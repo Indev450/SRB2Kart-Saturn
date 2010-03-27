@@ -972,6 +972,10 @@ boolean P_BlockLinesIterator(INT32 x, INT32 y, boolean (*func)(line_t *))
 	// First index is really empty, so +1 it.
 	for (list = blockmaplump + offset + 1; *list != -1; list++)
 	{
+#ifdef RANGECHECK
+		if (*list < 0 || (UINT32)*list >= numlines)
+			I_Error("P_BlockLinesIterator: index >= numlines");
+#endif
 		ld = &lines[*list];
 
 		if (ld->validcount == validcount)
