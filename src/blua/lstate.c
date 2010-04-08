@@ -64,6 +64,9 @@ static void freestack (lua_State *L, lua_State *L1) {
 }
 
 
+#define MEMERRMSG       "not enough memory"
+
+
 /*
 ** open parts that may cause memory-allocation errors
 */
@@ -76,7 +79,9 @@ static void f_luaopen (lua_State *L, void *ud) {
   luaS_resize(L, MINSTRTABSIZE);  /* initial size of string table */
   luaT_init(L);
   luaX_init(L);
-  luaS_fix(luaS_newliteral(L, MEMERRMSG));
+  /* pre-create memory-error message */
+  g->memerrmsg = luaS_newliteral(L, MEMERRMSG);
+  luaS_fix(g->memerrmsg);  /* it should never be collected */
   g->GCthreshold = 4*g->totalbytes;
 }
 

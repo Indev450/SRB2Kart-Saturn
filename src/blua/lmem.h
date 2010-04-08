@@ -13,8 +13,6 @@
 #include "llimits.h"
 #include "lua.h"
 
-#define MEMERRMSG	"not enough memory"
-
 
 #define luaM_reallocv(L,b,on,n,e) \
 	((cast(size_t, (n)+1) <= MAX_SIZET/(e)) ?  /* +1 to avoid warnings */ \
