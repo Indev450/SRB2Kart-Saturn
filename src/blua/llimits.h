@@ -100,6 +100,12 @@ typedef lu_int32 Instruction;
 #endif
 
 
+/* Size of cache for strings in the API (better be a prime) */
+#ifndef STRCACHE_SIZE
+#define STRCACHE_SIZE	127
+#endif
+
+
 /* minimum size for string buffer */
 #ifndef LUA_MINBUFFER
 #define LUA_MINBUFFER	32

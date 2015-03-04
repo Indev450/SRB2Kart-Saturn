@@ -18,6 +18,9 @@
 #include "lstring.h"
 
 
+#define MEMERRMSG       "not enough memory"
+
+
 
 void luaS_resize (lua_State *L, int newsize) {
   GCObject **newhash;
@@ -69,6 +72,21 @@ static TString *newlstr (lua_State *L, const char *str, size_t l,
   if (tb->nuse > cast(lu_int32, tb->size) && tb->size <= MAX_INT/2)
     luaS_resize(L, tb->size*2);  /* too crowded */
   return ts;
+}
+
+
+/*
+** Initialize the string table and the string cache
+*/
+void luaS_init (lua_State *L) {
+  global_State *g = G(L);
+  int i;
+  luaS_resize(L, MINSTRTABSIZE);  /* initial size of string table */
+  /* pre-create memory-error message */
+  g->memerrmsg = luaS_newliteral(L, MEMERRMSG);
+  luaS_fix(g->memerrmsg);  /* it should never be collected */
+  for (i = 0; i < STRCACHE_SIZE; i++)
+    g->strcache[i] = g->memerrmsg;  /* fill cache with valid strings */
 }
 
 
@@ -128,6 +146,10 @@ static inline __attribute__((always_inline)) unsigned luaS_hash (const char *str
 #endif
 }
 
+
+/*
+** new string (with explicit length)
+*/
 TString *luaS_newlstr (lua_State *L, const char *str, size_t l) {
   GCObject *o;
   unsigned int h = luaS_hash(str, l);
@@ -144,6 +166,25 @@ TString *luaS_newlstr (lua_State *L, const char *str, size_t l) {
     }
   }
   return newlstr(L, str, l, h);  /* not found */
+}
+
+
+/*
+** Create or reuse a zero-terminated string, first checking in the
+** cache (using the string address as a key). The cache can contain
+** only zero-terminated strings, so it is safe to use 'strcmp' to
+** check hits.
+*/
+TString *luaS_new (lua_State *L, const char *str) {
+  unsigned int i = IntPoint(str) % STRCACHE_SIZE;  /* hash */
+  TString **p = &G(L)->strcache[i];
+  if (strcmp(str, getstr(*p)) == 0)  /* hit? */
+    return *p;  /* that it is */
+  else {  /* normal route */
+    TString *s = luaS_newlstr(L, str, strlen(str));
+    *p = s;
+    return s;
+  }
 }
 
 
