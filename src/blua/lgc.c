@@ -522,6 +522,19 @@ static void remarkupvals (global_State *g) {
 }
 
 
+/*
+** Clear API string cache. (Entries cannot be empty, so fill them with
+** a non-collectable string.)
+*/
+static void clearapihash (global_State *g) {
+  int i;
+  for (i = 0; i < STRCACHE_SIZE; i++) {
+    if (luaS_iswhite(g->strcache[i]))  /* will entry be collected? */
+      g->strcache[i] = g->memerrmsg;  /* replace it with something fixed */
+  }
+}
+
+
 static void atomic (lua_State *L) {
   global_State *g = G(L);
   size_t udsize;  /* total size of userdata to be finalized */
@@ -544,6 +557,7 @@ static void atomic (lua_State *L) {
   marktmu(g);  /* mark `preserved' userdata */
   udsize += propagateall(g);  /* remark, to propagate `preserveness' */
   cleartable(g->weak);  /* remove collected objects from weak tables */
+  clearapihash(g);
   /* flip current white */
   g->currentwhite = cast_byte(otherwhite(g));
   g->sweepstrgc = 0;
