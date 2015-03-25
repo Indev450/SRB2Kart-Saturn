@@ -76,6 +76,19 @@ static TString *newlstr (lua_State *L, const char *str, size_t l,
 
 
 /*
+** Clear API string cache. (Entries cannot be empty, so fill them with
+** a non-collectable string.)
+*/
+void luaS_clearcache (global_State *g) {
+  int i;
+  for (i = 0; i < STRCACHE_SIZE; i++) {
+    if (luaS_iswhite(g->strcache[i]))  /* will entry be collected? */
+      g->strcache[i] = g->memerrmsg;  /* replace it with something fixed */
+  }
+}
+
+
+/*
 ** Initialize the string table and the string cache
 */
 void luaS_init (lua_State *L) {
