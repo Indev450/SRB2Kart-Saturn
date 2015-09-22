@@ -100,9 +100,14 @@ typedef lu_int32 Instruction;
 #endif
 
 
-/* Size of cache for strings in the API (better be a prime) */
-#ifndef STRCACHE_SIZE
-#define STRCACHE_SIZE	127
+/*
+** Size of cache for strings in the API. 'N' is the number of
+** sets (better be a prime) and "M" is the size of each set (M == 1
+** makes a direct cache.)
+*/
+#ifndef STRCACHE_N
+#define STRCACHE_N	63
+#define STRCACHE_M	2
 #endif
 
 

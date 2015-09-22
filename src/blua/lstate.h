@@ -92,7 +92,7 @@ typedef struct global_State {
   TString *memerrmsg;  /* memory-error message */
   struct Table *mt[NUM_TAGS];  /* metatables for basic types */
   TString *tmname[TM_N];  /* array with tag-method names */
-  TString *strcache[STRCACHE_SIZE];  /* cache for strings in API */
+  TString *strcache[STRCACHE_N][STRCACHE_M];  /* cache for strings in API */
 } global_State;
 
 
