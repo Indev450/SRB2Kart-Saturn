@@ -80,11 +80,12 @@ static TString *newlstr (lua_State *L, const char *str, size_t l,
 ** a non-collectable string.)
 */
 void luaS_clearcache (global_State *g) {
-  int i;
-  for (i = 0; i < STRCACHE_SIZE; i++) {
-    if (luaS_iswhite(g->strcache[i]))  /* will entry be collected? */
-      g->strcache[i] = g->memerrmsg;  /* replace it with something fixed */
-  }
+  int i, j;
+  for (i = 0; i < STRCACHE_N; i++)
+    for (j = 0; j < STRCACHE_M; j++) {
+      if (luaS_iswhite(g->strcache[i][j]))  /* will entry be collected? */
+        g->strcache[i][j] = g->memerrmsg;  /* replace it with something fixed */
+    }
 }
 
 
@@ -93,13 +94,14 @@ void luaS_clearcache (global_State *g) {
 */
 void luaS_init (lua_State *L) {
   global_State *g = G(L);
-  int i;
+  int i, j;
   luaS_resize(L, MINSTRTABSIZE);  /* initial size of string table */
   /* pre-create memory-error message */
   g->memerrmsg = luaS_newliteral(L, MEMERRMSG);
   luaS_fix(g->memerrmsg);  /* it should never be collected */
-  for (i = 0; i < STRCACHE_SIZE; i++)
-    g->strcache[i] = g->memerrmsg;  /* fill cache with valid strings */
+  for (i = 0; i < STRCACHE_N; i++)  /* fill cache with valid strings */
+    for (j = 0; j < STRCACHE_M; j++)
+      g->strcache[i][j] = g->memerrmsg;
 }
 
 
@@ -189,15 +191,19 @@ TString *luaS_newlstr (lua_State *L, const char *str, size_t l) {
 ** check hits.
 */
 TString *luaS_new (lua_State *L, const char *str) {
-  unsigned int i = IntPoint(str) % STRCACHE_SIZE;  /* hash */
-  TString **p = &G(L)->strcache[i];
-  if (strcmp(str, getstr(*p)) == 0)  /* hit? */
-    return *p;  /* that it is */
-  else {  /* normal route */
-    TString *s = luaS_newlstr(L, str, strlen(str));
-    *p = s;
-    return s;
+  unsigned int i = IntPoint(str) % STRCACHE_N;  /* hash */
+  int j;
+  TString **p = G(L)->strcache[i];
+  for (j = 0; j < STRCACHE_M; j++) {
+    if (strcmp(str, getstr(p[j])) == 0)  /* hit? */
+      return p[j];  /* that is it */
   }
+  /* normal route */
+  for (j = STRCACHE_M - 1; j > 0; j--)
+    p[j] = p[j - 1];  /* move out last element */
+  /* new element is first in the list */
+  p[0] = luaS_newlstr(L, str, strlen(str));
+  return p[0];
 }
 
 
