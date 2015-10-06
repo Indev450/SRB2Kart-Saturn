@@ -106,7 +106,7 @@ typedef lu_int32 Instruction;
 ** makes a direct cache.)
 */
 #ifndef STRCACHE_N
-#define STRCACHE_N	63
+#define STRCACHE_N	53
 #define STRCACHE_M	2
 #endif
 
