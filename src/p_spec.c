@@ -4767,6 +4767,11 @@ static ffloor_t *P_AddFakeFloor(sector_t *sec, sector_t *sec2, line_t *master, f
 	ffloor->t_slope = &sec2->c_slope;
 	ffloor->b_slope = &sec2->f_slope;
 
+	// mark the target sector as having slopes, if the FOF has any of its own
+	// (this fixes FOF slopes glitching initially at level load in software mode)
+	if (sec2->hasslope)
+		sec->hasslope = true;
+
 	if ((flags & FF_SOLID) && (master->flags & ML_EFFECT1)) // Block player only
 		flags &= ~FF_BLOCKOTHERS;
 
