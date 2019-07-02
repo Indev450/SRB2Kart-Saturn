@@ -3096,11 +3096,8 @@ void G_ChangePlayerReferences(mobj_t *oldmo, mobj_t *newmo)
 	I_Assert((oldmo != NULL) && (newmo != NULL));
 
 	// scan all thinkers
-	for (th = thinkercap.next; th != &thinkercap; th = th->next)
+	for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 	{
-		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
-			continue;
-
 		mo2 = (mobj_t *)th;
 
 		if (!(mo2->flags & MF_MISSILE))
@@ -5542,10 +5539,8 @@ void G_ConsGhostTic(INT32 playernum)
 				demo_p += sizeof(angle_t); // angle, unnecessary for cons.
 
 				mobj = NULL;
-				for (th = thinkercap.next; th != &thinkercap; th = th->next)
+				for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 				{
-					if (th->function.acp1 != (actionf_p1)P_MobjThinker)
-						continue;
 					mobj = (mobj_t *)th;
 					if (mobj->type == (mobjtype_t)type && mobj->x == x && mobj->y == y && mobj->z == z)
 						break;
@@ -7973,11 +7968,8 @@ void G_DoPlayMetal(void)
 		metalbuffer = metal_p = W_CacheLumpNum(l, PU_STATIC);
 
 	// find metal sonic
-	for (th = thinkercap.next; th != &thinkercap; th = th->next)
+	for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 	{
-		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
-			continue;
-
 		mo = (mobj_t *)th;
 		if (mo->type == MT_METALSONIC_RACE)
 			break;

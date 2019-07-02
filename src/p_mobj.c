@@ -421,11 +421,8 @@ boolean P_WeaponOrPanel(mobjtype_t type)
 		spawnpoints[i] = NULL;
 	}
 
-	for (think = thinkercap.next; think != &thinkercap; think = think->next)
+	for (think = thlist[THINK_MOBJ].next; think != &thlist[THINK_MOBJ]; think = think->next)
 	{
-		if (think->function.acp1 != (actionf_p1)P_MobjThinker)
-			continue; // not a mobj thinker
-
 		mo = (mobj_t *)think;
 
 		if (mo->type == MT_EMERALDSPAWN)
@@ -3498,11 +3495,8 @@ void P_DestroyRobots(void)
 	mobj_t *mo;
 	thinker_t *think;
 
-	for (think = thinkercap.next; think != &thinkercap; think = think->next)
+	for (think = thlist[THINK_MOBJ].next; think != &thlist[THINK_MOBJ]; think = think->next)
 	{
-		if (think->function.acp1 != (actionf_p1)P_MobjThinker)
-			continue; // not a mobj thinker
-
 		mo = (mobj_t *)think;
 		if (mo->health <= 0 || !(mo->flags & MF_ENEMY || mo->flags & MF_BOSS))
 			continue; // not a valid enemy
@@ -4305,11 +4299,8 @@ static void P_Boss3Thinker(mobj_t *mobj)
 
 			// scan the thinkers to make sure all the old pinch dummies are gone before making new ones
 			// this can happen if the boss was hurt earlier than expected
-			for (th = thinkercap.next; th != &thinkercap; th = th->next)
+			for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 			{
-				if (th->function.acp1 != (actionf_p1)P_MobjThinker)
-					continue;
-
 				mo2 = (mobj_t *)th;
 				if (mo2->type == (mobjtype_t)mobj->info->mass && mo2->tracer == mobj)
 				{
@@ -4396,11 +4387,8 @@ static void P_Boss3Thinker(mobj_t *mobj)
 		// scan the thinkers
 		// to find a point that matches
 		// the number
-		for (th = thinkercap.next; th != &thinkercap; th = th->next)
+		for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 		{
-			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
-				continue;
-
 			mo2 = (mobj_t *)th;
 			if (mo2->type == MT_BOSS3WAYPOINT && mo2->spawnpoint && mo2->spawnpoint->angle == mobj->threshold)
 			{
@@ -5017,11 +5005,8 @@ static void P_Boss7Thinker(mobj_t *mobj)
 				closestdist = 16384*FRACUNIT; // Just in case...
 
 				// Find waypoint he is closest to
-				for (th = thinkercap.next; th != &thinkercap; th = th->next)
+				for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 				{
-					if (th->function.acp1 != (actionf_p1)P_MobjThinker)
-						continue;
-
 					mo2 = (mobj_t *)th;
 					if (mo2->type == MT_BOSS3WAYPOINT && mo2->spawnpoint)
 					{
@@ -5072,11 +5057,8 @@ static void P_Boss7Thinker(mobj_t *mobj)
 
 		// scan the thinkers to find
 		// the waypoint to use
-		for (th = thinkercap.next; th != &thinkercap; th = th->next)
+		for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 		{
-			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
-				continue;
-
 			mo2 = (mobj_t *)th;
 			if (mo2->type == MT_BOSS3WAYPOINT && mo2->spawnpoint && (mo2->spawnpoint->options & 7) == waypointNum)
 			{
@@ -5195,11 +5177,8 @@ static void P_Boss9Thinker(mobj_t *mobj)
 
 		// Run through the thinkers ONCE and find all of the MT_BOSS9GATHERPOINT in the map.
 		// Build a hoop linked list of 'em!
-		for (th = thinkercap.next; th != &thinkercap; th = th->next)
+		for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 		{
-			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
-				continue;
-
 			mo2 = (mobj_t *)th;
 			if (mo2->type == MT_BOSS9GATHERPOINT)
 			{
@@ -5629,11 +5608,8 @@ mobj_t *P_GetClosestAxis(mobj_t *source)
 	fixed_t dist1, dist2 = 0;
 
 	// scan the thinkers to find the closest axis point
-	for (th = thinkercap.next; th != &thinkercap; th = th->next)
+	for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 	{
-		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
-			continue;
-
 		mo2 = (mobj_t *)th;
 
 		if (mo2->type == MT_AXIS)
@@ -10124,7 +10100,7 @@ mobj_t *P_SpawnShadowMobj(mobj_t * caster)
 		mobj->eflags |= MFE_ONGROUND;
 
 	if (!(mobj->flags & MF_NOTHINK))
-		P_AddThinker(&mobj->thinker);
+		P_AddThinker(THINK_MOBJ, &mobj->thinker);
 
 	// Call action functions when the state is set
 	if (st->action.acp1 && (mobj->flags & MF_RUNSPAWNFUNC))
@@ -10198,7 +10174,7 @@ static precipmobj_t *P_SpawnPrecipMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype
 	mobj->momz = mobjinfo[type].speed;
 
 	mobj->thinker.function.acp1 = (actionf_p1)P_NullPrecipThinker;
-	P_AddThinker(&mobj->thinker);
+	P_AddThinker(THINK_PRECIP, &mobj->thinker);
 
 	CalculatePrecipFloor(mobj);
 
@@ -10344,7 +10320,7 @@ void P_RemoveMobj(mobj_t *mobj)
 		else
 		{ // Add thinker just to delay removing it until refrences are gone.
 			mobj->flags &= ~MF_NOTHINK;
-			P_AddThinker((thinker_t *)mobj);
+			P_AddThinker(THINK_MOBJ, (thinker_t *)mobj);
 #ifdef SCRAMBLE_REMOVED
 			// Invalidate mobj_t data to cause crashes if accessed!
 			memset((UINT8 *)mobj + sizeof(thinker_t), 0xff, sizeof(mobj_t) - sizeof(thinker_t));
@@ -11767,11 +11743,8 @@ ML_NOCLIMB : Direction not controllable
 		mobj->health = (mthing->angle / 360) + 1;
 
 		// See if other starposts exist in this level that have the same value.
-		for (th = thinkercap.next; th != &thinkercap; th = th->next)
+		for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 		{
-			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
-				continue;
-
 			mo2 = (mobj_t *)th;
 
 			if (mo2 == mobj)
