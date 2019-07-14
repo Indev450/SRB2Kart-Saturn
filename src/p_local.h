@@ -60,8 +60,8 @@
 #define mariomode (maptol & TOL_MARIO)
 #define twodlevel (maptol & TOL_2D)
 
-typedef enum{
-	THINK_LIMBO,
+typedef enum
+{
 	THINK_POLYOBJ,
 	THINK_MAIN,
 	THINK_MOBJ,

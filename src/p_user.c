@@ -358,9 +358,16 @@ void P_ResetScore(player_t *player)
 	// to find the egg capsule with the lowest mare
 	for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 	{
+		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+			continue;
+
 		mo2 = (mobj_t *)th;
 
-		if (mo2->type == MT_EGGCAPSULE && mo2->health > 0)
+		if (mo2->type != MT_EGGCAPSULE)
+			continue;
+		if (mo2->health <= 0)
+			continue;
+
 		{
 			const UINT8 threshold = (UINT8)mo2->threshold;
 			if (mare == 255)
@@ -456,29 +463,32 @@ UINT8 P_FindHighestLap(void)
 	// to find the closest axis point
 	for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 	{
+		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+			continue;
+
 		mo2 = (mobj_t *)th;
 
-		if (mo2->type == MT_AXIS)
-		{
-			if (mo2->threshold == mare)
-			{
-				if (closestaxis == NULL)
-				{
-					closestaxis = mo2;
-					lowestaxisnum = mo2->health;
-					dist2 = R_PointToDist2(player->mo->x, player->mo->y, mo2->x, mo2->y)-mo2->radius;
-				}
-				else if (mo2->health < lowestaxisnum)
-				{
-					dist1 = R_PointToDist2(player->mo->x, player->mo->y, mo2->x, mo2->y)-mo2->radius;
+		if (mo2->type != MT_AXIS)
+			continue;
 
-					if (dist1 < dist2)
-					{
-						closestaxis = mo2;
-						lowestaxisnum = mo2->health;
-						dist2 = dist1;
-					}
-				}
+		if (mo2->threshold != mare)
+			continue;
+
+		if (closestaxis == NULL)
+		{
+			closestaxis = mo2;
+			lowestaxisnum = mo2->health;
+			dist2 = R_PointToDist2(player->mo->x, player->mo->y, mo2->x, mo2->y) - mo2->radius;
+		}
+		else if (mo2->health < lowestaxisnum)
+		{
+			dist1 = R_PointToDist2(player->mo->x, player->mo->y, mo2->x, mo2->y) - mo2->radius;
+
+			if (dist1 < dist2)
+			{
+				closestaxis = mo2;
+				lowestaxisnum = mo2->health;
+				dist2 = dist1;
 			}
 		}
 	}
@@ -504,17 +514,22 @@ static mobj_t *P_FindAxis(INT32 mare, INT32 axisnum)
 	// to find the closest axis point
 	for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 	{
+		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+			continue;
+
 		mo2 = (mobj_t *)th;
 
 		// Axis things are only at beginning of list.
 		if (!(mo2->flags2 & MF2_AXIS))
 			return NULL;
 
-		if (mo2->type == MT_AXIS)
-		{
-			if (mo2->health == axisnum && mo2->threshold == mare)
-				return mo2;
-		}
+		if (mo2->type != MT_AXIS)
+			continue;
+		if (mo2->health != axisnum)
+			continue;
+		if (mo2->threshold != mare)
+			continue;
+		return mo2;
 	}
 
 	return NULL;
@@ -534,17 +549,22 @@ static mobj_t *P_FindAxisTransfer(INT32 mare, INT32 axisnum, mobjtype_t type)
 	// to find the closest axis point
 	for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 	{
+		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+			continue;
+
 		mo2 = (mobj_t *)th;
 
 		// Axis things are only at beginning of list.
 		if (!(mo2->flags2 & MF2_AXIS))
 			return NULL;
 
-		if (mo2->type == type)
-		{
-			if (mo2->health == axisnum && mo2->threshold == mare)
-				return mo2;
-		}
+		if (mo2->type != type)
+			continue;
+		if (mo2->health != axisnum)
+			continue;
+		if (mo2->threshold != mare)
+			continue;
+		return mo2;
 	}
 
 	return NULL;
@@ -570,27 +590,31 @@ void P_TransferToAxis(player_t *player, INT32 axisnum)
 	// to find the closest axis point
 	for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 	{
+		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+			continue;
+
 		mo2 = (mobj_t *)th;
 
-		if (mo2->type == MT_AXIS)
-		{
-			if (mo2->health == axisnum && mo2->threshold == mare)
-			{
-				if (closestaxis == NULL)
-				{
-					closestaxis = mo2;
-					dist2 = R_PointToDist2(player->mo->x, player->mo->y, mo2->x, mo2->y)-mo2->radius;
-				}
-				else
-				{
-					dist1 = R_PointToDist2(player->mo->x, player->mo->y, mo2->x, mo2->y)-mo2->radius;
+		if (mo2->type != MT_AXIS)
+			continue;
+		if (mo2->health != axisnum)
+			continue;
+		if (mo2->threshold != mare)
+			continue;
 
-					if (dist1 < dist2)
-					{
-						closestaxis = mo2;
-						dist2 = dist1;
-					}
-				}
+		if (closestaxis == NULL)
+		{
+			closestaxis = mo2;
+			dist2 = R_PointToDist2(player->mo->x, player->mo->y, mo2->x, mo2->y) - mo2->radius;
+		}
+		else
+		{
+			dist1 = R_PointToDist2(player->mo->x, player->mo->y, mo2->x, mo2->y) - mo2->radius;
+
+			if (dist1 < dist2)
+			{
+				closestaxis = mo2;
+				dist2 = dist1;
 			}
 		}
 	}
@@ -666,6 +690,9 @@ static void P_DeNightserizePlayer(player_t *player)
 	// Check to see if the player should be killed.
 	for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 	{
+		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+			continue;
+
 		mo2 = (mobj_t *)th;
 		if (!(mo2->type == MT_NIGHTSDRONE))
 			continue;
@@ -1577,6 +1604,9 @@ void P_SpawnShieldOrb(player_t *player)
 	// blaze through the thinkers to see if an orb already exists!
 	for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 	{
+		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+			continue;
+
 		shieldobj = (mobj_t *)th;
 
 		if (shieldobj->type == orbtype && shieldobj->target == player->mo)
@@ -3272,7 +3302,8 @@ static void P_DoTeeter(player_t *player) // SRB2kart - unused.
 		if (teeter) // only bother with objects as a last resort if you were already teetering
 		{
 			mobj_t *oldtmthing = tmthing;
-			tmthing = teeterer = player->mo;
+			teeterer = player->mo;
+			P_SetTarget(&tmthing, teeterer);
 			teeterxl = teeterxh = player->mo->x;
 			teeteryl = teeteryh = player->mo->y;
 			couldteeter = false;
@@ -3286,7 +3317,7 @@ static void P_DoTeeter(player_t *player) // SRB2kart - unused.
 				}
 teeterdone:
 			teeter = solidteeter;
-			tmthing = oldtmthing; // restore old tmthing, goodness knows what the game does with this before mobj thinkers
+			P_SetTarget(&tmthing, oldtmthing); // restore old tmthing, goodness knows what the game does with this before mobj thinkers
 		}
 	}
 	if (teeter)
@@ -3599,11 +3630,177 @@ static void P_DoSpinDash(player_t *player, ticcmd_t *cmd) // SRB2kart - unused.
 #endif
 			) && !(player->pflags & PF_USEDOWN) && !(player->pflags & PF_SPINNING))
 		{
-			player->pflags |= PF_SPINNING;
-			//P_SetPlayerMobjState(player->mo, S_PLAY_ATK1);
-			if (!player->spectator)
-				S_StartSound(player->mo, sfx_spin);
-			player->pflags |= PF_USEDOWN;
+			case CA2_SPINDASH: // Spinning and Spindashing
+				 // Start revving
+				if ((cmd->buttons & BT_USE) && player->speed < FixedMul(5<<FRACBITS, player->mo->scale)
+					&& !player->mo->momz && onground && !(player->pflags & (PF_USEDOWN|PF_SPINNING))
+						&& canstand)
+				{
+					player->mo->momx = player->cmomx;
+					player->mo->momy = player->cmomy;
+					player->pflags |= (PF_USEDOWN|PF_STARTDASH|PF_SPINNING);
+					player->dashspeed = player->mindash;
+					P_SetPlayerMobjState(player->mo, S_PLAY_SPINDASH);
+					if (!player->spectator)
+						S_StartSound(player->mo, sfx_s3kab); // Make the rev sound! Previously sfx_spndsh.
+				}
+				 // Revving
+				else if ((cmd->buttons & BT_USE) && (player->pflags & PF_STARTDASH))
+				{
+					if (player->dashspeed < player->maxdash)
+					{
+#define chargecalculation (6*(player->dashspeed - player->mindash))/(player->maxdash - player->mindash)
+						fixed_t soundcalculation = chargecalculation;
+						player->dashspeed += FRACUNIT;
+						if (!player->spectator && soundcalculation != chargecalculation)
+							S_StartSound(player->mo, sfx_s3kab); // Make the rev sound! Previously sfx_spndsh.
+#undef chargecalculation
+					}
+					if (player->revitem && !(leveltime % 5)) // Now spawn the color thok circle.
+					{
+						P_SpawnSpinMobj(player, player->revitem);
+						if (demorecording)
+							G_GhostAddRev();
+					}
+				}
+
+				// If not moving up or down, and travelling faster than a speed of five while not holding
+				// down the spin button and not spinning.
+				// AKA Just go into a spin on the ground, you idiot. ;)
+				else if ((cmd->buttons & BT_USE || ((twodlevel || (player->mo->flags2 & MF2_TWOD)) && cmd->forwardmove < -20))
+					&& !player->climbing && !player->mo->momz && onground && (player->speed > FixedMul(5<<FRACBITS, player->mo->scale)
+						|| !canstand) && !(player->pflags & (PF_USEDOWN|PF_SPINNING)))
+				{
+					player->pflags |= (PF_USEDOWN|PF_SPINNING);
+					P_SetPlayerMobjState(player->mo, S_PLAY_ROLL);
+					if (!player->spectator)
+						S_StartSound(player->mo, sfx_spin);
+				}
+				else
+				// Catapult the player from a spindash rev!
+				if (onground && !(player->pflags & PF_USEDOWN) && (player->pflags & PF_STARTDASH) && (player->pflags & PF_SPINNING))
+				{
+					player->pflags &= ~PF_STARTDASH;
+					if (player->powers[pw_carry] == CR_BRAKGOOP)
+						player->dashspeed = 0;
+
+					if (!((gametype == GT_RACE || gametype == GT_COMPETITION) && leveltime < 4*TICRATE))
+					{
+						if (player->dashspeed)
+						{
+							P_SetPlayerMobjState(player->mo, S_PLAY_ROLL);
+							P_InstaThrust(player->mo, player->mo->angle, (player->speed = FixedMul(player->dashspeed, player->mo->scale))); // catapult forward ho!!
+						}
+						else
+						{
+							P_SetPlayerMobjState(player->mo, S_PLAY_STND);
+							player->pflags &= ~PF_SPINNING;
+						}
+
+						if (!player->spectator)
+							S_StartSound(player->mo, sfx_zoom);
+					}
+
+					player->dashspeed = 0;
+				}
+				break;
+			case CA2_GUNSLINGER:
+				if (!player->mo->momz && onground && !player->weapondelay && canstand)
+				{
+					if (player->speed > FixedMul(10<<FRACBITS, player->mo->scale))
+					{}
+					else
+					{
+						mobj_t *lockon = P_LookForEnemies(player, false, true);
+						if (lockon)
+						{
+							if (P_IsLocalPlayer(player)) // Only display it on your own view.
+							{
+								mobj_t *visual = P_SpawnMobj(lockon->x, lockon->y, lockon->z, MT_LOCKON); // positioning, flip handled in P_SceneryThinker
+								P_SetTarget(&visual->target, lockon);
+							}
+						}
+						if ((cmd->buttons & BT_USE) && !(player->pflags & PF_USEDOWN))
+						{
+							mobj_t *bullet;
+
+							P_SetPlayerMobjState(player->mo, S_PLAY_FIRE);
+
+#define zpos(posmo) (posmo->z + (posmo->height - mobjinfo[player->revitem].height)/2)
+							if (lockon)
+							{
+								player->mo->angle = R_PointToAngle2(player->mo->x, player->mo->y, lockon->x, lockon->y);
+								bullet = P_SpawnPointMissile(player->mo, lockon->x, lockon->y, zpos(lockon), player->revitem, player->mo->x, player->mo->y, zpos(player->mo));
+								if (!demoplayback || P_AnalogMove(player))
+								{
+									if (player == &players[consoleplayer])
+										localangle = player->mo->angle;
+									else if (player == &players[secondarydisplayplayer])
+										localangle2 = player->mo->angle;
+								}
+							}
+							else
+							{
+								bullet = P_SpawnPointMissile(player->mo, player->mo->x + P_ReturnThrustX(NULL, player->mo->angle, FRACUNIT), player->mo->y + P_ReturnThrustY(NULL, player->mo->angle, FRACUNIT), zpos(player->mo), player->revitem, player->mo->x, player->mo->y, zpos(player->mo));
+								if (bullet)
+								{
+									bullet->flags &= ~MF_NOGRAVITY;
+									bullet->momx >>= 1;
+									bullet->momy >>= 1;
+								}
+							}
+							player->drawangle = player->mo->angle;
+#undef zpos
+
+							P_SetTarget(&player->mo->tracer, NULL);
+							player->mo->momx >>= 1;
+							player->mo->momy >>= 1;
+							player->pflags |= PF_USEDOWN;
+							P_SetWeaponDelay(player, TICRATE/2);
+						}
+					}
+				}
+				break;
+			case CA2_MELEE: // Melee attack
+				if (player->panim != PA_ABILITY2 && (cmd->buttons & BT_USE)
+				&& !player->mo->momz && onground && !(player->pflags & PF_USEDOWN)
+				&& canstand)
+				{
+					P_ResetPlayer(player);
+					player->pflags |= PF_THOKKED;
+#if 0
+					if ((player->charability == CA_TWINSPIN) && (player->speed > FixedMul(player->runspeed, player->mo->scale)))
+					{
+						P_DoJump(player, false);
+						player->pflags &= ~PF_STARTJUMP;
+						player->mo->momz = FixedMul(player->mo->momz, 3*FRACUNIT/2); // NOT 1.5 times the jump height, but 2.25 times.
+						P_SetPlayerMobjState(player->mo, S_PLAY_TWINSPIN);
+						S_StartSound(player->mo, sfx_s3k8b);
+					}
+					else
+#endif
+					{
+						player->mo->z += P_MobjFlip(player->mo);
+						P_SetObjectMomZ(player->mo, player->mindash, false);
+						if (player->mo->eflags & MFE_UNDERWATER)
+							player->mo->momz >>= 1;
+#if 0
+						if (FixedMul(player->speed, FINECOSINE(((player->mo->angle - R_PointToAngle2(0, 0, player->rmomx, player->rmomy)) >> ANGLETOFINESHIFT) & FINEMASK)) < FixedMul(player->maxdash, player->mo->scale))
+#else
+						if (player->speed < FixedMul(player->maxdash, player->mo->scale))
+#endif
+						{
+							player->drawangle = player->mo->angle;
+							P_InstaThrust(player->mo, player->mo->angle, FixedMul(player->maxdash, player->mo->scale));
+						}
+						player->mo->momx += player->cmomx;
+						player->mo->momy += player->cmomy;
+						P_SetPlayerMobjState(player->mo, S_PLAY_MELEE);
+						S_StartSound(player->mo, sfx_s3k42);
+					}
+					player->pflags |= PF_USEDOWN;
+				}
+				break;
 		}
 	}
 
@@ -3687,6 +3884,9 @@ void P_Telekinesis(player_t *player, fixed_t thrust, fixed_t range)
 
 	for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 	{
+		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+			continue;
+
 		mo2 = (mobj_t *)th;
 
 		if (mo2 == player->mo)
@@ -4366,29 +4566,32 @@ static void P_NightsTransferPoints(player_t *player, fixed_t xspeed, fixed_t rad
 		// Find next waypoint
 		for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 		{
+			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+				continue;
+
 			mo2 = (mobj_t *)th;
 
 			// Axis things are only at beginning of list.
 			if (!(mo2->flags2 & MF2_AXIS))
 				break;
+			if (!(mo2->type == MT_AXISTRANSFER || mo2->type == MT_AXISTRANSFERLINE))
+				continue;
+			if (mo2->threshold != sequence)
+				continue;
 
-			if ((mo2->type == MT_AXISTRANSFER || mo2->type == MT_AXISTRANSFERLINE)
-				&& mo2->threshold == sequence)
+			if (player->pflags & PF_TRANSFERTOCLOSEST)
 			{
-				if (player->pflags & PF_TRANSFERTOCLOSEST)
-				{
-					if (mo2->health == player->axis1->health)
-						transfer1 = mo2;
-					else if (mo2->health == player->axis2->health)
-						transfer2 = mo2;
-				}
-				else
-				{
-					if (mo2->health == player->mo->target->health)
-						transfer1 = mo2;
-					else if (mo2->health == player->mo->target->health + 1)
-						transfer2 = mo2;
-				}
+				if (mo2->health == player->axis1->health)
+					transfer1 = mo2;
+				else if (mo2->health == player->axis2->health)
+					transfer2 = mo2;
+			}
+			else
+			{
+				if (mo2->health == player->mo->target->health)
+					transfer1 = mo2;
+				else if (mo2->health == player->mo->target->health + 1)
+					transfer2 = mo2;
 			}
 		}
 
@@ -4399,24 +4602,28 @@ static void P_NightsTransferPoints(player_t *player, fixed_t xspeed, fixed_t rad
 		{
 			for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 			{
+				if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+					continue;
+
 				mo2 = (mobj_t *)th;
 
 				// Axis things are only at beginning of list.
 				if (!(mo2->flags2 & MF2_AXIS))
 					break;
+				if (!(mo2->type == MT_AXISTRANSFER || mo2->type == MT_AXISTRANSFERLINE))
+					continue;
+				if (mo2->threshold != sequence)
+					continue;
 
-				if (mo2->threshold == sequence && (mo2->type == MT_AXISTRANSFER || mo2->type == MT_AXISTRANSFERLINE))
+				if (!transfer1)
 				{
-					if (!transfer1)
-					{
-						transfer1 = mo2;
-						transfer1last = true;
-					}
-					else if (mo2->health > transfer1->health)
-					{
-						transfer1 = mo2;
-						transfer1last = true;
-					}
+					transfer1 = mo2;
+					transfer1last = true;
+				}
+				else if (mo2->health > transfer1->health)
+				{
+					transfer1 = mo2;
+					transfer1last = true;
 				}
 			}
 		}
@@ -4424,24 +4631,28 @@ static void P_NightsTransferPoints(player_t *player, fixed_t xspeed, fixed_t rad
 		{
 			for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 			{
+				if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+					continue;
+
 				mo2 = (mobj_t *)th;
 
 				// Axis things are only at beginning of list.
 				if (!(mo2->flags2 & MF2_AXIS))
 					break;
+				if (!(mo2->type == MT_AXISTRANSFER || mo2->type == MT_AXISTRANSFERLINE))
+					continue;
+				if (mo2->threshold != sequence)
+					continue;
 
-				if (mo2->threshold == sequence && (mo2->type == MT_AXISTRANSFER || mo2->type == MT_AXISTRANSFERLINE))
+				if (!transfer2)
 				{
-					if (!transfer2)
-					{
-						transfer2 = mo2;
-						transfer2last = true;
-					}
-					else if (mo2->health > transfer2->health)
-					{
-						transfer2 = mo2;
-						transfer2last = true;
-					}
+					transfer2 = mo2;
+					transfer2last = true;
+				}
+				else if (mo2->health > transfer2->health)
+				{
+					transfer2 = mo2;
+					transfer2last = true;
 				}
 			}
 		}
@@ -4968,31 +5179,32 @@ static void P_NiGHTSMovement(player_t *player)
 		// to find the closest axis point
 		for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 		{
+			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+				continue;
+
 			mo2 = (mobj_t *)th;
 
-			if (mo2->type == MT_AXIS)
-			{
-				if (mo2->threshold == player->mare)
-				{
-					if (closestaxis == NULL)
-					{
-						closestaxis = mo2;
-						dist2 = R_PointToDist2(newx, newy, mo2->x, mo2->y)-mo2->radius;
-					}
-					else
-					{
-						dist1 = R_PointToDist2(newx, newy, mo2->x, mo2->y)-mo2->radius;
+			if (mo2->type != MT_AXIS)
+				continue;
+			if (mo2->threshold != player->mare)
+				continue;
 
-						if (dist1 < dist2)
-						{
-							closestaxis = mo2;
-							dist2 = dist1;
-						}
-					}
+			if (closestaxis == NULL)
+			{
+				closestaxis = mo2;
+				dist2 = R_PointToDist2(newx, newy, mo2->x, mo2->y) - mo2->radius;
+			}
+			else
+			{
+				dist1 = R_PointToDist2(newx, newy, mo2->x, mo2->y) - mo2->radius;
+
+				if (dist1 < dist2)
+				{
+					closestaxis = mo2;
+					dist2 = dist1;
 				}
 			}
 		}
-
 		P_SetTarget(&player->mo->target, closestaxis);
 	}
 
@@ -5684,6 +5896,9 @@ static void P_MovePlayer(player_t *player)
 
 			for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 			{
+				if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+					continue;
+
 				mo2 = (mobj_t *)th;
 
 				if (mo2->type == MT_EGGCAPSULE
@@ -6240,7 +6455,20 @@ static void P_MovePlayer(player_t *player)
 	/* // SRB2kart - what's a shield? Never heard of it. Never happened. Nope.
 	if (cmd->buttons & BT_BRAKE) // Spin button effects
 	{
-		if (player->pflags & PF_JUMPED) // If the player is jumping
+		mobj_t *lockon = NULL;
+		if (!player->powers[pw_super] && player->powers[pw_shield] == SH_ATTRACT && !(player->pflags & PF_THOKKED))
+		{
+			if ((lockon = P_LookForEnemies(player, false, false)))
+			{
+				if (P_IsLocalPlayer(player)) // Only display it on your own view.
+				{
+					mobj_t *visual = P_SpawnMobj(lockon->x, lockon->y, lockon->z, MT_LOCKON); // positioning, flip handled in P_SceneryThinker
+					P_SetTarget(&visual->target, lockon);
+					P_SetMobjStateNF(visual, visual->info->spawnstate+1);
+				}
+			}
+		}
+		if (cmd->buttons & BT_USE) // Spin button effects
 		{
 			if (!(player->pflags & PF_USEDOWN)) // If the player is not holding down BT_BRAKE
 			{
@@ -6498,20 +6726,25 @@ static void P_DoZoomTube(player_t *player)
 		// Find next waypoint
 		for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 		{
+			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+				continue;
+
 			mo2 = (mobj_t *)th;
 
 			if (mo2->type != MT_TUBEWAYPOINT)
 				continue;
 
-			if (mo2->threshold == sequence)
-			{
-				if ((reverse && mo2->health == player->mo->tracer->health - 1)
-					|| (!reverse && mo2->health == player->mo->tracer->health + 1))
-				{
-					waypoint = mo2;
-					break;
-				}
-			}
+			if (mo2->threshold != sequence)
+				continue;
+
+			if (reverse && mo2->health != player->mo->tracer->health - 1)
+				continue;
+
+			if (!reverse && mo2->health != player->mo->tracer->health + 1)
+				continue;
+
+			waypoint = mo2;
+			break;
 		}
 
 		if (waypoint)
@@ -6637,19 +6870,22 @@ static void P_DoRopeHang(player_t *player) // SRB2kart - unused.
 		// Find next waypoint
 		for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 		{
+			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+				continue;
+
 			mo2 = (mobj_t *)th;
 
 			if (mo2->type != MT_TUBEWAYPOINT)
 				continue;
 
-			if (mo2->threshold == sequence)
-			{
-				if (mo2->health == player->mo->tracer->health + 1)
-				{
-					waypoint = mo2;
-					break;
-				}
-			}
+			if (mo2->threshold != sequence)
+				continue;
+
+			if (mo2->health != player->mo->tracer->health + 1)
+				continue;
+
+			waypoint = mo2;
+			break;
 		}
 
 		if (!(player->mo->tracer->flags & MF_SLIDEME) && !waypoint)
@@ -6659,19 +6895,22 @@ static void P_DoRopeHang(player_t *player) // SRB2kart - unused.
 			// Wrap around back to first waypoint
 			for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 			{
+				if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+					continue;
+
 				mo2 = (mobj_t *)th;
 
 				if (mo2->type != MT_TUBEWAYPOINT)
 					continue;
 
-				if (mo2->threshold == sequence)
-				{
-					if (mo2->health == 0)
-					{
-						waypoint = mo2;
-						break;
-					}
-				}
+				if (mo2->threshold != sequence)
+					continue;
+
+				if (mo2->health != 0)
+					continue;
+
+				waypoint = mo2;
+				break;
 			}
 		}
 
@@ -6722,22 +6961,22 @@ static void P_DoRopeHang(player_t *player) // SRB2kart - unused.
 static void P_NukeAllPlayers(player_t *player)
 {
 	mobj_t *mo;
-	thinker_t *think;
+	UINT8 i;
 
-	for (think = thlist[THINK_MOBJ].next; think != &thlist[THINK_MOBJ]; think = think->next)
+	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		mo = (mobj_t *)think;
-
-		if (!mo->player)
+		if (!playeringame[i])
+			continue;
+		if (players[i].spectator)
+			continue;
+		if (!players[i].mo)
+			continue;
+		if (players[i].mo == player->mo)
+			continue;
+		if (players[i].mo->health <= 0)
 			continue;
 
-		if (mo->health <= 0) // dead
-			continue;
-
-		if (mo == player->mo)
-			continue;
-
-		P_DamageMobj(mo, player->mo, player->mo, 1);
+		P_DamageMobj(players[i].mo, player->mo, player->mo, 1, 0);
 	}
 
 	CONS_Printf(M_GetText("%s caused a world of pain.\n"), player_names[player-players]);
@@ -6773,6 +7012,9 @@ void P_NukeEnemies(mobj_t *inflictor, mobj_t *source, fixed_t radius)
 
 	for (think = thlist[THINK_MOBJ].next; think != &thlist[THINK_MOBJ]; think = think->next)
 	{
+		if (think->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+			continue;
+
 		mo = (mobj_t *)think;
 
 		if (!(mo->flags & MF_SHOOTABLE) && !(mo->type == MT_EGGGUARD || mo->type == MT_MINUS
@@ -6850,6 +7092,9 @@ boolean P_LookForEnemies(player_t *player)
 
 	for (think = thlist[THINK_MOBJ].next; think != &thlist[THINK_MOBJ]; think = think->next)
 	{
+		if (think->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+			continue;
+
 		mo = (mobj_t *)think;
 		if (!(mo->flags & (MF_ENEMY|MF_BOSS|MF_MONITOR|MF_SPRING)))
 			continue; // not a valid enemy
@@ -6972,6 +7217,9 @@ void P_FindEmerald(void)
 	// to find all emeralds
 	for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 	{
+		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+			continue;
+
 		mo2 = (mobj_t *)th;
 		if (mo2->type == MT_EMERHUNT)
 		{
@@ -8297,6 +8545,9 @@ void P_PlayerThink(player_t *player)
 
 		for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 		{
+			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+				continue;
+
 			mo2 = (mobj_t *)th;
 
 			if (!(mo2->type == MT_NIGHTSWING || mo2->type == MT_RING || mo2->type == MT_COIN

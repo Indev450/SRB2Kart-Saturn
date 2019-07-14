@@ -2149,7 +2149,7 @@ void A_Boss1Laser(mobj_t *actor)
 	if (z - floorz < mobjinfo[MT_EGGMOBILE_FIRE].height>>1)
 	{
 		point = P_SpawnMobj(x, y, floorz+1, MT_EGGMOBILE_FIRE);
-		point->target = actor;
+		P_SetTarget(&point->target, actor);
 		point->destscale = 3*FRACUNIT;
 		point->scalespeed = FRACUNIT>>2;
 		point->fuse = TICRATE;
@@ -2530,10 +2530,11 @@ void A_1upThinker(mobj_t *actor)
 
 	if (closestplayer == -1 || skins[players[closestplayer].skin].spritedef.numframes <= states[S_PLAY_BOX1].frame)
 	{ // Closest player not found (no players in game?? may be empty dedicated server!), or does not have correct sprite.
-		actor->frame = 0;
-		if (actor->tracer) {
-			P_RemoveMobj(actor->tracer);
-			actor->tracer = NULL;
+		if (actor->tracer)
+		{
+			mobj_t *tracer = actor->tracer;
+			P_SetTarget(&actor->tracer, NULL);
+			P_RemoveMobj(tracer);
 		}
 		return;
 	}
@@ -2747,6 +2748,9 @@ void A_BossDeath(mobj_t *mo)
 	// if all bosses are dead
 	for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 	{
+		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+			continue;
+
 		mo2 = (mobj_t *)th;
 		if (mo2 != mo && (mo2->flags & MF_BOSS) && mo2->health > 0)
 			goto bossjustdie; // other boss not dead - just go straight to dying!
@@ -2799,12 +2803,12 @@ bossjustdie:
 
 		P_SetTarget(&mo->target, NULL);
 
-		// Flee! Flee! Find a point to escape to! If none, just shoot upward!
-		// scan the thinkers to find the runaway point
-		for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
-		{
-			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
-				continue;
+			// Flee! Flee! Find a point to escape to! If none, just shoot upward!
+			// scan the thinkers to find the runaway point
+			for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
+			{
+				if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+					continue;
 
 			mo2 = (mobj_t *)th;
 
@@ -5436,6 +5440,9 @@ void A_RingExplode(mobj_t *actor)
 
 	for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 	{
+		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+			continue;
+
 		mo2 = (mobj_t *)th;
 
 		if (mo2 == actor) // Don't explode yourself! Endless loop!
@@ -6532,7 +6539,7 @@ void A_Boss2PogoTarget(mobj_t *actor)
 	if (actor->info->missilestate) // spawn the pogo stick collision box
 	{
 		mobj_t *pogo = P_SpawnMobj(actor->x, actor->y, actor->z - mobjinfo[actor->info->missilestate].height, (mobjtype_t)actor->info->missilestate);
-		pogo->target = actor;
+		P_SetTarget(&pogo->target, actor);
 	}
 
 	actor->reactiontime = 1;
@@ -7072,6 +7079,19 @@ void A_Boss3Path(mobj_t *actor)
 			mo2 = (mobj_t *)th;
 			if (mo2->type == MT_BOSS3WAYPOINT && mo2->spawnpoint && mo2->spawnpoint->angle == actor->threshold)
 			{
+				if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+					continue;
+
+				mo2 = (mobj_t *)th;
+				if (mo2->type != MT_BOSS3WAYPOINT)
+					continue;
+				if (!mo2->spawnpoint)
+					continue;
+				if (mo2->spawnpoint->angle != actor->threshold)
+					continue;
+				if (mo2->spawnpoint->extrainfo != actor->cusval)
+					continue;
+
 				P_SetTarget(&actor->target, mo2);
 				break;
 			}
@@ -7456,6 +7476,9 @@ void A_FindTarget(mobj_t *actor)
 	// scan the thinkers
 	for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 	{
+		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+			continue;
+
 		mo2 = (mobj_t *)th;
 
 		if (mo2->type == (mobjtype_t)locvar1)
@@ -7518,6 +7541,9 @@ void A_FindTracer(mobj_t *actor)
 	// scan the thinkers
 	for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 	{
+		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+			continue;
+
 		mo2 = (mobj_t *)th;
 
 		if (mo2->type == (mobjtype_t)locvar1)
@@ -8078,6 +8104,9 @@ void A_RemoteAction(mobj_t *actor)
 		// scan the thinkers
 		for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 		{
+			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+				continue;
+
 			mo2 = (mobj_t *)th;
 
 			if (mo2->type == (mobjtype_t)locvar1)
@@ -9118,7 +9147,7 @@ void A_CheckThingCount(mobj_t *actor)
 
 	for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 	{
-		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 			continue;
 
 		mo2 = (mobj_t *)th;
