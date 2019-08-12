@@ -453,34 +453,13 @@ consvar_t cv_driftsparkpulse = {"driftsparkpulse", "1.4", CV_FLOAT | CV_SAVE, dr
 static CV_PossibleValue_t cechotoggle_t[] = {{0, "Off"}, {1, "On"}, {2, "Console"}, {0, NULL}};
 consvar_t cv_cechotoggle = {"show_cecho", "On", CV_SAVE, cechotoggle_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-#if MAXPLAYERS > 16
-#error "please update player_name table using the new value for MAXPLAYERS"
-#endif
-
 #ifdef SEENAMES
 player_t *seenplayer = NULL; // player we're aiming at right now
 #endif
 
-char player_names[MAXPLAYERS][MAXPLAYERNAME+1] =
-{
-	"Player 1",
-	"Player 2",
-	"Player 3",
-	"Player 4",
-	"Player 5",
-	"Player 6",
-	"Player 7",
-	"Player 8",
-	"Player 9",
-	"Player 10",
-	"Player 11",
-	"Player 12",
-	"Player 13",
-	"Player 14",
-	"Player 15",
-	"Player 16"
-}; // SRB2kart - removed Players 17 through 32
-
+// now automatically allocated in D_RegisterClientCommands
+// so that it doesn't have to be updated depending on the value of MAXPLAYERS
+char player_names[MAXPLAYERS][MAXPLAYERNAME+1];
 INT32 player_name_changes[MAXPLAYERS] = {};
 
 INT16 rw_maximums[NUM_WEAPONS] =
