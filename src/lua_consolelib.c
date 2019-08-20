@@ -428,6 +428,13 @@ static int lib_cvRegisterVar(lua_State *L)
 #undef FIELDERROR
 #undef TYPEERROR
 
+	if (!cvar->name)
+		return luaL_error(L, M_GetText("Variable has no name!\n"));
+	if ((cvar->flags & CV_NOINIT) && !(cvar->flags & CV_CALL))
+		return luaL_error(L, M_GetText("Variable %s has CV_NOINIT without CV_CALL\n"), cvar->name);
+	if ((cvar->flags & CV_CALL) && !cvar->func)
+		return luaL_error(L, M_GetText("Variable %s has CV_CALL without a function\n"), cvar->name);
+
 	// actually time to register it to the console now! Finally!
 	cvar->flags |= CV_MODIFIED;
 	CV_RegisterVar(cvar);
