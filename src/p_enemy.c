@@ -8245,6 +8245,7 @@ void A_ItemPop(mobj_t *actor)
 	remains->fuse = actor->fuse; // Transfer respawn timer
 	remains->threshold = (actor->threshold == 69 ? 69 : 68);
 	remains->skin = NULL;
+	remains->localskin = NULL;
 	remains->spawnpoint = actor->spawnpoint;
 
 	P_SetTarget(&tmthing, remains);

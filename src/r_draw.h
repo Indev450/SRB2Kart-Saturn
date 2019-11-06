@@ -15,6 +15,7 @@
 #define __R_DRAW__
 
 #include "r_defs.h"
+#include "r_things.h"
 
 // -------------------------------
 // COMMON STUFF FOR 8bpp AND 16bpp
@@ -115,6 +116,7 @@ extern lumpnum_t viewborderlump[8];
 // Initialize color translation tables, for player rendering etc.
 void R_InitTranslationTables(void);
 UINT8* R_GetTranslationColormap(INT32 skinnum, skincolors_t color, UINT8 flags);
+UINT8* R_GetLocalTranslationColormap(skin_t *skin, skin_t *localskin, skincolors_t color, UINT8 flags, boolean local);
 void R_FlushTranslationColormapCache(void);
 UINT8 R_GetColorByName(const char *name);
 

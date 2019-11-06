@@ -58,6 +58,10 @@ patch_t *facerankprefix[MAXSKINS]; // ranking
 patch_t *facewantprefix[MAXSKINS]; // wanted
 patch_t *facemmapprefix[MAXSKINS]; // minimap
 
+patch_t *localfacerankprefix[MAXSKINS]; // ranking
+patch_t *localfacewantprefix[MAXSKINS]; // wanted
+patch_t *localfacemmapprefix[MAXSKINS]; // minimap
+
 // ------------------------------------------
 //             status bar overlay
 // ------------------------------------------
@@ -380,12 +384,27 @@ void ST_LoadFaceGraphics(char *rankstr, char *wantstr, char *mmapstr, INT32 skin
 	facemmapprefix[skinnum] = W_CachePatchName(mmapstr, PU_HUDGFX);
 }
 
+void ST_LoadLocalFaceGraphics(char *rankstr, char *wantstr, char *mmapstr, INT32 skinnum, boolean local)
+{
+	if (local)
+	{
+		localfacerankprefix[skinnum] = W_CachePatchName(rankstr, PU_HUDGFX);
+		localfacewantprefix[skinnum] = W_CachePatchName(wantstr, PU_HUDGFX);
+		localfacemmapprefix[skinnum] = W_CachePatchName(mmapstr, PU_HUDGFX);
+	}
+	else
+		ST_LoadFaceGraphics(rankstr, wantstr, mmapstr, skinnum);
+}
+
 void ST_ReloadSkinFaceGraphics(void)
 {
 	INT32 i;
 
 	for (i = 0; i < numskins; i++)
 		ST_LoadFaceGraphics(skins[i].facerank, skins[i].facewant, skins[i].facemmap, i);
+
+	for (i = 0; i < numlocalskins; i++)
+		ST_LoadLocalFaceGraphics(skins[i].facerank, skins[i].facewant, skins[i].facemmap, i, true);
 }
 
 static inline void ST_InitData(void)

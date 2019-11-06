@@ -60,7 +60,7 @@ void P_ScanThings(INT16 mapnum, INT16 wadnum, INT16 lumpnum);
 #endif
 void P_LoadThingsOnly(void);
 boolean P_SetupLevel(boolean skipprecip);
-boolean P_AddWadFile(const char *wadfilename);
+boolean P_AddWadFile(const char *wadfilename, boolean local);
 #ifdef DELFILE
 boolean P_DelWadFile(void);
 #endif
@@ -68,7 +68,7 @@ boolean P_DelWadFile(void);
 // WARNING: The following functions should be grouped as follows:
 // any amount of PartialAdds followed by MultiSetups until returned true,
 // as soon as possible.
-UINT16 P_PartialAddWadFile(const char *wadfilename);
+UINT16 P_PartialAddWadFile(const char *wadfilename, boolean local);
 // Run a single stage of multisetup, or all of them if fullsetup set.
 //   fullsetup true: run everything
 //   otherwise

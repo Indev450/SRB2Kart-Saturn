@@ -581,7 +581,7 @@ boolean CL_LoadServerFiles(void)
 			continue; // Already loaded
 		else if (fileneeded[i].status == FS_FOUND)
 		{
-			P_PartialAddWadFile(fileneeded[i].filename);
+			P_PartialAddWadFile(fileneeded[i].filename, false);
 			G_SetGameModified(true, false);
 			fileneeded[i].status = FS_OPEN;
 			return false;
