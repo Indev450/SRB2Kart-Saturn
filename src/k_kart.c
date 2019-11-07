@@ -7759,7 +7759,11 @@ static boolean K_drawKartPositionFaces(void)
 			else
 				colormap = R_GetTranslationColormap(players[rankplayer[i]].skin, players[rankplayer[i]].mo->color, GTC_CACHE);
 
-			V_DrawMappedPatch(FACE_X, Y, V_HUDTRANS|V_SNAPTOLEFT, facerankprefix[players[rankplayer[i]].skin], colormap);
+			{
+				player_t *p;
+				p = &players[rankplayer[i]];
+				V_DrawMappedPatch(FACE_X, Y, V_HUDTRANS|V_SNAPTOLEFT, ( (p->skinlocal) ? localfacerankprefix : facerankprefix )[( (p->localskin) ? p->localskin-1 : p->skin )], colormap);
+			}
 
 #ifdef HAVE_BLUA
 			if (LUA_HudEnabled(hud_battlebumpers))
@@ -7845,7 +7849,11 @@ void HU_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, I
 			else
 				colormap = R_GetTranslationColormap(players[tab[i].num].skin, players[tab[i].num].mo->color, GTC_CACHE);
 
-			V_DrawMappedPatch(x, y-4, 0, facerankprefix[players[tab[i].num].skin], colormap);
+			{
+				player_t *p;
+				p = &players[tab[i].num];
+				V_DrawMappedPatch(x, y-4, 0, ( (p->skinlocal) ? localfacerankprefix : facerankprefix )[( (p->localskin) ? p->localskin-1 : p->skin )], colormap);
+			}
 			/*if (G_BattleGametype() && players[tab[i].num].kartstuff[k_bumper] > 0) -- not enough space for this
 			{
 				INT32 bumperx = x+19;
@@ -8165,7 +8173,7 @@ static void K_drawKartWanted(void)
 		if (players[battlewanted[i]].skincolor)
 		{
 			colormap = R_GetTranslationColormap(TC_RAINBOW, p->skincolor, GTC_CACHE);
-			V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, FRACUNIT, V_HUDTRANS|(splitscreen < 3 ? V_SNAPTORIGHT : 0)|V_SNAPTOBOTTOM, (scale == FRACUNIT ? facewantprefix[p->skin] : facerankprefix[p->skin]), colormap);
+			V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, FRACUNIT, V_HUDTRANS|(splitscreen < 3 ? V_SNAPTORIGHT : 0)|V_SNAPTOBOTTOM, (scale == FRACUNIT ? ( (p->skinlocal) ? localfacewantprefix : facewantprefix )[( (p->localskin) ? p->localskin-1 : p->skin )] : ( (p->skinlocal) ? localfacerankprefix : facerankprefix )[( (p->localskin) ? p->localskin-1 : p->skin )]), colormap);
 			/*if (basey2)	// again with 4p stuff
 				V_DrawFixedPatch(x<<FRACBITS, (y - (basey-basey2))<<FRACBITS, FRACUNIT, V_HUDTRANS|V_SNAPTOTOP, (scale == FRACUNIT ? facewantprefix[p->skin] : facerankprefix[p->skin]), colormap);*/
 		}
@@ -8232,6 +8240,7 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags, pat
 	// it, they wouldn't 'spawn' on the top-right side of the HUD.
 
 	UINT8 skin = 0;
+	boolean skinlocal = mo->skinlocal;
 
 	fixed_t amnumxpos, amnumypos;
 	INT32 amxpos, amypos;
@@ -8244,7 +8253,7 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags, pat
 	fixed_t xscale, yscale, zoom;
 
 	if (mo->skin)
-		skin = ((skin_t*)mo->skin)-skins;
+		skin = ((skin_t*)( (mo->localskin) ? mo->localskin : mo->skin ))-( (skinlocal) ? localskins : skins );
 
 	maxx = maxy = INT32_MAX;
 	minx = miny = INT32_MIN;
@@ -8288,8 +8297,8 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags, pat
 	if (encoremode)
 		amnumxpos = -amnumxpos;
 
-	amxpos = amnumxpos + ((x + AutomapPic->width/2 - (facemmapprefix[skin]->width/2))<<FRACBITS);
-	amypos = amnumypos + ((y + AutomapPic->height/2 - (facemmapprefix[skin]->height/2))<<FRACBITS);
+	amxpos = amnumxpos + ((x + AutomapPic->width/2 - (( (skinlocal) ? localfacemmapprefix : facemmapprefix )[skin]->width/2))<<FRACBITS);
+	amypos = amnumypos + ((y + AutomapPic->height/2 - (( (skinlocal) ? localfacemmapprefix : facemmapprefix )[skin]->height/2))<<FRACBITS);
 
 	// do we want this? it feels unnecessary. easier to just modify the amnumxpos?
 	/*if (encoremode)
@@ -8299,15 +8308,15 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags, pat
 	}*/
 
 	if (!mo->color) // 'default' color
-		V_DrawSciencePatch(amxpos, amypos, flags, facemmapprefix[skin], FRACUNIT);
+		V_DrawSciencePatch(amxpos, amypos, flags, ( (skinlocal) ? localfacemmapprefix : facemmapprefix )[skin], FRACUNIT);
 	else
 	{
 		UINT8 *colormap;
 		if (mo->colorized)
 			colormap = R_GetTranslationColormap(TC_RAINBOW, mo->color, GTC_CACHE);
 		else
-			colormap = R_GetTranslationColormap(skin, mo->color, GTC_CACHE);
-		V_DrawFixedPatch(amxpos, amypos, FRACUNIT, flags, facemmapprefix[skin], colormap);
+			colormap = R_GetLocalTranslationColormap(mo->skin, mo->localskin, mo->color, GTC_CACHE, skinlocal);
+		V_DrawFixedPatch(amxpos, amypos, FRACUNIT, flags, ( (skinlocal) ? localfacemmapprefix : facemmapprefix )[skin], colormap);
 		if (mo->player
 			&& ((G_RaceGametype() && mo->player->kartstuff[k_position] == spbplace)
 			|| (G_BattleGametype() && K_IsPlayerWanted(mo->player))))
