@@ -79,6 +79,9 @@ extern patch_t *sboperiod;
 extern patch_t *facerankprefix[MAXSKINS]; // ranking
 extern patch_t *facewantprefix[MAXSKINS]; // wanted
 extern patch_t *facemmapprefix[MAXSKINS]; // minimap
+extern patch_t *localfacerankprefix[MAXSKINS]; // ranking
+extern patch_t *localfacewantprefix[MAXSKINS]; // wanted
+extern patch_t *localfacemmapprefix[MAXSKINS]; // minimap
 extern patch_t *livesback;
 extern patch_t *ngradeletters[7];
 

@@ -3313,7 +3313,7 @@ next_token:
 		}
 
 		// add face graphics
-		ST_LoadLocalFaceGraphics(skin->facerank, skin->facewant, skin->facemmap, numskins, local);
+		ST_LoadLocalFaceGraphics(skin->facerank, skin->facewant, skin->facemmap, ( (local) ? numlocalskins : numskins ), local);
 
 #ifdef HWRENDER
 		if (rendermode == render_opengl)

@@ -466,7 +466,7 @@ void K_RainbowColormap(UINT8 *dest_colormap, UINT8 skincolor)
 
 	\return	void
 */
-void K_GenerateKartColormap(UINT8 *dest_colormap, INT32 skinnum, UINT8 color)
+void K_GenerateKartColormap(UINT8 *dest_colormap, INT32 skinnum, UINT8 color, boolean local)
 {
 	INT32 i;
 	INT32 starttranscolor;
@@ -502,7 +502,7 @@ void K_GenerateKartColormap(UINT8 *dest_colormap, INT32 skinnum, UINT8 color)
 		return;
 	}
 
-	starttranscolor = (skinnum != TC_DEFAULT) ? skins[skinnum].starttranscolor : DEFAULT_STARTTRANSCOLOR;
+	starttranscolor = (skinnum != TC_DEFAULT) ? ( (local) ? localskins : skins )[skinnum].starttranscolor : DEFAULT_STARTTRANSCOLOR;
 
 	// Fill in the entries of the palette that are fixed
 	for (i = 0; i < starttranscolor; i++)
