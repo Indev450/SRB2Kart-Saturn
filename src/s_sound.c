@@ -2075,6 +2075,9 @@ void S_StopMusic(void)
 		|| demo.title) // SRB2Kart: Demos don't interrupt title screen music
 		return;
 
+	if (strcasecmp(music_name, mapmusname) == 0)
+		mapmusresume = I_GetSongPosition();
+
 	if (I_SongPaused())
 		I_ResumeSong();
 
