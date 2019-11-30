@@ -130,6 +130,10 @@ consvar_t cv_music_resync_threshold = {
 	"music_resync_threshold", "100", CV_SAVE|CV_CALL,
 	music_resync_threshold_cons_t, I_UpdateSongLagThreshold
 };
+consvar_t cv_music_resync_powerups_only = {
+	"music_resync_powerups_only", "No", CV_SAVE|CV_CALL,
+	CV_YesNo, I_UpdateSongLagConditions
+};
 
 #define S_MAX_VOLUME 127
 
@@ -298,6 +302,7 @@ void S_RegisterSoundStuff(void)
 	CV_RegisterVar(&cv_playsoundifunfocused);
 
 	CV_RegisterVar(&cv_music_resync_threshold);
+	CV_RegisterVar(&cv_music_resync_powerups_only);
 
 	COM_AddCommand("tunes", Command_Tunes_f);
 	COM_AddCommand("restartaudio", Command_RestartAudio_f);
@@ -1566,6 +1571,7 @@ static void      *music_data;
 static UINT16    music_flags;
 static boolean   music_looping;
 static consvar_t *music_refade_cv;
+static int       music_usage;
 
 static char      queue_name[7];
 static UINT16    queue_flags;
@@ -1951,12 +1957,15 @@ static void S_UnloadMusic(void)
 	music_looping = false;
 
 	music_refade_cv = 0;
+	music_usage = 0;
 }
 
 static boolean S_PlayMusic(boolean looping, UINT32 fadeinms)
 {
 	if (S_MusicDisabled())
 		return false;
+
+	I_UpdateSongLagConditions();
 
 	if ((!fadeinms && !I_PlaySong(looping)) ||
 		(fadeinms && !I_FadeInPlaySong(fadeinms, looping)))
@@ -2188,6 +2197,19 @@ S_GetRestoreMusicFadeIn (void)
 		return music_refade_cv->value;
 	else
 		return 0;
+}
+
+void
+S_SetMusicUsage (int type)
+{
+	music_usage = type;
+	I_UpdateSongLagConditions();
+}
+
+int
+S_MusicUsage (void)
+{
+	return music_usage;
 }
 
 /// ------------------------
