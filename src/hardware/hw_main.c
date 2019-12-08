@@ -4598,6 +4598,8 @@ void HWR_RenderFrame(INT32 viewnumber, player_t *player, boolean skybox)
 	gr_viewsin = FIXED_TO_FLOAT(viewsin);
 	gr_viewcos = FIXED_TO_FLOAT(viewcos);
 
+	memset(&atransform, 0x00, sizeof(FTransform));
+
 	// Set T&L transform
 	atransform.x = gr_viewx;
 	atransform.y = gr_viewy;
