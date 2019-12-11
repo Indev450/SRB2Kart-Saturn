@@ -471,6 +471,25 @@ boolean forceresetplayers = false;
 boolean deferencoremode = false;
 UINT8 splitscreen = 0;
 boolean circuitmap = true; // SRB2kart
+consvar_t cv_simulate = { "simulate", "Yes", 0, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL };
+
+static CV_PossibleValue_t simulateTics_cons_t[] = { {0, "MIN"}, {BACKUPTICS / 2, "MAX"}, {0, NULL} };
+consvar_t cv_simulatetics = { "simulatetics", "0", 0, simulateTics_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL };
+
+static CV_PossibleValue_t netdelay_cons_t[] = { {0, "MIN"}, {250, "MAX"}, {0, NULL} };
+consvar_t cv_netdelay = { "netdelay", "0", 0, netdelay_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL };
+
+static CV_PossibleValue_t netjitter_cons_t[] = { {0, "MIN"}, {5, "MAX"}, {0, NULL} };
+consvar_t cv_netjitter = { "netjitter", "0", 0, netdelay_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL };
+
+char timedemo_name[256];
+boolean timedemo_csv;
+char timedemo_csv_id[256];
+boolean timedemo_quit;
+
+INT16 gametype = GT_COOP;
+boolean splitscreen = false;
+boolean circuitmap = false;
 INT32 adminplayers[MAXPLAYERS];
 
 /// \warning Keep this up-to-date if you add/remove/rename net text commands
@@ -618,6 +637,11 @@ void D_RegisterServerCommands(void)
 	COM_AddCommand("savestate", Command_Savestate);
 	COM_AddCommand("loadstate", Command_Loadstate);
 	COM_AddCommand("rewind", Command_Rewind);
+
+	CV_RegisterVar(&cv_simulate);
+	CV_RegisterVar(&cv_simulatetics);
+	CV_RegisterVar(&cv_netdelay);
+	CV_RegisterVar(&cv_netjitter);
 
 	// for master server connection
 	AddMServCommands();
@@ -4793,19 +4817,28 @@ static void TimeLimit_OnChange(void)
 
 	if (cv_timelimit.value != 0)
 	{
-		CONS_Printf(M_GetText("Levels will end after %d minute%s.\n"),cv_timelimit.value,cv_timelimit.value == 1 ? "" : "s"); // Graue 11-17-2003
-		timelimitintics = cv_timelimit.value * 60 * TICRATE;
+		UINT32 newtimelimit = cv_timelimit.value * 60 * TICRATE;
 
 		//add hidetime for tag too!
 		if (G_TagGametype())
-			timelimitintics += hidetime * TICRATE;
+			newtimelimit += hidetime * TICRATE;
+
+		if (newtimelimit != timelimitintics)
+		{
+			CONS_Printf(M_GetText("Levels will end after %d minute%s.\n"), cv_timelimit.value, cv_timelimit.value == 1 ? "" : "s"); // Graue 11-17-2003
+
+			timelimitintics = newtimelimit; // ...and slightly modified by LX 12-11-2019 <3
+		}
 
 		// Note the deliberate absence of any code preventing
 		//   pointlimit and timelimit from being set simultaneously.
 		// Some people might like to use them together. It works.
 	}
-	else if (netgame || multiplayer)
+	else if ((netgame || multiplayer) && timelimitintics > 0)
+	{
+		timelimitintics = 0;
 		CONS_Printf(M_GetText("Time limit disabled\n"));
+	}
 }
 
 /** Adjusts certain settings to match a changed gametype.

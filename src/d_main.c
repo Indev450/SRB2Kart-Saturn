@@ -604,7 +604,7 @@ static void D_Display(void)
 
 tic_t rendergametic;
 
-void FlushAwfulDelayBuffers();
+void SOCK_FlushDelayBuffers();
 
 void D_SRB2Loop(void)
 {

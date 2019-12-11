@@ -145,8 +145,13 @@ char connectedservername[MAXSERVERNAME];
 boolean acceptnewnode = true;
 
 // Horrid LXShadow stuff
-ticcmd_t localTicBuffer[BACKUPTICS][MAXPLAYERS];
-UINT8 localStateBuffer[BACKUPTICS][1024 * 768];
+UINT8 gameStateBuffer[BACKUPTICS][1024 * 768];
+ticcmd_t gameTicBuffer[BACKUPTICS][MAXPLAYERS];
+
+UINT8 simulatedStateBuffer[BACKUPTICS][1024 * 768];
+ticcmd_t simulatedTicBuffer[BACKUPTICS];
+
+boolean gameStateBufferIsValid[BACKUPTICS];
 boolean rewindingWow = false;
 int rewindingTarget = 0;
 
@@ -5274,42 +5279,76 @@ void TryRunTics(tic_t realtics)
 		return;
 	}
 
-	if (neededtic > gametic)
+	// record the actual local controls
+	tic_t realTic = I_GetTime();
+	boolean canSimulate = (gamestate == GS_LEVEL) && cv_simulate.value;
+	tic_t ticsToUpdate = neededtic - gametic;
+	static tic_t minDiff = 99, maxDiff = 0;
+
+	// record the actual local controls for this frame
+	simulatedTicBuffer[realTic % BACKUPTICS] = localcmds;
+
+	if (neededtic - gametic < minDiff)
+		minDiff = neededtic - gametic;
+	if (neededtic - gametic > maxDiff)
+		maxDiff = neededtic - gametic;
+
+	if ((realTic % 35) == 0)
+	{
+		CONS_Printf("mindif %d maxdif %d\n", minDiff, maxDiff);
+		maxDiff = 0;
+		minDiff = 99;
+	}
+
+	if (neededtic > gametic && !resynch_local_inprogress)
 	{
 		if (advancedemo)
 			D_StartTitle();
 		else
 		{
-			if (gamestate == GS_LEVEL)
+
+			// REAL UPDATE PHASE
+			// Revert to the real state, if the real state exists
+			if (canSimulate)
 			{
 				// record game state for rewinding
 				for (int i = 0; i < 32; i++)
 				{
-					localTicBuffer[gametic % BACKUPTICS][i] = netcmds[gametic % BACKUPTICS][i];
+					gameTicBuffer[gametic % BACKUPTICS][i] = netcmds[gametic % BACKUPTICS][i];
 				}
-				save_p = localStateBuffer[gametic % BACKUPTICS];
-				P_SaveNetGame();
+				//save_p = gameStateBuffer[gametic % BACKUPTICS];
+				//P_SaveNetGame();
 			}
 
 			angle_t oldAngle = localangle;
 			INT32 oldAiming = localaiming;
 			if (rewindingWow) {
 				// do a rewind
-				save_p = localStateBuffer[(gametic - rewindingTarget + BACKUPTICS) % BACKUPTICS];
+				save_p = gameStateBuffer[(gametic - rewindingTarget + BACKUPTICS) % BACKUPTICS];
 				P_LoadNetGame(true);
 
 				for (int i = 0; i < MAXPLAYERS; i++) {
 					for (int j = 0; j < rewindingTarget; j++) {
-						netcmds[(gametic - rewindingTarget + j + BACKUPTICS) % BACKUPTICS][i] = localTicBuffer[(gametic - rewindingTarget + j + BACKUPTICS) % BACKUPTICS][i];
+						netcmds[(gametic - rewindingTarget + j + BACKUPTICS) % BACKUPTICS][i] = gameTicBuffer[(gametic - rewindingTarget + j + BACKUPTICS) % BACKUPTICS][i];
 					}
 				}
 
 				// execute the tics up to that point todo
 				gametic -= rewindingTarget;
+
+				// no more rewind plz
+				rewindingWow = false;
 			}
 
+			if (canSimulate) {
+				if (gameStateBufferIsValid[gametic % BACKUPTICS]) {
+					// load the real state
+					save_p = gameStateBuffer[gametic % BACKUPTICS];
+					P_LoadNetGame(true);
+				}
+			}
 
-			// run the count * tics
+			// run the tics up to the real game tic
 			while (neededtic > gametic)
 			{
 				DEBFILE(va("============ Running tic %d (local %d)\n", gametic, localgametic));
@@ -5317,20 +5356,49 @@ void TryRunTics(tic_t realtics)
 				G_Ticker((gametic % NEWTICRATERATIO) == 0);
 				ExtraDataTicker();
 				gametic++;
+
 				consistancy[gametic%BACKUPTICS] = Consistancy();
 
+
+				if (canSimulate) {
+					// store this real state
+					save_p = gameStateBuffer[gametic % BACKUPTICS];
+					P_SaveNetGame();
+					gameStateBufferIsValid[gametic % BACKUPTICS] = true;
+				}
+
 				// Leave a certain amount of tics present in the net buffer as long as we've ran at least one tic this frame.
-				if (client && gamestate == GS_LEVEL && leveltime > 3 && neededtic <= gametic + cv_netticbuffer.value)
-					break;
+				//if (client && gamestate == GS_LEVEL && leveltime > 3 && neededtic <= gametic + cv_netticbuffer.value)
+				//	break;
 			}
 
-			if (rewindingWow) {
-				// restore camera stuff because that's local anyways~
-				localangle = oldAngle;
-				localaiming = oldAiming;
+			// run the simulated state from here
+			if (canSimulate) {
+				for (int i = 0; i < cv_simulatetics.value; i++) {
+					// control other players
+					for (int j = 0; j < MAXPLAYERS; j++) {
+						if (playeringame[j] && j != consoleplayer) {
+							// just use their last control for now
+							netcmds[gametic % BACKUPTICS][j] = netcmds[(gametic - 1 + BACKUPTICS) % BACKUPTICS][j];
+						}
+					}
 
-				rewindingWow = false;
+					// control self
+					netcmds[gametic % BACKUPTICS][consoleplayer] = simulatedTicBuffer[(realTic - cv_simulatetics.value + i + BACKUPTICS + 1) % BACKUPTICS];
+					G_Ticker(true); // tic a bunch of times lol see what happens lolol
+				}
 			}
+
+			// clear gamestate buffer if we're no longer able to simulate, or things will break.
+			if (!canSimulate) {
+				for (int i = 0; i < BACKUPTICS; i++) {
+					gameStateBufferIsValid[i] = false;
+				}
+			}
+
+			// restore camera stuff because that's local anyways~
+			localangle = oldAngle;
+			localaiming = oldAiming;
 		}
 	}
 	else

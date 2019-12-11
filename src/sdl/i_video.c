@@ -194,17 +194,37 @@ static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen)
 		}
 		else // windowed mode
 		{
+			int xoffset = 0, yoffset = 0, arg;
+
 			if (wasfullscreen)
 			{
 				wasfullscreen = SDL_FALSE;
 				SDL_SetWindowFullscreen(window, 0);
 			}
+
 			// Reposition window only in windowed mode
 			SDL_SetWindowSize(window, width, height);
 			SDL_SetWindowPosition(window,
 				SDL_WINDOWPOS_CENTERED_DISPLAY(SDL_GetWindowDisplayIndex(window)),
 				SDL_WINDOWPOS_CENTERED_DISPLAY(SDL_GetWindowDisplayIndex(window))
 			);
+
+			// Offset the window w/ command line parameters, useful for multiplayer testing via batch files
+			if (arg = M_CheckParm("-winxoff"))
+			{
+				xoffset = atoi(arg + 1 < myargc ? myargv[arg + 1] : "0");
+			}
+			if (arg = M_CheckParm("-winyoff"))
+			{
+				yoffset = atoi(arg + 1 < myargc ? myargv[arg + 1] : "0");
+			}
+
+			if (xoffset || yoffset)
+			{
+				int x, y;
+				SDL_GetWindowPosition(window, &x, &y);
+				SDL_SetWindowPosition(window, x + xoffset, y + yoffset);
+			}
 		}
 	}
 	else
@@ -1294,11 +1314,11 @@ void I_StartupMouse(void)
 //
 // I_OsPolling
 //
-void FlushAwfulDelayBuffers();
+void SOCK_FlushDelayBuffers();
 
 void I_OsPolling(void)
 {
-	FlushAwfulDelayBuffers();
+	SOCK_FlushDelayBuffers();
 
 	if (consolevent)
 		I_GetConsoleEvents();
