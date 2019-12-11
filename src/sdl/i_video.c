@@ -1294,8 +1294,12 @@ void I_StartupMouse(void)
 //
 // I_OsPolling
 //
+void FlushAwfulDelayBuffers();
+
 void I_OsPolling(void)
 {
+	FlushAwfulDelayBuffers();
+
 	if (consolevent)
 		I_GetConsoleEvents();
 	if (SDL_WasInit(SDL_INIT_JOYSTICK) == SDL_INIT_JOYSTICK)

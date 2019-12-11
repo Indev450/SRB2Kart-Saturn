@@ -713,6 +713,48 @@ static boolean SOCK_CanGet(void)
 #endif
 
 #ifndef NONET
+typedef struct {
+	boolean inUse;
+
+	UINT8* data;
+	int dataLength;
+
+	int time;
+	SOCKET_TYPE socket;
+	mysockaddr_t sockaddr;
+} DelayBuffer;
+
+#define NUMDELAYPACKETS 200
+DelayBuffer delayPackets[NUMDELAYPACKETS];
+int delayAmount = 100;
+
+void FlushAwfulDelayBuffers()
+{
+	int time = I_GetTime();
+
+	socklen_t d4 = (socklen_t)sizeof(struct sockaddr_in);
+#ifdef HAVE_IPV6
+	socklen_t d6 = (socklen_t)sizeof(struct sockaddr_in6);
+#endif
+	socklen_t d, da = (socklen_t)sizeof(mysockaddr_t);
+
+	for (int i = 0; i < NUMDELAYPACKETS; i++) {
+		if (delayPackets[i].inUse && time - delayPackets[i].time >= delayAmount / TICRATE) {
+			switch (delayPackets[i].sockaddr.any.sa_family)
+			{
+				case AF_INET:  d = d4; break;
+	#ifdef HAVE_IPV6
+				case AF_INET6: d = d6; break;
+	#endif
+				default:       d = da; break;
+			}
+
+			sendto(delayPackets[i].socket, (char *)delayPackets[i].data, delayPackets[i].dataLength, 0, &delayPackets[i].sockaddr.any, d);
+			delayPackets[i].inUse = false;
+		}
+	}
+}
+
 static inline ssize_t SOCK_SendToAddr(SOCKET_TYPE socket, mysockaddr_t *sockaddr)
 {
 	socklen_t d4 = (socklen_t)sizeof(struct sockaddr_in);
@@ -730,7 +772,27 @@ static inline ssize_t SOCK_SendToAddr(SOCKET_TYPE socket, mysockaddr_t *sockaddr
 		default:       d = da; break;
 	}
 
-	return sendto(socket, (char *)&doomcom->data, doomcom->datalength, 0, &sockaddr->any, d);
+	// LX: add a nasty experimental packet delay!
+	boolean writtenPacket = false;
+	int time = I_GetTime();
+	for (int i = 0; i < NUMDELAYPACKETS; i++) {
+		if (!delayPackets[i].inUse) {
+			delayPackets[i].data = malloc(doomcom->datalength);
+			delayPackets[i].dataLength = doomcom->datalength;
+			delayPackets[i].socket = socket;
+			delayPackets[i].sockaddr = *sockaddr;
+			delayPackets[i].time = time;
+			delayPackets[i].inUse = true;
+			memcpy(delayPackets[i].data, doomcom->data, doomcom->datalength);
+
+			break;
+		}
+	}
+
+	// Send delayed packets
+
+	return doomcom->datalength;
+	//return sendto(socket, (char *)&doomcom->data, doomcom->datalength, 0, &sockaddr->any, d);
 }
 
 static void SOCK_Send(void)

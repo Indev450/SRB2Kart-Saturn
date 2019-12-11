@@ -116,6 +116,9 @@ static void KartSpeed_OnChange(void);
 static void KartEncore_OnChange(void);
 static void KartComeback_OnChange(void);
 static void KartEliminateLast_OnChange(void);
+static void Command_Savestate(void);
+static void Command_Loadstate(void);
+static void Command_Rewind(void);
 
 #ifdef NETGAME_DEVMODE
 static void Fishcake_OnChange(void);
@@ -611,6 +614,11 @@ void D_RegisterServerCommands(void)
 #endif
 #endif
 
+	// experimental load/save game state for possible rewinding in netgames
+	COM_AddCommand("savestate", Command_Savestate);
+	COM_AddCommand("loadstate", Command_Loadstate);
+	COM_AddCommand("rewind", Command_Rewind);
+
 	// for master server connection
 	AddMServCommands();
 
@@ -710,6 +718,49 @@ void D_RegisterServerCommands(void)
 #endif
 
 	CV_RegisterVar(&cv_dummyconsvar);
+}
+
+// =========================================================================
+// Louis' nasty test bed
+// =========================================================================
+#include "p_saveg.h"
+UINT8* savedState = NULL;
+
+static void Command_Savestate(void)
+{
+	CONS_Printf("Saving game state!\n");
+
+	savedState = (UINT8 *)malloc(1024*768 /* lol, 1998 screen resolution */);
+	if (!savedState)
+	{
+		CONS_Alert(CONS_ERROR, M_GetText("Wtf this machine is weak\n"));
+		return;
+	}
+
+	// Leave room for the uncompressed length.
+	save_p = savedState;
+
+	P_SaveNetGame();
+}
+
+static void Command_Loadstate(void)
+{
+	save_p = savedState;
+
+	P_LoadNetGame(true);
+
+	// try and execute 10 ticcmds...
+
+	CONS_Printf("Loading game state!\n");
+}
+
+extern boolean rewindingWow;
+extern int rewindingTarget;
+
+static void Command_Rewind(void)
+{
+	rewindingWow = true;
+	rewindingTarget = COM_Argc() > 1 ? atoi(COM_Argv(1)) : 0;
 }
 
 // =========================================================================
