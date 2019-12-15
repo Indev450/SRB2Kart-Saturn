@@ -5305,23 +5305,21 @@ void TryRunTics(tic_t realtics)
 	}
 
 	// record the actual local controls
-	boolean canSimulate = (gamestate == GS_LEVEL) && leveltime >= 10 && (cv_simulate.value && !server);
-	boolean recordingStates = (gamestate == GS_LEVEL) && leveltime >= 10;
-	tic_t numNewTics = neededtic - gametic;
-	static int controlDelay = -1;
+	boolean canSimulate = (gamestate == GS_LEVEL) && leveltime >= 10 && gametic >= BACKUPTICS && (cv_simulate.value && !server);
+	boolean recordingStates = (gamestate == GS_LEVEL) && leveltime >= 10 && gametic >= BACKUPTICS;
 	boolean preserveSoundDisabled = sound_disabled;
 
 	// preserve camera changes while we play with simulations/rewinds
-	angle_t preservedAngle = localangle;
-	INT32 preservedAiming = localaiming;
+	angle_t preservedAngle = localangle[0];
+	INT32 preservedAiming = localaiming[0];
 
 	if (recordingStates)
 	{
 		PerformDebugRewinds();
 	}
 
-	localangle = preservedAngle;
-	localaiming = preservedAiming;
+	localangle[0] = preservedAngle;
+	localaiming[0] = preservedAiming;
 
 	// record the actual local controls for this frame
 	liveTic = I_GetTime();
@@ -5391,15 +5389,14 @@ void TryRunTics(tic_t realtics)
 	if (canSimulate)
 	{
 		int numToSimulate = 0;
-		boolean enableSmoothing = true;
 
 		sound_disabled = true;
-		con_muted = true;
+		//con_muted = true;
 
 		// run the simulated state
 		// find the latest available real state
 		// sometimes we will go backwards to buffer the updates
-		if (enableSmoothing) {
+		if (cv_netsmoothing.value) {
 			smoothedTic = liveTic - maxLiveTicOffset - 1;
 
 			if (gameStateBufferIsValid[(smoothedTic + BACKUPTICS) % BACKUPTICS] && smoothedTic != gametic)
@@ -5442,14 +5439,14 @@ void TryRunTics(tic_t realtics)
 		}
 
 		simTic = gametic + numToSimulate;
-		rendergametic = 0; // hack to make sure game doesn't jitter
+		//rendergametic = 0; // hack to make sure game doesn't jitter
 
 		// restore local camera stuff because that's local anyways~
-		localangle = preservedAngle;
-		localaiming = preservedAiming;
+		localangle[0] = preservedAngle;
+		localaiming[0] = preservedAiming;
 
 		sound_disabled = preserveSoundDisabled;
-		con_muted = false;
+		//con_muted = false;
 	}
 	
 	if (!recordingStates)
@@ -5513,7 +5510,7 @@ static void PerformDebugRewinds() {
 		rewindingWow = false;
 	}
 
-	if (!server && gameStateBufferIsValid[gametic % BACKUPTICS] && cv_debugsimulaterewind.value > 0 && players[consoleplayer].mo) {
+	if (gameStateBufferIsValid[gametic % BACKUPTICS] && cv_debugsimulaterewind.value > 0 && players[consoleplayer].mo) {
 /*		sector_t initial = *((elevator_t*)thlist[1].next)->sector;
 		mobj_t initialPlayer = *players[consoleplayer].mo;*/
 

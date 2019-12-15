@@ -151,6 +151,7 @@ extern consvar_t cv_simulate;
 extern consvar_t cv_simulatetics;
 extern consvar_t cv_netdelay;
 extern consvar_t cv_netjitter;
+extern consvar_t cv_netsmoothing;
 extern consvar_t cv_debugsimulaterewind;
 
 extern consvar_t cv_skipmapcheck;
