@@ -5237,11 +5237,14 @@ int maxLiveTicOffset;
 int minLiveTicOffset;
 int smoothingDelay;
 
+int platformHeight[BACKUPTICS];
+
 #define MAXOFFSETHISTORY 35
 int ticTimeOffsetHistory[MAXOFFSETHISTORY];
 
 void MakeNetDebugString();
 void RefreshNetDetections();
+static void PerformDebugRewinds();
 boolean FindMatchingTics(int* liveTicOut, int* gameTicOut);
 boolean CompareTiccmd(const ticcmd_t* a, const ticcmd_t* b);
 
@@ -5306,26 +5309,19 @@ void TryRunTics(tic_t realtics)
 	boolean recordingStates = (gamestate == GS_LEVEL) && leveltime >= 10;
 	tic_t numNewTics = neededtic - gametic;
 	static int controlDelay = -1;
+	boolean preserveSoundDisabled = sound_disabled;
 
-	// preserve camera changes
-	angle_t oldAngle = localangle;
-	INT32 oldAiming = localaiming;
+	// preserve camera changes while we play with simulations/rewinds
+	angle_t preservedAngle = localangle;
+	INT32 preservedAiming = localaiming;
 
-	if (recordingStates && rewindingWow && rewindingTarget > 0)
+	if (recordingStates)
 	{
-		save_p = gameStateBuffer[(gametic - rewindingTarget) % BACKUPTICS];
-		P_LoadNetGame(true);
-
-		for (int i = 0; i < rewindingTarget; i++) {
-			netcmds[gametic%BACKUPTICS][consoleplayer] = gameTicBuffer[gametic - rewindingTarget + i % BACKUPTICS][consoleplayer];
-			G_Ticker(true);
-		}
-
-		localaiming = oldAiming;
-		localangle = oldAngle;
-
-		rewindingWow = false;
+		PerformDebugRewinds();
 	}
+
+	localangle = preservedAngle;
+	localaiming = preservedAiming;
 
 	// record the actual local controls for this frame
 	liveTic = I_GetTime();
@@ -5341,11 +5337,12 @@ void TryRunTics(tic_t realtics)
 			// Load the real state if it exists
 			if (canSimulate) {
 				if (gameStateBufferIsValid[gametic % BACKUPTICS]) {
-					save_p = gameStateBuffer[gametic % BACKUPTICS];
+					sound_disabled = true;
 
-					gametic--;
+					save_p = gameStateBuffer[gametic % BACKUPTICS];
 					P_LoadNetGame(true);
-					gametic++;
+
+					sound_disabled = preserveSoundDisabled;
 				}
 			}
 
@@ -5394,6 +5391,8 @@ void TryRunTics(tic_t realtics)
 		int numToSimulate = 0;
 		boolean enableSmoothing = true;
 
+		sound_disabled = true;
+
 		// run the simulated state
 		// find the latest available real state
 		// sometimes we will go backwards to buffer the updates
@@ -5422,12 +5421,12 @@ void TryRunTics(tic_t realtics)
 			for (int j = 0; j < MAXPLAYERS; j++) {
 				if (playeringame[j] && j != consoleplayer) {
 					// just use their last control for now
-					netcmds[gametic % BACKUPTICS][j] = netcmds[(min(smoothedTic + i + 1, gametic) - 1 + BACKUPTICS) % BACKUPTICS][j];
+					netcmds[gametic % BACKUPTICS][j] = gameTicBuffer[(min(smoothedTic + i, gametic) + BACKUPTICS) % BACKUPTICS][j];
 				}
 			}
 
 			// control self
-			netcmds[gametic % BACKUPTICS][consoleplayer] = simulatedTicBuffer[(liveTic - estimatedRTT + i + BACKUPTICS + 1) % BACKUPTICS];
+			netcmds[gametic % BACKUPTICS][consoleplayer] = simulatedTicBuffer[(liveTic - estimatedRTT + i + 1 + BACKUPTICS) % BACKUPTICS];
 			G_Ticker(true); // tic a bunch of times lol see what happens lolol
 		}
 
@@ -5435,8 +5434,10 @@ void TryRunTics(tic_t realtics)
 		rendergametic = 0; // hack to make sure game doesn't jitter
 
 		// restore local camera stuff because that's local anyways~
-		localangle = oldAngle;
-		localaiming = oldAiming;
+		localangle = preservedAngle;
+		localaiming = preservedAiming;
+
+		sound_disabled = preserveSoundDisabled;
 	}
 	
 	if (!recordingStates)
@@ -5486,6 +5487,38 @@ void RefreshNetDetections()
 	}
 }
 
+static void PerformDebugRewinds() {
+	if (rewindingWow && rewindingTarget > 0)
+	{
+		save_p = gameStateBuffer[(gametic - rewindingTarget) % BACKUPTICS];
+		P_LoadNetGame(true);
+
+		for (int i = 0; i < rewindingTarget; i++) {
+			netcmds[gametic%BACKUPTICS][consoleplayer] = gameTicBuffer[gametic - rewindingTarget + i % BACKUPTICS][consoleplayer];
+			G_Ticker(true);
+		}
+
+		rewindingWow = false;
+	}
+
+	if (!server && gameStateBufferIsValid[gametic % BACKUPTICS] && cv_debugsimulaterewind.value > 0 && players[consoleplayer].mo) {
+/*		sector_t initial = *((elevator_t*)thlist[1].next)->sector;
+		mobj_t initialPlayer = *players[consoleplayer].mo;*/
+
+		for (int i = 0; i < cv_debugsimulaterewind.value; i++) {
+			G_Ticker(true);
+		}
+
+		save_p = gameStateBuffer[gametic % BACKUPTICS];
+		P_LoadNetGame(true);
+
+		/*sector_t current = *((elevator_t*)thlist[1].next)->sector;
+		mobj_t currentPlayer = *players[consoleplayer].mo;*/
+
+		// consistency debug checks go here
+	}
+}
+
 char netDebugText[10000];
 
 void MakeNetDebugString()
@@ -5504,19 +5537,19 @@ void MakeNetDebugString()
 		if ((tic_t)i >= simTic - gametic) {
 			// show tics and matches
 			sprintf(&netDebugText[strlen(netDebugText)], 
-				"srv: %d%slcl: %d%s\n", 
+				"srv: %d%slcl: %d%s %d\n", 
 						gametic - i, 
 						  (i == matchingGameTic ? "<" : " "),
 								 liveTic - i, 
-									(i == matchingLiveTic ? "<" : " "));
+									(i == matchingLiveTic ? "<" : " "), platformHeight[(gametic - i) % BACKUPTICS]);
 		}
 		else {
 			sprintf(&netDebugText[strlen(netDebugText)],
-				"____ %d_lcl: %d%s\n",
+				"____ %d_lcl: %d%s %d\n",
 				simTic,
 				//(i == matchingGameTic ? "<" : " "),
 				liveTic - i,
-				(i == matchingLiveTic ? "<" : " "));
+				(i == matchingLiveTic ? "<" : " "), platformHeight[gametic % BACKUPTICS]);
 		}
 	}
 

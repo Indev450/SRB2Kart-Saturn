@@ -1071,6 +1071,7 @@ typedef enum
 #ifdef ESLOPE
 	, MD2_SLOPE       = 1<<11
 #endif
+	MD2_PMOM         = 1<<14
 } mobj_diff2_t;
 
 typedef enum
@@ -1239,6 +1240,8 @@ static void SaveMobjThinker(const thinker_t *th, const UINT8 type)
 		diff |= MD_DSCALE;
 	if (mobj->scalespeed != mapobjectscale/12)
 		diff2 |= MD2_SCALESPEED;
+	if (mobj->pmomz != 0)
+		diff2 |= MD2_PMOM;
 
 	if (mobj == redflag)
 		diff |= MD_REDFLAG;

@@ -483,6 +483,9 @@ consvar_t cv_netdelay = { "netdelay", "0", 0, netdelay_cons_t, NULL, 0, NULL, NU
 static CV_PossibleValue_t netjitter_cons_t[] = { {0, "MIN"}, {5, "MAX"}, {0, NULL} };
 consvar_t cv_netjitter = { "netjitter", "0", 0, netdelay_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL };
 
+static CV_PossibleValue_t debugsimulaterewind_cons_t[] = { {0, "MIN"}, {BACKUPTICS - 1, "MAX"}, {0, NULL} };
+consvar_t cv_debugsimulaterewind = { "debugsimulaterewind", "0", 0, debugsimulaterewind_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL };
+
 char timedemo_name[256];
 boolean timedemo_csv;
 char timedemo_csv_id[256];
@@ -644,6 +647,7 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_simulatetics);
 	CV_RegisterVar(&cv_netdelay);
 	CV_RegisterVar(&cv_netjitter);
+	CV_RegisterVar(&cv_debugsimulaterewind);
 
 	// for master server connection
 	AddMServCommands();
@@ -804,7 +808,7 @@ void MemShow() {
 		sizeu1(Z_TagsUsage(PU_PURGELEVEL, INT32_MAX) >> 10));
 }
 
-char buffer[1024 * 768];
+static char buffer[1024 * 768];
 static void Command_Saveloadtest(void)
 {
 	memleak = true;
