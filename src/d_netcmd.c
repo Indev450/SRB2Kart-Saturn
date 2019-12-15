@@ -119,6 +119,7 @@ static void KartEliminateLast_OnChange(void);
 static void Command_Savestate(void);
 static void Command_Loadstate(void);
 static void Command_Rewind(void);
+static void Command_Saveloadtest(void);
 
 #ifdef NETGAME_DEVMODE
 static void Fishcake_OnChange(void);
@@ -637,6 +638,7 @@ void D_RegisterServerCommands(void)
 	COM_AddCommand("savestate", Command_Savestate);
 	COM_AddCommand("loadstate", Command_Loadstate);
 	COM_AddCommand("rewind", Command_Rewind);
+	COM_AddCommand("saveloadtest", Command_Saveloadtest);
 
 	CV_RegisterVar(&cv_simulate);
 	CV_RegisterVar(&cv_simulatetics);
@@ -780,11 +782,45 @@ static void Command_Loadstate(void)
 
 extern boolean rewindingWow;
 extern int rewindingTarget;
+extern boolean memleak;
 
 static void Command_Rewind(void)
 {
 	rewindingWow = true;
 	rewindingTarget = COM_Argc() > 1 ? atoi(COM_Argv(1)) : 0;
+}
+
+void MemShow() {
+	Z_CheckHeap(-1);
+	CONS_Printf("\x82%s", M_GetText("Memory Info\n"));
+	CONS_Printf(M_GetText("Total heap used   : %7s KB\n"), sizeu1(Z_TotalUsage() >> 10));
+	CONS_Printf(M_GetText("Static            : %7s KB\n"), sizeu1(Z_TagUsage(PU_STATIC) >> 10));
+	CONS_Printf(M_GetText("Static (sound)    : %7s KB\n"), sizeu1(Z_TagUsage(PU_SOUND) >> 10));
+	CONS_Printf(M_GetText("Static (music)    : %7s KB\n"), sizeu1(Z_TagUsage(PU_MUSIC) >> 10));
+	CONS_Printf(M_GetText("Locked cache      : %7s KB\n"), sizeu1(Z_TagUsage(PU_CACHE) >> 10));
+	CONS_Printf(M_GetText("Level             : %7s KB\n"), sizeu1(Z_TagUsage(PU_LEVEL) >> 10));
+	CONS_Printf(M_GetText("Special thinker   : %7s KB\n"), sizeu1(Z_TagUsage(PU_LEVSPEC) >> 10));
+	CONS_Printf(M_GetText("All purgable      : %7s KB\n"),
+		sizeu1(Z_TagsUsage(PU_PURGELEVEL, INT32_MAX) >> 10));
+}
+
+char buffer[1024 * 768];
+static void Command_Saveloadtest(void)
+{
+	memleak = true;
+
+	MemShow();
+
+	for (int i = 0; i < 100; i++) {
+		save_p = buffer;
+		P_SaveNetGame();
+		save_p = buffer;
+		P_LoadNetGame(true);
+	}
+
+	MemShow();
+
+	memleak = false;
 }
 
 // =========================================================================

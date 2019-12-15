@@ -46,6 +46,8 @@ UINT8 *save_p;
 #define ARCHIVEBLOCK_THINKERS 0x7F37037C
 #define ARCHIVEBLOCK_SPECIALS 0x7F228378
 
+boolean memleak = false;
+
 // Note: This cannot be bigger
 // than an UINT16
 typedef enum
@@ -493,6 +495,7 @@ static void P_NetArchiveWorld(void)
 	UINT8 *put;
 
 	// reload the map just to see difference
+	UINT8* wadData = NULL;
 	mapsector_t *ms;
 	mapsidedef_t *msd;
 	maplinedef_t *mld;
@@ -504,22 +507,21 @@ static void P_NetArchiveWorld(void)
 
 	if (W_IsLumpWad(lastloadedmaplumpnum)) // welp it's a map wad in a pk3
 	{ // HACK: Open wad file rather quickly so we can get the data from the relevant lumps
-		UINT8 *wadData = W_CacheLumpNum(lastloadedmaplumpnum, PU_STATIC);
+		wadData = W_CacheLumpNum(lastloadedmaplumpnum, PU_STATIC);
 		filelump_t *fileinfo = (filelump_t *)(wadData + ((wadinfo_t *)wadData)->infotableofs);
 #define retrieve_mapdata(d, f)\
-		d = Z_Malloc((f)->size, PU_CACHE, NULL); \
-		M_Memcpy(d, wadData + (f)->filepos, (f)->size)
+		d = (void*)(wadData + (f)->filepos);
+
 		retrieve_mapdata(ms, fileinfo + ML_SECTORS);
 		retrieve_mapdata(mld, fileinfo + ML_LINEDEFS);
 		retrieve_mapdata(msd, fileinfo + ML_SIDEDEFS);
 #undef retrieve_mapdata
-		Z_Free(wadData); // we're done with this now
 	}
 	else // phew it's just a WAD
 	{
-			ms = W_CacheLumpNum(lastloadedmaplumpnum+ML_SECTORS, PU_CACHE);
-			mld = W_CacheLumpNum(lastloadedmaplumpnum+ML_LINEDEFS, PU_CACHE);
-			msd = W_CacheLumpNum(lastloadedmaplumpnum+ML_SIDEDEFS, PU_CACHE);
+		ms = W_CacheLumpNum(lastloadedmaplumpnum+ML_SECTORS, PU_CACHE);
+		mld = W_CacheLumpNum(lastloadedmaplumpnum+ML_LINEDEFS, PU_CACHE);
+		msd = W_CacheLumpNum(lastloadedmaplumpnum+ML_SIDEDEFS, PU_CACHE);
 	}
 
 	for (i = 0; i < numsectors; i++, ss++, ms++)
@@ -733,6 +735,12 @@ static void P_NetArchiveWorld(void)
 	}
 	WRITEUINT16(put, 0xffff);
 	R_ClearTextureNumCache(false);
+
+	if (wadData)
+	{
+		// memory leak fix
+		Z_Free(wadData);
+	}
 
 	save_p = put;
 }
@@ -2674,6 +2682,23 @@ static void P_NetUnArchiveThinkers(void)
 		I_Error("Bad $$$.sav at archive block Thinkers");
 
 	// remove all the current thinkers
+	/*thinker_t* debugThinkerLists[NUM_THINKERLISTS][1024];
+	mobj_t* debugMobjLists[NUM_THINKERLISTS][1024];
+	int numDebugThinkers[NUM_THINKERLISTS];
+
+	for (i = 0; i < NUM_THINKERLISTS; i++) {
+		int count = 0;
+		thinker_t* test;
+		thinker_t* testNext;
+		for (test = thlist[i].next; test != &thlist[i]; test = testNext) {
+			testNext = test->next;
+			debugThinkerLists[i][count] = test;
+			debugMobjLists[i][count] = (mobj_t*)test;
+			count++;
+		}
+		numDebugThinkers[i] = count;
+	}*/
+
 	for (i = 0; i < NUM_THINKERLISTS; i++)
 	{
 		currentthinker = thlist[i].next;
@@ -2681,16 +2706,22 @@ static void P_NetUnArchiveThinkers(void)
 		{
 			next = currentthinker->next;
 
+			currentthinker->references = 0;
+
 			if (currentthinker->function.acp1 == (actionf_p1)P_MobjThinker)
 				P_RemoveSavegameMobj((mobj_t *)currentthinker); // item isn't saved, don't remove it
-			else
+			else {
+				currentthinker->prev->next = currentthinker->next;
+				currentthinker->next->prev = currentthinker->prev;
 				Z_Free(currentthinker);
+			}
 		}
 	}
 
 	// we don't want the removed mobjs to come back
 	iquetail = iquehead = 0;
-	P_InitThinkers();
+
+	//P_InitThinkers(); caused a memory leak with delayed-removed mobjs
 
 	// clear sector thinker pointers so they don't point to non-existant thinkers for all of eternity
 	for (i = 0; i < numsectors; i++)
@@ -2880,7 +2911,7 @@ static void P_NetUnArchiveThinkers(void)
 		executor_t *delay = NULL;
 		UINT32 mobjnum;
 		for (currentthinker = thlist[THINK_MAIN].next; currentthinker != &thlist[THINK_MAIN];
-		currentthinker = currentthinker->next)
+			currentthinker = currentthinker->next)
 		{
 			if (currentthinker->function.acp1 != (actionf_p1)T_ExecutorDelay)
 				continue;
@@ -3505,6 +3536,7 @@ boolean P_LoadNetGame(boolean preserveLevel)
 	CV_LoadNetVars(&save_p);
 	if (!P_NetUnArchiveMisc(preserveLevel))
 		return false;
+
 	P_NetUnArchivePlayers();
 	if (gamestate == GS_LEVEL)
 	{

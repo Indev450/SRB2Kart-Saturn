@@ -5302,9 +5302,17 @@ void TryRunTics(tic_t realtics)
 	}
 
 	// record the actual local controls
-	boolean canSimulate = (gamestate == GS_LEVEL) && cv_simulate.value && !server;
+	boolean canSimulate = (gamestate == GS_LEVEL) && leveltime >= 10 && (cv_simulate.value && !server);
+	boolean recordingStates = (gamestate == GS_LEVEL) && leveltime >= 10;
 	tic_t numNewTics = neededtic - gametic;
 	static int controlDelay = -1;
+
+	if (recordingStates && rewindingWow && rewindingTarget > 0)
+	{
+		save_p = gameStateBuffer[(gametic - rewindingTarget) % BACKUPTICS];
+		P_LoadNetGame(true);
+		rewindingWow = false;
+	}
 
 	// record the actual local controls for this frame
 	liveTic = I_GetTime();
@@ -5340,9 +5348,7 @@ void TryRunTics(tic_t realtics)
 
 				consistancy[gametic%BACKUPTICS] = Consistancy();
 
-
-				if (canSimulate) {
-
+				if (recordingStates) {
 					// store this real state
 					save_p = gameStateBuffer[gametic % BACKUPTICS];
 					P_SaveNetGame();
@@ -5396,7 +5402,7 @@ void TryRunTics(tic_t realtics)
 		// this must be done after smoothedTic is set
 		RefreshNetDetections();
 		
-		numToSimulate = cv_simulatetics.value;
+		numToSimulate = estimatedRTT;//cv_simulatetics.value;
 
 		// simulate the rest o da future
 		for (int i = 0; i < numToSimulate; i++) {
@@ -5404,7 +5410,7 @@ void TryRunTics(tic_t realtics)
 			for (int j = 0; j < MAXPLAYERS; j++) {
 				if (playeringame[j] && j != consoleplayer) {
 					// just use their last control for now
-					netcmds[gametic % BACKUPTICS][j] = netcmds[(gametic - 1 + BACKUPTICS) % BACKUPTICS][j];
+					netcmds[gametic % BACKUPTICS][j] = netcmds[(min(smoothedTic + i + 1, gametic) - 1 + BACKUPTICS) % BACKUPTICS][j];
 				}
 			}
 
@@ -5480,7 +5486,7 @@ void MakeNetDebugString()
 
 	netDebugText[0] = 0;
 
-	for (int i = 15; i >= 0; i--)
+	for (int i = 8; i >= 0; i--)
 	{
 		if ((tic_t)i >= simTic - gametic) {
 			// show tics and matches
