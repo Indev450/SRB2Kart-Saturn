@@ -5488,7 +5488,7 @@ void RefreshNetDetections()
 	if (!(gametic % 35))
 	{
 		int matchingLiveTic, matchingGameTic;
-		if (FindMatchingTics(&matchingLiveTic, &matchingGameTic) && matchingLiveTic - matchingGameTic < 15)
+		if (FindMatchingTics(&matchingLiveTic, &matchingGameTic) && matchingLiveTic - matchingGameTic < BACKUPTICS - 2)
 		{
 			estimatedRTT = matchingLiveTic - matchingGameTic;
 		}
