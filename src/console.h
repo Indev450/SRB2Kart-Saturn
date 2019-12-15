@@ -26,6 +26,9 @@ extern boolean con_recalc;
 
 extern boolean con_startup;
 
+// no messages will be printed while the console is muted
+extern boolean con_muted;
+
 // top clip value for view render: do not draw part of view hidden by console
 extern INT32 con_clipviewtop;
 

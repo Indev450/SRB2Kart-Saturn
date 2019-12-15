@@ -5365,7 +5365,9 @@ void TryRunTics(tic_t realtics)
 					gameStateBufferIsValid[gametic % BACKUPTICS] = true;
 					
 					// store the ticcmds used during this game tic
-					gameTicBuffer[gametic % BACKUPTICS][consoleplayer] = netcmds[(gametic-1) % BACKUPTICS][consoleplayer];
+					for (int i = 0; i < MAXPLAYERS; i++) {
+						gameTicBuffer[gametic % BACKUPTICS][i] = netcmds[(gametic - 1) % BACKUPTICS][i];
+					}
 				}
 
 				// Leave a certain amount of tics present in the net buffer as long as we've ran at least one tic this frame.
@@ -5392,6 +5394,7 @@ void TryRunTics(tic_t realtics)
 		boolean enableSmoothing = true;
 
 		sound_disabled = true;
+		con_muted = true;
 
 		// run the simulated state
 		// find the latest available real state
@@ -5421,12 +5424,20 @@ void TryRunTics(tic_t realtics)
 			for (int j = 0; j < MAXPLAYERS; j++) {
 				if (playeringame[j] && j != consoleplayer) {
 					// just use their last control for now
-					netcmds[gametic % BACKUPTICS][j] = gameTicBuffer[(min(smoothedTic + i, gametic) + BACKUPTICS) % BACKUPTICS][j];
+					netcmds[gametic % BACKUPTICS][j] = gameTicBuffer[(min(smoothedTic + i + 1, gametic) + BACKUPTICS) % BACKUPTICS][j];
 				}
 			}
 
-			// control self
-			netcmds[gametic % BACKUPTICS][consoleplayer] = simulatedTicBuffer[(liveTic - estimatedRTT + i + 1 + BACKUPTICS) % BACKUPTICS];
+			// control the local player
+			if (smoothedTic + i < gametic) {
+				// we have a tiny bit more info we can glean
+				netcmds[gametic % BACKUPTICS][consoleplayer] = gameTicBuffer[(smoothedTic + i + 1) % BACKUPTICS][consoleplayer];
+			}
+			else
+			{
+				netcmds[gametic % BACKUPTICS][consoleplayer] = simulatedTicBuffer[(liveTic - estimatedRTT + i + 1 + BACKUPTICS) % BACKUPTICS];
+			}
+
 			G_Ticker(true); // tic a bunch of times lol see what happens lolol
 		}
 
@@ -5438,6 +5449,7 @@ void TryRunTics(tic_t realtics)
 		localaiming = preservedAiming;
 
 		sound_disabled = preserveSoundDisabled;
+		con_muted = false;
 	}
 	
 	if (!recordingStates)
