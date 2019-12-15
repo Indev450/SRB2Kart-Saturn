@@ -4790,6 +4790,8 @@ void ItemFinder_OnChange(void)
   * \sa cv_pointlimit, TimeLimit_OnChange
   * \author Graue <graue@oceanbase.org>
   */
+static int lastpointlimit;
+
 static void PointLimit_OnChange(void)
 {
 	// Don't allow pointlimit in Single Player/Co-Op/Race!
@@ -4800,15 +4802,20 @@ static void PointLimit_OnChange(void)
 		return;
 	}
 
-	if (cv_pointlimit.value)
+	if (cv_pointlimit.value != lastpointlimit)
 	{
-		CONS_Printf(M_GetText("Levels will end after %s scores %d point%s.\n"),
-			G_GametypeHasTeams() ? M_GetText("a team") : M_GetText("someone"),
-			cv_pointlimit.value,
-			cv_pointlimit.value > 1 ? "s" : "");
+		if (cv_pointlimit.value)
+		{
+			CONS_Printf(M_GetText("Levels will end after %s scores %d point%s.\n"),
+				G_GametypeHasTeams() ? M_GetText("a team") : M_GetText("someone"),
+				cv_pointlimit.value,
+				cv_pointlimit.value > 1 ? "s" : "");
+		}
+		else if (netgame || multiplayer)
+			CONS_Printf(M_GetText("Point limit disabled\n"));
 	}
-	else if (netgame || multiplayer)
-		CONS_Printf(M_GetText("Point limit disabled\n"));
+
+	lastpointlimit = cv_pointlimit.value;
 }
 
 static void NumLaps_OnChange(void)
