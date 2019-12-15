@@ -727,6 +727,8 @@ typedef struct {
 
 #define NUMDELAYPACKETS 200
 DelayBuffer delayPackets[NUMDELAYPACKETS];
+tic_t nextSpikeTime = 0;
+tic_t nextSpikeDuration = 0;
 
 void SOCK_FlushDelayBuffers(boolean flushImmediate)
 {
@@ -747,6 +749,7 @@ static inline ssize_t SOCK_SendToAddr(SOCKET_TYPE socket, mysockaddr_t *sockaddr
 	socklen_t d6 = (socklen_t)sizeof(struct sockaddr_in6);
 #endif
 	socklen_t d, da = (socklen_t)sizeof(mysockaddr_t);
+	tic_t time = I_GetTime();
 
 	switch (sockaddr->any.sa_family)
 	{
@@ -757,17 +760,24 @@ static inline ssize_t SOCK_SendToAddr(SOCKET_TYPE socket, mysockaddr_t *sockaddr
 		default:       d = da; break;
 	}
 
-	if (cv_netdelay.value > 0 || cv_netjitter.value > 0) {
+	if (cv_netspikes.value && time >= nextSpikeTime + nextSpikeDuration)
+	{
+		nextSpikeTime = time + (rand() % 35) + 1 * TICRATE;
+		nextSpikeDuration = (rand() % 10) + 1;
+	}
+
+	if (cv_netdelay.value > 0 || cv_netjitter.value > 0 || (cv_netspikes.value && time >= nextSpikeTime)) {
 		// add a nasty packet delay for testing!
 		boolean writtenPacket = false;
-		int time = I_GetTime();
+		int addSpike = (cv_netspikes.value && time >= nextSpikeTime) ? nextSpikeDuration : 0;
+
 		for (int i = 0; i < NUMDELAYPACKETS; i++) {
 			if (!delayPackets[i].inUse) {
 				delayPackets[i].data = malloc(doomcom->datalength);
 				delayPackets[i].dataLength = doomcom->datalength;
 				delayPackets[i].socket = socket;
 				delayPackets[i].sockaddr = *sockaddr;
-				delayPackets[i].time = time + (rand() % (cv_netjitter.value + 1));
+				delayPackets[i].time = time + (rand() % (cv_netjitter.value + 1)) + addSpike;
 				delayPackets[i].sockaddr_size = d;
 				delayPackets[i].inUse = true;
 				memcpy(delayPackets[i].data, doomcom->data, doomcom->datalength);
