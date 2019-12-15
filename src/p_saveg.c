@@ -484,6 +484,99 @@ static void P_NetUnArchivePlayers(void)
 #define LD_S2MIDTEX 0x08
 
 //
+// ResetSectors
+// Resets the sectors in the level to their original state
+//
+static void ResetSectors(void)
+{
+	UINT8* wadData = NULL;
+	const mapsector_t *ms;
+	const mapsidedef_t *msd;
+	const maplinedef_t *mld;
+	sector_t *ss;
+	line_t* li;
+	side_t* si;
+
+	if (W_IsLumpWad(lastloadedmaplumpnum)) // welp it's a map wad in a pk3
+	{ // HACK: Open wad file rather quickly so we can get the data from the relevant lumps
+		wadData = W_CacheLumpNum(lastloadedmaplumpnum, PU_STATIC);
+		filelump_t *fileinfo = (filelump_t *)(wadData + ((wadinfo_t *)wadData)->infotableofs);
+#define retrieve_mapdata(d, f)\
+		d = (void*)(wadData + (f)->filepos);
+
+		retrieve_mapdata(ms, fileinfo + ML_SECTORS);
+		retrieve_mapdata(mld, fileinfo + ML_LINEDEFS);
+		retrieve_mapdata(msd, fileinfo + ML_SIDEDEFS);
+#undef retrieve_mapdata
+	}
+	else // phew it's just a WAD
+	{
+		ms = W_CacheLumpNum(lastloadedmaplumpnum + ML_SECTORS, PU_CACHE);
+		mld = W_CacheLumpNum(lastloadedmaplumpnum + ML_LINEDEFS, PU_CACHE);
+		msd = W_CacheLumpNum(lastloadedmaplumpnum + ML_SIDEDEFS, PU_CACHE);
+	}
+
+	// reset every sector
+	// commented out lines are eh lines
+	// we really should do them properly, but they take effort and only have a visual effect
+	for (ss = sectors; ss < &sectors[numsectors]; ss++, ms++) {
+		ss->floorheight = ms->floorheight<<FRACBITS;
+		ss->ceilingheight = ms->ceilingheight<<FRACBITS;
+
+		//ss->floorpic = P_AddLevelFlatRuntime((char *)get);
+		//ss->ceilingpic = P_AddLevelFlatRuntime((char *)get);
+		ss->lightlevel = ms->lightlevel;
+		ss->special = ms->special;
+
+		ss->floor_xoffs = ss->spawn_flr_xoffs;
+		ss->floor_yoffs = ss->spawn_flr_yoffs;
+		ss->ceiling_xoffs = ss->spawn_ceil_xoffs;
+		ss->ceiling_yoffs = ss->spawn_ceil_yoffs;
+		ss->floorpic_angle = ss->spawn_flrpic_angle;
+		ss->ceilingpic_angle = ss->spawn_ceilpic_angle;
+		ss->tag = ms->tag; // DON'T use P_ChangeSectorTag
+		ss->firsttag = ss->spawn_firsttag;
+		ss->nexttag = ss->spawn_nexttag;
+		//ss->extra_colormap = GetNetColormapFromList(READUINT32(get));
+
+		ffloor_t* floor = ss->ffloors;
+
+		while (floor != NULL)
+		{
+			floor->flags = floor->spawnflags;
+			floor->alpha = floor->spawnalpha;
+
+			floor = floor->next;
+		}
+	}
+
+	for (li = lines; li < &lines[numlines]; li++, mld++)
+	{
+		li->special = mld->special;
+		if (SHORT(li->special) == 321 || SHORT(li->special) == 322) {
+			li->callcount = 0;
+		}
+
+		si = &sides[li->sidenum[0]];
+		//si->textureoffset = si->;
+		//si->toptexture = READINT32(get);
+		//si->bottomtexture = READINT32(get);
+		//si->midtexture = READINT32(get);
+
+		si = &sides[li->sidenum[1]];
+		//si->textureoffset = READFIXED(get);
+		//si->toptexture = READINT32(get);
+		//si->bottomtexture = READINT32(get);
+		//si->midtexture = READINT32(get);
+	}
+
+	if (wadData)
+	{
+		Z_Free(wadData);
+	}
+}
+
+//
 // P_NetArchiveWorld
 //
 static void P_NetArchiveWorld(void)
@@ -755,9 +848,27 @@ static void P_NetUnArchiveWorld(boolean preserveLevel)
 	side_t *si;
 	UINT8 *get;
 	UINT8 diff, diff2;
+	UINT32 num_ffloors;
 
 	if (READUINT32(save_p) != ARCHIVEBLOCK_WORLD)
 		I_Error("Bad $$$.sav at archive block World");
+
+	// initialize colormap vars because paranoia
+	ClearNetColormaps();
+
+	if (preserveLevel) {
+		// when we save, we only save sectors that differ from their initial state
+		// so if we don't reset our sectors before loading, some sector changes might not be reverted becuase they were identical to their original state when saved and thus omitted
+		ResetSectors();
+	}
+
+	// count the level's ffloors so that colormap loading can have an upper limit
+	for (i = 0; i < numsectors; i++)
+	{
+		ffloor_t *rover;
+		for (rover = sectors[i].ffloors; rover; rover = rover->next)
+			num_ffloors++;
+	}
 
 	get = save_p;
 
@@ -2682,7 +2793,7 @@ static void P_NetUnArchiveThinkers(void)
 		I_Error("Bad $$$.sav at archive block Thinkers");
 
 	// remove all the current thinkers
-	/*thinker_t* debugThinkerLists[NUM_THINKERLISTS][1024];
+	thinker_t* debugThinkerLists[NUM_THINKERLISTS][1024];
 	mobj_t* debugMobjLists[NUM_THINKERLISTS][1024];
 	int numDebugThinkers[NUM_THINKERLISTS];
 
@@ -2697,7 +2808,7 @@ static void P_NetUnArchiveThinkers(void)
 			count++;
 		}
 		numDebugThinkers[i] = count;
-	}*/
+	}
 
 	for (i = 0; i < NUM_THINKERLISTS; i++)
 	{
