@@ -1314,11 +1314,13 @@ void I_StartupMouse(void)
 //
 // I_OsPolling
 //
-void SOCK_FlushDelayBuffers();
+void SOCK_FlushDelayBuffers(boolean flush);
 
 void I_OsPolling(void)
 {
-	SOCK_FlushDelayBuffers();
+	SDL_Keymod mod;
+
+	SOCK_FlushDelayBuffers(false);
 
 	if (consolevent)
 		I_GetConsoleEvents();

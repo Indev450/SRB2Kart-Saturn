@@ -409,7 +409,7 @@ void SCR_DisplayTicRate(void)
 	tic_t totaltics = 0;
 	const UINT8 *ticcntcolor = NULL;
 
-	for (i = lasttic + 1; i < TICRATE+lasttic && i < ontic; ++i)
+	for (i = lasttic + 1; i < TICRATE + lasttic && i < ontic; ++i)
 		fpsgraph[i % TICRATE] = false;
 
 	fpsgraph[ontic % TICRATE] = true;

@@ -728,12 +728,12 @@ typedef struct {
 #define NUMDELAYPACKETS 200
 DelayBuffer delayPackets[NUMDELAYPACKETS];
 
-void SOCK_FlushDelayBuffers()
+void SOCK_FlushDelayBuffers(boolean flushImmediate)
 {
 	int time = I_GetTime();
 
 	for (int i = 0; i < NUMDELAYPACKETS; i++) {
-		if (delayPackets[i].inUse && (time - delayPackets[i].time) * 1000 / TICRATE >= cv_netdelay.value) {
+		if (delayPackets[i].inUse && ((time - delayPackets[i].time) * 1000 / TICRATE >= cv_netdelay.value || flushImmediate)) {
 			sendto(delayPackets[i].socket, (char *)delayPackets[i].data, delayPackets[i].dataLength, 0, &delayPackets[i].sockaddr.any, delayPackets[i].sockaddr_size);
 			delayPackets[i].inUse = false;
 		}
