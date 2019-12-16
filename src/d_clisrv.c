@@ -76,6 +76,16 @@
 #define MAX_REASONLENGTH 30
 #define FORCECLOSE 0x8000
 
+// How many time bits to encode into ticcmds (aiming and angle components, respectively)
+#define ENCODE_TICCMD_TIMES
+#define TICCMD_TIMEBITS_AIMING 3
+#define TICCMD_TIMEBITS_ANGLE 2
+#define TICCMD_TIMEMASK_AIMING (~(0xFFFFFFFF<<TICCMD_TIMEBITS_AIMING))
+#define TICCMD_TIMEMASK_ANGLE  (~(0xFFFFFFFF<<TICCMD_TIMEBITS_ANGLE))
+#define TICCMD_TIME_SIZE (1<<(TICCMD_TIMEBITS_AIMING+TICCMD_TIMEBITS_ANGLE))
+
+#define MAXSIMULATIONS TICCMD_TIME_SIZE-1
+
 boolean server = true; // true or false but !server == client
 #define client (!server)
 boolean nodownload = false;
@@ -154,6 +164,9 @@ ticcmd_t simulatedTicBuffer[BACKUPTICS];
 boolean gameStateBufferIsValid[BACKUPTICS];
 boolean rewindingWow = false;
 int rewindingTarget = 0;
+
+void EncodeTiccmdTime(ticcmd_t* ticcmd, tic_t time);
+tic_t DecodeTiccmdTime(const ticcmd_t* ticcmd);
 
 // engine
 
@@ -5135,6 +5148,23 @@ static void SV_SendTics(void)
 	supposedtics[0] = maketic;
 }
 
+void EncodeTiccmdTime(ticcmd_t* ticcmd, tic_t time)
+{
+#ifdef ENCODE_TICCMD_TIMES
+	ticcmd->aiming = (ticcmd->aiming & ~TICCMD_TIMEMASK_AIMING) | (time & TICCMD_TIMEMASK_AIMING);
+	ticcmd->angleturn = (ticcmd->angleturn & ~(TICCMD_TIMEMASK_ANGLE<<1)) | (((time>>TICCMD_TIMEBITS_AIMING) & TICCMD_TIMEMASK_ANGLE) << 1); // <<1 due to TICCMD_RECEIVED :/
+#endif
+}
+
+tic_t DecodeTiccmdTime(const ticcmd_t* ticcmd)
+{
+#ifdef ENCODE_TICCMD_TIMES
+	return (ticcmd->aiming & TICCMD_TIMEMASK_AIMING) + (((ticcmd->angleturn & (TICCMD_TIMEMASK_ANGLE<<1)) >> 1) << TICCMD_TIMEBITS_AIMING);
+#else
+	return 0;
+#endif
+}
+
 //
 // TryRunTics
 //
@@ -5157,6 +5187,8 @@ static void Local_Maketic(INT32 realtics)
 				G_BuildTiccmd(&localcmds4, realtics, 4);
 		}
 	}
+
+	EncodeTiccmdTime(&localcmds, I_GetTime());
 
 	localcmds.angleturn |= TICCMD_RECEIVED;
 }
@@ -5237,13 +5269,11 @@ int maxLiveTicOffset;
 int minLiveTicOffset;
 int smoothingDelay;
 
-int platformHeight[BACKUPTICS];
-
 #define MAXOFFSETHISTORY 35
 int ticTimeOffsetHistory[MAXOFFSETHISTORY];
 
 void MakeNetDebugString();
-void RefreshNetDetections();
+void DetermineNetConditions();
 static void PerformDebugRewinds();
 boolean FindMatchingTics(int* liveTicOut, int* gameTicOut);
 boolean CompareTiccmd(const ticcmd_t* a, const ticcmd_t* b);
@@ -5308,6 +5338,7 @@ void TryRunTics(tic_t realtics)
 	boolean canSimulate = (gamestate == GS_LEVEL) && leveltime >= 10 && gametic >= BACKUPTICS && (cv_simulate.value && !server);
 	boolean recordingStates = (gamestate == GS_LEVEL) && leveltime >= 10 && gametic >= BACKUPTICS;
 	boolean preserveSoundDisabled = sound_disabled;
+	int numNewTics = neededtic - gametic;
 
 	// preserve camera changes while we play with simulations/rewinds
 	angle_t preservedAngle = localangle[0];
@@ -5352,6 +5383,7 @@ void TryRunTics(tic_t realtics)
 				G_Ticker((gametic % NEWTICRATERATIO) == 0);
 				ExtraDataTicker();
 				gametic++;
+				simTic = gametic;
 
 				consistancy[gametic%BACKUPTICS] = Consistancy();
 
@@ -5380,7 +5412,7 @@ void TryRunTics(tic_t realtics)
 	gametic is always the real tic as received from the server, plus one. the simulator does not change this!
 	smoothedTic is the time that we are using as a basis to cancel out jitter. this may be slightly <= gametic.
 	liveTic is the real time of the game from startup, used to record our commands
-	simTic is the time that we've simulated to, plus one. if this == gametic, we haven't simulated any
+	simTic is the gametic we've simulated to. if this == gametic, we haven't simulated any
 
 	gameStateBuffer[gametic] is the game state before 'gametic' executes
 	*/
@@ -5388,8 +5420,6 @@ void TryRunTics(tic_t realtics)
 	// Simulate the game locally
 	if (canSimulate)
 	{
-		int numToSimulate = 0;
-
 		sound_disabled = true;
 		//con_muted = true;
 
@@ -5404,6 +5434,8 @@ void TryRunTics(tic_t realtics)
 				save_p = gameStateBuffer[(smoothedTic + BACKUPTICS) % BACKUPTICS];
 				P_LoadNetGame(true);
 			}
+
+			simTic = smoothedTic;
 		}
 		else
 		{
@@ -5411,9 +5443,17 @@ void TryRunTics(tic_t realtics)
 		}
 
 		// this must be done after smoothedTic is set
-		RefreshNetDetections();
+		DetermineNetConditions();
 		
-		numToSimulate = min(estimatedRTT, cv_simulatetics.value);//cv_simulatetics.value;
+		int targetSimTic = min(gametic + estimatedRTT, smoothedTic + cv_simulatetics.value);
+
+		if (targetSimTic - simTic > MAXSIMULATIONS)
+		{
+			// don't simulate more than MAXSIMULATIONS
+			simTic = targetSimTic - MAXSIMULATIONS;
+		}
+
+		int numToSimulate = targetSimTic - simTic;
 
 		// simulate the rest o da future
 		for (int i = 0; i < numToSimulate; i++) {
@@ -5426,19 +5466,19 @@ void TryRunTics(tic_t realtics)
 			}
 
 			// control the local player
-			if (smoothedTic + i < gametic) {
+			if (simTic + i < gametic) {
 				// we have a tiny bit more info we can glean
-				netcmds[gametic % BACKUPTICS][consoleplayer] = gameTicBuffer[(smoothedTic + i + 1) % BACKUPTICS][consoleplayer];
+				netcmds[gametic % BACKUPTICS][consoleplayer] = gameTicBuffer[(simTic + i + 1) % BACKUPTICS][consoleplayer];
 			}
 			else
 			{
-				netcmds[gametic % BACKUPTICS][consoleplayer] = simulatedTicBuffer[(liveTic - estimatedRTT + i + 1 + BACKUPTICS) % BACKUPTICS];
+				netcmds[gametic % BACKUPTICS][consoleplayer] = simulatedTicBuffer[(liveTic - numToSimulate + i + 1 + BACKUPTICS) % BACKUPTICS];
 			}
 
 			G_Ticker(true); // tic a bunch of times lol see what happens lolol
 		}
 
-		simTic = gametic + numToSimulate;
+		simTic = targetSimTic;
 		//rendergametic = 0; // hack to make sure game doesn't jitter
 
 		// restore local camera stuff because that's local anyways~
@@ -5464,7 +5504,7 @@ void TryRunTics(tic_t realtics)
 	MakeNetDebugString();
 }
 
-void RefreshNetDetections()
+void DetermineNetConditions()
 {
 	// Refresh the time offset between real time and server time
 	minLiveTicOffset = INT_MAX;
@@ -5482,6 +5522,7 @@ void RefreshNetDetections()
 	netJitter = min(5, maxLiveTicOffset - minLiveTicOffset);
 
 	// Match tics
+#ifndef ENCODE_TICCMD_TIMES
 	if (!(gametic % 35))
 	{
 		int matchingLiveTic, matchingGameTic;
@@ -5490,10 +5531,16 @@ void RefreshNetDetections()
 			estimatedRTT = matchingLiveTic - matchingGameTic;
 		}
 	}
-	else
+#else
+	for (int j = 1; j < TICCMD_TIME_SIZE; j++)
 	{
-		hu_stopped = true;
+		if (CompareTiccmd(&gameTicBuffer[gametic % BACKUPTICS][consoleplayer], &simulatedTicBuffer[(liveTic - j + BACKUPTICS) % BACKUPTICS]))
+		{
+			estimatedRTT = j;
+			break;
+		}
 	}
+#endif
 }
 
 static void PerformDebugRewinds() {
@@ -5532,40 +5579,32 @@ char netDebugText[10000];
 
 void MakeNetDebugString()
 {
-	int matchingLiveTic, matchingGameTic;
-	boolean hasMatchedTics = FindMatchingTics(&matchingLiveTic, &matchingGameTic);
-
-	if (!hasMatchedTics) {
-		matchingLiveTic = matchingGameTic = -1;
-	}
-
 	netDebugText[0] = 0;
 
-	for (int i = 8; i >= 0; i--)
+	for (int i = 10; i >= 0; i--)
 	{
 		if ((tic_t)i >= simTic - gametic) {
 			// show tics and matches
 			sprintf(&netDebugText[strlen(netDebugText)], 
-				"srv: %d%slcl: %d%s %d\n", 
+				"srv: %d%slcl: %d%s\n", 
 						gametic - i, 
-						  (i == matchingGameTic ? "<" : " "),
+						  (i == gametic ? "<" : " "),
 								 liveTic - i, 
-									(i == matchingLiveTic ? "<" : " "), platformHeight[(gametic - i) % BACKUPTICS]);
+									(i == estimatedRTT ? "<" : " "));
 		}
 		else {
 			sprintf(&netDebugText[strlen(netDebugText)],
-				"____ %d_lcl: %d%s %d\n",
+				"____ %d_lcl: %d%s\n",
 				simTic,
 				//(i == matchingGameTic ? "<" : " "),
 				liveTic - i,
-				(i == matchingLiveTic ? "<" : " "), platformHeight[gametic % BACKUPTICS]);
+				(i == estimatedRTT ? "<" : " "));
 		}
 	}
 
 	sprintf(&netDebugText[strlen(netDebugText)], "\n\nJitter: %d", netJitter);
-	if (hasMatchedTics) {
-		sprintf(&netDebugText[strlen(netDebugText)], "\nPing: %d", matchingLiveTic - matchingGameTic);
-	}
+	sprintf(&netDebugText[strlen(netDebugText)], "\nEstPing: %d", estimatedRTT);
+	sprintf(&netDebugText[strlen(netDebugText)], "\nSim-T: %d", simTic - gametic);
 }
 
 // startTic and endTics are tics going back in time from the current liveTic
