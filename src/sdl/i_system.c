@@ -2908,6 +2908,7 @@ ticcmd_t *I_BaseTiccmd4(void)
 static HMODULE winmm = NULL;
 static DWORD starttickcount = 0; // hack for win2k time bug
 static p_timeGetTime pfntimeGetTime = NULL;
+static LARGE_INTEGER basetime = { {0, 0} };
 
 // ---------
 // I_GetTime
@@ -2923,7 +2924,6 @@ tic_t I_GetTime(void)
 	if (!starttickcount) // high precision timer
 	{
 		LARGE_INTEGER currtime; // use only LowPart if high resolution counter is not available
-		static LARGE_INTEGER basetime = {{0, 0}};
 
 		// use this if High Resolution timer is found
 		static LARGE_INTEGER frequency;
@@ -2953,6 +2953,47 @@ tic_t I_GetTime(void)
 		newtics = (GetTickCount() - starttickcount)/(1000/NEWTICRATE);
 
 	return newtics;
+}
+
+
+// I_GetTime
+// Wow I remember Windows NT
+// Anyway this returns the time passed in microseconds if applicable. Useful for benchmarking
+UINT64 I_GetTimeUs(void)
+{
+	UINT64 timeUs;
+
+	if (!starttickcount) // high precision timer
+	{
+		LARGE_INTEGER currtime; // use only LowPart if high resolution counter is not available
+
+		// use this if High Resolution timer is found
+		static LARGE_INTEGER frequency;
+
+		if (!basetime.LowPart)
+		{
+			if (!QueryPerformanceFrequency(&frequency))
+				frequency.QuadPart = 0;
+			else
+				QueryPerformanceCounter(&basetime);
+		}
+
+		if (frequency.LowPart && QueryPerformanceCounter(&currtime))
+		{
+			timeUs = (INT32)((currtime.QuadPart - basetime.QuadPart) * 1000000 / frequency.QuadPart);
+		}
+		else if (pfntimeGetTime)
+		{
+			currtime.LowPart = pfntimeGetTime();
+			if (!basetime.LowPart)
+				basetime.LowPart = currtime.LowPart;
+			timeUs = (currtime.LowPart - basetime.LowPart) * 1000;
+		}
+	}
+	else
+		timeUs = (GetTickCount() - starttickcount) * 1000;
+
+	return timeUs;
 }
 
 static void I_ShutdownTimer(void)

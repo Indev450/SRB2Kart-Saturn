@@ -610,7 +610,7 @@ static void D_Display(void)
 				V_DrawRightAlignedSmallString(BASEVIDWIDTH, y, V_YELLOWMAP, temp);
 
 				y += 5;
-				str = nextStr;
+				str = nextStr ? nextStr + 1 : NULL;
 			}
 		}
 

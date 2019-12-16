@@ -46,6 +46,10 @@ UINT32 I_GetFreeMem(UINT32 *total);
 */
 tic_t I_GetTime(void);
 
+/** \brief Gets the current time in microseconds
+*/
+UINT64 I_GetTimeUs(void);
+
 /**	\brief	The I_Sleep function
 
 	\return	void
