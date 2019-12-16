@@ -924,7 +924,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 					if (player->powers[pw_super])
 						return;
 
-					player->gotflag |= flagflag;
+					player->gotflag |= flagflag; // >:(
 					CONS_Printf(M_GetText("%s picked up the %c%s%c!\n"), plname, flagcolor, flagtext, 0x80);
 					(*flagmobj) = NULL;
 					// code for dealing with abilities is handled elsewhere now

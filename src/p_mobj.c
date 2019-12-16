@@ -9194,6 +9194,8 @@ void P_MobjThinker(mobj_t *mobj)
 
 							blueflag = flagmo;
 						}
+
+						CONS_Printf("Flag respawning at %d,%d,%d type %d\n", mobj->spawnpoint->x, mobj->spawnpoint->y, mobj->spawnpoint->z, mobj->spawnpoint->type);
 					}
 					P_RemoveMobj(mobj);
 					return;
