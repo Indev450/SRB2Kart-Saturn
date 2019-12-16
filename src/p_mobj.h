@@ -354,6 +354,7 @@ typedef struct mobj_s
 	fixed_t waterbottom; // bottom of the water FOF the mobj is in
 
 	UINT32 mobjnum; // A unique number for this mobj. Used for restoring pointers on save games.
+	UINT32 localmobjnum; // A unique number for this mobj stored locally for association when restoring savestates
 
 	fixed_t scale;
 	fixed_t destscale;
@@ -463,6 +464,10 @@ void P_RemovePrecipMobj(precipmobj_t *mobj);
 void P_SetScale(mobj_t *mobj, fixed_t newscale);
 void P_XYMovement(mobj_t *mo);
 void P_EmeraldManager(void);
+
+extern INT32 modulothing;
+
+extern UINT32 globalmobjnum;
 
 #define MAXHUNTEMERALDS 64
 extern mapthing_t *huntemeralds[MAXHUNTEMERALDS];

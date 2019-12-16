@@ -48,6 +48,9 @@ UINT8 *save_p;
 
 boolean memleak = false;
 
+UINT32 saveTimes[12];
+UINT32 loadTimes[12];
+
 // Note: This cannot be bigger
 // than an UINT16
 typedef enum
@@ -577,6 +580,50 @@ static void ResetSectors(void)
 }
 
 //
+// P_LocalArchiveWorld
+// Archives the world's state locally, regardless of differences from original state
+// Faster than NetArchiveWorld
+//
+static void P_LocalArchiveWorld(void)
+{
+	UINT8* put;
+
+	// paranoia something something
+	ClearNetColormaps();
+
+	WRITEUINT32(save_p, ARCHIVEBLOCK_WORLD);
+	put = save_p;
+
+	WRITEUINT32(put, numsectors * sizeof(sectors[0]));
+
+	// dump all sector memory into the data
+	memcpy(put, sectors, numsectors * sizeof(sectors[0]));
+	put += numsectors * sizeof(sectors[0]);
+
+	// there will be probably be code here that corrects all the broken pointers and stuff eventually
+	// once the programmer realises that everything's screwed during the next playtest ;)
+
+	UINT32 wow = put - save_p;
+	save_p = put;
+}
+
+static void P_LocalUnArchiveWorld(void)
+{
+	UINT8* get = save_p;
+
+	if (READUINT32(get) != ARCHIVEBLOCK_WORLD)
+	{
+		I_Error("Bad SaveState at archive block World");
+	}
+
+	UINT32 size = READUINT32(get);
+	memcpy(sectors, get, numsectors * sizeof(sectors[0]));
+	get += numsectors * sizeof(sectors[0]);
+
+	save_p = get;
+}
+
+//
 // P_NetArchiveWorld
 //
 static void P_NetArchiveWorld(void)
@@ -1016,7 +1063,8 @@ static void P_NetUnArchiveWorld(boolean preserveLevel)
 }
 
 //
-// Thinkers
+// Thinkers			// you're welcomers <3
+// 
 //
 
 typedef enum
@@ -1116,6 +1164,66 @@ typedef enum
 #endif
 	tc_end
 } specials_e;
+
+typedef struct
+{
+	actionf_p1 action;
+	UINT16 size;
+} specialdef_t;
+
+// special function/data size associations
+#define A(x) (actionf_p1)x
+static const specialdef_t specialDefs[] =
+{
+	A(P_MobjThinker), sizeof (mobj_t),                   // tc_mobj
+	A(T_MoveCeiling), sizeof(ceiling_t),                 // tc_ceiling
+	A(T_MoveFloor), sizeof (floormove_t),                // tc_floor
+	A(T_LightningFlash), sizeof(lightflash_t),           // tc_flash
+	A(T_StrobeFlash), sizeof(strobe_t),                  // tc_strobe
+	A(T_Glow), sizeof (glow_t),                          // tc_glow
+	A(T_FireFlicker), sizeof (fireflicker_t),            // tc_fireflicker
+	A(T_ThwompSector), sizeof(levelspecthink_t),         // tc_thwomp
+	A(T_CameraScanner), sizeof(elevator_t),              // tc_camerascanner
+	A(T_MoveElevator), sizeof (elevator_t),              // tc_elevator
+	A(T_ContinuousFalling), sizeof (levelspecthink_t),   // tc_contunousfalling
+	A(T_BounceCheese), sizeof(levelspecthink_t),         // tc_bouncecheese
+	A(T_StartCrumble), sizeof(elevator_t),               // tc_startcrumble
+	A(T_MarioBlock), sizeof(levelspecthink_t),           // tc_marioblock
+	A(T_MarioBlockChecker), sizeof(levelspecthink_t),    // tc_marioblockchecker
+	A(T_SpikeSector), sizeof(levelspecthink_t),          // tc_spikesector
+	A(T_FloatSector), sizeof(levelspecthink_t),          // tc_floatsector
+	A(T_BridgeThinker), sizeof(levelspecthink_t),        // tc_bridgethinker
+	A(T_CrushCeiling), sizeof(ceiling_t),                // tc_crushceiling
+	A(T_Scroll), sizeof(scroll_t),                       // tc_scroll
+	A(T_Friction), sizeof(friction_t),                   // tc_friction
+	A(T_Pusher), sizeof(pusher_t),                       // tc_pusher
+	A(T_LaserFlash), sizeof(laserthink_t),               // tc_laserflash
+	A(T_LightFade), sizeof(lightlevel_t),                // tc_lightfade
+	A(T_ExecutorDelay), sizeof(executor_t),              // tc_executor
+	A(T_RaiseSector), sizeof(levelspecthink_t),          // tc_raisesector
+	A(T_NoEnemiesSector), sizeof(levelspecthink_t),      // tc_noenemies
+	A(T_EachTimeThinker), sizeof(levelspecthink_t),      // tc_eachtime
+	A(T_Disappear), sizeof (disappear_t),                // tc_disappear
+	A(T_Fade), sizeof (fade_t),                          // tc_fade
+	A(T_FadeColormap), sizeof (fadecolormap_t),          // tc_fade
+	A(T_PlaneDisplace), sizeof (planedisplace_t),        // tc_planedisplace
+#ifdef ESLOPE
+	A(T_DynamicSlopeLine), sizeof(dynplanethink_t),      // tc_dynslopeline
+	A(T_DynamicSlopeVert), sizeof(dynplanethink_t),      // tc_dynslopevert
+#endif
+#ifdef POLYOBJECTS
+	A(T_PolyObjRotate), sizeof (polyrotate_t),            // tc_polyrotate
+	A(T_PolyObjMove), sizeof (polymove_t),                // tc_polymove
+	A(T_PolyObjWaypoint), sizeof (polywaypoint_t),        // tc_polywaypoint
+	A(T_PolyDoorSlide), sizeof (polyslidedoor_t),         // tc_polyslidedoor
+	A(T_PolyDoorSwing), sizeof (polyswingdoor_t),         // tc_polyswingdoor
+	A(T_PolyObjFlag), sizeof (polymove_t),                // tc_polyflag
+	A(T_PolyObjDisplace), sizeof (polydisplace_t),        // tc_polydisplace
+	A(T_PolyObjRotDisplace), sizeof (polyrotdisplace_t),  // tc_polyrotdisplace
+	A(T_PolyObjFade), sizeof (polyfade_t),                // tc_polyfade
+#endif
+};
+#undef A
 
 static inline UINT32 SaveMobjnum(const mobj_t *mobj)
 {
@@ -1797,6 +1905,42 @@ static inline void SaveWhatThinker(const thinker_t *th, const UINT8 type)
 	WRITEUINT8(save_p, type);
 }
 */
+
+
+//
+// P_LocalArchiveThinkers
+// Archives the world's thinkers locally. Used for within-level savestates
+//
+static void P_LocalArchiveThinkers(void)
+{
+	int i, j;
+	const thinker_t* thinker;
+	UINT8* original = save_p;
+	WRITEUINT32(save_p, ARCHIVEBLOCK_THINKERS);
+
+	for (i = 0; i < NUM_THINKERLISTS; i++)
+	{
+		for (thinker = thlist[i].next; thinker != &thlist[i]; thinker = thinker->next)
+		{
+			actionf_p1 acp1 = thinker->function.acp1;
+
+			// find the associated special def
+			for (j = 0; j < sizeof(specialDefs) / sizeof(specialDefs[0]); j++)
+			{
+				if (acp1 == specialDefs[j].action)
+					break;
+			}
+
+			if (j == sizeof(specialDefs) / sizeof(specialDefs[0]))
+				continue;
+
+			WRITEUINT8(save_p, j);
+			WRITEMEM(save_p, thinker, specialDefs[j].size);
+		}
+
+		WRITEUINT8(save_p, 0xFF); // next list (or end)
+	}
+}
 
 //
 // P_NetArchiveThinkers
@@ -2801,6 +2945,247 @@ static void CollectDebugObjectList(void) {
 	}
 }
 
+static void P_LocalUnArchiveThinkers()
+{
+	thinker_t *thinker;
+	mobj_t* currentmobj;
+	UINT8 tclass;
+	UINT8 restoreExecutors = false;
+	INT32 i, j, list;
+	int skyviewid = -1;
+	int skycenterid = -1;
+	thinker_t newthinkers[NUM_THINKERLISTS] = { 0 };
+	static thinker_t* thinkersbytype[tc_end][16384];
+	static UINT8 thinkerlistbytype[tc_end][16384];
+	static int numthinkersbytype[tc_end];
+
+	if (READUINT32(save_p) != ARCHIVEBLOCK_THINKERS)
+		I_Error("Bad SaveState at archive block Thinkers");
+
+	// preserve sky box indexes
+	for (i = 0; i < 16; i++)
+	{
+		if (skyboxmo[0] && skyboxmo[0] == skyboxviewpnts[i])
+			skyviewid = i; // save id just in case
+		if (skyboxmo[1] && skyboxmo[1] == skyboxcenterpnts[i])
+			skycenterid = i; // save id just in case
+	}
+
+	// sort objects by type
+	for (i = 0; i < tc_end; i++) {
+		numthinkersbytype[i] = 0;
+	}
+
+	for (i = 0; i < NUM_THINKERLISTS; i++)
+	{
+		newthinkers[i].next = &newthinkers[i];
+		newthinkers[i].prev = &newthinkers[i];
+
+		for (thinker = thlist[i].next; thinker != &thlist[i]; thinker = thinker->next)
+		{
+			for (j = 0; j < tc_end; j++)
+			{
+				if (thinker->function.acp1 == specialDefs[j].action)
+				{
+					thinkersbytype[j][numthinkersbytype[j]] = thinker;
+					thinkerlistbytype[j][numthinkersbytype[j]] = i;
+					numthinkersbytype[j]++;
+					break;
+				}
+			}
+		}
+	}
+
+	// remove from item respawn queues
+	iquetail = iquehead = 0;
+
+	// clear sector thinker pointers so they don't point to non-existant thinkers for all of eternity
+	//for (i = 0; i < (int)numsectors; i++)
+	//{
+	//	sectors[i].floordata = sectors[i].ceilingdata = sectors[i].lightingdata = sectors[i].fadecolormapdata = NULL;
+	//}
+
+	// clear flag references
+	redflag = NULL;
+	blueflag = NULL;
+
+	CollectDebugObjectList();
+
+	// read in saved thinkers
+	for (list = 0; list < NUM_THINKERLISTS; list++)
+	{
+		for (;;)
+		{
+			tclass = READUINT8(save_p);
+
+			if (tclass == 0xFF)
+				break; // next list
+
+			thinker_t* newthinker = NULL;
+			thinker_t* oldthinker = NULL;
+
+			if (numthinkersbytype[tclass] > 0)
+			{
+				for (j = numthinkersbytype[tclass] - 1; j >= 0; j--)
+				{
+					UINT8 thinkerlist = thinkerlistbytype[tclass][j];
+
+					if (thinkerlist != list)
+					{
+						continue; // don't replace something from a different list actually it doesn't matter lol
+					}
+
+					newthinker = thinkersbytype[tclass][j];
+					oldthinker = newthinker;
+					numthinkersbytype[tclass]--;
+
+					for (int k = j; k < numthinkersbytype[tclass]; k++)
+					{
+						thinkersbytype[tclass][k] = thinkersbytype[tclass][k + 1];
+						thinkerlistbytype[tclass][k] = thinkerlistbytype[tclass][k + 1];
+					}
+					break;
+				}
+			}
+
+			if (newthinker == NULL)
+			{
+				// couldn't replace one, we gotta create it...
+				if (tclass == tc_mobj)
+				{
+					newthinker = Z_Calloc(specialDefs[tclass].size, PU_LEVEL, NULL);
+				}
+				else
+				{
+					newthinker = Z_Malloc(specialDefs[tclass].size, PU_LEVSPEC, NULL);
+				}
+			}
+
+			if (oldthinker)
+			{
+				// remove it from the old list
+				oldthinker->prev->next = oldthinker->next;
+				oldthinker->next->prev = oldthinker->prev;
+
+				if (tclass == tc_mobj)
+					P_UnsetThingPosition((mobj_t*)oldthinker);
+			}
+
+			// read in the data
+			READMEM(save_p, newthinker, specialDefs[tclass].size);
+
+			// set special-specific info
+			if (tclass == tc_mobj)
+			{
+				mobj_t* mobj = (mobj_t*)newthinker;
+				if (mobj->type == MT_REDFLAG)
+				{
+					redflag = mobj;
+					rflagpoint = mobj->spawnpoint;
+				}
+
+				if (mobj->type == MT_BLUEFLAG)
+				{
+					blueflag = mobj;
+					bflagpoint = mobj->spawnpoint;
+				}
+				
+				if (mobj->player && mobj->type == MT_PLAYER)
+				{
+					mobj->player->mo = mobj;
+				}
+			}
+
+			// relink into the list
+			newthinker->prev = newthinkers[list].prev;
+			newthinker->next = &newthinkers[list];
+			newthinker->prev->next = newthinker;
+			newthinker->next->prev = newthinker;
+
+			if (tclass == tc_mobj)
+				P_SetThingPosition((mobj_t*)newthinker);
+		}
+	}
+	
+	CollectDebugObjectList();
+
+	// delete everything remaining in the list that hasn't been linked
+	for (i = 0; i < NUM_THINKERLISTS; i++)
+	{
+		thinker_t* next;
+
+		for (thinker = thlist[i].next; thinker != &thlist[i]; thinker = next)
+		{
+			next = thinker->next;
+
+			thinker->references = 0;
+
+			if (thinker->function.acp1 == (actionf_p1)P_MobjThinker)
+				P_RemoveSavegameMobj((mobj_t *)thinker, true); // item isn't saved, don't remove it
+			else if (thinker->function.acp1 == (actionf_p1)P_NullPrecipThinker)
+				P_RemovePrecipMobj((precipmobj_t*)thinker);
+			else {
+				// remove it manually, bye!
+				thinker->prev->next = thinker->next;
+				thinker->next->prev = thinker->prev;
+				Z_Free(thinker);
+			}
+		}
+		
+		// connect the new linker list to the old linker list
+		newthinkers[i].prev->next = thlist[i].next;
+		thlist[i].next->prev = newthinkers[i].prev;
+
+		thlist[i].next = newthinkers[i].next;
+		newthinkers[i].next->prev = &thlist[i];
+	}
+
+	CollectDebugObjectList();
+
+	if (restoreExecutors)
+	{
+		executor_t *delay = NULL;
+		UINT32 mobjnum;
+		for (thinker = thlist[THINK_MAIN].next; thinker != &thlist[THINK_MAIN];
+			thinker = thinker->next)
+		{
+			if (thinker->function.acp1 != (actionf_p1)T_ExecutorDelay)
+				continue;
+			delay = (void *)thinker;
+			if (!(mobjnum = (UINT32)(size_t)delay->caller))
+				continue;
+			delay->caller = P_FindNewPosition(mobjnum);
+		}
+	}
+
+	// restore skyboxes, if applicable
+	for (i = 0; i < sizeof(skyboxmo) / sizeof(skyboxmo[0]); i++)
+		skyboxmo[i] = NULL;
+	for (i = 0; i < sizeof(skyboxcenterpnts) / sizeof(skyboxcenterpnts[0]); i++)
+	{
+		skyboxcenterpnts[i] = NULL;
+		skyboxviewpnts[i] = NULL;
+	}
+
+	for (currentmobj = (mobj_t*)thlist[THINK_MOBJ].next; currentmobj != (mobj_t*)&thlist[THINK_MOBJ]; currentmobj = (mobj_t*)currentmobj->thinker.next)
+	{
+		if (currentmobj->type == MT_SKYBOX)
+		{
+			if ((currentmobj->extravalue2 >> 16) == 1)
+			{
+				skyboxcenterpnts[currentmobj->extravalue2 & 0xFFFF] = currentmobj;
+			}
+			else
+			{
+				skyboxviewpnts[currentmobj->extravalue2 & 0xFFFF] = currentmobj;
+			}
+		}
+	}
+
+	skyboxmo[0] = skyboxviewpnts[(skyviewid >= 0) ? skyviewid : 0];
+	skyboxmo[1] = skyboxcenterpnts[(skycenterid >= 0) ? skycenterid : 0];
+}
+
 //
 // P_NetUnArchiveThinkers
 //
@@ -2836,11 +3221,6 @@ static void P_NetUnArchiveThinkers(boolean preserveLevel)
 	// remove all the current thinkers
 	for (i = 0; i < NUM_THINKERLISTS; i++)
 	{
-		/*if (i == THINK_PRECIP)
-		{
-			continue; // ignore precipitation
-		}*/
-
 		currentthinker = thlist[i].next;
 		for (currentthinker = thlist[i].next; currentthinker != &thlist[i]; currentthinker = next)
 		{
@@ -3664,7 +4044,10 @@ void P_SaveNetGame(void)
 	INT32 i = 1; // don't start from 0, it'd be confused with a blank pointer otherwise
 
 	CV_SaveNetVars(&save_p, false);
+
+	saveTimes[0] = I_GetTimeUs();
 	P_NetArchiveMisc();
+	saveTimes[1] = I_GetTimeUs();
 
 	// Assign the mobjnumber for pointer tracking
 	//if (gamestate == GS_LEVEL)
@@ -3680,17 +4063,24 @@ void P_SaveNetGame(void)
 	}
 
 	P_NetArchivePlayers();
+	saveTimes[2] = I_GetTimeUs();
 	if (gamestate == GS_LEVEL)
 	{
 		P_NetArchiveWorld();
+		saveTimes[3] = I_GetTimeUs();
 #ifdef POLYOBJECTS
 		P_ArchivePolyObjects();
+		saveTimes[4] = I_GetTimeUs();
 #endif
 		P_NetArchiveThinkers();
+		saveTimes[5] = I_GetTimeUs();
 		P_NetArchiveSpecials();
+		saveTimes[6] = I_GetTimeUs();
 	}
 #ifdef HAVE_BLUA
+	saveTimes[8] = saveTimes[9] = 0;
 	LUA_Archive();
+	saveTimes[10] = I_GetTimeUs();
 #endif
 
 	WRITEUINT8(save_p, 0x1d); // consistency marker
@@ -3708,6 +4098,58 @@ void P_SaveGameState(savestate_t* savestate)
 
 	save_p = savestate->buffer;
 	P_SaveNetGame();
+	return;
+
+	WRITEUINT32(save_p, globalmobjnum);
+
+	P_LocalArchiveThinkers();
+	return;
+
+	thinker_t *th;
+	mobj_t *mobj;
+	INT32 i = 1; // don't start from 0, it'd be confused with a blank pointer otherwise
+
+	CV_SaveNetVars(&save_p);
+
+	saveTimes[0] = I_GetTimeUs();
+	P_NetArchiveMisc();
+	saveTimes[1] = I_GetTimeUs();
+
+	// Assign the mobjnumber for pointer tracking
+	for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
+	{
+		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+			continue;
+
+		mobj = (mobj_t *)th;
+		if (mobj->type == MT_HOOP || mobj->type == MT_HOOPCOLLIDE || mobj->type == MT_HOOPCENTER)
+			continue;
+		mobj->mobjnum = i++;
+	}
+
+	P_NetArchivePlayers();
+	saveTimes[2] = I_GetTimeUs();
+	if (gamestate == GS_LEVEL)
+	{
+		P_NetArchiveWorld();
+		saveTimes[3] = I_GetTimeUs();
+#ifdef POLYOBJECTS
+		P_ArchivePolyObjects();
+		saveTimes[4] = I_GetTimeUs();
+#endif
+		P_LocalArchiveThinkers();
+		//P_NetArchiveThinkers();
+		saveTimes[5] = I_GetTimeUs();
+		P_NetArchiveSpecials();
+		saveTimes[6] = I_GetTimeUs();
+	}
+#ifdef HAVE_BLUA
+	saveTimes[8] = saveTimes[9] = 0;
+	LUA_Archive();
+	saveTimes[10] = I_GetTimeUs();
+#endif
+
+	P_ArchiveLuabanksAndConsistency();
 
 	saveTime += I_GetTimeUs() - time;
 	numSaves++;
@@ -3738,23 +4180,33 @@ boolean P_LoadGame(INT16 mapoverride)
 boolean P_LoadNetGame(boolean preserveLevel)
 {
 	CV_LoadNetVars(&save_p);
+	loadTimes[0] = I_GetTimeUs();
 	if (!P_NetUnArchiveMisc(preserveLevel))
 		return false;
 
+	loadTimes[1] = I_GetTimeUs();
 	P_NetUnArchivePlayers();
+	loadTimes[2] = I_GetTimeUs();
 	if (gamestate == GS_LEVEL)
 	{
 		P_NetUnArchiveWorld(preserveLevel);
+		loadTimes[3] = I_GetTimeUs();
 #ifdef POLYOBJECTS
 		P_UnArchivePolyObjects();
+		loadTimes[4] = I_GetTimeUs();
 #endif
 		P_NetUnArchiveThinkers(preserveLevel);
+		loadTimes[5] = I_GetTimeUs();
 		P_NetUnArchiveSpecials();
+		loadTimes[6] = I_GetTimeUs();
 		P_RelinkPointers();
+		loadTimes[7] = I_GetTimeUs();
 		P_FinishMobjs();
+		loadTimes[8] = I_GetTimeUs();
 	}
 #ifdef HAVE_BLUA
 	LUA_UnArchive();
+	loadTimes[10] = I_GetTimeUs();
 #endif
 
 	// This is stupid and hacky, but maybe it'll work!
@@ -3780,7 +4232,56 @@ boolean P_LoadGameState(const savestate_t* savestate)
 	UINT64 time = I_GetTimeUs();
 
 	save_p = ((unsigned char*)savestate->buffer);
-	P_LoadNetGame(true);
+	return P_LoadNetGame(true);
+
+	globalmobjnum = READUINT32(save_p);
+
+	P_LocalUnArchiveThinkers();
+	return true;
+
+	CV_LoadNetVars(&save_p);
+	loadTimes[0] = I_GetTimeUs();
+	if (!P_NetUnArchiveMisc(true))
+		return false;
+
+	loadTimes[1] = I_GetTimeUs();
+	P_NetUnArchivePlayers();
+	loadTimes[2] = I_GetTimeUs();
+	if (gamestate == GS_LEVEL)
+	{
+		P_NetUnArchiveWorld(true);
+		loadTimes[3] = I_GetTimeUs();
+#ifdef POLYOBJECTS
+		P_UnArchivePolyObjects();
+		loadTimes[4] = I_GetTimeUs();
+#endif
+		P_NetUnArchiveThinkers(true);
+		loadTimes[5] = I_GetTimeUs();
+		P_NetUnArchiveSpecials();
+		loadTimes[6] = I_GetTimeUs();
+		P_NetUnArchiveColormaps();
+		loadTimes[7] = I_GetTimeUs();
+		P_RelinkPointers();
+		loadTimes[8] = I_GetTimeUs();
+		P_FinishMobjs();
+		loadTimes[9] = I_GetTimeUs();
+	}
+#ifdef HAVE_BLUA
+	LUA_UnArchive();
+	loadTimes[10] = I_GetTimeUs();
+#endif
+
+	// This is stupid and hacky, but maybe it'll work!
+	P_SetRandSeed(P_GetInitSeed());
+
+	// The precipitation would normally be spawned in P_SetupLevel, which is called by
+	// P_NetUnArchiveMisc above. However, that would place it up before P_NetUnArchiveThinkers,
+	// so the thinkers would be deleted later. Therefore, P_SetupLevel will *not* spawn
+	// precipitation when loading a netgame save. Instead, precip has to be spawned here.
+	// This is done in P_NetUnArchiveSpecials now.
+
+	P_UnArchiveLuabanksAndConsistency();
+
 
 	loadTime += I_GetTimeUs() - time;
 	numLoads++;

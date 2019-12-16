@@ -811,7 +811,7 @@ void MemShow() {
 		sizeu1(Z_TagsUsage(PU_PURGELEVEL, INT32_MAX) >> 10));
 }
 
-static char buffer[1024 * 768];
+static savestate_t save;
 static void Command_Saveloadtest(void)
 {
 	memleak = true;
@@ -819,10 +819,8 @@ static void Command_Saveloadtest(void)
 	MemShow();
 
 	for (int i = 0; i < 2; i++) {
-		save_p = buffer;
-		P_SaveNetGame();
-		save_p = buffer;
-		P_LoadNetGame(true);
+		P_SaveGameState(&save);
+		P_LoadGameState(&save);
 	}
 
 	MemShow();

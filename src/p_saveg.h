@@ -32,7 +32,7 @@ typedef struct
 
 typedef struct
 {
-	UINT8 buffer[1024 * 768];
+	UINT8 buffer[4 * 1024 * 1024]; // 4 megs per frame should do
 } savestate_t;
 
 // Persistent storage/archiving.
