@@ -74,6 +74,40 @@ typedef struct {
 	angle_t angle;
 } listener_t;
 
+typedef struct
+{
+	// sound information (if null, channel avail.)
+	sfxinfo_t *sfxinfo;
+
+	// origin of sound
+	const void *origin;
+
+	// handle of the sound being played
+	INT32 handle;
+
+	// whether the sound is detached from its source (sound panning should not be changed)
+	boolean isdetached;
+
+	// positioning for detached sounds
+	fixed_t detachedx, detachedy, detachedz;
+
+} channel_t;
+
+typedef struct {
+	channel_t *c;
+	sfxinfo_t *s;
+	UINT16 t;
+	UINT8 b;
+} caption_t;
+
+#define NUMCAPTIONS 8
+#define MAXCAPTIONTICS (2*TICRATE)
+#define CAPTIONFADETICS 20
+
+extern caption_t closedcaptions[NUMCAPTIONS];
+void S_StartCaption(sfxenum_t sfx_id, INT32 cnum, UINT16 lifespan);
+void S_ResetCaptions(void);
+
 // register sound vars and commands at game startup
 void S_RegisterSoundStuff(void);
 
@@ -106,6 +140,10 @@ void S_StartSoundAtVolume(const void *origin, sfxenum_t sound_id, INT32 volume);
 
 // Stop sound for thing at <origin>
 void S_StopSound(void *origin);
+
+// Detaches a sound from an object, leaving it in the air at the object's original position
+void S_DetachChannelsFromOrigin(void* origin);
+
 
 //
 // Music Status

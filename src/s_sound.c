@@ -46,7 +46,7 @@ extern INT32 msg_id;
 // 3D Sound Interface
 #include "hardware/hw3sound.h"
 #else
-static INT32 S_AdjustSoundParams(const mobj_t *listener, const mobj_t *source, INT32 *vol, INT32 *sep, INT32 *pitch, sfxinfo_t *sfxinfo);
+static INT32 S_AdjustSoundParams(const mobj_t *listener, fixed_t x, fixed_t y, fixed_t z, INT32 *vol, INT32 *sep, INT32 *pitch, sfxinfo_t *sfxinfo);
 #endif
 
 CV_PossibleValue_t soundvolume_cons_t[] = {{0, "MIN"}, {31, "MAX"}, {0, NULL}};
@@ -248,6 +248,7 @@ static INT32 S_getChannel(const void *origin, sfxinfo_t *sfxinfo)
 	// channel is decided to be cnum.
 	c->sfxinfo = sfxinfo;
 	c->origin = origin;
+	c->isdetached = false;
 
 	return cnum;
 }
@@ -583,7 +584,7 @@ void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
 		if (origin && origin != listenmobj2)
 		{
 			INT32 rc;
-			rc = S_AdjustSoundParams(listenmobj2, origin, &volume, &sep, &pitch, sfx);
+			rc = S_AdjustSoundParams(listenmobj2, origin->x, origin->y, origin->z, &volume, &sep, &pitch, sfx);
 
 			if (!rc)
 				goto dontplay; // Maybe the other player can hear it...
@@ -749,7 +750,7 @@ dontplay4:
 	if (origin && origin != listenmobj)
 	{
 		INT32 rc;
-		rc = S_AdjustSoundParams(listenmobj, origin, &volume, &sep, &pitch, sfx);
+		rc = S_AdjustSoundParams(listenmobj, origin->x, origin->y, origin->z, &volume, &sep, &pitch, sfx);
 
 		if (!rc)
 			return;
@@ -1053,6 +1054,8 @@ void S_UpdateSounds(void)
 		{
 			if (I_SoundIsPlaying(c->handle))
 			{
+				boolean isspatial = c->origin || c->isdetached;
+
 				// initialize parameters
 				volume = 255; // 8 bits internal volume precision
 				pitch = NORM_PITCH;
@@ -1063,11 +1066,28 @@ void S_UpdateSounds(void)
 
 				// check non-local sounds for distance clipping
 				//  or modify their params
-				if (c->origin && ((c->origin != players[consoleplayer].mo)
+				if (isspatial && 
+					(c->origin && ((c->origin != players[consoleplayer].mo)
 					|| (splitscreen && c->origin != players[displayplayers[1]].mo)
 					|| (splitscreen > 1 && c->origin != players[displayplayers[2]].mo)
-					|| (splitscreen > 2 && c->origin != players[displayplayers[3]].mo)))
+					|| (splitscreen > 2 && c->origin != players[displayplayers[3]].mo))))
 				{
+					fixed_t x, y, z;
+					const mobj_t *soundmobj = c->origin;
+
+					if (c->isdetached)
+					{
+						x = c->detachedx;
+						y = c->detachedy;
+						z = c->detachedz;
+					}
+					else
+					{
+						x = soundmobj->x;
+						y = soundmobj->y;
+						z = soundmobj->z;
+					}
+
 					// Whomever is closer gets the sound, but only in splitscreen.
 					if (splitscreen)
 					{
@@ -1102,25 +1122,25 @@ void S_UpdateSounds(void)
 							if (p == 1)
 							{
 								// Player 2 gets the sound
-								audible = S_AdjustSoundParams(listenmobj2, c->origin, &volume, &sep, &pitch,
+								audible = S_AdjustSoundParams(listenmobj2, x, y, z, &volume, &sep, &pitch,
 									c->sfxinfo);
 							}
 							else if (p == 2)
 							{
 								// Player 3 gets the sound
-								audible = S_AdjustSoundParams(listenmobj3, c->origin, &volume, &sep, &pitch,
+								audible = S_AdjustSoundParams(listenmobj3, x, y, z, &volume, &sep, &pitch,
 								c->sfxinfo);
 							}
 							else if (p == 3)
 							{
 								// Player 4 gets the sound
-								audible = S_AdjustSoundParams(listenmobj4, c->origin, &volume, &sep, &pitch,
+								audible = S_AdjustSoundParams(listenmobj4, x, y, z, &volume, &sep, &pitch,
 									c->sfxinfo);
 							}
 							else
 							{
 								// Player 1 gets the sound
-								audible = S_AdjustSoundParams(listenmobj, c->origin, &volume, &sep, &pitch,
+								audible = S_AdjustSoundParams(listenmobj, x, y, z, &volume, &sep, &pitch,
 									c->sfxinfo);
 							}
 
@@ -1133,7 +1153,7 @@ void S_UpdateSounds(void)
 					else if (listenmobj && !splitscreen)
 					{
 						// In the case of a single player, he or she always should get updated sound.
-						audible = S_AdjustSoundParams(listenmobj, c->origin, &volume, &sep, &pitch,
+						audible = S_AdjustSoundParams(listenmobj, x, y, z, &volume, &sep, &pitch,
 							c->sfxinfo);
 
 						if (audible)
@@ -1204,6 +1224,28 @@ static void S_StopChannel(INT32 cnum)
 }
 
 //
+// S_DetachChannelFromSource
+//
+// Detaches a sound channel from the object it came from, leaving it loose
+//
+void S_DetachChannelsFromOrigin(void* origin)
+{
+	int i;
+	mobj_t* originmobj = (mobj_t*)origin;
+	for (i = 0; i < numofchannels; i++)
+	{
+		if (channels[i].origin == origin)
+		{
+			channels[i].origin = NULL;
+			channels[i].isdetached = true;
+			channels[i].detachedx = originmobj->x;
+			channels[i].detachedy = originmobj->y;
+			channels[i].detachedz = originmobj->z;
+		}
+	}
+}
+
+//
 // S_CalculateSoundDistance
 //
 // Calculates the distance between two points for a sound.
@@ -1237,7 +1279,7 @@ fixed_t S_CalculateSoundDistance(fixed_t sx1, fixed_t sy1, fixed_t sz1, fixed_t 
 // If the sound is not audible, returns a 0.
 // Otherwise, modifies parameters and returns 1.
 //
-INT32 S_AdjustSoundParams(const mobj_t *listener, const mobj_t *source, INT32 *vol, INT32 *sep, INT32 *pitch,
+INT32 S_AdjustSoundParams(const mobj_t *listener, fixed_t x, fixed_t y, fixed_t z, INT32 *vol, INT32 *sep, INT32 *pitch,
 	sfxinfo_t *sfxinfo)
 {
 	fixed_t approx_dist;
@@ -1318,8 +1360,7 @@ INT32 S_AdjustSoundParams(const mobj_t *listener, const mobj_t *source, INT32 *v
 	}
 	else
 	{
-		approx_dist = S_CalculateSoundDistance(listensource.x, listensource.y, listensource.z,
-												source->x, source->y, source->z);
+		approx_dist = S_CalculateSoundDistance(listensource.x, listensource.y, listensource.z, x, y, z);
 	}
 
 	// Ring loss, deaths, etc, should all be heard louder.
@@ -1337,7 +1378,7 @@ INT32 S_AdjustSoundParams(const mobj_t *listener, const mobj_t *source, INT32 *v
 		return 0;
 
 	// angle of source to listener
-	angle = R_PointToAngle2(listensource.x, listensource.y, source->x, source->y);
+	angle = R_PointToAngle2(listensource.x, listensource.y, x, y);
 
 	if (angle > listensource.angle)
 		angle = angle - listensource.angle;

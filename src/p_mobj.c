@@ -10390,7 +10390,7 @@ void P_RemovePrecipMobj(precipmobj_t *mobj)
 }
 
 // Clearing out stuff for savegames
-void P_RemoveSavegameMobj(mobj_t *mobj)
+void P_RemoveSavegameMobj(mobj_t *mobj, boolean preserveLevel)
 {
 	// unlink from sector and block lists
 	P_UnsetThingPosition(mobj);
@@ -10403,7 +10403,15 @@ void P_RemoveSavegameMobj(mobj_t *mobj)
 	}
 
 	// stop any playing sound
-	S_StopSound(mobj);
+	if (!preserveLevel)
+	{
+		S_StopSound(mobj);
+	}
+	else
+	{
+		// detach any playing sounds from this mobj, but don't destroy them as they might still be there
+		S_DetachChannelsFromOrigin(mobj);
+	}
 
 	// free block
 	P_RemoveThinker((thinker_t *)mobj);

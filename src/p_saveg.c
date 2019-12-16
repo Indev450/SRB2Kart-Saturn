@@ -2804,7 +2804,7 @@ static void CollectDebugObjectList(void) {
 //
 // P_NetUnArchiveThinkers
 //
-static void P_NetUnArchiveThinkers(void)
+static void P_NetUnArchiveThinkers(boolean preserveLevel)
 {
 	thinker_t *currentthinker;
 	thinker_t *next;
@@ -2849,7 +2849,7 @@ static void P_NetUnArchiveThinkers(void)
 			currentthinker->references = 0;
 
 			if (currentthinker->function.acp1 == (actionf_p1)P_MobjThinker)
-				P_RemoveSavegameMobj((mobj_t *)currentthinker); // item isn't saved, don't remove it
+				P_RemoveSavegameMobj((mobj_t *)currentthinker, preserveLevel); // item isn't saved, don't remove it
 			else if (currentthinker->function.acp1 == (actionf_p1)P_NullPrecipThinker)
 				P_RemovePrecipMobj((precipmobj_t*)currentthinker);
 			else {
@@ -3721,7 +3721,7 @@ boolean P_LoadNetGame(boolean preserveLevel)
 #ifdef POLYOBJECTS
 		P_UnArchivePolyObjects();
 #endif
-		P_NetUnArchiveThinkers();
+		P_NetUnArchiveThinkers(preserveLevel);
 		P_NetUnArchiveSpecials();
 		P_RelinkPointers();
 		P_FinishMobjs();
