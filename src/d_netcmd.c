@@ -436,6 +436,7 @@ consvar_t cv_allowexitlevel = {"allowexitlevel", "No", CV_NETVAR, CV_YesNo, NULL
 
 consvar_t cv_killingdead = {"killingdead", "Off", CV_NETVAR|CV_NOSHOWHELP, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_netsimstat = { "netsimstat", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL };
 consvar_t cv_netstat = {"netstat", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; // show bandwidth statistics
 static CV_PossibleValue_t nettimeout_cons_t[] = {{TICRATE/7, "MIN"}, {60*TICRATE, "MAX"}, {0, NULL}};
 consvar_t cv_nettimeout = {"nettimeout", "105", CV_CALL|CV_SAVE, nettimeout_cons_t, NetTimeout_OnChange, 0, NULL, NULL, 0, 0, NULL};
@@ -483,12 +484,14 @@ consvar_t cv_netdelay = { "netdelay", "0", 0, netdelay_cons_t, NULL, 0, NULL, NU
 static CV_PossibleValue_t netjitter_cons_t[] = { {0, "MIN"}, {5, "MAX"}, {0, NULL} };
 consvar_t cv_netjitter = { "netjitter", "0", 0, netdelay_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL };
 
-consvar_t cv_netsmoothing = { "netsmoothing", "0", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL };
+consvar_t cv_netsmoothing = { "netsmoothing", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL };
 
-consvar_t cv_netspikes = { "netspikes", "0", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL };
+consvar_t cv_netspikes = { "netspikes", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL };
 
 static CV_PossibleValue_t debugsimulaterewind_cons_t[] = { {0, "MIN"}, {BACKUPTICS - 1, "MAX"}, {0, NULL} };
 consvar_t cv_debugsimulaterewind = { "debugsimulaterewind", "0", 0, debugsimulaterewind_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL };
+
+consvar_t cv_netsteadyplayers = { "netsteadyplayers", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL };
 
 char timedemo_name[256];
 boolean timedemo_csv;
@@ -650,6 +653,7 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_netjitter);
 	CV_RegisterVar(&cv_netsmoothing);
 	CV_RegisterVar(&cv_netspikes);
+	CV_RegisterVar(&cv_netsteadyplayers);
 	CV_RegisterVar(&cv_debugsimulaterewind);
 
 	// for master server connection
@@ -930,6 +934,7 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_rollingdemos);
 	CV_RegisterVar(&cv_netstat);
 	CV_RegisterVar(&cv_netticbuffer);
+	CV_RegisterVar(&cv_netsimstat);
 
 #ifdef NETGAME_DEVMODE
 	CV_RegisterVar(&cv_fishcake);
