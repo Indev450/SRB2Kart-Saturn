@@ -491,7 +491,8 @@ consvar_t cv_netspikes = { "netspikes", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL,
 static CV_PossibleValue_t debugsimulaterewind_cons_t[] = { {0, "MIN"}, {BACKUPTICS - 1, "MAX"}, {0, NULL} };
 consvar_t cv_debugsimulaterewind = { "debugsimulaterewind", "0", 0, debugsimulaterewind_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL };
 
-consvar_t cv_netsteadyplayers = { "netsteadyplayers", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL };
+static CV_PossibleValue_t netsteadyplayers_cons_t[] = { {0, "MIN"}, {MAXSIMULATIONS - 1, "MAX"}, {0, NULL} };
+consvar_t cv_netsteadyplayers = { "netsteadyplayers", "0", 0, netsteadyplayers_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL };
 
 char timedemo_name[256];
 boolean timedemo_csv;

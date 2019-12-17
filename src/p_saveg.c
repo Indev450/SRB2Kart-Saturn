@@ -4230,9 +4230,16 @@ boolean P_LoadGameState(const savestate_t* savestate)
 	}
 
 	UINT64 time = I_GetTimeUs();
+	angle_t preserveAngle = localangle;
+	INT32 preserveAiming = localaiming;
 
 	save_p = ((unsigned char*)savestate->buffer);
-	return P_LoadNetGame(true);
+	P_LoadNetGame(true);
+
+	localangle = preserveAngle;
+	localaiming = preserveAiming;
+
+	return true;
 
 	globalmobjnum = READUINT32(save_p);
 

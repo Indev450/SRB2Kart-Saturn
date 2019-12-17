@@ -76,16 +76,6 @@
 #define MAX_REASONLENGTH 30
 #define FORCECLOSE 0x8000
 
-// How many time bits to encode into ticcmds (aiming and angle components, respectively)
-#define ENCODE_TICCMD_TIMES
-#define TICCMD_TIMEBITS_AIMING 3
-#define TICCMD_TIMEBITS_ANGLE 2
-#define TICCMD_TIMEMASK_AIMING (~(0xFFFFFFFF<<TICCMD_TIMEBITS_AIMING))
-#define TICCMD_TIMEMASK_ANGLE  (~(0xFFFFFFFF<<TICCMD_TIMEBITS_ANGLE))
-#define TICCMD_TIME_SIZE (1<<(TICCMD_TIMEBITS_AIMING+TICCMD_TIMEBITS_ANGLE))
-
-#define MAXSIMULATIONS (TICCMD_TIME_SIZE-1)
-
 boolean server = true; // true or false but !server == client
 #define client (!server)
 boolean nodownload = false;
@@ -167,10 +157,7 @@ int rewindingTarget = 0;
 
 typedef struct
 {
-	fixed_t gamex, gamey, gamez;
-	fixed_t simx, simy, simz;
-
-	// stores historical simulated positions where 0 is gamex/gamey/gamez and simtic-gametic is simx/simy/simz
+	// stores historical simulated positions where 0 is the real game position and simtic-gametic is the latest simulated position
 	fixed_t histx[MAXSIMULATIONS+1], histy[MAXSIMULATIONS+1], histz[MAXSIMULATIONS+1];
 } steadyplayer_t;
 steadyplayer_t steadyplayers[MAXPLAYERS];
@@ -179,6 +166,8 @@ void EncodeTiccmdTime(ticcmd_t* ticcmd, tic_t time);
 tic_t DecodeTiccmdTime(const ticcmd_t* ticcmd);
 
 static void AdjustSimulatedTiccmdInputs(ticcmd_t* cmds);
+
+static void RunSimulations();
 
 // engine
 
@@ -5209,9 +5198,7 @@ static ticcmd_t lastCmds;
 void CorrectPlayerTargeting(ticcmd_t* cmds)
 {
 	if (!players[consoleplayer].mo || !cv_netsteadyplayers.value || simtic == gametic)
-	{
 		return;
-	}
 
 	boolean hasPressedAttack = (cmds->buttons & BT_ATTACK) && (!(lastCmds.buttons & BT_ATTACK) 
 							|| (players[consoleplayer].currentweapon == WEP_AUTO && players[consoleplayer].rings > 0));
@@ -5224,15 +5211,17 @@ void CorrectPlayerTargeting(ticcmd_t* cmds)
 		SHORT smallestVDifference = 0x8000;
 		fixed_t dist = 0;
 		mobj_t* myself = players[consoleplayer].mo;
+		int gameHist = max((int)(simtic-gametic) - cv_netsteadyplayers.value, 0); // current hist time that the players have been positioned at on the screen
+		int simHist = simtic - gametic; // max simulated hist time
 
 		for (int i = 0; i < MAXPLAYERS; i++)
 		{
 			steadyplayer_t* player = &steadyplayers[i];
 			if (playeringame[i] && players[i].mo && i != consoleplayer)
 			{
-				SHORT difference = (SHORT)(FixedAngleBetween(myself->x, myself->y, player->gamex, player->gamey)>>FRACBITS) - cmds->angleturn;
-				SHORT vDifference = -(SHORT)(FixedAngleBetween(0, player->gamez, 
-					FixedDistance2(player->gamex, player->gamey, myself->x, myself->y), myself->z)>>FRACBITS) - cmds->aiming;
+				fixed_t curX = player->histx[gameHist], curY = player->histy[gameHist], curZ = player->histz[gameHist];
+				SHORT difference = (SHORT)(FixedAngleBetween(myself->x, myself->y, curX, curY)>>FRACBITS) - cmds->angleturn;
+				SHORT vDifference = -(SHORT)(FixedAngleBetween(0, curZ, FixedDistance2(curX, curY, myself->x, myself->y), myself->z)>>FRACBITS) - cmds->aiming;
 
 				if (abs(difference) + abs(vDifference) < abs(smallestDifference) + abs(smallestVDifference))
 				{
@@ -5245,20 +5234,18 @@ void CorrectPlayerTargeting(ticcmd_t* cmds)
 
 		if (mostLikelyPlayer != NULL)
 		{
+			fixed_t curX = mostLikelyPlayer->histx[gameHist], curY = mostLikelyPlayer->histy[gameHist], curZ = mostLikelyPlayer->histz[gameHist];
+			fixed_t simX = mostLikelyPlayer->histx[simHist], simY = mostLikelyPlayer->histy[simHist], simZ = mostLikelyPlayer->histz[simHist];
+
 			if (players[consoleplayer].currentweapon == WEP_RAIL)
 			{
 				// rail rings are simple: offset the aim towards the player's new position compared to their old one
-				SHORT extraDifference = (SHORT)(FixedAngleBetween(myself->x, myself->y, mostLikelyPlayer->simx, mostLikelyPlayer->simy) >> FRACBITS)
-					- cmds->angleturn;
-				SHORT extraVDifference = -(SHORT)(FixedAngleBetween(0, mostLikelyPlayer->simz,
-					FixedDistance2(mostLikelyPlayer->simx, mostLikelyPlayer->simy, myself->x, myself->y), myself->z) >> FRACBITS) - cmds->aiming;
-				float distanceRatio = FIXED_TO_FLOAT(FixedDiv(FixedDistance(myself->x, myself->y, myself->z, mostLikelyPlayer->simx, mostLikelyPlayer->simy, mostLikelyPlayer->simz),
-									  FixedDistance(myself->x, myself->y, myself->z, mostLikelyPlayer->gamex, mostLikelyPlayer->gamey, mostLikelyPlayer->gamez)));
+				// distanceRatio increases/reduces the player's accuracy based on the distance change (e.g. big close Sonic to little faraway Sonic)
+				fixed_t distanceRatio = FixedDiv(FixedDistance(myself->x, myself->y, myself->z, simX, simY, simZ), FixedDistance(myself->x, myself->y, myself->z, curX, curY, curZ));
 
-				// distanceRatio increases/reduces the player's accuracy based on the distance change
-
-				cmds->angleturn += extraDifference - smallestDifference / distanceRatio;
-				cmds->aiming += extraVDifference - smallestVDifference / distanceRatio;
+				cmds->angleturn = (SHORT)(FixedAngleBetween(myself->x, myself->y, simX, simY) >> FRACBITS) - FixedDiv(smallestDifference, distanceRatio);
+				cmds->aiming = -(SHORT)(FixedAngleBetween(0, simZ, FixedDistance2(simX, simY, myself->x, myself->y), myself->z) >> FRACBITS) - 
+										FixedDiv(smallestVDifference, distanceRatio);
 			}
 			else
 			{
@@ -5266,8 +5253,8 @@ void CorrectPlayerTargeting(ticcmd_t* cmds)
 				// calculate the player's new position and try to aim towards that
 				int ringSpeed = mobjinfo[MT_REDRING].speed>>FRACBITS;
 				fixed_t ringRadius = -(60<<FRACBITS) * (simtic - gametic); // if the ring was fired in any direction, this is the distance it would travel currently
-				fixed_t enemyX = mostLikelyPlayer->gamex, enemyY = mostLikelyPlayer->gamey, enemyZ = mostLikelyPlayer->gamez;
-				tic_t wowtic = gametic; // owo
+				fixed_t enemyX = curX, enemyY = curY, enemyZ = curZ;
+				tic_t wowtic = min(gametic, simtic - cv_netsteadyplayers.value);
 				fixed_t originalDistance = FixedDistance(myself->x, myself->y, myself->z, enemyX, enemyY, enemyZ);
 				fixed_t currentDistance = originalDistance;
 				SHORT difference = 0;
@@ -5284,7 +5271,7 @@ void CorrectPlayerTargeting(ticcmd_t* cmds)
 					}
 					else
 					{
-						// we don't have a simulation for this so just extrapolate the player's previous position
+						// we ran out of simulations so just extrapolate the player's previous position
 						enemyX += mostLikelyPlayer->histx[simtic - gametic] - mostLikelyPlayer->histx[simtic - gametic - 1];
 						enemyY += mostLikelyPlayer->histy[simtic - gametic] - mostLikelyPlayer->histy[simtic - gametic - 1];
 						enemyZ += mostLikelyPlayer->histz[simtic - gametic] - mostLikelyPlayer->histz[simtic - gametic - 1];
@@ -5318,20 +5305,16 @@ void CorrectPlayerTargeting(ticcmd_t* cmds)
 static void AdjustSimulatedTiccmdInputs(ticcmd_t* cmds)
 {
 	if (server || simtic == gametic)
-	{
 		return;
-	}
 
 	SHORT oldAngle = cmds->angleturn;
 
 	if (gamestate == GS_LEVEL && cv_netsteadyplayers.value)
-	{
 		CorrectPlayerTargeting(cmds);
-	}
 
 	if (cmds->angleturn != oldAngle)
 	{
-		// If the target angle is different, readjust movements to go towards it
+		// If the aiming angles are different, readjust movements to go towards the player's original intended direction
 		angle_t difference = (cmds->angleturn - oldAngle) << 16;
 		char oldSidemove = cmds->sidemove, oldForwardmove = cmds->forwardmove;
 
@@ -5439,8 +5422,15 @@ static void SV_Maketic(void)
 	maketic++;
 }
 
-extern tic_t rendergametic;
-
+// Overview for the new programmer and the programmer who probably isn't new, but doesn't have a clue what his code does becuase he didn't comment it ;)
+// oh dayum did I just get called out by my old comment
+/*
+gametic is always the real tic as received from the server, plus one. the simulator does not change this!
+smoothedTic is the time that we are using as a basis to cancel out jitter. this may be slightly <= gametic.
+liveTic is the real time of the game from startup, used to record our commands
+simTic is the gametic we've simulated to. if this == gametic, we haven't simulated any
+gameStateBuffer[gametic] is the game state before 'gametic' executes
+*/
 tic_t liveTic;
 
 int netJitter;
@@ -5524,33 +5514,19 @@ void TryRunTics(tic_t realtics)
 	static boolean didSimulate = false;
 	boolean canSimulate = (gamestate == GS_LEVEL) && leveltime >= BACKUPTICS && gametic >= BACKUPTICS && (cv_simulate.value && !server) && !resynch_local_inprogress;
 	boolean recordingStates = (gamestate == GS_LEVEL) && leveltime >= 1 && gametic >= BACKUPTICS;
-	boolean preserveSoundDisabled = sound_disabled;
-	int numNewTics = neededtic - gametic;
-
-	// preserve camera changes while we play with simulations/rewinds
-	angle_t preservedAngle = localangle[0];
-	INT32 preservedAiming = localaiming[0];
 
 	if (didSimulate && !canSimulate)
 	{
-		// if simulation stops, there is no guarantee our buffers are valid anymore
-		if (gameStateBufferIsValid[gametic % BACKUPTICS]) {
+		// if simulation stopped, there is no guarantee our buffers are valid anymore
+		if (gameStateBufferIsValid[gametic % BACKUPTICS])
 			P_LoadGameState(&gameStateBuffer[gametic % BACKUPTICS]);
-		}
 
 		// invalidate previous states
-		for (int i = 0; i < BACKUPTICS; i++) {
+		for (int i = 0; i < BACKUPTICS; i++)
 			gameStateBufferIsValid[i] = false;
-		}
 	}
 
-	if (recordingStates)
-	{
-		PerformDebugRewinds();
-	}
-
-	localangle[0] = preservedAngle;
-	localaiming[0] = preservedAiming;
+	PerformDebugRewinds();
 
 	// record the actual local controls for this frame
 	liveTic = I_GetTime();
@@ -5567,29 +5543,23 @@ void TryRunTics(tic_t realtics)
 		else
 		{
 			// Load the real state if it exists
-			if (canSimulate && gameStateBufferIsValid[gametic % BACKUPTICS]) {
+			if (canSimulate && gameStateBufferIsValid[gametic % BACKUPTICS])
 				P_LoadGameState(&gameStateBuffer[gametic % BACKUPTICS]);
-			}
 
 			// run the tics up to the real game tic
 			while (neededtic > gametic)
 			{
 				DEBFILE(va("============ Running tic %d (local %d)\n", gametic, localgametic));
 
-				localangle = preservedAngle;
-				localaiming = preservedAiming;
-
 				G_Ticker((gametic % NEWTICRATERATIO) == 0);
 				ExtraDataTicker();
 				gametic++;
-				simtic = gametic;
+				simtic = gametic; // game state is reset, we wanna resimulate from here
 
 				consistancy[gametic%BACKUPTICS] = Consistancy();
 
-				preservedAngle = localangle;
-				preservedAiming = localaiming;
-
-				if (recordingStates) {
+				if (recordingStates)
+				{
 					// store this real state
 					P_SaveGameState(&gameStateBuffer[gametic % BACKUPTICS]);
 
@@ -5607,146 +5577,26 @@ void TryRunTics(tic_t realtics)
 		}
 	}
 
-	// Overview for the new programmer and the programmer who isn't new, but doesn't have a clue what his code does becuase he didn't comment it ;)
-	/* 
-	gametic is always the real tic as received from the server, plus one. the simulator does not change this!
-	smoothedTic is the time that we are using as a basis to cancel out jitter. this may be slightly <= gametic.
-	liveTic is the real time of the game from startup, used to record our commands
-	simTic is the gametic we've simulated to. if this == gametic, we haven't simulated any
-	gameStateBuffer[gametic] is the game state before 'gametic' executes
-	*/
+	// Smooth out the game state according to the network
+	// \todo rather than re-loading an older state, we could just buffer the tics instead of running them above
+	if (cv_netsmoothing.value)
+	{
+		smoothedTic = liveTic - maxLiveTicOffset - 1;
+
+		if (gameStateBufferIsValid[(smoothedTic + BACKUPTICS) % BACKUPTICS] && smoothedTic != gametic)
+			P_LoadGameState(&gameStateBuffer[(smoothedTic + BACKUPTICS) % BACKUPTICS]);
+
+		simtic = smoothedTic;
+	}
+	else
+		smoothedTic = gametic;
 
 	// Simulate the game locally
 	if (canSimulate)
+		RunSimulations();
+	else
 	{
-		sound_disabled = true;
-		//con_muted = true;
-
-		// run the simulated state
-		// find the latest available real state
-		// sometimes we will go backwards to buffer the updates
-		if (cv_netsmoothing.value) {
-			smoothedTic = liveTic - maxLiveTicOffset - 1;
-
-			if (gameStateBufferIsValid[(smoothedTic + BACKUPTICS) % BACKUPTICS] && smoothedTic != gametic)
-			{
-				P_LoadGameState(&gameStateBuffer[(smoothedTic + BACKUPTICS) % BACKUPTICS]);
-			}
-
-			simtic = smoothedTic;
-		}
-		else
-		{
-			smoothedTic = gametic;
-		}
-
-		// this must be done after smoothedTic is set
-		DetermineNetConditions();
-		
-		int targetSimTic = min(gametic + estimatedRTT, smoothedTic + cv_simulatetics.value);
-
-		// don't simulate more than MAXSIMULATIONS
-		if (targetSimTic - simtic > MAXSIMULATIONS)
-			simtic = targetSimTic - MAXSIMULATIONS;
-
-		int numToSimulate = targetSimTic - simtic;
-
-		// simulate the rest o da future
-		localangle = preservedAngle;
-		localaiming = preservedAiming;
-
-		if (cv_netsteadyplayers.value && simtic == smoothedTic)
-		{
-			// if steady players is enabled, record their real game position and their simulated position
-			for (int i = 0; i < MAXPLAYERS; i++)
-			{
-				if (playeringame[i] && players[i].mo && i != consoleplayer)
-				{
-					if (simtic == smoothedTic) // this is their real position
-					{
-						steadyplayers[i].gamex = steadyplayers[i].simx = steadyplayers[i].histx[0] = players[i].mo->x;
-						steadyplayers[i].gamey = steadyplayers[i].simy = steadyplayers[i].histy[0] = players[i].mo->y;
-						steadyplayers[i].gamez = steadyplayers[i].simz = steadyplayers[i].histz[0] = players[i].mo->z;
-					}
-					else
-					{
-						// restore the players' simulated position before simulating more
-						players[i].mo->x = steadyplayers[i].simx;
-						players[i].mo->y = steadyplayers[i].simy;
-						players[i].mo->z = steadyplayers[i].simz;
-					}
-				}
-			}
-		}
-
-		for (int i = 0; i < numToSimulate; i++) {
-			// control other players
-			for (int j = 0; j < MAXPLAYERS; j++) {
-				if (playeringame[j] && j != consoleplayer) {
-					// just use their last control for now
-					netcmds[gametic % BACKUPTICS][j] = gameTicBuffer[(min(smoothedTic + i + 1, gametic) + BACKUPTICS) % BACKUPTICS][j];
-				}
-			}
-
-			// control the local player
-			if (simtic + i < gametic) {
-				// we have a tiny bit more info we can glean
-				netcmds[gametic % BACKUPTICS][consoleplayer] = gameTicBuffer[(simtic + i + 1) % BACKUPTICS][consoleplayer];
-			}
-			else
-			{
-				netcmds[gametic % BACKUPTICS][consoleplayer] = localTicBuffer[(liveTic - numToSimulate + i + 1 + BACKUPTICS) % BACKUPTICS];
-			}
-
-			G_Ticker(true); // tic a bunch of times lol see what happens lolol
-
-			// record simulated players' positions
-			if (cv_netsteadyplayers.value)
-			{
-				for (int j = 0; j < MAXPLAYERS; j++)
-				{
-					if (playeringame[j] && players[j].mo && j != consoleplayer)
-					{
-						// Update steadyplayers' simulated positions and move their game positions to their known one
-						steadyplayers[j].simx = steadyplayers[j].histx[simtic - smoothedTic + i + 1] = players[j].mo->x;
-						steadyplayers[j].simy = steadyplayers[j].histy[simtic - smoothedTic + i + 1] = players[j].mo->y;
-						steadyplayers[j].simz = steadyplayers[j].histz[simtic - smoothedTic + i + 1] = players[j].mo->z;
-					}
-				}
-			}
-
-			preservedAngle = localangle; // game simulations may lock the view angle
-			preservedAiming = localaiming;
-		}
-
-		if (cv_netsteadyplayers.value)
-		{
-			for (int j = 0; j < MAXPLAYERS; j++)
-			{
-				if (playeringame[j] && players[j].mo && j != consoleplayer)
-				{
-					// Set the player's positions to the last known real game position
-					players[j].mo->x = steadyplayers[j].gamex;
-					players[j].mo->y = steadyplayers[j].gamey;
-					players[j].mo->z = steadyplayers[j].gamez;
-				}
-			}
-		}
-
-		simtic = targetSimTic;
-		//rendergametic = 0; // hack to make sure game doesn't jitter
-
-		// restore local camera stuff because that's local anyways~
-		localangle[0] = preservedAngle;
-		localaiming[0] = preservedAiming;
-
-		sound_disabled = preserveSoundDisabled;
-		//con_muted = false;
-	}
-	
-	if (!canSimulate)
-	{
-		simtic = gametic;
+		simtic = gametic; // just use the real tic
 		smoothedTic = gametic;
 	}
 
@@ -5754,6 +5604,103 @@ void TryRunTics(tic_t realtics)
 
 	// we're gonna need more debugs...
 	MakeNetDebugString();
+}
+
+static void RunSimulations()
+{
+	boolean preserveSoundDisabled = sound_disabled;
+	
+	sound_disabled = true;
+	con_muted = true;
+
+	// this must be done after smoothedTic is set
+	DetermineNetConditions();
+
+	int targetSimTic = min(gametic + estimatedRTT, smoothedTic + cv_simulatetics.value);
+
+	// don't simulate more than MAXSIMULATIONS
+	if (targetSimTic - simtic > MAXSIMULATIONS)
+		simtic = targetSimTic - MAXSIMULATIONS;
+
+	// if steady players is enabled, record their real game position and their simulated position
+	if (cv_netsteadyplayers.value)
+	{
+		for (int i = 0; i < MAXPLAYERS; i++)
+		{
+			if (playeringame[i] && players[i].mo && i != consoleplayer)
+			{
+				if (simtic == smoothedTic) // this is their real position
+				{
+					steadyplayers[i].histx[0] = players[i].mo->x;
+					steadyplayers[i].histy[0] = players[i].mo->y;
+					steadyplayers[i].histz[0] = players[i].mo->z;
+				}
+				else
+				{
+					// restore the players' simulated position before simulating more
+					players[i].mo->x = steadyplayers[i].histx[simtic-smoothedTic];
+					players[i].mo->y = steadyplayers[i].histy[simtic-smoothedTic];
+					players[i].mo->z = steadyplayers[i].histz[simtic-smoothedTic];
+				}
+			}
+		}
+	}
+
+	// simulate the rest o da future
+	int numToSimulate = targetSimTic - simtic;
+	for (int i = 0; i < numToSimulate; i++)
+	{
+		// control other players (just use their previous control for now)
+		for (int j = 0; j < MAXPLAYERS; j++)
+		{
+			if (playeringame[j] && j != consoleplayer)
+				netcmds[gametic % BACKUPTICS][j] = gameTicBuffer[(min(smoothedTic + i + 1, gametic) + BACKUPTICS) % BACKUPTICS][j];
+		}
+
+		// control the local player
+		if (simtic + i < gametic) // game is smoothed, take tics from the _actual_ received state
+			netcmds[gametic % BACKUPTICS][consoleplayer] = gameTicBuffer[(simtic + i + 1) % BACKUPTICS][consoleplayer];
+		else
+			netcmds[gametic % BACKUPTICS][consoleplayer] = localTicBuffer[(liveTic - numToSimulate + i + 1 + BACKUPTICS) % BACKUPTICS];
+
+		G_Ticker(true); // tic a bunch of times lol see what happens lolol
+
+		// record simulated players' positions
+		if (cv_netsteadyplayers.value)
+		{
+			for (int j = 0; j < MAXPLAYERS; j++)
+			{
+				if (playeringame[j] && players[j].mo && j != consoleplayer)
+				{
+					// Update steadyplayers' simulated positions and move their game positions to their known one
+					steadyplayers[j].histx[simtic - smoothedTic + i + 1] = players[j].mo->x;
+					steadyplayers[j].histy[simtic - smoothedTic + i + 1] = players[j].mo->y;
+					steadyplayers[j].histz[simtic - smoothedTic + i + 1] = players[j].mo->z;
+				}
+			}
+		}
+	}
+
+	if (cv_netsteadyplayers.value)
+	{
+		int histIndex = max((int)(targetSimTic - smoothedTic) - cv_netsteadyplayers.value, 0); // up to cv_netsteadyplayers.value behind the simulation
+		for (int j = 0; j < MAXPLAYERS; j++)
+		{
+			if (playeringame[j] && players[j].mo && j != consoleplayer)
+			{
+				// Set the player's positions to the last known real game position
+				players[j].mo->x = steadyplayers[j].histx[histIndex];
+				players[j].mo->y = steadyplayers[j].histy[histIndex];
+				players[j].mo->z = steadyplayers[j].histz[histIndex];
+			}
+		}
+	}
+
+	simtic = targetSimTic;
+	rendergametic = simtic; // hack to make sure game doesn't jitter
+
+	sound_disabled = preserveSoundDisabled;
+	con_muted = false;
 }
 
 void DetermineNetConditions()
@@ -5795,7 +5742,8 @@ void DetermineNetConditions()
 #endif
 }
 
-static void PerformDebugRewinds() {
+static void PerformDebugRewinds()
+{
 	if (rewindingWow && rewindingTarget > 0 && gameStateBufferIsValid[(gametic - rewindingTarget) % BACKUPTICS])
 	{
 		P_LoadGameState(&gameStateBuffer[(gametic - rewindingTarget) % BACKUPTICS]);

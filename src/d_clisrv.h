@@ -38,6 +38,18 @@
 // Networking and tick handling related.
 #define BACKUPTICS 32
 #define MAXTEXTCMD 256
+
+// How many time bits to encode into ticcmds (aiming and angle components, respectively)
+#define ENCODE_TICCMD_TIMES
+#define TICCMD_TIMEBITS_AIMING 3
+#define TICCMD_TIMEBITS_ANGLE 2
+#define TICCMD_TIMEMASK_AIMING (~(0xFFFFFFFF<<TICCMD_TIMEBITS_AIMING))
+#define TICCMD_TIMEMASK_ANGLE  (~(0xFFFFFFFF<<TICCMD_TIMEBITS_ANGLE))
+#define TICCMD_TIME_SIZE (1<<(TICCMD_TIMEBITS_AIMING+TICCMD_TIMEBITS_ANGLE))
+
+// Maximum number of client-side simulations allowed. A simulation is a version of the game state extrapolated some frames ahead to cancel out network latency
+#define MAXSIMULATIONS (TICCMD_TIME_SIZE-1)
+
 //
 // Packet structure
 //
