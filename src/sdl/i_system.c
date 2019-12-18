@@ -2909,6 +2909,9 @@ static HMODULE winmm = NULL;
 static DWORD starttickcount = 0; // hack for win2k time bug
 static p_timeGetTime pfntimeGetTime = NULL;
 static LARGE_INTEGER basetime = { {0, 0} };
+static int lastTimeFudge;
+
+extern consvar_t cv_timefudge;
 
 // ---------
 // I_GetTime
@@ -2917,18 +2920,38 @@ static LARGE_INTEGER basetime = { {0, 0} };
 // but lower precision on Windows NT
 // ---------
 
+
 tic_t I_GetTime(void)
 {
 	tic_t newtics = 0;
+
+	// use this if High Resolution timer is found
+	static LARGE_INTEGER frequency;
+
+	if (cv_timefudge.value != lastTimeFudge)
+	{
+		long long int hello = basetime.QuadPart;
+		long long int bye = starttickcount;
+		// fudge the timer to sync better with online games
+		if (frequency.QuadPart)
+		{
+			basetime.QuadPart = (basetime.QuadPart / (frequency.QuadPart / TICRATE) * (frequency.QuadPart / TICRATE)) -frequency.QuadPart * cv_timefudge.value / 100 / TICRATE;
+			basetime.QuadPart -= frequency.QuadPart / TICRATE; // never go back in time if timefudge reduces
+		}
+		if (starttickcount)
+		{
+			starttickcount = starttickcount / (1000 / TICRATE) * (1000 / TICRATE);// -cv_timefudge.value * 1000 / TICRATE / 100;
+			starttickcount -= 1000 / TICRATE;
+		}
+
+		lastTimeFudge = cv_timefudge.value;
+	}
 
 	if (!starttickcount) // high precision timer
 	{
 		LARGE_INTEGER currtime; // use only LowPart if high resolution counter is not available
 
-		// use this if High Resolution timer is found
-		static LARGE_INTEGER frequency;
-
-		if (!basetime.LowPart)
+		if (!basetime.QuadPart)
 		{
 			if (!QueryPerformanceFrequency(&frequency))
 				frequency.QuadPart = 0;

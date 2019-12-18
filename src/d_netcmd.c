@@ -494,6 +494,9 @@ consvar_t cv_debugsimulaterewind = { "debugsimulaterewind", "0", 0, debugsimulat
 static CV_PossibleValue_t netsteadyplayers_cons_t[] = { {0, "MIN"}, {MAXSIMULATIONS - 1, "MAX"}, {0, NULL} };
 consvar_t cv_netsteadyplayers = { "netsteadyplayers", "0", 0, netsteadyplayers_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL };
 
+static CV_PossibleValue_t timefudge_cons_t[] = { {0, "MIN"}, {100, "MAX"}, {0, NULL} };
+consvar_t cv_timefudge = { "timefudge", "0", 0, timefudge_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL };
+
 char timedemo_name[256];
 boolean timedemo_csv;
 char timedemo_csv_id[256];
@@ -656,6 +659,7 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_netspikes);
 	CV_RegisterVar(&cv_netsteadyplayers);
 	CV_RegisterVar(&cv_debugsimulaterewind);
+	CV_RegisterVar(&cv_timefudge);
 
 	// for master server connection
 	AddMServCommands();

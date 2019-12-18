@@ -5433,8 +5433,11 @@ gameStateBuffer[gametic] is the game state before 'gametic' executes
 */
 tic_t liveTic;
 
-int netJitter;
+int serverJitter;
+int rttJitter;
 int estimatedRTT;
+int minRTT;
+int maxRTT;
 int maxLiveTicOffset;
 int minLiveTicOffset;
 int smoothingDelay;
@@ -5616,7 +5619,21 @@ static void RunSimulations()
 	// this must be done after smoothedTic is set
 	DetermineNetConditions();
 
-	int targetSimTic = min(gametic + estimatedRTT, smoothedTic + cv_simulatetics.value);
+	int tastyFudge = 0;
+	// hack: don't treat duplicate tics as extra round-trip time
+	for (int j = 0; j < 2; j++)
+	{
+		if (CompareTiccmd(&gameTicBuffer[gametic % BACKUPTICS][consoleplayer], &gameTicBuffer[(gametic - j) % BACKUPTICS][consoleplayer]))
+		{
+			tastyFudge++;
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	int targetSimTic = min(gametic + estimatedRTT - tastyFudge, smoothedTic + cv_simulatetics.value);
 
 	// don't simulate more than MAXSIMULATIONS
 	if (targetSimTic - simtic > MAXSIMULATIONS)
@@ -5661,7 +5678,7 @@ static void RunSimulations()
 		if (simtic + i < gametic) // game is smoothed, take tics from the _actual_ received state
 			netcmds[gametic % BACKUPTICS][consoleplayer] = gameTicBuffer[(simtic + i + 1) % BACKUPTICS][consoleplayer];
 		else
-			netcmds[gametic % BACKUPTICS][consoleplayer] = localTicBuffer[(liveTic - numToSimulate + i + 1 + BACKUPTICS) % BACKUPTICS];
+			netcmds[gametic % BACKUPTICS][consoleplayer] = localTicBuffer[(liveTic - estimatedRTT + i + 1 + BACKUPTICS) % BACKUPTICS];
 
 		G_Ticker(true); // tic a bunch of times lol see what happens lolol
 
@@ -5696,12 +5713,19 @@ static void RunSimulations()
 		}
 	}
 
-	simtic = targetSimTic;
-	rendergametic = simtic; // hack to make sure game doesn't jitter
+	if (simtic != targetSimTic)
+	{
+		rendergametic = gametic;
+		simtic = targetSimTic;
+	}
 
 	sound_disabled = preserveSoundDisabled;
 	con_muted = false;
 }
+
+int rttBuffer[70];
+int rttBufferIndex = 0;
+int rttBufferMax = 70;
 
 void DetermineNetConditions()
 {
@@ -5718,9 +5742,9 @@ void DetermineNetConditions()
 		maxLiveTicOffset = max(maxLiveTicOffset, ticTimeOffsetHistory[i]);
 	}
 
-	netJitter = min(5, maxLiveTicOffset - minLiveTicOffset);
+	serverJitter = min(5, maxLiveTicOffset - minLiveTicOffset);
 
-	// Match tics
+	// Estimate the RTT (once used awkward tic matching stuff, now uses sneaky encoded angles)
 #ifndef ENCODE_TICCMD_TIMES
 	if (!(gametic % 35))
 	{
@@ -5731,7 +5755,7 @@ void DetermineNetConditions()
 		}
 	}
 #else
-	for (int j = 1; j < TICCMD_TIME_SIZE; j++)
+	for (int j = 1; j < TICCMD_TIME_SIZE - 1; j++)
 	{
 		if (CompareTiccmd(&gameTicBuffer[gametic % BACKUPTICS][consoleplayer], &localTicBuffer[(liveTic - j + BACKUPTICS) % BACKUPTICS]))
 		{
@@ -5740,6 +5764,21 @@ void DetermineNetConditions()
 		}
 	}
 #endif
+
+	// estimate RTT jitter
+	minRTT = INT_MAX;
+	maxRTT = INT_MIN;
+
+	rttBuffer[rttBufferIndex] = estimatedRTT;
+	rttBufferIndex = (rttBufferIndex + 1) % rttBufferMax;
+
+	for (int i = 0; i < rttBufferMax; i++)
+	{
+		minRTT = min(minRTT, rttBuffer[i]);
+		maxRTT = max(maxRTT, rttBuffer[i]);
+	}
+
+	rttJitter = maxRTT - minRTT;
 }
 
 static void PerformDebugRewinds()
@@ -5796,31 +5835,61 @@ void MakeNetDebugString()
 {
 	netDebugText[0] = 0;
 
-	for (int i = 10; i >= 0; i--)
+	for (int i = min(maxRTT + 4, 16); i >= 0; i--)
 	{
-		if ((tic_t)i >= simtic - gametic) {
+		if (simtic - (tic_t)i <= gametic) {
+			char missed[2] = "+";
+
+			if (DecodeTiccmdTime(&(gameTicBuffer[(simtic - i) % BACKUPTICS][consoleplayer])) != 
+			   (DecodeTiccmdTime(&(gameTicBuffer[(simtic - i - 1) % BACKUPTICS][consoleplayer])) + 1) % TICCMD_TIME_SIZE)
+				missed[0] = 'X'; // missed tic
+
 			// show tics and matches
 			sprintf(&netDebugText[strlen(netDebugText)], 
-				"srv: %02d%slcl: %02d%s\n", 
-						DecodeTiccmdTime(&(gameTicBuffer[(gametic - i) % BACKUPTICS][consoleplayer])), 
-						  (i == gametic ? "<" : " "),
-								 (liveTic - i) & (TICCMD_TIME_SIZE-1), 
-									(i == estimatedRTT ? "<" : " "));
+				"%s srv: %02d%slcl: %02d%s\n", 
+					missed,
+						 DecodeTiccmdTime(&(gameTicBuffer[(simtic - i) % BACKUPTICS][consoleplayer])), 
+						    (i == gametic ? "<" : " "),
+								   (liveTic - i) & (TICCMD_TIME_SIZE-1), 
+									   (i == estimatedRTT ? "<" : " "));
 		}
 		else {
 			sprintf(&netDebugText[strlen(netDebugText)],
 				"____ %02d_lcl: %02d%s\n",
 				0,
 				//(i == matchingGameTic ? "<" : " "),
-				(liveTic - i) & (TICCMD_TIME_SIZE - 1),
+				DecodeTiccmdTime(&localTicBuffer[(liveTic - i) % BACKUPTICS]),
 				(i == estimatedRTT ? "<" : " "));
 		}
 	}
 
-	sprintf(&netDebugText[strlen(netDebugText)], "\n\nJitter: %d", netJitter);
-	sprintf(&netDebugText[strlen(netDebugText)], "\nEstPing: %d", estimatedRTT);
-	sprintf(&netDebugText[strlen(netDebugText)], "\nSim-T: %d", simtic - gametic);
+	static tic_t lastSim = 0;
+	sprintf(&netDebugText[strlen(netDebugText)], "\n\nJitter: %d", serverJitter);
+	sprintf(&netDebugText[strlen(netDebugText)], "\nEstRTT: %d", estimatedRTT);
+	sprintf(&netDebugText[strlen(netDebugText)], "\nGame: %d", gametic);
+	sprintf(&netDebugText[strlen(netDebugText)], "\nSim: %d", simtic);
+	sprintf(&netDebugText[strlen(netDebugText)], "\nSim-Game: %d", simtic - gametic);
+	sprintf(&netDebugText[strlen(netDebugText)], "\nSimDelta: %d", simtic - lastSim);
 	sprintf(&netDebugText[strlen(netDebugText)], "\nLive: %d", liveTic);
+	lastSim = simtic;
+
+	unsigned int rtts[20] = { 0 };
+	for (int i = 0; i < rttBufferMax; i++)
+	{
+		if (rttBuffer[i] < 20)
+		{
+			rtts[rttBuffer[i]]++;
+		}
+	}
+
+	for (int i = 0; i < 20; i++)
+	{
+		if (rtts[i] > 0)
+		{
+			sprintf(&netDebugText[strlen(netDebugText)], "\nRTT %i: %i", i, rtts[i] * 100 / rttBufferMax);
+		}
+	}
+
 	/*sprintf(&netDebugText[strlen(netDebugText)], "\nSaveN/LoadN: %i/%i", numSaves, numLoads);
 
 	for (int i = 1; i < 11; i++)
