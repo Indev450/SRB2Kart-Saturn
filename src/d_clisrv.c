@@ -5690,9 +5690,9 @@ static void RunSimulations()
 			if (playeringame[j] && players[j].mo && j != consoleplayer)
 			{
 				// Update steadyplayers' simulated positions and move their game positions to their known one
-				steadyplayers[j].histx[simtic - smoothedTic + 1] = players[j].mo->x;
-				steadyplayers[j].histy[simtic - smoothedTic + 1] = players[j].mo->y;
-				steadyplayers[j].histz[simtic - smoothedTic + 1] = players[j].mo->z;
+				steadyplayers[j].histx[simtic - smoothedTic] = players[j].mo->x;
+				steadyplayers[j].histy[simtic - smoothedTic] = players[j].mo->y;
+				steadyplayers[j].histz[simtic - smoothedTic] = players[j].mo->z;
 			}
 		}
 	}
@@ -5707,6 +5707,25 @@ static void RunSimulations()
 	{
 		if (playeringame[j] && players[j].mo && j != consoleplayer)
 		{
+			// If there is a big discrepency between the player's current position and their last one, spawn a trail showing their movements
+			fixed_t distance = max(abs(steadyplayers[j].finalx - players[j].mo->x), 
+							   max(abs(steadyplayers[j].finaly - players[j].mo->y),
+								   abs(steadyplayers[j].finalz - players[j].mo->z)));
+
+			// If player is changing direction quickly in a net simulation, create a ghost trail
+			if (distance > players[j].maxdash)
+			{
+				for (int i = 0; i < histIndex; i++)
+				{
+					mobj_t* ghost = P_SpawnGhostMobj(players[j].mo);
+
+					ghost->x = steadyplayers[j].histx[i];
+					ghost->y = steadyplayers[j].histy[i];
+					ghost->z = steadyplayers[j].histz[i];
+					ghost->fuse = i - (ghost->fuse - histIndex);
+				}
+			}
+
 			// Record the final simulated position and error
 			steadyplayers[j].finalx = players[j].mo->x;
 			steadyplayers[j].finaly = players[j].mo->y;
@@ -5716,6 +5735,22 @@ static void RunSimulations()
 			players[j].mo->x = steadyplayers[j].histx[histIndex];
 			players[j].mo->y = steadyplayers[j].histy[histIndex];
 			players[j].mo->z = steadyplayers[j].histz[histIndex];
+		}
+	}
+
+	// move steadyplayer shields
+	if (cv_netsteadyplayers.value)
+	{
+		mobj_t* mobj;
+
+		for (mobj = (mobj_t*)thlist[THINK_MOBJ].next; mobj != (mobj_t*)&thlist[THINK_MOBJ]; mobj = (mobj_t*)mobj->thinker.next)
+		{
+			if (mobj->flags2 & MF2_SHIELD && mobj->target != NULL && mobj->target->player != NULL && mobj->target != players[consoleplayer].mo)
+			{
+				mobj->x = steadyplayers[mobj->target->player - players].histx[histIndex];
+				mobj->y = steadyplayers[mobj->target->player - players].histy[histIndex];
+				mobj->z = steadyplayers[mobj->target->player - players].histz[histIndex];
+			}
 		}
 	}
 
@@ -5824,7 +5859,7 @@ void DetermineNetConditions()
 			autotimefudgemeans[autotimefudgetime / 10] = mean;
 			autotimefudgedeviations[autotimefudgetime / 10] = differences;
 
-			CONS_Printf("Fudge %d tested: mean %f deviation %f\n", autotimefudgetime, mean, differences);
+			CONS_Printf("Fudge %d: mean %f deviation %f\n", autotimefudgetime, mean, differences);
 
 			// reset and test the next time fudge
 			autotimefudgetime = (autotimefudgetime + 10) % 100;
