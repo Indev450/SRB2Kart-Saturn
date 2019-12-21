@@ -152,14 +152,11 @@ boolean gameStateBufferIsValid[BACKUPTICS];
 ticcmd_t gameTicBuffer[BACKUPTICS][MAXPLAYERS];
 ticcmd_t localTicBuffer[BACKUPTICS];
 
+boolean issimulation = false;
+
 boolean rewindingWow = false;
 int rewindingTarget = 0;
 
-typedef struct
-{
-	// stores historical simulated positions where 0 is the real game position and simtic-gametic is the latest simulated position
-	fixed_t histx[MAXSIMULATIONS+1], histy[MAXSIMULATIONS+1], histz[MAXSIMULATIONS+1];
-} steadyplayer_t;
 steadyplayer_t steadyplayers[MAXPLAYERS];
 
 void EncodeTiccmdTime(ticcmd_t* ticcmd, tic_t time);
@@ -5446,6 +5443,15 @@ UINT64 loadStateBenchmark = 0;
 boolean newSaveTic = false;
 boolean newLoadTic = false;
 
+#define MAXAUTOFUDGERTT 20
+
+boolean autotimefudge = true;
+UINT8 autotimefudgetime = 0;
+UINT16 autotimefudgesamples = 0;
+UINT16 autotimefudgedata[MAXAUTOFUDGERTT];
+float autotimefudgemeans[10];
+float autotimefudgedeviations[10];
+
 #define MAXOFFSETHISTORY 35
 int ticTimeOffsetHistory[MAXOFFSETHISTORY];
 
@@ -5608,10 +5614,10 @@ void TryRunTics(tic_t realtics)
 
 static void RunSimulations()
 {
+	if (!gameStateBufferIsValid[gametic % BACKUPTICS])
+		return; // do not simulate if we cannot guarantee a recovery
+
 	boolean preserveSoundDisabled = sound_disabled;
-	
-	sound_disabled = true;
-	con_muted = true;
 
 	// this must be done after smoothedTic is set
 	DetermineNetConditions();
@@ -5621,13 +5627,9 @@ static void RunSimulations()
 	for (int j = 0; j < 2; j++)
 	{
 		if (CompareTiccmd(&gameTicBuffer[gametic % BACKUPTICS][consoleplayer], &gameTicBuffer[(gametic - j) % BACKUPTICS][consoleplayer]))
-		{
 			tastyFudge++;
-		}
 		else
-		{
 			break;
-		}
 	}
 
 	int targetSimTic = min(gametic + estimatedRTT - tastyFudge, smoothedTic + cv_simulatetics.value);
@@ -5636,88 +5638,88 @@ static void RunSimulations()
 	if (targetSimTic - simtic > MAXSIMULATIONS)
 		simtic = targetSimTic - MAXSIMULATIONS;
 
-	// if steady players is enabled, record their real game position and their simulated position
-	if (cv_netsteadyplayers.value)
+	// record steadyplayers' real game position and their simulated position
+	for (int i = 0; i < MAXPLAYERS; i++)
 	{
-		for (int i = 0; i < MAXPLAYERS; i++)
+		if (playeringame[i] && players[i].mo && i != consoleplayer)
 		{
-			if (playeringame[i] && players[i].mo && i != consoleplayer)
+			if (simtic == smoothedTic) // this is their real position
 			{
-				if (simtic == smoothedTic) // this is their real position
-				{
-					steadyplayers[i].histx[0] = players[i].mo->x;
-					steadyplayers[i].histy[0] = players[i].mo->y;
-					steadyplayers[i].histz[0] = players[i].mo->z;
-				}
-				else
-				{
-					// restore the players' simulated position before simulating more
-					players[i].mo->x = steadyplayers[i].histx[simtic-smoothedTic];
-					players[i].mo->y = steadyplayers[i].histy[simtic-smoothedTic];
-					players[i].mo->z = steadyplayers[i].histz[simtic-smoothedTic];
-				}
+				steadyplayers[i].histx[0] = players[i].mo->x;
+				steadyplayers[i].histy[0] = players[i].mo->y;
+				steadyplayers[i].histz[0] = players[i].mo->z;
+			}
+			else
+			{
+				// restore the players' simulated position before simulating more
+				players[i].mo->x = steadyplayers[i].histx[simtic-smoothedTic];
+				players[i].mo->y = steadyplayers[i].histy[simtic-smoothedTic];
+				players[i].mo->z = steadyplayers[i].histz[simtic-smoothedTic];
 			}
 		}
 	}
 
 	// simulate the rest o da future
 	int numToSimulate = targetSimTic - (int)simtic;
+	
+	issimulation = true;
+	sound_disabled = true;
+	con_muted = true;
+
 	for (int i = 0; i < numToSimulate; i++)
 	{
 		// control other players (just use their previous control for now)
 		for (int j = 0; j < MAXPLAYERS; j++)
 		{
 			if (playeringame[j] && j != consoleplayer)
-				netcmds[gametic % BACKUPTICS][j] = gameTicBuffer[(min(smoothedTic + i + 1, gametic) + BACKUPTICS) % BACKUPTICS][j];
+				netcmds[gametic % BACKUPTICS][j] = gameTicBuffer[(min(simtic + 1, gametic) + BACKUPTICS) % BACKUPTICS][j];
 		}
 
 		// control the local player
 		if (simtic + i < gametic) // game is smoothed, take tics from the _actual_ received state
-			netcmds[gametic % BACKUPTICS][consoleplayer] = gameTicBuffer[(simtic + i + 1) % BACKUPTICS][consoleplayer];
+			netcmds[gametic % BACKUPTICS][consoleplayer] = gameTicBuffer[(simtic + 1) % BACKUPTICS][consoleplayer];
 		else
 			netcmds[gametic % BACKUPTICS][consoleplayer] = localTicBuffer[(liveTic - estimatedRTT + i + 1 + BACKUPTICS) % BACKUPTICS];
 
 		G_Ticker(true); // tic a bunch of times lol see what happens lolol
+		simtic++;
 
 		// record simulated players' positions
-		if (cv_netsteadyplayers.value)
-		{
-			for (int j = 0; j < MAXPLAYERS; j++)
-			{
-				if (playeringame[j] && players[j].mo && j != consoleplayer)
-				{
-					// Update steadyplayers' simulated positions and move their game positions to their known one
-					steadyplayers[j].histx[simtic - smoothedTic + i + 1] = players[j].mo->x;
-					steadyplayers[j].histy[simtic - smoothedTic + i + 1] = players[j].mo->y;
-					steadyplayers[j].histz[simtic - smoothedTic + i + 1] = players[j].mo->z;
-				}
-			}
-		}
-	}
-
-	if (cv_netsteadyplayers.value)
-	{
-		int histIndex = max((int)(targetSimTic - smoothedTic) - cv_netsteadyplayers.value, 0); // up to cv_netsteadyplayers.value behind the simulation
 		for (int j = 0; j < MAXPLAYERS; j++)
 		{
 			if (playeringame[j] && players[j].mo && j != consoleplayer)
 			{
-				// Set the player's positions to the last known real game position
-				players[j].mo->x = steadyplayers[j].histx[histIndex];
-				players[j].mo->y = steadyplayers[j].histy[histIndex];
-				players[j].mo->z = steadyplayers[j].histz[histIndex];
+				// Update steadyplayers' simulated positions and move their game positions to their known one
+				steadyplayers[j].histx[simtic - smoothedTic + 1] = players[j].mo->x;
+				steadyplayers[j].histy[simtic - smoothedTic + 1] = players[j].mo->y;
+				steadyplayers[j].histz[simtic - smoothedTic + 1] = players[j].mo->z;
 			}
 		}
 	}
 
-	if ((int)simtic < targetSimTic)
-	{
-		rendergametic = gametic;
-		simtic = targetSimTic;
-	}
-
+	issimulation = false;
 	sound_disabled = preserveSoundDisabled;
 	con_muted = false;
+
+	// Finalise steadyplayers
+	int histIndex = max((int)(simtic - smoothedTic) - cv_netsteadyplayers.value, 0); // up to cv_netsteadyplayers.value behind the simulation
+	for (int j = 0; j < MAXPLAYERS; j++)
+	{
+		if (playeringame[j] && players[j].mo && j != consoleplayer)
+		{
+			// Record the final simulated position and error
+			steadyplayers[j].finalx = players[j].mo->x;
+			steadyplayers[j].finaly = players[j].mo->y;
+			steadyplayers[j].finalz = players[j].mo->z;
+
+			// Set the player's positions to the preferred simulation index (or perhaps just their original position)
+			players[j].mo->x = steadyplayers[j].histx[histIndex];
+			players[j].mo->y = steadyplayers[j].histy[histIndex];
+			players[j].mo->z = steadyplayers[j].histz[histIndex];
+		}
+	}
+
+	rendergametic = gametic;
 }
 
 void InvalidateSavestates()
@@ -5782,6 +5784,78 @@ void DetermineNetConditions()
 	}
 
 	rttJitter = maxRTT - minRTT;
+	
+	// auto time fudge
+	int maxautotimefudgesamples = 25;
+	static int numignoredtimefudgesamples = 5;
+	if (autotimefudge)
+	{
+		CV_SetValue(&cv_timefudge, autotimefudgetime);
+
+		if (estimatedRTT < MAXAUTOFUDGERTT)
+		{
+			if (numignoredtimefudgesamples > 0)
+				numignoredtimefudgesamples--;
+			else
+			{
+				autotimefudgedata[estimatedRTT]++;
+				autotimefudgesamples++;
+			}
+		}
+
+		if (autotimefudgesamples > maxautotimefudgesamples)
+		{
+			// calculate standard deviation of this time fudge
+			float mean = 0;
+			for (int i = 0; i < MAXAUTOFUDGERTT; i++)
+			{
+				mean += autotimefudgedata[i] * i;
+			}
+			mean /= maxautotimefudgesamples;
+
+			float differences = 0;
+			for (int i = 0; i < MAXAUTOFUDGERTT; i++)
+			{
+				if (autotimefudgedata[i] > 0)
+					differences += ((i - mean) * (i - mean)) * autotimefudgedata[i];
+			}
+			differences /= maxautotimefudgesamples;
+
+			autotimefudgemeans[autotimefudgetime / 10] = mean;
+			autotimefudgedeviations[autotimefudgetime / 10] = differences;
+
+			CONS_Printf("Fudge %d tested: mean %f deviation %f\n", autotimefudgetime, mean, differences);
+
+			// reset and test the next time fudge
+			autotimefudgetime = (autotimefudgetime + 10) % 100;
+			autotimefudgesamples = 0;
+			numignoredtimefudgesamples = maxRTT + 2;
+
+			for (int i = 0; i < MAXAUTOFUDGERTT; i++)
+				autotimefudgedata[i] = 0;
+
+			if (autotimefudgetime == 0)
+			{
+				// best time is where the deviation is minimal; this can be achieved by going halfway from the worst point
+				int worstFudgeTime = 0;
+				float worstDeviation = 0.0f;
+
+				for (int i = 0; i < 10; i++)
+				{
+					if (autotimefudgedeviations[i] > worstDeviation)
+					{
+						worstDeviation = autotimefudgedeviations[i];
+						worstFudgeTime = i * 10;
+					}
+				}
+
+				CONS_Printf("Auto timefudge: Setting time fudge to %d\n", (worstFudgeTime + 50) % 100);
+				autotimefudge = false;
+
+				CV_SetValue(&cv_timefudge, (worstFudgeTime + 50) % 100);
+			}
+		}
+	}
 }
 
 static void PerformDebugRewinds()
@@ -5792,13 +5866,11 @@ static void PerformDebugRewinds()
 		
 		for (int i = 0; i < rewindingTarget; i++)
 		{
-			netcmds[gametic%BACKUPTICS][consoleplayer] = gameTicBuffer[gametic - rewindingTarget + i % BACKUPTICS][consoleplayer];
+			netcmds[gametic%BACKUPTICS][consoleplayer] = gameTicBuffer[(gametic - rewindingTarget + i) % BACKUPTICS][consoleplayer];
 			G_Ticker(true);
 		}
 
 		rewindingWow = false;
-
-		CONS_Printf("Rewinding\n");
 	}
 
 	if (gameStateBufferIsValid[gametic % BACKUPTICS] && cv_debugsimulaterewind.value > 0 && players[consoleplayer].mo) {
@@ -5812,18 +5884,19 @@ static void PerformDebugRewinds()
 			spawnpoint = *(redflag->spawnpoint);
 		}
 
-		for (int i = 0; i < cv_debugsimulaterewind.value; i++) {
+		short consis = Consistancy();
+
+		for (int i = 0; i < cv_debugsimulaterewind.value; i++)
 			G_Ticker(true);
-		}
 
 		P_LoadGameState(&gameStateBuffer[gametic % BACKUPTICS]);
-		
-		if (redflag) {
+
+		if (Consistancy() != consis)
+			CONS_Printf("General consistency error...\n");
+
+		if (redflag)
 			if (redflag->spawnpoint->x + redflag->spawnpoint->y + redflag->spawnpoint->z != xyz && xyz != 0)
-			{
 				CONS_Printf("Flag consistency error!\n");
-			}
-		}
 
 		/*sector_t current = *((elevator_t*)thlist[1].next)->sector;
 		mobj_t currentPlayer = *players[consoleplayer].mo;*/

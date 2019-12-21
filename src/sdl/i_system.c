@@ -2909,7 +2909,7 @@ static HMODULE winmm = NULL;
 static DWORD starttickcount = 0; // hack for win2k time bug
 static p_timeGetTime pfntimeGetTime = NULL;
 static LARGE_INTEGER basetime = { {0, 0} };
-static int lastTimeFudge;
+static int lastTimeFudge = -1;
 
 extern consvar_t cv_timefudge;
 
@@ -2927,25 +2927,6 @@ tic_t I_GetTime(void)
 
 	// use this if High Resolution timer is found
 	static LARGE_INTEGER frequency;
-
-	if (cv_timefudge.value != lastTimeFudge)
-	{
-		long long int hello = basetime.QuadPart;
-		long long int bye = starttickcount;
-		// fudge the timer to sync better with online games
-		if (frequency.QuadPart)
-		{
-			basetime.QuadPart = (basetime.QuadPart / (frequency.QuadPart / TICRATE) * (frequency.QuadPart / TICRATE)) -frequency.QuadPart * cv_timefudge.value / 100 / TICRATE;
-			basetime.QuadPart -= frequency.QuadPart / TICRATE; // never go back in time if timefudge reduces
-		}
-		if (starttickcount)
-		{
-			starttickcount = starttickcount / (1000 / TICRATE) * (1000 / TICRATE);// -cv_timefudge.value * 1000 / TICRATE / 100;
-			starttickcount -= 1000 / TICRATE;
-		}
-
-		lastTimeFudge = cv_timefudge.value;
-	}
 
 	if (!starttickcount) // high precision timer
 	{
@@ -2974,6 +2955,23 @@ tic_t I_GetTime(void)
 	}
 	else
 		newtics = (GetTickCount() - starttickcount)/(1000/NEWTICRATE);
+
+	// fudge the timer to sync better with online games
+	if (cv_timefudge.value != lastTimeFudge)
+	{
+		if (frequency.QuadPart)
+		{
+			basetime.QuadPart = (basetime.QuadPart / (frequency.QuadPart / TICRATE) * (frequency.QuadPart / TICRATE)) - frequency.QuadPart * cv_timefudge.value / 100 / TICRATE;
+			basetime.QuadPart -= frequency.QuadPart / TICRATE; // never go back in time if timefudge reduces
+		}
+		if (starttickcount)
+		{
+			starttickcount = (starttickcount / (1000 / TICRATE) * (1000 / TICRATE)) - 1000 * cv_timefudge.value / 100 / TICRATE;
+			starttickcount -= 1000 / TICRATE;
+		}
+
+		lastTimeFudge = cv_timefudge.value;
+	}
 
 	return newtics;
 }

@@ -533,6 +533,19 @@ typedef enum
 
 } kickreason_t;
 
+// Player movement histories for simulated gamestates
+typedef struct
+{
+	// stores historical simulated positions where 0 is the real game position and simtic-gametic is the latest simulated position
+	fixed_t histx[MAXSIMULATIONS + 1], histy[MAXSIMULATIONS + 1], histz[MAXSIMULATIONS + 1];
+
+	// stores the final simulated position for each simulated gametic
+	fixed_t finalx, finaly, finalz;
+
+	// difference between the position we simulated to during this update compared to the last one
+	fixed_t error;
+} steadyplayer_t;
+
 extern boolean server;
 #define client (!server)
 extern boolean dedicated; // For dedicated server
@@ -540,6 +553,9 @@ extern UINT16 software_MAXPACKETLENGTH;
 extern boolean acceptnewnode;
 extern SINT8 servernode;
 extern char connectedservername[MAXSERVERNAME];
+
+extern boolean issimulation; // whether the currently executed tic is part of a simulated gamestate
+extern steadyplayer_t steadyplayers[MAXPLAYERS];
 
 void Command_Ping_f(void);
 extern tic_t connectiontimeout;

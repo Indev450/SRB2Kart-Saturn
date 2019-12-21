@@ -847,15 +847,12 @@ static void P_LocalArchiveWorld(void)
 	put = save_p;
 
 	WRITEUINT32(put, numsectors * sizeof(sectors[0]));
+	WRITEUINT32(put, numlines * sizeof(lines[0]));
 
 	// dump all sector memory into the data
-	memcpy(put, sectors, numsectors * sizeof(sectors[0]));
-	put += numsectors * sizeof(sectors[0]);
+	WRITEMEM(put, sectors, numsectors * sizeof(sectors[0]));
+	WRITEMEM(put, lines, numlines * sizeof(lines[0]));
 
-	// there will be probably be code here that corrects all the broken pointers and stuff eventually
-	// once the programmer realises that everything's screwed during the next playtest ;)
-
-	UINT32 wow = put - save_p;
 	save_p = put;
 }
 
@@ -873,9 +870,10 @@ static void P_LocalUnArchiveWorld(void)
 
 	memcpy(preservedSectors, sectors, numsectors * sizeof(sector_t));
 
-	UINT32 size = READUINT32(get);
-	memcpy(sectors, get, numsectors * sizeof(sectors[0]));
-	get += numsectors * sizeof(sectors[0]);
+	UINT32 sectorSize = READUINT32(get);
+	UINT32 lineSize = READUINT32(get);
+	READMEM(get, sectors, numsectors * sizeof(sectors[0]));
+	READMEM(get, lines, numlines * sizeof(lines[0]));
 
 	for (size_t i = 0; i < numsectors; i++)
 	{
@@ -3252,6 +3250,8 @@ static void CollectDebugObjectList(void) {
 	}
 }
 
+void S_DetachChannelsFromOrigin(void* origin);
+
 static void P_LocalUnArchiveThinkers()
 {
 	thinker_t *thinker;
@@ -3348,6 +3348,9 @@ static void P_LocalUnArchiveThinkers()
 							sector_list = NULL;
 						}
 					}
+
+					// detach any playing sounds from this object if we can (still need to work on doing this properly!)
+					S_DetachChannelsFromOrigin((mobj_t*)newthinker);
 
 					// allocate it to the new object
 					for (int k = j; k < numthinkersbytype[tclass]; k++)
@@ -4535,12 +4538,12 @@ void P_SaveGameState(savestate_t* savestate)
 
 	P_NetArchiveMisc();
 	P_LocalArchivePlayers();
-	P_NetArchiveSpecials();
 	P_LocalArchiveWorld();
 #ifdef POLYOBJECTS
 	P_ArchivePolyObjects();
 #endif
 	P_LocalArchiveThinkers();
+	P_NetArchiveSpecials();
 #ifdef HAVE_BLUA
 	LUA_Archive();
 #endif
@@ -4566,12 +4569,12 @@ boolean P_LoadGameState(const savestate_t* savestate)
 
 	P_NetUnArchiveMisc(true);
 	P_LocalUnArchivePlayers();
-	P_NetUnArchiveSpecials();
 	P_LocalUnArchiveWorld();
 #ifdef POLYOBJECTS
 	P_UnArchivePolyObjects();
 #endif
 	P_LocalUnArchiveThinkers();
+	P_NetUnArchiveSpecials();
 
 #ifdef HAVE_BLUA
 	LUA_UnArchive();
