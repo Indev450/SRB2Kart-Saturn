@@ -2788,6 +2788,13 @@ boolean P_SetupLevel(boolean skipprecip)
 	CON_Drawer(); // let the user know what we are going to do
 	I_FinishUpdate(); // page flip or blit buffer
 
+	// Reset the palette
+	if (rendermode != render_none)
+		V_SetPaletteLump("PLAYPAL");
+
+	// Invalidate simulation save states
+	InvalidateSavestates();
+
 	// Initialize sector node list.
 	P_Initsecnode();
 

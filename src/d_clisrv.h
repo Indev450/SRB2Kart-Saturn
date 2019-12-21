@@ -592,6 +592,9 @@ void D_QuitNetGame(void);
 //? How many ticks to run?
 void TryRunTics(tic_t realtic);
 
+// Invalidates save states used in simulations
+void InvalidateSavestates();
+
 // extra data for lmps
 // these functions scare me. they contain magic.
 /*boolean AddLmpExtradata(UINT8 **demo_p, INT32 playernum);

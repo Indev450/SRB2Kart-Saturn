@@ -5441,10 +5441,8 @@ int maxRTT;
 int maxLiveTicOffset;
 int minLiveTicOffset;
 int smoothingDelay;
-UINT64 saveTime = 0;
-UINT64 loadTime = 0;
-int numSaves = 0;
-int numLoads = 0;
+UINT64 saveStateBenchmark = 0;
+UINT64 loadStateBenchmark = 0;
 boolean newSaveTic = false;
 boolean newLoadTic = false;
 
@@ -5525,8 +5523,7 @@ void TryRunTics(tic_t realtics)
 			P_LoadGameState(&gameStateBuffer[gametic % BACKUPTICS]);
 
 		// invalidate previous states
-		for (int i = 0; i < BACKUPTICS; i++)
-			gameStateBufferIsValid[i] = false;
+		InvalidateSavestates();
 	}
 
 	PerformDebugRewinds();
@@ -5723,6 +5720,12 @@ static void RunSimulations()
 	con_muted = false;
 }
 
+void InvalidateSavestates()
+{
+	for (int i = 0; i < MAXSIMULATIONS; i++)
+		gameStateBufferIsValid[i] = false;
+}
+
 int rttBuffer[70];
 int rttBufferIndex = 0;
 int rttBufferMax = 70;
@@ -5787,7 +5790,8 @@ static void PerformDebugRewinds()
 	{
 		P_LoadGameState(&gameStateBuffer[(gametic - rewindingTarget) % BACKUPTICS]);
 		
-		for (int i = 0; i < rewindingTarget; i++) {
+		for (int i = 0; i < rewindingTarget; i++)
+		{
 			netcmds[gametic%BACKUPTICS][consoleplayer] = gameTicBuffer[gametic - rewindingTarget + i % BACKUPTICS][consoleplayer];
 			G_Ticker(true);
 		}
@@ -5871,31 +5875,21 @@ void MakeNetDebugString()
 	sprintf(&netDebugText[strlen(netDebugText)], "\nSim-Game: %d", simtic - gametic);
 	sprintf(&netDebugText[strlen(netDebugText)], "\nSimDelta: %d", simtic - lastSim);
 	sprintf(&netDebugText[strlen(netDebugText)], "\nLive: %d", liveTic);
+	sprintf(&netDebugText[strlen(netDebugText)], "\nTime save/load: %.2f/%.2f", (float)saveStateBenchmark/1000.0f, (float)loadStateBenchmark/1000.0f);
 	lastSim = simtic;
 
 	unsigned int rtts[20] = { 0 };
 	for (int i = 0; i < rttBufferMax; i++)
 	{
 		if (rttBuffer[i] < 20)
-		{
 			rtts[rttBuffer[i]]++;
-		}
 	}
 
 	for (int i = 0; i < 20; i++)
 	{
 		if (rtts[i] > 0)
-		{
 			sprintf(&netDebugText[strlen(netDebugText)], "\nRTT %i: %i", i, rtts[i] * 100 / rttBufferMax);
-		}
 	}
-
-	/*sprintf(&netDebugText[strlen(netDebugText)], "\nSaveN/LoadN: %i/%i", numSaves, numLoads);
-
-	for (int i = 1; i < 11; i++)
-	{
-		sprintf(&netDebugText[strlen(netDebugText)], "\n[%i] %i/%i", i, saveTimes[i] - saveTimes[i - 1], loadTimes[i] - loadTimes[i - 1]);
-	}*/
 }
 
 // startTic and endTics are tics going back in time from the current liveTic
