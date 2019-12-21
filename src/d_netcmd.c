@@ -476,7 +476,7 @@ UINT8 splitscreen = 0;
 boolean circuitmap = true; // SRB2kart
 consvar_t cv_simulate = { "simulate", "Yes", 0, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL };
 
-static CV_PossibleValue_t simulateTics_cons_t[] = { {0, "MIN"}, {BACKUPTICS / 2, "MAX"}, {0, NULL} };
+static CV_PossibleValue_t simulateTics_cons_t[] = { {0, "MIN"}, {MAXSIMULATIONS - 1, "MAX"}, {0, NULL} };
 consvar_t cv_simulatetics = { "simulatetics", "0", 0, simulateTics_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL };
 
 static CV_PossibleValue_t netdelay_cons_t[] = { {0, "MIN"}, {250, "MAX"}, {0, NULL} };

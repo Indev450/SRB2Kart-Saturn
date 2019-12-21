@@ -5445,7 +5445,7 @@ boolean newLoadTic = false;
 
 #define MAXAUTOFUDGERTT 20
 
-boolean autotimefudge = true;
+boolean autotimefudge;
 UINT8 autotimefudgetime = 0;
 UINT16 autotimefudgesamples = 0;
 UINT16 autotimefudgedata[MAXAUTOFUDGERTT];
@@ -5708,21 +5708,28 @@ static void RunSimulations()
 		if (playeringame[j] && players[j].mo && j != consoleplayer)
 		{
 			// If there is a big discrepency between the player's current position and their last one, spawn a trail showing their movements
-			fixed_t distance = max(abs(steadyplayers[j].finalx - players[j].mo->x), 
-							   max(abs(steadyplayers[j].finaly - players[j].mo->y),
-								   abs(steadyplayers[j].finalz - players[j].mo->z)));
+			fixed_t distance = max(abs(steadyplayers[j].finalx - steadyplayers[j].histx[histIndex]), 
+							   max(abs(steadyplayers[j].finaly - steadyplayers[j].histy[histIndex]),
+								   abs(steadyplayers[j].finalz - steadyplayers[j].histz[histIndex])));
+			fixed_t stepDistance = 60 << FRACBITS; // distance between trail steps
 
 			// If player is changing direction quickly in a net simulation, create a ghost trail
-			if (distance > players[j].maxdash)
+			if (distance > stepDistance)
 			{
-				for (int i = 0; i < histIndex; i++)
+				fixed_t numSteps = FixedDiv(distance, stepDistance) & ~FRACMASK;
+				fixed_t currentStep; // between 0 and 1
+				fixed_t step = FixedDiv(1<<FRACBITS, numSteps + 1);
+				int i = 1;
+
+				for (currentStep = step; currentStep < (1<<FRACBITS); currentStep += step)
 				{
 					mobj_t* ghost = P_SpawnGhostMobj(players[j].mo);
 
-					ghost->x = steadyplayers[j].histx[i];
-					ghost->y = steadyplayers[j].histy[i];
-					ghost->z = steadyplayers[j].histz[i];
-					ghost->fuse = i - (ghost->fuse - histIndex);
+					ghost->x = steadyplayers[j].finalx + FixedMul(steadyplayers[j].histx[histIndex] - steadyplayers[j].finalx, currentStep);
+					ghost->y = steadyplayers[j].finaly + FixedMul(steadyplayers[j].histy[histIndex] - steadyplayers[j].finaly, currentStep);
+					ghost->z = steadyplayers[j].finalz + FixedMul(steadyplayers[j].histz[histIndex] - steadyplayers[j].finalz, currentStep);
+					ghost->fuse = ghost->fuse + i - (numSteps>>FRACBITS);
+					i++;
 				}
 			}
 

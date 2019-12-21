@@ -457,6 +457,17 @@ static void P_LocalArchivePlayers(void)
 			continue;
 
 		WRITEMEM(save_p, &players[i], sizeof(player_t));
+
+		player_t* player = &((player_t*)save_p)[-1];
+
+#define RELINK(var) if (var != NULL) var = (mobj_t*)var->mobjnum
+		RELINK(player->capsule);
+		RELINK(player->axis1);
+		RELINK(player->axis2);
+		RELINK(player->awayviewmobj);
+		RELINK(player->followmobj);
+		RELINK(player->drone);
+#undef RELINK
 	}
 }
 
@@ -473,13 +484,6 @@ static void P_LocalUnArchivePlayers(void)
 			continue;
 
 		READMEM(save_p, &players[i], sizeof(player_t));
-
-		players[i].capsule = NULL;
-		players[i].axis1 = NULL;
-		players[i].axis2 = NULL;
-		players[i].awayviewmobj = NULL;
-		players[i].followmobj = NULL;
-		players[i].drone = NULL;
 	}
 }
 
@@ -2229,16 +2233,6 @@ static void P_LocalArchiveThinkers(void)
 				RELINK(savedMobj->target);
 				RELINK(savedMobj->hnext);
 				RELINK(savedMobj->hprev);
-
-				if (savedMobj->player)
-				{
-					RELINK(savedMobj->player->capsule);
-					RELINK(savedMobj->player->axis1);
-					RELINK(savedMobj->player->axis2);
-					RELINK(savedMobj->player->awayviewmobj);
-					RELINK(savedMobj->player->followmobj);
-					RELINK(savedMobj->player->drone);
-				}
 			}
 		}
 #undef RELINK
@@ -3508,15 +3502,19 @@ static void P_LocalUnArchiveThinkers()
 		RELINK(mobj->target);
 		RELINK(mobj->hnext);
 		RELINK(mobj->hprev);
+	}
 
-		if (mobj->player)
+	// restore player pointers (the above doesn't always seem to work perhaps because playeringame is false?
+	for (int i = 0; i < MAXPLAYERS; i++)
+	{
+		if (playeringame[i])
 		{
-			RELINK(mobj->player->capsule);
-			RELINK(mobj->player->axis1);
-			RELINK(mobj->player->axis2);
-			RELINK(mobj->player->awayviewmobj);
-			RELINK(mobj->player->followmobj);
-			RELINK(mobj->player->drone);
+			RELINK(players[i].capsule);
+			RELINK(players[i].axis1);
+			RELINK(players[i].axis2);
+			RELINK(players[i].awayviewmobj);
+			RELINK(players[i].followmobj);
+			RELINK(players[i].drone);
 		}
 	}
 #undef RELINK
