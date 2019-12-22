@@ -451,6 +451,9 @@ void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
 	if (sound_disabled || !sound_started)
 		return;
 
+	if (((simtic != targetsimtic - 1 && origin == listenmobj) || (origin != listenmobj && issimulation))) // local player sounds play immediately during simulations
+		return;
+
 	// Don't want a sound? Okay then...
 	if (sfx_id == sfx_None)
 		return;
@@ -1237,7 +1240,7 @@ void S_DetachChannelsFromOrigin(void* origin)
 		if (channels[i].origin == origin)
 		{
 			// small hack: player-made sounds should stay hearable
-			if (channels[i].origin != players[displayplayer].mo)
+			if (originmobj->player != &players[displayplayer])
 			{
 				channels[i].isdetached = true;
 				channels[i].detachedx = originmobj->x;
