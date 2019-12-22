@@ -5439,8 +5439,6 @@ int minLiveTicOffset;
 int smoothingDelay;
 UINT64 saveStateBenchmark = 0;
 UINT64 loadStateBenchmark = 0;
-boolean newSaveTic = false;
-boolean newLoadTic = false;
 
 #define MAXAUTOFUDGERTT 20
 
@@ -5520,6 +5518,7 @@ void TryRunTics(tic_t realtics)
 	// record the actual local controls
 	boolean recordingStates = (gamestate == GS_LEVEL) && leveltime >= 1 && gametic >= BACKUPTICS;
 	boolean canSimulate = (gamestate == GS_LEVEL) && leveltime >= BACKUPTICS && gametic >= BACKUPTICS && (cv_simulate.value && !server) && !resynch_local_inprogress;
+	boolean preserveSoundDisabled = sound_disabled;
 
 	if (simtic > gametic && !canSimulate)
 	{
@@ -5534,11 +5533,13 @@ void TryRunTics(tic_t realtics)
 		InvalidateSavestates();
 	}
 
+	if (canSimulate)
+		sound_disabled = true;
+
 	PerformDebugRewinds();
 
 	// record the actual local controls for this frame
 	liveTic = I_GetTime();
-	newSaveTic = newLoadTic = true;
 
 	for (tic_t i = 0; i < realtics; i++)
 		localTicBuffer[(liveTic - i) % BACKUPTICS] = localcmds;
@@ -5606,7 +5607,10 @@ void TryRunTics(tic_t realtics)
 
 	// Simulate the game locally
 	if (canSimulate)
+	{
 		RunSimulations();
+		sound_disabled = preserveSoundDisabled;
+	}
 
 	// we're gonna need more debugs...
 	MakeNetDebugString();
@@ -5625,7 +5629,7 @@ static void RunSimulations()
 
 	int tastyFudge = 0;
 	// hack: don't treat duplicate tics as extra round-trip time
-	for (int j = 0; j < 2; j++)
+	for (int j = 1; j < 3; j++)
 	{
 		if (CompareTiccmd(&gameTicBuffer[gametic % BACKUPTICS][consoleplayer], &gameTicBuffer[(gametic - j) % BACKUPTICS][consoleplayer]))
 			tastyFudge++;
@@ -5678,6 +5682,8 @@ static void RunSimulations()
 			netcmds[gametic % BACKUPTICS][consoleplayer] = gameTicBuffer[(simtic + 1) % BACKUPTICS][consoleplayer];
 		else
 			netcmds[gametic % BACKUPTICS][consoleplayer] = localTicBuffer[(liveTic - estimatedRTT + i + 1 + BACKUPTICS) % BACKUPTICS];
+
+		sound_disabled = (i != numToSimulate - 1);
 
 		G_Ticker(true); // tic a bunch of times lol see what happens lolol
 		simtic++;

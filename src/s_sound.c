@@ -1236,11 +1236,16 @@ void S_DetachChannelsFromOrigin(void* origin)
 	{
 		if (channels[i].origin == origin)
 		{
+			// small hack: player-made sounds should stay hearable
+			if (channels[i].origin != players[displayplayer].mo)
+			{
+				channels[i].isdetached = true;
+				channels[i].detachedx = originmobj->x;
+				channels[i].detachedy = originmobj->y;
+				channels[i].detachedz = originmobj->z;
+			}
+
 			channels[i].origin = NULL;
-			channels[i].isdetached = true;
-			channels[i].detachedx = originmobj->x;
-			channels[i].detachedy = originmobj->y;
-			channels[i].detachedz = originmobj->z;
 		}
 	}
 }

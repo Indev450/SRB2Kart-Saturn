@@ -397,6 +397,12 @@ boolean P_WeaponOrPanel(mobjtype_t type)
 	return false;
 }
 
+boolean P_IsProjectile(mobjtype_t type)
+{
+	return type == MT_THROWNBOUNCE || type == MT_THROWNINFINITY || type == MT_THROWNAUTOMATIC || type == MT_THROWNSCATTER
+		|| type == MT_THROWNEXPLOSION || type == MT_THROWNGRENADE || type == MT_REDRING;
+}
+
 //
 // P_EmeraldManager
 //
@@ -6359,6 +6365,15 @@ void P_MobjThinker(mobj_t *mobj)
 
 	if (mobj->flags & MF_NOTHINK)
 		return;
+
+	if ((mobj->flags & MF_BOSS) && mobj->spawnpoint && (bossdisabled & (1<<mobj->spawnpoint->extrainfo)))
+		return;
+
+	if (cv_netslingdelay.value && P_IsProjectile(mobj->type) && issimulation && (tic_t)cv_netsteadyplayers.value > simtic-gametic && mobj->target == players[consoleplayer].mo)
+	{
+		// don't simulate ring weapons if netslingdelay is positive
+		mobj->momx = mobj->momy = mobj->momz = 0;
+	}
 
 	// Remove dead target/tracer.
 	if (mobj->target && P_MobjWasRemoved(mobj->target))

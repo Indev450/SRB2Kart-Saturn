@@ -4362,14 +4362,6 @@ static inline boolean P_NetUnArchiveMisc(boolean preserveLevel)
 	return true;
 }
 
-
-extern UINT64 saveTime;
-extern int numSaves;
-extern UINT64 loadTime;
-extern int numLoads;
-extern boolean newSaveTic;
-extern boolean newLoadTic;
-
 UINT64 I_GetTimeUs(void);
 
 void P_SaveGame(void)
