@@ -117,6 +117,7 @@ INT32 displayplayers[MAXSPLITSCREENPLAYERS]; // view being displayed
 
 tic_t gametic;
 tic_t simtic; // simulated tic
+tic_t targetsimtic; // target simulated tic
 tic_t smoothedTic;
 tic_t levelstarttic; // gametic at level start
 UINT32 totalrings; // for intermission

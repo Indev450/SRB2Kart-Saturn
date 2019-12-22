@@ -3376,10 +3376,16 @@ static void P_DoFiring(player_t *player, ticcmd_t *cmd) // SRB2kart - unused.
 			mobj_t *mo = NULL;
 			player->pflags |= PF_ATTACKDOWN;
 
-			//if (cmd->buttons & BT_FIRENORMAL) // No powers, just a regular ring.
-			//	goto firenormal; //code repetition sucks.
-			// Bounce ring
-			if (player->currentweapon == WEP_BOUNCE && player->powers[pw_bouncering])
+	if (mo)
+	{
+		if (mo->flags & MF_MISSILE && mo->flags2 & MF2_RAILRING)
+		{
+			if (cv_netslingdelay.value && issimulation && (tic_t)cv_netsteadyplayers.value > simtic - gametic && mo->target == players[consoleplayer].mo)
+				// don't fire it yet
+				return;
+
+			const boolean nblockmap = !(mo->flags & MF_NOBLOCKMAP);
+			for (i = 0; i < 256; i++)
 			{
 				if (player->health <= 1)
 					return;

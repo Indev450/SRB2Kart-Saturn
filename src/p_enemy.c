@@ -3769,6 +3769,14 @@ void A_ThrownRing(mobj_t *actor)
 	INT32 stop;
 	player_t *player;
 	fixed_t dist;
+
+	if (cv_netslingdelay.value && issimulation && (tic_t)cv_netsteadyplayers.value > simtic - gametic && actor->target == players[consoleplayer].mo)
+	{
+		// don't simulate ring weapons if netslingdelay is positive
+		actor->momx = actor->momy = actor->momz = 0;
+		return;
+	}
+
 #ifdef HAVE_BLUA
 	if (LUA_CallAction("A_ThrownRing", actor))
 		return;

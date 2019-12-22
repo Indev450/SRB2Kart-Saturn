@@ -5305,7 +5305,7 @@ static void AdjustSimulatedTiccmdInputs(ticcmd_t* cmds)
 
 	SHORT oldAngle = cmds->angleturn;
 
-	if (gamestate == GS_LEVEL && cv_netsteadyplayers.value)
+	if (gamestate == GS_LEVEL && cv_netsteadyplayers.value && !cv_netslingdelay.value)
 		CorrectPlayerTargeting(cmds);
 
 	if (cmds->angleturn != oldAngle)
@@ -5553,7 +5553,14 @@ void TryRunTics(tic_t realtics)
 		{
 			// Load the real state if it exists
 			if (simtic != gametic && gameStateBufferIsValid[gametic % BACKUPTICS])
+			{
 				P_LoadGameState(&gameStateBuffer[gametic % BACKUPTICS]);
+
+				if (Consistancy() != consistancy[gametic%BACKUPTICS])
+				{
+					CONS_Printf("oops, consistency error, even I got that one!\n");
+				}
+			}
 			else if (simtic != gametic && !gameStateBufferIsValid[gametic % BACKUPTICS])
 				CONS_Printf("Problem: game state buffer inaccessible but a simulation happened!!\n");
 
@@ -5637,26 +5644,35 @@ static void RunSimulations()
 			break;
 	}
 
-	int targetSimTic = min(min(gametic + estimatedRTT - tastyFudge, smoothedTic + cv_simulatetics.value), simtic + MAXSIMULATIONS);
-	int numToSimulate = targetSimTic - (int)simtic;
+	int nextTargetSimTic = min(min(gametic + estimatedRTT - tastyFudge, smoothedTic + cv_simulatetics.value), simtic + MAXSIMULATIONS);
+
+	if (nextTargetSimTic >= 0)
+		targetsimtic = nextTargetSimTic;
+
+	int numToSimulate = targetsimtic - simtic;
 
 	// record steadyplayers' real game position and their simulated position
-	for (int i = 0; i < MAXPLAYERS; i++)
+	if (numToSimulate > 0)
 	{
-		if (playeringame[i] && players[i].mo && i != consoleplayer)
+		for (int i = 0; i < MAXPLAYERS; i++)
 		{
-			if (simtic == smoothedTic) // this is their real position
+			if (playeringame[i] && players[i].mo && i != consoleplayer)
 			{
-				steadyplayers[i].histx[0] = players[i].mo->x;
-				steadyplayers[i].histy[0] = players[i].mo->y;
-				steadyplayers[i].histz[0] = players[i].mo->z;
-			}
-			else
-			{
-				// restore the players' simulated position before simulating more
-				players[i].mo->x = steadyplayers[i].histx[simtic-smoothedTic];
-				players[i].mo->y = steadyplayers[i].histy[simtic-smoothedTic];
-				players[i].mo->z = steadyplayers[i].histz[simtic-smoothedTic];
+				if (simtic == smoothedTic) // this is their real position
+				{
+					steadyplayers[i].histx[0] = players[i].mo->x;
+					steadyplayers[i].histy[0] = players[i].mo->y;
+					steadyplayers[i].histz[0] = players[i].mo->z;
+				}
+				else
+				{
+					P_UnsetThingPosition(players[i].mo);
+					// restore the players' simulated position before simulating more
+					players[i].mo->x = steadyplayers[i].histx[simtic - smoothedTic];
+					players[i].mo->y = steadyplayers[i].histy[simtic - smoothedTic];
+					players[i].mo->z = steadyplayers[i].histz[simtic - smoothedTic];
+					P_SetThingPosition(players[i].mo);
+				}
 			}
 		}
 	}
@@ -5693,7 +5709,7 @@ static void RunSimulations()
 		{
 			if (playeringame[j] && players[j].mo && j != consoleplayer)
 			{
-				// Update steadyplayers' simulated positions and move their game positions to their known one
+				// Update steadyplayers' simulated positions
 				steadyplayers[j].histx[simtic - smoothedTic] = players[j].mo->x;
 				steadyplayers[j].histy[simtic - smoothedTic] = players[j].mo->y;
 				steadyplayers[j].histz[simtic - smoothedTic] = players[j].mo->z;
@@ -5709,22 +5725,24 @@ static void RunSimulations()
 	if (numToSimulate > 0)
 	{
 		int histIndex = max((int)(simtic - smoothedTic) - cv_netsteadyplayers.value, 0); // up to cv_netsteadyplayers.value behind the simulation
-		for (int j = 0; j < MAXPLAYERS; j++)
+		for (int i = 0; i < MAXPLAYERS; i++)
 		{
-			if (playeringame[j] && players[j].mo && j != consoleplayer && !players[j].spectator)
+			if (playeringame[i] && players[i].mo && i != consoleplayer && !players[i].spectator)
 			{
 				// Set the player's positions to the preferred simulation index (or perhaps just their original position)
 				// and store it in simx/simy/simz too for trails
-				players[j].mo->x = steadyplayers[j].histx[histIndex];
-				players[j].mo->y = steadyplayers[j].histy[histIndex];
-				players[j].mo->z = steadyplayers[j].histz[histIndex];
+				P_UnsetThingPosition(players[i].mo);
+				players[i].mo->x = steadyplayers[i].histx[histIndex];
+				players[i].mo->y = steadyplayers[i].histy[histIndex];
+				players[i].mo->z = steadyplayers[i].histz[histIndex];
+				P_SetThingPosition(players[i].mo);
 
 				// fill any holes in the simulation history (due to frame skips)
-				for (int k = (int)max(lastsimtic + 1, (int)simtic - 5); k <= (int)simtic; k++)
+				for (int j = (int)max(lastsimtic + 1, (int)simtic - 5); j <= (int)simtic; j++)
 				{
-					steadyplayers[j].simx[k % BACKUPTICS] = steadyplayers[j].histx[histIndex];
-					steadyplayers[j].simy[k % BACKUPTICS] = steadyplayers[j].histy[histIndex];
-					steadyplayers[j].simz[k % BACKUPTICS] = steadyplayers[j].histz[histIndex];
+					steadyplayers[i].simx[j % BACKUPTICS] = steadyplayers[i].histx[histIndex];
+					steadyplayers[i].simy[j % BACKUPTICS] = steadyplayers[i].histy[histIndex];
+					steadyplayers[i].simz[j % BACKUPTICS] = steadyplayers[i].histz[histIndex];
 				}
 
 				// Generate trails
@@ -5735,12 +5753,12 @@ static void RunSimulations()
 					for (int s = 0; s < trailLifetime; s++)
 					{
 						// If there is a big discrepency between the player's current position and their last one, spawn a trail showing their movements
-						fixed_t prevx = steadyplayers[j].simx[(simtic - s - 1) % BACKUPTICS], prevy = steadyplayers[j].simy[(simtic - s - 1) % BACKUPTICS],
-							prevz = steadyplayers[j].simz[(simtic - s - 1) % BACKUPTICS];
-						fixed_t curx = steadyplayers[j].simx[(simtic - s) % BACKUPTICS], cury = steadyplayers[j].simy[(simtic - s) % BACKUPTICS],
-							curz = steadyplayers[j].simz[(simtic - s) % BACKUPTICS];
+						fixed_t prevx = steadyplayers[i].simx[(simtic - s - 1) % BACKUPTICS], prevy = steadyplayers[i].simy[(simtic - s - 1) % BACKUPTICS],
+							prevz = steadyplayers[i].simz[(simtic - s - 1) % BACKUPTICS];
+						fixed_t curx = steadyplayers[i].simx[(simtic - s) % BACKUPTICS], cury = steadyplayers[i].simy[(simtic - s) % BACKUPTICS],
+							curz = steadyplayers[i].simz[(simtic - s) % BACKUPTICS];
 						fixed_t distance = max(abs(curx - prevx), max(abs(cury - prevy), abs(curz - prevz)));
-						fixed_t stepDistance = 90 << FRACBITS; // distance between trail steps
+						fixed_t stepDistance = 60 << FRACBITS; // distance between trail steps
 						fixed_t activationDistance = 60 << FRACBITS; // distance between trail steps
 
 						// If player is changing direction quickly in a net simulation, create a ghost trail
@@ -5752,7 +5770,7 @@ static void RunSimulations()
 
 							for (currentStep = step; currentStep < (1 << FRACBITS); currentStep += step)
 							{
-								mobj_t* ghost = P_SpawnGhostMobj(players[j].mo);
+								mobj_t* ghost = P_SpawnGhostMobj(players[i].mo);
 
 								ghost->x = prevx + FixedMul(curx - prevx, currentStep);
 								ghost->y = prevy + FixedMul(cury - prevy, currentStep);
@@ -5766,10 +5784,23 @@ static void RunSimulations()
 			}
 		}
 
-		// move steadyplayer shields
+		// move steadyplayer shields and signs
 		if (cv_netsteadyplayers.value)
 		{
 			mobj_t* mobj;
+			player_t* redflagplayer = NULL;
+			player_t* blueflagplayer = NULL;
+
+			for (int i = 0; i < MAXPLAYERS; i++)
+			{
+				if (playeringame[i])
+				{
+					if (players[i].gotflag & GF_REDFLAG)
+						redflagplayer = &players[i];
+					if (players[i].gotflag & GF_BLUEFLAG)
+						blueflagplayer = &players[i];
+				}
+			}
 
 			for (mobj = (mobj_t*)thlist[THINK_MOBJ].next; mobj != (mobj_t*)&thlist[THINK_MOBJ]; mobj = (mobj_t*)mobj->thinker.next)
 			{
@@ -5778,6 +5809,18 @@ static void RunSimulations()
 					mobj->x = steadyplayers[mobj->target->player - players].histx[histIndex];
 					mobj->y = steadyplayers[mobj->target->player - players].histy[histIndex];
 					mobj->z = steadyplayers[mobj->target->player - players].histz[histIndex];
+				}
+				else if (mobj->type == MT_BLUEFLAG && blueflagplayer)
+				{
+					mobj->x += steadyplayers[blueflagplayer - players].histx[histIndex] - blueflagplayer->mo->x;
+					mobj->y += steadyplayers[blueflagplayer - players].histy[histIndex] - blueflagplayer->mo->y;
+					mobj->z += steadyplayers[blueflagplayer - players].histz[histIndex] - blueflagplayer->mo->z;
+				}
+				else if (mobj->type == MT_REDFLAG && redflagplayer)
+				{
+					mobj->x += steadyplayers[redflagplayer - players].histx[histIndex] - redflagplayer->mo->x;
+					mobj->y += steadyplayers[redflagplayer - players].histy[histIndex] - redflagplayer->mo->y;
+					mobj->z += steadyplayers[redflagplayer - players].histz[histIndex] - redflagplayer->mo->z;
 				}
 			}
 		}

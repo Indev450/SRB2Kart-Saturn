@@ -3259,8 +3259,8 @@ typedef struct
 	int thinkerListIndex;
 } mobjloclink_t;
 
-#define HASHLOC(x, y, z) (((((x<<3)^(y>>6)*(z>>3)+(x>>15))^(y<<20)-(z>>17)+(x>>6))^x) & 0x7FFF)
-#define MAXNUMMOBJSBYLOC 5
+#define HASHLOC(x, y, z) (((x>>4)-(y>>8)+(z>>12)-(x>>16)+(y>>20)-(z>>24)+(x>>28)-(y>>24)+(z>>20)-(x>>16)+(y>>8)-(z>>4)) & 0x7FFF)
+#define MAXNUMMOBJSBYLOC 15
 
 static void P_LocalUnArchiveThinkers()
 {
@@ -3282,6 +3282,9 @@ static void P_LocalUnArchiveThinkers()
 	memset(mobjByLoc, 0, sizeof(mobjByLoc));
 	memset(numMobjsByLoc, 0, sizeof(numMobjsByLoc));
 	memset(numthinkersbytype, 0, sizeof(numthinkersbytype));
+
+	int hashHits = 0;
+	int hashMisses = 0;
 
 	if (READUINT32(save_p) != ARCHIVEBLOCK_THINKERS)
 		I_Error("Bad SaveState at archive block Thinkers");
@@ -3371,9 +3374,13 @@ static void P_LocalUnArchiveThinkers()
 						mobjByLoc[locHash][i] = mobjByLoc[locHash][numMobjsByLoc[locHash] - 1];
 						numMobjsByLoc[locHash]--;
 						preservePositions = true;
+						hashHits++;
 						break;
 					}
 				}
+
+				if (newthinker == NULL)
+					hashMisses++;
 			}
 
 			// if that didn't work, find an existing thinker of the same type
