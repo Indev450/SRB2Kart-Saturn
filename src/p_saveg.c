@@ -2202,6 +2202,7 @@ static void P_LocalArchiveThinkers(void)
 	int i, j;
 	const thinker_t* thinker;
 	mobj_t* savedMobj;
+	executor_t* savedExecutor;
 	UINT8* original = save_p;
 	WRITEUINT32(save_p, ARCHIVEBLOCK_THINKERS);
 
@@ -2233,6 +2234,12 @@ static void P_LocalArchiveThinkers(void)
 				RELINK(savedMobj->target);
 				RELINK(savedMobj->hnext);
 				RELINK(savedMobj->hprev);
+			}
+
+			if (j == tc_executor)
+			{
+				savedExecutor = &((executor_t*)save_p)[-1];
+				RELINK(savedExecutor->caller);
 			}
 		}
 #undef RELINK
@@ -3246,6 +3253,15 @@ static void CollectDebugObjectList(void) {
 
 void S_DetachChannelsFromOrigin(void* origin);
 
+typedef struct
+{
+	mobj_t* mobj;
+	int thinkerListIndex;
+} mobjloclink_t;
+
+#define HASHLOC(x, y, z) (((((x<<3)^(y>>6)*(z>>3)+(x>>15))^(y<<20)-(z>>17)+(x>>6))^x) & 0x7FFF)
+#define MAXNUMMOBJSBYLOC 5
+
 static void P_LocalUnArchiveThinkers()
 {
 	thinker_t *thinker;
@@ -3257,11 +3273,15 @@ static void P_LocalUnArchiveThinkers()
 	int skycenterid = -1;
 	thinker_t newthinkers[NUM_THINKERLISTS] = { 0 };
 	static thinker_t* thinkersbytype[tc_end][16384];
-	static UINT8 thinkerlistbytype[tc_end][16384];
 	static int numthinkersbytype[tc_end];
+	static mobjloclink_t mobjByLoc[32768][MAXNUMMOBJSBYLOC];
+	static int numMobjsByLoc[32768];
 	static mobj_t* mobjByNum[16384];
 
 	memset(mobjByNum, 0, sizeof(mobjByNum));
+	memset(mobjByLoc, 0, sizeof(mobjByLoc));
+	memset(numMobjsByLoc, 0, sizeof(numMobjsByLoc));
+	memset(numthinkersbytype, 0, sizeof(numthinkersbytype));
 
 	if (READUINT32(save_p) != ARCHIVEBLOCK_THINKERS)
 		I_Error("Bad SaveState at archive block Thinkers");
@@ -3278,10 +3298,7 @@ static void P_LocalUnArchiveThinkers()
 	}
 	skyboxmo[0] = skyboxmo[1] = NULL;
 
-	// sort objects by type
-	for (i = 0; i < tc_end; i++)
-		numthinkersbytype[i] = 0;
-
+	// sort thinkers into maps to speed up replacement searches
 	for (i = 0; i < NUM_THINKERLISTS; i++)
 	{
 		newthinkers[i].next = &newthinkers[i];
@@ -3289,14 +3306,27 @@ static void P_LocalUnArchiveThinkers()
 
 		for (thinker = thlist[i].next; thinker != &thlist[i]; thinker = thinker->next)
 		{
+			if (thinker->function.acp1 == P_RemoveThinkerDelayed)
+				continue;
 			for (j = 0; j < tc_end; j++)
 			{
 				if (thinker->function.acp1 == specialDefs[j].action)
-				{
-					thinkersbytype[j][numthinkersbytype[j]] = thinker;
-					thinkerlistbytype[j][numthinkersbytype[j]] = i;
-					numthinkersbytype[j]++;
 					break;
+			}
+
+			// insert the thinker into the appropriate maps
+			thinkersbytype[j][numthinkersbytype[j]] = thinker;
+			numthinkersbytype[j]++;
+
+			if (thinker->function.acp1 == P_MobjThinker)
+			{
+				UINT16 locHash = HASHLOC(((mobj_t*)thinker)->x, ((mobj_t*)thinker)->y, ((mobj_t*)thinker)->z);
+
+				if (numMobjsByLoc[locHash] < MAXNUMMOBJSBYLOC)
+				{
+					mobjByLoc[locHash][numMobjsByLoc[locHash]].mobj = (mobj_t*)thinker;
+					mobjByLoc[locHash][numMobjsByLoc[locHash]].thinkerListIndex = numthinkersbytype[j] - 1;
+					numMobjsByLoc[locHash]++;
 				}
 			}
 		}
@@ -3323,47 +3353,69 @@ static void P_LocalUnArchiveThinkers()
 				break; // next list
 
 			thinker_t* newthinker = NULL;
+			boolean preservePositions = false;
 
-			if (numthinkersbytype[tclass] > 0)
+			// find the existing thinker(s) at the same position, if possible
+			if (tclass == tc_mobj)
+			{
+				mobj_t* savedMobj = (mobj_t*)save_p;
+				UINT16 locHash = HASHLOC(savedMobj->x, savedMobj->y, savedMobj->z);
+
+				for (i = 0; i < numMobjsByLoc[locHash]; i++)
+				{
+					if (mobjByLoc[locHash][i].mobj->x == savedMobj->x && mobjByLoc[locHash][i].mobj->y == savedMobj->y && mobjByLoc[locHash][i].mobj->z == savedMobj->z && 
+						(mobjByLoc[locHash][i].mobj->flags & (MF_NOSECTOR | MF_NOBLOCKMAP)) == (savedMobj->flags & (MF_NOSECTOR | MF_NOBLOCKMAP)))
+					{
+						newthinker = (thinker_t*)mobjByLoc[locHash][i].mobj;
+						thinkersbytype[tc_mobj][mobjByLoc[locHash][i].thinkerListIndex] = NULL;
+						mobjByLoc[locHash][i] = mobjByLoc[locHash][numMobjsByLoc[locHash] - 1];
+						numMobjsByLoc[locHash]--;
+						preservePositions = true;
+						break;
+					}
+				}
+			}
+
+			// if that didn't work, find an existing thinker of the same type
+			if (newthinker == NULL && numthinkersbytype[tclass] > 0)
 			{
 				for (j = numthinkersbytype[tclass] - 1; j >= 0; j--)
 				{
-					UINT8 thinkerlist = thinkerlistbytype[tclass][j];
-
-					if (thinkerlist != list)
-						continue; // don't replace something from a different list actually it doesn't matter lol
+					if (thinkersbytype[tclass][j] == NULL)
+					{
+						numthinkersbytype[tclass]--;
+						continue;
+					}
 
 					// we found an object to replace!
 					newthinker = thinkersbytype[tclass][j];
 					numthinkersbytype[tclass]--;
-
-					if (tclass == tc_mobj)
-					{
-						P_UnsetThingPosition((mobj_t*)newthinker);
-						if (sector_list != NULL) {
-							P_DelSeclist(sector_list);
-							sector_list = NULL;
-						}
-					}
-
-					// detach any playing sounds from this object if we can (still need to work on doing this properly!)
-					S_DetachChannelsFromOrigin((mobj_t*)newthinker);
-
-					// allocate it to the new object
-					for (int k = j; k < numthinkersbytype[tclass]; k++)
-					{
-						thinkersbytype[tclass][k] = thinkersbytype[tclass][k + 1];
-						thinkerlistbytype[tclass][k] = thinkerlistbytype[tclass][k + 1];
-					}
-
-					// unlink it from the old list
-					newthinker->prev->next = newthinker->next;
-					newthinker->next->prev = newthinker->prev;
 					break;
 				}
 			}
 
-			if (newthinker == NULL)
+			if (newthinker != NULL)
+			{
+				// we found a thinker! we just need to set it up to be replaced
+				if (tclass == tc_mobj && !preservePositions)
+				{
+					// remove it from its old position
+					P_UnsetThingPosition((mobj_t*)newthinker);
+					if (sector_list != NULL)
+					{
+						P_DelSeclist(sector_list);
+						sector_list = NULL;
+					}
+				}
+
+				// detach any playing sounds from this object if we can (still need to work on doing this properly!)
+				S_DetachChannelsFromOrigin((mobj_t*)newthinker);
+
+				// unlink it from the old list
+				newthinker->prev->next = newthinker->next;
+				newthinker->next->prev = newthinker->prev;
+			}
+			else
 			{
 				// we couldn't find an object to replace so we gotta create it
 				if (tclass == tc_mobj)
@@ -3373,9 +3425,9 @@ static void P_LocalUnArchiveThinkers()
 			}
 
 			// preserve vital positioning stuff (cleanup...)
-			mobj_t preserveMobj;
+			mobj_t preservedMobj;
 			if (tclass == tc_mobj)
-				preserveMobj = *(mobj_t*)newthinker;
+				preservedMobj = *(mobj_t*)newthinker;
 
 			// read in the data
 			READMEM(save_p, newthinker, specialDefs[tclass].size);
@@ -3414,10 +3466,10 @@ static void P_LocalUnArchiveThinkers()
 					// clear sector links etc
 					mobj->bnext = NULL;
 					mobj->bprev = NULL;
-					mobj->snext = preserveMobj.snext;
-					mobj->sprev = preserveMobj.sprev;
-					mobj->subsector = preserveMobj.subsector;
-					mobj->touching_sectorlist = preserveMobj.touching_sectorlist;
+					mobj->snext = preservedMobj.snext;
+					mobj->sprev = preservedMobj.sprev;
+					mobj->subsector = preservedMobj.subsector;
+					mobj->touching_sectorlist = preservedMobj.touching_sectorlist;
 					mobjByNum[mobj->mobjnum] = mobj;
 					break; // i dream of a programming language where breaking is the default and fallthrough is the optional (and so much more rarely used) specifier
 				}
@@ -3448,7 +3500,15 @@ static void P_LocalUnArchiveThinkers()
 			newthinker->next->prev = newthinker;
 
 			if (tclass == tc_mobj)
-				P_SetThingPosition((mobj_t*)newthinker);
+			{
+				if (!preservePositions)
+					P_SetThingPosition((mobj_t*)newthinker);
+				else
+				{
+					((mobj_t*)newthinker)->bnext = preservedMobj.bnext;
+					((mobj_t*)newthinker)->bprev = preservedMobj.bprev;
+				}
+			}
 		}
 	}
 	
@@ -3885,7 +3945,7 @@ static inline void P_UnArchivePolyObj(polyobj_t *po)
 		return;
 
 	// rotate and translate polyobject
-	Polyobj_MoveOnLoad(po, angle, x, y);
+	Polyobj_MoveOnLoad(po, angle + (po->origangle - po->angle), x + (po->origx - po->spawnSpot.x), y + (po->origy - po->spawnSpot.y));
 }
 
 static inline void P_ArchivePolyObjects(void)
@@ -3915,6 +3975,36 @@ static inline void P_UnArchivePolyObjects(void)
 
 	for (i = 0; i < numSavedPolys; ++i)
 		P_UnArchivePolyObj(&PolyObjects[i]);
+}
+
+static void P_LocalArchivePolyObjects(void)
+{
+	P_ArchivePolyObjects();
+	/*WRITEUINT32(save_p, ARCHIVEBLOCK_POBJS);
+
+	WRITEINT32(save_p, numPolyObjects);
+
+	WRITEMEM(save_p, PolyObjects, numPolyObjects * sizeof(PolyObjects[0]));*/
+}
+
+static void P_LocalUnArchivePolyObjects(void)
+{
+	P_UnArchivePolyObjects();
+	/*if (READUINT32(save_p) != ARCHIVEBLOCK_POBJS)
+		I_Error("Bad savestate at archive block polyobjects");
+
+	numPolyObjects = READINT32(save_p);
+
+	READMEM(save_p, PolyObjects, numPolyObjects * sizeof(PolyObjects[0]));
+
+	bmap_freelist = NULL;
+
+	for (int i = 0; i < numPolyObjects; i++)
+	{
+		PolyObjects[i].thinker = NULL;
+		PolyObjects[i].linked = false;
+		Polyobj_linkToBlockmap(&PolyObjects[i]);
+	}*/
 }
 #endif
 //
@@ -4445,7 +4535,7 @@ boolean P_LoadGame(INT16 mapoverride)
 
 boolean P_LoadNetGame(boolean preserveLevel)
 {
-	CV_LoadNetVars(&save_p);
+	CV_LoadNetVars(&save_p, false);
 	loadTimes[0] = I_GetTimeUs();
 	if (!P_NetUnArchiveMisc(preserveLevel))
 		return false;
@@ -4522,7 +4612,7 @@ void P_SaveGameState(savestate_t* savestate)
 	P_LocalArchivePlayers();
 	P_LocalArchiveWorld();
 #ifdef POLYOBJECTS
-	P_ArchivePolyObjects();
+	P_LocalArchivePolyObjects();
 #endif
 	P_LocalArchiveThinkers();
 	P_NetArchiveSpecials();
@@ -4547,13 +4637,13 @@ boolean P_LoadGameState(const savestate_t* savestate)
 
 	globalmobjnum = READUINT32(save_p);
 
-	CV_LoadNetVars(&save_p);
+	CV_LoadNetVars(&save_p, true);
 
 	P_NetUnArchiveMisc(true);
 	P_LocalUnArchivePlayers();
 	P_LocalUnArchiveWorld();
 #ifdef POLYOBJECTS
-	P_UnArchivePolyObjects();
+	P_LocalUnArchivePolyObjects();
 #endif
 	P_LocalUnArchiveThinkers();
 	P_NetUnArchiveSpecials();
@@ -4566,7 +4656,7 @@ boolean P_LoadGameState(const savestate_t* savestate)
 	//P_SetRandSeed(P_GetInitSeed());
 
 	P_UnArchiveLuabanksAndConsistency();
-
 	loadStateBenchmark = I_GetTimeUs() - time;
+
 	return true;
 }

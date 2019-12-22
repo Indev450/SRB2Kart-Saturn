@@ -1364,6 +1364,7 @@ badinput:
 //
 
 static boolean serverloading = false;
+static boolean serverloadingstealth = false;
 
 static void Got_NetVar(UINT8 **p, INT32 playernum)
 {
@@ -1391,7 +1392,7 @@ static void Got_NetVar(UINT8 **p, INT32 playernum)
 	cvar = CV_FindNetVar(netid);
 	svalue = (char *)*p;
 	SKIPSTRING(*p);
-	stealth = READUINT8(*p);
+	stealth = READUINT8(*p) || (serverloading && serverloadingstealth);
 
 	if (!cvar)
 	{
@@ -1448,13 +1449,14 @@ void CV_SaveNetVars(UINT8 **p, boolean isdemorecording)
 	WRITEUINT16(count_p, count);
 }
 
-void CV_LoadNetVars(UINT8 **p)
+void CV_LoadNetVars(UINT8 **p, boolean onlyIfChanged)
 {
 	consvar_t *cvar;
 	UINT16 count;
 
 	// prevent "invalid command received"
 	serverloading = true;
+	serverloadingstealth = onlyIfChanged;
 
 	for (cvar = consvar_vars; cvar; cvar = cvar->next)
 		if (cvar->flags & CV_NETVAR)

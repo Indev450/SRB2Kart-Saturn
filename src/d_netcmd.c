@@ -847,12 +847,14 @@ static void Command_Saveloadtest(void)
 }
 
 extern boolean autotimefudge;
+extern UINT8 autotimefudgetime;
 static void Command_Autotimefudge(void)
 {
 	if (!autotimefudge)
 	{
 		CONS_Printf("Searching for the best time fudge...\n");
 		autotimefudge = true;
+		autotimefudgetime = 0;
 	}
 }
 

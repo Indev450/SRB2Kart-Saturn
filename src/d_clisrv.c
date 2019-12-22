@@ -4151,7 +4151,7 @@ static void HandlePacketFromAwayNode(SINT8 node)
 
 			scp = netbuffer->u.servercfg.varlengthinputs;
 			CV_LoadPlayerNames(&scp);
-			CV_LoadNetVars(&scp);
+			CV_LoadNetVars(&scp, false);
 #ifdef JOININGAME
 			/// \note Wait. What if a Lua script uses some global custom variables synched with the NetVars hook?
 			///       Shouldn't them be downloaded even at intermission time?
