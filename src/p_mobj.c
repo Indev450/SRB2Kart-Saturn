@@ -12884,6 +12884,7 @@ mobj_t *P_SPMAngle(mobj_t *source, mobjtype_t type, angle_t angle, UINT8 allowai
 	angle_t an;
 	fixed_t x, y, z, slope = 0;
 
+
 	// angle at which you fire, is player angle
 	an = angle;
 
@@ -12899,6 +12900,13 @@ mobj_t *P_SPMAngle(mobj_t *source, mobjtype_t type, angle_t angle, UINT8 allowai
 		z = source->z + source->height/3;
 
 	th = P_SpawnMobj(x, y, z, type);
+
+	if (cv_netslingdelay.value && issimulation && (tic_t)cv_netsteadyplayers.value >= targetsimtic - simtic && source == players[consoleplayer].mo)
+	{
+		z = 0x80000000; // don't make rings appear when using netslingdelay
+		th->flags |= MF_NOTHINK;
+		th->sprite = SPR_NULL;
+	}
 
 	if (source->eflags & MFE_VERTICALFLIP)
 		th->flags2 |= MF2_OBJECTFLIP;

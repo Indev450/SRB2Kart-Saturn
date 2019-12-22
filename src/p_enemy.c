@@ -3770,9 +3770,9 @@ void A_ThrownRing(mobj_t *actor)
 	player_t *player;
 	fixed_t dist;
 
-	if (cv_netslingdelay.value && issimulation && (tic_t)cv_netsteadyplayers.value > simtic - gametic && actor->target == players[consoleplayer].mo)
+	if (cv_netslingdelay.value && issimulation && (tic_t)cv_netsteadyplayers.value >= targetsimtic - simtic && actor->target == players[consoleplayer].mo)
 	{
-		// don't simulate ring weapons if netslingdelay is positive
+		// don't move ring weapons during simulation if netslingdelay is positive
 		actor->momx = actor->momy = actor->momz = 0;
 		return;
 	}

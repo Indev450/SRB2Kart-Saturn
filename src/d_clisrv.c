@@ -5779,6 +5779,14 @@ static void RunSimulations()
 			player_t* redflagplayer = NULL;
 			player_t* blueflagplayer = NULL;
 
+#define ADJUSTPOSITION(obj, player) do { \
+			P_UnsetThingPosition(obj); \
+			obj->x += steadyplayers[player].histx[histIndex] - steadyplayers[player].histx[simtic - gametic]; \
+			obj->y += steadyplayers[player].histy[histIndex] - steadyplayers[player].histy[simtic - gametic]; \
+			obj->z += steadyplayers[player].histz[histIndex] - steadyplayers[player].histz[simtic - gametic]; \
+			P_SetThingPosition(obj); \
+} while(0)
+
 			for (int i = 0; i < MAXPLAYERS; i++)
 			{
 				if (playeringame[i])
@@ -5788,28 +5796,19 @@ static void RunSimulations()
 					if (players[i].gotflag & GF_BLUEFLAG)
 						blueflagplayer = &players[i];
 				}
+
+				if (players[i].followmobj)
+					ADJUSTPOSITION(players[i].followmobj, i);
 			}
 
 			for (mobj = (mobj_t*)thlist[THINK_MOBJ].next; mobj != (mobj_t*)&thlist[THINK_MOBJ]; mobj = (mobj_t*)mobj->thinker.next)
 			{
 				if (mobj->flags2 & MF2_SHIELD && mobj->target != NULL && mobj->target->player != NULL && mobj->target != players[consoleplayer].mo)
-				{
-					mobj->x = steadyplayers[mobj->target->player - players].histx[histIndex];
-					mobj->y = steadyplayers[mobj->target->player - players].histy[histIndex];
-					mobj->z = steadyplayers[mobj->target->player - players].histz[histIndex];
-				}
+					ADJUSTPOSITION(mobj, mobj->target->player - players);
 				else if (mobj->type == MT_BLUEFLAG && blueflagplayer)
-				{
-					mobj->x += steadyplayers[blueflagplayer - players].histx[histIndex] - blueflagplayer->mo->x;
-					mobj->y += steadyplayers[blueflagplayer - players].histy[histIndex] - blueflagplayer->mo->y;
-					mobj->z += steadyplayers[blueflagplayer - players].histz[histIndex] - blueflagplayer->mo->z;
-				}
+					ADJUSTPOSITION(mobj, blueflagplayer - players);
 				else if (mobj->type == MT_REDFLAG && redflagplayer)
-				{
-					mobj->x += steadyplayers[redflagplayer - players].histx[histIndex] - redflagplayer->mo->x;
-					mobj->y += steadyplayers[redflagplayer - players].histy[histIndex] - redflagplayer->mo->y;
-					mobj->z += steadyplayers[redflagplayer - players].histz[histIndex] - redflagplayer->mo->z;
-				}
+					ADJUSTPOSITION(mobj, redflagplayer - players);
 			}
 		}
 	}
