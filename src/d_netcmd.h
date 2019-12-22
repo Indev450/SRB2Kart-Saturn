@@ -157,6 +157,7 @@ extern consvar_t cv_netspikes;
 extern consvar_t cv_netsteadyplayers;
 extern consvar_t cv_debugsimulaterewind;
 extern consvar_t cv_timefudge;
+extern consvar_t cv_nettrails;
 
 extern consvar_t cv_skipmapcheck;
 

@@ -3269,11 +3269,14 @@ static void P_LocalUnArchiveThinkers()
 	// preserve sky box indexes
 	for (i = 0; i < 16; i++)
 	{
-		if (skyboxmo[0] && skyboxmo[0] == skyboxviewpnts[i])
+		if (skyboxmo[0] == skyboxviewpnts[i])
 			skyviewid = i; // save id just in case
-		if (skyboxmo[1] && skyboxmo[1] == skyboxcenterpnts[i])
+		if (skyboxmo[1] == skyboxcenterpnts[i])
 			skycenterid = i; // save id just in case
+		skyboxviewpnts[i] = NULL;
+		skyboxcenterpnts[i] = NULL;
 	}
+	skyboxmo[0] = skyboxmo[1] = NULL;
 
 	// sort objects by type
 	for (i = 0; i < tc_end; i++)
@@ -3395,6 +3398,14 @@ static void P_LocalUnArchiveThinkers()
 					{
 						blueflag = mobj;
 						bflagpoint = mobj->spawnpoint;
+					}
+
+					if (mobj->type == MT_SKYBOX)
+					{
+						if ((mobj->extravalue2 >> 16) == 1)
+							skyboxcenterpnts[mobj->extravalue2 & 0xFFFF] = mobj;
+						else
+							skyboxviewpnts[mobj->extravalue2 & 0xFFFF] = mobj;
 					}
 
 					if (mobj->player && mobj->type == MT_PLAYER)
@@ -3519,26 +3530,7 @@ static void P_LocalUnArchiveThinkers()
 	}
 #undef RELINK
 
-	// restore skyboxes if applicable
-	for (i = 0; i < sizeof(skyboxmo) / sizeof(skyboxmo[0]); i++)
-		skyboxmo[i] = NULL;
-	for (i = 0; i < sizeof(skyboxcenterpnts) / sizeof(skyboxcenterpnts[0]); i++)
-	{
-		skyboxcenterpnts[i] = NULL;
-		skyboxviewpnts[i] = NULL;
-	}
-
-	for (mobj = (mobj_t*)thlist[THINK_MOBJ].next; mobj != (mobj_t*)&thlist[THINK_MOBJ]; mobj = (mobj_t*)mobj->thinker.next)
-	{
-		if (mobj->type == MT_SKYBOX)
-		{
-			if ((mobj->extravalue2 >> 16) == 1)
-				skyboxcenterpnts[mobj->extravalue2 & 0xFFFF] = mobj;
-			else
-				skyboxviewpnts[mobj->extravalue2 & 0xFFFF] = mobj;
-		}
-	}
-
+	// restore skyboxes
 	skyboxmo[0] = skyboxviewpnts[(skyviewid >= 0) ? skyviewid : 0];
 	skyboxmo[1] = skyboxcenterpnts[(skycenterid >= 0) ? skycenterid : 0];
 }
@@ -4512,7 +4504,7 @@ void P_SaveGameState(savestate_t* savestate)
 {
 	mobj_t* mobj;
 	thinker_t* th;
-	int i = 0;
+	int i = 1;
 
 	UINT64 time = I_GetTimeUs();
 
@@ -4579,7 +4571,7 @@ boolean P_LoadGameState(const savestate_t* savestate)
 #endif
 
 	// This is stupid and hacky _squared_, but it's in the net load code and it says it might work, so I guess it might work!
-	P_SetRandSeed(P_GetInitSeed());
+	//P_SetRandSeed(P_GetInitSeed());
 
 	P_UnArchiveLuabanksAndConsistency();
 

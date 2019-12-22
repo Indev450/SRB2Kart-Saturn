@@ -4114,9 +4114,8 @@ static void HandlePacketFromAwayNode(SINT8 node)
 
 			if (client)
 			{
-				maketic = gametic = neededtic = (tic_t)LONG(netbuffer->u.servercfg.gametic);
-				if ((gametype = netbuffer->u.servercfg.gametype) >= NUMGAMETYPES)
-					I_Error("Bad gametype in cliserv!");
+				maketic = gametic = simtic = neededtic = (tic_t)LONG(netbuffer->u.servercfg.gametic);
+				gametype = netbuffer->u.servercfg.gametype;
 				modifiedgame = netbuffer->u.servercfg.modifiedgame;
 				for (j = 0; j < MAXPLAYERS; j++)
 					adminplayers[j] = netbuffer->u.servercfg.adminplayers[j];
@@ -5451,6 +5450,7 @@ UINT16 autotimefudgesamples = 0;
 UINT16 autotimefudgedata[MAXAUTOFUDGERTT];
 float autotimefudgemeans[10];
 float autotimefudgedeviations[10];
+int autotimefudgeattempts = 0;
 
 #define MAXOFFSETHISTORY 35
 int ticTimeOffsetHistory[MAXOFFSETHISTORY];
@@ -5518,17 +5518,19 @@ void TryRunTics(tic_t realtics)
 	}
 
 	// record the actual local controls
-	static boolean didSimulate = false;
-	boolean canSimulate = (gamestate == GS_LEVEL) && leveltime >= BACKUPTICS && gametic >= BACKUPTICS && (cv_simulate.value && !server) && !resynch_local_inprogress;
 	boolean recordingStates = (gamestate == GS_LEVEL) && leveltime >= 1 && gametic >= BACKUPTICS;
+	boolean canSimulate = (gamestate == GS_LEVEL) && leveltime >= BACKUPTICS && gametic >= BACKUPTICS && (cv_simulate.value && !server) && !resynch_local_inprogress;
 
-	if (didSimulate && !canSimulate)
+	if (simtic > gametic && !canSimulate)
 	{
-		// if simulation stopped, there is no guarantee our buffers are valid anymore
+		// if we can't simulate anymore, we ought to reload and invalidate the savestates
 		if (gameStateBufferIsValid[gametic % BACKUPTICS])
 			P_LoadGameState(&gameStateBuffer[gametic % BACKUPTICS]);
+		else
+			CONS_Printf("Problem: game state buffer inaccessible! (simtic %d gametic %d)\n", simtic, gametic);
 
-		// invalidate previous states
+		simtic = gametic;
+		CONS_Printf("Clearing savestates due to !canSim\n");
 		InvalidateSavestates();
 	}
 
@@ -5549,8 +5551,10 @@ void TryRunTics(tic_t realtics)
 		else
 		{
 			// Load the real state if it exists
-			if (canSimulate && gameStateBufferIsValid[gametic % BACKUPTICS])
+			if (simtic != gametic && gameStateBufferIsValid[gametic % BACKUPTICS])
 				P_LoadGameState(&gameStateBuffer[gametic % BACKUPTICS]);
+			else if (simtic != gametic && !gameStateBufferIsValid[gametic % BACKUPTICS])
+				CONS_Printf("Problem: game state buffer inaccessible but a simulation happened!!\n");
 
 			// run the tics up to the real game tic
 			while (neededtic > gametic)
@@ -5597,20 +5601,19 @@ void TryRunTics(tic_t realtics)
 	else
 		smoothedTic = gametic;
 
+	// collect net condition data
+	DetermineNetConditions();
+
 	// Simulate the game locally
 	if (canSimulate)
 		RunSimulations();
-	else
-	{
-		simtic = gametic; // just use the real tic
-		smoothedTic = gametic;
-	}
-
-	didSimulate = simtic != gametic || smoothedTic != gametic;
 
 	// we're gonna need more debugs...
 	MakeNetDebugString();
 }
+
+UINT64 simStartTime;
+UINT64 simEndTime;
 
 static void RunSimulations()
 {
@@ -5618,9 +5621,7 @@ static void RunSimulations()
 		return; // do not simulate if we cannot guarantee a recovery
 
 	boolean preserveSoundDisabled = sound_disabled;
-
-	// this must be done after smoothedTic is set
-	DetermineNetConditions();
+	static int lastsimtic = 0;
 
 	int tastyFudge = 0;
 	// hack: don't treat duplicate tics as extra round-trip time
@@ -5632,11 +5633,8 @@ static void RunSimulations()
 			break;
 	}
 
-	int targetSimTic = min(gametic + estimatedRTT - tastyFudge, smoothedTic + cv_simulatetics.value);
-
-	// don't simulate more than MAXSIMULATIONS
-	if (targetSimTic - simtic > MAXSIMULATIONS)
-		simtic = targetSimTic - MAXSIMULATIONS;
+	int targetSimTic = min(min(gametic + estimatedRTT - tastyFudge, smoothedTic + cv_simulatetics.value), simtic + MAXSIMULATIONS);
+	int numToSimulate = targetSimTic - (int)simtic;
 
 	// record steadyplayers' real game position and their simulated position
 	for (int i = 0; i < MAXPLAYERS; i++)
@@ -5660,11 +5658,11 @@ static void RunSimulations()
 	}
 
 	// simulate the rest o da future
-	int numToSimulate = targetSimTic - (int)simtic;
-	
 	issimulation = true;
 	sound_disabled = true;
 	con_muted = true;
+
+	simStartTime = I_GetTimeUs();
 
 	for (int i = 0; i < numToSimulate; i++)
 	{
@@ -5702,70 +5700,94 @@ static void RunSimulations()
 	con_muted = false;
 
 	// Finalise steadyplayers
-	int histIndex = max((int)(simtic - smoothedTic) - cv_netsteadyplayers.value, 0); // up to cv_netsteadyplayers.value behind the simulation
-	for (int j = 0; j < MAXPLAYERS; j++)
+	if (numToSimulate > 0)
 	{
-		if (playeringame[j] && players[j].mo && j != consoleplayer)
+		int histIndex = max((int)(simtic - smoothedTic) - cv_netsteadyplayers.value, 0); // up to cv_netsteadyplayers.value behind the simulation
+		for (int j = 0; j < MAXPLAYERS; j++)
 		{
-			// If there is a big discrepency between the player's current position and their last one, spawn a trail showing their movements
-			fixed_t distance = max(abs(steadyplayers[j].finalx - steadyplayers[j].histx[histIndex]), 
-							   max(abs(steadyplayers[j].finaly - steadyplayers[j].histy[histIndex]),
-								   abs(steadyplayers[j].finalz - steadyplayers[j].histz[histIndex])));
-			fixed_t stepDistance = 60 << FRACBITS; // distance between trail steps
-
-			// If player is changing direction quickly in a net simulation, create a ghost trail
-			if (distance > stepDistance)
+			if (playeringame[j] && players[j].mo && j != consoleplayer && !players[j].spectator)
 			{
-				fixed_t numSteps = FixedDiv(distance, stepDistance) & ~FRACMASK;
-				fixed_t currentStep; // between 0 and 1
-				fixed_t step = FixedDiv(1<<FRACBITS, numSteps + 1);
-				int i = 1;
+				// Set the player's positions to the preferred simulation index (or perhaps just their original position)
+				// and store it in simx/simy/simz too for trails
+				players[j].mo->x = steadyplayers[j].histx[histIndex];
+				players[j].mo->y = steadyplayers[j].histy[histIndex];
+				players[j].mo->z = steadyplayers[j].histz[histIndex];
 
-				for (currentStep = step; currentStep < (1<<FRACBITS); currentStep += step)
+				// fill any holes in the simulation history (due to frame skips)
+				for (int k = (int)max(lastsimtic + 1, (int)simtic - 5); k <= (int)simtic; k++)
 				{
-					mobj_t* ghost = P_SpawnGhostMobj(players[j].mo);
+					steadyplayers[j].simx[k % BACKUPTICS] = steadyplayers[j].histx[histIndex];
+					steadyplayers[j].simy[k % BACKUPTICS] = steadyplayers[j].histy[histIndex];
+					steadyplayers[j].simz[k % BACKUPTICS] = steadyplayers[j].histz[histIndex];
+				}
 
-					ghost->x = steadyplayers[j].finalx + FixedMul(steadyplayers[j].histx[histIndex] - steadyplayers[j].finalx, currentStep);
-					ghost->y = steadyplayers[j].finaly + FixedMul(steadyplayers[j].histy[histIndex] - steadyplayers[j].finaly, currentStep);
-					ghost->z = steadyplayers[j].finalz + FixedMul(steadyplayers[j].histz[histIndex] - steadyplayers[j].finalz, currentStep);
-					ghost->fuse = ghost->fuse + i - (numSteps>>FRACBITS);
-					i++;
+				// Generate trails
+				if (cv_nettrails.value)
+				{
+					int trailLifetime = cv_nettrails.value;
+
+					for (int s = 0; s < trailLifetime; s++)
+					{
+						// If there is a big discrepency between the player's current position and their last one, spawn a trail showing their movements
+						fixed_t prevx = steadyplayers[j].simx[(simtic - s - 1) % BACKUPTICS], prevy = steadyplayers[j].simy[(simtic - s - 1) % BACKUPTICS],
+							prevz = steadyplayers[j].simz[(simtic - s - 1) % BACKUPTICS];
+						fixed_t curx = steadyplayers[j].simx[(simtic - s) % BACKUPTICS], cury = steadyplayers[j].simy[(simtic - s) % BACKUPTICS],
+							curz = steadyplayers[j].simz[(simtic - s) % BACKUPTICS];
+						fixed_t distance = max(abs(curx - prevx), max(abs(cury - prevy), abs(curz - prevz)));
+						fixed_t stepDistance = 90 << FRACBITS; // distance between trail steps
+						fixed_t activationDistance = 60 << FRACBITS; // distance between trail steps
+
+						// If player is changing direction quickly in a net simulation, create a ghost trail
+						if (distance > activationDistance)
+						{
+							fixed_t numSteps = FixedDiv(distance, stepDistance) & ~FRACMASK;
+							fixed_t currentStep; // between 0 and 1
+							fixed_t step = FixedDiv(1 << FRACBITS, numSteps + 1);
+
+							for (currentStep = step; currentStep < (1 << FRACBITS); currentStep += step)
+							{
+								mobj_t* ghost = P_SpawnGhostMobj(players[j].mo);
+
+								ghost->x = prevx + FixedMul(curx - prevx, currentStep);
+								ghost->y = prevy + FixedMul(cury - prevy, currentStep);
+								ghost->z = prevz + FixedMul(curz - prevz, currentStep);
+								ghost->frame = (ghost->frame & FF_TRANSMASK) | ((6 - s) << FF_TRANSSHIFT);
+								ghost->fuse = 1;
+							}
+						}
+					}
 				}
 			}
-
-			// Record the final simulated position and error
-			steadyplayers[j].finalx = players[j].mo->x;
-			steadyplayers[j].finaly = players[j].mo->y;
-			steadyplayers[j].finalz = players[j].mo->z;
-
-			// Set the player's positions to the preferred simulation index (or perhaps just their original position)
-			players[j].mo->x = steadyplayers[j].histx[histIndex];
-			players[j].mo->y = steadyplayers[j].histy[histIndex];
-			players[j].mo->z = steadyplayers[j].histz[histIndex];
 		}
-	}
 
-	// move steadyplayer shields
-	if (cv_netsteadyplayers.value)
-	{
-		mobj_t* mobj;
-
-		for (mobj = (mobj_t*)thlist[THINK_MOBJ].next; mobj != (mobj_t*)&thlist[THINK_MOBJ]; mobj = (mobj_t*)mobj->thinker.next)
+		// move steadyplayer shields
+		if (cv_netsteadyplayers.value)
 		{
-			if (mobj->flags2 & MF2_SHIELD && mobj->target != NULL && mobj->target->player != NULL && mobj->target != players[consoleplayer].mo)
+			mobj_t* mobj;
+
+			for (mobj = (mobj_t*)thlist[THINK_MOBJ].next; mobj != (mobj_t*)&thlist[THINK_MOBJ]; mobj = (mobj_t*)mobj->thinker.next)
 			{
-				mobj->x = steadyplayers[mobj->target->player - players].histx[histIndex];
-				mobj->y = steadyplayers[mobj->target->player - players].histy[histIndex];
-				mobj->z = steadyplayers[mobj->target->player - players].histz[histIndex];
+				if (mobj->flags2 & MF2_SHIELD && mobj->target != NULL && mobj->target->player != NULL && mobj->target != players[consoleplayer].mo)
+				{
+					mobj->x = steadyplayers[mobj->target->player - players].histx[histIndex];
+					mobj->y = steadyplayers[mobj->target->player - players].histy[histIndex];
+					mobj->z = steadyplayers[mobj->target->player - players].histz[histIndex];
+				}
 			}
 		}
 	}
 
+	simEndTime = I_GetTimeUs();
+
+	lastsimtic = simtic;
 	rendergametic = gametic;
 }
 
 void InvalidateSavestates()
 {
+	if (simtic > gametic)
+		CONS_Printf("Warning: Savestates were invalidated during a simulation!!\n");
+
 	for (int i = 0; i < MAXSIMULATIONS; i++)
 		gameStateBufferIsValid[i] = false;
 }
@@ -5828,7 +5850,7 @@ void DetermineNetConditions()
 	rttJitter = maxRTT - minRTT;
 	
 	// auto time fudge
-	int maxautotimefudgesamples = 25;
+	int maxautotimefudgesamples = 10;
 	static int numignoredtimefudgesamples = 5;
 	if (autotimefudge)
 	{
@@ -5845,7 +5867,7 @@ void DetermineNetConditions()
 			}
 		}
 
-		if (autotimefudgesamples > maxautotimefudgesamples)
+		if (autotimefudgesamples >= maxautotimefudgesamples)
 		{
 			// calculate standard deviation of this time fudge
 			float mean = 0;
@@ -5869,16 +5891,21 @@ void DetermineNetConditions()
 			CONS_Printf("Fudge %d: mean %f deviation %f\n", autotimefudgetime, mean, differences);
 
 			// reset and test the next time fudge
-			autotimefudgetime = (autotimefudgetime + 10) % 100;
 			autotimefudgesamples = 0;
 			numignoredtimefudgesamples = maxRTT + 2;
 
 			for (int i = 0; i < MAXAUTOFUDGERTT; i++)
 				autotimefudgedata[i] = 0;
 
-			if (autotimefudgetime == 0)
+			if (differences < 2.0f)
+				autotimefudgetime = autotimefudgetime + 10;
+			else
+				CONS_Printf("Retrying...\n"); // too much deviation, try again
+
+			if (autotimefudgetime >= 100)
 			{
-				// best time is where the deviation is minimal; this can be achieved by going halfway from the worst point
+				// done!
+				// the best time is where the deviation is minimal; this can be achieved by going halfway from the worst point
 				int worstFudgeTime = 0;
 				float worstDeviation = 0.0f;
 
@@ -5991,6 +6018,8 @@ void MakeNetDebugString()
 	sprintf(&netDebugText[strlen(netDebugText)], "\nSimDelta: %d", simtic - lastSim);
 	sprintf(&netDebugText[strlen(netDebugText)], "\nLive: %d", liveTic);
 	sprintf(&netDebugText[strlen(netDebugText)], "\nTime save/load: %.2f/%.2f", (float)saveStateBenchmark/1000.0f, (float)loadStateBenchmark/1000.0f);
+	sprintf(&netDebugText[strlen(netDebugText)], "\nTotal +ms: %d", (int)((simEndTime - simStartTime + saveStateBenchmark + loadStateBenchmark) / 1000));
+	sprintf(&netDebugText[strlen(netDebugText)], "\nseed: %d", P_GetRandSeed());
 	lastSim = simtic;
 
 	unsigned int rtts[20] = { 0 };
