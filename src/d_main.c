@@ -604,7 +604,7 @@ static void D_Display(void)
 				const char* nextStr = strstr(str + 1, "\n");
 				int len = nextStr ? nextStr - str : strlen(str);
 
-				strncpy(temp, str, len);
+				memcpy(temp, str, len);
 				temp[len] = 0;
 
 				V_DrawRightAlignedSmallString(BASEVIDWIDTH, y, V_YELLOWMAP, temp);

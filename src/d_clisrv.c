@@ -5203,8 +5203,8 @@ void CorrectPlayerTargeting(ticcmd_t* cmds)
 	{
 		// find the most likely targeted player by measuring the angle between them
 		steadyplayer_t* mostLikelyPlayer = NULL;
-		SHORT smallestDifference = 0x8000;
-		SHORT smallestVDifference = 0x8000;
+		INT16 smallestDifference = 0x8000;
+		INT16 smallestVDifference = 0x8000;
 		fixed_t dist = 0;
 		mobj_t* myself = players[consoleplayer].mo;
 		int gameHist = max((int)(simtic-gametic) - cv_netsteadyplayers.value, 0); // current hist time that the players have been positioned at on the screen
@@ -5216,8 +5216,8 @@ void CorrectPlayerTargeting(ticcmd_t* cmds)
 			if (playeringame[i] && players[i].mo && i != consoleplayer)
 			{
 				fixed_t curX = player->histx[gameHist], curY = player->histy[gameHist], curZ = player->histz[gameHist];
-				SHORT difference = (SHORT)(FixedAngleBetween(myself->x, myself->y, curX, curY)>>FRACBITS) - cmds->angleturn;
-				SHORT vDifference = -(SHORT)(FixedAngleBetween(0, curZ, FixedDistance2(curX, curY, myself->x, myself->y), myself->z)>>FRACBITS) - cmds->aiming;
+				INT16 difference = (INT16)(FixedAngleBetween(myself->x, myself->y, curX, curY)>>FRACBITS) - cmds->angleturn;
+				INT16 vDifference = -(INT16)(FixedAngleBetween(0, curZ, FixedDistance2(curX, curY, myself->x, myself->y), myself->z)>>FRACBITS) - cmds->aiming;
 
 				if (abs(difference) + abs(vDifference) < abs(smallestDifference) + abs(smallestVDifference))
 				{
@@ -5303,7 +5303,7 @@ static void AdjustSimulatedTiccmdInputs(ticcmd_t* cmds)
 	if (server || simtic == gametic)
 		return;
 
-	SHORT oldAngle = cmds->angleturn;
+	INT16 oldAngle = cmds->angleturn;
 
 	if (gamestate == GS_LEVEL && cv_netsteadyplayers.value && !cv_netslingdelay.value)
 		CorrectPlayerTargeting(cmds);
@@ -5979,16 +5979,6 @@ static void PerformDebugRewinds()
 	}
 
 	if (gameStateBufferIsValid[gametic % BACKUPTICS] && cv_debugsimulaterewind.value > 0 && players[consoleplayer].mo) {
-/*		sector_t initial = *((elevator_t*)thlist[1].next)->sector;
-		mobj_t initialPlayer = *players[consoleplayer].mo;*/
-
-		int xyz = 0;
-		mapthing_t spawnpoint;
-		if (redflag) {
-			xyz = redflag->spawnpoint->x + redflag->spawnpoint->y + redflag->spawnpoint->z;
-			spawnpoint = *(redflag->spawnpoint);
-		}
-
 		short consis = Consistancy();
 
 		for (int i = 0; i < cv_debugsimulaterewind.value; i++)
@@ -5998,15 +5988,6 @@ static void PerformDebugRewinds()
 
 		if (Consistancy() != consis)
 			CONS_Printf("General consistency error...\n");
-
-		if (redflag)
-			if (redflag->spawnpoint->x + redflag->spawnpoint->y + redflag->spawnpoint->z != xyz && xyz != 0)
-				CONS_Printf("Flag consistency error!\n");
-
-		/*sector_t current = *((elevator_t*)thlist[1].next)->sector;
-		mobj_t currentPlayer = *players[consoleplayer].mo;*/
-
-		// consistency debug checks go here
 	}
 }
 

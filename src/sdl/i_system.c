@@ -3042,6 +3042,15 @@ tic_t I_GetTime (void)
 	if (!basetime)
 		basetime = ticks;
 
+	// fudge the timer for better netgame sync
+	if (cv_timefudge.value != lastTimeFudge)
+	{
+		basetime = (basetime / (1000 / TICRATE) * (1000 / TICRATE)) - 1000 * cv_timefudge.value / 100 / TICRATE;
+		basetime -= 1000 / TICRATE;
+
+		lastTimeFudge = cv_timefudge.value;
+	}
+
 	ticks -= basetime;
 
 	ticks = (ticks*TICRATE);
