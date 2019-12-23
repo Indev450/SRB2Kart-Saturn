@@ -5205,7 +5205,6 @@ void CorrectPlayerTargeting(ticcmd_t* cmds)
 		steadyplayer_t* mostLikelyPlayer = NULL;
 		INT16 smallestDifference = 0x8000;
 		INT16 smallestVDifference = 0x8000;
-		fixed_t dist = 0;
 		mobj_t* myself = players[consoleplayer].mo;
 		int gameHist = max((int)(simtic-gametic) - cv_netsteadyplayers.value, 0); // current hist time that the players have been positioned at on the screen
 		int simHist = simtic - gametic; // max simulated hist time
@@ -5239,8 +5238,8 @@ void CorrectPlayerTargeting(ticcmd_t* cmds)
 				// distanceRatio increases/reduces the player's accuracy based on the distance change (e.g. big close Sonic to little faraway Sonic)
 				fixed_t distanceRatio = FixedDiv(FixedDistance(myself->x, myself->y, myself->z, simX, simY, simZ), FixedDistance(myself->x, myself->y, myself->z, curX, curY, curZ));
 
-				cmds->angleturn = (SHORT)(FixedAngleBetween(myself->x, myself->y, simX, simY) >> FRACBITS) - FixedDiv(smallestDifference, distanceRatio);
-				cmds->aiming = -(SHORT)(FixedAngleBetween(0, simZ, FixedDistance2(simX, simY, myself->x, myself->y), myself->z) >> FRACBITS) - 
+				cmds->angleturn = (INT16)(FixedAngleBetween(myself->x, myself->y, simX, simY) >> FRACBITS) - FixedDiv(smallestDifference, distanceRatio);
+				cmds->aiming = -(INT16)(FixedAngleBetween(0, simZ, FixedDistance2(simX, simY, myself->x, myself->y), myself->z) >> FRACBITS) - 
 										FixedDiv(smallestVDifference, distanceRatio);
 			}
 			else
@@ -5253,8 +5252,8 @@ void CorrectPlayerTargeting(ticcmd_t* cmds)
 				tic_t wowtic = min(gametic, simtic - cv_netsteadyplayers.value);
 				fixed_t originalDistance = FixedDistance(myself->x, myself->y, myself->z, enemyX, enemyY, enemyZ);
 				fixed_t currentDistance = originalDistance;
-				SHORT difference = 0;
-				SHORT vDifference = 0;
+				INT16 difference = 0;
+				INT16 vDifference = 0;
 
 				while (ringRadius < currentDistance)
 				{
@@ -5279,8 +5278,8 @@ void CorrectPlayerTargeting(ticcmd_t* cmds)
 					if (ringRadius + (60<<FRACBITS)*(int)(simtic - gametic) >= currentDistance && difference == 0 && vDifference == 0)
 					{
 						// capture the player's current angle offset/accuracy here
-						difference = (SHORT)(FixedAngleBetween(myself->x, myself->y, enemyX, enemyY) >> FRACBITS) - cmds->angleturn;
-						vDifference = -(SHORT)(FixedAngleBetween(0, enemyZ,
+						difference = (INT16)(FixedAngleBetween(myself->x, myself->y, enemyX, enemyY) >> FRACBITS) - cmds->angleturn;
+						vDifference = -(INT16)(FixedAngleBetween(0, enemyZ,
 							FixedDistance2(enemyX, enemyY, myself->x, myself->y), myself->z) >> FRACBITS) - cmds->aiming;
 					}
 
