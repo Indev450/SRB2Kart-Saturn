@@ -2904,14 +2904,14 @@ ticcmd_t *I_BaseTiccmd4(void)
 	return &emptycmd4;
 }
 
+static int lastTimeFudge = -1;
+extern consvar_t cv_timefudge;
+
 #if defined (_WIN32)
 static HMODULE winmm = NULL;
 static DWORD starttickcount = 0; // hack for win2k time bug
 static p_timeGetTime pfntimeGetTime = NULL;
 static LARGE_INTEGER basetime = { {0, 0} };
-static int lastTimeFudge = -1;
-
-extern consvar_t cv_timefudge;
 
 // ---------
 // I_GetTime
@@ -3058,6 +3058,11 @@ tic_t I_GetTime (void)
 	ticks = (ticks/1000);
 
 	return (tic_t)ticks;
+}
+
+UINT64 I_GetTimeUs(void)
+{
+	return (SDL_GetTicks() - basetime) * 1000;
 }
 #endif
 
