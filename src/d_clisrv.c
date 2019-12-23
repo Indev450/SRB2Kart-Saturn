@@ -5246,7 +5246,7 @@ void CorrectPlayerTargeting(ticcmd_t* cmds)
 			{
 				// other rings are a bit more complex, we want to guess where the enemy will be and use that angle offset instead.
 				// calculate the player's new position and try to aim towards that
-				int ringSpeed = mobjinfo[MT_REDRING].speed>>FRACBITS;
+				fixed_t ringSpeed = mobjinfo[MT_REDRING].speed>>FRACBITS;
 				fixed_t ringRadius = -(60<<FRACBITS) * (simtic - gametic); // if the ring was fired in any direction, this is the distance it would travel currently
 				fixed_t enemyX = curX, enemyY = curY, enemyZ = curZ;
 				tic_t wowtic = min(gametic, simtic - cv_netsteadyplayers.value);
@@ -5283,15 +5283,15 @@ void CorrectPlayerTargeting(ticcmd_t* cmds)
 							FixedDistance2(enemyX, enemyY, myself->x, myself->y), myself->z) >> FRACBITS) - cmds->aiming;
 					}
 
-					ringRadius += 60<<FRACBITS;
+					ringRadius += ringSpeed;
 					wowtic++;
 				}
 
 				// aim towards it I guess lol
 				fixed_t distanceRatio = FixedDiv(currentDistance, originalDistance);
 
-				cmds->angleturn = (SHORT)(FixedAngleBetween(myself->x, myself->y, enemyX, enemyY)>>FRACBITS) - FixedDiv(difference, distanceRatio);
-				cmds->aiming = -(SHORT)(FixedAngleBetween(0, enemyZ, FixedDistance2(enemyX, enemyY, myself->x, myself->y), myself->z) >> FRACBITS) - FixedDiv(vDifference, distanceRatio);
+				cmds->angleturn = (INT16)(FixedAngleBetween(myself->x, myself->y, enemyX, enemyY)>>FRACBITS) - FixedDiv(difference, distanceRatio);
+				cmds->aiming = -(INT16)(FixedAngleBetween(0, enemyZ, FixedDistance2(enemyX, enemyY, myself->x, myself->y), myself->z) >> FRACBITS) - FixedDiv(vDifference, distanceRatio);
 			}
 		}
 	}
