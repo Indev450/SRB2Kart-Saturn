@@ -3034,10 +3034,11 @@ static void I_ShutdownTimer(void)
 // I_GetTime
 // returns time in 1/TICRATE second tics
 //
+static Uint64 basetime = 0;
+
 tic_t I_GetTime (void)
 {
-	static Uint64 basetime = 0;
-		   Uint64 ticks = SDL_GetTicks();
+	Uint64 ticks = SDL_GetTicks();
 
 	if (!basetime)
 		basetime = ticks;
