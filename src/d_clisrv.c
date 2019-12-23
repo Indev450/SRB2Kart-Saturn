@@ -5246,7 +5246,7 @@ void CorrectPlayerTargeting(ticcmd_t* cmds)
 			{
 				// other rings are a bit more complex, we want to guess where the enemy will be and use that angle offset instead.
 				// calculate the player's new position and try to aim towards that
-				fixed_t ringSpeed = mobjinfo[MT_REDRING].speed>>FRACBITS;
+				fixed_t ringSpeed = mobjinfo[MT_REDRING].speed;
 				fixed_t ringRadius = -(60<<FRACBITS) * (simtic - gametic); // if the ring was fired in any direction, this is the distance it would travel currently
 				fixed_t enemyX = curX, enemyY = curY, enemyZ = curZ;
 				tic_t wowtic = min(gametic, simtic - cv_netsteadyplayers.value);
