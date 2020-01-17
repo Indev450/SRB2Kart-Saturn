@@ -2956,18 +2956,29 @@ tic_t I_GetTime(void)
 	else
 		newtics = (GetTickCount() - starttickcount)/(1000/NEWTICRATE);
 
-	// fudge the timer to sync better with online games
 	if (cv_timefudge.value != lastTimeFudge)
 	{
 		if (frequency.QuadPart)
 		{
-			basetime.QuadPart = (basetime.QuadPart / (frequency.QuadPart / TICRATE) * (frequency.QuadPart / TICRATE)) - frequency.QuadPart * cv_timefudge.value / 100 / TICRATE;
-			basetime.QuadPart -= frequency.QuadPart / TICRATE; // never go back in time if timefudge reduces
+			unsigned long long frame = basetime.QuadPart * NEWTICRATE / frequency.QuadPart;
+
+			if (cv_timefudge.value > lastTimeFudge)
+			{
+				frame--; // do not allow the same tic to play twice
+			}
+
+			basetime.QuadPart = frame * frequency.QuadPart / NEWTICRATE + frequency.QuadPart * cv_timefudge.value / TICRATE / 100;
 		}
 		if (starttickcount)
 		{
-			starttickcount = (starttickcount / (1000 / TICRATE) * (1000 / TICRATE)) - 1000 * cv_timefudge.value / 100 / TICRATE;
-			starttickcount -= 1000 / TICRATE;
+			unsigned long long frame = starttickcount * NEWTICRATE / 1000;
+
+			if (cv_timefudge.value > lastTimeFudge)
+			{
+				frame--; // do not allow the same tic to play twice
+			}
+
+			starttickcount = (DWORD)(frame * 1000 / NEWTICRATE + 1000 * cv_timefudge.value / TICRATE / 100);
 		}
 
 		lastTimeFudge = cv_timefudge.value;

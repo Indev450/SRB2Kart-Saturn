@@ -846,15 +846,70 @@ static void Command_Saveloadtest(void)
 	memleak = false;
 }
 
-extern boolean autotimefudge;
-extern UINT8 autotimefudgetime;
+#include "i_net.h"
+
+extern int netUpdateFudge;
 static void Command_Autotimefudge(void)
 {
-	if (!autotimefudge)
+	UINT64 startTime = I_GetTimeUs();
+	static UINT64 packetTimeFudge[512];
+	int numReceivedPackets = 0;
+	int numSampleTics = 14;
+	int i;
+
+	if (server)
 	{
-		CONS_Printf("Searching for the best time fudge...\n");
-		autotimefudge = true;
-		autotimefudgetime = 0;
+		CONS_Printf("Servers do not need a time fudge! Heck, why are you hosting with this exe anyway? You don't need to ;)\n");
+		return;
+	}
+	
+	// New experimental version! Run a precise while loop that picks up packets instantly
+	while (I_GetTimeUs() - startTime < ((UINT64)numSampleTics * 1000000 / NEWTICRATE))
+	{
+		I_NetGet();
+		if (doomcom->remotenode != -1 && I_GetTimeUs() - startTime > (unsigned long long)2*1000000/NEWTICRATE) // wait a couple frames before recording
+		{
+			unsigned long long frame = I_GetTimeUs() * NEWTICRATE / 1000000;
+			packetTimeFudge[numReceivedPackets++] = (I_GetTimeUs() - frame * 1000000 / NEWTICRATE) * 100 * NEWTICRATE / 1000000
+				- netUpdateFudge; // gets the time fudge offset (0-100)
+		}
+	}
+
+	if (numReceivedPackets > 0)
+	{
+		int minOffset = 100, maxOffset = 0, averageOffset = 0;
+		int newTimeFudge;
+		int estimatedRange;
+
+		for (i = 0; i < numReceivedPackets; i++)
+		{
+			minOffset = min(minOffset, packetTimeFudge[i]);
+			maxOffset = max(maxOffset, packetTimeFudge[i]);
+		}
+
+		if (maxOffset - minOffset > 50)
+		{
+			// say maxOffset = 90 and minOffset = 20, we want the average to be 30...
+			maxOffset = maxOffset - 100;
+
+			if (minOffset > maxOffset)
+			{
+				int swap = maxOffset;
+				maxOffset = minOffset;
+				minOffset = swap;
+			}
+		}
+
+		estimatedRange = maxOffset - minOffset;
+		averageOffset = (maxOffset + minOffset) / 2;
+
+		CONS_Printf("%i packets, min: %d max: %d avg: %d est. range: %d (mynetupdate: %i)\n", numReceivedPackets, minOffset, maxOffset, averageOffset,
+			estimatedRange, netUpdateFudge);
+
+		newTimeFudge = (cv_timefudge.value + averageOffset + 50) % 100;
+		CONS_Printf("New time fudge: %i%%\n", newTimeFudge);
+
+		CV_SetValue(&cv_timefudge, newTimeFudge);
 	}
 }
 

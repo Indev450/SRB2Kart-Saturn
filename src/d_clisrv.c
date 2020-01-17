@@ -5438,16 +5438,7 @@ int minLiveTicOffset;
 int smoothingDelay;
 UINT64 saveStateBenchmark = 0;
 UINT64 loadStateBenchmark = 0;
-
-#define MAXAUTOFUDGERTT 20
-
-boolean autotimefudge;
-UINT8 autotimefudgetime = 0;
-UINT16 autotimefudgesamples = 0;
-UINT16 autotimefudgedata[MAXAUTOFUDGERTT];
-float autotimefudgemeans[10];
-float autotimefudgedeviations[10];
-int autotimefudgeattempts = 0;
+int netUpdateFudge; // our last net update fudge
 
 #define MAXOFFSETHISTORY 35
 int ticTimeOffsetHistory[MAXOFFSETHISTORY];
@@ -5478,6 +5469,10 @@ void TryRunTics(tic_t realtics)
 		if (mapchangepending)
 			D_MapChange(-1, 0, encoremode, false, 2, false, fromlevelselect); // finish the map change
 	}
+
+	// Get packets from the server
+	unsigned long long int frame = (I_GetTimeUs() * NEWTICRATE / 1000000);
+	netUpdateFudge = (I_GetTimeUs() - frame * 1000000 / NEWTICRATE) * 100 * NEWTICRATE / 1000000; // record the timefudge where the net update typically occurs
 
 	NetUpdate();
 
@@ -5883,83 +5878,6 @@ void DetermineNetConditions()
 	}
 
 	rttJitter = maxRTT - minRTT;
-	
-	// auto time fudge
-	int maxautotimefudgesamples = 10;
-	static int numignoredtimefudgesamples = 5;
-	if (autotimefudge)
-	{
-		CV_SetValue(&cv_timefudge, autotimefudgetime);
-
-		if (estimatedRTT < MAXAUTOFUDGERTT)
-		{
-			if (numignoredtimefudgesamples > 0)
-				numignoredtimefudgesamples--;
-			else
-			{
-				autotimefudgedata[estimatedRTT]++;
-				autotimefudgesamples++;
-			}
-		}
-
-		if (autotimefudgesamples >= maxautotimefudgesamples)
-		{
-			// calculate standard deviation of this time fudge
-			float mean = 0;
-			for (int i = 0; i < MAXAUTOFUDGERTT; i++)
-			{
-				mean += autotimefudgedata[i] * i;
-			}
-			mean /= maxautotimefudgesamples;
-
-			float differences = 0;
-			for (int i = 0; i < MAXAUTOFUDGERTT; i++)
-			{
-				if (autotimefudgedata[i] > 0)
-					differences += ((i - mean) * (i - mean)) * autotimefudgedata[i];
-			}
-			differences /= maxautotimefudgesamples;
-
-			autotimefudgemeans[autotimefudgetime / 10] = mean;
-			autotimefudgedeviations[autotimefudgetime / 10] = differences;
-
-			CONS_Printf("Fudge %d: mean %f deviation %f\n", autotimefudgetime, mean, differences);
-
-			// reset and test the next time fudge
-			autotimefudgesamples = 0;
-			numignoredtimefudgesamples = maxRTT + 2;
-
-			for (int i = 0; i < MAXAUTOFUDGERTT; i++)
-				autotimefudgedata[i] = 0;
-
-			if (differences < 2.0f)
-				autotimefudgetime = autotimefudgetime + 10;
-			else
-				CONS_Printf("Retrying...\n"); // too much deviation, try again
-
-			if (autotimefudgetime >= 100)
-			{
-				// done!
-				// the best time is where the deviation is minimal; this can be achieved by going halfway from the worst point
-				int worstFudgeTime = 0;
-				float worstDeviation = 0.0f;
-
-				for (int i = 0; i < 10; i++)
-				{
-					if (autotimefudgedeviations[i] > worstDeviation)
-					{
-						worstDeviation = autotimefudgedeviations[i];
-						worstFudgeTime = i * 10;
-					}
-				}
-
-				CONS_Printf("Auto timefudge: Setting time fudge to %d\n", (worstFudgeTime + 50) % 100);
-				autotimefudge = false;
-
-				CV_SetValue(&cv_timefudge, (worstFudgeTime + 50) % 100);
-			}
-		}
-	}
 }
 
 static void PerformDebugRewinds()
