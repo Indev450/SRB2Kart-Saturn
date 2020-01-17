@@ -859,7 +859,10 @@ static void Command_Autotimefudge(void)
 
 	if (server)
 	{
-		CONS_Printf("Servers do not need a time fudge! Heck, why are you hosting with this exe anyway? You don't need to ;)\n");
+		if (netgame)
+		{
+			CONS_Printf("Servers do not need a time fudge! Heck, why are you hosting with this exe anyway? You don't need to ;)\n");
+		}
 		return;
 	}
 	
