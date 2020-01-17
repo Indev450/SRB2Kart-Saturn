@@ -5435,6 +5435,7 @@ int minRTT;
 int maxRTT;
 int maxLiveTicOffset;
 int minLiveTicOffset;
+int recommendedSimulateTics = 0; // simulateTics recommendation based on the last known 'stable' RTT (range <= 2). Used for avoiding spike lag future-past-teleports.
 int smoothingDelay;
 UINT64 saveStateBenchmark = 0;
 UINT64 loadStateBenchmark = 0;
@@ -5630,7 +5631,8 @@ static void RunSimulations()
 			break;
 	}
 
-	int nextTargetSimTic = min(min(gametic + estimatedRTT - tastyFudge, smoothedTic + cv_simulatetics.value), simtic + MAXSIMULATIONS);
+	int numDesiredSimulateTics = min(recommendedSimulateTics, cv_simulatetics.value);
+	int nextTargetSimTic = min(min(gametic + estimatedRTT - tastyFudge, smoothedTic + numDesiredSimulateTics), simtic + MAXSIMULATIONS);
 
 	if (nextTargetSimTic >= 0)
 		targetsimtic = nextTargetSimTic;
@@ -5878,6 +5880,13 @@ void DetermineNetConditions()
 	}
 
 	rttJitter = maxRTT - minRTT;
+
+	// stable server conditions? (but not just a big lag spike?)
+	if (rttJitter <= 2 && maxRTT < BACKUPTICS - 1)
+	{
+		// we know roughly how much we should simulate then!
+		recommendedSimulateTics = maxRTT + 1;
+	}
 }
 
 static void PerformDebugRewinds()
