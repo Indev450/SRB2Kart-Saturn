@@ -332,6 +332,9 @@ static inline void P_RunThinkers(void)
 #ifdef PARANOIA
 			I_Assert(currentthinker->function.acp1 != NULL);
 #endif
+			if (currentthinker->function.acp1 == P_MobjThinker && issimulation && ((mobj_t*)currentthinker)->isculled)
+				continue; // apply distance culling
+
 			currentthinker->function.acp1(currentthinker);
 		}
 	}

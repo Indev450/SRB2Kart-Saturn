@@ -886,6 +886,11 @@ static void P_LocalUnArchiveWorld(void)
 		sectors[i].preciplist = preservedSectors[i].preciplist;
 		sectors[i].touching_preciplist = preservedSectors[i].touching_preciplist;
 
+		if (sectors[i].thinglist == (mobj_t*)0xDDDDDDDD)
+		{
+			continue;
+		}
+
 		// restore preserved local stuff (tbh I don't really know what this is lol)
 		sectors[i].lightlist = preservedSectors[i].lightlist;
 		sectors[i].numlights = preservedSectors[i].numlights;
@@ -2194,61 +2199,6 @@ static inline void SaveWhatThinker(const thinker_t *th, const UINT8 type)
 
 
 //
-// P_LocalArchiveThinkers
-// Archives the world's thinkers locally. Used for within-level savestates
-//
-static void P_LocalArchiveThinkers(void)
-{
-	int i, j;
-	const thinker_t* thinker;
-	mobj_t* savedMobj;
-	executor_t* savedExecutor;
-	UINT8* original = save_p;
-	WRITEUINT32(save_p, ARCHIVEBLOCK_THINKERS);
-
-	for (i = 0; i < NUM_THINKERLISTS; i++)
-	{
-		for (thinker = thlist[i].next; thinker != &thlist[i]; thinker = thinker->next)
-		{
-			actionf_p1 acp1 = thinker->function.acp1;
-
-			// find the associated special def
-			for (j = 0; j < sizeof(specialDefs) / sizeof(specialDefs[0]); j++)
-			{
-				if (acp1 == specialDefs[j].action)
-					break;
-			}
-
-			if (j == sizeof(specialDefs) / sizeof(specialDefs[0]))
-				continue;
-
-			WRITEUINT8(save_p, j);
-			WRITEMEM(save_p, thinker, specialDefs[j].size);
-
-			// relink saved pointers with saved mobjnums
-#define RELINK(var) if (var != NULL) var = (mobj_t*)(var->mobjnum)
-			if (j == tc_mobj)
-			{
-				savedMobj = &((mobj_t*)save_p)[-1];
-				RELINK(savedMobj->tracer);
-				RELINK(savedMobj->target);
-				RELINK(savedMobj->hnext);
-				RELINK(savedMobj->hprev);
-			}
-
-			if (j == tc_executor)
-			{
-				savedExecutor = &((executor_t*)save_p)[-1];
-				RELINK(savedExecutor->caller);
-			}
-		}
-#undef RELINK
-
-		WRITEUINT8(save_p, 0xFF); // next list (or end)
-	}
-}
-
-//
 // P_NetArchiveThinkers
 //
 //
@@ -3262,6 +3212,92 @@ typedef struct
 #define HASHLOC(x, y, z) (((x>>4)-(y>>8)+(z>>12)-(x>>16)+(y>>20)-(z>>24)+(x>>28)-(y>>24)+(z>>20)-(x>>16)+(y>>8)-(z>>4)) & 0x7FFF)
 #define MAXNUMMOBJSBYLOC 15
 
+
+
+//
+// P_LocalArchiveThinkers
+// Archives the world's thinkers locally. Used for within-level savestates
+//
+static void P_LocalArchiveThinkers(void)
+{
+	int i, j;
+	size_t s;
+	const thinker_t* thinker;
+	mobj_t* savedMobj;
+	executor_t* savedExecutor;
+	UINT8* original = save_p;
+	WRITEUINT32(save_p, ARCHIVEBLOCK_THINKERS);
+
+	for (i = 0; i < NUM_THINKERLISTS; i++)
+	{
+#define RELINK(var) if (var != NULL) var = (mobj_t*)(var->mobjnum)
+		for (thinker = thlist[i].next; thinker != &thlist[i]; thinker = thinker->next)
+		{
+			actionf_p1 acp1 = thinker->function.acp1;
+
+			// find the associated special def
+			for (j = 0; j < sizeof(specialDefs) / sizeof(specialDefs[0]); j++)
+			{
+				if (acp1 == specialDefs[j].action)
+					break;
+			}
+
+			if (j == sizeof(specialDefs) / sizeof(specialDefs[0]))
+				continue;
+
+			WRITEUINT8(save_p, j);
+			WRITEMEM(save_p, thinker, specialDefs[j].size);
+
+			// relink saved pointers with saved mobjnums
+			if (j == tc_mobj)
+			{
+				savedMobj = &((mobj_t*)save_p)[-1];
+				RELINK(savedMobj->tracer);
+				RELINK(savedMobj->target);
+				RELINK(savedMobj->hnext);
+				RELINK(savedMobj->hprev);
+			}
+
+			if (j == tc_executor)
+			{
+				savedExecutor = &((executor_t*)save_p)[-1];
+				RELINK(savedExecutor->caller);
+			}
+		}
+
+		WRITEUINT8(save_p, 0xFF); // next list (or end)
+	}
+
+	// now write the nothinkers...
+	// turns out that MF_NOTHINKs aren't in thinker lists lol....
+	// makes sense, but doesn't make life easier. I just wanted an object list. Ah well.
+	for (s = 0; s < numsectors; s++)
+	{
+		mobj_t* thing = sectors[s].thinglist;
+
+		while (thing)
+		{
+			if (thing->flags & MF_NOTHINK)
+			{
+				// archive this thing
+				WRITEUINT8(save_p, tc_mobj);
+				WRITEMEM(save_p, thing, specialDefs[tc_mobj].size);
+
+				savedMobj = &((mobj_t*)save_p)[-1];
+				RELINK(savedMobj->tracer);
+				RELINK(savedMobj->target);
+				RELINK(savedMobj->hnext);
+				RELINK(savedMobj->hprev);
+
+			}
+			thing = thing->snext;
+		}
+	}
+#undef RELINK
+
+	WRITEUINT8(save_p, 0xFF);
+}
+
 static void P_LocalUnArchiveThinkers()
 {
 	thinker_t *thinker;
@@ -3269,8 +3305,8 @@ static void P_LocalUnArchiveThinkers()
 	UINT8 tclass;
 	UINT8 restoreExecutors = false;
 	INT32 i, j, list;
-	int skyviewid = -1;
-	int skycenterid = -1;
+	int skyviewid = 0;
+	int skycenterid = 0;
 	thinker_t newthinkers[NUM_THINKERLISTS] = { 0 };
 	static thinker_t* thinkersbytype[tc_end][16384];
 	static int numthinkersbytype[tc_end];
@@ -3340,7 +3376,23 @@ static void P_LocalUnArchiveThinkers()
 
 	// clear sector thinker pointers so they don't point to non-existant thinkers for all of eternity
 	for (i = 0; i < (int)numsectors; i++)
+	{
+		mobj_t* thing = sectors[i].thinglist, *next;
 		sectors[i].floordata = sectors[i].ceilingdata = sectors[i].lightingdata = sectors[i].fadecolormapdata = NULL;
+
+		// clear nothinkers too
+		while (thing)
+		{
+			next = thing->snext;
+			if (thing->flags & MF_NOTHINK)
+			{
+				thing->thinker.references = 0; // hope this is ok...
+				P_RemoveMobj(thing);
+			}
+
+			thing = next;
+		}
+	}
 
 	// read in saved thinkers
 	for (list = 0; list < NUM_THINKERLISTS; list++)
@@ -3418,9 +3470,12 @@ static void P_LocalUnArchiveThinkers()
 				// detach any playing sounds from this object if we can (still need to work on doing this properly!)
 				S_DetachChannelsFromOrigin((mobj_t*)newthinker);
 
-				// unlink it from the old list
-				newthinker->prev->next = newthinker->next;
-				newthinker->next->prev = newthinker->prev;
+				// unlink it from the old list (if it's not a nothinker)
+				if (!(tclass == tc_mobj && (((mobj_t*)newthinker)->flags & MF_NOTHINK)))
+				{
+					newthinker->prev->next = newthinker->next;
+					newthinker->next->prev = newthinker->prev;
+				}
 			}
 			else
 			{
@@ -3447,6 +3502,8 @@ static void P_LocalUnArchiveThinkers()
 				case tc_mobj:
 				{
 					mobj_t* mobj = (mobj_t*)newthinker;
+
+					// link global and player pointers
 					if (mobj->type == MT_REDFLAG)
 					{
 						redflag = mobj;
@@ -3501,10 +3558,13 @@ static void P_LocalUnArchiveThinkers()
 			}
 
 			// relink into the new thinker list
-			newthinker->prev = newthinkers[list].prev;
-			newthinker->next = &newthinkers[list];
-			newthinker->prev->next = newthinker;
-			newthinker->next->prev = newthinker;
+			if (!(tclass == tc_mobj && (((mobj_t*)newthinker)->flags & MF_NOTHINK)))
+			{
+				newthinker->prev = newthinkers[list].prev;
+				newthinker->next = &newthinkers[list];
+				newthinker->prev->next = newthinker;
+				newthinker->next->prev = newthinker;
+			}
 
 			if (tclass == tc_mobj)
 			{
@@ -3519,6 +3579,29 @@ static void P_LocalUnArchiveThinkers()
 		}
 	}
 	
+	// collect nothinkers as well
+	for (;;)
+	{
+		tclass = READUINT8(save_p);
+
+		if (tclass == 0xFF)
+			break; // next list
+
+		mobj = Z_Calloc(sizeof(mobj_t), PU_LEVEL, NULL);
+		READMEM(save_p, mobj, specialDefs[tclass].size);
+
+		mobjByNum[mobj->mobjnum] = mobj;
+		mobj->bnext = NULL;
+		mobj->bprev = NULL;
+		mobj->snext = NULL;
+		mobj->sprev = NULL;
+		mobj->subsector = NULL;
+		mobj->touching_sectorlist = NULL;
+		P_SetThingPosition(mobj);
+
+		// we just spawner a nothinker so it doesn't go in a thinker list, let it run wild??
+	}
+
 	// delete everything remaining in the list that hasn't been linked
 	for (i = 0; i < NUM_THINKERLISTS; i++)
 	{
@@ -3580,6 +3663,25 @@ static void P_LocalUnArchiveThinkers()
 		RELINK(mobj->target);
 		RELINK(mobj->hnext);
 		RELINK(mobj->hprev);
+	}
+
+	// and for nothinkers
+	for (i = 0; i < (int)numsectors; i++)
+	{
+		mobj_t* thing = sectors[i].thinglist;
+
+		while (thing)
+		{
+			if (thing->flags & MF_NOTHINK)
+			{
+				RELINK(thing->tracer);
+				RELINK(thing->target);
+				RELINK(thing->hnext);
+				RELINK(thing->hprev);
+			}
+
+			thing = thing->snext;
+		}
 	}
 
 	// restore player pointers (the above doesn't always seem to work perhaps because playeringame is false?
@@ -4623,7 +4725,8 @@ void P_SaveGameState(savestate_t* savestate)
 {
 	mobj_t* mobj;
 	thinker_t* th;
-	int i = 1;
+	size_t s = 0;
+	int mobjnum = 1;
 
 	UINT64 time = I_GetTimeUs();
 
@@ -4642,7 +4745,21 @@ void P_SaveGameState(savestate_t* savestate)
 		mobj = (mobj_t *)th;
 		if (mobj->type == MT_HOOP || mobj->type == MT_HOOPCOLLIDE || mobj->type == MT_HOOPCENTER)
 			continue;
-		mobj->mobjnum = i++;
+		mobj->mobjnum = mobjnum++;
+	}
+	// including nothinkers...
+	for (s = 0; s < numsectors; s++)
+	{
+		mobj_t* thing = sectors[s].thinglist;
+
+		while (thing)
+		{
+			if (thing->flags & MF_NOTHINK)
+			{
+				thing->mobjnum = mobjnum++;
+			}
+			thing = thing->snext;
+		}
 	}
 
 	P_NetArchiveMisc();

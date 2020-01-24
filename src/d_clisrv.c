@@ -5639,9 +5639,9 @@ static void RunSimulations()
 
 	int numToSimulate = targetsimtic - simtic;
 
-	// record steadyplayers' real game position and their simulated position
-	if (numToSimulate > 0)
+	if (numToSimulate > 0) // only touch objects if we're definitely going to simulate and rewind!
 	{
+		// record steadyplayers' real game position and their simulated position
 		for (int i = 0; i < MAXPLAYERS; i++)
 		{
 			if (playeringame[i] && players[i].mo && i != consoleplayer)
@@ -5660,6 +5660,39 @@ static void RunSimulations()
 					players[i].mo->y = steadyplayers[i].histy[simtic - smoothedTic];
 					players[i].mo->z = steadyplayers[i].histz[simtic - smoothedTic];
 					P_SetThingPosition(players[i].mo);
+				}
+			}
+		}
+
+		// and cull distant thinkers if enabled
+		if (cv_simulateculldistance.value > 0)
+		{
+			thinker_t* current;
+			fixed_t minDistance = cv_simulateculldistance.value << FRACBITS;
+			mobj_t* playerMos[MAXPLAYERS];
+			int numPlayers = 0;
+			int i;
+
+			for (i = 0; i < MAXPLAYERS; i++)
+			{
+				if (playeringame[i] && players[i].mo)
+				{
+					playerMos[numPlayers++] = players[i].mo;
+				}
+			}
+
+			for (current = thlist[THINK_MOBJ].next; current != &thlist[THINK_MOBJ]; current = current->next)
+			{
+				for (i = 0; i < numPlayers; i++)
+				{
+					if (P_AproxDistance(playerMos[i]->x - ((mobj_t*)current)->x, playerMos[i]->y - ((mobj_t*)current)->y) < minDistance)
+						break;
+				}
+
+				if (i == numPlayers)
+				{
+					// cull this mobj
+					((mobj_t*)current)->isculled = true;
 				}
 			}
 		}

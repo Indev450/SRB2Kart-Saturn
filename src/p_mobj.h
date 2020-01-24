@@ -375,6 +375,8 @@ typedef struct mobj_s
 
 	boolean colorized; // Whether the mobj uses the rainbow colormap
 
+	boolean isculled; // Whether the mobj is being culled during simulations
+
 	// WARNING: New fields must be added separately to savegame and Lua.
 } mobj_t;
 

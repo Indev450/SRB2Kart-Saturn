@@ -150,6 +150,7 @@ extern consvar_t cv_showping;
 
 extern consvar_t cv_simulate;
 extern consvar_t cv_simulatetics;
+extern consvar_t cv_simulateculldistance;
 extern consvar_t cv_netdelay;
 extern consvar_t cv_netjitter;
 extern consvar_t cv_netsmoothing;

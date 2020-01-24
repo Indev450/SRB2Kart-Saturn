@@ -479,6 +479,9 @@ consvar_t cv_simulate = { "simulate", "Yes", 0, CV_YesNo, NULL, 0, NULL, NULL, 0
 static CV_PossibleValue_t simulateTics_cons_t[] = { {0, "MIN"}, {MAXSIMULATIONS - 1, "MAX"}, {0, NULL} };
 consvar_t cv_simulatetics = { "simulatetics", "MAX", 0, simulateTics_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL };
 
+static CV_PossibleValue_t simulateculldistance_cons_t[] = { {0, "MIN"}, {10000, "MAX"}, {0, NULL} };
+consvar_t cv_simulateculldistance = { "simulateculldistance", "MIN", 0, simulateculldistance_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL };
+
 static CV_PossibleValue_t netdelay_cons_t[] = { {0, "MIN"}, {250, "MAX"}, {0, NULL} };
 consvar_t cv_netdelay = { "netdelay", "0", 0, netdelay_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL };
 
@@ -660,6 +663,7 @@ void D_RegisterServerCommands(void)
 
 	CV_RegisterVar(&cv_simulate);
 	CV_RegisterVar(&cv_simulatetics);
+	CV_RegisterVar(&cv_simulateculldistance);
 	CV_RegisterVar(&cv_netdelay);
 	CV_RegisterVar(&cv_netjitter);
 	CV_RegisterVar(&cv_netsmoothing);
