@@ -287,6 +287,9 @@ static void D_Display(void)
 		if (vid.recalc)
 			SCR_Recalc(); // NOTE! setsizeneeded is set by SCR_Recalc()
 
+		if (rendermode == render_soft && !splitscreen)
+			R_CheckViewMorph();
+
 		// change the view size if needed
 		if (setsizeneeded)
 		{
@@ -496,6 +499,9 @@ static void D_Display(void)
 
 			if (rendermode == render_soft)
 			{
+					if (!splitscreen)
+						R_ApplyViewMorph();
+
 				for (i = 0; i <= splitscreen; i++)
 				{
 					if (postimgtype[i])

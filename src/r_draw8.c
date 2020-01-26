@@ -643,6 +643,7 @@ void R_CalcTiltedLighting(fixed_t start, fixed_t end)
 	}
 }
 
+#define PLANELIGHTFLOAT (BASEVIDWIDTH * BASEVIDWIDTH / vid.width / (zeroheight - FIXED_TO_FLOAT(viewz)) / 21.0f * FIXED_TO_FLOAT(fovtan))
 
 /**	\brief The R_DrawTiltedSpan_8 function
 	Draw slopes! Holy sheit!
@@ -668,7 +669,7 @@ void R_DrawTiltedSpan_8(void)
 
 	// Lighting is simple. It's just linear interpolation from start to end
 	{
-		float planelightfloat = BASEVIDWIDTH*BASEVIDWIDTH/vid.width / (zeroheight - FIXED_TO_FLOAT(viewz)) / 21.0f;
+		float planelightfloat = PLANELIGHTFLOAT;
 		float lightstart, lightend;
 
 		lightend = (iz + ds_sz.x*width) * planelightfloat;
@@ -804,7 +805,7 @@ void R_DrawTiltedTranslucentSpan_8(void)
 
 	// Lighting is simple. It's just linear interpolation from start to end
 	{
-		float planelightfloat = BASEVIDWIDTH*BASEVIDWIDTH/vid.width / (zeroheight - FIXED_TO_FLOAT(viewz)) / 21.0f;
+		float planelightfloat = PLANELIGHTFLOAT;
 		float lightstart, lightend;
 
 		lightend = (iz + ds_sz.x*width) * planelightfloat;
@@ -915,6 +916,145 @@ void R_DrawTiltedTranslucentSpan_8(void)
 #endif
 }
 
+#ifndef NOWATER
+/**	\brief The R_DrawTiltedTranslucentWaterSpan_8 function
+	Like DrawTiltedTranslucentSpan, but for water
+*/
+void R_DrawTiltedTranslucentWaterSpan_8(void)
+{
+	// x1, x2 = ds_x1, ds_x2
+	int width = ds_x2 - ds_x1;
+	double iz, uz, vz;
+	UINT32 u, v;
+	int i;
+
+	UINT8 *source;
+	UINT8 *colormap;
+	UINT8 *dest;
+	UINT8 *dsrc;
+
+	double startz, startu, startv;
+	double izstep, uzstep, vzstep;
+	double endz, endu, endv;
+	UINT32 stepu, stepv;
+
+	iz = ds_szp->z + ds_szp->y*(centery-ds_y) + ds_szp->x*(ds_x1-centerx);
+
+	// Lighting is simple. It's just linear interpolation from start to end
+	{
+		float planelightfloat = PLANELIGHTFLOAT;
+		float lightstart, lightend;
+
+		lightend = (iz + ds_szp->x*width) * planelightfloat;
+		lightstart = iz * planelightfloat;
+
+		R_CalcTiltedLighting(FLOAT_TO_FIXED(lightstart), FLOAT_TO_FIXED(lightend));
+		//CONS_Printf("tilted lighting %f to %f (foc %f)\n", lightstart, lightend, focallengthf);
+	}
+
+	uz = ds_sup->z + ds_sup->y*(centery-ds_y) + ds_sup->x*(ds_x1-centerx);
+	vz = ds_svp->z + ds_svp->y*(centery-ds_y) + ds_svp->x*(ds_x1-centerx);
+
+	dest = ylookup[ds_y] + columnofs[ds_x1];
+	dsrc = screens[1] + (ds_y+ds_bgofs)*vid.width + ds_x1;
+	source = ds_source;
+	//colormap = ds_colormap;
+
+#if 0	// The "perfect" reference version of this routine. Pretty slow.
+		// Use it only to see how things are supposed to look.
+	i = 0;
+	do
+	{
+		double z = 1.f/iz;
+		u = (INT64)(uz*z) + viewx;
+		v = (INT64)(vz*z) + viewy;
+
+		colormap = planezlight[tiltlighting[ds_x1++]] + (ds_colormap - colormaps);
+		*dest = *(ds_transmap + (colormap[source[((v >> nflatyshift) & nflatmask) | (u >> nflatxshift)]] << 8) + *dsrc++);
+		dest++;
+		iz += ds_szp->x;
+		uz += ds_sup->x;
+		vz += ds_svp->x;
+	} while (--width >= 0);
+#else
+#define SPANSIZE 16
+#define INVSPAN	0.0625f
+
+	startz = 1.f/iz;
+	startu = uz*startz;
+	startv = vz*startz;
+
+	izstep = ds_szp->x * SPANSIZE;
+	uzstep = ds_sup->x * SPANSIZE;
+	vzstep = ds_svp->x * SPANSIZE;
+	//x1 = 0;
+	width++;
+
+	while (width >= SPANSIZE)
+	{
+		iz += izstep;
+		uz += uzstep;
+		vz += vzstep;
+
+		endz = 1.f/iz;
+		endu = uz*endz;
+		endv = vz*endz;
+		stepu = (INT64)((endu - startu) * INVSPAN);
+		stepv = (INT64)((endv - startv) * INVSPAN);
+		u = (INT64)(startu) + viewx;
+		v = (INT64)(startv) + viewy;
+
+		for (i = SPANSIZE-1; i >= 0; i--)
+		{
+			colormap = planezlight[tiltlighting[ds_x1++]] + (ds_colormap - colormaps);
+			*dest = *(ds_transmap + (colormap[source[((v >> nflatyshift) & nflatmask) | (u >> nflatxshift)]] << 8) + *dsrc++);
+			dest++;
+			u += stepu;
+			v += stepv;
+		}
+		startu = endu;
+		startv = endv;
+		width -= SPANSIZE;
+	}
+	if (width > 0)
+	{
+		if (width == 1)
+		{
+			u = (INT64)(startu);
+			v = (INT64)(startv);
+			colormap = planezlight[tiltlighting[ds_x1++]] + (ds_colormap - colormaps);
+			*dest = *(ds_transmap + (colormap[source[((v >> nflatyshift) & nflatmask) | (u >> nflatxshift)]] << 8) + *dsrc++);
+		}
+		else
+		{
+			double left = width;
+			iz += ds_szp->x * left;
+			uz += ds_sup->x * left;
+			vz += ds_svp->x * left;
+
+			endz = 1.f/iz;
+			endu = uz*endz;
+			endv = vz*endz;
+			left = 1.f/left;
+			stepu = (INT64)((endu - startu) * left);
+			stepv = (INT64)((endv - startv) * left);
+			u = (INT64)(startu) + viewx;
+			v = (INT64)(startv) + viewy;
+
+			for (; width != 0; width--)
+			{
+				colormap = planezlight[tiltlighting[ds_x1++]] + (ds_colormap - colormaps);
+				*dest = *(ds_transmap + (colormap[source[((v >> nflatyshift) & nflatmask) | (u >> nflatxshift)]] << 8) + *dsrc++);
+				dest++;
+				u += stepu;
+				v += stepv;
+			}
+		}
+	}
+#endif
+}
+#endif // NOWATER
+
 void R_DrawTiltedSplat_8(void)
 {
 	// x1, x2 = ds_x1, ds_x2
@@ -938,7 +1078,7 @@ void R_DrawTiltedSplat_8(void)
 
 	// Lighting is simple. It's just linear interpolation from start to end
 	{
-		float planelightfloat = BASEVIDWIDTH*BASEVIDWIDTH/vid.width / (zeroheight - FIXED_TO_FLOAT(viewz)) / 21.0f;
+		float planelightfloat = PLANELIGHTFLOAT;
 		float lightstart, lightend;
 
 		lightend = (iz + ds_sz.x*width) * planelightfloat;

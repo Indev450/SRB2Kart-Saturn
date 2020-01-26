@@ -4471,7 +4471,7 @@ void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 
 static boolean drewsky = false;
 
-void HWR_DrawSkyBackground(float fpov)
+void HWR_DrawSkyBackground(player_t *player, float fpov)
 {
 	FTransform dometransform;
 
@@ -4496,6 +4496,12 @@ void HWR_DrawSkyBackground(float fpov)
 	dometransform.scalez = 1;
 	dometransform.fovxangle = fpov; // Tails
 	dometransform.fovyangle = fpov; // Tails
+	if (player->viewrollangle != 0)
+	{
+		fixed_t rol = AngleFixed(player->viewrollangle);
+		atransform.rollangle = FIXED_TO_FLOAT(rol);
+		atransform.roll = true;
+	}
 	dometransform.splitscreen = splitscreen;
 
 	HWR_GetTexture(texturetranslation[skytexture]);
@@ -4617,6 +4623,12 @@ void HWR_RenderFrame(INT32 viewnumber, player_t *player, boolean skybox)
 
 	atransform.fovxangle = fpov; // Tails
 	atransform.fovyangle = fpov; // Tails
+	if (player->viewrollangle != 0)
+	{
+		fixed_t rol = AngleFixed(player->viewrollangle);
+		atransform.rollangle = FIXED_TO_FLOAT(rol);
+		atransform.roll = true;
+	}
 	atransform.splitscreen = splitscreen;
 
 	for (i = 0; i <= splitscreen; i++)
@@ -4640,7 +4652,7 @@ void HWR_RenderFrame(INT32 viewnumber, player_t *player, boolean skybox)
 	ST_doPaletteStuff();
 
 	// Draw the sky background.
-	HWR_DrawSkyBackground(fpov);
+	HWR_DrawSkyBackground(player, fpov);
 	if (skybox)
 		drewsky = true;
 
