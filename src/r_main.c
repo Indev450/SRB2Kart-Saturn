@@ -1844,6 +1844,7 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_cam4_rotspeed);
 
 	CV_RegisterVar(&cv_inverseslope);
+	CV_RegisterVar(&cv_quaketilt);
 
 	CV_RegisterVar(&cv_showhud);
 	CV_RegisterVar(&cv_translucenthud);
