@@ -666,7 +666,7 @@ void R_CheckViewMorph(void)
 	float fisheyemap[MAXVIDWIDTH/2 + 1];
 #endif
 
-	angle_t rollangle = players[displayplayers[0]].viewrollangle;
+	angle_t rollangle = players[displayplayers[0]].viewrollangle + quake.roll;
 #ifdef WOUGHMP_WOUGHMP
 	fixed_t fisheye = cv_cam2_turnmultiplier.value; // temporary test value
 #endif
