@@ -136,6 +136,8 @@ extern consvar_t cv_cam3_speed, cv_cam3_rotate, cv_cam3_rotspeed;
 extern consvar_t cv_cam4_dist, cv_cam4_still, cv_cam4_height;
 extern consvar_t cv_cam4_speed, cv_cam4_rotate, cv_cam4_rotspeed;
 
+extern consvar_t cv_inverseslope;
+
 extern fixed_t t_cam_dist, t_cam_height, t_cam_rotate;
 extern fixed_t t_cam2_dist, t_cam2_height, t_cam2_rotate;
 extern fixed_t t_cam3_dist, t_cam3_height, t_cam3_rotate;

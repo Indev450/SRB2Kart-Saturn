@@ -7108,6 +7108,8 @@ consvar_t cv_cam4_speed = {"cam4_speed", "0.4", CV_FLOAT|CV_SAVE, CV_CamSpeed, N
 consvar_t cv_cam4_rotate = {"cam4_rotate", "0", CV_CALL|CV_NOINIT, CV_CamRotate, CV_CamRotate4_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_cam4_rotspeed = {"cam4_rotspeed", "10", CV_SAVE, rotation_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_inverseslope = {"inverseslope", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 fixed_t t_cam_dist = -42;
 fixed_t t_cam_height = -42;
 fixed_t t_cam_rotate = -42;
@@ -8217,6 +8219,33 @@ void P_DoTimeOver(player_t *player)
 		exitcountdown = 5*TICRATE;
 }
 
+	/* gaysed script from me, based on Golden's sprite slope roll */
+
+static void
+DoABarrelRoll (player_t *player)
+{
+	angle_t slope;
+	angle_t delta;
+
+	if (player->mo->standingslope)
+	{
+		delta = ( player->mo->angle - player->mo->standingslope->xydirection );
+		slope = FixedMul(FINESINE (delta>>ANGLETOFINESHIFT),
+				player->mo->standingslope->zangle);
+		if (cv_inverseslope.value)
+			slope = -slope;
+	}
+	else
+		slope = 0;
+
+	delta = (INT32)( slope - player->viewrollangle )/ 16;
+
+	if (delta)
+		player->viewrollangle += delta;
+	else
+		player->viewrollangle  = slope;
+}
+
 //
 // P_PlayerThink
 //
@@ -8801,6 +8830,8 @@ void P_PlayerThink(player_t *player)
 
 		I_Error("I'm done!\n");
 	}*/
+
+	DoABarrelRoll(player);
 }
 
 //
