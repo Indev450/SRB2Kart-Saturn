@@ -7108,7 +7108,15 @@ consvar_t cv_cam4_speed = {"cam4_speed", "0.4", CV_FLOAT|CV_SAVE, CV_CamSpeed, N
 consvar_t cv_cam4_rotate = {"cam4_rotate", "0", CV_CALL|CV_NOINIT, CV_CamRotate, CV_CamRotate4_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_cam4_rotspeed = {"cam4_rotspeed", "10", CV_SAVE, rotation_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_inverseslope = {"inverseslope", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+static CV_PossibleValue_t slopeview_cons_t[] =
+{
+	{ 0, "Off" },
+	{ 1, "On" },
+	{ 2, "Inverse" },
+
+	{0}
+};
+consvar_t cv_slopeview = {"slopeview", "Off", CV_SAVE, slopeview_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_quaketilt = {"quaketilt", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 fixed_t t_cam_dist = -42;
@@ -8260,12 +8268,13 @@ DoABarrelRoll (player_t *player)
 	angle_t slope;
 	angle_t delta;
 
-	if (player->mo->standingslope)
+	if (cv_slopeview.value && player->mo->standingslope)
 	{
 		delta = ( player->mo->angle - player->mo->standingslope->xydirection );
 		slope = FixedMul(FINESINE (delta>>ANGLETOFINESHIFT),
 				player->mo->standingslope->zangle);
-		if (cv_inverseslope.value)
+		/* invert the screen tilt as if tilting the view instead */
+		if (cv_slopeview.value != 2)/* :james: mode */
 			slope = -slope;
 	}
 	else
