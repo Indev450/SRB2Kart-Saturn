@@ -8284,7 +8284,7 @@ DoABarrelRoll (player_t *player)
 	if (cv_quaketilt.value)
 		slope += Quaketilt(player);
 
-	delta = (INT32)( slope - player->viewrollangle )/ 16;
+	delta = (INT32)( slope - player->viewrollangle )/ 32;
 
 	if (delta)
 		player->viewrollangle += delta;
