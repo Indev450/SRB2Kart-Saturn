@@ -405,26 +405,6 @@ static int player_set(lua_State *L)
 	//
 	else if (fastcmp(field,"charflags"))
 		plr->charflags = (UINT32)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"thokitem"))
-		plr->thokitem = luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"spinitem"))
-		plr->spinitem = luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"revitem"))
-		plr->revitem = luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"followitem"))
-		plr->followitem = luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"actionspd"))
-		plr->actionspd = (INT32)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"mindash"))
-		plr->mindash = (INT32)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"maxdash"))
-		plr->maxdash = (INT32)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"jumpfactor"))
-		plr->jumpfactor = (INT32)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"height"))
-		plr->height = luaL_checkfixed(L, 3);
-	else if (fastcmp(field,"spinheight"))
-		plr->spinheight = luaL_checkfixed(L, 3);
 	else if (fastcmp(field,"lives"))
 		plr->lives = (SINT8)luaL_checkinteger(L, 3);
 	else if (fastcmp(field,"continues"))
