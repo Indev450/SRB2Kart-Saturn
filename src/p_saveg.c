@@ -2838,7 +2838,7 @@ static void P_NetUnArchiveThinkers(void)
 					break;
 
 				case tc_disappear:
-					LoadDisappearThinker((actionf_p1)T_Disappear);
+					th = LoadDisappearThinker((actionf_p1)T_Disappear);
 					break;
 #ifdef POLYOBJECTS
 				case tc_polyrotate:
@@ -2866,7 +2866,7 @@ static void P_NetUnArchiveThinkers(void)
 					break;
 
 				case tc_polydisplace:
-					LoadPolydisplaceThinker((actionf_p1)T_PolyObjDisplace);
+					th = LoadPolydisplaceThinker((actionf_p1)T_PolyObjDisplace);
 					break;
 #endif
 				case tc_scroll:
@@ -2882,7 +2882,7 @@ static void P_NetUnArchiveThinkers(void)
 					break;
 
 				default:
-					I_Error("P_UnarchiveSpecials: Unknown tclass %d in savegame", tclass);
+					CONS_Alert(CONS_ERROR, "Found mobj with unknown map thing type NULL\n");
 			}
 			if (th)
 				P_AddThinker(i, th);
@@ -2896,7 +2896,7 @@ static void P_NetUnArchiveThinkers(void)
 		executor_t *delay = NULL;
 		UINT32 mobjnum;
 		for (currentthinker = thlist[i].next; currentthinker != &thlist[i];
-		currentthinker = currentthinker->next)
+			currentthinker = currentthinker->next)
 		{
 			if (currentthinker->function.acp1 != (actionf_p1)T_ExecutorDelay)
 				continue;
