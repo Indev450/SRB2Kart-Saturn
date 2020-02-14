@@ -25,8 +25,6 @@
 #include "lua_hook.h"
 #include "k_kart.h" // SRB2kart
 
-#include "p_user.c"
-
 #ifdef HW3SOUND
 #include "hardware/hw3sound.h"
 #endif
