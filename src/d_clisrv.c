@@ -4778,12 +4778,14 @@ static INT16 Consistancy(void)
 		ret += P_GetRandSeed();
 
 #ifdef MOBJCONSISTANCY
-	for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
+	if (gamestate == GS_LEVEL)
 	{
-		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-			continue;
+		for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
+		{
+			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+				continue;
 
-		mo = (mobj_t *)th;
+			mo = (mobj_t *)th;
 
 			if (mo->flags & (MF_SPECIAL | MF_SOLID | MF_PUSHABLE | MF_BOSS | MF_MISSILE | MF_SPRING | MF_MONITOR | MF_FIRE | MF_ENEMY | MF_PAIN | MF_STICKY))
 			{
@@ -4884,6 +4886,7 @@ static INT16 Consistancy(void)
 				ret -= mo->sprite;
 				ret += mo->frame;
 			}
+			
 		}
 	}
 #endif
