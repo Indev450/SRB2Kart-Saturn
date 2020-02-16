@@ -1021,14 +1021,6 @@ static inline UINT32 SavePlayer(const player_t *player)
 	return 0xFFFFFFFF;
 }
 
-#ifdef ESLOPE
-static UINT32 SaveSlope(const pslope_t *slope)
-{
-	if (slope) return (UINT32)(slope->id);
-	return 0xFFFFFFFF;
-}
-#endif // ESLOPE
-
 //
 // SaveMobjThinker
 //
@@ -1949,20 +1941,6 @@ static inline player_t *LoadPlayer(UINT32 player)
 	if (player >= MAXPLAYERS) return NULL;
 	return &players[player];
 }
-
-#ifdef ESLOPE
-static inline pslope_t *LoadSlope(UINT32 slopeid)
-{
-	pslope_t *p = slopelist;
-	if (slopeid > slopecount) return NULL;
-	do
-	{
-		if (p->id == slopeid)
-			return p;
-	} while ((p = p->next));
-	return NULL;
-}
-#endif // ESLOPE
 
 //
 // LoadMobjThinker
