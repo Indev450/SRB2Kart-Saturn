@@ -193,6 +193,8 @@ void P_InitThinkers(void)
 	UINT8 i;
 	for (i = 0; i < NUM_THINKERLISTS; i++)
 		thlist[i].prev = thlist[i].next = &thlist[i];
+	
+	waypointcap = NULL; //Hack transplant
 }
 
 // Adds a new thinker at the end of the list.
@@ -328,7 +330,7 @@ static inline void P_RunThinkers(void)
 		for (currentthinker = thlist[i].next; currentthinker != &thlist[i]; currentthinker = currentthinker->next)
 		{
 #ifdef PARANOIA
-			I_Assert(currentthinker->function.acp1 != NULL)
+			I_Assert(currentthinker->function.acp1 != NULL);
 #endif
 			currentthinker->function.acp1(currentthinker);
 		}
