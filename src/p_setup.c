@@ -3062,7 +3062,7 @@ boolean P_SetupLevel(boolean skipprecip)
 	}
 
 #ifdef ESLOPE
-	P_ResetDynamicSlopes(fromnetsave);
+	P_ResetDynamicSlopes();
 #endif
 
 	P_LoadThings();
