@@ -2699,175 +2699,181 @@ static void P_NetUnArchiveThinkers(void)
 	}
 
 	// read in saved thinkers
-	for (i = 0; i < NUM_THINKERLISTS; i++)
+	for (;;)
 	{
-		for (;;)
+		thinklistnum_t thinkerlist = THINK_MAIN;
+		thinker_t* th;
+		tclass = READUINT8(save_p);
+
+		if (tclass == tc_end)
+			break; // leave the saved thinker reading loop
+		numloaded++;
+
+		switch (tclass)
 		{
-			thinker_t* th;
-			tclass = READUINT8(save_p);
+			case tc_mobj:
+				th = LoadMobjThinker((actionf_p1)P_MobjThinker);
+				thinkerlist = THINK_MOBJ;
+				break;
 
-			if (tclass == tc_end)
-				break; // leave the saved thinker reading loop
-			numloaded++;
+			case tc_ceiling:
+				th = LoadCeilingThinker((actionf_p1)T_MoveCeiling);
+				break;
 
-			switch (tclass)
-			{
-				case tc_mobj:
-					th = LoadMobjThinker((actionf_p1)P_MobjThinker);
-					break;
+			case tc_crushceiling:
+				th = LoadCeilingThinker((actionf_p1)T_CrushCeiling);
+				break;
 
-				case tc_ceiling:
-					th = LoadCeilingThinker((actionf_p1)T_MoveCeiling);
-					break;
+			case tc_floor:
+				th = LoadFloormoveThinker((actionf_p1)T_MoveFloor);
+				break;
 
-				case tc_crushceiling:
-					th = LoadCeilingThinker((actionf_p1)T_CrushCeiling);
-					break;
+			case tc_flash:
+				th = LoadLightflashThinker((actionf_p1)T_LightningFlash);
+				break;
 
-				case tc_floor:
-					th = LoadFloormoveThinker((actionf_p1)T_MoveFloor);
-					break;
+			case tc_strobe:
+				th = LoadStrobeThinker((actionf_p1)T_StrobeFlash);
+				break;
 
-				case tc_flash:
-					th = LoadLightflashThinker((actionf_p1)T_LightningFlash);
-					break;
+			case tc_glow:
+				th = LoadGlowThinker((actionf_p1)T_Glow);
+				break;
 
-				case tc_strobe:
-					th = LoadStrobeThinker((actionf_p1)T_StrobeFlash);
-					break;
+			case tc_fireflicker:
+				th = LoadFireflickerThinker((actionf_p1)T_FireFlicker);
+				break;
 
-				case tc_glow:
-					th = LoadGlowThinker((actionf_p1)T_Glow);
-					break;
+			case tc_elevator:
+				th = LoadElevatorThinker((actionf_p1)T_MoveElevator, 3);
+				break;
 
-				case tc_fireflicker:
-					th = LoadFireflickerThinker((actionf_p1)T_FireFlicker);
-					break;
+			case tc_continuousfalling:
+				th = LoadSpecialLevelThinker((actionf_p1)T_ContinuousFalling, 3);
+				break;
 
-				case tc_elevator:
-					th = LoadElevatorThinker((actionf_p1)T_MoveElevator, 3);
-					break;
+			case tc_thwomp:
+				th = LoadSpecialLevelThinker((actionf_p1)T_ThwompSector, 3);
+				break;
 
-				case tc_continuousfalling:
-					th = LoadSpecialLevelThinker((actionf_p1)T_ContinuousFalling, 3);
-					break;
+			case tc_noenemies:
+				th = LoadSpecialLevelThinker((actionf_p1)T_NoEnemiesSector, 0);
+				break;
 
-				case tc_thwomp:
-					th = LoadSpecialLevelThinker((actionf_p1)T_ThwompSector, 3);
-					break;
+			case tc_eachtime:
+				th = LoadSpecialLevelThinker((actionf_p1)T_EachTimeThinker, 0);
+				break;
 
-				case tc_noenemies:
-					th = LoadSpecialLevelThinker((actionf_p1)T_NoEnemiesSector, 0);
-					break;
+			case tc_raisesector:
+				th = LoadSpecialLevelThinker((actionf_p1)T_RaiseSector, 0);
+				break;
 
-				case tc_eachtime:
-					th = LoadSpecialLevelThinker((actionf_p1)T_EachTimeThinker, 0);
-					break;
+			/// \todo rewrite all the code that uses an elevator_t but isn't an elevator
+			/// \note working on it!
+			case tc_camerascanner:
+				th = LoadElevatorThinker((actionf_p1)T_CameraScanner, 0);
+				break;
 
-				case tc_raisesector:
-					th = LoadSpecialLevelThinker((actionf_p1)T_RaiseSector, 0);
-					break;
+			case tc_bouncecheese:
+				th = LoadSpecialLevelThinker((actionf_p1)T_BounceCheese, 2);
+				break;
 
-				/// \todo rewrite all the code that uses an elevator_t but isn't an elevator
-				/// \note working on it!
-				case tc_camerascanner:
-					th = LoadElevatorThinker((actionf_p1)T_CameraScanner, 0);
-					break;
+			case tc_startcrumble:
+				th = LoadElevatorThinker((actionf_p1)T_StartCrumble, 1);
+				break;
 
-				case tc_bouncecheese:
-					th = LoadSpecialLevelThinker((actionf_p1)T_BounceCheese, 2);
-					break;
+			case tc_marioblock:
+				th = LoadSpecialLevelThinker((actionf_p1)T_MarioBlock, 3);
+				break;
 
-				case tc_startcrumble:
-					th = LoadElevatorThinker((actionf_p1)T_StartCrumble, 1);
-					break;
+			case tc_marioblockchecker:
+				th = LoadSpecialLevelThinker((actionf_p1)T_MarioBlockChecker, 0);
+				break;
 
-				case tc_marioblock:
-					th = LoadSpecialLevelThinker((actionf_p1)T_MarioBlock, 3);
-					break;
+			case tc_spikesector:
+				th = LoadSpecialLevelThinker((actionf_p1)T_SpikeSector, 0);
+				break;
 
-				case tc_marioblockchecker:
-					th = LoadSpecialLevelThinker((actionf_p1)T_MarioBlockChecker, 0);
-					break;
+			case tc_floatsector:
+				th = LoadSpecialLevelThinker((actionf_p1)T_FloatSector, 0);
+				break;
 
-				case tc_spikesector:
-					th = LoadSpecialLevelThinker((actionf_p1)T_SpikeSector, 0);
-					break;
+			case tc_bridgethinker:
+				th = LoadSpecialLevelThinker((actionf_p1)T_BridgeThinker, 3);
+				break;
 
-				case tc_floatsector:
-					th = LoadSpecialLevelThinker((actionf_p1)T_FloatSector, 0);
-					break;
+			case tc_laserflash:
+				th = LoadLaserThinker((actionf_p1)T_LaserFlash);
+				break;
 
-				case tc_bridgethinker:
-					th = LoadSpecialLevelThinker((actionf_p1)T_BridgeThinker, 3);
-					break;
+			case tc_lightfade:
+				th = LoadLightlevelThinker((actionf_p1)T_LightFade);
+				break;
 
-				case tc_laserflash:
-					th = LoadLaserThinker((actionf_p1)T_LaserFlash);
-					break;
+			case tc_executor:
+				th = LoadExecutorThinker((actionf_p1)T_ExecutorDelay);
+				restoreNum = true;
+				break;
 
-				case tc_lightfade:
-					th = LoadLightlevelThinker((actionf_p1)T_LightFade);
-					break;
-
-				case tc_executor:
-					th = LoadExecutorThinker((actionf_p1)T_ExecutorDelay);
-					restoreNum = true;
-					break;
-
-				case tc_disappear:
-					th = LoadDisappearThinker((actionf_p1)T_Disappear);
-					break;
+			case tc_disappear:
+				th = LoadDisappearThinker((actionf_p1)T_Disappear);
+				break;
 #ifdef POLYOBJECTS
-				case tc_polyrotate:
-					th = LoadPolyrotatetThinker((actionf_p1)T_PolyObjRotate);
-					break;
+			case tc_polyrotate:
+				th = LoadPolyrotatetThinker((actionf_p1)T_PolyObjRotate);
+				thinkerlist = THINK_POLYOBJ;
+				break;
 
-				case tc_polymove:
-					th = LoadPolymoveThinker((actionf_p1)T_PolyObjMove);
-					break;
+			case tc_polymove:
+				th = LoadPolymoveThinker((actionf_p1)T_PolyObjMove);
+				thinkerlist = THINK_POLYOBJ;
+				break;
 
-				case tc_polywaypoint:
-					th = LoadPolywaypointThinker((actionf_p1)T_PolyObjWaypoint);
-					break;
+			case tc_polywaypoint:
+				th = LoadPolywaypointThinker((actionf_p1)T_PolyObjWaypoint);
+				thinkerlist = THINK_POLYOBJ;
+				break;
 
-				case tc_polyslidedoor:
-					th = LoadPolyslidedoorThinker((actionf_p1)T_PolyDoorSlide);
-					break;
+			case tc_polyslidedoor:
+				th = LoadPolyslidedoorThinker((actionf_p1)T_PolyDoorSlide);
+				thinkerlist = THINK_POLYOBJ;
+				break;
 
-				case tc_polyswingdoor:
-					th = LoadPolyswingdoorThinker((actionf_p1)T_PolyDoorSwing);
-					break;
+			case tc_polyswingdoor:
+				th = LoadPolyswingdoorThinker((actionf_p1)T_PolyDoorSwing);
+				thinkerlist = THINK_POLYOBJ;
+				break;
 
-				case tc_polyflag:
-					th = LoadPolymoveThinker((actionf_p1)T_PolyObjFlag);
-					break;
+			case tc_polyflag:
+				th = LoadPolymoveThinker((actionf_p1)T_PolyObjFlag);
+				thinkerlist = THINK_POLYOBJ;
+				break;
 
-				case tc_polydisplace:
-					th = LoadPolydisplaceThinker((actionf_p1)T_PolyObjDisplace);
-					break;
+			case tc_polydisplace:
+				th = LoadPolydisplaceThinker((actionf_p1)T_PolyObjDisplace);
+				thinkerlist = THINK_POLYOBJ;
+				break;
 #endif
-				case tc_scroll:
-					th = LoadScrollThinker((actionf_p1)T_Scroll);
-					break;
+			case tc_scroll:
+				th = LoadScrollThinker((actionf_p1)T_Scroll);
+				break;
 
-				case tc_friction:
-					th = LoadFrictionThinker((actionf_p1)T_Friction);
-					break;
+			case tc_friction:
+				th = LoadFrictionThinker((actionf_p1)T_Friction);
+				break;
 
-				case tc_pusher:
-					th = LoadPusherThinker((actionf_p1)T_Pusher);
-					break;
+			case tc_pusher:
+				th = LoadPusherThinker((actionf_p1)T_Pusher);
+				break;
 
-				default:
-					CONS_Alert(CONS_ERROR, "Found mobj with unknown map thing type NULL\n");
-			}
-			if (th)
-				P_AddThinker(i, th);
+			default:
+				CONS_Alert(CONS_ERROR, "Found mobj with unknown map thing type NULL\n");
 		}
-
-		CONS_Debug(DBG_NETPLAY, "%u thinkers loaded in list %d\n", numloaded, i);
+		if (th)
+			P_AddThinker(thinkerlist, th);
 	}
+
+	CONS_Debug(DBG_NETPLAY, "%u thinkers loaded in list %d\n", numloaded, i);
 
 	if (restoreNum)
 	{
