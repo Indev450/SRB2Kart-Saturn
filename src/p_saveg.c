@@ -465,8 +465,8 @@ static void P_LocalArchivePlayers(void)
 		RELINK(player->axis1);
 		RELINK(player->axis2);
 		RELINK(player->awayviewmobj);
-		RELINK(player->followmobj);
-		RELINK(player->drone);
+		//RELINK(player->followmobj);
+		//RELINK(player->drone);
 #undef RELINK
 	}
 }
@@ -497,6 +497,7 @@ static UINT32 num_ffloors = 0; // for loading
 
 // Copypasta from r_data.c AddColormapToList
 // But also check for equality and return the matching index
+/*
 static UINT32 CheckAddNetColormapToList(extracolormap_t *extra_colormap)
 {
 	extracolormap_t *exc, *exc_prev = NULL;
@@ -707,6 +708,7 @@ static void P_NetUnArchiveColormaps(void)
 		}
 	}
 }
+*/
 
 #define SD_FLOORHT  0x01
 #define SD_CEILHT   0x02
@@ -845,7 +847,7 @@ static void P_LocalArchiveWorld(void)
 	UINT8* put;
 
 	// paranoia something something
-	ClearNetColormaps();
+	//ClearNetColormaps();
 
 	WRITEUINT32(save_p, ARCHIVEBLOCK_WORLD);
 	put = save_p;
@@ -1495,13 +1497,6 @@ static const specialdef_t specialDefs[] =
 	NOSECTOR(T_NoEnemiesSector, levelspecthink_t),      // tc_noenemies
 	NOSECTOR(T_EachTimeThinker, levelspecthink_t),      // tc_eachtime
 	NOSECTOR(T_Disappear, disappear_t),                // tc_disappear
-	NOSECTOR(T_Fade, fade_t),                          // tc_fade
-	WITHSECTOR(T_FadeColormap, fadecolormap_t, ST_FADEMAPDATA),          // tc_fade
-	NOSECTOR(T_PlaneDisplace, planedisplace_t),        // tc_planedisplace
-#ifdef ESLOPE
-	NOSECTOR(T_DynamicSlopeLine, dynplanethink_t),      // tc_dynslopeline
-	NOSECTOR(T_DynamicSlopeVert, dynplanethink_t),      // tc_dynslopevert
-#endif
 #ifdef POLYOBJECTS
 	NOSECTOR(T_PolyObjRotate, polyrotate_t),            // tc_polyrotate
 	NOSECTOR(T_PolyObjMove, polymove_t),                // tc_polymove
@@ -1510,8 +1505,6 @@ static const specialdef_t specialDefs[] =
 	NOSECTOR(T_PolyDoorSwing, polyswingdoor_t),         // tc_polyswingdoor
 	NOSECTOR(T_PolyObjFlag, polymove_t),                // tc_polyflag
 	NOSECTOR(T_PolyObjDisplace, polydisplace_t),        // tc_polydisplace
-	NOSECTOR(T_PolyObjRotDisplace, polyrotdisplace_t),  // tc_polyrotdisplace
-	NOSECTOR(T_PolyObjFade, polyfade_t),                // tc_polyfade
 #endif
 };
 #undef A
@@ -3326,6 +3319,7 @@ static void P_LocalUnArchiveThinkers()
 		I_Error("Bad SaveState at archive block Thinkers");
 
 	// preserve sky box indexes
+	/*  Probably unused
 	for (i = 0; i < 16; i++)
 	{
 		if (skyboxmo[0] == skyboxviewpnts[i])
@@ -3335,6 +3329,7 @@ static void P_LocalUnArchiveThinkers()
 		skyboxviewpnts[i] = NULL;
 		skyboxcenterpnts[i] = NULL;
 	}
+	*/
 	skyboxmo[0] = skyboxmo[1] = NULL;
 
 	// sort thinkers into maps to speed up replacement searches
@@ -3378,7 +3373,7 @@ static void P_LocalUnArchiveThinkers()
 	for (i = 0; i < (int)numsectors; i++)
 	{
 		mobj_t* thing = sectors[i].thinglist, *next;
-		sectors[i].floordata = sectors[i].ceilingdata = sectors[i].lightingdata = sectors[i].fadecolormapdata = NULL;
+		sectors[i].floordata = sectors[i].ceilingdata = sectors[i].lightingdata;
 
 		// clear nothinkers too
 		while (thing)
@@ -3516,6 +3511,7 @@ static void P_LocalUnArchiveThinkers()
 						bflagpoint = mobj->spawnpoint;
 					}
 
+					/*
 					if (mobj->type == MT_SKYBOX)
 					{
 						if ((mobj->extravalue2 >> 16) == 1)
@@ -3523,6 +3519,7 @@ static void P_LocalUnArchiveThinkers()
 						else
 							skyboxviewpnts[mobj->extravalue2 & 0xFFFF] = mobj;
 					}
+					*/
 
 					if (mobj->player && mobj->type == MT_PLAYER)
 						mobj->player->mo = mobj;
@@ -3551,10 +3548,12 @@ static void P_LocalUnArchiveThinkers()
 					target->ceilingdata = newthinker;
 				if (specialDefs[tclass].sectorTargets & ST_FLOORDATA)
 					target->floordata = newthinker;
+				/*
 				if (specialDefs[tclass].sectorTargets & ST_LIGHTDATA)
 					target->lightingdata = newthinker;
 				if (specialDefs[tclass].sectorTargets & ST_FADEMAPDATA)
 					target->fadecolormapdata = newthinker;
+				*/
 			}
 
 			// relink into the new thinker list
@@ -3693,15 +3692,15 @@ static void P_LocalUnArchiveThinkers()
 			RELINK(players[i].axis1);
 			RELINK(players[i].axis2);
 			RELINK(players[i].awayviewmobj);
-			RELINK(players[i].followmobj);
-			RELINK(players[i].drone);
+			//RELINK(players[i].followmobj);
+			//RELINK(players[i].drone);
 		}
 	}
 #undef RELINK
 
 	// restore skyboxes
-	skyboxmo[0] = skyboxviewpnts[(skyviewid >= 0) ? skyviewid : 0];
-	skyboxmo[1] = skyboxcenterpnts[(skycenterid >= 0) ? skycenterid : 0];
+	//skyboxmo[0] = skyboxviewpnts[(skyviewid >= 0) ? skyviewid : 0];
+	//skyboxmo[1] = skyboxcenterpnts[(skycenterid >= 0) ? skycenterid : 0];
 }
 
 //
@@ -4545,50 +4544,26 @@ static inline boolean P_NetUnArchiveMisc(boolean preserveLevel)
 	return true;
 }
 
+//made kart splitscreen compat
 static inline void P_LocalArchiveCameras()
 {
 	WRITEMEM(save_p, &camera, sizeof(camera));
-	WRITEMEM(save_p, &camera2, sizeof(camera2));
 }
 
+//made kart splitscreen compat
 static inline void P_LocalUnArchiveCameras()
 {
-	boolean chase1 = camera.chase;
-	boolean chase2 = camera2.chase;
+	UINT32 i;
+	boolean chase[4];
+	for (i = 0; i < 4; i++)
+		chase[i] = camera[i].chase;
 
 	// this makes things easy!
 	READMEM(save_p, &camera, sizeof(camera));
-	READMEM(save_p, &camera2, sizeof(camera2));
 
 	// chase is changed outside of tics, so preserve this
-	camera.chase = chase1;
-	camera2.chase = chase2;
-}
-
-static inline void P_ArchiveLuabanksAndConsistency(void)
-{
-	UINT8 i, banksinuse = NUM_LUABANKS;
-
-	gamespeed = READUINT8(save_p);
-	franticitems = (boolean)READUINT8(save_p);
-	comeback = (boolean)READUINT8(save_p);
-
 	for (i = 0; i < 4; i++)
-		battlewanted[i] = READSINT8(save_p);
-
-	wantedcalcdelay = READUINT32(save_p);
-	indirectitemcooldown = READUINT32(save_p);
-	hyubgone = READUINT32(save_p);
-	mapreset = READUINT32(save_p);
-	nospectategrief = READUINT8(save_p);
-	thwompsactive = (boolean)READUINT8(save_p);
-	spbplace = READSINT8(save_p);
-
-	// Is it paused?
-	if (READUINT8(save_p) == 0x2f)
-		paused = true;
-
-	return true;
+		camera[i].chase = chase[i];
 }
 
 UINT64 I_GetTimeUs(void);
@@ -4735,7 +4710,7 @@ void P_SaveGameState(savestate_t* savestate)
 	WRITEINT16(save_p, gamemap);
 	WRITEUINT32(save_p, globalmobjnum);
 
-	CV_SaveNetVars(&save_p);
+	CV_SaveNetVars(&save_p, false);
 
 	// assign mobj nums for pointer relinking
 	for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
@@ -4777,7 +4752,7 @@ void P_SaveGameState(savestate_t* savestate)
 	LUA_Archive();
 #endif
 
-	P_ArchiveLuabanksAndConsistency();
+	//P_ArchiveLuabanksAndConsistency();
 
 	saveStateBenchmark = I_GetTimeUs() - time;
 }
@@ -4821,7 +4796,7 @@ boolean P_LoadGameState(const savestate_t* savestate)
 	// This is stupid and hacky _squared_, but it's in the net load code and it says it might work, so I guess it might work!
 	//P_SetRandSeed(P_GetInitSeed());
 
-	P_UnArchiveLuabanksAndConsistency();
+	//P_UnArchiveLuabanksAndConsistency();
 	loadStateBenchmark = I_GetTimeUs() - time;
 
 	return true;

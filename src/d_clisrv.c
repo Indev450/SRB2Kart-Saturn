@@ -5191,6 +5191,8 @@ fixed_t FixedDistance2(fixed_t aX, fixed_t aY, fixed_t bX, fixed_t bY)
 
 static ticcmd_t lastCmds;
 
+//Kart doesnt have FPS shootouts, so this is unneeded
+/*
 void CorrectPlayerTargeting(ticcmd_t* cmds)
 {
 	if (!players[consoleplayer].mo || !cv_netsteadyplayers.value || simtic == gametic)
@@ -5296,6 +5298,7 @@ void CorrectPlayerTargeting(ticcmd_t* cmds)
 		}
 	}
 }
+*/
 
 static void AdjustSimulatedTiccmdInputs(ticcmd_t* cmds)
 {
@@ -5304,8 +5307,9 @@ static void AdjustSimulatedTiccmdInputs(ticcmd_t* cmds)
 
 	INT16 oldAngle = cmds->angleturn;
 
-	if (gamestate == GS_LEVEL && cv_netsteadyplayers.value && !cv_netslingdelay.value)
-		CorrectPlayerTargeting(cmds);
+	//Kart doesnt have match mode where this is relevant
+	//if (gamestate == GS_LEVEL && cv_netsteadyplayers.value && !cv_netslingdelay.value)
+	//	CorrectPlayerTargeting(cmds);
 
 	if (cmds->angleturn != oldAngle)
 	{
@@ -5830,18 +5834,18 @@ static void RunSimulations()
 						blueflagplayer = &players[i];
 				}
 
-				if (players[i].followmobj)
-					ADJUSTPOSITION(players[i].followmobj, i);
+//				if (players[i].followmobj)
+//					ADJUSTPOSITION(players[i].followmobj, i);
 			}
 
 			for (mobj = (mobj_t*)thlist[THINK_MOBJ].next; mobj != (mobj_t*)&thlist[THINK_MOBJ]; mobj = (mobj_t*)mobj->thinker.next)
 			{
-				if (mobj->flags2 & MF2_SHIELD && mobj->target != NULL && mobj->target->player != NULL && mobj->target != players[consoleplayer].mo)
-					ADJUSTPOSITION(mobj, mobj->target->player - players);
-				else if (mobj->type == MT_BLUEFLAG && blueflagplayer)
-					ADJUSTPOSITION(mobj, blueflagplayer - players);
-				else if (mobj->type == MT_REDFLAG && redflagplayer)
-					ADJUSTPOSITION(mobj, redflagplayer - players);
+//				if (mobj->flags2 & MF2_SHIELD && mobj->target != NULL && mobj->target->player != NULL && mobj->target != players[consoleplayer].mo)
+//					ADJUSTPOSITION(mobj, mobj->target->player - players);
+//				else if (mobj->type == MT_BLUEFLAG && blueflagplayer)
+//					ADJUSTPOSITION(mobj, blueflagplayer - players);
+//				else if (mobj->type == MT_REDFLAG && redflagplayer)
+//					ADJUSTPOSITION(mobj, redflagplayer - players);
 			}
 		}
 	}

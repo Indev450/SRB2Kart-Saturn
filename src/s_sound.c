@@ -154,19 +154,6 @@ consvar_t cv_playsoundifunfocused = {"playsoundsifunfocused", "No", CV_SAVE|CV_C
 // percent attenuation from front to back
 #define S_IFRACVOL 30
 
-typedef struct
-{
-	// sound information (if null, channel avail.)
-	sfxinfo_t *sfxinfo;
-
-	// origin of sound
-	const void *origin;
-
-	// handle of the sound being played
-	INT32 handle;
-
-} channel_t;
-
 // the set of channels available
 static channel_t *channels = NULL;
 static INT32 numofchannels = 0;
@@ -643,7 +630,7 @@ dontplay:
 		if (origin && origin != listenmobj3)
 		{
 			INT32 rc;
-			rc = S_AdjustSoundParams(listenmobj3, origin, &volume, &sep, &pitch, sfx);
+			rc = S_AdjustSoundParams(listenmobj3, origin->x, origin->y, origin->z , &volume, &sep, &pitch, sfx);
 
 			if (!rc)
 				goto dontplay3; // Maybe the other player can hear it...
@@ -699,7 +686,7 @@ dontplay3:
 		if (origin && origin != listenmobj4)
 		{
 			INT32 rc;
-			rc = S_AdjustSoundParams(listenmobj4, origin, &volume, &sep, &pitch, sfx);
+			rc = S_AdjustSoundParams(listenmobj4, origin->x, origin->y, origin->z, &volume, &sep, &pitch, sfx);
 
 			if (!rc)
 				goto dontplay4; // Maybe the other player can hear it...
@@ -1240,7 +1227,11 @@ void S_DetachChannelsFromOrigin(void* origin)
 		if (channels[i].origin == origin)
 		{
 			// small hack: player-made sounds should stay hearable
-			if (originmobj->player != &players[displayplayer])
+			if (originmobj->player != &players[displayplayers[0]] &&
+				originmobj->player != &players[displayplayers[1]] &&
+				originmobj->player != &players[displayplayers[2]] &&
+				originmobj->player != &players[displayplayers[3]]
+			)
 			{
 				channels[i].isdetached = true;
 				channels[i].detachedx = originmobj->x;

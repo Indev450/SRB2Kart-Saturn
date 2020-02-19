@@ -6366,7 +6366,7 @@ void P_MobjThinker(mobj_t *mobj)
 	if (mobj->flags & MF_NOTHINK)
 		return;
 
-	if ((mobj->flags & MF_BOSS) && mobj->spawnpoint && (bossdisabled & (1<<mobj->spawnpoint->extrainfo)))
+	if ((mobj->flags & MF_BOSS) && mobj->spawnpoint)
 		return;
 
 	// Remove dead target/tracer.
