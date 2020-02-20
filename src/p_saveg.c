@@ -2405,8 +2405,8 @@ static void P_NetArchiveThinkers(void)
 
 		CONS_Debug(DBG_NETPLAY, "%u thinkers saved in list %d\n", numsaved, i);
 
-		WRITEUINT8(save_p, tc_end);
 	}
+	WRITEUINT8(save_p, tc_end);
 }
 
 // Now save the pointers, tracer and target, but at load time we must
