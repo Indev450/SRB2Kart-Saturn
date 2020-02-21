@@ -442,6 +442,12 @@ static void P_NetUnArchivePlayers(void)
 		// SRB2kart
 		players[i].kartspeed = READUINT8(save_p);
 		players[i].kartweight = READUINT8(save_p);
+
+		for (j = 0; j < MAXPREDICTTICS; j++)
+		{
+			players[i].lturn_max[j] = READINT16(save_p);
+			players[i].rturn_max[j] = READINT16(save_p);
+		}
 	}
 }
 
@@ -699,13 +705,6 @@ static void P_NetUnArchiveColormaps(void)
 
 		if (i < num_net_colormaps-1 && !exc_next)
 			exc_next = R_CreateDefaultColormap(false);
-	}
-
-		for (j = 0; j < MAXPREDICTTICS; j++)
-		{
-			players[i].lturn_max[j] = READINT16(save_p);
-			players[i].rturn_max[j] = READINT16(save_p);
-		}
 	}
 }
 */
@@ -4537,6 +4536,22 @@ static inline boolean P_NetUnArchiveMisc(boolean preserveLevel)
 
 	// SRB2kart
 	numgotboxes = READINT32(save_p);
+
+	gamespeed = READUINT8(save_p);
+	franticitems = (boolean)READUINT8(save_p);
+	comeback = (boolean)READUINT8(save_p);
+
+	for (i = 0; i < 4; i++)
+		battlewanted[i] = READSINT8(save_p);
+
+	wantedcalcdelay = READUINT32(save_p);
+	indirectitemcooldown = READUINT32(save_p);
+	hyubgone = READUINT32(save_p);
+	mapreset = READUINT32(save_p);
+	nospectategrief = READUINT8(save_p);
+	thwompsactive = (boolean)READUINT8(save_p);
+	spbplace = READSINT8(save_p);
+
 	// Is it paused?
 	if (READUINT8(save_p) == 0x2f)
 		paused = true;
