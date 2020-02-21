@@ -4958,7 +4958,7 @@ static void CL_SendClientCmd(void)
 	else if (gamestate != GS_NULL)
 	{
 		ticcmd_t adjustedCmd = localcmds;
-		AdjustSimulatedTiccmdInputs(&adjustedCmd); // adjust ticcmds for simulations
+		//AdjustSimulatedTiccmdInputs(&adjustedCmd); // adjust ticcmds for simulations
 
 		G_MoveTiccmd(&netbuffer->u.clientpak.cmd, &adjustedCmd, 1);
 		netbuffer->u.clientpak.consistancy = SHORT(consistancy[gametic%BACKUPTICS]);
