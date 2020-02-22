@@ -3756,6 +3756,7 @@ static void P_NetUnArchiveThinkers(boolean preserveLevel)
 
 	// we don't want the removed mobjs to come back
 	iquetail = iquehead = 0;
+	waypointcap = NULL; //Hack transplant, was being called in P_InitThinkers, which was removed from here for memory leak reasons? Se we moved the hack here for netgames
 
 	// clear sector thinker pointers so they don't point to non-existant thinkers for all of eternity
 	for (i = 0; i < numsectors; i++)
