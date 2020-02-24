@@ -3260,6 +3260,7 @@ static void P_LocalArchiveThinkers(void)
 		WRITEUINT8(save_p, 0xFF); // next list (or end)
 	}
 
+	//RELINK(waypointcap);
 	// now write the nothinkers...
 	// turns out that MF_NOTHINKs aren't in thinker lists lol....
 	// makes sense, but doesn't make life easier. I just wanted an object list. Ah well.
@@ -3367,6 +3368,7 @@ static void P_LocalUnArchiveThinkers()
 
 	// remove from item respawn queues
 	iquetail = iquehead = 0;
+	waypointcap = NULL;
 
 	// clear sector thinker pointers so they don't point to non-existant thinkers for all of eternity
 	for (i = 0; i < (int)numsectors; i++)
@@ -3509,7 +3511,11 @@ static void P_LocalUnArchiveThinkers()
 						blueflag = mobj;
 						bflagpoint = mobj->spawnpoint;
 					}
-
+					if (mobj->type == MT_BOSS3WAYPOINT)
+					{
+						//P_SetTarget(&mobj->tracer, waypointcap);
+						P_SetTarget(&waypointcap, mobj);
+					}
 					/*
 					if (mobj->type == MT_SKYBOX)
 					{
@@ -3650,6 +3656,9 @@ static void P_LocalUnArchiveThinkers()
 
 	// restore pointers
 #define RELINK(var) if (var) { UINT32 index = (UINT32)var; var = NULL; P_SetTarget(&var, mobjByNum[index]); }
+
+	//RELINK(waypointcap);
+
 	for (thinker = thlist[THINK_MOBJ].next; thinker != &thlist[THINK_MOBJ]; thinker = thinker->next)
 	{
 		if (thinker->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
