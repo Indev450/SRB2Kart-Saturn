@@ -5520,7 +5520,10 @@ void TryRunTics(tic_t realtics)
 
 	// record the actual local controls
 	boolean canSimulate = (gamestate == GS_LEVEL)
-				&& leveltime >= TICRATE && gametic >= TICRATE && (cv_simulate.value && !server)
+				&& leveltime >= TICRATE*4 
+				&& gametic >= TICRATE 
+				&& !countdown2 //SRB2Kart: No simulating after everyone has finished ... it breaks stuff
+				&& (cv_simulate.value && !server) //SRB2Kart: make it impossible to sim before the start of the race
 				&& !resynch_local_inprogress && gametic >= lastSavestateClearedTic + TICRATE;
 	boolean recordingStates = canSimulate;
 
@@ -5539,9 +5542,9 @@ void TryRunTics(tic_t realtics)
 
 	PerformDebugRewinds();
 
-	// record the actual local controls for this frame
 	liveTic = I_GetTime();
 
+	// record the actual local controls for this frame
 	for (tic_t i = 0; i < realtics; i++)
 		localTicBuffer[(liveTic - i) % BACKUPTICS] = localcmds;
 
@@ -5590,8 +5593,8 @@ void TryRunTics(tic_t realtics)
 				}
 
 				// Leave a certain amount of tics present in the net buffer as long as we've ran at least one tic this frame.
-				//if (client && gamestate == GS_LEVEL && leveltime > 3 && neededtic <= gametic + cv_netticbuffer.value)
-				//	break;
+				if (client && gamestate == GS_LEVEL && leveltime > 3 && neededtic <= gametic + cv_netticbuffer.value)
+					break;
 			}
 		}
 	}
