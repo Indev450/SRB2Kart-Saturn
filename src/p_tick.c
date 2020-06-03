@@ -763,8 +763,7 @@ void P_Ticker(boolean run)
 					demo.savemode = DSM_TITLEENTRY;
 
 			//if there are no players left at all, stop demo recording
-			//Demos that that dont have any players crash during playback,w chich can happen with dedicated servers
-			//
+			//Demos that that dont have any players crash during playback, which can happen with dedicated servers
 			if (cv_recordmultiplayerdemos.value && demo.savemode == DSM_WILLAUTOSAVE && !D_NumPlayers())
 				G_SaveDemo();
 		}
