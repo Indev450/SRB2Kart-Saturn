@@ -761,6 +761,12 @@ void P_Ticker(boolean run)
 			if (cv_recordmultiplayerdemos.value && (demo.savemode == DSM_NOTSAVING || demo.savemode == DSM_WILLAUTOSAVE))
 				if (demo.savebutton && demo.savebutton + 3*TICRATE < leveltime && InputDown(gc_lookback, 1))
 					demo.savemode = DSM_TITLEENTRY;
+
+			//if there are no players left at all, stop demo recording
+			//Demos that that dont have any players crash during playback,w chich can happen with dedicated servers
+			//
+			if (cv_recordmultiplayerdemos.value && demo.savemode == DSM_WILLAUTOSAVE && !D_NumPlayers())
+				G_SaveDemo();
 		}
 		else if (demo.playback) // Use Ghost data for consistency checks.
 		{
