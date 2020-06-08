@@ -2915,7 +2915,7 @@ void GL_CreateModelVBOs(model_t *model)
 	}
 }
 
-#define BUFFER_OFFSET(i) ((char*)(i))
+#define BUFFER_OFFSET(i) ((void*)(i))
 
 void GL_DrawModelEx(model_t *model, INT32 frameIndex, float duration, float tics, INT32 nextFrameIndex, FTransform *pos, float hscale, float vscale, UINT8 flipped, UINT8 hflipped, FSurfaceInfo *Surface)
 {
