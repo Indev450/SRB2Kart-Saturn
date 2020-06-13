@@ -3162,9 +3162,9 @@ EXPORT void HWRAPI(PostImgRedraw) (float points[SCREENVERTS][SCREENVERTS][2])
 		16.0f, -16.0f, 6.0f
 	};
 
-    // look for power of two that is large enough for the screen
-    while (texsize < screen_width || texsize < screen_height)
-        texsize <<= 1;
+	// look for power of two that is large enough for the screen
+	while (texsize < screen_width || texsize < screen_height)
+		texsize <<= 1;
 
 	// X/Y stretch fix for all resolutions(!)
 	xfix = (float)(texsize)/((float)((screen_width)/(float)(SCREENVERTS-1)));
@@ -3251,9 +3251,9 @@ EXPORT void HWRAPI(StartScreenWipe) (void)
 	INT32 texsize = 512;
 	boolean firstTime = (startScreenWipe == 0);
 
-    // look for power of two that is large enough for the screen
-    while (texsize < screen_width || texsize < screen_height)
-        texsize <<= 1;
+	// look for power of two that is large enough for the screen
+	while (texsize < screen_width || texsize < screen_height)
+		texsize <<= 1;
 
 	// Create screen texture
 	if (firstTime)
@@ -3280,9 +3280,9 @@ EXPORT void HWRAPI(EndScreenWipe)(void)
 	INT32 texsize = 512;
 	boolean firstTime = (endScreenWipe == 0);
 
-    // look for power of two that is large enough for the screen
-    while (texsize < screen_width || texsize < screen_height)
-        texsize <<= 1;
+	// look for power of two that is large enough for the screen
+	while (texsize < screen_width || texsize < screen_height)
+		texsize <<= 1;
 
 	// Create screen texture
 	if (firstTime)
@@ -3319,9 +3319,9 @@ EXPORT void HWRAPI(DrawIntermissionBG)(void)
 
 	float fix[8];
 
-    // look for power of two that is large enough for the screen
-    while (texsize < screen_width || texsize < screen_height)
-        texsize <<= 1;
+	// look for power of two that is large enough for the screen
+	while (texsize < screen_width || texsize < screen_height)
+		texsize <<= 1;
 
 	xfix = 1/((float)(texsize)/((float)((screen_width))));
 	yfix = 1/((float)(texsize)/((float)((screen_height))));
@@ -3371,9 +3371,9 @@ EXPORT void HWRAPI(DoScreenWipe)(void)
 		1.0f, 1.0f
 	};
 
-    // look for power of two that is large enough for the screen
-    while (texsize < screen_width || texsize < screen_height)
-        texsize <<= 1;
+	// look for power of two that is large enough for the screen
+	while (texsize < screen_width || texsize < screen_height)
+		texsize <<= 1;
 
 	xfix = 1/((float)(texsize)/((float)((screen_width))));
 	yfix = 1/((float)(texsize)/((float)((screen_height))));
@@ -3435,9 +3435,9 @@ EXPORT void HWRAPI(MakeScreenTexture) (void)
 	INT32 texsize = 512;
 	boolean firstTime = (screentexture == 0);
 
-    // look for power of two that is large enough for the screen
-    while (texsize < screen_width || texsize < screen_height)
-        texsize <<= 1;
+	// look for power of two that is large enough for the screen
+	while (texsize < screen_width || texsize < screen_height)
+		texsize <<= 1;
 
 	// Create screen texture
 	if (firstTime)
@@ -3463,9 +3463,9 @@ EXPORT void HWRAPI(MakeScreenFinalTexture) (void)
 	INT32 texsize = 512;
 	boolean firstTime = (finalScreenTexture == 0);
 
-    // look for power of two that is large enough for the screen
-    while (texsize < screen_width || texsize < screen_height)
-        texsize <<= 1;
+	// look for power of two that is large enough for the screen
+	while (texsize < screen_width || texsize < screen_height)
+		texsize <<= 1;
 
 	// Create screen texture
 	if (firstTime)
@@ -3497,9 +3497,9 @@ EXPORT void HWRAPI(DrawScreenFinalTexture)(int width, int height)
 	float off[12];
 	float fix[8];
 
-    // look for power of two that is large enough for the screen
-    while (texsize < screen_width || texsize < screen_height)
-        texsize <<= 1;
+	// look for power of two that is large enough for the screen
+	while (texsize < screen_width || texsize < screen_height)
+		texsize <<= 1;
 
 	xfix = 1/((float)(texsize)/((float)((screen_width))));
 	yfix = 1/((float)(texsize)/((float)((screen_height))));
