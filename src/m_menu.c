@@ -1271,6 +1271,7 @@ static menuitem_t OP_VideoOptionsMenu[] =
 	{IT_STRING | IT_CVAR,	NULL,	"Show FPS",				&cv_ticrate,			 90},
 	{IT_STRING | IT_CVAR,	NULL,	"Vertical Sync",		&cv_vidwait,			100},
 	{IT_STRING | IT_CVAR,   NULL,   "FPS Cap",              &cv_fpscap,             110},
+	{IT_STRING | IT_CVAR,   NULL,   "Drift spark pulse size",&cv_driftsparkpulse,   125},
 
 #ifdef HWRENDER
 	{IT_SUBMENU|IT_STRING,	NULL,	"OpenGL Options...",	&OP_OpenGLOptionsDef,	130},
@@ -1292,6 +1293,7 @@ enum
 	op_video_fps,
 	op_video_vsync,
 	op_video_fpscap,
+	op_video_driftsparkpulse,
 #ifdef HWRENDER
 	op_video_ogl,
 #endif

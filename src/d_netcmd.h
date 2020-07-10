@@ -231,6 +231,8 @@ typedef union {
 #pragma pack()
 #endif
 
+extern tic_t driftsparkGrowTimer[16];
+
 // add game commands, needs cleanup
 void D_RegisterServerCommands(void);
 void D_RegisterClientCommands(void);

@@ -2798,6 +2798,8 @@ static mobj_t *K_SpawnKartMissile(mobj_t *source, mobjtype_t type, angle_t an, I
 	return NULL;
 }
 
+#define DRIFTSPARKGROWTICS 8
+
 static void K_SpawnDriftSparks(player_t *player)
 {
 	fixed_t newx;
@@ -2823,14 +2825,28 @@ static void K_SpawnDriftSparks(player_t *player)
 
 	for (i = 0; i < 2; i++)
 	{
+		UINT8 pindex;
+		fixed_t driftExtraScale = 0;
 		newx = player->mo->x + P_ReturnThrustX(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, FixedMul(32*FRACUNIT, player->mo->scale));
 		newy = player->mo->y + P_ReturnThrustY(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, FixedMul(32*FRACUNIT, player->mo->scale));
 		spark = P_SpawnMobj(newx, newy, player->mo->z, MT_DRIFTSPARK);
 
 		P_SetTarget(&spark->target, player->mo);
 		spark->angle = travelangle-(ANGLE_45/5)*player->kartstuff[k_drift];
-		spark->destscale = player->mo->scale;
-		P_SetScale(spark, player->mo->scale);
+
+		// scale increase while driftspark level gained timer is running
+		
+		// hack to find the correct player number
+		for (pindex = 0; pindex < MAXPLAYERS; pindex++)
+		{
+			if (player == &players[pindex])
+			{
+				driftExtraScale = FixedDiv(driftsparkGrowTimer[pindex], DRIFTSPARKGROWTICS);
+				break;
+			}
+		}
+		spark->destscale = FixedMul(player->mo->scale, FRACUNIT + FixedMul(driftExtraScale, cv_driftsparkpulse.value));
+		P_SetScale(spark, FixedMul(player->mo->scale, FRACUNIT + FixedMul(driftExtraScale, cv_driftsparkpulse.value)));
 
 		spark->momx = player->mo->momx/2;
 		spark->momy = player->mo->momy/2;
@@ -5196,23 +5212,53 @@ static void K_KartDrift(player_t *player, boolean onground)
 		if (player->speed > minspeed*2)
 			player->kartstuff[k_getsparks] = 1;
 
+		// Sound whenever you get a different tier of sparks
+		if ((player->kartstuff[k_driftcharge] < dsone && player->kartstuff[k_driftcharge]+driftadditive >= dsone)
+			|| (player->kartstuff[k_driftcharge] < dstwo && player->kartstuff[k_driftcharge]+driftadditive >= dstwo)
+			|| (player->kartstuff[k_driftcharge] < dsthree && player->kartstuff[k_driftcharge]+driftadditive >= dsthree))
+		{
+			UINT8 pindex;
+			//S_StartSound(player->mo, sfx_s3ka2);
+			if (P_IsLocalPlayer(player)) // UGHGHGH...
+				S_StartSoundAtVolume(player->mo, sfx_s3ka2, 192); // Ugh...
+			
+			// hack to find the correct player number
+			for (pindex = 0; pindex < MAXPLAYERS; pindex++)
+			{
+				if (player == &players[pindex])
+				{
+					driftsparkGrowTimer[pindex] = DRIFTSPARKGROWTICS;
+					break;
+				}
+			}
+		}
+
+
+		// moved this below sounds to help with scaling
 		// This spawns the drift sparks
 		if (player->kartstuff[k_driftcharge] + driftadditive >= dsone)
 			K_SpawnDriftSparks(player);
 
-		// Sound whenever you get a different tier of sparks
-		if (P_IsLocalPlayer(player) // UGHGHGH...
-			&& ((player->kartstuff[k_driftcharge] < dsone && player->kartstuff[k_driftcharge]+driftadditive >= dsone)
-			|| (player->kartstuff[k_driftcharge] < dstwo && player->kartstuff[k_driftcharge]+driftadditive >= dstwo)
-			|| (player->kartstuff[k_driftcharge] < dsthree && player->kartstuff[k_driftcharge]+driftadditive >= dsthree)))
-		{
-			//S_StartSound(player->mo, sfx_s3ka2);
-			S_StartSoundAtVolume(player->mo, sfx_s3ka2, 192); // Ugh...
-		}
-
 		player->kartstuff[k_driftcharge] += driftadditive;
 		player->kartstuff[k_driftend] = 0;
 	}
+
+	{
+		//im putting this in a block because i want the variables here, not at the top of the block
+		UINT8 pindex;
+
+		// hack to find the correct player number
+		for (pindex = 0; pindex < MAXPLAYERS; pindex++)
+		{
+			if (player == &players[pindex])
+			{
+				if (driftsparkGrowTimer[pindex])
+					driftsparkGrowTimer[pindex]--;
+				break;
+			}
+		}
+	}
+
 
 	// Stop drifting
 	if (player->kartstuff[k_spinouttimer] > 0 || player->speed < minspeed)
