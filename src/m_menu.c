@@ -7966,6 +7966,7 @@ static void M_ChooseTimeAttack(INT32 choice)
 	I_mkdir(va("%s"PATHSEP"replay", srb2home), 0755);
 	I_mkdir(va("%s"PATHSEP"replay"PATHSEP"%s", srb2home, timeattackfolder), 0755);
 
+
 	if ((gpath = malloc(glen)) == NULL)
 		I_Error("Out of memory for replay filepath\n");
 
@@ -7975,7 +7976,10 @@ static void M_ChooseTimeAttack(INT32 choice)
 	if (!cv_autorecord.value)
 		remove(va("%s"PATHSEP"%s.lmp", srb2home, nameofdemo));
 	else
+	{
 		G_RecordDemo(nameofdemo);
+		G_BeginRecording();
+	}
 
 	G_DeferedInitNew(false, G_BuildMapName(cv_nextmap.value), (UINT8)(cv_chooseskin.value-1), 0, false);
 }
