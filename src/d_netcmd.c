@@ -484,7 +484,19 @@ consvar_t cv_sleep = {"cpusleep", "1", CV_SAVE, sleeping_cons_t, NULL, -1, NULL,
 
 consvar_t cv_showtrackaddon = {"showtrackaddon", "Yes", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_skinselect2d = {"skinselect2d", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+static CV_PossibleValue_t skinselectmenu_t[] = {{SKINMENUTYPE_SCROLL, "Scoll"}, {SKINMENUTYPE_2D, "2d"}, {SKINMENUTYPE_GRID, "Grid"}, {0, NULL}};
+consvar_t cv_skinselectmenu = {"skinselectmenu", "Grid", CV_SAVE, skinselectmenu_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+static CV_PossibleValue_t skinselectgridsort_t[] ={
+	{ SKINMENUSORT_REALNAME, "Real name" },
+	{ SKINMENUSORT_NAME, "Internal name" },
+	{ SKINMENUSORT_SPEED, "Speed" },
+	{ SKINMENUSORT_WEIGHT, "Weight" },
+	{ SKINMENUSORT_PREFCOLOR, "Prefered Color" },
+	{ SKINMENUSORT_ID, "ID" },
+	{ 0, NULL }
+};
+consvar_t cv_skinselectgridsort ={ "skinselectgridsort", "Real name", CV_SAVE|CV_CALL|CV_NOINIT, skinselectgridsort_t, sortSkinGrid, 0, NULL, NULL, 0, 0, NULL };
 
 INT16 gametype = GT_RACE; // SRB2kart
 boolean forceresetplayers = false;
@@ -849,7 +861,8 @@ void D_RegisterClientCommands(void)
 	// preferred number of players
 	CV_RegisterVar(&cv_splitplayers);
 
-	CV_RegisterVar(&cv_skinselect2d);
+	CV_RegisterVar(&cv_skinselectmenu);
+	CV_RegisterVar(&cv_skinselectgridsort);
 
 #ifdef SEENAMES
 	CV_RegisterVar(&cv_seenames);

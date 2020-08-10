@@ -158,7 +158,26 @@ extern consvar_t cv_sleep;
 
 extern consvar_t cv_showtrackaddon;
 
-extern consvar_t cv_skinselect2d;
+typedef enum
+{
+	SKINMENUTYPE_SCROLL = 0,
+	SKINMENUTYPE_2D,    // 1
+	SKINMENUTYPE_GRID   // 2
+} skinmenutype_t;
+
+typedef enum
+{
+	SKINMENUSORT_REALNAME = 0,
+	SKINMENUSORT_NAME, // 1
+	SKINMENUSORT_SPEED, // 2
+	SKINMENUSORT_WEIGHT, // 3
+	SKINMENUSORT_PREFCOLOR, // 4
+	SKINMENUSORT_ID, // 5
+	MAXSKINMENUSORTS // 6
+} skinmenusort_t;
+
+extern consvar_t cv_skinselectmenu;
+extern consvar_t cv_skinselectgridsort;
 
 typedef enum
 {
