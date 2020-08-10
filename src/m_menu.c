@@ -9786,7 +9786,7 @@ static char *sortNames[] = {
 	"Internal name",
 	"Speed",
 	"Weight",
-	"Pefered color",
+	"Preferred color",
 	"ID"
 };
 

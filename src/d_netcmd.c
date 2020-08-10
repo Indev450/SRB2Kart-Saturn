@@ -492,7 +492,7 @@ static CV_PossibleValue_t skinselectgridsort_t[] ={
 	{ SKINMENUSORT_NAME, "Internal name" },
 	{ SKINMENUSORT_SPEED, "Speed" },
 	{ SKINMENUSORT_WEIGHT, "Weight" },
-	{ SKINMENUSORT_PREFCOLOR, "Prefered Color" },
+	{ SKINMENUSORT_PREFCOLOR, "Preferred Color" }, // get stickbugged lol
 	{ SKINMENUSORT_ID, "ID" },
 	{ 0, NULL }
 };
