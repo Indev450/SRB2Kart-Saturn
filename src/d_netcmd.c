@@ -2771,8 +2771,8 @@ static void Command_ReplayMarker(void)
 		demo.savemode = DSM_NOTSAVING;
 		CONS_Printf("Replay unmarked.\n");
 	} else {
-		demo.savemode = DSM_WILLSAVE;
 		int adjustedleveltime = leveltime - starttime;
+		demo.savemode = DSM_WILLSAVE;
 		if (adjustedleveltime < 0)
 			adjustedleveltime = 0;
 		snprintf(demo.titlename, 64, "%s - %i:%i - %s", G_BuildMapTitle(gamemap), G_TicsToMinutes(adjustedleveltime, false), G_TicsToSeconds(adjustedleveltime), modeattacking ? "Record Attack" : connectedservername);
