@@ -3243,7 +3243,8 @@ boolean P_SetupLevel(boolean skipprecip)
 		I_mkdir(va("%s"PATHSEP"replay", srb2home), 0755);
 		I_mkdir(va("%s"PATHSEP"replay"PATHSEP"online", srb2home), 0755);
 		G_RecordDemo(buf);
-		G_BeginRecording(); //this has to move here, since dedicated servers dont run got_mapcmd
+		if (dedicated)
+			G_BeginRecording(); //this has to move here, since dedicated servers dont run got_mapcmd
 	}
 
 	// ===========
