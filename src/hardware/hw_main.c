@@ -407,7 +407,7 @@ void HWR_RenderPlane(extrasubsector_t *xsub, boolean isceiling, fixed_t fixedhei
 	if (angle) // Only needs to be done if there's an altered angle
 	{
 
-		angle = (InvAngle(angle)+ANGLE_180)>>ANGLETOFINESHIFT;
+		angle = InvAngle(angle)>>ANGLETOFINESHIFT;
 
 		// This needs to be done so that it scrolls in a different direction after rotation like software
 		/*tempxsow = FLOAT_TO_FIXED(scrollx);
@@ -439,7 +439,7 @@ void HWR_RenderPlane(extrasubsector_t *xsub, boolean isceiling, fixed_t fixedhei
 			tempxsow = FLOAT_TO_FIXED(v3d->s);
 			tempytow = FLOAT_TO_FIXED(v3d->t);
 			v3d->s = (FIXED_TO_FLOAT(FixedMul(tempxsow, FINECOSINE(angle)) - FixedMul(tempytow, FINESINE(angle))));
-			v3d->t = (FIXED_TO_FLOAT(-FixedMul(tempxsow, FINESINE(angle)) - FixedMul(tempytow, FINECOSINE(angle))));
+			v3d->t = (FIXED_TO_FLOAT(FixedMul(tempxsow, FINESINE(angle)) + FixedMul(tempytow, FINECOSINE(angle))));
 		}
 
 		//v3d->s = (float)(v3d->s - flatxref + scrollx);
@@ -4733,6 +4733,7 @@ void HWR_RenderPlayerView(INT32 viewnumber, player_t *player)
 	}
 
 	R_SetupFrame(player, false); // This can stay false because it is only used to set viewsky in r_main.c, which isn't used here
+	framecount++; // for timedemo
 	HWR_RenderFrame(viewnumber, player, false);
 }
 

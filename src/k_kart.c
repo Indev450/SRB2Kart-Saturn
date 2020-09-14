@@ -666,31 +666,31 @@ static INT32 K_KartItemOddsRace[NUMKARTRESULTS][10] =
 			   /*Jawz x2*/ { 0, 0, 0, 1, 2, 0, 0, 0, 0, 0 }  // Jawz x2
 };
 
-static INT32 K_KartItemOddsBattle[NUMKARTRESULTS][6] =
+static INT32 K_KartItemOddsBattle[NUMKARTRESULTS][2] =
 {
-				//P-Odds	 0  1  2  3  4  5
-			   /*Sneaker*/ { 3, 2, 2, 2, 0, 2 }, // Sneaker
-		/*Rocket Sneaker*/ { 0, 0, 0, 0, 0, 0 }, // Rocket Sneaker
-		 /*Invincibility*/ { 0, 1, 2, 3, 4, 2 }, // Invincibility
-				/*Banana*/ { 2, 1, 0, 0, 0, 0 }, // Banana
-		/*Eggman Monitor*/ { 1, 1, 0, 0, 0, 0 }, // Eggman Monitor
-			  /*Orbinaut*/ { 6, 2, 1, 0, 0, 0 }, // Orbinaut
-				  /*Jawz*/ { 3, 3, 3, 2, 0, 2 }, // Jawz
-				  /*Mine*/ { 2, 3, 3, 1, 0, 2 }, // Mine
-			   /*Ballhog*/ { 0, 1, 2, 1, 0, 2 }, // Ballhog
-   /*Self-Propelled Bomb*/ { 0, 0, 0, 0, 0, 0 }, // Self-Propelled Bomb
-				  /*Grow*/ { 0, 0, 1, 2, 4, 2 }, // Grow
-				/*Shrink*/ { 0, 0, 0, 0, 0, 0 }, // Shrink
-		/*Thunder Shield*/ { 0, 0, 0, 0, 0, 0 }, // Thunder Shield
-			   /*Hyudoro*/ { 1, 1, 0, 0, 0, 0 }, // Hyudoro
-		   /*Pogo Spring*/ { 1, 1, 0, 0, 0, 0 }, // Pogo Spring
-		  /*Kitchen Sink*/ { 0, 0, 0, 0, 0, 0 }, // Kitchen Sink
-			/*Sneaker x3*/ { 0, 0, 0, 2, 4, 2 }, // Sneaker x3
-			 /*Banana x3*/ { 1, 2, 1, 0, 0, 0 }, // Banana x3
-			/*Banana x10*/ { 0, 0, 1, 1, 0, 2 }, // Banana x10
-		   /*Orbinaut x3*/ { 0, 1, 2, 1, 0, 0 }, // Orbinaut x3
-		   /*Orbinaut x4*/ { 0, 0, 1, 3, 4, 2 }, // Orbinaut x4
-			   /*Jawz x2*/ { 0, 0, 1, 2, 4, 2 }  // Jawz x2
+				//P-Odds	 0  1
+			   /*Sneaker*/ { 2, 1 }, // Sneaker
+		/*Rocket Sneaker*/ { 0, 0 }, // Rocket Sneaker
+		 /*Invincibility*/ { 2, 1 }, // Invincibility
+				/*Banana*/ { 1, 0 }, // Banana
+		/*Eggman Monitor*/ { 1, 0 }, // Eggman Monitor
+			  /*Orbinaut*/ { 8, 0 }, // Orbinaut
+				  /*Jawz*/ { 8, 1 }, // Jawz
+				  /*Mine*/ { 4, 1 }, // Mine
+			   /*Ballhog*/ { 2, 1 }, // Ballhog
+   /*Self-Propelled Bomb*/ { 0, 0 }, // Self-Propelled Bomb
+				  /*Grow*/ { 2, 1 }, // Grow
+				/*Shrink*/ { 0, 0 }, // Shrink
+		/*Thunder Shield*/ { 0, 0 }, // Thunder Shield
+			   /*Hyudoro*/ { 2, 0 }, // Hyudoro
+		   /*Pogo Spring*/ { 2, 0 }, // Pogo Spring
+		  /*Kitchen Sink*/ { 0, 0 }, // Kitchen Sink
+			/*Sneaker x3*/ { 0, 1 }, // Sneaker x3
+			 /*Banana x3*/ { 1, 0 }, // Banana x3
+			/*Banana x10*/ { 0, 1 }, // Banana x10
+		   /*Orbinaut x3*/ { 2, 0 }, // Orbinaut x3
+		   /*Orbinaut x4*/ { 1, 1 }, // Orbinaut x4
+			   /*Jawz x2*/ { 2, 1 }  // Jawz x2
 };
 
 /**	\brief	Item Roulette for Kart
@@ -898,6 +898,7 @@ static INT32 K_KartGetItemOdds(UINT8 pos, SINT8 item, fixed_t mashed, boolean sp
 				newodds = 0;
 			else
 				POWERITEMODDS(newodds);
+			break;
 		case KITEM_HYUDORO:
 			if ((hyubgone > 0) || COOLDOWNONSTART)
 				newodds = 0;
@@ -922,12 +923,15 @@ static INT32 K_FindUseodds(player_t *player, fixed_t mashed, INT32 pingame, INT3
 	UINT8 distlen = 0;
 	boolean oddsvalid[10];
 
+	// Unused now, oops :V
+	(void)bestbumper;
+
 	for (i = 0; i < 10; i++)
 	{
 		INT32 j;
 		boolean available = false;
 
-		if (G_BattleGametype() && i > 5)
+		if (G_BattleGametype() && i > 1)
 		{
 			oddsvalid[i] = false;
 			break;
@@ -961,24 +965,20 @@ static INT32 K_FindUseodds(player_t *player, fixed_t mashed, INT32 pingame, INT3
 
 	if (G_BattleGametype()) // Battle Mode
 	{
-		if (oddsvalid[0]) SETUPDISTTABLE(0,1);
-		if (oddsvalid[1]) SETUPDISTTABLE(1,1);
-		if (oddsvalid[2]) SETUPDISTTABLE(2,1);
-		if (oddsvalid[3]) SETUPDISTTABLE(3,1);
-		if (oddsvalid[4]) SETUPDISTTABLE(4,1);
-
-		if (player->kartstuff[k_roulettetype] == 1 && oddsvalid[5]) // 5 is the extreme odds of player-controlled "Karma" items
-			useodds = 5;
+		if (player->kartstuff[k_roulettetype] == 1 && oddsvalid[1] == true)
+		{
+			// 1 is the extreme odds of player-controlled "Karma" items
+			useodds = 1;
+		}
 		else
 		{
-			SINT8 wantedpos = (bestbumper-player->kartstuff[k_bumper]); // 0 is the best player's bumper count, 1 is a bumper below best, 2 is two bumpers below, etc
-			if (K_IsPlayerWanted(player))
-				wantedpos++;
-			if (wantedpos > 4) // Don't run off into karma items
-				wantedpos = 4;
-			if (wantedpos < 0) // Don't go below somehow
-				wantedpos = 0;
-			useodds = disttable[(wantedpos * distlen) / 5];
+			useodds = 0;
+
+			if (oddsvalid[0] == false && oddsvalid[1] == true)
+			{
+				// try to use karma odds as a fallback
+				useodds = 1;
+			}
 		}
 	}
 	else
@@ -1060,6 +1060,10 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 		if (players[i].kartstuff[k_bumper] > bestbumper)
 			bestbumper = players[i].kartstuff[k_bumper];
 	}
+
+	// No forced SPB in 1v1s, it has to be randomly rolled
+	if (pingame <= 2)
+		dontforcespb = true;
 
 	// This makes the roulette produce the random noises.
 	if ((player->kartstuff[k_itemroulette] % 3) == 1 && P_IsDisplayPlayer(player) && !demo.freecam)
@@ -1372,30 +1376,72 @@ void K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean solid)
 	}
 }
 
-/**	\brief	Checks that the player is on an offroad subsector for realsies
+/**	\brief	Checks that the player is on an offroad subsector for realsies. Also accounts for line riding to prevent cheese.
 
 	\param	mo	player mobj object
 
 	\return	boolean
 */
-static UINT8 K_CheckOffroadCollide(mobj_t *mo, sector_t *sec)
+static UINT8 K_CheckOffroadCollide(mobj_t *mo)
 {
-	UINT8 i;
-	sector_t *sec2;
+	// Check for sectors in touching_sectorlist
+	UINT8 i;			// special type iter
+	msecnode_t *node;	// touching_sectorlist iter
+	sector_t *s;		// main sector shortcut
+	sector_t *s2;		// FOF sector shortcut
+	ffloor_t *rover;	// FOF
+
+	fixed_t flr;
+	fixed_t cel;	// floor & ceiling for height checks to make sure we're touching the offroad sector.
 
 	I_Assert(mo != NULL);
 	I_Assert(!P_MobjWasRemoved(mo));
 
-	sec2 = P_ThingOnSpecial3DFloor(mo);
-
-	for (i = 2; i < 5; i++)
+	for (node = mo->touching_sectorlist; node; node = node->m_sectorlist_next)
 	{
-		if ((sec2 && GETSECSPECIAL(sec2->special, 1) == i)
-			|| (P_IsObjectOnRealGround(mo, sec) && GETSECSPECIAL(sec->special, 1) == i))
-			return i-1;
-	}
+		if (!node->m_sector)
+			break;	// shouldn't happen.
 
-	return 0;
+		s = node->m_sector;
+		// 1: Check for the main sector, make sure we're on the floor of that sector and see if we can apply offroad.
+		// Make arbitrary Z checks because we want to check for 1 sector in particular, we don't want to affect the player if the offroad sector is way below them and they're lineriding a normal sector above.
+
+		flr = P_MobjFloorZ(mo, s, s, mo->x, mo->y, NULL, false, true);
+		cel = P_MobjCeilingZ(mo, s, s, mo->x, mo->y, NULL, true, true);	// get Z coords of both floors and ceilings for this sector (this accounts for slopes properly.)
+		// NOTE: we don't use P_GetZAt with our x/y directly because the mobj won't have the same height because of its hitbox on the slope. Complex garbage but tldr it doesn't work.
+
+		if ( ((s->flags & SF_FLIPSPECIAL_FLOOR) && mo->z == flr)	// floor check
+			|| ((mo->eflags & MFE_VERTICALFLIP && (s->flags & SF_FLIPSPECIAL_CEILING) && (mo->z + mo->height) == cel)) )	// ceiling check.
+
+			for (i = 2; i < 5; i++)	// check for sector special
+
+				if (GETSECSPECIAL(s->special, 1) == i)
+					return i-1;	// return offroad type
+
+		// 2: If we're here, we haven't found anything. So let's try looking for FOFs in the sectors using the same logic.
+		for (rover = s->ffloors; rover; rover = rover->next)
+		{
+			if (!(rover->flags & FF_EXISTS))	// This FOF doesn't exist anymore.
+				continue;
+
+			s2 = &sectors[rover->secnum];	// makes things easier for us
+
+			flr = P_GetFOFBottomZ(mo, s, rover, mo->x, mo->y, NULL);
+			cel = P_GetFOFTopZ(mo, s, rover, mo->x, mo->y, NULL);	// Z coords for fof top/bottom.
+
+			// we will do essentially the same checks as above instead of bothering with top/bottom height of the FOF.
+			// Reminder that an FOF's floor is its bottom, silly!
+			if ( ((s2->flags & SF_FLIPSPECIAL_FLOOR) && mo->z == cel)	// "floor" check
+				|| ((s2->flags & SF_FLIPSPECIAL_CEILING) && (mo->z + mo->height) == flr) )	// "ceiling" check.
+
+				for (i = 2; i < 5; i++)	// check for sector special
+
+					if (GETSECSPECIAL(s2->special, 1) == i)
+						return i-1;	// return offroad type
+
+		}
+	}
+	return 0;	// couldn't find any offroad
 }
 
 /**	\brief	Updates the Player's offroad value once per frame
@@ -1407,14 +1453,12 @@ static UINT8 K_CheckOffroadCollide(mobj_t *mo, sector_t *sec)
 static void K_UpdateOffroad(player_t *player)
 {
 	fixed_t offroad;
-	sector_t *nextsector = R_PointInSubsector(
-		player->mo->x + player->mo->momx*2, player->mo->y + player->mo->momy*2)->sector;
-	UINT8 offroadstrength = K_CheckOffroadCollide(player->mo, nextsector);
+	UINT8 offroadstrength = K_CheckOffroadCollide(player->mo);
 
 	// If you are in offroad, a timer starts.
 	if (offroadstrength)
 	{
-		if (K_CheckOffroadCollide(player->mo, player->mo->subsector->sector) && player->kartstuff[k_offroad] == 0)
+		if (/*K_CheckOffroadCollide(player->mo) &&*/ player->kartstuff[k_offroad] == 0)	// With the way offroad is detected now that first check is no longer necessary. -Lat'
 			player->kartstuff[k_offroad] = (TICRATE/2);
 
 		if (player->kartstuff[k_offroad] > 0)
@@ -2893,14 +2937,12 @@ void K_SpawnBoostTrail(player_t *player)
 	{
 		newx = player->mo->x + P_ReturnThrustX(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, FixedMul(24*FRACUNIT, player->mo->scale));
 		newy = player->mo->y + P_ReturnThrustY(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, FixedMul(24*FRACUNIT, player->mo->scale));
-#ifdef ESLOPE
 		if (player->mo->standingslope)
 		{
 			ground = P_GetZAt(player->mo->standingslope, newx, newy);
 			if (player->mo->eflags & MFE_VERTICALFLIP)
 				ground -= FixedMul(mobjinfo[MT_SNEAKERTRAIL].height, player->mo->scale);
 		}
-#endif
 		flame = P_SpawnMobj(newx, newy, ground, MT_SNEAKERTRAIL);
 
 		P_SetTarget(&flame->target, player->mo);
@@ -3312,7 +3354,8 @@ void K_PuntMine(mobj_t *thismine, mobj_t *punter)
 	if (!thismine || P_MobjWasRemoved(thismine))
 		return;
 
-	if (thismine->type == MT_SSMINE_SHIELD) // Create a new mine
+	//This guarantees you hit a mine being dragged
+	if (thismine->type == MT_SSMINE_SHIELD) // Create a new mine, and clean up the old one
 	{
 		mine = P_SpawnMobj(thismine->x, thismine->y, thismine->z, MT_SSMINE);
 		P_SetTarget(&mine->target, thismine->target);
@@ -3320,7 +3363,19 @@ void K_PuntMine(mobj_t *thismine, mobj_t *punter)
 		mine->flags2 = thismine->flags2;
 		mine->floorz = thismine->floorz;
 		mine->ceilingz = thismine->ceilingz;
+
+		//Since we aren't using P_KillMobj, we need to clean up the hnext reference
+		{
+			P_SetTarget(&thismine->target->hnext, NULL); //target is the player who owns the mine
+			thismine->target->player->kartstuff[k_bananadrag] = 0;
+			thismine->target->player->kartstuff[k_itemheld] = 0;
+
+			if (--thismine->target->player->kartstuff[k_itemamount] <= 0)
+				thismine->target->player->kartstuff[k_itemtype] = KITEM_NONE;
+		}
+
 		P_RemoveMobj(thismine);
+
 	}
 	else
 		mine = thismine;
@@ -3604,9 +3659,7 @@ void K_DoPogoSpring(mobj_t *mo, fixed_t vertispeed, UINT8 sound)
 	if (mo->eflags & MFE_SPRUNG)
 		return;
 
-#ifdef ESLOPE
 	mo->standingslope = NULL;
-#endif
 
 	mo->eflags |= MFE_SPRUNG;
 
@@ -3868,6 +3921,62 @@ void K_DropItems(player_t *player)
 	}
 
 	K_StripItems(player);
+}
+
+void K_DropRocketSneaker(player_t *player)
+{
+	mobj_t *shoe = player->mo;
+	fixed_t flingangle;
+	boolean leftshoe = true; //left shoe is first
+
+	if (!(player->mo && !P_MobjWasRemoved(player->mo) && player->mo->hnext && !P_MobjWasRemoved(player->mo->hnext)))
+		return;
+
+	while ((shoe = shoe->hnext) && !P_MobjWasRemoved(shoe))
+	{
+		if (shoe->type != MT_ROCKETSNEAKER)
+			return; //woah, not a rocketsneaker, bail! safeguard in case this gets used when you're holding non-rocketsneakers
+
+		shoe->flags2 &= ~MF2_DONTDRAW;
+		shoe->flags &= ~MF_NOGRAVITY;
+		shoe->angle += ANGLE_45;
+
+		if (shoe->eflags & MFE_VERTICALFLIP)
+			shoe->z -= shoe->height;
+		else
+			shoe->z += shoe->height;
+
+		//left shoe goes off tot eh left, right shoe off to the right
+		if (leftshoe)
+			flingangle = -(ANG60);
+		else
+			flingangle = ANG60;
+
+		S_StartSound(shoe, shoe->info->deathsound);
+		P_SetObjectMomZ(shoe, 8*FRACUNIT, false);
+		P_InstaThrust(shoe, R_PointToAngle2(shoe->target->x, shoe->target->y, shoe->x, shoe->y)+flingangle, 16*FRACUNIT);
+		shoe->momx += shoe->target->momx;
+		shoe->momy += shoe->target->momy;
+		shoe->momz += shoe->target->momz;
+		shoe->extravalue2 = 1;
+
+		leftshoe = false;
+	}
+	P_SetTarget(&player->mo->hnext, NULL);
+	player->kartstuff[k_rocketsneakertimer] = 0;
+}
+
+void K_DropKitchenSink(player_t *player)
+{
+	if (!(player->mo && !P_MobjWasRemoved(player->mo) && player->mo->hnext && !P_MobjWasRemoved(player->mo->hnext)))
+		return;
+
+	if (player->mo->hnext->type != MT_SINK_SHIELD)
+		return; //so we can just call this function regardless of what is being held
+
+	P_KillMobj(player->mo->hnext, NULL, NULL);
+
+	P_SetTarget(&player->mo->hnext, NULL);
 }
 
 // When an item in the hnext chain dies.
@@ -4490,6 +4599,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		fast->momx = 3*player->mo->momx/4;
 		fast->momy = 3*player->mo->momy/4;
 		fast->momz = 3*player->mo->momz/4;
+		P_SetTarget(&fast->target, player->mo); // easier lua access
 		K_MatchGenericExtraFlags(fast, player->mo);
 	}
 
@@ -5195,11 +5305,11 @@ void K_KartUpdatePosition(player_t *player)
 //
 void K_StripItems(player_t *player)
 {
+	K_DropRocketSneaker(player);
+	K_DropKitchenSink(player);
 	player->kartstuff[k_itemtype] = KITEM_NONE;
 	player->kartstuff[k_itemamount] = 0;
 	player->kartstuff[k_itemheld] = 0;
-
-	player->kartstuff[k_rocketsneakertimer] = 0;
 
 	if (!player->kartstuff[k_itemroulette] || player->kartstuff[k_roulettetype] != 2)
 	{
@@ -8634,7 +8744,7 @@ void K_drawKartFreePlay(UINT32 flashtime)
 		return;
 
 	V_DrawKartString((BASEVIDWIDTH - (LAPS_X+1)) - (12*9), // mirror the laps thingy
-		LAPS_Y+3, V_SNAPTOBOTTOM|V_SNAPTORIGHT, "FREE PLAY");
+		LAPS_Y+3, V_SNAPTOBOTTOM|V_SNAPTORIGHT|V_HUDTRANS, "FREE PLAY");
 }
 
 static void K_drawDistributionDebugger(void)

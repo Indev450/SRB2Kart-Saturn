@@ -18,6 +18,7 @@
 #include "d_netcmd.h"
 #include "tables.h"
 #include "d_player.h"
+#include "mserv.h"
 
 /*
 The 'packet version' is used to distinguish packet formats.
@@ -333,6 +334,11 @@ typedef struct
 
 	char server_context[8]; // Unique context id, generated at server startup.
 
+	// Discord info (always defined for net compatibility)
+	UINT8 maxplayer;
+	boolean allownewplayer;
+	boolean discordinvites;
+
 	UINT8 varlengthinputs[0]; // Playernames and netvars
 } ATTRPACK serverconfig_pak;
 
@@ -530,7 +536,12 @@ typedef enum
 
 } kickreason_t;
 
+/* the max number of name changes in some time period */
+#define MAXNAMECHANGES (5)
+#define NAMECHANGERATE (60*TICRATE)
+
 extern boolean server;
+extern boolean serverrunning;
 #define client (!server)
 extern boolean dedicated; // For dedicated server
 extern UINT16 software_MAXPACKETLENGTH;
@@ -551,6 +562,8 @@ extern consvar_t
 	cv_joinnextround,
 #endif
 	cv_netticbuffer, cv_allownewplayer, cv_maxplayers, cv_resynchattempts, cv_blamecfail, cv_maxsend, cv_noticedownload, cv_downloadspeed;
+
+extern consvar_t cv_discordinvites;
 
 // Used in d_net, the only dependence
 tic_t ExpandTics(INT32 low, tic_t basetic);
@@ -577,7 +590,8 @@ void CL_RemoveSplitscreenPlayer(UINT8 p);
 void CL_Reset(void);
 void CL_ClearPlayer(INT32 playernum);
 void CL_RemovePlayer(INT32 playernum, INT32 reason);
-void CL_UpdateServerList(boolean internetsearch, INT32 room);
+void CL_QueryServerList(msg_server_t *list);
+void CL_UpdateServerList(void);
 // Is there a game running
 boolean Playing(void);
 
