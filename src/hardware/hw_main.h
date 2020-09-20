@@ -148,6 +148,7 @@ extern consvar_t cv_grsolvetjoin;
 extern consvar_t cv_grspritebillboarding;
 extern consvar_t cv_grfakecontrast;
 extern consvar_t cv_grfallbackplayermodel;
+extern consvar_t cv_grrenderdistance;
 
 extern CV_PossibleValue_t granisotropicmode_cons_t[];
 
