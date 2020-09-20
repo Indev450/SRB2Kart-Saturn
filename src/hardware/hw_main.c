@@ -80,15 +80,16 @@ consvar_t cv_grsolvetjoin = {"gr_solvetjoin", "On", 0, CV_OnOff, NULL, 0, NULL, 
 consvar_t cv_grbatching = {"gr_batching", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static CV_PossibleValue_t grrenderdistance_cons_t[] = {
-	{0, "Max"}, {1, "1024"}, {2, "2048"}, {3, "4096"}, {4, "6144"}, {5, "8192"}, {0, NULL}};
-consvar_t cv_grrenderdistance = {"gr_renderdistance", "Max", NULL, grrenderdistance_cons_t,
+	{0, "Max"}, {1, "1024"}, {2, "2048"}, {3, "4096"}, {4, "6144"}, {5, "8192"},
+	{6, "12288"}, {7, "16384"}, {0, NULL}};
+consvar_t cv_grrenderdistance = {"gr_renderdistance", "Max", CV_SAVE, grrenderdistance_cons_t,
 							NULL, 0, NULL, NULL, 0, 0, NULL};
 // values for the far clipping plane
-static float clipping_distances[] = {1024.0f, 2048.0f, 4096.0f, 6144.0f, 8192.0f};
+static float clipping_distances[] = {1024.0f, 2048.0f, 4096.0f, 6144.0f, 8192.0f, 12288.0f, 16384.0f};
 // values for bsp culling
 // slightly higher than the far clipping plane to compensate for impreciseness
 static INT32 bsp_culling_distances[] = {(1024+512)*FRACUNIT, (2048+512)*FRACUNIT, (4096+512)*FRACUNIT,
-	(6144+512)*FRACUNIT, (8192+512)*FRACUNIT};
+	(6144+512)*FRACUNIT, (8192+512)*FRACUNIT, (12288+512)*FRACUNIT, (16384+512)*FRACUNIT};
 static INT32 current_bsp_culling_distance = 0;
 
 static void CV_filtermode_ONChange(void)
@@ -4071,7 +4072,7 @@ void HWR_AddSprites(sector_t *sec)
 {
 	mobj_t *thing;
 	precipmobj_t *precipthing;
-	fixed_t approx_dist, limit_dist;
+	fixed_t approx_dist, limit_dist, precip_limit_dist;
 
 	INT32 splitflags;
 	boolean split_drawsprite;	// drawing with splitscreen flags
@@ -4086,9 +4087,24 @@ void HWR_AddSprites(sector_t *sec)
 	// Well, now it will be done.
 	sec->validcount = validcount;
 
+	if (current_bsp_culling_distance)
+	{
+		// Use the smaller setting
+		if (cv_drawdist.value)
+			limit_dist = min(current_bsp_culling_distance, cv_drawdist.value << FRACBITS);
+		else
+			limit_dist = current_bsp_culling_distance;
+		precip_limit_dist = min(current_bsp_culling_distance, cv_drawdist_precip.value << FRACBITS);
+	}
+	else
+	{
+		limit_dist = cv_drawdist.value << FRACBITS;
+		precip_limit_dist = cv_drawdist_precip.value << FRACBITS;
+	}
+
 	// Handle all things in sector.
 	// If a limit exists, handle things a tiny bit different.
-	if ((limit_dist = (fixed_t)(/*(maptol & TOL_NIGHTS) ? cv_drawdist_nights.value : */cv_drawdist.value) << FRACBITS))
+	if (limit_dist)
 	{
 		for (thing = sec->thinglist; thing; thing = thing->snext)
 		{
@@ -4174,7 +4190,7 @@ void HWR_AddSprites(sector_t *sec)
 	}
 
 	// No to infinite precipitation draw distance.
-	if ((limit_dist = (fixed_t)cv_drawdist_precip.value << FRACBITS))
+	if (precip_limit_dist)
 	{
 		for (precipthing = sec->preciplist; precipthing; precipthing = precipthing->snext)
 		{
