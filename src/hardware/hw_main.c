@@ -4199,7 +4199,7 @@ void HWR_AddSprites(sector_t *sec)
 
 			approx_dist = P_AproxDistance(viewx-precipthing->x, viewy-precipthing->y);
 
-			if (approx_dist > limit_dist)
+			if (approx_dist > precip_limit_dist)
 				continue;
 
 			HWR_ProjectPrecipitationSprite(precipthing);
