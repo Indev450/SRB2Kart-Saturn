@@ -136,8 +136,8 @@ extern consvar_t cv_cam3_speed, cv_cam3_rotate, cv_cam3_rotspeed;
 extern consvar_t cv_cam4_dist, cv_cam4_still, cv_cam4_height;
 extern consvar_t cv_cam4_speed, cv_cam4_rotate, cv_cam4_rotspeed;
 
-extern consvar_t cv_slopeview;
-extern consvar_t cv_quaketilt;
+extern consvar_t cv_tilting;
+
 extern consvar_t cv_actionmovie;
 extern consvar_t cv_windowquake;
 
