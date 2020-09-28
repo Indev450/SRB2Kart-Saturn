@@ -1654,20 +1654,44 @@ static menuitem_t OP_BirdMenu[] =
 static menuitem_t OP_TiltMenu[] =
 {
 	{IT_STRING | IT_CVAR, NULL, "Camera Tilting", &cv_tilting, 0},
-	{IT_STRING | IT_CVAR, NULL, "Also Tilt During Quakes", &cv_actionmovie, 10},
+	{IT_STRING | IT_CVAR, NULL, "Tilt While Turning", &cv_quaketilt, 10},
+	{IT_STRING | IT_CVAR, NULL, "Smoothing Divisor", &cv_tiltsmoothing, 20},
 
-	{IT_STRING | IT_CVAR, NULL, "\x85" "Window Shaking During Quakes", &cv_windowquake, 30},
+	{IT_STRING | IT_CVAR, NULL, "Also Tilt During Quakes", &cv_actionmovie, 40},
+
+	{IT_STRING | IT_CVAR, NULL, "\x85" "Window Shaking During Quakes", &cv_windowquake, 60},
+};
+
+enum
+{
+	tilting,
+	tiltwturning,
+	smoothening,
+	tiltwquakes,
+	windowshake,
 };
 
 static menuitem_t OP_AdvancedBirdMenu[] =
 {
-	{IT_STRING | IT_CVAR, NULL, "Resync Threshold",          &cv_music_resync_threshold,      0},
-	{IT_STRING | IT_CVAR, NULL, "Resync Special Music Only", &cv_music_resync_powerups_only, 10},
+	{IT_STRING | IT_CVAR, NULL, "Fading",                        &cv_fading,                  0},
+	{IT_STRING | IT_CVAR, NULL, "Fade Back from Invincibility",  &cv_invincmusicfade,        10},
+	{IT_STRING | IT_CVAR, NULL, "Fade Back from Grow",           &cv_growmusicfade,          20},
+	{IT_STRING | IT_CVAR, NULL, "Fade Out Before Respawning",    &cv_respawnfademusicout,    30},
+	{IT_STRING | IT_CVAR, NULL, "Fade Back In While Respawning", &cv_respawnfademusicback,   40},
 
-	{IT_STRING | IT_CVAR, NULL, "Fade Back from Invincibility",  &cv_invincmusicfade,        30},
-	{IT_STRING | IT_CVAR, NULL, "Fade Back from Grow",           &cv_growmusicfade,          40},
-	{IT_STRING | IT_CVAR, NULL, "Fade Out Before Respawning",    &cv_respawnfademusicout,    50},
-	{IT_STRING | IT_CVAR, NULL, "Fade Back In While Respawning", &cv_respawnfademusicback,   60},
+	{IT_STRING | IT_CVAR, NULL, "Resync Threshold",          &cv_music_resync_threshold,     60},
+	{IT_STRING | IT_CVAR, NULL, "Resync Special Music Only", &cv_music_resync_powerups_only, 70},
+};
+
+enum
+{
+	fading,
+	fadeinvinc,
+	fadegrow,
+	respawnfadeout,
+	respawnfadein,
+	syncthreshold,
+	syncspecialonly,
 };
 
 // ==========================================================================
@@ -2424,6 +2448,38 @@ void Addons_option_Onchange(void)
 {
 	OP_AddonsOptionsMenu[op_addons_folder].status =
 		(cv_addons_option.value == 3 ? IT_CVAR|IT_STRING|IT_CV_STRING : IT_DISABLED);
+}
+
+void Bird_menu_Onchange(void)
+{
+	UINT16 status;
+
+	if (cv_tilting.value)
+	{
+		status = IT_STRING | IT_CVAR;
+	}
+	else
+	{
+		status = IT_GRAYEDOUT;
+	}
+
+	OP_TiltMenu[tiltwturning].status = status;
+	OP_TiltMenu[smoothening].status = status;
+	OP_TiltMenu[tiltwquakes].status = status;
+
+	if (cv_fading.value)
+	{
+		status = IT_STRING | IT_CVAR;
+	}
+	else
+	{
+		status = IT_GRAYEDOUT;
+	}
+
+	OP_AdvancedBirdMenu[fadeinvinc].status = status;
+	OP_AdvancedBirdMenu[fadegrow].status = status;
+	OP_AdvancedBirdMenu[respawnfadeout].status = status;
+	OP_AdvancedBirdMenu[respawnfadein].status = status;
 }
 
 // ==========================================================================
