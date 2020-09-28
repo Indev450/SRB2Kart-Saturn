@@ -1648,7 +1648,7 @@ static menuitem_t OP_BirdMenu[] =
 	{IT_STRING | IT_CVAR, NULL, "Resume Level Music",    &cv_resume,            120},
 	{IT_STRING | IT_CVAR, NULL, "Restart Special Music", &cv_resetspecialmusic, 130},
 
-	{IT_STRING | IT_SUBMENU, NULL, "Advanced Music Fading Options...", &OP_AdvancedBirdDef, 150},
+	{IT_STRING | IT_SUBMENU, NULL, "Advanced Music Options...", &OP_AdvancedBirdDef, 150},
 };
 
 static menuitem_t OP_TiltMenu[] =
