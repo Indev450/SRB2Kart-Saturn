@@ -671,9 +671,6 @@ void R_CheckViewMorph(void)
 	fixed_t fisheye = cv_cam2_turnmultiplier.value; // temporary test value
 #endif
 
-	if (cv_actionmovie.value)
-		rollangle += quake.roll;
-
 	rollangle >>= ANGLETOFINESHIFT;
 	rollangle = ((rollangle+2) & ~3) & FINEMASK; // Limit the distinct number of angles to reduce recalcs from angles changing a lot.
 
