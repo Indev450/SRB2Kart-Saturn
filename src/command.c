@@ -79,6 +79,7 @@ CV_PossibleValue_t kartspeed_cons_t[] = {
 
 static boolean execversion_enabled = false;
 consvar_t cv_execversion = {"execversion","1",CV_CALL,CV_Unsigned, CV_EnforceExecVersion, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_birdmod = {"birdmod", "0", CV_SAVE|CV_NOSHOWHELP, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 // for default joyaxis detection
 #if 0

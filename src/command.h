@@ -143,6 +143,7 @@ extern CV_PossibleValue_t CV_Natural[];
 extern CV_PossibleValue_t kartspeed_cons_t[];
 
 extern consvar_t cv_execversion;
+extern consvar_t cv_birdmod;
 
 void CV_InitFilterVar(void);
 void CV_ToggleExecVersion(boolean enable);

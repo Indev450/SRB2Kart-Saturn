@@ -331,6 +331,11 @@ static void M_Addons(INT32 choice);
 static void M_AddonsOptions(INT32 choice);
 static patch_t *addonsp[NUM_EXT+5];
 
+// Bird
+menu_t OP_BirdDef;
+menu_t OP_TiltDef;
+menu_t OP_AdvancedBirdDef;
+
 #define numaddonsshown 4
 
 // Replay hut
@@ -1101,6 +1106,8 @@ static menuitem_t OP_MainMenu[] =
 
 	{IT_CALL|IT_STRING,			NULL, "Tricks & Secrets (F1)",	M_Manual,					120},
 	{IT_CALL|IT_STRING,			NULL, "Play Credits",			M_Credits,					130},
+
+	{IT_SUBMENU|IT_STRING,		NULL, "Bird",	&OP_BirdDef,	150},
 };
 
 static menuitem_t OP_ControlsMenu[] =
@@ -1624,6 +1631,45 @@ static menuitem_t OP_MonitorToggleMenu[] =
 #endif
 };
 
+static menuitem_t OP_BirdMenu[] =
+{
+	{IT_HEADER, NULL, "Crazy", NULL, 0},
+	{IT_STRING | IT_SUBMENU, NULL, "Screen Tilting...", &OP_TiltDef, 10},
+
+	{IT_HEADER, NULL, "HUD", NULL, 30},
+	{IT_STRING | IT_CVAR, NULL, "Show Viewpoint Text in Replays", &cv_showviewpointtext, 40},
+	{IT_STRING | IT_CVAR, NULL, "Show FREE PLAY Text",            &cv_showfreeplay,      50},
+
+	{IT_HEADER, NULL, "Voting", NULL, 70},
+	{IT_STRING | IT_CVAR, NULL, "Only Show One Battle Choice", &cv_lessbattlevotes, 80},
+	{IT_STRING | IT_CVAR, NULL, "Encore Choices",              &cv_encorevotes,     90},
+
+	{IT_HEADER, NULL, "Music", NULL, 110},
+	{IT_STRING | IT_CVAR, NULL, "Resume Level Music",    &cv_resume,            120},
+	{IT_STRING | IT_CVAR, NULL, "Restart Special Music", &cv_resetspecialmusic, 130},
+
+	{IT_STRING | IT_SUBMENU, NULL, "Advanced Music Fading Options...", &OP_AdvancedBirdDef, 150},
+};
+
+static menuitem_t OP_TiltMenu[] =
+{
+	{IT_STRING | IT_CVAR, NULL, "Camera Tilting", &cv_tilting, 0},
+	{IT_STRING | IT_CVAR, NULL, "Also Tilt During Quakes", &cv_actionmovie, 10},
+
+	{IT_STRING | IT_CVAR, NULL, "\x85" "Window Shaking During Quakes", &cv_windowquake, 30},
+};
+
+static menuitem_t OP_AdvancedBirdMenu[] =
+{
+	{IT_STRING | IT_CVAR, NULL, "Resync Threshold",          &cv_music_resync_threshold,      0},
+	{IT_STRING | IT_CVAR, NULL, "Resync Special Music Only", &cv_music_resync_powerups_only, 10},
+
+	{IT_STRING | IT_CVAR, NULL, "Fade Back from Invincibility",  &cv_invincmusicfade,        30},
+	{IT_STRING | IT_CVAR, NULL, "Fade Back from Grow",           &cv_growmusicfade,          40},
+	{IT_STRING | IT_CVAR, NULL, "Fade Out Before Respawning",    &cv_respawnfademusicout,    50},
+	{IT_STRING | IT_CVAR, NULL, "Fade Back In While Respawning", &cv_respawnfademusicback,   60},
+};
+
 // ==========================================================================
 // ALL MENU DEFINITIONS GO HERE
 // ==========================================================================
@@ -2127,6 +2173,10 @@ menu_t OP_AddonsOptionsDef = DEFAULTMENUSTYLE("M_ADDONS", OP_AddonsOptionsMenu, 
 menu_t OP_DiscordOptionsDef = DEFAULTMENUSTYLE(NULL, OP_DiscordOptionsMenu, &OP_DataOptionsDef, 30, 30);
 #endif
 menu_t OP_EraseDataDef = DEFAULTMENUSTYLE("M_DATA", OP_EraseDataMenu, &OP_DataOptionsDef, 30, 30);
+
+menu_t OP_BirdDef = DEFAULTMENUSTYLE(NULL, OP_BirdMenu, &OP_MainDef, 30, 30);
+menu_t OP_TiltDef = DEFAULTMENUSTYLE(NULL, OP_TiltMenu, &OP_BirdDef, 30, 60);
+menu_t OP_AdvancedBirdDef = DEFAULTMENUSTYLE(NULL, OP_AdvancedBirdMenu, &OP_BirdDef, 30, 60);
 
 // ==========================================================================
 // CVAR ONCHANGE EVENTS GO HERE
@@ -3181,6 +3231,19 @@ void M_Drawer(void)
 	interpTimerHackAllow = false;
 }
 
+static tic_t disclaimertic;
+
+static void
+M_AcceptBird (event_t *ev)
+{
+	(void)ev;
+	if (disclaimertic >= 3*TICRATE)
+	{
+		CV_SetValue(&cv_birdmod, 1);
+		M_StopMessage(0);
+	}
+}
+
 //
 // M_StartControlPanel
 //
@@ -3375,6 +3438,23 @@ void M_StartControlPanel(void)
 	}
 
 	CON_ToggleOff(); // move away console
+
+	if (cv_birdmod.value == 0)
+	{
+		currentMenu->lastOn = itemOn;
+
+		M_StartMessage(
+				"\x82WARNING\n\x80"
+				"This version of bird mod includes\n"
+				"a feature that may cause motion\n"
+				"sickness for some people.\n\n"
+
+				"You may want to look at\n"
+				"the\x82 Bird Options\x80 first.\n\n"
+
+				"(wait 3 seconds...)",
+				M_AcceptBird, MM_EVENTHANDLER);
+	}
 }
 
 void M_EndModeAttackRun(void)
@@ -3483,6 +3563,33 @@ void M_Ticker(void)
 #endif
 
 	CL_TimeoutServerList();
+
+	if (menuactive && cv_birdmod.value == 0)
+	{
+		if (disclaimertic < 3*TICRATE)
+		{
+			disclaimertic++;
+
+			if (disclaimertic % TICRATE == 0)
+			{
+				char *p = strrchr(MessageDef.menuitems[0].text, '\n');
+
+				if (disclaimertic == TICRATE)
+				{
+					strcpy(&p[1], "(wait 2 seconds...)");
+				}
+				else
+				{
+					strcpy(&p[1], "(wait 1 second...)");
+				}
+			}
+		}
+		else
+		{
+			char *p = strrchr(MessageDef.menuitems[0].text, '\n');
+			strcpy(&p[1], "(press a key)");
+		}
+	}
 }
 
 //
