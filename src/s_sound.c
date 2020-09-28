@@ -2156,6 +2156,34 @@ void S_SetMusicVolume(INT32 digvolume, INT32 seqvolume)
 	}
 }
 
+void
+S_SetRestoreMusicFadeInCvar (consvar_t *cv)
+{
+	music_refade_cv = cv;
+}
+
+int
+S_GetRestoreMusicFadeIn (void)
+{
+	if (music_refade_cv && cv_fading.value)
+		return music_refade_cv->value;
+	else
+		return 0;
+}
+
+void
+S_SetMusicUsage (int type)
+{
+	music_usage = type;
+	I_UpdateSongLagConditions();
+}
+
+int
+S_MusicUsage (void)
+{
+	return music_usage;
+}
+
 /// ------------------------
 /// Music Fading
 /// ------------------------

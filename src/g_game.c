@@ -531,6 +531,14 @@ consvar_t cv_xdeadzone4 = {"joy4_xdeadzone", "0.3", CV_FLOAT|CV_SAVE, deadzone_c
 consvar_t cv_ydeadzone4 = {"joy4_ydeadzone", "0.5", CV_FLOAT|CV_SAVE, deadzone_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 
+consvar_t cv_respawnfademusicout = {"respawnfademusicout", "1000", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_respawnfademusicback = {"respawnfademusicback", "500", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_resetspecialmusic = {"resetspecialmusic", "Yes", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_resume = {"resume", "Yes", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_fading = {"fading", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 #if MAXPLAYERS > 16
 #error "please update player_name table using the new value for MAXPLAYERS"
 #endif
@@ -2689,6 +2697,9 @@ void G_PlayerReborn(INT32 player)
 	tic_t grieftime;
 	UINT8 griefstrikes;
 
+	boolean fade;
+	boolean playing;
+
 	score = players[player].score;
 	marescore = players[player].marescore;
 	lives = players[player].lives;
@@ -2864,7 +2875,31 @@ void G_PlayerReborn(INT32 player)
 		}
 	}
 
+	/* I'm putting this here because lol */
+
+	fade = ( cv_fading.value && P_IsLocalPlayer(p) );
+
+	if (fade)
+	{
+		playing = S_MusicPlaying();
+
+		/*
+		Fade it in with the same call to avoid
+		max volume for a few milliseconds (?).
+		*/
+		if (! playing)
+			S_SetRestoreMusicFadeInCvar(&cv_respawnfademusicback);
+	}
+
 	P_RestoreMusic(p);
+
+	if (fade)
+	{
+		/* mid-way fading out, fade back up */
+		if (playing)
+			S_FadeMusic(100, cv_respawnfademusicback.value);
+	}
+
 	if (songcredit)
 		S_ShowMusicCredit();
 
