@@ -1341,6 +1341,7 @@ static int slope_set(lua_State *L)
 	case slope_zdelta: { // zdelta, this is temp until i figure out wtf to do
 		slope->zdelta = luaL_checkfixed(L, 3);
 		slope->zangle = R_PointToAngle2(0, 0, FRACUNIT, -slope->zdelta);
+		slope->real_zangle = slope->zangle;
 		P_CalculateSlopeNormal(slope);
 		break;
 	}
@@ -1349,12 +1350,14 @@ static int slope_set(lua_State *L)
 		if (zangle == ANGLE_90 || zangle == ANGLE_270)
 			return luaL_error(L, "invalid zangle for slope!");
 		slope->zangle = zangle;
+		slope->real_zangle = slope->zangle;
 		slope->zdelta = -FINETANGENT(((slope->zangle+ANGLE_90)>>ANGLETOFINESHIFT) & 4095);
 		P_CalculateSlopeNormal(slope);
 		break;
 	}
 	case slope_xydirection: // xydirection
 		slope->xydirection = luaL_checkangle(L, 3);
+		slope->real_xydirection = slope->xydirection;
 		slope->d.x = -FINECOSINE((slope->xydirection>>ANGLETOFINESHIFT) & FINEMASK);
 		slope->d.y = -FINESINE((slope->xydirection>>ANGLETOFINESHIFT) & FINEMASK);
 		P_CalculateSlopeNormal(slope);

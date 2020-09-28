@@ -8286,7 +8286,7 @@ DoABarrelRoll (player_t *player)
 
 	if (player->mo->standingslope)
 	{
-		slope = player->mo->standingslope->zangle;
+		slope = player->mo->standingslope->real_zangle;
 	}
 	else
 	{
@@ -8295,7 +8295,7 @@ DoABarrelRoll (player_t *player)
 
 	if (abs((INT32)slope) > ANGLE_11hh)
 	{
-		delta = ( player->mo->angle - player->mo->standingslope->xydirection );
+		delta = ( player->mo->angle - player->mo->standingslope->real_xydirection );
 		slope = -(FixedMul(FINESINE (delta>>ANGLETOFINESHIFT), slope));
 	}
 	else

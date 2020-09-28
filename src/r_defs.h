@@ -253,6 +253,10 @@ typedef struct pslope_s
 	angle_t zangle; // Angle of the plane going up from the ground (not mesured in degrees)
 	angle_t xydirection; // The direction the slope is facing (north, west, south, etc.)
 
+	// Applies even if the slope has no physics, for tilting
+	angle_t real_zangle;
+	angle_t real_xydirection;
+
 	struct line_s *sourceline; // The line that generated the slope
 	fixed_t extent; // Distance value used for recalculating zdelta
 	UINT8 refpos; // 1=front floor 2=front ceiling 3=back floor 4=back ceiling (used for dynamic sloping)
