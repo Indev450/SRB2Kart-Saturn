@@ -4691,6 +4691,12 @@ void HWR_RenderFrame(INT32 viewnumber, player_t *player, boolean skybox)
 
 	atransform.fovxangle = fpov; // Tails
 	atransform.fovyangle = fpov; // Tails
+	if (player->viewrollangle != 0)
+	{
+		fixed_t rol = AngleFixed(R_LerpAngle(player, viewrollangle));
+		atransform.rollangle = FIXED_TO_FLOAT(rol);
+		atransform.roll = true;
+	}
 	atransform.splitscreen = splitscreen;
 
 	for (i = 0; i <= splitscreen; i++)

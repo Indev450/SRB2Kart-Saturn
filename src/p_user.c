@@ -8239,6 +8239,11 @@ void P_PlayerThink(player_t *player)
 	ticcmd_t *cmd;
 	const size_t playeri = (size_t)(player - players);
 
+	player->lerp.aiming = player->aiming;
+	player->lerp.awayviewaiming = player->awayviewaiming;
+	player->lerp.frameangle = player->frameangle;
+	player->lerp.viewrollangle = player->viewrollangle;
+
 #ifdef PARANOIA
 	if (!player->mo)
 		I_Error("p_playerthink: players[%s].mo == NULL", sizeu1(playeri));
