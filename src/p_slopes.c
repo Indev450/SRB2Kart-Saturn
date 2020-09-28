@@ -39,6 +39,8 @@ static void P_ReconfigureVertexSlope(pslope_t *slope)
 {
 	vector3_t vec1, vec2;
 
+	fixed_t extent;
+
 	// Set slope normal
 	vec1.x = (slope->vertices[1]->x - slope->vertices[0]->x) << FRACBITS;
 	vec1.y = (slope->vertices[1]->y - slope->vertices[0]->y) << FRACBITS;
@@ -75,21 +77,25 @@ static void P_ReconfigureVertexSlope(pslope_t *slope)
 	slope->o.y = slope->vertices[0]->y << FRACBITS;
 	slope->o.z = slope->vertices[0]->z << FRACBITS;
 
+	// Get direction vector
+	extent = R_PointToDist2(0, 0, slope->normal.x, slope->normal.y);
+	slope->d.x = -FixedDiv(slope->normal.x, extent);
+	slope->d.y = -FixedDiv(slope->normal.y, extent);
+
+	// Z delta
+	slope->zdelta = FixedDiv(extent, slope->normal.z);
+
+	// Get angles
+	slope->real_xydirection = R_PointToAngle2(0, 0, slope->d.x, slope->d.y)+ANGLE_180;
+	slope->real_zangle = InvAngle(R_PointToAngle2(0, 0, FRACUNIT, slope->zdelta));
+
 	if (slope->normal.x == 0 && slope->normal.y == 0) { // Set some defaults for a non-sloped "slope"
 		slope->zangle = slope->xydirection = 0;
 		slope->zdelta = slope->d.x = slope->d.y = 0;
 	} else {
-		// Get direction vector
-		slope->extent = R_PointToDist2(0, 0, slope->normal.x, slope->normal.y);
-		slope->d.x = -FixedDiv(slope->normal.x, slope->extent);
-		slope->d.y = -FixedDiv(slope->normal.y, slope->extent);
-
-		// Z delta
-		slope->zdelta = FixedDiv(slope->extent, slope->normal.z);
-
-		// Get angles
-		slope->xydirection = R_PointToAngle2(0, 0, slope->d.x, slope->d.y)+ANGLE_180;
-		slope->zangle = InvAngle(R_PointToAngle2(0, 0, FRACUNIT, slope->zdelta));
+		slope->extent = extent;
+		slope->xydirection = slope->real_xydirection;
+		slope->zangle = slope->real_zangle;
 	}
 }
 
@@ -147,6 +153,7 @@ void P_RunDynamicSlopes(void) {
 		if (slope->zdelta != FixedDiv(zdelta, slope->extent)) {
 			slope->zdelta = FixedDiv(zdelta, slope->extent);
 			slope->zangle = R_PointToAngle2(0, 0, slope->extent, -zdelta);
+			slope->real_zangle = slope->zangle;
 			P_CalculateSlopeNormal(slope);
 		}
 	}
@@ -357,6 +364,9 @@ void P_SpawnSlope_Line(int linenum)
 			fslope->zangle = R_PointToAngle2(0, origin.z, extent, point.z);
 			fslope->xydirection = R_PointToAngle2(origin.x, origin.y, point.x, point.y);
 
+			fslope->real_zangle = fslope->zangle;
+			fslope->real_xydirection = fslope->xydirection;
+
 			P_CalculateSlopeNormal(fslope);
 		}
 		if(frontceil)
@@ -399,6 +409,9 @@ void P_SpawnSlope_Line(int linenum)
 
 			cslope->zangle = R_PointToAngle2(0, origin.z, extent, point.z);
 			cslope->xydirection = R_PointToAngle2(origin.x, origin.y, point.x, point.y);
+
+			cslope->real_zangle = cslope->zangle;
+			cslope->real_xydirection = cslope->xydirection;
 
 			P_CalculateSlopeNormal(cslope);
 		}
@@ -466,6 +479,9 @@ void P_SpawnSlope_Line(int linenum)
 			fslope->zangle = R_PointToAngle2(0, origin.z, extent, point.z);
 			fslope->xydirection = R_PointToAngle2(origin.x, origin.y, point.x, point.y);
 
+			fslope->real_zangle = fslope->zangle;
+			fslope->real_xydirection = fslope->xydirection;
+
 			P_CalculateSlopeNormal(fslope);
 		}
 		if(backceil)
@@ -508,6 +524,9 @@ void P_SpawnSlope_Line(int linenum)
 
 			cslope->zangle = R_PointToAngle2(0, origin.z, extent, point.z);
 			cslope->xydirection = R_PointToAngle2(origin.x, origin.y, point.x, point.y);
+
+			cslope->real_zangle = cslope->zangle;
+			cslope->real_xydirection = cslope->xydirection;
 
 			P_CalculateSlopeNormal(cslope);
 		}
