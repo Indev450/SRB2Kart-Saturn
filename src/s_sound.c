@@ -2197,7 +2197,7 @@ S_SetRestoreMusicFadeInCvar (consvar_t *cv)
 int
 S_GetRestoreMusicFadeIn (void)
 {
-	if (music_refade_cv)
+	if (music_refade_cv && cv_fading.value)
 		return music_refade_cv->value;
 	else
 		return 0;

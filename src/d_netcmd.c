@@ -981,6 +981,7 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_resetspecialmusic);
 
 	CV_RegisterVar(&cv_resume);
+	CV_RegisterVar(&cv_fading);
 
 	// ingame object placing
 	COM_AddCommand("objectplace", Command_ObjectPlace_f);
