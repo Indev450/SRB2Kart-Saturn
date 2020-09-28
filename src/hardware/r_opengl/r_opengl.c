@@ -28,6 +28,8 @@
 
 #include "../../p_tick.h" // for leveltime (NOTE: THIS IS BAD, FIGURE OUT HOW TO PROPERLY IMPLEMENT gl_leveltime)
 
+extern fixed_t fovtan; // also extremely bad, I'm just too lazy!!!
+
 #if defined (HWRENDER) && !defined (NOROPENGL)
 
 struct GLRGBAFloat
