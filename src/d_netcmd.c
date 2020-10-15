@@ -2815,15 +2815,15 @@ static void Command_ReplayMarker(void)
 		CONS_Printf(M_GetText("You must be in a level to use this.\n"));
 		return;
 	}
-	if (demo.savemode == DSM_WILLSAVE) {
+	if (demo.savemode == DSM_WILLAUTOSAVE) {
 		demo.savemode = DSM_NOTSAVING;
 		CONS_Printf("Replay unmarked.\n");
 	} else {
 		int adjustedleveltime = leveltime - starttime;
-		demo.savemode = DSM_WILLSAVE;
+		demo.savemode = DSM_WILLAUTOSAVE;
 		if (adjustedleveltime < 0)
 			adjustedleveltime = 0;
-		snprintf(demo.titlename, 64, "%s - %i:%i - %s", G_BuildMapTitle(gamemap), G_TicsToMinutes(adjustedleveltime, false), G_TicsToSeconds(adjustedleveltime), modeattacking ? "Record Attack" : connectedservername);
+		snprintf(demo.titlename, 64, "%s [%i:%02d/%.5s]", G_BuildMapTitle(gamemap), G_TicsToMinutes(adjustedleveltime, false), G_TicsToSeconds(adjustedleveltime), modeattacking ? "Record Attack" : connectedservername);
 		CONS_Printf("Replay will be saved!\n");
 	}
 }
