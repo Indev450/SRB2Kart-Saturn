@@ -55,6 +55,10 @@
 #define CV_RESTRICT 0
 #endif
 
+#ifdef HAVE_DISCORDRPC
+#include "discord.h"
+#endif
+
 // ------
 // protos
 // ------
@@ -77,6 +81,7 @@ static void Got_RandomSeed(UINT8 **cp, INT32 playernum);
 static void Got_RunSOCcmd(UINT8 **cp, INT32 playernum);
 static void Got_Teamchange(UINT8 **cp, INT32 playernum);
 static void Got_Clearscores(UINT8 **cp, INT32 playernum);
+static void Got_DiscordInfo(UINT8 **cp, INT32 playernum);
 
 static void PointLimit_OnChange(void);
 static void TimeLimit_OnChange(void);
@@ -708,10 +713,13 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_showping);
 
 #ifdef SEENAMES
-	 CV_RegisterVar(&cv_allowseenames);
+	CV_RegisterVar(&cv_allowseenames);
 #endif
 
 	CV_RegisterVar(&cv_dummyconsvar);
+
+	CV_RegisterVar(&cv_discordinvites);
+	RegisterNetXCmd(XD_DISCORD, Got_DiscordInfo);
 }
 
 // =========================================================================
@@ -1004,6 +1012,12 @@ void D_RegisterClientCommands(void)
 #if defined(HAVE_BLUA) && defined(LUA_ALLOW_BYTECODE)
 	COM_AddCommand("dumplua", Command_Dumplua_f);
 #endif
+
+#ifdef HAVE_DISCORDRPC
+	CV_RegisterVar(&cv_discordrp);
+	CV_RegisterVar(&cv_discordstreamer);
+	CV_RegisterVar(&cv_discordasks);
+#endif
 }
 
 /** Checks if a name (as received from another player) is okay.
@@ -1208,6 +1222,8 @@ static void SetPlayerName(INT32 playernum, char *newname)
 			if (netgame)
 				HU_AddChatText(va("\x82*%s renamed to %s", player_names[playernum], newname), false);
 
+			player_name_changes[playernum]++;
+
 			strcpy(player_names[playernum], newname);
 			demo_extradata[playernum] |= DXD_NAME;
 		}
@@ -1389,7 +1405,12 @@ static void SendNameAndColor(void)
 	snacpending++;
 
 	// Don't change name if muted
-	if (cv_mute.value && !(server || IsPlayerAdmin(consoleplayer)))
+	if (player_name_changes[consoleplayer] >= MAXNAMECHANGES)
+	{
+		CV_StealthSet(&cv_playername, player_names[consoleplayer]);
+		HU_AddChatText("\x85*You must wait to change your name again", false);
+	}
+	else if (cv_mute.value && !(server || IsPlayerAdmin(consoleplayer)))
 		CV_StealthSet(&cv_playername, player_names[consoleplayer]);
 	else // Cleanup name if changing it
 		CleanupPlayerName(consoleplayer, cv_playername.zstring);
@@ -1513,7 +1534,12 @@ static void SendNameAndColor2(void)
 	snac2pending++;
 
 	// Don't change name if muted
-	if (cv_mute.value && !(server || IsPlayerAdmin(displayplayers[1])))
+	if (player_name_changes[displayplayers[1]] >= MAXNAMECHANGES)
+	{
+		CV_StealthSet(&cv_playername2, player_names[displayplayers[1]]);
+		HU_AddChatText("\x85*You must wait to change your name again", false);
+	}
+	else if (cv_mute.value && !(server || IsPlayerAdmin(displayplayers[1])))
 		CV_StealthSet(&cv_playername2, player_names[displayplayers[1]]);
 	else // Cleanup name if changing it
 		CleanupPlayerName(displayplayers[1], cv_playername2.zstring);
@@ -1628,7 +1654,12 @@ static void SendNameAndColor3(void)
 	snac3pending++;
 
 	// Don't change name if muted
-	if (cv_mute.value && !(server || IsPlayerAdmin(displayplayers[2])))
+	if (player_name_changes[displayplayers[2]] >= MAXNAMECHANGES)
+	{
+		CV_StealthSet(&cv_playername3, player_names[displayplayers[2]]);
+		HU_AddChatText("\x85*You must wait to change your name again", false);
+	}
+	else if (cv_mute.value && !(server || IsPlayerAdmin(displayplayers[2])))
 		CV_StealthSet(&cv_playername3, player_names[displayplayers[2]]);
 	else // Cleanup name if changing it
 		CleanupPlayerName(displayplayers[2], cv_playername3.zstring);
@@ -1751,7 +1782,12 @@ static void SendNameAndColor4(void)
 	snac4pending++;
 
 	// Don't change name if muted
-	if (cv_mute.value && !(server || IsPlayerAdmin(displayplayers[3])))
+	if (player_name_changes[displayplayers[3]] >= MAXNAMECHANGES)
+	{
+		CV_StealthSet(&cv_playername4, player_names[displayplayers[3]]);
+		HU_AddChatText("\x85*You must wait to change your name again", false);
+	}
+	else if (cv_mute.value && !(server || IsPlayerAdmin(displayplayers[3])))
 		CV_StealthSet(&cv_playername4, player_names[displayplayers[3]]);
 	else // Cleanup name if changing it
 		CleanupPlayerName(displayplayers[3], cv_playername4.zstring);
@@ -1806,8 +1842,11 @@ static void Got_NameAndColor(UINT8 **cp, INT32 playernum)
 	skin = READUINT8(*cp);
 
 	// set name
-	if (strcasecmp(player_names[playernum], name) != 0)
-		SetPlayerName(playernum, name);
+	if (player_name_changes[playernum] < MAXNAMECHANGES)
+	{
+		if (strcasecmp(player_names[playernum], name) != 0)
+			SetPlayerName(playernum, name);
+	}
 
 	// set color
 	p->skincolor = color % MAXSKINCOLORS;
@@ -1863,6 +1902,11 @@ static void Got_NameAndColor(UINT8 **cp, INT32 playernum)
 	}
 	else
 		SetPlayerSkinByNum(playernum, skin);
+
+#ifdef HAVE_DISCORDRPC
+	if (playernum == consoleplayer)
+		DRPC_UpdatePresence();
+#endif
 }
 
 void SendWeaponPref(void)
@@ -2674,6 +2718,10 @@ static void Got_Mapcmd(UINT8 **cp, INT32 playernum)
 	if (demo.recording) // Okay, level loaded, character spawned and skinned,
 		G_BeginRecording(); // I AM NOW READY TO RECORD.
 	demo.deferstart = true;
+
+#ifdef HAVE_DISCORDRPC
+	DRPC_UpdatePresence();
+#endif
 }
 
 static void Command_Pause(void)
@@ -4112,7 +4160,7 @@ static void Command_RunSOC(void)
 static void Got_RunSOCcmd(UINT8 **cp, INT32 playernum)
 {
 	char filename[256];
-	filestatus_t ncs = FS_NOTFOUND;
+	filestatus_t ncs = FS_NOTCHECKED;
 
 	if (playernum != serverplayer && !IsPlayerAdmin(playernum))
 	{
@@ -4284,7 +4332,7 @@ static void Command_Delfile(void)
 static void Got_RequestAddfilecmd(UINT8 **cp, INT32 playernum)
 {
 	char filename[241];
-	filestatus_t ncs = FS_NOTFOUND;
+	filestatus_t ncs = FS_NOTCHECKED;
 	UINT8 md5sum[16];
 	boolean kick = false;
 	boolean toomany = false;
@@ -4379,7 +4427,7 @@ static void Got_Delfilecmd(UINT8 **cp, INT32 playernum)
 static void Got_Addfilecmd(UINT8 **cp, INT32 playernum)
 {
 	char filename[241];
-	filestatus_t ncs = FS_NOTFOUND;
+	filestatus_t ncs = FS_NOTCHECKED;
 	UINT8 md5sum[16];
 
 	READSTRINGN(*cp, filename, 240);
@@ -4667,6 +4715,10 @@ static void TimeLimit_OnChange(void)
 	}
 	else if (netgame || multiplayer)
 		CONS_Printf(M_GetText("Time limit disabled\n"));
+
+#ifdef HAVE_DISCORDRPC
+	DRPC_UpdatePresence();
+#endif
 }
 
 /** Adjusts certain settings to match a changed gametype.
@@ -5691,4 +5743,33 @@ static void KartEliminateLast_OnChange(void)
 {
 	if (G_RaceGametype() && cv_karteliminatelast.value)
 		P_CheckRacers();
+}
+
+void Got_DiscordInfo(UINT8 **p, INT32 playernum)
+{
+	if (playernum != serverplayer /*&& !IsPlayerAdmin(playernum)*/)
+	{
+		// protect against hacked/buggy client
+		CONS_Alert(CONS_WARNING, M_GetText("Illegal Discord info command received from %s\n"), player_names[playernum]);
+		if (server)
+		{
+			XBOXSTATIC UINT8 buf[2];
+
+			buf[0] = (UINT8)playernum;
+			buf[1] = KICK_MSG_CON_FAIL;
+			SendNetXCmd(XD_KICK, &buf, 2);
+		}
+		return;
+	}
+
+	// Don't do anything with the information if we don't have Discord RP support
+#ifdef HAVE_DISCORDRPC
+	discordInfo.maxPlayers = READUINT8(*p);
+	discordInfo.joinsAllowed = (boolean)READUINT8(*p);
+	discordInfo.everyoneCanInvite = (boolean)READUINT8(*p);
+
+	DRPC_UpdatePresence();
+#else
+	(*p) += 3;
+#endif
 }
