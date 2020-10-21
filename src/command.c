@@ -134,6 +134,8 @@ void COM_BufAddText(const char *ptext)
   */
 void COM_BufInsertText(const char *ptext)
 {
+	const INT32 old_wait = com_wait;
+
 	char *temp = NULL;
 	size_t templen;
 
@@ -145,9 +147,13 @@ void COM_BufInsertText(const char *ptext)
 		VS_Clear(&com_text);
 	}
 
+	com_wait = 0;
+
 	// add the entire text of the file (or alias)
 	COM_BufAddText(ptext);
 	COM_BufExecute(); // do it right away
+
+	com_wait += old_wait;
 
 	// add the copied off data
 	if (templen)
