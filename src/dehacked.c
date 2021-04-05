@@ -115,20 +115,25 @@ char *myfgets(char *buf, size_t bufsize, MYFILE *f)
 	size_t i = 0;
 	if (myfeof(f))
 		return NULL;
+
 	// we need one byte for a null terminated string
 	bufsize--;
+
 	while (i < bufsize && !myfeof(f))
 	{
 		char c = *f->curpos++;
+
 		if (c == '^')
 			buf[i++] = myfget_color(f);
 		else if (c == '\\')
 			buf[i++] = myfget_hex(f);
 		else if (c != '\r')
 			buf[i++] = c;
+
 		if (c == '\n')
 			break;
 	}
+
 	buf[i] = '\0';
 
 	dbg_line++;
@@ -138,25 +143,31 @@ char *myfgets(char *buf, size_t bufsize, MYFILE *f)
 static char *myhashfgets(char *buf, size_t bufsize, MYFILE *f)
 {
 	size_t i = 0;
+
 	if (myfeof(f))
 		return NULL;
+
 	// we need one byte for a null terminated string
 	bufsize--;
+
 	while (i < bufsize && !myfeof(f))
 	{
 		char c = *f->curpos++;
+
 		if (c == '^')
 			buf[i++] = myfget_color(f);
 		else if (c == '\\')
 			buf[i++] = myfget_hex(f);
 		else if (c != '\r')
 			buf[i++] = c;
+
 		if (c == '\n') // Ensure debug line is right...
 			dbg_line++;
+
 		if (c == '#')
 			break;
 	}
-	i++;
+
 	buf[i] = '\0';
 
 	return buf;
@@ -315,7 +326,10 @@ static void readPlayer(MYFILE *f, INT32 num)
 					goto done;
 				PlayerMenu[num].status = IT_CALL;
 
-				for (i = 0; i < MAXLINELEN-3; i++)
+				// A friendly neighborhood alias for brevity's sake
+				const size_t note_size = sizeof(description[num].notes);
+
+				for (i = 0; i < (INT32)(MAXLINELEN-note_size-3); i++)
 				{
 					if (s[i] == '=')
 					{
@@ -323,10 +337,12 @@ static void readPlayer(MYFILE *f, INT32 num)
 						break;
 					}
 				}
+
 				if (playertext)
 				{
-					strcpy(description[num].notes, playertext);
-					strcat(description[num].notes, myhashfgets(playertext, sizeof (description[num].notes), f));
+					strlcpy(description[num].notes, playertext, note_size);
+					strlcat(description[num].notes,
+							myhashfgets(playertext, note_size, f), note_size);
 				}
 				else
 					strcpy(description[num].notes, "");
@@ -335,7 +351,7 @@ static void readPlayer(MYFILE *f, INT32 num)
 				// It works down here, though.
 				{
 					INT32 numline = 0;
-					for (i = 0; (size_t)i < sizeof(description[num].notes)-1; i++)
+					for (i = 0; (size_t)i < note_size-1; i++)
 					{
 						if (numline < 20 && description[num].notes[i] == '\n')
 							numline++;
@@ -344,6 +360,7 @@ static void readPlayer(MYFILE *f, INT32 num)
 							break;
 					}
 				}
+
 				description[num].notes[strlen(description[num].notes)-1] = '\0';
 				description[num].notes[i] = '\0';
 				continue;
