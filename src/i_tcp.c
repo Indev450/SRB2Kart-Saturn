@@ -1564,6 +1564,30 @@ boolean I_InitTcpNetwork(void)
 			hardware_MAXPACKETLENGTH = MAXPACKETLENGTH;
 		}
 	}
+	if (M_CheckProtoParm("ip"))
+	{
+		strcpy(serverhostname, M_GetProtoParm());
+
+		// server address only in ip
+		if (serverhostname[0])
+		{			
+			CONS_Printf("SERVERNAME: %s\n", serverhostname);
+			COM_BufAddText("connect \"");
+			COM_BufAddText(serverhostname);
+			COM_BufAddText("\"\n");
+
+			// probably modem
+			hardware_MAXPACKETLENGTH = INETPACKETLENGTH;
+		}
+		else
+		{
+			// so we're on a LAN
+			COM_BufAddText("connect any\n");
+
+			net_bandwidth = 800000;
+			hardware_MAXPACKETLENGTH = MAXPACKETLENGTH;
+		}
+	}
 
 	I_NetOpenSocket = SOCK_OpenSocket;
 	I_Ban = SOCK_Ban;

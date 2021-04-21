@@ -24,6 +24,12 @@ extern boolean myargmalloc;
 // Returns the position of the given parameter in the arg list (0 if not found).
 INT32 M_CheckParm(const char *check);
 
+// Check params for srb2kart:// protocol
+INT32 M_CheckProtoParm(const char *check);
+
+// Gets the string after srb2kart://
+const char *M_GetProtoParm(void);
+
 // Pushes all parameters beginning with a +, ex: +map map01
 void M_PushSpecialParameters(void);
 

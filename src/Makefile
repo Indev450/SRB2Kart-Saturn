@@ -533,6 +533,7 @@ OBJS:=$(i_main_o) \
 		$(OBJDIR)/comptime.o \
 		$(OBJDIR)/string.o   \
 		$(OBJDIR)/d_main.o   \
+		$(OBJDIR)/d_protocol.o   \
 		$(OBJDIR)/d_clisrv.o \
 		$(OBJDIR)/d_net.o    \
 		$(OBJDIR)/d_netfil.o \
