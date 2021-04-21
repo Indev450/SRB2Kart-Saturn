@@ -17,7 +17,7 @@
 #include "d_clisrv.h"
 #include "d_protocol.h"
 
-#if (defined (__unix__) && !defined (MSDOS)) || defined (UNIXCOMMON)
+#if defined (__unix__) || defined (UNIXCOMMON)
 #include <sys/types.h>
 #include <unistd.h>
 #include <pwd.h>
@@ -30,7 +30,7 @@
 #endif
 
 // PROTOS
-#ifdef __MINGW32__
+#ifdef __WIN32
 static HKEY OpenKey(HKEY hRootKey, const char* strKey);
 static boolean SetStringValue(HKEY hRegistryKey, const char *valueName, const char  *data);
 #endif
@@ -38,7 +38,7 @@ static boolean SetStringValue(HKEY hRegistryKey, const char *valueName, const ch
 static char *exe_name(void)
 {
 	static char buf[PATH_MAX];
-#if (defined (__unix__) && !defined (MSDOS)) || defined (UNIXCOMMON)
+#if defined (__unix__) || defined (UNIXCOMMON)
 	static char *p = NULL;
 	FILE *fp = NULL;
 	
@@ -52,13 +52,13 @@ static char *exe_name(void)
 	while(*p != ' ')
 		p--;	
 	return p+1;
-#else
+#elif defined (__WIN32)
 	GetModuleFileName(NULL, buf, PATH_MAX);
 	return buf;
 	#endif
 }
 
-#ifdef __MINGW32__
+#ifdef __WIN32
 static HKEY OpenKey(HKEY hRootKey, const char* strKey)
 {
 	HKEY hKey;
@@ -93,7 +93,7 @@ void D_ShowProtoWindow(void) {
 	char buffer[255];
 	const char *exe_path = exe_name();
 	FILE *fp = NULL;
-#if (defined (__unix__) && !defined (MSDOS)) || defined (UNIXCOMMON)
+#if defined (__unix__) || defined (UNIXCOMMON)
 	FILE *desktopfile;
 	FILE *mimefile;
 	struct passwd *pw = getpwuid(getuid());
@@ -121,7 +121,7 @@ void D_ShowProtoWindow(void) {
 			"Register SRB2Kart Protocols",
 			"Would you like to register the srb2kart:// protocol?\n"
 			"This will allow you to connect to servers and load replays directly from the browser\n\n"
-#if defined (__MINGW32__)
+#if defined (__WIN32)
 			"This will require administrator permissions.\n"
 			"(if you aren't running the game as an administrator click in \"Cancel\" and run the game as administrator)."
 #endif
@@ -136,14 +136,14 @@ void D_ShowProtoWindow(void) {
 			I_Error("Error displaying message box.");
 		}
 		if (buttonid == 0) {
-#if defined (__MINGW32__)
+#if defined (__WIN32)
 			HKEY hKey = OpenKey(HKEY_CLASSES_ROOT,"srb2kart");
 			SetStringValue(hKey, "URL Protocol", "");
 			RegCloseKey(hKey);
 			hKey = OpenKey(HKEY_CLASSES_ROOT,"srb2kart\\shell\\open\\command");	
 			SetStringValue(hKey, "", va("\"%s\" \"%%1\"", exe_path));
 			RegCloseKey(hKey);
-#elif (defined (__unix__) && !defined (MSDOS)) || defined (UNIXCOMMON)
+#elif defined (__unix__) || defined (UNIXCOMMON)
 
 			desktopfile = fopen(va("%s/.local/share/applications/srb2kart.desktop", homedir), "w");
 
