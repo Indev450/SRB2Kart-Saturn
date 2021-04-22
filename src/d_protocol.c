@@ -11,10 +11,10 @@
 
 #include "doomdef.h"
 
-#include <curl/curl.h>
 #include "m_argv.h"
 #include "d_main.h"
 #include "d_clisrv.h"
+#include "d_netfil.h"
 #include "d_protocol.h"
 
 #if defined (__unix__) || defined (UNIXCOMMON)
@@ -26,11 +26,16 @@
 #include "SDL.h"
 #include <tchar.h>
 #include <unistd.h>
+#endif
+
 #include <limits.h>
+
+#ifdef HAVE_CURL
+#include <curl/curl.h>
 #endif
 
 // PROTOS
-#ifdef __WIN32
+#if defined (__WIN32)
 static HKEY OpenKey(HKEY hRootKey, const char* strKey);
 static boolean SetStringValue(HKEY hRegistryKey, const char *valueName, const char  *data);
 #endif
@@ -58,7 +63,7 @@ static char *exe_name(void)
 	#endif
 }
 
-#ifdef __WIN32
+#if defined (__WIN32)
 static HKEY OpenKey(HKEY hRootKey, const char* strKey)
 {
 	HKEY hKey;
@@ -89,7 +94,8 @@ static boolean SetStringValue(HKEY hRegistryKey, const char *valueName, const ch
 }
 #endif
 
-void D_ShowProtoWindow(void) {
+void D_SetupProtocol(void)
+{
 	char buffer[255];
 	const char *exe_path = exe_name();
 	FILE *fp = NULL;
@@ -98,23 +104,31 @@ void D_ShowProtoWindow(void) {
 	FILE *mimefile;
 	struct passwd *pw = getpwuid(getuid());
 	const char *homedir = pw->pw_dir;
-	boolean alreadyexists = false;
 #endif
 	if (dedicated)
 		return;
 
 	fp  = fopen(va("%s/protocol.txt", srb2home), "a+");
-
 	while (fgets(buffer, 255, fp))
 		if (strcmp(buffer, "no") == 0)
 			return;
 
-	if (strcmp(buffer, "yes") != 0) {
+	if (strcmp(buffer, "yes") != 0)
+	{
+#if defined (__unix__) || defined (UNIXCOMMON)
 		const SDL_MessageBoxButtonData buttons[] = {
 			{ /* .flags, .buttonid, .text */        0, 0, "Yes" },
 			{ SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 1, "No" },
 			{ SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 2, "Cancel" },
 		};
+#elif defined (__WIN32)
+		// Reversed on windows
+		const SDL_MessageBoxButtonData buttons[] = {
+			{ /* .flags, .buttonid, .text */        0, 2, "Yes" },
+			{ SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 1, "No" },
+			{ SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 0, "Cancel" },
+		};
+#endif
 		const SDL_MessageBoxData messageboxdata = {
 			SDL_MESSAGEBOX_INFORMATION,
 			NULL,
@@ -132,10 +146,12 @@ void D_ShowProtoWindow(void) {
 			};
 
 		int buttonid;
-		if (SDL_ShowMessageBox(&messageboxdata, &buttonid) < 0) {
+		if (SDL_ShowMessageBox(&messageboxdata, &buttonid) < 0)
+		{
 			I_Error("Error displaying message box.");
 		}
-		if (buttonid == 0) {
+		if (buttonid == 0)
+		{
 #if defined (__WIN32)
 			HKEY hKey = OpenKey(HKEY_CLASSES_ROOT,"srb2kart");
 			SetStringValue(hKey, "URL Protocol", "");
@@ -144,8 +160,11 @@ void D_ShowProtoWindow(void) {
 			SetStringValue(hKey, "", va("\"%s\" \"%%1\"", exe_path));
 			RegCloseKey(hKey);
 #elif defined (__unix__) || defined (UNIXCOMMON)
+			boolean alreadyexists = false;
 
 			desktopfile = fopen(va("%s/.local/share/applications/srb2kart.desktop", homedir), "w");
+			if (!desktopfile)
+				I_Error("PROTOCOL: Error creating .desktop file.");
 
 			fprintf(desktopfile, 
 				"[Desktop Entry]\n"
@@ -154,12 +173,13 @@ void D_ShowProtoWindow(void) {
 				"Exec=bash -c '%s %%u'\n"
 				"StartupNotify=false\n"
 				"Terminal=false\n"
-				"MimeType=x-scheme-handler/srb2kart;\n"
-				, exe_path);
-
+				"MimeType=x-scheme-handler/srb2kart;\n",
+				exe_path);
 			fclose(desktopfile);
 
 			mimefile = fopen(va("%s/.local/share/applications/mimeinfo.cache", homedir), "a+");
+			if (!mimefile)
+				I_Error("PROTOCOL: Error opening mime file.");
 
 			while (fgets(buffer, 255, mimefile))	
 				if (strncmp(buffer, "x-scheme-handler/srb2kart=srb2kart.desktop;", 43)==0)
@@ -180,26 +200,22 @@ void D_ShowProtoWindow(void) {
 	fclose(fp);
 }
 
-static size_t write_data(void *ptr, size_t size, size_t nmemb, FILE *stream) {
-	size_t written = fwrite(ptr, size, nmemb, stream);
-	return written;
-}
-
-void D_DownloadReplay(const char *url, const char *path) {
+#ifdef HAVE_CURL
+void D_DownloadReplay(const char *url, const char *path)
+{
 	FILE *fp = NULL;
 	CURL *curl;
 	CURLcode cc;
 	curl = curl_easy_init();
-
-	if (!curl) {
+	if (!curl)
 		I_Error("REPLAY: Error initializing CURL.");
 
-    	}
 	fp = fopen(path, "wb");
 	CONS_Printf("REPLAY: URL: %s\n", url);
 	curl_easy_setopt(curl, CURLOPT_URL, url);
-       	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
+       	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curlwrite_data);
        	curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
+
        	cc = curl_easy_perform(curl);
 	if (cc != CURLE_OK)
 		I_Error("REPLAY: URL gave response code %u.", cc);
@@ -207,3 +223,4 @@ void D_DownloadReplay(const char *url, const char *path) {
        	curl_easy_cleanup(curl);
        	fclose(fp);
 }
+#endif

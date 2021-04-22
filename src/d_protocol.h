@@ -9,5 +9,7 @@
 /// \file  d_protocol.h
 /// \brief srb2kart:// protocol stuff
 
-void D_ShowProtoWindow(void);
+void D_SetupProtocol(void);
+#ifdef HAVE_CURL
 void D_DownloadReplay(const char *url, const char *path);
+#endif

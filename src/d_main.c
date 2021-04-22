@@ -1132,7 +1132,7 @@ void D_SRB2Main(void)
 #endif
 	}
 
-	D_ShowProtoWindow(); // ask the user if they want to have cool url protocols
+	D_SetupProtocol(); // ask the user if they want to have cool url protocols
 
 	// rand() needs seeded regardless of password
 	srand((unsigned int)time(NULL));
@@ -1507,6 +1507,7 @@ void D_SRB2Main(void)
 		return;
 	}
 
+#ifdef HAVE_CURL
 	if (M_CheckProtoParm("replay"))
 	{
 		const char *replayurl = M_GetProtoParm();
@@ -1520,9 +1521,8 @@ void D_SRB2Main(void)
 		CONS_Printf("bruh %s", va("%s%s%s", srb2home, REPLAYDIR, replayname));
 
 		// check if file already exists	
-		if (access(va("%s%s%s", srb2home, REPLAYDIR, replayurl), F_OK )!=0) {
+		if (access(va("%s%s%s", srb2home, REPLAYDIR, replayurl), F_OK )!=0)
 			D_DownloadReplay(replayurl, va("%s%s%s", srb2home, REPLAYDIR, replayname));
-		}
 	
 		// add .lmp to identify the EXTERNAL demo file
 		// it is NOT possible to play an internal demo using -playdemo,
@@ -1535,6 +1535,7 @@ void D_SRB2Main(void)
 		wipegamestate = GS_NULL;
 		return;
 	}
+#endif
 
 	/*if (M_CheckParm("-ultimatemode"))
 	{

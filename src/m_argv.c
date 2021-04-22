@@ -66,12 +66,9 @@ INT32 M_CheckProtoParm(const char *check)
 
 	for (i = 1; i < myargc; i++)
 	{
-                if (strncmp(myargv[i], "srb2kart:/", 10) == 0)
+                if (strncmp(myargv[i], "srb2kart://", 11) == 0)
 		{
-			UINT8 skip = 10;
-			if (myargv[i][10] == '/')
-				skip++;
-                	if (strncmp(myargv[i]+skip, check, strlen(check))==0)
+                	if (strncmp(myargv[i]+11, check, strlen(check))==0)
 			{
 				found = i;
 				return i;
@@ -86,33 +83,15 @@ INT32 M_CheckProtoParm(const char *check)
 const char *M_GetProtoParm(void)
 {
 	INT32 i;
-	char buffer[255];
-	static char string[255];
-	char *token = NULL;
+	static char *string;
 
 	for (i = 1; i < myargc; i++)
 	{
-                if (strncmp(myargv[i], "srb2kart:/", 10) == 0)
+                if (strncmp(myargv[i], "srb2kart://", 11) == 0)
 		{
-			INT32 len = 0;
-			strcpy(buffer, myargv[i]);
-			token = strtok(buffer, "/");
-			for (i = 0; token; i++)
-			{
-				if (i == 2) {
-					strcpy(string, token);
-					strcat(string, "/");
-				}
-				else if (i > 2) {
-					strcat(string, token);
-					strcat(string, "/");
-				}
-
-				token = strtok(NULL, "/");
-			}
-			len = strlen(string);
-			if (string[len-1] == '/')
-				string[len-1] = '\0';
+			string = strchr(myargv[i], '/');
+			string = strchr(string+1, '/');
+			string = strchr(string+1, '/')+1;
 			return string;
 		}
 	}
