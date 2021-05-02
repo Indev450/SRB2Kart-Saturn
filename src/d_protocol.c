@@ -124,9 +124,9 @@ void D_SetupProtocol(void)
 #elif defined (__WIN32)
 		// Reversed on windows
 		const SDL_MessageBoxButtonData buttons[] = {
-			{ /* .flags, .buttonid, .text */        0, 2, "Yes" },
+			{ SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 2, "Cancel" },
 			{ SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 1, "No" },
-			{ SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 0, "Cancel" },
+			{ /* .flags, .buttonid, .text */        0, 0, "Yes" },
 		};
 #endif
 		const SDL_MessageBoxData messageboxdata = {
