@@ -43,24 +43,16 @@ static boolean SetStringValue(HKEY hRegistryKey, const char *valueName, const ch
 static char *GetExePath(void)
 {
 	static char buf[PATH_MAX];
-#if defined (__unix__) || defined (UNIXCOMMON)
-	static char *p = NULL;
-	FILE *fp = NULL;
-	
-	if (!(fp = fopen("/proc/self/maps", "r")))
-		return NULL;
-	
-	while (fgets(buf, PATH_MAX, fp))
-		fclose(fp);
-
-	*(p = strchr(buf, '\n')) = '\0';
-	while (*p != ' ')
-		p--;	
-	return p+1;
+#if defined (__linux__)
+	if (readlink("/proc/self/exe", buf, PATH_MAX) < 0)
+		I_Error("PROTOCOL: Error reading /proc/");
+#elif defined (__FreeBSD__)
+	if (readlink("/proc/curproc/file", buf, PATH_MAX) < 0)
+		I_Error("PROTOCOL: Error reading /proc/");
 #elif defined (__WIN32)
 	GetModuleFileName(NULL, buf, PATH_MAX);
+#endif
 	return buf;
-	#endif
 }
 
 static void RegisterProtocols(const char *path)
