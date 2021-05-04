@@ -130,7 +130,7 @@ static boolean SetStringValue(HKEY hRegistryKey, const char *valueName, const ch
 				valueName,
 				0,
 				REG_SZ,
-				(LPBYTE)data,
+				(const BYTE *)data,
 				strlen(data) + 1) == ERROR_SUCCESS);
 }
 #endif
