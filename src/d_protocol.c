@@ -9,6 +9,20 @@
 /// \file  d_protocol.c
 /// \brief srb2kart:// protocol stuff
 
+#include <stdio.h>
+#include <unistd.h>
+#include <limits.h>
+#if defined (__unix__) || defined (UNIXCOMMON)
+#include <sys/types.h>
+#include <pwd.h>
+#elif defined (__WIN32)
+#include <tchar.h>
+#endif
+
+#ifdef HAVE_CURL
+#include <curl/curl.h>
+#endif
+
 #include "doomdef.h"
 
 #include "m_argv.h"
@@ -16,51 +30,86 @@
 #include "d_clisrv.h"
 #include "d_netfil.h"
 #include "d_protocol.h"
+#include "i_system.h"
 
-#if defined (__unix__) || defined (UNIXCOMMON)
-#include <sys/types.h>
-#include <unistd.h>
-#include <pwd.h>
-#include <SDL2/SDL.h>
-#else
 #include "SDL.h"
-#include <tchar.h>
-#include <unistd.h>
-#endif
-
-#include <limits.h>
-
-#ifdef HAVE_CURL
-#include <curl/curl.h>
-#endif
 
 // PROTOS
 #if defined (__WIN32)
 static HKEY OpenKey(HKEY hRootKey, const char* strKey);
-static boolean SetStringValue(HKEY hRegistryKey, const char *valueName, const char  *data);
+static boolean SetStringValue(HKEY hRegistryKey, const char *valueName, const char *data);
 #endif
 
-static char *exe_name(void)
+static char *GetExePath(void)
 {
 	static char buf[PATH_MAX];
 #if defined (__unix__) || defined (UNIXCOMMON)
 	static char *p = NULL;
 	FILE *fp = NULL;
 	
-	if(!(fp = fopen("/proc/self/maps", "r")))
+	if (!(fp = fopen("/proc/self/maps", "r")))
 		return NULL;
 	
-	while(fgets(buf, PATH_MAX, fp))
+	while (fgets(buf, PATH_MAX, fp))
 		fclose(fp);
 
 	*(p = strchr(buf, '\n')) = '\0';
-	while(*p != ' ')
+	while (*p != ' ')
 		p--;	
 	return p+1;
 #elif defined (__WIN32)
 	GetModuleFileName(NULL, buf, PATH_MAX);
 	return buf;
 	#endif
+}
+
+static void RegisterProtocols(const char *path)
+{
+#if defined (__WIN32)
+	HKEY hKey = OpenKey(HKEY_CURRENT_USER,"Software\\Classes\\srb2kart");
+	SetStringValue(hKey, "URL Protocol", "");
+	RegCloseKey(hKey);
+	hKey = OpenKey(HKEY_CURRENT_USER,"Software\\Classes\\srb2kart\\shell\\open\\command");	
+	SetStringValue(hKey, "", va("\"%s\" \"%%1\"", path));
+	RegCloseKey(hKey);
+#elif defined (__unix__) || defined (UNIXCOMMON)
+	FILE *desktopfile = NULL;
+	FILE *mimefile = NULL;
+	struct passwd *pw = getpwuid(getuid());
+	const char *homedir = pw->pw_dir;
+	char buffer[255];
+	boolean alreadyexists = false;
+
+	desktopfile = fopen(va("%s/.local/share/applications/srb2kart-handler.desktop", homedir), "w");
+	if (!desktopfile)
+		I_Error("PROTOCOL: Error creating .desktop file.");
+
+	fprintf(desktopfile,
+			"[Desktop Entry]\n"
+			"Type=Application\n"
+			"Name=SRB2Kart Scheme Handler\n"
+			"Exec=bash -c '%s %%u'\n"
+			"StartupNotify=false\n"
+			"MimeType=x-scheme-handler/srb2kart;\n",
+			path);
+
+	fclose(desktopfile);
+
+	mimefile = fopen(va("%s/.local/share/applications/mimeinfo.cache", homedir), "a+");
+	if (!mimefile)
+		I_Error("PROTOCOL: Error opening mime file.");
+
+	while (fgets(buffer, 255, mimefile))	
+		if (strncmp(buffer, "x-scheme-handler/srb2kart=srb2kart-handler.desktop;", 43)==0)
+		{
+			alreadyexists = true;
+			break;
+		}
+
+	if (!alreadyexists)
+		fprintf(mimefile, "x-scheme-handler/srb2kart=srb2kart-handler.desktop;\n");
+
+#endif
 }
 
 #if defined (__WIN32)
@@ -76,7 +125,7 @@ static HKEY OpenKey(HKEY hRootKey, const char* strKey)
 	}
 
 	if (nError)
-		I_Error("PROTOCOL: Could not create Registry Key.\nMaybe you forgot to run as an administrator?");
+		I_Error("PROTOCOL: Could not create Registry Key.");
 
 	return hKey;
 }
@@ -96,49 +145,47 @@ static boolean SetStringValue(HKEY hRegistryKey, const char *valueName, const ch
 
 void D_SetupProtocol(void)
 {
-	char buffer[255];
-	const char *exe_path = exe_name();
 	FILE *fp = NULL;
-#if defined (__unix__) || defined (UNIXCOMMON)
-	FILE *desktopfile;
-	FILE *mimefile;
-	struct passwd *pw = getpwuid(getuid());
-	const char *homedir = pw->pw_dir;
-#endif
+	char *result = NULL;
+	char buffer[PATH_MAX];
+	const char *exe_path = GetExePath();
+	const char *protocolfile = va("%s/protocol.txt", srb2home);
+
 	if (dedicated)
 		return;
 
-	fp  = fopen(va("%s/protocol.txt", srb2home), "a+");
-	while (fgets(buffer, 255, fp))
+	fp = fopen(protocolfile, "a+");
+	result = fgets(buffer, PATH_MAX, fp);
+	if (result) 
+	{
 		if (strcmp(buffer, "no") == 0)
 			return;
-
-	if (strcmp(buffer, "yes") != 0)
+		else if (strcmp(buffer, exe_path) != 0)
+		{
+			// overwrite
+			fp = fopen(protocolfile, "w");
+			RegisterProtocols(exe_path);
+			fprintf(fp, "%s", exe_path);
+			return;
+		}
+	}
+	else // probably first time
 	{
+		const SDL_MessageBoxButtonData buttons[] = {
 #if defined (__unix__) || defined (UNIXCOMMON)
-		const SDL_MessageBoxButtonData buttons[] = {
 			{ /* .flags, .buttonid, .text */        0, 0, "Yes" },
-			{ SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 1, "No" },
-			{ SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 2, "Cancel" },
-		};
+			{ SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 1, "No" }
 #elif defined (__WIN32)
-		// Reversed on windows
-		const SDL_MessageBoxButtonData buttons[] = {
-			{ SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 2, "Cancel" },
 			{ SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 1, "No" },
-			{ /* .flags, .buttonid, .text */        0, 0, "Yes" },
-		};
+			{ /* .flags, .buttonid, .text */        0, 0, "Yes" }
 #endif
+		};
 		const SDL_MessageBoxData messageboxdata = {
 			SDL_MESSAGEBOX_INFORMATION,
 			NULL,
 			"Register SRB2Kart Protocols",
 			"Would you like to register the srb2kart:// protocol?\n"
-			"This will allow you to connect to servers and load replays directly from the browser\n\n"
-#if defined (__WIN32)
-			"This will require administrator permissions.\n"
-			"(if you aren't running the game as an administrator click in \"Cancel\" and run the game as administrator)."
-#endif
+			"This will allow you to connect to servers and load replays directly from the browser"
 			"",
 			SDL_arraysize(buttons),
 			buttons,
@@ -150,51 +197,13 @@ void D_SetupProtocol(void)
 		{
 			I_Error("Error displaying message box.");
 		}
+
 		if (buttonid == 0)
 		{
-#if defined (__WIN32)
-			HKEY hKey = OpenKey(HKEY_CLASSES_ROOT,"srb2kart");
-			SetStringValue(hKey, "URL Protocol", "");
-			RegCloseKey(hKey);
-			hKey = OpenKey(HKEY_CLASSES_ROOT,"srb2kart\\shell\\open\\command");	
-			SetStringValue(hKey, "", va("\"%s\" \"%%1\"", exe_path));
-			RegCloseKey(hKey);
-#elif defined (__unix__) || defined (UNIXCOMMON)
-			boolean alreadyexists = false;
-
-			desktopfile = fopen(va("%s/.local/share/applications/srb2kart.desktop", homedir), "w");
-			if (!desktopfile)
-				I_Error("PROTOCOL: Error creating .desktop file.");
-
-			fprintf(desktopfile, 
-				"[Desktop Entry]\n"
-				"Type=Application\n"
-				"Name=SRB2Kart Scheme Handler\n"
-				"Exec=bash -c '%s %%u'\n"
-				"StartupNotify=false\n"
-				"Terminal=false\n"
-				"MimeType=x-scheme-handler/srb2kart;\n",
-				exe_path);
-			fclose(desktopfile);
-
-			mimefile = fopen(va("%s/.local/share/applications/mimeinfo.cache", homedir), "a+");
-			if (!mimefile)
-				I_Error("PROTOCOL: Error opening mime file.");
-
-			while (fgets(buffer, 255, mimefile))	
-				if (strncmp(buffer, "x-scheme-handler/srb2kart=srb2kart.desktop;", 43)==0)
-				{
-					alreadyexists = true;
-					break;
-				}
-
-			if (!alreadyexists)
-				fprintf(mimefile, "x-scheme-handler/srb2kart=srb2kart.desktop;\n");
-
-#endif
-			fprintf(fp, "yes");
+			RegisterProtocols(exe_path);
+			fprintf(fp, "%s", exe_path);
 		}
-		else 
+		else
 			fprintf(fp, "no");
 	}
 	fclose(fp);

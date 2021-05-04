@@ -59,7 +59,10 @@ INT32 M_CheckParm(const char *check)
 	return 0;
 }
 
-// Check params for srb2kart:// protocol
+/**	\brief Check params for URL protocol
+
+	\return	number (1 to argc-1) or 0 if not present
+*/
 INT32 M_CheckProtoParm(const char *check)
 {
 	INT32 i;
@@ -79,7 +82,10 @@ INT32 M_CheckProtoParm(const char *check)
 	return 0;
 }
 
-// Gets the string after srb2kart://
+/**	\brief Gets the string after URL protocol
+ *
+	\return	string after protocol parameter or NULL if not found
+*/
 const char *M_GetProtoParm(void)
 {
 	INT32 i;
