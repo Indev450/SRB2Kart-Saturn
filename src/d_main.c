@@ -1513,7 +1513,7 @@ void D_SRB2Main(void)
 		const char *replayurl = M_GetProtoParam();
 		char *replayname = strrchr(replayurl, '/');
 
-		if (!replayurl || !replayurl)
+		if (!replayname || !replayurl)
 			I_Error("REPLAY: Invalid URL.");
 
 #define REPLAYDIR "/DownloadedReplays/"
