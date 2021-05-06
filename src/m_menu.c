@@ -326,7 +326,6 @@ static void M_Addons(INT32 choice);
 static void M_AddonsOptions(INT32 choice);
 static patch_t *addonsp[NUM_EXT+5];
 
-static void M_RegisterProtocol(void);
 static void M_DeleteProtocol(void);
 
 #define numaddonsshown 4
@@ -1429,7 +1428,7 @@ enum
 
 static menuitem_t OP_ProtocolMenu[] =
 {
-	{IT_STRING | IT_CALL, NULL, "Register protocol", M_RegisterProtocol, 10},
+	{IT_STRING | IT_CALL, NULL, "Register protocol", D_CreateProtocol, 10},
 	{IT_STRING | IT_CALL, NULL, "\x85" "Disable and delete protocols", M_DeleteProtocol, 20},
 };
 
@@ -9893,11 +9892,6 @@ static void M_ScreenshotOptions(INT32 choice)
 	Moviemode_mode_Onchange();
 
 	M_SetupNextMenu(&OP_ScreenshotOptionsDef);
-}
-
-static void M_RegisterProtocol(void)
-{
-	D_CreateProtocol();
 }
 
 static void M_DeleteProtocol(void)

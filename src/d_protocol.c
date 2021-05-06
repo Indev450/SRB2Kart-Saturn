@@ -54,35 +54,6 @@ static char *GetExePath(void)
 	return buf;
 }
 
-static void DeleteProtocols(void)
-{
-#if defined (__WIN32)
-
-	HKEY hKey;
-	RegOpenKeyEx(HKEY_CURRENT_USER, _T("Software\\Classes\\srb2kart\\shell\\open\\command"), 0, KEY_ALL_ACCESS, &hKey);
-	RegDeleteValue(hKey, _T(""));
-	RegCloseKey(hKey);
-	RegDeleteKey(HKEY_CURRENT_USER, _T("Software\\Classes\\srb2kart\\shell\\open\\command"));
-	RegOpenKeyEx(HKEY_CURRENT_USER, _T("Software\\Classes\\srb2kart\\shell\\open"), 0, KEY_ALL_ACCESS, &hKey);
-	RegDeleteValue(hKey, _T(""));
-	RegCloseKey(hKey);
-	RegDeleteKey(HKEY_CURRENT_USER, _T("Software\\Classes\\srb2kart\\shell\\open"));
-	RegOpenKeyEx(HKEY_CURRENT_USER, _T("Software\\Classes\\srb2kart\\shell"), 0, KEY_ALL_ACCESS, &hKey);
-	RegDeleteValue(hKey, _T(""));
-	RegCloseKey(hKey);
-	RegDeleteKey(HKEY_CURRENT_USER, _T("Software\\Classes\\srb2kart\\shell"));
-	RegOpenKeyEx(HKEY_CURRENT_USER, _T("Software\\Classes\\srb2kart"), 0, KEY_ALL_ACCESS, &hKey);
-	RegDeleteValue(hKey, _T("URL Protocol"));
-	RegDeleteValue(hKey, _T(""));
-	RegCloseKey(hKey);
-	RegDeleteKey(HKEY_CURRENT_USER, _T("Software\\Classes\\srb2kart"));
-#elif defined (__unix__) || defined (UNIXCOMMON)
-	struct passwd *pw = getpwuid(getuid());
-	const char *homedir = pw->pw_dir;
-	remove(va("%s/.local/share/applications/srb2kart-handler.desktop", homedir));
-#endif
-}
-
 static boolean RegisterProtocols(const char *path)
 {
 #if defined (__WIN32)
@@ -159,6 +130,35 @@ static boolean RegisterProtocols(const char *path)
 
 #endif
 	return true;
+}
+
+static void DeleteProtocols(void)
+{
+#if defined (__WIN32)
+
+	HKEY hKey;
+	RegOpenKeyEx(HKEY_CURRENT_USER, _T("Software\\Classes\\srb2kart\\shell\\open\\command"), 0, KEY_ALL_ACCESS, &hKey);
+	RegDeleteValue(hKey, _T(""));
+	RegCloseKey(hKey);
+	RegDeleteKey(HKEY_CURRENT_USER, _T("Software\\Classes\\srb2kart\\shell\\open\\command"));
+	RegOpenKeyEx(HKEY_CURRENT_USER, _T("Software\\Classes\\srb2kart\\shell\\open"), 0, KEY_ALL_ACCESS, &hKey);
+	RegDeleteValue(hKey, _T(""));
+	RegCloseKey(hKey);
+	RegDeleteKey(HKEY_CURRENT_USER, _T("Software\\Classes\\srb2kart\\shell\\open"));
+	RegOpenKeyEx(HKEY_CURRENT_USER, _T("Software\\Classes\\srb2kart\\shell"), 0, KEY_ALL_ACCESS, &hKey);
+	RegDeleteValue(hKey, _T(""));
+	RegCloseKey(hKey);
+	RegDeleteKey(HKEY_CURRENT_USER, _T("Software\\Classes\\srb2kart\\shell"));
+	RegOpenKeyEx(HKEY_CURRENT_USER, _T("Software\\Classes\\srb2kart"), 0, KEY_ALL_ACCESS, &hKey);
+	RegDeleteValue(hKey, _T("URL Protocol"));
+	RegDeleteValue(hKey, _T(""));
+	RegCloseKey(hKey);
+	RegDeleteKey(HKEY_CURRENT_USER, _T("Software\\Classes\\srb2kart"));
+#elif defined (__unix__) || defined (UNIXCOMMON)
+	struct passwd *pw = getpwuid(getuid());
+	const char *homedir = pw->pw_dir;
+	remove(va("%s/.local/share/applications/srb2kart-handler.desktop", homedir));
+#endif
 }
 
 #if defined (__WIN32)

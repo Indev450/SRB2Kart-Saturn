@@ -11,8 +11,8 @@
 
 void D_SetupProtocol(void);
 
-void D_DeleteProtocol(void);
 void D_CreateProtocol(void);
+void D_DeleteProtocol(void);
 #ifdef HAVE_CURL
 void D_DownloadReplay(const char *url, const char *path);
 #endif
