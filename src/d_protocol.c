@@ -10,6 +10,7 @@
 /// \brief srb2kart:// protocol stuff
 
 #include <stdio.h>
+#include <string.h>
 #include <unistd.h>
 #include <limits.h>
 #if defined (__unix__) || defined (UNIXCOMMON)
@@ -98,6 +99,7 @@ static boolean RegisterProtocols(const char *path)
 	const char *homedir = pw->pw_dir;
 	char buffer[255];
 	boolean alreadyexists = false;
+	boolean newfolder = false;
     	struct stat sb;
 	char *applicationsfolder = va("%s/.local/share/applications/", homedir);
 
@@ -111,12 +113,8 @@ static boolean RegisterProtocols(const char *path)
 	if (stat(applicationsfolder, &sb) == -1) 
 	{
 		// location doesn't exist, so let's actually create it
+		newfolder = true;
 		I_mkdir(applicationsfolder, 0755);
-		if (system(va("update-desktop-database %s", applicationsfolder)) != 1)
-		{
-			CONS_Alert(CONS_ERROR, "Unable to register protocols. Could not run call to run update-desktop-database.\n");
-			return false;
-		}
 	}
 
 	desktopfile = fopen(va("%s/.local/share/applications/srb2kart-handler.desktop", homedir), "w");
@@ -138,15 +136,26 @@ static boolean RegisterProtocols(const char *path)
 	if (!mimefile)
 		I_Error("Unable to register protocols. Error opening mime file.");
 
-	while (fgets(buffer, 255, mimefile))	
+	while (fgets(buffer, 255, mimefile))
+	{
 		if (strncmp(buffer, "x-scheme-handler/srb2kart=srb2kart-handler.desktop;", 43)==0)
 		{
 			alreadyexists = true;
 			break;
 		}
+	}
 
 	if (!alreadyexists)
 		fprintf(mimefile, "x-scheme-handler/srb2kart=srb2kart-handler.desktop;\n");
+	
+	if (newfolder)
+	{
+		if (system(va("update-desktop-database %s/.local/share/applications/", homedir)) == -1)
+		{
+			CONS_Alert(CONS_ERROR, "Unable to register protocols. Could not run call to run update-desktop-database sucessfully.\n");
+			return false;
+		}
+	}
 
 #endif
 	return true;
