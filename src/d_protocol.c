@@ -32,8 +32,6 @@
 #include "d_protocol.h"
 #include "i_system.h"
 
-#include "SDL.h"
-
 // PROTOS
 #if defined (__WIN32)
 static HKEY OpenKey(HKEY hRootKey, const char* strKey);

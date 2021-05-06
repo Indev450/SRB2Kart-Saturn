@@ -1132,7 +1132,7 @@ void D_SRB2Main(void)
 #endif
 	}
 
-	D_SetupProtocol(); // ask the user if they want to have cool url protocols
+	D_SetupProtocol();
 
 	// rand() needs seeded regardless of password
 	srand((unsigned int)time(NULL));
