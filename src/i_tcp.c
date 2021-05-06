@@ -1564,9 +1564,9 @@ boolean I_InitTcpNetwork(void)
 			hardware_MAXPACKETLENGTH = MAXPACKETLENGTH;
 		}
 	}
-	if (M_CheckProtoParm("ip"))
+	if (M_CheckProtoParam("ip"))
 	{
-		strcpy(serverhostname, M_GetProtoParm());
+		strcpy(serverhostname, M_GetProtoParam());
 
 		// server address only in ip
 		if (serverhostname[0])

@@ -1508,9 +1508,9 @@ void D_SRB2Main(void)
 	}
 
 #ifdef HAVE_CURL
-	if (M_CheckProtoParm("replay"))
+	if (M_CheckProtoParam("replay"))
 	{
-		const char *replayurl = M_GetProtoParm();
+		const char *replayurl = M_GetProtoParam();
 		char *replayname = strrchr(replayurl, '/');
 
 		if (!replayurl || !replayurl)

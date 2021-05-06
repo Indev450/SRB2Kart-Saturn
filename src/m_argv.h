@@ -25,10 +25,10 @@ extern boolean myargmalloc;
 INT32 M_CheckParm(const char *check);
 
 // Check params for srb2kart:// protocol
-INT32 M_CheckProtoParm(const char *check);
+INT32 M_CheckProtoParam(const char *check);
 
 // Gets the string after srb2kart://
-const char *M_GetProtoParm(void);
+const char *M_GetProtoParam(void);
 
 // Pushes all parameters beginning with a +, ex: +map map01
 void M_PushSpecialParameters(void);

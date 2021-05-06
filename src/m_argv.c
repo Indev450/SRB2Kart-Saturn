@@ -63,7 +63,7 @@ INT32 M_CheckParm(const char *check)
 
 	\return	number (1 to argc-1) or 0 if not present
 */
-INT32 M_CheckProtoParm(const char *check)
+INT32 M_CheckProtoParam(const char *check)
 {
 	INT32 i;
 
@@ -86,7 +86,7 @@ INT32 M_CheckProtoParm(const char *check)
  *
 	\return	string after protocol parameter or NULL if not found
 */
-const char *M_GetProtoParm(void)
+const char *M_GetProtoParam(void)
 {
 	INT32 i;
 	static char *string;
