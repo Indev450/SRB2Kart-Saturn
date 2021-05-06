@@ -1517,7 +1517,7 @@ void D_SRB2Main(void)
 			I_Error("REPLAY: Invalid URL.");
 
 #define REPLAYDIR "/DownloadedReplays/"
-		I_mkdir(va("%s%s", srb2home, REPLAYDIR), 0700);
+		I_mkdir(va("%s%s", srb2home, REPLAYDIR), 0755);
 		CONS_Printf("bruh %s", va("%s%s%s", srb2home, REPLAYDIR, replayname));
 
 		// check if file already exists	
