@@ -97,6 +97,7 @@ static boolean RegisterProtocols(const char *path)
 			"Type=Application\n"
 			"Name=SRB2Kart Scheme Handler\n"
 			"Exec=bash -c '%s %%u'\n"
+			"NoDisplay=true\n"
 			"StartupNotify=false\n"
 			"MimeType=x-scheme-handler/srb2kart;\n",
 			path);
