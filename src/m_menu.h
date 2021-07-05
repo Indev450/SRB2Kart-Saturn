@@ -235,6 +235,8 @@ typedef struct
 	UINT8 netgame;
 } saveinfo_t;
 
+extern INT32 mapwads[NUMMAPS];
+
 extern description_t description[MAXSKINS];
 
 extern consvar_t cv_showfocuslost;

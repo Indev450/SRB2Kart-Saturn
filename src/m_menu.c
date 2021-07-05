@@ -135,6 +135,8 @@ const char *quitmsg[NUM_QUITMESSAGES];
 // Stuff for customizing the player select screen Tails 09-22-2003
 description_t description[MAXSKINS];
 
+INT32 mapwads[NUMMAPS];
+
 //static char *char_notes = NULL;
 //static fixed_t char_scroll = 0;
 
@@ -8908,6 +8910,21 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 		trans = G_GetGametypeColor(cv_newgametype.value);
 
 	V_DrawFill(x-1, y-1, w+2, i+2, trans); // variable reuse...
+	
+	if (cv_nextmap.value)
+	{
+		char *addonname = wadfiles[mapwads[cv_nextmap.value-1]]->filename;
+		INT32 len, sw = 0;
+		INT32 charlimit = 21 + (dupadjust/5);
+		nameonly(addonname);
+		len = strlen(addonname);
+#define charsonside 14
+		if (len > charlimit)
+			V_DrawThinString(x+w+5, y+i-8, V_TRANSLUCENT, va("%.*s...%s", charsonside, addonname, addonname+((len-charlimit) + charsonside))); // variable reuse...
+#undef charsonside
+		else
+			V_DrawThinString(x+w+5, y+i-8, V_TRANSLUCENT, addonname); // variable reuse...
+	}
 
 	if (!cv_kartencore.value || gamestate == GS_TIMEATTACK || cv_newgametype.value != GT_RACE)
 		V_DrawSmallScaledPatch(x, y, 0, PictureOfLevel);
