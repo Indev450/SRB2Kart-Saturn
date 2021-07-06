@@ -8911,7 +8911,7 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 
 	V_DrawFill(x-1, y-1, w+2, i+2, trans); // variable reuse...
 	
-	if (cv_nextmap.value)
+	if (cv_nextmap.value && cv_showtrackaddon.value)
 	{
 		char *addonname = wadfiles[mapwads[cv_nextmap.value-1]]->filename;
 		INT32 len, sw = 0;
