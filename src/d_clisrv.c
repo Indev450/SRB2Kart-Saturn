@@ -2200,7 +2200,7 @@ static void CL_ReloadReceivedSavegame(void)
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		LUA_InvalidatePlayer(&players[i]);
-		sprintf(player_names[i], "Player %d", i + 1);
+		sprintf(player_names[i], "Player %c", 'A' + i);
 	}
 
 	CL_LoadReceivedSavegame(true);
@@ -4436,7 +4436,7 @@ void SV_ResetServer(void)
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		LUA_InvalidatePlayer(&players[i]);
-		sprintf(player_names[i], "Player %d", i + 1);
+		sprintf(player_names[i], "Player %c", 'A' + i);
 	}
 
 	memset(player_name_changes, 0, sizeof(player_name_changes));
