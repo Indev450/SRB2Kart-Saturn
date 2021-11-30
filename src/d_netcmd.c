@@ -1282,7 +1282,8 @@ static boolean EnsurePlayerNameIsGood(char *name, INT32 playernum)
   * is restored to what it was before.
   *
   * We assume that if playernum is ::consoleplayer or ::secondarydisplayplayer
-  * the console variable ::cv_playername or ::cv_playername2 respectively is
+  * (unless clientjoin is true, a necessary evil)
+  * the console variable ::cv_playername to ::cv_playername4 respectively is
   * already set to newname. However, the player name table is assumed to
   * contain the old name.
   *
@@ -1302,6 +1303,10 @@ static void CleanupPlayerName(INT32 playernum, const char *newname)
 	char *tmpname = NULL;
 	INT32 i;
 	boolean namefailed = true;
+	boolean clientjoin = !!(playernum >= MAXPLAYERS);
+
+	if (clientjoin)
+		playernum -= MAXPLAYERS;
 
 	buf = Z_StrDup(newname);
 
@@ -1358,17 +1363,20 @@ static void CleanupPlayerName(INT32 playernum, const char *newname)
 		}
 
 		// no stealing another player's name
-		for (i = 0; i < MAXPLAYERS; i++)
+		if (!clientjoin)
 		{
-			if (i != playernum && playeringame[i]
-				&& fasticmp(tmpname, player_names[i]))
+			for (i = 0; i < MAXPLAYERS; i++)
 			{
-				break;
+				if (i != playernum && playeringame[i]
+				 && fasticmp(tmpname, player_names[i]))
+				{
+					break;
+				}
 			}
-		}
 
-		if (i < MAXPLAYERS)
-			break;
+			if (i < MAXPLAYERS)
+				break;
+		}
 
 		// name is okay then
 		namefailed = false;
@@ -1379,15 +1387,23 @@ static void CleanupPlayerName(INT32 playernum, const char *newname)
 
 	// set consvars whether namefailed or not, because even if it succeeded,
 	// spaces may have been removed
-	if (playernum == consoleplayer)
-		CV_StealthSet(&cv_playername, tmpname);
-	else if (playernum == displayplayers[1] || (!netgame && playernum == 1))
-		CV_StealthSet(&cv_playername2, tmpname);
-	else if (playernum == displayplayers[2] || (!netgame && playernum == 2))
-		CV_StealthSet(&cv_playername3, tmpname);
-	else if (playernum == displayplayers[3] || (!netgame && playernum == 3))
-		CV_StealthSet(&cv_playername4, tmpname);
-	else I_Assert(((void)"CleanupPlayerName used on non-local player", 0));
+	if (clientjoin)
+	{
+		consvar_t *namevars[]  = {&cv_playername, &cv_playername2, &cv_playername3, &cv_playername4};
+		CV_StealthSet(namevars[playernum], tmpname);
+	}
+	else
+	{
+		if (playernum == consoleplayer)
+			CV_StealthSet(&cv_playername, tmpname);
+		else if (playernum == displayplayers[1] || (!netgame && playernum == 1))
+			CV_StealthSet(&cv_playername2, tmpname);
+		else if (playernum == displayplayers[2] || (!netgame && playernum == 2))
+			CV_StealthSet(&cv_playername3, tmpname);
+		else if (playernum == displayplayers[3] || (!netgame && playernum == 3))
+			CV_StealthSet(&cv_playername4, tmpname);
+		else I_Assert(((void)"CleanupPlayerName used on non-local player", 0));
+	}
 
 	Z_Free(buf);
 }
