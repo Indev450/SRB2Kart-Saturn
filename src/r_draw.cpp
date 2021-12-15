@@ -29,6 +29,7 @@
 #include "z_zone.h"
 #include "console.h" // Until buffering gets finished
 #include "k_kart.h" // SRB2kart
+#include "i_threads.h"
 
 #ifdef HWRENDER
 #include "hardware/hw_main.h"
@@ -111,6 +112,15 @@ static UINT8 **localtranslationtablecache[MAXLOCALSKINS] = {NULL};
 CV_PossibleValue_t Color_cons_t[MAXSKINCOLORS+1];
 
 static void R_GenerateBlendTables(void);
+static void R_AllocateBlendTables(void);
+
+#ifdef HAVE_THREADS
+static void R_GenerateBlendTables_Thread(void *userdata)
+{
+	(void)userdata;
+	R_GenerateBlendTables();
+}
+#endif
 
 /** \brief Initializes the translucency tables used by the Software renderer.
 */
@@ -131,7 +141,14 @@ void R_InitTranslucencyTables(void)
 	W_ReadLump(W_GetNumForName("TRANS80"), transtables+0x70000);
 	W_ReadLump(W_GetNumForName("TRANS90"), transtables+0x80000);
 
+	R_AllocateBlendTables();
+
+#ifdef HAVE_THREADS
+	I_spawn_thread("blend-tables",
+			R_GenerateBlendTables_Thread, NULL);
+#else
 	R_GenerateBlendTables();
+#endif
 }
 
 static colorlookup_t transtab_lut;
@@ -241,13 +258,18 @@ static void BlendTab_GenerateMaps(INT32 tab, INT32 style, void (*genfunc)(UINT8 
 	}
 }
 
-static void R_GenerateBlendTables(void)
+static void R_AllocateBlendTables(void)
 {
 	INT32 i;
 
 	for (i = 0; i < NUMBLENDMAPS; i++)
+	{
 		blendtables[i] = static_cast<UINT8*>(Z_Malloc(BlendTab_Count[i] * 0x10000, PU_STATIC, NULL));
+	}
+}
 
+static void R_GenerateBlendTables(void)
+{
 	InitColorLUT(&transtab_lut, pLocalPalette, false);
 
 	// Additive

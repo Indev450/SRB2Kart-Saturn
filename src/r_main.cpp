@@ -1033,7 +1033,7 @@ void R_Init(void)
 	R_InitLightTables();
 
 	//I_OutputMsg("\nR_InitTranslucencyTables\n");
-	R_InitTranslucencyTables();
+	//R_InitTranslucencyTables();
 
 	R_InitDrawNodes();
 

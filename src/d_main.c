@@ -1999,8 +1999,12 @@ void D_SRB2Main(void)
 	// setup loading screen
 	SCR_Startup();
 
+	// Do this in background; lots of number crunching
+	R_InitTranslucencyTables();
+
 	// we need the font of the console
 	CONS_Printf("HU_Init(): Setting up heads up display.\n");
+
 	HU_Init();
 
 	COM_Init();
