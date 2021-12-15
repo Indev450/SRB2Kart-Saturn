@@ -312,7 +312,7 @@ boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef, UINT16
 
 		// store sprite info in lookup tables
 		//FIXME : numspritelumps do not duplicate sprite replacements
-		W_ReadLumpHeaderPwad(wadnum, l, &patch, (sizeof(INT16) *4), 0);
+		W_ReadLumpHeaderPwad(wadnum, l, &patch, PNG_HEADER_SIZE, 0);
 		spritecachedinfo[numspritelumps].width = (INT32)(SHORT(patch.width))<<FRACBITS;
 		spritecachedinfo[numspritelumps].offset = (INT32)(SHORT(patch.leftoffset))<<FRACBITS;
 		spritecachedinfo[numspritelumps].topoffset = (INT32)(SHORT(patch.topoffset))<<FRACBITS;

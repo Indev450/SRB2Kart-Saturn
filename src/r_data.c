@@ -573,9 +573,9 @@ Rloadtextures (INT32 i, INT32 w)
 {
 	UINT16 j, numlumps = 0;
 	UINT16 texstart, texend, texturesLumpPos;
-	softwarepatch_t *patchlump;
 	texpatch_t *patch;
 	texture_t *texture;
+	softwarepatch_t patchlump;
 
 	// Get the lump numbers for the markers in the WAD, if they exist.
 	if (W_FileHasFolders(wadfiles[w]))
@@ -615,7 +615,7 @@ Rloadtextures (INT32 i, INT32 w)
 				continue; // If it is then SKIP IT
 		}
 
-		patchlump = (softwarepatch_t *)W_CacheLumpNumPwad(wadnum, lumpnum, PU_STATIC);
+		W_ReadLumpHeaderPwad(wadnum, lumpnum, &patchlump, PNG_HEADER_SIZE, 0);
 
 		//CONS_Printf("\n\"%s\" is a single patch, dimensions %d x %d",W_CheckNameForNumPwad((wadnum, lumpnum), patchlump->width, patchlump->height);
 		texture = textures[i] = Z_Calloc(sizeof(texture_t) + sizeof(texpatch_t), PU_STATIC, NULL);
@@ -624,8 +624,8 @@ Rloadtextures (INT32 i, INT32 w)
 		M_Memcpy(texture->name, W_CheckNameForNumPwad(wadnum, lumpnum), sizeof(texture->name));
 		texture->hash = quickncasehash(texture->name, 8);
 
-		texture->width = SHORT(patchlump->width);
-		texture->height = SHORT(patchlump->height);
+		texture->width = SHORT(patchlump.width);
+		texture->height = SHORT(patchlump.height);
 
 		texture->type = TEXTURETYPE_SINGLEPATCH;
 		texture->patchcount = 1;
@@ -637,8 +637,6 @@ Rloadtextures (INT32 i, INT32 w)
 		patch->originx = patch->originy = 0;
 		patch->wad = wadnum;
 		patch->lump = texstart + j;
-
-		Z_Free(patchlump);
 
 		texturewidth[i] = texture->width;
 		textureheight[i] = texture->height << FRACBITS;
