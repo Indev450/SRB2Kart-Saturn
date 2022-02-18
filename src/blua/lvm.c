@@ -399,6 +399,7 @@ static void Arith (lua_State *L, StkId ra, TValue *rb,
 
 
 #define arith_op(op,tm) { \
+        StkId ra = RA(i); \
         TValue *rb = RKB(i); \
         TValue *rc = RKC(i); \
         if (ttisnumber(rb) && ttisnumber(rc)) { \
@@ -443,7 +444,6 @@ void luaV_execute (lua_State *L, int nexeccalls) {
   /* main loop of interpreter */
   for (;;) {
     const Instruction i = *pc++;
-    StkId ra;
     if ((L->hookmask & (LUA_MASKLINE | LUA_MASKCOUNT)) &&
         (--L->hookcount == 0 || L->hookmask & LUA_MASKLINE)) {
       traceexec(L, pc);
@@ -453,26 +453,28 @@ void luaV_execute (lua_State *L, int nexeccalls) {
       }
       base = L->base;
     }
-    /* warning!! several calls may realloc the stack and invalidate `ra' */
-    ra = RA(i);
     lua_assert(base == L->base && L->base == L->ci->base);
     lua_assert(base <= L->top && L->top <= L->stack + L->stacksize);
     lua_assert(L->top == L->ci->top || luaG_checkopenop(i));
     switch (GET_OPCODE(i)) {
       case OP_MOVE: {
+        StkId ra = RA(i);
         setobjs2s(L, ra, RB(i));
         continue;
       }
       case OP_LOADK: {
+        StkId ra = RA(i);
         setobj2s(L, ra, KBx(i));
         continue;
       }
       case OP_LOADBOOL: {
+        StkId ra = RA(i);
         setbvalue(ra, GETARG_B(i));
         if (GETARG_C(i)) pc++;  /* skip next instruction (if C) */
         continue;
       }
       case OP_LOADNIL: {
+        StkId ra = RA(i);
         TValue *rb = RB(i);
         do {
           setnilvalue(rb--);
@@ -480,11 +482,13 @@ void luaV_execute (lua_State *L, int nexeccalls) {
         continue;
       }
       case OP_GETUPVAL: {
+        StkId ra = RA(i);
         int b = GETARG_B(i);
         setobj2s(L, ra, cl->upvals[b]->v);
         continue;
       }
       case OP_GETGLOBAL: {
+        StkId ra = RA(i);
         TValue g;
         TValue *rb = KBx(i);
         sethvalue(L, &g, cl->env);
@@ -493,12 +497,14 @@ void luaV_execute (lua_State *L, int nexeccalls) {
         continue;
       }
       case OP_GETTABLE: {
+        StkId ra = RA(i);
         StkId rb = RB(i);
         TValue *rc = RKC(i);
         gettableProtected(L, rb, rc, ra);
         continue;
       }
       case OP_SETGLOBAL: {
+        StkId ra = RA(i);
         TValue g;
         sethvalue(L, &g, cl->env);
         lua_assert(ttisstring(KBx(i)));
@@ -506,18 +512,21 @@ void luaV_execute (lua_State *L, int nexeccalls) {
         continue;
       }
       case OP_SETUPVAL: {
+        StkId ra = RA(i);
         UpVal *uv = cl->upvals[GETARG_B(i)];
         setobj(L, uv->v, ra);
         luaC_barrier(L, uv, ra);
         continue;
       }
       case OP_SETTABLE: {
+        StkId ra = RA(i);
         TValue *rb = RKB(i);
         TValue *rc = RKC(i);
         settableProtected(L, ra, rb, rc);
         continue;
       }
       case OP_NEWTABLE: {
+        StkId ra = RA(i);
         int b = GETARG_B(i);
         int c = GETARG_C(i);
         sethvalue(L, ra, luaH_new(L, luaO_fb2int(b), luaO_fb2int(c)));
@@ -525,6 +534,7 @@ void luaV_execute (lua_State *L, int nexeccalls) {
         continue;
       }
       case OP_SELF: {
+        StkId ra = RA(i);
         const TValue *slot;
         StkId rb = RB(i);
         TValue *rc = RKC(i);
@@ -549,6 +559,7 @@ void luaV_execute (lua_State *L, int nexeccalls) {
         continue;
       }
       case OP_DIV: {
+        StkId ra = RA(i);
         TValue *rb = RKB(i);
         TValue *rc = RKC(i);
         if (ttisnumber(rb) && ttisnumber(rc)) {
@@ -564,6 +575,7 @@ void luaV_execute (lua_State *L, int nexeccalls) {
         continue;
       }
       case OP_MOD: {
+        StkId ra = RA(i);
         TValue *rb = RKB(i);
         TValue *rc = RKC(i);
         if (ttisnumber(rb) && ttisnumber(rc)) {
@@ -583,26 +595,27 @@ void luaV_execute (lua_State *L, int nexeccalls) {
         continue;
       }
       case OP_BAND: {
-	arith_op(luai_numand, TM_AND);
-	continue;
+        arith_op(luai_numand, TM_AND);
+        continue;
       }
       case OP_BOR: {
-	arith_op(luai_numor, TM_OR);
-	continue;
+        arith_op(luai_numor, TM_OR);
+        continue;
       }
       case OP_BXOR: {
-	arith_op(luai_numxor, TM_XOR);
-	continue;
+        arith_op(luai_numxor, TM_XOR);
+        continue;
       }
       case OP_BSHL: {
-	arith_op(luai_numshl, TM_SHL);
-	continue;
+        arith_op(luai_numshl, TM_SHL);
+        continue;
       }
       case OP_BSHR: {
-	arith_op(luai_numshr, TM_SHR);
-	continue;
+        arith_op(luai_numshr, TM_SHR);
+        continue;
       }
       case OP_BNOT: {
+        StkId ra = RA(i);
         TValue *rb = RB(i);
         if (ttisnumber(rb)) {
           lua_Number nb = nvalue(rb);
@@ -614,6 +627,7 @@ void luaV_execute (lua_State *L, int nexeccalls) {
         continue;
       }
       case OP_UNM: {
+        StkId ra = RA(i);
         TValue *rb = RB(i);
         if (ttisnumber(rb)) {
           lua_Number nb = nvalue(rb);
@@ -625,11 +639,13 @@ void luaV_execute (lua_State *L, int nexeccalls) {
         continue;
       }
       case OP_NOT: {
+        StkId ra = RA(i);
         int res = l_isfalse(RB(i));  /* next assignment may change this value */
         setbvalue(ra, res);
         continue;
       }
       case OP_LEN: {
+        StkId ra = RA(i);
         TValue *rb = RB(i);
         switch (ttype(rb)) {
           case LUA_TTABLE: {
@@ -687,12 +703,14 @@ void luaV_execute (lua_State *L, int nexeccalls) {
         continue;
       }
       case OP_TEST: {
+        StkId ra = RA(i);
         if (l_isfalse(ra) != GETARG_C(i))
           dojump(L, pc, GETARG_sBx(*pc));
         pc++;
         continue;
       }
       case OP_TESTSET: {
+        StkId ra = RA(i);
         TValue *rb = RB(i);
         if (l_isfalse(rb) != GETARG_C(i)) {
           setobjs2s(L, ra, rb);
@@ -702,6 +720,7 @@ void luaV_execute (lua_State *L, int nexeccalls) {
         continue;
       }
       case OP_CALL: {
+        StkId ra = RA(i);
         int b = GETARG_B(i);
         int nresults = GETARG_C(i) - 1;
         if (b != 0) L->top = ra+b;  /* else previous instruction set top */
@@ -723,6 +742,7 @@ void luaV_execute (lua_State *L, int nexeccalls) {
         }
       }
       case OP_TAILCALL: {
+        StkId ra = RA(i);
         int b = GETARG_B(i);
         if (b != 0) L->top = ra+b;  /* else previous instruction set top */
         L->savedpc = pc;
@@ -755,6 +775,7 @@ void luaV_execute (lua_State *L, int nexeccalls) {
         }
       }
       case OP_RETURN: {
+        StkId ra = RA(i);
         int b = GETARG_B(i);
         if (b != 0) L->top = ra+b-1;
         if (L->openupval) luaF_close(L, base);
@@ -770,6 +791,7 @@ void luaV_execute (lua_State *L, int nexeccalls) {
         }
       }
       case OP_FORLOOP: {
+        StkId ra = RA(i);
         lua_Number step = nvalue(ra+2);
         lua_Number idx = luai_numadd(nvalue(ra), step); /* increment index */
         lua_Number limit = nvalue(ra+1);
@@ -782,6 +804,7 @@ void luaV_execute (lua_State *L, int nexeccalls) {
         continue;
       }
       case OP_FORPREP: {
+        StkId ra = RA(i);
         const TValue *init = ra;
         const TValue *plimit = ra+1;
         const TValue *pstep = ra+2;
@@ -798,6 +821,7 @@ void luaV_execute (lua_State *L, int nexeccalls) {
         continue;
       }
       case OP_TFORLOOP: {
+        StkId ra = RA(i);
         StkId cb = ra + 3;  /* call base */
         setobjs2s(L, cb+2, ra+2);
         setobjs2s(L, cb+1, ra+1);
@@ -814,6 +838,7 @@ void luaV_execute (lua_State *L, int nexeccalls) {
         continue;
       }
       case OP_SETLIST: {
+        StkId ra = RA(i);
         int n = GETARG_B(i);
         int c = GETARG_C(i);
         int last;
@@ -836,10 +861,12 @@ void luaV_execute (lua_State *L, int nexeccalls) {
         continue;
       }
       case OP_CLOSE: {
+        StkId ra = RA(i);
         luaF_close(L, ra);
         continue;
       }
       case OP_CLOSURE: {
+        StkId ra = RA(i);
         Proto *p;
         Closure *ncl;
         int nup, j;
@@ -860,6 +887,7 @@ void luaV_execute (lua_State *L, int nexeccalls) {
         continue;
       }
       case OP_VARARG: {
+        StkId ra = RA(i);
         int b = GETARG_B(i) - 1;
         int j;
         CallInfo *ci = L->ci;
