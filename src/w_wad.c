@@ -793,6 +793,7 @@ UINT16 W_InitFile(const char *filename, const char *lumpname, UINT16 *wadnump, b
 	fseek(handle, 0, SEEK_END);
 	wadfile->filesize = (unsigned)ftell(handle);
 	wadfile->type = type;
+	wadfile->majormod = false;
 
 	// already generated, just copy it over
 	M_Memcpy(&wadfile->md5sum, &md5sum, 16);

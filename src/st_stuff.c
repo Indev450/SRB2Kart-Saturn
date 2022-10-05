@@ -418,13 +418,8 @@ void ST_ReloadSkinFaceGraphics(void)
 	for (i = 0; i < numskins; i++)
 		ST_LoadFaceGraphics(skins[i].facerank, skins[i].facewant, skins[i].facemmap, i);
 	
-	if (players[consoleplayer].skinlocal) {
-		for (i = 0; i < numlocalskins; i++) {
-			ST_LoadLocalFaceGraphics(localskins[i].facerank, localskins[i].facewant, localskins[i].facemmap, i);
-		}
-	} else {
-		for (i = 0; i < numskins; i++)
-			ST_LoadLocalFaceGraphics(skins[i].facerank, skins[i].facewant, skins[i].facemmap, i);
+	for (i = 0; i < numlocalskins; i++) {
+		ST_LoadLocalFaceGraphics(localskins[i].facerank, localskins[i].facewant, localskins[i].facemmap, i);
 	}
 }
 

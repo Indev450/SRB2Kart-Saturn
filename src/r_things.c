@@ -2814,6 +2814,13 @@ void SetLocalPlayerSkin(INT32 playernum, const char *skinname, consvar_t *cvar)
 	player_t *player = &players[playernum];
 	INT32 i;
 
+	// this is where we're gonna use major mod for.
+	if (wadfiles[skins[player->skin].wadnum]->majormod && !demo.playback)
+	{
+		CONS_Alert(CONS_ERROR, M_GetText("Cannot set localskin to %s because the player's skin is modifying the game.\n"), skinname);
+		return;
+	}
+
 	if (strcasecmp(skinname, "none"))
 	{
 		for (i = 0; i < numlocalskins; i++)
@@ -2822,6 +2829,12 @@ void SetLocalPlayerSkin(INT32 playernum, const char *skinname, consvar_t *cvar)
 			if (stricmp(localskins[i].name, skinname) == 0)
 			{
 				player->localskin = 1 + i;
+				if (wadfiles[localskins[player->localskin - 1].wadnum]->majormod && !demo.playback)
+				{
+					CONS_Alert(CONS_ERROR, M_GetText("Cannot set localskin to %s because the localskin is a gameplay-modifying addon.\n"), skinname);
+					player->localskin = 0;
+					return;
+				}
 				player->skinlocal = true;
 				if (player->mo)
 				{
@@ -2837,6 +2850,12 @@ void SetLocalPlayerSkin(INT32 playernum, const char *skinname, consvar_t *cvar)
 			if (stricmp(skins[i].name, skinname) == 0)
 			{
 				player->localskin = 1 + i;
+				if (wadfiles[skins[player->localskin - 1].wadnum]->majormod && !demo.playback)
+				{
+					CONS_Alert(CONS_ERROR, M_GetText("Cannot set localskin to %s because the skin is a gameplay-modifying addon.\n"), skinname);
+					player->localskin = 0;
+					return;
+				}
 				player->skinlocal = false;
 				if (player->mo)
 				{
