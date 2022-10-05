@@ -37,6 +37,7 @@ extern consvar_t cv_playername4;
 extern consvar_t cv_playercolor4;
 extern consvar_t cv_skin4;
 extern consvar_t cv_localskin4;
+extern consvar_t cv_localskinall;
 // preferred number of players
 extern consvar_t cv_splitplayers;
 

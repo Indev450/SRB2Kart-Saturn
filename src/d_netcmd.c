@@ -109,10 +109,6 @@ static void Skin_OnChange(void);
 static void Skin2_OnChange(void);
 static void Skin3_OnChange(void);
 static void Skin4_OnChange(void);
-static void Localskin_OnChange(void);
-static void Localskin2_OnChange(void);
-static void Localskin3_OnChange(void);
-static void Localskin4_OnChange(void);
 static void Color_OnChange(void);
 static void Color2_OnChange(void);
 static void Color3_OnChange(void);
@@ -148,6 +144,7 @@ static void Command_Localskin1(void);
 static void Command_Localskin2(void);
 static void Command_Localskin3(void);
 static void Command_Localskin4(void);
+static void Command_LocalskinAll(void);
 static void Command_ListWADS_f(void);
 #ifdef DELFILE
 static void Command_Delfile(void);
@@ -298,6 +295,7 @@ consvar_t cv_localskin = {"internal___localskin", "none", CV_HIDEN, NULL, NULL, 
 consvar_t cv_localskin2 = {"internal___localskin2", "none", CV_HIDEN, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_localskin3 = {"internal___localskin3", "none", CV_HIDEN, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_localskin4 = {"internal___localskin4", "none", CV_HIDEN, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_localskinall = {"internal___localskinall", "none", CV_HIDEN, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_skipmapcheck = {"skipmapcheck", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -633,6 +631,7 @@ void D_RegisterServerCommands(void)
 	COM_AddCommand("localskin2", Command_Localskin2);
 	COM_AddCommand("localskin3", Command_Localskin3);
 	COM_AddCommand("localskin4", Command_Localskin4);
+	COM_AddCommand("localskinall", Command_LocalskinAll);
 	COM_AddCommand("listwad", Command_ListWADS_f);
 
 #ifdef DELFILE
@@ -881,6 +880,7 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_playercolor4);
 	CV_RegisterVar(&cv_skin4);
 	CV_RegisterVar(&cv_localskin4);
+	CV_RegisterVar(&cv_localskinall);
 	// preferred number of players
 	CV_RegisterVar(&cv_splitplayers);
 
@@ -4490,6 +4490,13 @@ static void Command_Addfile(void)
 		SendNetXCmd(XD_ADDFILE, buf, buf_p - buf);
 }
 
+// i hate myself
+static boolean DumbStartsWith(const char *pre, const char *str)
+{
+    size_t lenpre = strlen(pre),
+           lenstr = strlen(str);
+    return lenstr < lenpre ? false : memcmp(pre, str, lenpre) == 0;
+}
 /** Adds something at runtime.
   */
 static void
@@ -4501,7 +4508,15 @@ Command_Addskins (void)
 				"addskins <file>: load skins bro\n");
 		return;
 	}
-	P_AddWadFile(COM_Argv(1), true);
+	// we dont want anything that aint a skin
+	if (DumbStartsWith("KC_", COM_Argv(1)))
+		P_AddWadFile(COM_Argv(1), true);
+	else if (DumbStartsWith("KCL_", COM_Argv(1)) && demo.playback) // KCL only for demos
+		P_AddWadFile(COM_Argv(1), true);
+	else if (DumbStartsWith("KCL_", COM_Argv(1)) && !demo.playback)
+		CONS_Alert(CONS_ERROR, M_GetText("Cannot add file %s as it is a skin with lua."), COM_Argv(1));
+	else
+		CONS_Alert(CONS_ERROR, M_GetText("Cannot add file %s as it is not a skin."), COM_Argv(1));
 }
 
 static void Command_Localskin1 (void) {
@@ -4558,6 +4573,23 @@ static void Command_Localskin4 (void) {
 		return;
 	}
 	SetLocalPlayerSkin(displayplayers[3], COM_Argv(1), &cv_localskin4);
+}
+
+static void Command_LocalskinAll (void) {
+	if (!Playing() && !demo.playback)
+	{
+		CONS_Printf("You can only use this command in gameplay.\n");
+		return;
+	}
+	if (COM_Argc() != 2)
+	{
+		CONS_Printf("localskinall <name>: Set a localskin to all players.\n");
+		return;
+	}
+	INT32 i;
+	for (i; i < MAXPLAYERS; i++) {
+		SetLocalPlayerSkin(i, COM_Argv(1), &cv_localskinall);
+	}
 }
 
 #ifdef DELFILE
@@ -5795,38 +5827,6 @@ static void Skin4_OnChange(void)
 		CONS_Alert(CONS_NOTICE, M_GetText("You can't change your skin at the moment.\n"));
 		CV_StealthSet(&cv_skin4, skins[players[displayplayers[3]].skin].name);
 	}
-}
-
-/** bruh
-  */
-static void Localskin_OnChange(void)
-{
-	if (!Playing())
-		return; // do whatever you want
-	SetLocalPlayerSkin(consoleplayer, cv_localskin.string, &cv_localskin);
-}
-
-/** two bruh machine gun
-  */
-static void Localskin2_OnChange(void)
-{
-	if (!Playing())
-		return; // do whatever you want
-	SetLocalPlayerSkin(displayplayers[1], cv_localskin2.string, &cv_localskin2);
-}
-
-static void Localskin3_OnChange(void)
-{
-	if (!Playing())
-		return; // do whatever you want
-	SetLocalPlayerSkin(displayplayers[2], cv_localskin3.string, &cv_localskin3);
-}
-
-static void Localskin4_OnChange(void)
-{
-	if (!Playing())
-		return; // do whatever you want
-	SetLocalPlayerSkin(displayplayers[3], cv_localskin4.string, &cv_localskin4);
 }
 
 /** Sends a color change for the console player, unless that player is moving.
