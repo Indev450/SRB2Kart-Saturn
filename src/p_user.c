@@ -1739,13 +1739,13 @@ void P_DoPlayerExit(player_t *player)
 				sfxenum_t sfx_id;
 				// fix godjjsa win sounds
 				if (K_IsPlayerLosing(player)) {
-					if (player->mo->skinlocal)
+					if (player->mo->localskin)
 						sfx_id = ((skin_t *)player->mo->localskin)->soundsid[S_sfx[sfx_klose].skinsound];
 					else
 						sfx_id = ((skin_t *)player->mo->skin)->soundsid[S_sfx[sfx_klose].skinsound];
 				}
 				else {
-					if (player->mo->skinlocal)
+					if (player->mo->localskin)
 						sfx_id = ((skin_t *)player->mo->localskin)->soundsid[S_sfx[sfx_kwin].skinsound];
 					else
 						sfx_id = ((skin_t *)player->mo->skin)->soundsid[S_sfx[sfx_kwin].skinsound];

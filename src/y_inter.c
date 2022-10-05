@@ -475,13 +475,14 @@ void Y_IntermissionDrawer(void)
 				if (data.match.color[i])
 				{
 					UINT8 *colormap = R_GetTranslationColormap(*data.match.character[i], *data.match.color[i], GTC_CACHE);
-					if (!players[i].skinlocal) {
-						if (!players[i].localskin)
+					// i fucking hate this i fucking hate this i hate this so much
+					if (!players[data.match.num[i]].skinlocal) {
+						if (!players[data.match.num[i]].localskin)
 							V_DrawMappedPatch(x+16, y-4, 0, facerankprefix[*data.match.character[i]], colormap);
 						else
-							V_DrawMappedPatch(x+16, y-4, 0, facerankprefix[players[i].localskin - 1], colormap);
+							V_DrawMappedPatch(x+16, y-4, 0, facerankprefix[players[data.match.num[i]].localskin - 1], colormap);
 					} else {
-						V_DrawMappedPatch(x+16, y-4, 0, localfacerankprefix[players[i].localskin - 1], colormap);
+						V_DrawMappedPatch(x+16, y-4, 0, localfacerankprefix[players[data.match.num[i]].localskin - 1], colormap);
 					}
 				}
 

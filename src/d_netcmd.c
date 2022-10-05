@@ -49,6 +49,7 @@
 #include "m_anigif.h"
 #include "k_kart.h" // SRB2kart
 #include "y_inter.h"
+#include "fastcmp.h"
 
 #ifdef NETGAME_DEVMODE
 #define CV_RESTRICT CV_NETVAR
@@ -4502,21 +4503,32 @@ static boolean DumbStartsWith(const char *pre, const char *str)
 static void
 Command_Addskins (void)
 {
-	if (COM_Argc() != 2)
+	if (COM_Argc() > 3)
 	{
 		CONS_Printf(
-				"addskins <file>: load skins bro\n");
+				"addskins <file>: Load a skin file.\n");
 		return;
 	}
-	// we dont want anything that aint a skin
-	if (DumbStartsWith("KC_", COM_Argv(1)))
-		P_AddWadFile(COM_Argv(1), true);
-	else if (DumbStartsWith("KCL_", COM_Argv(1)) && demo.playback) // KCL only for demos
-		P_AddWadFile(COM_Argv(1), true);
-	else if (DumbStartsWith("KCL_", COM_Argv(1)) && !demo.playback)
-		CONS_Alert(CONS_ERROR, M_GetText("Cannot add file %s as it is a skin with lua."), COM_Argv(1));
-	else
-		CONS_Alert(CONS_ERROR, M_GetText("Cannot add file %s as it is not a skin."), COM_Argv(1));
+
+	// no forcing?
+	if (fasticmp(COM_Argv(2), "-force") || fasticmp(COM_Argv(2), "-f")) {
+		CONS_Alert(CONS_NOTICE, M_GetText("Adding file %s. May or may not be a skin.\n"), COM_Argv(1));
+		P_AddWadFile(COM_Argv(1), 0, true);	
+	} else {
+		if (DumbStartsWith("KC_", COM_Argv(1))) {
+			P_AddWadFile(COM_Argv(1), 0, true);
+		} else if (DumbStartsWith("KCL_", COM_Argv(1))) {
+			if (!demo.playback) {
+				CONS_Alert(CONS_ERROR, M_GetText("Cannot add file %s as it is a skin with lua. Include -force or -f to force it to load.\n"), COM_Argv(1));
+				return;
+			} else {
+				P_AddWadFile(COM_Argv(1), 0, true);
+			}
+		} else {
+			CONS_Alert(CONS_ERROR, M_GetText("Cannot add file %s as it is not a skin.\n"), COM_Argv(1));
+			return;
+		}
+	}
 }
 
 static void Command_Localskin1 (void) {
