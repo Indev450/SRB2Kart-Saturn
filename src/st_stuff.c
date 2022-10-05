@@ -384,16 +384,15 @@ void ST_LoadFaceGraphics(char *rankstr, char *wantstr, char *mmapstr, INT32 skin
 	facemmapprefix[skinnum] = W_CachePatchName(mmapstr, PU_HUDGFX);
 }
 
-void ST_LoadLocalFaceGraphics(char *rankstr, char *wantstr, char *mmapstr, INT32 skinnum, boolean local)
+void ST_LoadLocalFaceGraphics(char *rankstr, char *wantstr, char *mmapstr, INT32 skinnum)
 {
-	if (local)
-	{
-		localfacerankprefix[skinnum] = W_CachePatchName(rankstr, PU_HUDGFX);
-		localfacewantprefix[skinnum] = W_CachePatchName(wantstr, PU_HUDGFX);
-		localfacemmapprefix[skinnum] = W_CachePatchName(mmapstr, PU_HUDGFX);
-	}
-	else
-		ST_LoadFaceGraphics(rankstr, wantstr, mmapstr, skinnum);
+	localfacerankprefix[skinnum] = W_CachePatchName(rankstr, PU_HUDGFX);
+	localfacewantprefix[skinnum] = W_CachePatchName(wantstr, PU_HUDGFX);
+	localfacemmapprefix[skinnum] = W_CachePatchName(mmapstr, PU_HUDGFX);
+
+	//CONS_Printf("Added rank prefix %s\n", rankstr);
+	//CONS_Printf("Added want prefix %s\n", wantstr);
+	//CONS_Printf("Added mmap prefix %s\n", mmapstr);
 }
 
 void ST_ReloadSkinFaceGraphics(void)
@@ -404,7 +403,7 @@ void ST_ReloadSkinFaceGraphics(void)
 		ST_LoadFaceGraphics(skins[i].facerank, skins[i].facewant, skins[i].facemmap, i);
 
 	for (i = 0; i < numlocalskins; i++)
-		ST_LoadLocalFaceGraphics(skins[i].facerank, skins[i].facewant, skins[i].facemmap, i, true);
+		ST_LoadLocalFaceGraphics(localskins[i].facerank, localskins[i].facewant, localskins[i].facemmap, i);
 }
 
 static inline void ST_InitData(void)

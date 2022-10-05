@@ -144,6 +144,10 @@ static void Command_SetViews_f(void);
 
 static void Command_Addfile(void);
 static void Command_Addskins(void);
+static void Command_Localskin1(void);
+static void Command_Localskin2(void);
+static void Command_Localskin3(void);
+static void Command_Localskin4(void);
 static void Command_ListWADS_f(void);
 #ifdef DELFILE
 static void Command_Delfile(void);
@@ -290,10 +294,10 @@ consvar_t cv_skin2 = {"skin2", DEFAULTSKIN2, CV_SAVE|CV_CALL|CV_NOINIT, NULL, Sk
 consvar_t cv_skin3 = {"skin3", DEFAULTSKIN3, CV_SAVE|CV_CALL|CV_NOINIT, NULL, Skin3_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_skin4 = {"skin4", DEFAULTSKIN4, CV_SAVE|CV_CALL|CV_NOINIT, NULL, Skin4_OnChange, 0, NULL, NULL, 0, 0, NULL};
 // haha I've beaten you now, ONLINE
-consvar_t cv_localskin = {"localskin", "none", CV_CALL|CV_NOINIT, NULL, Localskin_OnChange, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_localskin2 = {"localskin2", "none", CV_CALL|CV_NOINIT, NULL, Localskin2_OnChange, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_localskin3 = {"localskin3", "none", CV_CALL|CV_NOINIT, NULL, Localskin3_OnChange, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_localskin4 = {"localskin4", "none", CV_CALL|CV_NOINIT, NULL, Localskin4_OnChange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_localskin = {"internal___localskin", "none", CV_HIDEN, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_localskin2 = {"internal___localskin2", "none", CV_HIDEN, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_localskin3 = {"internal___localskin3", "none", CV_HIDEN, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_localskin4 = {"internal___localskin4", "none", CV_HIDEN, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_skipmapcheck = {"skipmapcheck", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -625,6 +629,10 @@ void D_RegisterServerCommands(void)
 
 	COM_AddCommand("addfile", Command_Addfile);
 	COM_AddCommand("addskins", Command_Addskins);
+	COM_AddCommand("localskin", Command_Localskin1);
+	COM_AddCommand("localskin2", Command_Localskin2);
+	COM_AddCommand("localskin3", Command_Localskin3);
+	COM_AddCommand("localskin4", Command_Localskin4);
 	COM_AddCommand("listwad", Command_ListWADS_f);
 
 #ifdef DELFILE
@@ -4494,6 +4502,62 @@ Command_Addskins (void)
 		return;
 	}
 	P_AddWadFile(COM_Argv(1), true);
+}
+
+static void Command_Localskin1 (void) {
+	if (!Playing() && !demo.playback)
+	{
+		CONS_Printf("You can only use this command in gameplay.\n");
+		return;
+	}
+	if (COM_Argc() != 2)
+	{
+		CONS_Printf("localskin <name>: Set a localskin.\n");
+		return;
+	}
+	SetLocalPlayerSkin(consoleplayer, COM_Argv(1), &cv_localskin);
+}
+
+static void Command_Localskin2 (void) {
+	if (!Playing() && !demo.playback)
+	{
+		CONS_Printf("You can only use this command in gameplay.\n");
+		return;
+	}
+	if (COM_Argc() != 2)
+	{
+		CONS_Printf("localskin2 <name>: Set a localskin.\n");
+		return;
+	}
+	SetLocalPlayerSkin(displayplayers[1], COM_Argv(1), &cv_localskin2);
+}
+
+static void Command_Localskin3 (void) {
+	if (!Playing() && !demo.playback)
+	{
+		CONS_Printf("You can only use this command in gameplay.\n");
+		return;
+	}
+	if (COM_Argc() != 2)
+	{
+		CONS_Printf("localskin3 <name>: Set a localskin.\n");
+		return;
+	}
+	SetLocalPlayerSkin(displayplayers[2], COM_Argv(1), &cv_localskin3);
+}
+
+static void Command_Localskin4 (void) {
+	if (!Playing() && !demo.playback)
+	{
+		CONS_Printf("You can only use this command in gameplay.\n");
+		return;
+	}
+	if (COM_Argc() != 2)
+	{
+		CONS_Printf("localskin4 <name>: Set a localskin.\n");
+		return;
+	}
+	SetLocalPlayerSkin(displayplayers[3], COM_Argv(1), &cv_localskin4);
 }
 
 #ifdef DELFILE
