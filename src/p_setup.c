@@ -3418,6 +3418,13 @@ boolean P_SetupLevel(boolean skipprecip)
 #endif
 	}
 
+	/* testing purposes
+	CONS_Printf(M_GetText("Local skin number is %d\n"), players[consoleplayer].localskin);
+	for (i = 0; i < numlocalskins; i++) {
+		CONS_Printf(M_GetText("Local skin number is %s\n"), localskins[players[consoleplayer].localskin - 1].name);
+	}
+	*/
+
 	G_AddMapToBuffer(gamemap-1);
 
 	return true;
@@ -3472,7 +3479,7 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, boolean local)
 	boolean mapsadded = false;
 	lumpinfo_t *lumpinfo;
 
-	if ((numlumps = W_InitFile(wadfilename)) == INT16_MAX)
+	if ((numlumps = W_InitFile(wadfilename, 0, &wadnum, local)) == INT16_MAX)
 	{
 		refreshdirmenu |= REFRESHDIR_NOTLOADED;
 		CONS_Printf(M_GetText("Errors occurred while loading %s; not added.\n"), wadfilename);
