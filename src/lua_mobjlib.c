@@ -244,7 +244,10 @@ static int mobj_get(lua_State *L)
 	case mobj_skin: // skin name or nil, not struct
 		if (!mo->skin)
 			return 0;
-		lua_pushstring(L, ((skin_t *)mo->skin)->name);
+		if (mo->localskin) // only do this for demos
+			lua_pushstring(L, ((skin_t *)mo->localskin)->name);
+		else
+			lua_pushstring(L, ((skin_t *)mo->skin)->name);
 		break;
 	case mobj_color:
 		lua_pushinteger(L, mo->color);

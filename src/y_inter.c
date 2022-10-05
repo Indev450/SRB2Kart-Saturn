@@ -475,7 +475,14 @@ void Y_IntermissionDrawer(void)
 				if (data.match.color[i])
 				{
 					UINT8 *colormap = R_GetTranslationColormap(*data.match.character[i], *data.match.color[i], GTC_CACHE);
-					V_DrawMappedPatch(x+16, y-4, 0, facerankprefix[*data.match.character[i]], colormap);
+					if (!players[i].skinlocal) {
+						if (!players[i].localskin)
+							V_DrawMappedPatch(x+16, y-4, 0, facerankprefix[*data.match.character[i]], colormap);
+						else
+							V_DrawMappedPatch(x+16, y-4, 0, facerankprefix[players[i].localskin - 1], colormap);
+					} else {
+						V_DrawMappedPatch(x+16, y-4, 0, localfacerankprefix[players[i].localskin - 1], colormap);
+					}
 				}
 
 				if (data.match.num[i] == whiteplayer)
@@ -1179,7 +1186,7 @@ void Y_VoteDrawer(void)
 			if (players[i].skincolor)
 			{
 				UINT8 *colormap = R_GetTranslationColormap(players[i].skin, players[i].skincolor, GTC_CACHE);
-				V_DrawMappedPatch(x+24, y+9, V_SNAPTOLEFT, facerankprefix[players[i].skin], colormap);
+				V_DrawMappedPatch(x+24, y+9, V_SNAPTOLEFT, (players[i].skinlocal ? localfacerankprefix : facerankprefix)[((players[i].localskin) ? players[i].localskin-1 : players[i].skin)], colormap);
 			}
 
 			if (!splitscreen && i == consoleplayer)

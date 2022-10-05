@@ -189,6 +189,7 @@ typedef struct drawnode_s
 
 extern INT32 numskins;
 extern INT32 numlocalskins;
+extern INT32 numallskins;
 extern skin_t skins[MAXSKINS];
 extern UINT8 skinstats[9][9][MAXSKINS];
 extern UINT8 skinstatscount[9][9];
@@ -196,6 +197,7 @@ extern UINT8 skinsorted[MAXSKINS];
 
 void sortSkinGrid(void);
 extern skin_t localskins[MAXSKINS];
+extern skin_t allskins[MAXSKINS*2];
 
 boolean SetPlayerSkin(INT32 playernum,const char *skinname);
 void SetPlayerSkinByNum(INT32 playernum,INT32 skinnum); // Tails 03-16-2002
