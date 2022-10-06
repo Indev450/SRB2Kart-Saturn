@@ -115,6 +115,7 @@ typedef struct wadfile_s
 	UINT8 md5sum[16];
 	boolean important;
 	boolean majormod;
+	boolean localfile; // only for skins
 } wadfile_t;
 
 #define WADFILENUM(lumpnum) (UINT16)((lumpnum)>>16) // wad flumpnum>>16) // wad file number in upper word
