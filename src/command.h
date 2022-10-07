@@ -33,8 +33,12 @@ typedef void (*com_func_t)(void);
 void COM_AddCommand(const char *name, com_func_t func);
 int COM_AddLuaCommand(const char *name);
 
+#define MAX_ARGS 80
+extern char *com_argv[MAX_ARGS];
+
 size_t COM_Argc(void);
 const char *COM_Argv(size_t arg); // if argv > argc, returns empty string
+char **COM_ArgvList(void);
 char *COM_Args(void);
 size_t COM_CheckParm(const char *check); // like M_CheckParm :)
 size_t COM_CheckPartialParm(const char *check);

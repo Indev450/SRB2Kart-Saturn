@@ -2727,7 +2727,9 @@ void R_InitSkins(void)
 	strncpy(skin->facerank, "PLAYRANK", 9);
 	strncpy(skin->facewant, "PLAYWANT", 9);
 	strncpy(skin->facemmap, "PLAYMMAP", 9);
+	skin->wadnum = 0; // god what have you brought to this world
 	skin->prefcolor = SKINCOLOR_BLUE;
+	skin->localskin = false;
 
 	// SRB2kart
 	skin->kartspeed = 8;
@@ -2877,10 +2879,12 @@ void SetLocalPlayerSkin(INT32 playernum, const char *skinname, consvar_t *cvar)
 		}
 	}
 
+	/*
 	if (player->localskin > 0)
 		CV_StealthSet(cvar, ( (player->skinlocal) ? localskins : skins )[player->localskin - 1].name);
 	else
 		CV_StealthSet(cvar, "none");
+		*/
 }
 
 // Same as SetPlayerSkin, but uses the skin #.
@@ -3336,6 +3340,8 @@ next_token:
 			Forceskin_cons_t[numskins+1].value = numskins;
 			Forceskin_cons_t[numskins+1].strvalue = skins[numskins].name;
 		}
+
+		skin->localskin = local;
 
 		// add face graphics
 		if (local) {

@@ -3,6 +3,7 @@
 # Core sources
 set(SRB2_CORE_SOURCES
 	am_map.c
+	args.c
 	b_bot.c
 	command.c
 	comptime.c
@@ -50,6 +51,7 @@ set(SRB2_CORE_SOURCES
 
 set(SRB2_CORE_HEADERS
 	am_map.h
+	args.h
 	b_bot.h
 	byteptr.h
 	command.h
