@@ -2730,6 +2730,7 @@ void R_InitSkins(void)
 	skin->wadnum = 0; // god what have you brought to this world
 	skin->prefcolor = SKINCOLOR_BLUE;
 	skin->localskin = false;
+	skin->localnum = 0;
 
 	// SRB2kart
 	skin->kartspeed = 8;
@@ -2764,6 +2765,20 @@ INT32 R_SkinAvailable(const char *name)
 	for (i = 0; i < numskins; i++)
 	{
 		if (stricmp(skins[i].name,name)==0)
+			return i;
+	}
+	return -1;
+}
+
+// returns true if the skin name is found (loaded from pwad)
+// warning return -1 if not found
+INT32 R_AnySkinAvailable(const char *name)
+{
+	INT32 i;
+
+	for (i = 0; i < numallskins; i++)
+	{
+		if (stricmp(allskins[i].name,name)==0)
 			return i;
 	}
 	return -1;
@@ -2816,13 +2831,6 @@ void SetLocalPlayerSkin(INT32 playernum, const char *skinname, consvar_t *cvar)
 	player_t *player = &players[playernum];
 	INT32 i;
 
-	// this is where we're gonna use major mod for.
-	if (wadfiles[skins[player->skin].wadnum]->majormod && !demo.playback)
-	{
-		CONS_Alert(CONS_ERROR, M_GetText("Cannot set localskin to %s because the player's skin is modifying the game.\n"), skinname);
-		return;
-	}
-
 	if (strcasecmp(skinname, "none"))
 	{
 		for (i = 0; i < numlocalskins; i++)
@@ -2831,12 +2839,6 @@ void SetLocalPlayerSkin(INT32 playernum, const char *skinname, consvar_t *cvar)
 			if (stricmp(localskins[i].name, skinname) == 0)
 			{
 				player->localskin = 1 + i;
-				if (wadfiles[localskins[player->localskin - 1].wadnum]->majormod && !demo.playback)
-				{
-					CONS_Alert(CONS_ERROR, M_GetText("Cannot set localskin to %s because the localskin is a gameplay-modifying addon.\n"), skinname);
-					player->localskin = 0;
-					return;
-				}
 				player->skinlocal = true;
 				if (player->mo)
 				{
@@ -2852,12 +2854,6 @@ void SetLocalPlayerSkin(INT32 playernum, const char *skinname, consvar_t *cvar)
 			if (stricmp(skins[i].name, skinname) == 0)
 			{
 				player->localskin = 1 + i;
-				if (wadfiles[skins[player->localskin - 1].wadnum]->majormod && !demo.playback)
-				{
-					CONS_Alert(CONS_ERROR, M_GetText("Cannot set localskin to %s because the skin is a gameplay-modifying addon.\n"), skinname);
-					player->localskin = 0;
-					return;
-				}
 				player->skinlocal = false;
 				if (player->mo)
 				{
@@ -2879,12 +2875,16 @@ void SetLocalPlayerSkin(INT32 playernum, const char *skinname, consvar_t *cvar)
 		}
 	}
 
-	/*
-	if (player->localskin > 0)
-		CV_StealthSet(cvar, ( (player->skinlocal) ? localskins : skins )[player->localskin - 1].name);
-	else
-		CV_StealthSet(cvar, "none");
-		*/
+	if (cvar != NULL) {
+		if (player->localskin > 0) {
+			CV_StealthSet(&cv_fakelocalskin, ( (player->skinlocal) ? localskins : skins )[player->localskin - 1].name);
+			CV_StealthSet(cvar, ( (player->skinlocal) ? localskins : skins )[player->localskin - 1].name);
+		}
+		else {
+			CV_StealthSet(&cv_fakelocalskin, "none");
+			CV_StealthSet(cvar, "none");
+		}
+	}
 }
 
 // Same as SetPlayerSkin, but uses the skin #.
@@ -3342,6 +3342,11 @@ next_token:
 		}
 
 		skin->localskin = local;
+		// so we dont have to guess
+		if (local)
+			skin->localnum = numlocalskins;
+		else
+			skin->localnum = numskins;
 
 		// add face graphics
 		if (local) {
@@ -3354,12 +3359,14 @@ next_token:
 		if (rendermode == render_opengl)
 			HWR_AddPlayerMD2(( (local) ? numlocalskins : numskins ), local);
 #endif
-		skinstats[skin->kartspeed-1][skin->kartweight-1][skinstatscount[skin->kartspeed-1][skin->kartweight-1]] = numskins;
-		CONS_Debug(DBG_SETUP, M_GetText("Added %d to %d, %d\n"), numskins, skin->kartweight, skin->kartweight);
-		skinstatscount[skin->kartspeed-1][skin->kartweight-1]++;
-		CONS_Debug(DBG_SETUP, M_GetText("Incremented %d, %d to %d\n"), skin->kartspeed, skin->kartweight, skinstatscount[skin->kartspeed - 1][skin->kartweight - 1]);
-
-		skinsorted[numskins] = numskins;
+		if (!local) {
+			skinstats[skin->kartspeed-1][skin->kartweight-1][skinstatscount[skin->kartspeed-1][skin->kartweight-1]] = numskins;
+			CONS_Debug(DBG_SETUP, M_GetText("Added %d to %d, %d\n"), numskins, skin->kartweight, skin->kartweight);
+			skinstatscount[skin->kartspeed-1][skin->kartweight-1]++;
+			CONS_Debug(DBG_SETUP, M_GetText("Incremented %d, %d to %d\n"), skin->kartspeed, skin->kartweight, skinstatscount[skin->kartspeed - 1][skin->kartweight - 1]);
+			
+			skinsorted[numskins] = numskins;
+		}
 
 		allskins[numallskins] = ( (local) ? localskins : skins )[( (local) ? numlocalskins : numskins )];
 

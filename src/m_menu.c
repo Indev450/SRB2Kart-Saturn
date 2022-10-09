@@ -231,6 +231,8 @@ menu_t SR_MainDef, SR_UnlockChecklistDef;
 static void M_SinglePlayerMenu(INT32 choice);
 #endif
 static void M_Options(INT32 choice);
+static void M_LocalSkinMenu(INT32 choice);
+static void M_LocalSkinChange(INT32 choice);
 static void M_Manual(INT32 choice);
 static void M_SelectableClearMenus(INT32 choice);
 static void M_Retry(INT32 choice);
@@ -335,6 +337,9 @@ static patch_t *addonsp[NUM_EXT+5];
 
 // Bird
 menu_t OP_BirdDef;
+// Stuff, yknow.
+menu_t OP_ForkedBirdDef;
+menu_t OP_LocalSkinDef;
 menu_t OP_TiltDef;
 menu_t OP_AdvancedBirdDef;
 
@@ -631,10 +636,11 @@ static menuitem_t MPauseMenu[] =
 	{IT_STRING | IT_SUBMENU, NULL, "Switch Team...",     &MISC_ChangeTeamDef,    48},
 	{IT_STRING | IT_SUBMENU, NULL, "Enter/Spectate...",  &MISC_ChangeSpectateDef,48},
 	{IT_CALL | IT_STRING,    NULL, "Player Setup...",    M_SetupMultiPlayer,     56}, // alone
-	{IT_CALL | IT_STRING,    NULL, "Options",            M_Options,              64},
+	{IT_CALL | IT_STRING,    NULL, "Local Skin...",    	 M_LocalSkinMenu,     	 64}, // alone
+	{IT_CALL | IT_STRING,    NULL, "Options",            M_Options,              72},
 
-	{IT_CALL | IT_STRING,    NULL, "Return to Title",    M_EndGame,              80},
-	{IT_CALL | IT_STRING,    NULL, "Quit Game",          M_QuitSRB2,             88},
+	{IT_CALL | IT_STRING,    NULL, "Return to Title",    M_EndGame,              88},
+	{IT_CALL | IT_STRING,    NULL, "Quit Game",          M_QuitSRB2,             96},
 };
 
 typedef enum
@@ -658,6 +664,7 @@ typedef enum
 	mpause_switchteam,
 	mpause_switchspectate,
 	mpause_psetup,
+	mpause_localskin,
 	mpause_options,
 
 	mpause_title,
@@ -1110,6 +1117,7 @@ static menuitem_t OP_MainMenu[] =
 	{IT_CALL|IT_STRING,			NULL, "Play Credits",			M_Credits,					130},
 
 	{IT_SUBMENU|IT_STRING,		NULL, "Bird",	&OP_BirdDef,	150},
+	{IT_CALL|IT_STRING,		NULL, "Fork Options...",	M_LocalSkinMenu,	160},
 };
 
 static menuitem_t OP_ControlsMenu[] =
@@ -1659,6 +1667,17 @@ static menuitem_t OP_BirdMenu[] =
 	{IT_STRING | IT_CVAR, NULL, "Restart Special Music", &cv_resetspecialmusic, 90},
 
 	{IT_STRING | IT_SUBMENU, NULL, "Advanced Music Options...", &OP_AdvancedBirdDef, 120},
+};
+
+static menuitem_t OP_ForkedBirdMenu[] =
+{
+	{IT_HEADER, NULL, "Local Skins", NULL, 0},
+	{IT_STRING | IT_CVAR | IT_CV_STRING, NULL, "Local Skin Name", &cv_fakelocalskin, 10},
+	{IT_STRING2 | IT_SPACE, NULL, "Set to None for no Local Skin", NULL, 50},
+	{IT_STRING | IT_CALL, NULL, "Apply to All Players", M_LocalSkinChange, 50},
+	{IT_STRING | IT_CALL, NULL, "Apply to Displaying Player", M_LocalSkinChange, 60},
+	{IT_STRING | IT_CALL, NULL, "Apply to Yourself", M_LocalSkinChange, 70},
+	{IT_STRING | IT_CVAR, NULL, "Lua Immersion", &cv_luaimmersion, 90},
 };
 
 static menuitem_t OP_TiltMenu[] =
@@ -2211,6 +2230,9 @@ menu_t OP_EraseDataDef = DEFAULTMENUSTYLE("M_DATA", OP_EraseDataMenu, &OP_DataOp
 menu_t OP_BirdDef = DEFAULTMENUSTYLE(NULL, OP_BirdMenu, &OP_MainDef, 30, 30);
 menu_t OP_TiltDef = DEFAULTMENUSTYLE(NULL, OP_TiltMenu, &OP_BirdDef, 30, 60);
 menu_t OP_AdvancedBirdDef = DEFAULTMENUSTYLE(NULL, OP_AdvancedBirdMenu, &OP_BirdDef, 30, 60);
+
+menu_t OP_ForkedBirdDef = DEFAULTMENUSTYLE(NULL, OP_ForkedBirdMenu, &OP_MainDef, 30, 30);
+menu_t OP_LocalSkinDef = DEFAULTMENUSTYLE(NULL, OP_TiltMenu, &OP_ForkedBirdDef, 30, 60);
 
 // ==========================================================================
 // CVAR ONCHANGE EVENTS GO HERE
@@ -3389,7 +3411,7 @@ void M_StartControlPanel(void)
 	else // multiplayer
 	{
 		MPauseMenu[mpause_switchmap].status = IT_DISABLED;
-		//MPauseMenu[mpause_addons].status = IT_DISABLED;
+		MPauseMenu[mpause_addons].status = IT_DISABLED;
 		MPauseMenu[mpause_scramble].status = IT_DISABLED;
 		MPauseMenu[mpause_psetupsplit].status = IT_DISABLED;
 		MPauseMenu[mpause_psetupsplit2].status = IT_DISABLED;
@@ -3411,9 +3433,10 @@ void M_StartControlPanel(void)
 
 		MPauseMenu[mpause_switchteam].alphaKey = 48;
 		MPauseMenu[mpause_switchspectate].alphaKey = 48;
-		MPauseMenu[mpause_options].alphaKey = 64;
-		MPauseMenu[mpause_title].alphaKey = 80;
-		MPauseMenu[mpause_quit].alphaKey = 88;
+		MPauseMenu[mpause_localskin].alphaKey = 64;
+		MPauseMenu[mpause_options].alphaKey = 72;
+		MPauseMenu[mpause_title].alphaKey = 88;
+		MPauseMenu[mpause_quit].alphaKey = 96;
 
 		Dummymenuplayer_OnChange();
 
@@ -3423,6 +3446,9 @@ void M_StartControlPanel(void)
 			MPauseMenu[mpause_addons].status = IT_STRING | IT_CALL;
 			if (G_GametypeHasTeams())
 				MPauseMenu[mpause_scramble].status = IT_STRING | IT_SUBMENU;
+		} else {
+			MPauseMenu[mpause_addons].status = IT_STRING | IT_CALL;
+			MPauseMenu[mpause_addons].alphaKey += 8;
 		}
 
 		if (splitscreen)
@@ -3436,6 +3462,7 @@ void M_StartControlPanel(void)
 				{
 					MPauseMenu[mpause_switchteam].status = IT_STRING | IT_SUBMENU;
 					MPauseMenu[mpause_switchteam].alphaKey += ((splitscreen+1) * 8);
+					MPauseMenu[mpause_localskin].alphaKey += 8;
 					MPauseMenu[mpause_options].alphaKey += 8;
 					MPauseMenu[mpause_title].alphaKey += 8;
 					MPauseMenu[mpause_quit].alphaKey += 8;
@@ -3444,6 +3471,7 @@ void M_StartControlPanel(void)
 				{
 					MPauseMenu[mpause_switchspectate].status = IT_STRING | IT_SUBMENU;
 					MPauseMenu[mpause_switchspectate].alphaKey += ((splitscreen+1) * 8);
+					MPauseMenu[mpause_localskin].alphaKey += 8;
 					MPauseMenu[mpause_options].alphaKey += 8;
 					MPauseMenu[mpause_title].alphaKey += 8;
 					MPauseMenu[mpause_quit].alphaKey += 8;
@@ -3454,6 +3482,7 @@ void M_StartControlPanel(void)
 			{
 				MPauseMenu[mpause_psetupsplit3].status = IT_STRING | IT_CALL;
 
+				MPauseMenu[mpause_localskin].alphaKey += 8;
 				MPauseMenu[mpause_options].alphaKey += 8;
 				MPauseMenu[mpause_title].alphaKey += 8;
 				MPauseMenu[mpause_quit].alphaKey += 8;
@@ -3461,6 +3490,7 @@ void M_StartControlPanel(void)
 				if (splitscreen > 2)
 				{
 					MPauseMenu[mpause_psetupsplit4].status = IT_STRING | IT_CALL;
+					MPauseMenu[mpause_localskin].alphaKey += 8;
 					MPauseMenu[mpause_options].alphaKey += 8;
 					MPauseMenu[mpause_title].alphaKey += 8;
 					MPauseMenu[mpause_quit].alphaKey += 8;
@@ -4140,7 +4170,7 @@ static void M_DrawGenericMenu(void)
 					y += STRINGHEIGHT;
 					break;
 			case IT_STRING2:
-				V_DrawString(x, y, 0, currentMenu->menuitems[i].text);
+				V_DrawString(((BASEVIDWIDTH - V_StringWidth(currentMenu->menuitems[i].text, 0))>>1), y, 0, currentMenu->menuitems[i].text);
 				/* FALLTHRU */
 			case IT_DYLITLSPACE:
 				y += SMALLLINEHEIGHT;
@@ -6541,6 +6571,34 @@ static void M_Options(INT32 choice)
 
 	OP_MainDef.prevMenu = currentMenu;
 	M_SetupNextMenu(&OP_MainDef);
+}
+
+static void M_LocalSkinMenu(INT32 choice)
+{
+	(void)choice;
+
+	OP_ForkedBirdDef.prevMenu = currentMenu;
+	M_SetupNextMenu(&OP_ForkedBirdDef);
+}
+
+static void M_LocalSkinChange(INT32 choice)
+{
+	(void)choice;
+
+	switch (itemOn) {
+		case 3:
+			COM_BufAddText(va("localskin -a %s", cv_fakelocalskin.string));
+			break;
+		case 4:
+			COM_BufAddText(va("localskin -d %s", cv_fakelocalskin.string));
+			break;
+		case 5:
+			COM_BufAddText(va("localskin %s", cv_fakelocalskin.string));
+			break;
+		default:
+			break;
+	}
+	S_StartSound(NULL, sfx_s221);
 }
 
 static void M_Manual(INT32 choice)

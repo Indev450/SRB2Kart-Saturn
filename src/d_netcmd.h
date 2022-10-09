@@ -26,18 +26,14 @@ extern consvar_t cv_localskin;
 extern consvar_t cv_playername2;
 extern consvar_t cv_playercolor2;
 extern consvar_t cv_skin2;
-extern consvar_t cv_localskin2;
 // third splitscreen player
 extern consvar_t cv_playername3;
 extern consvar_t cv_playercolor3;
 extern consvar_t cv_skin3;
-extern consvar_t cv_localskin3;
 // fourth splitscreen player
 extern consvar_t cv_playername4;
 extern consvar_t cv_playercolor4;
 extern consvar_t cv_skin4;
-extern consvar_t cv_localskin4;
-extern consvar_t cv_localskinall;
 // preferred number of players
 extern consvar_t cv_splitplayers;
 
@@ -156,6 +152,8 @@ extern consvar_t cv_showping;
 extern consvar_t cv_pingmeasurement;
 
 extern consvar_t cv_showviewpointtext;
+extern consvar_t cv_luaimmersion;
+extern consvar_t cv_fakelocalskin;
 
 extern consvar_t cv_skipmapcheck;
 

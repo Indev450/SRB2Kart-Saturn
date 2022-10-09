@@ -18,6 +18,7 @@
 #include "g_game.h"
 #include "p_setup.h"
 #include "doomdef.h"
+#include "d_netcmd.h"
 
 #include "lua_script.h"
 #include "lua_libs.h"
@@ -245,10 +246,14 @@ static int mobj_get(lua_State *L)
 	case mobj_skin: // skin name or nil, not struct
 		if (!mo->skin)
 			return 0;
-		if (mo->localskin) // pretty cool, but also destructive
-			lua_pushstring(L, ((skin_t *)mo->localskin)->name);
-		else
+		if (hud_running && cv_luaimmersion.value) {
+			if (mo->localskin) // HUD ONLY!!!!!!!!!!
+				lua_pushstring(L, ((skin_t *)mo->localskin)->name);
+			else
+				lua_pushstring(L, ((skin_t *)mo->skin)->name);
+		} else {
 			lua_pushstring(L, ((skin_t *)mo->skin)->name);
+		}
 		break;
 	case mobj_color:
 		lua_pushinteger(L, mo->color);
@@ -522,12 +527,6 @@ static int mobj_set(lua_State *L)
 		char skin[SKINNAMESIZE+1]; // all skin names are limited to this length
 		strlcpy(skin, luaL_checkstring(L, 3), sizeof skin);
 		strlwr(skin); // all skin names are lowercase
-		// nope, not this time chief.
-		if (fastcmp(localskins[players[consoleplayer].localskin - 1].name, skin))
-		{
-			mo->skin = &skins[players[consoleplayer].skin]; // we dont want to use our local skin for this!!!!!!!!!
-			return 0;
-		}
 		for (i = 0; i < numskins; i++) {
 			if (fastcmp(skins[i].name, skin))
 			{
