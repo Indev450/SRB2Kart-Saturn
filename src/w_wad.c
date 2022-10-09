@@ -1733,15 +1733,6 @@ void *W_CachePatchName(const char *name, INT32 tag)
 	lumpnum_t num;
 	const char *finalname = name;
 
-	// bogus fix by haya
-	// i really dont want to bother rn
-	if (finalname == facerankprefix_name[players[consoleplayer].skin] && players[consoleplayer].skinlocal)
-		finalname = localfacerankprefix_name[players[consoleplayer].localskin - 1];
-	else if (finalname == facemmapprefix_name[players[consoleplayer].skin] && players[consoleplayer].skinlocal)
-		finalname = localfacemmapprefix_name[players[consoleplayer].localskin - 1];
-	else if (finalname == facewantprefix_name[players[consoleplayer].skin] && players[consoleplayer].skinlocal)
-		finalname = localfacewantprefix_name[players[consoleplayer].localskin - 1];
-
 	num = W_CheckNumForName(finalname);
 
 	if (num == LUMPERROR)
