@@ -147,6 +147,8 @@ static void Command_RunSOC(void);
 static void Command_Pause(void);
 static void Command_Respawn(void);
 
+static void Command_ReplayMarker(void);
+
 static void Command_Version_f(void);
 #ifdef UPDATE_ALERT
 static void Command_ModDetails_f(void);
@@ -623,6 +625,8 @@ void D_RegisterServerCommands(void)
 	COM_AddCommand("archivetest", Command_Archivetest_f);
 #endif
 #endif
+
+	COM_AddCommand("replaymarker", Command_ReplayMarker);
 
 	// for master server connection
 	AddMServCommands();
@@ -2842,6 +2846,26 @@ static void Got_Pause(UINT8 **cp, INT32 playernum)
 		}
 		else
 			S_ResumeAudio();
+	}
+}
+
+static void Command_ReplayMarker(void)
+{
+	if (gamestate != GS_LEVEL)
+	{
+		CONS_Printf(M_GetText("You must be in a level to use this.\n"));
+		return;
+	}
+	if (demo.savemode == DSM_WILLAUTOSAVE) {
+		demo.savemode = DSM_NOTSAVING;
+		CONS_Printf("Replay unmarked.\n");
+	} else {
+		int adjustedleveltime = leveltime - starttime;
+		demo.savemode = DSM_WILLAUTOSAVE;
+		if (adjustedleveltime < 0)
+			adjustedleveltime = 0;
+		snprintf(demo.titlename, 64, "%s [%i:%02d/%.5s]", G_BuildMapTitle(gamemap), G_TicsToMinutes(adjustedleveltime, false), G_TicsToSeconds(adjustedleveltime), modeattacking ? "Record Attack" : connectedservername);
+		CONS_Printf("Replay will be saved!\n");
 	}
 }
 
