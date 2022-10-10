@@ -883,7 +883,7 @@ static const struct {
 	{NULL, 0}
 };
 
-static void readlevelheader(MYFILE *f, INT32 num)
+static void readlevelheader(MYFILE *f, INT32 num, INT32 wadnum)
 {
 	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
 	char *word;
@@ -896,6 +896,9 @@ static void readlevelheader(MYFILE *f, INT32 num)
 	// This call automatically saves all previous information when DELFILE is defined.
 	// We don't need to do it ourselves.
 	P_AllocMapHeader((INT16)(num-1));
+	
+	if (!strstr(wadfiles[wadnum]->filename, ".soc"))
+		mapwads[num-1] = wadnum;
 
 	do
 	{
@@ -3399,7 +3402,7 @@ static void DEH_LoadDehackedFile(MYFILE *f, UINT16 wad)
 					{
 						if (mapheaderinfo[i-1])
 							G_SetGameModified(multiplayer, true); // only mark as a major mod if it replaces an already-existing mapheaderinfo
-						readlevelheader(f, i);
+						readlevelheader(f, i, wad);
 					}
 					else
 					{
