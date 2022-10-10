@@ -8928,6 +8928,9 @@ void K_drawKartFreePlay(UINT32 flashtime)
 {
 	// no splitscreen support because it's not FREE PLAY if you have more than one player in-game
 
+	if (! cv_showfreeplay.value)
+		return;
+
 	if ((flashtime % TICRATE) < TICRATE/2)
 		return;
 

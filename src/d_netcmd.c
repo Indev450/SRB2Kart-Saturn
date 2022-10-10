@@ -464,6 +464,8 @@ consvar_t cv_showping = {"showping", "Always", CV_SAVE, showping_cons_t, NULL, 0
 static CV_PossibleValue_t pingmeasurement_cons_t[] = {{0, "Frames"}, {1, "Milliseconds"}, {0, NULL}};
 consvar_t cv_pingmeasurement = {"pingmeasurement", "Frames", CV_SAVE, pingmeasurement_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_showviewpointtext = {"showviewpointtext", "On", CV_SAVE, CV_OnOff, 0, 0, NULL, NULL, 0, 0, NULL};
+
 // Intermission time Tails 04-19-2002
 static CV_PossibleValue_t inttime_cons_t[] = {{0, "MIN"}, {3600, "MAX"}, {0, NULL}};
 consvar_t cv_inttime = {"inttime", "20", CV_NETVAR, inttime_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -730,6 +732,8 @@ void D_RegisterServerCommands(void)
 
 	CV_RegisterVar(&cv_showtrackaddon);
 
+	CV_RegisterVar(&cv_showviewpointtext);
+
 #ifdef SEENAMES
 	CV_RegisterVar(&cv_allowseenames);
 #endif
@@ -880,6 +884,7 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_chatnotifications);
 	CV_RegisterVar(&cv_chatbacktint);
 	CV_RegisterVar(&cv_songcredits);
+	CV_RegisterVar(&cv_showfreeplay);
 	//CV_RegisterVar(&cv_crosshair);
 	//CV_RegisterVar(&cv_crosshair2);
 	//CV_RegisterVar(&cv_crosshair3);
