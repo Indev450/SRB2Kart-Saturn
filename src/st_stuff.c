@@ -183,6 +183,9 @@ hudinfo_t hudinfo[NUMHUDITEMS] =
 static huddrawlist_h luahuddrawlist_game;
 #endif
 
+// variable to stop mayonaka static from flickering
+consvar_t cv_lessflicker = {"lessflicker", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 //
 // STATUS BAR CODE
 //
@@ -2104,7 +2107,11 @@ void ST_DrawDemoTitleEntry(void)
 // MayonakaStatic: draw Midnight Channel's TV-like borders
 static void ST_MayonakaStatic(void)
 {
-	INT32 flag = (leveltime%2) ? V_90TRANS : V_70TRANS;
+	INT32 flag;
+	if (cv_lessflicker.value)
+		flag = V_70TRANS;
+	else
+		flag = (leveltime%2) ? V_90TRANS : V_70TRANS;
 
 	V_DrawFixedPatch(0, 0, FRACUNIT, V_SNAPTOTOP|V_SNAPTOLEFT|flag, hud_tv1, NULL);
 	V_DrawFixedPatch(320<<FRACBITS, 0, FRACUNIT, V_SNAPTOTOP|V_SNAPTORIGHT|V_FLIP|flag, hud_tv1, NULL);
