@@ -738,6 +738,9 @@ void D_RegisterServerCommands(void)
 
 	CV_RegisterVar(&cv_discordinvites);
 	RegisterNetXCmd(XD_DISCORD, Got_DiscordInfo);
+
+	CV_RegisterVar(&cv_recordmultiplayerdemos);
+	CV_RegisterVar(&cv_netdemosyncquality);
 }
 
 // =========================================================================
@@ -859,9 +862,6 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_ghost_staff);
 
 	COM_AddCommand("displayplayer", Command_Displayplayer_f);
-
-	CV_RegisterVar(&cv_recordmultiplayerdemos);
-	CV_RegisterVar(&cv_netdemosyncquality);
 
 	// FIXME: not to be here.. but needs be done for config loading
 	CV_RegisterVar(&cv_usegamma);
