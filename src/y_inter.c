@@ -552,18 +552,8 @@ void Y_Ticker(void)
 
 	intertic++;
 
-	// multiplayer uses timer (based on cv_inttime)
-	if (timer)
-	{
-		if (!--timer)
-		{
-			Y_EndIntermission();
-			Y_FollowIntermission();
-			return;
-		}
-	}
-	// single player is hardcoded to go away after awhile
-	else if (intertic == endtic)
+	if ((timer && !--timer)
+		|| (intertic == endtic))
 	{
 		Y_EndIntermission();
 		Y_FollowIntermission();
