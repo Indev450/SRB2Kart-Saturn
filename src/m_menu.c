@@ -11854,7 +11854,7 @@ static void M_DrawLocalSkinMenu(void)
 
 	//minenice's speen css, it's a piece of shit but hey
 	//patch = W_CachePatchNum(sprframe->lumppat[1], PU_CACHE);
-	speenframe = (I_GetTime()*cv_skinselectspin.value/TICRATE + 1)%8;
+	speenframe = (I_GetTime()*4/TICRATE + 1)%8;
 
 	//this is a very shitty solution for checking if a sprite needs flipping
 	//but it works
