@@ -557,18 +557,16 @@ static void D_Display(void)
 	// vid size change is now finished if it was on...
 	vid.recalc = 0;
 
-	// FIXME: draw either console or menu, not the two
-	if (gamestate != GS_TIMEATTACK)
-		CON_Drawer();
-
 #ifdef HAVE_THREADS
 	I_lock_mutex(&m_menu_mutex);
 #endif
-	M_Drawer(); // menu is drawn even on top of everything
+	M_Drawer(); // menu is drawn even on top of everything...
 #ifdef HAVE_THREADS
 	I_unlock_mutex(m_menu_mutex);
 #endif
 	// focus lost moved to M_Drawer
+
+	CON_Drawer(); // Ha, i LIED!
 
 	//
 	// wipe update
