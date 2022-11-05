@@ -473,6 +473,10 @@ consvar_t cv_luaimmersion = {"luaimmersion", "On", CV_SAVE, CV_OnOff, 0, 0, NULL
 
 consvar_t cv_showviewpointtext = {"showviewpointtext", "On", CV_SAVE, CV_OnOff, 0, 0, NULL, NULL, 0, 0, NULL};
 
+// snowy cvars
+consvar_t cv_showinput = {"showinput", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_showminimapnames = {"showminimapnames", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 // Intermission time Tails 04-19-2002
 static CV_PossibleValue_t inttime_cons_t[] = {{0, "MIN"}, {3600, "MAX"}, {0, NULL}};
 consvar_t cv_inttime = {"inttime", "20", CV_NETVAR, inttime_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -759,6 +763,8 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_showtrackaddon);
 
 	CV_RegisterVar(&cv_showviewpointtext);
+	CV_RegisterVar(&cv_showinput);
+	CV_RegisterVar(&cv_showminimapnames);
 
 #ifdef SEENAMES
 	CV_RegisterVar(&cv_allowseenames);

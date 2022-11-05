@@ -154,6 +154,9 @@ extern consvar_t cv_pingmeasurement;
 extern consvar_t cv_showviewpointtext;
 extern consvar_t cv_luaimmersion;
 extern consvar_t cv_fakelocalskin;
+// snowy cvars!!!
+extern consvar_t cv_showinput;
+extern consvar_t cv_showminimapnames;
 
 extern consvar_t cv_skipmapcheck;
 
