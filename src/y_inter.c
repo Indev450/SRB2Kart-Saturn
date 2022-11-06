@@ -212,7 +212,7 @@ static void Y_CalculateMatchData(UINT8 rankingsmode, void (*comparison)(INT32))
 		;
 	else if ((data.match.rankingsmode = (boolean)rankingsmode))
 	{
-		sprintf(data.match.levelstring, "* Total Rankings *");
+		sprintf(data.match.levelstring, "\x82* \x80Total Rankings \x82*");
 		data.match.encore = false;
 	}
 	else
@@ -223,12 +223,12 @@ static void Y_CalculateMatchData(UINT8 rankingsmode, void (*comparison)(INT32))
 			if (mapheaderinfo[prevmap]->actnum[0])
 				snprintf(data.match.levelstring,
 					sizeof data.match.levelstring,
-					"* %s %s *",
+					"\x82*\x80 %s %s \x82*",
 					mapheaderinfo[prevmap]->lvlttl, mapheaderinfo[prevmap]->actnum);
 			else
 				snprintf(data.match.levelstring,
 					sizeof data.match.levelstring,
-					"* %s *",
+					"\x82*\x80 %s \x82*",
 					mapheaderinfo[prevmap]->lvlttl);
 		}
 		else
@@ -237,12 +237,12 @@ static void Y_CalculateMatchData(UINT8 rankingsmode, void (*comparison)(INT32))
 			if (mapheaderinfo[prevmap]->actnum[0])
 				snprintf(data.match.levelstring,
 					sizeof data.match.levelstring,
-					"* %s %s %s *",
+					"\x82*\x80 %s %s %s \x82*",
 					mapheaderinfo[prevmap]->lvlttl, zonttl, mapheaderinfo[prevmap]->actnum);
 			else
 				snprintf(data.match.levelstring,
 					sizeof data.match.levelstring,
-					"* %s %s *",
+					"\x82*\x80 %s %s \x82*",
 					mapheaderinfo[prevmap]->lvlttl, zonttl);
 		}
 
@@ -436,16 +436,17 @@ void Y_IntermissionDrawer(void)
 			timeheader = (intertype == int_race ? "TIME" : "SCORE");
 
 		// draw the level name
-		V_DrawCenteredString(-4 + x + BASEVIDWIDTH/2, 12, 0, data.match.levelstring);
+		V_DrawCenteredString(-4 + x + BASEVIDWIDTH/2, 12, V_ALLOWLOWERCASE, data.match.levelstring);
+
 		V_DrawFill((x-3) - duptweak, 34, dupadjust-2, 1, 0);
+		V_DrawFill((x-3) - duptweak, 182, dupadjust-2, 1, 0);
 
 		if (data.match.encore)
-			V_DrawCenteredString(-4 + x + BASEVIDWIDTH/2, 12-8, hilicol, "ENCORE MODE");
+			V_DrawCenteredSmallString(-4 + x + BASEVIDWIDTH/2, 17, hilicol | V_ALLOWLOWERCASE, "Encore Mode");
 
 		if (data.match.numplayers > NUMFORNEWCOLUMN)
 		{
 			V_DrawFill(x+156, 24, 1, 158, 0);
-			V_DrawFill((x-3) - duptweak, 182, dupadjust-2, 1, 0);
 
 			V_DrawCenteredString(x+6+(BASEVIDWIDTH/2), 24, hilicol, "#");
 			V_DrawString(x+36+(BASEVIDWIDTH/2), 24, hilicol, "NAME");
@@ -568,27 +569,24 @@ void Y_IntermissionDrawer(void)
 dotimer:
 	if (timer)
 	{
-		char *string;
 		INT32 tickdown = (timer+1)/TICRATE;
+		char *string = va("%s starts in %d.%02d...", cv_advancemap.string, tickdown, G_TicsToCentiseconds(tickdown));
 
 		if (multiplayer && demo.playback)
-			string = va("Replay ends in %d", tickdown);
-		else
-			string = va("%s starts in %d", cv_advancemap.string, tickdown);
+			string = va("Replay ends in %d.%02d...", tickdown, G_TicsToCentiseconds(tickdown));
 
-		V_DrawCenteredString(BASEVIDWIDTH/2, 188, hilicol,
-			string);
+		V_DrawCenteredThinString(BASEVIDWIDTH/2, 189, hilicol|V_ALLOWLOWERCASE|V_6WIDTHSPACE, string);
 	}
 
 	if ((demo.recording || demo.savemode == DSM_SAVED) && !demo.playback)
 		switch (demo.savemode)
 		{
 		case DSM_NOTSAVING:
-			V_DrawRightAlignedThinString(BASEVIDWIDTH - 2, 2, V_SNAPTOTOP|V_SNAPTORIGHT|V_ALLOWLOWERCASE|hilicol, "Look Backward: Save replay");
+			V_DrawRightAlignedThinString(BASEVIDWIDTH - 2, 2, V_SNAPTOTOP|V_SNAPTORIGHT|V_ALLOWLOWERCASE|V_6WIDTHSPACE|hilicol, "Look Backward: Save replay");
 			break;
 
 		case DSM_SAVED:
-			V_DrawRightAlignedThinString(BASEVIDWIDTH - 2, 2, V_SNAPTOTOP|V_SNAPTORIGHT|V_ALLOWLOWERCASE|hilicol, "Replay saved!");
+			V_DrawRightAlignedThinString(BASEVIDWIDTH - 2, 2, V_SNAPTOTOP|V_SNAPTORIGHT|V_ALLOWLOWERCASE|V_6WIDTHSPACE|hilicol, "Replay saved!");
 			break;
 
 		case DSM_TITLEENTRY:

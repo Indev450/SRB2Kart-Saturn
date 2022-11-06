@@ -3303,18 +3303,20 @@ void M_Drawer(void)
 		// ... but only in the MAIN MENU.  I'm a picky bastard.
 		if (currentMenu == &MainDef)
 		{
+			INT32 flags = V_NOSCALESTART|V_TRANSLUCENT|V_6WIDTHSPACE|V_ALLOWLOWERCASE;
+
 			if (customversionstring[0] != '\0')
 			{
-				V_DrawThinString(vid.dupx, vid.height - 20*vid.dupy, V_NOSCALESTART|V_TRANSLUCENT, "Mod version:");
-				V_DrawThinString(vid.dupx, vid.height - 10*vid.dupy, V_NOSCALESTART|V_TRANSLUCENT|V_ALLOWLOWERCASE, customversionstring);
+				V_DrawThinString(vid.dupx, vid.height - 17*vid.dupy, flags|V_YELLOWMAP, "Mod version:");
+				V_DrawThinString(vid.dupx, vid.height - 9*vid.dupy, flags, customversionstring);
 			}
 			else
 			{
 #ifdef DEVELOP // Development -- show revision / branch info
-				V_DrawThinString(vid.dupx, vid.height - 20*vid.dupy, V_NOSCALESTART|V_TRANSLUCENT|V_ALLOWLOWERCASE, compbranch);
-				V_DrawThinString(vid.dupx, vid.height - 10*vid.dupy, V_NOSCALESTART|V_TRANSLUCENT|V_ALLOWLOWERCASE, comprevision);
+				V_DrawThinString(vid.dupx, vid.height - 17*vid.dupy, flags, compbranch);
+				V_DrawThinString(vid.dupx, vid.height - 9*vid.dupy,  flags, comprevision);
 #else // Regular build
-				V_DrawThinString(vid.dupx, vid.height - 10*vid.dupy, V_NOSCALESTART|V_TRANSLUCENT|V_ALLOWLOWERCASE, va("%s", VERSIONSTRING));
+				V_DrawThinString(vid.dupx, vid.height - 9*vid.dupy, flags, va("%s", VERSIONSTRING));
 #endif
 			}
 		}
@@ -8817,19 +8819,21 @@ static void M_HandleServerPage(INT32 choice)
 
 		case KEY_ENTER:
 		case KEY_RIGHTARROW:
-			S_StartSound(NULL, sfx_menu1);
 			if ((serverlistpage + 1) * SERVERS_PER_PAGE < serverlistcount)
 			{
 				oldserverlistpage = serverlistpage++;
 				serverlistslidex = BASEVIDWIDTH;
+
+				S_StartSoundAtVolume(NULL, sfx_s3kb7, 128);
 			}
 			break;
 		case KEY_LEFTARROW:
-			S_StartSound(NULL, sfx_menu1);
 			if (serverlistpage > 0)
 			{
 				oldserverlistpage = serverlistpage--;
 				serverlistslidex = -(BASEVIDWIDTH);
+
+				S_StartSoundAtVolume(NULL, sfx_s3kb7, 128);
 			}
 			break;
 
