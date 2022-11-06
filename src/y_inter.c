@@ -436,7 +436,7 @@ void Y_IntermissionDrawer(void)
 			timeheader = (intertype == int_race ? "TIME" : "SCORE");
 
 		// draw the level name
-		V_DrawCenteredString(-4 + x + BASEVIDWIDTH/2, 12, V_ALLOWLOWERCASE, data.match.levelstring);
+		V_DrawCenteredString(-4 + x + BASEVIDWIDTH/2, 8, V_ALLOWLOWERCASE, data.match.levelstring);
 
 		V_DrawFill((x-3) - duptweak, 34, dupadjust-2, 1, 0);
 		V_DrawFill((x-3) - duptweak, 182, dupadjust-2, 1, 0);
@@ -569,32 +569,35 @@ void Y_IntermissionDrawer(void)
 dotimer:
 	if (timer)
 	{
-		INT32 tickdown = (timer+1)/TICRATE;
-		char *string = va("%s starts in %d.%02d...", cv_advancemap.string, tickdown, G_TicsToCentiseconds(tickdown));
+		INT32 tickdown = timer + 1;
+		char hilichar = ('\x80' + (hilicol >> V_CHARCOLORSHIFT));
+
+		const char *othermap[4] = {"Restarting the map", "Next map starts", "Speeding off to a random map", "Voting starts"};
+		char *string = va("%c%s in \x82%d.%02d%c...", hilichar, othermap[cv_advancemap.value], tickdown / TICRATE, G_TicsToCentiseconds(tickdown), hilichar);
 
 		if (multiplayer && demo.playback)
-			string = va("Replay ends in %d.%02d...", tickdown, G_TicsToCentiseconds(tickdown));
+			string = va("%cReplay ends in \x82%d.%02d%c...", hilichar, tickdown / TICRATE, G_TicsToCentiseconds(tickdown), hilichar);
 
-		V_DrawCenteredThinString(BASEVIDWIDTH/2, 189, hilicol|V_ALLOWLOWERCASE|V_6WIDTHSPACE, string);
+		V_DrawCenteredString(BASEVIDWIDTH/2, 188, V_ALLOWLOWERCASE, string);
 	}
 
 	if ((demo.recording || demo.savemode == DSM_SAVED) && !demo.playback)
 		switch (demo.savemode)
 		{
-		case DSM_NOTSAVING:
-			V_DrawRightAlignedThinString(BASEVIDWIDTH - 2, 2, V_SNAPTOTOP|V_SNAPTORIGHT|V_ALLOWLOWERCASE|V_6WIDTHSPACE|hilicol, "Look Backward: Save replay");
-			break;
+			case DSM_NOTSAVING:
+				V_DrawRightAlignedThinString(BASEVIDWIDTH - 2, 2, V_SNAPTOTOP|V_SNAPTORIGHT|V_ALLOWLOWERCASE|V_6WIDTHSPACE|hilicol, "Look Backward: Save replay");
+				break;
 
-		case DSM_SAVED:
-			V_DrawRightAlignedThinString(BASEVIDWIDTH - 2, 2, V_SNAPTOTOP|V_SNAPTORIGHT|V_ALLOWLOWERCASE|V_6WIDTHSPACE|hilicol, "Replay saved!");
-			break;
+			case DSM_SAVED:
+				V_DrawRightAlignedThinString(BASEVIDWIDTH - 2, 2, V_SNAPTOTOP|V_SNAPTORIGHT|V_ALLOWLOWERCASE|V_6WIDTHSPACE|hilicol, "Replay saved!");
+				break;
 
-		case DSM_TITLEENTRY:
-			ST_DrawDemoTitleEntry();
-			break;
+			case DSM_TITLEENTRY:
+				ST_DrawDemoTitleEntry();
+				break;
 
-		default: // Don't render any text here
-			break;
+			default: // Don't render any text here
+				break;
 		}
 
 	// Make it obvious that scrambling is happening next round.
@@ -1107,16 +1110,16 @@ void Y_VoteDrawer(void)
 				V_DrawFixedPatch((BASEVIDWIDTH-60)<<FRACBITS, ((y+25)<<FRACBITS) - (rubyheight<<1), FRACUNIT, V_SNAPTORIGHT, rubyicon, NULL);
 			}
 
-			V_DrawRightAlignedThinString(BASEVIDWIDTH-21, 40+y, V_SNAPTORIGHT|V_6WIDTHSPACE, str);
+			V_DrawRightAlignedThinString(BASEVIDWIDTH-21, 40+y, V_SNAPTORIGHT|V_ALLOWLOWERCASE|V_6WIDTHSPACE, str);
 
 			if (levelinfo[i].gts)
 			{
-				INT32 w = V_ThinStringWidth(levelinfo[i].gts, V_SNAPTORIGHT)+1;
+				INT32 w = V_ThinStringWidth(levelinfo[i].gts, V_SNAPTORIGHT|V_6WIDTHSPACE)+1;
 				V_DrawFill(BASEVIDWIDTH-100, y+10, w+1, 2, V_SNAPTORIGHT|31);
 				V_DrawFill(BASEVIDWIDTH-100, y, w, 11, V_SNAPTORIGHT|levelinfo[i].gtc);
 				V_DrawDiag(BASEVIDWIDTH-100+w+1, y, 12, V_SNAPTORIGHT|31);
 				V_DrawDiag(BASEVIDWIDTH-100+w, y, 11, V_SNAPTORIGHT|levelinfo[i].gtc);
-				V_DrawThinString(BASEVIDWIDTH-99, y+1, V_SNAPTORIGHT, levelinfo[i].gts);
+				V_DrawThinString(BASEVIDWIDTH-99, y+1, V_SNAPTORIGHT|V_6WIDTHSPACE, levelinfo[i].gts);
 			}
 
 			y += 50;
@@ -1206,15 +1209,16 @@ void Y_VoteDrawer(void)
 
 	if (timer)
 	{
-		INT32 hilicol, tickdown = (timer+1)/TICRATE;
+		INT32 hilicol, tickdown = (timer+1);
 		if (cons_menuhighlight.value)
 			hilicol = cons_menuhighlight.value;
 		else if (gametype == GT_RACE)
 			hilicol = V_SKYMAP;
 		else //if (gametype == GT_MATCH)
 			hilicol = V_REDMAP;
-		V_DrawCenteredString(BASEVIDWIDTH/2, 188, hilicol,
-			va("Vote ends in %d", tickdown));
+
+		char hilichar = ('\x80' + (hilicol >> V_CHARCOLORSHIFT));
+		V_DrawCenteredString(BASEVIDWIDTH/2, 188, V_ALLOWLOWERCASE, va("%cVote ends in \x82%d.%02d%c...", hilichar, tickdown/TICRATE, G_TicsToCentiseconds(tickdown), hilichar));
 	}
 }
 
