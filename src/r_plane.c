@@ -177,7 +177,7 @@ void R_PortalRestoreClipValues(INT32 start, INT32 end, INT16 *ceil, INT16 *floor
 //  viewheight
 
 #ifndef NOWATER
-static INT32 bgofs;
+INT32 ds_bgofs;
 static INT32 wtofs=0;
 static INT32 waterofs;
 static boolean itswater;
@@ -210,7 +210,7 @@ static void R_DrawTranslucentWaterSpan_8(void)
 	source = ds_source;
 	colormap = ds_colormap;
 	dest = ylookup[ds_y] + columnofs[ds_x1];
-	dsrc = screens[1] + (ds_y+bgofs)*vid.width + ds_x1;
+	dsrc = screens[1] + (ds_y+ds_bgofs)*vid.width + ds_x1;
 	count = ds_x2 - ds_x1 + 1;
 
 	while (count >= 8)
@@ -308,17 +308,17 @@ void R_MapPlane(INT32 y, INT32 x1, INT32 x2)
 	{
 		const INT32 yay = (wtofs + (distance>>9) ) & 8191;
 		// ripples da water texture
-		bgofs = FixedDiv(FINESINE(yay), (1<<12) + (distance>>11))>>FRACBITS;
+		ds_bgofs = FixedDiv(FINESINE(yay), (1<<12) + (distance>>11))>>FRACBITS;
 		angle = (currentplane->viewangle + currentplane->plangle + xtoviewangle[x1])>>ANGLETOFINESHIFT;
 
 		angle = (angle + 2048) & 8191;  // 90 degrees
-		ds_xfrac += FixedMul(FINECOSINE(angle), (bgofs<<FRACBITS));
-		ds_yfrac += FixedMul(FINESINE(angle), (bgofs<<FRACBITS));
+		ds_xfrac += FixedMul(FINECOSINE(angle), (ds_bgofs<<FRACBITS));
+		ds_yfrac += FixedMul(FINESINE(angle), (ds_bgofs<<FRACBITS));
 
-		if (y+bgofs>=viewheight)
-			bgofs = viewheight-y-1;
-		if (y+bgofs<0)
-			bgofs = -y;
+		if (y+ds_bgofs>=viewheight)
+			ds_bgofs = viewheight-y-1;
+		if (y+ds_bgofs<0)
+			ds_bgofs = -y;
 	}
 #endif
 

@@ -2298,8 +2298,11 @@ void HWR_RenderPolyObjectPlane(polyobj_t *polysector, boolean isceiling, fixed_t
 	}
 
 	// reference point for flat texture coord for each vertex around the polygon
-	flatxref = (float)(((fixed_t)FIXED_TO_FLOAT(polysector->origVerts[0].x) & (~flatflag)) / fflatsize);
-	flatyref = (float)(((fixed_t)FIXED_TO_FLOAT(polysector->origVerts[0].y) & (~flatflag)) / fflatsize);
+	flatxref = FIXED_TO_FLOAT(polysector->origVerts[0].x);
+	flatyref = FIXED_TO_FLOAT(polysector->origVerts[0].y);
+
+	flatxref = (float)(((fixed_t)flatxref & (~flatflag)) / fflatsize);
+	flatyref = (float)(((fixed_t)flatyref & (~flatflag)) / fflatsize);
 
 	// transform
 	v3d = planeVerts;
@@ -4662,6 +4665,8 @@ void HWR_DrawSkyBackground(float fpov)
 	dometransform.scalez = 1;
 	dometransform.fovxangle = fpov; // Tails
 	dometransform.fovyangle = fpov; // Tails
+	dometransform.rollangle = atransform.rollangle;
+	dometransform.roll = atransform.roll;
 	dometransform.splitscreen = splitscreen;
 
 	HWR_GetTexture(texturetranslation[skytexture]);
@@ -4755,6 +4760,8 @@ void HWR_RenderFrame(INT32 viewnumber, player_t *player, boolean skybox)
 	gr_viewsin = FIXED_TO_FLOAT(viewsin);
 	gr_viewcos = FIXED_TO_FLOAT(viewcos);
 
+	memset(&atransform, 0x00, sizeof(FTransform));
+
 	// Set T&L transform
 	atransform.x = gr_viewx;
 	atransform.y = gr_viewy;
@@ -4785,7 +4792,7 @@ void HWR_RenderFrame(INT32 viewnumber, player_t *player, boolean skybox)
 	atransform.fovyangle = fpov; // Tails
 	if (player->viewrollangle != 0)
 	{
-		fixed_t rol = AngleFixed(R_LerpAngle(player, viewrollangle));
+		fixed_t rol = AngleFixed(player->viewrollangle);
 		atransform.rollangle = FIXED_TO_FLOAT(rol);
 		atransform.roll = true;
 	}

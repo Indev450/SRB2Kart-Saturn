@@ -605,6 +605,8 @@ static inline void R_InitLightTables(void)
 	}
 }
 
+//#define WOUGHMP_WOUGHMP // I got a fish-eye lens - I'll make a rap video with a couple of friends
+// it's kinda laggy sometimes
 
 static struct {
 	angle_t rollangle; // pre-shifted by fineshift
@@ -647,7 +649,7 @@ void R_CheckViewMorph(void)
 	float fisheyemap[MAXVIDWIDTH/2 + 1];
 #endif
 
-	angle_t rollangle = R_LerpAngle(&players[displayplayers[0]], viewrollangle);
+	angle_t rollangle = players[displayplayers[0]].viewrollangle;
 #ifdef WOUGHMP_WOUGHMP
 	fixed_t fisheye = cv_cam2_turnmultiplier.value; // temporary test value
 #endif
@@ -954,7 +956,7 @@ void R_ExecuteSetViewSize(void)
 	centeryfrac = centery<<FRACBITS;
 
 	fov = FixedAngle(cv_fov.value/2) + ANGLE_90;
-	fovtan = FINETANGENT(fov >> ANGLETOFINESHIFT);
+	fovtan = FixedMul(FINETANGENT(fov >> ANGLETOFINESHIFT), viewmorph.zoomneeded);
 	if (splitscreen == 1) // Splitscreen FOV should be adjusted to maintain expected vertical view
 		fovtan = 17*fovtan/10;
 
@@ -1092,6 +1094,31 @@ subsector_t *R_IsPointInSubsector(fixed_t x, fixed_t y)
 //
 
 static mobj_t *viewmobj;
+
+// recalc necessary stuff for mouseaiming
+// slopes are already calculated for the full possible view (which is 4*viewheight).
+// 18/08/18: (No it's actually 16*viewheight, thanks Jimita for finding this out)
+static void R_SetupFreelook(void)
+{
+	INT32 dy = 0;
+
+	// clip it in the case we are looking a hardware 90 degrees full aiming
+	// (lmps, network and use F12...)
+	if (rendermode == render_soft
+#ifdef HWRENDER
+		|| cv_grshearing.value
+#endif
+	)
+		G_SoftwareClipAimingPitch((INT32 *)&aimingangle);
+
+	if (rendermode == render_soft)
+	{
+		dy = (AIMINGTODY(aimingangle)>>FRACBITS) * viewwidth/BASEVIDWIDTH;
+		yslope = &yslopetab[viewheight*8 - (viewheight/2 + dy)];
+	}
+	centery = (viewheight/2) + dy;
+	centeryfrac = centery<<FRACBITS;
+}
 
 void R_SkyboxFrame(player_t *player)
 {
@@ -1671,9 +1698,22 @@ void R_RenderPlayerView(player_t *player)
 	validcount++;
 
 	// Clear buffers.
-	R_ClearClipSegs();
-	R_ClearDrawSegs();
 	R_ClearPlanes();
+	if (viewmorph.use)
+	{
+		portalclipstart = viewmorph.x1;
+		portalclipend = viewwidth-viewmorph.x1-1;
+		R_PortalClearClipSegs(portalclipstart, portalclipend);
+		memcpy(ceilingclip, viewmorph.ceilingclip, sizeof(INT16)*vid.width);
+		memcpy(floorclip, viewmorph.floorclip, sizeof(INT16)*vid.width);
+	}
+	else
+	{
+		portalclipstart = 0;
+		portalclipend = viewwidth-1;
+		R_ClearClipSegs();
+	}
+	R_ClearDrawSegs();
 	R_ClearSprites();
 #ifdef FLOORSPLATS
 	R_ClearVisibleFloorSplats();
@@ -1822,6 +1862,12 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_windowquake);
 
 	CV_RegisterVar(&cv_driftsparkpulse);
+
+	CV_RegisterVar(&cv_tilting);
+	CV_RegisterVar(&cv_quaketilt);
+	CV_RegisterVar(&cv_tiltsmoothing);
+	CV_RegisterVar(&cv_actionmovie);
+	CV_RegisterVar(&cv_windowquake);
 
 	CV_RegisterVar(&cv_showhud);
 	CV_RegisterVar(&cv_translucenthud);
