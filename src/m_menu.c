@@ -1640,15 +1640,15 @@ static menuitem_t OP_BirdMenu[] =
 	{IT_STRING | IT_CVAR, NULL, "Show Viewpoint Text in Replays", &cv_showviewpointtext, 40},
 	{IT_STRING | IT_CVAR, NULL, "Show FREE PLAY Text",            &cv_showfreeplay,      50},
 
-	{IT_HEADER, NULL, "Voting", NULL, 70},
-	{IT_STRING | IT_CVAR, NULL, "Only Show One Battle Choice", &cv_lessbattlevotes, 80},
-	{IT_STRING | IT_CVAR, NULL, "Encore Choices",              &cv_encorevotes,     90},
+	//{IT_HEADER, NULL, "Voting", NULL, 70},
+	//{IT_STRING | IT_CVAR, NULL, "Only Show One Battle Choice", &cv_lessbattlevotes, 80},
+	//{IT_STRING | IT_CVAR, NULL, "Encore Choices",              &cv_encorevotes,     90},
 
-	{IT_HEADER, NULL, "Music", NULL, 110},
-	{IT_STRING | IT_CVAR, NULL, "Resume Level Music",    &cv_resume,            120},
-	{IT_STRING | IT_CVAR, NULL, "Restart Special Music", &cv_resetspecialmusic, 130},
+	{IT_HEADER, NULL, "Music", NULL, 70},
+	{IT_STRING | IT_CVAR, NULL, "Resume Level Music",    &cv_resume,            80},
+	{IT_STRING | IT_CVAR, NULL, "Restart Special Music", &cv_resetspecialmusic, 90},
 
-	{IT_STRING | IT_SUBMENU, NULL, "Advanced Music Options...", &OP_AdvancedBirdDef, 150},
+	{IT_STRING | IT_SUBMENU, NULL, "Advanced Music Options...", &OP_AdvancedBirdDef, 120},
 };
 
 static menuitem_t OP_TiltMenu[] =
