@@ -2132,6 +2132,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 {
 	mobjtype_t item;
 	mobj_t *mo;
+	int ms;
 
 	//if (inflictor && (inflictor->type == MT_SHELL || inflictor->type == MT_FIREBALL))
 	//	P_SetTarget(&target->tracer, inflictor);

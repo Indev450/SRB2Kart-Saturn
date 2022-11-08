@@ -154,6 +154,8 @@ extern consvar_t cv_skipmapcheck;
 
 extern consvar_t cv_sleep;
 
+extern consvar_t cv_showtrackaddon;
+
 typedef enum
 {
 	XD_NAMEANDCOLOR = 1,
@@ -230,6 +232,8 @@ typedef union {
 #if defined(_MSC_VER)
 #pragma pack()
 #endif
+
+extern tic_t driftsparkGrowTimer[16];
 
 // add game commands, needs cleanup
 void D_RegisterServerCommands(void);

@@ -1821,6 +1821,8 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_actionmovie);
 	CV_RegisterVar(&cv_windowquake);
 
+	CV_RegisterVar(&cv_driftsparkpulse);
+
 	CV_RegisterVar(&cv_showhud);
 	CV_RegisterVar(&cv_translucenthud);
 

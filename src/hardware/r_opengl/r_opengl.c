@@ -50,7 +50,9 @@ static const GLubyte white[4] = { 255, 255, 255, 255 };
 #define      N_PI_DEMI               (M_PIl/2.0f) //(1.5707963268f)
 
 #define      ASPECT_RATIO            (1.0f)  //(320.0f/200.0f)
-#define      FAR_CLIPPING_PLANE      32768.0f // Draw further! Tails 01-21-2001
+//#define      FAR_CLIPPING_PLANE      32768.0f // Draw further! Tails 01-21-2001
+//#define      FAR_CLIPPING_PLANE      (4096.0f - 512.0f)
+static float FAR_CLIPPING_PLANE = 32768.0f;
 static float NEAR_CLIPPING_PLANE =   NZCLIP_PLANE;
 
 // **************************************************************************
@@ -1232,12 +1234,13 @@ EXPORT void HWRAPI(ReadRect) (INT32 x, INT32 y, INT32 width, INT32 height,
 // -----------------+
 // GClipRect        : Defines the 2D hardware clipping window
 // -----------------+
-EXPORT void HWRAPI(GClipRect) (INT32 minx, INT32 miny, INT32 maxx, INT32 maxy, float nearclip)
+EXPORT void HWRAPI(GClipRect) (INT32 minx, INT32 miny, INT32 maxx, INT32 maxy, float nearclip, float farclip)
 {
 	//GL_DBG_Printf("GClipRect(%d, %d, %d, %d)\n", minx, miny, maxx, maxy);
 
 	pglViewport(minx, screen_height-maxy, maxx-minx, maxy-miny);
 	NEAR_CLIPPING_PLANE = nearclip;
+	FAR_CLIPPING_PLANE = farclip;
 
 	//pglScissor(minx, screen_height-maxy, maxx-minx, maxy-miny);
 	pglMatrixMode(GL_PROJECTION);
@@ -3152,7 +3155,7 @@ EXPORT void HWRAPI(PostImgRedraw) (float points[SCREENVERTS][SCREENVERTS][2])
 	INT32 x, y;
 	float float_x, float_y, float_nextx, float_nexty;
 	float xfix, yfix;
-	INT32 texsize = 2048;
+	INT32 texsize = 512;
 
 	const float blackBack[16] =
 	{
@@ -3162,11 +3165,9 @@ EXPORT void HWRAPI(PostImgRedraw) (float points[SCREENVERTS][SCREENVERTS][2])
 		16.0f, -16.0f, 6.0f
 	};
 
-	// Use a power of two texture
-	if(screen_width <= 1024)
-		texsize = 1024;
-	if(screen_width <= 512)
-		texsize = 512;
+	// look for power of two that is large enough for the screen
+	while (texsize < screen_width || texsize < screen_height)
+		texsize <<= 1;
 
 	// X/Y stretch fix for all resolutions(!)
 	xfix = (float)(texsize)/((float)((screen_width)/(float)(SCREENVERTS-1)));
@@ -3250,14 +3251,12 @@ EXPORT void HWRAPI(FlushScreenTextures) (void)
 // Create Screen to fade from
 EXPORT void HWRAPI(StartScreenWipe) (void)
 {
-	INT32 texsize = 2048;
+	INT32 texsize = 512;
 	boolean firstTime = (startScreenWipe == 0);
 
-	// Use a power of two texture, dammit
-	if(screen_width <= 512)
-		texsize = 512;
-	else if(screen_width <= 1024)
-		texsize = 1024;
+	// look for power of two that is large enough for the screen
+	while (texsize < screen_width || texsize < screen_height)
+		texsize <<= 1;
 
 	// Create screen texture
 	if (firstTime)
@@ -3281,14 +3280,12 @@ EXPORT void HWRAPI(StartScreenWipe) (void)
 // Create Screen to fade to
 EXPORT void HWRAPI(EndScreenWipe)(void)
 {
-	INT32 texsize = 2048;
+	INT32 texsize = 512;
 	boolean firstTime = (endScreenWipe == 0);
 
-	// Use a power of two texture, dammit
-	if(screen_width <= 512)
-		texsize = 512;
-	else if(screen_width <= 1024)
-		texsize = 1024;
+	// look for power of two that is large enough for the screen
+	while (texsize < screen_width || texsize < screen_height)
+		texsize <<= 1;
 
 	// Create screen texture
 	if (firstTime)
@@ -3313,7 +3310,7 @@ EXPORT void HWRAPI(EndScreenWipe)(void)
 EXPORT void HWRAPI(DrawIntermissionBG)(void)
 {
 	float xfix, yfix;
-	INT32 texsize = 2048;
+	INT32 texsize = 512;
 
 	const float screenVerts[12] =
 	{
@@ -3325,10 +3322,9 @@ EXPORT void HWRAPI(DrawIntermissionBG)(void)
 
 	float fix[8];
 
-	if(screen_width <= 1024)
-		texsize = 1024;
-	if(screen_width <= 512)
-		texsize = 512;
+	// look for power of two that is large enough for the screen
+	while (texsize < screen_width || texsize < screen_height)
+		texsize <<= 1;
 
 	xfix = 1/((float)(texsize)/((float)((screen_width))));
 	yfix = 1/((float)(texsize)/((float)((screen_height))));
@@ -3355,7 +3351,7 @@ EXPORT void HWRAPI(DrawIntermissionBG)(void)
 // Do screen fades!
 EXPORT void HWRAPI(DoScreenWipe)(void)
 {
-	INT32 texsize = 2048;
+	INT32 texsize = 512;
 	float xfix, yfix;
 
 	INT32 fademaskdownloaded = tex_downloaded; // the fade mask that has been set
@@ -3378,11 +3374,9 @@ EXPORT void HWRAPI(DoScreenWipe)(void)
 		1.0f, 1.0f
 	};
 
-	// Use a power of two texture, dammit
-	if(screen_width <= 1024)
-		texsize = 1024;
-	if(screen_width <= 512)
-		texsize = 512;
+	// look for power of two that is large enough for the screen
+	while (texsize < screen_width || texsize < screen_height)
+		texsize <<= 1;
 
 	xfix = 1/((float)(texsize)/((float)((screen_width))));
 	yfix = 1/((float)(texsize)/((float)((screen_height))));
@@ -3441,14 +3435,12 @@ EXPORT void HWRAPI(DoScreenWipe)(void)
 // Create a texture from the screen.
 EXPORT void HWRAPI(MakeScreenTexture) (void)
 {
-	INT32 texsize = 2048;
+	INT32 texsize = 512;
 	boolean firstTime = (screentexture == 0);
 
-	// Use a power of two texture, dammit
-	if(screen_width <= 512)
-		texsize = 512;
-	else if(screen_width <= 1024)
-		texsize = 1024;
+	// look for power of two that is large enough for the screen
+	while (texsize < screen_width || texsize < screen_height)
+		texsize <<= 1;
 
 	// Create screen texture
 	if (firstTime)
@@ -3471,14 +3463,12 @@ EXPORT void HWRAPI(MakeScreenTexture) (void)
 
 EXPORT void HWRAPI(MakeScreenFinalTexture) (void)
 {
-	INT32 texsize = 2048;
+	INT32 texsize = 512;
 	boolean firstTime = (finalScreenTexture == 0);
 
-	// Use a power of two texture, dammit
-	if(screen_width <= 512)
-		texsize = 512;
-	else if(screen_width <= 1024)
-		texsize = 1024;
+	// look for power of two that is large enough for the screen
+	while (texsize < screen_width || texsize < screen_height)
+		texsize <<= 1;
 
 	// Create screen texture
 	if (firstTime)
@@ -3505,15 +3495,14 @@ EXPORT void HWRAPI(DrawScreenFinalTexture)(int width, int height)
 	float origaspect, newaspect;
 	float xoff = 1, yoff = 1; // xoffset and yoffset for the polygon to have black bars around the screen
 	FRGBAFloat clearColour;
-	INT32 texsize = 2048;
+	INT32 texsize = 512;
 
 	float off[12];
 	float fix[8];
 
-	if(screen_width <= 1024)
-		texsize = 1024;
-	if(screen_width <= 512)
-		texsize = 512;
+	// look for power of two that is large enough for the screen
+	while (texsize < screen_width || texsize < screen_height)
+		texsize <<= 1;
 
 	xfix = 1/((float)(texsize)/((float)((screen_width))));
 	yfix = 1/((float)(texsize)/((float)((screen_height))));

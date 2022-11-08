@@ -147,6 +147,8 @@ static void Command_RunSOC(void);
 static void Command_Pause(void);
 static void Command_Respawn(void);
 
+static void Command_ReplayMarker(void);
+
 static void Command_Version_f(void);
 #ifdef UPDATE_ALERT
 static void Command_ModDetails_f(void);
@@ -378,7 +380,7 @@ static CV_PossibleValue_t kartvoterulechanges_cons_t[] = {{0, "Never"}, {1, "Som
 consvar_t cv_kartvoterulechanges = {"kartvoterulechanges", "Frequent", CV_NETVAR, kartvoterulechanges_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 static CV_PossibleValue_t kartgametypepreference_cons_t[] = {{-1, "None"}, {GT_RACE, "Race"}, {GT_MATCH, "Battle"}, {0, NULL}};
 consvar_t cv_kartgametypepreference = {"kartgametypepreference", "None", CV_NETVAR, kartgametypepreference_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-static CV_PossibleValue_t kartspeedometer_cons_t[] = {{0, "Off"}, {1, "Kilometers"}, {2, "Miles"}, {3, "Fracunits"}, {0, NULL}};
+static CV_PossibleValue_t kartspeedometer_cons_t[] = {{0, "Off"}, {1, "Kilometers"}, {2, "Miles"}, {3, "Fracunits"}, {4, "Percent"}, {0, NULL}};
 consvar_t cv_kartspeedometer = {"kartdisplayspeed", "Off", CV_SAVE, kartspeedometer_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}; // use tics in display
 static CV_PossibleValue_t kartvoices_cons_t[] = {{0, "Never"}, {1, "Tasteful"}, {2, "Meme"}, {0, NULL}};
 consvar_t cv_kartvoices = {"kartvoices", "Tasteful", CV_SAVE, kartvoices_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -477,6 +479,8 @@ consvar_t cv_pause = {"pausepermission", "Server", CV_NETVAR, pause_cons_t, NULL
 consvar_t cv_mute = {"mute", "Off", CV_NETVAR|CV_CALL, CV_OnOff, Mute_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_sleep = {"cpusleep", "1", CV_SAVE, sleeping_cons_t, NULL, -1, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_showtrackaddon = {"showtrackaddon", "Yes", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 INT16 gametype = GT_RACE; // SRB2kart
 boolean forceresetplayers = false;
@@ -624,6 +628,8 @@ void D_RegisterServerCommands(void)
 #endif
 #endif
 
+	COM_AddCommand("replaymarker", Command_ReplayMarker);
+
 	// for master server connection
 	AddMServCommands();
 
@@ -722,6 +728,8 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_showping);
 	CV_RegisterVar(&cv_pingmeasurement);
 
+	CV_RegisterVar(&cv_showtrackaddon);
+
 #ifdef SEENAMES
 	CV_RegisterVar(&cv_allowseenames);
 #endif
@@ -734,6 +742,9 @@ void D_RegisterServerCommands(void)
 
 	CV_RegisterVar(&cv_discordinvites);
 	RegisterNetXCmd(XD_DISCORD, Got_DiscordInfo);
+
+	CV_RegisterVar(&cv_recordmultiplayerdemos);
+	CV_RegisterVar(&cv_netdemosyncquality);
 }
 
 // =========================================================================
@@ -856,9 +867,6 @@ void D_RegisterClientCommands(void)
 
 	COM_AddCommand("displayplayer", Command_Displayplayer_f);
 
-	CV_RegisterVar(&cv_recordmultiplayerdemos);
-	CV_RegisterVar(&cv_netdemosyncquality);
-
 	// FIXME: not to be here.. but needs be done for config loading
 	CV_RegisterVar(&cv_usegamma);
 
@@ -940,6 +948,7 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_mouse2opt);
 #endif
 	CV_RegisterVar(&cv_controlperkey);
+	CV_RegisterVar(&cv_turnsmooth);
 
 	CV_RegisterVar(&cv_usemouse);
 	CV_RegisterVar(&cv_usemouse2);
@@ -2338,6 +2347,8 @@ static void Command_StopMovie_f(void)
 
 INT32 mapchangepending = 0;
 
+tic_t driftsparkGrowTimer[MAXPLAYERS];
+
 /** Runs a map change.
   * The supplied data are assumed to be good. If provided by a user, they will
   * have already been checked in Command_Map_f().
@@ -2370,6 +2381,9 @@ void D_MapChange(INT32 mapnum, INT32 newgametype, boolean pencoremode, boolean r
 
 	CONS_Debug(DBG_GAMELOGIC, "Map change: mapnum=%d gametype=%d encoremode=%d resetplayers=%d delay=%d skipprecutscene=%d\n",
 	           mapnum, newgametype, pencoremode, resetplayers, delay, skipprecutscene);
+
+	// just gonna hack in a timer reset here...
+	memset(driftsparkGrowTimer, 0, sizeof(driftsparkGrowTimer));
 
 	if (netgame || multiplayer)
 		FLS = false;
@@ -2938,6 +2952,26 @@ static void Got_Pause(UINT8 **cp, INT32 playernum)
 		}
 		else
 			S_ResumeAudio();
+	}
+}
+
+static void Command_ReplayMarker(void)
+{
+	if (gamestate != GS_LEVEL)
+	{
+		CONS_Printf(M_GetText("You must be in a level to use this.\n"));
+		return;
+	}
+	if (demo.savemode == DSM_WILLAUTOSAVE) {
+		demo.savemode = DSM_NOTSAVING;
+		CONS_Printf("Replay unmarked.\n");
+	} else {
+		int adjustedleveltime = leveltime - starttime;
+		demo.savemode = DSM_WILLAUTOSAVE;
+		if (adjustedleveltime < 0)
+			adjustedleveltime = 0;
+		snprintf(demo.titlename, 64, "%s [%i:%02d/%.5s]", G_BuildMapTitle(gamemap), G_TicsToMinutes(adjustedleveltime, false), G_TicsToSeconds(adjustedleveltime), modeattacking ? "Record Attack" : connectedservername);
+		CONS_Printf("Replay will be saved!\n");
 	}
 }
 

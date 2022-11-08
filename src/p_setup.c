@@ -3237,14 +3237,16 @@ boolean P_SetupLevel(boolean skipprecip)
 			: mapheaderinfo[gamemap - 1]->numlaps);
 
 	// Start recording replay in multiplayer with a temp filename
-	//@TODO I'd like to fix dedis crashing when recording replays for the future too...
-	if (!demo.playback && multiplayer && !dedicated) {
+	//Ensure dedis only record a replay if there is a player at the start of the map, otherwise we get invalid replays!
+	if (!demo.playback && multiplayer && D_NumPlayers()) {
 		static char buf[256];
 		sprintf(buf, "replay"PATHSEP"online"PATHSEP"%d-%s", (int) (time(NULL)), G_BuildMapName(gamemap));
 
 		I_mkdir(va("%s"PATHSEP"replay", srb2home), 0755);
 		I_mkdir(va("%s"PATHSEP"replay"PATHSEP"online", srb2home), 0755);
 		G_RecordDemo(buf);
+		if (dedicated)
+			G_BeginRecording(); //this has to move here, since dedicated servers dont run got_mapcmd
 	}
 
 	wantedcalcdelay = wantedfrequency*2;

@@ -137,6 +137,8 @@ const char *quitmsg[NUM_QUITMESSAGES];
 // Stuff for customizing the player select screen Tails 09-22-2003
 description_t description[MAXSKINS];
 
+INT32 mapwads[NUMMAPS];
+
 //static char *char_notes = NULL;
 //static fixed_t char_scroll = 0;
 
@@ -1118,7 +1120,8 @@ static menuitem_t OP_ControlsMenu[] =
 	{IT_CALL | IT_STRING, NULL, "Player 3 Controls...", &M_Setup3PControlsMenu,  30},
 	{IT_CALL | IT_STRING, NULL, "Player 4 Controls...", &M_Setup4PControlsMenu,  40},
 
-	{IT_STRING | IT_CVAR, NULL, "Controls per key", &cv_controlperkey, 60},
+	{IT_STRING | IT_CVAR, NULL, "Controls per key",    &cv_controlperkey, 60},
+	{IT_STRING | IT_CVAR, NULL, "Digital turn easing", &cv_turnsmooth, 70},
 };
 
 static menuitem_t OP_AllControlsMenu[] =
@@ -1284,6 +1287,7 @@ static menuitem_t OP_VideoOptionsMenu[] =
 	{IT_STRING | IT_CVAR,	NULL,	"Show FPS",				&cv_ticrate,			 90},
 	{IT_STRING | IT_CVAR,	NULL,	"Vertical Sync",		&cv_vidwait,			100},
 	{IT_STRING | IT_CVAR,   NULL,   "FPS Cap",              &cv_fpscap,             110},
+	{IT_STRING | IT_CVAR,   NULL,   "Drift spark pulse size",&cv_driftsparkpulse,   125},
 
 #ifdef HWRENDER
 	{IT_SUBMENU|IT_STRING,	NULL,	"OpenGL Options...",	&OP_OpenGLOptionsDef,	130},
@@ -1305,6 +1309,7 @@ enum
 	op_video_fps,
 	op_video_vsync,
 	op_video_fpscap,
+	op_video_driftsparkpulse,
 #ifdef HWRENDER
 	op_video_ogl,
 #endif
@@ -1330,7 +1335,9 @@ static menuitem_t OP_OpenGLOptionsMenu[] =
 	{IT_STRING|IT_CVAR,		NULL, "Sprite Billboarding",		&cv_grspritebillboarding,	100},
 	{IT_STRING|IT_CVAR,		NULL, "Software Perspective",		&cv_grshearing,				110},
 
-	{IT_SUBMENU|IT_STRING,	NULL, "Gamma...",					&OP_OpenGLColorDef,			130},
+	{IT_STRING|IT_CVAR,		NULL, "Rendering Distance",			&cv_grrenderdistance,		130},
+
+	{IT_SUBMENU|IT_STRING,	NULL, "Gamma...",					&OP_OpenGLColorDef,			150},
 };
 
 static menuitem_t OP_OpenGLColorMenu[] =
@@ -1481,7 +1488,8 @@ static menuitem_t OP_HUDOptionsMenu[] =
 
 	{IT_STRING | IT_CVAR, NULL,	"Console Text Size",		&cv_constextsize,		120},
 
-	{IT_STRING | IT_CVAR, NULL,   "Show \"FOCUS LOST\"",  &cv_showfocuslost,   135},
+	{IT_STRING | IT_CVAR, NULL,   "Show Track Addon Name",  &cv_showtrackaddon,   135},
+	{IT_STRING | IT_CVAR, NULL,   "Show \"FOCUS LOST\"",  &cv_showfocuslost,   145},
 };
 
 // Ok it's still called chatoptions but we'll put ping display in here to be clean
@@ -9293,6 +9301,21 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 		trans = G_GetGametypeColor(cv_newgametype.value);
 
 	V_DrawFill(x-1, y-1, w+2, i+2, trans); // variable reuse...
+	
+	if (cv_nextmap.value && cv_showtrackaddon.value)
+	{
+		char *addonname = wadfiles[mapwads[cv_nextmap.value-1]]->filename;
+		INT32 len, sw = 0;
+		INT32 charlimit = 21 + (dupadjust/5);
+		nameonly(addonname);
+		len = strlen(addonname);
+#define charsonside 14
+		if (len > charlimit)
+			V_DrawThinString(x+w+5, y+i-8, V_TRANSLUCENT, va("%.*s...%s", charsonside, addonname, addonname+((len-charlimit) + charsonside))); // variable reuse...
+#undef charsonside
+		else
+			V_DrawThinString(x+w+5, y+i-8, V_TRANSLUCENT, addonname); // variable reuse...
+	}
 
 	if (!cv_kartencore.value || gamestate == GS_TIMEATTACK || cv_newgametype.value != GT_RACE)
 		V_DrawSmallScaledPatch(x, y, 0, PictureOfLevel);

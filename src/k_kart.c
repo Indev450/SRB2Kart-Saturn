@@ -2811,6 +2811,8 @@ static mobj_t *K_SpawnKartMissile(mobj_t *source, mobjtype_t type, angle_t an, I
 	return NULL;
 }
 
+#define DRIFTSPARKGROWTICS 8
+
 static void K_SpawnDriftSparks(player_t *player)
 {
 	fixed_t newx;
@@ -2836,14 +2838,28 @@ static void K_SpawnDriftSparks(player_t *player)
 
 	for (i = 0; i < 2; i++)
 	{
+		UINT8 pindex;
+		fixed_t driftExtraScale = 0;
 		newx = player->mo->x + P_ReturnThrustX(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, FixedMul(32*FRACUNIT, player->mo->scale));
 		newy = player->mo->y + P_ReturnThrustY(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, FixedMul(32*FRACUNIT, player->mo->scale));
 		spark = P_SpawnMobj(newx, newy, player->mo->z, MT_DRIFTSPARK);
 
 		P_SetTarget(&spark->target, player->mo);
 		spark->angle = travelangle-(ANGLE_45/5)*player->kartstuff[k_drift];
-		spark->destscale = player->mo->scale;
-		P_SetScale(spark, player->mo->scale);
+
+		// scale increase while driftspark level gained timer is running
+		
+		// hack to find the correct player number
+		for (pindex = 0; pindex < MAXPLAYERS; pindex++)
+		{
+			if (player == &players[pindex])
+			{
+				driftExtraScale = FixedDiv(driftsparkGrowTimer[pindex], DRIFTSPARKGROWTICS);
+				break;
+			}
+		}
+		spark->destscale = FixedMul(player->mo->scale, FRACUNIT + FixedMul(driftExtraScale, cv_driftsparkpulse.value));
+		P_SetScale(spark, FixedMul(player->mo->scale, FRACUNIT + FixedMul(driftExtraScale, cv_driftsparkpulse.value)));
 
 		spark->momx = player->mo->momx/2;
 		spark->momy = player->mo->momy/2;
@@ -5209,23 +5225,53 @@ static void K_KartDrift(player_t *player, boolean onground)
 		if (player->speed > minspeed*2)
 			player->kartstuff[k_getsparks] = 1;
 
+		// Sound whenever you get a different tier of sparks
+		if ((player->kartstuff[k_driftcharge] < dsone && player->kartstuff[k_driftcharge]+driftadditive >= dsone)
+			|| (player->kartstuff[k_driftcharge] < dstwo && player->kartstuff[k_driftcharge]+driftadditive >= dstwo)
+			|| (player->kartstuff[k_driftcharge] < dsthree && player->kartstuff[k_driftcharge]+driftadditive >= dsthree))
+		{
+			UINT8 pindex;
+			//S_StartSound(player->mo, sfx_s3ka2);
+			if (P_IsLocalPlayer(player)) // UGHGHGH...
+				S_StartSoundAtVolume(player->mo, sfx_s3ka2, 192); // Ugh...
+			
+			// hack to find the correct player number
+			for (pindex = 0; pindex < MAXPLAYERS; pindex++)
+			{
+				if (player == &players[pindex])
+				{
+					driftsparkGrowTimer[pindex] = DRIFTSPARKGROWTICS;
+					break;
+				}
+			}
+		}
+
+
+		// moved this below sounds to help with scaling
 		// This spawns the drift sparks
 		if (player->kartstuff[k_driftcharge] + driftadditive >= dsone)
 			K_SpawnDriftSparks(player);
 
-		// Sound whenever you get a different tier of sparks
-		if (P_IsLocalPlayer(player) // UGHGHGH...
-			&& ((player->kartstuff[k_driftcharge] < dsone && player->kartstuff[k_driftcharge]+driftadditive >= dsone)
-			|| (player->kartstuff[k_driftcharge] < dstwo && player->kartstuff[k_driftcharge]+driftadditive >= dstwo)
-			|| (player->kartstuff[k_driftcharge] < dsthree && player->kartstuff[k_driftcharge]+driftadditive >= dsthree)))
-		{
-			//S_StartSound(player->mo, sfx_s3ka2);
-			S_StartSoundAtVolume(player->mo, sfx_s3ka2, 192); // Ugh...
-		}
-
 		player->kartstuff[k_driftcharge] += driftadditive;
 		player->kartstuff[k_driftend] = 0;
 	}
+
+	{
+		//im putting this in a block because i want the variables here, not at the top of the block
+		UINT8 pindex;
+
+		// hack to find the correct player number
+		for (pindex = 0; pindex < MAXPLAYERS; pindex++)
+		{
+			if (player == &players[pindex])
+			{
+				if (driftsparkGrowTimer[pindex])
+					driftsparkGrowTimer[pindex]--;
+				break;
+			}
+		}
+	}
+
 
 	// Stop drifting
 	if (player->kartstuff[k_spinouttimer] > 0 || player->speed < minspeed)
@@ -5593,9 +5639,11 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 							P_SetScale(overlay, player->mo->scale);
 						}
 						player->kartstuff[k_invincibilitytimer] = itemtime+(2*TICRATE); // 10 seconds
-						P_RestoreMusic(player);
-						if (!P_IsLocalPlayer(player))
+						if (P_IsLocalPlayer(player))
+							S_ChangeMusicSpecial("kinvnc");
+						else
 							S_StartSound(player->mo, (cv_kartinvinsfx.value ? sfx_alarmi : sfx_kinvnc));
+						P_RestoreMusic(player);
 						K_PlayPowerGloatSound(player->mo);
 						player->kartstuff[k_itemamount]--;
 					}
@@ -5796,9 +5844,11 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 							if (cv_kartdebugshrink.value && !modeattacking && !player->bot)
 								player->mo->destscale = (6*player->mo->destscale)/8;
 							player->kartstuff[k_growshrinktimer] = itemtime+(4*TICRATE); // 12 seconds
-							P_RestoreMusic(player);
-							if (!P_IsLocalPlayer(player))
+							if (P_IsLocalPlayer(player))
+								S_ChangeMusicSpecial("kgrow");
+							else
 								S_StartSound(player->mo, (cv_kartinvinsfx.value ? sfx_alarmg : sfx_kgrow));
+							P_RestoreMusic(player);
 							S_StartSound(player->mo, sfx_kc5a);
 						}
 						player->kartstuff[k_itemamount]--;
@@ -7940,6 +7990,17 @@ static void K_drawKartSpeedometer(void)
 	{
 		convSpeed = FixedDiv(stplyr->speed, mapobjectscale)/FRACUNIT;
 		V_DrawKartString(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, va("%3d fu/t", convSpeed));
+	}
+	else if (cv_kartspeedometer.value == 4) // Percent
+	{
+		// so code breaks if someone attempts to join from spectator since it sets
+		// their mo to NULL
+		// so can we just check if their mo is NULL????
+		if (stplyr->mo) 
+		{
+			convSpeed = (FixedDiv(stplyr->speed, FixedMul(K_GetKartSpeed(stplyr, false), ORIG_FRICTION))*100)>>FRACBITS;
+			V_DrawKartString(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, va("%4d P", convSpeed));
+		}
 	}
 }
 
