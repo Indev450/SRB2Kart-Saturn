@@ -5399,7 +5399,7 @@ static boolean DumbStartsWith(const char *pre, const char *str)
 {
     size_t lenpre = strlen(pre),
            lenstr = strlen(str);
-    return lenstr < lenpre ? false : memcmp(pre, str, lenpre) == 0;
+    return lenstr < lenpre ? false : strncmp(toupper(pre), toupper(str), lenpre) == 0;
 }
 
 static void M_HandleAddons(INT32 choice)
@@ -5524,7 +5524,7 @@ static void M_HandleAddons(INT32 choice)
 								// no characters?
 								if (DumbStartsWith("KC_", dirmenu[dir_on[menudepthleft]]+DIR_STRING)) {
 									M_StartMessage(va("%c%s\x80\nYou are loading a local skin.\nLocal skins will not be usable\nafter going back from\nthe title screen.\n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), dirmenu[dir_on[menudepthleft]]+DIR_STRING),NULL,MM_NOTHING);
-									COM_BufAddText(va("addskins \"%s%s\" -force", menupath, dirmenu[dir_on[menudepthleft]]+DIR_STRING));
+									COM_BufAddText(va("addskins \"%s%s\"", menupath, dirmenu[dir_on[menudepthleft]]+DIR_STRING));
 								}
 								else
 									S_StartSound(NULL, sfx_s26d);
