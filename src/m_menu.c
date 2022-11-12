@@ -10273,13 +10273,6 @@ static void M_DrawSetupMultiPlayerMenu(void)
 	// draw box around guy
 	V_DrawFill(mx + 43 - (charw/2), my+65, charw, 84, 239);
 
-	if (setupm_skinlocal)
-	{
-		UINT8 *colmap;
-		colmap = R_GetTranslationColormap(setupm_fakeskin, setupm_fakecolor, GTC_MENUCACHE);
-		V_DrawFixedPatch(( mx + 43 - (charw/2) + 1 )<<FRACBITS, ( my+65+2 )<<FRACBITS, FRACUNIT, 0, facerankprefix[setupm_fakeskin], colmap);
-	}
-
 	// draw player sprite
 	if (setupm_fakecolor) // inverse should never happen
 	{
@@ -10910,7 +10903,7 @@ static void M_DrawJoystick(void)
 		compareval4 = cv_usejoystick4.value;
 		compareval3 = cv_usejoystick3.value;
 		compareval2 = cv_usejoystick2.value;
-		compareval = cv_usejoystick.value
+		compareval = cv_usejoystick.value;
 #endif
 
 		if ((setupcontrolplayer == 4 && (i == compareval4))
