@@ -5399,7 +5399,7 @@ static boolean DumbStartsWith(const char *pre, const char *str)
 {
     size_t lenpre = strlen(pre),
            lenstr = strlen(str);
-    return lenstr < lenpre ? false : strncmp(toupper(pre), toupper(str), lenpre) == 0;
+    return lenstr < lenpre ? false : memcmp(pre, str, lenpre) == 0;
 }
 
 static void M_HandleAddons(INT32 choice)
