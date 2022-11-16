@@ -1,21 +1,25 @@
-# SRB2Kart: Moe's Mansion Fork
+# SRB2Kart: Glalxy
 
 [SRB2Kart](https://srb2.org/mods/) is a kart racing mod based on the 3D Sonic the Hedgehog fangame [Sonic Robo Blast 2](https://srb2.org/), based on a modified version of [Doom Legacy](http://doomlegacy.sourceforge.net/).
 
-This repo hosts my personal fork of [Moe's Mansion](https://mb.srb2.org/threads/srb2kart-1-3-moe-mansion.29473/), to include some new features.
+This repo hosts my personal fork of [Galactice's Galaxy build](https://mb.srb2.org/addons/srb2kart-galaxy.4500/), to include some new features.
 
-## Moe's Mansion Features
-- Birdhouse included
+This build requires [snowy_files.kart](https://cdn.discordapp.com/attachments/977366683201187890/1038939545242194050/snowy_files.kart).
+
+## Galaxy Features
+- Percentage Speedometer from Lonsfor
+- Custom resolutions for OpenGL and Software from Birdhouse
+- Replay Marker from Tyron
+- Turnsmoothing from Birdhouse
+- Dedicated server replays from Birdhouse
+- OpenGL-render-distance adjuster setting from Birdhouse
 - Birdmod included
-- Large Address Aware so 32-bit builds can use 4gb of memory instead of only 2gb. Helps avoid "out of memory" errors.
-- Callmore's new grid character select screen
-- Character preview speen by minenice
-- Tyron's replaymarker command to mark replays in middle of race
+- Callmore's Character Skin Selection
+- driftsparkpulse from Ashnal
 
 ## This fork's features
 - James' `local-skins` branch, with some touchups by me.
-- X.organic's `futurepk3` branch
-- Extended skin and wad limit to 255
+- [JadenArcm's Snowy-Kart.](https://github.com/JadenArcm/Snowy-Kart)
 
 **YOU SHOULD NOT USE THIS AS A DEDICATED SERVER. USE VANILLA OR MOE'S MANSION.**
 
