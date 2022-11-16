@@ -9066,8 +9066,8 @@ static void M_DrawServerCountAndHorizontalBar(void)
 	V_DrawCenteredString(center, currentMenu->y+30, V_ALLOWLOWERCASE, text);
 
 	// Horizontal line!
-	V_DrawFill(0, currentMenu->y+34, center - radius - 2, 1, 0|V_SNAPTOLEFT);
-	V_DrawFill(center + radius + 2, currentMenu->y+34, BASEVIDWIDTH - 1, 1, 0);
+	V_DrawFill(0, currentMenu->y+34, center - radius - 2, 1, 0);
+	V_DrawFill(center + radius + 2, currentMenu->y+34, (BASEVIDWIDTH/vid.dupx) - 1, 1, 0);
 }
 
 static void M_DrawServerLines(INT32 x, INT32 page)
