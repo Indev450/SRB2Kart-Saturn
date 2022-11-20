@@ -62,7 +62,7 @@ static boolean con_started = false; // console has been initialised
 static boolean con_forcepic = true; // at startup toggle console translucency when first off
        boolean con_recalc = false;  // set true when screen size has changed
 
-static tic_t con_tick; // console ticker for anim or blinking prompt cursor
+static tic_t con_tick; // console ticker for blinking prompt cursor
                         // con_scrollup should use time (currenttime - lasttime)..
 
 static boolean consoletoggle; // true when console key pushed, ticker will handle
@@ -1637,53 +1637,54 @@ static void CON_DrawConsole(void)
 	}
 
 	// draw console text lines from top to bottom
-	if (con_curlines < minheight)
-		return;
-
-	i = con_cy - con_scrollup;
-
-	// skip the last empty line due to the cursor being at the start of a new line
-	i--;
-
-	i -= (con_curlines - minheight) / charheight;
-
-	if (rendermode == render_none) return;
-
-	for (y = (con_curlines-minheight) % charheight; y <= con_curlines-minheight; y += charheight, i++)
+	if (con_curlines >= minheight)
 	{
-		INT32 x;
-		size_t c;
+		i = con_cy - con_scrollup;
 
-		p = (UINT8 *)&con_buffer[((i > 0 ? i : 0)%con_totallines)*con_width];
+		// skip the last empty line due to the cursor being at the start of a new line
+		i--;
 
-		for (c = 0, x = charwidth; c < con_width; c++, x += charwidth, p++)
+		i -= (con_curlines - minheight) / charheight;
+
+		if (rendermode == render_none)
+			return;
+
+		for (y = (con_curlines-minheight) % charheight; y <= con_curlines-minheight; y += charheight, i++)
 		{
-			while (*p & 0x80)
+			INT32 x;
+			size_t c;
+
+			p = (UINT8 *)&con_buffer[((i > 0 ? i : 0)%con_totallines)*con_width];
+
+			for (c = 0, x = charwidth; c < con_width; c++, x += charwidth, p++)
 			{
-				charflags = (*p & 0x7f) << V_CHARCOLORSHIFT;
-				p++;
-				c++;
+				while (*p & 0x80)
+				{
+					charflags = (*p & 0x7f) << V_CHARCOLORSHIFT;
+					p++;
+					c++;
+				}
+
+				if (c >= con_width)
+					break;
+
+				int emotelen;
+				emote_t *emote;
+
+				if ((emote = M_VerifyEmote((const char *)p, &emotelen)))
+				{
+					M_DrawScaledEmote(x<<FRACBITS, (y+2*con_scalefactor)<<FRACBITS, charwidth*FRACUNIT/EMOTEWIDTH, emote, V_NOSCALESTART|V_NOSCALEPATCH);
+					p += emotelen-1;
+					c += emotelen-1;
+					continue;
+				}
+				V_DrawCharacter(x, y, (INT32)(*p) | charflags | cv_constextsize.value | V_NOSCALESTART, !cv_allcaps.value);
 			}
-
-			if (c >= con_width)
-				break;
-
-			int emotelen;
-			emote_t *emote;
-
-			if ((emote = M_VerifyEmote((const char *)p, &emotelen)))
-			{
-				M_DrawScaledEmote(x<<FRACBITS, (y+2*con_scalefactor)<<FRACBITS, charwidth*FRACUNIT/EMOTEWIDTH, emote, V_NOSCALESTART|V_NOSCALEPATCH);
-				p += emotelen-1;
-				c += emotelen-1;
-				continue;
-			}
-			V_DrawCharacter(x, y, (INT32)(*p) | charflags | cv_constextsize.value | V_NOSCALESTART, !cv_allcaps.value);
 		}
 	}
 
 	// draw prompt if enough place (not while game startup)
-	if ((con_curlines == con_destlines) && (con_curlines >= minheight) && !con_startup)
+	if ((con_curlines >= (minheight-charheight)) && !con_startup)
 		CON_DrawInput();
 }
 
