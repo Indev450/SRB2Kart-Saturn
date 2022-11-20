@@ -103,6 +103,8 @@ static void CON_InputInit(void);
 static void CON_RecalcSize(void);
 static void CON_ChangeHeight(void);
 
+static void CON_DrawBackpic(void);
+static void CONS_height_Change(void);
 static void CONS_hudlines_Change(void);
 static void CONS_backcolor_Change(void);
 
@@ -131,7 +133,7 @@ static CV_PossibleValue_t speed_cons_t[] = {{0, "MIN"}, {64, "MAX"}, {0, NULL}};
 static consvar_t cons_speed = {"con_speed", "8", CV_SAVE, speed_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 // percentage of screen height to use for console
-static consvar_t cons_height = {"con_height", "50", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
+static consvar_t cons_height = {"con_height", "50", CV_CALL|CV_SAVE, CV_Unsigned, CONS_height_Change, 0, NULL, NULL, 0, 0, NULL};
 
 static CV_PossibleValue_t backpic_cons_t[] = {{0, "translucent"}, {1, "picture"}, {0, NULL}};
 // whether to use console background picture, or translucent mode
@@ -172,6 +174,18 @@ consvar_t cons_menuhighlight = {"menuhighlight", "Gametype Default", CV_SAVE, me
 consvar_t cons_consoleprintinmenu = {"consoleprintinmenu", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static void CON_Print(char *msg);
+
+// Change the console height on demand
+//
+static void CONS_height_Change(void)
+{
+	Lock_state();
+
+	if (con_destlines > 0 && !con_startup) // If the console is open (as in, not using "bind")...
+		CON_ChangeHeight(); // ...update its height now, not only when it's closed and re-opened
+
+	Unlock_state();
+}
 
 //
 //
