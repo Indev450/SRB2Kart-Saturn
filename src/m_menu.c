@@ -70,6 +70,9 @@
 // And just some randomness for the exits.
 #include "m_random.h"
 
+// protocol handling
+#include "d_protocol.h"
+
 #if defined(HAVE_SDL)
 #include "SDL.h"
 #if SDL_VERSION_ATLEAST(2,0,0)
@@ -316,6 +319,7 @@ menu_t OP_SoundOptionsDef;
 
 //Misc
 menu_t OP_DataOptionsDef, OP_ScreenshotOptionsDef, OP_EraseDataDef;
+menu_t OP_ProtocolDef;
 #ifdef HAVE_DISCORDRPC
 menu_t OP_DiscordOptionsDef;
 #endif
@@ -332,6 +336,8 @@ static void M_EraseData(INT32 choice);
 static void M_Addons(INT32 choice);
 static void M_AddonsOptions(INT32 choice);
 static patch_t *addonsp[NUM_EXT+5];
+
+static void M_DeleteProtocol(void);
 
 // Bird
 menu_t OP_BirdDef;
@@ -1388,12 +1394,13 @@ static menuitem_t OP_DataOptionsMenu[] =
 	{IT_STRING | IT_CALL,		NULL, "Screenshot Options...",	M_ScreenshotOptions,	 10},
 	{IT_STRING | IT_CALL,		NULL, "Addon Options...",		M_AddonsOptions,		 20},
 	{IT_STRING | IT_SUBMENU,	NULL, "Replay Options...",		&MISC_ReplayOptionsDef,	 30},
+	{IT_STRING | IT_SUBMENU,	NULL, "Protocol options...",		&OP_ProtocolDef,	40},
 #ifdef HAVE_DISCORDRPC
-	{IT_STRING | IT_SUBMENU,	NULL, "Discord Options...",		&OP_DiscordOptionsDef,	 40},
+	{IT_STRING | IT_SUBMENU,	NULL, "Discord Options...",		&OP_DiscordOptionsDef,	 50},
 
-	{IT_STRING | IT_SUBMENU,	NULL, "Erase Data...",			&OP_EraseDataDef,		 60},
+	{IT_STRING | IT_SUBMENU,	NULL, "Erase Data...",			&OP_EraseDataDef,		 70},
 #else
-	{IT_STRING | IT_SUBMENU,	NULL, "Erase Data...",			&OP_EraseDataDef,		 50},
+	{IT_STRING | IT_SUBMENU,	NULL, "Erase Data...",			&OP_EraseDataDef,		 60},
 #endif
 };
 
@@ -1454,6 +1461,12 @@ static menuitem_t OP_AddonsOptionsMenu[] =
 enum
 {
 	op_addons_folder = 2,
+};
+
+static menuitem_t OP_ProtocolMenu[] =
+{
+	{IT_STRING | IT_CALL, NULL, "Register protocol", D_CreateProtocol, 10},
+	{IT_STRING | IT_CALL, NULL, "\x85" "Disable and delete protocols", M_DeleteProtocol, 20},
 };
 
 #ifdef HAVE_DISCORDRPC
@@ -2203,6 +2216,7 @@ menu_t OP_OpenGLColorDef =
 menu_t OP_DataOptionsDef = DEFAULTMENUSTYLE("M_DATA", OP_DataOptionsMenu, &OP_MainDef, 60, 30);
 menu_t OP_ScreenshotOptionsDef = DEFAULTMENUSTYLE("M_SCSHOT", OP_ScreenshotOptionsMenu, &OP_DataOptionsDef, 30, 30);
 menu_t OP_AddonsOptionsDef = DEFAULTMENUSTYLE("M_ADDONS", OP_AddonsOptionsMenu, &OP_DataOptionsDef, 30, 30);
+menu_t OP_ProtocolDef = DEFAULTMENUSTYLE(NULL, OP_ProtocolMenu, &OP_DataOptionsDef, 30, 30);
 #ifdef HAVE_DISCORDRPC
 menu_t OP_DiscordOptionsDef = DEFAULTMENUSTYLE(NULL, OP_DiscordOptionsMenu, &OP_DataOptionsDef, 30, 30);
 #endif
@@ -10859,6 +10873,14 @@ static void M_ScreenshotOptions(INT32 choice)
 	Moviemode_mode_Onchange();
 
 	M_SetupNextMenu(&OP_ScreenshotOptionsDef);
+}
+
+static void M_DeleteProtocol(void)
+{
+	M_StartMessage("Are you sure you want to disable and delete protocol registers?\n"
+			"Protocols can be registered again with the Register Protocol option in this menu\n\n"
+			"(Press 'Y' to confirm)\n",
+			D_DeleteProtocol, MM_YESNO);
 }
 
 // =============

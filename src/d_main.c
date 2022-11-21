@@ -77,6 +77,7 @@ int	snprintf(char *str, size_t n, const char *fmt, ...);
 #include "r_fps.h" // Frame interpolation/uncapped
 #include "keys.h"
 #include "filesrch.h" // refreshdirmenu
+#include "d_protocol.h"
 
 #ifdef CMAKECONFIG
 #include "config.h"
@@ -1225,6 +1226,8 @@ void D_SRB2Main(void)
 #endif
 	}
 
+	D_SetupProtocol();
+
 	// rand() needs seeded regardless of password
 	srand((unsigned int)time(NULL));
 
@@ -1534,7 +1537,7 @@ void D_SRB2Main(void)
 	if (D_CheckNetGame())
 		autostart = true;
 
-	if (splitscreen && !M_CheckParm("-connect")) // Make sure multiplayer & autostart is set if you have splitscreen, even after D_CheckNetGame
+	if (splitscreen && !M_CheckParm("-connect") && !M_CheckProtoParam("ip")) // Make sure multiplayer & autostart is set if you have splitscreen, even after D_CheckNetGame
 		multiplayer = autostart = true;
 
 	// check for a driver that wants intermission stats
@@ -1594,6 +1597,36 @@ void D_SRB2Main(void)
 		wipegamestate = GS_NULL;
 		return;
 	}
+
+#ifdef HAVE_CURL
+	if (M_CheckProtoParam("replay"))
+	{
+		const char *replayurl = M_GetProtoParam();
+		char *replayname = strrchr(replayurl, '/');
+
+		if (!replayname || !replayurl)
+			I_Error("REPLAY: Invalid URL.");
+
+#define REPLAYDIR "/DownloadedReplays/"
+		I_mkdir(va("%s%s", srb2home, REPLAYDIR), 0755);
+		CONS_Printf("bruh %s", va("%s%s%s", srb2home, REPLAYDIR, replayname));
+
+		// check if file already exists	
+		if (access(va("%s%s%s", srb2home, REPLAYDIR, replayurl), F_OK )!=0)
+			D_DownloadReplay(replayurl, va("%s%s%s", srb2home, REPLAYDIR, replayname));
+	
+		// add .lmp to identify the EXTERNAL demo file
+		// it is NOT possible to play an internal demo using -playdemo,
+		// rather push a playdemo command.. to do.	
+
+		G_DeferedPlayDemo(va("%s%s", REPLAYDIR, replayname));
+#undef REPLAYDIR
+
+		G_SetGamestate(GS_NULL);
+		wipegamestate = GS_NULL;
+		return;
+	}
+#endif
 
 	/*if (M_CheckParm("-ultimatemode"))
 	{
