@@ -8294,19 +8294,19 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags, pat
 			colormap = R_GetTranslationColormap(TC_RAINBOW, mo->color, GTC_CACHE);
 		else
 			colormap = R_GetLocalTranslationColormap(mo->skin, mo->localskin, mo->color, GTC_CACHE, skinlocal);
-		V_DrawFixedPatch(amxpos + (2 * FRACUNIT), amypos + (2 * FRACUNIT), FRACUNIT / 2, flags, ( (skinlocal) ? localfacemmapprefix : facemmapprefix )[skin], colormap);
+		V_DrawFixedPatch(amxpos, amypos, FRACUNIT, flags, ( (skinlocal) ? localfacemmapprefix : facemmapprefix )[skin], colormap);
 
 		if (cv_showminimapnames.value && !(modeattacking || gamestate == GS_TIMEATTACK))
 		{
 			const char *player_name = va("%c%s", V_GetSkincolorChar(mo->color), player_names[mo->player - players]);
-			V_DrawCenteredSmallStringAtFixed(amxpos + (4 * FRACUNIT), amypos - (3 * FRACUNIT), V_ALLOWLOWERCASE|flags, player_name);
+			V_DrawCenteredSmallStringAtFixed(amxpos + (5 * FRACUNIT), amypos - (4 * FRACUNIT), V_ALLOWLOWERCASE|flags, player_name);
 		}
 		
 		if (mo->player
 			&& ((G_RaceGametype() && mo->player->kartstuff[k_position] == spbplace)
 			|| (G_BattleGametype() && K_IsPlayerWanted(mo->player))))
 		{
-			V_DrawFixedPatch(amxpos, amypos, FRACUNIT / 2, flags, kp_wantedreticle, NULL);
+			V_DrawFixedPatch(amxpos, amypos, FRACUNIT, flags, kp_wantedreticle, NULL);
 		}
 	}
 }
