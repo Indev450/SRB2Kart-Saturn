@@ -182,6 +182,7 @@ static UINT8 UPNP_support = TRUE;
 #include "i_tcp.h"
 #include "m_argv.h"
 #include "stun.h"
+#include "d_main.h"
 #include "z_zone.h"
 
 #include "doomstat.h"
@@ -1856,6 +1857,32 @@ boolean I_InitTcpNetwork(void)
 		// server address only in ip
 		if (serverhostname[0])
 		{
+			COM_BufAddText("connect \"");
+			COM_BufAddText(serverhostname);
+			COM_BufAddText("\"\n");
+
+			// probably modem
+			hardware_MAXPACKETLENGTH = INETPACKETLENGTH;
+		}
+		else
+		{
+			// so we're on a LAN
+			COM_BufAddText("connect any\n");
+
+			net_bandwidth = 800000;
+			hardware_MAXPACKETLENGTH = MAXPACKETLENGTH;
+		}
+	}
+	if (M_CheckProtoParam("ip"))
+	{
+		COM_ImmedExecute(va("exec \"%s"PATHSEP"kartexec.cfg\" -noerror\n", srb2home));
+
+		strcpy(serverhostname, M_GetProtoParam());
+
+		// server address only in ip
+		if (serverhostname[0])
+		{			
+			CONS_Printf("SERVERNAME: %s\n", serverhostname);
 			COM_BufAddText("connect \"");
 			COM_BufAddText(serverhostname);
 			COM_BufAddText("\"\n");

@@ -59,6 +59,51 @@ INT32 M_CheckParm(const char *check)
 	return 0;
 }
 
+/**	\brief Check params for URL protocol
+
+	\return	number (1 to argc-1) or 0 if not present
+*/
+INT32 M_CheckProtoParam(const char *check)
+{
+	INT32 i;
+
+	for (i = 1; i < myargc; i++)
+	{
+                if (strncmp(myargv[i], "srb2kart://", 11) == 0)
+		{
+                	if (strncmp(myargv[i]+11, check, strlen(check))==0)
+			{
+				found = i;
+				return i;
+			}
+		}
+	}
+	found = 0;
+	return 0;
+}
+
+/**	\brief Gets the string after URL protocol
+ *
+	\return	string after protocol parameter or NULL if not found
+*/
+const char *M_GetProtoParam(void)
+{
+	INT32 i;
+	static char *string;
+
+	for (i = 1; i < myargc; i++)
+	{
+                if (strncmp(myargv[i], "srb2kart://", 11) == 0)
+		{
+			string = strchr(myargv[i], '/');
+			string = strchr(string+1, '/');
+			string = strchr(string+1, '/')+1;
+			return string;
+		}
+	}
+	return NULL;
+}
+
 /**	\brief the M_IsNextParm
 
   \return  true if there is an available next parameter
