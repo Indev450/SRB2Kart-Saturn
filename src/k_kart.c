@@ -8306,7 +8306,7 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags, pat
 			&& ((G_RaceGametype() && mo->player->kartstuff[k_position] == spbplace)
 			|| (G_BattleGametype() && K_IsPlayerWanted(mo->player))))
 		{
-			V_DrawFixedPatch(amxpos, amypos, FRACUNIT, flags, kp_wantedreticle, NULL);
+			V_DrawFixedPatch(amxpos - (4<<FRACBITS), amypos - (4<<FRACBITS), FRACUNIT, flags, kp_wantedreticle, NULL);
 		}
 	}
 }
