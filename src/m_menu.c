@@ -3958,9 +3958,7 @@ static void PrepReplayList(boolean reset)
 
 	Lock_search_state();
 
-	if (demolist_all)
-		Z_Free(demolist_all);
-
+	Z_Free(demolist_all);
 	demolist_all = Z_Calloc(sizeof(menudemo_t) * sizedirmenu, PU_STATIC, NULL);
 
 	for (i = 0; i < sizedirmenu; i++)
@@ -3978,9 +3976,9 @@ static void PrepReplayList(boolean reset)
 		else
 		{
 			demolist_all[i].type = MD_NOTLOADED;
-			// FIXME - do something with buffer sizes. menupath is 1024 chars but filepath is only
-			// 256. I'm not really sure what to do here but don't want to leave warnings...
-			snprintf(demolist_all[i].filepath, 255, "%.254s%s", menupath, dirmenu[i] + DIR_STRING);
+			snprintf(demolist_all[i].filepath, sizeof(demolist_all[i].filepath),
+					 // 255 = UINT8 limit. dirmenu entries are restricted to this length (see DIR_LEN).
+					 "%s%.255s", menupath, dirmenu[i] + DIR_STRING);
 			sprintf(demolist_all[i].title, ".....");
 		}
 	}
