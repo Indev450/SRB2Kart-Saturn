@@ -67,7 +67,7 @@ typedef enum {
 } menudemotype_e;
 
 typedef struct menudemo_s {
-	char filepath[256];
+	char filepath[1023 + 256]; // see M_PrepReplayList and sizeof menupath
 	menudemotype_e type;
 
 	char title[65]; // Null-terminated for string prints
