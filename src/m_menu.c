@@ -1301,29 +1301,29 @@ static menuitem_t OP_VideoOptionsMenu[] =
 	{IT_HEADER, NULL, "Framerate", NULL, 55},
 
 	{IT_STRING | IT_CVAR,	NULL,	"Show FPS",				&cv_ticrate,			 60},
-	{IT_STRING | IT_CVAR,	NULL,	"Vertical Sync",		&cv_vidwait,			 65},
-	{IT_STRING | IT_CVAR,   NULL,   "FPS Cap",              &cv_fpscap,              70},
-	{IT_STRING | IT_CVAR,   NULL,   "Drift spark pulse size",&cv_driftsparkpulse,   75},
+	{IT_STRING | IT_CVAR,   NULL,   "FPS Cap",              &cv_fpscap,              65},
+	{IT_STRING | IT_CVAR,   NULL,   "Drift spark pulse size",&cv_driftsparkpulse,   70},
 
 #ifdef HWRENDER
-	{IT_SUBMENU|IT_STRING,	NULL,	"OpenGL Options...",	&OP_OpenGLOptionsDef,	85},
+	{IT_SUBMENU|IT_STRING,	NULL,	"OpenGL Options...",	&OP_OpenGLOptionsDef,	80},
 #endif
 };
 
 enum
 {
-	op_video_res = 0,
+	op_video_header1 = 0,
+	op_video_res,
 #if (defined (__unix__) && !defined (MSDOS)) || defined (UNIXCOMMON) || defined (HAVE_SDL)
 	op_video_fullscreen,
 #endif
-	op_video_gamma,
+	op_video_vsync,
+	op_video_header2,
 	op_video_dd,
 	op_video_wdd,
-	//op_video_wd,
 	op_video_skybox,
 	op_video_fov,
+	op_video_header3,
 	op_video_fps,
-	op_video_vsync,
 	op_video_fpscap,
 	op_video_driftsparkpulse,
 #ifdef HWRENDER
