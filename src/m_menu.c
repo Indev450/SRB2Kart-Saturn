@@ -1350,15 +1350,16 @@ static menuitem_t OP_OpenGLOptionsMenu[] =
 	{IT_STRING | IT_CVAR,		NULL, "Texture Quality",	  &cv_scr_depth,	60},
 	{IT_STRING | IT_CVAR,		NULL, "Software Perspective", &cv_grshearing,	70},
 	{IT_STRING | IT_CVAR,		NULL, "Texture Filter",		  &cv_grfiltermode, 80},
+	{IT_STRING | IT_CVAR,		NULL, "Visual Portals",		  &cv_grportals,	90},
 	
-	{IT_HEADER, NULL, "Miscelleanous", NULL, 100},
+	{IT_HEADER, NULL, "Miscelleanous", NULL, 110},
 
-	{IT_STRING | IT_CVAR,		NULL, "Wall Contrast Style", &cv_grfakecontrast,	   110},
-	{IT_STRING | IT_CVAR,		NULL, "Sprite Billboarding", &cv_grspritebillboarding, 120},
-	{IT_STRING | IT_CVAR,		NULL, "Anisotropic",		 &cv_granisotropicmode,	   130},
+	{IT_STRING | IT_CVAR,		NULL, "Wall Contrast Style", &cv_grfakecontrast,	   120},
+	{IT_STRING | IT_CVAR,		NULL, "Sprite Billboarding", &cv_grspritebillboarding, 130},
+	{IT_STRING | IT_CVAR,		NULL, "Anisotropic",		 &cv_granisotropicmode,	   140},
 
-	{IT_STRING|IT_CVAR,		NULL, "Rendering Distance",			&cv_grrenderdistance,		140},
-	{IT_SUBMENU|IT_STRING,	NULL, "Gamma...",					&OP_OpenGLColorDef,			150},
+	{IT_STRING|IT_CVAR,		NULL, "Rendering Distance",			&cv_grrenderdistance,		150},
+	{IT_SUBMENU|IT_STRING,	NULL, "Gamma...",					&OP_OpenGLColorDef,			160},
 };
 
 static menuitem_t OP_OpenGLColorMenu[] =

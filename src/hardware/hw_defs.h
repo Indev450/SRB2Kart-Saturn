@@ -251,9 +251,23 @@ enum hwdsetspecialstate
 
 	HWD_SET_SCREEN_TEXTURES,
 
+	HWD_SET_DEPTH_ONLY_MODE,// for portals
+
+	HWD_SET_PORTAL_MODE,// new portal thing
+	HWD_SET_STENCIL_LEVEL,
+
 	HWD_NUMSTATE
 };
 typedef enum hwdsetspecialstate hwdspecialstate_t;
+
+enum hwdportalstate
+{
+	HWD_PORTAL_NORMAL,
+	HWD_PORTAL_STENCIL_SEGS,
+	HWD_PORTAL_STENCIL_REVERSE_SEGS,
+	HWD_PORTAL_DEPTH_SEGS,
+	HWD_PORTAL_SKY_STENCIL_SEGS,
+};
 
 #define GL_DEFAULTMIX 0x00000000
 #define GL_DEFAULTFOG 0xFF000000

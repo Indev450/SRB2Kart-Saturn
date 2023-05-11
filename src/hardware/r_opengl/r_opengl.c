@@ -488,6 +488,12 @@ boolean SetupGLfunc(void)
 	return true;
 }
 
+typedef void    (APIENTRY *PFNglStencilFuncSeparate)        (GLenum, GLenum, GLint, GLuint);
+static PFNglStencilFuncSeparate pglStencilFuncSeparate;
+
+typedef void    (APIENTRY *PFNglStencilOpSeparate)          (GLenum, GLenum, GLenum, GLenum);
+static PFNglStencilOpSeparate pglStencilOpSeparate;
+
 #ifdef GL_SHADERS
 typedef GLuint 	(APIENTRY *PFNglCreateShader)		(GLenum);
 typedef void 	(APIENTRY *PFNglShaderSource)		(GLuint, GLsizei, const GLchar**, GLint*);
@@ -546,6 +552,10 @@ static boolean gl_shaderprogramchanged = true;
 static boolean gl_batching = false;// are we currently collecting batches?
 
 static INT32 gl_enable_screen_textures = 1;
+
+static GLint gl_portal_stencil_level = 0;
+
+static INT32 gl_portal_mode = HWD_PORTAL_NORMAL;
 
 // 13062019
 typedef enum
@@ -795,6 +805,9 @@ void SetupGLFunc4(void)
 	pglBufferData = GetGLFunc("glBufferData");
 	pglDeleteBuffers = GetGLFunc("glDeleteBuffers");
 	pglColorPointer = GetGLFunc("glColorPointer");
+
+	pglStencilFuncSeparate = GetGLFunc("glStencilFuncSeparate");
+	pglStencilOpSeparate = GetGLFunc("glStencilOpSeparate");
 
 #ifdef GL_SHADERS
 	pglCreateShader = GetGLFunc("glCreateShader");
@@ -1111,6 +1124,8 @@ void SetStates(void)
 	pglLoadIdentity();
 	pglScalef(1.0f, 1.0f, -1.0f);
 	pglGetFloatv(GL_MODELVIEW_MATRIX, modelMatrix); // added for new coronas' code (without depth buffer)
+
+	pglEnable(GL_STENCIL_TEST);
 }
 
 // -----------------+
@@ -1263,6 +1278,7 @@ EXPORT void HWRAPI(GClipRect) (INT32 minx, INT32 miny, INT32 maxx, INT32 maxy, f
 // -----------------+
 EXPORT void HWRAPI(ClearBuffer) (FBOOLEAN ColorMask,
                                     FBOOLEAN DepthMask,
+									FBOOLEAN StencilMask,
                                     FRGBAFloat * ClearColor)
 {
 	//GL_DBG_Printf("ClearBuffer(%d)\n", alpha);
@@ -1287,6 +1303,8 @@ EXPORT void HWRAPI(ClearBuffer) (FBOOLEAN ColorMask,
 
 	SetBlend(DepthMask ? PF_Occlude | CurrentPolyFlags : CurrentPolyFlags&~PF_Occlude);
 
+	if (StencilMask)
+		ClearMask |= GL_STENCIL_BUFFER_BIT;// looks like sometimes stencil buffer needs clearing? had a problem with random black screens
 	pglClear(ClearMask);
 	pglEnableClientState(GL_VERTEX_ARRAY); // We always use this one
 	pglEnableClientState(GL_TEXTURE_COORD_ARRAY); // And mostly this one, too
@@ -2300,35 +2318,40 @@ EXPORT void HWRAPI(DrawPolygon) (FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUI
 
 		SetBlend(PolyFlags);    //TODO: inline (#pragma..)
 
-		// PolyColor
-		if (pSurf)
+		if (gl_portal_mode == HWD_PORTAL_NORMAL)
 		{
-			// If Modulated, mix the surface colour to the texture
-			if (CurrentPolyFlags & PF_Modulated)
+			// PolyColor
+			if (pSurf)
 			{
-				// Poly color
-				poly.red    = byte2float[pSurf->PolyColor.s.red];
-				poly.green  = byte2float[pSurf->PolyColor.s.green];
-				poly.blue   = byte2float[pSurf->PolyColor.s.blue];
-				poly.alpha  = byte2float[pSurf->PolyColor.s.alpha];
+				// If Modulated, mix the surface colour to the texture
+				if (CurrentPolyFlags & PF_Modulated)
+				{
+					// Poly color
+					poly.red    = byte2float[pSurf->PolyColor.s.red];
+					poly.green  = byte2float[pSurf->PolyColor.s.green];
+					poly.blue   = byte2float[pSurf->PolyColor.s.blue];
+					poly.alpha  = byte2float[pSurf->PolyColor.s.alpha];
 
-				pglColor4ubv((GLubyte*)&pSurf->PolyColor.s);
+					pglColor4ubv((GLubyte*)&pSurf->PolyColor.s);
+				}
+
+				// Tint color
+				tint.red   = byte2float[pSurf->TintColor.s.red];
+				tint.green = byte2float[pSurf->TintColor.s.green];
+				tint.blue  = byte2float[pSurf->TintColor.s.blue];
+				tint.alpha = byte2float[pSurf->TintColor.s.alpha];
+
+				// Fade color
+				fade.red   = byte2float[pSurf->FadeColor.s.red];
+				fade.green = byte2float[pSurf->FadeColor.s.green];
+				fade.blue  = byte2float[pSurf->FadeColor.s.blue];
+				fade.alpha = byte2float[pSurf->FadeColor.s.alpha];
 			}
 
-			// Tint color
-			tint.red   = byte2float[pSurf->TintColor.s.red];
-			tint.green = byte2float[pSurf->TintColor.s.green];
-			tint.blue  = byte2float[pSurf->TintColor.s.blue];
-			tint.alpha = byte2float[pSurf->TintColor.s.alpha];
-
-			// Fade color
-			fade.red   = byte2float[pSurf->FadeColor.s.red];
-			fade.green = byte2float[pSurf->FadeColor.s.green];
-			fade.blue  = byte2float[pSurf->FadeColor.s.blue];
-			fade.alpha = byte2float[pSurf->FadeColor.s.alpha];
+			load_shaders(pSurf, &poly, &tint, &fade);
 		}
-
-		load_shaders(pSurf, &poly, &tint, &fade);
+		else
+			UnSetShader();
 
 		pglVertexPointer(3, GL_FLOAT, sizeof(FOutVector), &pOutVerts[0].x);
 		pglTexCoordPointer(2, GL_FLOAT, sizeof(FOutVector), &pOutVerts[0].s);
@@ -2433,6 +2456,54 @@ static void SkyVertex(vbo_vertex_t *vbo, int r, int c)
 	vbo->x = x;
 	vbo->y = y + delta;
 	vbo->z = z;
+}
+
+void RevertStencilBuffer()// TODO need to add OpenGL stencil functions to function importing
+{
+	/*const float screenVerts[12] =
+	{
+		-1.0f, -1.0f, 1.0f,
+		-1.0f, 1.0f, 1.0f,
+		1.0f, 1.0f, 1.0f,
+		1.0f, -1.0f, 1.0f
+	};*/
+
+	const float screenVerts[12] =
+	{
+		-1.0f, -1.0f, 1.0f,
+		1.0f, -1.0f, 1.0f,
+		1.0f, 1.0f, 1.0f,
+		-1.0f, 1.0f, 1.0f
+	};
+
+	pglDisableClientState(GL_TEXTURE_COORD_ARRAY);
+	pglDisable(GL_TEXTURE_2D);
+	pglDisable(GL_DEPTH_TEST);
+	pglDisable(GL_BLEND);
+	//pglColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+	pglColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);// TEST
+
+	//pglStencilFuncSeparate(GL_FRONT_AND_BACK, GL_EQUAL, gl_portal_stencil_level + 1, 0xFF);
+	//pglStencilFuncSeparate(GL_FRONT_AND_BACK, GL_ALWAYS, gl_portal_stencil_level + 1, 0xFF);// TEST
+	//pglStencilOpSeparate(GL_FRONT_AND_BACK, GL_KEEP, GL_DECR, GL_DECR);
+	//pglStencilOpSeparate(GL_FRONT_AND_BACK, GL_KEEP, GL_KEEP, GL_KEEP);// TEST
+
+	pglPushMatrix();
+	pglLoadIdentity();
+	pglScalef(1.0f, 1.0f, -1.0f);
+//	glMatrixMode(GL_PROJECTION
+
+	pglColor4ubv(white);
+	pglVertexPointer(3, GL_FLOAT, 0, screenVerts);
+	pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+	pglPopMatrix();
+
+	pglEnableClientState(GL_TEXTURE_COORD_ARRAY);
+	pglEnable(GL_TEXTURE_2D);
+	pglEnable(GL_DEPTH_TEST);
+	pglEnable(GL_BLEND);
+	pglColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 }
 
 static GLSkyVBO sky_vbo;
@@ -2669,6 +2740,86 @@ EXPORT void HWRAPI(SetSpecialState) (hwdspecialstate_t IdState, INT32 Value)
 
 		case HWD_SET_SCREEN_TEXTURES:
 			gl_enable_screen_textures = Value;
+			break;
+
+		case HWD_SET_DEPTH_ONLY_MODE:// for portals
+			if (Value)
+			{
+				pglClear(GL_DEPTH_BUFFER_BIT);
+				pglColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+			}
+			else
+			{
+				pglColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+			}
+			break;
+
+		case HWD_SET_PORTAL_MODE:
+			gl_portal_mode = Value;
+			switch (Value)
+			{
+				case HWD_PORTAL_NORMAL:
+					// regular drawing, only to current level of stencil
+					pglEnable(GL_TEXTURE_2D);
+					pglEnable(GL_DEPTH_TEST);
+					pglEnable(GL_BLEND);
+					pglColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+					pglStencilFuncSeparate(GL_FRONT_AND_BACK, GL_EQUAL, gl_portal_stencil_level, 0xFF);
+					//pglStencilFuncSeparate(GL_FRONT_AND_BACK, GL_GEQUAL, 0, 0xFF);
+					pglStencilOpSeparate(GL_FRONT_AND_BACK, GL_KEEP, GL_KEEP, GL_KEEP);
+					pglDepthMask(GL_TRUE);
+					break;
+				case HWD_PORTAL_STENCIL_SEGS:
+					// draw only to stencil, only to current level of stencil, incrementing when drawing
+					pglDisable(GL_TEXTURE_2D);
+					pglDisable(GL_DEPTH_TEST);
+					pglDisable(GL_BLEND);
+					pglColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+					pglStencilFuncSeparate(GL_FRONT_AND_BACK, GL_EQUAL, gl_portal_stencil_level, 0xFF);
+					pglStencilOpSeparate(GL_FRONT_AND_BACK, GL_KEEP, GL_INCR, GL_INCR);// dont think z-buffer is used at this point
+					pglDepthMask(GL_FALSE);
+					break;
+				case HWD_PORTAL_STENCIL_REVERSE_SEGS:
+					// draw only to stencil, only to current level of stencil, incrementing when drawing
+					pglDisable(GL_TEXTURE_2D);
+					pglDisable(GL_DEPTH_TEST);
+					pglDisable(GL_BLEND);
+					pglColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+					pglStencilFuncSeparate(GL_FRONT_AND_BACK, GL_EQUAL, gl_portal_stencil_level+1, 0xFF);
+					pglStencilOpSeparate(GL_FRONT_AND_BACK, GL_KEEP, GL_DECR, GL_DECR);// dont think z-buffer is used at this point
+					pglDepthMask(GL_FALSE);
+					break;
+				case HWD_PORTAL_DEPTH_SEGS:
+					// draw only to depth, only to current level of stencil
+					// also revert last stencil buffer write at this point
+					//RevertStencilBuffer();
+					pglDisable(GL_TEXTURE_2D);
+					pglEnable(GL_DEPTH_TEST);
+					pglDisable(GL_BLEND);
+					pglColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+					pglStencilFuncSeparate(GL_FRONT_AND_BACK, GL_EQUAL, gl_portal_stencil_level, 0xFF);
+					pglStencilOpSeparate(GL_FRONT_AND_BACK, GL_KEEP, GL_KEEP, GL_KEEP);
+					pglDepthMask(GL_TRUE);
+					break;
+				case HWD_PORTAL_SKY_STENCIL_SEGS:
+					// draw only to stencil, only to current level of stencil, incrementing when drawing
+					// same as HWD_PORTAL_STENCIL_SEGS except depth testing is enabled
+					// this is used to mark all visible skywall pixels to the stencil buffer
+					pglDisable(GL_TEXTURE_2D);
+					pglEnable(GL_DEPTH_TEST);
+					pglDisable(GL_BLEND);
+					pglColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+					pglStencilFuncSeparate(GL_FRONT_AND_BACK, GL_EQUAL, gl_portal_stencil_level, 0xFF);
+					pglStencilOpSeparate(GL_FRONT_AND_BACK, GL_KEEP, GL_KEEP, GL_INCR);
+					pglDepthMask(GL_TRUE);// not sure about this and does it matter
+					break;
+				default:
+					I_Error("Bad value in HWD_SET_PORTAL_MODE");
+			}
+			break;
+
+		case HWD_SET_STENCIL_LEVEL:
+			gl_portal_stencil_level = Value;
 			break;
 
 		default:
@@ -3564,7 +3715,7 @@ EXPORT void HWRAPI(DrawScreenFinalTexture)(int width, int height)
 
 	clearColour.red = clearColour.green = clearColour.blue = 0;
 	clearColour.alpha = 1;
-	ClearBuffer(true, false, &clearColour);
+	ClearBuffer(true, false, false, &clearColour);
 	pglBindTexture(GL_TEXTURE_2D, finalScreenTexture);
 
 	pglColor4ubv(white);

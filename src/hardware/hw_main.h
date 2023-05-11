@@ -64,6 +64,8 @@ void HWR_RenderPlayerView(INT32 viewnumber, player_t *player);
 void HWR_LoadShaders(UINT16 wadnum, boolean PK3);
 void HWR_SetViewSize(void);
 void HWR_AddCommands(void);
+void HWR_SetTransform(float fpov, player_t *player);
+void HWR_ClearClipper(void);
 
 // My original intention was to split hw_main.c
 // into files like hw_bsp.c, hw_sprites.c...
@@ -123,6 +125,7 @@ void HWR_DrawSprites(void);
 
 // hw_bsp.c
 void HWR_CreatePlanePolygons(INT32 bspnum);
+extern boolean gr_maphasportals;
 
 // hw_cache.c
 void HWR_PrepLevelCache(size_t pnumtextures);
@@ -149,6 +152,8 @@ extern consvar_t cv_grspritebillboarding;
 extern consvar_t cv_grfakecontrast;
 extern consvar_t cv_grfallbackplayermodel;
 extern consvar_t cv_grrenderdistance;
+extern consvar_t cv_grportals;
+extern consvar_t cv_nostencil;
 
 extern CV_PossibleValue_t granisotropicmode_cons_t[];
 
