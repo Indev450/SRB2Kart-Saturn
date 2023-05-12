@@ -5706,10 +5706,6 @@ void HWR_RenderFrame(INT32 viewnumber, player_t *player, boolean skybox)
 
 	HWR_ClearClipper();
 
-	// need to apply the transform again since skydome changed it
-	// maybe figure out some better way to do this
-	HWR_SetTransform(fpov, player);
-
 	// Reset the shader state.
 	HWD.pfnSetSpecialState(HWD_SET_SHADERS, cv_grshaders.value);
 	HWD.pfnSetShader(0);
