@@ -5556,9 +5556,17 @@ void RecursivePortalRendering(portal_t *rootportal, const float fpov, player_t *
 		}
 		drawcount = 0;
 		validcount++;
+		if (cv_grbatching.value)
+			HWD.pfnStartBatching();
 		if (!rootportal && portallist.base && !skybox)// if portals have been drawn in the main view, then render skywalls differently
 			gr_collect_skywalls = true;
 		HWR_RenderBSPNode((INT32)numnodes-1);
+		if (cv_grbatching.value)
+		{
+			int dummy = 0;// the vars in RenderBatches are meant for render stats. But we don't have that stuff in this branch
+						// so that stuff could be removed...
+			HWD.pfnRenderBatches(&dummy, &dummy, &dummy, &dummy, &dummy, &dummy, &dummy);
+		}
 		if (skyWallVertexArraySize)// if there are skywalls to draw using the alternate method
 		{
 			HWD.pfnSetSpecialState(HWD_SET_PORTAL_MODE, HWD_PORTAL_SKY_STENCIL_SEGS);
