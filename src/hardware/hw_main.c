@@ -345,6 +345,7 @@ static void HWR_SortPortals(player_t *player, float fpov, INT32 viewnumber, post
 #endif
 
 static int gr_portal = GRPORTAL_OFF;
+static boolean gl_drawing_stencil = false;
 
 // Culling
 typedef struct
@@ -799,6 +800,14 @@ void HWR_ProjectWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend
 	HWR_Lighting(pSurf, lightlevel, wallcolormap);
 
 	HWD.pfnSetShader(2);	// wall shader
+
+	// don't draw to color buffer when drawing to stencil
+	if (gl_drawing_stencil)
+	{
+		blendmode |= PF_Invisible|PF_NoAlphaTest; // TODO not sure if any others than PF_Invisible are needed??
+		blendmode &= ~PF_Masked;
+	}
+
 	HWD.pfnDrawPolygon(pSurf, wallVerts, 4, blendmode|PF_Modulated|PF_Occlude);
 
 #ifdef WALLSPLATS
@@ -1484,9 +1493,9 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 			wallVerts[0].y = wallVerts[1].y = FIXED_TO_FLOAT(worldhigh);
 #endif
 
-			if (gr_frontsector->numlights)
+			if (!gl_drawing_stencil && gr_frontsector->numlights)
 				HWR_SplitWall(gr_frontsector, wallVerts, gr_toptexture, &Surf, FF_CUTLEVEL, NULL);
-			else if (grTex->mipmap.flags & TF_TRANSPARENT)
+			else if (!gl_drawing_stencil && grTex->mipmap.flags & TF_TRANSPARENT)
 				HWR_AddTransparentWall(wallVerts, &Surf, gr_toptexture, PF_Environment, false, lightnum, colormap);
 			else
 				HWR_ProjectWall(wallVerts, &Surf, PF_Masked, lightnum, colormap);
@@ -1566,15 +1575,15 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 			wallVerts[0].y = wallVerts[1].y = FIXED_TO_FLOAT(worldbottom);
 #endif
 
-			if (gr_frontsector->numlights)
+			if (!gl_drawing_stencil && gr_frontsector->numlights)
 				HWR_SplitWall(gr_frontsector, wallVerts, gr_bottomtexture, &Surf, FF_CUTLEVEL, NULL);
-			else if (grTex->mipmap.flags & TF_TRANSPARENT)
+			else if (!gl_drawing_stencil && grTex->mipmap.flags & TF_TRANSPARENT)
 				HWR_AddTransparentWall(wallVerts, &Surf, gr_bottomtexture, PF_Environment, false, lightnum, colormap);
 			else
 				HWR_ProjectWall(wallVerts, &Surf, PF_Masked, lightnum, colormap);
 		}
 		gr_midtexture = R_GetTextureNum(gr_sidedef->midtexture);
-		if (gr_midtexture || gr_portal == GRPORTAL_STENCIL || gr_portal == GRPORTAL_DEPTH)
+		if (gr_midtexture || gr_portal == GRPORTAL_STENCIL || gr_portal == GRPORTAL_DEPTH || gl_drawing_stencil)
 		{
 			FBITFIELD blendmode;
 			sector_t *front, *back;
@@ -1828,7 +1837,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 			}
 #endif
 
-			if (gr_frontsector->numlights)
+			if (!gl_drawing_stencil && gr_frontsector->numlights)
 			{
 				if (!(blendmode & PF_Masked))
 					HWR_SplitWall(gr_frontsector, wallVerts, gr_midtexture, &Surf, FF_TRANSLUCENT, NULL);
@@ -1837,7 +1846,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 					HWR_SplitWall(gr_frontsector, wallVerts, gr_midtexture, &Surf, FF_CUTLEVEL, NULL);
 				}
 			}
-			else if (!(blendmode & PF_Masked))
+			else if (!gl_drawing_stencil && !(blendmode & PF_Masked))
 				HWR_AddTransparentWall(wallVerts, &Surf, gr_midtexture, blendmode, false, lightnum, colormap);
 			else
 				HWR_ProjectWall(wallVerts, &Surf, blendmode, lightnum, colormap);
@@ -1960,7 +1969,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 
 	//Hurdler: 3d-floors test
-	if (gr_frontsector && gr_backsector && gr_frontsector->tag != gr_backsector->tag && (gr_backsector->ffloors || gr_frontsector->ffloors))
+	if (!gl_drawing_stencil && gr_frontsector && gr_backsector && gr_frontsector->tag != gr_backsector->tag && (gr_backsector->ffloors || gr_frontsector->ffloors))
 	{
 		ffloor_t * rover;
 		fixed_t    highcut = 0, lowcut = 0;
@@ -2578,8 +2587,6 @@ void HWR_AddLine(seg_t *line)
 					dont_draw = true;
 			}
 		}
-		else
-			return;// dont do anything with the other side i guess?
 	}
 
 doaddline:
@@ -5491,13 +5498,17 @@ void RecursivePortalRendering(portal_t *rootportal, const float fpov, player_t *
 				// draw portal seg to stencil buffer with increment
 				HWR_SetTransform(fpov, player);
 				HWR_ClearClipper();
+				gl_drawing_stencil = true;
 				HWD.pfnSetSpecialState(HWD_SET_STENCIL_LEVEL, stencil_level);
 				HWD.pfnSetSpecialState(HWD_SET_PORTAL_MODE, HWD_PORTAL_STENCIL_SEGS);
 				gr_portal = GRPORTAL_STENCIL;// currently grportal_stencil and grportal_depth are not used, but it needs to be something else than "inside" or "search"
 				gr_frontsector = portal->seg->frontsector;
-				//gr_backsector = addportal_p->backsector;    gr_backsector is set in hwr_addline
 				validcount++;
 				HWR_AddLine(portal->seg);
+				gl_drawing_stencil = false;
+				// need to work around the r_opengl PF_Invisible bug with this call
+				// similarly as in the linkdraw hack in HWR_DrawSprites
+				HWD.pfnSetBlend(PF_Translucent|PF_Occlude|PF_Masked);
 			}
 			// go to portal frame
 			HWR_PortalFrame(portal);
@@ -5516,15 +5527,21 @@ void RecursivePortalRendering(portal_t *rootportal, const float fpov, player_t *
 				// remove portal seg from stencil buffer
 				HWR_SetTransform(fpov, player);
 				HWR_ClearClipper();
+				gl_drawing_stencil = true;
 				HWD.pfnSetSpecialState(HWD_SET_STENCIL_LEVEL, stencil_level);
 				HWD.pfnSetSpecialState(HWD_SET_PORTAL_MODE, HWD_PORTAL_STENCIL_REVERSE_SEGS);
 				gr_portal = GRPORTAL_STENCIL;
 				gr_frontsector = portal->seg->frontsector;
 				validcount++;
 				HWR_AddLine(portal->seg);
+				gl_drawing_stencil = false;
+				// need to work around the r_opengl PF_Invisible bug with this call
+				// similarly as in the linkdraw hack in HWR_DrawSprites
+				HWD.pfnSetBlend(PF_Translucent|PF_Occlude|PF_Masked);
 			}
 			// draw portal seg to depth buffer
 			HWR_ClearClipper();
+			gl_drawing_stencil = true;
 			if (!cv_nostencil.value)
 				HWD.pfnSetSpecialState(HWD_SET_STENCIL_LEVEL, stencil_level);
 			HWD.pfnSetSpecialState(HWD_SET_PORTAL_MODE, HWD_PORTAL_DEPTH_SEGS);
@@ -5532,6 +5549,10 @@ void RecursivePortalRendering(portal_t *rootportal, const float fpov, player_t *
 			gr_frontsector = portal->seg->frontsector;
 			validcount++;
 			HWR_AddLine(portal->seg);
+			gl_drawing_stencil = false;
+			// need to work around the r_opengl PF_Invisible bug with this call
+			// similarly as in the linkdraw hack in HWR_DrawSprites
+			HWD.pfnSetBlend(PF_Translucent|PF_Occlude|PF_Masked);
 		}
 		gr_portal = GRPORTAL_INSIDE;// when portal walls are encountered in following bsp traversal, nothing should be drawn
 	}
@@ -5723,6 +5744,8 @@ void HWR_RenderFrame(INT32 viewnumber, player_t *player, boolean skybox)
 
 	portalclipline = NULL;
 	RecursivePortalRendering(NULL, fpov, player, 0, !skybox);
+
+	HWR_SetTransform(fpov, player);// not sure if needed
 
 	// Unset transform and shader
 	HWD.pfnSetTransform(NULL);
