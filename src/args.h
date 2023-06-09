@@ -8,7 +8,7 @@
 #ifndef args_h
 #define args_h
 
-#include <stdbool.h>
+#include "doomtype.h"
 
 // -----------------------------------------------------------------------------
 // Types.
@@ -51,7 +51,7 @@ char* ap_get_version(ArgParser* parser);
 
 // If toggled to true, the first positional argument ends option parsing; all
 // subsequent arguments will be treated as positionals. Defaults to false.
-void ap_first_pos_arg_ends_options(ArgParser* parser, bool enable);
+void ap_first_pos_arg_ends_options(ArgParser* parser, boolean enable);
 
 // Parses the application's command line arguments. The parameters are assumed
 // to be [argc] and [argv] as supplied to main(), i.e. the first element of the
@@ -59,7 +59,7 @@ void ap_first_pos_arg_ends_options(ArgParser* parser, bool enable);
 // if the arguments were successfully parsed. Returns false if parsing failed
 // due to a memory allocation error. (This memory allocation error may have
 // occured during set-up rather than during parsing.)
-bool ap_parse(ArgParser* parser, int argc, char** argv);
+boolean ap_parse(ArgParser* parser, int argc, char** argv);
 
 // Frees the memory associated with the parser and any subparsers.
 void ap_free(ArgParser* parser);
@@ -88,7 +88,7 @@ void ap_dbl_opt(ArgParser* parser, const char* name, double fallback);
 int ap_count(ArgParser* parser, const char* name);
 
 // Returns true if the specified flag or option was found.
-bool ap_found(ArgParser* parser, const char* name);
+boolean ap_found(ArgParser* parser, const char* name);
 
 // Returns the value of a string option.
 char* ap_str_value(ArgParser* parser, const char* name);
@@ -128,7 +128,7 @@ double* ap_dbl_values(ArgParser* parser, const char* name);
 // -----------------------------------------------------------------------------
 
 // Returns true if the parser has found one or more positional arguments.
-bool ap_has_args(ArgParser* parser);
+boolean ap_has_args(ArgParser* parser);
 
 // Returns the number of positional arguments.
 int ap_count_args(ArgParser* parser);
@@ -166,7 +166,7 @@ ArgParser* ap_cmd(ArgParser* parser, const char* name);
 void ap_callback(ArgParser* parser, ap_callback_t function);
 
 // Returns true if the parser has found a command.
-bool ap_has_cmd(ArgParser* parser);
+boolean ap_has_cmd(ArgParser* parser);
 
 // Returns the command name, if the parser has found a command.
 char* ap_cmd_name(ArgParser* parser);
@@ -174,11 +174,11 @@ char* ap_cmd_name(ArgParser* parser);
 // Returns the command's parser instance, if the parser has found a command.
 ArgParser* ap_cmd_parser(ArgParser* parser);
 
-// This boolean switch toggles support for an automatic 'help' command that
+// This booleanean switch toggles support for an automatic 'help' command that
 // prints subcommand helptext. The value defaults to false but gets toggled
 // automatically to true whenever a command is registered. You can use this
 // function to disable the feature if required.
-void ap_enable_help_command(ArgParser* parser, bool enable);
+void ap_enable_help_command(ArgParser* parser, boolean enable);
 
 // -----------------------------------------------------------------------------
 // Debugging utilities.
@@ -188,14 +188,14 @@ void ap_enable_help_command(ArgParser* parser, bool enable);
 void ap_print(ArgParser* parser);
 
 // True if an attempt to allocate memory failed.
-bool ap_had_memory_error(ArgParser* parser);
+boolean ap_had_memory_error(ArgParser* parser);
 
 // -----------------------------------------------------------------------------
 // Deprecated.
 // -----------------------------------------------------------------------------
 
 // Replaced by ap_enable_help_command().
-void ap_cmd_help(ArgParser* parser, bool enable);
+void ap_cmd_help(ArgParser* parser, boolean enable);
 
 // Replaced by ap_set_helptext().
 void ap_helptext(ArgParser* parser, const char* helptext);
