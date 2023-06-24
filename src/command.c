@@ -278,7 +278,7 @@ static xcommand_t *com_commands = NULL; // current commands
 
 #define MAX_ARGS 80
 static size_t com_argc;
-char *com_argv[MAX_ARGS];
+static char *com_argv[MAX_ARGS];
 static const char *com_null_string = "";
 static char *com_args = NULL; // current command args or NULL
 
@@ -326,16 +326,6 @@ const char *COM_Argv(size_t arg)
 	if (arg >= com_argc || (signed)arg < 0)
 		return com_null_string;
 	return com_argv[arg];
-}
-
-/** Returns all of the console command arguments
-  *
-  * \return String pointer to the argv table.
-  * \sa COM_ArgvList
-  */
-char **COM_ArgvList(void)
-{
-	return com_argv;
 }
 
 /** Gets all console command arguments.

@@ -65,7 +65,6 @@
 #include "i_system.h"
 #include "md5.h"
 #include "lua_script.h"
-#include "st_stuff.h"
 #ifdef SCANTHINGS
 #include "p_setup.h" // P_ScanThings
 #endif
@@ -691,7 +690,7 @@ static void W_ReadFileShaders(wadfile_t *wadfile)
 //
 // Can now load dehacked files (.soc)
 //
-UINT16 W_InitFile(const char *filename, const char *lumpname, UINT16 *wadnump, boolean local)
+UINT16 W_InitFile(const char *filename)
 {
 	FILE *handle;
 	lumpinfo_t *lumpinfo = NULL;
@@ -744,13 +743,10 @@ UINT16 W_InitFile(const char *filename, const char *lumpname, UINT16 *wadnump, b
 	{
 		if (!memcmp(wadfiles[i]->md5sum, md5sum, 16))
 		{
-			if (!local) {
-				CONS_Alert(CONS_ERROR, M_GetText("%s is already loaded\n"), filename);
-				if (handle)
-					fclose(handle);
-				return INT16_MAX;
-			}
-			CONS_Alert(CONS_WARNING, M_GetText("%s is a local skin that is already loaded\n"), filename);
+			CONS_Alert(CONS_ERROR, M_GetText("%s is already loaded\n"), filename);
+			if (handle)
+				fclose(handle);
+			return INT16_MAX;
 		}
 	}
 #endif
@@ -793,7 +789,6 @@ UINT16 W_InitFile(const char *filename, const char *lumpname, UINT16 *wadnump, b
 	fseek(handle, 0, SEEK_END);
 	wadfile->filesize = (unsigned)ftell(handle);
 	wadfile->type = type;
-	wadfile->majormod = false;
 
 	// already generated, just copy it over
 	M_Memcpy(&wadfile->md5sum, &md5sum, 16);
@@ -903,7 +898,7 @@ INT32 W_InitMultipleFiles(char **filenames, boolean addons)
 			G_SetGameModified(true, false);
 
 		//CONS_Debug(DBG_SETUP, "Loading %s\n", *filenames);
-		rc = W_InitFile(*filenames, 0, 0, false);
+		rc = W_InitFile(*filenames);
 		if (rc == INT16_MAX)
 			CONS_Printf(M_GetText("Errors occurred while loading %s; not added.\n"), *filenames);
 		overallrc &= (rc != INT16_MAX) ? 1 : 0;
@@ -1731,9 +1726,8 @@ void W_UnlockCachedPatch(void *patch)
 void *W_CachePatchName(const char *name, INT32 tag)
 {
 	lumpnum_t num;
-	const char *finalname = name;
 
-	num = W_CheckNumForName(finalname);
+	num = W_CheckNumForName(name);
 
 	if (num == LUMPERROR)
 		return W_CachePatchNum(W_GetNumForName("MISSING"), tag);

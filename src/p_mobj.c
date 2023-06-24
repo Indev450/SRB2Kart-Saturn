@@ -9525,6 +9525,7 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 	mobj->radius = info->radius;
 	mobj->height = info->height;
 	mobj->flags = info->flags;
+	mobj->sloperoll = 0;
 
 	mobj->health = info->spawnhealth;
 
@@ -9556,6 +9557,12 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 		mobj->destscale = mapobjectscale;
 		mobj->scalespeed = mapobjectscale/12;
 	}
+	
+	// Rendering-related things
+	mobj->realxscale = mobj->realyscale = mobj->scale; 
+	mobj->spritexscale = mobj->realxscale;
+	mobj->spriteyscale = mobj->realyscale; 
+	mobj->spritexoffset = mobj->spriteyoffset = 0;
 
 	// set subsector and/or block links
 	P_SetThingPosition(mobj);
@@ -10007,6 +10014,10 @@ mobj_t *P_SpawnShadowMobj(mobj_t * caster)
 		mobj->destscale = mapobjectscale;
 		mobj->scalespeed = mapobjectscale/12;
 	}
+	
+	// Rendering-related things
+	mobj->spritexscale = mobj->spriteyscale = mobj->scale; 
+	mobj->spritexoffset = mobj->spriteyoffset = 0;
 
 	P_SetScale(mobj, mobj->destscale);
 
@@ -10762,16 +10773,6 @@ void P_SpawnPlayer(INT32 playernum)
 	// (usefulness: when body mobj is detached from player (who respawns),
 	// the dead body mobj retains the skin through the 'spritedef' override).
 	mobj->skin = &skins[p->skin];
-	if (p->localskin > 0)
-	{
-		if (p->skinlocal)
-			mobj->localskin = &localskins[p->localskin - 1];
-		else
-			mobj->localskin = &     skins[p->localskin - 1];
-	}
-	else
-		mobj->localskin = 0;
-	mobj->skinlocal = p->skinlocal;
 
 	mobj->health = p->health;
 	p->playerstate = PST_LIVE;

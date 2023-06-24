@@ -87,7 +87,7 @@
 #endif
 
 // maximum number of windowed modes (see windowedModes[][])
-#define MAXWINMODES (21)
+#define MAXWINMODES (18)
 
 /**	\brief
 */
@@ -166,12 +166,9 @@ static INT32 windowedModes[MAXWINMODES][2] =
 	{1280, 720}, // 1.66
 	{1152, 864}, // 1.33,3.60
 	{1024, 768}, // 1.33,3.20
-	{ 960, 600}, // 1.33,3.20
 	{ 800, 600}, // 1.33,2.50
-	{ 735, 415}, // 1.33,2.50
 	{ 640, 480}, // 1.33,2.00
 	{ 640, 400}, // 1.60,2.00
-	{ 500, 300}, // 1.33
 	{ 320, 240}, // 1.33,1.00
 	{ 320, 200}, // 1.60,1.00
 };
@@ -1774,11 +1771,6 @@ static SDL_bool Impl_CreateWindow(SDL_bool fullscreen)
 	if (rendermode == render_opengl)
 		flags |= SDL_WINDOW_OPENGL;
 #endif
-
-	// request stencil buffer. If there are problems on weaker hw the bit count could be reduced
-	// If only something like 1-bit or 2-bit stencil is available on some gpus then should implement limit for maxportals based on that.
-	// 4 bits would be enough for current limit in maxportals (12)
-	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 4);
 
 	// Create a window
 	window = SDL_CreateWindow("SRB2Kart "VERSIONSTRING, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,

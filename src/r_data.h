@@ -77,6 +77,8 @@ UINT8 *R_GetFlat(lumpnum_t flatnum);
 void R_InitData(void);
 void R_PrecacheLevel(void);
 
+extern size_t flatmemory, spritememory, texturememory;
+
 // Retrieval.
 // Floor/ceiling opaque texture tiles,
 // lookup by name. For animation?

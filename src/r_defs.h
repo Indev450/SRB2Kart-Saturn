@@ -641,6 +641,15 @@ typedef enum
 	RGBA32          = 4,  // 32 bit rgba
 } pic_mode_t;
 
+// rotsprite
+#ifdef ROTSPRITE
+typedef struct
+{
+	INT32 angles;
+	void **patches; //2.2.9 system
+} rotsprite_t;
+#endif/*ROTSPRITE*/
+
 #if defined(_MSC_VER)
 #pragma pack(1)
 #endif
@@ -659,6 +668,10 @@ typedef struct
 	INT16 topoffset;      // pixels below the origin
 	INT32 columnofs[8];     // only [width] used
 	// the [0] is &columnofs[width]
+	
+#ifdef ROTSPRITE
+	rotsprite_t *rotated; // Rotated patches
+#endif
 } ATTRPACK patch_t;
 
 #ifdef _MSC_VER
@@ -684,6 +697,14 @@ typedef struct
 #if defined(_MSC_VER)
 #pragma pack()
 #endif
+
+typedef enum // trimmed since its only real use here is for xscale/yscale
+{
+	RF_HORIZONTALFLIP   = 0x0001,   // Flip sprite horizontally
+	RF_VERTICALFLIP     = 0x0002,   // Flip sprite vertically
+	RF_ABSOLUTEOFFSETS  = 0x0004,   // Sprite uses the object's offsets absolutely, instead of relatively
+	RF_FLIPOFFSETS      = 0x0008,   // Relative object offsets are flipped with the sprite
+} renderflags_t;
 
 typedef enum
 {
@@ -721,6 +742,10 @@ typedef struct
 
 	// Flip bits (1 = flip) to use for view angles 0-7.
 	UINT8 flip;
+	
+#ifdef ROTSPRITE
+	rotsprite_t *rotated[2][16]; // Rotated patches
+#endif
 } spriteframe_t;
 
 //

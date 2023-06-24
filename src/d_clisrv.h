@@ -287,6 +287,7 @@ typedef struct
 	UINT8 hasmo; // Boolean
 
 	angle_t angle;
+	angle_t rollangle;
 	fixed_t x;
 	fixed_t y;
 	fixed_t z;

@@ -213,7 +213,7 @@ void LUA_LoadLump(UINT16 wad, UINT16 lump)
 	LUA_LoadFile(&f, name); // actually load file!
 
 	// Okay, we've modified the game beyond the point of no return.
-	G_SetWadModified(multiplayer, true, wad);
+	G_SetGameModified(multiplayer, true);
 
 	free(name);
 	Z_Free(f.data);

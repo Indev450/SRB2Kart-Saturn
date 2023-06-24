@@ -29,6 +29,7 @@
 #include "p_local.h" // for var1 and var2, and some constants
 #include "p_setup.h"
 #include "r_data.h"
+#include "r_patch.h"
 #include "r_sky.h"
 #include "fastcmp.h"
 #include "lua_script.h"
@@ -1730,6 +1731,9 @@ static actionpointer_t actionpointers[] =
 	{{A_SpawnObjectRelative},  "A_SPAWNOBJECTRELATIVE"},
 	{{A_ChangeAngleRelative},  "A_CHANGEANGLERELATIVE"},
 	{{A_ChangeAngleAbsolute},  "A_CHANGEANGLEABSOLUTE"},
+	{{A_RollAngle},            "A_ROLLANGLE"},
+	{{A_ChangeRollAngleRelative},"A_CHANGEROLLANGLERELATIVE"},
+	{{A_ChangeRollAngleAbsolute},"A_CHANGEROLLANGLEABSOLUTE"},
 	{{A_PlaySound},            "A_PLAYSOUND"},
 	{{A_FindTarget},           "A_FINDTARGET"},
 	{{A_FindTracer},           "A_FINDTRACER"},

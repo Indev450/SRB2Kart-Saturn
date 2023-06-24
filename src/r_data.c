@@ -19,6 +19,7 @@
 #include "p_local.h"
 #include "m_misc.h"
 #include "r_data.h"
+#include "r_patch.h"
 #include "w_wad.h"
 #include "z_zone.h"
 #include "p_setup.h" // levelflats
@@ -118,7 +119,7 @@ UINT8 invertmap[256];
 #endif
 
 // for debugging/info purposes
-static size_t flatmemory, spritememory, texturememory;
+size_t flatmemory, spritememory, texturememory; // gotta play by 2.2 rules to get this to work
 
 // highcolor stuff
 INT16 color8to16[256]; // remap color index to highcolor rgb value

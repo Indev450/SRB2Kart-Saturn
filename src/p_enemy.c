@@ -168,6 +168,9 @@ void A_SpawnObjectAbsolute(mobj_t *actor);
 void A_SpawnObjectRelative(mobj_t *actor);
 void A_ChangeAngleRelative(mobj_t *actor);
 void A_ChangeAngleAbsolute(mobj_t *actor);
+void A_RollAngle(mobj_t *actor);
+void A_ChangeRollAngleRelative(mobj_t *actor);
+void A_ChangeRollAngleAbsolute(mobj_t *actor);
 void A_PlaySound(mobj_t *actor);
 void A_FindTarget(mobj_t *actor);
 void A_FindTracer(mobj_t *actor);
@@ -4164,18 +4167,6 @@ void A_SignPlayer(mobj_t *actor)
 	P_SetTarget(&ov->target, actor);
 	ov->color = actor->target->player->skincolor;
 	ov->skin = &skins[actor->target->player->skin];
-	if (actor->target->skinlocal) {
-		// needs - 1 or else it pukes an error out
-		// same thing happens on p_mobj.c
-		ov->localskin = &localskins[actor->target->player->localskin - 1];
-		ov->skinlocal = actor->target->skinlocal;
-	} else {
-		// needs - 1 or else it pukes an error out
-		// same thing happens on p_mobj.c
-		if (actor->target->player->localskin)
-			ov->localskin = &skins[actor->target->player->localskin - 1];
-		ov->skinlocal = actor->target->skinlocal;
-	}
 	P_SetMobjState(ov, actor->info->seestate); // S_PLAY_SIGN
 }
 
@@ -7440,6 +7431,84 @@ void A_ChangeAngleAbsolute(mobj_t *actor)
 	actor->angle = FixedAngle(P_RandomRange(amin, amax));
 }
 
+// Function: A_RollAngle
+//
+// Description: Changes the roll angle.
+//
+// var1 = angle
+// var2 = relative? (default)
+//
+void A_RollAngle(mobj_t *actor)
+{
+	INT32 locvar1 = var1;
+	INT32 locvar2 = var2;
+	const angle_t angle = FixedAngle(locvar1*FRACUNIT);
+
+#ifdef HAVE_BLUA
+	if (LUA_CallAction("A_RollAngle", actor))
+		return;
+#endif
+
+	// relative (default)
+	if (!locvar2)
+		actor->rollangle += angle;
+	// absolute
+	else
+		actor->rollangle = angle;
+}
+
+// Function: A_ChangeRollAngleRelative
+//
+// Description: Changes the roll angle to a random relative value between the min and max. Set min and max to the same value to eliminate randomness
+//
+// var1 = min
+// var2 = max
+//
+void A_ChangeRollAngleRelative(mobj_t *actor)
+{
+	INT32 locvar1 = var1;
+	INT32 locvar2 = var2;
+	const fixed_t amin = locvar1*FRACUNIT;
+	const fixed_t amax = locvar2*FRACUNIT;
+#ifdef HAVE_BLUA
+	if (LUA_CallAction("A_ChangeRollAngleRelative", actor))
+		return;
+#endif
+
+#ifdef PARANOIA
+	if (amin > amax)
+		I_Error("A_ChangeRollAngleRelative: var1 is greater than var2");
+#endif
+
+	actor->rollangle += FixedAngle(P_RandomRange(amin, amax));
+}
+
+// Function: A_ChangeRollAngleAbsolute
+//
+// Description: Changes the roll angle to a random absolute value between the min and max. Set min and max to the same value to eliminate randomness
+//
+// var1 = min
+// var2 = max
+//
+void A_ChangeRollAngleAbsolute(mobj_t *actor)
+{
+	INT32 locvar1 = var1;
+	INT32 locvar2 = var2;
+	const fixed_t amin = locvar1*FRACUNIT;
+	const fixed_t amax = locvar2*FRACUNIT;
+#ifdef HAVE_BLUA
+	if (LUA_CallAction("A_ChangeRollAngleAbsolute", actor))
+		return;
+#endif
+
+#ifdef PARANOIA
+	if (amin > amax)
+		I_Error("A_ChangeRollAngleAbsolute: var1 is greater than var2");
+#endif
+
+	actor->rollangle = FixedAngle(P_RandomRange(amin, amax));
+}
+
 // Function: A_PlaySound
 //
 // Description: Plays a sound
@@ -8257,7 +8326,6 @@ void A_ItemPop(mobj_t *actor)
 	remains->fuse = actor->fuse; // Transfer respawn timer
 	remains->threshold = (actor->threshold == 69 ? 69 : 68);
 	remains->skin = NULL;
-	remains->localskin = NULL;
 	remains->spawnpoint = actor->spawnpoint;
 
 	P_SetTarget(&tmthing, remains);

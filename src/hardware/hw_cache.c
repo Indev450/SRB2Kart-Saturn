@@ -25,6 +25,7 @@
 #include "../z_zone.h"
 #include "../v_video.h"
 #include "../r_draw.h"
+#include "../r_patch.h"    // sneed's feed and seed, formerly chuck's
 
 // Values set after a call to HWR_ResizeBlock()
 static INT32 blocksize, blockwidth, blockheight;
@@ -672,11 +673,19 @@ static void HWR_LoadMappedPatch(GLMipmap_t *grmip, GLPatch_t *gpatch)
 {
 	if (!grmip->downloaded && !grmip->grInfo.data)
 	{
-		patch_t *patch = W_CacheLumpNumPwad(gpatch->wadnum, gpatch->lumpnum, PU_STATIC);
+		patch_t *patch = gpatch->rawpatch;
+		if (!patch)
+				patch = W_CacheLumpNumPwad(gpatch->wadnum, gpatch->lumpnum, PU_STATIC);
 		HWR_MakePatch(patch, gpatch, grmip, true);
 
-		Z_Free(patch);
+		// You can't free rawpatch for some reason?
+		// (Obviously I can't, sprite rotation needs that...)
+
+		// Fuckal: I HATE HARDWARE, I HATE HARDWARE!!
+		if (!gpatch->rawpatch)
+			Z_Free(patch);
 	}
+
 
 	HWD.pfnSetTexture(grmip);
 
@@ -689,17 +698,23 @@ static void HWR_LoadMappedPatch(GLMipmap_t *grmip, GLPatch_t *gpatch)
 // -----------------+
 void HWR_GetPatch(GLPatch_t *gpatch)
 {
+		/*if (needpatchflush)
+			W_FlushCachedPatches();*/
+
 	// is it in hardware cache
 	if (!gpatch->mipmap->downloaded && !gpatch->mipmap->grInfo.data)
 	{
 		// load the software patch, PU_STATIC or the Z_Malloc for hardware patch will
 		// flush the software patch before the conversion! oh yeah I suffered
-		patch_t *patch = W_CacheLumpNumPwad(gpatch->wadnum, gpatch->lumpnum, PU_STATIC);
-		HWR_MakePatch(patch, gpatch, gpatch->mipmap, true);
+		patch_t *ptr = gpatch->rawpatch;
+		if (!ptr)
+			ptr = W_CacheLumpNumPwad(gpatch->wadnum, gpatch->lumpnum, PU_STATIC);
+		HWR_MakePatch(ptr, gpatch, gpatch->mipmap, true);
 
 		// this is inefficient.. but the hardware patch in heap is purgeable so it should
 		// not fragment memory, and besides the REAL cache here is the hardware memory
-		Z_Free(patch);
+		if (!gpatch->rawpatch)
+			Z_Free(ptr);
 	}
 
 	HWD.pfnSetTexture(gpatch->mipmap);

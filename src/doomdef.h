@@ -149,8 +149,8 @@ extern char  logfilename[1024];
 #else
 #define VERSION    1 // Game version
 #define SUBVERSION 6 // more precise version number
-#define VERSIONSTRING "1.6 - HEP v1"
-#define VERSIONSTRINGW L"1.6 - HEP v1"
+#define VERSIONSTRING "Galaxy(v1.2) Alugs Spoon v2 "
+#define VERSIONSTRINGW L"Galaxy(v1.2) Alugs Spoon v2"
 // Hey! If you change this, add 1 to the MODVERSION below! Otherwise we can't force updates!
 // And change CMakeLists.txt (not src/, but in root), for CMake users!
 // AND appveyor.yml, for the build bots!
@@ -524,6 +524,8 @@ extern INT32 cv_debug;
 // Misc stuff for later...
 // =======================
 
+#define ANG2RAD(angle) ((float)((angle)*M_PI)/ANGLE_180)
+
 // Modifier key variables, accessible anywhere
 extern UINT8 shiftdown, ctrldown, altdown;
 extern boolean capslock;
@@ -652,6 +654,11 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 /// \note	SRB2CB port.
 ///      	SRB2CB itself ported this from PrBoom+
 //#define NEWCLIP
+
+/// Sprite rotation
+#define ROTSPRITE
+#define ROTANGLES 72 // Needs to be a divisor of 360 (45, 60, 90, 120...)
+#define ROTANGDIFF (360 / ROTANGLES)
 
 /// Hardware renderer: OpenGL
 #define GL_SHADERS

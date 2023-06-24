@@ -74,7 +74,6 @@
 
 md2_t md2_models[NUMSPRITES];
 md2_t md2_playermodels[MAXSKINS];
-md2_t md2_localplayermodels[MAXSKINS];
 
 
 /*
@@ -487,13 +486,6 @@ void HWR_InitMD2(void)
 		md2_playermodels[s].skin = -1;
 		md2_playermodels[s].notfound = true;
 		md2_playermodels[s].error = false;
-
-		md2_localplayermodels[s].scale = -1.0f;
-		md2_localplayermodels[s].model = NULL;
-		md2_localplayermodels[s].grpatch = NULL;
-		md2_localplayermodels[s].skin = -1;
-		md2_localplayermodels[s].notfound = true;
-		md2_localplayermodels[s].error = false;
 	}
 	for (i = 0; i < NUMSPRITES; i++)
 	{
@@ -566,12 +558,11 @@ md2found:
 	fclose(f);
 }
 
-void HWR_AddPlayerMD2(int skin, boolean local) // For MD2's that were added after startup
+void HWR_AddPlayerMD2(int skin) // For MD2's that were added after startup
 {
 	FILE *f;
 	char name[20], filename[32];
 	float scale, offset;
-	md2_t *md2s;
 
 	if (nomd2s)
 		return;
@@ -593,23 +584,22 @@ void HWR_AddPlayerMD2(int skin, boolean local) // For MD2's that were added afte
 		}
 	}
 
-	md2s = ( (local) ? md2_localplayermodels : md2_playermodels );
-	// Check for any MD2s that match the names of player skins!
+	// Check for any MD2s that match the names of sprite names!
 	while (fscanf(f, "%19s %31s %f %f", name, filename, &scale, &offset) == 4)
 	{
-		if (stricmp(name, ( (local) ? localskins : skins )[skin].name) == 0)
+		if (stricmp(name, skins[skin].name) == 0)
 		{
-			md2s[skin].skin = skin;
-			md2s[skin].scale = scale;
-			md2s[skin].offset = offset;
-			md2s[skin].notfound = false;
-			strcpy(md2s[skin].filename, filename);
+			md2_playermodels[skin].skin = skin;
+			md2_playermodels[skin].scale = scale;
+			md2_playermodels[skin].offset = offset;
+			md2_playermodels[skin].notfound = false;
+			strcpy(md2_playermodels[skin].filename, filename);
 			goto playermd2found;
 		}
 	}
 
 	//CONS_Printf("MD2 for player skin %s not found\n", skins[skin].name);
-	md2s[skin].notfound = true;
+	md2_playermodels[skin].notfound = true;
 playermd2found:
 	fclose(f);
 }
@@ -1150,6 +1140,8 @@ void HWR_DrawMD2(gr_vissprite_t *spr)
 		const UINT8 flip = (UINT8)((spr->mobj->eflags & MFE_VERTICALFLIP) == MFE_VERTICALFLIP);
 		spritedef_t *sprdef;
 		spriteframe_t *sprframe;
+		spriteinfo_t *sprinfo;
+		angle_t ang;
 		float finalscale;
 		interpmobjstate_t interp;
 
@@ -1161,8 +1153,6 @@ void HWR_DrawMD2(gr_vissprite_t *spr)
 		{
 			R_InterpolateMobjState(spr->mobj, FRACUNIT, &interp);
 		}
-		md2_t *md2s;
-		int skinnum;
 
 		// Apparently people don't like jump frames like that, so back it goes
 		//if (tics > durs)
@@ -1178,35 +1168,19 @@ void HWR_DrawMD2(gr_vissprite_t *spr)
 		// dont forget to enabled the depth test because we can't do this like
 		// before: polygons models are not sorted
 
-		/* fuck you */
-		if (spr->mobj->localskin)
-		{
-			if (spr->mobj->skinlocal)
-			{
-				md2s = md2_localplayermodels;
-				skinnum = (skin_t *)spr->mobj->localskin - localskins;
-			}
-			else
-			{
-				md2s = md2_playermodels;
-				skinnum = (skin_t *)spr->mobj->localskin -      skins;
-			}
-		}
-		else
-		{
-			md2s = md2_playermodels;
-			skinnum = (skin_t *)spr->mobj->skin - skins;
-		}
-
 		// 1. load model+texture if not already loaded
 		// 2. draw model with correct position, rotation,...
-		if (spr->mobj->skin && spr->mobj->sprite == SPR_PLAY && !md2s[skinnum].notfound) // Use the player MD2 list if the mobj has a skin and is using the player sprites
+		if (spr->mobj->skin && spr->mobj->sprite == SPR_PLAY && !md2_playermodels[(skin_t*)spr->mobj->skin-skins].notfound) // Use the player MD2 list if the mobj has a skin and is using the player sprites
 		{
-			md2 = &md2s[skinnum];
-			md2->skin = skinnum;
+			md2 = &md2_playermodels[(skin_t*)spr->mobj->skin-skins];
+			md2->skin = (skin_t*)spr->mobj->skin-skins;
+			sprinfo = &spriteinfo[spr->mobj->sprite];
 		}
-		else	// if we can't find the player md2, use SPR_PLAY's MD2.
+		else
+		{	// if we can't find the player md2, use SPR_PLAY's MD2.
 			md2 = &md2_models[spr->mobj->sprite];
+			sprinfo = &spriteinfo[spr->mobj->sprite];
+		}
 
 		if (md2->error)
 			return; // we already failed loading this before :(
@@ -1265,7 +1239,7 @@ void HWR_DrawMD2(gr_vissprite_t *spr)
 							skinnum = TC_RAINBOW;
 						else
 						{
-							skinnum = (INT32)((skin_t*)( (spr->mobj->localskin) ? spr->mobj->localskin : spr->mobj->skin ) - ( (spr->mobj->skinlocal) ? localskins : skins ));
+							skinnum = (INT32)((skin_t*)spr->mobj->skin-skins);
 						}
 					}
 					else skinnum = TC_DEFAULT;
@@ -1281,7 +1255,7 @@ void HWR_DrawMD2(gr_vissprite_t *spr)
 		else
 		{
 			// Sprite
-			gpatch = W_CachePatchNum(spr->patchlumpnum, PU_CACHE);
+			gpatch = spr->gpatch; //gpatch = W_CachePatchNum(spr->patchlumpnum, PU_CACHE);
 			HWR_GetMappedPatch(gpatch, spr->colormap);
 		}
 
@@ -1332,7 +1306,7 @@ void HWR_DrawMD2(gr_vissprite_t *spr)
 			p.z = FIXED_TO_FLOAT(interp.z);
 
 		if (spr->mobj->skin && spr->mobj->sprite == SPR_PLAY)
-			sprdef = &((skin_t *)( (spr->mobj->localskin) ? spr->mobj->localskin : spr->mobj->skin ))->spritedef;
+			sprdef = &((skin_t *)spr->mobj->skin)->spritedef;
 		else
 			sprdef = &sprites[spr->mobj->sprite];
 
@@ -1349,6 +1323,37 @@ void HWR_DrawMD2(gr_vissprite_t *spr)
 			const fixed_t anglef = AngleFixed((R_PointToAngle(interp.x, interp.y))-ANGLE_180);
 			p.angley = FIXED_TO_FLOAT(anglef);
 		}
+		
+		p.rollangle = 0.0f;
+		p.rollflip = 1;
+		p.rotaxis = 0;
+		
+		p.spritexscale = FIXED_TO_FLOAT(spr->mobj->spritexscale);
+		p.spriteyscale = FIXED_TO_FLOAT(spr->mobj->spriteyscale);
+		if (spr->mobj->rollangle)
+		{
+			fixed_t anglef = AngleFixed(spr->mobj->rollangle);
+			p.rollangle = FIXED_TO_FLOAT(anglef);
+			p.rollmodel = (spr->mobj->rollmodel);
+			p.roll = true;
+
+			// rotation pivot
+			p.centerx = FIXED_TO_FLOAT(spr->mobj->radius/2)*(p.spritexscale);
+			p.centery = FIXED_TO_FLOAT(spr->mobj->height/2)*(p.spriteyscale);
+
+			// rotation axis
+			if (sprinfo->available)
+				p.rotaxis = (UINT8)(sprinfo->pivot[(spr->mobj->frame & FF_FRAMEMASK)].rotaxis);
+
+			// for NiGHTS specifically but should work everywhere else
+			ang = R_PointToAngle (spr->mobj->x, spr->mobj->y) - (spr->mobj->player ? spr->mobj->player->frameangle : spr->mobj->angle);
+			if ((sprframe->rotate & SRF_RIGHT) && (ang < ANGLE_180)) // See from right
+				p.rollflip = 1;
+			else if ((sprframe->rotate & SRF_LEFT) && (ang >= ANGLE_180)) // See from left
+				p.rollflip = -1;
+		}
+
+		
 		p.anglex = 0.0f;
 #ifdef USE_FTRANSFORM_ANGLEZ
 		// Slope rotation from Kart
@@ -1367,6 +1372,8 @@ void HWR_DrawMD2(gr_vissprite_t *spr)
 
 		// SRB2CBTODO: MD2 scaling support
 		finalscale *= FIXED_TO_FLOAT(interp.scale);
+
+
 
 		p.flip = atransform.flip;
 #ifdef USE_FTRANSFORM_MIRROR

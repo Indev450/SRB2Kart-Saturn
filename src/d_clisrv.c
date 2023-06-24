@@ -665,6 +665,7 @@ static inline void resynch_write_player(resynch_pak *rsp, const size_t i)
 	rsp->health = LONG(players[i].mo->health);
 
 	rsp->angle = (angle_t)LONG(players[i].mo->angle);
+	rsp->rollangle = (angle_t)LONG(players[i].mo->rollangle);
 	rsp->x = (fixed_t)LONG(players[i].mo->x);
 	rsp->y = (fixed_t)LONG(players[i].mo->y);
 	rsp->z = (fixed_t)LONG(players[i].mo->z);
@@ -803,6 +804,7 @@ static void resynch_read_player(resynch_pak *rsp)
 	players[i].mo->health = LONG(rsp->health);
 
 	players[i].mo->angle = (angle_t)LONG(rsp->angle);
+	players[i].mo->rollangle = (angle_t)LONG(rsp->rollangle);
 	players[i].mo->x = (fixed_t)LONG(rsp->x);
 	players[i].mo->y = (fixed_t)LONG(rsp->y);
 	players[i].mo->z = (fixed_t)LONG(rsp->z);

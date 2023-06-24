@@ -16,6 +16,7 @@
 
 #include "sounds.h"
 #include "r_plane.h"
+#include "r_patch.h"
 
 // "Left" and "Right" character symbols for additional rotation functionality
 #define ROT_L ('L' - '0')
@@ -28,6 +29,8 @@
 #define VISSPRITECHUNKBITS 6	// 2^6 = 64 sprites per chunk
 #define VISSPRITESPERCHUNK (1 << VISSPRITECHUNKBITS)
 #define VISSPRITEINDEXMASK (VISSPRITESPERCHUNK - 1)
+
+#define FEETADJUST (4<<FRACBITS) // R_AddSingleSpriteDef
 
 // Constant arrays used for psprite clipping
 //  and initializing clipping.
@@ -94,9 +97,6 @@ typedef struct
 
 	// specific sounds per skin
 	sfxenum_t soundsid[NUMSKINSOUNDS]; // sound # in S_sfx table
-
-	boolean localskin;
-	INT32 localnum;
 } skin_t;
 
 extern CV_PossibleValue_t Forceskin_cons_t[];
@@ -108,7 +108,8 @@ typedef enum
 {
 	SC_NONE = 0,
 	SC_TOP = 1,
-	SC_BOTTOM = 2
+	SC_BOTTOM = 2,
+	SC_VFLIP = 3
 } spritecut_e;
 
 // A vissprite_t is a thing that will be drawn during a refresh,
@@ -119,7 +120,7 @@ typedef struct vissprite_s
 	struct vissprite_s *prev;
 	struct vissprite_s *next;
 
-	mobj_t *mobj; // for easy access
+	mobj_t *mobj; // for easy access4
 
 	INT32 x1, x2;
 
@@ -128,12 +129,21 @@ typedef struct vissprite_s
 	fixed_t pz, pzt; // physical bottom/top for sorting with 3D floors
 
 	fixed_t startfrac; // horizontal position of x1
-	fixed_t scale, sortscale; // sortscale only differs from scale for flat sprites
+	fixed_t xscale, scale; // projected horizontal and vertical scales
+	fixed_t sortscale; // sortscale only differs from scale for flat sprites
 	fixed_t scalestep; // only for flat sprites, 0 otherwise
+	fixed_t paperoffset, paperdistance; // for paper sprites, offset/dist relative to the angle
 	fixed_t xiscale; // negative if flipped
+	
+	angle_t centerangle; // for paper sprites
+
+	struct {
+		fixed_t tan; // The amount to shear the sprite vertically per row
+		INT32 offset; // The center of the shearing location offset from x1
+	} shear;
 
 	fixed_t texturemid;
-	lumpnum_t patch;
+	patch_t *patch;
 
 	lighttable_t *colormap; // for color translation and shadow draw
 	                        // maxbright frames as well
@@ -146,7 +156,7 @@ typedef struct vissprite_s
 
 	extracolormap_t *extra_colormap; // global colormaps
 
-	fixed_t xscale;
+	//fixed_t xscale;
 
 	// Precalculated top and bottom screen coords for the sprite.
 	fixed_t thingheight; // The actual height of the thing (for 3D floors)
@@ -154,6 +164,11 @@ typedef struct vissprite_s
 	INT16 sz, szt;
 
 	spritecut_e cut;
+	UINT32 renderflags;
+
+	fixed_t spritexscale, spriteyscale;
+	fixed_t spritexoffset, spriteyoffset;
+
 
 	INT16 clipbot[MAXVIDWIDTH], cliptop[MAXVIDWIDTH];
 
@@ -191,24 +206,17 @@ typedef struct drawnode_s
 } drawnode_t;
 
 extern INT32 numskins;
-extern INT32 numlocalskins;
-extern INT32 numallskins;
 extern skin_t skins[MAXSKINS];
 extern UINT8 skinstats[9][9][MAXSKINS];
 extern UINT8 skinstatscount[9][9];
 extern UINT8 skinsorted[MAXSKINS];
 
 void sortSkinGrid(void);
-extern skin_t localskins[MAXSKINS];
-extern skin_t allskins[MAXSKINS*2];
 
 boolean SetPlayerSkin(INT32 playernum,const char *skinname);
 void SetPlayerSkinByNum(INT32 playernum,INT32 skinnum); // Tails 03-16-2002
-void SetLocalPlayerSkin(INT32 playernum,const char *skinname, consvar_t *cvar);
 INT32 R_SkinAvailable(const char *name);
-INT32 R_AnySkinAvailable(const char *name);
-INT32 R_LocalSkinAvailable(const char *name, boolean local);
-void R_AddSkins(UINT16 wadnum, boolean local);
+void R_AddSkins(UINT16 wadnum);
 
 #ifdef DELFILE
 void R_DelSkins(UINT16 wadnum);

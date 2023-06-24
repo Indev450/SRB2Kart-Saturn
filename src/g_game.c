@@ -536,6 +536,21 @@ consvar_t cv_ydeadzone4 = {"joy4_ydeadzone", "0.5", CV_FLOAT|CV_SAVE, deadzone_c
 
 static CV_PossibleValue_t driftsparkpulse_t[] = {{0, "MIN"}, {FRACUNIT*3, "MAX"}, {0, NULL}};
 consvar_t cv_driftsparkpulse = {"driftsparkpulse", "1.4", CV_FLOAT | CV_SAVE, driftsparkpulse_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+static CV_PossibleValue_t stretchfactor_t[] = {{FRACUNIT/5, "MIN"}, {FRACUNIT, "MAX"}, {0, NULL}};
+consvar_t cv_gravstretch = {"gravstretch", "1", CV_FLOAT | CV_SAVE, stretchfactor_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_sloperoll = {"sloperoll", "Off", CV_SAVE|CV_CALL, CV_OnOff, PDistort_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
+
+static CV_PossibleValue_t sloperolldist_cons_t[] = {
+	/*{256, "256"},*/	{512, "512"},	{768, "768"},
+	{1024, "1024"},	{1536, "1536"},	{2048, "2048"},
+	{3072, "3072"},	{4096, "4096"},	{6144, "6144"},
+	{8192, "8192"},	{0, "Infinite"},	{0, NULL}};
+consvar_t cv_sloperolldist = {"sloperolldist", "Infinite", CV_SAVE, sloperolldist_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+
+
 consvar_t cv_invincmusicfade = {"invincmusicfade", "300", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_growmusicfade = {"growmusicfade", "500", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_respawnfademusicout = {"respawnfademusicout", "1000", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -820,16 +835,6 @@ void G_SetGameModified(boolean silent, boolean major)
 	// If in record attack recording, cancel it.
 	if (modeattacking)
 		M_EndModeAttackRun();
-}
-
-void G_SetWadModified(boolean silent, boolean major, UINT16 wadnum)
-{
-	// now that we have a wad that is actually well, a gameplay changing mod
-	// (for later)
-	wadfiles[wadnum]->majormod = true;
-
-	// set our game to be marked as modified.
-	G_SetGameModified(silent, major);
 }
 
 /** Builds an original game map name from a map number.
@@ -2688,8 +2693,6 @@ void G_PlayerReborn(INT32 player)
 	UINT8 mare;
 	UINT8 skincolor;
 	INT32 skin;
-	int localskin;
-	boolean skinlocal;
 	tic_t jointime;
 	UINT8 splitscreenindex;
 	boolean spectator;
@@ -2736,8 +2739,6 @@ void G_PlayerReborn(INT32 player)
 
 	skincolor = players[player].skincolor;
 	skin = players[player].skin;
-	localskin = players[player].localskin;
-	skinlocal = players[player].skinlocal;
 	// SRB2kart
 	kartspeed = players[player].kartspeed;
 	kartweight = players[player].kartweight;
@@ -2827,8 +2828,6 @@ void G_PlayerReborn(INT32 player)
 	// save player config truth reborn
 	p->skincolor = skincolor;
 	p->skin = skin;
-	p->localskin = localskin;
-	p->skinlocal = skinlocal;
 	// SRB2kart
 	p->kartspeed = kartspeed;
 	p->kartweight = kartweight;
@@ -7073,7 +7072,7 @@ static void G_LoadDemoExtraFiles(UINT8 **pp)
 			}
 			else
 			{
-				P_PartialAddWadFile(filename, false);
+				P_PartialAddWadFile(filename);
 			}
 		}
 	}

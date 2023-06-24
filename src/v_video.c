@@ -41,8 +41,7 @@ UINT8 *screens[5];
 static CV_PossibleValue_t gamma_cons_t[] = {{0, "MIN"}, {4, "MAX"}, {0, NULL}};
 static void CV_usegamma_OnChange(void);
 
-static CV_PossibleValue_t fps_cons_t[] = {{0, "No"}, {1, "Compact"}, {2, "Enhanced"}};
-consvar_t cv_ticrate = {"showfps", "No", CV_SAVE, fps_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_ticrate = {"showfps", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_usegamma = {"gamma", "0", CV_SAVE|CV_CALL, gamma_cons_t, CV_usegamma_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_allcaps = {"allcaps", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -328,12 +327,12 @@ static inline UINT8 transmappedpdraw(const UINT8 *dest, const UINT8 *source, fix
 }
 
 // Draws a patch scaled to arbitrary size.
-void V_DrawFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, INT32 scrn, patch_t *patch, const UINT8 *colormap)
+void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vscale, INT32 scrn, patch_t *patch, const UINT8 *colormap)
 {
 	UINT8 (*patchdrawfunc)(const UINT8*, const UINT8*, fixed_t);
 	UINT32 alphalevel = 0;
 
-	fixed_t col, ofs, colfrac, rowfrac, fdup;
+	fixed_t col, ofs, colfrac, rowfrac, fdup, vdup;
 	INT32 dupx, dupy;
 	const column_t *column;
 	UINT8 *desttop, *dest, *deststart, *destend;
@@ -348,7 +347,7 @@ void V_DrawFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, INT32 scrn, patch_t 
 	//if (rendermode != render_soft && !con_startup)		// Why?
 	if (rendermode == render_opengl)
 	{
-		HWR_DrawFixedPatch((GLPatch_t *)patch, x, y, pscale, scrn, colormap);
+		HWR_DrawStretchyFixedPatch((GLPatch_t *)patch, x, y, pscale, vscale, scrn, colormap);;
 		return;
 	}
 #endif
@@ -402,9 +401,11 @@ void V_DrawFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, INT32 scrn, patch_t 
 
 	// only use one dup, to avoid stretching (har har)
 	dupx = dupy = (dupx < dupy ? dupx : dupy);
-	fdup = FixedMul(dupx<<FRACBITS, pscale);
+	fdup = vdup = FixedMul(dupx<<FRACBITS, pscale);
+	if (vscale != pscale)
+		vdup = FixedMul(dupx<<FRACBITS, vscale);
 	colfrac = FixedDiv(FRACUNIT, fdup);
-	rowfrac = FixedDiv(FRACUNIT, fdup);
+	rowfrac = FixedDiv(FRACUNIT, vdup);
 
 	// So it turns out offsets aren't scaled in V_NOSCALESTART unless V_OFFSET is applied ...poo, that's terrible
 	// For now let's just at least give V_OFFSET the ability to support V_FLIP
@@ -542,7 +543,7 @@ void V_DrawFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, INT32 scrn, patch_t 
 			dest = desttop;
 			if (scrn & V_FLIP)
 				dest = deststart + (destend - desttop);
-			dest += FixedInt(FixedMul(topdelta<<FRACBITS,fdup))*vid.width;
+			dest += FixedInt(FixedMul(topdelta<<FRACBITS,vdup))*vid.width;
 
 			for (ofs = 0; dest < deststop && (ofs>>FRACBITS) < column->length; ofs += rowfrac)
 			{
@@ -558,7 +559,7 @@ void V_DrawFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, INT32 scrn, patch_t 
 // Draws a patch cropped and scaled to arbitrary size.
 void V_DrawCroppedPatch(fixed_t x, fixed_t y, fixed_t pscale, INT32 scrn, patch_t *patch, fixed_t sx, fixed_t sy, fixed_t w, fixed_t h)
 {
-	fixed_t col, ofs, colfrac, rowfrac, fdup;
+	fixed_t col, ofs, colfrac, rowfrac, fdup, vdup;
 	INT32 dupx, dupy;
 	const column_t *column;
 	UINT8 *desttop, *dest;
@@ -1767,12 +1768,6 @@ void V_DrawSmallString(INT32 x, INT32 y, INT32 option, const char *string)
 	}
 }
 
-void V_DrawCenteredSmallString(INT32 x, INT32 y, INT32 option, const char *string)
-{
-	x -= V_SmallStringWidth(string, option)/2;
-	V_DrawSmallString(x, y, option, string);
-}
-
 void V_DrawRightAlignedSmallString(INT32 x, INT32 y, INT32 option, const char *string)
 {
 	x -= V_SmallStringWidth(string, option);
@@ -1986,102 +1981,6 @@ void V_DrawStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *string)
 	}
 }
 
-// Jaden: awesome!
-void V_DrawSmallStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *string)
-{
-	fixed_t cx = x, cy = y;
-	INT32 w, c, dupx, dupy, scrwidth, center = 0, left = 0;
-	const char *ch = string;
-	INT32 charflags = 0;
-	const UINT8 *colormap = NULL;
-	INT32 spacewidth = 2, charwidth = 0;
-	INT32 lowercase = (option & V_ALLOWLOWERCASE);
-	option &= ~V_FLIP; // which is also shared with V_ALLOWLOWERCASE...
-	if (option & V_NOSCALESTART)
-	{
-		dupx = vid.dupx;
-		dupy = vid.dupy;
-		scrwidth = vid.width;
-	}
-	else
-	{
-		dupx = dupy = 1;
-		scrwidth = vid.width/vid.dupx;
-		left = (scrwidth - BASEVIDWIDTH)/2;
-		scrwidth -= left;
-	}
-	if (option & V_NOSCALEPATCH)
-		scrwidth *= vid.dupx;
-	charflags = (option & V_CHARCOLORMASK);
-	switch (option & V_SPACINGMASK)
-	{
-		case V_MONOSPACE:
-			spacewidth = 4;
-			/* FALLTHRU */
-		case V_OLDSPACING:
-			charwidth = 4;
-			break;
-		case V_6WIDTHSPACE:
-			spacewidth = 3;
-		default:
-			break;
-	}
-	for (;;ch++)
-	{
-		if (!*ch)
-			break;
-		if (*ch & 0x80) //color parsing -x 2.16.09
-		{
-			// manually set flags override color codes
-			if (!(option & V_CHARCOLORMASK))
-				charflags = ((*ch & 0x7f) << V_CHARCOLORSHIFT) & V_CHARCOLORMASK;
-			continue;
-		}
-		if (*ch == '\n')
-		{
-			cx = x;
-			if (option & V_RETURN8)
-				cy += (4*dupy)<<FRACBITS;
-			else
-				cy += (6*dupy)<<FRACBITS;
-			continue;
-		}
-		c = *ch;
-		if (!lowercase)
-			c = toupper(c);
-		c -= HU_FONTSTART;
-		// character does not exist or is a space
-		if (c < 0 || c >= HU_FONTSIZE || !hu_font[c])
-		{
-			cx += (spacewidth * dupx)<<FRACBITS;
-			continue;
-		}
-		if (charwidth)
-		{
-			w = charwidth * dupx;
-			center = w/2 - hu_font[c]->width*(dupx/4);
-		}
-		else
-			w = hu_font[c]->width * dupx / 2;
-		if ((cx>>FRACBITS) > scrwidth)
-			break;
-		if ((cx>>FRACBITS)+left + w < 0) //left boundary check
-		{
-			cx += w<<FRACBITS;
-			continue;
-		}
-		colormap = V_GetStringColormap(charflags);
-		V_DrawFixedPatch(cx + (center<<FRACBITS), cy, FRACUNIT/2, option, hu_font[c], colormap);
-		cx += w<<FRACBITS;
-	}
-}
-
-void V_DrawCenteredSmallStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *string)
-{
-	x -= (V_SmallStringWidth(string, option) / 2)<<FRACBITS;
-	V_DrawSmallStringAtFixed(x, y, option, string);
-}
-
 // Draws a tallnum.  Replaces two functions in y_inter and st_stuff
 void V_DrawTallNum(INT32 x, INT32 y, INT32 flags, INT32 num)
 {
@@ -2150,28 +2049,6 @@ INT32 V_DrawPingNum(INT32 x, INT32 y, INT32 flags, INT32 num, const UINT8 *color
 	} while (num);
 
 	return x;
-}
-
-// Jaden: Draw a number using the position numbers.
-//
-void V_DrawRankNum(INT32 x, INT32 y, INT32 flags, INT32 num, INT32 digits, const UINT8 *colormap)
-{
-	INT32 w = SHORT(ranknum[0]->width) - 1;
-
-	if (flags & V_NOSCALESTART)
-		w *= vid.dupx;
-
-	if (num < 0)
-		num = -num;
-
-	// draw the number
-	do
-	{
-		x -= (w - 1);
-
-		V_DrawFixedPatch(x << FRACBITS, y << FRACBITS, FRACUNIT, flags, ranknum[num % 10], colormap);
-		num /= 10;
-	} while (--digits);
 }
 
 // Write a string using the credit font
@@ -2466,167 +2343,6 @@ INT32 V_ThinStringWidth(const char *string, INT32 option)
 
 
 	return w;
-}
-
-char V_GetSkincolorChar(INT32 color)
-{
-	char cstart = 0x80;
-	
-	switch (color)
-	{
-		case SKINCOLOR_WHITE:
-		case SKINCOLOR_SILVER:
-		case SKINCOLOR_SLATE:
-			cstart = 0x80; // White
-			break;
-
-		case SKINCOLOR_GREY:
-		case SKINCOLOR_NICKEL:
-		case SKINCOLOR_BLACK:
-		case SKINCOLOR_SKUNK:
-		case SKINCOLOR_JET:
-			cstart = 0x86; // V_GRAYMAP
-			break;
-
-		case SKINCOLOR_SEPIA:
-		case SKINCOLOR_BEIGE:
-		case SKINCOLOR_WALNUT:
-		case SKINCOLOR_BROWN:
-		case SKINCOLOR_LEATHER:
-		case SKINCOLOR_RUST:
-		case SKINCOLOR_WRISTWATCH:
-			cstart = 0x8e; // V_BROWNMAP
-			break;
-
-		case SKINCOLOR_FAIRY:
-		case SKINCOLOR_SALMON:
-		case SKINCOLOR_PINK:
-		case SKINCOLOR_ROSE:
-		case SKINCOLOR_BRICK:
-		case SKINCOLOR_LEMONADE:
-		case SKINCOLOR_BUBBLEGUM:
-		case SKINCOLOR_LILAC:
-			cstart = 0x8d; // V_PINKMAP
-			break;
-
-		case SKINCOLOR_CINNAMON:
-		case SKINCOLOR_RUBY:
-		case SKINCOLOR_RASPBERRY:
-		case SKINCOLOR_CHERRY:
-		case SKINCOLOR_RED:
-		case SKINCOLOR_CRIMSON:
-		case SKINCOLOR_MAROON:
-		case SKINCOLOR_FLAME:
-		case SKINCOLOR_SCARLET:
-		case SKINCOLOR_KETCHUP:
-			cstart = 0x85; // V_REDMAP
-			break;
-
-		case SKINCOLOR_DAWN:
-		case SKINCOLOR_SUNSET:
-		case SKINCOLOR_CREAMSICLE:
-		case SKINCOLOR_ORANGE:
-		case SKINCOLOR_PUMPKIN:
-		case SKINCOLOR_ROSEWOOD:
-		case SKINCOLOR_BURGUNDY:
-		case SKINCOLOR_TANGERINE:
-			cstart = 0x87; // V_ORANGEMAP
-			break;
-
-		case SKINCOLOR_PEACH:
-		case SKINCOLOR_CARAMEL:
-		case SKINCOLOR_CREAM:
-			cstart = 0x8f; // V_PEACHMAP
-			break;
-
-		case SKINCOLOR_GOLD:
-		case SKINCOLOR_ROYAL:
-		case SKINCOLOR_BRONZE:
-		case SKINCOLOR_COPPER:
-		case SKINCOLOR_THUNDER:
-			cstart = 0x8a; // V_GOLDMAP
-			break;
-
-		case SKINCOLOR_POPCORN:
-		case SKINCOLOR_QUARRY:
-		case SKINCOLOR_YELLOW:
-		case SKINCOLOR_MUSTARD:
-		case SKINCOLOR_CROCODILE:
-		case SKINCOLOR_OLIVE:
-			cstart = 0x82; // V_YELLOWMAP
-			break;
-
-		case SKINCOLOR_ARTICHOKE:
-		case SKINCOLOR_VOMIT:
-		case SKINCOLOR_GARDEN:
-		case SKINCOLOR_TEA:
-		case SKINCOLOR_PISTACHIO:
-			cstart = 0x8b; // V_TEAMAP
-			break;
-
-		case SKINCOLOR_LIME:
-		case SKINCOLOR_HANDHELD:
-		case SKINCOLOR_MOSS:
-		case SKINCOLOR_CAMOUFLAGE:
-		case SKINCOLOR_ROBOHOOD:
-		case SKINCOLOR_MINT:
-		case SKINCOLOR_GREEN:
-		case SKINCOLOR_PINETREE:
-		case SKINCOLOR_EMERALD:
-		case SKINCOLOR_SWAMP:
-		case SKINCOLOR_DREAM:
-		case SKINCOLOR_PLAGUE:
-		case SKINCOLOR_ALGAE:
-			cstart = 0x83; // V_GREENMAP
-			break;
-
-		case SKINCOLOR_CARIBBEAN:
-		case SKINCOLOR_AZURE:
-		case SKINCOLOR_AQUA:
-		case SKINCOLOR_TEAL:
-		case SKINCOLOR_CYAN:
-		case SKINCOLOR_JAWZ:
-		case SKINCOLOR_CERULEAN:
-		case SKINCOLOR_NAVY:
-		case SKINCOLOR_SAPPHIRE:
-			cstart = 0x88; // V_SKYMAP
-			break;
-
-		case SKINCOLOR_PIGEON:
-		case SKINCOLOR_PLATINUM:
-		case SKINCOLOR_STEEL:
-			cstart = 0x8c; // V_STEELMAP
-			break;
-
-		case SKINCOLOR_PERIWINKLE:
-		case SKINCOLOR_BLUE:
-		case SKINCOLOR_BLUEBERRY:
-		case SKINCOLOR_NOVA:
-			cstart = 0x84; // V_BLUEMAP
-			break;
-
-		case SKINCOLOR_ULTRAVIOLET:
-		case SKINCOLOR_PURPLE:
-		case SKINCOLOR_FUCHSIA:
-			cstart = 0x81; // V_PURPLEMAP
-			break;
-
-		case SKINCOLOR_PASTEL:
-		case SKINCOLOR_MOONSLAM:
-		case SKINCOLOR_DUSK:
-		case SKINCOLOR_TOXIC:
-		case SKINCOLOR_MAUVE:
-		case SKINCOLOR_LAVENDER:
-		case SKINCOLOR_BYZANTIUM:
-		case SKINCOLOR_POMEGRANATE:
-			cstart = 0x89; // V_LAVENDERMAP
-			break;
-
-		default:
-			break;
-	}
-	
-	return cstart;
 }
 
 boolean *heatshifter = NULL;

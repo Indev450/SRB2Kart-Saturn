@@ -105,7 +105,6 @@ void R_DrawColumn_8(void)
 	}
 }
 
-#define TRANSPARENTPIXEL 247
 
 void R_Draw2sMultiPatchColumn_8(void)
 {

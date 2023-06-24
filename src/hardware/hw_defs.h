@@ -115,26 +115,7 @@ typedef struct
 	poly_t *planepoly;  // the generated convex polygon
 } extrasubsector_t;
 
-// needed for sprite rendering
-// equivalent of the software renderer's vissprites
-typedef struct gr_vissprite_s
-{
-	// Doubly linked list
-	struct gr_vissprite_s *prev;
-	struct gr_vissprite_s *next;
-	float x1, x2;
-	float z1, z2;
-	float tz, ty;
-	lumpnum_t patchlumpnum;
-	boolean flip;
-	UINT8 translucency;       //alpha level 0-255
-	mobj_t *mobj;
-	boolean precip; // Tails 08-25-2002
-	boolean vflip;
-   //Hurdler: 25/04/2000: now support colormap in hardware mode
-	UINT8 *colormap;
-	INT32 dispoffset; // copy of info->dispoffset, affects ordering but not drawing
-} gr_vissprite_t;
+//here lies gr_vissprite
 
 // Kart features
 #define USE_FTRANSFORM_ANGLEZ
@@ -152,11 +133,16 @@ typedef struct
 	FLOAT       anglex,angley;   // aimingangle / viewangle
 #endif
 	FLOAT       scalex,scaley,scalez;
+	FLOAT       spritexscale,spriteyscale;
 	FLOAT       fovxangle, fovyangle;
 	UINT8       splitscreen;
 	boolean     flip;            // screenflip
 	boolean     roll;
+	boolean     rollmodel;
+	SINT8       rollflip;
 	FLOAT       rollangle;
+	UINT8       rotaxis;
+	FLOAT       centerx, centery;
 #ifdef USE_FTRANSFORM_MIRROR
 	boolean     mirror;          // SRB2Kart: Encore Mode
 #endif
@@ -251,23 +237,9 @@ enum hwdsetspecialstate
 
 	HWD_SET_SCREEN_TEXTURES,
 
-	HWD_SET_DEPTH_ONLY_MODE,// for portals
-
-	HWD_SET_PORTAL_MODE,// new portal thing
-	HWD_SET_STENCIL_LEVEL,
-
 	HWD_NUMSTATE
 };
 typedef enum hwdsetspecialstate hwdspecialstate_t;
-
-enum hwdportalstate
-{
-	HWD_PORTAL_NORMAL,
-	HWD_PORTAL_STENCIL_SEGS,
-	HWD_PORTAL_STENCIL_REVERSE_SEGS,
-	HWD_PORTAL_DEPTH_SEGS,
-	HWD_PORTAL_SKY_STENCIL_SEGS,
-};
 
 #define GL_DEFAULTMIX 0x00000000
 #define GL_DEFAULTFOG 0xFF000000

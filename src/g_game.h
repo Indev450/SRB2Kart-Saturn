@@ -126,6 +126,9 @@ extern consvar_t cv_turnaxis4,cv_moveaxis4,cv_brakeaxis4,cv_aimaxis4,cv_lookaxis
 extern consvar_t cv_ghost_besttime, cv_ghost_bestlap, cv_ghost_last, cv_ghost_guest, cv_ghost_staff;
 
 extern consvar_t cv_driftsparkpulse;
+extern consvar_t cv_gravstretch;
+extern consvar_t cv_sloperoll;
+extern consvar_t cv_sloperolldist;
 
 extern consvar_t cv_invincmusicfade;
 extern consvar_t cv_growmusicfade;
@@ -366,7 +369,6 @@ boolean G_GetRetryFlag(void);
 void G_LoadGameData(void);
 void G_LoadGameSettings(void);
 
-void G_SetWadModified(boolean silent, boolean major, UINT16 wadnum);
 void G_SetGameModified(boolean silent, boolean major);
 
 void G_SetGamestate(gamestate_t newstate);

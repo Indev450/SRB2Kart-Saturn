@@ -1862,6 +1862,9 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_windowquake);
 
 	CV_RegisterVar(&cv_driftsparkpulse);
+	CV_RegisterVar(&cv_gravstretch);
+	CV_RegisterVar(&cv_sloperoll);
+	CV_RegisterVar(&cv_sloperolldist);
 
 	CV_RegisterVar(&cv_tilting);
 	CV_RegisterVar(&cv_quaketilt);

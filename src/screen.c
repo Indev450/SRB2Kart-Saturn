@@ -469,56 +469,41 @@ void SCR_CalculateFPS(void)
 
 void SCR_DisplayTicRate(void)
 {
-	skincolors_t ticcntcolor = SKINCOLOR_NONE;
-
+	const UINT8 *ticcntcolor = NULL;
 	UINT32 cap = R_GetFramerateCap();
 	UINT32 benchmark = (cap == 0) ? I_GetRefreshRate() : cap;
 	INT32 x = 318;
-
 	double fps = round(averageFPS);
-	const char *fps_string;
+
+	// draw "FPS"
+	V_DrawFixedPatch(306<<FRACBITS, 183<<FRACBITS, FRACUNIT, V_SNAPTOBOTTOM|V_SNAPTORIGHT, framecounter, R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_YELLOW, GTC_CACHE));
 
 	if (fps > (benchmark - 5))
-		ticcntcolor = SKINCOLOR_MINT;
+		ticcntcolor = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_MINT, GTC_CACHE);
 	else if (fps < 20)
-		ticcntcolor = SKINCOLOR_RASPBERRY;
+		ticcntcolor = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_RASPBERRY, GTC_CACHE);
 
-	if (cv_ticrate.value == 1)
+	if (cap != 0)
 	{
-		if (cap != 0)
-			fps_string = va("%c%d/%d\x82 FPS", V_GetSkincolorChar(ticcntcolor), (INT32)fps, cap);
-		else
-			fps_string = va("%c%d\x82 FPS", V_GetSkincolorChar(ticcntcolor), (INT32)fps);
+		UINT32 digits = 1;
+		UINT32 c2 = cap;
 
-		V_DrawRightAlignedString(318, 190, V_SNAPTOBOTTOM|V_SNAPTORIGHT, fps_string);
-	}
-	else if (cv_ticrate.value == 2)
-	{
-		// draw "FPS"
-		V_DrawFixedPatch(306<<FRACBITS, 183<<FRACBITS, FRACUNIT, V_SNAPTOBOTTOM|V_SNAPTORIGHT, framecounter, R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_YELLOW, GTC_CACHE));
-
-		if (cap != 0)
+		while (c2 > 0)
 		{
-			UINT32 digits = 1;
-			UINT32 c2 = cap;
-
-			while (c2 > 0)
-			{
-				c2 = c2 / 10;
-				digits++;
-			}
-
-			// draw total frame:
-			V_DrawPingNum(x, 190, V_SNAPTOBOTTOM|V_SNAPTORIGHT, cap, R_GetTranslationColormap(TC_RAINBOW, ticcntcolor, GTC_CACHE));
-			x -= digits * 4;
-
-			// draw "/"
-			V_DrawFixedPatch(x<<FRACBITS, 190<<FRACBITS, FRACUNIT, V_SNAPTOBOTTOM|V_SNAPTORIGHT, frameslash, R_GetTranslationColormap(TC_RAINBOW, ticcntcolor, GTC_CACHE));
+			c2 = c2 / 10;
+			digits++;
 		}
 
-		// draw our actual framerate
-		V_DrawPingNum(x, 190, V_SNAPTOBOTTOM|V_SNAPTORIGHT, fps, R_GetTranslationColormap(TC_RAINBOW, ticcntcolor, GTC_CACHE));
+		// draw total frame:
+		V_DrawPingNum(x, 190, V_SNAPTOBOTTOM|V_SNAPTORIGHT, cap, ticcntcolor);
+		x -= digits * 4;
+
+		// draw "/"
+		V_DrawFixedPatch(x<<FRACBITS, 190<<FRACBITS, FRACUNIT, V_SNAPTOBOTTOM|V_SNAPTORIGHT, frameslash, ticcntcolor);
 	}
+
+	// draw our actual framerate
+	V_DrawPingNum(x, 190, V_SNAPTOBOTTOM|V_SNAPTORIGHT, fps, ticcntcolor);
 }
 
 // SCR_DisplayLocalPing
@@ -527,25 +512,9 @@ void SCR_DisplayTicRate(void)
 void SCR_DisplayLocalPing(void)
 {
 	UINT32 ping = playerpingtable[consoleplayer];	// consoleplayer's ping is everyone's ping in a splitnetgame :P
-	INT32 dispy;
-
 	if (cv_showping.value == 1 || (cv_showping.value == 2 && ping > servermaxping))	// only show 2 (warning) if our ping is at a bad level
 	{
-		switch (cv_ticrate.value)
-		{
-			case 1:
-				dispy = 170;
-				break;
-
-			case 2:
-				dispy = 163;
-				break;
-
-			default:
-				dispy = 181;
-				break;
-		}
-
+		INT32 dispy = cv_ticrate.value ? 160 : 181;
 		HU_drawPing(307, dispy, ping, V_SNAPTORIGHT | V_SNAPTOBOTTOM);
 	}
 }

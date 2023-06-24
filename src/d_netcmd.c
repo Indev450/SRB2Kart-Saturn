@@ -49,7 +49,6 @@
 #include "m_anigif.h"
 #include "k_kart.h" // SRB2kart
 #include "y_inter.h"
-#include "fastcmp.h"
 
 #ifdef NETGAME_DEVMODE
 #define CV_RESTRICT CV_NETVAR
@@ -140,8 +139,6 @@ static void Command_View_f (void);
 static void Command_SetViews_f(void);
 
 static void Command_Addfile(void);
-static void Command_Addskins(void);
-static void Command_GLocalSkin(void);
 static void Command_ListWADS_f(void);
 #ifdef DELFILE
 static void Command_Delfile(void);
@@ -287,8 +284,6 @@ consvar_t cv_skin = {"skin", DEFAULTSKIN, CV_SAVE|CV_CALL|CV_NOINIT, NULL, Skin_
 consvar_t cv_skin2 = {"skin2", DEFAULTSKIN2, CV_SAVE|CV_CALL|CV_NOINIT, NULL, Skin2_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_skin3 = {"skin3", DEFAULTSKIN3, CV_SAVE|CV_CALL|CV_NOINIT, NULL, Skin3_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_skin4 = {"skin4", DEFAULTSKIN4, CV_SAVE|CV_CALL|CV_NOINIT, NULL, Skin4_OnChange, 0, NULL, NULL, 0, 0, NULL};
-// haha I've beaten you now, ONLINE
-consvar_t cv_localskin = {"internal___localskin", "none", CV_HIDEN, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_skipmapcheck = {"skipmapcheck", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -447,7 +442,6 @@ static CV_PossibleValue_t basenumlaps_cons_t[] = {{1, "MIN"}, {50, "MAX"}, {0, "
 consvar_t cv_basenumlaps = {"basenumlaps", "Map default", CV_NETVAR|CV_CALL|CV_CHEAT, basenumlaps_cons_t, BaseNumLaps_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_forceskin = {"forceskin", "Off", CV_NETVAR|CV_CALL|CV_CHEAT, Forceskin_cons_t, ForceSkin_OnChange, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_fakelocalskin = {"fakelocalskin", "None", CV_SAVE, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_downloading = {"downloading", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_allowexitlevel = {"allowexitlevel", "No", CV_NETVAR, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -469,13 +463,8 @@ consvar_t cv_showping = {"showping", "Always", CV_SAVE, showping_cons_t, NULL, 0
 
 static CV_PossibleValue_t pingmeasurement_cons_t[] = {{0, "Frames"}, {1, "Milliseconds"}, {0, NULL}};
 consvar_t cv_pingmeasurement = {"pingmeasurement", "Frames", CV_SAVE, pingmeasurement_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_luaimmersion = {"luaimmersion", "On", CV_SAVE, CV_OnOff, 0, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_showviewpointtext = {"showviewpointtext", "On", CV_SAVE, CV_OnOff, 0, 0, NULL, NULL, 0, 0, NULL};
-
-// snowy cvars
-consvar_t cv_showinput = {"showinput", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_showminimapnames = {"showminimapnames", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 // Intermission time Tails 04-19-2002
 static CV_PossibleValue_t inttime_cons_t[] = {{0, "MIN"}, {3600, "MAX"}, {0, NULL}};
@@ -625,8 +614,6 @@ void D_RegisterServerCommands(void)
 	COM_AddCommand("mapmd5", Command_Mapmd5_f);
 
 	COM_AddCommand("addfile", Command_Addfile);
-	COM_AddCommand("addskins", Command_Addskins);
-	COM_AddCommand("localskin", Command_GLocalSkin);
 	COM_AddCommand("listwad", Command_ListWADS_f);
 
 #ifdef DELFILE
@@ -757,14 +744,9 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_showping);
 	CV_RegisterVar(&cv_pingmeasurement);
 
-	CV_RegisterVar(&cv_luaimmersion);
-	CV_RegisterVar(&cv_fakelocalskin);
-
 	CV_RegisterVar(&cv_showtrackaddon);
 
 	CV_RegisterVar(&cv_showviewpointtext);
-	CV_RegisterVar(&cv_showinput);
-	CV_RegisterVar(&cv_showminimapnames);
 
 #ifdef SEENAMES
 	CV_RegisterVar(&cv_allowseenames);
@@ -864,7 +846,6 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_playername);
 	CV_RegisterVar(&cv_playercolor);
 	CV_RegisterVar(&cv_skin); // r_things.c (skin NAME)
-	CV_RegisterVar(&cv_localskin);
 	// secondary player (splitscreen)
 	CV_RegisterVar(&cv_playername2);
 	CV_RegisterVar(&cv_playercolor2);
@@ -4437,7 +4418,7 @@ static void Command_Addfile(void)
 	// Add file on your client directly if it is trivial, or you aren't in a netgame.
 	if (!(netgame || multiplayer) || musiconly)
 	{
-		P_AddWadFile(fn, false);
+		P_AddWadFile(fn);
 		return;
 	}
 
@@ -4484,104 +4465,6 @@ static void Command_Addfile(void)
 		SendNetXCmd(XD_REQADDFILE, buf, buf_p - buf);
 	else
 		SendNetXCmd(XD_ADDFILE, buf, buf_p - buf);
-}
-
-// i hate myself
-static boolean DumbStartsWith(const char *pre, const char *str)
-{
-    size_t lenpre = strlen(pre),
-           lenstr = strlen(str);
-    return lenstr < lenpre ? false : memcmp(pre, str, lenpre) == 0;
-}
-/** Adds something at runtime.
-  */
-static void
-Command_Addskins (void)
-{
-	if (COM_Argc() > 3)
-	{
-		CONS_Printf(
-				"addskins <file>: Load a skin file.\n");
-		return;
-	}
-
-	// no forcing?
-	/*
-	if (fasticmp(COM_Argv(2), "-force") || fasticmp(COM_Argv(2), "-f")) {
-		CONS_Alert(CONS_NOTICE, M_GetText("Adding file %s. May or may not be a skin.\n"), COM_Argv(1));
-		P_AddWadFile(COM_Argv(1), 0, true);	
-	} else {
-		if (DumbStartsWith("KC_", COM_Argv(1))) {
-			P_AddWadFile(COM_Argv(1), 0, true);
-		} else if (DumbStartsWith("KCL_", COM_Argv(1))) {
-			if (!demo.playback) {
-				CONS_Alert(CONS_ERROR, M_GetText("Cannot add file %s as it is a skin with lua. Include -force or -f to force it to load.\n"), COM_Argv(1));
-				return;
-			} else {
-	*/
-				P_AddWadFile(COM_Argv(1), true);
-	/*
-			}
-		} else {
-			CONS_Alert(CONS_ERROR, M_GetText("Cannot add file %s as it is not a skin.\n"), COM_Argv(1));
-			return;
-		}
-	}
-	*/
-}
-// args n stuff
-#include "args.h"
-
-static void Command_GLocalSkin (void) {
-	ArgParser* parser = ap_new();
-	ap_set_helptext(parser, "Usage: localskin [options] <name>\n\nOptions: \n\
-	-d, --display: 	Use the first displaying player instead of yourself.\n\
-					Has no effect on replays. Omits any player related\n\
-					options.\n\
-    -a, --all: 		Set a localskin to all players. Omits any player related\n\
-					options.\n\
-    -p, --player: 	Set a localskin to a specific player name.\n\
-					If omitted, defaults to the client player, unless -d \n\
-					or --display is added.");
-	ap_set_version(parser, "");
-	ap_str_opt(parser, "player p", player_names[consoleplayer]);
-	ap_flag(parser, "display d");
-	ap_flag(parser, "all a");
-
-	ap_parse(parser, COM_Argc(), COM_ArgvList());
-
-	boolean disply;
-	boolean allp;
-
-	if (ap_found(parser, "display")) disply = true; else disply = false;
-	if (ap_found(parser, "all")) allp = true; else allp = false;
-
-	INT32 i, idx;
-	i = 0;
-	idx = 0;
-
-	for (idx = 0; idx < ap_count_args(parser); idx++) {
-		if (disply) {
-			SetLocalPlayerSkin(displayplayers[0], ap_arg(parser, idx), NULL);
-			return;
-		} else {
-			for (i = 0; i < MAXPLAYERS; i++) {
-				if (allp) {
-					SetLocalPlayerSkin(i, ap_arg(parser, idx), NULL);
-				} else {
-					if (fasticmp(player_names[i], ap_str_value(parser, "player"))) {
-						if (fasticmp(player_names[i], cv_playername.string))
-							SetLocalPlayerSkin(i, ap_arg(parser, idx), &cv_localskin);
-						else
-							SetLocalPlayerSkin(i, ap_arg(parser, idx), NULL);
-						break;
-					}	
-				}
-			}
-		}
-	}
-
-	ap_free(parser);
 }
 
 #ifdef DELFILE
@@ -4740,7 +4623,7 @@ static void Got_Addfilecmd(UINT8 **cp, INT32 playernum)
 
 	ncs = findfile(filename,md5sum,true);
 
-	if (ncs != FS_FOUND || !P_AddWadFile(filename, false))
+	if (ncs != FS_FOUND || !P_AddWadFile(filename))
 	{
 		Command_ExitGame_f();
 		if (ncs == FS_FOUND)

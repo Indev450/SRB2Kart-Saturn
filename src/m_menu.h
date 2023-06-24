@@ -262,6 +262,9 @@ void Screenshot_option_Onchange(void);
 // Addons menu updating
 void Addons_option_Onchange(void);
 
+// Player distortion menu updating
+void PDistort_menu_Onchange(void);
+
 // Bird menu updating
 void Bird_menu_Onchange(void);
 

@@ -144,6 +144,9 @@ void A_SpawnObjectAbsolute();
 void A_SpawnObjectRelative();
 void A_ChangeAngleRelative();
 void A_ChangeAngleAbsolute();
+void A_RollAngle();
+void A_ChangeRollAngleRelative();
+void A_ChangeRollAngleAbsolute();
 void A_PlaySound();
 void A_FindTarget();
 void A_FindTracer();
@@ -226,7 +229,7 @@ void A_NapalmScatter();
 void A_SpawnFreshCopy();
 
 // ratio of states to sprites to mobj types is roughly 6 : 1 : 1
-#define NUMMOBJFREESLOTS 2048
+#define NUMMOBJFREESLOTS 1024
 #define NUMSPRITEFREESLOTS NUMMOBJFREESLOTS
 #define NUMSTATEFREESLOTS (NUMMOBJFREESLOTS*8)
 

@@ -21,7 +21,6 @@
 extern consvar_t cv_playername;
 extern consvar_t cv_playercolor;
 extern consvar_t cv_skin;
-extern consvar_t cv_localskin;
 // secondary splitscreen player
 extern consvar_t cv_playername2;
 extern consvar_t cv_playercolor2;
@@ -152,11 +151,6 @@ extern consvar_t cv_showping;
 extern consvar_t cv_pingmeasurement;
 
 extern consvar_t cv_showviewpointtext;
-extern consvar_t cv_luaimmersion;
-extern consvar_t cv_fakelocalskin;
-// snowy cvars!!!
-extern consvar_t cv_showinput;
-extern consvar_t cv_showminimapnames;
 
 extern consvar_t cv_skipmapcheck;
 

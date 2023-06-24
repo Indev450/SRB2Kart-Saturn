@@ -212,7 +212,7 @@ static void Y_CalculateMatchData(UINT8 rankingsmode, void (*comparison)(INT32))
 		;
 	else if ((data.match.rankingsmode = (boolean)rankingsmode))
 	{
-		sprintf(data.match.levelstring, "\x82* \x80Total Rankings \x82*");
+		sprintf(data.match.levelstring, "* Total Rankings *");
 		data.match.encore = false;
 	}
 	else
@@ -223,12 +223,12 @@ static void Y_CalculateMatchData(UINT8 rankingsmode, void (*comparison)(INT32))
 			if (mapheaderinfo[prevmap]->actnum[0])
 				snprintf(data.match.levelstring,
 					sizeof data.match.levelstring,
-					"\x82*\x80 %s %s \x82*",
+					"* %s %s *",
 					mapheaderinfo[prevmap]->lvlttl, mapheaderinfo[prevmap]->actnum);
 			else
 				snprintf(data.match.levelstring,
 					sizeof data.match.levelstring,
-					"\x82*\x80 %s \x82*",
+					"* %s *",
 					mapheaderinfo[prevmap]->lvlttl);
 		}
 		else
@@ -237,12 +237,12 @@ static void Y_CalculateMatchData(UINT8 rankingsmode, void (*comparison)(INT32))
 			if (mapheaderinfo[prevmap]->actnum[0])
 				snprintf(data.match.levelstring,
 					sizeof data.match.levelstring,
-					"\x82*\x80 %s %s %s \x82*",
+					"* %s %s %s *",
 					mapheaderinfo[prevmap]->lvlttl, zonttl, mapheaderinfo[prevmap]->actnum);
 			else
 				snprintf(data.match.levelstring,
 					sizeof data.match.levelstring,
-					"\x82*\x80 %s %s \x82*",
+					"* %s %s *",
 					mapheaderinfo[prevmap]->lvlttl, zonttl);
 		}
 
@@ -436,17 +436,16 @@ void Y_IntermissionDrawer(void)
 			timeheader = (intertype == int_race ? "TIME" : "SCORE");
 
 		// draw the level name
-		V_DrawCenteredString(-4 + x + BASEVIDWIDTH/2, 8, V_ALLOWLOWERCASE, data.match.levelstring);
-
+		V_DrawCenteredString(-4 + x + BASEVIDWIDTH/2, 12, 0, data.match.levelstring);
 		V_DrawFill((x-3) - duptweak, 34, dupadjust-2, 1, 0);
-		V_DrawFill((x-3) - duptweak, 182, dupadjust-2, 1, 0);
 
 		if (data.match.encore)
-			V_DrawCenteredSmallString(-4 + x + BASEVIDWIDTH/2, 17, hilicol | V_ALLOWLOWERCASE, "Encore Mode");
+			V_DrawCenteredString(-4 + x + BASEVIDWIDTH/2, 12-8, hilicol, "ENCORE MODE");
 
 		if (data.match.numplayers > NUMFORNEWCOLUMN)
 		{
 			V_DrawFill(x+156, 24, 1, 158, 0);
+			V_DrawFill((x-3) - duptweak, 182, dupadjust-2, 1, 0);
 
 			V_DrawCenteredString(x+6+(BASEVIDWIDTH/2), 24, hilicol, "#");
 			V_DrawString(x+36+(BASEVIDWIDTH/2), 24, hilicol, "NAME");
@@ -476,15 +475,7 @@ void Y_IntermissionDrawer(void)
 				if (data.match.color[i])
 				{
 					UINT8 *colormap = R_GetTranslationColormap(*data.match.character[i], *data.match.color[i], GTC_CACHE);
-					// i fucking hate this i fucking hate this i hate this so much
-					if (!players[data.match.num[i]].skinlocal) {
-						if (!players[data.match.num[i]].localskin)
-							V_DrawMappedPatch(x+16, y-4, 0, facerankprefix[*data.match.character[i]], colormap);
-						else
-							V_DrawMappedPatch(x+16, y-4, 0, facerankprefix[players[data.match.num[i]].localskin - 1], colormap);
-					} else {
-						V_DrawMappedPatch(x+16, y-4, 0, localfacerankprefix[players[data.match.num[i]].localskin - 1], colormap);
-					}
+					V_DrawMappedPatch(x+16, y-4, 0, facerankprefix[*data.match.character[i]], colormap);
 				}
 
 				if (data.match.num[i] == whiteplayer)
@@ -569,35 +560,35 @@ void Y_IntermissionDrawer(void)
 dotimer:
 	if (timer)
 	{
-		INT32 tickdown = timer + 1;
-		char hilichar = ('\x80' + (hilicol >> V_CHARCOLORSHIFT));
-
-		const char *othermap[4] = {"Restarting the map", "Next map starts", "Speeding off to a random map", "Voting starts"};
-		char *string = va("%c%s in \x82%d.%02d%c...", hilichar, othermap[cv_advancemap.value], tickdown / TICRATE, G_TicsToCentiseconds(tickdown), hilichar);
+		char *string;
+		INT32 tickdown = (timer+1)/TICRATE;
 
 		if (multiplayer && demo.playback)
-			string = va("%cReplay ends in \x82%d.%02d%c...", hilichar, tickdown / TICRATE, G_TicsToCentiseconds(tickdown), hilichar);
+			string = va("Replay ends in %d", tickdown);
+		else
+			string = va("%s starts in %d", cv_advancemap.string, tickdown);
 
-		V_DrawCenteredString(BASEVIDWIDTH/2, 188, V_ALLOWLOWERCASE, string);
+		V_DrawCenteredString(BASEVIDWIDTH/2, 188, hilicol,
+			string);
 	}
 
 	if ((demo.recording || demo.savemode == DSM_SAVED) && !demo.playback)
 		switch (demo.savemode)
 		{
-			case DSM_NOTSAVING:
-				V_DrawRightAlignedThinString(BASEVIDWIDTH - 2, 2, V_SNAPTOTOP|V_SNAPTORIGHT|V_ALLOWLOWERCASE|V_6WIDTHSPACE|hilicol, "Look Backward: Save replay");
-				break;
+		case DSM_NOTSAVING:
+			V_DrawRightAlignedThinString(BASEVIDWIDTH - 2, 2, V_SNAPTOTOP|V_SNAPTORIGHT|V_ALLOWLOWERCASE|hilicol, "Look Backward: Save replay");
+			break;
 
-			case DSM_SAVED:
-				V_DrawRightAlignedThinString(BASEVIDWIDTH - 2, 2, V_SNAPTOTOP|V_SNAPTORIGHT|V_ALLOWLOWERCASE|V_6WIDTHSPACE|hilicol, "Replay saved!");
-				break;
+		case DSM_SAVED:
+			V_DrawRightAlignedThinString(BASEVIDWIDTH - 2, 2, V_SNAPTOTOP|V_SNAPTORIGHT|V_ALLOWLOWERCASE|hilicol, "Replay saved!");
+			break;
 
-			case DSM_TITLEENTRY:
-				ST_DrawDemoTitleEntry();
-				break;
+		case DSM_TITLEENTRY:
+			ST_DrawDemoTitleEntry();
+			break;
 
-			default: // Don't render any text here
-				break;
+		default: // Don't render any text here
+			break;
 		}
 
 	// Make it obvious that scrambling is happening next round.
@@ -1110,16 +1101,16 @@ void Y_VoteDrawer(void)
 				V_DrawFixedPatch((BASEVIDWIDTH-60)<<FRACBITS, ((y+25)<<FRACBITS) - (rubyheight<<1), FRACUNIT, V_SNAPTORIGHT, rubyicon, NULL);
 			}
 
-			V_DrawRightAlignedThinString(BASEVIDWIDTH-21, 40+y, V_SNAPTORIGHT|V_ALLOWLOWERCASE|V_6WIDTHSPACE, str);
+			V_DrawRightAlignedThinString(BASEVIDWIDTH-21, 40+y, V_SNAPTORIGHT|V_6WIDTHSPACE, str);
 
 			if (levelinfo[i].gts)
 			{
-				INT32 w = V_ThinStringWidth(levelinfo[i].gts, V_SNAPTORIGHT|V_6WIDTHSPACE)+1;
+				INT32 w = V_ThinStringWidth(levelinfo[i].gts, V_SNAPTORIGHT)+1;
 				V_DrawFill(BASEVIDWIDTH-100, y+10, w+1, 2, V_SNAPTORIGHT|31);
 				V_DrawFill(BASEVIDWIDTH-100, y, w, 11, V_SNAPTORIGHT|levelinfo[i].gtc);
 				V_DrawDiag(BASEVIDWIDTH-100+w+1, y, 12, V_SNAPTORIGHT|31);
 				V_DrawDiag(BASEVIDWIDTH-100+w, y, 11, V_SNAPTORIGHT|levelinfo[i].gtc);
-				V_DrawThinString(BASEVIDWIDTH-99, y+1, V_SNAPTORIGHT|V_6WIDTHSPACE, levelinfo[i].gts);
+				V_DrawThinString(BASEVIDWIDTH-99, y+1, V_SNAPTORIGHT, levelinfo[i].gts);
 			}
 
 			y += 50;
@@ -1188,7 +1179,7 @@ void Y_VoteDrawer(void)
 			if (players[i].skincolor)
 			{
 				UINT8 *colormap = R_GetTranslationColormap(players[i].skin, players[i].skincolor, GTC_CACHE);
-				V_DrawMappedPatch(x+24, y+9, V_SNAPTOLEFT, (players[i].skinlocal ? localfacerankprefix : facerankprefix)[((players[i].localskin) ? players[i].localskin-1 : players[i].skin)], colormap);
+				V_DrawMappedPatch(x+24, y+9, V_SNAPTOLEFT, facerankprefix[players[i].skin], colormap);
 			}
 
 			if (!splitscreen && i == consoleplayer)
@@ -1209,16 +1200,15 @@ void Y_VoteDrawer(void)
 
 	if (timer)
 	{
-		INT32 hilicol, tickdown = (timer+1);
+		INT32 hilicol, tickdown = (timer+1)/TICRATE;
 		if (cons_menuhighlight.value)
 			hilicol = cons_menuhighlight.value;
 		else if (gametype == GT_RACE)
 			hilicol = V_SKYMAP;
 		else //if (gametype == GT_MATCH)
 			hilicol = V_REDMAP;
-
-		char hilichar = ('\x80' + (hilicol >> V_CHARCOLORSHIFT));
-		V_DrawCenteredString(BASEVIDWIDTH/2, 188, V_ALLOWLOWERCASE, va("%cVote ends in \x82%d.%02d%c...", hilichar, tickdown/TICRATE, G_TicsToCentiseconds(tickdown), hilichar));
+		V_DrawCenteredString(BASEVIDWIDTH/2, 188, hilicol,
+			va("Vote ends in %d", tickdown));
 	}
 }
 
