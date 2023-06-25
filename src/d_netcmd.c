@@ -138,6 +138,7 @@ static void Command_ResetCamera_f(void);
 static void Command_View_f (void);
 static void Command_SetViews_f(void);
 
+static void Command_Addfilelocal(void);
 static void Command_Addfile(void);
 static void Command_ListWADS_f(void);
 #ifdef DELFILE
@@ -613,6 +614,7 @@ void D_RegisterServerCommands(void)
 	COM_AddCommand("showmap", Command_Showmap_f);
 	COM_AddCommand("mapmd5", Command_Mapmd5_f);
 
+	COM_AddCommand("addfilelocal", Command_Addfilelocal);
 	COM_AddCommand("addfile", Command_Addfile);
 	COM_AddCommand("listwad", Command_ListWADS_f);
 
@@ -4377,6 +4379,29 @@ static void Got_RunSOCcmd(UINT8 **cp, INT32 playernum)
 	P_RunSOC(filename);
 	G_SetGameModified(true, false);
 }
+
+static void Command_Addfilelocal(void)
+{
+	const char *fn;
+	INT32 i;
+
+	if (COM_Argc() != 2)
+	{
+		CONS_Printf(M_GetText("addfile <wadfile.wad>: load wad file\n"));
+		return;
+	}
+	else
+		fn = COM_Argv(1);
+
+	// Disallow non-printing characters and semicolons.
+	for (i = 0; fn[i] != '\0'; i++)
+		if (!isprint(fn[i]) || fn[i] == ';')
+			return;
+
+	// Add file on your client directly if it is trivial, or you aren't in a netgame.
+	P_AddWadFile(fn);
+}
+
 
 /** Adds a pwad at runtime.
   * Searches for sounds, maps, music, new images.
