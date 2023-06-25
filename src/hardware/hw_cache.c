@@ -476,24 +476,50 @@ void HWR_InitTextureCache(void)
 	gr_textures = NULL;
 }
 
-
 // Callback function for HWR_FreeTextureCache.
 static void FreeMipmapColormap(INT32 patchnum, void *patch)
 {
-	GLPatch_t* const grpatch = patch;
+	GLPatch_t* const pat = patch;
 	(void)patchnum; //unused
-	while (grpatch->mipmap->nextcolormap)
+
+	// The patch must be valid, obviously
+	if (!pat)
+		return;
+
+	// The mipmap must be valid, obviously
+	while (pat->mipmap)
 	{
-		GLMipmap_t *grmip = grpatch->mipmap->nextcolormap;
-		grpatch->mipmap->nextcolormap = grmip->nextcolormap;
-		if (grmip->grInfo.data) Z_Free(grmip->grInfo.data);
-		free(grmip);
+		// Confusing at first, but pat->mipmap->nextcolormap
+		// at the beginning of the loop is the first colormap
+		// from the linked list of colormaps.
+		GLMipmap_t *next = NULL;
+
+		// No mipmap in this patch, break out of the loop.
+		if (!pat->mipmap)
+			break;
+
+		// No colormap mipmap either.
+		if (!pat->mipmap->nextcolormap)
+			break;
+
+		// Set the first colormap to the one that comes after it.
+		next = pat->mipmap->nextcolormap;
+		pat->mipmap->nextcolormap = next->nextcolormap;
+
+		// Free image data from memory.
+		if (next->grInfo.data)
+			Z_Free(next->grInfo.data);
+		next->grInfo.data = NULL;
+
+		// Free the old colormap mipmap from memory.
+		free(next);
 	}
 }
 
-void HWR_FreeTextureCache(void)
+void HWR_FreeMipmapCache(void)
 {
 	INT32 i;
+	
 	// free references to the textures
 	HWD.pfnClearMipMapCache();
 
@@ -503,10 +529,15 @@ void HWR_FreeTextureCache(void)
 	Z_FreeTags(PU_HWRCACHE_UNLOCKED, PU_HWRCACHE_UNLOCKED);
 
 	// Alam: free the Z_Blocks before freeing it's users
-
-	// free all skin after each level: must be done after pfnClearMipMapCache!
+	// free all patch colormaps after each level: must be done after ClearMipMapCache!
 	for (i = 0; i < numwadfiles; i++)
 		M_AATreeIterate(wadfiles[i]->hwrcache, FreeMipmapColormap);
+}
+
+void HWR_FreeTextureCache(void)
+{
+	// free references to the textures
+	HWR_FreeMipmapCache();
 
 	// now the heap don't have any 'user' pointing to our
 	// texturecache info, we can free it
@@ -516,13 +547,8 @@ void HWR_FreeTextureCache(void)
 	gr_numtextures = 0;
 }
 
-void HWR_PrepLevelCache(size_t pnumtextures)
+void HWR_LoadTextures(size_t pnumtextures)
 {
-	// problem: the mipmap cache management hold a list of mipmaps.. but they are
-	//           reallocated on each level..
-	//sub-optimal, but 1) just need re-download stuff in hardware cache VERY fast
-	//   2) sprite/menu stuff mixed with level textures so can't do anything else
-
 	// we must free it since numtextures changed
 	HWR_FreeTextureCache();
 

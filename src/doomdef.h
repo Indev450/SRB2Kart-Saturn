@@ -149,8 +149,8 @@ extern char  logfilename[1024];
 #else
 #define VERSION    1 // Game version
 #define SUBVERSION 6 // more precise version number
-#define VERSIONSTRING "Galaxy(v1.2) Alugs Spoon v2 "
-#define VERSIONSTRINGW L"Galaxy(v1.2) Alugs Spoon v2"
+#define VERSIONSTRING "Galaxy(v1.2) Alugs Spoon v3.1/dev "
+#define VERSIONSTRINGW L"Galaxy(v1.2) Alugs Spoon v3.1/dev"
 // Hey! If you change this, add 1 to the MODVERSION below! Otherwise we can't force updates!
 // And change CMakeLists.txt (not src/, but in root), for CMake users!
 // AND appveyor.yml, for the build bots!

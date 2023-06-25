@@ -883,7 +883,7 @@ void HWR_DrawConsoleFill(INT32 x, INT32 y, INT32 w, INT32 h, UINT32 color, INT32
 			clearColour.green = (float)rgbaColour.s.green / 255;
 			clearColour.blue = (float)rgbaColour.s.blue / 255;
 			clearColour.alpha = 1;
-			HWD.pfnClearBuffer(true, false, &clearColour);
+			HWD.pfnClearBuffer(true, false, false, &clearColour);
 			return;
 		}
 
@@ -991,7 +991,7 @@ void HWR_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color)
 			clearColour.green = (float)rgbaColour.s.green / 255;
 			clearColour.blue = (float)rgbaColour.s.blue / 255;
 			clearColour.alpha = 1;
-			HWD.pfnClearBuffer(true, false, &clearColour);
+			HWD.pfnClearBuffer(true, false, false, &clearColour);
 			return;
 		}
 

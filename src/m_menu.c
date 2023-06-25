@@ -1335,18 +1335,20 @@ static menuitem_t OP_OpenGLOptionsMenu[] =
 	{IT_STRING | IT_CVAR,	NULL, "3D Models",					&cv_grmdls,					 10},
 	{IT_STRING | IT_CVAR,	NULL, "Fallback Player 3D Model",	&cv_grfallbackplayermodel,	 20},
 	{IT_STRING|IT_CVAR,		NULL, "Shaders",					&cv_grshaders,				 30},
+	{IT_STRING|IT_CVAR,		NULL, "Use custom Shaders",			&cv_grusecustomshaders,		 40},
 
-	{IT_STRING|IT_CVAR,		NULL, "Texture Quality",			&cv_scr_depth,				 50},
-	{IT_STRING|IT_CVAR,		NULL, "Texture Filter",				&cv_grfiltermode,			 60},
-	{IT_STRING|IT_CVAR,		NULL, "Anisotropic",				&cv_granisotropicmode,		 70},
+	{IT_STRING|IT_CVAR,		NULL, "Texture Quality",			&cv_scr_depth,				 60},
+	{IT_STRING|IT_CVAR,		NULL, "Texture Filter",				&cv_grfiltermode,			 70},
+	{IT_STRING|IT_CVAR,		NULL, "Anisotropic",				&cv_granisotropicmode,		 80},
+	{IT_STRING|IT_CVAR,		NULL, "Visual Portals",		  		&cv_grportals,				 90},
 
-	{IT_STRING|IT_CVAR,		NULL, "Wall Contrast Style",		&cv_grfakecontrast,			 90},
-	{IT_STRING|IT_CVAR,		NULL, "Sprite Billboarding",		&cv_grspritebillboarding,	100},
-	{IT_STRING|IT_CVAR,		NULL, "Software Perspective",		&cv_grshearing,				110},
+	{IT_STRING|IT_CVAR,		NULL, "Wall Contrast Style",		&cv_grfakecontrast,			100},
+	{IT_STRING|IT_CVAR,		NULL, "Sprite Billboarding",		&cv_grspritebillboarding,	110},
+	{IT_STRING|IT_CVAR,		NULL, "Software Perspective",		&cv_grshearing,				120},
 
-	{IT_STRING|IT_CVAR,		NULL, "Rendering Distance",			&cv_grrenderdistance,		130},
+	{IT_STRING|IT_CVAR,		NULL, "Rendering Distance",			&cv_grrenderdistance,		140},
 
-	{IT_SUBMENU|IT_STRING,	NULL, "Gamma...",					&OP_OpenGLColorDef,			150},
+	{IT_SUBMENU|IT_STRING,	NULL, "Gamma...",					&OP_OpenGLColorDef,			160},
 };
 
 static menuitem_t OP_OpenGLColorMenu[] =
@@ -1521,7 +1523,7 @@ static menuitem_t OP_HUDOptionsMenu[] =
 
 	{IT_STRING | IT_CVAR, NULL,   "Show Track Addon Name",  &cv_showtrackaddon,   135},
 	{IT_STRING | IT_CVAR, NULL,   "Show \"FOCUS LOST\"",  &cv_showfocuslost,   145},
-	
+
 	{IT_STRING | IT_CVAR, NULL,	"2D character select",		&cv_skinselectmenu,		155},
 };
 
@@ -9215,7 +9217,7 @@ static void M_HandleMasterServerResetChoice(event_t *ev)
 			CV_Set(&cv_masterserver_nagattempts, cv_masterserver_nagattempts.defaultvalue);
 			S_StartSound(NULL, sfx_s221);
 		}
-		else 
+		else
 		{
 			if (firstDismissedNagThisBoot)
 			{
@@ -9377,7 +9379,7 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 		trans = G_GetGametypeColor(cv_newgametype.value);
 
 	V_DrawFill(x-1, y-1, w+2, i+2, trans); // variable reuse...
-	
+
 	if (cv_nextmap.value && cv_showtrackaddon.value)
 	{
 		char *addonname = wadfiles[mapwads[cv_nextmap.value-1]]->filename;
@@ -9631,7 +9633,7 @@ Update the maxplayers label...
 			if (itemOn == 2 && i == setupm_pselect)
 			{
 				static fixed_t cursorframe = 0;
-				
+
 				cursorframe += renderdeltatics / 4;
 				for (; cursorframe > 7 * FRACUNIT; cursorframe -= 7 * FRACUNIT) {}
 
@@ -9927,7 +9929,7 @@ static void M_DrawSetupMultiPlayerMenu(void)
 #undef GETSELECTEDSKINNAME
 			break;
 		case SKINMENUTYPE_2D:
-			
+
 			skintodisplay = setupm_fakeskin;
 			if (setupm_skinlockedselect) //show the skin we are trying to select
 				skintodisplay = skinstats[setupm_skinxpos][setupm_skinypos][setupm_skinselect];
@@ -10037,7 +10039,7 @@ static void M_DrawSetupMultiPlayerMenu(void)
 #define DRAWACCEL(x, y) V_DrawThinString((x), (y), V_6WIDTHSPACE | highlightflags, "Turn")
 #define DRAWHEAVY(x, y) V_DrawThinString((x), (y), V_6WIDTHSPACE | highlightflags, "Heavy")
 #define TEXTVERTSHIFT 10
-	
+
 			DRAWSLOW(statx - sltw - 2, staty);
 			DRAWSLOW(statx - sltw - 2, staty - TEXTVERTSHIFT+ (9 * 18) - 11);
 			DRAWFAST(statx + (9 * 18), staty);
@@ -10122,7 +10124,7 @@ static void M_DrawSetupMultiPlayerMenu(void)
 				else
 				{
 					UINT8 cursorframe = (I_GetTime() / 4) % 7;
-					
+
 					cursor = W_CachePatchName(va("K_CHILI%d", cursorframe + 1), PU_CACHE);
 					V_DrawFixedPatch((curx << FRACBITS) - (FRACUNIT), (cury << FRACBITS) - (FRACUNIT), FRACUNIT+(FRACUNIT>>3), 0, cursor, NULL);
 				}
@@ -10302,7 +10304,7 @@ static void M_DrawSetupMultiPlayerMenu(void)
 	}
 
 	// skin 0 is default player sprite
-	
+
 	switch (cv_skinselectmenu.value)
 	{
 		case SKINMENUTYPE_2D:
@@ -10429,7 +10431,7 @@ static void M_HandleSetupMultiPlayer(INT32 choice)
 
 		case KEY_UPARROW:
 			if (cv_skinselectmenu.value == SKINMENUTYPE_2D)
-			{	
+			{
 				BREAKWHENLOCKED
 				if (itemOn == 1 && setupm_skinypos > 0)
 					setupm_skinypos--;
@@ -10476,7 +10478,7 @@ static void M_HandleSetupMultiPlayer(INT32 choice)
 
 		case KEY_LEFTARROW:
 			if (cv_skinselectmenu.value == SKINMENUTYPE_2D && itemOn == 1)
-			{				
+			{
 				if (setupm_skinlockedselect)
 				{
 					if (setupm_skinselect > 0)

@@ -64,6 +64,8 @@ void HWR_RenderPlayerView(INT32 viewnumber, player_t *player);
 void HWR_LoadShaders(UINT16 wadnum, boolean PK3);
 void HWR_SetViewSize(void);
 void HWR_AddCommands(void);
+void HWR_SetTransform(float fpov, player_t *player);
+void HWR_ClearClipper(void);
 
 // My original intention was to split hw_main.c
 // into files like hw_bsp.c, hw_sprites.c...
@@ -84,7 +86,7 @@ void HWR_MakeScreenFinalTexture(void);
 void HWR_DrawScreenFinalTexture(int width, int height);
 
 // hw_main.c: Planes
-void HWR_RenderPlane(extrasubsector_t *xsub, boolean isceiling, fixed_t fixedheight, FBITFIELD PolyFlags, INT32 lightlevel, lumpnum_t lumpnum, sector_t *FOFsector, UINT8 alpha, extracolormap_t *planecolormap);
+void HWR_RenderPlane(extrasubsector_t *xsub, boolean isceiling, fixed_t fixedheight, FBITFIELD PolyFlags, INT32 lightlevel, lumpnum_t lumpnum, sector_t *FOFsector, UINT8 alpha, extracolormap_t *planecolormap, subsector_t *subsector);
 void HWR_AddTransparentFloor(lumpnum_t lumpnum, extrasubsector_t *xsub, boolean isceiling, fixed_t fixedheight, INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, boolean fogplane, extracolormap_t *planecolormap);
 
 #ifdef POLYOBJECTS
@@ -123,9 +125,10 @@ void HWR_DrawSprites(void);
 
 // hw_bsp.c
 void HWR_CreatePlanePolygons(INT32 bspnum);
+extern boolean gr_maphasportals;
 
 // hw_cache.c
-void HWR_PrepLevelCache(size_t pnumtextures);
+void HWR_LoadTextures(size_t pnumtextures);
 
 // hw_trick.c
 void HWR_CorrectSWTricks(void);
@@ -149,6 +152,9 @@ extern consvar_t cv_grspritebillboarding;
 extern consvar_t cv_grfakecontrast;
 extern consvar_t cv_grfallbackplayermodel;
 extern consvar_t cv_grrenderdistance;
+extern consvar_t cv_grportals;
+extern consvar_t cv_nostencil;
+extern consvar_t cv_grusecustomshaders;
 
 extern CV_PossibleValue_t granisotropicmode_cons_t[];
 

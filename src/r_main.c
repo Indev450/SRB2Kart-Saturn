@@ -1899,6 +1899,7 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_grfakecontrast);
 	CV_RegisterVar(&cv_grshearing);
 	CV_RegisterVar(&cv_grshaders);
+	CV_RegisterVar(&cv_grusecustomshaders);
 #endif
 
 #ifdef HWRENDER

@@ -1772,6 +1772,11 @@ static SDL_bool Impl_CreateWindow(SDL_bool fullscreen)
 		flags |= SDL_WINDOW_OPENGL;
 #endif
 
+	// request stencil buffer. If there are problems on weaker hw the bit count could be reduced
+	// If only something like 1-bit or 2-bit stencil is available on some gpus then should implement limit for maxportals based on that.
+	// 4 bits would be enough for current limit in maxportals (12)
+	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 4);
+
 	// Create a window
 	window = SDL_CreateWindow("SRB2Kart "VERSIONSTRING, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
 			realwidth, realheight, flags);
