@@ -1,4 +1,5 @@
 // SONIC ROBO BLAST 2
+// SONIC ROBO BLAST 2
 //-----------------------------------------------------------------------------
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -149,8 +150,8 @@ extern char  logfilename[1024];
 #else
 #define VERSION    1 // Game version
 #define SUBVERSION 6 // more precise version number
-#define VERSIONSTRING "Galaxy(v1.2) Alugs Spoon v3.1 "
-#define VERSIONSTRINGW L"Galaxy(v1.2) Alugs Spoon v3.1"
+#define VERSIONSTRING "Galaxy(v1.2) Alugs Spoon v4/dev"
+#define VERSIONSTRINGW L"Galaxy(v1.2) Alugs Spoon v4/dev"
 // Hey! If you change this, add 1 to the MODVERSION below! Otherwise we can't force updates!
 // And change CMakeLists.txt (not src/, but in root), for CMake users!
 // AND appveyor.yml, for the build bots!

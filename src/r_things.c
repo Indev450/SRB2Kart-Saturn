@@ -1218,6 +1218,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	patch_t *rotsprite = NULL;
 	INT32 rollangle = 0;
 	angle_t rollsum = 0;
+	angle_t sliptiderollangle = 0;
 #endif
 
 	fixed_t ang_scale = FRACUNIT;
@@ -1356,9 +1357,22 @@ static void R_ProjectSprite(mobj_t *thing)
 	spr_topoffset = spritecachedinfo[lump].topoffset;
 
 #ifdef ROTSPRITE
-	if ((thing->rollangle)||(thing->sloperoll))
+
+	if (thing->player)
 	{
-		rollsum = (thing->rollangle)+(thing->sloperoll);
+		sliptiderollangle = FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), ((cv_sloperoll.value == 1) ? thing->player->sliproll*(thing->player->sliptidemem) : 0));
+	}
+	else
+		sliptiderollangle = 0;
+
+	if ((thing->rollangle)||(thing->sloperoll)||sliptiderollangle)
+	{
+		
+		if (thing->player)
+			rollsum = (thing->rollangle) + (thing->sloperoll) + sliptiderollangle;
+		else
+			rollsum = (thing->rollangle) + (thing->sloperoll);
+
 		rollangle = R_GetRollAngle(rollsum);
 		rotsprite = Patch_GetRotatedSprite(sprframe, (thing->frame & FF_FRAMEMASK), rot, flip, sprinfo, rollangle);
 		

@@ -4918,6 +4918,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 	patch_t *rotsprite = NULL;
 	INT32 rollangle = 0;
 	angle_t rollsum = 0;
+	angle_t sliptiderollangle = 0;
 #endif
 
 
@@ -5052,9 +5053,16 @@ void HWR_ProjectSprite(mobj_t *thing)
 	spr_topoffset = spritecachedinfo[lumpoff].topoffset;
 
 #ifdef ROTSPRITE
-	if ((thing->rollangle)||(thing->sloperoll))
+	if ((thing->rollangle)||(thing->sloperoll)||(thing->player && thing->player->sliproll))
 	{
-		rollsum = (thing->rollangle)+(thing->sloperoll);
+		if (thing->player)
+		{
+			sliptiderollangle = thing->player->sliproll*(thing->player->sliptidemem);
+			rollsum = (thing->rollangle)+(thing->sloperoll)+FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), sliptiderollangle);
+		}
+		else
+			rollsum = (thing->rollangle)+(thing->sloperoll);
+		
 		rollangle = R_GetRollAngle(rollsum);
 		rotsprite = Patch_GetRotatedSprite(sprframe, (thing->frame & FF_FRAMEMASK), rot, flip, sprinfo, rollangle);
 

@@ -39,6 +39,7 @@
 #include "../r_draw.h"
 #include "../p_tick.h"
 #include "../k_kart.h" // colortranslations
+#include "../g_game.h" // cv_sloperoll
 #include "hw_model.h"
 
 #include "hw_main.h"
@@ -1141,6 +1142,7 @@ void HWR_DrawMD2(gr_vissprite_t *spr)
 		spritedef_t *sprdef;
 		spriteframe_t *sprframe;
 		spriteinfo_t *sprinfo;
+		INT32 rollfactor = 0;
 		angle_t ang;
 		float finalscale;
 		interpmobjstate_t interp;
@@ -1330,9 +1332,23 @@ void HWR_DrawMD2(gr_vissprite_t *spr)
 		
 		p.spritexscale = FIXED_TO_FLOAT(spr->mobj->spritexscale);
 		p.spriteyscale = FIXED_TO_FLOAT(spr->mobj->spriteyscale);
-		if (spr->mobj->rollangle)
+		
+		angle_t sliptideroll = 0;
+
+		if (spr->mobj->player)
+			sliptideroll = ((cv_sloperoll.value) ? spr->mobj->player->sliproll : 0);
+
+		if ((spr->mobj->rollangle)||sliptideroll)
 		{
-			fixed_t anglef = AngleFixed(spr->mobj->rollangle);
+			angle_t rollang = 0;
+			rollfactor = ((spr->mobj->rollmodel == true) ? 1 : 0);
+
+			if (spr->mobj->player)
+				rollang = (spr->mobj->rollangle*rollfactor) + (sliptideroll*spr->mobj->player->sliptidemem);
+			else
+				rollang = (spr->mobj->rollangle*rollfactor);
+			
+			fixed_t anglef = AngleFixed(rollang);
 			p.rollangle = FIXED_TO_FLOAT(anglef);
 			p.rollmodel = (spr->mobj->rollmodel);
 			p.roll = true;
