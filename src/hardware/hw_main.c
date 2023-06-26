@@ -109,7 +109,7 @@ static INT32 current_bsp_culling_distance = 0;
 //  - full screen scaling (use native resolution or windowed mode to avoid this)
 consvar_t cv_grscreentextures = {"gr_screentextures", "On", CV_CALL, CV_OnOff,
                                  CV_screentextures_ONChange, 0, NULL, NULL, 0, 0, NULL};
-								 
+
 consvar_t cv_grusecustomshaders = {"gr_usecustomshaders", "Yes", CV_CALL|CV_SAVE, CV_OnOff, CV_useCustomShaders_ONChange, 0, NULL, NULL, 0, 0, NULL};
 
 static void CV_filtermode_ONChange(void)
@@ -127,8 +127,7 @@ static void CV_screentextures_ONChange(void)
 	HWD.pfnSetSpecialState(HWD_SET_SCREEN_TEXTURES, cv_grscreentextures.value);
 }
 
-static void CV_useCustomShaders_ONChange(void)
-{
+static void CV_useCustomShaders_ONChange(void) {
     HWD.pfnInitCustomShaders();
 }
 
@@ -800,7 +799,7 @@ void HWR_ProjectWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend
 	HWR_Lighting(pSurf, lightlevel, wallcolormap);
 
 	HWD.pfnSetShader(2);	// wall shader
-	
+
 	// don't draw to color buffer when drawing to stencil
 	if (gl_drawing_stencil)
 	{
@@ -2405,7 +2404,7 @@ void HWR_AddLine(seg_t *line)
 	static sector_t tempsec;
 
 	fixed_t v1x, v1y, v2x, v2y; // the seg's vertexes as fixed_t
-	
+
 	boolean dont_draw = false;
 #ifdef POLYOBJECTS
 	if (line->polyseg && !(line->polyseg->flags & POF_RENDERSIDES))
@@ -2493,7 +2492,7 @@ void HWR_AddLine(seg_t *line)
 	checkforemptylines = true;
 
 	gr_backsector = line->backsector;
-	
+
 	// Portal line
 /*
 	if (cv_grportals.value && line->linedef->special == 40 && line->side == 0)
@@ -3047,7 +3046,7 @@ void HWR_Subsector(size_t num)
 	gr_frontsector = R_FakeFlat(gr_frontsector, &tempsec, &floorlightlevel,
 								&ceilinglightlevel, false);
 	//FIXME: Use floorlightlevel and ceilinglightlevel insted of lightlevel.
-	
+
 	if (gr_portal == GRPORTAL_SEARCH)
 	{
 		skipSprites = true;
@@ -4398,10 +4397,10 @@ static int CompareVisSprites(const void *p1, const void *p2)
 	gr_vissprite_t* spr2 = *(gr_vissprite_t*const*)p2;
 	int idiff;
 	float fdiff;
-	
+
 	// make transparent sprites last
 	// "boolean to int"
-	
+
 	int transparency1 = (spr1->mobj->flags2 & MF2_SHADOW) || (spr1->mobj->frame & FF_TRANSMASK);
 	int transparency2 = (spr2->mobj->flags2 & MF2_SHADOW) || (spr2->mobj->frame & FF_TRANSMASK);
 	idiff = transparency1 - transparency2;
@@ -4912,7 +4911,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 	const boolean papersprite = (thing->frame & FF_PAPERSPRITE);
 	INT32 heightsec, phs;
 	vector3_t pos;
-	
+
 	fixed_t spr_width, spr_height;
 	fixed_t spr_offset, spr_topoffset;
 #ifdef ROTSPRITE
@@ -4921,7 +4920,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 	angle_t rollsum = 0;
 #endif
 
-	
+
 
 	// uncapped/interpolation
 	interpmobjstate_t interp = {0};
@@ -4937,7 +4936,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 	{
 		R_InterpolateMobjState(thing, FRACUNIT, &interp);
 	}
-	
+
 	if (thing->spritexscale < 1 || thing->spriteyscale < 1)
 		return;
 
@@ -5046,7 +5045,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 
 	if (thing->skin && ((skin_t *)thing->skin)->flags & SF_HIRES)
 		this_scale = this_scale * FIXED_TO_FLOAT(((skin_t *)thing->skin)->highresscale);
-	
+
 	spr_width = spritecachedinfo[lumpoff].width;
 	spr_height = spritecachedinfo[lumpoff].height;
 	spr_offset = spritecachedinfo[lumpoff].offset;
@@ -5058,7 +5057,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 		rollsum = (thing->rollangle)+(thing->sloperoll);
 		rollangle = R_GetRollAngle(rollsum);
 		rotsprite = Patch_GetRotatedSprite(sprframe, (thing->frame & FF_FRAMEMASK), rot, flip, sprinfo, rollangle);
-		
+
 		if (rotsprite != NULL)
 		{
 			spr_width = rotsprite->width << FRACBITS;
@@ -5066,7 +5065,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 			spr_offset = rotsprite->leftoffset << FRACBITS;
 			spr_topoffset = rotsprite->topoffset << FRACBITS;
 			spr_topoffset += FEETADJUST;
-			
+
 			// flip -> rotate, not rotate -> flip
 			flip = 0;
 		}
@@ -5164,7 +5163,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 	vis->tz = tz; // Keep tz for the simple sprite sorting that happens
 	vis->dispoffset = thing->info->dispoffset; // Monster Iestyn: 23/11/15: HARDWARE SUPPORT AT LAST
 	vis->flip = flip;
-	
+
 	vis->scale = this_scale;
 	vis->spritexscale = spritexscale;
 	vis->spriteyscale = spriteyscale;
@@ -5177,7 +5176,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 	else
 #endif
 			vis->gpatch = (GLPatch_t *)W_CachePatchNum(sprframe->lumppat[rot], PU_CACHE);
-	
+
 	vis->mobj = thing;
 
 
@@ -5215,7 +5214,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 
 	// set top/bottom coords
 	vis->ty = gzt;
-	
+
 	vis->gzt = gzt;
 	vis->gz = gz;
 
@@ -5352,7 +5351,7 @@ void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 
 	// set top/bottom coords
 	vis->ty = FIXED_TO_FLOAT(thing->z + spritecachedinfo[lumpoff].topoffset);
-	
+
 	vis->gzt = FIXED_TO_FLOAT(thing->z + spritecachedinfo[lumpoff].topoffset);
 	vis->gz = vis->gzt - FIXED_TO_FLOAT(spritecachedinfo[lumpoff].height);
 
@@ -5531,7 +5530,7 @@ void HWR_PortalClipping(portal_t *portal)
 	v1y = FLOAT_TO_FIXED(((polyvertex_t *)seg->pv1)->y);
 	v2x = FLOAT_TO_FIXED(((polyvertex_t *)seg->pv2)->x);
 	v2y = FLOAT_TO_FIXED(((polyvertex_t *)seg->pv2)->y);
-	
+
 	angle1 = R_PointToAngleEx(viewx, viewy, v1x, v1y);
 	angle2 = R_PointToAngleEx(viewx, viewy, v2x, v2y);
 */
@@ -5831,7 +5830,7 @@ void HWR_RenderFrame(INT32 viewnumber, player_t *player, boolean skybox)
 
 	portalclipline = NULL;
 	RecursivePortalRendering(NULL, fpov, player, 0, !skybox);
-	
+
 	HWR_SetTransform(fpov, player);// not sure if needed
 
 	// Unset transform and shader

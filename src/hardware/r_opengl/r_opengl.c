@@ -159,8 +159,8 @@ FUNCPRINTF void GL_DBG_Printf(const char *format, ...)
 	char str[4096] = "";
 	va_list arglist;
 
-	if (gllogstream) 
-	{	
+	if (gllogstream)
+	{
 		va_start(arglist, format);
 		vsnprintf(str, 4096, format, arglist);
 		va_end(arglist);
@@ -808,7 +808,7 @@ void SetupGLFunc4(void)
 	pglBufferData = GetGLFunc("glBufferData");
 	pglDeleteBuffers = GetGLFunc("glDeleteBuffers");
 	pglColorPointer = GetGLFunc("glColorPointer");
-	
+
 	pglStencilFuncSeparate = GetGLFunc("glStencilFuncSeparate");
 	pglStencilOpSeparate = GetGLFunc("glStencilOpSeparate");
 
@@ -1127,7 +1127,7 @@ void SetStates(void)
 	pglLoadIdentity();
 	pglScalef(1.0f, 1.0f, -1.0f);
 	pglGetFloatv(GL_MODELVIEW_MATRIX, modelMatrix); // added for new coronas' code (without depth buffer)
-	
+
 	pglEnable(GL_STENCIL_TEST);
 }
 
@@ -1305,7 +1305,7 @@ EXPORT void HWRAPI(ClearBuffer) (FBOOLEAN ColorMask,
 	}
 
 	SetBlend(DepthMask ? PF_Occlude | CurrentPolyFlags : CurrentPolyFlags&~PF_Occlude);
-	
+
 	if (StencilMask)
 		ClearMask |= GL_STENCIL_BUFFER_BIT;// looks like sometimes stencil buffer needs clearing? had a problem with random black screens
 	pglClear(ClearMask);
@@ -2745,7 +2745,7 @@ EXPORT void HWRAPI(SetSpecialState) (hwdspecialstate_t IdState, INT32 Value)
 		case HWD_SET_SCREEN_TEXTURES:
 			gl_enable_screen_textures = Value;
 			break;
-			
+
 		case HWD_SET_DEPTH_ONLY_MODE:// for portals
 			if (Value)
 			{
@@ -3049,7 +3049,7 @@ static void DrawModelEx(model_t *model, INT32 frameIndex, float duration, float 
 	boolean useTinyFrames;
 
 	int i;
-	
+
 	sprxscale = pos->spritexscale;
 	spryscale = pos->spriteyscale;
 
@@ -3058,7 +3058,7 @@ static void DrawModelEx(model_t *model, INT32 frameIndex, float duration, float 
 	rollradian = (pos->rollangle)*radians;
 
 	// Affect input model scaling
-	
+
 	// this is hilariously insane but it's late as fuck and I can't be inclined to care
 	scalediffx = (sprxscale*scale) - scale;
 	scalediffy = (spryscale*scale) - scale;
@@ -3069,7 +3069,7 @@ static void DrawModelEx(model_t *model, INT32 frameIndex, float duration, float 
 
 	scalediffx *= 0.5f;
 	scalediffy *= 0.5f;
-	
+
 
 	dfx = 1;
 	dfy = 1;
@@ -3161,7 +3161,7 @@ static void DrawModelEx(model_t *model, INT32 frameIndex, float duration, float 
 #endif
 	pglRotatef(pos->anglex, -1.0f, 0.0f, 0.0f);
 	pglRotatef(pos->angley, 0.0f, -1.0f, 0.0f);
-	
+
 	if (pos->roll)
 	{
 		float roll = (1.0f * pos->rollflip);
