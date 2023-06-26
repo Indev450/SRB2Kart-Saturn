@@ -541,6 +541,7 @@ static CV_PossibleValue_t stretchfactor_t[] = {{FRACUNIT/5, "MIN"}, {FRACUNIT, "
 consvar_t cv_gravstretch = {"gravstretch", "1", CV_FLOAT | CV_SAVE, stretchfactor_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_sloperoll = {"sloperoll", "Off", CV_SAVE|CV_CALL, CV_OnOff, PDistort_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_sliptideroll = {"sliptideroll", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static CV_PossibleValue_t sloperolldist_cons_t[] = {
 	/*{256, "256"},*/	{512, "512"},	{768, "768"},
@@ -1176,7 +1177,7 @@ static INT32 Joy3Axis(axis_input_e axissel)
 		}
 		if (flp) retaxis = -retaxis; //flip it around
 		return retaxis;
-		
+
 	}
 	else
 	{
@@ -1196,7 +1197,7 @@ static INT32 Joy3Axis(axis_input_e axissel)
 		}
 		if (flp) retaxis = -retaxis; //flip it around
 		return retaxis;
-		
+
 	}
 }
 
@@ -1274,7 +1275,7 @@ static INT32 Joy4Axis(axis_input_e axissel)
 		}
 		if (flp) retaxis = -retaxis; //flip it around
 		return retaxis;
-		
+
 	}
 	else
 	{
@@ -1294,7 +1295,7 @@ static INT32 Joy4Axis(axis_input_e axissel)
 		}
 		if (flp) retaxis = -retaxis; //flip it around
 		return retaxis;
-		
+
 	}
 }
 

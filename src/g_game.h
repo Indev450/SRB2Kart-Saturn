@@ -128,6 +128,7 @@ extern consvar_t cv_ghost_besttime, cv_ghost_bestlap, cv_ghost_last, cv_ghost_gu
 extern consvar_t cv_driftsparkpulse;
 extern consvar_t cv_gravstretch;
 extern consvar_t cv_sloperoll;
+extern consvar_t cv_sliptideroll;
 extern consvar_t cv_sloperolldist;
 
 extern consvar_t cv_invincmusicfade;

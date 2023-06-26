@@ -128,7 +128,8 @@ static void CV_screentextures_ONChange(void)
 }
 
 static void CV_useCustomShaders_ONChange(void) {
-    HWD.pfnInitCustomShaders();
+    if (rendermode == render_opengl)
+        HWD.pfnInitCustomShaders();
 }
 
 // ==========================================================================
@@ -5057,12 +5058,12 @@ void HWR_ProjectSprite(mobj_t *thing)
 	{
 		if (thing->player)
 		{
-			sliptiderollangle = thing->player->sliproll*(thing->player->sliptidemem);
+			sliptiderollangle = cv_sliptideroll.value ? thing->player->sliproll*(thing->player->sliptidemem) : 0;
 			rollsum = (thing->rollangle)+(thing->sloperoll)+FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), sliptiderollangle);
 		}
 		else
 			rollsum = (thing->rollangle)+(thing->sloperoll);
-		
+
 		rollangle = R_GetRollAngle(rollsum);
 		rotsprite = Patch_GetRotatedSprite(sprframe, (thing->frame & FF_FRAMEMASK), rot, flip, sprinfo, rollangle);
 
