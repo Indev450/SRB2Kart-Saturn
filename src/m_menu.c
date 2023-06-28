@@ -1362,9 +1362,10 @@ static menuitem_t OP_OpenGLColorMenu[] =
 static menuitem_t OP_PlayerDistortMenu[] =
 {
 	{IT_HEADER, NULL, "Player Distortion", NULL, 0},
-	{IT_STRING | IT_CVAR, 	NULL, 	"Rotate players on slopes", &cv_sloperoll, 	10},
-	{IT_STRING | IT_CVAR, 	NULL, 	"Slope rotation distance",&cv_sloperolldist,20},
-	{IT_STRING | IT_CVAR,	NULL,	"Player stretch factor",	&cv_gravstretch,30},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Rotate players when sliptiding", &cv_sliptideroll, 	10},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Rotate players on slopes",       &cv_sloperoll, 	    30},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Slope rotation distance",        &cv_sloperolldist,    40},
+	{IT_STRING | IT_CVAR,	NULL,	"Player stretch factor",	      &cv_gravstretch,      60},
 };
 
 enum
