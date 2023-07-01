@@ -1,0 +1,261 @@
+diff --git a/src/command.c b/src/command.c
+index ff2ff7b1..2d69c781 100644
+--- a/src/command.c
++++ b/src/command.c
+@@ -1910,7 +1910,7 @@ static boolean CV_FilterJoyAxisVars(consvar_t *v, const char *valstr)
+ 	return true;
+ }
+ 
+-// Block the Xbox DInput default axes and reset to the current defaults 
++// Block the Xbox DInput default axes and reset to the current defaults
+ static boolean CV_FilterJoyAxisVars2(consvar_t *v, const char *valstr)
+ {
+ 	if (!stricmp(v->name, "joyaxis_turn") && !stricmp(valstr, "X-Axis"))
+diff --git a/src/g_game.c b/src/g_game.c
+index 55c2e6c9..9e1205b5 100644
+--- a/src/g_game.c
++++ b/src/g_game.c
+@@ -541,6 +541,7 @@ static CV_PossibleValue_t stretchfactor_t[] = {{FRACUNIT/5, "MIN"}, {FRACUNIT, "
+ consvar_t cv_gravstretch = {"gravstretch", "1", CV_FLOAT | CV_SAVE, stretchfactor_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+ 
+ consvar_t cv_sloperoll = {"sloperoll", "Off", CV_SAVE|CV_CALL, CV_OnOff, PDistort_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
++consvar_t cv_sliptideroll = {"sliptideroll", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+ 
+ static CV_PossibleValue_t sloperolldist_cons_t[] = {
+ 	/*{256, "256"},*/	{512, "512"},	{768, "768"},
+@@ -1176,7 +1177,7 @@ static INT32 Joy3Axis(axis_input_e axissel)
+ 		}
+ 		if (flp) retaxis = -retaxis; //flip it around
+ 		return retaxis;
+-		
++
+ 	}
+ 	else
+ 	{
+@@ -1196,7 +1197,7 @@ static INT32 Joy3Axis(axis_input_e axissel)
+ 		}
+ 		if (flp) retaxis = -retaxis; //flip it around
+ 		return retaxis;
+-		
++
+ 	}
+ }
+ 
+@@ -1274,7 +1275,7 @@ static INT32 Joy4Axis(axis_input_e axissel)
+ 		}
+ 		if (flp) retaxis = -retaxis; //flip it around
+ 		return retaxis;
+-		
++
+ 	}
+ 	else
+ 	{
+@@ -1294,7 +1295,7 @@ static INT32 Joy4Axis(axis_input_e axissel)
+ 		}
+ 		if (flp) retaxis = -retaxis; //flip it around
+ 		return retaxis;
+-		
++
+ 	}
+ }
+ 
+diff --git a/src/g_game.h b/src/g_game.h
+index 75b84aa1..2671ffb4 100644
+--- a/src/g_game.h
++++ b/src/g_game.h
+@@ -128,6 +128,7 @@ extern consvar_t cv_ghost_besttime, cv_ghost_bestlap, cv_ghost_last, cv_ghost_gu
+ extern consvar_t cv_driftsparkpulse;
+ extern consvar_t cv_gravstretch;
+ extern consvar_t cv_sloperoll;
++extern consvar_t cv_sliptideroll;
+ extern consvar_t cv_sloperolldist;
+ 
+ extern consvar_t cv_invincmusicfade;
+diff --git a/src/hardware/hw_main.c b/src/hardware/hw_main.c
+index 7227fa23..6a13ce77 100644
+--- a/src/hardware/hw_main.c
++++ b/src/hardware/hw_main.c
+@@ -128,7 +128,8 @@ static void CV_screentextures_ONChange(void)
+ }
+ 
+ static void CV_useCustomShaders_ONChange(void) {
+-    HWD.pfnInitCustomShaders();
++    if (rendermode == render_opengl)
++        HWD.pfnInitCustomShaders();
+ }
+ 
+ // ==========================================================================
+@@ -5057,12 +5058,12 @@ void HWR_ProjectSprite(mobj_t *thing)
+ 	{
+ 		if (thing->player)
+ 		{
+-			sliptiderollangle = thing->player->sliproll*(thing->player->sliptidemem);
++			sliptiderollangle = cv_sliptideroll.value ? thing->player->sliproll*(thing->player->sliptidemem) : 0;
+ 			rollsum = (thing->rollangle)+(thing->sloperoll)+FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), sliptiderollangle);
+ 		}
+ 		else
+ 			rollsum = (thing->rollangle)+(thing->sloperoll);
+-		
++
+ 		rollangle = R_GetRollAngle(rollsum);
+ 		rotsprite = Patch_GetRotatedSprite(sprframe, (thing->frame & FF_FRAMEMASK), rot, flip, sprinfo, rollangle);
+ 
+diff --git a/src/r_main.c b/src/r_main.c
+index 810d249c..811e0463 100644
+--- a/src/r_main.c
++++ b/src/r_main.c
+@@ -1864,15 +1864,10 @@ void R_RegisterEngineStuff(void)
+ 	CV_RegisterVar(&cv_driftsparkpulse);
+ 	CV_RegisterVar(&cv_gravstretch);
+ 	CV_RegisterVar(&cv_sloperoll);
++	CV_RegisterVar(&cv_sliptideroll);
+ 	CV_RegisterVar(&cv_sloperolldist);
+ 
+-	CV_RegisterVar(&cv_tilting);
+-	CV_RegisterVar(&cv_quaketilt);
+-	CV_RegisterVar(&cv_tiltsmoothing);
+-	CV_RegisterVar(&cv_actionmovie);
+-	CV_RegisterVar(&cv_windowquake);
+-
+-	CV_RegisterVar(&cv_showhud);
++    CV_RegisterVar(&cv_showhud);
+ 	CV_RegisterVar(&cv_translucenthud);
+ 
+ 	CV_RegisterVar(&cv_maxportals);
+diff --git a/src/r_things.c b/src/r_things.c
+index 54203873..ac396fa8 100644
+--- a/src/r_things.c
++++ b/src/r_things.c
+@@ -140,7 +140,7 @@ static void R_InstallSpriteLump(UINT16 wad,            // graphics patch
+ 
+ 	if (maxframe ==(size_t)-1 || frame > maxframe)
+ 		maxframe = frame;
+-	
++
+ // rotsprite
+ #ifdef ROTSPRITE
+ 		for (r = 0; r < 16; r++)
+@@ -961,7 +961,7 @@ static void R_DrawVisSprite(vissprite_t *vis)
+ 
+ 	if (vis->x2 >= vid.width)
+ 		vis->x2 = vid.width-1;
+-	
++
+ 	lengthcol = patch->height;
+ 
+ #if 1
+@@ -979,7 +979,7 @@ static void R_DrawVisSprite(vissprite_t *vis)
+ 		fixed_t scalestep = FixedMul(vis->scalestep, vis->spriteyscale);
+ 		if (vis->scalestep) // currently papersprites only
+ 		{
+-			
++
+ #ifndef RANGECHECK
+ 			if ((frac>>FRACBITS) < 0 || (frac>>FRACBITS) >= SHORT(patch->width)) // if this doesn't work i'm removing papersprites
+ 				break;
+@@ -1350,7 +1350,7 @@ static void R_ProjectSprite(mobj_t *thing)
+ 
+ 	if (thing->skin && ((skin_t *)thing->skin)->flags & SF_HIRES)
+ 		this_scale = FixedMul(this_scale, ((skin_t *)thing->skin)->highresscale);
+-	
++
+ 	spr_width = spritecachedinfo[lump].width;
+ 	spr_height = spritecachedinfo[lump].height;
+ 	spr_offset = spritecachedinfo[lump].offset;
+@@ -1360,14 +1360,14 @@ static void R_ProjectSprite(mobj_t *thing)
+ 
+ 	if (thing->player)
+ 	{
+-		sliptiderollangle = FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), ((cv_sloperoll.value == 1) ? thing->player->sliproll*(thing->player->sliptidemem) : 0));
++		sliptiderollangle = FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), ((cv_sliptideroll.value == 1) ? thing->player->sliproll*(thing->player->sliptidemem) : 0));
+ 	}
+ 	else
+ 		sliptiderollangle = 0;
+ 
+ 	if ((thing->rollangle)||(thing->sloperoll)||sliptiderollangle)
+ 	{
+-		
++
+ 		if (thing->player)
+ 			rollsum = (thing->rollangle) + (thing->sloperoll) + sliptiderollangle;
+ 		else
+@@ -1375,7 +1375,7 @@ static void R_ProjectSprite(mobj_t *thing)
+ 
+ 		rollangle = R_GetRollAngle(rollsum);
+ 		rotsprite = Patch_GetRotatedSprite(sprframe, (thing->frame & FF_FRAMEMASK), rot, flip, sprinfo, rollangle);
+-		
++
+ 		if (rotsprite != NULL)
+ 		{
+ 			spr_width = rotsprite->width << FRACBITS;
+@@ -1383,7 +1383,7 @@ static void R_ProjectSprite(mobj_t *thing)
+ 			spr_offset = rotsprite->leftoffset << FRACBITS;
+ 			spr_topoffset = rotsprite->topoffset << FRACBITS;
+ 			spr_topoffset += FEETADJUST;
+-			
++
+ 			// flip -> rotate, not rotate -> flip
+ 			flip = 0;
+ 		}
+@@ -1411,7 +1411,7 @@ static void R_ProjectSprite(mobj_t *thing)
+ 		spr_offset += thing->spritexoffset * flipoffset;
+ 		spr_topoffset += thing->spriteyoffset * flipoffset;
+ 	}
+-	
++
+ 	if (flip)
+ 		offset = spr_offset - spr_width;
+ 	else
+@@ -1580,7 +1580,7 @@ static void R_ProjectSprite(mobj_t *thing)
+ 
+ 	vis->x1 = x1 < 0 ? 0 : x1;
+ 	vis->x2 = x2 >= viewwidth ? viewwidth-1 : x2;
+-	
++
+ 	vis->sector = thing->subsector->sector;
+ 	vis->szt = (INT16)((centeryfrac - FixedMul(vis->gzt - viewz, sortscale))>>FRACBITS);
+ 	vis->sz = (INT16)((centeryfrac - FixedMul(vis->gz - viewz, sortscale))>>FRACBITS);
+@@ -1631,7 +1631,7 @@ static void R_ProjectSprite(mobj_t *thing)
+ 	vis->thingscale = interp.scale;
+ 
+ 	//Fab: lumppat is the lump number of the patch to use, this is different
+-	//     than lumpid for sprites-in-pwad : the graphics are patched	
++	//     than lumpid for sprites-in-pwad : the graphics are patched
+ #ifdef ROTSPRITE
+ 	if (rotsprite != NULL)
+ 		vis->patch = rotsprite;
+@@ -2680,14 +2680,14 @@ void R_ClipSprites(void)
+ 			// e6y: ~13% of speed improvement on sunder.wad map10
+ 			if (ds->x1 < cx)
+ 			{
+-				drawsegs_xranges[1].items[drawsegs_xranges[1].count] = 
++				drawsegs_xranges[1].items[drawsegs_xranges[1].count] =
+ 					drawsegs_xranges[0].items[drawsegs_xranges[0].count];
+ 				drawsegs_xranges[1].count++;
+ 			}
+ 
+ 			if (ds->x2 >= cx)
+ 			{
+-				drawsegs_xranges[2].items[drawsegs_xranges[2].count] = 
++				drawsegs_xranges[2].items[drawsegs_xranges[2].count] =
+ 					drawsegs_xranges[0].items[drawsegs_xranges[0].count];
+ 				drawsegs_xranges[2].count++;
+ 			}
+@@ -3015,7 +3015,7 @@ static int skinSortFunc(const void *a, const void *b) //tbh i have no clue what
+ 
+ 
+ 	//return (strcmp(in1->realname, in2->realname) < 0) || (strcmp(in1->realname, in2->realname) ==);
+-	
++
+ 	switch (cv_skinselectgridsort.value)
+ 	{
+ 	case SKINMENUSORT_REALNAME:
+@@ -3399,7 +3399,7 @@ next_token:
+ 	}
+ 
+ 	sortSkinGrid();
+-	
++
+ 	return;
+ }
+ 

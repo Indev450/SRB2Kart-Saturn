@@ -509,6 +509,7 @@ static void FreeMipmapColormap(INT32 patchnum, void *patch)
 		// Free image data from memory.
 		if (next->grInfo.data)
 			Z_Free(next->grInfo.data);
+		next->grInfo.data = NULL;
 
 		// Free the old colormap from memory.
 		free(next);

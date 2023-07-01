@@ -1365,9 +1365,8 @@ static void R_ProjectSprite(mobj_t *thing)
 	else
 		sliptiderollangle = 0;
 
-	if ((thing->rollangle)||(thing->sloperoll)||sliptiderollangle)
+    if ((thing->rollangle)||(thing->sloperoll)||sliptiderollangle)
 	{
-
 		if (thing->player)
 			rollsum = (thing->rollangle) + (thing->sloperoll) + sliptiderollangle;
 		else
@@ -1581,7 +1580,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	vis->x1 = x1 < 0 ? 0 : x1;
 	vis->x2 = x2 >= viewwidth ? viewwidth-1 : x2;
 
-	vis->sector = thing->subsector->sector;
+	vis->sector = interp.subsector->sector;
 	vis->szt = (INT16)((centeryfrac - FixedMul(vis->gzt - viewz, sortscale))>>FRACBITS);
 	vis->sz = (INT16)((centeryfrac - FixedMul(vis->gz - viewz, sortscale))>>FRACBITS);
 	vis->cut = SC_NONE;

@@ -1910,7 +1910,7 @@ static boolean CV_FilterJoyAxisVars(consvar_t *v, const char *valstr)
 	return true;
 }
 
-// Block the Xbox DInput default axes and reset to the current defaults
+// Block the Xbox DInput default axes and reset to the current defaults 
 static boolean CV_FilterJoyAxisVars2(consvar_t *v, const char *valstr)
 {
 	if (!stricmp(v->name, "joyaxis_turn") && !stricmp(valstr, "X-Axis"))

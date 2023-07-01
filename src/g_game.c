@@ -1177,7 +1177,7 @@ static INT32 Joy3Axis(axis_input_e axissel)
 		}
 		if (flp) retaxis = -retaxis; //flip it around
 		return retaxis;
-
+		
 	}
 	else
 	{
@@ -1197,7 +1197,7 @@ static INT32 Joy3Axis(axis_input_e axissel)
 		}
 		if (flp) retaxis = -retaxis; //flip it around
 		return retaxis;
-
+		
 	}
 }
 
@@ -1275,7 +1275,7 @@ static INT32 Joy4Axis(axis_input_e axissel)
 		}
 		if (flp) retaxis = -retaxis; //flip it around
 		return retaxis;
-
+		
 	}
 	else
 	{
@@ -1295,7 +1295,7 @@ static INT32 Joy4Axis(axis_input_e axissel)
 		}
 		if (flp) retaxis = -retaxis; //flip it around
 		return retaxis;
-
+		
 	}
 }
 

@@ -159,8 +159,8 @@ FUNCPRINTF void GL_DBG_Printf(const char *format, ...)
 	char str[4096] = "";
 	va_list arglist;
 
-	if (gllogstream)
-	{
+	if (gllogstream) 
+	{	
 		va_start(arglist, format);
 		vsnprintf(str, 4096, format, arglist);
 		va_end(arglist);
@@ -808,7 +808,7 @@ void SetupGLFunc4(void)
 	pglBufferData = GetGLFunc("glBufferData");
 	pglDeleteBuffers = GetGLFunc("glDeleteBuffers");
 	pglColorPointer = GetGLFunc("glColorPointer");
-
+	
 	pglStencilFuncSeparate = GetGLFunc("glStencilFuncSeparate");
 	pglStencilOpSeparate = GetGLFunc("glStencilOpSeparate");
 
@@ -1127,7 +1127,7 @@ void SetStates(void)
 	pglLoadIdentity();
 	pglScalef(1.0f, 1.0f, -1.0f);
 	pglGetFloatv(GL_MODELVIEW_MATRIX, modelMatrix); // added for new coronas' code (without depth buffer)
-
+	
 	pglEnable(GL_STENCIL_TEST);
 }
 
@@ -1281,7 +1281,7 @@ EXPORT void HWRAPI(GClipRect) (INT32 minx, INT32 miny, INT32 maxx, INT32 maxy, f
 // -----------------+
 EXPORT void HWRAPI(ClearBuffer) (FBOOLEAN ColorMask,
                                     FBOOLEAN DepthMask,
-																FBOOLEAN StencilMask,
+														FBOOLEAN StencilMask,
                                     FRGBAFloat * ClearColor)
 {
 	//GL_DBG_Printf("ClearBuffer(%d)\n", alpha);
@@ -2336,8 +2336,7 @@ EXPORT void HWRAPI(DrawPolygon) (FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUI
 					poly.alpha  = byte2float[pSurf->PolyColor.s.alpha];
 
 					pglColor4ubv((GLubyte*)&pSurf->PolyColor.s);
-				}
-
+			}
 
 				// Tint color
 				tint.red   = byte2float[pSurf->TintColor.s.red];
@@ -2350,7 +2349,7 @@ EXPORT void HWRAPI(DrawPolygon) (FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUI
 				fade.green = byte2float[pSurf->FadeColor.s.green];
 				fade.blue  = byte2float[pSurf->FadeColor.s.blue];
 				fade.alpha = byte2float[pSurf->FadeColor.s.alpha];
-			}
+		}
 
 		load_shaders(pSurf, &poly, &tint, &fade);
 		}
@@ -2745,7 +2744,7 @@ EXPORT void HWRAPI(SetSpecialState) (hwdspecialstate_t IdState, INT32 Value)
 		case HWD_SET_SCREEN_TEXTURES:
 			gl_enable_screen_textures = Value;
 			break;
-
+			
 		case HWD_SET_DEPTH_ONLY_MODE:// for portals
 			if (Value)
 			{
@@ -3049,7 +3048,7 @@ static void DrawModelEx(model_t *model, INT32 frameIndex, float duration, float 
 	boolean useTinyFrames;
 
 	int i;
-
+	
 	sprxscale = pos->spritexscale;
 	spryscale = pos->spriteyscale;
 
@@ -3058,7 +3057,7 @@ static void DrawModelEx(model_t *model, INT32 frameIndex, float duration, float 
 	rollradian = (pos->rollangle)*radians;
 
 	// Affect input model scaling
-
+	
 	// this is hilariously insane but it's late as fuck and I can't be inclined to care
 	scalediffx = (sprxscale*scale) - scale;
 	scalediffy = (spryscale*scale) - scale;
@@ -3069,7 +3068,7 @@ static void DrawModelEx(model_t *model, INT32 frameIndex, float duration, float 
 
 	scalediffx *= 0.5f;
 	scalediffy *= 0.5f;
-
+	
 
 	dfx = 1;
 	dfy = 1;
@@ -3161,7 +3160,7 @@ static void DrawModelEx(model_t *model, INT32 frameIndex, float duration, float 
 #endif
 	pglRotatef(pos->anglex, -1.0f, 0.0f, 0.0f);
 	pglRotatef(pos->angley, 0.0f, -1.0f, 0.0f);
-
+	
 	if (pos->roll)
 	{
 		float roll = (1.0f * pos->rollflip);

@@ -1867,7 +1867,13 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_sliptideroll);
 	CV_RegisterVar(&cv_sloperolldist);
 
-    CV_RegisterVar(&cv_showhud);
+	CV_RegisterVar(&cv_tilting);
+	CV_RegisterVar(&cv_quaketilt);
+	CV_RegisterVar(&cv_tiltsmoothing);
+	CV_RegisterVar(&cv_actionmovie);
+	CV_RegisterVar(&cv_windowquake);
+
+	CV_RegisterVar(&cv_showhud);
 	CV_RegisterVar(&cv_translucenthud);
 
 	CV_RegisterVar(&cv_maxportals);
@@ -1894,7 +1900,7 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_grfakecontrast);
 	CV_RegisterVar(&cv_grshearing);
 	CV_RegisterVar(&cv_grshaders);
-    CV_RegisterVar(&cv_grusecustomshaders);
+	CV_RegisterVar(&cv_grusecustomshaders);
 #endif
 
 #ifdef HWRENDER

@@ -109,8 +109,8 @@ static INT32 current_bsp_culling_distance = 0;
 //  - full screen scaling (use native resolution or windowed mode to avoid this)
 consvar_t cv_grscreentextures = {"gr_screentextures", "On", CV_CALL, CV_OnOff,
                                  CV_screentextures_ONChange, 0, NULL, NULL, 0, 0, NULL};
-
-consvar_t cv_grusecustomshaders = {"gr_usecustomshaders", "Yes", CV_CALL|CV_SAVE, CV_OnOff, CV_useCustomShaders_ONChange, 0, NULL, NULL, 0, 0, NULL};
+								 
+ consvar_t cv_grusecustomshaders = {"gr_usecustomshaders", "Yes", CV_CALL|CV_SAVE, CV_OnOff, CV_useCustomShaders_ONChange, 0, NULL, NULL, 0, 0, NULL};
 
 static void CV_filtermode_ONChange(void)
 {
@@ -127,7 +127,8 @@ static void CV_screentextures_ONChange(void)
 	HWD.pfnSetSpecialState(HWD_SET_SCREEN_TEXTURES, cv_grscreentextures.value);
 }
 
-static void CV_useCustomShaders_ONChange(void) {
+static void CV_useCustomShaders_ONChange(void)
+{
     if (rendermode == render_opengl)
         HWD.pfnInitCustomShaders();
 }
@@ -172,8 +173,6 @@ FTransform atransform;
 // Float variants of viewx, viewy, viewz, etc.
 static float gr_viewx, gr_viewy, gr_viewz;
 static float gr_viewsin, gr_viewcos;
-
-static fixed_t dup_viewx, dup_viewy, dup_viewz;
 
 static angle_t gr_aimingangle;
 static float gr_viewludsin, gr_viewludcos;
@@ -372,7 +371,6 @@ static size_t gr_numportalsegs = 0;
 static sector_t *gr_portalcullsectors[MAX_GRPORTALS];
 static size_t gr_numportalcullsectors = 0;
 
-
 // ==========================================================================
 // Lighting
 // ==========================================================================
@@ -505,7 +503,7 @@ static FUINT HWR_CalcWallLight(FUINT lightnum, fixed_t v1x, fixed_t v1y, fixed_t
 
 // HWR_RenderPlane
 // Render a floor or ceiling convex polygon
-void HWR_RenderPlane(extrasubsector_t *xsub, boolean isceiling, fixed_t fixedheight, FBITFIELD PolyFlags, INT32 lightlevel, lumpnum_t lumpnum, sector_t *FOFsector, UINT8 alpha, extracolormap_t *planecolormap, subsector_t *subsector)
+void HWR_RenderPlane(extrasubsector_t *xsub, boolean isceiling, fixed_t fixedheight, FBITFIELD PolyFlags, INT32 lightlevel, lumpnum_t lumpnum, sector_t *FOFsector, UINT8 alpha, extracolormap_t *planecolormap)
 {
 	polyvertex_t *  pv;
 	float           height; //constant y for all points on the convex flat polygon
@@ -607,6 +605,9 @@ void HWR_RenderPlane(extrasubsector_t *xsub, boolean isceiling, fixed_t fixedhei
 	flatxref = (float)(((fixed_t)pv->x & (~flatflag)) / fflatsize);
 	flatyref = (float)(((fixed_t)pv->y & (~flatflag)) / fflatsize);
 
+	// transform
+	v3d = planeVerts;
+
 	if (FOFsector != NULL)
 	{
 		if (!isceiling) // it's a floor
@@ -658,32 +659,40 @@ void HWR_RenderPlane(extrasubsector_t *xsub, boolean isceiling, fixed_t fixedhei
 		flatyref = (FIXED_TO_FLOAT(FixedMul(tempxsow, FINESINE(angle)) + FixedMul(tempytow, FINECOSINE(angle))));
 	}
 
-#define SETUP3DVERT(vert, vx, vy) {\
-		/* Hurdler: add scrolling texture on floor/ceiling */\
-			vert->s = (float)(((vx) / fflatsize) - flatxref + scrollx);\
-			vert->t = (float)(flatyref - ((vy) / fflatsize) + scrolly);\
-\
-		/* Need to rotate before translate */\
-		if (angle) /* Only needs to be done if there's an altered angle */\
-		{\
-			tempxsow = FLOAT_TO_FIXED(vert->s);\
-			tempytow = FLOAT_TO_FIXED(vert->t);\
-			vert->s = (FIXED_TO_FLOAT(FixedMul(tempxsow, FINECOSINE(angle)) - FixedMul(tempytow, FINESINE(angle))));\
-			vert->t = (FIXED_TO_FLOAT(FixedMul(tempxsow, FINESINE(angle)) + FixedMul(tempytow, FINECOSINE(angle))));\
-		}\
-\
-		vert->x = (vx);\
-		vert->y = height;\
-		vert->z = (vy);\
-\
-		if (slope)\
-		{\
-			fixedheight = P_GetZAt(slope, FLOAT_TO_FIXED((vx)), FLOAT_TO_FIXED((vy)));\
-			vert->y = FIXED_TO_FLOAT(fixedheight);\
-		}\
-}
-	for (i = 0, v3d = planeVerts; i < nrPlaneVerts; i++,v3d++,pv++)
-		SETUP3DVERT(v3d, pv->x, pv->y);
+
+	for (i = 0; i < nrPlaneVerts; i++,v3d++,pv++)
+	{
+		// Hurdler: add scrolling texture on floor/ceiling
+		v3d->s = (float)((pv->x / fflatsize) - flatxref + scrollx);
+		v3d->t = (float)(flatyref - (pv->y / fflatsize) + scrolly);
+
+		//v3d->s = (float)(pv->x / fflatsize);
+		//v3d->t = (float)(pv->y / fflatsize);
+
+		// Need to rotate before translate
+		if (angle) // Only needs to be done if there's an altered angle
+		{
+			tempxsow = FLOAT_TO_FIXED(v3d->s);
+			tempytow = FLOAT_TO_FIXED(v3d->t);
+			v3d->s = (FIXED_TO_FLOAT(FixedMul(tempxsow, FINECOSINE(angle)) - FixedMul(tempytow, FINESINE(angle))));
+			v3d->t = (FIXED_TO_FLOAT(FixedMul(tempxsow, FINESINE(angle)) + FixedMul(tempytow, FINECOSINE(angle))));
+		}
+
+		//v3d->s = (float)(v3d->s - flatxref + scrollx);
+		//v3d->t = (float)(flatyref - v3d->t + scrolly);
+
+		v3d->x = pv->x;
+		v3d->y = height;
+		v3d->z = pv->y;
+
+#ifdef ESLOPE
+		if (slope)
+		{
+			fixedheight = P_GetZAt(slope, FLOAT_TO_FIXED(pv->x), FLOAT_TO_FIXED(pv->y));
+			v3d->y = FIXED_TO_FLOAT(fixedheight);
+		}
+#endif
+	}
 
 	HWR_Lighting(&Surf, lightlevel, planecolormap);
 
@@ -800,14 +809,14 @@ void HWR_ProjectWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend
 	HWR_Lighting(pSurf, lightlevel, wallcolormap);
 
 	HWD.pfnSetShader(2);	// wall shader
-
+	
 	// don't draw to color buffer when drawing to stencil
 	if (gl_drawing_stencil)
 	{
 		blendmode |= PF_Invisible|PF_NoAlphaTest; // TODO not sure if any others than PF_Invisible are needed??
 		blendmode &= ~PF_Masked;
 	}
-
+	
 	HWD.pfnDrawPolygon(pSurf, wallVerts, 4, blendmode|PF_Modulated|PF_Occlude);
 
 #ifdef WALLSPLATS
@@ -1200,7 +1209,6 @@ static void HWR_DrawPortalClipWall(line_t *line)
 
 	HWR_ProjectWall(wallVerts, &Surf, PF_NoTexture, 255, NULL);
 }
-
 
 //
 // HWR_ProcessSeg
@@ -2405,7 +2413,7 @@ void HWR_AddLine(seg_t *line)
 	static sector_t tempsec;
 
 	fixed_t v1x, v1y, v2x, v2y; // the seg's vertexes as fixed_t
-
+	
 	boolean dont_draw = false;
 #ifdef POLYOBJECTS
 	if (line->polyseg && !(line->polyseg->flags & POF_RENDERSIDES))
@@ -2422,7 +2430,7 @@ void HWR_AddLine(seg_t *line)
 	// OPTIMIZE: quickly reject orthogonal back sides.
 	angle1 = R_PointToAngleEx(viewx, viewy, v1x, v1y);
 	angle2 = R_PointToAngleEx(viewx, viewy, v2x, v2y);
-
+	
 	// do an extra culling check when rendering portals
 	// check if any line vertex is on the viewable side of the portal target line
 	// if not, the line can be culled.
@@ -2493,7 +2501,7 @@ void HWR_AddLine(seg_t *line)
 	checkforemptylines = true;
 
 	gr_backsector = line->backsector;
-
+	
 	// Portal line
 /*
 	if (cv_grportals.value && line->linedef->special == 40 && line->side == 0)
@@ -3047,7 +3055,7 @@ void HWR_Subsector(size_t num)
 	gr_frontsector = R_FakeFlat(gr_frontsector, &tempsec, &floorlightlevel,
 								&ceilinglightlevel, false);
 	//FIXME: Use floorlightlevel and ceilinglightlevel insted of lightlevel.
-
+	
 	if (gr_portal == GRPORTAL_SEARCH)
 	{
 		skipSprites = true;
@@ -3150,7 +3158,7 @@ void HWR_Subsector(size_t num)
 					// Hack to make things continue to work around slopes.
 					locFloorHeight == cullFloorHeight ? locFloorHeight : gr_frontsector->floorheight,
 					// We now return you to your regularly scheduled rendering.
-					PF_Occlude, floorlightlevel, levelflats[gr_frontsector->floorpic].lumpnum, NULL, 255, floorcolormap, sub);
+					PF_Occlude, floorlightlevel, levelflats[gr_frontsector->floorpic].lumpnum, NULL, 255, floorcolormap);
 			}
 		}
 	}
@@ -3166,7 +3174,7 @@ void HWR_Subsector(size_t num)
 					// Hack to make things continue to work around slopes.
 					locCeilingHeight == cullCeilingHeight ? locCeilingHeight : gr_frontsector->ceilingheight,
 					// We now return you to your regularly scheduled rendering.
-					PF_Occlude, ceilinglightlevel, levelflats[gr_frontsector->ceilingpic].lumpnum,NULL, 255, ceilingcolormap, sub);
+					PF_Occlude, ceilinglightlevel, levelflats[gr_frontsector->ceilingpic].lumpnum,NULL, 255, ceilingcolormap);
 			}
 		}
 	}
@@ -3232,7 +3240,7 @@ void HWR_Subsector(size_t num)
 					HWR_GetFlat(levelflats[*rover->bottompic].lumpnum, R_NoEncore(gr_frontsector, false));
 					light = R_GetPlaneLight(gr_frontsector, centerHeight, viewz < cullHeight ? true : false);
 					HWR_RenderPlane(&extrasubsectors[num], false, *rover->bottomheight, (rover->flags & FF_RIPPLE ? PF_Ripple : 0)|PF_Occlude, *gr_frontsector->lightlist[light].lightlevel, levelflats[*rover->bottompic].lumpnum,
-					                rover->master->frontsector, 255, gr_frontsector->lightlist[light].extra_colormap, sub);
+					                rover->master->frontsector, 255, gr_frontsector->lightlist[light].extra_colormap);
 				}
 			}
 
@@ -3284,7 +3292,7 @@ void HWR_Subsector(size_t num)
 					HWR_GetFlat(levelflats[*rover->toppic].lumpnum, R_NoEncore(gr_frontsector, true));
 					light = R_GetPlaneLight(gr_frontsector, centerHeight, viewz < cullHeight ? true : false);
 					HWR_RenderPlane(&extrasubsectors[num], true, *rover->topheight, (rover->flags & FF_RIPPLE ? PF_Ripple : 0)|PF_Occlude, *gr_frontsector->lightlist[light].lightlevel, levelflats[*rover->toppic].lumpnum,
-					                  rover->master->frontsector, 255, gr_frontsector->lightlist[light].extra_colormap, sub);
+					                  rover->master->frontsector, 255, gr_frontsector->lightlist[light].extra_colormap);
 				}
 			}
 		}
@@ -3443,7 +3451,7 @@ void HWR_RenderBSPNode(INT32 bspnum)
 			HWR_Subsector(bspnum&(~NF_SUBSECTOR));
 		return;
 	}
-
+	
 	// in portal checking phase we can stop after one is found
 	//if (gr_portal == GRPORTAL_FOUND)
 	//	return;
@@ -4398,10 +4406,10 @@ static int CompareVisSprites(const void *p1, const void *p2)
 	gr_vissprite_t* spr2 = *(gr_vissprite_t*const*)p2;
 	int idiff;
 	float fdiff;
-
+	
 	// make transparent sprites last
 	// "boolean to int"
-
+	
 	int transparency1 = (spr1->mobj->flags2 & MF2_SHADOW) || (spr1->mobj->frame & FF_TRANSMASK);
 	int transparency2 = (spr2->mobj->flags2 & MF2_SHADOW) || (spr2->mobj->frame & FF_TRANSMASK);
 	idiff = transparency1 - transparency2;
@@ -4683,7 +4691,7 @@ void HWR_RenderDrawNodes(void)
 			if (!(sortnode[sortindex[i]].plane->blend & PF_NoTexture))
 				HWR_GetFlat(sortnode[sortindex[i]].plane->lumpnum, R_NoEncore(sortnode[sortindex[i]].plane->FOFSector, sortnode[sortindex[i]].plane->isceiling));
 			HWR_RenderPlane(sortnode[sortindex[i]].plane->xsub, sortnode[sortindex[i]].plane->isceiling, sortnode[sortindex[i]].plane->fixedheight, sortnode[sortindex[i]].plane->blend, sortnode[sortindex[i]].plane->lightlevel,
-				sortnode[sortindex[i]].plane->lumpnum, sortnode[sortindex[i]].plane->FOFSector, sortnode[sortindex[i]].plane->alpha, /*sortnode[sortindex[i]].plane->fogplane,*/ sortnode[sortindex[i]].plane->planecolormap, NULL);
+				sortnode[sortindex[i]].plane->lumpnum, sortnode[sortindex[i]].plane->FOFSector, sortnode[sortindex[i]].plane->alpha, /*sortnode[sortindex[i]].plane->fogplane,*/ sortnode[sortindex[i]].plane->planecolormap);
 		}
 		else if (sortnode[sortindex[i]].polyplane)
 		{
@@ -4912,7 +4920,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 	const boolean papersprite = (thing->frame & FF_PAPERSPRITE);
 	INT32 heightsec, phs;
 	vector3_t pos;
-
+	
 	fixed_t spr_width, spr_height;
 	fixed_t spr_offset, spr_topoffset;
 #ifdef ROTSPRITE
@@ -4922,7 +4930,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 	angle_t sliptiderollangle = 0;
 #endif
 
-
+	
 
 	// uncapped/interpolation
 	interpmobjstate_t interp = {0};
@@ -4938,7 +4946,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 	{
 		R_InterpolateMobjState(thing, FRACUNIT, &interp);
 	}
-
+	
 	if (thing->spritexscale < 1 || thing->spriteyscale < 1)
 		return;
 
@@ -5047,7 +5055,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 
 	if (thing->skin && ((skin_t *)thing->skin)->flags & SF_HIRES)
 		this_scale = this_scale * FIXED_TO_FLOAT(((skin_t *)thing->skin)->highresscale);
-
+	
 	spr_width = spritecachedinfo[lumpoff].width;
 	spr_height = spritecachedinfo[lumpoff].height;
 	spr_offset = spritecachedinfo[lumpoff].offset;
@@ -5063,7 +5071,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 		}
 		else
 			rollsum = (thing->rollangle)+(thing->sloperoll);
-
+		
 		rollangle = R_GetRollAngle(rollsum);
 		rotsprite = Patch_GetRotatedSprite(sprframe, (thing->frame & FF_FRAMEMASK), rot, flip, sprinfo, rollangle);
 
@@ -5074,7 +5082,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 			spr_offset = rotsprite->leftoffset << FRACBITS;
 			spr_topoffset = rotsprite->topoffset << FRACBITS;
 			spr_topoffset += FEETADJUST;
-
+			
 			// flip -> rotate, not rotate -> flip
 			flip = 0;
 		}
@@ -5172,7 +5180,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 	vis->tz = tz; // Keep tz for the simple sprite sorting that happens
 	vis->dispoffset = thing->info->dispoffset; // Monster Iestyn: 23/11/15: HARDWARE SUPPORT AT LAST
 	vis->flip = flip;
-
+	
 	vis->scale = this_scale;
 	vis->spritexscale = spritexscale;
 	vis->spriteyscale = spriteyscale;
@@ -5185,7 +5193,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 	else
 #endif
 			vis->gpatch = (GLPatch_t *)W_CachePatchNum(sprframe->lumppat[rot], PU_CACHE);
-
+	
 	vis->mobj = thing;
 
 
@@ -5223,7 +5231,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 
 	// set top/bottom coords
 	vis->ty = gzt;
-
+	
 	vis->gzt = gzt;
 	vis->gz = gz;
 
@@ -5360,7 +5368,7 @@ void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 
 	// set top/bottom coords
 	vis->ty = FIXED_TO_FLOAT(thing->z + spritecachedinfo[lumpoff].topoffset);
-
+	
 	vis->gzt = FIXED_TO_FLOAT(thing->z + spritecachedinfo[lumpoff].topoffset);
 	vis->gz = vis->gzt - FIXED_TO_FLOAT(spritecachedinfo[lumpoff].height);
 
@@ -5539,7 +5547,7 @@ void HWR_PortalClipping(portal_t *portal)
 	v1y = FLOAT_TO_FIXED(((polyvertex_t *)seg->pv1)->y);
 	v2x = FLOAT_TO_FIXED(((polyvertex_t *)seg->pv2)->x);
 	v2y = FLOAT_TO_FIXED(((polyvertex_t *)seg->pv2)->y);
-
+	
 	angle1 = R_PointToAngleEx(viewx, viewy, v1x, v1y);
 	angle2 = R_PointToAngleEx(viewx, viewy, v2x, v2y);
 */
@@ -5672,7 +5680,7 @@ void RecursivePortalRendering(portal_t *rootportal, const float fpov, player_t *
 		if (!rootportal && portallist.base && !skybox)// if portals have been drawn in the main view, then render skywalls differently
 			gr_collect_skywalls = true;
 		HWR_RenderBSPNode((INT32)numnodes-1);
-			if (cv_grbatching.value)
+		if (cv_grbatching.value)
 		{
 			int dummy = 0;// the vars in RenderBatches are meant for render stats. But we don't have that stuff in this branch
 						// so that stuff could be removed...
@@ -5720,11 +5728,6 @@ void HWR_RenderFrame(INT32 viewnumber, player_t *player, boolean skybox)
 	const float fpov = FIXED_TO_FLOAT(cv_fov.value+player->fovadd);
 	postimg_t *postprocessor = &postimgtype[0];
 	INT32 i;
-
-	// copy view cam position for local use
-	dup_viewx = viewx;
-	dup_viewy = viewy;
-	dup_viewz = viewz;
 
 	// set window position
 	gr_centerx = gr_basecenterx;
@@ -5839,7 +5842,6 @@ void HWR_RenderFrame(INT32 viewnumber, player_t *player, boolean skybox)
 
 	portalclipline = NULL;
 	RecursivePortalRendering(NULL, fpov, player, 0, !skybox);
-
 	HWR_SetTransform(fpov, player);// not sure if needed
 
 	// Unset transform and shader
@@ -5877,7 +5879,6 @@ void HWR_RenderSinglePortal(portal_t *portal, size_t portalnum, float fpov, play
 	if (numplanes || numpolyplanes || numwalls) // Render FOFs and translucent walls after everything
 		HWR_RenderDrawNodes();
 }
-
 
 // ==========================================================================
 // Render the player view.

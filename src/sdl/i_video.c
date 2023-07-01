@@ -87,7 +87,7 @@
 #endif
 
 // maximum number of windowed modes (see windowedModes[][])
-#define MAXWINMODES (18)
+#define MAXWINMODES (22)
 
 /**	\brief
 */
@@ -153,6 +153,7 @@ static const char *fallback_resolution_name = "Fallback";
 // windowed video modes from which to choose from.
 static INT32 windowedModes[MAXWINMODES][2] =
 {
+	{2560,1440}, // 1.66
 	{1920,1200}, // 1.60,6.00
 	{1920,1080}, // 1.66
 	{1680,1050}, // 1.60,5.25
@@ -166,9 +167,12 @@ static INT32 windowedModes[MAXWINMODES][2] =
 	{1280, 720}, // 1.66
 	{1152, 864}, // 1.33,3.60
 	{1024, 768}, // 1.33,3.20
+	{ 960, 600}, // 1.33,3.20
 	{ 800, 600}, // 1.33,2.50
+	{ 735, 415}, // 1.33,2.50
 	{ 640, 480}, // 1.33,2.00
 	{ 640, 400}, // 1.60,2.00
+	{ 500, 300}, // 1.33
 	{ 320, 240}, // 1.33,1.00
 	{ 320, 200}, // 1.60,1.00
 };
@@ -1814,7 +1818,7 @@ static SDL_bool Impl_CreateWindow(SDL_bool fullscreen)
 		// "direct3d" driver (D3D9) causes Drmingw exchndl
 		// to not write RPT files. Every other driver
 		// seems fine.
-		SDL_SetHint(SDL_HINT_RENDER_DRIVER, "opengl");
+		SDL_SetHint(SDL_HINT_RENDER_DRIVER, "direct3d11");
 
 		renderer = SDL_CreateRenderer(window, -1, flags);
 		if (renderer == NULL)

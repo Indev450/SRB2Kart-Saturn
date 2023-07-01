@@ -1340,12 +1340,12 @@ static menuitem_t OP_OpenGLOptionsMenu[] =
 	{IT_STRING|IT_CVAR,		NULL, "Texture Quality",			&cv_scr_depth,				 60},
 	{IT_STRING|IT_CVAR,		NULL, "Texture Filter",				&cv_grfiltermode,			 70},
 	{IT_STRING|IT_CVAR,		NULL, "Anisotropic",				&cv_granisotropicmode,		 80},
+	
 	{IT_STRING|IT_CVAR,		NULL, "Visual Portals",		  		&cv_grportals,				 90},
 
-	{IT_STRING|IT_CVAR,		NULL, "Wall Contrast Style",		&cv_grfakecontrast,			100},
-	{IT_STRING|IT_CVAR,		NULL, "Sprite Billboarding",		&cv_grspritebillboarding,	110},
-	{IT_STRING|IT_CVAR,		NULL, "Software Perspective",		&cv_grshearing,				120},
-
+	{IT_STRING|IT_CVAR,		NULL, "Wall Contrast Style",		&cv_grfakecontrast,			110},
+	{IT_STRING|IT_CVAR,		NULL, "Sprite Billboarding",		&cv_grspritebillboarding,	120},
+	{IT_STRING|IT_CVAR,		NULL, "Software Perspective",		&cv_grshearing,				130},
 	{IT_STRING|IT_CVAR,		NULL, "Rendering Distance",			&cv_grrenderdistance,		140},
 
 	{IT_SUBMENU|IT_STRING,	NULL, "Gamma...",					&OP_OpenGLColorDef,			160},
@@ -1362,10 +1362,11 @@ static menuitem_t OP_OpenGLColorMenu[] =
 static menuitem_t OP_PlayerDistortMenu[] =
 {
 	{IT_HEADER, NULL, "Player Distortion", NULL, 0},
-	{IT_STRING | IT_CVAR, 	NULL, 	"Rotate players when sliptiding", &cv_sliptideroll, 	10},
-	{IT_STRING | IT_CVAR, 	NULL, 	"Rotate players on slopes",       &cv_sloperoll, 	    30},
-	{IT_STRING | IT_CVAR, 	NULL, 	"Slope rotation distance",        &cv_sloperolldist,    40},
-	{IT_STRING | IT_CVAR,	NULL,	"Player stretch factor",	      &cv_gravstretch,      60},
+	
+	{IT_STRING | IT_CVAR, 	NULL, 	"Rotate players on slopes",       &cv_sloperoll, 	    10},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Slope rotation distance",        &cv_sloperolldist,    20},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Rotate players when sliptiding", &cv_sliptideroll, 	30},
+	{IT_STRING | IT_CVAR,	NULL,	"Player stretch factor",	      &cv_gravstretch,      50},
 };
 
 enum

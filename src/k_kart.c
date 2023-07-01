@@ -5432,7 +5432,7 @@ static void K_KartDrift(player_t *player, boolean onground)
 			player->sliptidemem = 0;
 			player->sliproll = 0;
 		}
-
+		
 		player->kartstuff[k_getsparks] = 0;
 	}
 

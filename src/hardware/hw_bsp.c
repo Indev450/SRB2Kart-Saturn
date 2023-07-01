@@ -380,7 +380,7 @@ static poly_t *CutOutSubsecPoly(seg_t *lseg, INT32 count, poly_t *poly)
 			if (line2 >= 0) // found it!
 				gr_maphasportals = 1;
 		}
-
+		
 		p1.x = FIXED_TO_FLOAT(lseg->side ? line->v2->x : line->v1->x);
 		p1.y = FIXED_TO_FLOAT(lseg->side ? line->v2->y : line->v1->y);
 		p2.x = FIXED_TO_FLOAT(lseg->side ? line->v1->x : line->v2->x);
@@ -894,10 +894,10 @@ void HWR_CreatePlanePolygons(INT32 bspnum)
 	ls_count = ls_percent = 0; // reset the loading status
 	CON_Drawer(); //let the user know what we are doing
 	I_FinishUpdate(); // page flip or blit buffer
-#endif
-
 	// reset the portal flag
 	gr_maphasportals = 0;
+
+#endif
 
 	// find min/max boundaries of map
 	//CONS_Debug(DBG_RENDER, "Looking for boundaries of map...\n");
