@@ -140,7 +140,7 @@ static void R_InstallSpriteLump(UINT16 wad,            // graphics patch
 
 	if (maxframe ==(size_t)-1 || frame > maxframe)
 		maxframe = frame;
-
+	
 // rotsprite
 #ifdef ROTSPRITE
 		for (r = 0; r < 16; r++)
@@ -961,7 +961,7 @@ static void R_DrawVisSprite(vissprite_t *vis)
 
 	if (vis->x2 >= vid.width)
 		vis->x2 = vid.width-1;
-
+	
 	lengthcol = patch->height;
 
 #if 1
@@ -979,7 +979,7 @@ static void R_DrawVisSprite(vissprite_t *vis)
 		fixed_t scalestep = FixedMul(vis->scalestep, vis->spriteyscale);
 		if (vis->scalestep) // currently papersprites only
 		{
-
+			
 #ifndef RANGECHECK
 			if ((frac>>FRACBITS) < 0 || (frac>>FRACBITS) >= SHORT(patch->width)) // if this doesn't work i'm removing papersprites
 				break;
@@ -1208,7 +1208,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	fixed_t gz, gzt;
 	INT32 heightsec, phs;
 	INT32 light = 0;
-	fixed_t this_scale = thing->scale;
+	fixed_t this_scale;
 	fixed_t spritexscale, spriteyscale;
 
 	// rotsprite
@@ -1229,11 +1229,11 @@ static void R_ProjectSprite(mobj_t *thing)
 	// do interpolation
 	if (R_UsingFrameInterpolation() && !paused)
 	{
-		R_InterpolateMobjState(thing, rendertimefrac, &interp);
+		R_InterpolateMobjState(oldthing, rendertimefrac, &interp);
 	}
 	else
 	{
-		R_InterpolateMobjState(thing, FRACUNIT, &interp);
+		R_InterpolateMobjState(oldthing, FRACUNIT, &interp);
 	}
 
 	this_scale = interp.scale;
@@ -1350,14 +1350,14 @@ static void R_ProjectSprite(mobj_t *thing)
 
 	if (thing->skin && ((skin_t *)thing->skin)->flags & SF_HIRES)
 		this_scale = FixedMul(this_scale, ((skin_t *)thing->skin)->highresscale);
-
+	
 	spr_width = spritecachedinfo[lump].width;
 	spr_height = spritecachedinfo[lump].height;
 	spr_offset = spritecachedinfo[lump].offset;
 	spr_topoffset = spritecachedinfo[lump].topoffset;
 
 #ifdef ROTSPRITE
-
+	
 	if (thing->player)
 	{
 		sliptiderollangle = FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), ((cv_sliptideroll.value == 1) ? thing->player->sliproll*(thing->player->sliptidemem) : 0));
@@ -1365,7 +1365,6 @@ static void R_ProjectSprite(mobj_t *thing)
 	else
 		sliptiderollangle = 0;
 
-    if ((thing->rollangle)||(thing->sloperoll)||sliptiderollangle)
 	{
 		if (thing->player)
 			rollsum = (thing->rollangle) + (thing->sloperoll) + sliptiderollangle;
@@ -1374,7 +1373,7 @@ static void R_ProjectSprite(mobj_t *thing)
 
 		rollangle = R_GetRollAngle(rollsum);
 		rotsprite = Patch_GetRotatedSprite(sprframe, (thing->frame & FF_FRAMEMASK), rot, flip, sprinfo, rollangle);
-
+		
 		if (rotsprite != NULL)
 		{
 			spr_width = rotsprite->width << FRACBITS;
@@ -1382,7 +1381,7 @@ static void R_ProjectSprite(mobj_t *thing)
 			spr_offset = rotsprite->leftoffset << FRACBITS;
 			spr_topoffset = rotsprite->topoffset << FRACBITS;
 			spr_topoffset += FEETADJUST;
-
+			
 			// flip -> rotate, not rotate -> flip
 			flip = 0;
 		}
@@ -1390,15 +1389,15 @@ static void R_ProjectSprite(mobj_t *thing)
 #endif
 
 	// calculate edges of the shape
-	spritexscale = thing->spritexscale;
-	spriteyscale = thing->spriteyscale;
+	spritexscale = interp.spritexscale;
+	spriteyscale = interp.spriteyscale;
 	if (spritexscale < 1 || spriteyscale < 1)
 		return;
 
 	if (thing->renderflags & RF_ABSOLUTEOFFSETS)
 	{
-		spr_offset = thing->spritexoffset;
-		spr_topoffset = thing->spriteyoffset;
+		spr_offset = interp.spritexoffset;
+		spr_topoffset = interp.spriteyoffset;
 	}
 	else
 	{
@@ -1407,10 +1406,10 @@ static void R_ProjectSprite(mobj_t *thing)
 		if ((thing->renderflags & RF_FLIPOFFSETS) && flip)
 			flipoffset = -1;
 
-		spr_offset += thing->spritexoffset * flipoffset;
-		spr_topoffset += thing->spriteyoffset * flipoffset;
+		spr_offset += interp.spritexoffset * flipoffset;
+		spr_topoffset += interp.spriteyoffset * flipoffset;
 	}
-
+	
 	if (flip)
 		offset = spr_offset - spr_width;
 	else
@@ -1579,8 +1578,8 @@ static void R_ProjectSprite(mobj_t *thing)
 
 	vis->x1 = x1 < 0 ? 0 : x1;
 	vis->x2 = x2 >= viewwidth ? viewwidth-1 : x2;
-
-	vis->sector = interp.subsector->sector;
+	
+	vis->sector = thing->subsector->sector;
 	vis->szt = (INT16)((centeryfrac - FixedMul(vis->gzt - viewz, sortscale))>>FRACBITS);
 	vis->sz = (INT16)((centeryfrac - FixedMul(vis->gz - viewz, sortscale))>>FRACBITS);
 	vis->cut = SC_NONE;
@@ -1630,7 +1629,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	vis->thingscale = interp.scale;
 
 	//Fab: lumppat is the lump number of the patch to use, this is different
-	//     than lumpid for sprites-in-pwad : the graphics are patched
+	//     than lumpid for sprites-in-pwad : the graphics are patched	
 #ifdef ROTSPRITE
 	if (rotsprite != NULL)
 		vis->patch = rotsprite;
@@ -2679,14 +2678,14 @@ void R_ClipSprites(void)
 			// e6y: ~13% of speed improvement on sunder.wad map10
 			if (ds->x1 < cx)
 			{
-				drawsegs_xranges[1].items[drawsegs_xranges[1].count] =
+				drawsegs_xranges[1].items[drawsegs_xranges[1].count] = 
 					drawsegs_xranges[0].items[drawsegs_xranges[0].count];
 				drawsegs_xranges[1].count++;
 			}
 
 			if (ds->x2 >= cx)
 			{
-				drawsegs_xranges[2].items[drawsegs_xranges[2].count] =
+				drawsegs_xranges[2].items[drawsegs_xranges[2].count] = 
 					drawsegs_xranges[0].items[drawsegs_xranges[0].count];
 				drawsegs_xranges[2].count++;
 			}
@@ -3014,7 +3013,7 @@ static int skinSortFunc(const void *a, const void *b) //tbh i have no clue what 
 
 
 	//return (strcmp(in1->realname, in2->realname) < 0) || (strcmp(in1->realname, in2->realname) ==);
-
+	
 	switch (cv_skinselectgridsort.value)
 	{
 	case SKINMENUSORT_REALNAME:
@@ -3398,7 +3397,7 @@ next_token:
 	}
 
 	sortSkinGrid();
-
+	
 	return;
 }
 

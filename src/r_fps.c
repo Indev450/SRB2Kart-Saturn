@@ -280,6 +280,10 @@ void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 		out->scale = mobj->scale;
 		out->subsector = mobj->subsector;
 		out->angle = mobj->player ? mobj->player->frameangle : mobj->angle;
+		out->spritexscale = mobj->spritexscale;
+		out->spriteyscale = mobj->spriteyscale;
+		out->spritexoffset = mobj->spritexoffset;
+		out->spriteyoffset = mobj->spriteyoffset;
 		return;
 	}
 
@@ -287,7 +291,16 @@ void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 	out->y = R_LerpFixed(mobj->old_y, mobj->y, frac);
 	out->z = R_LerpFixed(mobj->old_z, mobj->z, frac);
 	out->scale = mobj->resetinterp ? mobj->scale : R_LerpFixed(mobj->old_scale, mobj->scale, frac);
-
+	out->spritexscale = mobj->resetinterp ? mobj->spritexscale : R_LerpFixed(mobj->old_spritexscale, mobj->spritexscale, frac);
+	out->spriteyscale = mobj->resetinterp ? mobj->spriteyscale : R_LerpFixed(mobj->old_spriteyscale, mobj->spriteyscale, frac);
+	out->spritexoffset = mobj->resetinterp ? mobj->spritexoffset : R_LerpFixed(mobj->old_spritexoffset, mobj->spritexoffset, frac);
+	out->spriteyoffset = mobj->resetinterp ? mobj->spriteyoffset : R_LerpFixed(mobj->old_spriteyoffset, mobj->spriteyoffset, frac);
+	
+	// Sprite offsets are not interpolated until we have a way to interpolate them explicitly in Lua.
+	// It seems existing mods visually break more often than not if it is interpolated.
+	out->spritexoffset = mobj->spritexoffset;
+	out->spriteyoffset = mobj->spriteyoffset;
+	
 	out->subsector = R_PointInSubsector(out->x, out->y);
 
 	if (mobj->player)
@@ -310,6 +323,10 @@ void R_InterpolatePrecipMobjState(precipmobj_t *mobj, fixed_t frac, interpmobjst
 		out->scale = FRACUNIT;
 		out->subsector = mobj->subsector;
 		out->angle = mobj->angle;
+		out->spritexscale = mobj->spritexscale;
+		out->spriteyscale = mobj->spriteyscale;
+		out->spritexoffset = mobj->spritexoffset;
+		out->spriteyoffset = mobj->spriteyoffset;
 		return;
 	}
 
@@ -317,6 +334,10 @@ void R_InterpolatePrecipMobjState(precipmobj_t *mobj, fixed_t frac, interpmobjst
 	out->y = R_LerpFixed(mobj->old_y, mobj->y, frac);
 	out->z = R_LerpFixed(mobj->old_z, mobj->z, frac);
 	out->scale = FRACUNIT;
+	out->spritexscale = R_LerpFixed(mobj->old_spritexscale, mobj->spritexscale, frac);
+	out->spriteyscale = R_LerpFixed(mobj->old_spriteyscale, mobj->spriteyscale, frac);
+	out->spritexoffset = R_LerpFixed(mobj->old_spritexoffset, mobj->spritexoffset, frac);
+	out->spriteyoffset = R_LerpFixed(mobj->old_spriteyoffset, mobj->spriteyoffset, frac);
 
 	out->subsector = R_PointInSubsector(out->x, out->y);
 
@@ -742,6 +763,10 @@ void R_ResetMobjInterpolationState(mobj_t *mobj)
 	mobj->old_z = mobj->z;
 	mobj->old_angle = mobj->angle;
 	mobj->old_scale = mobj->scale;
+	mobj->old_spritexscale = mobj->spritexscale;
+	mobj->old_spriteyscale = mobj->spriteyscale;
+	mobj->old_spritexoffset = mobj->spritexoffset;
+	mobj->old_spriteyoffset = mobj->spriteyoffset;
 
 	if (mobj->player)
 	{
@@ -767,4 +792,8 @@ void R_ResetPrecipitationMobjInterpolationState(precipmobj_t *mobj)
 	mobj->old_y = mobj->y;
 	mobj->old_z = mobj->z;
 	mobj->old_angle = mobj->angle;
+	mobj->old_spritexscale = mobj->spritexscale;
+	mobj->old_spriteyscale = mobj->spriteyscale;
+	mobj->old_spritexoffset = mobj->spritexoffset;
+	mobj->old_spriteyoffset = mobj->spriteyoffset;
 }

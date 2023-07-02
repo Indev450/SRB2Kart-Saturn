@@ -293,6 +293,8 @@ typedef struct mobj_s
 	UINT32 renderflags; // render flags
 	fixed_t spritexscale, spriteyscale;
 	fixed_t spritexoffset, spriteyoffset;
+	fixed_t old_spritexscale, old_spriteyscale;
+	fixed_t old_spritexoffset, old_spriteyoffset;
 
 	fixed_t realxscale, realyscale; // funn-E streeetch
 
@@ -428,6 +430,8 @@ typedef struct precipmobj_s
 	UINT32 renderflags; // render flags
 	fixed_t spritexscale, spriteyscale;
 	fixed_t spritexoffset, spriteyoffset;
+	fixed_t old_spritexscale, old_spriteyscale;
+	fixed_t old_spritexoffset, old_spriteyoffset;
 
 	fixed_t realxscale, realyscale; // funn-E streeetch
 
