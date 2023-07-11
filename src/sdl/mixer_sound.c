@@ -101,6 +101,7 @@ static UINT32 fading_timer;
 static UINT32 fading_duration;
 static INT32 fading_id;
 static void (*fading_callback)(void);
+static boolean fading_do_callback;
 
 #ifdef HAVE_LIBGME
 static Music_Emu *gme;
@@ -119,6 +120,7 @@ static void var_cleanup(void)
 	 is_fading = false;
 
 	fading_callback = NULL;
+	fading_do_callback = false;
 
 	internal_volume = 100;
 }
@@ -215,6 +217,13 @@ void I_ShutdownSound(void)
 
 void I_UpdateSound(void)
 {
+	if (fading_do_callback)
+	{
+		if (fading_callback)
+			(*fading_callback)();
+		fading_callback = NULL;
+		fading_do_callback = false;
+	}
 }
 
 /// ------------------------
@@ -539,9 +548,8 @@ static UINT32 get_adjusted_position(UINT32 position)
 
 static void do_fading_callback(void)
 {
-	if (fading_callback)
-		(*fading_callback)();
-	fading_callback = NULL;
+	// TODO: Should I use a mutex here or something?
+	fading_do_callback = true;
 }
 
 /// ------------------------

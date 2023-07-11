@@ -498,7 +498,7 @@ static void FreeMipmapColormap(INT32 patchnum, void *patch)
 		if (!pat->mipmap)
 			break;
 
-		// No colormap mipmap either.
+		// No colormap mipmaps either.
 		if (!pat->mipmap->nextcolormap)
 			break;
 

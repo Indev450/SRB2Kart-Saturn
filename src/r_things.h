@@ -120,7 +120,7 @@ typedef struct vissprite_s
 	struct vissprite_s *prev;
 	struct vissprite_s *next;
 
-	mobj_t *mobj; // for easy access4
+	mobj_t *mobj; // for easy access
 
 	INT32 x1, x2;
 
@@ -130,6 +130,7 @@ typedef struct vissprite_s
 
 	fixed_t startfrac; // horizontal position of x1
 	fixed_t xscale, scale; // projected horizontal and vertical scales
+	fixed_t thingscale; // the object's scale
 	fixed_t sortscale; // sortscale only differs from scale for flat sprites
 	fixed_t scalestep; // only for flat sprites, 0 otherwise
 	fixed_t paperoffset, paperdistance; // for paper sprites, offset/dist relative to the angle
@@ -165,6 +166,7 @@ typedef struct vissprite_s
 
 	spritecut_e cut;
 	UINT32 renderflags;
+	UINT8 rotateflags;
 
 	fixed_t spritexscale, spriteyscale;
 	fixed_t spritexoffset, spriteyoffset;
@@ -176,8 +178,6 @@ typedef struct vissprite_s
 	boolean vflip; // Flip vertically
 	boolean isScaled;
 	INT32 dispoffset; // copy of info->dispoffset, affects ordering but not drawing
-
-	fixed_t thingscale;
 } vissprite_t;
 
 extern UINT32 visspritecount;

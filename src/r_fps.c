@@ -295,12 +295,12 @@ void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 	out->spriteyscale = mobj->resetinterp ? mobj->spriteyscale : R_LerpFixed(mobj->old_spriteyscale, mobj->spriteyscale, frac);
 	out->spritexoffset = mobj->resetinterp ? mobj->spritexoffset : R_LerpFixed(mobj->old_spritexoffset, mobj->spritexoffset, frac);
 	out->spriteyoffset = mobj->resetinterp ? mobj->spriteyoffset : R_LerpFixed(mobj->old_spriteyoffset, mobj->spriteyoffset, frac);
-	
+
 	// Sprite offsets are not interpolated until we have a way to interpolate them explicitly in Lua.
 	// It seems existing mods visually break more often than not if it is interpolated.
 	out->spritexoffset = mobj->spritexoffset;
 	out->spriteyoffset = mobj->spriteyoffset;
-	
+
 	out->subsector = R_PointInSubsector(out->x, out->y);
 
 	if (mobj->player)
@@ -356,7 +356,7 @@ static void AddInterpolator(levelinterpolator_t* interpolator)
 		{
 			levelinterpolators_size *= 2;
 		}
-		
+
 		levelinterpolators = Z_ReallocAlign(
 			(void*) levelinterpolators,
 			sizeof(levelinterpolator_t*) * levelinterpolators_size,
@@ -604,7 +604,7 @@ void R_RestoreLevelInterpolators(void)
 	for (i = 0; i < levelinterpolators_len; i++)
 	{
 		levelinterpolator_t *interp = levelinterpolators[i];
-		
+
 		switch (interp->type)
 		{
 		case LVLINTERP_SectorPlane:
@@ -659,7 +659,7 @@ void R_DestroyLevelInterpolators(thinker_t *thinker)
 	for (i = 0; i < levelinterpolators_len; i++)
 	{
 		levelinterpolator_t *interp = levelinterpolators[i];
-		
+
 		if (interp->thinker == thinker)
 		{
 			// Swap the tail of the level interpolators to this spot

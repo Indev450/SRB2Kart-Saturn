@@ -48,8 +48,8 @@ boolean R_CheckIfPatch(lumpnum_t lump)
 
 	patch = (patch_t *)W_CacheLumpNum(lump, PU_STATIC);
 
-	width = SHORT(patch->width);
-	height = SHORT(patch->height);
+	width = patch->width;
+	height = patch->height;
 
 	result = (height > 0 && height <= 16384 && width > 0 && width <= 16384 && width < (INT16)(size / 4));
 
@@ -996,12 +996,10 @@ void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle
 	}
 
 
-
 	ox = (newwidth / 2) + (leftoffset - xpivot);
 	oy = (newheight / 2) + (patch->topoffset - ypivot);
-	width = (maxx - minx);
-	height = (maxy - miny);
-
+	width = (maxx+1 - minx);
+	height = (maxy+1 - miny);
 
 	if ((unsigned)(width * height) > size)
 	{

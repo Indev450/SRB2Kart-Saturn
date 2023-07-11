@@ -646,12 +646,8 @@ typedef enum
 typedef struct
 {
 	INT32 angles;
-	void **patches; //2.2.9 system
+	void **patches;
 } rotsprite_t;
-#endif/*ROTSPRITE*/
-
-#if defined(_MSC_VER)
-#pragma pack(1)
 #endif
 
 // Patches.
@@ -667,12 +663,29 @@ typedef struct
 	INT16 leftoffset;     // pixels to the left of origin
 	INT16 topoffset;      // pixels below the origin
 	INT32 columnofs[8];     // only [width] used
+	UINT8 *columns; // Software column data
 	// the [0] is &columnofs[width]
+	
+	void *hardware; // OpenGL patch, allocated whenever necessary
 	
 #ifdef ROTSPRITE
 	rotsprite_t *rotated; // Rotated patches
 #endif
-} ATTRPACK patch_t;
+} patch_t;
+
+#if defined(_MSC_VER)
+#pragma pack(1)
+#endif
+
+typedef struct
+{
+	INT16 width;          // bounding box size
+	INT16 height;
+	INT16 leftoffset;     // pixels to the left of origin
+	INT16 topoffset;      // pixels below the origin
+	INT32 columnofs[8];     // only [width] used
+	// the [0] is &columnofs[width]
+} ATTRPACK softwarepatch_t;
 
 #ifdef _MSC_VER
 #pragma warning(disable :  4200)

@@ -4954,6 +4954,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 	spritexscale = FIXED_TO_FLOAT(interp.spritexscale);
 	spriteyscale = FIXED_TO_FLOAT(interp.spriteyscale);
 
+
 	// transform the origin point
 	tr_x = FIXED_TO_FLOAT(interp.x) - gr_viewx;
 	tr_y = FIXED_TO_FLOAT(interp.y) - gr_viewy;
@@ -5080,8 +5081,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 			spr_height = rotsprite->height << FRACBITS;
 			spr_offset = rotsprite->leftoffset << FRACBITS;
 			spr_topoffset = rotsprite->topoffset << FRACBITS;
-			spr_topoffset += FEETADJUST;
-			
+			spr_topoffset += FEETADJUST;			
 			// flip -> rotate, not rotate -> flip
 			flip = 0;
 		}

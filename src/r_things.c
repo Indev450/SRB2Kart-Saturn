@@ -140,7 +140,7 @@ static void R_InstallSpriteLump(UINT16 wad,            // graphics patch
 
 	if (maxframe ==(size_t)-1 || frame > maxframe)
 		maxframe = frame;
-	
+
 // rotsprite
 #ifdef ROTSPRITE
 		for (r = 0; r < 16; r++)
@@ -682,8 +682,10 @@ static vissprite_t *R_GetVisSprite(UINT32 num)
 
 static vissprite_t *R_NewVisSprite(void)
 {
-	if (visspritecount == MAXVISSPRITES)
+	if (visspritecount == MAXVISSPRITES) {
+		//CONS_Alert(CONS_ERROR, M_GetText("R_NewVisSprite: too many vissprites requested (maximum is %i)\n"), MAXVISSPRITES);
 		return &overflowsprite;
+    }
 
 	return R_GetVisSprite(visspritecount++);
 }
@@ -827,9 +829,7 @@ static void R_DrawVisSprite(vissprite_t *vis)
 {
 	column_t *column;
 	void (*localcolfunc)(column_t *);
-//#ifdef RANGECHECK
 	INT32 texturecolumn;
-//#endif
 	INT32 pwidth;
 	fixed_t frac;
 	patch_t *patch = vis->patch;
@@ -946,7 +946,7 @@ static void R_DrawVisSprite(vissprite_t *vis)
 	if (!(vis->scalestep))
 	{
 		sprtopscreen = centeryfrac - FixedMul(dc_texturemid, spryscale);
-		sprtopscreen += vis->shear.tan * vis->shear.offset;
+		//sprtopscreen += vis->shear.tan * vis->shear.offset;
 		dc_iscale = FixedDiv(FRACUNIT, vis->scale);
 	}
 
@@ -961,8 +961,8 @@ static void R_DrawVisSprite(vissprite_t *vis)
 
 	if (vis->x2 >= vid.width)
 		vis->x2 = vid.width-1;
-	
-	lengthcol = patch->height;
+
+	lengthcol = SHORT(patch->height);
 
 #if 1
 	// Something is occasionally setting 1px-wide sprites whose frac is exactly the width of the sprite, causing crashes due to
@@ -979,7 +979,7 @@ static void R_DrawVisSprite(vissprite_t *vis)
 		fixed_t scalestep = FixedMul(vis->scalestep, vis->spriteyscale);
 		if (vis->scalestep) // currently papersprites only
 		{
-			
+
 #ifndef RANGECHECK
 			if ((frac>>FRACBITS) < 0 || (frac>>FRACBITS) >= SHORT(patch->width)) // if this doesn't work i'm removing papersprites
 				break;
@@ -1350,7 +1350,7 @@ static void R_ProjectSprite(mobj_t *thing)
 
 	if (thing->skin && ((skin_t *)thing->skin)->flags & SF_HIRES)
 		this_scale = FixedMul(this_scale, ((skin_t *)thing->skin)->highresscale);
-	
+
 	spr_width = spritecachedinfo[lump].width;
 	spr_height = spritecachedinfo[lump].height;
 	spr_offset = spritecachedinfo[lump].offset;
@@ -1360,11 +1360,12 @@ static void R_ProjectSprite(mobj_t *thing)
 	
 	if (thing->player)
 	{
-		sliptiderollangle = FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), ((cv_sliptideroll.value == 1) ? thing->player->sliproll*(thing->player->sliptidemem) : 0));
+		sliptiderollangle = FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), ((cv_sloperoll.value == 1) ? thing->player->sliproll*(thing->player->sliptidemem) : 0));
 	}
 	else
 		sliptiderollangle = 0;
 
+	if ((thing->rollangle)||(thing->sloperoll)||sliptiderollangle)
 	{
 		if (thing->player)
 			rollsum = (thing->rollangle) + (thing->sloperoll) + sliptiderollangle;
@@ -1373,7 +1374,7 @@ static void R_ProjectSprite(mobj_t *thing)
 
 		rollangle = R_GetRollAngle(rollsum);
 		rotsprite = Patch_GetRotatedSprite(sprframe, (thing->frame & FF_FRAMEMASK), rot, flip, sprinfo, rollangle);
-		
+
 		if (rotsprite != NULL)
 		{
 			spr_width = rotsprite->width << FRACBITS;
@@ -1381,7 +1382,7 @@ static void R_ProjectSprite(mobj_t *thing)
 			spr_offset = rotsprite->leftoffset << FRACBITS;
 			spr_topoffset = rotsprite->topoffset << FRACBITS;
 			spr_topoffset += FEETADJUST;
-			
+
 			// flip -> rotate, not rotate -> flip
 			flip = 0;
 		}
@@ -1409,7 +1410,7 @@ static void R_ProjectSprite(mobj_t *thing)
 		spr_offset += interp.spritexoffset * flipoffset;
 		spr_topoffset += interp.spriteyoffset * flipoffset;
 	}
-	
+
 	if (flip)
 		offset = spr_offset - spr_width;
 	else
@@ -1471,6 +1472,7 @@ static void R_ProjectSprite(mobj_t *thing)
 
 		scalestep = (yscale2 - yscale)/(x2 - x1);
 		scalestep = scalestep ? scalestep : 1;
+		
 
 		// The following two are alternate sorting methods which might be more applicable in some circumstances. TODO - maybe enable via MF2?
 		// sortscale = max(yscale, yscale2);
@@ -1546,19 +1548,22 @@ static void R_ProjectSprite(mobj_t *thing)
 
 	if (heightsec != -1 && phs != -1) // only clip things which are in special sectors
 	{
+		fixed_t top = gzt;
+		fixed_t bottom = interp.z;
+
 		if (viewz < sectors[phs].floorheight ?
-		thing->z >= sectors[heightsec].floorheight :
-		gzt < sectors[heightsec].floorheight)
+		bottom >= sectors[heightsec].floorheight :
+		top < sectors[heightsec].floorheight)
 			return;
 		if (viewz > sectors[phs].ceilingheight ?
-		gzt < sectors[heightsec].ceilingheight && viewz >= sectors[heightsec].ceilingheight :
-		thing->z >= sectors[heightsec].ceilingheight)
+		top < sectors[heightsec].ceilingheight && viewz >= sectors[heightsec].ceilingheight :
+		bottom >= sectors[heightsec].ceilingheight)
 			return;
 	}
 
 	// store information in a vissprite
 	vis = R_NewVisSprite();
-	//vis->renderflags = thing->renderflags;
+	vis->renderflags = thing->renderflags;
 	vis->heightsec = heightsec; //SoM: 3/17/2000
 	vis->mobjflags = thing->flags;
 	vis->scale = yscale; //<<detailshift;
@@ -1578,7 +1583,7 @@ static void R_ProjectSprite(mobj_t *thing)
 
 	vis->x1 = x1 < 0 ? 0 : x1;
 	vis->x2 = x2 >= viewwidth ? viewwidth-1 : x2;
-	
+
 	vis->sector = thing->subsector->sector;
 	vis->szt = (INT16)((centeryfrac - FixedMul(vis->gzt - viewz, sortscale))>>FRACBITS);
 	vis->sz = (INT16)((centeryfrac - FixedMul(vis->gz - viewz, sortscale))>>FRACBITS);
@@ -1629,7 +1634,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	vis->thingscale = interp.scale;
 
 	//Fab: lumppat is the lump number of the patch to use, this is different
-	//     than lumpid for sprites-in-pwad : the graphics are patched	
+	//     than lumpid for sprites-in-pwad : the graphics are patched
 #ifdef ROTSPRITE
 	if (rotsprite != NULL)
 		vis->patch = rotsprite;
@@ -2678,14 +2683,14 @@ void R_ClipSprites(void)
 			// e6y: ~13% of speed improvement on sunder.wad map10
 			if (ds->x1 < cx)
 			{
-				drawsegs_xranges[1].items[drawsegs_xranges[1].count] = 
+				drawsegs_xranges[1].items[drawsegs_xranges[1].count] =
 					drawsegs_xranges[0].items[drawsegs_xranges[0].count];
 				drawsegs_xranges[1].count++;
 			}
 
 			if (ds->x2 >= cx)
 			{
-				drawsegs_xranges[2].items[drawsegs_xranges[2].count] = 
+				drawsegs_xranges[2].items[drawsegs_xranges[2].count] =
 					drawsegs_xranges[0].items[drawsegs_xranges[0].count];
 				drawsegs_xranges[2].count++;
 			}
@@ -3013,7 +3018,7 @@ static int skinSortFunc(const void *a, const void *b) //tbh i have no clue what 
 
 
 	//return (strcmp(in1->realname, in2->realname) < 0) || (strcmp(in1->realname, in2->realname) ==);
-	
+
 	switch (cv_skinselectgridsort.value)
 	{
 	case SKINMENUSORT_REALNAME:
@@ -3397,7 +3402,7 @@ next_token:
 	}
 
 	sortSkinGrid();
-	
+
 	return;
 }
 
