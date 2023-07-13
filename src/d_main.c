@@ -439,7 +439,7 @@ static void D_Display(void)
 		if (cv_renderview.value && !automapactive)
 		{
 			PS_START_TIMING(ps_rendercalltime);
-			
+
 			R_ApplyLevelInterpolators(R_UsingFrameInterpolation() ? rendertimefrac : FRACUNIT);
 
 			for (i = 0; i <= splitscreen; i++)
@@ -519,7 +519,7 @@ static void D_Display(void)
 			}
 
 			R_RestoreLevelInterpolators();
-			
+
 			PS_STOP_TIMING(ps_rendercalltime);
 		}
 
@@ -576,10 +576,8 @@ static void D_Display(void)
 	I_unlock_mutex(m_menu_mutex);
 #endif
 	// focus lost moved to M_Drawer
-	
+
 	PS_STOP_TIMING(ps_uitime);
-	
-	CON_Drawer(); // Ha, i LIED!
 
 	//
 	// wipe update
@@ -630,16 +628,19 @@ static void D_Display(void)
 
 		if (cv_shittyscreen.value)
 			V_DrawVhsEffect(cv_shittyscreen.value == 2);
-		
+
 		if (cv_perfstats.value)
 		{
 			M_DrawPerfStats();
 		}
 
+	    CON_Drawer(); // Ha, i LIED!
+
 		PS_START_TIMING(ps_swaptime);
 		I_FinishUpdate(); // page flip or blit buffer
 		PS_STOP_TIMING(ps_swaptime);
 	}
+
 }
 
 // =========================================================================
@@ -1628,13 +1629,13 @@ void D_SRB2Main(void)
 		I_mkdir(va("%s%s", srb2home, REPLAYDIR), 0755);
 		CONS_Printf("bruh %s", va("%s%s%s", srb2home, REPLAYDIR, replayname));
 
-		// check if file already exists	
+		// check if file already exists
 		if (access(va("%s%s%s", srb2home, REPLAYDIR, replayurl), F_OK )!=0)
 			D_DownloadReplay(replayurl, va("%s%s%s", srb2home, REPLAYDIR, replayname));
-	
+
 		// add .lmp to identify the EXTERNAL demo file
 		// it is NOT possible to play an internal demo using -playdemo,
-		// rather push a playdemo command.. to do.	
+		// rather push a playdemo command.. to do.
 
 		G_DeferedPlayDemo(va("%s%s", REPLAYDIR, replayname));
 #undef REPLAYDIR
