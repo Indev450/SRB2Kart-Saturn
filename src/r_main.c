@@ -129,6 +129,26 @@ lighttable_t *zlight[LIGHTLEVELS][MAXLIGHTZ];
 size_t num_extra_colormaps;
 extracolormap_t extra_colormaps[MAXCOLORMAPS];
 
+// Performance stats
+precise_t ps_prevframetime = 0;
+ps_metric_t ps_rendercalltime = {0};
+ps_metric_t ps_otherrendertime = {0};
+ps_metric_t ps_uitime = {0};
+ps_metric_t ps_swaptime = {0};
+
+ps_metric_t ps_skyboxtime = {0};
+ps_metric_t ps_bsptime = {0};
+
+ps_metric_t ps_sw_spritecliptime = {0};
+ps_metric_t ps_sw_portaltime = {0};
+ps_metric_t ps_sw_planetime = {0};
+ps_metric_t ps_sw_maskedtime = {0};
+
+ps_metric_t ps_numbspcalls = {0};
+ps_metric_t ps_numsprites = {0};
+ps_metric_t ps_numdrawnodes = {0};
+ps_metric_t ps_numpolyobjects = {0};
+
 static CV_PossibleValue_t drawdist_cons_t[] = {
 	/*{256, "256"},*/	{512, "512"},	{768, "768"},
 	{1024, "1024"},	{1536, "1536"},	{2048, "2048"},
@@ -176,6 +196,7 @@ consvar_t cv_flipcam4 = {"flipcam4", "No", CV_SAVE|CV_CALL|CV_NOINIT, CV_YesNo, 
 consvar_t cv_shadow = {"shadow", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_shadowoffs = {"offsetshadows", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_skybox = {"skybox", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_ffloorclip = {"ffloorclip", "On", CV_SAVE, CV_OnOff, NULL};
 consvar_t cv_soniccd = {"soniccd", "Off", CV_NETVAR|CV_NOSHOWHELP, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_allowmlook = {"allowmlook", "Yes", CV_NETVAR, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_showhud = {"showhud", "Yes", CV_CALL,  CV_YesNo, R_SetViewSize, 0, NULL, NULL, 0, 0, NULL};
@@ -377,6 +398,22 @@ angle_t R_PointToAngle(fixed_t x, fixed_t y)
 		ANGLE_90 + tantoangle[SlopeDiv(x,y)] :                         // octant 2
 		(x = -x) > (y = -y) ? ANGLE_180+tantoangle[SlopeDiv(y,x)] :    // octant 4
 		ANGLE_270-tantoangle[SlopeDiv(x,y)] :                          // octant 5
+		0;
+}
+
+angle_t R_PointToAngle64(INT64 x, INT64 y)
+{
+	return (y -= viewy, (x -= viewx) || y) ?
+	x >= 0 ?
+	y >= 0 ?
+		(x > y) ? tantoangle[SlopeDivEx(y,x)] :                            // octant 0
+		ANGLE_90-tantoangle[SlopeDivEx(x,y)] :                               // octant 1
+		x > (y = -y) ? 0-tantoangle[SlopeDivEx(y,x)] :                    // octant 8
+		ANGLE_270+tantoangle[SlopeDivEx(x,y)] :                              // octant 7
+		y >= 0 ? (x = -x) > y ? ANGLE_180-tantoangle[SlopeDivEx(y,x)] :  // octant 3
+		ANGLE_90 + tantoangle[SlopeDivEx(x,y)] :                             // octant 2
+		(x = -x) > (y = -y) ? ANGLE_180+tantoangle[SlopeDivEx(y,x)] :    // octant 4
+		ANGLE_270-tantoangle[SlopeDivEx(x,y)] :                              // octant 5
 		0;
 }
 
@@ -980,7 +1017,7 @@ void R_ExecuteSetViewSize(void)
 		j = viewheight*16;
 		for (i = 0; i < j; i++)
 		{
-			dy = ((i - viewheight*8)<<FRACBITS) + FRACUNIT/2;
+			dy = (i - viewheight*8)<<FRACBITS;
 			dy = FixedMul(abs(dy), fovtan);
 			yslopetab[i] = FixedDiv(centerx*FRACUNIT, dy);
 		}
@@ -1671,7 +1708,8 @@ void R_RenderPlayerView(player_t *player)
 
 	portalrender = 0;
 	portal_base = portal_cap = NULL;
-
+	
+	PS_START_TIMING(ps_skyboxtime);
 	if (skybox && skyVisible)
 	{
 		R_SkyboxFrame(player);
@@ -1692,6 +1730,7 @@ void R_RenderPlayerView(player_t *player)
 #endif
 		R_DrawMasked();
 	}
+	PS_STOP_TIMING(ps_skyboxtime);
 
 	R_SetupFrame(player, skybox);
 	skyVisible = false;
@@ -1730,8 +1769,14 @@ void R_RenderPlayerView(player_t *player)
 	mytotal = 0;
 	ProfZeroTimer();
 #endif
+	ps_numbspcalls.value.i = ps_numpolyobjects.value.i = ps_numdrawnodes.value.i = 0;
+	PS_START_TIMING(ps_bsptime);
 	R_RenderBSPNode((INT32)numnodes - 1);
+	PS_STOP_TIMING(ps_bsptime);
+	ps_numsprites.value.i = visspritecount;
+	PS_START_TIMING(ps_sw_spritecliptime);
 	R_ClipSprites();
+	PS_STOP_TIMING(ps_sw_spritecliptime);
 #ifdef TIMING
 	RDMSR(0x10, &mycount);
 	mytotal += mycount; // 64bit add
@@ -1741,6 +1786,7 @@ void R_RenderPlayerView(player_t *player)
 //profile stuff ---------------------------------------------------------
 
 	// PORTAL RENDERING
+	PS_START_TIMING(ps_sw_portaltime);
 	for(portal = portal_base; portal; portal = portal_base)
 	{
 		// render the portal
@@ -1768,15 +1814,20 @@ void R_RenderPlayerView(player_t *player)
 		Z_Free(portal->frontscale);
 		Z_Free(portal);
 	}
+	PS_STOP_TIMING(ps_sw_portaltime);
 	// END PORTAL RENDERING
 
+	PS_START_TIMING(ps_sw_planetime);
 	R_DrawPlanes();
+	PS_STOP_TIMING(ps_sw_planetime);
 #ifdef FLOORSPLATS
 	R_DrawVisibleFloorSplats();
 #endif
 	// draw mid texture and sprite
 	// And now 3D floors/sides!
+	PS_START_TIMING(ps_sw_maskedtime);
 	R_DrawMasked();
+	PS_STOP_TIMING(ps_sw_maskedtime);
 
 	// Check for new console commands.
 	NetUpdate();
@@ -1827,6 +1878,7 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_shadow);
 	CV_RegisterVar(&cv_shadowoffs);
 	CV_RegisterVar(&cv_skybox);
+	CV_RegisterVar(&cv_ffloorclip);
 
 	CV_RegisterVar(&cv_cam_dist);
 	CV_RegisterVar(&cv_cam_still);

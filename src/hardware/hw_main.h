@@ -29,6 +29,7 @@
 #include "../am_map.h"
 #include "../d_player.h"
 #include "../r_defs.h"
+#include "../m_perfstats.h"
 
 #define GLENCORE
 
@@ -41,6 +42,23 @@ extern float gr_viewwidth, gr_viewheight, gr_baseviewwindowx, gr_baseviewwindowy
 extern float gr_basewindowcenterx, gr_basewindowcentery;
 
 extern FTransform atransform;
+
+// Performance stats
+extern ps_metric_t ps_hw_nodesorttime;
+extern ps_metric_t ps_hw_nodedrawtime;
+extern ps_metric_t ps_hw_spritesorttime;
+extern ps_metric_t ps_hw_spritedrawtime;
+
+// Performance stats for batching
+extern ps_metric_t ps_hw_numpolys;
+extern ps_metric_t ps_hw_numverts;
+extern ps_metric_t ps_hw_numcalls;
+extern ps_metric_t ps_hw_numshaders;
+extern ps_metric_t ps_hw_numtextures;
+extern ps_metric_t ps_hw_numpolyflags;
+extern ps_metric_t ps_hw_numcolors;
+extern ps_metric_t ps_hw_batchsorttime;
+extern ps_metric_t ps_hw_batchdrawtime;
 
 // hw_draw.c
 void HWR_DrawPatch(GLPatch_t *gpatch, INT32 x, INT32 y, INT32 option);
@@ -102,7 +120,7 @@ void HWR_ProcessSeg(void); // Sort of like GLWall::Process in GZDoom
 void HWR_RenderWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap);
 void HWR_ProjectWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blendmode, INT32 lightlevel, extracolormap_t *wallcolormap);
 void HWR_AddTransparentWall(FOutVector *wallVerts, FSurfaceInfo * pSurf, INT32 texnum, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap);
-void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum, FSurfaceInfo* Surf, INT32 cutflag, ffloor_t *pfloor);
+void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum, FSurfaceInfo* Surf, INT32 cutflag, ffloor_t *pfloor, FBITFIELD polyflags);
 void HWR_DrawSkyWall(FOutVector *wallVerts, FSurfaceInfo *Surf);
 void HWR_DrawSkyBackground(float fpov);
 
@@ -151,6 +169,7 @@ extern consvar_t cv_grsolvetjoin;
 extern consvar_t cv_grspritebillboarding;
 extern consvar_t cv_grfakecontrast;
 extern consvar_t cv_grfallbackplayermodel;
+extern consvar_t cv_grbatching;
 extern consvar_t cv_grrenderdistance;
 extern consvar_t cv_grusecustomshaders;
 extern consvar_t cv_grportals;

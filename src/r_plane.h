@@ -18,6 +18,11 @@
 #include "r_data.h"
 #include "p_polyobj.h"
 
+#define VISPLANEHASHBITS 9
+#define VISPLANEHASHMASK ((1<<VISPLANEHASHBITS)-1)
+// the last visplane list is outside of the hash table and is used for fof planes
+#define MAXVISPLANES ((1<<VISPLANEHASHBITS)+1)
+
 //
 // Now what is a visplane, anyway?
 // Simple: kinda floor/ceiling polygon optimised for SRB2 rendering.

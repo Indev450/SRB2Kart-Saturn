@@ -405,11 +405,10 @@ double averageFPS = 0.0f;
 #define USE_FPS_SAMPLES
 
 #ifdef USE_FPS_SAMPLES
-#define FPS_SAMPLE_RATE (0.05) // How often to update FPS samples, in seconds
-#define NUM_FPS_SAMPLES (16) // Number of samples to store
+#define NUM_FPS_SAMPLES (32) // Number of samples to store
 
 static double fps_samples[NUM_FPS_SAMPLES];
-static double updateElapsed = 0.0;
+static int fps_index;
 #endif
 
 static boolean fps_init = false;
@@ -418,6 +417,7 @@ static precise_t fps_enter = 0;
 void SCR_CalculateFPS(void)
 {
 	precise_t fps_finish = 0;
+	int i;
 
 	double frameElapsed = 0.0;
 
@@ -432,35 +432,13 @@ void SCR_CalculateFPS(void)
 	fps_enter = fps_finish;
 
 #ifdef USE_FPS_SAMPLES
-	updateElapsed += frameElapsed;
+	fps_samples[fps_index] = frameElapsed / NUM_FPS_SAMPLES;
+	fps_index = (fps_index + 1) % NUM_FPS_SAMPLES;
 
-	if (updateElapsed >= FPS_SAMPLE_RATE)
-	{
-		static int sampleIndex = 0;
-		int i;
-
-		fps_samples[sampleIndex] = frameElapsed;
-
-		sampleIndex++;
-		if (sampleIndex >= NUM_FPS_SAMPLES)
-			sampleIndex = 0;
-
-		averageFPS = 0.0;
-		for (i = 0; i < NUM_FPS_SAMPLES; i++)
-		{
-			averageFPS += fps_samples[i];
-		}
-
-		if (averageFPS > 0.0)
-		{
-			averageFPS = 1.0 / (averageFPS / NUM_FPS_SAMPLES);
-		}
-	}
-
-	while (updateElapsed >= FPS_SAMPLE_RATE)
-	{
-		updateElapsed -= FPS_SAMPLE_RATE;
-	}
+	averageFPS = 0.0;
+	for (i = 0; i < NUM_FPS_SAMPLES; i++)
+		averageFPS += fps_samples[i];
+	averageFPS = 1.0 / averageFPS;
 #else
 	// Direct, unsampled counter.
 	averageFPS = 1.0 / frameElapsed;
@@ -476,7 +454,7 @@ void SCR_DisplayTicRate(void)
 	double fps = round(averageFPS);
 
 	// draw "FPS"
-	V_DrawFixedPatch(306<<FRACBITS, 183<<FRACBITS, FRACUNIT, V_SNAPTOBOTTOM|V_SNAPTORIGHT, framecounter, R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_YELLOW, GTC_CACHE));
+	V_DrawFixedPatch(306<<FRACBITS, 183<<FRACBITS, FRACUNIT, V_SNAPTOBOTTOM|V_SNAPTORIGHT|V_HUDTRANS, framecounter, R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_YELLOW, GTC_CACHE));
 
 	if (fps > (benchmark - 5))
 		ticcntcolor = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_MINT, GTC_CACHE);
@@ -499,11 +477,11 @@ void SCR_DisplayTicRate(void)
 		x -= digits * 4;
 
 		// draw "/"
-		V_DrawFixedPatch(x<<FRACBITS, 190<<FRACBITS, FRACUNIT, V_SNAPTOBOTTOM|V_SNAPTORIGHT, frameslash, ticcntcolor);
+		V_DrawFixedPatch(x<<FRACBITS, 190<<FRACBITS, FRACUNIT, V_SNAPTOBOTTOM|V_SNAPTORIGHT|V_HUDTRANS, frameslash, ticcntcolor);
 	}
 
 	// draw our actual framerate
-	V_DrawPingNum(x, 190, V_SNAPTOBOTTOM|V_SNAPTORIGHT, fps, ticcntcolor);
+	V_DrawPingNum(x, 190, V_SNAPTOBOTTOM|V_SNAPTORIGHT|V_HUDTRANS, fps, ticcntcolor);
 }
 
 // SCR_DisplayLocalPing
@@ -515,6 +493,6 @@ void SCR_DisplayLocalPing(void)
 	if (cv_showping.value == 1 || (cv_showping.value == 2 && ping > servermaxping))	// only show 2 (warning) if our ping is at a bad level
 	{
 		INT32 dispy = cv_ticrate.value ? 160 : 181;
-		HU_drawPing(307, dispy, ping, V_SNAPTORIGHT | V_SNAPTOBOTTOM);
+		HU_drawPing(307, dispy, ping, V_SNAPTORIGHT | V_SNAPTOBOTTOM|V_HUDTRANS);
 	}
 }

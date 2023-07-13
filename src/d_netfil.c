@@ -804,8 +804,6 @@ static void SV_EndFileSend(INT32 node)
 	filestosend--;
 }
 
-#define PACKETPERTIC net_bandwidth/(TICRATE*software_MAXPACKETLENGTH)
-
 /** Handles file transmission
   *
   * \todo Use an acknowledging method more adapted to file transmission
@@ -825,24 +823,7 @@ void SV_FileSendTicker(void)
 	if (!filestosend) // No file to send
 		return;
 
-	if (cv_downloadspeed.value) // New (and experimental) behavior
-	{
-		packetsent = cv_downloadspeed.value;
-		// Don't send more packets than we have free acks
-#ifndef NONET
-		maxpacketsent = Net_GetFreeAcks(false) - 5; // Let 5 extra acks just in case
-#else
-		maxpacketsent = 1;
-#endif
-		if (packetsent > maxpacketsent && maxpacketsent > 0) // Send at least one packet
-			packetsent = maxpacketsent;
-	}
-	else // Old behavior
-	{
-		packetsent = PACKETPERTIC;
-		if (!packetsent)
-			packetsent = 1;
-	}
+	packetsent = cv_downloadspeed.value;
 
 	netbuffer->packettype = PT_FILEFRAGMENT;
 

@@ -16,6 +16,7 @@
 
 #include "d_player.h"
 #include "r_data.h"
+#include "m_perfstats.h"
 
 //
 // POV related.
@@ -67,6 +68,7 @@ extern lighttable_t *zlight[LIGHTLEVELS][MAXLIGHTZ];
 INT32 R_PointOnSide(fixed_t x, fixed_t y, node_t *node);
 INT32 R_PointOnSegSide(fixed_t x, fixed_t y, seg_t *line);
 angle_t R_PointToAngle(fixed_t x, fixed_t y);
+angle_t R_PointToAngle64(INT64 x, INT64 y);
 angle_t R_PointToAngle2(fixed_t px2, fixed_t py2, fixed_t px1, fixed_t py1);
 angle_t R_PointToAngleEx(INT32 x2, INT32 y2, INT32 x1, INT32 y1);
 fixed_t R_PointToDist(fixed_t x, fixed_t y);
@@ -78,6 +80,27 @@ subsector_t *R_IsPointInSubsector(fixed_t x, fixed_t y);
 
 boolean R_DoCulling(line_t *cullheight, line_t *viewcullheight, fixed_t vz, fixed_t bottomh, fixed_t toph);
 
+// Performance stats
+
+extern precise_t ps_prevframetime;// time when previous frame was rendered
+extern ps_metric_t ps_rendercalltime;
+extern ps_metric_t ps_otherrendertime;
+extern ps_metric_t ps_uitime;
+extern ps_metric_t ps_swaptime;
+
+extern ps_metric_t ps_skyboxtime;
+extern ps_metric_t ps_bsptime;
+
+extern ps_metric_t ps_sw_spritecliptime;
+extern ps_metric_t ps_sw_portaltime;
+extern ps_metric_t ps_sw_planetime;
+extern ps_metric_t ps_sw_maskedtime;
+
+extern ps_metric_t ps_numbspcalls;
+extern ps_metric_t ps_numsprites;
+extern ps_metric_t ps_numdrawnodes;
+extern ps_metric_t ps_numpolyobjects;
+
 //
 // REFRESH - the actual rendering functions.
 //
@@ -87,6 +110,7 @@ extern consvar_t cv_homremoval;
 extern consvar_t cv_chasecam, cv_chasecam2, cv_chasecam3, cv_chasecam4;
 extern consvar_t cv_flipcam, cv_flipcam2, cv_flipcam3, cv_flipcam4;
 extern consvar_t cv_shadow, cv_shadowoffs;
+extern consvar_t cv_ffloorclip;
 extern consvar_t cv_translucency;
 extern consvar_t /*cv_precipdensity,*/ cv_drawdist, /*cv_drawdist_nights,*/ cv_drawdist_precip;
 extern consvar_t cv_fov;

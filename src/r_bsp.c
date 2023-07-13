@@ -410,8 +410,8 @@ static void R_AddLine(seg_t *line)
 		return;
 
 	// big room fix
-	angle1 = R_PointToAngleEx(viewx, viewy, line->v1->x, line->v1->y);
-	angle2 = R_PointToAngleEx(viewx, viewy, line->v2->x, line->v2->y);
+	angle1 = R_PointToAngle64(line->v1->x, line->v1->y);
+	angle2 = R_PointToAngle64(line->v2->x, line->v2->y);
 	curline = line;
 
 	// Clip to view edges.
@@ -613,8 +613,8 @@ static boolean R_CheckBBox(const fixed_t *bspcoord)
 	check = checkcoord[boxpos];
 
 	// big room fix
-	angle1 = R_PointToAngleEx(viewx, viewy, bspcoord[check[0]], bspcoord[check[1]]) - viewangle;
-	angle2 = R_PointToAngleEx(viewx, viewy, bspcoord[check[2]], bspcoord[check[3]]) - viewangle;
+	angle1 = R_PointToAngle64(bspcoord[check[0]], bspcoord[check[1]]) - viewangle;
+	angle2 = R_PointToAngle64(bspcoord[check[2]], bspcoord[check[3]]) - viewangle;
 
 	if ((signed)angle1 < (signed)angle2)
 	{
@@ -800,6 +800,9 @@ static void R_AddPolyObjects(subsector_t *sub)
 		++numpolys;
 		po = (polyobj_t *)(po->link.next);
 	}
+	
+	// for render stats
+	ps_numpolyobjects.value.i += numpolys;
 
 	// sort polyobjects
 	R_SortPolyObjects(sub);
@@ -1290,6 +1293,9 @@ void R_RenderBSPNode(INT32 bspnum)
 {
 	node_t *bsp;
 	INT32 side;
+	
+	ps_numbspcalls.value.i++;
+	
 	while (!(bspnum & NF_SUBSECTOR))  // Found a subsector?
 	{
 		bsp = &nodes[bspnum];

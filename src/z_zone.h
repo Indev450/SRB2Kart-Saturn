@@ -36,6 +36,8 @@
 #define PU_STATIC               1 // static entire execution time
 #define PU_LUA                  2 // static entire execution time -- used by lua so it doesn't get caught in loops forever
 
+#define PU_PERFSTATS            3 // static between changes to ps_samplesize cvar
+
 #define PU_SOUND               11 // static while playing
 #define PU_MUSIC               12 // static while playing
 #define PU_HUDGFX              13 // static until WAD added

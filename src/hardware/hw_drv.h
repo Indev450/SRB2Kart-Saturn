@@ -75,7 +75,7 @@ EXPORT void HWRAPI(LoadCustomShader) (int number, char *shader, size_t size, boo
 EXPORT void HWRAPI(InitCustomShaders) (void);
 
 EXPORT void HWRAPI(StartBatching) (void);
-EXPORT void HWRAPI(RenderBatches) (int *sNumPolys, int *sNumVerts, int *sNumCalls, int *sNumShaders, int *sNumTextures, int *sNumPolyFlags, int *sNumColors);
+EXPORT void HWRAPI(RenderBatches) (precise_t *sSortTime, precise_t *sDrawTime, int *sNumPolys, int *sNumVerts, int *sNumCalls, int *sNumShaders, int *sNumTextures, int *sNumPolyFlags, int *sNumColors);
 
 // ==========================================================================
 //                                      HWR DRIVER OBJECT, FOR CLIENT PROGRAM

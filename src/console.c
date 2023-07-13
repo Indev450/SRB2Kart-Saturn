@@ -709,14 +709,6 @@ void CON_Ticker(void)
 	con_tick++;
 	con_tick &= 7;
 
-	// if the menu is open then close the console.
-	if (menuactive && con_destlines)
-	{
-		consoletoggle = false;
-		con_destlines = 0;
-		CON_ClearHUD();
-	}
-
 	// console key was pushed
 	if (consoletoggle)
 	{
@@ -933,7 +925,7 @@ boolean CON_Responder(event_t *ev)
 		// check other keys only if console prompt is active
 		if (!consoleready && key < NUMINPUTS) // metzgermeister: boundary check!!
 		{
-			if (bindtable[key])
+			if (!menuactive && bindtable[key])
 			{
 				COM_BufAddText(bindtable[key]);
 				COM_BufAddText("\n");
@@ -1776,7 +1768,12 @@ void CON_Drawer(void)
 	}
 
 	if (con_recalc)
+	{
 		CON_RecalcSize();
+		
+		if (con_curlines <= 0)
+			CON_ClearHUD();
+	}
 
 	if (con_curlines > 0)
 		CON_DrawConsole();
