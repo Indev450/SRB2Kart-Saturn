@@ -56,6 +56,7 @@ void PS_UpdateTickStats(void);
 void M_DrawPerfStats(void);
 
 void PS_PerfStats_OnChange(void);
+void PS_ThinkFrame_Page_OnChange(void);
 void PS_SampleSize_OnChange(void);
 
 #endif

@@ -711,13 +711,30 @@ static void PS_DrawGameLogicStats(void)
 	PS_DrawPerfRows(x, y, V_PURPLEMAP, misc_calls_rows);
 }
 
+// Maybe needs to be defined in header, with some prefix like PS_, but eh,
+// works like that too. Just need to (un)define it outside so
+// PS_ThinkFrame_Page_OnChange can see this too
+#define WIDTH   106
+#define HEIGHT  4
+#define MAX_X   214
+#define MAX_Y   192
+#define START_X 2
+#define START_Y 4
+
+#define PAGE_ENTRIES (((MAX_Y - START_Y) / HEIGHT)*(MAX_X - START_X)/WIDTH)
+
 static void PS_DrawThinkFrameStats(void)
 {
-	char s[100];
+    char s[100];
 	int i;
+    int maxpage = thinkframe_hooks_length/PAGE_ENTRIES + 1;
+    int page = max(1, min(cv_ps_thinkframe_page.value, maxpage));
+
+    int pagestart = min((page - 1)*PAGE_ENTRIES, thinkframe_hooks_length);
+    int pageend   = min(pagestart + PAGE_ENTRIES, thinkframe_hooks_length);
 	// text writing position
-	int x = 2;
-	int y = 4;
+	int x = START_X;
+	int y = START_Y;
 	UINT32 text_color;
 	char tempbuffer[LUA_IDSIZE];
 	char last_mod_name[LUA_IDSIZE];
@@ -725,16 +742,16 @@ static void PS_DrawThinkFrameStats(void)
 
 	PS_DrawDescriptorHeader();
 
-	for (i = 0; i < thinkframe_hooks_length; i++)
+	for (i = pagestart; i < pageend; i++)
 	{
 
 #define NEXT_ROW() \
-y += 4; \
-if (y > 192) \
+y += HEIGHT; \
+if (y > MAX_Y) \
 { \
-	y = 4; \
-	x += 106; \
-	if (x > 214) \
+	y = START_Y; \
+	x += WIDTH; \
+	if (x > MAX_X) \
 		break; \
 }
 
@@ -792,7 +809,30 @@ if (y > 192) \
 #undef NEXT_ROW
 
 	}
+
+    if (maxpage > 1) {
+        snprintf(s, sizeof s - 1, "PAGE %d", page);
+        V_DrawSmallString(START_X, MAX_Y+2*HEIGHT, V_MONOSPACE | V_GREENMAP, s);
+    }
 }
+
+void PS_ThinkFrame_Page_OnChange(void)
+{
+    int maxpage = thinkframe_hooks_length/PAGE_ENTRIES + 1;
+
+    if (cv_ps_thinkframe_page.value > maxpage) {
+        CV_StealthSetValue(&cv_ps_thinkframe_page, maxpage);
+    }
+}
+
+#undef WIDTH
+#undef HEIGHT
+#undef MAX_X
+#undef MAX_Y
+#undef START_X
+#undef START_Y
+
+#undef PAGE_ENTRIES
 
 void M_DrawPerfStats(void)
 {
