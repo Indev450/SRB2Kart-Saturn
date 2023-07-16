@@ -602,9 +602,14 @@ static int mobj_set(lua_State *L)
 
     lua_settop(L, 3);
 
-	if (!mo) {
+	if (!mo)
 		return LUA_ErrInvalid(L, "mobj_t");
-    }
+
+    if (hud_running)
+        return luaL_error(L, "Do not alter mobj_t in HUD rendering code!");
+
+    if (hook_cmd_running)
+        return luaL_error(L, "Do not alter mobj_t in BuildCMD code!");
 
     lua_getmetatable(L, 1); // Push metatable
 
