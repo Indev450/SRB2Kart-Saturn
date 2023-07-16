@@ -19,10 +19,16 @@
 #include "p_local.h"
 #include "d_clisrv.h"
 
+#include "lua_udatalib.h"
 #include "lua_script.h"
 #include "lua_libs.h"
 #include "lua_hud.h" // hud_running errors
 #include "lua_hook.h"	// hook_cmd_running
+
+#define pushplayer(L, player) LUA_PushUserdata(L, player, META_PLAYER)
+int udatalib_getter_player(lua_State *L)
+UDATALIB_SIMPLE_GETTER(player_t*, pushplayer)
+#undef pushplayer
 
 static int lib_iteratePlayers(lua_State *L)
 {

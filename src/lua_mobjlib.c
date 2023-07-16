@@ -10,6 +10,8 @@
 /// \file  lua_mobjlib.c
 /// \brief mobj/thing library for Lua scripting
 
+#include <stddef.h>
+
 #include "doomdef.h"
 #ifdef HAVE_BLUA
 #include "fastcmp.h"
@@ -23,388 +25,573 @@
 #include "lua_hud.h" // hud_running errors
 #include "lua_hook.h"	// cmd errors
 
+#include "lua_udatalib.h"
+
+int mobj_nosetpos_x(lua_State *L);
+int mobj_nosetpos_y(lua_State *L);
+int mobj_nosetpos_subsector(lua_State *L);
+int mobj_nosetpos_floorz(lua_State *L);
+int mobj_nosetpos_ceilingz(lua_State *L);
+int mobj_snext_noset(lua_State *L);
+int mobj_z_setter(lua_State *L);
+int mobj_sprev_unimplemented(lua_State *L);
+int mobj_angle_setter(lua_State *L);
+int mobj_sloperoll_noset(lua_State *L);
+int mobj_spritescale_setter(lua_State *L);
+int mobj_touching_sectorlist_unimplemented(lua_State *L);
+int mobj_radius_setter(lua_State *L);
+int mobj_height_setter(lua_State *L);
+int mobj_pmomz_setter(lua_State *L);
+int mobj_state_getter(lua_State *L);
+int mobj_state_setter(lua_State *L);
+int mobj_flags_setter(lua_State *L);
+int mobj_skin_getter(lua_State *L);
+int mobj_skin_setter(lua_State *L);
+int mobj_color_setter(lua_State *L);
+int mobj_bnext_noset(lua_State *L);
+int mobj_bprev_unimplemented(lua_State *L);
+int mobj_hnext_setter(lua_State *L);
+int mobj_hprev_setter(lua_State *L);
+int mobj_type_setter(lua_State *L);
+int mobj_info_getter(lua_State *L);
+int mobj_info_noset(lua_State *L);
+int mobj_target_getter(lua_State *L);
+int mobj_target_setter(lua_State *L);
+int mobj_player_noset(lua_State *L);
+int mobj_spawnpoint_setter(lua_State *L);
+int mobj_tracer_getter(lua_State *L);
+int mobj_tracer_setter(lua_State *L);
+int mobj_mobjnum_unimplemented(lua_State *L);
+int mobj_scale_setter(lua_State *L);
+int mobj_destscale_setter(lua_State *L);
+int mobj_standingslope_noset(lua_State *L);
+
 static const char *const array_opt[] ={"iterate",NULL};
 
-enum mobj_e {
-	mobj_valid = 0,
-	mobj_x,
-	mobj_y,
-	mobj_z,
-	mobj_snext,
-	mobj_sprev,
-	mobj_angle,
-	mobj_rollangle,
-	mobj_sloperoll,
-	mobj_sprite,
-	mobj_frame,
-	mobj_anim_duration,
-	mobj_spritexscale,
-	mobj_spriteyscale,
-	mobj_spritexoffset,
-	mobj_spriteyoffset,
-	mobj_touching_sectorlist,
-	mobj_subsector,
-	mobj_floorz,
-	mobj_ceilingz,
-	mobj_radius,
-	mobj_height,
-	mobj_momx,
-	mobj_momy,
-	mobj_momz,
-	mobj_pmomz,
-	mobj_tics,
-	mobj_state,
-	mobj_flags,
-	mobj_flags2,
-	mobj_eflags,
-	mobj_skin,
-	mobj_color,
-	mobj_bnext,
-	mobj_bprev,
-	mobj_hnext,
-	mobj_hprev,
-	mobj_type,
-	mobj_info,
-	mobj_health,
-	mobj_movedir,
-	mobj_movecount,
-	mobj_target,
-	mobj_reactiontime,
-	mobj_threshold,
-	mobj_player,
-	mobj_lastlook,
-	mobj_spawnpoint,
-	mobj_tracer,
-	mobj_friction,
-	mobj_movefactor,
-	mobj_fuse,
-	mobj_watertop,
-	mobj_waterbottom,
-	mobj_mobjnum,
-	mobj_scale,
-	mobj_destscale,
-	mobj_scalespeed,
-	mobj_extravalue1,
-	mobj_extravalue2,
-	mobj_cusval,
-	mobj_cvmem,
-	mobj_standingslope,
-	mobj_colorized,
-	mobj_rollmodel
+#define FIELD(type, field_name, getter, setter) { #field_name, offsetof(type, field_name), getter, setter }
+static const udata_field_t mobj_fields[] = {
+    FIELD(mobj_t, x,                   udatalib_getter_fixed,      mobj_nosetpos_x),
+    FIELD(mobj_t, y,                   udatalib_getter_fixed,      mobj_nosetpos_y),
+    FIELD(mobj_t, z,                   udatalib_getter_fixed,      mobj_z_setter),
+    FIELD(mobj_t, snext,               udatalib_getter_mobj,       mobj_snext_noset),
+    FIELD(mobj_t, sprev,               mobj_sprev_unimplemented,   mobj_sprev_unimplemented),
+    FIELD(mobj_t, angle,               udatalib_getter_angle,      mobj_angle_setter),
+    FIELD(mobj_t, rollangle,           udatalib_getter_angle,      udatalib_setter_angle),
+    FIELD(mobj_t, sloperoll,           udatalib_getter_angle,      mobj_sloperoll_noset),
+    FIELD(mobj_t, sprite,              udatalib_getter_spritenum,  udatalib_setter_spritenum),
+    FIELD(mobj_t, frame,               udatalib_getter_uint32,     udatalib_setter_uint32),
+    FIELD(mobj_t, anim_duration,       udatalib_getter_uint16,     udatalib_setter_uint16),
+    FIELD(mobj_t, spritexscale,        udatalib_getter_fixed,      mobj_spritescale_setter),
+    FIELD(mobj_t, spriteyscale,        udatalib_getter_fixed,      mobj_spritescale_setter),
+    FIELD(mobj_t, spritexoffset,       udatalib_getter_fixed,      udatalib_setter_fixed),
+    FIELD(mobj_t, spriteyoffset,       udatalib_getter_fixed,      udatalib_setter_fixed),
+    FIELD(mobj_t, touching_sectorlist, mobj_touching_sectorlist_unimplemented, mobj_touching_sectorlist_unimplemented),
+    FIELD(mobj_t, subsector,           udatalib_getter_subsector,  mobj_nosetpos_subsector),
+    FIELD(mobj_t, floorz,              udatalib_getter_fixed,      mobj_nosetpos_floorz),
+    FIELD(mobj_t, ceilingz,            udatalib_getter_fixed,      mobj_nosetpos_ceilingz),
+    FIELD(mobj_t, radius,              udatalib_getter_fixed,      mobj_radius_setter),
+    FIELD(mobj_t, height,              udatalib_getter_fixed,      mobj_height_setter),
+    FIELD(mobj_t, momx,                udatalib_getter_fixed,      udatalib_setter_fixed),
+    FIELD(mobj_t, momy,                udatalib_getter_fixed,      udatalib_setter_fixed),
+    FIELD(mobj_t, momz,                udatalib_getter_fixed,      udatalib_setter_fixed),
+    FIELD(mobj_t, pmomz,               udatalib_getter_fixed,      mobj_pmomz_setter),
+    FIELD(mobj_t, tics,                udatalib_getter_int32,      udatalib_setter_int32),
+    FIELD(mobj_t, state,               mobj_state_getter,          mobj_state_setter),
+    FIELD(mobj_t, flags,               udatalib_getter_uint32,     mobj_flags_setter),
+    FIELD(mobj_t, flags2,              udatalib_getter_uint32,     udatalib_setter_uint32),
+    FIELD(mobj_t, eflags,              udatalib_getter_uint32,     udatalib_setter_uint32),
+    FIELD(mobj_t, skin,                mobj_skin_getter,           mobj_skin_setter),
+    FIELD(mobj_t, color,               udatalib_getter_uint8,      mobj_color_setter),
+    FIELD(mobj_t, bnext,               udatalib_getter_mobj,       mobj_bnext_noset),
+    FIELD(mobj_t, bprev,               mobj_bprev_unimplemented,   mobj_bprev_unimplemented),
+    FIELD(mobj_t, hnext,               udatalib_getter_mobj,       mobj_hnext_setter),
+    FIELD(mobj_t, hprev,               udatalib_getter_mobj,       mobj_hprev_setter),
+    FIELD(mobj_t, type,                udatalib_getter_mobjtype,   mobj_type_setter),
+    FIELD(mobj_t, info,                mobj_info_getter,           mobj_info_noset),
+    FIELD(mobj_t, health,              udatalib_getter_int32,      udatalib_setter_int32),
+    FIELD(mobj_t, movedir,             udatalib_getter_angle,      udatalib_setter_angle), // Differs a bit from original setter and getter
+    FIELD(mobj_t, movecount,           udatalib_getter_int32,      udatalib_setter_int32),
+    FIELD(mobj_t, target,              mobj_target_getter,         mobj_target_setter),
+    FIELD(mobj_t, reactiontime,        udatalib_getter_int32,      udatalib_setter_int32),
+    FIELD(mobj_t, threshold,           udatalib_getter_int32,      udatalib_setter_int32),
+    FIELD(mobj_t, player,              udatalib_getter_player,     mobj_player_noset),
+    FIELD(mobj_t, lastlook,            udatalib_getter_int32,      udatalib_setter_int32),
+    FIELD(mobj_t, spawnpoint,          udatalib_getter_mapthing,   mobj_spawnpoint_setter),
+    FIELD(mobj_t, tracer,              mobj_tracer_getter,         mobj_tracer_setter),
+    FIELD(mobj_t, friction,            udatalib_getter_fixed,      udatalib_setter_fixed),
+    FIELD(mobj_t, movefactor,          udatalib_getter_fixed,      udatalib_setter_fixed),
+    FIELD(mobj_t, fuse,                udatalib_getter_int32,      udatalib_setter_int32),
+    FIELD(mobj_t, watertop,            udatalib_getter_fixed,      udatalib_setter_fixed),
+    FIELD(mobj_t, waterbottom,         udatalib_getter_fixed,      udatalib_setter_fixed),
+    FIELD(mobj_t, mobjnum,             mobj_mobjnum_unimplemented, mobj_mobjnum_unimplemented),
+    FIELD(mobj_t, scale,               udatalib_getter_fixed,      mobj_scale_setter),
+    FIELD(mobj_t, destscale,           udatalib_getter_fixed,      mobj_destscale_setter),
+    FIELD(mobj_t, scalespeed,          udatalib_getter_fixed,      udatalib_setter_fixed),
+    FIELD(mobj_t, extravalue1,         udatalib_getter_int32,      udatalib_setter_int32),
+    FIELD(mobj_t, extravalue2,         udatalib_getter_int32,      udatalib_setter_int32),
+    FIELD(mobj_t, cusval,              udatalib_getter_int32,      udatalib_setter_int32),
+    FIELD(mobj_t, cvmem,               udatalib_getter_int32,      udatalib_setter_int32),
+    FIELD(mobj_t, standingslope,       udatalib_getter_slope,      mobj_standingslope_noset),
+    FIELD(mobj_t, colorized,           udatalib_getter_boolean,    udatalib_setter_boolean),
+    FIELD(mobj_t, rollmodel,           udatalib_getter_boolean,    udatalib_setter_boolean),
+    { NULL },
 };
+#undef FIELD
 
-static const char *const mobj_opt[] = {
-	"valid",
-	"x",
-	"y",
-	"z",
-	"snext",
-	"sprev",
-	"angle",
-	"rollangle",
-	"sloperoll",
-	"sprite",
-	"frame",
-	"anim_duration",
-	"spritexscale",
-	"spriteyscale",
-	"spritexoffset",
-	"spriteyoffset",
-	"touching_sectorlist",
-	"subsector",
-	"floorz",
-	"ceilingz",
-	"radius",
-	"height",
-	"momx",
-	"momy",
-	"momz",
-	"pmomz",
-	"tics",
-	"state",
-	"flags",
-	"flags2",
-	"eflags",
-	"skin",
-	"color",
-	"bnext",
-	"bprev",
-	"hnext",
-	"hprev",
-	"type",
-	"info",
-	"health",
-	"movedir",
-	"movecount",
-	"target",
-	"reactiontime",
-	"threshold",
-	"player",
-	"lastlook",
-	"spawnpoint",
-	"tracer",
-	"friction",
-	"movefactor",
-	"fuse",
-	"watertop",
-	"waterbottom",
-	"mobjnum",
-	"scale",
-	"destscale",
-	"scalespeed",
-	"extravalue1",
-	"extravalue2",
-	"cusval",
-	"cvmem",
-	"standingslope",
-	"colorized",
-	"rollmodel",
-	NULL};
+// First, implement udatalib simple getters
+#define pushmobj(L, mobj) LUA_PushUserdata(L, mobj, META_MOBJ)
+int udatalib_getter_mobj(lua_State *L)
+UDATALIB_SIMPLE_GETTER(mobj_t*, pushmobj)
+#undef pushmobj
 
-#define UNIMPLEMENTED luaL_error(L, LUA_QL("mobj_t") " field " LUA_QS " is not implemented for Lua and cannot be accessed.", mobj_opt[field])
+int udatalib_getter_mobjtype(lua_State *L)
+UDATALIB_SIMPLE_GETTER(mobjtype_t, lua_pushinteger)
+
+#define pushmapthing(L, mapthing) LUA_PushUserdata(L, mapthing, META_MAPTHING)
+int udatalib_getter_mapthing(lua_State *L)
+UDATALIB_SIMPLE_GETTER(mapthing_t*, pushmapthing)
+#undef pushmapthing
+
+// Now specific fields related to mobj positions that cannot be set directly
+#define NOSETPOS(field) \
+int mobj_nosetpos_ ## field(lua_State *L) \
+{ \
+    return luaL_error(L, LUA_QL("mobj_t") " field " LUA_QS " should not be set directly. Use " LUA_QL("P_Move") ", " LUA_QL("P_TryMove") ", or " LUA_QL("P_SetOrigin") ", or " LUA_QL("P_MoveOrigin") " instead.", #field); \
+}
+
+NOSETPOS(x)
+NOSETPOS(y)
+NOSETPOS(subsector)
+NOSETPOS(floorz)
+NOSETPOS(ceilingz)
+
+#undef NOSETPOS
+
+// Other fields that cannot be set directly
+#define NOSET(field) \
+int mobj_ ## field ## _noset(lua_State *L) \
+{ \
+    return luaL_error(L, LUA_QL("mobj_t") " field " LUA_QS " should not be set directly.", #field); \
+}
+
+NOSET(sloperoll)
+NOSET(snext)
+NOSET(bnext)
+NOSET(info)
+NOSET(player)
+NOSET(standingslope)
+
+#undef NOSET
+
+// Unimplemented fields (why would you need to set them like that explicitly?
+// No idea, i'm keeping it for synch reasons)
+#define UNIMPLEMENTED(field) \
+int mobj_ ## field ## _unimplemented(lua_State *L) \
+{ \
+    return luaL_error(L, LUA_QL("mobj_t") " field " LUA_QS " is not implemented for Lua and cannot be accessed.", #field); \
+}
+
+UNIMPLEMENTED(sprev)
+UNIMPLEMENTED(touching_sectorlist)
+UNIMPLEMENTED(bprev)
+UNIMPLEMENTED(mobjnum)
+
+#undef UNIMPLEMENTED
+
+// Now other getters/setters with arbitary logic
+
+// Getters get light userdata, which in this case is just mobj_t pointer
+#define GETMO() (mobj_t*)lua_touserdata(L, 1)
+
+int mobj_z_setter(lua_State *L)
+{
+    mobj_t *mo = GETMO();
+    // z doesn't cross sector bounds so it's okay.
+    mobj_t *ptmthing = tmthing;
+    mo->z = luaL_checkfixed(L, 2);
+    P_CheckPosition(mo, mo->x, mo->y);
+    mo->floorz = tmfloorz;
+    mo->ceilingz = tmceilingz;
+    P_SetTarget(&tmthing, ptmthing);
+
+    return 0;
+}
+
+int mobj_angle_setter(lua_State *L)
+{
+    mobj_t *mo = GETMO();
+
+    mo->angle = luaL_checkangle(L, 2);
+    if (mo->player == &players[consoleplayer])
+        localangle[0] = mo->angle;
+    else if (mo->player == &players[displayplayers[1]])
+        localangle[1] = mo->angle;
+    else if (mo->player == &players[displayplayers[2]])
+        localangle[2] = mo->angle;
+    else if (mo->player == &players[displayplayers[3]])
+        localangle[3] = mo->angle;
+    return 0;
+}
+
+int mobj_spritescale_setter(lua_State *L)
+{
+    mobj_t *mo = GETMO();
+
+    fixed_t *spritescale;
+    UDATALIB_GETFIELD(fixed_t, spritescale);
+
+    if (!mo->player)
+        *spritescale = luaL_checkfixed(L, 2);
+    else
+    {
+        // Mmm yea
+        if (spritescale == &mo->spritexscale)
+            mo->realxscale = luaL_checkfixed(L, 2);
+        else
+            mo->realyscale = luaL_checkfixed(L, 2);
+    }
+    return 0;
+}
+
+int mobj_radius_setter(lua_State *L)
+{
+    mobj_t *mo = GETMO();
+
+    mobj_t *ptmthing = tmthing;
+    mo->radius = luaL_checkfixed(L, 2);
+    if (mo->radius < 0)
+        mo->radius = 0;
+    P_CheckPosition(mo, mo->x, mo->y);
+    mo->floorz = tmfloorz;
+    mo->ceilingz = tmceilingz;
+    P_SetTarget(&tmthing, ptmthing);
+
+    return 0;
+}
+
+int mobj_height_setter(lua_State *L)
+{
+    mobj_t *mo = GETMO();
+
+    mobj_t *ptmthing = tmthing;
+    mo->height = luaL_checkfixed(L, 2);
+    if (mo->height < 0)
+        mo->height = 0;
+    P_CheckPosition(mo, mo->x, mo->y);
+    mo->floorz = tmfloorz;
+    mo->ceilingz = tmceilingz;
+    P_SetTarget(&tmthing, ptmthing);
+
+    return 0;
+}
+
+int mobj_pmomz_setter(lua_State *L)
+{
+    mobj_t *mo = GETMO();
+
+    mo->pmomz = luaL_checkfixed(L, 2);
+	mo->eflags |= MFE_APPLYPMOMZ;
+
+    return 0;
+}
+
+int mobj_state_getter(lua_State *L)
+{
+    mobj_t *mo = GETMO();
+
+    lua_pushinteger(L, mo->state-states);
+
+    return 1;
+}
+
+int mobj_state_setter(lua_State *L)
+{
+    mobj_t *mo = GETMO();
+
+    if (mo->player)
+        P_SetPlayerMobjState(mo, luaL_checkinteger(L, 2));
+    else
+        P_SetMobjState(mo, luaL_checkinteger(L, 2));
+
+    return 0;
+}
+
+int mobj_flags_setter(lua_State *L)
+{
+    mobj_t *mo = GETMO();
+
+    UINT32 flags = luaL_checkinteger(L, 2);
+    if ((flags & (MF_NOBLOCKMAP|MF_NOSECTOR)) != (mo->flags & (MF_NOBLOCKMAP|MF_NOSECTOR)))
+    {
+        P_UnsetThingPosition(mo);
+        mo->flags = flags;
+        if (flags & MF_NOSECTOR && sector_list)
+        {
+            P_DelSeclist(sector_list);
+            sector_list = NULL;
+        }
+        mo->snext = NULL, mo->sprev = NULL;
+        mo->bnext = NULL, mo->bprev = NULL;
+        P_SetThingPosition(mo);
+    }
+    else
+        mo->flags = flags;
+
+    return 0;
+}
+
+int mobj_skin_getter(lua_State *L)
+{
+    mobj_t *mo = GETMO();
+
+    if (!mo->skin)
+		return 0;
+
+	lua_pushstring(L, ((skin_t *)mo->skin)->name);
+
+    return 1;
+}
+
+int mobj_skin_setter(lua_State *L)
+{
+    mobj_t *mo = GETMO();
+
+    INT32 i;
+    char skin[SKINNAMESIZE+1]; // all skin names are limited to this length
+    strlcpy(skin, luaL_checkstring(L, 2), sizeof skin);
+    strlwr(skin); // all skin names are lowercase
+    for (i = 0; i < numskins; i++)
+    {
+        if (fastcmp(skins[i].name, skin))
+        {
+            mo->skin = &skins[i];
+            return 0;
+        }
+    }
+
+    return luaL_error(L, "mobj.skin '%s' not found!", skin);
+}
+
+int mobj_color_setter(lua_State *L)
+{
+    mobj_t *mo = GETMO();
+
+    UINT8 newcolor = (UINT8)luaL_checkinteger(L, 2);
+    if (newcolor >= MAXTRANSLATIONS)
+        return luaL_error(L, "mobj.color %d out of range (0 - %d).", newcolor, MAXTRANSLATIONS-1);
+    mo->color = newcolor;
+
+    return 0;
+}
+
+int mobj_hnext_setter(lua_State *L)
+{
+    mobj_t *mo = GETMO();
+
+    if (lua_isnil(L, 2))
+        P_SetTarget(&mo->hnext, NULL);
+    else
+    {
+        mobj_t *hnext = *((mobj_t **)luaL_checkudata(L, 2, META_MOBJ));
+        P_SetTarget(&mo->hnext, hnext);
+    }
+
+    return 0;
+}
+
+int mobj_hprev_setter(lua_State *L)
+{
+    mobj_t *mo = GETMO();
+
+    if (lua_isnil(L, 2))
+        P_SetTarget(&mo->hprev, NULL);
+    else
+    {
+        mobj_t *hprev = *((mobj_t **)luaL_checkudata(L, 2, META_MOBJ));
+        P_SetTarget(&mo->hprev, hprev);
+    }
+
+    return 0;
+}
+
+int mobj_type_setter(lua_State *L)
+{
+    mobj_t *mo = GETMO();
+
+    mobjtype_t newtype = luaL_checkinteger(L, 2);
+    if (newtype >= NUMMOBJTYPES)
+        return luaL_error(L, "mobj.type %d out of range (0 - %d).", newtype, NUMMOBJTYPES-1);
+    mo->type = newtype;
+    mo->info = &mobjinfo[newtype];
+    P_SetScale(mo, mo->scale);
+
+    return 0;
+}
+
+int mobj_info_getter(lua_State *L)
+{
+    mobj_t *mo = GETMO();
+
+    LUA_PushUserdata(L, &mobjinfo[mo->type], META_MOBJINFO);
+
+    return 1;
+}
+
+int mobj_target_getter(lua_State *L)
+{
+    mobj_t *mo = GETMO();
+
+    if (mo->target && P_MobjWasRemoved(mo->target))
+    { // don't put invalid mobj back into Lua.
+        P_SetTarget(&mo->target, NULL);
+        return 0;
+    }
+    LUA_PushUserdata(L, mo->target, META_MOBJ);
+
+    return 1;
+}
+
+int mobj_target_setter(lua_State *L)
+{
+    mobj_t *mo = GETMO();
+
+    if (lua_isnil(L, 2))
+        P_SetTarget(&mo->target, NULL);
+    else
+    {
+        mobj_t *target = *((mobj_t **)luaL_checkudata(L, 2, META_MOBJ));
+        P_SetTarget(&mo->target, target);
+    }
+
+    return 0;
+}
+
+int mobj_spawnpoint_setter(lua_State *L)
+{
+    mobj_t *mo = GETMO();
+
+    if (lua_isnil(L, 2))
+        mo->spawnpoint = NULL;
+    else
+    {
+        mapthing_t *spawnpoint = *((mapthing_t **)luaL_checkudata(L, 2, META_MAPTHING));
+        mo->spawnpoint = spawnpoint;
+    }
+
+    return 0;
+}
+
+int mobj_tracer_getter(lua_State *L)
+{
+    mobj_t *mo = GETMO();
+
+    if (mo->tracer && P_MobjWasRemoved(mo->tracer))
+    { // don't put invalid mobj back into Lua.
+        P_SetTarget(&mo->tracer, NULL);
+        return 0;
+    }
+    LUA_PushUserdata(L, mo->tracer, META_MOBJ);
+
+    return 1;
+}
+
+int mobj_tracer_setter(lua_State *L)
+{
+    mobj_t *mo = GETMO();
+
+    if (lua_isnil(L, 2))
+        P_SetTarget(&mo->tracer, NULL);
+    else
+    {
+        mobj_t *tracer = *((mobj_t **)luaL_checkudata(L, 2, META_MOBJ));
+        P_SetTarget(&mo->tracer, tracer);
+    }
+
+    return 0;
+}
+
+int mobj_scale_setter(lua_State *L)
+{
+    mobj_t *mo = GETMO();
+
+    fixed_t scale = luaL_checkfixed(L, 2);
+    if (scale < FRACUNIT/100)
+        scale = FRACUNIT/100;
+    mo->destscale = scale;
+    P_SetScale(mo, scale);
+    mo->old_scale = scale;
+
+    return 0;
+}
+
+int mobj_destscale_setter(lua_State *L)
+{
+    mobj_t *mo = GETMO();
+
+    fixed_t scale = luaL_checkfixed(L, 2);
+    if (scale < FRACUNIT/100)
+        scale = FRACUNIT/100;
+    mo->destscale = scale;
+
+    return 0;
+}
 
 static int mobj_get(lua_State *L)
 {
 	mobj_t *mo = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));
-	enum mobj_e field = Lua_optoption(L, 2, NULL, mobj_opt);
+
+    // We still gonna have 2 strcmp for "valid" field
+    const char *field = luaL_checkstring(L, 2);
+
 	lua_settop(L, 2);
 
 	if (!mo) {
-		if (field == mobj_valid) {
+		if (fastcmp(field, "valid")) {
 			lua_pushboolean(L, 0);
 			return 1;
 		}
 		return LUA_ErrInvalid(L, "mobj_t");
-	}
+    } else if (fastcmp(field, "valid")) {
+        lua_pushboolean(L, 1);
+        return 1;
+    }
 
-	switch(field)
-	{
-	case mobj_valid:
-		lua_pushboolean(L, 1);
-		break;
-	case mobj_x:
-		lua_pushfixed(L, mo->x);
-		break;
-	case mobj_y:
-		lua_pushfixed(L, mo->y);
-		break;
-	case mobj_z:
-		lua_pushfixed(L, mo->z);
-		break;
-	case mobj_snext:
-		LUA_PushUserdata(L, mo->snext, META_MOBJ);
-		break;
-	case mobj_sprev:
-		// sprev is actually the previous mobj's snext pointer,
-		// or the subsector->sector->thing_list if there is no previous mobj,
-		// i.e. it will always ultimately point to THIS mobj -- so that's actually not useful to Lua and won't be included.
-		return UNIMPLEMENTED;
-	case mobj_angle:
-		lua_pushangle(L, mo->angle);
-		break;
-	case mobj_rollangle:
-		lua_pushangle(L, mo->rollangle);
-		break;
-	case mobj_sloperoll:
-		lua_pushangle(L, mo->sloperoll); // read-only: get the player's slope roll angle
-		break;
-	case mobj_sprite:
-		lua_pushinteger(L, mo->sprite);
-		break;
-	case mobj_frame:
-		lua_pushinteger(L, mo->frame);
-		break;
-	case mobj_anim_duration:
-		lua_pushinteger(L, mo->anim_duration);
-		break;
-	case mobj_spritexscale:
-		lua_pushfixed(L, mo->realxscale);
-		break;
-	case mobj_spriteyscale:
-		lua_pushfixed(L, mo->realyscale);
-		break;
-	case mobj_spritexoffset:
-		lua_pushfixed(L, mo->spritexoffset);
-		break;
-	case mobj_spriteyoffset:
-		lua_pushfixed(L, mo->spriteyoffset);
-		break;
-	case mobj_touching_sectorlist:
-		return UNIMPLEMENTED;
-	case mobj_subsector:
-		LUA_PushUserdata(L, mo->subsector, META_SUBSECTOR);
-		break;
-	case mobj_floorz:
-		lua_pushfixed(L, mo->floorz);
-		break;
-	case mobj_ceilingz:
-		lua_pushfixed(L, mo->ceilingz);
-		break;
-	case mobj_radius:
-		lua_pushfixed(L, mo->radius);
-		break;
-	case mobj_height:
-		lua_pushfixed(L, mo->height);
-		break;
-	case mobj_momx:
-		lua_pushfixed(L, mo->momx);
-		break;
-	case mobj_momy:
-		lua_pushfixed(L, mo->momy);
-		break;
-	case mobj_momz:
-		lua_pushfixed(L, mo->momz);
-		break;
-	case mobj_pmomz:
-		lua_pushfixed(L, mo->pmomz);
-		break;
-	case mobj_tics:
-		lua_pushinteger(L, mo->tics);
-		break;
-	case mobj_state: // state number, not struct
-		lua_pushinteger(L, mo->state-states);
-		break;
-	case mobj_flags:
-		lua_pushinteger(L, mo->flags);
-		break;
-	case mobj_flags2:
-		lua_pushinteger(L, mo->flags2);
-		break;
-	case mobj_eflags:
-		lua_pushinteger(L, mo->eflags);
-		break;
-	case mobj_skin: // skin name or nil, not struct
-		if (!mo->skin)
-			return 0;
-		lua_pushstring(L, ((skin_t *)mo->skin)->name);
-		break;
-	case mobj_color:
-		lua_pushinteger(L, mo->color);
-		break;
-	case mobj_bnext:
-		LUA_PushUserdata(L, mo->bnext, META_MOBJ);
-		break;
-	case mobj_bprev:
-		// bprev -- same deal as sprev above, but for the blockmap.
-		return UNIMPLEMENTED;
-	case mobj_hnext:
-		LUA_PushUserdata(L, mo->hnext, META_MOBJ);
-		break;
-	case mobj_hprev:
-		// implimented differently from sprev and bprev because SSNTails.
-		LUA_PushUserdata(L, mo->hprev, META_MOBJ);
-		break;
-	case mobj_type:
-		lua_pushinteger(L, mo->type);
-		break;
-	case mobj_info:
-		LUA_PushUserdata(L, &mobjinfo[mo->type], META_MOBJINFO);
-		break;
-	case mobj_health:
-		lua_pushinteger(L, mo->health);
-		break;
-	case mobj_movedir:
-		lua_pushinteger(L, mo->movedir);
-		break;
-	case mobj_movecount:
-		lua_pushinteger(L, mo->movecount);
-		break;
-	case mobj_target:
-		if (mo->target && P_MobjWasRemoved(mo->target))
-		{ // don't put invalid mobj back into Lua.
-			P_SetTarget(&mo->target, NULL);
-			return 0;
-		}
-		LUA_PushUserdata(L, mo->target, META_MOBJ);
-		break;
-	case mobj_reactiontime:
-		lua_pushinteger(L, mo->reactiontime);
-		break;
-	case mobj_threshold:
-		lua_pushinteger(L, mo->threshold);
-		break;
-	case mobj_player:
-		LUA_PushUserdata(L, mo->player, META_PLAYER);
-		break;
-	case mobj_lastlook:
-		lua_pushinteger(L, mo->lastlook);
-		break;
-	case mobj_spawnpoint:
-		LUA_PushUserdata(L, mo->spawnpoint, META_MAPTHING);
-		break;
-	case mobj_tracer:
-		if (mo->tracer && P_MobjWasRemoved(mo->tracer))
-		{ // don't put invalid mobj back into Lua.
-			P_SetTarget(&mo->tracer, NULL);
-			return 0;
-		}
-		LUA_PushUserdata(L, mo->tracer, META_MOBJ);
-		break;
-	case mobj_friction:
-		lua_pushfixed(L, mo->friction);
-		break;
-	case mobj_movefactor:
-		lua_pushfixed(L, mo->movefactor);
-		break;
-	case mobj_fuse:
-		lua_pushinteger(L, mo->fuse);
-		break;
-	case mobj_watertop:
-		lua_pushfixed(L, mo->watertop);
-		break;
-	case mobj_waterbottom:
-		lua_pushfixed(L, mo->waterbottom);
-		break;
-	case mobj_mobjnum:
-		// mobjnum is a networking thing generated for $$$.sav
-		// and therefore shouldn't be used by Lua.
-		return UNIMPLEMENTED;
-	case mobj_scale:
-		lua_pushfixed(L, mo->scale);
-		break;
-	case mobj_destscale:
-		lua_pushfixed(L, mo->destscale);
-		break;
-	case mobj_scalespeed:
-		lua_pushfixed(L, mo->scalespeed);
-		break;
-	case mobj_extravalue1:
-		lua_pushinteger(L, mo->extravalue1);
-		break;
-	case mobj_extravalue2:
-		lua_pushinteger(L, mo->extravalue2);
-		break;
-	case mobj_cusval:
-		lua_pushinteger(L, mo->cusval);
-		break;
-	case mobj_cvmem:
-		lua_pushinteger(L, mo->cvmem);
-		break;
-	case mobj_standingslope:
-		LUA_PushUserdata(L, mo->standingslope, META_SLOPE);
-		break;
-	case mobj_colorized:
-		lua_pushboolean(L, mo->colorized);
-		break;
-	case mobj_rollmodel:
-		lua_pushboolean(L, mo->rollmodel);
-		break;
-	default: // extra custom variables in Lua memory
-		lua_getfield(L, LUA_REGISTRYINDEX, LREG_EXTVARS);
-		I_Assert(lua_istable(L, -1));
-		lua_pushlightuserdata(L, mo);
-		lua_rawget(L, -2);
-		if (!lua_istable(L, -1)) { // no extra values table
-			CONS_Debug(DBG_LUA, M_GetText("'%s' has no extvars table or field named '%s'; returning nil.\n"), "mobj_t", lua_tostring(L, 2));
-			return 0;
-		}
-		lua_pushvalue(L, 2); // field name
-		lua_gettable(L, -2);
-		if (lua_isnil(L, -1)) // no value for this field
-			CONS_Debug(DBG_LUA, M_GetText("'%s' has no field named '%s'; returning nil.\n"), "mobj_t", lua_tostring(L, 2));
-		break;
-	}
-	return 1;
+    lua_getmetatable(L, 1);
+
+    lua_pushvalue(L, 2); // Push field name
+    lua_pushliteral(L, ".get"); // Push suffix
+    lua_concat(L, 2); // Concat into "field_name.get"
+    lua_rawget(L, -2); // Get getter (lel) from metatable
+
+    // If field exists, run getter for it
+    if (!lua_isnil(L, -1)) {
+        //CONS_Printf("Running getter for field %s\n", field);
+        lua_pushlightuserdata(L, mo);
+        lua_call(L, 1, 1);
+        //CONS_Printf("Getter returned %s\n", lua_typename(L, lua_type(L, -1)));
+        return 1;
+    }
+
+    lua_pop(L, 1);
+
+    //CONS_Printf("Getting custom field %s\n", field);
+
+    // Othervise, return extra value
+    // extra custom variables in Lua memory
+    lua_getfield(L, LUA_REGISTRYINDEX, LREG_EXTVARS);
+    I_Assert(lua_istable(L, -1));
+    lua_pushlightuserdata(L, mo);
+    lua_rawget(L, -2);
+    if (!lua_istable(L, -1)) { // no extra values table
+        CONS_Debug(DBG_LUA, M_GetText("'%s' has no extvars table or field named '%s'; returning nil.\n"), "mobj_t", lua_tostring(L, 2));
+        return 0;
+    }
+    lua_pushvalue(L, 2); // field name
+    lua_gettable(L, -2);
+    if (lua_isnil(L, -1)) // no value for this field
+        CONS_Debug(DBG_LUA, M_GetText("'%s' has no field named '%s'; returning nil.\n"), "mobj_t", lua_tostring(L, 2));
+
+    return 1;
 }
 
 #define NOSET luaL_error(L, LUA_QL("mobj_t") " field " LUA_QS " should not be set directly.", mobj_opt[field])
@@ -412,344 +599,54 @@ static int mobj_get(lua_State *L)
 static int mobj_set(lua_State *L)
 {
 	mobj_t *mo = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));
-	enum mobj_e field = Lua_optoption(L, 2, mobj_opt[0], mobj_opt);
-	lua_settop(L, 3);
 
-	if (!mo)
+    lua_settop(L, 3);
+
+	if (!mo) {
 		return LUA_ErrInvalid(L, "mobj_t");
+    }
 
-	if (hud_running)
-		return luaL_error(L, "Do not alter mobj_t in HUD rendering code!");
+    lua_getmetatable(L, 1); // Push metatable
 
-	if (hook_cmd_running)
-		return luaL_error(L, "Do not alter mobj_t in BuildCMD code!");
+    lua_pushvalue(L, 2); // Push field name
+    lua_pushliteral(L, ".set"); // Push suffix
+    lua_concat(L, 2); // Concat into "field_name.set"
+    lua_rawget(L, -2); // Get setter from metatable
 
-	switch(field)
-	{
-	case mobj_valid:
-		return NOSET;
-	case mobj_x:
-		return NOSETPOS;
-	case mobj_y:
-		return NOSETPOS;
-	case mobj_z:
-	{
-		// z doesn't cross sector bounds so it's okay.
-		mobj_t *ptmthing = tmthing;
-		mo->z = luaL_checkfixed(L, 3);
-		P_CheckPosition(mo, mo->x, mo->y);
-		mo->floorz = tmfloorz;
-		mo->ceilingz = tmceilingz;
-		P_SetTarget(&tmthing, ptmthing);
-		break;
-	}
-	case mobj_snext:
-		return NOSETPOS;
-	case mobj_sprev:
-		return UNIMPLEMENTED;
-	case mobj_angle:
-		mo->angle = luaL_checkangle(L, 3);
-		if (mo->player == &players[consoleplayer])
-			localangle[0] = mo->angle;
-		else if (mo->player == &players[displayplayers[1]])
-			localangle[1] = mo->angle;
-		else if (mo->player == &players[displayplayers[2]])
-			localangle[2] = mo->angle;
-		else if (mo->player == &players[displayplayers[3]])
-			localangle[3] = mo->angle;
-		break;
-	case mobj_rollangle:
-		mo->rollangle = luaL_checkangle(L, 3);
-		break;
-	case mobj_sprite:
-		mo->sprite = luaL_checkinteger(L, 3);
-		break;
-	case mobj_frame:
-		mo->frame = (UINT32)luaL_checkinteger(L, 3);
-		break;
-	case mobj_anim_duration:
-		mo->anim_duration = (UINT16)luaL_checkinteger(L, 3);
-		break;
-	case mobj_spritexscale:
-		if (!mo->player)
-			mo->spritexscale = luaL_checkfixed(L, 3);
-		else
-			mo->realxscale = luaL_checkfixed(L, 3);
-		break;
-	case mobj_spriteyscale:
-		if (!mo->player)
-			mo->spriteyscale = luaL_checkfixed(L, 3);
-		else
-			mo->realyscale = luaL_checkfixed(L, 3);
-		break;
-	case mobj_spritexoffset:
-		mo->spritexoffset = luaL_checkfixed(L, 3);
-		break;
-	case mobj_spriteyoffset:
-		mo->spriteyoffset = luaL_checkfixed(L, 3);
-		break;
-	case mobj_touching_sectorlist:
-		return UNIMPLEMENTED;
-	case mobj_subsector:
-		return NOSETPOS;
-	case mobj_floorz:
-		return NOSETPOS;
-	case mobj_ceilingz:
-		return NOSETPOS;
-	case mobj_radius:
-	{
-		mobj_t *ptmthing = tmthing;
-		mo->radius = luaL_checkfixed(L, 3);
-		if (mo->radius < 0)
-			mo->radius = 0;
-		P_CheckPosition(mo, mo->x, mo->y);
-		mo->floorz = tmfloorz;
-		mo->ceilingz = tmceilingz;
-		P_SetTarget(&tmthing, ptmthing);
-		break;
-	}
-	case mobj_height:
-	{
-		mobj_t *ptmthing = tmthing;
-		mo->height = luaL_checkfixed(L, 3);
-		if (mo->height < 0)
-			mo->height = 0;
-		P_CheckPosition(mo, mo->x, mo->y);
-		mo->floorz = tmfloorz;
-		mo->ceilingz = tmceilingz;
-		P_SetTarget(&tmthing, ptmthing);
-		break;
-	}
-	case mobj_momx:
-		mo->momx = luaL_checkfixed(L, 3);
-		break;
-	case mobj_momy:
-		mo->momy = luaL_checkfixed(L, 3);
-		break;
-	case mobj_momz:
-		mo->momz = luaL_checkfixed(L, 3);
-		break;
-	case mobj_pmomz:
-		mo->pmomz = luaL_checkfixed(L, 3);
-		mo->eflags |= MFE_APPLYPMOMZ;
-		break;
-	case mobj_tics:
-		mo->tics = luaL_checkinteger(L, 3);
-		break;
-	case mobj_state: // set state by enum
-		if (mo->player)
-			P_SetPlayerMobjState(mo, luaL_checkinteger(L, 3));
-		else
-			P_SetMobjState(mo, luaL_checkinteger(L, 3));
-		break;
-	case mobj_flags: // special handling for MF_NOBLOCKMAP and MF_NOSECTOR
-	{
-		UINT32 flags = luaL_checkinteger(L, 3);
-		if ((flags & (MF_NOBLOCKMAP|MF_NOSECTOR)) != (mo->flags & (MF_NOBLOCKMAP|MF_NOSECTOR)))
-		{
-			P_UnsetThingPosition(mo);
-			mo->flags = flags;
-			if (flags & MF_NOSECTOR && sector_list)
-			{
-				P_DelSeclist(sector_list);
-				sector_list = NULL;
-			}
-			mo->snext = NULL, mo->sprev = NULL;
-			mo->bnext = NULL, mo->bprev = NULL;
-			P_SetThingPosition(mo);
-		}
-		else
-			mo->flags = flags;
-		break;
-	}
-	case mobj_flags2:
-		mo->flags2 = (UINT32)luaL_checkinteger(L, 3);
-		break;
-	case mobj_eflags:
-		mo->eflags = (UINT32)luaL_checkinteger(L, 3);
-		break;
-	case mobj_skin: // set skin by name
-	{
-		INT32 i;
-		char skin[SKINNAMESIZE+1]; // all skin names are limited to this length
-		strlcpy(skin, luaL_checkstring(L, 3), sizeof skin);
-		strlwr(skin); // all skin names are lowercase
-		for (i = 0; i < numskins; i++)
-			if (fastcmp(skins[i].name, skin))
-			{
-				mo->skin = &skins[i];
-				return 0;
-			}
-		return luaL_error(L, "mobj.skin '%s' not found!", skin);
-	}
-	case mobj_color:
-	{
-		UINT8 newcolor = (UINT8)luaL_checkinteger(L,3);
-		if (newcolor >= MAXTRANSLATIONS)
-			return luaL_error(L, "mobj.color %d out of range (0 - %d).", newcolor, MAXTRANSLATIONS-1);
-		mo->color = newcolor;
-		break;
-	}
-	case mobj_bnext:
-		return NOSETPOS;
-	case mobj_bprev:
-		return UNIMPLEMENTED;
-	case mobj_hnext:
-		if (lua_isnil(L, 3))
-			P_SetTarget(&mo->hnext, NULL);
-		else
-		{
-			mobj_t *hnext = *((mobj_t **)luaL_checkudata(L, 3, META_MOBJ));
-			P_SetTarget(&mo->hnext, hnext);
-		}
-		break;
-	case mobj_hprev:
-		if (lua_isnil(L, 3))
-			P_SetTarget(&mo->hprev, NULL);
-		else
-		{
-			mobj_t *hprev = *((mobj_t **)luaL_checkudata(L, 3, META_MOBJ));
-			P_SetTarget(&mo->hprev, hprev);
-		}
-		break;
-	case mobj_type: // yeah sure, we'll let you change the mobj's type.
-	{
-		mobjtype_t newtype = luaL_checkinteger(L, 3);
-		if (newtype >= NUMMOBJTYPES)
-			return luaL_error(L, "mobj.type %d out of range (0 - %d).", newtype, NUMMOBJTYPES-1);
-		mo->type = newtype;
-		mo->info = &mobjinfo[newtype];
-		P_SetScale(mo, mo->scale);
-		break;
-	}
-	case mobj_info:
-		return NOSET;
-	case mobj_health:
-		mo->health = luaL_checkinteger(L, 3);
-		break;
-	case mobj_movedir:
-		mo->movedir = (angle_t)luaL_checkinteger(L, 3);
-		break;
-	case mobj_movecount:
-		mo->movecount = luaL_checkinteger(L, 3);
-		break;
-	case mobj_target:
-		if (lua_isnil(L, 3))
-			P_SetTarget(&mo->target, NULL);
-		else
-		{
-			mobj_t *target = *((mobj_t **)luaL_checkudata(L, 3, META_MOBJ));
-			P_SetTarget(&mo->target, target);
-		}
-		break;
-	case mobj_reactiontime:
-		mo->reactiontime = luaL_checkinteger(L, 3);
-		break;
-	case mobj_threshold:
-		mo->threshold = luaL_checkinteger(L, 3);
-		break;
-	case mobj_player:
-		return NOSET;
-	case mobj_lastlook:
-		mo->lastlook = luaL_checkinteger(L, 3);
-		break;
-	case mobj_spawnpoint:
-		if (lua_isnil(L, 3))
-			mo->spawnpoint = NULL;
-		else
-		{
-			mapthing_t *spawnpoint = *((mapthing_t **)luaL_checkudata(L, 3, META_MAPTHING));
-			mo->spawnpoint = spawnpoint;
-		}
-		break;
-	case mobj_tracer:
-		if (lua_isnil(L, 3))
-			P_SetTarget(&mo->tracer, NULL);
-		else
-		{
-			mobj_t *tracer = *((mobj_t **)luaL_checkudata(L, 3, META_MOBJ));
-			P_SetTarget(&mo->tracer, tracer);
-		}
-		break;
-	case mobj_friction:
-		mo->friction = luaL_checkfixed(L, 3);
-		break;
-	case mobj_movefactor:
-		mo->movefactor = luaL_checkfixed(L, 3);
-		break;
-	case mobj_fuse:
-		mo->fuse = luaL_checkinteger(L, 3);
-		break;
-	case mobj_watertop:
-		mo->watertop = luaL_checkfixed(L, 3);
-		break;
-	case mobj_waterbottom:
-		mo->waterbottom = luaL_checkfixed(L, 3);
-		break;
-	case mobj_mobjnum:
-		return UNIMPLEMENTED;
-	case mobj_scale:
-	{
-		fixed_t scale = luaL_checkfixed(L, 3);
-		if (scale < FRACUNIT/100)
-			scale = FRACUNIT/100;
-		mo->destscale = scale;
-		P_SetScale(mo, scale);
-		mo->old_scale = scale;
-		break;
-	}
-	case mobj_destscale:
-	{
-		fixed_t scale = luaL_checkfixed(L, 3);
-		if (scale < FRACUNIT/100)
-			scale = FRACUNIT/100;
-		mo->destscale = scale;
-		break;
-	}
-	case mobj_scalespeed:
-		mo->scalespeed = luaL_checkfixed(L, 3);
-		break;
-	case mobj_extravalue1:
-		mo->extravalue1 = luaL_checkinteger(L, 3);
-		break;
-	case mobj_extravalue2:
-		mo->extravalue2 = luaL_checkinteger(L, 3);
-		break;
-	case mobj_cusval:
-		mo->cusval = luaL_checkinteger(L, 3);
-		break;
-	case mobj_cvmem:
-		mo->cvmem = luaL_checkinteger(L, 3);
-		break;
-	case mobj_standingslope:
-		return NOSET;
-	case mobj_colorized:
-		mo->colorized = luaL_checkboolean(L, 3);
-		break;
-	case mobj_rollmodel:
-		mo->rollmodel = luaL_checkboolean(L, 3);
-		break;
-	default:
-		lua_getfield(L, LUA_REGISTRYINDEX, LREG_EXTVARS);
-		I_Assert(lua_istable(L, -1));
-		lua_pushlightuserdata(L, mo);
-		lua_rawget(L, -2);
-		if (lua_isnil(L, -1)) {
-			// This index doesn't have a table for extra values yet, let's make one.
-			lua_pop(L, 1);
-			CONS_Debug(DBG_LUA, M_GetText("'%s' has no field named '%s'; adding it as Lua data.\n"), "mobj_t", lua_tostring(L, 2));
-			lua_newtable(L);
-			lua_pushlightuserdata(L, mo);
-			lua_pushvalue(L, -2); // ext value table
-			lua_rawset(L, -4); // LREG_EXTVARS table
-		}
-		lua_pushvalue(L, 2); // key
-		lua_pushvalue(L, 3); // value to store
-		lua_settable(L, -3);
-		lua_pop(L, 2);
-		break;
-	}
-	return 0;
+    // If field exists, run setter for it
+    if (!lua_isnil(L, -1)) {
+        //CONS_Printf("Running setter for field %s\n", luaL_checkstring(L, 2));
+        lua_pushlightuserdata(L, mo);
+        lua_pushvalue(L, 3);
+        lua_call(L, 2, 0);
+        return 0;
+    }
+
+    lua_pop(L, 1);
+
+    //CONS_Printf("Adding custom field %s\n", luaL_checkstring(L, 2));
+
+    // Otherwise, set custom field
+
+    lua_getfield(L, LUA_REGISTRYINDEX, LREG_EXTVARS);
+    I_Assert(lua_istable(L, -1));
+    lua_pushlightuserdata(L, mo);
+    lua_rawget(L, -2);
+    if (lua_isnil(L, -1)) {
+        // This index doesn't have a table for extra values yet, let's make one.
+        lua_pop(L, 1);
+        CONS_Debug(DBG_LUA, M_GetText("'%s' has no field named '%s'; adding it as Lua data.\n"), "mobj_t", lua_tostring(L, 2));
+        lua_newtable(L);
+        lua_pushlightuserdata(L, mo);
+        lua_pushvalue(L, -2); // ext value table
+        lua_rawset(L, -4); // LREG_EXTVARS table
+    }
+    lua_pushvalue(L, 2); // key
+    lua_pushvalue(L, 3); // value to store
+    lua_settable(L, -3);
+    lua_pop(L, 2);
+
+    return 0;
 }
 
 #undef UNIMPLEMENTED
@@ -891,6 +788,8 @@ int LUA_MobjLib(lua_State *L)
 
 		lua_pushcfunction(L, mobj_set);
 		lua_setfield(L, -2, "__newindex");
+
+        udatalib_addfields(L, -1, mobj_fields);
 	lua_pop(L,1);
 
 	luaL_newmetatable(L, META_MAPTHING);

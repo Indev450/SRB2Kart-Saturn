@@ -19,6 +19,7 @@
 #include "p_slopes.h"
 #include "r_main.h"
 
+#include "lua_udatalib.h"
 #include "lua_script.h"
 #include "lua_libs.h"
 #include "lua_hud.h" // hud_running errors
@@ -238,6 +239,15 @@ static const char *const vector_opt[] = {
 static const char *const array_opt[] ={"iterate",NULL};
 static const char *const valid_opt[] ={"valid",NULL};
 
+#define pushsubsector(L, subsector) LUA_PushUserdata(L, subsector, META_SUBSECTOR)
+int udatalib_getter_subsector(lua_State *L)
+UDATALIB_SIMPLE_GETTER(subsector_t*, pushsubsector)
+#undef pushsubsector
+
+#define pushslope(L, slope) LUA_PushUserdata(L, slope, META_SLOPE)
+int udatalib_getter_slope(lua_State *L)
+UDATALIB_SIMPLE_GETTER(pslope_t*, pushslope)
+#undef pushslope
 // iterates through a sector's thinglist!
 static int lib_iterateSectorThinglist(lua_State *L)
 {
