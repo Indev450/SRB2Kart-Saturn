@@ -42,6 +42,9 @@ UDATALIB_SIMPLE_GETTER(boolean, lua_pushboolean)
 int udatalib_getter_spritenum(lua_State *L)
 UDATALIB_SIMPLE_GETTER(spritenum_t, lua_pushinteger)
 
+int udatalib_getter_tic(lua_State *L)
+UDATALIB_SIMPLE_GETTER(tic_t, lua_pushinteger)
+
 // Setters
 int udatalib_setter_fixed(lua_State *L)
 UDATALIB_SIMPLE_SETTER(fixed_t, luaL_checkfixed)
@@ -80,7 +83,10 @@ int udatalib_setter_boolean(lua_State *L)
 UDATALIB_SIMPLE_SETTER(boolean, luaL_checkboolean)
 
 int udatalib_setter_spritenum(lua_State *L)
-UDATALIB_SIMPLE_SETTER(spritenum_t, luaL_checkinteger)
+UDATALIB_SIMPLE_SETTER(spritenum_t, (spritenum_t)luaL_checkinteger)
+
+int udatalib_setter_tic(lua_State *L)
+UDATALIB_SIMPLE_SETTER(tic_t, (tic_t)luaL_checkinteger)
 
 
 void udatalib_addfield(lua_State *L, int mt, udata_field_t field)

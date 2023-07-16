@@ -38,6 +38,13 @@ int udatalib_getter_mobjtype(lua_State *L);
 int udatalib_getter_player(lua_State *L);
 int udatalib_getter_mapthing(lua_State *L);
 int udatalib_getter_slope(lua_State *L);
+int udatalib_getter_cmd(lua_State *L);
+int udatalib_getter_playerstate(lua_State *L);
+int udatalib_getter_powers(lua_State *L);
+int udatalib_getter_kartstuff(lua_State *L);
+int udatalib_getter_pflags(lua_State *L);
+int udatalib_getter_panim(lua_State *L);
+int udatalib_getter_tic(lua_State *L);
 
 int udatalib_setter_fixed(lua_State *L);
 int udatalib_setter_angle(lua_State *L);
@@ -53,6 +60,10 @@ int udatalib_setter_string(lua_State *L);
 int udatalib_setter_boolean(lua_State *L);
 int udatalib_setter_spritenum(lua_State *L);
 int udatalib_setter_mobj(lua_State *L);
+int udatalib_setter_playerstate(lua_State *L);
+int udatalib_setter_pflags(lua_State *L);
+int udatalib_setter_panim(lua_State *L);
+int udatalib_setter_tic(lua_State *L);
 
 // Adds setter and getter for field and stores it as field.name..".get" and
 // field.name..".set" in table at index mt. (metatable, usually)

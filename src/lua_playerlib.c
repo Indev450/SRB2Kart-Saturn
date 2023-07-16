@@ -19,16 +19,317 @@
 #include "p_local.h"
 #include "d_clisrv.h"
 
-#include "lua_udatalib.h"
 #include "lua_script.h"
 #include "lua_libs.h"
 #include "lua_hud.h" // hud_running errors
 #include "lua_hook.h"	// hook_cmd_running
 
+#include "lua_udatalib.h"
+
+int player_name_getter(lua_State *L);
+int player_name_noset(lua_State *L);
+int player_mo_getter(lua_State *L);
+int player_mo_setter(lua_State *L);
+int player_cmd_noset(lua_State *L);
+int player_aiming_setter(lua_State *L);
+int player_powers_noset(lua_State *L);
+int player_kartstuff_noset(lua_State *L);
+int player_skincolor_setter(lua_State *L);
+int player_axis_setter(lua_State *L);
+int player_capsule_setter(lua_State *L);
+int player_awayviewmobj_setter(lua_State *L);
+int player_awayviewtics_setter(lua_State *L);
+int player_bot_noset(lua_State *L);
+int player_splitscreenindex_noset(lua_State *L);
+int player_ping_getter(lua_State *L);
+int player_ping_noset(lua_State *L);
+
+#define FIELD(type, field_name, getter, setter) { #field_name, offsetof(type, field_name), getter, setter }
+static const udata_field_t player_fields[] = {
+    // Player doesn't actually have field "name" so macro fails. Need to declare field manually.
+    { "name", 0, player_name_getter, player_name_noset },
+    FIELD(player_t, mo,               player_mo_getter,            player_mo_setter),
+    FIELD(player_t, cmd,              udatalib_getter_cmd,         player_cmd_noset),
+    FIELD(player_t, playerstate,      udatalib_getter_playerstate, udatalib_setter_playerstate),
+    FIELD(player_t, viewz,            udatalib_getter_fixed,       udatalib_setter_fixed),
+    FIELD(player_t, viewheight,       udatalib_getter_fixed,       udatalib_setter_fixed),
+    FIELD(player_t, aiming,           udatalib_getter_angle,       player_aiming_setter),
+    FIELD(player_t, health,           udatalib_getter_int32,       udatalib_setter_int32),
+    FIELD(player_t, pity,             udatalib_getter_sint8,       udatalib_setter_sint8),
+    FIELD(player_t, currentweapon,    udatalib_getter_int32,       udatalib_setter_int32),
+    FIELD(player_t, ringweapons,      udatalib_getter_int32,       udatalib_setter_int32),
+    FIELD(player_t, powers,           udatalib_getter_powers,      player_powers_noset),
+    FIELD(player_t, kartstuff,        udatalib_getter_kartstuff,   player_kartstuff_noset),
+    FIELD(player_t, frameangle,       udatalib_getter_angle,       udatalib_setter_angle),
+    FIELD(player_t, pflags,           udatalib_getter_pflags,      udatalib_setter_pflags),
+    FIELD(player_t, panim,            udatalib_getter_panim,       udatalib_setter_panim),
+    FIELD(player_t, flashcount,       udatalib_getter_uint16,      udatalib_setter_uint16),
+    FIELD(player_t, flashpal,         udatalib_getter_uint16,      udatalib_setter_uint16),
+    FIELD(player_t, skincolor,        udatalib_getter_uint8,       player_skincolor_setter),
+    FIELD(player_t, score,            udatalib_getter_uint32,      udatalib_setter_uint32),
+    FIELD(player_t, dashspeed,        udatalib_getter_fixed,       udatalib_setter_fixed),
+    FIELD(player_t, dashtime,         udatalib_getter_int32,       udatalib_setter_int32),
+    FIELD(player_t, kartspeed,        udatalib_getter_uint8,       udatalib_setter_uint8),
+    FIELD(player_t, kartweight,       udatalib_getter_uint8,       udatalib_setter_uint8),
+    FIELD(player_t, charflags,        udatalib_getter_uint32,      udatalib_setter_uint32),
+    FIELD(player_t, lives,            udatalib_getter_sint8,       udatalib_setter_sint8),
+    FIELD(player_t, continues,        udatalib_getter_sint8,       udatalib_setter_sint8),
+    FIELD(player_t, xtralife,         udatalib_getter_sint8,       udatalib_setter_sint8),
+    FIELD(player_t, gotcontinue,      udatalib_getter_uint8,       udatalib_setter_uint8),
+    FIELD(player_t, speed,            udatalib_getter_fixed,       udatalib_setter_fixed),
+    FIELD(player_t, jumping,          udatalib_getter_boolean,     udatalib_setter_boolean),
+    FIELD(player_t, secondjump,       udatalib_getter_uint8,       udatalib_setter_uint8),
+    FIELD(player_t, fly1,             udatalib_getter_uint8,       udatalib_setter_uint8),
+    FIELD(player_t, scoreadd,         udatalib_getter_uint8,       udatalib_setter_uint8),
+    FIELD(player_t, glidetime,        udatalib_getter_tic,         udatalib_setter_tic),
+    FIELD(player_t, climbing,         udatalib_getter_uint8,       udatalib_setter_sint8), // For whatever reason, original setter casted to INT32...
+    FIELD(player_t, deadtimer,        udatalib_getter_int32,       udatalib_setter_int32),
+    FIELD(player_t, exiting,          udatalib_getter_tic,         udatalib_setter_tic),
+    FIELD(player_t, homing,           udatalib_getter_uint8,       udatalib_setter_uint8),
+    FIELD(player_t, skidtime,         udatalib_getter_tic,         udatalib_setter_tic),
+    FIELD(player_t, cmomx,            udatalib_getter_fixed,       udatalib_setter_fixed),
+    FIELD(player_t, cmomy,            udatalib_getter_fixed,       udatalib_setter_fixed),
+    FIELD(player_t, rmomx,            udatalib_getter_fixed,       udatalib_setter_fixed),
+    FIELD(player_t, rmomy,            udatalib_getter_fixed,       udatalib_setter_fixed),
+    FIELD(player_t, numboxes,         udatalib_getter_int16,       udatalib_setter_int16),
+    FIELD(player_t, totalring,        udatalib_getter_int16,       udatalib_setter_int16),
+    FIELD(player_t, realtime,         udatalib_getter_tic,         udatalib_setter_tic),
+    FIELD(player_t, laps,             udatalib_getter_uint8,       udatalib_setter_uint8),
+    FIELD(player_t, ctfteam,          udatalib_getter_int32,       udatalib_setter_int32),
+    FIELD(player_t, gotflag,          udatalib_getter_uint16,      udatalib_setter_uint16),
+    FIELD(player_t, weapondelay,      udatalib_getter_int32,       udatalib_setter_int32),
+    FIELD(player_t, tossdelay,        udatalib_getter_int32,       udatalib_setter_int32),
+    FIELD(player_t, starpostx,        udatalib_getter_int16,       udatalib_setter_int16),
+    FIELD(player_t, starposty,        udatalib_getter_int16,       udatalib_setter_int16),
+    FIELD(player_t, starpostz,        udatalib_getter_int16,       udatalib_setter_int16),
+    FIELD(player_t, starpostnum,      udatalib_getter_int32,       udatalib_setter_int32),
+    FIELD(player_t, starposttime,     udatalib_getter_tic,         udatalib_setter_tic),
+    FIELD(player_t, starpostangle,    udatalib_getter_angle,       udatalib_setter_angle),
+    FIELD(player_t, angle_pos,        udatalib_getter_angle,       udatalib_setter_angle),
+    FIELD(player_t, old_angle_pos,    udatalib_getter_angle,       udatalib_setter_angle),
+    FIELD(player_t, axis1,            udatalib_getter_mobj,        player_axis_setter),
+    FIELD(player_t, axis2,            udatalib_getter_mobj,        player_axis_setter),
+    FIELD(player_t, bumpertime,       udatalib_getter_tic,         udatalib_setter_tic),
+    FIELD(player_t, flyangle,         udatalib_getter_int32,       udatalib_setter_int32),
+    FIELD(player_t, drilltimer,       udatalib_getter_tic,         udatalib_setter_tic),
+    FIELD(player_t, linkcount,        udatalib_getter_int32,       udatalib_setter_int32),
+    FIELD(player_t, linktimer,        udatalib_getter_tic,         udatalib_setter_tic),
+    FIELD(player_t, anotherflyangle,  udatalib_getter_int32,       udatalib_setter_int32),
+    FIELD(player_t, nightstime,       udatalib_getter_tic,         udatalib_setter_tic),
+    FIELD(player_t, drillmeter,       udatalib_getter_int32,       udatalib_setter_int32),
+    FIELD(player_t, drilldelay,       udatalib_getter_uint8,       udatalib_setter_uint8),
+    FIELD(player_t, bonustime,        udatalib_getter_boolean,     udatalib_setter_boolean),
+    FIELD(player_t, capsule,          udatalib_getter_mobj,        player_capsule_setter),
+    FIELD(player_t, mare,             udatalib_getter_uint8,       udatalib_setter_uint8),
+    FIELD(player_t, marebegunat,      udatalib_getter_tic,         udatalib_setter_tic),
+    FIELD(player_t, startedtime,      udatalib_getter_tic,         udatalib_setter_tic),
+    FIELD(player_t, finishedtime,     udatalib_getter_tic,         udatalib_setter_tic),
+    FIELD(player_t, finishedrings,    udatalib_getter_int16,       udatalib_setter_int16),
+    FIELD(player_t, marescore,        udatalib_getter_uint32,      udatalib_setter_uint32),
+    FIELD(player_t, lastmarescore,    udatalib_getter_uint32,      udatalib_setter_uint32),
+    FIELD(player_t, lastmare,         udatalib_getter_uint8,       udatalib_setter_uint8),
+    FIELD(player_t, maxlink,          udatalib_getter_int32,       udatalib_setter_int32),
+    FIELD(player_t, texttimer,        udatalib_getter_uint8,       udatalib_setter_uint8),
+    FIELD(player_t, textvar,          udatalib_getter_uint8,       udatalib_setter_uint8),
+    FIELD(player_t, lastsidehit,      udatalib_getter_int16,       udatalib_setter_int16),
+    FIELD(player_t, lastlinehit,      udatalib_getter_int16,       udatalib_setter_int16),
+    FIELD(player_t, losstime,         udatalib_getter_tic,         udatalib_setter_tic),
+    FIELD(player_t, timeshit,         udatalib_getter_uint8,       udatalib_setter_uint8), // Haha, time shit, funni
+    FIELD(player_t, onconveyor,       udatalib_getter_int32,       udatalib_setter_int32),
+    FIELD(player_t, awayviewmobj,     udatalib_getter_mobj,        player_awayviewmobj_setter),
+    FIELD(player_t, awayviewtics,     udatalib_getter_int32,       player_awayviewtics_setter),
+    FIELD(player_t, awayviewaiming,   udatalib_getter_angle,       udatalib_setter_angle),
+    FIELD(player_t, spectator,        udatalib_getter_boolean,     udatalib_setter_boolean),
+    FIELD(player_t, bot,              udatalib_getter_uint8,       player_bot_noset),
+    FIELD(player_t, jointime,         udatalib_getter_tic,         udatalib_setter_tic),
+    FIELD(player_t, spectatorreentry, udatalib_getter_tic,         udatalib_setter_tic),
+    FIELD(player_t, grieftime,        udatalib_getter_tic,         udatalib_setter_tic),
+    FIELD(player_t, griefstrikes,     udatalib_getter_uint8,       udatalib_setter_uint8),
+    FIELD(player_t, splitscreenindex, udatalib_getter_uint8,       player_splitscreenindex_noset),
+#ifdef HWRENDER
+    FIELD(player_t, fovadd,           udatalib_getter_fixed,       udatalib_setter_fixed), // Mmm yeah thats definitely synch safe
+#endif
+    // Same as player.name
+    { "ping", 0, player_ping_getter, player_ping_noset }, // Hmm originally setter doesn't exist so data is written as unreachable custom field...
+    { NULL },
+};
+#undef FIELD
+
+// Implement udatalib simple getters
 #define pushplayer(L, player) LUA_PushUserdata(L, player, META_PLAYER)
 int udatalib_getter_player(lua_State *L)
 UDATALIB_SIMPLE_GETTER(player_t*, pushplayer)
 #undef pushplayer
+
+#define pushcmd(L, cmd) LUA_PushUserdata(L, &cmd, META_TICCMD)
+int udatalib_getter_cmd(lua_State *L)
+UDATALIB_SIMPLE_GETTER(ticcmd_t, pushcmd)
+#undef pushcmd
+
+int udatalib_getter_playerstate(lua_State *L)
+UDATALIB_SIMPLE_GETTER(playerstate_t, lua_pushinteger)
+
+int udatalib_setter_playerstate(lua_State *L)
+UDATALIB_SIMPLE_SETTER(playerstate_t, luaL_checkinteger)
+
+#define pushpowers(L, powers) LUA_PushUserdata(L, &powers, META_POWERS)
+int udatalib_getter_powers(lua_State *L)
+UDATALIB_SIMPLE_GETTER(UINT16, pushpowers)
+#undef pushpowers
+
+#define pushkartstuff(L, kartstuff) LUA_PushUserdata(L, &kartstuff, META_KARTSTUFF)
+int udatalib_getter_kartstuff(lua_State *L)
+UDATALIB_SIMPLE_GETTER(INT32, pushkartstuff)
+#undef pushkartstuff
+
+int udatalib_getter_pflags(lua_State *L)
+UDATALIB_SIMPLE_GETTER(pflags_t, lua_pushinteger)
+
+int udatalib_setter_pflags(lua_State *L)
+UDATALIB_SIMPLE_SETTER(pflags_t, luaL_checkinteger)
+
+int udatalib_getter_panim(lua_State *L)
+UDATALIB_SIMPLE_GETTER(panim_t, lua_pushinteger)
+
+int udatalib_setter_panim(lua_State *L)
+UDATALIB_SIMPLE_SETTER(panim_t, luaL_checkinteger)
+// Fields that cannot be set directly
+#define NOSET(field) \
+int player_ ## field ## _noset(lua_State *L) \
+{ \
+    return luaL_error(L, LUA_QL("player_t") " field " LUA_QS " should not be set directly.", #field); \
+}
+
+NOSET(name)
+NOSET(cmd)
+NOSET(powers)
+NOSET(kartstuff)
+NOSET(bot)
+NOSET(splitscreenindex)
+NOSET(ping)
+
+#undef NOSET
+
+// Rest of getters/setters with arbitary logic
+
+
+#define GETPLAYER() (player_t*)lua_touserdata(L, 1)
+
+int player_name_getter(lua_State *L)
+{
+    player_t *plr = GETPLAYER();
+
+    lua_pushstring(L, player_names[plr-players]);
+
+    return 1;
+}
+
+int player_mo_getter(lua_State *L)
+{
+    player_t *plr = GETPLAYER();
+
+    if (plr->spectator)
+        lua_pushnil(L);
+    else
+        LUA_PushUserdata(L, plr->mo, META_MOBJ);
+
+    return 1;
+}
+
+int player_mo_setter(lua_State *L)
+{
+    player_t *plr = GETPLAYER();
+
+    mobj_t *newmo = *((mobj_t **)luaL_checkudata(L, 2, META_MOBJ));
+    plr->mo->player = NULL; // remove player pointer from old mobj
+    (newmo->player = plr)->mo = newmo; // set player pointer for new mobj, and set new mobj as the player's mobj
+
+    return 0;
+}
+
+int player_aiming_setter(lua_State *L)
+{
+    player_t *plr = GETPLAYER();
+
+    plr->aiming = luaL_checkangle(L, 2);
+    if (plr == &players[consoleplayer])
+        localaiming[0] = plr->aiming;
+    else if (plr == &players[displayplayers[1]])
+        localaiming[1] = plr->aiming;
+    else if (plr == &players[displayplayers[2]])
+        localaiming[2] = plr->aiming;
+    else if (plr == &players[displayplayers[3]])
+        localaiming[3] = plr->aiming;
+
+    return 0;
+}
+
+int player_skincolor_setter(lua_State *L)
+{
+    player_t *plr = GETPLAYER();
+
+    UINT8 newcolor = (UINT8)luaL_checkinteger(L,2);
+    if (newcolor >= MAXSKINCOLORS)
+        return luaL_error(L, "player.skincolor %d out of range (0 - %d).", newcolor, MAXSKINCOLORS-1);
+    plr->skincolor = newcolor;
+
+    return 0;
+}
+int player_axis_setter(lua_State *L)
+{
+    mobj_t **axis;
+
+    UDATALIB_GETFIELD(mobj_t*, axis);
+
+	P_SetTarget(axis, *((mobj_t **)luaL_checkudata(L, 2, META_MOBJ)));
+
+    return 0;
+}
+
+int player_capsule_setter(lua_State *L)
+{
+    player_t *plr = GETPLAYER();
+
+    mobj_t *mo = NULL;
+    if (!lua_isnil(L, 2))
+        mo = *((mobj_t **)luaL_checkudata(L, 2, META_MOBJ));
+    P_SetTarget(&plr->capsule, mo);
+
+    return 0;
+}
+
+// Probably can do same thing as with axis1 and axis2
+int player_awayviewmobj_setter(lua_State *L)
+{
+    player_t *plr = GETPLAYER();
+
+    mobj_t *mo = NULL;
+    if (!lua_isnil(L, 2))
+        mo = *((mobj_t **)luaL_checkudata(L, 2, META_MOBJ));
+    P_SetTarget(&plr->awayviewmobj, mo);
+
+    return 0;
+}
+
+int player_awayviewtics_setter(lua_State *L)
+{
+    player_t *plr = GETPLAYER();
+
+    plr->awayviewtics = (INT32)luaL_checkinteger(L, 2);
+    if (plr->awayviewtics && !plr->awayviewmobj) // awayviewtics must ALWAYS have an awayviewmobj set!!
+        P_SetTarget(&plr->awayviewmobj, plr->mo); // but since the script might set awayviewmobj immediately AFTER setting awayviewtics, use player mobj as filler for now.
+
+    return 0;
+}
+
+int player_ping_getter(lua_State *L)
+{
+    player_t *plr = GETPLAYER();
+
+    lua_pushinteger(L, playerpingtable[( plr - players )]);
+
+    return 1;
+}
 
 static int lib_iteratePlayers(lua_State *L)
 {
@@ -175,7 +476,7 @@ static int lib_lenDisplayplayers(lua_State *L)
 static int player_get(lua_State *L)
 {
 	player_t *plr = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
-	const char *field = luaL_checkstring(L, 2);
+	const char *field = luaL_checkstring(L, 2); // Still gotta have 2 strcmp's
 
 	if (!plr) {
 		if (fastcmp(field,"valid")) {
@@ -183,243 +484,44 @@ static int player_get(lua_State *L)
 			return 1;
 		}
 		return LUA_ErrInvalid(L, "player_t");
-	}
-
-	if (fastcmp(field,"valid"))
+	} else if (fastcmp(field,"valid")) {
 		lua_pushboolean(L, true);
-	else if (fastcmp(field,"name"))
-		lua_pushstring(L, player_names[plr-players]);
-	else if (fastcmp(field,"mo"))
-	{
-		if (plr->spectator)
-			lua_pushnil(L);
-		else
-			LUA_PushUserdata(L, plr->mo, META_MOBJ);
-	}
-	else if (fastcmp(field,"cmd"))
-		LUA_PushUserdata(L, &plr->cmd, META_TICCMD);
-	else if (fastcmp(field,"playerstate"))
-		lua_pushinteger(L, plr->playerstate);
-	else if (fastcmp(field,"viewz"))
-		lua_pushfixed(L, plr->viewz);
-	else if (fastcmp(field,"viewheight"))
-		lua_pushfixed(L, plr->viewheight);
-	/*else if (fastcmp(field,"deltaviewheight"))
-		lua_pushfixed(L, plr->deltaviewheight);
-	else if (fastcmp(field,"bob"))
-		lua_pushfixed(L, plr->bob);*/
-	else if (fastcmp(field,"aiming"))
-		lua_pushangle(L, plr->aiming);
-	else if (fastcmp(field,"health"))
-		lua_pushinteger(L, plr->health);
-	else if (fastcmp(field,"pity"))
-		lua_pushinteger(L, plr->pity);
-	else if (fastcmp(field,"currentweapon"))
-		lua_pushinteger(L, plr->currentweapon);
-	else if (fastcmp(field,"ringweapons"))
-		lua_pushinteger(L, plr->ringweapons);
-	else if (fastcmp(field,"powers"))
-		LUA_PushUserdata(L, plr->powers, META_POWERS);
-	else if (fastcmp(field,"kartstuff"))
-		LUA_PushUserdata(L, plr->kartstuff, META_KARTSTUFF);
-	else if (fastcmp(field,"frameangle"))
-		lua_pushangle(L, plr->frameangle);
-	else if (fastcmp(field,"pflags"))
-		lua_pushinteger(L, plr->pflags);
-	else if (fastcmp(field,"panim"))
-		lua_pushinteger(L, plr->panim);
-	else if (fastcmp(field,"flashcount"))
-		lua_pushinteger(L, plr->flashcount);
-	else if (fastcmp(field,"flashpal"))
-		lua_pushinteger(L, plr->flashpal);
-	else if (fastcmp(field,"skincolor"))
-		lua_pushinteger(L, plr->skincolor);
-	else if (fastcmp(field,"score"))
-		lua_pushinteger(L, plr->score);
-	else if (fastcmp(field,"dashspeed"))
-		lua_pushfixed(L, plr->dashspeed);
-	else if (fastcmp(field,"dashtime"))
-		lua_pushinteger(L, plr->dashtime);
-	// SRB2kart
-	else if (fastcmp(field,"kartspeed"))
-		lua_pushinteger(L, plr->kartspeed);
-	else if (fastcmp(field,"kartweight"))
-		lua_pushinteger(L, plr->kartweight);
-	//
-	else if (fastcmp(field,"charflags"))
-		lua_pushinteger(L, plr->charflags);
-	else if (fastcmp(field,"lives"))
-		lua_pushinteger(L, plr->lives);
-	else if (fastcmp(field,"continues"))
-		lua_pushinteger(L, plr->continues);
-	else if (fastcmp(field,"xtralife"))
-		lua_pushinteger(L, plr->xtralife);
-	else if (fastcmp(field,"gotcontinue"))
-		lua_pushinteger(L, plr->gotcontinue);
-	else if (fastcmp(field,"speed"))
-		lua_pushfixed(L, plr->speed);
-	else if (fastcmp(field,"jumping"))
-		lua_pushboolean(L, plr->jumping);
-	else if (fastcmp(field,"secondjump"))
-		lua_pushinteger(L, plr->secondjump);
-	else if (fastcmp(field,"fly1"))
-		lua_pushinteger(L, plr->fly1);
-	else if (fastcmp(field,"scoreadd"))
-		lua_pushinteger(L, plr->scoreadd);
-	else if (fastcmp(field,"glidetime"))
-		lua_pushinteger(L, plr->glidetime);
-	else if (fastcmp(field,"climbing"))
-		lua_pushinteger(L, plr->climbing);
-	else if (fastcmp(field,"deadtimer"))
-		lua_pushinteger(L, plr->deadtimer);
-	else if (fastcmp(field,"exiting"))
-		lua_pushinteger(L, plr->exiting);
-	else if (fastcmp(field,"homing"))
-		lua_pushinteger(L, plr->homing);
-	else if (fastcmp(field,"skidtime"))
-		lua_pushinteger(L, plr->skidtime);
-	else if (fastcmp(field,"cmomx"))
-		lua_pushfixed(L, plr->cmomx);
-	else if (fastcmp(field,"cmomy"))
-		lua_pushfixed(L, plr->cmomy);
-	else if (fastcmp(field,"rmomx"))
-		lua_pushfixed(L, plr->rmomx);
-	else if (fastcmp(field,"rmomy"))
-		lua_pushfixed(L, plr->rmomy);
-	else if (fastcmp(field,"numboxes"))
-		lua_pushinteger(L, plr->numboxes);
-	else if (fastcmp(field,"totalring"))
-		lua_pushinteger(L, plr->totalring);
-	else if (fastcmp(field,"realtime"))
-		lua_pushinteger(L, plr->realtime);
-	else if (fastcmp(field,"laps"))
-		lua_pushinteger(L, plr->laps);
-	else if (fastcmp(field,"ctfteam"))
-		lua_pushinteger(L, plr->ctfteam);
-	else if (fastcmp(field,"gotflag"))
-		lua_pushinteger(L, plr->gotflag);
-	else if (fastcmp(field,"weapondelay"))
-		lua_pushinteger(L, plr->weapondelay);
-	else if (fastcmp(field,"tossdelay"))
-		lua_pushinteger(L, plr->tossdelay);
-	else if (fastcmp(field,"starpostx"))
-		lua_pushinteger(L, plr->starpostx);
-	else if (fastcmp(field,"starposty"))
-		lua_pushinteger(L, plr->starposty);
-	else if (fastcmp(field,"starpostz"))
-		lua_pushinteger(L, plr->starpostz);
-	else if (fastcmp(field,"starpostnum"))
-		lua_pushinteger(L, plr->starpostnum);
-	else if (fastcmp(field,"starposttime"))
-		lua_pushinteger(L, plr->starposttime);
-	else if (fastcmp(field,"starpostangle"))
-		lua_pushangle(L, plr->starpostangle);
-	else if (fastcmp(field,"angle_pos"))
-		lua_pushangle(L, plr->angle_pos);
-	else if (fastcmp(field,"old_angle_pos"))
-		lua_pushangle(L, plr->old_angle_pos);
-	else if (fastcmp(field,"axis1"))
-		LUA_PushUserdata(L, plr->axis1, META_MOBJ);
-	else if (fastcmp(field,"axis2"))
-		LUA_PushUserdata(L, plr->axis2, META_MOBJ);
-	else if (fastcmp(field,"bumpertime"))
-		lua_pushinteger(L, plr->bumpertime);
-	else if (fastcmp(field,"flyangle"))
-		lua_pushinteger(L, plr->flyangle);
-	else if (fastcmp(field,"drilltimer"))
-		lua_pushinteger(L, plr->drilltimer);
-	else if (fastcmp(field,"linkcount"))
-		lua_pushinteger(L, plr->linkcount);
-	else if (fastcmp(field,"linktimer"))
-		lua_pushinteger(L, plr->linktimer);
-	else if (fastcmp(field,"anotherflyangle"))
-		lua_pushinteger(L, plr->anotherflyangle);
-	else if (fastcmp(field,"nightstime"))
-		lua_pushinteger(L, plr->nightstime);
-	else if (fastcmp(field,"drillmeter"))
-		lua_pushinteger(L, plr->drillmeter);
-	else if (fastcmp(field,"drilldelay"))
-		lua_pushinteger(L, plr->drilldelay);
-	else if (fastcmp(field,"bonustime"))
-		lua_pushboolean(L, plr->bonustime);
-	else if (fastcmp(field,"capsule"))
-		LUA_PushUserdata(L, plr->capsule, META_MOBJ);
-	else if (fastcmp(field,"mare"))
-		lua_pushinteger(L, plr->mare);
-	else if (fastcmp(field,"marebegunat"))
-		lua_pushinteger(L, plr->marebegunat);
-	else if (fastcmp(field,"startedtime"))
-		lua_pushinteger(L, plr->startedtime);
-	else if (fastcmp(field,"finishedtime"))
-		lua_pushinteger(L, plr->finishedtime);
-	else if (fastcmp(field,"finishedrings"))
-		lua_pushinteger(L, plr->finishedrings);
-	else if (fastcmp(field,"marescore"))
-		lua_pushinteger(L, plr->marescore);
-	else if (fastcmp(field,"lastmarescore"))
-		lua_pushinteger(L, plr->lastmarescore);
-	else if (fastcmp(field,"lastmare"))
-		lua_pushinteger(L, plr->lastmare);
-	else if (fastcmp(field,"maxlink"))
-		lua_pushinteger(L, plr->maxlink);
-	else if (fastcmp(field,"texttimer"))
-		lua_pushinteger(L, plr->texttimer);
-	else if (fastcmp(field,"textvar"))
-		lua_pushinteger(L, plr->textvar);
-	else if (fastcmp(field,"lastsidehit"))
-		lua_pushinteger(L, plr->lastsidehit);
-	else if (fastcmp(field,"lastlinehit"))
-		lua_pushinteger(L, plr->lastlinehit);
-	else if (fastcmp(field,"losstime"))
-		lua_pushinteger(L, plr->losstime);
-	else if (fastcmp(field,"timeshit"))
-		lua_pushinteger(L, plr->timeshit);
-	else if (fastcmp(field,"onconveyor"))
-		lua_pushinteger(L, plr->onconveyor);
-	else if (fastcmp(field,"awayviewmobj"))
-		LUA_PushUserdata(L, plr->awayviewmobj, META_MOBJ);
-	else if (fastcmp(field,"awayviewtics"))
-		lua_pushinteger(L, plr->awayviewtics);
-	else if (fastcmp(field,"awayviewaiming"))
-		lua_pushangle(L, plr->awayviewaiming);
-	else if (fastcmp(field,"spectator"))
-		lua_pushboolean(L, plr->spectator);
-	else if (fastcmp(field,"bot"))
-		lua_pushinteger(L, plr->bot);
-	else if (fastcmp(field,"jointime"))
-		lua_pushinteger(L, plr->jointime);
-	else if (fastcmp(field,"spectatorreentry"))
-		lua_pushinteger(L, plr->spectatorreentry);
-	else if (fastcmp(field,"grieftime"))
-		lua_pushinteger(L, plr->grieftime);
-	else if (fastcmp(field,"griefstrikes"))
-		lua_pushinteger(L, plr->griefstrikes);
-	else if (fastcmp(field,"splitscreenindex"))
-		lua_pushinteger(L, plr->splitscreenindex);
-#ifdef HWRENDER
-	else if (fastcmp(field,"fovadd"))
-		lua_pushfixed(L, plr->fovadd);
-#endif
-	else if (fastcmp(field,"ping"))
-		lua_pushinteger(L, playerpingtable[( plr - players )]);
-	else {
-		lua_getfield(L, LUA_REGISTRYINDEX, LREG_EXTVARS);
-		I_Assert(lua_istable(L, -1));
-		lua_pushlightuserdata(L, plr);
-		lua_rawget(L, -2);
-		if (!lua_istable(L, -1)) { // no extra values table
-			CONS_Debug(DBG_LUA, M_GetText("'%s' has no extvars table or field named '%s'; returning nil.\n"), "player_t", field);
-			return 0;
-		}
-		lua_getfield(L, -1, field);
-		if (lua_isnil(L, -1)) // no value for this field
-			CONS_Debug(DBG_LUA, M_GetText("'%s' has no field named '%s'; returning nil.\n"), "player_t", field);
-	}
+        return 1;
+    }
+
+    lua_getmetatable(L, 1);
+
+    lua_pushvalue(L, 2); // Push field name
+    lua_pushliteral(L, ".get"); // Push suffix
+    lua_concat(L, 2); // Concat into "field_name.get"
+    lua_rawget(L, -2); // Get getter (lel) from metatable
+
+    // If field exists, run getter for it
+    if (!lua_isnil(L, -1)) {
+        //CONS_Printf("Running getter for field %s\n", field);
+        lua_pushlightuserdata(L, plr);
+        lua_call(L, 1, 1);
+        //CONS_Printf("Getter returned %s\n", lua_typename(L, lua_type(L, -1)));
+        return 1;
+    }
+
+    lua_pop(L, 1);
+
+    lua_getfield(L, LUA_REGISTRYINDEX, LREG_EXTVARS);
+    I_Assert(lua_istable(L, -1));
+    lua_pushlightuserdata(L, plr);
+    lua_rawget(L, -2);
+    if (!lua_istable(L, -1)) { // no extra values table
+        CONS_Debug(DBG_LUA, M_GetText("'%s' has no extvars table or field named '%s'; returning nil.\n"), "player_t", field);
+        return 0;
+    }
+    lua_getfield(L, -1, field);
+    if (lua_isnil(L, -1)) // no value for this field
+        CONS_Debug(DBG_LUA, M_GetText("'%s' has no field named '%s'; returning nil.\n"), "player_t", field);
 
 	return 1;
 }
 
-#define NOSET luaL_error(L, LUA_QL("player_t") " field " LUA_QS " should not be set directly.", field)
 static int player_set(lua_State *L)
 {
 	player_t *plr = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
@@ -433,261 +535,40 @@ static int player_set(lua_State *L)
 	if (hook_cmd_running)
 		return luaL_error(L, "Do not alter player_t in BuildCMD code!");
 
-	if (fastcmp(field,"mo")) {
-		mobj_t *newmo = *((mobj_t **)luaL_checkudata(L, 3, META_MOBJ));
-		plr->mo->player = NULL; // remove player pointer from old mobj
-		(newmo->player = plr)->mo = newmo; // set player pointer for new mobj, and set new mobj as the player's mobj
-	}
-	else if (fastcmp(field,"cmd"))
-		return NOSET;
-	else if (fastcmp(field,"playerstate"))
-		plr->playerstate = luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"viewz"))
-		plr->viewz = luaL_checkfixed(L, 3);
-	else if (fastcmp(field,"viewheight"))
-		plr->viewheight = luaL_checkfixed(L, 3);
-	/*else if (fastcmp(field,"deltaviewheight"))
-		plr->deltaviewheight = luaL_checkfixed(L, 3);
-	else if (fastcmp(field,"bob"))
-		plr->bob = luaL_checkfixed(L, 3);*/
-	else if (fastcmp(field,"aiming")) {
-		plr->aiming = luaL_checkangle(L, 3);
-		if (plr == &players[consoleplayer])
-			localaiming[0] = plr->aiming;
-		else if (plr == &players[displayplayers[1]])
-			localaiming[1] = plr->aiming;
-		else if (plr == &players[displayplayers[2]])
-			localaiming[2] = plr->aiming;
-		else if (plr == &players[displayplayers[3]])
-			localaiming[3] = plr->aiming;
-	}
-	else if (fastcmp(field,"health"))
-		plr->health = (INT32)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"pity"))
-		plr->pity = (SINT8)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"currentweapon"))
-		plr->currentweapon = (INT32)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"ringweapons"))
-		plr->ringweapons = (INT32)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"powers"))
-		return NOSET;
-	else if (fastcmp(field,"pflags"))
-		plr->pflags = luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"panim"))
-		plr->panim = luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"flashcount"))
-		plr->flashcount = (UINT16)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"flashpal"))
-		plr->flashpal = (UINT16)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"skincolor"))
-	{
-		UINT8 newcolor = (UINT8)luaL_checkinteger(L,3);
-		if (newcolor >= MAXSKINCOLORS)
-			return luaL_error(L, "player.skincolor %d out of range (0 - %d).", newcolor, MAXSKINCOLORS-1);
-		plr->skincolor = newcolor;
-	}
-	else if (fastcmp(field,"score"))
-		plr->score = (UINT32)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"dashspeed"))
-		plr->dashspeed = luaL_checkfixed(L, 3);
-	else if (fastcmp(field,"dashtime"))
-		plr->dashtime = (INT32)luaL_checkinteger(L, 3);
-	// SRB2kart
-	else if (fastcmp(field,"kartstuff"))
-		return NOSET;
-	else if (fastcmp(field,"frameangle"))
-		plr->frameangle = luaL_checkangle(L, 3);
-	else if (fastcmp(field,"kartspeed"))
-		plr->kartspeed = (UINT8)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"kartweight"))
-		plr->kartweight = (UINT8)luaL_checkinteger(L, 3);
-	//
-	else if (fastcmp(field,"charflags"))
-		plr->charflags = (UINT32)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"lives"))
-		plr->lives = (SINT8)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"continues"))
-		plr->continues = (SINT8)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"xtralife"))
-		plr->xtralife = (SINT8)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"gotcontinue"))
-		plr->gotcontinue = (UINT8)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"speed"))
-		plr->speed = luaL_checkfixed(L, 3);
-	else if (fastcmp(field,"jumping"))
-		plr->jumping = luaL_checkboolean(L, 3);
-	else if (fastcmp(field,"secondjump"))
-		plr->secondjump = (UINT8)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"fly1"))
-		plr->fly1 = (UINT8)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"scoreadd"))
-		plr->scoreadd = (UINT8)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"glidetime"))
-		plr->glidetime = (tic_t)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"climbing"))
-		plr->climbing = (INT32)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"deadtimer"))
-		plr->deadtimer = (INT32)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"exiting"))
-		plr->exiting = (tic_t)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"homing"))
-		plr->homing = (UINT8)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"skidtime"))
-		plr->skidtime = (tic_t)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"cmomx"))
-		plr->cmomx = luaL_checkfixed(L, 3);
-	else if (fastcmp(field,"cmomy"))
-		plr->cmomy = luaL_checkfixed(L, 3);
-	else if (fastcmp(field,"rmomx"))
-		plr->rmomx = luaL_checkfixed(L, 3);
-	else if (fastcmp(field,"rmomy"))
-		plr->rmomy = luaL_checkfixed(L, 3);
-	else if (fastcmp(field,"numboxes"))
-		plr->numboxes = (INT16)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"totalring"))
-		plr->totalring = (INT16)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"realtime"))
-		plr->realtime = (tic_t)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"laps"))
-		plr->laps = (UINT8)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"ctfteam"))
-		plr->ctfteam = (INT32)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"gotflag"))
-		plr->gotflag = (UINT16)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"weapondelay"))
-		plr->weapondelay = (INT32)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"tossdelay"))
-		plr->tossdelay = (INT32)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"starpostx"))
-		plr->starpostx = (INT16)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"starposty"))
-		plr->starposty = (INT16)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"starpostz"))
-		plr->starpostz = (INT16)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"starpostnum"))
-		plr->starpostnum = (INT32)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"starposttime"))
-		plr->starposttime = (tic_t)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"starpostangle"))
-		plr->starpostangle = luaL_checkangle(L, 3);
-	else if (fastcmp(field,"angle_pos"))
-		plr->angle_pos = luaL_checkangle(L, 3);
-	else if (fastcmp(field,"old_angle_pos"))
-		plr->old_angle_pos = luaL_checkangle(L, 3);
-	else if (fastcmp(field,"axis1"))
-		P_SetTarget(&plr->axis1, *((mobj_t **)luaL_checkudata(L, 3, META_MOBJ)));
-	else if (fastcmp(field,"axis2"))
-		P_SetTarget(&plr->axis2, *((mobj_t **)luaL_checkudata(L, 3, META_MOBJ)));
-	else if (fastcmp(field,"bumpertime"))
-		plr->bumpertime = (tic_t)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"flyangle"))
-		plr->flyangle = (INT32)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"drilltimer"))
-		plr->drilltimer = (tic_t)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"linkcount"))
-		plr->linkcount = (INT32)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"linktimer"))
-		plr->linktimer = (tic_t)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"anotherflyangle"))
-		plr->anotherflyangle = (INT32)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"nightstime"))
-		plr->nightstime = (tic_t)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"drillmeter"))
-		plr->drillmeter = (INT32)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"drilldelay"))
-		plr->drilldelay = (UINT8)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"bonustime"))
-		plr->bonustime = luaL_checkboolean(L, 3);
-	else if (fastcmp(field,"capsule"))
-	{
-		mobj_t *mo = NULL;
-		if (!lua_isnil(L, 3))
-			mo = *((mobj_t **)luaL_checkudata(L, 3, META_MOBJ));
-		P_SetTarget(&plr->capsule, mo);
-	}
-	else if (fastcmp(field,"mare"))
-		plr->mare = (UINT8)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"marebegunat"))
-		plr->marebegunat = (tic_t)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"startedtime"))
-		plr->startedtime = (tic_t)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"finishedtime"))
-		plr->finishedtime = (tic_t)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"finishedrings"))
-		plr->finishedrings = (INT16)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"marescore"))
-		plr->marescore = (UINT32)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"lastmarescore"))
-		plr->lastmarescore = (UINT32)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"lastmare"))
-		plr->lastmare = (UINT8)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"maxlink"))
-		plr->maxlink = (INT32)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"texttimer"))
-		plr->texttimer = (UINT8)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"textvar"))
-		plr->textvar = (UINT8)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"lastsidehit"))
-		plr->lastsidehit = (INT16)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"lastlinehit"))
-		plr->lastlinehit = (INT16)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"losstime"))
-		plr->losstime = (tic_t)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"timeshit"))
-		plr->timeshit = (UINT8)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"onconveyor"))
-		plr->onconveyor = (INT32)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"awayviewmobj"))
-	{
-		mobj_t *mo = NULL;
-		if (!lua_isnil(L, 3))
-			mo = *((mobj_t **)luaL_checkudata(L, 3, META_MOBJ));
-		P_SetTarget(&plr->awayviewmobj, mo);
-	}
-	else if (fastcmp(field,"awayviewtics"))
-	{
-		plr->awayviewtics = (INT32)luaL_checkinteger(L, 3);
-		if (plr->awayviewtics && !plr->awayviewmobj) // awayviewtics must ALWAYS have an awayviewmobj set!!
-			P_SetTarget(&plr->awayviewmobj, plr->mo); // but since the script might set awayviewmobj immediately AFTER setting awayviewtics, use player mobj as filler for now.
-	}
-	else if (fastcmp(field,"awayviewaiming"))
-		plr->awayviewaiming = luaL_checkangle(L, 3);
-	else if (fastcmp(field,"spectator"))
-		plr->spectator = lua_toboolean(L, 3);
-	else if (fastcmp(field,"bot"))
-		return NOSET;
-	else if (fastcmp(field,"jointime"))
-		plr->jointime = (tic_t)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"spectatorreentry"))
-		plr->spectatorreentry = (tic_t)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"grieftime"))
-		plr->grieftime = (tic_t)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"griefstrikes"))
-		plr->griefstrikes = (UINT8)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"splitscreenindex"))
-		return NOSET;
-#ifdef HWRENDER
-	else if (fastcmp(field,"fovadd"))
-		plr->fovadd = luaL_checkfixed(L, 3);
-#endif
-	else {
-		lua_getfield(L, LUA_REGISTRYINDEX, LREG_EXTVARS);
-		I_Assert(lua_istable(L, -1));
-		lua_pushlightuserdata(L, plr);
-		lua_rawget(L, -2);
-		if (lua_isnil(L, -1)) {
-			// This index doesn't have a table for extra values yet, let's make one.
-			lua_pop(L, 1);
-			CONS_Debug(DBG_LUA, M_GetText("'%s' has no field named '%s'; adding it as Lua data.\n"), "player_t", field);
-			lua_newtable(L);
-			lua_pushlightuserdata(L, plr);
-			lua_pushvalue(L, -2); // ext value table
-			lua_rawset(L, -4); // LREG_EXTVARS table
-		}
-		lua_pushvalue(L, 3); // value to store
-		lua_setfield(L, -2, field);
-		lua_pop(L, 2);
-	}
+    lua_getmetatable(L, 1); // Push metatable
+
+    lua_pushvalue(L, 2); // Push field name
+    lua_pushliteral(L, ".set"); // Push suffix
+    lua_concat(L, 2); // Concat into "field_name.set"
+    lua_rawget(L, -2); // Get setter from metatable
+
+    // If field exists, run setter for it
+    if (!lua_isnil(L, -1)) {
+        //CONS_Printf("Running setter for field %s\n", luaL_checkstring(L, 2));
+        lua_pushlightuserdata(L, plr);
+        lua_pushvalue(L, 3);
+        lua_call(L, 2, 0);
+        return 0;
+    }
+
+    lua_pop(L, 1);
+
+    lua_getfield(L, LUA_REGISTRYINDEX, LREG_EXTVARS);
+    I_Assert(lua_istable(L, -1));
+    lua_pushlightuserdata(L, plr);
+    lua_rawget(L, -2);
+    if (lua_isnil(L, -1)) {
+        // This index doesn't have a table for extra values yet, let's make one.
+        lua_pop(L, 1);
+        CONS_Debug(DBG_LUA, M_GetText("'%s' has no field named '%s'; adding it as Lua data.\n"), "player_t", field);
+        lua_newtable(L);
+        lua_pushlightuserdata(L, plr);
+        lua_pushvalue(L, -2); // ext value table
+        lua_rawset(L, -4); // LREG_EXTVARS table
+    }
+    lua_pushvalue(L, 3); // value to store
+    lua_setfield(L, -2, field);
+    lua_pop(L, 2);
 
 	return 0;
 }
@@ -841,6 +722,8 @@ int LUA_PlayerLib(lua_State *L)
 
 		lua_pushcfunction(L, player_num);
 		lua_setfield(L, -2, "__len");
+
+        udatalib_addfields(L, -1, player_fields);
 	lua_pop(L,1);
 
 	luaL_newmetatable(L, META_POWERS);
