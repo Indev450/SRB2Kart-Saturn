@@ -721,7 +721,7 @@ static void PS_DrawGameLogicStats(void)
 #define START_X 2
 #define START_Y 4
 
-#define PAGE_ENTRIES (((MAX_Y - START_Y) / HEIGHT)*(MAX_X - START_X)/WIDTH)
+#define PAGE_ENTRIES ((MAX_Y - START_Y) / HEIGHT)
 
 static void PS_DrawThinkFrameStats(void)
 {
@@ -739,21 +739,19 @@ static void PS_DrawThinkFrameStats(void)
 	char tempbuffer[LUA_IDSIZE];
 	char last_mod_name[LUA_IDSIZE];
 	last_mod_name[0] = '\0';
+    INT32 total = 0;
 
 	PS_DrawDescriptorHeader();
 
-	for (i = pagestart; i < pageend; i++)
+	for (i = 0; i < thinkframe_hooks_length; i++)
 	{
 
-#define NEXT_ROW() \
-y += HEIGHT; \
-if (y > MAX_Y) \
-{ \
-	y = START_Y; \
-	x += WIDTH; \
-	if (x > MAX_X) \
-		break; \
-}
+#define NEXT_ROW() y += HEIGHT;
+
+        INT32 value = PS_GetMetricScreenValue(&thinkframe_hooks[i].time_taken, true);
+        total += value;
+
+        if (i < pagestart || i >= pageend) continue;
 
 		char* str = thinkframe_hooks[i].short_src;
 		char* tempstr = tempbuffer;
@@ -764,9 +762,7 @@ if (y > MAX_Y) \
 			str[len-4] = '\0'; // remove .lua at end
 			len -= 4;
 		}
-		// we locate the wad/pk3 name in the string and compare it to
-		// what we found on the previous iteration.
-		// if the name has changed, print it out on the screen
+		// Print wad name first.
 		strcpy(tempstr, str);
 		str_ptr = strrchr(tempstr, '|');
 		if (str_ptr)
@@ -777,16 +773,12 @@ if (y > MAX_Y) \
 			if (str_ptr)
 				tempstr = str_ptr + 1;
 			// tempstr should now point to the mod name, (wad/pk3) possibly truncated
-			if (strcmp(tempstr, last_mod_name) != 0)
-			{
-				strcpy(last_mod_name, tempstr);
-				len = (int)strlen(tempstr);
-				if (len > 25)
-					tempstr += len - 25;
-				snprintf(s, sizeof s - 1, "%s", tempstr);
-				V_DrawSmallString(x, y, V_MONOSPACE | V_ALLOWLOWERCASE | V_GRAYMAP, s);
-				NEXT_ROW()
-			}
+            strcpy(last_mod_name, tempstr);
+            len = (int)strlen(tempstr);
+            if (len > 30)
+                tempstr += len - 30;
+            snprintf(s, sizeof s - 1, "%s", tempstr);
+            V_DrawSmallString(x, y, V_MONOSPACE | V_ALLOWLOWERCASE | V_GRAYMAP, s);
 			text_color = V_YELLOWMAP;
 		}
 		else
@@ -799,16 +791,18 @@ if (y > MAX_Y) \
 			text_color = 0; // white
 		}
 		len = (int)strlen(str);
-		if (len > 20)
-			str += len - 20;
-		snprintf(s, sizeof s - 1, "%20s: %d", str,
-				PS_GetMetricScreenValue(&thinkframe_hooks[i].time_taken, true));
-		V_DrawSmallString(x, y, V_MONOSPACE | V_ALLOWLOWERCASE | text_color, s);
+		if (len > 40)
+			str += len - 40;
+		snprintf(s, sizeof s - 1, "%40s: %d", str, value);
+		V_DrawSmallString(x + WIDTH, y, V_MONOSPACE | V_ALLOWLOWERCASE | text_color, s);
 		NEXT_ROW()
 
 #undef NEXT_ROW
 
 	}
+
+    snprintf(s, sizeof s - 1, "TOTAL %d", total);
+    V_DrawSmallString(MAX_X, MAX_Y+2*HEIGHT, V_MONOSPACE | V_GREENMAP, s);
 
     if (maxpage > 1) {
         snprintf(s, sizeof s - 1, "PAGE %d", page);
