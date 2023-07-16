@@ -28,11 +28,6 @@
 #define FREELIST_REF	0	/* free list of references */
 
 
-/* convert a stack index to positive */
-#define abs_index(L, i)		((i) > 0 || (i) <= LUA_REGISTRYINDEX ? (i) : \
-					lua_gettop(L) + (i) + 1)
-
-
 /*
 ** {======================================================
 ** Error-report functions

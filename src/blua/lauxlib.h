@@ -27,6 +27,11 @@ LUALIB_API void (luaL_setn) (lua_State *L, int t, int n);
 #define luaI_openlib	luaL_openlib
 #endif
 
+/* convert a stack index to positive */
+#define abs_index(L, i)		((i) > 0 || (i) <= LUA_REGISTRYINDEX ? (i) : \
+					lua_gettop(L) + (i) + 1)
+
+
 
 /* extra error code for `luaL_load' */
 #define LUA_ERRFILE     (LUA_ERRERR+1)
