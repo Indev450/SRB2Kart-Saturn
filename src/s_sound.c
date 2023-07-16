@@ -582,7 +582,7 @@ void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
 					{
 						continue;
 					}
-				
+
 					recdist = thisdist;
 					i = j;
 				}
@@ -1862,20 +1862,20 @@ void S_ResumeAudio(void)
 
 void S_DisableSound(void)
 {
-	if (sound_started && !sound_disabled)
+    if (sound_started && !sound_disabled)
 	{
-		sound_disabled = true;
 		S_StopSounds();
 	}
+	sound_disabled = true;
 }
 
 void S_EnableSound(void)
 {
-	if (sound_started && sound_disabled)
+    if (sound_started && sound_disabled)
 	{
-		sound_disabled = false;
 		S_InitSfxChannels(cv_soundvolume.value);
 	}
+	sound_disabled = false;
 }
 
 void S_SetMusicVolume(INT32 digvolume, INT32 seqvolume)
