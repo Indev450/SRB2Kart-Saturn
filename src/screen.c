@@ -473,7 +473,7 @@ void SCR_DisplayTicRate(void)
 		}
 
 		// draw total frame:
-		V_DrawPingNum(x, 190, V_SNAPTOBOTTOM|V_SNAPTORIGHT, cap, ticcntcolor);
+		V_DrawPingNum(x, 190, V_SNAPTOBOTTOM|V_SNAPTORIGHT|V_HUDTRANS, cap, ticcntcolor);
 		x -= digits * 4;
 
 		// draw "/"
