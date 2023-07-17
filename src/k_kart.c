@@ -7127,17 +7127,17 @@ static void K_initKartHUD(void)
 
 	// Single Screen (defaults)
 	// Item Window
-	ITEM_X = 2;						//   5
-	ITEM_Y = 2;						//   5
+	ITEM_X = 5;						//   5
+	ITEM_Y = 5;						//   5
 	// Level Timer
-	TIME_X = BASEVIDWIDTH - 142;	// 172
-	TIME_Y = 2;						//   9
+	TIME_X = BASEVIDWIDTH - 148;	// 172
+	TIME_Y = 9;						//   9
 	// Level Laps
-	LAPS_X = 2;						//   9
-	LAPS_Y = BASEVIDHEIGHT - 23;	// 171
+	LAPS_X = 9;						//   9
+	LAPS_Y = BASEVIDHEIGHT - 29;	// 171
 	// Speedometer
-	SPDM_X = 1;						//   9
-	SPDM_Y = BASEVIDHEIGHT - 38;	// 155
+	SPDM_X = 9;						//   9
+	SPDM_Y = BASEVIDHEIGHT - 45;	// 155
 	// Position Number
 	POSI_X = BASEVIDWIDTH  - 9;		// 268
 	POSI_Y = BASEVIDHEIGHT - 9;		// 138
