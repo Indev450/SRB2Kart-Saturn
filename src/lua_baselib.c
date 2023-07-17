@@ -238,7 +238,7 @@ static int lib_pAproxDistance(lua_State *L)
 	fixed_t dx = luaL_checkfixed(L, 1);
 	fixed_t dy = luaL_checkfixed(L, 2);
 	//HUDSAFE
-	LUA_Deprecated(L, "P_AproxDistance", "FixedHypot");
+	//LUA_Deprecated(L, "P_AproxDistance", "FixedHypot");
 	lua_pushfixed(L, FixedHypot(dx, dy));
 	return 1;
 }
@@ -1026,7 +1026,7 @@ static int lib_pTeleportMove(lua_State *L)
 	NOHUD
 	if (!thing)
 		return LUA_ErrInvalid(L, "mobj_t");
-	LUA_Deprecated(L, "P_TeleportMove", "P_SetOrigin\" or \"P_MoveOrigin");
+	//LUA_Deprecated(L, "P_TeleportMove", "P_SetOrigin\" or \"P_MoveOrigin");
 	lua_pushboolean(L, P_MoveOrigin(thing, x, y, z));
 	LUA_PushUserdata(L, tmthing, META_MOBJ);
 	P_SetTarget(&tmthing, ptmthing);
