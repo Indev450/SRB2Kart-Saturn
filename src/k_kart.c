@@ -7150,7 +7150,7 @@ static void K_initKartHUD(void)
 	// CHECK graphic
 	CHEK_Y = BASEVIDHEIGHT;			// 200
 	// Minimap
-	MINI_X = BASEVIDWIDTH - 40;		// 270
+	MINI_X = BASEVIDWIDTH - 50;		// 270
 	MINI_Y = (BASEVIDHEIGHT/2)-16; //  84
 	// Battle WANTED poster
 	WANT_X = BASEVIDWIDTH - 55;		// 270
