@@ -10,6 +10,10 @@
 #include "lua_libs.h"
 #include "fastcmp.h"
 
+// Indices in getter/setter tables for fields
+#define UDATALIB_GETTER 1
+#define UDATALIB_SETTER 2
+
 typedef struct udata_field_s {
     const char *name;
     intptr_t offset;

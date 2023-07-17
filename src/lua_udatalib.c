@@ -93,23 +93,23 @@ void udatalib_addfield(lua_State *L, int mt, udata_field_t field)
 {
     int idx = abs_index(L, mt);
 
-    lua_pushstring(L, field.name);
-    lua_pushliteral(L, ".get");
-    lua_concat(L, 2);
+    lua_createtable(L, 2, 0); // Push table
 
-    lua_pushinteger(L, field.offset);
-    lua_pushcclosure(L, field.getter, 1);
+    lua_pushinteger(L, field.offset); // Push offset
+    lua_pushcclosure(L, field.getter, 1); // Pop offset, push closure
 
-    lua_settable(L, idx);
+    lua_rawseti(L, -2, UDATALIB_GETTER); // Pop closure, add to table
 
-    lua_pushstring(L, field.name);
-    lua_pushliteral(L, ".set");
-    lua_concat(L, 2);
+    lua_pushinteger(L, field.offset); // Push offset
+    lua_pushcclosure(L, field.setter, 1); // Pop offset, push closure
 
-    lua_pushinteger(L, field.offset);
-    lua_pushcclosure(L, field.setter, 1);
+    lua_rawseti(L, -2, UDATALIB_SETTER); // Pop closure, add to table
 
-    lua_settable(L, idx);
+    lua_pushstring(L, field.name); // Push field name
+    lua_pushvalue(L, -2); // Copy table
+    lua_rawset(L, idx); // Pop field name and table, add to metatable
+
+    lua_pop(L, 1); // Pop field table
 }
 
 void udatalib_addfields(lua_State *L, int mt, const udata_field_t fields[])

@@ -559,13 +559,12 @@ static int mobj_get(lua_State *L)
     lua_getmetatable(L, 1);
 
     lua_pushvalue(L, 2); // Push field name
-    lua_pushliteral(L, ".get"); // Push suffix
-    lua_concat(L, 2); // Concat into "field_name.get"
-    lua_rawget(L, -2); // Get getter (lel) from metatable
+    lua_rawget(L, -2); // Get getter/setter table from metatable
 
     // If field exists, run getter for it
     if (!lua_isnil(L, -1)) {
         //CONS_Printf("Running getter for field %s\n", field);
+        lua_rawgeti(L, -1, UDATALIB_GETTER);
         lua_pushlightuserdata(L, mo);
         lua_call(L, 1, 1);
         //CONS_Printf("Getter returned %s\n", lua_typename(L, lua_type(L, -1)));
@@ -614,13 +613,12 @@ static int mobj_set(lua_State *L)
     lua_getmetatable(L, 1); // Push metatable
 
     lua_pushvalue(L, 2); // Push field name
-    lua_pushliteral(L, ".set"); // Push suffix
-    lua_concat(L, 2); // Concat into "field_name.set"
-    lua_rawget(L, -2); // Get setter from metatable
+    lua_rawget(L, -2); // Get getter/setter table from metatable
 
     // If field exists, run setter for it
     if (!lua_isnil(L, -1)) {
         //CONS_Printf("Running setter for field %s\n", luaL_checkstring(L, 2));
+        lua_rawgeti(L, -1, UDATALIB_SETTER);
         lua_pushlightuserdata(L, mo);
         lua_pushvalue(L, 3);
         lua_call(L, 2, 0);
