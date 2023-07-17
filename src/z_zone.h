@@ -76,27 +76,29 @@ void Z_SetUser2(void *ptr, void **newuser, const char *file, INT32 line);
 void Z_SetUser2(void *ptr, void **newuser);
 #endif
 
+
+// Z_Free and alloc with alignment
 #ifdef ZDEBUG
-#define Z_Free(p) Z_Free2(p, __FILE__, __LINE__)
-void Z_Free2(void *ptr, const char *file, INT32 line);
-#define Z_Malloc(s,t,u) Z_Malloc2(s, t, u, 0, __FILE__, __LINE__)
-#define Z_MallocAlign(s,t,u,a) Z_Malloc2(s, t, u, a, __FILE__, __LINE__)
-void *Z_Malloc2(size_t size, INT32 tag, void *user, INT32 alignbits, const char *file, INT32 line) FUNCALLOC(1);
-#define Z_Calloc(s,t,u) Z_Calloc2(s, t, u, 0, __FILE__, __LINE__)
-#define Z_CallocAlign(s,t,u,a) Z_Calloc2(s, t, u, a, __FILE__, __LINE__)
-void *Z_Calloc2(size_t size, INT32 tag, void *user, INT32 alignbits, const char *file, INT32 line) FUNCALLOC(1);
-#define Z_Realloc(p,s,t,u) Z_Realloc2(p, s, t, u, 0, __FILE__, __LINE__)
+#define Z_Free(p)                 Z_Free2(p, __FILE__, __LINE__)
+#define Z_MallocAlign(s,t,u,a)    Z_Malloc2(s, t, u, a, __FILE__, __LINE__)
+#define Z_CallocAlign(s,t,u,a)    Z_Calloc2(s, t, u, a, __FILE__, __LINE__)
 #define Z_ReallocAlign(p,s,t,u,a) Z_Realloc2(p,s, t, u, a, __FILE__, __LINE__)
+void Z_Free2(void *ptr, const char *file, INT32 line);
+void *Z_Malloc2(size_t size, INT32 tag, void *user, INT32 alignbits, const char *file, INT32 line) FUNCALLOC(1);
+void *Z_Calloc2(size_t size, INT32 tag, void *user, INT32 alignbits, const char *file, INT32 line) FUNCALLOC(1);
 void *Z_Realloc2(void *ptr, size_t size, INT32 tag, void *user, INT32 alignbits, const char *file, INT32 line) FUNCALLOC(2);
 #else
 void Z_Free(void *ptr);
 void *Z_MallocAlign(size_t size, INT32 tag, void *user, INT32 alignbits) FUNCALLOC(1);
-#define Z_Malloc(s,t,u) Z_MallocAlign(s, t, u, 0)
 void *Z_CallocAlign(size_t size, INT32 tag, void *user, INT32 alignbits) FUNCALLOC(1);
-#define Z_Calloc(s,t,u) Z_CallocAlign(s, t, u, 0)
-void *Z_ReallocAlign(void *ptr, size_t size, INT32 tag, void *user, INT32 alignbits) FUNCALLOC(2) ;
-#define Z_Realloc(p, s,t,u) Z_ReallocAlign(p, s, t, u, 0)
+void *Z_ReallocAlign(void *ptr, size_t size, INT32 tag, void *user, INT32 alignbits) FUNCALLOC(2);
 #endif
+
+// Alloc with standard alignment
+#define Z_Malloc(s,t,u)    Z_MallocAlign(s, t, u, sizeof(void *))
+#define Z_Calloc(s,t,u)    Z_CallocAlign(s, t, u, sizeof(void *))
+#define Z_Realloc(p,s,t,u) Z_ReallocAlign(p, s, t, u, sizeof(void *))
+
 
 size_t Z_TagUsage(INT32 tagnum);
 size_t Z_TagsUsage(INT32 lowtag, INT32 hightag);

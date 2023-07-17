@@ -242,7 +242,13 @@ void *Z_Malloc2(size_t size, INT32 tag, void *user, INT32 alignbits,
 void *Z_MallocAlign(size_t size, INT32 tag, void *user, INT32 alignbits)
 #endif
 {
-	size_t extrabytes = (1<<alignbits) - 1;
+    // I have 0 knowledge about memory alignment but maybe if alignbits is
+    // something like 32 that would require too much BYTES, so bits amount
+    // should be divided by 8? Idk, maybe this would break alignment, but at
+    // least game wouldn't crash with "error allocating 2^32-1 bytes"
+    INT32 alignbytes = alignbits/8;
+	I_Assert(alignbytes >= 0 && alignbytes < (INT32)(sizeof(size_t) * 8));
+	size_t extrabytes = ((size_t)1<<(alignbytes)) - 1;
 	size_t padsize = 0;
 	memblock_t *block;
 	void *ptr;
