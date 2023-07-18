@@ -325,6 +325,7 @@ menu_t OP_ProtocolDef;
 menu_t OP_DiscordOptionsDef;
 #endif
 menu_t OP_HUDOptionsDef, OP_ChatOptionsDef;
+menu_t OP_HudOffsetDef;
 menu_t OP_GameOptionsDef, OP_ServerOptionsDef;
 #ifndef NONET
 menu_t OP_AdvServerOptionsDef;
@@ -1376,6 +1377,24 @@ enum
 	stretchyplayer,
 };
 
+static menuitem_t OP_HudOffsetMenu[] =
+{
+	{IT_HEADER, NULL, "Kart Hud Offsets", NULL, 0},
+	
+	{IT_STRING | IT_CVAR, 	NULL, 	"Itembox Horizontal Offset",      &cv_item_xoffset, 	10},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Itembox Vertical Offset",        &cv_item_yoffset,     20},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Timer Horizontal Offset", 		  &cv_time_xoffset, 	35},
+	{IT_STRING | IT_CVAR,	NULL,	"Timer Vertical Offset",	      &cv_time_yoffset,     45},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Lapcount Horizontal Offset",     &cv_laps_xoffset, 	60},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Lapcount Vertical Offset",       &cv_laps_yoffset,     70},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Speedometer Horizontal Offset",  &cv_spdm_xoffset, 	85},
+	{IT_STRING | IT_CVAR,	NULL,	"Speedometer Vertical Offset",	  &cv_spdm_yoffset,     95},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Miniranking Horizontal Offset",  &cv_face_xoffset, 	110},
+	{IT_STRING | IT_CVAR,	NULL,	"Miniranking Vertical Offset",	  &cv_face_yoffset,     120},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Minimap Horizontal Offset",  	  &cv_mini_xoffset, 	135},
+	{IT_STRING | IT_CVAR,	NULL,	"Minimap Vertical Offset",	  	  &cv_mini_yoffset,     145},
+};
+
 static menuitem_t OP_SoundOptionsMenu[] =
 {
 	{IT_STRING|IT_CVAR,			NULL, "SFX",					&cv_gamesounds,			 10},
@@ -1508,25 +1527,27 @@ static menuitem_t OP_HUDOptionsMenu[] =
 {
 	{IT_STRING | IT_CVAR, NULL, "Show HUD (F3)",			&cv_showhud,			 10},
 	{IT_STRING | IT_CVAR | IT_CV_SLIDER,
-	                      NULL, "HUD Visibility",			&cv_translucenthud,		 20},
+	                      NULL, "HUD Visibility",			&cv_translucenthud,		 20},						  
+	{IT_SUBMENU|IT_STRING,	NULL,	"Hud Offsets...", 		&OP_HudOffsetDef,		 30},
 
-	{IT_STRING | IT_SUBMENU, NULL, "Online HUD options...",&OP_ChatOptionsDef, 	 35},
-	{IT_STRING | IT_CVAR, NULL, "Background Glass",			&cons_backcolor,		 45},
+	{IT_STRING | IT_SUBMENU, NULL, "Online HUD options...",&OP_ChatOptionsDef, 	 	 45},
+	{IT_STRING | IT_CVAR, NULL, "Background Glass",			&cons_backcolor,		 55},
 
 	{IT_STRING | IT_CVAR | IT_CV_SLIDER,
-						  NULL, "Minimap Visibility",		&cv_kartminimap,		 60},
-	{IT_STRING | IT_CVAR, NULL, "Speedometer Display",		&cv_kartspeedometer,	 70},
-	{IT_STRING | IT_CVAR, NULL, "Show \"CHECK\"",			&cv_kartcheck,			 80},
+						  NULL, "Minimap Visibility",		&cv_kartminimap,		 65},
+	{IT_STRING | IT_CVAR, NULL, "Speedometer Display",		&cv_kartspeedometer,	 75},
+	{IT_STRING | IT_CVAR, NULL, "Show \"CHECK\"",			&cv_kartcheck,			 85},
 
-	{IT_STRING | IT_CVAR, NULL,	"Menu Highlights",			&cons_menuhighlight,     95},
+	{IT_STRING | IT_CVAR, NULL,	"Menu Highlights",			&cons_menuhighlight,    100},
 	// highlight info - (GOOD HIGHLIGHT, WARNING HIGHLIGHT) - 105 (see M_DrawHUDOptions)
 
-	{IT_STRING | IT_CVAR, NULL,	"Console Text Size",		&cv_constextsize,		120},
+	{IT_STRING | IT_CVAR, NULL,	"Console Text Size",		&cv_constextsize,		125},
 
-	{IT_STRING | IT_CVAR, NULL,   "Show Track Addon Name",  &cv_showtrackaddon,   135},
-	{IT_STRING | IT_CVAR, NULL,   "Show \"FOCUS LOST\"",  &cv_showfocuslost,   145},
+	{IT_STRING | IT_CVAR, NULL,   "Show Track Addon Name",  &cv_showtrackaddon,   	140},
+	{IT_STRING | IT_CVAR, NULL,   "Show \"FOCUS LOST\"",  &cv_showfocuslost,   		150},
 
-	{IT_STRING | IT_CVAR, NULL,	"2D character select",		&cv_skinselectmenu,		155},
+	{IT_STRING | IT_CVAR, NULL,	"2D character select",		&cv_skinselectmenu,		160},
+	
 };
 
 // Ok it's still called chatoptions but we'll put ping display in here to be clean
@@ -2193,7 +2214,7 @@ menu_t OP_HUDOptionsDef =
 	&OP_MainDef,
 	OP_HUDOptionsMenu,
 	M_DrawHUDOptions,
-	30, 30,
+	30, 20,
 	0,
 	NULL
 };
@@ -2245,6 +2266,8 @@ menu_t OP_ProtocolDef = DEFAULTMENUSTYLE(NULL, OP_ProtocolMenu, &OP_DataOptionsD
 menu_t OP_DiscordOptionsDef = DEFAULTMENUSTYLE(NULL, OP_DiscordOptionsMenu, &OP_DataOptionsDef, 30, 30);
 #endif
 menu_t OP_EraseDataDef = DEFAULTMENUSTYLE("M_DATA", OP_EraseDataMenu, &OP_DataOptionsDef, 30, 30);
+
+menu_t OP_HudOffsetDef = DEFAULTMENUSTYLE(NULL, OP_HudOffsetMenu, &OP_HUDOptionsDef, 30, 30);
 
 menu_t OP_BirdDef = DEFAULTMENUSTYLE(NULL, OP_BirdMenu, &OP_MainDef, 30, 30);
 menu_t OP_TiltDef = DEFAULTMENUSTYLE(NULL, OP_TiltMenu, &OP_BirdDef, 30, 60);
@@ -11779,7 +11802,7 @@ static void M_DrawHUDOptions(void)
 	const char *str1 = " Warning highlight";
 	const char *str2 = ",";
 	const char *str3 = "Good highlight";
-	INT32 x = BASEVIDWIDTH - currentMenu->x + 2, y = currentMenu->y + 105;
+	INT32 x = BASEVIDWIDTH - currentMenu->x + 2, y = currentMenu->y + 110;
 	INT32 w0 = V_StringWidth(str0, 0), w1 = V_StringWidth(str1, 0), w2 = V_StringWidth(str2, 0), w3 = V_StringWidth(str3, 0);
 
 	M_DrawGenericMenu();
