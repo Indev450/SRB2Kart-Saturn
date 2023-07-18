@@ -40,6 +40,7 @@ void LUA_ClearExtVars(void);
 
 void LUA_ClearState(void);
 
+int LUA_GetErrorMessage(lua_State *L);
 void LUA_LoadLump(UINT16 wad, UINT16 lump);
 #ifdef LUA_ALLOW_BYTECODE
 void LUA_DumpFile(const char *filename);
