@@ -918,6 +918,27 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_chatbacktint);
 	CV_RegisterVar(&cv_songcredits);
 	CV_RegisterVar(&cv_showfreeplay);
+
+	CV_RegisterVar(&cv_item_xoffset);
+	CV_RegisterVar(&cv_item_yoffset);
+	CV_RegisterVar(&cv_time_xoffset);
+	CV_RegisterVar(&cv_time_yoffset);
+	CV_RegisterVar(&cv_laps_xoffset);
+	CV_RegisterVar(&cv_laps_yoffset);
+	CV_RegisterVar(&cv_spdm_xoffset);
+	CV_RegisterVar(&cv_spdm_yoffset);
+	CV_RegisterVar(&cv_posi_xoffset);
+	CV_RegisterVar(&cv_posi_yoffset);
+	CV_RegisterVar(&cv_face_xoffset);
+	CV_RegisterVar(&cv_face_yoffset);
+	CV_RegisterVar(&cv_stcd_xoffset);
+	CV_RegisterVar(&cv_stcd_yoffset);
+	CV_RegisterVar(&cv_chek_yoffset);
+	CV_RegisterVar(&cv_mini_xoffset);
+	CV_RegisterVar(&cv_mini_yoffset);
+	CV_RegisterVar(&cv_want_xoffset);
+	CV_RegisterVar(&cv_want_yoffset);
+
 	//CV_RegisterVar(&cv_crosshair);
 	//CV_RegisterVar(&cv_crosshair2);
 	//CV_RegisterVar(&cv_crosshair3);

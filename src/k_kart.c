@@ -23,6 +23,36 @@
 #include "lua_hud.h"	// For Lua hud checks
 #include "lua_hook.h"	// For MobjDamage and ShouldDamage
 
+// Hud offset cvars
+consvar_t cv_item_xoffset = {"hud_item_xoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_item_yoffset = {"hud_item_yoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_time_xoffset = {"hud_time_xoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_time_yoffset = {"hud_time_yoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_laps_xoffset = {"hud_laps_xoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_laps_yoffset = {"hud_laps_yoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_spdm_xoffset = {"hud_speed_xoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_spdm_yoffset = {"hud_speed_yoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_posi_xoffset = {"hud_position_xoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_posi_yoffset = {"hud_position_yoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_face_xoffset = {"hud_face_xoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_face_yoffset = {"hud_face_yoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_stcd_xoffset = {"hud_startcountdown_xoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_stcd_yoffset = {"hud_startcountdown_yoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_chek_yoffset = {"hud_check_yoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_mini_xoffset = {"hud_minimap_xoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_mini_yoffset = {"hud_minimap_yoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_want_xoffset = {"hud_wanted_xoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_want_yoffset = {"hud_wanted_yoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 // SOME IMPORTANT VARIABLES DEFINED IN DOOMDEF.H:
 // gamespeed is cc (0 for easy, 1 for normal, 2 for hard)
 // franticitems is Frantic Mode items, bool
@@ -2850,7 +2880,7 @@ static void K_SpawnDriftSparks(player_t *player)
 		spark->angle = travelangle-(ANGLE_45/5)*player->kartstuff[k_drift];
 
 		// scale increase while driftspark level gained timer is running
-		
+
 		// hack to find the correct player number
 		for (pindex = 0; pindex < MAXPLAYERS; pindex++)
 		{
@@ -3013,11 +3043,11 @@ static angle_t K_GetSlopeRollAngle(player_t *p, boolean dontflip, boolean useRes
 	angle_t zangle = 0;
 	angle_t xydirection = 0;
 	angle_t an;
-	
+
 	I_Assert(p != NULL);
 	I_Assert(p->mo != NULL);
 	I_Assert(!P_MobjWasRemoved(p->mo));
-	
+
 	if (useReserves)
 	{
 		I_Assert(p->mo->reservezangle != NULL);
@@ -3025,7 +3055,7 @@ static angle_t K_GetSlopeRollAngle(player_t *p, boolean dontflip, boolean useRes
 	}
 
 	lookAngle = R_PointToAngle(p->mo->x, p->mo->y);
-	
+
 
 	if (!R_PointToDist(p->mo->x, p->mo->y))
 		lookAngle = p->mo->angle;
@@ -3070,7 +3100,7 @@ static void K_RollPlayerBySlopes(player_t *p, boolean usedistance) {
 			p->mo->sloperoll = K_GetSlopeRollAngle(p, false, true);
 		else
 			p->mo->sloperoll = FixedAngle(0);
-		
+
 		return;
 	}
 
@@ -5382,7 +5412,7 @@ static void K_KartDrift(player_t *player, boolean onground)
 			//S_StartSound(player->mo, sfx_s3ka2);
 			if (P_IsLocalPlayer(player)) // UGHGHGH...
 				S_StartSoundAtVolume(player->mo, sfx_s3ka2, 192); // Ugh...
-			
+
 			// hack to find the correct player number
 			for (pindex = 0; pindex < MAXPLAYERS; pindex++)
 			{
@@ -5426,13 +5456,13 @@ static void K_KartDrift(player_t *player, boolean onground)
 	{
 		player->kartstuff[k_drift] = player->kartstuff[k_driftcharge] = 0;
 		player->kartstuff[k_aizdriftstrat] = player->kartstuff[k_brakedrift] = 0;
-		
+
 		if (!player->sliproll)
 		{
 			player->sliptidemem = 0;
 			player->sliproll = 0;
 		}
-		
+
 		player->kartstuff[k_getsparks] = 0;
 	}
 
@@ -5449,7 +5479,7 @@ static void K_KartDrift(player_t *player, boolean onground)
 	else if (player->kartstuff[k_aizdriftstrat] && !player->kartstuff[k_drift])
 	{
 		K_SpawnAIZDust(player);
-		
+
 		if (player->sliproll < (32*ANG1))
 			player->sliproll += (4*ANG1);
 
@@ -6176,7 +6206,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 
 	// JugadorXEI: Do *not* calculate friction when a player is pogo'd
 	// because they'll be in the air and friction will not reset!
-	if (onground && !player->kartstuff[k_pogospring]) 
+	if (onground && !player->kartstuff[k_pogospring])
 	{
 		// Friction
 		if (!player->kartstuff[k_offroad])
@@ -6220,13 +6250,13 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 	}
 
 	K_KartDrift(player, onground);
-	
+
 	if ((!player->kartstuff[k_aizdriftstrat])||(!P_IsObjectOnGround(player->mo))||(player->kartstuff[k_drift]))
 	{
 		if (player->sliproll && (player->sliproll > 0))
 			player->sliproll -= (4*ANG1);
 	}
-	
+
 	if (cv_gravstretch.value > 13107)
 		K_StretchPlayerGravity(player);
 	else
@@ -6566,7 +6596,7 @@ void K_CheckSpectateStatus(void)
 				return;
 
 			// Allow if you're not in a level
-			if (gamestate != GS_LEVEL) 
+			if (gamestate != GS_LEVEL)
 				continue;
 
 			// DON'T allow if anyone's exiting
@@ -7127,81 +7157,81 @@ static void K_initKartHUD(void)
 
 	// Single Screen (defaults)
 	// Item Window
-	ITEM_X = 5;						//   5
-	ITEM_Y = 5;						//   5
+	ITEM_X = 5 + cv_item_xoffset.value;						//   5
+	ITEM_Y = 5 + cv_item_yoffset.value;						//   5
 	// Level Timer
-	TIME_X = BASEVIDWIDTH - 148;	// 172
-	TIME_Y = 9;						//   9
+	TIME_X = BASEVIDWIDTH - 148 + cv_time_xoffset.value;	// 172
+	TIME_Y = 9 + cv_time_yoffset.value;						//   9
 	// Level Laps
-	LAPS_X = 9;						//   9
-	LAPS_Y = BASEVIDHEIGHT - 29;	// 171
+	LAPS_X = 9 + cv_laps_xoffset.value;						//   9
+	LAPS_Y = BASEVIDHEIGHT - 29 + cv_laps_yoffset.value;	// 171
 	// Speedometer
-	SPDM_X = 9;						//   9
-	SPDM_Y = BASEVIDHEIGHT - 45;	// 155
+	SPDM_X = 9 + cv_spdm_xoffset.value; 					//   9
+	SPDM_Y = BASEVIDHEIGHT - 45 + cv_spdm_yoffset.value;	// 155
 	// Position Number
-	POSI_X = BASEVIDWIDTH  - 9;		// 268
-	POSI_Y = BASEVIDHEIGHT - 9;		// 138
+	POSI_X = BASEVIDWIDTH  - 9 + cv_posi_xoffset.value;		// 268
+	POSI_Y = BASEVIDHEIGHT - 9 + cv_posi_yoffset.value;		// 138
 	// Top-Four Faces
-	FACE_X = 9;						//   9
-	FACE_Y = 92;					//  92
+	FACE_X = 9 + cv_face_xoffset.value;						//   9
+	FACE_Y = 92 + cv_face_yoffset.value;					//  92
 	// Starting countdown
-	STCD_X = BASEVIDWIDTH/2;		//   9
-	STCD_Y = BASEVIDHEIGHT/2;		//  92
+	STCD_X = BASEVIDWIDTH/2 + cv_stcd_xoffset.value;		//   9
+	STCD_Y = BASEVIDHEIGHT/2 + cv_stcd_yoffset.value;		//  92
 	// CHECK graphic
-	CHEK_Y = BASEVIDHEIGHT;			// 200
+	CHEK_Y = BASEVIDHEIGHT + cv_chek_yoffset.value;			// 200
 	// Minimap
-	MINI_X = BASEVIDWIDTH - 50;		// 270
-	MINI_Y = (BASEVIDHEIGHT/2)-16; //  84
+	MINI_X = BASEVIDWIDTH - 50 + cv_mini_xoffset.value;		// 270
+	MINI_Y = (BASEVIDHEIGHT/2)-16 + cv_mini_yoffset.value;  //  84
 	// Battle WANTED poster
-	WANT_X = BASEVIDWIDTH - 55;		// 270
-	WANT_Y = BASEVIDHEIGHT- 71;		// 176
+	WANT_X = BASEVIDWIDTH - 55 + cv_want_xoffset.value;		// 270
+	WANT_Y = BASEVIDHEIGHT- 71 + cv_want_yoffset.value;		// 176
 
 	if (splitscreen)	// Splitscreen
 	{
-		ITEM_X = 5;
-		ITEM_Y = 3;
+		ITEM_X = 5 + cv_item_xoffset.value;
+		ITEM_Y = 3 + cv_item_yoffset.value;
 
-		LAPS_Y = (BASEVIDHEIGHT/2)-24;
+		LAPS_Y = (BASEVIDHEIGHT/2)-24 + cv_laps_yoffset.value;
 
-		POSI_Y = (BASEVIDHEIGHT/2)- 2;
+		POSI_Y = (BASEVIDHEIGHT/2)- 2 + cv_posi_yoffset.value;
 
-		STCD_Y = BASEVIDHEIGHT/4;
+		STCD_Y = BASEVIDHEIGHT/4 + cv_stcd_yoffset.value;
 
-		MINI_Y = (BASEVIDHEIGHT/2);
+		MINI_Y = (BASEVIDHEIGHT/2) + cv_mini_yoffset.value;
 
 		if (splitscreen > 1)	// 3P/4P Small Splitscreen
 		{
 			// 1P (top left)
-			ITEM_X = -9;
-			ITEM_Y = -8;
+			ITEM_X = -9 + cv_item_xoffset.value;
+			ITEM_Y = -8 + cv_item_yoffset.value;
 
-			LAPS_X = 3;
-			LAPS_Y = (BASEVIDHEIGHT/2)-13;
+			LAPS_X = 3 + cv_laps_xoffset.value;
+			LAPS_Y = (BASEVIDHEIGHT/2)-13 + cv_laps_yoffset.value;
 
-			POSI_X = 24;
-			POSI_Y = (BASEVIDHEIGHT/2)- 16;
+			POSI_X = 24 + cv_posi_xoffset.value;
+			POSI_Y = (BASEVIDHEIGHT/2)- 16 + cv_posi_yoffset.value;
 
 			// 2P (top right)
-			ITEM2_X = BASEVIDWIDTH-39;
-			ITEM2_Y = -8;
+			ITEM2_X = BASEVIDWIDTH-39 + cv_item_xoffset.value;
+			ITEM2_Y = -8 + cv_item_yoffset.value;
 
-			LAPS2_X = BASEVIDWIDTH-40;
-			LAPS2_Y = (BASEVIDHEIGHT/2)-13;
+			LAPS2_X = BASEVIDWIDTH-40 + cv_laps_xoffset.value;
+			LAPS2_Y = (BASEVIDHEIGHT/2)-13 + cv_laps_yoffset.value;
 
-			POSI2_X = BASEVIDWIDTH -4;
-			POSI2_Y = (BASEVIDHEIGHT/2)- 16;
+			POSI2_X = BASEVIDWIDTH -4 + cv_posi_xoffset.value;
+			POSI2_Y = (BASEVIDHEIGHT/2)- 16 + cv_posi_yoffset.value;
 
 			// Reminder that 3P and 4P are just 1P and 2P splitscreen'd to the bottom.
 
-			STCD_X = BASEVIDWIDTH/4;
+			STCD_X = BASEVIDWIDTH/4 + cv_stcd_xoffset.value;
 
-			MINI_X = (3*BASEVIDWIDTH/4);
-			MINI_Y = (3*BASEVIDHEIGHT/4);
+			MINI_X = (3*BASEVIDWIDTH/4) + cv_mini_xoffset.value;
+			MINI_Y = (3*BASEVIDHEIGHT/4) + cv_mini_yoffset.value;
 
 			if (splitscreen > 2) // 4P-only
 			{
-				MINI_X = (BASEVIDWIDTH/2);
-				MINI_Y = (BASEVIDHEIGHT/2);
+				MINI_X = (BASEVIDWIDTH/2) + cv_mini_xoffset.value;
+				MINI_Y = (BASEVIDHEIGHT/2) + cv_mini_yoffset.value;
 			}
 		}
 	}
@@ -8180,7 +8210,7 @@ static void K_drawKartSpeedometer(void)
 		// so code breaks if someone attempts to join from spectator since it sets
 		// their mo to NULL
 		// so can we just check if their mo is NULL????
-		if (stplyr->mo) 
+		if (stplyr->mo)
 		{
 			convSpeed = (FixedDiv(stplyr->speed, FixedMul(K_GetKartSpeed(stplyr, false), ORIG_FRICTION))*100)>>FRACBITS;
 			V_DrawKartString(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, va("%4d P", convSpeed));

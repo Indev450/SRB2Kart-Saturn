@@ -125,6 +125,27 @@ extern consvar_t cv_turnaxis3,cv_moveaxis3,cv_brakeaxis3,cv_aimaxis3,cv_lookaxis
 extern consvar_t cv_turnaxis4,cv_moveaxis4,cv_brakeaxis4,cv_aimaxis4,cv_lookaxis4,cv_fireaxis4,cv_driftaxis4,cv_lookbackaxis4,cv_xdeadzone4,cv_ydeadzone4;
 extern consvar_t cv_ghost_besttime, cv_ghost_bestlap, cv_ghost_last, cv_ghost_guest, cv_ghost_staff;
 
+// Hud offsets
+extern consvar_t cv_item_xoffset;
+extern consvar_t cv_item_yoffset;
+extern consvar_t cv_time_xoffset;
+extern consvar_t cv_time_yoffset;
+extern consvar_t cv_laps_xoffset;
+extern consvar_t cv_laps_yoffset;
+extern consvar_t cv_spdm_xoffset;
+extern consvar_t cv_spdm_yoffset;
+extern consvar_t cv_posi_xoffset;
+extern consvar_t cv_posi_yoffset;
+extern consvar_t cv_face_xoffset;
+extern consvar_t cv_face_yoffset;
+extern consvar_t cv_stcd_xoffset;
+extern consvar_t cv_stcd_yoffset;
+extern consvar_t cv_chek_yoffset;
+extern consvar_t cv_mini_xoffset;
+extern consvar_t cv_mini_yoffset;
+extern consvar_t cv_want_xoffset;
+extern consvar_t cv_want_yoffset;
+
 extern consvar_t cv_driftsparkpulse;
 extern consvar_t cv_gravstretch;
 extern consvar_t cv_sloperoll;
