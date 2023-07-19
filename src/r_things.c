@@ -2233,18 +2233,21 @@ static void R_CreateDrawNodes(void)
 				} else
 					planeobjectz = planecameraz = r2->plane->height;
 
-				// bird: if any part of the sprite peeks in front the plane
-				if (planecameraz < viewz)
+				if (rover->mobjflags & MF_NOCLIPHEIGHT)
 				{
-					if (rover->gzt >= planeobjectz)
+					//Objects with NOCLIPHEIGHT can appear halfway in.
+					if (planecameraz < viewz && rover->pz+(rover->thingheight/2) >= planeobjectz)
+						continue;
+					if (planecameraz > viewz && rover->pzt-(rover->thingheight/2) <= planeobjectz)
 						continue;
 				}
-				else if (planecameraz > viewz)
+				else
 				{
-					if (rover->gz <= planeobjectz)
+					if (planecameraz < viewz && rover->pz >= planeobjectz)
+						continue;
+					if (planecameraz > viewz && rover->pzt <= planeobjectz)
 						continue;
 				}
-
 
 				// SoM: NOTE: Because a visplane's shape and scale is not directly
 				// bound to any single linedef, a simple poll of it's frontscale is
