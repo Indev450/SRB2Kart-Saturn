@@ -405,10 +405,11 @@ double averageFPS = 0.0f;
 #define USE_FPS_SAMPLES
 
 #ifdef USE_FPS_SAMPLES
-#define NUM_FPS_SAMPLES (32) // Number of samples to store
+#define MAX_FRAME_TIME 0.05
+#define NUM_FPS_SAMPLES (16) // Number of samples to store
 
-static double fps_samples[NUM_FPS_SAMPLES];
-static int fps_index;
+static double total_frame_time = 0.0;
+static int frame_index;
 #endif
 
 static boolean fps_init = false;
@@ -417,7 +418,6 @@ static precise_t fps_enter = 0;
 void SCR_CalculateFPS(void)
 {
 	precise_t fps_finish = 0;
-	int i;
 
 	double frameElapsed = 0.0;
 
@@ -432,13 +432,13 @@ void SCR_CalculateFPS(void)
 	fps_enter = fps_finish;
 
 #ifdef USE_FPS_SAMPLES
-	fps_samples[fps_index] = frameElapsed / NUM_FPS_SAMPLES;
-	fps_index = (fps_index + 1) % NUM_FPS_SAMPLES;
-
-	averageFPS = 0.0;
-	for (i = 0; i < NUM_FPS_SAMPLES; i++)
-		averageFPS += fps_samples[i];
-	averageFPS = 1.0 / averageFPS;
+	total_frame_time += frameElapsed;
+	if (frame_index++ >= NUM_FPS_SAMPLES || total_frame_time >= MAX_FRAME_TIME)
+	{
+		averageFPS = 1.0 / (total_frame_time / frame_index);
+		total_frame_time = 0.0;
+		frame_index = 0;
+	}
 #else
 	// Direct, unsampled counter.
 	averageFPS = 1.0 / frameElapsed;
@@ -454,7 +454,7 @@ void SCR_DisplayTicRate(void)
 	double fps = round(averageFPS);
 
 	// draw "FPS"
-	V_DrawFixedPatch(306<<FRACBITS, 183<<FRACBITS, FRACUNIT, V_SNAPTOBOTTOM|V_SNAPTORIGHT|V_HUDTRANS, framecounter, R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_YELLOW, GTC_CACHE));
+	V_DrawFixedPatch(306<<FRACBITS, 183<<FRACBITS, FRACUNIT, V_SNAPTOBOTTOM|V_SNAPTORIGHT, framecounter, R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_YELLOW, GTC_CACHE));
 
 	if (fps > (benchmark - 5))
 		ticcntcolor = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_MINT, GTC_CACHE);
@@ -473,15 +473,15 @@ void SCR_DisplayTicRate(void)
 		}
 
 		// draw total frame:
-		V_DrawPingNum(x, 190, V_SNAPTOBOTTOM|V_SNAPTORIGHT|V_HUDTRANS, cap, ticcntcolor);
+		V_DrawPingNum(x, 190, V_SNAPTOBOTTOM|V_SNAPTORIGHT, cap, ticcntcolor);
 		x -= digits * 4;
 
 		// draw "/"
-		V_DrawFixedPatch(x<<FRACBITS, 190<<FRACBITS, FRACUNIT, V_SNAPTOBOTTOM|V_SNAPTORIGHT|V_HUDTRANS, frameslash, ticcntcolor);
+		V_DrawFixedPatch(x<<FRACBITS, 190<<FRACBITS, FRACUNIT, V_SNAPTOBOTTOM|V_SNAPTORIGHT, frameslash, ticcntcolor);
 	}
 
 	// draw our actual framerate
-	V_DrawPingNum(x, 190, V_SNAPTOBOTTOM|V_SNAPTORIGHT|V_HUDTRANS, fps, ticcntcolor);
+	V_DrawPingNum(x, 190, V_SNAPTOBOTTOM|V_SNAPTORIGHT, fps, ticcntcolor);
 }
 
 // SCR_DisplayLocalPing
@@ -493,6 +493,6 @@ void SCR_DisplayLocalPing(void)
 	if (cv_showping.value == 1 || (cv_showping.value == 2 && ping > servermaxping))	// only show 2 (warning) if our ping is at a bad level
 	{
 		INT32 dispy = cv_ticrate.value ? 160 : 181;
-		HU_drawPing(307, dispy, ping, V_SNAPTORIGHT | V_SNAPTOBOTTOM|V_HUDTRANS);
+		HU_drawPing(307, dispy, ping, V_SNAPTORIGHT | V_SNAPTOBOTTOM);
 	}
 }
