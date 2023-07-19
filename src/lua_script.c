@@ -131,6 +131,19 @@ int LUA_GetErrorMessage(lua_State *L)
 	return 1;
 }
 
+int LUA_Call(lua_State *L, int nargs, int nresults, int errorhandlerindex)
+{
+	int err = lua_pcall(L, nargs, nresults, errorhandlerindex);
+
+	if (err)
+	{
+		CONS_Alert(CONS_WARNING, "%s\n", lua_tostring(L, -1));
+		lua_pop(L, 1);
+	}
+
+	return err;
+}
+
 // This function decides which global variables you are allowed to set.
 static int noglobals(lua_State *L)
 {
@@ -182,7 +195,7 @@ void LUA_ClearState(void)
 
 	// open base libraries
 	luaL_openlibs(L);
-	lua_pop(L, -1);
+	lua_settop(L, 0);
 
 	// make LREG_VALID table for all pushed userdata cache.
 	lua_newtable(L);
@@ -372,7 +385,7 @@ fixed_t LUA_EvalMath(const char *word)
 	*b = '\0';
 
 	// eval string.
-	lua_pop(L, -1);
+	lua_settop(L, 0);
 	if (luaL_dostring(L, buf))
 	{
 		p = lua_tostring(L, -1);
