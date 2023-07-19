@@ -36,7 +36,7 @@ void Got_Luacmd(UINT8 **cp, INT32 playernum)
 	// like sending random junk lua commands to crash the server
 
 	if (!gL) goto deny;
-	
+
 	lua_settop(gL, 0); // Just in case...
 	lua_pushcfunction(gL, LUA_GetErrorMessage);
 
@@ -104,7 +104,7 @@ void COM_Lua_f(void)
 	INT32 playernum = consoleplayer;
 
 	I_Assert(gL != NULL);
-	
+
 	lua_settop(gL, 0); // Just in case...
 	lua_pushcfunction(gL, LUA_GetErrorMessage);
 
@@ -288,8 +288,9 @@ static void Lua_OnChange(void)
 	I_Assert(cvname != NULL);
 
 	/// \todo Network this! XD_LUAVAR
-	
-	lua_settop(gL, 0); // Just in case...
+
+    // Why?..
+	//lua_settop(gL, 0); // Just in case...
 	lua_pushcfunction(gL, LUA_GetErrorMessage);
 
 	// From CV_OnChange registry field, get the function for this cvar by name.
@@ -304,7 +305,7 @@ static void Lua_OnChange(void)
 	lua_remove(gL, -2); // pop the CV_Vars table.
 
 	LUA_Call(gL, 1, 0, 1); // call function(cvar)
-	lua_pop(gL, 1); // pop CV_OnChange table
+	lua_pop(gL, 2); // pop CV_OnChange table and error handler
 }
 
 static int lib_cvRegisterVar(lua_State *L)
@@ -393,18 +394,28 @@ static int lib_cvRegisterVar(lua_State *L)
 				cvar->PossibleValue = cvpv;
 			} else
 				FIELDERROR("PossibleValue", va("%s or CV_PossibleValue_t expected, got %s", lua_typename(L, LUA_TTABLE), luaL_typename(L, -1)))
-		} else if (cvar->flags & CV_CALL && (i == 5 || (k && fasticmp(k, "func")))) {
-			if (!lua_isfunction(L, 4))
-				TYPEERROR("func", LUA_TFUNCTION)
-			lua_getfield(L, LUA_REGISTRYINDEX, "CV_OnChange");
-			I_Assert(lua_istable(L, 5));
-			lua_pushvalue(L, 4);
-			lua_setfield(L, 5, cvar->name);
-			lua_pop(L, 1);
-			cvar->func = Lua_OnChange;
 		}
 		lua_pop(L, 1);
 	}
+
+    if (cvar->flags & CV_CALL) {
+        lua_rawgeti(L, 1, 5); // Push function, if it stored at field 5
+
+        if (lua_isnil(L, -1)) { // If it is nil, try to get at field "func"
+            lua_pop(L, 1);
+            lua_getfield(L, 1, "func");
+        }
+
+        if (!lua_isfunction(L, -1))
+            TYPEERROR("func", LUA_TFUNCTION)
+
+        lua_getfield(L, LUA_REGISTRYINDEX, "CV_OnChange"); // Push table
+        I_Assert(lua_istable(L, -1));
+        lua_pushvalue(L, -2); // Push func
+        lua_setfield(L, -2, cvar->name); // Pop func, add it to table
+        lua_pop(L, 2); // Pop table and func
+        cvar->func = Lua_OnChange;
+    }
 
 #undef FIELDERROR
 #undef TYPEERROR
