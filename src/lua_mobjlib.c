@@ -233,7 +233,7 @@ int mobj_angle_setter(lua_State *L)
     return 0;
 }
 
-int mobj_spritescale_setter(lua_State *L)
+/*int mobj_spritescale_setter(lua_State *L)
 {
     mobj_t *mo = GETMO();
 
@@ -242,16 +242,16 @@ int mobj_spritescale_setter(lua_State *L)
 
     if (!mo->player)
         *spritescale = luaL_checkfixed(L, 2);
-    /*else
+    else
     {
         // Mmm yea
         if (spritescale == &mo->spritexscale)
             mo->realxscale = luaL_checkfixed(L, 2);
         else
             mo->realyscale = luaL_checkfixed(L, 2);
-    }*/
+    }
     return 0;
-}
+}*/
 
 int mobj_radius_setter(lua_State *L)
 {
