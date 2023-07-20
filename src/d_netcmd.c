@@ -739,6 +739,7 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_maxsend);
 	CV_RegisterVar(&cv_noticedownload);
 	CV_RegisterVar(&cv_downloadspeed);
+    CV_RegisterVar(&cv_connectawaittime);
 	CV_RegisterVar(&cv_httpsource);
 #ifndef NONET
 	CV_RegisterVar(&cv_allownewplayer);

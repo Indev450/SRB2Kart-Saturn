@@ -2509,18 +2509,19 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 			}
 			break;
 		case CL_ASKJOIN:
-			if (firstconnectattempttime + NEWTICRATE*300 < I_GetTime() && !server)
+			if (cv_connectawaittime.value && firstconnectattempttime + NEWTICRATE*60*cv_connectawaittime.value < I_GetTime() && !server)
 			{
-				CONS_Printf(M_GetText("5 minute wait time exceeded.\n"));
+				CONS_Printf("%d minute wait time exceeded.\n", cv_connectawaittime.value);
 				CONS_Printf(M_GetText("Network game synchronization aborted.\n"));
 				D_QuitNetGame();
 				CL_Reset();
 				D_StartTitle();
-				M_StartMessage(M_GetText(
-					"5 minute wait time exceeded.\n"
+				M_StartMessage(va(
+					"%d minute wait time exceeded.\n"
 					"You may retry connection.\n"
 					"\n"
-					"Press ESC\n"
+					"Press ESC\n",
+                    cv_connectawaittime.value
 				), NULL, MM_NOTHING);
 				return false;
 			}
@@ -3882,6 +3883,8 @@ consvar_t cv_noticedownload = {"noticedownload", "Off", CV_SAVE, CV_OnOff, NULL,
 // Speed of file downloading (in packets per tic)
 static CV_PossibleValue_t downloadspeed_cons_t[] = {{1, "MIN"}, {300, "MAX"}, {0, NULL}};
 consvar_t cv_downloadspeed = {"downloadspeed", "MAX", CV_SAVE, downloadspeed_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_connectawaittime = {"connectawaittime", "5", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static void Got_AddPlayer(UINT8 **p, INT32 playernum);
 static void Got_RemovePlayer(UINT8 **p, INT32 playernum);
@@ -5979,9 +5982,9 @@ boolean TryRunTics(tic_t realtics)
 		while (neededtic > gametic)
 		{
 			boolean update_stats = !(paused || P_AutoPause());
-			
+
 			DEBFILE(va("============ Running tic %d (local %d)\n", gametic, localgametic));
-			
+
 			if (update_stats)
 				PS_START_TIMING(ps_tictime);
 
@@ -5989,7 +5992,7 @@ boolean TryRunTics(tic_t realtics)
 			ExtraDataTicker();
 			gametic++;
 			consistancy[gametic%TICQUEUE] = Consistancy();
-			
+
 			if (update_stats)
 			{
 				PS_STOP_TIMING(ps_tictime);
