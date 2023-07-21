@@ -325,7 +325,6 @@ menu_t OP_ProtocolDef;
 menu_t OP_DiscordOptionsDef;
 #endif
 menu_t OP_HUDOptionsDef, OP_ChatOptionsDef;
-menu_t OP_HudOffsetDef;
 menu_t OP_GameOptionsDef, OP_ServerOptionsDef;
 #ifndef NONET
 menu_t OP_AdvServerOptionsDef;
@@ -340,6 +339,10 @@ static void M_AddonsOptions(INT32 choice);
 static patch_t *addonsp[NUM_EXT+5];
 
 static void M_DeleteProtocol(void);
+
+// Saturn
+menu_t OP_ConnectDef;
+menu_t OP_HudOffsetDef;
 
 // Bird
 menu_t OP_BirdDef;
@@ -1111,13 +1114,15 @@ static menuitem_t OP_MainMenu[] =
 	{IT_SUBMENU|IT_STRING,		NULL, "HUD Options...",			&OP_HUDOptionsDef,			 60},
 	{IT_SUBMENU|IT_STRING,		NULL, "Gameplay Options...",	&OP_GameOptionsDef,			 70},
 	{IT_SUBMENU|IT_STRING,		NULL, "Server Options...",		&OP_ServerOptionsDef,		 80},
+	
+	{IT_SUBMENU|IT_STRING,		NULL, "Connection Options...",	&OP_ConnectDef,				 90},
 
-	{IT_SUBMENU|IT_STRING,		NULL, "Data Options...",		&OP_DataOptionsDef,			100},
+	{IT_SUBMENU|IT_STRING,		NULL, "Data Options...",		&OP_DataOptionsDef,			110},
 
-	{IT_CALL|IT_STRING,			NULL, "Tricks & Secrets (F1)",	M_Manual,					120},
-	{IT_CALL|IT_STRING,			NULL, "Play Credits",			M_Credits,					130},
-
-	{IT_SUBMENU|IT_STRING,		NULL, "Bird",	&OP_BirdDef,	150},
+	{IT_CALL|IT_STRING,			NULL, "Tricks & Secrets (F1)",	M_Manual,					130},
+	{IT_CALL|IT_STRING,			NULL, "Play Credits",			M_Credits,					140},
+	
+	{IT_SUBMENU|IT_STRING,		NULL, "Bird",					&OP_BirdDef,				160},
 };
 
 static menuitem_t OP_ControlsMenu[] =
@@ -1717,6 +1722,13 @@ static menuitem_t OP_BirdMenu[] =
 	{IT_STRING | IT_SUBMENU, NULL, "Advanced Music Options...", &OP_AdvancedBirdDef, 120},
 };
 
+static menuitem_t OP_ConnectMenu[] =
+{
+	{IT_HEADER, NULL, "Connection Options", NULL, 20},
+	{IT_STRING | IT_CVAR, NULL, "Serverqueue waittime", &cv_connectawaittime, 40},
+	{IT_STRING | IT_CVAR, NULL, "Addon Download Speed", &cv_downloadspeed, 60},
+};
+
 static menuitem_t OP_TiltMenu[] =
 {
 	{IT_STRING | IT_CVAR, NULL, "Camera Tilting", &cv_tilting, 0},
@@ -2268,6 +2280,8 @@ menu_t OP_DiscordOptionsDef = DEFAULTMENUSTYLE(NULL, OP_DiscordOptionsMenu, &OP_
 menu_t OP_EraseDataDef = DEFAULTMENUSTYLE("M_DATA", OP_EraseDataMenu, &OP_DataOptionsDef, 30, 30);
 
 menu_t OP_HudOffsetDef = DEFAULTMENUSTYLE(NULL, OP_HudOffsetMenu, &OP_HUDOptionsDef, 30, 30);
+
+menu_t OP_ConnectDef = DEFAULTMENUSTYLE(NULL, OP_ConnectMenu, &OP_MainDef, 30, 30);
 
 menu_t OP_BirdDef = DEFAULTMENUSTYLE(NULL, OP_BirdMenu, &OP_MainDef, 30, 30);
 menu_t OP_TiltDef = DEFAULTMENUSTYLE(NULL, OP_TiltMenu, &OP_BirdDef, 30, 60);
