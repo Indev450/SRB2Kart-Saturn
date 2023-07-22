@@ -1050,7 +1050,9 @@ void LUAh_GameHUD(player_t *stplayr, huddrawlist_h list)
 	lua_setfield(gL, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
 
 	hud_running = true;
-	lua_pop(gL, -1);
+	lua_settop(gL, 0);
+	
+	lua_pushcfunction(gL, LUA_GetErrorMessage);
 
 	lua_getfield(gL, LUA_REGISTRYINDEX, "HUD");
 	I_Assert(lua_istable(gL, -1));
@@ -1088,9 +1090,9 @@ void LUAh_GameHUD(player_t *stplayr, huddrawlist_h list)
 		lua_pushvalue(gL, -5); // graphics library (HUD[1])
 		lua_pushvalue(gL, -5); // stplayr
 		lua_pushvalue(gL, -5); // camera
-		LUA_Call(gL, 3);
+		LUA_Call(gL, 3, 0, 1);
 	}
-	lua_pop(gL, -1);
+	lua_settop(gL, 0);
 	hud_running = false;
 
 	lua_pushlightuserdata(gL, NULL);
@@ -1106,7 +1108,9 @@ void LUAh_ScoresHUD(huddrawlist_h list)
 	lua_setfield(gL, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
 
 	hud_running = true;
-	lua_pop(gL, -1);
+	lua_settop(gL, 0);
+	
+	lua_pushcfunction(gL, LUA_GetErrorMessage);
 
 	lua_getfield(gL, LUA_REGISTRYINDEX, "HUD");
 	I_Assert(lua_istable(gL, -1));
@@ -1119,9 +1123,9 @@ void LUAh_ScoresHUD(huddrawlist_h list)
 	lua_pushnil(gL);
 	while (lua_next(gL, -3) != 0) {
 		lua_pushvalue(gL, -3); // graphics library (HUD[1])
-		LUA_Call(gL, 1);
+		LUA_Call(gL, 1, 0, 1);
 	}
-	lua_pop(gL, -1);
+	lua_settop(gL, 0);
 	hud_running = false;
 
 	lua_pushlightuserdata(gL, NULL);

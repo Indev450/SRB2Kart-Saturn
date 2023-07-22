@@ -102,6 +102,9 @@ static void A_Lua(mobj_t *actor)
 {
 	boolean found = false;
 	I_Assert(actor != NULL);
+	
+	lua_settop(gL, 0); // Just in case...
+	lua_pushcfunction(gL, LUA_GetErrorMessage);
 
 	// get the action for this state
 	lua_getfield(gL, LUA_REGISTRYINDEX, LREG_STATEACTION);
@@ -131,7 +134,7 @@ static void A_Lua(mobj_t *actor)
 	LUA_PushUserdata(gL, actor, META_MOBJ);
 	lua_pushinteger(gL, var1);
 	lua_pushinteger(gL, var2);
-	LUA_Call(gL, 3);
+	LUA_Call(gL, 3, 0, 1);
 
 	if (found)
 	{
@@ -284,6 +287,8 @@ boolean LUA_CallAction(const char *csaction, mobj_t *actor)
 
 	if (superstack && fasticmp(csaction, superactions[superstack-1])) // the action is calling itself,
 		return false; // let it call the hardcoded function instead.
+		
+	lua_pushcfunction(gL, LUA_GetErrorMessage);
 
 	// grab function by uppercase name.
 	lua_getfield(gL, LUA_REGISTRYINDEX, LREG_ACTIONS);
@@ -297,13 +302,14 @@ boolean LUA_CallAction(const char *csaction, mobj_t *actor)
 
 	if (lua_isnil(gL, -1)) // no match
 	{
-		lua_pop(gL, 1); // pop nil
+		lua_pop(gL, 2); // pop nil and error handler
 		return false; // action not called.
 	}
 
 	if (superstack == MAXRECURSION)
 	{
 		CONS_Alert(CONS_WARNING, "Max Lua Action recursion reached! Cool it on the calling A_Action functions from inside A_Action functions!\n");
+		lua_pop(gL, 2); // pop function and error handler
 		return true;
 	}
 
@@ -317,7 +323,8 @@ boolean LUA_CallAction(const char *csaction, mobj_t *actor)
 	superactions[superstack] = csaction;
 	++superstack;
 
-	LUA_Call(gL, 3);
+	LUA_Call(gL, 3, 0, -(2 + 3));
+	lua_pop(gL, -1); // Error handler
 
 	--superstack;
 	superactions[superstack] = NULL;
