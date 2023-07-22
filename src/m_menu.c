@@ -1115,14 +1115,14 @@ static menuitem_t OP_MainMenu[] =
 	{IT_SUBMENU|IT_STRING,		NULL, "HUD Options...",			&OP_HUDOptionsDef,			 50},
 	{IT_SUBMENU|IT_STRING,		NULL, "Gameplay Options...",	&OP_GameOptionsDef,			 60},
 	{IT_SUBMENU|IT_STRING,		NULL, "Server Options...",		&OP_ServerOptionsDef,		 70},
-	
+
 	{IT_SUBMENU|IT_STRING,		NULL, "Data Options...",		&OP_DataOptionsDef,			90},
-	
+
 	{IT_CALL|IT_STRING,			NULL, "Tricks & Secrets (F1)",	M_Manual,					110},
 	{IT_CALL|IT_STRING,			NULL, "Play Credits",			M_Credits,					120},
-	
+
 	{IT_SUBMENU|IT_STRING,		NULL, "Saturn Options...",		&OP_SaturnDef,				140},
-	
+
 	{IT_SUBMENU|IT_STRING,		NULL, "Bird",	&OP_BirdDef,	150},
 };
 
@@ -1346,7 +1346,7 @@ static menuitem_t OP_OpenGLOptionsMenu[] =
 	{IT_STRING|IT_CVAR,		NULL, "Texture Quality",			&cv_scr_depth,				 60},
 	{IT_STRING|IT_CVAR,		NULL, "Texture Filter",				&cv_grfiltermode,			 70},
 	{IT_STRING|IT_CVAR,		NULL, "Anisotropic",				&cv_granisotropicmode,		 80},
-	
+
 	{IT_STRING|IT_CVAR,		NULL, "Visual Portals",		  		&cv_grportals,				 90},
 
 	{IT_STRING|IT_CVAR,		NULL, "Wall Contrast Style",		&cv_grfakecontrast,			110},
@@ -1514,7 +1514,7 @@ static menuitem_t OP_HUDOptionsMenu[] =
 
 	{IT_STRING | IT_CVAR, NULL,   "Show Track Addon Name",  &cv_showtrackaddon,   	135},
 	{IT_STRING | IT_CVAR, NULL,   "Show \"FOCUS LOST\"",  &cv_showfocuslost,   		145},
-	
+
 	{IT_STRING | IT_CVAR, NULL,	"2D character select",		&cv_skinselectmenu,		155},
 };
 
@@ -1673,14 +1673,14 @@ static menuitem_t OP_SaturnMenu[] =
 	{IT_STRING | IT_CVAR, NULL, "Addon Download Speed", 	&cv_downloadspeed, 		 55},
 	{IT_SUBMENU|IT_STRING,	NULL,	"Player distortion...", &OP_PlayerDistortDef,	 90},
 	{IT_SUBMENU|IT_STRING,	NULL,	"Hud Offsets...", 		&OP_HudOffsetDef,		 105},
-	
+
 	//{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Credits", 		&OP_SaturnCreditsDef,		 130},
 };
 
 static menuitem_t OP_PlayerDistortMenu[] =
 {
 	{IT_HEADER, NULL, "Player Distortion", NULL, 0},
-	
+
 	{IT_STRING | IT_CVAR, 	NULL, 	"Rotate players on slopes",       &cv_sloperoll, 	    10},
 	{IT_STRING | IT_CVAR, 	NULL, 	"Slope rotation distance",        &cv_sloperolldist,    20},
 	{IT_STRING | IT_CVAR, 	NULL, 	"Rotate players when sliptiding", &cv_sliptideroll, 	30},
@@ -1697,7 +1697,7 @@ enum
 static menuitem_t OP_HudOffsetMenu[] =
 {
 	{IT_HEADER, NULL, "Kart Hud Offsets", NULL, 0},
-	
+
 	{IT_STRING | IT_CVAR, 	NULL, 	"Itembox Horizontal Offset",      &cv_item_xoffset, 	10},
 	{IT_STRING | IT_CVAR, 	NULL, 	"Itembox Vertical Offset",        &cv_item_yoffset,     20},
 	{IT_STRING | IT_CVAR, 	NULL, 	"Timer Horizontal Offset", 		  &cv_time_xoffset, 	35},
@@ -1715,9 +1715,9 @@ static menuitem_t OP_HudOffsetMenu[] =
 /*static menuitem_t OP_SaturnCreditsMenu[] =
 {
 	{IT_HEADER, NULL, "Saturn Credits", NULL, 0},
-	
+
 	// idk need to add credits uwu
-	
+
 };*/
 
 static menuitem_t OP_BirdMenu[] =
@@ -2295,8 +2295,6 @@ menu_t OP_PlayerDistortDef = DEFAULTMENUSTYLE("M_VIDEO", OP_PlayerDistortMenu, &
 menu_t OP_HudOffsetDef = DEFAULTMENUSTYLE(NULL, OP_HudOffsetMenu, &OP_SaturnDef, 30, 30);
 //menu_t OP_SaturnCreditsDef = DEFAULTMENUSTYLE(NULL, OP_SaturnCreditsMenu, &OP_SaturnDef, 30, 30);
 
-menu_t OP_ConnectDef = DEFAULTMENUSTYLE(NULL, OP_ConnectMenu, &OP_MainDef, 30, 30);
-
 menu_t OP_BirdDef = DEFAULTMENUSTYLE(NULL, OP_BirdMenu, &OP_MainDef, 30, 30);
 menu_t OP_TiltDef = DEFAULTMENUSTYLE(NULL, OP_TiltMenu, &OP_BirdDef, 30, 60);
 menu_t OP_AdvancedBirdDef = DEFAULTMENUSTYLE(NULL, OP_AdvancedBirdMenu, &OP_BirdDef, 30, 60);
@@ -2754,7 +2752,7 @@ boolean M_Responder(event_t *ev)
 	|| gamestate == GS_INTRO || gamestate == GS_CUTSCENE || gamestate == GS_GAMEEND
 	|| gamestate == GS_CREDITS || gamestate == GS_EVALUATION)
 		return false;
-		
+
 	if (CON_Ready() && gamestate != GS_WAITINGPLAYERS)
 		return false;
 
