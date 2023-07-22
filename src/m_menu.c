@@ -1740,7 +1740,6 @@ static menuitem_t OP_BirdMenu[] =
 	{IT_STRING | IT_SUBMENU, NULL, "Advanced Music Options...", &OP_AdvancedBirdDef, 120},
 };
 
-
 static menuitem_t OP_TiltMenu[] =
 {
 	{IT_STRING | IT_CVAR, NULL, "Camera Tilting", &cv_tilting, 0},
@@ -2295,6 +2294,8 @@ menu_t OP_SaturnDef = DEFAULTMENUSTYLE(NULL, OP_SaturnMenu, &OP_MainDef, 30, 30)
 menu_t OP_PlayerDistortDef = DEFAULTMENUSTYLE("M_VIDEO", OP_PlayerDistortMenu, &OP_SaturnDef, 30, 60);
 menu_t OP_HudOffsetDef = DEFAULTMENUSTYLE(NULL, OP_HudOffsetMenu, &OP_SaturnDef, 30, 30);
 //menu_t OP_SaturnCreditsDef = DEFAULTMENUSTYLE(NULL, OP_SaturnCreditsMenu, &OP_SaturnDef, 30, 30);
+
+menu_t OP_ConnectDef = DEFAULTMENUSTYLE(NULL, OP_ConnectMenu, &OP_MainDef, 30, 30);
 
 menu_t OP_BirdDef = DEFAULTMENUSTYLE(NULL, OP_BirdMenu, &OP_MainDef, 30, 30);
 menu_t OP_TiltDef = DEFAULTMENUSTYLE(NULL, OP_TiltMenu, &OP_BirdDef, 30, 60);
