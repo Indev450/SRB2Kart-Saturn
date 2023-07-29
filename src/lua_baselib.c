@@ -1824,6 +1824,14 @@ static int lib_sStopSoundByID(lua_State *L)
 	return 0;
 }
 
+static int lib_sStopSoundByNum(lua_State *L)
+{
+    sfxenum_t sound_id = luaL_checkinteger(L, 1);
+    NOHUD
+    S_StopSoundByNum(sound_id);
+    return 0;
+}
+
 static int lib_sShowMusicCredit(lua_State *L)
 {
 	player_t *player = NULL;
@@ -3139,6 +3147,7 @@ static luaL_Reg lib[] = {
 	{"S_StartSoundAtVolume",lib_sStartSoundAtVolume},
 	{"S_StopSound",lib_sStopSound},
 	{"S_StopSoundByID",lib_sStopSoundByID},
+	{"S_StopSoundByNum",lib_sStopSoundByNum},
 	{"S_ShowMusicCredit",lib_sShowMusicCredit},
 	{"S_ChangeMusic",lib_sChangeMusic},
 	{"S_SpeedMusic",lib_sSpeedMusic},
