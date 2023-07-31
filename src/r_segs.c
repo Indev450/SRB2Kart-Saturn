@@ -705,7 +705,7 @@ static boolean R_IsFFloorTranslucent(visffloor_t *pfloor)
 
 	// Polyobjects have no ffloors, and they're handled in the conditional above.
 	if (pfloor->ffloor != NULL)
-		return (pfloor->ffloor->flags & (FF_TRANSLUCENT|FF_FOG));
+		return (pfloor->ffloor->flags & FF_TRANSLUCENT);
 
 	return false;
 }
@@ -1362,29 +1362,29 @@ static void R_RenderSegLoop (void)
 					if (top_w <= bottom_w)
 					{
 						fftop = (INT16)top_w;
-							ffbottom = (INT16)bottom_w;
+						ffbottom = (INT16)bottom_w;
 
-							ffloor[i].plane->top[rw_x] = fftop;
-							ffloor[i].plane->bottom[rw_x] = ffbottom;
+						ffloor[i].plane->top[rw_x] = fftop;
+						ffloor[i].plane->bottom[rw_x] = ffbottom;
 
-							// Lactozilla: Cull part of the column by the 3D floor if it can't be seen
-							// "bottom" is the top pixel of the floor column
-							if (ffbottom >= bottom-1 && R_FFloorCanClip(&ffloor[i]) && !curline->polyseg)
+						// Lactozilla: Cull part of the column by the 3D floor if it can't be seen
+						// "bottom" is the top pixel of the floor column
+						if (ffbottom >= bottom-1 && R_FFloorCanClip(&ffloor[i]))
+						{
+							rw_floormarked = true;
+							floorclip[rw_x] = fftop;
+							if (yh > fftop)
+								yh = fftop;
+
+							if (markfloor && floorplane)
+								floorplane->top[rw_x] = bottom;
+
+							if (rw_silhouette)
 							{
-								rw_floormarked = true;
-								floorclip[rw_x] = fftop;
-								if (yh > fftop)
-									yh = fftop;
-
-								if (markfloor && floorplane)
-									floorplane->top[rw_x] = bottom;
-
-								if (rw_silhouette)
-								{
-									(*rw_silhouette) |= SIL_BOTTOM;
-									(*rw_bsilheight) = INT32_MAX;
-								}
+								(*rw_silhouette) |= SIL_BOTTOM;
+								(*rw_bsilheight) = INT32_MAX;
 							}
+						}
 					}
 				}
 				else if (ffloor[i].height > viewz)
@@ -1406,29 +1406,29 @@ static void R_RenderSegLoop (void)
 					if (top_w <= bottom_w)
 					{
 						fftop = (INT16)top_w;
-							ffbottom = (INT16)bottom_w;
+						ffbottom = (INT16)bottom_w;
 
-							ffloor[i].plane->top[rw_x] = fftop;
-							ffloor[i].plane->bottom[rw_x] = ffbottom;
+						ffloor[i].plane->top[rw_x] = fftop;
+						ffloor[i].plane->bottom[rw_x] = ffbottom;
 
-							// Lactozilla: Cull part of the column by the 3D floor if it can't be seen
-							// "top" is the height of the ceiling column
-							if (fftop <= top+1 && R_FFloorCanClip(&ffloor[i]) && !curline->polyseg)
+						// Lactozilla: Cull part of the column by the 3D floor if it can't be seen
+						// "top" is the height of the ceiling column
+						if (fftop <= top+1 && R_FFloorCanClip(&ffloor[i]))
+						{
+							rw_ceilingmarked = true;
+							ceilingclip[rw_x] = ffbottom;
+							if (yl < ffbottom)
+								yl = ffbottom;
+
+							if (markceiling && ceilingplane)
+								ceilingplane->bottom[rw_x] = top;
+
+							if (rw_silhouette)
 							{
-								rw_ceilingmarked = true;
-								ceilingclip[rw_x] = ffbottom;
-								if (yl < ffbottom)
-									yl = ffbottom;
-
-								if (markceiling && ceilingplane)
-									ceilingplane->bottom[rw_x] = top;
-
-								if (rw_silhouette)
-								{
-									(*rw_silhouette) |= SIL_TOP;
-									(*rw_tsilheight) = INT32_MIN;
-								}
+								(*rw_silhouette) |= SIL_TOP;
+								(*rw_tsilheight) = INT32_MIN;
 							}
+						}
 					}
 				}
 			}
