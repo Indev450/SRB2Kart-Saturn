@@ -107,6 +107,10 @@ static void Impl_SetVsync(void);
 consvar_t cv_vidwait = {"vid_wait", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, Impl_SetVsync, 0, NULL, NULL, 0, 0, NULL};
 static consvar_t cv_stretch = {"stretch", "Off", CV_SAVE|CV_NOSHOWHELP, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+// these cant be used since config is read after window creation, so need to use command line parameter instead
+//static CV_PossibleValue_t msaa_cons_t[] = {{0, "Off"}, {2, "2X"}, {4, "4X"}, {8, "8X"}, {16, "16X"}, {0, NULL}};
+//consvar_t cv_msaa = {"msaa", "Off", CV_SAVE, msaa_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 UINT8 graphics_started = 0; // Is used in console.c and screen.c
 
 // To disable fullscreen at startup; is set in VID_PrepareModeList
@@ -1772,7 +1776,19 @@ static SDL_bool Impl_CreateWindow(SDL_bool fullscreen)
 
 #ifdef HWRENDER
 	if (rendermode == render_opengl)
+	{
 		flags |= SDL_WINDOW_OPENGL;
+	if (M_CheckParm("-msaa") && M_IsNextParm())
+		{
+			unsigned int value;
+			const char* str = M_GetNextParm();
+			if (sscanf(str, "%u", &value))
+			{
+				SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+				SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, value);
+			}
+		}
+	}
 	
 	// Without a 24-bit depth buffer many visuals are ruined by z-fighting.
 	// Some GPU drivers may give us a 16-bit depth buffer since the
