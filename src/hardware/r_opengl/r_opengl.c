@@ -2735,6 +2735,15 @@ EXPORT void HWRAPI(SetSpecialState) (hwdspecialstate_t IdState, INT32 Value)
 			}
 			Flush(); //??? if we want to change filter mode by texture, remove this
 			break;
+			
+		case HWD_SET_MSAA:
+			if (Value)
+			{
+				pglEnable(GL_MULTISAMPLE);
+				if (Value == 2)
+					pglEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
+			}
+			break;
 
 		case HWD_SET_TEXTUREANISOTROPICMODE:
 			anisotropic_filter = min(Value,maximumAnisotropy);

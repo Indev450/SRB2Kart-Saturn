@@ -41,6 +41,7 @@
 #include "../st_stuff.h"
 #include "../i_system.h"
 #include "../m_cheat.h"
+#include "../m_argv.h" // parm functions for msaa
 
 #ifdef ESLOPE
 #include "../p_slopes.h"
@@ -6025,6 +6026,14 @@ void HWR_Startup(void)
 	HWD.pfnKillShaders();
 	if (!HWD.pfnLoadShaders())
 		gr_shadersavailable = false;
+	
+	if (M_CheckParm("-msaa"))
+	{
+		if (M_CheckParm("-a2c"))
+			HWD.pfnSetSpecialState(HWD_SET_MSAA, 2);
+		else
+			HWD.pfnSetSpecialState(HWD_SET_MSAA, 1);
+	}
 }
 
 
