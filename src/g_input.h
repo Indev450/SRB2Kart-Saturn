@@ -124,6 +124,12 @@ typedef enum
 	num_gamecontrols
 } gamecontrols_e;
 
+#ifdef TEXTINPUTEVENTS
+extern consvar_t cv_keyboardlocale;
+#endif
+extern consvar_t cv_usekeycodes;
+extern consvar_t cv_forceqwerty;
+
 // mouse values are used once
 extern consvar_t cv_mousesens, cv_mouseysens;
 extern consvar_t cv_mousesens2, cv_mouseysens2;

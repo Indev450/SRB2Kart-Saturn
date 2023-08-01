@@ -2656,8 +2656,13 @@ static boolean M_ChangeStringCvar(INT32 choice)
 	char buf[MAXSTRINGLENGTH];
 	size_t len;
 
-	if (shiftdown && choice >= 32 && choice <= 127)
-		choice = shiftxform[choice];
+#ifdef TEXTINPUTEVENTS
+	if (!cv_keyboardlocale.value)
+#endif
+	{
+		if (shiftdown && choice >= 32 && choice <= 127)
+			choice = shiftxform[choice];
+	}
 
 	switch (choice)
 	{
@@ -2734,6 +2739,33 @@ static void Command_Manual_f(void)
 	M_StartControlPanel();
 	M_Manual(INT32_MAX);
 	itemOn = 0;
+}
+
+boolean M_TextInput(void)
+{
+	menuitem_t *item = &(currentMenu->menuitems[itemOn]);
+
+	// Return false if the menus are not active.
+	if (!menuactive)
+		return false;
+
+	if (item->itemaction)
+	{
+		if ((item->status & IT_TYPE) == IT_KEYHANDLER)
+		{
+			void (*action)(INT32 choice) = item->itemaction;
+			if (action == M_HandleAddons)
+				return true;
+			else if (action == M_HandleSetupMultiPlayer)
+				return (itemOn == 0);
+			else if (action == M_HandleConnectIP)
+				return true;
+		}
+		else if ((item->status & IT_TYPE) == IT_CVAR)
+			return ((item->status & IT_CVARTYPE) == IT_CV_STRING);
+	}
+
+	return false;
 }
 
 //
@@ -2992,8 +3024,13 @@ boolean M_Responder(event_t *ev)
 	// Handle menuitems which need a specific key handling
 	if (routine && (currentMenu->menuitems[itemOn].status & IT_TYPE) == IT_KEYHANDLER)
 	{
-		if (shiftdown && ch >= 32 && ch <= 127)
-			ch = shiftxform[ch];
+#ifdef TEXTINPUTEVENTS
+		if (!(cv_keyboardlocale.value && M_TextInput()))
+#endif
+		{
+			if (shiftdown && ch >= 32 && ch <= 127)
+				ch = shiftxform[ch];
+		}
 		routine(ch);
 		return true;
 	}
@@ -5427,8 +5464,13 @@ static void M_AddonExec(INT32 ch)
 #define len menusearch[0]
 static boolean M_ChangeStringAddons(INT32 choice)
 {
-	if (shiftdown && choice >= 32 && choice <= 127)
-		choice = shiftxform[choice];
+#ifdef TEXTINPUTEVENTS
+	if (!cv_keyboardlocale.value)
+#endif
+	{
+		if (shiftdown && choice >= 32 && choice <= 127)
+			choice = shiftxform[choice];
+	}
 
 	switch (choice)
 	{

@@ -30,6 +30,7 @@
 // this can resize the view and change game parameters.
 // Does all the real work of the menu interaction.
 boolean M_Responder(event_t *ev);
+boolean M_TextInput(void);
 
 // Called by main loop, runs for demo playback. If this returns true, nullify any further user input.
 boolean M_DemoResponder(event_t *ev);
