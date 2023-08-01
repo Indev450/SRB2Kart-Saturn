@@ -1209,6 +1209,13 @@ static void R_RenderSegLoop(drawcolumndata_t* dc)
 	INT32     bottom;
 	INT32     i;
 
+	if (midtexture)
+		R_CheckTextureCache(midtexture);
+	if (toptexture)
+		R_CheckTextureCache(toptexture);
+	if (bottomtexture)
+		R_CheckTextureCache(bottomtexture);
+
 	// Loop over width
 	for (; rw_x < rw_stopx; rw_x++)
 	{

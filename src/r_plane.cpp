@@ -785,6 +785,7 @@ static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc2)(drawcolumndata_t*), b
 	}
 
 	drawcolumndata_t dc = {};
+	const INT32 texture = texturetranslation[skytexture];
 
 	// Reset column drawer function (note: couldn't we just call walldrawerfunc directly?)
 	// (that is, unless we'll need to switch drawers in future for some reason)
@@ -803,16 +804,13 @@ static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc2)(drawcolumndata_t*), b
 		dc.colormap += COLORMAP_REMAPOFFSET;
 
 	dc.texturemid = skytexturemid;
-	dc.texheight = textureheight[skytexture] >>FRACBITS;
+	dc.texheight = textureheight[texture] >>FRACBITS;
 	dc.sourcelength = dc.texheight;
 
 	x = pl->minx;
 
 	// Precache the texture so we don't corrupt the zoned heap off-main thread
-	if (!texturecache[texturetranslation[skytexture]])
-	{
-		R_GenerateTexture(texturetranslation[skytexture]);
-	}
+	R_CheckTextureCache(texture);
 
 #ifdef HAVE_THREADS
 	while (x <= pl->maxx)
@@ -837,9 +835,7 @@ static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc2)(drawcolumndata_t*), b
 
 				dc.iscale = FixedMul(skyscale, FINECOSINE(xtoviewangle[x + i]>>ANGLETOFINESHIFT));
 				dc.x = x + i;
-				dc.source =
-					R_GetColumn(texturetranslation[skytexture],
-						-angle); // get negative of angle for each column to display sky correct way round! --Monster Iestyn 27/01/18
+				dc.source = R_GetColumn(texture, -angle); // get negative of angle for each column to display sky correct way round! --Monster Iestyn 27/01/18
 
 				colfunc2(&dc);
 			}

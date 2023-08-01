@@ -535,13 +535,6 @@ static inline INT32 wrap_column(fixed_t tex, INT32 col)
 //
 UINT8 *R_GetColumn(fixed_t tex, INT32 col)
 {
-	if (!texturecache[tex])
-	{
-		// This must be here because cache can be freed by other operations.
-		// To prevent must lock individual texture cache on every draw.
-		R_GenerateTexture(tex);
-	}
-
 	return texturecache[tex] + LONG(texturecolumnofs[tex][wrap_column(tex, col)]);
 }
 
