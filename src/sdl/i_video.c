@@ -99,6 +99,14 @@ static char vidModeName[33][32]; // allow 33 different modes
 
 rendermode_t rendermode = render_none;
 
+#ifdef HWRENDER
+unsigned msaa = 0;
+
+// Eee probably the way i organize it isn't best ><
+// Just don't know where do i put declaration and "implementation"
+boolean a2c = false;
+#endif
+
 boolean highcolor = false;
 
 static void Impl_SetVsync(void);
@@ -1778,18 +1786,14 @@ static SDL_bool Impl_CreateWindow(SDL_bool fullscreen)
 	if (rendermode == render_opengl)
 	{
 		flags |= SDL_WINDOW_OPENGL;
-	if (M_CheckParm("-msaa") && M_IsNextParm())
-		{
-			unsigned int value;
-			const char* str = M_GetNextParm();
-			if (sscanf(str, "%u", &value))
-			{
-				SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
-				SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, value);
-			}
-		}
+    }
+
+	if (msaa)
+    {
+        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, msaa);
 	}
-	
+
 	// Without a 24-bit depth buffer many visuals are ruined by z-fighting.
 	// Some GPU drivers may give us a 16-bit depth buffer since the
 	// default value for SDL_GL_DEPTH_SIZE is 16.
@@ -1972,32 +1976,84 @@ void I_StartupGraphics(void)
 		rendermode = render_opengl;
 #endif
 
-	if (rendermode == render_none)
-	{
-#ifdef HWRENDER
+    msaa = 0; boolean msaa_set = false;
+    a2c = false; boolean a2c_set = false;
+
+    if (M_CheckParm("-msaa") && M_IsNextParm())
+    {
+        const char* str = M_GetNextParm();
+        if (sscanf(str, "%u", &msaa))
+        {
+            msaa_set = true;
+        }
+    }
+
+    if (M_CheckParm("-a2c"))
+    {
+        a2c = true;
+        a2c_set = true;
+    }
+    else if (M_CheckParm("-noa2c"))
+    {
+        a2c_set = true;
+    }
+
+    {
 		char   line[16];
 		char * word;
 		FILE * file = OpenRendererFile("r");
 		if (file != NULL)
 		{
-			if (fgets(line, sizeof line, file) != NULL)
+#ifdef HWRENDER
+			while (fgets(line, sizeof line, file) != NULL)
 			{
-				word = strtok(line, "\n");
+                word = strtok(line, " \n");
 
-				if (strcasecmp(word, "software") == 0)
-				{
-					rendermode = render_soft;
-				}
-				else if (strcasecmp(word, "opengl") == 0)
-				{
-					rendermode = render_opengl;
-				}
+                if (rendermode == render_none)
+                {
+                    if (strcasecmp(word, "software") == 0)
+                    {
+                        rendermode = render_soft;
+                    }
+                    else if (strcasecmp(word, "opengl") == 0)
+                    {
+                        rendermode = render_opengl;
+                    }
 
-				if (rendermode != render_none)
-				{
-					CONS_Printf("Using last known renderer: %s\n", line);
-				}
-			}
+                    if (rendermode != render_none)
+                    {
+                        CONS_Printf("Using last known renderer: %s\n", line);
+                    }
+			    }
+
+                if (!msaa_set)
+                {
+                    if (strcasecmp(word, "msaa") == 0)
+                    {
+                        const char *nextword = strtok(NULL, " \n");
+
+                        if (!nextword || !sscanf(nextword, "%u", &msaa))
+                        {
+                            CONS_Alert(CONS_ERROR, "Malformed MSAA entry in renderer.txt\n");
+                        }
+                        else
+                        {
+                            CONS_Printf("Using last know MSAA value: %u\n", msaa);
+                        }
+                    }
+                }
+
+                if (!a2c_set)
+                {
+                    if (strcasecmp(word, "a2c") == 0)
+                    {
+                        a2c = true;
+
+                        CONS_Printf("Using a2c because it was specified to be used earlier\n");
+                    }
+                }
+            }
+
 			fclose(file);
 		}
 #endif
@@ -2006,8 +2062,8 @@ void I_StartupGraphics(void)
 			rendermode = render_soft;
 			CONS_Printf("Using default software renderer.\n");
 		}
-	}
-	else
+    }
+
 	{
 		FILE * file = OpenRendererFile("w");
 		if (file != NULL)
@@ -2020,7 +2076,13 @@ void I_StartupGraphics(void)
 			{
 				fputs("opengl\n", file);
 			}
-			fclose(file);
+
+            fprintf(file, "msaa %u\n", msaa);
+
+            if (a2c)
+                fputs("a2c\n", file);
+
+            fclose(file);
 		}
 		else
 		{

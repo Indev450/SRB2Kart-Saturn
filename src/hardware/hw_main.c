@@ -110,7 +110,7 @@ static INT32 current_bsp_culling_distance = 0;
 //  - full screen scaling (use native resolution or windowed mode to avoid this)
 consvar_t cv_grscreentextures = {"gr_screentextures", "On", CV_CALL, CV_OnOff,
                                  CV_screentextures_ONChange, 0, NULL, NULL, 0, 0, NULL};
-								 
+
  consvar_t cv_grusecustomshaders = {"gr_usecustomshaders", "Yes", CV_CALL|CV_SAVE, CV_OnOff, CV_useCustomShaders_ONChange, 0, NULL, NULL, 0, 0, NULL};
 
 static void CV_filtermode_ONChange(void)
@@ -439,7 +439,7 @@ void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *col
 		poly_color.s.green = (UINT8)green;
 		poly_color.s.blue = (UINT8)blue;
 	}
-	
+
 	// Clamp the light level, since it can sometimes go out of the 0-255 range from animations
 	light_level = min(max(light_level, 0), 255);
 
@@ -821,14 +821,14 @@ void HWR_ProjectWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend
 	HWR_Lighting(pSurf, lightlevel, wallcolormap);
 
 	HWD.pfnSetShader(2);	// wall shader
-	
+
 	// don't draw to color buffer when drawing to stencil
 	if (gl_drawing_stencil)
 	{
 		blendmode |= PF_Invisible|PF_NoAlphaTest; // TODO not sure if any others than PF_Invisible are needed??
 		blendmode &= ~PF_Masked;
 	}
-	
+
 	HWD.pfnDrawPolygon(pSurf, wallVerts, 4, blendmode|PF_Modulated|PF_Occlude);
 
 #ifdef WALLSPLATS
@@ -875,7 +875,7 @@ void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum, FSurfa
 	pegt = wallVerts[3].t;
 	pegb = wallVerts[0].t;
 	pegmul = (pegb - pegt) / (top - bot);
-	
+
 	if (fpclassify(pegmul) == FP_NAN)
 		pegmul = 0.0;
 
@@ -1631,7 +1631,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 			}
 			else
 				repeats = 1;
-			
+
 			fixed_t midtexheight = textureheight[gr_midtexture] * repeats;
 			fixed_t popentop, popenbottom, polytop, polybottom, lowcut, highcut;
 			fixed_t popentopslope, popenbottomslope, polytopslope, polybottomslope, lowcutslope, highcutslope;
@@ -1658,7 +1658,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 #ifdef ESLOPE
 				popentop = min(worldtop, worldhigh);
 				popenbottom = max(worldbottom, worldlow);
-				
+
 				popentopslope = min(worldtopslope, worldhighslope);
 				popenbottomslope = max(worldbottomslope, worldlowslope);
 			}
@@ -1699,7 +1699,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 				polytopslope = popentopslope + gr_sidedef->rowoffset;
 				polybottomslope = polytopslope - midtexheight;
 			}
-			
+
 			// CB
 #ifdef POLYOBJECTS
 			// NOTE: With polyobjects, whenever you need to check the properties of the polyobject sector it belongs to,
@@ -1725,7 +1725,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 			l = max(polybottom, lowcut);
 			hS = min(highcutslope, polytopslope);
 			lS = max(polybottomslope, lowcutslope);
-			
+
 			// PEGGING
 			fixed_t texturevpeg, texturevpegslope;
 
@@ -1760,7 +1760,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 			// set alpha for transparent walls (new boom and legacy linedef types)
 			FBITFIELD blendmode;
-			
+
 			switch (gr_linedef->special)
 			{
 				case 900:
@@ -1966,7 +1966,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 	if (!gl_drawing_stencil && gr_frontsector && gr_backsector && gr_frontsector->tag != gr_backsector->tag && (gr_backsector->ffloors || gr_frontsector->ffloors))
 	{
 		ffloor_t * rover;
-		fixed_t    highcut = 0, lowcut = 0;		
+		fixed_t    highcut = 0, lowcut = 0;
 		fixed_t lowcutslope, highcutslope;
 
 		// Used for height comparisons and etc across FOFs and slopes
@@ -1979,14 +1979,14 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 		highcut = min(worldtop, worldhigh);
 		lowcutslope = max(worldbottomslope, worldlowslope);
 		highcutslope = min(worldtopslope, worldhighslope);
-		
+
 		if (gr_backsector->ffloors)
 		{
 			for (rover = gr_backsector->ffloors; rover; rover = rover->next)
 			{
 				if (!(rover->flags & FF_EXISTS) || !(rover->flags & FF_RENDERSIDES) || (rover->flags & FF_INVERTSIDES))
 					continue;
-				
+
 				SLOPEPARAMS(*rover->t_slope, high1, highslope1, *rover->topheight)
 				SLOPEPARAMS(*rover->b_slope, low1,  lowslope1,  *rover->bottomheight)
 
@@ -2156,7 +2156,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 			{
 				if (!(rover->flags & FF_EXISTS) || !(rover->flags & FF_RENDERSIDES) || !(rover->flags & FF_ALLSIDES))
 					continue;
-				
+
 				SLOPEPARAMS(*rover->t_slope, high1, highslope1, *rover->topheight)
 				SLOPEPARAMS(*rover->b_slope, low1,  lowslope1,  *rover->bottomheight)
 
@@ -2427,7 +2427,7 @@ void HWR_AddLine(seg_t *line)
 	static sector_t tempsec;
 
 	fixed_t v1x, v1y, v2x, v2y; // the seg's vertexes as fixed_t
-	
+
 	boolean dont_draw = false;
 #ifdef POLYOBJECTS
 	if (line->polyseg && !(line->polyseg->flags & POF_RENDERSIDES))
@@ -2444,7 +2444,7 @@ void HWR_AddLine(seg_t *line)
 	// OPTIMIZE: quickly reject orthogonal back sides.
 	angle1 = R_PointToAngle64(v1x, v1y);
 	angle2 = R_PointToAngle64(v2x, v2y);
-	
+
 	// do an extra culling check when rendering portals
 	// check if any line vertex is on the viewable side of the portal target line
 	// if not, the line can be culled.
@@ -2515,7 +2515,7 @@ void HWR_AddLine(seg_t *line)
 	checkforemptylines = true;
 
 	gr_backsector = line->backsector;
-	
+
 	// Portal line
 /*
 	if (cv_grportals.value && line->linedef->special == 40 && line->side == 0)
@@ -3069,7 +3069,7 @@ void HWR_Subsector(size_t num)
 	gr_frontsector = R_FakeFlat(gr_frontsector, &tempsec, &floorlightlevel,
 								&ceilinglightlevel, false);
 	//FIXME: Use floorlightlevel and ceilinglightlevel insted of lightlevel.
-	
+
 	if (gr_portal == GRPORTAL_SEARCH)
 	{
 		skipSprites = true;
@@ -3326,7 +3326,7 @@ void HWR_Subsector(size_t num)
 			++numpolys;
 			po = (polyobj_t *)(po->link.next);
 		}
-		
+
 		// for performance stats
 		ps_numpolyobjects.value.i += numpolys;
 
@@ -3449,7 +3449,7 @@ void HWR_RenderBSPNode(INT32 bspnum)
 
 	// Decide which side the view point is on
 	INT32 side;
-	
+
 	ps_numbspcalls.value.i++;
 
 	// Found a subsector?
@@ -3470,7 +3470,7 @@ void HWR_RenderBSPNode(INT32 bspnum)
 			HWR_Subsector(bspnum&(~NF_SUBSECTOR));
 		return;
 	}
-	
+
 	// in portal checking phase we can stop after one is found
 	//if (gr_portal == GRPORTAL_FOUND)
 	//	return;
@@ -4420,10 +4420,10 @@ static int CompareVisSprites(const void *p1, const void *p2)
 	gr_vissprite_t* spr2 = *(gr_vissprite_t*const*)p2;
 	int idiff;
 	float fdiff;
-	
+
 	// make transparent sprites last
 	// "boolean to int"
-	
+
 	int transparency1 = (spr1->mobj->flags2 & MF2_SHADOW) || (spr1->mobj->frame & FF_TRANSMASK);
 	int transparency2 = (spr2->mobj->flags2 & MF2_SHADOW) || (spr2->mobj->frame & FF_TRANSMASK);
 	idiff = transparency1 - transparency2;
@@ -4630,7 +4630,7 @@ void HWR_RenderDrawNodes(void)
 	// However, in reality we shouldn't be re-copying and shifting all this information
 	// that is already lying around. This should all be in some sort of linked list or lists.
 	sortindex = Z_Calloc(sizeof(size_t) * (numplanes + numpolyplanes + numwalls), PU_STATIC, NULL);
-	
+
 	PS_START_TIMING(ps_hw_nodesorttime);
 
 	for (i = 0; i < numplanes; i++, p++)
@@ -4650,7 +4650,7 @@ void HWR_RenderDrawNodes(void)
 		sortnode[p].wall = &wallinfo[i];
 		sortindex[p] = p;
 	}
-	
+
 	ps_numdrawnodes.value.i = p;
 
 	// p is the number of stuff to sort
@@ -4694,7 +4694,7 @@ void HWR_RenderDrawNodes(void)
 			run_start++;
 		}
 	}
-	
+
 	PS_STOP_TIMING(ps_hw_nodesorttime);
 
 	PS_START_TIMING(ps_hw_nodedrawtime);
@@ -4733,7 +4733,7 @@ void HWR_RenderDrawNodes(void)
 				sortnode[sortindex[i]].wall->lightlevel, sortnode[sortindex[i]].wall->wallcolormap);
 		}
 	}
-	
+
 	PS_STOP_TIMING(ps_hw_nodedrawtime);
 
 	numwalls = 0;
@@ -4944,7 +4944,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 	const boolean papersprite = (thing->frame & FF_PAPERSPRITE);
 	INT32 heightsec, phs;
 	vector3_t pos;
-	
+
 	fixed_t spr_width, spr_height;
 	fixed_t spr_offset, spr_topoffset;
 #ifdef ROTSPRITE
@@ -4954,7 +4954,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 	angle_t sliptiderollangle = 0;
 #endif
 
-	
+
 
 	// uncapped/interpolation
 	interpmobjstate_t interp = {0};
@@ -4970,7 +4970,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 	{
 		R_InterpolateMobjState(thing, FRACUNIT, &interp);
 	}
-	
+
 	if (interp.spritexscale < 1 || interp.spriteyscale < 1)
 		return;
 
@@ -5079,7 +5079,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 
 	if (thing->skin && ((skin_t *)thing->skin)->flags & SF_HIRES)
 		this_scale = this_scale * FIXED_TO_FLOAT(((skin_t *)thing->skin)->highresscale);
-	
+
 	spr_width = spritecachedinfo[lumpoff].width;
 	spr_height = spritecachedinfo[lumpoff].height;
 	spr_offset = spritecachedinfo[lumpoff].offset;
@@ -5095,7 +5095,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 		}
 		else
 			rollsum = (thing->rollangle)+(thing->sloperoll);
-		
+
 		rollangle = R_GetRollAngle(rollsum);
 		rotsprite = Patch_GetRotatedSprite(sprframe, (thing->frame & FF_FRAMEMASK), rot, flip, sprinfo, rollangle);
 
@@ -5105,7 +5105,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 			spr_height = rotsprite->height << FRACBITS;
 			spr_offset = rotsprite->leftoffset << FRACBITS;
 			spr_topoffset = rotsprite->topoffset << FRACBITS;
-			spr_topoffset += FEETADJUST;			
+			spr_topoffset += FEETADJUST;
 			// flip -> rotate, not rotate -> flip
 			flip = 0;
 		}
@@ -5203,7 +5203,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 	vis->tz = tz; // Keep tz for the simple sprite sorting that happens
 	vis->dispoffset = thing->info->dispoffset; // Monster Iestyn: 23/11/15: HARDWARE SUPPORT AT LAST
 	vis->flip = flip;
-	
+
 	vis->scale = this_scale;
 	vis->spritexscale = spritexscale;
 	vis->spriteyscale = spriteyscale;
@@ -5216,7 +5216,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 	else
 #endif
 			vis->gpatch = (GLPatch_t *)W_CachePatchNum(sprframe->lumppat[rot], PU_CACHE);
-	
+
 	vis->mobj = thing;
 
 
@@ -5254,7 +5254,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 
 	// set top/bottom coords
 	vis->ty = gzt;
-	
+
 	vis->gzt = gzt;
 	vis->gz = gz;
 
@@ -5391,7 +5391,7 @@ void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 
 	// set top/bottom coords
 	vis->ty = FIXED_TO_FLOAT(thing->z + spritecachedinfo[lumpoff].topoffset);
-	
+
 	vis->gzt = FIXED_TO_FLOAT(thing->z + spritecachedinfo[lumpoff].topoffset);
 	vis->gz = vis->gzt - FIXED_TO_FLOAT(spritecachedinfo[lumpoff].height);
 
@@ -5484,7 +5484,7 @@ void HWR_SetTransform(float fpov, player_t *player)
 {
 	postimg_t *postprocessor = &postimgtype[0];
 	INT32 i;
-	
+
 	// copy view cam position for local use
 	dup_viewx = viewx;
 	dup_viewy = viewy;
@@ -5575,7 +5575,7 @@ void HWR_PortalClipping(portal_t *portal)
 	v1y = FLOAT_TO_FIXED(((polyvertex_t *)seg->pv1)->y);
 	v2x = FLOAT_TO_FIXED(((polyvertex_t *)seg->pv2)->x);
 	v2y = FLOAT_TO_FIXED(((polyvertex_t *)seg->pv2)->y);
-	
+
 	angle1 = R_PointToAngleEx(viewx, viewy, v1x, v1y);
 	angle2 = R_PointToAngleEx(viewx, viewy, v2x, v2y);
 */
@@ -5705,19 +5705,19 @@ void RecursivePortalRendering(portal_t *rootportal, const float fpov, player_t *
 		validcount++;
 		if (cv_grbatching.value)
 			HWD.pfnStartBatching();
-		
+
 		ps_numbspcalls.value.i = 0;
 		ps_numpolyobjects.value.i = 0;
 		PS_START_TIMING(ps_bsptime);
 
 		if (!rootportal && portallist.base && !skybox)// if portals have been drawn in the main view, then render skywalls differently
 			gr_collect_skywalls = true;
-			
-		// Recursively "render" the BSP tree.	
+
+		// Recursively "render" the BSP tree.
 		HWR_RenderBSPNode((INT32)numnodes-1);
-		
+
 		PS_STOP_TIMING(ps_bsptime);
-		
+
 		if (cv_grbatching.value)
 		{
 			HWD.pfnRenderBatches(&ps_hw_batchsorttime.value.p, &ps_hw_batchdrawtime.value.p,
@@ -5913,7 +5913,7 @@ void HWR_RenderSinglePortal(portal_t *portal, size_t portalnum, float fpov, play
 	// Render the BSP from the new viewpoint.
 	portalcullsector = gr_portalcullsectors[portalnum];
 	HWR_RenderBSPNode((INT32)numnodes - 1);
-	
+
 	// Draw MD2 and sprites
 	ps_numsprites.value.i = gr_visspritecount;
 	PS_START_TIMING(ps_hw_spritesorttime);
@@ -5922,7 +5922,7 @@ void HWR_RenderSinglePortal(portal_t *portal, size_t portalnum, float fpov, play
 	PS_START_TIMING(ps_hw_spritedrawtime);
 	HWR_DrawSprites();
 	PS_STOP_TIMING(ps_hw_spritedrawtime);
-	
+
 	ps_numdrawnodes.value.i = 0;
 	ps_hw_nodesorttime.value.p = 0;
 	ps_hw_nodedrawtime.value.p = 0;
@@ -6026,10 +6026,10 @@ void HWR_Startup(void)
 	HWD.pfnKillShaders();
 	if (!HWD.pfnLoadShaders())
 		gr_shadersavailable = false;
-	
-	if (M_CheckParm("-msaa"))
+
+	if (msaa)
 	{
-		if (M_CheckParm("-a2c"))
+		if (a2c)
 			HWD.pfnSetSpecialState(HWD_SET_MSAA, 2);
 		else
 			HWD.pfnSetSpecialState(HWD_SET_MSAA, 1);
