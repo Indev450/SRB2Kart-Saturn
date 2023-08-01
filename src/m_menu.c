@@ -343,6 +343,7 @@ static void M_DeleteProtocol(void);
 menu_t OP_SaturnDef;
 menu_t OP_HudOffsetDef;
 menu_t OP_PlayerDistortDef;
+menu_t OP_KeyboardDef;
 //menu_t OP_SaturnCreditsDef;
 
 // Bird
@@ -1674,6 +1675,7 @@ static menuitem_t OP_SaturnMenu[] =
 	{IT_STRING | IT_CVAR, NULL, "Less Flicker effects", 	&cv_lessflicker, 		 70},
 	{IT_SUBMENU|IT_STRING,	NULL,	"Player distortion...", &OP_PlayerDistortDef,	 90},
 	{IT_SUBMENU|IT_STRING,	NULL,	"Hud Offsets...", 		&OP_HudOffsetDef,		 105},
+	{IT_SUBMENU|IT_STRING,	NULL,	"Keyboard Layout...", 	&OP_KeyboardDef,		 120},
 
 	//{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Credits", 		&OP_SaturnCreditsDef,		 130},
 };
@@ -1711,6 +1713,17 @@ static menuitem_t OP_HudOffsetMenu[] =
 	{IT_STRING | IT_CVAR,	NULL,	"Miniranking Vertical Offset",	  &cv_face_yoffset,     120},
 	{IT_STRING | IT_CVAR, 	NULL, 	"Minimap Horizontal Offset",  	  &cv_mini_xoffset, 	135},
 	{IT_STRING | IT_CVAR,	NULL,	"Minimap Vertical Offset",	  	  &cv_mini_yoffset,     145},
+};
+
+static menuitem_t OP_KeyboardMenu[] =
+{
+	{IT_HEADER, NULL, "Keyboard Layout Options", NULL, 0},
+
+	{IT_STRING | IT_CVAR, 	NULL, 	"Use native Keyboard Layout",       &cv_keyboardlocale, 	    30},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Use Keycodes",        &cv_usekeycodes,    60},	
+	{IT_HEADER, NULL, "Keycodes:", NULL, 75},
+	{IT_HEADER, NULL, "useful if opening the console doesent work", NULL, 85},
+	{IT_HEADER, NULL, "or if you experience double inputs", NULL, 95},
 };
 
 /*static menuitem_t OP_SaturnCreditsMenu[] =
@@ -2294,6 +2307,7 @@ menu_t OP_EraseDataDef = DEFAULTMENUSTYLE("M_DATA", OP_EraseDataMenu, &OP_DataOp
 menu_t OP_SaturnDef = DEFAULTMENUSTYLE(NULL, OP_SaturnMenu, &OP_MainDef, 30, 30);
 menu_t OP_PlayerDistortDef = DEFAULTMENUSTYLE("M_VIDEO", OP_PlayerDistortMenu, &OP_SaturnDef, 30, 60);
 menu_t OP_HudOffsetDef = DEFAULTMENUSTYLE(NULL, OP_HudOffsetMenu, &OP_SaturnDef, 30, 30);
+menu_t OP_KeyboardDef = DEFAULTMENUSTYLE(NULL, OP_KeyboardMenu, &OP_SaturnDef, 30, 30);
 //menu_t OP_SaturnCreditsDef = DEFAULTMENUSTYLE(NULL, OP_SaturnCreditsMenu, &OP_SaturnDef, 30, 30);
 
 menu_t OP_BirdDef = DEFAULTMENUSTYLE(NULL, OP_BirdMenu, &OP_MainDef, 30, 30);
