@@ -12,6 +12,7 @@ set(SRB2_CORE_SOURCES
 	d_net.c
 	d_netcmd.c
 	d_netfil.c
+	d_protocol.c
 	dehacked.c
 	f_finale.c
 	f_wipe.c
@@ -31,6 +32,7 @@ set(SRB2_CORE_SOURCES
 	m_fixed.c
 	m_menu.c
 	m_misc.c
+	m_perfstats.c
 	m_queue.c
 	m_random.c
 	md5.c
@@ -61,6 +63,7 @@ set(SRB2_CORE_HEADERS
 	d_netcmd.h
 	d_netfil.h
 	d_player.h
+	d_protocol.h
 	d_think.h
 	d_ticcmd.h
 	dehacked.h
@@ -97,6 +100,7 @@ set(SRB2_CORE_HEADERS
 	m_menu.h
 	m_misc.h
 	m_queue.h
+	m_perfstats.h
 	m_random.h
 	m_swap.h
 	md5.h
@@ -121,6 +125,7 @@ set(SRB2_CORE_RENDER_SOURCES
 	r_draw.c
 	r_fps.c
 	r_main.c
+	r_patch.c
 	r_plane.c
 	r_segs.c
 	r_sky.c
@@ -134,6 +139,7 @@ set(SRB2_CORE_RENDER_SOURCES
 	r_fps.h
 	r_local.h
 	r_main.h
+	r_patch
 	r_plane.h
 	r_segs.h
 	r_sky.h
@@ -261,6 +267,7 @@ if(${SRB2_CONFIG_HAVE_BLUA})
 		lua_script.c
 		lua_skinlib.c
 		lua_thinkerlib.c
+		lua_udatalib.c
 	)
 	set(SRB2_LUA_HEADERS
 		lua_hook.h
@@ -268,6 +275,7 @@ if(${SRB2_CONFIG_HAVE_BLUA})
 		lua_hudlib_drawlist.h
 		lua_libs.h
 		lua_script.h
+		lua_udatalib.h
 	)
 
 	prepend_sources(SRB2_LUA_SOURCES)
