@@ -8732,6 +8732,9 @@ struct {
 	{"TC_ALLWHITE",TC_ALLWHITE},
 	{"TC_RAINBOW",TC_RAINBOW},
 	{"TC_BLINK",TC_BLINK},
+
+	// Custom client features exposed to lua
+	{"FEATURE_INTERMISSIONHUD",1},
 #endif
 
 	{NULL,0}
