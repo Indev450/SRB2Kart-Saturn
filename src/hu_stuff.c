@@ -378,6 +378,11 @@ void HU_Start(void)
 
 // EVERY CHANGE IN THIS SCRIPT IS LOL XD! BY VINCYTM
 
+static void Chatlogsize_OnChange(void);
+
+static CV_PossibleValue_t chatlogsize_cons_t[] = {{8, "MIN"}, {MAX_CHAT_BUFSIZE, "MAX"}, {0, NULL}};
+consvar_t cv_chatlogsize = {"chatlogsize", "64", CV_CALL|CV_SAVE, chatlogsize_cons_t, Chatlogsize_OnChange, 0, NULL, NULL, 0, 0, NULL};
+
 static UINT32 chat_nummsg_log = 0;
 static UINT32 chat_nummsg_min = 0;
 static UINT32 chat_scroll = 0;
@@ -385,10 +390,7 @@ static tic_t chat_scrolltime = 0;
 
 static UINT32 chat_maxscroll = 0; // how far can we scroll?
 
-//static chatmsg_t chat_mini[CHAT_BUFSIZE]; // Display the last few messages sent.
-//static chatmsg_t chat_log[CHAT_BUFSIZE]; // Keep every message sent to us in memory so we can scroll n shit, it's cool.
-
-static char chat_log[CHAT_BUFSIZE][255]; // hold the last 48 or so messages in that log.
+static char **chat_log = NULL;
 static char chat_mini[8][255]; // display up to 8 messages that will fade away / get overwritten
 static tic_t chat_timers[8];
 
@@ -416,12 +418,29 @@ static void HU_removeChatText_Mini(void)
 // same but w the log. TODO: optimize this and maybe merge in a single func? im bad at C.
 static void HU_removeChatText_Log(void)
 {
-	// MPC: Don't create new arrays, just iterate through an existing one
+	// We don't have any messages, idiot!
+	if (!chat_nummsg_log)
+		return;
+
+	free(chat_log[0]);
 	size_t i;
 	for(i=0;i<chat_nummsg_log-1;i++) {
-		strcpy(chat_log[i], chat_log[i+1]);
+		chat_log[i] = chat_log[i+1];
 	}
 	chat_nummsg_log--; // lost 1 msg.
+}
+
+static void Chatlogsize_OnChange(void)
+{
+	// Free unneeded messages
+	while (chat_nummsg_log > (UINT32)cv_chatlogsize.value)
+	{
+		HU_removeChatText_Log();
+	}
+
+	// TODO - use z_zone allocators?
+	chat_log = reallocarray(chat_log, cv_chatlogsize.value, sizeof(char*));
+	chat_nummsg_log = min(chat_nummsg_log, (UINT32)cv_chatlogsize.value);
 }
 #endif
 
@@ -432,11 +451,19 @@ void HU_AddChatText(const char *text, boolean playsound)
 		S_StartSound(NULL, sfx_radio);
 	// reguardless of our preferences, put all of this in the chat buffer in case we decide to change from oldchat mid-game.
 
-	if (chat_nummsg_log >= CHAT_BUFSIZE) // too many messages!
+	// Uuuh dunno how that can happen but a bit of paranoia is never too bad
+	if (!chat_log)
+	{
+		//I_Error("Chat log is not allocated what the fuck"); // uwu
+		Chatlogsize_OnChange(); // Lets hope that will surely allocate some memory for us
+	}
+
+	if (chat_nummsg_log >= (UINT32)cv_chatlogsize.value) // too many messages!
 		HU_removeChatText_Log();
 
+	chat_log[chat_nummsg_log] = malloc(HU_MSGBUFSIZE);
 	strcpy(chat_log[chat_nummsg_log], text);
-	chat_nummsg_log++;
+	++chat_nummsg_log;
 
 	if (chat_nummsg_min >= 8)
 		HU_removeChatText_Mini();
