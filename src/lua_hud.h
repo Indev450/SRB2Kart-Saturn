@@ -43,5 +43,6 @@ boolean LUA_HudEnabled(enum hud option);
 
 void LUAh_GameHUD(player_t *stplyr, huddrawlist_h list);
 void LUAh_ScoresHUD(huddrawlist_h list);
+void LUAh_IntermissionHUD(huddrawlist_h list);
 
 #endif // __LUA_HUD_H__

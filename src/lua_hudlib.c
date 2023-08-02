@@ -84,11 +84,13 @@ static const char *const patch_opt[] = {
 
 enum hudhook {
 	hudhook_game = 0,
-	hudhook_scores
+	hudhook_scores = 1,
+	hudhook_intermission = 2,
 };
 static const char *const hudhook_opt[] = {
 	"game",
 	"scores",
+	"intermission",
 	NULL};
 
 // alignment types for v.drawString
@@ -987,7 +989,10 @@ int LUA_HudLib(lua_State *L)
 		lua_rawseti(L, -2, 2); // HUD[2] = game rendering functions array
 
 		lua_newtable(L);
-		lua_rawseti(L, -2, 3); // HUD[2] = scores rendering functions array
+		lua_rawseti(L, -2, 3); // HUD[3] = scores rendering functions array
+
+		lua_newtable(L);
+		lua_rawseti(L, -2, 4); // HUD[4] = intermission rendering functions array
 	lua_setfield(L, LUA_REGISTRYINDEX, "HUD");
 
 	luaL_newmetatable(L, META_HUDINFO);
@@ -1115,6 +1120,39 @@ void LUAh_ScoresHUD(huddrawlist_h list)
 	lua_getfield(gL, LUA_REGISTRYINDEX, "HUD");
 	I_Assert(lua_istable(gL, -1));
 	lua_rawgeti(gL, -1, 3); // HUD[3] = rendering funcs
+	I_Assert(lua_istable(gL, -1));
+
+	lua_rawgeti(gL, -2, 1); // HUD[1] = lib_draw
+	I_Assert(lua_istable(gL, -1));
+	lua_remove(gL, -3); // pop HUD
+	lua_pushnil(gL);
+	while (lua_next(gL, -3) != 0) {
+		lua_pushvalue(gL, -3); // graphics library (HUD[1])
+		LUA_Call(gL, 1, 0, 1);
+	}
+	lua_settop(gL, 0);
+	hud_running = false;
+
+	lua_pushlightuserdata(gL, NULL);
+	lua_setfield(gL, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
+}
+
+void LUAh_IntermissionHUD(huddrawlist_h list)
+{
+	if (!gL || !(hudAvailable & (1<<hudhook_intermission)))
+		return;
+	
+	lua_pushlightuserdata(gL, list);
+	lua_setfield(gL, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
+
+	hud_running = true;
+	lua_settop(gL, 0);
+	
+	lua_pushcfunction(gL, LUA_GetErrorMessage);
+
+	lua_getfield(gL, LUA_REGISTRYINDEX, "HUD");
+	I_Assert(lua_istable(gL, -1));
+	lua_rawgeti(gL, -1, 4); // HUD[4] = rendering funcs
 	I_Assert(lua_istable(gL, -1));
 
 	lua_rawgeti(gL, -2, 1); // HUD[1] = lib_draw
