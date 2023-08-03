@@ -438,8 +438,13 @@ static void Chatlogsize_OnChange(void)
 		HU_removeChatText_Log();
 	}
 
+// Some versons of C don't have reallocarray sadly
+#define reallocarray(ptr, nmemb, size) realloc(ptr, (nmemb)*(size))
+
 	// TODO - use z_zone allocators?
 	chat_log = reallocarray(chat_log, cv_chatlogsize.value, sizeof(char*));
+
+#undef reallocarray
 	chat_nummsg_log = min(chat_nummsg_log, (UINT32)cv_chatlogsize.value);
 }
 #endif
