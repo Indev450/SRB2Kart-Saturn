@@ -41,6 +41,7 @@
 #include "k_kart.h" // colortranslations
 #include "console.h" // cons_menuhighlight
 #include "lua_hook.h" // IntermissionThinker hook
+#include "lua_hud.h" // intermission hud hook
 
 #ifdef HWRENDER
 #include "hardware/hw_main.h"
@@ -116,6 +117,11 @@ static INT32 endtic = -1;
 static INT32 sorttic = -1;
 
 intertype_t intertype = int_none;
+
+
+#ifdef HAVE_BLUA
+static huddrawlist_h luahuddrawlist_intermission = NULL;
+#endif
 
 static void Y_FollowIntermission(void);
 static void Y_UnloadData(void);
@@ -359,6 +365,15 @@ void Y_IntermissionDrawer(void)
 
 	if (usebuffer) // Fade everything out
 		V_DrawFadeScreen(0xFF00, 22);
+
+#ifdef HAVE_BLUA
+	if (renderisnewtic)
+	{
+		LUA_HUD_ClearDrawList(luahuddrawlist_intermission);
+		LUAh_IntermissionHUD(luahuddrawlist_intermission);
+	}
+	LUA_HUD_DrawList(luahuddrawlist_intermission);
+#endif
 
 	if (!splitscreen)
 		whiteplayer = demo.playback ? displayplayers[0] : consoleplayer;
@@ -880,6 +895,11 @@ void Y_StartIntermission(void)
 		usetile = useinterpic = false;
 		usebuffer = true;
 	}
+
+#ifdef HAVE_BLUA
+	LUA_HUD_DestroyDrawList(luahuddrawlist_intermission);
+	luahuddrawlist_intermission = LUA_HUD_CreateDrawList();
+#endif
 }
 
 // ======
