@@ -41,6 +41,9 @@ extern float gr_viewwidth, gr_viewheight, gr_baseviewwindowx, gr_baseviewwindowy
 
 extern float gr_basewindowcenterx, gr_basewindowcentery;
 
+extern unsigned msaa;
+extern boolean a2c;
+
 extern FTransform atransform;
 
 // Performance stats
