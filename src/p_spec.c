@@ -2495,8 +2495,8 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 				}
 
 				// Show credit
-				if (!(line->flags & ML_EFFECT3))
-					S_ShowMusicCredit();
+				if (!(line->flags & ML_EFFECT3) && !musicsame && sides[line->sidenum[0]].text[0])
+					S_ShowSpecifiedMusicCredit(sides[line->sidenum[0]].text);
 
 				// Except, you can use the ML_BLOCKMONSTERS flag to change this behavior.
 				// if (mapmusflags & MUSIC_RELOADRESET) then it will reset the music in G_PlayerReborn.
