@@ -26,6 +26,9 @@
 extern consvar_t stereoreverse;
 extern consvar_t cv_soundvolume, cv_digmusicvolume;//, cv_midimusicvolume;
 extern consvar_t cv_numChannels;
+#ifdef HAVE_OPENMPT
+extern consvar_t cv_modfilter;
+#endif
 extern consvar_t surround;
 //extern consvar_t cv_resetmusic;
 extern consvar_t cv_gamedigimusic;

@@ -42,6 +42,10 @@ extern INT32 msg_id;
 #include "lua_hook.h" // MusicChange hook
 #endif
 
+#ifdef HAVE_OPENMPT
+#include "libopenmpt/libopenmpt.h"
+#endif
+
 #ifdef HW3SOUND
 // 3D Sound Interface
 #include "hardware/hw3sound.h"
@@ -277,6 +281,9 @@ void S_RegisterSoundStuff(void)
 #endif
 	CV_RegisterVar(&surround);
 	CV_RegisterVar(&cv_samplerate);
+#ifdef HAVE_OPENMPT
+	CV_RegisterVar(&cv_modfilter);
+#endif
 	//CV_RegisterVar(&cv_resetmusic);
 	CV_RegisterVar(&cv_gamesounds);
 	CV_RegisterVar(&cv_gamedigimusic);
