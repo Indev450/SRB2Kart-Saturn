@@ -2495,7 +2495,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 				}
 
 				// Show credit
-				if (!(line->flags & ML_EFFECT3) && !musicsame && sides[line->sidenum[0]].text[0])
+				if (!(line->flags & ML_EFFECT3) && !musicsame && sides[line->sidenum[0]].text[0] && leveltime >= starttime)
 					S_ShowSpecifiedMusicCredit(sides[line->sidenum[0]].text);
 
 				// Except, you can use the ML_BLOCKMONSTERS flag to change this behavior.
