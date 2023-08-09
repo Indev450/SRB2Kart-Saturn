@@ -42,10 +42,6 @@ extern INT32 msg_id;
 #include "lua_hook.h" // MusicChange hook
 #endif
 
-#ifdef HAVE_OPENMPT
-#include "libopenmpt/libopenmpt.h"
-#endif
-
 #ifdef HW3SOUND
 // 3D Sound Interface
 #include "hardware/hw3sound.h"
@@ -67,6 +63,10 @@ static void GameDigiMusic_OnChange(void);
 
 static void PlayMusicIfUnfocused_OnChange(void);
 static void PlaySoundIfUnfocused_OnChange(void);
+
+#ifdef HAVE_OPENMPT
+static void ModFilter_OnChange(void);
+#endif
 
 // commands for music and sound servers
 #ifdef MUSSERV
@@ -136,7 +136,7 @@ consvar_t cv_music_resync_powerups_only = {"music_resync_powerups_only", "No", C
 
 #ifdef HAVE_OPENMPT
 static CV_PossibleValue_t interpolationfilter_cons_t[] = {{0, "Default"}, {1, "None"}, {2, "Linear"}, {4, "Cubic"}, {8, "Windowed sinc"}, {0, NULL}};
-consvar_t cv_modfilter = {"modfilter", "0", CV_SAVE, interpolationfilter_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_modfilter = {"modfilter", "0", CV_SAVE|CV_CALL, interpolationfilter_cons_t, ModFilter_OnChange, 0, NULL, NULL, 0, 0, NULL};
 #endif
 
 #define S_MAX_VOLUME 127
@@ -286,9 +286,6 @@ void S_RegisterSoundStuff(void)
 #endif
 	CV_RegisterVar(&surround);
 	CV_RegisterVar(&cv_samplerate);
-#ifdef HAVE_OPENMPT
-	CV_RegisterVar(&cv_modfilter);
-#endif
 	//CV_RegisterVar(&cv_resetmusic);
 	CV_RegisterVar(&cv_gamesounds);
 	CV_RegisterVar(&cv_gamedigimusic);
@@ -2178,6 +2175,12 @@ void GameDigiMusic_OnChange(void)
 			}
 		}
 	}
+}
+
+void ModFilter_OnChange(void)
+{
+	if (openmpt_mhandle)
+		openmpt_module_set_render_param(openmpt_mhandle, OPENMPT_MODULE_RENDER_INTERPOLATIONFILTER_LENGTH, cv_modfilter.value);
 }
 
 #ifndef NO_MIDI
