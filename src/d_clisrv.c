@@ -2909,6 +2909,12 @@ void D_LoadBan(boolean warning)
 		address = strtok(buffer, " /\t\r\n");
 		mask = strtok(NULL, " \t\r\n");
 
+		if (!address)
+		{
+			malformed = true;
+			continue;
+		}
+
 		if (i == 0 && !strncmp(address, "BANFORMAT", 9))
 		{
 			if (mask)
