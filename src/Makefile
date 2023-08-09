@@ -236,6 +236,10 @@ ifdef DJGPPDOS
 include djgppdos/Makefile.cfg
 endif
 
+ifndef NOOPENMPT
+HAVE_OPENMPT=1
+endif
+
 ifdef MINGW
 include win32/Makefile.cfg
 endif #ifdef MINGW
@@ -249,10 +253,6 @@ UNIXCOMMON=1
 ifndef NOGME
 HAVE_LIBGME=1
 endif
-endif
-
-ifndef NOOPENMPT
-HAVE_OPENMPT=1
 endif
 
 ifdef SOLARIS
@@ -406,8 +406,7 @@ CFLAGS+=$(LIBGME_CFLAGS)
 endif
 
 ifdef HAVE_OPENMPT
-# make libopenmpt optional
-OPTS+=-DHAVE_OPENMPT -DOPENMPT_DYNAMIC
+OPTS+=-DHAVE_OPENMPT
 
 LIBOPENMPT_PKGCONFIG?=libopenmpt
 LIBOPENMPT_CFLAGS?=$(shell $(PKG_CONFIG) $(LIBOPENMPT_PKGCONFIG) --cflags)
