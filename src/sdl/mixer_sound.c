@@ -1260,7 +1260,7 @@ boolean I_LoadSong(char *data, size_t len)
 #ifdef HAVE_OPENMPT
 	switch(Mix_GetMusicType(music))
 	{
-		case MUS_MODPLUG_UNUSED:
+		case MUS_MODPLUG:
 		case MUS_MOD:
 			if (openmpt.loaded)
 			{
