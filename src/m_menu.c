@@ -1410,7 +1410,8 @@ static menuitem_t OP_SoundAdvancedMenu[] =
 {
 	{IT_HEADER, NULL, "MOD", NULL, 10},
 
-	{IT_STRING | IT_CVAR, NULL, "Instrument Filter", &cv_modfilter, 22}
+	{IT_STRING | IT_CVAR, NULL, "Instrument Filter", &cv_modfilter, 22},
+	{IT_STRING | IT_CVAR, NULL, "Amiga Resampler", &cv_amigafilter, 42}
 };
 #endif
 
