@@ -20,12 +20,18 @@
 #include "command.h"
 #include "tables.h" // angle_t
 
+#ifdef HAVE_OPENMPT
+#include "libopenmpt/libopenmpt.h"
+extern openmpt_module *openmpt_mhandle;
+#endif
+
 // mask used to indicate sound origin is player item pickup
 #define PICKUP_SOUND 0x8000
 
 extern consvar_t stereoreverse;
 extern consvar_t cv_soundvolume, cv_digmusicvolume;//, cv_midimusicvolume;
 extern consvar_t cv_numChannels;
+
 extern consvar_t surround;
 //extern consvar_t cv_resetmusic;
 extern consvar_t cv_gamedigimusic;
@@ -35,6 +41,11 @@ extern consvar_t cv_gamemidimusic;
 extern consvar_t cv_gamesounds;
 extern consvar_t cv_playmusicifunfocused;
 extern consvar_t cv_playsoundifunfocused;
+
+#ifdef HAVE_OPENMPT
+extern consvar_t cv_modfilter;
+extern consvar_t cv_amigafilter;
+#endif
 
 extern consvar_t cv_music_resync_threshold;
 extern consvar_t cv_music_resync_powerups_only;
