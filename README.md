@@ -9,23 +9,25 @@
 - Lua shows tracebacks whenever an error occurs
 - The Lua perfstat page now has multiple pages and is more organized (ps_thinkframe_page X)
 - "addfilelocal" Command, for those who want to use their custom hud in netgames (Same as addfile but completely client sided)
+- OpenMPT for Tracker module playback (Complete with filters) fixed looping issue while even sounding better than the old GME playback
+- Music changes now properly show the music credits
+- Configurable chatlog size
+- Lua hooks for Intermission
+- Timeout for waiting to join a full server is configurable now
+- Higher/configurable addon download speed
 - Visual Portals from haya´s HEP Client
+- Everything that galaxy has
 
 Techical Stuff:
 
 - ZFigthing Textures in Opengl mode have been fixed in engine (well almost all of it)
 - Fof´s intersecting with slopes have less issues and now render correctly in Opengl
 - Midtextures on slopes in Opengl arent broken anymore, all those weird guardrails and fences, aswell as some of those sticking out textures from the ground on some maps should be gone.
-- A longstanding crash with "fading music changes" has been fixed
-- A crash after long play sessions or when hosting a listen server regarding "FreeColormipmaps" has been fixed
 - Multiple other fixes/optimizations like 3D floor clipping in software mode
+- Zone memory allocations have been rewritten
+- The annoying depraction messages for "P_TeleportMove" and "P_AproxDistance" have been silenced
 
 ## Bugs
-
-- Joining a netgame midrace makes all sprites invisible until the next mapchange.
-(Sadly unfixable without breaking netgame compability)
-
-- For the reason mentioned above, sometimes when rewinding a recorded replay from a netgame, playersprites may disappear, however normal playback is fine.
 
 ## Dependencies
 - NASM (x86 builds only)
