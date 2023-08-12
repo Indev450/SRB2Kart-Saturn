@@ -1499,11 +1499,11 @@ void S_InitMusicDefs(void)
 }
 
 //
-// S_ShowMusicCredit
+// S_ShowSpecifiedMusicCredit
 //
-// Display current song's credit on screen
+// Display song's credit on screen
 //
-void S_ShowMusicCredit(void)
+void S_ShowSpecifiedMusicCredit(const char *musname)
 {
 	musicdef_t *def = musicdefstart;
 
@@ -1515,7 +1515,7 @@ void S_ShowMusicCredit(void)
 
 	while (def)
 	{
-		if (!stricmp(def->name, music_name))
+		if (!stricmp(def->name, musname))
 		{
 			cursongcredit.def = def;
 			cursongcredit.anim = 5*TICRATE;
@@ -1526,6 +1526,16 @@ void S_ShowMusicCredit(void)
 		else
 			def = def->next;
 	}
+}
+
+//
+// S_ShowMusicCredit
+//
+// Display current song's credit on screen
+//
+void S_ShowMusicCredit(void)
+{
+	S_ShowSpecifiedMusicCredit(music_name);
 }
 
 /// ------------------------

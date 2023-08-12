@@ -2463,9 +2463,6 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 					else
 						S_FadeMusicFromVolume(fadetarget, fadesource, postfadems);
 
-					if (!(line->flags & ML_EFFECT3))
-						S_ShowMusicCredit();
-
 					if (position)
 						S_SetMusicPosition(position);
 				}
@@ -2496,6 +2493,10 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 							S_FadeMusicFromVolume(fadetarget, fadesource, postfadems);
 					}
 				}
+
+				// Show credit
+				if (!(line->flags & ML_EFFECT3) && !musicsame && sides[line->sidenum[0]].text[0] && leveltime >= starttime)
+					S_ShowSpecifiedMusicCredit(sides[line->sidenum[0]].text);
 
 				// Except, you can use the ML_BLOCKMONSTERS flag to change this behavior.
 				// if (mapmusflags & MUSIC_RELOADRESET) then it will reset the music in G_PlayerReborn.
