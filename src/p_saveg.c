@@ -1979,6 +1979,14 @@ static void LoadMobjThinker(actionf_p1 thinker)
 	// declare this as a valid mobj as soon as possible.
 	mobj->thinker.function.acp1 = thinker;
 
+	mobj->rollangle = 0;
+	mobj->spritexoffset = mobj->spriteyoffset = mobj->old_spritexoffset = mobj->old_spriteyoffset = FRACUNIT;
+	mobj->spritexscale = mobj->spriteyscale = mobj->old_spritexscale = mobj->old_spriteyscale = FRACUNIT;
+	mobj->realxscale = mobj->realyscale = FRACUNIT;
+	mobj->stretchslam = 0;
+	
+	mobj->sloperoll = mobj->reservezangle = mobj->reservexydir = 0;
+
 	mobj->z = z;
 	mobj->floorz = floorz;
 	mobj->ceilingz = ceilingz;
