@@ -918,6 +918,14 @@ SOURCE=..\r_main.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\r_patch.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\r_patch.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\r_plane.c
 # End Source File
 # Begin Source File
