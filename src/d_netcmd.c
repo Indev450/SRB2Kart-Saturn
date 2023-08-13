@@ -2650,14 +2650,27 @@ ConcatCommandArgv (int start, int end)
 	return final;
 }
 
+
+static tic_t last_map_cmd = 0;
 //
 // Warp to map code.
 // Called either from map <mapname> console command, or idclev cheat.
 //
 // Largely rewritten by James.
 //
+// Added small cooldown which prevents from spamming map command and crashing
+// game. It is not wery good fix but oh well i can't find yet where are mobj's
+// freed/allocated between map loads and why they crash game - Indev
+//
 static void Command_Map_f(void)
 {
+	if (I_GetTime() - last_map_cmd < 20) {
+		CONS_Alert(CONS_WARNING, "Map command is used too frequently!\n");
+		return;
+	}
+
+	last_map_cmd = I_GetTime();
+
 	size_t first_option;
 	size_t option_force;
 	size_t option_gametype;
