@@ -117,6 +117,6 @@ void udatalib_addfields(lua_State *L, int mt, const udata_field_t fields[])
     for (unsigned i = 0; fields[i].name != NULL; ++i)
     {
         udatalib_addfield(L, mt, fields[i]);
-        CONS_Printf("Add field name=%s, offset=%d, getter=%p, setter=%p\n", fields[i].name, fields[i].offset, fields[i].getter, fields[i].setter);
+        //CONS_Printf("Add field name=%s, offset=%d, getter=%p, setter=%p\n", fields[i].name, fields[i].offset, fields[i].getter, fields[i].setter);
     }
 }
