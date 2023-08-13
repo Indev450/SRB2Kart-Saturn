@@ -177,9 +177,6 @@ int main(int argc, char **argv)
 			ExcHndlInit();
 		}
 	}
-#ifndef __MINGW32__
-	prevExceptionFilter = SetUnhandledExceptionFilter(RecordExceptionInfo);
-#endif
 	MakeCodeWritable();
 #endif
 
