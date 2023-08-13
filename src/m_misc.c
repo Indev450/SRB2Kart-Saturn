@@ -501,8 +501,6 @@ void M_FirstLoadConfig(void)
 	// register execversion here before we load any configs
 	CV_RegisterVar(&cv_execversion);
 
-	CV_RegisterVar(&cv_birdmod);
-
 	// temporarily reset execversion to default
 	// we shouldn't need to do this, but JUST in case...
 	CV_ToggleExecVersion(true);

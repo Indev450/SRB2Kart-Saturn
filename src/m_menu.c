@@ -3426,19 +3426,6 @@ void M_Drawer(void)
 	interpTimerHackAllow = false;
 }
 
-static tic_t disclaimertic;
-
-static void
-M_AcceptBird (event_t *ev)
-{
-	(void)ev;
-	if (disclaimertic >= 3*TICRATE)
-	{
-		CV_SetValue(&cv_birdmod, 1);
-		M_StopMessage(0);
-	}
-}
-
 //
 // M_StartControlPanel
 //
@@ -3633,23 +3620,6 @@ void M_StartControlPanel(void)
 	}
 
 	CON_ToggleOff(); // move away console
-
-	if (cv_birdmod.value == 0)
-	{
-		currentMenu->lastOn = itemOn;
-
-		M_StartMessage(
-				"\x82WARNING\n\x80"
-				"This version of bird mod includes\n"
-				"a feature that may cause motion\n"
-				"sickness for some people.\n\n"
-
-				"You may want to look at\n"
-				"the\x82 Bird Options\x80 first.\n\n"
-
-				"(wait 3 seconds...)",
-				M_AcceptBird, MM_EVENTHANDLER);
-	}
 }
 
 void M_EndModeAttackRun(void)
@@ -3758,33 +3728,6 @@ void M_Ticker(void)
 #endif
 
 	CL_TimeoutServerList();
-
-	if (menuactive && cv_birdmod.value == 0)
-	{
-		if (disclaimertic < 3*TICRATE)
-		{
-			disclaimertic++;
-
-			if (disclaimertic % TICRATE == 0)
-			{
-				char *p = strrchr(MessageDef.menuitems[0].text, '\n');
-
-				if (disclaimertic == TICRATE)
-				{
-					strcpy(&p[1], "(wait 2 seconds...)");
-				}
-				else
-				{
-					strcpy(&p[1], "(wait 1 second...)");
-				}
-			}
-		}
-		else
-		{
-			char *p = strrchr(MessageDef.menuitems[0].text, '\n');
-			strcpy(&p[1], "(press a key)");
-		}
-	}
 }
 
 //
