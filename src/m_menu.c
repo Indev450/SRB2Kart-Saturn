@@ -9903,6 +9903,7 @@ static void M_DrawSetupMultiPlayerMenu(void)
 	UINT8 s, w;
 	const UINT8 *flashcol = V_GetStringColormap(highlightflags);
 	INT32 statx, staty;
+	UINT32 speenframe;
 	INT32 sltw, actw, hetw;
 	UINT8 skintodisplay;
 	INT32 nameboxaddy = 0;
@@ -10361,9 +10362,17 @@ static void M_DrawSetupMultiPlayerMenu(void)
 		frame = 0; // Try to use standing frame
 
 	sprframe = &sprdef->spriteframes[frame];
-	patch = W_CachePatchNum(sprframe->lumppat[1], PU_CACHE);
-	if (sprframe->flip & 1) // Only for first sprite
-		flags |= V_FLIP; // This sprite is left/right flipped!
+	
+	//minenice's speen css, it's a piece of shit but hey
+	//patch = W_CachePatchNum(sprframe->lumppat[1], PU_CACHE);
+	speenframe = (I_GetTime()*cv_skinselectspin.value/TICRATE + 1)%8;
+
+	//this is a very shitty solution for checking if a sprite needs flipping
+	//but it works
+	if ((sprframe->lumppat[speenframe] == sprframe->lumppat[8-speenframe]) && (speenframe > 4)) {
+		flags = V_FLIP; // This sprite is left/right flipped!
+	}
+	patch = W_CachePatchNum(sprframe->lumppat[speenframe], PU_CACHE);
 
 	// draw box around guy
 	V_DrawFill(mx + 43 - (charw/2), my+65, charw, 84, 239);

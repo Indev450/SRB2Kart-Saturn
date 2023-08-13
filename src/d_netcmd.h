@@ -156,6 +156,8 @@ extern consvar_t cv_skipmapcheck;
 
 extern consvar_t cv_sleep;
 
+extern consvar_t cv_skinselectspin;
+
 extern consvar_t cv_perfstats;
 extern consvar_t cv_ps_thinkframe_page;
 extern consvar_t cv_ps_samplesize;

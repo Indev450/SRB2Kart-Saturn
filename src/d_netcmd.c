@@ -484,6 +484,8 @@ consvar_t cv_mute = {"mute", "Off", CV_NETVAR|CV_CALL, CV_OnOff, Mute_OnChange, 
 
 consvar_t cv_sleep = {"cpusleep", "1", CV_SAVE, sleeping_cons_t, NULL, -1, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_skinselectspin = {"skinselectspin", "4", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 static CV_PossibleValue_t perfstats_cons_t[] = {
 	{0, "Off"}, {1, "Rendering"}, {2, "Logic"}, {3, "ThinkFrame"}, {0, NULL}};
 consvar_t cv_perfstats = {"perfstats", "Off", CV_CALL, perfstats_cons_t, PS_PerfStats_OnChange, 0, NULL, NULL, 0, 0, NULL};
@@ -1072,6 +1074,8 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_scr_height);
 
 	CV_RegisterVar(&cv_soundtest);
+	
+	CV_RegisterVar(&cv_skinselectspin);
 
 	CV_RegisterVar(&cv_perfstats);
 	CV_RegisterVar(&cv_ps_thinkframe_page);
