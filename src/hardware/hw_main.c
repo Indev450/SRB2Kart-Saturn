@@ -4588,7 +4588,7 @@ static int CompareDrawNodes(const void *p1, const void *p2)
 		v1 = sortnode[n1].polyplane->drawcount;
 	else if (sortnode[n1].wall)
 		v1 = sortnode[n1].wall->drawcount;
-	else I_Error("n1 unknown");
+	else I_Error("CompareDrawNodes: n1 unknown");
 
 	if (sortnode[n2].plane)
 		v2 = sortnode[n2].plane->drawcount;
@@ -4596,10 +4596,10 @@ static int CompareDrawNodes(const void *p1, const void *p2)
 		v2 = sortnode[n2].polyplane->drawcount;
 	else if (sortnode[n2].wall)
 		v2 = sortnode[n2].wall->drawcount;
-	else I_Error("n2 unknown");
+	else I_Error("CompareDrawNodes: n2 unknown");
 
 	diff = v2 - v1;
-	if (diff == 0) I_Error("diff is zero");
+	if (diff == 0) I_Error("CompareDrawNodes: diff is zero");
 	return diff;
 }
 
@@ -4607,8 +4607,8 @@ static int CompareDrawNodePlanes(const void *p1, const void *p2)
 {
 	size_t n1 = *(const size_t*)p1;
 	size_t n2 = *(const size_t*)p2;
-	if (!sortnode[n1].plane) I_Error("Uh.. This isn't a plane! (n1)");
-	if (!sortnode[n2].plane) I_Error("Uh.. This isn't a plane! (n2)");
+	if (!sortnode[n1].plane) I_Error("CompareDrawNodePlanes: Uh.. This isn't a plane! (n1)");
+	if (!sortnode[n2].plane) I_Error("CompareDrawNodePlanes: Uh.. This isn't a plane! (n2)");
 	return ABS(sortnode[n2].plane->fixedheight - viewz) - ABS(sortnode[n1].plane->fixedheight - viewz);
 }
 
