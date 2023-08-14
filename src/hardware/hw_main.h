@@ -177,6 +177,7 @@ extern consvar_t cv_grrenderdistance;
 extern consvar_t cv_grusecustomshaders;
 extern consvar_t cv_grportals;
 extern consvar_t cv_nostencil;
+extern consvar_t cv_secbright;
 
 extern CV_PossibleValue_t granisotropicmode_cons_t[];
 
