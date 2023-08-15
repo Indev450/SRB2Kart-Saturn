@@ -1692,8 +1692,16 @@ mobj_t *P_SpawnGhostMobj(mobj_t *mobj)
 	ghost->tics = -1;
 	ghost->frame &= ~FF_TRANSMASK;
 	ghost->frame |= tr_trans50<<FF_TRANSSHIFT;
+	ghost->sloperoll = mobj->sloperoll;
+	
+	ghost->spritexscale = mobj->realxscale;
+	ghost->spriteyscale = mobj->realyscale; 
+	ghost->spritexoffset = mobj->spritexoffset;
+	ghost->spriteyoffset = mobj->spriteyoffset;
+
 	ghost->fuse = ghost->info->damage;
 	ghost->skin = mobj->skin;
+	//ghost->standingslope = mobj->standingslope;
 
 	if (mobj->flags2 & MF2_OBJECTFLIP)
 		ghost->flags |= MF2_OBJECTFLIP;
