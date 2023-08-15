@@ -94,6 +94,11 @@ consvar_t cv_grportals = {"gr_portals", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, 
 consvar_t cv_nostencil = {"nostencil", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_portalline = {"portalline", "0", 0, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_portalonly = {"portalonly", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+CV_PossibleValue_t secbright_cons_t[] = {{0, "MIN"}, {255, "MAX"}, {0, NULL}};
+consvar_t cv_secbright = {"secbright", "0", CV_SAVE, secbright_cons_t,
+							NULL, 0, NULL, NULL, 0, 0, NULL};
+							 
 // values for the far clipping plane
 static float clipping_distances[] = {1024.0f, 2048.0f, 4096.0f, 6144.0f, 8192.0f, 12288.0f, 16384.0f};
 // values for bsp culling
@@ -441,7 +446,7 @@ void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *col
 	}
 
 	// Clamp the light level, since it can sometimes go out of the 0-255 range from animations
-	light_level = min(max(light_level, 0), 255);
+	light_level = min(max(light_level, cv_secbright.value), 255);
 
 	Surface->PolyColor.rgba = poly_color.rgba;
 	Surface->TintColor.rgba = tint_color.rgba;
@@ -6000,6 +6005,7 @@ void HWR_AddCommands(void)
 	CV_RegisterVar(&cv_nostencil);
 	CV_RegisterVar(&cv_portalline);
 	CV_RegisterVar(&cv_portalonly);
+	CV_RegisterVar(&cv_secbright);
 }
 
 // --------------------------------------------------------------------------
