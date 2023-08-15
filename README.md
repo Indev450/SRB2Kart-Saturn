@@ -18,7 +18,7 @@
 - Visual Portals from haya´s HEP Client
 - Everything that galaxy has
 
-Techical Stuff:
+## Technical Stuff:
 
 - ZFigthing Textures in Opengl mode have been fixed in engine (well almost all of it)
 - Fof´s intersecting with slopes have less issues and now render correctly in Opengl
