@@ -139,7 +139,7 @@ static const udata_field_t player_fields[] = {
     FIELD(player_t, awayviewmobj,     udatalib_getter_mobj,        player_awayviewmobj_setter),
     FIELD(player_t, awayviewtics,     udatalib_getter_int32,       player_awayviewtics_setter),
     FIELD(player_t, awayviewaiming,   udatalib_getter_angle,       udatalib_setter_angle),
-    FIELD(player_t, spectator,        udatalib_getter_boolean,     udatalib_setter_boolean),
+    FIELD(player_t, spectator,        udatalib_getter_boolean,     udatalib_setter_boolean_nocheck), // ffs
     FIELD(player_t, bot,              udatalib_getter_uint8,       player_bot_noset),
     FIELD(player_t, jointime,         udatalib_getter_tic,         udatalib_setter_tic),
     FIELD(player_t, spectatorreentry, udatalib_getter_tic,         udatalib_setter_tic),
