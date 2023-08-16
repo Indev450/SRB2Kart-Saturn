@@ -62,6 +62,7 @@ int udatalib_setter_uint64(lua_State *L);
 int udatalib_setter_int64(lua_State *L);
 int udatalib_setter_string(lua_State *L);
 int udatalib_setter_boolean(lua_State *L);
+int udatalib_setter_boolean_nocheck(lua_State *L);
 int udatalib_setter_spritenum(lua_State *L);
 int udatalib_setter_mobj(lua_State *L);
 int udatalib_setter_playerstate(lua_State *L);
