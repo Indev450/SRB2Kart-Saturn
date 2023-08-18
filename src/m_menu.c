@@ -1688,9 +1688,11 @@ static menuitem_t OP_SaturnMenu[] =
 	{IT_STRING | IT_CVAR, NULL, "Serverqueue waittime", 	&cv_connectawaittime, 	 40},
 	{IT_STRING | IT_CVAR, NULL, "Addon Download Speed", 	&cv_downloadspeed, 		 55},
 	{IT_STRING | IT_CVAR, NULL, "Less Flicker effects", 	&cv_lessflicker, 		 70},
-	{IT_STRING | IT_CVAR, NULL, "Min Shader Brightness", 	&cv_secbright, 		 80},
-	{IT_SUBMENU|IT_STRING,	NULL,	"Player distortion...", &OP_PlayerDistortDef,	 100},
-	{IT_SUBMENU|IT_STRING,	NULL,	"Hud Offsets...", 		&OP_HudOffsetDef,		 115},
+	{IT_STRING | IT_CVAR, NULL, "Skin Select Spinning Speed",		 	&cv_skinselectspin, 	 80},
+	{IT_STRING | IT_CVAR, NULL, "Min Shader Brightness", 	&cv_secbright, 		 90},
+
+	{IT_SUBMENU|IT_STRING,	NULL,	"Player distortion...", &OP_PlayerDistortDef,	 110},
+	{IT_SUBMENU|IT_STRING,	NULL,	"Hud Offsets...", 		&OP_HudOffsetDef,		 125},
 
 	//{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Credits", 		&OP_SaturnCreditsDef,		 130},
 };
@@ -9904,6 +9906,7 @@ static void M_DrawSetupMultiPlayerMenu(void)
 	UINT8 s, w;
 	const UINT8 *flashcol = V_GetStringColormap(highlightflags);
 	INT32 statx, staty;
+	UINT32 speenframe;
 	INT32 sltw, actw, hetw;
 	UINT8 skintodisplay;
 	INT32 nameboxaddy = 0;
@@ -10313,7 +10316,7 @@ static void M_DrawSetupMultiPlayerMenu(void)
 	multi_tics -= renderdeltatics;
 	while (multi_tics <= 0)
 	{
-		st = multi_state->nextstate;
+		st = cv_skinselectspin.value == SKINSELECTSPIN_PAIN ? S_KART_PAIN : multi_state->nextstate;
 		if (st != S_NULL)
 			multi_state = &states[st];
 
@@ -10362,9 +10365,17 @@ static void M_DrawSetupMultiPlayerMenu(void)
 		frame = 0; // Try to use standing frame
 
 	sprframe = &sprdef->spriteframes[frame];
-	patch = W_CachePatchNum(sprframe->lumppat[1], PU_CACHE);
-	if (sprframe->flip & 1) // Only for first sprite
-		flags |= V_FLIP; // This sprite is left/right flipped!
+	
+	//minenice's speen css, it's a piece of shit but hey
+	//patch = W_CachePatchNum(sprframe->lumppat[1], PU_CACHE);
+	speenframe = (I_GetTime()*cv_skinselectspin.value/TICRATE + 1)%8;
+
+	//this is a very shitty solution for checking if a sprite needs flipping
+	//but it works
+	if ((sprframe->lumppat[speenframe] == sprframe->lumppat[8-speenframe]) && (speenframe > 4)) {
+		flags = V_FLIP; // This sprite is left/right flipped!
+	}
+	patch = W_CachePatchNum(sprframe->lumppat[speenframe], PU_CACHE);
 
 	// draw box around guy
 	V_DrawFill(mx + 43 - (charw/2), my+65, charw, 84, 239);
@@ -10742,7 +10753,7 @@ static void M_SetupMultiPlayer(INT32 choice)
 {
 	(void)choice;
 
-	multi_state = &states[mobjinfo[MT_PLAYER].seestate];
+	multi_state = cv_skinselectspin.value == SKINSELECTSPIN_PAIN ? &states[S_KART_PAIN] : &states[mobjinfo[MT_PLAYER].seestate];
 	multi_tics = multi_state->tics*FRACUNIT;
 	strcpy(setupm_name, cv_playername.string);
 
@@ -10779,7 +10790,7 @@ static void M_SetupMultiPlayer2(INT32 choice)
 {
 	(void)choice;
 
-	multi_state = &states[mobjinfo[MT_PLAYER].seestate];
+	multi_state = cv_skinselectspin.value == SKINSELECTSPIN_PAIN ? &states[S_KART_PAIN] : &states[mobjinfo[MT_PLAYER].seestate];
 	multi_tics = multi_state->tics*FRACUNIT;
 	strcpy (setupm_name, cv_playername2.string);
 
@@ -10816,7 +10827,7 @@ static void M_SetupMultiPlayer3(INT32 choice)
 {
 	(void)choice;
 
-	multi_state = &states[mobjinfo[MT_PLAYER].seestate];
+	multi_state = cv_skinselectspin.value == SKINSELECTSPIN_PAIN ? &states[S_KART_PAIN] : &states[mobjinfo[MT_PLAYER].seestate];
 	multi_tics = multi_state->tics;
 	strcpy(setupm_name, cv_playername3.string);
 
@@ -10853,7 +10864,7 @@ static void M_SetupMultiPlayer4(INT32 choice)
 {
 	(void)choice;
 
-	multi_state = &states[mobjinfo[MT_PLAYER].seestate];
+	multi_state = cv_skinselectspin.value == SKINSELECTSPIN_PAIN ? &states[S_KART_PAIN] : &states[mobjinfo[MT_PLAYER].seestate];
 	multi_tics = multi_state->tics;
 	strcpy(setupm_name, cv_playername4.string);
 
