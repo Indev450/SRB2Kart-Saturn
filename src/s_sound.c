@@ -138,10 +138,10 @@ consvar_t cv_music_resync_powerups_only = {"music_resync_powerups_only", "No", C
 #ifdef HAVE_OPENMPT
 openmpt_module *openmpt_mhandle = NULL;
 static CV_PossibleValue_t interpolationfilter_cons_t[] = {{0, "Default"}, {1, "None"}, {2, "Linear"}, {4, "Cubic"}, {8, "Windowed sinc"}, {0, NULL}};
-consvar_t cv_modfilter = {"modfilter", "0", CV_SAVE|CV_CALL, interpolationfilter_cons_t, ModFilter_OnChange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_modfilter = {"modfilter", "4", CV_SAVE|CV_CALL, interpolationfilter_cons_t, ModFilter_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 static CV_PossibleValue_t amigafilter_cons_t[] = {{0, "Off"}, {1, "On"}, {0, NULL}};
-consvar_t cv_amigafilter = {"amigafilter", "0", CV_SAVE|CV_CALL, amigafilter_cons_t, AmigaFilter_OnChange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_amigafilter = {"amigafilter", "1", CV_SAVE|CV_CALL, amigafilter_cons_t, AmigaFilter_OnChange, 0, NULL, NULL, 0, 0, NULL};
 #endif
 
 #define S_MAX_VOLUME 127

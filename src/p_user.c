@@ -1692,6 +1692,8 @@ mobj_t *P_SpawnGhostMobj(mobj_t *mobj)
 	ghost->tics = -1;
 	ghost->frame &= ~FF_TRANSMASK;
 	ghost->frame |= tr_trans50<<FF_TRANSSHIFT;
+	ghost->sloperoll = mobj->sloperoll;
+	
 	ghost->fuse = ghost->info->damage;
 	ghost->skin = mobj->skin;
 
