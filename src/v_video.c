@@ -52,6 +52,8 @@ static CV_PossibleValue_t constextsize_cons_t[] = {
 static void CV_constextsize_OnChange(void);
 consvar_t cv_constextsize = {"con_textsize", "Medium", CV_SAVE|CV_CALL, constextsize_cons_t, CV_constextsize_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_menucaps = {"menucaps", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 #ifdef HWRENDER
 static void CV_Gammaxxx_ONChange(void);
 // Saved hardware mode variables

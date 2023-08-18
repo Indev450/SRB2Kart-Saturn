@@ -1305,9 +1305,11 @@ static menuitem_t OP_VideoOptionsMenu[] =
 	{IT_STRING | IT_CVAR,	NULL,	"Vertical Sync",		&cv_vidwait,			100},
 	{IT_STRING | IT_CVAR,   NULL,   "FPS Cap",              &cv_fpscap,             110},
 	{IT_STRING | IT_CVAR,   NULL,   "Drift spark pulse size",&cv_driftsparkpulse,   125},
+	{IT_STRING | IT_CVAR,   NULL,   "Uppercase Menu",		&cv_menucaps,   		135},
+
 
 #ifdef HWRENDER
-	{IT_SUBMENU|IT_STRING,	NULL,	"OpenGL Options...",	&OP_OpenGLOptionsDef,	135},
+	{IT_SUBMENU|IT_STRING,	NULL,	"OpenGL Options...",	&OP_OpenGLOptionsDef,	145},
 #endif
 };
 
@@ -4126,6 +4128,8 @@ static void M_DrawMenuTitle(void)
 static void M_DrawGenericMenu(void)
 {
 	INT32 x, y, w, i, cursory = 0;
+	
+	INT32 lowercase = !cv_menucaps.value ? V_ALLOWLOWERCASE : 0;
 
 	// DRAW MENU
 	x = currentMenu->x;
@@ -4172,9 +4176,9 @@ static void M_DrawGenericMenu(void)
 					cursory = y;
 
 				if ((currentMenu->menuitems[i].status & IT_DISPLAY)==IT_STRING)
-					V_DrawString(x, y, 0, currentMenu->menuitems[i].text);
+					V_DrawString(x, y, lowercase, currentMenu->menuitems[i].text);
 				else
-					V_DrawString(x, y, highlightflags, currentMenu->menuitems[i].text);
+					V_DrawString(x, y, lowercase|highlightflags, currentMenu->menuitems[i].text);
 
 				// Cvar specific handling
 				switch (currentMenu->menuitems[i].status & IT_TYPE)
@@ -4199,7 +4203,7 @@ static void M_DrawGenericMenu(void)
 							default:
 								w = V_StringWidth(cv->string, 0);
 								V_DrawString(BASEVIDWIDTH - x - w, y,
-									((cv->flags & CV_CHEAT) && !CV_IsSetToDefault(cv) ? warningflags : highlightflags), cv->string);
+									((cv->flags & CV_CHEAT) && !CV_IsSetToDefault(cv) ? warningflags : highlightflags)|lowercase, cv->string);
 								if (i == itemOn)
 								{
 									V_DrawCharacter(BASEVIDWIDTH - x - 10 - w - (skullAnimCounter/5), y,
@@ -4214,7 +4218,7 @@ static void M_DrawGenericMenu(void)
 					y += STRINGHEIGHT;
 					break;
 			case IT_STRING2:
-				V_DrawString(x, y, 0, currentMenu->menuitems[i].text);
+				V_DrawString(x, y, lowercase, currentMenu->menuitems[i].text);
 				/* FALLTHRU */
 			case IT_DYLITLSPACE:
 				y += SMALLLINEHEIGHT;
@@ -4230,21 +4234,21 @@ static void M_DrawGenericMenu(void)
 					y = currentMenu->y+currentMenu->menuitems[i].alphaKey;
 				/* FALLTHRU */
 			case IT_TRANSTEXT2:
-				V_DrawString(x, y, V_TRANSLUCENT, currentMenu->menuitems[i].text);
+				V_DrawString(x, y, V_TRANSLUCENT|lowercase, currentMenu->menuitems[i].text);
 				y += SMALLLINEHEIGHT;
 				break;
 			case IT_QUESTIONMARKS:
 				if (currentMenu->menuitems[i].alphaKey)
 					y = currentMenu->y+currentMenu->menuitems[i].alphaKey;
 
-				V_DrawString(x, y, V_TRANSLUCENT|V_OLDSPACING, M_CreateSecretMenuOption(currentMenu->menuitems[i].text));
+				V_DrawString(x, y, V_TRANSLUCENT|V_OLDSPACING|lowercase, M_CreateSecretMenuOption(currentMenu->menuitems[i].text));
 				y += SMALLLINEHEIGHT;
 				break;
 			case IT_HEADERTEXT: // draws 16 pixels to the left, in yellow text
 				if (currentMenu->menuitems[i].alphaKey)
 					y = currentMenu->y+currentMenu->menuitems[i].alphaKey;
 
-				V_DrawString(x-16, y, highlightflags, currentMenu->menuitems[i].text);
+				V_DrawString(x-16, y, highlightflags|lowercase, currentMenu->menuitems[i].text);
 				y += SMALLLINEHEIGHT;
 				break;
 		}
@@ -4261,7 +4265,7 @@ static void M_DrawGenericMenu(void)
 	{
 		V_DrawScaledPatch(currentMenu->x - 24, cursory, 0,
 			W_CachePatchName("M_CURSOR", PU_CACHE));
-		V_DrawString(currentMenu->x, cursory, highlightflags, currentMenu->menuitems[itemOn].text);
+		V_DrawString(currentMenu->x, cursory, lowercase|highlightflags, currentMenu->menuitems[itemOn].text);
 	}
 }
 
@@ -4456,6 +4460,8 @@ static void M_DrawCenteredMenu(void)
 
 	// draw title (or big pic)
 	M_DrawMenuTitle();
+	
+	INT32 lowercase = !cv_menucaps.value ? V_ALLOWLOWERCASE : 0;
 
 	for (i = 0; i < currentMenu->numitems; i++)
 	{
@@ -4495,9 +4501,9 @@ static void M_DrawCenteredMenu(void)
 					cursory = y;
 
 				if ((currentMenu->menuitems[i].status & IT_DISPLAY)==IT_STRING)
-					V_DrawCenteredString(x, y, 0, currentMenu->menuitems[i].text);
+					V_DrawCenteredString(x, y, lowercase, currentMenu->menuitems[i].text);
 				else
-					V_DrawCenteredString(x, y, highlightflags, currentMenu->menuitems[i].text);
+					V_DrawCenteredString(x, y, highlightflags|lowercase, currentMenu->menuitems[i].text);
 
 				// Cvar specific handling
 				switch(currentMenu->menuitems[i].status & IT_TYPE)
@@ -4520,7 +4526,7 @@ static void M_DrawCenteredMenu(void)
 								break;
 							default:
 								V_DrawString(BASEVIDWIDTH - x - V_StringWidth(cv->string, 0), y,
-									((cv->flags & CV_CHEAT) && !CV_IsSetToDefault(cv) ? warningflags : highlightflags), cv->string);
+									((cv->flags & CV_CHEAT) && !CV_IsSetToDefault(cv) ? warningflags : highlightflags)|lowercase, cv->string);
 								break;
 						}
 						break;
@@ -4528,7 +4534,7 @@ static void M_DrawCenteredMenu(void)
 					y += STRINGHEIGHT;
 					break;
 			case IT_STRING2:
-				V_DrawCenteredString(x, y, 0, currentMenu->menuitems[i].text);
+				V_DrawCenteredString(x, y, lowercase, currentMenu->menuitems[i].text);
 				/* FALLTHRU */
 			case IT_DYLITLSPACE:
 				y += SMALLLINEHEIGHT;
@@ -4537,7 +4543,7 @@ static void M_DrawCenteredMenu(void)
 				if (currentMenu->menuitems[i].alphaKey)
 					y = currentMenu->y+currentMenu->menuitems[i].alphaKey;
 
-				V_DrawCenteredString(x, y, V_TRANSLUCENT|V_OLDSPACING, M_CreateSecretMenuOption(currentMenu->menuitems[i].text));
+				V_DrawCenteredString(x, y, V_TRANSLUCENT|V_OLDSPACING|lowercase, M_CreateSecretMenuOption(currentMenu->menuitems[i].text));
 				y += SMALLLINEHEIGHT;
 				break;
 			case IT_GRAYPATCH:
@@ -4560,7 +4566,7 @@ static void M_DrawCenteredMenu(void)
 	{
 		V_DrawScaledPatch(x - V_StringWidth(currentMenu->menuitems[itemOn].text, 0)/2 - 24, cursory, 0,
 			W_CachePatchName("M_CURSOR", PU_CACHE));
-		V_DrawCenteredString(x, cursory, highlightflags, currentMenu->menuitems[itemOn].text);
+		V_DrawCenteredString(x, cursory, highlightflags|lowercase, currentMenu->menuitems[itemOn].text);
 	}
 }
 
@@ -9579,17 +9585,19 @@ static void M_DrawMPMainMenu(void)
 
 	// use generic drawer for cursor, items and title
 	M_DrawGenericMenu();
+	
+	INT32 lowercase = !cv_menucaps.value ? V_ALLOWLOWERCASE : 0;
 
 #ifndef NONET
 #if MAXPLAYERS != 16
 Update the maxplayers label...
 #endif
 	V_DrawRightAlignedString(BASEVIDWIDTH-x, y+MP_MainMenu[4].alphaKey,
-		((itemOn == 4) ? highlightflags : 0), "(2-16 players)");
+		((itemOn == 4) ? highlightflags : 0)|lowercase, "(2-16 Players)");
 #endif
 
 	V_DrawRightAlignedString(BASEVIDWIDTH-x, y+MP_MainMenu[5].alphaKey,
-		((itemOn == 5) ? highlightflags : 0),
+		((itemOn == 5) ? highlightflags : 0)|lowercase,
 		"(2-4 players)"
 		);
 
@@ -11792,9 +11800,11 @@ static void M_VideoModeMenu(INT32 choice)
 static void M_DrawVideoMenu(void)
 {
 	M_DrawGenericMenu();
+	
+	INT32 lowercase = !cv_menucaps.value ? V_ALLOWLOWERCASE : 0;
 
 	V_DrawRightAlignedString(BASEVIDWIDTH - currentMenu->x, currentMenu->y + OP_VideoOptionsMenu[0].alphaKey,
-		(SCR_IsAspectCorrect(vid.width, vid.height) ? recommendedflags : highlightflags),
+		(SCR_IsAspectCorrect(vid.width, vid.height) ? recommendedflags : highlightflags)|lowercase,
 			va("%dx%d", vid.width, vid.height));
 }
 

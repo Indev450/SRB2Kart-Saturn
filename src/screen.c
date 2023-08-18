@@ -263,6 +263,7 @@ void SCR_Startup(void)
 
 	V_Init();
 	CV_RegisterVar(&cv_ticrate);
+	CV_RegisterVar(&cv_menucaps);
 	CV_RegisterVar(&cv_constextsize);
 
 	V_SetPalette(0);
