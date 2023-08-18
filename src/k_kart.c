@@ -3037,12 +3037,24 @@ static void K_StretchPlayerGravity(player_t *p)
     }
 }
 
+static INT32 K_FindPlayerNum(player_t *plyr)
+{
+	INT32 i;
+	for(i = 0; i < 4; i++)
+	{
+		if (plyr == &players[displayplayers[i]])
+			return i;
+	}
+	return 0; // technically defaulting to player 1 but fuck it
+}
+
 static angle_t K_GetSlopeRollAngle(player_t *p, boolean dontflip, boolean useReserves)
 {
 	angle_t lookAngle = 0;
 	angle_t zangle = 0;
 	angle_t xydirection = 0;
 	angle_t an;
+	INT32 pNum = K_FindPlayerNum(p);
 
 	I_Assert(p != NULL);
 	I_Assert(p->mo != NULL);
@@ -3054,7 +3066,7 @@ static angle_t K_GetSlopeRollAngle(player_t *p, boolean dontflip, boolean useRes
 		I_Assert(p->mo->reservexydir != NULL);
 	}
 
-	lookAngle = R_PointToAngle(p->mo->x, p->mo->y);
+	lookAngle = R_PointToAngle2(camera[pNum].x, camera[pNum].y, p->mo->x, p->mo->y);
 
 
 	if (!R_PointToDist(p->mo->x, p->mo->y))
@@ -3084,11 +3096,14 @@ static angle_t K_GetSlopeRollAngle(player_t *p, boolean dontflip, boolean useRes
 	return FixedMul(zangle, FINESINE(an>>ANGLETOFINESHIFT));
 }
 
-static void K_RollPlayerBySlopes(player_t *p, boolean usedistance) {
+static void K_RollPlayerBySlopes(player_t *p, boolean usedistance) 
+{
 	I_Assert(p->mo->subsector != NULL);
 	I_Assert(p->mo->subsector->sector != NULL);
 
-	fixed_t p_dist = R_PointToDist(p->mo->x,p->mo->y);
+	INT32 pNum = K_FindPlayerNum(p);
+
+	fixed_t p_dist = R_PointToDist2(p->mo->x, p->mo->y, camera[pNum].x, camera[pNum].y);
 	fixed_t mos = mapobjectscale;
 	fixed_t rolldist = cv_sloperolldist.value*mos;
 

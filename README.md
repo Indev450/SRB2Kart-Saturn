@@ -3,9 +3,9 @@
 [SRB2Kart](https://srb2.org/mods/) is a kart racing mod based on the 3D Sonic the Hedgehog fangame [Sonic Robo Blast 2](https://srb2.org/), based on a modified version of [Doom Legacy](http://doomlegacy.sourceforge.net/).
 
 ## Saturn Features
-- Player rotation on Slopes, funny squish when landing, Sprite scaling and all that 
+- Player rotation on slopes, funny squish when landing, Sprite scaling and all that 
 - Kart Hud offsets are user changable
-- Access for `mobj_t` and `player_t` fields from Lua has been completely rewritten, much better performance
+- Access for `mobj_t` and `player_t` fields from Lua has been completely rewritten, for much better performance with many Lua scripts
 - Lua shows tracebacks whenever an error occurs
 - The Lua perfstat page now has multiple pages and is more organized (ps_thinkframe_page X)
 - "addfilelocal" Command, for those who want to use their custom hud in netgames (Same as addfile but completely client sided)
@@ -15,16 +15,16 @@
 - Lua hooks for Intermission
 - Timeout for waiting to join a full server is configurable now
 - Higher/configurable addon download speed
-- Visual Portals from haya´s HEP Client
-- Everything that galaxy has
+- Visual Portals from Haya´s HEP Client
+- Everything that Galaxy has
 
-Techical Stuff:
+## Technical Stuff:
 
 - ZFigthing Textures in Opengl mode have been fixed in engine (well almost all of it)
 - Fof´s intersecting with slopes have less issues and now render correctly in Opengl
-- Midtextures on slopes in Opengl arent broken anymore, all those weird guardrails and fences, aswell as some of those sticking out textures from the ground on some maps should be gone.
+- Midtextures on slopes in Opengl are fixed, all those weird guardrails and fences, aswell as some of those sticking out textures from the ground on some maps should be gone
 - Multiple other fixes/optimizations like 3D floor clipping in software mode
-- Zone memory allocations have been rewritten
+- Zone memory allocations have been rewritten, speeds up some map loading, and may improve performance on busy maps
 - The annoying depraction messages for "P_TeleportMove" and "P_AproxDistance" have been silenced
 
 ## Bugs

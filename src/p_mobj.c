@@ -10016,9 +10016,7 @@ mobj_t *P_SpawnShadowMobj(mobj_t * caster)
 	}
 	
 	// Sprite rendering
-	mobj->realxscale = mobj->realyscale = mobj->scale; 
-	mobj->spritexscale = mobj->realxscale;
-	mobj->spriteyscale = mobj->realyscale; 
+	mobj->spritexscale = mobj->spriteyscale = mobj->scale; 
 	mobj->spritexoffset = mobj->spriteyoffset = 0;
 	
 	// set subsector and/or block links

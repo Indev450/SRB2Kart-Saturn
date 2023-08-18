@@ -394,29 +394,18 @@ static int lib_cvRegisterVar(lua_State *L)
 				cvar->PossibleValue = cvpv;
 			} else
 				FIELDERROR("PossibleValue", va("%s or CV_PossibleValue_t expected, got %s", lua_typename(L, LUA_TTABLE), luaL_typename(L, -1)))
+		} else if (i == 5 || (k && fasticmp(k, "func"))) {
+			if (!lua_isfunction(L, 4))
+				TYPEERROR("func", LUA_TFUNCTION)
+			lua_getfield(L, LUA_REGISTRYINDEX, "CV_OnChange");
+			I_Assert(lua_istable(L, 5));
+			lua_pushvalue(L, 4);
+			lua_setfield(L, 5, cvar->name);
+			lua_pop(L, 1);
+			cvar->func = Lua_OnChange;
 		}
 		lua_pop(L, 1);
 	}
-
-    if (cvar->flags & CV_CALL) {
-        lua_rawgeti(L, 1, 5); // Push function, if it stored at field 5
-
-        if (lua_isnil(L, -1)) { // If it is nil, try to get at field "func"
-            lua_pop(L, 1);
-            lua_getfield(L, 1, "func");
-        }
-
-        if (!lua_isfunction(L, -1))
-            TYPEERROR("func", LUA_TFUNCTION)
-
-        lua_getfield(L, LUA_REGISTRYINDEX, "CV_OnChange"); // Push table
-        I_Assert(lua_istable(L, -1));
-        lua_pushvalue(L, -2); // Push func
-        lua_setfield(L, -2, cvar->name); // Pop func, add it to table
-        lua_pop(L, 2); // Pop table and func
-        cvar->func = Lua_OnChange;
-    }
-
 #undef FIELDERROR
 #undef TYPEERROR
 
