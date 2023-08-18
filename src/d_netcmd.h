@@ -156,6 +156,7 @@ extern consvar_t cv_skipmapcheck;
 
 extern consvar_t cv_sleep;
 
+#define SKINSELECTSPIN_PAIN 25
 extern consvar_t cv_skinselectspin;
 
 extern consvar_t cv_perfstats;

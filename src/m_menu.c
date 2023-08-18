@@ -10315,7 +10315,7 @@ static void M_DrawSetupMultiPlayerMenu(void)
 	multi_tics -= renderdeltatics;
 	while (multi_tics <= 0)
 	{
-		st = multi_state->nextstate;
+		st = cv_skinselectspin.value == SKINSELECTSPIN_PAIN ? S_KART_PAIN : multi_state->nextstate;
 		if (st != S_NULL)
 			multi_state = &states[st];
 
@@ -10752,7 +10752,7 @@ static void M_SetupMultiPlayer(INT32 choice)
 {
 	(void)choice;
 
-	multi_state = &states[mobjinfo[MT_PLAYER].seestate];
+	multi_state = cv_skinselectspin.value == SKINSELECTSPIN_PAIN ? &states[S_KART_PAIN] : &states[mobjinfo[MT_PLAYER].seestate];
 	multi_tics = multi_state->tics*FRACUNIT;
 	strcpy(setupm_name, cv_playername.string);
 
@@ -10789,7 +10789,7 @@ static void M_SetupMultiPlayer2(INT32 choice)
 {
 	(void)choice;
 
-	multi_state = &states[mobjinfo[MT_PLAYER].seestate];
+	multi_state = cv_skinselectspin.value == SKINSELECTSPIN_PAIN ? &states[S_KART_PAIN] : &states[mobjinfo[MT_PLAYER].seestate];
 	multi_tics = multi_state->tics*FRACUNIT;
 	strcpy (setupm_name, cv_playername2.string);
 
@@ -10826,7 +10826,7 @@ static void M_SetupMultiPlayer3(INT32 choice)
 {
 	(void)choice;
 
-	multi_state = &states[mobjinfo[MT_PLAYER].seestate];
+	multi_state = cv_skinselectspin.value == SKINSELECTSPIN_PAIN ? &states[S_KART_PAIN] : &states[mobjinfo[MT_PLAYER].seestate];
 	multi_tics = multi_state->tics;
 	strcpy(setupm_name, cv_playername3.string);
 
@@ -10863,7 +10863,7 @@ static void M_SetupMultiPlayer4(INT32 choice)
 {
 	(void)choice;
 
-	multi_state = &states[mobjinfo[MT_PLAYER].seestate];
+	multi_state = cv_skinselectspin.value == SKINSELECTSPIN_PAIN ? &states[S_KART_PAIN] : &states[mobjinfo[MT_PLAYER].seestate];
 	multi_tics = multi_state->tics;
 	strcpy(setupm_name, cv_playername4.string);
 
