@@ -913,9 +913,7 @@ void D_RegisterClientCommands(void)
 #ifdef HAVE_OPENMPT
 	CV_RegisterVar(&cv_modfilter);
 	CV_RegisterVar(&cv_amigafilter);
-//#if OPENMPT_API_VERSION_MAJOR < 1 && OPENMPT_API_VERSION_MINOR < 5
 	//CV_RegisterVar(&cv_amigatype);
-//#endif
 	//CV_RegisterVar(&cv_mptdither);
 #endif
 
