@@ -1413,9 +1413,9 @@ static menuitem_t OP_SoundAdvancedMenu[] =
 
 	{IT_STRING | IT_CVAR, NULL, "Instrument Filter", &cv_modfilter, 22},
 	{IT_STRING | IT_CVAR, NULL, "Amiga Resampler", &cv_amigafilter, 42},
-//#if OPENMPT_API_VERSION_MAJOR < 1 && OPENMPT_API_VERSION_MINOR > 4
-	//{IT_STRING | IT_CVAR, NULL, "Amiga Type", &cv_amigatype, 62},
-//#endif
+#if OPENMPT_API_VERSION_MAJOR < 1 && OPENMPT_API_VERSION_MINOR > 4
+	{IT_STRING | IT_CVAR, NULL, "Amiga Type", &cv_amigatype, 62},
+#endif
 	//{IT_STRING | IT_CVAR, NULL, "Dithering", &cv_mptdither, 82}
 };
 #endif
