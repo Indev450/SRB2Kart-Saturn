@@ -71,7 +71,6 @@ static void AmigaFilter_OnChange(void);
 #if OPENMPT_API_VERSION_MAJOR < 1 && OPENMPT_API_VERSION_MINOR > 4
 static void AmigaType_OnChange(void);
 #endif
-//static void MPTDither_OnChange(void);
 #endif
 
 // commands for music and sound servers
@@ -150,12 +149,10 @@ consvar_t cv_amigafilter = {"amigafilter", "1", CV_SAVE|CV_CALL, amigafilter_con
 
 
 #if OPENMPT_API_VERSION_MAJOR < 1 && OPENMPT_API_VERSION_MINOR > 4
-static CV_PossibleValue_t amigatype_cons_t[] = {{0, "auto"}, {1, "a500"}, {2, "a1200"}, {3, "unfiltered"}, {0, NULL}};
+static CV_PossibleValue_t amigatype_cons_t[] = {{0, "auto"}, {1, "a500"}, {2, "a1200"}, {0, NULL}};
 consvar_t cv_amigatype = {"amigatype", "0", CV_SAVE|CV_CALL, amigatype_cons_t, AmigaType_OnChange, 0, NULL, NULL, 0, 0, NULL};
 #endif
 
-//static CV_PossibleValue_t mptdither_cons_t[] = {{0, "No dithering"}, {1, "Default"}, {2, "Rectangular 0.5 bit"}, {3, "Rectangular 1 bit"}, {0, NULL}};
-//consvar_t cv_mptdither = {"mptdither", "1", CV_SAVE|CV_CALL, mptdither_cons_t, MPTDither_OnChange, 0, NULL, NULL, 0, 0, NULL};
 #endif
 
 #define S_MAX_VOLUME 127
@@ -2248,14 +2245,6 @@ void AmigaType_OnChange(void)
 	COM_ImmedExecute("restartmusic"); //need to restart the music system or else it wont work
 	}
 #endif
-
-/*	
-void MPTDither_OnChange(void)
-{
-	if (openmpt_mhandle)
-		openmpt_module_ctl_set(openmpt_mhandle, "dither", cv_mptdither.value);
-	}
-*/
 #endif
 
 #ifndef NO_MIDI

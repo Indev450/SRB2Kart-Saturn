@@ -48,7 +48,6 @@ extern consvar_t cv_amigafilter;
 #if OPENMPT_API_VERSION_MAJOR < 1 && OPENMPT_API_VERSION_MINOR > 4
 extern consvar_t cv_amigatype;
 #endif
-//extern consvar_t cv_mptdither;
 #endif
 
 extern consvar_t cv_music_resync_threshold;
