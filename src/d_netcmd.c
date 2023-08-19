@@ -913,6 +913,8 @@ void D_RegisterClientCommands(void)
 #ifdef HAVE_OPENMPT
 	CV_RegisterVar(&cv_modfilter);
 	CV_RegisterVar(&cv_amigafilter);
+	//CV_RegisterVar(&cv_amigatype);
+	//CV_RegisterVar(&cv_mptdither);
 #endif
 
 	// FIXME: not to be here.. but needs be done for config loading

@@ -45,6 +45,7 @@ extern consvar_t cv_playsoundifunfocused;
 #ifdef HAVE_OPENMPT
 extern consvar_t cv_modfilter;
 extern consvar_t cv_amigafilter;
+//extern consvar_t cv_mptdither;
 #endif
 
 extern consvar_t cv_music_resync_threshold;

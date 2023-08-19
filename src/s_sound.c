@@ -67,6 +67,8 @@ static void PlaySoundIfUnfocused_OnChange(void);
 #ifdef HAVE_OPENMPT
 static void ModFilter_OnChange(void);
 static void AmigaFilter_OnChange(void);
+//static void AmigaType_OnChange(void);
+//static void MPTDither_OnChange(void);
 #endif
 
 // commands for music and sound servers
@@ -142,6 +144,12 @@ consvar_t cv_modfilter = {"modfilter", "4", CV_SAVE|CV_CALL, interpolationfilter
 
 static CV_PossibleValue_t amigafilter_cons_t[] = {{0, "Off"}, {1, "On"}, {0, NULL}};
 consvar_t cv_amigafilter = {"amigafilter", "1", CV_SAVE|CV_CALL, amigafilter_cons_t, AmigaFilter_OnChange, 0, NULL, NULL, 0, 0, NULL};
+
+/*static CV_PossibleValue_t amigatype_cons_t[] = {{0, "auto"}, {1, "a500"}, {2, "a1200"}, {4, "unfiltered"}, {0, NULL}};
+consvar_t cv_amigatype = {"amigatype", "1", CV_SAVE|CV_CALL, amigatype_cons_t, AmigaType_OnChange, 0, NULL, NULL, 0, 0, NULL};
+
+static CV_PossibleValue_t mptdither_cons_t[] = {{0, "No dithering"}, {1, "Default"}, {2, "Rectangular 0.5 bit"}, {3, "Rectangular 1 bit"}, {0, NULL}};
+consvar_t cv_mptdither = {"mptdither", "1", CV_SAVE|CV_CALL, mptdither_cons_t, MPTDither_OnChange, 0, NULL, NULL, 0, 0, NULL};*/
 #endif
 
 #define S_MAX_VOLUME 127
@@ -2204,6 +2212,19 @@ void AmigaFilter_OnChange(void)
 	if (openmpt_mhandle)
 		openmpt_module_ctl_set(openmpt_mhandle, "render.resampler.emulate_amiga", cv_amigafilter.value ? "1" : "0");
 	}
+
+/*	
+void AmigaType_OnChange(void)
+{
+	if (openmpt_mhandle)
+		openmpt_module_ctl_set(openmpt_mhandle, "render.resampler.emulate_amiga", cv_amigatype.value ? "1" : "0");
+	}
+	
+void MPTDither_OnChange(void)
+{
+	if (openmpt_mhandle)
+		openmpt_module_ctl_set(openmpt_mhandle, "dither", cv_mptdither.value);
+	}*/
 
 #ifndef NO_MIDI
 void GameMIDIMusic_OnChange(void)
