@@ -45,6 +45,9 @@ extern consvar_t cv_playsoundifunfocused;
 #ifdef HAVE_OPENMPT
 extern consvar_t cv_modfilter;
 extern consvar_t cv_amigafilter;
+//#if OPENMPT_API_VERSION_MAJOR < 1 && OPENMPT_API_VERSION_MINOR < 5
+//extern consvar_t cv_amigatype;
+//#endif
 //extern consvar_t cv_mptdither;
 #endif
 

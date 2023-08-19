@@ -2200,6 +2200,7 @@ void GameDigiMusic_OnChange(void)
 	}
 }
 
+#ifdef HAVE_OPENMPT
 void ModFilter_OnChange(void)
 {
 	if (openmpt_mhandle)
@@ -2214,17 +2215,20 @@ void AmigaFilter_OnChange(void)
 	}
 
 /*	
+#if OPENMPT_API_VERSION_MAJOR < 1 && OPENMPT_API_VERSION_MINOR < 5
 void AmigaType_OnChange(void)
 {
 	if (openmpt_mhandle)
 		openmpt_module_ctl_set(openmpt_mhandle, "render.resampler.emulate_amiga", cv_amigatype.value ? "1" : "0");
 	}
+#endif
 	
 void MPTDither_OnChange(void)
 {
 	if (openmpt_mhandle)
 		openmpt_module_ctl_set(openmpt_mhandle, "dither", cv_mptdither.value);
-	}*/
+	}*/	
+#endif
 
 #ifndef NO_MIDI
 void GameMIDIMusic_OnChange(void)
