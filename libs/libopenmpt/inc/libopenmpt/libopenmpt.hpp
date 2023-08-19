@@ -17,8 +17,10 @@
 #include <iostream>
 #include <map>
 #include <string>
+#include <string_view>
 #include <vector>
 
+#include <cstddef>
 #include <cstdint>
 
 /*!
@@ -101,7 +103,7 @@
  * threads for internal use.
  * - You must ensure to only ever access a particular libopenmpt object via
  * non-const member functions from a single thread at a time.
- * - You may access a particular libopenmpt objects concurrently from different
+ * - You may access a particular libopenmpt object concurrently from different
  * threads when using only const member functions from all threads.
  * - Consecutive accesses can happen from different threads.
  * - Different objects can be accessed concurrently from different threads.
@@ -125,11 +127,11 @@
 
 /*! \defgroup libopenmpt_cpp libopenmpt C++ */
 
+namespace openmpt {
+
 /*! \addtogroup libopenmpt_cpp
   @{
 */
-
-namespace openmpt {
 
 #if defined(_MSC_VER)
 #pragma warning(push)
@@ -140,17 +142,17 @@ namespace openmpt {
   Base class used for all exceptions that are thrown by libopenmpt itself. Libopenmpt may additionally throw any exception thrown by the standard library which are all derived from std::exception.
   \sa \ref libopenmpt_cpp_error
 */
-class LIBOPENMPT_CXX_API exception : public std::exception {
+class LIBOPENMPT_CXX_API_CLASS exception : public std::exception {
 private:
 	char * text;
 public:
-	exception( const std::string & text ) noexcept;
-	exception( const exception & other ) noexcept;
-	exception( exception && other ) noexcept;
-	exception & operator = ( const exception & other ) noexcept;
-	exception & operator = ( exception && other ) noexcept;
-	virtual ~exception() noexcept;
-	const char * what() const noexcept override;
+	LIBOPENMPT_CXX_API_MEMBER exception( const std::string & text ) noexcept;
+	LIBOPENMPT_CXX_API_MEMBER exception( const exception & other ) noexcept;
+	LIBOPENMPT_CXX_API_MEMBER exception( exception && other ) noexcept;
+	LIBOPENMPT_CXX_API_MEMBER exception & operator = ( const exception & other ) noexcept;
+	LIBOPENMPT_CXX_API_MEMBER exception & operator = ( exception && other ) noexcept;
+	LIBOPENMPT_CXX_API_MEMBER virtual ~exception() noexcept;
+	LIBOPENMPT_CXX_API_MEMBER const char * what() const noexcept override;
 }; // class exception
 #if defined(_MSC_VER)
 #pragma warning(pop)
@@ -174,19 +176,19 @@ LIBOPENMPT_CXX_API std::uint32_t get_core_version();
 namespace string {
 
 //! Return a verbose library version string from openmpt::string::get(). \deprecated Please use `"library_version"` directly.
-LIBOPENMPT_DEPRECATED static const char library_version  LIBOPENMPT_ATTR_DEPRECATED [] = "library_version";
+static const char library_version  LIBOPENMPT_ATTR_DEPRECATED [] = "library_version";
 //! Return a verbose library features string from openmpt::string::get(). \deprecated Please use `"library_features"` directly.
-LIBOPENMPT_DEPRECATED static const char library_features LIBOPENMPT_ATTR_DEPRECATED [] = "library_features";
+static const char library_features LIBOPENMPT_ATTR_DEPRECATED [] = "library_features";
 //! Return a verbose OpenMPT core version string from openmpt::string::get(). \deprecated Please use `"core_version"` directly.
-LIBOPENMPT_DEPRECATED static const char core_version     LIBOPENMPT_ATTR_DEPRECATED [] = "core_version";
+static const char core_version     LIBOPENMPT_ATTR_DEPRECATED [] = "core_version";
 //! Return information about the current build (e.g. the build date or compiler used) from openmpt::string::get(). \deprecated Please use `"build"` directly.
-LIBOPENMPT_DEPRECATED static const char build            LIBOPENMPT_ATTR_DEPRECATED [] = "build";
+static const char build            LIBOPENMPT_ATTR_DEPRECATED [] = "build";
 //! Return all contributors from openmpt::string::get(). \deprecated Please use `"credits"` directly.
-LIBOPENMPT_DEPRECATED static const char credits          LIBOPENMPT_ATTR_DEPRECATED [] = "credits";
+static const char credits          LIBOPENMPT_ATTR_DEPRECATED [] = "credits";
 //! Return contact information about libopenmpt from openmpt::string::get(). \deprecated Please use `"contact"` directly.
-LIBOPENMPT_DEPRECATED static const char contact          LIBOPENMPT_ATTR_DEPRECATED [] = "contact";
+static const char contact          LIBOPENMPT_ATTR_DEPRECATED [] = "contact";
 //! Return the libopenmpt license from openmpt::string::get(). \deprecated Please use `"license"` directly.
-LIBOPENMPT_DEPRECATED static const char license          LIBOPENMPT_ATTR_DEPRECATED [] = "license";
+static const char license          LIBOPENMPT_ATTR_DEPRECATED [] = "license";
 
 //! Get library related metadata.
 /*!
@@ -231,8 +233,16 @@ LIBOPENMPT_CXX_API std::vector<std::string> get_supported_extensions();
 /*!
   \param extension file extension to query without a leading dot. The case is ignored.
   \return true if the extension is supported by libopenmpt, false otherwise.
+  \deprecated Please use openmpt::is_extension_supported2().
 */
-LIBOPENMPT_CXX_API bool is_extension_supported( const std::string & extension );
+LIBOPENMPT_ATTR_DEPRECATED LIBOPENMPT_CXX_API bool is_extension_supported( const std::string & extension );
+//! Query whether a file extension is supported
+/*!
+  \param extension file extension to query without a leading dot. The case is ignored.
+  \return true if the extension is supported by libopenmpt, false otherwise.
+  \since 0.5.0
+*/
+LIBOPENMPT_CXX_API bool is_extension_supported2( std::string_view extension );
 
 //! Roughly scan the input stream to find out whether libopenmpt might be able to open it
 /*!
@@ -251,9 +261,9 @@ LIBOPENMPT_CXX_API double could_open_probability( std::istream & stream, double 
 
 //! Roughly scan the input stream to find out whether libopenmpt might be able to open it
 /*!
-  \deprecated Please use openmpt::module::could_open_probability().
+  \deprecated Please use openmpt::could_open_probability().
 */
-LIBOPENMPT_ATTR_DEPRECATED LIBOPENMPT_CXX_API LIBOPENMPT_DEPRECATED double could_open_propability( std::istream & stream, double effort = 1.0, std::ostream & log = std::clog );
+LIBOPENMPT_ATTR_DEPRECATED LIBOPENMPT_CXX_API double could_open_propability( std::istream & stream, double effort = 1.0, std::ostream & log = std::clog );
 
 //! Get recommended header size for successfull format probing
 /*!
@@ -262,28 +272,59 @@ LIBOPENMPT_ATTR_DEPRECATED LIBOPENMPT_CXX_API LIBOPENMPT_DEPRECATED double could
 */
 LIBOPENMPT_CXX_API std::size_t probe_file_header_get_recommended_size();
 
-//! Probe for module formats in openmpt::probe_file_header(). \since 0.3.0
-static const std::uint64_t probe_file_header_flags_modules    = 0x1ul;
+//! Probe for module formats in openmpt::probe_file_header(). \since 0.3.0 \deprecated Please use openmpt::probe_file_header_flags_modules2.
+static const std::uint64_t probe_file_header_flags_modules    LIBOPENMPT_ATTR_DEPRECATED = 0x1ull;
 
-//! Probe for module-specific container formats in openmpt::probe_file_header(). \since 0.3.0
-static const std::uint64_t probe_file_header_flags_containers = 0x2ul;
+//! Probe for module-specific container formats in openmpt::probe_file_header(). \since 0.3.0 \deprecated Please use openmpt::probe_file_header_flags_containers2.
+static const std::uint64_t probe_file_header_flags_containers LIBOPENMPT_ATTR_DEPRECATED = 0x2ull;
 
-//! Probe for the default set of formats in openmpt::probe_file_header(). \since 0.3.0
-static const std::uint64_t probe_file_header_flags_default    = probe_file_header_flags_modules | probe_file_header_flags_containers;
+//! Probe for the default set of formats in openmpt::probe_file_header(). \since 0.3.0 \deprecated Please use openmpt::probe_file_header_flags_default2.
+static const std::uint64_t probe_file_header_flags_default    LIBOPENMPT_ATTR_DEPRECATED = 0x1ull | 0x2ull;
 
-//! Probe for no formats in openmpt::probe_file_header(). \since 0.3.0
-static const std::uint64_t probe_file_header_flags_none       = 0x0ul;
+//! Probe for no formats in openmpt::probe_file_header(). \since 0.3.0 \deprecated Please use openmpt::probe_file_header_flags_none2.
+static const std::uint64_t probe_file_header_flags_none       LIBOPENMPT_ATTR_DEPRECATED = 0x0ull;
+
+//! Possible values for openmpt::probe_file_header() flags parameter. \since 0.6.0
+enum probe_file_header_flags : std::uint64_t {
+	//! Probe for module formats in openmpt::probe_file_header(). \since 0.6.0
+	probe_file_header_flags_modules2    = 0x1ull,
+	//! Probe for module-specific container formats in openmpt::probe_file_header(). \since 0.6.0
+	probe_file_header_flags_containers2 = 0x2ull,
+	//! Probe for the default set of formats in openmpt::probe_file_header(). \since 0.6.0
+	probe_file_header_flags_default2    = probe_file_header_flags_modules2 | probe_file_header_flags_containers2,
+	//! Probe for no formats in openmpt::probe_file_header(). \since 0.6.0
+	probe_file_header_flags_none2       = 0x0ull
+};
 
 //! Possible return values for openmpt::probe_file_header(). \since 0.3.0
 enum probe_file_header_result {
+	//! The file will most likely be supported by libopenmpt. \since 0.3.0
 	probe_file_header_result_success      =  1,
+	//! The file is not supported by libopenmpt. \since 0.3.0
 	probe_file_header_result_failure      =  0,
+	//! An answer could not be determined with the amount of data provided. \since 0.3.0
 	probe_file_header_result_wantmoredata = -1
 };
 
 //! Probe the provided bytes from the beginning of a file for supported file format headers to find out whether libopenmpt might be able to open it
 /*!
-  \param flags Ored mask of openmpt::probe_file_header_flags_modules and openmpt::probe_file_header_flags_containers, or openmpt::probe_file_header_flags_default.
+  \param flags Bit mask of openmpt::probe_file_header_flags_modules2 and openmpt::probe_file_header_flags_containers2, or openmpt::probe_file_header_flags_default2.
+  \param data Beginning of the file data.
+  \param size Size of the beginning of the file data.
+  \param filesize Full size of the file data on disk.
+  \remarks It is recommended to provide openmpt::probe_file_header_get_recommended_size() bytes of data for data and size. If the file is smaller, only provide the filesize amount and set size and filesize to the file's size. 
+  \remarks openmpt::could_open_probability() provides a more elaborate interface that might be required for special use cases. It is recommended to use openmpt::probe_file_header() though, if possible.
+  \retval probe_file_header_result_success The file will most likely be supported by libopenmpt.
+  \retval probe_file_header_result_failure The file is not supported by libopenmpt.
+  \retval probe_file_header_result_wantmoredata An answer could not be determined with the amount of data provided.
+  \sa openmpt::probe_file_header_get_recommended_size()
+  \sa openmpt::could_open_probability()
+  \since 0.5.0
+*/
+LIBOPENMPT_CXX_API int probe_file_header( std::uint64_t flags, const std::byte * data, std::size_t size, std::uint64_t filesize );
+//! Probe the provided bytes from the beginning of a file for supported file format headers to find out whether libopenmpt might be able to open it
+/*!
+  \param flags Bit mask of openmpt::probe_file_header_flags_modules2 and openmpt::probe_file_header_flags_containers2, or openmpt::probe_file_header_flags_default2.
   \param data Beginning of the file data.
   \param size Size of the beginning of the file data.
   \param filesize Full size of the file data on disk.
@@ -300,7 +341,23 @@ LIBOPENMPT_CXX_API int probe_file_header( std::uint64_t flags, const std::uint8_
 
 //! Probe the provided bytes from the beginning of a file for supported file format headers to find out whether libopenmpt might be able to open it
 /*!
-  \param flags Ored mask of openmpt::probe_file_header_flags_modules and openmpt::probe_file_header_flags_containers, or openmpt::probe_file_header_flags_default.
+  \param flags Bit mask of openmpt::probe_file_header_flags_modules2 and openmpt::probe_file_header_flags_containers2, or openmpt::probe_file_header_flags_default2.
+  \param data Beginning of the file data.
+  \param size Size of the beginning of the file data.
+  \remarks It is recommended to use the overload of this function that also takes the filesize as parameter if at all possile. libopenmpt can provide more accurate answers if the filesize is known.
+  \remarks It is recommended to provide openmpt::probe_file_header_get_recommended_size() bytes of data for data and size. If the file is smaller, only provide the filesize amount and set size to the file's size. 
+  \remarks openmpt::could_open_probability() provides a more elaborate interface that might be required for special use cases. It is recommended to use openmpt::probe_file_header() though, if possible.
+  \retval probe_file_header_result_success The file will most likely be supported by libopenmpt.
+  \retval probe_file_header_result_failure The file is not supported by libopenmpt.
+  \retval probe_file_header_result_wantmoredata An answer could not be determined with the amount of data provided.
+  \sa openmpt::probe_file_header_get_recommended_size()
+  \sa openmpt::could_open_probability()
+  \since 0.5.0
+*/
+LIBOPENMPT_CXX_API int probe_file_header( std::uint64_t flags, const std::byte * data, std::size_t size );
+//! Probe the provided bytes from the beginning of a file for supported file format headers to find out whether libopenmpt might be able to open it
+/*!
+  \param flags Bit mask of openmpt::probe_file_header_flags_modules2 and openmpt::probe_file_header_flags_containers2, or openmpt::probe_file_header_flags_default2.
   \param data Beginning of the file data.
   \param size Size of the beginning of the file data.
   \remarks It is recommended to use the overload of this function that also takes the filesize as parameter if at all possile. libopenmpt can provide more accurate answers if the filesize is known.
@@ -317,7 +374,7 @@ LIBOPENMPT_CXX_API int probe_file_header( std::uint64_t flags, const std::uint8_
 
 //! Probe the provided bytes from the beginning of a file for supported file format headers to find out whether libopenmpt might be able to open it
 /*!
-  \param flags Ored mask of openmpt::probe_file_header_flags_modules and openmpt::probe_file_header_flags_containers, or openmpt::probe_file_header_flags_default.
+  \param flags Bit mask of openmpt::probe_file_header_flags_modules2 and openmpt::probe_file_header_flags_containers2, or openmpt::probe_file_header_flags_default2.
   \param stream Input stream to scan.
   \remarks stream is left in an unspecified state when this function returns.
   \remarks openmpt::could_open_probability() provides a more elaborate interface that might be required for special use cases. It is recommended to use openmpt::probe_file_header() though, if possible.
@@ -340,7 +397,7 @@ typedef std::map< std::string, std::string > initial_ctls_map;
 
 } // namespace detail
 
-class LIBOPENMPT_CXX_API module {
+class LIBOPENMPT_CXX_API_CLASS module {
 
 	friend class module_ext;
 
@@ -411,21 +468,53 @@ public:
 	/*!
 	  \param stream Input stream from which the module is loaded. After the constructor has finished successfully, the input position of stream is set to the byte after the last byte that has been read. If the constructor fails, the state of the input position of stream is undefined.
 	  \param log Log where any warnings or errors are printed to. The lifetime of the reference has to be as long as the lifetime of the module instance.
-	  \param ctls A map of initial ctl values, see openmpt::module::get_ctls.
+	  \param ctls A map of initial ctl values, see \ref openmpt::module::get_ctls and openmpt::module::ctl_set.
 	  \throws openmpt::exception Throws an exception derived from openmpt::exception in case the provided file cannot be opened.
 	  \remarks The input data can be discarded after an openmpt::module has been constructed successfully.
 	  \sa \ref libopenmpt_cpp_fileio
 	*/
-	module( std::istream & stream, std::ostream & log = std::clog, const std::map< std::string, std::string > & ctls = detail::initial_ctls_map() );
+	LIBOPENMPT_CXX_API_MEMBER module( std::istream & stream, std::ostream & log = std::clog, const std::map< std::string, std::string > & ctls = detail::initial_ctls_map() );
 	/*!
 	  \param data Data to load the module from.
+	  \param log Log where any warnings or errors are printed to. The lifetime of the reference has to be as long as the lifetime of the module instance.
+	  \param ctls A map of initial ctl values, see \ref openmpt::module::get_ctls and openmpt::module::ctl_set.
+	  \throws openmpt::exception Throws an exception derived from openmpt::exception in case the provided file cannot be opened.
+	  \remarks The input data can be discarded after an openmpt::module has been constructed successfully.
+	  \sa \ref libopenmpt_cpp_fileio
+	  \since 0.5.0
+	*/
+	LIBOPENMPT_CXX_API_MEMBER module( const std::vector<std::byte> & data, std::ostream & log = std::clog, const std::map< std::string, std::string > & ctls = detail::initial_ctls_map() );
+	/*!
+	  \param beg Begin of data to load the module from.
+	  \param end End of data to load the module from.
+	  \param log Log where any warnings or errors are printed to. The lifetime of the reference has to be as long as the lifetime of the module instance.
+	  \param ctls A map of initial ctl values, see \ref openmpt::module::get_ctls and openmpt::module::ctl_set.
+	  \throws openmpt::exception Throws an exception derived from openmpt::exception in case the provided file cannot be opened.
+	  \remarks The input data can be discarded after an openmpt::module has been constructed successfully.
+	  \sa \ref libopenmpt_cpp_fileio
+	  \since 0.5.0
+	*/
+	LIBOPENMPT_CXX_API_MEMBER module( const std::byte * beg, const std::byte * end, std::ostream & log = std::clog, const std::map< std::string, std::string > & ctls = detail::initial_ctls_map() );
+	/*!
+	  \param data Data to load the module from.
+	  \param size Amount of data available.
 	  \param log Log where any warnings or errors are printed to. The lifetime of the reference has to be as long as the lifetime of the module instance.
 	  \param ctls A map of initial ctl values, see openmpt::module::get_ctls.
 	  \throws openmpt::exception Throws an exception derived from openmpt::exception in case the provided file cannot be opened.
 	  \remarks The input data can be discarded after an openmpt::module has been constructed successfully.
 	  \sa \ref libopenmpt_cpp_fileio
+	  \since 0.5.0
 	*/
-	module( const std::vector<std::uint8_t> & data, std::ostream & log = std::clog, const std::map< std::string, std::string > & ctls = detail::initial_ctls_map() );
+	LIBOPENMPT_CXX_API_MEMBER module( const std::byte * data, std::size_t size, std::ostream & log = std::clog, const std::map< std::string, std::string > & ctls = detail::initial_ctls_map() );
+	/*!
+	  \param data Data to load the module from.
+	  \param log Log where any warnings or errors are printed to. The lifetime of the reference has to be as long as the lifetime of the module instance.
+	  \param ctls A map of initial ctl values, see \ref openmpt::module::get_ctls and openmpt::module::ctl_set.
+	  \throws openmpt::exception Throws an exception derived from openmpt::exception in case the provided file cannot be opened.
+	  \remarks The input data can be discarded after an openmpt::module has been constructed successfully.
+	  \sa \ref libopenmpt_cpp_fileio
+	*/
+	LIBOPENMPT_CXX_API_MEMBER module( const std::vector<std::uint8_t> & data, std::ostream & log = std::clog, const std::map< std::string, std::string > & ctls = detail::initial_ctls_map() );
 	/*!
 	  \param beg Begin of data to load the module from.
 	  \param end End of data to load the module from.
@@ -435,7 +524,7 @@ public:
 	  \remarks The input data can be discarded after an openmpt::module has been constructed successfully.
 	  \sa \ref libopenmpt_cpp_fileio
 	*/
-	module( const std::uint8_t * beg, const std::uint8_t * end, std::ostream & log = std::clog, const std::map< std::string, std::string > & ctls = detail::initial_ctls_map() );
+	LIBOPENMPT_CXX_API_MEMBER module( const std::uint8_t * beg, const std::uint8_t * end, std::ostream & log = std::clog, const std::map< std::string, std::string > & ctls = detail::initial_ctls_map() );
 	/*!
 	  \param data Data to load the module from.
 	  \param size Amount of data available.
@@ -445,7 +534,7 @@ public:
 	  \remarks The input data can be discarded after an openmpt::module has been constructed successfully.
 	  \sa \ref libopenmpt_cpp_fileio
 	*/
-	module( const std::uint8_t * data, std::size_t size, std::ostream & log = std::clog, const std::map< std::string, std::string > & ctls = detail::initial_ctls_map() );
+	LIBOPENMPT_CXX_API_MEMBER module( const std::uint8_t * data, std::size_t size, std::ostream & log = std::clog, const std::map< std::string, std::string > & ctls = detail::initial_ctls_map() );
 	/*!
 	  \param data Data to load the module from.
 	  \param log Log where any warnings or errors are printed to. The lifetime of the reference has to be as long as the lifetime of the module instance.
@@ -454,7 +543,7 @@ public:
 	  \remarks The input data can be discarded after an openmpt::module has been constructed successfully.
 	  \sa \ref libopenmpt_cpp_fileio
 	*/
-	module( const std::vector<char> & data, std::ostream & log = std::clog, const std::map< std::string, std::string > & ctls = detail::initial_ctls_map() );
+	LIBOPENMPT_CXX_API_MEMBER module( const std::vector<char> & data, std::ostream & log = std::clog, const std::map< std::string, std::string > & ctls = detail::initial_ctls_map() );
 	/*!
 	  \param beg Begin of data to load the module from.
 	  \param end End of data to load the module from.
@@ -464,7 +553,7 @@ public:
 	  \remarks The input data can be discarded after an openmpt::module has been constructed successfully.
 	  \sa \ref libopenmpt_cpp_fileio
 	*/
-	module( const char * beg, const char * end, std::ostream & log = std::clog, const std::map< std::string, std::string > & ctls = detail::initial_ctls_map() );
+	LIBOPENMPT_CXX_API_MEMBER module( const char * beg, const char * end, std::ostream & log = std::clog, const std::map< std::string, std::string > & ctls = detail::initial_ctls_map() );
 	/*!
 	  \param data Data to load the module from.
 	  \param size Amount of data available.
@@ -474,7 +563,7 @@ public:
 	  \remarks The input data can be discarded after an openmpt::module has been constructed successfully.
 	  \sa \ref libopenmpt_cpp_fileio
 	*/
-	module( const char * data, std::size_t size, std::ostream & log = std::clog, const std::map< std::string, std::string > & ctls = detail::initial_ctls_map() );
+	LIBOPENMPT_CXX_API_MEMBER module( const char * data, std::size_t size, std::ostream & log = std::clog, const std::map< std::string, std::string > & ctls = detail::initial_ctls_map() );
 	/*!
 	  \param data Data to load the module from.
 	  \param size Amount of data available.
@@ -484,8 +573,8 @@ public:
 	  \remarks The input data can be discarded after an openmpt::module has been constructed successfully.
 	  \sa \ref libopenmpt_cpp_fileio
 	*/
-	module( const void * data, std::size_t size, std::ostream & log = std::clog, const std::map< std::string, std::string > & ctls = detail::initial_ctls_map() );
-	virtual ~module();
+	LIBOPENMPT_CXX_API_MEMBER module( const void * data, std::size_t size, std::ostream & log = std::clog, const std::map< std::string, std::string > & ctls = detail::initial_ctls_map() );
+	LIBOPENMPT_CXX_API_MEMBER virtual ~module();
 public:
 
 	//! Select a sub-song from a multi-song module
@@ -495,14 +584,14 @@ public:
 	  \sa openmpt::module::get_num_subsongs, openmpt::module::get_selected_subsong, openmpt::module::get_subsong_names
 	  \remarks Whether subsong -1 (all subsongs consecutively), subsong 0 or some other subsong is selected by default, is an implementation detail and subject to change. If you do not want to care about subsongs, it is recommended to just not call openmpt::module::select_subsong() at all.
 	*/
-	void select_subsong( std::int32_t subsong );
+	LIBOPENMPT_CXX_API_MEMBER void select_subsong( std::int32_t subsong );
 	//! Get currently selected sub-song from a multi-song module
 	/*!
 	  \return Currently selected sub-song. -1 for all subsongs consecutively, 0 or greater for the current sub-song index.
 	  \sa openmpt::module::get_num_subsongs, openmpt::module::select_subsong, openmpt::module::get_subsong_names
 	  \since 0.3.0
 	*/
-	std::int32_t get_selected_subsong() const;
+	LIBOPENMPT_CXX_API_MEMBER std::int32_t get_selected_subsong() const;
 	//! Set Repeat Count
 	/*!
 	  \param repeat_count Repeat Count
@@ -511,7 +600,7 @@ public:
 	    - n>0: play once and repeat n times after that
 	  \sa openmpt::module::get_repeat_count
 	*/
-	void set_repeat_count( std::int32_t repeat_count );
+	LIBOPENMPT_CXX_API_MEMBER void set_repeat_count( std::int32_t repeat_count );
 	//! Get Repeat Count
 	/*!
 	  \return Repeat Count
@@ -520,13 +609,14 @@ public:
 	    - n>0: play once and repeat n times after that
 	  \sa openmpt::module::set_repeat_count
 	*/
-	std::int32_t get_repeat_count() const;
+	LIBOPENMPT_CXX_API_MEMBER std::int32_t get_repeat_count() const;
 
 	//! Get approximate song duration
 	/*!
 	  \return Approximate duration of current sub-song in seconds.
+	  \remarks The function may return infinity if the pattern data is too complex to evaluate.
 	*/
-	double get_duration_seconds() const;
+	LIBOPENMPT_CXX_API_MEMBER double get_duration_seconds() const;
 
 	//! Set approximate current song position
 	/*!
@@ -534,13 +624,13 @@ public:
 	  \return Approximate new song position in seconds.
 	  \sa openmpt::module::get_position_seconds
 	*/
-	double set_position_seconds( double seconds );
+	LIBOPENMPT_CXX_API_MEMBER double set_position_seconds( double seconds );
 	//! Get current song position
 	/*!
 	  \return Current song position in seconds.
 	  \sa openmpt::module::set_position_seconds
 	*/
-	double get_position_seconds() const;
+	LIBOPENMPT_CXX_API_MEMBER double get_position_seconds() const;
 
 	//! Set approximate current song position
 	/*!
@@ -551,7 +641,7 @@ public:
 	  \sa openmpt::module::set_position_seconds
 	  \sa openmpt::module::get_position_seconds
 	*/
-	double set_position_order_row( std::int32_t order, std::int32_t row );
+	LIBOPENMPT_CXX_API_MEMBER double set_position_order_row( std::int32_t order, std::int32_t row );
 
 	//! Get render parameter
 	/*!
@@ -561,7 +651,7 @@ public:
 	  \sa openmpt::module::render_param
 	  \sa openmpt::module::set_render_param
 	*/
-	std::int32_t get_render_param( int param ) const;
+	LIBOPENMPT_CXX_API_MEMBER std::int32_t get_render_param( int param ) const;
 	//! Set render parameter
 	/*!
 	  \param param Parameter to set. See openmpt::module::render_param.
@@ -570,7 +660,7 @@ public:
 	  \sa openmpt::module::render_param
 	  \sa openmpt::module::get_render_param
 	*/
-	void set_render_param( int param, std::int32_t value );
+	LIBOPENMPT_CXX_API_MEMBER void set_render_param( int param, std::int32_t value );
 
 	/*@{*/
 	//! Render audio data
@@ -585,7 +675,7 @@ public:
 	  \remarks It is recommended to use the floating point API because of the greater dynamic range and no implied clipping.
 	  \sa \ref libopenmpt_cpp_outputformat
 	*/
-	std::size_t read( std::int32_t samplerate, std::size_t count, std::int16_t * mono );
+	LIBOPENMPT_CXX_API_MEMBER std::size_t read( std::int32_t samplerate, std::size_t count, std::int16_t * mono );
 	//! Render audio data
 	/*!
 	  \param samplerate Sample rate to render output. Should be in [8000,192000], but this is not enforced.
@@ -599,7 +689,7 @@ public:
 	  \remarks It is recommended to use the floating point API because of the greater dynamic range and no implied clipping.
 	  \sa \ref libopenmpt_cpp_outputformat
 	*/
-	std::size_t read( std::int32_t samplerate, std::size_t count, std::int16_t * left, std::int16_t * right );
+	LIBOPENMPT_CXX_API_MEMBER std::size_t read( std::int32_t samplerate, std::size_t count, std::int16_t * left, std::int16_t * right );
 	//! Render audio data
 	/*!
 	  \param samplerate Sample rate to render output. Should be in [8000,192000], but this is not enforced.
@@ -615,7 +705,7 @@ public:
 	  \remarks It is recommended to use the floating point API because of the greater dynamic range and no implied clipping.
 	  \sa \ref libopenmpt_cpp_outputformat
 	*/
-	std::size_t read( std::int32_t samplerate, std::size_t count, std::int16_t * left, std::int16_t * right, std::int16_t * rear_left, std::int16_t * rear_right );
+	LIBOPENMPT_CXX_API_MEMBER std::size_t read( std::int32_t samplerate, std::size_t count, std::int16_t * left, std::int16_t * right, std::int16_t * rear_left, std::int16_t * rear_right );
 	//! Render audio data
 	/*!
 	  \param samplerate Sample rate to render output. Should be in [8000,192000], but this is not enforced.
@@ -628,7 +718,7 @@ public:
 	  \remarks Floating point samples are in the [-1.0..1.0] nominal range. They are not clipped to that range though and thus might overshoot.
 	  \sa \ref libopenmpt_cpp_outputformat
 	*/
-	std::size_t read( std::int32_t samplerate, std::size_t count, float * mono );
+	LIBOPENMPT_CXX_API_MEMBER std::size_t read( std::int32_t samplerate, std::size_t count, float * mono );
 	//! Render audio data
 	/*!
 	  \param samplerate Sample rate to render output. Should be in [8000,192000], but this is not enforced.
@@ -642,7 +732,7 @@ public:
 	  \remarks Floating point samples are in the [-1.0..1.0] nominal range. They are not clipped to that range though and thus might overshoot.
 	  \sa \ref libopenmpt_cpp_outputformat
 	*/
-	std::size_t read( std::int32_t samplerate, std::size_t count, float * left, float * right );
+	LIBOPENMPT_CXX_API_MEMBER std::size_t read( std::int32_t samplerate, std::size_t count, float * left, float * right );
 	//! Render audio data
 	/*!
 	  \param samplerate Sample rate to render output. Should be in [8000,192000], but this is not enforced.
@@ -658,7 +748,7 @@ public:
 	  \remarks Floating point samples are in the [-1.0..1.0] nominal range. They are not clipped to that range though and thus might overshoot.
 	  \sa \ref libopenmpt_cpp_outputformat
 	*/
-	std::size_t read( std::int32_t samplerate, std::size_t count, float * left, float * right, float * rear_left, float * rear_right );
+	LIBOPENMPT_CXX_API_MEMBER std::size_t read( std::int32_t samplerate, std::size_t count, float * left, float * right, float * rear_left, float * rear_right );
 	//! Render audio data
 	/*!
 	  \param samplerate Sample rate to render output. Should be in [8000,192000], but this is not enforced.
@@ -671,12 +761,12 @@ public:
 	  \remarks It is recommended to use the floating point API because of the greater dynamic range and no implied clipping.
 	  \sa \ref libopenmpt_cpp_outputformat
 	*/
-	std::size_t read_interleaved_stereo( std::int32_t samplerate, std::size_t count, std::int16_t * interleaved_stereo );
+	LIBOPENMPT_CXX_API_MEMBER std::size_t read_interleaved_stereo( std::int32_t samplerate, std::size_t count, std::int16_t * interleaved_stereo );
 	//! Render audio data
 	/*!
 	  \param samplerate Sample rate to render output. Should be in [8000,192000], but this is not enforced.
 	  \param count Number of audio frames to render per channel.
-	  \param interleaved_quad Pointer to a buffer of at least count*4 elements that receives the interleaved suad surround output in the order (L,R,RL,RR).
+	  \param interleaved_quad Pointer to a buffer of at least count*4 elements that receives the interleaved quad surround output in the order (L,R,RL,RR).
 	  \return The number of frames actually rendered.
 	  \retval 0 The end of song has been reached.
 	  \remarks The output buffers are only written to up to the returned number of elements.
@@ -684,7 +774,7 @@ public:
 	  \remarks It is recommended to use the floating point API because of the greater dynamic range and no implied clipping.
 	  \sa \ref libopenmpt_cpp_outputformat
 	*/
-	std::size_t read_interleaved_quad( std::int32_t samplerate, std::size_t count, std::int16_t * interleaved_quad );
+	LIBOPENMPT_CXX_API_MEMBER std::size_t read_interleaved_quad( std::int32_t samplerate, std::size_t count, std::int16_t * interleaved_quad );
 	//! Render audio data
 	/*!
 	  \param samplerate Sample rate to render output. Should be in [8000,192000], but this is not enforced.
@@ -697,12 +787,12 @@ public:
 	  \remarks Floating point samples are in the [-1.0..1.0] nominal range. They are not clipped to that range though and thus might overshoot.
 	  \sa \ref libopenmpt_cpp_outputformat
 	*/
-	std::size_t read_interleaved_stereo( std::int32_t samplerate, std::size_t count, float * interleaved_stereo );
+	LIBOPENMPT_CXX_API_MEMBER std::size_t read_interleaved_stereo( std::int32_t samplerate, std::size_t count, float * interleaved_stereo );
 	//! Render audio data
 	/*!
 	  \param samplerate Sample rate to render output. Should be in [8000,192000], but this is not enforced.
 	  \param count Number of audio frames to render per channel.
-	  \param interleaved_quad Pointer to a buffer of at least count*4 elements that receives the interleaved suad surround output in the order (L,R,RL,RR).
+	  \param interleaved_quad Pointer to a buffer of at least count*4 elements that receives the interleaved quad surround output in the order (L,R,RL,RR).
 	  \return The number of frames actually rendered.
 	  \retval 0 The end of song has been reached.
 	  \remarks The output buffers are only written to up to the returned number of elements.
@@ -710,7 +800,7 @@ public:
 	  \remarks Floating point samples are in the [-1.0..1.0] nominal range. They are not clipped to that range though and thus might overshoot.
 	  \sa \ref libopenmpt_cpp_outputformat
 	*/
-	std::size_t read_interleaved_quad( std::int32_t samplerate, std::size_t count, float * interleaved_quad );
+	LIBOPENMPT_CXX_API_MEMBER std::size_t read_interleaved_quad( std::int32_t samplerate, std::size_t count, float * interleaved_quad );
 	/*@}*/
 
 	//! Get the list of supported metadata item keys
@@ -718,12 +808,12 @@ public:
 	  \return Metadata item keys supported by openmpt::module::get_metadata
 	  \sa openmpt::module::get_metadata
 	*/
-	std::vector<std::string> get_metadata_keys() const;
+	LIBOPENMPT_CXX_API_MEMBER std::vector<std::string> get_metadata_keys() const;
 	//! Get a metadata item value
 	/*!
 	  \param key Metadata item key to query. Use openmpt::module::get_metadata_keys to check for available keys.
 	           Possible keys are:
-	           - type: Module format extension (e.g. it)
+	           - type: Module format extension (e.g. it) or another similar identifier for modules formats that typically do not use a file extension
 	           - type_long: Format name associated with the module format (e.g. Impulse Tracker)
 	           - originaltype: Module format extension (e.g. it) of the original module in case the actual type is a converted format (e.g. mo3 or gdm)
 	           - originaltype_long: Format name associated with the module format (e.g. Impulse Tracker) of the original module in case the actual type is a converted format (e.g. mo3 or gdm)
@@ -739,38 +829,52 @@ public:
 	  \return The associated value for key.
 	  \sa openmpt::module::get_metadata_keys
 	*/
-	std::string get_metadata( const std::string & key ) const;
+	LIBOPENMPT_CXX_API_MEMBER std::string get_metadata( const std::string & key ) const;
 
+	//! Get the current estimated beats per minute (BPM).
+	/*!
+	  \remarks Many module formats lack time signature metadata. It is common that this estimate is off by a factor of two, but other multipliers are also possible.
+	  \remarks Due to the nature of how module tempo works, the estimate may change slightly after switching libopenmpt's output to a different sample rate.
+	  \return The current estimated BPM.
+	*/
+	LIBOPENMPT_CXX_API_MEMBER double get_current_estimated_bpm() const;
 	//! Get the current speed
 	/*!
 	  \return The current speed in ticks per row.
 	*/
-	std::int32_t get_current_speed() const;
+	LIBOPENMPT_CXX_API_MEMBER std::int32_t get_current_speed() const;
 	//! Get the current tempo
 	/*!
 	  \return The current tempo in tracker units. The exact meaning of this value depends on the tempo mode being used.
+	  \deprecated Please use openmpt::module::get_current_tempo2().
 	*/
-	std::int32_t get_current_tempo() const;
+	LIBOPENMPT_ATTR_DEPRECATED LIBOPENMPT_CXX_API_MEMBER std::int32_t get_current_tempo() const;
+	//! Get the current tempo
+	/*!
+	  \return The current tempo in tracker units. The exact meaning of this value depends on the tempo mode being used.
+	  \since 0.7.0
+	*/
+	LIBOPENMPT_CXX_API_MEMBER double get_current_tempo2() const;
 	//! Get the current order
 	/*!
 	  \return The current order at which the module is being played back.
 	*/
-	std::int32_t get_current_order() const;
+	LIBOPENMPT_CXX_API_MEMBER std::int32_t get_current_order() const;
 	//! Get the current pattern
 	/*!
 	  \return The current pattern that is being played.
 	*/
-	std::int32_t get_current_pattern() const;
+	LIBOPENMPT_CXX_API_MEMBER std::int32_t get_current_pattern() const;
 	//! Get the current row
 	/*!
 	  \return The current row at which the current pattern is being played.
 	*/
-	std::int32_t get_current_row() const;
+	LIBOPENMPT_CXX_API_MEMBER std::int32_t get_current_row() const;
 	//! Get the current amount of playing channels.
 	/*!
 	  \return The amount of sample channels that are currently being rendered.
 	*/
-	std::int32_t get_current_playing_channels() const;
+	LIBOPENMPT_CXX_API_MEMBER std::int32_t get_current_playing_channels() const;
 
 	//! Get an approximate indication of the channel volume.
 	/*!
@@ -778,119 +882,119 @@ public:
 	  \return The approximate channel volume.
 	  \remarks The returned value is solely based on the note velocity and does not take the actual waveform of the playing sample into account.
 	*/
-	float get_current_channel_vu_mono( std::int32_t channel ) const;
+	LIBOPENMPT_CXX_API_MEMBER float get_current_channel_vu_mono( std::int32_t channel ) const;
 	//! Get an approximate indication of the channel volume on the front-left speaker.
 	/*!
 	  \param channel The channel whose volume should be retrieved.
 	  \return The approximate channel volume.
 	  \remarks The returned value is solely based on the note velocity and does not take the actual waveform of the playing sample into account.
 	*/
-	float get_current_channel_vu_left( std::int32_t channel ) const;
+	LIBOPENMPT_CXX_API_MEMBER float get_current_channel_vu_left( std::int32_t channel ) const;
 	//! Get an approximate indication of the channel volume on the front-right speaker.
 	/*!
 	  \param channel The channel whose volume should be retrieved.
 	  \return The approximate channel volume.
 	  \remarks The returned value is solely based on the note velocity and does not take the actual waveform of the playing sample into account.
 	*/
-	float get_current_channel_vu_right( std::int32_t channel ) const;
+	LIBOPENMPT_CXX_API_MEMBER float get_current_channel_vu_right( std::int32_t channel ) const;
 	//! Get an approximate indication of the channel volume on the rear-left speaker.
 	/*!
 	  \param channel The channel whose volume should be retrieved.
 	  \return The approximate channel volume.
 	  \remarks The returned value is solely based on the note velocity and does not take the actual waveform of the playing sample into account.
 	*/
-	float get_current_channel_vu_rear_left( std::int32_t channel ) const;
+	LIBOPENMPT_CXX_API_MEMBER float get_current_channel_vu_rear_left( std::int32_t channel ) const;
 	//! Get an approximate indication of the channel volume on the rear-right speaker.
 	/*!
 	  \param channel The channel whose volume should be retrieved.
 	  \return The approximate channel volume.
 	  \remarks The returned value is solely based on the note velocity and does not take the actual waveform of the playing sample into account.
 	*/
-	float get_current_channel_vu_rear_right( std::int32_t channel ) const;
+	LIBOPENMPT_CXX_API_MEMBER float get_current_channel_vu_rear_right( std::int32_t channel ) const;
 
 	//! Get the number of sub-songs
 	/*!
 	  \return The number of sub-songs in the module. This includes any "hidden" songs (songs that share the same sequence, but start at different order indices) and "normal" sub-songs or "sequences" (if the format supports them).
 	  \sa openmpt::module::get_subsong_names, openmpt::module::select_subsong, openmpt::module::get_selected_subsong
 	*/
-	std::int32_t get_num_subsongs() const;
+	LIBOPENMPT_CXX_API_MEMBER std::int32_t get_num_subsongs() const;
 	//! Get the number of pattern channels
 	/*!
 	  \return The number of pattern channels in the module. Not all channels do necessarily contain data.
 	  \remarks The number of pattern channels is completely independent of the number of output channels. libopenmpt can render modules in mono, stereo or quad surround, but the choice of which of the three modes to use must not be made based on the return value of this function, which may be any positive integer amount. Only use this function for informational purposes.
 	*/
-	std::int32_t get_num_channels() const;
+	LIBOPENMPT_CXX_API_MEMBER std::int32_t get_num_channels() const;
 	//! Get the number of orders
 	/*!
 	  \return The number of orders in the current sequence of the module.
 	*/
-	std::int32_t get_num_orders() const;
+	LIBOPENMPT_CXX_API_MEMBER std::int32_t get_num_orders() const;
 	//! Get the number of patterns
 	/*!
 	  \return The number of distinct patterns in the module.
 	*/
-	std::int32_t get_num_patterns() const;
+	LIBOPENMPT_CXX_API_MEMBER std::int32_t get_num_patterns() const;
 	//! Get the number of instruments
 	/*!
 	  \return The number of instrument slots in the module. Instruments are a layer on top of samples, and are not supported by all module formats.
 	*/
-	std::int32_t get_num_instruments() const;
+	LIBOPENMPT_CXX_API_MEMBER std::int32_t get_num_instruments() const;
 	//! Get the number of samples
 	/*!
 	  \return The number of sample slots in the module.
 	*/
-	std::int32_t get_num_samples() const;
+	LIBOPENMPT_CXX_API_MEMBER std::int32_t get_num_samples() const;
 
 	//! Get a list of sub-song names
 	/*!
 	  \return All sub-song names.
 	  \sa openmpt::module::get_num_subsongs, openmpt::module::select_subsong, openmpt::module::get_selected_subsong
 	*/
-	std::vector<std::string> get_subsong_names() const;
+	LIBOPENMPT_CXX_API_MEMBER std::vector<std::string> get_subsong_names() const;
 	//! Get a list of channel names
 	/*!
 	  \return All channel names.
 	  \sa openmpt::module::get_num_channels
 	*/
-	std::vector<std::string> get_channel_names() const;
+	LIBOPENMPT_CXX_API_MEMBER std::vector<std::string> get_channel_names() const;
 	//! Get a list of order names
 	/*!
 	  \return All order names.
 	  \sa openmpt::module::get_num_orders
 	*/
-	std::vector<std::string> get_order_names() const;
+	LIBOPENMPT_CXX_API_MEMBER std::vector<std::string> get_order_names() const;
 	//! Get a list of pattern names
 	/*!
 	  \return All pattern names.
 	  \sa openmpt::module::get_num_patterns
 	*/
-	std::vector<std::string> get_pattern_names() const;
+	LIBOPENMPT_CXX_API_MEMBER std::vector<std::string> get_pattern_names() const;
 	//! Get a list of instrument names
 	/*!
 	  \return All instrument names.
 	  \sa openmpt::module::get_num_instruments
 	*/
-	std::vector<std::string> get_instrument_names() const;
+	LIBOPENMPT_CXX_API_MEMBER std::vector<std::string> get_instrument_names() const;
 	//! Get a list of sample names
 	/*!
 	  \return All sample names.
 	  \sa openmpt::module::get_num_samples
 	*/
-	std::vector<std::string> get_sample_names() const;
+	LIBOPENMPT_CXX_API_MEMBER std::vector<std::string> get_sample_names() const;
 
 	//! Get pattern at order position
 	/*!
 	  \param order The order item whose pattern index should be retrieved.
 	  \return The pattern index found at the given order position of the current sequence.
 	*/
-	std::int32_t get_order_pattern( std::int32_t order ) const;
+	LIBOPENMPT_CXX_API_MEMBER std::int32_t get_order_pattern( std::int32_t order ) const;
 
 	//! Get the number of rows in a pattern
 	/*!
 	  \param pattern The pattern whose row count should be retrieved.
 	  \return The number of rows in the given pattern. If the pattern does not exist, 0 is returned.
 	*/
-	std::int32_t get_pattern_num_rows( std::int32_t pattern ) const;
+	LIBOPENMPT_CXX_API_MEMBER std::int32_t get_pattern_num_rows( std::int32_t pattern ) const;
 
 	//! Get raw pattern content
 	/*!
@@ -900,7 +1004,7 @@ public:
 	  \param command The cell index at which the data should be retrieved. See openmpt::module::command_index
 	  \return The internal, raw pattern data at the given pattern position.
 	*/
-	std::uint8_t get_pattern_row_channel_command( std::int32_t pattern, std::int32_t row, std::int32_t channel, int command ) const;
+	LIBOPENMPT_CXX_API_MEMBER std::uint8_t get_pattern_row_channel_command( std::int32_t pattern, std::int32_t row, std::int32_t channel, int command ) const;
 
 	//! Get formatted (human-readable) pattern content
 	/*!
@@ -911,7 +1015,7 @@ public:
 	  \return The formatted pattern data at the given pattern position. See openmpt::module::command_index
 	  \sa openmpt::module::highlight_pattern_row_channel_command
 	*/
-	std::string format_pattern_row_channel_command( std::int32_t pattern, std::int32_t row, std::int32_t channel, int command ) const;
+	LIBOPENMPT_CXX_API_MEMBER std::string format_pattern_row_channel_command( std::int32_t pattern, std::int32_t row, std::int32_t channel, int command ) const;
 
 	//! Get highlighting information for formatted pattern content
 	/*!
@@ -933,7 +1037,7 @@ public:
 	           - "f" : generic effect column parameter
 	  \sa openmpt::module::get_pattern_row_channel_command
 	*/
-	std::string highlight_pattern_row_channel_command( std::int32_t pattern, std::int32_t row, std::int32_t channel, int command ) const;
+	LIBOPENMPT_CXX_API_MEMBER std::string highlight_pattern_row_channel_command( std::int32_t pattern, std::int32_t row, std::int32_t channel, int command ) const;
 
 	//! Get formatted (human-readable) pattern content
 	/*!
@@ -945,7 +1049,7 @@ public:
 	  \return The formatted pattern data at the given pattern position.
 	  \sa openmpt::module::highlight_pattern_row_channel
 	*/
-	std::string format_pattern_row_channel( std::int32_t pattern, std::int32_t row, std::int32_t channel, std::size_t width = 0, bool pad = true ) const;
+	LIBOPENMPT_CXX_API_MEMBER std::string format_pattern_row_channel( std::int32_t pattern, std::int32_t row, std::int32_t channel, std::size_t width = 0, bool pad = true ) const;
 	//! Get highlighting information for formatted pattern content
 	/*!
 	  \param pattern The pattern whose data should be retrieved.
@@ -956,27 +1060,32 @@ public:
 	  \return The highlighting string for the formatted pattern data as retrieved by openmpt::module::format_pattern_row_channel at the given pattern position.
 	  \sa openmpt::module::format_pattern_row_channel
 	*/
-	std::string highlight_pattern_row_channel( std::int32_t pattern, std::int32_t row, std::int32_t channel, std::size_t width = 0, bool pad = true ) const;
+	LIBOPENMPT_CXX_API_MEMBER std::string highlight_pattern_row_channel( std::int32_t pattern, std::int32_t row, std::int32_t channel, std::size_t width = 0, bool pad = true ) const;
 
 	//! Retrieve supported ctl keys
 	/*!
 	  \return A vector containing all supported ctl keys.
 	  \remarks Currently supported ctl values are:
-	           - load.skip_samples: Set to "1" to avoid loading samples into memory
-	           - load.skip_patterns: Set to "1" to avoid loading patterns into memory
-	           - load.skip_plugins: Set to "1" to avoid loading plugins
-	           - load.skip_subsongs_init: Set to "1" to avoid pre-initializing sub-songs. Skipping results in faster module loading but slower seeking.
-	           - seek.sync_samples: Set to "1" to sync sample playback when using openmpt::module::set_position_seconds or openmpt::module::set_position_order_row.
-	           - subsong: The current subsong. Setting it has identical semantics as openmpt::module::select_subsong(), getting it returns the currently selected subsong.
-	           - play.at_end: Chooses the behaviour when the end of song is reached:
+	           - load.skip_samples (boolean): Set to "1" to avoid loading samples into memory
+	           - load.skip_patterns (boolean): Set to "1" to avoid loading patterns into memory
+	           - load.skip_plugins (boolean): Set to "1" to avoid loading plugins
+	           - load.skip_subsongs_init (boolean): Set to "1" to avoid pre-initializing sub-songs. Skipping results in faster module loading but slower seeking.
+	           - seek.sync_samples (boolean): Set to "0" to not sync sample playback when using openmpt::module::set_position_seconds or openmpt::module::set_position_order_row.
+	           - subsong (integer): The current subsong. Setting it has identical semantics as openmpt::module::select_subsong(), getting it returns the currently selected subsong.
+	           - play.at_end (text): Chooses the behaviour when the end of song is reached. The song end is considered to be reached after the number of reptitions set by openmpt::module::set_repeat_count was played, so if the song is set to repeat infinitely, its end is never considered to be reached.
 	                          - "fadeout": Fades the module out for a short while. Subsequent reads after the fadeout will return 0 rendered frames.
-	                          - "continue": Returns 0 rendered frames when the song end is reached. Subsequent reads will continue playing from the song start or loop start.
+	                          - "continue": Returns 0 rendered frames when the song end is reached. Subsequent reads will continue playing from the loop start (if the song is not programmed to loop, playback resumsed from the song start).
 	                          - "stop": Returns 0 rendered frames when the song end is reached. Subsequent reads will return 0 rendered frames.
-	           - play.tempo_factor: Set a floating point tempo factor. "1.0" is the default tempo.
-	           - play.pitch_factor: Set a floating point pitch factor. "1.0" is the default pitch.
-	           - render.resampler.emulate_amiga: Set to "1" to enable the Amiga resampler for Amiga modules. This emulates the sound characteristics of the Paula chip and overrides the selected interpolation filter. Non-Amiga module formats are not affected by this setting. 
-	           - render.opl.volume_factor: Set volume factor applied to synthesized OPL sounds, relative to the default OPL volume.
-	           - dither: Set the dither algorithm that is used for the 16 bit versions of openmpt::module::read. Supported values are:
+	           - play.tempo_factor (floatingpoint): Set a floating point tempo factor. "1.0" is the default tempo.
+	           - play.pitch_factor (floatingpoint): Set a floating point pitch factor. "1.0" is the default pitch.
+	           - render.resampler.emulate_amiga (boolean): Set to "1" to enable the Amiga resampler for Amiga modules. This emulates the sound characteristics of the Paula chip and overrides the selected interpolation filter. Non-Amiga module formats are not affected by this setting. 
+	           - render.resampler.emulate_amiga_type (string): Configures the filter type to use for the Amiga resampler. Supported values are:
+	                     - "auto": Filter type is chosen by the library and might change. This is the default.
+	                     - "a500": Amiga A500 filter.
+	                     - "a1200": Amiga A1200 filter.
+	                     - "unfiltered": BLEP synthesis without model-specific filters. The LED filter is ignored by this setting. This filter mode is considered to be experimental and might change in the future.
+	           - render.opl.volume_factor (floatingpoint): Set volume factor applied to synthesized OPL sounds, relative to the default OPL volume.
+	           - dither (integer): Set the dither algorithm that is used for the 16 bit versions of openmpt::module::read. Supported values are:
 	                     - 0: No dithering.
 	                     - 1: Default mode. Chosen by OpenMPT code, might change.
 	                     - 2: Rectangular, 0.5 bit depth, no noise shaping (original ModPlug Tracker).
@@ -984,32 +1093,103 @@ public:
 
 	           An exclamation mark ("!") or a question mark ("?") can be appended to any ctl key in order to influence the behaviour in case of an unknown ctl key. "!" causes an exception to be thrown; "?" causes the ctl to be silently ignored. In case neither is appended to the key name, unknown init_ctls are ignored by default and other ctls throw an exception by default.
 	*/
-	std::vector<std::string> get_ctls() const;
+	LIBOPENMPT_CXX_API_MEMBER std::vector<std::string> get_ctls() const;
 
 	//! Get current ctl value
 	/*!
 	  \param ctl The ctl key whose value should be retrieved.
 	  \return The associated ctl value.
 	  \sa openmpt::module::get_ctls
+	  \deprecated Please use openmpt::module::ctl_get_boolean(), openmpt::module::ctl_get_integer(), openmpt::module::ctl_get_floatingpoint(), or openmpt::module::ctl_get_text().
 	*/
-	std::string ctl_get( const std::string & ctl ) const;
+	LIBOPENMPT_ATTR_DEPRECATED LIBOPENMPT_CXX_API_MEMBER std::string ctl_get( const std::string & ctl ) const;
+	//! Get current ctl boolean value
+	/*!
+	  \param ctl The ctl key whose value should be retrieved.
+	  \return The associated ctl value.
+	  \sa openmpt::module::get_ctls
+	  \since 0.5.0
+	*/
+	LIBOPENMPT_CXX_API_MEMBER bool ctl_get_boolean( std::string_view ctl ) const;
+	//! Get current ctl integer value
+	/*!
+	  \param ctl The ctl key whose value should be retrieved.
+	  \return The associated ctl value.
+	  \sa openmpt::module::get_ctls
+	  \since 0.5.0
+	*/
+	LIBOPENMPT_CXX_API_MEMBER std::int64_t ctl_get_integer( std::string_view ctl ) const;
+	//! Get current ctl floatingpoint value
+	/*!
+	  \param ctl The ctl key whose value should be retrieved.
+	  \return The associated ctl value.
+	  \sa openmpt::module::get_ctls
+	  \since 0.5.0
+	*/
+	LIBOPENMPT_CXX_API_MEMBER double ctl_get_floatingpoint( std::string_view ctl ) const;
+	//! Get current ctl text value
+	/*!
+	  \param ctl The ctl key whose value should be retrieved.
+	  \return The associated ctl value.
+	  \sa openmpt::module::get_ctls
+	  \since 0.5.0
+	*/
+	LIBOPENMPT_CXX_API_MEMBER std::string ctl_get_text( std::string_view ctl ) const;
+
 	//! Set ctl value
 	/*!
 	  \param ctl The ctl key whose value should be set.
 	  \param value The value that should be set.
 	  \throws openmpt::exception Throws an exception derived from openmpt::exception in case the value is not sensible (e.g. negative tempo factor) or under the circumstances outlined in openmpt::module::get_ctls.
 	  \sa openmpt::module::get_ctls
+	  \deprecated Please use openmpt::module::ctl_set_boolean(), openmpt::module::ctl_set_integer(), openmpt::module::ctl_set_floatingpoint(), or openmpt::module::ctl_set_text().
 	*/
-	void ctl_set( const std::string & ctl, const std::string & value );
+	LIBOPENMPT_ATTR_DEPRECATED LIBOPENMPT_CXX_API_MEMBER void ctl_set( const std::string & ctl, const std::string & value );
+	//! Set ctl boolean value
+	/*!
+	  \param ctl The ctl key whose value should be set.
+	  \param value The value that should be set.
+	  \throws openmpt::exception Throws an exception derived from openmpt::exception in case the value is not sensible (e.g. negative tempo factor) or under the circumstances outlined in openmpt::module::get_ctls.
+	  \sa openmpt::module::get_ctls
+	  \since 0.5.0
+	*/
+	LIBOPENMPT_CXX_API_MEMBER void ctl_set_boolean( std::string_view ctl, bool value );
+	//! Set ctl integer value
+	/*!
+	  \param ctl The ctl key whose value should be set.
+	  \param value The value that should be set.
+	  \throws openmpt::exception Throws an exception derived from openmpt::exception in case the value is not sensible (e.g. negative tempo factor) or under the circumstances outlined in openmpt::module::get_ctls.
+	  \sa openmpt::module::get_ctls
+	  \since 0.5.0
+	*/
+	LIBOPENMPT_CXX_API_MEMBER void ctl_set_integer( std::string_view ctl, std::int64_t value );
+	//! Set ctl floatingpoint value
+	/*!
+	  \param ctl The ctl key whose value should be set.
+	  \param value The value that should be set.
+	  \throws openmpt::exception Throws an exception derived from openmpt::exception in case the value is not sensible (e.g. negative tempo factor) or under the circumstances outlined in openmpt::module::get_ctls.
+	  \sa openmpt::module::get_ctls
+	  \since 0.5.0
+	*/
+	LIBOPENMPT_CXX_API_MEMBER void ctl_set_floatingpoint( std::string_view ctl, double value );
+	//! Set ctl text value
+	/*!
+	  \param ctl The ctl key whose value should be set.
+	  \param value The value that should be set.
+	  \throws openmpt::exception Throws an exception derived from openmpt::exception in case the value is not sensible (e.g. negative tempo factor) or under the circumstances outlined in openmpt::module::get_ctls.
+	  \sa openmpt::module::get_ctls
+	  \since 0.5.0
+	*/
+	LIBOPENMPT_CXX_API_MEMBER void ctl_set_text( std::string_view ctl, std::string_view value );
 
 	// remember to add new functions to both C and C++ interfaces and to increase OPENMPT_API_VERSION_MINOR
 
 }; // class module
 
-} // namespace openmpt
-
 /*!
   @}
 */
+
+} // namespace openmpt
 
 #endif // LIBOPENMPT_HPP

@@ -559,27 +559,27 @@ LIBOPENMPT_API double openmpt_could_open_probability2( openmpt_stream_callbacks 
 LIBOPENMPT_API size_t openmpt_probe_file_header_get_recommended_size(void);
 
 /*! Probe for module formats in openmpt_probe_file_header() or openmpt_probe_file_header_without_filesize(). \since 0.3.0 */
-#define OPENMPT_PROBE_FILE_HEADER_FLAGS_MODULES    0x1ul
+#define OPENMPT_PROBE_FILE_HEADER_FLAGS_MODULES    0x1ull
 /*! Probe for module-specific container formats in openmpt_probe_file_header() or openmpt_probe_file_header_without_filesize(). \since 0.3.0 */
-#define OPENMPT_PROBE_FILE_HEADER_FLAGS_CONTAINERS 0x2ul
+#define OPENMPT_PROBE_FILE_HEADER_FLAGS_CONTAINERS 0x2ull
 
 /*! Probe for the default set of formats in openmpt_probe_file_header() or openmpt_probe_file_header_without_filesize(). \since 0.3.0 */
 #define OPENMPT_PROBE_FILE_HEADER_FLAGS_DEFAULT    ( OPENMPT_PROBE_FILE_HEADER_FLAGS_MODULES | OPENMPT_PROBE_FILE_HEADER_FLAGS_CONTAINERS )
 /*! Probe for no formats in openmpt_probe_file_header() or openmpt_probe_file_header_without_filesize(). \since 0.3.0 */
-#define OPENMPT_PROBE_FILE_HEADER_FLAGS_NONE       0x0ul
+#define OPENMPT_PROBE_FILE_HEADER_FLAGS_NONE       0x0ull
 
-/*! Possible return values fo openmpt_probe_file_header() and openmpt_probe_file_header_without_filesize(). \since 0.3.0 */
+/*! Possible return values for openmpt_probe_file_header() and openmpt_probe_file_header_without_filesize(): The file will most likely be supported by libopenmpt. \since 0.3.0 */
 #define OPENMPT_PROBE_FILE_HEADER_RESULT_SUCCESS      1
-/*! Possible return values fo openmpt_probe_file_header() and openmpt_probe_file_header_without_filesize(). \since 0.3.0 */
+/*! Possible return values for openmpt_probe_file_header() and openmpt_probe_file_header_without_filesize(): The file is not supported by libopenmpt. \since 0.3.0 */
 #define OPENMPT_PROBE_FILE_HEADER_RESULT_FAILURE      0
-/*! Possible return values fo openmpt_probe_file_header() and openmpt_probe_file_header_without_filesize(). \since 0.3.0 */
+/*! Possible return values for openmpt_probe_file_header() and openmpt_probe_file_header_without_filesize(): An answer could not be determined with the amount of data provided. \since 0.3.0 */
 #define OPENMPT_PROBE_FILE_HEADER_RESULT_WANTMOREDATA (-1)
-/*! Possible return values fo openmpt_probe_file_header() and openmpt_probe_file_header_without_filesize(). \since 0.3.0 */
+/*! Possible return values for openmpt_probe_file_header() and openmpt_probe_file_header_without_filesize(): An internal error occurred. \since 0.3.0 */
 #define OPENMPT_PROBE_FILE_HEADER_RESULT_ERROR        (-255)
 
 /*! \brief Probe the provided bytes from the beginning of a file for supported file format headers to find out whether libopenmpt might be able to open it
  *
- * \param flags Ored mask of OPENMPT_PROBE_FILE_HEADER_FLAGS_MODULES and OPENMPT_PROBE_FILE_HEADER_FLAGS_CONTAINERS, or OPENMPT_PROBE_FILE_HEADER_FLAGS_DEFAULT.
+ * \param flags Bit mask of OPENMPT_PROBE_FILE_HEADER_FLAGS_MODULES and OPENMPT_PROBE_FILE_HEADER_FLAGS_CONTAINERS, or OPENMPT_PROBE_FILE_HEADER_FLAGS_DEFAULT.
  * \param data Beginning of the file data.
  * \param size Size of the beginning of the file data.
  * \param filesize Full size of the file data on disk.
@@ -604,7 +604,7 @@ LIBOPENMPT_API size_t openmpt_probe_file_header_get_recommended_size(void);
 LIBOPENMPT_API int openmpt_probe_file_header( uint64_t flags, const void * data, size_t size, uint64_t filesize, openmpt_log_func logfunc, void * loguser, openmpt_error_func errfunc, void * erruser, int * error, const char * * error_message );
 /*! \brief Probe the provided bytes from the beginning of a file for supported file format headers to find out whether libopenmpt might be able to open it
  *
- * \param flags Ored mask of OPENMPT_PROBE_FILE_HEADER_FLAGS_MODULES and OPENMPT_PROBE_FILE_HEADER_FLAGS_CONTAINERS, or OPENMPT_PROBE_FILE_HEADER_FLAGS_DEFAULT.
+ * \param flags Bit mask of OPENMPT_PROBE_FILE_HEADER_FLAGS_MODULES and OPENMPT_PROBE_FILE_HEADER_FLAGS_CONTAINERS, or OPENMPT_PROBE_FILE_HEADER_FLAGS_DEFAULT.
  * \param data Beginning of the file data.
  * \param size Size of the beginning of the file data.
  * \param logfunc Logging function where warning and errors are written. May be NULL.
@@ -630,7 +630,7 @@ LIBOPENMPT_API int openmpt_probe_file_header_without_filesize( uint64_t flags, c
 
 /*! \brief Probe the provided bytes from the beginning of a file for supported file format headers to find out whether libopenmpt might be able to open it
  *
- * \param flags Ored mask of OPENMPT_PROBE_FILE_HEADER_FLAGS_MODULES and OPENMPT_PROBE_FILE_HEADER_FLAGS_CONTAINERS, or OPENMPT_PROBE_FILE_HEADER_FLAGS_DEFAULT.
+ * \param flags Bit mask of OPENMPT_PROBE_FILE_HEADER_FLAGS_MODULES and OPENMPT_PROBE_FILE_HEADER_FLAGS_CONTAINERS, or OPENMPT_PROBE_FILE_HEADER_FLAGS_DEFAULT.
  * \param stream_callbacks Input stream callback operations.
  * \param stream Input stream to scan.
  * \param logfunc Logging function where warning and errors are written. May be NULL.
@@ -670,7 +670,7 @@ typedef struct openmpt_module_initial_ctl {
  * \param stream Input stream to load the module from.
  * \param logfunc Logging function where warning and errors are written. The logging function may be called throughout the lifetime of openmpt_module. May be NULL.
  * \param loguser User-defined data associated with this module. This value will be passed to the logging callback function (logfunc)
- * \param ctls A map of initial ctl values. See openmpt_module_get_ctls()
+ * \param ctls An array of initial ctl and value pairs stored in \ref openmpt_module_initial_ctl, terminated by a pair of NULL and NULL. See \ref openmpt_module_get_ctls and \ref openmpt_module_ctl_set.
  * \return A pointer to the constructed openmpt_module, or NULL on failure.
  * \remarks The input data can be discarded after an openmpt_module has been constructed successfully.
  * \sa openmpt_stream_callbacks
@@ -689,7 +689,7 @@ LIBOPENMPT_API LIBOPENMPT_DEPRECATED openmpt_module * openmpt_module_create( ope
  * \param erruser Error function user context. Used to pass any user-defined data associated with this module to the logging function.
  * \param error Pointer to an integer where an error may get stored. May be NULL.
  * \param error_message Pointer to a string pointer where an error message may get stored. May be NULL.
- * \param ctls A map of initial ctl values. See openmpt_module_get_ctls()
+ * \param ctls An array of initial ctl and value pairs stored in \ref openmpt_module_initial_ctl, terminated by a pair of NULL and NULL. See \ref openmpt_module_get_ctls and \ref openmpt_module_ctl_set.
  * \return A pointer to the constructed openmpt_module, or NULL on failure.
  * \remarks The input data can be discarded after an openmpt_module has been constructed successfully.
  * \sa openmpt_stream_callbacks
@@ -704,7 +704,7 @@ LIBOPENMPT_API openmpt_module * openmpt_module_create2( openmpt_stream_callbacks
  * \param filesize Amount of data available.
  * \param logfunc Logging function where warning and errors are written. The logging function may be called throughout the lifetime of openmpt_module.
  * \param loguser User-defined data associated with this module. This value will be passed to the logging callback function (logfunc)
- * \param ctls A map of initial ctl values. See openmpt_module_get_ctls()
+ * \param ctls An array of initial ctl and value pairs stored in \ref openmpt_module_initial_ctl, terminated by a pair of NULL and NULL. See \ref openmpt_module_get_ctls and \ref openmpt_module_ctl_set.
  * \return A pointer to the constructed openmpt_module, or NULL on failure.
  * \remarks The input data can be discarded after an openmpt_module has been constructed successfully.
  * \sa \ref libopenmpt_c_fileio
@@ -722,7 +722,7 @@ LIBOPENMPT_API LIBOPENMPT_DEPRECATED openmpt_module * openmpt_module_create_from
  * \param erruser Error function user context. Used to pass any user-defined data associated with this module to the logging function.
  * \param error Pointer to an integer where an error may get stored. May be NULL.
  * \param error_message Pointer to a string pointer where an error message may get stored. May be NULL.
- * \param ctls A map of initial ctl values. See openmpt_module_get_ctls()
+ * \param ctls An array of initial ctl and value pairs stored in \ref openmpt_module_initial_ctl, terminated by a pair of NULL and NULL. See \ref openmpt_module_get_ctls and \ref openmpt_module_ctl_set.
  * \return A pointer to the constructed openmpt_module, or NULL on failure.
  * \remarks The input data can be discarded after an openmpt_module has been constructed successfully.
  * \sa \ref libopenmpt_c_fileio
@@ -901,6 +901,7 @@ LIBOPENMPT_API int32_t openmpt_module_get_repeat_count( openmpt_module * mod );
  *
  * \param mod The module handle to work on.
  * \return Approximate duration of current sub-song in seconds.
+ * \remarks The function may return infinity if the pattern data is too complex to evaluate.
  */
 LIBOPENMPT_API double openmpt_module_get_duration_seconds( openmpt_module * mod );
 
@@ -1071,7 +1072,7 @@ LIBOPENMPT_API size_t openmpt_module_read_interleaved_stereo( openmpt_module * m
  * \param mod The module handle to work on.
  * \param samplerate Sample rate to render output. Should be in [8000,192000], but this is not enforced.
  * \param count Number of audio frames to render per channel.
- * \param interleaved_quad Pointer to a buffer of at least count*4 elements that receives the interleaved suad surround output in the order (L,R,RL,RR).
+ * \param interleaved_quad Pointer to a buffer of at least count*4 elements that receives the interleaved quad surround output in the order (L,R,RL,RR).
  * \return The number of frames actually rendered.
  * \retval 0 The end of song has been reached.
  * \remarks The output buffers are only written to up to the returned number of elements.
@@ -1099,7 +1100,7 @@ LIBOPENMPT_API size_t openmpt_module_read_interleaved_float_stereo( openmpt_modu
  * \param mod The module handle to work on.
  * \param samplerate Sample rate to render output. Should be in [8000,192000], but this is not enforced.
  * \param count Number of audio frames to render per channel.
- * \param interleaved_quad Pointer to a buffer of at least count*4 elements that receives the interleaved suad surround output in the order (L,R,RL,RR).
+ * \param interleaved_quad Pointer to a buffer of at least count*4 elements that receives the interleaved quad surround output in the order (L,R,RL,RR).
  * \return The number of frames actually rendered.
  * \retval 0 The end of song has been reached.
  * \remarks The output buffers are only written to up to the returned number of elements.
@@ -1122,7 +1123,7 @@ LIBOPENMPT_API const char * openmpt_module_get_metadata_keys( openmpt_module * m
  * \param mod The module handle to work on.
  * \param key Metadata item key to query. Use openmpt_module_get_metadata_keys to check for available keys.
  *          Possible keys are:
- *          - type: Module format extension (e.g. it)
+ *          - type: Module format extension (e.g. it) or another similar identifier for modules formats that typically do not use a file extension
  *          - type_long: Format name associated with the module format (e.g. Impulse Tracker)
  *          - originaltype: Module format extension (e.g. it) of the original module in case the actual type is a converted format (e.g. mo3 or gdm)
  *          - originaltype_long: Format name associated with the module format (e.g. Impulse Tracker) of the original module in case the actual type is a converted format (e.g. mo3 or gdm)
@@ -1140,6 +1141,14 @@ LIBOPENMPT_API const char * openmpt_module_get_metadata_keys( openmpt_module * m
  */
 LIBOPENMPT_API const char * openmpt_module_get_metadata( openmpt_module * mod, const char * key );
 
+/*! Get the current estimated beats per minute (BPM).
+ *
+ * \param mod The module handle to work on.
+ * \remarks Many module formats lack time signature metadata. It is common that this estimate is off by a factor of two, but other multipliers are also possible.
+ * \remarks Due to the nature of how module tempo works, the estimate may change slightly after switching libopenmpt's output to a different sample rate.
+ * \return The current estimated BPM.
+ */
+LIBOPENMPT_API double openmpt_module_get_current_estimated_bpm( openmpt_module * mod );
 /*! \brief Get the current speed
  *
  * \param mod The module handle to work on.
@@ -1150,8 +1159,16 @@ LIBOPENMPT_API int32_t openmpt_module_get_current_speed( openmpt_module * mod );
  *
  * \param mod The module handle to work on.
  * \return The current tempo in tracker units. The exact meaning of this value depends on the tempo mode being used.
+ * \deprecated Please use openmpt_module_get_current_tempo2().
  */
-LIBOPENMPT_API int32_t openmpt_module_get_current_tempo( openmpt_module * mod );
+LIBOPENMPT_API LIBOPENMPT_DEPRECATED int32_t openmpt_module_get_current_tempo( openmpt_module * mod );
+/*! \brief Get the current tempo
+ *
+ * \param mod The module handle to work on.
+ * \return The current tempo in tracker units. The exact meaning of this value depends on the tempo mode being used.
+ * \since 0.7.0
+ */
+LIBOPENMPT_API double openmpt_module_get_current_tempo2( openmpt_module * mod );
 /*! \brief Get the current order
  *
  * \param mod The module handle to work on.
@@ -1396,35 +1413,79 @@ LIBOPENMPT_API const char * openmpt_module_highlight_pattern_row_channel( openmp
  * \param mod The module handle to work on.
  * \return A semicolon-separated list containing all supported ctl keys.
  * \remarks Currently supported ctl values are:
- *          - load.skip_samples: Set to "1" to avoid loading samples into memory
- *          - load.skip_patterns: Set to "1" to avoid loading patterns into memory
- *          - load.skip_plugins: Set to "1" to avoid loading plugins
- *          - load.skip_subsongs_init: Set to "1" to avoid pre-initializing sub-songs. Skipping results in faster module loading but slower seeking.
- *          - seek.sync_samples: Set to "1" to sync sample playback when using openmpt_module_set_position_seconds or openmpt_module_set_position_order_row.
- *          - subsong: The current subsong. Setting it has identical semantics as openmpt_module_select_subsong(), getting it returns the currently selected subsong.
- *          - play.at_end: Chooses the behaviour when the end of song is reached:
+ *          - load.skip_samples (boolean): Set to "1" to avoid loading samples into memory
+ *          - load.skip_patterns (boolean): Set to "1" to avoid loading patterns into memory
+ *          - load.skip_plugins (boolean): Set to "1" to avoid loading plugins
+ *          - load.skip_subsongs_init (boolean): Set to "1" to avoid pre-initializing sub-songs. Skipping results in faster module loading but slower seeking.
+ *          - seek.sync_samples (boolean): Set to "0" to not sync sample playback when using openmpt_module_set_position_seconds or openmpt_module_set_position_order_row.
+ *          - subsong (integer): The current subsong. Setting it has identical semantics as openmpt_module_select_subsong(), getting it returns the currently selected subsong.
+ *          - play.at_end (text): Chooses the behaviour when the end of song is reached. The song end is considered to be reached after the number of reptitions set by openmpt_module_set_repeat_count was played, so if the song is set to repeat infinitely, its end is never considered to be reached.
  *                         - "fadeout": Fades the module out for a short while. Subsequent reads after the fadeout will return 0 rendered frames.
- *                         - "continue": Returns 0 rendered frames when the song end is reached. Subsequent reads will continue playing from the song start or loop start.
+ *                         - "continue": Returns 0 rendered frames when the song end is reached. Subsequent reads will continue playing from the loop start (if the song is not programmed to loop, playback resumsed from the song start).
  *                         - "stop": Returns 0 rendered frames when the song end is reached. Subsequent reads will return 0 rendered frames.
- *          - play.tempo_factor: Set a floating point tempo factor. "1.0" is the default tempo.
- *          - play.pitch_factor: Set a floating point pitch factor. "1.0" is the default pitch.
- *          - render.resampler.emulate_amiga: Set to "1" to enable the Amiga resampler for Amiga modules. This emulates the sound characteristics of the Paula chip and overrides the selected interpolation filter. Non-Amiga module formats are not affected by this setting.
- *          - render.opl.volume_factor: Set volume factor applied to synthesized OPL sounds, relative to the default OPL volume.
- *          - dither: Set the dither algorithm that is used for the 16 bit versions of openmpt_module_read. Supported values are:
+ *          - play.tempo_factor (floatingpoint): Set a floating point tempo factor. "1.0" is the default tempo.
+ *          - play.pitch_factor (floatingpoint): Set a floating point pitch factor. "1.0" is the default pitch.
+ *          - render.resampler.emulate_amiga (boolean): Set to "1" to enable the Amiga resampler for Amiga modules. This emulates the sound characteristics of the Paula chip and overrides the selected interpolation filter. Non-Amiga module formats are not affected by this setting.
+ *          - render.resampler.emulate_amiga_type (string): Configures the filter type to use for the Amiga resampler. Supported values are:
+ *                    - "auto": Filter type is chosen by the library and might change. This is the default.
+ *                    - "a500": Amiga A500 filter.
+ *                    - "a1200": Amiga A1200 filter.
+ *                    - "unfiltered": BLEP synthesis without model-specific filters. The LED filter is ignored by this setting. This filter mode is considered to be experimental and might change in the future.
+ *          - render.opl.volume_factor (floatingpoint): Set volume factor applied to synthesized OPL sounds, relative to the default OPL volume.
+ *          - dither (integer): Set the dither algorithm that is used for the 16 bit versions of openmpt_module_read. Supported values are:
  *                    - 0: No dithering.
  *                    - 1: Default mode. Chosen by OpenMPT code, might change.
  *                    - 2: Rectangular, 0.5 bit depth, no noise shaping (original ModPlug Tracker).
  *                    - 3: Rectangular, 1 bit depth, simple 1st order noise shaping
  */
 LIBOPENMPT_API const char * openmpt_module_get_ctls( openmpt_module * mod );
+
 /*! \brief Get current ctl value
  *
  * \param mod The module handle to work on.
  * \param ctl The ctl key whose value should be retrieved.
  * \return The associated ctl value, or NULL on failure.
  * \sa openmpt_module_get_ctls
+ * \deprecated Please use openmpt_module_ctl_get_boolean(), openmpt_module_ctl_get_integer(), openmpt_module_ctl_get_floatingpoint(), or openmpt_module_ctl_get_text().
  */
-LIBOPENMPT_API const char * openmpt_module_ctl_get( openmpt_module * mod, const char * ctl );
+LIBOPENMPT_API LIBOPENMPT_DEPRECATED const char * openmpt_module_ctl_get( openmpt_module * mod, const char * ctl );
+/*! \brief Get current ctl boolean value
+ *
+ * \param mod The module handle to work on.
+ * \param ctl The ctl key whose value should be retrieved.
+ * \return The associated ctl value, or NULL on failure.
+ * \sa openmpt_module_get_ctls
+ * \since 0.5.0
+ */
+LIBOPENMPT_API int openmpt_module_ctl_get_boolean( openmpt_module * mod, const char * ctl );
+/*! \brief Get current ctl integer value
+ *
+ * \param mod The module handle to work on.
+ * \param ctl The ctl key whose value should be retrieved.
+ * \return The associated ctl value, or NULL on failure.
+ * \sa openmpt_module_get_ctls
+ * \since 0.5.0
+ */
+LIBOPENMPT_API int64_t openmpt_module_ctl_get_integer( openmpt_module * mod, const char * ctl );
+/*! \brief Get current ctl floatingpoint value
+ *
+ * \param mod The module handle to work on.
+ * \param ctl The ctl key whose value should be retrieved.
+ * \return The associated ctl value, or NULL on failure.
+ * \sa openmpt_module_get_ctls
+ * \since 0.5.0
+ */
+LIBOPENMPT_API double openmpt_module_ctl_get_floatingpoint( openmpt_module * mod, const char * ctl );
+/*! \brief Get current ctl string value
+ *
+ * \param mod The module handle to work on.
+ * \param ctl The ctl key whose value should be retrieved.
+ * \return The associated ctl value, or NULL on failure.
+ * \sa openmpt_module_get_ctls
+ * \since 0.5.0
+ */
+LIBOPENMPT_API const char * openmpt_module_ctl_get_text( openmpt_module * mod, const char * ctl );
+
 /*! \brief Set ctl value
  *
  * \param mod The module handle to work on.
@@ -1432,8 +1493,49 @@ LIBOPENMPT_API const char * openmpt_module_ctl_get( openmpt_module * mod, const 
  * \param value The value that should be set.
  * \return 1 if successful, 0 in case the value is not sensible (e.g. negative tempo factor) or the ctl is not recognized.
  * \sa openmpt_module_get_ctls
+ * \deprecated Please use openmpt_module_ctl_set_boolean(), openmpt_module_ctl_set_integer(), openmpt_module_ctl_set_floatingpoint(), or openmpt_module_ctl_set_text().
  */
-LIBOPENMPT_API int openmpt_module_ctl_set( openmpt_module * mod, const char * ctl, const char * value );
+LIBOPENMPT_API LIBOPENMPT_DEPRECATED int openmpt_module_ctl_set( openmpt_module * mod, const char * ctl, const char * value );
+/*! \brief Set ctl boolean value
+ *
+ * \param mod The module handle to work on.
+ * \param ctl The ctl key whose value should be set.
+ * \param value The value that should be set.
+ * \return 1 if successful, 0 in case the value is not sensible (e.g. negative tempo factor) or the ctl is not recognized.
+ * \sa openmpt_module_get_ctls
+ * \since 0.5.0
+ */
+LIBOPENMPT_API int openmpt_module_ctl_set_boolean( openmpt_module * mod, const char * ctl, int value );
+/*! \brief Set ctl integer value
+ *
+ * \param mod The module handle to work on.
+ * \param ctl The ctl key whose value should be set.
+ * \param value The value that should be set.
+ * \return 1 if successful, 0 in case the value is not sensible (e.g. negative tempo factor) or the ctl is not recognized.
+ * \sa openmpt_module_get_ctls
+ * \since 0.5.0
+ */
+LIBOPENMPT_API int openmpt_module_ctl_set_integer( openmpt_module * mod, const char * ctl, int64_t value );
+/*! \brief Set ctl floatingpoint value
+ *
+ * \param mod The module handle to work on.
+ * \param ctl The ctl key whose value should be set.
+ * \param value The value that should be set.
+ * \return 1 if successful, 0 in case the value is not sensible (e.g. negative tempo factor) or the ctl is not recognized.
+ * \sa openmpt_module_get_ctls
+ * \since 0.5.0
+ */
+LIBOPENMPT_API int openmpt_module_ctl_set_floatingpoint( openmpt_module * mod, const char * ctl, double value );
+/*! \brief Set ctl string value
+ *
+ * \param mod The module handle to work on.
+ * \param ctl The ctl key whose value should be set.
+ * \param value The value that should be set.
+ * \return 1 if successful, 0 in case the value is not sensible (e.g. negative tempo factor) or the ctl is not recognized.
+ * \sa openmpt_module_get_ctls
+ * \since 0.5.0
+ */
+LIBOPENMPT_API int openmpt_module_ctl_set_text( openmpt_module * mod, const char * ctl, const char * value );
 
 /* remember to add new functions to both C and C++ interfaces and to increase OPENMPT_API_VERSION_MINOR */
 
