@@ -53,6 +53,7 @@ CV_PossibleValue_t soundvolume_cons_t[] = {{0, "MIN"}, {31, "MAX"}, {0, NULL}};
 static void SetChannelsNum(void);
 static void Command_Tunes_f(void);
 static void Command_RestartAudio_f(void);
+static void Command_RestartMusic_f(void); //mhhhm amiga type filters here i come uwu
 
 // Sound system toggles
 #ifndef NO_MIDI
@@ -319,6 +320,7 @@ void S_RegisterSoundStuff(void)
 
 	COM_AddCommand("tunes", Command_Tunes_f);
 	COM_AddCommand("restartaudio", Command_RestartAudio_f);
+	COM_AddCommand("restartmusic", Command_RestartMusic_f);
 
 
 #if defined (macintosh) && !defined (HAVE_SDL) // mp3 playlist stuff
@@ -2149,6 +2151,24 @@ static void Command_RestartAudio_f(void)
 		S_ChangeMusicInternal("titles", looptitle);
 }
 
+static void Command_RestartMusic_f(void) //same as RestartAudio but only music gets restarted
+{
+	S_StopMusic();
+	I_ShutdownMusic();
+	I_InitMusic();
+
+#ifdef NO_MIDI
+	S_SetMusicVolume(cv_digmusicvolume.value, -1);
+#else
+	S_SetMusicVolume(cv_digmusicvolume.value, cv_midimusicvolume.value);
+#endif
+
+	if (Playing()) // Gotta make sure the player is in a level
+		P_RestoreMusic(&players[consoleplayer]);
+	else
+		S_ChangeMusicInternal("titles", looptitle);
+}
+
 void GameSounds_OnChange(void)
 {
 	if (M_CheckParm("-nosound") || M_CheckParm("-noaudio"))
@@ -2225,6 +2245,7 @@ void AmigaType_OnChange(void)
 {
 	if (openmpt_mhandle)
 		openmpt_module_ctl_set_text(openmpt_mhandle, "render.resampler.emulate_amiga", cv_amigatype.string);
+	COM_ImmedExecute("restartmusic"); //need to restart the music system or else it wont work
 	}
 #endif
 
