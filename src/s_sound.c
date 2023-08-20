@@ -2044,6 +2044,24 @@ void S_Start(void)
 		S_ChangeMusicEx(mapmusname, mapmusflags, true, mapmusposition, 0, 0);
 }
 
+void S_RestartMusic(void)
+{
+	S_StopMusic();
+	I_ShutdownMusic();
+	I_InitMusic();
+
+#ifdef NO_MIDI
+	S_SetMusicVolume(cv_digmusicvolume.value, -1);
+#else
+	S_SetMusicVolume(cv_digmusicvolume.value, cv_midimusicvolume.value);
+#endif
+
+	if (Playing()) // Gotta make sure the player is in a level
+		P_RestoreMusic(&players[consoleplayer]);
+	else
+		S_ChangeMusicInternal("titles", looptitle);
+}
+
 static void Command_Tunes_f(void)
 {
 	const char *tunearg;
@@ -2150,20 +2168,7 @@ static void Command_RestartAudio_f(void)
 
 static void Command_RestartMusic_f(void) //same as RestartAudio but only music gets restarted
 {
-	S_StopMusic();
-	I_ShutdownMusic();
-	I_InitMusic();
-
-#ifdef NO_MIDI
-	S_SetMusicVolume(cv_digmusicvolume.value, -1);
-#else
-	S_SetMusicVolume(cv_digmusicvolume.value, cv_midimusicvolume.value);
-#endif
-
-	if (Playing()) // Gotta make sure the player is in a level
-		P_RestoreMusic(&players[consoleplayer]);
-	else
-		S_ChangeMusicInternal("titles", looptitle);
+	S_RestartMusic();
 }
 
 void GameSounds_OnChange(void)
@@ -2242,8 +2247,9 @@ void AmigaType_OnChange(void)
 {
 	if (openmpt_mhandle)
 		openmpt_module_ctl_set_text(openmpt_mhandle, "render.resampler.emulate_amiga", cv_amigatype.string);
-	COM_ImmedExecute("restartmusic"); //need to restart the music system or else it wont work
-	}
+
+	S_RestartMusic(); //need to restart the music system or else it wont work
+}
 #endif
 #endif
 

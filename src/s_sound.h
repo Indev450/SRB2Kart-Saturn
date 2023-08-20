@@ -108,6 +108,9 @@ void S_StopSounds(void);
 void S_ClearSfx(void);
 void S_Start(void);
 
+// Stops music and restarts it from same position. Used for instant applying changes to amiga filters.
+void S_RestartMusic(void);
+
 //
 // Basically a W_GetNumForName that adds "ds" at the beginning of the string. Returns a lumpnum.
 //
