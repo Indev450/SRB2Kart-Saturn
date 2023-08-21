@@ -346,7 +346,7 @@ static void M_DeleteProtocol(void);
 menu_t OP_SaturnDef;
 menu_t OP_HudOffsetDef;
 menu_t OP_PlayerDistortDef;
-//menu_t OP_SaturnCreditsDef;
+menu_t OP_SaturnCreditsDef;
 
 // Bird
 menu_t OP_BirdDef;
@@ -1694,13 +1694,13 @@ static menuitem_t OP_SaturnMenu[] =
 {
 	{IT_HEADER, NULL, "Saturn Options", NULL, 0},
 	{IT_STRING | IT_CVAR, NULL, "Serverqueue waittime", 	&cv_connectawaittime, 	 30},
-	//{IT_STRING | IT_CVAR, NULL, "Addon Download Speed", 	&cv_downloadspeed, 		 55},	
+	//{IT_STRING | IT_CVAR, NULL, "Addon Download Speed", 	&cv_downloadspeed, 		 55},	//no idea why you would wanna change it anyways
 	{IT_STRING | IT_CVAR, NULL, "Skin Select Spinning Speed",		 	&cv_skinselectspin, 	 50},
 	{IT_STRING | IT_CVAR, NULL, "Midnight Channel Flicker", 	&cv_lessflicker, 		 70},
 	{IT_SUBMENU|IT_STRING,	NULL,	"Player distortion...", &OP_PlayerDistortDef,	 95},
 	{IT_SUBMENU|IT_STRING,	NULL,	"Hud Offsets...", 		&OP_HudOffsetDef,		 110},
 
-	//{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Credits", 		&OP_SaturnCreditsDef,		 130},
+	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Credits", 		&OP_SaturnCreditsDef,		 130}, // uwu
 };
 
 static menuitem_t OP_PlayerDistortMenu[] =
@@ -1738,13 +1738,32 @@ static menuitem_t OP_HudOffsetMenu[] =
 	{IT_STRING | IT_CVAR,	NULL,	"Minimap Vertical Offset",	  	  &cv_mini_yoffset,     145},
 };
 
-/*static menuitem_t OP_SaturnCreditsMenu[] =
+static menuitem_t OP_SaturnCreditsMenu[] =
 {
-	{IT_HEADER, NULL, "Saturn Credits", NULL, 0},
+	{IT_HEADER, NULL, "Saturn Credits", 									NULL,       0},
+	
+	{IT_HEADER, NULL, "Main Devs <3", 											NULL,      20},
+	
+	{IT_STRING, NULL, 	"alufolie91 aka Alug",      						NULL, 	   30},
+	{IT_STRING, NULL, 	"Indev",        									NULL,      40},
+	
+	{IT_HEADER, NULL, "Testers <3", NULL, 60},
+	
+	{IT_STRING, NULL, 	"Sunflower aka AnimeSonic", 		 				NULL, 	   70},
+	{IT_STRING, NULL, 	"Yuz aka Yuzler", 		  							NULL, 	   80},
+	{IT_STRING, NULL, 	"Democrab", 		  								NULL, 	   90},
+	{IT_STRING, NULL, 	"EXpand aka Maver", 		 						NULL, 	  100},
+	
+	{IT_HEADER, NULL, "Special Thanks <3", 									NULL,     120},
+	
+	{IT_STRING, NULL, 	"xyzzy",     										NULL, 	  130},
+	{IT_STRING, NULL, 	"Haya",       										NULL,     140},
+	{IT_STRING, NULL, 	"Galactice",       									NULL,     150},
+	{IT_STRING, NULL, 	"Himie and",       									NULL,     160},	
+	{IT_STRING, NULL, 	"The Moe Mansion / Birdhouse Team",       			NULL,     170},
+	{IT_STRING,	NULL,	"All of Sunflower's Garden",	      				NULL,     180},
 
-	// idk need to add credits uwu
-
-};*/
+};
 
 static menuitem_t OP_BirdMenu[] =
 {
@@ -2323,7 +2342,7 @@ menu_t OP_EraseDataDef = DEFAULTMENUSTYLE("M_DATA", OP_EraseDataMenu, &OP_DataOp
 menu_t OP_SaturnDef = DEFAULTMENUSTYLE(NULL, OP_SaturnMenu, &OP_MainDef, 30, 30);
 menu_t OP_PlayerDistortDef = DEFAULTMENUSTYLE("M_VIDEO", OP_PlayerDistortMenu, &OP_SaturnDef, 30, 60);
 menu_t OP_HudOffsetDef = DEFAULTMENUSTYLE(NULL, OP_HudOffsetMenu, &OP_SaturnDef, 30, 30);
-//menu_t OP_SaturnCreditsDef = DEFAULTMENUSTYLE(NULL, OP_SaturnCreditsMenu, &OP_SaturnDef, 30, 30);
+menu_t OP_SaturnCreditsDef = DEFAULTMENUSTYLE(NULL, OP_SaturnCreditsMenu, &OP_SaturnDef, 30, 10);
 
 menu_t OP_BirdDef = DEFAULTMENUSTYLE(NULL, OP_BirdMenu, &OP_MainDef, 30, 30);
 menu_t OP_TiltDef = DEFAULTMENUSTYLE(NULL, OP_TiltMenu, &OP_BirdDef, 30, 60);
