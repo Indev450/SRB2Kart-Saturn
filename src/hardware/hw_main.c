@@ -2282,7 +2282,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 // From PrBoom:
 //
-// e6y: Check whether the player can look beyond this line, rturns true if we can't
+// e6y: Check whether the player can look beyond this line, returns true if we can't
 //
 
 boolean checkforemptylines = true;

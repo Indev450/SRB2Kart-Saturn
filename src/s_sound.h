@@ -45,6 +45,9 @@ extern consvar_t cv_playsoundifunfocused;
 #ifdef HAVE_OPENMPT
 extern consvar_t cv_modfilter;
 extern consvar_t cv_amigafilter;
+#if OPENMPT_API_VERSION_MAJOR < 1 && OPENMPT_API_VERSION_MINOR > 4
+extern consvar_t cv_amigatype;
+#endif
 #endif
 
 extern consvar_t cv_music_resync_threshold;
@@ -104,6 +107,9 @@ void S_InitSfxChannels(INT32 sfxVolume);
 void S_StopSounds(void);
 void S_ClearSfx(void);
 void S_Start(void);
+
+// Stops music and restarts it from same position. Used for instant applying changes to amiga filters.
+void S_RestartMusic(void);
 
 //
 // Basically a W_GetNumForName that adds "ds" at the beginning of the string. Returns a lumpnum.
