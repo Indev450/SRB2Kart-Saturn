@@ -562,6 +562,7 @@ static menuitem_t MISC_ReplayOptionsMenu[] =
 {
 	{IT_CVAR|IT_STRING, NULL, "Record Replays",      &cv_recordmultiplayerdemos, 0},
 	{IT_CVAR|IT_STRING, NULL, "Sync Check Interval", &cv_netdemosyncquality,     10},
+	{IT_CVAR|IT_STRING, NULL, "Max demo size (MiB)", &cv_maxdemosize,			 20},
 };
 
 static tic_t playback_last_menu_interaction_leveltime = 0;

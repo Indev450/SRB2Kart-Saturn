@@ -345,6 +345,10 @@ consvar_t cv_recordmultiplayerdemos = {"netdemo_record", "Manual Save", CV_SAVE,
 static CV_PossibleValue_t netdemosyncquality_cons_t[] = {{1, "MIN"}, {35, "MAX"}, {0, NULL}};
 consvar_t cv_netdemosyncquality = {"netdemo_syncquality", "1", CV_SAVE, netdemosyncquality_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+// Units are MiB.
+static CV_PossibleValue_t maxdemosize_cons_t[] = {{10, "MIN"}, {100, "MAX"}, {0, NULL}};
+consvar_t cv_maxdemosize = {"maxdemosize", "10", CV_SAVE, maxdemosize_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 static UINT8 *savebuffer;
 
 // Analog Control
@@ -6743,29 +6747,35 @@ void G_RecordDemo(const char *name)
 
 	strcpy(demoname, name);
 	strcat(demoname, ".lmp");
-	//@TODO make a maxdemosize cvar
-	maxsize = 1024*1024*2;
-	if (M_CheckParm("-maxdemo") && M_IsNextParm())
-		maxsize = atoi(M_GetNextParm()) * 1024;
+	maxsize = cv_maxdemosize.value*1024*1024;
 	if (demobuffer)
 		free(demobuffer);
 	demo_p = NULL;
+	demo.recording = false;
 	demobuffer = malloc(maxsize);
 	demoend = demobuffer + maxsize;
 
-	demo.recording = true;
+	if (demobuffer)
+		demo.recording = true;
+	else
+		CONS_Alert(CONS_ERROR, "Failed to allocate demo buffer\n");
 }
 
 void G_RecordMetal(void)
 {
 	INT32 maxsize;
-	maxsize = 1024*1024;
-	if (M_CheckParm("-maxdemo") && M_IsNextParm())
-		maxsize = atoi(M_GetNextParm()) * 1024;
+	maxsize = cv_maxdemosize.value*1024*1024;
+	if (demobuffer)
+		free(demobuffer);
 	demo_p = NULL;
+	metalrecording = false;
 	demobuffer = malloc(maxsize);
 	demoend = demobuffer + maxsize;
-	metalrecording = true;
+
+	if (demobuffer)
+		metalrecording = true;
+	else
+		CONS_Alert(CONS_ERROR, "Failed to allocate demo buffer\n");
 }
 
 void G_BeginRecording(void)
