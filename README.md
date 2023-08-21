@@ -19,6 +19,7 @@
 - People with lower end hardware can disable "screen textures" with "gr_screentextures" command, huge performance gain with minimal visual loss (Note intermission screen background is broken with this)
 - Software mode has gotten ffloorclip, which boosts performance on maps with many Floor over Floor roads
 - Visual Portals from Haya´s HEP Client
+- Toggable lowercase menu´s also from Haya´s HEP client
 - Everything that Galaxy has
 
 ## Technical Stuff:
