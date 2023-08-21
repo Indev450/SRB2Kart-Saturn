@@ -4456,7 +4456,7 @@ static void Command_Addfilelocal(void)
 
 	if (COM_Argc() != 2)
 	{
-		CONS_Printf(M_GetText("addfile <wadfile.wad>: load wad file\n"));
+		CONS_Printf(M_GetText("addfilelocal <wadfile.wad>: load wad file\n"));
 		return;
 	}
 	else
@@ -4467,8 +4467,10 @@ static void Command_Addfilelocal(void)
 		if (!isprint(fn[i]) || fn[i] == ';')
 			return;
 
-	// Add file on your client directly if it is trivial, or you aren't in a netgame.
-	P_AddWadFile(fn);
+	// Add any wad file, ignoring checks for if it contains complex things like
+	// lua. Great for complex but client-side customizations, like different
+	// level cards or anything like that.
+	P_AddWadFileLocal(fn);
 }
 
 
