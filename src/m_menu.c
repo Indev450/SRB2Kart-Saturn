@@ -1329,6 +1329,7 @@ enum
 	op_video_vsync,
 	op_video_fpscap,
 	op_video_driftsparkpulse,
+	op_uppercase_menu,
 #ifdef HWRENDER
 	op_video_ogl,
 #endif
