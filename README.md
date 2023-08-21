@@ -21,6 +21,8 @@
 - Visual Portals from Haya´s HEP Client
 - Toggable lowercase menu´s also from Haya´s HEP client
 - Everything that Galaxy has
+- Bird's Crazy tilt feature is no longer turned on by default
+- Bird's Crazy tilt warning on the title screen has been removed
 
 ## Technical Stuff:
 
