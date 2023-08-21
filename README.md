@@ -14,7 +14,10 @@
 - Configurable chatlog size
 - Lua hooks for Intermission
 - Timeout for waiting to join a full server is configurable now
-- Higher/configurable addon download speed
+- Characters now spin in skin selection menu (configurable)
+- The minimal brightness with Shaders can be configured, now you can seeeee in dark areas (0-255 , uses Sector brightness values)
+- People with lower end hardware can disable "screen textures" with "gr_screentextures" command, huge performance gain with minimal visual loss (Note intermission screen background is broken with this)
+- Software mode has gotten ffloorclip, which boosts performance on maps with many Floor over Floor roads
 - Visual Portals from Haya´s HEP Client
 - Everything that Galaxy has
 
@@ -23,9 +26,12 @@
 - ZFigthing Textures in Opengl mode have been fixed in engine (well almost all of it)
 - Fof´s intersecting with slopes have less issues and now render correctly in Opengl
 - Midtextures on slopes in Opengl are fixed, all those weird guardrails and fences, aswell as some of those sticking out textures from the ground on some maps should be gone
-- Multiple other fixes/optimizations like 3D floor clipping in software mode
+- Multiple other fixes
 - Zone memory allocations have been rewritten, speeds up some map loading, and may improve performance on busy maps
+- HWR Drawnodes have been refactored, this should fix a few rare crashes esp in regards to OpenGL Visportals
 - The annoying depraction messages for "P_TeleportMove" and "P_AproxDistance" have been silenced
+- Silenced the annoying "cant find next map..." messages as theyre super useless and annoying anyways
+- HTTP Addon download speed has been raised dramatically
 
 ## Bugs
 
