@@ -2,7 +2,7 @@
 
 [SRB2Kart](https://srb2.org/mods/) is a kart racing mod based on the 3D Sonic the Hedgehog fangame [Sonic Robo Blast 2](https://srb2.org/), based on a modified version of [Doom Legacy](http://doomlegacy.sourceforge.net/).
 
-## Saturn Features (Take a look at the "Saturn Options" menu in your options c;)
+## Saturn Features (Take a look at the "Saturn Options" menu c;)
 - Player rotation on slopes, funny squish when landing, Sprite scaling and all that 
 - Kart Hud offsets are user changable
 - Access for `mobj_t` and `player_t` fields from Lua has been completely rewritten, for much better performance with many Lua scripts
