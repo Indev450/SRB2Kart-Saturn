@@ -1257,6 +1257,7 @@ boolean I_PlaySong(boolean looping)
 	{
 		openmpt_module_select_subsong(openmpt_mhandle, 0);
 		openmpt_module_ctl_set(openmpt_mhandle, "dither", "1");
+		openmpt_module_set_render_param(openmpt_mhandle, OPENMPT_MODULE_RENDER_STEREOSEPARATION_PERCENT, cv_stereosep.value); //have a feeling some might like it
 		openmpt_module_ctl_set(openmpt_mhandle, "render.resampler.emulate_amiga", cv_amigafilter.value ? "1" : "0");
 #if OPENMPT_API_VERSION_MAJOR < 1 && OPENMPT_API_VERSION_MINOR > 4
 		openmpt_module_ctl_set_text(openmpt_mhandle, "render.resampler.emulate_amiga_type", cv_amigatype.string);

@@ -67,6 +67,7 @@ static void PlaySoundIfUnfocused_OnChange(void);
 
 #ifdef HAVE_OPENMPT
 static void ModFilter_OnChange(void);
+static void StereoSep_OnChange(void);
 static void AmigaFilter_OnChange(void);
 #if OPENMPT_API_VERSION_MAJOR < 1 && OPENMPT_API_VERSION_MINOR > 4
 static void AmigaType_OnChange(void);
@@ -141,12 +142,15 @@ consvar_t cv_music_resync_powerups_only = {"music_resync_powerups_only", "No", C
 
 #ifdef HAVE_OPENMPT
 openmpt_module *openmpt_mhandle = NULL;
+
 static CV_PossibleValue_t interpolationfilter_cons_t[] = {{0, "Default"}, {1, "None"}, {2, "Linear"}, {4, "Cubic"}, {8, "Windowed sinc"}, {0, NULL}};
 consvar_t cv_modfilter = {"modfilter", "4", CV_SAVE|CV_CALL, interpolationfilter_cons_t, ModFilter_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
+static CV_PossibleValue_t stereosep_cons_t[] = {{0, "MIN"}, {200, "MAX"}, {0, NULL}};
+consvar_t cv_stereosep = {"stereoseperation", "100", CV_SAVE|CV_CALL, stereosep_cons_t, StereoSep_OnChange, 0, NULL, NULL, 0, 0, NULL}; //some tracker modules have nauseously high stereo width
+
 static CV_PossibleValue_t amigafilter_cons_t[] = {{0, "Off"}, {1, "On"}, {0, NULL}};
 consvar_t cv_amigafilter = {"amigafilter", "1", CV_SAVE|CV_CALL, amigafilter_cons_t, AmigaFilter_OnChange, 0, NULL, NULL, 0, 0, NULL};
-
 
 #if OPENMPT_API_VERSION_MAJOR < 1 && OPENMPT_API_VERSION_MINOR > 4
 static CV_PossibleValue_t amigatype_cons_t[] = {{0, "auto"}, {1, "a500"}, {2, "a1200"}, {0, NULL}};
@@ -2232,6 +2236,13 @@ void ModFilter_OnChange(void)
 {
 	if (openmpt_mhandle)
 		openmpt_module_set_render_param(openmpt_mhandle, OPENMPT_MODULE_RENDER_INTERPOLATIONFILTER_LENGTH, cv_modfilter.value);
+		
+}
+
+void StereoSep_OnChange(void)
+{
+	if (openmpt_mhandle)
+		openmpt_module_set_render_param(openmpt_mhandle, OPENMPT_MODULE_RENDER_STEREOSEPARATION_PERCENT, cv_stereosep.value);
 		
 }
 

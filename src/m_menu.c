@@ -1418,7 +1418,7 @@ static menuitem_t OP_SoundAdvancedMenu[] =
 #if OPENMPT_API_VERSION_MAJOR < 1 && OPENMPT_API_VERSION_MINOR > 4
 	{IT_STRING | IT_CVAR, NULL, "Amiga Type", &cv_amigatype, 62},
 #endif
-	//{IT_STRING | IT_CVAR, NULL, "Dithering", &cv_mptdither, 82}
+	{IT_STRING | IT_CVAR, NULL, "Stereo Seperation", &cv_stereosep, 82},
 };
 #endif
 
