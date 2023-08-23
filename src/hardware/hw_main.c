@@ -6033,6 +6033,11 @@ void HWR_RenderWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend,
 #endif
 }
 
+INT32 HWR_GetTextureUsed(void)
+{
+	return HWD.pfnGetTextureUsed();
+}
+
 void HWR_DoPostProcessor(player_t *player)
 {
 	postimg_t *type = &postimgtype[0];
