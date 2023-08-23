@@ -35,6 +35,7 @@
 - HTTP Addon download speed has been raised dramatically
 - Zone memory allocations have been rewritten, speeds up some map loading, and may improve performance on busy maps
 - HWR Drawnodes have been refactored, this should fix a few rare crashes esp in regards to OpenGL Visportals
+- Added a small cooldown on "map" command due to spamming causing a SIGSEGV
 - Multiple other fixes
 
 ## Bugs
