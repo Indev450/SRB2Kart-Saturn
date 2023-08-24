@@ -27,6 +27,7 @@
 
 ## Technical Stuff:
 
+- Replay size has been increased to 10MiB minimum, to make replay overflows very unlikely to happen (can be set to 100MiB max with "maxdemosize" command)
 - ZFigthing Textures in Opengl mode have been fixed in engine (well almost all of it)
 - Fof´s intersecting with slopes have less issues and now render correctly in Opengl
 - Midtextures on slopes in Opengl are fixed, many weird guardrails and fences, aswell as some of those sticking out textures from the ground on some maps should be gone
