@@ -36,6 +36,7 @@
 - Zone memory allocations have been rewritten, speeds up some map loading, and may improve performance on busy maps
 - HWR Drawnodes have been refactored, this should fix a few rare crashes esp in regards to OpenGL Visportals
 - Added a small cooldown on "map" command due to spamming causing a SIGSEGV
+- MSAA and A2C Antialiasing support (Changable from renderer.txt file)
 - Multiple other fixes
 
 ## Bugs
