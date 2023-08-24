@@ -1405,7 +1405,7 @@ static menuitem_t OP_SoundOptionsMenu[] =
 	{IT_STRING|IT_CVAR,        NULL, "Play Music While Unfocused", &cv_playmusicifunfocused, 125},
 	{IT_STRING|IT_CVAR,        NULL, "Play SFX While Unfocused", &cv_playsoundifunfocused, 135},
 #ifdef HAVE_OPENMPT
-	{IT_STRING|IT_SUBMENU, 		NULL, "Advanced Settings...", 		&OP_SoundAdvancedDef, 145}
+	{IT_STRING|IT_SUBMENU, 		NULL, "Advanced Settings...", 		&OP_SoundAdvancedDef, 155}
 #endif
 };
 
@@ -1697,11 +1697,11 @@ static menuitem_t OP_SaturnMenu[] =
 	{IT_STRING | IT_CVAR, NULL, "Serverqueue waittime", 	&cv_connectawaittime, 	 30},
 	//{IT_STRING | IT_CVAR, NULL, "Addon Download Speed", 	&cv_downloadspeed, 		 55},	//no idea why you would wanna change it anyways
 	{IT_STRING | IT_CVAR, NULL, "Skin Select Spinning Speed",		 	&cv_skinselectspin, 	 50},
-	{IT_STRING | IT_CVAR, NULL, "Midnight Channel Flicker", 	&cv_lessflicker, 		 70},
-	{IT_SUBMENU|IT_STRING,	NULL,	"Player distortion...", &OP_PlayerDistortDef,	 95},
-	{IT_SUBMENU|IT_STRING,	NULL,	"Hud Offsets...", 		&OP_HudOffsetDef,		 110},
+	{IT_STRING | IT_CVAR, NULL, "No Midnight Channel Flicker", 	&cv_lessflicker, 		 75},
+	{IT_SUBMENU|IT_STRING,	NULL,	"Player distortion...", &OP_PlayerDistortDef,	 100},
+	{IT_SUBMENU|IT_STRING,	NULL,	"Hud Offsets...", 		&OP_HudOffsetDef,		 115},
 
-	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Credits", 		&OP_SaturnCreditsDef,		 130}, // uwu
+	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Credits", 		&OP_SaturnCreditsDef,		 155}, // uwu
 };
 
 static menuitem_t OP_PlayerDistortMenu[] =
@@ -1725,18 +1725,18 @@ static menuitem_t OP_HudOffsetMenu[] =
 {
 	{IT_HEADER, NULL, "Kart Hud Offsets", NULL, 0},
 
-	{IT_STRING | IT_CVAR, 	NULL, 	"Itembox Horizontal Offset",      &cv_item_xoffset, 	10},
-	{IT_STRING | IT_CVAR, 	NULL, 	"Itembox Vertical Offset",        &cv_item_yoffset,     20},
-	{IT_STRING | IT_CVAR, 	NULL, 	"Timer Horizontal Offset", 		  &cv_time_xoffset, 	35},
-	{IT_STRING | IT_CVAR,	NULL,	"Timer Vertical Offset",	      &cv_time_yoffset,     45},
-	{IT_STRING | IT_CVAR, 	NULL, 	"Lapcount Horizontal Offset",     &cv_laps_xoffset, 	60},
-	{IT_STRING | IT_CVAR, 	NULL, 	"Lapcount Vertical Offset",       &cv_laps_yoffset,     70},
-	{IT_STRING | IT_CVAR, 	NULL, 	"Speedometer Horizontal Offset",  &cv_spdm_xoffset, 	85},
-	{IT_STRING | IT_CVAR,	NULL,	"Speedometer Vertical Offset",	  &cv_spdm_yoffset,     95},
-	{IT_STRING | IT_CVAR, 	NULL, 	"Miniranking Horizontal Offset",  &cv_face_xoffset, 	110},
-	{IT_STRING | IT_CVAR,	NULL,	"Miniranking Vertical Offset",	  &cv_face_yoffset,     120},
-	{IT_STRING | IT_CVAR, 	NULL, 	"Minimap Horizontal Offset",  	  &cv_mini_xoffset, 	135},
-	{IT_STRING | IT_CVAR,	NULL,	"Minimap Vertical Offset",	  	  &cv_mini_yoffset,     145},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Itembox Horizontal Offset",      &cv_item_xoffset, 	20},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Itembox Vertical Offset",        &cv_item_yoffset,     30},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Timer Horizontal Offset", 		  &cv_time_xoffset, 	45},
+	{IT_STRING | IT_CVAR,	NULL,	"Timer Vertical Offset",	      &cv_time_yoffset,     55},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Lapcount Horizontal Offset",     &cv_laps_xoffset, 	70},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Lapcount Vertical Offset",       &cv_laps_yoffset,     80},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Speedometer Horizontal Offset",  &cv_spdm_xoffset, 	95},
+	{IT_STRING | IT_CVAR,	NULL,	"Speedometer Vertical Offset",	  &cv_spdm_yoffset,     105},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Miniranking Horizontal Offset",  &cv_face_xoffset, 	120},
+	{IT_STRING | IT_CVAR,	NULL,	"Miniranking Vertical Offset",	  &cv_face_yoffset,     130},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Minimap Horizontal Offset",  	  &cv_mini_xoffset, 	145},
+	{IT_STRING | IT_CVAR,	NULL,	"Minimap Vertical Offset",	  	  &cv_mini_yoffset,     155},
 };
 
 static menuitem_t OP_SaturnCreditsMenu[] =
@@ -2342,7 +2342,7 @@ menu_t OP_EraseDataDef = DEFAULTMENUSTYLE("M_DATA", OP_EraseDataMenu, &OP_DataOp
 
 menu_t OP_SaturnDef = DEFAULTMENUSTYLE(NULL, OP_SaturnMenu, &OP_MainDef, 30, 30);
 menu_t OP_PlayerDistortDef = DEFAULTMENUSTYLE("M_VIDEO", OP_PlayerDistortMenu, &OP_SaturnDef, 30, 60);
-menu_t OP_HudOffsetDef = DEFAULTMENUSTYLE(NULL, OP_HudOffsetMenu, &OP_SaturnDef, 30, 30);
+menu_t OP_HudOffsetDef = DEFAULTMENUSTYLE(NULL, OP_HudOffsetMenu, &OP_SaturnDef, 30, 20);
 menu_t OP_SaturnCreditsDef = DEFAULTMENUSTYLE(NULL, OP_SaturnCreditsMenu, &OP_SaturnDef, 30, 10);
 
 menu_t OP_BirdDef = DEFAULTMENUSTYLE(NULL, OP_BirdMenu, &OP_MainDef, 30, 30);
