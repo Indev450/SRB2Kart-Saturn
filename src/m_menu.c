@@ -1712,6 +1712,7 @@ static menuitem_t OP_PlayerDistortMenu[] =
 	{IT_STRING | IT_CVAR, 	NULL, 	"Slope rotation distance",        &cv_sloperolldist,    35},
 	{IT_STRING | IT_CVAR, 	NULL, 	"Rotate players when sliptiding", &cv_sliptideroll, 	50},
 	{IT_STRING | IT_CVAR,	NULL,	"Player stretch factor",	      &cv_gravstretch,      65},
+	{IT_STRING | IT_CVAR,	NULL,	"Squish Sound Effect",	      	  &cv_slamsound,        80},
 };
 
 enum
