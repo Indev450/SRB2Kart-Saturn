@@ -121,12 +121,11 @@ static UINT16 current_track;
 #endif
 
 #ifdef HAVE_OPENMPT
-static openmpt_module *mod = 0;
-int mod_err = OPENMPT_ERROR_OK;
+static int mod_err = OPENMPT_ERROR_OK;
 static const char *mod_err_str;
 static UINT16 current_subsong;
-size_t probesize;
-int result;
+static size_t probesize;
+static int result;
 #endif
 
 static void var_cleanup(void)
@@ -1137,7 +1136,7 @@ boolean I_LoadSong(char *data, size_t len)
 
 #ifdef HAVE_OPENMPT
 	/*
-		If the size of the data to be checked is bigger than the recommended size (> 2048)
+		If the size of the data to be checked is bigger than the recommended size (> 2048 bytes)
 		Let's just set the probe size to the recommended size
 		Otherwise let's give it the full data size
 	*/
@@ -1421,6 +1420,8 @@ boolean I_SetSongTrack(int track)
 		return false;
 	}
 #endif
+	if (I_SongType() == MU_MOD)
+		return !Mix_SetMusicPosition(track);
 	(void)track;
 	return false;
 }

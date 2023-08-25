@@ -154,7 +154,7 @@ consvar_t cv_amigafilter = {"amigafilter", "1", CV_SAVE|CV_CALL, amigafilter_con
 
 #if OPENMPT_API_VERSION_MAJOR < 1 && OPENMPT_API_VERSION_MINOR > 4
 static CV_PossibleValue_t amigatype_cons_t[] = {{0, "auto"}, {1, "a500"}, {2, "a1200"}, {0, NULL}};
-consvar_t cv_amigatype = {"amigatype", "0", CV_SAVE|CV_CALL, amigatype_cons_t, AmigaType_OnChange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_amigatype = {"amigatype", "0", CV_SAVE|CV_CALL|CV_NOINIT, amigatype_cons_t, AmigaType_OnChange, 0, NULL, NULL, 0, 0, NULL};
 #endif
 
 #endif
