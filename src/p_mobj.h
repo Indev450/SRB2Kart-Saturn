@@ -299,6 +299,8 @@ typedef struct mobj_s
 	fixed_t realxscale, realyscale; // funn-E streeetch
 
 	fixed_t stretchslam; // "squish" effect when you land
+	
+	boolean stretchonground; // Play funni sound when player lands on ground with stretch
 
 	//sloperollangle
 	angle_t sloperoll, reservezangle, reservexydir;

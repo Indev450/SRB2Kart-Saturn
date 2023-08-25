@@ -9563,6 +9563,8 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 	mobj->spritexscale = mobj->realxscale;
 	mobj->spriteyscale = mobj->realyscale; 
 	mobj->spritexoffset = mobj->spriteyoffset = 0;
+	
+	mobj->stretchonground = true;
 
 	// set subsector and/or block links
 	P_SetThingPosition(mobj);
