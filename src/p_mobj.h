@@ -299,8 +299,6 @@ typedef struct mobj_s
 	fixed_t realxscale, realyscale; // funn-E streeetch
 
 	fixed_t stretchslam; // "squish" effect when you land
-	
-	boolean stretchonground; // Play funni sound when player lands on ground with stretch
 
 	//sloperollangle
 	angle_t sloperoll, reservezangle, reservexydir;
@@ -395,6 +393,8 @@ typedef struct mobj_s
 	boolean resetinterp; // if true, some fields should not be interpolated (see R_InterpolateMobjState implementation)
 	boolean colorized; // Whether the mobj uses the rainbow colormap
 	boolean rollmodel; // OpenGL: Should this model rotate?
+
+	boolean stretchonground; // Play funni sound when player lands on ground with stretch
 
 	// WARNING: New fields must be added separately to savegame and Lua.
 } mobj_t;
