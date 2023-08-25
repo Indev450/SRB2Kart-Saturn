@@ -2259,7 +2259,8 @@ void AmigaType_OnChange(void)
 	if (openmpt_mhandle)
 		openmpt_module_ctl_set_text(openmpt_mhandle, "render.resampler.emulate_amiga_type", cv_amigatype.string);
 
-	S_RestartMusic(); //need to restart the music system or else it wont work
+	if (sound_started)
+        S_RestartMusic(); //need to restart the music system or else it wont work
 }
 #endif
 #endif
