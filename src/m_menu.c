@@ -1694,14 +1694,17 @@ static menuitem_t OP_MonitorToggleMenu[] =
 static menuitem_t OP_SaturnMenu[] =
 {
 	{IT_HEADER, NULL, "Saturn Options", NULL, 0},
-	{IT_STRING | IT_CVAR, NULL, "Serverqueue waittime", 	&cv_connectawaittime, 	 30},
 	//{IT_STRING | IT_CVAR, NULL, "Addon Download Speed", 	&cv_downloadspeed, 		 55},	//no idea why you would wanna change it anyways
+	
+	{IT_STRING | IT_CVAR, NULL,	  "Show Minimap Names",   &cv_showminimapnames, 30},
 	{IT_STRING | IT_CVAR, NULL, "Skin Select Spinning Speed",		 	&cv_skinselectspin, 	 50},
-	{IT_STRING | IT_CVAR, NULL, "No Midnight Channel Flicker", 	&cv_lessflicker, 		 75},
-	{IT_SUBMENU|IT_STRING,	NULL,	"Player distortion...", &OP_PlayerDistortDef,	 100},
-	{IT_SUBMENU|IT_STRING,	NULL,	"Hud Offsets...", 		&OP_HudOffsetDef,		 115},
+	{IT_STRING | IT_CVAR, NULL, "Serverqueue waittime", 	&cv_connectawaittime, 	 70},
+	{IT_STRING | IT_CVAR, NULL,	  "Small Position Number",   &cv_smallpos, 90},
+	{IT_STRING | IT_CVAR, NULL, "No Midnight Channel Flicker", 	&cv_lessflicker, 		 110},	
+	{IT_SUBMENU|IT_STRING,	NULL,	"Player distortion...", &OP_PlayerDistortDef,	 130},
+	{IT_SUBMENU|IT_STRING,	NULL,	"Hud Offsets...", 		&OP_HudOffsetDef,		 140},
 
-	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Credits", 		&OP_SaturnCreditsDef,		 155}, // uwu
+	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Credits", 		&OP_SaturnCreditsDef,		 160}, // uwu
 };
 
 static menuitem_t OP_PlayerDistortMenu[] =

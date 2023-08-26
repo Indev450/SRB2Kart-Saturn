@@ -153,25 +153,25 @@ consvar_t cons_backcolor = {"con_backcolor", "Black", CV_CALL|CV_SAVE, backcolor
 
 static CV_PossibleValue_t menuhighlight_cons_t[] =
 {
-	{0, "Game type"},
-	{V_YELLOWMAP, "Always yellow"},
-	{V_PURPLEMAP, "Always purple"},
-	{V_GREENMAP, "Always green"},
-	{V_BLUEMAP, "Always blue"},
-	{V_REDMAP, "Always red"},
-	{V_GRAYMAP, "Always gray"},
-	{V_ORANGEMAP, "Always orange"},
-	{V_SKYMAP, "Always sky-blue"},
-	{V_GOLDMAP, "Always gold"},
-	{V_LAVENDERMAP, "Always lavender"},
-	{V_TEAMAP, "Always tea-green"},
-	{V_STEELMAP, "Always steel-blue"},
-	{V_PINKMAP, "Always pink"},
-	{V_BROWNMAP, "Always brown"},
-	{V_PEACHMAP, "Always peach"},
+	{0, 			"Gametype Default"},
+	{V_YELLOWMAP, 	"Always Yellow"},
+	{V_PURPLEMAP, 	"Always Purple"},
+	{V_GREENMAP, 	"Always Green"},
+	{V_BLUEMAP, 	"Always Blue"},
+	{V_REDMAP, 		"Always Red"},
+	{V_GRAYMAP, 	"Always Gray"},
+	{V_ORANGEMAP, 	"Always Orange"},
+	{V_SKYMAP, 		"Always Sky-Blue"},
+	{V_GOLDMAP, 	"Always Gold"},
+	{V_LAVENDERMAP, "Always Lavender"},
+	{V_TEAMAP, 		"Always Tea-Green"},
+	{V_STEELMAP,	"Always Steel-Blue"},
+	{V_PINKMAP, 	"Always Pink"},
+	{V_BROWNMAP, 	"Always Brown"},
+	{V_PEACHMAP, 	"Always Peach"},
 	{0, NULL}
 };
-consvar_t cons_menuhighlight = {"menuhighlight", "Game type", CV_SAVE, menuhighlight_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cons_menuhighlight = {"menuhighlight", "Gametype Default", CV_SAVE, menuhighlight_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static void CON_Print(char *msg);
 
