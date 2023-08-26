@@ -22,6 +22,7 @@
 #include "f_finale.h"
 #include "lua_hud.h"	// For Lua hud checks
 #include "lua_hook.h"	// For MobjDamage and ShouldDamage
+#include "d_main.h"		// found_extra_kart
 
 // Hud offset cvars
 consvar_t cv_item_xoffset = {"hud_item_xoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -54,6 +55,7 @@ consvar_t cv_want_xoffset = {"hud_wanted_xoffset", "0", CV_SAVE, NULL, NULL, 0, 
 consvar_t cv_want_yoffset = {"hud_wanted_yoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_showinput = {"showinput", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_newspeedometer = {"newspeedometer", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 // SOME IMPORTANT VARIABLES DEFINED IN DOOMDEF.H:
 // gamespeed is cc (0 for easy, 1 for normal, 2 for hard)
@@ -6819,6 +6821,9 @@ static patch_t *kp_lapanim_hand[3];
 
 static patch_t *kp_yougotem;
 
+static patch_t *skp_smallsticker;
+static patch_t *skp_speedpatches[5];
+
 void K_LoadKartHUDGraphics(void)
 {
 	INT32 i, j;
@@ -7065,6 +7070,16 @@ void K_LoadKartHUDGraphics(void)
 	}
 
 	kp_yougotem = (patch_t *) W_CachePatchName("YOUGOTEM", PU_HUDGFX);
+
+	if (found_extra_kart) // snowy speedometer
+	{
+		skp_smallsticker = 	  W_CachePatchName("SP_SMSTC", PU_HUDGFX);
+		skp_speedpatches[0] = W_CachePatchName("K_TRNULL", PU_HUDGFX); // lolxd
+		skp_speedpatches[1] = W_CachePatchName("SP_MKMH",  PU_HUDGFX);
+		skp_speedpatches[2] = W_CachePatchName("SP_MMPH",  PU_HUDGFX);
+		skp_speedpatches[3] = W_CachePatchName("SP_MFRAC", PU_HUDGFX);
+		skp_speedpatches[4] = W_CachePatchName("SP_MPERC", PU_HUDGFX);
+	}
 }
 
 // For the item toggle menu
@@ -8207,34 +8222,59 @@ static void K_drawKartLaps(void)
 
 static void K_drawKartSpeedometer(void)
 {
-	fixed_t convSpeed;
+	// why?
+	if (cv_kartspeedometer.value == 0)
+		return;
+
+	fixed_t convSpeed = 0;
+	INT32 speedtype = 0;
 	INT32 splitflags = K_calcSplitFlags(V_SNAPTOBOTTOM|V_SNAPTOLEFT);
 
-	if (cv_kartspeedometer.value == 1) // Kilometers
+	switch (cv_kartspeedometer.value)
 	{
-		convSpeed = FixedDiv(FixedMul(stplyr->speed, 142371), mapobjectscale)/FRACUNIT; // 2.172409058
-		V_DrawKartString(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, va("%03d km/h", convSpeed));
+		case 1:
+			convSpeed = FixedDiv(FixedMul(stplyr->speed, 142371), mapobjectscale)/FRACUNIT; // 2.172409058
+			speedtype = 1;
+			break;
+		case 2:
+			convSpeed = FixedDiv(FixedMul(stplyr->speed, 142371), mapobjectscale)/FRACUNIT; // 2.172409058
+			speedtype = 2;
+			break;
+		case 3:
+			convSpeed = FixedDiv(FixedMul(stplyr->speed, 88465), mapobjectscale)/FRACUNIT; // 1.349868774
+			speedtype = 3;
+			break;
+		case 4:
+			if (stplyr->mo)
+				convSpeed = (FixedDiv(stplyr->speed, FixedMul(K_GetKartSpeed(stplyr, false), ORIG_FRICTION))*100)>>FRACBITS;
+			speedtype = 4;
+			break;
+		default:
+			break;
 	}
-	else if (cv_kartspeedometer.value == 2) // Miles
+
+	// man.
+	if ((!cv_newspeedometer.value) || (cv_newspeedometer.value && !found_extra_kart)) 
 	{
-		convSpeed = FixedDiv(FixedMul(stplyr->speed, 88465), mapobjectscale)/FRACUNIT; // 1.349868774
-		V_DrawKartString(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, va("%03d mph", convSpeed));
-	}
-	else if (cv_kartspeedometer.value == 3) // Fracunits
-	{
-		convSpeed = FixedDiv(stplyr->speed, mapobjectscale)/FRACUNIT;
-		V_DrawKartString(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, va("%03d fu/t", convSpeed));
-	}
-	else if (cv_kartspeedometer.value == 4) // Percent
-	{
-		// so code breaks if someone attempts to join from spectator since it sets
-		// their mo to NULL
-		// so can we just check if their mo is NULL????
-		if (stplyr->mo)
-		{
-			convSpeed = (FixedDiv(stplyr->speed, FixedMul(K_GetKartSpeed(stplyr, false), ORIG_FRICTION))*100)>>FRACBITS;
-			V_DrawKartString(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, va("%03d P", convSpeed));
+		switch (speedtype) {
+			case 1:
+				V_DrawKartString(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, va("%03d km/h", convSpeed));
+			case 2:
+				V_DrawKartString(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, va("%03d mph", convSpeed));
+			case 3:
+				V_DrawKartString(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, va("%03d fu/t", convSpeed));
+			case 4: // if extra.kart is found, use its included % symbol
+				if (!found_extra_kart)
+					V_DrawKartString(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, va("%03d P", convSpeed));
+				else
+					V_DrawKartString(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, va("%03d %%", convSpeed));
 		}
+	}
+	else if (cv_newspeedometer.value && found_extra_kart) { // why bother if we dont?
+
+		V_DrawScaledPatch(SPDM_X + 1, SPDM_Y + 4, V_HUDTRANS|splitflags, skp_smallsticker);
+		V_DrawRankNum(SPDM_X + 26, SPDM_Y + 4, V_HUDTRANS|splitflags, convSpeed, 3, NULL);
+		V_DrawScaledPatch(SPDM_X + 31, SPDM_Y + 4, V_HUDTRANS|splitflags, skp_speedpatches[cv_kartspeedometer.value]);
 	}
 }
 

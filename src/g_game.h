@@ -146,6 +146,7 @@ extern consvar_t cv_mini_yoffset;
 extern consvar_t cv_want_xoffset;
 extern consvar_t cv_want_yoffset;
 extern consvar_t cv_showinput;
+extern consvar_t cv_newspeedometer;
 
 extern consvar_t cv_driftsparkpulse;
 extern consvar_t cv_gravstretch;

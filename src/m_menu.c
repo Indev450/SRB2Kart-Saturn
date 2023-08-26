@@ -1694,14 +1694,15 @@ static menuitem_t OP_MonitorToggleMenu[] =
 static menuitem_t OP_SaturnMenu[] =
 {
 	{IT_HEADER, NULL, "Saturn Options", NULL, 0},
-	{IT_STRING | IT_CVAR, NULL, "Serverqueue waittime", 	&cv_connectawaittime, 	 30},
+	{IT_STRING | IT_CVAR, NULL, "Serverqueue waittime", 	&cv_connectawaittime, 	 20},
 	//{IT_STRING | IT_CVAR, NULL, "Addon Download Speed", 	&cv_downloadspeed, 		 55},	//no idea why you would wanna change it anyways
-	{IT_STRING | IT_CVAR, NULL, "Skin Select Spinning Speed",		 	&cv_skinselectspin, 	 50},
-	{IT_STRING | IT_CVAR, NULL, "No Midnight Channel Flicker", 	&cv_lessflicker, 		 75},
-	{IT_SUBMENU|IT_STRING,	NULL,	"Player distortion...", &OP_PlayerDistortDef,	 100},
-	{IT_SUBMENU|IT_STRING,	NULL,	"Hud Offsets...", 		&OP_HudOffsetDef,		 115},
+	{IT_STRING | IT_CVAR, NULL, "Skin Select Spinning Speed",		 	&cv_skinselectspin, 	 40},
+	{IT_STRING | IT_CVAR, NULL, "Input Display outside of RA",		 	&cv_showinput, 	 50},
+	{IT_STRING | IT_CVAR, NULL, "No Midnight Channel Flicker", 	&cv_lessflicker, 		 60},
+	{IT_SUBMENU|IT_STRING,	NULL,	"Player distortion...", &OP_PlayerDistortDef,	 80},
+	{IT_SUBMENU|IT_STRING,	NULL,	"Hud Offsets...", 		&OP_HudOffsetDef,		 90},
 
-	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Credits", 		&OP_SaturnCreditsDef,		 155}, // uwu
+	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Credits", 		&OP_SaturnCreditsDef,		 110}, // uwu
 };
 
 static menuitem_t OP_PlayerDistortMenu[] =
@@ -1745,25 +1746,27 @@ static menuitem_t OP_SaturnCreditsMenu[] =
 	
 	{IT_HEADER, NULL, "Main Devs <3", 											NULL,      20},
 	
-	{IT_STRING, NULL, 	"alufolie91 aka Alug",      						NULL, 	   30},
-	{IT_STRING, NULL, 	"Indev",        									NULL,      40},
+	{IT_STRING2+IT_SPACE, NULL, 	"alufolie91 aka Alug",      						NULL, 	   30},
+	{IT_STRING2+IT_SPACE, NULL, 	"Indev",        									NULL,      40},
 	
 	{IT_HEADER, NULL, "Testers <3", NULL, 60},
 	
-	{IT_STRING, NULL, 	"Sunflower aka AnimeSonic", 		 				NULL, 	   70},
-	{IT_STRING, NULL, 	"Yuz aka Yuzler", 		  							NULL, 	   80},
-	{IT_STRING, NULL, 	"Democrab", 		  								NULL, 	   90},
-	{IT_STRING, NULL, 	"EXpand aka Maver", 		 						NULL, 	  100},
+	{IT_STRING2+IT_SPACE, NULL, 	"Sunflower aka AnimeSonic", 		 				NULL, 	   70},
+	{IT_STRING2+IT_SPACE, NULL, 	"Yuz aka Yuzler", 		  							NULL, 	   80},
+	{IT_STRING2+IT_SPACE, NULL, 	"Democrab", 		  								NULL, 	   90},
+	{IT_STRING2+IT_SPACE, NULL, 	"EXpand aka Maver", 		 						NULL, 	  100},
 	
 	{IT_HEADER, NULL, "Special Thanks <3", 									NULL,     120},
 	
-	{IT_STRING, NULL, 	"xyzzy",     										NULL, 	  130},
-	{IT_STRING, NULL, 	"Haya",       										NULL,     140},
-	{IT_STRING, NULL, 	"Galactice",       									NULL,     150},
-	{IT_STRING, NULL, 	"Himie and",       									NULL,     160},	
-	{IT_STRING, NULL, 	"The Moe Mansion / Birdhouse Team",       			NULL,     170},
-	{IT_STRING,	NULL,	"All of Sunflower's Garden",	      				NULL,     180},
+	{IT_STRING2+IT_SPACE, NULL, 	"xyzzy",     										NULL, 	  130},
+	{IT_STRING2+IT_SPACE, NULL, 	"Haya",       										NULL,     140},
+	{IT_STRING2+IT_SPACE, NULL, 	"Galactice",       									NULL,     150},
+	{IT_STRING2+IT_SPACE, NULL, 	"Himie and",       									NULL,     160},	
+	{IT_STRING2+IT_SPACE, NULL, 	"The Moe Mansion / Birdhouse Team",       			NULL,     170},
+	{IT_STRING2+IT_SPACE,	NULL,	"All of Sunflower's Garden",	      				NULL,     180},
 
+	{IT_STRING+IT_SPACE, NULL, "", 									NULL,       190},	// dummy text
+	{IT_STRING, NULL, "", 									NULL,       200},	// dummy text II
 };
 
 static menuitem_t OP_BirdMenu[] =

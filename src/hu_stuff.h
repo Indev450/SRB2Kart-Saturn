@@ -83,6 +83,7 @@ extern patch_t *hu_font[HU_FONTSIZE], *kart_font[KART_FONTSIZE], *tny_font[HU_FO
 extern patch_t *tallnum[10];
 extern patch_t *pingnum[10];
 extern patch_t *pinggfx[5];
+extern patch_t *ranknum[10];
 extern patch_t *nightsnum[10];
 extern patch_t *framecounter;
 extern patch_t *frameslash;

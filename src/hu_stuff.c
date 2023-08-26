@@ -81,6 +81,8 @@ patch_t *pingnum[10];
 patch_t *pinggfx[5];	// small ping graphic
 patch_t *pingmeasure[2]; // ping measurement graphic
 
+patch_t *ranknum[10]; // rank numbers
+
 patch_t *framecounter;
 patch_t *frameslash;	// framerate stuff. Used in screen.c
 
@@ -281,6 +283,8 @@ void HU_LoadGraphics(void)
 		nightsnum[i] = (patch_t *) W_CachePatchName(buffer, PU_HUDGFX);
 		sprintf(buffer, "PINGN%d", i);
 		pingnum[i] = (patch_t *) W_CachePatchName(buffer, PU_HUDGFX);
+		sprintf(buffer, "OPPRNK0%d", i);
+		ranknum[i] = (patch_t *) W_CachePatchName(buffer, PU_HUDGFX);
 	}
 
 	// minus for negative tallnums
