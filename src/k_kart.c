@@ -53,6 +53,8 @@ consvar_t cv_mini_yoffset = {"hud_minimap_yoffset", "0", CV_SAVE, NULL, NULL, 0,
 consvar_t cv_want_xoffset = {"hud_wanted_xoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_want_yoffset = {"hud_wanted_yoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_showinput = {"showinput", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 // SOME IMPORTANT VARIABLES DEFINED IN DOOMDEF.H:
 // gamespeed is cc (0 for easy, 1 for normal, 2 for hard)
 // franticitems is Frantic Mode items, bool
@@ -7775,6 +7777,7 @@ static void K_DrawKartPositionNum(INT32 num)
 	patch_t *localpatch = kp_positionnum[0][0];
 	//INT32 splitflags = K_calcSplitFlags(V_SNAPTOBOTTOM|V_SNAPTORIGHT);
 	INT32 fx = 0, fy = 0, fflags = 0;
+	INT32 xoffs = (cv_showinput.value) ? -48 : 0;
 	boolean flipdraw = false;	// flip the order we draw it in for MORE splitscreen bs. fun.
 	boolean flipvdraw = false;	// used only for 2p splitscreen so overtaking doesn't make 1P's position fly off the screen.
 	boolean overtake = false;
@@ -7786,13 +7789,15 @@ static void K_DrawKartPositionNum(INT32 num)
 	}
 	if (splitscreen)
 		scale /= 2;
+	if (cv_showinput.value && !splitscreen) // anuther one.
+		scale /= 2;
 
 	W = FixedMul(W<<FRACBITS, scale)>>FRACBITS;
 
 	// pain and suffering defined below
 	if (!splitscreen)
 	{
-		fx = POSI_X;
+		fx = POSI_X + xoffs;
 		fy = BASEVIDHEIGHT - 8;
 		fflags = V_SNAPTOBOTTOM|V_SNAPTORIGHT;
 	}
@@ -9004,9 +9009,12 @@ static void K_drawKartFirstPerson(void)
 // doesn't need to ever support 4p
 static void K_drawInput(void)
 {
+	if (!cv_showinput.value && !modeattacking) // dont bother
+		return;
+
 	static INT32 pn = 0;
 	INT32 target = 0, splitflags = (V_SNAPTOBOTTOM|V_SNAPTORIGHT);
-	INT32 x = BASEVIDWIDTH - 32, y = BASEVIDHEIGHT-24, offs, col;
+	INT32 x = BASEVIDWIDTH - 32 + cv_posi_xoffset.value, y = BASEVIDHEIGHT-24 + cv_posi_yoffset.value, offs, col;
 	const INT32 accent1 = splitflags|colortranslations[stplyr->skincolor][5];
 	const INT32 accent2 = splitflags|colortranslations[stplyr->skincolor][9];
 	ticcmd_t *cmd = &stplyr->cmd;
@@ -9388,6 +9396,12 @@ void K_drawKartHUD(void)
 
 	if (!stplyr->spectator && !demo.freecam) // Bottom of the screen elements, don't need in spectate mode
 	{
+		if (!(splitscreen || demo.title))
+#ifdef HAVE_BLUA
+			if (LUA_HudEnabled(hud_position))
+#endif
+				K_drawInput();
+
 		if (demo.title) // Draw title logo instead in demo.titles
 		{
 			INT32 x = BASEVIDWIDTH - 32, y = 128, offs;
