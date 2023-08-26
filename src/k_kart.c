@@ -8213,17 +8213,17 @@ static void K_drawKartSpeedometer(void)
 	if (cv_kartspeedometer.value == 1) // Kilometers
 	{
 		convSpeed = FixedDiv(FixedMul(stplyr->speed, 142371), mapobjectscale)/FRACUNIT; // 2.172409058
-		V_DrawKartString(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, va("%3d km/h", convSpeed));
+		V_DrawKartString(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, va("%03d km/h", convSpeed));
 	}
 	else if (cv_kartspeedometer.value == 2) // Miles
 	{
 		convSpeed = FixedDiv(FixedMul(stplyr->speed, 88465), mapobjectscale)/FRACUNIT; // 1.349868774
-		V_DrawKartString(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, va("%3d mph", convSpeed));
+		V_DrawKartString(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, va("%03d mph", convSpeed));
 	}
 	else if (cv_kartspeedometer.value == 3) // Fracunits
 	{
 		convSpeed = FixedDiv(stplyr->speed, mapobjectscale)/FRACUNIT;
-		V_DrawKartString(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, va("%3d fu/t", convSpeed));
+		V_DrawKartString(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, va("%03d fu/t", convSpeed));
 	}
 	else if (cv_kartspeedometer.value == 4) // Percent
 	{
@@ -8233,7 +8233,7 @@ static void K_drawKartSpeedometer(void)
 		if (stplyr->mo)
 		{
 			convSpeed = (FixedDiv(stplyr->speed, FixedMul(K_GetKartSpeed(stplyr, false), ORIG_FRICTION))*100)>>FRACBITS;
-			V_DrawKartString(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, va("%4d P", convSpeed));
+			V_DrawKartString(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, va("%03d P", convSpeed));
 		}
 	}
 }
