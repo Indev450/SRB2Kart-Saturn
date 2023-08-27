@@ -8333,10 +8333,13 @@ static void K_drawKartSpeedometer(void)
 		switch (speedtype) {
 			case 1:
 				V_DrawKartString(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, va("%03d km/h", convSpeed));
+				break;
 			case 2:
 				V_DrawKartString(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, va("%03d mph", convSpeed));
+				break;
 			case 3:
 				V_DrawKartString(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, va("%03d fu/t", convSpeed));
+				break;
 			case 4: // if extra.kart is found, use its included % symbol
 				if (!found_extra_kart)
 					V_DrawKartString(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, va("%03d P", convSpeed));
@@ -8345,7 +8348,6 @@ static void K_drawKartSpeedometer(void)
 		}
 	}
 	else if (cv_newspeedometer.value && found_extra_kart) { // why bother if we dont?
-
 		V_DrawScaledPatch(SPDM_X + 1, SPDM_Y + 4, V_HUDTRANS|splitflags, skp_smallsticker);
 		V_DrawRankNum(SPDM_X + 26, SPDM_Y + 4, V_HUDTRANS|splitflags, convSpeed, 3, NULL);
 		V_DrawScaledPatch(SPDM_X + 31, SPDM_Y + 4, V_HUDTRANS|splitflags, skp_speedpatches[cv_kartspeedometer.value]);
