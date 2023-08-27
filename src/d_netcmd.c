@@ -957,6 +957,11 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_mini_yoffset);
 	CV_RegisterVar(&cv_want_xoffset);
 	CV_RegisterVar(&cv_want_yoffset);
+	CV_RegisterVar(&cv_showinput);
+	CV_RegisterVar(&cv_newspeedometer);
+
+	CV_RegisterVar(&cv_saltyhop);
+	CV_RegisterVar(&cv_saltyhopsfx);
 
 	//CV_RegisterVar(&cv_crosshair);
 	//CV_RegisterVar(&cv_crosshair2);
