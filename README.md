@@ -10,6 +10,9 @@
 - OpenMPT for Tracker module playback (Complete with filters) fixed looping issues while even sounding better than the old GME playback
 - The minimal brightness with Shaders can be configured, now you can seeeee in dark areas (0-255 , uses Sector brightness values)
 - Lua hooks for Intermission (ex: You can make hostmod votes still visible during intermission!)
+- "Saltyhop" does a cute jump when you press the drift button
+- Smaller "v2" like Speedometer (toggable)
+- Use the Input Display from Record Attack everywhere!
 - Visual Portals from Haya´s HEP Client
 - Toggable lowercase menu´s also from Haya´s HEP client
 - Everything that Galaxy has
@@ -22,8 +25,8 @@
 - Configurable timeout for waiting to join a full server (in vanilla this is capped to 5 minutes before it boots you out)
 - Characters now spin in skin selection menu (configurable)
 - HTTP Addon download speed has been raised dramatically (configurable with "downloadspeed" command)
-- Zone memory allocations have been rewritten, speeds up some map loading, and may improve performance on busy maps
 - HWR Drawnodes have been refactored, this should fix a few rare crashes esp in regards to OpenGL Visportals
+- The Position Number in the corner is alot smaller now (half the size!)
 - MSAA and A2C Antialiasing support (Configurable in renderer.txt file)
 
 ## Performance / Debugging
