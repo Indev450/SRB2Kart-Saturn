@@ -1706,6 +1706,19 @@ static menuitem_t OP_SaturnMenu[] =
 	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Credits", 		&OP_SaturnCreditsDef,		 120}, // uwu
 };
 
+enum
+{
+	sm_header,
+	sm_waittime,
+	sm_skinselspeed,
+	sm_input,
+	sm_speedometer,
+	sm_pisschannel,
+	sm_distortionmenu,
+	sm_hudoffsets,
+	sm_credits,
+};
+
 static menuitem_t OP_PlayerDistortMenu[] =
 {
 	{IT_HEADER, NULL, "Player Distortion", NULL, 0},
@@ -3829,6 +3842,9 @@ void M_Init(void)
 	if (rendermode == render_soft)
 		OP_VideoOptionsMenu[op_video_ogl].status = IT_DISABLED;
 #endif
+
+	if (!found_extra_kart) // why bother?
+		OP_SaturnMenu[sm_speedometer].status = IT_GRAYEDOUT;
 
 #ifndef NONET
 	CV_RegisterVar(&cv_serversort);
@@ -11054,7 +11070,7 @@ static void M_DrawJoystick(void)
 		compareval4 = cv_usejoystick4.value;
 		compareval3 = cv_usejoystick3.value;
 		compareval2 = cv_usejoystick2.value;
-		compareval = cv_usejoystick.value
+		compareval = cv_usejoystick.value;
 #endif
 
 		if ((setupcontrolplayer == 4 && (i == compareval4))
