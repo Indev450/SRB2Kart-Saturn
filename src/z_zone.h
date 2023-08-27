@@ -44,10 +44,17 @@ enum
 
 	PU_SOUND                 = 11, // static while playing
 	PU_MUSIC                 = 12, // static while playing
-	PU_HUDGFX                = 13, // static until WAD added
+
+	PU_PATCH                 = 14, // static entire execution time
+	PU_PATCH_LOWPRIORITY     = 15, // lower priority patch, static until level exited
+	PU_PATCH_ROTATED         = 16, // rotated patch, static until level exited or WAD added
+	PU_PATCH_DATA            = 17, // patch data, lifetime depends on the patch that owns it
+	PU_SPRITE                = 18, // sprite patch, static until WAD added
+	PU_HUDGFX                = 19, // HUD patch, static until WAD added
 
 	PU_HWRPATCHINFO          = 21, // Hardware GLPatch_t struct for OpenGL texture cache
 	PU_HWRPATCHCOLMIPMAP     = 22, // Hardware GLMipmap_t struct colormap variation of patch
+	PU_HWRMODELTEXTURE       = 23, // Hardware model texture
 
 	PU_HWRCACHE              = 48, // static until unlocked
 	PU_CACHE                 = 49, // static until unlocked

@@ -4615,6 +4615,18 @@ void HWR_RenderDrawNodes(void)
 
 	ps_numdrawnodes.value.i = numdrawnodes;
 
+	// Dump EVERYTHING into a huge drawnode list. Then we'll sort it!
+	// Could this be optimized into _AddTransparentWall/_AddTransparentPlane?
+	// Hell yes! But sort algorithm must be modified to use a linked list.
+	sortnode = Z_Calloc((sizeof(planeinfo_t)*numplanes)
+									+ (sizeof(polyplaneinfo_t)*numpolyplanes)
+									+ (sizeof(wallinfo_t)*numwalls)
+									,PU_STATIC, NULL);
+	// todo:
+	// However, in reality we shouldn't be re-copying and shifting all this information
+	// that is already lying around. This should all be in some sort of linked list or lists.
+	sortindex = Z_Calloc(sizeof(size_t) * (numplanes + numpolyplanes + numwalls), PU_STATIC, NULL);
+
 	PS_START_TIMING(ps_hw_nodesorttime);
 
 	sortindex = Z_Malloc(sizeof(INT32) * numdrawnodes, PU_STATIC, NULL);
@@ -4623,11 +4635,30 @@ void HWR_RenderDrawNodes(void)
 	for (i = 0; i < numdrawnodes; i++)
 		sortindex[i] = numdrawnodes - i - 1;
 
-	// The order is correct apart from planes in the same subsector.
-	// So scan the list and sort out these cases.
-	// For each consecutive run of planes in the list, sort that run based on
-	// plane height and view height.
-	while (run_start < numdrawnodes-1) // numdrawnodes-1 because a 1 plane run at the end of the list does not count
+	for (i = 0; i < numwalls; i++, p++)
+	{
+		sortnode[p].wall = &wallinfo[i];
+		sortindex[p] = p;
+	}
+
+	ps_numdrawnodes.value.i = p;
+
+	// p is the number of stuff to sort
+
+	// Add the 3D floors, thicksides, and masked textures...
+	// Instead of going through drawsegs, we need to iterate
+	// through the lists of masked textures and
+	// translucent ffloors being drawn.
+
+	// im not sure if this sort on the next line is needed.
+	// it sorts the list based on the value of the 'drawcount' member of the drawnodes.
+	// im thinking the list might already be in that order, but i havent bothered to check yet.
+	// anyway doing this sort does not hurt and does not take much time.
+	// the while loop after this sort is important however!
+	qsort(sortindex, p, sizeof(size_t), CompareDrawNodes);
+
+	// try solving floor order here. for each consecutive run of floors in the list, sort that run.
+	while (run_start < p-1)// p-1 because a 1 plane run at the end of the list does not count
 	{
 		// locate run start
 		if (drawnodes[sortindex[run_start]].type == DRAWNODE_PLANE)
@@ -4699,7 +4730,6 @@ void HWR_RenderDrawNodes(void)
 				wall->lightlevel, wall->wallcolormap);
 		}
 	}
-		
 	PS_STOP_TIMING(ps_hw_nodedrawtime);
 
 	numdrawnodes = 0;
@@ -5074,7 +5104,6 @@ void HWR_ProjectSprite(mobj_t *thing)
 			spr_offset = rotsprite->leftoffset << FRACBITS;
 			spr_topoffset = rotsprite->topoffset << FRACBITS;
 			spr_topoffset += FEETADJUST;
-			
 			// flip -> rotate, not rotate -> flip
 			flip = 0;
 		}
@@ -5535,6 +5564,16 @@ void HWR_PortalClipping(portal_t *portal)
 {
 	angle_t angle1, angle2;
 
+	seg_t *seg = portal->seg;
+
+	v1x = FLOAT_TO_FIXED(((polyvertex_t *)seg->pv1)->x);
+	v1y = FLOAT_TO_FIXED(((polyvertex_t *)seg->pv1)->y);
+	v2x = FLOAT_TO_FIXED(((polyvertex_t *)seg->pv2)->x);
+	v2y = FLOAT_TO_FIXED(((polyvertex_t *)seg->pv2)->y);
+
+	angle1 = R_PointToAngleEx(viewx, viewy, v1x, v1y);
+	angle2 = R_PointToAngleEx(viewx, viewy, v2x, v2y);
+*/
 	line_t *line = &lines[portal->clipline];
 
 	angle1 = R_PointToAngleEx(viewx, viewy, line->v1->x, line->v1->y);
