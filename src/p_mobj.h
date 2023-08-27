@@ -442,6 +442,14 @@ typedef struct precipmobj_s
 	fixed_t old_spritexscale, old_spriteyscale;
 	fixed_t old_spritexoffset, old_spriteyoffset;
 
+	// saltyhop! hardcode edition
+	boolean salty_ready;
+	boolean salty_tapping;
+	fixed_t salty_zoffset;
+	fixed_t salty_momz;
+	boolean salty_jump;
+	boolean init_salty;
+
 	fixed_t realxscale, realyscale; // funn-E streeetch
 
 	fixed_t stretchslam; // "squish" effect when you land
