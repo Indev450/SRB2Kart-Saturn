@@ -634,10 +634,44 @@ static void COM_ExecuteString(char *ptext)
 static void COM_Alias_f(void)
 {
 	cmdalias_t *a;
+	const char *alias_format = "\x87%-8s:\x80 %s\n";
+	int argc = COM_Argc();
 
-	if (COM_Argc() < 3)
+	if (argc == 2)
 	{
+		const char *begin = COM_Argv(1);
+		size_t szBegin = strlen(begin);
+
+		/* Display all aliases that start with `begin`. */
+		CONS_Printf(M_GetText("All aliases that start with \x87'%s'\x80 are:\n"), begin);
+
+		int count = 0;
+		for (cmdalias_t *head = com_alias; head->next != NULL; head = head->next)
+		{
+			if (strncmp(begin, head->name, szBegin) == 0)
+			{
+				CONS_Printf(alias_format, head->name, head->value);
+				count++;
+			}
+		}
+
+		if (count == 0)
+		{
+			CONS_Printf(M_GetText("There are none.\n"));
+		}
+
+		return;
+	}
+	else if (argc < 3)
+	{
+		/* Display alias subtext, show all aliases. */
 		CONS_Printf(M_GetText("alias <name> <command>: create a shortcut command that executes other command(s)\n"));
+
+		for (cmdalias_t *head = com_alias; head->next != NULL; head = head->next)
+		{
+			CONS_Printf(alias_format, head->name, head->value);
+		}
+
 		return;
 	}
 
