@@ -57,6 +57,9 @@ consvar_t cv_want_yoffset = {"hud_wanted_yoffset", "0", CV_SAVE, NULL, NULL, 0, 
 consvar_t cv_showinput = {"showinput", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_newspeedometer = {"newspeedometer", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_saltyhop = {"hardcodehop", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_saltyhopsfx = {"hardcodehopsfx", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 // SOME IMPORTANT VARIABLES DEFINED IN DOOMDEF.H:
 // gamespeed is cc (0 for easy, 1 for normal, 2 for hard)
 // franticitems is Frantic Mode items, bool
@@ -3039,6 +3042,61 @@ static void K_StretchPlayerGravity(player_t *p)
             p->mo->stretchslam = 0;
 
     }
+}
+
+static void K_QuiteSaltyHop(player_t *p) 
+{
+	// what the fuck is this haya
+	fixed_t mos = mapobjectscale;
+
+	// ready?
+	if (!p->kartstuff[k_jmp]) {
+		p->mo->salty_ready = true;
+		p->mo->salty_tapping = false;
+	} else if (p->mo->salty_ready) {
+		p->mo->salty_ready = false;
+		p->mo->salty_tapping = true;
+	} else {
+		p->mo->salty_tapping = false;
+	}
+
+	// GO!
+	if (!p->mo->init_salty) {
+		p->mo->salty_jump = false;
+		p->mo->salty_zoffset = 0;
+		p->mo->salty_momz = 0;
+		p->mo->init_salty = true;
+	}
+	else if (p->mo->salty_jump) {
+		if (p->mo->eflags & MFE_JUSTHITFLOOR) {
+			p->mo->salty_zoffset = 0;
+		} else if (P_IsObjectOnGround(p->mo)) {
+			p->mo->salty_zoffset += p->mo->salty_momz;
+			p->mo->salty_momz -= (mos*3/2);
+		} else {
+			p->mo->salty_zoffset *= 49/50;
+			p->mo->salty_momz = 0;
+		}
+		if (p->mo->salty_zoffset <= 0) {
+			if (!(p->mo->eflags & MFE_JUSTHITFLOOR) && P_IsObjectOnGround(p->mo) && cv_saltyhopsfx.value)
+				S_StartSound(p->mo, sfx_s268);
+			p->mo->salty_jump = false;
+			p->mo->salty_zoffset = 0;
+			p->mo->salty_momz = 0;
+		}
+		p->mo->spriteyoffset = p->mo->salty_zoffset*P_MobjFlip(p->mo);
+		if (S_SoundPlaying(p->mo, sfx_screec))
+			S_StopSoundByID(p->mo, sfx_screec);
+		if (S_SoundPlaying(p->mo, sfx_drift))
+			S_StopSoundByID(p->mo, sfx_drift);
+	}
+	else if (p->mo->salty_tapping && P_IsObjectOnGround(p->mo) && !p->kartstuff[k_spinouttimer] && !p->kartstuff[k_squishedtimer]) {
+		p->mo->salty_jump = true;
+		p->mo->salty_zoffset = 0;
+		p->mo->salty_momz = 6*mos;
+		if (cv_saltyhopsfx.value) 
+			S_StartSound(p->mo, sfx_s25a);
+	}
 }
 
 static INT32 K_FindPlayerNum(player_t *plyr)
@@ -6396,6 +6454,10 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 
 		player->kartstuff[k_boostcharge] = 0;
 	}
+
+	// salty hop! i wanna die
+	if (cv_saltyhop.value)
+		K_QuiteSaltyHop(player);
 }
 
 void K_CalculateBattleWanted(void)

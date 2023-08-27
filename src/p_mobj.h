@@ -23,6 +23,7 @@
 
 // We need the WAD data structure for Map things, from the THINGS lump.
 #include "doomdata.h"
+#include "doomtype.h"
 
 // States are tied to finite states are tied to animation frames.
 // Needs precompiled tables/data structures.
@@ -295,6 +296,14 @@ typedef struct mobj_s
 	fixed_t spritexoffset, spriteyoffset;
 	fixed_t old_spritexscale, old_spriteyscale;
 	fixed_t old_spritexoffset, old_spriteyoffset;
+
+	// saltyhop! hardcode edition
+	boolean salty_ready;
+	boolean salty_tapping;
+	fixed_t salty_zoffset;
+	fixed_t salty_momz;
+	boolean salty_jump;
+	boolean init_salty;
 
 	fixed_t realxscale, realyscale; // funn-E streeetch
 
