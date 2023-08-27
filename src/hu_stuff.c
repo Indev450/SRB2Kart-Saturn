@@ -682,6 +682,134 @@ static void Command_CSay_f(void)
 }
 static tic_t stop_spamming[MAXPLAYERS];
 
+const char *HU_SkinColorToConsoleColor(skincolors_t color)
+{
+	// Move this ugly switch into a function you can collapse.
+	switch (color)
+	{
+		case SKINCOLOR_WHITE:
+		case SKINCOLOR_SILVER:
+		case SKINCOLOR_SLATE:
+			return "\x80"; // White
+		case SKINCOLOR_GREY:
+		case SKINCOLOR_NICKEL:
+		case SKINCOLOR_BLACK:
+		case SKINCOLOR_SKUNK:
+		case SKINCOLOR_JET:
+			return "\x86"; // V_GRAYMAP
+		case SKINCOLOR_SEPIA:
+		case SKINCOLOR_BEIGE:
+		case SKINCOLOR_WALNUT:
+		case SKINCOLOR_BROWN:
+		case SKINCOLOR_LEATHER:
+		case SKINCOLOR_RUST:
+		case SKINCOLOR_WRISTWATCH:
+			return "\x8e"; // V_BROWNMAP
+		case SKINCOLOR_FAIRY:
+		case SKINCOLOR_SALMON:
+		case SKINCOLOR_PINK:
+		case SKINCOLOR_ROSE:
+		case SKINCOLOR_BRICK:
+		case SKINCOLOR_LEMONADE:
+		case SKINCOLOR_BUBBLEGUM:
+		case SKINCOLOR_LILAC:
+			return "\x8d"; // V_PINKMAP
+		case SKINCOLOR_CINNAMON:
+		case SKINCOLOR_RUBY:
+		case SKINCOLOR_RASPBERRY:
+		case SKINCOLOR_CHERRY:
+		case SKINCOLOR_RED:
+		case SKINCOLOR_CRIMSON:
+		case SKINCOLOR_MAROON:
+		case SKINCOLOR_FLAME:
+		case SKINCOLOR_SCARLET:
+		case SKINCOLOR_KETCHUP:
+			return "\x85"; // V_REDMAP
+		case SKINCOLOR_DAWN:
+		case SKINCOLOR_SUNSET:
+		case SKINCOLOR_CREAMSICLE:
+		case SKINCOLOR_ORANGE:
+		case SKINCOLOR_PUMPKIN:
+		case SKINCOLOR_ROSEWOOD:
+		case SKINCOLOR_BURGUNDY:
+		case SKINCOLOR_TANGERINE:
+			return "\x87"; // V_ORANGEMAP
+		case SKINCOLOR_PEACH:
+		case SKINCOLOR_CARAMEL:
+		case SKINCOLOR_CREAM:
+			return "\x8f"; // V_PEACHMAP
+		case SKINCOLOR_GOLD:
+		case SKINCOLOR_ROYAL:
+		case SKINCOLOR_BRONZE:
+		case SKINCOLOR_COPPER:
+		case SKINCOLOR_THUNDER:
+			return "\x8A"; // V_GOLDMAP
+		case SKINCOLOR_POPCORN:
+		case SKINCOLOR_QUARRY:
+		case SKINCOLOR_YELLOW:
+		case SKINCOLOR_MUSTARD:
+		case SKINCOLOR_CROCODILE:
+		case SKINCOLOR_OLIVE:
+			return "\x82"; // V_YELLOWMAP
+		case SKINCOLOR_ARTICHOKE:
+		case SKINCOLOR_VOMIT:
+		case SKINCOLOR_GARDEN:
+		case SKINCOLOR_TEA:
+		case SKINCOLOR_PISTACHIO:
+			return "\x8b"; // V_TEAMAP
+		case SKINCOLOR_LIME:
+		case SKINCOLOR_HANDHELD:
+		case SKINCOLOR_MOSS:
+		case SKINCOLOR_CAMOUFLAGE:
+		case SKINCOLOR_ROBOHOOD:
+		case SKINCOLOR_MINT:
+		case SKINCOLOR_GREEN:
+		case SKINCOLOR_PINETREE:
+		case SKINCOLOR_EMERALD:
+		case SKINCOLOR_SWAMP:
+		case SKINCOLOR_DREAM:
+		case SKINCOLOR_PLAGUE:
+		case SKINCOLOR_ALGAE:
+			return "\x83"; // V_GREENMAP
+		case SKINCOLOR_CARIBBEAN:
+		case SKINCOLOR_AZURE:
+		case SKINCOLOR_AQUA:
+		case SKINCOLOR_TEAL:
+		case SKINCOLOR_CYAN:
+		case SKINCOLOR_JAWZ:
+		case SKINCOLOR_CERULEAN:
+		case SKINCOLOR_NAVY:
+		case SKINCOLOR_SAPPHIRE:
+			return "\x88"; // V_SKYMAP
+		case SKINCOLOR_PIGEON:
+		case SKINCOLOR_PLATINUM:
+		case SKINCOLOR_STEEL:
+			return "\x8c"; // V_STEELMAP
+		case SKINCOLOR_PERIWINKLE:
+		case SKINCOLOR_BLUE:
+		case SKINCOLOR_BLUEBERRY:
+		case SKINCOLOR_NOVA:
+			return "\x84"; // V_BLUEMAP
+		case SKINCOLOR_ULTRAVIOLET:
+		case SKINCOLOR_PURPLE:
+		case SKINCOLOR_FUCHSIA:
+			return "\x81"; // V_PURPLEMAP
+		case SKINCOLOR_PASTEL:
+		case SKINCOLOR_MOONSLAM:
+		case SKINCOLOR_DUSK:
+		case SKINCOLOR_TOXIC:
+		case SKINCOLOR_MAUVE:
+		case SKINCOLOR_LAVENDER:
+		case SKINCOLOR_BYZANTIUM:
+		case SKINCOLOR_POMEGRANATE:
+			return "\x89"; // V_LAVENDERMAP
+
+		default:
+			return "\x83";
+	}
+}
+
+
 /** Receives a message, processing an ::XD_SAY command.
   * \sa DoSayCommand
   * \author Graue <graue@oceanbase.org>
@@ -828,145 +956,7 @@ static void Got_Saycmd(UINT8 **p, INT32 playernum)
 		{
 			const UINT8 color = players[playernum].skincolor;
 
-			cstart = "\x83";
-
-			switch (color)
-			{
-				case SKINCOLOR_WHITE:
-				case SKINCOLOR_SILVER:
-				case SKINCOLOR_SLATE:
-					cstart = "\x80"; // White
-					break;
-				case SKINCOLOR_GREY:
-				case SKINCOLOR_NICKEL:
-				case SKINCOLOR_BLACK:
-				case SKINCOLOR_SKUNK:
-				case SKINCOLOR_JET:
-					cstart = "\x86"; // V_GRAYMAP
-					break;
-				case SKINCOLOR_SEPIA:
-				case SKINCOLOR_BEIGE:
-				case SKINCOLOR_WALNUT:
-				case SKINCOLOR_BROWN:
-				case SKINCOLOR_LEATHER:
-				case SKINCOLOR_RUST:
-				case SKINCOLOR_WRISTWATCH:
-					cstart = "\x8e"; // V_BROWNMAP
-					break;
-				case SKINCOLOR_FAIRY:
-				case SKINCOLOR_SALMON:
-				case SKINCOLOR_PINK:
-				case SKINCOLOR_ROSE:
-				case SKINCOLOR_BRICK:
-				case SKINCOLOR_LEMONADE:
-				case SKINCOLOR_BUBBLEGUM:
-				case SKINCOLOR_LILAC:
-					cstart = "\x8d"; // V_PINKMAP
-					break;
-				case SKINCOLOR_CINNAMON:
-				case SKINCOLOR_RUBY:
-				case SKINCOLOR_RASPBERRY:
-				case SKINCOLOR_CHERRY:
-				case SKINCOLOR_RED:
-				case SKINCOLOR_CRIMSON:
-				case SKINCOLOR_MAROON:
-				case SKINCOLOR_FLAME:
-				case SKINCOLOR_SCARLET:
-				case SKINCOLOR_KETCHUP:
-					cstart = "\x85"; // V_REDMAP
-					break;
-				case SKINCOLOR_DAWN:
-				case SKINCOLOR_SUNSET:
-				case SKINCOLOR_CREAMSICLE:
-				case SKINCOLOR_ORANGE:
-				case SKINCOLOR_PUMPKIN:
-				case SKINCOLOR_ROSEWOOD:
-				case SKINCOLOR_BURGUNDY:
-				case SKINCOLOR_TANGERINE:
-					cstart = "\x87"; // V_ORANGEMAP
-					break;
-				case SKINCOLOR_PEACH:
-				case SKINCOLOR_CARAMEL:
-				case SKINCOLOR_CREAM:
-					cstart = "\x8f"; // V_PEACHMAP
-					break;
-				case SKINCOLOR_GOLD:
-				case SKINCOLOR_ROYAL:
-				case SKINCOLOR_BRONZE:
-				case SKINCOLOR_COPPER:
-				case SKINCOLOR_THUNDER:
-					cstart = "\x8A"; // V_GOLDMAP
-					break;
-				case SKINCOLOR_POPCORN:
-				case SKINCOLOR_QUARRY:
-				case SKINCOLOR_YELLOW:
-				case SKINCOLOR_MUSTARD:
-				case SKINCOLOR_CROCODILE:
-				case SKINCOLOR_OLIVE:
-					cstart = "\x82"; // V_YELLOWMAP
-					break;
-				case SKINCOLOR_ARTICHOKE:
-				case SKINCOLOR_VOMIT:
-				case SKINCOLOR_GARDEN:
-				case SKINCOLOR_TEA:
-				case SKINCOLOR_PISTACHIO:
-					cstart = "\x8b"; // V_TEAMAP
-					break;
-				case SKINCOLOR_LIME:
-				case SKINCOLOR_HANDHELD:
-				case SKINCOLOR_MOSS:
-				case SKINCOLOR_CAMOUFLAGE:
-				case SKINCOLOR_ROBOHOOD:
-				case SKINCOLOR_MINT:
-				case SKINCOLOR_GREEN:
-				case SKINCOLOR_PINETREE:
-				case SKINCOLOR_EMERALD:
-				case SKINCOLOR_SWAMP:
-				case SKINCOLOR_DREAM:
-				case SKINCOLOR_PLAGUE:
-				case SKINCOLOR_ALGAE:
-					cstart = "\x83"; // V_GREENMAP
-					break;
-				case SKINCOLOR_CARIBBEAN:
-				case SKINCOLOR_AZURE:
-				case SKINCOLOR_AQUA:
-				case SKINCOLOR_TEAL:
-				case SKINCOLOR_CYAN:
-				case SKINCOLOR_JAWZ:
-				case SKINCOLOR_CERULEAN:
-				case SKINCOLOR_NAVY:
-				case SKINCOLOR_SAPPHIRE:
-					cstart = "\x88"; // V_SKYMAP
-					break;
-				case SKINCOLOR_PIGEON:
-				case SKINCOLOR_PLATINUM:
-				case SKINCOLOR_STEEL:
-					cstart = "\x8c"; // V_STEELMAP
-					break;
-				case SKINCOLOR_PERIWINKLE:
-				case SKINCOLOR_BLUE:
-				case SKINCOLOR_BLUEBERRY:
-				case SKINCOLOR_NOVA:
-					cstart = "\x84"; // V_BLUEMAP
-					break;
-				case SKINCOLOR_ULTRAVIOLET:
-				case SKINCOLOR_PURPLE:
-				case SKINCOLOR_FUCHSIA:
-					cstart = "\x81"; // V_PURPLEMAP
-					break;
-				case SKINCOLOR_PASTEL:
-				case SKINCOLOR_MOONSLAM:
-				case SKINCOLOR_DUSK:
-				case SKINCOLOR_TOXIC:
-				case SKINCOLOR_MAUVE:
-				case SKINCOLOR_LAVENDER:
-				case SKINCOLOR_BYZANTIUM:
-				case SKINCOLOR_POMEGRANATE:
-					cstart = "\x89"; // V_LAVENDERMAP
-					break;
-				default:
-					break;
-			}
+			cstart = HU_SkinColorToConsoleColor(color);
 		}
 
 		prefix = cstart;

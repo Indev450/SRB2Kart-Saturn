@@ -121,6 +121,7 @@ void HU_drawPing(INT32 x, INT32 y, UINT32 ping, INT32 flags);	// Lat': Ping draw
 //void HU_DrawDualTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, INT32 whiteplayer);
 void HU_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, INT32 whiteplayer, INT32 hilicol);
 void HU_DrawEmeralds(INT32 x, INT32 y, INT32 pemeralds);
+const char *HU_SkinColorToConsoleColor(skincolors_t color);
 
 INT32 HU_CreateTeamScoresTbl(playersort_t *tab, UINT32 dmtotals[]);
 
