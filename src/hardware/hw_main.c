@@ -194,7 +194,7 @@ FTransform atransform;
 
 // Float variants of viewx, viewy, viewz, etc.
 static float gr_viewx, gr_viewy, gr_viewz;
-static float gr_viewsin, gr_viewcos;
+float gr_viewsin, gr_viewcos;
 
 static fixed_t dup_viewx, dup_viewy, dup_viewz;
 
@@ -5074,6 +5074,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 			spr_offset = rotsprite->leftoffset << FRACBITS;
 			spr_topoffset = rotsprite->topoffset << FRACBITS;
 			spr_topoffset += FEETADJUST;
+			
 			// flip -> rotate, not rotate -> flip
 			flip = 0;
 		}
@@ -5129,13 +5130,13 @@ void HWR_ProjectSprite(mobj_t *thing)
 
 	if (thing->eflags & MFE_VERTICALFLIP)
 	{
-		gz = FIXED_TO_FLOAT(interp.z+thing->height) - FIXED_TO_FLOAT(spr_topoffset) * this_yscale;
-		gzt = gz + FIXED_TO_FLOAT(spr_height) * this_yscale;
+		gz = FIXED_TO_FLOAT(interp.z + thing->height) - (FIXED_TO_FLOAT(spr_topoffset) * this_yscale);
+		gzt = gz + (FIXED_TO_FLOAT(spr_height) * this_yscale);
 	}
 	else
 	{
-		gzt = FIXED_TO_FLOAT(interp.z) + FIXED_TO_FLOAT(spr_topoffset) * this_yscale;
-		gz = gzt - FIXED_TO_FLOAT(spr_height) * this_yscale;
+		gzt = FIXED_TO_FLOAT(interp.z) + (FIXED_TO_FLOAT(spr_topoffset) * this_yscale);
+		gz = gzt - (FIXED_TO_FLOAT(spr_height) * this_yscale);
 	}
 
 	if (thing->subsector->sector->cullheight)
@@ -5177,10 +5178,10 @@ void HWR_ProjectSprite(mobj_t *thing)
 	vis->spriteyscale = spriteyscale;
 	vis->spritexoffset = FIXED_TO_FLOAT(spr_offset);
 	vis->spriteyoffset = FIXED_TO_FLOAT(spr_topoffset);
-	//vis->patchlumpnum = sprframe->lumppat[rot];
+
 #ifdef ROTSPRITE
 	if (rotsprite)
-			vis->gpatch = (GLPatch_t *)rotsprite;
+		vis->gpatch = (GLPatch_t *)rotsprite;
 	else
 #endif
 			vis->gpatch = (GLPatch_t *)W_CachePatchNum(sprframe->lumppat[rot], PU_CACHE);
@@ -5345,7 +5346,6 @@ void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 	vis->z2 = z2;
 	vis->tz = tz;
 	vis->dispoffset = 0; // Monster Iestyn: 23/11/15: HARDWARE SUPPORT AT LAST
-	//vis->patchlumpnum = sprframe->lumppat[rot];
 	vis->gpatch = (GLPatch_t *)W_CachePatchNum(sprframe->lumppat[rot], PU_CACHE);
 	vis->flip = flip;
 	vis->mobj = (mobj_t *)thing;

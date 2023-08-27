@@ -45,6 +45,7 @@ extern unsigned msaa;
 extern boolean a2c;
 
 extern FTransform atransform;
+extern float gr_viewsin, gr_viewcos;
 
 // Performance stats
 extern ps_metric_t ps_hw_nodesorttime;
