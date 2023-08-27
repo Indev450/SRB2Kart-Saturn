@@ -3083,6 +3083,12 @@ static void K_QuiteSaltyHop(player_t *p)
 			p->mo->salty_jump = false;
 			p->mo->salty_zoffset = 0;
 			p->mo->salty_momz = 0;
+			// shlamma damma
+			p->mo->stretchslam += (8*mos);
+		} else if (p->mo->salty_zoffset >= 0) {
+			// goofy ahh hack
+			p->mo->spriteyscale += (mos/8);
+			p->mo->spritexscale -= (mos/8);
 		}
 		p->mo->spriteyoffset = p->mo->salty_zoffset*P_MobjFlip(p->mo);
 		if (S_SoundPlaying(p->mo, sfx_screec))
