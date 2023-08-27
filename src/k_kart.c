@@ -3000,8 +3000,8 @@ static void K_StretchPlayerGravity(player_t *p)
     I_Assert(p != NULL);
 	I_Assert(p->mo != NULL);
 	I_Assert(!P_MobjWasRemoved(p->mo));
-	
-	if (!p->mo->stretchonground && P_IsObjectOnGround(p->mo) && (cv_slamsound.value == 1))
+
+	if (p->mo->eflags & MFE_JUSTHITFLOOR && (cv_slamsound.value == 1))
 		S_StartSound(p->mo, sfx_s3k4c);
 
     if (!P_IsObjectOnGround(p->mo))
@@ -3022,7 +3022,6 @@ static void K_StretchPlayerGravity(player_t *p)
         {
             p->mo->spritexscale = (dxs);
             p->mo->spriteyscale = (dys);
-			p->mo->stretchonground = false;
         }
     }
     else
@@ -3037,10 +3036,7 @@ static void K_StretchPlayerGravity(player_t *p)
             p->mo->stretchslam -= (4*mos);
         else
             p->mo->stretchslam = 0;
-				p->mo->stretchonground = true;	
     }
-	
-	
 }
 
 static INT32 K_FindPlayerNum(player_t *plyr)
