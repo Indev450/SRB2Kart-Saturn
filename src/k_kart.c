@@ -3047,7 +3047,7 @@ static void K_StretchPlayerGravity(player_t *p)
 static void K_QuiteSaltyHop(player_t *p) 
 {
 	// what the fuck is this haya
-	fixed_t mos = mapobjectscale;
+	fixed_t mos = FRACUNIT; // doesnt work correctly if it isnt :/
 
 	// ready?
 	if (!p->kartstuff[k_jmp]) {
@@ -3074,7 +3074,7 @@ static void K_QuiteSaltyHop(player_t *p)
 			p->mo->salty_zoffset += p->mo->salty_momz;
 			p->mo->salty_momz -= (mos*3/2);
 		} else {
-			p->mo->salty_zoffset *= 49/50;
+			p->mo->salty_zoffset *= (49/50)*mos;
 			p->mo->salty_momz = 0;
 		}
 		if (p->mo->salty_zoffset <= 0) {
