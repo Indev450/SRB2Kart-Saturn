@@ -7768,13 +7768,14 @@ static void K_DrawKartPositionNum(INT32 num)
 	// POSI_X = BASEVIDWIDTH - 51;	// 269
 	// POSI_Y = BASEVIDHEIGHT- 64;	// 136
 
-	fixed_t scale = (cv_smallpos.value) ? FRACUNIT / 2 : FRACUNIT;
-	patch_t *localpatch = kp_positionnum[0][0];
-	INT32 W = SHORT(kp_positionnum[0][0]->width);
-	INT32 fx = 0, fy = 0, fflags = 0;
-	INT32 xoffs = (cv_smallpos.value) ? -18 : 0;
-	
 	boolean win = (stplyr->exiting && num == 1);
+	//INT32 X = POSI_X;
+	INT32 W = SHORT(kp_positionnum[0][0]->width);
+	fixed_t scale = FRACUNIT;
+	patch_t *localpatch = kp_positionnum[0][0];
+	//INT32 splitflags = K_calcSplitFlags(V_SNAPTOBOTTOM|V_SNAPTORIGHT);
+	INT32 fx = 0, fy = 0, fflags = 0;
+	INT32 xoffs = (cv_showinput.value) ? -48 : 0;
 	boolean flipdraw = false;	// flip the order we draw it in for MORE splitscreen bs. fun.
 	boolean flipvdraw = false;	// used only for 2p splitscreen so overtaking doesn't make 1P's position fly off the screen.
 	boolean overtake = false;
@@ -7784,8 +7785,9 @@ static void K_DrawKartPositionNum(INT32 num)
 		scale *= 2;
 		overtake = true;	// this is used for splitscreen stuff in conjunction with flipdraw.
 	}
-	
-	if ((splitscreen) && (cv_smallpos.value == 0))
+	if (splitscreen)
+		scale /= 2;
+	if (cv_showinput.value && !splitscreen) // anuther one.
 		scale /= 2;
 
 	W = FixedMul(W<<FRACBITS, scale)>>FRACBITS;
@@ -8524,19 +8526,22 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags, pat
 	else
 	{
 		UINT8 *colormap = R_GetTranslationColormap((mo->colorized) ? TC_RAINBOW : skin, mo->color, GTC_CACHE);
-		V_DrawFixedPatch(amxpos + (2 * FRACUNIT), amypos + (2 * FRACUNIT), FRACUNIT / 2, flags, facemmapprefix[skin], colormap);
+		
+		if (cv_minihead.value == 1)
+			V_DrawFixedPatch(amxpos + (2 * FRACUNIT), amypos + (2 * FRACUNIT), FRACUNIT/2, flags, facemmapprefix[skin], colormap);
+		else if (cv_minihead.value == 0)
+			V_DrawFixedPatch(amxpos + (2 * FRACUNIT), amypos + (2 * FRACUNIT), FRACUNIT, flags, facemmapprefix[skin], colormap);
 
 		if (cv_showminimapnames.value && !(modeattacking || gamestate == GS_TIMEATTACK))
 		{
 			const char *player_name = va("%c%s", V_GetSkincolorChar(mo->color), player_names[mo->player - players]);
 			V_DrawCenteredSmallStringAtFixed(amxpos + (4 * FRACUNIT), amypos - (3 * FRACUNIT), V_ALLOWLOWERCASE|flags, player_name);
 		}
-		
 		if (mo->player
 			&& ((G_RaceGametype() && mo->player->kartstuff[k_position] == spbplace)
 			|| (G_BattleGametype() && K_IsPlayerWanted(mo->player))))
 		{
-			V_DrawFixedPatch(amxpos, amypos, FRACUNIT / 2, flags, kp_wantedreticle, NULL);
+			V_DrawFixedPatch(amxpos - (4<<FRACBITS), amypos - (4<<FRACBITS), FRACUNIT, flags, kp_wantedreticle, NULL);
 		}
 	}
 }
