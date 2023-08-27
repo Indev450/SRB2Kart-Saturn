@@ -6464,6 +6464,12 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 	// salty hop! i wanna die
 	if (cv_saltyhop.value)
 		K_QuiteSaltyHop(player);
+	else {
+		player->mo->spriteyoffset = 0;
+		player->mo->salty_jump = false;
+		player->mo->salty_zoffset = 0;
+		player->mo->salty_momz = 0;
+	}
 }
 
 void K_CalculateBattleWanted(void)
