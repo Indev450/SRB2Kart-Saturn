@@ -297,14 +297,6 @@ typedef struct mobj_s
 	fixed_t old_spritexscale, old_spriteyscale;
 	fixed_t old_spritexoffset, old_spriteyoffset;
 
-	// saltyhop! hardcode edition
-	boolean salty_ready;
-	boolean salty_tapping;
-	fixed_t salty_zoffset;
-	fixed_t salty_momz;
-	boolean salty_jump;
-	boolean init_salty;
-
 	fixed_t realxscale, realyscale; // funn-E streeetch
 
 	fixed_t stretchslam; // "squish" effect when you land
@@ -403,6 +395,14 @@ typedef struct mobj_s
 	boolean colorized; // Whether the mobj uses the rainbow colormap
 	boolean rollmodel; // OpenGL: Should this model rotate?
 
+	// saltyhop! hardcode edition
+	boolean salty_ready;
+	boolean salty_tapping;
+	fixed_t salty_zoffset;
+	fixed_t salty_momz;
+	boolean salty_jump;
+	boolean init_salty;
+
 	// WARNING: New fields must be added separately to savegame and Lua.
 } mobj_t;
 
@@ -441,14 +441,6 @@ typedef struct precipmobj_s
 	fixed_t spritexoffset, spriteyoffset;
 	fixed_t old_spritexscale, old_spriteyscale;
 	fixed_t old_spritexoffset, old_spriteyoffset;
-
-	// saltyhop! hardcode edition
-	boolean salty_ready;
-	boolean salty_tapping;
-	fixed_t salty_zoffset;
-	fixed_t salty_momz;
-	boolean salty_jump;
-	boolean init_salty;
 
 	fixed_t realxscale, realyscale; // funn-E streeetch
 
