@@ -9564,6 +9564,9 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 	mobj->spriteyscale = mobj->realyscale; 
 	mobj->spritexoffset = mobj->spriteyoffset = 0;
 
+	// Funni slam sound when landing
+	mobj->slamsoundtimer = 0;
+
 	// set subsector and/or block links
 	P_SetThingPosition(mobj);
 	I_Assert(mobj->subsector != NULL);

@@ -394,6 +394,8 @@ typedef struct mobj_s
 	boolean colorized; // Whether the mobj uses the rainbow colormap
 	boolean rollmodel; // OpenGL: Should this model rotate?
 
+	tic_t slamsoundtimer;
+
 	// WARNING: New fields must be added separately to savegame and Lua.
 } mobj_t;
 
