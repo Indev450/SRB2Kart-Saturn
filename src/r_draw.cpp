@@ -111,14 +111,23 @@ static UINT8 **localtranslationtablecache[MAXLOCALSKINS] = {NULL};
 
 CV_PossibleValue_t Color_cons_t[MAXSKINCOLORS+1];
 
-static void R_GenerateBlendTables(void);
+struct GenerateBlendTables_State
+{
+	RGBA_t *LocalPalette;
+};
+
+static void R_GenerateBlendTables_Core(struct GenerateBlendTables_State *state);
 static void R_AllocateBlendTables(void);
 
 #ifdef HAVE_THREADS
 static void R_GenerateBlendTables_Thread(void *userdata)
 {
-	(void)userdata;
-	R_GenerateBlendTables();
+	struct GenerateBlendTables_State *state = static_cast<struct GenerateBlendTables_State *>(userdata);
+
+	R_GenerateBlendTables_Core(state);
+
+	free(state->LocalPalette);
+	free(state);
 }
 #endif
 
@@ -142,13 +151,7 @@ void R_InitTranslucencyTables(void)
 	W_ReadLump(W_GetNumForName("TRANS90"), transtables+0x80000);
 
 	R_AllocateBlendTables();
-
-#ifdef HAVE_THREADS
-	I_spawn_thread("blend-tables",
-			R_GenerateBlendTables_Thread, NULL);
-#else
 	R_GenerateBlendTables();
-#endif
 }
 
 static colorlookup_t transtab_lut;
@@ -268,9 +271,26 @@ static void R_AllocateBlendTables(void)
 	}
 }
 
-static void R_GenerateBlendTables(void)
+void R_GenerateBlendTables(void)
 {
-	InitColorLUT(&transtab_lut, pLocalPalette, false);
+#ifdef HAVE_THREADS
+	// Allocate copies for the worker thread since the originals can be freed in the main thread.
+	struct GenerateBlendTables_State *state = static_cast<struct GenerateBlendTables_State *>(malloc(sizeof *state));
+	size_t palsize = 256 * sizeof(RGBA_t);
+
+	state->LocalPalette = static_cast<RGBA_t *>(memcpy(malloc(palsize), pLocalPalette, palsize));
+
+	I_spawn_thread("blend-tables",
+			R_GenerateBlendTables_Thread, state);
+#else
+	struct GenerateBlendTables_State state = {pLocalPalette, pGammaCorrectedPalette};
+	R_GenerateBlendTables_Core(&state);
+#endif
+}
+
+static void R_GenerateBlendTables_Core(struct GenerateBlendTables_State *state)
+{
+	InitColorLUT(&transtab_lut, state->LocalPalette, false);
 
 	// Additive
 	BlendTab_GenerateMaps(blendtab_add, AST_ADD, BlendTab_Translucent);
