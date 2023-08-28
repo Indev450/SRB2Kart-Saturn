@@ -3001,7 +3001,7 @@ static void K_StretchPlayerGravity(player_t *p)
 	I_Assert(p->mo != NULL);
 	I_Assert(!P_MobjWasRemoved(p->mo));
 
-	if (p->mo->eflags & MFE_JUSTHITFLOOR && (cv_slamsound.value == 1))
+	if (cv_slamsound.value == 1 && (p->mo->eflags & MFE_JUSTHITFLOOR) && p->mo->stretchslam > 4*mos)
 		S_StartSound(p->mo, sfx_s3k4c);
 
     if (!P_IsObjectOnGround(p->mo))
