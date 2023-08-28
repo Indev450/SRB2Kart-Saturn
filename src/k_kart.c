@@ -8530,7 +8530,7 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags, pat
 		if (cv_minihead.value == 1)
 			V_DrawFixedPatch(amxpos + (2 * FRACUNIT), amypos + (2 * FRACUNIT), FRACUNIT/2, flags, facemmapprefix[skin], colormap);
 		else if (cv_minihead.value == 0)
-			V_DrawFixedPatch(amxpos + (2 * FRACUNIT), amypos + (2 * FRACUNIT), FRACUNIT, flags, facemmapprefix[skin], colormap);
+			V_DrawFixedPatch(amxpos, amypos, FRACUNIT, flags, facemmapprefix[skin], colormap);
 
 		if (cv_showminimapnames.value && !(modeattacking || gamestate == GS_TIMEATTACK))
 		{
@@ -8541,6 +8541,9 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags, pat
 			&& ((G_RaceGametype() && mo->player->kartstuff[k_position] == spbplace)
 			|| (G_BattleGametype() && K_IsPlayerWanted(mo->player))))
 		{
+			if (cv_minihead.value == 1)
+			V_DrawFixedPatch(amxpos, amypos, FRACUNIT / 2, flags, kp_wantedreticle, NULL);
+			else if (cv_minihead.value == 0)
 			V_DrawFixedPatch(amxpos - (4<<FRACBITS), amypos - (4<<FRACBITS), FRACUNIT, flags, kp_wantedreticle, NULL);
 		}
 	}
