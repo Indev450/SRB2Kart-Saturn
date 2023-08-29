@@ -703,6 +703,8 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_powerstones);
 	CV_RegisterVar(&cv_competitionboxes);
 	CV_RegisterVar(&cv_matchboxes);
+	
+	CV_RegisterVar(&cv_slamsound);
 
 	/*CV_RegisterVar(&cv_recycler);
 	CV_RegisterVar(&cv_teleporters);

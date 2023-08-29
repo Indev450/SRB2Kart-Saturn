@@ -395,6 +395,8 @@ typedef struct mobj_s
 	boolean colorized; // Whether the mobj uses the rainbow colormap
 	boolean rollmodel; // OpenGL: Should this model rotate?
 
+	tic_t slamsoundtimer;
+
 	// saltyhop! hardcode edition
 	boolean salty_ready;
 	boolean salty_tapping;

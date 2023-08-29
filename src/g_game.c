@@ -545,7 +545,11 @@ static CV_PossibleValue_t stretchfactor_t[] = {{0, "MIN"}, {FRACUNIT, "MAX"}, {0
 consvar_t cv_gravstretch = {"gravstretch", "0", CV_FLOAT | CV_SAVE, stretchfactor_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_sloperoll = {"sloperoll", "Off", CV_SAVE|CV_CALL, CV_OnOff, PDistort_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
+
 consvar_t cv_sliptideroll = {"sliptideroll", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+static CV_PossibleValue_t slamsound_t[] = {{0, "Off"}, {1, "On"}, {0, NULL}};
+consvar_t cv_slamsound = {"slamsound", "1", CV_SAVE, slamsound_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static CV_PossibleValue_t sloperolldist_cons_t[] = {
 	/*{256, "256"},*/	{512, "512"},	{768, "768"},

@@ -3008,6 +3008,15 @@ static void K_StretchPlayerGravity(player_t *p)
 	I_Assert(p->mo != NULL);
 	I_Assert(!P_MobjWasRemoved(p->mo));
 
+	if (p->mo->slamsoundtimer)
+		p->mo->slamsoundtimer--;
+
+	if (cv_slamsound.value == 1 && (p->mo->eflags & MFE_JUSTHITFLOOR) && p->mo->stretchslam > 4*mos && !p->mo->slamsoundtimer)
+	{
+		S_StartSound(p->mo, sfx_s3k4c);
+		p->mo->slamsoundtimer = TICRATE;
+	}
+
     if (!P_IsObjectOnGround(p->mo))
     {
         if (zspd != 0)
@@ -3040,7 +3049,6 @@ static void K_StretchPlayerGravity(player_t *p)
             p->mo->stretchslam -= (4*mos);
         else
             p->mo->stretchslam = 0;
-
     }
 }
 
