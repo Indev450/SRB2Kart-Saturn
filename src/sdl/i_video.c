@@ -2059,8 +2059,13 @@ void I_StartupGraphics(void)
 #endif
 		if (rendermode == render_none)
 		{
+#ifdef HWRENDER
+			rendermode = render_opengl;
+			CONS_Printf("Defaulting to OpenGL renderer.\n");
+#else
 			rendermode = render_soft;
 			CONS_Printf("Using default software renderer.\n");
+#endif
 		}
     }
 
