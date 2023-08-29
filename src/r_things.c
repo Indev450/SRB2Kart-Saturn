@@ -1796,17 +1796,6 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 			return;
 	}
 
-	// okay, we can't return now except for vertical clipping... this is a hack, but weather isn't networked, so it should be ok
-	if (!(thing->precipflags & PCF_THUNK))
-	{
-		if (thing->precipflags & PCF_RAIN)
-			P_RainThinker(thing);
-		else
-			P_SnowThinker(thing);
-		thing->precipflags |= PCF_THUNK;
-	}
-
-
 	//SoM: 3/17/2000: Disregard sprites that are out of view..
 	gzt = interp.z + spritecachedinfo[lump].topoffset;
 	gz = gzt - spritecachedinfo[lump].height;
@@ -1814,7 +1803,7 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 	if (thing->subsector->sector->cullheight)
 	{
 		if (R_DoCulling(thing->subsector->sector->cullheight, viewsector->cullheight, viewz, gz, gzt))
-			return;
+			goto weatherthink;
 	}
 
 	// store information in a vissprite
@@ -1878,6 +1867,18 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 	vis->precip = true;
 	vis->vflip = false;
 	vis->isScaled = false;
+	
+weatherthink:
+	// okay... this is a hack, but weather isn't networked, so it should be ok
+	if (!(thing->precipflags & PCF_THUNK))
+	{
+		if (thing->precipflags & PCF_RAIN)
+			P_RainThinker(thing);
+		else
+			P_SnowThinker(thing);
+		thing->precipflags |= PCF_THUNK;
+	}
+
 }
 
 // R_AddSprites

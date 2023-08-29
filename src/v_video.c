@@ -2053,6 +2053,28 @@ INT32 V_DrawPingNum(INT32 x, INT32 y, INT32 flags, INT32 num, const UINT8 *color
 	return x;
 }
 
+// Jaden: Draw a number using the position numbers.
+//
+void V_DrawRankNum(INT32 x, INT32 y, INT32 flags, INT32 num, INT32 digits, const UINT8 *colormap)
+{
+	INT32 w = SHORT(ranknum[0]->width) - 1;
+
+	if (flags & V_NOSCALESTART)
+		w *= vid.dupx;
+
+	if (num < 0)
+		num = -num;
+
+	// draw the number
+	do
+	{
+		x -= (w - 1);
+
+		V_DrawFixedPatch(x << FRACBITS, y << FRACBITS, FRACUNIT, flags, ranknum[num % 10], colormap);
+		num /= 10;
+	} while (--digits);
+}
+
 // Write a string using the credit font
 // NOTE: the text is centered for screens larger than the base width
 //

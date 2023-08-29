@@ -46,7 +46,9 @@ EXPORT void HWRAPI(ClearMipMapCache) (void);
 EXPORT void HWRAPI(SetSpecialState) (hwdspecialstate_t IdState, INT32 Value);
 
 //Hurdler: added for new development
-EXPORT void HWRAPI(DrawModel) (model_t *model, INT32 frameIndex, float duration, float tics, INT32 nextFrameIndex, FTransform *pos, float scale, UINT8 flipped, FSurfaceInfo *Surface);
+
+EXPORT void HWRAPI(DrawModel) (model_t *model, INT32 frameIndex, float duration, float tics, INT32 nextFrameIndex, FTransform *pos, float hscale, float vscale, UINT8 flipped, FSurfaceInfo *Surface);
+
 EXPORT void HWRAPI(CreateModelVBOs) (model_t *model);
 EXPORT void HWRAPI(SetTransform) (FTransform *stransform);
 EXPORT INT32 HWRAPI(GetTextureUsed) (void);

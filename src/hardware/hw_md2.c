@@ -1144,7 +1144,6 @@ void HWR_DrawMD2(gr_vissprite_t *spr)
 		spriteinfo_t *sprinfo;
 		INT32 rollfactor = 0;
 		angle_t ang;
-		float finalscale;
 		interpmobjstate_t interp;
 
 		if (R_UsingFrameInterpolation() && !paused)
@@ -1204,7 +1203,6 @@ void HWR_DrawMD2(gr_vissprite_t *spr)
 				return;
 			}
 		}
-		finalscale = md2->scale;
 		//Hurdler: arf, I don't like that implementation at all... too much crappy
 		gpatch = md2->grpatch;
 		if (!gpatch || ((!gpatch->mipmap->grInfo.format || !gpatch->mipmap->downloaded) && !gpatch->notfound))
@@ -1386,18 +1384,28 @@ void HWR_DrawMD2(gr_vissprite_t *spr)
 		}
 #endif
 
-		// SRB2CBTODO: MD2 scaling support
-		finalscale *= FIXED_TO_FLOAT(interp.scale);
-
-
-
 		p.flip = atransform.flip;
 #ifdef USE_FTRANSFORM_MIRROR
 		p.mirror = atransform.mirror; // from Kart
 #endif
 
 		HWD.pfnSetShader(4);	// model shader
-		HWD.pfnDrawModel(md2->model, frame, durs, tics, nextFrame, &p, finalscale, flip, &Surf);
+		{
+		float this_scale = FIXED_TO_FLOAT(interp.scale);
+
+			float xs = this_scale * FIXED_TO_FLOAT(interp.spritexscale);
+			float ys = this_scale * FIXED_TO_FLOAT(interp.spriteyscale);
+
+			float ox = xs * FIXED_TO_FLOAT(interp.spritexoffset);
+			float oy = ys * FIXED_TO_FLOAT(interp.spriteyoffset);
+
+			// offset perpendicular to the camera angle
+			p.x -= ox * gr_viewsin;
+			p.y += ox * gr_viewcos;
+			p.z += oy;
+
+			HWD.pfnDrawModel(md2->model, frame, durs, tics, nextFrame, &p, md2->scale * xs, md2->scale * ys, flip, &Surf);
+		}
 	}
 }
 
