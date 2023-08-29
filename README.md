@@ -22,8 +22,8 @@
 - Configurable timeout for waiting to join a full server (in vanilla this is capped to 5 minutes before it boots you out)
 - Characters now spin in skin selection menu (configurable)
 - HTTP Addon download speed has been raised dramatically (configurable with "downloadspeed" command)
-- Zone memory allocations have been rewritten, speeds up some map loading, and may improve performance on busy maps
 - HWR Drawnodes have been refactored, this should fix a few rare crashes esp in regards to OpenGL Visportals
+- The Position Number in the corner is alot smaller now (half the size!)
 - MSAA and A2C Antialiasing support (Configurable in renderer.txt file)
 
 ## Performance / Debugging

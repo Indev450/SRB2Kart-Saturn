@@ -545,7 +545,11 @@ static CV_PossibleValue_t stretchfactor_t[] = {{0, "MIN"}, {FRACUNIT, "MAX"}, {0
 consvar_t cv_gravstretch = {"gravstretch", "0", CV_FLOAT | CV_SAVE, stretchfactor_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_sloperoll = {"sloperoll", "Off", CV_SAVE|CV_CALL, CV_OnOff, PDistort_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
+
 consvar_t cv_sliptideroll = {"sliptideroll", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+static CV_PossibleValue_t slamsound_t[] = {{0, "Off"}, {1, "On"}, {0, NULL}};
+consvar_t cv_slamsound = {"slamsound", "1", CV_SAVE, slamsound_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static CV_PossibleValue_t sloperolldist_cons_t[] = {
 	/*{256, "256"},*/	{512, "512"},	{768, "768"},
@@ -5699,6 +5703,9 @@ void G_GhostAddHit(INT32 playernum, mobj_t *victim)
 
 void G_WriteAllGhostTics(void)
 {
+	UINT8 *save_demo_p = demo_p;
+#define CHECKSPACE(num) if (demo_p+(num) > demoend) { demo_p = save_demo_p; G_CheckDemoStatus(); return; }
+
 	INT32 i, counter = leveltime;
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
@@ -5713,10 +5720,16 @@ void G_WriteAllGhostTics(void)
 		if (counter % cv_netdemosyncquality.value != 0) // Only write 1 in this many ghost datas per tic to cut down on multiplayer replay size.
 			continue;
 
+		CHECKSPACE(1);
+
 		WRITEUINT8(demo_p, i);
 		G_WriteGhostTic(players[i].mo, i);
 	}
+
+	CHECKSPACE(1);
 	WRITEUINT8(demo_p, 0xFF);
+
+#undef CHECKSPACE
 }
 
 void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
@@ -5726,6 +5739,9 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 	UINT32 i;
 	UINT8 sprite;
 	UINT8 frame;
+
+	UINT8 *save_demo_p = demo_p;
+#define CHECKSPACE(num) if (demo_p+(num) > demoend) { demo_p = save_demo_p; G_CheckDemoStatus(); return; }
 
 	if (!demo_p)
 		return;
@@ -5753,6 +5769,8 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 		oldghost[playernum].y = ghost->y;
 		oldghost[playernum].z = ghost->z;
 		ziptic |= GZT_XYZ;
+
+		CHECKSPACE(sizeof(fixed_t)*3);
 		WRITEFIXED(demo_p,oldghost[playernum].x);
 		WRITEFIXED(demo_p,oldghost[playernum].y);
 		WRITEFIXED(demo_p,oldghost[playernum].z);
@@ -5769,6 +5787,9 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 			oldghost[playernum].momx = momx;
 			oldghost[playernum].momy = momy;
 			ziptic |= GZT_MOMXY;
+
+			CHECKSPACE(4);
+
 			WRITEINT16(demo_p,momx);
 			WRITEINT16(demo_p,momy);
 		}
@@ -5777,6 +5798,9 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 		{
 			oldghost[playernum].momz = momx;
 			ziptic |= GZT_MOMZ;
+
+			CHECKSPACE(2);
+
 			WRITEINT16(demo_p,momx);
 		}
 
@@ -5797,6 +5821,9 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 	{
 		oldghost[playernum].angle = ghost->angle>>24;
 		ziptic |= GZT_ANGLE;
+
+		CHECKSPACE(1);
+
 		WRITEUINT8(demo_p,oldghost[playernum].angle);
 	}
 
@@ -5806,6 +5833,9 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 	{
 		oldghost[playernum].frame = frame;
 		ziptic |= GZT_SPRITE;
+
+		CHECKSPACE(1);
+
 		WRITEUINT8(demo_p,oldghost[playernum].frame);
 	}
 
@@ -5845,20 +5875,26 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 
 		if (ghostext[playernum].flags & EZT_COLOR)
 		{
+			CHECKSPACE(1);
 			WRITEUINT8(demo_p,ghostext[playernum].color);
 			ghostext[playernum].lastcolor = ghostext[playernum].color;
 		}
 		if (ghostext[playernum].flags & EZT_SCALE)
 		{
+			CHECKSPACE(sizeof(fixed_t));
 			WRITEFIXED(demo_p,ghostext[playernum].scale);
 			ghostext[playernum].lastscale = ghostext[playernum].scale;
 		}
 		if (ghostext[playernum].flags & EZT_HIT)
 		{
+			CHECKSPACE(2);
 			WRITEUINT16(demo_p,ghostext[playernum].hits);
 			for (i = 0; i < ghostext[playernum].hits; i++)
 			{
 				mobj_t *mo = ghostext[playernum].hitlist[i];
+
+				CHECKSPACE(4+4+2+sizeof(fixed_t)*3+sizeof(angle_t));
+
 				WRITEUINT32(demo_p,UINT32_MAX); // reserved for some method of determining exactly which mobj this is. (mobjnum doesn't work here.)
 				WRITEUINT32(demo_p,mo->type);
 				WRITEUINT16(demo_p,(UINT16)mo->health);
@@ -5872,9 +5908,14 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 			ghostext[playernum].hitlist = NULL;
 		}
 		if (ghostext[playernum].flags & EZT_SPRITE)
+		{
+			CHECKSPACE(1);
 			WRITEUINT8(demo_p,sprite);
+		}
 		if (ghostext[playernum].flags & EZT_KART)
 		{
+			CHECKSPACE(12);
+
 			WRITEINT32(demo_p, ghostext[playernum].kartitem);
 			WRITEINT32(demo_p, ghostext[playernum].kartamount);
 			WRITEINT32(demo_p, ghostext[playernum].kartbumpers);
@@ -5891,6 +5932,7 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 		G_CheckDemoStatus(); // no more space
 		return;
 	}
+#undef CHECKSPACE
 }
 
 void G_ConsAllGhostTics(void)
@@ -6743,22 +6785,30 @@ void G_RecordDemo(const char *name)
 {
 	INT32 maxsize;
 
-	CONS_Printf("Recording demo %s.lmp\n", name);
-
-	strcpy(demoname, name);
-	strcat(demoname, ".lmp");
-	maxsize = cv_maxdemosize.value*1024*1024;
-	if (demobuffer)
-		free(demobuffer);
 	demo_p = NULL;
 	demo.recording = false;
-	demobuffer = malloc(maxsize);
-	demoend = demobuffer + maxsize;
-
 	if (demobuffer)
-		demo.recording = true;
-	else
-		CONS_Alert(CONS_ERROR, "Failed to allocate demo buffer\n");
+		free(demobuffer);
+	demobuffer = NULL;
+	demoend = NULL;
+
+	if (cv_recordmultiplayerdemos.value)
+	{
+		CONS_Printf("Recording demo %s.lmp\n", name);
+
+		strcpy(demoname, name);
+		strcat(demoname, ".lmp");
+
+		maxsize = cv_maxdemosize.value*1024*1024;
+
+		demobuffer = malloc(maxsize);
+		demoend = demobuffer + maxsize;
+
+		if (demobuffer)
+			demo.recording = true;
+		else
+			CONS_Alert(CONS_ERROR, "Failed to allocate demo buffer\n");
+	}
 }
 
 void G_RecordMetal(void)
