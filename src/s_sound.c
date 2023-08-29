@@ -1527,7 +1527,7 @@ musicdef_t *S_FindMusicCredit(const char *musname)
 	musicdef_t *def = musicdefstart;
 
 	if (!def) // No definitions
-		return;
+		return NULL;
 
 	while (def)
 	{
