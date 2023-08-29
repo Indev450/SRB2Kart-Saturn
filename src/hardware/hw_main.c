@@ -3787,7 +3787,7 @@ static void HWR_RotateSpritePolyToAim(gr_vissprite_t *spr, FOutVector *wallVerts
 			}
 		}
 
-		if (!precip && P_MobjFlip(spr->mobj) == -1) // precip doesn't have eflags so they can't flip
+		if (P_MobjFlip(spr->mobj) == -1)
 		{
 			basey = FIXED_TO_FLOAT(interp.z + spr->mobj->height);
 		}
@@ -3796,6 +3796,7 @@ static void HWR_RotateSpritePolyToAim(gr_vissprite_t *spr, FOutVector *wallVerts
 			basey = FIXED_TO_FLOAT(interp.z);
 		}
 		lowy = wallVerts[0].y;
+
 
 		// Rotate sprites to fully billboard with the camera
 		// X, Y, AND Z need to be manipulated for the polys to rotate around the
@@ -5255,6 +5256,7 @@ void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 
 	// uncapped/interpolation
 	interpmobjstate_t interp = {0};
+	float basey, lowy;
 
 	if (!thing)
 		return;
@@ -5262,11 +5264,25 @@ void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 	// do interpolation
 	if (R_UsingFrameInterpolation() && !paused)
 	{
-		R_InterpolatePrecipMobjState(thing, rendertimefrac, &interp);
+		if (precip)
+			{
+				R_InterpolatePrecipMobjState(spr->mobj, rendertimefrac, &interp);
+			}
+			else
+			{
+				R_InterpolateMobjState(spr->mobj, rendertimefrac, &interp);
+			}
 	}
 	else
 	{
-		R_InterpolatePrecipMobjState(thing, FRACUNIT, &interp);
+		if (precip)
+			{
+				R_InterpolatePrecipMobjState(spr->mobj, FRACUNIT, &interp);
+			}
+			else
+			{
+				R_InterpolateMobjState(spr->mobj, FRACUNIT, &interp);
+			}
 	}
 
 	// transform the origin point
@@ -5326,16 +5342,6 @@ void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 	x1 = tr_x + x1 * rightcos;
 	x2 = tr_x - x2 * rightcos;
 
-	// okay, we can't return now... this is a hack, but weather isn't networked, so it should be ok
-	if (!(thing->precipflags & PCF_THUNK))
-	{
-		if (thing->precipflags & PCF_RAIN)
-			P_RainThinker(thing);
-		else
-			P_SnowThinker(thing);
-		thing->precipflags |= PCF_THUNK;
-	}
-
 	//
 	// store information in a vissprite
 	//
@@ -5364,6 +5370,16 @@ void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 	vis->gz = vis->gzt - FIXED_TO_FLOAT(spritecachedinfo[lumpoff].height);
 
 	vis->precip = true;
+	
+	// okay... this is a hack, but weather isn't networked, so it should be ok
+	if (!(thing->precipflags & PCF_THUNK))
+	{
+		if (thing->precipflags & PCF_RAIN)
+			P_RainThinker(thing);
+		else
+			P_SnowThinker(thing);
+		thing->precipflags |= PCF_THUNK;
+	}
 }
 
 static boolean drewsky = false;

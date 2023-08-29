@@ -3835,17 +3835,18 @@ void P_RainThinker(precipmobj_t *mobj)
 	}
 
 	// adjust height
-	if ((mobj->z += mobj->momz) <= mobj->floorz)
+	if ((mobj->z += mobj->momz) > mobj->floorz)
+		return;
+
+	// no splashes on sky or bottomless pits
+	if (mobj->precipflags & PCF_PIT)
 	{
-		// no splashes on sky or bottomless pits
-		if (mobj->precipflags & PCF_PIT)
-			mobj->z = mobj->ceilingz;
-		else
-		{
-			mobj->z = mobj->floorz;
-			P_SetPrecipMobjState(mobj, S_SPLASH1);
-		}
+		mobj->z = mobj->ceilingz;
+		return;
 	}
+
+	mobj->z = mobj->floorz;
+	P_SetPrecipMobjState(mobj, S_SPLASH1);
 }
 
 static void P_RingThinker(mobj_t *mobj)
