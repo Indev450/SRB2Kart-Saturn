@@ -3797,7 +3797,6 @@ static void HWR_RotateSpritePolyToAim(gr_vissprite_t *spr, FOutVector *wallVerts
 		}
 		lowy = wallVerts[0].y;
 
-
 		// Rotate sprites to fully billboard with the camera
 		// X, Y, AND Z need to be manipulated for the polys to rotate around the
 		// origin, because of how the origin setting works I believe that should
@@ -5254,35 +5253,20 @@ void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 	unsigned rot = 0;
 	UINT8 flip;
 
-	// uncapped/interpolation
-	interpmobjstate_t interp = {0};
-	float basey, lowy;
-
 	if (!thing)
 		return;
+	
+	// uncapped/interpolation
+	interpmobjstate_t interp = {0};
 
 	// do interpolation
 	if (R_UsingFrameInterpolation() && !paused)
 	{
-		if (precip)
-			{
-				R_InterpolatePrecipMobjState(spr->mobj, rendertimefrac, &interp);
-			}
-			else
-			{
-				R_InterpolateMobjState(spr->mobj, rendertimefrac, &interp);
-			}
+		R_InterpolatePrecipMobjState(thing, rendertimefrac, &interp);
 	}
 	else
 	{
-		if (precip)
-			{
-				R_InterpolatePrecipMobjState(spr->mobj, FRACUNIT, &interp);
-			}
-			else
-			{
-				R_InterpolateMobjState(spr->mobj, FRACUNIT, &interp);
-			}
+		R_InterpolatePrecipMobjState(thing, FRACUNIT, &interp);
 	}
 
 	// transform the origin point
