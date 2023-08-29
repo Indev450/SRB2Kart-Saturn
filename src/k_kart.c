@@ -8647,27 +8647,29 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags, pat
 	amxpos = amnumxpos + ((x + AutomapPic->width/2 - (facemmapprefix[skin]->width/2))<<FRACBITS);
 	amypos = amnumypos + ((y + AutomapPic->height/2 - (facemmapprefix[skin]->height/2))<<FRACBITS);
 
-	// do we want this? it feels unnecessary. easier to just modify the amnumxpos?
-	/*if (encoremode)
-	{
-		flags |= V_FLIP;
-		amxpos = -amnumxpos + ((x + AutomapPic->width/2 + (facemmapprefix[skin]->width/2))<<FRACBITS);
-	}*/
-
 	if (!mo->color) // 'default' color
 		V_DrawSciencePatch(amxpos, amypos, flags, facemmapprefix[skin], FRACUNIT);
 	else
 	{
-		UINT8 *colormap;
-		if (mo->colorized)
-			colormap = R_GetTranslationColormap(TC_RAINBOW, mo->color, GTC_CACHE);
-		else
-			colormap = R_GetTranslationColormap(skin, mo->color, GTC_CACHE);
-		V_DrawFixedPatch(amxpos, amypos, FRACUNIT, flags, facemmapprefix[skin], colormap);
+		UINT8 *colormap = R_GetTranslationColormap((mo->colorized) ? TC_RAINBOW : skin, mo->color, GTC_CACHE);
+		
+		if (cv_minihead.value == 1)
+			V_DrawFixedPatch(amxpos + (2 * FRACUNIT), amypos + (2 * FRACUNIT), FRACUNIT/2, flags, facemmapprefix[skin], colormap);
+		else if (cv_minihead.value == 0)
+			V_DrawFixedPatch(amxpos, amypos, FRACUNIT, flags, facemmapprefix[skin], colormap);
+
+		if (cv_showminimapnames.value && !(modeattacking || gamestate == GS_TIMEATTACK))
+		{
+			const char *player_name = va("%c%s", V_GetSkincolorChar(mo->color), player_names[mo->player - players]);
+			V_DrawCenteredSmallStringAtFixed(amxpos + (4 * FRACUNIT), amypos - (3 * FRACUNIT), V_ALLOWLOWERCASE|flags, player_name);
+		}
 		if (mo->player
 			&& ((G_RaceGametype() && mo->player->kartstuff[k_position] == spbplace)
 			|| (G_BattleGametype() && K_IsPlayerWanted(mo->player))))
 		{
+			if (cv_minihead.value == 1)
+			V_DrawFixedPatch(amxpos, amypos, FRACUNIT / 2, flags, kp_wantedreticle, NULL);
+			else if (cv_minihead.value == 0)
 			V_DrawFixedPatch(amxpos - (4<<FRACBITS), amypos - (4<<FRACBITS), FRACUNIT, flags, kp_wantedreticle, NULL);
 		}
 	}

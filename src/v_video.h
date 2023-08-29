@@ -191,6 +191,7 @@ void V_DrawRightAlignedString(INT32 x, INT32 y, INT32 option, const char *string
 
 // draw a string using the hu_font, 0.5x scale
 void V_DrawSmallString(INT32 x, INT32 y, INT32 option, const char *string);
+void V_DrawCenteredSmallString(INT32 x, INT32 y, INT32 option, const char *string);
 void V_DrawRightAlignedSmallString(INT32 x, INT32 y, INT32 option, const char *string);
 
 // draw a string using the tny_font
@@ -199,6 +200,9 @@ void V_DrawCenteredThinString(INT32 x, INT32 y, INT32 option, const char *string
 void V_DrawRightAlignedThinString(INT32 x, INT32 y, INT32 option, const char *string);
 
 void V_DrawStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *string);
+
+void V_DrawSmallStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *string);
+void V_DrawCenteredSmallStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *string);
 
 // Draw tall nums, used for menu, HUD, intermission
 void V_DrawTallNum(INT32 x, INT32 y, INT32 flags, INT32 num);
@@ -224,6 +228,8 @@ INT32 V_StringWidth(const char *string, INT32 option);
 INT32 V_SmallStringWidth(const char *string, INT32 option);
 // Find string width from tny_font chars
 INT32 V_ThinStringWidth(const char *string, INT32 option);
+
+char V_GetSkincolorChar(INT32 color);
 
 void V_DoPostProcessor(INT32 view, postimg_t type, INT32 param);
 
