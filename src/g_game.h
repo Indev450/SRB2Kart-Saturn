@@ -150,6 +150,7 @@ extern consvar_t cv_newspeedometer;
 
 extern consvar_t cv_saltyhop;
 extern consvar_t cv_saltyhopsfx;
+extern consvar_t cv_saltysquish;
 
 extern consvar_t cv_driftsparkpulse;
 extern consvar_t cv_gravstretch;

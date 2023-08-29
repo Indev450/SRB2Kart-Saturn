@@ -59,6 +59,7 @@ consvar_t cv_newspeedometer = {"newspeedometer", "Off", CV_SAVE, CV_OnOff, NULL,
 
 consvar_t cv_saltyhop = {"hardcodehop", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_saltyhopsfx = {"hardcodehopsfx", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_saltysquish = {"hardcodehopsquish", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 // SOME IMPORTANT VARIABLES DEFINED IN DOOMDEF.H:
 // gamespeed is cc (0 for easy, 1 for normal, 2 for hard)
@@ -3007,7 +3008,7 @@ static void K_StretchPlayerGravity(player_t *p)
     I_Assert(p != NULL);
 	I_Assert(p->mo != NULL);
 	I_Assert(!P_MobjWasRemoved(p->mo));
-
+	
 	if (p->mo->slamsoundtimer)
 		p->mo->slamsoundtimer--;
 
@@ -3049,6 +3050,7 @@ static void K_StretchPlayerGravity(player_t *p)
             p->mo->stretchslam -= (4*mos);
         else
             p->mo->stretchslam = 0;
+
     }
 }
 
@@ -3074,8 +3076,8 @@ static void K_QuiteSaltyHop(player_t *p)
 		p->mo->salty_zoffset = 0;
 		p->mo->salty_momz = 0;
 		p->mo->init_salty = true;
-	}
-	else if (p->mo->salty_jump) {
+	}	
+	else if ((p->mo->salty_jump)) {
 		if (p->mo->eflags & MFE_JUSTHITFLOOR) {
 			p->mo->salty_zoffset = 0;
 		} else if (P_IsObjectOnGround(p->mo)) {
@@ -3092,8 +3094,8 @@ static void K_QuiteSaltyHop(player_t *p)
 			p->mo->salty_zoffset = 0;
 			p->mo->salty_momz = 0;
 			// shlamma damma
-			p->mo->stretchslam += (8*mos);
-		} else if (p->mo->salty_zoffset >= 0) {
+			p->mo->stretchslam += cv_saltysquish.value ? (8*mos) : 0;
+		} else if (p->mo->salty_zoffset >= 0 && cv_saltysquish.value) {
 			// goofy ahh hack
 			p->mo->spriteyscale += (mos/8);
 			p->mo->spritexscale -= (mos/8);
