@@ -10,9 +10,6 @@
 - OpenMPT for Tracker module playback (Complete with filters) fixed looping issues while even sounding better than the old GME playback
 - The minimal brightness with Shaders can be configured, now you can seeeee in dark areas (0-255 , uses Sector brightness values)
 - Lua hooks for Intermission (ex: You can make hostmod votes still visible during intermission!)
-- "Saltyhop" does a cute jump when you press the drift button
-- Smaller "v2" like Speedometer (toggable)
-- Use the Input Display from Record Attack everywhere!
 - Visual Portals from Haya´s HEP Client
 - Toggable lowercase menu´s also from Haya´s HEP client
 - Everything that Galaxy has
