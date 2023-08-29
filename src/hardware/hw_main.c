@@ -3755,7 +3755,7 @@ static void HWR_DrawSpriteShadow(gr_vissprite_t *spr, GLPatch_t *gpatch, float t
 }
 
 // This is expecting a pointer to an array containing 4 wallVerts for a sprite
-static void HWR_RotateSpritePolyToAim(gr_vissprite_t *spr, FOutVector *wallVerts)
+static void HWR_RotateSpritePolyToAim(gr_vissprite_t *spr, FOutVector *wallVerts, const boolean precip)
 {
 	if (cv_grspritebillboarding.value && spr && spr->mobj && !(spr->mobj->frame & FF_PAPERSPRITE) && wallVerts)
 	{
@@ -3787,7 +3787,7 @@ static void HWR_RotateSpritePolyToAim(gr_vissprite_t *spr, FOutVector *wallVerts
 			}
 		}
 
-		if (P_MobjFlip(spr->mobj) == -1)
+		if (!precip && P_MobjFlip(spr->mobj) == -1) // precip doesn't have eflags so they can't flip
 		{
 			basey = FIXED_TO_FLOAT(interp.z + spr->mobj->height);
 		}
@@ -3907,7 +3907,7 @@ static void HWR_SplitSprite(gr_vissprite_t *spr)
 	}
 
 	// Let dispoffset work first since this adjust each vertex
-	HWR_RotateSpritePolyToAim(spr, baseWallVerts);
+	HWR_RotateSpritePolyToAim(spr, baseWallVerts, false);
 
 	// push it toward the camera to mitigate floor-clipping sprites
 	{
@@ -4254,7 +4254,7 @@ static void HWR_DrawSprite(gr_vissprite_t *spr)
 
 	// Let dispoffset work first since this adjust each vertex
 	// ...nah
-	HWR_RotateSpritePolyToAim(spr, wallVerts);
+	HWR_RotateSpritePolyToAim(spr, wallVerts, false);
 
 	// push it toward the camera to mitigate floor-clipping sprites
 	{
@@ -4348,7 +4348,7 @@ static inline void HWR_DrawPrecipitationSprite(gr_vissprite_t *spr)
 	wallVerts[1].z = wallVerts[2].z = spr->z2;
 
 	// Let dispoffset work first since this adjust each vertex
-	HWR_RotateSpritePolyToAim(spr, wallVerts);
+	HWR_RotateSpritePolyToAim(spr, wallVerts, true);
 
 	wallVerts[0].s = wallVerts[3].s = 0;
 	wallVerts[2].s = wallVerts[1].s = gpatch->max_s;
