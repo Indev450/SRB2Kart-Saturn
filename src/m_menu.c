@@ -1414,12 +1414,17 @@ static menuitem_t OP_SoundAdvancedMenu[] =
 {
 	{IT_HEADER, NULL, "Tracker Module Options", NULL, 10},
 
-	{IT_STRING | IT_CVAR, NULL, "Instrument Filter", &cv_modfilter, 42},
-	{IT_STRING | IT_CVAR, NULL, "Amiga Resampler", &cv_amigafilter, 62},
+	{IT_STRING | IT_CVAR, NULL, "Instrument Filter", &cv_modfilter, 22},
+	{IT_STRING | IT_CVAR, NULL, "Amiga Resampler", &cv_amigafilter, 42},
 #if OPENMPT_API_VERSION_MAJOR < 1 && OPENMPT_API_VERSION_MINOR > 4
-	{IT_STRING | IT_CVAR, NULL, "Amiga Type", &cv_amigatype, 82},
+	{IT_STRING | IT_CVAR, NULL, "Amiga Type", &cv_amigatype, 62},
 #endif
-	{IT_STRING | IT_CVAR, NULL, "Stereo Seperation", &cv_stereosep, 102},
+	{IT_STRING | IT_CVAR, NULL, "Stereo Seperation", &cv_stereosep, 82},
+	
+	{IT_HEADER, NULL, "Misc", NULL, 105},
+	
+	{IT_STRING | IT_CVAR, NULL, "Grow Music", &cv_growmusic, 117},
+	{IT_STRING | IT_CVAR, NULL, "Invulnerability Music", &cv_supermusic, 137},
 };
 #endif
 
