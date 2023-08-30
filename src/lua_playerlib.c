@@ -516,7 +516,9 @@ static int player_get(lua_State *L)
     }
     lua_getfield(L, -1, field);
     if (lua_isnil(L, -1)) // no value for this field
+	{
         CONS_Debug(DBG_LUA, M_GetText("'%s' has no field named '%s'; returning nil.\n"), "player_t", field);
+	}
 
 	return 1;
 }
