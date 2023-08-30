@@ -4657,6 +4657,7 @@ Command_Addskins (void)
 		return;
 	}
 	// no forcing?
+	/*
 	if (fasticmp(COM_Argv(2), "-force") || fasticmp(COM_Argv(2), "-f")) {
 		CONS_Alert(CONS_NOTICE, M_GetText("Adding file %s. May or may not be a skin.\n"), COM_Argv(1));
 		P_AddWadFile(COM_Argv(1), 0, true);	
@@ -4668,13 +4669,16 @@ Command_Addskins (void)
 				CONS_Alert(CONS_ERROR, M_GetText("Cannot add file %s as it is a skin with lua. Include -force or -f to force it to load.\n"), COM_Argv(1));
 				return;
 			} else {
+	*/
 				P_AddWadFile(COM_Argv(1), 0, true);
+	/*
 			}
 		} else {
 			CONS_Alert(CONS_ERROR, M_GetText("Cannot add file %s as it is not a skin.\n"), COM_Argv(1));
 			return;
 		}
 	}
+	*/
 }
 
 static void Command_Localskin1 (void) {
