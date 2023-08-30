@@ -16,7 +16,7 @@
 - Record Attack input display can now be used everywhere
 - Smaller minimap icons and also show player names on the minimap (toggable)
 - "showmusiccredits" command, shows you the current music track again
-- "listsskins" show a list of all skins currently loaded
+- "listskins" show a list of all skins currently loaded
 - Visual Portals from Haya´s HEP Client
 - Toggable lowercase menu´s also from Haya´s HEP client
 - Everything that Galaxy has
