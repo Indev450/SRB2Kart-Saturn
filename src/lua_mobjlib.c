@@ -367,6 +367,12 @@ int mobj_skin_setter(lua_State *L)
     char skin[SKINNAMESIZE+1]; // all skin names are limited to this length
     strlcpy(skin, luaL_checkstring(L, 2), sizeof skin);
     strlwr(skin); // all skin names are lowercase
+	// nope, not this time chief.
+		if (fastcmp(localskins[players[consoleplayer].localskin - 1].name, skin))
+		{
+			mo->skin = &skins[players[consoleplayer].skin]; // we dont want to use our local skin for this!!!!!!!!!
+			return 0;
+		}
     for (i = 0; i < numskins; i++) {
     {
         if (fastcmp(skins[i].name, skin))
@@ -378,8 +384,7 @@ int mobj_skin_setter(lua_State *L)
 
     }
 		
-		mo->skin = &skins[players[consoleplayer].skin]; // we dont want to use our local skin for this!!!!!!!!!
-		return 0;
+	return luaL_error(L, "mobj.skin '%s' not found!", skin);
 }
 
 int mobj_color_setter(lua_State *L)
