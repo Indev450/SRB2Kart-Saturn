@@ -1697,11 +1697,11 @@ static menuitem_t OP_SaturnMenu[] =
 	{IT_STRING | IT_CVAR, NULL, "Serverqueue waittime", 	&cv_connectawaittime, 	 20},
 	{IT_STRING | IT_CVAR, NULL, "Skin Select Spinning Speed",		 	&cv_skinselectspin, 	 40},
 	{IT_STRING | IT_CVAR, NULL, "Input Display outside of RA",		 	&cv_showinput, 	 50},
-	{IT_STRING | IT_CVAR, NULL, "V2-ish Speedometer",		 	&cv_newspeedometer, 	 60},
+	{IT_STRING | IT_CVAR, NULL, "Small Speedometer",		 	&cv_newspeedometer, 	 60},
 	{IT_STRING | IT_CVAR, NULL, "Show Lap Emblem",		 		&cv_showlapemblem, 	 70},
 	{IT_STRING | IT_CVAR, NULL,	  "Show Minimap Names",   &cv_showminimapnames, 80},
 	{IT_STRING | IT_CVAR, NULL,	  "Small Minimap Players",   &cv_minihead, 90},
-	{IT_STRING | IT_CVAR, NULL, "No Midnight Channel Flicker", 	&cv_lessflicker, 		 110},
+	{IT_STRING | IT_CVAR, NULL, "Less Midnight Channel Flicker", 	&cv_lessflicker, 		 110},
 	{IT_SUBMENU|IT_STRING,	NULL,	"Player distortion...", &OP_PlayerDistortDef,	 130},
 	{IT_SUBMENU|IT_STRING,	NULL,	"Hud Offsets...", 		&OP_HudOffsetDef,		 145},
 
