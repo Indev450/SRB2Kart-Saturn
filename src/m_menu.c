@@ -10452,6 +10452,13 @@ static void M_DrawSetupMultiPlayerMenu(void)
 
 	// draw box around guy
 	V_DrawFill(mx + 43 - (charw/2), my+65, charw, 84, 239);
+	
+	if (setupm_skinlocal)
+	{
+		UINT8 *colmap;
+		colmap = R_GetTranslationColormap(setupm_fakeskin, setupm_fakecolor, GTC_MENUCACHE);
+		V_DrawFixedPatch(( mx + 43 - (charw/2) + 1 )<<FRACBITS, ( my+65+2 )<<FRACBITS, FRACUNIT, 0, facerankprefix[setupm_fakeskin], colmap);
+	}
 
 	// draw player sprite
 	if (setupm_fakecolor) // inverse should never happen
