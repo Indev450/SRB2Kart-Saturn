@@ -3571,7 +3571,7 @@ void M_StartControlPanel(void)
 	else // multiplayer
 	{
 		MPauseMenu[mpause_switchmap].status = IT_DISABLED;
-		MPauseMenu[mpause_addons].status = IT_DISABLED;
+		//MPauseMenu[mpause_addons].status = IT_DISABLED;
 		MPauseMenu[mpause_scramble].status = IT_DISABLED;
 		MPauseMenu[mpause_psetupsplit].status = IT_DISABLED;
 		MPauseMenu[mpause_psetupsplit2].status = IT_DISABLED;
@@ -5499,6 +5499,14 @@ static boolean M_ChangeStringAddons(INT32 choice)
 }
 #undef len
 
+// i hate myself
+static boolean DumbStartsWith(const char *pre, const char *str)
+{
+    size_t lenpre = strlen(pre),
+           lenstr = strlen(str);
+    return lenstr < lenpre ? false : memcmp(pre, str, lenpre) == 0;
+}
+
 static void M_HandleAddons(INT32 choice)
 {
 	boolean exitmenu = false; // exit to previous menu
@@ -5617,7 +5625,17 @@ static void M_HandleAddons(INT32 choice)
 						case EXT_KART:
 #endif
 						case EXT_PK3:
-							COM_BufAddText(va("addfile \"%s%s\"", menupath, dirmenu[dir_on[menudepthleft]]+DIR_STRING));
+							if (netgame || multiplayer) {
+								// no characters?
+								if (DumbStartsWith("KC_", dirmenu[dir_on[menudepthleft]]+DIR_STRING)) {
+									M_StartMessage(va("%c%s\x80\nYou are loading a local skin.\nLocal skins will not be usable\nafter going back from\nthe title screen.\n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), dirmenu[dir_on[menudepthleft]]+DIR_STRING),NULL,MM_NOTHING);
+									COM_BufAddText(va("addskins \"%s%s\"", menupath, dirmenu[dir_on[menudepthleft]]+DIR_STRING));
+								}
+								else
+									S_StartSound(NULL, sfx_s26d);
+							}
+							else
+								COM_BufAddText(va("addfile \"%s%s\"", menupath, dirmenu[dir_on[menudepthleft]]+DIR_STRING));
 							break;
 						default:
 							S_StartSound(NULL, sfx_s26d);

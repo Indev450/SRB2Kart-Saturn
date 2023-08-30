@@ -3459,14 +3459,18 @@ next_token:
 #endif
 
 		// Update the forceskin possiblevalues
-		if (! local)
+		if (!local)
 		{
 			Forceskin_cons_t[numskins+1].value = numskins;
 			Forceskin_cons_t[numskins+1].strvalue = skins[numskins].name;
 		}
 
 		// add face graphics
-		ST_LoadLocalFaceGraphics(skin->facerank, skin->facewant, skin->facemmap, ( (local) ? numlocalskins : numskins ), local);
+		if (local) {
+			ST_LoadLocalFaceGraphics(skin->facerank, skin->facewant, skin->facemmap, numlocalskins);
+		} else {
+			ST_LoadFaceGraphics(skin->facerank, skin->facewant, skin->facemmap, numskins);
+		}
 
 #ifdef HWRENDER
 		if (rendermode == render_opengl)
