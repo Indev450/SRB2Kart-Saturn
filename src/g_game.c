@@ -846,6 +846,16 @@ void G_SetGameModified(boolean silent, boolean major)
 		M_EndModeAttackRun();
 }
 
+void G_SetWadModified(boolean silent, boolean major, UINT16 wadnum)
+{
+	// now that we have a wad that is actually well, a gameplay changing mod
+	// (for later)
+	wadfiles[wadnum]->majormod = true;
+
+	// set our game to be marked as modified.
+	G_SetGameModified(silent, major);
+}
+
 /** Builds an original game map name from a map number.
   * The complexity is due to MAPA0-MAPZZ.
   *

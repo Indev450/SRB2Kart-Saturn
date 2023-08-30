@@ -4683,12 +4683,15 @@ static void Command_Localskin1 (void) {
 		CONS_Printf("You can only use this command in gameplay.\n");
 		return;
 	}
-	if (COM_Argc() != 2)
+	if (COM_Argc() > 3)
 	{
 		CONS_Printf("localskin <name>: Set a localskin.\n");
 		return;
 	}
-	SetLocalPlayerSkin(consoleplayer, COM_Argv(1), &cv_localskin);
+	if (fasticmp(COM_Argv(2), "-display") || fasticmp(COM_Argv(2), "-d"))
+		SetLocalPlayerSkin(displayplayers[0], COM_Argv(1), &cv_localskin);
+	else
+		SetLocalPlayerSkin(consoleplayer, COM_Argv(1), &cv_localskin);
 }
 
 static void Command_Localskin2 (void) {
