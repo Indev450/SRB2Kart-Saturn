@@ -15,7 +15,7 @@ extern UINT8 colortranslations[MAXTRANSLATIONS][16];
 extern const char *KartColor_Names[MAXSKINCOLORS];
 extern const UINT8 KartColor_Opposite[MAXSKINCOLORS*2];
 void K_RainbowColormap(UINT8 *dest_colormap, UINT8 skincolor);
-void K_GenerateKartColormap(UINT8 *dest_colormap, INT32 skinnum, UINT8 color);
+void K_GenerateKartColormap(UINT8 *dest_colormap, INT32 skinnum, UINT8 color, boolean local);
 UINT8 K_GetKartColorByName(const char *name);
 
 void K_RegisterKartStuff(void);
