@@ -690,7 +690,7 @@ static void W_ReadFileShaders(wadfile_t *wadfile)
 //
 // Can now load dehacked files (.soc)
 //
-UINT16 W_InitFile(const char *filename, boolean local)
+UINT16 W_InitFile(const char *filename, const char *lumpname, UINT16 *wadnump, boolean local)
 {
 	FILE *handle;
 	lumpinfo_t *lumpinfo = NULL;
@@ -743,10 +743,13 @@ UINT16 W_InitFile(const char *filename, boolean local)
 	{
 		if (!memcmp(wadfiles[i]->md5sum, md5sum, 16))
 		{
-			CONS_Alert(CONS_ERROR, M_GetText("%s is already loaded\n"), filename);
-			if (handle)
-				fclose(handle);
-			return INT16_MAX;
+			if (!local) {
+				CONS_Alert(CONS_ERROR, M_GetText("%s is already loaded\n"), filename);
+				if (handle)
+					fclose(handle);
+				return INT16_MAX;
+			}
+			CONS_Alert(CONS_WARNING, M_GetText("%s is a local skin that is already loaded\n"), filename);
 		}
 	}
 #endif
@@ -898,7 +901,7 @@ INT32 W_InitMultipleFiles(char **filenames, boolean addons)
 			G_SetGameModified(true, false);
 
 		//CONS_Debug(DBG_SETUP, "Loading %s\n", *filenames);
-		rc = W_InitFile(*filenames, false);
+		rc = W_InitFile(*filenames, 0, 0, false);
 		if (rc == INT16_MAX)
 			CONS_Printf(M_GetText("Errors occurred while loading %s; not added.\n"), *filenames);
 		overallrc &= (rc != INT16_MAX) ? 1 : 0;
