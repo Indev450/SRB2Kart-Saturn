@@ -10,6 +10,13 @@
 - OpenMPT for Tracker module playback (Complete with filters) fixed looping issues while even sounding better than the old GME playback
 - The minimal brightness with Shaders can be configured, now you can seeeee in dark areas (0-255 , uses Sector brightness values)
 - Lua hooks for Intermission (ex: You can make hostmod votes still visible during intermission!)
+- Lua hooks for Vote Screen (ex: You can make hostmod votes still visible during map vote screen!)
+- Saltyhop! do a funny hop
+- Smaller Speedometer (optional / requieres extra.kart file)
+- Record Attack input display can now be used everywhere
+- Smaller minimap icons and also show player names on the minimap (toggable)
+- "showmusiccredits" command, shows you the current music track again
+- "listsskins" show a list of all skins currently loaded
 - Visual Portals from Haya´s HEP Client
 - Toggable lowercase menu´s also from Haya´s HEP client
 - Everything that Galaxy has
@@ -24,6 +31,8 @@
 - HTTP Addon download speed has been raised dramatically (configurable with "downloadspeed" command)
 - HWR Drawnodes have been refactored, this should fix a few rare crashes esp in regards to OpenGL Visportals
 - The Position Number in the corner is alot smaller now (half the size!)
+- Toggable Lap animation
+- Main menu shows the current renderer being used
 - MSAA and A2C Antialiasing support (Configurable in renderer.txt file)
 
 ## Performance / Debugging
