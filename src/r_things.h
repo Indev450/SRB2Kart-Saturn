@@ -99,6 +99,7 @@ typedef struct
 	sfxenum_t soundsid[NUMSKINSOUNDS]; // sound # in S_sfx table
 	
 	boolean localskin;
+	INT32 localnum;
 } skin_t;
 
 extern CV_PossibleValue_t Forceskin_cons_t[];
@@ -218,6 +219,7 @@ boolean SetPlayerSkin(INT32 playernum,const char *skinname);
 void SetPlayerSkinByNum(INT32 playernum,INT32 skinnum); // Tails 03-16-2002
 void SetLocalPlayerSkin(INT32 playernum,const char *skinname, consvar_t *cvar);
 INT32 R_SkinAvailable(const char *name);
+INT32 R_AnySkinAvailable(const char *name);
 INT32 R_LocalSkinAvailable(const char *name, boolean local);
 void R_AddSkins(UINT16 wadnum, boolean local);
 

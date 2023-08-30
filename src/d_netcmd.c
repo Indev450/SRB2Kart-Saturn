@@ -294,10 +294,6 @@ consvar_t cv_skin3 = {"skin3", DEFAULTSKIN3, CV_SAVE|CV_CALL|CV_NOINIT, NULL, Sk
 consvar_t cv_skin4 = {"skin4", DEFAULTSKIN4, CV_SAVE|CV_CALL|CV_NOINIT, NULL, Skin4_OnChange, 0, NULL, NULL, 0, 0, NULL};
 // haha I've beaten you now, ONLINE
 consvar_t cv_localskin = {"internal___localskin", "none", CV_HIDEN, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_localskin2 = {"internal___localskin2", "none", CV_HIDEN, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_localskin3 = {"internal___localskin3", "none", CV_HIDEN, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_localskin4 = {"internal___localskin4", "none", CV_HIDEN, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_localskinall = {"internal___localskinall", "none", CV_HIDEN, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_skipmapcheck = {"skipmapcheck", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -456,6 +452,7 @@ static CV_PossibleValue_t basenumlaps_cons_t[] = {{1, "MIN"}, {50, "MAX"}, {0, "
 consvar_t cv_basenumlaps = {"basenumlaps", "Map default", CV_NETVAR|CV_CALL|CV_CHEAT, basenumlaps_cons_t, BaseNumLaps_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_forceskin = {"forceskin", "Off", CV_NETVAR|CV_CALL|CV_CHEAT, Forceskin_cons_t, ForceSkin_OnChange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_fakelocalskin = {"fakelocalskin", "None", CV_SAVE, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_downloading = {"downloading", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_allowexitlevel = {"allowexitlevel", "No", CV_NETVAR, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -477,6 +474,7 @@ consvar_t cv_showping = {"showping", "Always", CV_SAVE, showping_cons_t, NULL, 0
 
 static CV_PossibleValue_t pingmeasurement_cons_t[] = {{0, "Frames"}, {1, "Milliseconds"}, {0, NULL}};
 consvar_t cv_pingmeasurement = {"pingmeasurement", "Frames", CV_SAVE, pingmeasurement_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_luaimmersion = {"luaimmersion", "On", CV_SAVE, CV_OnOff, 0, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_minihead = {"smallminimapplayers", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -788,6 +786,9 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_showping);
 	CV_RegisterVar(&cv_pingmeasurement);
 	
+	CV_RegisterVar(&cv_luaimmersion);
+	CV_RegisterVar(&cv_fakelocalskin);
+	
 	CV_RegisterVar(&cv_minihead);
 	CV_RegisterVar(&cv_showminimapnames);
 	
@@ -901,18 +902,14 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_playername2);
 	CV_RegisterVar(&cv_playercolor2);
 	CV_RegisterVar(&cv_skin2);
-	CV_RegisterVar(&cv_localskin2);
 	// third player
 	CV_RegisterVar(&cv_playername3);
 	CV_RegisterVar(&cv_playercolor3);
 	CV_RegisterVar(&cv_skin3);
-	CV_RegisterVar(&cv_localskin3);
 	// fourth player
 	CV_RegisterVar(&cv_playername4);
 	CV_RegisterVar(&cv_playercolor4);
 	CV_RegisterVar(&cv_skin4);
-	CV_RegisterVar(&cv_localskin4);
-	CV_RegisterVar(&cv_localskinall);
 	// preferred number of players
 	CV_RegisterVar(&cv_splitplayers);
 
@@ -4706,15 +4703,18 @@ static void Command_GLocalSkin (void) {
 
 	for (idx = 0; idx < ap_count_args(parser); idx++) {
 		if (disply) {
-			SetLocalPlayerSkin(displayplayers[0], ap_arg(parser, idx), &cv_localskin);
+			SetLocalPlayerSkin(displayplayers[0], ap_arg(parser, idx), NULL);
 			return;
 		} else {
 			for (i = 0; i < MAXPLAYERS; i++) {
 				if (allp) {
-					SetLocalPlayerSkin(i, ap_arg(parser, idx), &cv_localskinall);
+					SetLocalPlayerSkin(i, ap_arg(parser, idx), NULL);
 				} else {
 					if (fasticmp(player_names[i], ap_str_value(parser, "player"))) {
-						SetLocalPlayerSkin(i, ap_arg(parser, idx), &cv_localskin);
+						if (fasticmp(player_names[i], cv_playername.string))
+							SetLocalPlayerSkin(i, ap_arg(parser, idx), &cv_localskin);
+						else
+							SetLocalPlayerSkin(i, ap_arg(parser, idx), NULL);
 						break;
 					}	
 				}
