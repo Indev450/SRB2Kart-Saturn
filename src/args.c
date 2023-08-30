@@ -1,4 +1,4 @@
-#include <stdbool.h>
+#include "doomtype.h"
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -106,7 +106,7 @@ static void vec_free(Vec* vec) {
 }
 
 
-static bool vec_add(Vec* vec, void* entry) {
+static boolean vec_add(Vec* vec, void* entry) {
     if (vec->count + 1 > vec->capacity) {
         int new_capacity = vec->capacity < 8 ? 8 : vec->capacity * 2;
         void** new_array = realloc(vec->entries, sizeof(void*) * new_capacity);
@@ -191,7 +191,7 @@ static MapEntry* map_find(Map* map, const char* key, uint32_t key_hash) {
 }
 
 
-static bool map_grow(Map* map) {
+static boolean map_grow(Map* map) {
     MapEntry* old_entries = map->entries;
     int old_capacity = map->capacity;
     int new_capacity = old_capacity < 8 ? 8 : old_capacity * 2;
@@ -227,7 +227,7 @@ static bool map_grow(Map* map) {
 
 
 // Returns true if the key was found.
-static bool map_get(Map* map, const char* key, void** value) {
+static boolean map_get(Map* map, const char* key, void** value) {
     if (map->count == 0) return false;
 
     uint32_t key_hash = str_hash(key);
@@ -241,7 +241,7 @@ static bool map_get(Map* map, const char* key, void** value) {
 
 // Adds a new entry to the map or updates the value of an existing entry.
 // (Note that the map stores its own internal copy of the key string.)
-static bool map_set(Map* map, const char* key, void* value) {
+static boolean map_set(Map* map, const char* key, void* value) {
     if (map->count == map->max_load_threshold) {
         if (!map_grow(map)) {
             return false;
@@ -269,7 +269,7 @@ static bool map_set(Map* map, const char* key, void* value) {
 
 // Convenience wrapper for map_set(). This splits the key string into space-
 // separated words and adds a separate entry to the map for each word.
-static bool map_set_splitkey(Map* map, const char* key_string, void* value) {
+static boolean map_set_splitkey(Map* map, const char* key_string, void* value) {
     char *copy_of_key_string = str_dup(key_string);
     if (!copy_of_key_string) {
         return false;
@@ -343,7 +343,7 @@ static void option_free(Option* opt) {
 }
 
 
-static bool option_append_value(Option* opt, OptionValue value) {
+static boolean option_append_value(Option* opt, OptionValue value) {
     if (opt->count + 1 > opt->capacity) {
         int new_capacity = opt->capacity < 4 ? 4 : opt->capacity * 2;
         OptionValue* new_array = realloc(opt->values, sizeof(OptionValue) * new_capacity);
@@ -359,7 +359,7 @@ static bool option_append_value(Option* opt, OptionValue value) {
 }
 
 
-static bool option_try_set(Option* opt, char* arg) {
+static boolean option_try_set(Option* opt, char* arg) {
     if (opt->type == OPT_STR) {
         return option_append_value(opt, (OptionValue){.str_val = arg});
     }
@@ -579,7 +579,7 @@ static char* argstream_next(ArgStream* stream) {
 }
 
 
-static bool argstream_has_next(ArgStream* stream) {
+static boolean argstream_has_next(ArgStream* stream) {
     return stream->index < stream->count;
 }
 
@@ -600,10 +600,10 @@ struct ArgParser {
     ap_callback_t callback;
     char* cmd_name;
     struct ArgParser* cmd_parser;
-    bool enable_help_command;
-    bool had_memory_error;
+    boolean enable_help_command;
+    boolean had_memory_error;
     struct ArgParser* parent;
-    bool first_positional_arg_ends_options;
+    boolean first_positional_arg_ends_options;
 };
 
 
@@ -748,7 +748,7 @@ char* ap_get_version(ArgParser* parser) {
 }
 
 
-void ap_first_pos_arg_ends_options(ArgParser* parser, bool enable) {
+void ap_first_pos_arg_ends_options(ArgParser* parser, boolean enable) {
     parser->first_positional_arg_ends_options = enable;
 }
 
@@ -832,7 +832,7 @@ int ap_count(ArgParser* parser, const char* name) {
 
 
 // Returns true if the specified flag or option was found.
-bool ap_found(ArgParser* parser, const char* name) {
+boolean ap_found(ArgParser* parser, const char* name) {
     Option* opt = ap_get_opt(parser, name);
     return opt->count > 0;
 }
@@ -913,7 +913,7 @@ double* ap_dbl_values(ArgParser* parser, const char* name) {
 
 
 // Returns true if the parser has found one or more positional arguments.
-bool ap_has_args(ArgParser* parser) {
+boolean ap_has_args(ArgParser* parser) {
     return parser->positional_args->count > 0;
 }
 
@@ -1016,7 +1016,7 @@ void ap_callback(ArgParser* parser, ap_callback_t function) {
 
 
 // Returns true if the parser has found a command.
-bool ap_has_cmd(ArgParser* parser) {
+boolean ap_has_cmd(ArgParser* parser) {
     return parser->cmd_name != NULL;
 }
 
@@ -1034,7 +1034,7 @@ ArgParser* ap_cmd_parser(ArgParser* parser) {
 
 
 // Toggles support for the automatic 'help' command.
-void ap_enable_help_command(ArgParser* parser, bool enable) {
+void ap_enable_help_command(ArgParser* parser, boolean enable) {
     parser->enable_help_command = enable;
 }
 
@@ -1056,7 +1056,7 @@ static void ap_handle_equals_opt(ArgParser* parser, const char* prefix, const ch
     char *value = strchr(arg, '=') + 1;
 
     Option* option;
-    bool found = map_get(parser->option_map, name, (void**)&option);
+    boolean found = map_get(parser->option_map, name, (void**)&option);
 
     if (!found || option->type == OPT_FLAG) {
         err(va("%s%s is not a recognised option name", prefix, name));
@@ -1101,7 +1101,7 @@ static void ap_handle_short_opt(ArgParser* parser, const char* arg, ArgStream* s
     for (size_t i = 0; i < strlen(arg); i++) {
         char keystr[] = {arg[i], 0};
         Option* option;
-        bool found = map_get(parser->option_map, keystr, (void**)&option);
+        boolean found = map_get(parser->option_map, keystr, (void**)&option);
         if (!found) {
             if (arg[i] == 'h' && parser->helptext != NULL) {
                 CONS_Printf("%s\n", parser->helptext);
@@ -1134,7 +1134,7 @@ static void ap_parse_stream(ArgParser* parser, ArgStream* stream) {
     }
 
     ArgParser* cmd_parser;
-    bool is_first_arg = true;
+    boolean is_first_arg = true;
 
     while (argstream_has_next(stream)) {
         char* arg = argstream_next(stream);
@@ -1216,7 +1216,7 @@ static void ap_parse_stream(ArgParser* parser, ArgStream* stream) {
 
 
 // Parse an array of string arguments.
-static bool ap_parse_array(ArgParser* parser, int count, char* args[]) {
+static boolean ap_parse_array(ArgParser* parser, int count, char* args[]) {
     if (parser->had_memory_error) {
         return false;
     }
@@ -1237,7 +1237,7 @@ static bool ap_parse_array(ArgParser* parser, int count, char* args[]) {
 // are the arguments passed to main(), i.e. that the first element in [argv] is the program's name
 // and should be ignored when parsing the actual *arguments*. In some situations [argv] can be
 // empty, i.e. [argc == 0], which can lead to security vulnerabilities if not explicitly handled.
-bool ap_parse(ArgParser* parser, int argc, char* argv[]) {
+boolean ap_parse(ArgParser* parser, int argc, char* argv[]) {
     if (argc > 1) {
         return ap_parse_array(parser, argc - 1, argv + 1);
     }
@@ -1250,7 +1250,7 @@ bool ap_parse(ArgParser* parser, int argc, char* argv[]) {
 /* --------------------- */
 
 
-bool ap_had_memory_error(ArgParser* parser) {
+boolean ap_had_memory_error(ArgParser* parser) {
     return parser->had_memory_error;
 }
 
@@ -1294,7 +1294,7 @@ void ap_print(ArgParser* parser) {
 /* --------------------- */
 
 
-void ap_cmd_help(ArgParser* parser, bool enable) {
+void ap_cmd_help(ArgParser* parser, boolean enable) {
     ap_enable_help_command(parser, enable);
 }
 
