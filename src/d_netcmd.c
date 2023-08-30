@@ -4659,7 +4659,7 @@ Command_Addskins (void)
 				return;
 			} else {
 	*/
-				P_AddWadFile(COM_Argv(1), 0, true);
+				P_AddWadFile(COM_Argv(1), true);
 	/*
 			}
 		} else {
