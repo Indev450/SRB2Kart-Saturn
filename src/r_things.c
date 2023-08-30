@@ -643,7 +643,7 @@ void R_InitSprites(void)
 	// it can be is do before loading config for skin cvar possible value
 	R_InitSkins();
 	for (i = 0; i < numwadfiles; i++)
-		R_AddSkins((UINT16)i);
+		R_AddSkins((UINT16)i, false);
 
 	//
 	// check if all sprites have frames
@@ -872,10 +872,7 @@ static void R_DrawVisSprite(vissprite_t *vis)
 		if (vis->mobj->colorized)
 			dc_translation = R_GetTranslationColormap(TC_RAINBOW, vis->mobj->color, GTC_CACHE);
 		else if (vis->mobj->skin && vis->mobj->sprite == SPR_PLAY) // MT_GHOST LOOKS LIKE A PLAYER SO USE THE PLAYER TRANSLATION TABLES. >_>
-		{
-			size_t skinnum = (skin_t*)vis->mobj->skin-skins;
-			dc_translation = R_GetTranslationColormap((INT32)skinnum, vis->mobj->color, GTC_CACHE);
-		}
+			dc_translation = R_GetLocalTranslationColormap(vis->mobj->skin, vis->mobj->localskin, vis->mobj->color, GTC_CACHE, vis->mobj->skinlocal);
 		else // Use the defaults
 			dc_translation = R_GetTranslationColormap(TC_DEFAULT, vis->mobj->color, GTC_CACHE);
 	}
@@ -893,10 +890,7 @@ static void R_DrawVisSprite(vissprite_t *vis)
 		if (vis->mobj->colorized)
 			dc_translation = R_GetTranslationColormap(TC_RAINBOW, vis->mobj->color, GTC_CACHE);
 		else if (vis->mobj->skin && vis->mobj->sprite == SPR_PLAY) // This thing is a player!
-		{
-			size_t skinnum = (skin_t*)vis->mobj->skin-skins;
-			dc_translation = R_GetTranslationColormap((INT32)skinnum, vis->mobj->color, GTC_CACHE);
-		}
+			dc_translation = R_GetLocalTranslationColormap(vis->mobj->skin, vis->mobj->localskin, vis->mobj->color, GTC_CACHE, vis->mobj->skinlocal);
 		else // Use the defaults
 			dc_translation = R_GetTranslationColormap(TC_DEFAULT, vis->mobj->color, GTC_CACHE);
 	}
@@ -925,7 +919,9 @@ static void R_DrawVisSprite(vissprite_t *vis)
 	frac = vis->startfrac;
 	windowtop = windowbottom = sprbotscreen = INT32_MAX;
 
-	if (vis->mobj->skin && ((skin_t *)vis->mobj->skin)->flags & SF_HIRES)
+	if (vis->mobj->localskin && ((skin_t *)vis->mobj->localskin)->flags & SF_HIRES)
+		this_scale = FixedMul(this_scale, ((skin_t *)vis->mobj->localskin)->highresscale);
+	else if (vis->mobj->skin && ((skin_t *)vis->mobj->skin)->flags & SF_HIRES)
 		this_scale = FixedMul(this_scale, ((skin_t *)vis->mobj->skin)->highresscale);
 	if (this_scale <= 0)
 		this_scale = 1;
@@ -1274,7 +1270,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	//Fab : 02-08-98: 'skin' override spritedef currently used for skin
 	if (thing->skin && thing->sprite == SPR_PLAY)
 	{
-		sprdef = &((skin_t *)thing->skin)->spritedef;
+		sprdef = &((skin_t *)( (thing->localskin) ? thing->localskin : thing->skin ))->spritedef;
 #ifdef ROTSPRITE
 		sprinfo = &spriteinfo[thing->sprite];
 #endif
@@ -1348,7 +1344,9 @@ static void R_ProjectSprite(mobj_t *thing)
 
 	I_Assert(lump < max_spritelumps);
 
-	if (thing->skin && ((skin_t *)thing->skin)->flags & SF_HIRES)
+	if (thing->localskin && ((skin_t *)thing->localskin)->flags & SF_HIRES)
+		this_scale = FixedMul(this_scale, ((skin_t *)thing->localskin)->highresscale);
+	else if (thing->skin && ((skin_t *)thing->skin)->flags & SF_HIRES)
 		this_scale = FixedMul(this_scale, ((skin_t *)thing->skin)->highresscale);
 
 	spr_width = spritecachedinfo[lump].width;
@@ -2784,6 +2782,7 @@ void R_DrawMasked(void)
 // ==========================================================================
 
 INT32 numskins = 0;
+INT32 numlocalskins = 0;
 skin_t skins[MAXSKINS];
 UINT8 skinstats[9][9][MAXSKINS];
 UINT8 skinstatscount[9][9] = {
@@ -2798,13 +2797,15 @@ UINT8 skinstatscount[9][9] = {
 	{0, 0, 0, 0, 0, 0, 0, 0, 0}
 };
 UINT8 skinsorted[MAXSKINS];
+skin_t localskins[MAXSKINS];
 // FIXTHIS: don't work because it must be inistilised before the config load
 //#define SKINVALUES
 #ifdef SKINVALUES
 CV_PossibleValue_t skin_cons_t[MAXSKINS+1];
+CV_PossibleValue_t localskin_cons_t[MAXSKINS+1];
 #endif
 
-static void Sk_SetDefaultValue(skin_t *skin)
+static void Sk_SetDefaultValue(skin_t *skin, boolean local)
 {
 	INT32 i;
 	//
@@ -2812,7 +2813,7 @@ static void Sk_SetDefaultValue(skin_t *skin)
 	//
 	memset(skin, 0, sizeof (skin_t));
 	snprintf(skin->name,
-		sizeof skin->name, "skin %u", (UINT32)(skin-skins));
+		sizeof skin->name, "skin %u", (UINT32)(skin-( (local) ? localskins : skins )));
 	skin->name[sizeof skin->name - 1] = '\0';
 	skin->wadnum = INT16_MAX;
 	strcpy(skin->sprite, "");
@@ -2853,13 +2854,15 @@ void R_InitSkins(void)
 	{
 		skin_cons_t[i].value = 0;
 		skin_cons_t[i].strvalue = NULL;
+		localskin_cons_t[i].value = 0;
+		localskin_cons_t[i].strvalue = NULL;
 	}
 #endif
 
 	// skin[0] = Sonic skin
 	skin = &skins[0];
 	numskins = 1;
-	Sk_SetDefaultValue(skin);
+	Sk_SetDefaultValue(skin, false);
 	memset(skinstats, 0, sizeof(skinstats));
 	memset(skinsorted, 0, sizeof(skinsorted));
 
@@ -2893,7 +2896,7 @@ void R_InitSkins(void)
 	//MD2 for sonic doesn't want to load in Linux.
 #ifdef HWRENDER
 	if (rendermode == render_opengl)
-		HWR_AddPlayerMD2(0);
+		HWR_AddPlayerMD2(0, false);
 #endif
 }
 
@@ -2909,6 +2912,23 @@ INT32 R_SkinAvailable(const char *name)
 			return i;
 	}
 	return -1;
+}
+
+INT32 R_LocalSkinAvailable(const char *name, boolean local)
+{
+	INT32 i;
+
+	if (local)
+	{
+		for (i = 0; i < numlocalskins; i++)
+		{
+			if (stricmp(localskins[i].name,name)==0)
+				return i;
+		}
+		return -1;
+	}
+	else
+		return R_SkinAvailable(name);
 }
 
 // network code calls this when a 'skin change' is received
@@ -2934,6 +2954,61 @@ boolean SetPlayerSkin(INT32 playernum, const char *skinname)
 
 	SetPlayerSkinByNum(playernum, 0);
 	return false;
+}
+
+void SetLocalPlayerSkin(INT32 playernum, const char *skinname, consvar_t *cvar)
+{
+	player_t *player = &players[playernum];
+	INT32 i;
+
+	if (strcasecmp(skinname, "none"))
+	{
+		for (i = 0; i < numlocalskins; i++)
+		{
+			// search in the skin list
+			if (stricmp(localskins[i].name, skinname) == 0)
+			{
+				player->localskin = 1 + i;
+				player->skinlocal = true;
+				if (player->mo)
+				{
+					player->mo->localskin = &localskins[i];
+					player->mo->skinlocal = true;
+				}
+				break;
+			}
+		}
+		for (i = 0; i < numskins; i++)
+		{
+			// search in the skin list
+			if (stricmp(skins[i].name, skinname) == 0)
+			{
+				player->localskin = 1 + i;
+				player->skinlocal = false;
+				if (player->mo)
+				{
+					player->mo->localskin = &skins[i];
+					player->mo->skinlocal = false;
+				}
+				break;
+			}
+		}
+	}
+	else
+	{
+		player->localskin = 0;
+		player->skinlocal = false;
+		if (player->mo)
+		{
+			player->mo->localskin = 0;
+			player->mo->skinlocal = false;
+		}
+	}
+
+	if (player->localskin > 0)
+		CV_StealthSet(cvar, ( (player->skinlocal) ? localskins : skins )[player->localskin - 1].name);
+	else
+		CV_StealthSet(cvar, "none");
 }
 
 // Same as SetPlayerSkin, but uses the skin #.
@@ -3120,7 +3195,7 @@ void sortSkinGrid(void)
 //
 // Find skin sprites, sounds & optional status bar face, & add them
 //
-void R_AddSkins(UINT16 wadnum)
+void R_AddSkins(UINT16 wadnum, boolean local)
 {
 	UINT16 lump, lastlump = 0;
 	char *buf;
@@ -3140,7 +3215,7 @@ void R_AddSkins(UINT16 wadnum)
 		// advance by default
 		lastlump = lump + 1;
 
-		if (numskins >= MAXSKINS)
+		if (( (local) ? numlocalskins : numskins ) >= MAXSKINS)
 		{
 			CONS_Alert(CONS_WARNING, M_GetText("Unable to add skin, too many characters are loaded (%d maximum)\n"), MAXSKINS);
 			continue; // so we know how many skins couldn't be added
@@ -3156,8 +3231,8 @@ void R_AddSkins(UINT16 wadnum)
 		buf2[size] = '\0';
 
 		// set defaults
-		skin = &skins[numskins];
-		Sk_SetDefaultValue(skin);
+		skin = &( (local) ? localskins : skins )[( (local) ? numlocalskins : numskins )];
+		Sk_SetDefaultValue(skin, local);
 		skin->wadnum = wadnum;
 		hudname = realname = false;
 		// parse
@@ -3181,7 +3256,7 @@ void R_AddSkins(UINT16 wadnum)
 				// the skin name must uniquely identify a single skin
 				// I'm lazy so if name is already used I leave the 'skin x'
 				// default skin name set in Sk_SetDefaultValue
-				if (R_SkinAvailable(value) == -1)
+				if (R_LocalSkinAvailable(value, local) == -1)
 				{
 					STRBUFCPY(skin->name, value);
 					strlwr(skin->name);
@@ -3191,12 +3266,12 @@ void R_AddSkins(UINT16 wadnum)
 				else
 				{
 					const size_t stringspace =
-						strlen(value) + sizeof (numskins) + 1;
+						strlen(value) + sizeof (( (local) ? numlocalskins : numskins )) + 1;
 					char *value2 = Z_Malloc(stringspace, PU_STATIC, NULL);
 					snprintf(value2, stringspace,
-						"%s%d", value, numskins);
+						"%s%d", value, ( (local) ? numlocalskins : numskins ));
 					value2[stringspace - 1] = '\0';
-					if (R_SkinAvailable(value2) == -1)
+					if (R_LocalSkinAvailable(value2, local) == -1)
 					{
 						STRBUFCPY(skin->name,
 							value2);
@@ -3379,20 +3454,23 @@ next_token:
 
 		CONS_Printf(M_GetText("Added skin '%s'\n"), skin->name);
 #ifdef SKINVALUES
-		skin_cons_t[numskins].value = numskins;
-		skin_cons_t[numskins].strvalue = skin->name;
+		( (local) ? localskin_cons_t : skin_cons_t )[( (local) ? numlocalskins : numskins )].value = ( (local) ? numlocalskins : numskins );
+		( (local) ? localskin_cons_t : skin_cons_t )[( (local) ? numlocalskins : numskins )].strvalue = skin->name;
 #endif
 
 		// Update the forceskin possiblevalues
-		Forceskin_cons_t[numskins+1].value = numskins;
-		Forceskin_cons_t[numskins+1].strvalue = skins[numskins].name;
+		if (! local)
+		{
+			Forceskin_cons_t[numskins+1].value = numskins;
+			Forceskin_cons_t[numskins+1].strvalue = skins[numskins].name;
+		}
 
 		// add face graphics
-		ST_LoadFaceGraphics(skin->facerank, skin->facewant, skin->facemmap, numskins);
+		ST_LoadLocalFaceGraphics(skin->facerank, skin->facewant, skin->facemmap, numskins, local);
 
 #ifdef HWRENDER
 		if (rendermode == render_opengl)
-			HWR_AddPlayerMD2(numskins);
+			HWR_AddPlayerMD2(( (local) ? numlocalskins : numskins ), local);
 #endif
 		skinstats[skin->kartspeed-1][skin->kartweight-1][skinstatscount[skin->kartspeed-1][skin->kartweight-1]] = numskins;
 		CONS_Debug(DBG_SETUP, M_GetText("Added %d to %d, %d\n"), numskins, skin->kartweight, skin->kartweight);
@@ -3401,7 +3479,7 @@ next_token:
 
 		skinsorted[numskins] = numskins;
 
-		numskins++;
+		( (local) ? numlocalskins++ : numskins++ );
 	}
 
 	sortSkinGrid();

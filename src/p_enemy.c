@@ -2608,6 +2608,7 @@ void A_MonitorPop(mobj_t *actor)
 	remains->fuse = actor->fuse; // Transfer respawn timer
 	remains->threshold = 68;
 	remains->skin = NULL;
+	remains->localskin = NULL;
 
 	P_SetTarget(&tmthing, remains);
 

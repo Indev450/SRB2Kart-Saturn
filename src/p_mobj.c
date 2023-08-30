@@ -10772,6 +10772,16 @@ void P_SpawnPlayer(INT32 playernum)
 	// (usefulness: when body mobj is detached from player (who respawns),
 	// the dead body mobj retains the skin through the 'spritedef' override).
 	mobj->skin = &skins[p->skin];
+	if (p->localskin > 0)
+	{
+		if (p->skinlocal)
+			mobj->localskin = &localskins[p->localskin - 1];
+		else
+			mobj->localskin = &     skins[p->localskin - 1];
+	}
+	else
+		mobj->localskin = 0;
+	mobj->skinlocal = p->skinlocal;
 
 	mobj->health = p->health;
 	p->playerstate = PST_LIVE;
