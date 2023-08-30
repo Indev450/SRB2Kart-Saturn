@@ -143,11 +143,7 @@ static void Command_SetViews_f(void);
 static void Command_Addfilelocal(void);
 static void Command_Addfile(void);
 static void Command_Addskins(void);
-static void Command_Localskin1(void);
-static void Command_Localskin2(void);
-static void Command_Localskin3(void);
-static void Command_Localskin4(void);
-static void Command_LocalskinAll(void);
+static void Command_GLocalSkin(void);
 static void Command_ListWADS_f(void);
 #ifdef DELFILE
 static void Command_Delfile(void);
@@ -657,11 +653,7 @@ void D_RegisterServerCommands(void)
 	COM_AddCommand("addfilelocal", Command_Addfilelocal);
 	COM_AddCommand("addfile", Command_Addfile);
 	COM_AddCommand("addskins", Command_Addskins);
-	COM_AddCommand("localskin", Command_Localskin1);
-	COM_AddCommand("localskin2", Command_Localskin2);
-	COM_AddCommand("localskin3", Command_Localskin3);
-	COM_AddCommand("localskin4", Command_Localskin4);
-	COM_AddCommand("localskinall", Command_LocalskinAll);
+	COM_AddCommand("localskin", Command_GLocalSkin);
 	COM_AddCommand("listwad", Command_ListWADS_f);
 
 #ifdef DELFILE
@@ -4681,80 +4673,56 @@ Command_Addskins (void)
 	*/
 }
 
-static void Command_Localskin1 (void) {
-	if (!Playing() && !demo.playback)
-	{
-		CONS_Printf("You can only use this command in gameplay.\n");
-		return;
-	}
-	if (COM_Argc() > 3)
-	{
-		CONS_Printf("localskin <name>: Set a localskin.\n");
-		return;
-	}
-	if (fasticmp(COM_Argv(2), "-display") || fasticmp(COM_Argv(2), "-d"))
-		SetLocalPlayerSkin(displayplayers[0], COM_Argv(1), &cv_localskin);
-	else
-		SetLocalPlayerSkin(consoleplayer, COM_Argv(1), &cv_localskin);
-}
+// args n stuff
+#include "args.h"
 
-static void Command_Localskin2 (void) {
-	if (!Playing() && !demo.playback)
-	{
-		CONS_Printf("You can only use this command in gameplay.\n");
-		return;
-	}
-	if (COM_Argc() != 2)
-	{
-		CONS_Printf("localskin2 <name>: Set a localskin.\n");
-		return;
-	}
-	SetLocalPlayerSkin(displayplayers[1], COM_Argv(1), &cv_localskin2);
-}
+static void Command_GLocalSkin (void) {
+	ArgParser* parser = ap_new();
+	ap_set_helptext(parser, "Usage: localskin [options] <name>\n\nOptions: \n\
+	-d, --display: 	Use the first displaying player instead of yourself.\n\
+					Has no effect on replays. Omits any player related\n\
+					options.\n\
+    -a, --all: 		Set a localskin to all players. Omits any player related\n\
+					options.\n\
+    -p, --player: 	Set a localskin to a specific player name.\n\
+					If omitted, defaults to the client player, unless -d \n\
+					or --display is added.");
+	ap_set_version(parser, "");
+	ap_str_opt(parser, "player p", player_names[consoleplayer]);
+	ap_flag(parser, "display d");
+	ap_flag(parser, "all a");
 
-static void Command_Localskin3 (void) {
-	if (!Playing() && !demo.playback)
-	{
-		CONS_Printf("You can only use this command in gameplay.\n");
-		return;
-	}
-	if (COM_Argc() != 2)
-	{
-		CONS_Printf("localskin3 <name>: Set a localskin.\n");
-		return;
-	}
-	SetLocalPlayerSkin(displayplayers[2], COM_Argv(1), &cv_localskin3);
-}
+	ap_parse(parser, COM_Argc(), COM_ArgvList());
 
-static void Command_Localskin4 (void) {
-	if (!Playing() && !demo.playback)
-	{
-		CONS_Printf("You can only use this command in gameplay.\n");
-		return;
-	}
-	if (COM_Argc() != 2)
-	{
-		CONS_Printf("localskin4 <name>: Set a localskin.\n");
-		return;
-	}
-	SetLocalPlayerSkin(displayplayers[3], COM_Argv(1), &cv_localskin4);
-}
+	boolean disply;
+	boolean allp;
 
-static void Command_LocalskinAll (void) {
-	if (!Playing() && !demo.playback)
-	{
-		CONS_Printf("You can only use this command in gameplay.\n");
-		return;
+	if (ap_found(parser, "display")) disply = true; else disply = false;
+	if (ap_found(parser, "all")) allp = true; else allp = false;
+
+	INT32 i, idx;
+	i = 0;
+	idx = 0;
+
+	for (idx = 0; idx < ap_count_args(parser); idx++) {
+		if (disply) {
+			SetLocalPlayerSkin(displayplayers[0], ap_arg(parser, idx), &cv_localskin);
+			return;
+		} else {
+			for (i = 0; i < MAXPLAYERS; i++) {
+				if (allp) {
+					SetLocalPlayerSkin(i, ap_arg(parser, idx), &cv_localskinall);
+				} else {
+					if (fasticmp(player_names[i], ap_str_value(parser, "player"))) {
+						SetLocalPlayerSkin(i, ap_arg(parser, idx), &cv_localskin);
+						break;
+					}	
+				}
+			}
+		}
 	}
-	if (COM_Argc() != 2)
-	{
-		CONS_Printf("localskinall <name>: Set a localskin to all players.\n");
-		return;
-	}
-	INT32 i;
-	for (i; i < MAXPLAYERS; i++) {
-		SetLocalPlayerSkin(i, COM_Argv(1), &cv_localskinall);
-	}
+
+	ap_free(parser);
 }
 
 #ifdef DELFILE
