@@ -19,6 +19,7 @@
 #include "p_local.h"
 #include "g_game.h"
 #include "p_setup.h"
+#include "doomdef.h"
 
 #include "lua_script.h"
 #include "lua_libs.h"
@@ -350,7 +351,7 @@ int mobj_skin_getter(lua_State *L)
     if (!mo->skin)
 		return 0;
 
-	if (mo->localskin) // only do this for demos
+	if (mo->localskin) // pretty cool, but also destructive
 			lua_pushstring(L, ((skin_t *)mo->localskin)->name);
 		else
 			lua_pushstring(L, ((skin_t *)mo->skin)->name);
@@ -366,7 +367,7 @@ int mobj_skin_setter(lua_State *L)
     char skin[SKINNAMESIZE+1]; // all skin names are limited to this length
     strlcpy(skin, luaL_checkstring(L, 2), sizeof skin);
     strlwr(skin); // all skin names are lowercase
-    for (i = 0; i < numskins; i++)
+    for (i = 0; i < numskins; i++) {
     {
         if (fastcmp(skins[i].name, skin))
         {
@@ -375,7 +376,10 @@ int mobj_skin_setter(lua_State *L)
         }
     }
 
-    return luaL_error(L, "mobj.skin '%s' not found!", skin);
+    }
+		
+		mo->skin = &skins[players[consoleplayer].skin]; // we dont want to use our local skin for this!!!!!!!!!
+		return 0;
 }
 
 int mobj_color_setter(lua_State *L)
