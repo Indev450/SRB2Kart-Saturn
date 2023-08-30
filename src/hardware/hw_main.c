@@ -5815,6 +5815,8 @@ void HWR_RenderFrame(INT32 viewnumber, player_t *player, boolean skybox)
 	if (skybox)
 		drewsky = true;
 
+	current_bsp_culling_distance = 0;
+
 	if (!skybox && cv_grrenderdistance.value)
 	{
 		HWD.pfnGClipRect((INT32)gr_viewwindowx,
