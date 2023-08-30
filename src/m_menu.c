@@ -1825,11 +1825,11 @@ static menuitem_t OP_ForkedBirdMenu[] =
 {
 	{IT_HEADER, NULL, "Local Skins", NULL, 0},
 	{IT_STRING | IT_CVAR | IT_CV_STRING, NULL, "Local Skin Name", &cv_fakelocalskin, 10},
-	{IT_STRING2 | IT_SPACE, NULL, "Set to None for no Local Skin", NULL, 50},
-	{IT_STRING | IT_CALL, NULL, "Apply to All Players", M_LocalSkinChange, 50},
-	{IT_STRING | IT_CALL, NULL, "Apply to Displaying Player", M_LocalSkinChange, 60},
-	{IT_STRING | IT_CALL, NULL, "Apply to Yourself", M_LocalSkinChange, 70},
-	{IT_STRING | IT_CVAR, NULL, "Lua Immersion", &cv_luaimmersion, 90},
+	{IT_STRING2 | IT_SPACE, NULL, "Set to None for no Local Skin", NULL, 20},
+	{IT_STRING | IT_CALL, NULL, "Apply to All Players", M_LocalSkinChange, 140},
+	{IT_STRING | IT_CALL, NULL, "Apply to Displaying Player", M_LocalSkinChange, 150},
+	{IT_STRING | IT_CALL, NULL, "Apply to Yourself", M_LocalSkinChange, 160},
+	{IT_STRING | IT_CVAR, NULL, "Lua Immersion", &cv_luaimmersion, 170},
 };
 
 static menuitem_t OP_TiltMenu[] =
@@ -2395,7 +2395,17 @@ menu_t OP_BirdDef = DEFAULTMENUSTYLE(NULL, OP_BirdMenu, &OP_MainDef, 30, 30);
 menu_t OP_TiltDef = DEFAULTMENUSTYLE(NULL, OP_TiltMenu, &OP_BirdDef, 30, 60);
 menu_t OP_AdvancedBirdDef = DEFAULTMENUSTYLE(NULL, OP_AdvancedBirdMenu, &OP_BirdDef, 30, 60);
 
-menu_t OP_ForkedBirdDef = DEFAULTMENUSTYLE(NULL, OP_ForkedBirdMenu, &OP_MainDef, 30, 30);
+menu_t OP_ForkedBirdDef = {
+	NULL,
+	sizeof(OP_ForkedBirdMenu)/sizeof(menuitem_t),
+	&OP_MainDef,
+	OP_ForkedBirdMenu,
+	M_DrawLocalSkinMenu,
+	30, 6,
+	0,
+	NULL
+};
+
 menu_t OP_LocalSkinDef = DEFAULTMENUSTYLE(NULL, OP_TiltMenu, &OP_ForkedBirdDef, 30, 60);
 
 
@@ -6722,33 +6732,6 @@ static void M_Options(INT32 choice)
 
 	OP_MainDef.prevMenu = currentMenu;
 	M_SetupNextMenu(&OP_MainDef);
-}
-static void M_LocalSkinMenu(INT32 choice)
-{
-	(void)choice;
-
-	OP_ForkedBirdDef.prevMenu = currentMenu;
-	M_SetupNextMenu(&OP_ForkedBirdDef);
-}
-
-static void M_LocalSkinChange(INT32 choice)
-{
-	(void)choice;
-
-	switch (itemOn) {
-		case 3:
-			COM_BufAddText(va("localskin -a %s", cv_fakelocalskin.string));
-			break;
-		case 4:
-			COM_BufAddText(va("localskin -d %s", cv_fakelocalskin.string));
-			break;
-		case 5:
-			COM_BufAddText(va("localskin %s", cv_fakelocalskin.string));
-			break;
-		default:
-			break;
-	}
-	S_StartSound(NULL, sfx_s221);
 }
 
 static void M_Manual(INT32 choice)
@@ -11970,6 +11953,133 @@ static void M_DrawHUDOptions(void)
 	x -= w3;
 	V_DrawString(x, y, recommendedflags, str3);
 	V_DrawRightAlignedString(x, y, highlightflags, "(");
+}
+
+static void M_LocalSkinMenu(INT32 choice)
+{
+	(void)choice;
+
+	multi_state = &states[mobjinfo[MT_PLAYER].seestate];
+	multi_tics = multi_state->tics;
+
+	OP_ForkedBirdDef.prevMenu = currentMenu;
+	M_SetupNextMenu(&OP_ForkedBirdDef);
+}
+
+static void M_LocalSkinChange(INT32 choice)
+{
+	(void)choice;
+
+	switch (itemOn) {
+		case 3:
+			COM_BufAddText(va("localskin -a %s", cv_fakelocalskin.string));
+			break;
+		case 4:
+			COM_BufAddText(va("localskin -d %s", cv_fakelocalskin.string));
+			break;
+		case 5:
+			COM_BufAddText(va("localskin %s", cv_fakelocalskin.string));
+			break;
+		default:
+			break;
+	}
+	S_StartSound(NULL, sfx_s221);
+}
+
+// Display our localskin in our goofy ahhhh local skin menu
+static void M_DrawLocalSkinMenu(void)
+{
+	INT32 mx, my, st, flags = 0;
+	spritedef_t *sprdef;
+	spriteframe_t *sprframe;
+	patch_t *patch;
+	UINT8 frame;
+	UINT8 skintodisplay;
+	UINT32 speenframe;
+
+	mx = OP_ForkedBirdDef.x;
+	my = OP_ForkedBirdDef.y;
+
+	// use generic drawer for cursor, items and title
+	M_DrawGenericMenu();
+
+	#define charw 72
+
+	// anim the player in the box
+	if (--multi_tics <= 0)
+	{
+		st = multi_state->nextstate;
+		if (st != S_NULL)
+			multi_state = &states[st];
+		multi_tics = multi_state->tics;
+		if (multi_tics == -1)
+			multi_tics = 15;
+	}
+
+	// skin 0 is default player sprite
+	if (R_AnySkinAvailable(cv_fakelocalskin.string) != -1)
+	{
+		sprdef = &allskins[R_AnySkinAvailable(cv_fakelocalskin.string)].spritedef;
+		skintodisplay = R_AnySkinAvailable(cv_fakelocalskin.string);
+	}
+	else
+	{
+		// ATTEMPT TO FIND REAL SKIN	
+		if (R_AnySkinAvailable(cv_skin.string) != -1)
+		{
+			sprdef = &allskins[R_AnySkinAvailable(cv_skin.string)].spritedef;
+			skintodisplay = R_AnySkinAvailable(cv_skin.string);
+		} else { // STILL NOTHIN? use sonic instead
+			sprdef = &allskins[0].spritedef;
+			skintodisplay = 0;
+		}
+	}
+
+	if (!sprdef->numframes) // No frames ??
+		return; // Can't render!
+
+	frame = multi_state->frame & FF_FRAMEMASK;
+	if (frame >= sprdef->numframes) // Walking animation missing
+		frame = 0; // Try to use standing frame
+
+	sprframe = &sprdef->spriteframes[frame];
+
+	//minenice's speen css, it's a piece of shit but hey
+	//patch = W_CachePatchNum(sprframe->lumppat[1], PU_CACHE);
+	speenframe = (I_GetTime()*cv_skinselectspin.value/TICRATE + 1)%8;
+
+	//this is a very shitty solution for checking if a sprite needs flipping
+	//but it works
+	if ((sprframe->lumppat[speenframe] == sprframe->lumppat[8-speenframe]) && (speenframe > 4)) {
+		flags = V_FLIP; // This sprite is left/right flipped!
+	}
+	patch = W_CachePatchNum(sprframe->lumppat[speenframe], PU_CACHE);
+
+	// draw box around guy
+	V_DrawFill(mx + 220 - (charw/2), my+54, charw, 84, 239);
+
+	// draw player sprite
+	UINT8 *colormap = R_GetTranslationColormap(skintodisplay, cv_playercolor.value, GTC_MENUCACHE);
+	colormap = R_GetLocalTranslationColormap(&skins[allskins[skintodisplay].localnum], (allskins[skintodisplay].localskin ? &localskins[allskins[skintodisplay].localnum] : NULL), cv_playercolor.value, GTC_MENUCACHE, allskins[skintodisplay].localskin);
+
+	V_DrawMappedPatch(mx, my+50, 0, W_CachePatchName(allskins[skintodisplay].facewant, PU_CACHE), colormap);
+	V_DrawMappedPatch(mx+8, my+85, 0, W_CachePatchName(allskins[skintodisplay].facerank, PU_CACHE), colormap);
+	V_DrawString(mx, my+108, V_ALLOWLOWERCASE, "Character");
+	if (strlen(allskins[skintodisplay].realname) > 10)
+		V_DrawThinString(mx+20, my+118, V_ALLOWLOWERCASE|highlightflags, allskins[skintodisplay].realname);
+	else
+		V_DrawString(mx+20, my+118, V_ALLOWLOWERCASE|highlightflags, allskins[skintodisplay].realname);
+
+	if (allskins[skintodisplay].flags & SF_HIRES)
+	{
+		V_DrawFixedPatch((mx+220)<<FRACBITS,
+					(my+120)<<FRACBITS,
+			allskins[skintodisplay].highresscale,
+			flags, patch, colormap);
+	}
+	else
+		V_DrawMappedPatch(mx+220, my+120, flags, patch, colormap);
+#undef charw
 }
 
 // Draw the video modes list, a-la-Quake
