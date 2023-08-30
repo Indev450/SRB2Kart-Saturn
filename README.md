@@ -10,7 +10,7 @@
 - OpenMPT for Tracker module playback (Complete with filters) fixed looping issues while even sounding better than the old GME playback
 - The minimal brightness with Shaders can be configured, now you can seeeee in dark areas (0-255 , uses Sector brightness values)
 - Lua hooks for Intermission (ex: You can make hostmod votes still visible during intermission!)
-- Lua hooks for Vote Screen (ex: You can make hostmod votes still visible during map vote screen!)
+- Lua HUD hooks for Vote Screen (ex: You can make hostmod votes still visible during map vote screen!)
 - Saltyhop! do a funny hop
 - Smaller Speedometer (optional / requieres extra.kart file)
 - Record Attack input display can now be used everywhere
