@@ -3493,6 +3493,11 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, boolean local)
 
 	if (wadfiles[wadnum]->important)
 		partadd_important = true;
+	
+	if (local)
+		wadfiles[wadnum]->localfile = true;
+	else
+		wadfiles[wadnum]->localfile = false;
 
 	//
 	// search for sound replacements
