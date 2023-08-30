@@ -2782,6 +2782,7 @@ void R_DrawMasked(void)
 // ==========================================================================
 
 INT32 numskins = 0;
+INT32 numallskins = 0;
 INT32 numlocalskins = 0;
 skin_t skins[MAXSKINS];
 UINT8 skinstats[9][9][MAXSKINS];
@@ -2798,6 +2799,7 @@ UINT8 skinstatscount[9][9] = {
 };
 UINT8 skinsorted[MAXSKINS];
 skin_t localskins[MAXSKINS];
+skin_t allskins[MAXSKINS*2];
 // FIXTHIS: don't work because it must be inistilised before the config load
 //#define SKINVALUES
 #ifdef SKINVALUES
@@ -2898,6 +2900,10 @@ void R_InitSkins(void)
 	if (rendermode == render_opengl)
 		HWR_AddPlayerMD2(0, false);
 #endif
+
+	// lets set it
+	allskins[0] = skins[0];
+	numallskins = 1;
 }
 
 // returns true if the skin name is found (loaded from pwad)
@@ -3482,8 +3488,11 @@ next_token:
 		CONS_Debug(DBG_SETUP, M_GetText("Incremented %d, %d to %d\n"), skin->kartspeed, skin->kartweight, skinstatscount[skin->kartspeed - 1][skin->kartweight - 1]);
 
 		skinsorted[numskins] = numskins;
+		
+		allskins[numallskins] = ( (local) ? localskins : skins )[( (local) ? numlocalskins : numskins )];
 
 		( (local) ? numlocalskins++ : numskins++ );
+		numallskins++;
 	}
 
 	sortSkinGrid();

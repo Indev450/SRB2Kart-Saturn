@@ -82,6 +82,12 @@ extern patch_t *facemmapprefix[MAXSKINS]; // minimap
 extern patch_t *localfacerankprefix[MAXSKINS]; // ranking
 extern patch_t *localfacewantprefix[MAXSKINS]; // wanted
 extern patch_t *localfacemmapprefix[MAXSKINS]; // minimap
+extern char *facerankprefix_name[MAXSKINS]; // ranking
+extern char *facewantprefix_name[MAXSKINS]; // wanted
+extern char *facemmapprefix_name[MAXSKINS]; // minimap
+extern char *localfacerankprefix_name[MAXSKINS]; // ranking
+extern char *localfacewantprefix_name[MAXSKINS]; // wanted
+extern char *localfacemmapprefix_name[MAXSKINS]; // minimap
 extern patch_t *livesback;
 extern patch_t *ngradeletters[7];
 

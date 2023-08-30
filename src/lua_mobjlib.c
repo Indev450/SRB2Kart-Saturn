@@ -350,7 +350,10 @@ int mobj_skin_getter(lua_State *L)
     if (!mo->skin)
 		return 0;
 
-	lua_pushstring(L, ((skin_t *)mo->skin)->name);
+	if (mo->localskin) // only do this for demos
+			lua_pushstring(L, ((skin_t *)mo->localskin)->name);
+		else
+			lua_pushstring(L, ((skin_t *)mo->skin)->name);
 
     return 1;
 }
