@@ -121,6 +121,7 @@ intertype_t intertype = int_none;
 
 #ifdef HAVE_BLUA
 static huddrawlist_h luahuddrawlist_intermission = NULL;
+static huddrawlist_h luahuddrawlist_vote = NULL;
 #endif
 
 static void Y_FollowIntermission(void);
@@ -366,15 +367,6 @@ void Y_IntermissionDrawer(void)
 	if (usebuffer) // Fade everything out
 		V_DrawFadeScreen(0xFF00, 22);
 
-#ifdef HAVE_BLUA
-	if (renderisnewtic)
-	{
-		LUA_HUD_ClearDrawList(luahuddrawlist_intermission);
-		LUAh_IntermissionHUD(luahuddrawlist_intermission);
-	}
-	LUA_HUD_DrawList(luahuddrawlist_intermission);
-#endif
-
 	if (!splitscreen)
 		whiteplayer = demo.playback ? displayplayers[0] : consoleplayer;
 
@@ -609,6 +601,15 @@ dotimer:
 	// Make it obvious that scrambling is happening next round.
 	if (cv_scrambleonchange.value && cv_teamscramble.value && (intertic/TICRATE % 2 == 0))
 		V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT/2, hilicol, M_GetText("Teams will be scrambled next round!"));
+
+#ifdef HAVE_BLUA
+	if (renderisnewtic)
+	{
+		LUA_HUD_ClearDrawList(luahuddrawlist_intermission);
+		LUAh_IntermissionHUD(luahuddrawlist_intermission);
+	}
+	LUA_HUD_DrawList(luahuddrawlist_intermission);
+#endif
 }
 
 //
@@ -1230,6 +1231,15 @@ void Y_VoteDrawer(void)
 		V_DrawCenteredString(BASEVIDWIDTH/2, 188, hilicol,
 			va("Vote ends in %d", tickdown));
 	}
+
+#ifdef HAVE_BLUA
+	if (renderisnewtic)
+	{
+		LUA_HUD_ClearDrawList(luahuddrawlist_vote);
+		LUAh_VoteHUD(luahuddrawlist_vote);
+	}
+	LUA_HUD_DrawList(luahuddrawlist_vote);
+#endif
 }
 
 //
@@ -1559,6 +1569,11 @@ void Y_StartVote(void)
 	}
 
 	voteclient.loaded = true;
+
+#ifdef HAVE_BLUA
+	LUA_HUD_DestroyDrawList(luahuddrawlist_vote);
+	luahuddrawlist_vote = LUA_HUD_CreateDrawList();
+#endif
 }
 
 //
