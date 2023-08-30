@@ -36,8 +36,8 @@ int mobj_snext_noset(lua_State *L);
 int mobj_z_setter(lua_State *L);
 int mobj_sprev_unimplemented(lua_State *L);
 int mobj_angle_setter(lua_State *L);
-//int mobj_sloperoll_noset(lua_State *L);
-//int mobj_spritescale_setter(lua_State *L);
+int mobj_sloperoll_noop(lua_State *L);
+int mobj_spritescale_setter(lua_State *L);
 int mobj_touching_sectorlist_unimplemented(lua_State *L);
 int mobj_radius_setter(lua_State *L);
 int mobj_height_setter(lua_State *L);
@@ -76,15 +76,15 @@ static const udata_field_t mobj_fields[] = {
     FIELD(mobj_t, snext,               udatalib_getter_mobj,       mobj_snext_noset),
     FIELD(mobj_t, sprev,               mobj_sprev_unimplemented,   mobj_sprev_unimplemented),
     FIELD(mobj_t, angle,               udatalib_getter_angle,      mobj_angle_setter),
-    //FIELD(mobj_t, rollangle,           udatalib_getter_angle,      udatalib_setter_angle),
-    //FIELD(mobj_t, sloperoll,           udatalib_getter_angle,      mobj_sloperoll_noset),
+    FIELD(mobj_t, rollangle,           udatalib_getter_angle,      udatalib_setter_angle),
+    FIELD(mobj_t, sloperoll,           udatalib_getter_angle,      mobj_sloperoll_noop),
     FIELD(mobj_t, sprite,              udatalib_getter_spritenum,  udatalib_setter_spritenum),
     FIELD(mobj_t, frame,               udatalib_getter_uint32,     udatalib_setter_uint32),
     FIELD(mobj_t, anim_duration,       udatalib_getter_uint16,     udatalib_setter_uint16),
-    //FIELD(mobj_t, spritexscale,        udatalib_getter_fixed,      mobj_spritescale_setter),
-    //FIELD(mobj_t, spriteyscale,        udatalib_getter_fixed,      mobj_spritescale_setter),
-    //FIELD(mobj_t, spritexoffset,       udatalib_getter_fixed,      udatalib_setter_fixed),
-    //FIELD(mobj_t, spriteyoffset,       udatalib_getter_fixed,      udatalib_setter_fixed),
+    FIELD(mobj_t, spritexscale,        udatalib_getter_fixed,      mobj_spritescale_setter),
+    FIELD(mobj_t, spriteyscale,        udatalib_getter_fixed,      mobj_spritescale_setter),
+    FIELD(mobj_t, spritexoffset,       udatalib_getter_fixed,      udatalib_setter_fixed),
+    FIELD(mobj_t, spriteyoffset,       udatalib_getter_fixed,      udatalib_setter_fixed),
     FIELD(mobj_t, touching_sectorlist, mobj_touching_sectorlist_unimplemented, mobj_touching_sectorlist_unimplemented),
     FIELD(mobj_t, subsector,           udatalib_getter_subsector,  mobj_nosetpos_subsector),
     FIELD(mobj_t, floorz,              udatalib_getter_fixed,      mobj_nosetpos_floorz),
@@ -133,7 +133,7 @@ static const udata_field_t mobj_fields[] = {
     FIELD(mobj_t, cvmem,               udatalib_getter_int32,      udatalib_setter_int32),
     FIELD(mobj_t, standingslope,       udatalib_getter_slope,      mobj_standingslope_noset),
     FIELD(mobj_t, colorized,           udatalib_getter_boolean,    udatalib_setter_boolean),
-    //FIELD(mobj_t, rollmodel,           udatalib_getter_boolean,    udatalib_setter_boolean),
+    FIELD(mobj_t, rollmodel,           udatalib_getter_boolean,    udatalib_setter_boolean),
     { NULL },
 };
 #undef FIELD
@@ -174,7 +174,6 @@ int mobj_ ## field ## _noset(lua_State *L) \
     return luaL_error(L, LUA_QL("mobj_t") " field " LUA_QS " should not be set directly.", #field); \
 }
 
-//NOSET(sloperoll)
 NOSET(snext)
 NOSET(bnext)
 NOSET(info)
@@ -197,6 +196,10 @@ UNIMPLEMENTED(bprev)
 UNIMPLEMENTED(mobjnum)
 
 #undef UNIMPLEMENTED
+
+// For some dumb reason it is valid to set sloperoll, even though it is read
+// only
+int mobj_sloperoll_noop(lua_State *L) { return 0; }
 
 // Now other getters/setters with arbitary logic
 
@@ -233,7 +236,7 @@ int mobj_angle_setter(lua_State *L)
     return 0;
 }
 
-/*int mobj_spritescale_setter(lua_State *L)
+int mobj_spritescale_setter(lua_State *L)
 {
     mobj_t *mo = GETMO();
 
@@ -251,7 +254,7 @@ int mobj_angle_setter(lua_State *L)
             mo->realyscale = luaL_checkfixed(L, 2);
     }
     return 0;
-}*/
+}
 
 int mobj_radius_setter(lua_State *L)
 {
