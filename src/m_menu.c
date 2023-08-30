@@ -1404,14 +1404,13 @@ static menuitem_t OP_SoundOptionsMenu[] =
 
 	{IT_STRING|IT_CVAR,        NULL, "Play Music While Unfocused", &cv_playmusicifunfocused, 125},
 	{IT_STRING|IT_CVAR,        NULL, "Play SFX While Unfocused", &cv_playsoundifunfocused, 135},
-#ifdef HAVE_OPENMPT
 	{IT_STRING|IT_SUBMENU, 		NULL, "Advanced Settings...", 		&OP_SoundAdvancedDef, 155}
-#endif
 };
 
-#ifdef HAVE_OPENMPT
+
 static menuitem_t OP_SoundAdvancedMenu[] =
 {
+#ifdef HAVE_OPENMPT
 	{IT_HEADER, NULL, "Tracker Module Options", NULL, 10},
 
 	{IT_STRING | IT_CVAR, NULL, "Instrument Filter", &cv_modfilter, 22},
@@ -1420,13 +1419,13 @@ static menuitem_t OP_SoundAdvancedMenu[] =
 	{IT_STRING | IT_CVAR, NULL, "Amiga Type", &cv_amigatype, 62},
 #endif
 	{IT_STRING | IT_CVAR, NULL, "Stereo Seperation", &cv_stereosep, 82},
-	
+#endif	
 	{IT_HEADER, NULL, "Misc", NULL, 105},
 	
 	{IT_STRING | IT_CVAR, NULL, "Grow Music", &cv_growmusic, 117},
 	{IT_STRING | IT_CVAR, NULL, "Invulnerability Music", &cv_supermusic, 137},
 };
-#endif
+
 
 static menuitem_t OP_DataOptionsMenu[] =
 {
