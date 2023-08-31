@@ -98,6 +98,9 @@ UINT8 HWR_FogBlockAlpha(INT32 light, extracolormap_t *colormap); // Let's see if
 
 FBITFIELD HWR_TranstableToAlpha(INT32 transtablenum, FSurfaceInfo *pSurf);
 
+// Get amount of memory used by gpu textures in bytes
+INT32 HWR_GetTextureUsed(void);
+
 // hw_main.c: Post-rendering
 void HWR_DoPostProcessor(player_t *player);
 void HWR_StartScreenWipe(void);

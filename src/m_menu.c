@@ -1404,24 +1404,28 @@ static menuitem_t OP_SoundOptionsMenu[] =
 
 	{IT_STRING|IT_CVAR,        NULL, "Play Music While Unfocused", &cv_playmusicifunfocused, 125},
 	{IT_STRING|IT_CVAR,        NULL, "Play SFX While Unfocused", &cv_playsoundifunfocused, 135},
-#ifdef HAVE_OPENMPT
 	{IT_STRING|IT_SUBMENU, 		NULL, "Advanced Settings...", 		&OP_SoundAdvancedDef, 155}
-#endif
 };
 
-#ifdef HAVE_OPENMPT
+
 static menuitem_t OP_SoundAdvancedMenu[] =
 {
+#ifdef HAVE_OPENMPT
 	{IT_HEADER, NULL, "Tracker Module Options", NULL, 10},
 
-	{IT_STRING | IT_CVAR, NULL, "Instrument Filter", &cv_modfilter, 42},
-	{IT_STRING | IT_CVAR, NULL, "Amiga Resampler", &cv_amigafilter, 62},
+	{IT_STRING | IT_CVAR, NULL, "Instrument Filter", &cv_modfilter, 22},
+	{IT_STRING | IT_CVAR, NULL, "Amiga Resampler", &cv_amigafilter, 42},
 #if OPENMPT_API_VERSION_MAJOR < 1 && OPENMPT_API_VERSION_MINOR > 4
-	{IT_STRING | IT_CVAR, NULL, "Amiga Type", &cv_amigatype, 82},
+	{IT_STRING | IT_CVAR, NULL, "Amiga Type", &cv_amigatype, 62},
 #endif
-	{IT_STRING | IT_CVAR, NULL, "Stereo Seperation", &cv_stereosep, 102},
+	{IT_STRING | IT_CVAR, NULL, "Stereo Seperation", &cv_stereosep, 82},
+#endif	
+	{IT_HEADER, NULL, "Misc", NULL, 105},
+	
+	{IT_STRING | IT_CVAR, NULL, "Grow Music", &cv_growmusic, 117},
+	{IT_STRING | IT_CVAR, NULL, "Invulnerability Music", &cv_supermusic, 137},
 };
-#endif
+
 
 static menuitem_t OP_DataOptionsMenu[] =
 {
@@ -1694,14 +1698,34 @@ static menuitem_t OP_MonitorToggleMenu[] =
 static menuitem_t OP_SaturnMenu[] =
 {
 	{IT_HEADER, NULL, "Saturn Options", NULL, 0},
-	{IT_STRING | IT_CVAR, NULL, "Serverqueue waittime", 	&cv_connectawaittime, 	 30},
-	//{IT_STRING | IT_CVAR, NULL, "Addon Download Speed", 	&cv_downloadspeed, 		 55},	//no idea why you would wanna change it anyways
-	{IT_STRING | IT_CVAR, NULL, "Skin Select Spinning Speed",		 	&cv_skinselectspin, 	 50},
-	{IT_STRING | IT_CVAR, NULL, "No Midnight Channel Flicker", 	&cv_lessflicker, 		 75},
-	{IT_SUBMENU|IT_STRING,	NULL,	"Player distortion...", &OP_PlayerDistortDef,	 100},
-	{IT_SUBMENU|IT_STRING,	NULL,	"Hud Offsets...", 		&OP_HudOffsetDef,		 115},
+	{IT_STRING | IT_CVAR, NULL, "Serverqueue waittime", 	&cv_connectawaittime, 	 20},
+	{IT_STRING | IT_CVAR, NULL, "Skin Select Spinning Speed",		 	&cv_skinselectspin, 	 40},
+	{IT_STRING | IT_CVAR, NULL, "Input Display outside of RA",		 	&cv_showinput, 	 50},
+	{IT_STRING | IT_CVAR, NULL, "Small Speedometer",		 	&cv_newspeedometer, 	 60},
+	{IT_STRING | IT_CVAR, NULL, "Show Lap Emblem",		 		&cv_showlapemblem, 	 70},
+	{IT_STRING | IT_CVAR, NULL,	  "Show Minimap Names",   &cv_showminimapnames, 80},
+	{IT_STRING | IT_CVAR, NULL,	  "Small Minimap Players",   &cv_minihead, 90},
+	{IT_STRING | IT_CVAR, NULL, "Less Midnight Channel Flicker", 	&cv_lessflicker, 		 110},
+	{IT_SUBMENU|IT_STRING,	NULL,	"Player distortion...", &OP_PlayerDistortDef,	 130},
+	{IT_SUBMENU|IT_STRING,	NULL,	"Hud Offsets...", 		&OP_HudOffsetDef,		 145},
 
-	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Credits", 		&OP_SaturnCreditsDef,		 155}, // uwu
+	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Credits", 		&OP_SaturnCreditsDef,		 170}, // uwu
+};
+
+enum
+{
+	sm_header,
+	sm_waittime,
+	sm_skinselspeed,
+	sm_input,
+	sm_speedometer,
+	sm_lapemblem,
+	sm_mapnames,
+	sm_smallmap,
+	sm_pisschannel,
+	sm_distortionmenu,
+	sm_hudoffsets,
+	sm_credits,
 };
 
 static menuitem_t OP_PlayerDistortMenu[] =
@@ -1712,6 +1736,10 @@ static menuitem_t OP_PlayerDistortMenu[] =
 	{IT_STRING | IT_CVAR, 	NULL, 	"Slope rotation distance",        &cv_sloperolldist,    35},
 	{IT_STRING | IT_CVAR, 	NULL, 	"Rotate players when sliptiding", &cv_sliptideroll, 	50},
 	{IT_STRING | IT_CVAR,	NULL,	"Player stretch factor",	      &cv_gravstretch,      65},
+	{IT_STRING | IT_CVAR,	NULL,	"Squish Sound Effect",	      	  &cv_slamsound,        80},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Saltyhop", &cv_saltyhop, 	110},
+	{IT_STRING | IT_CVAR,	NULL,	"Saltyhop Sound Effect",	      &cv_saltyhopsfx,      125},
+	{IT_STRING | IT_CVAR,	NULL,	"Saltyhop Squish",	      	  	&cv_saltysquish,        140},
 };
 
 enum
@@ -1745,25 +1773,27 @@ static menuitem_t OP_SaturnCreditsMenu[] =
 	
 	{IT_HEADER, NULL, "Main Devs <3", 											NULL,      20},
 	
-	{IT_STRING, NULL, 	"alufolie91 aka Alug",      						NULL, 	   30},
-	{IT_STRING, NULL, 	"Indev",        									NULL,      40},
+	{IT_STRING2+IT_SPACE, NULL, 	"alufolie91 aka Alug",      						NULL, 	   30},
+	{IT_STRING2+IT_SPACE, NULL, 	"Indev",        									NULL,      40},
 	
 	{IT_HEADER, NULL, "Testers <3", NULL, 60},
 	
-	{IT_STRING, NULL, 	"Sunflower aka AnimeSonic", 		 				NULL, 	   70},
-	{IT_STRING, NULL, 	"Yuz aka Yuzler", 		  							NULL, 	   80},
-	{IT_STRING, NULL, 	"Democrab", 		  								NULL, 	   90},
-	{IT_STRING, NULL, 	"EXpand aka Maver", 		 						NULL, 	  100},
+	{IT_STRING2+IT_SPACE, NULL, 	"Sunflower aka AnimeSonic", 		 				NULL, 	   70},
+	{IT_STRING2+IT_SPACE, NULL, 	"Yuz aka Yuzler", 		  							NULL, 	   80},
+	{IT_STRING2+IT_SPACE, NULL, 	"Democrab", 		  								NULL, 	   90},
+	{IT_STRING2+IT_SPACE, NULL, 	"EXpand aka Maver", 		 						NULL, 	  100},
 	
 	{IT_HEADER, NULL, "Special Thanks <3", 									NULL,     120},
 	
-	{IT_STRING, NULL, 	"xyzzy",     										NULL, 	  130},
-	{IT_STRING, NULL, 	"Haya",       										NULL,     140},
-	{IT_STRING, NULL, 	"Galactice",       									NULL,     150},
-	{IT_STRING, NULL, 	"Himie and",       									NULL,     160},	
-	{IT_STRING, NULL, 	"The Moe Mansion / Birdhouse Team",       			NULL,     170},
-	{IT_STRING,	NULL,	"All of Sunflower's Garden",	      				NULL,     180},
+	{IT_STRING2+IT_SPACE, NULL, 	"xyzzy",     										NULL, 	  130},
+	{IT_STRING2+IT_SPACE, NULL, 	"Haya",       										NULL,     140},
+	{IT_STRING2+IT_SPACE, NULL, 	"Galactice",       									NULL,     150},
+	{IT_STRING2+IT_SPACE, NULL, 	"Himie and",       									NULL,     160},	
+	{IT_STRING2+IT_SPACE, NULL, 	"The Moe Mansion / Birdhouse Team",       			NULL,     170},
+	{IT_STRING2+IT_SPACE,	NULL,	"All of Sunflower's Garden",	      				NULL,     180},
 
+	{IT_STRING+IT_SPACE, NULL, "", 									NULL,       190},	// dummy text
+	{IT_STRING, NULL, "", 									NULL,       200},	// dummy text II
 };
 
 static menuitem_t OP_BirdMenu[] =
@@ -2340,8 +2370,8 @@ menu_t OP_DiscordOptionsDef = DEFAULTMENUSTYLE(NULL, OP_DiscordOptionsMenu, &OP_
 #endif
 menu_t OP_EraseDataDef = DEFAULTMENUSTYLE("M_DATA", OP_EraseDataMenu, &OP_DataOptionsDef, 30, 30);
 
-menu_t OP_SaturnDef = DEFAULTMENUSTYLE(NULL, OP_SaturnMenu, &OP_MainDef, 30, 30);
-menu_t OP_PlayerDistortDef = DEFAULTMENUSTYLE("M_VIDEO", OP_PlayerDistortMenu, &OP_SaturnDef, 30, 60);
+menu_t OP_SaturnDef = DEFAULTMENUSTYLE(NULL, OP_SaturnMenu, &OP_MainDef, 30, 15);
+menu_t OP_PlayerDistortDef = DEFAULTMENUSTYLE("M_VIDEO", OP_PlayerDistortMenu, &OP_SaturnDef, 30, 30);
 menu_t OP_HudOffsetDef = DEFAULTMENUSTYLE(NULL, OP_HudOffsetMenu, &OP_SaturnDef, 30, 20);
 menu_t OP_SaturnCreditsDef = DEFAULTMENUSTYLE(NULL, OP_SaturnCreditsMenu, &OP_SaturnDef, 30, 10);
 
@@ -3437,6 +3467,18 @@ void M_Drawer(void)
 #else // Regular build
 				V_DrawThinString(vid.dupx, vid.height - 10*vid.dupy, V_NOSCALESTART|V_TRANSLUCENT|V_ALLOWLOWERCASE, va("%s", VERSIONSTRING));
 #endif
+
+#ifdef HWRENDER
+				if (rendermode == render_opengl)
+				{
+				V_DrawThinString(0, 0, V_GREENMAP|V_SNAPTOTOP|V_SNAPTOLEFT|V_TRANSLUCENT|V_ALLOWLOWERCASE, ("Opengl"));
+				}
+#endif			
+				if (rendermode == render_soft)
+				{
+				V_DrawThinString(0, 0, V_REDMAP|V_SNAPTOTOP|V_SNAPTOLEFT|V_TRANSLUCENT|V_ALLOWLOWERCASE, ("Software"));
+				}
+				
 			}
 		}
 	}
@@ -3825,6 +3867,9 @@ void M_Init(void)
 	if (rendermode == render_soft)
 		OP_VideoOptionsMenu[op_video_ogl].status = IT_DISABLED;
 #endif
+
+	if (!found_extra_kart) // why bother?
+		OP_SaturnMenu[sm_speedometer].status = IT_GRAYEDOUT;
 
 #ifndef NONET
 	CV_RegisterVar(&cv_serversort);
@@ -11050,7 +11095,7 @@ static void M_DrawJoystick(void)
 		compareval4 = cv_usejoystick4.value;
 		compareval3 = cv_usejoystick3.value;
 		compareval2 = cv_usejoystick2.value;
-		compareval = cv_usejoystick.value
+		compareval = cv_usejoystick.value;
 #endif
 
 		if ((setupcontrolplayer == 4 && (i == compareval4))

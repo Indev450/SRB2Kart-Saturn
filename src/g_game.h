@@ -113,6 +113,7 @@ extern INT16 rw_maximums[NUM_WEAPONS];
 extern consvar_t cv_chatwidth, cv_chatnotifications, cv_chatheight, cv_chattime, cv_consolechat, cv_chatbacktint, cv_chatspamprotection/*, cv_compactscoreboard*/;
 extern consvar_t cv_songcredits;
 extern consvar_t cv_showfreeplay;
+extern consvar_t cv_growmusic, cv_supermusic;
 extern consvar_t cv_pauseifunfocused;
 //extern consvar_t cv_crosshair, cv_crosshair2, cv_crosshair3, cv_crosshair4;
 extern consvar_t cv_invertmouse/*, cv_alwaysfreelook, cv_chasefreelook, cv_mousemove*/;
@@ -145,11 +146,18 @@ extern consvar_t cv_mini_xoffset;
 extern consvar_t cv_mini_yoffset;
 extern consvar_t cv_want_xoffset;
 extern consvar_t cv_want_yoffset;
+extern consvar_t cv_showinput;
+extern consvar_t cv_newspeedometer;
+
+extern consvar_t cv_saltyhop;
+extern consvar_t cv_saltyhopsfx;
+extern consvar_t cv_saltysquish;
 
 extern consvar_t cv_driftsparkpulse;
 extern consvar_t cv_gravstretch;
 extern consvar_t cv_sloperoll;
 extern consvar_t cv_sliptideroll;
+extern consvar_t cv_slamsound;
 extern consvar_t cv_sloperolldist;
 
 extern consvar_t cv_invincmusicfade;

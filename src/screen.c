@@ -137,10 +137,12 @@ void SCR_SetMode(void)
 		{
 			if (R_MMX)
 			{
-				colfunc = basecolfunc = R_DrawColumn_8_MMX;
+				//colfunc = basecolfunc = R_DrawColumn_8_MMX;  Can we please not use this function it seems to break sometimes????
+				colfunc = basecolfunc = R_DrawColumn_8_ASM;
 				//shadecolfunc = R_DrawShadeColumn_8_ASM;
 				//fuzzcolfunc = R_DrawTranslucentColumn_8_ASM;
-				walldrawerfunc = R_DrawWallColumn_8_MMX;
+				//walldrawerfunc = R_DrawWallColumn_8_MMX;  This is just an alias to R_DrawColumn_8_MMX
+				walldrawerfunc = R_DrawWallColumn_8_ASM;
 				twosmultipatchfunc = R_Draw2sMultiPatchColumn_8_MMX;
 				spanfunc = basespanfunc = R_DrawSpan_8_MMX;
 			}

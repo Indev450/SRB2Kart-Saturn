@@ -54,6 +54,7 @@ static void SetChannelsNum(void);
 static void Command_Tunes_f(void);
 static void Command_RestartAudio_f(void);
 static void Command_RestartMusic_f(void); //mhhhm amiga type filters here i come uwu
+static void Command_ShowMusicCredit_f(void);
 
 // Sound system toggles
 #ifndef NO_MIDI
@@ -322,6 +323,7 @@ void S_RegisterSoundStuff(void)
 	COM_AddCommand("tunes", Command_Tunes_f);
 	COM_AddCommand("restartaudio", Command_RestartAudio_f);
 	COM_AddCommand("restartmusic", Command_RestartMusic_f);
+	COM_AddCommand("showmusiccredit", Command_ShowMusicCredit_f);
 
 
 #if defined (macintosh) && !defined (HAVE_SDL) // mp3 playlist stuff
@@ -1514,6 +1516,32 @@ void S_InitMusicDefs(void)
 		S_LoadMusicDefs(i);
 }
 
+
+//
+// S_FindMusicCredit
+//
+// Returns musicdef of specified song, or null if musicdef for it doesn't exist
+//
+musicdef_t *S_FindMusicCredit(const char *musname)
+{
+	musicdef_t *def = musicdefstart;
+
+	if (!def) // No definitions
+		return NULL;
+
+	while (def)
+	{
+		if (!stricmp(def->name, musname))
+		{
+			return def;
+		}
+		else
+			def = def->next;
+	}
+
+	return NULL;
+}
+
 //
 // S_ShowSpecifiedMusicCredit
 //
@@ -1521,26 +1549,21 @@ void S_InitMusicDefs(void)
 //
 void S_ShowSpecifiedMusicCredit(const char *musname)
 {
-	musicdef_t *def = musicdefstart;
+	musicdef_t *def;
+
+	if (digital_disabled) return;
 
 	if (!cv_songcredits.value || demo.rewinding)
 		return;
 
-	if (!def) // No definitions
-		return;
+	def = S_FindMusicCredit(musname);
 
-	while (def)
+	if (def)
 	{
-		if (!stricmp(def->name, musname))
-		{
-			cursongcredit.def = def;
-			cursongcredit.anim = 5*TICRATE;
-			cursongcredit.x = 0;
-			cursongcredit.trans = NUMTRANSMAPS;
-			return;
-		}
-		else
-			def = def->next;
+		cursongcredit.def = def;
+		cursongcredit.anim = 5*TICRATE;
+		cursongcredit.x = 0;
+		cursongcredit.trans = NUMTRANSMAPS;
 	}
 }
 
@@ -2173,6 +2196,26 @@ static void Command_RestartAudio_f(void)
 static void Command_RestartMusic_f(void) //same as RestartAudio but only music gets restarted
 {
 	S_RestartMusic();
+}
+
+static void Command_ShowMusicCredit_f(void)
+{
+	const char *musname = music_name;
+
+	if (COM_Argc() > 1)
+	{
+		musname = COM_Argv(1);
+	}
+	else
+	{
+		S_ShowMusicCredit();
+	}
+
+	musicdef_t *def = S_FindMusicCredit(musname);
+
+	if (def) {
+		CONS_Printf("%.6s - %.255s\n", musname, def->source);
+	}
 }
 
 void GameSounds_OnChange(void)

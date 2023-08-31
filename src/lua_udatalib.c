@@ -87,7 +87,7 @@ int udatalib_setter_boolean_nocheck(lua_State *L)
 UDATALIB_SIMPLE_SETTER(boolean, lua_toboolean)
 
 int udatalib_setter_spritenum(lua_State *L)
-UDATALIB_SIMPLE_SETTER(spritenum_t, (spritenum_t)luaL_checkinteger)
+UDATALIB_SIMPLE_SETTER(spritenum_t, luaL_checkinteger)
 
 int udatalib_setter_tic(lua_State *L)
 UDATALIB_SIMPLE_SETTER(tic_t, (tic_t)luaL_checkinteger)

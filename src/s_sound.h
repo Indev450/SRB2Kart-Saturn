@@ -172,6 +172,7 @@ extern musicdef_t *musicdefstart;
 
 void S_LoadMusicDefs(UINT16 wadnum);
 void S_InitMusicDefs(void);
+musicdef_t *S_FindMusicCredit(const char *musname);
 void S_ShowSpecifiedMusicCredit(const char *musname);
 void S_ShowMusicCredit(void);
 

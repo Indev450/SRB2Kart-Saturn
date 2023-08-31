@@ -469,6 +469,12 @@ consvar_t cv_showping = {"showping", "Always", CV_SAVE, showping_cons_t, NULL, 0
 static CV_PossibleValue_t pingmeasurement_cons_t[] = {{0, "Frames"}, {1, "Milliseconds"}, {0, NULL}};
 consvar_t cv_pingmeasurement = {"pingmeasurement", "Frames", CV_SAVE, pingmeasurement_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_minihead = {"smallminimapplayers", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_showminimapnames = {"showminimapnames", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_showlapemblem = {"showlapemblem", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 consvar_t cv_showviewpointtext = {"showviewpointtext", "On", CV_SAVE, CV_OnOff, 0, 0, NULL, NULL, 0, 0, NULL};
 
 // Intermission time Tails 04-19-2002
@@ -703,6 +709,8 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_powerstones);
 	CV_RegisterVar(&cv_competitionboxes);
 	CV_RegisterVar(&cv_matchboxes);
+	
+	CV_RegisterVar(&cv_slamsound);
 
 	/*CV_RegisterVar(&cv_recycler);
 	CV_RegisterVar(&cv_teleporters);
@@ -768,6 +776,11 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_pingtimeout);
 	CV_RegisterVar(&cv_showping);
 	CV_RegisterVar(&cv_pingmeasurement);
+	
+	CV_RegisterVar(&cv_minihead);
+	CV_RegisterVar(&cv_showminimapnames);
+	
+	CV_RegisterVar(&cv_showlapemblem);
 
 	CV_RegisterVar(&cv_showtrackaddon);
 
@@ -957,6 +970,15 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_mini_yoffset);
 	CV_RegisterVar(&cv_want_xoffset);
 	CV_RegisterVar(&cv_want_yoffset);
+	CV_RegisterVar(&cv_showinput);
+	CV_RegisterVar(&cv_newspeedometer);
+
+	CV_RegisterVar(&cv_saltyhop);
+	CV_RegisterVar(&cv_saltyhopsfx);
+	CV_RegisterVar(&cv_saltysquish);
+	
+	CV_RegisterVar(&cv_growmusic);
+	CV_RegisterVar(&cv_supermusic);
 
 	//CV_RegisterVar(&cv_crosshair);
 	//CV_RegisterVar(&cv_crosshair2);
