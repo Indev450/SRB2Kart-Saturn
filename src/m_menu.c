@@ -1404,24 +1404,28 @@ static menuitem_t OP_SoundOptionsMenu[] =
 
 	{IT_STRING|IT_CVAR,        NULL, "Play Music While Unfocused", &cv_playmusicifunfocused, 125},
 	{IT_STRING|IT_CVAR,        NULL, "Play SFX While Unfocused", &cv_playsoundifunfocused, 135},
-#ifdef HAVE_OPENMPT
 	{IT_STRING|IT_SUBMENU, 		NULL, "Advanced Settings...", 		&OP_SoundAdvancedDef, 155}
-#endif
 };
 
-#ifdef HAVE_OPENMPT
+
 static menuitem_t OP_SoundAdvancedMenu[] =
 {
+#ifdef HAVE_OPENMPT
 	{IT_HEADER, NULL, "Tracker Module Options", NULL, 10},
 
-	{IT_STRING | IT_CVAR, NULL, "Instrument Filter", &cv_modfilter, 42},
-	{IT_STRING | IT_CVAR, NULL, "Amiga Resampler", &cv_amigafilter, 62},
+	{IT_STRING | IT_CVAR, NULL, "Instrument Filter", &cv_modfilter, 22},
+	{IT_STRING | IT_CVAR, NULL, "Amiga Resampler", &cv_amigafilter, 42},
 #if OPENMPT_API_VERSION_MAJOR < 1 && OPENMPT_API_VERSION_MINOR > 4
-	{IT_STRING | IT_CVAR, NULL, "Amiga Type", &cv_amigatype, 82},
+	{IT_STRING | IT_CVAR, NULL, "Amiga Type", &cv_amigatype, 62},
 #endif
-	{IT_STRING | IT_CVAR, NULL, "Stereo Seperation", &cv_stereosep, 102},
+	{IT_STRING | IT_CVAR, NULL, "Stereo Seperation", &cv_stereosep, 82},
+#endif	
+	{IT_HEADER, NULL, "Misc", NULL, 105},
+	
+	{IT_STRING | IT_CVAR, NULL, "Grow Music", &cv_growmusic, 117},
+	{IT_STRING | IT_CVAR, NULL, "Invulnerability Music", &cv_supermusic, 137},
 };
-#endif
+
 
 static menuitem_t OP_DataOptionsMenu[] =
 {
