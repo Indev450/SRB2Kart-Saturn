@@ -8665,11 +8665,16 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags, pat
 		UINT8 *colormap = R_GetTranslationColormap((mo->colorized) ? TC_RAINBOW : skin, mo->color, GTC_CACHE);
 		
 		if (cv_minihead.value == 1)
-			V_DrawFixedPatch(amxpos + (2 * FRACUNIT), amypos + (2 * FRACUNIT), FRACUNIT/2, flags, facemmapprefix[skin], colormap);
-		else if (cv_minihead.value == 0)
+		{
 			colormap = R_GetLocalTranslationColormap(mo->skin, mo->localskin, mo->color, GTC_CACHE, skinlocal);
-		V_DrawFixedPatch(amxpos, amypos, FRACUNIT, flags, ( (skinlocal) ? localfacemmapprefix : facemmapprefix )[skin], colormap);
-
+			V_DrawFixedPatch(amxpos + (2 * FRACUNIT), amypos + (2 * FRACUNIT), FRACUNIT/2, flags, ( (skinlocal) ? localfacemmapprefix : facemmapprefix )[skin], colormap);
+		}
+		else if (cv_minihead.value == 0)
+		{
+			colormap = R_GetLocalTranslationColormap(mo->skin, mo->localskin, mo->color, GTC_CACHE, skinlocal);
+			V_DrawFixedPatch(amxpos, amypos, FRACUNIT, flags, ( (skinlocal) ? localfacemmapprefix : facemmapprefix )[skin], colormap);
+		}
+		
 		if (cv_showminimapnames.value && !(modeattacking || gamestate == GS_TIMEATTACK))
 		{
 			const char *player_name = va("%c%s", V_GetSkincolorChar(mo->color), player_names[mo->player - players]);
