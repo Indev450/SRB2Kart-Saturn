@@ -145,6 +145,8 @@ INT32 mapwads[NUMMAPS];
 //static char *char_notes = NULL;
 //static fixed_t char_scroll = 0;
 
+boolean browselocalskins = false;
+
 boolean menuactive = false;
 boolean fromlevelselect = false;
 
@@ -338,7 +340,9 @@ menu_t OP_MonitorToggleDef;
 static void M_ScreenshotOptions(INT32 choice);
 static void M_EraseData(INT32 choice);
 
+static void M_AddonsInternal();
 static void M_Addons(INT32 choice);
+static void M_LocalSkins(INT32 choice);
 static void M_AddonsOptions(INT32 choice);
 static patch_t *addonsp[NUM_EXT+5];
 
@@ -633,12 +637,13 @@ typedef enum
 // ---------------------
 static menuitem_t MPauseMenu[] =
 {
-	{IT_STRING | IT_CALL,     NULL, "Addons...",        M_Addons,                8},
-	{IT_STRING | IT_SUBMENU,  NULL, "Scramble Teams...", &MISC_ScrambleTeamDef,  16},
-	{IT_STRING | IT_CALL,     NULL, "Switch Map..."    , M_MapChange,            24},
+	{IT_STRING | IT_CALL,     NULL, "Addons...",          M_Addons,                8},
+	{IT_STRING | IT_CALL,     NULL, "Add local skins...", M_LocalSkins,            16},
+	{IT_STRING | IT_SUBMENU,  NULL, "Scramble Teams...", &MISC_ScrambleTeamDef,  24},
+	{IT_STRING | IT_CALL,     NULL, "Switch Map..."    , M_MapChange,            32},
 
 #ifdef HAVE_DISCORDRPC
-	{IT_STRING | IT_SUBMENU,  NULL, "Ask To Join Requests...", &MISC_DiscordRequestsDef, 24},
+	{IT_STRING | IT_SUBMENU,  NULL, "Ask To Join Requests...", &MISC_DiscordRequestsDef, 32},
 #endif
 
 	{IT_CALL | IT_STRING,    NULL, "Continue",           M_SelectableClearMenus, 40},
@@ -663,6 +668,7 @@ static menuitem_t MPauseMenu[] =
 typedef enum
 {
 	mpause_addons = 0,
+	mpause_addlocalskins,
 	mpause_scramble,
 	mpause_switchmap,
 #ifdef HAVE_DISCORDRPC
@@ -3622,6 +3628,7 @@ void M_StartControlPanel(void)
 
 		// Reset these in case splitscreen messes things up
 		MPauseMenu[mpause_addons].alphaKey = 8;
+		MPauseMenu[mpause_addlocalskins].alphaKey = 16;
 		MPauseMenu[mpause_scramble].alphaKey = 8;
 		MPauseMenu[mpause_switchmap].alphaKey = 24;
 
@@ -3640,9 +3647,6 @@ void M_StartControlPanel(void)
 			MPauseMenu[mpause_addons].status = IT_STRING | IT_CALL;
 			if (G_GametypeHasTeams())
 				MPauseMenu[mpause_scramble].status = IT_STRING | IT_SUBMENU;
-		} else {
-			MPauseMenu[mpause_addons].status = IT_STRING | IT_CALL;
-			MPauseMenu[mpause_addons].alphaKey += 8;
 		}
 
 		if (splitscreen)
@@ -5152,11 +5156,9 @@ static void M_AddonsOptions(INT32 choice)
 #define LOCATIONSTRING1 "Visit \x83SRB2.ORG/MODS\x80 to get & make addons!"
 #define LOCATIONSTRING2 "Visit \x88SRB2.ORG/MODS\x80 to get & make addons!"
 
-static void M_Addons(INT32 choice)
+static void M_AddonsInternal()
 {
 	const char *pathname = ".";
-
-	(void)choice;
 
 #if 1
 	if (cv_addons_option.value == 0)
@@ -5216,6 +5218,20 @@ static void M_Addons(INT32 choice)
 
 	MISC_AddonsDef.prevMenu = currentMenu;
 	M_SetupNextMenu(&MISC_AddonsDef);
+}
+
+static void M_Addons(INT32 choice)
+{
+	(void)choice;
+	browselocalskins = false;
+	M_AddonsInternal();
+}
+
+static void M_LocalSkins(INT32 choice)
+{
+	(void)choice;
+	browselocalskins = true;
+	M_AddonsInternal();
 }
 
 #define width 4
@@ -5370,7 +5386,12 @@ static void M_DrawAddons(void)
 	}
 
 	if (Playing())
-		V_DrawCenteredString(BASEVIDWIDTH/2, 5, warningflags, "Adding files mid-game may cause problems.");
+	{
+		if (browselocalskins)
+			V_DrawCenteredString(BASEVIDWIDTH/2, 5, V_ALLOWLOWERCASE, "Load \x83local skins\x80 from addons!");
+		else
+			V_DrawCenteredString(BASEVIDWIDTH/2, 5, warningflags, "Adding files mid-game may cause problems.");
+	}
 	else
 		V_DrawCenteredString(BASEVIDWIDTH/2, 5, 0, (recommendedflags == V_SKYMAP ? LOCATIONSTRING2 : LOCATIONSTRING1));
 
@@ -5667,14 +5688,9 @@ static void M_HandleAddons(INT32 choice)
 						case EXT_KART:
 #endif
 						case EXT_PK3:
-							if (netgame || multiplayer) {
-								// no characters?
-								if (DumbStartsWith("KC_", dirmenu[dir_on[menudepthleft]]+DIR_STRING)) {
-									M_StartMessage(va("%c%s\x80\nYou are loading a local skin.\nLocal skins will not be usable\nafter going back from\nthe title screen.\n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), dirmenu[dir_on[menudepthleft]]+DIR_STRING),NULL,MM_NOTHING);
-									COM_BufAddText(va("addskins \"%s%s\"", menupath, dirmenu[dir_on[menudepthleft]]+DIR_STRING));
-								}
-								else
-									S_StartSound(NULL, sfx_s26d);
+							if (browselocalskins) {
+								M_StartMessage(va("%c%s\x80\nYou are loading a local skin.\nLocal skins will not be usable\nafter going back from\nthe title screen.\n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), dirmenu[dir_on[menudepthleft]]+DIR_STRING),NULL,MM_NOTHING);
+								COM_BufAddText(va("addskins \"%s%s\"", menupath, dirmenu[dir_on[menudepthleft]]+DIR_STRING));
 							}
 							else
 								COM_BufAddText(va("addfile \"%s%s\"", menupath, dirmenu[dir_on[menudepthleft]]+DIR_STRING));
