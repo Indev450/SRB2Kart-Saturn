@@ -8321,11 +8321,11 @@ static void K_drawKartSpeedometer(void)
 			speedtype = 1;
 			break;
 		case 2:
-			convSpeed = FixedDiv(FixedMul(stplyr->speed, 142371), mapobjectscale)/FRACUNIT; // 2.172409058
+			convSpeed = FixedDiv(FixedMul(stplyr->speed, 88465), mapobjectscale)/FRACUNIT; // 1.349868774
 			speedtype = 2;
 			break;
 		case 3:
-			convSpeed = FixedDiv(FixedMul(stplyr->speed, 88465), mapobjectscale)/FRACUNIT; // 1.349868774
+			convSpeed = FixedDiv(stplyr->speed, mapobjectscale)/FRACUNIT;
 			speedtype = 3;
 			break;
 		case 4:
@@ -8342,19 +8342,19 @@ static void K_drawKartSpeedometer(void)
 	{
 		switch (speedtype) {
 			case 1:
-				V_DrawKartString(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, va("%03d km/h", convSpeed));
+				V_DrawKartString(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, va("%3d km/h", convSpeed));
 				break;
 			case 2:
-				V_DrawKartString(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, va("%03d mph", convSpeed));
+				V_DrawKartString(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, va("%3d mph", convSpeed));
 				break;
 			case 3:
-				V_DrawKartString(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, va("%03d fu/t", convSpeed));
+				V_DrawKartString(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, va("%3d fu/t", convSpeed));
 				break;
 			case 4: // if extra.kart is found, use its included % symbol
 				if (!found_extra_kart)
-					V_DrawKartString(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, va("%03d P", convSpeed));
+					V_DrawKartString(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, va("%4d P", convSpeed));
 				else
-					V_DrawKartString(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, va("%03d %%", convSpeed));
+					V_DrawKartString(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, va("%4d %%", convSpeed));
 		}
 	}
 	else if (cv_newspeedometer.value && found_extra_kart) { // why bother if we dont?
