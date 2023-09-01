@@ -7444,10 +7444,10 @@ void A_RollAngle(mobj_t *actor)
 	INT32 locvar2 = var2;
 	const angle_t angle = FixedAngle(locvar1*FRACUNIT);
 
-/*#ifdef HAVE_BLUA
+#ifdef HAVE_BLUA
 	if (LUA_CallAction("A_RollAngle", actor))
 		return;
-#endif*/
+#endif
 
 	// relative (default)
 	if (!locvar2)
@@ -7470,10 +7470,10 @@ void A_ChangeRollAngleRelative(mobj_t *actor)
 	INT32 locvar2 = var2;
 	const fixed_t amin = locvar1*FRACUNIT;
 	const fixed_t amax = locvar2*FRACUNIT;
-/*#ifdef HAVE_BLUA
+#ifdef HAVE_BLUA
 	if (LUA_CallAction("A_ChangeRollAngleRelative", actor))
 		return;
-#endif*/
+#endif
 
 #ifdef PARANOIA
 	if (amin > amax)
@@ -7496,10 +7496,10 @@ void A_ChangeRollAngleAbsolute(mobj_t *actor)
 	INT32 locvar2 = var2;
 	const fixed_t amin = locvar1*FRACUNIT;
 	const fixed_t amax = locvar2*FRACUNIT;
-/*#ifdef HAVE_BLUA
+#ifdef HAVE_BLUA
 	if (LUA_CallAction("A_ChangeRollAngleAbsolute", actor))
 		return;
-#endif*/
+#endif
 
 #ifdef PARANOIA
 	if (amin > amax)
