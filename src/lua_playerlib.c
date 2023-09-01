@@ -13,6 +13,7 @@
 #include "doomdef.h"
 #ifdef HAVE_BLUA
 #include "fastcmp.h"
+#include "r_main.h"
 #include "p_mobj.h"
 #include "d_player.h"
 #include "g_game.h"
@@ -43,6 +44,10 @@ int player_bot_noset(lua_State *L);
 int player_splitscreenindex_noset(lua_State *L);
 int player_ping_getter(lua_State *L);
 int player_ping_noset(lua_State *L);
+
+// Non synch safe!
+int player_sliproll_getter(lua_State *L);
+int player_sliproll_noset(lua_State *L);
 
 #define FIELD(type, field_name, getter, setter) { #field_name, offsetof(type, field_name), getter, setter }
 static const udata_field_t player_fields[] = {
@@ -150,6 +155,7 @@ static const udata_field_t player_fields[] = {
     FIELD(player_t, fovadd,           udatalib_getter_fixed,       udatalib_setter_fixed), // Mmm yeah thats definitely synch safe
 #endif
     // Same as player.name
+	{ "sliproll", 0, player_sliproll_getter, player_sliproll_noset },
     { "ping", 0, player_ping_getter, player_ping_noset }, // Hmm originally setter doesn't exist so data is written as unreachable custom field...
     { NULL },
 };
@@ -207,6 +213,7 @@ NOSET(kartstuff)
 NOSET(bot)
 NOSET(splitscreenindex)
 NOSET(ping)
+NOSET(sliproll)
 
 #undef NOSET
 
@@ -329,6 +336,15 @@ int player_ping_getter(lua_State *L)
     lua_pushinteger(L, playerpingtable[( plr - players )]);
 
     return 1;
+}
+
+int player_sliproll_getter(lua_State *L)
+{
+	player_t *plr = GETPLAYER();
+
+	lua_pushangle(L, R_PlayerSliptideAngle(plr));
+
+	return 1;
 }
 
 static int lib_iteratePlayers(lua_State *L)
