@@ -171,6 +171,7 @@ typedef struct
 static y_votelvlinfo levelinfo[5];
 static y_voteclient voteclient;
 static INT32 votetic;
+static INT32 lastvotetic;
 static INT32 voteendtic = -1;
 static patch_t *cursor = NULL;
 static patch_t *cursor1 = NULL;
@@ -1037,7 +1038,6 @@ void Y_DrawAnimatedVoteScreenPatch(boolean widePatch){
 	(widePatch) ? strcpy(tempAnimPrefix, animWidePrefix) : strcpy(tempAnimPrefix, animPrefix);
 	INT32 tempFoundAnimVoteFrames = (widePatch) ? foundAnimVoteWideFrames : foundAnimVoteFrames;
 	INT32 flags = V_SNAPTOBOTTOM | V_SNAPTOTOP;
-	UINT8 patchframe = (votetic / 4) % 16;
 
 	// Just in case someone provides LESS widescreen frames than normal frames or vice versa, reset the frame counter to 0
 	if(widePatch) {
@@ -1057,9 +1057,11 @@ void Y_DrawAnimatedVoteScreenPatch(boolean widePatch){
 	if(votetic % 3 == 0 && !paused){*/
 		
 	{
-		currentAnimFrame = (currentAnimFrame+1 > tempFoundAnimVoteFrames-1) ? 0 : currentAnimFrame + 1; // jeez no fucking idea how to make this shit not go nuts with interpolation
-		patch_t *background = W_CachePatchName(va("%s%d", tempAnimPrefix, patchframe + 1), PU_CACHE);		
+		patch_t *background = W_CachePatchName(va("%s%d", tempAnimPrefix, currentAnimFrame + 1), PU_CACHE);		
 		V_DrawScaledPatch(160 - (background->width / 2), (200 - (background->height)), flags, background);		
+	}
+	if (lastvotetic != votetic && lastvotetic % 2 == 0) {
+		currentAnimFrame = (currentAnimFrame+1 > tempFoundAnimVoteFrames-1) ? 0 : currentAnimFrame + 1; // jeez no fucking idea how to make this shit not go nuts with interpolation
 	}
 }
 
@@ -1336,6 +1338,8 @@ void Y_VoteDrawer(void)
 		V_DrawCenteredString(BASEVIDWIDTH/2, 188, hilicol,
 			va("Vote ends in %d", tickdown));
 	}
+	
+	lastvotetic = votetic;
 
 #ifdef HAVE_BLUA
 	if (renderisnewtic)
