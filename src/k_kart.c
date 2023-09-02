@@ -3100,7 +3100,7 @@ static void K_QuiteSaltyHop(player_t *p)
 			p->mo->spriteyscale += (mos/8);
 			p->mo->spritexscale -= (mos/8);
 		}
-		p->mo->spriteyoffset = p->mo->salty_zoffset*P_MobjFlip(p->mo);
+		p->mo->spriteyoffset = p->mo->salty_zoffset;
 		if (S_SoundPlaying(p->mo, sfx_screec))
 			S_StopSoundByID(p->mo, sfx_screec);
 		if (S_SoundPlaying(p->mo, sfx_drift))
