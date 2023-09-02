@@ -1,16 +1,26 @@
 #include "lua_glib.h"
 
 #define GLIB_DATABASE_GUID "{cf75e032-00c8-4887-b15f-87b755784ad3}"
-    #define GLIB_DATABASE_GETTERS "getters"
-    #define GLIB_DATABASE_SETTERS "setters"
-    #define GLIB_DATABASE_ENUMS   "enums"
-    #define GLIB_DATABASE_CACHE   "cache"
-    #define GLIB_DATABASE_MTABLE  "metatable"
+    #define GLIB_DATABASE_GETTERS "getters"     /* Table of getter functions. */
+    #define GLIB_DATABASE_SETTERS "setters"     /* Table of setter functions. */
+    #define GLIB_DATABASE_ENUMS   "enums"       /* Table of enum fallback functions. */
+    #define GLIB_DATABASE_CACHE   "cache"       /* Table of cached enum values. */
+    #define GLIB_DATABASE_MTABLE  "metatable"   /* Metatable.*/
+    #define GLIB_DATABASE_PROXY   "proxy"       /* Proxy table for the library that isn't the global table. */
 
 static inline void lua_glib_push_db(lua_State *L)
 {
     lua_pushliteral(L, GLIB_DATABASE_GUID);
     lua_gettable(L, LUA_REGISTRYINDEX);
+}
+
+void lua_glib_get_proxy(lua_State *L)
+{
+    lua_pushliteral(L, GLIB_DATABASE_GUID);
+    lua_gettable(L, LUA_REGISTRYINDEX);
+    lua_pushliteral(L, GLIB_DATABASE_PROXY);
+    lua_gettable(L, -2);
+    lua_remove(L, -2);
 }
 
 /**
@@ -44,7 +54,7 @@ static int lua_glib___index(lua_State *L)
     const int GETTERS = lua_upvalueindex(2); /* Storage for getters. */
     const int ENUMS   = lua_upvalueindex(3); /* Enum fallback cache. */
 
-    if (!lua_isstring(L, 1))
+    if (!lua_isstring(L, 2))
     {
         /* A non string key should not happen. But somebody might really want it. */
         return 0;
@@ -52,7 +62,7 @@ static int lua_glib___index(lua_State *L)
 
     /* Attempt cache lookup. */
 
-    lua_pushvalue(L, 1);
+    lua_pushvalue(L, 2);
     lua_gettable(L, CACHE);
     if (!lua_isnil(L, -1))
     {
@@ -63,7 +73,7 @@ static int lua_glib___index(lua_State *L)
 
     /* Attempt a get property. */
 
-    lua_pushvalue(L, 1);
+    lua_pushvalue(L, 2);
     lua_gettable(L, GETTERS);
     if (lua_isfunction(L, -1))
     {
@@ -72,8 +82,8 @@ static int lua_glib___index(lua_State *L)
     }
 
     /* Try finding a the relevant enum fallback function. */
-    const char *str = lua_tostring(L, 1);
-    int sz = lua_strlen(L, 1);
+    const char *str = lua_tostring(L, 2);
+    int sz = lua_strlen(L, 2);
     for (int i = 1; i < sz; i++)
     {
         lua_pushlstring(L, str, i);
@@ -81,11 +91,11 @@ static int lua_glib___index(lua_State *L)
 
         if (lua_isfunction(L, -1))
         {
-            lua_pushvalue(L, 1);
+            lua_pushvalue(L, 2);
             lua_call(L, 1, 1);
 
             /* Store value in cache. */
-            lua_pushvalue(L, 1);
+            lua_pushvalue(L, 2);
             lua_pushvalue(L, -2);
             lua_settable(L, CACHE);
 
@@ -108,7 +118,7 @@ static int lua_glib___newindex(lua_State *L)
 
     const int SETTERS = lua_upvalueindex(1);
 
-    lua_pushvalue(L, 1);
+    lua_pushvalue(L, 2);
     lua_gettable(L, SETTERS);
     if (!lua_isfunction(L, -1))
     {
@@ -116,13 +126,34 @@ static int lua_glib___newindex(lua_State *L)
     }
 
     /* Set the property. */
-    lua_pushvalue(L, 2);
+    lua_pushvalue(L, 3);
     lua_call(L, 1, 0);
+    return 0;
+}
+
+int lua_glib_append_cache(lua_State *L)
+{
+    luaL_checktype(L, 1, LUA_TTABLE);
+
+    lua_glib_push_db(L);
+
+    lua_pushcfunction(L, lua_glib_copy_table);
+    lua_pushliteral(L, GLIB_DATABASE_CACHE);
+    lua_gettable(L, -3);
+    lua_pushvalue(L, 1);
+    lua_call(L, 2, 0);
+
     return 0;
 }
 
 int lua_glib_require(lua_State *L)
 {
+    if (!lua_isboolean(L, 1))
+    {
+        /* Request loading the metatable by default. */
+        lua_pushboolean(L, 1);
+    }
+
     lua_pushliteral(L, GLIB_DATABASE_GUID);
     lua_newtable(L);
         /* Standard functions. */
@@ -163,16 +194,25 @@ int lua_glib_require(lua_State *L)
 
                 lua_pushcclosure(L, lua_glib___newindex, 1);
             lua_settable(L, -3);    /* __newindex */
-
         lua_settable(L, -3);    /* GLIB_DATABASE_MTABLE. */
+
+        lua_pushliteral(L, GLIB_DATABASE_PROXY);
+        lua_newtable(L);
+            lua_pushliteral(L, GLIB_DATABASE_MTABLE);
+            lua_gettable(L, -4);
+        lua_setmetatable(L, -2);    /* get GLIB_DATABASE_MTABLE. */
+        lua_settable(L, -3);    /* GLIB_DATABASE_PROXY. */
 
     lua_settable(L, LUA_REGISTRYINDEX); /* GLIB_DATABASE_GUID. */
 
     /* Set global metatable. */
-    lua_glib_push_db(L);
-    lua_pushliteral(L, GLIB_DATABASE_MTABLE);
-    lua_gettable(L, -2);
-    lua_setmetatable(L, LUA_GLOBALSINDEX);
+    if (lua_toboolean(L, 1))
+    {
+        lua_glib_push_db(L);
+        lua_pushliteral(L, GLIB_DATABASE_MTABLE);
+        lua_gettable(L, -2);
+        lua_setmetatable(L, LUA_GLOBALSINDEX);
+    }
 
     return 0;
 }
@@ -199,8 +239,9 @@ int lua_glib_new_enum(lua_State *L)
         lua_pushliteral(L, GLIB_DATABASE_ENUMS);
         lua_gettable(L, -2);
 
-        lua_pushvalue(L, 1);    /* prefix */
+        lua_pushvalue(L, 2);    /* prefix */
         lua_pushvalue(L, 3);    /* fallback */
+        lua_settable(L, -3);
     }
 
     return 0;
@@ -250,6 +291,13 @@ int lua_glib_new_setter(lua_State *L)
         luaL_checktype(L, 1, LUA_TNUMBER); \
         T* ptr = (T*)lua_topointer(L, lua_upvalueindex(1)); \
         *ptr = (T)lua_tointeger(L, 1); \
+        return 0; \
+    }
+
+#define _GLIB_DECL_BOOL_GETTER(T, name) \
+    int lua_glib_getter_##name(lua_State *L) { \
+        const T* ptr = (const T*)lua_topointer(L, lua_upvalueindex(1)); \
+        lua_pushboolean(L, *ptr != 0); \
         return 1; \
     }
 
@@ -265,7 +313,14 @@ int lua_glib_new_setter(lua_State *L)
         luaL_checktype(L, 1, LUA_TNUMBER); \
         T* ptr = (T*)lua_topointer(L, lua_upvalueindex(1)); \
         *ptr = (T)lua_tonumber(L, 1); \
-        return 1; \
+        return 0; \
+    }
+
+#define _GLIB_DECL_BOOL_SETTER(T, name) \
+    int lua_glib_setter_##name(lua_State *L) { \
+        T* ptr = (T*)lua_topointer(L, lua_upvalueindex(1)); \
+        *ptr = (T)lua_toboolean(L, 1); \
+        return 0; \
     }
 
 _GLIB_DECL_INT_GETTER(int8_t,  i8);
@@ -278,6 +333,10 @@ _GLIB_DECL_INT_GETTER(uint32_t, u32);
 _GLIB_DECL_INT_GETTER(uint64_t, u64);
 _GLIB_DECL_FLOAT_GETTER(float, f32);
 _GLIB_DECL_FLOAT_GETTER(double, f64);
+_GLIB_DECL_BOOL_GETTER(uint8_t,  b8);
+_GLIB_DECL_BOOL_GETTER(uint16_t, b16);
+_GLIB_DECL_BOOL_GETTER(uint32_t, b32);
+_GLIB_DECL_BOOL_GETTER(uint64_t, b64);
 
 _GLIB_DECL_INT_SETTER(int8_t,  i8);
 _GLIB_DECL_INT_SETTER(int16_t, i16);
@@ -289,6 +348,24 @@ _GLIB_DECL_INT_SETTER(uint32_t, u32);
 _GLIB_DECL_INT_SETTER(uint64_t, u64);
 _GLIB_DECL_FLOAT_SETTER(float, f32);
 _GLIB_DECL_FLOAT_SETTER(double, f64);
+_GLIB_DECL_BOOL_SETTER(uint8_t,  b8);
+_GLIB_DECL_BOOL_SETTER(uint16_t, b16);
+_GLIB_DECL_BOOL_SETTER(uint32_t, b32);
+_GLIB_DECL_BOOL_SETTER(uint64_t, b64);
+
+int lua_glib_setter_fxp(lua_State *L)
+{
+    fixed_t *fxp = (fixed_t*)lua_topointer(L, lua_upvalueindex(1));
+    *fxp = lua_tointeger(L, 1);
+    return 0;
+}
+
+int lua_glib_getter_fxp(lua_State *L)
+{
+    const fixed_t *fxp = (const fixed_t*)lua_topointer(L, lua_upvalueindex(1));
+    lua_pushfixed(L, *fxp);
+    return 1;
+}
 
 int lua_glib_getter_str(lua_State *L)
 {
