@@ -11999,7 +11999,7 @@ static void M_LocalSkinChange(INT32 choice)
 			COM_BufAddText(va("localskin -a %s", cv_fakelocalskin.string));
 			break;
 		case 4:
-			COM_BufAddText(va("localskin -d %s", cv_fakelocalskin.string));
+			COM_BufAddText(va("localskin -d 0 %s", cv_fakelocalskin.string));
 			break;
 		case 5:
 			COM_BufAddText(va("localskin %s", cv_fakelocalskin.string));

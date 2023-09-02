@@ -4676,56 +4676,107 @@ Command_Addskins (void)
 // args n stuff
 #include "args.h"
 
-static void Command_GLocalSkin (void) {
-	ArgParser* parser = ap_new();
-	ap_set_helptext(parser, "Usage: localskin [options] <name>\n\nOptions: \n\
-	-d, --display: 	Use the first displaying player instead of yourself.\n\
-					Has no effect on replays. Omits any player related\n\
-					options.\n\
-    -a, --all: 		Set a localskin to all players. Omits any player related\n\
-					options.\n\
-    -p, --player: 	Set a localskin to a specific player name.\n\
-					If omitted, defaults to the client player, unless -d \n\
-					or --display is added.");
-	ap_set_version(parser, "");
-	ap_str_opt(parser, "player p", player_names[consoleplayer]);
-	ap_flag(parser, "display d");
-	ap_flag(parser, "all a");
+static void Command_GLocalSkin (void) 
+{
+	size_t first_option;
+	size_t option_display;
+	size_t option_all;
+	size_t option_player;
+	
+	option_player	= COM_CheckPartialParm("-p");
+	option_display 	= COM_CheckPartialParm("-d");
+	option_all		= COM_CheckPartialParm("-a");
 
-	ap_parse(parser, COM_Argc(), COM_ArgvList());
+	char* fuck; // local skin name
 
-	boolean disply;
-	boolean allp;
+	if (!( first_option = COM_FirstOption() ))
+		first_option = COM_Argc();
 
-	if (ap_found(parser, "display")) disply = true; else disply = false;
-	if (ap_found(parser, "all")) allp = true; else allp = false;
-
-	INT32 i, idx;
-	i = 0;
-	idx = 0;
-
-	for (idx = 0; idx < ap_count_args(parser); idx++) {
-		if (disply) {
-			SetLocalPlayerSkin(displayplayers[0], ap_arg(parser, idx), NULL);
-			return;
-		} else {
-			for (i = 0; i < MAXPLAYERS; i++) {
-				if (allp) {
-					SetLocalPlayerSkin(i, ap_arg(parser, idx), NULL);
-				} else {
-					if (fasticmp(player_names[i], ap_str_value(parser, "player"))) {
-						if (fasticmp(player_names[i], cv_playername.string))
-							SetLocalPlayerSkin(i, ap_arg(parser, idx), &cv_localskin);
-						else
-							SetLocalPlayerSkin(i, ap_arg(parser, idx), NULL);
-						break;
-					}	
-				}
-			}
-		}
+	if (first_option < 2)
+	{
+		/* holy fucking shit */
+		CONS_Printf("localskin <name> [-player <name>] [-display <number>] [-all]:\n");
+		CONS_Printf(M_GetText("Set a localskin via its internal name (usually printed on the console).\n\n\
+* Using \"-player\" will set a localskin to a specified player.\n\
+  Defaults to yourself.\n\
+* Using \"-display\" will set a localskin to the displayed player.\n\
+  Defaults to 0, which is the first player displayed.\n\
+  Can go up to 3 for splitscreen.\n\
+* Using \"-all\" will set a localskin to ALL players.\n\
+* \"localskin none\" removes the localskin, just like how\n\
+  \"forceskin none\" does.\n"));
+		return;
 	}
 
-	ap_free(parser);
+	fuck = ConcatCommandArgv(1, first_option);
+
+	char* player_name = player_names[consoleplayer];
+	char* display_num = "0";
+	size_t dnum = 0;
+
+	if (option_display)  // -display
+	{
+		// handle default: 0
+		if (COM_Argv(option_display + 1)[0] == "" || COM_Argv(option_display + 1)[0] != "-")
+			display_num = COM_Argv(option_display + 1);
+
+		if (isdigit(display_num[0]) || display_num == "0") 
+		{
+			dnum = atoi(display_num);
+			if (dnum > 3 || dnum < 0) // nuh uh
+				dnum = 0;
+			SetLocalPlayerSkin(displayplayers[dnum], fuck, NULL);
+
+			CONS_Printf("Successfully applied localskin to displayed player.\n");
+			return;
+		}
+		
+		CONS_Printf("Could not apply localskin.\n");
+		
+		return;
+	} 
+	else if (option_all) // -all
+	{
+		int i;
+
+		for (i = 0; i < MAXPLAYERS; ++i) 
+		{
+			if (!playeringame[i])
+				continue;
+			SetLocalPlayerSkin(i, fuck, NULL);
+		}
+		CONS_Printf("Successfully applied localskin to all players.\n");
+
+		return;
+	} 
+	else // -player or no other arguments
+	{
+		if (option_player) 
+		{
+			int i;
+			player_name = COM_Argv(option_player + 1);
+
+			for (i = 0; i < MAXPLAYERS; ++i) 
+			{
+				if (fasticmp(player_names[i], player_name))
+					SetLocalPlayerSkin(i, fuck, NULL);
+			}
+			CONS_Printf("Successfully applied localskin to specified player.\n");
+
+			return;
+		} 
+		else 
+		{
+			SetLocalPlayerSkin(consoleplayer, fuck, &cv_localskin);
+			CONS_Printf("Successfully applied localskin.\n");
+
+			return;
+		}
+
+		CONS_Printf("Could not apply localskin.\n");
+
+		return;
+	}
 }
 
 #ifdef DELFILE
