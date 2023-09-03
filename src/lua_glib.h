@@ -4,6 +4,7 @@
 #ifndef _LUA_GLIB_H_
 #define _LUA_GLIB_H_
 
+#include "doomdef.h"
 #include "lua_script.h"
 
 /**
