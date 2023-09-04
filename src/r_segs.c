@@ -1769,6 +1769,9 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			while (need > maxopenings);
 			openings = Z_Realloc(openings, maxopenings * sizeof (*openings), PU_STATIC, NULL);
 			lastopening = openings + pos;
+			
+			if (oldopenings == NULL)
+			return;
 
 			// borrowed fix from *cough* zdoom *cough*
 			// [RH] We also need to adjust the openings pointers that
