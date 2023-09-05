@@ -123,6 +123,7 @@ patch_t *animVoteFramesPatches = NULL;
 // VEXTRW - Vote (V) Extra (EXT) Race (R) Normal (W - Wide patch used in software)
 char animPrefix[] = "INTSC";
 char animWidePrefix[] = "INTSW";
+char *luaVoteScreen = NULL;
 
 INT32 currentAnimFrame = 0;
 static INT32 foundAnimVoteFrames = 0;
@@ -345,13 +346,23 @@ static void Y_CalculateMatchData(UINT8 rankingsmode, void (*comparison)(INT32))
 void Y_AnimatedVoteScreenCheck(void)
 {
 	char tmpPrefix[] = "INTS";
-	if(G_BattleGametype()) {
-		strcpy(animPrefix, "BTLSC");
-		strcpy(animWidePrefix, "BTLSW");
-
-		strcpy(tmpPrefix, "BTLS");
-	}
 	boolean stopSearching = false;
+
+	if (luaVoteScreen)
+	{
+		strncpy(tmpPrefix, luaVoteScreen, 4);
+	}
+	else
+	{
+		if(G_BattleGametype()) {
+			strcpy(tmpPrefix, "BTLS");
+		}
+	}
+
+	strncpy(animPrefix, tmpPrefix, 4);
+	animPrefix[4] = 'C';
+	strncpy(animWidePrefix, tmpPrefix, 4);
+	animWidePrefix[4] = 'W';
 
 	foundAnimVoteFrames = 0;
 	foundAnimVoteWideFrames = 0;
