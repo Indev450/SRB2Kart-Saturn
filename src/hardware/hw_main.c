@@ -85,9 +85,7 @@ consvar_t cv_grcorrecttricks = {"gr_correcttricks", "Off", 0, CV_OnOff, NULL, 0,
 consvar_t cv_grsolvetjoin = {"gr_solvetjoin", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_grbatching = {"gr_batching", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-
-consvar_t cv_grpaletteshader = {"gr_paletteshader", "Off", CV_CALL, CV_OnOff,
-                             CV_grpaletteshader_OnChange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_grpaletteshader = {"gr_paletteshader", "Off", CV_CALL|CV_SAVE, CV_OnOff, CV_grpaletteshader_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 static CV_PossibleValue_t grrenderdistance_cons_t[] = {
 	{0, "Max"}, {1, "1024"}, {2, "2048"}, {3, "4096"}, {4, "6144"}, {5, "8192"},
@@ -5954,7 +5952,6 @@ void HWR_AddCommands(void)
 	CV_RegisterVar(&cv_grsolvetjoin);
 
 	CV_RegisterVar(&cv_grbatching);
-	CV_RegisterVar(&cv_grpaletteshader);
 	CV_RegisterVar(&cv_grscreentextures);
 	CV_RegisterVar(&cv_grrenderdistance);
 	CV_RegisterVar(&cv_grportals);
@@ -5962,6 +5959,7 @@ void HWR_AddCommands(void)
 	CV_RegisterVar(&cv_portalline);
 	CV_RegisterVar(&cv_portalonly);
 	CV_RegisterVar(&cv_secbright);
+	CV_RegisterVar(&cv_grpaletteshader);
 }
 
 // --------------------------------------------------------------------------
