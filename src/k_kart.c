@@ -6647,7 +6647,7 @@ void K_CheckBumpers(void)
 	if (winnernum > -1 && playeringame[winnernum])
 	{
 		players[winnernum].marescore += winnerscoreadd;
-		CONS_Printf(M_GetText("%s recieved %d point%s for winning!\n"), player_names[winnernum], winnerscoreadd, (winnerscoreadd == 1 ? "" : "s"));
+		CONS_Printf(M_GetText("%s received %d point%s for winning!\n"), player_names[winnernum], winnerscoreadd, (winnerscoreadd == 1 ? "" : "s"));
 	}
 
 	for (i = 0; i < MAXPLAYERS; i++) // This can't go in the earlier loop because winning adds points
