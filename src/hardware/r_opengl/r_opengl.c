@@ -26,6 +26,8 @@
 #include "r_opengl.h"
 #include "r_vbo.h"
 
+#include "../../v_video.h" // pLocalPalette
+
 #include "../../p_tick.h" // for leveltime (NOTE: THIS IS BAD, FIGURE OUT HOW TO PROPERLY IMPLEMENT gl_leveltime)
 #include "../../i_system.h" // for I_GetPreciseTime (batching time measurements)
 
@@ -511,6 +513,7 @@ typedef void 	(APIENTRY *PFNglLinkProgram)		(GLuint);
 typedef void 	(APIENTRY *PFNglGetProgramiv)		(GLuint, GLenum, GLint*);
 typedef void 	(APIENTRY *PFNglUseProgram)			(GLuint);
 typedef void 	(APIENTRY *PFNglUniform1i)			(GLint, GLint);
+typedef void 	(APIENTRY *PFNglUniform1iv)			(GLint, GLsizei, const GLint*);
 typedef void 	(APIENTRY *PFNglUniform1f)			(GLint, GLfloat);
 typedef void 	(APIENTRY *PFNglUniform2f)			(GLint, GLfloat, GLfloat);
 typedef void 	(APIENTRY *PFNglUniform3f)			(GLint, GLfloat, GLfloat, GLfloat);
@@ -532,6 +535,7 @@ static PFNglLinkProgram pglLinkProgram;
 static PFNglGetProgramiv pglGetProgramiv;
 static PFNglUseProgram pglUseProgram;
 static PFNglUniform1i pglUniform1i;
+static PFNglUniform1iv pglUniform1iv;
 static PFNglUniform1f pglUniform1f;
 static PFNglUniform2f pglUniform2f;
 static PFNglUniform3f pglUniform3f;
@@ -561,6 +565,9 @@ static GLint gl_portal_stencil_level = 0;
 
 static INT32 gl_portal_mode = HWD_PORTAL_NORMAL;
 
+static GLint gl_palette[768];
+static INT32 gl_use_palette_shader = 0;
+
 // 13062019
 typedef enum
 {
@@ -574,6 +581,8 @@ typedef enum
 
 	// misc. (custom shaders)
 	gluniform_leveltime,
+	
+	gluniform_palette,
 
 	gluniform_max,
 } gluniform_t;
@@ -708,6 +717,26 @@ static gl_shaderprogram_t gl_shaderprograms[MAXSHADERPROGRAMS];
 		GLSL_SOFTWARE_FADE_EQUATION \
 		"gl_FragColor = final_color;\n" \
 	"}\0"
+	
+//
+// Palette color quantization shader test.
+//
+
+// Could test putting this to GLSL_SOFTWARE_FRAGMENT_SHADER and seeing what happens to performance.
+
+#define GLSL_PALETTE_FRAGMENT_SHADER \
+	"uniform sampler2D tex;\n" \
+	"uniform int palette[768];\n" \
+	"void main(void) {\n" \
+		"vec3 texel = texture2D(tex, gl_TexCoord[0].st);\n" \
+		"vec3 best = vec3(200.0);\n" \
+		"for (int i = 0; i < 256; i++) {\n" \
+			"vec3 pal_color = vec3(palette[i*3] / 255.0, palette[i*3+1] / 255.0, palette[i*3+2] / 255.0);\n" \
+			"best = mix(pal_color, best, step(length(best-texel), length(pal_color-texel)));\n" \
+		"}\n" \
+		"gl_FragColor = vec4(best[0], best[1], best[2] ,1.0);\n" \
+	"}\0"
+
 
 //
 // GLSL generic fragment shader
@@ -747,6 +776,9 @@ static const char *fragment_shaders[] = {
 	"void main(void) {\n"
 		"gl_FragColor = texture2D(tex, gl_TexCoord[0].st);\n"
 	"}\0",
+	
+	// Palette fragment shader
+	GLSL_PALETTE_FRAGMENT_SHADER,
 
 	NULL,
 };
@@ -793,6 +825,9 @@ static const char *vertex_shaders[] = {
 	// Sky vertex shader
 	GLSL_DEFAULT_VERTEX_SHADER,
 
+    //Palette vertex shader
+	GLSL_DEFAULT_VERTEX_SHADER,
+
 	NULL,
 };
 
@@ -826,6 +861,7 @@ void SetupGLFunc4(void)
 	pglGetProgramiv = GetGLFunc("glGetProgramiv");
 	pglUseProgram = GetGLFunc("glUseProgram");
 	pglUniform1i = GetGLFunc("glUniform1i");
+	pglUniform1iv = GetGLFunc("glUniform1iv");
 	pglUniform1f = GetGLFunc("glUniform1f");
 	pglUniform2f = GetGLFunc("glUniform2f");
 	pglUniform3f = GetGLFunc("glUniform3f");
@@ -949,6 +985,8 @@ EXPORT boolean HWRAPI(LoadShaders) (void)
 
 		// misc. (custom shaders)
 		shader->uniforms[gluniform_leveltime] = GETUNI("leveltime");
+		
+		shader->uniforms[gluniform_palette] = GETUNI("palette");
 
 #undef GETUNI
 	}
@@ -1020,6 +1058,17 @@ EXPORT void HWRAPI(UnSetShader) (void)
 EXPORT void HWRAPI(KillShaders) (void)
 {
 	// unused.........................
+}
+
+static void InitPalette(void)
+{
+	int i;
+	for (i = 0; i < 256; i++)
+	{
+		gl_palette[i*3] = pLocalPalette[i].s.red;
+		gl_palette[i*3+1] = pLocalPalette[i].s.green;
+		gl_palette[i*3+2] = pLocalPalette[i].s.blue;
+	}
 }
 
 // -----------------+
@@ -1312,6 +1361,8 @@ EXPORT void HWRAPI(ClearBuffer) (FBOOLEAN ColorMask,
 	pglClear(ClearMask);
 	pglEnableClientState(GL_VERTEX_ARRAY); // We always use this one
 	pglEnableClientState(GL_TEXTURE_COORD_ARRAY); // And mostly this one, too
+	
+	InitPalette(); // just gonna put this here for now, could try doing it on gl init
 }
 
 
@@ -2692,6 +2743,10 @@ EXPORT void HWRAPI(SetSpecialState) (hwdspecialstate_t IdState, INT32 Value)
 					break;
 			}
 			break;
+		
+		case HWD_SET_PALETTE_SHADER_ENABLED:
+			gl_use_palette_shader = Value;
+			break;
 
 		case HWD_SET_TEXTUREFILTERMODE:
 			switch (Value)
@@ -3760,6 +3815,12 @@ EXPORT void HWRAPI(DrawScreenFinalTexture)(int width, int height)
 	clearColour.alpha = 1;
 	ClearBuffer(true, false, false, &clearColour);
 	pglBindTexture(GL_TEXTURE_2D, finalScreenTexture);
+	
+	if (gl_use_palette_shader)
+	{
+		pglUseProgram(gl_shaderprograms[8].program); // palette shader
+		pglUniform1iv(gl_shaderprograms[8].uniforms[gluniform_palette], 768, gl_palette);
+	}
 
 	pglColor4ubv(white);
 	pglTexCoordPointer(2, GL_FLOAT, 0, fix);
@@ -3768,6 +3829,8 @@ EXPORT void HWRAPI(DrawScreenFinalTexture)(int width, int height)
 	pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
 	tex_downloaded = finalScreenTexture;
+	if (gl_use_palette_shader)
+		pglUseProgram(0);
 }
 
 #endif //HWRENDER
