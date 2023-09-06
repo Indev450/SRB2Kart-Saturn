@@ -482,7 +482,6 @@ boolean SetupGLfunc(void)
 	GETOPENGLFUNC(pglTexEnvi, glTexEnvi)
 	GETOPENGLFUNC(pglTexParameteri, glTexParameteri)
 	GETOPENGLFUNC(pglTexImage2D, glTexImage2D)
-	GETOPENGLFUNC(pglTexImage3D, glTexImage3D)
 
 	GETOPENGLFUNC(pglFogf, glFogf)
 	GETOPENGLFUNC(pglFogfv, glFogfv)
@@ -737,13 +736,21 @@ static gl_shaderprogram_t gl_shaderprograms[MAXSHADERPROGRAMS];
 	"uniform int palette[768];\n" \
 	"void main(void) {\n" \
 		"vec3 texel = texture2D(tex, gl_TexCoord[0].st);\n" \
-		"float pal_idx = texture3D(lookup_tex, texel)[0];\n" \
-		"gl_FragColor = vec4(pal_idx, pal_idx, 0.5, 1.0);\n" \
-		"//if (pal_idx == 0) {\n" \
-			"//gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);\n" \
-		"//} else {\n" \
-			"//gl_FragColor = vec4(float(palette[pal_idx*3])/255.0, float(palette[pal_idx*3+1])/255.0, float(palette[pal_idx*3+2])/255.0, 1.0);\n" \
-		"//}\n" \
+		"int pal_idx = texture3D(lookup_tex, (63.0/64.0) * texel + 1.0 / 128.0)[0] * 255;\n" \
+		"gl_FragColor = vec4(float(palette[pal_idx*3])/255.0, float(palette[pal_idx*3+1])/255.0, float(palette[pal_idx*3+2])/255.0, 1.0);\n" \
+	"}\0"
+	
+#define GLSL_PALETTE_FRAGMENT_SHADER_OLD \
+	"uniform sampler2D tex;\n" \
+	"uniform int palette[768];\n" \
+	"void main(void) {\n" \
+		"vec3 texel = texture2D(tex, gl_TexCoord[0].st);\n" \
+		"vec3 best = vec3(200.0);\n" \
+		"for (int i = 0; i < 256; i++) {\n" \
+			"vec3 pal_color = vec3(palette[i*3] / 255.0, palette[i*3+1] / 255.0, palette[i*3+2] / 255.0);\n" \
+			"best = mix(pal_color, best, step(length(best-texel), length(pal_color-texel)));\n" \
+		"}\n" \
+		"gl_FragColor = vec4(best[0], best[1], best[2] ,1.0);\n" \
 	"}\0"
 
 
@@ -1073,6 +1080,14 @@ EXPORT void HWRAPI(KillShaders) (void)
 }
 
 GLuint palette_tex_num;
+// length of one side of lookup texture
+// smallest separation between all the colors in the srb2 palette is 6, so
+// possibly a 64x64x64 lookup texture might be enough for 100% correct colors
+// (min separation for 64^3 size is 4)
+#define LUT_SIZE 64
+#define STEP_SIZE (256/LUT_SIZE)
+// the +2 in the NearestColor call also needs to be adjusted if LUT_SIZE is changed!
+// the hardcoded values in the shader also need to be adjusted if LUT_SIZE is changed!
 
 static void InitPalette(void)
 {
@@ -1085,20 +1100,17 @@ static void InitPalette(void)
 		gl_palette[i*3+2] = pLocalPalette[i].s.blue;
 	}
 	// init the palette conversion lookup texture
-	GLubyte *pal_lookup_tex = malloc(256*256*256*sizeof(GLubyte));
-	// smallest separation between all the colors in the srb2 palette is 6, so
-	// possibly a 64x64x64 lookup texture might be enough for 100% correct colors
-	// (min separation for 64^3 size is 4)
+	GLubyte *pal_lookup_tex = malloc(LUT_SIZE*LUT_SIZE*LUT_SIZE*sizeof(GLubyte));
 	if (!pal_lookup_tex)
 		I_Error("Failed to allocate memory for generating palette lookup texture.");
 
-	for (b = 0; b < 256; b++)
+	for (b = 0; b < LUT_SIZE; b++)
 	{
-		for (g = 0; g < 256; g++)
+		for (g = 0; g < LUT_SIZE; g++)
 		{
-			for (r = 0; r < 256; r++)
+			for (r = 0; r < LUT_SIZE; r++)
 			{
-				pal_lookup_tex[b*65536+g*256+r] = NearestColor(r, b, g);
+				pal_lookup_tex[b*LUT_SIZE*LUT_SIZE+g*LUT_SIZE+r] = NearestColor(r*STEP_SIZE+2, g*STEP_SIZE+2, b*STEP_SIZE+2);
 			}
 		}
 	}
@@ -1108,9 +1120,12 @@ static void InitPalette(void)
 	pglTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	if (!pglTexImage3D)
 		I_Error("pglTexImage3D is NULL!");
-	pglTexImage3D(GL_TEXTURE_3D, 0, GL_R8, 256, 256, 256, 0, GL_RED, GL_UNSIGNED_BYTE, pal_lookup_tex); // test: put gl_red instead of gl_red_integer
+	pglTexImage3D(GL_TEXTURE_3D, 0, GL_R8, LUT_SIZE, LUT_SIZE, LUT_SIZE, 0, GL_RED, GL_UNSIGNED_BYTE, pal_lookup_tex); // test: put gl_red instead of gl_red_integer
 	free(pal_lookup_tex);
+	pglUseProgram(gl_shaderprograms[8].program);
 	pglUniform1i(gl_shaderprograms[8].uniforms[gluniform_color_lookup], 1); // bind sampler to second texture unit
+	pglUseProgram(0);
+	pglBindTexture(GL_TEXTURE_3D, 0);
 	gl_palette_initialized = true;
 }
 
@@ -3865,7 +3880,7 @@ EXPORT void HWRAPI(DrawScreenFinalTexture)(int width, int height)
 		pglUseProgram(gl_shaderprograms[8].program); // palette shader
 		pglUniform1iv(gl_shaderprograms[8].uniforms[gluniform_palette], 768, gl_palette);
 		pglActiveTexture(GL_TEXTURE1);
-		pglBindTexture(GL_TEXTURE_2D, palette_tex_num);
+		pglBindTexture(GL_TEXTURE_3D, palette_tex_num);
 	}
 
 	pglColor4ubv(white);
@@ -3878,6 +3893,7 @@ EXPORT void HWRAPI(DrawScreenFinalTexture)(int width, int height)
 	if (gl_use_palette_shader)
 	{
 		pglUseProgram(0);
+		pglBindTexture(GL_TEXTURE_3D, 0);
 		pglActiveTexture(GL_TEXTURE0);
 	}
 }
