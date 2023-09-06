@@ -27,6 +27,7 @@
 #include "r_vbo.h"
 
 #include "../../v_video.h" // pLocalPalette
+#include "../../r_data.h" // NearestColor
 
 #include "../../p_tick.h" // for leveltime (NOTE: THIS IS BAD, FIGURE OUT HOW TO PROPERLY IMPLEMENT gl_leveltime)
 #include "../../i_system.h" // for I_GetPreciseTime (batching time measurements)
@@ -237,6 +238,7 @@ FUNCPRINTF void GL_DBG_Printf(const char *format, ...)
 #define pglTexEnvi glTexEnvi
 #define pglTexParameteri glTexParameteri
 #define pglTexImage2D glTexImage2D
+#define pglTexImage3D glTexImage3D
 
 /* Fog */
 #define pglFogf glFogf
@@ -357,6 +359,8 @@ typedef void (APIENTRY * PFNglTexParameteri) (GLenum target, GLenum pname, GLint
 static PFNglTexParameteri pglTexParameteri;
 typedef void (APIENTRY * PFNglTexImage2D) (GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *pixels);
 static PFNglTexImage2D pglTexImage2D;
+typedef void (APIENTRY * PFNglTexImage3D) (GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, const GLvoid *pixels);
+static PFNglTexImage3D pglTexImage3D;
 
 /* Fog */
 typedef void (APIENTRY * PFNglFogf) (GLenum pname, GLfloat param);
@@ -478,6 +482,7 @@ boolean SetupGLfunc(void)
 	GETOPENGLFUNC(pglTexEnvi, glTexEnvi)
 	GETOPENGLFUNC(pglTexParameteri, glTexParameteri)
 	GETOPENGLFUNC(pglTexImage2D, glTexImage2D)
+	GETOPENGLFUNC(pglTexImage3D, glTexImage3D)
 
 	GETOPENGLFUNC(pglFogf, glFogf)
 	GETOPENGLFUNC(pglFogfv, glFogfv)
@@ -567,6 +572,7 @@ static INT32 gl_portal_mode = HWD_PORTAL_NORMAL;
 
 static GLint gl_palette[768];
 static INT32 gl_use_palette_shader = 0;
+static boolean gl_palette_initialized = false;
 
 // 13062019
 typedef enum
@@ -583,6 +589,7 @@ typedef enum
 	gluniform_leveltime,
 	
 	gluniform_palette,
+	gluniform_color_lookup,
 
 	gluniform_max,
 } gluniform_t;
@@ -726,15 +733,17 @@ static gl_shaderprogram_t gl_shaderprograms[MAXSHADERPROGRAMS];
 
 #define GLSL_PALETTE_FRAGMENT_SHADER \
 	"uniform sampler2D tex;\n" \
+	"uniform sampler3D lookup_tex;\n" \
 	"uniform int palette[768];\n" \
 	"void main(void) {\n" \
 		"vec3 texel = texture2D(tex, gl_TexCoord[0].st);\n" \
-		"vec3 best = vec3(200.0);\n" \
-		"for (int i = 0; i < 256; i++) {\n" \
-			"vec3 pal_color = vec3(palette[i*3] / 255.0, palette[i*3+1] / 255.0, palette[i*3+2] / 255.0);\n" \
-			"best = mix(pal_color, best, step(length(best-texel), length(pal_color-texel)));\n" \
-		"}\n" \
-		"gl_FragColor = vec4(best[0], best[1], best[2] ,1.0);\n" \
+		"float pal_idx = texture3D(lookup_tex, texel)[0];\n" \
+		"gl_FragColor = vec4(pal_idx, pal_idx, 0.5, 1.0);\n" \
+		"//if (pal_idx == 0) {\n" \
+			"//gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);\n" \
+		"//} else {\n" \
+			"//gl_FragColor = vec4(float(palette[pal_idx*3])/255.0, float(palette[pal_idx*3+1])/255.0, float(palette[pal_idx*3+2])/255.0, 1.0);\n" \
+		"//}\n" \
 	"}\0"
 
 
@@ -872,6 +881,8 @@ void SetupGLFunc4(void)
 	pglGetUniformLocation = GetGLFunc("glGetUniformLocation");
 #endif
 
+	pglTexImage3D = GetGLFunc("glTexImage3D"); // how about here then...
+
 	// GLU
 	pgluBuild2DMipmaps = GetGLFunc("gluBuild2DMipmaps");
 }
@@ -987,6 +998,7 @@ EXPORT boolean HWRAPI(LoadShaders) (void)
 		shader->uniforms[gluniform_leveltime] = GETUNI("leveltime");
 		
 		shader->uniforms[gluniform_palette] = GETUNI("palette");
+		shader->uniforms[gluniform_color_lookup] = GETUNI("lookup_tex");
 
 #undef GETUNI
 	}
@@ -1060,15 +1072,46 @@ EXPORT void HWRAPI(KillShaders) (void)
 	// unused.........................
 }
 
+GLuint palette_tex_num;
+
 static void InitPalette(void)
 {
-	int i;
+	int i, r, g, b;
+	// init the palette
 	for (i = 0; i < 256; i++)
 	{
 		gl_palette[i*3] = pLocalPalette[i].s.red;
 		gl_palette[i*3+1] = pLocalPalette[i].s.green;
 		gl_palette[i*3+2] = pLocalPalette[i].s.blue;
 	}
+	// init the palette conversion lookup texture
+	GLubyte *pal_lookup_tex = malloc(256*256*256*sizeof(GLubyte));
+	// smallest separation between all the colors in the srb2 palette is 6, so
+	// possibly a 64x64x64 lookup texture might be enough for 100% correct colors
+	// (min separation for 64^3 size is 4)
+	if (!pal_lookup_tex)
+		I_Error("Failed to allocate memory for generating palette lookup texture.");
+
+	for (b = 0; b < 256; b++)
+	{
+		for (g = 0; g < 256; g++)
+		{
+			for (r = 0; r < 256; r++)
+			{
+				pal_lookup_tex[b*65536+g*256+r] = NearestColor(r, b, g);
+			}
+		}
+	}
+	pglGenTextures(1, &palette_tex_num);
+	pglBindTexture(GL_TEXTURE_3D, palette_tex_num);
+	pglTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	pglTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	if (!pglTexImage3D)
+		I_Error("pglTexImage3D is NULL!");
+	pglTexImage3D(GL_TEXTURE_3D, 0, GL_R8, 256, 256, 256, 0, GL_RED, GL_UNSIGNED_BYTE, pal_lookup_tex); // test: put gl_red instead of gl_red_integer
+	free(pal_lookup_tex);
+	pglUniform1i(gl_shaderprograms[8].uniforms[gluniform_color_lookup], 1); // bind sampler to second texture unit
+	gl_palette_initialized = true;
 }
 
 // -----------------+
@@ -1362,7 +1405,8 @@ EXPORT void HWRAPI(ClearBuffer) (FBOOLEAN ColorMask,
 	pglEnableClientState(GL_VERTEX_ARRAY); // We always use this one
 	pglEnableClientState(GL_TEXTURE_COORD_ARRAY); // And mostly this one, too
 	
-	InitPalette(); // just gonna put this here for now, could try doing it on gl init
+	if (!gl_palette_initialized)
+		InitPalette(); // just gonna put this here for now
 }
 
 
@@ -3820,6 +3864,8 @@ EXPORT void HWRAPI(DrawScreenFinalTexture)(int width, int height)
 	{
 		pglUseProgram(gl_shaderprograms[8].program); // palette shader
 		pglUniform1iv(gl_shaderprograms[8].uniforms[gluniform_palette], 768, gl_palette);
+		pglActiveTexture(GL_TEXTURE1);
+		pglBindTexture(GL_TEXTURE_2D, palette_tex_num);
 	}
 
 	pglColor4ubv(white);
@@ -3830,7 +3876,10 @@ EXPORT void HWRAPI(DrawScreenFinalTexture)(int width, int height)
 
 	tex_downloaded = finalScreenTexture;
 	if (gl_use_palette_shader)
+	{
 		pglUseProgram(0);
+		pglActiveTexture(GL_TEXTURE0);
+	}
 }
 
 #endif //HWRENDER
