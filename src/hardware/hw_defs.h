@@ -231,7 +231,6 @@ typedef struct FSurfaceInfo FSurfaceInfo;
 enum hwdsetspecialstate
 {
 	HWD_SET_SHADERS,
-	
 	HWD_SET_PALETTE_SHADER_ENABLED,
 
 	HWD_SET_TEXTUREFILTERMODE,
