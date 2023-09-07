@@ -59,6 +59,7 @@
 #endif
 
 #include "../doomstat.h"
+#include "../p_setup.h"
 #include "../i_system.h"
 #include "../v_video.h"
 #include "../m_argv.h"
@@ -1296,7 +1297,7 @@ void I_GetEvent(void)
 				break;
 			case SDL_DROPFILE:
 				dropped_filedir = evt.drop.file;
-				COM_BufInsertText(va("addfile \"%s\"", dropped_filedir));
+				P_AddWadFile(dropped_filedir);
 				SDL_free(dropped_filedir);    // Free dropped_filedir memory
 				break;
 			case SDL_QUIT:
