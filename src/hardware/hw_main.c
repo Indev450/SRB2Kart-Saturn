@@ -5846,7 +5846,6 @@ void HWR_RenderFrame(INT32 viewnumber, player_t *player, boolean skybox)
 	HWD.pfnSetSpecialState(HWD_SET_SHADERS, cv_grshaders.value);
 	HWD.pfnSetShader(0);
 
-	//drawcount = 0;
 	validcount++;
 
 	portalclipline = NULL;
