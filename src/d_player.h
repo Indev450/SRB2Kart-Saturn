@@ -371,6 +371,7 @@ typedef struct player_s
 
 	angle_t viewrollangle;
 	angle_t tilt;
+	angle_t tilt_sprite;
 
 	// Mouse aiming, where the guy is looking at!
 	// It is updated with cmd->aiming.

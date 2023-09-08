@@ -3132,6 +3132,7 @@ static angle_t K_GetSlopeRollAngle(player_t *p, boolean dontflip, boolean useRes
 	angle_t zangle = 0;
 	angle_t xydirection = 0;
 	angle_t an;
+	angle_t final_slope;
 	INT32 pNum = K_FindPlayerNum(p);
 
 	I_Assert(p != NULL);
@@ -3171,7 +3172,14 @@ static angle_t K_GetSlopeRollAngle(player_t *p, boolean dontflip, boolean useRes
 		zangle = InvAngle(zangle);
 
 	an = (lookAngle - xydirection);
-	return FixedMul(zangle, FINESINE(an>>ANGLETOFINESHIFT));
+	final_slope = -(FixedMul(FINESINE(an>>ANGLETOFINESHIFT), zangle));
+	an = (INT32)(final_slope - p->tilt_sprite) / 3; // instead of just a direct snap
+
+	if (an)
+		p->tilt_sprite += an;
+	else
+		p->tilt_sprite = final_slope;
+	return -p->tilt_sprite;
 }
 
 static void K_RollPlayerBySlopes(player_t *p, boolean usedistance) 
