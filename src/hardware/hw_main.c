@@ -5696,8 +5696,18 @@ void RecursivePortalRendering(portal_t *rootportal, const float fpov, player_t *
 			HWR_SetTransform(fpov, player);// restore transform
 		}
 		gr_collect_skywalls = false;
+		
+		ps_numsprites.value.i = gr_visspritecount;
+		PS_START_TIMING(ps_hw_spritesorttime);
 		HWR_SortVisSprites();
+		PS_STOP_TIMING(ps_hw_spritesorttime);
+		PS_START_TIMING(ps_hw_spritedrawtime);
 		HWR_DrawSprites();
+		PS_STOP_TIMING(ps_hw_spritedrawtime);
+
+		ps_numdrawnodes.value.i = 0;
+		ps_hw_nodesorttime.value.p = 0;
+		ps_hw_nodedrawtime.value.p = 0;
 		HWR_RenderDrawNodes();
 	}
 	// free memory from portal list allocated by calls to Add2Lines
@@ -5871,18 +5881,8 @@ void HWR_RenderSinglePortal(portal_t *portal, size_t portalnum, float fpov, play
 	portalcullsector = gr_portalcullsectors[portalnum];
 	HWR_RenderBSPNode((INT32)numnodes - 1);
 
-	// Draw MD2 and sprites
-	ps_numsprites.value.i = gr_visspritecount;
-	PS_START_TIMING(ps_hw_spritesorttime);
 	HWR_SortVisSprites();
-	PS_STOP_TIMING(ps_hw_spritesorttime);
-	PS_START_TIMING(ps_hw_spritedrawtime);
 	HWR_DrawSprites();
-	PS_STOP_TIMING(ps_hw_spritedrawtime);
-
-	ps_numdrawnodes.value.i = 0;
-	ps_hw_nodesorttime.value.p = 0;
-	ps_hw_nodedrawtime.value.p = 0;
 	HWR_RenderDrawNodes();
 }
 
