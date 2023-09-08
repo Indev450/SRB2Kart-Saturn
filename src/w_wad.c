@@ -159,8 +159,10 @@ static char filenamebuf[MAX_WADPATH];
 FILE* fopen_utf8(const char* filename, const char* mode)
 {
 	static const int MY_PATH_MAX =  2048;
-	WCHAR nameW[MY_PATH_MAX] = { 0 };
-	WCHAR modeW[16] = { 0 };
+	WCHAR nameW[MY_PATH_MAX];
+	memset(nameW, 0, sizeof(WCHAR)*MY_PATH_MAX);
+	WCHAR modeW[16];
+	memset(modeW, 0, sizeof(WCHAR)*16);
 	// the following function converts the UTF-8 filename to UTF-16 (WCHAR) nameW
 	int len = MultiByteToWideChar(CP_UTF8, 0, filename, -1, nameW, MY_PATH_MAX);
 	if(len > 0 && MultiByteToWideChar(CP_UTF8, 0, mode, -1, modeW, 16) > 0)
