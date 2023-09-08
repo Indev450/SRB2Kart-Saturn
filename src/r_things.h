@@ -109,7 +109,10 @@ typedef enum
 	SC_NONE = 0,
 	SC_TOP = 1,
 	SC_BOTTOM = 2,
-	SC_VFLIP = 3
+	SC_VFLIP = 3,
+	SC_NOTVISIBLE = 4,
+	SC_CUTMASK    = SC_TOP|SC_BOTTOM|SC_NOTVISIBLE,
+	SC_FLAGMASK   = ~SC_CUTMASK
 } spritecut_e;
 
 // A vissprite_t is a thing that will be drawn during a refresh,
@@ -152,8 +155,6 @@ typedef struct vissprite_s
 
 	extracolormap_t *extra_colormap; // global colormaps
 
-	//fixed_t xscale;
-
 	// Precalculated top and bottom screen coords for the sprite.
 	fixed_t thingheight; // The actual height of the thing (for 3D floors)
 	sector_t *sector; // The sector containing the thing.
@@ -175,7 +176,7 @@ typedef struct vissprite_s
 	INT32 dispoffset; // copy of info->dispoffset, affects ordering but not drawing
 } vissprite_t;
 
-extern UINT32 visspritecount;
+extern UINT32 visspritecount, numvisiblesprites;
 
 void R_ClipSprites(void);
 void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2);
