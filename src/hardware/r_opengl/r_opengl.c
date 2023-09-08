@@ -1875,7 +1875,7 @@ static int comparePolygons(const void *p1, const void *p2)
 	// make skywalls and horizon lines first in order
 	if (poly1->polyFlags & PF_NoTexture || poly1->horizonSpecial)
 		shader1 = -1;
-	if (poly2->polyFlags & PF_NoTexture || poly1->horizonSpecial)
+	if (poly2->polyFlags & PF_NoTexture || poly2->horizonSpecial)
 		shader2 = -1;
 	diff = shader1 - shader2;
 	if (diff != 0) return diff;
@@ -1918,7 +1918,7 @@ static int comparePolygonsNoShaders(const void *p1, const void *p2)
 	GLuint texNum2 = poly2->texNum;
 	if (poly1->polyFlags & PF_NoTexture || poly1->horizonSpecial)
 		texNum1 = 0;
-	if (poly2->polyFlags & PF_NoTexture || poly1->horizonSpecial)
+	if (poly2->polyFlags & PF_NoTexture || poly2->horizonSpecial)
 		texNum2 = 0;
 	diff = texNum1 - texNum2;
 	if (diff != 0) return diff;
