@@ -1822,6 +1822,8 @@ typedef struct
 	FBITFIELD polyFlags;
 	GLuint texNum;
 	GLuint shader;
+	// this tells batching that the plane belongs to a horizon line and must be drawn in correct order with the skywalls
+	boolean horizonSpecial;
 } PolygonArrayEntry;
 
 FOutVector* finalVertexArray = NULL;// contains subset of sorted vertices and texture coordinates to be sent to gpu
@@ -1861,20 +1863,26 @@ EXPORT void HWRAPI(StartBatching) (void)
 
 static int comparePolygons(const void *p1, const void *p2)
 {
-	PolygonArrayEntry* poly1 = &polygonArray[*(const unsigned int*)p1];
-	PolygonArrayEntry* poly2 = &polygonArray[*(const unsigned int*)p2];
+	unsigned int index1 = *(const unsigned int*)p1;
+	unsigned int index2 = *(const unsigned int*)p2;
+	PolygonArrayEntry* poly1 = &polygonArray[index1];
+	PolygonArrayEntry* poly2 = &polygonArray[index2];
 	int diff;
 	INT64 diff64;
 
 	int shader1 = poly1->shader;
 	int shader2 = poly2->shader;
-	// make skywalls first in order
-	if (poly1->polyFlags & PF_NoTexture)
+	// make skywalls and horizon lines first in order
+	if (poly1->polyFlags & PF_NoTexture || poly1->horizonSpecial)
 		shader1 = -1;
-	if (poly2->polyFlags & PF_NoTexture)
+	if (poly2->polyFlags & PF_NoTexture || poly1->horizonSpecial)
 		shader2 = -1;
 	diff = shader1 - shader2;
 	if (diff != 0) return diff;
+
+	// skywalls and horizon lines must retain their order for horizon lines to work
+	if (shader1 == -1 && shader2 == -1)
+		return index1 - index2;
 
 	diff = poly1->texNum - poly2->texNum;
 	if (diff != 0) return diff;
@@ -1899,19 +1907,25 @@ static int comparePolygons(const void *p1, const void *p2)
 
 static int comparePolygonsNoShaders(const void *p1, const void *p2)
 {
-	PolygonArrayEntry* poly1 = &polygonArray[*(const unsigned int*)p1];
-	PolygonArrayEntry* poly2 = &polygonArray[*(const unsigned int*)p2];
+	unsigned int index1 = *(const unsigned int*)p1;
+	unsigned int index2 = *(const unsigned int*)p2;
+	PolygonArrayEntry* poly1 = &polygonArray[index1];
+	PolygonArrayEntry* poly2 = &polygonArray[index2];
 	int diff;
 	INT64 diff64;
 
 	GLuint texNum1 = poly1->texNum;
 	GLuint texNum2 = poly2->texNum;
-	if (poly1->polyFlags & PF_NoTexture)
+	if (poly1->polyFlags & PF_NoTexture || poly1->horizonSpecial)
 		texNum1 = 0;
-	if (poly2->polyFlags & PF_NoTexture)
+	if (poly2->polyFlags & PF_NoTexture || poly1->horizonSpecial)
 		texNum2 = 0;
 	diff = texNum1 - texNum2;
 	if (diff != 0) return diff;
+
+	// skywalls and horizon lines must retain their order for horizon lines to work
+	if (texNum1 == 0 && texNum2 == 0)
+		return index1 - index2;
 
 	diff = poly1->polyFlags - poly2->polyFlags;
 	if (diff != 0) return diff;
@@ -2269,7 +2283,7 @@ EXPORT void HWRAPI(RenderBatches) (precise_t *sSortTime, precise_t *sDrawTime, i
 // -----------------+
 // DrawPolygon      : Render a polygon, set the texture, set render mode
 // -----------------+
-EXPORT void HWRAPI(DrawPolygon) (FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags)
+EXPORT void HWRAPI(DrawPolygon) (FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags, boolean horizonSpecial)
 {
 	if (gl_batching)
 	{
@@ -2309,6 +2323,7 @@ EXPORT void HWRAPI(DrawPolygon) (FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUI
 		polygonArray[polygonArraySize].polyFlags = PolyFlags;
 		polygonArray[polygonArraySize].texNum = tex_downloaded;
 		polygonArray[polygonArraySize].shader = gl_currentshaderprogram;
+		polygonArray[polygonArraySize].horizonSpecial = horizonSpecial;
 		polygonArraySize++;
 
 		memcpy(&unsortedVertexArray[unsortedVertexArraySize], pOutVerts, iNumPts * sizeof(FOutVector));
