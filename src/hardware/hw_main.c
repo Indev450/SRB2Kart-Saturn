@@ -196,6 +196,8 @@ FTransform atransform;
 static float gr_viewx, gr_viewy, gr_viewz;
 float gr_viewsin, gr_viewcos;
 
+static fixed_t dup_viewx, dup_viewy, dup_viewz;
+
 static angle_t gr_aimingangle;
 static float gr_viewludsin, gr_viewludcos;
 
@@ -526,7 +528,7 @@ static FUINT HWR_CalcWallLight(FUINT lightnum, fixed_t v1x, fixed_t v1y, fixed_t
 
 // HWR_RenderPlane
 // Render a floor or ceiling convex polygon
-void HWR_RenderPlane(extrasubsector_t *xsub, boolean isceiling, fixed_t fixedheight, FBITFIELD PolyFlags, INT32 lightlevel, lumpnum_t lumpnum, sector_t *FOFsector, UINT8 alpha, extracolormap_t *planecolormap)
+void HWR_RenderPlane(extrasubsector_t *xsub, boolean isceiling, fixed_t fixedheight, FBITFIELD PolyFlags, INT32 lightlevel, lumpnum_t lumpnum, sector_t *FOFsector, UINT8 alpha, extracolormap_t *planecolormap, subsector_t *subsector)
 {
 	polyvertex_t *  pv;
 	float           height; //constant y for all points on the convex flat polygon
@@ -627,9 +629,6 @@ void HWR_RenderPlane(extrasubsector_t *xsub, boolean isceiling, fixed_t fixedhei
 	// reference point for flat texture coord for each vertex around the polygon
 	flatxref = (float)(((fixed_t)pv->x & (~flatflag)) / fflatsize);
 	flatyref = (float)(((fixed_t)pv->y & (~flatflag)) / fflatsize);
-	
-	// transform
-	v3d = planeVerts;
 
 	if (FOFsector != NULL)
 	{
@@ -682,39 +681,32 @@ void HWR_RenderPlane(extrasubsector_t *xsub, boolean isceiling, fixed_t fixedhei
 		flatyref = (FIXED_TO_FLOAT(FixedMul(tempxsow, FINESINE(angle)) + FixedMul(tempytow, FINECOSINE(angle))));
 	}
 
-	for (i = 0; i < nrPlaneVerts; i++,v3d++,pv++)
-	{
-		// Hurdler: add scrolling texture on floor/ceiling
-		v3d->s = (float)((pv->x / fflatsize) - flatxref + scrollx);
-		v3d->t = (float)(flatyref - (pv->y / fflatsize) + scrolly);
-
-		//v3d->s = (float)(pv->x / fflatsize);
-		//v3d->t = (float)(pv->y / fflatsize);
-
-		// Need to rotate before translate
-		if (angle) // Only needs to be done if there's an altered angle
-		{
-			tempxsow = FLOAT_TO_FIXED(v3d->s);
-			tempytow = FLOAT_TO_FIXED(v3d->t);
-			v3d->s = (FIXED_TO_FLOAT(FixedMul(tempxsow, FINECOSINE(angle)) - FixedMul(tempytow, FINESINE(angle))));
-			v3d->t = (FIXED_TO_FLOAT(FixedMul(tempxsow, FINESINE(angle)) + FixedMul(tempytow, FINECOSINE(angle))));
-		}
-
-		//v3d->s = (float)(v3d->s - flatxref + scrollx);
-		//v3d->t = (float)(flatyref - v3d->t + scrolly);
-
-		v3d->x = pv->x;
-		v3d->y = height;
-		v3d->z = pv->y;
-
-#ifdef ESLOPE
-		if (slope)
-		{
-			fixedheight = P_GetZAt(slope, FLOAT_TO_FIXED(pv->x), FLOAT_TO_FIXED(pv->y));
-			v3d->y = FIXED_TO_FLOAT(fixedheight);
-		}
-#endif
-	}
+#define SETUP3DVERT(vert, vx, vy) {\
+		/* Hurdler: add scrolling texture on floor/ceiling */\
+			vert->s = (float)(((vx) / fflatsize) - flatxref + scrollx);\
+			vert->t = (float)(flatyref - ((vy) / fflatsize) + scrolly);\
+\
+		/* Need to rotate before translate */\
+		if (angle) /* Only needs to be done if there's an altered angle */\
+		{\
+			tempxsow = FLOAT_TO_FIXED(vert->s);\
+			tempytow = FLOAT_TO_FIXED(vert->t);\
+			vert->s = (FIXED_TO_FLOAT(FixedMul(tempxsow, FINECOSINE(angle)) - FixedMul(tempytow, FINESINE(angle))));\
+			vert->t = (FIXED_TO_FLOAT(FixedMul(tempxsow, FINESINE(angle)) + FixedMul(tempytow, FINECOSINE(angle))));\
+		}\
+\
+		vert->x = (vx);\
+		vert->y = height;\
+		vert->z = (vy);\
+\
+		if (slope)\
+		{\
+			fixedheight = P_GetZAt(slope, FLOAT_TO_FIXED((vx)), FLOAT_TO_FIXED((vy)));\
+			vert->y = FIXED_TO_FLOAT(fixedheight);\
+		}\
+}
+	for (i = 0, v3d = planeVerts; i < nrPlaneVerts; i++,v3d++,pv++)
+		SETUP3DVERT(v3d, pv->x, pv->y);
 
 	HWR_Lighting(&Surf, lightlevel, planecolormap);
 
@@ -3180,7 +3172,7 @@ void HWR_Subsector(size_t num)
 					// Hack to make things continue to work around slopes.
 					locFloorHeight == cullFloorHeight ? locFloorHeight : gr_frontsector->floorheight,
 					// We now return you to your regularly scheduled rendering.
-					PF_Occlude, floorlightlevel, levelflats[gr_frontsector->floorpic].lumpnum, NULL, 255, floorcolormap);
+					PF_Occlude, floorlightlevel, levelflats[gr_frontsector->floorpic].lumpnum, NULL, 255, floorcolormap, sub);
 			}
 		}
 	}
@@ -3196,7 +3188,7 @@ void HWR_Subsector(size_t num)
 					// Hack to make things continue to work around slopes.
 					locCeilingHeight == cullCeilingHeight ? locCeilingHeight : gr_frontsector->ceilingheight,
 					// We now return you to your regularly scheduled rendering.
-					PF_Occlude, ceilinglightlevel, levelflats[gr_frontsector->ceilingpic].lumpnum,NULL, 255, ceilingcolormap);
+					PF_Occlude, ceilinglightlevel, levelflats[gr_frontsector->ceilingpic].lumpnum,NULL, 255, ceilingcolormap, sub);
 			}
 		}
 	}
@@ -3262,7 +3254,7 @@ void HWR_Subsector(size_t num)
 					HWR_GetFlat(levelflats[*rover->bottompic].lumpnum, R_NoEncore(gr_frontsector, false));
 					light = R_GetPlaneLight(gr_frontsector, centerHeight, viewz < cullHeight ? true : false);
 					HWR_RenderPlane(&extrasubsectors[num], false, *rover->bottomheight, (rover->flags & FF_RIPPLE ? PF_Ripple : 0)|PF_Occlude, *gr_frontsector->lightlist[light].lightlevel, levelflats[*rover->bottompic].lumpnum,
-					                rover->master->frontsector, 255, gr_frontsector->lightlist[light].extra_colormap);
+					                rover->master->frontsector, 255, gr_frontsector->lightlist[light].extra_colormap, sub);
 				}
 			}
 
@@ -3314,7 +3306,7 @@ void HWR_Subsector(size_t num)
 					HWR_GetFlat(levelflats[*rover->toppic].lumpnum, R_NoEncore(gr_frontsector, true));
 					light = R_GetPlaneLight(gr_frontsector, centerHeight, viewz < cullHeight ? true : false);
 					HWR_RenderPlane(&extrasubsectors[num], true, *rover->topheight, (rover->flags & FF_RIPPLE ? PF_Ripple : 0)|PF_Occlude, *gr_frontsector->lightlist[light].lightlevel, levelflats[*rover->toppic].lumpnum,
-					                rover->master->frontsector, 255, gr_frontsector->lightlist[light].extra_colormap, sub);
+					                  rover->master->frontsector, 255, gr_frontsector->lightlist[light].extra_colormap, sub);
 				}
 			}
 		}
@@ -5461,6 +5453,11 @@ void HWR_SetTransform(float fpov, player_t *player)
 	postimg_t *postprocessor = &postimgtype[0];
 	INT32 i;
 
+	// copy view cam position for local use
+	dup_viewx = viewx;
+	dup_viewy = viewy;
+	dup_viewz = viewz;
+
 	gr_viewx = FIXED_TO_FLOAT(viewx);
 	gr_viewy = FIXED_TO_FLOAT(viewy);
 	gr_viewz = FIXED_TO_FLOAT(viewz);
@@ -5660,6 +5657,7 @@ void RecursivePortalRendering(portal_t *rootportal, const float fpov, player_t *
 			HWR_PortalFrame(rootportal);// for portalclipsector, it could have gone null from search
 			HWR_PortalClipping(rootportal);
 		}
+		//drawcount = 0;
 		validcount++;
 		if (cv_grbatching.value)
 			HWD.pfnStartBatching();
@@ -5698,18 +5696,8 @@ void RecursivePortalRendering(portal_t *rootportal, const float fpov, player_t *
 			HWR_SetTransform(fpov, player);// restore transform
 		}
 		gr_collect_skywalls = false;
-
-		ps_numsprites.value.i = gr_visspritecount;
-		PS_START_TIMING(ps_hw_spritesorttime);
 		HWR_SortVisSprites();
-		PS_STOP_TIMING(ps_hw_spritesorttime);
-		PS_START_TIMING(ps_hw_spritedrawtime);
 		HWR_DrawSprites();
-		PS_STOP_TIMING(ps_hw_spritedrawtime);
-
-		ps_numdrawnodes.value.i = 0;
-		ps_hw_nodesorttime.value.p = 0;
-		ps_hw_nodedrawtime.value.p = 0;
 		HWR_RenderDrawNodes();
 	}
 	// free memory from portal list allocated by calls to Add2Lines
@@ -5882,8 +5870,19 @@ void HWR_RenderSinglePortal(portal_t *portal, size_t portalnum, float fpov, play
 	// Render the BSP from the new viewpoint.
 	portalcullsector = gr_portalcullsectors[portalnum];
 	HWR_RenderBSPNode((INT32)numnodes - 1);
+
+	// Draw MD2 and sprites
+	ps_numsprites.value.i = gr_visspritecount;
+	PS_START_TIMING(ps_hw_spritesorttime);
 	HWR_SortVisSprites();
+	PS_STOP_TIMING(ps_hw_spritesorttime);
+	PS_START_TIMING(ps_hw_spritedrawtime);
 	HWR_DrawSprites();
+	PS_STOP_TIMING(ps_hw_spritedrawtime);
+
+	ps_numdrawnodes.value.i = 0;
+	ps_hw_nodesorttime.value.p = 0;
+	ps_hw_nodedrawtime.value.p = 0;
 	HWR_RenderDrawNodes();
 }
 
