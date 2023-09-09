@@ -565,7 +565,6 @@ static boolean gl_batching = false;// are we currently collecting batches?
 
 static GLint gl_palette[768];
 static INT32 gl_use_palette_shader = 0;
-static boolean gl_palette_initialized = false;
 
 static INT32 gl_enable_screen_textures = 1;
 
@@ -736,8 +735,8 @@ static gl_shaderprogram_t gl_shaderprograms[MAXSHADERPROGRAMS];
 	"uniform int palette[768];\n" \
 	"void main(void) {\n" \
 		"vec3 texel = vec3(texture2D(tex, gl_TexCoord[0].st));\n" \
-		"int pal_idx = int(texture3D(lookup_tex, vec3((63.0/64.0) * texel + 1.0 / 128.0))[0] * 255.0);\n" \
-		"gl_FragColor = vec4(float(palette[pal_idx*3])/232.0, float(palette[pal_idx*3+1])/232.0, float(palette[pal_idx*3+2])/232.0, 1.0);\n" \
+		"int pal_idx = int(texture3D(lookup_tex, vec3((11.0/12.0) * texel + 1.0 / 24.0))[0] * 255.0);\n" \
+		"gl_FragColor = vec4(float(palette[pal_idx*3])/250.0, float(palette[pal_idx*3+1])/250.0, float(palette[pal_idx*3+2])/250.0, 1.0);\n" \
 	"}\0"
 
 #define GLSL_PALETTE_FRAGMENT_SHADER_OLD \
@@ -850,6 +849,7 @@ static const char *vertex_shaders[] = {
 
 void SetupGLFunc4(void)
 {
+	pglTexImage3D = GetGLFunc("glTexImage3D");
 	pglActiveTexture = GetGLFunc("glActiveTexture");
 	pglMultiTexCoord2f = GetGLFunc("glMultiTexCoord2f");
 	pglClientActiveTexture = GetGLFunc("glClientActiveTexture");
@@ -886,8 +886,6 @@ void SetupGLFunc4(void)
 	pglUniform3fv = GetGLFunc("glUniform3fv");
 	pglGetUniformLocation = GetGLFunc("glGetUniformLocation");
 #endif
-
-	pglTexImage3D = GetGLFunc("glTexImage3D"); // how about here then...
 
 	// GLU
 	pgluBuild2DMipmaps = GetGLFunc("gluBuild2DMipmaps");
@@ -1082,7 +1080,7 @@ GLuint palette_tex_num;
 // smallest separation between all the colors in the srb2 palette is 6, so
 // possibly a 64x64x64 lookup texture might be enough for 100% correct colors
 // (min separation for 64^3 size is 4)
-#define LUT_SIZE 16
+#define LUT_SIZE 12
 #define STEP_SIZE (256/LUT_SIZE)
 // the +2 in the NearestColor call also needs to be adjusted if LUT_SIZE is changed!
 // the hardcoded values in the shader also need to be adjusted if LUT_SIZE is changed!
@@ -1102,7 +1100,7 @@ static void InitPalette(void)
 		gl_palette[i*3+1] = (GLint)(fgreen / 63.0f * 255.0f);
 		gl_palette[i*3+2] = (GLint)(fblue / 31.0f * 255.0f);
 	}
-	
+
 	// init the palette conversion lookup texture
 	GLubyte *pal_lookup_tex = malloc(LUT_SIZE*LUT_SIZE*LUT_SIZE*sizeof(GLubyte));
 	if (!pal_lookup_tex)
@@ -1114,21 +1112,21 @@ static void InitPalette(void)
 		{
 			for (r = 0; r < LUT_SIZE; r++)
 			{
-				pal_lookup_tex[b*LUT_SIZE*LUT_SIZE+g*LUT_SIZE+r] = NearestColor(r*STEP_SIZE+2, g*STEP_SIZE+2, b*STEP_SIZE+2);
+				pal_lookup_tex[b*LUT_SIZE*LUT_SIZE+g*LUT_SIZE+r] = NearestColor(r*STEP_SIZE+3, g*STEP_SIZE+3, b*STEP_SIZE+3);
 			}
 		}
 	}
+	
 	pglGenTextures(1, &palette_tex_num);
 	pglBindTexture(GL_TEXTURE_3D, palette_tex_num);
 	pglTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	pglTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	pglTexImage3D(GL_TEXTURE_3D, 0, GL_R8, LUT_SIZE, LUT_SIZE, LUT_SIZE, 0, GL_RED, GL_UNSIGNED_BYTE, pal_lookup_tex); // test: put gl_red instead of gl_red_integer
+	pglTexImage3D(GL_TEXTURE_3D, 0, GL_LUMINANCE8, LUT_SIZE, LUT_SIZE, LUT_SIZE, 0, GL_RED, GL_UNSIGNED_BYTE, pal_lookup_tex); // test: put gl_red instead of gl_red_integer
 	pglUseProgram(gl_shaderprograms[8].program);
 	pglUniform1i(gl_shaderprograms[8].uniforms[gluniform_color_lookup], 1); // bind sampler to second texture unit
 	pglUseProgram(0);
 	pglBindTexture(GL_TEXTURE_3D, 0);
 	free(pal_lookup_tex);
-	gl_palette_initialized = true;
 }
 
 // -----------------+
