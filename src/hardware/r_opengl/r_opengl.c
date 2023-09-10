@@ -25,7 +25,6 @@
 #include <math.h>
 #include "r_opengl.h"
 #include "r_vbo.h"
-#include "../../z_zone.h"
 
 #include "../../v_video.h" // pLocalPalette
 #include "../../r_data.h" // NearestColor
@@ -359,8 +358,6 @@ typedef void (APIENTRY * PFNglTexEnvi) (GLenum target, GLenum pname, GLint param
 static PFNglTexEnvi pglTexEnvi;
 typedef void (APIENTRY * PFNglTexParameteri) (GLenum target, GLenum pname, GLint param);
 static PFNglTexParameteri pglTexParameteri;
-typedef void (APIENTRY * PFNglTexImage1D) (GLenum target, GLint level, GLint internalFormat, GLsizei width, GLint border, GLenum format, GLenum type, const GLvoid *pixels);
-static PFNglTexImage1D pglTexImage1D;
 typedef void (APIENTRY * PFNglTexImage2D) (GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *pixels);
 static PFNglTexImage2D pglTexImage2D;
 typedef void (APIENTRY * PFNglTexImage3D) (GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, const GLvoid *pixels);
@@ -422,9 +419,6 @@ static PFNglColorPointer pglColorPointer;
 #endif
 #ifndef GL_TEXTURE1
 #define GL_TEXTURE1 0x84C1
-#endif
-#ifndef GL_TEXTURE2
-#define GL_TEXTURE2 0x84C2
 #endif
 
 boolean SetupGLfunc(void)
@@ -488,7 +482,6 @@ boolean SetupGLfunc(void)
 
 	GETOPENGLFUNC(pglTexEnvi, glTexEnvi)
 	GETOPENGLFUNC(pglTexParameteri, glTexParameteri)
-	GETOPENGLFUNC(pglTexImage1D, glTexImage1D)
 	GETOPENGLFUNC(pglTexImage2D, glTexImage2D)
 
 	GETOPENGLFUNC(pglFogf, glFogf)
@@ -573,6 +566,7 @@ static boolean gl_batching = false;// are we currently collecting batches?
 
 static GLint gl_palette[768];
 static INT32 gl_use_palette_shader = 0;
+static boolean gl_palette_initialized = false;
 
 static INT32 gl_enable_screen_textures = 1;
 
@@ -743,8 +737,8 @@ static gl_shaderprogram_t gl_shaderprograms[MAXSHADERPROGRAMS];
 	"uniform int palette[768];\n" \
 	"void main(void) {\n" \
 		"vec3 texel = vec3(texture2D(tex, gl_TexCoord[0].st));\n" \
-		"int pal_idx = int(texture3D(lookup_tex, vec3((texel * 11.0 + 0.5) / 12.0))[0] * 255.0);\n" \
-		"gl_FragColor = vec4(float(palette[pal_idx*3])/250.0, float(palette[pal_idx*3+1])/250.0, float(palette[pal_idx*3+2])/250.0, 1.0);\n" \
+		"int pal_idx = int(texture3D(lookup_tex, vec3((texel * 63.0 + 0.5) / 64.0))[0] * 255.0);\n" \
+		"gl_FragColor = vec4(float(palette[pal_idx*3])/255.0, float(palette[pal_idx*3+1])/255.0, float(palette[pal_idx*3+2])/255.0, 1.0);\n" \
 	"}\0"
 
 #define GLSL_PALETTE_FRAGMENT_SHADER_OLD \
@@ -1088,6 +1082,7 @@ EXPORT void HWRAPI(UnSetShader) (void)
 	gl_shadersenabled = false;
 	gl_currentshaderprogram = 0;
 	gl_shaderprogramchanged = true;// not sure if this is needed
+	if (!pglUseProgram) return;
 	pglUseProgram(0);
 #endif
 }
@@ -1097,12 +1092,11 @@ EXPORT void HWRAPI(KillShaders) (void)
 	// unused.........................
 }
 
-
 // length of one side of lookup texture
 // smallest separation between all the colors in the srb2 palette is 6, so
 // possibly a 64x64x64 lookup texture might be enough for 100% correct colors
 // (min separation for 64^3 size is 4)
-#define LUT_SIZE 12
+#define LUT_SIZE 64
 #define STEP_SIZE (256/LUT_SIZE)
 // the +2 in the NearestColor call also needs to be adjusted if LUT_SIZE is changed!
 // the hardcoded values in the shader also need to be adjusted if LUT_SIZE is changed!
@@ -1124,9 +1118,7 @@ static void InitPalette(void)
 	}
 
 		// init the palette conversion lookup texture
-		UINT8 *pal_lookup_tex = Z_Malloc(
-			LUT_SIZE*LUT_SIZE*LUT_SIZE*sizeof(UINT8),
-			PU_STATIC, NULL);
+		GLubyte *pal_lookup_tex = malloc(LUT_SIZE*LUT_SIZE*LUT_SIZE*sizeof(GLubyte));
 				
 		if (!pal_lookup_tex)
 			I_Error("Failed to allocate memory for generating palette lookup texture.");
@@ -1137,25 +1129,24 @@ static void InitPalette(void)
 			{
 				for (r = 0; r < LUT_SIZE; r++)
 				{
-						pal_lookup_tex[b*LUT_SIZE*LUT_SIZE+g*LUT_SIZE+r] = NearestColor(r*STEP_SIZE+3, g*STEP_SIZE+3, b*STEP_SIZE+3);
+						pal_lookup_tex[b*LUT_SIZE*LUT_SIZE+g*LUT_SIZE+r] = NearestColor(r*STEP_SIZE+0, g*STEP_SIZE+0, b*STEP_SIZE+0);
 				}
 			}
 		}
 #undef STEP_SIZE
-		Z_Free(pal_lookup_tex);
+		
 			
 	pglGenTextures(1, &palette_tex_num);
-	pglActiveTexture(GL_TEXTURE1);
 	pglBindTexture(GL_TEXTURE_3D, palette_tex_num);
 	pglTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	pglTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	pglTexImage3D(GL_TEXTURE_3D, 0, GL_R8, LUT_SIZE, LUT_SIZE, LUT_SIZE, 0, GL_RED, GL_UNSIGNED_BYTE, pal_lookup_tex);
-	pglActiveTexture(GL_TEXTURE0);
+	free(pal_lookup_tex);
 	pglUseProgram(gl_shaderprograms[8].program);
 	pglUniform1i(gl_shaderprograms[8].uniforms[gluniform_color_lookup], 1); // bind sampler to second texture unit
 	pglUseProgram(0);
 	pglBindTexture(GL_TEXTURE_3D, 0);
-
+	gl_palette_initialized = true;
 }
 
 // -----------------+
@@ -1449,7 +1440,7 @@ EXPORT void HWRAPI(ClearBuffer) (FBOOLEAN ColorMask,
 	pglEnableClientState(GL_VERTEX_ARRAY); // We always use this one
 	pglEnableClientState(GL_TEXTURE_COORD_ARRAY); // And mostly this one, too
 	
-	if (gl_use_palette_shader == 1)
+	if (!gl_palette_initialized)
 		InitPalette(); // just gonna put this here for now
 }
 
@@ -3908,13 +3899,8 @@ EXPORT void HWRAPI(DrawScreenFinalTexture)(int width, int height)
 	{
 		pglUseProgram(gl_shaderprograms[8].program); // palette shader
 		pglUniform1iv(gl_shaderprograms[8].uniforms[gluniform_palette], 768, gl_palette);		
-		pglGenTextures(1, &palette_tex_num);
 		pglActiveTexture(GL_TEXTURE1);
-		pglBindTexture(GL_TEXTURE_1D, palette_tex_num);
-		pglTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		pglTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		pglTexImage1D(GL_TEXTURE_1D, 0, GL_RGBA, 256, 0, GL_RGBA, GL_UNSIGNED_BYTE, gl_palette);
-		pglActiveTexture(GL_TEXTURE0);
+		pglBindTexture(GL_TEXTURE_3D, palette_tex_num);
 	}
 
 	pglColor4ubv(white);
@@ -3924,10 +3910,11 @@ EXPORT void HWRAPI(DrawScreenFinalTexture)(int width, int height)
 	pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
 	tex_downloaded = finalScreenTexture;
+	
 	if (gl_use_palette_shader)
 	{
 		pglUseProgram(0);
-		pglBindTexture(GL_TEXTURE_1D, 0);
+		pglBindTexture(GL_TEXTURE_3D, 0);
 		pglActiveTexture(GL_TEXTURE0);
 	}
 }
