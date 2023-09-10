@@ -585,11 +585,12 @@ typedef enum
 	gluniform_fade_start,
 	gluniform_fade_end,
 
-	// misc. (custom shaders)
-	gluniform_leveltime,
-	
+	// palette rendering
 	gluniform_palette,
 	gluniform_color_lookup,
+	
+	// misc.
+	gluniform_leveltime,
 
 	gluniform_max,
 } gluniform_t;
@@ -1000,11 +1001,12 @@ EXPORT boolean HWRAPI(LoadShaders) (void)
 		shader->uniforms[gluniform_fade_start] = GETUNI("fade_start");
 		shader->uniforms[gluniform_fade_end] = GETUNI("fade_end");
 
-		// misc. (custom shaders)
-		shader->uniforms[gluniform_leveltime] = GETUNI("leveltime");
-		
+		// palette rendering
 		shader->uniforms[gluniform_palette] = GETUNI("palette");
 		shader->uniforms[gluniform_color_lookup] = GETUNI("lookup_tex");
+		
+		// misc. (custom shaders)
+		shader->uniforms[gluniform_leveltime] = GETUNI("leveltime");
 
 #undef GETUNI
 
@@ -1018,6 +1020,8 @@ EXPORT boolean HWRAPI(LoadShaders) (void)
 	// texture unit numbers for the samplers used for palette rendering
 	UNIFORM_1(shader->uniforms[gluniform_palette], 2, pglUniform1i);
 	UNIFORM_1(shader->uniforms[gluniform_color_lookup], 1, pglUniform1i);
+	
+	pglUseProgram(0);
 
 #undef UNIFORM_1
 
