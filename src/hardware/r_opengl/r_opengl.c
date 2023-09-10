@@ -25,6 +25,7 @@
 #include <math.h>
 #include "r_opengl.h"
 #include "r_vbo.h"
+#include "../../z_zone.h"
 
 #include "../../v_video.h" // pLocalPalette
 #include "../../r_data.h" // NearestColor
@@ -75,8 +76,9 @@ static  FBITFIELD   CurrentPolyFlags;
 
 static  FTextureInfo *gr_cachetail = NULL;
 static  FTextureInfo *gr_cachehead = NULL;
-
-RGBA_t  myPaletteData[256];
+static GLuint palette_tex_num = 0; // 1D texture containing the screen palette
+static GLuint pal_lookup_tex = 0; // 3D texture containing RGB -> palette index lookup table
+RGBA_t  myPaletteData[256]; // the palette for converting textures to RGBA
 GLint   screen_width    = 0;               // used by Draw2DLine()
 GLint   screen_height   = 0;
 GLbyte  screen_depth    = 0;
@@ -357,6 +359,8 @@ typedef void (APIENTRY * PFNglTexEnvi) (GLenum target, GLenum pname, GLint param
 static PFNglTexEnvi pglTexEnvi;
 typedef void (APIENTRY * PFNglTexParameteri) (GLenum target, GLenum pname, GLint param);
 static PFNglTexParameteri pglTexParameteri;
+typedef void (APIENTRY * PFNglTexImage1D) (GLenum target, GLint level, GLint internalFormat, GLsizei width, GLint border, GLenum format, GLenum type, const GLvoid *pixels);
+static PFNglTexImage1D pglTexImage1D;
 typedef void (APIENTRY * PFNglTexImage2D) (GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *pixels);
 static PFNglTexImage2D pglTexImage2D;
 typedef void (APIENTRY * PFNglTexImage3D) (GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, const GLvoid *pixels);
@@ -418,6 +422,9 @@ static PFNglColorPointer pglColorPointer;
 #endif
 #ifndef GL_TEXTURE1
 #define GL_TEXTURE1 0x84C1
+#endif
+#ifndef GL_TEXTURE2
+#define GL_TEXTURE2 0x84C2
 #endif
 
 boolean SetupGLfunc(void)
@@ -481,6 +488,7 @@ boolean SetupGLfunc(void)
 
 	GETOPENGLFUNC(pglTexEnvi, glTexEnvi)
 	GETOPENGLFUNC(pglTexParameteri, glTexParameteri)
+	GETOPENGLFUNC(pglTexImage1D, glTexImage1D)
 	GETOPENGLFUNC(pglTexImage2D, glTexImage2D)
 
 	GETOPENGLFUNC(pglFogf, glFogf)
@@ -1005,6 +1013,20 @@ EXPORT boolean HWRAPI(LoadShaders) (void)
 		shader->uniforms[gluniform_color_lookup] = GETUNI("lookup_tex");
 
 #undef GETUNI
+
+// set permanent uniform values
+#define UNIFORM_1(uniform, a, function) \
+	if (uniform != -1) \
+		function (uniform, a);
+
+	pglUseProgram(shader->program);
+
+	// texture unit numbers for the samplers used for palette rendering
+	UNIFORM_1(shader->uniforms[gluniform_palette], 2, pglUniform1i);
+	UNIFORM_1(shader->uniforms[gluniform_color_lookup], 1, pglUniform1i);
+
+#undef UNIFORM_1
+
 	}
 #endif
 	return true;
@@ -1075,7 +1097,7 @@ EXPORT void HWRAPI(KillShaders) (void)
 	// unused.........................
 }
 
-GLuint palette_tex_num;
+
 // length of one side of lookup texture
 // smallest separation between all the colors in the srb2 palette is 6, so
 // possibly a 64x64x64 lookup texture might be enough for 100% correct colors
@@ -1101,32 +1123,39 @@ static void InitPalette(void)
 		gl_palette[i*3+2] = (GLint)(fblue / 31.0f * 255.0f);
 	}
 
-	// init the palette conversion lookup texture
-	GLubyte *pal_lookup_tex = malloc(LUT_SIZE*LUT_SIZE*LUT_SIZE*sizeof(GLubyte));
-	if (!pal_lookup_tex)
-		I_Error("Failed to allocate memory for generating palette lookup texture.");
-
-	for (b = 0; b < LUT_SIZE; b++)
-	{
-		for (g = 0; g < LUT_SIZE; g++)
+		// init the palette conversion lookup texture
+		UINT8 *pal_lookup_tex = Z_Malloc(
+			LUT_SIZE*LUT_SIZE*LUT_SIZE*sizeof(UINT8),
+			PU_STATIC, NULL);
+				
+		if (!pal_lookup_tex)
+			I_Error("Failed to allocate memory for generating palette lookup texture.");
+				
+		for (b = 0; b < LUT_SIZE; b++)
 		{
-			for (r = 0; r < LUT_SIZE; r++)
+			for (g = 0; g < LUT_SIZE; g++)
 			{
-				pal_lookup_tex[b*LUT_SIZE*LUT_SIZE+g*LUT_SIZE+r] = NearestColor(r*STEP_SIZE+3, g*STEP_SIZE+3, b*STEP_SIZE+3);
+				for (r = 0; r < LUT_SIZE; r++)
+				{
+						pal_lookup_tex[b*LUT_SIZE*LUT_SIZE+g*LUT_SIZE+r] = NearestColor(r*STEP_SIZE+3, g*STEP_SIZE+3, b*STEP_SIZE+3);
+				}
 			}
 		}
-	}
-	
+#undef STEP_SIZE
+		Z_Free(pal_lookup_tex);
+			
 	pglGenTextures(1, &palette_tex_num);
+	pglActiveTexture(GL_TEXTURE1);
 	pglBindTexture(GL_TEXTURE_3D, palette_tex_num);
 	pglTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	pglTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	pglTexImage3D(GL_TEXTURE_3D, 0, GL_LUMINANCE8, LUT_SIZE, LUT_SIZE, LUT_SIZE, 0, GL_RED, GL_UNSIGNED_BYTE, pal_lookup_tex); // test: put gl_red instead of gl_red_integer
+	pglTexImage3D(GL_TEXTURE_3D, 0, GL_R8, LUT_SIZE, LUT_SIZE, LUT_SIZE, 0, GL_RED, GL_UNSIGNED_BYTE, pal_lookup_tex);
+	pglActiveTexture(GL_TEXTURE0);
 	pglUseProgram(gl_shaderprograms[8].program);
 	pglUniform1i(gl_shaderprograms[8].uniforms[gluniform_color_lookup], 1); // bind sampler to second texture unit
 	pglUseProgram(0);
 	pglBindTexture(GL_TEXTURE_3D, 0);
-	free(pal_lookup_tex);
+
 }
 
 // -----------------+
@@ -3878,9 +3907,14 @@ EXPORT void HWRAPI(DrawScreenFinalTexture)(int width, int height)
 	if (gl_use_palette_shader)
 	{
 		pglUseProgram(gl_shaderprograms[8].program); // palette shader
-		pglUniform1iv(gl_shaderprograms[8].uniforms[gluniform_palette], 768, gl_palette);
+		pglUniform1iv(gl_shaderprograms[8].uniforms[gluniform_palette], 768, gl_palette);		
+		pglGenTextures(1, &palette_tex_num);
 		pglActiveTexture(GL_TEXTURE1);
-		pglBindTexture(GL_TEXTURE_3D, palette_tex_num);
+		pglBindTexture(GL_TEXTURE_1D, palette_tex_num);
+		pglTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		pglTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		pglTexImage1D(GL_TEXTURE_1D, 0, GL_RGBA, 256, 0, GL_RGBA, GL_UNSIGNED_BYTE, gl_palette);
+		pglActiveTexture(GL_TEXTURE0);
 	}
 
 	pglColor4ubv(white);
@@ -3893,7 +3927,7 @@ EXPORT void HWRAPI(DrawScreenFinalTexture)(int width, int height)
 	if (gl_use_palette_shader)
 	{
 		pglUseProgram(0);
-		pglBindTexture(GL_TEXTURE_3D, 0);
+		pglBindTexture(GL_TEXTURE_1D, 0);
 		pglActiveTexture(GL_TEXTURE0);
 	}
 }
