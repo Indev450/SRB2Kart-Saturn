@@ -743,7 +743,7 @@ static gl_shaderprogram_t gl_shaderprograms[MAXSHADERPROGRAMS];
 	"uniform int palette[768];\n" \
 	"void main(void) {\n" \
 		"vec3 texel = vec3(texture2D(tex, gl_TexCoord[0].st));\n" \
-		"int pal_idx = int(texture3D(lookup_tex, vec3((11.0/12.0) * texel + 1.0 / 24.0))[0] * 255.0);\n" \
+		"int pal_idx = int(texture3D(lookup_tex, vec3((texel * 11.0 + 0.5) / 12.0))[0] * 255.0);\n" \
 		"gl_FragColor = vec4(float(palette[pal_idx*3])/250.0, float(palette[pal_idx*3+1])/250.0, float(palette[pal_idx*3+2])/250.0, 1.0);\n" \
 	"}\0"
 
