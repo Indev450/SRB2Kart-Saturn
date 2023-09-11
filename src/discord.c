@@ -47,6 +47,8 @@ discordRequest_t *discordRequestList = NULL;
 
 static char self_ip[IP_SIZE];
 
+boolean drpc_init = false;
+
 /*--------------------------------------------------
 	static char *DRPC_XORIPString(const char *input)
 
@@ -315,6 +317,9 @@ void DRPC_RemoveRequest(discordRequest_t *removeRequest)
 --------------------------------------------------*/
 void DRPC_Init(void)
 {
+	if (drpc_init || !cv_discordrp.value) return;
+
+	drpc_init = true;
 	DiscordEventHandlers handlers;
 	memset(&handlers, 0, sizeof(handlers));
 
@@ -402,6 +407,10 @@ static void DRPC_EmptyRequests(void)
 --------------------------------------------------*/
 void DRPC_UpdatePresence(void)
 {
+	if (!cv_discordrp.value) return;
+
+	if (!drpc_init) DRPC_Init();
+
 	char detailstr[48+1];
 
 	char mapimg[8+1];
