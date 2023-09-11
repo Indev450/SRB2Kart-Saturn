@@ -26,6 +26,10 @@
 #include "v_video.h" // pLocalPalette
 #include "dehacked.h"
 
+#ifdef HWRENDER
+#include "hardware/hw_main.h"
+#endif
+
 #if defined (_WIN32) || defined (_WIN32_WCE)
 #include <malloc.h> // alloca(sizeof)
 #endif
@@ -1137,6 +1141,10 @@ void R_ClearColormaps(void)
 		foundcolormaps[i] = LUMPERROR;
 
 	memset(extra_colormaps, 0, sizeof (extra_colormaps));
+
+#ifdef HWRENDER
+	HWR_ClearLightTableCache();
+#endif	
 }
 
 /*INT32 R_ColormapNumForName(char *name)
@@ -1317,7 +1325,7 @@ INT32 R_CreateColormap(char *p1, char *p2, char *p3)
 	extra_colormaps[mapnum].fadeend = (UINT16)fadeend;
 	extra_colormaps[mapnum].fog = fog;
 
-	if (rendermode == render_soft)
+	if (rendermode == render_soft || cv_grpaletteshader.value == 1)
 	{
 		double r, g, b, cbrightness;
 		int p;

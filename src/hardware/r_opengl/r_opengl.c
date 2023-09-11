@@ -75,9 +75,21 @@ static  FBITFIELD   CurrentPolyFlags;
 
 static  FTextureInfo *gr_cachetail = NULL;
 static  FTextureInfo *gr_cachehead = NULL;
-static GLuint palette_tex_num = 0; // 1D texture containing the screen palette
-static GLuint pal_lookup_tex = 0; // 3D texture containing RGB -> palette index lookup table
-RGBA_t  myPaletteData[256]; // the palette for converting textures to RGBA
+
+typedef struct LightTableCacheEntry_s
+{
+	GLuint id;
+	struct LightTableCacheEntry_s *next;
+} LightTableCacheEntry_t;
+
+LightTableCacheEntry_t *ltcachehead = NULL;
+LightTableCacheEntry_t *ltcachetail = NULL;
+
+// tweakable vars for shader tweaking and testing
+float shadervar1 = 1.0;
+float shadervar2 = 1.0;
+
+RGBA_t  myPaletteData[256];
 GLint   screen_width    = 0;               // used by Draw2DLine()
 GLint   screen_height   = 0;
 GLbyte  screen_depth    = 0;
@@ -585,12 +597,18 @@ typedef enum
 	gluniform_fade_start,
 	gluniform_fade_end,
 
+	// misc.
+	gluniform_leveltime,
+	
 	// palette rendering
 	gluniform_palette,
 	gluniform_color_lookup,
+	gluniform_lighttable_tex,
 	
-	// misc.
-	gluniform_leveltime,
+	// live tweaking
+	gluniform_svar1,
+	gluniform_svar2,
+
 
 	gluniform_max,
 } gluniform_t;
@@ -611,6 +629,18 @@ static gl_shaderprogram_t gl_shaderprograms[MAXSHADERPROGRAMS];
 // GLSL Software fragment shader
 //
 
+#define GLSL_DOOM_COLORMAP_floors \
+	"float R_DoomColormap(float light, float z)\n" \
+	"{\n" \
+		"float lightnum = clamp(light / 17.0, 0.0, 15.0);\n" \
+		"float lightz = clamp(z / 16.0, 0.0, 127.0);\n" \
+		"float startmap = (15.0 - lightnum) * 4.0;\n" \
+		"float scale = 160.0 / (lightz + 1.0);\n" \
+		"return startmap * 1.06 - scale * 0.5 * 1.15;\n" \
+	"}\n"
+
+// 1.06 and 1.15 were chosen when trying to match software lighting in a test map
+
 #define GLSL_DOOM_COLORMAP \
 	"float R_DoomColormap(float light, float z)\n" \
 	"{\n" \
@@ -619,6 +649,49 @@ static gl_shaderprogram_t gl_shaderprograms[MAXSHADERPROGRAMS];
 		"float startmap = (15.0 - lightnum) * 4.0;\n" \
 		"float scale = 160.0 / (lightz + 1.0);\n" \
 		"return startmap - scale * 0.5;\n" \
+	"}\n"
+
+#define GLSL_DOOM_COLORMAP_walls \
+	"float R_DoomColormap(float light, float z)\n" \
+	"{\n" \
+		"float lightnum = clamp(light / 17.0, 0.0, 15.0);\n" \
+		"float lightz = clamp(z / 16.0, 0.0, 127.0);\n" \
+		"float startmap = (15.0 - lightnum) * 4.0;\n" \
+		"float scale = 160.0 / (lightz + 1.0);\n" \
+		"return startmap * 1.05 - scale * 1.0 * 1.1;\n" \
+	"}\n"
+
+// 1.05 and 1.1 were chosen when trying to match software lighting in a test map
+
+#define GLSL_DOOM_COLORMAP_test \
+	"float R_DoomColormap(float light, float z)\n" \
+	"{\n" \
+		"float lightnum = clamp(light / 8.0, 0.0, 31.0);\n" \
+		"float scale = 160.0 / z;\n" \
+		"float pindex = clamp(scale * 4.0, 0.0, 47.0);\n" \
+		"float left = (31.0-lightnum)*2.0;\n" \
+		"float right = 160.0 / floor((pindex+1.0) / 512.0);\n" \
+		"return left - right;\n" \
+	"}\n"
+
+// this one is adapted from here https://forum.zdoom.org/viewtopic.php?f=4&t=34984
+// and added -0.016 when trying to match it... doesnt really
+#define GLSL_DOOM_COLORMAP_test2 \
+	"float R_DoomColormap(float light, float z)\n" \
+	"{\n" \
+		"int L = int((light / 255.0) * 63.0);\n" \
+		"int min_L = 36 - L;\n" \
+		"if (min_L < 0)\n" \
+			"min_L = 0;\n" \
+		"else if (min_L > 31)\n" \
+			"min_L = 31;\n" \
+		"float scale = 1.0 / (gl_FragCoord.z - 0.016);\n" \
+		"int index = (59 - L) - int(scale * 192.0 - 192.0);\n" \
+		"if (index < min_L)\n" \
+			"index = min_L;\n" \
+		"else if (index > 31)\n" \
+			"index = 31;\n" \
+		"return float(index);\n" \
 	"}\n"
 
 #define GLSL_DOOM_LIGHT_EQUATION \
@@ -648,16 +721,16 @@ static gl_shaderprogram_t gl_shaderprograms[MAXSHADERPROGRAMS];
 	"}\n" \
 	"final_color = mix(final_color, fade_color, darkness);\n"
 
-#define GLSL_SOFTWARE_FRAGMENT_SHADER \
+#define GLSL_SOFTWARE_UNIFORMS \
 	"uniform sampler2D tex;\n" \
 	"uniform vec4 poly_color;\n" \
 	"uniform vec4 tint_color;\n" \
 	"uniform vec4 fade_color;\n" \
 	"uniform float lighting;\n" \
 	"uniform float fade_start;\n" \
-	"uniform float fade_end;\n" \
-	GLSL_DOOM_COLORMAP \
-	GLSL_DOOM_LIGHT_EQUATION \
+	"uniform float fade_end;\n"
+
+#define GLSL_SOFTWARE_MAIN \
 	"void main(void) {\n" \
 		"vec4 texel = texture2D(tex, gl_TexCoord[0].st);\n" \
 		"vec4 base_color = texel * poly_color;\n" \
@@ -666,7 +739,56 @@ static gl_shaderprogram_t gl_shaderprograms[MAXSHADERPROGRAMS];
 		GLSL_SOFTWARE_FADE_EQUATION \
 		"final_color.a = texel.a * poly_color.a;\n" \
 		"gl_FragColor = final_color;\n" \
-	"}\0"
+	"}\n"
+
+#define GLSL_SOFTWARE_FRAGMENT_SHADER_FLOORS \
+	GLSL_SOFTWARE_UNIFORMS \
+	GLSL_DOOM_COLORMAP_floors \
+	GLSL_DOOM_LIGHT_EQUATION \
+	GLSL_SOFTWARE_MAIN \
+	"\0"
+
+#define GLSL_SOFTWARE_FRAGMENT_SHADER_WALLS \
+	GLSL_SOFTWARE_UNIFORMS \
+	GLSL_DOOM_COLORMAP_walls \
+	GLSL_DOOM_LIGHT_EQUATION \
+	GLSL_SOFTWARE_MAIN \
+	"\0"
+
+#define GLSL_SOFTWARE_PAL_UNIFORMS \
+	"uniform sampler2D tex;\n" \
+	"uniform sampler2D lighttable_tex;\n" \
+	"uniform sampler3D lookup_tex;\n" \
+	"uniform int palette[768];\n" \
+	"uniform vec4 poly_color;\n" \
+	"uniform float lighting;\n" \
+	"uniform float svar1;\n" \
+	"uniform float svar2;\n"
+
+#define GLSL_SOFTWARE_PAL_MAIN \
+	"void main(void) {\n" \
+		"vec4 texel = texture2D(tex, gl_TexCoord[0].st);\n" \
+		"int tex_pal_idx = int(texture3D(lookup_tex, vec3((texel * 63.0 + 0.5) / 64.0))[0] * 255.0);\n" \
+		"float z = gl_FragCoord.z / gl_FragCoord.w;\n" \
+		"int light_y = int(clamp(floor(R_DoomColormap(lighting, z)), 0.0, 31.0));\n" \
+		"vec2 lighttable_coord = vec2((float(tex_pal_idx) + 0.5) / 256.0, (float(light_y) + 0.5) / 32.0);\n" \
+		"int final_idx = int(texture2D(lighttable_tex, lighttable_coord)[0] * 255.0);\n" \
+		"vec4 final_color = vec4(float(palette[final_idx*3])/255.0, float(palette[final_idx*3+1])/255.0, float(palette[final_idx*3+2])/255.0, 1.0);\n" \
+		"final_color.a = texel.a * poly_color.a;\n" \
+		"gl_FragColor = final_color;\n" \
+	"}\n"
+
+#define GLSL_SOFTWARE_PAL_FRAGMENT_SHADER_FLOORS \
+	GLSL_SOFTWARE_PAL_UNIFORMS \
+	GLSL_DOOM_COLORMAP_floors \
+	GLSL_SOFTWARE_PAL_MAIN \
+	"\0"
+
+#define GLSL_SOFTWARE_PAL_FRAGMENT_SHADER_WALLS \
+	GLSL_SOFTWARE_PAL_UNIFORMS \
+	GLSL_DOOM_COLORMAP_walls \
+	GLSL_SOFTWARE_PAL_MAIN \
+	"\0"
 
 //
 // Water surface shader
@@ -736,13 +858,9 @@ static gl_shaderprogram_t gl_shaderprograms[MAXSHADERPROGRAMS];
 	"uniform sampler2D tex;\n" \
 	"uniform sampler3D lookup_tex;\n" \
 	"uniform int palette[768];\n" \
-	"uniform float lighting;\n" \
-	GLSL_DOOM_COLORMAP \
 	"void main(void) {\n" \
-		"vec4 texel = texture2D(tex, gl_TexCoord[0].st);\n" \
-		"int pal_idx = int(texture3D(lookup_tex, vec3((texel * 63.0 + 0.5) / 64.0))[0] * 255.0);\n" \
-		"float z = gl_FragCoord.z / gl_FragCoord.w;\n" \
-		"float light_y = clamp(floor(R_DoomColormap(lighting, z)), 0.0, 31.0);\n" \
+		"vec3 texel = vec3(texture2D(tex, gl_TexCoord[0].st));\n" \
+		"int pal_idx = int(texture3D(lookup_tex, vec3((63.0/64.0) * texel + 1.0 / 128.0))[0] * 255.0);\n" \
 		"gl_FragColor = vec4(float(palette[pal_idx*3])/255.0, float(palette[pal_idx*3+1])/255.0, float(palette[pal_idx*3+2])/255.0, 1.0);\n" \
 	"}\0"
 
@@ -750,7 +868,7 @@ static gl_shaderprogram_t gl_shaderprograms[MAXSHADERPROGRAMS];
 	"uniform sampler2D tex;\n" \
 	"uniform int palette[768];\n" \
 	"void main(void) {\n" \
-		"vec3 texel = vec3(texture2D(tex, gl_TexCoord[0].st));\n" \" \
+		"vec3 texel = vec3(texture2D(tex, gl_TexCoord[0].st));\n" \
 		"vec3 best = vec3(200.0);\n" \
 		"for (int i = 0; i < 256; i++) {\n" \
 			"vec3 pal_color = vec3(palette[i*3] / 255.0, palette[i*3+1] / 255.0, palette[i*3+2] / 255.0);\n" \
@@ -775,16 +893,16 @@ static const char *fragment_shaders[] = {
 	GLSL_DEFAULT_FRAGMENT_SHADER,
 
 	// Floor fragment shader
-	GLSL_SOFTWARE_FRAGMENT_SHADER,
+	GLSL_SOFTWARE_FRAGMENT_SHADER_FLOORS,
 
 	// Wall fragment shader
-	GLSL_SOFTWARE_FRAGMENT_SHADER,
+	GLSL_SOFTWARE_FRAGMENT_SHADER_WALLS,
 
 	// Sprite fragment shader
-	GLSL_SOFTWARE_FRAGMENT_SHADER,
+	GLSL_SOFTWARE_FRAGMENT_SHADER_WALLS,
 
 	// Model fragment shader
-	GLSL_SOFTWARE_FRAGMENT_SHADER,
+	GLSL_SOFTWARE_FRAGMENT_SHADER_WALLS,
 
 	// Water fragment shader
 	GLSL_WATER_FRAGMENT_SHADER,
@@ -800,6 +918,10 @@ static const char *fragment_shaders[] = {
 	
 	// Palette fragment shader
 	GLSL_PALETTE_FRAGMENT_SHADER,
+	
+	GLSL_SOFTWARE_PAL_FRAGMENT_SHADER_FLOORS,
+
+	GLSL_SOFTWARE_PAL_FRAGMENT_SHADER_WALLS,
 
 	NULL,
 };
@@ -847,6 +969,10 @@ static const char *vertex_shaders[] = {
 	GLSL_DEFAULT_VERTEX_SHADER,
 	
 	// Palette vertex shader
+	GLSL_DEFAULT_VERTEX_SHADER,
+	
+	GLSL_DEFAULT_VERTEX_SHADER,
+	
 	GLSL_DEFAULT_VERTEX_SHADER,
 
 	NULL,
@@ -1004,14 +1130,18 @@ EXPORT boolean HWRAPI(LoadShaders) (void)
 		shader->uniforms[gluniform_lighting] = GETUNI("lighting");
 		shader->uniforms[gluniform_fade_start] = GETUNI("fade_start");
 		shader->uniforms[gluniform_fade_end] = GETUNI("fade_end");
-
-		// palette rendering
-		shader->uniforms[gluniform_palette] = GETUNI("palette");
-		shader->uniforms[gluniform_color_lookup] = GETUNI("lookup_tex");
 		
 		// misc. (custom shaders)
 		shader->uniforms[gluniform_leveltime] = GETUNI("leveltime");
 
+		// palette rendering
+		shader->uniforms[gluniform_palette] = GETUNI("palette");
+		shader->uniforms[gluniform_color_lookup] = GETUNI("lookup_tex");
+		shader->uniforms[gluniform_lighttable_tex] = GETUNI("lighttable_tex");
+		
+		shader->uniforms[gluniform_svar1] = GETUNI("svar1");
+		shader->uniforms[gluniform_svar2] = GETUNI("svar2");
+		
 #undef GETUNI
 
 // set permanent uniform values
@@ -1024,6 +1154,10 @@ EXPORT boolean HWRAPI(LoadShaders) (void)
 	// texture unit numbers for the samplers used for palette rendering
 	UNIFORM_1(shader->uniforms[gluniform_palette], 2, pglUniform1i);
 	UNIFORM_1(shader->uniforms[gluniform_color_lookup], 1, pglUniform1i);
+	UNIFORM_1(shader->uniforms[gluniform_lighttable_tex], 2, pglUniform1i);
+	
+	UNIFORM_1(shader->uniforms[gluniform_svar1], shadervar1, pglUniform1f);
+	UNIFORM_1(shader->uniforms[gluniform_svar2], shadervar2, pglUniform1f);
 	
 	pglUseProgram(0);
 
@@ -1100,6 +1234,7 @@ EXPORT void HWRAPI(KillShaders) (void)
 	// unused.........................
 }
 
+GLuint palette_tex_num;
 // length of one side of lookup texture
 // smallest separation between all the colors in the srb2 palette is 6, so
 // possibly a 64x64x64 lookup texture might be enough for 100% correct colors
@@ -1148,12 +1283,31 @@ void InitPalette(void)
 	pglBindTexture(GL_TEXTURE_3D, palette_tex_num);
 	pglTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	pglTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	if (!pglTexImage3D)
+		I_Error("pglTexImage3D is NULL!");
 	pglTexImage3D(GL_TEXTURE_3D, 0, GL_R8, LUT_SIZE, LUT_SIZE, LUT_SIZE, 0, GL_RED, GL_UNSIGNED_BYTE, pal_lookup_tex);
 	free(pal_lookup_tex);
 	pglUseProgram(gl_shaderprograms[8].program);
 	pglUniform1i(gl_shaderprograms[8].uniforms[gluniform_color_lookup], 1); // bind sampler to second texture unit
+	// bind the palette to the fancy shader here
+	pglUseProgram(gl_shaderprograms[9].program);
+	pglUniform1iv(gl_shaderprograms[9].uniforms[gluniform_palette], 768, gl_palette);
+	// bind tex unit 2 to lighttable tex
+	pglUniform1i(gl_shaderprograms[9].uniforms[gluniform_lighttable_tex], 2);
+	pglUniform1i(gl_shaderprograms[9].uniforms[gluniform_color_lookup], 1);
+	// bind the palette to the fancy shader here
+	pglUseProgram(gl_shaderprograms[10].program);
+	pglUniform1iv(gl_shaderprograms[10].uniforms[gluniform_palette], 768, gl_palette);
+	// bind tex unit 2 to lighttable tex
+	pglUniform1i(gl_shaderprograms[10].uniforms[gluniform_lighttable_tex], 2);
+	pglUniform1i(gl_shaderprograms[10].uniforms[gluniform_color_lookup], 1);
 	pglUseProgram(0);
 	pglBindTexture(GL_TEXTURE_3D, 0);
+
+	// bind 3d lookup to unit 1, maybe it can stay there
+	pglActiveTexture(GL_TEXTURE1);
+	pglBindTexture(GL_TEXTURE_3D, palette_tex_num);
+	pglActiveTexture(GL_TEXTURE0);
 	gl_palette_initialized = true;
 }
 
@@ -1336,6 +1490,51 @@ EXPORT void HWRAPI(ClearMipMapCache) (void)
 	Flush();
 }
 
+EXPORT UINT32 HWRAPI(AddLightTable) (UINT8 *lighttable)
+{
+	LightTableCacheEntry_t *cache_entry = malloc(sizeof(LightTableCacheEntry_t));
+	if (!ltcachetail)
+	{
+		ltcachehead = ltcachetail = cache_entry;
+	}
+	else
+	{
+		ltcachetail->next = cache_entry;
+		ltcachetail = cache_entry;
+	}
+	ltcachetail->next = NULL;
+	pglGenTextures(1, &ltcachetail->id);
+	if (!ltcachetail->id)
+		I_Error("hwr lighttable cache entry id is zero");
+	pglBindTexture(GL_TEXTURE_2D, ltcachetail->id);
+	pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	// should this be a square? (256x256)
+	// if so, then could change the height. just need to allocate a temp
+	// 256x256 buffer and copy the lightmap there so there is a full 256x256
+	// memory area for opengl to read from.
+	pglTexImage2D(GL_TEXTURE_2D, 0, GL_R8, 256, 32, 0, GL_RED, GL_UNSIGNED_BYTE, lighttable);
+
+	// restore the tex that was bound before
+	if (!gl_batching)
+		pglBindTexture(GL_TEXTURE_2D, tex_downloaded);
+
+	return ltcachetail->id;
+}
+
+EXPORT void HWRAPI(ClearLightTableCache) (void)
+{
+	while (ltcachehead)
+	{
+		pglDeleteTextures(1, &ltcachehead->id);
+		LightTableCacheEntry_t *next = ltcachehead->next;
+		free(ltcachehead);
+		ltcachehead = next;
+	}
+	ltcachetail = NULL;
+
+	CONS_Printf("Debug: cleared hwr light tables\n");
+}
 
 // -----------------+
 // ReadRect         : Read a rectangle region of the truecolor framebuffer
@@ -2016,6 +2215,9 @@ static int comparePolygons(const void *p1, const void *p2)
 
 	diff = poly1->texNum - poly2->texNum;
 	if (diff != 0) return diff;
+	
+	diff = poly1->surf.LightTableId - poly2->surf.LightTableId;
+	if (diff != 0) return diff;
 
 	diff = poly1->polyFlags - poly2->polyFlags;
 	if (diff != 0) return diff;
@@ -2148,7 +2350,15 @@ EXPORT void HWRAPI(RenderBatches) (precise_t *sSortTime, precise_t *sDrawTime, i
 	firstFade.alpha = byte2float[currentSurfaceInfo.FadeColor.s.alpha];
 
 	if (gl_allowshaders)
+	{
 		load_shaders(&currentSurfaceInfo, &firstPoly, &firstTint, &firstFade);
+		if (gl_use_palette_shader)
+		{
+			pglActiveTexture(GL_TEXTURE2);// this stuff could be done better but gonna do it quick like this for now
+			pglBindTexture(GL_TEXTURE_2D, currentSurfaceInfo.LightTableId);
+			pglActiveTexture(GL_TEXTURE0);
+		}
+	}
 
 	if (currentPolyFlags & PF_NoTexture)
 		currentTexture = 0;
@@ -2266,7 +2476,8 @@ EXPORT void HWRAPI(RenderBatches) (precise_t *sSortTime, precise_t *sDrawTime, i
 					currentSurfaceInfo.FadeColor.rgba != nextSurfaceInfo.FadeColor.rgba ||
 					currentSurfaceInfo.LightInfo.light_level != nextSurfaceInfo.LightInfo.light_level ||
 					currentSurfaceInfo.LightInfo.fade_start != nextSurfaceInfo.LightInfo.fade_start ||
-					currentSurfaceInfo.LightInfo.fade_end != nextSurfaceInfo.LightInfo.fade_end)
+					currentSurfaceInfo.LightInfo.fade_end != nextSurfaceInfo.LightInfo.fade_end ||
+					currentSurfaceInfo.LightTableId != nextSurfaceInfo.LightTableId)
 				{
 					changeState = true;
 					changeSurfaceInfo = true;
@@ -2389,7 +2600,15 @@ EXPORT void HWRAPI(RenderBatches) (precise_t *sSortTime, precise_t *sDrawTime, i
 				fade.alpha = byte2float[nextSurfaceInfo.FadeColor.s.alpha];
 
 				load_shaders(&nextSurfaceInfo, &poly, &tint, &fade);
+				
+				if (gl_use_palette_shader)
+				{
+					pglActiveTexture(GL_TEXTURE2);// this stuff could be done better but gonna do it quick like this for now
+					pglBindTexture(GL_TEXTURE_2D, nextSurfaceInfo.LightTableId);
+					pglActiveTexture(GL_TEXTURE0);
+				}
 			}
+
 			currentSurfaceInfo = nextSurfaceInfo;
 			changeSurfaceInfo = false;
 
@@ -2488,6 +2707,14 @@ EXPORT void HWRAPI(DrawPolygon) (FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUI
 				fade.green = byte2float[pSurf->FadeColor.s.green];
 				fade.blue  = byte2float[pSurf->FadeColor.s.blue];
 				fade.alpha = byte2float[pSurf->FadeColor.s.alpha];
+				
+				// inefficient. load the colormap texture
+				if (gl_use_palette_shader || gl_allowshaders)
+				{
+					pglActiveTexture(GL_TEXTURE2);
+					pglBindTexture(GL_TEXTURE_2D, pSurf->LightTableId);
+					pglActiveTexture(GL_TEXTURE0);
+				}
 		}
 
 		load_shaders(pSurf, &poly, &tint, &fade);
@@ -2833,6 +3060,14 @@ EXPORT void HWRAPI(SetSpecialState) (hwdspecialstate_t IdState, INT32 Value)
 			
 		case HWD_SET_PALETTE_SHADER_ENABLED:
 			gl_use_palette_shader = Value;
+			break;
+			
+		case HWD_SET_SVAR1:
+			shadervar1 = (float)Value / 1000.0f;
+			break;
+		
+		case HWD_SET_SVAR2:
+			shadervar2 = (float)Value / 1000.0f;
 			break;
 
 		case HWD_SET_TEXTUREFILTERMODE:
@@ -3903,13 +4138,13 @@ EXPORT void HWRAPI(DrawScreenFinalTexture)(int width, int height)
 	ClearBuffer(true, false, false, &clearColour);
 	pglBindTexture(GL_TEXTURE_2D, finalScreenTexture);
 	
-	if (gl_use_palette_shader)
+	/*if (gl_use_palette_shader)
 	{
 		pglUseProgram(gl_shaderprograms[8].program); // palette shader
-		pglUniform1iv(gl_shaderprograms[8].uniforms[gluniform_palette], 768, gl_palette);		
+		pglUniform1iv(gl_shaderprograms[8].uniforms[gluniform_palette], 768, gl_palette);
 		pglActiveTexture(GL_TEXTURE1);
 		pglBindTexture(GL_TEXTURE_3D, palette_tex_num);
-	}
+	}*/
 
 	pglColor4ubv(white);
 	pglTexCoordPointer(2, GL_FLOAT, 0, fix);
@@ -3919,12 +4154,12 @@ EXPORT void HWRAPI(DrawScreenFinalTexture)(int width, int height)
 
 	tex_downloaded = finalScreenTexture;
 	
-	if (gl_use_palette_shader)
+	/*if (gl_use_palette_shader)
 	{
 		pglUseProgram(0);
 		pglBindTexture(GL_TEXTURE_3D, 0);
 		pglActiveTexture(GL_TEXTURE0);
-	}
+	}*/
 }
 
 #endif //HWRENDER

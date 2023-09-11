@@ -142,6 +142,8 @@ void HWR_AddLine(seg_t *line);
 boolean HWR_CheckBBox(fixed_t *bspcoord);
 void HWR_RenderDrawNodes(void);
 
+void HWR_ClearLightTableCache(void);
+
 // hw_main.c: Sprites
 void HWR_AddSprites(sector_t *sec);
 void HWR_ProjectSprite(mobj_t *thing);
