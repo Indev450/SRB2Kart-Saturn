@@ -32,6 +32,8 @@
 #include "../../p_tick.h" // for leveltime (NOTE: THIS IS BAD, FIGURE OUT HOW TO PROPERLY IMPLEMENT gl_leveltime)
 #include "../../i_system.h" // for I_GetPreciseTime (batching time measurements)
 
+#include "../hw_main.h"
+
 // Eeeeh not sure is this right way, but it works < sry :c 
 //extern consvar_t cv_grusecustomshaders;
 
@@ -4078,7 +4080,7 @@ EXPORT void HWRAPI(DrawScreenFinalTexture)(int width, int height)
 	ClearBuffer(true, false, false, &clearColour);
 	pglBindTexture(GL_TEXTURE_2D, finalScreenTexture);
 	
-	if (gl_use_palette_shader)
+	if (gl_use_palette_shader && cv_grshaders.value)
 	{
 		pglUseProgram(gl_shaderprograms[8].program); // palette shader
 		pglUniform1iv(gl_shaderprograms[8].uniforms[gluniform_palette], 768, gl_palette);
@@ -4093,7 +4095,7 @@ EXPORT void HWRAPI(DrawScreenFinalTexture)(int width, int height)
 
 	tex_downloaded = finalScreenTexture;
 	
-	if (gl_use_palette_shader)
+	if (gl_use_palette_shader && cv_grshaders.value)
 	{
 		pglUseProgram(0);
 		pglActiveTexture(GL_TEXTURE0);
