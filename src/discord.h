@@ -65,6 +65,13 @@ void DRPC_Init(void);
 
 
 /*--------------------------------------------------
+	void DRPC_Shutdown(void);
+
+		Shutdown Discord Rich Presence if it was started at all.
+--------------------------------------------------*/
+void DRPC_Shutdown(void);
+
+/*--------------------------------------------------
 	void DRPC_UpdatePresence(void);
 
 		Updates what is displayed by Rich Presence on the user's profile.
