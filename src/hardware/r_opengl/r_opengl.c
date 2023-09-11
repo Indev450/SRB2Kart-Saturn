@@ -566,7 +566,7 @@ static boolean gl_batching = false;// are we currently collecting batches?
 
 static GLint gl_palette[768];
 static INT32 gl_use_palette_shader = 0;
-static boolean gl_palette_initialized = false;
+boolean gl_palette_initialized = false;
 
 static INT32 gl_enable_screen_textures = 1;
 
@@ -740,7 +740,7 @@ static gl_shaderprogram_t gl_shaderprograms[MAXSHADERPROGRAMS];
 	GLSL_DOOM_COLORMAP \
 	"void main(void) {\n" \
 		"vec4 texel = texture2D(tex, gl_TexCoord[0].st);\n" \
-		"float pal_idx = int(texture3D(lookup_tex, vec3((texel * 63.0 + 0.5) / 64.0))[0] * 255.0);\n" \
+		"int pal_idx = int(texture3D(lookup_tex, vec3((texel * 63.0 + 0.5) / 64.0))[0] * 255.0);\n" \
 		"float z = gl_FragCoord.z / gl_FragCoord.w;\n" \
 		"float light_y = clamp(floor(R_DoomColormap(lighting, z)), 0.0, 31.0);\n" \
 		"gl_FragColor = vec4(float(palette[pal_idx*3])/255.0, float(palette[pal_idx*3+1])/255.0, float(palette[pal_idx*3+2])/255.0, 1.0);\n" \
@@ -1109,7 +1109,7 @@ EXPORT void HWRAPI(KillShaders) (void)
 // the +2 in the NearestColor call also needs to be adjusted if LUT_SIZE is changed!
 // the hardcoded values in the shader also need to be adjusted if LUT_SIZE is changed!
 
-static void InitPalette(void)
+void InitPalette(void)
 {	
 	int i, r, g, b;
 	// init the palette
