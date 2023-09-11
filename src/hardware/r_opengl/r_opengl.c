@@ -85,10 +85,6 @@ typedef struct LightTableCacheEntry_s
 LightTableCacheEntry_t *ltcachehead = NULL;
 LightTableCacheEntry_t *ltcachetail = NULL;
 
-// tweakable vars for shader tweaking and testing
-float shadervar1 = 1.0;
-float shadervar2 = 1.0;
-
 RGBA_t  myPaletteData[256];
 GLint   screen_width    = 0;               // used by Draw2DLine()
 GLint   screen_height   = 0;
@@ -596,20 +592,15 @@ typedef enum
 	gluniform_lighting,
 	gluniform_fade_start,
 	gluniform_fade_end,
-
-	// misc.
-	gluniform_leveltime,
 	
 	// palette rendering
 	gluniform_palette,
 	gluniform_color_lookup,
 	gluniform_lighttable_tex,
 	
-	// live tweaking
-	gluniform_svar1,
-	gluniform_svar2,
-
-
+	// misc.
+	gluniform_leveltime,
+	
 	gluniform_max,
 } gluniform_t;
 
@@ -659,39 +650,6 @@ static gl_shaderprogram_t gl_shaderprograms[MAXSHADERPROGRAMS];
 		"float startmap = (15.0 - lightnum) * 4.0;\n" \
 		"float scale = 160.0 / (lightz + 1.0);\n" \
 		"return startmap * 1.05 - scale * 1.0 * 1.1;\n" \
-	"}\n"
-
-// 1.05 and 1.1 were chosen when trying to match software lighting in a test map
-
-#define GLSL_DOOM_COLORMAP_test \
-	"float R_DoomColormap(float light, float z)\n" \
-	"{\n" \
-		"float lightnum = clamp(light / 8.0, 0.0, 31.0);\n" \
-		"float scale = 160.0 / z;\n" \
-		"float pindex = clamp(scale * 4.0, 0.0, 47.0);\n" \
-		"float left = (31.0-lightnum)*2.0;\n" \
-		"float right = 160.0 / floor((pindex+1.0) / 512.0);\n" \
-		"return left - right;\n" \
-	"}\n"
-
-// this one is adapted from here https://forum.zdoom.org/viewtopic.php?f=4&t=34984
-// and added -0.016 when trying to match it... doesnt really
-#define GLSL_DOOM_COLORMAP_test2 \
-	"float R_DoomColormap(float light, float z)\n" \
-	"{\n" \
-		"int L = int((light / 255.0) * 63.0);\n" \
-		"int min_L = 36 - L;\n" \
-		"if (min_L < 0)\n" \
-			"min_L = 0;\n" \
-		"else if (min_L > 31)\n" \
-			"min_L = 31;\n" \
-		"float scale = 1.0 / (gl_FragCoord.z - 0.016);\n" \
-		"int index = (59 - L) - int(scale * 192.0 - 192.0);\n" \
-		"if (index < min_L)\n" \
-			"index = min_L;\n" \
-		"else if (index > 31)\n" \
-			"index = 31;\n" \
-		"return float(index);\n" \
 	"}\n"
 
 #define GLSL_DOOM_LIGHT_EQUATION \
@@ -762,8 +720,6 @@ static gl_shaderprogram_t gl_shaderprograms[MAXSHADERPROGRAMS];
 	"uniform int palette[768];\n" \
 	"uniform vec4 poly_color;\n" \
 	"uniform float lighting;\n" \
-	"uniform float svar1;\n" \
-	"uniform float svar2;\n"
 
 #define GLSL_SOFTWARE_PAL_MAIN \
 	"void main(void) {\n" \
@@ -849,10 +805,8 @@ static gl_shaderprogram_t gl_shaderprograms[MAXSHADERPROGRAMS];
 	"}\0"
 	
 //
-// Palette color quantization shader test.
+// Palette color quantization shader
 //
-
-// Could test putting this to GLSL_SOFTWARE_FRAGMENT_SHADER and seeing what happens to performance.
 
 #define GLSL_PALETTE_FRAGMENT_SHADER \
 	"uniform sampler2D tex;\n" \
@@ -862,19 +816,6 @@ static gl_shaderprogram_t gl_shaderprograms[MAXSHADERPROGRAMS];
 		"vec3 texel = vec3(texture2D(tex, gl_TexCoord[0].st));\n" \
 		"int pal_idx = int(texture3D(lookup_tex, vec3((63.0/64.0) * texel + 1.0 / 128.0))[0] * 255.0);\n" \
 		"gl_FragColor = vec4(float(palette[pal_idx*3])/255.0, float(palette[pal_idx*3+1])/255.0, float(palette[pal_idx*3+2])/255.0, 1.0);\n" \
-	"}\0"
-
-#define GLSL_PALETTE_FRAGMENT_SHADER_OLD \
-	"uniform sampler2D tex;\n" \
-	"uniform int palette[768];\n" \
-	"void main(void) {\n" \
-		"vec3 texel = vec3(texture2D(tex, gl_TexCoord[0].st));\n" \
-		"vec3 best = vec3(200.0);\n" \
-		"for (int i = 0; i < 256; i++) {\n" \
-			"vec3 pal_color = vec3(palette[i*3] / 255.0, palette[i*3+1] / 255.0, palette[i*3+2] / 255.0);\n" \
-			"best = mix(pal_color, best, step(length(best-texel), length(pal_color-texel)));\n" \
-		"}\n" \
-		"gl_FragColor = vec4(best[0], best[1], best[2] ,1.0);\n" \
 	"}\0"
 
 //
@@ -1131,16 +1072,13 @@ EXPORT boolean HWRAPI(LoadShaders) (void)
 		shader->uniforms[gluniform_fade_start] = GETUNI("fade_start");
 		shader->uniforms[gluniform_fade_end] = GETUNI("fade_end");
 		
-		// misc. (custom shaders)
-		shader->uniforms[gluniform_leveltime] = GETUNI("leveltime");
-
 		// palette rendering
 		shader->uniforms[gluniform_palette] = GETUNI("palette");
 		shader->uniforms[gluniform_color_lookup] = GETUNI("lookup_tex");
 		shader->uniforms[gluniform_lighttable_tex] = GETUNI("lighttable_tex");
 		
-		shader->uniforms[gluniform_svar1] = GETUNI("svar1");
-		shader->uniforms[gluniform_svar2] = GETUNI("svar2");
+		// misc. (custom shaders)
+		shader->uniforms[gluniform_leveltime] = GETUNI("leveltime");
 		
 #undef GETUNI
 
@@ -1155,9 +1093,6 @@ EXPORT boolean HWRAPI(LoadShaders) (void)
 	UNIFORM_1(shader->uniforms[gluniform_palette], 2, pglUniform1i);
 	UNIFORM_1(shader->uniforms[gluniform_color_lookup], 1, pglUniform1i);
 	UNIFORM_1(shader->uniforms[gluniform_lighttable_tex], 2, pglUniform1i);
-	
-	UNIFORM_1(shader->uniforms[gluniform_svar1], shadervar1, pglUniform1f);
-	UNIFORM_1(shader->uniforms[gluniform_svar2], shadervar2, pglUniform1f);
 	
 	pglUseProgram(0);
 
@@ -1532,8 +1467,6 @@ EXPORT void HWRAPI(ClearLightTableCache) (void)
 		ltcachehead = next;
 	}
 	ltcachetail = NULL;
-
-	CONS_Printf("Debug: cleared hwr light tables\n");
 }
 
 // -----------------+
@@ -3060,14 +2993,6 @@ EXPORT void HWRAPI(SetSpecialState) (hwdspecialstate_t IdState, INT32 Value)
 			
 		case HWD_SET_PALETTE_SHADER_ENABLED:
 			gl_use_palette_shader = Value;
-			break;
-			
-		case HWD_SET_SVAR1:
-			shadervar1 = (float)Value / 1000.0f;
-			break;
-		
-		case HWD_SET_SVAR2:
-			shadervar2 = (float)Value / 1000.0f;
 			break;
 
 		case HWD_SET_TEXTUREFILTERMODE:

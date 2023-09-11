@@ -69,9 +69,6 @@ static void CV_screentextures_ONChange(void);
 static void CV_useCustomShaders_ONChange(void);
 static void CV_grpaletteshader_OnChange(void);
 
-static void CV_shadervar1_OnChange(void);
-static void CV_shadervar2_OnChange(void);
-
 static CV_PossibleValue_t grfiltermode_cons_t[]= {{HWD_SET_TEXTUREFILTER_POINTSAMPLED, "Nearest"},
 	{HWD_SET_TEXTUREFILTER_BILINEAR, "Bilinear"}, {HWD_SET_TEXTUREFILTER_TRILINEAR, "Trilinear"},
 	{HWD_SET_TEXTUREFILTER_MIXED1, "Linear_Nearest"},
@@ -92,11 +89,6 @@ consvar_t cv_grsolvetjoin = {"gr_solvetjoin", "On", 0, CV_OnOff, NULL, 0, NULL, 
 
 consvar_t cv_grbatching = {"gr_batching", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_grpaletteshader = {"gr_paletteshader", "Off", CV_CALL|CV_SAVE, CV_OnOff, CV_grpaletteshader_OnChange, 0, NULL, NULL, 0, 0, NULL};
-
-consvar_t cv_shadervar1 = {"svar1", "1000", CV_CALL, CV_Unsigned,
-                             CV_shadervar1_OnChange, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_shadervar2 = {"svar2", "1000", CV_CALL, CV_Unsigned,
-                             CV_shadervar2_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 static CV_PossibleValue_t grrenderdistance_cons_t[] = {
 	{0, "Max"}, {1, "1024"}, {2, "2048"}, {3, "4096"}, {4, "6144"}, {5, "8192"},
@@ -158,18 +150,6 @@ static void CV_grpaletteshader_OnChange(void)
 		HWD.pfnSetSpecialState(HWD_SET_PALETTE_SHADER_ENABLED, cv_grpaletteshader.value);
 		gr_use_palette_shader = cv_grpaletteshader.value;
 	}
-}
-
-static void CV_shadervar1_OnChange(void)
-{
-	if (rendermode == render_opengl)
-		HWD.pfnSetSpecialState(HWD_SET_SVAR1, cv_shadervar1.value);
-}
-
-static void CV_shadervar2_OnChange(void)
-{
-	if (rendermode == render_opengl)
-		HWD.pfnSetSpecialState(HWD_SET_SVAR2, cv_shadervar2.value);
 }
 
 // ==========================================================================
@@ -496,10 +476,8 @@ void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *col
 		{
 		UINT8 *colormap_pointer;
 
-		CONS_Printf("Dbg: creating hwr lt, id %u, color %X, fadecolor %X\n", colormap->gl_lighttable_id, colormap->rgba, colormap->fadergba);
 		if (default_colormap)
 		{
-			CONS_Printf("Dbg: Watch out! it's the sneaky default colormap!\n");
 			colormap_pointer = colormaps;
 		}
 		else
@@ -6023,8 +6001,6 @@ void HWR_AddCommands(void)
 	CV_RegisterVar(&cv_portalonly);
 	CV_RegisterVar(&cv_secbright);
 	CV_RegisterVar(&cv_grpaletteshader);
-	CV_RegisterVar(&cv_shadervar1);
-	CV_RegisterVar(&cv_shadervar2);
 }
 
 // --------------------------------------------------------------------------
