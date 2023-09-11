@@ -3100,7 +3100,7 @@ static void K_QuiteSaltyHop(player_t *p)
 			p->mo->spriteyscale += (mos/8);
 			p->mo->spritexscale -= (mos/8);
 		}
-		p->mo->spriteyoffset = p->mo->salty_zoffset*P_MobjFlip(p->mo);
+		p->mo->spriteyoffset = p->mo->salty_zoffset;
 		if (S_SoundPlaying(p->mo, sfx_screec))
 			S_StopSoundByID(p->mo, sfx_screec);
 		if (S_SoundPlaying(p->mo, sfx_drift))
@@ -3132,6 +3132,7 @@ static angle_t K_GetSlopeRollAngle(player_t *p, boolean dontflip, boolean useRes
 	angle_t zangle = 0;
 	angle_t xydirection = 0;
 	angle_t an;
+	angle_t final_slope;
 	INT32 pNum = K_FindPlayerNum(p);
 
 	I_Assert(p != NULL);
@@ -3171,7 +3172,14 @@ static angle_t K_GetSlopeRollAngle(player_t *p, boolean dontflip, boolean useRes
 		zangle = InvAngle(zangle);
 
 	an = (lookAngle - xydirection);
-	return FixedMul(zangle, FINESINE(an>>ANGLETOFINESHIFT));
+	final_slope = -(FixedMul(FINESINE(an>>ANGLETOFINESHIFT), zangle));
+	an = (INT32)(final_slope - p->tilt_sprite) / 3; // instead of just a direct snap
+
+	if (an)
+		p->tilt_sprite += an;
+	else
+		p->tilt_sprite = final_slope;
+	return -p->tilt_sprite;
 }
 
 static void K_RollPlayerBySlopes(player_t *p, boolean usedistance) 
@@ -6647,7 +6655,7 @@ void K_CheckBumpers(void)
 	if (winnernum > -1 && playeringame[winnernum])
 	{
 		players[winnernum].marescore += winnerscoreadd;
-		CONS_Printf(M_GetText("%s recieved %d point%s for winning!\n"), player_names[winnernum], winnerscoreadd, (winnerscoreadd == 1 ? "" : "s"));
+		CONS_Printf(M_GetText("%s received %d point%s for winning!\n"), player_names[winnernum], winnerscoreadd, (winnerscoreadd == 1 ? "" : "s"));
 	}
 
 	for (i = 0; i < MAXPLAYERS; i++) // This can't go in the earlier loop because winning adds points
