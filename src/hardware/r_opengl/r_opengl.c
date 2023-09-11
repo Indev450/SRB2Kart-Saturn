@@ -4078,13 +4078,12 @@ EXPORT void HWRAPI(DrawScreenFinalTexture)(int width, int height)
 	ClearBuffer(true, false, false, &clearColour);
 	pglBindTexture(GL_TEXTURE_2D, finalScreenTexture);
 	
-	/*if (gl_use_palette_shader)
+	if (gl_use_palette_shader)
 	{
 		pglUseProgram(gl_shaderprograms[8].program); // palette shader
 		pglUniform1iv(gl_shaderprograms[8].uniforms[gluniform_palette], 768, gl_palette);
 		pglActiveTexture(GL_TEXTURE1);
-		pglBindTexture(GL_TEXTURE_3D, palette_tex_num);
-	}*/
+	}
 
 	pglColor4ubv(white);
 	pglTexCoordPointer(2, GL_FLOAT, 0, fix);
@@ -4094,12 +4093,11 @@ EXPORT void HWRAPI(DrawScreenFinalTexture)(int width, int height)
 
 	tex_downloaded = finalScreenTexture;
 	
-	/*if (gl_use_palette_shader)
+	if (gl_use_palette_shader)
 	{
 		pglUseProgram(0);
-		pglBindTexture(GL_TEXTURE_3D, 0);
 		pglActiveTexture(GL_TEXTURE0);
-	}*/
+	}
 }
 
 #endif //HWRENDER
