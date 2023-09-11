@@ -1347,7 +1347,8 @@ static menuitem_t OP_OpenGLOptionsMenu[] =
 	{IT_STRING | IT_CVAR,	NULL, "3D Models",					&cv_grmdls,					 5},
 	{IT_STRING | IT_CVAR,	NULL, "Fallback Player 3D Model",	&cv_grfallbackplayermodel,	 15},
 	{IT_STRING|IT_CVAR,		NULL, "Shaders",					&cv_grshaders,				 25},
-	{IT_STRING|IT_CVAR,		NULL, "Use custom Shaders",			&cv_grusecustomshaders,		 35},
+	//{IT_STRING|IT_CVAR,		NULL, "Use custom Shaders",			&cv_grusecustomshaders,		 35}, // rip in peace sweet prince
+	{IT_STRING|IT_CVAR,		NULL, "Palette Rendering",			&cv_grpaletteshader,		 35},
 	{IT_STRING | IT_CVAR, 	NULL, "Min Shader Brightness", 		&cv_secbright, 		 		 45},
 
 	{IT_STRING|IT_CVAR,		NULL, "Texture Quality",			&cv_scr_depth,				 65},
@@ -1406,7 +1407,6 @@ static menuitem_t OP_SoundOptionsMenu[] =
 	{IT_STRING|IT_CVAR,        NULL, "Play SFX While Unfocused", &cv_playsoundifunfocused, 135},
 	{IT_STRING|IT_SUBMENU, 		NULL, "Advanced Settings...", 		&OP_SoundAdvancedDef, 155}
 };
-
 
 static menuitem_t OP_SoundAdvancedMenu[] =
 {

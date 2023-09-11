@@ -30,6 +30,7 @@
 #include "../r_fps.h"
 #include "../r_state.h"
 #include "../r_local.h"
+#include "../r_data.h"
 #include "../r_patch.h" // a mystery as to what this is for
 #include "../r_bsp.h"	// R_NoEncore
 #include "../r_main.h"	// cv_fov
@@ -66,7 +67,7 @@ int gr_use_palette_shader = 0;
 static void CV_filtermode_ONChange(void);
 static void CV_anisotropic_ONChange(void);
 static void CV_screentextures_ONChange(void);
-static void CV_useCustomShaders_ONChange(void);
+//static void CV_useCustomShaders_ONChange(void); 
 static void CV_grpaletteshader_OnChange(void);
 
 static CV_PossibleValue_t grfiltermode_cons_t[]= {{HWD_SET_TEXTUREFILTER_POINTSAMPLED, "Nearest"},
@@ -88,7 +89,6 @@ consvar_t cv_grcorrecttricks = {"gr_correcttricks", "Off", 0, CV_OnOff, NULL, 0,
 consvar_t cv_grsolvetjoin = {"gr_solvetjoin", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_grbatching = {"gr_batching", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_grpaletteshader = {"gr_paletteshader", "Off", CV_CALL|CV_SAVE, CV_OnOff, CV_grpaletteshader_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 static CV_PossibleValue_t grrenderdistance_cons_t[] = {
 	{0, "Max"}, {1, "1024"}, {2, "2048"}, {3, "4096"}, {4, "6144"}, {5, "8192"},
@@ -120,7 +120,9 @@ static INT32 current_bsp_culling_distance = 0;
 consvar_t cv_grscreentextures = {"gr_screentextures", "On", CV_CALL, CV_OnOff,
                                  CV_screentextures_ONChange, 0, NULL, NULL, 0, 0, NULL};
 
- consvar_t cv_grusecustomshaders = {"gr_usecustomshaders", "Yes", CV_CALL|CV_SAVE, CV_OnOff, CV_useCustomShaders_ONChange, 0, NULL, NULL, 0, 0, NULL};
+//consvar_t cv_grusecustomshaders = {"gr_usecustomshaders", "Yes", CV_CALL|CV_SAVE, CV_OnOff, CV_useCustomShaders_ONChange, 0, NULL, NULL, 0, 0, NULL}; // rip in peace sweet prince
+
+consvar_t cv_grpaletteshader = {"gr_paletteshader", "Off", CV_CALL|CV_SAVE, CV_OnOff, CV_grpaletteshader_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 static void CV_filtermode_ONChange(void)
 {
@@ -137,11 +139,11 @@ static void CV_screentextures_ONChange(void)
 	HWD.pfnSetSpecialState(HWD_SET_SCREEN_TEXTURES, cv_grscreentextures.value);
 }
 
-static void CV_useCustomShaders_ONChange(void)
+/*static void CV_useCustomShaders_ONChange(void)
 {
     if (rendermode == render_opengl)
         HWD.pfnInitCustomShaders();
-}
+}*/
 
 static void CV_grpaletteshader_OnChange(void)
 {
@@ -149,6 +151,7 @@ static void CV_grpaletteshader_OnChange(void)
 	{
 		HWD.pfnSetSpecialState(HWD_SET_PALETTE_SHADER_ENABLED, cv_grpaletteshader.value);
 		gr_use_palette_shader = cv_grpaletteshader.value;
+		R_ClearColormaps();
 	}
 }
 
