@@ -1104,7 +1104,7 @@ void Y_VoteDrawer(void)
 
 	V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 31);
 
-	if (widebgpatch && rendermode == render_soft && vid.width / vid.dupx > 320) {
+	if (widebgpatch && vid.width / vid.dupx > 320) {
 
 		if(foundAnimVoteWideFrames == 0){
 			V_DrawScaledPatch(((vid.width/2) / vid.dupx) - (SHORT(widebgpatch->width)/2),
