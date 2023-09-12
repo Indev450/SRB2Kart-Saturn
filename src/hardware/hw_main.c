@@ -470,27 +470,30 @@ void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *col
 	Surface->LightInfo.fade_start = (colormap != NULL) ? colormap->fadestart : 0;
 	Surface->LightInfo.fade_end = (colormap != NULL) ? colormap->fadeend : 31;
 	
-	if (!colormap)
+	if (gr_use_palette_shader)
 	{
-		colormap = &extra_colormaps[num_extra_colormaps];
-		default_colormap = true;
-	}
-	if (!colormap->gl_lighttable_id)
+		if (!colormap)
 		{
-		UINT8 *colormap_pointer;
-
-		if (default_colormap)
-		{
-			colormap_pointer = colormaps;
+			colormap = &extra_colormaps[num_extra_colormaps];
+			default_colormap = true;
 		}
-		else
-		{
-			colormap_pointer = colormap->colormap;
-		}
-		colormap->gl_lighttable_id = HWD.pfnAddLightTable(colormap_pointer);
-	}
+		if (!colormap->gl_lighttable_id)
+			{
+			UINT8 *colormap_pointer;
 
-	Surface->LightTableId = colormap->gl_lighttable_id;
+			if (default_colormap)
+			{
+				colormap_pointer = colormaps;
+			}
+			else
+			{
+				colormap_pointer = colormap->colormap;
+			}
+			colormap->gl_lighttable_id = HWD.pfnAddLightTable(colormap_pointer);
+		}
+
+		Surface->LightTableId = colormap->gl_lighttable_id;
+	}
 }
 
 void HWR_ClearLightTableCache()
@@ -6117,7 +6120,6 @@ void HWR_Startup(void)
 			HWD.pfnSetSpecialState(HWD_SET_MSAA, 1);
 	}
 }
-
 
 // --------------------------------------------------------------------------
 // Free resources allocated by the hardware renderer
