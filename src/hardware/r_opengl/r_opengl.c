@@ -49,11 +49,20 @@ struct GLRGBAFloat
 	GLfloat alpha;
 };
 typedef struct GLRGBAFloat GLRGBAFloat;
-static const GLubyte white[4] = { 255, 255, 255, 255 };
+
+// lighttable list item
+struct LTListItem
+{
+	UINT32 id;
+	struct LTListItem *next;
+};
+typedef struct LTListItem LTListItem;
 
 // ==========================================================================
 //                                                                  CONSTANTS
 // ==========================================================================
+
+static const GLubyte white[4] = { 255, 255, 255, 255 };
 
 // With OpenGL 1.1+, the first texture should be 1
 #define NOTEXTURE_NUM     0
@@ -72,20 +81,15 @@ static float NEAR_CLIPPING_PLANE =   NZCLIP_PLANE;
 
 
 static  GLuint      tex_downloaded  = 0;
+static  GLuint      lt_downloaded   = 0; // currently bound lighttable texture
 static  GLfloat     fov             = 90.0f;
 static  FBITFIELD   CurrentPolyFlags;
 
 static  FTextureInfo *gr_cachetail = NULL;
 static  FTextureInfo *gr_cachehead = NULL;
 
-typedef struct LightTableCacheEntry_s
-{
-	GLuint id;
-	struct LightTableCacheEntry_s *next;
-} LightTableCacheEntry_t;
-
-LightTableCacheEntry_t *ltcachehead = NULL;
-LightTableCacheEntry_t *ltcachetail = NULL;
+static LTListItem *LightTablesTail = NULL;
+static LTListItem *LightTablesHead = NULL;
 
 RGBA_t  myPaletteData[256];
 GLint   screen_width    = 0;               // used by Draw2DLine()
@@ -1427,48 +1431,47 @@ EXPORT void HWRAPI(ClearMipMapCache) (void)
 	Flush();
 }
 
+
 EXPORT UINT32 HWRAPI(AddLightTable) (UINT8 *lighttable)
 {
-	LightTableCacheEntry_t *cache_entry = malloc(sizeof(LightTableCacheEntry_t));
-	if (!ltcachetail)
+	LTListItem *item = malloc(sizeof(LTListItem));
+	if (!LightTablesTail)
 	{
-		ltcachehead = ltcachetail = cache_entry;
+		LightTablesHead = LightTablesTail = item;
 	}
 	else
 	{
-		ltcachetail->next = cache_entry;
-		ltcachetail = cache_entry;
+		LightTablesTail->next = item;
+		LightTablesTail = item;
 	}
-	ltcachetail->next = NULL;
-	pglGenTextures(1, &ltcachetail->id);
-	if (!ltcachetail->id)
-		I_Error("hwr lighttable cache entry id is zero");
-	pglBindTexture(GL_TEXTURE_2D, ltcachetail->id);
+	item->next = NULL;
+	pglGenTextures(1, &item->id);
+	pglBindTexture(GL_TEXTURE_2D, item->id);
 	pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	// should this be a square? (256x256)
-	// if so, then could change the height. just need to allocate a temp
-	// 256x256 buffer and copy the lightmap there so there is a full 256x256
-	// memory area for opengl to read from.
 	pglTexImage2D(GL_TEXTURE_2D, 0, GL_R8, 256, 32, 0, GL_RED, GL_UNSIGNED_BYTE, lighttable);
 
-	// restore the tex that was bound before
-	if (!gl_batching)
-		pglBindTexture(GL_TEXTURE_2D, tex_downloaded);
+	// restore previously bound texture
+	pglBindTexture(GL_TEXTURE_2D, tex_downloaded);
 
-	return ltcachetail->id;
+	return item->id;
 }
 
+// Delete light table textures, ids given before become invalid and must not be used.
 EXPORT void HWRAPI(ClearLightTableCache) (void)
 {
-	while (ltcachehead)
+	while (LightTablesHead)
 	{
-		pglDeleteTextures(1, &ltcachehead->id);
-		LightTableCacheEntry_t *next = ltcachehead->next;
-		free(ltcachehead);
-		ltcachehead = next;
+		LTListItem *item = LightTablesHead;
+		pglDeleteTextures(1, (GLuint *)&item->id);
+		LightTablesHead = item->next;
+		free(item);
 	}
-	ltcachetail = NULL;
+
+	LightTablesTail = NULL;
+
+	// we no longer have a bound light table (if we had one), we just deleted it!
+	lt_downloaded = 0;
 }
 
 // -----------------+
@@ -2658,12 +2661,12 @@ EXPORT void HWRAPI(DrawPolygon) (FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUI
 				fade.blue  = byte2float[pSurf->FadeColor.s.blue];
 				fade.alpha = byte2float[pSurf->FadeColor.s.alpha];
 				
-				// inefficient. load the colormap texture
-				if (gl_use_palette_shader || gl_allowshaders)
+				if (pSurf->LightTableId && pSurf->LightTableId != lt_downloaded)
 				{
 					pglActiveTexture(GL_TEXTURE2);
 					pglBindTexture(GL_TEXTURE_2D, pSurf->LightTableId);
 					pglActiveTexture(GL_TEXTURE0);
+					lt_downloaded = pSurf->LightTableId;
 				}
 		}
 
