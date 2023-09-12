@@ -915,10 +915,11 @@ void HWR_ProjectWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend
 //
 // HWR_SplitWall
 //
-// SoM: split up and light walls according to the lightlist.
-// This may also include leaving out parts of the wall that can't be seen
 void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum, FSurfaceInfo* Surf, INT32 cutflag, ffloor_t *pfloor, FBITFIELD polyflags)
 {
+	/* SoM: split up and light walls according to the
+	 lightlist. This may also include leaving out parts
+	 of the wall that can't be seen */
 
 	float realtop, realbot, top, bot;
 	float pegt, pegb, pegmul;
@@ -929,55 +930,48 @@ void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum, FSurfa
 	float endpegt, endpegb, endpegmul;
 	float endheight = 0.0f, endbheight = 0.0f;
 
-	fixed_t v1x = FloatToFixed(wallVerts[0].x);
-	fixed_t v1y = FloatToFixed(wallVerts[0].z);
-	fixed_t v2x = FloatToFixed(wallVerts[1].x);
-	fixed_t v2y = FloatToFixed(wallVerts[1].z);
-	float diff;
+	fixed_t v1x = FLOAT_TO_FIXED(wallVerts[0].x);
+	fixed_t v1y = FLOAT_TO_FIXED(wallVerts[0].z); // not a typo
+	fixed_t v2x = FLOAT_TO_FIXED(wallVerts[1].x);
+	fixed_t v2y = FLOAT_TO_FIXED(wallVerts[1].z); // not a typo
+	// compiler complains when P_GetZAt is used in FLOAT_TO_FIXED directly
+	// use this as a temp var to store P_GetZAt's return value each time
+	fixed_t temp;
 #endif
 
+	INT32   solid, i;
+	lightlist_t *  list = sector->lightlist;
 	const UINT8 alpha = Surf->PolyColor.s.alpha;
 	FUINT lightnum = HWR_CalcWallLight(sector->lightlevel, v1x, v1y, v2x, v2y);
 	extracolormap_t *colormap = NULL;
 
 	realtop = top = wallVerts[3].y;
 	realbot = bot = wallVerts[0].y;
-	diff = top - bot;
 	pegt = wallVerts[3].t;
 	pegb = wallVerts[0].t;
-	
-	// Lactozilla: If both heights of a side lay on the same position, then this wall is a triangle.
-	// To avoid division by zero, which would result in a NaN, we check if the vertical difference
-	// between the two vertices is not zero.
-	if (fpclassify(diff) == FP_ZERO)
+	pegmul = (pegb - pegt) / (top - bot);
+
+	if (fpclassify(pegmul) == FP_NAN)
 		pegmul = 0.0;
-	else
-		pegmul = (pegb - pegt) / diff;
 
 #ifdef ESLOPE
 	endrealtop = endtop = wallVerts[2].y;
 	endrealbot = endbot = wallVerts[1].y;
-	diff = endtop - endbot;
-	
 	endpegt = wallVerts[2].t;
 	endpegb = wallVerts[1].t;
-	
-	if (fpclassify(diff) == FP_ZERO)
-		endpegmul = 0.0;
-	else
-		endpegmul = (endpegb - endpegt) / diff;
+	endpegmul = (endpegb - endpegt) / (endtop - endbot);
 #endif
 
+	if (fpclassify(endpegmul) == FP_NAN)
+		endpegmul = 0.0;
 
-	for (INT32 i = 0; i < sector->numlights; i++)
+	for (i = 0; i < sector->numlights; i++)
 	{
 #ifdef ESLOPE
 		if (endtop < endrealbot)
 #endif
 		if (top < realbot)
 			return;
-		
-		lightlist_t *list = sector->lightlist;
 
 		if (!(list[i].flags & FF_NOSHADE))
 		{
@@ -993,7 +987,7 @@ void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum, FSurfa
 			}
 		}
 
-		boolean solid = false;
+		solid = false;
 
 		if ((sector->lightlist[i].flags & FF_CUTSOLIDS) && !(cutflag & FF_EXTRA))
 			solid = true;
@@ -1013,8 +1007,10 @@ void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum, FSurfa
 #ifdef ESLOPE
 		if (list[i].slope)
 		{
-			height = FixedToFloat(P_GetZAt(&list[i], v1x, v1y));
-			endheight = FixedToFloat(P_GetZAt(&list[i], v2x, v2y));
+			temp = P_GetZAt(list[i].slope, v1x, v1y);
+			height = FIXED_TO_FLOAT(temp);
+			temp = P_GetZAt(list[i].slope, v2x, v2y);
+			endheight = FIXED_TO_FLOAT(temp);
 		}
 		else
 			height = endheight = FIXED_TO_FLOAT(list[i].height);
@@ -1022,8 +1018,10 @@ void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum, FSurfa
 		{
 			if (*list[i].caster->b_slope)
 			{
-				bheight = FixedToFloat(P_GetZAt(list[i].caster, v1x, v1y));
-				endbheight = FixedToFloat(P_GetZAt(list[i].caster, v2x, v2y));
+				temp = P_GetZAt(*list[i].caster->b_slope, v1x, v1y);
+				bheight = FIXED_TO_FLOAT(temp);
+				temp = P_GetZAt(*list[i].caster->b_slope, v2x, v2y);
+				endbheight = FIXED_TO_FLOAT(temp);
 			}
 			else
 				bheight = endbheight = FIXED_TO_FLOAT(*list[i].caster->bottomheight);
@@ -1052,8 +1050,10 @@ void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum, FSurfa
 		{
 			if (list[i+1].slope)
 			{
-				bheight = FixedToFloat(P_GetZAt(&list[i+1], v1x, v1y));
-				endbheight = FixedToFloat(P_GetZAt(&list[i+1], v2x, v2y));
+				temp = P_GetZAt(list[i+1].slope, v1x, v1y);
+				bheight = FIXED_TO_FLOAT(temp);
+				temp = P_GetZAt(list[i+1].slope, v2x, v2y);
+				endbheight = FIXED_TO_FLOAT(temp);
 			}
 			else
 				bheight = endbheight = FIXED_TO_FLOAT(list[i+1].height);
@@ -1074,11 +1074,10 @@ void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum, FSurfa
 		}
 #endif
 
-#ifdef ESLOPE
 		// Found a break
 		bot = min(max(bheight, realbot), top);
 		endbot = min(max(endbheight, endrealbot), endtop);
-#endif
+
 		Surf->PolyColor.s.alpha = alpha;
 
 #ifdef ESLOPE
@@ -1707,7 +1706,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 			}
 			else
 				repeats = 1;
-			
+
 			fixed_t midtexheight = textureheight[gr_midtexture] * repeats;
 			fixed_t popentop, popenbottom, polytop, polybottom, lowcut, highcut;
 			fixed_t popentopslope, popenbottomslope, polytopslope, polybottomslope, lowcutslope, highcutslope;
@@ -1734,12 +1733,9 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 #ifdef ESLOPE
 				popentop = min(worldtop, worldhigh);
 				popenbottom = max(worldbottom, worldlow);
+
 				popentopslope = min(worldtopslope, worldhighslope);
 				popenbottomslope = max(worldbottomslope, worldlowslope);
-#else
-				popentop = min(front->ceilingheight, back->ceilingheight);
-				popenbottom = max(front->floorheight, back->floorheight);
-#endif
 			}
 
 #ifdef ESLOPE
@@ -1773,6 +1769,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 			else
 			{
 				polytop = popentop + gr_sidedef->rowoffset;
+				polybottom = polytop - textureheight[gr_midtexture]*repeats;
 				polybottom = polytop - midtexheight;
 				polytopslope = popentopslope + gr_sidedef->rowoffset;
 				polybottomslope = polytopslope - midtexheight;
@@ -1803,14 +1800,11 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 			l = max(polybottom, lowcut);
 			hS = min(highcutslope, polytopslope);
 			lS = max(polybottomslope, lowcutslope);
-			
+
 			// PEGGING
 			fixed_t texturevpeg, texturevpegslope;
-#ifdef ESLOPE
+
 			if (!!(gr_linedef->flags & ML_DONTPEGBOTTOM) ^ !!(gr_linedef->flags & ML_EFFECT3))
-#else
-			if (gr_linedef->flags & ML_DONTPEGBOTTOM)
-#endif
 			{
 				texturevpeg = midtexheight - h + polybottom;
 				texturevpegslope = midtexheight - hS + polybottomslope;
@@ -1837,6 +1831,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 			wallVerts[0].y = FIXED_TO_FLOAT(l);
 			wallVerts[2].y = FIXED_TO_FLOAT(hS);
 			wallVerts[1].y = FIXED_TO_FLOAT(lS);
+#endif
 
 			// set alpha for transparent walls (new boom and legacy linedef types)
 			FBITFIELD blendmode;
