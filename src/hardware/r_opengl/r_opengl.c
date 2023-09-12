@@ -1230,6 +1230,7 @@ void InitPalette(void)
 	free(pal_lookup_tex);
 	pglUseProgram(gl_shaderprograms[8].program);
 	pglUniform1i(gl_shaderprograms[8].uniforms[gluniform_color_lookup], 1); // bind sampler to second texture unit
+	pglUniform1iv(gl_shaderprograms[8].uniforms[gluniform_palette], 768, gl_palette);
 	// bind the palette to the fancy shader here
 	pglUseProgram(gl_shaderprograms[9].program);
 	pglUniform1iv(gl_shaderprograms[9].uniforms[gluniform_palette], 768, gl_palette);
@@ -4086,7 +4087,6 @@ EXPORT void HWRAPI(DrawScreenFinalTexture)(int width, int height)
 	if (gl_use_palette_shader && cv_grshaders.value)
 	{
 		pglUseProgram(gl_shaderprograms[8].program); // palette shader
-		pglUniform1iv(gl_shaderprograms[8].uniforms[gluniform_palette], 768, gl_palette);
 		pglActiveTexture(GL_TEXTURE1);
 	}
 
