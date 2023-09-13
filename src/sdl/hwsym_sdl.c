@@ -103,13 +103,13 @@ void *hwSym(const char *funcName,void *handle)
 	
 	GETFUNC(RenderSkyDome);
 
-	GETFUNC(LoadShaders);
-	GETFUNC(KillShaders);
+	GETFUNC(CompileShaders);
+	GETFUNC(CleanShaders);
 	GETFUNC(SetShader);
 	GETFUNC(UnSetShader);
 
+	GETFUNC(SetShaderInfo);
 	GETFUNC(LoadCustomShader);
-	GETFUNC(InitCustomShaders);
 	
 	GETFUNC(StartBatching);
 	GETFUNC(RenderBatches);

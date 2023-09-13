@@ -83,7 +83,14 @@ boolean HWR_Screenshot(const char *lbmname);
 // hw_main.c
 void HWR_RenderFrame(INT32 viewnumber, player_t *player, boolean skybox);
 void HWR_RenderPlayerView(INT32 viewnumber, player_t *player);
-void HWR_LoadShaders(UINT16 wadnum, boolean PK3);
+
+boolean HWR_CompileShaders(void);
+
+void HWR_LoadAllCustomShaders(void);
+void HWR_LoadCustomShadersFromFile(UINT16 wadnum, boolean PK3);
+const char *HWR_GetShaderName(INT32 shader);
+
+extern customshaderxlat_t shaderxlat[];
 void HWR_SetViewSize(void);
 void HWR_AddCommands(void);
 void HWR_SetTransform(float fpov, player_t *player);

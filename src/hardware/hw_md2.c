@@ -1389,7 +1389,7 @@ void HWR_DrawMD2(gr_vissprite_t *spr)
 		p.mirror = atransform.mirror; // from Kart
 #endif
 
-		HWD.pfnSetShader(4);	// model shader
+		HWD.pfnSetShader(SHADER_MODEL);	// model shader
 		{
 		float this_scale = FIXED_TO_FLOAT(interp.scale);
 

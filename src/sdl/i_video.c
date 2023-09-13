@@ -2138,14 +2138,14 @@ void I_StartupGraphics(void)
 
 		HWD.pfnRenderSkyDome = hwSym("RenderSkyDome",NULL);
 
-		HWD.pfnLoadShaders = hwSym("LoadShaders",NULL);
-		HWD.pfnKillShaders = hwSym("KillShaders",NULL);
+		HWD.pfnCompileShaders   = hwSym("CompileShaders",NULL);
+		HWD.pfnCleanShaders     = hwSym("CleanShaders",NULL);
 		HWD.pfnSetShader = hwSym("SetShader",NULL);
 		HWD.pfnUnSetShader = hwSym("UnSetShader",NULL);
-
+		
+		HWD.pfnSetShaderInfo    = hwSym("SetShaderInfo",NULL);
 		HWD.pfnLoadCustomShader = hwSym("LoadCustomShader",NULL);
-		HWD.pfnInitCustomShaders = hwSym("InitCustomShaders",NULL);
-
+		
 		HWD.pfnStartBatching = hwSym("StartBatching",NULL);
 		HWD.pfnRenderBatches = hwSym("RenderBatches",NULL);
 

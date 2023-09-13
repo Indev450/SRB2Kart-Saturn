@@ -1416,14 +1416,6 @@ void D_SRB2Main(void)
 	CONS_Printf("I_StartupGraphics()...\n");
 	I_StartupGraphics();
 
-#ifdef HWRENDER
-	if (rendermode == render_opengl)
-	{
-		for (i = 0; i < numwadfiles; i++)
-			HWR_LoadShaders(i, (wadfiles[i]->type == RET_PK3));
-	}
-#endif
-
 	//--------------------------------------------------------- CONSOLE
 	// setup loading screen
 	SCR_Startup();
