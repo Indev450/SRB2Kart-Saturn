@@ -813,7 +813,6 @@ UINT16 W_InitFile(const char *filename, boolean local)
 		// Read shaders from file
 		if (rendermode == render_opengl)
 		{
-			HWR_CompileShaders();
 			HWR_LoadCustomShadersFromFile(numwadfiles - 1, (type == RET_PK3));
 			HWR_CompileShaders();
 		}
