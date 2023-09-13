@@ -439,6 +439,60 @@ fixed_t R_PointToDist2(fixed_t px2, fixed_t py2, fixed_t px1, fixed_t py1)
 	return FixedHypot(px1 - px2, py1 - py2);
 }
 
+angle_t R_PlayerSliptideAngle(player_t *player)
+{
+	mobj_t *mo = player->mo;
+
+	if (!cv_sliptideroll.value || !mo || P_MobjWasRemoved(mo)) return 0;
+
+	size_t rot = mo->frame&FF_FRAMEMASK;
+	boolean papersprite = (mo->frame & FF_PAPERSPRITE);
+
+	spritedef_t *sprdef;
+	spriteframe_t *sprframe;
+	angle_t ang = 0;
+
+	interpmobjstate_t interp = {0};
+
+	// Yes.
+	if (R_UsingFrameInterpolation() && !paused)
+	{
+		R_InterpolateMobjState(mo, rendertimefrac, &interp);
+	}
+	else
+	{
+		R_InterpolateMobjState(mo, FRACUNIT, &interp);
+	}
+
+	if (mo->skin && mo->sprite == SPR_PLAY)
+	{
+		sprdef = &((skin_t *)mo->skin)->spritedef;
+
+		if (rot >= sprdef->numframes)
+			sprdef = &sprites[mo->sprite];
+	}
+	else
+	{
+		sprdef = &sprites[mo->sprite];
+	}
+
+	if (rot >= sprdef->numframes)
+	{
+		sprdef = &sprites[states[S_UNKNOWN].sprite];
+		rot = states[S_UNKNOWN].frame&FF_FRAMEMASK;
+	}
+
+	sprframe = &sprdef->spriteframes[rot];
+
+	// No sprite frame? I guess it is possible
+	if (!sprframe) return 0;
+
+	if (sprframe->rotate != SRF_SINGLE || papersprite)
+		ang = R_PointToAngle(interp.x, interp.y) - interp.angle;
+
+	return FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), mo->player->sliproll*(mo->player->sliptidemem));
+}
+
 // Little extra utility. Works in the same way as R_PointToAngle2
 fixed_t R_PointToDist(fixed_t x, fixed_t y)
 {
