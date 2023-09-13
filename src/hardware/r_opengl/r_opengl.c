@@ -848,12 +848,12 @@ EXPORT boolean HWRAPI(CompileShaders) (void)
 		gl_shaderprogram_t *shader;
 		const GLchar *vert_shader = gl_shadersources[i].vertex;
 		const GLchar *frag_shader = gl_shadersources[i].fragment;
-		boolean custom = ((gl_customshaders[i].vertex || gl_customshaders[i].fragment) && (i > 0));
+		boolean custom = cv_grusecustomshaders.value && ((gl_customshaders[i].vertex || gl_customshaders[i].fragment) && (i > 0));
 
 		// 18032019
-		if (gl_customshaders[i].vertex)
+		if (cv_grusecustomshaders.value && gl_customshaders[i].vertex)
 			vert_shader = gl_customshaders[i].vertex;
-		if (gl_customshaders[i].fragment)
+		if (cv_grusecustomshaders.value && gl_customshaders[i].fragment)
 			frag_shader = gl_customshaders[i].fragment;
 
 		if (i >= HWR_MAXSHADERS)

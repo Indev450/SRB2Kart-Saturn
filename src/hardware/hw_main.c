@@ -134,8 +134,8 @@ static void CV_screentextures_ONChange(void)
 
 static void CV_useCustomShaders_ONChange(void)
 {
-    //if (rendermode == render_opengl)
-        //HWD.pfnInitCustomShaders();
+    if (rendermode == render_opengl)
+       HWD.pfnCompileShaders();
 }
 
 // ==========================================================================
