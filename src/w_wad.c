@@ -148,6 +148,40 @@ void W_Shutdown(void)
 
 static char filenamebuf[MAX_WADPATH];
 
+// This #if is copied from filesrch.c, so not sure if it is 100% suitable for
+// this
+#if defined (_WIN32) && !defined (_XBOX)
+//#define WIN32_LEAN_AND_MEAN
+#define RPC_NO_WINDOWS_H
+#include <windows.h>
+
+// Windows can't open utf-8 path so it must be converted to utf-16
+FILE* fopen_utf8(const char* filename, const char* mode)
+{
+	static const int MY_PATH_MAX =  2048;
+	WCHAR nameW[MY_PATH_MAX];
+	memset(nameW, 0, sizeof(WCHAR)*MY_PATH_MAX);
+	WCHAR modeW[16];
+	memset(modeW, 0, sizeof(WCHAR)*16);
+	// the following function converts the UTF-8 filename to UTF-16 (WCHAR) nameW
+	int len = MultiByteToWideChar(CP_UTF8, 0, filename, -1, nameW, MY_PATH_MAX);
+	if(len > 0 && MultiByteToWideChar(CP_UTF8, 0, mode, -1, modeW, 16) > 0)
+	{
+		// using _wfopen_s() shuts up MSVC's complaints
+		// about _wfopen() being unsafe..
+		FILE* ret = NULL;
+		if(_wfopen_s(&ret, nameW, modeW) == 0)
+			return ret;
+	}
+	return NULL;
+}
+
+#else
+
+#define fopen_utf8 fopen
+
+#endif
+
 // W_OpenWadFile
 // Helper function for opening the WAD file.
 // Returns the FILE * handle for the file, or NULL if not found or could not be opened
@@ -165,7 +199,7 @@ FILE *W_OpenWadFile(const char **filename, boolean useerrors)
 	*filename = filenamebuf;
 
 	// open wad file
-	if ((handle = fopen(*filename, "rb")) == NULL)
+	if ((handle = fopen_utf8(*filename, "rb")) == NULL)
 	{
 		// If we failed to load the file with the path as specified by
 		// the user, strip the directories and search for the file.
@@ -175,7 +209,7 @@ FILE *W_OpenWadFile(const char **filename, boolean useerrors)
 		// in filenamebuf == *filename.
 		if (findfile(filenamebuf, NULL, true))
 		{
-			if ((handle = fopen(*filename, "rb")) == NULL)
+			if ((handle = fopen_utf8(*filename, "rb")) == NULL)
 			{
 				if (useerrors)
 					CONS_Alert(CONS_ERROR, M_GetText("Can't open %s\n"), *filename);
