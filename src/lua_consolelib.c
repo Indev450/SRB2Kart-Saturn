@@ -293,6 +293,8 @@ static void Lua_OnChange(void)
 	//lua_settop(gL, 0); // Just in case...
 	lua_pushcfunction(gL, LUA_GetErrorMessage);
 
+	int error_handler_i = abs_index(gL, -1);
+
 	// From CV_OnChange registry field, get the function for this cvar by name.
 	lua_getfield(gL, LUA_REGISTRYINDEX, "CV_OnChange");
 	I_Assert(lua_istable(gL, -1));
@@ -304,7 +306,7 @@ static void Lua_OnChange(void)
 	lua_getfield(gL, -1, cvname); // get consvar_t* userdata.
 	lua_remove(gL, -2); // pop the CV_Vars table.
 
-	LUA_Call(gL, 1, 0, 1); // call function(cvar)
+	LUA_Call(gL, 1, 0, error_handler_i); // call function(cvar)
 	lua_pop(gL, 2); // pop CV_OnChange table and error handler
 }
 
