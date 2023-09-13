@@ -397,12 +397,20 @@ visplane_t *R_FindPlane(fixed_t height, INT32 picnum, INT32 lightlevel,
 	{
 		if (plangle != 0)
 		{
+			// Must use 64-bit math to avoid an overflow!
+			INT64 vx = xoff + viewx;
+			INT64 vy = yoff - viewy;
+
 			// Add the view offset, rotated by the plane angle.
-			fixed_t cosinecomponent = FINECOSINE(plangle>>ANGLETOFINESHIFT);
-			fixed_t sinecomponent = FINESINE(plangle>>ANGLETOFINESHIFT);
-			fixed_t oldxoff = xoff;
-			xoff = FixedMul(xoff,cosinecomponent)+FixedMul(yoff,sinecomponent);
-			yoff = -FixedMul(oldxoff,sinecomponent)+FixedMul(yoff,cosinecomponent);
+			float ang = ANG2RAD(plangle);
+			float x = vx / (float)FRACUNIT;
+			float y = vy / (float)FRACUNIT;
+
+			vx = (x * cos(ang) + y * sin(ang)) * FRACUNIT;
+			vy = (-x * sin(ang) + y * cos(ang)) * FRACUNIT;
+
+			xoff = vx;
+			yoff = vy;
 		}
 		else
 		{
