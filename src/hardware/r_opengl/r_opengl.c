@@ -2169,8 +2169,11 @@ static int comparePolygons(const void *p1, const void *p2)
 	diff = poly1->texNum - poly2->texNum;
 	if (diff != 0) return diff;
 	
+	if (gl_use_palette_shader)
+	{
 	diff = poly1->surf.LightTableId - poly2->surf.LightTableId;
 	if (diff != 0) return diff;
+	}
 
 	diff = poly1->polyFlags - poly2->polyFlags;
 	if (diff != 0) return diff;
@@ -2428,7 +2431,7 @@ EXPORT void HWRAPI(RenderBatches) (precise_t *sSortTime, precise_t *sDrawTime, i
 				changeState = true;
 				changePolyFlags = true;
 			}
-			if (gl_allowshaders)
+			if ((gl_allowshaders) && (gl_use_palette_shader))
 			{
 				if (currentSurfaceInfo.PolyColor.rgba != nextSurfaceInfo.PolyColor.rgba ||
 					currentSurfaceInfo.TintColor.rgba != nextSurfaceInfo.TintColor.rgba ||
@@ -2437,6 +2440,19 @@ EXPORT void HWRAPI(RenderBatches) (precise_t *sSortTime, precise_t *sDrawTime, i
 					currentSurfaceInfo.LightInfo.fade_start != nextSurfaceInfo.LightInfo.fade_start ||
 					currentSurfaceInfo.LightInfo.fade_end != nextSurfaceInfo.LightInfo.fade_end ||
 					currentSurfaceInfo.LightTableId != nextSurfaceInfo.LightTableId)
+				{
+					changeState = true;
+					changeSurfaceInfo = true;
+				}
+			}
+			else if ((gl_allowshaders) && (!gl_use_palette_shader))
+			{
+				if (currentSurfaceInfo.PolyColor.rgba != nextSurfaceInfo.PolyColor.rgba ||
+					currentSurfaceInfo.TintColor.rgba != nextSurfaceInfo.TintColor.rgba ||
+					currentSurfaceInfo.FadeColor.rgba != nextSurfaceInfo.FadeColor.rgba ||
+					currentSurfaceInfo.LightInfo.light_level != nextSurfaceInfo.LightInfo.light_level ||
+					currentSurfaceInfo.LightInfo.fade_start != nextSurfaceInfo.LightInfo.fade_start ||
+					currentSurfaceInfo.LightInfo.fade_end != nextSurfaceInfo.LightInfo.fade_end)
 				{
 					changeState = true;
 					changeSurfaceInfo = true;
