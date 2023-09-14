@@ -1126,9 +1126,22 @@ void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum, FSurfa
 		}
 #endif
 
-		// Found a break
-		bot = min(max(bheight, realbot), top);
+#ifdef ESLOPE
+		if (endbheight > endtop)
+			endbot = endtop;
+#endif
+		if (bheight >= top)
+			continue;
+
+		//Found a break;
+		bot = bheight;
+
+		if (bot < realbot)
+			bot = realbot;
+		
+#ifdef ESLOPE
 		endbot = min(max(endbheight, endrealbot), endtop);
+#endif
 
 		Surf->PolyColor.s.alpha = alpha;
 
