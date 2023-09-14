@@ -80,6 +80,9 @@ EXPORT void HWRAPI(InitCustomShaders) (void);
 EXPORT void HWRAPI(StartBatching) (void);
 EXPORT void HWRAPI(RenderBatches) (precise_t *sSortTime, precise_t *sDrawTime, int *sNumPolys, int *sNumVerts, int *sNumCalls, int *sNumShaders, int *sNumTextures, int *sNumPolyFlags, int *sNumColors);
 
+EXPORT UINT32 HWRAPI(AddLightTable) (UINT8 *lighttable);
+EXPORT void HWRAPI(ClearLightTableCache) (void);
+
 // ==========================================================================
 //                                      HWR DRIVER OBJECT, FOR CLIENT PROGRAM
 // ==========================================================================
@@ -126,6 +129,9 @@ struct hwdriver_s
 
 	StartBatching pfnStartBatching;
 	RenderBatches pfnRenderBatches;
+	
+	AddLightTable pfnAddLightTable;
+	ClearLightTableCache pfnClearLightTableCache;
 };
 
 extern struct hwdriver_s hwdriver;

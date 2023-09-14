@@ -2009,6 +2009,7 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_grshearing);
 	CV_RegisterVar(&cv_grshaders);
 	CV_RegisterVar(&cv_grusecustomshaders);
+	CV_RegisterVar(&cv_grpaletteshader);
 #endif
 
 #ifdef HWRENDER

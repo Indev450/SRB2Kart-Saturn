@@ -28,6 +28,7 @@
 
 #ifdef HWRENDER
 #include "hardware/hw_main.h"
+#include "hardware/r_opengl/r_opengl.h"
 #endif
 
 // Each screen is [vid.width*vid.height];
@@ -224,8 +225,14 @@ void V_SetPalette(INT32 palettenum)
 		LoadMapPalette();
 
 #ifdef HWRENDER
-	if (rendermode != render_soft && rendermode != render_none)
+	if (rendermode != render_soft && rendermode != render_none) {
+		
+		if (cv_grpaletteshader.value == 1){
+		// reset our palette lookups n shit
+		gl_palette_initialized = false;
+		InitPalette();}
 		HWR_SetPalette(&pLocalPalette[palettenum*256]);
+	}		
 #if (defined (__unix__) && !defined (MSDOS)) || defined (UNIXCOMMON) || defined (HAVE_SDL)
 	else
 #endif
@@ -238,8 +245,13 @@ void V_SetPaletteLump(const char *pal)
 {
 	LoadPalette(pal);
 #ifdef HWRENDER
-	if (rendermode != render_soft && rendermode != render_none)
+	if (rendermode != render_soft && rendermode != render_none) {
+		if (cv_grpaletteshader.value == 1){
+		// reset our palette lookups n shit
+		gl_palette_initialized = false;
+		InitPalette();}
 		HWR_SetPalette(pLocalPalette);
+	}
 #if (defined (__unix__) && !defined (MSDOS)) || defined (UNIXCOMMON) || defined (HAVE_SDL)
 	else
 #endif
