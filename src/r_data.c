@@ -1325,12 +1325,11 @@ INT32 R_CreateColormap(char *p1, char *p2, char *p3)
 	extra_colormaps[mapnum].fadeend = (UINT16)fadeend;
 	extra_colormaps[mapnum].fog = fog;
 
-	if (rendermode == render_soft || cv_grpaletteshader.value == 1)
-	{
+	
 		double r, g, b, cbrightness;
 		int p;
 		lighttable_t *colormap_p;
-
+	
 		// Initialise the map and delta arrays
 		// map[i] stores an RGB color (as double) for index i,
 		//  which is then converted to SRB2's palette later
@@ -1409,8 +1408,7 @@ INT32 R_CreateColormap(char *p1, char *p2, char *p3)
 				colormap_p2 += 256;
 			}
 		}
-	}
-
+	
 	return (INT32)mapnum;
 }
 
