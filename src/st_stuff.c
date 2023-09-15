@@ -233,8 +233,8 @@ void ST_doPaletteStuff(void)
 		palette = 0;
 
 #ifdef HWRENDER
-	if (rendermode == render_opengl && (cv_grpaletteshader.value == 0))
-		palette = 0; // Don't set the palette to a flashpal in OpenGL's truecolor mode
+	if (rendermode == render_opengl)
+		palette = 0; // No flashpals here in OpenGL
 #endif
 
 	palette = min(max(palette, 0), 13);
@@ -2167,7 +2167,7 @@ void ST_Drawer(void)
 	//25/08/99: Hurdler: palette changes is done for all players,
 	//                   not only player1! That's why this part
 	//                   of code is moved somewhere else.
-	if (rendermode == render_soft || (cv_grpaletteshader.value == 1))
+	if (rendermode == render_soft)
 #endif
 		if (rendermode != render_none) ST_doPaletteStuff();
 
