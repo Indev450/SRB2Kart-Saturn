@@ -1324,8 +1324,9 @@ INT32 R_CreateColormap(char *p1, char *p2, char *p3)
 	extra_colormaps[mapnum].fadestart = (UINT16)fadestart;
 	extra_colormaps[mapnum].fadeend = (UINT16)fadeend;
 	extra_colormaps[mapnum].fog = fog;
-
 	
+	if (rendermode == render_soft || rendermode == render_opengl)
+	{	
 		double r, g, b, cbrightness;
 		int p;
 		lighttable_t *colormap_p;
@@ -1408,6 +1409,7 @@ INT32 R_CreateColormap(char *p1, char *p2, char *p3)
 				colormap_p2 += 256;
 			}
 		}
+	}
 	
 	return (INT32)mapnum;
 }
