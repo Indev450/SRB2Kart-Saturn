@@ -576,7 +576,6 @@ void HWR_SetPalette(RGBA_t *palette)
 		Z_FreeTags(PU_HWRCACHE_UNLOCKED, PU_HWRCACHE_UNLOCKED);
 	}
 }
-
 // --------------------------------------------------------------------------
 // Make sure texture is downloaded and set it as the source
 // --------------------------------------------------------------------------
