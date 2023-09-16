@@ -751,6 +751,11 @@ static gl_shaderprogram_t gl_shaderprograms[MAXSHADERPROGRAMS];
 	GLSL_SOFTWARE_PAL_MAIN \
 	"\0"
 
+#define GLSL_SOFTWARE_PAL_FRAGMENT_SHADER_POSTPROCESS \
+	GLSL_SOFTWARE_PAL_UNIFORMS \
+	GLSL_SOFTWARE_PAL_MAIN \
+	"\0"
+
 //
 // Water surface shader
 //
@@ -868,6 +873,8 @@ static const char *fragment_shaders[] = {
 	GLSL_SOFTWARE_PAL_FRAGMENT_SHADER_FLOORS,
 
 	GLSL_SOFTWARE_PAL_FRAGMENT_SHADER_WALLS,
+
+	GLSL_SOFTWARE_PAL_FRAGMENT_SHADER_POSTPROCESS,
 
 	NULL,
 };
@@ -1093,16 +1100,21 @@ EXPORT boolean HWRAPI(LoadShaders) (void)
 	if (uniform != -1) \
 		function (uniform, a);
 
+#define UNIFORM_2(uniform, a, b, function) \
+	if (uniform != -1) \
+		function (uniform, a, b);
+
 	pglUseProgram(shader->program);
 
 	// texture unit numbers for the samplers used for palette rendering
-	UNIFORM_1(shader->uniforms[gluniform_palette], 2, pglUniform1i);
+	UNIFORM_2(shader->uniforms[gluniform_palette], 768, gl_palette, pglUniform1iv);
 	UNIFORM_1(shader->uniforms[gluniform_color_lookup], 1, pglUniform1i);
 	UNIFORM_1(shader->uniforms[gluniform_lighttable_tex], 2, pglUniform1i);
 	
 	pglUseProgram(0);
 
 #undef UNIFORM_1
+#undef UNIFORM_2
 
 	}
 #endif
@@ -1143,9 +1155,9 @@ EXPORT void HWRAPI(InitCustomShaders) (void)
 	KillShaders();
 	LoadShaders();
 	
-if (gl_use_palette_shader)
+	if (gl_use_palette_shader)
 	{
-	InitPalette();
+		InitPalette(0);
 	}
 #endif
 }
@@ -1193,20 +1205,22 @@ GLuint palette_tex_num;
 // the +2 in the NearestColor call also needs to be adjusted if LUT_SIZE is changed!
 // the hardcoded values in the shader also need to be adjusted if LUT_SIZE is changed!
 
-void InitPalette(void)
+void InitPalette(int flashnum)
 {	
 	int i, r, g, b;
 	// init the palette
-	for (i = 0; i < 256; i++)
+	int flashoffset = flashnum*256;
+	for (i = 0+flashoffset; i < 256+flashoffset; i++)
 	{
+		int fi = i-flashoffset;
 		// crush to 16-bit rgb565, like software currently does
 		float fred = (float)(pLocalPalette[i].s.red >> 3);
 		float fgreen = (float)(pLocalPalette[i].s.green >> 2);
 		float fblue = (float)(pLocalPalette[i].s.blue >> 3);
 		// restore to rgb888
-		gl_palette[i*3] = (GLint)(fred / 31.0f * 255.0f);
-		gl_palette[i*3+1] = (GLint)(fgreen / 63.0f * 255.0f);
-		gl_palette[i*3+2] = (GLint)(fblue / 31.0f * 255.0f);
+		gl_palette[fi*3] = (GLint)(fred / 31.0f * 255.0f);
+		gl_palette[fi*3+1] = (GLint)(fgreen / 63.0f * 255.0f);
+		gl_palette[fi*3+2] = (GLint)(fblue / 31.0f * 255.0f);
 	}
 
 		// init the palette conversion lookup texture
@@ -1593,7 +1607,7 @@ EXPORT void HWRAPI(ClearBuffer) (FBOOLEAN ColorMask,
 	pglEnableClientState(GL_TEXTURE_COORD_ARRAY); // And mostly this one, too
 	
 	if (!gl_palette_initialized)
-		InitPalette(); // just gonna put this here for now
+		InitPalette(0); // just gonna put this here for now
 }
 
 

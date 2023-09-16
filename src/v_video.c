@@ -226,11 +226,11 @@ void V_SetPalette(INT32 palettenum)
 
 #ifdef HWRENDER
 	if (rendermode != render_soft && rendermode != render_none) {
-		
 		if (cv_grpaletteshader.value == 1){
-		// reset our palette lookups n shit
-		gl_palette_initialized = false;
-		InitPalette();}
+			// reset our palette lookups n shit
+			gl_palette_initialized = false;
+			InitPalette(palettenum);
+		}
 		HWR_SetPalette(&pLocalPalette[palettenum*256]);
 	}		
 #if (defined (__unix__) && !defined (MSDOS)) || defined (UNIXCOMMON) || defined (HAVE_SDL)
@@ -247,9 +247,10 @@ void V_SetPaletteLump(const char *pal)
 #ifdef HWRENDER
 	if (rendermode != render_soft && rendermode != render_none) {
 		if (cv_grpaletteshader.value == 1){
-		// reset our palette lookups n shit
-		gl_palette_initialized = false;
-		InitPalette();}
+			// reset our palette lookups n shit
+			gl_palette_initialized = false;
+			InitPalette(0);
+		}
 		HWR_SetPalette(pLocalPalette);
 	}
 #if (defined (__unix__) && !defined (MSDOS)) || defined (UNIXCOMMON) || defined (HAVE_SDL)

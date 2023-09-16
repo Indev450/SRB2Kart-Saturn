@@ -152,7 +152,7 @@ static void CV_grpaletteshader_OnChange(void)
 		HWD.pfnSetSpecialState(HWD_SET_PALETTE_SHADER_ENABLED, cv_grpaletteshader.value);
 		gr_use_palette_shader = cv_grpaletteshader.value;
 		//R_ClearColormaps();
-		InitPalette();
+		InitPalette(0);
 	}
 }
 
@@ -6156,8 +6156,6 @@ void HWR_RenderWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend,
 
 	pSurf->PolyColor.s.alpha = alpha; // put the alpha back after lighting
 
-	HWD.pfnSetShader(gr_use_palette_shader ? 10 : 2);	// wall shader
-
 	if (blend & PF_Environment)
 		blendmode |= PF_Occlude;	// PF_Occlude must be used for solid objects
 
@@ -6169,6 +6167,8 @@ void HWR_RenderWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend,
 
 	blendmode |= PF_Modulated;	// No PF_Occlude means overlapping (incorrect) transparency
 
+	if (!fogwall)
+		HWD.pfnSetShader(gr_use_palette_shader ? 10 : 2);	// wall shader
 	HWD.pfnDrawPolygon(pSurf, wallVerts, 4, blendmode, false);
 
 #ifdef WALLSPLATS
@@ -6200,7 +6200,7 @@ void HWR_DoPostProcessor(player_t *player)
 
 	// Armageddon Blast Flash!
 	// Could this even be considered postprocessor?
-	if (player->flashcount)
+	if (player->flashcount && !cv_grpaletteshader.value)
 	{
 		FOutVector      v[4];
 		FSurfaceInfo Surf;
@@ -6329,6 +6329,8 @@ void HWR_MakeScreenFinalTexture(void)
 
 void HWR_DrawScreenFinalTexture(int width, int height)
 {
+	if (gr_use_palette_shader)
+		HWD.pfnSetShader(11);	//post processing
     HWD.pfnDrawScreenFinalTexture(width, height);
 }
 
