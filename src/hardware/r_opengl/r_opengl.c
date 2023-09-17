@@ -751,6 +751,11 @@ static gl_shaderprogram_t gl_shaderprograms[MAXSHADERPROGRAMS];
 	GLSL_SOFTWARE_PAL_MAIN \
 	"\0"
 
+#define GLSL_SOFTWARE_PAL_FRAGMENT_SHADER_POSTPROCESS \
+	GLSL_SOFTWARE_PAL_UNIFORMS \
+	GLSL_SOFTWARE_PAL_MAIN \
+	"\0"
+
 //
 // Water surface shader
 //
@@ -868,6 +873,8 @@ static const char *fragment_shaders[] = {
 	GLSL_SOFTWARE_PAL_FRAGMENT_SHADER_FLOORS,
 
 	GLSL_SOFTWARE_PAL_FRAGMENT_SHADER_WALLS,
+
+	GLSL_SOFTWARE_PAL_FRAGMENT_SHADER_POSTPROCESS,
 
 	NULL,
 };
@@ -1093,16 +1100,21 @@ EXPORT boolean HWRAPI(LoadShaders) (void)
 	if (uniform != -1) \
 		function (uniform, a);
 
+#define UNIFORM_2(uniform, a, b, function) \
+	if (uniform != -1) \
+		function (uniform, a, b);
+
 	pglUseProgram(shader->program);
 
 	// texture unit numbers for the samplers used for palette rendering
-	UNIFORM_1(shader->uniforms[gluniform_palette], 2, pglUniform1i);
+	UNIFORM_2(shader->uniforms[gluniform_palette], 768, gl_palette, pglUniform1iv);
 	UNIFORM_1(shader->uniforms[gluniform_color_lookup], 1, pglUniform1i);
 	UNIFORM_1(shader->uniforms[gluniform_lighttable_tex], 2, pglUniform1i);
 	
 	pglUseProgram(0);
 
 #undef UNIFORM_1
+#undef UNIFORM_2
 
 	}
 #endif
@@ -1143,9 +1155,9 @@ EXPORT void HWRAPI(InitCustomShaders) (void)
 	KillShaders();
 	LoadShaders();
 	
-if (gl_use_palette_shader)
+	if (gl_use_palette_shader)
 	{
-	InitPalette();
+		InitPalette(0, false);
 	}
 #endif
 }
@@ -1193,22 +1205,42 @@ GLuint palette_tex_num;
 // the +2 in the NearestColor call also needs to be adjusted if LUT_SIZE is changed!
 // the hardcoded values in the shader also need to be adjusted if LUT_SIZE is changed!
 
-void InitPalette(void)
+void InitPalette(int flashnum, boolean skiplut)
 {	
 	int i, r, g, b;
+
+	//Hudler: 16/10/99: added for OpenGL gamma correction
+	RGBA_t gamma_correction = {0x7F7F7F7F};
+
+	//Hurdler 16/10/99: added for OpenGL gamma correction
+	gamma_correction.s.red   = (UINT8)cv_grgammared.value;
+	gamma_correction.s.green = (UINT8)cv_grgammagreen.value;
+	gamma_correction.s.blue  = (UINT8)cv_grgammablue.value;
+
 	// init the palette
-	for (i = 0; i < 256; i++)
+	int flashoffset = flashnum*256;
+	for (i = 0+flashoffset; i < 256+flashoffset; i++)
 	{
+		int fi = i-flashoffset;
+
+		// gamma correction
+		int pr, pg, pb;
+		pr = (UINT8)MIN((pLocalPalette[i].s.red*gamma_correction.s.red)/127,     255);
+		pg = (UINT8)MIN((pLocalPalette[i].s.green*gamma_correction.s.green)/127,     255);
+		pb = (UINT8)MIN((pLocalPalette[i].s.blue*gamma_correction.s.blue)/127,     255);
+
 		// crush to 16-bit rgb565, like software currently does
-		float fred = (float)(pLocalPalette[i].s.red >> 3);
-		float fgreen = (float)(pLocalPalette[i].s.green >> 2);
-		float fblue = (float)(pLocalPalette[i].s.blue >> 3);
+		float fred = (float)(pr >> 3);
+		float fgreen = (float)(pg >> 2);
+		float fblue = (float)(pb >> 3);
 		// restore to rgb888
-		gl_palette[i*3] = (GLint)(fred / 31.0f * 255.0f);
-		gl_palette[i*3+1] = (GLint)(fgreen / 63.0f * 255.0f);
-		gl_palette[i*3+2] = (GLint)(fblue / 31.0f * 255.0f);
+		gl_palette[fi*3] = (GLint)(fred / 31.0f * 255.0f);
+		gl_palette[fi*3+1] = (GLint)(fgreen / 63.0f * 255.0f);
+		gl_palette[fi*3+2] = (GLint)(fblue / 31.0f * 255.0f);
 	}
 
+	if (!skiplut) 
+	{
 		// init the palette conversion lookup texture
 		GLubyte *pal_lookup_tex = malloc(LUT_SIZE*LUT_SIZE*LUT_SIZE*sizeof(GLubyte));
 				
@@ -1225,17 +1257,18 @@ void InitPalette(void)
 				}
 			}
 		}
-#undef STEP_SIZE
-		
 			
-	pglGenTextures(1, &palette_tex_num);
-	pglBindTexture(GL_TEXTURE_3D, palette_tex_num);
-	pglTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	pglTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	if (!pglTexImage3D)
-		I_Error("pglTexImage3D is NULL!");
-	pglTexImage3D(GL_TEXTURE_3D, 0, GL_R8, LUT_SIZE, LUT_SIZE, LUT_SIZE, 0, GL_RED, GL_UNSIGNED_BYTE, pal_lookup_tex);
-	free(pal_lookup_tex);
+		pglGenTextures(1, &palette_tex_num);
+		pglBindTexture(GL_TEXTURE_3D, palette_tex_num);
+		pglTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		pglTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		if (!pglTexImage3D)
+			I_Error("pglTexImage3D is NULL!");
+		pglTexImage3D(GL_TEXTURE_3D, 0, GL_R8, LUT_SIZE, LUT_SIZE, LUT_SIZE, 0, GL_RED, GL_UNSIGNED_BYTE, pal_lookup_tex);
+		free(pal_lookup_tex);
+	}
+#undef STEP_SIZE
+	
 	pglUseProgram(gl_shaderprograms[8].program);
 	pglUniform1i(gl_shaderprograms[8].uniforms[gluniform_color_lookup], 1); // bind sampler to second texture unit
 	pglUniform1iv(gl_shaderprograms[8].uniforms[gluniform_palette], 768, gl_palette);
@@ -1593,7 +1626,7 @@ EXPORT void HWRAPI(ClearBuffer) (FBOOLEAN ColorMask,
 	pglEnableClientState(GL_TEXTURE_COORD_ARRAY); // And mostly this one, too
 	
 	if (!gl_palette_initialized)
-		InitPalette(); // just gonna put this here for now
+		InitPalette(0, false); // just gonna put this here for now
 }
 
 
