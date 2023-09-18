@@ -18,6 +18,7 @@
 #include "doomdef.h"
 #include "doomstat.h"
 #include "r_local.h"
+#include "r_things.h"
 #include "st_stuff.h" // need ST_HEIGHT
 #include "i_video.h"
 #include "v_video.h"
@@ -141,6 +142,7 @@ UINT32 nflatxshift, nflatyshift, nflatshiftup, nflatmask;
 #define NUM_PALETTE_ENTRIES 256
 
 static UINT8** translationtablecache[TT_CACHE_SIZE] = {NULL};
+static UINT8** localtranslationtablecache[MAXSKINS] = {NULL};
 
 
 // See also the enum skincolors_t
@@ -519,29 +521,39 @@ static void R_GenerateTranslationColormap(UINT8 *dest_colormap, INT32 skinnum, U
 
 	\return	Colormap. If not cached, caller should Z_Free.
 */
-UINT8* R_GetTranslationColormap(INT32 skinnum, skincolors_t color, UINT8 flags)
+static UINT8* RGetTranslationColormap(INT32 skinnum, skincolors_t color, UINT8 flags, boolean local)
 {
+	UINT8 ***tt;
 	UINT8* ret;
 	INT32 skintableindex;
 
-	// Adjust if we want the default colormap
-	if (skinnum == TC_DEFAULT) skintableindex = DEFAULT_TT_CACHE_INDEX;
-	else if (skinnum == TC_BOSS) skintableindex = BOSS_TT_CACHE_INDEX;
-	else if (skinnum == TC_METALSONIC) skintableindex = METALSONIC_TT_CACHE_INDEX;
-	else if (skinnum == TC_ALLWHITE) skintableindex = ALLWHITE_TT_CACHE_INDEX;
-	else if (skinnum == TC_RAINBOW) skintableindex = RAINBOW_TT_CACHE_INDEX;
-	else if (skinnum == TC_BLINK) skintableindex = BLINK_TT_CACHE_INDEX;
-	else skintableindex = skinnum;
+	if (local)
+	{
+		tt = localtranslationtablecache;
+		skintableindex = skinnum;
+	}
+	else
+	{
+		tt = translationtablecache;
+		// Adjust if we want the default colormap
+		if (skinnum == TC_DEFAULT) skintableindex = DEFAULT_TT_CACHE_INDEX;
+		else if (skinnum == TC_BOSS) skintableindex = BOSS_TT_CACHE_INDEX;
+		else if (skinnum == TC_METALSONIC) skintableindex = METALSONIC_TT_CACHE_INDEX;
+		else if (skinnum == TC_ALLWHITE) skintableindex = ALLWHITE_TT_CACHE_INDEX;
+		else if (skinnum == TC_RAINBOW) skintableindex = RAINBOW_TT_CACHE_INDEX;
+		else if (skinnum == TC_BLINK) skintableindex = BLINK_TT_CACHE_INDEX;
+		else skintableindex = skinnum;
+	}
 
 	if (flags & GTC_CACHE)
 	{
 
 		// Allocate table for skin if necessary
-		if (!translationtablecache[skintableindex])
-			translationtablecache[skintableindex] = Z_Calloc(MAXTRANSLATIONS * sizeof(UINT8**), PU_STATIC, NULL);
+		if (!tt[skintableindex])
+			tt[skintableindex] = Z_Calloc(MAXTRANSLATIONS * sizeof(UINT8**), PU_STATIC, NULL);
 
 		// Get colormap
-		ret = translationtablecache[skintableindex][color];
+		ret = tt[skintableindex][color];
 	}
 	else ret = NULL;
 
@@ -549,14 +561,27 @@ UINT8* R_GetTranslationColormap(INT32 skinnum, skincolors_t color, UINT8 flags)
 	if (!ret)
 	{
 		ret = Z_MallocAlign(NUM_PALETTE_ENTRIES, (flags & GTC_CACHE) ? PU_LEVEL : PU_STATIC, NULL, 8);
-		K_GenerateKartColormap(ret, skinnum, color); //R_GenerateTranslationColormap(ret, skinnum, color);		// SRB2kart
+		K_GenerateKartColormap(ret, skinnum, color, local); //R_GenerateTranslationColormap(ret, skinnum, color);		// SRB2kart
 
 		// Cache the colormap if desired
 		if (flags & GTC_CACHE)
-			translationtablecache[skintableindex][color] = ret;
+			tt[skintableindex][color] = ret;
 	}
 
 	return ret;
+}
+
+UINT8* R_GetTranslationColormap(INT32 skinnum, skincolors_t color, UINT8 flags)
+{
+	return RGetTranslationColormap(skinnum, color, flags, false);
+}
+
+UINT8* R_GetLocalTranslationColormap(skin_t *skin, skin_t *localskin, skincolors_t color, UINT8 flags, boolean local)
+{
+	if (localskin)
+		return RGetTranslationColormap(( localskin - ( (local) ? localskins : skins ) ), color, flags, local);
+	else
+		return RGetTranslationColormap(( skin - skins ), color, flags, false);
 }
 
 /**	\brief	Flushes cache of translation colormaps.
@@ -574,6 +599,10 @@ void R_FlushTranslationColormapCache(void)
 	for (i = 0; i < (INT32)(sizeof(translationtablecache) / sizeof(translationtablecache[0])); i++)
 		if (translationtablecache[i])
 			memset(translationtablecache[i], 0, MAXTRANSLATIONS * sizeof(UINT8**));
+		
+		for (i = 0; i < (INT32)(sizeof(localtranslationtablecache) / sizeof(localtranslationtablecache[0])); i++)
+		if (localtranslationtablecache[i])
+			memset(localtranslationtablecache[i], 0, MAXTRANSLATIONS * sizeof(UINT8**));
 }
 
 /*

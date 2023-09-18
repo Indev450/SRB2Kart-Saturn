@@ -97,6 +97,9 @@ typedef struct
 
 	// specific sounds per skin
 	sfxenum_t soundsid[NUMSKINSOUNDS]; // sound # in S_sfx table
+	
+	boolean localskin;
+	INT32 localnum;
 } skin_t;
 
 extern CV_PossibleValue_t Forceskin_cons_t[];
@@ -199,17 +202,24 @@ typedef struct drawnode_s
 } drawnode_t;
 
 extern INT32 numskins;
+extern INT32 numlocalskins;
+extern INT32 numallskins;
 extern skin_t skins[MAXSKINS];
 extern UINT8 skinstats[9][9][MAXSKINS];
 extern UINT8 skinstatscount[9][9];
 extern UINT8 skinsorted[MAXSKINS];
 
 void sortSkinGrid(void);
+extern skin_t localskins[MAXSKINS];
+extern skin_t allskins[MAXSKINS*2];
 
 boolean SetPlayerSkin(INT32 playernum,const char *skinname);
 void SetPlayerSkinByNum(INT32 playernum,INT32 skinnum); // Tails 03-16-2002
+void SetLocalPlayerSkin(INT32 playernum,const char *skinname, consvar_t *cvar);
 INT32 R_SkinAvailable(const char *name);
-void R_AddSkins(UINT16 wadnum);
+INT32 R_AnySkinAvailable(const char *name);
+INT32 R_LocalSkinAvailable(const char *name, boolean local);
+void R_AddSkins(UINT16 wadnum, boolean local);
 
 #ifdef DELFILE
 void R_DelSkins(UINT16 wadnum);

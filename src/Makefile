@@ -626,6 +626,7 @@ OBJS:=$(i_main_o) \
 		$(OBJDIR)/lzf.o	     \
 		$(OBJDIR)/vid_copy.o \
 		$(OBJDIR)/b_bot.o \
+		$(OBJDIR)/args.o \
 		$(i_cdmus_o)    \
 		$(i_net_o)      \
 		$(i_system_o)   \

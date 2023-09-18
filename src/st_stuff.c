@@ -58,6 +58,18 @@ patch_t *facerankprefix[MAXSKINS]; // ranking
 patch_t *facewantprefix[MAXSKINS]; // wanted
 patch_t *facemmapprefix[MAXSKINS]; // minimap
 
+patch_t *localfacerankprefix[MAXSKINS]; // ranking
+patch_t *localfacewantprefix[MAXSKINS]; // wanted
+patch_t *localfacemmapprefix[MAXSKINS]; // minimap
+
+char *facerankprefix_name[MAXSKINS]; // ranking
+char *facewantprefix_name[MAXSKINS]; // wanted
+char *facemmapprefix_name[MAXSKINS]; // minimap
+
+char *localfacerankprefix_name[MAXSKINS]; // ranking
+char *localfacewantprefix_name[MAXSKINS]; // wanted
+char *localfacemmapprefix_name[MAXSKINS]; // minimap
+
 // ------------------------------------------
 //             status bar overlay
 // ------------------------------------------
@@ -382,6 +394,25 @@ void ST_LoadFaceGraphics(char *rankstr, char *wantstr, char *mmapstr, INT32 skin
 	facerankprefix[skinnum] = W_CachePatchName(rankstr, PU_HUDGFX);
 	facewantprefix[skinnum] = W_CachePatchName(wantstr, PU_HUDGFX);
 	facemmapprefix[skinnum] = W_CachePatchName(mmapstr, PU_HUDGFX);
+	
+	facerankprefix_name[skinnum] = rankstr;
+	facewantprefix_name[skinnum] = wantstr;
+	facemmapprefix_name[skinnum] = mmapstr;
+}
+
+void ST_LoadLocalFaceGraphics(char *rankstr, char *wantstr, char *mmapstr, INT32 skinnum)
+{
+	localfacerankprefix[skinnum] = W_CachePatchName(rankstr, PU_HUDGFX);
+	localfacewantprefix[skinnum] = W_CachePatchName(wantstr, PU_HUDGFX);
+	localfacemmapprefix[skinnum] = W_CachePatchName(mmapstr, PU_HUDGFX);
+	
+	localfacerankprefix_name[skinnum] = rankstr;
+	localfacewantprefix_name[skinnum] = wantstr;
+	localfacemmapprefix_name[skinnum] = mmapstr;
+
+	//CONS_Printf("Added rank prefix %s\n", rankstr);
+	//CONS_Printf("Added want prefix %s\n", wantstr);
+	//CONS_Printf("Added mmap prefix %s\n", mmapstr);
 }
 
 void ST_ReloadSkinFaceGraphics(void)
@@ -390,6 +421,10 @@ void ST_ReloadSkinFaceGraphics(void)
 
 	for (i = 0; i < numskins; i++)
 		ST_LoadFaceGraphics(skins[i].facerank, skins[i].facewant, skins[i].facemmap, i);
+	
+	for (i = 0; i < numlocalskins; i++) {
+		ST_LoadLocalFaceGraphics(localskins[i].facerank, localskins[i].facewant, localskins[i].facemmap, i);
+	}
 }
 
 static inline void ST_InitData(void)

@@ -49,6 +49,7 @@
 #include "m_anigif.h"
 #include "k_kart.h" // SRB2kart
 #include "y_inter.h"
+#include "fastcmp.h"
 #include "m_perfstats.h"
 
 #ifdef NETGAME_DEVMODE
@@ -141,6 +142,8 @@ static void Command_SetViews_f(void);
 
 static void Command_Addfilelocal(void);
 static void Command_Addfile(void);
+static void Command_Addskins(void);
+static void Command_GLocalSkin(void);
 static void Command_ListWADS_f(void);
 #ifdef DELFILE
 static void Command_Delfile(void);
@@ -289,6 +292,8 @@ consvar_t cv_skin = {"skin", DEFAULTSKIN, CV_SAVE|CV_CALL|CV_NOINIT, NULL, Skin_
 consvar_t cv_skin2 = {"skin2", DEFAULTSKIN2, CV_SAVE|CV_CALL|CV_NOINIT, NULL, Skin2_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_skin3 = {"skin3", DEFAULTSKIN3, CV_SAVE|CV_CALL|CV_NOINIT, NULL, Skin3_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_skin4 = {"skin4", DEFAULTSKIN4, CV_SAVE|CV_CALL|CV_NOINIT, NULL, Skin4_OnChange, 0, NULL, NULL, 0, 0, NULL};
+// haha I've beaten you now, ONLINE
+consvar_t cv_localskin = {"internal___localskin", "none", CV_HIDEN, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_skipmapcheck = {"skipmapcheck", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -447,6 +452,7 @@ static CV_PossibleValue_t basenumlaps_cons_t[] = {{1, "MIN"}, {50, "MAX"}, {0, "
 consvar_t cv_basenumlaps = {"basenumlaps", "Map default", CV_NETVAR|CV_CALL|CV_CHEAT, basenumlaps_cons_t, BaseNumLaps_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_forceskin = {"forceskin", "Off", CV_NETVAR|CV_CALL|CV_CHEAT, Forceskin_cons_t, ForceSkin_OnChange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_fakelocalskin = {"fakelocalskin", "None", CV_SAVE, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_downloading = {"downloading", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_allowexitlevel = {"allowexitlevel", "No", CV_NETVAR, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -468,6 +474,7 @@ consvar_t cv_showping = {"showping", "Always", CV_SAVE, showping_cons_t, NULL, 0
 
 static CV_PossibleValue_t pingmeasurement_cons_t[] = {{0, "Frames"}, {1, "Milliseconds"}, {0, NULL}};
 consvar_t cv_pingmeasurement = {"pingmeasurement", "Frames", CV_SAVE, pingmeasurement_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_luaimmersion = {"luaimmersion", "On", CV_SAVE, CV_OnOff, 0, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_minihead = {"smallminimapplayers", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -643,6 +650,8 @@ void D_RegisterServerCommands(void)
 
 	COM_AddCommand("addfilelocal", Command_Addfilelocal);
 	COM_AddCommand("addfile", Command_Addfile);
+	COM_AddCommand("addskins", Command_Addskins);
+	COM_AddCommand("localskin", Command_GLocalSkin);
 	COM_AddCommand("listwad", Command_ListWADS_f);
 
 #ifdef DELFILE
@@ -777,6 +786,9 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_showping);
 	CV_RegisterVar(&cv_pingmeasurement);
 	
+	CV_RegisterVar(&cv_luaimmersion);
+	CV_RegisterVar(&cv_fakelocalskin);
+	
 	CV_RegisterVar(&cv_minihead);
 	CV_RegisterVar(&cv_showminimapnames);
 	
@@ -885,6 +897,7 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_playername);
 	CV_RegisterVar(&cv_playercolor);
 	CV_RegisterVar(&cv_skin); // r_things.c (skin NAME)
+	CV_RegisterVar(&cv_localskin);
 	// secondary player (splitscreen)
 	CV_RegisterVar(&cv_playername2);
 	CV_RegisterVar(&cv_playercolor2);
@@ -4567,7 +4580,7 @@ static void Command_Addfile(void)
 	// Add file on your client directly if it is trivial, or you aren't in a netgame.
 	if (!(netgame || multiplayer) || musiconly)
 	{
-		P_AddWadFile(fn);
+		P_AddWadFile(fn, false);
 		return;
 	}
 
@@ -4614,6 +4627,156 @@ static void Command_Addfile(void)
 		SendNetXCmd(XD_REQADDFILE, buf, buf_p - buf);
 	else
 		SendNetXCmd(XD_ADDFILE, buf, buf_p - buf);
+}
+
+// i hate myself
+static boolean DumbStartsWith(const char *pre, const char *str)
+{
+    size_t lenpre = strlen(pre),
+           lenstr = strlen(str);
+    return lenstr < lenpre ? false : memcmp(pre, str, lenpre) == 0;
+}
+
+/** Adds something at runtime.
+  */
+static void
+Command_Addskins (void)
+{
+	if (COM_Argc() > 3)
+	{
+		CONS_Printf(
+				"addskins <file>: Load a skin file.\n");
+		return;
+	}
+	// no forcing?
+	/*
+	if (fasticmp(COM_Argv(2), "-force") || fasticmp(COM_Argv(2), "-f")) {
+		CONS_Alert(CONS_NOTICE, M_GetText("Adding file %s. May or may not be a skin.\n"), COM_Argv(1));
+		P_AddWadFile(COM_Argv(1), 0, true);	
+	} else {
+		if (DumbStartsWith("KC_", COM_Argv(1))) {
+			P_AddWadFile(COM_Argv(1), 0, true);
+		} else if (DumbStartsWith("KCL_", COM_Argv(1))) {
+			if (!demo.playback) {
+				CONS_Alert(CONS_ERROR, M_GetText("Cannot add file %s as it is a skin with lua. Include -force or -f to force it to load.\n"), COM_Argv(1));
+				return;
+			} else {
+	*/
+				P_AddWadFile(COM_Argv(1), true);
+	/*
+			}
+		} else {
+			CONS_Alert(CONS_ERROR, M_GetText("Cannot add file %s as it is not a skin.\n"), COM_Argv(1));
+			return;
+		}
+	}
+	*/
+}
+
+// args n stuff
+#include "args.h"
+
+static void Command_GLocalSkin (void) 
+{
+	size_t first_option;
+	size_t option_display;
+	size_t option_all;
+	size_t option_player;
+	
+	option_player	= COM_CheckPartialParm("-p");
+	option_display 	= COM_CheckPartialParm("-d");
+	option_all		= COM_CheckPartialParm("-a");
+
+	char* fuck; // local skin name
+
+	if (!( first_option = COM_FirstOption() ))
+		first_option = COM_Argc();
+
+	if (first_option < 2)
+	{
+		/* holy fucking shit */
+		CONS_Printf("localskin <name> [-player <name>] [-display <number>] [-all]:\n");
+		CONS_Printf(M_GetText("Set a localskin via its internal name (usually printed on the console).\n\n\
+* Using \"-player\" will set a localskin to a specified player.\n\
+  Defaults to yourself.\n\
+* Using \"-display\" will set a localskin to the displayed player.\n\
+  Defaults to 0, which is the first player displayed.\n\
+  Can go up to 3 for splitscreen.\n\
+* Using \"-all\" will set a localskin to ALL players.\n\
+* \"localskin none\" removes the localskin, just like how\n\
+  \"forceskin none\" does.\n"));
+		return;
+	}
+
+	fuck = ConcatCommandArgv(1, first_option);
+
+	char* player_name = player_names[consoleplayer];
+	char* display_num = "0";
+	size_t dnum = 0;
+
+	if (option_display)  // -display
+	{
+		// handle default: 0
+		if (COM_Argv(option_display + 1)[0] == "" || COM_Argv(option_display + 1)[0] != "-")
+			display_num = COM_Argv(option_display + 1);
+
+		if (isdigit(display_num[0]) || display_num == "0") 
+		{
+			dnum = atoi(display_num);
+			if (dnum > 3 || dnum < 0) // nuh uh
+				dnum = 0;
+			SetLocalPlayerSkin(displayplayers[dnum], fuck, NULL);
+
+			CONS_Printf("Successfully applied localskin to displayed player.\n");
+			return;
+		}
+		
+		CONS_Printf("Could not apply localskin.\n");
+		
+		return;
+	} 
+	else if (option_all) // -all
+	{
+		int i;
+
+		for (i = 0; i < MAXPLAYERS; ++i) 
+		{
+			if (!playeringame[i])
+				continue;
+			SetLocalPlayerSkin(i, fuck, NULL);
+		}
+		CONS_Printf("Successfully applied localskin to all players.\n");
+
+		return;
+	} 
+	else // -player or no other arguments
+	{
+		if (option_player) 
+		{
+			int i;
+			player_name = COM_Argv(option_player + 1);
+
+			for (i = 0; i < MAXPLAYERS; ++i) 
+			{
+				if (fasticmp(player_names[i], player_name))
+					SetLocalPlayerSkin(i, fuck, NULL);
+			}
+			CONS_Printf("Successfully applied localskin to specified player.\n");
+
+			return;
+		} 
+		else 
+		{
+			SetLocalPlayerSkin(consoleplayer, fuck, &cv_localskin);
+			CONS_Printf("Successfully applied localskin.\n");
+
+			return;
+		}
+
+		CONS_Printf("Could not apply localskin.\n");
+
+		return;
+	}
 }
 
 #ifdef DELFILE
@@ -4772,7 +4935,7 @@ static void Got_Addfilecmd(UINT8 **cp, INT32 playernum)
 
 	ncs = findfile(filename,md5sum,true);
 
-	if (ncs != FS_FOUND || !P_AddWadFile(filename))
+	if (ncs != FS_FOUND || !P_AddWadFile(filename, false))
 	{
 		Command_ExitGame_f();
 		if (ncs == FS_FOUND)
@@ -5927,7 +6090,6 @@ static void Command_ListSkins(void)
 		CONS_Printf("There are no more pages.\n");
 	}
 }
-
 
 /** Sends a color change for the console player, unless that player is moving.
   * \sa cv_playercolor, Color2_OnChange, Skin_OnChange
