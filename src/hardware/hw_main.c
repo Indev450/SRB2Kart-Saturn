@@ -124,6 +124,8 @@ consvar_t cv_grusecustomshaders = {"gr_usecustomshaders", "Yes", CV_CALL|CV_SAVE
 
 consvar_t cv_grpaletteshader = {"gr_paletteshader", "Off", CV_CALL|CV_SAVE, CV_OnOff, CV_grpaletteshader_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_grflashpal = {"gr_flashpal", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 static void CV_filtermode_ONChange(void)
 {
 	HWD.pfnSetSpecialState(HWD_SET_TEXTUREFILTERMODE, cv_grfiltermode.value);
@@ -6093,6 +6095,7 @@ void HWR_AddCommands(void)
 	CV_RegisterVar(&cv_portalonly);
 	CV_RegisterVar(&cv_secbright);
 	CV_RegisterVar(&cv_grpaletteshader);
+	CV_RegisterVar(&cv_grflashpal);
 }
 
 // --------------------------------------------------------------------------
@@ -6199,7 +6202,7 @@ void HWR_DoPostProcessor(player_t *player)
 
 	// Armageddon Blast Flash!
 	// Could this even be considered postprocessor?
-	if (player->flashcount && !cv_grpaletteshader.value)
+	if (player->flashcount && !cv_grpaletteshader.value || player->flashcount && cv_grpaletteshader.value && !cv_grflashpal.value)
 	{
 		FOutVector      v[4];
 		FSurfaceInfo Surf;
