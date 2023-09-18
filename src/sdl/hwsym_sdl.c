@@ -113,6 +113,9 @@ void *hwSym(const char *funcName,void *handle)
 	
 	GETFUNC(StartBatching);
 	GETFUNC(RenderBatches);
+	
+	GETFUNC(AddLightTable);
+	GETFUNC(ClearLightTableCache);
 
 #else //HWRENDER
 	if (0 == strcmp("FinishUpdate", funcName))

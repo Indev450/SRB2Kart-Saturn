@@ -232,18 +232,22 @@ void ST_doPaletteStuff(void)
 	else
 		palette = 0;
 
+	palette = min(max(palette, 0), 13);
+
 #ifdef HWRENDER
-	if (rendermode == render_opengl)
+	if (rendermode == render_opengl && !cv_grpaletteshader.value || rendermode == render_opengl && cv_grpaletteshader.value && !cv_grflashpal.value)
 		palette = 0; // No flashpals here in OpenGL
 #endif
-
-	palette = min(max(palette, 0), 13);
 
 	if (palette != st_palette)
 	{
 		st_palette = palette;
 
-		if (rendermode == render_soft)
+#ifdef HWRENDER
+		if (rendermode != render_none && cv_grpaletteshader.value && cv_grflashpal.value)
+#else
+		if (rendermode != render_none)
+#endif
 		{
 			//V_SetPaletteLump(GetPalette()); // Reset the palette -- is this needed?
 			if (!splitscreen)
@@ -2167,9 +2171,9 @@ void ST_Drawer(void)
 	//25/08/99: Hurdler: palette changes is done for all players,
 	//                   not only player1! That's why this part
 	//                   of code is moved somewhere else.
-	if (rendermode == render_soft)
+	if (rendermode == render_soft || rendermode == render_opengl && cv_grpaletteshader.value && cv_grflashpal.value)
 #endif
-		if (rendermode != render_none) ST_doPaletteStuff();
+	if (rendermode != render_none) ST_doPaletteStuff();
 
 	if (st_overlay)
 	{
