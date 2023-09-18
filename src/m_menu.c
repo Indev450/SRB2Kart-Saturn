@@ -1706,8 +1706,9 @@ static menuitem_t OP_SaturnMenu[] =
 	{IT_STRING | IT_CVAR, NULL,	  "Show Minimap Names",   &cv_showminimapnames, 80},
 	{IT_STRING | IT_CVAR, NULL,	  "Small Minimap Players",   &cv_minihead, 90},
 	{IT_STRING | IT_CVAR, NULL, "Less Midnight Channel Flicker", 	&cv_lessflicker, 		 110},
-	{IT_SUBMENU|IT_STRING,	NULL,	"Player distortion...", &OP_PlayerDistortDef,	 130},
-	{IT_SUBMENU|IT_STRING,	NULL,	"Hud Offsets...", 		&OP_HudOffsetDef,		 145},
+	{IT_STRING | IT_CVAR, NULL, "Flashpals in Palette Renderer", 	&cv_grflashpal, 		 120},
+	{IT_SUBMENU|IT_STRING,	NULL,	"Player distortion...", &OP_PlayerDistortDef,	 140},
+	{IT_SUBMENU|IT_STRING,	NULL,	"Hud Offsets...", 		&OP_HudOffsetDef,		 155},
 
 	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Credits", 		&OP_SaturnCreditsDef,		 170}, // uwu
 };

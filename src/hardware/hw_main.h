@@ -182,6 +182,7 @@ extern consvar_t cv_grbatching;
 extern consvar_t cv_grrenderdistance;
 extern consvar_t cv_grusecustomshaders;
 extern consvar_t cv_grpaletteshader;
+extern consvar_t cv_grflashpal;
 extern consvar_t cv_grportals;
 extern consvar_t cv_nostencil;
 extern consvar_t cv_secbright;

@@ -235,7 +235,7 @@ void ST_doPaletteStuff(void)
 	palette = min(max(palette, 0), 13);
 
 #ifdef HWRENDER
-	if (rendermode == render_opengl && !cv_grpaletteshader.value)
+	if (rendermode == render_opengl && !cv_grpaletteshader.value || rendermode == render_opengl && cv_grpaletteshader.value && !cv_grflashpal.value)
 		palette = 0; // No flashpals here in OpenGL
 #endif
 
@@ -244,7 +244,7 @@ void ST_doPaletteStuff(void)
 		st_palette = palette;
 
 #ifdef HWRENDER
-		if (rendermode != render_none && cv_grpaletteshader.value)
+		if (rendermode != render_none && cv_grpaletteshader.value && cv_grflashpal.value)
 #else
 		if (rendermode != render_none)
 #endif
@@ -2167,6 +2167,12 @@ void ST_Drawer(void)
 		st_palette = -1;
 
 	// Do red-/gold-shifts from damage/items
+#ifdef HWRENDER
+	//25/08/99: Hurdler: palette changes is done for all players,
+	//                   not only player1! That's why this part
+	//                   of code is moved somewhere else.
+	if (rendermode == render_soft || rendermode == render_opengl && cv_grpaletteshader.value && cv_grflashpal.value)
+#endif
 	if (rendermode != render_none) ST_doPaletteStuff();
 
 	if (st_overlay)
