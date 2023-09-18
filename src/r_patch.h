@@ -56,14 +56,13 @@ INT32 R_GetRollAngle(angle_t rollangle);
 patch_t *Patch_GetRotatedSprite(
 	spriteframe_t *sprite,
 	size_t frame, size_t spriteangle,
-	boolean flip, void *info, 
-	INT32 rotationangle);
+	boolean flip, boolean adjustfeet,
+	void *info, INT32 rotationangle);	
 rotsprite_t *RotatedPatch_Create(INT32 numangles);
-void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle, INT32 xpivot, INT32 ypivot, UINT8 flip);
-//void R_FreeSkinRotSprite(size_t skinnum);
+void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle, INT32 xpivot, INT32 ypivot, boolean flip);
+
 extern fixed_t rollcosang[ROTANGLES];
 extern fixed_t rollsinang[ROTANGLES];
-void R_FreeAllRotSprite(void);
 #endif
 
 #endif // __R_PATCH__

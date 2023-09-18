@@ -725,7 +725,80 @@ void HWR_RenderPlane(extrasubsector_t *xsub, boolean isceiling, fixed_t fixedhei
 	else
 		HWD.pfnSetShader(1);	// floor shader
 
-	HWD.pfnDrawPolygon(&Surf, planeVerts, nrPlaneVerts, PolyFlags);
+	HWD.pfnDrawPolygon(&Surf, planeVerts, nrPlaneVerts, PolyFlags, false);
+
+	if (subsector)
+	{
+		// Horizon lines
+		FOutVector horizonpts[6];
+		float dist, vx, vy;
+		float x1, y1, xd, yd;
+		UINT8 numplanes, j;
+		vertex_t v; // For determining the closest distance from the line to the camera, to split render planes for minimum distortion;
+
+		const float renderdist = 27000.0f; // How far out to properly render the plane
+		const float farrenderdist = 32768.0f; // From here, raise plane to horizon level to fill in the line with some texture distortion
+
+		seg_t *line = &segs[subsector->firstline];
+
+		for (i = 0; i < subsector->numlines; i++, line++)
+		{
+			if (line->linedef->special == 41 && R_PointOnSegSide(dup_viewx, dup_viewy, line) == 0)
+			{
+				P_ClosestPointOnLine(viewx, viewy, line->linedef, &v);
+				dist = FIXED_TO_FLOAT(R_PointToDist(v.x, v.y));
+
+				x1 = ((polyvertex_t *)line->pv1)->x;
+				y1 = ((polyvertex_t *)line->pv1)->y;
+				xd = ((polyvertex_t *)line->pv2)->x - x1;
+				yd = ((polyvertex_t *)line->pv2)->y - y1;
+
+				// Based on the seg length and the distance from the line, split horizon into multiple poly sets to reduce distortion
+				dist = sqrtf((xd*xd) + (yd*yd)) / dist / 16.0f;
+				if (dist > 100.0f)
+					numplanes = 100;
+				else
+					numplanes = (UINT8)dist + 1;
+
+				for (j = 0; j < numplanes; j++)
+				{
+					// Left side
+					vx = x1 + xd * j / numplanes;
+					vy = y1 + yd * j / numplanes;
+					SETUP3DVERT((&horizonpts[1]), vx, vy);
+
+					dist = sqrtf(powf(vx - gr_viewx, 2) + powf(vy - gr_viewy, 2));
+					vx = (vx - gr_viewx) * renderdist / dist + gr_viewx;
+					vy = (vy - gr_viewy) * renderdist / dist + gr_viewy;
+					SETUP3DVERT((&horizonpts[0]), vx, vy);
+
+					// Right side
+					vx = x1 + xd * (j+1) / numplanes;
+					vy = y1 + yd * (j+1) / numplanes;
+					SETUP3DVERT((&horizonpts[2]), vx, vy);
+
+					dist = sqrtf(powf(vx - gr_viewx, 2) + powf(vy - gr_viewy, 2));
+					vx = (vx - gr_viewx) * renderdist / dist + gr_viewx;
+					vy = (vy - gr_viewy) * renderdist / dist + gr_viewy;
+					SETUP3DVERT((&horizonpts[3]), vx, vy);
+
+					// Horizon fills
+					vx = (horizonpts[0].x - gr_viewx) * farrenderdist / renderdist + gr_viewx;
+					vy = (horizonpts[0].z - gr_viewy) * farrenderdist / renderdist + gr_viewy;
+					SETUP3DVERT((&horizonpts[5]), vx, vy);
+					horizonpts[5].y = gr_viewz;
+
+					vx = (horizonpts[3].x - gr_viewx) * farrenderdist / renderdist + gr_viewx;
+					vy = (horizonpts[3].z - gr_viewy) * farrenderdist / renderdist + gr_viewy;
+					SETUP3DVERT((&horizonpts[4]), vx, vy);
+					horizonpts[4].y = gr_viewz;
+
+					// Draw
+					HWD.pfnDrawPolygon(&Surf, horizonpts, 6, PolyFlags, true);
+				}
+			}
+		}
+	}
 }
 
 #ifdef WALLSPLATS
@@ -789,7 +862,7 @@ static void HWR_DrawSegsSplats(FSurfaceInfo * pSurf)
 		}
 
 		HWD.pfnSetShader(2);	// wall shader
-		HWD.pfnDrawPolygon(&pSurf, wallVerts, 4, i|PF_Modulated|PF_Decal);
+		HWD.pfnDrawPolygon(&pSurf, wallVerts, 4, i|PF_Modulated|PF_Decal, false);
 	}
 }
 #endif
@@ -831,7 +904,7 @@ void HWR_ProjectWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend
 		blendmode &= ~PF_Masked;
 	}
 
-	HWD.pfnDrawPolygon(pSurf, wallVerts, 4, blendmode|PF_Modulated|PF_Occlude);
+	HWD.pfnDrawPolygon(pSurf, wallVerts, 4, blendmode|PF_Modulated|PF_Occlude, false);
 
 #ifdef WALLSPLATS
 	if (gr_curline->linedef->splats && cv_splats.value)
@@ -878,9 +951,6 @@ void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum, FSurfa
 	pegb = wallVerts[0].t;
 	pegmul = (pegb - pegt) / (top - bot);
 
-	if (fpclassify(pegmul) == FP_NAN)
-		pegmul = 0.0;
-
 #ifdef ESLOPE
 	endrealtop = endtop = wallVerts[2].y;
 	endrealbot = endbot = wallVerts[1].y;
@@ -889,8 +959,6 @@ void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum, FSurfa
 	endpegmul = (endpegb - endpegt) / (endtop - endbot);
 #endif
 
-	if (fpclassify(endpegmul) == FP_NAN)
-		endpegmul = 0.0;
 
 	for (i = 0; i < sector->numlights; i++)
 	{
@@ -1001,10 +1069,24 @@ void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum, FSurfa
 		}
 #endif
 
-		// Found a break
-		bot = min(max(bheight, realbot), top);
-		endbot = min(max(endbheight, endrealbot), endtop);
+#ifdef ESLOPE
+		if (endbheight >= endtop)
+#endif
+		if (bheight >= top)
+			continue;
 
+		//Found a break;
+		bot = bheight;
+
+		if (bot < realbot)
+			bot = realbot;
+
+#ifdef ESLOPE
+		endbot = endbheight;
+		
+		if (endbot < endrealbot)
+			endbot = endrealbot;
+#endif
 		Surf->PolyColor.s.alpha = alpha;
 
 #ifdef ESLOPE
@@ -1125,7 +1207,7 @@ void HWR_DrawSkyWallList()
 	HWD.pfnUnSetShader();
 	for (i = 0; i < skyWallVertexArraySize; i++)
 	{
-		HWD.pfnDrawPolygon(&surf, skyWallVertexArray + i * 4, 4, PF_Occlude|PF_Invisible|PF_NoTexture);
+		HWD.pfnDrawPolygon(&surf, skyWallVertexArray + i * 4, 4, PF_Occlude|PF_Invisible|PF_NoTexture, false);
 	}
 }
 
@@ -1598,7 +1680,10 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 		gr_midtexture = R_GetTextureNum(gr_sidedef->midtexture);
 		if (gr_midtexture || gr_portal == GRPORTAL_STENCIL || gr_portal == GRPORTAL_DEPTH || gl_drawing_stencil)
 		{
+			FBITFIELD blendmode;
 			sector_t *front, *back;
+			fixed_t  popentop, popenbottom, polytop, polybottom, lowcut, highcut;
+			fixed_t     texturevpeg = 0;
 			INT32 repeats;
 
 			if (gr_linedef->frontsector->heightsec != -1)
@@ -1634,10 +1719,6 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 			else
 				repeats = 1;
 
-			fixed_t midtexheight = textureheight[gr_midtexture] * repeats;
-			fixed_t popentop, popenbottom, polytop, polybottom, lowcut, highcut;
-			fixed_t popentopslope, popenbottomslope, polytopslope, polybottomslope, lowcutslope, highcutslope;
-
 			// SoM: a little note: This code re-arranging will
 			// fix the bug in Nimrod map02. popentop and popenbottom
 			// record the limits the texture can be displayed in.
@@ -1651,8 +1732,8 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 			// From CB
 			if (gr_curline->polyseg)
 			{
-				popentop = popentopslope = back->ceilingheight;
-				popenbottom = popenbottomslope = back->floorheight;
+				popentop = back->ceilingheight;
+				popenbottom = back->floorheight;
 			}
 			else
 #endif
@@ -1660,9 +1741,10 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 #ifdef ESLOPE
 				popentop = min(worldtop, worldhigh);
 				popenbottom = max(worldbottom, worldlow);
-
-				popentopslope = min(worldtopslope, worldhighslope);
-				popenbottomslope = max(worldbottomslope, worldlowslope);
+#else
+				popentop = min(front->ceilingheight, back->ceilingheight);
+				popenbottom = max(front->floorheight, back->floorheight);
+#endif
 			}
 
 #ifdef ESLOPE
@@ -1671,16 +1753,12 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 				if (!!(gr_linedef->flags & ML_DONTPEGBOTTOM) ^ !!(gr_linedef->flags & ML_EFFECT3))
 				{
 					polybottom = max(front->floorheight, back->floorheight) + gr_sidedef->rowoffset;
-					polybottomslope = polybottom;
-					polytop = polybottom + midtexheight;
-					polytopslope = polytop;
+					polytop = polybottom + textureheight[gr_midtexture]*repeats;
 				}
 				else
 				{
 					polytop = min(front->ceilingheight, back->ceilingheight) + gr_sidedef->rowoffset;
-					polytopslope = polytop;
-					polybottom = polytop - midtexheight;
-					polybottomslope = polybottom;
+					polybottom = polytop - textureheight[gr_midtexture]*repeats;
 				}
 			}
 			else if (!!(gr_linedef->flags & ML_DONTPEGBOTTOM) ^ !!(gr_linedef->flags & ML_EFFECT3))
@@ -1689,17 +1767,12 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 #endif
 			{
 				polybottom = popenbottom + gr_sidedef->rowoffset;
-				polytop = polybottom + midtexheight;
-				polybottomslope = popenbottomslope + gr_sidedef->rowoffset;
-				polytopslope = polybottomslope + midtexheight;
+				polytop = polybottom + textureheight[gr_midtexture]*repeats;
 			}
 			else
 			{
 				polytop = popentop + gr_sidedef->rowoffset;
 				polybottom = polytop - textureheight[gr_midtexture]*repeats;
-				polybottom = polytop - midtexheight;
-				polytopslope = popentopslope + gr_sidedef->rowoffset;
-				polybottomslope = polytopslope - midtexheight;
 			}
 
 			// CB
@@ -1710,8 +1783,6 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 			{
 				lowcut = polybottom;
 				highcut = polytop;
-				lowcutslope = polybottomslope;
-				highcutslope = polytopslope;
 			}
 #endif
 			else
@@ -1719,49 +1790,83 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 				// The cut-off values of a linedef can always be constant, since every line has an absoulute front and or back sector
 				lowcut = popenbottom;
 				highcut = popentop;
-				lowcutslope = popenbottomslope;
-				highcutslope = popentopslope;
 			}
 
 			h = min(highcut, polytop);
 			l = max(polybottom, lowcut);
-			hS = min(highcutslope, polytopslope);
-			lS = max(polybottomslope, lowcutslope);
 
-			// PEGGING
-			fixed_t texturevpeg, texturevpegslope;
-
-			if (!!(gr_linedef->flags & ML_DONTPEGBOTTOM) ^ !!(gr_linedef->flags & ML_EFFECT3))
 			{
-				texturevpeg = midtexheight - h + polybottom;
-				texturevpegslope = midtexheight - hS + polybottomslope;
-			}
-			else
-			{
-				texturevpeg = polytop - h;
-				texturevpegslope = polytopslope - hS;
-			}
+				// PEGGING
+#ifdef ESLOPE
+				if (!!(gr_linedef->flags & ML_DONTPEGBOTTOM) ^ !!(gr_linedef->flags & ML_EFFECT3))
+#else
+				if (gr_linedef->flags & ML_DONTPEGBOTTOM)
+#endif
+					texturevpeg = textureheight[gr_sidedef->midtexture]*repeats - h + polybottom;
+				else
+					texturevpeg = polytop - h;
 
 			grTex = HWR_GetTexture(gr_midtexture);
 
-			wallVerts[3].t = texturevpeg * grTex->scaleY;
-			wallVerts[0].t = (h - l + texturevpeg) * grTex->scaleY;
-			wallVerts[2].t = texturevpegslope * grTex->scaleY;
-			wallVerts[1].t = (hS - lS + texturevpegslope) * grTex->scaleY;
-			wallVerts[0].s = wallVerts[3].s = cliplow * grTex->scaleX;
-			wallVerts[2].s = wallVerts[1].s = cliphigh * grTex->scaleX;
+				wallVerts[3].t = wallVerts[2].t = texturevpeg * grTex->scaleY;
+				wallVerts[0].t = wallVerts[1].t = (h - l + texturevpeg) * grTex->scaleY;
+				wallVerts[0].s = wallVerts[3].s = cliplow * grTex->scaleX;
+				wallVerts[2].s = wallVerts[1].s = cliphigh * grTex->scaleX;
+			}
 
 			// set top/bottom coords
 			// Take the texture peg into account, rather than changing the offsets past
 			// where the polygon might not be.
-			wallVerts[3].y = FIXED_TO_FLOAT(h);
-			wallVerts[0].y = FIXED_TO_FLOAT(l);
-			wallVerts[2].y = FIXED_TO_FLOAT(hS);
-			wallVerts[1].y = FIXED_TO_FLOAT(lS);
+			wallVerts[2].y = wallVerts[3].y = FIXED_TO_FLOAT(h);
+			wallVerts[0].y = wallVerts[1].y = FIXED_TO_FLOAT(l);
+
+#ifdef ESLOPE
+			// Correct to account for slopes
+			{
+				fixed_t midtextureslant;
+
+				if (gr_linedef->flags & ML_EFFECT2)
+					midtextureslant = 0;
+				else if (!!(gr_linedef->flags & ML_DONTPEGBOTTOM) ^ !!(gr_linedef->flags & ML_EFFECT3))
+					midtextureslant = worldlow < worldbottom
+							  ? worldbottomslope-worldbottom
+							  : worldlowslope-worldlow;
+				else
+					midtextureslant = worldtop < worldhigh
+							  ? worldtopslope-worldtop
+							  : worldhighslope-worldhigh;
+
+				polytop += midtextureslant;
+				polybottom += midtextureslant;
+
+				highcut += worldtop < worldhigh
+						 ? worldtopslope-worldtop
+						 : worldhighslope-worldhigh;
+				lowcut += worldlow < worldbottom
+						? worldbottomslope-worldbottom
+						: worldlowslope-worldlow;
+
+				// Texture stuff
+				h = min(highcut, polytop);
+				l = max(polybottom, lowcut);
+
+				{
+					// PEGGING
+					if (!!(gr_linedef->flags & ML_DONTPEGBOTTOM) ^ !!(gr_linedef->flags & ML_EFFECT3))
+						texturevpeg = textureheight[gr_sidedef->midtexture]*repeats - h + polybottom;
+					else
+						texturevpeg = polytop - h;
+					wallVerts[2].t = texturevpeg * grTex->scaleY;
+					wallVerts[1].t = (h - l + texturevpeg) * grTex->scaleY;
+				}
+
+				wallVerts[2].y = FIXED_TO_FLOAT(h);
+				wallVerts[1].y = FIXED_TO_FLOAT(l);
+			}
 #endif
 
 			// set alpha for transparent walls (new boom and legacy linedef types)
-			FBITFIELD blendmode;
+			// ooops ! this do not work at all because render order we should render it in backtofront order
 
 			switch (gr_linedef->special)
 			{
@@ -2951,7 +3056,7 @@ void HWR_RenderPolyObjectPlane(polyobj_t *polysector, boolean isceiling, fixed_t
 		blendmode |= PF_Masked|PF_Modulated;
 
 	HWD.pfnSetShader(1);	// floor shader
-	HWD.pfnDrawPolygon(&Surf, planeVerts, nrPlaneVerts, blendmode);
+	HWD.pfnDrawPolygon(&Surf, planeVerts, nrPlaneVerts, blendmode, false);
 }
 
 void HWR_AddPolyObjectPlanes(void)
@@ -3750,7 +3855,7 @@ static void HWR_DrawSpriteShadow(gr_vissprite_t *spr, GLPatch_t *gpatch, float t
 	{
 		sSurf.PolyColor.s.alpha = (UINT8)(sSurf.PolyColor.s.alpha - floorheight/4);
 		HWD.pfnSetShader(1);	// floor shader
-		HWD.pfnDrawPolygon(&sSurf, swallVerts, 4, PF_Translucent|PF_Modulated);
+		HWD.pfnDrawPolygon(&sSurf, swallVerts, 4, PF_Translucent|PF_Modulated, false);
 	}
 }
 
@@ -4117,7 +4222,7 @@ static void HWR_SplitSprite(gr_vissprite_t *spr)
 		Surf.PolyColor.s.alpha = alpha;
 
 		HWD.pfnSetShader(3);	// sprite shader
-		HWD.pfnDrawPolygon(&Surf, wallVerts, 4, blend|PF_Modulated);
+		HWD.pfnDrawPolygon(&Surf, wallVerts, 4, blend|PF_Modulated, false);
 
 		top = bot;
 #ifdef ESLOPE
@@ -4157,7 +4262,7 @@ static void HWR_SplitSprite(gr_vissprite_t *spr)
 	Surf.PolyColor.s.alpha = alpha;
 
 	HWD.pfnSetShader(3);	// sprite shader
-	HWD.pfnDrawPolygon(&Surf, wallVerts, 4, blend|PF_Modulated);
+	HWD.pfnDrawPolygon(&Surf, wallVerts, 4, blend|PF_Modulated, false);
 }
 
 // -----------------+
@@ -4310,7 +4415,7 @@ static void HWR_DrawSprite(gr_vissprite_t *spr)
 		}
 
 		HWD.pfnSetShader(3);	// sprite shader
-		HWD.pfnDrawPolygon(&Surf, wallVerts, 4, blend|PF_Modulated);
+		HWD.pfnDrawPolygon(&Surf, wallVerts, 4, blend|PF_Modulated, false);
 	}
 }
 
@@ -4404,7 +4509,7 @@ static inline void HWR_DrawPrecipitationSprite(gr_vissprite_t *spr)
 	}
 
 	HWD.pfnSetShader(3);	// sprite shader
-	HWD.pfnDrawPolygon(&Surf, wallVerts, 4, blend|PF_Modulated);
+	HWD.pfnDrawPolygon(&Surf, wallVerts, 4, blend|PF_Modulated, false);
 }
 
 // --------------------------------------------------------------------------
@@ -5076,7 +5181,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 			rollsum = (thing->rollangle)+(thing->sloperoll);
 
 		rollangle = R_GetRollAngle(rollsum);
-		rotsprite = Patch_GetRotatedSprite(sprframe, (thing->frame & FF_FRAMEMASK), rot, flip, sprinfo, rollangle);
+		rotsprite = Patch_GetRotatedSprite(sprframe, (thing->frame & FF_FRAMEMASK), rot, flip, false, sprinfo, rollangle);
 
 		if (rotsprite != NULL)
 		{
@@ -5704,8 +5809,18 @@ void RecursivePortalRendering(portal_t *rootportal, const float fpov, player_t *
 			HWR_SetTransform(fpov, player);// restore transform
 		}
 		gr_collect_skywalls = false;
+		
+		ps_numsprites.value.i = gr_visspritecount;
+		PS_START_TIMING(ps_hw_spritesorttime);
 		HWR_SortVisSprites();
+		PS_STOP_TIMING(ps_hw_spritesorttime);
+		PS_START_TIMING(ps_hw_spritedrawtime);
 		HWR_DrawSprites();
+		PS_STOP_TIMING(ps_hw_spritedrawtime);
+
+		ps_numdrawnodes.value.i = 0;
+		ps_hw_nodesorttime.value.p = 0;
+		ps_hw_nodedrawtime.value.p = 0;
 		HWR_RenderDrawNodes();
 	}
 	// free memory from portal list allocated by calls to Add2Lines
@@ -5720,6 +5835,7 @@ void RecursivePortalRendering(portal_t *rootportal, const float fpov, player_t *
 	// TODO: batching at some point
 	// TODO: is it okay if stencil test is on all the time even when its not needed?
 }
+
 
 // ==========================================================================
 // Render the current frame.
@@ -5841,7 +5957,6 @@ void HWR_RenderFrame(INT32 viewnumber, player_t *player, boolean skybox)
 	HWD.pfnSetSpecialState(HWD_SET_SHADERS, cv_grshaders.value);
 	HWD.pfnSetShader(0);
 
-	//drawcount = 0;
 	validcount++;
 
 	portalclipline = NULL;
@@ -5879,18 +5994,8 @@ void HWR_RenderSinglePortal(portal_t *portal, size_t portalnum, float fpov, play
 	portalcullsector = gr_portalcullsectors[portalnum];
 	HWR_RenderBSPNode((INT32)numnodes - 1);
 
-	// Draw MD2 and sprites
-	ps_numsprites.value.i = gr_visspritecount;
-	PS_START_TIMING(ps_hw_spritesorttime);
 	HWR_SortVisSprites();
-	PS_STOP_TIMING(ps_hw_spritesorttime);
-	PS_START_TIMING(ps_hw_spritedrawtime);
 	HWR_DrawSprites();
-	PS_STOP_TIMING(ps_hw_spritedrawtime);
-
-	ps_numdrawnodes.value.i = 0;
-	ps_hw_nodesorttime.value.p = 0;
-	ps_hw_nodedrawtime.value.p = 0;
 	HWR_RenderDrawNodes();
 }
 
@@ -6035,7 +6140,7 @@ void HWR_RenderWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend,
 
 	blendmode |= PF_Modulated;	// No PF_Occlude means overlapping (incorrect) transparency
 
-	HWD.pfnDrawPolygon(pSurf, wallVerts, 4, blendmode);
+	HWD.pfnDrawPolygon(pSurf, wallVerts, 4, blendmode, false);
 
 #ifdef WALLSPLATS
 	if (gr_curline->linedef->splats && cv_splats.value)
@@ -6086,7 +6191,7 @@ void HWR_DoPostProcessor(player_t *player)
 
 		Surf.PolyColor.s.alpha = 0xc0; // match software mode
 
-		HWD.pfnDrawPolygon(&Surf, v, 4, PF_Modulated|PF_Translucent|PF_NoTexture|PF_NoDepthTest);
+		HWD.pfnDrawPolygon(&Surf, v, 4, PF_Modulated|PF_Translucent|PF_NoTexture|PF_NoDepthTest, false);
 	}
 
 	if (!cv_grscreentextures.value) // screen textures are needed for the rest of the effects

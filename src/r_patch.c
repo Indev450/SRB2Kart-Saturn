@@ -584,20 +584,6 @@ static void R_ParseSpriteInfo(boolean spr2)
 			}
 		}
 	}
-	else
-	{
-		/*for (i = 0; i <= NUMPLAYERSPRITES; i++)
-		{
-			if (i == NUMPLAYERSPRITES)
-				I_Error("Error parsing SPRTINFO lump: Unknown sprite2 name \"%s\"", newSpriteName);
-			if (!memcmp(newSpriteName,spr2names[i],4))
-			{
-				spr2num = i;
-				break;
-			}
-		}*/
-		// Fuckal: 2.1; playersprites don't exist
-	}
 
 	// allocate a spriteinfo
 	info = Z_Calloc(sizeof(spriteinfo_t), PU_STATIC, NULL);
@@ -654,22 +640,6 @@ static void R_ParseSpriteInfo(boolean spr2)
 			{
 				R_ParseSpriteInfoFrame(info);
 				Z_Free(sprinfoToken);
-				/*if (spr2)
-				{
-					if (!foundskins)
-						I_Error("Error parsing SPRTINFO lump: No skins specified in this sprite2 definition");
-					for (i = 0; i < foundskins; i++)
-					{
-						size_t skinnum = skinnumbers[i];
-						skin_t *skin = &skins[skinnum];
-						spriteinfo_t *sprinfo = skin->sprinfo;
-#ifdef ROTSPRITE
-						R_FreeSkinRotSprite(skinnum);
-#endif
-						M_Memcpy(&sprinfo[spr2num], info, sizeof(spriteinfo_t));
-					}
-				}
-				else*/
 					M_Memcpy(&spriteinfo[sprnum], info, sizeof(spriteinfo_t));
 			}
 			else
@@ -793,6 +763,7 @@ static UINT16 GetPatchPixel(patch_t *patch, INT32 x, INT32 y, boolean flip)
 //
 fixed_t rollcosang[ROTANGLES];
 fixed_t rollsinang[ROTANGLES];
+
 INT32 R_GetRollAngle(angle_t rollangle)
 {
 	INT32 ra = AngleFixed(rollangle)>>FRACBITS;
@@ -807,15 +778,11 @@ INT32 R_GetRollAngle(angle_t rollangle)
 patch_t *Patch_GetRotatedSprite(
 	spriteframe_t *sprite,
 	size_t frame, size_t spriteangle,
-	boolean flip, void *info, 
-	INT32 rotationangle)
+	boolean flip, boolean adjustfeet,
+	void *info, INT32 rotationangle)
 {
 	rotsprite_t *rotsprite;
 	spriteinfo_t *sprinfo = (spriteinfo_t *)info;
-	boolean adjustfeet;
-
-	adjustfeet = (rendermode == render_none);
-
 	INT32 idx = rotationangle;
 	UINT8 type = (adjustfeet ? 1 : 0);
 
@@ -903,17 +870,11 @@ static patch_t *R_CreateHardwarePatch(patch_t *patch)
 	GLPatch_t *grPatch = Z_Calloc(sizeof(GLPatch_t), PU_HWRPATCHINFO, NULL);
 	grPatch->mipmap = Z_Calloc(sizeof(GLMipmap_t), PU_HWRPATCHINFO, NULL);
 	grPatch->rawpatch = patch;
-	//sprframe->rotsprite.patch[rot][angle] = (patch_t *)grPatch;
 	HWR_MakePatch(patch, grPatch, grPatch->mipmap, false);
     return (patch_t *)grPatch;
 }
 
-//
-// R_CacheRotSprite
-//
-// Create a rotated sprite.
-//
-void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle, INT32 xpivot, INT32 ypivot, UINT8 flip)
+void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle, INT32 xpivot, INT32 ypivot, boolean flip)
 {
 	UINT32 i;
 	patch_t *rotated, *hwpatch;
@@ -947,15 +908,14 @@ void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle
 		leftoffset = width - leftoffset;
 	}
 
-
-		if (rotsprite->patches[idx])
+	if (rotsprite->patches[idx])
 		return;
 
-		// Find the dimensions of the rotated patch.
-		RotatedPatch_CalculateDimensions(width, height, ca, sa, &newwidth, &newheight);
+	// Find the dimensions of the rotated patch.
+	RotatedPatch_CalculateDimensions(width, height, ca, sa, &newwidth, &newheight);
 
-		xcenter = (xpivot * FRACUNIT);
-		ycenter = (ypivot * FRACUNIT);
+	xcenter = (xpivot * FRACUNIT);
+	ycenter = (ypivot * FRACUNIT);
 
 	if (xpivot != width / 2 || ypivot != height / 2)
 	{
@@ -968,13 +928,12 @@ void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle
 	maxx = 0;
 	maxy = 0;
 
-
-		// Draw the rotated sprite to a temporary buffer.
+	// Draw the rotated sprite to a temporary buffer.
 	size = (newwidth * newheight);
 	if (!size)
 		size = (width * height);
+	rawdst = Z_Calloc(size * sizeof(UINT16), PU_STATIC, NULL);
 
-	rawdst = Z_Malloc(size * sizeof(UINT16), PU_STATIC, NULL);
 	for (i = 0; i < size; i++)
 		rawdst[i] = 0xFF00;
 
@@ -995,24 +954,21 @@ void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle
 		}
 	}
 
-
 	ox = (newwidth / 2) + (leftoffset - xpivot);
 	oy = (newheight / 2) + (patch->topoffset - ypivot);
-	width = (maxx+1 - minx);
-	height = (maxy+1 - miny);
+	width = (maxx - minx);
+	height = (maxy - miny);
 
 	if ((unsigned)(width * height) > size)
 	{
-			UINT16 *src, *dest;
+		UINT16 *src, *dest;
 
+		size = (width * height);
+		rawconv = Z_Calloc(size * sizeof(UINT16), PU_STATIC, NULL);
 
-			size = (width * height);
-			rawconv = Z_Malloc(size * sizeof(UINT16), PU_STATIC, NULL);
-
-			src = &rawdst[(miny * newwidth) + minx];
-			dest = rawconv;
-			dy = height;
-
+		src = &rawdst[(miny * newwidth) + minx];
+		dest = rawconv;
+		dy = height;
 
 		while (dy--)
 		{
@@ -1021,10 +977,8 @@ void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle
 			src += newwidth;
 		}
 
-
 		ox -= minx;
 		oy -= miny;
-
 
 		Z_Free(rawdst);
 	}
@@ -1058,45 +1012,7 @@ void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle
 
 	Z_Free(rawconv);
 
-	//rotated->leftoffset = ox;
-	//rotated->topoffset = oy;
-
-}
-
-//
-// R_FreeSingleRotSprite
-//
-// IS DEAD BECAUSE OF SIGSEG HELL
-//
-
-//
-// R_FreeSkinRotSprite
-//
-// Free sprite rotation data from memory, for a skin.
-// Calls R_FreeSingleRotSprite.
-//
-/*void R_FreeSkinRotSprite(size_t skinnum)
-{
-	size_t i;
-	skin_t *skin = &skins[skinnum];
-	spritedef_t *skinsprites = skin->sprites;
-	for (i = 0; i < NUMPLAYERSPRITES*2; i++)
-	{
-		R_FreeSingleRotSprite(skinsprites);
-		skinsprites++;
-	}
-}*/
-
-//
-// R_FreeAllRotSprite
-//
-// Free ALL sprite rotation data from memory.
-//
-void R_FreeAllRotSprite(void)
-{
-	//INT32 i;
-	size_t s;
-	/*for (i = 0; i < numskins; ++i)
-		R_FreeSkinRotSprite(i);*/
+	rotated->leftoffset = ox;
+	rotated->topoffset = oy;
 }
 #endif
