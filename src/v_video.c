@@ -255,8 +255,7 @@ void V_SetPaletteLump(const char *pal)
 			gl_palette_initialized = false;
 			InitPalette(0, false);
 		}
-		else
-			HWR_SetPalette(pLocalPalette);
+		HWR_SetPalette(pLocalPalette);
 	}
 #if (defined (__unix__) && !defined (MSDOS)) || defined (UNIXCOMMON) || defined (HAVE_SDL)
 	else
