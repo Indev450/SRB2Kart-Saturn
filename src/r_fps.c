@@ -330,18 +330,18 @@ void R_InterpolatePrecipMobjState(precipmobj_t *mobj, fixed_t frac, interpmobjst
 		return;
 	}
 
-	out->x = R_LerpFixed(mobj->old_x, mobj->x, frac);
-	out->y = R_LerpFixed(mobj->old_y, mobj->y, frac);
-	out->z = R_LerpFixed(mobj->old_z, mobj->z, frac);
+	out->x = mobj->x;
+	out->y = mobj->y;
+	out->z = mobj->z;
 	out->scale = FRACUNIT;
 	out->spritexscale = mobj->spritexscale;
 	out->spriteyscale = mobj->spriteyscale;
 	out->spritexoffset = mobj->spritexoffset;
 	out->spriteyoffset = mobj->spriteyoffset;
 
-	out->subsector = R_PointInSubsector(out->x, out->y);
+	out->subsector = mobj->subsector;
 
-	out->angle = R_LerpAngle(mobj->old_angle, mobj->angle, frac);
+	out->angle = mobj->angle;
 }
 
 static void AddInterpolator(levelinterpolator_t* interpolator)
