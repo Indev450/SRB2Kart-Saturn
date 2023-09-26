@@ -1716,7 +1716,7 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 	fixed_t gz ,gzt;
 
 	// uncapped/interpolation
-	interpmobjstate_t interp = {0};
+	/*interpmobjstate_t interp = {0};
 
 	// do interpolation
 	if (R_UsingFrameInterpolation() && !paused)
@@ -1726,11 +1726,11 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 	else
 	{
 		R_InterpolatePrecipMobjState(thing, FRACUNIT, &interp);
-	}
+	}*/
 
 	// transform the origin point
-	tr_x = interp.x - viewx;
-	tr_y = interp.y - viewy;
+	tr_x = thing->x - viewx;
+	tr_y = thing->y - viewy;
 
 	gxt = FixedMul(tr_x, viewcos);
 	gyt = -FixedMul(tr_y, viewsin);
@@ -1799,12 +1799,12 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 		if (x2 < portalclipstart || x1 > portalclipend)
 			return;
 
-		if (P_PointOnLineSide(interp.x, interp.y, portalclipline) != 0)
+		if (P_PointOnLineSide(thing->x, thing->y, portalclipline) != 0)
 			return;
 	}
 
 	//SoM: 3/17/2000: Disregard sprites that are out of view..
-	gzt = interp.z + spritecachedinfo[lump].topoffset;
+	gzt = thing->z + spritecachedinfo[lump].topoffset;
 	gz = gzt - spritecachedinfo[lump].height;
 
 	if (thing->subsector->sector->cullheight)
@@ -1817,12 +1817,12 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 	vis = R_NewVisSprite();
 	vis->scale = vis->sortscale = yscale; //<<detailshift;
 	vis->dispoffset = 0; // Monster Iestyn: 23/11/15
-	vis->gx = interp.x;
-	vis->gy = interp.y;
+	vis->gx = thing->x;
+	vis->gy = thing->y;
 	vis->gz = gz;
 	vis->gzt = gzt;
 	vis->thingheight = 4*FRACUNIT;
-	vis->pz = interp.z;
+	vis->pz = thing->z;
 	vis->pzt = vis->pz + vis->thingheight;
 	vis->texturemid = vis->gzt - viewz;
 	vis->scalestep = 0;
@@ -1849,7 +1849,7 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 	vis->startfrac = 0;
 	vis->xiscale = iscale;
 
-	vis->thingscale = interp.scale;
+	//vis->thingscale = interp.scale;
 
 	if (vis->x1 > x1)
 		vis->startfrac += vis->xiscale*(vis->x1-x1);

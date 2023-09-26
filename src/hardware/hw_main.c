@@ -3911,7 +3911,7 @@ static void HWR_RotateSpritePolyToAim(gr_vissprite_t *spr, FOutVector *wallVerts
 		{
 			if (spr->precip)
 			{
-				R_InterpolatePrecipMobjState((precipmobj_t *)spr->mobj, rendertimefrac, &interp);
+				//R_InterpolatePrecipMobjState((precipmobj_t *)spr->mobj, rendertimefrac, &interp);
 			}
 			else
 			{
@@ -3922,7 +3922,7 @@ static void HWR_RotateSpritePolyToAim(gr_vissprite_t *spr, FOutVector *wallVerts
 		{
 			if (spr->precip)
 			{
-				R_InterpolatePrecipMobjState((precipmobj_t *)spr->mobj, FRACUNIT, &interp);
+				//R_InterpolatePrecipMobjState((precipmobj_t *)spr->mobj, FRACUNIT, &interp);
 			}
 			else
 			{
@@ -5408,21 +5408,21 @@ void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 		return;
 	
 	// uncapped/interpolation
-	interpmobjstate_t interp = {0};
+	//interpmobjstate_t interp = {0};
 
 	// do interpolation
-	if (R_UsingFrameInterpolation() && !paused)
+	/*if (R_UsingFrameInterpolation() && !paused)
 	{
 		R_InterpolatePrecipMobjState(thing, rendertimefrac, &interp);
 	}
 	else
 	{
 		R_InterpolatePrecipMobjState(thing, FRACUNIT, &interp);
-	}
+	}*/
 
 	// transform the origin point
-	tr_x = FIXED_TO_FLOAT(interp.x) - gr_viewx;
-	tr_y = FIXED_TO_FLOAT(interp.y) - gr_viewy;
+	tr_x = FIXED_TO_FLOAT(thing->x) - gr_viewx;
+	tr_y = FIXED_TO_FLOAT(thing->y) - gr_viewy;
 
 	// rotation around vertical axis
 	tz = (tr_x * gr_viewcos) + (tr_y * gr_viewsin);
@@ -5431,8 +5431,8 @@ void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 	if (tz < ZCLIP_PLANE)
 		return;
 
-	tr_x = FIXED_TO_FLOAT(interp.x);
-	tr_y = FIXED_TO_FLOAT(interp.y);
+	tr_x = FIXED_TO_FLOAT(thing->x);
+	tr_y = FIXED_TO_FLOAT(thing->y);
 
 	// decide which patch to use for sprite relative to player
 	if ((unsigned)thing->sprite >= numsprites)

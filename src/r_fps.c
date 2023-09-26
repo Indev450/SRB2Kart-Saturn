@@ -313,7 +313,7 @@ void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 	}
 }
 
-void R_InterpolatePrecipMobjState(precipmobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
+/*void R_InterpolatePrecipMobjState(precipmobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 {
 	if (frac == FRACUNIT)
 	{
@@ -342,7 +342,7 @@ void R_InterpolatePrecipMobjState(precipmobj_t *mobj, fixed_t frac, interpmobjst
 	out->subsector = mobj->subsector;
 
 	out->angle = mobj->angle;
-}
+}*/
 
 static void AddInterpolator(levelinterpolator_t* interpolator)
 {
@@ -782,7 +782,7 @@ void R_ResetMobjInterpolationState(mobj_t *mobj)
 //
 // Reset the rendering interpolation state of the precipmobj.
 //
-void R_ResetPrecipitationMobjInterpolationState(precipmobj_t *mobj)
+/*void R_ResetPrecipitationMobjInterpolationState(precipmobj_t *mobj)
 {
 	mobj->old_x2 = mobj->old_x;
 	mobj->old_y2 = mobj->old_y;
@@ -796,4 +796,4 @@ void R_ResetPrecipitationMobjInterpolationState(precipmobj_t *mobj)
 	mobj->old_spriteyscale = mobj->spriteyscale;
 	mobj->old_spritexoffset = mobj->spritexoffset;
 	mobj->old_spriteyoffset = mobj->spriteyoffset;
-}
+}*/
