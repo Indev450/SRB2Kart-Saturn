@@ -1638,8 +1638,6 @@ static void R_ProjectSprite(mobj_t *thing)
 		vis->scale += FixedMul(scalestep, spriteyscale) * (vis->x1 - x1);
 	}
 
-	vis->thingscale = interp.scale;
-
 	//Fab: lumppat is the lump number of the patch to use, this is different
 	//     than lumpid for sprites-in-pwad : the graphics are patched
 #ifdef ROTSPRITE
@@ -1848,8 +1846,6 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 
 	vis->startfrac = 0;
 	vis->xiscale = iscale;
-
-	vis->thingscale = interp.scale;
 
 	if (vis->x1 > x1)
 		vis->startfrac += vis->xiscale*(vis->x1-x1);
