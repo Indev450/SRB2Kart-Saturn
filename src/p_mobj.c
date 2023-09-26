@@ -3792,7 +3792,7 @@ void P_NullPrecipThinker(precipmobj_t *mobj)
 {
 	//(void)mobj;
 	mobj->precipflags &= ~PCF_THUNK;
-	//R_ResetPrecipitationMobjInterpolationState(mobj);
+	R_ResetPrecipitationMobjInterpolationState(mobj);
 }
 
 void P_SnowThinker(precipmobj_t *mobj)
@@ -3803,7 +3803,7 @@ void P_SnowThinker(precipmobj_t *mobj)
 	if ((mobj->z += mobj->momz) <= mobj->floorz)
 	{
 		mobj->z = mobj->ceilingz;
-		//R_ResetPrecipitationMobjInterpolationState(mobj);
+		R_ResetPrecipitationMobjInterpolationState(mobj);
 	}
 }
 
@@ -3828,7 +3828,7 @@ void P_RainThinker(precipmobj_t *mobj)
 			return;
 
 		mobj->z = mobj->ceilingz;
-		//R_ResetPrecipitationMobjInterpolationState(mobj);
+		R_ResetPrecipitationMobjInterpolationState(mobj);
 		P_SetPrecipMobjState(mobj, S_RAIN1);
 
 		return;
@@ -10123,7 +10123,7 @@ static precipmobj_t *P_SpawnPrecipMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype
 	 || mobj->subsector->sector->floorpic == skyflatnum)
 		mobj->precipflags |= PCF_PIT;
 
-	//R_ResetPrecipitationMobjInterpolationState(mobj);
+	R_ResetPrecipitationMobjInterpolationState(mobj);
 
 	return mobj;
 }
