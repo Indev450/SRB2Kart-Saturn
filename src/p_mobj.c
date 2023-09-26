@@ -10359,7 +10359,7 @@ void P_SpawnPrecipitation(void)
 	subsector_t *precipsector = NULL;
 	precipmobj_t *rainmo = NULL;
 
-	if (dedicated || /*!cv_precipdensity*/!cv_drawdist_precip.value || curWeather == PRECIP_NONE) // SRB2Kart
+	if (dedicated || !(cv_drawdist_precip.value) || curWeather == PRECIP_NONE || curWeather == PRECIP_STORM_NORAIN) // SRB2Kart
 		return;
 
 	// Use the blockmap to narrow down our placing patterns
@@ -10402,21 +10402,12 @@ void P_SpawnPrecipitation(void)
 			}
 			else // everything else.
 				rainmo = P_SpawnRainMobj(x, y, height, MT_RAIN);
+			if (curWeather == PRECIP_BLANK)
+				rainmo->precipflags |= PCF_INVISIBLE;
 
 			// Randomly assign a height, now that floorz is set.
 			rainmo->z = M_RandomRange(rainmo->floorz>>FRACBITS, rainmo->ceilingz>>FRACBITS)<<FRACBITS;
 		}
-	}
-
-	if (curWeather == PRECIP_BLANK)
-	{
-		curWeather = PRECIP_RAIN;
-		P_SwitchWeather(PRECIP_BLANK);
-	}
-	else if (curWeather == PRECIP_STORM_NORAIN)
-	{
-		curWeather = PRECIP_RAIN;
-		P_SwitchWeather(PRECIP_STORM_NORAIN);
 	}
 }
 
