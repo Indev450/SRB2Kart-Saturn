@@ -6210,7 +6210,7 @@ void HWR_DoPostProcessor(player_t *player)
 
 	// Armageddon Blast Flash!
 	// Could this even be considered postprocessor?
-	if (player->flashcount && !cv_grpaletteshader.value || player->flashcount && cv_grpaletteshader.value && !cv_grflashpal.value)
+	if ((player->flashcount && !cv_grpaletteshader.value) || (player->flashcount && cv_grpaletteshader.value && !cv_grflashpal.value))
 	{
 		FOutVector      v[4];
 		FSurfaceInfo Surf;

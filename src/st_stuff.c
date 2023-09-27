@@ -247,7 +247,7 @@ void ST_doPaletteStuff(void)
 	palette = min(max(palette, 0), 13);
 
 #ifdef HWRENDER
-	if (rendermode == render_opengl && !cv_grpaletteshader.value || rendermode == render_opengl && cv_grpaletteshader.value && !cv_grflashpal.value)
+	if ((rendermode == render_opengl && !cv_grpaletteshader.value) || (rendermode == render_opengl && cv_grpaletteshader.value && !cv_grflashpal.value))
 		palette = 0; // No flashpals here in OpenGL
 #endif
 
