@@ -136,10 +136,7 @@ typedef struct vissprite_s
 	fixed_t thingscale; // the object's scale
 	fixed_t sortscale; // sortscale only differs from scale for flat sprites
 	fixed_t scalestep; // only for flat sprites, 0 otherwise
-	fixed_t paperoffset, paperdistance; // for paper sprites, offset/dist relative to the angle
 	fixed_t xiscale; // negative if flipped
-	
-	angle_t centerangle; // for paper sprites
 
 	fixed_t texturemid;
 	patch_t *patch;
