@@ -441,18 +441,19 @@ fixed_t R_PointToDist2(fixed_t px2, fixed_t py2, fixed_t px1, fixed_t py1)
 
 angle_t R_PlayerSliptideAngle(player_t *player)
 {
-	mobj_t *mo = player->mo;
+	mobj_t *mo;
+    spritedef_t *sprdef;
+    spriteframe_t *sprframe;
+    angle_t ang = 0;
+    interpmobjstate_t interp = {0};
 
-	if (!cv_sliptideroll.value || !mo || P_MobjWasRemoved(mo)) return 0;
+    if (!cv_sliptideroll.value || !player || P_MobjWasRemoved(player->mo))
+        return 0;
 
-	size_t rot = mo->frame&FF_FRAMEMASK;
-	boolean papersprite = (mo->frame & FF_PAPERSPRITE);
+    mo = player->mo;
 
-	spritedef_t *sprdef;
-	spriteframe_t *sprframe;
-	angle_t ang = 0;
-
-	interpmobjstate_t interp = {0};
+    size_t rot = mo->frame & FF_FRAMEMASK;
+    boolean papersprite = (mo->frame & FF_PAPERSPRITE);
 
 	// Yes.
 	if (R_UsingFrameInterpolation() && !paused)
