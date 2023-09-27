@@ -1847,6 +1847,8 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 	vis->startfrac = 0;
 	vis->xiscale = iscale;
 
+	vis->thingscale = interp.scale;
+
 	if (vis->x1 > x1)
 		vis->startfrac += vis->xiscale*(vis->x1-x1);
 
