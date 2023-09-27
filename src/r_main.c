@@ -445,7 +445,6 @@ angle_t R_PlayerSliptideAngle(player_t *player)
     spritedef_t *sprdef;
     spriteframe_t *sprframe;
     angle_t ang = 0;
-    interpmobjstate_t interp = {0};
 
     if (!cv_sliptideroll.value || !player || P_MobjWasRemoved(player->mo))
         return 0;
@@ -454,16 +453,6 @@ angle_t R_PlayerSliptideAngle(player_t *player)
 
     size_t rot = mo->frame & FF_FRAMEMASK;
     boolean papersprite = (mo->frame & FF_PAPERSPRITE);
-
-	// Yes.
-	if (R_UsingFrameInterpolation() && !paused)
-	{
-		R_InterpolateMobjState(mo, rendertimefrac, &interp);
-	}
-	else
-	{
-		R_InterpolateMobjState(mo, FRACUNIT, &interp);
-	}
 
 	if (mo->skin && mo->sprite == SPR_PLAY)
 	{
@@ -489,7 +478,7 @@ angle_t R_PlayerSliptideAngle(player_t *player)
 	if (!sprframe) return 0;
 
 	if (sprframe->rotate != SRF_SINGLE || papersprite)
-		ang = R_PointToAngle(interp.x, interp.y) - interp.angle;
+		ang = R_PointToAngle(mo->x, mo->y) - mo->angle;
 
 	return FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), mo->player->sliproll*(mo->player->sliptidemem));
 }
