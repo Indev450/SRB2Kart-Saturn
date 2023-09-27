@@ -441,28 +441,18 @@ fixed_t R_PointToDist2(fixed_t px2, fixed_t py2, fixed_t px1, fixed_t py1)
 
 angle_t R_PlayerSliptideAngle(player_t *player)
 {
-	mobj_t *mo = player->mo;
+	mobj_t *mo;
+    spritedef_t *sprdef;
+    spriteframe_t *sprframe;
+    angle_t ang = 0;
 
-	if (!cv_sliptideroll.value || !mo || P_MobjWasRemoved(mo)) return 0;
+    if (!cv_sliptideroll.value || !player || P_MobjWasRemoved(player->mo))
+        return 0;
 
-	size_t rot = mo->frame&FF_FRAMEMASK;
-	boolean papersprite = (mo->frame & FF_PAPERSPRITE);
+    mo = player->mo;
 
-	spritedef_t *sprdef;
-	spriteframe_t *sprframe;
-	angle_t ang = 0;
-
-	interpmobjstate_t interp = {0};
-
-	// Yes.
-	if (R_UsingFrameInterpolation() && !paused)
-	{
-		R_InterpolateMobjState(mo, rendertimefrac, &interp);
-	}
-	else
-	{
-		R_InterpolateMobjState(mo, FRACUNIT, &interp);
-	}
+    size_t rot = mo->frame & FF_FRAMEMASK;
+    boolean papersprite = (mo->frame & FF_PAPERSPRITE);
 
 	if (mo->skin && mo->sprite == SPR_PLAY)
 	{
@@ -488,7 +478,7 @@ angle_t R_PlayerSliptideAngle(player_t *player)
 	if (!sprframe) return 0;
 
 	if (sprframe->rotate != SRF_SINGLE || papersprite)
-		ang = R_PointToAngle(interp.x, interp.y) - interp.angle;
+		ang = R_PointToAngle(mo->x, mo->y) - mo->angle;
 
 	return FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), mo->player->sliproll*(mo->player->sliptidemem));
 }
