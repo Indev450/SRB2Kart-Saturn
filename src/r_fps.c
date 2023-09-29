@@ -37,6 +37,8 @@ static CV_PossibleValue_t fpscap_cons_t[] = {
 };
 consvar_t cv_fpscap = {"fpscap", "Match refresh rate", CV_SAVE, fpscap_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_precipinterp = {"precipinterpolation", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 UINT32 R_GetFramerateCap(void)
 {
 	if (rendermode == render_none)
@@ -315,7 +317,7 @@ void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 
 void R_InterpolatePrecipMobjState(precipmobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 {
-	if (frac == FRACUNIT)
+	if (frac == FRACUNIT || !cv_precipinterp.value)
 	{
 		out->x = mobj->x;
 		out->y = mobj->y;
@@ -330,18 +332,18 @@ void R_InterpolatePrecipMobjState(precipmobj_t *mobj, fixed_t frac, interpmobjst
 		return;
 	}
 
-	out->x = mobj->x;
-	out->y = mobj->y;
-	out->z = mobj->z;
-	out->scale = FRACUNIT;
-	out->spritexscale = mobj->spritexscale;
-	out->spriteyscale = mobj->spriteyscale;
-	out->spritexoffset = mobj->spritexoffset;
-	out->spriteyoffset = mobj->spriteyoffset;
+		out->x = R_LerpFixed(mobj->old_x, mobj->x, frac);
+		out->y = R_LerpFixed(mobj->old_y, mobj->y, frac);
+		out->z = R_LerpFixed(mobj->old_z, mobj->z, frac);
+		out->scale = FRACUNIT;
+		out->spritexscale = mobj->spritexscale;
+		out->spriteyscale = mobj->spriteyscale;
+		out->spritexoffset = mobj->spritexoffset;
+		out->spriteyoffset = mobj->spriteyoffset;
 
-	out->subsector = mobj->subsector;
+		out->subsector = R_PointInSubsector(out->x, out->y);
 
-	out->angle = mobj->angle;
+		out->angle = R_LerpAngle(mobj->old_angle, mobj->angle, frac);
 }
 
 static void AddInterpolator(levelinterpolator_t* interpolator)
