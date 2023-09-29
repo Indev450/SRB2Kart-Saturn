@@ -1278,13 +1278,13 @@ void P_RestoreMusic(player_t *player)
 		}
 
 		// Item - Grow
-		if (wantedmus == 2)
+		if (wantedmus == 2 && cv_growmusic.value)
 		{
 			S_ChangeMusicInternal("kgrow", true);
 			S_SetRestoreMusicFadeInCvar(&cv_growmusicfade);
 		}
 		// Item - Invincibility
-		else if (wantedmus == 1)
+		else if (wantedmus == 1 && cv_supermusic.value)
 		{
 			S_ChangeMusicInternal("kinvnc", true);
 			S_SetRestoreMusicFadeInCvar(&cv_invincmusicfade);
@@ -1692,8 +1692,12 @@ mobj_t *P_SpawnGhostMobj(mobj_t *mobj)
 	ghost->tics = -1;
 	ghost->frame &= ~FF_TRANSMASK;
 	ghost->frame |= tr_trans50<<FF_TRANSSHIFT;
+	ghost->sloperoll = mobj->sloperoll;
+	
 	ghost->fuse = ghost->info->damage;
 	ghost->skin = mobj->skin;
+	ghost->localskin = mobj->localskin;
+	ghost->skinlocal = mobj->skinlocal;
 
 	if (mobj->flags2 & MF2_OBJECTFLIP)
 		ghost->flags |= MF2_OBJECTFLIP;
@@ -1735,10 +1739,19 @@ void P_DoPlayerExit(player_t *player)
 			if (P_IsLocalPlayer(player))
 			{
 				sfxenum_t sfx_id;
-				if (K_IsPlayerLosing(player))
-					sfx_id = ((skin_t *)player->mo->skin)->soundsid[S_sfx[sfx_klose].skinsound];
-				else
-					sfx_id = ((skin_t *)player->mo->skin)->soundsid[S_sfx[sfx_kwin].skinsound];
+				// fix godjjsa win sounds
+				if (K_IsPlayerLosing(player)) {
+					if (player->mo->localskin)
+						sfx_id = ((skin_t *)player->mo->localskin)->soundsid[S_sfx[sfx_klose].skinsound];
+					else
+						sfx_id = ((skin_t *)player->mo->skin)->soundsid[S_sfx[sfx_klose].skinsound];
+				}
+				else {
+					if (player->mo->localskin)
+						sfx_id = ((skin_t *)player->mo->localskin)->soundsid[S_sfx[sfx_kwin].skinsound];
+					else
+						sfx_id = ((skin_t *)player->mo->skin)->soundsid[S_sfx[sfx_kwin].skinsound];
+				}
 				S_StartSound(NULL, sfx_id);
 			}
 			else
@@ -7135,11 +7148,11 @@ consvar_t cv_cam4_speed = {"cam4_speed", "0.4", CV_FLOAT|CV_SAVE, CV_CamSpeed, N
 consvar_t cv_cam4_rotate = {"cam4_rotate", "0", CV_CALL|CV_NOINIT, CV_CamRotate, CV_CamRotate4_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_cam4_rotspeed = {"cam4_rotspeed", "10", CV_SAVE, rotation_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_tilting = {"tilting", "On", CV_SAVE|CV_CALL, CV_OnOff, Bird_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_quaketilt = {"quaketilt", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_tilting = {"tilting", "Off", CV_SAVE|CV_CALL, CV_OnOff, Bird_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_quaketilt = {"quaketilt", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_tiltsmoothing = {"tiltsmoothing", "32", CV_SAVE, CV_Natural, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_actionmovie = {"actionmovie", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_actionmovie = {"actionmovie", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_windowquake = {"windowquake", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 fixed_t t_cam_dist = -42;

@@ -74,6 +74,7 @@
 #     Compile without BSD API, add 'NONET=1'
 #     Compile without IPX/SPX, add 'NOIPX=1'
 #     Compile Mingw/SDL with S_DS3S, add 'DS3D=1'
+#     Compile without libopenmpt, add 'NOOPENMPT=1'
 #     Compile with S_FMOD3D, add 'FMOD=1' (WIP)
 #     Compile with S_OPENAL, add 'OPENAL=1' (WIP)
 #     To link with the whole SDL_Image lib to load Icons, add 'SDL_IMAGE=1' but it isn't not realy needed
@@ -233,6 +234,10 @@ endif
 
 ifdef DJGPPDOS
 include djgppdos/Makefile.cfg
+endif
+
+ifndef NOOPENMPT
+HAVE_OPENMPT=1
 endif
 
 ifdef MINGW
@@ -398,6 +403,17 @@ LIBGME_LDFLAGS?=$(shell $(PKG_CONFIG) $(LIBGME_PKGCONFIG) --libs)
 
 LIBS+=$(LIBGME_LDFLAGS)
 CFLAGS+=$(LIBGME_CFLAGS)
+endif
+
+ifdef HAVE_OPENMPT
+OPTS+=-DHAVE_OPENMPT
+
+LIBOPENMPT_PKGCONFIG?=libopenmpt
+LIBOPENMPT_CFLAGS?=$(shell $(PKG_CONFIG) $(LIBOPENMPT_PKGCONFIG) --cflags)
+LIBOPENMPT_LDFLAGS?=$(shell $(PKG_CONFIG) $(LIBOPENMPT_PKGCONFIG) --libs)
+
+LIBS+=$(LIBOPENMPT_LDFLAGS)
+CFLAGS+=$(LIBOPENMPT_CFLAGS)
 endif
 
 ifndef NOZLIB
@@ -610,6 +626,7 @@ OBJS:=$(i_main_o) \
 		$(OBJDIR)/lzf.o	     \
 		$(OBJDIR)/vid_copy.o \
 		$(OBJDIR)/b_bot.o \
+		$(OBJDIR)/args.o \
 		$(i_cdmus_o)    \
 		$(i_net_o)      \
 		$(i_system_o)   \

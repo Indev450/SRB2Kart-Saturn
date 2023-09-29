@@ -41,6 +41,7 @@
 #include "k_kart.h" // colortranslations
 #include "console.h" // cons_menuhighlight
 #include "lua_hook.h" // IntermissionThinker hook
+#include "lua_hud.h" // intermission hud hook
 
 #ifdef HWRENDER
 #include "hardware/hw_main.h"
@@ -115,7 +116,26 @@ static INT32 intertic;
 static INT32 endtic = -1;
 static INT32 sorttic = -1;
 
+patch_t *animVoteFramesPatches = NULL;
+// VEXTRN - Vote (V) Extra (EXT) Race (R) Normal (N - Normal sized patch)
+// VEXTBN - Vote (V) Extra (EXT) Battle (B) Normal (N - Normal sized patch)
+// VEXTBW - Vote (V) Extra (EXT) Battle (B) Normal (W - Wide patch used in software)
+// VEXTRW - Vote (V) Extra (EXT) Race (R) Normal (W - Wide patch used in software)
+char animPrefix[] = "INTSC";
+char animWidePrefix[] = "INTSW";
+char *luaVoteScreen = NULL;
+
+INT32 currentAnimFrame = 0;
+static INT32 foundAnimVoteFrames = 0;
+static INT32 foundAnimVoteWideFrames = 0;
+
 intertype_t intertype = int_none;
+
+
+#ifdef HAVE_BLUA
+static huddrawlist_h luahuddrawlist_intermission = NULL;
+static huddrawlist_h luahuddrawlist_vote = NULL;
+#endif
 
 static void Y_FollowIntermission(void);
 static void Y_UnloadData(void);
@@ -152,6 +172,7 @@ typedef struct
 static y_votelvlinfo levelinfo[5];
 static y_voteclient voteclient;
 static INT32 votetic;
+static INT32 lastvotetic;
 static INT32 voteendtic = -1;
 static patch_t *cursor = NULL;
 static patch_t *cursor1 = NULL;
@@ -319,6 +340,54 @@ static void Y_CalculateMatchData(UINT8 rankingsmode, void (*comparison)(INT32))
 }
 
 //
+// Y_AnimatedVoteScreenCheck
+//
+// Check if the lumps exist (checking for VEXTR(N|W)xx for race and VEXTRB(N|W)xx for battle)
+void Y_AnimatedVoteScreenCheck(void)
+{
+	char tmpPrefix[] = "INTS";
+	boolean stopSearching = false;
+
+	if (luaVoteScreen)
+	{
+		strncpy(tmpPrefix, luaVoteScreen, 4);
+	}
+	else
+	{
+		if(G_BattleGametype()) {
+			strcpy(tmpPrefix, "BTLS");
+		}
+	}
+
+	strncpy(animPrefix, tmpPrefix, 4);
+	animPrefix[4] = 'C';
+	strncpy(animWidePrefix, tmpPrefix, 4);
+	animWidePrefix[4] = 'W';
+
+	foundAnimVoteFrames = 0;
+	foundAnimVoteWideFrames = 0;
+	currentAnimFrame = 0;
+
+	INT32 i = 1;
+	while(!stopSearching){
+		boolean normalLumpExists = W_LumpExists(va("%sC%d", tmpPrefix, i));
+		boolean wideLumpExists = W_LumpExists(va("%sW%d", tmpPrefix, i));
+
+		if(normalLumpExists || wideLumpExists){
+			if(normalLumpExists){
+				foundAnimVoteFrames++;
+			}
+			if(wideLumpExists){
+				foundAnimVoteWideFrames++;
+			}
+		} else { // If we don't find at least frame 1 (e.g VEXTRN1), let's just stop looking
+			stopSearching = true;
+		}
+		i++;
+	}
+}
+
+//
 // Y_IntermissionDrawer
 //
 // Called by D_Display. Nothing is modified here; all it does is draw. (SRB2Kart: er, about that...)
@@ -475,7 +544,15 @@ void Y_IntermissionDrawer(void)
 				if (data.match.color[i])
 				{
 					UINT8 *colormap = R_GetTranslationColormap(*data.match.character[i], *data.match.color[i], GTC_CACHE);
-					V_DrawMappedPatch(x+16, y-4, 0, facerankprefix[*data.match.character[i]], colormap);
+					// i fucking hate this i fucking hate this i hate this so much
+					if (!players[data.match.num[i]].skinlocal) {
+						if (!players[data.match.num[i]].localskin)
+							V_DrawMappedPatch(x+16, y-4, 0, facerankprefix[*data.match.character[i]], colormap);
+						else
+							V_DrawMappedPatch(x+16, y-4, 0, facerankprefix[players[data.match.num[i]].localskin - 1], colormap);
+					} else {
+						V_DrawMappedPatch(x+16, y-4, 0, localfacerankprefix[players[data.match.num[i]].localskin - 1], colormap);
+					}
 				}
 
 				if (data.match.num[i] == whiteplayer)
@@ -594,6 +671,15 @@ dotimer:
 	// Make it obvious that scrambling is happening next round.
 	if (cv_scrambleonchange.value && cv_teamscramble.value && (intertic/TICRATE % 2 == 0))
 		V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT/2, hilicol, M_GetText("Teams will be scrambled next round!"));
+
+#ifdef HAVE_BLUA
+	if (renderisnewtic)
+	{
+		LUA_HUD_ClearDrawList(luahuddrawlist_intermission);
+		LUAh_IntermissionHUD(luahuddrawlist_intermission);
+	}
+	LUA_HUD_DrawList(luahuddrawlist_intermission);
+#endif
 }
 
 //
@@ -880,6 +966,11 @@ void Y_StartIntermission(void)
 		usetile = useinterpic = false;
 		usebuffer = true;
 	}
+
+#ifdef HAVE_BLUA
+	LUA_HUD_DestroyDrawList(luahuddrawlist_intermission);
+	luahuddrawlist_intermission = LUA_HUD_CreateDrawList();
+#endif
 }
 
 // ======
@@ -957,6 +1048,42 @@ static void Y_UnloadData(void)
 
 // SRB2Kart: Voting!
 
+// Y_DrawAnimatedVoteScreenPatch
+//
+// Draw animated patch based on frame counter on vote screen
+//
+void Y_DrawAnimatedVoteScreenPatch(boolean widePatch){
+	char tempAnimPrefix[7];
+	(widePatch) ? strcpy(tempAnimPrefix, animWidePrefix) : strcpy(tempAnimPrefix, animPrefix);
+	INT32 tempFoundAnimVoteFrames = (widePatch) ? foundAnimVoteWideFrames : foundAnimVoteFrames;
+	INT32 flags = V_SNAPTOBOTTOM | V_SNAPTOTOP;
+
+	// Just in case someone provides LESS widescreen frames than normal frames or vice versa, reset the frame counter to 0
+	if(widePatch) {
+		if(currentAnimFrame > foundAnimVoteWideFrames-1){
+			currentAnimFrame = 0;
+		}
+	} else {
+		if(currentAnimFrame > foundAnimVoteFrames-1){
+			currentAnimFrame = 0;
+		}
+	}
+
+	/*patch_t *currPatch = W_CachePatchName(va("%s%d", tempAnimPrefix, currentAnimFrame+1), PU_CACHE);
+	V_DrawScaledPatch(((vid.width/2) / vid.dupx) - (SHORT(currPatch->width)/2), // Keep the width/height adjustments, for screens that are less wide than 320(?)
+				(vid.height / vid.dupy) - SHORT(currPatch->height),
+				V_SNAPTOTOP|V_SNAPTOLEFT, currPatch);
+	if(votetic % 3 == 0 && !paused){*/
+		
+	{
+		patch_t *background = W_CachePatchName(va("%s%d", tempAnimPrefix, currentAnimFrame + 1), PU_CACHE);		
+		V_DrawScaledPatch(160 - (background->width / 2), (200 - (background->height)), flags, background);		
+	}
+	if (lastvotetic != votetic && lastvotetic % 2 == 0) {
+		currentAnimFrame = (currentAnimFrame+1 > tempFoundAnimVoteFrames-1) ? 0 : currentAnimFrame + 1; // jeez no fucking idea how to make this shit not go nuts with interpolation
+	}
+}
+
 //
 // Y_VoteDrawer
 //
@@ -985,14 +1112,34 @@ void Y_VoteDrawer(void)
 
 	V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 31);
 
-	if (widebgpatch && rendermode == render_soft && vid.width / vid.dupx > 320)
-		V_DrawScaledPatch(((vid.width/2) / vid.dupx) - (SHORT(widebgpatch->width)/2),
-							(vid.height / vid.dupy) - SHORT(widebgpatch->height),
-							V_SNAPTOTOP|V_SNAPTOLEFT, widebgpatch);
-	else
-		V_DrawScaledPatch(((vid.width/2) / vid.dupx) - (SHORT(bgpatch->width)/2), // Keep the width/height adjustments, for screens that are less wide than 320(?)
-							(vid.height / vid.dupy) - SHORT(bgpatch->height),
-							V_SNAPTOTOP|V_SNAPTOLEFT, bgpatch);
+	if (widebgpatch && vid.width / vid.dupx > 320) {
+
+		if(foundAnimVoteWideFrames == 0){
+			V_DrawScaledPatch(((vid.width/2) / vid.dupx) - (SHORT(widebgpatch->width)/2),
+								(vid.height / vid.dupy) - SHORT(widebgpatch->height),
+								V_SNAPTOTOP|V_SNAPTOLEFT, widebgpatch);
+		} else {
+			// patch_t *currPatch = W_CachePatchName(va("%s%d", animPrefix, currentAnimFrame+1), PU_CACHE);
+			// V_DrawScaledPatch(((vid.width/2) / vid.dupx) - (SHORT(currPatch->width)/2), // Keep the width/height adjustments, for screens that are less wide than 320(?)
+			// 			(vid.height / vid.dupy) - SHORT(currPatch->height),
+			// 			V_SNAPTOTOP|V_SNAPTOLEFT, currPatch);
+			// if(votetic % 4 == 0 && !paused){
+			// 	currentAnimFrame = (currentAnimFrame+1 > foundAnimVoteFrames-1) ? 0 : currentAnimFrame + 1;
+			// }
+			Y_DrawAnimatedVoteScreenPatch(true);
+		}
+	} else {
+		if(foundAnimVoteFrames == 0) {
+			V_DrawScaledPatch(((vid.width/2) / vid.dupx) - (SHORT(bgpatch->width)/2), // Keep the width/height adjustments, for screens that are less wide than 320(?)
+								(vid.height / vid.dupy) - SHORT(bgpatch->height),
+								V_SNAPTOTOP|V_SNAPTOLEFT, bgpatch);
+		} else {
+			Y_DrawAnimatedVoteScreenPatch(false);
+		}
+
+
+	}
+							
 
 	for (i = 0; i < 4; i++) // First, we need to figure out the height of this thing...
 	{
@@ -1179,7 +1326,7 @@ void Y_VoteDrawer(void)
 			if (players[i].skincolor)
 			{
 				UINT8 *colormap = R_GetTranslationColormap(players[i].skin, players[i].skincolor, GTC_CACHE);
-				V_DrawMappedPatch(x+24, y+9, V_SNAPTOLEFT, facerankprefix[players[i].skin], colormap);
+				V_DrawMappedPatch(x+24, y+9, V_SNAPTOLEFT, (players[i].skinlocal ? localfacerankprefix : facerankprefix)[((players[i].localskin) ? players[i].localskin-1 : players[i].skin)], colormap);
 			}
 
 			if (!splitscreen && i == consoleplayer)
@@ -1210,6 +1357,17 @@ void Y_VoteDrawer(void)
 		V_DrawCenteredString(BASEVIDWIDTH/2, 188, hilicol,
 			va("Vote ends in %d", tickdown));
 	}
+	
+	lastvotetic = votetic;
+
+#ifdef HAVE_BLUA
+	if (renderisnewtic)
+	{
+		LUA_HUD_ClearDrawList(luahuddrawlist_vote);
+		LUAh_VoteHUD(luahuddrawlist_vote);
+	}
+	LUA_HUD_DrawList(luahuddrawlist_vote);
+#endif
 }
 
 //
@@ -1457,6 +1615,8 @@ void Y_StartVote(void)
 		I_Error("voteendtic is dirty");
 #endif
 
+	Y_AnimatedVoteScreenCheck();
+
 	widebgpatch = W_CachePatchName(((prefgametype == GT_MATCH) ? "BATTLSCW" : "INTERSCW"), PU_STATIC);
 	bgpatch = W_CachePatchName(((prefgametype == GT_MATCH) ? "BATTLSCR" : "INTERSCR"), PU_STATIC);
 	cursor = W_CachePatchName("M_CURSOR", PU_STATIC);
@@ -1539,6 +1699,11 @@ void Y_StartVote(void)
 	}
 
 	voteclient.loaded = true;
+
+#ifdef HAVE_BLUA
+	LUA_HUD_DestroyDrawList(luahuddrawlist_vote);
+	luahuddrawlist_vote = LUA_HUD_CreateDrawList();
+#endif
 }
 
 //

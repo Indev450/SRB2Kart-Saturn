@@ -21,6 +21,7 @@
 extern consvar_t cv_playername;
 extern consvar_t cv_playercolor;
 extern consvar_t cv_skin;
+extern consvar_t cv_localskin;
 // secondary splitscreen player
 extern consvar_t cv_playername2;
 extern consvar_t cv_playercolor2;
@@ -150,11 +151,22 @@ extern consvar_t cv_pingtimeout;
 extern consvar_t cv_showping;
 extern consvar_t cv_pingmeasurement;
 
+//extern consvar_t cv_smallpos;
+extern consvar_t cv_showminimapnames;
+extern consvar_t cv_minihead;
+
+extern consvar_t cv_showlapemblem; 
+
 extern consvar_t cv_showviewpointtext;
+extern consvar_t cv_luaimmersion;
+extern consvar_t cv_fakelocalskin;
 
 extern consvar_t cv_skipmapcheck;
 
 extern consvar_t cv_sleep;
+
+#define SKINSELECTSPIN_PAIN 25
+extern consvar_t cv_skinselectspin;
 
 extern consvar_t cv_perfstats;
 extern consvar_t cv_ps_thinkframe_page;

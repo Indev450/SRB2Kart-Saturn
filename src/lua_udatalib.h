@@ -1,8 +1,6 @@
 #ifndef __LUA_UDATALIB_H__
 #define __LUA_UDATALIB_H__
 
-#include <stdint.h>
-
 #ifdef HAVE_BLUA
 
 #include "doomdef.h"
@@ -16,7 +14,7 @@
 
 typedef struct udata_field_s {
     const char *name;
-    intptr_t offset;
+    size_t offset;
     lua_CFunction getter;
     lua_CFunction setter;
 } udata_field_t;
@@ -62,6 +60,7 @@ int udatalib_setter_uint64(lua_State *L);
 int udatalib_setter_int64(lua_State *L);
 int udatalib_setter_string(lua_State *L);
 int udatalib_setter_boolean(lua_State *L);
+int udatalib_setter_boolean_nocheck(lua_State *L);
 int udatalib_setter_spritenum(lua_State *L);
 int udatalib_setter_mobj(lua_State *L);
 int udatalib_setter_playerstate(lua_State *L);
@@ -81,8 +80,8 @@ void udatalib_addfields(lua_State *L, int mt, const udata_field_t fields[]);
 // Get pointer to field value within getter or setter
 #define UDATALIB_GETFIELD(type, field) \
 { \
-    intptr_t offset = lua_tointeger(L, lua_upvalueindex(1)); \
-    field = (type*)((intptr_t)lua_touserdata(L, 1) + offset); \
+    size_t offset = lua_tointeger(L, lua_upvalueindex(1)); \
+    field = (type*)((uint8_t*)lua_touserdata(L, 1) + offset); \
 }
 
 // Creates implementation for simple getter and setter. Super lazy, yes.

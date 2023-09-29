@@ -81,6 +81,8 @@ patch_t *pingnum[10];
 patch_t *pinggfx[5];	// small ping graphic
 patch_t *pingmeasure[2]; // ping measurement graphic
 
+patch_t *ranknum[10]; // rank numbers
+
 patch_t *framecounter;
 patch_t *frameslash;	// framerate stuff. Used in screen.c
 
@@ -281,6 +283,8 @@ void HU_LoadGraphics(void)
 		nightsnum[i] = (patch_t *) W_CachePatchName(buffer, PU_HUDGFX);
 		sprintf(buffer, "PINGN%d", i);
 		pingnum[i] = (patch_t *) W_CachePatchName(buffer, PU_HUDGFX);
+		sprintf(buffer, "OPPRNK0%d", i);
+		ranknum[i] = (patch_t *) W_CachePatchName(buffer, PU_HUDGFX);
 	}
 
 	// minus for negative tallnums
@@ -378,6 +382,11 @@ void HU_Start(void)
 
 // EVERY CHANGE IN THIS SCRIPT IS LOL XD! BY VINCYTM
 
+static void Chatlogsize_OnChange(void);
+
+static CV_PossibleValue_t chatlogsize_cons_t[] = {{8, "MIN"}, {MAX_CHAT_BUFSIZE, "MAX"}, {0, NULL}};
+consvar_t cv_chatlogsize = {"chatlogsize", "64", CV_CALL|CV_SAVE, chatlogsize_cons_t, Chatlogsize_OnChange, 0, NULL, NULL, 0, 0, NULL};
+
 static UINT32 chat_nummsg_log = 0;
 static UINT32 chat_nummsg_min = 0;
 static UINT32 chat_scroll = 0;
@@ -385,10 +394,7 @@ static tic_t chat_scrolltime = 0;
 
 static UINT32 chat_maxscroll = 0; // how far can we scroll?
 
-//static chatmsg_t chat_mini[CHAT_BUFSIZE]; // Display the last few messages sent.
-//static chatmsg_t chat_log[CHAT_BUFSIZE]; // Keep every message sent to us in memory so we can scroll n shit, it's cool.
-
-static char chat_log[CHAT_BUFSIZE][255]; // hold the last 48 or so messages in that log.
+static char **chat_log = NULL;
 static char chat_mini[8][255]; // display up to 8 messages that will fade away / get overwritten
 static tic_t chat_timers[8];
 
@@ -416,12 +422,34 @@ static void HU_removeChatText_Mini(void)
 // same but w the log. TODO: optimize this and maybe merge in a single func? im bad at C.
 static void HU_removeChatText_Log(void)
 {
-	// MPC: Don't create new arrays, just iterate through an existing one
+	// We don't have any messages, idiot!
+	if (!chat_nummsg_log)
+		return;
+
+	free(chat_log[0]);
 	size_t i;
 	for(i=0;i<chat_nummsg_log-1;i++) {
-		strcpy(chat_log[i], chat_log[i+1]);
+		chat_log[i] = chat_log[i+1];
 	}
 	chat_nummsg_log--; // lost 1 msg.
+}
+
+static void Chatlogsize_OnChange(void)
+{
+	// Free unneeded messages
+	while (chat_nummsg_log > (UINT32)cv_chatlogsize.value)
+	{
+		HU_removeChatText_Log();
+	}
+
+// Some versons of C don't have reallocarray sadly
+#define reallocarray(ptr, nmemb, size) realloc(ptr, (nmemb)*(size))
+
+	// TODO - use z_zone allocators?
+	chat_log = reallocarray(chat_log, cv_chatlogsize.value, sizeof(char*));
+
+#undef reallocarray
+	chat_nummsg_log = min(chat_nummsg_log, (UINT32)cv_chatlogsize.value);
 }
 #endif
 
@@ -432,11 +460,19 @@ void HU_AddChatText(const char *text, boolean playsound)
 		S_StartSound(NULL, sfx_radio);
 	// reguardless of our preferences, put all of this in the chat buffer in case we decide to change from oldchat mid-game.
 
-	if (chat_nummsg_log >= CHAT_BUFSIZE) // too many messages!
+	// Uuuh dunno how that can happen but a bit of paranoia is never too bad
+	if (!chat_log)
+	{
+		//I_Error("Chat log is not allocated what the fuck"); // uwu
+		Chatlogsize_OnChange(); // Lets hope that will surely allocate some memory for us
+	}
+
+	if (chat_nummsg_log >= (UINT32)cv_chatlogsize.value) // too many messages!
 		HU_removeChatText_Log();
 
+	chat_log[chat_nummsg_log] = malloc(HU_MSGBUFSIZE);
 	strcpy(chat_log[chat_nummsg_log], text);
-	chat_nummsg_log++;
+	++chat_nummsg_log;
 
 	if (chat_nummsg_min >= 8)
 		HU_removeChatText_Mini();
@@ -650,6 +686,134 @@ static void Command_CSay_f(void)
 }
 static tic_t stop_spamming[MAXPLAYERS];
 
+const char *HU_SkinColorToConsoleColor(skincolors_t color)
+{
+	// Move this ugly switch into a function you can collapse.
+	switch (color)
+	{
+		case SKINCOLOR_WHITE:
+		case SKINCOLOR_SILVER:
+		case SKINCOLOR_SLATE:
+			return "\x80"; // White
+		case SKINCOLOR_GREY:
+		case SKINCOLOR_NICKEL:
+		case SKINCOLOR_BLACK:
+		case SKINCOLOR_SKUNK:
+		case SKINCOLOR_JET:
+			return "\x86"; // V_GRAYMAP
+		case SKINCOLOR_SEPIA:
+		case SKINCOLOR_BEIGE:
+		case SKINCOLOR_WALNUT:
+		case SKINCOLOR_BROWN:
+		case SKINCOLOR_LEATHER:
+		case SKINCOLOR_RUST:
+		case SKINCOLOR_WRISTWATCH:
+			return "\x8e"; // V_BROWNMAP
+		case SKINCOLOR_FAIRY:
+		case SKINCOLOR_SALMON:
+		case SKINCOLOR_PINK:
+		case SKINCOLOR_ROSE:
+		case SKINCOLOR_BRICK:
+		case SKINCOLOR_LEMONADE:
+		case SKINCOLOR_BUBBLEGUM:
+		case SKINCOLOR_LILAC:
+			return "\x8d"; // V_PINKMAP
+		case SKINCOLOR_CINNAMON:
+		case SKINCOLOR_RUBY:
+		case SKINCOLOR_RASPBERRY:
+		case SKINCOLOR_CHERRY:
+		case SKINCOLOR_RED:
+		case SKINCOLOR_CRIMSON:
+		case SKINCOLOR_MAROON:
+		case SKINCOLOR_FLAME:
+		case SKINCOLOR_SCARLET:
+		case SKINCOLOR_KETCHUP:
+			return "\x85"; // V_REDMAP
+		case SKINCOLOR_DAWN:
+		case SKINCOLOR_SUNSET:
+		case SKINCOLOR_CREAMSICLE:
+		case SKINCOLOR_ORANGE:
+		case SKINCOLOR_PUMPKIN:
+		case SKINCOLOR_ROSEWOOD:
+		case SKINCOLOR_BURGUNDY:
+		case SKINCOLOR_TANGERINE:
+			return "\x87"; // V_ORANGEMAP
+		case SKINCOLOR_PEACH:
+		case SKINCOLOR_CARAMEL:
+		case SKINCOLOR_CREAM:
+			return "\x8f"; // V_PEACHMAP
+		case SKINCOLOR_GOLD:
+		case SKINCOLOR_ROYAL:
+		case SKINCOLOR_BRONZE:
+		case SKINCOLOR_COPPER:
+		case SKINCOLOR_THUNDER:
+			return "\x8A"; // V_GOLDMAP
+		case SKINCOLOR_POPCORN:
+		case SKINCOLOR_QUARRY:
+		case SKINCOLOR_YELLOW:
+		case SKINCOLOR_MUSTARD:
+		case SKINCOLOR_CROCODILE:
+		case SKINCOLOR_OLIVE:
+			return "\x82"; // V_YELLOWMAP
+		case SKINCOLOR_ARTICHOKE:
+		case SKINCOLOR_VOMIT:
+		case SKINCOLOR_GARDEN:
+		case SKINCOLOR_TEA:
+		case SKINCOLOR_PISTACHIO:
+			return "\x8b"; // V_TEAMAP
+		case SKINCOLOR_LIME:
+		case SKINCOLOR_HANDHELD:
+		case SKINCOLOR_MOSS:
+		case SKINCOLOR_CAMOUFLAGE:
+		case SKINCOLOR_ROBOHOOD:
+		case SKINCOLOR_MINT:
+		case SKINCOLOR_GREEN:
+		case SKINCOLOR_PINETREE:
+		case SKINCOLOR_EMERALD:
+		case SKINCOLOR_SWAMP:
+		case SKINCOLOR_DREAM:
+		case SKINCOLOR_PLAGUE:
+		case SKINCOLOR_ALGAE:
+			return "\x83"; // V_GREENMAP
+		case SKINCOLOR_CARIBBEAN:
+		case SKINCOLOR_AZURE:
+		case SKINCOLOR_AQUA:
+		case SKINCOLOR_TEAL:
+		case SKINCOLOR_CYAN:
+		case SKINCOLOR_JAWZ:
+		case SKINCOLOR_CERULEAN:
+		case SKINCOLOR_NAVY:
+		case SKINCOLOR_SAPPHIRE:
+			return "\x88"; // V_SKYMAP
+		case SKINCOLOR_PIGEON:
+		case SKINCOLOR_PLATINUM:
+		case SKINCOLOR_STEEL:
+			return "\x8c"; // V_STEELMAP
+		case SKINCOLOR_PERIWINKLE:
+		case SKINCOLOR_BLUE:
+		case SKINCOLOR_BLUEBERRY:
+		case SKINCOLOR_NOVA:
+			return "\x84"; // V_BLUEMAP
+		case SKINCOLOR_ULTRAVIOLET:
+		case SKINCOLOR_PURPLE:
+		case SKINCOLOR_FUCHSIA:
+			return "\x81"; // V_PURPLEMAP
+		case SKINCOLOR_PASTEL:
+		case SKINCOLOR_MOONSLAM:
+		case SKINCOLOR_DUSK:
+		case SKINCOLOR_TOXIC:
+		case SKINCOLOR_MAUVE:
+		case SKINCOLOR_LAVENDER:
+		case SKINCOLOR_BYZANTIUM:
+		case SKINCOLOR_POMEGRANATE:
+			return "\x89"; // V_LAVENDERMAP
+
+		default:
+			return "\x83";
+	}
+}
+
+
 /** Receives a message, processing an ::XD_SAY command.
   * \sa DoSayCommand
   * \author Graue <graue@oceanbase.org>
@@ -796,145 +960,7 @@ static void Got_Saycmd(UINT8 **p, INT32 playernum)
 		{
 			const UINT8 color = players[playernum].skincolor;
 
-			cstart = "\x83";
-
-			switch (color)
-			{
-				case SKINCOLOR_WHITE:
-				case SKINCOLOR_SILVER:
-				case SKINCOLOR_SLATE:
-					cstart = "\x80"; // White
-					break;
-				case SKINCOLOR_GREY:
-				case SKINCOLOR_NICKEL:
-				case SKINCOLOR_BLACK:
-				case SKINCOLOR_SKUNK:
-				case SKINCOLOR_JET:
-					cstart = "\x86"; // V_GRAYMAP
-					break;
-				case SKINCOLOR_SEPIA:
-				case SKINCOLOR_BEIGE:
-				case SKINCOLOR_WALNUT:
-				case SKINCOLOR_BROWN:
-				case SKINCOLOR_LEATHER:
-				case SKINCOLOR_RUST:
-				case SKINCOLOR_WRISTWATCH:
-					cstart = "\x8e"; // V_BROWNMAP
-					break;
-				case SKINCOLOR_FAIRY:
-				case SKINCOLOR_SALMON:
-				case SKINCOLOR_PINK:
-				case SKINCOLOR_ROSE:
-				case SKINCOLOR_BRICK:
-				case SKINCOLOR_LEMONADE:
-				case SKINCOLOR_BUBBLEGUM:
-				case SKINCOLOR_LILAC:
-					cstart = "\x8d"; // V_PINKMAP
-					break;
-				case SKINCOLOR_CINNAMON:
-				case SKINCOLOR_RUBY:
-				case SKINCOLOR_RASPBERRY:
-				case SKINCOLOR_CHERRY:
-				case SKINCOLOR_RED:
-				case SKINCOLOR_CRIMSON:
-				case SKINCOLOR_MAROON:
-				case SKINCOLOR_FLAME:
-				case SKINCOLOR_SCARLET:
-				case SKINCOLOR_KETCHUP:
-					cstart = "\x85"; // V_REDMAP
-					break;
-				case SKINCOLOR_DAWN:
-				case SKINCOLOR_SUNSET:
-				case SKINCOLOR_CREAMSICLE:
-				case SKINCOLOR_ORANGE:
-				case SKINCOLOR_PUMPKIN:
-				case SKINCOLOR_ROSEWOOD:
-				case SKINCOLOR_BURGUNDY:
-				case SKINCOLOR_TANGERINE:
-					cstart = "\x87"; // V_ORANGEMAP
-					break;
-				case SKINCOLOR_PEACH:
-				case SKINCOLOR_CARAMEL:
-				case SKINCOLOR_CREAM:
-					cstart = "\x8f"; // V_PEACHMAP
-					break;
-				case SKINCOLOR_GOLD:
-				case SKINCOLOR_ROYAL:
-				case SKINCOLOR_BRONZE:
-				case SKINCOLOR_COPPER:
-				case SKINCOLOR_THUNDER:
-					cstart = "\x8A"; // V_GOLDMAP
-					break;
-				case SKINCOLOR_POPCORN:
-				case SKINCOLOR_QUARRY:
-				case SKINCOLOR_YELLOW:
-				case SKINCOLOR_MUSTARD:
-				case SKINCOLOR_CROCODILE:
-				case SKINCOLOR_OLIVE:
-					cstart = "\x82"; // V_YELLOWMAP
-					break;
-				case SKINCOLOR_ARTICHOKE:
-				case SKINCOLOR_VOMIT:
-				case SKINCOLOR_GARDEN:
-				case SKINCOLOR_TEA:
-				case SKINCOLOR_PISTACHIO:
-					cstart = "\x8b"; // V_TEAMAP
-					break;
-				case SKINCOLOR_LIME:
-				case SKINCOLOR_HANDHELD:
-				case SKINCOLOR_MOSS:
-				case SKINCOLOR_CAMOUFLAGE:
-				case SKINCOLOR_ROBOHOOD:
-				case SKINCOLOR_MINT:
-				case SKINCOLOR_GREEN:
-				case SKINCOLOR_PINETREE:
-				case SKINCOLOR_EMERALD:
-				case SKINCOLOR_SWAMP:
-				case SKINCOLOR_DREAM:
-				case SKINCOLOR_PLAGUE:
-				case SKINCOLOR_ALGAE:
-					cstart = "\x83"; // V_GREENMAP
-					break;
-				case SKINCOLOR_CARIBBEAN:
-				case SKINCOLOR_AZURE:
-				case SKINCOLOR_AQUA:
-				case SKINCOLOR_TEAL:
-				case SKINCOLOR_CYAN:
-				case SKINCOLOR_JAWZ:
-				case SKINCOLOR_CERULEAN:
-				case SKINCOLOR_NAVY:
-				case SKINCOLOR_SAPPHIRE:
-					cstart = "\x88"; // V_SKYMAP
-					break;
-				case SKINCOLOR_PIGEON:
-				case SKINCOLOR_PLATINUM:
-				case SKINCOLOR_STEEL:
-					cstart = "\x8c"; // V_STEELMAP
-					break;
-				case SKINCOLOR_PERIWINKLE:
-				case SKINCOLOR_BLUE:
-				case SKINCOLOR_BLUEBERRY:
-				case SKINCOLOR_NOVA:
-					cstart = "\x84"; // V_BLUEMAP
-					break;
-				case SKINCOLOR_ULTRAVIOLET:
-				case SKINCOLOR_PURPLE:
-				case SKINCOLOR_FUCHSIA:
-					cstart = "\x81"; // V_PURPLEMAP
-					break;
-				case SKINCOLOR_PASTEL:
-				case SKINCOLOR_MOONSLAM:
-				case SKINCOLOR_DUSK:
-				case SKINCOLOR_TOXIC:
-				case SKINCOLOR_MAUVE:
-				case SKINCOLOR_LAVENDER:
-				case SKINCOLOR_BYZANTIUM:
-				case SKINCOLOR_POMEGRANATE:
-					cstart = "\x89"; // V_LAVENDERMAP
-					break;
-				default:
-					break;
-			}
+			cstart = HU_SkinColorToConsoleColor(color);
 		}
 
 		prefix = cstart;

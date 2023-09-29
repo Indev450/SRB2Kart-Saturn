@@ -114,7 +114,7 @@ fixed_t P_RandomFixedD(const char *rfile, INT32 rline)
 {
 	CONS_Printf("P_RandomFixed() at: %sp %d\n", rfile, rline);
 #endif
-	return (INT32)((INT64)__internal_prng__());
+	return __internal_prng__();
 }
 
 /** Provides a random byte. Distribution is uniform.

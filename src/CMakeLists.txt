@@ -3,6 +3,7 @@
 # Core sources
 set(SRB2_CORE_SOURCES
 	am_map.c
+	args.c
 	b_bot.c
 	command.c
 	comptime.c
@@ -12,6 +13,7 @@ set(SRB2_CORE_SOURCES
 	d_net.c
 	d_netcmd.c
 	d_netfil.c
+	d_protocol.c
 	dehacked.c
 	f_finale.c
 	f_wipe.c
@@ -31,6 +33,7 @@ set(SRB2_CORE_SOURCES
 	m_fixed.c
 	m_menu.c
 	m_misc.c
+	m_perfstats.c
 	m_queue.c
 	m_random.c
 	md5.c
@@ -50,6 +53,7 @@ set(SRB2_CORE_SOURCES
 
 set(SRB2_CORE_HEADERS
 	am_map.h
+	args.h
 	b_bot.h
 	byteptr.h
 	command.h
@@ -61,6 +65,7 @@ set(SRB2_CORE_HEADERS
 	d_netcmd.h
 	d_netfil.h
 	d_player.h
+	d_protocol.h
 	d_think.h
 	d_ticcmd.h
 	dehacked.h
@@ -97,6 +102,7 @@ set(SRB2_CORE_HEADERS
 	m_menu.h
 	m_misc.h
 	m_queue.h
+	m_perfstats.h
 	m_random.h
 	m_swap.h
 	md5.h
@@ -121,6 +127,7 @@ set(SRB2_CORE_RENDER_SOURCES
 	r_draw.c
 	r_fps.c
 	r_main.c
+	r_patch.c
 	r_plane.c
 	r_segs.c
 	r_sky.c
@@ -134,6 +141,7 @@ set(SRB2_CORE_RENDER_SOURCES
 	r_fps.h
 	r_local.h
 	r_main.h
+	r_patch
 	r_plane.h
 	r_segs.h
 	r_sky.h
@@ -225,6 +233,8 @@ set(SRB2_CONFIG_HAVE_ZLIB ON CACHE BOOL
 	"Enable zlib support.")
 set(SRB2_CONFIG_HAVE_GME ON CACHE BOOL
 	"Enable GME support.")
+set(SRB2_CONFIG_HAVE_OPENMPT ON CACHE BOOL
+	"Enable OpenMPT support.")
 set(SRB2_CONFIG_HAVE_DISCORDRPC OFF CACHE BOOL
 	"Enable Discord rich presence support.")
 set(SRB2_CONFIG_HAVE_CURL ON CACHE BOOL
@@ -241,7 +251,7 @@ set(SRB2_CONFIG_STATIC_OPENGL OFF CACHE BOOL
 ### use internal libraries?
 if(${CMAKE_SYSTEM} MATCHES "Windows") ###set on Windows only
 	set(SRB2_CONFIG_USE_INTERNAL_LIBRARIES OFF CACHE BOOL
-	"Use SRB2Kart's internal copies of required dependencies (SDL2, PNG, zlib, GME).")
+	"Use SRB2Kart's internal copies of required dependencies (SDL2, PNG, zlib, GME, OpenMPT).")
 endif()
 
 if(${SRB2_CONFIG_HAVE_BLUA})
@@ -261,6 +271,7 @@ if(${SRB2_CONFIG_HAVE_BLUA})
 		lua_script.c
 		lua_skinlib.c
 		lua_thinkerlib.c
+		lua_udatalib.c
 	)
 	set(SRB2_LUA_HEADERS
 		lua_hook.h
@@ -268,6 +279,7 @@ if(${SRB2_CONFIG_HAVE_BLUA})
 		lua_hudlib_drawlist.h
 		lua_libs.h
 		lua_script.h
+		lua_udatalib.h
 	)
 
 	prepend_sources(SRB2_LUA_SOURCES)
@@ -378,6 +390,26 @@ if(${SRB2_CONFIG_HAVE_DISCORDRPC})
 		source_group("Discord Rich Presence" FILES ${SRB2_DISCORDRPC_SOURCES} ${SRB2_DISCORDRPC_HEADERS})
 	else()
 		message(WARNING "You have specified that Discord Rich Presence is available but it was not found.")
+	endif()
+endif()
+
+if(${SRB2_CONFIG_HAVE_OPENMPT})
+	if(${SRB2_CONFIG_USE_INTERNAL_LIBRARIES})
+		set(OPENMPT_FOUND ON)
+		set(OPENMPT_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/libs/libopenmpt/inc)
+        if(${SRB2_SYSTEM_BITS} EQUAL 64)
+			set(OPENMPT_LIBRARIES "-L${CMAKE_SOURCE_DIR}/libs/libopenmpt/lib/x86_64/mingw -lopenmpt")
+		else() # 32-bit
+			set(OPENMPT_LIBRARIES "-L${CMAKE_SOURCE_DIR}/libs/libopenmpt/lib/x86/mingw -lopenmpt")
+		endif()
+	else()
+		find_package(OPENMPT)
+	endif()
+	if(${OPENMPT_FOUND})
+		set(SRB2_HAVE_OPENMPT ON)
+		add_definitions(-DHAVE_OPENMPT)
+	else()
+		message(WARNING "You have specified that OpenMPT is available but it was not found.")
 	endif()
 endif()
 

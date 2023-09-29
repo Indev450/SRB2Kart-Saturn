@@ -140,14 +140,14 @@ static void Command_Memdump_f(void);
 
 void Z_Init(void)
 {
-	UINT32 total, memfree;
+	size_t total, memfree;
 
 	memset(&head, 0x00, sizeof(head));
 
 	head.next = head.prev = &head;
 
 	memfree = I_GetFreeMem(&total)>>20;
-	CONS_Printf("System memory: %uMB - Free: %uMB\n", total>>20, memfree);
+	CONS_Printf("System memory: %sMB - Free: %sMB\n", sizeu1(total>>20), sizeu2(memfree));
 
 	// Note: This allocates memory. Watch out.
 	COM_AddCommand("memfree", Command_Memfree_f);
@@ -242,13 +242,7 @@ void *Z_Malloc2(size_t size, INT32 tag, void *user, INT32 alignbits,
 void *Z_MallocAlign(size_t size, INT32 tag, void *user, INT32 alignbits)
 #endif
 {
-    // I have 0 knowledge about memory alignment but maybe if alignbits is
-    // something like 32 that would require too much BYTES, so bits amount
-    // should be divided by 8? Idk, maybe this would break alignment, but at
-    // least game wouldn't crash with "error allocating 2^32-1 bytes"
-    INT32 alignbytes = alignbits/8;
-	I_Assert(alignbytes >= 0 && alignbytes < (INT32)(sizeof(size_t) * 8));
-	size_t extrabytes = ((size_t)1<<(alignbytes)) - 1;
+	size_t extrabytes = (1<<alignbits) - 1;
 	size_t padsize = 0;
 	memblock_t *block;
 	void *ptr;
@@ -622,12 +616,13 @@ size_t Z_TagUsage(INT32 tagnum)
 
 void Command_Memfree_f(void)
 {
-	UINT32 freebytes, totalbytes;
+	size_t freebytes, totalbytes;
 
 	Z_CheckHeap(-1);
 	CONS_Printf("\x82%s", M_GetText("Memory Info\n"));
 	CONS_Printf(M_GetText("Total heap used   : %7s KB\n"), sizeu1(Z_TagsUsage(0, INT32_MAX)>>10));
 	CONS_Printf(M_GetText("Static            : %7s KB\n"), sizeu1(Z_TagUsage(PU_STATIC)>>10));
+	CONS_Printf(M_GetText("Lua               : %7s KB\n"), sizeu1(Z_TagUsage(PU_LUA)>>10));
 	CONS_Printf(M_GetText("Static (sound)    : %7s KB\n"), sizeu1(Z_TagUsage(PU_SOUND)>>10));
 	CONS_Printf(M_GetText("Static (music)    : %7s KB\n"), sizeu1(Z_TagUsage(PU_MUSIC)>>10));
 	CONS_Printf(M_GetText("Locked cache      : %7s KB\n"), sizeu1(Z_TagUsage(PU_CACHE)>>10));
@@ -643,13 +638,14 @@ void Command_Memfree_f(void)
 		CONS_Printf(M_GetText("Mipmap patches    : %7s KB\n"), sizeu1(Z_TagUsage(PU_HWRPATCHCOLMIPMAP)>>10));
 		CONS_Printf(M_GetText("HW Texture cache  : %7s KB\n"), sizeu1(Z_TagUsage(PU_HWRCACHE)>>10));
 		CONS_Printf(M_GetText("Plane polygons    : %7s KB\n"), sizeu1(Z_TagUsage(PU_HWRPLANE)>>10));
+		CONS_Printf(M_GetText("All GPU textures  : %7s KB\n"), sizeu1(HWR_GetTextureUsed()>>10));
 	}
 #endif
 
 	CONS_Printf("\x82%s", M_GetText("System Memory Info\n"));
 	freebytes = I_GetFreeMem(&totalbytes);
-	CONS_Printf(M_GetText("    Total physical memory: %7u KB\n"), totalbytes>>10);
-	CONS_Printf(M_GetText("Available physical memory: %7u KB\n"), freebytes>>10);
+	CONS_Printf(M_GetText("    Total physical memory: %s KB\n"), sizeu1(totalbytes>>10));
+	CONS_Printf(M_GetText("Available physical memory: %s KB\n"), sizeu1(freebytes>>10));
 }
 
 #ifdef ZDEBUG

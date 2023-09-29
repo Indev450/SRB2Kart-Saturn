@@ -62,7 +62,8 @@ typedef struct
 //           chat stuff
 //------------------------------------
 #define HU_MAXMSGLEN 223
-#define CHAT_BUFSIZE 64		// that's enough messages, right? We'll delete the older ones when that gets out of hand.
+#define HU_MSGBUFSIZE 255
+#define MAX_CHAT_BUFSIZE 256		// that's enough messages, right? We'll delete the older ones when that gets out of hand.
 #define NETSPLITSCREEN // why the hell WOULDN'T we want this?
 #ifdef NETSPLITSCREEN
 #define OLDCHAT (cv_consolechat.value == 1 || dedicated || vid.width < 640)
@@ -83,6 +84,7 @@ extern patch_t *hu_font[HU_FONTSIZE], *kart_font[KART_FONTSIZE], *tny_font[HU_FO
 extern patch_t *tallnum[10];
 extern patch_t *pingnum[10];
 extern patch_t *pinggfx[5];
+extern patch_t *ranknum[10];
 extern patch_t *nightsnum[10];
 extern patch_t *framecounter;
 extern patch_t *frameslash;
@@ -121,6 +123,7 @@ void HU_drawPing(INT32 x, INT32 y, UINT32 ping, INT32 flags);	// Lat': Ping draw
 //void HU_DrawDualTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, INT32 whiteplayer);
 void HU_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, INT32 whiteplayer, INT32 hilicol);
 void HU_DrawEmeralds(INT32 x, INT32 y, INT32 pemeralds);
+const char *HU_SkinColorToConsoleColor(skincolors_t color);
 
 INT32 HU_CreateTeamScoresTbl(playersort_t *tab, UINT32 dmtotals[]);
 

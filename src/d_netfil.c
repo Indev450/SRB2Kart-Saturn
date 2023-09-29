@@ -508,19 +508,29 @@ INT32 CL_CheckFiles(void)
 	if (modifiedgame)
 	{
 		CONS_Debug(DBG_NETPLAY, "game is modified; only doing basic checks\n");
+
+		boolean have_important = false;
+
 		for (i = 0, j = mainwads+1; i < fileneedednum || j < numwadfiles;)
 		{
-			if (j < numwadfiles && !wadfiles[j]->important)
+			if (j < numwadfiles && (!wadfiles[j]->important || wadfiles[j]->localfile))
 			{
 				// Unimportant on our side. still don't care.
 				++j;
 				continue;
 			}
 
-			// If this test is true, we've reached the end of one file list
-			// and the other still has a file that's important
+			// If this test is true, we've reached the end of one file list.
 			if (i >= fileneedednum || j >= numwadfiles)
-				return 2;
+			{
+				// We are missing some of important files, or have too much
+				// important files.
+				if (have_important)
+					return 2;
+
+				// All checked files weren't important, don't care about them.
+				break;
+			}
 
 			// For the sake of speed, only bother with a md5 check
 			if (memcmp(wadfiles[j]->md5sum, fileneeded[i].md5sum, 16))
@@ -528,11 +538,14 @@ INT32 CL_CheckFiles(void)
 
 			// It's accounted for! let's keep going.
 			CONS_Debug(DBG_NETPLAY, "'%s' accounted for\n", fileneeded[i].filename);
+			have_important = true;
 			fileneeded[i].status = FS_OPEN;
 			++i;
 			++j;
 		}
-		return 1;
+
+		if (have_important)
+			return 1;
 	}
 
 	for (i = 0; i < fileneedednum; i++)
@@ -549,7 +562,7 @@ INT32 CL_CheckFiles(void)
 		CONS_Debug(DBG_NETPLAY, "searching for '%s' ", fileneeded[i].filename);
 
 		// Check in already loaded files
-		for (j = mainwads+1; j < numwadfiles; j++)
+		for (j = mainwads+1; wadfiles[j]; j++)
 		{
 			nameonly(strcpy(wadfilename, wadfiles[j]->filename));
 			if (!stricmp(wadfilename, fileneeded[i].filename) &&
@@ -591,7 +604,7 @@ boolean CL_LoadServerFiles(void)
 			continue; // Already loaded
 		else if (fileneeded[i].status == FS_FOUND)
 		{
-			P_PartialAddWadFile(fileneeded[i].filename);
+			P_PartialAddWadFile(fileneeded[i].filename, false);
 			G_SetGameModified(true, false);
 			fileneeded[i].status = FS_OPEN;
 			return false;

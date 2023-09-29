@@ -26,6 +26,10 @@
 #include "v_video.h" // pLocalPalette
 #include "dehacked.h"
 
+#ifdef HWRENDER
+#include "hardware/hw_main.h"
+#endif
+
 #if defined (_WIN32) || defined (_WIN32_WCE)
 #include <malloc.h> // alloca(sizeof)
 #endif
@@ -1137,6 +1141,10 @@ void R_ClearColormaps(void)
 		foundcolormaps[i] = LUMPERROR;
 
 	memset(extra_colormaps, 0, sizeof (extra_colormaps));
+
+#ifdef HWRENDER
+	HWR_ClearLightTableCache();
+#endif	
 }
 
 /*INT32 R_ColormapNumForName(char *name)
@@ -1316,13 +1324,13 @@ INT32 R_CreateColormap(char *p1, char *p2, char *p3)
 	extra_colormaps[mapnum].fadestart = (UINT16)fadestart;
 	extra_colormaps[mapnum].fadeend = (UINT16)fadeend;
 	extra_colormaps[mapnum].fog = fog;
-
-	if (rendermode == render_soft)
-	{
+	
+	if (rendermode == render_soft || rendermode == render_opengl)
+	{	
 		double r, g, b, cbrightness;
 		int p;
 		lighttable_t *colormap_p;
-
+	
 		// Initialise the map and delta arrays
 		// map[i] stores an RGB color (as double) for index i,
 		//  which is then converted to SRB2's palette later
@@ -1402,7 +1410,7 @@ INT32 R_CreateColormap(char *p1, char *p2, char *p3)
 			}
 		}
 	}
-
+	
 	return (INT32)mapnum;
 }
 

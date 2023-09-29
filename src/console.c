@@ -23,6 +23,7 @@
 #include "g_input.h"
 #include "hu_stuff.h"
 #include "keys.h"
+#include "r_main.h"
 #include "r_defs.h"
 #include "sounds.h"
 #include "st_stuff.h"
@@ -153,25 +154,25 @@ consvar_t cons_backcolor = {"con_backcolor", "Black", CV_CALL|CV_SAVE, backcolor
 
 static CV_PossibleValue_t menuhighlight_cons_t[] =
 {
-	{0, "Game type"},
-	{V_YELLOWMAP, "Always yellow"},
-	{V_PURPLEMAP, "Always purple"},
-	{V_GREENMAP, "Always green"},
-	{V_BLUEMAP, "Always blue"},
-	{V_REDMAP, "Always red"},
-	{V_GRAYMAP, "Always gray"},
-	{V_ORANGEMAP, "Always orange"},
-	{V_SKYMAP, "Always sky-blue"},
-	{V_GOLDMAP, "Always gold"},
-	{V_LAVENDERMAP, "Always lavender"},
-	{V_TEAMAP, "Always tea-green"},
-	{V_STEELMAP, "Always steel-blue"},
-	{V_PINKMAP, "Always pink"},
-	{V_BROWNMAP, "Always brown"},
-	{V_PEACHMAP, "Always peach"},
+	{0, 			"Gametype Default"},
+	{V_YELLOWMAP, 	"Always Yellow"},
+	{V_PURPLEMAP, 	"Always Purple"},
+	{V_GREENMAP, 	"Always Green"},
+	{V_BLUEMAP, 	"Always Blue"},
+	{V_REDMAP, 		"Always Red"},
+	{V_GRAYMAP, 	"Always Gray"},
+	{V_ORANGEMAP, 	"Always Orange"},
+	{V_SKYMAP, 		"Always Sky-Blue"},
+	{V_GOLDMAP, 	"Always Gold"},
+	{V_LAVENDERMAP, "Always Lavender"},
+	{V_TEAMAP, 		"Always Tea-Green"},
+	{V_STEELMAP,	"Always Steel-Blue"},
+	{V_PINKMAP, 	"Always Pink"},
+	{V_BROWNMAP, 	"Always Brown"},
+	{V_PEACHMAP, 	"Always Peach"},
 	{0, NULL}
 };
-consvar_t cons_menuhighlight = {"menuhighlight", "Game type", CV_SAVE, menuhighlight_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cons_menuhighlight = {"menuhighlight", "Gametype Default", CV_SAVE, menuhighlight_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static void CON_Print(char *msg);
 
@@ -602,32 +603,38 @@ static void CON_ChangeHeight(void)
 //
 static void CON_MoveConsole(void)
 {
-	fixed_t conspeed;
+	static fixed_t fracmovement = 0;
 
 	Lock_state();
-
-	conspeed = FixedDiv(cons_speed.value*vid.fdupy, FRACUNIT);
 
 	// instant
 	if (!cons_speed.value)
 	{
 		con_curlines = con_destlines;
+		Unlock_state();
 		return;
 	}
 
-	// up/down move to dest
-	if (con_curlines < con_destlines)
+	// Not instant - Increment fracmovement fractionally
+	fracmovement += FixedMul(cons_speed.value*vid.fdupy, renderdeltatics);
+
+	if (con_curlines < con_destlines) // Move the console downwards
 	{
-		con_curlines += FixedInt(conspeed);
-		if (con_curlines > con_destlines)
-			con_curlines = con_destlines;
+		con_curlines += FixedInt(fracmovement); // Move by fracmovement's integer value
+		if (con_curlines > con_destlines) // If we surpassed the destination...
+			con_curlines = con_destlines; // ...clamp to it!
 	}
-	else if (con_curlines > con_destlines)
+	else // Move the console upwards
 	{
-		con_curlines -= FixedInt(conspeed);
+		con_curlines -= FixedInt(fracmovement);
 		if (con_curlines < con_destlines)
 			con_curlines = con_destlines;
+		
+		if (con_destlines == 0) // If the console is being closed, not just moved up...
+			con_tick = 0; // ...don't show the blinking cursor
 	}
+	
+	fracmovement %= FRACUNIT; // Reset fracmovement's integer value, but keep the fraction
 
 	Unlock_state();
 }
@@ -723,10 +730,6 @@ void CON_Ticker(void)
 		else
 			CON_ChangeHeight();
 	}
-
-	// console movement
-	if (con_destlines != con_curlines)
-		CON_MoveConsole();
 
 	// clip the view, so that the part under the console is not drawn
 	con_clipviewtop = -1;
@@ -1782,6 +1785,10 @@ void CON_Drawer(void)
 		if (con_curlines <= 0)
 			CON_ClearHUD();
 	}
+	
+	// console movement
+	if (con_curlines != con_destlines)
+		CON_MoveConsole();
 
 	if (con_curlines > 0)
 		CON_DrawConsole();

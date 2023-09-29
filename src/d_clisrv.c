@@ -2909,6 +2909,12 @@ void D_LoadBan(boolean warning)
 		address = strtok(buffer, " /\t\r\n");
 		mask = strtok(NULL, " \t\r\n");
 
+		if (!address)
+		{
+			malformed = true;
+			continue;
+		}
+
 		if (i == 0 && !strncmp(address, "BANFORMAT", 9))
 		{
 			if (mask)
@@ -3882,7 +3888,7 @@ consvar_t cv_noticedownload = {"noticedownload", "Off", CV_SAVE, CV_OnOff, NULL,
 
 // Speed of file downloading (in packets per tic)
 static CV_PossibleValue_t downloadspeed_cons_t[] = {{1, "MIN"}, {300, "MAX"}, {0, NULL}};
-consvar_t cv_downloadspeed = {"downloadspeed", "MAX", CV_SAVE, downloadspeed_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_downloadspeed = {"downloadspeed", "300", CV_SAVE, downloadspeed_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static CV_PossibleValue_t connectawaittime_cons_t[] = {{1, "MIN"}, {60, "MAX"}, {0, "Inf"}, {0, NULL}};
 consvar_t cv_connectawaittime = {"connectawaittime", "5", CV_SAVE, connectawaittime_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};

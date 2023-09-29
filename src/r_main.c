@@ -160,6 +160,7 @@ static CV_PossibleValue_t drawdist_cons_t[] = {
 static CV_PossibleValue_t drawdist_precip_cons_t[] = {
 	{256, "256"},	{512, "512"},	{768, "768"},
 	{1024, "1024"},	{1536, "1536"},	{2048, "2048"},
+	{3072, "3072"},	{4096, "4096"},
 	{0, "None"},	{0, NULL}};
 
 static CV_PossibleValue_t fov_cons_t[] = {{5*FRACUNIT, "MIN"}, {178*FRACUNIT, "MAX"}, {0, NULL}};
@@ -436,6 +437,50 @@ angle_t R_PointToAngle2(fixed_t pviewx, fixed_t pviewy, fixed_t x, fixed_t y)
 fixed_t R_PointToDist2(fixed_t px2, fixed_t py2, fixed_t px1, fixed_t py1)
 {
 	return FixedHypot(px1 - px2, py1 - py2);
+}
+
+angle_t R_PlayerSliptideAngle(player_t *player)
+{
+	mobj_t *mo;
+    spritedef_t *sprdef;
+    spriteframe_t *sprframe;
+    angle_t ang = 0;
+
+    if (!cv_sliptideroll.value || !player || P_MobjWasRemoved(player->mo))
+        return 0;
+
+    mo = player->mo;
+
+    size_t rot = mo->frame & FF_FRAMEMASK;
+    boolean papersprite = (mo->frame & FF_PAPERSPRITE);
+
+	if (mo->skin && mo->sprite == SPR_PLAY)
+	{
+		sprdef = &((skin_t *)mo->skin)->spritedef;
+
+		if (rot >= sprdef->numframes)
+			sprdef = &sprites[mo->sprite];
+	}
+	else
+	{
+		sprdef = &sprites[mo->sprite];
+	}
+
+	if (rot >= sprdef->numframes)
+	{
+		sprdef = &sprites[states[S_UNKNOWN].sprite];
+		rot = states[S_UNKNOWN].frame&FF_FRAMEMASK;
+	}
+
+	sprframe = &sprdef->spriteframes[rot];
+
+	// No sprite frame? I guess it is possible
+	if (!sprframe) return 0;
+
+	if (sprframe->rotate != SRF_SINGLE || papersprite)
+		ang = R_PointToAngle(mo->x, mo->y) - mo->angle;
+
+	return FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), mo->player->sliproll*(mo->player->sliptidemem));
 }
 
 // Little extra utility. Works in the same way as R_PointToAngle2
@@ -1954,6 +1999,8 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_grshearing);
 	CV_RegisterVar(&cv_grshaders);
 	CV_RegisterVar(&cv_grusecustomshaders);
+	CV_RegisterVar(&cv_grpaletteshader);
+	CV_RegisterVar(&cv_grflashpal);
 #endif
 
 #ifdef HWRENDER

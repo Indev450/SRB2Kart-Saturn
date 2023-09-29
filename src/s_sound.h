@@ -20,12 +20,18 @@
 #include "command.h"
 #include "tables.h" // angle_t
 
+#ifdef HAVE_OPENMPT
+#include "libopenmpt/libopenmpt.h"
+extern openmpt_module *openmpt_mhandle;
+#endif
+
 // mask used to indicate sound origin is player item pickup
 #define PICKUP_SOUND 0x8000
 
 extern consvar_t stereoreverse;
 extern consvar_t cv_soundvolume, cv_digmusicvolume;//, cv_midimusicvolume;
 extern consvar_t cv_numChannels;
+
 extern consvar_t surround;
 //extern consvar_t cv_resetmusic;
 extern consvar_t cv_gamedigimusic;
@@ -35,6 +41,15 @@ extern consvar_t cv_gamemidimusic;
 extern consvar_t cv_gamesounds;
 extern consvar_t cv_playmusicifunfocused;
 extern consvar_t cv_playsoundifunfocused;
+
+#ifdef HAVE_OPENMPT
+extern consvar_t cv_modfilter;
+extern consvar_t cv_stereosep;
+extern consvar_t cv_amigafilter;
+#if OPENMPT_API_VERSION_MAJOR < 1 && OPENMPT_API_VERSION_MINOR > 4
+extern consvar_t cv_amigatype;
+#endif
+#endif
 
 extern consvar_t cv_music_resync_threshold;
 extern consvar_t cv_music_resync_powerups_only;
@@ -93,6 +108,9 @@ void S_InitSfxChannels(INT32 sfxVolume);
 void S_StopSounds(void);
 void S_ClearSfx(void);
 void S_Start(void);
+
+// Stops music and restarts it from same position. Used for instant applying changes to amiga filters.
+void S_RestartMusic(void);
 
 //
 // Basically a W_GetNumForName that adds "ds" at the beginning of the string. Returns a lumpnum.
@@ -154,6 +172,8 @@ extern musicdef_t *musicdefstart;
 
 void S_LoadMusicDefs(UINT16 wadnum);
 void S_InitMusicDefs(void);
+musicdef_t *S_FindMusicCredit(const char *musname);
+void S_ShowSpecifiedMusicCredit(const char *musname);
 void S_ShowMusicCredit(void);
 
 //

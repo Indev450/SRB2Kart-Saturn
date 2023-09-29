@@ -23,6 +23,7 @@
 
 // We need the WAD data structure for Map things, from the THINGS lump.
 #include "doomdata.h"
+#include "doomtype.h"
 
 // States are tied to finite states are tied to animation frames.
 // Needs precompiled tables/data structures.
@@ -326,6 +327,8 @@ typedef struct mobj_s
 	UINT16 eflags; // extra flags
 
 	void *skin; // overrides 'sprite' when non-NULL (for player bodies to 'remember' the skin)
+	void *localskin;
+	boolean skinlocal;
 	// Player and mobj sprites in multiplayer modes are modified
 	//  using an internal color lookup table for re-indexing.
 	UINT8 color; // This replaces MF_TRANSLATION. Use 0 for default (no translation).
@@ -393,6 +396,16 @@ typedef struct mobj_s
 	boolean resetinterp; // if true, some fields should not be interpolated (see R_InterpolateMobjState implementation)
 	boolean colorized; // Whether the mobj uses the rainbow colormap
 	boolean rollmodel; // OpenGL: Should this model rotate?
+
+	tic_t slamsoundtimer;
+
+	// saltyhop! hardcode edition
+	boolean salty_ready;
+	boolean salty_tapping;
+	fixed_t salty_zoffset;
+	fixed_t salty_momz;
+	boolean salty_jump;
+	boolean init_salty;
 
 	// WARNING: New fields must be added separately to savegame and Lua.
 } mobj_t;

@@ -53,6 +53,8 @@ CV_PossibleValue_t soundvolume_cons_t[] = {{0, "MIN"}, {31, "MAX"}, {0, NULL}};
 static void SetChannelsNum(void);
 static void Command_Tunes_f(void);
 static void Command_RestartAudio_f(void);
+static void Command_RestartMusic_f(void); //mhhhm amiga type filters here i come uwu
+static void Command_ShowMusicCredit_f(void);
 
 // Sound system toggles
 #ifndef NO_MIDI
@@ -63,6 +65,15 @@ static void GameDigiMusic_OnChange(void);
 
 static void PlayMusicIfUnfocused_OnChange(void);
 static void PlaySoundIfUnfocused_OnChange(void);
+
+#ifdef HAVE_OPENMPT
+static void ModFilter_OnChange(void);
+static void StereoSep_OnChange(void);
+static void AmigaFilter_OnChange(void);
+#if OPENMPT_API_VERSION_MAJOR < 1 && OPENMPT_API_VERSION_MINOR > 4
+static void AmigaType_OnChange(void);
+#endif
+#endif
 
 // commands for music and sound servers
 #ifdef MUSSERV
@@ -129,6 +140,25 @@ static CV_PossibleValue_t music_resync_threshold_cons_t[] = {
 consvar_t cv_music_resync_threshold = {"music_resync_threshold", "0", CV_SAVE|CV_CALL, music_resync_threshold_cons_t, I_UpdateSongLagThreshold, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_music_resync_powerups_only = {"music_resync_powerups_only", "No", CV_SAVE|CV_CALL, CV_YesNo, I_UpdateSongLagConditions, 0, NULL, NULL, 0, 0, NULL};
+
+#ifdef HAVE_OPENMPT
+openmpt_module *openmpt_mhandle = NULL;
+
+static CV_PossibleValue_t interpolationfilter_cons_t[] = {{0, "Default"}, {1, "None"}, {2, "Linear"}, {4, "Cubic"}, {8, "Windowed sinc"}, {0, NULL}};
+consvar_t cv_modfilter = {"modfilter", "4", CV_SAVE|CV_CALL, interpolationfilter_cons_t, ModFilter_OnChange, 0, NULL, NULL, 0, 0, NULL};
+
+static CV_PossibleValue_t stereosep_cons_t[] = {{0, "MIN"}, {200, "MAX"}, {0, NULL}};
+consvar_t cv_stereosep = {"stereoseperation", "100", CV_SAVE|CV_CALL, stereosep_cons_t, StereoSep_OnChange, 0, NULL, NULL, 0, 0, NULL}; //some tracker modules have nauseously high stereo width
+
+static CV_PossibleValue_t amigafilter_cons_t[] = {{0, "Off"}, {1, "On"}, {0, NULL}};
+consvar_t cv_amigafilter = {"amigafilter", "1", CV_SAVE|CV_CALL, amigafilter_cons_t, AmigaFilter_OnChange, 0, NULL, NULL, 0, 0, NULL};
+
+#if OPENMPT_API_VERSION_MAJOR < 1 && OPENMPT_API_VERSION_MINOR > 4
+static CV_PossibleValue_t amigatype_cons_t[] = {{0, "auto"}, {1, "a500"}, {2, "a1200"}, {0, NULL}};
+consvar_t cv_amigatype = {"amigatype", "0", CV_SAVE|CV_CALL|CV_NOINIT, amigatype_cons_t, AmigaType_OnChange, 0, NULL, NULL, 0, 0, NULL};
+#endif
+
+#endif
 
 #define S_MAX_VOLUME 127
 
@@ -292,6 +322,8 @@ void S_RegisterSoundStuff(void)
 
 	COM_AddCommand("tunes", Command_Tunes_f);
 	COM_AddCommand("restartaudio", Command_RestartAudio_f);
+	COM_AddCommand("restartmusic", Command_RestartMusic_f);
+	COM_AddCommand("showmusiccredit", Command_ShowMusicCredit_f);
 
 
 #if defined (macintosh) && !defined (HAVE_SDL) // mp3 playlist stuff
@@ -546,7 +578,7 @@ void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
 	if (sfx->skinsound != -1 && origin && origin->skin)
 	{
 		// redirect player sound to the sound in the skin table
-		sfx_id = ((skin_t *)origin->skin)->soundsid[sfx->skinsound];
+		sfx_id = ((skin_t *)( (origin->localskin) ? origin->localskin : origin->skin ))->soundsid[sfx->skinsound];
 		sfx = &S_sfx[sfx_id];
 	}
 
@@ -1484,6 +1516,57 @@ void S_InitMusicDefs(void)
 		S_LoadMusicDefs(i);
 }
 
+
+//
+// S_FindMusicCredit
+//
+// Returns musicdef of specified song, or null if musicdef for it doesn't exist
+//
+musicdef_t *S_FindMusicCredit(const char *musname)
+{
+	musicdef_t *def = musicdefstart;
+
+	if (!def) // No definitions
+		return NULL;
+
+	while (def)
+	{
+		if (!stricmp(def->name, musname))
+		{
+			return def;
+		}
+		else
+			def = def->next;
+	}
+
+	return NULL;
+}
+
+//
+// S_ShowSpecifiedMusicCredit
+//
+// Display song's credit on screen
+//
+void S_ShowSpecifiedMusicCredit(const char *musname)
+{
+	musicdef_t *def;
+
+	if (digital_disabled) return;
+
+	if (!cv_songcredits.value || demo.rewinding)
+		return;
+
+	def = S_FindMusicCredit(musname);
+
+	if (def)
+	{
+		cursongcredit.def = def;
+		cursongcredit.anim = 5*TICRATE;
+		cursongcredit.x = 0;
+		cursongcredit.trans = NUMTRANSMAPS;
+	}
+}
+
 //
 // S_ShowMusicCredit
 //
@@ -1491,27 +1574,7 @@ void S_InitMusicDefs(void)
 //
 void S_ShowMusicCredit(void)
 {
-	musicdef_t *def = musicdefstart;
-
-	if (!cv_songcredits.value || demo.rewinding)
-		return;
-
-	if (!def) // No definitions
-		return;
-
-	while (def)
-	{
-		if (!stricmp(def->name, music_name))
-		{
-			cursongcredit.def = def;
-			cursongcredit.anim = 5*TICRATE;
-			cursongcredit.x = 0;
-			cursongcredit.trans = NUMTRANSMAPS;
-			return;
-		}
-		else
-			def = def->next;
-	}
+	S_ShowSpecifiedMusicCredit(music_name);
 }
 
 /// ------------------------
@@ -2008,6 +2071,24 @@ void S_Start(void)
 		S_ChangeMusicEx(mapmusname, mapmusflags, true, mapmusposition, 0, 0);
 }
 
+void S_RestartMusic(void)
+{
+	S_StopMusic();
+	I_ShutdownMusic();
+	I_InitMusic();
+
+#ifdef NO_MIDI
+	S_SetMusicVolume(cv_digmusicvolume.value, -1);
+#else
+	S_SetMusicVolume(cv_digmusicvolume.value, cv_midimusicvolume.value);
+#endif
+
+	if (Playing()) // Gotta make sure the player is in a level
+		P_RestoreMusic(&players[consoleplayer]);
+	else
+		S_ChangeMusicInternal("titles", looptitle);
+}
+
 static void Command_Tunes_f(void)
 {
 	const char *tunearg;
@@ -2112,6 +2193,31 @@ static void Command_RestartAudio_f(void)
 		S_ChangeMusicInternal("titles", looptitle);
 }
 
+static void Command_RestartMusic_f(void) //same as RestartAudio but only music gets restarted
+{
+	S_RestartMusic();
+}
+
+static void Command_ShowMusicCredit_f(void)
+{
+	const char *musname = music_name;
+
+	if (COM_Argc() > 1)
+	{
+		musname = COM_Argv(1);
+	}
+	else
+	{
+		S_ShowMusicCredit();
+	}
+
+	musicdef_t *def = S_FindMusicCredit(musname);
+
+	if (def) {
+		CONS_Printf("%.6s - %.255s\n", musname, def->source);
+	}
+}
+
 void GameSounds_OnChange(void)
 {
 	if (M_CheckParm("-nosound") || M_CheckParm("-noaudio"))
@@ -2167,6 +2273,40 @@ void GameDigiMusic_OnChange(void)
 		}
 	}
 }
+
+#ifdef HAVE_OPENMPT
+void ModFilter_OnChange(void)
+{
+	if (openmpt_mhandle)
+		openmpt_module_set_render_param(openmpt_mhandle, OPENMPT_MODULE_RENDER_INTERPOLATIONFILTER_LENGTH, cv_modfilter.value);
+		
+}
+
+void StereoSep_OnChange(void)
+{
+	if (openmpt_mhandle)
+		openmpt_module_set_render_param(openmpt_mhandle, OPENMPT_MODULE_RENDER_STEREOSEPARATION_PERCENT, cv_stereosep.value);
+		
+}
+
+void AmigaFilter_OnChange(void)
+{
+	if (openmpt_mhandle)
+		openmpt_module_ctl_set(openmpt_mhandle, "render.resampler.emulate_amiga", cv_amigafilter.value ? "1" : "0");
+	}
+
+
+#if OPENMPT_API_VERSION_MAJOR < 1 && OPENMPT_API_VERSION_MINOR > 4
+void AmigaType_OnChange(void)
+{
+	if (openmpt_mhandle)
+		openmpt_module_ctl_set_text(openmpt_mhandle, "render.resampler.emulate_amiga_type", cv_amigatype.string);
+
+	if (sound_started)
+        S_RestartMusic(); //need to restart the music system or else it wont work
+}
+#endif
+#endif
 
 #ifndef NO_MIDI
 void GameMIDIMusic_OnChange(void)

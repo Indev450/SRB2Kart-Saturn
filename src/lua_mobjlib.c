@@ -16,9 +16,12 @@
 #ifdef HAVE_BLUA
 #include "fastcmp.h"
 #include "r_things.h"
+#include "r_main.h"
 #include "p_local.h"
 #include "g_game.h"
 #include "p_setup.h"
+#include "doomdef.h"
+#include "d_netcmd.h"
 
 #include "lua_script.h"
 #include "lua_libs.h"
@@ -36,8 +39,8 @@ int mobj_snext_noset(lua_State *L);
 int mobj_z_setter(lua_State *L);
 int mobj_sprev_unimplemented(lua_State *L);
 int mobj_angle_setter(lua_State *L);
-//int mobj_sloperoll_noset(lua_State *L);
-//int mobj_spritescale_setter(lua_State *L);
+int mobj_sloperoll_noop(lua_State *L);
+int mobj_spritescale_setter(lua_State *L);
 int mobj_touching_sectorlist_unimplemented(lua_State *L);
 int mobj_radius_setter(lua_State *L);
 int mobj_height_setter(lua_State *L);
@@ -65,6 +68,8 @@ int mobj_mobjnum_unimplemented(lua_State *L);
 int mobj_scale_setter(lua_State *L);
 int mobj_destscale_setter(lua_State *L);
 int mobj_standingslope_noset(lua_State *L);
+int mobj_rollsum_getter(lua_State *L);
+int mobj_rollsum_noset(lua_State *L);
 
 static const char *const array_opt[] ={"iterate",NULL};
 
@@ -76,15 +81,17 @@ static const udata_field_t mobj_fields[] = {
     FIELD(mobj_t, snext,               udatalib_getter_mobj,       mobj_snext_noset),
     FIELD(mobj_t, sprev,               mobj_sprev_unimplemented,   mobj_sprev_unimplemented),
     FIELD(mobj_t, angle,               udatalib_getter_angle,      mobj_angle_setter),
-    //FIELD(mobj_t, rollangle,           udatalib_getter_angle,      udatalib_setter_angle),
-    //FIELD(mobj_t, sloperoll,           udatalib_getter_angle,      mobj_sloperoll_noset),
+    FIELD(mobj_t, rollangle,           udatalib_getter_angle,      udatalib_setter_angle),
+    FIELD(mobj_t, sloperoll,           udatalib_getter_angle,      mobj_sloperoll_noop),
+	// Macro fails here
+	{ "rollsum", 0, mobj_rollsum_getter, mobj_rollsum_noset },
     FIELD(mobj_t, sprite,              udatalib_getter_spritenum,  udatalib_setter_spritenum),
     FIELD(mobj_t, frame,               udatalib_getter_uint32,     udatalib_setter_uint32),
     FIELD(mobj_t, anim_duration,       udatalib_getter_uint16,     udatalib_setter_uint16),
-    //FIELD(mobj_t, spritexscale,        udatalib_getter_fixed,      mobj_spritescale_setter),
-    //FIELD(mobj_t, spriteyscale,        udatalib_getter_fixed,      mobj_spritescale_setter),
-    //FIELD(mobj_t, spritexoffset,       udatalib_getter_fixed,      udatalib_setter_fixed),
-    //FIELD(mobj_t, spriteyoffset,       udatalib_getter_fixed,      udatalib_setter_fixed),
+    FIELD(mobj_t, spritexscale,        udatalib_getter_fixed,      mobj_spritescale_setter),
+    FIELD(mobj_t, spriteyscale,        udatalib_getter_fixed,      mobj_spritescale_setter),
+    FIELD(mobj_t, spritexoffset,       udatalib_getter_fixed,      udatalib_setter_fixed),
+    FIELD(mobj_t, spriteyoffset,       udatalib_getter_fixed,      udatalib_setter_fixed),
     FIELD(mobj_t, touching_sectorlist, mobj_touching_sectorlist_unimplemented, mobj_touching_sectorlist_unimplemented),
     FIELD(mobj_t, subsector,           udatalib_getter_subsector,  mobj_nosetpos_subsector),
     FIELD(mobj_t, floorz,              udatalib_getter_fixed,      mobj_nosetpos_floorz),
@@ -133,7 +140,7 @@ static const udata_field_t mobj_fields[] = {
     FIELD(mobj_t, cvmem,               udatalib_getter_int32,      udatalib_setter_int32),
     FIELD(mobj_t, standingslope,       udatalib_getter_slope,      mobj_standingslope_noset),
     FIELD(mobj_t, colorized,           udatalib_getter_boolean,    udatalib_setter_boolean),
-    //FIELD(mobj_t, rollmodel,           udatalib_getter_boolean,    udatalib_setter_boolean),
+    FIELD(mobj_t, rollmodel,           udatalib_getter_boolean,    udatalib_setter_boolean),
     { NULL },
 };
 #undef FIELD
@@ -174,14 +181,21 @@ int mobj_ ## field ## _noset(lua_State *L) \
     return luaL_error(L, LUA_QL("mobj_t") " field " LUA_QS " should not be set directly.", #field); \
 }
 
-//NOSET(sloperoll)
+#define NOSET_USE(field, use) \
+int mobj_ ## field ## _noset(lua_State *L) \
+{ \
+    return luaL_error(L, LUA_QL("mobj_t") " field " LUA_QS " should not be set directly. Use " LUA_QL(use) " instead.", #field); \
+}
+
 NOSET(snext)
 NOSET(bnext)
 NOSET(info)
 NOSET(player)
 NOSET(standingslope)
+NOSET_USE(rollsum, "rollangle")
 
 #undef NOSET
+#undef NOSET_USE
 
 // Unimplemented fields (why would you need to set them like that explicitly?
 // No idea, i'm keeping it for synch reasons)
@@ -197,6 +211,10 @@ UNIMPLEMENTED(bprev)
 UNIMPLEMENTED(mobjnum)
 
 #undef UNIMPLEMENTED
+
+// For some dumb reason it is valid to set sloperoll, even though it is read
+// only
+int mobj_sloperoll_noop(lua_State *L) { return 0; }
 
 // Now other getters/setters with arbitary logic
 
@@ -233,7 +251,7 @@ int mobj_angle_setter(lua_State *L)
     return 0;
 }
 
-/*int mobj_spritescale_setter(lua_State *L)
+int mobj_spritescale_setter(lua_State *L)
 {
     mobj_t *mo = GETMO();
 
@@ -251,7 +269,7 @@ int mobj_angle_setter(lua_State *L)
             mo->realyscale = luaL_checkfixed(L, 2);
     }
     return 0;
-}*/
+}
 
 int mobj_radius_setter(lua_State *L)
 {
@@ -347,8 +365,14 @@ int mobj_skin_getter(lua_State *L)
     if (!mo->skin)
 		return 0;
 
-	lua_pushstring(L, ((skin_t *)mo->skin)->name);
-
+	if (hud_running && cv_luaimmersion.value) {
+			if (mo->localskin) // HUD ONLY!!!!!!!!!!
+				lua_pushstring(L, ((skin_t *)mo->localskin)->name);
+			else
+				lua_pushstring(L, ((skin_t *)mo->skin)->name);
+		} else {
+			lua_pushstring(L, ((skin_t *)mo->skin)->name);
+		}
     return 1;
 }
 
@@ -360,7 +384,7 @@ int mobj_skin_setter(lua_State *L)
     char skin[SKINNAMESIZE+1]; // all skin names are limited to this length
     strlcpy(skin, luaL_checkstring(L, 2), sizeof skin);
     strlwr(skin); // all skin names are lowercase
-    for (i = 0; i < numskins; i++)
+    for (i = 0; i < numskins; i++) {
     {
         if (fastcmp(skins[i].name, skin))
         {
@@ -369,7 +393,9 @@ int mobj_skin_setter(lua_State *L)
         }
     }
 
-    return luaL_error(L, "mobj.skin '%s' not found!", skin);
+    }
+		
+	return luaL_error(L, "mobj.skin '%s' not found!", skin);
 }
 
 int mobj_color_setter(lua_State *L)
@@ -534,6 +560,24 @@ int mobj_destscale_setter(lua_State *L)
     mo->destscale = scale;
 
     return 0;
+}
+
+// WARNING: Not synch safe!
+// Don't use this field in game logic code!
+int mobj_rollsum_getter(lua_State *L)
+{
+	mobj_t *mo = GETMO();
+
+	angle_t rollsum = mo->rollangle + cv_sloperoll.value ? mo->sloperoll : 0;
+
+	if (mo->player)
+	{
+		rollsum += R_PlayerSliptideAngle(mo->player);
+	}
+
+	lua_pushangle(L, rollsum);
+
+	return 1;
 }
 
 static int mobj_get(lua_State *L)

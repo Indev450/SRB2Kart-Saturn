@@ -15,6 +15,7 @@
 #include "r_defs.h"
 #include "r_local.h"
 #include "st_stuff.h" // hudinfo[]
+#include "y_inter.h"
 #include "g_game.h"
 #include "i_video.h" // rendermode
 #include "p_local.h" // camera_t
@@ -84,11 +85,15 @@ static const char *const patch_opt[] = {
 
 enum hudhook {
 	hudhook_game = 0,
-	hudhook_scores
+	hudhook_scores = 1,
+	hudhook_intermission = 2,
+	hudhook_vote = 3,
 };
 static const char *const hudhook_opt[] = {
 	"game",
 	"scores",
+	"intermission",
+	"vote",
 	NULL};
 
 // alignment types for v.drawString
@@ -962,11 +967,46 @@ static int lib_hudadd(lua_State *L)
 	return 0;
 }
 
+static int lib_hudsetvotebackground(lua_State *L)
+{
+	if (lua_isnoneornil(L, 1))
+	{
+		if (luaVoteScreen)
+		{
+			free(luaVoteScreen);
+		}
+
+		luaVoteScreen = NULL;
+
+		return 0;
+	}
+
+	const char *prefix = luaL_checkstring(L, 1);
+
+	if (strlen(prefix) != 4)
+	{
+		return luaL_argerror(L, 1, "prefix should 4 characters wide");
+	}
+
+	if (!luaVoteScreen)
+	{
+		luaVoteScreen = (char*)malloc(5);
+		luaVoteScreen[4] = 0;
+	}
+
+	strncpy(luaVoteScreen, prefix, 4);
+
+	strupr(luaVoteScreen);
+
+	return 0;
+}
+
 static luaL_Reg lib_hud[] = {
 	{"enable", lib_hudenable},
 	{"disable", lib_huddisable},
 	{"enabled", lib_hudenabled},
 	{"add", lib_hudadd},
+	{"setVoteBackground", lib_hudsetvotebackground},
 	{NULL, NULL}
 };
 
@@ -987,7 +1027,13 @@ int LUA_HudLib(lua_State *L)
 		lua_rawseti(L, -2, 2); // HUD[2] = game rendering functions array
 
 		lua_newtable(L);
-		lua_rawseti(L, -2, 3); // HUD[2] = scores rendering functions array
+		lua_rawseti(L, -2, 3); // HUD[3] = scores rendering functions array
+
+		lua_newtable(L);
+		lua_rawseti(L, -2, 4); // HUD[4] = intermission rendering functions array
+
+		lua_newtable(L);
+		lua_rawseti(L, -2, 5); // HUD[5] = vote rendering functions array
 	lua_setfield(L, LUA_REGISTRYINDEX, "HUD");
 
 	luaL_newmetatable(L, META_HUDINFO);
@@ -1056,7 +1102,7 @@ void LUAh_GameHUD(player_t *stplayr, huddrawlist_h list)
 
 	lua_getfield(gL, LUA_REGISTRYINDEX, "HUD");
 	I_Assert(lua_istable(gL, -1));
-	lua_rawgeti(gL, -1, 2); // HUD[2] = rendering funcs
+	lua_rawgeti(gL, -1, hudhook_game+2); // HUD[2] = rendering funcs
 	I_Assert(lua_istable(gL, -1));
 
 	lua_rawgeti(gL, -2, 1); // HUD[1] = lib_draw
@@ -1114,7 +1160,73 @@ void LUAh_ScoresHUD(huddrawlist_h list)
 
 	lua_getfield(gL, LUA_REGISTRYINDEX, "HUD");
 	I_Assert(lua_istable(gL, -1));
-	lua_rawgeti(gL, -1, 3); // HUD[3] = rendering funcs
+	lua_rawgeti(gL, -1, hudhook_scores+2); // HUD[3] = rendering funcs
+	I_Assert(lua_istable(gL, -1));
+
+	lua_rawgeti(gL, -2, 1); // HUD[1] = lib_draw
+	I_Assert(lua_istable(gL, -1));
+	lua_remove(gL, -3); // pop HUD
+	lua_pushnil(gL);
+	while (lua_next(gL, -3) != 0) {
+		lua_pushvalue(gL, -3); // graphics library (HUD[1])
+		LUA_Call(gL, 1, 0, 1);
+	}
+	lua_settop(gL, 0);
+	hud_running = false;
+
+	lua_pushlightuserdata(gL, NULL);
+	lua_setfield(gL, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
+}
+
+void LUAh_IntermissionHUD(huddrawlist_h list)
+{
+	if (!gL || !(hudAvailable & (1<<hudhook_intermission)))
+		return;
+	
+	lua_pushlightuserdata(gL, list);
+	lua_setfield(gL, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
+
+	hud_running = true;
+	lua_settop(gL, 0);
+	
+	lua_pushcfunction(gL, LUA_GetErrorMessage);
+
+	lua_getfield(gL, LUA_REGISTRYINDEX, "HUD");
+	I_Assert(lua_istable(gL, -1));
+	lua_rawgeti(gL, -1, hudhook_intermission+2); // HUD[4] = rendering funcs
+	I_Assert(lua_istable(gL, -1));
+
+	lua_rawgeti(gL, -2, 1); // HUD[1] = lib_draw
+	I_Assert(lua_istable(gL, -1));
+	lua_remove(gL, -3); // pop HUD
+	lua_pushnil(gL);
+	while (lua_next(gL, -3) != 0) {
+		lua_pushvalue(gL, -3); // graphics library (HUD[1])
+		LUA_Call(gL, 1, 0, 1);
+	}
+	lua_settop(gL, 0);
+	hud_running = false;
+
+	lua_pushlightuserdata(gL, NULL);
+	lua_setfield(gL, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
+}
+
+void LUAh_VoteHUD(huddrawlist_h list)
+{
+	if (!gL || !(hudAvailable & (1<<hudhook_vote)))
+		return;
+	
+	lua_pushlightuserdata(gL, list);
+	lua_setfield(gL, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
+
+	hud_running = true;
+	lua_settop(gL, 0);
+	
+	lua_pushcfunction(gL, LUA_GetErrorMessage);
+
+	lua_getfield(gL, LUA_REGISTRYINDEX, "HUD");
+	I_Assert(lua_istable(gL, -1));
+	lua_rawgeti(gL, -1, hudhook_vote+2); // HUD[5] = rendering funcs
 	I_Assert(lua_istable(gL, -1));
 
 	lua_rawgeti(gL, -2, 1); // HUD[1] = lib_draw

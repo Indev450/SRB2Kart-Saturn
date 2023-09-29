@@ -2,30 +2,70 @@
 
 [SRB2Kart](https://srb2.org/mods/) is a kart racing mod based on the 3D Sonic the Hedgehog fangame [Sonic Robo Blast 2](https://srb2.org/), based on a modified version of [Doom Legacy](http://doomlegacy.sourceforge.net/).
 
-## Saturn Features
-- Player rotation on Slopes, funny squish when landing, Sprite scaling and all that 
-- Kart Hud offsets are user changable
-- Access for `mobj_t` and `player_t` fields from Lua has been completely rewritten, much better performance
-- Lua shows tracebacks whenever an error occurs
-- The Lua perfstat page now has multiple pages and is more organized (ps_thinkframe_page X)
-- "addfilelocal" Command, for those who want to use their custom hud in netgames (Same as addfile but completely client sided)
-- Visual Portals from haya´s HEP Client
+## Saturn Features (Take a look at the "Saturn Options" menu c;)
 
-Techical Stuff:
+- Sprites player rotation on slopes; going on hills, levitate, going down, and so on alters your sprites (configurable)
+- You can alter all the base kart HUD element offsets on the fly in the Saturn Options settings menu
+- `addfilelocal` Command, for those who want to use things like their custom hud in netgames (Same as addfile but completely client sided)
+- OpenMPT for Tracker module playback instead of GME
+  - Fixes looping and sounds better
+  - Allows filter configuration
+- The minimal brightness with Shaders can be configured, now you can seeeee in dark areas (0-255 , uses Sector brightness values)
+- Lua HUD hooks for Intermission (ex: You can make hostmod votes still visible during intermission!)
+- Lua HUD hooks for Vote Screen (ex: You can make hostmod votes still visible during map vote screen!)
+- Saltyhop! do a funny hop
+- Smaller Speedometer (optional / requieres extra.kart file)
+- Record Attack input display can now be used everywhere
+- Smaller minimap icons and also show player names on the minimap (toggable)
+- `showmusiccredit` command, shows you the current music track again
+- `listskins` show a list of all skins currently loaded
+- Visual Portals from Haya's HEP Client
+- Toggable lowercase menu's also from Haya's HEP client
+- Everything that Galaxy has
+
+## Improvements / Bug fixes
+
+- Replay size has been increased to 10MiB minimum, to make replay overflows very unlikely to happen
+  - can be set to 100MiB max with `maxdemosize` command in console
+- Music changes now properly show the music credits (ex: Kart maps with easter eggs that alter the music)
+ - The mapper still has to provide a MusicDEF for this to work.
+- Configurable chatlog length (yay can read those messages from 30 mins ago without opening log.txt)
+- Configurable timeout for waiting to join a full server (in vanilla this is capped to 5 minutes before it boots you out)
+- Characters now spin in skin selection menu (configurable)
+- HTTP Addon download speed has been raised dramatically
+  - configurable with `downloadspeed` command
+- HWR Drawnodes have been refactored, this should fix a few rare crashes esp in regards to OpenGL Visportals
+- The Position Number in the corner is alot smaller now (half the size!)
+- Toggable Lap animation
+- Main menu shows the current renderer being used
+- MSAA and A2C Antialiasing support (Configurable in renderer.txt file)
+
+## Performance / Debugging
+
+- Access for `mobj_t` and `player_t` fields from Lua has been completely rewritten, for much better performance with many Lua scripts
+- Lua shows Tracebacks whenever an error occurs
+- The Lua Perfstats page now has multiple pages and is more organized (ps_thinkframe_page X in console)
+- People with lower end hardware can disable "screen textures" with "gr_screentextures" command, huge performance gain with minimal visual loss
+  - Intermission backgrounds, heat wave effects and etc are broken with this
+- `ffloorclip`, exclusive to Software, which boosts performance on maps with many Floor over Floor sectors
+
+## Technical fixes
 
 - ZFigthing Textures in Opengl mode have been fixed in engine (well almost all of it)
-- Fof´s intersecting with slopes have less issues and now render correctly in Opengl
-- Midtextures on slopes in Opengl arent broken anymore, all those weird guardrails and fences, aswell as some of those sticking out textures from the ground on some maps should be gone.
-- A longstanding crash with "fading music changes" has been fixed
-- A crash after long play sessions or when hosting a listen server regarding "FreeColormipmaps" has been fixed
-- Multiple other fixes/optimizations like 3D floor clipping in software mode
+- FOFs intersecting with slopes have less issues and now render correctly in Opengl
+- Midtextures on slopes in Opengl are fixed, many weird guardrails and fences, aswell as some of those sticking out textures from the ground on some maps should be gone
+- The annoying depraction messages for `P_TeleportMove` and `P_AproxDistance` have been silenced
+- Silenced the annoying "cant find next map..." messages as theyre super useless and annoying anyways
+- Added a small cooldown on `map` command due to spamming causing a SIGSEGV
+
+## MISC
+- Bird's Camara Tilting feature is no longer turned on by default
+- Bird's warning on the title screen has been removed
 
 ## Bugs
-
-- Joining a netgame midrace makes all sprites invisible until the next mapchange.
-(Sadly unfixable without breaking netgame compability)
-
-- For the reason mentioned above, sometimes when rewinding a recorded replay from a netgame, playersprites may disappear, however normal playback is fine.
+- On maps which change the song multiple times on map start (exp: Wandering Falls) may show multiple music credits appearing
+- A2C antialiasing makes transparent surfaces even more transparent
+- You tell us! c:
 
 ## Dependencies
 - NASM (x86 builds only)
@@ -33,6 +73,7 @@ Techical Stuff:
 - SDL2-Mixer (Linux/OS X only)
 - libupnp (Linux/OS X only)
 - libgme (Linux/OS X only)
+- libopenmpt (Linux/OS X only)
 
 ## Compiling
 

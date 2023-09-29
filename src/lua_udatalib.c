@@ -82,8 +82,12 @@ UDATALIB_SIMPLE_SETTER(const char*, luaL_checkstring)
 int udatalib_setter_boolean(lua_State *L)
 UDATALIB_SIMPLE_SETTER(boolean, luaL_checkboolean)
 
+// ffs
+int udatalib_setter_boolean_nocheck(lua_State *L)
+UDATALIB_SIMPLE_SETTER(boolean, lua_toboolean)
+
 int udatalib_setter_spritenum(lua_State *L)
-UDATALIB_SIMPLE_SETTER(spritenum_t, (spritenum_t)luaL_checkinteger)
+UDATALIB_SIMPLE_SETTER(spritenum_t, luaL_checkinteger)
 
 int udatalib_setter_tic(lua_State *L)
 UDATALIB_SIMPLE_SETTER(tic_t, (tic_t)luaL_checkinteger)
@@ -117,6 +121,6 @@ void udatalib_addfields(lua_State *L, int mt, const udata_field_t fields[])
     for (unsigned i = 0; fields[i].name != NULL; ++i)
     {
         udatalib_addfield(L, mt, fields[i]);
-        CONS_Printf("Add field name=%s, offset=%d, getter=%p, setter=%p\n", fields[i].name, fields[i].offset, fields[i].getter, fields[i].setter);
+        //CONS_Printf("Add field name=%s, offset=%d, getter=%p, setter=%p\n", fields[i].name, fields[i].offset, fields[i].getter, fields[i].setter);
     }
 }

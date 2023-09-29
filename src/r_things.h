@@ -97,6 +97,9 @@ typedef struct
 
 	// specific sounds per skin
 	sfxenum_t soundsid[NUMSKINSOUNDS]; // sound # in S_sfx table
+	
+	boolean localskin;
+	INT32 localnum;
 } skin_t;
 
 extern CV_PossibleValue_t Forceskin_cons_t[];
@@ -133,15 +136,7 @@ typedef struct vissprite_s
 	fixed_t thingscale; // the object's scale
 	fixed_t sortscale; // sortscale only differs from scale for flat sprites
 	fixed_t scalestep; // only for flat sprites, 0 otherwise
-	fixed_t paperoffset, paperdistance; // for paper sprites, offset/dist relative to the angle
 	fixed_t xiscale; // negative if flipped
-	
-	angle_t centerangle; // for paper sprites
-
-	struct {
-		fixed_t tan; // The amount to shear the sprite vertically per row
-		INT32 offset; // The center of the shearing location offset from x1
-	} shear;
 
 	fixed_t texturemid;
 	patch_t *patch;
@@ -156,8 +151,6 @@ typedef struct vissprite_s
 	INT32 heightsec; // height sector for underwater/fake ceiling support
 
 	extracolormap_t *extra_colormap; // global colormaps
-
-	//fixed_t xscale;
 
 	// Precalculated top and bottom screen coords for the sprite.
 	fixed_t thingheight; // The actual height of the thing (for 3D floors)
@@ -206,17 +199,24 @@ typedef struct drawnode_s
 } drawnode_t;
 
 extern INT32 numskins;
+extern INT32 numlocalskins;
+extern INT32 numallskins;
 extern skin_t skins[MAXSKINS];
 extern UINT8 skinstats[9][9][MAXSKINS];
 extern UINT8 skinstatscount[9][9];
 extern UINT8 skinsorted[MAXSKINS];
 
 void sortSkinGrid(void);
+extern skin_t localskins[MAXSKINS];
+extern skin_t allskins[MAXSKINS*2];
 
 boolean SetPlayerSkin(INT32 playernum,const char *skinname);
 void SetPlayerSkinByNum(INT32 playernum,INT32 skinnum); // Tails 03-16-2002
+void SetLocalPlayerSkin(INT32 playernum,const char *skinname, consvar_t *cvar);
 INT32 R_SkinAvailable(const char *name);
-void R_AddSkins(UINT16 wadnum);
+INT32 R_AnySkinAvailable(const char *name);
+INT32 R_LocalSkinAvailable(const char *name, boolean local);
+void R_AddSkins(UINT16 wadnum, boolean local);
 
 #ifdef DELFILE
 void R_DelSkins(UINT16 wadnum);

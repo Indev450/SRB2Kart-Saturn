@@ -957,9 +957,12 @@ static boolean AddIWAD(void)
 	}
 }
 
+boolean found_extra_kart;
+
 static void IdentifyVersion(void)
 {
 	const char *srb2waddir = NULL;
+	found_extra_kart = false;
 
 #if (defined (__unix__) && !defined (MSDOS)) || defined (UNIXCOMMON) || defined (HAVE_SDL)
 	// change to the directory where 'srb2.srb' is found
@@ -1012,6 +1015,11 @@ static void IdentifyVersion(void)
 #ifdef USE_PATCH_KART
 	D_AddFile(va(pandf,srb2waddir,"patch.kart"), startupwadfiles);
 #endif
+	// completely optional
+	if (FIL_ReadFileOK(va(pandf,srb2waddir,"extra.kart"))) {
+		D_AddFile(va(pandf,srb2waddir,"extra.kart"), startupwadfiles);
+		found_extra_kart = true;
+	}
 
 #if !defined (HAVE_SDL) || defined (HAVE_MIXER)
 #define MUSICTEST(str) \
@@ -1336,6 +1344,9 @@ void D_SRB2Main(void)
 #endif
 
 #endif //ifndef DEVELOP
+
+	if (found_extra_kart) // found the funny, add it in!
+		mainwads++;
 
 	//
 	// search for maps

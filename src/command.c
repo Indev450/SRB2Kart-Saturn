@@ -79,7 +79,6 @@ CV_PossibleValue_t kartspeed_cons_t[] = {
 
 static boolean execversion_enabled = false;
 consvar_t cv_execversion = {"execversion","1",CV_CALL,CV_Unsigned, CV_EnforceExecVersion, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_birdmod = {"birdmod", "0", CV_SAVE|CV_NOSHOWHELP, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 // for default joyaxis detection
 #if 0
@@ -278,7 +277,7 @@ static xcommand_t *com_commands = NULL; // current commands
 
 #define MAX_ARGS 80
 static size_t com_argc;
-static char *com_argv[MAX_ARGS];
+char *com_argv[MAX_ARGS];
 static const char *com_null_string = "";
 static char *com_args = NULL; // current command args or NULL
 
@@ -326,6 +325,16 @@ const char *COM_Argv(size_t arg)
 	if (arg >= com_argc || (signed)arg < 0)
 		return com_null_string;
 	return com_argv[arg];
+}
+
+/** Returns all of the console command arguments
+  *
+  * \return String pointer to the argv table.
+  * \sa COM_ArgvList
+  */
+char **COM_ArgvList(void)
+{
+	return com_argv;
 }
 
 /** Gets all console command arguments.
@@ -635,10 +644,44 @@ static void COM_ExecuteString(char *ptext)
 static void COM_Alias_f(void)
 {
 	cmdalias_t *a;
+	const char *alias_format = "\x87%-8s:\x80 %s\n";
+	int argc = COM_Argc();
 
-	if (COM_Argc() < 3)
+	if (argc == 2)
 	{
+		const char *begin = COM_Argv(1);
+		size_t szBegin = strlen(begin);
+
+		/* Display all aliases that start with `begin`. */
+		CONS_Printf(M_GetText("All aliases that start with \x87'%s'\x80 are:\n"), begin);
+
+		int count = 0;
+		for (cmdalias_t *head = com_alias; head->next != NULL; head = head->next)
+		{
+			if (strncmp(begin, head->name, szBegin) == 0)
+			{
+				CONS_Printf(alias_format, head->name, head->value);
+				count++;
+			}
+		}
+
+		if (count == 0)
+		{
+			CONS_Printf(M_GetText("There are none.\n"));
+		}
+
+		return;
+	}
+	else if (argc < 3)
+	{
+		/* Display alias subtext, show all aliases. */
 		CONS_Printf(M_GetText("alias <name> <command>: create a shortcut command that executes other command(s)\n"));
+
+		for (cmdalias_t *head = com_alias; head->next != NULL; head = head->next)
+		{
+			CONS_Printf(alias_format, head->name, head->value);
+		}
+
 		return;
 	}
 

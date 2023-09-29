@@ -41,7 +41,11 @@ extern float gr_viewwidth, gr_viewheight, gr_baseviewwindowx, gr_baseviewwindowy
 
 extern float gr_basewindowcenterx, gr_basewindowcentery;
 
+extern unsigned msaa;
+extern boolean a2c;
+
 extern FTransform atransform;
+extern float gr_viewsin, gr_viewcos;
 
 // Performance stats
 extern ps_metric_t ps_hw_nodesorttime;
@@ -94,6 +98,9 @@ UINT8 HWR_FogBlockAlpha(INT32 light, extracolormap_t *colormap); // Let's see if
 
 FBITFIELD HWR_TranstableToAlpha(INT32 transtablenum, FSurfaceInfo *pSurf);
 
+// Get amount of memory used by gpu textures in bytes
+INT32 HWR_GetTextureUsed(void);
+
 // hw_main.c: Post-rendering
 void HWR_DoPostProcessor(player_t *player);
 void HWR_StartScreenWipe(void);
@@ -135,6 +142,8 @@ void HWR_AddLine(seg_t *line);
 boolean HWR_CheckBBox(fixed_t *bspcoord);
 void HWR_RenderDrawNodes(void);
 
+void HWR_ClearLightTableCache(void);
+
 // hw_main.c: Sprites
 void HWR_AddSprites(sector_t *sec);
 void HWR_ProjectSprite(mobj_t *thing);
@@ -172,8 +181,11 @@ extern consvar_t cv_grfallbackplayermodel;
 extern consvar_t cv_grbatching;
 extern consvar_t cv_grrenderdistance;
 extern consvar_t cv_grusecustomshaders;
+extern consvar_t cv_grpaletteshader;
+extern consvar_t cv_grflashpal;
 extern consvar_t cv_grportals;
 extern consvar_t cv_nostencil;
+extern consvar_t cv_secbright;
 
 extern CV_PossibleValue_t granisotropicmode_cons_t[];
 

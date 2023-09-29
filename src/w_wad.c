@@ -65,6 +65,7 @@
 #include "i_system.h"
 #include "md5.h"
 #include "lua_script.h"
+#include "st_stuff.h"
 #ifdef SCANTHINGS
 #include "p_setup.h" // P_ScanThings
 #endif
@@ -148,6 +149,40 @@ void W_Shutdown(void)
 
 static char filenamebuf[MAX_WADPATH];
 
+// This #if is copied from filesrch.c, so not sure if it is 100% suitable for
+// this
+#if defined (_WIN32) && !defined (_XBOX)
+//#define WIN32_LEAN_AND_MEAN
+#define RPC_NO_WINDOWS_H
+#include <windows.h>
+
+// Windows can't open utf-8 path so it must be converted to utf-16
+FILE* fopen_utf8(const char* filename, const char* mode)
+{
+	static const int MY_PATH_MAX =  2048;
+	WCHAR nameW[MY_PATH_MAX];
+	memset(nameW, 0, sizeof(WCHAR)*MY_PATH_MAX);
+	WCHAR modeW[16];
+	memset(modeW, 0, sizeof(WCHAR)*16);
+	// the following function converts the UTF-8 filename to UTF-16 (WCHAR) nameW
+	int len = MultiByteToWideChar(CP_UTF8, 0, filename, -1, nameW, MY_PATH_MAX);
+	if(len > 0 && MultiByteToWideChar(CP_UTF8, 0, mode, -1, modeW, 16) > 0)
+	{
+		// using _wfopen_s() shuts up MSVC's complaints
+		// about _wfopen() being unsafe..
+		FILE* ret = NULL;
+		if(_wfopen_s(&ret, nameW, modeW) == 0)
+			return ret;
+	}
+	return NULL;
+}
+
+#else
+
+#define fopen_utf8 fopen
+
+#endif
+
 // W_OpenWadFile
 // Helper function for opening the WAD file.
 // Returns the FILE * handle for the file, or NULL if not found or could not be opened
@@ -165,7 +200,7 @@ FILE *W_OpenWadFile(const char **filename, boolean useerrors)
 	*filename = filenamebuf;
 
 	// open wad file
-	if ((handle = fopen(*filename, "rb")) == NULL)
+	if ((handle = fopen_utf8(*filename, "rb")) == NULL)
 	{
 		// If we failed to load the file with the path as specified by
 		// the user, strip the directories and search for the file.
@@ -175,7 +210,7 @@ FILE *W_OpenWadFile(const char **filename, boolean useerrors)
 		// in filenamebuf == *filename.
 		if (findfile(filenamebuf, NULL, true))
 		{
-			if ((handle = fopen(*filename, "rb")) == NULL)
+			if ((handle = fopen_utf8(*filename, "rb")) == NULL)
 			{
 				if (useerrors)
 					CONS_Alert(CONS_ERROR, M_GetText("Can't open %s\n"), *filename);
@@ -690,7 +725,7 @@ static void W_ReadFileShaders(wadfile_t *wadfile)
 //
 // Can now load dehacked files (.soc)
 //
-UINT16 W_InitFile(const char *filename)
+UINT16 W_InitFile(const char *filename, const char *lumpname, UINT16 *wadnump, boolean local)
 {
 	FILE *handle;
 	lumpinfo_t *lumpinfo = NULL;
@@ -729,7 +764,7 @@ UINT16 W_InitFile(const char *filename)
 	if ((handle = W_OpenWadFile(&filename, true)) == NULL)
 		return INT16_MAX;
 
-	important = !W_VerifyNMUSlumps(filename);
+	important = !local && !W_VerifyNMUSlumps(filename);
 
 #ifndef NOMD5
 	//
@@ -743,10 +778,13 @@ UINT16 W_InitFile(const char *filename)
 	{
 		if (!memcmp(wadfiles[i]->md5sum, md5sum, 16))
 		{
-			CONS_Alert(CONS_ERROR, M_GetText("%s is already loaded\n"), filename);
-			if (handle)
-				fclose(handle);
-			return INT16_MAX;
+			if (!local) {
+				CONS_Alert(CONS_ERROR, M_GetText("%s is already loaded\n"), filename);
+				if (handle)
+					fclose(handle);
+				return INT16_MAX;
+			}
+			CONS_Alert(CONS_WARNING, M_GetText("%s is a local skin that is already loaded\n"), filename);
 		}
 	}
 #endif
@@ -789,6 +827,7 @@ UINT16 W_InitFile(const char *filename)
 	fseek(handle, 0, SEEK_END);
 	wadfile->filesize = (unsigned)ftell(handle);
 	wadfile->type = type;
+	wadfile->majormod = false;
 
 	// already generated, just copy it over
 	M_Memcpy(&wadfile->md5sum, &md5sum, 16);
@@ -898,7 +937,7 @@ INT32 W_InitMultipleFiles(char **filenames, boolean addons)
 			G_SetGameModified(true, false);
 
 		//CONS_Debug(DBG_SETUP, "Loading %s\n", *filenames);
-		rc = W_InitFile(*filenames);
+		rc = W_InitFile(*filenames, 0, 0, false);
 		if (rc == INT16_MAX)
 			CONS_Printf(M_GetText("Errors occurred while loading %s; not added.\n"), *filenames);
 		overallrc &= (rc != INT16_MAX) ? 1 : 0;
@@ -1727,7 +1766,9 @@ void *W_CachePatchName(const char *name, INT32 tag)
 {
 	lumpnum_t num;
 
-	num = W_CheckNumForName(name);
+	const char *finalname = name;
+
+	num = W_CheckNumForName(finalname);
 
 	if (num == LUMPERROR)
 		return W_CachePatchNum(W_GetNumForName("MISSING"), tag);

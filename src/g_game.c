@@ -345,6 +345,10 @@ consvar_t cv_recordmultiplayerdemos = {"netdemo_record", "Manual Save", CV_SAVE,
 static CV_PossibleValue_t netdemosyncquality_cons_t[] = {{1, "MIN"}, {35, "MAX"}, {0, NULL}};
 consvar_t cv_netdemosyncquality = {"netdemo_syncquality", "1", CV_SAVE, netdemosyncquality_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+// Units are MiB.
+static CV_PossibleValue_t maxdemosize_cons_t[] = {{10, "MIN"}, {100, "MAX"}, {0, NULL}};
+consvar_t cv_maxdemosize = {"maxdemosize", "10", CV_SAVE, maxdemosize_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 static UINT8 *savebuffer;
 
 // Analog Control
@@ -431,7 +435,7 @@ static CV_PossibleValue_t deadzone_cons_t[] = {{FRACUNIT/16, "MIN"}, {FRACUNIT, 
 //consvar_t cv_compactscoreboard= {"compactscoreboard", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 // chat timer thingy
-static CV_PossibleValue_t chattime_cons_t[] = {{5, "MIN"}, {999, "MAX"}, {0, NULL}};
+static CV_PossibleValue_t chattime_cons_t[] = {{1, "MIN"}, {999, "MAX"}, {0, NULL}};
 consvar_t cv_chattime = {"chattime", "8", CV_SAVE, chattime_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 // chatwidth
@@ -463,6 +467,10 @@ consvar_t cv_songcredits = {"songcredits", "On", CV_SAVE, CV_OnOff, NULL, 0, NUL
 
 // Show "FREE PLAY" when you're alone. :(
 consvar_t cv_showfreeplay = { "showfreeplay", "Yes", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+// We can disable special tunes!
+consvar_t cv_growmusic  = {"growmusic",  "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_supermusic = {"supermusic", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 /*consvar_t cv_crosshair = {"crosshair", "Off", CV_SAVE, crosshair_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_crosshair2 = {"crosshair2", "Off", CV_SAVE, crosshair_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -537,11 +545,15 @@ consvar_t cv_ydeadzone4 = {"joy4_ydeadzone", "0.5", CV_FLOAT|CV_SAVE, deadzone_c
 static CV_PossibleValue_t driftsparkpulse_t[] = {{0, "MIN"}, {FRACUNIT*3, "MAX"}, {0, NULL}};
 consvar_t cv_driftsparkpulse = {"driftsparkpulse", "1.4", CV_FLOAT | CV_SAVE, driftsparkpulse_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-static CV_PossibleValue_t stretchfactor_t[] = {{FRACUNIT/5, "MIN"}, {FRACUNIT, "MAX"}, {0, NULL}};
-consvar_t cv_gravstretch = {"gravstretch", "1", CV_FLOAT | CV_SAVE, stretchfactor_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+static CV_PossibleValue_t stretchfactor_t[] = {{0, "MIN"}, {FRACUNIT, "MAX"}, {0, NULL}};
+consvar_t cv_gravstretch = {"gravstretch", "0", CV_FLOAT | CV_SAVE, stretchfactor_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_sloperoll = {"sloperoll", "Off", CV_SAVE|CV_CALL, CV_OnOff, PDistort_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
+
 consvar_t cv_sliptideroll = {"sliptideroll", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+static CV_PossibleValue_t slamsound_t[] = {{0, "Off"}, {1, "On"}, {0, NULL}};
+consvar_t cv_slamsound = {"slamsound", "1", CV_SAVE, slamsound_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static CV_PossibleValue_t sloperolldist_cons_t[] = {
 	/*{256, "256"},*/	{512, "512"},	{768, "768"},
@@ -556,9 +568,9 @@ consvar_t cv_invincmusicfade = {"invincmusicfade", "300", CV_SAVE, CV_Unsigned, 
 consvar_t cv_growmusicfade = {"growmusicfade", "500", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_respawnfademusicout = {"respawnfademusicout", "1000", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_respawnfademusicback = {"respawnfademusicback", "500", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_resetspecialmusic = {"resetspecialmusic", "Yes", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_resume = {"resume", "Yes", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_fading = {"fading", "On", CV_SAVE|CV_CALL, CV_OnOff, Bird_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_resetspecialmusic = {"resetspecialmusic", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_resume = {"resume", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_fading = {"fading", "Off", CV_SAVE|CV_CALL, CV_OnOff, Bird_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
 
 #if MAXPLAYERS > 16
 #error "please update player_name table using the new value for MAXPLAYERS"
@@ -836,6 +848,16 @@ void G_SetGameModified(boolean silent, boolean major)
 	// If in record attack recording, cancel it.
 	if (modeattacking)
 		M_EndModeAttackRun();
+}
+
+void G_SetWadModified(boolean silent, boolean major, UINT16 wadnum)
+{
+	// now that we have a wad that is actually well, a gameplay changing mod
+	// (for later)
+	wadfiles[wadnum]->majormod = true;
+
+	// set our game to be marked as modified.
+	G_SetGameModified(silent, major);
 }
 
 /** Builds an original game map name from a map number.
@@ -2694,6 +2716,8 @@ void G_PlayerReborn(INT32 player)
 	UINT8 mare;
 	UINT8 skincolor;
 	INT32 skin;
+	int localskin;
+	boolean skinlocal;
 	tic_t jointime;
 	UINT8 splitscreenindex;
 	boolean spectator;
@@ -2740,6 +2764,8 @@ void G_PlayerReborn(INT32 player)
 
 	skincolor = players[player].skincolor;
 	skin = players[player].skin;
+	localskin = players[player].localskin;
+	skinlocal = players[player].skinlocal;
 	// SRB2kart
 	kartspeed = players[player].kartspeed;
 	kartweight = players[player].kartweight;
@@ -2829,6 +2855,8 @@ void G_PlayerReborn(INT32 player)
 	// save player config truth reborn
 	p->skincolor = skincolor;
 	p->skin = skin;
+	p->localskin = localskin;
+	p->skinlocal = skinlocal;
 	// SRB2kart
 	p->kartspeed = kartspeed;
 	p->kartweight = kartweight;
@@ -3930,7 +3958,7 @@ static void G_DoCompleted(void)
 				//Make sure the map actually exists before you try to go to it!
 				if ((W_CheckNumForName(G_BuildMapName(cm + 1)) == LUMPERROR))
 				{
-					CONS_Alert(CONS_ERROR, M_GetText("Next map given (MAP %d) doesn't exist! Reverting to MAP01.\n"), cm+1);
+					//CONS_Alert(CONS_ERROR, M_GetText("Next map given (MAP %d) doesn't exist! Reverting to MAP01.\n"), cm+1);
 					cm = 0;
 					break;
 				}
@@ -3941,7 +3969,7 @@ static void G_DoCompleted(void)
 				// We got stuck in a loop, came back to the map we started on
 				// without finding one supporting the current gametype.
 				// Thus, print a warning, and just use this map anyways.
-				CONS_Alert(CONS_WARNING, M_GetText("Can't find a compatible map after map %d; using map %d anyway\n"), prevmap+1, cm+1);
+				//CONS_Alert(CONS_WARNING, M_GetText("Can't find a compatible map after map %d; using map %d anyway\n"), prevmap+1, cm+1);
 				break;
 			}
 		}
@@ -5695,6 +5723,9 @@ void G_GhostAddHit(INT32 playernum, mobj_t *victim)
 
 void G_WriteAllGhostTics(void)
 {
+	UINT8 *save_demo_p = demo_p;
+#define CHECKSPACE(num) if (demo_p+(num) > demoend) { demo_p = save_demo_p; G_CheckDemoStatus(); return; }
+
 	INT32 i, counter = leveltime;
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
@@ -5709,10 +5740,16 @@ void G_WriteAllGhostTics(void)
 		if (counter % cv_netdemosyncquality.value != 0) // Only write 1 in this many ghost datas per tic to cut down on multiplayer replay size.
 			continue;
 
+		CHECKSPACE(1);
+
 		WRITEUINT8(demo_p, i);
 		G_WriteGhostTic(players[i].mo, i);
 	}
+
+	CHECKSPACE(1);
 	WRITEUINT8(demo_p, 0xFF);
+
+#undef CHECKSPACE
 }
 
 void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
@@ -5722,6 +5759,9 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 	UINT32 i;
 	UINT8 sprite;
 	UINT8 frame;
+
+	UINT8 *save_demo_p = demo_p;
+#define CHECKSPACE(num) if (demo_p+(num) > demoend) { demo_p = save_demo_p; G_CheckDemoStatus(); return; }
 
 	if (!demo_p)
 		return;
@@ -5749,6 +5789,8 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 		oldghost[playernum].y = ghost->y;
 		oldghost[playernum].z = ghost->z;
 		ziptic |= GZT_XYZ;
+
+		CHECKSPACE(sizeof(fixed_t)*3);
 		WRITEFIXED(demo_p,oldghost[playernum].x);
 		WRITEFIXED(demo_p,oldghost[playernum].y);
 		WRITEFIXED(demo_p,oldghost[playernum].z);
@@ -5765,6 +5807,9 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 			oldghost[playernum].momx = momx;
 			oldghost[playernum].momy = momy;
 			ziptic |= GZT_MOMXY;
+
+			CHECKSPACE(4);
+
 			WRITEINT16(demo_p,momx);
 			WRITEINT16(demo_p,momy);
 		}
@@ -5773,6 +5818,9 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 		{
 			oldghost[playernum].momz = momx;
 			ziptic |= GZT_MOMZ;
+
+			CHECKSPACE(2);
+
 			WRITEINT16(demo_p,momx);
 		}
 
@@ -5793,6 +5841,9 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 	{
 		oldghost[playernum].angle = ghost->angle>>24;
 		ziptic |= GZT_ANGLE;
+
+		CHECKSPACE(1);
+
 		WRITEUINT8(demo_p,oldghost[playernum].angle);
 	}
 
@@ -5802,6 +5853,9 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 	{
 		oldghost[playernum].frame = frame;
 		ziptic |= GZT_SPRITE;
+
+		CHECKSPACE(1);
+
 		WRITEUINT8(demo_p,oldghost[playernum].frame);
 	}
 
@@ -5841,20 +5895,26 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 
 		if (ghostext[playernum].flags & EZT_COLOR)
 		{
+			CHECKSPACE(1);
 			WRITEUINT8(demo_p,ghostext[playernum].color);
 			ghostext[playernum].lastcolor = ghostext[playernum].color;
 		}
 		if (ghostext[playernum].flags & EZT_SCALE)
 		{
+			CHECKSPACE(sizeof(fixed_t));
 			WRITEFIXED(demo_p,ghostext[playernum].scale);
 			ghostext[playernum].lastscale = ghostext[playernum].scale;
 		}
 		if (ghostext[playernum].flags & EZT_HIT)
 		{
+			CHECKSPACE(2);
 			WRITEUINT16(demo_p,ghostext[playernum].hits);
 			for (i = 0; i < ghostext[playernum].hits; i++)
 			{
 				mobj_t *mo = ghostext[playernum].hitlist[i];
+
+				CHECKSPACE(4+4+2+sizeof(fixed_t)*3+sizeof(angle_t));
+
 				WRITEUINT32(demo_p,UINT32_MAX); // reserved for some method of determining exactly which mobj this is. (mobjnum doesn't work here.)
 				WRITEUINT32(demo_p,mo->type);
 				WRITEUINT16(demo_p,(UINT16)mo->health);
@@ -5868,9 +5928,14 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 			ghostext[playernum].hitlist = NULL;
 		}
 		if (ghostext[playernum].flags & EZT_SPRITE)
+		{
+			CHECKSPACE(1);
 			WRITEUINT8(demo_p,sprite);
+		}
 		if (ghostext[playernum].flags & EZT_KART)
 		{
+			CHECKSPACE(12);
+
 			WRITEINT32(demo_p, ghostext[playernum].kartitem);
 			WRITEINT32(demo_p, ghostext[playernum].kartamount);
 			WRITEINT32(demo_p, ghostext[playernum].kartbumpers);
@@ -5887,6 +5952,7 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 		G_CheckDemoStatus(); // no more space
 		return;
 	}
+#undef CHECKSPACE
 }
 
 void G_ConsAllGhostTics(void)
@@ -6739,33 +6805,47 @@ void G_RecordDemo(const char *name)
 {
 	INT32 maxsize;
 
-	CONS_Printf("Recording demo %s.lmp\n", name);
-
-	strcpy(demoname, name);
-	strcat(demoname, ".lmp");
-	//@TODO make a maxdemosize cvar
-	maxsize = 1024*1024*2;
-	if (M_CheckParm("-maxdemo") && M_IsNextParm())
-		maxsize = atoi(M_GetNextParm()) * 1024;
+	demo_p = NULL;
+	demo.recording = false;
 	if (demobuffer)
 		free(demobuffer);
-	demo_p = NULL;
-	demobuffer = malloc(maxsize);
-	demoend = demobuffer + maxsize;
+	demobuffer = NULL;
+	demoend = NULL;
 
-	demo.recording = true;
+	if (cv_recordmultiplayerdemos.value)
+	{
+		CONS_Printf("Recording demo %s.lmp\n", name);
+
+		strcpy(demoname, name);
+		strcat(demoname, ".lmp");
+
+		maxsize = cv_maxdemosize.value*1024*1024;
+
+		demobuffer = malloc(maxsize);
+		demoend = demobuffer + maxsize;
+
+		if (demobuffer)
+			demo.recording = true;
+		else
+			CONS_Alert(CONS_ERROR, "Failed to allocate demo buffer\n");
+	}
 }
 
 void G_RecordMetal(void)
 {
 	INT32 maxsize;
-	maxsize = 1024*1024;
-	if (M_CheckParm("-maxdemo") && M_IsNextParm())
-		maxsize = atoi(M_GetNextParm()) * 1024;
+	maxsize = cv_maxdemosize.value*1024*1024;
+	if (demobuffer)
+		free(demobuffer);
 	demo_p = NULL;
+	metalrecording = false;
 	demobuffer = malloc(maxsize);
 	demoend = demobuffer + maxsize;
-	metalrecording = true;
+
+	if (demobuffer)
+		metalrecording = true;
+	else
+		CONS_Alert(CONS_ERROR, "Failed to allocate demo buffer\n");
 }
 
 void G_BeginRecording(void)
@@ -7073,7 +7153,7 @@ static void G_LoadDemoExtraFiles(UINT8 **pp)
 			}
 			else
 			{
-				P_PartialAddWadFile(filename);
+				P_PartialAddWadFile(filename, false);
 			}
 		}
 	}

@@ -25,7 +25,7 @@
 #include "../z_zone.h"
 #include "../v_video.h"
 #include "../r_draw.h"
-#include "../r_patch.h"    // sneed's feed and seed, formerly chuck's
+#include "../r_patch.h"    // patch rotation
 
 // Values set after a call to HWR_ResizeBlock()
 static INT32 blocksize, blockwidth, blockheight;
@@ -576,7 +576,6 @@ void HWR_SetPalette(RGBA_t *palette)
 		Z_FreeTags(PU_HWRCACHE_UNLOCKED, PU_HWRCACHE_UNLOCKED);
 	}
 }
-
 // --------------------------------------------------------------------------
 // Make sure texture is downloaded and set it as the source
 // --------------------------------------------------------------------------
@@ -706,7 +705,6 @@ static void HWR_LoadMappedPatch(GLMipmap_t *grmip, GLPatch_t *gpatch)
 		// You can't free rawpatch for some reason?
 		// (Obviously I can't, sprite rotation needs that...)
 
-		// Fuckal: I HATE HARDWARE, I HATE HARDWARE!!
 		if (!gpatch->rawpatch)
 			Z_Free(patch);
 	}
