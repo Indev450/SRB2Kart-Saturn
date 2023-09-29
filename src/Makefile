@@ -62,7 +62,6 @@
 #     Compile a debug version, add 'DEBUGMODE=1'
 #     Compile with less warnings, add 'RELAXWARNINGS=1'
 #     Generate compiler errors for most compiler warnings, add 'ERRORMODE=1'
-#     Compile without NASM's tmap.nas, add 'NOASM=1'
 #     Compile without 3D hardware support, add 'NOHW=1'
 #     Compile with GDBstubs, add 'RDB=1'
 #     Compile without PNG, add 'NOPNG=1'
@@ -166,7 +165,6 @@ endif
 ifdef MINGW64
 MINGW=1
 NONX86=1
-NOASM=1
 # MINGW64 should not necessarily imply X86_64=1, but we make that assumption elsewhere
 # Once that changes, remove this
 X86_64=1
@@ -189,7 +187,6 @@ NOPNG=1
 NOZLIB=1
 NONET=1
 NOHW=1
-NOASM=1
 NOIPX=1
 EXENAME?=srb2dummy
 OBJS=$(OBJDIR)/i_video.o
@@ -198,7 +195,6 @@ endif
 
 ifdef HAIKU
 NOIPX=1
-NOASM=1
 ifndef NONET
 LIBS=-lnetwork
 endif
@@ -272,7 +268,6 @@ NOPNG=1
 NOZLIB=1
 NONET=1
 #NOHW=1
-NOASM=1
 NOIPX=1
 NONX86=1
 OBJS+=$(OBJDIR)/i_video.o
@@ -300,7 +295,6 @@ endif
 MSGFMT?=msgfmt
 
 ifndef ECHO
-	NASM:=@$(NASM)
 	REMOVE:=@$(REMOVE)
 	CC:=@$(CC)
 	CXX:=@$(CXX)
@@ -355,12 +349,6 @@ ifdef X86_64
 endif
 endif
 
-ifndef NOASM
-ifndef NONX86
-	OBJS+=$(OBJDIR)/tmap.o $(OBJDIR)/tmap_mmx.o
-	OPTS+=-DUSEASM
-endif
-endif
 
 ifndef NOPNG
 OPTS+=-DHAVE_PNG
@@ -510,16 +498,6 @@ else
 	CFLAGS+=-O3
 endif
 	CFLAGS+=-g $(OPTS) $(ARCHOPTS) $(WINDRESFLAGS)
-
-ifdef YASM
-ifdef STABS
-	NASMOPTS?= -g stabs
-else
-	NASMOPTS?= -g dwarf2
-endif
-else
-	NASMOPTS?= -g
-endif
 
 ifdef PROFILEMODE
 	# build with profiling information
@@ -718,11 +696,6 @@ ifdef CYGWIN32
 	$(REMOVE) $(OBJDIR)/*.res
 endif
 
-#make a big srb2.s that is the disasm of the exe (dos only ?)
-asm:
-	$(CC) $(LDFLAGS) $(OBJS) -o $(OBJDIR)/tmp.exe $(LIBS)
-	$(OBJDUMP) -d $(OBJDIR)/tmp.exe --no-show-raw-insn > srb2.s
-	$(REMOVE) $(OBJDIR)/tmp.exe
 
 # executable
 # NOTE: DJGPP's objcopy do not have --add-gnu-debuglink
@@ -907,12 +880,6 @@ $(OBJDIR)/%.o: hardware/%.c
 
 $(OBJDIR)/%.o: blua/%.c
 	$(CC) $(CFLAGS) $(LUA_CFLAGS) $(WFLAGS) -c $< -o $@
-
-$(OBJDIR)/%.o: %.nas
-	$(NASM) $(NASMOPTS) -o $@ -f $(NASMFORMAT) $<
-
-$(OBJDIR)/vid_copy.o: vid_copy.s asm_defs.inc
-	$(CC) $(OPTS) $(ASFLAGS) -x assembler-with-cpp -c $< -o $@
 
 $(OBJDIR)/%.o: %.s
 	$(CC) $(OPTS) -x assembler-with-cpp -c $< -o $@
