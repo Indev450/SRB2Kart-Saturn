@@ -102,7 +102,7 @@ consvar_t cv_portalonly = {"portalonly", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL
 CV_PossibleValue_t secbright_cons_t[] = {{0, "MIN"}, {255, "MAX"}, {0, NULL}};
 consvar_t cv_secbright = {"secbright", "0", CV_SAVE, secbright_cons_t,
 							NULL, 0, NULL, NULL, 0, 0, NULL};
-							 
+
 // values for the far clipping plane
 static float clipping_distances[] = {1024.0f, 2048.0f, 4096.0f, 6144.0f, 8192.0f, 12288.0f, 16384.0f};
 // values for bsp culling
@@ -3906,8 +3906,10 @@ static void HWR_RotateSpritePolyToAim(gr_vissprite_t *spr, FOutVector *wallVerts
 		interpmobjstate_t interp = {0};
 		float basey, lowy;
 
+		INT32 dist = R_QuickCamDist(spr->mobj->x, spr->mobj->y);
+
 		// do interpolation
-		if (R_UsingFrameInterpolation() && !paused)
+		if (R_UsingFrameInterpolation() && !paused && (!cv_grmaxinterpdist.value || dist < cv_grmaxinterpdist.value))
 		{
 			if (spr->precip)
 			{
@@ -5081,7 +5083,9 @@ void HWR_ProjectSprite(mobj_t *thing)
 	if (!thing)
 		return;
 
-	if (R_UsingFrameInterpolation() && !paused)
+	INT32 dist = R_QuickCamDist(thing->x, thing->y);
+
+	if (R_UsingFrameInterpolation() && !paused && (!cv_grmaxinterpdist.value || dist < cv_grmaxinterpdist.value))
 	{
 		R_InterpolateMobjState(thing, rendertimefrac, &interp);
 	}
@@ -5406,12 +5410,14 @@ void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 
 	if (!thing)
 		return;
-	
+
+	INT32 dist = R_QuickCamDist(thing->x, thing->y);
+
 	// uncapped/interpolation
 	interpmobjstate_t interp = {0};
 
 	// do interpolation
-	if (R_UsingFrameInterpolation() && !paused)
+	if (R_UsingFrameInterpolation() && !paused && (!cv_grmaxinterpdist.value || dist < cv_grmaxinterpdist.value))
 	{
 		R_InterpolatePrecipMobjState(thing, rendertimefrac, &interp);
 	}
