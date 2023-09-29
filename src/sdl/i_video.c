@@ -876,7 +876,6 @@ static void Impl_HandleKeyboardEvent(SDL_KeyboardEvent evt, Uint32 type)
 	if (event.data1) D_PostEvent(&event);
 }
 
-
 #ifdef TEXTINPUTEVENTS
 static void Impl_HandleTextInputEvent(char *text)
 {
@@ -1188,7 +1187,7 @@ void I_GetEvent(void)
 			case SDL_KEYUP:
 			case SDL_KEYDOWN:
 				Impl_HandleKeyboardEvent(evt.key, evt.type);
-				break;			
+				break;
 #ifdef TEXTINPUTEVENTS
 			case SDL_TEXTINPUT:
 				Impl_HandleTextInputEvent(evt.text.text);

@@ -149,8 +149,8 @@ extern char  logfilename[1024];
 #else
 #define VERSION    1 // Game version
 #define SUBVERSION 6 // more precise version number
-#define VERSIONSTRING "Saturn v3 "
-#define VERSIONSTRINGW L"Saturn v3"
+#define VERSIONSTRING "Saturn v3.1 - keyboard test "
+#define VERSIONSTRINGW L"Saturn v3.1 - keyboard test "
 // Hey! If you change this, add 1 to the MODVERSION below! Otherwise we can't force updates!
 // And change CMakeLists.txt (not src/, but in root), for CMake users!
 // AND appveyor.yml, for the build bots!
@@ -642,6 +642,9 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 /// \note   Required for proper collision with moving sloped surfaces that have sector specials on them.
 #define SECTORSPECIALSAFTERTHINK
 
+/// Text input events
+#define TEXTINPUTEVENTS
+
 /// SRB2Kart: Camera always has noclip.
 #define NOCLIPCAM
 
@@ -654,9 +657,6 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 /// \note	SRB2CB port.
 ///      	SRB2CB itself ported this from PrBoom+
 //#define NEWCLIP
-
-/// Text input events
-#define TEXTINPUTEVENTS
 
 /// Sprite rotation
 #define ROTSPRITE

@@ -1238,7 +1238,7 @@ boolean CON_Responder(event_t *ev)
 		else if (key == KEY_KPADSLASH)
 			key = '/';
 
-		if (key >= 'a' && key <= 'z')
+		if ((key >= 'a' && key <= 'z') || (key >= 'A' && key <= 'Z'))
 		{
 			if (capslock ^ shiftdown)
 				key = shiftxform[key];
@@ -1246,7 +1246,6 @@ boolean CON_Responder(event_t *ev)
 		else if (shiftdown)
 			key = shiftxform[key];
 	}
-
 
 	// enter a char into the command prompt
 	if (key < 32 || key > 127)
