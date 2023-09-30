@@ -198,32 +198,6 @@ source_group("Main" FILES ${SRB2_CORE_SOURCES} ${SRB2_CORE_HEADERS})
 source_group("Renderer" FILES ${SRB2_CORE_RENDER_SOURCES})
 source_group("Game" FILES ${SRB2_CORE_GAME_SOURCES})
 
-
-set(SRB2_ASM_SOURCES
-	${CMAKE_CURRENT_SOURCE_DIR}/vid_copy.s
-)
-
-set(SRB2_NASM_SOURCES
-	${CMAKE_CURRENT_SOURCE_DIR}/tmap_mmx.nas
-	${CMAKE_CURRENT_SOURCE_DIR}/tmap.nas
-)
-
-if(MSVC)
-	list(APPEND SRB2_NASM_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/tmap_vc.nas)
-endif()
-
-set(SRB2_NASM_OBJECTS
-	${CMAKE_CURRENT_BINARY_DIR}/tmap_mmx.obj
-	${CMAKE_CURRENT_BINARY_DIR}/tmap.obj
-)
-
-if(MSVC)
-	list(APPEND SRB2_NASM_OBJECTS ${CMAKE_CURRENT_BINARY_DIR}/tmap_vc.obj)
-endif()
-
-source_group("Assembly" FILES ${SRB2_ASM_SOURCES} ${SRB2_NASM_SOURCES})
-
-
 ### Configuration
 set(SRB2_CONFIG_HAVE_BLUA ON CACHE BOOL
 	"Enable Lua interpreter support")
@@ -241,10 +215,6 @@ set(SRB2_CONFIG_HAVE_CURL ON CACHE BOOL
 	"Enable curl support, used for downloading files via HTTP.")
 set(SRB2_CONFIG_HWRENDER ON CACHE BOOL
 	"Enable hardware rendering through OpenGL.")
-set(SRB2_CONFIG_USEASM OFF CACHE BOOL
-	"Enable NASM tmap implementation for software mode speedup.")
-set(SRB2_CONFIG_YASM OFF CACHE BOOL
-	"Use YASM in place of NASM.")
 set(SRB2_CONFIG_STATIC_OPENGL OFF CACHE BOOL
 	"Use statically linked OpenGL. NOT RECOMMENDED.")
 
@@ -535,28 +505,6 @@ if(${SRB2_CONFIG_HWRENDER} AND ${SRB2_CONFIG_STATIC_OPENGL})
 	endif()
 endif()
 
-if(${SRB2_CONFIG_USEASM})
-	#SRB2_ASM_FLAGS can be used to pass flags to either nasm or yasm.
-	if(${CMAKE_SYSTEM} MATCHES "Linux")
-		set(SRB2_ASM_FLAGS "-DLINUX ${SRB2_ASM_FLAGS}")
-	endif()
-
-	if(${SRB2_CONFIG_YASM})
-		set(CMAKE_ASM_YASM_SOURCE_FILE_EXTENSIONS ${CMAKE_ASM_YASM_SOURCE_FILE_EXTENSIONS} nas)
-		set(CMAKE_ASM_YASM_FLAGS "${SRB2_ASM_FLAGS}" CACHE STRING "Flags used by the assembler during all build types.")
-		enable_language(ASM_YASM)
-	else()
-		set(CMAKE_ASM_NASM_SOURCE_FILE_EXTENSIONS ${CMAKE_ASM_NASM_SOURCE_FILE_EXTENSIONS} nas)
-		set(CMAKE_ASM_NASM_FLAGS "${SRB2_ASM_FLAGS}" CACHE STRING "Flags used by the assembler during all build types.")
-		enable_language(ASM_NASM)
-	endif()
-	set(SRB2_USEASM ON)
-	add_definitions(-DUSEASM)
-	set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} -msse3 -mfpmath=sse)
-else()
-	set(SRB2_USEASM OFF)
-	add_definitions(-DNONX86 -DNORUSEASM)
-endif()
 
 # Targets
 
