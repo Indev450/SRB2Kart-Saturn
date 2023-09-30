@@ -678,9 +678,9 @@ cleandep:
 
 pre-build:
 ifdef WINDOWSHELL
-	-..\comptime.bat .
+	-$(.)..\comptime.bat .
 else
-	-@../comptime.sh .
+	-$(.)../comptime.sh .
 endif
 
 clean:

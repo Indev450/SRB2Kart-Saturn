@@ -775,7 +775,6 @@ static void I_RegisterSignals (void)
 #endif
 }
 
-
 #ifdef NEWSIGNALHANDLER
 static void signal_handler_child(INT32 num)
 {
