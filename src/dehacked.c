@@ -461,7 +461,10 @@ static void readPlayer(MYFILE *f, INT32 num)
 					goto done;
 				PlayerMenu[num].status = IT_CALL;
 
-				for (i = 0; i < MAXLINELEN-3; i++)
+				// A friendly neighborhood alias for brevity's sake
+#define NOTE_SIZE sizeof(description[num].notes)
+
+				for (i = 0; i < (INT32)(MAXLINELEN-NOTE_SIZE-3); i++)
 				{
 					if (s[i] == '=')
 					{
@@ -471,8 +474,9 @@ static void readPlayer(MYFILE *f, INT32 num)
 				}
 				if (playertext)
 				{
-					strcpy(description[num].notes, playertext);
-					strcat(description[num].notes, myhashfgets(playertext, sizeof (description[num].notes), f));
+					strlcpy(description[num].notes, playertext, NOTE_SIZE);
+					strlcat(description[num].notes,
+						myhashfgets(playertext, NOTE_SIZE, f), NOTE_SIZE);
 				}
 				else
 					strcpy(description[num].notes, "");
@@ -481,7 +485,7 @@ static void readPlayer(MYFILE *f, INT32 num)
 				// It works down here, though.
 				{
 					INT32 numline = 0;
-					for (i = 0; i < MAXLINELEN-1; i++)
+					for (i = 0; (size_t)i < NOTE_SIZE-1; i++)
 					{
 						if (numline < 20 && description[num].notes[i] == '\n')
 							numline++;
@@ -492,6 +496,7 @@ static void readPlayer(MYFILE *f, INT32 num)
 				}
 				description[num].notes[strlen(description[num].notes)-1] = '\0';
 				description[num].notes[i] = '\0';
+#undef NOTE_SIZE
 				continue;
 			}
 
@@ -3181,24 +3186,10 @@ static void DEH_LoadDehackedFile(MYFILE *f, UINT16 wad)
 	dbg_line = -1; // start at -1 so the first line is 0.
 	while (!myfeof(f))
 	{
-		XBOXSTATIC char origpos[128];
-		INT32 size = 0;
-		char *traverse;
 
 		myfgets(s, MAXLINELEN, f);
 		if (s[0] == '\n' || s[0] == '#')
 			continue;
-
-		traverse = s;
-
-		while (traverse[0] != '\n')
-		{
-			traverse++;
-			size++;
-		}
-
-		strncpy(origpos, s, size);
-		origpos[size] = '\0';
 
 		if (NULL != (word = strtok(s, " "))) {
 			strupr(word);
