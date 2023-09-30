@@ -1313,6 +1313,11 @@ static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen)
 
 		texture = SDL_CreateTexture(renderer, sw_texture_format, SDL_TEXTUREACCESS_STREAMING, width, height);
 	}
+
+	if (graphics_started)
+	{
+		I_UpdateNoVsync();
+	}
 }
 
 //
