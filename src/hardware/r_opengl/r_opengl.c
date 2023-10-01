@@ -983,7 +983,7 @@ EXPORT boolean HWRAPI(LoadShaders) (void)
 #ifdef GL_SHADERS
 	GLuint gl_vertShader, gl_fragShader;
 	GLint i, result;
-	pglUseProgram = NULL;
+	
 	if (!pglUseProgram) return false;
 
 	gl_customvertexshaders[0] = NULL;
