@@ -3755,7 +3755,11 @@ static void HWR_DrawSpriteShadow(gr_vissprite_t *spr, GLPatch_t *gpatch, float t
 	FOutVector swallVerts[4];
 	FSurfaceInfo sSurf;
 	fixed_t floorheight, mobjfloor;
+	pslope_t *floorslope;
+	fixed_t slopez;
 	float offset = 0;
+	
+	R_GetShadowZ(spr->mobj, &floorslope);
 
 	mobjfloor = HWR_OpaqueFloorAtPos(
 		spr->mobj->x, spr->mobj->y,
@@ -3849,6 +3853,14 @@ static void HWR_DrawSpriteShadow(gr_vissprite_t *spr, GLPatch_t *gpatch, float t
 		swallVerts[0].z = spr->z1 + offset * gr_viewsin;
 		swallVerts[1].z = spr->z2 + offset * gr_viewsin;
 	}
+	
+	if (floorslope)
+		for (int i = 0; i < 4; i++)
+		{
+			slopez = P_GetZAt(floorslope, FLOAT_TO_FIXED(swallVerts[i].x), FLOAT_TO_FIXED(swallVerts[i].z));
+			swallVerts[i].y = FIXED_TO_FLOAT(slopez) + 0.05f;
+		}
+
 
 	if (spr->flip)
 	{
