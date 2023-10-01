@@ -426,7 +426,7 @@ void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *col
 	fade_color.rgba = (colormap != NULL) ? (UINT32)colormap->fadergba : GL_DEFAULTFOG;
 
 	// Crappy backup coloring if you can't do shaders
-	if (!(cv_grshaders.value && gr_shadersavailable))
+	if (!cv_grshaders.value || !gr_shadersavailable)
 	{
 		// be careful, this may get negative for high lightlevel values.
 		float tint_alpha, fade_alpha;
@@ -511,7 +511,11 @@ UINT8 HWR_FogBlockAlpha(INT32 light, extracolormap_t *colormap) // Let's see if 
 
 	realcolor.rgba = (colormap != NULL) ? colormap->rgba : GL_DEFAULTMIX;
 
-	if (!(cv_grshaders.value && gr_shadersavailable))
+	if (cv_grshaders.value && gr_shadersavailable)
+	{
+		surfcolor.s.alpha = (255 - light);
+	}
+	else
 	{
 		light = light - (255 - light);
 
@@ -526,13 +530,10 @@ UINT8 HWR_FogBlockAlpha(INT32 light, extracolormap_t *colormap) // Let's see if 
 		// at 255 brightness, alpha is between 0 and 127, at 0 brightness alpha will always be 255
 		surfcolor.s.alpha = (alpha*light) / (2*256) + 255-light;
 	}
-	else
-	{
-		surfcolor.s.alpha = (255 - light);
-	}
 
 	return surfcolor.s.alpha;
 }
+
 
 static FUINT HWR_CalcWallLight(FUINT lightnum, fixed_t v1x, fixed_t v1y, fixed_t v2x, fixed_t v2y)
 {
