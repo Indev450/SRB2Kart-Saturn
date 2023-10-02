@@ -258,7 +258,7 @@ void LUA_HUD_AddDrawPingNum(
 	INT32 y,
 	INT32 num,
 	INT32 flags,
-	UINT8 *colormap
+	const UINT8 *colormap
 )
 {
 	size_t i = AllocateDrawItem(list);

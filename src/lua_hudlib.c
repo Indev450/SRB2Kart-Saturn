@@ -655,8 +655,6 @@ static int libd_drawPingNum(lua_State *L)
 	list = (huddrawlist_h) lua_touserdata(L, -1);
 	lua_pop(L, 1);
 
-	V_DrawPingNum(x, y, flags, num, colormap);
-
 	if (LUA_HUD_IsDrawListValid(list))
 		LUA_HUD_AddDrawPingNum(list, x, y, num, flags, colormap);
 	else
