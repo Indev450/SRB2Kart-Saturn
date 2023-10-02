@@ -49,7 +49,7 @@
 #define MIX_CHANNELS 8
 #endif
 
-#if defined (_WIN32) && !defined (_WIN32_WCE) && !defined (_XBOX)
+#if defined (_WIN32) && !defined (_WIN32_WCE)
 #include <direct.h>
 #elif defined (__GNUC__)
 #include <unistd.h>
@@ -174,7 +174,7 @@ static SDL_bool canlooping = SDL_TRUE;
 
 #if SDL_MIXER_VERSION_ATLEAST(1,2,7)
 #define USE_RWOPS // ok, USE_RWOPS is in here
-#if defined (_WIN32_WCE) || defined (_XBOX) //|| defined(_WIN32) || defined(GP2X)
+#if defined (_WIN32_WCE) //|| defined(_WIN32) || defined(GP2X)
 #undef USE_RWOPS
 #endif
 #endif
@@ -1285,7 +1285,7 @@ void I_StartupSound(void)
 			snddev.bps = 16;
 			snddev.sample_rate = audio.freq;
 			snddev.numsfxs = NUMSFX;
-#if defined (_WIN32) && !defined (_XBOX)
+#ifdef _WIN32
 			snddev.cooplevel = 0x00000002;
 			snddev.hWnd = vid.WndParent;
 #endif
@@ -1740,7 +1740,7 @@ static void I_CleanupGME(void *userdata)
 static boolean I_StartGMESong(const char *musicname, boolean looping)
 {
 #ifdef HAVE_LIBGME
-	XBOXSTATIC char filename[9];
+	char filename[9];
 	void *data;
 	lumpnum_t lumpnum;
 	size_t lumplength;
@@ -1793,7 +1793,7 @@ static boolean I_StartGMESong(const char *musicname, boolean looping)
 boolean I_StartDigSong(const char *musicname, boolean looping)
 {
 #ifdef HAVE_MIXER
-	XBOXSTATIC char filename[9];
+	char filename[9];
 	void *data;
 	lumpnum_t lumpnum;
 	size_t lumplength;
@@ -1835,7 +1835,7 @@ boolean I_StartDigSong(const char *musicname, boolean looping)
 	{
 		size_t scan;
 		const char *dataum = data;
-		XBOXSTATIC char looplength[64];
+		char looplength[64];
 		UINT32 loopstart = 0;
 		UINT8 newcount = 0;
 

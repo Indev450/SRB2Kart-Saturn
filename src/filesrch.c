@@ -16,7 +16,7 @@
 #ifdef __GNUC__
 #include <dirent.h>
 #endif
-#if defined (_WIN32) && !defined (_XBOX)
+#ifdef _WIN32
 //#define WIN32_LEAN_AND_MEAN
 #define RPC_NO_WINDOWS_H
 #include <windows.h>
@@ -34,7 +34,7 @@
 #include "z_zone.h"
 #include "m_menu.h" // Addons_option_Onchange
 
-#if (defined (_WIN32) && !defined (_WIN32_WCE)) && defined (_MSC_VER) && !defined (_XBOX)
+#if (defined (_WIN32) && !defined (_WIN32_WCE)) && defined (_MSC_VER)
 
 #include <errno.h>
 #include <io.h>
@@ -342,38 +342,7 @@ UINT8 refreshdirmenu = 0;
 char *refreshdirname = NULL;
 
 
-#if defined (_XBOX) && defined (_MSC_VER)
-filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *wantedmd5sum,
-	boolean completepath, int maxsearchdepth)
-{
-//NONE?
-	startpath = filename = NULL;
-	wantedmd5sum = NULL;
-	maxsearchdepth = 0;
-	completepath = false;
-	return FS_NOTFOUND;
-}
-
-void closefilemenu(boolean validsize)
-{
-	(void)validsize;
-	return;
-}
-
-void searchfilemenu(char *tempname)
-{
-	(void)tempname;
-	return;
-}
-
-boolean preparefilemenu(boolean samedepth, boolean replayhut)
-{
-	(void)samedepth;
-	(void)replayhut;
-	return false;
-}
-
-#elif defined (_WIN32_WCE)
+#ifdef _WIN32_WCE
 filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *wantedmd5sum,
 	boolean completepath, int maxsearchdepth)
 {

@@ -621,10 +621,6 @@ ifdef DJGPPDOS
 all:	 pre-build $(BIN)/$(EXENAME)
 endif
 
-ifdef XBOX
-all:	 pre-build $(BIN)/$(BINNAME)
-endif
-
 ifdef PS3N
 all:	 pre-build $(BIN)/$(PKGNAME)
 endif
@@ -642,11 +638,9 @@ all:	 pre-build $(BIN)/$(BINNAME) post-build
 endif
 
 ifndef PSP
-ifndef XBOX
 ifdef MINGW
 ifndef SDL
 all:	 pre-build $(BIN)/$(EXENAME) dll
-endif
 endif
 endif
 
@@ -866,14 +860,6 @@ $(OBJDIR)/%.o: %.s
 
 $(OBJDIR)/SRB2.res: win32/Srb2win.rc win32/afxres.h win32/resource.h
 	$(WINDRES) -i $< -O rc $(WINDRESFLAGS) --include-dir=win32 -o $@ -O coff
-
-ifdef XBOX
-$(OBJDIR)/xboxhelp.o: $(INTERFACE)/SRB2XBOX/xboxhelp.c
-		$(CC) $(CFLAGS) $(WFLAGS) -c $< -o $@
-
-$(BIN)/$(BINNAME): $(BIN)/$(EXENAME)
-	$(CXBE) -OUT:"$@" -DUMPINFO:"$(BIN)/SRB2XBOX.cxbe"  -TITLE:"Sonic Robo Blast 2" $<
-endif
 
 ifdef NDS
 $(BIN)/$(EXENAME:.elf=.nds): $(BIN)/$(EXENAME:.elf=.arm9)

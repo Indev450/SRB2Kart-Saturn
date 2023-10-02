@@ -24,11 +24,7 @@
 #include <signal.h>
 #endif
 
-#ifdef _XBOX
-#include "SRB2XBOX/xboxhelp.h"
-#endif
-
-#if defined (_WIN32) && !defined (_XBOX)
+#ifdef _WIN32
 #define RPC_NO_WINDOWS_H
 #include <windows.h>
 #include "../doomtype.h"
@@ -57,7 +53,7 @@ typedef BOOL (WINAPI *p_SetProcessAffinityMask) (HANDLE, DWORD_PTR);
 #endif
 
 #include <stdio.h>
-#if defined (_WIN32) && !defined (_WIN32_WCE) && !defined (_XBOX)
+#if defined (_WIN32) && !defined (_WIN32_WCE)
 #include <conio.h>
 #endif
 
@@ -121,7 +117,7 @@ typedef BOOL (WINAPI *p_SetProcessAffinityMask) (HANDLE, DWORD_PTR);
 #include <wchar.h>
 #endif
 
-#if defined (_WIN32) && !defined (_WIN32_WCE) && !defined (_XBOX)
+#if defined (_WIN32) && !defined (_WIN32_WCE)
 #define HAVE_MUMBLE
 #define WINMUMBLE
 #elif defined (HAVE_SHM)
@@ -176,18 +172,6 @@ typedef BOOL (WINAPI *p_SetProcessAffinityMask) (HANDLE, DWORD_PTR);
 #define DEFAULTSEARCHPATH1 "/usr/local/games"
 #define DEFAULTSEARCHPATH2 "/usr/games"
 #define DEFAULTSEARCHPATH3 "/usr/local"
-#elif defined (_XBOX)
-#define NOCWD
-#ifdef __GNUC__
-#include <openxdk/debug.h>
-#endif
-#define DEFAULTWADLOCATION1 "c:\\srb2kart"
-#define DEFAULTWADLOCATION2 "d:\\srb2kart"
-#define DEFAULTWADLOCATION3 "e:\\srb2kart"
-#define DEFAULTWADLOCATION4 "f:\\srb2kart"
-#define DEFAULTWADLOCATION5 "g:\\srb2kart"
-#define DEFAULTWADLOCATION6 "h:\\srb2kart"
-#define DEFAULTWADLOCATION7 "i:\\srb2kart"
 #elif defined (_WIN32_WCE)
 #define NOCWD
 #define NOHOME
@@ -571,7 +555,7 @@ void I_GetConsoleEvents(void)
 	(void)d;
 }
 
-#elif defined (_WIN32) && !(defined (_XBOX) || defined (_WIN32_WCE))
+#elif defined (_WIN32) && !defined (_WIN32_WCE)
 static BOOL I_ReadyConsole(HANDLE ci)
 {
 	DWORD gotinput;
@@ -758,7 +742,7 @@ void I_StartupKeyboard (void)
 void I_OutputMsg(const char *fmt, ...)
 {
 	size_t len;
-	XBOXSTATIC char txt[8192];
+	char txt[8192];
 	va_list  argptr;
 
 	va_start(argptr,fmt);
@@ -770,7 +754,7 @@ void I_OutputMsg(const char *fmt, ...)
 	DEFAULTFONTBGR, DEFAULTFONTBGG, DEFAULTFONTBGB, DEFAULTFONTBGA, txt);
 #endif
 
-#if defined (_WIN32) && !defined (_XBOX) && defined (_MSC_VER)
+#if defined (_WIN32) && defined (_MSC_VER)
 	OutputDebugStringA(txt);
 #endif
 
@@ -785,7 +769,7 @@ void I_OutputMsg(const char *fmt, ...)
 	}
 #endif
 
-#if defined (_WIN32) && !defined (_XBOX) && !defined(_WIN32_WCE)
+#if defined (_WIN32) && !defined(_WIN32_WCE)
 #ifdef DEBUGFILE
 	if (debugfile != stderr)
 #endif
@@ -2413,7 +2397,7 @@ static void I_ShutdownMouse2(void)
 	if (fdmouse2 != -1) close(fdmouse2);
 	mouse2_started = 0;
 }
-#elif defined (_WIN32) && !defined (_XBOX)
+#elif defined (_WIN32)
 
 static HANDLE mouse2filehandle = INVALID_HANDLE_VALUE;
 
@@ -2611,7 +2595,7 @@ void I_StartupMouse2(void)
 	}
 	mouse2_started = 1;
 	I_AddExitFunc(I_ShutdownMouse2);
-#elif defined (_WIN32) && !defined (_XBOX)
+#elif defined (_WIN32)
 	DCB dcb;
 
 	if (mouse2filehandle != INVALID_HANDLE_VALUE)
@@ -2738,7 +2722,7 @@ ticcmd_t *I_BaseTiccmd4(void)
 	return &emptycmd4;
 }
 
-#if (defined (_WIN32) && !defined (_WIN32_WCE)) && !defined (_XBOX)
+#if defined (_WIN32) && !defined (_WIN32_WCE)
 static HMODULE winmm = NULL;
 static DWORD starttickcount = 0; // hack for win2k time bug
 static p_timeGetTime pfntimeGetTime = NULL;
@@ -2833,7 +2817,7 @@ tic_t I_GetTime (void)
 //
 void I_StartupTimer(void)
 {
-#if (defined (_WIN32) && !defined (_WIN32_WCE)) && !defined (_XBOX)
+#if defined (_WIN32) && !defined (_WIN32_WCE)
 	// for win2k time bug
 	if (M_CheckParm("-gettickcount"))
 	{
@@ -2859,26 +2843,14 @@ void I_StartupTimer(void)
 
 void I_Sleep(void)
 {
-#if !(defined (_XBOX))
 	if (cv_sleep.value > 0)
 		SDL_Delay(cv_sleep.value);
-#endif
 }
 
 INT32 I_StartupSystem(void)
 {
 	SDL_version SDLcompiled;
 	const SDL_version *SDLlinked;
-#ifdef _XBOX
-#ifdef __GNUC__
-	char DP[] ="      Sonic Robo Blast 2!\n";
-	debugPrint(DP);
-#endif
-	unlink("e:/Games/SRB2/stdout.txt");
-	freopen("e:/Games/SRB2/stdout.txt", "w+", stdout);
-	unlink("e:/Games/SRB2/stderr.txt");
-	freopen("e:/Games/SRB2/stderr.txt", "w+", stderr);
-#endif
 	SDL_VERSION(&SDLcompiled)
 	SDLlinked = SDL_Linked_Version();
 	I_StartupConsole();
@@ -2978,7 +2950,7 @@ static boolean shutdowning = false;
 void I_Error(const char *error, ...)
 {
 	va_list argptr;
-#if (defined (MAC_ALERT) || defined (_WIN32) || (defined (_WIN32_WCE) && !defined (__GNUC__))) && !defined (_XBOX)
+#if defined (MAC_ALERT) || defined (_WIN32) || (defined (_WIN32_WCE) && !defined (__GNUC__))
 	char buffer[8192];
 #endif
 
@@ -3016,7 +2988,7 @@ void I_Error(const char *error, ...)
 			va_end(argptr);
 			// 2004-03-03 AJR Since the Mac user is most likely double clicking to run the game, give them a panel.
 			MacShowAlert("Recursive Error", buffer, "Quit", NULL, NULL);
-#elif (defined (_WIN32) || (defined (_WIN32_WCE)) && !defined (__GNUC__)) && !defined (_XBOX)
+#elif defined (_WIN32) || (defined (_WIN32_WCE)) && !defined (__GNUC__)
 			va_start(argptr,error);
 			vsprintf(buffer, error, argptr);
 			va_end(argptr);
@@ -3191,7 +3163,7 @@ void I_GetDiskFreeSpace(INT64 *freespace)
 	}
 	*freespace = stfs.f_bavail * stfs.f_bsize;
 #endif
-#elif (defined (_WIN32) && !defined (_WIN32_WCE)) && !defined (_XBOX)
+#elif defined (_WIN32) && !defined (_WIN32_WCE)
 	static p_GetDiskFreeSpaceExA pfnGetDiskFreeSpaceEx = NULL;
 	static boolean testwin95 = false;
 	ULARGE_INTEGER usedbytes, lfreespace;
@@ -3228,7 +3200,7 @@ char *I_GetUserName(void)
 #elif defined (PSP)
 	static char username[MAXPLAYERNAME] = "PSPUSER";
 	return username;
-#elif !(defined (_WIN32_WCE) || defined (_XBOX))
+#elif !defined (_WIN32_WCE)
 	static char username[MAXPLAYERNAME];
 	char *p;
 #ifdef _WIN32
@@ -3269,7 +3241,7 @@ INT32 I_mkdir(const char *dirname, INT32 unixright)
 //[segabor]
 #if defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON) || defined (__CYGWIN__) || defined (__OS2__)
 	return mkdir(dirname, unixright);
-#elif (defined (_WIN32) || (defined (_WIN32_WCE) && !defined (__GNUC__))) && !defined (_XBOX)
+#elif defined (_WIN32) || (defined (_WIN32_WCE) && !defined (__GNUC__))
 	UNREFERENCED_PARAMETER(unixright); /// \todo should implement ntright under nt...
 	return CreateDirectoryA(dirname, NULL);
 #else
@@ -3513,7 +3485,7 @@ const char *I_LocateWad(void)
 	if (waddir)
 	{
 		// change to the directory where we found srb2.srb
-#if (defined (_WIN32) && !defined (_WIN32_WCE)) && !defined (_XBOX)
+#if defined (_WIN32) && !defined (_WIN32_WCE)
 		SetCurrentDirectoryA(waddir);
 #elif !defined (_WIN32_WCE) && !defined (_PS3)
 		if (chdir(waddir) == -1)
@@ -3618,7 +3590,7 @@ UINT32 I_GetFreeMem(UINT32 *total)
 	if (total)
 		*total = totalKBytes << 10;
 	return freeKBytes << 10;
-#elif (defined (_WIN32) || (defined (_WIN32_WCE) && !defined (__GNUC__))) && !defined (_XBOX)
+#elif defined (_WIN32) || (defined (_WIN32_WCE) && !defined (__GNUC__))
 	MEMORYSTATUS info;
 
 	info.dwLength = sizeof (MEMORYSTATUS);
@@ -3646,7 +3618,7 @@ UINT32 I_GetFreeMem(UINT32 *total)
 
 const CPUInfoFlags *I_CPUInfo(void)
 {
-#if (defined (_WIN32) && !defined (_WIN32_WCE)) && !defined (_XBOX)
+#if defined (_WIN32) && !defined (_WIN32_WCE)
 	static CPUInfoFlags WIN_CPUInfo;
 	SYSTEM_INFO SI;
 	p_IsProcessorFeaturePresent pfnCPUID = (p_IsProcessorFeaturePresent)GetProcAddress(GetModuleHandleA("kernel32.dll"), "IsProcessorFeaturePresent");
@@ -3707,7 +3679,7 @@ const CPUInfoFlags *I_CPUInfo(void)
 #endif
 }
 
-#if (defined (_WIN32) && !defined (_WIN32_WCE)) && !defined (_XBOX)
+#if defined (_WIN32) && !defined (_WIN32_WCE)
 static void CPUAffinity_OnChange(void);
 static consvar_t cv_cpuaffinity = {"cpuaffinity", "-1", CV_SAVE | CV_CALL, NULL, CPUAffinity_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
@@ -3750,7 +3722,7 @@ static void CPUAffinity_OnChange(void)
 
 void I_RegisterSysCommands(void)
 {
-#if (defined (_WIN32) && !defined (_WIN32_WCE)) && !defined (_XBOX)
+#if defined (_WIN32) && !defined (_WIN32_WCE)
 	GetAffinityFuncs();
 	CV_RegisterVar(&cv_cpuaffinity);
 #endif

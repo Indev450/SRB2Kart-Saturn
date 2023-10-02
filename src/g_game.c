@@ -397,9 +397,6 @@ static CV_PossibleValue_t joyaxis_cons_t[] = {{0, "None"},
 #endif
 #else
 {1, "Left X"}, {2, "Left Y"}, {-1, "Left X-"}, {-2, "Left Y-"},
-#ifdef _XBOX
-{3, "Alt X-Axis"}, {4, "Alt Y-Axis"}, {-3, "Alt X-Axis-"}, {-4, "Alt Y-Axis-"},
-#else
 #if JOYAXISSET > 1
 {3, "Right X"}, {4, "Right Y"}, {-3, "Right X-"}, {-4, "Right Y-"},
 #endif
@@ -408,7 +405,6 @@ static CV_PossibleValue_t joyaxis_cons_t[] = {{0, "None"},
 #endif
 #if JOYAXISSET > 3
 {7, "U-Axis"}, {8, "V-Axis"}, {-7, "U-Axis-"}, {-8, "V-Axis-"},
-#endif
 #endif
 #endif
  {0, NULL}};

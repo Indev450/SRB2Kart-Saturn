@@ -1893,7 +1893,7 @@ static void readframe(MYFILE *f, INT32 num)
 			{
 				size_t z;
 				boolean found = false;
-				XBOXSTATIC char actiontocompare[32];
+				char actiontocompare[32];
 
 				memset(actiontocompare, 0x00, sizeof(actiontocompare));
 				strlcpy(actiontocompare, word2, sizeof (actiontocompare));
@@ -3164,9 +3164,7 @@ static void DEH_LoadDehackedFile(MYFILE *f, UINT16 wad)
 	char *word2;
 	INT32 i;
 	// do a copy of this for cross references probleme
-	//XBOXSTATIC actionf_t saveactions[NUMSTATES];
-	//XBOXSTATIC const char *savesprnames[NUMSPRITES];
-	XBOXSTATIC const char *savesfxnames[NUMSFX];
+	const char *savesfxnames[NUMSFX];
 
 	if (!deh_loaded)
 		initfreeslots();

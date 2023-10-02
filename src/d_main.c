@@ -30,15 +30,13 @@ int	snprintf(char *str, size_t n, const char *fmt, ...);
 //int	vsnprintf(char *str, size_t n, const char *fmt, va_list ap);
 #endif
 
-#if (defined (_WIN32) && !defined (_WIN32_WCE)) && !defined (_XBOX)
+#if defined (_WIN32) && !defined (_WIN32_WCE)
 #include <direct.h>
 #include <malloc.h>
 #endif
 
 #if !defined (UNDER_CE)
 #include <time.h>
-#elif defined (_XBOX)
-#define NO_TIME
 #endif
 
 #include "doomdef.h"
@@ -86,10 +84,6 @@ int	snprintf(char *str, size_t n, const char *fmt, ...);
 #include "config.h.in"
 #endif
 
-#ifdef _XBOX
-#include "sdl12/SRB2XBOX/xboxhelp.h"
-#endif
-
 #ifdef HWRENDER
 #include "hardware/hw_main.h" // 3D View Rendering
 #endif
@@ -134,19 +128,11 @@ INT32 postimgparam[MAXSPLITSCREENPLAYERS];
 // These variables are only true if
 // whether the respective sound system is disabled
 // or they're init'ed, but the player just toggled them
-#ifdef _XBOX
-#ifndef NO_MIDI
-boolean midi_disabled = true;
-#endif
-boolean sound_disabled = true;
-boolean digital_disabled = true;
-#else
 #ifndef NO_MIDI
 boolean midi_disabled = false;
 #endif
 boolean sound_disabled = false;
 boolean digital_disabled = false;
-#endif
 
 #ifdef DEBUGFILE
 INT32 debugload = 0;

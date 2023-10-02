@@ -8698,7 +8698,7 @@ void P_PlayerThink(player_t *player)
 							&& !P_IsLocalPlayer(player)) // P_IsMachineLocalPlayer for DRRR
 						{
 							// Send kick
-							XBOXSTATIC UINT8 buf[2];
+							UINT8 buf[2];
 
 							buf[0] = n;
 							buf[1] = KICK_MSG_GRIEF;
