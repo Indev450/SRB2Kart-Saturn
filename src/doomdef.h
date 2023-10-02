@@ -431,7 +431,7 @@ enum {
 };
 
 // Name of local directory for config files and savegames
-#if !defined(_WIN32_WCE) && !defined(GP2X) && !defined(_WII)
+#if !defined(_WIN32_WCE) && !defined(GP2X)
 #if (((defined (__unix__) && !defined (MSDOS)) || defined (UNIXCOMMON)) && !defined (__CYGWIN__)) && !defined (__APPLE__)
 #define DEFAULTDIR ".srb2kart"
 #else
@@ -617,7 +617,7 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 ///	    	Most modifications should probably enable this.
 //#define SAVEGAME_OTHERVERSIONS
 
-#if !defined (_NDS) && !defined (_PSP)
+#if !defined (_NDS)
 ///	Allow the use of the SOC RESETINFO command.
 ///	\note	Builds that are tight on memory should disable this.
 ///	    	This stops the game from storing backups of the states, sprites, and mobjinfo tables.

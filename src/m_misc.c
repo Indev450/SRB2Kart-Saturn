@@ -65,7 +65,7 @@ typedef off_t off64_t;
 #define PRIdS "u"
 #elif defined(_WIN32) && !defined(__MINGW64__)
 #define PRIdS "Iu"
-#elif defined (_PSP) || defined (DJGPP) || defined (_WII) || defined (_NDS)
+#elif defined (DJGPP) || defined (_NDS)
 #define PRIdS "u"
 #else
 #define PRIdS "zu"
@@ -74,10 +74,8 @@ typedef off_t off64_t;
 #ifdef HAVE_PNG
 
 #ifndef _MSC_VER
-#ifndef _WII
 #ifndef _LARGEFILE64_SOURCE
 #define _LARGEFILE64_SOURCE
-#endif
 #endif
 #endif
 

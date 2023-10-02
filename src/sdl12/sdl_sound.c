@@ -85,7 +85,7 @@
 //  mixing buffer, and the samplerate of the raw data.
 
 // Needed for calling the actual sound output.
-#if defined (_WIN32_WCE) || defined (PSP) || defined(GP2X)
+#if defined (_WIN32_WCE) || defined(GP2X)
 #define NUM_CHANNELS            MIX_CHANNELS
 #else
 #define NUM_CHANNELS            MIX_CHANNELS*4
@@ -93,7 +93,7 @@
 
 #define INDEXOFSFX(x) ((sfxinfo_t *)x - S_sfx)
 
-#if defined (_WIN32_WCE) || defined (PSP)
+#if defined (_WIN32_WCE)
 static Uint16 samplecount = 512; //Alam: .5KB samplecount at 11025hz is 46.439909297052154195011337868481ms of buffer
 #elif defined(GP2X)
 static Uint16 samplecount = 128;
@@ -1226,13 +1226,7 @@ void I_StartupSound(void)
 		audio.samples /= 2;
 	}
 
-#if defined (_PSP)  && defined (HAVE_MIXER) // Bug in PSP's SDL_OpenAudio, can not open twice
-	I_SetChannels();
-	sound_started = true;
-	Snd_Mutex = SDL_CreateMutex();
-#else
 	if (nosound)
-#endif
 		return;
 
 #ifdef HW3SOUND
@@ -1503,9 +1497,7 @@ void I_InitMusic(void)
 	I_OutputMsg("Compiled for SDL_mixer version: %d.%d.%d\n",
 	            MIXcompiled.major, MIXcompiled.minor, MIXcompiled.patch);
 #ifdef MIXER_POS
-#ifndef _WII
 	if (MIXlinked->major == 1 && MIXlinked->minor == 2 && MIXlinked->patch < 7)
-#endif
 		canlooping = SDL_FALSE;
 #endif
 #ifdef USE_RWOPS
@@ -1514,7 +1506,7 @@ void I_InitMusic(void)
 #endif
 	I_OutputMsg("Linked with SDL_mixer version: %d.%d.%d\n",
 	            MIXlinked->major, MIXlinked->minor, MIXlinked->patch);
-#if !(defined (PSP) || defined(GP2X) || defined (WII))
+#if !defined(GP2X)
 	if (audio.freq < 44100 && !M_CheckParm ("-freq")) //I want atleast 44Khz
 	{
 		audio.samples = (Uint16)(audio.samples*(INT32)(44100/audio.freq));

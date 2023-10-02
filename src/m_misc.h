@@ -40,11 +40,7 @@ void M_SaveFrame(void);
 void M_StopMovie(void);
 
 // the file where game vars and settings are saved
-#ifdef PSP
-#define CONFIGFILENAME "srb2psp.cfg"
-#else
 #define CONFIGFILENAME "kartconfig.cfg"
-#endif
 
 INT32 M_MapNumber(char first, char second);
 

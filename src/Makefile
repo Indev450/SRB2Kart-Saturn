@@ -148,10 +148,6 @@ D_FILES=$(D_DIR)/srb2.srb \
 
 PKG_CONFIG?=pkg-config
 
-ifdef WIILINUX
-LINUX=1
-endif
-
 ifdef PANDORA
 LINUX=1
 endif
@@ -203,24 +199,9 @@ PNG_CFLAGS?=
 PNG_LDFLAGS?=-lpng
 endif
 
-ifdef WIILINUX
-NONX86=1
-NOTERMIOS=1
-NOHW=1
-CFLAGS+=-DWMINPUT
-NOTERMIOS=1
-NOPOSTPROCESSING=1
-endif
-
 ifdef PANDORA
 NONX86=1
 NOHW=1
-endif
-
-ifdef WII
-NONX86=1
-NOHW=1
-NOPOSTPROCESSING=1
 endif
 
 ifdef DJGPPDOS
@@ -616,19 +597,10 @@ ifdef DJGPPDOS
 all:	 pre-build $(BIN)/$(EXENAME)
 endif
 
-ifdef WII
-all:	pre-build $(BIN)/$(DOLNAME)
-endif
-
 ifdef PANDORA
 all:	pre-build $(BIN)/$(PNDNAME)
 endif
 
-ifdef PSP
-all:	 pre-build $(BIN)/$(BINNAME) post-build
-endif
-
-ifndef PSP
 ifdef MINGW
 ifndef SDL
 all:	 pre-build $(BIN)/$(EXENAME) dll
@@ -637,7 +609,6 @@ endif
 
 ifdef SDL
 all:	 pre-build $(BIN)/$(EXENAME)
-endif
 endif
 
 ifdef NDS
@@ -691,11 +662,9 @@ endif
 
 # mac os x lsdlsrb2 does not like objcopy
 ifndef MACOSX
-ifndef PSP
 	$(OBJCOPY) $(BIN)/$(EXENAME) $(BIN)/$(DBGNAME)
 	$(OBJCOPY) --strip-debug $(BIN)/$(EXENAME)
 	-$(OBJCOPY) --add-gnu-debuglink=$(BIN)/$(DBGNAME) $(BIN)/$(EXENAME)
-endif
 endif
 ifndef NOUPX
 	-$(UPX) $(UPX_OPTS) $(BIN)/$(EXENAME)
