@@ -52,19 +52,6 @@ typedef long ssize_t;
 		#define PDWORD_PTR PDWORD
 	#endif
 #endif
-#elif defined (_arch_dreamcast) // KOS Dreamcast
-#include <arch/types.h>
-
-#define UINT8 unsigned char
-#define SINT8 signed char
-
-#define UINT16 uint16
-#define INT16 int16
-
-#define INT32 int
-#define UINT32 unsigned int
-#define INT64  int64
-#define UINT64 uint64
 #elif defined (__DJGPP__)
 #define UINT8 unsigned char
 #define SINT8 signed char
@@ -160,7 +147,7 @@ char *strcasestr(const char *in, const char *what);
 	#endif
 #endif //macintosh
 
-#if defined (PC_DOS) || defined (_WIN32) || defined (_WII) || defined (_PSP) || defined (_arch_dreamcast) || defined (__HAIKU__) || defined(_NDS)  || defined(_PS3)
+#if defined (PC_DOS) || defined (_WIN32) || defined (_WII) || defined (_PSP) || defined (__HAIKU__) || defined(_NDS)  || defined(_PS3)
 #define HAVE_DOSSTR_FUNCS
 #endif
 

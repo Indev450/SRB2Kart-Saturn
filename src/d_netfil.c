@@ -1142,7 +1142,7 @@ size_t nameonlylength(const char *s)
 
 filestatus_t checkfilemd5(char *filename, const UINT8 *wantedmd5sum)
 {
-#if defined (NOMD5) || defined (_arch_dreamcast)
+#if defined (NOMD5)
 	(void)wantedmd5sum;
 	(void)filename;
 #else
@@ -1194,11 +1194,7 @@ filestatus_t findfile(char *filename, const UINT8 *wantedmd5sum, boolean complet
 	// if not found at all, just move on without doing anything
 
 	// finally check "." directory
-#ifdef _arch_dreamcast
-	homecheck = filesearch(filename, "/cd", wantedmd5sum, completepath, 10);
-#else
 	homecheck = filesearch(filename, ".", wantedmd5sum, completepath, 10);
-#endif
 
 	if (homecheck != FS_NOTFOUND) // if not found this time, fall back on the below return statement
 		return homecheck; // otherwise return the result we got

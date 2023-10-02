@@ -1416,9 +1416,7 @@ void CONS_Printf(const char *fmt, ...)
 	va_end(argptr);
 
 	// echo console prints to log file
-#ifndef _arch_dreamcast
 	DEBFILE(txt);
-#endif
 
 	if (!con_started)
 	{

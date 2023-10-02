@@ -69,7 +69,7 @@ static void AmigaType_OnChange(void);
 #define SURROUND
 #endif
 
-#if defined (_WIN32_WCE) || defined (DC) || defined(GP2X)
+#if defined (_WIN32_WCE) || defined(GP2X)
 consvar_t cv_samplerate = {"samplerate", "11025", 0, CV_Unsigned, NULL, 11025, NULL, NULL, 0, 0, NULL}; //Alam: For easy hacking?
 #elif defined(_PSP) || defined(_WINDOWS)
 consvar_t cv_samplerate = {"samplerate", "44100", 0, CV_Unsigned, NULL, 44100, NULL, NULL, 0, 0, NULL}; //Alam: For easy hacking?
@@ -92,7 +92,7 @@ consvar_t cv_digmusicvolume = {"digmusicvolume", "18", CV_SAVE, soundvolume_cons
 consvar_t cv_midimusicvolume = {"midimusicvolume", "18", CV_SAVE, soundvolume_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 #endif
 // number of channels available
-#if defined (_WIN32_WCE) || defined (DC) || defined (PSP) || defined(GP2X)
+#if defined (_WIN32_WCE) || defined (PSP) || defined(GP2X)
 consvar_t cv_numChannels = {"snd_channels", "8", CV_SAVE|CV_CALL, CV_Unsigned, SetChannelsNum, 0, NULL, NULL, 0, 0, NULL};
 #else
 consvar_t cv_numChannels = {"snd_channels", "64", CV_SAVE|CV_CALL, CV_Unsigned, SetChannelsNum, 0, NULL, NULL, 0, 0, NULL};
@@ -1737,7 +1737,7 @@ void S_ChangeMusicEx(const char *mmusic, UINT16 mflags, boolean looping, UINT32 
 {
 	char newmusic[7];
 
-#if defined (DC) || defined (_WIN32_WCE) || defined (PSP) || defined(GP2X)
+#if defined (_WIN32_WCE) || defined (PSP) || defined(GP2X)
 	S_ClearSfx();
 #endif
 

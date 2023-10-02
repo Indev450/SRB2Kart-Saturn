@@ -35,11 +35,6 @@
 #pragma warning(default : 4214 4244)
 #endif
 
-#if SDL_VERSION_ATLEAST(1,2,9) && defined (_arch_dreamcast)
-#define HAVE_DCSDL
-#include "SDL_dreamcast.h"
-#endif
-
 #if SDL_VERSION_ATLEAST(1,2,9) && defined (GP2X)
 #define HAVE_GP2XSDL
 #include "SDL_gp2x.h"
@@ -59,7 +54,7 @@
 
 #ifdef HAVE_IMAGE
 #include "SDL_image.h"
-#elseif !(defined (DC) || defined (_WIN32_WCE) || defined (PSP) || defined(GP2X))
+#elseif !(defined (_WIN32_WCE) || defined (PSP) || defined(GP2X))
 #define LOAD_XPM //I want XPM!
 #include "IMG_xpm.c" //Alam: I don't want to add SDL_Image.dll/so
 #define HAVE_IMAGE //I have SDL_Image, sortof
@@ -73,16 +68,6 @@
 
 #if defined (_WIN32) && !defined (_XBOX)
 #include "SDL_syswm.h"
-#endif
-
-#ifdef _arch_dreamcast
-#include <conio/conio.h>
-#include <dc/maple.h>
-#include <dc/maple/vmu.h>
-//#include "SRB2DC/VMU.xbm"
-//#include <dc/pvr.h>
-//#define malloc pvr_mem_malloc
-//#define free pvr_mem_free
 #endif
 
 #if defined (_XBOX) && defined (__GNUC__)
@@ -117,7 +102,7 @@
 #endif
 
 // maximum number of windowed modes (see windowedModes[][])
-#if defined (_WIN32_WCE) || defined (DC) || defined (PSP) || defined(GP2X)
+#if defined (_WIN32_WCE) || defined (PSP) || defined(GP2X)
 #define MAXWINMODES (1)
 #elif defined (WII)
 #define MAXWINMODES (8)
@@ -140,7 +125,7 @@ rendermode_t rendermode=render_soft;
 boolean highcolor = false;
 
 // synchronize page flipping with screen refresh
-#if defined(DC) || (defined(GP2X) && !defined(HAVE_GP2XSDL))
+#if defined(GP2X) && !defined(HAVE_GP2XSDL)
 consvar_t cv_vidwait = {"vid_wait", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 #else
 consvar_t cv_vidwait = {"vid_wait", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -167,11 +152,7 @@ static      SDL_Surface *bufSurface = NULL;
 static      SDL_Surface *icoSurface = NULL;
 static      SDL_Color    localPalette[256];
 static      SDL_Rect   **modeList = NULL;
-#ifdef DC
-static       Uint8       BitsPerPixel = 15;
-#else
 static       Uint8       BitsPerPixel = 16;
-#endif
 static       Uint16      realwidth = BASEVIDWIDTH;
 static       Uint16      realheight = BASEVIDHEIGHT;
 #ifdef _WIN32_WCE
@@ -186,7 +167,7 @@ static const Uint32      surfaceFlagsF = SDL_HWPALETTE|SDL_FULLSCREEN;
 #endif
 static       SDL_bool    mousegrabok = SDL_TRUE;
 #define HalfWarpMouse(x,y) SDL_WarpMouse((Uint16)(x/2),(Uint16)(y/2))
-#if defined (_WIN32_WCE) || defined (DC) || defined (PSP) || defined(GP2X)
+#if defined (_WIN32_WCE) || defined (PSP) || defined(GP2X)
 static       SDL_bool    videoblitok = SDL_TRUE;
 #else
 static       SDL_bool    videoblitok = SDL_FALSE;
@@ -196,7 +177,7 @@ static       SDL_bool    exposevideo = SDL_FALSE;
 // windowed video modes from which to choose from.
 static INT32 windowedModes[MAXWINMODES][2] =
 {
-#if !(defined (_WIN32_WCE) || defined (DC) || defined (PSP) || defined (GP2X))
+#if !(defined (_WIN32_WCE) || defined (PSP) || defined (GP2X))
 #ifndef WII
 #ifndef _PS3
 	{1920,1200}, // 1.60,6.00
@@ -240,11 +221,6 @@ static void SDLSetMode(INT32 width, INT32 height, INT32 bpp, Uint32 flags)
 #endif
 #ifdef _WII
 	bpp = 16; // 8-bit mode poo
-#endif
-#ifdef DC
-	if (bpp < 15)
-		bpp = 15;
-	height = 240;
 #endif
 #ifdef PSP
 	bpp = 16;
@@ -491,7 +467,6 @@ static INT32 SDLatekey(SDLKey sym)
 			rc = KEY_PLUSPAD;
 			break;
 
-#ifndef _arch_dreamcast
 		case SDLK_LSUPER:
 #ifdef HAVE_SDLMETAKEYS
 		case SDLK_LMETA:
@@ -508,7 +483,6 @@ static INT32 SDLatekey(SDLKey sym)
 		case SDLK_MENU:
 			rc = KEY_MENU;
 			break;
-#endif
 
 		default:
 			if (sym >= SDLK_SPACE && sym <= SDLK_DELETE)
@@ -653,7 +627,7 @@ static void VID_Command_Info_f (void)
 
 static void VID_Command_ModeList_f(void)
 {
-#if !defined (DC) && !defined (_WIN32_WCE) && !defined (_PSP) &&  !defined(GP2X)
+#if !defined (_WIN32_WCE) && !defined (_PSP) &&  !defined(GP2X)
 	INT32 i;
 
 	modeList = SDL_ListModes(NULL, surfaceFlagsF|SDL_HWSURFACE); //Alam: At least hardware surface
@@ -944,11 +918,8 @@ static inline void SDLJoyRemap(event_t *event)
 
 static INT32 SDLJoyAxis(const Sint16 axis, evtype_t which)
 {
-#ifdef _arch_dreamcast // -128 to 127 SDL for DC have give us a smaller range
-	INT32 raxis = axis*8;
-#else // -32768 to 32767
+	// -32768 to 32767
 	INT32 raxis = axis/32;
-#endif
 	if (which == ev_joystick)
 	{
 		if (Joystick.bGamepadStyle)
@@ -1285,7 +1256,7 @@ static inline boolean I_SkipFrame(void)
 
 	skip = !skip;
 
-#if 0 //(defined (GP2X) || defined (PSP) || defined (_arch_dreamcast))
+#if 0 //(defined (GP2X) || defined (PSP))
 	return skip;
 #endif
 
@@ -1976,9 +1947,7 @@ void I_ShutdownGraphics(void)
 #endif
 	graphics_started = false;
 	CONS_Printf("%s", M_GetText("shut down\n"));
-#ifndef _arch_dreamcast
 	SDL_QuitSubSystem(SDL_INIT_VIDEO);
-#endif
 	framebuffer = SDL_FALSE;
 }
 #endif
