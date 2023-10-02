@@ -46,7 +46,7 @@ typedef struct drawitem_s {
 	INT32 flags;
 	UINT16 basecolor;
 	UINT16 outlinecolor;
-	UINT8 *colormap;
+	const UINT8 *colormap;
 	UINT8 *basecolormap;
 	UINT8 *outlinecolormap;
 	fixed_t sx;
