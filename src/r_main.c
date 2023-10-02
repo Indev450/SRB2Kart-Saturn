@@ -2001,10 +2001,6 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_grusecustomshaders);
 	CV_RegisterVar(&cv_grpaletteshader);
 	CV_RegisterVar(&cv_grflashpal);
-	CV_RegisterVar(&cv_grrenderdistance);
-	CV_RegisterVar(&cv_grportals);
-	CV_RegisterVar(&cv_secbright);
-	CV_RegisterVar(&cv_grfiltermode);
 #endif
 
 #ifdef HWRENDER
