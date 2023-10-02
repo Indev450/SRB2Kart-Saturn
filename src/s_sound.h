@@ -56,9 +56,6 @@ extern consvar_t cv_music_resync_powerups_only;
 
 extern CV_PossibleValue_t soundvolume_cons_t[];
 
-extern consvar_t play_mode;
-#endif
-
 typedef enum
 {
 	SF_TOTALLYSINGLE =  1, // Only play one of these sounds at a time...GLOBALLY
