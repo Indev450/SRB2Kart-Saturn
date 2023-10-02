@@ -54,22 +54,7 @@ extern consvar_t cv_amigatype;
 extern consvar_t cv_music_resync_threshold;
 extern consvar_t cv_music_resync_powerups_only;
 
-#ifdef SNDSERV
-extern consvar_t sndserver_cmd, sndserver_arg;
-#endif
-#ifdef MUSSERV
-extern consvar_t musserver_cmd, musserver_arg;
-#endif
-
 extern CV_PossibleValue_t soundvolume_cons_t[];
-
-#if defined (macintosh) && !defined (HAVE_SDL)
-typedef enum
-{
-	music_normal,
-	playlist_random,
-	playlist_normal
-} playmode_t;
 
 extern consvar_t play_mode;
 #endif
