@@ -640,6 +640,8 @@ static int libd_drawPingNum(lua_State *L)
 {
 	INT32 x, y, flags, num;
 	const UINT8 *colormap = NULL;
+	huddrawlist_h list;
+
 	HUDONLY
 	x = luaL_checkinteger(L, 1);
 	y = luaL_checkinteger(L, 2);
@@ -649,7 +651,15 @@ static int libd_drawPingNum(lua_State *L)
 	if (!lua_isnoneornil(L, 5))
 		colormap = *((UINT8 **)luaL_checkudata(L, 5, META_COLORMAP));
 
-	V_DrawPingNum(x, y, flags, num, colormap);
+	lua_getfield(L, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
+	list = (huddrawlist_h) lua_touserdata(L, -1);
+	lua_pop(L, 1);
+
+	if (LUA_HUD_IsDrawListValid(list))
+		LUA_HUD_AddDrawPingNum(list, x, y, num, flags, colormap);
+	else
+		V_DrawPingNum(x, y, flags, num, colormap);
+
 	return 0;
 }
 

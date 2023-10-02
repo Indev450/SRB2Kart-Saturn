@@ -22,6 +22,7 @@ enum drawitem_e {
 	DI_DrawScaled,
 	DI_DrawNum,
 	DI_DrawPaddedNum,
+	DI_DrawPingNum,
 	DI_DrawFill,
 	DI_DrawString,
 	DI_DrawKartString,
@@ -45,7 +46,7 @@ typedef struct drawitem_s {
 	INT32 flags;
 	UINT16 basecolor;
 	UINT16 outlinecolor;
-	UINT8 *colormap;
+	const UINT8 *colormap;
 	UINT8 *basecolormap;
 	UINT8 *outlinecolormap;
 	fixed_t sx;
@@ -251,6 +252,25 @@ void LUA_HUD_AddDrawPaddedNum(
 	item->flags = flags;
 }
 
+void LUA_HUD_AddDrawPingNum(
+	huddrawlist_h list,
+	INT32 x,
+	INT32 y,
+	INT32 num,
+	INT32 flags,
+	const UINT8 *colormap
+)
+{
+	size_t i = AllocateDrawItem(list);
+	drawitem_t *item = &list->items[i];
+	item->type = DI_DrawPingNum;
+	item->x = x;
+	item->y = y;
+	item->num = num;
+	item->flags = flags;
+	item->colormap = colormap;
+}
+
 void LUA_HUD_AddDrawFill(
 	huddrawlist_h list,
 	INT32 x,
@@ -362,6 +382,9 @@ void LUA_HUD_DrawList(huddrawlist_h list)
 				break;
 			case DI_DrawPaddedNum:
 				V_DrawPaddedTallNum(item->x, item->y, item->flags, item->num, item->digits);
+				break;
+			case DI_DrawPingNum:
+				V_DrawPingNum(item->x, item->y, item->flags, item->num, item->colormap);
 				break;
 			case DI_DrawFill:
 				V_DrawFill(item->x, item->y, item->w, item->h, item->c);
