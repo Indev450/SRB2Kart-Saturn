@@ -1905,22 +1905,12 @@ void S_PauseAudio(void)
 {
 	if (I_SongPlaying() && !I_SongPaused())
 		I_PauseSong();
-
-	// pause cd music
-#if (defined (__unix__) && !defined (MSDOS)) || defined (UNIXCOMMON) || defined (HAVE_SDL)
-	I_PauseCD();
-#else
-	I_StopCD();
-#endif
 }
 
 void S_ResumeAudio(void)
 {
 	if (I_SongPlaying() && I_SongPaused())
 		I_ResumeSong();
-
-	// resume cd music
-	I_ResumeCD();
 }
 
 void S_DisableSound(void)
