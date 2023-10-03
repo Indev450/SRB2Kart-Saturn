@@ -52,6 +52,7 @@ static void GameMIDIMusic_OnChange(void);
 #endif
 static void GameSounds_OnChange(void);
 static void GameDigiMusic_OnChange(void);
+static void BufferSize_OnChange(void);
 
 static void PlayMusicIfUnfocused_OnChange(void);
 static void PlaySoundIfUnfocused_OnChange(void);
@@ -66,6 +67,9 @@ static void AmigaType_OnChange(void);
 #endif
 
 consvar_t cv_samplerate = {"samplerate", "44100", 0, CV_Unsigned, NULL, 22050, NULL, NULL, 0, 0, NULL}; //Alam: For easy hacking?
+
+static CV_PossibleValue_t audbuffersize_cons_t[] = {{1024, "1024"}, {2048, "2048"}, {4096, "4096"}, {0, NULL}};
+consvar_t cv_audbuffersize = {"buffersize", "2048", CV_SAVE, audbuffersize_cons_t, BufferSize_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 // stereo reverse
 consvar_t stereoreverse = {"stereoreverse", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -2209,6 +2213,12 @@ void AmigaType_OnChange(void)
 }
 #endif
 #endif
+
+void BufferSize_OnChange(void)
+{
+	if (sound_started)
+        COM_ImmedExecute("restartaudio");
+}
 
 #ifndef NO_MIDI
 void GameMIDIMusic_OnChange(void)
