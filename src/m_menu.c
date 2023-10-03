@@ -1715,7 +1715,9 @@ static menuitem_t OP_SaturnMenu[] =
 	{IT_STRING | IT_CVAR, NULL,	  "Show Minimap Names",   &cv_showminimapnames, 80},
 	{IT_STRING | IT_CVAR, NULL,	  "Small Minimap Players",   &cv_minihead, 90},
 	{IT_STRING | IT_CVAR, NULL, "Less Midnight Channel Flicker", 	&cv_lessflicker, 		 110},
+#ifdef HWRENDER
 	{IT_STRING | IT_CVAR, NULL, "Flashpals in Palette Renderer", 	&cv_grflashpal, 		 120},
+#endif
 	{IT_SUBMENU|IT_STRING,	NULL,	"Player distortion...", &OP_PlayerDistortDef,	 140},
 	{IT_SUBMENU|IT_STRING,	NULL,	"Hud Offsets...", 		&OP_HudOffsetDef,		 155},
 
@@ -1733,6 +1735,7 @@ enum
 	sm_mapnames,
 	sm_smallmap,
 	sm_pisschannel,
+	sm_flashpal,
 	sm_distortionmenu,
 	sm_hudoffsets,
 	sm_credits,
@@ -1756,7 +1759,12 @@ enum
 {
 	sloperotate,
 	slrotatedist,
+	sliptide,
 	stretchyplayer,
+	squishsound,
+	salthmmm,
+	saltsound,
+	saltsquishy,
 };
 
 static menuitem_t OP_HudOffsetMenu[] =
