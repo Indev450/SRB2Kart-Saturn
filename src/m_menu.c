@@ -11877,16 +11877,8 @@ static void M_VideoModeMenu(INT32 choice)
 	vidm_selected = 0;
 	nummodes = VID_NumModes();
 
-#ifdef _WINDOWS
-	// clean that later: skip windowed mode 0, video modes menu only shows FULL SCREEN modes
-	if (nummodes <= NUMSPECIALMODES)
-		i = 0; // unless we have nothing
-	else
-		i = NUMSPECIALMODES;
-#else
 	// DOS does not skip mode 0, because mode 0 is ALWAYS present
 	i = 0;
-#endif
 	for (; i < nummodes && vidm_nummodes < MAXMODEDESCS; i++)
 	{
 		desc = VID_GetModeName(i);

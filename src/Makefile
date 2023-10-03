@@ -9,11 +9,10 @@
 # See the 'LICENSE' file for more details.
 #
 #     -DLINUX     -> use for the GNU/Linux specific
-#     -D_WINDOWS  -> use for the Win32/DirectX specific
 #     -DHAVE_SDL  -> use for the SDL interface
 #
 # Sets:
-#     Compile the DirectX/Mingw version with 'make MINGW=1'
+#     Compile the Mingw version with 'make MINGW=1'
 #     Compile the SDL/Mingw version with 'make MINGW=1 SDL=1'
 #     Compile the SDL/Linux version with 'make LINUX=1'
 #     Compile the SDL/Solaris version with 'make SOLARIS=1'
@@ -643,7 +642,7 @@ else
 dll : opengl_dll
 endif
 ifdef MINGW
-all_dll: opengl_dll minigl_dll ds3d_dll fmod_dll openal_dll
+all_dll: opengl_dll ds3d_dll fmod_dll openal_dll
 
 opengl_dll: $(BIN)/r_opengl.dll
 $(BIN)/r_opengl.dll: $(OBJDIR)/ogl_win.o $(OBJDIR)/r_opengl.o
@@ -653,12 +652,6 @@ $(BIN)/r_opengl.dll: $(OBJDIR)/ogl_win.o $(OBJDIR)/r_opengl.o
 ifndef NOUPX
 	-$(UPX) $(UPX_OPTS) $@
 endif
-
-minigl_dll: $(BIN)/r_minigl.dll
-$(BIN)/r_minigl.dll: $(OBJDIR)/r_minigl.o
-	-$(MKDIR) $(BIN)
-	@echo Linking R_MiniGL.dll...
-	$(CC) --shared  $^ -o $@ -g -Wl,--add-stdcall-alias -lgdi32
 
 ds3d_dll: $(BIN)/s_ds3d.dll
 $(BIN)/s_ds3d.dll: $(OBJDIR)/s_ds3d.o
@@ -773,40 +766,6 @@ $(OBJDIR)/%.o: %.s
 
 $(OBJDIR)/SRB2.res: win32/Srb2win.rc win32/afxres.h win32/resource.h
 	$(WINDRES) -i $< -O rc $(WINDRESFLAGS) --include-dir=win32 -o $@ -O coff
-
-ifdef MINGW
-ifndef SDL
-ifndef NOHW
-$(OBJDIR)/r_opengl.o: hardware/r_opengl/r_opengl.c hardware/r_opengl/r_opengl.h \
- doomdef.h doomtype.h g_state.h m_swap.h hardware/hw_drv.h screen.h \
- command.h hardware/hw_data.h hardware/hw_defs.h hardware/hw_md2.h \
- hardware/hw_glob.h hardware/hw_main.h hardware/hw_clip.h \
- hardware/hw_md2load.h hardware/hw_md3load.h hardware/hw_model.h hardware/u_list.h \
- am_map.h d_event.h d_player.h p_pspr.h m_fixed.h tables.h info.h d_think.h \
- p_mobj.h doomdata.h d_ticcmd.h r_defs.h hardware/hw_dll.h
-	$(CC) $(CFLAGS) $(WFLAGS) -D_WINDOWS -mwindows -c $< -o $@
-
-$(OBJDIR)/ogl_win.o: hardware/r_opengl/ogl_win.c hardware/r_opengl/r_opengl.h \
- doomdef.h doomtype.h g_state.h m_swap.h hardware/hw_drv.h screen.h \
- command.h hardware/hw_data.h hardware/hw_defs.h hardware/hw_md2.h \
- hardware/hw_glob.h hardware/hw_main.h hardware/hw_clip.h \
- hardware/hw_md2load.h hardware/hw_md3load.h hardware/hw_model.h hardware/u_list.h \
- am_map.h d_event.h d_player.h p_pspr.h m_fixed.h tables.h info.h d_think.h \
- p_mobj.h doomdata.h d_ticcmd.h r_defs.h hardware/hw_dll.h
-	$(CC) $(CFLAGS) $(WFLAGS) -D_WINDOWS -mwindows -c $< -o $@
-
-$(OBJDIR)/r_minigl.o: hardware/r_minigl/r_minigl.c hardware/r_opengl/r_opengl.h \
- doomdef.h doomtype.h g_state.h m_swap.h hardware/hw_drv.h screen.h \
- command.h hardware/hw_data.h hardware/hw_defs.h hardware/hw_md2.h \
- hardware/hw_glob.h hardware/hw_main.h hardware/hw_clip.h \
- hardware/hw_md2load.h hardware/hw_md3load.h hardware/hw_model.h hardware/u_list.h \
- am_map.h d_event.h d_player.h p_pspr.h m_fixed.h tables.h info.h d_think.h \
- p_mobj.h doomdata.h d_ticcmd.h r_defs.h hardware/hw_dll.h
-	$(CC) $(CFLAGS) $(WFLAGS) -D_WINDOWS -mwindows -c $< -o $@
-endif
-
-endif
-endif
 
 ifdef SDL
 

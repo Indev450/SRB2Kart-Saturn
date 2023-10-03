@@ -34,10 +34,6 @@
 #include "m_menu.h"
 #include "filesrch.h"
 
-#ifdef _WINDOWS
-#include "win32/win_main.h"
-#endif
-
 #ifdef HWRENDER
 #include "hardware/hw_main.h"
 #endif
@@ -1429,19 +1425,9 @@ void CONS_Printf(const char *fmt, ...)
 	// if not in display loop, force screen update
 	if (startup)
 	{
-#if (defined (_WINDOWS)) || (defined (__OS2__) && !defined (HAVE_SDL))
-		patch_t *con_backpic = W_CachePatchName("KARTKREW", PU_CACHE);
-
-		// Jimita: CON_DrawBackpic just called V_DrawScaledPatch
-		V_DrawFixedPatch(0, 0, FRACUNIT/2, 0, con_backpic, NULL);
-
-		W_UnlockCachedPatch(con_backpic);
-		I_LoadingScreen(txt);				// Win32/OS2 only
-#else
 		// here we display the console text
 		CON_Drawer();
 		I_FinishUpdate(); // page flip or blit buffer
-#endif
 	}
 }
 

@@ -65,15 +65,7 @@ static void AmigaType_OnChange(void);
 #endif
 #endif
 
-#if defined (_WINDOWS) && !defined (SURROUND) //&& defined (_X86_)
-#define SURROUND
-#endif
-
-#ifdef _WINDOWS
-consvar_t cv_samplerate = {"samplerate", "44100", 0, CV_Unsigned, NULL, 44100, NULL, NULL, 0, 0, NULL}; //Alam: For easy hacking?
-#else
 consvar_t cv_samplerate = {"samplerate", "22050", 0, CV_Unsigned, NULL, 22050, NULL, NULL, 0, 0, NULL}; //Alam: For easy hacking?
-#endif
 
 // stereo reverse
 consvar_t stereoreverse = {"stereoreverse", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
