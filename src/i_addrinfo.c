@@ -20,11 +20,9 @@
 #else
 #include <winsock.h>
 #endif
-#elif !defined (__DJGPP__)
+#else
 #include <sys/socket.h>
-#ifndef _NDS
 #include <arpa/inet.h>
-#endif
 #include <netdb.h>
 #endif
 

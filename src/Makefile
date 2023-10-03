@@ -8,13 +8,11 @@
 # terms of the GNU General Public License, version 2.
 # See the 'LICENSE' file for more details.
 #
-#     -DPC_DOS    -> use DOS specific code (eg:textmode stuff)...
 #     -DLINUX     -> use for the GNU/Linux specific
 #     -D_WINDOWS  -> use for the Win32/DirectX specific
 #     -DHAVE_SDL  -> use for the SDL interface
 #
 # Sets:
-#     Compile the DGJPP/DOS version with 'make WATTCP=1'
 #     Compile the DirectX/Mingw version with 'make MINGW=1'
 #     Compile the SDL/Mingw version with 'make MINGW=1 SDL=1'
 #     Compile the SDL/Linux version with 'make LINUX=1'
@@ -87,7 +85,6 @@ ALL_SYSTEMS=\
 	MINGW64\
 	HAIKU\
 	DUMMY\
-	DJGPPDOS\
 	MINGW\
 	UNIX\
 	LINUX\
@@ -170,12 +167,6 @@ ifdef HAIKU
 SDL=1
 endif
 
-ifdef NDS
-# Include this before the main Makefile.cfg
-EXENAME?=srb2.elf
-include nds/Makefile.cfg
-endif
-
 include Makefile.cfg
 
 ifdef DUMMY
@@ -202,10 +193,6 @@ endif
 ifdef PANDORA
 NONX86=1
 NOHW=1
-endif
-
-ifdef DJGPPDOS
-include djgppdos/Makefile.cfg
 endif
 
 ifndef NOOPENMPT
@@ -239,25 +226,8 @@ ifdef MACOSX
 UNIXCOMMON=1
 endif
 
-ifdef NDS
-NOPNG=1
-NOZLIB=1
-NONET=1
-#NOHW=1
-NOIPX=1
-NONX86=1
-OBJS+=$(OBJDIR)/i_video.o
-LIBS+=-lm
-endif
-
 ifdef SDL
-#SDL 2.0
-ifndef SDL12
 	include sdl/Makefile.cfg
-#SDL 1.2
-else
-	include sdl12/Makefile.cfg
-endif #ifndef SDL12
 endif #ifdef SDL
 
 ifdef DISTCC
@@ -585,10 +555,6 @@ POS:=$(BIN)/en.mo
 OPTS+=-DGETTEXT
 endif
 
-ifdef DJGPPDOS
-all:	 pre-build $(BIN)/$(EXENAME)
-endif
-
 ifdef PANDORA
 all:	pre-build $(BIN)/$(PNDNAME)
 endif
@@ -601,10 +567,6 @@ endif
 
 ifdef SDL
 all:	 pre-build $(BIN)/$(EXENAME)
-endif
-
-ifdef NDS
-all:	$(BIN)/$(EXENAME:.elf=.nds)
 endif
 
 ifdef DUMMY
@@ -636,7 +598,6 @@ endif
 
 
 # executable
-# NOTE: DJGPP's objcopy do not have --add-gnu-debuglink
 
 $(BIN)/$(EXENAME): $(POS) $(OBJS)
 	-$(MKDIR) $(BIN)
@@ -812,14 +773,6 @@ $(OBJDIR)/%.o: %.s
 
 $(OBJDIR)/SRB2.res: win32/Srb2win.rc win32/afxres.h win32/resource.h
 	$(WINDRES) -i $< -O rc $(WINDRESFLAGS) --include-dir=win32 -o $@ -O coff
-
-ifdef NDS
-$(BIN)/$(EXENAME:.elf=.nds): $(BIN)/$(EXENAME:.elf=.arm9)
-	$(NDSTOOL) -c $@ -9 $(BIN)/$(EXENAME:.elf=.arm9)
-
-%.arm9: %.elf
-	$(OBJCOPY) -O binary $< $@
-endif
 
 ifdef MINGW
 ifndef SDL

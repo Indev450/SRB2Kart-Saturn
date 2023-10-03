@@ -17,14 +17,10 @@
 #ifndef __DOOMTYPE__
 #define __DOOMTYPE__
 
-#if defined (_WIN32) || (defined (_WIN32_WCE) && !defined (__GNUC__))
+#ifdef _WIN32
 //#define WIN32_LEAN_AND_MEAN
 #define RPC_NO_WINDOWS_H
 #include <windows.h>
-#endif
-
-#ifdef _NDS
-#include <nds.h>
 #endif
 
 /* 7.18.1.1  Exact-width integer types */
@@ -52,17 +48,7 @@ typedef long ssize_t;
 		#define PDWORD_PTR PDWORD
 	#endif
 #endif
-#elif defined (__DJGPP__)
-#define UINT8 unsigned char
-#define SINT8 signed char
 
-#define UINT16 unsigned short int
-#define INT16 signed short int
-
-#define INT32 signed long
-#define UINT32 unsigned long
-#define INT64  signed long long
-#define UINT64 unsigned long long
 #else
 #define __STDC_LIMIT_MACROS
 #include <stdint.h>
@@ -108,20 +94,11 @@ typedef long ssize_t;
 	#define strncasecmp             strnicmp
 	#define strcasecmp              strcmpi
 #endif
-#if (defined (__unix__) && !defined (MSDOS)) || defined(__APPLE__) || defined (UNIXCOMMON)
+#if defined (__unix__) || defined (__APPLE__) || defined (UNIXCOMMON)
 	#undef stricmp
 	#define stricmp(x,y) strcasecmp(x,y)
 	#undef strnicmp
 	#define strnicmp(x,y,n) strncasecmp(x,y,n)
-#endif
-#ifdef _WIN32_WCE
-#ifndef __GNUC__
-	#define stricmp(x,y)            _stricmp(x,y)
-	#define strnicmp                _strnicmp
-#endif
-	#define strdup                  _strdup
-	#define strupr                  _strupr
-	#define strlwr                  _strlwr
 #endif
 
 char *strcasestr(const char *in, const char *what);
@@ -145,7 +122,7 @@ char *strcasestr(const char *in, const char *what);
 	#endif
 #endif //macintosh
 
-#if defined (PC_DOS) || defined (_WIN32) || defined (__HAIKU__) || defined(_NDS)
+#if defined (_WIN32) || defined (__HAIKU__)
 #define HAVE_DOSSTR_FUNCS
 #endif
 
@@ -188,12 +165,10 @@ size_t strlcpy(char *dst, const char *src, size_t siz);
 	//faB: clean that up !!
 	#if defined( _MSC_VER)  && (_MSC_VER >= 1800) // MSVC 2013 and forward
 		#include "stdbool.h"
-	#elif defined (_WIN32) || (defined (_WIN32_WCE) && !defined (__GNUC__))
+	#elif defined (_WIN32)
 		#define false   FALSE           // use windows types
 		#define true    TRUE
 		#define boolean BOOL
-	#elif defined(_NDS)
-		#define boolean bool
 	#else
 		typedef enum {false, true} boolean;
 	#endif

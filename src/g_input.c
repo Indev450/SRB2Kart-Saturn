@@ -325,39 +325,6 @@ static keyname_t keynames[] =
 	{KEY_2MOUSEWHEELUP, "Wheel 2 UP"},
 	{KEY_2MOUSEWHEELDOWN, "Wheel 2 Down"},
 
-#ifdef _PSP
-	{KEY_JOY1+0, "TRIANGLE"},
-	{KEY_JOY1+1, "CIRCLE"  },
-	{KEY_JOY1+2, "CROSS"   },
-	{KEY_JOY1+3, "SQUARE"  },
-	{KEY_JOY1+4, "LTRIGGER"},
-	{KEY_JOY1+5, "RTRIGGER"},
-	{KEY_JOY1+6, "SELECT"  },
-	{KEY_JOY1+7, "START"   },
-	{KEY_JOY1+8, "HOME"    },
-	{KEY_JOY1+9, "HOLD"    },
-#define NOMOREJOYBTN_1S
-#elif defined (GP2X)
-	{KEY_JOY1+0, "JOYA"},
-	{KEY_JOY1+1, "JOYY"},
-	{KEY_JOY1+2, "JOYB"},
-	{KEY_JOY1+3, "JOYX"},
-	{KEY_JOY1+4, "JOYL"},
-	{KEY_JOY1+5, "JOYR"},
-	{KEY_JOY1+6, "JOYVOLUP"},
-	{KEY_JOY1+7, "JOYVOLDOWN"},
-	{KEY_JOY1+8, "JOYSELECT"},
-#elif defined (_NDS)
-	{KEY_JOY1+0, "JOYA"},
-	{KEY_JOY1+1, "JOYB"},
-	{KEY_JOY1+2, "JOYX"},
-	{KEY_JOY1+3, "JOYY"},
-	{KEY_JOY1+4, "JOYL"},
-	{KEY_JOY1+5, "JOYR"},
-	{KEY_JOY1+6, "JOYSTART"},
-	{KEY_JOY1+7, "JOYSELECT"},
-#define NOMOREJOYBTN_1S
-#else
 	{KEY_JOY1+0, "JOY1"},
 	{KEY_JOY1+1, "JOY2"},
 	{KEY_JOY1+2, "JOY3"},
@@ -367,7 +334,7 @@ static keyname_t keynames[] =
 	{KEY_JOY1+6, "JOY7"},
 	{KEY_JOY1+7, "JOY8"},
 	{KEY_JOY1+8, "JOY9"},
-#endif
+	
 #if !defined (NOMOREJOYBTN_1S)
 	// we use up to 32 buttons in DirectInput
 	{KEY_JOY1+9, "JOY10"},
@@ -429,39 +396,6 @@ static keyname_t keynames[] =
 	{KEY_DBL2MOUSE1+6, "DBLSEC_MOUSE7"},
 	{KEY_DBL2MOUSE1+7, "DBLSEC_MOUSE8"},
 
-#ifdef _PSP
-	{KEY_DBLJOY1+0, "DBLTRIANGLE"},
-	{KEY_DBLJOY1+1, "DBLCIRCLE"  },
-	{KEY_DBLJOY1+2, "DBLCROSS"   },
-	{KEY_DBLJOY1+3, "DBLSQUARE"  },
-	{KEY_DBLJOY1+4, "DBLLTRIGGER"},
-	{KEY_DBLJOY1+5, "DBLRTRIGGER"},
-	{KEY_DBLJOY1+6, "DBLSELECT"  },
-	{KEY_DBLJOY1+7, "DBLSTART"   },
-	{KEY_DBLJOY1+8, "DBLHOME"    },
-	{KEY_DBLJOY1+9, "DBLHOLD"    },
-#elif defined (GP2X)
-	{KEY_DBLJOY1+0, "DBLJOYA"},
-	{KEY_DBLJOY1+1, "DBLJOYY"},
-	{KEY_DBLJOY1+2, "DBLJOYB"},
-	{KEY_DBLJOY1+3, "DBLJOYX"},
-	{KEY_DBLJOY1+4, "DBLJOYL"},
-	{KEY_DBLJOY1+5, "DBLJOYR"},
-	{KEY_DBLJOY1+6, "DBLJOYVOLUP"},
-	{KEY_DBLJOY1+7, "DBLJOYVOLDOWN"},
-	{KEY_DBLJOY1+8, "DBLJOYSELECT"},
-#define NOMOREJOYBTN_1DBL
-#elif defined (_NDS)
-	{KEY_DBLJOY1+0, "DBLJOYA"},
-	{KEY_DBLJOY1+1, "DBLJOYB"},
-	{KEY_DBLJOY1+2, "DBLJOYX"},
-	{KEY_DBLJOY1+3, "DBLJOYY"},
-	{KEY_DBLJOY1+4, "DBLJOYL"},
-	{KEY_DBLJOY1+5, "DBLJOYR"},
-	{KEY_DBLJOY1+6, "DBLJOYSTART"},
-	{KEY_DBLJOY1+7, "DBLJOYSELECT"},
-#define NOMOREJOYBTN_1DBL
-#else
 	{KEY_DBLJOY1+0, "DBLJOY1"},
 	{KEY_DBLJOY1+1, "DBLJOY2"},
 	{KEY_DBLJOY1+2, "DBLJOY3"},
@@ -470,7 +404,6 @@ static keyname_t keynames[] =
 	{KEY_DBLJOY1+5, "DBLJOY6"},
 	{KEY_DBLJOY1+6, "DBLJOY7"},
 	{KEY_DBLJOY1+7, "DBLJOY8"},
-#endif
 #if !defined (NOMOREJOYBTN_1DBL)
 	{KEY_DBLJOY1+8, "DBLJOY9"},
 	{KEY_DBLJOY1+9, "DBLJOY10"},
@@ -1161,14 +1094,6 @@ static INT32 G_FilterKeyByVersion(INT32 numctrl, INT32 keyidx, INT32 player, INT
 		}
 	}
 #else
-#if !defined (DC) && !defined (_PSP) && !defined (GP2X) && !defined (_NDS)
-	if (GETMAJOREXECVERSION(cv_execversion.value) < 27 && ( // v2.1.22
-		numctrl == gc_weaponnext || numctrl == gc_weaponprev || numctrl == gc_tossflag ||
-		numctrl == gc_use || numctrl == gc_camreset || numctrl == gc_jump ||
-		numctrl == gc_pause || numctrl == gc_systemmenu || numctrl == gc_camtoggle ||
-		numctrl == gc_screenshot || numctrl == gc_talkkey || numctrl == gc_scores ||
-		numctrl == gc_centerview
-	))
 	{
 		INT32 keynum = 0, existingctrl = 0;
 		INT32 defaultkey;
@@ -1254,7 +1179,6 @@ static INT32 G_FilterKeyByVersion(INT32 numctrl, INT32 keyidx, INT32 player, INT
 		else
 			return 0;
 	}
-#endif
 #endif
 
 	// All's good, so pass the keynum as-is

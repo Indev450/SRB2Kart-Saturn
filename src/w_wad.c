@@ -77,12 +77,6 @@
 #include "hardware/hw_glob.h"
 #endif
 
-#ifdef PC_DOS
-#include <stdio.h> // for snprintf
-int	snprintf(char *str, size_t n, const char *fmt, ...);
-//int	vsnprintf(char *str, size_t n, const char *fmt, va_list ap);
-#endif
-
 #ifndef O_BINARY
 #define O_BINARY 0
 #endif

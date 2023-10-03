@@ -236,7 +236,7 @@ void V_SetPalette(INT32 palettenum)
 		else
 			HWR_SetPalette(pLocalPalette);
 	}		
-#if (defined (__unix__) && !defined (MSDOS)) || defined (UNIXCOMMON) || defined (HAVE_SDL)
+#if defined (__unix__) || defined (UNIXCOMMON) || defined (HAVE_SDL)
 	else
 #endif
 #endif
@@ -257,7 +257,7 @@ void V_SetPaletteLump(const char *pal)
 		}
 		HWR_SetPalette(pLocalPalette);
 	}
-#if (defined (__unix__) && !defined (MSDOS)) || defined (UNIXCOMMON) || defined (HAVE_SDL)
+#if defined (__unix__) || defined (UNIXCOMMON) || defined (HAVE_SDL)
 	else
 #endif
 #endif

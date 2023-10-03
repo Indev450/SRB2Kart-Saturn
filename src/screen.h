@@ -15,20 +15,16 @@
 
 #include "command.h"
 
-#if (defined (_WIN32) || defined (_WIN32_WCE)) && !defined (__CYGWIN__)
-#if defined (_WIN32_WCE) && defined (__GNUC__)
-#include <sys/wcetypes.h>
-#else
+#if defined (_WIN32) && !defined (__CYGWIN__)
 #define RPC_NO_WINDOWS_H
 #include <windows.h>
-#endif
 #define DNWH HWND
 #else
 #define DNWH void * // unused in DOS version
 #endif
 
 // quickhack for V_Init()... to be cleaned up
-#if defined (_WIN32_WCE) || defined (NOPOSTPROCESSING)
+#ifdef NOPOSTPROCESSING
 #define NUMSCREENS 2
 #else
 #define NUMSCREENS 5
@@ -43,12 +39,9 @@
 // we try to re-allocate a minimum of buffers for stability of the memory,
 // so all the small-enough tables based on screen size, are allocated once
 // and for all at the maximum size.
-#if defined (_WIN32_WCE) || defined (_NDS)
+#if defined (_WIN32_WCE)
 #define MAXVIDWIDTH 320
 #define MAXVIDHEIGHT 200
-#elif defined (GP2X)
-#define MAXVIDWIDTH 320 //720
-#define MAXVIDHEIGHT 240 //576
 #else
 #define MAXVIDWIDTH 2560 // don't set this too high because actually
 #define MAXVIDHEIGHT 1440 // lots of tables are allocated with the MAX size.

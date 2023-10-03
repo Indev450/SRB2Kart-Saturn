@@ -27,7 +27,7 @@
 #define HAVE_IPV6
 #endif
 
-#if defined (_WIN32) || defined (_WIN32_WCE)
+#ifdef _WIN32
 #define USE_WINSOCK
 #if defined (_WIN64) || defined (HAVE_IPV6)
 #define USE_WINSOCK2
@@ -74,7 +74,7 @@
 #include <errno.h>
 #include <time.h>
 
-#if (defined (__unix__) && !defined (MSDOS)) || defined(__APPLE__) || defined (UNIXCOMMON)
+#if defined (__unix__) || defined (__APPLE__) || defined (UNIXCOMMON)
 	#include <sys/time.h>
 #endif // UNIXCOMMON
 #endif // !NONET
@@ -117,15 +117,6 @@
 	#endif
 #endif
 
-#ifdef __DJGPP__
-#ifdef WATTCP // Alam_GBC: Wattcp may need this
-#include <tcp.h>
-#define strerror strerror_s
-#else // wattcp
-#include <lsck/lsck.h>
-#endif // libsocket
-#endif // djgpp
-
 typedef union
 {
 	struct sockaddr     any;
@@ -161,29 +152,15 @@ static UINT8 UPNP_support = TRUE;
 
 #include "doomstat.h"
 
-// win32 or djgpp
-#if defined (USE_WINSOCK) || defined (__DJGPP__)
+// win32
+#ifdef USE_WINSOCK
 	// winsock stuff (in winsock a socket is not a file)
 	#define ioctl ioctlsocket
 	#define close closesocket
-
-	#ifdef _WIN32_WCE
-	#include "sdl12/SRB2CE/cehelp.h"
-	#endif
-
 #endif
 
 #include "i_addrinfo.h"
-
-#ifdef __DJGPP__
-
-#ifdef WATTCP
 #define SELECTTEST
-#endif
-
-#else
-#define SELECTTEST
-#endif
 
 #define DEFAULTPORT "5029"
 
@@ -191,7 +168,7 @@ static UINT8 UPNP_support = TRUE;
 typedef SOCKET SOCKET_TYPE;
 #define ERRSOCKET (SOCKET_ERROR)
 #else
-#if (defined (__unix__) && !defined (MSDOS)) || defined (__APPLE__) || defined (__HAIKU__)
+#if defined (__unix__) || defined (__APPLE__) || defined (__HAIKU__)
 typedef int SOCKET_TYPE;
 #else
 typedef unsigned long SOCKET_TYPE;
@@ -199,7 +176,7 @@ typedef unsigned long SOCKET_TYPE;
 #define ERRSOCKET (-1)
 #endif
 
-#if (defined (WATTCP) && !defined (__libsocket_socklen_t)) || defined (USE_WINSOCK1)
+#ifdef USE_WINSOCK1
 typedef int socklen_t;
 #endif
 
@@ -237,18 +214,6 @@ static const char *serverport_name = DEFAULTPORT;
 static const char *clientport_name;/* any port */
 
 #ifndef NONET
-
-#ifdef WATTCP
-static void wattcp_outch(char s)
-{
-	static char old = '\0';
-	char pr[2] = {s,0};
-	if (s == old && old == ' ') return;
-	else old = s;
-	if (s == '\r') CONS_Printf("\n");
-	else if (s != '\n') CONS_Printf(pr);
-}
-#endif
 
 #ifdef USE_WINSOCK
 // stupid microsoft makes things complicated
@@ -917,11 +882,7 @@ static SOCKET_TYPE UDP_Bind(int family, struct sockaddr *addr, socklen_t addrlen
 	int opt;
 	socklen_t opts;
 #ifdef FIONBIO
-#ifdef WATTCP
-	char trueval = true;
-#else
 	unsigned long trueval = true;
-#endif
 #endif
 	mysockaddr_t straddr;
 	struct sockaddr_in sin;
@@ -1291,61 +1252,7 @@ boolean I_InitTcpDriver(void)
 		CONS_Debug(DBG_NETPLAY, "WinSock description: %s\n",WSAData.szDescription);
 		CONS_Debug(DBG_NETPLAY, "WinSock System Status: %s\n",WSAData.szSystemStatus);
 #endif
-#ifdef __DJGPP__
-#ifdef WATTCP // Alam_GBC: survive bootp, dhcp, rarp and wattcp/pktdrv from failing to load
-		survive_eth   = 1; // would be needed to not exit if pkt_eth_init() fails
-		survive_bootp = 1; // ditto for BOOTP
-		survive_dhcp  = 1; // ditto for DHCP/RARP
-		survive_rarp  = 1;
-		//_watt_do_exit = false;
-		//_watt_handle_cbreak = false;
-		//_watt_no_config = true;
-		_outch = wattcp_outch;
-		init_misc();
-//#ifdef DEBUGFILE
-		dbug_init();
-//#endif
-		switch (sock_init())
-		{
-			case 0:
-				init_tcp_driver = true;
-				break;
-			case 3:
-				CONS_Debug(DBG_NETPLAY, "No packet driver detected\n");
-				break;
-			case 4:
-				CONS_Debug(DBG_NETPLAY, "Error while talking to packet driver\n");
-				break;
-			case 5:
-				CONS_Debug(DBG_NETPLAY, "BOOTP failed\n");
-				break;
-			case 6:
-				CONS_Debug(DBG_NETPLAY, "DHCP failed\n");
-				break;
-			case 7:
-				CONS_Debug(DBG_NETPLAY, "RARP failed\n");
-				break;
-			case 8:
-				CONS_Debug(DBG_NETPLAY, "TCP/IP failed\n");
-				break;
-			case 9:
-				CONS_Debug(DBG_NETPLAY, "PPPoE login/discovery failed\n");
-				break;
-			default:
-				CONS_Debug(DBG_NETPLAY, "Unknown error with TCP/IP stack\n");
-				break;
-		}
-		hires_timer(0);
-#else // wattcp
-		if (__lsck_init())
-			init_tcp_driver = true;
-		else
-			CONS_Debug(DBG_NETPLAY, "No TCP/IP driver detected\n");
-#endif // libsocket
-#endif // __DJGPP__
-#ifndef __DJGPP__
 		init_tcp_driver = true;
-#endif
 	}
 #endif
 	if (!tcp_was_up && init_tcp_driver)
@@ -1370,10 +1277,8 @@ static void SOCK_CloseSocket(void)
 		if (mysockets[i] != (SOCKET_TYPE)ERRSOCKET
 		 && FD_ISSET(mysockets[i], &masterset))
 		{
-#if !defined (__DJGPP__) || defined (WATTCP)
 			FD_CLR(mysockets[i], &masterset);
 			close(mysockets[i]);
-#endif
 		}
 		mysockets[i] = ERRSOCKET;
 	}
@@ -1390,14 +1295,6 @@ void I_ShutdownTcpDriver(void)
 	WS_addrinfocleanup();
 	WSACleanup();
 #endif
-#ifdef __DJGPP__
-#ifdef WATTCP // wattcp
-	//_outch = NULL;
-	sock_exit();
-#else
-	__lsck_uninit();
-#endif // libsocket
-#endif // __DJGPP__
 	CONS_Printf("shut down\n");
 	init_tcp_driver = false;
 #endif

@@ -65,8 +65,6 @@ typedef off_t off64_t;
 #define PRIdS "u"
 #elif defined(_WIN32) && !defined(__MINGW64__)
 #define PRIdS "Iu"
-#elif defined (DJGPP) || defined (_NDS)
-#define PRIdS "u"
 #else
 #define PRIdS "zu"
 #endif
@@ -720,8 +718,6 @@ static void M_PNGText(png_structp png_ptr, png_infop png_info_ptr, PNG_CONST png
 	 "SDL";
 #elif defined (_WINDOWS)
 	 "DirectX";
-#elif defined (PC_DOS)
-	 "Allegro";
 #else
 	 "Unknown";
 #endif

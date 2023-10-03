@@ -6135,13 +6135,8 @@ void HWR_Startup(void)
 	}
 
 	if (rendermode == render_opengl)
-		textureformat = patchformat =
-#ifdef _NDS
-			GR_TEXFMT_P_8;
-#else
-			GR_RGBA;
-#endif
-
+		textureformat = patchformat = GR_RGBA;
+		
 	startupdone = true;
 
 	// jimita

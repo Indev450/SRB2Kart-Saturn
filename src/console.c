@@ -1413,21 +1413,10 @@ void CONS_Printf(const char *fmt, ...)
 	// echo console prints to log file
 	DEBFILE(txt);
 
-	if (!con_started)
-	{
-#ifdef PC_DOS
-		CON_LogMessage(txt);
-		free(txt);
-		return;
-#endif
-	}
-	else
-		// write message in con text buffer
+	if (con_started)
 		CON_Print(txt);
-
-#ifndef PC_DOS
+	
 	CON_LogMessage(txt);
-#endif
 
 	Lock_state();
 
