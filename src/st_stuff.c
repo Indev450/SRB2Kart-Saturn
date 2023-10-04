@@ -198,7 +198,7 @@ static huddrawlist_h luahuddrawlist_game;
 // variable to stop mayonaka static from flickering
 consvar_t cv_lessflicker = {"lessflicker", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_stagetitle = {"stagetitle", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_stagetitle = {"maptitle", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 //
 // STATUS BAR CODE
