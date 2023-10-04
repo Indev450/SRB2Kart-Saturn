@@ -3153,7 +3153,7 @@ void HWR_AddPolyObjectPlanes(void)
 			{
 				HWR_GetFlat(levelflats[polyobjsector->ceilingpic].lumpnum, R_NoEncore(polyobjsector, true));
 				HWR_RenderPolyObjectPlane(po_ptrs[i], true, polyobjsector->ceilingheight, PF_Occlude,
-				                          polyobjsector->lightlevel, levelflats[polyobjsector->floorpic].lumpnum,
+				                          polyobjsector->lightlevel, levelflats[polyobjsector->ceilingpic].lumpnum,
 				                          polyobjsector, 255, NULL);
 			}
 		}
