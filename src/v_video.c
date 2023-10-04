@@ -249,16 +249,6 @@ static void CV_usegamma_OnChange(void)
 	V_SetPalette(0);
 }
 
-// change the palette directly to see the change
-#ifdef HWRENDER
-static void CV_Gammaxxx_ONChange(void)
-{
-	if (rendermode != render_soft && rendermode != render_none)
-		V_SetPalette(0);
-}
-#endif
-
-
 static void CV_constextsize_OnChange(void)
 {
 	con_recalc = true;
