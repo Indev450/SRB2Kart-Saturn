@@ -718,8 +718,6 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_powerstones);
 	CV_RegisterVar(&cv_competitionboxes);
 	CV_RegisterVar(&cv_matchboxes);
-	
-	CV_RegisterVar(&cv_slamsound);
 
 	/*CV_RegisterVar(&cv_recycler);
 	CV_RegisterVar(&cv_teleporters);
@@ -785,18 +783,6 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_pingtimeout);
 	CV_RegisterVar(&cv_showping);
 	CV_RegisterVar(&cv_pingmeasurement);
-	
-	CV_RegisterVar(&cv_luaimmersion);
-	CV_RegisterVar(&cv_fakelocalskin);
-	
-	CV_RegisterVar(&cv_minihead);
-	CV_RegisterVar(&cv_showminimapnames);
-	
-	CV_RegisterVar(&cv_showlapemblem);
-
-	CV_RegisterVar(&cv_showtrackaddon);
-
-	CV_RegisterVar(&cv_showviewpointtext);
 
 #ifdef SEENAMES
 	CV_RegisterVar(&cv_allowseenames);
@@ -964,36 +950,19 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_chatnotifications);
 	CV_RegisterVar(&cv_chatbacktint);
 	CV_RegisterVar(&cv_songcredits);
-	CV_RegisterVar(&cv_showfreeplay);
-
-	CV_RegisterVar(&cv_item_xoffset);
-	CV_RegisterVar(&cv_item_yoffset);
-	CV_RegisterVar(&cv_time_xoffset);
-	CV_RegisterVar(&cv_time_yoffset);
-	CV_RegisterVar(&cv_laps_xoffset);
-	CV_RegisterVar(&cv_laps_yoffset);
-	CV_RegisterVar(&cv_spdm_xoffset);
-	CV_RegisterVar(&cv_spdm_yoffset);
-	CV_RegisterVar(&cv_posi_xoffset);
-	CV_RegisterVar(&cv_posi_yoffset);
-	CV_RegisterVar(&cv_face_xoffset);
-	CV_RegisterVar(&cv_face_yoffset);
-	CV_RegisterVar(&cv_stcd_xoffset);
-	CV_RegisterVar(&cv_stcd_yoffset);
-	CV_RegisterVar(&cv_chek_yoffset);
-	CV_RegisterVar(&cv_mini_xoffset);
-	CV_RegisterVar(&cv_mini_yoffset);
-	CV_RegisterVar(&cv_want_xoffset);
-	CV_RegisterVar(&cv_want_yoffset);
-	CV_RegisterVar(&cv_showinput);
-	CV_RegisterVar(&cv_newspeedometer);
-
-	CV_RegisterVar(&cv_saltyhop);
-	CV_RegisterVar(&cv_saltyhopsfx);
-	CV_RegisterVar(&cv_saltysquish);
+	CV_RegisterVar(&cv_showfreeplay);	
 	
 	CV_RegisterVar(&cv_growmusic);
 	CV_RegisterVar(&cv_supermusic);
+		
+	CV_RegisterVar(&cv_lessflicker);
+	
+	CV_RegisterVar(&cv_showtrackaddon);
+	CV_RegisterVar(&cv_showviewpointtext);
+	CV_RegisterVar(&cv_stagetitle);	
+	
+	CV_RegisterVar(&cv_luaimmersion);
+	CV_RegisterVar(&cv_fakelocalskin);
 
 	//CV_RegisterVar(&cv_crosshair);
 	//CV_RegisterVar(&cv_crosshair2);
