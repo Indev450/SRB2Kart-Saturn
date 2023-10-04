@@ -1330,6 +1330,13 @@ void D_SRB2Main(void)
 	I_StartupGraphics();
 
 #ifdef HWRENDER
+	// Lactozilla: Add every hardware mode CVAR and CCMD.
+	// Has to be done before the configuration file loads,
+	// but after the OpenGL library loads.
+	HWR_AddCommands();
+#endif
+
+#ifdef HWRENDER
 	if (rendermode == render_opengl)
 	{
 		for (i = 0; i < numwadfiles; i++)
