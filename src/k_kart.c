@@ -630,6 +630,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartdebugcolorize);
 
 	CV_RegisterVar(&cv_lessflicker);
+	CV_RegisterVar(&cv_stagetitle);
 }
 
 //}
