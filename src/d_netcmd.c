@@ -954,12 +954,9 @@ void D_RegisterClientCommands(void)
 	
 	CV_RegisterVar(&cv_growmusic);
 	CV_RegisterVar(&cv_supermusic);
-		
-	CV_RegisterVar(&cv_lessflicker);
-	
+			
 	CV_RegisterVar(&cv_showtrackaddon);
 	CV_RegisterVar(&cv_showviewpointtext);
-	CV_RegisterVar(&cv_stagetitle);	
 	
 	CV_RegisterVar(&cv_luaimmersion);
 	CV_RegisterVar(&cv_fakelocalskin);

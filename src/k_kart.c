@@ -661,6 +661,10 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_minihead);
 	CV_RegisterVar(&cv_showminimapnames);
 	CV_RegisterVar(&cv_showlapemblem);
+	
+	CV_RegisterVar(&cv_stagetitle);	
+	
+	CV_RegisterVar(&cv_lessflicker);
 }
 
 //}
