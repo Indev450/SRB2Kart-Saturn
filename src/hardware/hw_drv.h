@@ -62,6 +62,7 @@ EXPORT void HWRAPI(EndScreenWipe) (void);
 EXPORT void HWRAPI(DoScreenWipe) (void);
 EXPORT void HWRAPI(DrawIntermissionBG) (void);
 EXPORT void HWRAPI(MakeScreenTexture) (void);
+EXPORT void HWRAPI(RenderVhsEffect) (INT16 upbary, INT16 downbary, UINT8 updistort, UINT8 downdistort, UINT8 barsize);
 EXPORT void HWRAPI(MakeScreenFinalTexture) (void);
 EXPORT void HWRAPI(DrawScreenFinalTexture) (int width, int height);
 
@@ -114,6 +115,7 @@ struct hwdriver_s
 	DoScreenWipe        pfnDoScreenWipe;
 	DrawIntermissionBG  pfnDrawIntermissionBG;
 	MakeScreenTexture   pfnMakeScreenTexture;
+	RenderVhsEffect     pfnRenderVhsEffect;
 	MakeScreenFinalTexture  pfnMakeScreenFinalTexture;
 	DrawScreenFinalTexture  pfnDrawScreenFinalTexture;
 

@@ -102,6 +102,8 @@ consvar_t cv_portalonly = {"portalonly", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL
 CV_PossibleValue_t secbright_cons_t[] = {{0, "MIN"}, {255, "MAX"}, {0, NULL}};
 consvar_t cv_secbright = {"secbright", "0", CV_SAVE, secbright_cons_t,
 							NULL, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_grvhseffect = {"gr_vhseffect", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 							 
 // values for the far clipping plane
 static float clipping_distances[] = {1024.0f, 2048.0f, 4096.0f, 6144.0f, 8192.0f, 12288.0f, 16384.0f};
@@ -6104,6 +6106,8 @@ void HWR_AddCommands(void)
 	CV_RegisterVar(&cv_secbright);
 	CV_RegisterVar(&cv_grpaletteshader);
 	CV_RegisterVar(&cv_grflashpal);
+
+	CV_RegisterVar(&cv_grvhseffect);	
 }
 
 // --------------------------------------------------------------------------
@@ -6330,6 +6334,12 @@ void HWR_DoWipe(UINT8 wipenum, UINT8 scrnnum)
 
 	HWR_GetFadeMask(lumpnum);
 	HWD.pfnDoScreenWipe();
+}
+
+void HWR_RenderVhsEffect(INT16 upbary, INT16 downbary, UINT8 updistort, UINT8 downdistort, UINT8 barsize)
+{
+	if (cv_grvhseffect.value)
+		HWD.pfnRenderVhsEffect(upbary, downbary, updistort, downdistort, barsize);
 }
 
 void HWR_MakeScreenFinalTexture(void)
