@@ -1101,6 +1101,8 @@ void D_RegisterClientCommands(void)
 
 	CV_RegisterVar(&cv_resume);
 	CV_RegisterVar(&cv_fading);
+	
+	CV_RegisterVar(&cv_showallmaps);
 
 	// ingame object placing
 	COM_AddCommand("objectplace", Command_ObjectPlace_f);
