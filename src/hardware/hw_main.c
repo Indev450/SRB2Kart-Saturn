@@ -6207,7 +6207,6 @@ void HWR_Shutdown(void)
 {
 	CONS_Printf("HWR_Shutdown()\n");
 	HWR_FreeExtraSubsectors();
-	HWR_FreeMipmapCache();
 	HWR_FreeTextureCache();
 	HWD.pfnFlushScreenTextures();
 }
