@@ -1698,8 +1698,6 @@ mobj_t *P_SpawnGhostMobj(mobj_t *mobj)
 	ghost->skin = mobj->skin;
 	ghost->localskin = mobj->localskin;
 	ghost->skinlocal = mobj->skinlocal;
-	ghost->realxscale = mobj->realxscale;
-	ghost->realyscale = mobj->realyscale;
 	ghost->spritexscale = mobj->spritexscale;
 	ghost->spriteyscale = mobj->spriteyscale;
 	ghost->spritexoffset = mobj->spritexoffset;
