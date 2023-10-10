@@ -12,9 +12,6 @@
 
 #ifdef __GNUC__
 #include <unistd.h>
-#ifdef _XBOX
-#include <openxdk/debug.h>
-#endif
 #endif
 
 #include "doomdef.h"
@@ -36,10 +33,6 @@
 #include "d_main.h"
 #include "m_menu.h"
 #include "filesrch.h"
-
-#ifdef _WINDOWS
-#include "win32/win_main.h"
-#endif
 
 #ifdef HWRENDER
 #include "hardware/hw_main.h"
@@ -375,14 +368,10 @@ static void CON_SetupColormaps(void)
 	CON_SetupBackColormap();
 }
 
+//
 // Setup the console text buffer
 //
-// for WII, libogc already has a CON_Init function, we must rename it here
-#ifdef _WII
-void CON_InitWii(void)
-#else
 void CON_Init(void)
-#endif
 {
 	INT32 i;
 
@@ -457,6 +446,8 @@ void CON_Init(void)
 		Unlock_state();
 	}
 }
+
+//
 // Console input initialization
 //
 static void CON_InputInit(void)
@@ -1218,10 +1209,10 @@ boolean CON_Responder(event_t *ev)
 	// allow people to use keypad in console (good for typing IP addresses) - Calum
 	if (key >= KEY_KEYPAD7 && key <= KEY_KPADDEL)
 	{
-		XBOXSTATIC char keypad_translation[] = {'7','8','9','-',
-		                                        '4','5','6','+',
-		                                        '1','2','3',
-		                                        '0','.'};
+		char keypad_translation[] = {'7','8','9','-',
+		                             '4','5','6','+',
+		                             '1','2','3',
+		                             '0','.'};
 
 		key = keypad_translation[key - KEY_KEYPAD7];
 	}
@@ -1379,7 +1370,7 @@ static void CON_Print(char *msg)
 
 void CON_LogMessage(const char *msg)
 {
-	XBOXSTATIC char txt[8192], *t;
+	char txt[8192], *t;
 	const char *p = msg, *e = txt+sizeof (txt)-2;
 
 	for (t = txt; *p != '\0'; p++)
@@ -1416,28 +1407,12 @@ void CONS_Printf(const char *fmt, ...)
 	va_end(argptr);
 
 	// echo console prints to log file
-#ifndef _arch_dreamcast
 	DEBFILE(txt);
-#endif
 
-	if (!con_started)
-	{
-#if defined (_XBOX) && defined (__GNUC__)
-		if (!keyboard_started) debugPrint(txt);
-#endif
-#ifdef PC_DOS
-		CON_LogMessage(txt);
-		free(txt);
-		return;
-#endif
-	}
-	else
-		// write message in con text buffer
+	if (con_started)
 		CON_Print(txt);
-
-#ifndef PC_DOS
+	
 	CON_LogMessage(txt);
-#endif
 
 	Lock_state();
 
@@ -1450,19 +1425,9 @@ void CONS_Printf(const char *fmt, ...)
 	// if not in display loop, force screen update
 	if (startup)
 	{
-#if (defined (_WINDOWS)) || (defined (__OS2__) && !defined (HAVE_SDL))
-		patch_t *con_backpic = W_CachePatchName("KARTKREW", PU_CACHE);
-
-		// Jimita: CON_DrawBackpic just called V_DrawScaledPatch
-		V_DrawFixedPatch(0, 0, FRACUNIT/2, 0, con_backpic, NULL);
-
-		W_UnlockCachedPatch(con_backpic);
-		I_LoadingScreen(txt);				// Win32/OS2 only
-#else
 		// here we display the console text
 		CON_Drawer();
 		I_FinishUpdate(); // page flip or blit buffer
-#endif
 	}
 }
 

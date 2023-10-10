@@ -22,7 +22,7 @@
 #include "p_saveg.h"
 
 #include "i_time.h"
-#include "i_sound.h" // for I_PlayCD()..
+#include "i_sound.h"
 #include "i_video.h" // for I_FinishUpdate()..
 #include "r_sky.h"
 #include "i_system.h"
@@ -71,7 +71,7 @@
 #include <time.h>
 #endif
 
-#if defined (_WIN32) || defined (_WIN32_WCE)
+#ifdef _WIN32
 #include <malloc.h>
 #include <math.h>
 #endif
@@ -3354,9 +3354,6 @@ boolean P_SetupLevel(boolean skipprecip)
 
 	// clear special respawning que
 	iquehead = iquetail = 0;
-
-	// Fab : 19-07-98 : start cd music for this level (note: can be remapped)
-	I_PlayCD((UINT8)(gamemap), false);
 
 	// preload graphics
 #ifdef HWRENDER // not win32 only 19990829 by Kin

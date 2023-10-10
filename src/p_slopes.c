@@ -789,6 +789,11 @@ fixed_t P_GetFFloorBottomZAt(const ffloor_t *ffloor, fixed_t x, fixed_t y)
 	return *ffloor->b_slope ? P_GetZAt(*ffloor->b_slope, x, y) : *ffloor->bottomheight;
 }
 
+// Returns the height of the light list at (x, y)
+fixed_t P_GetLightZAt(const lightlist_t *light, fixed_t x, fixed_t y)
+{
+	return light->slope ? P_GetZAt(light->slope, x, y) : light->height;
+}
 
 //
 // P_QuantizeMomentumToSlope
