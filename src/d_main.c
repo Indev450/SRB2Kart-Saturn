@@ -915,11 +915,13 @@ static boolean AddIWAD(void)
 }
 
 boolean found_extra_kart;
+boolean found_extra2_kart;
 
 static void IdentifyVersion(void)
 {
 	const char *srb2waddir = NULL;
 	found_extra_kart = false;
+	found_extra2_kart = false;
 
 #if defined (__unix__) || defined (UNIXCOMMON) || defined (HAVE_SDL)
 	// change to the directory where 'srb2.srb' is found
@@ -970,6 +972,12 @@ static void IdentifyVersion(void)
 	if (FIL_ReadFileOK(va(pandf,srb2waddir,"extra.kart"))) {
 		D_AddFile(va(pandf,srb2waddir,"extra.kart"), startupwadfiles);
 		found_extra_kart = true;
+	}
+	
+	// completely optional 2: Back with a vengence
+	if (FIL_ReadFileOK(va(pandf,srb2waddir,"extra2.kart"))) {
+		D_AddFile(va(pandf,srb2waddir,"extra2.kart"), startupwadfiles);
+		found_extra2_kart = true;
 	}
 
 #if !defined (HAVE_SDL) || defined (HAVE_MIXER)
@@ -1259,6 +1267,9 @@ void D_SRB2Main(void)
 #endif //ifndef DEVELOP
 
 	if (found_extra_kart) // found the funny, add it in!
+		mainwads++;
+	
+	if (found_extra2_kart) // found the funny, add it in!
 		mainwads++;
 
 	//
