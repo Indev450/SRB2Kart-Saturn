@@ -21,6 +21,7 @@
 extern consvar_t cv_playername;
 extern consvar_t cv_playercolor;
 extern consvar_t cv_skin;
+extern consvar_t cv_localskin;
 // secondary splitscreen player
 extern consvar_t cv_playername2;
 extern consvar_t cv_playercolor2;
@@ -157,6 +158,8 @@ extern consvar_t cv_minihead;
 extern consvar_t cv_showlapemblem; 
 
 extern consvar_t cv_showviewpointtext;
+extern consvar_t cv_luaimmersion;
+extern consvar_t cv_fakelocalskin;
 
 extern consvar_t cv_skipmapcheck;
 

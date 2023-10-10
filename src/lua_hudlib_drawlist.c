@@ -22,6 +22,7 @@ enum drawitem_e {
 	DI_DrawScaled,
 	DI_DrawNum,
 	DI_DrawPaddedNum,
+	DI_DrawPingNum,
 	DI_DrawFill,
 	DI_DrawString,
 	DI_DrawKartString,
@@ -45,7 +46,7 @@ typedef struct drawitem_s {
 	INT32 flags;
 	UINT16 basecolor;
 	UINT16 outlinecolor;
-	UINT8 *colormap;
+	const UINT8 *colormap;
 	UINT8 *basecolormap;
 	UINT8 *outlinecolormap;
 	fixed_t sx;
@@ -84,7 +85,7 @@ huddrawlist_h LUA_HUD_CreateDrawList(void)
 {
 	huddrawlist_h drawlist;
 
-	drawlist = (huddrawlist_h) Z_CallocAlign(sizeof(struct huddrawlist_s), PU_STATIC, NULL, 64);
+	drawlist = (huddrawlist_h) Z_Calloc(sizeof(struct huddrawlist_s), PU_STATIC, NULL);
 	drawlist->items = NULL;
 	drawlist->items_capacity = 0;
 	drawlist->items_len = 0;
@@ -145,7 +146,7 @@ static size_t AllocateDrawItem(huddrawlist_h list)
 	{
 		if (list->items_capacity == 0) list->items_capacity = 128;
 		else list->items_capacity *= 2;
-		list->items = (drawitem_t *) Z_ReallocAlign(list->items, sizeof(struct drawitem_s) * list->items_capacity, PU_STATIC, NULL, 64);
+		list->items = (drawitem_t *) Z_Realloc(list->items, sizeof(struct drawitem_s) * list->items_capacity, PU_STATIC, NULL);
 	}
 
 	return list->items_len++;
@@ -164,7 +165,7 @@ static size_t CopyString(huddrawlist_h list, const char* str)
 	{
 		if (list->strbuf_capacity == 0) list->strbuf_capacity = 256;
 		else list->strbuf_capacity *= 2;
-		list->strbuf = (char*) Z_ReallocAlign(list->strbuf, sizeof(char) * list->strbuf_capacity, PU_STATIC, NULL, 8);
+		list->strbuf = (char*) Z_Realloc(list->strbuf, sizeof(char) * list->strbuf_capacity, PU_STATIC, NULL);
 	}
 
 	{
@@ -249,6 +250,25 @@ void LUA_HUD_AddDrawPaddedNum(
 	item->num = num;
 	item->digits = digits;
 	item->flags = flags;
+}
+
+void LUA_HUD_AddDrawPingNum(
+	huddrawlist_h list,
+	INT32 x,
+	INT32 y,
+	INT32 num,
+	INT32 flags,
+	const UINT8 *colormap
+)
+{
+	size_t i = AllocateDrawItem(list);
+	drawitem_t *item = &list->items[i];
+	item->type = DI_DrawPingNum;
+	item->x = x;
+	item->y = y;
+	item->num = num;
+	item->flags = flags;
+	item->colormap = colormap;
 }
 
 void LUA_HUD_AddDrawFill(
@@ -362,6 +382,9 @@ void LUA_HUD_DrawList(huddrawlist_h list)
 				break;
 			case DI_DrawPaddedNum:
 				V_DrawPaddedTallNum(item->x, item->y, item->flags, item->num, item->digits);
+				break;
+			case DI_DrawPingNum:
+				V_DrawPingNum(item->x, item->y, item->flags, item->num, item->colormap);
 				break;
 			case DI_DrawFill:
 				V_DrawFill(item->x, item->y, item->w, item->h, item->c);

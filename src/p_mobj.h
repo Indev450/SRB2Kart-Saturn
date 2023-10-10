@@ -327,6 +327,8 @@ typedef struct mobj_s
 	UINT16 eflags; // extra flags
 
 	void *skin; // overrides 'sprite' when non-NULL (for player bodies to 'remember' the skin)
+	void *localskin;
+	boolean skinlocal;
 	// Player and mobj sprites in multiplayer modes are modified
 	//  using an internal color lookup table for re-indexing.
 	UINT8 color; // This replaces MF_TRANSLATION. Use 0 for default (no translation).

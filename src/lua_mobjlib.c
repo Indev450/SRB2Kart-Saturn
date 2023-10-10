@@ -20,6 +20,8 @@
 #include "p_local.h"
 #include "g_game.h"
 #include "p_setup.h"
+#include "doomdef.h"
+#include "d_netcmd.h"
 
 #include "lua_script.h"
 #include "lua_libs.h"
@@ -363,8 +365,14 @@ int mobj_skin_getter(lua_State *L)
     if (!mo->skin)
 		return 0;
 
-	lua_pushstring(L, ((skin_t *)mo->skin)->name);
-
+	if (hud_running && cv_luaimmersion.value) {
+			if (mo->localskin) // HUD ONLY!!!!!!!!!!
+				lua_pushstring(L, ((skin_t *)mo->localskin)->name);
+			else
+				lua_pushstring(L, ((skin_t *)mo->skin)->name);
+		} else {
+			lua_pushstring(L, ((skin_t *)mo->skin)->name);
+		}
     return 1;
 }
 
@@ -376,7 +384,7 @@ int mobj_skin_setter(lua_State *L)
     char skin[SKINNAMESIZE+1]; // all skin names are limited to this length
     strlcpy(skin, luaL_checkstring(L, 2), sizeof skin);
     strlwr(skin); // all skin names are lowercase
-    for (i = 0; i < numskins; i++)
+    for (i = 0; i < numskins; i++) {
     {
         if (fastcmp(skins[i].name, skin))
         {
@@ -385,7 +393,9 @@ int mobj_skin_setter(lua_State *L)
         }
     }
 
-    return luaL_error(L, "mobj.skin '%s' not found!", skin);
+    }
+		
+	return luaL_error(L, "mobj.skin '%s' not found!", skin);
 }
 
 int mobj_color_setter(lua_State *L)

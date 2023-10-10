@@ -114,6 +114,8 @@ typedef struct wadfile_s
 	UINT32 filesize; // for network
 	UINT8 md5sum[16];
 	boolean important;
+	boolean majormod;
+	boolean localfile; // only for skins
 } wadfile_t;
 
 #define WADFILENUM(lumpnum) (UINT16)((lumpnum)>>16) // wad flumpnum>>16) // wad file number in upper word
@@ -132,7 +134,7 @@ FILE *W_OpenWadFile(const char **filename, boolean useerrors);
 //
 // if local is true, it wouldn't check if file adds complex things, therefore
 // allowing to still join server without the "you have wrong addons loaded" error
-UINT16 W_InitFile(const char *filename, boolean local);
+UINT16 W_InitFile(const char *filename, const char *lumpname, UINT16 *wadnump, boolean local);
 #ifdef DELFILE
 void W_UnloadWadFile(UINT16 num);
 #endif

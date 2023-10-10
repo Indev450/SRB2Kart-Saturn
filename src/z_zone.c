@@ -1,7 +1,7 @@
 // SONIC ROBO BLAST 2
 //-----------------------------------------------------------------------------
 // Copyright (C) 2006      by Graue.
-// Copyright (C) 2006-2018 by Sonic Team Junior.
+// Copyright (C) 2006-2023 by Sonic Team Junior.
 //
 // This program is free software distributed under the
 // terms of the GNU General Public License, version 2.
@@ -27,6 +27,7 @@
 
 #include "doomdef.h"
 #include "doomstat.h"
+#include "r_patch.h"
 #include "i_system.h" // I_GetFreeMem
 #include "i_video.h" // rendermode
 #include "z_zone.h"
@@ -49,27 +50,11 @@ static boolean Z_calloc = false;
 //#define ZDEBUG2
 #endif
 
-struct memblock_s;
-
-typedef struct
-{
-	struct memblock_s *block; // Describing this memory
-	UINT32 id; // Should be ZONEID
-} ATTRPACK memhdr_t;
-
-// Some code might want aligned memory. Assume it wants memory n bytes
-// aligned -- then we allocate n-1 extra bytes and return a pointer to
-// the first byte aligned as requested.
-// Thus, "real" is the pointer we get from malloc() and will free()
-// later, but "hdr" is where the memhdr_t starts.
-// For non-aligned allocations they will be the same.
 typedef struct memblock_s
 {
-	void *real;
-	memhdr_t *hdr;
-
 	void **user;
 	INT32 tag; // purgelevel
+	UINT32 id; // Should be ZONEID
 
 	size_t size; // including the header and blocks
 	size_t realsize; // size of real data only
@@ -80,64 +65,31 @@ typedef struct memblock_s
 #endif
 
 	struct memblock_s *next, *prev;
-} ATTRPACK memblock_t;
+} memblock_t;
 
-#ifdef ZDEBUG
-#define Ptr2Memblock(s, f) Ptr2Memblock2(s, f, __FILE__, __LINE__)
-static memblock_t *Ptr2Memblock2(void *ptr, const char* func, const char *file, INT32 line)
-#else
-static memblock_t *Ptr2Memblock(void *ptr, const char* func)
-#endif
-{
-	memhdr_t *hdr;
-	memblock_t *block;
+#define MEMORY(x) (void *)((uintptr_t)(x) + sizeof(memblock_t))
+#define MEMBLOCK(x) (memblock_t *)((uintptr_t)(x) - sizeof(memblock_t))
 
-	if (ptr == NULL)
-		return NULL;
-
-#ifdef ZDEBUG2
-	CONS_Printf("%s %s:%d\n", func, file, line);
-#endif
-
-	hdr = (memhdr_t *)((UINT8 *)ptr - sizeof *hdr);
-
-#ifdef VALGRIND_MAKE_MEM_DEFINED
-	VALGRIND_MAKE_MEM_DEFINED(hdr, sizeof *hdr);
-#endif
-
-#ifdef VALGRIND_MEMPOOL_EXISTS
-	if (!VALGRIND_MEMPOOL_EXISTS(hdr->block))
-	{
-#ifdef ZDEBUG
-		I_Error("%s: bad memblock from %s:%d", func, file, line);
-#else
-		I_Error("%s: bad memblock", func);
-#endif
-	}
-#endif
-	if (hdr->id != ZONEID)
-	{
-#ifdef ZDEBUG
-		I_Error("%s: wrong id from %s:%d", func, file, line);
-#else
-		I_Error("%s: wrong id", func);
-#endif
-	}
-	block = hdr->block;
-#ifdef VALGRIND_MAKE_MEM_NOACCESS
-	VALGRIND_MAKE_MEM_NOACCESS(hdr, sizeof *hdr);
-#endif
-	return block;
-
-}
-
+// both the head and tail of the zone memory block list
 static memblock_t head;
 
+//
+// Function prototypes
+//
 static void Command_Memfree_f(void);
 #ifdef ZDEBUG
 static void Command_Memdump_f(void);
 #endif
 
+// --------------------------
+// Zone memory initialisation
+// --------------------------
+
+/** Initialises zone memory.
+  * Used at game startup.
+  *
+  * \sa I_GetFreeMem, Command_Memfree_f, Command_Memdump_f
+  */
 void Z_Init(void)
 {
 	size_t total, memfree;
@@ -157,6 +109,17 @@ void Z_Init(void)
 #endif
 }
 
+
+// ----------------------
+// Zone memory allocation
+// ----------------------
+
+/** Frees allocated memory.
+  *
+  * \param ptr A pointer to allocated memory,
+  *             assumed to have been allocated with Z_Malloc/Z_Calloc.
+  * \sa Z_FreeTags
+  */
 #ifdef ZDEBUG
 void Z_Free2(void *ptr, const char *file, INT32 line)
 #else
@@ -172,10 +135,14 @@ void Z_Free(void *ptr)
 	CONS_Debug(DBG_MEMORY, "Z_Free %s:%d\n", file, line);
 #endif
 
+	block = MEMBLOCK(ptr);
+#ifdef PARANOIA
+	if (block->id != ZONEID)
 #ifdef ZDEBUG
-	block = Ptr2Memblock2(ptr, "Z_Free", file, line);
+		I_Error("Z_Free at %s:%d: wrong id", file, line);
 #else
-	block = Ptr2Memblock(ptr, "Z_Free");
+		I_Error("Z_Free: wrong id");
+#endif
 #endif
 
 #ifdef ZDEBUG
@@ -183,11 +150,9 @@ void Z_Free(void *ptr)
 	CONS_Debug(DBG_MEMORY, "Z_Free at %s:%d\n", file, line);
 #endif
 
-#ifdef HAVE_BLUA
 	// anything that isn't by lua gets passed to lua just in case.
 	if (block->tag != PU_LUA)
 		LUA_InvalidateUserdata(ptr);
-#endif
 
 	// TODO: if zdebugging, make sure no other block has a user
 	// that is about to be freed.
@@ -196,21 +161,27 @@ void Z_Free(void *ptr)
 	if (block->user != NULL)
 		*block->user = NULL;
 
-	// Free the memory and get rid of the block.
-	free(block->real);
-	block->prev->next = block->next;
-	block->next->prev = block->prev;
-	free(block);
 #ifdef VALGRIND_DESTROY_MEMPOOL
 	VALGRIND_DESTROY_MEMPOOL(block);
 #endif
+	block->prev->next = block->next;
+	block->next->prev = block->prev;
+	free(block);
 }
 
-// malloc() that doesn't accept failure.
+/** malloc() that doesn't accept failure.
+  *
+  * \param size Amount of memory to be allocated, in bytes.
+  * \return A pointer to the allocated memory.
+  */
 static void *xm(size_t size)
 {
 	const size_t padedsize = size+sizeof (size_t);
-	void *p = malloc(padedsize);
+	void *p;
+
+	if (padedsize < size)/* overflow check */
+		I_Error("You are allocating memory too large!");
+	p = malloc(padedsize);
 
 	if (p == NULL)
 	{
@@ -220,10 +191,6 @@ static void *xm(size_t size)
 
 		if (p == NULL)
 		{
-#if defined (_NDS) | defined (_PSP)
-			// Temporary-ish debugging measure
-			Command_Memfree_f();
-#endif
 			I_Error("Out of memory allocating %s bytes", sizeu1(size));
 		}
 	}
@@ -231,10 +198,18 @@ static void *xm(size_t size)
 	return p;
 }
 
-// Z_Malloc
-// You can pass Z_Malloc() a NULL user if the tag is less than
-// PU_PURGELEVEL.
-
+/** The Z_MallocAlign function.
+  * Allocates a block of memory, adds it to a linked list so we can keep track of it.
+  *
+  * \param size Amount of memory to be allocated, in bytes.
+  * \param tag Purge tag.
+  * \param user The address of a pointer to the memory to be allocated.
+  *             When the memory is freed by Z_Free later,
+  *             the pointer at this address will then be automatically set to NULL.
+  * \param alignbits The alignment of the memory to be allocated, in bits. Can be 0.
+  * \note You can pass Z_Malloc() a NULL user if the tag is less than PU_PURGELEVEL.
+  * \sa Z_CallocAlign, Z_ReallocAlign
+  */
 #ifdef ZDEBUG
 void *Z_Malloc2(size_t size, INT32 tag, void *user, INT32 alignbits,
 	const char *file, INT32 line)
@@ -242,38 +217,20 @@ void *Z_Malloc2(size_t size, INT32 tag, void *user, INT32 alignbits,
 void *Z_MallocAlign(size_t size, INT32 tag, void *user, INT32 alignbits)
 #endif
 {
-	size_t extrabytes = (1<<alignbits) - 1;
-	size_t padsize = 0;
 	memblock_t *block;
 	void *ptr;
-	memhdr_t *hdr;
-	void *given;
-	size_t blocksize = extrabytes + sizeof *hdr + size;
+	(void)(alignbits); // no longer used, so silence warnings.
 
 #ifdef ZDEBUG2
 	CONS_Debug(DBG_MEMORY, "Z_Malloc %s:%d\n", file, line);
 #endif
 
-	block = xm(sizeof *block);
+	block = xm(sizeof (memblock_t) + size);
+	ptr = MEMORY(block);
+	I_Assert((intptr_t)ptr % sizeof (void *) == 0);
+
 #ifdef HAVE_VALGRIND
-	padsize += (1<<sizeof(size_t))*2;
-#endif
-	ptr = xm(blocksize + padsize*2);
-
-	// This horrible calculation makes sure that "given" is aligned
-	// properly.
-	given = (void *)((size_t)((UINT8 *)ptr + extrabytes + sizeof *hdr + padsize/2)
-		& ~extrabytes);
-
-	// The mem header lives 'sizeof (memhdr_t)' bytes before given.
-	hdr = (memhdr_t *)((UINT8 *)given - sizeof *hdr);
-
-#ifdef VALGRIND_CREATE_MEMPOOL
-	VALGRIND_CREATE_MEMPOOL(block, padsize, Z_calloc);
 	Z_calloc = false;
-#endif
-#ifdef VALGRIND_MEMPOOL_ALLOC
-	VALGRIND_MEMPOOL_ALLOC(block, hdr, size + sizeof *hdr);
 #endif
 
 	block->next = head.next;
@@ -281,36 +238,46 @@ void *Z_MallocAlign(size_t size, INT32 tag, void *user, INT32 alignbits)
 	head.next = block;
 	block->next->prev = block;
 
-	block->real = ptr;
-	block->hdr = hdr;
 	block->tag = tag;
 	block->user = NULL;
 #ifdef ZDEBUG
 	block->ownerline = line;
 	block->ownerfile = file;
 #endif
-	block->size = blocksize;
+	block->size = sizeof (memblock_t) + size;
 	block->realsize = size;
 
-	hdr->id = ZONEID;
-	hdr->block = block;
-
-#ifdef VALGRIND_MAKE_MEM_NOACCESS
-	VALGRIND_MAKE_MEM_NOACCESS(hdr, sizeof *hdr);
+#ifdef VALGRIND_CREATE_MEMPOOL
+	VALGRIND_CREATE_MEMPOOL(block, size, Z_calloc);
 #endif
+
+	block->id = ZONEID;
 
 	if (user != NULL)
 	{
 		block->user = user;
-		*(void **)user = given;
+		*(void **)user = ptr;
 	}
 	else if (tag >= PU_PURGELEVEL)
 		I_Error("Z_Malloc: attempted to allocate purgable block "
 			"(size %s) with no user", sizeu1(size));
 
-	return given;
+	return ptr;
 }
 
+/** The Z_CallocAlign function.
+  * Allocates a block of memory, adds it to a linked list so we can keep track of it.
+  * Unlike Z_MallocAlign, this also initialises the bytes to zero.
+  *
+  * \param size Amount of memory to be allocated, in bytes.
+  * \param tag Purge tag.
+  * \param user The address of a pointer to the memory to be allocated.
+  *             When the memory is freed by Z_Free later,
+  *             the pointer at this address will then be automatically set to NULL.
+  * \param alignbits The alignment of the memory to be allocated, in bits. Can be 0.
+  * \note You can pass Z_Calloc() a NULL user if the tag is less than PU_PURGELEVEL.
+  * \sa Z_MallocAlign, Z_ReallocAlign
+  */
 #ifdef ZDEBUG
 void *Z_Calloc2(size_t size, INT32 tag, void *user, INT32 alignbits, const char *file, INT32 line)
 #else
@@ -327,10 +294,26 @@ void *Z_CallocAlign(size_t size, INT32 tag, void *user, INT32 alignbits)
 #endif
 }
 
+/** The Z_ReallocAlign function.
+  * Reallocates a block of memory with a new size.
+  *
+  * \param ptr A pointer to allocated memory,
+  *             assumed to have been allocated with Z_Malloc/Z_Calloc.
+  *             If NULL, this function instead acts as a wrapper for Z_CallocAlign.
+  * \param size New size of memory block, in bytes.
+  *             If zero, then the memory is freed and NULL is returned.
+  * \param tag New purge tag.
+  * \param user The address of a pointer to the memory to be reallocated.
+  *             This can be a different user to the one originally assigned to the memory block.
+  * \param alignbits The alignment of the memory to be allocated, in bits. Can be 0.
+  * \return A pointer to the reallocated memory. Can be NULL if memory was freed.
+  * \note You can pass Z_Realloc() a NULL user if the tag is less than PU_PURGELEVEL.
+  * \sa Z_MallocAlign, Z_CallocAlign
+  */
 #ifdef ZDEBUG
 void *Z_Realloc2(void *ptr, size_t size, INT32 tag, void *user, INT32 alignbits, const char *file, INT32 line)
 #else
-void *Z_ReallocAlign(void *ptr, size_t size,INT32 tag, void *user,  INT32 alignbits)
+void *Z_ReallocAlign(void *ptr, size_t size, INT32 tag, void *user, INT32 alignbits)
 #endif
 {
 	void *rez;
@@ -356,10 +339,14 @@ void *Z_ReallocAlign(void *ptr, size_t size,INT32 tag, void *user,  INT32 alignb
 #endif
 	}
 
+	block = MEMBLOCK(ptr);
+#ifdef PARANOIA
+	if (block->id != ZONEID)
 #ifdef ZDEBUG
-	block = Ptr2Memblock2(ptr, "Z_Realloc", file, line);
+		I_Error("Z_ReallocAlign at %s:%d: wrong id", file, line);
 #else
-	block = Ptr2Memblock(ptr, "Z_Realloc");
+		I_Error("Z_ReallocAlign: wrong id");
+#endif
 #endif
 
 	if (block == NULL)
@@ -397,6 +384,11 @@ void *Z_ReallocAlign(void *ptr, size_t size,INT32 tag, void *user,  INT32 alignb
 	return rez;
 }
 
+/** Frees all memory for a given set of tags.
+  *
+  * \param lowtag The lowest tag to consider.
+  * \param hightag The highest tag to consider.
+  */
 void Z_FreeTags(INT32 lowtag, INT32 hightag)
 {
 	memblock_t *block, *next;
@@ -405,28 +397,57 @@ void Z_FreeTags(INT32 lowtag, INT32 hightag)
 	for (block = head.next; block != &head; block = next)
 	{
 		next = block->next; // get link before freeing
-
 		if (block->tag >= lowtag && block->tag <= hightag)
-			Z_Free((UINT8 *)block->hdr + sizeof *block->hdr);
+			Z_Free(MEMORY(block));
 	}
 }
 
-//
-// Z_CheckMemCleanup
-//
-// TODO: Currently blocks >= PU_PURGELEVEL are freed every
-// CLEANUPCOUNT. It might be better to keep track of
-// the total size of all purgable memory and free it when the
-// size exceeds some value.
-//
-// This was in Z_Malloc, but was freeing data at
-// unsafe times. Now it is only called when it is safe
-// to cleanup memory.
+/** Iterates through all memory for a given set of tags.
+  *
+  * \param lowtag The lowest tag to consider.
+  * \param hightag The highest tag to consider.
+  * \param iterfunc The iterator function.
+  */
+void Z_IterateTags(INT32 lowtag, INT32 hightag, boolean (*iterfunc)(void *))
+{
+	memblock_t *block, *next;
 
+	if (!iterfunc)
+		I_Error("Z_IterateTags: no iterator function was given");
+
+	for (block = head.next; block != &head; block = next)
+	{
+		next = block->next; // get link before possibly freeing
+
+		if (block->tag >= lowtag && block->tag <= hightag)
+		{
+			void *mem = MEMORY(block);
+			boolean free = iterfunc(mem);
+			if (free)
+				Z_Free(mem);
+		}
+	}
+}
+
+// -----------------
+// Utility functions
+// -----------------
+
+// starting value of nextcleanup
 #define CLEANUPCOUNT 2000
 
+// number of function calls left before next cleanup
 static INT32 nextcleanup = CLEANUPCOUNT;
 
+/** This was in Z_Malloc, but was freeing data at
+  * unsafe times. Now it is only called when it is safe
+  * to cleanup memory.
+  *
+  * \todo Currently blocks >= PU_PURGELEVEL are freed every
+  *       CLEANUPCOUNT. It might be better to keep track of
+  *       the total size of all purgable memory and free it when the
+  *       size exceeds some value.
+  */
 void Z_CheckMemCleanup(void)
 {
 	if (nextcleanup-- == 0)
@@ -445,15 +466,13 @@ void Z_CheckMemCleanup(void)
 void Z_CheckHeap(INT32 i)
 {
 	memblock_t *block;
-	memhdr_t *hdr;
 	UINT32 blocknumon = 0;
 	void *given;
 
 	for (block = head.next; block != &head; block = block->next)
 	{
 		blocknumon++;
-		hdr = block->hdr;
-		given = (UINT8 *)hdr + sizeof *hdr;
+		given = MEMORY(block);
 #ifdef ZDEBUG2
 		CONS_Debug(DBG_MEMORY, "block %u owned by %s:%d\n",
 			blocknumon, block->ownerfile, block->ownerline);
@@ -469,7 +488,7 @@ void Z_CheckHeap(INT32 i)
 #ifdef ZDEBUG
 				, block->ownerfile, block->ownerline
 #endif
-			        );
+				);
 		}
 #endif
 		if (block->user != NULL && *(block->user) != given)
@@ -482,7 +501,7 @@ void Z_CheckHeap(INT32 i)
 #ifdef ZDEBUG
 				, block->ownerfile, block->ownerline
 #endif
-			       );
+				);
 		}
 		if (block->next->prev != block)
 		{
@@ -494,7 +513,7 @@ void Z_CheckHeap(INT32 i)
 #ifdef ZDEBUG
 				, block->ownerfile, block->ownerline
 #endif
-			       );
+				);
 		}
 		if (block->prev->next != block)
 		{
@@ -506,25 +525,9 @@ void Z_CheckHeap(INT32 i)
 #ifdef ZDEBUG
 				, block->ownerfile, block->ownerline
 #endif
-			       );
+				);
 		}
-#ifdef VALGRIND_MAKE_MEM_DEFINED
-		VALGRIND_MAKE_MEM_DEFINED(hdr, sizeof *hdr);
-#endif
-		if (hdr->block != block)
-		{
-			I_Error("Z_CheckHeap %d: block %u"
-#ifdef ZDEBUG
-				"(owned by %s:%d)"
-#endif
-				" doesn't have linkback from allocated memory",
-				i, blocknumon
-#ifdef ZDEBUG
-				, block->ownerfile, block->ownerline
-#endif
-					);
-		}
-		if (hdr->id != ZONEID)
+		if (block->id != ZONEID)
 		{
 			I_Error("Z_CheckHeap %d: block %u"
 #ifdef ZDEBUG
@@ -534,50 +537,37 @@ void Z_CheckHeap(INT32 i)
 #ifdef ZDEBUG
 				, block->ownerfile, block->ownerline
 #endif
-					);
+				);
 		}
-#ifdef VALGRIND_MAKE_MEM_NOACCESS
-	VALGRIND_MAKE_MEM_NOACCESS(hdr, sizeof *hdr);
-#endif
 	}
 }
 
+// ------------------------
+// Zone memory modification
+// ------------------------
+
+/** Changes a memory block's purge tag.
+  *
+  * \param ptr A pointer to allocated memory,
+  *             assumed to have been allocated with Z_Malloc/Z_Calloc.
+  * \param tag The new tag.
+  * \sa Z_SetUser
+  */
 #ifdef PARANOIA
 void Z_ChangeTag2(void *ptr, INT32 tag, const char *file, INT32 line)
 #else
-void Z_ChangeTag2(void *ptr, INT32 tag)
+void Z_ChangeTag(void *ptr, INT32 tag)
 #endif
 {
 	memblock_t *block;
-	memhdr_t *hdr;
 
 	if (ptr == NULL)
 		return;
 
-	hdr = (memhdr_t *)((UINT8 *)ptr - sizeof *hdr);
+	block = MEMBLOCK(ptr);
 
-#ifdef VALGRIND_MAKE_MEM_DEFINED
-	VALGRIND_MAKE_MEM_DEFINED(hdr, sizeof *hdr);
-#endif
-
-#ifdef VALGRIND_MEMPOOL_EXISTS
-	if (!VALGRIND_MEMPOOL_EXISTS(hdr->block))
-	{
 #ifdef PARANOIA
-		I_Error("Z_CT at %s:%d: bad memblock", file, line);
-#else
-		I_Error("Z_CT: bad memblock");
-#endif
-	}
-#endif
-#ifdef PARANOIA
-	if (hdr->id != ZONEID) I_Error("Z_CT at %s:%d: wrong id", file, line);
-#endif
-
-	block = hdr->block;
-
-#ifdef VALGRIND_MAKE_MEM_NOACCESS
-	VALGRIND_MAKE_MEM_NOACCESS(hdr, sizeof *hdr);
+	if (block->id != ZONEID) I_Error("Z_ChangeTag at %s:%d: wrong id", file, line);
 #endif
 
 	if (tag >= PU_PURGELEVEL && block->user == NULL)
@@ -587,12 +577,48 @@ void Z_ChangeTag2(void *ptr, INT32 tag)
 	block->tag = tag;
 }
 
+/** Changes a memory block's user.
+  *
+  * \param ptr A pointer to allocated memory,
+  *             assumed to have been allocated with Z_Malloc/Z_Calloc.
+  * \param newuser The new user for the memory block.
+  * \sa Z_ChangeTag
+  */
+#ifdef PARANOIA
+void Z_SetUser2(void *ptr, void **newuser, const char *file, INT32 line)
+#else
+void Z_SetUser(void *ptr, void **newuser)
+#endif
+{
+	memblock_t *block;
+
+	if (ptr == NULL)
+		return;
+
+	block = MEMBLOCK(ptr);
+
+#ifdef PARANOIA
+	if (block->id != ZONEID) I_Error("Z_SetUser at %s:%d: wrong id", file, line);
+#endif
+
+	if (block->tag >= PU_PURGELEVEL && newuser == NULL)
+		I_Error("Internal memory management error: "
+			"tried to make block purgable but it has no owner");
+
+	block->user = (void*)newuser;
+	*newuser = ptr;
+}
+
+// -----------------
+// Zone memory usage
+// -----------------
+
 /** Calculates memory usage for a given set of tags.
+  *
   * \param lowtag The lowest tag to consider.
   * \param hightag The highest tag to consider.
   * \return Number of bytes currently allocated in the heap for the
   *         given tags.
-  * \sa Z_TagUsage
   */
 size_t Z_TagsUsage(INT32 lowtag, INT32 hightag)
 {
@@ -609,12 +635,14 @@ size_t Z_TagsUsage(INT32 lowtag, INT32 hightag)
 	return cnt;
 }
 
-size_t Z_TagUsage(INT32 tagnum)
-{
-	return Z_TagsUsage(tagnum, tagnum);
-}
+// -----------------------
+// Miscellaneous functions
+// -----------------------
 
-void Command_Memfree_f(void)
+/** The function called by the "memfree" console command.
+  * Prints the memory being used by each part of the game to the console.
+  */
+static void Command_Memfree_f(void)
 {
 	size_t freebytes, totalbytes;
 
@@ -638,7 +666,7 @@ void Command_Memfree_f(void)
 		CONS_Printf(M_GetText("Mipmap patches    : %7s KB\n"), sizeu1(Z_TagUsage(PU_HWRPATCHCOLMIPMAP)>>10));
 		CONS_Printf(M_GetText("HW Texture cache  : %7s KB\n"), sizeu1(Z_TagUsage(PU_HWRCACHE)>>10));
 		CONS_Printf(M_GetText("Plane polygons    : %7s KB\n"), sizeu1(Z_TagUsage(PU_HWRPLANE)>>10));
-		CONS_Printf(M_GetText("All GPU textures  : %7s KB\n"), sizeu1(HWR_GetTextureUsed()>>10));
+		CONS_Printf(M_GetText("All GPU textures       : %7d KB\n"), HWR_GetTextureUsed()>>10);
 	}
 #endif
 
@@ -648,7 +676,14 @@ void Command_Memfree_f(void)
 	CONS_Printf(M_GetText("Available physical memory: %s KB\n"), sizeu1(freebytes>>10));
 }
 
+
+
 #ifdef ZDEBUG
+/** The function called by the "memdump" console command.
+  * Prints zone memory debugging information (i.e. tag, size, location in code allocated).
+  * Can be all memory allocated in game, or between a set of tags (if -min/-max args used).
+  * This command is available only if ZDEBUG is enabled.
+  */
 static void Command_Memdump_f(void)
 {
 	memblock_t *block;
@@ -670,45 +705,12 @@ static void Command_Memdump_f(void)
 }
 #endif
 
-// Creates a copy of a string.
+/** Creates a copy of a string.
+  *
+  * \param s The string to be copied.
+  * \return A copy of the string, allocated in zone memory.
+  */
 char *Z_StrDup(const char *s)
 {
 	return strcpy(ZZ_Alloc(strlen(s) + 1), s);
-}
-
-
-#ifdef PARANOIA
-void Z_SetUser2(void *ptr, void **newuser, const char *file, INT32 line)
-#else
-void Z_SetUser2(void *ptr, void **newuser)
-#endif
-{
-	memblock_t *block;
-	memhdr_t *hdr;
-
-	if (ptr == NULL)
-		return;
-
-	hdr = (memhdr_t *)((UINT8 *)ptr - sizeof *hdr);
-
-#ifdef VALGRIND_MAKE_MEM_DEFINED
-	VALGRIND_MAKE_MEM_DEFINED(hdr, sizeof *hdr);
-#endif
-
-#ifdef PARANOIA
-	if (hdr->id != ZONEID) I_Error("Z_CT at %s:%d: wrong id", file, line);
-#endif
-
-	block = hdr->block;
-
-#ifdef VALGRIND_MAKE_MEM_NOACCESS
-	VALGRIND_MAKE_MEM_NOACCESS(hdr, sizeof *hdr);
-#endif
-
-	if (block->tag >= PU_PURGELEVEL && newuser == NULL)
-		I_Error("Internal memory management error: "
-			"tried to make block purgable but it has no owner");
-
-	block->user = (void*)newuser;
-	*newuser = ptr;
 }

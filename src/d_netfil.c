@@ -513,7 +513,7 @@ INT32 CL_CheckFiles(void)
 
 		for (i = 0, j = mainwads+1; i < fileneedednum || j < numwadfiles;)
 		{
-			if (j < numwadfiles && !wadfiles[j]->important)
+			if (j < numwadfiles && (!wadfiles[j]->important || wadfiles[j]->localfile))
 			{
 				// Unimportant on our side. still don't care.
 				++j;
@@ -562,7 +562,7 @@ INT32 CL_CheckFiles(void)
 		CONS_Debug(DBG_NETPLAY, "searching for '%s' ", fileneeded[i].filename);
 
 		// Check in already loaded files
-		for (j = mainwads+1; wadfiles[j]; j++)
+		for (j = mainwads+1; j < numwadfiles; j++)
 		{
 			nameonly(strcpy(wadfilename, wadfiles[j]->filename));
 			if (!stricmp(wadfilename, fileneeded[i].filename) &&

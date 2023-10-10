@@ -1696,6 +1696,8 @@ mobj_t *P_SpawnGhostMobj(mobj_t *mobj)
 	
 	ghost->fuse = ghost->info->damage;
 	ghost->skin = mobj->skin;
+	ghost->localskin = mobj->localskin;
+	ghost->skinlocal = mobj->skinlocal;
 
 	if (mobj->flags2 & MF2_OBJECTFLIP)
 		ghost->flags |= MF2_OBJECTFLIP;
@@ -1737,10 +1739,19 @@ void P_DoPlayerExit(player_t *player)
 			if (P_IsLocalPlayer(player))
 			{
 				sfxenum_t sfx_id;
-				if (K_IsPlayerLosing(player))
-					sfx_id = ((skin_t *)player->mo->skin)->soundsid[S_sfx[sfx_klose].skinsound];
-				else
-					sfx_id = ((skin_t *)player->mo->skin)->soundsid[S_sfx[sfx_kwin].skinsound];
+				// fix godjjsa win sounds
+				if (K_IsPlayerLosing(player)) {
+					if (player->mo->localskin)
+						sfx_id = ((skin_t *)player->mo->localskin)->soundsid[S_sfx[sfx_klose].skinsound];
+					else
+						sfx_id = ((skin_t *)player->mo->skin)->soundsid[S_sfx[sfx_klose].skinsound];
+				}
+				else {
+					if (player->mo->localskin)
+						sfx_id = ((skin_t *)player->mo->localskin)->soundsid[S_sfx[sfx_kwin].skinsound];
+					else
+						sfx_id = ((skin_t *)player->mo->skin)->soundsid[S_sfx[sfx_kwin].skinsound];
+				}
 				S_StartSound(NULL, sfx_id);
 			}
 			else
