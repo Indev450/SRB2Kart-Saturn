@@ -579,10 +579,17 @@ static int libd_drawOnMinimap(lua_State *L)
 	list = (huddrawlist_h) lua_touserdata(L, -1);
 	lua_pop(L, 1);
 
-	if (LUA_HUD_IsDrawListValid(list))
-		LUA_HUD_AddDrawScaled(list, amxpos, amypos, scale, patch, splitflags, colormap);
-	else
-		V_DrawFixedPatch(amxpos, amypos, scale, splitflags, patch, colormap);
+	if (LUA_HUD_IsDrawListValid(list)){
+		if (cv_minihead.value)
+			LUA_HUD_AddDrawScaled(list, amxpos, amypos, scale/2, patch, splitflags, colormap);
+		else
+			LUA_HUD_AddDrawScaled(list, amxpos, amypos, scale, patch, splitflags, colormap);
+	}else{
+		if (cv_minihead.value)
+			V_DrawFixedPatch(amxpos, amypos, scale/2, splitflags, patch, colormap);
+		else
+			V_DrawFixedPatch(amxpos, amypos, scale, splitflags, patch, colormap);
+	}
 
 	
 	return 0;
