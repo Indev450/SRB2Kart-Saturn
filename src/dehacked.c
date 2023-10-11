@@ -3173,7 +3173,7 @@ static void DEH_LoadDehackedFile(MYFILE *f, UINT16 wad)
 	dbg_line = -1; // start at -1 so the first line is 0.
 	while (!myfeof(f))
 	{
-		XBOXSTATIC char origpos[128];
+		char origpos[128];
 		INT32 size = 0;
 		char *traverse;
 
