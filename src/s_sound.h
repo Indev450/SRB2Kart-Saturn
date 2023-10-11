@@ -99,6 +99,13 @@ void S_RestartMusic(void);
 lumpnum_t S_GetSfxLumpNum(sfxinfo_t *sfx);
 
 //
+// Sound Status
+//
+
+boolean S_SoundDisabled(void);
+
+
+//
 // Start sound for thing at <origin> using <sound_id> from sounds.h
 //
 void S_StartSound(const void *origin, sfxenum_t sound_id);
@@ -118,6 +125,7 @@ boolean S_MIDIMusicDisabled(void);
 boolean S_MusicDisabled(void);
 boolean S_MusicPlaying(void);
 boolean S_MusicPaused(void);
+boolean S_MusicNotInFocus(void);
 musictype_t S_MusicType(void);
 const char *S_MusicName(void);
 boolean S_MusicInfo(char *mname, UINT16 *mflags, boolean *looping);
@@ -210,9 +218,6 @@ void S_StopMusic(void);
 void S_PauseAudio(void);
 void S_ResumeAudio(void);
 
-// Enable and disable sound effects
-void S_EnableSound(void);
-void S_DisableSound(void);
 
 //
 // Music Fading

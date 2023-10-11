@@ -54,9 +54,6 @@ static void GameSounds_OnChange(void);
 static void GameDigiMusic_OnChange(void);
 static void BufferSize_OnChange(void);
 
-static void PlayMusicIfUnfocused_OnChange(void);
-static void PlaySoundIfUnfocused_OnChange(void);
-
 #ifdef HAVE_OPENMPT
 static void ModFilter_OnChange(void);
 static void StereoSep_OnChange(void);
@@ -96,8 +93,8 @@ consvar_t cv_gamemidimusic = {"midimusic", "On", CV_SAVE|CV_CALL|CV_NOINIT, CV_O
 #endif
 consvar_t cv_gamesounds = {"sounds", "On", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, GameSounds_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_playmusicifunfocused = {"playmusicifunfocused",  "No", CV_SAVE|CV_CALL|CV_NOINIT, CV_YesNo, PlayMusicIfUnfocused_OnChange, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_playsoundifunfocused = {"playsoundsifunfocused", "No", CV_SAVE|CV_CALL|CV_NOINIT, CV_YesNo, PlaySoundIfUnfocused_OnChange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_playmusicifunfocused = {"playmusicifunfocused",  "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_playsoundifunfocused = {"playsoundsifunfocused", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static CV_PossibleValue_t music_resync_threshold_cons_t[] = {
 	{0,    "MIN"},
@@ -341,6 +338,19 @@ lumpnum_t S_GetSfxLumpNum(sfxinfo_t *sfx)
 	return W_GetNumForName("dsthok");
 }
 
+//
+// Sound Status
+//
+
+boolean S_SoundDisabled(void)
+{
+	return (
+			sound_disabled ||
+			( window_notinfocus && ! cv_playsoundifunfocused.value )
+	);
+}
+
+
 // Stop all sounds, load level info, THEN start sounds.
 void S_StopSounds(void)
 {
@@ -437,7 +447,7 @@ void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
 	listener_t listener[MAXSPLITSCREENPLAYERS];
 	mobj_t *listenmobj[MAXSPLITSCREENPLAYERS];
 
-	if (sound_disabled || !sound_started)
+	if (S_SoundDisabled() || !sound_started)
 		return;
 
 	// Don't want a sound? Okay then...
@@ -613,7 +623,7 @@ void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
 
 void S_StartSound(const void *origin, sfxenum_t sfx_id)
 {
-	if (sound_disabled)
+	if (S_SoundDisabled())
 		return;
 
 	if (mariomode) // Sounds change in Mario mode!
@@ -1541,6 +1551,13 @@ boolean S_MusicPaused(void)
 	return I_SongPaused();
 }
 
+boolean S_MusicNotInFocus(void)
+{
+	return (
+			( window_notinfocus && ! cv_playmusicifunfocused.value )
+	);
+}
+
 musictype_t S_MusicType(void)
 {
 	return I_SongType();
@@ -1693,7 +1710,7 @@ static boolean S_PlayMusic(boolean looping, UINT32 fadeinms)
 
 	S_InitMusicVolume(); // switch between digi and sequence volume
 
-	if (window_notinfocus && !cv_playmusicifunfocused.value)
+	if (S_MusicNotInFocus())
 		I_SetMusicVolume(0);
 
 	return true;
@@ -1828,26 +1845,11 @@ void S_PauseAudio(void)
 
 void S_ResumeAudio(void)
 {
+	if (S_MusicNotInFocus())
+		return;
+
 	if (I_SongPlaying() && I_SongPaused())
 		I_ResumeSong();
-}
-
-void S_DisableSound(void)
-{
-    if (sound_started && !sound_disabled)
-	{
-		S_StopSounds();
-	}
-	sound_disabled = true;
-}
-
-void S_EnableSound(void)
-{
-    if (sound_started && sound_disabled)
-	{
-		S_InitSfxChannels(cv_soundvolume.value);
-	}
-	sound_disabled = false;
 }
 
 void S_SetMusicVolume(INT32 digvolume, INT32 seqvolume)
@@ -2131,12 +2133,18 @@ void GameSounds_OnChange(void)
 
 	if (sound_disabled)
 	{
-		if (!( cv_playsoundifunfocused.value && window_notinfocus ))
-			S_EnableSound();
+		sound_disabled = false;
+		I_StartupSound(); // will return early if initialised
+		S_InitSfxChannels(cv_soundvolume.value);
+		S_StartSound(NULL, sfx_strpst);
 	}
 	else
-		S_DisableSound();
+	{
+		sound_disabled = true;
+		S_StopSounds();
+	}
 }
+
 
 void GameDigiMusic_OnChange(void)
 {
@@ -2148,8 +2156,9 @@ void GameDigiMusic_OnChange(void)
 	if (digital_disabled)
 	{
 		digital_disabled = false;
+		I_StartupSound(); // will return early if initialised
 		I_InitMusic();
-		S_StopMusic();
+		
 		if (Playing())
 			P_RestoreMusic(&players[consoleplayer]);
 		else
@@ -2179,6 +2188,7 @@ void GameDigiMusic_OnChange(void)
 		}
 	}
 }
+
 
 #ifdef HAVE_OPENMPT
 void ModFilter_OnChange(void)
@@ -2262,28 +2272,3 @@ void GameMIDIMusic_OnChange(void)
 	}
 }
 #endif
-
-static void PlayMusicIfUnfocused_OnChange(void)
-{
-	if (window_notinfocus)
-	{
-		if (cv_playmusicifunfocused.value)
-			I_SetMusicVolume(0);
-		else
-			S_InitMusicVolume();
-	}
-}
-
-static void PlaySoundIfUnfocused_OnChange(void)
-{
-	if (!cv_gamesounds.value)
-		return;
-
-	if (window_notinfocus)
-	{
-		if (cv_playsoundifunfocused.value)
-			S_DisableSound();
-		else
-			S_EnableSound();
-	}
-}
