@@ -447,20 +447,20 @@ static int libd_drawOnMinimap(lua_State *L)
 	// replicate exactly what source does for its minimap drawer; AKA hardcoded garbo.
 
 	// first, check what position the mmap is supposed to be in (pasted from k_kart.c):
-	MM_X = BASEVIDWIDTH - 50;		// 270
-	MM_Y = (BASEVIDHEIGHT/2)-16; //  84
+	MM_X = BASEVIDWIDTH - 50 + cv_mini_xoffset.value;		// 270
+	MM_Y = (BASEVIDHEIGHT/2)-16 + cv_mini_yoffset.value; //  84
 	if (splitscreen)
 	{
-		MM_Y = (BASEVIDHEIGHT/2);
+		MM_Y = (BASEVIDHEIGHT/2) + cv_mini_yoffset.value;
 		if (splitscreen > 1)	// 3P : bottom right
 		{
-			MM_X = (3*BASEVIDWIDTH/4);
-			MM_Y = (3*BASEVIDHEIGHT/4);
+			MM_X = (3*BASEVIDWIDTH/4) + cv_mini_xoffset.value;
+			MM_Y = (3*BASEVIDHEIGHT/4) + cv_mini_yoffset.value;
 
 			if (splitscreen > 2) // 4P: centered
 			{
-				MM_X = (BASEVIDWIDTH/2);
-				MM_Y = (BASEVIDHEIGHT/2);
+				MM_X = (BASEVIDWIDTH/2) + cv_mini_xoffset.value;
+				MM_Y = (BASEVIDHEIGHT/2) + cv_mini_yoffset.value;
 			}
 		}
 	}
