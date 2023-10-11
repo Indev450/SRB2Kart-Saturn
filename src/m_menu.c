@@ -1733,8 +1733,8 @@ enum
 	sm_waittime,
 	sm_skinselspeed,
 	sm_input,
-	sm_colorhud,
 	sm_speedometer,
+	sm_colorhud,
 	sm_lapemblem,
 	sm_mapnames,
 	sm_smallmap,
@@ -3920,6 +3920,9 @@ void M_Init(void)
 
 	if (!found_extra_kart) // why bother?
 		OP_SaturnMenu[sm_speedometer].status = IT_GRAYEDOUT;
+		
+	if (!found_extra2_kart) // uhguauhauguuhee
+		OP_SaturnMenu[sm_colorhud].status = IT_GRAYEDOUT;
 
 #ifndef NONET
 	CV_RegisterVar(&cv_serversort);
