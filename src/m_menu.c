@@ -1713,7 +1713,7 @@ static menuitem_t OP_SaturnMenu[] =
 	{IT_STRING | IT_CVAR, NULL, "Skin Select Spinning Speed",		 	&cv_skinselectspin, 	 	35},
 	{IT_STRING | IT_CVAR, NULL, "Input Display outside of RA",		 	&cv_showinput, 	 			45},
 	{IT_STRING | IT_CVAR, NULL, "Small Speedometer",		 			&cv_newspeedometer, 	 	55},
-	{IT_STRING | IT_CVAR, NULL, "Colorized HUD",						&cv_colorizedhud,		 	65},
+	{IT_STRING | IT_CVAR, NULL, "Colourized HUD",						&cv_colorizedhud,		 	65},
 	{IT_STRING | IT_CVAR, NULL, "Show Lap Emblem",		 				&cv_showlapemblem, 	 		75},
 	{IT_STRING | IT_CVAR, NULL,	  "Show Minimap Names",   				&cv_showminimapnames, 		85},
 	{IT_STRING | IT_CVAR, NULL,	  "Small Minimap Players",   			&cv_minihead, 				95},
