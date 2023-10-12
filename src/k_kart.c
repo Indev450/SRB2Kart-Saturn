@@ -63,7 +63,9 @@ consvar_t cv_saltysquish = {"hardcodehopsquish", "On", CV_SAVE, CV_OnOff, NULL, 
 
 //Colourized HUD
 consvar_t cv_colorizedhud = {"colorizedhud", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_colorizedhudcolor = {"colorizedhudcolor", "None", CV_SAVE, Color_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+static CV_PossibleValue_t HudColor_cons_t[MAXSKINCOLORS+1];
+consvar_t cv_colorizedhudcolor = {"colorizedhudcolor", "Skin Color", CV_SAVE, HudColor_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 
 // SOME IMPORTANT VARIABLES DEFINED IN DOOMDEF.H:
@@ -592,6 +594,17 @@ UINT8 K_GetHudColor()
 
 void K_RegisterKartStuff(void)
 {
+	HudColor_cons_t[0].value = 0;
+	HudColor_cons_t[0].strvalue = "Skin Color";
+
+	for (INT32 i = 1; i < MAXSKINCOLORS; i++)
+	{
+		HudColor_cons_t[i].value = i;
+		HudColor_cons_t[i].strvalue = KartColor_Names[i];				// SRB2kart
+	}
+	HudColor_cons_t[MAXSKINCOLORS].value = 0;
+	HudColor_cons_t[MAXSKINCOLORS].strvalue = NULL;
+
 	CV_RegisterVar(&cv_sneaker);
 	CV_RegisterVar(&cv_rocketsneaker);
 	CV_RegisterVar(&cv_invincibility);
@@ -670,6 +683,7 @@ void K_RegisterKartStuff(void)
 	
 	//Colourized HUD
 	CV_RegisterVar(&cv_colorizedhud);
+	CV_RegisterVar(&cv_colorizedhudcolor);
 	
 	CV_RegisterVar(&cv_slamsound);
 	
