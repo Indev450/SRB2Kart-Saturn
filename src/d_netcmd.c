@@ -917,6 +917,10 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_timetic);
 	CV_RegisterVar(&cv_itemfinder);
 
+	// Has to be added here instead of K_RegisterKartStuff because it needs
+	// Color_cons_t
+	CV_RegisterVar(&cv_colorizedhudcolor);
+
 	// time attack ghost options are also saved to config
 	CV_RegisterVar(&cv_ghost_besttime);
 	CV_RegisterVar(&cv_ghost_bestlap);
