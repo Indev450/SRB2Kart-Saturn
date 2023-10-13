@@ -5058,7 +5058,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 #endif
 	size_t lumpoff;
 	unsigned rot;
-	UINT8 flip;
+	UINT16 flip;
 	angle_t ang;
 	const boolean papersprite = (thing->frame & FF_PAPERSPRITE);
 	INT32 heightsec, phs;
@@ -5169,12 +5169,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 		flip = sprframe->flip; // Will only be 0x00 or 0xFF
 
 		if (papersprite && ang < ANGLE_180)
-		{
-			if (flip)
-				flip = 0;
-			else
-				flip = 255;
-		}
+		flip ^= 0xFFFF;
 	}
 	else
 	{
@@ -5183,6 +5178,11 @@ void HWR_ProjectSprite(mobj_t *thing)
 			rot = 6; // F7 slot
 		else if ((ang >= ANGLE_180) && (sprframe->rotate & SRF_LEFT)) // See from left
 			rot = 2; // F3 slot
+		else if (sprframe->rotate & SRF_3DGE) // 16-angle mode
+		{
+			rot = (ang+ANGLE_180+ANGLE_11hh)>>28;
+			rot = ((rot & 1)<<3)|(rot>>1);
+		}
 		else // Normal behaviour
 			rot = (ang+ANGLE_202h)>>29;
 
@@ -5191,12 +5191,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 		flip = sprframe->flip & (1<<rot);
 
 		if (papersprite && ang < ANGLE_180)
-		{
-			if (flip)
-				flip = 0;
-			else
-				flip = 1<<rot;
-		}
+		flip ^= (1<<rot);
 	}
 
 	if (thing->skin && ((skin_t *)( (thing->localskin) ? thing->localskin : thing->skin ))->flags & SF_HIRES)
