@@ -64,6 +64,9 @@ consvar_t cv_saltysquish = {"hardcodehopsquish", "On", CV_SAVE, CV_OnOff, NULL, 
 //Colourized HUD
 consvar_t cv_colorizedhud = {"colorizedhud", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+static CV_PossibleValue_t HudColor_cons_t[MAXSKINCOLORS+1];
+consvar_t cv_colorizedhudcolor = {"colorizedhudcolor", "Skin Color", CV_SAVE, HudColor_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 
 // SOME IMPORTANT VARIABLES DEFINED IN DOOMDEF.H:
 // gamespeed is cc (0 for easy, 1 for normal, 2 for hard)
@@ -578,12 +581,30 @@ UINT8 K_GetKartColorByName(const char *name)
 	return 0;
 }
 
+UINT8 K_GetHudColor()
+{
+	if (stplyr && players - stplyr != consoleplayer) return stplyr->skincolor;
+	if (cv_colorizedhudcolor.value) return cv_colorizedhudcolor.value;
+	return cv_playercolor.value;
+}
+
 //}
 
 //{ SRB2kart Net Variables
 
 void K_RegisterKartStuff(void)
 {
+	HudColor_cons_t[0].value = 0;
+	HudColor_cons_t[0].strvalue = "Skin Color";
+
+	for (INT32 i = 1; i < MAXSKINCOLORS; i++)
+	{
+		HudColor_cons_t[i].value = i;
+		HudColor_cons_t[i].strvalue = KartColor_Names[i];				// SRB2kart
+	}
+	HudColor_cons_t[MAXSKINCOLORS].value = 0;
+	HudColor_cons_t[MAXSKINCOLORS].strvalue = NULL;
+
 	CV_RegisterVar(&cv_sneaker);
 	CV_RegisterVar(&cv_rocketsneaker);
 	CV_RegisterVar(&cv_invincibility);
@@ -662,6 +683,7 @@ void K_RegisterKartStuff(void)
 	
 	//Colourized HUD
 	CV_RegisterVar(&cv_colorizedhud);
+	CV_RegisterVar(&cv_colorizedhudcolor);
 	
 	CV_RegisterVar(&cv_slamsound);
 	
@@ -7500,14 +7522,14 @@ static void K_drawKartItem(void)
 	UINT8 localcolor = SKINCOLOR_NONE;
 	SINT8 colormode = TC_RAINBOW;
 	UINT8 *colmap = NULL;
-	UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, stplyr->skincolor, GTC_CACHE);
+	UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
 	
 	boolean flipamount = false;	// Used for 3P/4P splitscreen to flip item amount stuff
 
 	if (stplyr->kartstuff[k_itemroulette])
 	{
-		if (stplyr->skincolor)
-			localcolor = stplyr->skincolor;
+		if (K_GetHudColor())
+			localcolor = K_GetHudColor();
 
 		switch((stplyr->kartstuff[k_itemroulette] % (14*3)) / 3)
 		{
@@ -7827,23 +7849,16 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 	}
 
 
-	if (!stplyr)
+	if (!cv_colorizedhud.value || !found_extra2_kart)
 		V_DrawScaledPatch(TX, TY, splitflags, ((mode == 2) ? kp_lapstickerwide : kp_timestickerwide));
-	else if (stplyr)
+	else
 	{
-		UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, stplyr->skincolor, GTC_CACHE);
-		
-		//Colourized hud	
-		if (cv_colorizedhud.value && found_extra2_kart)
-		{
-			V_DrawMappedPatch(TX, TY, splitflags, ((mode == 2) ? kp_lapstickerwideclr : kp_timestickerwideclr), colormap);
-		}
-		else
-		{
-			V_DrawScaledPatch(TX, TY, splitflags, ((mode == 2) ? kp_lapstickerwide : kp_timestickerwide));
-		}
-	}	
-	
+		//Colourized hud
+		UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
+
+		V_DrawMappedPatch(TX, TY, splitflags, ((mode == 2) ? kp_lapstickerwideclr : kp_timestickerwideclr), colormap);
+	}
+
 	TX += 33;
 
 	worktime = drawtime/(60*TICRATE);
@@ -8418,24 +8433,17 @@ static void K_drawKartLaps(void)
 	}
 	else
 	{
-			
-		if (!stplyr)
+
+		if (!cv_colorizedhud.value || !found_extra2_kart)
 			V_DrawScaledPatch(LAPS_X, LAPS_Y, V_HUDTRANS|splitflags, kp_lapsticker);
-		else if (stplyr)
+		else
 		{
-			UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, stplyr->skincolor, GTC_CACHE);
-			
-			//Colourized hud	
-			if (cv_colorizedhud.value && found_extra2_kart)
-			{
-				V_DrawMappedPatch(LAPS_X, LAPS_Y, V_HUDTRANS|splitflags, kp_lapstickerclr, colormap);
-			}
-			else
-			{
-				V_DrawScaledPatch(LAPS_X, LAPS_Y, V_HUDTRANS|splitflags, kp_lapsticker);
-			}
-		}	
-			
+			//Colourized hud
+			UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
+
+			V_DrawMappedPatch(LAPS_X, LAPS_Y, V_HUDTRANS|splitflags, kp_lapstickerclr, colormap);
+		}
+
 		if (stplyr->exiting)
 			V_DrawKartString(LAPS_X+33, LAPS_Y+3, V_HUDTRANS|splitflags, "FIN");
 		else
@@ -8497,36 +8505,27 @@ static void K_drawKartSpeedometer(void)
 					V_DrawKartString(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, va("%4d %%", convSpeed));
 		}
 	}
-	else if (cv_newspeedometer.value && found_extra_kart) { // why bother if we dont?			
-		if (!stplyr)
-			V_DrawScaledPatch(SPDM_X + 1, SPDM_Y + 4, (V_HUDTRANS|splitflags), (skp_smallsticker)); 
-		else if (stplyr)
+	else if (cv_newspeedometer.value && found_extra_kart) { // why bother if we dont?
+		if (!cv_colorizedhud.value || !found_extra2_kart)
+			V_DrawScaledPatch(SPDM_X + 1, SPDM_Y + 4, (V_HUDTRANS|splitflags), (skp_smallsticker));
+		else
 		{
-			UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, stplyr->skincolor, GTC_CACHE);
-			
-			//Colourized hud	
-			if (cv_colorizedhud.value && found_extra2_kart)
-			{
-				V_DrawMappedPatch(SPDM_X + 1, SPDM_Y + 4, (V_HUDTRANS|splitflags), (skp_smallstickerclr), colormap);
-			}
-			else
-			{
-				V_DrawScaledPatch(SPDM_X + 1, SPDM_Y + 4, (V_HUDTRANS|splitflags), (skp_smallsticker)); 
-			}
+			//Colourized hud
+			UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
+
+			V_DrawMappedPatch(SPDM_X + 1, SPDM_Y + 4, (V_HUDTRANS|splitflags), (skp_smallstickerclr), colormap);
 		}
-		
+
 		V_DrawRankNum(SPDM_X + 26, SPDM_Y + 4, V_HUDTRANS|splitflags, convSpeed, 3, NULL);
-		
-		
-		
+
 		V_DrawScaledPatch(SPDM_X + 31, SPDM_Y + 4, V_HUDTRANS|splitflags, skp_speedpatches[cv_kartspeedometer.value]);
-		
+
 	}
 }
 
 static void K_drawKartBumpersOrKarma(void)
 {
-	UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, stplyr->skincolor, GTC_CACHE);
+	UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
 	INT32 splitflags = K_calcSplitFlags(V_SNAPTOBOTTOM|V_SNAPTOLEFT);
 	INT32 fx = 0, fy = 0, fflags = 0;
 	boolean flipstring = false;	// same as laps, used for splitscreen
@@ -8566,7 +8565,7 @@ static void K_drawKartBumpersOrKarma(void)
 				V_DrawRightAlignedString(BASEVIDWIDTH-3, fy+1, V_HUDTRANS|fflags, va("%d/%d", stplyr->kartstuff[k_bumper], cv_kartbumpers.value));
 			}
 			else	// draw bumpers normally.
-			{	
+			{
 				V_DrawMappedPatch(fx, fy-1, V_HUDTRANS|fflags, kp_rankbumper, colormap);
 				V_DrawString(fx+13, fy+1, V_HUDTRANS|fflags, va("%d/%d", stplyr->kartstuff[k_bumper], cv_kartbumpers.value));
 			}
@@ -8576,11 +8575,11 @@ static void K_drawKartBumpersOrKarma(void)
 	{
 		if (stplyr->kartstuff[k_bumper] <= 0)
 		{
-			//Colourized hud	
+			//Colourized hud
 			if (cv_colorizedhud.value && found_extra2_kart)
 			{
 				V_DrawMappedPatch(LAPS_X, LAPS_Y, V_HUDTRANS|splitflags, kp_karmastickerclr, colormap);
-			}	
+			}
 			else
 			{
 				V_DrawMappedPatch(LAPS_X, LAPS_Y, V_HUDTRANS|splitflags, kp_karmasticker, colormap);
@@ -8590,8 +8589,7 @@ static void K_drawKartBumpersOrKarma(void)
 		else
 		{
 			if (stplyr->kartstuff[k_bumper] > 9 && cv_kartbumpers.value > 9)
-				
-				//Colourized hud	
+				//Colourized hud
 				if (cv_colorizedhud.value && found_extra2_kart)
 				{
 					V_DrawMappedPatch(LAPS_X, LAPS_Y, V_HUDTRANS|splitflags, kp_bumperstickerwideclr, colormap);
@@ -8600,9 +8598,8 @@ static void K_drawKartBumpersOrKarma(void)
 				{
 					V_DrawMappedPatch(LAPS_X, LAPS_Y, V_HUDTRANS|splitflags, kp_bumperstickerwide, colormap);
 				}
-				
 			else
-				//Colourized hud	
+				//Colourized hud
 				if (cv_colorizedhud.value && found_extra2_kart)
 				{
 					V_DrawMappedPatch(LAPS_X, LAPS_Y, V_HUDTRANS|splitflags, kp_bumperstickerclr, colormap);
@@ -8611,7 +8608,7 @@ static void K_drawKartBumpersOrKarma(void)
 				{
 					V_DrawMappedPatch(LAPS_X, LAPS_Y, V_HUDTRANS|splitflags, kp_bumpersticker, colormap);
 				}
-				
+
 			V_DrawKartString(LAPS_X+47, LAPS_Y+3, V_HUDTRANS|splitflags, va("%d/%d", stplyr->kartstuff[k_bumper], cv_kartbumpers.value));
 		}
 	}
@@ -9150,24 +9147,17 @@ static void K_drawBattleFullscreen(void)
 		if (splitscreen > 1)
 			V_DrawString(x-txoff, ty, 0, va("%d", stplyr->kartstuff[k_comebacktimer]/TICRATE));
 		else
-		{			
-			if (!stplyr)
+		{
+			if (!cv_colorizedhud.value || !found_extra2_kart)
 				V_DrawFixedPatch(x<<FRACBITS, ty<<FRACBITS, scale, 0, kp_timeoutstickerclr, NULL);
-			else if (stplyr)
+			else
 			{
-				UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, stplyr->skincolor, GTC_CACHE);
-				
-				//Colourized hud	
-				if (cv_colorizedhud.value && found_extra2_kart)
-				{
-					V_DrawFixedPatch(x<<FRACBITS, ty<<FRACBITS, scale, 0, kp_timeoutstickerclr, colormap);
-				}
-				else
-				{
-					V_DrawFixedPatch(x<<FRACBITS, ty<<FRACBITS, scale, 0, kp_timeoutstickerclr, NULL);
-				}
-			}			
-			
+				//Colourized hud
+				UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
+
+				V_DrawFixedPatch(x<<FRACBITS, ty<<FRACBITS, scale, 0, kp_timeoutstickerclr, colormap);
+			}
+
 			V_DrawKartString(x-txoff, ty, 0, va("%d", stplyr->kartstuff[k_comebacktimer]/TICRATE));
 		}
 	}
@@ -9353,8 +9343,8 @@ static void K_drawInput(void)
 	static INT32 pn = 0;
 	INT32 target = 0, splitflags = (V_SNAPTOBOTTOM|V_SNAPTORIGHT);
 	INT32 x = BASEVIDWIDTH - 32 + cv_posi_xoffset.value, y = BASEVIDHEIGHT-24 + cv_posi_yoffset.value, offs, col;
-	const INT32 accent1 = splitflags|colortranslations[stplyr->skincolor][5];
-	const INT32 accent2 = splitflags|colortranslations[stplyr->skincolor][9];
+	const INT32 accent1 = splitflags|colortranslations[K_GetHudColor()][5];
+	const INT32 accent2 = splitflags|colortranslations[K_GetHudColor()][9];
 	ticcmd_t *cmd = &stplyr->cmd;
 
 	if (timeinmap <= 105)
@@ -9430,12 +9420,12 @@ static void K_drawInput(void)
 	if (target > 4)
 		target = 4;
 
-	if (!stplyr->skincolor)
+	if (!K_GetHudColor())
 		V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, FRACUNIT, splitflags, kp_inputwheel[target], NULL);
 	else
 	{
 		UINT8 *colormap;
-		colormap = R_GetTranslationColormap(0, stplyr->skincolor, GTC_CACHE);
+		colormap = R_GetTranslationColormap(0, K_GetHudColor(), GTC_CACHE);
 		V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, FRACUNIT, splitflags, kp_inputwheel[target], colormap);
 	}
 }
@@ -9463,7 +9453,7 @@ static void K_drawLapStartAnim(void)
 	
 	// This is an EVEN MORE insanely complicated animation.
 	const UINT8 progress = 80-stplyr->kartstuff[k_lapanimation];
-	UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, stplyr->skincolor, GTC_CACHE);
+	UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
 
 	V_DrawFixedPatch((BASEVIDWIDTH/2 + (32*max(0, stplyr->kartstuff[k_lapanimation]-76)))*FRACUNIT,
 		(48 - (32*max(0, progress-76)))*FRACUNIT,
