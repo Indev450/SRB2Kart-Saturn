@@ -2853,6 +2853,9 @@ void HU_SetCEchoFlags(INT32 flags)
 
 void HU_DoCEcho(const char *msg)
 {
+	if (!cv_cechotoggle.value)
+		return
+	
 	I_OutputMsg("%s\n", msg); // print to log
 
 	strncpy(cechotext, msg, sizeof(cechotext));
