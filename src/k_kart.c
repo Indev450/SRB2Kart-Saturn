@@ -7852,6 +7852,12 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 		V_DrawKartString(TX, TY+3, splitflags, va("--'--\"--"));
 	else if (worktime < 100) // 99:99:99 only
 	{
+		if ((cv_timelimit.value && G_BattleGametype()) && (!players[consoleplayer].exiting && (leveltime > (timelimitintics + starttime + TICRATE/2)) && cv_overtime.value)) // i hate this so much
+		{
+			V_DrawKartString(TX, TY+3, splitflags, va("OVERTIME"));
+				return;
+		}
+		
 		// zero minute
 		if (worktime < 10)
 		{
