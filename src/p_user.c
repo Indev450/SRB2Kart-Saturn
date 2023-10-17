@@ -1135,6 +1135,46 @@ void P_PlayVictorySound(mobj_t *source)
 		S_StartSound(source, sfx_kwin);
 }
 
+// Can't rely on k_position and K_IsPlayerLosing in battle smh
+static UINT8 getPlayerPos(player_t *player)
+{
+	if (G_BattleGametype())
+	{
+		UINT8 pos = 1;
+
+		for (int i = 0; i < MAXPLAYERS; ++i) {
+			if (!playeringame[i] || players[i].spectator) continue;
+			if (players[i].marescore > player->marescore) ++pos;
+		}
+
+		return pos;
+	}
+
+	return player->kartstuff[k_position];
+}
+
+static boolean isPlayerLosing(player_t *player)
+{
+	if (G_BattleGametype()) {
+		UINT8 pos = 1;
+		UINT8 maxpos = 1;
+
+		for (int i = 0; i < MAXPLAYERS; ++i) {
+			if (!playeringame[i] || players[i].spectator) continue;
+			if (players[i].marescore > player->marescore) ++pos;
+			maxpos = max(getPlayerPos(&players[i]), maxpos);
+		}
+
+		if (maxpos == 1) return false;
+
+		if (maxpos % 2) ++maxpos;
+
+		return pos > (maxpos / 2);
+	}
+
+	return K_IsPlayerLosing(player);
+}
+
 //
 // P_EndingMusic
 //
@@ -1164,12 +1204,12 @@ boolean P_EndingMusic(player_t *player)
 			return false;
 
 		bestlocalplayer = &players[displayplayers[0]];
-		bestlocalpos = ((players[displayplayers[0]].pflags & PF_TIMEOVER) ? MAXPLAYERS+1 : players[displayplayers[0]].kartstuff[k_position]);
+		bestlocalpos = ((players[displayplayers[0]].pflags & PF_TIMEOVER) ? MAXPLAYERS+1 : getPlayerPos(&players[displayplayers[0]]));
 #define setbests(p) \
-	if (((players[p].pflags & PF_TIMEOVER) ? MAXPLAYERS+1 : players[p].kartstuff[k_position]) < bestlocalpos) \
+	if (((players[p].pflags & PF_TIMEOVER) ? MAXPLAYERS+1 : getPlayerPos(&players[p])) < bestlocalpos) \
 	{ \
 		bestlocalplayer = &players[p]; \
-		bestlocalpos = ((players[p].pflags & PF_TIMEOVER) ? MAXPLAYERS+1 : players[p].kartstuff[k_position]); \
+		bestlocalpos = ((players[p].pflags & PF_TIMEOVER) ? MAXPLAYERS+1 : getPlayerPos(&players[p])); \
 	}
 		setbests(displayplayers[1]);
 		if (splitscreen > 1)
@@ -1184,7 +1224,7 @@ boolean P_EndingMusic(player_t *player)
 			return false;
 
 		bestlocalplayer = player;
-		bestlocalpos = ((player->pflags & PF_TIMEOVER) ? MAXPLAYERS+1 : player->kartstuff[k_position]);
+		bestlocalpos = ((player->pflags & PF_TIMEOVER) ? MAXPLAYERS+1 : getPlayerPos(player));
 	}
 
 	if (G_RaceGametype() && bestlocalpos == MAXPLAYERS+1)
@@ -1193,7 +1233,7 @@ boolean P_EndingMusic(player_t *player)
 	{
 		if (bestlocalpos == 1)
 			sprintf(buffer, "k*win");
-		else if (K_IsPlayerLosing(bestlocalplayer))
+		else if (isPlayerLosing(bestlocalplayer))
 			sprintf(buffer, "k*lose");
 		else
 			sprintf(buffer, "k*ok");
