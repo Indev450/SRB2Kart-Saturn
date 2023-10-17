@@ -1736,6 +1736,7 @@ enum
 	sm_input,
 	sm_speedometer,
 	sm_colorhud,
+	sm_colorhud_customcolor,
 	sm_lapemblem,
 	sm_mapnames,
 	sm_smallmap,
@@ -3919,11 +3920,13 @@ void M_Init(void)
 		OP_VideoOptionsMenu[op_video_ogl].status = IT_DISABLED;
 #endif
 
-	if (!found_extra_kart) // why bother?
+	if (!snw_speedo) // why bother?
 		OP_SaturnMenu[sm_speedometer].status = IT_GRAYEDOUT;
 		
-	if (!found_extra2_kart) // uhguauhauguuhee
+	if (!clr_hud){ // uhguauhauguuhee
 		OP_SaturnMenu[sm_colorhud].status = IT_GRAYEDOUT;
+		OP_SaturnMenu[sm_colorhud_customcolor].status = IT_GRAYEDOUT;
+	}
 
 #ifndef NONET
 	CV_RegisterVar(&cv_serversort);

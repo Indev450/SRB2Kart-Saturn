@@ -917,6 +917,11 @@ static boolean AddIWAD(void)
 boolean found_extra_kart;
 boolean found_extra2_kart;
 
+boolean snw_speedo; // snowy speedometer check
+boolean clr_hud; // colour hud check
+boolean big_lap; // bigger lap counter
+boolean big_lap_color; // bigger lap counter but colour
+
 static void IdentifyVersion(void)
 {
 	const char *srb2waddir = NULL;
@@ -1266,11 +1271,28 @@ void D_SRB2Main(void)
 
 #endif //ifndef DEVELOP
 
-	if (found_extra_kart) // found the funny, add it in!
+	if (found_extra_kart){ // found the funny, add it in!
 		mainwads++;
+		
+		// now check for speedometer stuff
+		if ((W_LumpExists("SP_SMSTC")) && (W_LumpExists("K_TRNULL")) && (W_LumpExists("SP_MKMH")) && (W_LumpExists("SP_MMPH")) && (W_LumpExists("SP_MFRAC")) && (W_LumpExists("SP_MPERC")))
+		snw_speedo = true;
 	
-	if (found_extra2_kart) // found the funny, add it in!
+		if ((W_LumpExists("K_STLAPB")) && (W_LumpExists("K_STLA2B"))) // check for bigger lap count
+		big_lap = true;
+	}
+	
+	if (found_extra2_kart){ // found the funny, add it in!
 		mainwads++;
+		
+		// now check for colour hud stuff
+		if ((W_LumpExists("K_SCTIME")) && (W_LumpExists("K_SCTIMW")) && (W_LumpExists("K_SCLAPS")) && (W_LumpExists("K_SCLAPW")) && (W_LumpExists("K_SCBALN")) 
+			&& (W_LumpExists("K_SCBALW")) && (W_LumpExists("K_SCKARM")) && (W_LumpExists("K_SCTOUT")) && (W_LumpExists("K_ISMULC")) && (W_LumpExists("K_ITMULC")))
+		clr_hud = true;
+		
+		if ((W_LumpExists("K_SCLAPB")) && (W_LumpExists("K_SCLA2B"))) // check for bigger lap count but colour
+		big_lap_color = true;
+	}
 
 	//
 	// search for maps
