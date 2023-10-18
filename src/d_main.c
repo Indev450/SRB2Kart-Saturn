@@ -66,7 +66,7 @@
 #include "fastcmp.h"
 #include "r_fps.h" // Frame interpolation/uncapped
 #include "keys.h"
-#include "filesrch.h" // refreshdirmenu
+#include "filesrch.h" // refreshdirmenu, pathisdirectory
 #include "d_protocol.h"
 #include "m_perfstats.h"
 
@@ -102,6 +102,11 @@ UINT8 window_notinfocus = false;
 static const char *pagename = "MAP1PIC";
 static char *startupwadfiles[MAX_WADFILES];
 static char *startuppwads[MAX_WADFILES];
+
+// autoloading
+static char *autoloadwadfiles[MAX_WADFILES];
+boolean autoloading;
+boolean autoloaded;
 
 boolean devparm = false; // started game with -devparm
 
@@ -883,6 +888,106 @@ static void D_AddFile(const char *file, char **filearray)
 	filearray[pnumwadfiles] = newfile;
 }
 
+// Taken from TSoURDt3rd
+// https://github.com/StarManiaKG/The-Story-of-Uncapped-Revengence-Discord-the-3rd/blob/main/src/STAR/star_functions.c
+static INT32 D_DetectFileType(const char* filename)
+{
+	if (pathisdirectory(filename) == 1)
+		return 1;
+	else
+	{
+		if (!stricmp(&filename[strlen(filename) - 4], ".wad"))
+			return 2;
+		else if (!stricmp(&filename[strlen(filename) - 4], ".pk3"))
+			return 3;
+		else if (!stricmp(&filename[strlen(filename) - 5], ".kart"))
+			return 4;
+
+		else if (!stricmp(&filename[strlen(filename) - 4], ".lua"))
+			return 5;
+		else if (!stricmp(&filename[strlen(filename) - 4], ".soc"))
+			return 6;
+		
+		else if (!stricmp(&filename[strlen(filename) - 4], ".cfg"))
+			return 7;
+		else if (!stricmp(&filename[strlen(filename) - 4], ".txt"))
+			return 8;
+	}
+
+	return 0;
+}
+
+// autoload that shit
+static void D_AutoloadFile(const char *file, char **filearray)
+{
+	size_t pnumwadfiles;
+	char *newfile;
+	INT32 fileType = D_DetectFileType(file);
+
+	for (pnumwadfiles = 0; filearray[pnumwadfiles]; pnumwadfiles++)
+		;
+
+	newfile = malloc(strlen(file) + 1);
+	if (!newfile)
+		I_Error("No more free memory to AutoloadFile %s",file);
+
+	if (!fileType) 
+	{
+		CONS_Printf("D_AutoloadFile: File %s is unknown or invalid\n", file);
+		return;
+	}
+		
+	strcpy(newfile, file);
+
+	if (fileType <= 6)
+		filearray[pnumwadfiles] = newfile;
+	else
+		COM_BufAddText(va("exec %s\n", newfile));
+}
+
+// FIND THEM
+static void D_FindAddonsToAutoload(void)
+{
+	FILE *autoloadconfigfile;
+	const char *autoloadpath;
+
+	INT32 i;
+	char wadsToAutoload[256] = "", renameAutoloadStrings[256] = "";
+
+	// does it exist tho
+	autoloadpath = va("%s"PATHSEP"%s",srb2home,AUTOLOADCONFIGFILENAME);
+	autoloadconfigfile = fopen(autoloadpath, "r");
+
+	// If the file is found, run our shit
+	if (!autoloadconfigfile) // nope outta here
+		return;
+
+	while (fgets(wadsToAutoload, sizeof wadsToAutoload, autoloadconfigfile) != NULL)
+	{
+		// skip if commented or empty
+		if ((wadsToAutoload[1] == '\0' || wadsToAutoload[1] == '\n')
+			|| (wadsToAutoload[0] == '#'))
+			continue;
+
+		// Remove Any Empty or Skipped Lines
+		for (i = 0; wadsToAutoload[i] != '\0'; i++)
+		{
+			if (wadsToAutoload[i] == '\n')
+				wadsToAutoload[i] = '\0';
+		}
+
+		// LOAD IT
+		D_AutoloadFile(wadsToAutoload, autoloadwadfiles);
+
+		// end it here
+		for (i = 0; wadsToAutoload[i] != '\0'; i++)
+			wadsToAutoload[i] = '\0';
+	}
+
+	// we dont want memory leaks around here do we?
+	fclose(autoloadconfigfile);
+}
+
 static inline void D_CleanFile(char **filearray)
 {
 	size_t pnumwadfiles;
@@ -1186,6 +1291,9 @@ void D_SRB2Main(void)
 	if (M_CheckParm("-password") && M_IsNextParm())
 		D_SetPassword(M_GetNextParm());
 
+	// FIND THEM
+	D_FindAddonsToAutoload();
+
 	// add any files specified on the command line with -file wadfile
 	// to the wad list
 	if (!(M_CheckParm("-connect") && !M_CheckParm("-server")))
@@ -1309,6 +1417,20 @@ void D_SRB2Main(void)
 			"K_STATN5", "K_STATN6", NULL)) 
 			statdp = true;
 	}
+
+	CONS_Printf("D_AutoloadFile(): Loading autoloaded addons...\n");
+	if (W_InitMultipleFiles(autoloadwadfiles, true))
+	{
+		if (modifiedgame)
+		{
+			autoloaded = true;
+			modifiedgame = false;
+		}
+		autoloading = false;
+	}
+	else // snarky remark
+		CONS_Printf("D_AutoloadFile(): Are you sure you put in valid files or what?\n");
+	D_CleanFile(autoloadwadfiles);
 
 	//
 	// search for maps

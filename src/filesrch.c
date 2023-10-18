@@ -337,6 +337,23 @@ size_t dir_on[menudepth];
 UINT8 refreshdirmenu = 0;
 char *refreshdirname = NULL;
 
+// Checks if the specified path is a directory.
+// Returns 1 if so, 0 if not, and -1 if an error occurred.
+// direrror is set if there was an error.
+INT32 pathisdirectory(const char *path)
+{
+	struct stat fsstat;
+
+	if (stat(path, &fsstat) < 0)
+	{
+		return -1;
+	}
+	else if (S_ISDIR(fsstat.st_mode))
+		return 1;
+
+	return 0;
+}
+
 filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *wantedmd5sum, boolean completepath, int maxsearchdepth)
 {
 	filestatus_t retval = FS_NOTFOUND;
