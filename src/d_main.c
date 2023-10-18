@@ -1271,27 +1271,30 @@ void D_SRB2Main(void)
 
 #endif //ifndef DEVELOP
 
-	if (found_extra_kart){ // found the funny, add it in!
-		mainwads++;
+	if (found_extra_kart || found_extra2_kart) // found the funny, add it in!
+	{
+		// HAYA: These are seperated for a reason lmao
+		if (found_extra_kart) 
+			mainwads++;
+		if (found_extra2_kart)
+			mainwads++;
 		
 		// now check for speedometer stuff
-		if ((W_LumpExists("SP_SMSTC")) && (W_LumpExists("K_TRNULL")) && (W_LumpExists("SP_MKMH")) && (W_LumpExists("SP_MMPH")) && (W_LumpExists("SP_MFRAC")) && (W_LumpExists("SP_MPERC")))
-		snw_speedo = true;
+		if (W_CheckMultipleLumps("SP_SMSTC", "K_TRNULL", "SP_MKMH", "SP_MMPH", "SP_MFRAC", "SP_MPERC", NULL))
+			snw_speedo = true;
 	
-		if ((W_LumpExists("K_STLAPB")) && (W_LumpExists("K_STLA2B"))) // check for bigger lap count
-		big_lap = true;
-	}
-	
-	if (found_extra2_kart){ // found the funny, add it in!
-		mainwads++;
+		// check for bigger lap count
+		if (W_CheckMultipleLumps("K_STLAPB", "K_STLA2B", NULL)) 
+			big_lap = true;
 		
 		// now check for colour hud stuff
-		if ((W_LumpExists("K_SCTIME")) && (W_LumpExists("K_SCTIMW")) && (W_LumpExists("K_SCLAPS")) && (W_LumpExists("K_SCLAPW")) && (W_LumpExists("K_SCBALN")) 
-			&& (W_LumpExists("K_SCBALW")) && (W_LumpExists("K_SCKARM")) && (W_LumpExists("K_SCTOUT")) && (W_LumpExists("K_ISMULC")) && (W_LumpExists("K_ITMULC")))
-		clr_hud = true;
+		if (W_CheckMultipleLumps("K_SCTIME", "K_SCTIMW", "K_SCLAPS", "K_SCLAPW", \
+			"K_SCBALN", "K_SCBALW", "K_SCKARM", "K_SCTOUT", "K_ISMULC", "K_ITMULC", NULL))
+			clr_hud = true;
 		
-		if ((W_LumpExists("K_SCLAPB")) && (W_LumpExists("K_SCLA2B"))) // check for bigger lap count but colour
-		big_lap_color = true;
+		// check for bigger lap count but color** its color bitch
+		if (W_CheckMultipleLumps("K_SCLAPB", "K_SCLA2B", NULL)) 
+			big_lap_color = true;
 	}
 
 	//
