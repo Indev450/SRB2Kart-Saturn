@@ -834,11 +834,27 @@ void HWR_RenderPlane(extrasubsector_t *xsub, boolean isceiling, fixed_t fixedhei
 			{
 				P_ClosestPointOnLine(viewx, viewy, line->linedef, &v);
 				dist = FIXED_TO_FLOAT(R_PointToDist(v.x, v.y));
-
-				x1 = ((polyvertex_t *)line->pv1)->x;
-				y1 = ((polyvertex_t *)line->pv1)->y;
-				xd = ((polyvertex_t *)line->pv2)->x - x1;
-				yd = ((polyvertex_t *)line->pv2)->y - y1;
+				
+				if (line->pv1)
+				{
+					x1 = ((polyvertex_t *)line->pv1)->x;
+					y1 = ((polyvertex_t *)line->pv1)->y;
+				}
+				else
+				{
+					x1 = FIXED_TO_FLOAT(line->v1->x);
+					y1 = FIXED_TO_FLOAT(line->v1->x);
+				}
+				if (line->pv2)
+				{
+					xd = ((polyvertex_t *)line->pv2)->x - x1;
+					yd = ((polyvertex_t *)line->pv2)->y - y1;
+				}
+				else
+				{
+					xd = FIXED_TO_FLOAT(line->v2->x) - x1;
+					yd = FIXED_TO_FLOAT(line->v2->y) - y1;
+				}
 
 				// Based on the seg length and the distance from the line, split horizon into multiple poly sets to reduce distortion
 				dist = sqrtf((xd*xd) + (yd*yd)) / dist / 16.0f;
@@ -1425,11 +1441,27 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 	gr_sidedef = gr_curline->sidedef;
 	gr_linedef = gr_curline->linedef;
-
-	vs.x = ((polyvertex_t *)gr_curline->pv1)->x;
-	vs.y = ((polyvertex_t *)gr_curline->pv1)->y;
-	ve.x = ((polyvertex_t *)gr_curline->pv2)->x;
-	ve.y = ((polyvertex_t *)gr_curline->pv2)->y;
+	
+	if (gr_curline->pv1)
+	{
+		vs.x = ((polyvertex_t *)gr_curline->pv1)->x;
+		vs.y = ((polyvertex_t *)gr_curline->pv1)->y;
+	}
+	else
+	{
+		vs.x = FIXED_TO_FLOAT(gr_curline->v1->x);
+		vs.y = FIXED_TO_FLOAT(gr_curline->v1->y);
+	}
+	if (gr_curline->pv2)
+	{
+		ve.x = ((polyvertex_t *)gr_curline->pv2)->x;
+		ve.y = ((polyvertex_t *)gr_curline->pv2)->y;
+	}
+	else
+	{
+		ve.x = FIXED_TO_FLOAT(gr_curline->v2->x);
+		ve.y = FIXED_TO_FLOAT(gr_curline->v2->y);
+	}
 
 #ifdef ESLOPE
 	v1x = FLOAT_TO_FIXED(vs.x);
@@ -2478,10 +2510,28 @@ static boolean CheckClip(sector_t * afrontsector, sector_t * abacksector)
 	if (afrontsector->f_slope || afrontsector->c_slope || abacksector->f_slope || abacksector->c_slope)
 	{
 		fixed_t v1x, v1y, v2x, v2y; // the seg's vertexes as fixed_t
-		v1x = FLOAT_TO_FIXED(((polyvertex_t *)gr_curline->pv1)->x);
-		v1y = FLOAT_TO_FIXED(((polyvertex_t *)gr_curline->pv1)->y);
-		v2x = FLOAT_TO_FIXED(((polyvertex_t *)gr_curline->pv2)->x);
-		v2y = FLOAT_TO_FIXED(((polyvertex_t *)gr_curline->pv2)->y);
+		
+		if (gr_curline->pv1)
+		{
+			v1x = FLOAT_TO_FIXED(((polyvertex_t *)gr_curline->pv1)->x);
+			v1y = FLOAT_TO_FIXED(((polyvertex_t *)gr_curline->pv1)->y);
+		}
+		else
+		{
+			v1x = gr_curline->v1->x;
+			v1y = gr_curline->v1->y;
+		}
+		if (gr_curline->pv2)
+		{
+			v2x = FLOAT_TO_FIXED(((polyvertex_t *)gr_curline->pv2)->x);
+			v2y = FLOAT_TO_FIXED(((polyvertex_t *)gr_curline->pv2)->y);
+		}
+		else
+		{
+			v2x = gr_curline->v2->x;
+			v2y = gr_curline->v2->y;
+		}
+		
 #define SLOPEPARAMS(slope, end1, end2, normalheight) \
 		if (slope) { \
 			end1 = P_GetZAt(slope, v1x, v1y); \
@@ -2617,10 +2667,26 @@ void HWR_AddLine(seg_t *line)
 
 	gr_curline = line;
 
-	v1x = FLOAT_TO_FIXED(((polyvertex_t *)gr_curline->pv1)->x);
-	v1y = FLOAT_TO_FIXED(((polyvertex_t *)gr_curline->pv1)->y);
-	v2x = FLOAT_TO_FIXED(((polyvertex_t *)gr_curline->pv2)->x);
-	v2y = FLOAT_TO_FIXED(((polyvertex_t *)gr_curline->pv2)->y);
+	if (gr_curline->pv1)
+	{
+		v1x = FLOAT_TO_FIXED(((polyvertex_t *)gr_curline->pv1)->x);
+		v1y = FLOAT_TO_FIXED(((polyvertex_t *)gr_curline->pv1)->y);
+	}
+	else
+	{
+		v1x = gr_curline->v1->x;
+		v1y = gr_curline->v1->y;
+	}
+	if (gr_curline->pv2)
+	{
+		v2x = FLOAT_TO_FIXED(((polyvertex_t *)gr_curline->pv2)->x);
+		v2y = FLOAT_TO_FIXED(((polyvertex_t *)gr_curline->pv2)->y);
+	}
+	else
+	{
+		v2x = gr_curline->v2->x;
+		v2y = gr_curline->v2->y;
+	}
 
 	// OPTIMIZE: quickly reject orthogonal back sides.
 	angle1 = R_PointToAngle64(v1x, v1y);
