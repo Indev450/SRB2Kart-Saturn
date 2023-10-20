@@ -239,14 +239,10 @@ void ST_doPaletteStuff(void)
 {
 	INT32 palette;
 
-	if (paused || P_AutoPause())
-		palette = 0;
-	else if (stplyr && stplyr->flashcount)
+	if (stplyr && stplyr->flashcount)
 		palette = stplyr->flashpal;
 	else
 		palette = 0;
-
-	palette = min(max(palette, 0), 13);
 
 #ifdef HWRENDER
 	if ((rendermode == render_opengl && !cv_grpaletteshader.value) || (rendermode == render_opengl && cv_grpaletteshader.value && !cv_grflashpal.value))
