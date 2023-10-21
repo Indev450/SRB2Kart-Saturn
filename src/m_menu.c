@@ -21,6 +21,8 @@
 #include "doomdef.h"
 #include "d_main.h"
 #include "d_netcmd.h"
+#include "d_clisrv.h"
+#include "i_net.h"
 #include "console.h"
 #include "r_fps.h"
 #include "r_local.h"
@@ -425,6 +427,7 @@ static void M_HandleImageDef(INT32 choice);
 static void M_HandleLevelStats(INT32 choice);
 #ifndef NONET
 static void M_HandleConnectIP(INT32 choice);
+static void M_ConnectLastServer(INT32 choice);
 #endif
 static void M_HandleSetupMultiPlayer(INT32 choice);
 static void M_HandleVideoMode(INT32 choice);
@@ -1045,10 +1048,12 @@ static menuitem_t MP_MainMenu[] =
 	{IT_HEADER, NULL, "Join a game", NULL, 132-24},
 #ifndef NONET
 	{IT_STRING|IT_CALL,       NULL, "Internet server browser...",M_PreConnectMenu,   142-24},
-	{IT_STRING|IT_KEYHANDLER, NULL, "Specify IPv4 address:",     M_HandleConnectIP,        150-24},
+	{IT_STRING|IT_CALL, NULL, "Join last server",     M_ConnectLastServer,        150-24},
+	{IT_STRING|IT_KEYHANDLER, NULL, "Specify IPv4 address:",     M_HandleConnectIP,        158-24},
 #else
 	{IT_GRAYEDOUT,            NULL, "Internet server browser...",NULL,                     142-24},
-	{IT_GRAYEDOUT,            NULL, "Specify IPv4 address:",     NULL,                     150-24},
+	{IT_GRAYEDOUT,            NULL, "Join last server",     NULL,               	       150-24},
+	{IT_GRAYEDOUT,            NULL, "Specify IPv4 address:",     NULL,                     158-24},
 #endif
 	//{IT_HEADER, NULL, "Player setup", NULL, 80},
 	//{IT_STRING|IT_CALL,       NULL, "Name, character, color...", M_SetupMultiPlayer,       90},
@@ -9069,8 +9074,10 @@ static void M_Connect(INT32 choice)
 {
 	// do not call menuexitfunc
 	M_ClearMenus(false);
-
-	COM_BufAddText(va("connect node %d\n", serverlist[choice-FIRSTSERVERLINE + serverlistpage * SERVERS_PER_PAGE].node));
+	
+	CV_Set(&cv_lastserver, I_GetNodeAddress(serverlist[choice-FIRSTSERVERLINE + serverlistpage * SERVERS_PER_PAGE].node));
+		
+	COM_BufAddText(va("connect node %d\n", serverlist[choice-FIRSTSERVERLINE + serverlistpage * SERVERS_PER_PAGE].node));	
 }
 
 static void M_Refresh(INT32 choice)
@@ -9780,7 +9787,7 @@ Update the maxplayers label...
 		);
 
 #ifndef NONET
-	y += MP_MainMenu[8].alphaKey;
+	y += MP_MainMenu[9].alphaKey;
 
 	V_DrawFill(x+5, y+4+5, /*16*8 + 6,*/ BASEVIDWIDTH - 2*(x+5), 8+6, 239);
 
@@ -9788,7 +9795,7 @@ Update the maxplayers label...
 	V_DrawString(x+8,y+12, V_ALLOWLOWERCASE, setupm_ip);
 
 	// draw text cursor for name
-	if (itemOn == 8
+	if (itemOn == 9
 	    && skullAnimCounter < 4)   //blink cursor
 		V_DrawCharacter(x+8+V_StringWidth(setupm_ip, V_ALLOWLOWERCASE),y+12,'_',false);
 #endif
@@ -9947,6 +9954,7 @@ static void M_ConnectIP(INT32 choice)
 
 	M_ClearMenus(true);
 
+	CV_Set(&cv_lastserver,setupm_ip);
 	COM_BufAddText(va("connect \"%s\"\n", setupm_ip));
 
 	// A little "please wait" message.
@@ -9956,6 +9964,22 @@ static void M_ConnectIP(INT32 choice)
 	I_UpdateNoBlit();
 	if (rendermode == render_soft)
 		I_FinishUpdate(); // page flip or blit buffer
+}
+
+
+//Join Last server
+static void M_ConnectLastServer(INT32 choice)
+{
+	(void)choice;
+
+	if (!*cv_lastserver.string)
+	{
+		M_StartMessage("You haven't previosuly joined a server.\n", NULL, MM_NOTHING);
+		return;
+	}
+
+	M_ClearMenus(true);
+	COM_BufAddText(va("connect \"%s\"\n", cv_lastserver.string));	
 }
 
 // Tails 11-19-2002
