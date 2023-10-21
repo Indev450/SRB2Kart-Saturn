@@ -1153,14 +1153,14 @@ EXPORT boolean HWRAPI(LoadShaders) (void)
 		shader->uniforms[gluniform_lighting] = GETUNI("lighting");
 		shader->uniforms[gluniform_fade_start] = GETUNI("fade_start");
 		shader->uniforms[gluniform_fade_end] = GETUNI("fade_end");
+			
+		// misc. (custom shaders)
+		shader->uniforms[gluniform_leveltime] = GETUNI("leveltime");
 		
 		// palette rendering
 		shader->uniforms[gluniform_palette] = GETUNI("palette");
 		shader->uniforms[gluniform_color_lookup] = GETUNI("lookup_tex");
 		shader->uniforms[gluniform_lighttable_tex] = GETUNI("lighttable_tex");
-		
-		// misc. (custom shaders)
-		shader->uniforms[gluniform_leveltime] = GETUNI("leveltime");
 		
 #undef GETUNI
 
@@ -4237,6 +4237,9 @@ EXPORT void HWRAPI(DrawScreenFinalTexture)(int width, int height)
 	clearColour.alpha = 1;
 	ClearBuffer(true, false, false, &clearColour);
 	pglBindTexture(GL_TEXTURE_2D, finalScreenTexture);
+	
+	// prepare shader, if it is enabled
+	Shader_SetUniforms(NULL, NULL, NULL, NULL);
 	
 	if (gl_use_palette_shader && cv_grshaders.value)
 	{
