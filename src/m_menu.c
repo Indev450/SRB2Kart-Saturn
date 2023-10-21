@@ -1363,23 +1363,24 @@ static menuitem_t OP_OpenGLOptionsMenu[] =
 {
 	{IT_STRING | IT_CVAR,	NULL, "3D Models",					&cv_grmdls,					 5},
 	{IT_STRING | IT_CVAR,	NULL, "Fallback Player 3D Model",	&cv_grfallbackplayermodel,	 15},
-	{IT_STRING|IT_CVAR,		NULL, "Shaders",					&cv_grshaders,				 25},
+	{IT_STRING | IT_CVAR,	NULL, "Shaders",					&cv_grshaders,				 25},
 	//{IT_STRING|IT_CVAR,		NULL, "Use custom Shaders",			&cv_grusecustomshaders,		 35}, 
-	{IT_STRING|IT_CVAR,		NULL, "Palette Rendering",			&cv_grpaletteshader,		 35},
-	{IT_STRING | IT_CVAR, 	NULL, "Min Shader Brightness", 		&cv_secbright, 		 		 45},
+	{IT_STRING | IT_CVAR,	NULL, "Palette Rendering",			&cv_grpaletteshader,		 35},
+	{IT_STRING | IT_CVAR,   NULL, "Flashpals in Palette Renderer", &cv_grflashpal, 		 	 45},
+	{IT_STRING | IT_CVAR, 	NULL, "Min Shader Brightness", 		&cv_secbright, 		 		 55},
 
-	{IT_STRING|IT_CVAR,		NULL, "Texture Quality",			&cv_scr_depth,				 65},
-	{IT_STRING|IT_CVAR,		NULL, "Texture Filter",				&cv_grfiltermode,			 75},
-	{IT_STRING|IT_CVAR,		NULL, "Anisotropic",				&cv_granisotropicmode,		 85},
+	{IT_STRING|IT_CVAR,		NULL, "Texture Quality",			&cv_scr_depth,				 75},
+	{IT_STRING|IT_CVAR,		NULL, "Texture Filter",				&cv_grfiltermode,			 85},
+	{IT_STRING|IT_CVAR,		NULL, "Anisotropic",				&cv_granisotropicmode,		 95},
 
-	{IT_STRING|IT_CVAR,		NULL, "Visual Portals",		  		&cv_grportals,				 95},
+	{IT_STRING|IT_CVAR,		NULL, "Visual Portals",		  		&cv_grportals,				 105},
 
-	{IT_STRING|IT_CVAR,		NULL, "Wall Contrast Style",		&cv_grfakecontrast,			115},
-	{IT_STRING|IT_CVAR,		NULL, "Sprite Billboarding",		&cv_grspritebillboarding,	125},
-	{IT_STRING|IT_CVAR,		NULL, "Software Perspective",		&cv_grshearing,				135},
-	{IT_STRING|IT_CVAR,		NULL, "Rendering Distance",			&cv_grrenderdistance,		145},
+	{IT_STRING|IT_CVAR,		NULL, "Wall Contrast Style",		&cv_grfakecontrast,			125},
+	{IT_STRING|IT_CVAR,		NULL, "Sprite Billboarding",		&cv_grspritebillboarding,	135},
+	{IT_STRING|IT_CVAR,		NULL, "Software Perspective",		&cv_grshearing,				145},
+	{IT_STRING|IT_CVAR,		NULL, "Rendering Distance",			&cv_grrenderdistance,		155},
 
-	{IT_SUBMENU|IT_STRING,	NULL, "Gamma...",					&OP_OpenGLColorDef,			160},
+	{IT_SUBMENU|IT_STRING,	NULL, "Gamma...",					&OP_OpenGLColorDef,			170},
 };
 
 static menuitem_t OP_OpenGLColorMenu[] =
@@ -1724,10 +1725,8 @@ static menuitem_t OP_SaturnMenu[] =
 	{IT_STRING | IT_CVAR, NULL, "Show Lap Emblem",		 				&cv_showlapemblem, 	 		85},
 	{IT_STRING | IT_CVAR, NULL,	  "Show Minimap Names",   				&cv_showminimapnames, 		95},
 	{IT_STRING | IT_CVAR, NULL,	  "Small Minimap Players",   			&cv_minihead, 				105},
-	{IT_STRING | IT_CVAR, NULL, "Less Midnight Channel Flicker", 		&cv_lessflicker, 		 	115},
-#ifdef HWRENDER
-	{IT_STRING | IT_CVAR, NULL, "Flashpals in Palette Renderer", 		&cv_grflashpal, 		 	125},
-#endif
+	{IT_STRING | IT_CVAR, NULL, "Less Midnight Channel Flicker", 		&cv_lessflicker, 		 	120},
+
 	{IT_SUBMENU|IT_STRING,	NULL,	"Player distortion...", 			&OP_PlayerDistortDef,	 	140},
 	{IT_SUBMENU|IT_STRING,	NULL,	"Hud Offsets...", 					&OP_HudOffsetDef,		 	155},
 
@@ -1747,7 +1746,6 @@ enum
 	sm_mapnames,
 	sm_smallmap,
 	sm_pisschannel,
-	sm_flashpal,
 	sm_distortionmenu,
 	sm_hudoffsets,
 	sm_credits,
@@ -1801,29 +1799,34 @@ static menuitem_t OP_SaturnCreditsMenu[] =
 {
 	{IT_HEADER, NULL, "Saturn Credits", 									NULL,       0},
 	
-	{IT_HEADER, NULL, "Main Devs <3", 											NULL,      20},
+	{IT_HEADER, NULL, "Thanks to all contributers <3", 											NULL,      25},
 	
 	{IT_STRING2+IT_SPACE, NULL, 	"alufolie91 aka Alug",      						NULL, 	   30},
 	{IT_STRING2+IT_SPACE, NULL, 	"Indev",        									NULL,      40},
+	{IT_STRING2+IT_SPACE, NULL, 	"Haya",       										NULL,      50},
+	{IT_STRING2+IT_SPACE, NULL, 	"Nepdisk", 		 									NULL, 	   60},
+	{IT_STRING2+IT_SPACE, NULL, 	"xyzzy",     										NULL, 	   70},
 	
-	{IT_HEADER, NULL, "Testers <3", NULL, 60},
 	
-	{IT_STRING2+IT_SPACE, NULL, 	"Sunflower aka AnimeSonic", 		 				NULL, 	   70},
-	{IT_STRING2+IT_SPACE, NULL, 	"Yuz aka Yuzler", 		  							NULL, 	   80},
-	{IT_STRING2+IT_SPACE, NULL, 	"Democrab", 		  								NULL, 	   90},
-	{IT_STRING2+IT_SPACE, NULL, 	"EXpand aka Maver", 		 						NULL, 	  100},
+	{IT_STRING+IT_SPACE, NULL, "", 									NULL,       73},	// dummy text 
 	
-	{IT_HEADER, NULL, "Special Thanks <3", 									NULL,     120},
+	{IT_STRING2+IT_SPACE, NULL, 	"Sunflower aka AnimeSonic", 		 				NULL, 	   80},
+	{IT_STRING2+IT_SPACE, NULL, 	"Yuz aka Yuzler", 		  							NULL, 	  90},
+	{IT_STRING2+IT_SPACE, NULL, 	"Democrab", 		  								NULL, 	   100},
+	{IT_STRING2+IT_SPACE, NULL, 	"EXpand aka Maver", 		 						NULL, 	  110},
+	{IT_STRING2+IT_SPACE, NULL, 	"Nexit", 		 						NULL, 	  120},
 	
-	{IT_STRING2+IT_SPACE, NULL, 	"xyzzy",     										NULL, 	  130},
-	{IT_STRING2+IT_SPACE, NULL, 	"Haya",       										NULL,     140},
-	{IT_STRING2+IT_SPACE, NULL, 	"Galactice",       									NULL,     150},
-	{IT_STRING2+IT_SPACE, NULL, 	"Himie and",       									NULL,     160},	
-	{IT_STRING2+IT_SPACE, NULL, 	"The Moe Mansion / Birdhouse Team",       			NULL,     170},
-	{IT_STRING2+IT_SPACE,	NULL,	"All of Sunflower's Garden",	      				NULL,     180},
+	{IT_HEADER, NULL, "Special Thanks <3", 									NULL,     130},
+	
+	
+	{IT_STRING2+IT_SPACE,	NULL,	"All of Sunflower's Garden",	      				NULL,     150},
+	{IT_STRING2+IT_SPACE, NULL, 	"Galactice",       									NULL,     160},
+	{IT_STRING2+IT_SPACE, NULL, 	"Himie and",       									NULL,     170},	
+	{IT_STRING2+IT_SPACE, NULL, 	"The Moe Mansion / Birdhouse Team",       			NULL,     180},
+	
 
-	{IT_STRING+IT_SPACE, NULL, "", 									NULL,       190},	// dummy text
-	{IT_STRING, NULL, "", 									NULL,       200},	// dummy text II
+	{IT_STRING+IT_SPACE, NULL, "", 									NULL,       190},	// dummy text II
+	{IT_STRING, NULL, "", 									NULL,       200},	// dummy text III
 };
 
 static menuitem_t OP_BirdMenu[] =
@@ -2387,7 +2390,7 @@ menu_t OP_MonitorToggleDef =
 };
 
 #ifdef HWRENDER
-menu_t OP_OpenGLOptionsDef = DEFAULTMENUSTYLE("M_VIDEO", OP_OpenGLOptionsMenu, &OP_VideoOptionsDef, 30, 30);
+menu_t OP_OpenGLOptionsDef = DEFAULTMENUSTYLE("M_VIDEO", OP_OpenGLOptionsMenu, &OP_VideoOptionsDef, 30, 20);
 
 menu_t OP_OpenGLColorDef =
 {
