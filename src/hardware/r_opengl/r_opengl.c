@@ -23,6 +23,7 @@
 
 #include <stdarg.h>
 #include <math.h>
+#include "../../r_local.h" // For rendertimefrac, used for the leveltime shader uniform
 #include "r_opengl.h"
 #include "r_vbo.h"
 
@@ -668,7 +669,7 @@ typedef struct gl_shaderprogram_s
 static gl_shaderprogram_t gl_shaderprograms[MAXSHADERPROGRAMS];
 
 // Shader info
-static INT32 shader_leveltime = 0;
+static float shader_leveltime = 0;
 
 // ========================
 //  Fragment shader macros
@@ -1201,7 +1202,7 @@ EXPORT void HWRAPI(SetShaderInfo) (hwdshaderinfo_t info, INT32 value)
 	switch (info)
 	{
 		case HWD_SHADERINFO_LEVELTIME:
-			shader_leveltime = value;
+			shader_leveltime = (((float)(value-1)) + FIXED_TO_FLOAT(rendertimefrac)) / TICRATE;
 			break;
 		default:
 			break;
@@ -2212,7 +2213,7 @@ static void Shader_SetUniforms(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRGBAF
 			UNIFORM_1(shader->uniforms[gluniform_fade_start], Surface->LightInfo.fade_start, pglUniform1f);
 			UNIFORM_1(shader->uniforms[gluniform_fade_end], Surface->LightInfo.fade_end, pglUniform1f);
 		}
-		UNIFORM_1(shader->uniforms[gluniform_leveltime], ((float)shader_leveltime) / TICRATE, pglUniform1f);
+		UNIFORM_1(shader->uniforms[gluniform_leveltime], shader_leveltime, pglUniform1f);
 
 		#undef UNIFORM_1
 		#undef UNIFORM_2

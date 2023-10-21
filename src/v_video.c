@@ -2645,7 +2645,8 @@ void V_DoPostProcessor(INT32 view, postimg_t type, INT32 param)
 		UINT8 *tmpscr = screens[4];
 		UINT8 *srcscr = screens[0];
 		INT32 y;
-		angle_t disStart = (leveltime * 128) & FINEMASK; // in 0 to FINEANGLE
+		// Set disStart to a range from 0 to FINEANGLE, incrementing by 128 per tic
+		angle_t disStart = (((leveltime-1)*128) + (rendertimefrac / (FRACUNIT/128))) & FINEMASK;
 		INT32 newpix;
 		INT32 sine;
 		//UINT8 *transme = transtables + ((tr_trans50-1)<<FF_TRANSSHIFT);
@@ -2768,8 +2769,11 @@ Unoptimized version
 			heatindex[view] %= viewheight;
 		}
 
-		heatindex[view]++;
-		heatindex[view] %= vid.height;
+		if (renderisnewtic) // This isn't interpolated... but how do you interpolate a one-pixel shift?
+		{
+			heatindex[view]++;
+			heatindex[view] %= vid.height;
+		}
 
 		VID_BlitLinearScreen(tmpscr+vid.width*vid.bpp*yoffset+xoffset, screens[0]+vid.width*vid.bpp*yoffset+xoffset,
 				viewwidth*vid.bpp, viewheight, vid.width*vid.bpp, vid.width);
