@@ -1519,10 +1519,8 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 	if (gr_backsector)
 	{
-		INT32 gr_toptexture = 0, gr_bottomtexture = 0;
+		INT32 gr_toptexture, gr_bottomtexture;
 		// two sided line
-		boolean bothceilingssky = false; // turned on if both back and front ceilings are sky
-		boolean bothfloorssky = false; // likewise, but for floors
 
 #ifdef ESLOPE
 		SLOPEPARAMS(gr_backsector->c_slope, worldhigh, worldhighslope, gr_backsector->ceilingheight)
@@ -1640,20 +1638,14 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 		if (gr_frontsector->ceilingpic == skyflatnum
 			&& gr_backsector->ceilingpic  == skyflatnum)
 		{
-			bothceilingssky = true;
+			worldtop = worldhigh;
+#ifdef ESLOPE
+			worldtopslope = worldhighslope;
+#endif
 		}
 
-		// likewise, but for floors and upper textures
-		if (gr_frontsector->floorpic == skyflatnum
-			&& gr_backsector->floorpic == skyflatnum)
-		{
-			bothfloorssky = true;
-		}
-
-		if (!bothceilingssky)
-			gr_toptexture = R_GetTextureNum(gr_sidedef->toptexture);
-		if (!bothfloorssky)
-			gr_bottomtexture = R_GetTextureNum(gr_sidedef->bottomtexture);
+		gr_toptexture = R_GetTextureNum(gr_sidedef->toptexture);
+		gr_bottomtexture = R_GetTextureNum(gr_sidedef->bottomtexture);
 
 		// check TOP TEXTURE
 		if ((
