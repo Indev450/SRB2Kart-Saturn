@@ -39,6 +39,7 @@ EXPORT void HWRAPI(DrawPolygon) (FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUI
 EXPORT void HWRAPI(SetBlend) (FBITFIELD PolyFlags);
 EXPORT void HWRAPI(ClearBuffer) (FBOOLEAN ColorMask, FBOOLEAN DepthMask, FBOOLEAN StencilMask, FRGBAFloat *ClearColor);
 EXPORT void HWRAPI(SetTexture) (FTextureInfo *TexInfo);
+EXPORT void HWRAPI(UpdateTexture) (FTextureInfo *TexInfo);
 EXPORT void HWRAPI(ReadRect) (INT32 x, INT32 y, INT32 width, INT32 height, INT32 dst_stride, UINT16 *dst_data);
 EXPORT void HWRAPI(GClipRect) (INT32 minx, INT32 miny, INT32 maxx, INT32 maxy, float nearclip, float farclip);
 EXPORT void HWRAPI(ClearMipMapCache) (void);
@@ -74,8 +75,9 @@ EXPORT void HWRAPI(KillShaders) (void);
 EXPORT void HWRAPI(SetShader) (int shader);
 EXPORT void HWRAPI(UnSetShader) (void);
 
+EXPORT void HWRAPI(SetShaderInfo) (hwdshaderinfo_t info, INT32 value);
 EXPORT void HWRAPI(LoadCustomShader) (int number, char *shader, size_t size, boolean fragment);
-EXPORT void HWRAPI(InitCustomShaders) (void);
+EXPORT boolean HWRAPI(InitCustomShaders) (void);
 
 EXPORT void HWRAPI(StartBatching) (void);
 EXPORT void HWRAPI(RenderBatches) (precise_t *sSortTime, precise_t *sDrawTime, int *sNumPolys, int *sNumVerts, int *sNumCalls, int *sNumShaders, int *sNumTextures, int *sNumPolyFlags, int *sNumColors);
@@ -91,47 +93,49 @@ EXPORT void HWRAPI(ClearLightTableCache) (void);
 
 struct hwdriver_s
 {
-	Init                pfnInit;
-	SetPalette          pfnSetPalette;
-	FinishUpdate        pfnFinishUpdate;
-	Draw2DLine          pfnDraw2DLine;
-	DrawPolygon         pfnDrawPolygon;
-	SetBlend            pfnSetBlend;
-	ClearBuffer         pfnClearBuffer;
-	SetTexture          pfnSetTexture;
-	ReadRect            pfnReadRect;
-	GClipRect           pfnGClipRect;
-	ClearMipMapCache    pfnClearMipMapCache;
-	SetSpecialState     pfnSetSpecialState;
-	DrawModel           pfnDrawModel;
-	CreateModelVBOs     pfnCreateModelVBOs;
-	SetTransform        pfnSetTransform;
-	GetTextureUsed      pfnGetTextureUsed;
-	PostImgRedraw       pfnPostImgRedraw;
-	FlushScreenTextures pfnFlushScreenTextures;
-	StartScreenWipe     pfnStartScreenWipe;
-	EndScreenWipe       pfnEndScreenWipe;
-	DoScreenWipe        pfnDoScreenWipe;
-	DrawIntermissionBG  pfnDrawIntermissionBG;
-	MakeScreenTexture   pfnMakeScreenTexture;
+	Init                	pfnInit;
+	SetPalette          	pfnSetPalette;
+	FinishUpdate        	pfnFinishUpdate;
+	Draw2DLine          	pfnDraw2DLine;
+	DrawPolygon         	pfnDrawPolygon;
+	SetBlend            	pfnSetBlend;
+	ClearBuffer         	pfnClearBuffer;
+	SetTexture          	pfnSetTexture;
+	UpdateTexture       	pfnUpdateTexture;
+	ReadRect            	pfnReadRect;
+	GClipRect           	pfnGClipRect;
+	ClearMipMapCache    	pfnClearMipMapCache;
+	SetSpecialState     	pfnSetSpecialState;
+	DrawModel           	pfnDrawModel;
+	CreateModelVBOs     	pfnCreateModelVBOs;
+	SetTransform        	pfnSetTransform;
+	GetTextureUsed      	pfnGetTextureUsed;
+	PostImgRedraw       	pfnPostImgRedraw;
+	FlushScreenTextures 	pfnFlushScreenTextures;
+	StartScreenWipe     	pfnStartScreenWipe;
+	EndScreenWipe       	pfnEndScreenWipe;
+	DoScreenWipe        	pfnDoScreenWipe;
+	DrawIntermissionBG  	pfnDrawIntermissionBG;
+	MakeScreenTexture   	pfnMakeScreenTexture;
 	MakeScreenFinalTexture  pfnMakeScreenFinalTexture;
 	DrawScreenFinalTexture  pfnDrawScreenFinalTexture;
 
-	RenderSkyDome pfnRenderSkyDome;
+	RenderSkyDome 			pfnRenderSkyDome;
 
-	LoadShaders pfnLoadShaders;
-	KillShaders pfnKillShaders;
-	SetShader pfnSetShader;
-	UnSetShader pfnUnSetShader;
+	LoadShaders 			pfnLoadShaders;
+	KillShaders 			pfnKillShaders;
+	SetShader 				pfnSetShader;
+	UnSetShader 			pfnUnSetShader;
 
-	LoadCustomShader pfnLoadCustomShader;
-	InitCustomShaders pfnInitCustomShaders;
+	SetShaderInfo       	pfnSetShaderInfo;
+	LoadCustomShader 		pfnLoadCustomShader;
+	InitCustomShaders 		pfnInitCustomShaders;
 
-	StartBatching pfnStartBatching;
-	RenderBatches pfnRenderBatches;
+	StartBatching 			pfnStartBatching;
+	RenderBatches 			pfnRenderBatches;
 	
-	AddLightTable pfnAddLightTable;
-	ClearLightTableCache pfnClearLightTableCache;
+	AddLightTable 			pfnAddLightTable;
+	ClearLightTableCache 	pfnClearLightTableCache;
 };
 
 extern struct hwdriver_s hwdriver;

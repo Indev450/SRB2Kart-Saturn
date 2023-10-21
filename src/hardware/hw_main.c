@@ -171,17 +171,23 @@ static void CV_screentextures_ONChange(void)
 
 static void CV_useCustomShaders_ONChange(void)
 {
-    if (rendermode == render_opengl)
-        HWD.pfnInitCustomShaders();
+	if (rendermode == render_opengl)	
+	{
+		if (cv_grshaders.value)
+			HWD.pfnInitCustomShaders();
+	}
 }
 
 static void CV_grpaletteshader_OnChange(void)
 {
-	if (rendermode == render_opengl)
+	if (rendermode == render_opengl)	
 	{
-		HWD.pfnSetSpecialState(HWD_SET_PALETTE_SHADER_ENABLED, cv_grpaletteshader.value);
-		gr_use_palette_shader = cv_grpaletteshader.value;
-		V_SetPalette(0);
+		if (cv_grshaders.value)
+		{
+			HWD.pfnSetSpecialState(HWD_SET_PALETTE_SHADER_ENABLED, cv_grpaletteshader.value);
+			gr_use_palette_shader = cv_grpaletteshader.value;
+			V_SetPalette(0);
+		}
 	}
 }
 
@@ -1513,8 +1519,10 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 	if (gr_backsector)
 	{
-		INT32 gr_toptexture, gr_bottomtexture;
+		INT32 gr_toptexture = 0, gr_bottomtexture = 0;
 		// two sided line
+		boolean bothceilingssky = false; // turned on if both back and front ceilings are sky
+		boolean bothfloorssky = false; // likewise, but for floors
 
 #ifdef ESLOPE
 		SLOPEPARAMS(gr_backsector->c_slope, worldhigh, worldhighslope, gr_backsector->ceilingheight)
@@ -1629,17 +1637,23 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 		// hack to allow height changes in outdoor areas
 		// This is what gets rid of the upper textures if there should be sky
-		if (gr_frontsector->ceilingpic == skyflatnum &&
-			gr_backsector->ceilingpic  == skyflatnum)
+		if (gr_frontsector->ceilingpic == skyflatnum
+			&& gr_backsector->ceilingpic  == skyflatnum)
 		{
-			worldtop = worldhigh;
-#ifdef ESLOPE
-			worldtopslope = worldhighslope;
-#endif
+			bothceilingssky = true;
 		}
 
-		gr_toptexture = R_GetTextureNum(gr_sidedef->toptexture);
-		gr_bottomtexture = R_GetTextureNum(gr_sidedef->bottomtexture);
+		// likewise, but for floors and upper textures
+		if (gr_frontsector->floorpic == skyflatnum
+			&& gr_backsector->floorpic == skyflatnum)
+		{
+			bothfloorssky = true;
+		}
+
+		if (!bothceilingssky)
+			gr_toptexture = R_GetTextureNum(gr_sidedef->toptexture);
+		if (!bothfloorssky)
+			gr_bottomtexture = R_GetTextureNum(gr_sidedef->bottomtexture);
 
 		// check TOP TEXTURE
 		if ((
@@ -6169,6 +6183,9 @@ void HWR_RenderPlayerView(INT32 viewnumber, player_t *player)
 		ClearColor.alpha = 1.0f;
 		HWD.pfnClearBuffer(true, false, false, &ClearColor);
 	}
+
+	if (cv_grshaders.value)
+		HWD.pfnSetShaderInfo(HWD_SHADERINFO_LEVELTIME, (INT32)leveltime); // The water surface shader needs the leveltime.
 
 	if (viewnumber > 3)
 		return;
