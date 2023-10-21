@@ -9974,7 +9974,7 @@ static void M_ConnectLastServer(INT32 choice)
 
 	if (!*cv_lastserver.string)
 	{
-		M_StartMessage("You haven't previosuly joined a server.\n", NULL, MM_NOTHING);
+		M_StartMessage("You haven't previously joined a server.\n", NULL, MM_NOTHING);
 		return;
 	}
 
