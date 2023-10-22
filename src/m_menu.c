@@ -10699,6 +10699,7 @@ static void M_DrawSetupMultiPlayerMenu(void)
 				sprdef = &skins[0].spritedef;
 			break;
 		default:
+			skintodisplay = setupm_fakeskin;
 			if (R_SkinAvailable(skins[setupm_fakeskin].name) != -1)
 				sprdef = &skins[R_SkinAvailable(skins[setupm_fakeskin].name)].spritedef;
 			else
@@ -10732,13 +10733,13 @@ static void M_DrawSetupMultiPlayerMenu(void)
 	// draw player sprite
 	if (setupm_fakecolor) // inverse should never happen
 	{
-		UINT8 *colormap = R_GetTranslationColormap(setupm_fakeskin, setupm_fakecolor, GTC_MENUCACHE);
+		UINT8 *colormap = R_GetTranslationColormap(skintodisplay, setupm_fakecolor, GTC_MENUCACHE);
 
-		if (skins[setupm_fakeskin].flags & SF_HIRES)
+		if (skins[skintodisplay].flags & SF_HIRES)
 		{
 			V_DrawFixedPatch((mx+43)<<FRACBITS,
 						(my+131)<<FRACBITS,
-						skins[setupm_fakeskin].highresscale,
+						skins[skintodisplay].highresscale,
 						flags, patch, colormap);
 		}
 		else
