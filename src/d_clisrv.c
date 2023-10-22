@@ -4981,26 +4981,36 @@ static void HandlePacketFromPlayer(SINT8 node)
 			/// \todo Use a separate cvar for that kind of timeout?
 			freezetimeout[node] = I_GetTime() + connectiontimeout;
 
+			//Ported this from 2.2 Prevent dropped ticcmds due to interp timing jutter 
+			// If we've alredy received a ticcmd for this tic, just submit it for the next one.
+			tic_t faketic = maketic;
+			if ((!!(netcmds[maketic % TICQUEUE][netconsole].angleturn & TICCMD_RECEIVED))
+				&& (maketic - firstticstosend < TICQUEUE - 1))
+					faketic++;
+
+
+			
 			// Don't do anything for packets of type NODEKEEPALIVE?
 			// Sryder 2018/07/01: Update the freezetimeout still!
 			if (netbuffer->packettype == PT_NODEKEEPALIVE
 				|| netbuffer->packettype == PT_NODEKEEPALIVEMIS)
 				break;
 
-			// Copy ticcmd
-			G_MoveTiccmd(&netcmds[maketic%TICQUEUE][netconsole], &netbuffer->u.clientpak.cmd, 1);
+			// Copy ticcmd Prevent dropped ticcmds due to interp timing jutter 
+			G_MoveTiccmd(&netcmds[faketic%TICQUEUE][netconsole], &netbuffer->u.clientpak.cmd, 1);
+
 
 			// Check ticcmd for "speed hacks"
 			if (CheckForSpeedHacks((UINT8)netconsole))
 				break;
 
-			// Splitscreen cmd
+			// Splitscreen cmd Prevent dropped ticcmds due to interp timing jutter 
 			if (((netbuffer->packettype == PT_CLIENT2CMD || netbuffer->packettype == PT_CLIENT2MIS)
 				|| (netbuffer->packettype == PT_CLIENT3CMD || netbuffer->packettype == PT_CLIENT3MIS)
 				|| (netbuffer->packettype == PT_CLIENT4CMD || netbuffer->packettype == PT_CLIENT4MIS))
 				&& (nodetoplayer2[node] >= 0))
 			{
-				G_MoveTiccmd(&netcmds[maketic%TICQUEUE][(UINT8)nodetoplayer2[node]],
+				G_MoveTiccmd(&netcmds[faketic%TICQUEUE][(UINT8)nodetoplayer2[node]],
 					&netbuffer->u.client2pak.cmd2, 1);
 
 				if (CheckForSpeedHacks((UINT8)nodetoplayer2[node]))
@@ -5011,7 +5021,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 				|| (netbuffer->packettype == PT_CLIENT4CMD || netbuffer->packettype == PT_CLIENT4MIS))
 				&& (nodetoplayer3[node] >= 0))
 			{
-				G_MoveTiccmd(&netcmds[maketic%TICQUEUE][(UINT8)nodetoplayer3[node]],
+				G_MoveTiccmd(&netcmds[faketic%TICQUEUE][(UINT8)nodetoplayer3[node]],
 					&netbuffer->u.client3pak.cmd3, 1);
 
 				if (CheckForSpeedHacks((UINT8)nodetoplayer3[node]))
@@ -5021,7 +5031,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 			if ((netbuffer->packettype == PT_CLIENT4CMD || netbuffer->packettype == PT_CLIENT4MIS)
 				&& (nodetoplayer4[node] >= 0))
 			{
-				G_MoveTiccmd(&netcmds[maketic%TICQUEUE][(UINT8)nodetoplayer4[node]],
+				G_MoveTiccmd(&netcmds[faketic%TICQUEUE][(UINT8)nodetoplayer4[node]],
 					&netbuffer->u.client4pak.cmd4, 1);
 
 				if (CheckForSpeedHacks((UINT8)nodetoplayer4[node]))
