@@ -142,7 +142,7 @@ consvar_t cv_grusecustomshaders = {"gr_usecustomshaders", "Yes", CV_CALL|CV_SAVE
 
 consvar_t cv_grpaletteshader = {"gr_paletteshader", "Off", CV_CALL|CV_SAVE, CV_OnOff, CV_grpaletteshader_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_grflashpal = {"gr_flashpal", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_grflashpal = {"gr_flashpal", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_grmdls = {"gr_mdls", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_grfallbackplayermodel = {"gr_fallbackplayermodel", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
