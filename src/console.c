@@ -1142,7 +1142,10 @@ boolean CON_Responder(event_t *ev)
 
 		CONS_Printf("\x86""%c""\x80""%s\n", CON_PROMPTCHAR, inputlines[inputline]);
 
-		inputline = (inputline+1) & 31;
+		// Only add command to history if it differs from previous one
+		if (strcmp(inputlines[inputline], inputlines[(inputline-1) & 31]))
+			inputline = (inputline+1) & 31;
+
 		inputhist = inputline;
 		CON_InputClear();
 
