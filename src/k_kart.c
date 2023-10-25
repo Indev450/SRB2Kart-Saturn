@@ -6935,6 +6935,7 @@ static patch_t *kp_karmastickerclr;
 static patch_t *kp_timeoutstickerclr;
 static patch_t *skp_smallstickerclr;
 static patch_t *kp_itemmulstickerclr[2];
+static patch_t *kp_itembgclr[4];
 
 static patch_t *kp_startcountdown[16];
 static patch_t *kp_racefinish[6];
@@ -7037,7 +7038,11 @@ void K_LoadKartHUDGraphics(void)
 		kp_bumperstickerclr = 			W_CachePatchName("K_SCBALN", PU_HUDGFX);
 		kp_bumperstickerwideclr = 		W_CachePatchName("K_SCBALW", PU_HUDGFX);
 		kp_karmastickerclr = 			W_CachePatchName("K_SCKARM", PU_HUDGFX);
-		kp_timeoutstickerclr = 			W_CachePatchName("K_SCTOUT", PU_HUDGFX);	
+		kp_timeoutstickerclr = 			W_CachePatchName("K_SCTOUT", PU_HUDGFX);
+		kp_itembgclr[0] = 				W_CachePatchName("K_ITBC", PU_HUDGFX);
+		kp_itembgclr[1] = 				W_CachePatchName("K_ITBCD", PU_HUDGFX);
+		kp_itembgclr[2] = 				W_CachePatchName("K_ISBC", PU_HUDGFX);
+		kp_itembgclr[3] = 				W_CachePatchName("K_ISBCD", PU_HUDGFX);
 		kp_itemmulstickerclr[1] = 		W_CachePatchName("K_ISMULC", PU_HUDGFX);
 		kp_itemmulstickerclr[0] = 		W_CachePatchName("K_ITMULC", PU_HUDGFX);
 		if (big_lap_color){		
@@ -7528,7 +7533,13 @@ static void K_drawKartItem(void)
 	// Set to 'no item' just in case.
 	const UINT8 offset = ((splitscreen > 1) ? 1 : 0);
 	patch_t *localpatch = kp_nodraw;
-	patch_t *localbg = ((offset) ? kp_itembg[2] : kp_itembg[0]);
+	patch_t *localbg;
+	
+	if (cv_colorizedhud.value && clr_hud)
+		localbg = ((offset) ? kp_itembgclr[2] : kp_itembgclr[0]);
+	else
+		localbg = ((offset) ? kp_itembg[2] : kp_itembg[0]);
+	
 	patch_t *localinv = ((offset) ? kp_invincibility[((leveltime % (6*3)) / 3) + 7] : kp_invincibility[(leveltime % (7*3)) / 3]);
 	INT32 fx = 0, fy = 0, fflags = 0;	// final coords for hud and flags...
 	//INT32 splitflags = K_calcSplitFlags(V_SNAPTOTOP|V_SNAPTOLEFT);
@@ -7688,7 +7699,10 @@ static void K_drawKartItem(void)
 					break;
 				case KITEM_INVINCIBILITY:
 					localpatch = localinv;
-					localbg = kp_itembg[offset+1];
+					if (cv_colorizedhud.value && clr_hud)
+						localbg = kp_itembgclr[offset+1];
+					else
+						localbg = kp_itembg[offset+1];
 					break;
 				case KITEM_BANANA:
 					localpatch = kp_banana[offset];
@@ -7710,7 +7724,10 @@ static void K_drawKartItem(void)
 					break;
 				case KITEM_SPB:
 					localpatch = kp_selfpropelledbomb[offset];
-					localbg = kp_itembg[offset+1];
+					if (cv_colorizedhud.value && clr_hud)
+						localbg = kp_itembgclr[offset+1];
+					else
+						localbg = kp_itembg[offset+1];
 					break;
 				case KITEM_GROW:
 					localpatch = kp_grow[offset];
@@ -7720,7 +7737,10 @@ static void K_drawKartItem(void)
 					break;
 				case KITEM_THUNDERSHIELD:
 					localpatch = kp_thundershield[offset];
-					localbg = kp_itembg[offset+1];
+					if (cv_colorizedhud.value && clr_hud)
+						localbg = kp_itembgclr[offset+1];
+					else
+						localbg = kp_itembg[offset+1];
 					break;
 				case KITEM_HYUDORO:
 					localpatch = kp_hyudoro[offset];
@@ -7788,8 +7808,20 @@ static void K_drawKartItem(void)
 	if (localcolor != SKINCOLOR_NONE)
 		colmap = R_GetTranslationColormap(colormode, localcolor, GTC_CACHE);
 
-	V_DrawScaledPatch(fx, fy, V_HUDTRANS|fflags, localbg);
+	
+	if (cv_colorizedhud.value && clr_hud)
+	{
+		V_DrawMappedPatch(fx, fy, V_HUDTRANS|fflags, localbg,colormap);
+	}
+	else
+	{	
+		V_DrawScaledPatch(fx, fy, V_HUDTRANS|fflags, localbg);
+	}
+	
+	
 
+
+	
 	// Then, the numbers:
 	if (stplyr->kartstuff[k_itemamount] >= numberdisplaymin && !stplyr->kartstuff[k_itemroulette])
 	{
