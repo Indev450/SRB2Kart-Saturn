@@ -63,6 +63,8 @@ consvar_t cv_saltysquish = {"hardcodehopsquish", "On", CV_SAVE, CV_OnOff, NULL, 
 
 //Colourized HUD
 consvar_t cv_colorizedhud = {"colorizedhud", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_colorizeditembox = {"colorizeditembox", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 
 static CV_PossibleValue_t HudColor_cons_t[MAXSKINCOLORS+1];
 consvar_t cv_colorizedhudcolor = {"colorizedhudcolor", "Skin Color", CV_SAVE, HudColor_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -686,6 +688,7 @@ void K_RegisterKartStuff(void)
 	//Colourized HUD
 	CV_RegisterVar(&cv_colorizedhud);
 	CV_RegisterVar(&cv_colorizedhudcolor);
+	CV_RegisterVar(&cv_colorizeditembox);
 	
 	CV_RegisterVar(&cv_biglaps);
 	
@@ -7535,7 +7538,7 @@ static void K_drawKartItem(void)
 	patch_t *localpatch = kp_nodraw;
 	patch_t *localbg;
 	
-	if (cv_colorizedhud.value && clr_hud)
+	if (cv_colorizeditembox.value && cv_colorizedhud.value && clr_hud)
 		localbg = ((offset) ? kp_itembgclr[2] : kp_itembgclr[0]);
 	else
 		localbg = ((offset) ? kp_itembg[2] : kp_itembg[0]);
@@ -7699,7 +7702,7 @@ static void K_drawKartItem(void)
 					break;
 				case KITEM_INVINCIBILITY:
 					localpatch = localinv;
-					if (cv_colorizedhud.value && clr_hud)
+					if (cv_colorizeditembox.value && cv_colorizedhud.value && clr_hud)
 						localbg = kp_itembgclr[offset+1];
 					else
 						localbg = kp_itembg[offset+1];
@@ -7724,7 +7727,7 @@ static void K_drawKartItem(void)
 					break;
 				case KITEM_SPB:
 					localpatch = kp_selfpropelledbomb[offset];
-					if (cv_colorizedhud.value && clr_hud)
+					if (cv_colorizeditembox.value && cv_colorizedhud.value && clr_hud)
 						localbg = kp_itembgclr[offset+1];
 					else
 						localbg = kp_itembg[offset+1];
@@ -7737,7 +7740,7 @@ static void K_drawKartItem(void)
 					break;
 				case KITEM_THUNDERSHIELD:
 					localpatch = kp_thundershield[offset];
-					if (cv_colorizedhud.value && clr_hud)
+					if (cv_colorizeditembox.value && cv_colorizedhud.value && clr_hud)
 						localbg = kp_itembgclr[offset+1];
 					else
 						localbg = kp_itembg[offset+1];
@@ -7809,7 +7812,7 @@ static void K_drawKartItem(void)
 		colmap = R_GetTranslationColormap(colormode, localcolor, GTC_CACHE);
 
 	
-	if (cv_colorizedhud.value && clr_hud)
+	if (cv_colorizeditembox.value && cv_colorizedhud.value && clr_hud)
 	{
 		V_DrawMappedPatch(fx, fy, V_HUDTRANS|fflags, localbg,colormap);
 	}
