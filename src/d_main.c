@@ -1289,7 +1289,7 @@ void D_SRB2Main(void)
 		
 		// now check for colour hud stuff
 		if (W_CheckMultipleLumps("K_SCTIME", "K_SCTIMW", "K_SCLAPS", "K_SCLAPW", \
-			"K_SCBALN", "K_SCBALW", "K_SCKARM", "K_SCTOUT", "K_ISMULC", "K_ITMULC", NULL))
+			"K_SCBALN", "K_SCBALW", "K_SCKARM", "K_SCTOUT", "K_ISMULC", "K_ITMULC", "K_ITBC","K_ITBCD", "K_ISBC", "K_ISBCD", NULL))
 			clr_hud = true;
 		
 		// check for bigger lap count but color** its color bitch
