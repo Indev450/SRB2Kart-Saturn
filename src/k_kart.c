@@ -69,6 +69,8 @@ consvar_t cv_colorizeditembox = {"colorizeditembox", "Off", CV_SAVE, CV_OnOff, N
 static CV_PossibleValue_t HudColor_cons_t[MAXSKINCOLORS+1];
 consvar_t cv_colorizedhudcolor = {"colorizedhudcolor", "Skin Color", CV_SAVE, HudColor_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_darkitembox = {"darkitembox", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 consvar_t cv_biglaps = {"biglaphud", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; // here for ppl who dont want to make 2 more patches for their custom hud
 
 
@@ -689,6 +691,8 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_colorizedhud);
 	CV_RegisterVar(&cv_colorizedhudcolor);
 	CV_RegisterVar(&cv_colorizeditembox);
+	
+	CV_RegisterVar(&cv_darkitembox);
 	
 	CV_RegisterVar(&cv_biglaps);
 	
@@ -7702,10 +7706,12 @@ static void K_drawKartItem(void)
 					break;
 				case KITEM_INVINCIBILITY:
 					localpatch = localinv;
-					if (cv_colorizeditembox.value && cv_colorizedhud.value && clr_hud)
-						localbg = kp_itembgclr[offset+1];
-					else
-						localbg = kp_itembg[offset+1];
+					if (cv_darkitembox.value){
+						if (cv_colorizeditembox.value && cv_colorizedhud.value && clr_hud)
+							localbg = kp_itembgclr[offset+1];
+						else
+							localbg = kp_itembg[offset+1];
+					}
 					break;
 				case KITEM_BANANA:
 					localpatch = kp_banana[offset];
@@ -7727,10 +7733,12 @@ static void K_drawKartItem(void)
 					break;
 				case KITEM_SPB:
 					localpatch = kp_selfpropelledbomb[offset];
-					if (cv_colorizeditembox.value && cv_colorizedhud.value && clr_hud)
-						localbg = kp_itembgclr[offset+1];
-					else
-						localbg = kp_itembg[offset+1];
+					if (cv_darkitembox.value){
+						if (cv_colorizeditembox.value && cv_colorizedhud.value && clr_hud)
+							localbg = kp_itembgclr[offset+1];
+						else
+							localbg = kp_itembg[offset+1];
+					}
 					break;
 				case KITEM_GROW:
 					localpatch = kp_grow[offset];
@@ -7740,10 +7748,12 @@ static void K_drawKartItem(void)
 					break;
 				case KITEM_THUNDERSHIELD:
 					localpatch = kp_thundershield[offset];
-					if (cv_colorizeditembox.value && cv_colorizedhud.value && clr_hud)
-						localbg = kp_itembgclr[offset+1];
-					else
-						localbg = kp_itembg[offset+1];
+					if (cv_darkitembox.value){
+						if (cv_colorizeditembox.value && cv_colorizedhud.value && clr_hud)
+							localbg = kp_itembgclr[offset+1];
+						else
+							localbg = kp_itembg[offset+1];
+					}
 					break;
 				case KITEM_HYUDORO:
 					localpatch = kp_hyudoro[offset];
