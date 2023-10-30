@@ -9536,7 +9536,8 @@ static int lua_enumlib_kartstuff_get(lua_State *L)
 
 static int lua_enumlib_action_get(lua_State *L)
 {
-	const char *action = lua_tostring(L, 1)+2;
+	const char *action = lua_tostring(L, 1);
+
 	for (int i = 0; actionpointers[i].name; i++)
 		if (fasticmp(action, actionpointers[i].name)) {
 			// push lib_action as a C closure with the actionf_t* as an upvalue.
