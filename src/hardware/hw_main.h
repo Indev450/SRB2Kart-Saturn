@@ -142,6 +142,8 @@ void HWR_AddLine(seg_t *line);
 boolean HWR_CheckBBox(fixed_t *bspcoord);
 void HWR_RenderDrawNodes(void);
 
+void HWR_ClearLightTableCache(void);
+
 // hw_main.c: Sprites
 void HWR_AddSprites(sector_t *sec);
 void HWR_ProjectSprite(mobj_t *thing);
@@ -179,6 +181,8 @@ extern consvar_t cv_grfallbackplayermodel;
 extern consvar_t cv_grbatching;
 extern consvar_t cv_grrenderdistance;
 extern consvar_t cv_grusecustomshaders;
+extern consvar_t cv_grpaletteshader;
+extern consvar_t cv_grflashpal;
 extern consvar_t cv_grportals;
 extern consvar_t cv_nostencil;
 extern consvar_t cv_secbright;

@@ -49,6 +49,7 @@
 #include "m_anigif.h"
 #include "k_kart.h" // SRB2kart
 #include "y_inter.h"
+#include "fastcmp.h"
 #include "m_perfstats.h"
 
 #ifdef NETGAME_DEVMODE
@@ -141,6 +142,8 @@ static void Command_SetViews_f(void);
 
 static void Command_Addfilelocal(void);
 static void Command_Addfile(void);
+static void Command_Addskins(void);
+static void Command_GLocalSkin(void);
 static void Command_ListWADS_f(void);
 #ifdef DELFILE
 static void Command_Delfile(void);
@@ -210,7 +213,7 @@ void SendWeaponPref3(void);
 void SendWeaponPref4(void);
 
 static CV_PossibleValue_t usemouse_cons_t[] = {{0, "Off"}, {1, "On"}, {2, "Force"}, {0, NULL}};
-#if (defined (__unix__) && !defined (MSDOS)) || defined(__APPLE__) || defined (UNIXCOMMON)
+#if defined (__unix__) || defined (__APPLE__) || defined (UNIXCOMMON)
 static CV_PossibleValue_t mouse2port_cons_t[] = {{0, "/dev/gpmdata"}, {1, "/dev/ttyS0"},
 	{2, "/dev/ttyS1"}, {3, "/dev/ttyS2"}, {4, "/dev/ttyS3"}, {0, NULL}};
 #else
@@ -289,6 +292,8 @@ consvar_t cv_skin = {"skin", DEFAULTSKIN, CV_SAVE|CV_CALL|CV_NOINIT, NULL, Skin_
 consvar_t cv_skin2 = {"skin2", DEFAULTSKIN2, CV_SAVE|CV_CALL|CV_NOINIT, NULL, Skin2_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_skin3 = {"skin3", DEFAULTSKIN3, CV_SAVE|CV_CALL|CV_NOINIT, NULL, Skin3_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_skin4 = {"skin4", DEFAULTSKIN4, CV_SAVE|CV_CALL|CV_NOINIT, NULL, Skin4_OnChange, 0, NULL, NULL, 0, 0, NULL};
+// haha I've beaten you now, ONLINE
+consvar_t cv_localskin = {"internal___localskin", "none", CV_HIDEN, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_skipmapcheck = {"skipmapcheck", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -297,7 +302,7 @@ INT32 cv_debug;
 consvar_t cv_usemouse = {"use_mouse", "Off", CV_SAVE|CV_CALL,usemouse_cons_t, I_StartupMouse, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_usemouse2 = {"use_mouse2", "Off", CV_SAVE|CV_CALL,usemouse_cons_t, I_StartupMouse2, 0, NULL, NULL, 0, 0, NULL};
 
-#if defined (DC) || defined (_XBOX) || defined (WMINPUT) || defined (_WII) || defined(HAVE_SDL) || defined(_WINDOWS) //joystick 1 and 2
+#if defined(HAVE_SDL) || defined(_WINDOWS) //joystick 1 and 2
 consvar_t cv_usejoystick = {"use_joystick", "1", CV_SAVE|CV_CALL, usejoystick_cons_t,
 	I_InitJoystick, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_usejoystick2 = {"use_joystick2", "2", CV_SAVE|CV_CALL, usejoystick_cons_t,
@@ -321,7 +326,7 @@ consvar_t cv_joyscale4 = {"joyscale4", "1", CV_SAVE|CV_CALL, NULL, I_JoyScale4, 
 consvar_t cv_joyscale = {"joyscale", "1", CV_SAVE|CV_HIDEN, NULL, NULL, 0, NULL, NULL, 0, 0, NULL}; //Alam: Dummy for save
 consvar_t cv_joyscale2 = {"joyscale2", "1", CV_SAVE|CV_HIDEN, NULL, NULL, 0, NULL, NULL, 0, 0, NULL}; //Alam: Dummy for save
 #endif
-#if (defined (__unix__) && !defined (MSDOS)) || defined(__APPLE__) || defined (UNIXCOMMON)
+#if defined (__unix__) || defined (__APPLE__) || defined (UNIXCOMMON)
 consvar_t cv_mouse2port = {"mouse2port", "/dev/gpmdata", CV_SAVE, mouse2port_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_mouse2opt = {"mouse2opt", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
 #else
@@ -369,6 +374,9 @@ consvar_t cv_decabanana = 			{"decabanana", 			"On", CV_NETVAR|CV_CHEAT, CV_OnOf
 consvar_t cv_tripleorbinaut = 		{"tripleorbinaut", 		"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_quadorbinaut = 		{"quadorbinaut", 		"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_dualjawz = 			{"dualjawz", 			"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+//Save server ip
+consvar_t cv_lastserver = {"lastserver", "", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static CV_PossibleValue_t kartminimap_cons_t[] = {{0, "MIN"}, {10, "MAX"}, {0, NULL}};
 consvar_t cv_kartminimap = {"kartminimap", "4", CV_SAVE, kartminimap_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -447,6 +455,7 @@ static CV_PossibleValue_t basenumlaps_cons_t[] = {{1, "MIN"}, {50, "MAX"}, {0, "
 consvar_t cv_basenumlaps = {"basenumlaps", "Map default", CV_NETVAR|CV_CALL|CV_CHEAT, basenumlaps_cons_t, BaseNumLaps_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_forceskin = {"forceskin", "Off", CV_NETVAR|CV_CALL|CV_CHEAT, Forceskin_cons_t, ForceSkin_OnChange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_fakelocalskin = {"fakelocalskin", "None", CV_SAVE, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_downloading = {"downloading", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_allowexitlevel = {"allowexitlevel", "No", CV_NETVAR, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -468,6 +477,7 @@ consvar_t cv_showping = {"showping", "Always", CV_SAVE, showping_cons_t, NULL, 0
 
 static CV_PossibleValue_t pingmeasurement_cons_t[] = {{0, "Frames"}, {1, "Milliseconds"}, {0, NULL}};
 consvar_t cv_pingmeasurement = {"pingmeasurement", "Frames", CV_SAVE, pingmeasurement_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_luaimmersion = {"luaimmersion", "On", CV_SAVE, CV_OnOff, 0, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_minihead = {"smallminimapplayers", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -512,7 +522,7 @@ consvar_t cv_ps_descriptor = {"ps_descriptor", "Average", 0, ps_descriptor_cons_
 
 consvar_t cv_showtrackaddon = {"showtrackaddon", "Yes", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-static CV_PossibleValue_t skinselectmenu_t[] = {{SKINMENUTYPE_SCROLL, "Scoll"}, {SKINMENUTYPE_2D, "2d"}, {SKINMENUTYPE_GRID, "Grid"}, {0, NULL}};
+static CV_PossibleValue_t skinselectmenu_t[] = {{SKINMENUTYPE_SCROLL, "Scroll"}, {SKINMENUTYPE_2D, "2d"}, {SKINMENUTYPE_GRID, "Grid"}, {0, NULL}};
 consvar_t cv_skinselectmenu = {"skinselectmenu", "Grid", CV_SAVE, skinselectmenu_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static CV_PossibleValue_t skinselectgridsort_t[] ={
@@ -643,6 +653,8 @@ void D_RegisterServerCommands(void)
 
 	COM_AddCommand("addfilelocal", Command_Addfilelocal);
 	COM_AddCommand("addfile", Command_Addfile);
+	COM_AddCommand("addskins", Command_Addskins);
+	COM_AddCommand("localskin", Command_GLocalSkin);
 	COM_AddCommand("listwad", Command_ListWADS_f);
 
 #ifdef DELFILE
@@ -709,8 +721,6 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_powerstones);
 	CV_RegisterVar(&cv_competitionboxes);
 	CV_RegisterVar(&cv_matchboxes);
-	
-	CV_RegisterVar(&cv_slamsound);
 
 	/*CV_RegisterVar(&cv_recycler);
 	CV_RegisterVar(&cv_teleporters);
@@ -776,15 +786,6 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_pingtimeout);
 	CV_RegisterVar(&cv_showping);
 	CV_RegisterVar(&cv_pingmeasurement);
-	
-	CV_RegisterVar(&cv_minihead);
-	CV_RegisterVar(&cv_showminimapnames);
-	
-	CV_RegisterVar(&cv_showlapemblem);
-
-	CV_RegisterVar(&cv_showtrackaddon);
-
-	CV_RegisterVar(&cv_showviewpointtext);
 
 #ifdef SEENAMES
 	CV_RegisterVar(&cv_allowseenames);
@@ -802,6 +803,8 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_recordmultiplayerdemos);
 	CV_RegisterVar(&cv_netdemosyncquality);
 	CV_RegisterVar(&cv_maxdemosize);
+	
+	CV_RegisterVar(&cv_cechotoggle);
 }
 
 // =========================================================================
@@ -885,6 +888,7 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_playername);
 	CV_RegisterVar(&cv_playercolor);
 	CV_RegisterVar(&cv_skin); // r_things.c (skin NAME)
+	CV_RegisterVar(&cv_localskin);
 	// secondary player (splitscreen)
 	CV_RegisterVar(&cv_playername2);
 	CV_RegisterVar(&cv_playercolor2);
@@ -927,6 +931,8 @@ void D_RegisterClientCommands(void)
 
 	COM_AddCommand("displayplayer", Command_Displayplayer_f);
 	
+	CV_RegisterVar(&cv_audbuffersize); 
+	
 #ifdef HAVE_OPENMPT
 	CV_RegisterVar(&cv_modfilter);
 	CV_RegisterVar(&cv_stereosep);
@@ -949,36 +955,16 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_chatnotifications);
 	CV_RegisterVar(&cv_chatbacktint);
 	CV_RegisterVar(&cv_songcredits);
-	CV_RegisterVar(&cv_showfreeplay);
-
-	CV_RegisterVar(&cv_item_xoffset);
-	CV_RegisterVar(&cv_item_yoffset);
-	CV_RegisterVar(&cv_time_xoffset);
-	CV_RegisterVar(&cv_time_yoffset);
-	CV_RegisterVar(&cv_laps_xoffset);
-	CV_RegisterVar(&cv_laps_yoffset);
-	CV_RegisterVar(&cv_spdm_xoffset);
-	CV_RegisterVar(&cv_spdm_yoffset);
-	CV_RegisterVar(&cv_posi_xoffset);
-	CV_RegisterVar(&cv_posi_yoffset);
-	CV_RegisterVar(&cv_face_xoffset);
-	CV_RegisterVar(&cv_face_yoffset);
-	CV_RegisterVar(&cv_stcd_xoffset);
-	CV_RegisterVar(&cv_stcd_yoffset);
-	CV_RegisterVar(&cv_chek_yoffset);
-	CV_RegisterVar(&cv_mini_xoffset);
-	CV_RegisterVar(&cv_mini_yoffset);
-	CV_RegisterVar(&cv_want_xoffset);
-	CV_RegisterVar(&cv_want_yoffset);
-	CV_RegisterVar(&cv_showinput);
-	CV_RegisterVar(&cv_newspeedometer);
-
-	CV_RegisterVar(&cv_saltyhop);
-	CV_RegisterVar(&cv_saltyhopsfx);
-	CV_RegisterVar(&cv_saltysquish);
+	CV_RegisterVar(&cv_showfreeplay);	
 	
 	CV_RegisterVar(&cv_growmusic);
 	CV_RegisterVar(&cv_supermusic);
+			
+	CV_RegisterVar(&cv_showtrackaddon);
+	CV_RegisterVar(&cv_showviewpointtext);
+	
+	CV_RegisterVar(&cv_luaimmersion);
+	CV_RegisterVar(&cv_fakelocalskin);
 
 	//CV_RegisterVar(&cv_crosshair);
 	//CV_RegisterVar(&cv_crosshair2);
@@ -1044,7 +1030,7 @@ void D_RegisterClientCommands(void)
 	// WARNING: the order is important when initialising mouse2
 	// we need the mouse2port
 	CV_RegisterVar(&cv_mouse2port);
-#if (defined (__unix__) && !defined (MSDOS)) || defined(__APPLE__) || defined (UNIXCOMMON)
+#if defined (__unix__) || defined (__APPLE__) || defined (UNIXCOMMON)
 	CV_RegisterVar(&cv_mouse2opt);
 #endif
 	CV_RegisterVar(&cv_controlperkey);
@@ -1092,10 +1078,6 @@ void D_RegisterClientCommands(void)
 #endif
 	CV_RegisterVar(&cv_numChannels);
 
-	// i_cdmus.c
-	CV_RegisterVar(&cd_volume);
-	CV_RegisterVar(&cdUpdate);
-
 	// screen.c
 	CV_RegisterVar(&cv_fullscreen);
 	CV_RegisterVar(&cv_renderview);
@@ -1124,6 +1106,11 @@ void D_RegisterClientCommands(void)
 
 	CV_RegisterVar(&cv_resume);
 	CV_RegisterVar(&cv_fading);
+	
+	//Value used to store last server player has joined
+	CV_RegisterVar(&cv_lastserver);
+	
+	CV_RegisterVar(&cv_showallmaps);
 
 	// ingame object placing
 	COM_AddCommand("objectplace", Command_ObjectPlace_f);
@@ -1427,7 +1414,7 @@ static void SetPlayerName(INT32 playernum, char *newname)
 		CONS_Printf(M_GetText("Player %d sent a bad name change\n"), playernum+1);
 		if (server && netgame)
 		{
-			XBOXSTATIC UINT8 buf[2];
+			UINT8 buf[2];
 
 			buf[0] = (UINT8)playernum;
 			buf[1] = KICK_MSG_CON_FAIL;
@@ -1511,7 +1498,7 @@ static INT32 snacpending = 0, snac2pending = 0, snac3pending = 0, snac4pending =
 //
 static void SendNameAndColor(void)
 {
-	XBOXSTATIC char buf[MAXPLAYERNAME+2];
+	char buf[MAXPLAYERNAME+2];
 	char *p;
 
 	p = buf;
@@ -1633,7 +1620,7 @@ static void SendNameAndColor(void)
 static void SendNameAndColor2(void)
 {
 	INT32 secondplaya = -1;
-	XBOXSTATIC char buf[MAXPLAYERNAME+2];
+	char buf[MAXPLAYERNAME+2];
 	char *p;
 
 	if (splitscreen < 1 && !botingame)
@@ -1761,7 +1748,7 @@ static void SendNameAndColor2(void)
 static void SendNameAndColor3(void)
 {
 	INT32 thirdplaya = -1;
-	XBOXSTATIC char buf[MAXPLAYERNAME+2];
+	char buf[MAXPLAYERNAME+2];
 	char *p;
 
 	if (splitscreen < 2)
@@ -1881,7 +1868,7 @@ static void SendNameAndColor3(void)
 static void SendNameAndColor4(void)
 {
 	INT32 fourthplaya = -1;
-	XBOXSTATIC char buf[MAXPLAYERNAME+2];
+	char buf[MAXPLAYERNAME+2];
 	char *p;
 
 	if (splitscreen < 3)
@@ -2069,7 +2056,7 @@ static void Got_NameAndColor(UINT8 **cp, INT32 playernum)
 
 		if (kick)
 		{
-			XBOXSTATIC UINT8 buf[2];
+			UINT8 buf[2];
 			CONS_Alert(CONS_WARNING, M_GetText("Illegal color change received from %s (team: %d), color: %d)\n"), player_names[playernum], p->ctfteam, p->skincolor);
 
 			buf[0] = (UINT8)playernum;
@@ -2105,7 +2092,7 @@ static void Got_NameAndColor(UINT8 **cp, INT32 playernum)
 
 void SendWeaponPref(void)
 {
-	XBOXSTATIC UINT8 buf[1];
+	UINT8 buf[1];
 
 	buf[0] = 0;
 	if (cv_flipcam.value)
@@ -2117,7 +2104,7 @@ void SendWeaponPref(void)
 
 void SendWeaponPref2(void)
 {
-	XBOXSTATIC UINT8 buf[1];
+	UINT8 buf[1];
 
 	buf[0] = 0;
 	if (cv_flipcam2.value)
@@ -2129,7 +2116,7 @@ void SendWeaponPref2(void)
 
 void SendWeaponPref3(void)
 {
-	XBOXSTATIC UINT8 buf[1];
+	UINT8 buf[1];
 
 	buf[0] = 0;
 	if (cv_flipcam3.value)
@@ -2141,7 +2128,7 @@ void SendWeaponPref3(void)
 
 void SendWeaponPref4(void)
 {
-	XBOXSTATIC UINT8 buf[1];
+	UINT8 buf[1];
 
 	buf[0] = 0;
 	if (cv_flipcam4.value)
@@ -2936,7 +2923,7 @@ static void Got_Mapcmd(UINT8 **cp, INT32 playernum)
 		CONS_Alert(CONS_WARNING, M_GetText("Illegal map change received from %s\n"), player_names[playernum]);
 		if (server)
 		{
-			XBOXSTATIC UINT8 buf[2];
+			UINT8 buf[2];
 
 			buf[0] = (UINT8)playernum;
 			buf[1] = KICK_MSG_CON_FAIL;
@@ -3019,7 +3006,7 @@ static void Got_Mapcmd(UINT8 **cp, INT32 playernum)
 
 static void Command_Pause(void)
 {
-	XBOXSTATIC UINT8 buf[2];
+	UINT8 buf[2];
 	UINT8 *cp = buf;
 
 	if (COM_Argc() > 1)
@@ -3061,7 +3048,7 @@ static void Got_Pause(UINT8 **cp, INT32 playernum)
 		CONS_Alert(CONS_WARNING, M_GetText("Illegal pause command received from %s\n"), player_names[playernum]);
 		if (server)
 		{
-			XBOXSTATIC UINT8 buf[2];
+			UINT8 buf[2];
 
 			buf[0] = (UINT8)playernum;
 			buf[1] = KICK_MSG_CON_FAIL;
@@ -3124,7 +3111,7 @@ static void Command_ReplayMarker(void)
 // Command for stuck characters in netgames, griefing, etc.
 static void Command_Respawn(void)
 {
-	XBOXSTATIC UINT8 buf[4];
+	UINT8 buf[4];
 	UINT8 *cp = buf;
 
 	WRITEINT32(cp, consoleplayer);
@@ -3174,7 +3161,7 @@ static void Got_Respawn(UINT8 **cp, INT32 playernum)
 		CONS_Alert(CONS_WARNING, M_GetText("Illegal respawn command received from %s\n"), player_names[playernum]);
 		if (server)
 		{
-			XBOXSTATIC UINT8 buf[2];
+			UINT8 buf[2];
 
 			buf[0] = (UINT8)playernum;
 			buf[1] = KICK_MSG_CON_FAIL;
@@ -3248,7 +3235,7 @@ static void Got_Clearscores(UINT8 **cp, INT32 playernum)
 		CONS_Alert(CONS_WARNING, M_GetText("Illegal clear scores command received from %s\n"), player_names[playernum]);
 		if (server)
 		{
-			XBOXSTATIC UINT8 buf[2];
+			UINT8 buf[2];
 
 			buf[0] = (UINT8)playernum;
 			buf[1] = KICK_MSG_CON_FAIL;
@@ -3771,7 +3758,7 @@ static void Got_Teamchange(UINT8 **cp, INT32 playernum)
 		CONS_Alert(CONS_WARNING, M_GetText("Illegal team change received from player %s\n"), player_names[playernum]);
 		if (server)
 		{
-			XBOXSTATIC UINT8 buf[2];
+			UINT8 buf[2];
 
 			buf[0] = (UINT8)playernum;
 			buf[1] = KICK_MSG_CON_FAIL;
@@ -3786,7 +3773,7 @@ static void Got_Teamchange(UINT8 **cp, INT32 playernum)
 			CONS_Alert(CONS_WARNING, M_GetText("Illegal team change received from player %s\n"), player_names[playernum]);
 			if (server)
 			{
-				XBOXSTATIC UINT8 buf[2];
+				UINT8 buf[2];
 
 				buf[0] = (UINT8)playernum;
 				buf[1] = KICK_MSG_CON_FAIL;
@@ -3824,7 +3811,7 @@ static void Got_Teamchange(UINT8 **cp, INT32 playernum)
 			CONS_Alert(CONS_WARNING, M_GetText("Illegal team change received from player %s\n"), player_names[playernum]);
 			if (server)
 			{
-				XBOXSTATIC UINT8 buf[2];
+				UINT8 buf[2];
 
 				buf[0] = (UINT8)playernum;
 				buf[1] = KICK_MSG_CON_FAIL;
@@ -3877,7 +3864,7 @@ static void Got_Teamchange(UINT8 **cp, INT32 playernum)
 
 	if (server && ((NetPacket.packet.newteam < 0 || NetPacket.packet.newteam > 3) || error))
 	{
-		XBOXSTATIC UINT8 buf[2];
+		UINT8 buf[2];
 
 		buf[0] = (UINT8)playernum;
 		buf[1] = KICK_MSG_CON_FAIL;
@@ -4058,7 +4045,7 @@ static void D_MD5PasswordPass(const UINT8 *buffer, size_t len, const char *salt,
 	(void)salt;
 	memset(dest, 0, 16);
 #else
-	XBOXSTATIC char tmpbuf[256];
+	char tmpbuf[256];
 	const size_t sl = strlen(salt);
 
 	if (len > 256-sl)
@@ -4116,7 +4103,7 @@ static void Command_Login_f(void)
 	// If we have no MD5 support then completely disable XD_LOGIN responses for security.
 	CONS_Alert(CONS_NOTICE, "Remote administration commands are not supported in this build.\n");
 #else
-	XBOXSTATIC UINT8 finalmd5[MD5_LEN];
+	UINT8 finalmd5[MD5_LEN];
 	const char *pw;
 
 	if (!netgame)
@@ -4223,7 +4210,7 @@ void RemoveAdminPlayer(INT32 playernum)
 
 static void Command_Verify_f(void)
 {
-	XBOXSTATIC char buf[8]; // Should be plenty
+	char buf[8]; // Should be plenty
 	char *temp;
 	INT32 playernum;
 
@@ -4266,7 +4253,7 @@ static void Got_Verification(UINT8 **cp, INT32 playernum)
 		CONS_Alert(CONS_WARNING, M_GetText("Illegal verification received from %s (serverplayer is %s)\n"), player_names[playernum], player_names[serverplayer]);
 		if (server)
 		{
-			XBOXSTATIC UINT8 buf[2];
+			UINT8 buf[2];
 
 			buf[0] = (UINT8)playernum;
 			buf[1] = KICK_MSG_CON_FAIL;
@@ -4285,7 +4272,7 @@ static void Got_Verification(UINT8 **cp, INT32 playernum)
 
 static void Command_RemoveAdmin_f(void)
 {
-	XBOXSTATIC char buf[8]; // Should be plenty
+	char buf[8]; // Should be plenty
 	char *temp;
 	INT32 playernum;
 
@@ -4322,7 +4309,7 @@ static void Got_Removal(UINT8 **cp, INT32 playernum)
 		CONS_Alert(CONS_WARNING, M_GetText("Illegal demotion received from %s (serverplayer is %s)\n"), player_names[playernum], player_names[serverplayer]);
 		if (server)
 		{
-			XBOXSTATIC UINT8 buf[2];
+			UINT8 buf[2];
 
 			buf[0] = (UINT8)playernum;
 			buf[1] = KICK_MSG_CON_FAIL;
@@ -4402,7 +4389,7 @@ static void Got_MotD_f(UINT8 **cp, INT32 playernum)
 		CONS_Alert(CONS_WARNING, M_GetText("Illegal motd change received from %s\n"), player_names[playernum]);
 		if (server)
 		{
-			XBOXSTATIC UINT8 buf[2];
+			UINT8 buf[2];
 
 			buf[0] = (UINT8)playernum;
 			buf[1] = KICK_MSG_CON_FAIL;
@@ -4423,7 +4410,7 @@ static void Got_MotD_f(UINT8 **cp, INT32 playernum)
 static void Command_RunSOC(void)
 {
 	const char *fn;
-	XBOXSTATIC char buf[255];
+	char buf[255];
 	size_t length = 0;
 
 	if (COM_Argc() != 2)
@@ -4465,7 +4452,7 @@ static void Got_RunSOCcmd(UINT8 **cp, INT32 playernum)
 		CONS_Alert(CONS_WARNING, M_GetText("Illegal runsoc command received from %s\n"), player_names[playernum]);
 		if (server)
 		{
-			XBOXSTATIC UINT8 buf[2];
+			UINT8 buf[2];
 
 			buf[0] = (UINT8)playernum;
 			buf[1] = KICK_MSG_CON_FAIL;
@@ -4533,7 +4520,7 @@ static void Command_Addfilelocal(void)
 static void Command_Addfile(void)
 {
 	const char *fn, *p;
-	XBOXSTATIC char buf[256];
+	char buf[256];
 	char *buf_p = buf;
 	INT32 i;
 	int musiconly; // W_VerifyNMUSlumps isn't boolean
@@ -4567,7 +4554,7 @@ static void Command_Addfile(void)
 	// Add file on your client directly if it is trivial, or you aren't in a netgame.
 	if (!(netgame || multiplayer) || musiconly)
 	{
-		P_AddWadFile(fn);
+		P_AddWadFile(fn, false);
 		return;
 	}
 
@@ -4614,6 +4601,156 @@ static void Command_Addfile(void)
 		SendNetXCmd(XD_REQADDFILE, buf, buf_p - buf);
 	else
 		SendNetXCmd(XD_ADDFILE, buf, buf_p - buf);
+}
+
+// i hate myself
+static boolean DumbStartsWith(const char *pre, const char *str)
+{
+    size_t lenpre = strlen(pre),
+           lenstr = strlen(str);
+    return lenstr < lenpre ? false : memcmp(pre, str, lenpre) == 0;
+}
+
+/** Adds something at runtime.
+  */
+static void
+Command_Addskins (void)
+{
+	if (COM_Argc() > 3)
+	{
+		CONS_Printf(
+				"addskins <file>: Load a skin file.\n");
+		return;
+	}
+	// no forcing?
+	/*
+	if (fasticmp(COM_Argv(2), "-force") || fasticmp(COM_Argv(2), "-f")) {
+		CONS_Alert(CONS_NOTICE, M_GetText("Adding file %s. May or may not be a skin.\n"), COM_Argv(1));
+		P_AddWadFile(COM_Argv(1), 0, true);	
+	} else {
+		if (DumbStartsWith("KC_", COM_Argv(1))) {
+			P_AddWadFile(COM_Argv(1), 0, true);
+		} else if (DumbStartsWith("KCL_", COM_Argv(1))) {
+			if (!demo.playback) {
+				CONS_Alert(CONS_ERROR, M_GetText("Cannot add file %s as it is a skin with lua. Include -force or -f to force it to load.\n"), COM_Argv(1));
+				return;
+			} else {
+	*/
+				P_AddWadFile(COM_Argv(1), true);
+	/*
+			}
+		} else {
+			CONS_Alert(CONS_ERROR, M_GetText("Cannot add file %s as it is not a skin.\n"), COM_Argv(1));
+			return;
+		}
+	}
+	*/
+}
+
+// args n stuff
+#include "args.h"
+
+static void Command_GLocalSkin (void) 
+{
+	size_t first_option;
+	size_t option_display;
+	size_t option_all;
+	size_t option_player;
+	
+	option_player	= COM_CheckPartialParm("-p");
+	option_display 	= COM_CheckPartialParm("-d");
+	option_all		= COM_CheckPartialParm("-a");
+
+	char* fuck; // local skin name
+
+	if (!( first_option = COM_FirstOption() ))
+		first_option = COM_Argc();
+
+	if (first_option < 2)
+	{
+		/* holy fucking shit */
+		CONS_Printf("localskin <name> [-player <name>] [-display <number>] [-all]:\n");
+		CONS_Printf(M_GetText("Set a localskin via its internal name (usually printed on the console).\n\n\
+* Using \"-player\" will set a localskin to a specified player.\n\
+  Defaults to yourself.\n\
+* Using \"-display\" will set a localskin to the displayed player.\n\
+  Defaults to 0, which is the first player displayed.\n\
+  Can go up to 3 for splitscreen.\n\
+* Using \"-all\" will set a localskin to ALL players.\n\
+* \"localskin none\" removes the localskin, just like how\n\
+  \"forceskin none\" does.\n"));
+		return;
+	}
+
+	fuck = ConcatCommandArgv(1, first_option);
+
+	char* player_name = player_names[consoleplayer];
+	char* display_num = "0";
+	size_t dnum = 0;
+
+	if (option_display)  // -display
+	{
+		// handle default: 0
+		if (COM_Argv(option_display + 1)[0] == "" || COM_Argv(option_display + 1)[0] != "-")
+			display_num = COM_Argv(option_display + 1);
+
+		if (isdigit(display_num[0]) || display_num == "0") 
+		{
+			dnum = atoi(display_num);
+			if (dnum > 3 || dnum < 0) // nuh uh
+				dnum = 0;
+			SetLocalPlayerSkin(displayplayers[dnum], fuck, NULL);
+
+			CONS_Printf("Successfully applied localskin to displayed player.\n");
+			return;
+		}
+		
+		CONS_Printf("Could not apply localskin.\n");
+		
+		return;
+	} 
+	else if (option_all) // -all
+	{
+		int i;
+
+		for (i = 0; i < MAXPLAYERS; ++i) 
+		{
+			if (!playeringame[i])
+				continue;
+			SetLocalPlayerSkin(i, fuck, NULL);
+		}
+		CONS_Printf("Successfully applied localskin to all players.\n");
+
+		return;
+	} 
+	else // -player or no other arguments
+	{
+		if (option_player) 
+		{
+			int i;
+			player_name = COM_Argv(option_player + 1);
+
+			for (i = 0; i < MAXPLAYERS; ++i) 
+			{
+				if (fasticmp(player_names[i], player_name))
+					SetLocalPlayerSkin(i, fuck, NULL);
+			}
+			CONS_Printf("Successfully applied localskin to specified player.\n");
+
+			return;
+		} 
+		else 
+		{
+			SetLocalPlayerSkin(consoleplayer, fuck, &cv_localskin);
+			CONS_Printf("Successfully applied localskin.\n");
+
+			return;
+		}
+
+		CONS_Printf("Could not apply localskin.\n");
+
+		return;
+	}
 }
 
 #ifdef DELFILE
@@ -4679,7 +4816,7 @@ static void Got_RequestAddfilecmd(UINT8 **cp, INT32 playernum)
 
 	if ((playernum != serverplayer && !IsPlayerAdmin(playernum)) || kick)
 	{
-		XBOXSTATIC UINT8 buf[2];
+		UINT8 buf[2];
 
 		CONS_Alert(CONS_WARNING, M_GetText("Illegal addfile command received from %s\n"), player_names[playernum]);
 
@@ -4728,7 +4865,7 @@ static void Got_Delfilecmd(UINT8 **cp, INT32 playernum)
 		CONS_Alert(CONS_WARNING, M_GetText("Illegal delfile command received from %s\n"), player_names[playernum]);
 		if (server)
 		{
-			XBOXSTATIC UINT8 buf[2];
+			UINT8 buf[2];
 
 			buf[0] = (UINT8)playernum;
 			buf[1] = KICK_MSG_CON_FAIL;
@@ -4761,7 +4898,7 @@ static void Got_Addfilecmd(UINT8 **cp, INT32 playernum)
 		CONS_Alert(CONS_WARNING, M_GetText("Illegal addfile command received from %s\n"), player_names[playernum]);
 		if (server)
 		{
-			XBOXSTATIC UINT8 buf[2];
+			UINT8 buf[2];
 
 			buf[0] = (UINT8)playernum;
 			buf[1] = KICK_MSG_CON_FAIL;
@@ -4772,7 +4909,7 @@ static void Got_Addfilecmd(UINT8 **cp, INT32 playernum)
 
 	ncs = findfile(filename,md5sum,true);
 
-	if (ncs != FS_FOUND || !P_AddWadFile(filename))
+	if (ncs != FS_FOUND || !P_AddWadFile(filename, false))
 	{
 		Command_ExitGame_f();
 		if (ncs == FS_FOUND)
@@ -4835,8 +4972,6 @@ static void Command_Version_f(void)
 	// Base library
 #if defined( HAVE_SDL)
 	CONS_Printf("SDL ");
-#elif defined(_WINDOWS)
-	CONS_Printf("DD ");
 #endif
 
 	// OS
@@ -4860,11 +4995,6 @@ static void Command_Version_f(void)
 		CONS_Printf("64-bit ");
 	else // 16-bit? 128-bit?
 		CONS_Printf("Bits Unknown ");
-
-	// No ASM?
-#ifdef NOASM
-	CONS_Printf("\x85" "NOASM " "\x80");
-#endif
 
 	// Debug build
 #ifdef _DEBUG
@@ -5453,7 +5583,7 @@ static void Got_ExitLevelcmd(UINT8 **cp, INT32 playernum)
 		CONS_Alert(CONS_WARNING, M_GetText("Illegal exitlevel command received from %s\n"), player_names[playernum]);
 		if (server)
 		{
-			XBOXSTATIC UINT8 buf[2];
+			UINT8 buf[2];
 
 			buf[0] = (UINT8)playernum;
 			buf[1] = KICK_MSG_CON_FAIL;
@@ -5475,7 +5605,7 @@ static void Got_SetupVotecmd(UINT8 **cp, INT32 playernum)
 		CONS_Alert(CONS_WARNING, M_GetText("Illegal vote setup received from %s\n"), player_names[playernum]);
 		if (server)
 		{
-			XBOXSTATIC UINT8 buf[2];
+			UINT8 buf[2];
 
 			buf[0] = (UINT8)playernum;
 			buf[1] = KICK_MSG_CON_FAIL;
@@ -5540,7 +5670,7 @@ static void Got_PickVotecmd(UINT8 **cp, INT32 playernum)
 		CONS_Alert(CONS_WARNING, M_GetText("Illegal vote setup received from %s\n"), player_names[playernum]);
 		if (server)
 		{
-			XBOXSTATIC UINT8 buf[2];
+			UINT8 buf[2];
 
 			buf[0] = (UINT8)playernum;
 			buf[1] = KICK_MSG_CON_FAIL;
@@ -5928,7 +6058,6 @@ static void Command_ListSkins(void)
 	}
 }
 
-
 /** Sends a color change for the console player, unless that player is moving.
   * \sa cv_playercolor, Color2_OnChange, Skin_OnChange
   * \author Graue <graue@oceanbase.org>
@@ -6165,7 +6294,7 @@ void Got_DiscordInfo(UINT8 **p, INT32 playernum)
 		CONS_Alert(CONS_WARNING, M_GetText("Illegal Discord info command received from %s\n"), player_names[playernum]);
 		if (server)
 		{
-			XBOXSTATIC UINT8 buf[2];
+			UINT8 buf[2];
 
 			buf[0] = (UINT8)playernum;
 			buf[1] = KICK_MSG_CON_FAIL;

@@ -20,6 +20,7 @@
 #include "r_state.h"
 
 extern consvar_t cv_fpscap;
+extern consvar_t cv_precipinterp;
 
 UINT32 R_GetFramerateCap(void);
 boolean R_UsingFrameInterpolation(void);

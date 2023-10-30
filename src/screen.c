@@ -33,10 +33,6 @@
 // SRB2Kart
 #include "r_fps.h" // R_GetFramerateCap
 
-#if defined (USEASM) && !defined (NORUSEASM)//&& (!defined (_MSC_VER) || (_MSC_VER <= 1200))
-#define RUSEASM //MSC.NET can't patch itself
-#endif
-
 // --------------------------------------------
 // assembly or c drawer routines for 8bpp/16bpp
 // --------------------------------------------
@@ -65,15 +61,9 @@ static CV_PossibleValue_t scr_depth_cons_t[] = {{8, "8 bits"}, {16, "16 bits"}, 
 static CV_PossibleValue_t shittyscreen_cons_t[] = {{0, "Okay"}, {1, "Shitty"}, {2, "Extra Shitty"}, {0, NULL}};
 
 //added : 03-02-98: default screen mode, as loaded/saved in config
-#ifdef WII
-consvar_t cv_scr_width = {"scr_width", "640", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_scr_height = {"scr_height", "480", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_scr_depth = {"scr_depth", "16 bits", CV_SAVE, scr_depth_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-#else
 consvar_t cv_scr_width = {"scr_width", "1280", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_scr_height = {"scr_height", "800", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_scr_depth = {"scr_depth", "16 bits", CV_SAVE, scr_depth_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-#endif
 consvar_t cv_renderview = {"renderview", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_vhseffect = {"vhspause", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_shittyscreen = {"televisionsignal", "Okay", CV_NOSHOWHELP, shittyscreen_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -94,7 +84,6 @@ UINT8 *scr_borderpatch; // flat used to fill the reduced view borders set at ST_
 //  Short and Tall sky drawer, for the current color mode
 void (*walldrawerfunc)(void);
 
-boolean R_ASM = true;
 boolean R_486 = false;
 boolean R_586 = false;
 boolean R_MMX = false;
@@ -132,30 +121,6 @@ void SCR_SetMode(void)
 		walldrawerfunc = R_DrawWallColumn_8;
 		twosmultipatchfunc = R_Draw2sMultiPatchColumn_8;
 		twosmultipatchtransfunc = R_Draw2sMultiPatchTranslucentColumn_8;
-#ifdef RUSEASM
-		if (R_ASM)
-		{
-			if (R_MMX)
-			{
-				//colfunc = basecolfunc = R_DrawColumn_8_MMX;  Can we please not use this function it seems to break sometimes????
-				colfunc = basecolfunc = R_DrawColumn_8_ASM;
-				//shadecolfunc = R_DrawShadeColumn_8_ASM;
-				//fuzzcolfunc = R_DrawTranslucentColumn_8_ASM;
-				//walldrawerfunc = R_DrawWallColumn_8_MMX;  This is just an alias to R_DrawColumn_8_MMX
-				walldrawerfunc = R_DrawWallColumn_8_ASM;
-				twosmultipatchfunc = R_Draw2sMultiPatchColumn_8_MMX;
-				spanfunc = basespanfunc = R_DrawSpan_8_MMX;
-			}
-			else
-			{
-				colfunc = basecolfunc = R_DrawColumn_8_ASM;
-				//shadecolfunc = R_DrawShadeColumn_8_ASM;
-				//fuzzcolfunc = R_DrawTranslucentColumn_8_ASM;
-				walldrawerfunc = R_DrawWallColumn_8_ASM;
-				twosmultipatchfunc = R_Draw2sMultiPatchColumn_8_ASM;
-			}
-		}
-#endif
 	}
 /*	else if (vid.bpp > 1)
 	{
@@ -171,10 +136,10 @@ void SCR_SetMode(void)
 	}*/
 	else
 		I_Error("unknown bytes per pixel mode %d\n", vid.bpp);
-/*#if !defined (DC) && !defined (WII)
+/*
 	if (SCR_IsAspectCorrect(vid.width, vid.height))
 		CONS_Alert(CONS_WARNING, M_GetText("Resolution is not aspect-correct!\nUse a multiple of %dx%d\n"), BASEVIDWIDTH, BASEVIDHEIGHT);
-#endif*/
+*/
 	// set the apprpriate drawer for the sky (tall or INT16)
 	setmodeneeded = 0;
 }
@@ -204,8 +169,6 @@ void SCR_Startup(void)
 		CONS_Printf("CPU Info: 486: %i, 586: %i, MMX: %i, 3DNow: %i, MMXExt: %i, SSE2: %i\n", R_486, R_586, R_MMX, R_3DNow, R_MMXExt, R_SSE2);
 	}
 
-	if (M_CheckParm("-noASM"))
-		R_ASM = false;
 	if (M_CheckParm("-486"))
 		R_486 = true;
 	if (M_CheckParm("-586"))

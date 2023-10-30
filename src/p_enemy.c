@@ -2608,6 +2608,7 @@ void A_MonitorPop(mobj_t *actor)
 	remains->fuse = actor->fuse; // Transfer respawn timer
 	remains->threshold = 68;
 	remains->skin = NULL;
+	remains->localskin = NULL;
 
 	P_SetTarget(&tmthing, remains);
 
@@ -4167,6 +4168,18 @@ void A_SignPlayer(mobj_t *actor)
 	P_SetTarget(&ov->target, actor);
 	ov->color = actor->target->player->skincolor;
 	ov->skin = &skins[actor->target->player->skin];
+	if (actor->target->skinlocal) {
+		// needs - 1 or else it pukes an error out
+		// same thing happens on p_mobj.c
+		ov->localskin = &localskins[actor->target->player->localskin - 1];
+		ov->skinlocal = actor->target->skinlocal;
+	} else {
+		// needs - 1 or else it pukes an error out
+		// same thing happens on p_mobj.c
+		if (actor->target->player->localskin)
+			ov->localskin = &skins[actor->target->player->localskin - 1];
+		ov->skinlocal = actor->target->skinlocal;
+	}
 	P_SetMobjState(ov, actor->info->seestate); // S_PLAY_SIGN
 }
 
@@ -9628,22 +9641,23 @@ void A_Custom3DRotate(mobj_t *actor)
 		return;
 #endif
 
+	if (!actor->target) // Ensure we actually have a target first.
+	{
+		CONS_Printf("Error: A_Custom3DRotate: Object has no target.\n");
+		P_RemoveMobj(actor);
+		return;
+	}
+
 	if (actor->target->health == 0)
 	{
 		P_RemoveMobj(actor);
 		return;
 	}
-
-	if (!actor->target) // This should NEVER happen.
-	{
-		if (cv_debug)
-			CONS_Printf("Error: Object has no target\n");
-		P_RemoveMobj(actor);
-		return;
-	}
+	
 	if (hspeed==0 && vspeed==0)
 	{
-		CONS_Printf("Error: A_Custom3DRotate: Object has no speed.\n");
+		if (cv_debug)
+			CONS_Printf("Error: A_Custom3DRotate: Object has no speed.\n");
 		return;
 	}
 

@@ -16,9 +16,12 @@
 #ifdef HAVE_BLUA
 #include "fastcmp.h"
 #include "r_things.h"
+#include "r_main.h"
 #include "p_local.h"
 #include "g_game.h"
 #include "p_setup.h"
+#include "doomdef.h"
+#include "d_netcmd.h"
 
 #include "lua_script.h"
 #include "lua_libs.h"
@@ -47,6 +50,8 @@ int mobj_state_setter(lua_State *L);
 int mobj_flags_setter(lua_State *L);
 int mobj_skin_getter(lua_State *L);
 int mobj_skin_setter(lua_State *L);
+int mobj_localskin_getter(lua_State *L);
+int mobj_localskin_setter(lua_State *L);
 int mobj_color_setter(lua_State *L);
 int mobj_bnext_noset(lua_State *L);
 int mobj_bprev_unimplemented(lua_State *L);
@@ -65,6 +70,8 @@ int mobj_mobjnum_unimplemented(lua_State *L);
 int mobj_scale_setter(lua_State *L);
 int mobj_destscale_setter(lua_State *L);
 int mobj_standingslope_noset(lua_State *L);
+int mobj_rollsum_getter(lua_State *L);
+int mobj_rollsum_noset(lua_State *L);
 
 static const char *const array_opt[] ={"iterate",NULL};
 
@@ -78,6 +85,8 @@ static const udata_field_t mobj_fields[] = {
     FIELD(mobj_t, angle,               udatalib_getter_angle,      mobj_angle_setter),
     FIELD(mobj_t, rollangle,           udatalib_getter_angle,      udatalib_setter_angle),
     FIELD(mobj_t, sloperoll,           udatalib_getter_angle,      mobj_sloperoll_noop),
+	// Macro fails here
+	{ "rollsum", 0, mobj_rollsum_getter, mobj_rollsum_noset },
     FIELD(mobj_t, sprite,              udatalib_getter_spritenum,  udatalib_setter_spritenum),
     FIELD(mobj_t, frame,               udatalib_getter_uint32,     udatalib_setter_uint32),
     FIELD(mobj_t, anim_duration,       udatalib_getter_uint16,     udatalib_setter_uint16),
@@ -101,6 +110,7 @@ static const udata_field_t mobj_fields[] = {
     FIELD(mobj_t, flags2,              udatalib_getter_uint32,     udatalib_setter_uint32),
     FIELD(mobj_t, eflags,              udatalib_getter_uint32,     udatalib_setter_uint32),
     FIELD(mobj_t, skin,                mobj_skin_getter,           mobj_skin_setter),
+    FIELD(mobj_t, localskin,           mobj_localskin_getter,      mobj_localskin_setter),
     FIELD(mobj_t, color,               udatalib_getter_uint8,      mobj_color_setter),
     FIELD(mobj_t, bnext,               udatalib_getter_mobj,       mobj_bnext_noset),
     FIELD(mobj_t, bprev,               mobj_bprev_unimplemented,   mobj_bprev_unimplemented),
@@ -174,13 +184,21 @@ int mobj_ ## field ## _noset(lua_State *L) \
     return luaL_error(L, LUA_QL("mobj_t") " field " LUA_QS " should not be set directly.", #field); \
 }
 
+#define NOSET_USE(field, use) \
+int mobj_ ## field ## _noset(lua_State *L) \
+{ \
+    return luaL_error(L, LUA_QL("mobj_t") " field " LUA_QS " should not be set directly. Use " LUA_QL(use) " instead.", #field); \
+}
+
 NOSET(snext)
 NOSET(bnext)
 NOSET(info)
 NOSET(player)
 NOSET(standingslope)
+NOSET_USE(rollsum, "rollangle")
 
 #undef NOSET
+#undef NOSET_USE
 
 // Unimplemented fields (why would you need to set them like that explicitly?
 // No idea, i'm keeping it for synch reasons)
@@ -350,8 +368,14 @@ int mobj_skin_getter(lua_State *L)
     if (!mo->skin)
 		return 0;
 
-	lua_pushstring(L, ((skin_t *)mo->skin)->name);
-
+	if (hud_running && cv_luaimmersion.value) {
+			if (mo->localskin) // HUD ONLY!!!!!!!!!!
+				lua_pushstring(L, ((skin_t *)mo->localskin)->name);
+			else
+				lua_pushstring(L, ((skin_t *)mo->skin)->name);
+		} else {
+			lua_pushstring(L, ((skin_t *)mo->skin)->name);
+		}
     return 1;
 }
 
@@ -372,7 +396,34 @@ int mobj_skin_setter(lua_State *L)
         }
     }
 
-    return luaL_error(L, "mobj.skin '%s' not found!", skin);
+	return luaL_error(L, "mobj.skin '%s' not found!", skin);
+}
+
+int mobj_localskin_getter(lua_State *L)
+{
+	mobj_t *mo = GETMO();
+
+	if (mo->localskin)
+		lua_pushstring(L, ((skin_t *)mo->localskin)->name);
+	else
+		lua_pushnil(L);
+
+	return 1;
+}
+
+int mobj_localskin_setter(lua_State *L)
+{
+	mobj_t *mo = GETMO();
+
+	// TODO - add ability to set localskin to non-player mobjs
+	// Will probably just need to reimplement SetLocalPlayerSkin as something
+	// like SetLocalObjectSkin
+	if (!mo->player)
+		return luaL_error(L, "mobj.localskin can't be set for non-player mobjs!");
+
+	SetLocalPlayerSkin(mo->player - players, luaL_checkstring(L, 2), NULL);
+
+	return 0;
 }
 
 int mobj_color_setter(lua_State *L)
@@ -537,6 +588,24 @@ int mobj_destscale_setter(lua_State *L)
     mo->destscale = scale;
 
     return 0;
+}
+
+// WARNING: Not synch safe!
+// Don't use this field in game logic code!
+int mobj_rollsum_getter(lua_State *L)
+{
+	mobj_t *mo = GETMO();
+
+	angle_t rollsum = mo->rollangle + cv_sloperoll.value ? mo->sloperoll : 0;
+
+	if (mo->player)
+	{
+		rollsum += R_PlayerSliptideAngle(mo->player);
+	}
+
+	lua_pushangle(L, rollsum);
+
+	return 1;
 }
 
 static int mobj_get(lua_State *L)

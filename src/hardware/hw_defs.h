@@ -224,6 +224,7 @@ struct FSurfaceInfo
 	RGBA_t			PolyColor;
 	RGBA_t			TintColor;
 	RGBA_t			FadeColor;
+	UINT32			LightTableId;
 	FLightInfo		LightInfo;	// jimita 14032019
 };
 typedef struct FSurfaceInfo FSurfaceInfo;
@@ -231,6 +232,7 @@ typedef struct FSurfaceInfo FSurfaceInfo;
 enum hwdsetspecialstate
 {
 	HWD_SET_SHADERS,
+	HWD_SET_PALETTE_SHADER_ENABLED,
 
 	HWD_SET_TEXTUREFILTERMODE,
 	HWD_SET_TEXTUREANISOTROPICMODE,
@@ -247,6 +249,15 @@ enum hwdsetspecialstate
 	HWD_NUMSTATE
 };
 typedef enum hwdsetspecialstate hwdspecialstate_t;
+
+// Lactozilla: Shader info
+// Generally set at the start of the frame.
+enum hwdshaderinfo
+{
+	HWD_SHADERINFO_LEVELTIME = 1,
+};
+
+typedef enum hwdshaderinfo hwdshaderinfo_t;
 
 enum hwdportalstate
 {

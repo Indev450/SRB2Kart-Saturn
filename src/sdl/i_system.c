@@ -137,6 +137,12 @@ typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 #include <errno.h>
 #endif
 
+#if defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON)
+#include <execinfo.h>
+#include <time.h>
+#define UNIXBACKTRACE
+#endif
+
 // Locations for searching the srb2.srb
 #if defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON)
 #define DEFAULTWADLOCATION1 "/usr/local/share/games/SRB2Kart"
@@ -252,6 +258,85 @@ SDL_bool framebuffer = SDL_FALSE;
 
 UINT8 keyboard_started = false;
 
+#ifdef UNIXBACKTRACE
+
+static void bt_write_file(int fd, const char *string) {
+	ssize_t written = 0;
+	ssize_t sourcelen = strlen(string);
+
+	while (fd != -1 && (written != -1 && errno != EINTR) && written < sourcelen)
+		written = write(fd, string, sourcelen);
+}
+
+static void bt_write_stderr(const char *string) {
+	bt_write_file(STDERR_FILENO, string);
+}
+
+static void bt_write_all(int fd, const char *string) {
+	bt_write_file(fd, string);
+	bt_write_file(STDERR_FILENO, string);
+}
+
+static void write_backtrace(INT32 signal)
+{
+	int fd = -1;
+	time_t rawtime;
+	struct tm timeinfo;
+	size_t bt_size;
+
+	enum { BT_SIZE = 1024, STR_SIZE = 32 };
+	void *funcptrs[BT_SIZE];
+	char timestr[STR_SIZE];
+
+	const char *filename = va("%s" PATHSEP "%s", srb2home, "crash-log.txt");
+
+	fd = open(filename, O_CREAT|O_APPEND|O_RDWR, S_IRUSR|S_IWUSR);
+
+	if (fd == -1) // File handle error
+		bt_write_stderr("\nWARNING: Couldn't open crash log for writing! Make sure your permissions are correct. Please save the below report!\n");
+
+	// Get the current time as a string.
+	time(&rawtime);
+	localtime_r(&rawtime, &timeinfo);
+	strftime(timestr, STR_SIZE, "%a, %d %b %Y %T %z", &timeinfo);
+
+	bt_write_file(fd, "------------------------\n"); // Nice looking seperator
+
+	bt_write_all(fd, "\n"); // Newline to look nice for both outputs.
+	bt_write_all(fd, "An error occurred within SRB2! Send this stack trace to someone who can help!\n");
+
+	if (fd != -1) // If the crash log exists,
+		bt_write_stderr("(Or find crash-log.txt in your SRB2 directory.)\n"); // tell the user where the crash log is.
+
+	// Tell the log when we crashed.
+	bt_write_file(fd, "Time of crash: ");
+	bt_write_file(fd, timestr);
+	bt_write_file(fd, "\n");
+
+	// Give the crash log the cause and a nice 'Backtrace:' thing
+	// The signal is given to the user when the parent process sees we crashed.
+	bt_write_file(fd, "Cause: ");
+	bt_write_file(fd, strsignal(signal));
+	bt_write_file(fd, "\n"); // Newline for the signal name
+
+	bt_write_all(fd, "\nBacktrace:\n");
+
+	// Flood the output and log with the backtrace
+	bt_size = backtrace(funcptrs, BT_SIZE);
+	backtrace_symbols_fd(funcptrs, bt_size, fd);
+	backtrace_symbols_fd(funcptrs, bt_size, STDERR_FILENO);
+
+	bt_write_file(fd, "\n"); // Write another newline to the log so it looks nice :)
+
+	if (fd != -1) {
+		fsync(fd); // reaaaaally make sure we got that data written.
+		close(fd);
+	}
+}
+
+#endif // UNIXBACKTRACE
+
+
 static void I_ReportSignal(int num, int coredumped)
 {
 	//static char msg[] = "oh no! back to reality!\r\n";
@@ -310,6 +395,9 @@ static void I_ReportSignal(int num, int coredumped)
 FUNCNORETURN static ATTRNORETURN void signal_handler(INT32 num)
 {
 	D_QuitNetGame(); // Fix server freezes
+#ifdef UNIXBACKTRACE
+	write_backtrace(num);
+#endif
 	I_ReportSignal(num, 0);
 	I_ShutdownSystem();
 	signal(num, SIG_DFL);               //default signal action
@@ -700,13 +788,35 @@ static void I_RegisterSignals (void)
 #endif
 }
 
+#ifdef NEWSIGNALHANDLER
+static void signal_handler_child(INT32 num)
+{
+#ifdef UNIXBACKTRACE
+	write_backtrace(num);
+#endif
+
+	signal(num, SIG_DFL);               //default signal action
+	raise(num);
+}
+
+static void I_RegisterChildSignals(void)
+{
+	// If these defines don't exist,
+	// then compilation would have failed above us...
+	signal(SIGILL , signal_handler_child);
+	signal(SIGSEGV , signal_handler_child);
+	signal(SIGABRT , signal_handler_child);
+	signal(SIGFPE , signal_handler_child);
+}
+#endif
+
 //
 //I_OutputMsg
 //
 void I_OutputMsg(const char *fmt, ...)
 {
 	size_t len;
-	XBOXSTATIC char txt[8192];
+	char txt[8192];
 	va_list  argptr;
 
 	va_start(argptr,fmt);
@@ -3037,7 +3147,7 @@ void I_Sleep(UINT32 ms)
 }
 
 #ifdef NEWSIGNALHANDLER
-static void newsignalhandler_Warn(const char *pr)
+FUNCNORETURN static ATTRNORETURN void newsignalhandler_Warn(const char *pr)
 {
 	char text[128];
 
@@ -3072,6 +3182,7 @@ static void I_Fork(void)
 			newsignalhandler_Warn("fork()");
 			break;
 		case 0:
+			I_RegisterChildSignals();
 			break;
 		default:
 			if (logstream)
@@ -3170,7 +3281,6 @@ void I_Quit(void)
 	D_QuitNetGame();
 	I_ShutdownMusic();
 	I_ShutdownSound();
-	I_ShutdownCD();
 	// use this for 1.28 19990220 by Kin
 	I_ShutdownGraphics();
 	I_ShutdownInput();
@@ -3231,16 +3341,14 @@ void I_Error(const char *error, ...)
 		if (errorcount == 3)
 			I_ShutdownSound();
 		if (errorcount == 4)
-			I_ShutdownCD();
-		if (errorcount == 5)
 			I_ShutdownGraphics();
-		if (errorcount == 6)
+		if (errorcount == 5)
 			I_ShutdownInput();
-		if (errorcount == 7)
+		if (errorcount == 6)
 			I_ShutdownSystem();
-		if (errorcount == 8)
+		if (errorcount == 7)
 			SDL_Quit();
-		if (errorcount == 9)
+		if (errorcount == 8)
 		{
 			M_SaveConfig(NULL);
 			G_SaveGameData(false);
@@ -3288,7 +3396,6 @@ void I_Error(const char *error, ...)
 	D_QuitNetGame();
 	I_ShutdownMusic();
 	I_ShutdownSound();
-	I_ShutdownCD();
 	// use this for 1.28 19990220 by Kin
 	I_ShutdownGraphics();
 	I_ShutdownInput();
@@ -3806,8 +3913,7 @@ static long get_entry(const char* name, const char* buf)
 }
 #endif
 
-// quick fix for compil
-UINT32 I_GetFreeMem(UINT32 *total)
+size_t I_GetFreeMem(size_t *total)
 {
 #ifdef FREEBSD
 	struct vmmeter sum;
@@ -3855,8 +3961,8 @@ UINT32 I_GetFreeMem(UINT32 *total)
 	info.dwLength = sizeof (MEMORYSTATUS);
 	GlobalMemoryStatus( &info );
 	if (total)
-		*total = (UINT32)info.dwTotalPhys;
-	return (UINT32)info.dwAvailPhys;
+		*total = (size_t)info.dwTotalPhys;
+	return (size_t)info.dwAvailPhys;
 #elif defined (__OS2__)
 	UINT32 pr_arena;
 
@@ -3871,8 +3977,8 @@ UINT32 I_GetFreeMem(UINT32 *total)
 	/* Linux */
 	char buf[1024];
 	char *memTag;
-	UINT32 freeKBytes;
-	UINT32 totalKBytes;
+	size_t freeKBytes;
+	size_t totalKBytes;
 	INT32 n;
 	INT32 meminfo_fd = -1;
 	long Cached;
@@ -3903,7 +4009,7 @@ UINT32 I_GetFreeMem(UINT32 *total)
 	}
 
 	memTag += sizeof (MEMTOTAL);
-	totalKBytes = atoi(memTag);
+	totalKBytes = (size_t)atoi(memTag);
 
 	if ((memTag = strstr(buf, MEMAVAILABLE)) == NULL)
 	{

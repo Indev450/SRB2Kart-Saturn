@@ -167,13 +167,10 @@ angle_t FixedAngle(fixed_t fa)
 	return AngleAdj(cfa, cwf, ra);
 }
 
-
-#if !(defined _NDS) || !(defined NONET)
 #include "t_ftan.c"
 
 #include "t_fsin.c"
 fixed_t *finecosine = &finesine[FINEANGLES/4];
-#endif
 
 #include "t_tan2a.c"
 

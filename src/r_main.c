@@ -160,8 +160,8 @@ static CV_PossibleValue_t drawdist_cons_t[] = {
 static CV_PossibleValue_t drawdist_precip_cons_t[] = {
 	{256, "256"},	{512, "512"},	{768, "768"},
 	{1024, "1024"},	{1536, "1536"},	{2048, "2048"},
-	{3072, "3072"},	{4096, "4096"},
-	{0, "None"},	{0, NULL}};
+	{3072, "3072"}, {0, "None"},	{0, NULL}};
+	
 
 static CV_PossibleValue_t fov_cons_t[] = {{5*FRACUNIT, "MIN"}, {178*FRACUNIT, "MAX"}, {0, NULL}};
 
@@ -333,7 +333,7 @@ static void FlipCam4_OnChange(void)
 //
 // killough 5/2/98: reformatted
 //
-INT32 R_PointOnSide(fixed_t x, fixed_t y, node_t *node)
+INT32 R_PointOnSide(fixed_t x, fixed_t y, node_t *restrict node)
 {
 	if (!node->dx)
 		return x <= node->x ? node->dy > 0 : node->dy < 0;
@@ -344,14 +344,15 @@ INT32 R_PointOnSide(fixed_t x, fixed_t y, node_t *node)
 	x -= node->x;
 	y -= node->y;
 
-	// Try to quickly decide by looking at sign bits.
-	if ((node->dy ^ node->dx ^ x ^ y) < 0)
-		return (node->dy ^ x) < 0;  // (left is negative)
-	return FixedMul(y, node->dx>>FRACBITS) >= FixedMul(node->dy>>FRACBITS, x);
+	// Try to quickly decide by looking at sign bits.	
+	// also use a mask to avoid branch prediction
+	INT32 mask = (node->dy ^ node->dx ^ x ^ y) >> 31;
+	return (mask & ((node->dy ^ x) < 0)) |  // (left is negative)
+		(~mask & (FixedMul(y, node->dx>>FRACBITS) >= FixedMul(node->dy>>FRACBITS, x)));
 }
 
 // killough 5/2/98: reformatted
-INT32 R_PointOnSegSide(fixed_t x, fixed_t y, seg_t *line)
+INT32 R_PointOnSegSide(fixed_t x, fixed_t y, seg_t *restrict line)
 {
 	fixed_t lx = line->v1->x;
 	fixed_t ly = line->v1->y;
@@ -368,9 +369,10 @@ INT32 R_PointOnSegSide(fixed_t x, fixed_t y, seg_t *line)
 	y -= ly;
 
 	// Try to quickly decide by looking at sign bits.
-	if ((ldy ^ ldx ^ x ^ y) < 0)
-		return (ldy ^ x) < 0;          // (left is negative)
-	return FixedMul(y, ldx>>FRACBITS) >= FixedMul(ldy>>FRACBITS, x);
+	// also use a mask to avoid branch prediction
+	INT32 mask = (ldy ^ ldx ^ x ^ y) >> 31;
+	return (mask & ((ldy ^ x) < 0)) |  // (left is negative)
+		(~mask & (FixedMul(y, ldx>>FRACBITS) >= FixedMul(ldy>>FRACBITS, x)));
 }
 
 //
@@ -437,6 +439,50 @@ angle_t R_PointToAngle2(fixed_t pviewx, fixed_t pviewy, fixed_t x, fixed_t y)
 fixed_t R_PointToDist2(fixed_t px2, fixed_t py2, fixed_t px1, fixed_t py1)
 {
 	return FixedHypot(px1 - px2, py1 - py2);
+}
+
+angle_t R_PlayerSliptideAngle(player_t *player)
+{
+	mobj_t *mo;
+    spritedef_t *sprdef;
+    spriteframe_t *sprframe;
+    angle_t ang = 0;
+
+    if (!cv_sliptideroll.value || !player || P_MobjWasRemoved(player->mo))
+        return 0;
+
+    mo = player->mo;
+
+    size_t rot = mo->frame & FF_FRAMEMASK;
+    boolean papersprite = (mo->frame & FF_PAPERSPRITE);
+
+	if (mo->skin && mo->sprite == SPR_PLAY)
+	{
+		sprdef = &((skin_t *)mo->skin)->spritedef;
+
+		if (rot >= sprdef->numframes)
+			sprdef = &sprites[mo->sprite];
+	}
+	else
+	{
+		sprdef = &sprites[mo->sprite];
+	}
+
+	if (rot >= sprdef->numframes)
+	{
+		sprdef = &sprites[states[S_UNKNOWN].sprite];
+		rot = states[S_UNKNOWN].frame&FF_FRAMEMASK;
+	}
+
+	sprframe = &sprdef->spriteframes[rot];
+
+	// No sprite frame? I guess it is possible
+	if (!sprframe) return 0;
+
+	if (sprframe->rotate != SRF_SINGLE || papersprite)
+		ang = R_PointToAngle(mo->x, mo->y) - mo->angle;
+
+	return FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), mo->player->sliproll*(mo->player->sliptidemem));
 }
 
 // Little extra utility. Works in the same way as R_PointToAngle2
@@ -1921,12 +1967,6 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_sliptideroll);
 	CV_RegisterVar(&cv_sloperolldist);
 
-	CV_RegisterVar(&cv_tilting);
-	CV_RegisterVar(&cv_quaketilt);
-	CV_RegisterVar(&cv_tiltsmoothing);
-	CV_RegisterVar(&cv_actionmovie);
-	CV_RegisterVar(&cv_windowquake);
-
 	CV_RegisterVar(&cv_showhud);
 	CV_RegisterVar(&cv_translucenthud);
 
@@ -1936,32 +1976,7 @@ void R_RegisterEngineStuff(void)
 	// initialized to standard viewheight
 	//CV_RegisterVar(&cv_viewheight);
 
-#ifdef HWRENDER
-	// GL-specific Commands
-	CV_RegisterVar(&cv_grgammablue);
-	CV_RegisterVar(&cv_grgammagreen);
-	CV_RegisterVar(&cv_grgammared);
-	CV_RegisterVar(&cv_grfovchange);
-#ifdef ALAM_LIGHTING
-	CV_RegisterVar(&cv_grstaticlighting);
-	CV_RegisterVar(&cv_grdynamiclighting);
-	CV_RegisterVar(&cv_grcoronas);
-	CV_RegisterVar(&cv_grcoronasize);
-#endif
-	CV_RegisterVar(&cv_grmdls);
-	CV_RegisterVar(&cv_grfallbackplayermodel);
-	CV_RegisterVar(&cv_grspritebillboarding);
-	CV_RegisterVar(&cv_grfakecontrast);
-	CV_RegisterVar(&cv_grshearing);
-	CV_RegisterVar(&cv_grshaders);
-	CV_RegisterVar(&cv_grusecustomshaders);
-#endif
-
-#ifdef HWRENDER
-	if (rendermode != render_soft && rendermode != render_none)
-		HWR_AddCommands();
-#endif
-
 	// Frame interpolation/uncapped
 	CV_RegisterVar(&cv_fpscap);
+	CV_RegisterVar(&cv_precipinterp);
 }

@@ -59,6 +59,7 @@
 #endif
 
 #include "../doomstat.h"
+#include "../p_setup.h"
 #include "../i_system.h"
 #include "../v_video.h"
 #include "../m_argv.h"
@@ -652,7 +653,7 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 		S_InitMusicVolume();
 
 		if (cv_gamesounds.value)
-			S_EnableSound();
+			S_ResumeAudio(); //resume it
 
 		if (!firsttimeonmouse)
 		{
@@ -664,10 +665,10 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 	{
 		// Tell game we lost focus, pause music
 		window_notinfocus = true;
-		if (!cv_playmusicifunfocused.value)
+		if (! cv_playmusicifunfocused.value)
 			I_SetMusicVolume(0);
-		if (!cv_playsoundifunfocused.value)
-			S_DisableSound();
+		if (! cv_playsoundifunfocused.value)
+			S_StopSounds();
 
 		if (!disable_mouse)
 		{
@@ -969,6 +970,7 @@ static void Impl_HandleControllerButtonEvent(SDL_ControllerButtonEvent evt, Uint
 void I_GetEvent(void)
 {
 	SDL_Event evt;
+	char* dropped_filedir;
 	// We only want the first motion event,
 	// otherwise we'll end up catching the warp back to center.
 	//int mouseMotionOnce = 0;
@@ -1292,6 +1294,11 @@ void I_GetEvent(void)
 				// update the menu
 				if (currentMenu == &OP_JoystickSetDef)
 					M_SetupJoystickMenu(0);
+				break;
+			case SDL_DROPFILE:
+				dropped_filedir = evt.drop.file;
+				P_AddWadFile(dropped_filedir, false);
+				SDL_free(dropped_filedir);    // Free dropped_filedir memory
 				break;
 			case SDL_QUIT:
 				I_Quit();
@@ -2110,6 +2117,7 @@ void I_StartupGraphics(void)
 		HWD.pfnSetBlend         = hwSym("SetBlend",NULL);
 		HWD.pfnClearBuffer      = hwSym("ClearBuffer",NULL);
 		HWD.pfnSetTexture       = hwSym("SetTexture",NULL);
+		HWD.pfnUpdateTexture    = hwSym("UpdateTexture",NULL);
 		HWD.pfnReadRect         = hwSym("ReadRect",NULL);
 		HWD.pfnGClipRect        = hwSym("GClipRect",NULL);
 		HWD.pfnClearMipMapCache = hwSym("ClearMipMapCache",NULL);
@@ -2136,11 +2144,15 @@ void I_StartupGraphics(void)
 		HWD.pfnSetShader = hwSym("SetShader",NULL);
 		HWD.pfnUnSetShader = hwSym("UnSetShader",NULL);
 
+		HWD.pfnSetShaderInfo    = hwSym("SetShaderInfo",NULL);
 		HWD.pfnLoadCustomShader = hwSym("LoadCustomShader",NULL);
 		HWD.pfnInitCustomShaders = hwSym("InitCustomShaders",NULL);
 
 		HWD.pfnStartBatching = hwSym("StartBatching",NULL);
 		HWD.pfnRenderBatches = hwSym("RenderBatches",NULL);
+		
+		HWD.pfnAddLightTable = hwSym("AddLightTable",NULL);
+		HWD.pfnClearLightTableCache = hwSym("ClearLightTableCache",NULL);
 
 		if (!HWD.pfnInit()) // load the OpenGL library
 			rendermode = render_soft;

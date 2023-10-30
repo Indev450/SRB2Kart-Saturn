@@ -277,7 +277,7 @@ static xcommand_t *com_commands = NULL; // current commands
 
 #define MAX_ARGS 80
 static size_t com_argc;
-static char *com_argv[MAX_ARGS];
+char *com_argv[MAX_ARGS];
 static const char *com_null_string = "";
 static char *com_args = NULL; // current command args or NULL
 
@@ -325,6 +325,16 @@ const char *COM_Argv(size_t arg)
 	if (arg >= com_argc || (signed)arg < 0)
 		return com_null_string;
 	return com_argv[arg];
+}
+
+/** Returns all of the console command arguments
+  *
+  * \return String pointer to the argv table.
+  * \sa COM_ArgvList
+  */
+char **COM_ArgvList(void)
+{
+	return com_argv;
 }
 
 /** Gets all console command arguments.
@@ -1445,7 +1455,7 @@ static void Got_NetVar(UINT8 **p, INT32 playernum)
 
 		if (server)
 		{
-			XBOXSTATIC UINT8 buf[2];
+			UINT8 buf[2];
 
 			buf[0] = (UINT8)playernum;
 			buf[1] = KICK_MSG_CON_FAIL;
@@ -1464,9 +1474,6 @@ static void Got_NetVar(UINT8 **p, INT32 playernum)
 		CONS_Alert(CONS_WARNING, "Netvar not found with netid %hu\n", netid);
 		return;
 	}
-#if 0 //defined (GP2X) || defined (PSP)
-	CONS_Printf("Netvar received: %s [netid=%d] value %s\n", cvar->name, netid, svalue);
-#endif
 	DEBFILE(va("Netvar received: %s [netid=%d] value %s\n", cvar->name, netid, svalue));
 
 	Setvalue(cvar, svalue, stealth);
@@ -1587,7 +1594,7 @@ static void CV_SetCVar(consvar_t *var, const char *value, boolean stealth)
 	if (var->flags & CV_NETVAR)
 	{
 		// send the value of the variable
-		XBOXSTATIC UINT8 buf[128];
+		UINT8 buf[128];
 		UINT8 *p = buf;
 		if (!(server || (IsPlayerAdmin(consoleplayer))))
 		{

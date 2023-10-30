@@ -66,6 +66,14 @@ void LUA_HUD_AddDrawPaddedNum(
 	INT32 digits,
 	INT32 flags
 );
+void LUA_HUD_AddDrawPingNum(
+	huddrawlist_h list,
+	INT32 x,
+	INT32 y,
+	INT32 num,
+	INT32 flags,
+	const UINT8 *colormap
+);
 void LUA_HUD_AddDrawFill(
 	huddrawlist_h list,
 	INT32 x,

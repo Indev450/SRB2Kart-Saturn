@@ -15,6 +15,7 @@
 #include "r_defs.h"
 #include "r_local.h"
 #include "st_stuff.h" // hudinfo[]
+#include "y_inter.h"
 #include "g_game.h"
 #include "i_video.h" // rendermode
 #include "p_local.h" // camera_t
@@ -446,20 +447,20 @@ static int libd_drawOnMinimap(lua_State *L)
 	// replicate exactly what source does for its minimap drawer; AKA hardcoded garbo.
 
 	// first, check what position the mmap is supposed to be in (pasted from k_kart.c):
-	MM_X = BASEVIDWIDTH - 50;		// 270
-	MM_Y = (BASEVIDHEIGHT/2)-16; //  84
+	MM_X = BASEVIDWIDTH - 50 + cv_mini_xoffset.value;		// 270
+	MM_Y = (BASEVIDHEIGHT/2)-16 + cv_mini_yoffset.value; //  84
 	if (splitscreen)
 	{
-		MM_Y = (BASEVIDHEIGHT/2);
+		MM_Y = (BASEVIDHEIGHT/2) + cv_mini_yoffset.value;
 		if (splitscreen > 1)	// 3P : bottom right
 		{
-			MM_X = (3*BASEVIDWIDTH/4);
-			MM_Y = (3*BASEVIDHEIGHT/4);
+			MM_X = (3*BASEVIDWIDTH/4) + cv_mini_xoffset.value;
+			MM_Y = (3*BASEVIDHEIGHT/4) + cv_mini_yoffset.value;
 
 			if (splitscreen > 2) // 4P: centered
 			{
-				MM_X = (BASEVIDWIDTH/2);
-				MM_Y = (BASEVIDHEIGHT/2);
+				MM_X = (BASEVIDWIDTH/2) + cv_mini_xoffset.value;
+				MM_Y = (BASEVIDHEIGHT/2) + cv_mini_yoffset.value;
 			}
 		}
 	}
@@ -578,10 +579,17 @@ static int libd_drawOnMinimap(lua_State *L)
 	list = (huddrawlist_h) lua_touserdata(L, -1);
 	lua_pop(L, 1);
 
-	if (LUA_HUD_IsDrawListValid(list))
-		LUA_HUD_AddDrawScaled(list, amxpos, amypos, scale, patch, splitflags, colormap);
-	else
-		V_DrawFixedPatch(amxpos, amypos, scale, splitflags, patch, colormap);
+	if (LUA_HUD_IsDrawListValid(list)){
+		if (cv_minihead.value)
+			LUA_HUD_AddDrawScaled(list, amxpos, amypos, scale/2, patch, splitflags, colormap);
+		else
+			LUA_HUD_AddDrawScaled(list, amxpos, amypos, scale, patch, splitflags, colormap);
+	}else{
+		if (cv_minihead.value)
+			V_DrawFixedPatch(amxpos, amypos, scale/2, splitflags, patch, colormap);
+		else
+			V_DrawFixedPatch(amxpos, amypos, scale, splitflags, patch, colormap);
+	}
 
 	
 	return 0;
@@ -639,6 +647,8 @@ static int libd_drawPingNum(lua_State *L)
 {
 	INT32 x, y, flags, num;
 	const UINT8 *colormap = NULL;
+	huddrawlist_h list;
+
 	HUDONLY
 	x = luaL_checkinteger(L, 1);
 	y = luaL_checkinteger(L, 2);
@@ -648,7 +658,15 @@ static int libd_drawPingNum(lua_State *L)
 	if (!lua_isnoneornil(L, 5))
 		colormap = *((UINT8 **)luaL_checkudata(L, 5, META_COLORMAP));
 
-	V_DrawPingNum(x, y, flags, num, colormap);
+	lua_getfield(L, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
+	list = (huddrawlist_h) lua_touserdata(L, -1);
+	lua_pop(L, 1);
+
+	if (LUA_HUD_IsDrawListValid(list))
+		LUA_HUD_AddDrawPingNum(list, x, y, num, flags, colormap);
+	else
+		V_DrawPingNum(x, y, flags, num, colormap);
+
 	return 0;
 }
 
@@ -966,11 +984,46 @@ static int lib_hudadd(lua_State *L)
 	return 0;
 }
 
+static int lib_hudsetvotebackground(lua_State *L)
+{
+	if (lua_isnoneornil(L, 1))
+	{
+		if (luaVoteScreen)
+		{
+			free(luaVoteScreen);
+		}
+
+		luaVoteScreen = NULL;
+
+		return 0;
+	}
+
+	const char *prefix = luaL_checkstring(L, 1);
+
+	if (strlen(prefix) != 4)
+	{
+		return luaL_argerror(L, 1, "prefix should 4 characters wide");
+	}
+
+	if (!luaVoteScreen)
+	{
+		luaVoteScreen = (char*)malloc(5);
+		luaVoteScreen[4] = 0;
+	}
+
+	strncpy(luaVoteScreen, prefix, 4);
+
+	strupr(luaVoteScreen);
+
+	return 0;
+}
+
 static luaL_Reg lib_hud[] = {
 	{"enable", lib_hudenable},
 	{"disable", lib_huddisable},
 	{"enabled", lib_hudenabled},
 	{"add", lib_hudadd},
+	{"setVoteBackground", lib_hudsetvotebackground},
 	{NULL, NULL}
 };
 
