@@ -9400,7 +9400,7 @@ static int lua_enumlib_mobjtype_get(lua_State *L)
 static int lua_enumlib_sprite_get(lua_State *L)
 {
 	const char *s = lua_tostring(L, 1);
-	for (int i = SPR_FIRSTFREESLOT; i < NUMSPRITES; i++)
+	for (int i = 0; i < NUMSPRITES; i++)
 	{
 		if (fastncmp(s+4, sprnames[i], 4))
 		{
