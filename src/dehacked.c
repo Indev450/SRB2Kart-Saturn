@@ -900,7 +900,7 @@ static void readlevelheader(MYFILE *f, INT32 num, INT32 wadnum)
 	// This call automatically saves all previous information when DELFILE is defined.
 	// We don't need to do it ourselves.
 	P_AllocMapHeader((INT16)(num-1));
-	
+
 	if (!strstr(wadfiles[wadnum]->filename, ".soc"))
 		mapwads[num-1] = wadnum;
 
@@ -9394,6 +9394,7 @@ static int lua_enumlib_mobjtype_get(lua_State *L)
 	const char *s = lua_tostring(L, 1);
 	for (int i = 0; i < NUMMOBJFREESLOTS; i++)
 	{
+        if (!FREE_MOBJS[i]) continue;
 		if (fastcmp(s+3, FREE_MOBJS[i]))
 		{
 			lua_pushinteger(L, MT_FIRSTFREESLOT+i);
