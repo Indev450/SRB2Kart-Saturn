@@ -384,7 +384,7 @@ static UINT8 playback_enterheld = 0; // horrid hack to prevent holding the butto
 // Drawing functions
 static void M_DrawGenericMenu(void);
 static void M_DrawGenericBackgroundMenu(void);
-static void M_DrawGenericScrollMenu(void);
+//static void M_DrawGenericScrollMenu(void);
 static void M_DrawCenteredMenu(void);
 static void M_DrawAddons(void);
 static void M_DrawSkyRoom(void);
@@ -4414,7 +4414,7 @@ static void M_DrawGenericBackgroundMenu(void)
 #define scrollareaheight 72
 
 // note that alphakey is multiplied by 2 for scrolling menus to allow greater usage in UINT8 range.
-static void M_DrawGenericScrollMenu(void)
+/*static void M_DrawGenericScrollMenu(void)
 {
 	INT32 x, y, i, max, bottom, tempcentery, cursory = 0;
 
@@ -4543,7 +4543,7 @@ static void M_DrawGenericScrollMenu(void)
 	// DRAW THE SKULL CURSOR
 	V_DrawScaledPatch(currentMenu->x - 24, cursory, 0,
 		W_CachePatchName("M_CURSOR", PU_CACHE));
-}
+}*/
 
 
 static void M_DrawPauseMenu(void)
