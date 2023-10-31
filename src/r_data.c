@@ -30,7 +30,7 @@
 #include "hardware/hw_main.h"
 #endif
 
-#if defined (_WIN32) || defined (_WIN32_WCE)
+#ifdef _WIN32
 #include <malloc.h> // alloca(sizeof)
 #endif
 

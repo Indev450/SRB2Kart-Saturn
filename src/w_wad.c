@@ -77,12 +77,6 @@
 #include "hardware/hw_glob.h"
 #endif
 
-#ifdef PC_DOS
-#include <stdio.h> // for snprintf
-int	snprintf(char *str, size_t n, const char *fmt, ...);
-//int	vsnprintf(char *str, size_t n, const char *fmt, va_list ap);
-#endif
-
 #ifndef O_BINARY
 #define O_BINARY 0
 #endif
@@ -1323,6 +1317,26 @@ UINT8 W_LumpExists(const char *name)
 				return true;
 	}
 	return false;
+}
+
+UINT8 W_CheckMultipleLumps(const char* lump, ...) 
+{
+	va_list lumps;
+	va_start(lumps, lump);
+	const char* lumpname = lump;
+
+	while (lumpname != NULL) 
+	{
+		if (!W_LumpExists(lumpname)) 
+		{
+			va_end(lumps);
+			return false;
+		}
+		lumpname = va_arg(lumps, const char*);
+	}
+
+	va_end(lumps);
+	return true;
 }
 
 size_t W_LumpLengthPwad(UINT16 wad, UINT16 lump)

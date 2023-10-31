@@ -145,5 +145,6 @@ extern UINT16 objectsdrawn;
 
 // variable to stop mayonaka static from flickering
 extern consvar_t cv_lessflicker;
+extern consvar_t cv_stagetitle;
 
 #endif

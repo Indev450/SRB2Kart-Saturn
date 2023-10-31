@@ -69,6 +69,17 @@ static void CV_anisotropic_ONChange(void);
 static void CV_screentextures_ONChange(void);
 static void CV_useCustomShaders_ONChange(void); 
 static void CV_grpaletteshader_OnChange(void);
+static void CV_Gammaxxx_ONChange(void);
+
+static CV_PossibleValue_t grgamma_cons_t[] = {{1, "MIN"}, {255, "MAX"}, {0, NULL}};
+consvar_t cv_grgammared = {"gr_gammared", "127", CV_SAVE|CV_CALL, grgamma_cons_t,
+                           CV_Gammaxxx_ONChange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_grgammagreen = {"gr_gammagreen", "127", CV_SAVE|CV_CALL, grgamma_cons_t,
+                             CV_Gammaxxx_ONChange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_grgammablue = {"gr_gammablue", "127", CV_SAVE|CV_CALL, grgamma_cons_t,
+                            CV_Gammaxxx_ONChange, 0, NULL, NULL, 0, 0, NULL};
+
+static CV_PossibleValue_t grfakecontrast_cons_t[] = {{0, "Off"}, {1, "Standard"}, {2, "Smooth"}, {0, NULL}};
 
 static CV_PossibleValue_t grfiltermode_cons_t[]= {{HWD_SET_TEXTUREFILTER_POINTSAMPLED, "Nearest"},
 	{HWD_SET_TEXTUREFILTER_BILINEAR, "Bilinear"}, {HWD_SET_TEXTUREFILTER_TRILINEAR, "Trilinear"},
@@ -80,11 +91,12 @@ CV_PossibleValue_t granisotropicmode_cons_t[] = {{1, "MIN"}, {16, "MAX"}, {0, NU
 
 consvar_t cv_grrounddown = {"gr_rounddown", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-
 consvar_t cv_grfiltermode = {"gr_filtermode", "Nearest", CV_CALL|CV_SAVE, grfiltermode_cons_t,
                              CV_filtermode_ONChange, 0, NULL, NULL, 0, 0, NULL};
+							 
 consvar_t cv_granisotropicmode = {"gr_anisotropicmode", "1", CV_CALL|CV_SAVE, granisotropicmode_cons_t,
                              CV_anisotropic_ONChange, 0, NULL, NULL, 0, 0, NULL};
+							 
 consvar_t cv_grcorrecttricks = {"gr_correcttricks", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_grsolvetjoin = {"gr_solvetjoin", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -95,13 +107,17 @@ static CV_PossibleValue_t grrenderdistance_cons_t[] = {
 	{6, "12288"}, {7, "16384"}, {0, NULL}};
 consvar_t cv_grrenderdistance = {"gr_renderdistance", "Max", CV_SAVE, grrenderdistance_cons_t,
 							NULL, 0, NULL, NULL, 0, 0, NULL};
+							
 consvar_t cv_grportals = {"gr_portals", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_nostencil = {"nostencil", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_portalline = {"portalline", "0", 0, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_portalonly = {"portalonly", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 CV_PossibleValue_t secbright_cons_t[] = {{0, "MIN"}, {255, "MAX"}, {0, NULL}};
+
 consvar_t cv_secbright = {"secbright", "0", CV_SAVE, secbright_cons_t,
 							NULL, 0, NULL, NULL, 0, 0, NULL};
+							
+consvar_t cv_grfovchange = {"gr_fovchange", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 							 
 // values for the far clipping plane
 static float clipping_distances[] = {1024.0f, 2048.0f, 4096.0f, 6144.0f, 8192.0f, 12288.0f, 16384.0f};
@@ -109,6 +125,7 @@ static float clipping_distances[] = {1024.0f, 2048.0f, 4096.0f, 6144.0f, 8192.0f
 // slightly higher than the far clipping plane to compensate for impreciseness
 static INT32 bsp_culling_distances[] = {(1024+512)*FRACUNIT, (2048+512)*FRACUNIT, (4096+512)*FRACUNIT,
 	(6144+512)*FRACUNIT, (8192+512)*FRACUNIT, (12288+512)*FRACUNIT, (16384+512)*FRACUNIT};
+	
 static INT32 current_bsp_culling_distance = 0;
 
 // The current screen texture implementation is inefficient and disabling it can result in significant
@@ -119,42 +136,66 @@ static INT32 current_bsp_culling_distance = 0;
 //  - full screen scaling (use native resolution or windowed mode to avoid this)
 consvar_t cv_grscreentextures = {"gr_screentextures", "On", CV_CALL, CV_OnOff,
                                  CV_screentextures_ONChange, 0, NULL, NULL, 0, 0, NULL};
-
+								 
+consvar_t cv_grshaders = {"gr_shaders", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_grusecustomshaders = {"gr_usecustomshaders", "Yes", CV_CALL|CV_SAVE, CV_OnOff, CV_useCustomShaders_ONChange, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_grpaletteshader = {"gr_paletteshader", "Off", CV_CALL|CV_SAVE, CV_OnOff, CV_grpaletteshader_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_grflashpal = {"gr_flashpal", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_grflashpal = {"gr_flashpal", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_grmdls = {"gr_mdls", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_grfallbackplayermodel = {"gr_fallbackplayermodel", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_grshearing = {"gr_shearing", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_grspritebillboarding = {"gr_spritebillboarding", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_grfakecontrast = {"gr_fakecontrast", "Standard", CV_SAVE, grfakecontrast_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static void CV_filtermode_ONChange(void)
 {
+	if (rendermode == render_opengl)
 	HWD.pfnSetSpecialState(HWD_SET_TEXTUREFILTERMODE, cv_grfiltermode.value);
 }
 
 static void CV_anisotropic_ONChange(void)
 {
+	if (rendermode == render_opengl)
 	HWD.pfnSetSpecialState(HWD_SET_TEXTUREANISOTROPICMODE, cv_granisotropicmode.value);
 }
 
 static void CV_screentextures_ONChange(void)
 {
+	if (rendermode == render_opengl)
 	HWD.pfnSetSpecialState(HWD_SET_SCREEN_TEXTURES, cv_grscreentextures.value);
 }
 
 static void CV_useCustomShaders_ONChange(void)
 {
-    if (rendermode == render_opengl)
-        HWD.pfnInitCustomShaders();
+	if (rendermode == render_opengl)	
+	{
+		if (cv_grshaders.value)
+			HWD.pfnInitCustomShaders();
+	}
 }
 
 static void CV_grpaletteshader_OnChange(void)
 {
-	if (rendermode == render_opengl)
+	if (rendermode == render_opengl)	
 	{
-		HWD.pfnSetSpecialState(HWD_SET_PALETTE_SHADER_ENABLED, cv_grpaletteshader.value);
-		gr_use_palette_shader = cv_grpaletteshader.value;
-		V_SetPalette(0);
+		if (cv_grshaders.value)
+		{
+			HWD.pfnSetSpecialState(HWD_SET_PALETTE_SHADER_ENABLED, cv_grpaletteshader.value);
+			gr_use_palette_shader = cv_grpaletteshader.value;
+			V_SetPalette(0);
+		}
 	}
+}
+
+// change the palette directly to see the change
+static void CV_Gammaxxx_ONChange(void)
+{
+	if (rendermode == render_opengl)
+		V_SetPalette(0);
 }
 
 // ==========================================================================
@@ -426,7 +467,7 @@ void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *col
 	fade_color.rgba = (colormap != NULL) ? (UINT32)colormap->fadergba : GL_DEFAULTFOG;
 
 	// Crappy backup coloring if you can't do shaders
-	if (!(cv_grshaders.value && gr_shadersavailable))
+	if (!cv_grshaders.value || !gr_shadersavailable)
 	{
 		// be careful, this may get negative for high lightlevel values.
 		float tint_alpha, fade_alpha;
@@ -511,7 +552,11 @@ UINT8 HWR_FogBlockAlpha(INT32 light, extracolormap_t *colormap) // Let's see if 
 
 	realcolor.rgba = (colormap != NULL) ? colormap->rgba : GL_DEFAULTMIX;
 
-	if (!(cv_grshaders.value && gr_shadersavailable))
+	if (cv_grshaders.value && gr_shadersavailable)
+	{
+		surfcolor.s.alpha = (255 - light);
+	}
+	else
 	{
 		light = light - (255 - light);
 
@@ -526,13 +571,10 @@ UINT8 HWR_FogBlockAlpha(INT32 light, extracolormap_t *colormap) // Let's see if 
 		// at 255 brightness, alpha is between 0 and 127, at 0 brightness alpha will always be 255
 		surfcolor.s.alpha = (alpha*light) / (2*256) + 255-light;
 	}
-	else
-	{
-		surfcolor.s.alpha = (255 - light);
-	}
 
 	return surfcolor.s.alpha;
 }
+
 
 static FUINT HWR_CalcWallLight(FUINT lightnum, fixed_t v1x, fixed_t v1y, fixed_t v2x, fixed_t v2y)
 {
@@ -798,11 +840,27 @@ void HWR_RenderPlane(extrasubsector_t *xsub, boolean isceiling, fixed_t fixedhei
 			{
 				P_ClosestPointOnLine(viewx, viewy, line->linedef, &v);
 				dist = FIXED_TO_FLOAT(R_PointToDist(v.x, v.y));
-
-				x1 = ((polyvertex_t *)line->pv1)->x;
-				y1 = ((polyvertex_t *)line->pv1)->y;
-				xd = ((polyvertex_t *)line->pv2)->x - x1;
-				yd = ((polyvertex_t *)line->pv2)->y - y1;
+				
+				if (line->pv1)
+				{
+					x1 = ((polyvertex_t *)line->pv1)->x;
+					y1 = ((polyvertex_t *)line->pv1)->y;
+				}
+				else
+				{
+					x1 = FIXED_TO_FLOAT(line->v1->x);
+					y1 = FIXED_TO_FLOAT(line->v1->x);
+				}
+				if (line->pv2)
+				{
+					xd = ((polyvertex_t *)line->pv2)->x - x1;
+					yd = ((polyvertex_t *)line->pv2)->y - y1;
+				}
+				else
+				{
+					xd = FIXED_TO_FLOAT(line->v2->x) - x1;
+					yd = FIXED_TO_FLOAT(line->v2->y) - y1;
+				}
 
 				// Based on the seg length and the distance from the line, split horizon into multiple poly sets to reduce distortion
 				dist = sqrtf((xd*xd) + (yd*yd)) / dist / 16.0f;
@@ -1389,11 +1447,27 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 	gr_sidedef = gr_curline->sidedef;
 	gr_linedef = gr_curline->linedef;
-
-	vs.x = ((polyvertex_t *)gr_curline->pv1)->x;
-	vs.y = ((polyvertex_t *)gr_curline->pv1)->y;
-	ve.x = ((polyvertex_t *)gr_curline->pv2)->x;
-	ve.y = ((polyvertex_t *)gr_curline->pv2)->y;
+	
+	if (gr_curline->pv1)
+	{
+		vs.x = ((polyvertex_t *)gr_curline->pv1)->x;
+		vs.y = ((polyvertex_t *)gr_curline->pv1)->y;
+	}
+	else
+	{
+		vs.x = FIXED_TO_FLOAT(gr_curline->v1->x);
+		vs.y = FIXED_TO_FLOAT(gr_curline->v1->y);
+	}
+	if (gr_curline->pv2)
+	{
+		ve.x = ((polyvertex_t *)gr_curline->pv2)->x;
+		ve.y = ((polyvertex_t *)gr_curline->pv2)->y;
+	}
+	else
+	{
+		ve.x = FIXED_TO_FLOAT(gr_curline->v2->x);
+		ve.y = FIXED_TO_FLOAT(gr_curline->v2->y);
+	}
 
 #ifdef ESLOPE
 	v1x = FLOAT_TO_FIXED(vs.x);
@@ -1561,8 +1635,8 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 		// hack to allow height changes in outdoor areas
 		// This is what gets rid of the upper textures if there should be sky
-		if (gr_frontsector->ceilingpic == skyflatnum &&
-			gr_backsector->ceilingpic  == skyflatnum)
+		if (gr_frontsector->ceilingpic == skyflatnum
+			&& gr_backsector->ceilingpic  == skyflatnum)
 		{
 			worldtop = worldhigh;
 #ifdef ESLOPE
@@ -2442,10 +2516,28 @@ static boolean CheckClip(sector_t * afrontsector, sector_t * abacksector)
 	if (afrontsector->f_slope || afrontsector->c_slope || abacksector->f_slope || abacksector->c_slope)
 	{
 		fixed_t v1x, v1y, v2x, v2y; // the seg's vertexes as fixed_t
-		v1x = FLOAT_TO_FIXED(((polyvertex_t *)gr_curline->pv1)->x);
-		v1y = FLOAT_TO_FIXED(((polyvertex_t *)gr_curline->pv1)->y);
-		v2x = FLOAT_TO_FIXED(((polyvertex_t *)gr_curline->pv2)->x);
-		v2y = FLOAT_TO_FIXED(((polyvertex_t *)gr_curline->pv2)->y);
+		
+		if (gr_curline->pv1)
+		{
+			v1x = FLOAT_TO_FIXED(((polyvertex_t *)gr_curline->pv1)->x);
+			v1y = FLOAT_TO_FIXED(((polyvertex_t *)gr_curline->pv1)->y);
+		}
+		else
+		{
+			v1x = gr_curline->v1->x;
+			v1y = gr_curline->v1->y;
+		}
+		if (gr_curline->pv2)
+		{
+			v2x = FLOAT_TO_FIXED(((polyvertex_t *)gr_curline->pv2)->x);
+			v2y = FLOAT_TO_FIXED(((polyvertex_t *)gr_curline->pv2)->y);
+		}
+		else
+		{
+			v2x = gr_curline->v2->x;
+			v2y = gr_curline->v2->y;
+		}
+		
 #define SLOPEPARAMS(slope, end1, end2, normalheight) \
 		if (slope) { \
 			end1 = P_GetZAt(slope, v1x, v1y); \
@@ -2581,10 +2673,26 @@ void HWR_AddLine(seg_t *line)
 
 	gr_curline = line;
 
-	v1x = FLOAT_TO_FIXED(((polyvertex_t *)gr_curline->pv1)->x);
-	v1y = FLOAT_TO_FIXED(((polyvertex_t *)gr_curline->pv1)->y);
-	v2x = FLOAT_TO_FIXED(((polyvertex_t *)gr_curline->pv2)->x);
-	v2y = FLOAT_TO_FIXED(((polyvertex_t *)gr_curline->pv2)->y);
+	if (gr_curline->pv1)
+	{
+		v1x = FLOAT_TO_FIXED(((polyvertex_t *)gr_curline->pv1)->x);
+		v1y = FLOAT_TO_FIXED(((polyvertex_t *)gr_curline->pv1)->y);
+	}
+	else
+	{
+		v1x = gr_curline->v1->x;
+		v1y = gr_curline->v1->y;
+	}
+	if (gr_curline->pv2)
+	{
+		v2x = FLOAT_TO_FIXED(((polyvertex_t *)gr_curline->pv2)->x);
+		v2y = FLOAT_TO_FIXED(((polyvertex_t *)gr_curline->pv2)->y);
+	}
+	else
+	{
+		v2x = gr_curline->v2->x;
+		v2y = gr_curline->v2->y;
+	}
 
 	// OPTIMIZE: quickly reject orthogonal back sides.
 	angle1 = R_PointToAngle64(v1x, v1y);
@@ -3152,7 +3260,7 @@ void HWR_AddPolyObjectPlanes(void)
 			{
 				HWR_GetFlat(levelflats[polyobjsector->ceilingpic].lumpnum, R_NoEncore(polyobjsector, true));
 				HWR_RenderPolyObjectPlane(po_ptrs[i], true, polyobjsector->ceilingheight, PF_Occlude,
-				                          polyobjsector->lightlevel, levelflats[polyobjsector->floorpic].lumpnum,
+				                          polyobjsector->lightlevel, levelflats[polyobjsector->ceilingpic].lumpnum,
 				                          polyobjsector, 255, NULL);
 			}
 		}
@@ -3754,7 +3862,11 @@ static void HWR_DrawSpriteShadow(gr_vissprite_t *spr, GLPatch_t *gpatch, float t
 	FOutVector swallVerts[4];
 	FSurfaceInfo sSurf;
 	fixed_t floorheight, mobjfloor;
+	pslope_t *floorslope;
+	fixed_t slopez;
 	float offset = 0;
+	
+	R_GetShadowZ(spr->mobj, &floorslope);
 
 	mobjfloor = HWR_OpaqueFloorAtPos(
 		spr->mobj->x, spr->mobj->y,
@@ -3848,6 +3960,14 @@ static void HWR_DrawSpriteShadow(gr_vissprite_t *spr, GLPatch_t *gpatch, float t
 		swallVerts[0].z = spr->z1 + offset * gr_viewsin;
 		swallVerts[1].z = spr->z2 + offset * gr_viewsin;
 	}
+	
+	if (floorslope)
+		for (int i = 0; i < 4; i++)
+		{
+			slopez = P_GetZAt(floorslope, FLOAT_TO_FIXED(swallVerts[i].x), FLOAT_TO_FIXED(swallVerts[i].z));
+			swallVerts[i].y = FIXED_TO_FLOAT(slopez) + 0.05f;
+		}
+
 
 	if (spr->flip)
 	{
@@ -6056,6 +6176,9 @@ void HWR_RenderPlayerView(INT32 viewnumber, player_t *player)
 		HWD.pfnClearBuffer(true, false, false, &ClearColor);
 	}
 
+	if (cv_grshaders.value)
+		HWD.pfnSetShaderInfo(HWD_SHADERINFO_LEVELTIME, (INT32)leveltime); // The water surface shader needs the leveltime.
+
 	if (viewnumber > 3)
 		return;
 
@@ -6074,17 +6197,9 @@ void HWR_RenderPlayerView(INT32 viewnumber, player_t *player)
 	HWR_RenderFrame(viewnumber, player, false);
 }
 
-// ==========================================================================
-//                                                         3D ENGINE COMMANDS
-// ==========================================================================
 
-// **************************************************************************
-//                                                            3D ENGINE SETUP
-// **************************************************************************
 
-// --------------------------------------------------------------------------
-// Add hardware engine commands & consvars
-// --------------------------------------------------------------------------
+
 //added by Hurdler: console varibale that are saved
 void HWR_AddCommands(void)
 {
@@ -6097,13 +6212,33 @@ void HWR_AddCommands(void)
 	CV_RegisterVar(&cv_grbatching);
 	CV_RegisterVar(&cv_grscreentextures);
 	CV_RegisterVar(&cv_grrenderdistance);
+	
+	CV_RegisterVar(&cv_grgammablue);
+	CV_RegisterVar(&cv_grgammagreen);
+	CV_RegisterVar(&cv_grgammared);
+	CV_RegisterVar(&cv_grfakecontrast);
+	
+	CV_RegisterVar(&cv_grfovchange);
+	
+	CV_RegisterVar(&cv_grmdls);
+	CV_RegisterVar(&cv_grfallbackplayermodel);
+	
+	CV_RegisterVar(&cv_grspritebillboarding);
+		
+	CV_RegisterVar(&cv_grshearing);
+	
+	CV_RegisterVar(&cv_grshaders);
+	CV_RegisterVar(&cv_grusecustomshaders);
+	
 	CV_RegisterVar(&cv_grportals);
 	CV_RegisterVar(&cv_nostencil);
 	CV_RegisterVar(&cv_portalline);
 	CV_RegisterVar(&cv_portalonly);
+	
 	CV_RegisterVar(&cv_secbright);
+	
 	CV_RegisterVar(&cv_grpaletteshader);
-	CV_RegisterVar(&cv_grflashpal);
+	CV_RegisterVar(&cv_grflashpal);	
 }
 
 // --------------------------------------------------------------------------
@@ -6122,13 +6257,8 @@ void HWR_Startup(void)
 	}
 
 	if (rendermode == render_opengl)
-		textureformat = patchformat =
-#ifdef _NDS
-			GR_TEXFMT_P_8;
-#else
-			GR_RGBA;
-#endif
-
+		textureformat = patchformat = GR_RGBA;
+		
 	startupdone = true;
 
 	// jimita
@@ -6248,7 +6378,7 @@ void HWR_DoPostProcessor(player_t *player)
 	{
 		// 10 by 10 grid. 2 coordinates (xy)
 		float v[SCREENVERTS][SCREENVERTS][2];
-		static double disStart = 0;
+		float disStart = (leveltime-1) + FIXED_TO_FLOAT(rendertimefrac);
 
 		UINT8 x, y;
 		INT32 WAVELENGTH;
@@ -6279,8 +6409,6 @@ void HWR_DoPostProcessor(player_t *player)
 			}
 		}
 		HWD.pfnPostImgRedraw(v);
-		if (!(paused || P_AutoPause()))
-			disStart += FIXED_TO_FLOAT(renderdeltatics);
 
 		// Capture the screen again for screen waving on the intermission
 		if(gamestate != GS_INTERMISSION)

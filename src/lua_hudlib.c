@@ -447,20 +447,20 @@ static int libd_drawOnMinimap(lua_State *L)
 	// replicate exactly what source does for its minimap drawer; AKA hardcoded garbo.
 
 	// first, check what position the mmap is supposed to be in (pasted from k_kart.c):
-	MM_X = BASEVIDWIDTH - 50;		// 270
-	MM_Y = (BASEVIDHEIGHT/2)-16; //  84
+	MM_X = BASEVIDWIDTH - 50 + cv_mini_xoffset.value;		// 270
+	MM_Y = (BASEVIDHEIGHT/2)-16 + cv_mini_yoffset.value; //  84
 	if (splitscreen)
 	{
-		MM_Y = (BASEVIDHEIGHT/2);
+		MM_Y = (BASEVIDHEIGHT/2) + cv_mini_yoffset.value;
 		if (splitscreen > 1)	// 3P : bottom right
 		{
-			MM_X = (3*BASEVIDWIDTH/4);
-			MM_Y = (3*BASEVIDHEIGHT/4);
+			MM_X = (3*BASEVIDWIDTH/4) + cv_mini_xoffset.value;
+			MM_Y = (3*BASEVIDHEIGHT/4) + cv_mini_yoffset.value;
 
 			if (splitscreen > 2) // 4P: centered
 			{
-				MM_X = (BASEVIDWIDTH/2);
-				MM_Y = (BASEVIDHEIGHT/2);
+				MM_X = (BASEVIDWIDTH/2) + cv_mini_xoffset.value;
+				MM_Y = (BASEVIDHEIGHT/2) + cv_mini_yoffset.value;
 			}
 		}
 	}
@@ -579,10 +579,17 @@ static int libd_drawOnMinimap(lua_State *L)
 	list = (huddrawlist_h) lua_touserdata(L, -1);
 	lua_pop(L, 1);
 
-	if (LUA_HUD_IsDrawListValid(list))
-		LUA_HUD_AddDrawScaled(list, amxpos, amypos, scale, patch, splitflags, colormap);
-	else
-		V_DrawFixedPatch(amxpos, amypos, scale, splitflags, patch, colormap);
+	if (LUA_HUD_IsDrawListValid(list)){
+		if (cv_minihead.value)
+			LUA_HUD_AddDrawScaled(list, amxpos, amypos, scale/2, patch, splitflags, colormap);
+		else
+			LUA_HUD_AddDrawScaled(list, amxpos, amypos, scale, patch, splitflags, colormap);
+	}else{
+		if (cv_minihead.value)
+			V_DrawFixedPatch(amxpos, amypos, scale/2, splitflags, patch, colormap);
+		else
+			V_DrawFixedPatch(amxpos, amypos, scale, splitflags, patch, colormap);
+	}
 
 	
 	return 0;

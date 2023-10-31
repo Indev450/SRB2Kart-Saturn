@@ -653,7 +653,7 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 		S_InitMusicVolume();
 
 		if (cv_gamesounds.value)
-			S_EnableSound();
+			S_ResumeAudio(); //resume it
 
 		if (!firsttimeonmouse)
 		{
@@ -665,10 +665,10 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 	{
 		// Tell game we lost focus, pause music
 		window_notinfocus = true;
-		if (!cv_playmusicifunfocused.value)
+		if (! cv_playmusicifunfocused.value)
 			I_SetMusicVolume(0);
-		if (!cv_playsoundifunfocused.value)
-			S_DisableSound();
+		if (! cv_playsoundifunfocused.value)
+			S_StopSounds();
 
 		if (!disable_mouse)
 		{
@@ -2117,6 +2117,7 @@ void I_StartupGraphics(void)
 		HWD.pfnSetBlend         = hwSym("SetBlend",NULL);
 		HWD.pfnClearBuffer      = hwSym("ClearBuffer",NULL);
 		HWD.pfnSetTexture       = hwSym("SetTexture",NULL);
+		HWD.pfnUpdateTexture    = hwSym("UpdateTexture",NULL);
 		HWD.pfnReadRect         = hwSym("ReadRect",NULL);
 		HWD.pfnGClipRect        = hwSym("GClipRect",NULL);
 		HWD.pfnClearMipMapCache = hwSym("ClearMipMapCache",NULL);
@@ -2143,6 +2144,7 @@ void I_StartupGraphics(void)
 		HWD.pfnSetShader = hwSym("SetShader",NULL);
 		HWD.pfnUnSetShader = hwSym("UnSetShader",NULL);
 
+		HWD.pfnSetShaderInfo    = hwSym("SetShaderInfo",NULL);
 		HWD.pfnLoadCustomShader = hwSym("LoadCustomShader",NULL);
 		HWD.pfnInitCustomShaders = hwSym("InitCustomShaders",NULL);
 

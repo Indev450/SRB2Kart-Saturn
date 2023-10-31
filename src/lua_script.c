@@ -1520,10 +1520,21 @@ static void UnArchiveTablesDemo(void)
 		lua_rawgeti(gL, TABLESINDEX, i);
 		while (true)
 		{
-			if (UnArchiveValueDemo(TABLESINDEX, NULL) == 1) // read key
+			UINT8 ret;
+
+			ret = UnArchiveValueDemo(TABLESINDEX, NULL);
+			if (ret == 3)
+				lua_pushnil(gL);
+			else if (ret == 1) // read key
 				break;
-			if (UnArchiveValueDemo(TABLESINDEX, NULL) == 2) // read value
+
+			ret = UnArchiveValueDemo(TABLESINDEX, NULL);
+
+			if (ret == 3)
+				lua_pushnil(gL);
+			else if (ret == 2) // read value
 				n++;
+
 			if (lua_isnil(gL, -2)) // if key is nil (if a function etc was accidentally saved)
 			{
 				CONS_Alert(CONS_ERROR, "A nil key in table %d was found! (Invalid key type or corrupted save?)\n", i);

@@ -47,12 +47,6 @@
 #include "hardware/hw_main.h"
 #endif
 
-#ifdef PC_DOS
-#include <stdio.h> // for snprintf
-int	snprintf(char *str, size_t n, const char *fmt, ...);
-//int	vsnprintf(char *str, size_t n, const char *fmt, va_list ap);
-#endif
-
 typedef struct
 {
 	char patch[9];
@@ -419,11 +413,11 @@ void Y_IntermissionDrawer(void)
 		{
 			if (widebgpatch && rendermode == render_soft && vid.width / vid.dupx == 400)
 				V_DrawScaledPatch(0, 0, V_SNAPTOLEFT, widebgpatch);
-			else
+			else if (bgpatch)
 				V_DrawScaledPatch(0, 0, 0, bgpatch);
 		}
 	}
-	else
+	else if (bgtile)
 		V_DrawPatchFill(bgtile);
 
 	if (usebuffer) // Fade everything out

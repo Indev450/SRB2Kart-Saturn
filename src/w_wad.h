@@ -22,6 +22,8 @@
 #pragma interface
 #endif
 
+#include <stdarg.h> // hopefully this shouldn't cause any problems...
+
 // a raw entry of the wad directory
 // NOTE: This sits here and not in w_wad.c because p_setup.c makes use of it to load map WADs inside PK3s.
 #if defined(_MSC_VER)
@@ -165,6 +167,7 @@ lumpnum_t W_GetNumForName(const char *name); // like W_CheckNumForName but I_Err
 lumpnum_t W_GetNumForLongName(const char *name);
 lumpnum_t W_CheckNumForNameInBlock(const char *name, const char *blockstart, const char *blockend);
 UINT8 W_LumpExists(const char *name); // Lua uses this.
+UINT8 W_CheckMultipleLumps(const char* lump, ...); // variadic version of above lmao
 
 size_t W_LumpLengthPwad(UINT16 wad, UINT16 lump);
 size_t W_LumpLength(lumpnum_t lumpnum);

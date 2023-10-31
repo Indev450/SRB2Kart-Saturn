@@ -250,6 +250,15 @@ enum hwdsetspecialstate
 };
 typedef enum hwdsetspecialstate hwdspecialstate_t;
 
+// Lactozilla: Shader info
+// Generally set at the start of the frame.
+enum hwdshaderinfo
+{
+	HWD_SHADERINFO_LEVELTIME = 1,
+};
+
+typedef enum hwdshaderinfo hwdshaderinfo_t;
+
 enum hwdportalstate
 {
 	HWD_PORTAL_NORMAL,

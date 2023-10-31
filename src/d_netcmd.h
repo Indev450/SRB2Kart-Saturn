@@ -57,7 +57,7 @@ extern consvar_t cv_joyscale4;
 // splitscreen with second mouse
 extern consvar_t cv_mouse2port;
 extern consvar_t cv_usemouse2;
-#if (defined (__unix__) && !defined (MSDOS)) || defined (UNIXCOMMON)
+#if defined (__unix__) || defined (__APPLE__) || defined (UNIXCOMMON)
 extern consvar_t cv_mouse2opt;
 #endif
 
@@ -110,6 +110,9 @@ extern consvar_t cv_thundershield, cv_hyudoro, cv_pogospring, cv_kitchensink;
 
 extern consvar_t cv_triplesneaker, cv_triplebanana, cv_decabanana;
 extern consvar_t cv_tripleorbinaut, cv_quadorbinaut, cv_dualjawz;
+
+//Lastserver
+extern consvar_t cv_lastserver;
 
 extern consvar_t cv_kartminimap;
 extern consvar_t cv_kartcheck;
