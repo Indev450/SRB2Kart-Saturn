@@ -281,7 +281,7 @@ int lua_glib_new_setter(lua_State *L)
 
 #define _GLIB_DECL_INT_GETTER(T, name) \
     int lua_glib_getter_##name(lua_State *L) { \
-        const T* ptr = (const T*)lua_topointer(L, lua_upvalueindex(1)); \
+        const T* ptr = (const T*)lua_touserdata(L, lua_upvalueindex(1)); \
         lua_pushinteger(L, (lua_Integer)*ptr); \
         return 1; \
     }
@@ -289,21 +289,21 @@ int lua_glib_new_setter(lua_State *L)
 #define _GLIB_DECL_INT_SETTER(T, name) \
     int lua_glib_setter_##name(lua_State *L) { \
         luaL_checktype(L, 1, LUA_TNUMBER); \
-        T* ptr = (T*)lua_topointer(L, lua_upvalueindex(1)); \
+        T* ptr = (T*)lua_touserdata(L, lua_upvalueindex(1)); \
         *ptr = (T)lua_tointeger(L, 1); \
         return 0; \
     }
 
 #define _GLIB_DECL_BOOL_GETTER(T, name) \
     int lua_glib_getter_##name(lua_State *L) { \
-        const T* ptr = (const T*)lua_topointer(L, lua_upvalueindex(1)); \
+        const T* ptr = (const T*)lua_touserdata(L, lua_upvalueindex(1)); \
         lua_pushboolean(L, *ptr != 0); \
         return 1; \
     }
 
 #define _GLIB_DECL_FLOAT_GETTER(T, name) \
     int lua_glib_getter_##name(lua_State *L) { \
-        const T* ptr = (const T*)lua_topointer(L, lua_upvalueindex(1)); \
+        const T* ptr = (const T*)lua_touserdata(L, lua_upvalueindex(1)); \
         lua_pushnumber(L, (lua_Number)*ptr); \
         return 1; \
     }
@@ -311,14 +311,14 @@ int lua_glib_new_setter(lua_State *L)
 #define _GLIB_DECL_FLOAT_SETTER(T, name) \
     int lua_glib_setter_##name(lua_State *L) { \
         luaL_checktype(L, 1, LUA_TNUMBER); \
-        T* ptr = (T*)lua_topointer(L, lua_upvalueindex(1)); \
+        T* ptr = (T*)lua_touserdata(L, lua_upvalueindex(1)); \
         *ptr = (T)lua_tonumber(L, 1); \
         return 0; \
     }
 
 #define _GLIB_DECL_BOOL_SETTER(T, name) \
     int lua_glib_setter_##name(lua_State *L) { \
-        T* ptr = (T*)lua_topointer(L, lua_upvalueindex(1)); \
+        T* ptr = (T*)lua_touserdata(L, lua_upvalueindex(1)); \
         *ptr = (T)lua_toboolean(L, 1); \
         return 0; \
     }
@@ -331,8 +331,6 @@ _GLIB_DECL_INT_GETTER(uint8_t,  u8);
 _GLIB_DECL_INT_GETTER(uint16_t, u16);
 _GLIB_DECL_INT_GETTER(uint32_t, u32);
 _GLIB_DECL_INT_GETTER(uint64_t, u64);
-_GLIB_DECL_FLOAT_GETTER(float, f32);
-_GLIB_DECL_FLOAT_GETTER(double, f64);
 _GLIB_DECL_BOOL_GETTER(uint8_t,  b8);
 _GLIB_DECL_BOOL_GETTER(uint16_t, b16);
 _GLIB_DECL_BOOL_GETTER(uint32_t, b32);
@@ -346,8 +344,6 @@ _GLIB_DECL_INT_SETTER(uint8_t,  u8);
 _GLIB_DECL_INT_SETTER(uint16_t, u16);
 _GLIB_DECL_INT_SETTER(uint32_t, u32);
 _GLIB_DECL_INT_SETTER(uint64_t, u64);
-_GLIB_DECL_FLOAT_SETTER(float, f32);
-_GLIB_DECL_FLOAT_SETTER(double, f64);
 _GLIB_DECL_BOOL_SETTER(uint8_t,  b8);
 _GLIB_DECL_BOOL_SETTER(uint16_t, b16);
 _GLIB_DECL_BOOL_SETTER(uint32_t, b32);
@@ -355,21 +351,21 @@ _GLIB_DECL_BOOL_SETTER(uint64_t, b64);
 
 int lua_glib_setter_fxp(lua_State *L)
 {
-    fixed_t *fxp = (fixed_t*)lua_topointer(L, lua_upvalueindex(1));
+    fixed_t *fxp = (fixed_t*)lua_touserdata(L, lua_upvalueindex(1));
     *fxp = lua_tointeger(L, 1);
     return 0;
 }
 
 int lua_glib_getter_fxp(lua_State *L)
 {
-    const fixed_t *fxp = (const fixed_t*)lua_topointer(L, lua_upvalueindex(1));
+    const fixed_t *fxp = (const fixed_t*)lua_touserdata(L, lua_upvalueindex(1));
     lua_pushfixed(L, *fxp);
     return 1;
 }
 
 int lua_glib_getter_str(lua_State *L)
 {
-    const char *str = (const char*)lua_topointer(L, lua_upvalueindex(1));
+    const char *str = (const char*)lua_touserdata(L, lua_upvalueindex(1));
     lua_pushstring(L, str);
     return 1;
 }

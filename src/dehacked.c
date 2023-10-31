@@ -9272,8 +9272,7 @@ static inline int lib_getenum(lua_State *L)
 	const int UV_MATHLIB = lua_upvalueindex(1);
 	const int GLIB_PROXY = lua_upvalueindex(2);
 
-	const char *word, *p;
-	fixed_t i;
+	const char *word;
 	boolean mathlib = lua_toboolean(L, UV_MATHLIB);
 	if (lua_type(L,2) != LUA_TSTRING)
 		return 0;
@@ -9511,6 +9510,8 @@ static int lua_enumlib_power_get(lua_State *L)
 	{
 		return luaL_error(L, "power '%s' could not be found.\n", lua_tostring(L, 1));
 	}
+
+	return 0;
 }
 
 static int lua_enumlib_kartstuff_get(lua_State *L)
@@ -9532,6 +9533,8 @@ static int lua_enumlib_kartstuff_get(lua_State *L)
 	{
 		return luaL_error(L, "kartstuff '%s' could not be found.\n", lua_tostring(L, 1));
 	}
+
+	return 0;
 }
 
 static int lua_enumlib_action_get(lua_State *L)
@@ -9917,10 +9920,10 @@ int LUA_EnumLib(lua_State *L)
 	PUSHGETTER(gametype, i16);
 	PUSHGETTER(leveltime, u32);
 	PUSHGETTER(curWeather, i32);
-	PUSHGETTER(globalweather, i8);
+	PUSHGETTER(globalweather, u8);
 	PUSHGETTER(levelskynum, i32);
 	PUSHGETTER(globallevelskynum, i32);
-	PUSHGETTER(mapmusname, str);
+	PUSHGETTER((*mapmusname), str);
 	PUSHGETTER(mapmusflags, u16);
 	PUSHGETTER(mapmusposition, u32);
 	PUSHGETTER(gravity, fxp);

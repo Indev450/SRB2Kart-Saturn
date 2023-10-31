@@ -125,7 +125,7 @@ int lua_glib_setter_b64(lua_State *L);
 int lua_glib_setter_fxp(lua_State *L);
 
 #define _LUA_GLIB_DECL_PGETTER(T, name) \
-    static inline void lua_glib_push_##name##_getter(lua_State *L, const T* ptr) { \
+    static inline void lua_glib_push_##name##_getter(lua_State *L, T* ptr) { \
         lua_pushlightuserdata(L, (void*)ptr); \
         lua_pushcclosure(L, lua_glib_getter_##name, 1); \
     }
@@ -138,8 +138,6 @@ int lua_glib_setter_fxp(lua_State *L);
     _LUA_GLIB_DECL_PGETTER(uint16_t, u16);
     _LUA_GLIB_DECL_PGETTER(uint32_t, u32);
     _LUA_GLIB_DECL_PGETTER(uint64_t, u64);
-    _LUA_GLIB_DECL_PGETTER(float, f32);
-    _LUA_GLIB_DECL_PGETTER(double, f64);
     _LUA_GLIB_DECL_PGETTER(char, str);
     _LUA_GLIB_DECL_PGETTER(void, ptr);
     _LUA_GLIB_DECL_PGETTER(uint8_t,  b8);
@@ -163,8 +161,6 @@ int lua_glib_setter_fxp(lua_State *L);
     _LUA_GLIB_DECL_PSETTER(uint16_t, u16);
     _LUA_GLIB_DECL_PSETTER(uint32_t, u32);
     _LUA_GLIB_DECL_PSETTER(uint64_t, u64);
-    _LUA_GLIB_DECL_PSETTER(float, f32);
-    _LUA_GLIB_DECL_PSETTER(double, f64);
     _LUA_GLIB_DECL_PSETTER(uint8_t,  b8);
     _LUA_GLIB_DECL_PSETTER(uint16_t, b16);
     _LUA_GLIB_DECL_PSETTER(uint32_t, b32);
