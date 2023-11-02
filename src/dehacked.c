@@ -653,6 +653,9 @@ static void readfreeslots(MYFILE *f)
 				for (i = 0; i < NUMSTATEFREESLOTS; i++)
 					if (!FREE_STATES[i]) {
 						CONS_Printf("State S_%s allocated.\n",word);
+
+						LUA_InvalidateMathlibStateCache(word);
+
 						FREE_STATES[i] = Z_Malloc(strlen(word)+1, PU_STATIC, NULL);
 						strcpy(FREE_STATES[i],word);
 						freeslotusage[0][0]++;
@@ -9212,6 +9215,11 @@ static inline int lib_freeslot(lua_State *L)
 			for (i = 0; i < NUMSTATEFREESLOTS; i++)
 				if (!FREE_STATES[i]) {
 					CONS_Printf("State S_%s allocated.\n",word);
+
+					lua_pushcfunction(L, lua_glib_invalidate_cache);
+					lua_pushfstring(L, "S_%s", word);
+					lua_call(L, 1, 0);
+
 					FREE_STATES[i] = Z_Malloc(strlen(word)+1, PU_STATIC, NULL);
 					strcpy(FREE_STATES[i],word);
 					freeslotusage[0][0]++;

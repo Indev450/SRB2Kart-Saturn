@@ -415,6 +415,16 @@ void LUA_InvalidateMathlibMobjCache(const char *name)
 	lua_call(mL, 1, 0);
 }
 
+void LUA_InvalidateMathlibStateCache(const char *name)
+{
+	// No state => no cache => nothing to invalidate :3
+	if (mL == NULL) return;
+
+	lua_pushcfunction(mL, lua_glib_invalidate_cache);
+	lua_pushfstring(mL, "S_%s", name);
+	lua_call(mL, 1, 0);
+}
+
 // Takes a pointer, any pointer, and a metatable name
 // Creates a userdata for that pointer with the given metatable
 // Pushes it to the stack and stores it in the registry.
