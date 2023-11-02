@@ -247,6 +247,23 @@ int lua_glib_new_enum(lua_State *L)
     return 0;
 }
 
+int lua_glib_invalidate_cache(lua_State *L)
+{
+	luaL_checktype(L, 1, LUA_TSTRING);
+
+	lua_glib_push_db(L);
+
+	lua_pushliteral(L, GLIB_DATABASE_CACHE);
+	lua_gettable(L, -2);
+
+	lua_pushvalue(L, 1);
+	lua_pushnil(L);
+
+	lua_settable(L, -3);
+
+	return 0;
+}
+
 int lua_glib_new_getter(lua_State *L)
 {
     luaL_checktype(L, 1, LUA_TSTRING);

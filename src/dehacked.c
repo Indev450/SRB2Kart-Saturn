@@ -667,6 +667,9 @@ static void readfreeslots(MYFILE *f)
 				for (i = 0; i < NUMMOBJFREESLOTS; i++)
 					if (!FREE_MOBJS[i]) {
 						CONS_Printf("MobjType MT_%s allocated.\n",word);
+
+						LUA_InvalidateMathlibMobjCache(word);
+
 						FREE_MOBJS[i] = Z_Malloc(strlen(word)+1, PU_STATIC, NULL);
 						strcpy(FREE_MOBJS[i],word);
 						freeslotusage[1][0]++;
@@ -9225,6 +9228,11 @@ static inline int lib_freeslot(lua_State *L)
 			for (i = 0; i < NUMMOBJFREESLOTS; i++)
 				if (!FREE_MOBJS[i]) {
 					CONS_Printf("MobjType MT_%s allocated.\n",word);
+
+					lua_pushcfunction(L, lua_glib_invalidate_cache);
+					lua_pushfstring(L, "MT_%s", word);
+					lua_call(L, 1, 0);
+
 					FREE_MOBJS[i] = Z_Malloc(strlen(word)+1, PU_STATIC, NULL);
 					strcpy(FREE_MOBJS[i],word);
 					freeslotusage[1][0]++;
@@ -9383,12 +9391,22 @@ static int lua_enumlib_state_get(lua_State *L)
 static int lua_enumlib_mobjtype_get(lua_State *L)
 {
 	const char *s = lua_tostring(L, 1);
-	for (int i = 0; i < NUMMOBJFREESLOTS; i++)
+	for (mobjtype_t i = 0; i < NUMMOBJFREESLOTS; i++)
 	{
-        if (!FREE_MOBJS[i]) continue;
+		if (!FREE_MOBJS[i])
+			break;
 		if (fastcmp(s+3, FREE_MOBJS[i]))
 		{
 			lua_pushinteger(L, MT_FIRSTFREESLOT+i);
+			return 1;
+		}
+	}
+
+	for (mobjtype_t i = 0; i < MT_FIRSTFREESLOT; i++)
+	{
+		if (fastcmp(s, MOBJTYPE_LIST[i]))
+		{
+			lua_pushinteger(L, i);
 			return 1;
 		}
 	}

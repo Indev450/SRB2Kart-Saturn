@@ -23,6 +23,11 @@ int lua_glib_append_cache(lua_State *L);
  */
 int lua_glib_new_enum(lua_State *L);
 
+/* Invalidate cache entry.
+ * @param L[1] Name of entry. ("MT_MYOBJECT" for example)
+ */
+int lua_glib_invalidate_cache(lua_State *L);
+
 /**
  *  Create a new getter.
  * @param L[1] The name of the getter.
