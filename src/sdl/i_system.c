@@ -223,6 +223,59 @@ static void printsignal(FILE *fp, INT32 num)
 		}
 }
 
+typedef struct bt_out_buf_s {
+	char *pos;
+	size_t size;
+	unsigned n;
+} bt_out_buf_t;
+
+static void bt_syminfo_cb(void *data, uintptr_t pc, const char *symname, uintptr_t symval, uintptr_t symsize)
+{
+	bt_out_buf_t *buf = (bt_out_buf_t*)data;
+
+	if (!symname)
+		symname = "???";
+
+	int n = snprintf(buf->pos, buf->size, "%p %s\n", (void*)pc, symname);
+
+	if (n <= 0)
+	{
+		buf->size = 0;
+		return;
+	}
+
+	buf->pos += n;
+	buf->size -= n;
+}
+
+static int bt_simple_cb(void *data, uintptr_t pc)
+{
+	bt_out_buf_t *buf = (bt_out_buf_t*)data;
+
+	backtrace_syminfo(bt_state, pc, bt_syminfo_cb, NULL, data);
+
+	if (!buf->size) return 1;
+
+	buf->n++;
+
+	return 0;
+}
+
+static void backtrace_print_simple(FILE *fp)
+{
+	const size_t BUFSIZE = 8192;
+	char backtrace[BUFSIZE];
+
+	bt_out_buf_t buf;
+	buf.pos = backtrace;
+	buf.size = BUFSIZE;
+	buf.n = 1;
+
+	backtrace_simple(bt_state, 2, bt_simple_cb, NULL, (void*)&buf);
+
+	fputs(backtrace, fp);
+}
+
 static void write_backtrace_libbacktrace(INT32 num)
 {
 	FILE *out = fopen(va("%s" PATHSEP "%s", srb2home, "crash-log-libbacktrace.txt"), "a");
@@ -248,7 +301,13 @@ static void write_backtrace_libbacktrace(INT32 num)
 
 	fprintf(out, "\nBacktrace:\n");
 
+#ifdef _DEBUG
+	// Full backtrace, prints files and line numbers
 	backtrace_print(bt_state, 2, out);
+#else
+	// Simple backtrace, only prints function names
+	backtrace_print_simple(out);
+#endif
 
 	if (out != stderr)
 	{
