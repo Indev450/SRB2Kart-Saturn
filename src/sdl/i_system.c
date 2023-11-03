@@ -202,12 +202,33 @@ static char returnWadPath[256];
 // TODO - move this to some header file instead
 extern struct backtrace_state *bt_state;
 
+static void printsignal(FILE *fp, INT32 num)
+{
+	switch (num)
+		{
+		case SIGILL:
+			fprintf(fp, "SIGILL - illegal instruction - invalid function image");
+			break;
+		case SIGFPE:
+			fprintf(fp, "SIGFPE - mathematical exception");
+			break;
+		case SIGSEGV:
+			fprintf(fp, "SIGSEGV - segment violation");
+			break;
+		case SIGABRT:
+			fprintf(fp, "SIGABRT - abnormal termination triggered by abort call");
+			break;
+		default:
+			fprintf(fp, "Signal number %d", num);
+		}
+}
+
 static void write_backtrace_libbacktrace(INT32 num)
 {
 	FILE *out = fopen(va("%s" PATHSEP "%s", srb2home, "crash-log-libbacktrace.txt"), "a");
 
 	time_t rawtime;
-	struct tm timeinfo;
+	struct tm *timeinfo;
 	char timestr[64];
 
 	if (!out)
@@ -218,13 +239,14 @@ static void write_backtrace_libbacktrace(INT32 num)
 
 	// Get the current time as a string.
 	time(&rawtime);
-	localtime_r(&rawtime, &timeinfo);
-	strftime(timestr, 64, "%a, %d %b %Y %T %z", &timeinfo);
+	timeinfo = localtime(&rawtime);
+	strftime(timestr, 64, "%a, %d %b %Y %T %z", timeinfo);
 
 	fprintf(out, "------------------------\n\n");
 	fprintf(out, "Time of crash: %s\n", timestr);
 
-	fprintf(out, "Caused by: %s\n", strsignal(num));
+	fprintf(out, "Caused by: ");
+	printsignal(out, num);
 
 	fprintf(out, "\nBacktrace:\n");
 
