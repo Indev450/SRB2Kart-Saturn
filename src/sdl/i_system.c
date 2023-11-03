@@ -67,12 +67,6 @@ typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 #define _MATH_DEFINES_DEFINED
 #include "SDL.h"
 
-#ifdef HAVE_LIBBACKTRACE
-#include <backtrace.h>
-// TODO - move this to some header file instead
-extern struct backtrace_state *bt_state;
-#endif
-
 #ifdef HAVE_TTF
 #include "i_ttf.h"
 #endif
@@ -145,8 +139,11 @@ extern struct backtrace_state *bt_state;
 
 #if defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON)
 #include <execinfo.h>
-#include <time.h>
 #define UNIXBACKTRACE
+#endif
+
+#if defined(UNIXBACKTRACE) || defined(HAVE_LIBBACKTRACE)
+#include <time.h>
 #endif
 
 // Locations for searching the srb2.srb
@@ -201,6 +198,48 @@ static char returnWadPath[256];
 // Mumble context string
 #include "../d_clisrv.h"
 #include "../byteptr.h"
+#endif
+
+#ifdef HAVE_LIBBACKTRACE
+#include <backtrace.h>
+// TODO - move this to some header file instead
+extern struct backtrace_state *bt_state;
+
+static void write_backtrace_libbacktrace(INT32 num)
+{
+	FILE *out = fopen(va("%s" PATHSEP "%s", srb2home, "crash-log-libbacktrace.txt"), "a");
+
+	time_t rawtime;
+	struct tm timeinfo;
+	char timestr[64];
+
+	if (!out)
+	{
+		fprintf(stderr, "\nWARNING: Couldn't open crash log for writing! Make sure your permissions are correct. Please save the below report!\n");
+		out = stderr;
+	}
+
+	// Get the current time as a string.
+	time(&rawtime);
+	localtime_r(&rawtime, &timeinfo);
+	strftime(timestr, 64, "%a, %d %b %Y %T %z", &timeinfo);
+
+	fprintf(out, "------------------------\n\n");
+	fprintf(out, "Time of crash: %s\n", timestr);
+
+	fprintf(out, "Caused by: %s\n", strsignal(num));
+
+	fprintf(out, "\nBacktrace:\n");
+
+	backtrace_print(bt_state, 2, out);
+
+	if (out != stderr)
+	{
+		fclose(out);
+		fprintf(stderr, "Crash report created, find crash-log-libbacktrace.txt in your SRB2Kart directory\n");
+	}
+}
+
 #endif
 
 /**	\brief	The JoyReset function
@@ -403,13 +442,7 @@ FUNCNORETURN static ATTRNORETURN void signal_handler(INT32 num)
 	D_QuitNetGame(); // Fix server freezes
 
 #ifdef HAVE_LIBBACKTRACE
-	FILE *out = fopen(va("%s" PATHSEP "%s", srb2home, "crash-log-libbacktrace.txt"), "w");
-
-	if (out)
-	{
-		backtrace_print(bt_state, 2, out);
-		fclose(out);
-	}
+	write_backtrace_libbacktrace(num);
 #endif
 
 #ifdef UNIXBACKTRACE
@@ -810,13 +843,7 @@ static void signal_handler_child(INT32 num)
 {
 
 #ifdef HAVE_LIBBACKTRACE
-	FILE *out = fopen(va("%s" PATHSEP "%s", srb2home, "crash-log-libbacktrace.txt"), "w");
-
-	if (out)
-	{
-		backtrace_print(bt_state, 2, out);
-		fclose(out);
-	}
+	write_backtrace_libbacktrace(num);
 #endif
 
 #ifdef UNIXBACKTRACE
