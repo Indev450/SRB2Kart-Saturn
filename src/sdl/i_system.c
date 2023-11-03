@@ -43,6 +43,7 @@ typedef HANDLE (WINAPI *p_OpenFileMappingA) (DWORD, BOOL, LPCSTR);
 typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 #endif
 #include <stdio.h>
+#include <time.h>
 #include <stdlib.h>
 #include <string.h>
 #ifdef __GNUC__
@@ -140,10 +141,6 @@ typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 #if defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON)
 #include <execinfo.h>
 #define UNIXBACKTRACE
-#endif
-
-#if defined(UNIXBACKTRACE) || defined(HAVE_LIBBACKTRACE)
-#include <time.h>
 #endif
 
 // Locations for searching the srb2.srb
