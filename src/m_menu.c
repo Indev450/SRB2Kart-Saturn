@@ -146,6 +146,8 @@ boolean browselocalskins = false;
 boolean menuactive = false;
 boolean fromlevelselect = false;
 
+static INT32 coolalphatimer = 9;
+
 typedef enum
 {
 	LLM_CREATESERVER,
@@ -1743,13 +1745,13 @@ static menuitem_t OP_SaturnMenu[] =
 static const char* OP_SaturnTooltips[] =
 {
 	NULL,
-	"How long can the game wait before\nit kicks you out from the server\nconnecting screen.",
+	"How long can the game wait before it kicks you out from the server\nconnecting screen.",
 	"How much speen do you want?",
-	"Displays the input display outside of\nRecord Attack. Also adjusts the position\nscale to match.",
+	"Displays the input display outside ofRecord Attack. Also adjusts the\nposition scale to match.",
 	"Enable the smaller speedometer.",
 	"Enable colorized hud.",
-	"Enable the colorized itembox when colorized\nhud is enabled.",
-	"The color to use instead of the player color\nwhen colorized hud is enabled.",
+	"Enable the colorized itembox when colorized hud is enabled.",
+	"The color to use instead of the player color when colorized hud is enabled.",
 	"Show the big 'LAP' text on a lap change.",
 	"Show player names on the minimap.",
 	"Minimize the player icons on the minimap.",
@@ -3318,6 +3320,7 @@ boolean M_Responder(event_t *ev)
 		case KEY_DOWNARROW:
 			M_NextOpt();
 			S_StartSound(NULL, sfx_menu1);
+			coolalphatimer = 9;
 			/*if (currentMenu == &SP_PlayerDef)
 			{
 				Z_Free(char_notes);
@@ -3328,6 +3331,7 @@ boolean M_Responder(event_t *ev)
 		case KEY_UPARROW:
 			M_PrevOpt();
 			S_StartSound(NULL, sfx_menu1);
+			coolalphatimer = 9;
 			/*if (currentMenu == &SP_PlayerDef)
 			{
 				Z_Free(char_notes);
@@ -4484,7 +4488,7 @@ static void M_DrawGenericBackgroundMenu(void)
 #define scrollareaheight 72
 
 // TODO: This is fucking terrible.
-static void M_DrawSplitText(INT32 x, INT32 y, INT32 option, const char* str, INT32 box_x) 
+static void M_DrawSplitText(INT32 x, INT32 y, INT32 option, const char* str, INT32 box_x, INT32 alpha) 
 {
 	const char* icopy = strdup(str);
 	const char** clines = NULL;
@@ -4510,21 +4514,22 @@ static void M_DrawSplitText(INT32 x, INT32 y, INT32 option, const char* str, INT
 	free(icopy);
 
 	INT16 yoffset;
-	yoffset = (((5*10 - num_lines*10)) / 2);
+	yoffset = (((5*10 - num_lines*10)));
 
 	// Draw BG first,,,
 	for (int i = 0; i < num_lines; i++) 
 	{
-		M_DrawTextBox(box_x, y + yoffset - 7, MAXSTRINGLENGTH - 2, 1);
-		yoffset += 10;
+		V_DrawFill(0, (y + yoffset - 6)+5, vid.width, 11, 239|V_SNAPTOBOTTOM|V_SNAPTOLEFT);
+		yoffset += 11;
 	}
 
-	yoffset = (((5*10 - num_lines*10)) / 2);
+	yoffset = (((5*10 - num_lines*10)));
 
 	// THEN the text
 	for (int i = 0; i < num_lines; i++) 
 	{
         V_DrawCenteredThinString(x, y + yoffset, option, clines[i]);
+		V_DrawCenteredThinString(x, y + yoffset, option|V_YELLOWMAP|((9 - alpha) << V_ALPHASHIFT), clines[i]);
 		yoffset += 10;
         // Remember to free the memory for each line when you're done with it.
         free((void*)clines[i]);
@@ -4669,7 +4674,9 @@ static void M_DrawGenericScrollMenu(void)
 	{
 		if (!(OP_SaturnTooltips[itemOn] == NULL)) 
 		{
-			M_DrawSplitText(BASEVIDWIDTH / 2, 140, V_ALLOWLOWERCASE, OP_SaturnTooltips[itemOn], 30);
+			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_SaturnTooltips[itemOn], 30, coolalphatimer);
+			if (coolalphatimer > 0 && interpTimerHackAllow)
+				coolalphatimer--;
 		}
 	}
 }
