@@ -67,6 +67,12 @@ typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 #define _MATH_DEFINES_DEFINED
 #include "SDL.h"
 
+#ifdef HAVE_LIBBACKTRACE
+#include <backtrace.h>
+// TODO - move this to some header file instead
+extern struct backtrace_state *bt_state;
+#endif
+
 #ifdef HAVE_TTF
 #include "i_ttf.h"
 #endif
@@ -395,6 +401,17 @@ static void I_ReportSignal(int num, int coredumped)
 FUNCNORETURN static ATTRNORETURN void signal_handler(INT32 num)
 {
 	D_QuitNetGame(); // Fix server freezes
+
+#ifdef HAVE_LIBBACKTRACE
+	FILE *out = fopen(va("%s" PATHSEP "%s", srb2home, "crash-log-libbacktrace.txt"), "w");
+
+	if (out)
+	{
+		backtrace_print(bt_state, 2, out);
+		fclose(out);
+	}
+#endif
+
 #ifdef UNIXBACKTRACE
 	write_backtrace(num);
 #endif
@@ -791,6 +808,17 @@ static void I_RegisterSignals (void)
 #ifdef NEWSIGNALHANDLER
 static void signal_handler_child(INT32 num)
 {
+
+#ifdef HAVE_LIBBACKTRACE
+	FILE *out = fopen(va("%s" PATHSEP "%s", srb2home, "crash-log-libbacktrace.txt"), "w");
+
+	if (out)
+	{
+		backtrace_print(bt_state, 2, out);
+		fclose(out);
+	}
+#endif
+
 #ifdef UNIXBACKTRACE
 	write_backtrace(num);
 #endif
