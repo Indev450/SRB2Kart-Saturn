@@ -229,7 +229,6 @@ static void write_backtrace_libbacktrace(INT32 num)
 
 	time_t rawtime;
 	struct tm *timeinfo;
-	char timestr[64];
 
 	if (!out)
 	{
@@ -240,10 +239,9 @@ static void write_backtrace_libbacktrace(INT32 num)
 	// Get the current time as a string.
 	time(&rawtime);
 	timeinfo = localtime(&rawtime);
-	strftime(timestr, 64, "%a, %d %b %Y %T %z", timeinfo);
 
 	fprintf(out, "------------------------\n\n");
-	fprintf(out, "Time of crash: %s\n", timestr);
+	fprintf(out, "Time of crash: %s\n", asctime(timeinfo));
 
 	fprintf(out, "Caused by: ");
 	printsignal(out, num);
