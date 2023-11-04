@@ -72,8 +72,8 @@
 - Many many more crash fixes and other bugfixes to the basegame (too many too list all of them here; check the changelogs for more information)
 
 - Crash Backtraces have been replaced by libbacktrace (except for 32bit Windows builds)
- - Crashlogs now contain alot more informations. and even more if your build has debug symbols
- - Also allows 64bit Windows builds to produce Crashlogs!
+Crashlogs now contain alot more informations. and even more if your build has debug symbols
+Also allows 64bit Windows builds to produce Crashlogs!
 
 ## MISC
 - Bird's Camara Tilting feature is no longer turned on by default
