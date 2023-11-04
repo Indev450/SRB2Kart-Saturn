@@ -7,9 +7,11 @@
 - Sprites player rotation on slopes; going on hills, levitate, going down, and so on alters your sprites (configurable)
 - You can alter all the base kart HUD element offsets on the fly in the Saturn Options settings menu
 - `addfilelocal` Command, for those who want to use things like their custom hud in netgames (Same as addfile but completely client sided)
+- Palette rendering, make the OpenGL renderer (almost) look like software mode!
 - OpenMPT for Tracker module playback instead of GME
   - Fixes looping and sounds better
   - Allows filter configuration
+- Colourize your Kart HUD, to either your player color or whichever colour you like! (optional / requieres extra2.kart file)
 - The minimal brightness with Shaders can be configured, now you can seeeee in dark areas (0-255 , uses Sector brightness values)
 - Lua HUD hooks for Intermission (ex: You can make hostmod votes still visible during intermission!)
 - Lua HUD hooks for Vote Screen (ex: You can make hostmod votes still visible during map vote screen!)
@@ -17,9 +19,12 @@
 - Smaller Speedometer (optional / requieres extra.kart file)
 - Record Attack input display can now be used everywhere
 - Smaller minimap icons and also show player names on the minimap (toggable)
+- Support for animated votescreens!
 - `showmusiccredit` command, shows you the current music track again
 - `listskins` show a list of all skins currently loaded
 - Visual Portals from Haya's HEP Client
+- Horizonline effect in OpenGL (watch the endless bricks on SNES Bowsers Castle!)
+- Localskins! use whatever skin you like!
 - Toggable lowercase menu's also from Haya's HEP client
 - Everything that Galaxy has
 
@@ -39,6 +44,9 @@
 - Toggable Lap animation
 - Main menu shows the current renderer being used
 - MSAA and A2C Antialiasing support (Configurable in renderer.txt file)
+- A simple button to rejoin your last visited server
+- Ability to show ALL maps in the mapselect screen, this includes hidden or hellmaps "showallmaps yes/no"
+- Ability to toggle the Stagetitlecard "maptitles on/off"
 
 ## Performance / Debugging
 
@@ -57,6 +65,11 @@
 - The annoying depraction messages for `P_TeleportMove` and `P_AproxDistance` have been silenced
 - Silenced the annoying "cant find next map..." messages as theyre super useless and annoying anyways
 - Added a small cooldown on `map` command due to spamming causing a SIGSEGV
+- Many bugfixes to the Software renderer, so its much less prone to crashing
+- Many bugfixes to the OpenGL renderer (too many too list all of them here; check the changelogs for more information)
+- Bugfixes to the soundsystem, mainly regarding Sound muting
+- Refactored Zone Memory Allocations (helps a bit with large maps)
+- Many many more crash fixes and other bugfixes to the basegame (too many too list all of them here; check the changelogs for more information)
 
 ## MISC
 - Bird's Camara Tilting feature is no longer turned on by default
@@ -67,12 +80,16 @@
 - A2C antialiasing makes transparent surfaces even more transparent
 - You tell us! c:
 
+## Note
+Check the LUASTUFF file for more information on all the lua things Saturn has.
+
 ## Dependencies
 - SDL2 (Linux/OS X only)
 - SDL2-Mixer (Linux/OS X only)
 - libupnp (Linux/OS X only)
 - libgme (Linux/OS X only)
 - libopenmpt (Linux/OS X only)
+- libbacktrace (Linux/OS X only)
 
 ## Compiling
 
