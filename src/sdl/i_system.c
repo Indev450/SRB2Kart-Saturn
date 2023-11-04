@@ -289,7 +289,7 @@ static void bt_error_cb(void *data, const char *msg, int errnum)
 
 static void write_backtrace(INT32 num)
 {
-	FILE *out = fopen(va("%s" PATHSEP "%s", srb2home, "crash-log.txt"), "a");
+	FILE *out = fopen(va("%s" PATHSEP "%s", srb2home, "srb2kart-crash-log.txt"), "a");
 
 	time_t rawtime;
 	struct tm *timeinfo;
@@ -314,6 +314,12 @@ static void write_backtrace(INT32 num)
 	timeinfo = localtime(&rawtime);
 
 	fprintf(out, "------------------------\n\n");
+
+	fprintf(out, "Program name: %s %s\n", SRB2APPLICATION, VERSIONSTRING);
+
+	if (compdate && comptime && comprevision && compbranch)
+	fprintf(out, "Compiled: %s %s, commit %s, branch %s\n", compdate, comptime, comprevision, compbranch);
+
 	fprintf(out, "Time of crash: %s\n", asctime(timeinfo));
 
 	fprintf(out, "Caused by: ");
@@ -335,7 +341,7 @@ static void write_backtrace(INT32 num)
 	if (out != stderr)
 	{
 		fclose(out);
-		fprintf(stderr, "Crash report created, find crash-log.txt in your SRB2Kart directory\n");
+		fprintf(stderr, "Crash report created, find srb2kart-crash-log.txt in your SRB2Kart directory\n");
 	}
 }
 
