@@ -2579,8 +2579,15 @@ void HU_drawPing(INT32 x, INT32 y, UINT32 lag, INT32 flags)
 	gfxnum = Ping_gfx_num(lag);
 
 	if (measureid == 1)
-		V_DrawScaledPatch(x+11 - pingmeasure[measureid]->width, y+9, flags, pingmeasure[measureid]);
-	V_DrawScaledPatch(x+2, y, flags, pinggfx[gfxnum]);
+	{
+		if (cv_ticrate.value == 2){
+			V_DrawScaledPatch(x+12 - pingmeasure[measureid]->width, y+22, flags, pingmeasure[measureid]);
+			V_DrawScaledPatch(x+4, y+13, flags, pinggfx[gfxnum]);
+		}else{
+			V_DrawScaledPatch(x+12 - pingmeasure[measureid]->width, y+9, flags, pingmeasure[measureid]);
+			V_DrawScaledPatch(x+4, y+2, flags, pinggfx[gfxnum]);
+		}	
+	}
 
 	if (servermaxping && lag > servermaxping && hu_tick < 4)
 	{
@@ -2592,8 +2599,12 @@ void HU_drawPing(INT32 x, INT32 y, UINT32 lag, INT32 flags)
 	{
 		lag = (INT32)(lag * (1000.00f / TICRATE));
 	}
-
-	x = V_DrawPingNum(x + (measureid == 1 ? 11 - pingmeasure[measureid]->width : 10), y+9, flags, lag, colormap);
+	
+	if (cv_ticrate.value == 2){
+		x = V_DrawPingNum(x + (measureid == 1 ? 11 - pingmeasure[measureid]->width : 10), y+22, flags, lag, colormap);
+	}else{
+		x = V_DrawPingNum(x + (measureid == 1 ? 11 - pingmeasure[measureid]->width : 10), y+9, flags, lag, colormap);
+	}
 
 	if (measureid == 0)
 		V_DrawScaledPatch(x+1 - pingmeasure[measureid]->width, y+9, flags, pingmeasure[measureid]);
