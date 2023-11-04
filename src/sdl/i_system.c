@@ -224,13 +224,16 @@ static void printsignal(FILE *fp, INT32 num)
 }
 
 typedef struct bt_out_buf_s {
+	boolean error;
 	char *pos;
 	size_t size;
-	unsigned n;
 } bt_out_buf_t;
 
 static void bt_syminfo_cb(void *data, uintptr_t pc, const char *symname, uintptr_t symval, uintptr_t symsize)
 {
+	(void)symval;
+	(void)symsize;
+
 	bt_out_buf_t *buf = (bt_out_buf_t*)data;
 
 	if (!symname)
@@ -256,24 +259,37 @@ static int bt_simple_cb(void *data, uintptr_t pc)
 
 	if (!buf->size) return 1;
 
-	buf->n++;
+	return 0;
+}
+
+static int bt_full_cb(void *data, uintptr_t pc, const char *filename, int lineno, const char *function)
+{
+	bt_out_buf_t *buf = (bt_out_buf_t*)data;
+
+	if (!filename) filename = "???";
+	if (!function) function = "???";
+
+	int n = snprintf(buf->pos, buf->size, "%p %s\n\t%s:%d\n", (void*)pc, function, filename, lineno);
+
+	if (n <= 0) return 1;
+
+	buf->pos += n;
+	buf->size -= n;
+
+	if (!buf->size) return 1;
 
 	return 0;
 }
 
-static void backtrace_print_simple(FILE *fp)
+static void bt_error_cb(void *data, const char *msg, int errnum)
 {
-	const size_t BUFSIZE = 8192;
-	char backtrace[BUFSIZE];
+	(void)msg; // We don't need this
 
-	bt_out_buf_t buf;
-	buf.pos = backtrace;
-	buf.size = BUFSIZE;
-	buf.n = 1;
+	bt_out_buf_t *buf = (bt_out_buf_t*)data;
 
-	backtrace_simple(bt_state, 2, bt_simple_cb, NULL, (void*)&buf);
-
-	fputs(backtrace, fp);
+	// No debug info
+	if (errnum == -1)
+		buf->error = true;
 }
 
 static void write_backtrace_libbacktrace(INT32 num)
@@ -282,6 +298,15 @@ static void write_backtrace_libbacktrace(INT32 num)
 
 	time_t rawtime;
 	struct tm *timeinfo;
+
+	const size_t BUFSIZE = 8192;
+	char backtrace[BUFSIZE];
+
+	bt_out_buf_t buf;
+	buf.error = false;
+	buf.pos = backtrace;
+	buf.size = BUFSIZE;
+
 
 	if (!out)
 	{
@@ -301,13 +326,16 @@ static void write_backtrace_libbacktrace(INT32 num)
 
 	fprintf(out, "\nBacktrace:\n");
 
-#ifdef _DEBUG
-	// Full backtrace, prints files and line numbers
-	backtrace_print(bt_state, 2, out);
-#else
-	// Simple backtrace, only prints function names
-	backtrace_print_simple(out);
-#endif
+	// Try to get full backtrace, it will print files and line numbers
+	backtrace_full(bt_state, 2, bt_full_cb, bt_error_cb, (void*)&buf);
+
+	if (buf.error)
+	{
+		// Fall back to simple backtrace, only prints function names
+		backtrace_simple(bt_state, 2, bt_simple_cb, NULL, (void*)&buf);
+	}
+
+	fputs(backtrace, out);
 
 	if (out != stderr)
 	{
