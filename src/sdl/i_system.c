@@ -138,11 +138,6 @@ typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 #include <errno.h>
 #endif
 
-#if defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON)
-#include <execinfo.h>
-#define UNIXBACKTRACE
-#endif
-
 // Locations for searching the srb2.srb
 #if defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON)
 #define DEFAULTWADLOCATION1 "/usr/local/share/games/SRB2Kart"
@@ -292,9 +287,9 @@ static void bt_error_cb(void *data, const char *msg, int errnum)
 		buf->error = true;
 }
 
-static void write_backtrace_libbacktrace(INT32 num)
+static void write_backtrace(INT32 num)
 {
-	FILE *out = fopen(va("%s" PATHSEP "%s", srb2home, "crash-log-libbacktrace.txt"), "a");
+	FILE *out = fopen(va("%s" PATHSEP "%s", srb2home, "crash-log.txt"), "a");
 
 	time_t rawtime;
 	struct tm *timeinfo;
@@ -340,7 +335,7 @@ static void write_backtrace_libbacktrace(INT32 num)
 	if (out != stderr)
 	{
 		fclose(out);
-		fprintf(stderr, "Crash report created, find crash-log-libbacktrace.txt in your SRB2Kart directory\n");
+		fprintf(stderr, "Crash report created, find crash-log.txt in your SRB2Kart directory\n");
 	}
 }
 
@@ -407,85 +402,6 @@ SDL_bool framebuffer = SDL_FALSE;
 
 UINT8 keyboard_started = false;
 
-#ifdef UNIXBACKTRACE
-
-static void bt_write_file(int fd, const char *string) {
-	ssize_t written = 0;
-	ssize_t sourcelen = strlen(string);
-
-	while (fd != -1 && (written != -1 && errno != EINTR) && written < sourcelen)
-		written = write(fd, string, sourcelen);
-}
-
-static void bt_write_stderr(const char *string) {
-	bt_write_file(STDERR_FILENO, string);
-}
-
-static void bt_write_all(int fd, const char *string) {
-	bt_write_file(fd, string);
-	bt_write_file(STDERR_FILENO, string);
-}
-
-static void write_backtrace(INT32 signal)
-{
-	int fd = -1;
-	time_t rawtime;
-	struct tm timeinfo;
-	size_t bt_size;
-
-	enum { BT_SIZE = 1024, STR_SIZE = 32 };
-	void *funcptrs[BT_SIZE];
-	char timestr[STR_SIZE];
-
-	const char *filename = va("%s" PATHSEP "%s", srb2home, "crash-log.txt");
-
-	fd = open(filename, O_CREAT|O_APPEND|O_RDWR, S_IRUSR|S_IWUSR);
-
-	if (fd == -1) // File handle error
-		bt_write_stderr("\nWARNING: Couldn't open crash log for writing! Make sure your permissions are correct. Please save the below report!\n");
-
-	// Get the current time as a string.
-	time(&rawtime);
-	localtime_r(&rawtime, &timeinfo);
-	strftime(timestr, STR_SIZE, "%a, %d %b %Y %T %z", &timeinfo);
-
-	bt_write_file(fd, "------------------------\n"); // Nice looking seperator
-
-	bt_write_all(fd, "\n"); // Newline to look nice for both outputs.
-	bt_write_all(fd, "An error occurred within SRB2! Send this stack trace to someone who can help!\n");
-
-	if (fd != -1) // If the crash log exists,
-		bt_write_stderr("(Or find crash-log.txt in your SRB2 directory.)\n"); // tell the user where the crash log is.
-
-	// Tell the log when we crashed.
-	bt_write_file(fd, "Time of crash: ");
-	bt_write_file(fd, timestr);
-	bt_write_file(fd, "\n");
-
-	// Give the crash log the cause and a nice 'Backtrace:' thing
-	// The signal is given to the user when the parent process sees we crashed.
-	bt_write_file(fd, "Cause: ");
-	bt_write_file(fd, strsignal(signal));
-	bt_write_file(fd, "\n"); // Newline for the signal name
-
-	bt_write_all(fd, "\nBacktrace:\n");
-
-	// Flood the output and log with the backtrace
-	bt_size = backtrace(funcptrs, BT_SIZE);
-	backtrace_symbols_fd(funcptrs, bt_size, fd);
-	backtrace_symbols_fd(funcptrs, bt_size, STDERR_FILENO);
-
-	bt_write_file(fd, "\n"); // Write another newline to the log so it looks nice :)
-
-	if (fd != -1) {
-		fsync(fd); // reaaaaally make sure we got that data written.
-		close(fd);
-	}
-}
-
-#endif // UNIXBACKTRACE
-
-
 static void I_ReportSignal(int num, int coredumped)
 {
 	//static char msg[] = "oh no! back to reality!\r\n";
@@ -546,12 +462,9 @@ FUNCNORETURN static ATTRNORETURN void signal_handler(INT32 num)
 	D_QuitNetGame(); // Fix server freezes
 
 #ifdef HAVE_LIBBACKTRACE
-	write_backtrace_libbacktrace(num);
-#endif
-
-#ifdef UNIXBACKTRACE
 	write_backtrace(num);
 #endif
+
 	I_ReportSignal(num, 0);
 	I_ShutdownSystem();
 	signal(num, SIG_DFL);               //default signal action
@@ -947,10 +860,6 @@ static void signal_handler_child(INT32 num)
 {
 
 #ifdef HAVE_LIBBACKTRACE
-	write_backtrace_libbacktrace(num);
-#endif
-
-#ifdef UNIXBACKTRACE
 	write_backtrace(num);
 #endif
 
