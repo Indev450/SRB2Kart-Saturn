@@ -43,6 +43,7 @@ typedef HANDLE (WINAPI *p_OpenFileMappingA) (DWORD, BOOL, LPCSTR);
 typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 #endif
 #include <stdio.h>
+#include <time.h>
 #include <stdlib.h>
 #include <string.h>
 #ifdef __GNUC__
@@ -90,7 +91,7 @@ typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 #include <kvm.h>
 #endif
 #include <nlist.h>
-#include <sys/vmmeter.h>
+#include <sys/sysctl.h>
 #endif
 #endif
 
@@ -135,12 +136,6 @@ typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 
 #ifndef errno
 #include <errno.h>
-#endif
-
-#if defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON)
-#include <execinfo.h>
-#include <time.h>
-#define UNIXBACKTRACE
 #endif
 
 // Locations for searching the srb2.srb
@@ -195,6 +190,161 @@ static char returnWadPath[256];
 // Mumble context string
 #include "../d_clisrv.h"
 #include "../byteptr.h"
+#endif
+
+#ifdef HAVE_LIBBACKTRACE
+#include <backtrace.h>
+// TODO - move this to some header file instead
+extern struct backtrace_state *bt_state;
+
+static void printsignal(FILE *fp, INT32 num)
+{
+	switch (num)
+		{
+		case SIGILL:
+			fprintf(fp, "SIGILL - illegal instruction - invalid function image");
+			break;
+		case SIGFPE:
+			fprintf(fp, "SIGFPE - mathematical exception");
+			break;
+		case SIGSEGV:
+			fprintf(fp, "SIGSEGV - segment violation");
+			break;
+		case SIGABRT:
+			fprintf(fp, "SIGABRT - abnormal termination triggered by abort call");
+			break;
+		default:
+			fprintf(fp, "Signal number %d", num);
+		}
+}
+
+typedef struct bt_out_buf_s {
+	boolean error;
+	char *pos;
+	size_t size;
+} bt_out_buf_t;
+
+static void bt_syminfo_cb(void *data, uintptr_t pc, const char *symname, uintptr_t symval, uintptr_t symsize)
+{
+	(void)symval;
+	(void)symsize;
+
+	bt_out_buf_t *buf = (bt_out_buf_t*)data;
+
+	if (!symname)
+		symname = "???";
+
+	int n = snprintf(buf->pos, buf->size, "%p %s\n", (void*)pc, symname);
+
+	if (n <= 0)
+	{
+		buf->size = 0;
+		return;
+	}
+
+	buf->pos += n;
+	buf->size -= n;
+}
+
+static int bt_simple_cb(void *data, uintptr_t pc)
+{
+	bt_out_buf_t *buf = (bt_out_buf_t*)data;
+
+	backtrace_syminfo(bt_state, pc, bt_syminfo_cb, NULL, data);
+
+	if (!buf->size) return 1;
+
+	return 0;
+}
+
+static int bt_full_cb(void *data, uintptr_t pc, const char *filename, int lineno, const char *function)
+{
+	bt_out_buf_t *buf = (bt_out_buf_t*)data;
+
+	if (!filename) filename = "???";
+	if (!function) function = "???";
+
+	int n = snprintf(buf->pos, buf->size, "%p %s\n\t%s:%d\n", (void*)pc, function, filename, lineno);
+
+	if (n <= 0) return 1;
+
+	buf->pos += n;
+	buf->size -= n;
+
+	if (!buf->size) return 1;
+
+	return 0;
+}
+
+static void bt_error_cb(void *data, const char *msg, int errnum)
+{
+	(void)msg; // We don't need this
+
+	bt_out_buf_t *buf = (bt_out_buf_t*)data;
+
+	// No debug info
+	if (errnum == -1)
+		buf->error = true;
+}
+
+static void write_backtrace(INT32 num)
+{
+	FILE *out = fopen(va("%s" PATHSEP "%s", srb2home, "srb2kart-crash-log.txt"), "a");
+
+	time_t rawtime;
+	struct tm *timeinfo;
+
+	const size_t BUFSIZE = 8192;
+	char backtrace[BUFSIZE];
+
+	bt_out_buf_t buf;
+	buf.error = false;
+	buf.pos = backtrace;
+	buf.size = BUFSIZE;
+
+
+	if (!out)
+	{
+		fprintf(stderr, "\nWARNING: Couldn't open crash log for writing! Make sure your permissions are correct. Please save the below report!\n");
+		out = stderr;
+	}
+
+	// Get the current time as a string.
+	time(&rawtime);
+	timeinfo = localtime(&rawtime);
+
+	fprintf(out, "------------------------\n\n");
+
+	fprintf(out, "Program name: %s %s\n", SRB2APPLICATION, VERSIONSTRING);
+
+	if (compdate && comptime && comprevision && compbranch)
+	fprintf(out, "Compiled: %s %s, commit %s, branch %s\n", compdate, comptime, comprevision, compbranch);
+
+	fprintf(out, "Time of crash: %s\n", asctime(timeinfo));
+
+	fprintf(out, "Caused by: ");
+	printsignal(out, num);
+
+	fprintf(out, "\nBacktrace:\n");
+
+	// Try to get full backtrace, it will print files and line numbers
+	backtrace_full(bt_state, 2, bt_full_cb, bt_error_cb, (void*)&buf);
+
+	if (buf.error)
+	{
+		// Fall back to simple backtrace, only prints function names
+		backtrace_simple(bt_state, 2, bt_simple_cb, NULL, (void*)&buf);
+	}
+
+	fputs(backtrace, out);
+
+	if (out != stderr)
+	{
+		fclose(out);
+		fprintf(stderr, "Crash report created, find srb2kart-crash-log.txt in your SRB2Kart directory\n");
+	}
+}
+
 #endif
 
 /**	\brief	The JoyReset function
@@ -258,85 +408,6 @@ SDL_bool framebuffer = SDL_FALSE;
 
 UINT8 keyboard_started = false;
 
-#ifdef UNIXBACKTRACE
-
-static void bt_write_file(int fd, const char *string) {
-	ssize_t written = 0;
-	ssize_t sourcelen = strlen(string);
-
-	while (fd != -1 && (written != -1 && errno != EINTR) && written < sourcelen)
-		written = write(fd, string, sourcelen);
-}
-
-static void bt_write_stderr(const char *string) {
-	bt_write_file(STDERR_FILENO, string);
-}
-
-static void bt_write_all(int fd, const char *string) {
-	bt_write_file(fd, string);
-	bt_write_file(STDERR_FILENO, string);
-}
-
-static void write_backtrace(INT32 signal)
-{
-	int fd = -1;
-	time_t rawtime;
-	struct tm timeinfo;
-	size_t bt_size;
-
-	enum { BT_SIZE = 1024, STR_SIZE = 32 };
-	void *funcptrs[BT_SIZE];
-	char timestr[STR_SIZE];
-
-	const char *filename = va("%s" PATHSEP "%s", srb2home, "crash-log.txt");
-
-	fd = open(filename, O_CREAT|O_APPEND|O_RDWR, S_IRUSR|S_IWUSR);
-
-	if (fd == -1) // File handle error
-		bt_write_stderr("\nWARNING: Couldn't open crash log for writing! Make sure your permissions are correct. Please save the below report!\n");
-
-	// Get the current time as a string.
-	time(&rawtime);
-	localtime_r(&rawtime, &timeinfo);
-	strftime(timestr, STR_SIZE, "%a, %d %b %Y %T %z", &timeinfo);
-
-	bt_write_file(fd, "------------------------\n"); // Nice looking seperator
-
-	bt_write_all(fd, "\n"); // Newline to look nice for both outputs.
-	bt_write_all(fd, "An error occurred within SRB2! Send this stack trace to someone who can help!\n");
-
-	if (fd != -1) // If the crash log exists,
-		bt_write_stderr("(Or find crash-log.txt in your SRB2 directory.)\n"); // tell the user where the crash log is.
-
-	// Tell the log when we crashed.
-	bt_write_file(fd, "Time of crash: ");
-	bt_write_file(fd, timestr);
-	bt_write_file(fd, "\n");
-
-	// Give the crash log the cause and a nice 'Backtrace:' thing
-	// The signal is given to the user when the parent process sees we crashed.
-	bt_write_file(fd, "Cause: ");
-	bt_write_file(fd, strsignal(signal));
-	bt_write_file(fd, "\n"); // Newline for the signal name
-
-	bt_write_all(fd, "\nBacktrace:\n");
-
-	// Flood the output and log with the backtrace
-	bt_size = backtrace(funcptrs, BT_SIZE);
-	backtrace_symbols_fd(funcptrs, bt_size, fd);
-	backtrace_symbols_fd(funcptrs, bt_size, STDERR_FILENO);
-
-	bt_write_file(fd, "\n"); // Write another newline to the log so it looks nice :)
-
-	if (fd != -1) {
-		fsync(fd); // reaaaaally make sure we got that data written.
-		close(fd);
-	}
-}
-
-#endif // UNIXBACKTRACE
-
-
 static void I_ReportSignal(int num, int coredumped)
 {
 	//static char msg[] = "oh no! back to reality!\r\n";
@@ -395,9 +466,11 @@ static void I_ReportSignal(int num, int coredumped)
 FUNCNORETURN static ATTRNORETURN void signal_handler(INT32 num)
 {
 	D_QuitNetGame(); // Fix server freezes
-#ifdef UNIXBACKTRACE
+
+#ifdef HAVE_LIBBACKTRACE
 	write_backtrace(num);
 #endif
+
 	I_ReportSignal(num, 0);
 	I_ShutdownSystem();
 	signal(num, SIG_DFL);               //default signal action
@@ -791,7 +864,8 @@ static void I_RegisterSignals (void)
 #ifdef NEWSIGNALHANDLER
 static void signal_handler_child(INT32 num)
 {
-#ifdef UNIXBACKTRACE
+
+#ifdef HAVE_LIBBACKTRACE
 	write_backtrace(num);
 #endif
 
@@ -3916,40 +3990,17 @@ static long get_entry(const char* name, const char* buf)
 size_t I_GetFreeMem(size_t *total)
 {
 #ifdef FREEBSD
-	struct vmmeter sum;
-	kvm_t *kd;
-	struct nlist namelist[] =
-	{
-#define X_SUM   0
-		{"_cnt"},
-		{NULL}
-	};
-	if ((kd = kvm_open(NULL, NULL, NULL, O_RDONLY, "kvm_open")) == NULL)
-	{
-		if (total)
-			*total = 0L;
-		return 0;
-	}
-	if (kvm_nlist(kd, namelist) != 0)
-	{
-		kvm_close (kd);
-		if (total)
-			*total = 0L;
-		return 0;
-	}
-	if (kvm_read(kd, namelist[X_SUM].n_value, &sum,
-		sizeof (sum)) != sizeof (sum))
-	{
-		kvm_close(kd);
-		if (total)
-			*total = 0L;
-		return 0;
-	}
-	kvm_close(kd);
+	u_int v_free_count, v_page_size, v_page_count;
+	size_t size = sizeof(v_free_count);
+	sysctlbyname("vm.stats.vm.v_free_count", &v_free_count, &size, NULL, 0);
+	size = sizeof(v_page_size);
+	sysctlbyname("vm.stats.vm.v_page_size", &v_page_size, &size, NULL, 0);
+	size = sizeof(v_page_count);
+	sysctlbyname("vm.stats.vm.v_page_count", &v_page_count, &size, NULL, 0);
 
 	if (total)
-		*total = sum.v_page_count * sum.v_page_size;
-	return sum.v_free_count * sum.v_page_size;
+		*total = v_page_count * v_page_size;
+	return v_free_count * v_page_size;
 #elif defined (SOLARIS)
 	/* Just guess */
 	if (total)

@@ -23,10 +23,8 @@ and don't forget to build r_opengl.dll for srb2dd.
 
 ## srb2kart, 64-bit
 
-* libs\dll-binaries\x86_64\exchndl.dll
 * libs\dll-binaries\x86_64\libgme.dll
 * libs\dll-binaries\x86_64\discord-rpc.dll
-* libs\dll-binaries\x86_64\mgwhelp.dll (depend for exchndl.dll)
 * libs\SDL2\x86_64-w64-mingw32\bin\SDL2.dll
 * libs\SDL2_mixer\x86_64-w64-mingw32\bin\*.dll (get everything)
 * libs\libopenmpt\x86_64\bin\mingw\libopenmpt.dll
