@@ -1581,6 +1581,7 @@ static menuitem_t OP_ChatOptionsMenu[] =
 	{IT_STRING | IT_CVAR, NULL, "Max Chat Messages",		&cv_chatlogsize,		80},
 
 	{IT_STRING | IT_CVAR, NULL, "Local ping display",		&cv_showping,			100},	// shows ping next to framerate if we want to.
+	{IT_STRING | IT_CVAR, NULL, "Ping measurement",		&cv_pingmeasurement,			110},
 };
 
 static menuitem_t OP_GameOptionsMenu[] =
