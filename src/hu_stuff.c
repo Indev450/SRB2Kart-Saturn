@@ -2705,10 +2705,13 @@ static void HU_DrawRankings(void)
 		hilicol = ((gametype == GT_RACE) ? V_SKYMAP : V_REDMAP);
 
 	// draw the current gametype in the lower right
-	if (modeattacking)
-		V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, "Record Attack");
-	else
-		V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, gametype_cons_t[gametype].strvalue);
+	//if (modeattacking)
+		//V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, "Record Attack");
+	//else
+		//V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, gametype_cons_t[gametype].strvalue);
+	
+	// draw the current map in the lower right
+	V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, G_BuildMapTitle(gamemap));
 
 	if (G_GametypeHasTeams())
 	{
