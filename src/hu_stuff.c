@@ -2687,21 +2687,19 @@ static void HU_DrawRankings(void)
 
 	V_DrawFadeScreen(0xFF00, 16); // A little more readable, and prevents cheating the fades under other circumstances.
 
-	//if (cons_menuhighlight.value)
+	if (cons_menuhighlight.value)
 		hilicol = cons_menuhighlight.value;
-	/*else if (modeattacking)
+	else if (modeattacking)
 		hilicol = V_ORANGEMAP;
 	else
-		hilicol = ((gametype == GT_RACE) ? V_SKYMAP : V_REDMAP);*/
+		hilicol = ((gametype == GT_RACE) ? V_SKYMAP : V_REDMAP);
 
 	// draw the current gametype in the lower right
-	/*if (modeattacking)
+	if (modeattacking)
 		V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, "Record Attack");
 	else
-		V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, gametype_cons_t[gametype].strvalue);*/
-		
-	V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, G_BuildMapTitle(cv_nextmap.value));
-	
+		V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, gametype_cons_t[gametype].strvalue);
+
 	if (G_GametypeHasTeams())
 	{
 		if (gametype == GT_CTF)
