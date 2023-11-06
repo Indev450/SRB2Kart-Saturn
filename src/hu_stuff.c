@@ -2588,7 +2588,7 @@ void HU_drawPing(INT32 x, INT32 y, UINT32 lag, INT32 flags)
 	}
 	
 	if (cv_ticrate.value == 2){
-			V_DrawScaledPatch(x+4, y+13, flags, pinggfx[gfxnum]);
+			V_DrawScaledPatch(x+2, y+13, flags, pinggfx[gfxnum]);
 		}else{
 			V_DrawScaledPatch(x+2, y, flags, pinggfx[gfxnum]);
 		}	
