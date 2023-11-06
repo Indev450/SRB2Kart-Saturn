@@ -12184,10 +12184,10 @@ static void M_LocalSkinChange(INT32 choice)
 
 	switch (itemOn) {
 		case 3:
-			COM_BufAddText(va("localskin -a %s", cv_fakelocalskin.string));
+			COM_BufAddText(va("localskin %s -a", cv_fakelocalskin.string));
 			break;
 		case 4:
-			COM_BufAddText(va("localskin -d 0 %s", cv_fakelocalskin.string));
+			COM_BufAddText(va("localskin %s -d 0", cv_fakelocalskin.string));
 			break;
 		case 5:
 			COM_BufAddText(va("localskin %s", cv_fakelocalskin.string));
@@ -12218,16 +12218,19 @@ static void M_DrawLocalSkinMenu(void)
 	#define charw 72
 
 	// anim the player in the box
-	if (--multi_tics <= 0)
+	multi_tics -= renderdeltatics;
+	while (multi_tics <= 0)
 	{
-		st = multi_state->nextstate;
+		st = cv_skinselectspin.value == SKINSELECTSPIN_PAIN ? S_KART_PAIN : multi_state->nextstate;
 		if (st != S_NULL)
 			multi_state = &states[st];
-		multi_tics = multi_state->tics;
-		if (multi_tics == -1)
-			multi_tics = 15;
-	}
 
+		if (multi_state->tics <= -1)
+			multi_tics += 15*FRACUNIT;
+		else
+			multi_tics += multi_state->tics * FRACUNIT;
+	}
+	
 	// skin 0 is default player sprite
 	if (R_AnySkinAvailable(cv_fakelocalskin.string) != -1)
 	{
@@ -12258,7 +12261,7 @@ static void M_DrawLocalSkinMenu(void)
 
 	//minenice's speen css, it's a piece of shit but hey
 	//patch = W_CachePatchNum(sprframe->lumppat[1], PU_CACHE);
-	speenframe = (I_GetTime()*4/TICRATE + 1)%8;
+	speenframe = (I_GetTime()*cv_skinselectspin.value/TICRATE + 1)%8;
 
 	//this is a very shitty solution for checking if a sprite needs flipping
 	//but it works
