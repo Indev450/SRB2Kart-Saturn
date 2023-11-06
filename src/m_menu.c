@@ -315,9 +315,7 @@ menu_t OP_VideoOptionsDef, OP_VideoModeDef;
 menu_t OP_OpenGLOptionsDef, OP_OpenGLColorDef;
 #endif
 menu_t OP_SoundOptionsDef;
-#ifdef HAVE_OPENMPT
 menu_t OP_SoundAdvancedDef;
-#endif
 //static void M_RestartAudio(void);
 
 //Misc
@@ -1437,9 +1435,9 @@ static menuitem_t OP_SoundAdvancedMenu[] =
 	{IT_STRING | IT_CVAR, NULL, "Amiga Type", &cv_amigatype, 62},
 #endif
 	{IT_STRING | IT_CVAR, NULL, "Stereo Seperation", &cv_stereosep, 82},
-#endif	
+#endif
 	{IT_HEADER, NULL, "Misc", NULL, 105},
-	
+
 	{IT_STRING | IT_CVAR, NULL, "Grow Music", &cv_growmusic, 117},
 	{IT_STRING | IT_CVAR, NULL, "Invulnerability Music", &cv_supermusic, 137},
 };
@@ -2365,9 +2363,7 @@ menu_t OP_HUDOptionsDef =
 
 menu_t OP_ChatOptionsDef = DEFAULTMENUSTYLE("M_HUD", OP_ChatOptionsMenu, &OP_HUDOptionsDef, 30, 30);
 
-#ifdef HAVE_OPENMPT
 menu_t OP_SoundAdvancedDef = DEFAULTMENUSTYLE("M_SOUND", OP_SoundAdvancedMenu, &OP_SoundOptionsDef, 30, 30);
-#endif
 
 menu_t OP_GameOptionsDef = DEFAULTMENUSTYLE("M_GAME", OP_GameOptionsMenu, &OP_MainDef, 30, 30);
 menu_t OP_ServerOptionsDef = DEFAULTMENUSTYLE("M_SERVER", OP_ServerOptionsMenu, &OP_MainDef, 24, 30);
