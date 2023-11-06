@@ -42,8 +42,9 @@ consvar_t cv_masterserver_timeout = {
 	NULL, 0, NULL, NULL, 0, 0, NULL/* C90 moment */
 };
 
+CV_PossibleValue_t masterserver_debug_cons_t[] = {{0, "Off"}, {1, "PrintOnly"}, {2, "On"}, {0, NULL}};
 consvar_t cv_masterserver_debug = {
-	"masterserver_debug", "Off", CV_SAVE|CV_CALL, CV_OnOff,
+	"masterserver_debug", "Off", CV_SAVE|CV_CALL, masterserver_debug_cons_t,
 	MasterServer_Debug_OnChange, 0, NULL, NULL, 0, 0, NULL/* C90 moment */
 };
 
@@ -90,8 +91,9 @@ Printf_url (const char *url)
 	startup = con_startup;
 	I_unlock_mutex(con_mutex);
 
-	(startup ? I_OutputMsg : CONS_Printf)(
-			"HMS: connecting '%s'...\n", url);
+	if (cv_masterserver_debug.value)
+		(startup ? I_OutputMsg : CONS_Printf)(
+				"HMS: connecting '%s'...\n", url);
 }
 
 static size_t
@@ -201,7 +203,7 @@ HMS_connect (const char *format, ...)
 	buffer->buffer = malloc(buffer->end);
 	buffer->needle = 0;
 
-	if (cv_masterserver_debug.value)
+	if (cv_masterserver_debug.value == 2)
 	{
 		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
 		curl_easy_setopt(curl, CURLOPT_STDERR, logstream);
@@ -385,7 +387,7 @@ HMS_list_servers (void)
 	if (! hms)
 		return;
 
-	if (HMS_do(hms))
+	if (HMS_do(hms) && cv_masterserver_debug.value)
 	{
 		CONS_Printf("%s\n", hms->buffer);
 	}
@@ -579,7 +581,7 @@ MasterServer_Debug_OnChange (void)
 {
 #ifdef MASTERSERVER
 	/* TODO: change to 'latest-log.txt' for log files revision. */
-	if (cv_masterserver_debug.value)
+	if (cv_masterserver_debug.value == 2)
 		CONS_Printf("Master server debug messages will appear in log.txt\n");
 #endif
 }
