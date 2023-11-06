@@ -2903,10 +2903,11 @@ boolean M_Responder(event_t *ev)
 		// (but still allow shift keyup so caps doesn't get stuck)
 		return false;
 	}
-	else if (ev->type == ev_keydown)
+	else if (ev->type == ev_keydown || ev->type == ev_text)
 	{
 		ch = ev->data1;
 
+		if (ev->type == ev_keydown)
 		// added 5-2-98 remap virtual keys (mouse & joystick buttons)
 		switch (ch)
 		{
@@ -2936,6 +2937,7 @@ boolean M_Responder(event_t *ev)
 				break;
 		}
 	}
+		
 	else if (menuactive)
 	{
 		tic_t thistime = I_GetTime();
@@ -3130,8 +3132,11 @@ boolean M_Responder(event_t *ev)
 	// Handle menuitems which need a specific key handling
 	if (routine && (currentMenu->menuitems[itemOn].status & IT_TYPE) == IT_KEYHANDLER)
 	{
-		if (shiftdown && ch >= 32 && ch <= 127)
-			ch = shiftxform[ch];
+		// ignore ev_keydown events if the key maps to a character, since
+		// the ev_text event will follow immediately after in that case.
+		if (ev->type == ev_keydown && ch >= 32 && ch <= 127)
+			return true;
+		
 		routine(ch);
 		return true;
 	}
@@ -3171,8 +3176,11 @@ boolean M_Responder(event_t *ev)
 		if ((currentMenu->menuitems[itemOn].status & IT_CVARTYPE) == IT_CV_STRING)
 		{
 
-			if (shiftdown && ch >= 32 && ch <= 127)
-				ch = shiftxform[ch];
+			// ignore ev_keydown events if the key maps to a character, since
+			// the ev_text event will follow immediately after in that case.
+			if (ev->type == ev_keydown && ch >= 32 && ch <= 127)
+				return false;
+			
 			if (M_ChangeStringCvar(ch))
 				return true;
 			else
@@ -12184,10 +12192,10 @@ static void M_LocalSkinChange(INT32 choice)
 
 	switch (itemOn) {
 		case 3:
-			COM_BufAddText(va("localskin %s -a", cv_fakelocalskin.string));
+			COM_BufAddText(va("localskin -a %s", cv_fakelocalskin.string));
 			break;
 		case 4:
-			COM_BufAddText(va("localskin %s -d 0", cv_fakelocalskin.string));
+			COM_BufAddText(va("localskin -d 0 %s", cv_fakelocalskin.string));
 			break;
 		case 5:
 			COM_BufAddText(va("localskin %s", cv_fakelocalskin.string));
@@ -12218,19 +12226,16 @@ static void M_DrawLocalSkinMenu(void)
 	#define charw 72
 
 	// anim the player in the box
-	multi_tics -= renderdeltatics;
-	while (multi_tics <= 0)
+	if (--multi_tics <= 0)
 	{
-		st = cv_skinselectspin.value == SKINSELECTSPIN_PAIN ? S_KART_PAIN : multi_state->nextstate;
+		st = multi_state->nextstate;
 		if (st != S_NULL)
 			multi_state = &states[st];
-
-		if (multi_state->tics <= -1)
-			multi_tics += 15*FRACUNIT;
-		else
-			multi_tics += multi_state->tics * FRACUNIT;
+		multi_tics = multi_state->tics;
+		if (multi_tics == -1)
+			multi_tics = 15;
 	}
-	
+
 	// skin 0 is default player sprite
 	if (R_AnySkinAvailable(cv_fakelocalskin.string) != -1)
 	{
@@ -12261,7 +12266,7 @@ static void M_DrawLocalSkinMenu(void)
 
 	//minenice's speen css, it's a piece of shit but hey
 	//patch = W_CachePatchNum(sprframe->lumppat[1], PU_CACHE);
-	speenframe = (I_GetTime()*cv_skinselectspin.value/TICRATE + 1)%8;
+	speenframe = (I_GetTime()*4/TICRATE + 1)%8;
 
 	//this is a very shitty solution for checking if a sprite needs flipping
 	//but it works

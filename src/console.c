@@ -879,7 +879,7 @@ boolean CON_Responder(event_t *ev)
 		return false;
 
 	// let go keyup events, don't eat them
-	if (ev->type != ev_keydown && ev->type != ev_console)
+	if (ev->type != ev_keydown && ev->type != ev_text && ev->type != ev_console)
 	{
 		if (ev->data1 == gamecontrol[gc_console][0] || ev->data1 == gamecontrol[gc_console][1])
 			consdown = false;
@@ -919,7 +919,7 @@ boolean CON_Responder(event_t *ev)
 		// check other keys only if console prompt is active
 		if (!consoleready && key < NUMINPUTS) // metzgermeister: boundary check!!
 		{
-			if (!menuactive && bindtable[key])
+			if (ev->type == ev_keydown && !menuactive && bindtable[key])
 			{
 				COM_BufAddText(bindtable[key]);
 				COM_BufAddText("\n");
@@ -934,6 +934,12 @@ boolean CON_Responder(event_t *ev)
 			consoletoggle = true;
 			return true;
 		}
+	}
+	
+	if (ev->type == ev_text)
+	{
+		CON_InputAddChar(key);
+		return true;
 	}
 
 	// Always eat ctrl/shift/alt if console open, so the menu doesn't get ideas
@@ -1222,18 +1228,6 @@ boolean CON_Responder(event_t *ev)
 	else if (key == KEY_KPADSLASH)
 		key = '/';
 
-	// same capslock code as hu_stuff.c's HU_responder. Check there for details.
-	if ((key >= 'a' && key <= 'z') || (key >= 'A' && key <= 'Z'))
-	{
-		if (shiftdown ^ capslock)
-			key = shiftxform[key];
-	}
-	else
-	{
-		if (shiftdown)
-			key = shiftxform[key];
-	}
-
 	// enter a char into the command prompt
 	if (key < 32 || key > 127)
 		return true;
@@ -1244,7 +1238,6 @@ boolean CON_Responder(event_t *ev)
 
 	if (input_sel != input_cur)
 		CON_InputDelSelection();
-	CON_InputAddChar(key);
 
 	return true;
 }
