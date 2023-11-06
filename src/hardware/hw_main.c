@@ -150,6 +150,7 @@ consvar_t cv_grfallbackplayermodel = {"gr_fallbackplayermodel", "Off", CV_SAVE, 
 consvar_t cv_grshearing = {"gr_shearing", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_grspritebillboarding = {"gr_spritebillboarding", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_grfakecontrast = {"gr_fakecontrast", "Standard", CV_SAVE, grfakecontrast_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_grslopecontrast = {"gr_slopecontrast", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static void CV_filtermode_ONChange(void)
 {
@@ -615,6 +616,50 @@ static FUINT HWR_CalcWallLight(FUINT lightnum, fixed_t v1x, fixed_t v1y, fixed_t
 	return (FUINT)finallight;
 }
 
+static FUINT HWR_CalcSlopeLight(FUINT lightnum, angle_t dir, fixed_t delta)
+{
+	INT16 finallight = lightnum;
+
+	if (cv_grfakecontrast.value != 0 && cv_grslopecontrast.value != 0)
+	{
+		const UINT8 contrast = 8;
+		fixed_t extralight = 0;
+
+		if (cv_grfakecontrast.value == 2) // Smooth setting
+		{
+			fixed_t dirmul = abs(FixedDiv(AngleFixed(dir) - (180<<FRACBITS), 180<<FRACBITS));
+
+			extralight = -(contrast<<FRACBITS) + (dirmul * (contrast * 2));
+
+			extralight = FixedMul(extralight, delta*4) >> FRACBITS;
+		}
+		else
+		{
+			dir = ((dir + ANGLE_45) / ANGLE_90) * ANGLE_90;
+
+			if (dir == ANGLE_180)
+				extralight = -contrast;
+			else if (dir == 0)
+				extralight = contrast;
+
+			if (delta >= FRACUNIT/2)
+				extralight *= 2;
+		}
+
+		if (extralight != 0)
+		{
+			finallight += extralight;
+
+			if (finallight < 0)
+				finallight = 0;
+			if (finallight > 255)
+				finallight = 255;
+		}
+	}
+
+	return (FUINT)finallight;
+}
+
 // ==========================================================================
 // Floor and ceiling generation from subsectors
 // ==========================================================================
@@ -800,6 +845,11 @@ void HWR_RenderPlane(extrasubsector_t *xsub, boolean isceiling, fixed_t fixedhei
 }
 	for (i = 0, v3d = planeVerts; i < nrPlaneVerts; i++,v3d++,pv++)
 		SETUP3DVERT(v3d, pv->x, pv->y);
+
+#ifdef ESLOPE
+	if (slope)
+		lightlevel = HWR_CalcSlopeLight(lightlevel, R_PointToAngle2(0, 0, slope->normal.x, slope->normal.y), abs(slope->zdelta));
+#endif
 
 	HWR_Lighting(&Surf, lightlevel, planecolormap);
 
@@ -6217,6 +6267,7 @@ void HWR_AddCommands(void)
 	CV_RegisterVar(&cv_grgammagreen);
 	CV_RegisterVar(&cv_grgammared);
 	CV_RegisterVar(&cv_grfakecontrast);
+	CV_RegisterVar(&cv_grslopecontrast);
 	
 	CV_RegisterVar(&cv_grfovchange);
 	
