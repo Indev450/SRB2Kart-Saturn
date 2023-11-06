@@ -865,6 +865,7 @@ static void RotatedPatch_CalculateDimensions(
 	*newheight = max(height, max(h1, h2));
 }
 
+#ifdef HWRENDER
 static patch_t *R_CreateHardwarePatch(patch_t *patch)
 {
 	GLPatch_t *grPatch = Z_Calloc(sizeof(GLPatch_t), PU_HWRPATCHINFO, NULL);
@@ -873,6 +874,7 @@ static patch_t *R_CreateHardwarePatch(patch_t *patch)
 	HWR_MakePatch(patch, grPatch, grPatch->mipmap, false);
     return (patch_t *)grPatch;
 }
+#endif
 
 void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle, INT32 xpivot, INT32 ypivot, boolean flip)
 {

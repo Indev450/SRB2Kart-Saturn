@@ -315,9 +315,7 @@ menu_t OP_VideoOptionsDef, OP_VideoModeDef;
 menu_t OP_OpenGLOptionsDef, OP_OpenGLColorDef;
 #endif
 menu_t OP_SoundOptionsDef;
-#ifdef HAVE_OPENMPT
 menu_t OP_SoundAdvancedDef;
-#endif
 //static void M_RestartAudio(void);
 
 //Misc
@@ -1369,16 +1367,17 @@ static menuitem_t OP_OpenGLOptionsMenu[] =
 	{IT_STRING | IT_CVAR,   NULL, "Flashpals in Palette Renderer", &cv_grflashpal, 		 	 45},
 	{IT_STRING | IT_CVAR, 	NULL, "Min Shader Brightness", 		&cv_secbright, 		 		 55},
 
-	{IT_STRING|IT_CVAR,		NULL, "Texture Quality",			&cv_scr_depth,				 75},
-	{IT_STRING|IT_CVAR,		NULL, "Texture Filter",				&cv_grfiltermode,			 85},
-	{IT_STRING|IT_CVAR,		NULL, "Anisotropic",				&cv_granisotropicmode,		 95},
+	{IT_STRING|IT_CVAR,		NULL, "Texture Quality",			&cv_scr_depth,				 70},
+	{IT_STRING|IT_CVAR,		NULL, "Texture Filter",				&cv_grfiltermode,			 80},
+	{IT_STRING|IT_CVAR,		NULL, "Anisotropic",				&cv_granisotropicmode,		 90},
 
-	{IT_STRING|IT_CVAR,		NULL, "Visual Portals",		  		&cv_grportals,				 105},
+	{IT_STRING|IT_CVAR,		NULL, "Visual Portals",		  		&cv_grportals,				 100},
 
-	{IT_STRING|IT_CVAR,		NULL, "Wall Contrast Style",		&cv_grfakecontrast,			125},
-	{IT_STRING|IT_CVAR,		NULL, "Sprite Billboarding",		&cv_grspritebillboarding,	135},
-	{IT_STRING|IT_CVAR,		NULL, "Software Perspective",		&cv_grshearing,				145},
-	{IT_STRING|IT_CVAR,		NULL, "Rendering Distance",			&cv_grrenderdistance,		155},
+	{IT_STRING|IT_CVAR,		NULL, "Wall Contrast Style",		&cv_grfakecontrast,			120},
+	{IT_STRING|IT_CVAR,		NULL, "Slope Contrast",				&cv_grslopecontrast,		130},
+	{IT_STRING|IT_CVAR,		NULL, "Sprite Billboarding",		&cv_grspritebillboarding,	140},
+	{IT_STRING|IT_CVAR,		NULL, "Software Perspective",		&cv_grshearing,				150},
+	{IT_STRING|IT_CVAR,		NULL, "Rendering Distance",			&cv_grrenderdistance,		160},
 
 	{IT_SUBMENU|IT_STRING,	NULL, "Gamma...",					&OP_OpenGLColorDef,			170},
 };
@@ -1437,9 +1436,9 @@ static menuitem_t OP_SoundAdvancedMenu[] =
 	{IT_STRING | IT_CVAR, NULL, "Amiga Type", &cv_amigatype, 62},
 #endif
 	{IT_STRING | IT_CVAR, NULL, "Stereo Seperation", &cv_stereosep, 82},
-#endif	
+#endif
 	{IT_HEADER, NULL, "Misc", NULL, 105},
-	
+
 	{IT_STRING | IT_CVAR, NULL, "Grow Music", &cv_growmusic, 117},
 	{IT_STRING | IT_CVAR, NULL, "Invulnerability Music", &cv_supermusic, 137},
 };
@@ -1559,9 +1558,12 @@ static menuitem_t OP_HUDOptionsMenu[] =
 	{IT_STRING | IT_CVAR, NULL,	"Console Text Size",		&cv_constextsize,		120},
 
 	{IT_STRING | IT_CVAR, NULL,   "Show Track Addon Name",  &cv_showtrackaddon,   	135},
-	{IT_STRING | IT_CVAR, NULL,   "Show \"FOCUS LOST\"",  &cv_showfocuslost,   		145},
+	
+	{IT_STRING | IT_CVAR, NULL,   "Show All Maps",  &cv_showallmaps,   	145},
+	
+	{IT_STRING | IT_CVAR, NULL,   "Show \"FOCUS LOST\"",  &cv_showfocuslost,   		155},
 
-	{IT_STRING | IT_CVAR, NULL,	"2D character select",		&cv_skinselectmenu,		155},
+	{IT_STRING | IT_CVAR, NULL,	"2D character select",		&cv_skinselectmenu,		165},
 };
 
 
@@ -1582,6 +1584,8 @@ static menuitem_t OP_ChatOptionsMenu[] =
 	{IT_STRING | IT_CVAR, NULL, "Max Chat Messages",		&cv_chatlogsize,		80},
 
 	{IT_STRING | IT_CVAR, NULL, "Local ping display",		&cv_showping,			100},	// shows ping next to framerate if we want to.
+	{IT_STRING | IT_CVAR, NULL, "Ping measurement",		&cv_pingmeasurement,			110},
+	{IT_STRING | IT_CVAR, NULL, "Ping icon",		&cv_pingicon,			120},
 };
 
 static menuitem_t OP_GameOptionsMenu[] =
@@ -2365,9 +2369,7 @@ menu_t OP_HUDOptionsDef =
 
 menu_t OP_ChatOptionsDef = DEFAULTMENUSTYLE("M_HUD", OP_ChatOptionsMenu, &OP_HUDOptionsDef, 30, 30);
 
-#ifdef HAVE_OPENMPT
 menu_t OP_SoundAdvancedDef = DEFAULTMENUSTYLE("M_SOUND", OP_SoundAdvancedMenu, &OP_SoundOptionsDef, 30, 30);
-#endif
 
 menu_t OP_GameOptionsDef = DEFAULTMENUSTYLE("M_GAME", OP_GameOptionsMenu, &OP_MainDef, 30, 30);
 menu_t OP_ServerOptionsDef = DEFAULTMENUSTYLE("M_SERVER", OP_ServerOptionsMenu, &OP_MainDef, 24, 30);

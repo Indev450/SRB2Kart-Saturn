@@ -2582,12 +2582,21 @@ void HU_drawPing(INT32 x, INT32 y, UINT32 lag, INT32 flags)
 	{
 		if (cv_ticrate.value == 2){
 			V_DrawScaledPatch(x+12 - pingmeasure[measureid]->width, y+22, flags, pingmeasure[measureid]);
-			V_DrawScaledPatch(x+4, y+13, flags, pinggfx[gfxnum]);
 		}else{
-			V_DrawScaledPatch(x+12 - pingmeasure[measureid]->width, y+9, flags, pingmeasure[measureid]);
-			V_DrawScaledPatch(x+4, y+2, flags, pinggfx[gfxnum]);
+			V_DrawScaledPatch(x+11 - pingmeasure[measureid]->width, y+9, flags, pingmeasure[measureid]);
 		}	
 	}
+	
+	
+	if (cv_pingicon.value)
+	{	
+	if (cv_ticrate.value == 2){
+			V_DrawScaledPatch(x+2, y+13, flags, pinggfx[gfxnum]);
+		}else{
+			V_DrawScaledPatch(x+2, y, flags, pinggfx[gfxnum]);
+		}
+	}
+	
 
 	if (servermaxping && lag > servermaxping && hu_tick < 4)
 	{
@@ -2606,8 +2615,14 @@ void HU_drawPing(INT32 x, INT32 y, UINT32 lag, INT32 flags)
 		x = V_DrawPingNum(x + (measureid == 1 ? 11 - pingmeasure[measureid]->width : 10), y+9, flags, lag, colormap);
 	}
 
-	if (measureid == 0)
-		V_DrawScaledPatch(x+1 - pingmeasure[measureid]->width, y+9, flags, pingmeasure[measureid]);
+	if (measureid == 0){
+		if (cv_ticrate.value == 2){
+			V_DrawScaledPatch(x+1 - pingmeasure[measureid]->width, y+22, flags, pingmeasure[measureid]);
+		}else{
+			V_DrawScaledPatch(x+1 - pingmeasure[measureid]->width, y+9, flags, pingmeasure[measureid]);
+		}
+	}		
+		
 }
 
 //
@@ -2687,21 +2702,22 @@ static void HU_DrawRankings(void)
 
 	V_DrawFadeScreen(0xFF00, 16); // A little more readable, and prevents cheating the fades under other circumstances.
 
-	//if (cons_menuhighlight.value)
+	if (cons_menuhighlight.value)
 		hilicol = cons_menuhighlight.value;
-	/*else if (modeattacking)
+	else if (modeattacking)
 		hilicol = V_ORANGEMAP;
 	else
-		hilicol = ((gametype == GT_RACE) ? V_SKYMAP : V_REDMAP);*/
+		hilicol = ((gametype == GT_RACE) ? V_SKYMAP : V_REDMAP);
 
 	// draw the current gametype in the lower right
-	/*if (modeattacking)
-		V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, "Record Attack");
-	else
-		V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, gametype_cons_t[gametype].strvalue);*/
-		
-	V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, G_BuildMapTitle(cv_nextmap.value));
+	//if (modeattacking)
+		//V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, "Record Attack");
+	//else
+		//V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, gametype_cons_t[gametype].strvalue);
 	
+	// draw the current map in the lower right
+	V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, G_BuildMapTitle(gamemap));
+
 	if (G_GametypeHasTeams())
 	{
 		if (gametype == GT_CTF)
