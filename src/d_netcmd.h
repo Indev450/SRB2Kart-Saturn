@@ -153,6 +153,7 @@ extern consvar_t cv_maxping;
 extern consvar_t cv_pingtimeout;
 extern consvar_t cv_showping;
 extern consvar_t cv_pingmeasurement;
+extern consvar_t cv_pingicon;
 
 //extern consvar_t cv_smallpos;
 extern consvar_t cv_showminimapnames;

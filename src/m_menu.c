@@ -1582,6 +1582,7 @@ static menuitem_t OP_ChatOptionsMenu[] =
 
 	{IT_STRING | IT_CVAR, NULL, "Local ping display",		&cv_showping,			100},	// shows ping next to framerate if we want to.
 	{IT_STRING | IT_CVAR, NULL, "Ping measurement",		&cv_pingmeasurement,			110},
+	{IT_STRING | IT_CVAR, NULL, "Ping icon",		&cv_pingicon,			120},
 };
 
 static menuitem_t OP_GameOptionsMenu[] =

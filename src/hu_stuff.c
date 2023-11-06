@@ -2587,11 +2587,16 @@ void HU_drawPing(INT32 x, INT32 y, UINT32 lag, INT32 flags)
 		}	
 	}
 	
+	
+	if (cv_pingicon.value)
+	{	
 	if (cv_ticrate.value == 2){
 			V_DrawScaledPatch(x+2, y+13, flags, pinggfx[gfxnum]);
 		}else{
 			V_DrawScaledPatch(x+2, y, flags, pinggfx[gfxnum]);
-		}	
+		}
+	}
+	
 
 	if (servermaxping && lag > servermaxping && hu_tick < 4)
 	{
