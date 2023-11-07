@@ -642,6 +642,9 @@ static void readfreeslots(MYFILE *f)
 					strncpy(sprnames[i],word,4);
 					//sprnames[i][4] = 0;
 					CONS_Printf("Sprite SPR_%s allocated.\n",word);
+
+					LUA_InvalidateMathlibCache(va("SPR_%s", word));
+
 					used_spr[(i-SPR_FIRSTFREESLOT)/8] |= 1<<(i%8); // Okay, this sprite slot has been named now.
 					break;
 				}
@@ -654,7 +657,7 @@ static void readfreeslots(MYFILE *f)
 					if (!FREE_STATES[i]) {
 						CONS_Printf("State S_%s allocated.\n",word);
 
-						LUA_InvalidateMathlibStateCache(word);
+						LUA_InvalidateMathlibCache(va("S_%s", word));
 
 						FREE_STATES[i] = Z_Malloc(strlen(word)+1, PU_STATIC, NULL);
 						strcpy(FREE_STATES[i],word);
@@ -671,7 +674,7 @@ static void readfreeslots(MYFILE *f)
 					if (!FREE_MOBJS[i]) {
 						CONS_Printf("MobjType MT_%s allocated.\n",word);
 
-						LUA_InvalidateMathlibMobjCache(word);
+						LUA_InvalidateMathlibCache(va("MT_%s", word));
 
 						FREE_MOBJS[i] = Z_Malloc(strlen(word)+1, PU_STATIC, NULL);
 						strcpy(FREE_MOBJS[i],word);
@@ -9199,6 +9202,11 @@ static inline int lib_freeslot(lua_State *L)
 				}
 				// Found a free slot!
 				CONS_Printf("Sprite SPR_%s allocated.\n",word);
+
+				lua_pushcfunction(L, lua_glib_invalidate_cache);
+				lua_pushfstring(L, "SPR_%s", word);
+				lua_call(L, 1, 0);
+
 				strncpy(sprnames[j],word,4);
 				//sprnames[j][4] = 0;
 				used_spr[(j-SPR_FIRSTFREESLOT)/8] |= 1<<(j%8); // Okay, this sprite slot has been named now.
@@ -9427,7 +9435,7 @@ static int lua_enumlib_sprite_get(lua_State *L)
 	const char *s = lua_tostring(L, 1);
 	for (int i = 0; i < NUMSPRITES; i++)
 	{
-		if (fastncmp(s+4, sprnames[i], 4))
+		if (!sprnames[i][4] && fastncmp(s+4, sprnames[i], 4))
 		{
 			lua_pushinteger(L, i);
 			return 1;

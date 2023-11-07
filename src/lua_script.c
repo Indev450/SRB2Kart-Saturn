@@ -405,23 +405,13 @@ fixed_t LUA_EvalMath(const char *word)
 	return res;
 }
 
-void LUA_InvalidateMathlibMobjCache(const char *name)
+void LUA_InvalidateMathlibCache(const char *name)
 {
 	// No state => no cache => nothing to invalidate :3
 	if (mL == NULL) return;
 
 	lua_pushcfunction(mL, lua_glib_invalidate_cache);
-	lua_pushfstring(mL, "MT_%s", name);
-	lua_call(mL, 1, 0);
-}
-
-void LUA_InvalidateMathlibStateCache(const char *name)
-{
-	// No state => no cache => nothing to invalidate :3
-	if (mL == NULL) return;
-
-	lua_pushcfunction(mL, lua_glib_invalidate_cache);
-	lua_pushfstring(mL, "S_%s", name);
+	lua_pushstring(mL, name);
 	lua_call(mL, 1, 0);
 }
 
