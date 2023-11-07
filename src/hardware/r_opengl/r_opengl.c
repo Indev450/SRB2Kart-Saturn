@@ -1340,6 +1340,20 @@ void InitPalette(int flashnum, boolean skiplut)
 
 	if (!skiplut) 
 	{
+		GLenum internalFormat;
+		if (gl_version[0] == '1' || gl_version[0] == '2')
+		{
+			// if the OpenGL version is below 3.0, then the GL_R8 format may not be available.
+			// so use GL_LUMINANCE8 instead to get a single component 8-bit format
+			// (it is possible to have access to shaders even in some OpenGL 1.x systems,
+			// so palette rendering can still possibly be achieved there)
+			internalFormat = GL_LUMINANCE8;
+		}
+		else
+		{
+			internalFormat = GL_R8;
+		}
+	
 		// init the palette conversion lookup texture
 		GLubyte *pal_lookup_tex = malloc(LUT_SIZE*LUT_SIZE*LUT_SIZE*sizeof(GLubyte));
 				
@@ -1363,7 +1377,7 @@ void InitPalette(int flashnum, boolean skiplut)
 		pglTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		if (!pglTexImage3D)
 			I_Error("pglTexImage3D is NULL!");
-		pglTexImage3D(GL_TEXTURE_3D, 0, GL_R8, LUT_SIZE, LUT_SIZE, LUT_SIZE, 0, GL_RED, GL_UNSIGNED_BYTE, pal_lookup_tex);
+		pglTexImage3D(GL_TEXTURE_3D, 0, internalFormat, LUT_SIZE, LUT_SIZE, LUT_SIZE, 0, GL_RED, GL_UNSIGNED_BYTE, pal_lookup_tex);
 		free(pal_lookup_tex);
 	}
 #undef STEP_SIZE
