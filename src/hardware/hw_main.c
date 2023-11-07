@@ -861,7 +861,7 @@ void HWR_RenderPlane(extrasubsector_t *xsub, boolean isceiling, fixed_t fixedhei
 	else
 		PolyFlags |= PF_Masked|PF_Modulated;
 
-	if (cv_grshaders.value || gr_shadersavailable)
+	if (cv_grshaders.value && gr_shadersavailable)
 	{	
 		if (PolyFlags & PF_Fog)
 			HWD.pfnSetShader(6);	// fog shader
@@ -1025,7 +1025,7 @@ static void HWR_DrawSegsSplats(FSurfaceInfo * pSurf)
 				break;
 		}
 
-		if (cv_grshaders.value || gr_shadersavailable)
+		if (cv_grshaders.value && gr_shadersavailable)
 		{
 			HWD.pfnSetShader(gr_use_palette_shader ? 10 : 2);	// wall shader
 		}
@@ -1063,7 +1063,7 @@ void HWR_ProjectWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend
 {
 	HWR_Lighting(pSurf, lightlevel, wallcolormap);
 
-	if (cv_grshaders.value || gr_shadersavailable)
+	if (cv_grshaders.value && gr_shadersavailable)
 	{
 		HWD.pfnSetShader(gr_use_palette_shader ? 10 : 2);	// wall shader
 		blendmode |= PF_ColorMapped;
@@ -3264,7 +3264,7 @@ void HWR_RenderPolyObjectPlane(polyobj_t *polysector, boolean isceiling, fixed_t
 	else
 		blendmode |= PF_Masked|PF_Modulated;
 
-	if (cv_grshaders.value || gr_shadersavailable)
+	if (cv_grshaders.value && gr_shadersavailable)
 	{		
 		HWD.pfnSetShader(gr_use_palette_shader ? 9 : 1);	// floor shader
 		blendmode |= PF_ColorMapped;
@@ -4080,10 +4080,12 @@ static void HWR_DrawSpriteShadow(gr_vissprite_t *spr, GLPatch_t *gpatch, float t
 	if (sSurf.PolyColor.s.alpha > floorheight/4)
 	{
 		sSurf.PolyColor.s.alpha = (UINT8)(sSurf.PolyColor.s.alpha - floorheight/4);
-		if (cv_grshaders.value || gr_shadersavailable)
+		
+		if (cv_grshaders.value && gr_shadersavailable)
 		{
 			HWD.pfnSetShader(gr_use_palette_shader ? 9 : 1);	// floor shader
 		}
+		
 		HWD.pfnDrawPolygon(&sSurf, swallVerts, 4, PF_Translucent|PF_Modulated, false);
 	}
 }
@@ -4451,7 +4453,7 @@ static void HWR_SplitSprite(gr_vissprite_t *spr)
 
 		Surf.PolyColor.s.alpha = alpha;
 		
-		if (cv_grshaders.value || gr_shadersavailable)
+		if (cv_grshaders.value && gr_shadersavailable)
 		{
 			HWD.pfnSetShader(gr_use_palette_shader ? 10 : 3);	// sprite shader
 			blend |= PF_ColorMapped;
@@ -4496,7 +4498,7 @@ static void HWR_SplitSprite(gr_vissprite_t *spr)
 
 	Surf.PolyColor.s.alpha = alpha;
 
-	if (cv_grshaders.value || gr_shadersavailable)
+	if (cv_grshaders.value && gr_shadersavailable)
 	{
 		HWD.pfnSetShader(gr_use_palette_shader ? 10 : 3);	// sprite shader
 		blend |= PF_ColorMapped;
@@ -4654,7 +4656,7 @@ static void HWR_DrawSprite(gr_vissprite_t *spr)
 			blend = PF_Translucent|PF_Occlude;
 		}
 
-		if (cv_grshaders.value || gr_shadersavailable)
+		if (cv_grshaders.value && gr_shadersavailable)
 		{
 			HWD.pfnSetShader(gr_use_palette_shader ? 10 : 3);	// sprite shader
 			blend |= PF_ColorMapped;
@@ -4753,7 +4755,7 @@ static inline void HWR_DrawPrecipitationSprite(gr_vissprite_t *spr)
 		blend = PF_Translucent|PF_Occlude;
 	}
 
-	if (cv_grshaders.value || gr_shadersavailable)
+	if (cv_grshaders.value && gr_shadersavailable)
 	{
 		HWD.pfnSetShader(gr_use_palette_shader ? 10 : 3);	// sprite shader
 		blend |= PF_ColorMapped;
@@ -6402,7 +6404,7 @@ void HWR_RenderWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend,
 
 	if (!fogwall)
 	{
-		if (cv_grshaders.value || gr_shadersavailable)
+		if (cv_grshaders.value && gr_shadersavailable)
 		{
 			HWD.pfnSetShader(gr_use_palette_shader ? 10 : 2);	// wall shader
 			blendmode |= PF_ColorMapped;
