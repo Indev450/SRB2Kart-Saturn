@@ -2807,37 +2807,40 @@ EXPORT void HWRAPI(DrawPolygon) (FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUI
 			// PolyColor
 			if (pSurf)
 			{
-				// If Modulated, mix the surface colour to the texture
+				// If modulated, mix the surface colour to the texture
 				if (CurrentPolyFlags & PF_Modulated)
-				{
-					// Poly color
-					poly.red    = byte2float[pSurf->PolyColor.s.red];
-					poly.green  = byte2float[pSurf->PolyColor.s.green];
-					poly.blue   = byte2float[pSurf->PolyColor.s.blue];
-					poly.alpha  = byte2float[pSurf->PolyColor.s.alpha];
-
 					pglColor4ubv((GLubyte*)&pSurf->PolyColor.s);
-			}
 
-				// Tint color
-				tint.red   = byte2float[pSurf->TintColor.s.red];
-				tint.green = byte2float[pSurf->TintColor.s.green];
-				tint.blue  = byte2float[pSurf->TintColor.s.blue];
-				tint.alpha = byte2float[pSurf->TintColor.s.alpha];
+				// If the surface is either modulated or colormapped, or both
+				if (CurrentPolyFlags & (PF_Modulated | PF_ColorMapped))
+				{
+					poly.red   = byte2float[pSurf->PolyColor.s.red];
+					poly.green = byte2float[pSurf->PolyColor.s.green];
+					poly.blue  = byte2float[pSurf->PolyColor.s.blue];
+					poly.alpha = byte2float[pSurf->PolyColor.s.alpha];
+				}
 
-				// Fade color
-				fade.red   = byte2float[pSurf->FadeColor.s.red];
-				fade.green = byte2float[pSurf->FadeColor.s.green];
-				fade.blue  = byte2float[pSurf->FadeColor.s.blue];
-				fade.alpha = byte2float[pSurf->FadeColor.s.alpha];
-				
+				// Only if the surface is colormapped
+				if (CurrentPolyFlags & PF_ColorMapped)
+				{
+					tint.red   = byte2float[pSurf->TintColor.s.red];
+					tint.green = byte2float[pSurf->TintColor.s.green];
+					tint.blue  = byte2float[pSurf->TintColor.s.blue];
+					tint.alpha = byte2float[pSurf->TintColor.s.alpha];
+
+					fade.red   = byte2float[pSurf->FadeColor.s.red];
+					fade.green = byte2float[pSurf->FadeColor.s.green];
+					fade.blue  = byte2float[pSurf->FadeColor.s.blue];
+					fade.alpha = byte2float[pSurf->FadeColor.s.alpha];
+				}
+			
 				if (gl_use_palette_shader && gl_allowshaders)
 				{
 					pglActiveTexture(GL_TEXTURE2);
 					pglBindTexture(GL_TEXTURE_2D, pSurf->LightTableId);
 					pglActiveTexture(GL_TEXTURE0);
 				}
-		}
+			}
 
 		Shader_Load(pSurf, &poly, &tint, &fade);
 		}
