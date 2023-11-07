@@ -260,7 +260,7 @@ static const char *GetTextureFormatName(INT32 format)
 	{
 		case GR_TEXFMT_P_8:                return "GR_TEXFMT_P_8";
 		case GR_TEXFMT_AP_88:              return "GR_TEXFMT_AP_88";
-		case GL_RGBA:               	   return "GR_RGBA";
+		case GR_RGBA:               	   return "GR_RGBA";
 		case GR_TEXFMT_ALPHA_8:            return "GR_TEXFMT_ALPHA_8";
 		case GR_TEXFMT_INTENSITY_8:        return "GR_TEXFMT_INTENSITY_8";
 		case GR_TEXFMT_ALPHA_INTENSITY_88: return "GR_TEXFMT_ALPHA_INTENSITY_88";
