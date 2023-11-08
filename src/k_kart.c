@@ -8497,7 +8497,7 @@ static void K_drawKartLaps(void)
 	{
 
 		if (!cv_colorizedhud.value || !clr_hud){
-			if ((cv_numlaps.value > 9) && (big_lap) && (cv_biglaps.value)){
+			if ((cv_numlaps.value > 9) && (big_lap) && (cv_biglaps.value) && (!stplyr->exiting)){
 				if (stplyr->laps+1 > 9)
 					V_DrawScaledPatch(LAPS_X, LAPS_Y, V_HUDTRANS|splitflags, kp_lapstickerbig2);
 				else
@@ -8510,7 +8510,7 @@ static void K_drawKartLaps(void)
 		{
 			//Colourized hud
 			UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
-			if ((cv_numlaps.value > 9) && (big_lap_color) && (cv_biglaps.value)){
+			if ((cv_numlaps.value > 9) && (big_lap_color) && (cv_biglaps.value) && (!stplyr->exiting)){
 				if (stplyr->laps+1 > 9)
 					V_DrawMappedPatch(LAPS_X, LAPS_Y, V_HUDTRANS|splitflags, kp_lapstickerbig2clr, colormap);
 				else
