@@ -43,12 +43,6 @@
 #include "r_draw.h" // translation colormap consts (for lua)
 #endif
 
-#ifdef PC_DOS
-#include <stdio.h> // for snprintf
-//int	snprintf(char *str, size_t n, const char *fmt, ...);
-int	vsnprintf(char *str, size_t n, const char *fmt, va_list ap);
-#endif
-
 // Free slot names
 // The crazy word-reading stuff uses these.
 static char *FREE_STATES[NUMSTATEFREESLOTS];
@@ -1888,7 +1882,7 @@ static void readframe(MYFILE *f, INT32 num)
 			{
 				size_t z;
 				boolean found = false;
-				XBOXSTATIC char actiontocompare[32];
+				char actiontocompare[32];
 
 				memset(actiontocompare, 0x00, sizeof(actiontocompare));
 				strlcpy(actiontocompare, word2, sizeof (actiontocompare));
@@ -3159,9 +3153,7 @@ static void DEH_LoadDehackedFile(MYFILE *f, UINT16 wad)
 	char *word2;
 	INT32 i;
 	// do a copy of this for cross references probleme
-	//XBOXSTATIC actionf_t saveactions[NUMSTATES];
-	//XBOXSTATIC const char *savesprnames[NUMSPRITES];
-	XBOXSTATIC const char *savesfxnames[NUMSFX];
+	const char *savesfxnames[NUMSFX];
 
 	if (!deh_loaded)
 		initfreeslots();
@@ -3181,7 +3173,7 @@ static void DEH_LoadDehackedFile(MYFILE *f, UINT16 wad)
 	dbg_line = -1; // start at -1 so the first line is 0.
 	while (!myfeof(f))
 	{
-		XBOXSTATIC char origpos[128];
+		char origpos[128];
 		INT32 size = 0;
 		char *traverse;
 

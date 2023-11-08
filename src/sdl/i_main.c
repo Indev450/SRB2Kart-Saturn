@@ -37,6 +37,12 @@
 //#define SDLMAIN
 #endif
 
+#ifdef HAVE_LIBBACKTRACE
+#include <backtrace.h>
+
+struct backtrace_state *bt_state = NULL;
+#endif
+
 #ifdef SDLMAIN
 #include "SDL_main.h"
 #elif defined(FORCESDLMAIN)
@@ -58,48 +64,17 @@ char  logfilename[1024];
 #endif
 #endif
 
-#if defined (_WIN32)
+#ifdef _WIN32
+#ifndef _AMD64_
 #include "exchndl.h"
+#define DRMINGW
+#endif
 #endif
 
 #if defined (_WIN32)
 #include "../win32/win_dbg.h"
 typedef BOOL (WINAPI *p_IsDebuggerPresent)(VOID);
 #endif
-
-#if defined (_WIN32)
-static inline VOID MakeCodeWritable(VOID)
-{
-#ifdef USEASM // Disable write-protection of code segment
-	DWORD OldRights;
-	const DWORD NewRights = PAGE_EXECUTE_READWRITE;
-	PBYTE pBaseOfImage = (PBYTE)GetModuleHandle(NULL);
-	PIMAGE_DOS_HEADER dosH =(PIMAGE_DOS_HEADER)pBaseOfImage;
-	PIMAGE_NT_HEADERS ntH = (PIMAGE_NT_HEADERS)(pBaseOfImage + dosH->e_lfanew);
-	PIMAGE_OPTIONAL_HEADER oH = (PIMAGE_OPTIONAL_HEADER)
-		((PBYTE)ntH + sizeof (IMAGE_NT_SIGNATURE) + sizeof (IMAGE_FILE_HEADER));
-	LPVOID pA = pBaseOfImage+oH->BaseOfCode;
-	SIZE_T pS = oH->SizeOfCode;
-#if 1 // try to find the text section
-	PIMAGE_SECTION_HEADER ntS = IMAGE_FIRST_SECTION (ntH);
-	WORD s;
-	for (s = 0; s < ntH->FileHeader.NumberOfSections; s++)
-	{
-		if (memcmp (ntS[s].Name, ".text\0\0", 8) == 0)
-		{
-			pA = pBaseOfImage+ntS[s].VirtualAddress;
-			pS = ntS[s].Misc.VirtualSize;
-			break;
-		}
-	}
-#endif
-
-	if (!VirtualProtect(pA,pS,NewRights,&OldRights))
-		I_Error("Could not make code writable\n");
-#endif
-}
-#endif
-
 
 #ifdef _WIN32
 static void
@@ -135,6 +110,19 @@ int main(int argc, char **argv)
 	const char *logdir = NULL;
 	myargc = argc;
 	myargv = argv; /// \todo pull out path to exe from this string
+
+#ifdef HAVE_LIBBACKTRACE
+	bt_state = backtrace_create_state(
+		argv[0],
+#ifdef HAVE_THREADS
+		1,
+#else
+		0,
+#endif
+		NULL,
+		NULL
+	);
+#endif
 
 #ifdef HAVE_TTF
 #ifdef _WIN32
@@ -174,10 +162,11 @@ int main(int argc, char **argv)
 			)
 #endif
 		{
+#ifdef DRMINGW
 			ExcHndlInit();
+#endif
 		}
 	}
-	MakeCodeWritable();
 #endif
 
 	// startup SRB2

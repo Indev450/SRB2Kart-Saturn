@@ -19,6 +19,7 @@
 
 // We rely on the thinker data struct to handle sound origins in sectors.
 #include "d_think.h"
+
 // SECTORS do store MObjs anyway.
 #include "p_mobj.h"
 
@@ -62,6 +63,12 @@ typedef struct
 	INT32 fadergba; // The colour the colourmaps fade to
 
 	lighttable_t *colormap;
+	
+
+#ifdef HWRENDER
+	// The id of the hardware lighttable. Zero means it does not exist yet.
+	UINT32 gl_lighttable_id;
+#endif
 } extracolormap_t;
 
 //

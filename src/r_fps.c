@@ -37,6 +37,8 @@ static CV_PossibleValue_t fpscap_cons_t[] = {
 };
 consvar_t cv_fpscap = {"fpscap", "Match refresh rate", CV_SAVE, fpscap_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_precipinterp = {"precipinterpolation", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 UINT32 R_GetFramerateCap(void)
 {
 	if (rendermode == render_none)
@@ -315,7 +317,7 @@ void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 
 void R_InterpolatePrecipMobjState(precipmobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 {
-	if (frac == FRACUNIT)
+	if (frac == FRACUNIT || !cv_precipinterp.value)
 	{
 		out->x = mobj->x;
 		out->y = mobj->y;
@@ -330,18 +332,18 @@ void R_InterpolatePrecipMobjState(precipmobj_t *mobj, fixed_t frac, interpmobjst
 		return;
 	}
 
-	out->x = R_LerpFixed(mobj->old_x, mobj->x, frac);
-	out->y = R_LerpFixed(mobj->old_y, mobj->y, frac);
-	out->z = R_LerpFixed(mobj->old_z, mobj->z, frac);
-	out->scale = FRACUNIT;
-	out->spritexscale = R_LerpFixed(mobj->old_spritexscale, mobj->spritexscale, frac);
-	out->spriteyscale = R_LerpFixed(mobj->old_spriteyscale, mobj->spriteyscale, frac);
-	out->spritexoffset = R_LerpFixed(mobj->old_spritexoffset, mobj->spritexoffset, frac);
-	out->spriteyoffset = R_LerpFixed(mobj->old_spriteyoffset, mobj->spriteyoffset, frac);
+		out->x = R_LerpFixed(mobj->old_x, mobj->x, frac);
+		out->y = R_LerpFixed(mobj->old_y, mobj->y, frac);
+		out->z = R_LerpFixed(mobj->old_z, mobj->z, frac);
+		out->scale = FRACUNIT;
+		out->spritexscale = mobj->spritexscale;
+		out->spriteyscale = mobj->spriteyscale;
+		out->spritexoffset = mobj->spritexoffset;
+		out->spriteyoffset = mobj->spriteyoffset;
 
-	out->subsector = R_PointInSubsector(out->x, out->y);
+		out->subsector = R_PointInSubsector(out->x, out->y);
 
-	out->angle = R_LerpAngle(mobj->old_angle, mobj->angle, frac);
+		out->angle = R_LerpAngle(mobj->old_angle, mobj->angle, frac);
 }
 
 static void AddInterpolator(levelinterpolator_t* interpolator)
@@ -357,12 +359,11 @@ static void AddInterpolator(levelinterpolator_t* interpolator)
 			levelinterpolators_size *= 2;
 		}
 
-		levelinterpolators = Z_ReallocAlign(
+		levelinterpolators = Z_Realloc(
 			(void*) levelinterpolators,
 			sizeof(levelinterpolator_t*) * levelinterpolators_size,
 			PU_LEVEL,
-			NULL,
-			sizeof(levelinterpolator_t*) * 8
+			NULL
 		);
 	}
 
@@ -372,11 +373,8 @@ static void AddInterpolator(levelinterpolator_t* interpolator)
 
 static levelinterpolator_t *CreateInterpolator(levelinterpolator_type_e type, thinker_t *thinker)
 {
-	levelinterpolator_t *ret = (levelinterpolator_t*) Z_CallocAlign(
-		sizeof(levelinterpolator_t),
-		PU_LEVEL,
-		NULL,
-		sizeof(levelinterpolator_t) * 8
+	levelinterpolator_t *ret = (levelinterpolator_t*) Z_Calloc(
+		sizeof(levelinterpolator_t), PU_LEVEL, NULL
 	);
 
 	ret->type = type;
@@ -691,12 +689,11 @@ void R_AddMobjInterpolator(mobj_t *mobj)
 			interpolated_mobjs_capacity *= 2;
 		}
 
-		interpolated_mobjs = Z_ReallocAlign(
+		interpolated_mobjs = Z_Realloc(
 			interpolated_mobjs,
 			sizeof(mobj_t *) * interpolated_mobjs_capacity,
 			PU_LEVEL,
-			NULL,
-			64
+			NULL
 		);
 	}
 

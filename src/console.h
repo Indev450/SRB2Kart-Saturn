@@ -14,11 +14,7 @@
 #include "command.h"
 #include "i_threads.h"
 
-#ifdef _WII
-void CON_InitWii(void);
-#else
 void CON_Init(void);
-#endif
 
 boolean CON_Responder(event_t *ev);
 

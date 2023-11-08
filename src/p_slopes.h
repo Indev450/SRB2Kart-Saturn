@@ -41,6 +41,9 @@ fixed_t P_GetSectorCeilingZAt(const sector_t *sector, fixed_t x, fixed_t y);
 fixed_t P_GetFFloorTopZAt   (const ffloor_t *ffloor, fixed_t x, fixed_t y);
 fixed_t P_GetFFloorBottomZAt(const ffloor_t *ffloor, fixed_t x, fixed_t y);
 
+// Returns the height of the light list at (x, y)
+fixed_t P_GetLightZAt(const lightlist_t *light, fixed_t x, fixed_t y);
+
 // Lots of physics-based bullshit
 void P_QuantizeMomentumToSlope(vector3_t *momentum, pslope_t *slope);
 void P_ReverseQuantizeMomentumToSlope(vector3_t *momentum, pslope_t *slope);

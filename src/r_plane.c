@@ -698,7 +698,7 @@ void R_DrawPlanes(void)
 	}
 #ifndef NOWATER
 	waterofs = (leveltime & 1)*16384;
-	wtofs = leveltime * 140;
+	wtofs = ((leveltime-1)*140) + ((rendertimefrac*140) / FRACUNIT);
 #endif
 }
 

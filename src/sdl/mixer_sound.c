@@ -78,8 +78,8 @@ write netcode into the sound code, OKAY?
 #endif // HAVE_ZLIB
 #endif // HAVE_LIBGME
 
-
-static UINT16 BUFFERSIZE = 2048;
+ 
+//static UINT16 BUFFERSIZE = 2048;
 static UINT16 SAMPLERATE = 44100;
 
 #ifdef HAVE_OPENMPT
@@ -204,7 +204,7 @@ void I_StartupSound(void)
 	Mix_Init(MIX_INIT_FLAC|MIX_INIT_MP3|MIX_INIT_OGG|MIX_INIT_MOD);
 #endif
 
-	if (Mix_OpenAudio(SAMPLERATE, AUDIO_S16SYS, 2, BUFFERSIZE) < 0)
+	if (Mix_OpenAudio(SAMPLERATE, AUDIO_S16SYS, 2, cv_audbuffersize.value) < 0)
 	{
 		CONS_Alert(CONS_ERROR, "Error starting SDL_Mixer: %s\n", Mix_GetError());
 		// call to start audio failed -- we do not have it
@@ -714,7 +714,7 @@ static void mix_openmpt(void *udata, Uint8 *stream, int len)
 		return;
 
 	// Play module into stream
-	openmpt_module_read_interleaved_stereo(openmpt_mhandle, SAMPLERATE, BUFFERSIZE, (short *)stream);
+	openmpt_module_read_interleaved_stereo(openmpt_mhandle, SAMPLERATE, cv_audbuffersize.value, (short *)stream);
 	
 	// Limiter to prevent music from being disorted with some formats
 	if (music_volume >= 18)

@@ -58,6 +58,18 @@ patch_t *facerankprefix[MAXSKINS]; // ranking
 patch_t *facewantprefix[MAXSKINS]; // wanted
 patch_t *facemmapprefix[MAXSKINS]; // minimap
 
+patch_t *localfacerankprefix[MAXSKINS]; // ranking
+patch_t *localfacewantprefix[MAXSKINS]; // wanted
+patch_t *localfacemmapprefix[MAXSKINS]; // minimap
+
+char *facerankprefix_name[MAXSKINS]; // ranking
+char *facewantprefix_name[MAXSKINS]; // wanted
+char *facemmapprefix_name[MAXSKINS]; // minimap
+
+char *localfacerankprefix_name[MAXSKINS]; // ranking
+char *localfacewantprefix_name[MAXSKINS]; // wanted
+char *localfacemmapprefix_name[MAXSKINS]; // minimap
+
 // ------------------------------------------
 //             status bar overlay
 // ------------------------------------------
@@ -186,6 +198,8 @@ static huddrawlist_h luahuddrawlist_game;
 // variable to stop mayonaka static from flickering
 consvar_t cv_lessflicker = {"lessflicker", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_stagetitle = {"maptitle", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 //
 // STATUS BAR CODE
 //
@@ -225,25 +239,25 @@ void ST_doPaletteStuff(void)
 {
 	INT32 palette;
 
-	if (paused || P_AutoPause())
-		palette = 0;
-	else if (stplyr && stplyr->flashcount)
+	if (stplyr && stplyr->flashcount)
 		palette = stplyr->flashpal;
 	else
 		palette = 0;
 
 #ifdef HWRENDER
-	if (rendermode == render_opengl)
+	if ((rendermode == render_opengl && !cv_grpaletteshader.value) || (rendermode == render_opengl && cv_grpaletteshader.value && !cv_grflashpal.value))
 		palette = 0; // No flashpals here in OpenGL
 #endif
-
-	palette = min(max(palette, 0), 13);
 
 	if (palette != st_palette)
 	{
 		st_palette = palette;
 
-		if (rendermode == render_soft)
+#ifdef HWRENDER
+		if (rendermode == render_soft || (rendermode == render_opengl && cv_grpaletteshader.value && cv_grflashpal.value))
+#else
+		if (rendermode != render_none)
+#endif
 		{
 			//V_SetPaletteLump(GetPalette()); // Reset the palette -- is this needed?
 			if (!splitscreen)
@@ -378,6 +392,25 @@ void ST_LoadFaceGraphics(char *rankstr, char *wantstr, char *mmapstr, INT32 skin
 	facerankprefix[skinnum] = W_CachePatchName(rankstr, PU_HUDGFX);
 	facewantprefix[skinnum] = W_CachePatchName(wantstr, PU_HUDGFX);
 	facemmapprefix[skinnum] = W_CachePatchName(mmapstr, PU_HUDGFX);
+	
+	facerankprefix_name[skinnum] = rankstr;
+	facewantprefix_name[skinnum] = wantstr;
+	facemmapprefix_name[skinnum] = mmapstr;
+}
+
+void ST_LoadLocalFaceGraphics(char *rankstr, char *wantstr, char *mmapstr, INT32 skinnum)
+{
+	localfacerankprefix[skinnum] = W_CachePatchName(rankstr, PU_HUDGFX);
+	localfacewantprefix[skinnum] = W_CachePatchName(wantstr, PU_HUDGFX);
+	localfacemmapprefix[skinnum] = W_CachePatchName(mmapstr, PU_HUDGFX);
+	
+	localfacerankprefix_name[skinnum] = rankstr;
+	localfacewantprefix_name[skinnum] = wantstr;
+	localfacemmapprefix_name[skinnum] = mmapstr;
+
+	//CONS_Printf("Added rank prefix %s\n", rankstr);
+	//CONS_Printf("Added want prefix %s\n", wantstr);
+	//CONS_Printf("Added mmap prefix %s\n", mmapstr);
 }
 
 void ST_ReloadSkinFaceGraphics(void)
@@ -386,6 +419,10 @@ void ST_ReloadSkinFaceGraphics(void)
 
 	for (i = 0; i < numskins; i++)
 		ST_LoadFaceGraphics(skins[i].facerank, skins[i].facewant, skins[i].facemmap, i);
+	
+	for (i = 0; i < numlocalskins; i++) {
+		ST_LoadLocalFaceGraphics(localskins[i].facerank, localskins[i].facewant, localskins[i].facemmap, i);
+	}
 }
 
 static inline void ST_InitData(void)
@@ -787,6 +824,9 @@ static void ST_drawLevelTitle(void)
 		? BASEVIDHEIGHT/2
 		: 163;
 	INT32 lvlw;
+	
+	if (!cv_stagetitle.value)
+		return;
 
 	if (timeinmap > 113)
 		return;
@@ -2167,9 +2207,9 @@ void ST_Drawer(void)
 	//25/08/99: Hurdler: palette changes is done for all players,
 	//                   not only player1! That's why this part
 	//                   of code is moved somewhere else.
-	if (rendermode == render_soft)
+	if (rendermode == render_soft || (rendermode == render_opengl && cv_grpaletteshader.value && cv_grflashpal.value))
 #endif
-		if (rendermode != render_none) ST_doPaletteStuff();
+	if (rendermode != render_none) ST_doPaletteStuff();
 
 	if (st_overlay)
 	{

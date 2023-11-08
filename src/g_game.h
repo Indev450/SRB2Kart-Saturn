@@ -168,6 +168,8 @@ extern consvar_t cv_respawnfademusicback;
 
 extern consvar_t cv_resetspecialmusic;
 
+extern consvar_t cv_cechotoggle;
+
 extern consvar_t cv_resume;
 extern consvar_t cv_fading;
 
@@ -403,6 +405,7 @@ boolean G_GetRetryFlag(void);
 void G_LoadGameData(void);
 void G_LoadGameSettings(void);
 
+void G_SetWadModified(boolean silent, boolean major, UINT16 wadnum);
 void G_SetGameModified(boolean silent, boolean major);
 
 void G_SetGamestate(gamestate_t newstate);

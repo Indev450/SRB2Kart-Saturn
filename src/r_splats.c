@@ -23,11 +23,6 @@ static wallsplat_t wallsplats[MAXLEVELSPLATS]; // WALL splats
 static INT32 freewallsplat;
 #endif
 
-#ifdef USEASM
-/// \brief for floorsplats \note accessed by asm code
-struct rastery_s *prastertab;
-#endif
-
 #ifdef FLOORSPLATS
 static floorsplat_t floorsplats[1]; // FLOOR splats
 static INT32 freefloorsplat;
@@ -338,12 +333,6 @@ void R_AddVisibleFloorSplats(subsector_t *subsec)
 		}
 	}
 }
-
-#ifdef USEASM
-// tv1, tv2 = x/y qui varie dans la texture, tc = x/y qui est constant.
-void ASMCALL rasterize_segment_tex(INT32 x1, INT32 y1, INT32 x2, INT32 y2, INT32 tv1, INT32 tv2,
-	INT32 tc, INT32 dir);
-#endif
 
 // current test with floor tile
 //#define FLOORSPLATSOLIDCOLOR

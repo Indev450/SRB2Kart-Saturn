@@ -83,6 +83,7 @@ void *hwSym(const char *funcName,void *handle)
 	GETFUNC(SetBlend);
 	GETFUNC(ClearBuffer);
 	GETFUNC(SetTexture);
+	GETFUNC(UpdateTexture);
 	GETFUNC(ReadRect);
 	GETFUNC(GClipRect);
 	GETFUNC(ClearMipMapCache);
@@ -108,11 +109,15 @@ void *hwSym(const char *funcName,void *handle)
 	GETFUNC(SetShader);
 	GETFUNC(UnSetShader);
 
+	GETFUNC(SetShaderInfo);
 	GETFUNC(LoadCustomShader);
 	GETFUNC(InitCustomShaders);
 	
 	GETFUNC(StartBatching);
 	GETFUNC(RenderBatches);
+	
+	GETFUNC(AddLightTable);
+	GETFUNC(ClearLightTableCache);
 
 #else //HWRENDER
 	if (0 == strcmp("FinishUpdate", funcName))

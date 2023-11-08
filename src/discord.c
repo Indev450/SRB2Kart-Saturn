@@ -37,7 +37,9 @@
 // length of IP strings
 #define IP_SIZE 21
 
-consvar_t cv_discordrp = {"discordrp", "On", CV_SAVE|CV_CALL, CV_OnOff, DRPC_UpdatePresence, 0, NULL, NULL, 0, 0, NULL};
+static void Discordrp_OnChange(void);
+
+consvar_t cv_discordrp = {"discordrp", "On", CV_SAVE|CV_CALL, CV_OnOff, Discordrp_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_discordstreamer = {"discordstreamer", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_discordasks = {"discordasks", "Yes", CV_SAVE|CV_CALL, CV_YesNo, DRPC_UpdatePresence, 0, NULL, NULL, 0, 0, NULL};
 
@@ -46,6 +48,8 @@ struct discordInfo_s discordInfo;
 discordRequest_t *discordRequestList = NULL;
 
 static char self_ip[IP_SIZE];
+
+boolean drpc_init = false;
 
 /*--------------------------------------------------
 	static char *DRPC_XORIPString(const char *input)
@@ -315,6 +319,9 @@ void DRPC_RemoveRequest(discordRequest_t *removeRequest)
 --------------------------------------------------*/
 void DRPC_Init(void)
 {
+	if (drpc_init || !cv_discordrp.value) return;
+
+	drpc_init = true;
 	DiscordEventHandlers handlers;
 	memset(&handlers, 0, sizeof(handlers));
 
@@ -325,8 +332,34 @@ void DRPC_Init(void)
 	handlers.joinRequest = DRPC_HandleJoinRequest;
 
 	Discord_Initialize(DISCORD_APPID, &handlers, 1, NULL);
-	I_AddExitFunc(Discord_Shutdown);
+	I_AddExitFunc(DRPC_Shutdown);
 	DRPC_UpdatePresence();
+}
+
+void DRPC_Shutdown(void)
+{
+	if (!drpc_init)
+	{
+		CONS_Printf("DiscordRPC never started\n");
+		return;
+	}
+
+	CONS_Printf("Shutting down DiscordRPC\n");
+
+	Discord_Shutdown();
+	drpc_init = false;
+}
+
+static void Discordrp_OnChange(void)
+{
+	if (cv_discordrp.value)
+	{
+		DRPC_UpdatePresence();
+	}
+	else
+	{
+		DRPC_Shutdown();
+	}
 }
 
 /*--------------------------------------------------
@@ -402,6 +435,10 @@ static void DRPC_EmptyRequests(void)
 --------------------------------------------------*/
 void DRPC_UpdatePresence(void)
 {
+	if (!cv_discordrp.value) return;
+
+	if (!drpc_init) DRPC_Init();
+
 	char detailstr[48+1];
 
 	char mapimg[8+1];

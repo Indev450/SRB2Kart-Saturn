@@ -23,13 +23,19 @@
 
 #include <stdarg.h>
 #include <math.h>
+#include "../../r_local.h" // For rendertimefrac, used for the leveltime shader uniform
 #include "r_opengl.h"
 #include "r_vbo.h"
 
-#include "../../p_tick.h" // for leveltime (NOTE: THIS IS BAD, FIGURE OUT HOW TO PROPERLY IMPLEMENT gl_leveltime)
+#include "../../v_video.h" // pLocalPalette
+#include "../../r_data.h" // NearestColor
+
+//#include "../../p_tick.h" // for leveltime (NOTE: THIS IS BAD, FIGURE OUT HOW TO PROPERLY IMPLEMENT gl_leveltime)
 #include "../../i_system.h" // for I_GetPreciseTime (batching time measurements)
 
-// Eeeeh not sure is this right way, but it works
+#include "../hw_main.h"
+
+// Eeeeh not sure is this right way, but it works < sry :c 
 extern consvar_t cv_grusecustomshaders;
 
 extern fixed_t fovtan; // also extremely bad, I'm just too lazy!!!
@@ -44,11 +50,14 @@ struct GLRGBAFloat
 	GLfloat alpha;
 };
 typedef struct GLRGBAFloat GLRGBAFloat;
+
 static const GLubyte white[4] = { 255, 255, 255, 255 };
 
 // ==========================================================================
 //                                                                  CONSTANTS
 // ==========================================================================
+
+
 
 // With OpenGL 1.1+, the first texture should be 1
 #define NOTEXTURE_NUM     0
@@ -70,8 +79,17 @@ static  GLuint      tex_downloaded  = 0;
 static  GLfloat     fov             = 90.0f;
 static  FBITFIELD   CurrentPolyFlags;
 
-static  FTextureInfo*  gr_cachetail = NULL;
-static  FTextureInfo*  gr_cachehead = NULL;
+static  FTextureInfo *gr_cachetail = NULL;
+static  FTextureInfo *gr_cachehead = NULL;
+
+typedef struct LightTableCacheEntry_s
+{
+	GLuint id;
+	struct LightTableCacheEntry_s *next;
+} LightTableCacheEntry_t;
+
+LightTableCacheEntry_t *ltcachehead = NULL;
+LightTableCacheEntry_t *ltcachetail = NULL;
 
 RGBA_t  myPaletteData[256];
 GLint   screen_width    = 0;               // used by Draw2DLine()
@@ -92,7 +110,7 @@ const GLubyte *gl_extensions = NULL;
 //Hurdler: 04/10/2000: added for the kick ass coronas as Boris wanted;-)
 static GLfloat modelMatrix[16];
 static GLfloat projMatrix[16];
-static GLint viewport[4];
+static GLint   viewport[4];
 
 #ifdef USE_PALETTED_TEXTURE
 	PFNGLCOLORTABLEEXTPROC  glColorTableEXT = NULL;
@@ -107,6 +125,10 @@ static GLuint screentexture = 0;
 static GLuint startScreenWipe = 0;
 static GLuint endScreenWipe = 0;
 static GLuint finalScreenTexture = 0;
+
+// Lactozilla: Set shader programs and uniforms
+static void *Shader_Load(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRGBAFloat *tint, GLRGBAFloat *fade);
+static void Shader_SetUniforms(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRGBAFloat *tint, GLRGBAFloat *fade);
 
 // shortcut for ((float)1/i)
 static const GLfloat byte2float[256] = {
@@ -144,6 +166,7 @@ static const GLfloat byte2float[256] = {
 	0.972549f, 0.976471f, 0.980392f, 0.984314f, 0.988235f, 0.992157f, 0.996078f, 1.000000f
 };
 
+
 // -----------------+
 // GL_DBG_Printf    : Output debug messages to debug log if DEBUG_TO_FILE is defined,
 //                  : else do nothing
@@ -151,7 +174,7 @@ static const GLfloat byte2float[256] = {
 // -----------------+
 
 #ifdef DEBUG_TO_FILE
-FILE *gllogstream = NULL;
+FILE *gllogstream;
 #endif
 
 FUNCPRINTF void GL_DBG_Printf(const char *format, ...)
@@ -160,18 +183,71 @@ FUNCPRINTF void GL_DBG_Printf(const char *format, ...)
 	char str[4096] = "";
 	va_list arglist;
 
-	if (gllogstream) 
-	{	
-		va_start(arglist, format);
-		vsnprintf(str, 4096, format, arglist);
-		va_end(arglist);
+	if (!gllogstream)
+		gllogstream = fopen("ogllog.txt", "w");
+	
+	va_start(arglist, format);
+	vsnprintf(str, 4096, format, arglist);
+	va_end(arglist);
 
-		fwrite(str, strlen(str), 1, gllogstream);
-	}
+	fwrite(str, strlen(str), 1, gllogstream);
 #else
 	(void)format;
 #endif
 }
+
+
+// -----------------+
+// GL_MSG_Warning   : Raises a warning.
+//                  :
+// Returns          :
+// -----------------+
+
+
+static void GL_MSG_Warning(const char *format, ...)
+{
+	char str[4096] = "";
+	va_list arglist;
+
+	va_start(arglist, format);
+	vsnprintf(str, 4096, format, arglist);
+	va_end(arglist);
+
+#ifdef HAVE_SDL
+	CONS_Alert(CONS_WARNING, "%s", str);
+#endif
+#ifdef DEBUG_TO_FILE
+		if (!gllogstream)
+		gllogstream = fopen("ogllog.txt", "w");
+	fwrite(str, strlen(str), 1, gllogstream);
+#endif
+}
+
+// -----------------+
+// GL_MSG_Error     : Raises an error.
+//                  :
+// Returns          :
+// -----------------+
+
+static void GL_MSG_Error(const char *format, ...)
+{
+	char str[4096] = "";
+	va_list arglist;
+
+	va_start(arglist, format);
+	vsnprintf(str, 4096, format, arglist);
+	va_end(arglist);
+
+#ifdef HAVE_SDL
+	CONS_Alert(CONS_ERROR, "%s", str);
+#endif
+#ifdef DEBUG_TO_FILE
+	if (!gllogstream)
+		gllogstream = fopen("ogllog.txt", "w");
+	fwrite(str, strlen(str), 1, gllogstream);
+#endif
+}
+
 
 #ifdef STATIC_OPENGL
 /* 1.0 functions */
@@ -235,10 +311,8 @@ FUNCPRINTF void GL_DBG_Printf(const char *format, ...)
 #define pglTexEnvi glTexEnvi
 #define pglTexParameteri glTexParameteri
 #define pglTexImage2D glTexImage2D
-
-/* Fog */
-#define pglFogf glFogf
-#define pglFogfv glFogfv
+#define pglTexImage3D glTexImage3D
+#define pglTexSubImage2D glTexSubImage2D
 
 /* 1.1 functions */
 /* texture objects */ //GL_EXT_texture_object
@@ -355,12 +429,11 @@ typedef void (APIENTRY * PFNglTexParameteri) (GLenum target, GLenum pname, GLint
 static PFNglTexParameteri pglTexParameteri;
 typedef void (APIENTRY * PFNglTexImage2D) (GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *pixels);
 static PFNglTexImage2D pglTexImage2D;
+typedef void (APIENTRY * PFNglTexImage3D) (GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, const GLvoid *pixels);
+static PFNglTexImage3D pglTexImage3D;
 
-/* Fog */
-typedef void (APIENTRY * PFNglFogf) (GLenum pname, GLfloat param);
-static PFNglFogf pglFogf;
-typedef void (APIENTRY * PFNglFogfv) (GLenum pname, const GLfloat *params);
-static PFNglFogfv pglFogfv;
+typedef void (APIENTRY * PFNglTexSubImage2D) (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels);
+static PFNglTexSubImage2D pglTexSubImage2D;
 
 /* 1.1 functions */
 /* texture objects */ //GL_EXT_texture_object
@@ -421,7 +494,7 @@ boolean SetupGLfunc(void)
 	func = GetGLFunc(#proc); \
 	if (!func) \
 	{ \
-		GL_DBG_Printf("failed to get OpenGL function: %s\n", #proc); \
+		GL_MSG_Warning("failed to get OpenGL function: %s", #proc); \
 	} \
 
 	GETOPENGLFUNC(pglClearColor, glClearColor)
@@ -476,9 +549,7 @@ boolean SetupGLfunc(void)
 	GETOPENGLFUNC(pglTexEnvi, glTexEnvi)
 	GETOPENGLFUNC(pglTexParameteri, glTexParameteri)
 	GETOPENGLFUNC(pglTexImage2D, glTexImage2D)
-
-	GETOPENGLFUNC(pglFogf, glFogf)
-	GETOPENGLFUNC(pglFogfv, glFogfv)
+	GETOPENGLFUNC(pglTexSubImage2D , glTexSubImage2D)
 
 	GETOPENGLFUNC(pglGenTextures, glGenTextures)
 	GETOPENGLFUNC(pglDeleteTextures, glDeleteTextures)
@@ -511,6 +582,7 @@ typedef void 	(APIENTRY *PFNglLinkProgram)		(GLuint);
 typedef void 	(APIENTRY *PFNglGetProgramiv)		(GLuint, GLenum, GLint*);
 typedef void 	(APIENTRY *PFNglUseProgram)			(GLuint);
 typedef void 	(APIENTRY *PFNglUniform1i)			(GLint, GLint);
+typedef void 	(APIENTRY *PFNglUniform1iv)			(GLint, GLsizei, const GLint*);
 typedef void 	(APIENTRY *PFNglUniform1f)			(GLint, GLfloat);
 typedef void 	(APIENTRY *PFNglUniform2f)			(GLint, GLfloat, GLfloat);
 typedef void 	(APIENTRY *PFNglUniform3f)			(GLint, GLfloat, GLfloat, GLfloat);
@@ -532,6 +604,7 @@ static PFNglLinkProgram pglLinkProgram;
 static PFNglGetProgramiv pglGetProgramiv;
 static PFNglUseProgram pglUseProgram;
 static PFNglUniform1i pglUniform1i;
+static PFNglUniform1iv pglUniform1iv;
 static PFNglUniform1f pglUniform1f;
 static PFNglUniform2f pglUniform2f;
 static PFNglUniform3f pglUniform3f;
@@ -555,6 +628,10 @@ static boolean gl_shaderprogramchanged = true;
 
 static boolean gl_batching = false;// are we currently collecting batches?
 
+static GLint gl_palette[768];
+static INT32 gl_use_palette_shader = 0;
+boolean gl_palette_initialized = false;
+
 static INT32 gl_enable_screen_textures = 1;
 
 static GLint gl_portal_stencil_level = 0;
@@ -571,10 +648,15 @@ typedef enum
 	gluniform_lighting,
 	gluniform_fade_start,
 	gluniform_fade_end,
-
-	// misc. (custom shaders)
+	
+	// palette rendering
+	gluniform_palette,
+	gluniform_color_lookup,
+	gluniform_lighttable_tex,
+	
+	// misc.
 	gluniform_leveltime,
-
+	
 	gluniform_max,
 } gluniform_t;
 
@@ -586,6 +668,9 @@ typedef struct gl_shaderprogram_s
 } gl_shaderprogram_t;
 static gl_shaderprogram_t gl_shaderprograms[MAXSHADERPROGRAMS];
 
+// Shader info
+static float shader_leveltime = 0;
+
 // ========================
 //  Fragment shader macros
 // ========================
@@ -593,6 +678,18 @@ static gl_shaderprogram_t gl_shaderprograms[MAXSHADERPROGRAMS];
 //
 // GLSL Software fragment shader
 //
+
+#define GLSL_DOOM_COLORMAP_floors \
+	"float R_DoomColormap(float light, float z)\n" \
+	"{\n" \
+		"float lightnum = clamp(light / 17.0, 0.0, 15.0);\n" \
+		"float lightz = clamp(z / 16.0, 0.0, 127.0);\n" \
+		"float startmap = (15.0 - lightnum) * 4.0;\n" \
+		"float scale = 160.0 / (lightz + 1.0);\n" \
+		"return startmap * 1.06 - scale * 0.5 * 1.15;\n" \
+	"}\n"
+
+// 1.06 and 1.15 were chosen when trying to match software lighting in a test map
 
 #define GLSL_DOOM_COLORMAP \
 	"float R_DoomColormap(float light, float z)\n" \
@@ -602,6 +699,16 @@ static gl_shaderprogram_t gl_shaderprograms[MAXSHADERPROGRAMS];
 		"float startmap = (15.0 - lightnum) * 4.0;\n" \
 		"float scale = 160.0 / (lightz + 1.0);\n" \
 		"return startmap - scale * 0.5;\n" \
+	"}\n"
+
+#define GLSL_DOOM_COLORMAP_walls \
+	"float R_DoomColormap(float light, float z)\n" \
+	"{\n" \
+		"float lightnum = clamp(light / 17.0, 0.0, 15.0);\n" \
+		"float lightz = clamp(z / 16.0, 0.0, 127.0);\n" \
+		"float startmap = (15.0 - lightnum) * 4.0;\n" \
+		"float scale = 160.0 / (lightz + 1.0);\n" \
+		"return startmap * 1.05 - scale * 1.0 * 1.1;\n" \
 	"}\n"
 
 #define GLSL_DOOM_LIGHT_EQUATION \
@@ -631,16 +738,16 @@ static gl_shaderprogram_t gl_shaderprograms[MAXSHADERPROGRAMS];
 	"}\n" \
 	"final_color = mix(final_color, fade_color, darkness);\n"
 
-#define GLSL_SOFTWARE_FRAGMENT_SHADER \
+#define GLSL_SOFTWARE_UNIFORMS \
 	"uniform sampler2D tex;\n" \
 	"uniform vec4 poly_color;\n" \
 	"uniform vec4 tint_color;\n" \
 	"uniform vec4 fade_color;\n" \
 	"uniform float lighting;\n" \
 	"uniform float fade_start;\n" \
-	"uniform float fade_end;\n" \
-	GLSL_DOOM_COLORMAP \
-	GLSL_DOOM_LIGHT_EQUATION \
+	"uniform float fade_end;\n"
+
+#define GLSL_SOFTWARE_MAIN \
 	"void main(void) {\n" \
 		"vec4 texel = texture2D(tex, gl_TexCoord[0].st);\n" \
 		"vec4 base_color = texel * poly_color;\n" \
@@ -649,7 +756,59 @@ static gl_shaderprogram_t gl_shaderprograms[MAXSHADERPROGRAMS];
 		GLSL_SOFTWARE_FADE_EQUATION \
 		"final_color.a = texel.a * poly_color.a;\n" \
 		"gl_FragColor = final_color;\n" \
-	"}\0"
+	"}\n"
+
+#define GLSL_SOFTWARE_FRAGMENT_SHADER_FLOORS \
+	GLSL_SOFTWARE_UNIFORMS \
+	GLSL_DOOM_COLORMAP_floors \
+	GLSL_DOOM_LIGHT_EQUATION \
+	GLSL_SOFTWARE_MAIN \
+	"\0"
+
+#define GLSL_SOFTWARE_FRAGMENT_SHADER_WALLS \
+	GLSL_SOFTWARE_UNIFORMS \
+	GLSL_DOOM_COLORMAP_walls \
+	GLSL_DOOM_LIGHT_EQUATION \
+	GLSL_SOFTWARE_MAIN \
+	"\0"
+
+#define GLSL_SOFTWARE_PAL_UNIFORMS \
+	"uniform sampler2D tex;\n" \
+	"uniform sampler2D lighttable_tex;\n" \
+	"uniform sampler3D lookup_tex;\n" \
+	"uniform int palette[768];\n" \
+	"uniform vec4 poly_color;\n" \
+	"uniform float lighting;\n" \
+
+#define GLSL_SOFTWARE_PAL_MAIN \
+	"void main(void) {\n" \
+		"vec4 texel = texture2D(tex, gl_TexCoord[0].st);\n" \
+		"int tex_pal_idx = int(texture3D(lookup_tex, vec3((texel * 63.0 + 0.5) / 64.0))[0] * 255.0);\n" \
+		"float z = gl_FragCoord.z / gl_FragCoord.w;\n" \
+		"int light_y = int(clamp(floor(R_DoomColormap(lighting, z)), 0.0, 31.0));\n" \
+		"vec2 lighttable_coord = vec2((float(tex_pal_idx) + 0.5) / 256.0, (float(light_y) + 0.5) / 32.0);\n" \
+		"int final_idx = int(texture2D(lighttable_tex, lighttable_coord)[0] * 255.0);\n" \
+		"vec4 final_color = vec4(float(palette[final_idx*3])/255.0, float(palette[final_idx*3+1])/255.0, float(palette[final_idx*3+2])/255.0, 1.0);\n" \
+		"final_color.a = texel.a * poly_color.a;\n" \
+		"gl_FragColor = final_color;\n" \
+	"}\n"
+
+#define GLSL_SOFTWARE_PAL_FRAGMENT_SHADER_FLOORS \
+	GLSL_SOFTWARE_PAL_UNIFORMS \
+	GLSL_DOOM_COLORMAP_floors \
+	GLSL_SOFTWARE_PAL_MAIN \
+	"\0"
+
+#define GLSL_SOFTWARE_PAL_FRAGMENT_SHADER_WALLS \
+	GLSL_SOFTWARE_PAL_UNIFORMS \
+	GLSL_DOOM_COLORMAP_walls \
+	GLSL_SOFTWARE_PAL_MAIN \
+	"\0"
+
+#define GLSL_SOFTWARE_PAL_FRAGMENT_SHADER_POSTPROCESS \
+	GLSL_SOFTWARE_PAL_UNIFORMS \
+	GLSL_SOFTWARE_PAL_MAIN \
+	"\0"
 
 //
 // Water surface shader
@@ -708,6 +867,20 @@ static gl_shaderprogram_t gl_shaderprograms[MAXSHADERPROGRAMS];
 		GLSL_SOFTWARE_FADE_EQUATION \
 		"gl_FragColor = final_color;\n" \
 	"}\0"
+	
+//
+// Palette color quantization shader
+//
+
+#define GLSL_PALETTE_FRAGMENT_SHADER \
+	"uniform sampler2D tex;\n" \
+	"uniform sampler3D lookup_tex;\n" \
+	"uniform int palette[768];\n" \
+	"void main(void) {\n" \
+		"vec3 texel = vec3(texture2D(tex, gl_TexCoord[0].st));\n" \
+		"int pal_idx = int(texture3D(lookup_tex, vec3((63.0/64.0) * texel + 1.0 / 128.0))[0] * 255.0);\n" \
+		"gl_FragColor = vec4(float(palette[pal_idx*3])/255.0, float(palette[pal_idx*3+1])/255.0, float(palette[pal_idx*3+2])/255.0, 1.0);\n" \
+	"}\0"
 
 //
 // GLSL generic fragment shader
@@ -725,16 +898,16 @@ static const char *fragment_shaders[] = {
 	GLSL_DEFAULT_FRAGMENT_SHADER,
 
 	// Floor fragment shader
-	GLSL_SOFTWARE_FRAGMENT_SHADER,
+	GLSL_SOFTWARE_FRAGMENT_SHADER_FLOORS,
 
 	// Wall fragment shader
-	GLSL_SOFTWARE_FRAGMENT_SHADER,
+	GLSL_SOFTWARE_FRAGMENT_SHADER_WALLS,
 
 	// Sprite fragment shader
-	GLSL_SOFTWARE_FRAGMENT_SHADER,
+	GLSL_SOFTWARE_FRAGMENT_SHADER_WALLS,
 
 	// Model fragment shader
-	GLSL_SOFTWARE_FRAGMENT_SHADER,
+	GLSL_SOFTWARE_FRAGMENT_SHADER_WALLS,
 
 	// Water fragment shader
 	GLSL_WATER_FRAGMENT_SHADER,
@@ -747,6 +920,15 @@ static const char *fragment_shaders[] = {
 	"void main(void) {\n"
 		"gl_FragColor = texture2D(tex, gl_TexCoord[0].st);\n"
 	"}\0",
+	
+	// Palette fragment shader
+	GLSL_PALETTE_FRAGMENT_SHADER,
+	
+	GLSL_SOFTWARE_PAL_FRAGMENT_SHADER_FLOORS,
+
+	GLSL_SOFTWARE_PAL_FRAGMENT_SHADER_WALLS,
+
+	GLSL_SOFTWARE_PAL_FRAGMENT_SHADER_POSTPROCESS,
 
 	NULL,
 };
@@ -792,6 +974,13 @@ static const char *vertex_shaders[] = {
 
 	// Sky vertex shader
 	GLSL_DEFAULT_VERTEX_SHADER,
+	
+	// Palette vertex shader
+	GLSL_DEFAULT_VERTEX_SHADER,
+	
+	GLSL_DEFAULT_VERTEX_SHADER,
+	
+	GLSL_DEFAULT_VERTEX_SHADER,
 
 	NULL,
 };
@@ -800,6 +989,7 @@ static const char *vertex_shaders[] = {
 
 void SetupGLFunc4(void)
 {
+	pglTexImage3D = GetGLFunc("glTexImage3D");
 	pglActiveTexture = GetGLFunc("glActiveTexture");
 	pglMultiTexCoord2f = GetGLFunc("glMultiTexCoord2f");
 	pglClientActiveTexture = GetGLFunc("glClientActiveTexture");
@@ -826,6 +1016,7 @@ void SetupGLFunc4(void)
 	pglGetProgramiv = GetGLFunc("glGetProgramiv");
 	pglUseProgram = GetGLFunc("glUseProgram");
 	pglUniform1i = GetGLFunc("glUniform1i");
+	pglUniform1iv = GetGLFunc("glUniform1iv");
 	pglUniform1f = GetGLFunc("glUniform1f");
 	pglUniform2f = GetGLFunc("glUniform2f");
 	pglUniform3f = GetGLFunc("glUniform3f");
@@ -846,7 +1037,7 @@ EXPORT boolean HWRAPI(LoadShaders) (void)
 #ifdef GL_SHADERS
 	GLuint gl_vertShader, gl_fragShader;
 	GLint i, result;
-
+	
 	if (!pglUseProgram) return false;
 
 	gl_customvertexshaders[0] = NULL;
@@ -858,12 +1049,13 @@ EXPORT boolean HWRAPI(LoadShaders) (void)
 		const GLchar* vert_shader = vertex_shaders[i];
 		const GLchar* frag_shader = fragment_shaders[i];
 		boolean custom = cv_grusecustomshaders.value && ((gl_customvertexshaders[i] || gl_customfragmentshaders[i]) && (i > 0));
-
+		
 		// 18032019
 		if (cv_grusecustomshaders.value && gl_customvertexshaders[i])
 			vert_shader = gl_customvertexshaders[i];
 		if (cv_grusecustomshaders.value && gl_customfragmentshaders[i])
 			frag_shader = gl_customfragmentshaders[i];
+		
 
 		if (i >= MAXSHADERS)
 			break;
@@ -875,7 +1067,10 @@ EXPORT boolean HWRAPI(LoadShaders) (void)
 		//
 		gl_vertShader = pglCreateShader(GL_VERTEX_SHADER);
 		if (!gl_vertShader)
-			I_Error("Hardware driver: Error creating vertex shader %d", i);
+		{
+			GL_MSG_Error("LoadShaders: Error creating vertex shader %d\n", i);
+			continue;
+		}
 
 		pglShaderSource(gl_vertShader, 1, &vert_shader, NULL);
 		pglCompileShader(gl_vertShader);
@@ -892,7 +1087,8 @@ EXPORT boolean HWRAPI(LoadShaders) (void)
 			infoLog = malloc(logLength);
 			pglGetShaderInfoLog(gl_vertShader, logLength, NULL, infoLog);
 
-			I_Error("Hardware driver: Error compiling vertex shader %d\n%s", i, infoLog);
+			GL_MSG_Error("LoadShaders: Error compiling vertex shader %d\n%s", i, infoLog);
+			continue;
 		}
 
 		//
@@ -900,7 +1096,10 @@ EXPORT boolean HWRAPI(LoadShaders) (void)
 		//
 		gl_fragShader = pglCreateShader(GL_FRAGMENT_SHADER);
 		if (!gl_fragShader)
-			I_Error("Hardware driver: Error creating fragment shader %d", i);
+		{
+			GL_MSG_Error("LoadShaders: Error creating fragment shader %d\n", i);
+			continue;
+		}
 
 		pglShaderSource(gl_fragShader, 1, &frag_shader, NULL);
 		pglCompileShader(gl_fragShader);
@@ -917,7 +1116,8 @@ EXPORT boolean HWRAPI(LoadShaders) (void)
 			infoLog = malloc(logLength);
 			pglGetShaderInfoLog(gl_fragShader, logLength, NULL, infoLog);
 
-			I_Error("Hardware driver: Error compiling fragment shader %d\n%s", i, infoLog);
+			GL_MSG_Error("LoadShaders: Error compiling fragment shader %d\n%s", i, infoLog);
+			continue;
 		}
 
 		shader = &gl_shaderprograms[i];
@@ -929,12 +1129,19 @@ EXPORT boolean HWRAPI(LoadShaders) (void)
 
 		// check link status
 		pglGetProgramiv(shader->program, GL_LINK_STATUS, &result);
-		if (result != GL_TRUE)
-			I_Error("Hardware driver: Error linking shader program %d", i);
 
 		// delete the shader objects
 		pglDeleteShader(gl_vertShader);
 		pglDeleteShader(gl_fragShader);
+		
+		// couldn't link?
+		if (result != GL_TRUE)
+		{
+			shader->program = 0;
+			shader->custom = false;
+			GL_MSG_Error("LoadShaders: Error linking shader program %d\n", i);
+			continue;
+		}
 
 		// 13062019
 #define GETUNI(uniform) pglGetUniformLocation(shader->program, uniform);
@@ -946,14 +1153,64 @@ EXPORT boolean HWRAPI(LoadShaders) (void)
 		shader->uniforms[gluniform_lighting] = GETUNI("lighting");
 		shader->uniforms[gluniform_fade_start] = GETUNI("fade_start");
 		shader->uniforms[gluniform_fade_end] = GETUNI("fade_end");
-
+			
 		// misc. (custom shaders)
 		shader->uniforms[gluniform_leveltime] = GETUNI("leveltime");
-
+		
+		// palette rendering
+		shader->uniforms[gluniform_palette] = GETUNI("palette");
+		shader->uniforms[gluniform_color_lookup] = GETUNI("lookup_tex");
+		shader->uniforms[gluniform_lighttable_tex] = GETUNI("lighttable_tex");
+		
 #undef GETUNI
+
+// set permanent uniform values
+#define UNIFORM_1(uniform, a, function) \
+	if (uniform != -1) \
+		function (uniform, a);
+
+#define UNIFORM_2(uniform, a, b, function) \
+	if (uniform != -1) \
+		function (uniform, a, b);
+
+	pglUseProgram(shader->program);
+
+	// texture unit numbers for the samplers used for palette rendering
+	UNIFORM_2(shader->uniforms[gluniform_palette], 768, gl_palette, pglUniform1iv);
+	UNIFORM_1(shader->uniforms[gluniform_color_lookup], 1, pglUniform1i);
+	UNIFORM_1(shader->uniforms[gluniform_lighttable_tex], 2, pglUniform1i);
+	
+	pglUseProgram(0);
+
+#undef UNIFORM_1
+#undef UNIFORM_2
+
 	}
 #endif
 	return true;
+}
+
+
+//
+// Shader info
+// Those are given to the uniforms.
+//
+
+EXPORT void HWRAPI(SetShaderInfo) (hwdshaderinfo_t info, INT32 value)
+{
+#ifdef GL_SHADERS
+	switch (info)
+	{
+		case HWD_SHADERINFO_LEVELTIME:
+			shader_leveltime = (((float)(value-1)) + FIXED_TO_FLOAT(rendertimefrac)) / TICRATE;
+			break;
+		default:
+			break;
+	}
+#else
+	(void)info;
+	(void)value;
+#endif
 }
 
 //
@@ -962,7 +1219,9 @@ EXPORT boolean HWRAPI(LoadShaders) (void)
 EXPORT void HWRAPI(LoadCustomShader) (int number, char *shader, size_t size, boolean fragment)
 {
 #ifdef GL_SHADERS
-	if (!pglUseProgram) return;
+	if (!pglUseProgram)
+		return;
+	
 	if (number < 1 || number > MAXSHADERS)
 		I_Error("LoadCustomShader(): cannot load shader %d (max %d)", number, MAXSHADERS);
 
@@ -978,32 +1237,45 @@ EXPORT void HWRAPI(LoadCustomShader) (int number, char *shader, size_t size, boo
 		strncpy(gl_customvertexshaders[number], shader, size);
 		gl_customvertexshaders[number][size] = 0;
 	}
+#else
+	(void)number;
+	(void)shader;
+	(void)size;
+	(void)fragment;
 #endif
 }
 
-EXPORT void HWRAPI(InitCustomShaders) (void)
+EXPORT boolean HWRAPI(InitCustomShaders) (void)
 {
 #ifdef GL_SHADERS
 	KillShaders();
-	LoadShaders();
+	return LoadShaders();
+	
+	if (gl_use_palette_shader)
+	{
+		InitPalette(0, false);
+	}
 #endif
 }
+
 
 EXPORT void HWRAPI(SetShader) (int shader)
 {
 #ifdef GL_SHADERS
 	if (gl_allowshaders)
 	{
-		gl_shadersenabled = true;
 		if ((GLuint)shader != gl_currentshaderprogram)
 		{
 			gl_currentshaderprogram = shader;
 			gl_shaderprogramchanged = true;
 		}
+		gl_shadersenabled = true;
+		return;
 	}
-	else
+#else
+	(void)shader;
 #endif
-		gl_shadersenabled = false;
+	gl_shadersenabled = false;
 }
 
 EXPORT void HWRAPI(UnSetShader) (void)
@@ -1020,6 +1292,119 @@ EXPORT void HWRAPI(UnSetShader) (void)
 EXPORT void HWRAPI(KillShaders) (void)
 {
 	// unused.........................
+}
+
+GLuint palette_tex_num;
+// length of one side of lookup texture
+// smallest separation between all the colors in the srb2 palette is 6, so
+// possibly a 64x64x64 lookup texture might be enough for 100% correct colors
+// (min separation for 64^3 size is 4)
+#define LUT_SIZE 64
+#define STEP_SIZE (256/LUT_SIZE)
+// the +2 in the NearestColor call also needs to be adjusted if LUT_SIZE is changed!
+// the hardcoded values in the shader also need to be adjusted if LUT_SIZE is changed!
+
+void InitPalette(int flashnum, boolean skiplut)
+{	
+	int i, r, g, b;
+
+	//Hudler: 16/10/99: added for OpenGL gamma correction
+	RGBA_t gamma_correction = {0x7F7F7F7F};
+
+	//Hurdler 16/10/99: added for OpenGL gamma correction
+	gamma_correction.s.red   = (UINT8)cv_grgammared.value;
+	gamma_correction.s.green = (UINT8)cv_grgammagreen.value;
+	gamma_correction.s.blue  = (UINT8)cv_grgammablue.value;
+
+	// init the palette
+	int flashoffset = flashnum*256;
+	for (i = 0+flashoffset; i < 256+flashoffset; i++)
+	{
+		int fi = i-flashoffset;
+
+		// gamma correction
+		int pr, pg, pb;
+		pr = (UINT8)MIN((pLocalPalette[i].s.red*gamma_correction.s.red)/127,     255);
+		pg = (UINT8)MIN((pLocalPalette[i].s.green*gamma_correction.s.green)/127,     255);
+		pb = (UINT8)MIN((pLocalPalette[i].s.blue*gamma_correction.s.blue)/127,     255);
+
+		// crush to 16-bit rgb565, like software currently does
+		float fred = (float)(pr >> 3);
+		float fgreen = (float)(pg >> 2);
+		float fblue = (float)(pb >> 3);
+		// restore to rgb888
+		gl_palette[fi*3] = (GLint)(fred / 31.0f * 255.0f);
+		gl_palette[fi*3+1] = (GLint)(fgreen / 63.0f * 255.0f);
+		gl_palette[fi*3+2] = (GLint)(fblue / 31.0f * 255.0f);
+	}
+
+	if (!skiplut) 
+	{
+		GLenum internalFormat;
+		if (gl_version[0] == '1' || gl_version[0] == '2')
+		{
+			// if the OpenGL version is below 3.0, then the GL_R8 format may not be available.
+			// so use GL_LUMINANCE8 instead to get a single component 8-bit format
+			// (it is possible to have access to shaders even in some OpenGL 1.x systems,
+			// so palette rendering can still possibly be achieved there)
+			internalFormat = GL_LUMINANCE8;
+		}
+		else
+		{
+			internalFormat = GL_R8;
+		}
+	
+		// init the palette conversion lookup texture
+		GLubyte *pal_lookup_tex = malloc(LUT_SIZE*LUT_SIZE*LUT_SIZE*sizeof(GLubyte));
+				
+		if (!pal_lookup_tex)
+			I_Error("Failed to allocate memory for generating palette lookup texture.");
+				
+		for (b = 0; b < LUT_SIZE; b++)
+		{
+			for (g = 0; g < LUT_SIZE; g++)
+			{
+				for (r = 0; r < LUT_SIZE; r++)
+				{
+						pal_lookup_tex[b*LUT_SIZE*LUT_SIZE+g*LUT_SIZE+r] = NearestColor(r*STEP_SIZE+0, g*STEP_SIZE+0, b*STEP_SIZE+0);
+				}
+			}
+		}
+			
+		pglGenTextures(1, &palette_tex_num);
+		pglBindTexture(GL_TEXTURE_3D, palette_tex_num);
+		pglTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		pglTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		if (!pglTexImage3D)
+			I_Error("pglTexImage3D is NULL!");
+		pglTexImage3D(GL_TEXTURE_3D, 0, internalFormat, LUT_SIZE, LUT_SIZE, LUT_SIZE, 0, GL_RED, GL_UNSIGNED_BYTE, pal_lookup_tex);
+		free(pal_lookup_tex);
+	}
+#undef STEP_SIZE
+	
+	pglUseProgram(gl_shaderprograms[8].program);
+	pglUniform1i(gl_shaderprograms[8].uniforms[gluniform_color_lookup], 1); // bind sampler to second texture unit
+	pglUniform1iv(gl_shaderprograms[8].uniforms[gluniform_palette], 768, gl_palette);
+	// bind the palette to the fancy shader here
+	pglUseProgram(gl_shaderprograms[9].program);
+	pglUniform1iv(gl_shaderprograms[9].uniforms[gluniform_palette], 768, gl_palette);
+	// bind tex unit 2 to lighttable tex
+	pglUniform1i(gl_shaderprograms[9].uniforms[gluniform_lighttable_tex], 2);
+	pglUniform1i(gl_shaderprograms[9].uniforms[gluniform_color_lookup], 1);
+	// bind the palette to the fancy shader here
+	pglUseProgram(gl_shaderprograms[10].program);
+	pglUniform1iv(gl_shaderprograms[10].uniforms[gluniform_palette], 768, gl_palette);
+	// bind tex unit 2 to lighttable tex
+	pglUniform1i(gl_shaderprograms[10].uniforms[gluniform_lighttable_tex], 2);
+	pglUniform1i(gl_shaderprograms[10].uniforms[gluniform_color_lookup], 1);
+	pglUseProgram(0);
+	pglBindTexture(GL_TEXTURE_3D, 0);
+
+	// bind 3d lookup to unit 1, maybe it can stay there
+	pglActiveTexture(GL_TEXTURE1);
+	pglBindTexture(GL_TEXTURE_3D, palette_tex_num);
+	pglActiveTexture(GL_TEXTURE0);
+	gl_palette_initialized = true;
 }
 
 // -----------------+
@@ -1079,9 +1464,6 @@ void SetModelView(GLint w, GLint h)
 	screen_height = h;
 
 	pglViewport(0, 0, w, h);
-#ifdef GL_ACCUM_BUFFER_BIT
-	pglClear(GL_ACCUM_BUFFER_BIT);
-#endif
 
 	pglMatrixMode(GL_PROJECTION);
 	pglLoadIdentity();
@@ -1201,6 +1583,46 @@ EXPORT void HWRAPI(ClearMipMapCache) (void)
 	Flush();
 }
 
+EXPORT UINT32 HWRAPI(AddLightTable) (UINT8 *lighttable)
+{
+	LightTableCacheEntry_t *cache_entry = malloc(sizeof(LightTableCacheEntry_t));
+	if (!ltcachetail)
+	{
+		ltcachehead = ltcachetail = cache_entry;
+	}
+	else
+	{
+		ltcachetail->next = cache_entry;
+		ltcachetail = cache_entry;
+	}
+	ltcachetail->next = NULL;
+	pglGenTextures(1, &ltcachetail->id);
+	if (!ltcachetail->id)
+		I_Error("hwr lighttable cache entry id is zero");
+	pglBindTexture(GL_TEXTURE_2D, ltcachetail->id);
+	pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	pglTexImage2D(GL_TEXTURE_2D, 0, GL_R8, 256, 32, 0, GL_RED, GL_UNSIGNED_BYTE, lighttable);
+
+	// restore previously bound texture
+	if (!gl_batching)
+		pglBindTexture(GL_TEXTURE_2D, tex_downloaded);
+
+	return ltcachetail->id;
+}
+
+// Delete light table textures, ids given before become invalid and must not be used.
+EXPORT void HWRAPI(ClearLightTableCache) (void)
+{
+	while (ltcachehead)
+	{
+		pglDeleteTextures(1, &ltcachehead->id);
+		LightTableCacheEntry_t *next = ltcachehead->next;
+		free(ltcachehead);
+		ltcachehead = next;
+	}
+	ltcachetail = NULL;
+}
 
 // -----------------+
 // ReadRect         : Read a rectangle region of the truecolor framebuffer
@@ -1312,6 +1734,9 @@ EXPORT void HWRAPI(ClearBuffer) (FBOOLEAN ColorMask,
 	pglClear(ClearMask);
 	pglEnableClientState(GL_VERTEX_ARRAY); // We always use this one
 	pglEnableClientState(GL_TEXTURE_COORD_ARRAY); // And mostly this one, too
+	
+	if (!gl_palette_initialized)
+		InitPalette(0, false); // just gonna put this here for now
 }
 
 
@@ -1502,6 +1927,211 @@ EXPORT void HWRAPI(SetBlend) (FBITFIELD PolyFlags)
 
 
 // -----------------+
+// UpdateTexture    : Updates the texture data.
+// -----------------+
+EXPORT void HWRAPI(UpdateTexture) (FTextureInfo *pTexInfo)
+{
+	// Download a mipmap
+	boolean updatemipmap = true;
+	static RGBA_t   tex[2048*2048];
+	const GLvoid   *ptex = tex;
+	INT32             w, h;
+	GLuint texnum = 0;
+
+	if (!pTexInfo->downloaded)
+	{
+		pglGenTextures(1, &texnum);
+		pTexInfo->downloaded = texnum;
+		updatemipmap = false;
+	}
+	else
+		texnum = pTexInfo->downloaded;
+
+	//GL_DBG_Printf ("DownloadMipmap %d %x\n",(INT32)texnum,pTexInfo->grInfo.data);
+
+	w = pTexInfo->width;
+	h = pTexInfo->height;
+
+
+	if ((pTexInfo->grInfo.format == GR_TEXFMT_P_8) ||
+		(pTexInfo->grInfo.format == GR_TEXFMT_AP_88))
+	{
+		const GLubyte *pImgData = (const GLubyte *)pTexInfo->grInfo.data;
+		INT32 i, j;
+
+		for (j = 0; j < h; j++)
+		{
+			for (i = 0; i < w; i++)
+			{
+				if ((*pImgData == HWR_PATCHES_CHROMAKEY_COLORINDEX) &&
+					(pTexInfo->flags & TF_CHROMAKEYED))
+				{
+					tex[w*j+i].s.red   = 0;
+					tex[w*j+i].s.green = 0;
+					tex[w*j+i].s.blue  = 0;
+					tex[w*j+i].s.alpha = 0;
+					pTexInfo->flags |= TF_TRANSPARENT; // there is a hole in it
+				}
+				else
+				{
+					tex[w*j+i].s.red   = myPaletteData[*pImgData].s.red;
+					tex[w*j+i].s.green = myPaletteData[*pImgData].s.green;
+					tex[w*j+i].s.blue  = myPaletteData[*pImgData].s.blue;
+					tex[w*j+i].s.alpha = myPaletteData[*pImgData].s.alpha;
+				}
+
+				pImgData++;
+
+				if (pTexInfo->grInfo.format == GR_TEXFMT_AP_88)
+				{
+					if (!(pTexInfo->flags & TF_CHROMAKEYED))
+						tex[w*j+i].s.alpha = *pImgData;
+					pImgData++;
+				}
+
+			}
+		}
+	}
+	else if (pTexInfo->grInfo.format == GR_RGBA)
+	{
+		// corona test : passed as ARGB 8888, which is not in glide formats
+		// Hurdler: not used for coronas anymore, just for dynamic lighting
+		ptex = pTexInfo->grInfo.data;
+	}
+	else if (pTexInfo->grInfo.format == GR_TEXFMT_ALPHA_INTENSITY_88)
+	{
+		const GLubyte *pImgData = (const GLubyte *)pTexInfo->grInfo.data;
+		INT32 i, j;
+
+		for (j = 0; j < h; j++)
+		{
+			for (i = 0; i < w; i++)
+			{
+				tex[w*j+i].s.red   = *pImgData;
+				tex[w*j+i].s.green = *pImgData;
+				tex[w*j+i].s.blue  = *pImgData;
+				pImgData++;
+				tex[w*j+i].s.alpha = *pImgData;
+				pImgData++;
+			}
+		}
+	}
+	else if (pTexInfo->grInfo.format == GR_TEXFMT_ALPHA_8) // Used for fade masks
+	{
+		const GLubyte *pImgData = (const GLubyte *)pTexInfo->grInfo.data;
+		INT32 i, j;
+
+		for (j = 0; j < h; j++)
+		{
+			for (i = 0; i < w; i++)
+			{
+				tex[w*j+i].s.red   = 255; // 255 because the fade mask is modulated with the screen texture, so alpha affects it while the colours don't
+				tex[w*j+i].s.green = 255;
+				tex[w*j+i].s.blue  = 255;
+				tex[w*j+i].s.alpha = *pImgData;
+				pImgData++;
+			}
+		}
+	}
+	else
+		GL_MSG_Warning ("SetTexture(bad format) %ld\n", pTexInfo->grInfo.format);
+
+
+	// the texture number was already generated by pglGenTextures
+	pglBindTexture(GL_TEXTURE_2D, texnum);
+	tex_downloaded = texnum;
+
+	// disable texture filtering on any texture that has holes so there's no dumb borders or blending issues
+	if (pTexInfo->flags & TF_TRANSPARENT)
+	{
+		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	}
+	else
+	{
+		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter);
+		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter);
+	}
+
+	if (pTexInfo->grInfo.format == GR_TEXFMT_ALPHA_INTENSITY_88)
+	{
+		//pglTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
+		if (MipMap)
+		{
+			pgluBuild2DMipmaps(GL_TEXTURE_2D, GL_LUMINANCE_ALPHA, w, h, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
+			pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_LOD, 0);
+			if (pTexInfo->flags & TF_TRANSPARENT)
+				pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, 0); // No mippmaps on transparent stuff
+			else
+				pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, 4);
+			//pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_LINEAR_MIPMAP_LINEAR);
+		}
+		else
+		{
+			if (updatemipmap)
+				pglTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
+			else
+				pglTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
+		}
+	}
+	else if (pTexInfo->grInfo.format == GR_TEXFMT_ALPHA_8)
+	{
+		//pglTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
+		if (MipMap)
+		{
+			pgluBuild2DMipmaps(GL_TEXTURE_2D, GL_ALPHA, w, h, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
+			pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_LOD, 0);
+			if (pTexInfo->flags & TF_TRANSPARENT)
+				pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, 0); // No mippmaps on transparent stuff
+			else
+				pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, 4);
+			//pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_LINEAR_MIPMAP_LINEAR);
+		}
+		else
+		{
+			if (updatemipmap)
+				pglTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
+			else
+				pglTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
+		}
+	}
+	else
+	{
+		if (MipMap)
+		{
+			pgluBuild2DMipmaps(GL_TEXTURE_2D, textureformatGL, w, h, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
+			// Control the mipmap level of detail
+			pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_LOD, 0); // the lower the number, the higer the detail
+			if (pTexInfo->flags & TF_TRANSPARENT)
+				pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, 0); // No mippmaps on transparent stuff
+			else
+				pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, 5);
+		}
+		else
+		{
+			if (updatemipmap)
+				pglTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
+			else
+				pglTexImage2D(GL_TEXTURE_2D, 0, textureformatGL, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
+		}
+	}
+
+	if (pTexInfo->flags & TF_WRAPX)
+		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	else
+		Clamp2D(GL_TEXTURE_WRAP_S);
+
+	if (pTexInfo->flags & TF_WRAPY)
+		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	else
+		Clamp2D(GL_TEXTURE_WRAP_T);
+
+	if (maximumAnisotropy)
+		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropic_filter);
+}
+
+
+// -----------------+
 // SetTexture       : The mipmap becomes the current texture source
 // -----------------+
 EXPORT void HWRAPI(SetTexture) (FTextureInfo *pTexInfo)
@@ -1515,220 +2145,13 @@ EXPORT void HWRAPI(SetTexture) (FTextureInfo *pTexInfo)
 	{
 		if (pTexInfo->downloaded != tex_downloaded)
 		{
-			if (!gl_batching)
-				pglBindTexture(GL_TEXTURE_2D, pTexInfo->downloaded);
+			pglBindTexture(GL_TEXTURE_2D, pTexInfo->downloaded);
 			tex_downloaded = pTexInfo->downloaded;
 		}
 	}
 	else
 	{
-		// Download a mipmap
-		static RGBA_t   tex[2048*2048];
-		const GLvoid   *ptex = tex;
-		INT32             w, h;
-		GLuint texnum = 0;
-
-		pglGenTextures(1, &texnum);
-		//GL_DBG_Printf("DownloadMipmap %d\n", (INT32)texnum, pTexInfo->grInfo.data);
-
-		w = pTexInfo->width;
-		h = pTexInfo->height;
-
-#ifdef USE_PALETTED_TEXTURE
-		if (glColorTableEXT &&
-			(pTexInfo->grInfo.format == GR_TEXFMT_P_8) &&
-			!(pTexInfo->flags & TF_CHROMAKEYED))
-		{
-			// do nothing here.
-			// Not a problem with MiniGL since we don't use paletted texture
-		}
-		else
-#endif
-
-		if ((pTexInfo->grInfo.format == GR_TEXFMT_P_8) ||
-			(pTexInfo->grInfo.format == GR_TEXFMT_AP_88))
-		{
-			const GLubyte *pImgData = (const GLubyte *)pTexInfo->grInfo.data;
-			INT32 i, j;
-
-			for (j = 0; j < h; j++)
-			{
-				for (i = 0; i < w; i++)
-				{
-					if ((*pImgData == HWR_PATCHES_CHROMAKEY_COLORINDEX) &&
-					    (pTexInfo->flags & TF_CHROMAKEYED))
-					{
-						tex[w*j+i].s.red   = 0;
-						tex[w*j+i].s.green = 0;
-						tex[w*j+i].s.blue  = 0;
-						tex[w*j+i].s.alpha = 0;
-						pTexInfo->flags |= TF_TRANSPARENT; // there is a hole in it
-					}
-					else
-					{
-						tex[w*j+i].s.red   = myPaletteData[*pImgData].s.red;
-						tex[w*j+i].s.green = myPaletteData[*pImgData].s.green;
-						tex[w*j+i].s.blue  = myPaletteData[*pImgData].s.blue;
-						tex[w*j+i].s.alpha = myPaletteData[*pImgData].s.alpha;
-					}
-
-					pImgData++;
-
-					if (pTexInfo->grInfo.format == GR_TEXFMT_AP_88)
-					{
-						if (!(pTexInfo->flags & TF_CHROMAKEYED))
-							tex[w*j+i].s.alpha = *pImgData;
-						pImgData++;
-					}
-
-				}
-			}
-		}
-		else if (pTexInfo->grInfo.format == GR_RGBA)
-		{
-			// corona test : passed as ARGB 8888, which is not in glide formats
-			// Hurdler: not used for coronas anymore, just for dynamic lighting
-			ptex = pTexInfo->grInfo.data;
-		}
-		else if (pTexInfo->grInfo.format == GR_TEXFMT_ALPHA_INTENSITY_88)
-		{
-			const GLubyte *pImgData = (const GLubyte *)pTexInfo->grInfo.data;
-			INT32 i, j;
-
-			for (j = 0; j < h; j++)
-			{
-				for (i = 0; i < w; i++)
-				{
-					tex[w*j+i].s.red   = *pImgData;
-					tex[w*j+i].s.green = *pImgData;
-					tex[w*j+i].s.blue  = *pImgData;
-					pImgData++;
-					tex[w*j+i].s.alpha = *pImgData;
-					pImgData++;
-				}
-			}
-		}
-		else if (pTexInfo->grInfo.format == GR_TEXFMT_ALPHA_8) // Used for fade masks
-		{
-			const GLubyte *pImgData = (const GLubyte *)pTexInfo->grInfo.data;
-			INT32 i, j;
-
-			for (j = 0; j < h; j++)
-			{
-				for (i = 0; i < w; i++)
-				{
-					tex[w*j+i].s.red   = 255; // 255 because the fade mask is modulated with the screen texture, so alpha affects it while the colours don't
-					tex[w*j+i].s.green = 255;
-					tex[w*j+i].s.blue  = 255;
-					tex[w*j+i].s.alpha = *pImgData;
-					pImgData++;
-				}
-			}
-		}
-		else
-			GL_DBG_Printf("SetTexture(bad format) %ld\n", pTexInfo->grInfo.format);
-
-		// the texture number was already generated by pglGenTextures
-		pglBindTexture(GL_TEXTURE_2D, texnum);
-		pTexInfo->downloaded = texnum;
-		tex_downloaded = texnum;
-
-		// disable texture filtering on any texture that has holes so there's no dumb borders or blending issues
-		if (pTexInfo->flags & TF_TRANSPARENT)
-		{
-			pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-			pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		}
-		else
-		{
-			pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter);
-			pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter);
-		}
-
-#ifdef USE_PALETTED_TEXTURE
-			//Hurdler: not really supported and not tested recently
-		if (glColorTableEXT &&
-			(pTexInfo->grInfo.format == GR_TEXFMT_P_8) &&
-			!(pTexInfo->flags & TF_CHROMAKEYED))
-		{
-			glColorTableEXT(GL_TEXTURE_2D, GL_RGB8, 256, GL_RGB, GL_UNSIGNED_BYTE, palette_tex);
-			pglTexImage2D(GL_TEXTURE_2D, 0, GL_COLOR_INDEX8_EXT, w, h, 0, GL_COLOR_INDEX, GL_UNSIGNED_BYTE, pTexInfo->grInfo.data);
-		}
-		else
-#endif
-		if (pTexInfo->grInfo.format == GR_TEXFMT_ALPHA_INTENSITY_88)
-		{
-			//pglTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
-			if (MipMap)
-			{
-				pgluBuild2DMipmaps(GL_TEXTURE_2D, GL_LUMINANCE_ALPHA, w, h, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
-#ifdef GL_TEXTURE_MIN_LOD
-				pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_LOD, 0);
-#endif
-#ifdef GL_TEXTURE_MAX_LOD
-				if (pTexInfo->flags & TF_TRANSPARENT)
-					pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, 0); // No mippmaps on transparent stuff
-				else
-					pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, 4);
-#endif
-				//pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_LINEAR_MIPMAP_LINEAR);
-			}
-			else
-				pglTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
-		}
-		else if (pTexInfo->grInfo.format == GR_TEXFMT_ALPHA_8)
-		{
-			//pglTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
-			if (MipMap)
-			{
-				pgluBuild2DMipmaps(GL_TEXTURE_2D, GL_ALPHA, w, h, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
-#ifdef GL_TEXTURE_MIN_LOD
-				pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_LOD, 0);
-#endif
-#ifdef GL_TEXTURE_MAX_LOD
-				if (pTexInfo->flags & TF_TRANSPARENT)
-					pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, 0); // No mippmaps on transparent stuff
-				else
-					pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, 4);
-#endif
-				//pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_LINEAR_MIPMAP_LINEAR);
-			}
-			else
-				pglTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
-		}
-		else
-		{
-			if (MipMap)
-			{
-				pgluBuild2DMipmaps(GL_TEXTURE_2D, textureformatGL, w, h, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
-				// Control the mipmap level of detail
-#ifdef GL_TEXTURE_MIN_LOD
-				pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_LOD, 0); // the lower the number, the higer the detail
-#endif
-#ifdef GL_TEXTURE_MAX_LOD
-				if (pTexInfo->flags & TF_TRANSPARENT)
-					pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, 0); // No mippmaps on transparent stuff
-				else
-					pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, 5);
-#endif
-			}
-			else
-				pglTexImage2D(GL_TEXTURE_2D, 0, textureformatGL, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
-		}
-
-		if (pTexInfo->flags & TF_WRAPX)
-			pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		else
-			Clamp2D(GL_TEXTURE_WRAP_S);
-
-		if (pTexInfo->flags & TF_WRAPY)
-			pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-		else
-			Clamp2D(GL_TEXTURE_WRAP_T);
-
-		if (maximumAnisotropy)
-			pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropic_filter);
-
+		UpdateTexture(pTexInfo);
 		pTexInfo->nextmipmap = NULL;
 		if (gr_cachetail)
 		{ // insertion at the tail
@@ -1740,7 +2163,8 @@ EXPORT void HWRAPI(SetTexture) (FTextureInfo *pTexInfo)
 	}
 }
 
-static void load_shaders(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRGBAFloat *tint, GLRGBAFloat *fade)
+
+static void *Shader_Load(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRGBAFloat *tint, GLRGBAFloat *fade)
 {
 #ifdef GL_SHADERS
 	if (gl_shadersenabled && pglUseProgram)
@@ -1748,67 +2172,76 @@ static void load_shaders(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRGBAFloat *
 		gl_shaderprogram_t *shader = &gl_shaderprograms[gl_currentshaderprogram];
 		if (shader->program)
 		{
-			boolean custom = (gl_shaderprograms[gl_currentshaderprogram].custom);
-			// 13062019
-			// Check for fog
-			//if (changed)
+			if (gl_shaderprogramchanged)
 			{
-				if (!custom)
-				{
-					if (gl_shaderprogramchanged)
-					{
-						pglUseProgram(gl_shaderprograms[gl_currentshaderprogram].program);
-						gl_shaderprogramchanged = false;
-					}
-				}
-				else	// always load custom shaders
-				{
-					if (gl_shaderprogramchanged)
-					{
-						pglUseProgram(gl_shaderprograms[gl_currentshaderprogram].program);
-						gl_shaderprogramchanged = false;
-					}
-				}
+				pglUseProgram(gl_shaderprograms[gl_currentshaderprogram].program);
+				gl_shaderprogramchanged = false;
 			}
-
-			// set uniforms
-			{
-				#define UNIFORM_1(uniform, a, function) \
-					if (uniform != -1) \
-						function (uniform, a);
-
-				#define UNIFORM_2(uniform, a, b, function) \
-					if (uniform != -1) \
-						function (uniform, a, b);
-
-				#define UNIFORM_3(uniform, a, b, c, function) \
-					if (uniform != -1) \
-						function (uniform, a, b, c);
-
-				#define UNIFORM_4(uniform, a, b, c, d, function) \
-					if (uniform != -1) \
-						function (uniform, a, b, c, d);
-
-				// polygon
-				UNIFORM_4(shader->uniforms[gluniform_poly_color], poly->red, poly->green, poly->blue, poly->alpha, pglUniform4f);
-				UNIFORM_4(shader->uniforms[gluniform_tint_color], tint->red, tint->green, tint->blue, tint->alpha, pglUniform4f);
-				UNIFORM_4(shader->uniforms[gluniform_fade_color], fade->red, fade->green, fade->blue, fade->alpha, pglUniform4f);
-				UNIFORM_1(shader->uniforms[gluniform_lighting], Surface->LightInfo.light_level, pglUniform1f);
-				UNIFORM_1(shader->uniforms[gluniform_fade_start], Surface->LightInfo.fade_start, pglUniform1f);
-				UNIFORM_1(shader->uniforms[gluniform_fade_end], Surface->LightInfo.fade_end, pglUniform1f);
-				UNIFORM_1(shader->uniforms[gluniform_leveltime], ((float)leveltime) / TICRATE, pglUniform1f);
-
-				#undef UNIFORM_1
-				#undef UNIFORM_2
-				#undef UNIFORM_3
-				#undef UNIFORM_4
-			}
+			Shader_SetUniforms(Surface, poly, tint, fade);
+			return shader;
 		}
 		else
 			pglUseProgram(0);
 	}
+#else
+	(void)Surface;
+	(void)poly;
+	(void)tint;
+	(void)fade;
+#endif
+	return NULL;
+}
+
+static void Shader_SetUniforms(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRGBAFloat *tint, GLRGBAFloat *fade)
+{
+#ifdef GL_SHADERS
+	if (gl_shadersenabled)
+	{
+		gl_shaderprogram_t *shader = &gl_shaderprograms[gl_currentshaderprogram];
+		if (!shader->program)
+			return;
+
+		#define UNIFORM_1(uniform, a, function) \
+			if (uniform != -1) \
+				function (uniform, a);
+
+		#define UNIFORM_2(uniform, a, b, function) \
+			if (uniform != -1) \
+				function (uniform, a, b);
+
+		#define UNIFORM_3(uniform, a, b, c, function) \
+			if (uniform != -1) \
+				function (uniform, a, b, c);
+
+		#define UNIFORM_4(uniform, a, b, c, d, function) \
+			if (uniform != -1) \
+				function (uniform, a, b, c, d);
+
+		// polygon
+		UNIFORM_4(shader->uniforms[gluniform_poly_color], poly->red, poly->green, poly->blue, poly->alpha, pglUniform4f);
+		UNIFORM_4(shader->uniforms[gluniform_tint_color], tint->red, tint->green, tint->blue, tint->alpha, pglUniform4f);
+		UNIFORM_4(shader->uniforms[gluniform_fade_color], fade->red, fade->green, fade->blue, fade->alpha, pglUniform4f);
+		if (Surface != NULL)
+		{
+			UNIFORM_1(shader->uniforms[gluniform_lighting], Surface->LightInfo.light_level, pglUniform1f);
+			UNIFORM_1(shader->uniforms[gluniform_fade_start], Surface->LightInfo.fade_start, pglUniform1f);
+			UNIFORM_1(shader->uniforms[gluniform_fade_end], Surface->LightInfo.fade_end, pglUniform1f);
+		}
+		UNIFORM_1(shader->uniforms[gluniform_leveltime], shader_leveltime, pglUniform1f);
+
+		#undef UNIFORM_1
+		#undef UNIFORM_2
+		#undef UNIFORM_3
+		#undef UNIFORM_4
+	}
+#else
+	(void)Surface;
+	(void)poly;
+	(void)tint;
+	(void)fade;
 #endif
 }
+
 
 // unfinished draw call batching
 
@@ -1822,6 +2255,8 @@ typedef struct
 	FBITFIELD polyFlags;
 	GLuint texNum;
 	GLuint shader;
+	// this tells batching that the plane belongs to a horizon line and must be drawn in correct order with the skywalls
+	boolean horizonSpecial;
 } PolygonArrayEntry;
 
 FOutVector* finalVertexArray = NULL;// contains subset of sorted vertices and texture coordinates to be sent to gpu
@@ -1835,7 +2270,7 @@ int finalVertexArrayAllocSize = 65536;
 
 PolygonArrayEntry* polygonArray = NULL;// contains the polygon data from DrawPolygon, waiting to be processed
 int polygonArraySize = 0;
-unsigned int* polygonIndexArray = NULL;// contains sorting pointers for polygonArray
+PolygonArrayEntry **polygonArraySorted = NULL;// contains sorted pointers to polygonArray
 int polygonArrayAllocSize = 65536;
 
 FOutVector* unsortedVertexArray = NULL;// contains unsorted vertices and texture coordinates from DrawPolygon
@@ -1851,7 +2286,7 @@ EXPORT void HWRAPI(StartBatching) (void)
 		finalVertexArray = malloc(finalVertexArrayAllocSize * sizeof(FOutVector));
 		finalVertexIndexArray = malloc(finalVertexArrayAllocSize * 3 * sizeof(UINT32));
 		polygonArray = malloc(polygonArrayAllocSize * sizeof(PolygonArrayEntry));
-		polygonIndexArray = malloc(polygonArrayAllocSize * sizeof(unsigned int));
+		polygonArraySorted = malloc(polygonArrayAllocSize * sizeof(PolygonArrayEntry *));
 		unsortedVertexArray = malloc(unsortedVertexArrayAllocSize * sizeof(FOutVector));
 	}
 	// drawing functions will now collect the drawing data instead of passing it to opengl
@@ -1861,23 +2296,33 @@ EXPORT void HWRAPI(StartBatching) (void)
 
 static int comparePolygons(const void *p1, const void *p2)
 {
-	PolygonArrayEntry* poly1 = &polygonArray[*(const unsigned int*)p1];
-	PolygonArrayEntry* poly2 = &polygonArray[*(const unsigned int*)p2];
+	PolygonArrayEntry *poly1 = *(PolygonArrayEntry *const *)p1;
+	PolygonArrayEntry *poly2 = *(PolygonArrayEntry *const *)p2;
 	int diff;
 	INT64 diff64;
 
 	int shader1 = poly1->shader;
 	int shader2 = poly2->shader;
-	// make skywalls first in order
-	if (poly1->polyFlags & PF_NoTexture)
+	// make skywalls and horizon lines first in order
+	if (poly1->polyFlags & PF_NoTexture || poly1->horizonSpecial)
 		shader1 = -1;
-	if (poly2->polyFlags & PF_NoTexture)
+	if (poly2->polyFlags & PF_NoTexture || poly2->horizonSpecial)
 		shader2 = -1;
 	diff = shader1 - shader2;
 	if (diff != 0) return diff;
 
+	// skywalls and horizon lines must retain their order for horizon lines to work
+	if (shader1 == -1 && shader2 == -1)
+		return poly1 - poly2;
+
 	diff = poly1->texNum - poly2->texNum;
 	if (diff != 0) return diff;
+	
+	if (gl_use_palette_shader)
+	{
+	diff = poly1->surf.LightTableId - poly2->surf.LightTableId;
+	if (diff != 0) return diff;
+	}
 
 	diff = poly1->polyFlags - poly2->polyFlags;
 	if (diff != 0) return diff;
@@ -1899,19 +2344,23 @@ static int comparePolygons(const void *p1, const void *p2)
 
 static int comparePolygonsNoShaders(const void *p1, const void *p2)
 {
-	PolygonArrayEntry* poly1 = &polygonArray[*(const unsigned int*)p1];
-	PolygonArrayEntry* poly2 = &polygonArray[*(const unsigned int*)p2];
+	PolygonArrayEntry *poly1 = *(PolygonArrayEntry *const *)p1;
+	PolygonArrayEntry *poly2 = *(PolygonArrayEntry *const *)p2;
 	int diff;
 	INT64 diff64;
 
 	GLuint texNum1 = poly1->texNum;
 	GLuint texNum2 = poly2->texNum;
-	if (poly1->polyFlags & PF_NoTexture)
+	if (poly1->polyFlags & PF_NoTexture || poly1->horizonSpecial)
 		texNum1 = 0;
-	if (poly2->polyFlags & PF_NoTexture)
+	if (poly2->polyFlags & PF_NoTexture || poly2->horizonSpecial)
 		texNum2 = 0;
 	diff = texNum1 - texNum2;
 	if (diff != 0) return diff;
+
+	// skywalls and horizon lines must retain their order for horizon lines to work
+	if (texNum1 == 0 && texNum2 == 0)
+		return poly1 - poly2;
 
 	diff = poly1->polyFlags - poly2->polyFlags;
 	if (diff != 0) return diff;
@@ -1928,7 +2377,7 @@ EXPORT void HWRAPI(RenderBatches) (precise_t *sSortTime, precise_t *sDrawTime, i
 	int finalVertexWritePos = 0;// position in finalVertexArray
 	int finalIndexWritePos = 0;// position in finalVertexIndexArray
 
-	int polygonReadPos = 0;// position in polygonIndexArray
+	int polygonReadPos = 0;// position in polygonArraySorted
 
 	GLuint currentShader;
 	GLuint currentTexture;
@@ -1954,19 +2403,19 @@ EXPORT void HWRAPI(RenderBatches) (precise_t *sSortTime, precise_t *sDrawTime, i
 	*sNumPolys = polygonArraySize;
 	*sNumCalls = *sNumVerts = 0;
 	*sNumShaders = *sNumTextures = *sNumPolyFlags = *sNumColors = 1;
-	// init polygonIndexArray
+	// init polygonArraySorted
 	for (i = 0; i < polygonArraySize; i++)
 	{
-		polygonIndexArray[i] = i;
+		polygonArraySorted[i] = &polygonArray[i];
 	}
 
 	// sort polygons
 	//CONS_Printf("qsort polys\n");
 	*sSortTime = I_GetPreciseTime();
 	if (gl_allowshaders)
-		qsort(polygonIndexArray, polygonArraySize, sizeof(unsigned int), comparePolygons);
+		qsort(polygonArraySorted, polygonArraySize, sizeof(PolygonArrayEntry *), comparePolygons);
 	else
-		qsort(polygonIndexArray, polygonArraySize, sizeof(unsigned int), comparePolygonsNoShaders);
+		qsort(polygonArraySorted, polygonArraySize, sizeof(PolygonArrayEntry *), comparePolygonsNoShaders);
 	*sSortTime = I_GetPreciseTime() - *sSortTime;
 	//CONS_Printf("sort done\n");
 	// sort order
@@ -1978,10 +2427,10 @@ EXPORT void HWRAPI(RenderBatches) (precise_t *sSortTime, precise_t *sDrawTime, i
 
 	*sDrawTime = I_GetPreciseTime();
 
-	currentShader = polygonArray[polygonIndexArray[0]].shader;
-	currentTexture = polygonArray[polygonIndexArray[0]].texNum;
-	currentPolyFlags = polygonArray[polygonIndexArray[0]].polyFlags;
-	currentSurfaceInfo = polygonArray[polygonIndexArray[0]].surf;
+	currentShader = polygonArraySorted[0]->shader;
+	currentTexture = polygonArraySorted[0]->texNum;
+	currentPolyFlags = polygonArraySorted[0]->polyFlags;
+	currentSurfaceInfo = polygonArraySorted[0]->surf;
 	// For now, will sort and track the colors. Vertex attributes could be used instead of uniforms
 	// and a color array could replace the color calls.
 
@@ -2010,7 +2459,15 @@ EXPORT void HWRAPI(RenderBatches) (precise_t *sSortTime, precise_t *sDrawTime, i
 	firstFade.alpha = byte2float[currentSurfaceInfo.FadeColor.s.alpha];
 
 	if (gl_allowshaders)
-		load_shaders(&currentSurfaceInfo, &firstPoly, &firstTint, &firstFade);
+	{
+		Shader_Load(&currentSurfaceInfo, &firstPoly, &firstTint, &firstFade);
+		if (gl_use_palette_shader)
+		{
+			pglActiveTexture(GL_TEXTURE2);// this stuff could be done better but gonna do it quick like this for now
+			pglBindTexture(GL_TEXTURE_2D, currentSurfaceInfo.LightTableId);
+			pglActiveTexture(GL_TEXTURE0);
+		}
+	}
 
 	if (currentPolyFlags & PF_NoTexture)
 		currentTexture = 0;
@@ -2051,8 +2508,8 @@ EXPORT void HWRAPI(RenderBatches) (precise_t *sSortTime, precise_t *sDrawTime, i
 		// reset write pos
 		// repeat loop
 
-		int index = polygonIndexArray[polygonReadPos++];
-		int numVerts = polygonArray[index].numVerts;
+		PolygonArrayEntry *entry = polygonArraySorted[polygonReadPos++];
+		int numVerts = entry->numVerts;
 		// before writing, check if there is enough room
 		// using 'while' instead of 'if' here makes sure that there will *always* be enough room.
 		// probably never will this loop run more than once though
@@ -2077,7 +2534,7 @@ EXPORT void HWRAPI(RenderBatches) (precise_t *sSortTime, precise_t *sDrawTime, i
 		}
 		//CONS_Printf("write verts to final\n");
 		// write the vertices of the polygon
-		memcpy(&finalVertexArray[finalVertexWritePos], &unsortedVertexArray[polygonArray[index].vertsIndex],
+		memcpy(&finalVertexArray[finalVertexWritePos], &unsortedVertexArray[entry->vertsIndex],
 			numVerts * sizeof(FOutVector));
 		// write the indexes, pointing to the fan vertexes but in triangles format
 		firstIndex = finalVertexWritePos;
@@ -2099,11 +2556,11 @@ EXPORT void HWRAPI(RenderBatches) (precise_t *sSortTime, precise_t *sDrawTime, i
 		{
 			//CONS_Printf("state change check\n");
 			// check if a state change is required, set the change bools and next vars
-			int nextIndex = polygonIndexArray[polygonReadPos];
-			nextShader = polygonArray[nextIndex].shader;
-			nextTexture = polygonArray[nextIndex].texNum;
-			nextPolyFlags = polygonArray[nextIndex].polyFlags;
-			nextSurfaceInfo = polygonArray[nextIndex].surf;
+			PolygonArrayEntry *nextEntry = polygonArraySorted[polygonReadPos];
+			nextShader = nextEntry->shader;
+			nextTexture = nextEntry->texNum;
+			nextPolyFlags = nextEntry->polyFlags;
+			nextSurfaceInfo = nextEntry->surf;
 			if (nextPolyFlags & PF_NoTexture)
 				nextTexture = 0;
 			if (currentShader != nextShader)
@@ -2121,7 +2578,21 @@ EXPORT void HWRAPI(RenderBatches) (precise_t *sSortTime, precise_t *sDrawTime, i
 				changeState = true;
 				changePolyFlags = true;
 			}
-			if (gl_allowshaders)
+			if ((gl_allowshaders) && (gl_use_palette_shader))
+			{
+				if (currentSurfaceInfo.PolyColor.rgba != nextSurfaceInfo.PolyColor.rgba ||
+					currentSurfaceInfo.TintColor.rgba != nextSurfaceInfo.TintColor.rgba ||
+					currentSurfaceInfo.FadeColor.rgba != nextSurfaceInfo.FadeColor.rgba ||
+					currentSurfaceInfo.LightInfo.light_level != nextSurfaceInfo.LightInfo.light_level ||
+					currentSurfaceInfo.LightInfo.fade_start != nextSurfaceInfo.LightInfo.fade_start ||
+					currentSurfaceInfo.LightInfo.fade_end != nextSurfaceInfo.LightInfo.fade_end ||
+					currentSurfaceInfo.LightTableId != nextSurfaceInfo.LightTableId)
+				{
+					changeState = true;
+					changeSurfaceInfo = true;
+				}
+			}
+			else if ((gl_allowshaders) && (!gl_use_palette_shader))
 			{
 				if (currentSurfaceInfo.PolyColor.rgba != nextSurfaceInfo.PolyColor.rgba ||
 					currentSurfaceInfo.TintColor.rgba != nextSurfaceInfo.TintColor.rgba ||
@@ -2198,7 +2669,7 @@ EXPORT void HWRAPI(RenderBatches) (precise_t *sSortTime, precise_t *sDrawTime, i
 			fade.blue  = byte2float[nextSurfaceInfo.FadeColor.s.blue];
 			fade.alpha = byte2float[nextSurfaceInfo.FadeColor.s.alpha];
 
-			load_shaders(&nextSurfaceInfo, &poly, &tint, &fade);
+			Shader_Load(&nextSurfaceInfo, &poly, &tint, &fade);
 			currentShader = nextShader;
 			changeShader = false;
 
@@ -2250,8 +2721,16 @@ EXPORT void HWRAPI(RenderBatches) (precise_t *sSortTime, precise_t *sDrawTime, i
 				fade.blue  = byte2float[nextSurfaceInfo.FadeColor.s.blue];
 				fade.alpha = byte2float[nextSurfaceInfo.FadeColor.s.alpha];
 
-				load_shaders(&nextSurfaceInfo, &poly, &tint, &fade);
+				Shader_Load(&nextSurfaceInfo, &poly, &tint, &fade);
+				
+				if (gl_use_palette_shader)
+				{
+					pglActiveTexture(GL_TEXTURE2);// this stuff could be done better but gonna do it quick like this for now
+					pglBindTexture(GL_TEXTURE_2D, nextSurfaceInfo.LightTableId);
+					pglActiveTexture(GL_TEXTURE0);
+				}
 			}
+
 			currentSurfaceInfo = nextSurfaceInfo;
 			changeSurfaceInfo = false;
 
@@ -2269,7 +2748,7 @@ EXPORT void HWRAPI(RenderBatches) (precise_t *sSortTime, precise_t *sDrawTime, i
 // -----------------+
 // DrawPolygon      : Render a polygon, set the texture, set render mode
 // -----------------+
-EXPORT void HWRAPI(DrawPolygon) (FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags)
+EXPORT void HWRAPI(DrawPolygon) (FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags, boolean horizonSpecial)
 {
 	if (gl_batching)
 	{
@@ -2286,8 +2765,8 @@ EXPORT void HWRAPI(DrawPolygon) (FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUI
 			free(polygonArray);
 			polygonArray = new_array;
 			// also need to redo the index array, dont need to copy it though
-			free(polygonIndexArray);
-			polygonIndexArray = malloc(polygonArrayAllocSize * sizeof(unsigned int));
+			free(polygonArraySorted);
+			polygonArraySorted = malloc(polygonArrayAllocSize * sizeof(PolygonArrayEntry *));
 		}
 
 		while (unsortedVertexArraySize + (int)iNumPts > unsortedVertexArrayAllocSize)
@@ -2309,6 +2788,7 @@ EXPORT void HWRAPI(DrawPolygon) (FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUI
 		polygonArray[polygonArraySize].polyFlags = PolyFlags;
 		polygonArray[polygonArraySize].texNum = tex_downloaded;
 		polygonArray[polygonArraySize].shader = gl_currentshaderprogram;
+		polygonArray[polygonArraySize].horizonSpecial = horizonSpecial;
 		polygonArraySize++;
 
 		memcpy(&unsortedVertexArray[unsortedVertexArraySize], pOutVerts, iNumPts * sizeof(FOutVector));
@@ -2327,32 +2807,42 @@ EXPORT void HWRAPI(DrawPolygon) (FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUI
 			// PolyColor
 			if (pSurf)
 			{
-				// If Modulated, mix the surface colour to the texture
+				// If modulated, mix the surface colour to the texture
 				if (CurrentPolyFlags & PF_Modulated)
-				{
-					// Poly color
-					poly.red    = byte2float[pSurf->PolyColor.s.red];
-					poly.green  = byte2float[pSurf->PolyColor.s.green];
-					poly.blue   = byte2float[pSurf->PolyColor.s.blue];
-					poly.alpha  = byte2float[pSurf->PolyColor.s.alpha];
-
 					pglColor4ubv((GLubyte*)&pSurf->PolyColor.s);
+
+				// If the surface is either modulated or colormapped, or both
+				if (CurrentPolyFlags & (PF_Modulated | PF_ColorMapped))
+				{
+					poly.red   = byte2float[pSurf->PolyColor.s.red];
+					poly.green = byte2float[pSurf->PolyColor.s.green];
+					poly.blue  = byte2float[pSurf->PolyColor.s.blue];
+					poly.alpha = byte2float[pSurf->PolyColor.s.alpha];
+				}
+
+				// Only if the surface is colormapped
+				if (CurrentPolyFlags & PF_ColorMapped)
+				{
+					tint.red   = byte2float[pSurf->TintColor.s.red];
+					tint.green = byte2float[pSurf->TintColor.s.green];
+					tint.blue  = byte2float[pSurf->TintColor.s.blue];
+					tint.alpha = byte2float[pSurf->TintColor.s.alpha];
+
+					fade.red   = byte2float[pSurf->FadeColor.s.red];
+					fade.green = byte2float[pSurf->FadeColor.s.green];
+					fade.blue  = byte2float[pSurf->FadeColor.s.blue];
+					fade.alpha = byte2float[pSurf->FadeColor.s.alpha];
+				}
+			
+				if (gl_use_palette_shader && gl_allowshaders)
+				{
+					pglActiveTexture(GL_TEXTURE2);
+					pglBindTexture(GL_TEXTURE_2D, pSurf->LightTableId);
+					pglActiveTexture(GL_TEXTURE0);
+				}
 			}
 
-				// Tint color
-				tint.red   = byte2float[pSurf->TintColor.s.red];
-				tint.green = byte2float[pSurf->TintColor.s.green];
-				tint.blue  = byte2float[pSurf->TintColor.s.blue];
-				tint.alpha = byte2float[pSurf->TintColor.s.alpha];
-
-				// Fade color
-				fade.red   = byte2float[pSurf->FadeColor.s.red];
-				fade.green = byte2float[pSurf->FadeColor.s.green];
-				fade.blue  = byte2float[pSurf->FadeColor.s.blue];
-				fade.alpha = byte2float[pSurf->FadeColor.s.alpha];
-		}
-
-		load_shaders(pSurf, &poly, &tint, &fade);
+		Shader_Load(pSurf, &poly, &tint, &fade);
 		}
 		else
 			UnSetShader();
@@ -2691,6 +3181,10 @@ EXPORT void HWRAPI(SetSpecialState) (hwdspecialstate_t IdState, INT32 Value)
 					gl_allowshaders = false;
 					break;
 			}
+			break;
+			
+		case HWD_SET_PALETTE_SHADER_ENABLED:
+			gl_use_palette_shader = Value;
 			break;
 
 		case HWD_SET_TEXTUREFILTERMODE:
@@ -3095,7 +3589,7 @@ static void DrawModelEx(model_t *model, INT32 frameIndex, float duration, float 
 	fade.blue  = byte2float[Surface->FadeColor.s.blue];
 	fade.alpha = byte2float[Surface->FadeColor.s.alpha];
 
-	load_shaders(Surface, &poly, &tint, &fade);
+	Shader_Load(Surface, &poly, &tint, &fade);
 
 	pglEnable(GL_CULL_FACE);
 	pglEnable(GL_NORMALIZE);
@@ -3760,6 +4254,15 @@ EXPORT void HWRAPI(DrawScreenFinalTexture)(int width, int height)
 	clearColour.alpha = 1;
 	ClearBuffer(true, false, false, &clearColour);
 	pglBindTexture(GL_TEXTURE_2D, finalScreenTexture);
+	
+	// prepare shader, if it is enabled
+	Shader_SetUniforms(NULL, NULL, NULL, NULL);
+	
+	if (gl_use_palette_shader && cv_grshaders.value)
+	{
+		pglUseProgram(gl_shaderprograms[8].program); // palette shader
+		pglActiveTexture(GL_TEXTURE1);
+	}
 
 	pglColor4ubv(white);
 	pglTexCoordPointer(2, GL_FLOAT, 0, fix);
@@ -3768,6 +4271,12 @@ EXPORT void HWRAPI(DrawScreenFinalTexture)(int width, int height)
 	pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
 	tex_downloaded = finalScreenTexture;
+	
+	if (gl_use_palette_shader && cv_grshaders.value)
+	{
+		pglUseProgram(0);
+		pglActiveTexture(GL_TEXTURE0);
+	}
 }
 
 #endif //HWRENDER

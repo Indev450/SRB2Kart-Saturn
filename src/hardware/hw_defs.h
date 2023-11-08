@@ -183,14 +183,15 @@ enum EPolyFlags
 	PF_NoDepthTest      = 0x00000200,   // Disable the depth test mode
 	PF_Invisible        = 0x00000400,   // Disable write to color buffer
 	PF_Decal            = 0x00000800,   // Enable polygon offset
-	PF_Modulated        = 0x00001000,   // Modulation (multiply output with constant ARGB)
+	PF_Modulated        = 0x00001000,   // Modulation (multiply output with constant RGBA)
 	                                    // When set, pass the color constant into the FSurfaceInfo -> FlatColor
 	PF_NoTexture        = 0x00002000,   // Disable texture
-	PF_Ripple           = 0x00004000,	// Water shader effect
+	PF_ColorMapped      = 0x00008000,   // Surface has "tint" and "fade" colors, which are sent as uniforms to a shader.
 	//                    0x00008000
 	PF_RemoveYWrap      = 0x00010000,   // Force clamp texture on Y
 	PF_ForceWrapX       = 0x00020000,   // Force repeat texture on X
-	PF_ForceWrapY       = 0x00040000,   // Force repeat texture on Y
+	PF_ForceWrapY       = 0x00040000,   // Forces repeat texture on Y
+	PF_Ripple           = 0x00100000    // Water ripple effect. The current backend doesn't use it for anything.
 	//                    0x20000000
 	//                    0x40000000
 	//                    0x80000000
@@ -208,7 +209,6 @@ enum ETextureFlags
 
 typedef struct GLMipmap_s FTextureInfo;
 
-// jimita 14032019
 struct FLightInfo
 {
 	FUINT			light_level;
@@ -224,13 +224,15 @@ struct FSurfaceInfo
 	RGBA_t			PolyColor;
 	RGBA_t			TintColor;
 	RGBA_t			FadeColor;
-	FLightInfo		LightInfo;	// jimita 14032019
+	UINT32			LightTableId;
+	FLightInfo		LightInfo;
 };
 typedef struct FSurfaceInfo FSurfaceInfo;
 
 enum hwdsetspecialstate
 {
 	HWD_SET_SHADERS,
+	HWD_SET_PALETTE_SHADER_ENABLED,
 
 	HWD_SET_TEXTUREFILTERMODE,
 	HWD_SET_TEXTUREANISOTROPICMODE,
@@ -247,6 +249,15 @@ enum hwdsetspecialstate
 	HWD_NUMSTATE
 };
 typedef enum hwdsetspecialstate hwdspecialstate_t;
+
+// Lactozilla: Shader info
+// Generally set at the start of the frame.
+enum hwdshaderinfo
+{
+	HWD_SHADERINFO_LEVELTIME = 1,
+};
+
+typedef enum hwdshaderinfo hwdshaderinfo_t;
 
 enum hwdportalstate
 {
