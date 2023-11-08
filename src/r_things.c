@@ -1472,11 +1472,6 @@ static void R_ProjectSprite(mobj_t *thing)
 
 	I_Assert(lump < max_spritelumps);
 
-	if (thing->localskin && ((skin_t *)thing->localskin)->flags & SF_HIRES)
-		this_scale = FixedMul(this_scale, ((skin_t *)thing->localskin)->highresscale);
-	else if (thing->skin && ((skin_t *)thing->skin)->flags & SF_HIRES)
-		this_scale = FixedMul(this_scale, ((skin_t *)thing->skin)->highresscale);
-
 	spr_width = spritecachedinfo[lump].width;
 	spr_height = spritecachedinfo[lump].height;
 	spr_offset = spritecachedinfo[lump].offset;
@@ -1519,12 +1514,19 @@ static void R_ProjectSprite(mobj_t *thing)
 	spritexscale = interp.spritexscale;
 	spriteyscale = interp.spriteyscale;
 	
-	if (thing->skin && ((skin_t *)thing->skin)->flags & SF_HIRES)
+	if (thing->localskin && ((skin_t *)thing->localskin)->flags & SF_HIRES)
+	{
+		fixed_t highresscale = ((skin_t *)thing->localskin)->highresscale;
+		spritexscale = FixedMul(spritexscale, highresscale);
+		spriteyscale = FixedMul(spriteyscale, highresscale);
+	}
+	else if (thing->skin && ((skin_t *)thing->skin)->flags & SF_HIRES)
 	{
 		fixed_t highresscale = ((skin_t *)thing->skin)->highresscale;
 		spritexscale = FixedMul(spritexscale, highresscale);
 		spriteyscale = FixedMul(spriteyscale, highresscale);
 	}
+	
 
 	if (spritexscale < 1 || spriteyscale < 1)
 		return;
@@ -2204,6 +2206,14 @@ void R_SortVisSprites(void)
 		bestscale = bestdispoffset = INT32_MAX;
 		for (ds = unsorted.next; ds != &unsorted; ds = ds->next)
 		{
+			// Remove this sprite if it was determined to not be visible
+			if (ds->cut & SC_NOTVISIBLE)
+			{
+				ds->next->prev = ds->prev;
+				ds->prev->next = ds->next;
+				continue;
+			}
+
 			if (ds->sortscale < bestscale)
 			{
 				bestscale = ds->sortscale;
@@ -2219,12 +2229,12 @@ void R_SortVisSprites(void)
 		}
 		if (best)
 		{
-		best->next->prev = best->prev;
-		best->prev->next = best->next;
-		best->next = &vsprsortedhead;
-		best->prev = vsprsortedhead.prev;
-		vsprsortedhead.prev->next = best;
-		vsprsortedhead.prev = best;
+			best->next->prev = best->prev;
+			best->prev->next = best->next;
+			best->next = &vsprsortedhead;
+			best->prev = vsprsortedhead.prev;
+			vsprsortedhead.prev->next = best;
+			vsprsortedhead.prev = best;
 		}
 	}
 }
