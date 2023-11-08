@@ -1471,6 +1471,11 @@ static void R_ProjectSprite(mobj_t *thing)
 	}
 
 	I_Assert(lump < max_spritelumps);
+	
+	if (thing->localskin && ((skin_t *)thing->localskin)->flags & SF_HIRES)
+		this_scale = FixedMul(this_scale, ((skin_t *)thing->localskin)->highresscale);
+	else if (thing->skin && ((skin_t *)thing->skin)->flags & SF_HIRES)
+		this_scale = FixedMul(this_scale, ((skin_t *)thing->skin)->highresscale);
 
 	spr_width = spritecachedinfo[lump].width;
 	spr_height = spritecachedinfo[lump].height;
@@ -1514,20 +1519,6 @@ static void R_ProjectSprite(mobj_t *thing)
 	spritexscale = interp.spritexscale;
 	spriteyscale = interp.spriteyscale;
 	
-	if (thing->localskin && ((skin_t *)thing->localskin)->flags & SF_HIRES)
-	{
-		fixed_t highresscale = ((skin_t *)thing->localskin)->highresscale;
-		spritexscale = FixedMul(spritexscale, highresscale);
-		spriteyscale = FixedMul(spriteyscale, highresscale);
-	}
-	else if (thing->skin && ((skin_t *)thing->skin)->flags & SF_HIRES)
-	{
-		fixed_t highresscale = ((skin_t *)thing->skin)->highresscale;
-		spritexscale = FixedMul(spritexscale, highresscale);
-		spriteyscale = FixedMul(spriteyscale, highresscale);
-	}
-	
-
 	if (spritexscale < 1 || spriteyscale < 1)
 		return;
 
