@@ -3668,6 +3668,8 @@ void M_StartControlPanel(void)
 		{
 			MPauseMenu[mpause_switchmap].status = IT_STRING | IT_CALL;
 			MPauseMenu[mpause_addons].status = IT_STRING | IT_CALL;
+			MPauseMenu[mpause_addlocalskins].status = IT_DISABLED;
+			MPauseMenu[mpause_localskin].status = IT_DISABLED;
 			if (G_GametypeHasTeams())
 				MPauseMenu[mpause_scramble].status = IT_STRING | IT_SUBMENU;
 		}
