@@ -7540,11 +7540,12 @@ INT32 K_calcSplitFlags(INT32 snapflags)
 
 static void K_drawKartStats(void)
 {
-	INT32 x, y, flags;
+	INT32 x, y, spdoffset, flags;
 
 	// For 1-player display
 	x = 15;
 	y = 150;
+	spdoffset = 0;
 	flags = V_SNAPTOBOTTOM|V_SNAPTOLEFT;
 
 	UINT8 splitnum = 0;
@@ -7597,10 +7598,21 @@ static void K_drawKartStats(void)
 			}
 		}
 	}
-
+	
+	//Internal offset for speedometer
+	if (cv_kartspeedometer.value)
+	{
+		if (cv_newspeedometer.value)
+			spdoffset = -10;
+		else
+			spdoffset = -14;
+	}
+	else
+		spdoffset = 0;
+	
 	// Customizations c:
 	x += cv_stat_xoffset.value;
-	y += cv_stat_yoffset.value + (G_BattleGametype() ? (stplyr->kartstuff[k_bumper] ? -5 : -8) : 0);
+	y += cv_stat_yoffset.value + (G_BattleGametype() ? (stplyr->kartstuff[k_bumper] ? -5 : -8) : 0) + spdoffset;
 	flags |= V_HUDTRANS;
 
 	if (!splitscreen)
