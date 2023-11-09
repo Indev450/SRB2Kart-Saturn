@@ -111,7 +111,7 @@ extern consvar_t cv_homremoval;
 extern consvar_t cv_chasecam, cv_chasecam2, cv_chasecam3, cv_chasecam4;
 extern consvar_t cv_flipcam, cv_flipcam2, cv_flipcam3, cv_flipcam4;
 extern consvar_t cv_shadow, cv_shadowoffs;
-extern consvar_t cv_ffloorclip;
+extern consvar_t cv_ffloorclip, cv_spriteclip;
 extern consvar_t cv_translucency;
 extern consvar_t /*cv_precipdensity,*/ cv_drawdist, /*cv_drawdist_nights,*/ cv_drawdist_precip;
 extern consvar_t cv_fov;

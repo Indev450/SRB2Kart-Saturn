@@ -114,7 +114,10 @@ typedef enum
 	SC_NONE = 0,
 	SC_TOP = 1,
 	SC_BOTTOM = 2,
-	SC_VFLIP = 3
+	SC_VFLIP = 3,
+	SC_NOTVISIBLE = 4,
+	SC_CUTMASK    = SC_TOP|SC_BOTTOM|SC_NOTVISIBLE,
+	SC_FLAGMASK   = ~SC_CUTMASK
 } spritecut_e;
 
 // A vissprite_t is a thing that will be drawn during a refresh,
@@ -175,7 +178,7 @@ typedef struct vissprite_s
 	INT32 dispoffset; // copy of info->dispoffset, affects ordering but not drawing
 } vissprite_t;
 
-extern UINT32 visspritecount;
+extern UINT32 visspritecount, numvisiblesprites;
 
 void R_ClipSprites(void);
 void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2);

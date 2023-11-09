@@ -589,7 +589,8 @@ void R_DelSpriteDefs(UINT16 wadnum)
 //
 // GAME FUNCTIONS
 //
-UINT32 visspritecount;
+UINT32 visspritecount, numvisiblesprites;
+
 static UINT32 clippedvissprites;
 static vissprite_t *visspritechunks[MAXVISSPRITES >> VISSPRITECHUNKBITS] = {NULL};
 
@@ -661,7 +662,7 @@ void R_InitSprites(void)
 //
 void R_ClearSprites(void)
 {
-	visspritecount = clippedvissprites = 0;
+	visspritecount = numvisiblesprites = clippedvissprites = 0;
 }
 
 //
@@ -940,10 +941,10 @@ static void R_DrawVisSprite(vissprite_t *vis)
 		{
 			vis->scale = FixedMul(vis->scale, this_scale);
 			vis->scalestep = FixedMul(vis->scalestep, this_scale);
-			vis->xiscale = FixedDiv(vis->xiscale,this_scale);
+			vis->xiscale = FixedDiv(vis->xiscale, this_scale);
 			vis->isScaled = true;
 		}
-		dc_texturemid = FixedDiv(dc_texturemid,this_scale);
+		dc_texturemid = FixedDiv(dc_texturemid, this_scale);
 	}
 
 	spryscale = vis->scale;
@@ -1318,6 +1319,8 @@ static void R_ProjectSprite(mobj_t *thing)
 	INT32 lindex;
 
 	vissprite_t *vis;
+	
+	spritecut_e cut = SC_NONE;
 
 	angle_t ang = 0; // gcc 4.6 and lower fix
 	fixed_t iscale;
@@ -1468,7 +1471,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	}
 
 	I_Assert(lump < max_spritelumps);
-
+	
 	if (thing->localskin && ((skin_t *)thing->localskin)->flags & SF_HIRES)
 		this_scale = FixedMul(this_scale, ((skin_t *)thing->localskin)->highresscale);
 	else if (thing->skin && ((skin_t *)thing->skin)->flags & SF_HIRES)
@@ -1515,6 +1518,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	// calculate edges of the shape
 	spritexscale = interp.spritexscale;
 	spriteyscale = interp.spriteyscale;
+	
 	if (spritexscale < 1 || spriteyscale < 1)
 		return;
 
@@ -2193,6 +2197,14 @@ void R_SortVisSprites(void)
 		bestscale = bestdispoffset = INT32_MAX;
 		for (ds = unsorted.next; ds != &unsorted; ds = ds->next)
 		{
+			// Remove this sprite if it was determined to not be visible
+			if (ds->cut & SC_NOTVISIBLE)
+			{
+				ds->next->prev = ds->prev;
+				ds->prev->next = ds->next;
+				continue;
+			}
+
 			if (ds->sortscale < bestscale)
 			{
 				bestscale = ds->sortscale;
@@ -2206,12 +2218,15 @@ void R_SortVisSprites(void)
 				best = ds;
 			}
 		}
-		best->next->prev = best->prev;
-		best->prev->next = best->next;
-		best->next = &vsprsortedhead;
-		best->prev = vsprsortedhead.prev;
-		vsprsortedhead.prev->next = best;
-		vsprsortedhead.prev = best;
+		if (best)
+		{
+			best->next->prev = best->prev;
+			best->prev->next = best->next;
+			best->next = &vsprsortedhead;
+			best->prev = vsprsortedhead.prev;
+			vsprsortedhead.prev->next = best;
+			vsprsortedhead.prev = best;
+		}
 	}
 }
 
@@ -2573,7 +2588,45 @@ static void R_DrawPrecipitationSprite(vissprite_t *spr)
 	R_DrawPrecipitationVisSprite(spr);
 }
 
-// R_ClipSprites
+static boolean R_CheckSpriteVisible(vissprite_t *spr, INT32 x1, INT32 x2)
+{
+	INT16 sz = spr->sz;
+	INT16 szt = spr->szt;
+
+	fixed_t texturemid, yscale, scalestep = spr->scalestep;
+	INT32 height;
+
+	if (scalestep)
+	{
+		height = spr->patch->height;
+		yscale = spr->scale;
+		scalestep = FixedMul(scalestep, spr->spriteyscale);
+
+		if (spr->thingscale != FRACUNIT)
+			texturemid = FixedDiv(spr->texturemid, max(spr->thingscale, 1));
+		else
+			texturemid = spr->texturemid;
+	}
+
+	for (INT32 x = x1; x <= x2; x++)
+	{
+		if (scalestep)
+		{
+			fixed_t top = centeryfrac - FixedMul(texturemid, yscale);
+			fixed_t bottom = top + (height * yscale);
+			szt = (INT16)(top >> FRACBITS);
+			sz = (INT16)(bottom >> FRACBITS);
+			yscale += scalestep;
+		}
+
+		if (spr->cliptop[x] < spr->clipbot[x] && sz > spr->cliptop[x] && szt < spr->clipbot[x])
+			return true;
+	}
+
+	return false;
+}
+
+// R_ClipVisSprite
 // Clips vissprites without drawing, so that portals can work. -Red
 void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2)
 {
@@ -2756,8 +2809,15 @@ void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2)
 			spr->clipbot[x] = (INT16)viewheight;
 
 		if (spr->cliptop[x] == -2)
-			//Fab : 26-04-98: was -1, now clips against console bottom
-			spr->cliptop[x] = (INT16)con_clipviewtop;
+			spr->cliptop[x] = -1;
+	}
+	
+	// Check if it'll be visible
+	// Not done for floorsprites.
+	if (cv_spriteclip.value)
+	{
+		if (!R_CheckSpriteVisible(spr, x1, x2))
+			spr->cut |= SC_NOTVISIBLE;
 	}
 }
 
@@ -2826,6 +2886,13 @@ void R_ClipSprites(void)
 	for (; clippedvissprites < visspritecount; clippedvissprites++)
 	{
 		vissprite_t *spr = R_GetVisSprite(clippedvissprites);
+		
+		if (cv_spriteclip.value
+		&& (spr->szt > vid.height || spr->sz < 0))
+		{
+			spr->cut |= SC_NOTVISIBLE;
+			continue;
+		}
 
 		if (spr->x2 < cx)
 		{
@@ -2844,6 +2911,9 @@ void R_ClipSprites(void)
 		}
 
 		R_ClipVisSprite(spr, spr->x1, spr->x2);
+		
+		if ((spr->cut & SC_NOTVISIBLE) == 0)
+			numvisiblesprites++;
 	}
 }
 
