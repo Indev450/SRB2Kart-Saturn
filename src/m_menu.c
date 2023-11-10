@@ -146,6 +146,8 @@ boolean browselocalskins = false;
 boolean menuactive = false;
 boolean fromlevelselect = false;
 
+static INT32 coolalphatimer = 9;
+
 typedef enum
 {
 	LLM_CREATESERVER,
@@ -382,7 +384,7 @@ static UINT8 playback_enterheld = 0; // horrid hack to prevent holding the butto
 // Drawing functions
 static void M_DrawGenericMenu(void);
 static void M_DrawGenericBackgroundMenu(void);
-//static void M_DrawGenericScrollMenu(void);
+static void M_DrawGenericScrollMenu(void);
 static void M_DrawCenteredMenu(void);
 static void M_DrawAddons(void);
 static void M_DrawSkyRoom(void);
@@ -1720,24 +1722,46 @@ static menuitem_t OP_MonitorToggleMenu[] =
 static menuitem_t OP_SaturnMenu[] =
 {
 	{IT_HEADER, NULL, "Saturn Options", NULL, 0},
-	{IT_STRING | IT_CVAR, NULL, "Serverqueue waittime", 				&cv_connectawaittime, 	 	15},
-	{IT_STRING | IT_CVAR, NULL, "Skin Select Spinning Speed",		 	&cv_skinselectspin, 	 	30},
-	{IT_STRING | IT_CVAR, NULL, "Input Display outside of RA",		 	&cv_showinput, 	 			40},
-	{IT_STRING | IT_CVAR, NULL, "Small Speedometer",		 			&cv_newspeedometer, 	 	50},
-	{IT_STRING | IT_CVAR, NULL, "Stat Display",		 					&cv_showstats, 	 			60},
 
-	{IT_STRING | IT_CVAR, NULL, "Colourized HUD",						&cv_colorizedhud,		 	75},
-	{IT_STRING | IT_CVAR, NULL, "Colourized Itembox",					&cv_colorizeditembox,		85},
-	{IT_STRING | IT_CVAR, NULL, "Colourized HUD Color",					&cv_colorizedhudcolor,		95},
-	{IT_STRING | IT_CVAR, NULL, "Show Lap Emblem",		 				&cv_showlapemblem, 	 		105},
-	{IT_STRING | IT_CVAR, NULL,	  "Show Minimap Names",   				&cv_showminimapnames, 		115},
-	{IT_STRING | IT_CVAR, NULL,	  "Small Minimap Players",   			&cv_minihead, 				125},
-	{IT_STRING | IT_CVAR, NULL, "Less Midnight Channel Flicker", 		&cv_lessflicker, 		 	135},
+	{IT_STRING | IT_CVAR, NULL, "Serverqueue waittime", 				&cv_connectawaittime, 	 	10},
 
-	{IT_SUBMENU|IT_STRING,	NULL,	"Player distortion...", 			&OP_PlayerDistortDef,	 	150},
-	{IT_SUBMENU|IT_STRING,	NULL,	"Hud Offsets...", 					&OP_HudOffsetDef,		 	160},
+	{IT_STRING | IT_CVAR, NULL, "Skin Select Spinning Speed",		 	&cv_skinselectspin, 	 	20},
+	{IT_STRING | IT_CVAR, NULL, "Input Display outside of RA",		 	&cv_showinput, 	 			25},
+	{IT_STRING | IT_CVAR, NULL, "Small Speedometer",		 			&cv_newspeedometer, 	 	30},
+	{IT_STRING | IT_CVAR, NULL, "Stat Display",		 					&cv_showstats, 	 			35},
+	{IT_STRING | IT_CVAR, NULL, "Colourized HUD",						&cv_colorizedhud,		 	40},
+	{IT_STRING | IT_CVAR, NULL, "Colourized Itembox",					&cv_colorizeditembox,		45},
+	{IT_STRING | IT_CVAR, NULL, "Colourized HUD Color",					&cv_colorizedhudcolor,		50},
+	{IT_STRING | IT_CVAR, NULL, "Show Lap Emblem",		 				&cv_showlapemblem, 	 		55},
+	{IT_STRING | IT_CVAR, NULL,	"Show Minimap Names",   				&cv_showminimapnames, 		60},
+	{IT_STRING | IT_CVAR, NULL,	"Small Minimap Players",   				&cv_minihead, 				65},
+	{IT_STRING | IT_CVAR, NULL, "Less Midnight Channel Flicker", 		&cv_lessflicker, 		 	70},
 
-	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Credits", 		&OP_SaturnCreditsDef,		 175}, // uwu
+	{IT_SUBMENU|IT_STRING,	NULL,	"Player distortion...", 			&OP_PlayerDistortDef,	 	80},
+	{IT_SUBMENU|IT_STRING,	NULL,	"Hud Offsets...", 					&OP_HudOffsetDef,		 	85},
+
+	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Credits", 					&OP_SaturnCreditsDef,		95}, // uwu
+};
+
+static const char* OP_SaturnTooltips[] =
+{
+	NULL,
+	"How long can the game wait before it kicks you out from the server\nconnecting screen.",
+	"How much speen do you want?",
+	"Displays the input display outside of Record Attack. Also adjusts the\nposition scale to match.",
+	"Enable the smaller speedometer.",
+	"Enable the stat display.",
+	"Enable colorized hud.",
+	"Enable the colorized itembox when colorized hud is enabled.",
+	"The color to use instead of the player color when colorized hud is enabled.",
+	"Show the big 'LAP' text on a lap change.",
+	"Show player names on the minimap.",
+	"Minimize the player icons on the minimap.",
+	"Disables the flicker effect on Midnight Channel.",
+
+	NULL,
+	NULL,
+	NULL,
 };
 
 enum
@@ -1789,20 +1813,37 @@ static menuitem_t OP_HudOffsetMenu[] =
 {
 	{IT_HEADER, NULL, "Kart Hud Offsets", NULL, 0},
 
-	{IT_STRING | IT_CVAR, 	NULL, 	"Itembox Horizontal Offset",      &cv_item_xoffset, 	20},
-	{IT_STRING | IT_CVAR, 	NULL, 	"Itembox Vertical Offset",        &cv_item_yoffset,     30},
-	{IT_STRING | IT_CVAR, 	NULL, 	"Timer Horizontal Offset", 		  &cv_time_xoffset, 	45},
-	{IT_STRING | IT_CVAR,	NULL,	"Timer Vertical Offset",	      &cv_time_yoffset,     55},
-	{IT_STRING | IT_CVAR, 	NULL, 	"Lapcount Horizontal Offset",     &cv_laps_xoffset, 	70},
-	{IT_STRING | IT_CVAR, 	NULL, 	"Lapcount Vertical Offset",       &cv_laps_yoffset,     80},
-	{IT_STRING | IT_CVAR, 	NULL, 	"Speedometer Horizontal Offset",  &cv_spdm_xoffset, 	95},
-	{IT_STRING | IT_CVAR,	NULL,	"Speedometer Vertical Offset",	  &cv_spdm_yoffset,     105},
-	{IT_STRING | IT_CVAR, 	NULL, 	"Miniranking Horizontal Offset",  &cv_face_xoffset, 	120},
-	{IT_STRING | IT_CVAR,	NULL,	"Miniranking Vertical Offset",	  &cv_face_yoffset,     130},
-	{IT_STRING | IT_CVAR, 	NULL, 	"Minimap Horizontal Offset",  	  &cv_mini_xoffset, 	145},
-	{IT_STRING | IT_CVAR,	NULL,	"Minimap Vertical Offset",	  	  &cv_mini_yoffset,     155},
-	{IT_STRING | IT_CVAR, 	NULL, 	"Stat Display Horizontal Offset",  	  &cv_stat_xoffset, 	170},
-	{IT_STRING | IT_CVAR,	NULL,	"Stat Display Vertical Offset",	  	  &cv_stat_yoffset,     180},
+	{IT_HEADER, NULL, "Itembox", NULL, 10},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Horizontal Offset",      		&cv_item_xoffset, 		15},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Vertical Offset",        		&cv_item_yoffset,     	20},
+
+	{IT_HEADER, NULL, "Timer", NULL, 30},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Horizontal Offset", 		  	&cv_time_xoffset, 		35},
+	{IT_STRING | IT_CVAR,	NULL,	"Vertical Offset",	      		&cv_time_yoffset,     	40},
+
+	{IT_HEADER, NULL, "Lap Count", NULL, 50},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Horizontal Offset",     		&cv_laps_xoffset, 		55},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Vertical Offset",       		&cv_laps_yoffset,     	60},
+
+	{IT_HEADER, NULL, "Speedometer", NULL, 70},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Horizontal Offset",  			&cv_spdm_xoffset, 		75},
+	{IT_STRING | IT_CVAR,	NULL,	"Vertical Offset",	  			&cv_spdm_yoffset,     	80},
+
+	{IT_HEADER, NULL, "Mini Rankings", NULL, 90},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Horizontal Offset",  			&cv_face_xoffset, 		95},
+	{IT_STRING | IT_CVAR,	NULL,	"Vertical Offset",	  			&cv_face_yoffset,     	100},
+
+	{IT_HEADER, NULL, "Minimap", NULL, 110},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Horizontal Offset",  			&cv_mini_xoffset, 		115},
+	{IT_STRING | IT_CVAR,	NULL,	"Vertical Offset",	  	 		&cv_mini_yoffset,     	120},
+
+	{IT_HEADER, NULL, "Position / R.A. Wheel", NULL, 130},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Horizontal Offset",  	  		&cv_posi_xoffset, 		135},
+	{IT_STRING | IT_CVAR,	NULL,	"Vertical Offset",	  	  		&cv_posi_yoffset,     	140},
+
+	{IT_HEADER, NULL, "Stat Display", NULL, 150},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Horizontal Offset",  	  		&cv_stat_xoffset, 		155},
+	{IT_STRING | IT_CVAR,	NULL,	"Vertical Offset",	  	  		&cv_stat_yoffset,     	160},
 };
 
 static menuitem_t OP_SaturnCreditsMenu[] =
@@ -1929,6 +1970,7 @@ menu_t MISC_AddonsDef =
 	M_DrawAddons,
 	50, 28,
 	0,
+	NULL,
 	NULL
 };
 
@@ -1941,7 +1983,8 @@ menu_t MISC_ReplayHutDef =
 	M_DrawReplayHut,
 	30, 80,
 	0,
-	M_QuitReplayHut
+	M_QuitReplayHut,
+	NULL
 };
 
 menu_t MISC_ReplayOptionsDef =
@@ -1953,6 +1996,7 @@ menu_t MISC_ReplayOptionsDef =
 	M_DrawGenericMenu,
 	27, 40,
 	0,
+	NULL,
 	NULL
 };
 
@@ -1965,6 +2009,7 @@ menu_t MISC_ReplayStartDef =
 	M_DrawReplayStartMenu,
 	30, 90,
 	0,
+	NULL,
 	NULL
 };
 
@@ -1977,6 +2022,7 @@ menu_t PlaybackMenuDef = {
 	//BASEVIDWIDTH/2 - 94, 2,
 	BASEVIDWIDTH/2 - 88, 2,
 	0,
+	NULL,
 	NULL
 };
 
@@ -2088,7 +2134,8 @@ menu_t SR_PandoraDef =
 	M_DrawGenericMenu,
 	60, 40,
 	0,
-	M_ExitPandorasBox
+	M_ExitPandorasBox,
+	NULL
 };
 menu_t SR_MainDef = CENTERMENUSTYLE(NULL, SR_MainMenu, &MainDef, 72);
 
@@ -2103,6 +2150,7 @@ menu_t SR_UnlockChecklistDef =
 	M_DrawChecklist,
 	280, 185,
 	0,
+	NULL,
 	NULL
 };
 menu_t SR_EmblemHintDef =
@@ -2114,6 +2162,7 @@ menu_t SR_EmblemHintDef =
 	M_DrawEmblemHints,
 	60, 150,
 	0,
+	NULL,
 	NULL
 };
 
@@ -2141,6 +2190,7 @@ menu_t SP_LevelStatsDef =
 	M_DrawLevelStats,
 	280, 185,
 	0,
+	NULL,
 	NULL
 };
 
@@ -2153,7 +2203,9 @@ static menu_t SP_TimeAttackDef =
 	M_DrawTimeAttackMenu,
 	34, 40,
 	0,
-	M_QuitTimeAttackMenu
+	M_QuitTimeAttackMenu,
+	NULL,
+	NULL
 };
 static menu_t SP_ReplayDef =
 {
@@ -2164,6 +2216,8 @@ static menu_t SP_ReplayDef =
 	M_DrawTimeAttackMenu,
 	34, 40,
 	0,
+	NULL,
+	NULL,
 	NULL
 };
 static menu_t SP_GuestReplayDef =
@@ -2175,6 +2229,8 @@ static menu_t SP_GuestReplayDef =
 	M_DrawTimeAttackMenu,
 	34, 40,
 	0,
+	NULL,
+	NULL,
 	NULL
 };
 static menu_t SP_GhostDef =
@@ -2186,6 +2242,7 @@ static menu_t SP_GhostDef =
 	M_DrawTimeAttackMenu,
 	34, 40,
 	0,
+	NULL,
 	NULL
 };
 
@@ -2258,10 +2315,11 @@ menu_t MP_MainDef =
 	42, 30,
 	0,
 #ifndef NONET
-	M_CancelConnect
+	M_CancelConnect,
 #else
-	NULL
+	NULL,
 #endif
+	NULL
 };
 
 menu_t MP_OfflineServerDef = MAPICONMENUSTYLE("M_MULTI", MP_OfflineServerMenu, &MP_MainDef);
@@ -2278,7 +2336,8 @@ menu_t MP_ConnectDef =
 	M_DrawConnectMenu,
 	27,24,
 	0,
-	M_CancelConnect
+	M_CancelConnect,
+	NULL
 };
 #endif
 menu_t MP_PlayerSetupDef =
@@ -2290,7 +2349,8 @@ menu_t MP_PlayerSetupDef =
 	M_DrawSetupMultiPlayerMenu,
 	36, 14,
 	0,
-	M_QuitMultiPlayerMenu
+	M_QuitMultiPlayerMenu,
+	NULL
 };
 
 // Options
@@ -2303,6 +2363,7 @@ menu_t OP_MainDef =
 	M_DrawGenericMenu,
 	60, 30,
 	0,
+	NULL,
 	NULL
 };
 
@@ -2321,6 +2382,7 @@ menu_t OP_JoystickSetDef =
 	M_DrawJoystick,
 	50, 40,
 	0,
+	NULL,
 	NULL
 };
 
@@ -2333,6 +2395,7 @@ menu_t OP_VideoOptionsDef =
 	M_DrawVideoMenu,
 	30, 30,
 	0,
+	NULL,
 	NULL
 };
 
@@ -2345,6 +2408,7 @@ menu_t OP_VideoModeDef =
 	M_DrawVideoMode,
 	48, 26,
 	0,
+	NULL,
 	NULL
 };
 
@@ -2357,6 +2421,7 @@ menu_t OP_SoundOptionsDef =
 	M_DrawSkyRoom,
 	30, 30,
 	0,
+	NULL,
 	NULL
 };
 
@@ -2369,6 +2434,7 @@ menu_t OP_HUDOptionsDef =
 	M_DrawHUDOptions,
 	30, 20,
 	0,
+	NULL,
 	NULL
 };
 
@@ -2394,6 +2460,7 @@ menu_t OP_MonitorToggleDef =
 	M_DrawMonitorToggles,
 	47, 30,
 	0,
+	NULL,
 	NULL
 };
 
@@ -2409,6 +2476,7 @@ menu_t OP_OpenGLColorDef =
 	M_OGL_DrawColorMenu,
 	60, 40,
 	0,
+	NULL,
 	NULL
 };
 #endif
@@ -2422,9 +2490,9 @@ menu_t OP_DiscordOptionsDef = DEFAULTMENUSTYLE(NULL, OP_DiscordOptionsMenu, &OP_
 #endif
 menu_t OP_EraseDataDef = DEFAULTMENUSTYLE("M_DATA", OP_EraseDataMenu, &OP_DataOptionsDef, 30, 30);
 
-menu_t OP_SaturnDef = DEFAULTMENUSTYLE(NULL, OP_SaturnMenu, &OP_MainDef, 30, 10);
+menu_t OP_SaturnDef = DEFAULTSCROLLSTYLE(NULL, OP_SaturnMenu, &OP_MainDef, 30, 30);
 menu_t OP_PlayerDistortDef = DEFAULTMENUSTYLE("M_VIDEO", OP_PlayerDistortMenu, &OP_SaturnDef, 30, 30);
-menu_t OP_HudOffsetDef = DEFAULTMENUSTYLE(NULL, OP_HudOffsetMenu, &OP_SaturnDef, 30, 5);
+menu_t OP_HudOffsetDef = DEFAULTSCROLLSTYLE(NULL, OP_HudOffsetMenu, &OP_SaturnDef, 30, 30);
 menu_t OP_SaturnCreditsDef = DEFAULTMENUSTYLE(NULL, OP_SaturnCreditsMenu, &OP_SaturnDef, 30, 10);
 
 menu_t OP_BirdDef = DEFAULTMENUSTYLE(NULL, OP_BirdMenu, &OP_MainDef, 30, 30);
@@ -2439,6 +2507,7 @@ menu_t OP_ForkedBirdDef = {
 	M_DrawLocalSkinMenu,
 	30, 6,
 	0,
+	NULL,
 	NULL
 };
 
@@ -3257,6 +3326,7 @@ boolean M_Responder(event_t *ev)
 		case KEY_DOWNARROW:
 			M_NextOpt();
 			S_StartSound(NULL, sfx_menu1);
+			coolalphatimer = 9;
 			/*if (currentMenu == &SP_PlayerDef)
 			{
 				Z_Free(char_notes);
@@ -3267,6 +3337,7 @@ boolean M_Responder(event_t *ev)
 		case KEY_UPARROW:
 			M_PrevOpt();
 			S_StartSound(NULL, sfx_menu1);
+			coolalphatimer = 9;
 			/*if (currentMenu == &SP_PlayerDef)
 			{
 				Z_Free(char_notes);
@@ -3669,7 +3740,7 @@ void M_StartControlPanel(void)
 
 		Dummymenuplayer_OnChange();
 
-		if ((server || IsPlayerAdmin(consoleplayer)))
+		if (server)
 		{
 			MPauseMenu[mpause_switchmap].status = IT_STRING | IT_CALL;
 			MPauseMenu[mpause_addons].status = IT_STRING | IT_CALL;
@@ -4422,8 +4493,59 @@ static void M_DrawGenericBackgroundMenu(void)
 
 #define scrollareaheight 72
 
+// TODO: This is fucking terrible.
+static void M_DrawSplitText(INT32 x, INT32 y, INT32 option, const char* str, INT32 box_x, INT32 alpha) 
+{
+	const char* icopy = strdup(str);
+	const char** clines = NULL;
+	INT16 num_lines = 0;
+
+	if (icopy == NULL) return;
+
+	char* token = strtok(icopy, "\n");
+
+	while (token != NULL) 
+	{
+		const char* line = strdup(token);
+
+		if (line == NULL) return;
+
+		clines = (const char**)realloc(clines, (num_lines + 1) * sizeof(const char*));
+		clines[num_lines] = line;
+		num_lines++;
+
+		token = strtok(NULL, "\n");
+	}
+
+	free(icopy);
+
+	INT16 yoffset;
+	yoffset = (((5*10 - num_lines*10)));
+
+	// Draw BG first,,,
+	for (int i = 0; i < num_lines; i++) 
+	{
+		V_DrawFill(0, (y + yoffset - 6)+5, vid.width, 11, 239|V_SNAPTOBOTTOM|V_SNAPTOLEFT);
+		yoffset += 11;
+	}
+
+	yoffset = (((5*10 - num_lines*10)));
+
+	// THEN the text
+	for (int i = 0; i < num_lines; i++) 
+	{
+        V_DrawCenteredThinString(x, y + yoffset, option, clines[i]);
+		V_DrawCenteredThinString(x, y + yoffset, option|V_YELLOWMAP|((9 - alpha) << V_ALPHASHIFT), clines[i]);
+		yoffset += 10;
+        // Remember to free the memory for each line when you're done with it.
+        free((void*)clines[i]);
+    }
+
+	free(clines);
+}
+
 // note that alphakey is multiplied by 2 for scrolling menus to allow greater usage in UINT8 range.
-/*static void M_DrawGenericScrollMenu(void)
+static void M_DrawGenericScrollMenu(void)
 {
 	INT32 x, y, i, max, bottom, tempcentery, cursory = 0;
 
@@ -4552,8 +4674,18 @@ static void M_DrawGenericBackgroundMenu(void)
 	// DRAW THE SKULL CURSOR
 	V_DrawScaledPatch(currentMenu->x - 24, cursory, 0,
 		W_CachePatchName("M_CURSOR", PU_CACHE));
-}*/
 
+	// dumb hack
+	if (currentMenu == &OP_SaturnDef)
+	{
+		if (!(OP_SaturnTooltips[itemOn] == NULL)) 
+		{
+			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_SaturnTooltips[itemOn], 30, coolalphatimer);
+			if (coolalphatimer > 0 && interpTimerHackAllow)
+				coolalphatimer--;
+		}
+	}
+}
 
 static void M_DrawPauseMenu(void)
 {

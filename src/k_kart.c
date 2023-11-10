@@ -7615,13 +7615,28 @@ static void K_drawKartStats(void)
 	y += cv_stat_yoffset.value + (G_BattleGametype() ? (stplyr->kartstuff[k_bumper] ? -5 : -8) : 0) + spdoffset;
 	flags |= V_HUDTRANS;
 
+	INT32 skinnum;
+	skin_t fakeskin;
+	fakeskin = skins[stplyr->skin];
+	skinnum = stplyr->skin;
+
+	// local skinner
+	if (stplyr->localskin) 
+	{
+		skinnum = stplyr->localskin - 1;
+		if (stplyr->mo->skinlocal)
+			fakeskin = localskins[stplyr->localskin - 1];
+		else
+			fakeskin = skins[stplyr->localskin - 1];
+	}
+
 	if (!splitscreen)
 	{
 		// Skin name
-		V_DrawSmallString(x+20, y+12, flags|V_ALLOWLOWERCASE, va("%c%s", V_GetSkincolorChar(stplyr->skincolor), skins[stplyr->skin].realname));
+		V_DrawSmallString(x+20, y+12, flags|V_ALLOWLOWERCASE, va("%c%s", V_GetSkincolorChar(stplyr->skincolor), fakeskin.realname));
 
 		// Icon and stats
-		V_DrawMappedPatch(x, y, flags, W_CachePatchName(skins[stplyr->skin].facerank, PU_CACHE), R_GetTranslationColormap(stplyr->skin, stplyr->skincolor, GTC_CACHE));
+		V_DrawMappedPatch(x, y, flags, R_GetSkinFaceRank(stplyr), R_GetLocalTranslationColormap(stplyr->mo->skin, stplyr->mo->localskin, stplyr->skincolor, GTC_CACHE, stplyr->mo->skinlocal));
 		V_DrawMappedPatch(x-3, y-2, flags, kp_facenum[min(9, max(1, stplyr->kartspeed))], R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_BLUEBERRY, GTC_CACHE));
 		V_DrawMappedPatch(x+10, y+10, flags, kp_facenum[min(9, max(1, stplyr->kartweight))], R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_BURGUNDY, GTC_CACHE));
 	}
@@ -8386,7 +8401,7 @@ static boolean K_drawKartPositionFaces(void)
 			{
 				player_t *p;
 				p = &players[rankplayer[i]];
-				V_DrawMappedPatch(FACE_X, Y, V_HUDTRANS|V_SNAPTOLEFT, ( (p->skinlocal) ? localfacerankprefix : facerankprefix )[( (p->localskin) ? p->localskin-1 : p->skin )], colormap);
+				V_DrawMappedPatch(FACE_X, Y, V_HUDTRANS|V_SNAPTOLEFT, R_GetSkinFaceRank(p), colormap);
 			}
 
 #ifdef HAVE_BLUA
@@ -8476,7 +8491,7 @@ void HU_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, I
 			{
 				player_t *p;
 				p = &players[tab[i].num];
-				V_DrawMappedPatch(x, y-4, 0, ( (p->skinlocal) ? localfacerankprefix : facerankprefix )[( (p->localskin) ? p->localskin-1 : p->skin )], colormap);
+				V_DrawMappedPatch(x, y-4, 0, R_GetSkinFaceRank(p), colormap);
 			}
 			/*if (G_BattleGametype() && players[tab[i].num].kartstuff[k_bumper] > 0) -- not enough space for this
 			{
@@ -8884,7 +8899,7 @@ static void K_drawKartWanted(void)
 		if (players[battlewanted[i]].skincolor)
 		{
 			colormap = R_GetTranslationColormap(TC_RAINBOW, p->skincolor, GTC_CACHE);
-			V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, FRACUNIT, V_HUDTRANS|(splitscreen < 3 ? V_SNAPTORIGHT : 0)|V_SNAPTOBOTTOM, (scale == FRACUNIT ? ( (p->skinlocal) ? localfacewantprefix : facewantprefix )[( (p->localskin) ? p->localskin-1 : p->skin )] : ( (p->skinlocal) ? localfacerankprefix : facerankprefix )[( (p->localskin) ? p->localskin-1 : p->skin )]), colormap);
+			V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, FRACUNIT, V_HUDTRANS|(splitscreen < 3 ? V_SNAPTORIGHT : 0)|V_SNAPTOBOTTOM, (scale == FRACUNIT ? R_GetSkinFaceWant(p) : R_GetSkinFaceRank(p)), colormap);
 			/*if (basey2)	// again with 4p stuff
 				V_DrawFixedPatch(x<<FRACBITS, (y - (basey-basey2))<<FRACBITS, FRACUNIT, V_HUDTRANS|V_SNAPTOTOP, (scale == FRACUNIT ? facewantprefix[p->skin] : facerankprefix[p->skin]), colormap);*/
 		}
@@ -9012,7 +9027,7 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags, pat
 	amypos = amnumypos + ((y + AutomapPic->height/2 - (( (skinlocal) ? localfacemmapprefix : facemmapprefix )[skin]->height/2))<<FRACBITS);
 
 	if (!mo->color) // 'default' color
-		V_DrawSciencePatch(amxpos, amypos, flags, ( (skinlocal) ? localfacemmapprefix : facemmapprefix )[skin], FRACUNIT);
+		V_DrawSciencePatch(amxpos, amypos, flags, R_GetSkinFaceMini(mo->player), FRACUNIT);
 	else
 	{
 		UINT8 *colormap = R_GetTranslationColormap((mo->colorized) ? TC_RAINBOW : skin, mo->color, GTC_CACHE);
@@ -9020,12 +9035,12 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags, pat
 		if (cv_minihead.value == 1)
 		{
 			colormap = R_GetLocalTranslationColormap(mo->skin, mo->localskin, mo->color, GTC_CACHE, skinlocal);
-			V_DrawFixedPatch(amxpos + (2 * FRACUNIT), amypos + (2 * FRACUNIT), FRACUNIT/2, flags, ( (skinlocal) ? localfacemmapprefix : facemmapprefix )[skin], colormap);
+			V_DrawFixedPatch(amxpos + (2 * FRACUNIT), amypos + (2 * FRACUNIT), FRACUNIT/2, flags, R_GetSkinFaceMini(mo->player), colormap);
 		}
 		else if (cv_minihead.value == 0)
 		{
 			colormap = R_GetLocalTranslationColormap(mo->skin, mo->localskin, mo->color, GTC_CACHE, skinlocal);
-			V_DrawFixedPatch(amxpos, amypos, FRACUNIT, flags, ( (skinlocal) ? localfacemmapprefix : facemmapprefix )[skin], colormap);
+			V_DrawFixedPatch(amxpos, amypos, FRACUNIT, flags, R_GetSkinFaceMini(mo->player), colormap);
 		}
 		
 		if (cv_showminimapnames.value && !(modeattacking || gamestate == GS_TIMEATTACK))
