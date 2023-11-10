@@ -1940,7 +1940,6 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_quaketilt);
 	CV_RegisterVar(&cv_tiltsmoothing);
 	CV_RegisterVar(&cv_actionmovie);
-	CV_RegisterVar(&cv_windowquake);
 
 	CV_RegisterVar(&cv_driftsparkpulse);
 	CV_RegisterVar(&cv_gravstretch);

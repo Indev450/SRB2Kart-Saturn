@@ -1918,8 +1918,6 @@ static menuitem_t OP_TiltMenu[] =
 	{IT_STRING | IT_CVAR, NULL, "Smoothing Divisor", &cv_tiltsmoothing, 20},
 
 	{IT_STRING | IT_CVAR, NULL, "Also Tilt During Quakes", &cv_actionmovie, 40},
-
-	{IT_STRING | IT_CVAR, NULL, "\x85" "Window Shaking During Quakes", &cv_windowquake, 60},
 };
 
 enum
