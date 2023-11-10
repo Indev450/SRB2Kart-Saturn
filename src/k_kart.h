@@ -26,6 +26,9 @@ extern consvar_t cv_colorizeditembox;
 extern consvar_t cv_colorizedhudcolor;
 extern consvar_t cv_darkitembox;
 extern consvar_t cv_biglaps;
+extern consvar_t cv_stat_xoffset;
+extern consvar_t cv_stat_yoffset;
+extern consvar_t cv_showstats;
 
 boolean K_IsPlayerLosing(player_t *player);
 boolean K_IsPlayerWanted(player_t *player);

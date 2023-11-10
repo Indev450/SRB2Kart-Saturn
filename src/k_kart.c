@@ -54,6 +54,10 @@ consvar_t cv_mini_yoffset = {"hud_minimap_yoffset", "0", CV_SAVE, NULL, NULL, 0,
 consvar_t cv_want_xoffset = {"hud_wanted_xoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_want_yoffset = {"hud_wanted_yoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_stat_xoffset = {"hud_stat_xoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_stat_yoffset = {"hud_stat_yoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_showstats = {"showstats", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_showinput = {"showinput", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_newspeedometer = {"newspeedometer", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -679,7 +683,10 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_mini_yoffset);
 	CV_RegisterVar(&cv_want_xoffset);
 	CV_RegisterVar(&cv_want_yoffset);
+	CV_RegisterVar(&cv_stat_xoffset);
+	CV_RegisterVar(&cv_stat_yoffset);
 	
+	CV_RegisterVar(&cv_showstats);
 	CV_RegisterVar(&cv_showinput);
 	CV_RegisterVar(&cv_newspeedometer);
 	
@@ -7531,6 +7538,100 @@ INT32 K_calcSplitFlags(INT32 snapflags)
 	return (splitflags|snapflags);
 }
 
+static void K_drawKartStats(void)
+{
+	INT32 x, y, spdoffset, flags;
+
+	// For 1-player display
+	x = 15;
+	y = 150;
+	spdoffset = 0;
+	flags = V_SNAPTOBOTTOM|V_SNAPTOLEFT;
+
+	UINT8 splitnum = 0;
+
+	for (; splitnum < MAXSPLITSCREENPLAYERS; ++splitnum)
+	{
+		if (stplyr == &players[displayplayers[splitnum]])
+			break;
+	}
+
+	// I tried my best, but this is still mess :/
+	if (splitscreen)
+	{
+		if (splitscreen == 1)
+		{
+			// If we are in 2-player splitscreen, for player 1 we move hud to up and remove snapping
+			// to bottom
+			if (splitnum == 0)
+			{
+				y /= 2;
+				flags = V_SNAPTOLEFT;
+			}
+			else
+			{
+				// Can move it down a bit
+				y += 20;
+			}
+		}
+		else
+		{
+			// In 4-player splitscreen...
+			flags = 0;
+
+			// ...For players 2 and 4, which are at right side, we move x coordinate...
+			if (splitnum == 1 || splitnum == 3)
+				x += BASEVIDWIDTH/2;
+			// ...Else, for players on left side we can snap position to left...
+			else
+				flags |= V_SNAPTOLEFT;
+
+			// ...For players 1 and 2, which are at top side, we move y coordinate...
+			if (splitnum == 0 || splitnum == 1)
+				y /= 2;
+			// ...Else, for players on bottom side we can snap position to bottom
+			else
+			{
+				flags |= V_SNAPTOBOTTOM;
+				// Can move it down a bit
+				y += 20;
+			}
+		}
+	}
+	
+	//Internal offset for speedometer
+	if (cv_kartspeedometer.value)
+	{
+		if (cv_newspeedometer.value)
+			spdoffset = -10;
+		else
+			spdoffset = -14;
+	}
+	else
+		spdoffset = 0;
+	
+	// Customizations c:
+	x += cv_stat_xoffset.value;
+	y += cv_stat_yoffset.value + (G_BattleGametype() ? (stplyr->kartstuff[k_bumper] ? -5 : -8) : 0) + spdoffset;
+	flags |= V_HUDTRANS;
+
+	if (!splitscreen)
+	{
+		// Skin name
+		V_DrawSmallString(x+20, y+12, flags|V_ALLOWLOWERCASE, va("%c%s", V_GetSkincolorChar(stplyr->skincolor), skins[stplyr->skin].realname));
+
+		// Icon and stats
+		V_DrawMappedPatch(x, y, flags, W_CachePatchName(skins[stplyr->skin].facerank, PU_CACHE), R_GetTranslationColormap(stplyr->skin, stplyr->skincolor, GTC_CACHE));
+		V_DrawMappedPatch(x-3, y-2, flags, kp_facenum[min(9, max(1, stplyr->kartspeed))], R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_BLUEBERRY, GTC_CACHE));
+		V_DrawMappedPatch(x+10, y+10, flags, kp_facenum[min(9, max(1, stplyr->kartweight))], R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_BURGUNDY, GTC_CACHE));
+	}
+	else
+	{
+		// In splitscreen, just draw a string with stats
+		V_DrawString(x, y+10, flags, va("\x84%dS \x87%dW", stplyr->kartspeed, stplyr->kartweight));
+	}
+}
+
 static void K_drawKartItem(void)
 {
 	// ITEM_X = BASEVIDWIDTH-50;	// 270
@@ -9808,6 +9909,9 @@ void K_drawKartHUD(void)
 			if (LUA_HudEnabled(hud_position))
 #endif
 				K_drawInput();
+
+		if (!demo.title && cv_showstats.value)
+			K_drawKartStats();
 
 		if (demo.title) // Draw title logo instead in demo.titles
 		{

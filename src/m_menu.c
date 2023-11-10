@@ -1721,21 +1721,23 @@ static menuitem_t OP_SaturnMenu[] =
 {
 	{IT_HEADER, NULL, "Saturn Options", NULL, 0},
 	{IT_STRING | IT_CVAR, NULL, "Serverqueue waittime", 				&cv_connectawaittime, 	 	15},
-	{IT_STRING | IT_CVAR, NULL, "Skin Select Spinning Speed",		 	&cv_skinselectspin, 	 	35},
-	{IT_STRING | IT_CVAR, NULL, "Input Display outside of RA",		 	&cv_showinput, 	 			45},
-	{IT_STRING | IT_CVAR, NULL, "Small Speedometer",		 			&cv_newspeedometer, 	 	55},
-	{IT_STRING | IT_CVAR, NULL, "Colourized HUD",						&cv_colorizedhud,		 	65},
-	{IT_STRING | IT_CVAR, NULL, "Colourized Itembox",					&cv_colorizeditembox,		75},
-	{IT_STRING | IT_CVAR, NULL, "Colourized HUD Color",					&cv_colorizedhudcolor,		85},
-	{IT_STRING | IT_CVAR, NULL, "Show Lap Emblem",		 				&cv_showlapemblem, 	 		95},
-	{IT_STRING | IT_CVAR, NULL,	  "Show Minimap Names",   				&cv_showminimapnames, 		105},
-	{IT_STRING | IT_CVAR, NULL,	  "Small Minimap Players",   			&cv_minihead, 				115},
-	{IT_STRING | IT_CVAR, NULL, "Less Midnight Channel Flicker", 		&cv_lessflicker, 		 	125},
+	{IT_STRING | IT_CVAR, NULL, "Skin Select Spinning Speed",		 	&cv_skinselectspin, 	 	30},
+	{IT_STRING | IT_CVAR, NULL, "Input Display outside of RA",		 	&cv_showinput, 	 			40},
+	{IT_STRING | IT_CVAR, NULL, "Small Speedometer",		 			&cv_newspeedometer, 	 	50},
+	{IT_STRING | IT_CVAR, NULL, "Stat Display",		 					&cv_showstats, 	 			60},
 
-	{IT_SUBMENU|IT_STRING,	NULL,	"Player distortion...", 			&OP_PlayerDistortDef,	 	140},
-	{IT_SUBMENU|IT_STRING,	NULL,	"Hud Offsets...", 					&OP_HudOffsetDef,		 	155},
+	{IT_STRING | IT_CVAR, NULL, "Colourized HUD",						&cv_colorizedhud,		 	75},
+	{IT_STRING | IT_CVAR, NULL, "Colourized Itembox",					&cv_colorizeditembox,		85},
+	{IT_STRING | IT_CVAR, NULL, "Colourized HUD Color",					&cv_colorizedhudcolor,		95},
+	{IT_STRING | IT_CVAR, NULL, "Show Lap Emblem",		 				&cv_showlapemblem, 	 		105},
+	{IT_STRING | IT_CVAR, NULL,	  "Show Minimap Names",   				&cv_showminimapnames, 		115},
+	{IT_STRING | IT_CVAR, NULL,	  "Small Minimap Players",   			&cv_minihead, 				125},
+	{IT_STRING | IT_CVAR, NULL, "Less Midnight Channel Flicker", 		&cv_lessflicker, 		 	135},
 
-	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Credits", 					&OP_SaturnCreditsDef,		170}, // uwu
+	{IT_SUBMENU|IT_STRING,	NULL,	"Player distortion...", 			&OP_PlayerDistortDef,	 	150},
+	{IT_SUBMENU|IT_STRING,	NULL,	"Hud Offsets...", 					&OP_HudOffsetDef,		 	160},
+
+	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Credits", 		&OP_SaturnCreditsDef,		 175}, // uwu
 };
 
 enum
@@ -1745,6 +1747,7 @@ enum
 	sm_skinselspeed,
 	sm_input,
 	sm_speedometer,
+	sm_statdisplay,
 	sm_colorhud,
 	sm_colorhud_customcolor,
 	sm_lapemblem,
@@ -1798,6 +1801,8 @@ static menuitem_t OP_HudOffsetMenu[] =
 	{IT_STRING | IT_CVAR,	NULL,	"Miniranking Vertical Offset",	  &cv_face_yoffset,     130},
 	{IT_STRING | IT_CVAR, 	NULL, 	"Minimap Horizontal Offset",  	  &cv_mini_xoffset, 	145},
 	{IT_STRING | IT_CVAR,	NULL,	"Minimap Vertical Offset",	  	  &cv_mini_yoffset,     155},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Stat Display Horizontal Offset",  	  &cv_stat_xoffset, 	170},
+	{IT_STRING | IT_CVAR,	NULL,	"Stat Display Vertical Offset",	  	  &cv_stat_yoffset,     180},
 };
 
 static menuitem_t OP_SaturnCreditsMenu[] =
@@ -2417,9 +2422,9 @@ menu_t OP_DiscordOptionsDef = DEFAULTMENUSTYLE(NULL, OP_DiscordOptionsMenu, &OP_
 #endif
 menu_t OP_EraseDataDef = DEFAULTMENUSTYLE("M_DATA", OP_EraseDataMenu, &OP_DataOptionsDef, 30, 30);
 
-menu_t OP_SaturnDef = DEFAULTMENUSTYLE(NULL, OP_SaturnMenu, &OP_MainDef, 30, 15);
+menu_t OP_SaturnDef = DEFAULTMENUSTYLE(NULL, OP_SaturnMenu, &OP_MainDef, 30, 10);
 menu_t OP_PlayerDistortDef = DEFAULTMENUSTYLE("M_VIDEO", OP_PlayerDistortMenu, &OP_SaturnDef, 30, 30);
-menu_t OP_HudOffsetDef = DEFAULTMENUSTYLE(NULL, OP_HudOffsetMenu, &OP_SaturnDef, 30, 20);
+menu_t OP_HudOffsetDef = DEFAULTMENUSTYLE(NULL, OP_HudOffsetMenu, &OP_SaturnDef, 30, 5);
 menu_t OP_SaturnCreditsDef = DEFAULTMENUSTYLE(NULL, OP_SaturnCreditsMenu, &OP_SaturnDef, 30, 10);
 
 menu_t OP_BirdDef = DEFAULTMENUSTYLE(NULL, OP_BirdMenu, &OP_MainDef, 30, 30);
