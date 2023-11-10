@@ -1749,6 +1749,7 @@ static const char* OP_SaturnTooltips[] =
 	"How much speen do you want?",
 	"Displays the input display outside ofRecord Attack. Also adjusts the\nposition scale to match.",
 	"Enable the smaller speedometer.",
+	"Enable the stat display.",
 	"Enable colorized hud.",
 	"Enable the colorized itembox when colorized hud is enabled.",
 	"The color to use instead of the player color when colorized hud is enabled.",
@@ -3734,7 +3735,7 @@ void M_StartControlPanel(void)
 
 		Dummymenuplayer_OnChange();
 
-		if ((server || IsPlayerAdmin(consoleplayer)))
+		if (server)
 		{
 			MPauseMenu[mpause_switchmap].status = IT_STRING | IT_CALL;
 			MPauseMenu[mpause_addons].status = IT_STRING | IT_CALL;
