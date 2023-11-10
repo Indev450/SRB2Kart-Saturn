@@ -1747,7 +1747,7 @@ static const char* OP_SaturnTooltips[] =
 	NULL,
 	"How long can the game wait before it kicks you out from the server\nconnecting screen.",
 	"How much speen do you want?",
-	"Displays the input display outside ofRecord Attack. Also adjusts the\nposition scale to match.",
+	"Displays the input display outside of Record Attack. Also adjusts the\nposition scale to match.",
 	"Enable the smaller speedometer.",
 	"Enable the stat display.",
 	"Enable colorized hud.",
