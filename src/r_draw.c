@@ -579,33 +579,6 @@ UINT8* R_GetLocalTranslationColormap(skin_t *skin, skin_t *localskin, skincolors
 		return RGetTranslationColormap(( skin - skins ), color, flags, false);
 }
 
-patch_t* R_GetSkinFaceRank(player_t* ply) 
-{
-	if (ply->skinlocal && ply->localskin)
-		return localfacerankprefix[ply->localskin - 1];
-	else if (ply->localskin)
-		return facerankprefix[ply->localskin - 1];
-	return facerankprefix[ply->skin];
-}
-
-patch_t* R_GetSkinFaceWant(player_t* ply) 
-{
-	if (ply->skinlocal && ply->localskin)
-		return localfacewantprefix[ply->localskin - 1];
-	else if (ply->localskin)
-		return facewantprefix[ply->localskin - 1];
-	return facewantprefix[ply->skin];
-}
-
-patch_t* R_GetSkinFaceMini(player_t* ply) 
-{
-	if (ply->skinlocal && ply->localskin)
-		return localfacemmapprefix[ply->localskin - 1];
-	else if (ply->localskin)
-		return facemmapprefix[ply->localskin - 1];
-	return facemmapprefix[ply->skin];
-}
-
 /**	\brief	Flushes cache of translation colormaps.
 
 	Flushes cache of translation colormaps, but doesn't actually free the

@@ -117,9 +117,6 @@ extern lumpnum_t viewborderlump[8];
 void R_InitTranslationTables(void);
 UINT8* R_GetTranslationColormap(INT32 skinnum, skincolors_t color, UINT8 flags);
 UINT8* R_GetLocalTranslationColormap(skin_t *skin, skin_t *localskin, skincolors_t color, UINT8 flags, boolean local);
-patch_t* R_GetSkinFaceRank(player_t* ply);
-patch_t* R_GetSkinFaceWant(player_t* ply);
-patch_t* R_GetSkinFaceMini(player_t* ply);
 void R_FlushTranslationColormapCache(void);
 UINT8 R_GetColorByName(const char *name);
 
