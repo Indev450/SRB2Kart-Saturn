@@ -9143,7 +9143,7 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags, pat
 	amypos = amnumypos + ((y + AutomapPic->height/2 - (( (skinlocal) ? localfacemmapprefix : facemmapprefix )[skin]->height/2))<<FRACBITS);
 
 	if (!mo->color) // 'default' color
-		V_DrawSciencePatch(amxpos, amypos, flags, R_GetSkinFaceMini(mo->player), FRACUNIT);
+		V_DrawSciencePatch(amxpos, amypos, flags, ( (skinlocal) ? localfacemmapprefix : facemmapprefix )[skin], FRACUNIT);
 	else
 	{
 		UINT8 *colormap = R_GetTranslationColormap((mo->colorized) ? TC_RAINBOW : skin, mo->color, GTC_CACHE);
@@ -9151,12 +9151,12 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags, pat
 		if (cv_minihead.value == 1)
 		{
 			colormap = R_GetLocalTranslationColormap(mo->skin, mo->localskin, mo->color, GTC_CACHE, skinlocal);
-			V_DrawFixedPatch(amxpos + (2 * FRACUNIT), amypos + (2 * FRACUNIT), FRACUNIT/2, flags, R_GetSkinFaceMini(mo->player), colormap);
+			V_DrawFixedPatch(amxpos + (2 * FRACUNIT), amypos + (2 * FRACUNIT), FRACUNIT/2, flags, ( (skinlocal) ? localfacemmapprefix : facemmapprefix )[skin], colormap);
 		}
 		else if (cv_minihead.value == 0)
 		{
 			colormap = R_GetLocalTranslationColormap(mo->skin, mo->localskin, mo->color, GTC_CACHE, skinlocal);
-			V_DrawFixedPatch(amxpos, amypos, FRACUNIT, flags, R_GetSkinFaceMini(mo->player), colormap);
+			V_DrawFixedPatch(amxpos, amypos, FRACUNIT, flags, ( (skinlocal) ? localfacemmapprefix : facemmapprefix )[skin], colormap);
 		}
 		
 		if (cv_showminimapnames.value && !(modeattacking || gamestate == GS_TIMEATTACK))
