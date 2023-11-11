@@ -1483,7 +1483,6 @@ static void R_ProjectSprite(mobj_t *thing)
 	spr_topoffset = spritecachedinfo[lump].topoffset;
 
 #ifdef ROTSPRITE
-	
 	if (thing->player)
 	{
 		sliptiderollangle = FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), ((cv_sloperoll.value == 1) ? thing->player->sliproll*(thing->player->sliptidemem) : 0));
