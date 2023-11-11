@@ -102,6 +102,8 @@ consvar_t cv_grsolvetjoin = {"gr_solvetjoin", "On", 0, CV_OnOff, NULL, 0, NULL, 
 
 consvar_t cv_grbatching = {"gr_batching", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_grfofcut = {"gr_fofcut", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 static CV_PossibleValue_t grrenderdistance_cons_t[] = {
 	{0, "Max"}, {1, "1024"}, {2, "2048"}, {3, "4096"}, {4, "6144"}, {5, "8192"},
 	{6, "12288"}, {7, "16384"}, {0, NULL}};
@@ -2254,10 +2256,21 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 		INT32 texnum;
 		line_t * newline = NULL; // Multi-Property FOF
 
-		lowcut = max(worldbottom, worldlow);
-		highcut = min(worldtop, worldhigh);
-		lowcutslope = max(worldbottomslope, worldlowslope);
-		highcutslope = min(worldtopslope, worldhighslope);
+		if (!cv_grfofcut.value)
+		{
+			///TODO add slope support (fixing cutoffs, proper wall clipping) - maybe just disable highcut/lowcut if either sector or FOF has a slope
+			///     to allow fun plane intersecting in OGL? But then people would abuse that and make software look bad. :C
+			highcut = gr_frontsector->ceilingheight < gr_backsector->ceilingheight ? gr_frontsector->ceilingheight : gr_backsector->ceilingheight;
+			lowcut = gr_frontsector->floorheight > gr_backsector->floorheight ? gr_frontsector->floorheight : gr_backsector->floorheight;
+		}
+		else
+		{
+			lowcut = max(worldbottom, worldlow);
+			highcut = min(worldtop, worldhigh);
+			lowcutslope = max(worldbottomslope, worldlowslope);
+			highcutslope = min(worldtopslope, worldhighslope);
+		}
+
 
 		if (gr_backsector->ffloors)
 		{
@@ -2266,11 +2279,20 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 				if (!(rover->flags & FF_EXISTS) || !(rover->flags & FF_RENDERSIDES) || (rover->flags & FF_INVERTSIDES))
 					continue;
 
-				SLOPEPARAMS(*rover->t_slope, high1, highslope1, *rover->topheight)
-				SLOPEPARAMS(*rover->b_slope, low1,  lowslope1,  *rover->bottomheight)
+				if (!cv_grfofcut.value)
+				{
+					if (*rover->topheight < lowcut || *rover->bottomheight > highcut)
+						continue;
+				}
+				else
+				{
+					SLOPEPARAMS(*rover->t_slope, high1, highslope1, *rover->topheight)
+					SLOPEPARAMS(*rover->b_slope, low1,  lowslope1,  *rover->bottomheight)
 
-				if ((high1 < lowcut && highslope1 < lowcutslope) || (low1 > highcut && lowslope1 > highcutslope))
-					continue;
+					if ((high1 < lowcut && highslope1 < lowcutslope) || (low1 > highcut && lowslope1 > highcutslope))
+						continue;
+				}
+
 
 				texnum = R_GetTextureNum(sides[rover->master->sidenum[0]].midtexture);
 
@@ -2286,17 +2308,31 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 				hS = *rover->t_slope ? P_GetZAt(*rover->t_slope, v2x, v2y) : *rover->topheight;
 				l  = *rover->b_slope ? P_GetZAt(*rover->b_slope, v1x, v1y) : *rover->bottomheight;
 				lS = *rover->b_slope ? P_GetZAt(*rover->b_slope, v2x, v2y) : *rover->bottomheight;
-				// Adjust the heights so the FOF does not overlap with top and bottom textures.
-				if (h >= highcut && hS >= highcutslope)
+				
+				
+				if (!cv_grfofcut.value)
 				{
-					h = highcut;
-					hS = highcutslope;
+					if (!(*rover->t_slope) && !gr_frontsector->c_slope && !gr_backsector->c_slope && h > highcut)
+						h = hS = highcut;
+					if (!(*rover->b_slope) && !gr_frontsector->f_slope && !gr_backsector->f_slope && l < lowcut)
+						l = lS = lowcut;
 				}
-				if (l <= lowcut && lS <= lowcutslope)
+				else
 				{
-					l = lowcut;
-					lS = lowcutslope;
+					// Adjust the heights so the FOF does not overlap with top and bottom textures.
+					if (h >= highcut && hS >= highcutslope)
+					{
+						h = highcut;
+						hS = highcutslope;
+					}
+					if (l <= lowcut && lS <= lowcutslope)
+					{
+						l = lowcut;
+						lS = lowcutslope;
+					}
 				}
+
+
 				//Hurdler: HW code starts here
 				//FIXME: check if peging is correct
 				// set top/bottom coords
@@ -2438,11 +2474,20 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 				if (!(rover->flags & FF_EXISTS) || !(rover->flags & FF_RENDERSIDES) || !(rover->flags & FF_ALLSIDES))
 					continue;
 
-				SLOPEPARAMS(*rover->t_slope, high1, highslope1, *rover->topheight)
-				SLOPEPARAMS(*rover->b_slope, low1,  lowslope1,  *rover->bottomheight)
+				if (!cv_grfofcut.value)
+				{
+					if (*rover->topheight < lowcut || *rover->bottomheight > highcut)
+						continue;
+				}
+				else
+				{
+					SLOPEPARAMS(*rover->t_slope, high1, highslope1, *rover->topheight)
+					SLOPEPARAMS(*rover->b_slope, low1,  lowslope1,  *rover->bottomheight)
 
-				if ((high1 < lowcut && highslope1 < lowcutslope) || (low1 > highcut && lowslope1 > highcutslope))
-					continue;
+					if ((high1 < lowcut && highslope1 < lowcutslope) || (low1 > highcut && lowslope1 > highcutslope))
+						continue;
+				}
+
 
 				texnum = R_GetTextureNum(sides[rover->master->sidenum[0]].midtexture);
 
@@ -2457,17 +2502,29 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 				hS = *rover->t_slope ? P_GetZAt(*rover->t_slope, v2x, v2y) : *rover->topheight;
 				l  = *rover->b_slope ? P_GetZAt(*rover->b_slope, v1x, v1y) : *rover->bottomheight;
 				lS = *rover->b_slope ? P_GetZAt(*rover->b_slope, v2x, v2y) : *rover->bottomheight;
-				// Adjust the heights so the FOF does not overlap with top and bottom textures.
-				if (h >= highcut && hS >= highcutslope)
+				
+				if (!cv_grfofcut.value)
 				{
-					h = highcut;
-					hS = highcutslope;
+					if (!(*rover->t_slope) && !gr_frontsector->c_slope && !gr_backsector->c_slope && h > highcut)
+						h = hS = highcut;
+					if (!(*rover->b_slope) && !gr_frontsector->f_slope && !gr_backsector->f_slope && l < lowcut)
+						l = lS = lowcut;
 				}
-				if (l <= lowcut && lS <= lowcutslope)
+				else
 				{
-					l = lowcut;
-					lS = lowcutslope;
+					// Adjust the heights so the FOF does not overlap with top and bottom textures.
+					if (h >= highcut && hS >= highcutslope)
+					{
+						h = highcut;
+						hS = highcutslope;
+					}
+					if (l <= lowcut && lS <= lowcutslope)
+					{
+						l = lowcut;
+						lS = lowcutslope;
+					}
 				}
+				
 				//Hurdler: HW code starts here
 				//FIXME: check if peging is correct
 				// set top/bottom coords
@@ -5026,7 +5083,7 @@ void HWR_RenderDrawNodes(void)
 		{
 			planeinfo_t *plane = &drawnode->u.plane;
 
-			// We aren't traversing the BSP tree, so make gl_frontsector null to avoid crashes.
+			// We aren't traversing the BSP tree, so make gr_frontsector null to avoid crashes.
 			gr_frontsector = NULL;
 
 			if (!(plane->blend & PF_NoTexture))
@@ -5038,7 +5095,7 @@ void HWR_RenderDrawNodes(void)
 		{
 			polyplaneinfo_t *polyplane = &drawnode->u.polyplane;
 
-			// We aren't traversing the BSP tree, so make gl_frontsector null to avoid crashes.
+			// We aren't traversing the BSP tree, so make gr_frontsector null to avoid crashes.
 			gr_frontsector = NULL;
 
 			if (!(polyplane->blend & PF_NoTexture))
@@ -6304,6 +6361,7 @@ void HWR_AddCommands(void)
 	CV_RegisterVar(&cv_grsolvetjoin);
 
 	CV_RegisterVar(&cv_grbatching);
+	CV_RegisterVar(&cv_grfofcut);
 	CV_RegisterVar(&cv_grscreentextures);
 	CV_RegisterVar(&cv_grrenderdistance);
 	

@@ -162,6 +162,7 @@ void HWR_CorrectSWTricks(void);
 
 // Console variables
 extern consvar_t cv_grshaders;
+extern consvar_t cv_grfofcut;
 extern consvar_t cv_grshearing;
 extern consvar_t cv_grfov;
 extern consvar_t cv_grmdls;
