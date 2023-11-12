@@ -1089,12 +1089,10 @@ void HWR_ProjectWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend
 //
 // HWR_SplitWall
 //
+// SoM: split up and light walls according to the lightlist.
+// This may also include leaving out parts of the wall that can't be seen
 static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum, FSurfaceInfo* Surf, INT32 cutflag, ffloor_t *pfloor, FBITFIELD polyflags)
 {
-	/* SoM: split up and light walls according to the
-	 lightlist. This may also include leaving out parts
-	 of the wall that can't be seen */
-
 	float realtop, realbot, top, bot;
 	float pegt, pegb, pegmul;
 	float height = 0.0f, bheight = 0.0f;
@@ -1106,17 +1104,12 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 	
 	float diff;
 
-	fixed_t v1x = FLOAT_TO_FIXED(wallVerts[0].x);
-	fixed_t v1y = FLOAT_TO_FIXED(wallVerts[0].z); // not a typo
-	fixed_t v2x = FLOAT_TO_FIXED(wallVerts[1].x);
-	fixed_t v2y = FLOAT_TO_FIXED(wallVerts[1].z); // not a typo
-	// compiler complains when P_GetZAt is used in FLOAT_TO_FIXED directly
-	// use this as a temp var to store P_GetZAt's return value each time
-	fixed_t temp;
+	fixed_t v1x = FloatToFixed(wallVerts[0].x);
+	fixed_t v1y = FloatToFixed(wallVerts[0].z);
+	fixed_t v2x = FloatToFixed(wallVerts[1].x);
+	fixed_t v2y = FloatToFixed(wallVerts[1].z);
 #endif
 
-	INT32   solid, i;
-	lightlist_t *  list = sector->lightlist;
 	const UINT8 alpha = Surf->PolyColor.s.alpha;
 	FUINT lightnum = HWR_CalcWallLight(sector->lightlevel, v1x, v1y, v2x, v2y);
 	extracolormap_t *colormap = NULL;
@@ -1139,21 +1132,19 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 
 #ifdef ESLOPE
 	endrealtop = endtop = wallVerts[2].y;
-	endrealbot = endbot = wallVerts[1].y;
+	endrealbot = endbot = wallVerts[1].y;	
 	endpegt = wallVerts[2].t;
 	endpegb = wallVerts[1].t;
 	endpegmul = (endpegb - endpegt) / (endtop - endbot);
 #endif
 
-	if (fpclassify(diff) == FP_ZERO)
-		endpegmul = 0.0;
-	else
-		endpegmul = (endpegb - endpegt) / diff;
 
-	for (i = 0; i < sector->numlights; i++)
+	for (INT32 i = 0; i < sector->numlights; i++)
 	{
 		if (endtop < endrealbot && top < realbot)
 			return;
+		
+		lightlist_t *list = sector->lightlist;
 
 		if (!(list[i].flags & FF_NOSHADE))
 		{
@@ -1171,7 +1162,7 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 			}
 		}
 
-		solid = false;
+		boolean solid = false;
 
 		if ((sector->lightlist[i].flags & FF_CUTSOLIDS) && !(cutflag & FF_EXTRA))
 			solid = true;
@@ -1190,11 +1181,9 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 
 #ifdef ESLOPE
 		if (list[i].slope)
-		{
-			temp = P_GetZAt(list[i].slope, v1x, v1y);
-			height = FIXED_TO_FLOAT(temp);
-			temp = P_GetZAt(list[i].slope, v2x, v2y);
-			endheight = FIXED_TO_FLOAT(temp);
+		{		
+			height = FixedToFloat(P_GetZAt(list[i].slope, v1x, v1y));
+			endheight = FixedToFloat(P_GetZAt(list[i].slope, v2x, v2y));		
 		}
 		else
 			height = endheight = FIXED_TO_FLOAT(list[i].height);
@@ -1202,10 +1191,8 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 		{
 			if (*list[i].caster->b_slope)
 			{
-				temp = P_GetZAt(*list[i].caster->b_slope, v1x, v1y);
-				bheight = FIXED_TO_FLOAT(temp);
-				temp = P_GetZAt(*list[i].caster->b_slope, v2x, v2y);
-				endbheight = FIXED_TO_FLOAT(temp);
+				bheight = FixedToFloat(P_GetZAt(*list[i].caster->b_slope, v1x, v1y));
+				endbheight = FixedToFloat(P_GetZAt(*list[i].caster->b_slope, v2x, v2y));
 			}
 			else
 				bheight = endbheight = FIXED_TO_FLOAT(*list[i].caster->bottomheight);
@@ -1234,10 +1221,8 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 		{
 			if (list[i+1].slope)
 			{
-				temp = P_GetZAt(list[i+1].slope, v1x, v1y);
-				bheight = FIXED_TO_FLOAT(temp);
-				temp = P_GetZAt(list[i+1].slope, v2x, v2y);
-				endbheight = FIXED_TO_FLOAT(temp);
+				bheight = FixedToFloat(P_GetZAt(list[i+1].slope, v1x, v1y));
+				endbheight = FixedToFloat(P_GetZAt(list[i+1].slope, v2x, v2y));
 			}
 			else
 				bheight = endbheight = FIXED_TO_FLOAT(list[i+1].height);
