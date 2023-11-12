@@ -4832,17 +4832,6 @@ static void M_DrawGenericMenu(void)
 	}
 	
 	
-	
-	if (currentMenu == &OP_ExpOptionsDef)
-	{
-		if (!(OP_ExpTooltips[itemOn] == NULL)) 
-		{
-			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_ExpTooltips[itemOn], 30, coolalphatimer);
-			if (coolalphatimer > 0 && interpTimerHackAllow)
-				coolalphatimer--;
-		}
-	}
-	
 	if (currentMenu == &OP_ChatOptionsDef)
 	{
 		if (!(OP_ChatOptionsTooltips[itemOn] == NULL)) 
