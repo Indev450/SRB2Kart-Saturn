@@ -1363,7 +1363,6 @@ static const char* OP_VideoTooltips[] =
 #ifdef HWRENDER
 	"Options for OpenGL renderer.",
 #endif
-	"Experimental graphical options.",
 };
 
 
@@ -1766,7 +1765,6 @@ static const char* OP_ServerOptionsTooltips[] =
 	"Length of intermission after races.",
 	"How the next map to be played is choosen.",
 	"How long map voting is.",
-	"Amount of map rows in voting.",
 	"How often should other gamemodes appear.",
 #ifndef NONET
 	"Max amount of players allowed in this server",
@@ -2093,15 +2091,14 @@ static const char* OP_BirdTooltips[] =
 	NULL,
 	"Show player names in replay playback.",
 	"Show FREE PLAY text when in a empty server.",
-	NULL,
-	"Only show one battle choice in map vote",
-	"Amount of encore choices in map vote.",
+	//NULL,
+	//"Only show one battle choice in map vote",
+	//"Amount of encore choices in map vote.",
 	NULL,
 	"Resume level music from last position after music change.",
 	"Restart Special music if item is used again.",
 	
 	"Options for advanced music settings.",
-	
 };
 
 static menuitem_t OP_ForkedBirdMenu[] =
