@@ -1773,6 +1773,7 @@ enum
 	sm_speedometer,
 	sm_statdisplay,
 	sm_colorhud,
+	sm_coloritem,
 	sm_colorhud_customcolor,
 	sm_lapemblem,
 	sm_mapnames,
@@ -2806,6 +2807,24 @@ void Bird_menu_Onchange(void)
 	OP_AdvancedBirdMenu[fadegrow].status = status;
 	OP_AdvancedBirdMenu[respawnfadeout].status = status;
 	OP_AdvancedBirdMenu[respawnfadein].status = status;
+}
+
+//menu code is nice
+void Saturn_menu_Onchange(void) 
+{
+	UINT16 status;
+
+	if (cv_colorizedhud.value)
+	{
+			status = IT_STRING | IT_CVAR;
+	}
+	else
+	{
+			status = IT_GRAYEDOUT;
+	}
+	
+	OP_SaturnMenu[sm_coloritem].status = status;
+	OP_SaturnMenu[sm_colorhud_customcolor].status = status;
 }
 
 // ==========================================================================

@@ -8,6 +8,7 @@
 #include "hu_stuff.h"
 #include "g_game.h"
 #include "m_random.h"
+#include "m_menu.h" // ffdhidshfuisduifigergho9igj89dgodhfih AAAAAAAAAA
 #include "p_local.h"
 #include "p_slopes.h"
 #include "r_draw.h"
@@ -66,9 +67,8 @@ consvar_t cv_saltyhopsfx = {"hardcodehopsfx", "On", CV_SAVE, CV_OnOff, NULL, 0, 
 consvar_t cv_saltysquish = {"hardcodehopsquish", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 //Colourized HUD
-consvar_t cv_colorizedhud = {"colorizedhud", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_colorizedhud = {"colorizedhud", "Off", CV_SAVE|CV_CALL, CV_OnOff, Saturn_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_colorizeditembox = {"colorizeditembox", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-
 
 static CV_PossibleValue_t HudColor_cons_t[MAXSKINCOLORS+1];
 consvar_t cv_colorizedhudcolor = {"colorizedhudcolor", "Skin Color", CV_SAVE, HudColor_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -594,7 +594,9 @@ UINT8 K_GetKartColorByName(const char *name)
 UINT8 K_GetHudColor()
 {
 	if (stplyr && players - stplyr != consoleplayer) return stplyr->skincolor;
-	if (cv_colorizedhudcolor.value) return cv_colorizedhudcolor.value;
+	if (cv_colorizedhud.value){
+		if (cv_colorizedhudcolor.value) return cv_colorizedhudcolor.value;
+	}
 	return cv_playercolor.value;
 }
 

@@ -272,6 +272,9 @@ void PDistort_menu_Onchange(void);
 // Bird menu updating
 void Bird_menu_Onchange(void);
 
+// Saturn menu updating
+void Saturn_menu_Onchange(void);
+
 void M_ReplayHut(INT32 choice);
 void M_SetPlaybackMenuPointer(void);
 
