@@ -918,6 +918,8 @@ void P_PreTicker(INT32 frames)
 		// Run shield positioning
 		//P_RunShields();
 		P_RunOverlays();
+		
+		P_RunShadows();
 
 		P_UpdateSpecials();
 		P_RespawnSpecials();
