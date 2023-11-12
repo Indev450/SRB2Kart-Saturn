@@ -7656,28 +7656,25 @@ static void K_drawKartStats(void)
 	y += cv_stat_yoffset.value + (G_BattleGametype() ? (stplyr->kartstuff[k_bumper] ? -5 : -8) : 0) + spdoffset;
 	flags |= V_HUDTRANS;
 
-	INT32 skinnum;
-	skin_t fakeskin;
-	fakeskin = skins[stplyr->skin];
-	skinnum = stplyr->skin;
+	skin_t *fakeskin;
+	fakeskin = &skins[stplyr->skin];
 
 	// local skinner
-	if (stplyr->localskin) 
+	if (stplyr->localskin)
 	{
-		skinnum = stplyr->localskin - 1;
-		if (stplyr->mo->skinlocal)
-			fakeskin = localskins[stplyr->localskin - 1];
+		if (stplyr->skinlocal)
+			fakeskin = &localskins[stplyr->localskin - 1];
 		else
-			fakeskin = skins[stplyr->localskin - 1];
+			fakeskin = &skins[stplyr->localskin - 1];
 	}
 
 	if (!splitscreen)
 	{
 		// Skin name
-		V_DrawSmallString(x+20, y+12, flags|V_ALLOWLOWERCASE, va("%c%s", V_GetSkincolorChar(stplyr->skincolor), fakeskin.realname));
+		V_DrawSmallString(x+20, y+12, flags|V_ALLOWLOWERCASE, va("%c%s", V_GetSkincolorChar(stplyr->skincolor), fakeskin->realname));
 
 		// Icon and stats
-		V_DrawMappedPatch(x, y, flags, R_GetSkinFaceRank(stplyr), R_GetLocalTranslationColormap(stplyr->mo->skin, stplyr->mo->localskin, stplyr->skincolor, GTC_CACHE, stplyr->mo->skinlocal));
+		V_DrawMappedPatch(x, y, flags, R_GetSkinFaceRank(stplyr), R_GetLocalTranslationColormap(fakeskin, fakeskin, stplyr->skincolor, GTC_CACHE, stplyr->skinlocal));
 		V_DrawMappedPatch(x-3, y-2, flags, kp_facenum[min(9, max(1, stplyr->kartspeed))], R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_BLUEBERRY, GTC_CACHE));
 		V_DrawMappedPatch(x+10, y+10, flags, kp_facenum[min(9, max(1, stplyr->kartweight))], R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_BURGUNDY, GTC_CACHE));
 	}
