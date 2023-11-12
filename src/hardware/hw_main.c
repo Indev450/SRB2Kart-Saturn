@@ -1089,7 +1089,7 @@ void HWR_ProjectWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend
 //
 // HWR_SplitWall
 //
-void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum, FSurfaceInfo* Surf, INT32 cutflag, ffloor_t *pfloor, FBITFIELD polyflags)
+static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum, FSurfaceInfo* Surf, INT32 cutflag, ffloor_t *pfloor, FBITFIELD polyflags)
 {
 	/* SoM: split up and light walls according to the
 	 lightlist. This may also include leaving out parts
@@ -1103,6 +1103,8 @@ void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum, FSurfa
 	float endrealtop, endrealbot, endtop, endbot;
 	float endpegt, endpegb, endpegmul;
 	float endheight = 0.0f, endbheight = 0.0f;
+	
+	float diff;
 
 	fixed_t v1x = FLOAT_TO_FIXED(wallVerts[0].x);
 	fixed_t v1y = FLOAT_TO_FIXED(wallVerts[0].z); // not a typo
@@ -1121,12 +1123,19 @@ void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum, FSurfa
 
 	realtop = top = wallVerts[3].y;
 	realbot = bot = wallVerts[0].y;
+	diff = top - bot;
+	
 	pegt = wallVerts[3].t;
 	pegb = wallVerts[0].t;
-	pegmul = (pegb - pegt) / (top - bot);
 
-	if (fpclassify(pegmul) == FP_NAN)
+	// Lactozilla: If both heights of a side lay on the same position, then this wall is a triangle.
+	// To avoid division by zero, which would result in a NaN, we check if the vertical difference
+	// between the two vertices is not zero.
+	if (fpclassify(diff) == FP_ZERO)
 		pegmul = 0.0;
+	else
+		pegmul = (pegb - pegt) / diff;
+
 
 #ifdef ESLOPE
 	endrealtop = endtop = wallVerts[2].y;
@@ -1136,15 +1145,14 @@ void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum, FSurfa
 	endpegmul = (endpegb - endpegt) / (endtop - endbot);
 #endif
 
-	if (fpclassify(endpegmul) == FP_NAN)
+	if (fpclassify(diff) == FP_ZERO)
 		endpegmul = 0.0;
+	else
+		endpegmul = (endpegb - endpegt) / diff;
 
 	for (i = 0; i < sector->numlights; i++)
 	{
-#ifdef ESLOPE
-		if (endtop < endrealbot)
-#endif
-		if (top < realbot)
+		if (endtop < endrealbot && top < realbot)
 			return;
 
 		if (!(list[i].flags & FF_NOSHADE))
@@ -2435,7 +2443,6 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 					colormap = rover->master->frontsector->extra_colormap;
 					lightnum = rover->master->frontsector->lightlevel;
 					lightnum = colormap ? lightnum : HWR_CalcWallLight(lightnum, vs.x, vs.y, ve.x, ve.y);
-
 
 					Surf.PolyColor.s.alpha = HWR_FogBlockAlpha(rover->master->frontsector->lightlevel, rover->master->frontsector->extra_colormap);
 
