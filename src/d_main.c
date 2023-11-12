@@ -919,6 +919,7 @@ boolean snw_speedo; // snowy speedometer check
 boolean clr_hud; // colour hud check
 boolean big_lap; // bigger lap counter
 boolean big_lap_color; // bigger lap counter but colour
+boolean kartzspeedo; // kartZ speedometer
 
 static void IdentifyVersion(void)
 {
@@ -1293,6 +1294,13 @@ void D_SRB2Main(void)
 		// check for bigger lap count but color** its color bitch
 		if (W_CheckMultipleLumps("K_SCLAPB", "K_SCLA2B", NULL)) 
 			big_lap_color = true;
+		
+		// kartzspeedo
+		if (W_CheckMultipleLumps("K_KZSP1", "K_KZSP2", "K_KZSP3", "K_KZSP4", "K_KZSP5", \
+			"K_KZSP6", "K_KZSP7", "K_KZSP8", "K_KZSP9", "K_KZSP10", "K_KZSP11", "K_KZSP12", \
+			"K_KZSP13", "K_KZSP14", "K_KZSP15", "K_KZSP16", "K_KZSP17", "K_KZSP18", "K_KZSP19", \
+			"K_KZSP20", "K_KZSP21", "K_KZSP22", "K_KZSP23", "K_KZSP24", "K_KZSP25", NULL)) 
+			kartzspeedo = true;
 	}
 
 	//

@@ -1727,7 +1727,7 @@ static menuitem_t OP_SaturnMenu[] =
 
 	{IT_STRING | IT_CVAR, NULL, "Skin Select Spinning Speed",		 	&cv_skinselectspin, 	 	20},
 	{IT_STRING | IT_CVAR, NULL, "Input Display outside of RA",		 	&cv_showinput, 	 			25},
-	{IT_STRING | IT_CVAR, NULL, "Small Speedometer",		 			&cv_newspeedometer, 	 	30},
+	{IT_STRING | IT_CVAR, NULL, "Speedometer Style",		 			&cv_newspeedometer, 	 	30},
 	{IT_STRING | IT_CVAR, NULL, "Stat Display",		 					&cv_showstats, 	 			35},
 	{IT_STRING | IT_CVAR, NULL, "Colourized HUD",						&cv_colorizedhud,		 	40},
 	{IT_STRING | IT_CVAR, NULL, "Colourized Itembox",					&cv_colorizeditembox,		45},
@@ -1749,7 +1749,7 @@ static const char* OP_SaturnTooltips[] =
 	"How long can the game wait before it kicks you out from the server\nconnecting screen.",
 	"How much speen do you want?",
 	"Displays the input display outside of Record Attack. Also adjusts the\nposition scale to match.",
-	"Enable the smaller speedometer.",
+	"Change what style the speedometer is.",
 	"Enable the stat display.",
 	"Enable colorized hud.",
 	"Enable the colorized itembox when colorized hud is enabled.",
@@ -4027,8 +4027,15 @@ void M_Init(void)
 		OP_VideoOptionsMenu[op_video_ogl].status = IT_DISABLED;
 #endif
 
-	if (!snw_speedo) // why bother?
+	if (!snw_speedo && !kartzspeedo) // why bother?
 		OP_SaturnMenu[sm_speedometer].status = IT_GRAYEDOUT;
+	
+	if (!snw_speedo && kartzspeedo)
+		OP_SaturnMenu[sm_speedometer].text = "Speedometer (No Small)";
+	
+	if (snw_speedo && !kartzspeedo)
+		OP_SaturnMenu[sm_speedometer].text = "Speedometer (No PMeter)";
+	
 		
 	if (!clr_hud){ // uhguauhauguuhee
 		OP_SaturnMenu[sm_colorhud].status = IT_GRAYEDOUT;
