@@ -8010,7 +8010,7 @@ static void K_drawKartItem(void)
 				V_DrawString(fx+24, fy+31, V_ALLOWLOWERCASE|V_HUDTRANS|fflags, va("x%d", stplyr->kartstuff[k_itemamount]));
 		else
 		{
-			V_DrawScaledPatch(fy+28, fy+41, V_HUDTRANS|fflags, kp_itemx);
+			V_DrawScaledPatch(fx+28, fy+41, V_HUDTRANS|fflags, kp_itemx);
 			V_DrawKartString(fx+38, fy+36, V_HUDTRANS|fflags, va("%d", stplyr->kartstuff[k_itemamount]));
 		}
 	}
