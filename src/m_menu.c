@@ -1159,6 +1159,19 @@ static menuitem_t OP_ControlsMenu[] =
 	{IT_STRING | IT_CVAR, NULL, "Digital turn easing", &cv_turnsmooth, 70},
 };
 
+static const char* OP_ControlsTooltips[] =
+{
+	
+	"Setup player 1 controls.",
+	"Setup player 2 controls.",
+	"Setup player 3 controls.",
+	"Setup player 4 controls.",
+	
+	"Allowed amount of comtrols per key.",
+	"Turn smoothing for non-analog turning.",
+
+};
+
 static menuitem_t OP_AllControlsMenu[] =
 {
 	{IT_SUBMENU|IT_STRING, NULL, "Gamepad Options...", &OP_Joystick1Def, 0},
@@ -1331,6 +1344,29 @@ static menuitem_t OP_VideoOptionsMenu[] =
 #endif
 };
 
+static const char* OP_VideoTooltips[] =
+{
+	"Resolution game runs at.",
+#if defined (__unix__) || defined (UNIXCOMMON) || defined (HAVE_SDL)
+	"Enable fullscreen.",
+#endif
+	"Gamma (brightness) of the game.",
+	"How far away objects are drawn.",
+	"How far away weather is drawn.",
+	"Toggle being able to see the sky.",
+	"Player field of view.",
+	"Show current game framerate.",
+	"Sync game framerate to refresh rate of monitor.",
+	"Set manual framerate cap.",
+	"Size of drift spark pulse.",
+	"Force menu to only use uppercase.",
+#ifdef HWRENDER
+	"Options for OpenGL renderer.",
+#endif
+	"Experimental graphical options.",
+};
+
+
 enum
 {
 	op_video_res = 0,
@@ -1361,27 +1397,47 @@ static menuitem_t OP_VideoModeMenu[] =
 #ifdef HWRENDER
 static menuitem_t OP_OpenGLOptionsMenu[] =
 {
-	{IT_STRING | IT_CVAR,	NULL, "3D Models",					&cv_grmdls,					 5},
-	{IT_STRING | IT_CVAR,	NULL, "Fallback Player 3D Model",	&cv_grfallbackplayermodel,	 15},
+	{IT_STRING | IT_CVAR,	NULL, "3D Models",					&cv_grmdls,					 15},
+	{IT_STRING | IT_CVAR,	NULL, "Fallback Player 3D Model",	&cv_grfallbackplayermodel,	 20},
 	{IT_STRING | IT_CVAR,	NULL, "Shaders",					&cv_grshaders,				 25},
 	//{IT_STRING|IT_CVAR,		NULL, "Use custom Shaders",			&cv_grusecustomshaders,		 35}, 
-	{IT_STRING | IT_CVAR,	NULL, "Palette Rendering",			&cv_grpaletteshader,		 35},
-	{IT_STRING | IT_CVAR,   NULL, "Flashpals in Palette Renderer", &cv_grflashpal, 		 	 45},
-	{IT_STRING | IT_CVAR, 	NULL, "Min Shader Brightness", 		&cv_secbright, 		 		 55},
+	{IT_STRING | IT_CVAR,	NULL, "Palette Rendering",			&cv_grpaletteshader,		 30},
+	{IT_STRING | IT_CVAR,   NULL, "Flashpals in Palette Renderer", &cv_grflashpal, 		 	 35},
+	{IT_STRING | IT_CVAR, 	NULL, "Min Shader Brightness", 		&cv_secbright, 		 		 40},
 
-	{IT_STRING|IT_CVAR,		NULL, "Texture Quality",			&cv_scr_depth,				 70},
-	{IT_STRING|IT_CVAR,		NULL, "Texture Filter",				&cv_grfiltermode,			 80},
-	{IT_STRING|IT_CVAR,		NULL, "Anisotropic",				&cv_granisotropicmode,		 90},
+	{IT_STRING|IT_CVAR,		NULL, "Texture Quality",			&cv_scr_depth,				 50},
+	{IT_STRING|IT_CVAR,		NULL, "Texture Filter",				&cv_grfiltermode,			 55},
+	{IT_STRING|IT_CVAR,		NULL, "Anisotropic",				&cv_granisotropicmode,		 60},
+	{IT_STRING|IT_CVAR,		NULL, "Visual Portals",		  		&cv_grportals,				 65},
 
-	{IT_STRING|IT_CVAR,		NULL, "Visual Portals",		  		&cv_grportals,				 100},
+	{IT_STRING|IT_CVAR,		NULL, "Wall Contrast Style",		&cv_grfakecontrast,			75},
+	{IT_STRING|IT_CVAR,		NULL, "Slope Contrast",				&cv_grslopecontrast,		80},
+	{IT_STRING|IT_CVAR,		NULL, "Sprite Billboarding",		&cv_grspritebillboarding,	85},
+	{IT_STRING|IT_CVAR,		NULL, "Software Perspective",		&cv_grshearing,				90},
+	{IT_STRING|IT_CVAR,		NULL, "Rendering Distance",			&cv_grrenderdistance,		95},
 
-	{IT_STRING|IT_CVAR,		NULL, "Wall Contrast Style",		&cv_grfakecontrast,			120},
-	{IT_STRING|IT_CVAR,		NULL, "Slope Contrast",				&cv_grslopecontrast,		130},
-	{IT_STRING|IT_CVAR,		NULL, "Sprite Billboarding",		&cv_grspritebillboarding,	140},
-	{IT_STRING|IT_CVAR,		NULL, "Software Perspective",		&cv_grshearing,				150},
-	{IT_STRING|IT_CVAR,		NULL, "Rendering Distance",			&cv_grrenderdistance,		160},
+	{IT_SUBMENU|IT_STRING,	NULL, "Gamma...",					&OP_OpenGLColorDef,			105},
+};
 
-	{IT_SUBMENU|IT_STRING,	NULL, "Gamma...",					&OP_OpenGLColorDef,			170},
+static const char* OP_OpenGLTooltips[] =
+{
+	"Use 3D models.",
+	"Fallback 3D model for characters that don't have any.",
+	"Graphical Shaders.",
+	"Recreates the look of software mode.",
+	"Flash palettes for palette rendering.",
+	"Minimum shader brightness. This is set in sector brightness values.",
+	"Bit-depth of textures.",
+	"Filter to use on textures.",
+	"Anisotropic filtering.",
+	"Recreates an effect from software mode that is used on some maps.",
+	"The look of the wall contrast effect.",
+	"Wall contrast but for slopes.",
+	"Should sprites always face the camera?",
+	"Recreates the look of software mode camera perspective.",
+	"How far the game world should be drawn.",
+	"Gamma (brightness) of colors.",
+
 };
 
 static menuitem_t OP_OpenGLColorMenu[] =
@@ -1427,6 +1483,26 @@ static menuitem_t OP_SoundOptionsMenu[] =
 	{IT_STRING|IT_SUBMENU, 		NULL, "Advanced Settings...", 		&OP_SoundAdvancedDef, 155}
 };
 
+static const char* OP_SoundTooltips[] =
+{
+
+	"Turn Sound effects on or off.",
+	"Volume of sound effects.",
+	"Turn Sound effects on or off.",
+	"Volume of music.",
+	"Reverse left and right channels of audio.",
+	"Surround Sound.",
+	"Chat notification sound.",
+	"Frequency of character voice lines.",
+	"Should the powerup warning be a sound effect or music?",
+	"Testing sounds...",
+	"Should the game play music while unfocused?",
+	"Should the game play sound while unfocused?",
+	"Options for advanced sound settings.",
+	
+};
+
+
 static menuitem_t OP_SoundAdvancedMenu[] =
 {
 #ifdef HAVE_OPENMPT
@@ -1443,6 +1519,24 @@ static menuitem_t OP_SoundAdvancedMenu[] =
 
 	{IT_STRING | IT_CVAR, NULL, "Grow Music", &cv_growmusic, 117},
 	{IT_STRING | IT_CVAR, NULL, "Invulnerability Music", &cv_supermusic, 137},
+};
+
+static const char* OP_SoundAdvancedTooltips[] =
+{
+#ifdef HAVE_OPENMPT
+	NULL,
+	
+	"Filter used to resample tracker instruments.",
+	"Resample tracker modules to sound similar to Paula hardware.",
+#if OPENMPT_API_VERSION_MAJOR < 1 && OPENMPT_API_VERSION_MINOR > 4
+	"Which Amiga should be used for .mod playback?",
+#endif
+	"How far should the four channels in .mod be panned?",
+#endif
+	NULL,
+	"Should the Grow music be on or off?",
+	"Should the Invulnerability music be on or off?",
+
 };
 
 
@@ -1590,6 +1684,20 @@ static menuitem_t OP_ChatOptionsMenu[] =
 	{IT_STRING | IT_CVAR, NULL, "Ping icon",		&cv_pingicon,			120},
 };
 
+static const char* OP_ChatOptionsTooltips[] =
+{
+	"Chat mode used for in-game chat.",
+	"Width of chat box.",
+	"Height of chat box.",
+	"Chatbox background.",
+	"Fadeout time for new chat message.",
+	"Spam protection for in-game chat.",
+	"Maxiumum amount of chat messages to look back at.",
+	"Show player ping.",
+	"Measurement used for ping.",
+	"Visibility of ping icon.",
+};
+
 static menuitem_t OP_GameOptionsMenu[] =
 {
 	{IT_STRING | IT_SUBMENU, NULL, "Random Item Toggles...",	&OP_MonitorToggleDef,	 10},
@@ -1607,6 +1715,23 @@ static menuitem_t OP_GameOptionsMenu[] =
 
 	{IT_STRING | IT_CVAR, NULL, "Force Character",				&cv_forceskin,          140},
 	{IT_STRING | IT_CVAR, NULL, "Restrict Character Changes",	&cv_restrictskinchange, 150},
+};
+
+static const char* OP_GameTooltips[] =
+{
+	"Toggles for all in-game items.",
+	"Configure gameplay options related to Neptune client.",
+	"Speed of game in race mode.",
+	"Speed of game in battle mode.",
+	"Crazier item rolls.",
+	"Mirror mode.",
+	"Number of laps.",
+	"Countdown for other players when people finish.",
+	"Time limit for battle mode.",
+	"Number of bumpers to start with in battle mode.",
+	"Allow players to come back via karma in battle mode.",
+	"Force everyone to use the same character.",
+	"Prevent character changes.",
 };
 
 static menuitem_t OP_ServerOptionsMenu[] =
@@ -1632,6 +1757,27 @@ static menuitem_t OP_ServerOptionsMenu[] =
 #endif
 };
 
+static const char* OP_ServerOptionsTooltips[] =
+{
+#ifndef NONET
+	"Name of server.",
+#endif
+	
+	"Length of intermission after races.",
+	"How the next map to be played is choosen.",
+	"How long map voting is.",
+	"Amount of map rows in voting.",
+	"How often should other gamemodes appear.",
+#ifndef NONET
+	"Max amount of players allowed in this server",
+	"Allow players to join this server.",
+	"Allow players to download addons.",
+	"Who has permission to pause the server?",
+	"Completely mute in game chat.",
+	"Options for advanced server settings.",
+#endif
+};
+
 #ifndef NONET
 static menuitem_t OP_AdvServerOptionsMenu[] =
 {
@@ -1650,6 +1796,24 @@ static menuitem_t OP_AdvServerOptionsMenu[] =
 	{IT_STRING | IT_CVAR,    NULL, "Log join addresses",			&cv_showjoinaddress,	130},
 	{IT_STRING | IT_CVAR,    NULL, "Log resyncs",					&cv_blamecfail,			140},
 	{IT_STRING | IT_CVAR,    NULL, "Log file transfers",			&cv_noticedownload,		150},
+};
+#endif
+
+#ifndef NONET
+static const char* OP_AdvServerOptionsTooltips[] =
+{
+	
+	"Server used for master server.",
+	"Attempts to resynchronise player to server.",
+	"Maximum allowed delay.",
+	"Delay timeout in seconds.",
+	"Connection timeout in tics.",
+	"Join timeout in tics",
+	"Max file size sent in killobytes.",
+	"Packet rate for file transfers.",
+	"Log ip addresses of players who join.",
+	"Log player resync attempts.",
+	"Log player file transfers.",
 };
 #endif
 
@@ -1759,9 +1923,9 @@ static const char* OP_SaturnTooltips[] =
 	"Minimize the player icons on the minimap.",
 	"Disables the flicker effect on Midnight Channel.",
 
-	NULL,
-	NULL,
-	NULL,
+	"Options for player distortion effects.",
+	"Move position of HUD elements.",
+	"See the people who helped make this project possible!",
 };
 
 enum
@@ -1796,6 +1960,20 @@ static menuitem_t OP_PlayerDistortMenu[] =
 	{IT_STRING | IT_CVAR, 	NULL, 	"Saltyhop", &cv_saltyhop, 	110},
 	{IT_STRING | IT_CVAR,	NULL,	"Saltyhop Sound Effect",	      &cv_saltyhopsfx,      125},
 	{IT_STRING | IT_CVAR,	NULL,	"Saltyhop Squish",	      	  	&cv_saltysquish,        140},
+};
+
+static const char* OP_PlayerDistortTooltips[] =
+{
+	NULL,
+	"Player rotation on slopes.",
+	"Distance player rotation should be visable.",
+	"Player rotation when sliptiding.",
+	"Player squash and stretch.",
+	"Player landing sound effect.",
+	"Kart hopping while drifting. This is purely visual.",
+	"Player hop sound effect.",
+	"Player hop squash and stretch.",
+	
 };
 
 enum
@@ -1881,6 +2059,13 @@ static menuitem_t OP_SaturnCreditsMenu[] =
 	{IT_STRING, NULL, "", 									NULL,       200},	// dummy text III
 };
 
+static const char* OP_CreditTooltips[] =
+{
+	NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,
+	"Thanks everyone! <3",
+};
+
+
 static menuitem_t OP_BirdMenu[] =
 {
 	{IT_HEADER, NULL, "Crazy", NULL, 0},
@@ -1899,6 +2084,24 @@ static menuitem_t OP_BirdMenu[] =
 	{IT_STRING | IT_CVAR, NULL, "Restart Special Music", &cv_resetspecialmusic, 90},
 
 	{IT_STRING | IT_SUBMENU, NULL, "Advanced Music Options...", &OP_AdvancedBirdDef, 120},
+};
+
+static const char* OP_BirdTooltips[] =
+{
+	NULL,
+	"Options for screen tilting.",
+	NULL,
+	"Show player names in replay playback.",
+	"Show FREE PLAY text when in a empty server.",
+	NULL,
+	"Only show one battle choice in map vote",
+	"Amount of encore choices in map vote.",
+	NULL,
+	"Resume level music from last position after music change.",
+	"Restart Special music if item is used again.",
+	
+	"Options for advanced music settings.",
+	
 };
 
 static menuitem_t OP_ForkedBirdMenu[] =
@@ -1921,6 +2124,15 @@ static menuitem_t OP_TiltMenu[] =
 	{IT_STRING | IT_CVAR, NULL, "Also Tilt During Quakes", &cv_actionmovie, 40},
 };
 
+static const char* OP_TiltTooltips[] =
+{
+	"Camera tilting during gameplay.",
+	"Tilt camera while turning.",
+	"Smoothing value used.",
+	"Tilt during screen quakes.",
+	
+};
+
 enum
 {
 	tilting,
@@ -1940,6 +2152,18 @@ static menuitem_t OP_AdvancedBirdMenu[] =
 
 	{IT_STRING | IT_CVAR, NULL, "Resync Threshold",          &cv_music_resync_threshold,     60},
 	{IT_STRING | IT_CVAR, NULL, "Resync Special Music Only", &cv_music_resync_powerups_only, 70},
+};
+
+static const char* OP_AdvancedBirdTooltips[] =
+{
+	"Music fading.",
+	"Fade in music after Invincibility.",
+	"Fade in music after Grow.",
+	"Fade out music before respawning.",
+	"Fade in music while respawning.",
+	"Threshold for syncing music.",
+	"Only sync special music.",
+	
 };
 
 enum
@@ -2392,7 +2616,7 @@ menu_t OP_VideoOptionsDef =
 	&OP_MainDef,
 	OP_VideoOptionsMenu,
 	M_DrawVideoMenu,
-	30, 30,
+	30, 20,
 	0,
 	NULL,
 	NULL
@@ -2418,11 +2642,12 @@ menu_t OP_SoundOptionsDef =
 	&OP_MainDef,
 	OP_SoundOptionsMenu,
 	M_DrawSkyRoom,
-	30, 30,
+	30, 20,
 	0,
 	NULL,
 	NULL
 };
+
 
 menu_t OP_HUDOptionsDef =
 {
@@ -2437,14 +2662,15 @@ menu_t OP_HUDOptionsDef =
 	NULL
 };
 
+
 menu_t OP_ChatOptionsDef = DEFAULTMENUSTYLE("M_HUD", OP_ChatOptionsMenu, &OP_HUDOptionsDef, 30, 30);
 
 menu_t OP_SoundAdvancedDef = DEFAULTMENUSTYLE("M_SOUND", OP_SoundAdvancedMenu, &OP_SoundOptionsDef, 30, 30);
 
-menu_t OP_GameOptionsDef = DEFAULTMENUSTYLE("M_GAME", OP_GameOptionsMenu, &OP_MainDef, 30, 30);
-menu_t OP_ServerOptionsDef = DEFAULTMENUSTYLE("M_SERVER", OP_ServerOptionsMenu, &OP_MainDef, 24, 30);
+menu_t OP_GameOptionsDef = DEFAULTMENUSTYLE("M_GAME", OP_GameOptionsMenu, &OP_MainDef, 30, 20);
+menu_t OP_ServerOptionsDef = DEFAULTMENUSTYLE("M_SERVER", OP_ServerOptionsMenu, &OP_MainDef, 24, 20);
 #ifndef NONET
-menu_t OP_AdvServerOptionsDef = DEFAULTMENUSTYLE("M_SERVER", OP_AdvServerOptionsMenu, &OP_ServerOptionsDef, 24, 30);
+menu_t OP_AdvServerOptionsDef = DEFAULTMENUSTYLE("M_SERVER", OP_AdvServerOptionsMenu, &OP_ServerOptionsDef, 24, 20);
 #endif
 
 //menu_t OP_NetgameOptionsDef = DEFAULTMENUSTYLE("M_SERVER", OP_NetgameOptionsMenu, &OP_ServerOptionsDef, 30, 30);
@@ -2464,7 +2690,7 @@ menu_t OP_MonitorToggleDef =
 };
 
 #ifdef HWRENDER
-menu_t OP_OpenGLOptionsDef = DEFAULTMENUSTYLE("M_VIDEO", OP_OpenGLOptionsMenu, &OP_VideoOptionsDef, 30, 20);
+menu_t OP_OpenGLOptionsDef = DEFAULTSCROLLSTYLE("M_VIDEO", OP_OpenGLOptionsMenu, &OP_VideoOptionsDef, 30, 30);
 
 menu_t OP_OpenGLColorDef =
 {
@@ -4365,6 +4591,58 @@ static void M_DrawMenuTitle(void)
 	}
 }
 
+// TODO: This is fucking terrible.
+static void M_DrawSplitText(INT32 x, INT32 y, INT32 option, const char* str, INT32 box_x, INT32 alpha) 
+{
+	const char* icopy = strdup(str);
+	const char** clines = NULL;
+	INT16 num_lines = 0;
+
+	if (icopy == NULL) return;
+
+	char* token = strtok(icopy, "\n");
+
+	while (token != NULL) 
+	{
+		const char* line = strdup(token);
+
+		if (line == NULL) return;
+
+		clines = (const char**)realloc(clines, (num_lines + 1) * sizeof(const char*));
+		clines[num_lines] = line;
+		num_lines++;
+
+		token = strtok(NULL, "\n");
+	}
+
+	free(icopy);
+
+	INT16 yoffset;
+	yoffset = (((5*10 - num_lines*10)));
+
+	// Draw BG first,,,
+	for (int i = 0; i < num_lines; i++) 
+	{
+		V_DrawFill(0, (y + yoffset - 6)+5, vid.width, 11, 239|V_SNAPTOBOTTOM|V_SNAPTOLEFT);
+		yoffset += 11;
+	}
+
+	yoffset = (((5*10 - num_lines*10)));
+
+	// THEN the text
+	for (int i = 0; i < num_lines; i++) 
+	{
+        V_DrawCenteredThinString(x, y + yoffset, option, clines[i]);
+		V_DrawCenteredThinString(x, y + yoffset, option|V_YELLOWMAP|((9 - alpha) << V_ALPHASHIFT), clines[i]);
+		yoffset += 10;
+        // Remember to free the memory for each line when you're done with it.
+        free((void*)clines[i]);
+    }
+
+	free(clines);
+}
+
+
 static void M_DrawGenericMenu(void)
 {
 	INT32 x, y, w, i, cursory = 0;
@@ -4507,6 +4785,165 @@ static void M_DrawGenericMenu(void)
 			W_CachePatchName("M_CURSOR", PU_CACHE));
 		V_DrawString(currentMenu->x, cursory, lowercase|highlightflags, currentMenu->menuitems[itemOn].text);
 	}
+	
+	
+	// dumb hack
+	// tooltips
+	
+	if (currentMenu == &OP_ControlsDef)
+	{
+		if (!(OP_ControlsTooltips[itemOn] == NULL)) 
+		{
+			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_ControlsTooltips[itemOn], 30, coolalphatimer);
+			if (coolalphatimer > 0 && interpTimerHackAllow)
+				coolalphatimer--;
+		}
+	}
+	
+	
+	if (currentMenu == &OP_VideoOptionsDef)
+	{
+		if (!(OP_VideoTooltips[itemOn] == NULL)) 
+		{
+			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_VideoTooltips[itemOn], 30, coolalphatimer);
+			if (coolalphatimer > 0 && interpTimerHackAllow)
+				coolalphatimer--;
+		}
+	}
+	
+	if (currentMenu == &OP_SoundOptionsDef)
+	{
+		if (!(OP_SoundTooltips[itemOn] == NULL)) 
+		{
+			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_SoundTooltips[itemOn], 30, coolalphatimer);
+			if (coolalphatimer > 0 && interpTimerHackAllow)
+				coolalphatimer--;
+		}
+	}
+	
+	if (currentMenu == &OP_SoundAdvancedDef)
+	{
+		if (!(OP_SoundAdvancedTooltips[itemOn] == NULL)) 
+		{
+			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_SoundAdvancedTooltips[itemOn], 30, coolalphatimer);
+			if (coolalphatimer > 0 && interpTimerHackAllow)
+				coolalphatimer--;
+		}
+	}
+	
+	
+	
+	if (currentMenu == &OP_ExpOptionsDef)
+	{
+		if (!(OP_ExpTooltips[itemOn] == NULL)) 
+		{
+			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_ExpTooltips[itemOn], 30, coolalphatimer);
+			if (coolalphatimer > 0 && interpTimerHackAllow)
+				coolalphatimer--;
+		}
+	}
+	
+	if (currentMenu == &OP_ChatOptionsDef)
+	{
+		if (!(OP_ChatOptionsTooltips[itemOn] == NULL)) 
+		{
+			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_ChatOptionsTooltips[itemOn], 30, coolalphatimer);
+			if (coolalphatimer > 0 && interpTimerHackAllow)
+				coolalphatimer--;
+		}
+	}
+	
+	
+		
+	if (currentMenu == &OP_GameOptionsDef)
+	{
+		if (!(OP_GameTooltips[itemOn] == NULL)) 
+		{
+			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_GameTooltips[itemOn], 30, coolalphatimer);
+			if (coolalphatimer > 0 && interpTimerHackAllow)
+				coolalphatimer--;
+		}
+	}
+	
+	
+	if (currentMenu == &OP_ServerOptionsDef)
+	{
+		if (!(OP_ServerOptionsTooltips[itemOn] == NULL)) 
+		{
+			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_ServerOptionsTooltips[itemOn], 30, coolalphatimer);
+			if (coolalphatimer > 0 && interpTimerHackAllow)
+				coolalphatimer--;
+		}
+	}
+	
+	
+	if (currentMenu == &OP_AdvServerOptionsDef)
+	{
+		if (!(OP_AdvServerOptionsTooltips[itemOn] == NULL)) 
+		{
+			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_AdvServerOptionsTooltips[itemOn], 30, coolalphatimer);
+			if (coolalphatimer > 0 && interpTimerHackAllow)
+				coolalphatimer--;
+		}
+	}
+	
+	
+	
+		
+	if (currentMenu == &OP_PlayerDistortDef)
+	{
+		if (!(OP_PlayerDistortTooltips[itemOn] == NULL)) 
+		{
+			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_PlayerDistortTooltips[itemOn], 30, coolalphatimer);
+			if (coolalphatimer > 0 && interpTimerHackAllow)
+				coolalphatimer--;
+		}
+	}
+	
+	
+	
+	
+	if (currentMenu == &OP_SaturnCreditsDef) // C:
+	{
+		if (!(OP_CreditTooltips[itemOn] == NULL)) 
+		{
+			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_CreditTooltips[itemOn], 30, coolalphatimer);
+			if (coolalphatimer > 0 && interpTimerHackAllow)
+				coolalphatimer--;
+		}
+	}
+	
+	if (currentMenu == &OP_BirdDef)
+	{
+		if (!(OP_BirdTooltips[itemOn] == NULL)) 
+		{
+			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_BirdTooltips[itemOn], 30, coolalphatimer);
+			if (coolalphatimer > 0 && interpTimerHackAllow)
+				coolalphatimer--;
+		}
+	}
+	
+	if (currentMenu == &OP_TiltDef)
+	{
+		if (!(OP_TiltTooltips[itemOn] == NULL)) 
+		{
+			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_TiltTooltips[itemOn], 30, coolalphatimer);
+			if (coolalphatimer > 0 && interpTimerHackAllow)
+				coolalphatimer--;
+		}
+	}
+	
+	if (currentMenu == &OP_AdvancedBirdDef)
+	{
+		if (!(OP_AdvancedBirdTooltips[itemOn] == NULL)) 
+		{
+			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_AdvancedBirdTooltips[itemOn], 30, coolalphatimer);
+			if (coolalphatimer > 0 && interpTimerHackAllow)
+				coolalphatimer--;
+		}
+	}
+	
+	
 }
 
 static void M_DrawGenericBackgroundMenu(void)
@@ -4517,56 +4954,7 @@ static void M_DrawGenericBackgroundMenu(void)
 
 #define scrollareaheight 72
 
-// TODO: This is fucking terrible.
-static void M_DrawSplitText(INT32 x, INT32 y, INT32 option, const char* str, INT32 box_x, INT32 alpha) 
-{
-	const char* icopy = strdup(str);
-	const char** clines = NULL;
-	INT16 num_lines = 0;
 
-	if (icopy == NULL) return;
-
-	char* token = strtok(icopy, "\n");
-
-	while (token != NULL) 
-	{
-		const char* line = strdup(token);
-
-		if (line == NULL) return;
-
-		clines = (const char**)realloc(clines, (num_lines + 1) * sizeof(const char*));
-		clines[num_lines] = line;
-		num_lines++;
-
-		token = strtok(NULL, "\n");
-	}
-
-	free(icopy);
-
-	INT16 yoffset;
-	yoffset = (((5*10 - num_lines*10)));
-
-	// Draw BG first,,,
-	for (int i = 0; i < num_lines; i++) 
-	{
-		V_DrawFill(0, (y + yoffset - 6)+5, vid.width, 11, 239|V_SNAPTOBOTTOM|V_SNAPTOLEFT);
-		yoffset += 11;
-	}
-
-	yoffset = (((5*10 - num_lines*10)));
-
-	// THEN the text
-	for (int i = 0; i < num_lines; i++) 
-	{
-        V_DrawCenteredThinString(x, y + yoffset, option, clines[i]);
-		V_DrawCenteredThinString(x, y + yoffset, option|V_YELLOWMAP|((9 - alpha) << V_ALPHASHIFT), clines[i]);
-		yoffset += 10;
-        // Remember to free the memory for each line when you're done with it.
-        free((void*)clines[i]);
-    }
-
-	free(clines);
-}
 
 // note that alphakey is multiplied by 2 for scrolling menus to allow greater usage in UINT8 range.
 static void M_DrawGenericScrollMenu(void)
@@ -4700,6 +5088,19 @@ static void M_DrawGenericScrollMenu(void)
 		W_CachePatchName("M_CURSOR", PU_CACHE));
 
 	// dumb hack
+	// tooltips
+	if (currentMenu == &OP_OpenGLOptionsDef)
+	{
+		if (!(OP_OpenGLTooltips[itemOn] == NULL)) 
+		{
+			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_OpenGLTooltips[itemOn], 30, coolalphatimer);
+			if (coolalphatimer > 0 && interpTimerHackAllow)
+				coolalphatimer--;
+		}
+	}
+	
+	
+	
 	if (currentMenu == &OP_SaturnDef)
 	{
 		if (!(OP_SaturnTooltips[itemOn] == NULL)) 
