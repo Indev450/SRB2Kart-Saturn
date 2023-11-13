@@ -2320,8 +2320,8 @@ static int comparePolygons(const void *p1, const void *p2)
 	
 	if (gl_use_palette_shader)
 	{
-	diff = poly1->surf.LightTableId - poly2->surf.LightTableId;
-	if (diff != 0) return diff;
+		diff = poly1->surf.LightTableId - poly2->surf.LightTableId;
+		if (diff != 0) return diff;
 	}
 
 	diff = poly1->polyFlags - poly2->polyFlags;

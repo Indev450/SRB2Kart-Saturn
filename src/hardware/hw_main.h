@@ -44,6 +44,8 @@ extern float gr_basewindowcenterx, gr_basewindowcentery;
 extern unsigned msaa;
 extern boolean a2c;
 
+extern gr_use_palette_shader;
+
 extern FTransform atransform;
 extern float gr_viewsin, gr_viewcos;
 

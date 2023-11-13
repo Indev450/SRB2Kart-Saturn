@@ -69,6 +69,7 @@ static void CV_anisotropic_ONChange(void);
 static void CV_screentextures_ONChange(void);
 static void CV_useCustomShaders_ONChange(void); 
 static void CV_grpaletteshader_OnChange(void);
+static void CV_grshaders_OnChange(void);
 static void CV_Gammaxxx_ONChange(void);
 
 static CV_PossibleValue_t grgamma_cons_t[] = {{1, "MIN"}, {255, "MAX"}, {0, NULL}};
@@ -139,12 +140,12 @@ static INT32 current_bsp_culling_distance = 0;
 consvar_t cv_grscreentextures = {"gr_screentextures", "On", CV_CALL, CV_OnOff,
                                  CV_screentextures_ONChange, 0, NULL, NULL, 0, 0, NULL};
 								 
-consvar_t cv_grshaders = {"gr_shaders", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_grshaders = {"gr_shaders", "On", CV_CALL|CV_SAVE, CV_OnOff, CV_grshaders_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_grusecustomshaders = {"gr_usecustomshaders", "Yes", CV_CALL|CV_SAVE, CV_OnOff, CV_useCustomShaders_ONChange, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_grpaletteshader = {"gr_paletteshader", "Off", CV_CALL|CV_SAVE, CV_OnOff, CV_grpaletteshader_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_grflashpal = {"gr_flashpal", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_grflashpal = {"gr_flashpal", "On", CV_CALL|CV_SAVE, CV_OnOff, CV_grshaders_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_grmdls = {"gr_mdls", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_grfallbackplayermodel = {"gr_fallbackplayermodel", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -189,11 +190,26 @@ static void CV_grpaletteshader_OnChange(void)
 		{
 			InitPalette(0, false);
 			HWD.pfnSetSpecialState(HWD_SET_PALETTE_SHADER_ENABLED, cv_grpaletteshader.value);
-			gr_use_palette_shader = cv_grpaletteshader.value;
+			gr_use_palette_shader = cv_grpaletteshader.value;			
 			V_SetPalette(0);
 		}
 	}
 }
+
+
+static void CV_grshaders_OnChange(void)
+{
+	if (rendermode == render_opengl)	
+	{
+		if (cv_grpaletteshader.value)
+		{
+			InitPalette(0, false);			
+			V_SetPalette(0);
+		}
+	}
+}
+
+
 
 // change the palette directly to see the change
 static void CV_Gammaxxx_ONChange(void)
@@ -517,7 +533,7 @@ void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *col
 	Surface->LightInfo.fade_start = (colormap != NULL) ? colormap->fadestart : 0;
 	Surface->LightInfo.fade_end = (colormap != NULL) ? colormap->fadeend : 31;
 	
-	if (gr_use_palette_shader)
+	if (gr_use_palette_shader && cv_grshaders.value)
 	{
 		if (!colormap)
 		{
@@ -6499,7 +6515,7 @@ void HWR_DoPostProcessor(player_t *player)
 
 	// Armageddon Blast Flash!
 	// Could this even be considered postprocessor?
-	if ((player->flashcount) && !(cv_grshaders.value && cv_grpaletteshader.value && cv_grflashpal.value))
+	if ((player->flashcount) && !(cv_grshaders.value && gr_use_palette_shader && cv_grflashpal.value))
 	{
 		FOutVector      v[4];
 		FSurfaceInfo Surf;
