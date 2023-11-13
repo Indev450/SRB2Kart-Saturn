@@ -54,6 +54,7 @@ static const char *const hud_disable_options[] = {
 	"battlecomebacktimer",		// come back timer in battlefullscreen
 	"wanted",
 	"speedometer",
+	"statdisplay",
 	"freeplay",
 	"rankings",
 	NULL};
