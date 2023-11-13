@@ -592,13 +592,13 @@ UINT8 K_GetKartColorByName(const char *name)
 	return 0;
 }
 
-UINT8 K_GetHudColor()
+UINT8 K_GetHudColor(void)
 {
 	if (stplyr && players - stplyr != consoleplayer) return stplyr->skincolor;
 	if (cv_colorizedhud.value){
 		if (cv_colorizedhudcolor.value) return cv_colorizedhudcolor.value;
 	}
-	return cv_playercolor.value;
+	return (stplyr ? stplyr->skincolor : cv_playercolor.value);
 }
 
 //}
