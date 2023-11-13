@@ -187,6 +187,7 @@ static void CV_grpaletteshader_OnChange(void)
 	{
 		if (cv_grshaders.value)
 		{
+			InitPalette(0, false);
 			HWD.pfnSetSpecialState(HWD_SET_PALETTE_SHADER_ENABLED, cv_grpaletteshader.value);
 			gr_use_palette_shader = cv_grpaletteshader.value;
 			V_SetPalette(0);
