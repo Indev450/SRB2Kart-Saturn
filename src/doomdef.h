@@ -638,8 +638,8 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 #define GL_SHADERS
 
 #if defined (HAVE_CURL) && ! defined (NONET)
-//#define MASTERSERVER
-//#define HOLEPUNCH
+#define MASTERSERVER
+#define HOLEPUNCH
 #else
 #undef UPDATE_ALERT
 #endif
