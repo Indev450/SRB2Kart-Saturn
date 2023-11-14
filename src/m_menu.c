@@ -273,12 +273,16 @@ static menu_t SP_TimeAttackDef, SP_ReplayDef, SP_GuestReplayDef, SP_GhostDef;
 // Multiplayer
 #ifndef NONET
 static void M_PreStartServerMenu(INT32 choice);
+#ifdef MASTERSERVER
 static void M_PreStartServerMenuChoice(event_t *ev);
 static void M_PreConnectMenu(INT32 choice);
 static void M_PreConnectMenuChoice(event_t *ev);
+#endif
 static void M_StartServerMenu(INT32 choice);
+#ifdef MASTERSERVER
 static void M_ConnectMenu(INT32 choice);
 static void M_ConnectMenuModChecks(INT32 choice);
+#endif
 static void M_Refresh(INT32 choice);
 static void M_Connect(INT32 choice);
 #endif
@@ -9802,6 +9806,7 @@ static void M_Refresh(INT32 choice)
 #endif/*MASTERSERVER*/
 }
 
+#ifdef MASTERSERVER
 static void M_DrawServerCountAndHorizontalBar(void)
 {
 	const char *text;
@@ -9844,6 +9849,7 @@ static void M_DrawServerCountAndHorizontalBar(void)
 	V_DrawFill(1, currentMenu->y+32, center - radius - 2, 1, 0);
 	V_DrawFill(center + radius + 2, currentMenu->y+32, BASEVIDWIDTH - 1, 1, 0);
 }
+#endif
 
 static void M_DrawServerLines(INT32 x, INT32 page)
 {
@@ -10025,9 +10031,9 @@ void M_SortServerList(void)
 
 #ifndef NONET
 #ifdef UPDATE_ALERT
+#ifdef MASTERSERVER	
 static void M_CheckMODVersion(int id)
 {
-#ifdef MASTERSERVER	
 	char updatestring[500];
 	const char *updatecheck = GetMODVersion(id);
 	if(updatecheck)
@@ -10041,15 +10047,16 @@ static void M_CheckMODVersion(int id)
 		I_unlock_mutex(m_menu_mutex);
 #endif
 	}
-#endif MASTERSERVER
 }
+#endif //MASTERSERVER
 #endif/*UPDATE_ALERT*/
 
 #if defined (UPDATE_ALERT) && defined (HAVE_THREADS)
+#ifdef MASTERSERVER
 static void
 Check_new_version_thread (int *id)
 {
-#ifdef MASTERSERVER
+
 	M_SetWaitingMode(M_WAITING_VERSION);
 
 	M_CheckMODVersion(*id);
@@ -10062,10 +10069,12 @@ Check_new_version_thread (int *id)
 	{
 		free(id);
 	}
-#endif MASTERSERVER
+
 }
+#endif
 #endif/*defined (UPDATE_ALERT) && defined (HAVE_THREADS)*/
 
+#ifdef MASTERSERVER
 static void M_ConnectMenu(INT32 choice)
 {
 	(void)choice;
@@ -10110,6 +10119,7 @@ static void M_ConnectMenu(INT32 choice)
 #endif/*defined (MASTERSERVER) && defined (HAVE_THREADS)*/
 }
 
+
 static void M_ConnectMenuModChecks(INT32 choice)
 {
 	(void)choice;
@@ -10123,12 +10133,12 @@ static void M_ConnectMenuModChecks(INT32 choice)
 
 	M_ConnectMenu(-1);
 }
+#endif
 
 boolean firstDismissedNagThisBoot = true;
-
+#ifdef MASTERSERVER
 static void M_HandleMasterServerResetChoice(event_t *ev)
 {
-#ifdef MASTERSERVER
 	INT32 choice = -1;
 
 	choice = ev->data1;
@@ -10153,8 +10163,9 @@ static void M_HandleMasterServerResetChoice(event_t *ev)
 			}
 		}
 	}
-#endif
+
 }
+#endif
 
 static void M_PreStartServerMenu(INT32 choice)
 {
@@ -10170,17 +10181,17 @@ static void M_PreStartServerMenu(INT32 choice)
 	M_StartServerMenu(-1);
 
 }
-
+#ifdef MASTERSERVER
 static void M_PreConnectMenu(INT32 choice)
 {
 	(void)choice;
-#ifdef MASTERSERVER
+
 	if (!CV_IsSetToDefault(&cv_masterserver) && cv_masterserver_nagattempts.value > 0)
 	{
 		M_StartMessage(M_GetText("Hey! You've changed the Server Browser address.\n\nYou won't be able to see games from the official Server Browser.\nUnless you're from the future, this probably isn't what you want.\n\n\x83Press Accel\x80 to fix this and continue.\x80\nPress any other key to continue anyway.\n"),M_PreConnectMenuChoice,MM_EVENTHANDLER);
 		return;
 	}
-#endif
+
 	M_ConnectMenuModChecks(-1);
 }
 
@@ -10195,6 +10206,7 @@ static void M_PreConnectMenuChoice(event_t *ev)
 	M_HandleMasterServerResetChoice(ev);
 	M_ConnectMenuModChecks(-1);
 }
+#endif
 #endif //NONET
 
 //===========================================================================

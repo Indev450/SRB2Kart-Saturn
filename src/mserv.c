@@ -77,8 +77,12 @@ static CV_PossibleValue_t masterserver_update_rate_cons_t[] = {
 
 #ifdef MASTERSERVER
 consvar_t cv_masterserver = {"masterserver", "https://ms.kartkrew.org/ms/api", CV_SAVE|CV_CALL, NULL, MasterServer_OnChange, 0, NULL, NULL, 0, 0, NULL};
+#endif
+
+#ifdef HOLEPUNCH
 consvar_t cv_rendezvousserver = {"holepunchserver", "relay.kartkrew.org", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
 #endif
+
 consvar_t cv_servername = {"servername", "SRB2Kart server", CV_SAVE|CV_CALL|CV_NOINIT, NULL, Update_parameters, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_server_contact = {"server_contact", "", CV_SAVE|CV_CALL|CV_NOINIT, NULL, Update_parameters, 0, NULL, NULL, 0, 0, NULL};
 #ifdef MASTERSERVER
@@ -116,8 +120,11 @@ void AddMServCommands(void)
 	CV_RegisterVar(&cv_masterserver_token);
 	CV_RegisterVar(&cv_masterserver_nagattempts);
 	CV_RegisterVar(&cv_advertise);
+#endif
+#ifdef HOLEPUNCH
 	CV_RegisterVar(&cv_rendezvousserver);
 #endif
+
 	CV_RegisterVar(&cv_servername);
 	CV_RegisterVar(&cv_server_contact);
 #ifdef MASTERSERVER
@@ -560,23 +567,23 @@ Update_parameters (void)
 	}
 #endif/*MASTERSERVER*/
 }
-
+#ifdef MASTERSERVER
 static void MasterServer_OnChange(void)
 {
-#ifdef MASTERSERVER
+
 	UnregisterServer();
 
 	Set_api(cv_masterserver.string);
 
 	if (Online())
 		RegisterServer();
-#endif/*MASTERSERVER*/
-}
 
+}
+#endif/*MASTERSERVER*/
+#ifdef MASTERSERVER
 static void
 Advertise_OnChange(void)
 {
-#ifdef MASTERSERVER
 	int different;
 
 	if (cv_advertise.value)
@@ -608,5 +615,5 @@ Advertise_OnChange(void)
 	{
 		M_PopupMasterServerRules();
 	}
-#endif
 }
+#endif

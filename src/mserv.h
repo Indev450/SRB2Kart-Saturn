@@ -61,12 +61,16 @@ extern consvar_t cv_masterserver_update_rate;
 extern consvar_t cv_masterserver_timeout;
 extern consvar_t cv_masterserver_debug;
 extern consvar_t cv_masterserver_token;
-extern consvar_t cv_rendezvousserver;
 
 extern consvar_t cv_advertise;
 
 extern consvar_t cv_masterserver_nagattempts;
 #endif
+
+#ifdef HOLEPUNCH
+extern consvar_t cv_rendezvousserver;
+#endif
+
 #ifdef HAVE_THREADS
 extern int           ms_QueryId;
 extern I_mutex       ms_QueryId_mutex;
