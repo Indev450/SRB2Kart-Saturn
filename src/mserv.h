@@ -51,9 +51,12 @@ typedef struct
 #endif
 
 // ================================ GLOBALS ===============================
-
-extern consvar_t cv_masterserver, cv_servername;
+#ifdef MASTERSERVER
+extern consvar_t cv_masterserver; 
+#endif
+extern consvar_t cv_servername;
 extern consvar_t cv_server_contact;
+#ifdef MASTERSERVER
 extern consvar_t cv_masterserver_update_rate;
 extern consvar_t cv_masterserver_timeout;
 extern consvar_t cv_masterserver_debug;
@@ -63,7 +66,7 @@ extern consvar_t cv_rendezvousserver;
 extern consvar_t cv_advertise;
 
 extern consvar_t cv_masterserver_nagattempts;
-
+#endif
 #ifdef HAVE_THREADS
 extern int           ms_QueryId;
 extern I_mutex       ms_QueryId_mutex;
@@ -71,7 +74,7 @@ extern I_mutex       ms_QueryId_mutex;
 extern msg_server_t *ms_ServerList;
 extern I_mutex       ms_ServerList_mutex;
 #endif
-
+#ifdef MASTERSERVER
 void RegisterServer(void);
 void UnregisterServer(void);
 
@@ -95,5 +98,7 @@ void HMS_list_servers (void);
 msg_server_t * HMS_fetch_servers (msg_server_t *list, int id);
 int  HMS_compare_mod_version (char *buffer, size_t size_of_buffer);
 const char * HMS_fetch_rules (char *buffer, size_t size_of_buffer);
+
+#endif
 
 #endif

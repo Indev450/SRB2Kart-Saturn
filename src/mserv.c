@@ -57,7 +57,11 @@ static void Command_Listserv_f(void);
 
 #endif/*MASTERSERVER*/
 
+
+
 static void Update_parameters (void);
+
+#ifdef MASTERSERVER
 
 static void MasterServer_OnChange(void);
 
@@ -69,16 +73,22 @@ static CV_PossibleValue_t masterserver_update_rate_cons_t[] = {
 	{0, NULL}
 };
 
+#endif
+
+#ifdef MASTERSERVER
 consvar_t cv_masterserver = {"masterserver", "https://ms.kartkrew.org/ms/api", CV_SAVE|CV_CALL, NULL, MasterServer_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_rendezvousserver = {"holepunchserver", "relay.kartkrew.org", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
+#endif
 consvar_t cv_servername = {"servername", "SRB2Kart server", CV_SAVE|CV_CALL|CV_NOINIT, NULL, Update_parameters, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_server_contact = {"server_contact", "", CV_SAVE|CV_CALL|CV_NOINIT, NULL, Update_parameters, 0, NULL, NULL, 0, 0, NULL};
-
+#ifdef MASTERSERVER
 consvar_t cv_masterserver_update_rate = {"masterserver_update_rate", "15", CV_SAVE|CV_CALL|CV_NOINIT, masterserver_update_rate_cons_t, MasterClient_Ticker, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_advertise = {"advertise", "No", CV_NETVAR|CV_CALL|CV_NOINIT, CV_YesNo, Advertise_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_masterserver_nagattempts = {"masterserver_nagattempts", "5", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
+#endif
+
 
 #if defined (MASTERSERVER) && defined (HAVE_THREADS)
 int           ms_QueryId;
@@ -98,6 +108,7 @@ UINT16 current_port = 0;
 void AddMServCommands(void)
 {
 #ifndef NONET
+#ifdef MASTERSERVER
 	CV_RegisterVar(&cv_masterserver);
 	CV_RegisterVar(&cv_masterserver_update_rate);
 	CV_RegisterVar(&cv_masterserver_timeout);
@@ -106,6 +117,7 @@ void AddMServCommands(void)
 	CV_RegisterVar(&cv_masterserver_nagattempts);
 	CV_RegisterVar(&cv_advertise);
 	CV_RegisterVar(&cv_rendezvousserver);
+#endif
 	CV_RegisterVar(&cv_servername);
 	CV_RegisterVar(&cv_server_contact);
 #ifdef MASTERSERVER
@@ -564,6 +576,7 @@ static void MasterServer_OnChange(void)
 static void
 Advertise_OnChange(void)
 {
+#ifdef MASTERSERVER
 	int different;
 
 	if (cv_advertise.value)
@@ -595,4 +608,5 @@ Advertise_OnChange(void)
 	{
 		M_PopupMasterServerRules();
 	}
+#endif
 }

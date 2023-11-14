@@ -611,6 +611,7 @@ is_external_address (UINT32 p)
 
 static boolean hole_punch(ssize_t c)
 {
+#ifdef MASTERSERVER
 	/* See ../doc/Holepunch-Protocol.txt */
 	if (cv_rendezvousserver.string[0] &&
 			c == 10 && holepunchpacket->magic == hole_punch_magic &&
@@ -631,6 +632,7 @@ static boolean hole_punch(ssize_t c)
 	{
 		return false;
 	}
+#endif
 }
 
 // Returns true if a packet was received from a new node, false in all other cases
@@ -1366,6 +1368,7 @@ static SINT8 SOCK_NetMakeNodewPort(const char *address, const char *port)
 
 static void rendezvous(int size)
 {
+#ifdef MASTERSERVER
 	char *addrs = strdup(cv_rendezvousserver.string);
 
 	char *host = strtok(addrs, ":");
@@ -1396,6 +1399,7 @@ static void rendezvous(int size)
 	}
 
 	free(addrs);
+#endif
 }
 
 static void SOCK_RequestHolePunch(INT32 node)
