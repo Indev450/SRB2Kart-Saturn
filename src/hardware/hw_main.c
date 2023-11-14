@@ -65,7 +65,6 @@ static void CV_filtermode_ONChange(void);
 static void CV_anisotropic_ONChange(void);
 static void CV_screentextures_ONChange(void);
 static void CV_useCustomShaders_ONChange(void); 
-static void CV_grpaletteshader_OnChange(void);
 static void CV_grshaders_OnChange(void);
 static void CV_Gammaxxx_ONChange(void);
 
@@ -140,7 +139,7 @@ consvar_t cv_grscreentextures = {"gr_screentextures", "On", CV_CALL, CV_OnOff,
 consvar_t cv_grshaders = {"gr_shaders", "On", CV_CALL|CV_SAVE, CV_OnOff, CV_grshaders_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_grusecustomshaders = {"gr_usecustomshaders", "Yes", CV_CALL|CV_SAVE, CV_OnOff, CV_useCustomShaders_ONChange, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_grpaletteshader = {"gr_paletteshader", "Off", CV_CALL|CV_SAVE, CV_OnOff, CV_grpaletteshader_OnChange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_grpaletteshader = {"gr_paletteshader", "Off", CV_CALL|CV_SAVE, CV_OnOff, CV_grshaders_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_grflashpal = {"gr_flashpal", "On", CV_CALL|CV_SAVE, CV_OnOff, CV_grshaders_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
@@ -176,28 +175,6 @@ static void CV_screentextures_ONChange(void)
 	HWD.pfnSetSpecialState(HWD_SET_SCREEN_TEXTURES, cv_grscreentextures.value);
 }
 
-static void CV_useCustomShaders_ONChange(void)
-{
-	if (rendermode == render_opengl)	
-	{
-		if (cv_grshaders.value)
-			HWD.pfnInitCustomShaders();
-	}
-}
-
-static void CV_grpaletteshader_OnChange(void)
-{
-	if (rendermode == render_opengl)	
-	{
-		InitPalette(0, false);
-		
-		if (HWR_ShouldUsePaletteRendering())
-		{		
-			V_SetPalette(0);
-		}	
-	}
-}
-
 static void CV_grshaders_OnChange(void)
 {
 	if (rendermode == render_opengl)	
@@ -207,6 +184,15 @@ static void CV_grshaders_OnChange(void)
 			InitPalette(0, false);			
 			V_SetPalette(0);
 		}
+	}
+}
+
+static void CV_useCustomShaders_ONChange(void)
+{
+	if (rendermode == render_opengl)	
+	{
+		if (cv_grshaders.value)
+			HWD.pfnInitCustomShaders();
 	}
 }
 
