@@ -182,8 +182,9 @@ static void CV_grshaders_OnChange(void)
 		if (HWR_ShouldUsePaletteRendering())
 		{
 			InitPalette(0, false);			
-			V_SetPalette(0);
 		}
+		
+		V_SetPalette(0);
 	}
 }
 
