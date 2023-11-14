@@ -147,6 +147,8 @@ boolean M_CanShowLevelInList(INT32 mapnum, INT32 gt);
 
 #define MAXSTRINGLENGTH 32
 
+#define MAXTOOLTIPS 255
+
 typedef union
 {
 	struct menu_s *submenu;      // IT_SUBMENU
@@ -184,6 +186,7 @@ typedef struct menu_s
 	INT16          x, y;               // x, y of menu
 	INT16          lastOn;             // last item user was on in menu
 	boolean      (*quitroutine)(void); // called before quit a menu return true if we can
+	const char*		tooltips[MAXTOOLTIPS]; // tooltips! give me that info bitch
 } menu_t;
 
 void M_SetupNextMenu(menu_t *menudef);
@@ -269,6 +272,9 @@ void PDistort_menu_Onchange(void);
 // Bird menu updating
 void Bird_menu_Onchange(void);
 
+// Saturn menu updating
+void Saturn_menu_Onchange(void);
+
 void M_ReplayHut(INT32 choice);
 void M_SetPlaybackMenuPointer(void);
 
@@ -288,6 +294,20 @@ void M_PopupMasterServerRules(void);
 	M_DrawGenericMenu,\
 	x, y,\
 	0,\
+	NULL,\
+	NULL\
+}
+
+#define DEFAULTSCROLLSTYLE(header, source, prev, x, y)\
+{\
+	header,\
+	sizeof(source)/sizeof(menuitem_t),\
+	prev,\
+	source,\
+	M_DrawGenericScrollMenu,\
+	x, y,\
+	0,\
+	NULL,\
 	NULL\
 }
 
@@ -300,6 +320,7 @@ void M_PopupMasterServerRules(void);
 	M_DrawPauseMenu,\
 	x, y,\
 	0,\
+	NULL,\
 	NULL\
 }
 
@@ -312,6 +333,7 @@ void M_PopupMasterServerRules(void);
 	M_DrawCenteredMenu,\
 	BASEVIDWIDTH/2, y,\
 	0,\
+	NULL,\
 	NULL\
 }
 
@@ -324,6 +346,7 @@ void M_PopupMasterServerRules(void);
 	M_DrawServerMenu,\
 	24,40,\
 	0,\
+	NULL,\
 	NULL\
 }
 
@@ -336,6 +359,7 @@ void M_PopupMasterServerRules(void);
 	M_DrawControl,\
 	26, 40,\
 	0,\
+	NULL,\
 	NULL\
 }
 
@@ -348,6 +372,7 @@ void M_PopupMasterServerRules(void);
 	M_DrawImageDef,\
 	0, 0,\
 	0,\
+	NULL,\
 	NULL\
 }
 

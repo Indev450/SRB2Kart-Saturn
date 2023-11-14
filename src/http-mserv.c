@@ -87,9 +87,13 @@ Printf_url (const char *url)
 {
 	boolean startup;
 
+#ifdef HAVE_THREADS
 	I_lock_mutex(&con_mutex);
 	startup = con_startup;
 	I_unlock_mutex(con_mutex);
+#else
+	startup = con_startup;
+#endif
 
 	if (cv_masterserver_debug.value)
 		(startup ? I_OutputMsg : CONS_Printf)(

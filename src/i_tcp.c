@@ -201,7 +201,9 @@ static size_t broadcastaddresses = 0;
 static boolean nodeconnected[MAXNETNODES+1];
 static banned_t *banned;
 /* See ../doc/Holepunch-Protocol.txt */
+#ifdef HOLEPUNCH
 static const INT32 hole_punch_magic = MSBF_LONG (0x52eb11);
+#endif
 #endif
 
 static size_t numbans = 0;
@@ -609,8 +611,10 @@ is_external_address (UINT32 p)
 	}
 }
 
+#ifdef HOLEPUNCH
 static boolean hole_punch(ssize_t c)
 {
+
 	/* See ../doc/Holepunch-Protocol.txt */
 	if (cv_rendezvousserver.string[0] &&
 			c == 10 && holepunchpacket->magic == hole_punch_magic &&
@@ -631,7 +635,9 @@ static boolean hole_punch(ssize_t c)
 	{
 		return false;
 	}
+
 }
+#endif
 
 // Returns true if a packet was received from a new node, false in all other cases
 static boolean SOCK_Get(void)
@@ -655,11 +661,12 @@ static boolean SOCK_Get(void)
 				break;
 			}
 #endif
-
+#ifdef HOLEPUNCH
 			if (hole_punch(c))
 			{
 				break;
 			}
+#endif
 
 			// find remote node number
 			for (j = 1; j <= MAXNETNODES; j++) //include LAN
@@ -1363,7 +1370,7 @@ static SINT8 SOCK_NetMakeNodewPort(const char *address, const char *port)
 }
 
 /* See ../doc/Holepunch-Protocol.txt */
-
+#ifdef HOLEPUNCH
 static void rendezvous(int size)
 {
 	char *addrs = strdup(cv_rendezvousserver.string);
@@ -1391,7 +1398,9 @@ static void rendezvous(int size)
 
 	if (tic == refreshtic)
 	{
+		#ifdef HOLEPUNCH
 		holepunchpacket->magic = hole_punch_magic;
+		#endif
 		sendto(mysockets[0], doomcom->data, size, 0, &rzv.any, sizeof rzv.ip4);
 	}
 
@@ -1417,6 +1426,8 @@ static void SOCK_RegisterHolePunch(void)
 }
 #endif
 
+#endif
+
 static boolean SOCK_OpenSocket(void)
 {
 #ifndef NONET
@@ -1439,9 +1450,11 @@ static boolean SOCK_OpenSocket(void)
 	I_NetCanSend = SOCK_CanSend;
 	I_NetCanGet = SOCK_CanGet;
 #endif
+#ifdef HOLEPUNCH
 
 	I_NetRequestHolePunch = SOCK_RequestHolePunch;
 	I_NetRegisterHolePunch = SOCK_RegisterHolePunch;
+#endif
 
 	// build the socket but close it first
 	SOCK_CloseSocket();

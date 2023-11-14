@@ -1939,12 +1939,13 @@ static void CL_LoadReceivedSavegame(void)
 static void SendAskInfo(INT32 node)
 {
 	tic_t asktime;
-
+	#ifdef HOLEPUNCH
 	if (node != 0 && node != BROADCASTADDR &&
 			cv_rendezvousserver.string[0])
 	{
 		I_NetRequestHolePunch(node);
 	}
+	#endif
 
 	asktime = I_GetTime();
 
@@ -6153,6 +6154,7 @@ static void UpdatePingTable(void)
 	}
 }
 
+#ifdef HOLEPUNCH
 static void RenewHolePunch(void)
 {
 	if (cv_rendezvousserver.string[0])
@@ -6168,6 +6170,7 @@ static void RenewHolePunch(void)
 		}
 	}
 }
+#endif
 
 // Handle timeouts to prevent definitive freezes from happenning
 static void HandleNodeTimeouts(void)
@@ -6201,11 +6204,14 @@ void NetKeepAlive(void)
 #ifdef MASTERSERVER
 	MasterClient_Ticker();
 #endif
-
+	
+	#ifdef HOLEPUNCH
 	if (netgame && serverrunning)
 	{
 		RenewHolePunch();
 	}
+	#endif
+
 
 	if (client)
 	{
@@ -6318,10 +6324,12 @@ void NetUpdate(void)
 	MasterClient_Ticker(); // Acking the Master Server
 #endif
 
+	#ifdef HOLEPUNCH
 	if (netgame && serverrunning)
 	{
 		RenewHolePunch();
 	}
+	#endif
 
 	if (client)
 	{

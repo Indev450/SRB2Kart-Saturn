@@ -16,3 +16,5 @@
 #Appveyor
 /appveyor.yml -crlf -whitespace
 # Other
+*.c text=auto
+*.h text=auto

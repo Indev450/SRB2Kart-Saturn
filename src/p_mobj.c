@@ -6063,13 +6063,22 @@ static void P_AddOverlay(mobj_t *thing)
 static void P_RemoveOverlay(mobj_t *thing)
 {
 	mobj_t *mo;
+	if (overlaycap == thing)
+	{
+		P_SetTarget(&overlaycap, thing->hnext);
+		P_SetTarget(&thing->hnext, NULL);
+		return;
+	}
+
 	for (mo = overlaycap; mo; mo = mo->hnext)
-		if (mo->hnext == thing)
-		{
-			P_SetTarget(&mo->hnext, thing->hnext);
-			P_SetTarget(&thing->hnext, NULL);
-			return;
-		}
+	{
+		if (mo->hnext != thing)
+			continue;
+
+		P_SetTarget(&mo->hnext, thing->hnext);
+		P_SetTarget(&thing->hnext, NULL);
+		return;
+	}
 }
 
 void P_RunShadows(void)
@@ -6175,12 +6184,14 @@ static void P_RemoveShadow(mobj_t *thing)
 	}
 
 	for (mo = shadowcap; mo; mo = mo->hnext)
-		if (mo->hnext == thing)
-		{
-			P_SetTarget(&mo->hnext, thing->hnext);
-			P_SetTarget(&thing->hnext, NULL);
-			return;
-		}
+	{
+		if (mo->hnext != thing)
+			continue;
+
+		P_SetTarget(&mo->hnext, thing->hnext);
+		P_SetTarget(&thing->hnext, NULL);
+		return;
+	}
 }
 
 void A_BossDeath(mobj_t *mo);
@@ -10359,7 +10370,7 @@ void P_SpawnPrecipitation(void)
 	subsector_t *precipsector = NULL;
 	precipmobj_t *rainmo = NULL;
 
-	if (dedicated || !(cv_drawdist_precip.value) || curWeather == PRECIP_NONE || curWeather == PRECIP_STORM_NORAIN) // SRB2Kart
+	if (dedicated || /*!cv_precipdensity*/!cv_drawdist_precip.value || curWeather == PRECIP_NONE) // SRB2Kart
 		return;
 
 	// Use the blockmap to narrow down our placing patterns
@@ -10370,8 +10381,16 @@ void P_SpawnPrecipitation(void)
 
 		//for (j = 0; j < cv_precipdensity.value; ++j) -- density is 1 for kart always
 		{
-			x = basex + ((M_RandomKey(MAPBLOCKUNITS<<3)<<FRACBITS)>>3);
-			y = basey + ((M_RandomKey(MAPBLOCKUNITS<<3)<<FRACBITS)>>3);
+			if (cv_lessprecip.value)
+			{
+				x = basex*1.5 + ((M_RandomKey(MAPBLOCKUNITS<<3)<<FRACBITS)>>3);
+				y = basey*1.5 + ((M_RandomKey(MAPBLOCKUNITS<<3)<<FRACBITS)>>3);
+			}
+			else
+			{
+				x = basex + ((M_RandomKey(MAPBLOCKUNITS<<3)<<FRACBITS)>>3);
+				y = basey + ((M_RandomKey(MAPBLOCKUNITS<<3)<<FRACBITS)>>3);
+			}
 
 			precipsector = R_IsPointInSubsector(x, y);
 
@@ -10402,12 +10421,21 @@ void P_SpawnPrecipitation(void)
 			}
 			else // everything else.
 				rainmo = P_SpawnRainMobj(x, y, height, MT_RAIN);
-			if (curWeather == PRECIP_BLANK)
-				rainmo->precipflags |= PCF_INVISIBLE;
 
 			// Randomly assign a height, now that floorz is set.
 			rainmo->z = M_RandomRange(rainmo->floorz>>FRACBITS, rainmo->ceilingz>>FRACBITS)<<FRACBITS;
 		}
+	}
+
+	if (curWeather == PRECIP_BLANK)
+	{
+		curWeather = PRECIP_RAIN;
+		P_SwitchWeather(PRECIP_BLANK);
+	}
+	else if (curWeather == PRECIP_STORM_NORAIN)
+	{
+		curWeather = PRECIP_RAIN;
+		P_SwitchWeather(PRECIP_STORM_NORAIN);
 	}
 }
 

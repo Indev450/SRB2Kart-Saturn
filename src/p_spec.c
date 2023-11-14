@@ -2002,14 +2002,53 @@ void P_LinedefExecute(INT16 tag, mobj_t *actor, sector_t *caller)
 //
 void P_SwitchWeather(INT32 weathernum)
 {
-	boolean purge = true;
-	boolean raintype = (PRECIP_SNOW || PRECIP_RAIN || PRECIP_STORM || PRECIP_STORM_NOSTRIKES || PRECIP_BLANK);
+	boolean purge = false;
+	INT32 swap = 0;
 
-	if (weathernum == curWeather)
-		return;
-
-	if (weathernum == raintype && curWeather == raintype)
-		purge = false;
+	switch (weathernum)
+	{
+		case PRECIP_NONE: // None
+			if (curWeather == PRECIP_NONE)
+				return; // Nothing to do.
+			purge = true;
+			break;
+		case PRECIP_STORM: // Storm
+		case PRECIP_STORM_NOSTRIKES: // Storm w/ no lightning
+		case PRECIP_RAIN: // Rain
+			if (curWeather == PRECIP_SNOW || curWeather == PRECIP_BLANK || curWeather == PRECIP_STORM_NORAIN)
+				swap = PRECIP_RAIN;
+			break;
+		case PRECIP_SNOW: // Snow
+			if (curWeather == PRECIP_SNOW)
+				return; // Nothing to do.
+			if (curWeather == PRECIP_RAIN || curWeather == PRECIP_STORM || curWeather == PRECIP_STORM_NOSTRIKES || curWeather == PRECIP_BLANK || curWeather == PRECIP_STORM_NORAIN)
+				swap = PRECIP_SNOW; // Need to delete the other precips.
+			break;
+		case PRECIP_STORM_NORAIN: // Storm w/o rain
+			if (curWeather == PRECIP_SNOW
+				|| curWeather == PRECIP_STORM
+				|| curWeather == PRECIP_STORM_NOSTRIKES
+				|| curWeather == PRECIP_RAIN
+				|| curWeather == PRECIP_BLANK)
+				swap = PRECIP_STORM_NORAIN;
+			else if (curWeather == PRECIP_STORM_NORAIN)
+				return;
+			break;
+		case PRECIP_BLANK:
+			if (curWeather == PRECIP_SNOW
+				|| curWeather == PRECIP_STORM
+				|| curWeather == PRECIP_STORM_NOSTRIKES
+				|| curWeather == PRECIP_RAIN)
+				swap = PRECIP_BLANK;
+			else if (curWeather == PRECIP_STORM_NORAIN)
+				swap = PRECIP_BLANK;
+			else if (curWeather == PRECIP_BLANK)
+				return;
+			break;
+		default:
+			CONS_Debug(DBG_GAMELOGIC, "P_SwitchWeather: Unknown weather type %d.\n", weathernum);
+			break;
+	}
 
 	if (purge)
 	{
@@ -2026,7 +2065,7 @@ void P_SwitchWeather(INT32 weathernum)
 			P_RemovePrecipMobj(precipmobj);
 		}
 	}
-	else // Rather than respawn all that crap, reuse it!
+	else if (swap && !((swap == PRECIP_BLANK && curWeather == PRECIP_STORM_NORAIN) || (swap == PRECIP_STORM_NORAIN && curWeather == PRECIP_BLANK))) // Rather than respawn all that crap, reuse it!
 	{
 		thinker_t *think;
 		precipmobj_t *precipmobj;
@@ -2038,7 +2077,7 @@ void P_SwitchWeather(INT32 weathernum)
 				continue; // not a precipmobj thinker
 			precipmobj = (precipmobj_t *)think;
 
-			if (weathernum == PRECIP_RAIN || weathernum == PRECIP_STORM || weathernum == PRECIP_STORM_NOSTRIKES) // Snow To Rain
+			if (swap == PRECIP_RAIN) // Snow To Rain
 			{
 				precipmobj->flags = mobjinfo[MT_RAIN].flags;
 				st = &states[mobjinfo[MT_RAIN].spawnstate];
@@ -2053,7 +2092,7 @@ void P_SwitchWeather(INT32 weathernum)
 				precipmobj->precipflags |= PCF_RAIN;
 				//think->function.acp1 = (actionf_p1)P_RainThinker;
 			}
-			else if (weathernum == PRECIP_SNOW) // Rain To Snow
+			else if (swap == PRECIP_SNOW) // Rain To Snow
 			{
 				INT32 z;
 
@@ -2078,7 +2117,7 @@ void P_SwitchWeather(INT32 weathernum)
 
 				//think->function.acp1 = (actionf_p1)P_SnowThinker;
 			}
-			else // Remove precip, but keep it around for reuse.
+			else if (swap == PRECIP_BLANK || swap == PRECIP_STORM_NORAIN) // Remove precip, but keep it around for reuse.
 			{
 				//think->function.acp1 = (actionf_p1)P_NullPrecipThinker;
 
@@ -2092,31 +2131,48 @@ void P_SwitchWeather(INT32 weathernum)
 		case PRECIP_SNOW: // snow
 			curWeather = PRECIP_SNOW;
 
-			if (purge)
+			if (!swap)
 				P_SpawnPrecipitation();
 
 			break;
 		case PRECIP_RAIN: // rain
 		{
+			boolean dontspawn = false;
+
+			if (curWeather == PRECIP_RAIN || curWeather == PRECIP_STORM || curWeather == PRECIP_STORM_NOSTRIKES)
+				dontspawn = true;
+
 			curWeather = PRECIP_RAIN;
 
-			if (purge)
+			if (!dontspawn && !swap)
 				P_SpawnPrecipitation();
 
 			break;
 		}
 		case PRECIP_STORM: // storm
 		{
+			boolean dontspawn = false;
+
+			if (curWeather == PRECIP_RAIN || curWeather == PRECIP_STORM || curWeather == PRECIP_STORM_NOSTRIKES)
+				dontspawn = true;
+
 			curWeather = PRECIP_STORM;
 
-			if (purge)
+			if (!dontspawn && !swap)
 				P_SpawnPrecipitation();
 
 			break;
 		}
 		case PRECIP_STORM_NOSTRIKES: // storm w/o lightning
 		{
-			if (purge)
+			boolean dontspawn = false;
+
+			if (curWeather == PRECIP_RAIN || curWeather == PRECIP_STORM || curWeather == PRECIP_STORM_NOSTRIKES)
+				dontspawn = true;
+
+			curWeather = PRECIP_STORM_NOSTRIKES;
+
+			if (!dontspawn && !swap)
 				P_SpawnPrecipitation();
 
 			break;
@@ -2124,11 +2180,14 @@ void P_SwitchWeather(INT32 weathernum)
 		case PRECIP_STORM_NORAIN: // storm w/o rain
 			curWeather = PRECIP_STORM_NORAIN;
 
+			if (!swap)
+				P_SpawnPrecipitation();
+
 			break;
-		case PRECIP_BLANK: //preloaded
+		case PRECIP_BLANK:
 			curWeather = PRECIP_BLANK;
 
-			if (purge)
+			if (!swap)
 				P_SpawnPrecipitation();
 
 			break;

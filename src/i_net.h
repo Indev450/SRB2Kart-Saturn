@@ -79,19 +79,24 @@ typedef struct
 	char data[MAXPACKETLENGTH];
 } ATTRPACK doomcom_t;
 
+#ifdef HOLEPUNCH
 typedef struct
 {
 	INT32 magic;
 	INT32 addr;
 	INT16 port;
 } ATTRPACK holepunch_t;
+#endif
 
 #if defined(_MSC_VER)
 #pragma pack()
 #endif
 
 extern doomcom_t *doomcom;
+
+#ifdef HOLEPUNCH
 extern holepunch_t *holepunchpacket;
+#endif
 
 /**	\brief return packet in doomcom struct
 */
@@ -152,12 +157,14 @@ extern void (*I_NetCloseSocket)(void);
 
 /**	\brief send a hole punching request
 */
+#ifdef HOLEPUNCH
 extern void (*I_NetRequestHolePunch)(INT32 node);
-
+#endif
 /**	\brief register this machine on the hole punching server
 */
+#ifdef HOLEPUNCH
 extern void (*I_NetRegisterHolePunch)(void);
-
+#endif
 
 extern boolean (*I_Ban) (INT32 node);
 extern void (*I_ClearBans)(void);
