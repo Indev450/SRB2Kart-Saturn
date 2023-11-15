@@ -1423,7 +1423,9 @@ static const char* OP_ExpTooltips[] =
 	NULL,
 	"Should weather be interpolated? Weather should look about the\nsame but perform a bit better when disabled.",
 	"When weather is on this will cut the object amount used in half.",
+#ifdef HWRENDER
 	"Should the game do Screen Textures? Provides a good boost to frames\nat the cost of some visual effects not working when disabled.",
+#endif
 };
 
 enum
