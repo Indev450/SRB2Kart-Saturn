@@ -7649,7 +7649,7 @@ static void K_drawKartStats(void)
 	//Internal offset for speedometer
 	if (cv_kartspeedometer.value)
 	{
-		if (cv_newspeedometer.value == 1 && snw_speedo)
+		if (cv_newspeedometer.value == 2 && snw_speedo)
 			spdoffset = -10;
 		else
 			spdoffset = -14;
@@ -8727,7 +8727,7 @@ static void K_drawKartSpeedometer(void)
 	}
 
 	// man.
-	if ((!cv_newspeedometer.value) || (cv_newspeedometer.value == 1 && !snw_speedo) || (cv_newspeedometer.value == 2 && !kartzspeedo) ) 
+	if ((cv_newspeedometer.value == 1) || (cv_newspeedometer.value == 2 && !snw_speedo) || (cv_newspeedometer.value == 3 && !kartzspeedo) ) 
 	{
 		switch (speedtype) {
 			case 1:
@@ -8746,7 +8746,7 @@ static void K_drawKartSpeedometer(void)
 					V_DrawKartString(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, va("%4d %%", convSpeed));
 		}
 	}
-	else if (cv_newspeedometer.value == 1 && snw_speedo )  { // why bother if we dont?
+	else if (cv_newspeedometer.value == 2 && snw_speedo )  { // why bother if we dont?
 		if (!cv_colorizedhud.value || !clr_hud)
 			V_DrawScaledPatch(SPDM_X + 1, SPDM_Y + 4, (V_HUDTRANS|splitflags), (skp_smallsticker));
 		else
@@ -8765,7 +8765,7 @@ static void K_drawKartSpeedometer(void)
 	// Kart Z speedo bullshit...
 	// Draw the Speed counter.
 	// Warning large if statement below...
-	else if (cv_newspeedometer.value == 2 && kartzspeedo){
+	else if (cv_newspeedometer.value == 3 && kartzspeedo){
 		
 		fuspeed =  FixedDiv(stplyr->speed, mapobjectscale)/FRACUNIT;
 		
