@@ -4796,15 +4796,9 @@ static inline void HWR_DrawPrecipitationSprite(gr_vissprite_t *spr)
 		HWR_Lighting(&Surf, lightlevel, colormap);
 	}
 
-	if (spr->mobj->flags2 & MF2_SHADOW)
-	{
-		Surf.PolyColor.s.alpha = 0x40;
-		blend = PF_Translucent;
-	}
-	else if (spr->mobj->frame & FF_TRANSMASK)
+	if (spr->mobj->frame & FF_TRANSMASK)
 		blend = HWR_TranstableToAlpha((spr->mobj->frame & FF_TRANSMASK)>>FF_TRANSSHIFT, &Surf);
 	else
-
 	{
 		// BP: i agree that is little better in environement but it don't
 		//     work properly under glide nor with fogcolor to ffffff :(
