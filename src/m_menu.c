@@ -1418,7 +1418,6 @@ static menuitem_t OP_ExpOptionsMenu[] =
 #endif	
 };
 
-
 static const char* OP_ExpTooltips[] =
 {
 	NULL,
@@ -1426,6 +1425,17 @@ static const char* OP_ExpTooltips[] =
 	"When weather is on this will cut the object amount used in half.",
 	"Should the game do Screen Textures? Provides a good boost to frames\nat the cost of some visual effects not working when disabled.",
 };
+
+enum
+{
+	op_exp_header,
+	op_exp_precipinter,
+	op_exp_lessprecip,
+#ifdef HWRENDER
+	op_exp_grscrtx,
+#endif
+};
+
 
 #ifdef HWRENDER
 static menuitem_t OP_OpenGLOptionsMenu[] =
@@ -4287,7 +4297,10 @@ void M_Init(void)
 #ifdef HWRENDER
 	// Permanently hide some options based on render mode
 	if (rendermode == render_soft)
+	{
 		OP_VideoOptionsMenu[op_video_ogl].status = IT_DISABLED;
+		OP_ExpOptionsMenu[op_exp_grscrtx].status = IT_DISABLED;
+	}
 #endif
 
 	if (!snw_speedo && !kartzspeedo) // why bother?
