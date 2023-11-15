@@ -1400,6 +1400,7 @@ enum
 #ifdef HWRENDER
 	op_video_ogl,
 #endif
+	op_video_exp,
 };
 
 static menuitem_t OP_VideoModeMenu[] =
