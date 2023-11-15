@@ -8099,8 +8099,8 @@ boolean P_SpectatorJoinGame(player_t *player)
 		player->ctfteam = changeto;
 		player->playerstate = PST_REBORN;
 		
-		//reset camera
-		if (P_IsLocalPlayer(player))
+		//center camera if its not already
+		if ((P_IsLocalPlayer(player)) && localaiming[0] != 0)
 			localaiming[0] = 0;
 
 		//Reset away view
@@ -8127,8 +8127,8 @@ boolean P_SpectatorJoinGame(player_t *player)
 		player->kartstuff[k_spectatewait] = 0;
 		player->playerstate = PST_REBORN;
 
-		//reset camera
-		if (P_IsLocalPlayer(player))
+		//center camera if its not already
+		if ((P_IsLocalPlayer(player)) && localaiming[0] != 0)
 			localaiming[0] = 0;
 
 		//Reset away view
