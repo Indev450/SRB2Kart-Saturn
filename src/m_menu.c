@@ -316,7 +316,7 @@ static void M_ChangeControl(INT32 choice);
 static void M_ResetControls(INT32 choice);
 
 // Video & Sound
-menu_t OP_VideoOptionsDef, OP_VideoModeDef;
+menu_t OP_VideoOptionsDef, OP_VideoModeDef, OP_ExpOptionsDef;
 #ifdef HWRENDER
 menu_t OP_OpenGLOptionsDef, OP_OpenGLColorDef;
 #endif
@@ -1347,13 +1347,14 @@ static menuitem_t OP_VideoOptionsMenu[] =
 	{IT_STRING | IT_CVAR,	NULL,	"Show FPS",				&cv_ticrate,			 90},
 	{IT_STRING | IT_CVAR,	NULL,	"Vertical Sync",		&cv_vidwait,			100},
 	{IT_STRING | IT_CVAR,   NULL,   "FPS Cap",              &cv_fpscap,             110},
-	{IT_STRING | IT_CVAR,   NULL,   "Drift spark pulse size",&cv_driftsparkpulse,   125},
-	{IT_STRING | IT_CVAR,   NULL,   "Uppercase Menu",		&cv_menucaps,   		135},
-
+	{IT_STRING | IT_CVAR,   NULL,   "Drift spark pulse size",&cv_driftsparkpulse,   120},
+	{IT_STRING | IT_CVAR,   NULL,   "Uppercase Menu",		&cv_menucaps,   		130},
 
 #ifdef HWRENDER
-	{IT_SUBMENU|IT_STRING,	NULL,	"OpenGL Options...",	&OP_OpenGLOptionsDef,	145},
+	{IT_SUBMENU|IT_STRING,	NULL,	"OpenGL Options...",	&OP_OpenGLOptionsDef,	140},
 #endif
+	{IT_SUBMENU|IT_STRING,  NULL,   "Experimental Options...", &OP_ExpOptionsDef,   150},
+
 };
 
 static const char* OP_VideoTooltips[] =
@@ -1375,6 +1376,7 @@ static const char* OP_VideoTooltips[] =
 #ifdef HWRENDER
 	"Options for OpenGL renderer.",
 #endif
+	"Experimental graphical options.",
 };
 
 
@@ -1408,23 +1410,20 @@ static menuitem_t OP_VideoModeMenu[] =
 static menuitem_t OP_ExpOptionsMenu[] =
 {
 	{IT_HEADER, NULL, "Experimental Options", NULL, 10},
-	{IT_STRING|IT_CVAR,		NULL, "Interpolation Distance",		&cv_grmaxinterpdist,		 35},
-	{IT_STRING | IT_CVAR, 	NULL, "Weather Interpolation", 		&cv_precipinterp, 		 		 55},
-	{IT_STRING | IT_CVAR, 	NULL, "Less Weather Effects", 		&cv_lessprecip, 		 		 65},
-	
-	{IT_STRING | IT_CVAR, 	NULL, "Screen Textures", 		&cv_grscreentextures, 		 		 85},
-	
+	{IT_STRING | IT_CVAR, 	NULL, "Weather Interpolation", 		&cv_precipinterp, 		 		 45},
+	{IT_STRING | IT_CVAR, 	NULL, "Less Weather Effects", 		&cv_lessprecip, 		 		 55},
+#ifdef HWRENDER	
+	{IT_STRING | IT_CVAR, 	NULL, "Screen Textures", 		&cv_grscreentextures, 		 		 75},
+#endif	
 };
 
 
 static const char* OP_ExpTooltips[] =
 {
 	NULL,
-	"How far interpolation should take effect.",
 	"Should weather be interpolated? Weather should look about the\nsame but perform a bit better when disabled.",
 	"When weather is on this will cut the object amount used in half.",
 	"Should the game do Screen Textures? Provides a good boost to frames\nat the cost of some visual effects not working when disabled.",
-
 };
 
 #ifdef HWRENDER
@@ -2740,6 +2739,8 @@ menu_t OP_OpenGLColorDef =
 	NULL
 };
 #endif
+
+menu_t OP_ExpOptionsDef = DEFAULTMENUSTYLE("M_VIDEO", OP_ExpOptionsMenu, &OP_VideoOptionsDef, 30, 30);
 
 menu_t OP_DataOptionsDef = DEFAULTMENUSTYLE("M_DATA", OP_DataOptionsMenu, &OP_MainDef, 60, 30);
 menu_t OP_ScreenshotOptionsDef = DEFAULTMENUSTYLE("M_SCSHOT", OP_ScreenshotOptionsMenu, &OP_DataOptionsDef, 30, 30);
@@ -4866,6 +4867,15 @@ static void M_DrawGenericMenu(void)
 		}
 	}
 	
+	if (currentMenu == &OP_ExpOptionsDef)
+	{
+		if (!(OP_ExpTooltips[itemOn] == NULL)) 
+		{
+			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_ExpTooltips[itemOn], 30, coolalphatimer);
+			if (coolalphatimer > 0 && interpTimerHackAllow)
+				coolalphatimer--;
+		}
+	}
 	
 	if (currentMenu == &OP_ChatOptionsDef)
 	{
