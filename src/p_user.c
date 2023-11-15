@@ -8062,10 +8062,7 @@ boolean P_SpectatorJoinGame(player_t *player)
 	// Pressing fire assigns you to a team that needs players if allowed.
 	// Partial code reproduction from p_tick.c autobalance code.
 	else if (G_GametypeHasTeams())
-	{
-		if (P_IsLocalPlayer(player))
-			localaiming[0] = 0;
-		
+	{		
 		INT32 changeto = 0;
 		INT32 z, numplayersred = 0, numplayersblue = 0;
 
@@ -8101,6 +8098,10 @@ boolean P_SpectatorJoinGame(player_t *player)
 		player->kartstuff[k_spectatewait] = 0;
 		player->ctfteam = changeto;
 		player->playerstate = PST_REBORN;
+		
+		//reset camera
+		if (P_IsLocalPlayer(player))
+			localaiming[0] = 0;
 
 		//Reset away view
 		if (P_IsLocalPlayer(player) && displayplayers[0] != consoleplayer)
@@ -8115,10 +8116,7 @@ boolean P_SpectatorJoinGame(player_t *player)
 	}
 	// Joining in game from firing.
 	else
-	{
-		if (P_IsLocalPlayer(player))
-			localaiming[0] = 0;
-		
+	{		
 		if (player->mo)
 		{
 			P_RemoveMobj(player->mo);
@@ -8128,6 +8126,10 @@ boolean P_SpectatorJoinGame(player_t *player)
 		player->pflags &= ~PF_WANTSTOJOIN;
 		player->kartstuff[k_spectatewait] = 0;
 		player->playerstate = PST_REBORN;
+
+		//reset camera
+		if (P_IsLocalPlayer(player))
+			localaiming[0] = 0;
 
 		//Reset away view
 		if (P_IsLocalPlayer(player) && displayplayers[0] != consoleplayer)
