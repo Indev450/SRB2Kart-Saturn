@@ -8063,6 +8063,9 @@ boolean P_SpectatorJoinGame(player_t *player)
 	// Partial code reproduction from p_tick.c autobalance code.
 	else if (G_GametypeHasTeams())
 	{
+		if (P_IsLocalPlayer(player))
+			localaiming[0] = 0;
+		
 		INT32 changeto = 0;
 		INT32 z, numplayersred = 0, numplayersblue = 0;
 
@@ -8113,6 +8116,9 @@ boolean P_SpectatorJoinGame(player_t *player)
 	// Joining in game from firing.
 	else
 	{
+		if (P_IsLocalPlayer(player))
+			localaiming[0] = 0;
+		
 		if (player->mo)
 		{
 			P_RemoveMobj(player->mo);
