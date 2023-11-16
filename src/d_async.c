@@ -160,7 +160,7 @@ Append_async_addfile (int type, const char * filename, void * userdata)
 
 	filequery_t file;
 
-	if (FIL_FileOK(va(pandf,srb2home,filename)))
+	if (FIL_FileOK(filename))
 	{
 		file.status   = FS_FOUND;
 		file.filename = filenamebuf;
