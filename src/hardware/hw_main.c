@@ -6620,7 +6620,7 @@ void HWR_DoWipe(UINT8 wipenum, UINT8 scrnnum)
 	HWD.pfnDoScreenWipe();
 }
 
-void HWR_RenderVhsEffect(INT16 upbary, INT16 downbary, UINT8 updistort, UINT8 downdistort, UINT8 barsize)
+void HWR_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8 downdistort, UINT8 barsize)
 {
 	HWD.pfnRenderVhsEffect(upbary, downbary, updistort, downdistort, barsize);
 }
