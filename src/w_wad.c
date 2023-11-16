@@ -921,17 +921,46 @@ void W_UnloadWadFile(UINT16 num)
   */
 INT32 W_InitMultipleFiles(char **filenames, boolean addons)
 {
+	char filenamebufs[MAX_WADFILES][MAX_WADPATH];
+	filequery_t q[MAX_WADFILES];
+
+	int n = 0;
+	int i;
+	
 	INT32 rc = 1;
 	INT32 overallrc = 1;
 
 	// will be realloced as lumps are added
 	for (; *filenames; filenames++)
 	{
-		if (addons && !W_VerifyNMUSlumps(*filenames))
+		if (FIL_FileOK(*filenames))
+		{
+			q[n].status   = FS_FOUND;
+			q[n].filename = *filenames;
+		}
+		else
+		{
+			strcpy(filenamebufs[n], *filenames);
+			q[n].filename = filenamebufs[n];
+		}
+		n++;
+	}
+
+	findmultiplefiles(n, q, false, true, NULL);
+
+	for (i = 0; i < n; ++i)
+	{
+		if (q[i].status != FS_FOUND)
+		{
+			CONS_Alert(CONS_ERROR, M_GetText("File %s not found.\n"), q[i].filename);
+			continue;
+		}
+
+		if (addons && !W_VerifyNMUSlumps(q[i].filename))
 			G_SetGameModified(true, false);
 
 		//CONS_Debug(DBG_SETUP, "Loading %s\n", *filenames);
-		rc = W_InitFile(*filenames, 0, 0, false);
+		rc = W_InitFile(q[i].filename, 0, 0, false);
 		if (rc == INT16_MAX)
 			CONS_Printf(M_GetText("Errors occurred while loading %s; not added.\n"), *filenames);
 		overallrc &= (rc != INT16_MAX) ? 1 : 0;

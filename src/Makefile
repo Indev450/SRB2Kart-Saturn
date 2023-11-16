@@ -465,6 +465,7 @@ DBGNAME?=$(EXENAME).debug
 OBJS:=$(i_main_o) \
 		$(OBJDIR)/comptime.o \
 		$(OBJDIR)/string.o   \
+		$(OBJDIR)/d_async.o  \
 		$(OBJDIR)/d_main.o   \
 		$(OBJDIR)/d_protocol.o   \
 		$(OBJDIR)/d_clisrv.o \

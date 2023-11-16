@@ -45,6 +45,7 @@
 #include "lua_script.h"
 #include "lua_hook.h"
 #include "k_kart.h"
+#include "d_async.h"
 #include "s_sound.h" // sfx_syfail
 #include "m_perfstats.h"
 
@@ -5943,6 +5944,8 @@ boolean TryRunTics(tic_t realtics)
 
 	if (singletics)
 		realtics = 1;
+	
+	Finish_async_addfile();
 
 	if (realtics >= 1)
 	{
@@ -6020,6 +6023,8 @@ boolean TryRunTics(tic_t realtics)
 	{
 		hu_stopped = true;
 	}
+	
+	Detach_async_addfile();
 
 	return ticking;
 }
