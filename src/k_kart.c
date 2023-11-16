@@ -78,6 +78,8 @@ consvar_t cv_darkitembox = {"darkitembox", "On", CV_SAVE, CV_OnOff, NULL, 0, NUL
 
 consvar_t cv_biglaps = {"biglaphud", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; // here for ppl who dont want to make 2 more patches for their custom hud
 
+consvar_t  cv_highresportrait = {"highresportrait", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 
 // SOME IMPORTANT VARIABLES DEFINED IN DOOMDEF.H:
 // gamespeed is cc (0 for easy, 1 for normal, 2 for hard)
@@ -706,6 +708,8 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_darkitembox);
 	
 	CV_RegisterVar(&cv_biglaps);
+	
+	CV_RegisterVar(&cv_highresportrait);
 	
 	CV_RegisterVar(&cv_slamsound);
 	
@@ -7680,7 +7684,10 @@ static void K_drawKartStats(void)
 		V_DrawSmallString(x+20, y+12, flags|V_ALLOWLOWERCASE, va("%c%s", V_GetSkincolorChar(stplyr->skincolor), fakeskin->realname));
 
 		// Icon and stats
-		V_DrawMappedPatch(x, y, flags, R_GetSkinFaceRank(stplyr), R_GetLocalTranslationColormap(fakeskin, fakeskin, stplyr->skincolor, GTC_CACHE, stplyr->skinlocal));
+		if (cv_highresportrait.value)
+			V_DrawSmallMappedPatch(x, y, flags, R_GetSkinFaceWant(stplyr), R_GetLocalTranslationColormap(fakeskin, fakeskin, stplyr->skincolor, GTC_CACHE, stplyr->skinlocal));
+		else
+			V_DrawMappedPatch(x, y, flags, R_GetSkinFaceRank(stplyr), R_GetLocalTranslationColormap(fakeskin, fakeskin, stplyr->skincolor, GTC_CACHE, stplyr->skinlocal));
 		V_DrawMappedPatch(x-3, y-2, flags, kp_facenum[min(9, max(1, stplyr->kartspeed))], R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_BLUEBERRY, GTC_CACHE));
 		V_DrawMappedPatch(x+10, y+10, flags, kp_facenum[min(9, max(1, stplyr->kartweight))], R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_BURGUNDY, GTC_CACHE));
 	}
@@ -8445,7 +8452,10 @@ static boolean K_drawKartPositionFaces(void)
 			{
 				player_t *p;
 				p = &players[rankplayer[i]];
-				V_DrawMappedPatch(FACE_X, Y, V_HUDTRANS|V_SNAPTOLEFT, R_GetSkinFaceRank(p), colormap);
+				if (cv_highresportrait.value)
+					V_DrawSmallMappedPatch(FACE_X, Y, V_HUDTRANS|V_SNAPTOLEFT, R_GetSkinFaceWant(p), colormap);
+				else
+					V_DrawMappedPatch(FACE_X, Y, V_HUDTRANS|V_SNAPTOLEFT, R_GetSkinFaceRank(p), colormap);
 			}
 
 #ifdef HAVE_BLUA
@@ -8535,7 +8545,10 @@ void HU_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, I
 			{
 				player_t *p;
 				p = &players[tab[i].num];
-				V_DrawMappedPatch(x, y-4, 0, R_GetSkinFaceRank(p), colormap);
+				if (cv_highresportrait.value)
+					V_DrawSmallMappedPatch(x, y-4, 0, R_GetSkinFaceWant(p), colormap);
+				else	
+					V_DrawMappedPatch(x, y-4, 0, R_GetSkinFaceRank(p), colormap);
 			}
 			/*if (G_BattleGametype() && players[tab[i].num].kartstuff[k_bumper] > 0) -- not enough space for this
 			{
