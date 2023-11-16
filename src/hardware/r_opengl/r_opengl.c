@@ -4185,12 +4185,10 @@ EXPORT void HWRAPI(RenderVhsEffect) (fixed_t upbary, fixed_t downbary, UINT8 upd
 	SetBlend(PF_Modulated|PF_Translucent|PF_NoDepthTest);
 	pglBindTexture(GL_TEXTURE_2D, screentexture);
 
-	fix[2] = (float)(rand() % 128) / -22000 * xfix;
-
 	for (i = 0; i < 1; i += 2.f/vid.height)
 	{
-		fix[0] = fix[2];
 		fix[2] = (float)(rand() % 128) / -22000 * xfix;
+		fix[0] = fix[2];
 		fix[6] = fix[0] + xfix;
 		fix[4] = fix[2] + xfix;
 		fix[1] = fix[7] = i*yfix;
