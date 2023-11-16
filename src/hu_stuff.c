@@ -184,6 +184,8 @@ static INT32 cechoflags = 0;
 //                          HEADS UP INIT
 //======================================================================
 
+static tic_t resynch_ticker = 0;
+
 #ifndef NONET
 // just after
 static void Command_Say_f(void);
@@ -1140,6 +1142,10 @@ void HU_Ticker(void)
 	}
 
 	if (cechotimer > 0) --cechotimer;
+	
+	// Animate the desynch dots
+	if (hu_resynching)
+		resynch_ticker++;	//tic tic tic tic tic	
 
 	HU_TickSongCredits();
 }
@@ -2464,18 +2470,12 @@ void HU_Drawer(void)
 	// draw desynch text
 	if (hu_resynching)
 	{
-		static UINT32 resynch_ticker = 0;
 		char resynch_text[14];
 		UINT32 i;
 
-		// Animate the dots
-		if (renderisnewtic) 
-		{
-			resynch_ticker++;	//tic tic tic tic tic	
-		}
-			strcpy(resynch_text, "Resynching");
-			for (i = 0; i < (resynch_ticker / 16) % 4; i++)
-				strcat(resynch_text, ".");
+		strcpy(resynch_text, "Resynching");
+		for (i = 0; i < (resynch_ticker / 16) % 4; i++)
+			strcat(resynch_text, ".");
 
 		V_DrawCenteredString(BASEVIDWIDTH/2, 180, V_YELLOWMAP | V_ALLOWLOWERCASE, resynch_text);
 	}
