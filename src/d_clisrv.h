@@ -515,6 +515,8 @@ extern consvar_t cv_kicktime;
 extern consvar_t cv_showjoinaddress;
 extern consvar_t cv_playbackspeed;
 
+extern consvar_t cv_shownodeip;
+
 #define BASEPACKETSIZE      offsetof(doomdata_t, u)
 #define FILETXHEADER        offsetof(filetx_pak, data)
 #define BASESERVERTICSSIZE  offsetof(doomdata_t, u.serverpak.cmds[0])

@@ -1749,8 +1749,10 @@ static menuitem_t OP_ChatOptionsMenu[] =
 	{IT_STRING | IT_CVAR, NULL, "Max Chat Messages",		&cv_chatlogsize,		80},
 
 	{IT_STRING | IT_CVAR, NULL, "Local ping display",		&cv_showping,			100},	// shows ping next to framerate if we want to.
-	{IT_STRING | IT_CVAR, NULL, "Ping measurement",		&cv_pingmeasurement,			110},
-	{IT_STRING | IT_CVAR, NULL, "Ping icon",		&cv_pingicon,			120},
+	{IT_STRING | IT_CVAR, NULL, "Ping measurement",			&cv_pingmeasurement,	110},
+	{IT_STRING | IT_CVAR, NULL, "Ping icon",				&cv_pingicon,			120},
+	
+	{IT_STRING | IT_CVAR, NULL, "Show IP addresses in playerlist",		&cv_shownodeip,	140},
 };
 
 static const char* OP_ChatOptionsTooltips[] =
@@ -1765,6 +1767,7 @@ static const char* OP_ChatOptionsTooltips[] =
 	"Show player ping.",
 	"Measurement used for ping.",
 	"Visibility of ping icon.",
+	"Should Player IP addresses be printed when using\nthe nodes or listplayers command?",
 };
 
 static menuitem_t OP_GameOptionsMenu[] =

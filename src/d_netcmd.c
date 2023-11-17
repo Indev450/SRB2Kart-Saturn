@@ -776,6 +776,7 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_joinnextround);
 #endif
 	CV_RegisterVar(&cv_showjoinaddress);
+	CV_RegisterVar(&cv_shownodeip);
 	CV_RegisterVar(&cv_blamecfail);
 #endif
 

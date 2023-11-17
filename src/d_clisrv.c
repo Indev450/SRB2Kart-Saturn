@@ -171,6 +171,8 @@ static textcmdtic_t *textcmds[TEXTCMD_HASH_SIZE] = {NULL};
 
 consvar_t cv_showjoinaddress = {"showjoinaddress", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_shownodeip = {"showipinnodelist", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 static CV_PossibleValue_t playbackspeed_cons_t[] = {{1, "MIN"}, {10, "MAX"}, {0, NULL}};
 consvar_t cv_playbackspeed = {"playbackspeed", "1", 0, playbackspeed_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -3346,7 +3348,7 @@ static void Command_Nodes(void)
 		{
 			CONS_Printf("%.2u: %*s", i, (int)maxlen, player_names[i]);
 			CONS_Printf(" - %.2d", playernode[i]);
-			if (I_GetNodeAddress && (address = I_GetNodeAddress(playernode[i])) != NULL)
+			if ((I_GetNodeAddress && (address = I_GetNodeAddress(playernode[i])) != NULL) && (cv_shownodeip.value))
 				CONS_Printf(" - %s", address);
 
 			if (IsPlayerAdmin(i))
@@ -3358,6 +3360,94 @@ static void Command_Nodes(void)
 			CONS_Printf("\n");
 		}
 	}
+}
+
+//Screw the base game nodes lets replace with listplayers instead.
+static void Command_Listplayers(void)
+{
+	const char *address;
+	int width = 0;
+
+	boolean admin;
+	boolean spectator;
+
+	/*
+	Mode of player status for an individual player (admin, spectator).
+	1 for admin
+	2 for spectator
+	4 for both
+	*/
+	int mode = 0;
+
+	INT32 totalplayers = 0;
+
+	const char *cc;
+	const char *pcc;
+
+	INT32 i;
+	int n;
+
+	for (i = 0; i < MAXPLAYERS; ++i)
+		if (playeringame[i])
+	{
+		n = strlen(player_names[i]);
+		if (n > width)
+			width = n;
+
+		if (mode != 7)
+		{
+			admin     = IsPlayerAdmin(i);
+			spectator = players[i].spectator;
+
+			if (admin)
+				mode |= 1;
+			if (spectator)
+				mode |= 2;
+			if (admin && spectator)
+				mode |= 4;
+		}
+	}
+
+	for (i = 0; i < MAXPLAYERS; ++i)
+		if (playeringame[i])
+	{
+		admin     = IsPlayerAdmin(i);
+		spectator = players[i].spectator;
+
+		if (admin)
+			cc = "\x85";/* red */
+		else if (spectator)
+			cc = "\x86";/* gray */
+		else
+			cc = "";
+
+		pcc = HU_SkinColorToConsoleColor(players[i].skincolor);
+
+		CONS_Printf("%.2d: ""%s""%-*s""\x80", i, pcc,width, player_names[i]);
+
+			if ((I_GetNodeAddress && (address = I_GetNodeAddress(playernode[i])) != NULL) && (cv_shownodeip.value))
+				CONS_Printf(" -- %s", address);
+			else/* print spacer */
+			{
+				/* ...but not if there's a crammed status and were admin */
+				if (mode != 7 || !admin)
+					CONS_Printf(" --     ");/* -- self */
+			}
+
+		if (admin)
+			CONS_Printf(M_GetText("%s"" (admin)"),cc);
+		if (spectator)
+			CONS_Printf(M_GetText("%s"" (spectator)"),cc);
+
+		CONS_Printf("\n");
+
+		totalplayers++;
+	}
+
+	if (totalplayers == 1)
+		CONS_Printf("\nThere is 1 player in the game.\n");
+	else
+		CONS_Printf("\nThere are %d players in the game.\n", totalplayers);
 }
 
 static void Command_Ban(void)
@@ -3925,6 +4015,7 @@ void D_ClientServerInit(void)
 	COM_AddCommand("reloadbans", Command_ReloadBan);
 	COM_AddCommand("connect", Command_connect);
 	COM_AddCommand("nodes", Command_Nodes);
+	COM_AddCommand("listplayers", Command_Listplayers);
 #ifdef HAVE_CURL
 	COM_AddCommand("set_http_login", Command_set_http_login);
 	COM_AddCommand("list_http_logins", Command_list_http_logins);
