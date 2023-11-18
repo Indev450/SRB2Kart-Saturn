@@ -511,7 +511,7 @@ static CV_PossibleValue_t skinselectspin_cons_t[] = {
 consvar_t cv_skinselectspin = {"skinselectspin", "5", CV_SAVE, skinselectspin_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static CV_PossibleValue_t perfstats_cons_t[] = {
-	{0, "Off"}, {1, "Rendering"}, {2, "Logic"}, {3, "ThinkFrame"}, {0, NULL}};
+	{0, "Off"}, {1, "Rendering"}, {2, "Logic"}, {3, "ThinkFrame"}, {4, "PreThinkFrame"}, {5, "PostThinkFrame"}, {0, NULL}};
 consvar_t cv_perfstats = {"perfstats", "Off", CV_CALL, perfstats_cons_t, PS_PerfStats_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_ps_thinkframe_page = {"ps_thinkframe_page", "1", CV_CALL, CV_Natural, PS_ThinkFrame_Page_OnChange, 0, NULL, NULL, 0, 0, NULL};
