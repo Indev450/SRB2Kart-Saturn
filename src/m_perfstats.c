@@ -813,7 +813,7 @@ static void draw_think_frame_stats(int hook_length, ps_hookinfo_t *hook)
     char s[100];
 	int i;
 	int maxpage = 0;
-    int page = max(1, min(cv_ps_thinkframe_page.value, maxpage));
+    int page = 0;
     int pagestart = 0;
     int pageend = 0;
 	// text writing position
@@ -828,6 +828,7 @@ static void draw_think_frame_stats(int hook_length, ps_hookinfo_t *hook)
 	//Decide page length based and drawn text on choosen thinker type
 	if (cv_perfstats.value == 3){
     	maxpage = thinkframe_hooks_length/PAGE_ENTRIES + 1;
+		page = max(1, min(cv_ps_thinkframe_page.value, maxpage));
     	pagestart = min((page - 1)*PAGE_ENTRIES, thinkframe_hooks_length);
     	pageend   = min(pagestart + PAGE_ENTRIES, thinkframe_hooks_length);
 		
@@ -835,12 +836,14 @@ static void draw_think_frame_stats(int hook_length, ps_hookinfo_t *hook)
 	}
 	else if (cv_perfstats.value == 4){
 		maxpage = prethinkframe_hooks_length/PAGE_ENTRIES + 1;
+		page = max(1, min(cv_ps_thinkframe_page.value, maxpage));
     	pagestart = min((page - 1)*PAGE_ENTRIES, prethinkframe_hooks_length);
     	pageend   = min(pagestart + PAGE_ENTRIES, prethinkframe_hooks_length);
 		V_DrawSmallString(MAX_X-60, MAX_Y+2*HEIGHT, V_MONOSPACE | V_GREENMAP, "PreThinkFrame");
 	}
 	else if (cv_perfstats.value == 5){
 		maxpage = postthinkframe_hooks_length/PAGE_ENTRIES + 1;
+		page = max(1, min(cv_ps_thinkframe_page.value, maxpage));
     	pagestart = min((page - 1)*PAGE_ENTRIES, postthinkframe_hooks_length);
     	pageend   = min(pagestart + PAGE_ENTRIES, postthinkframe_hooks_length);
 		V_DrawSmallString(MAX_X-65, MAX_Y+2*HEIGHT, V_MONOSPACE | V_GREENMAP, "PostThinkFrame");
