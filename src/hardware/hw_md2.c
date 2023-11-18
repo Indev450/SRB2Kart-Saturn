@@ -1366,15 +1366,19 @@ void HWR_DrawMD2(gr_vissprite_t *spr)
 		angle_t sliptideroll = 0;
 
 		if (spr->mobj->player)
-			sliptideroll = ((cv_sloperoll.value) ? spr->mobj->player->sliproll : 0);
+			sliptideroll = ((cv_sloperoll.value && cv_sliptideroll.value) ? spr->mobj->player->sliproll : 0);
 
-		if ((spr->mobj->rollangle)||sliptideroll)
+		if ((spr->mobj->rollangle)||(sliptideroll && cv_sliptideroll.value))
 		{
 			angle_t rollang = 0;
 			rollfactor = ((spr->mobj->rollmodel == true) ? 1 : 0);
 
-			if (spr->mobj->player)
-				rollang = (spr->mobj->rollangle*rollfactor) + (sliptideroll*spr->mobj->player->sliptidemem);
+			if (spr->mobj->player){
+				if (sliptideroll && cv_sliptideroll.value)
+					rollang = (spr->mobj->rollangle*rollfactor) + (sliptideroll*spr->mobj->player->sliptidemem);
+				else
+					rollang = (spr->mobj->rollangle*rollfactor);
+			}			
 			else
 				rollang = (spr->mobj->rollangle*rollfactor);
 			
@@ -1423,7 +1427,7 @@ void HWR_DrawMD2(gr_vissprite_t *spr)
 
 		HWD.pfnSetShader(4);	// model shader
 		{
-		float this_scale = FIXED_TO_FLOAT(interp.scale);
+			float this_scale = FIXED_TO_FLOAT(interp.scale);
 
 			float xs = this_scale * FIXED_TO_FLOAT(interp.spritexscale);
 			float ys = this_scale * FIXED_TO_FLOAT(interp.spriteyscale);
