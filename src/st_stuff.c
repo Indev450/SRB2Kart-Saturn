@@ -1971,8 +1971,8 @@ static void ST_overlayDrawer(void)
 					strlcpy(name, player_names[stplyr-players], 13);*/
 
 					// Show name of player being displayed
-					V_DrawCenteredString((BASEVIDWIDTH/2), BASEVIDHEIGHT-40, 0, M_GetText("VIEWPOINT:"));
-					V_DrawCenteredString((BASEVIDWIDTH/2), BASEVIDHEIGHT-32, V_ALLOWLOWERCASE, player_names[stplyr-players]);
+					V_DrawCenteredString((BASEVIDWIDTH/2), BASEVIDHEIGHT-40, V_HUDTRANS, M_GetText("VIEWPOINT:"));
+					V_DrawCenteredString((BASEVIDWIDTH/2), BASEVIDHEIGHT-32, V_HUDTRANS|V_ALLOWLOWERCASE, player_names[stplyr-players]);
 				}
 			}
 			else if (!demo.title)
