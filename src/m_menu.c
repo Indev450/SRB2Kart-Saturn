@@ -7605,6 +7605,8 @@ static void M_Options(INT32 choice)
 
 	OP_MainDef.prevMenu = currentMenu;
 	M_SetupNextMenu(&OP_MainDef);
+	
+	OP_MainMenu[11].status = (Playing() &&(server &&(!IsPlayerAdmin(consoleplayer)))) ? (IT_DISABLED) : (IT_CALL|IT_STRING);	
 }
 
 static void M_Manual(INT32 choice)
