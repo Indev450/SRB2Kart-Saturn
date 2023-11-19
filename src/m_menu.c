@@ -4051,7 +4051,7 @@ void M_StartControlPanel(void)
 
 		// Reset these in case splitscreen messes things up
 		MPauseMenu[mpause_addons].alphaKey = 8;
-		MPauseMenu[mpause_addlocalskins].alphaKey = 16;
+		MPauseMenu[mpause_addlocalskins].alphaKey = 8;
 		MPauseMenu[mpause_scramble].alphaKey = 8;
 		MPauseMenu[mpause_switchmap].alphaKey = 24;
 
@@ -4068,11 +4068,17 @@ void M_StartControlPanel(void)
 		{
 			MPauseMenu[mpause_switchmap].status = IT_STRING | IT_CALL;
 			MPauseMenu[mpause_addons].status = IT_STRING | IT_CALL;
+			
 			if (!IsPlayerAdmin(consoleplayer)) 
 			{
 				MPauseMenu[mpause_addlocalskins].status = IT_DISABLED;
 				MPauseMenu[mpause_localskin].status = IT_DISABLED;
+				
+				MPauseMenu[mpause_options].alphaKey = 64;
+				MPauseMenu[mpause_title].alphaKey = 80;
+				MPauseMenu[mpause_quit].alphaKey = 88;
 			}
+			
 			if (G_GametypeHasTeams())
 				MPauseMenu[mpause_scramble].status = IT_STRING | IT_SUBMENU;
 		}
