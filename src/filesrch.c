@@ -400,10 +400,13 @@ filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *want
 		if (dent->d_type == DT_UNKNOWN)
 			if (lstat(searchpath,&fsstat) == 0 && S_ISDIR(fsstat.st_mode))
 				dent->d_type = DT_DIR;
+            else if (lstat(searchpath,&fsstat) == 0 && S_ISLNK(fsstat.st_mode))
+                    dent->d_type = DT_LNK;
+
 
 		// Linux and FreeBSD has a special field for file type on dirent, so use that to speed up lookups.
 		// FIXME: should we also follow symlinks?
-		if (dent->d_type == DT_DIR && depthleft)
+		if ((dent->d_type == DT_DIR && depthleft) || (dent->d_type == DT_LNK && depthleft))
 #else
 		if (stat(searchpath,&fsstat) < 0) // do we want to follow symlinks? if not: change it to lstat
 			; // was the file (re)moved? can't stat it
