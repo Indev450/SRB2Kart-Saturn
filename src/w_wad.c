@@ -202,7 +202,7 @@ FILE *W_OpenWadFile(const char **filename, boolean useerrors)
 
 		// If findfile finds the file, the full path will be returned
 		// in filenamebuf == *filename.
-		if (findfile(filenamebuf, NULL, true))
+		if (findfile(filenamebuf, NULL, true) == FS_FOUND)
 		{
 			if ((handle = fopen_utf8(*filename, "rb")) == NULL)
 			{
