@@ -5391,7 +5391,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 			}
 			else
 			{
-				DEBFILE(va("frame not in bound: %u\n", neededtic));
+				DEBFILE(va("frame not in bound: %u (bounds are from %u to %u)\n", neededtic, realstart, realend));
 				/*if (realend < neededtic - 2 * TICRATE || neededtic + 2 * TICRATE < realstart)
 					I_Error("Received an out of order PT_SERVERTICS packet!\n"
 							"Got tics %d-%d, needed tic %d\n\n"
