@@ -4048,6 +4048,9 @@ void M_StartControlPanel(void)
 		MPauseMenu[mpause_psetup].status = IT_DISABLED;
 		MISC_ChangeTeamMenu[0].status = IT_DISABLED;
 		MISC_ChangeSpectateMenu[0].status = IT_DISABLED;
+		
+		MPauseMenu[mpause_addlocalskins].status = IT_STRING | IT_CALL;
+		MPauseMenu[mpause_localskin].status = IT_STRING | IT_CALL;
 
 		// Reset these in case splitscreen messes things up
 		MPauseMenu[mpause_addons].alphaKey = 8;
@@ -4069,19 +4072,20 @@ void M_StartControlPanel(void)
 			MPauseMenu[mpause_switchmap].status = IT_STRING | IT_CALL;
 			MPauseMenu[mpause_addons].status = IT_STRING | IT_CALL;
 			
-			if (!IsPlayerAdmin(consoleplayer)) 
-			{
-				MPauseMenu[mpause_addlocalskins].status = IT_DISABLED;
-				MPauseMenu[mpause_localskin].status = IT_DISABLED;
-				
-				MPauseMenu[mpause_options].alphaKey = 64;
-				MPauseMenu[mpause_title].alphaKey = 80;
-				MPauseMenu[mpause_quit].alphaKey = 88;
-			}
-			
 			if (G_GametypeHasTeams())
 				MPauseMenu[mpause_scramble].status = IT_STRING | IT_SUBMENU;
 		}
+		
+		if (server || (!cv_showlocalskinmenus.value))
+		{
+			MPauseMenu[mpause_addlocalskins].status = IT_DISABLED;
+			MPauseMenu[mpause_localskin].status = IT_DISABLED;
+					
+			MPauseMenu[mpause_options].alphaKey = 64;
+			MPauseMenu[mpause_title].alphaKey = 80;
+			MPauseMenu[mpause_quit].alphaKey = 88;
+		}
+				
 
 		if (splitscreen)
 		{
@@ -7606,7 +7610,7 @@ static void M_Options(INT32 choice)
 	OP_MainDef.prevMenu = currentMenu;
 	M_SetupNextMenu(&OP_MainDef);
 	
-	OP_MainMenu[11].status = (Playing() &&(server &&(!IsPlayerAdmin(consoleplayer)))) ? (IT_DISABLED) : (IT_CALL|IT_STRING);	
+	OP_MainMenu[11].status = ((Playing() &&(server &&(!IsPlayerAdmin(consoleplayer)))) || (!cv_showlocalskinmenus.value)) ? (IT_DISABLED) : (IT_CALL|IT_STRING);
 }
 
 static void M_Manual(INT32 choice)

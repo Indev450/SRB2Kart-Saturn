@@ -166,6 +166,7 @@ extern consvar_t cv_showlapemblem;
 extern consvar_t cv_showviewpointtext;
 extern consvar_t cv_luaimmersion;
 extern consvar_t cv_fakelocalskin;
+extern consvar_t cv_showlocalskinmenus;
 
 extern consvar_t cv_skipmapcheck;
 
