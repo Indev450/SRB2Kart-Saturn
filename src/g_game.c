@@ -1965,7 +1965,7 @@ boolean G_Responder(event_t *ev)
 				paused = true;
 				S_PauseAudio();
 			}
-			else if (paused)
+			else if ((paused) && (!cv_pausemusic.value))
 				S_PauseAudio();
 			else
 				S_ResumeAudio();

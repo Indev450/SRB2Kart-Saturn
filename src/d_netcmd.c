@@ -3085,7 +3085,7 @@ static void Got_Pause(UINT8 **cp, INT32 playernum)
 
 		if (paused)
 		{
-			if (!menuactive || netgame)
+			if ((!menuactive || netgame) && (!cv_pausemusic.value))
 				S_PauseAudio();
 		}
 		else

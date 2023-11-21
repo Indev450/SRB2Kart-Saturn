@@ -42,6 +42,7 @@ extern consvar_t cv_gamemidimusic;
 extern consvar_t cv_gamesounds;
 extern consvar_t cv_playmusicifunfocused;
 extern consvar_t cv_playsoundifunfocused;
+extern consvar_t cv_pausemusic;
 
 #ifdef HAVE_OPENMPT
 extern consvar_t cv_modfilter;

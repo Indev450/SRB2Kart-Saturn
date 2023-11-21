@@ -96,6 +96,8 @@ consvar_t cv_gamesounds = {"sounds", "On", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, 
 consvar_t cv_playmusicifunfocused = {"playmusicifunfocused",  "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_playsoundifunfocused = {"playsoundsifunfocused", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_pausemusic = {"playmusicifpaused",  "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 static CV_PossibleValue_t music_resync_threshold_cons_t[] = {
 	{0,    "MIN"},
 	{1000, "MAX"},
@@ -272,6 +274,7 @@ void S_RegisterSoundStuff(void)
 
 	CV_RegisterVar(&cv_playmusicifunfocused);
 	CV_RegisterVar(&cv_playsoundifunfocused);
+	CV_RegisterVar(&cv_pausemusic);
 
 	CV_RegisterVar(&cv_music_resync_threshold);
 	CV_RegisterVar(&cv_music_resync_powerups_only);
