@@ -7665,7 +7665,7 @@ static void K_drawKartStats(void)
 		spdoffset = 0;
 	
 	// Customizations c:
-	x += cv_stat_xoffset.value;
+	x += 18 + cv_stat_xoffset.value;
 	y += cv_stat_yoffset.value + (G_BattleGametype() ? (stplyr->kartstuff[k_bumper] ? -5 : -8) : 0) + spdoffset;
 	flags |= V_HUDTRANS;
 
