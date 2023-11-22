@@ -595,11 +595,11 @@ UINT8 K_GetKartColorByName(const char *name)
 }
 
 UINT8 K_GetHudColor(void)
-{
-	if (stplyr && players - stplyr != consoleplayer) return stplyr->skincolor;
+{	
 	if (cv_colorizedhud.value){
 		if (cv_colorizedhudcolor.value) return cv_colorizedhudcolor.value;
 	}
+	if (stplyr && P_IsLocalPlayer(stplyr)) return stplyr->skincolor;
 	return (stplyr ? stplyr->skincolor : cv_playercolor.value);
 }
 
