@@ -3240,7 +3240,6 @@ static angle_t K_GetSlopeRollAngle(player_t *p, boolean dontflip, boolean useRes
 
 	lookAngle = R_PointToAngle2(camera[pNum].x, camera[pNum].y, p->mo->x, p->mo->y);
 
-
 	if (!R_PointToDist(p->mo->x, p->mo->y))
 		lookAngle = p->mo->angle;
 
@@ -3266,7 +3265,11 @@ static angle_t K_GetSlopeRollAngle(player_t *p, boolean dontflip, boolean useRes
 
 	an = (lookAngle - xydirection);
 	final_slope = -(FixedMul(FINESINE(an>>ANGLETOFINESHIFT), zangle));
-	an = (INT32)(final_slope - p->tilt_sprite) / 3; // instead of just a direct snap
+	
+	if (camspin)
+		an = (INT32)(final_slope - p->tilt_sprite); // do a direct snap
+	else
+		an = (INT32)(final_slope - p->tilt_sprite) / 3; // instead of just a direct snap
 
 	if (an)
 		p->tilt_sprite += an;
