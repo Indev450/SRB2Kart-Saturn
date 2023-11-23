@@ -920,6 +920,7 @@ boolean clr_hud; // colour hud check
 boolean big_lap; // bigger lap counter
 boolean big_lap_color; // bigger lap counter but colour
 boolean kartzspeedo; // kartZ speedometer
+boolean statdp; // New stat
 
 static void IdentifyVersion(void)
 {
@@ -1301,6 +1302,12 @@ void D_SRB2Main(void)
 			"K_KZSP13", "K_KZSP14", "K_KZSP15", "K_KZSP16", "K_KZSP17", "K_KZSP18", "K_KZSP19", \
 			"K_KZSP20", "K_KZSP21", "K_KZSP22", "K_KZSP23", "K_KZSP24", "K_KZSP25", NULL)) 
 			kartzspeedo = true;
+		
+		
+		// new stat
+		if (W_CheckMultipleLumps("K_STATNB", "K_STATN1", "K_STATN2", "K_STATN3", "K_STATN4", \
+			"K_STATN5", "K_STATN6", NULL)) 
+			statdp = true;
 	}
 
 	//

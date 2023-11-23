@@ -186,7 +186,8 @@ typedef enum
 {
 	SKINMENUTYPE_SCROLL = 0,
 	SKINMENUTYPE_2D,    // 1
-	SKINMENUTYPE_GRID   // 2
+	SKINMENUTYPE_GRID,   // 2
+	SKINMENUTYPE_EXTENDED	// 3
 } skinmenutype_t;
 
 typedef enum

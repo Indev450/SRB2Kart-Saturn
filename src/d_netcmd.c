@@ -529,8 +529,8 @@ consvar_t cv_ps_descriptor = {"ps_descriptor", "Average", 0, ps_descriptor_cons_
 
 consvar_t cv_showtrackaddon = {"showtrackaddon", "Yes", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-static CV_PossibleValue_t skinselectmenu_t[] = {{SKINMENUTYPE_SCROLL, "Scroll"}, {SKINMENUTYPE_2D, "2d"}, {SKINMENUTYPE_GRID, "Grid"}, {0, NULL}};
-consvar_t cv_skinselectmenu = {"skinselectmenu", "Grid", CV_SAVE, skinselectmenu_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+static CV_PossibleValue_t skinselectmenu_t[] = {{SKINMENUTYPE_SCROLL, "Scroll"}, {SKINMENUTYPE_2D, "2d"}, {SKINMENUTYPE_GRID, "Grid"}, {SKINMENUTYPE_EXTENDED, "Extended"}, {0, NULL}};
+consvar_t cv_skinselectmenu = {"skinselectmenu", "Extended", CV_SAVE, skinselectmenu_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static CV_PossibleValue_t skinselectgridsort_t[] ={
 	{ SKINMENUSORT_REALNAME, "Real name" },

@@ -33,6 +33,8 @@ extern boolean clr_hud; // colour hud check
 extern boolean big_lap; // bigger lap counter
 extern boolean big_lap_color; //bigger lap counter but colour
 extern boolean kartzspeedo; //kartZ speedo
+extern boolean statdp; //kartZ speedo
+
 
 // the infinite loop of D_SRB2Loop() called from win_main for windows version
 void D_SRB2Loop(void) FUNCNORETURN;
