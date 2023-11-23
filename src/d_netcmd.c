@@ -6090,16 +6090,6 @@ static void Command_SkinSearch(void)
 				CONS_Printf("Total %d skins.\n", ic);
 }
 
-/*
-static void COM_Echo_f(void)
-{
-	size_t i;
-
-	for (i = 1; i < COM_Argc(); i++)
-		CONS_Printf("%s ", COM_Argv(i));
-	CONS_Printf("\n");
-}*/
-
 /** Sends a color change for the console player, unless that player is moving.
   * \sa cv_playercolor, Color2_OnChange, Skin_OnChange
   * \author Graue <graue@oceanbase.org>
