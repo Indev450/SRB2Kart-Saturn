@@ -10971,6 +10971,8 @@ static void M_DrawSetupMultiPlayerMenu(void)
 	INT32 sltw, actw, hetw;
 	UINT8 skintodisplay;
 	INT32 nameboxaddy = 0;
+	int statoffset = 0;
+	int gridyoffset = 0;
 
 	mx = MP_PlayerSetupDef.x;
 	my = MP_PlayerSetupDef.y;
@@ -11013,7 +11015,7 @@ static void M_DrawSetupMultiPlayerMenu(void)
 #define GETSELECTEDSPEED (itemOn == 1 && setupm_skinselect < numskins ? skins[skinsorted[setupm_skinselect]].kartspeed : skins[setupm_fakeskin].kartspeed)
 #define GETSELECTEDWEIGHT (itemOn == 1 && setupm_skinselect < numskins ? skins[skinsorted[setupm_skinselect]].kartweight : skins[setupm_fakeskin].kartweight)
 
-			int statoffset = 0;
+			statoffset = 0;
 			tw = V_StringWidth("Character", 0);//V_StringWidth(GETSELECTEDSKINNAME, 0);
 			st = V_StringWidth(GETSELECTEDSKINNAME, 0);
 			
@@ -11255,7 +11257,7 @@ static void M_DrawSetupMultiPlayerMenu(void)
 	{
 			//Skin grid stuff
 			case SKINMENUTYPE_EXTENDED:
-			int gridyoffset = 10;
+			gridyoffset = 10;
 			for (s = 0; s < SKINGRIDNEWWIDTH*SKINGRIDNEWHEIGHT; s++)
 			{
 				INT32 x = ((s % SKINGRIDNEWWIDTH) * 18) + ((BASEVIDWIDTH / 2) - (18 * SKINGRIDNEWWIDTH) - 8) + 100 + SKINXSHIFT; //BASEVIDWIDTH / 2 - ((icons + 1) * 24) - 4;
