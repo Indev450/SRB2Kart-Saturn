@@ -3587,6 +3587,9 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, boolean local)
 	if (!mapsadded)
 		CONS_Printf(M_GetText("No maps added\n"));
 
+	// TODO: Experimental SPRTINFO support, test first
+	R_LoadSpriteInfoLumps(wadnum, wadfiles[wadnum]->numlumps);
+
 	refreshdirmenu &= ~REFRESHDIR_GAMEDATA; // Under usual circumstances we'd wait for REFRESHDIR_GAMEDATA to disappear the next frame, but it's a bit too dangerous for that...
 	partadd_stage = 0;
 	return wadnum;

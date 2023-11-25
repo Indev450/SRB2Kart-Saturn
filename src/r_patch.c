@@ -640,6 +640,19 @@ static void R_ParseSpriteInfo(boolean spr2)
 			{
 				R_ParseSpriteInfoFrame(info);
 				Z_Free(sprinfoToken);
+				if (spr2)
+				{
+					if (!foundskins)
+						I_Error("Error parsing SPRTINFO lump: No skins specified in this sprite2 definition");
+					for (i = 0; i < foundskins; i++)
+					{
+						size_t skinnum = skinnumbers[i];
+						skin_t *skin = &skins[skinnum];
+						M_Memcpy(&skin->sprinfo, info, sizeof(spriteinfo_t));
+						CONS_Printf("Successfully added SPRTINFO definition for skin \"%s\"\n", skin->name);
+					}
+				}
+				else
 					M_Memcpy(&spriteinfo[sprnum], info, sizeof(spriteinfo_t));
 			}
 			else
@@ -694,6 +707,7 @@ void R_ParseSPRTINFOLump(UINT16 wadNum, UINT16 lumpNum)
 	sprinfoToken = M_GetToken(sprinfoText);
 	while (sprinfoToken != NULL)
 	{
+		CONS_Printf("Attempting to parse le SPRTINFO lump for ya..\n");
 		if (!stricmp(sprinfoToken, "SPRITE"))
 			R_ParseSpriteInfo(false);
 		else if (!stricmp(sprinfoToken, "SPRITE2"))

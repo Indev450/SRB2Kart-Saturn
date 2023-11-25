@@ -79,6 +79,7 @@ typedef struct
 {
 	char name[SKINNAMESIZE+1]; // INT16 descriptive name of the skin
 	spritedef_t spritedef;
+	spriteinfo_t sprinfo;
 	UINT16 wadnum;
 	char sprite[4]; // Sprite name, if seperated from S_SKIN.
 	skinflags_t flags;
