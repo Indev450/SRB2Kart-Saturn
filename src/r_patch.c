@@ -629,7 +629,7 @@ static void R_ParseSpriteInfo(boolean spr2)
 				strlwr(skinName);
 				Z_Free(sprinfoToken);
 
-				skinnum = R_SkinAvailable(skinName);
+				skinnum = R_AnySkinAvailable(skinName);
 				if (skinnum == -1)
 					I_Error("Error parsing SPRTINFO lump: Unknown skin \"%s\"", skinName);
 
@@ -647,7 +647,11 @@ static void R_ParseSpriteInfo(boolean spr2)
 					for (i = 0; i < foundskins; i++)
 					{
 						size_t skinnum = skinnumbers[i];
-						skin_t *skin = &skins[skinnum];
+						skin_t *skin;
+						if (allskins[skinnum].localskin)
+							skin = &localskins[allskins[skinnum].localnum];
+						else
+							skin = &skins[allskins[skinnum].localnum];
 						M_Memcpy(&skin->sprinfo, info, sizeof(spriteinfo_t));
 					}
 				}
