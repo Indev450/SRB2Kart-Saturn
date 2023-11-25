@@ -649,7 +649,6 @@ static void R_ParseSpriteInfo(boolean spr2)
 						size_t skinnum = skinnumbers[i];
 						skin_t *skin = &skins[skinnum];
 						M_Memcpy(&skin->sprinfo, info, sizeof(spriteinfo_t));
-						CONS_Printf("Successfully added SPRTINFO definition for skin \"%s\"\n", skin->name);
 					}
 				}
 				else
