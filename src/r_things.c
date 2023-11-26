@@ -3272,6 +3272,8 @@ void SetLocalPlayerSkin(INT32 playernum, const char *skinname, consvar_t *cvar)
 			CV_StealthSet(cvar, "none");
 		}
 	}
+
+	demo_extradata[playernum] |= DXD_LOCALSKIN;
 }
 
 // Same as SetPlayerSkin, but uses the skin #.
