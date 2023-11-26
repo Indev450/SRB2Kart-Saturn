@@ -4307,6 +4307,13 @@ static void Got_RemovePlayer(UINT8 **p, INT32 playernum)
 	pnum = READUINT8(*p);
 	reason = READUINT8(*p);
 
+	if (pnum == serverplayer)
+	{
+		CONS_Alert(CONS_WARNING, "Attempt to remove server player\n");
+
+		return;
+	}
+
 	CL_RemovePlayer(pnum, reason);
 
 #ifdef HAVE_DISCORDRPC
