@@ -3012,6 +3012,9 @@ void G_SpawnPlayer(INT32 playernum, boolean starpost)
 	}
 	P_MovePlayerToSpawn(playernum, spawnpoint);
 
+	// TODO: This is so dumb.
+	demo_extradata[playernum] |= DXD_LOCALSKIN;
+
 #ifdef HAVE_BLUA
 	LUAh_PlayerSpawn(&players[playernum]); // Lua hook for player spawning :)
 #endif
@@ -3347,7 +3350,7 @@ void G_AddPlayer(INT32 playernum)
 	p->jointime = 0;
 	p->playerstate = PST_REBORN;
 
-	demo_extradata[playernum] |= DXD_PLAYSTATE|DXD_COLOR|DXD_NAME|DXD_SKIN; // Set everything
+	demo_extradata[playernum] |= DXD_PLAYSTATE|DXD_COLOR|DXD_NAME|DXD_SKIN|DXD_LOCALSKIN; // Set everything
 }
 
 void G_ExitLevel(void)
@@ -5346,7 +5349,14 @@ void G_ReadDemoExtraData(void)
 			else if (G_RaceGametype())
 				P_CheckRacers(); // also SRB2Kart
 		}
-
+		if (extradata & DXD_LOCALSKIN) 
+		{
+			// TODO: Does this work just fine?
+			M_Memcpy(name, demo_p, 16);
+			//CONS_Printf("Loaded localskin data from replay: %s\n", name);
+			demo_p += 16;
+			SetLocalPlayerSkin(p, name, NULL);
+		}
 
 		p = READUINT8(demo_p);
 	}
@@ -5432,6 +5442,21 @@ void G_WriteDemoExtraData(void)
 					WRITEUINT8(demo_p, DXD_PST_SPECTATING);
 				else
 					WRITEUINT8(demo_p, DXD_PST_PLAYING);
+			}
+			if (demo_extradata[i] & DXD_LOCALSKIN)
+			{
+				// Skin
+				memset(name, 0, 16);
+				// check for different localskin conditions
+				if (players[i].skinlocal && players[i].localskin > 0)
+					strncpy(name, localskins[players[i].localskin - 1].name, 16);
+				else if (!players[i].skinlocal && players[i].localskin > 0)
+					strncpy(name, skins[players[i].localskin - 1].name, 16);
+				else
+					strncpy(name, "none", 16);
+				//CONS_Printf("Saved localskin data to replay: %s\n", name);
+				M_Memcpy(demo_p,name,16);
+				demo_p += 16;
 			}
 		}
 
