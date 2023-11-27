@@ -27,6 +27,7 @@
 #include "r_sky.h" // skyflatnum
 #include "p_local.h" // camera info
 #include "m_misc.h" // for tunes command
+#include "m_cond.h" // for conditionsets
 
 #ifdef HAVE_BLUA
 #include "lua_hook.h" // MusicChange hook
@@ -1297,6 +1298,19 @@ static UINT32    queue_fadeinms;
 musicdef_t *musicdefstart = NULL; // First music definition
 struct cursongcredit cursongcredit; // Currently displayed song credit info
 
+musicdef_t soundtestsfx = {
+	"_STSFX", // prevents exactly one valid track name from being used on the sound test
+	"Sound Effects",
+	"",
+	"SEGA, Sonic Team Jr, other sources",
+	1, // show on soundtest page 1
+	0, // with no conditions
+	0,
+	0,
+	false,
+	NULL
+};
+
 //
 // search for music definition in wad
 //
@@ -1425,7 +1439,7 @@ skip_lump:
 				free(buf2);
 				return;
 			}
-
+			
 			if (!stricmp(stoken, "usage")) {
 #if 0 // Ignore for now
 				STRBUFCPY(def->usage, value);
@@ -1463,8 +1477,6 @@ void S_InitMusicDefs(void)
 	for (i = 0; i < numwadfiles; i++)
 		S_LoadMusicDefs(i);
 }
-
-
 //
 // S_FindMusicCredit
 //
@@ -1524,6 +1536,45 @@ void S_ShowMusicCredit(void)
 {
 	S_ShowSpecifiedMusicCredit(music_name);
 }
+
+musicdef_t **soundtestdefs = NULL;
+INT32 numsoundtestdefs = 0;
+UINT8 soundtestpage = 1;
+
+//
+// S_PrepareSoundTest
+//
+// Prepare sound test. What am I, your butler?
+//
+boolean S_PrepareSoundTest(void)
+{
+	musicdef_t *def;
+	INT32 pos = numsoundtestdefs = 0;
+
+	for (def = musicdefstart; def; def = def->next)
+	{
+		def->allowed = false;
+		numsoundtestdefs++;
+	}
+
+	if (!numsoundtestdefs)
+		return false;
+
+	if (soundtestdefs)
+		Z_Free(soundtestdefs);
+
+	if (!(soundtestdefs = Z_Malloc(numsoundtestdefs*sizeof(musicdef_t *), PU_STATIC, NULL)))
+		I_Error("S_PrepareSoundTest(): could not allocate soundtestdefs.");
+
+	for (def = musicdefstart; def /*&& i < numsoundtestdefs*/; def = def->next)
+	{
+		soundtestdefs[pos++] = def;
+		def->allowed = true;
+	}
+
+	return true;
+}
+
 
 /// ------------------------
 /// Music Status
