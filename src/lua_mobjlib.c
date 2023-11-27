@@ -217,7 +217,7 @@ UNIMPLEMENTED(mobjnum)
 
 // For some dumb reason it is valid to set sloperoll, even though it is read
 // only
-int mobj_sloperoll_noop(lua_State *L) { return 0; }
+int mobj_sloperoll_noop(lua_State *L) { (void)L; return 0; }
 
 // Now other getters/setters with arbitary logic
 
@@ -415,13 +415,40 @@ int mobj_localskin_setter(lua_State *L)
 {
 	mobj_t *mo = GETMO();
 
-	// TODO - add ability to set localskin to non-player mobjs
-	// Will probably just need to reimplement SetLocalPlayerSkin as something
-	// like SetLocalObjectSkin
-	if (!mo->player)
-		return luaL_error(L, "mobj.localskin can't be set for non-player mobjs!");
+	if (mo->player)
+	{
+		SetLocalPlayerSkin(mo->player - players, luaL_checkstring(L, 2), NULL);
+	}
+	else
+	{
+		INT32 i;
+		char skin[SKINNAMESIZE+1]; // all skin names are limited to this length
+		strlcpy(skin, luaL_checkstring(L, 2), sizeof skin);
+		strlwr(skin); // all skin names are lowercase
 
-	SetLocalPlayerSkin(mo->player - players, luaL_checkstring(L, 2), NULL);
+		// Try localskins
+		for (i = 0; i < numlocalskins; i++)
+		{
+			if (stricmp(localskins[i].name, skin) == 0)
+			{
+				mo->localskin = &localskins[i];
+				mo->skinlocal = true;
+				return 0;
+			}
+		}
+
+		// Try other skins
+		for (i = 0; i < numskins; i++)
+		{
+			if (fastcmp(skins[i].name, skin))
+			{
+				mo->localskin = &skins[i];
+				mo->skinlocal = false;
+				return 0;
+			}
+		}
+	}
+
 
 	return 0;
 }
