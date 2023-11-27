@@ -11608,7 +11608,7 @@ static void M_DrawSetupMultiPlayerMenu(void)
 	patch = W_CachePatchNum(sprframe->lumppat[speenframe], PU_CACHE);
 
 	// draw box around guy
-	V_DrawFill(mx + 43 - (charw/2), my+65, charw, 84, 239);
+	V_DrawFill(mx + 36 - (charw/2), my+65, charw, 84, 239);
 
 	// draw player sprite
 	if (setupm_fakecolor) // inverse should never happen
@@ -11617,13 +11617,13 @@ static void M_DrawSetupMultiPlayerMenu(void)
 
 		if (skins[skintodisplay].flags & SF_HIRES)
 		{
-			V_DrawFixedPatch((mx+43)<<FRACBITS,
+			V_DrawFixedPatch((mx+36)<<FRACBITS,
 						(my+131)<<FRACBITS,
 						skins[skintodisplay].highresscale,
 						flags, patch, colormap);
 		}
 		else
-			V_DrawMappedPatch(mx+43, my+131, flags, patch, colormap);
+			V_DrawMappedPatch(mx+36, my+131, flags, patch, colormap);
 	}
 #undef charw
 }
