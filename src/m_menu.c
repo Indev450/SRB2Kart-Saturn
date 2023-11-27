@@ -8363,7 +8363,7 @@ static void M_DrawMusicTest(void)
 				}
 
 				strncpy(buf, soundtestdefs[t]->source + nameoffset, MAXLENGTH);
-				buf[MAXLENGTH+1] = 0;
+				buf[MAXLENGTH] = 0;
 
 				V_DrawString(x, y, (t == st_sel ? V_YELLOWMAP : 0)|V_ALLOWLOWERCASE|V_MONOSPACE, buf);
 				if (curplaying == soundtestdefs[t])
