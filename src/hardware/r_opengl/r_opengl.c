@@ -1222,7 +1222,7 @@ EXPORT void HWRAPI(LoadCustomShader) (int number, char *shader, size_t size, boo
 		return;
 	
 	if (number < 1 || number > MAXSHADERS)
-		GL_MSG_Error("LoadCustomShader(): cannot load shader %d (max %d)", number, MAXSHADERS);
+		I_Error("LoadCustomShader(): cannot load shader %d (max %d)", number, MAXSHADERS);
 
 	if (fragment)
 	{
@@ -1307,6 +1307,12 @@ void InitPalette(int flashnum, boolean skiplut)
 {	
 	int i, r, g, b;
 
+	if (!pglTexImage3D){
+		GL_MSG_Error("pglTexImage3D is NULL!");
+		CV_Set(&cv_grpaletteshader, "Off"); // turn that thing off if you cant use it
+		return;
+	}
+
 	//Hudler: 16/10/99: added for OpenGL gamma correction
 	RGBA_t gamma_correction = {0x7F7F7F7F};
 
@@ -1374,8 +1380,6 @@ void InitPalette(int flashnum, boolean skiplut)
 		pglBindTexture(GL_TEXTURE_3D, palette_tex_num);
 		pglTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		pglTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		if (!pglTexImage3D)
-			GL_MSG_Error("pglTexImage3D is NULL!");
 		pglTexImage3D(GL_TEXTURE_3D, 0, internalFormat, LUT_SIZE, LUT_SIZE, LUT_SIZE, 0, GL_RED, GL_UNSIGNED_BYTE, pal_lookup_tex);
 		free(pal_lookup_tex);
 	}
@@ -1584,6 +1588,12 @@ EXPORT void HWRAPI(ClearMipMapCache) (void)
 
 EXPORT UINT32 HWRAPI(AddLightTable) (UINT8 *lighttable)
 {
+	if (!ltcachetail->id){
+		GL_MSG_Error("HWR Lighttable cache entry id is zero");
+		CV_Set(&cv_grpaletteshader, "Off"); // turn that thing off if you cant use it
+		return;
+	}	
+	
 	LightTableCacheEntry_t *cache_entry = malloc(sizeof(LightTableCacheEntry_t));
 	if (!ltcachetail)
 	{
@@ -1596,8 +1606,6 @@ EXPORT UINT32 HWRAPI(AddLightTable) (UINT8 *lighttable)
 	}
 	ltcachetail->next = NULL;
 	pglGenTextures(1, &ltcachetail->id);
-	if (!ltcachetail->id)
-		GL_MSG_Error("hwr lighttable cache entry id is zero");
 	pglBindTexture(GL_TEXTURE_2D, ltcachetail->id);
 	pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -1734,7 +1742,7 @@ EXPORT void HWRAPI(ClearBuffer) (FBOOLEAN ColorMask,
 	pglEnableClientState(GL_VERTEX_ARRAY); // We always use this one
 	pglEnableClientState(GL_TEXTURE_COORD_ARRAY); // And mostly this one, too
 	
-	if (!gl_palette_initialized)
+	if ((!gl_palette_initialized) && (HWR_ShouldUsePaletteRendering()))
 		InitPalette(0, false); // just gonna put this here for now
 }
 
