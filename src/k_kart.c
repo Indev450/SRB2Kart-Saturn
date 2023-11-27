@@ -599,8 +599,8 @@ UINT8 K_GetHudColor(void)
 	if (cv_colorizedhud.value){
 		if (cv_colorizedhudcolor.value) return cv_colorizedhudcolor.value;
 	}
-	if (stplyr && P_IsLocalPlayer(stplyr)) return stplyr->skincolor;
-	return (stplyr ? stplyr->skincolor : cv_playercolor.value);
+	if (stplyr && P_IsLocalPlayer(stplyr) && gamestate == GS_LEVEL) return stplyr->skincolor;
+	return ((stplyr && gamestate == GS_LEVEL) ? stplyr->skincolor : cv_playercolor.value);
 }
 
 //}
@@ -8082,7 +8082,6 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 				drawtime = timelimitintics - drawtime;
 		}
 	}
-
 
 	if (!cv_colorizedhud.value || !clr_hud)
 		V_DrawScaledPatch(TX, TY, splitflags, ((mode == 2) ? kp_lapstickerwide : kp_timestickerwide));

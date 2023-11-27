@@ -1222,7 +1222,7 @@ EXPORT void HWRAPI(LoadCustomShader) (int number, char *shader, size_t size, boo
 		return;
 	
 	if (number < 1 || number > MAXSHADERS)
-		GL_MSG_Error("LoadCustomShader(): cannot load shader %d (max %d)", number, MAXSHADERS);
+		I_Error("LoadCustomShader(): cannot load shader %d (max %d)", number, MAXSHADERS);
 
 	if (fragment)
 	{
@@ -1374,8 +1374,13 @@ void InitPalette(int flashnum, boolean skiplut)
 		pglBindTexture(GL_TEXTURE_3D, palette_tex_num);
 		pglTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		pglTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		if (!pglTexImage3D)
+		
+		if (!pglTexImage3D){
 			GL_MSG_Error("pglTexImage3D is NULL!");
+			CV_Set(&cv_grpaletteshader, "Off"); // turn that thing off if you cant use it
+			return;
+		}
+		
 		pglTexImage3D(GL_TEXTURE_3D, 0, internalFormat, LUT_SIZE, LUT_SIZE, LUT_SIZE, 0, GL_RED, GL_UNSIGNED_BYTE, pal_lookup_tex);
 		free(pal_lookup_tex);
 	}
@@ -1595,13 +1600,31 @@ EXPORT UINT32 HWRAPI(AddLightTable) (UINT8 *lighttable)
 		ltcachetail = cache_entry;
 	}
 	ltcachetail->next = NULL;
+	
+	GLenum internalFormat;
+	if (gl_version[0] == '1' || gl_version[0] == '2')
+	{
+		// if the OpenGL version is below 3.0, then the GL_R8 format may not be available.
+		// so use GL_LUMINANCE8 instead to get a single component 8-bit format
+		// (it is possible to have access to shaders even in some OpenGL 1.x systems,
+		// so palette rendering can still possibly be achieved there)
+		internalFormat = GL_LUMINANCE8;
+	}
+	else
+	{
+		internalFormat = GL_R8;
+	}
+	
 	pglGenTextures(1, &ltcachetail->id);
-	if (!ltcachetail->id)
-		GL_MSG_Error("hwr lighttable cache entry id is zero");
+	if (!ltcachetail->id){
+		GL_MSG_Error("HWR Lighttable cache entry id is zero");
+		CV_Set(&cv_grpaletteshader, "Off"); // turn that thing off if you cant use it
+		return;
+	}	
 	pglBindTexture(GL_TEXTURE_2D, ltcachetail->id);
 	pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	pglTexImage2D(GL_TEXTURE_2D, 0, GL_R8, 256, 32, 0, GL_RED, GL_UNSIGNED_BYTE, lighttable);
+	pglTexImage2D(GL_TEXTURE_2D, 0, internalFormat, 256, 32, 0, GL_RED, GL_UNSIGNED_BYTE, lighttable);
 
 	// restore previously bound texture
 	if (!gl_batching)
@@ -1734,7 +1757,7 @@ EXPORT void HWRAPI(ClearBuffer) (FBOOLEAN ColorMask,
 	pglEnableClientState(GL_VERTEX_ARRAY); // We always use this one
 	pglEnableClientState(GL_TEXTURE_COORD_ARRAY); // And mostly this one, too
 	
-	if (!gl_palette_initialized)
+	if ((!gl_palette_initialized) && (HWR_ShouldUsePaletteRendering()))
 		InitPalette(0, false); // just gonna put this here for now
 }
 
