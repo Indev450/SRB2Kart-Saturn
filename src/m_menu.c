@@ -8229,12 +8229,12 @@ static void M_DrawMusicTest(void)
 			//V_DrawRightAlignedString(BASEVIDWIDTH-16, 46, V_ALLOWLOWERCASE, curplaying->source);
 	}
 
-	V_DrawFill(20, 60, 280, 112, 159);
+	V_DrawFill(20, 60, 280, 127, 159);
 
 	{
 		INT32 t, b, q, m = 112;
 
-		if (numsoundtestdefs <= 7)
+		if (numsoundtestdefs <= 8)
 		{
 			t = 0;
 			b = numsoundtestdefs - 1;
@@ -8247,20 +8247,20 @@ static void M_DrawMusicTest(void)
 			if (st_sel < 3)
 			{
 				t = 0;
-				b = 6;
+				b = 7;
 				i = 0;
 			}
 			else if (st_sel >= numsoundtestdefs-4)
 			{
-				t = numsoundtestdefs - 7;
+				t = numsoundtestdefs - 8;
 				b = numsoundtestdefs - 1;
 				i = q-m;
 			}
 			else
 			{
 				t = st_sel - 3;
-				b = st_sel + 3;
-				i = (t * (q-m))/(numsoundtestdefs - 7);
+				b = st_sel + 4;
+				i = (t * (q-m))/(numsoundtestdefs - 8);
 			}
 		}
 
