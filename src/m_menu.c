@@ -8099,10 +8099,6 @@ static void M_MusicTest(INT32 choice)
 	UINT8 i;
 	char buf[8];
 
-	//soundtestpage = (UINT8)(unlockables[ul].variable);
-	if (!soundtestpage)
-		soundtestpage = 1;
-
 	if (!S_PrepareSoundTest())
 	{
 		M_StartMessage(M_GetText("No selectable tracks found.\n"),NULL,MM_NOTHING);
@@ -8145,32 +8141,24 @@ static void M_DrawMusicTest(void)
 	if (curplaying)
 	{
 		{
-			if (curplaying->stoppingtics && st_time >= curplaying->stoppingtics)
-			{
-				curplaying = NULL;
-				st_time = 0;
-			}
-			else
-			{
-				fixed_t work;
-				//angle_t ang;
-				//bpm = FixedDiv((60*TICRATE)<<FRACBITS, bpm); -- bake this in on load
+			fixed_t work;
+			//angle_t ang;
+			//bpm = FixedDiv((60*TICRATE)<<FRACBITS, bpm); -- bake this in on load
 
-				work = st_time<<FRACBITS;
-				//work %= bpm;
+			work = st_time<<FRACBITS;
+			//work %= bpm;
 
-				if (st_time >= (FRACUNIT>>1)) // prevent overflow jump - takes about 15 minutes of loop on the same song to reach
-					st_time = (work>>FRACBITS);
+			if (st_time >= (FRACUNIT>>1)) // prevent overflow jump - takes about 15 minutes of loop on the same song to reach
+				st_time = (work>>FRACBITS);
 
-				//work = FixedDiv(work*180, bpm);
-				//frame[0] = 8-(work/(20<<FRACBITS));
-				//ang = (FixedAngle(work)>>ANGLETOFINESHIFT) & FINEMASK;
-				//bounce = (FINESINE(ang) - FRACUNIT/2);
-				//hscale -= bounce/16;
-				//vscale += bounce/16;
+			//work = FixedDiv(work*180, bpm);
+			//frame[0] = 8-(work/(20<<FRACBITS));
+			//ang = (FixedAngle(work)>>ANGLETOFINESHIFT) & FINEMASK;
+			//bounce = (FINESINE(ang) - FRACUNIT/2);
+			//hscale -= bounce/16;
+			//vscale += bounce/16;
 
-				st_time++;
-			}
+			st_time++;
 		}
 	}
 
@@ -8291,11 +8279,7 @@ static void M_DrawMusicTest(void)
 		{
 			if (t == st_sel)
 				V_DrawFill(40, y-4, 240-1, 16, 155);
-			if (!soundtestdefs[t]->allowed)
-			{
-				V_DrawString(x, y, (t == st_sel ? V_YELLOWMAP : 0)|V_ALLOWLOWERCASE, "???");
-			}
-			else
+
 			{
 				const size_t MAXLENGTH = 28;
 				const tic_t SCROLLSPEED = TICRATE/5; // Number of tics for name being scrolled by 1 letter
@@ -8447,17 +8431,8 @@ static void M_HandleMusicTest(INT32 choice)
 			S_StopSounds();
 			S_StopMusic();
 			st_time = 0;
-			if (soundtestdefs[st_sel]->allowed)
-			{
-				curplaying = soundtestdefs[st_sel];
-			
-				S_ChangeMusicInternal(curplaying->name, !curplaying->stoppingtics);
-			}
-			else
-			{
-				curplaying = NULL;
-				S_StartSound(NULL, sfx_lose);
-			}
+			curplaying = soundtestdefs[st_sel];		
+			S_ChangeMusicInternal(curplaying->name, true);
 			break;
 
 		default:

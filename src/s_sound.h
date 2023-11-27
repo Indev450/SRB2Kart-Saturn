@@ -145,16 +145,8 @@ boolean S_SpeedMusic(float speed);
 typedef struct musicdef_s
 {
 	char name[7];
-	char title[32];
-	char alttitle[64];
 	//char usage[256];
 	char source[256];
-	char authors[256];
-	UINT8 soundtestpage;
-	INT16 soundtestcond; // +ve for map, -ve for conditionset, 0 for already here
-	tic_t stoppingtics;
-	fixed_t bpm;
-	boolean allowed; // question marks or listenable on sound test?
 	struct musicdef_s *next;
 } musicdef_t;
 

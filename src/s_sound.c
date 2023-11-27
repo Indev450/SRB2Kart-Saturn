@@ -1539,7 +1539,6 @@ void S_ShowMusicCredit(void)
 
 musicdef_t **soundtestdefs = NULL;
 INT32 numsoundtestdefs = 0;
-UINT8 soundtestpage = 1;
 
 //
 // S_PrepareSoundTest
@@ -1553,7 +1552,6 @@ boolean S_PrepareSoundTest(void)
 
 	for (def = musicdefstart; def; def = def->next)
 	{
-		def->allowed = false;
 		numsoundtestdefs++;
 	}
 
@@ -1569,7 +1567,6 @@ boolean S_PrepareSoundTest(void)
 	for (def = musicdefstart; def /*&& i < numsoundtestdefs*/; def = def->next)
 	{
 		soundtestdefs[pos++] = def;
-		def->allowed = true;
 	}
 
 	return true;
