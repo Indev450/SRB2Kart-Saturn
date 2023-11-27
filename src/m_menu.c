@@ -8136,8 +8136,8 @@ static void M_MusicTest(INT32 choice)
 static void M_DrawMusicTest(void)
 {
 	INT32 x, y, i;
-	fixed_t hscale = FRACUNIT/2, vscale = FRACUNIT/2, bounce = 0;
-	UINT8 frame[4] = {0, 0, -1, SKINCOLOR_RUBY};
+	//fixed_t hscale = FRACUNIT/2, vscale = FRACUNIT/2, bounce = 0;
+	//UINT8 frame[4] = {0, 0, -1, SKINCOLOR_RUBY};
 
 	// let's handle the ticker first. ideally we'd tick this somewhere else, BUT...
 	if (curplaying)
@@ -8151,7 +8151,7 @@ static void M_DrawMusicTest(void)
 			else
 			{
 				fixed_t work;
-				angle_t ang;
+				//angle_t ang;
 				//bpm = FixedDiv((60*TICRATE)<<FRACBITS, bpm); -- bake this in on load
 
 				work = st_time<<FRACBITS;
@@ -8161,11 +8161,11 @@ static void M_DrawMusicTest(void)
 					st_time = (work>>FRACBITS);
 
 				//work = FixedDiv(work*180, bpm);
-				frame[0] = 8-(work/(20<<FRACBITS));
-				ang = (FixedAngle(work)>>ANGLETOFINESHIFT) & FINEMASK;
+				//frame[0] = 8-(work/(20<<FRACBITS));
+				//ang = (FixedAngle(work)>>ANGLETOFINESHIFT) & FINEMASK;
 				//bounce = (FINESINE(ang) - FRACUNIT/2);
-				hscale -= bounce/16;
-				vscale += bounce/16;
+				//hscale -= bounce/16;
+				//vscale += bounce/16;
 
 				st_time++;
 			}
@@ -8237,7 +8237,7 @@ static void M_DrawMusicTest(void)
 			//V_DrawRightAlignedString(BASEVIDWIDTH-16, 46, V_ALLOWLOWERCASE, curplaying->source);
 	}
 
-	V_DrawFill(165, 60, 140, 112, 159);
+	V_DrawFill(40, 60, 240, 112, 159);
 
 	{
 		INT32 t, b, q, m = 112;
@@ -8272,21 +8272,21 @@ static void M_DrawMusicTest(void)
 			}
 		}
 
-		V_DrawFill(165+140-1, 60 + i, 1, m, 0);
+		V_DrawFill(40+240-1, 60 + i, 1, m, 0);
 
 		if (t != 0)
-			V_DrawString(165+140+4, 60+4 - (skullAnimCounter/5), V_YELLOWMAP, "\x1A");
+			V_DrawString(40+240+4, 60+4 - (skullAnimCounter/5), V_YELLOWMAP, "\x1A");
 
 		if (b != numsoundtestdefs - 1)
-			V_DrawString(165+140+4, 60+112-12 + (skullAnimCounter/5), V_YELLOWMAP, "\x1B");
+			V_DrawString(40+240+4, 60+112-12 + (skullAnimCounter/5), V_YELLOWMAP, "\x1B");
 
-		x = 169;
+		x = 49;
 		y = 64;
 
 		while (t <= b)
 		{
 			if (t == st_sel)
-				V_DrawFill(165, y-4, 140-1, 16, 155);
+				V_DrawFill(40, y-4, 240-1, 16, 155);
 			if (!soundtestdefs[t]->allowed)
 			{
 				V_DrawString(x, y, (t == st_sel ? V_YELLOWMAP : 0)|V_ALLOWLOWERCASE, "???");
@@ -8296,7 +8296,7 @@ static void M_DrawMusicTest(void)
 				V_DrawString(x, y, (t == st_sel ? V_YELLOWMAP : 0)|V_ALLOWLOWERCASE, soundtestdefs[t]->source);
 				if (curplaying == soundtestdefs[t])
 				{
-					V_DrawFill(165+140-9, y-4, 8, 16, 150);
+					V_DrawFill(40+240-9, y-4, 8, 16, 150);
 					//V_DrawCharacter(165+140-8, y, '\x19' | V_YELLOWMAP, false);
 					//V_DrawFixedPatch((165+140-9)<<FRACBITS, (y<<FRACBITS)-(bounce*4), FRACUNIT, 0, hu_font['\x19'-HU_FONTSTART], V_GetStringColormap(V_YELLOWMAP));
 				}
