@@ -8145,11 +8145,11 @@ static void M_DrawMusicTest(void)
 			//angle_t ang;
 			//bpm = FixedDiv((60*TICRATE)<<FRACBITS, bpm); -- bake this in on load
 
-			work = st_time<<FRACBITS;
+			work = st_time;
 			//work %= bpm;
 
-			if (st_time >= (FRACUNIT>>1)) // prevent overflow jump - takes about 15 minutes of loop on the same song to reach
-				st_time = (work>>FRACBITS);
+			if (st_time >= (FRACUNIT << (FRACBITS - 2))) // prevent overflow jump - takes about 15 minutes of loop on the same song to reach
+					st_time = work;
 
 			//work = FixedDiv(work*180, bpm);
 			//frame[0] = 8-(work/(20<<FRACBITS));
@@ -8158,7 +8158,7 @@ static void M_DrawMusicTest(void)
 			//hscale -= bounce/16;
 			//vscale += bounce/16;
 
-			st_time++;
+			st_time += renderdeltatics;
 		}
 	}
 
@@ -8197,7 +8197,7 @@ static void M_DrawMusicTest(void)
 
 	V_DrawFill(y, 20, vid.width/vid.dupx, 24, 159);
 	{
-		static fixed_t st_scroll = -1;
+		static fixed_t st_scroll = -FRACUNIT;
 		const char* titl;
 		x = 16;
 		V_DrawString(x, 10, 0, "NOW PLAYING:");
@@ -8210,10 +8210,12 @@ static void M_DrawMusicTest(void)
 
 		i = V_LevelNameWidth(titl);
 
-		if (++st_scroll >= i)
-			st_scroll %= i;
+		st_scroll += renderdeltatics;
 
-		x -= st_scroll;
+		while (st_scroll >= (i << FRACBITS))
+			st_scroll -= i << FRACBITS;
+
+		x -= st_scroll >> FRACBITS;
 
 		while (x < BASEVIDWIDTH-y)
 			x += i;
@@ -8227,7 +8229,7 @@ static void M_DrawMusicTest(void)
 			//V_DrawRightAlignedString(BASEVIDWIDTH-16, 46, V_ALLOWLOWERCASE, curplaying->source);
 	}
 
-	V_DrawFill(40, 60, 240, 112, 159);
+	V_DrawFill(20, 60, 280, 112, 159);
 
 	{
 		INT32 t, b, q, m = 112;
@@ -8262,15 +8264,15 @@ static void M_DrawMusicTest(void)
 			}
 		}
 
-		V_DrawFill(40+240-1, 60 + i, 1, m, 0);
+		V_DrawFill(20+280-1, 60 + i, 1, m, 0);
 
 		if (t != 0)
-			V_DrawString(40+240+4, 60+4 - (skullAnimCounter/5), V_YELLOWMAP, "\x1A");
+			V_DrawString(20+280+4, 60+4 - (skullAnimCounter/5), V_YELLOWMAP, "\x1A");
 
 		if (b != numsoundtestdefs - 1)
-			V_DrawString(40+240+4, 60+112-12 + (skullAnimCounter/5), V_YELLOWMAP, "\x1B");
+			V_DrawString(20+280+4, 60+112-12 + (skullAnimCounter/5), V_YELLOWMAP, "\x1B");
 
-		x = 49;
+		x = 24;
 		y = 64;
 
 		if (renderisnewtic) ++st_namescroll;
@@ -8278,10 +8280,10 @@ static void M_DrawMusicTest(void)
 		while (t <= b)
 		{
 			if (t == st_sel)
-				V_DrawFill(40, y-4, 240-1, 16, 155);
+				V_DrawFill(20, y-4, 280-1, 16, 155);
 
 			{
-				const size_t MAXLENGTH = 28;
+				const size_t MAXLENGTH = 34;
 				const tic_t SCROLLSPEED = TICRATE/5; // Number of tics for name being scrolled by 1 letter
 				size_t nameoffset = 0;
 				size_t namelength = strlen(soundtestdefs[t]->source);
@@ -8352,7 +8354,7 @@ static void M_DrawMusicTest(void)
 				V_DrawString(x, y, (t == st_sel ? V_YELLOWMAP : 0)|V_ALLOWLOWERCASE|V_MONOSPACE, buf);
 				if (curplaying == soundtestdefs[t])
 				{
-					V_DrawFill(40+240-9, y-4, 8, 16, 150);
+					V_DrawFill(20+280-9, y-4, 8, 16, 150);
 					//V_DrawCharacter(165+140-8, y, '\x19' | V_YELLOWMAP, false);
 					//V_DrawFixedPatch((165+140-9)<<FRACBITS, (y<<FRACBITS)-(bounce*4), FRACUNIT, 0, hu_font['\x19'-HU_FONTSTART], V_GetStringColormap(V_YELLOWMAP));
 				}
