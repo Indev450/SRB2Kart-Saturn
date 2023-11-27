@@ -101,6 +101,8 @@ consvar_t cv_grbatching = {"gr_batching", "On", 0, CV_OnOff, NULL, 0, NULL, NULL
 
 consvar_t cv_grfofcut = {"gr_fofcut", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_splitwallfix = {"splitwallfix", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 static CV_PossibleValue_t grrenderdistance_cons_t[] = {
 	{0, "Max"}, {1, "1024"}, {2, "2048"}, {3, "4096"}, {4, "6144"}, {5, "8192"},
 	{6, "12288"}, {7, "16384"}, {0, NULL}};
@@ -1122,6 +1124,7 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 
 	realtop = top = wallVerts[3].y;
 	realbot = bot = wallVerts[0].y;
+	
 	diff = top - bot;
 	
 	pegt = wallVerts[3].t;
@@ -1135,7 +1138,6 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 	else
 		pegmul = (pegb - pegt) / diff;
 
-
 #ifdef ESLOPE
 	endrealtop = endtop = wallVerts[2].y;
 	endrealbot = endbot = wallVerts[1].y;	
@@ -1143,7 +1145,6 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 	endpegb = wallVerts[1].t;
 	endpegmul = (endpegb - endpegt) / (endtop - endbot);
 #endif
-
 
 	for (INT32 i = 0; i < sector->numlights; i++)
 	{
@@ -1187,12 +1188,13 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 
 #ifdef ESLOPE
 		if (list[i].slope)
-		{		
+		{
 			height = FixedToFloat(P_GetZAt(list[i].slope, v1x, v1y));
-			endheight = FixedToFloat(P_GetZAt(list[i].slope, v2x, v2y));		
+			endheight = FixedToFloat(P_GetZAt(list[i].slope, v2x, v2y));
 		}
 		else
 			height = endheight = FIXED_TO_FLOAT(list[i].height);
+		
 		if (solid)
 		{
 			if (*list[i].caster->b_slope)
@@ -1249,6 +1251,8 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 		}
 #endif
 
+	if (cv_splitwallfix.value)
+	{
 #ifdef ESLOPE
 		if (endbheight > endtop)
 			endbot = endtop;
@@ -1265,6 +1269,27 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 #ifdef ESLOPE
 		endbot = min(max(endbheight, endrealbot), endtop);
 #endif
+	}else{
+#ifdef ESLOPE
+		if (endbheight >= endtop)
+#endif
+		if (bheight >= top)
+			continue;
+
+		//Found a break;
+		bot = bheight;
+
+		if (bot < realbot)
+			bot = realbot;
+
+#ifdef ESLOPE
+		endbot = endbheight;
+
+		if (endbot < endrealbot)
+			endbot = endrealbot;
+#endif
+	}
+
 
 		Surf->PolyColor.s.alpha = alpha;
 
@@ -6360,7 +6385,10 @@ void HWR_AddCommands(void)
 
 	CV_RegisterVar(&cv_grbatching);
 	CV_RegisterVar(&cv_grfofcut);
+	CV_RegisterVar(&cv_splitwallfix);
+	
 	CV_RegisterVar(&cv_grscreentextures);
+	
 	CV_RegisterVar(&cv_grrenderdistance);
 	
 	CV_RegisterVar(&cv_grgammablue);
