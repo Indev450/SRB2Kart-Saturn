@@ -8297,7 +8297,7 @@ static void M_DrawMusicTest(void)
 			}
 			else
 			{
-				const size_t MAXLENGTH = 17;
+				const size_t MAXLENGTH = 28;
 				const tic_t SCROLLSPEED = TICRATE/5; // Number of tics for name being scrolled by 1 letter
 				size_t nameoffset = 0;
 				size_t namelength = strlen(soundtestdefs[t]->source);
