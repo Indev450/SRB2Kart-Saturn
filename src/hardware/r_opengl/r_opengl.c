@@ -1600,6 +1600,21 @@ EXPORT UINT32 HWRAPI(AddLightTable) (UINT8 *lighttable)
 		ltcachetail = cache_entry;
 	}
 	ltcachetail->next = NULL;
+	
+	GLenum internalFormat;
+	if (gl_version[0] == '1' || gl_version[0] == '2')
+	{
+		// if the OpenGL version is below 3.0, then the GL_R8 format may not be available.
+		// so use GL_LUMINANCE8 instead to get a single component 8-bit format
+		// (it is possible to have access to shaders even in some OpenGL 1.x systems,
+		// so palette rendering can still possibly be achieved there)
+		internalFormat = GL_LUMINANCE8;
+	}
+	else
+	{
+		internalFormat = GL_R8;
+	}
+	
 	pglGenTextures(1, &ltcachetail->id);
 	if (!ltcachetail->id){
 		GL_MSG_Error("HWR Lighttable cache entry id is zero");
@@ -1609,7 +1624,7 @@ EXPORT UINT32 HWRAPI(AddLightTable) (UINT8 *lighttable)
 	pglBindTexture(GL_TEXTURE_2D, ltcachetail->id);
 	pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	pglTexImage2D(GL_TEXTURE_2D, 0, GL_R8, 256, 32, 0, GL_RED, GL_UNSIGNED_BYTE, lighttable);
+	pglTexImage2D(GL_TEXTURE_2D, 0, internalFormat, 256, 32, 0, GL_RED, GL_UNSIGNED_BYTE, lighttable);
 
 	// restore previously bound texture
 	if (!gl_batching)
