@@ -1152,7 +1152,10 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 
 	for (INT32 i = 0; i < sector->numlights; i++)
 	{
-		if (endtop < endrealbot && top < realbot)
+#ifdef ESLOPE
+		if (endtop < endrealbot)
+#endif
+		if (top < realbot)
 			return;
 		
 		lightlist_t *list = sector->lightlist;
