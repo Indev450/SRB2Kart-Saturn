@@ -2492,7 +2492,7 @@ menu_t SR_MusicTestDef =
 {
 	NULL,
 	sizeof (SR_MusicTestMenu)/sizeof (menuitem_t),
-	&SR_MainDef,
+	&OP_SoundOptionsDef,
 	SR_MusicTestMenu,
 	M_DrawMusicTest,
 	60, 150,
@@ -8306,7 +8306,6 @@ static void M_DrawMusicTest(void)
 		}
 	}
 }
-
 
 static void M_HandleMusicTest(INT32 choice)
 {
