@@ -224,7 +224,7 @@ static void M_GetAllEmeralds(INT32 choice);
 static void M_DestroyRobots(INT32 choice);
 //static void M_LevelSelectWarp(INT32 choice);
 static void M_Credits(INT32 choice);
-static void M_SoundTest(INT32 choice);
+static void M_MusicTest(INT32 choice);
 static void M_PandorasBox(INT32 choice);
 static void M_EmblemHints(INT32 choice);
 static char *M_GetConditionString(condition_t cond);
@@ -394,7 +394,7 @@ static void M_DrawCenteredMenu(void);
 static void M_DrawAddons(void);
 static void M_DrawSkyRoom(void);
 static void M_DrawChecklist(void);
-static void M_DrawSoundTest(void);
+static void M_DrawMusicTest(void);
 static void M_DrawEmblemHints(void);
 static void M_DrawPauseMenu(void);
 static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade);
@@ -429,6 +429,7 @@ static boolean M_ExitPandorasBox(void);
 static boolean M_QuitMultiPlayerMenu(void);
 static void M_HandleAddons(INT32 choice);
 static void M_HandleSoundTest(INT32 choice);
+static void M_HandleMusicTest(INT32 choice);
 static void M_HandleImageDef(INT32 choice);
 //static void M_HandleLoadSave(INT32 choice);
 static void M_HandleLevelStats(INT32 choice);
@@ -860,9 +861,9 @@ static menuitem_t SR_UnlockChecklistMenu[] =
 	{IT_SUBMENU | IT_STRING,         NULL, "NEXT", &MainDef, 192},
 };
 
-static menuitem_t SR_SoundTestMenu[] =
+static menuitem_t SR_MusicTestMenu[] =
 {
-	{IT_KEYHANDLER | IT_STRING, NULL, "", M_HandleSoundTest, 0},
+	{IT_KEYHANDLER | IT_STRING, NULL, "", M_HandleMusicTest, 0},
 };
 
 
@@ -1575,8 +1576,9 @@ static menuitem_t OP_SoundOptionsMenu[] =
 	{IT_STRING|IT_CVAR,			NULL, "Chat Notifications",		&cv_chatnotifications,	 75},
 	{IT_STRING|IT_CVAR,			NULL, "Character voices",		&cv_kartvoices,			 85},
 	{IT_STRING|IT_CVAR,			NULL, "Powerup Warning",		&cv_kartinvinsfx,		 95},
-
-	{IT_STRING|IT_CALL,	NULL, "Sound Test",				M_SoundTest,		110},
+	
+	{IT_KEYHANDLER|IT_STRING,	NULL, "Sound Test",				M_HandleSoundTest,		105},
+	{IT_STRING|IT_CALL,	NULL, "Music Test",				M_MusicTest,		115},
 
 	{IT_STRING|IT_CVAR,        NULL, "Play Music While Unfocused", &cv_playmusicifunfocused, 125},
 	{IT_STRING|IT_CVAR,        NULL, "Play SFX While Unfocused", &cv_playsoundifunfocused, 135},
@@ -1596,6 +1598,7 @@ static const char* OP_SoundTooltips[] =
 	"Frequency of character voice lines.",
 	"Should the powerup warning be a sound effect or music?",
 	"Testing sounds...",
+	"Testing music...",
 	"Should the games music play while unfocused?",
 	"Should the games sound play while unfocused?",
 	"Options for advanced sound settings.",
@@ -2485,13 +2488,13 @@ menu_t SR_UnlockChecklistDef =
 	NULL
 };
 
-menu_t SR_SoundTestDef =
+menu_t SR_MusicTestDef =
 {
 	NULL,
-	sizeof (SR_SoundTestMenu)/sizeof (menuitem_t),
+	sizeof (SR_MusicTestMenu)/sizeof (menuitem_t),
 	&SR_MainDef,
-	SR_SoundTestMenu,
-	M_DrawSoundTest,
+	SR_MusicTestMenu,
+	M_DrawMusicTest,
 	60, 150,
 	0,
 	NULL,
@@ -8010,7 +8013,7 @@ static void M_DrawSkyRoom(void)
 			lengthstring = 8*(midi_disabled ? 3 : 2);*/
 	}
 
-	/*for (i = 0; i < currentMenu->numitems; ++i)
+	for (i = 0; i < currentMenu->numitems; ++i)
 	{
 		if (currentMenu->menuitems[i].itemaction == M_HandleSoundTest)
 		{
@@ -8029,7 +8032,7 @@ static void M_DrawSkyRoom(void)
 
 		if (i == itemOn)
 			lengthstring = V_StringWidth(cv_soundtest.string, 0);
-	}*/
+	}
 
 	if (lengthstring)
 	{
@@ -8040,13 +8043,55 @@ static void M_DrawSkyRoom(void)
 	}
 }
 
+static void M_HandleSoundTest(INT32 choice)
+{
+	boolean exitmenu = false; // exit to previous menu
+
+	switch (choice)
+	{
+		case KEY_DOWNARROW:
+			M_NextOpt();
+			S_StartSound(NULL, sfx_menu1);
+			break;
+		case KEY_UPARROW:
+			M_PrevOpt();
+			S_StartSound(NULL, sfx_menu1);
+			break;
+		case KEY_BACKSPACE:
+		case KEY_ESCAPE:
+			exitmenu = true;
+			break;
+
+		case KEY_RIGHTARROW:
+			CV_AddValue(&cv_soundtest, 1);
+			break;
+		case KEY_LEFTARROW:
+			CV_AddValue(&cv_soundtest, -1);
+			break;
+		case KEY_ENTER:
+			S_StopSounds();
+			S_StartSound(NULL, cv_soundtest.value);
+			break;
+
+		default:
+			break;
+	}
+	if (exitmenu)
+	{
+		if (currentMenu->prevMenu)
+			M_SetupNextMenu(currentMenu->prevMenu);
+		else
+			M_ClearMenus(true);
+	}
+}
+
 static musicdef_t *curplaying = NULL;
 static INT32 st_sel = 0;
 static tic_t st_time = 0;
 //static patch_t* st_radio[9];
 //static patch_t* st_launchpad[4];
 
-static void M_SoundTest(INT32 choice)
+static void M_MusicTest(INT32 choice)
 {
 	INT32 ul = skyRoomMenuTranslations[choice-1];
 	UINT8 i;
@@ -8085,10 +8130,10 @@ static void M_SoundTest(INT32 choice)
 
 	st_sel = 0;
 
-	M_SetupNextMenu(&SR_SoundTestDef);
+	M_SetupNextMenu(&SR_MusicTestDef);
 }
 
-static void M_DrawSoundTest(void)
+static void M_DrawMusicTest(void)
 {
 	INT32 x, y, i;
 	fixed_t hscale = FRACUNIT/2, vscale = FRACUNIT/2, bounce = 0;
@@ -8097,18 +8142,6 @@ static void M_DrawSoundTest(void)
 	// let's handle the ticker first. ideally we'd tick this somewhere else, BUT...
 	if (curplaying)
 	{
-		if (curplaying == &soundtestsfx)
-		{
-			if (cv_soundtest.value)
-			{
-				frame[1] = (2-st_time);
-				frame[2] = ((cv_soundtest.value - 1) % 9);
-				frame[3] += (((cv_soundtest.value - 1) / 9) % (MAXSKINCOLORS - frame[3]));
-				if (st_time < 2)
-					st_time++;
-			}
-		}
-		else
 		{
 			if (curplaying->stoppingtics && st_time >= curplaying->stoppingtics)
 			{
@@ -8130,7 +8163,7 @@ static void M_DrawSoundTest(void)
 				//work = FixedDiv(work*180, bpm);
 				frame[0] = 8-(work/(20<<FRACBITS));
 				ang = (FixedAngle(work)>>ANGLETOFINESHIFT) & FINEMASK;
-				bounce = (FINESINE(ang) - FRACUNIT/2);
+				//bounce = (FINESINE(ang) - FRACUNIT/2);
 				hscale -= bounce/16;
 				vscale += bounce/16;
 
@@ -8200,8 +8233,8 @@ static void M_DrawSoundTest(void)
 			V_DrawLevelTitle(x, 24, 0, titl);
 		}
 
-		if (curplaying)
-			V_DrawRightAlignedString(BASEVIDWIDTH-16, 46, V_ALLOWLOWERCASE, curplaying->source);
+		//if (curplaying)
+			//V_DrawRightAlignedString(BASEVIDWIDTH-16, 46, V_ALLOWLOWERCASE, curplaying->source);
 	}
 
 	V_DrawFill(165, 60, 140, 112, 159);
@@ -8258,26 +8291,6 @@ static void M_DrawSoundTest(void)
 			{
 				V_DrawString(x, y, (t == st_sel ? V_YELLOWMAP : 0)|V_ALLOWLOWERCASE, "???");
 			}
-			else if (soundtestdefs[t] == &soundtestsfx)
-			{
-				const char *sfxstr = va("SFX %s", cv_soundtest.string);
-				V_DrawString(x, y, (t == st_sel ? V_YELLOWMAP : 0), sfxstr);
-				if (t == st_sel)
-				{
-					V_DrawCharacter(x - 10 - (skullAnimCounter/5), y,
-						'\x1C' | V_YELLOWMAP, false);
-					V_DrawCharacter(x + 2 + V_StringWidth(sfxstr, 0) + (skullAnimCounter/5), y,
-						'\x1D' | V_YELLOWMAP, false);
-				}
-
-				if (curplaying == soundtestdefs[t])
-				{
-					sfxstr = (cv_soundtest.value) ? S_sfx[cv_soundtest.value].name : "N/A";
-					i = V_StringWidth(sfxstr, 0);
-					V_DrawFill(165+140-9-i, y-4, i+8, 16, 150);
-					V_DrawRightAlignedString(165+140-5, y, V_YELLOWMAP, sfxstr);
-				}
-			}
 			else
 			{
 				V_DrawString(x, y, (t == st_sel ? V_YELLOWMAP : 0)|V_ALLOWLOWERCASE, soundtestdefs[t]->source);
@@ -8295,7 +8308,7 @@ static void M_DrawSoundTest(void)
 }
 
 
-static void M_HandleSoundTest(INT32 choice)
+static void M_HandleMusicTest(INT32 choice)
 {
 	boolean exitmenu = false; // exit to previous menu
 
@@ -8348,25 +8361,7 @@ static void M_HandleSoundTest(INT32 choice)
 			break;
 
 		case KEY_RIGHTARROW:
-			if (soundtestdefs[st_sel] == &soundtestsfx && soundtestdefs[st_sel]->allowed)
-			{
-				S_StopSounds();
-				S_StopMusic();
-				curplaying = soundtestdefs[st_sel];
-				st_time = 0;
-				CV_AddValue(&cv_soundtest, 1);
-			}
-			break;
 		case KEY_LEFTARROW:
-			if (soundtestdefs[st_sel] == &soundtestsfx && soundtestdefs[st_sel]->allowed)
-			{
-				S_StopSounds();
-				S_StopMusic();
-				curplaying = soundtestdefs[st_sel];
-				st_time = 0;
-				CV_AddValue(&cv_soundtest, -1);
-			}
-			break;
 		case KEY_ENTER:
 			S_StopSounds();
 			S_StopMusic();
@@ -8374,14 +8369,8 @@ static void M_HandleSoundTest(INT32 choice)
 			if (soundtestdefs[st_sel]->allowed)
 			{
 				curplaying = soundtestdefs[st_sel];
-				if (curplaying == &soundtestsfx)
-				{
-					// S_StopMusic() -- is this necessary?
-					if (cv_soundtest.value)
-						S_StartSound(NULL, cv_soundtest.value);
-				}
-				else
-					S_ChangeMusicInternal(curplaying->name, !curplaying->stoppingtics);
+			
+				S_ChangeMusicInternal(curplaying->name, !curplaying->stoppingtics);
 			}
 			else
 			{
