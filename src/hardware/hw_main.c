@@ -105,6 +105,8 @@ consvar_t cv_fofzfightfix = {"fofzfightfix", "On", CV_SAVE, CV_OnOff, NULL, 0, N
 
 consvar_t cv_splitwallfix = {"splitwallfix", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_slopepegfix = {"slopepegfix", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; 
+
 static CV_PossibleValue_t grrenderdistance_cons_t[] = {
 	{0, "Max"}, {1, "1024"}, {2, "2048"}, {3, "4096"}, {4, "6144"}, {5, "8192"},
 	{6, "12288"}, {7, "16384"}, {0, NULL}};
@@ -2006,6 +2008,10 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 				popentopslope = min(worldtopslope, worldhighslope);
 				popenbottomslope = max(worldbottomslope, worldlowslope);
+#else
+				popentop = min(front->ceilingheight, back->ceilingheight);
+				popenbottom = max(front->floorheight, back->floorheight);			
+#endif
 			}
 
 #ifdef ESLOPE
@@ -2070,38 +2076,108 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 			l = max(polybottom, lowcut);
 			hS = min(highcutslope, polytopslope);
 			lS = max(polybottomslope, lowcutslope);
-
+						
 			// PEGGING
 			fixed_t texturevpeg, texturevpegslope;
+			
+			grTex = HWR_GetTexture(gr_midtexture);
+			
+			if (cv_slopepegfix.value)
+			{		
+				if (!!(gr_linedef->flags & ML_DONTPEGBOTTOM) ^ !!(gr_linedef->flags & ML_EFFECT3))			
+				{
+					texturevpeg = midtexheight - h + polybottom;
+					texturevpegslope = midtexheight - hS + polybottomslope;
+				}
+				else
+				{
+					texturevpeg = polytop - h;
+					texturevpegslope = polytopslope - hS;
+				}
+				
+				wallVerts[3].t = texturevpeg * grTex->scaleY;
+				wallVerts[0].t = (h - l + texturevpeg) * grTex->scaleY;
+				wallVerts[2].t = texturevpegslope * grTex->scaleY;
+				wallVerts[1].t = (hS - lS + texturevpegslope) * grTex->scaleY;
+				wallVerts[0].s = wallVerts[3].s = cliplow * grTex->scaleX;
+				wallVerts[2].s = wallVerts[1].s = cliphigh * grTex->scaleX;
 
-			if (!!(gr_linedef->flags & ML_DONTPEGBOTTOM) ^ !!(gr_linedef->flags & ML_EFFECT3))
-			{
-				texturevpeg = midtexheight - h + polybottom;
-				texturevpegslope = midtexheight - hS + polybottomslope;
+				// set top/bottom coords
+				// Take the texture peg into account, rather than changing the offsets past
+				// where the polygon might not be.
+				wallVerts[3].y = FIXED_TO_FLOAT(h);
+				wallVerts[0].y = FIXED_TO_FLOAT(l);
+				wallVerts[2].y = FIXED_TO_FLOAT(hS);
+				wallVerts[1].y = FIXED_TO_FLOAT(lS);
 			}
 			else
 			{
-				texturevpeg = polytop - h;
-				texturevpegslope = polytopslope - hS;
-			}
-
-			grTex = HWR_GetTexture(gr_midtexture);
-
-			wallVerts[3].t = texturevpeg * grTex->scaleY;
-			wallVerts[0].t = (h - l + texturevpeg) * grTex->scaleY;
-			wallVerts[2].t = texturevpegslope * grTex->scaleY;
-			wallVerts[1].t = (hS - lS + texturevpegslope) * grTex->scaleY;
-			wallVerts[0].s = wallVerts[3].s = cliplow * grTex->scaleX;
-			wallVerts[2].s = wallVerts[1].s = cliphigh * grTex->scaleX;
-
-			// set top/bottom coords
-			// Take the texture peg into account, rather than changing the offsets past
-			// where the polygon might not be.
-			wallVerts[3].y = FIXED_TO_FLOAT(h);
-			wallVerts[0].y = FIXED_TO_FLOAT(l);
-			wallVerts[2].y = FIXED_TO_FLOAT(hS);
-			wallVerts[1].y = FIXED_TO_FLOAT(lS);
+				// PEGGING
+#ifdef ESLOPE
+				if (!!(gr_linedef->flags & ML_DONTPEGBOTTOM) ^ !!(gr_linedef->flags & ML_EFFECT3))
+#else
+				if (gr_linedef->flags & ML_DONTPEGBOTTOM)
 #endif
+					texturevpeg = textureheight[gr_sidedef->midtexture]*repeats - h + polybottom;
+				else
+					texturevpeg = polytop - h;
+
+				wallVerts[3].t = wallVerts[2].t = texturevpeg * grTex->scaleY;
+				wallVerts[0].t = wallVerts[1].t = (h - l + texturevpeg) * grTex->scaleY;
+				wallVerts[0].s = wallVerts[3].s = cliplow * grTex->scaleX;
+				wallVerts[2].s = wallVerts[1].s = cliphigh * grTex->scaleX;
+				
+				// set top/bottom coords
+				// Take the texture peg into account, rather than changing the offsets past
+				// where the polygon might not be.
+				wallVerts[2].y = wallVerts[3].y = FIXED_TO_FLOAT(h);
+				wallVerts[0].y = wallVerts[1].y = FIXED_TO_FLOAT(l);			
+
+#ifdef ESLOPE
+				// Correct to account for slopes
+				{
+					fixed_t midtextureslant;
+
+					if (gr_linedef->flags & ML_EFFECT2)
+						midtextureslant = 0;
+					else if (!!(gr_linedef->flags & ML_DONTPEGBOTTOM) ^ !!(gr_linedef->flags & ML_EFFECT3))
+						midtextureslant = worldlow < worldbottom
+								  ? worldbottomslope-worldbottom
+								  : worldlowslope-worldlow;
+					else
+						midtextureslant = worldtop < worldhigh
+								  ? worldtopslope-worldtop
+								  : worldhighslope-worldhigh;
+
+					polytop += midtextureslant;
+					polybottom += midtextureslant;
+
+					highcut += worldtop < worldhigh
+							 ? worldtopslope-worldtop
+							 : worldhighslope-worldhigh;
+					lowcut += worldlow < worldbottom
+							? worldbottomslope-worldbottom
+							: worldlowslope-worldlow;
+
+					// Texture stuff
+					h = min(highcut, polytop);
+					l = max(polybottom, lowcut);
+
+					{
+						// PEGGING
+						if (!!(gr_linedef->flags & ML_DONTPEGBOTTOM) ^ !!(gr_linedef->flags & ML_EFFECT3))
+							texturevpeg = textureheight[gr_sidedef->midtexture]*repeats - h + polybottom;
+						else
+							texturevpeg = polytop - h;
+						wallVerts[2].t = texturevpeg * grTex->scaleY;
+						wallVerts[1].t = (h - l + texturevpeg) * grTex->scaleY;
+					}
+
+					wallVerts[2].y = FIXED_TO_FLOAT(h);
+					wallVerts[1].y = FIXED_TO_FLOAT(l);
+				}
+#endif
+			}
 
 			// set alpha for transparent walls (new boom and legacy linedef types)
 			FBITFIELD blendmode;
@@ -6450,6 +6526,7 @@ void HWR_AddCommands(void)
 	CV_RegisterVar(&cv_grfofcut);
 	CV_RegisterVar(&cv_fofzfightfix);
 	CV_RegisterVar(&cv_splitwallfix);
+	CV_RegisterVar(&cv_slopepegfix);
 	
 	CV_RegisterVar(&cv_grscreentextures);
 	
