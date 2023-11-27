@@ -1222,7 +1222,7 @@ EXPORT void HWRAPI(LoadCustomShader) (int number, char *shader, size_t size, boo
 		return;
 	
 	if (number < 1 || number > MAXSHADERS)
-		I_Error("LoadCustomShader(): cannot load shader %d (max %d)", number, MAXSHADERS);
+		GL_MSG_Error("LoadCustomShader(): cannot load shader %d (max %d)", number, MAXSHADERS);
 
 	if (fragment)
 	{
@@ -1375,7 +1375,7 @@ void InitPalette(int flashnum, boolean skiplut)
 		pglTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		pglTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		if (!pglTexImage3D)
-			I_Error("pglTexImage3D is NULL!");
+			GL_MSG_Error("pglTexImage3D is NULL!");
 		pglTexImage3D(GL_TEXTURE_3D, 0, internalFormat, LUT_SIZE, LUT_SIZE, LUT_SIZE, 0, GL_RED, GL_UNSIGNED_BYTE, pal_lookup_tex);
 		free(pal_lookup_tex);
 	}
@@ -1597,7 +1597,7 @@ EXPORT UINT32 HWRAPI(AddLightTable) (UINT8 *lighttable)
 	ltcachetail->next = NULL;
 	pglGenTextures(1, &ltcachetail->id);
 	if (!ltcachetail->id)
-		I_Error("hwr lighttable cache entry id is zero");
+		GL_MSG_Error("hwr lighttable cache entry id is zero");
 	pglBindTexture(GL_TEXTURE_2D, ltcachetail->id);
 	pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
