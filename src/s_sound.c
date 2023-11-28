@@ -1417,6 +1417,8 @@ void S_LoadMusicDefs(UINT16 wadnum)
 					//CONS_Printf("S_LoadMusicDefs: Added song '%s'\n", def->name);
 				}
 			}
+			
+			strncpy(def->filename, wadfiles[wadnum]->filename, 256);
 
 skip_lump:
 			stoken = strtok(NULL, "\r\n ");

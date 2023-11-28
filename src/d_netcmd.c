@@ -1122,6 +1122,7 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_lastserver);
 	
 	CV_RegisterVar(&cv_showallmaps);
+	CV_RegisterVar(&cv_showmusicfilename);
 
 	// ingame object placing
 	COM_AddCommand("objectplace", Command_ObjectPlace_f);
