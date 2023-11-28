@@ -1441,12 +1441,10 @@ skip_lump:
 			}
 			
 			if (!stricmp(stoken, "usage")) {
-#if 0 // Ignore for now
 				STRBUFCPY(def->usage, value);
 				for (value = def->usage; *value; value++)
 					if (*value == '_') *value = ' '; // turn _ into spaces.
 				//CONS_Printf("S_LoadMusicDefs: Set usage to '%s'\n", def->usage);
-#endif
 			} else if (!stricmp(stoken, "source")) {
 				STRBUFCPY(def->source, value);
 				for (value = def->source; *value; value++)

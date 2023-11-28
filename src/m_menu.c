@@ -8199,6 +8199,7 @@ static void M_DrawMusicTest(void)
 	{
 		static fixed_t st_scroll = -FRACUNIT;
 		const char* titl;
+		
 		x = 16;
 		V_DrawString(x, 10, 0, "NOW PLAYING:");
 		if (curplaying)
@@ -8227,6 +8228,14 @@ static void M_DrawMusicTest(void)
 
 		//if (curplaying)
 			//V_DrawRightAlignedString(BASEVIDWIDTH-16, 46, V_ALLOWLOWERCASE, curplaying->source);
+		
+		if (curplaying)
+		{
+			if (!curplaying->usage[0])
+				V_DrawString(vid.dupx, vid.height - 10*vid.dupy, V_NOSCALESTART|V_ALLOWLOWERCASE, va("%.6s", curplaying->name));
+			else
+				V_DrawString(vid.dupx, vid.height - 10*vid.dupy, V_NOSCALESTART|V_ALLOWLOWERCASE, va("%.6s - %.255s\n", curplaying->name, curplaying->usage));
+		}
 	}
 
 	V_DrawFill(20, 60, 280, 127, 159);
