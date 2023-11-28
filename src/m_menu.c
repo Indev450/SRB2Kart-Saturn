@@ -8195,7 +8195,7 @@ static void M_DrawMusicTest(void)
 
 	y = (BASEVIDWIDTH-(vid.width/vid.dupx))/2;
 
-	V_DrawFill(y-1, 20, vid.width/vid.dupx+1, 24, 159);
+	V_DrawFill(y-1, 20, vid.width/vid.dupx+1, 24, 239);
 	{
 		static fixed_t st_scroll = -FRACUNIT;
 		const char* titl;
@@ -8238,10 +8238,10 @@ static void M_DrawMusicTest(void)
 		}
 	}
 
-	V_DrawFill(20, 60, 280, 127, 159);
+	V_DrawFill(20, 60, 280, 128, 239);
 
 	{
-		INT32 t, b, q, m = 112;
+		INT32 t, b, q, m = 128;
 
 		if (numsoundtestdefs <= 8)
 		{
@@ -8279,7 +8279,7 @@ static void M_DrawMusicTest(void)
 			V_DrawString(20+280+4, 60+4 - (skullAnimCounter/5), V_YELLOWMAP, "\x1A");
 
 		if (b != numsoundtestdefs - 1)
-			V_DrawString(20+280+4, 60+112-12 + (skullAnimCounter/5), V_YELLOWMAP, "\x1B");
+			V_DrawString(20+280+4, 60+128-12 + (skullAnimCounter/5), V_YELLOWMAP, "\x1B");
 
 		x = 24;
 		y = 64;
@@ -8289,7 +8289,7 @@ static void M_DrawMusicTest(void)
 		while (t <= b)
 		{
 			if (t == st_sel)
-				V_DrawFill(20, y-4, 280-1, 16, 155);
+				V_DrawFill(20, y-4, 280-1, 16, 237);
 
 			{
 				const size_t MAXLENGTH = 34;
@@ -8363,7 +8363,7 @@ static void M_DrawMusicTest(void)
 				V_DrawString(x, y, (t == st_sel ? V_YELLOWMAP : 0)|V_ALLOWLOWERCASE|V_MONOSPACE, buf);
 				if (curplaying == soundtestdefs[t])
 				{
-					V_DrawFill(20+280-9, y-4, 8, 16, 150);
+					V_DrawFill(20+280-9, y-4, 8, 16, 230);
 					//V_DrawCharacter(165+140-8, y, '\x19' | V_YELLOWMAP, false);
 					//V_DrawFixedPatch((165+140-9)<<FRACBITS, (y<<FRACBITS)-(bounce*4), FRACUNIT, 0, hu_font['\x19'-HU_FONTSTART], V_GetStringColormap(V_YELLOWMAP));
 				}
