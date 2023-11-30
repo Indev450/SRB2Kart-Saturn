@@ -3293,9 +3293,9 @@ boolean HWR_CheckBBox(fixed_t *bspcoord)
 void HWR_AddPolyObjectSegs(void)
 {
 	size_t i, j;
-	seg_t *gr_fakeline = Z_Calloc(sizeof(seg_t), PU_STATIC, NULL);
-	polyvertex_t *pv1 = Z_Calloc(sizeof(polyvertex_t), PU_STATIC, NULL);
-	polyvertex_t *pv2 = Z_Calloc(sizeof(polyvertex_t), PU_STATIC, NULL);
+	seg_t gr_fakeline;
+	polyvertex_t pv1;
+	polyvertex_t pv2;
 
 	// Sort through all the polyobjects
 	for (i = 0; i < numpolys; ++i)
@@ -3304,25 +3304,20 @@ void HWR_AddPolyObjectSegs(void)
 		for (j = 0; j < po_ptrs[i]->segCount; ++j)
 		{
 			// Copy the info of a polyobject's seg, then convert it to OpenGL floating point
-			M_Memcpy(gr_fakeline, po_ptrs[i]->segs[j], sizeof(seg_t));
+			M_Memcpy(&gr_fakeline, po_ptrs[i]->segs[j], sizeof(seg_t));
 
 			// Now convert the line to float and add it to be rendered
-			pv1->x = FIXED_TO_FLOAT(gr_fakeline->v1->x);
-			pv1->y = FIXED_TO_FLOAT(gr_fakeline->v1->y);
-			pv2->x = FIXED_TO_FLOAT(gr_fakeline->v2->x);
-			pv2->y = FIXED_TO_FLOAT(gr_fakeline->v2->y);
+			pv1.x = FIXED_TO_FLOAT(gr_fakeline.v1->x);
+			pv1.y = FIXED_TO_FLOAT(gr_fakeline.v1->y);
+			pv2.x = FIXED_TO_FLOAT(gr_fakeline.v2->x);
+			pv2.y = FIXED_TO_FLOAT(gr_fakeline.v2->y);
 
-			gr_fakeline->pv1 = pv1;
-			gr_fakeline->pv2 = pv2;
+			gr_fakeline.pv1 = &pv1;
+			gr_fakeline.pv2 = &pv2;
 
-			HWR_AddLine(gr_fakeline);
+			HWR_AddLine(&gr_fakeline);
 		}
 	}
-
-	// Free temporary data no longer needed
-	Z_Free(pv2);
-	Z_Free(pv1);
-	Z_Free(gr_fakeline);
 }
 
 #ifdef POLYOBJECTS_PLANES
