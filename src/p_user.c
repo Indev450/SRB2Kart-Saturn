@@ -1281,13 +1281,17 @@ void P_RestoreMusic(player_t *player)
 		if (wantedmus == 2 && cv_growmusic.value)
 		{
 			S_ChangeMusicInternal("kgrow", true);
-			S_SetRestoreMusicFadeInCvar(&cv_growmusicfade);
+			
+			if (cv_birdmusic.value)
+				S_SetRestoreMusicFadeInCvar(&cv_growmusicfade);
 		}
 		// Item - Invincibility
 		else if (wantedmus == 1 && cv_supermusic.value)
 		{
 			S_ChangeMusicInternal("kinvnc", true);
-			S_SetRestoreMusicFadeInCvar(&cv_invincmusicfade);
+			
+			if (cv_birdmusic.value)
+				S_SetRestoreMusicFadeInCvar(&cv_invincmusicfade);
 		}
 		else
 		{
@@ -1297,14 +1301,20 @@ void P_RestoreMusic(player_t *player)
 			if (G_RaceGametype() && player->laps >= (UINT8)(cv_numlaps.value - 1))
 				S_SpeedMusic(1.2f);
 #endif
-			if (mapmusresume && cv_resume.value)
-				position = mapmusresume;
-			else
-				position = mapmusposition;
+			if (cv_birdmusic.value)
+			{
+				if (mapmusresume && cv_resume.value)
+					position = mapmusresume;
+				else
+					position = mapmusposition;
 
-			S_ChangeMusicEx(mapmusname, mapmusflags, true, position, 0,
-					S_GetRestoreMusicFadeIn());
-			S_ClearRestoreMusicFadeInCvar();
+				S_ChangeMusicEx(mapmusname, mapmusflags, true, position, 0,
+						S_GetRestoreMusicFadeIn());
+				S_ClearRestoreMusicFadeInCvar();
+			}
+			else
+				S_ChangeMusicEx(mapmusname, mapmusflags, true, mapmusposition, 0, 0);
+			
 			mapmusresume = 0;
 		}
 	}

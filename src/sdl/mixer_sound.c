@@ -624,7 +624,7 @@ static void count_music_bytes(int chan, void *stream, int len, void *udata)
 		return;
 	music_bytes += len;
 
-	if (gamestate == GS_LEVEL)
+	if ((gamestate == GS_LEVEL) && (cv_birdmusic.value))
 		Countstutter(len);
 }
 

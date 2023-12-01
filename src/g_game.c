@@ -519,14 +519,6 @@ consvar_t cv_sloperolldist = {"sloperolldist", "Infinite", CV_SAVE, sloperolldis
 
 consvar_t cv_cechotoggle = {"show_cecho", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_invincmusicfade = {"invincmusicfade", "300", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_growmusicfade = {"growmusicfade", "500", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_respawnfademusicout = {"respawnfademusicout", "1000", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_respawnfademusicback = {"respawnfademusicback", "500", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_resetspecialmusic = {"resetspecialmusic", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_resume = {"resume", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_fading = {"fading", "Off", CV_SAVE|CV_CALL, CV_OnOff, Bird_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
-
 #if MAXPLAYERS > 16
 #error "please update player_name table using the new value for MAXPLAYERS"
 #endif
@@ -2832,7 +2824,7 @@ void G_PlayerReborn(INT32 player)
 
 	/* I'm putting this here because lol */
 
-	fade = ( cv_fading.value && P_IsLocalPlayer(p) );
+	fade = (cv_fading.value && cv_birdmusic.value && P_IsLocalPlayer(p));
 
 	if (fade)
 	{
