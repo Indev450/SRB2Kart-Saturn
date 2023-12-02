@@ -3293,9 +3293,9 @@ boolean HWR_CheckBBox(fixed_t *bspcoord)
 void HWR_AddPolyObjectSegs(void)
 {
 	size_t i, j;
-	seg_t *gr_fakeline = Z_Calloc(sizeof(seg_t), PU_STATIC, NULL);
-	polyvertex_t *pv1 = Z_Calloc(sizeof(polyvertex_t), PU_STATIC, NULL);
-	polyvertex_t *pv2 = Z_Calloc(sizeof(polyvertex_t), PU_STATIC, NULL);
+	seg_t gr_fakeline;
+	polyvertex_t pv1;
+	polyvertex_t pv2;
 
 	// Sort through all the polyobjects
 	for (i = 0; i < numpolys; ++i)
@@ -3304,25 +3304,20 @@ void HWR_AddPolyObjectSegs(void)
 		for (j = 0; j < po_ptrs[i]->segCount; ++j)
 		{
 			// Copy the info of a polyobject's seg, then convert it to OpenGL floating point
-			M_Memcpy(gr_fakeline, po_ptrs[i]->segs[j], sizeof(seg_t));
+			M_Memcpy(&gr_fakeline, po_ptrs[i]->segs[j], sizeof(seg_t));
 
 			// Now convert the line to float and add it to be rendered
-			pv1->x = FIXED_TO_FLOAT(gr_fakeline->v1->x);
-			pv1->y = FIXED_TO_FLOAT(gr_fakeline->v1->y);
-			pv2->x = FIXED_TO_FLOAT(gr_fakeline->v2->x);
-			pv2->y = FIXED_TO_FLOAT(gr_fakeline->v2->y);
+			pv1.x = FIXED_TO_FLOAT(gr_fakeline.v1->x);
+			pv1.y = FIXED_TO_FLOAT(gr_fakeline.v1->y);
+			pv2.x = FIXED_TO_FLOAT(gr_fakeline.v2->x);
+			pv2.y = FIXED_TO_FLOAT(gr_fakeline.v2->y);
 
-			gr_fakeline->pv1 = pv1;
-			gr_fakeline->pv2 = pv2;
+			gr_fakeline.pv1 = &pv1;
+			gr_fakeline.pv2 = &pv2;
 
-			HWR_AddLine(gr_fakeline);
+			HWR_AddLine(&gr_fakeline);
 		}
 	}
-
-	// Free temporary data no longer needed
-	Z_Free(pv2);
-	Z_Free(pv1);
-	Z_Free(gr_fakeline);
 }
 
 #ifdef POLYOBJECTS_PLANES
@@ -5558,7 +5553,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 	rot = thing->frame&FF_FRAMEMASK;
 
 	//Fab : 02-08-98: 'skin' override spritedef currently used for skin
-	if (thing->skin && thing->sprite == SPR_PLAY)
+	if ((thing->skin || thing->localskin) && thing->sprite == SPR_PLAY)
 	{
 		sprdef = &((skin_t *)( (thing->localskin) ? thing->localskin : thing->skin ))->spritedef;
 #ifdef ROTSPRITE
@@ -6256,8 +6251,15 @@ void RecursivePortalRendering(portal_t *rootportal, const float fpov, player_t *
 		if (!rootportal && portallist.base && !skybox)// if portals have been drawn in the main view, then render skywalls differently
 			gr_collect_skywalls = true;
 
+		// HAYA: Save the old portal state, and turn portals off while normally rendering the BSP tree.
+		// This fixes specific effects not working, such as horizon lines.
+		int oldportal_state = gr_portal;
+
+		gr_portal = GRPORTAL_OFF; // TURN IT OFF
 		// Recursively "render" the BSP tree.
 		HWR_RenderBSPNode((INT32)numnodes-1);
+		// woo we back
+		gr_portal = oldportal_state;
 
 		PS_STOP_TIMING(ps_bsptime);
 

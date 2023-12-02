@@ -1106,17 +1106,6 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_ps_thinkframe_page);
 	CV_RegisterVar(&cv_ps_samplesize);
 	CV_RegisterVar(&cv_ps_descriptor);
-
-	CV_RegisterVar(&cv_invincmusicfade);
-	CV_RegisterVar(&cv_growmusicfade);
-
-	CV_RegisterVar(&cv_respawnfademusicout);
-	CV_RegisterVar(&cv_respawnfademusicback);
-
-	CV_RegisterVar(&cv_resetspecialmusic);
-
-	CV_RegisterVar(&cv_resume);
-	CV_RegisterVar(&cv_fading);
 	
 	//Value used to store last server player has joined
 	CV_RegisterVar(&cv_lastserver);

@@ -245,7 +245,7 @@ void ST_doPaletteStuff(void)
 		palette = 0;
 
 #ifdef HWRENDER
-	if ((rendermode == render_opengl && !cv_grpaletteshader.value) || (rendermode == render_opengl && HWR_ShouldUsePaletteRendering() && !cv_grflashpal.value))
+	if ((rendermode == render_opengl && !HWR_ShouldUsePaletteRendering()) || (rendermode == render_opengl && HWR_ShouldUsePaletteRendering() && !cv_grflashpal.value))
 		palette = 0; // No flashpals here in OpenGL
 #endif
 

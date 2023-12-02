@@ -1325,7 +1325,7 @@ INT32 R_CreateColormap(char *p1, char *p2, char *p3)
 	extra_colormaps[mapnum].fadeend = (UINT16)fadeend;
 	extra_colormaps[mapnum].fog = fog;
 	
-	if (rendermode == render_soft || rendermode == render_opengl)
+	if (rendermode != render_none)
 	{	
 		double r, g, b, cbrightness;
 		int p;

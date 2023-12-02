@@ -53,8 +53,22 @@ extern consvar_t cv_amigatype;
 #endif
 #endif
 
+//bird music stuff
 extern consvar_t cv_music_resync_threshold;
 extern consvar_t cv_music_resync_powerups_only;
+
+extern consvar_t cv_invincmusicfade;
+extern consvar_t cv_growmusicfade;
+
+extern consvar_t cv_respawnfademusicout;
+extern consvar_t cv_respawnfademusicback;
+
+extern consvar_t cv_resetspecialmusic;
+
+extern consvar_t cv_resume;
+extern consvar_t cv_fading;
+extern consvar_t cv_birdmusic;
+
 
 extern CV_PossibleValue_t soundvolume_cons_t[];
 
