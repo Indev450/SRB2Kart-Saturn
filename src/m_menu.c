@@ -8165,6 +8165,7 @@ static void M_MusicTest(INT32 choice)
 static void M_DrawMusicTest(void)
 {
 	INT32 x, y, i;
+	char* title;
 	//fixed_t hscale = FRACUNIT/2, vscale = FRACUNIT/2, bounce = 0;
 	//UINT8 frame[4] = {0, 0, -1, SKINCOLOR_RUBY};
 
@@ -8235,7 +8236,12 @@ static void M_DrawMusicTest(void)
 		V_DrawString(x, 10, 0, "NOW PLAYING:");
 		if (curplaying)
 		{
-			titl = va("%s - ", curplaying->source);
+			if (curplaying->title[0] && curplaying->alttitle[0])
+				titl = va("%s - %s - ", curplaying->title, curplaying->alttitle);
+			else if (curplaying->title[0])
+				titl = va("%s - ", curplaying->title);
+			else
+				titl = va("%s - ", curplaying->source);
 		}
 		else
 			titl = "NONE - ";
@@ -8257,15 +8263,16 @@ static void M_DrawMusicTest(void)
 			V_DrawLevelTitle(x, 24, 0, titl);
 		}
 
-		//if (curplaying)
-			//V_DrawRightAlignedString(BASEVIDWIDTH-16, 46, V_ALLOWLOWERCASE, curplaying->source);
+		if (curplaying && curplaying->authors[0])
+			V_DrawRightAlignedThinString(BASEVIDWIDTH-16, 46, V_ALLOWLOWERCASE, curplaying->authors);
 		
 		if (curplaying)
 		{
 			if (!curplaying->usage[0])
 				V_DrawString(vid.dupx, vid.height - 10*vid.dupy, V_NOSCALESTART|V_ALLOWLOWERCASE, va("%.6s", curplaying->name));
-			else
-				V_DrawString(vid.dupx, vid.height - 10*vid.dupy, V_NOSCALESTART|V_ALLOWLOWERCASE, va("%.6s - %.255s\n", curplaying->name, curplaying->usage));
+			else {
+				V_DrawSmallString(vid.dupx, vid.height - 5*vid.dupy, V_NOSCALESTART|V_ALLOWLOWERCASE, va("%.6s - %.255s\n", curplaying->name, curplaying->usage));
+			}
 			
 			if (cv_showmusicfilename.value)
 				V_DrawSmallString(0, 0, V_SNAPTOTOP|V_SNAPTOLEFT|V_ALLOWLOWERCASE, curplaying->filename);
@@ -8330,6 +8337,8 @@ static void M_DrawMusicTest(void)
 				const tic_t SCROLLSPEED = TICRATE/5; // Number of tics for name being scrolled by 1 letter
 				size_t nameoffset = 0;
 				size_t namelength = strlen(soundtestdefs[t]->source);
+				if (soundtestdefs[t]->title[0])
+					namelength = strlen(soundtestdefs[t]->title);
 
 				char buf[MAXLENGTH+1];
 
@@ -8391,7 +8400,10 @@ static void M_DrawMusicTest(void)
 					}
 				}
 
-				strncpy(buf, soundtestdefs[t]->source + nameoffset, MAXLENGTH);
+				if (soundtestdefs[t]->title[0])
+					strncpy(buf, soundtestdefs[t]->title + nameoffset, MAXLENGTH);
+				else
+					strncpy(buf, soundtestdefs[t]->source + nameoffset, MAXLENGTH);
 				buf[MAXLENGTH] = 0;
 
 				V_DrawString(x, y, (t == st_sel ? V_YELLOWMAP : 0)|V_ALLOWLOWERCASE|V_MONOSPACE, buf);

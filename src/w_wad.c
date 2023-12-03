@@ -2138,8 +2138,9 @@ int W_VerifyNMUSlumps(const char *filename)
 		{"K_", 2}, // Kart graphic changes
 		{"MUSICDEF", 8}, // Kart song definitions
 		{"SP_", 3}, // Speedometer changes do not count either.
-		{"SC_", 3}, // No idea what the SC_SMSTC thing does, ask nepdisk idk
+		{"SC_", 3}, // Colored speedometer stuff too.
 		{"SPRTINFO", 8}, // Sprite info
+		{"MUSCINFO", 8}, // Music test definitions
 
 #ifdef HWRENDER
 		{"SHADERS", 7},
