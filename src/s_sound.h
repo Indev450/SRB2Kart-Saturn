@@ -159,10 +159,24 @@ boolean S_SpeedMusic(float speed);
 typedef struct musicdef_s
 {
 	char name[7];
-	//char usage[256];
+	char usage[256];
 	char source[256];
+	char filename[256];
+	// for the music test stuff
+	// generally if these are present on vanilla the game would throw up a warning
+	// a sacrifice i suppose
+	char title[256];
+	char alttitle[256];
+	char authors[256];
+	boolean use_info;
 	struct musicdef_s *next;
 } musicdef_t;
+
+extern musicdef_t soundtestsfx;
+extern musicdef_t *musicdefstart;
+extern musicdef_t **soundtestdefs;
+extern INT32 numsoundtestdefs;
+extern UINT8 soundtestpage;
 
 extern struct cursongcredit
 {
@@ -172,13 +186,16 @@ extern struct cursongcredit
 	UINT8 trans;
 } cursongcredit;
 
-extern musicdef_t *musicdefstart;
 
 void S_LoadMusicDefs(UINT16 wadnum);
 void S_InitMusicDefs(void);
+void S_LoadMTDefs(UINT16 wadnum);
+void S_InitMTDefs(void);
 musicdef_t *S_FindMusicCredit(const char *musname);
 void S_ShowSpecifiedMusicCredit(const char *musname);
 void S_ShowMusicCredit(void);
+
+boolean S_PrepareSoundTest(void);
 
 //
 // Music Seeking

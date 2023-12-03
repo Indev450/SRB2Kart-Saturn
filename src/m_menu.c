@@ -224,6 +224,7 @@ static void M_GetAllEmeralds(INT32 choice);
 static void M_DestroyRobots(INT32 choice);
 //static void M_LevelSelectWarp(INT32 choice);
 static void M_Credits(INT32 choice);
+static void M_MusicTest(INT32 choice);
 static void M_PandorasBox(INT32 choice);
 static void M_EmblemHints(INT32 choice);
 static char *M_GetConditionString(condition_t cond);
@@ -393,6 +394,7 @@ static void M_DrawCenteredMenu(void);
 static void M_DrawAddons(void);
 static void M_DrawSkyRoom(void);
 static void M_DrawChecklist(void);
+static void M_DrawMusicTest(void);
 static void M_DrawEmblemHints(void);
 static void M_DrawPauseMenu(void);
 static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade);
@@ -427,6 +429,7 @@ static boolean M_ExitPandorasBox(void);
 static boolean M_QuitMultiPlayerMenu(void);
 static void M_HandleAddons(INT32 choice);
 static void M_HandleSoundTest(INT32 choice);
+static void M_HandleMusicTest(INT32 choice);
 static void M_HandleImageDef(INT32 choice);
 //static void M_HandleLoadSave(INT32 choice);
 static void M_HandleLevelStats(INT32 choice);
@@ -467,7 +470,9 @@ CV_PossibleValue_t gametype_cons_t[NUMGAMETYPES+1];
 
 consvar_t cv_newgametype = {"newgametype", "Race", CV_HIDEN|CV_CALL, gametype_cons_t, Newgametype_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_showallmaps = {"showallmaps", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL };
+consvar_t cv_showallmaps = {"showallmaps", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_showmusicfilename = {"showmusicfilename", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static CV_PossibleValue_t serversort_cons_t[] = {
 	{0,"Ping"},
@@ -857,6 +862,12 @@ static menuitem_t SR_UnlockChecklistMenu[] =
 {
 	{IT_SUBMENU | IT_STRING,         NULL, "NEXT", &MainDef, 192},
 };
+
+static menuitem_t SR_MusicTestMenu[] =
+{
+	{IT_KEYHANDLER | IT_STRING, NULL, "", M_HandleMusicTest, 0},
+};
+
 
 static menuitem_t SR_EmblemHintMenu[] =
 {
@@ -1567,8 +1578,9 @@ static menuitem_t OP_SoundOptionsMenu[] =
 	{IT_STRING|IT_CVAR,			NULL, "Chat Notifications",		&cv_chatnotifications,	 75},
 	{IT_STRING|IT_CVAR,			NULL, "Character voices",		&cv_kartvoices,			 85},
 	{IT_STRING|IT_CVAR,			NULL, "Powerup Warning",		&cv_kartinvinsfx,		 95},
-
-	{IT_KEYHANDLER|IT_STRING,	NULL, "Sound Test",				M_HandleSoundTest,		110},
+	
+	{IT_KEYHANDLER|IT_STRING,	NULL, "Sound Test",				M_HandleSoundTest,		105},
+	{IT_STRING|IT_CALL,	NULL, "Music Test",				M_MusicTest,		115},
 
 	{IT_STRING|IT_CVAR,        NULL, "Play Music While Unfocused", &cv_playmusicifunfocused, 125},
 	{IT_STRING|IT_CVAR,        NULL, "Play SFX While Unfocused", &cv_playsoundifunfocused, 135},
@@ -1588,6 +1600,7 @@ static const char* OP_SoundTooltips[] =
 	"Frequency of character voice lines.",
 	"Should the powerup warning be a sound effect or music?",
 	"Testing sounds...",
+	"Testing music...",
 	"Should the games music play while unfocused?",
 	"Should the games sound play while unfocused?",
 	"Options for advanced sound settings.",
@@ -2492,6 +2505,20 @@ menu_t SR_UnlockChecklistDef =
 	NULL,
 	NULL
 };
+
+menu_t SR_MusicTestDef =
+{
+	NULL,
+	sizeof (SR_MusicTestMenu)/sizeof (menuitem_t),
+	&OP_SoundOptionsDef,
+	SR_MusicTestMenu,
+	M_DrawMusicTest,
+	60, 150,
+	0,
+	NULL,
+	NULL
+};
+
 menu_t SR_EmblemHintDef =
 {
 	NULL,
@@ -8082,6 +8109,397 @@ static void M_HandleSoundTest(INT32 choice)
 	}
 	if (exitmenu)
 	{
+		if (currentMenu->prevMenu)
+			M_SetupNextMenu(currentMenu->prevMenu);
+		else
+			M_ClearMenus(true);
+	}
+}
+
+static musicdef_t *curplaying = NULL;
+static INT32 st_sel = 0;
+static tic_t st_time = 0;
+static size_t st_namescroll = 0;
+static size_t st_namescrollstate = 0;
+//static patch_t* st_radio[9];
+//static patch_t* st_launchpad[4];
+
+static void M_MusicTest(INT32 choice)
+{
+	INT32 ul = skyRoomMenuTranslations[choice-1];
+	UINT8 i;
+	char buf[8];
+
+	if (!S_PrepareSoundTest())
+	{
+		M_StartMessage(M_GetText("No selectable tracks found.\n"),NULL,MM_NOTHING);
+		return;
+	}
+
+	/*STRBUFCPY(buf, "M_RADIOn");
+	for (i = 0; i < 9; i++)
+	{
+		if (st_radio[i])
+			W_UnlockCachedPatch(st_radio[i]);
+		buf[7] = (char)('0'+i);
+		st_radio[i] = W_CachePatchName(buf, PU_STATIC);
+	}
+
+	STRBUFCPY(buf, "M_LPADn");
+	for (i = 0; i < 4; i++)
+	{
+		if (st_launchpad[i])
+			W_UnlockCachedPatch(st_launchpad[i]);
+		buf[6] = (char)('0'+i);
+		st_launchpad[i] = W_CachePatchName(buf, PU_STATIC);
+	}*/
+
+	curplaying = NULL;
+	st_time = 0;
+
+	st_sel = 0;
+
+	M_SetupNextMenu(&SR_MusicTestDef);
+}
+
+static void M_DrawMusicTest(void)
+{
+	INT32 x, y, i;
+	char* title;
+	//fixed_t hscale = FRACUNIT/2, vscale = FRACUNIT/2, bounce = 0;
+	//UINT8 frame[4] = {0, 0, -1, SKINCOLOR_RUBY};
+
+	// let's handle the ticker first. ideally we'd tick this somewhere else, BUT...
+	if (curplaying)
+	{
+		{
+			fixed_t work;
+			//angle_t ang;
+			//bpm = FixedDiv((60*TICRATE)<<FRACBITS, bpm); -- bake this in on load
+
+			work = st_time;
+			//work %= bpm;
+
+			if (st_time >= (FRACUNIT << (FRACBITS - 2))) // prevent overflow jump - takes about 15 minutes of loop on the same song to reach
+					st_time = work;
+
+			//work = FixedDiv(work*180, bpm);
+			//frame[0] = 8-(work/(20<<FRACBITS));
+			//ang = (FixedAngle(work)>>ANGLETOFINESHIFT) & FINEMASK;
+			//bounce = (FINESINE(ang) - FRACUNIT/2);
+			//hscale -= bounce/16;
+			//vscale += bounce/16;
+
+			st_time += renderdeltatics;
+		}
+	}
+
+	x = 90<<FRACBITS;
+	y = (BASEVIDHEIGHT-32)<<FRACBITS;
+
+	/*V_DrawStretchyFixedPatch(x, y,
+		hscale, vscale,
+		0, st_radio[frame[0]], NULL);
+
+	V_DrawFixedPatch(x, y, FRACUNIT/2, 0, st_launchpad[0], NULL);
+
+	for (i = 0; i < 9; i++)
+	{
+		if (i == frame[2])
+		{
+			UINT8 *colmap = R_GetTranslationColormap(TC_RAINBOW, frame[3], GTC_CACHE);
+			V_DrawFixedPatch(x, y + (frame[1]<<FRACBITS), FRACUNIT/2, 0, st_launchpad[frame[1]+1], colmap);
+		}
+		else
+			V_DrawFixedPatch(x, y, FRACUNIT/2, 0, st_launchpad[1], NULL);
+
+		if ((i % 3) == 2)
+		{
+			x -= ((2*28) + 25)<<(FRACBITS-1);
+			y -= ((2*7) - 11)<<(FRACBITS-1);
+		}
+		else
+		{
+			x += 28<<(FRACBITS-1);
+			y += 7<<(FRACBITS-1);
+		}
+	}*/
+
+	y = (BASEVIDWIDTH-(vid.width/vid.dupx))/2;
+
+	V_DrawFill(y-1, 20, vid.width/vid.dupx+1, 24, 239);
+	{
+		static fixed_t st_scroll = -FRACUNIT;
+		const char* titl;
+		
+		x = 16;
+		V_DrawString(x, 10, 0, "NOW PLAYING:");
+		if (curplaying)
+		{
+			if (curplaying->title[0] && curplaying->alttitle[0])
+				titl = va("%s - %s - ", curplaying->title, curplaying->alttitle);
+			else if (curplaying->title[0])
+				titl = va("%s - ", curplaying->title);
+			else
+				titl = va("%s - ", curplaying->source);
+		}
+		else
+			titl = "NONE - ";
+
+		i = V_LevelNameWidth(titl);
+
+		st_scroll += renderdeltatics;
+
+		while (st_scroll >= (i << FRACBITS))
+			st_scroll -= i << FRACBITS;
+
+		x -= st_scroll >> FRACBITS;
+
+		while (x < BASEVIDWIDTH-y)
+			x += i;
+		while (x > y)
+		{
+			x -= i;
+			V_DrawLevelTitle(x, 24, 0, titl);
+		}
+
+		if (curplaying && curplaying->authors[0])
+			V_DrawRightAlignedThinString(BASEVIDWIDTH-16, 46, V_ALLOWLOWERCASE, curplaying->authors);
+		
+		if (curplaying)
+		{
+			if (!curplaying->usage[0])
+				V_DrawString(vid.dupx, vid.height - 10*vid.dupy, V_NOSCALESTART|V_ALLOWLOWERCASE, va("%.6s", curplaying->name));
+			else {
+				V_DrawSmallString(vid.dupx, vid.height - 5*vid.dupy, V_NOSCALESTART|V_ALLOWLOWERCASE, va("%.6s - %.255s\n", curplaying->name, curplaying->usage));
+			}
+			
+			if (cv_showmusicfilename.value)
+				V_DrawSmallString(0, 0, V_SNAPTOTOP|V_SNAPTOLEFT|V_ALLOWLOWERCASE, curplaying->filename);
+		}
+	}
+
+	V_DrawFill(20, 60, 280, 128, 239);
+
+	{
+		INT32 t, b, q, m = 128;
+
+		if (numsoundtestdefs <= 8)
+		{
+			t = 0;
+			b = numsoundtestdefs - 1;
+			i = 0;
+		}
+		else
+		{
+			q = m;
+			m = (5*m)/numsoundtestdefs;
+			if (st_sel < 3)
+			{
+				t = 0;
+				b = 7;
+				i = 0;
+			}
+			else if (st_sel >= numsoundtestdefs-4)
+			{
+				t = numsoundtestdefs - 8;
+				b = numsoundtestdefs - 1;
+				i = q-m;
+			}
+			else
+			{
+				t = st_sel - 3;
+				b = st_sel + 4;
+				i = (t * (q-m))/(numsoundtestdefs - 8);
+			}
+		}
+
+		V_DrawFill(20+280-1, 60 + i, 1, m, 0);
+
+		if (t != 0)
+			V_DrawString(20+280+4, 60+4 - (skullAnimCounter/5), V_YELLOWMAP, "\x1A");
+
+		if (b != numsoundtestdefs - 1)
+			V_DrawString(20+280+4, 60+128-12 + (skullAnimCounter/5), V_YELLOWMAP, "\x1B");
+
+		x = 24;
+		y = 64;
+
+		if (renderisnewtic) ++st_namescroll;
+
+		while (t <= b)
+		{
+			if (t == st_sel)
+				V_DrawFill(20, y-4, 280-1, 16, 237);
+
+			{
+				const size_t MAXLENGTH = 34;
+				const tic_t SCROLLSPEED = TICRATE/5; // Number of tics for name being scrolled by 1 letter
+				size_t nameoffset = 0;
+				size_t namelength = strlen(soundtestdefs[t]->source);
+				if (soundtestdefs[t]->title[0])
+					namelength = strlen(soundtestdefs[t]->title);
+
+				char buf[MAXLENGTH+1];
+
+				if (t == st_sel && namelength > MAXLENGTH)
+				{
+					switch (st_namescrollstate)
+					{
+						case 0:
+						{
+							// Scroll forward
+							nameoffset = (st_namescroll/SCROLLSPEED) % (namelength - MAXLENGTH + 1);
+
+							if (nameoffset == namelength - MAXLENGTH)
+							{
+								st_namescroll = 0;
+								st_namescrollstate++;
+							}
+						}
+						break;
+
+						case 1:
+						{
+							nameoffset = namelength - MAXLENGTH;
+
+							// Show name end for 1 second, then start scrolling back
+							if (st_namescroll == TICRATE)
+							{
+								st_namescroll = 0;
+								st_namescrollstate++;
+							}
+						}
+						break;
+
+						case 2:
+						{
+							// Scroll back
+							nameoffset = (namelength - MAXLENGTH - 1) - (st_namescroll/SCROLLSPEED) % (namelength - MAXLENGTH);
+
+							if (nameoffset == 0)
+							{
+								st_namescroll = 0;
+								st_namescrollstate++;
+							}
+						}
+						break;
+
+						case 3:
+						{
+							nameoffset = 0;
+
+							// Show name beginning for 1 second, then start scrolling forward again
+							if (st_namescroll == TICRATE)
+							{
+								st_namescroll = 0;
+								st_namescrollstate = 0;
+							}
+						}
+						break;
+					}
+				}
+
+				if (soundtestdefs[t]->title[0])
+					strncpy(buf, soundtestdefs[t]->title + nameoffset, MAXLENGTH);
+				else
+					strncpy(buf, soundtestdefs[t]->source + nameoffset, MAXLENGTH);
+				buf[MAXLENGTH] = 0;
+
+				V_DrawString(x, y, (t == st_sel ? V_YELLOWMAP : 0)|V_ALLOWLOWERCASE|V_MONOSPACE, buf);
+				if (curplaying == soundtestdefs[t])
+				{
+					V_DrawFill(20+280-9, y-4, 8, 16, 230);
+					//V_DrawCharacter(165+140-8, y, '\x19' | V_YELLOWMAP, false);
+					//V_DrawFixedPatch((165+140-9)<<FRACBITS, (y<<FRACBITS)-(bounce*4), FRACUNIT, 0, hu_font['\x19'-HU_FONTSTART], V_GetStringColormap(V_YELLOWMAP));
+				}
+			}
+			t++;
+			y += 16;
+		}
+	}
+}
+
+static void M_HandleMusicTest(INT32 choice)
+{
+	boolean exitmenu = false; // exit to previous menu
+
+	switch (choice)
+	{
+		case KEY_DOWNARROW:
+			if (st_sel++ >= numsoundtestdefs-1)
+				st_sel = 0;
+			{
+				S_StartSound(NULL, sfx_menu1);
+			}
+			st_namescroll = 0;
+			st_namescrollstate = 0;
+			break;
+		case KEY_UPARROW:
+			if (!st_sel--)
+				st_sel = numsoundtestdefs-1;
+			{
+				S_StartSound(NULL, sfx_menu1);
+			}
+			st_namescroll = 0;
+			st_namescrollstate = 0;
+			break;
+		case KEY_PGDN:
+			if (st_sel < numsoundtestdefs-1)
+			{
+				st_sel += 3;
+				if (st_sel >= numsoundtestdefs-1)
+					st_sel = numsoundtestdefs-1;
+				S_StartSound(NULL, sfx_menu1);
+			}
+			st_namescroll = 0;
+			st_namescrollstate = 0;
+			break;
+		case KEY_PGUP:
+			if (st_sel)
+			{
+				st_sel -= 3;
+				if (st_sel < 0)
+					st_sel = 0;
+				S_StartSound(NULL, sfx_menu1);
+			}
+			st_namescroll = 0;
+			st_namescrollstate = 0;
+			break;
+		case KEY_BACKSPACE:
+			if (curplaying)
+			{
+				S_StopSounds();
+				S_StopMusic();
+				curplaying = NULL;
+				st_time = 0;
+				S_StartSound(NULL, sfx_skid);
+			}
+			break;
+		case KEY_ESCAPE:
+			exitmenu = true;
+			st_namescroll = 0;
+			st_namescrollstate = 0;
+			break;
+
+		case KEY_RIGHTARROW:
+		case KEY_LEFTARROW:
+		case KEY_ENTER:
+			S_StopSounds();
+			S_StopMusic();
+			st_time = 0;
+			curplaying = soundtestdefs[st_sel];		
+			S_ChangeMusicInternal(curplaying->name, true);
+			break;
+
+		default:
+			break;
+	}
+	if (exitmenu)
+	{
+		Z_Free(soundtestdefs);
+		soundtestdefs = NULL;
+
 		if (currentMenu->prevMenu)
 			M_SetupNextMenu(currentMenu->prevMenu);
 		else

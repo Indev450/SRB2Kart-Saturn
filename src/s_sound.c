@@ -27,6 +27,7 @@
 #include "r_sky.h" // skyflatnum
 #include "p_local.h" // camera info
 #include "m_misc.h" // for tunes command
+#include "m_cond.h" // for conditionsets
 #include "m_menu.h" // bird music stuff
 
 #ifdef HAVE_BLUA
@@ -1322,6 +1323,19 @@ static UINT32    queue_fadeinms;
 musicdef_t *musicdefstart = NULL; // First music definition
 struct cursongcredit cursongcredit; // Currently displayed song credit info
 
+musicdef_t soundtestsfx = {
+	"_STSFX", // prevents exactly one valid track name from being used on the sound test
+	"Sound Effects",
+	"",
+	"SEGA, Sonic Team Jr, other sources",
+	1, // show on soundtest page 1
+	0, // with no conditions
+	0,
+	0,
+	false,
+	NULL
+};
+
 //
 // search for music definition in wad
 //
@@ -1428,6 +1442,8 @@ void S_LoadMusicDefs(UINT16 wadnum)
 					//CONS_Printf("S_LoadMusicDefs: Added song '%s'\n", def->name);
 				}
 			}
+			
+			strncpy(def->filename, wadfiles[wadnum]->filename, 256);
 
 skip_lump:
 			stoken = strtok(NULL, "\r\n ");
@@ -1450,17 +1466,31 @@ skip_lump:
 				free(buf2);
 				return;
 			}
-
+			
 			if (!stricmp(stoken, "usage")) {
-#if 0 // Ignore for now
 				STRBUFCPY(def->usage, value);
 				for (value = def->usage; *value; value++)
 					if (*value == '_') *value = ' '; // turn _ into spaces.
 				//CONS_Printf("S_LoadMusicDefs: Set usage to '%s'\n", def->usage);
-#endif
 			} else if (!stricmp(stoken, "source")) {
 				STRBUFCPY(def->source, value);
 				for (value = def->source; *value; value++)
+					if (*value == '_') *value = ' '; // turn _ into spaces.
+				//CONS_Printf("S_LoadMusicDefs: Set source to '%s'\n", def->source);
+			} else if (!stricmp(stoken, "title")) {
+				def->use_info = true;
+				STRBUFCPY(def->title, value);
+				for (value = def->title; *value; value++)
+					if (*value == '_') *value = ' '; // turn _ into spaces.
+				//CONS_Printf("S_LoadMusicDefs: Set source to '%s'\n", def->source);
+			} else if (!stricmp(stoken, "alttitle")) {
+				STRBUFCPY(def->alttitle, value);
+				for (value = def->alttitle; *value; value++)
+					if (*value == '_') *value = ' '; // turn _ into spaces.
+				//CONS_Printf("S_LoadMusicDefs: Set source to '%s'\n", def->source);
+			} else if (!stricmp(stoken, "authors")) {
+				STRBUFCPY(def->authors, value);
+				for (value = def->authors; *value; value++)
 					if (*value == '_') *value = ' '; // turn _ into spaces.
 				//CONS_Printf("S_LoadMusicDefs: Set source to '%s'\n", def->source);
 			} else {
@@ -1489,7 +1519,168 @@ void S_InitMusicDefs(void)
 		S_LoadMusicDefs(i);
 }
 
+//
+// search for music definition in wad
+//
+static UINT16 W_CheckForMusicInfoInPwad(UINT16 wadid)
+{
+	UINT16 i;
+	lumpinfo_t *lump_p;
 
+	lump_p = wadfiles[wadid]->lumpinfo;
+	for (i = 0; i < wadfiles[wadid]->numlumps; i++, lump_p++)
+		if (memcmp(lump_p->name, "MUSCINFO", 8) == 0)
+			return i;
+
+	return INT16_MAX; // not found
+}
+
+void S_LoadMTDefs(UINT16 wadnum)
+{
+	UINT16 lump;
+	char *buf;
+	char *buf2;
+	char *stoken;
+	char *value;
+	size_t size;
+	musicdef_t *def, *prev;
+	UINT16 line = 1; // for better error msgs
+
+	lump = W_CheckForMusicInfoInPwad(wadnum);
+	if (lump == INT16_MAX)
+		return;
+
+	buf = W_CacheLumpNumPwad(wadnum, lump, PU_CACHE);
+	size = W_LumpLengthPwad(wadnum, lump);
+
+	// for strtok
+	buf2 = malloc(size+1);
+	if (!buf2)
+		I_Error("S_LoadMTDefs: No more free memory\n");
+	M_Memcpy(buf2,buf,size);
+	buf2[size] = '\0';
+
+	def = prev = NULL;
+
+	stoken = strtok (buf2, "\r\n ");
+	// Find music def
+	while (stoken)
+	{
+		/*if ((stoken[0] == '/' && stoken[1] == '/')
+			|| (stoken[0] == '#')) // skip comments
+		{
+			stoken = strtok(NULL, "\r\n"); // skip end of line
+			if (def)
+				stoken = strtok(NULL, "\r\n= ");
+			else
+				stoken = strtok(NULL, "\r\n ");
+			line++;
+		}
+		else*/ if (!stricmp(stoken, "lump"))
+		{
+			value = strtok(NULL, "\r\n ");
+
+			if (!value)
+			{
+				CONS_Alert(CONS_WARNING, "MUSICDEF: Lump '%s' is missing name. (file %s, line %d)\n", stoken, wadfiles[wadnum]->filename, line);
+				stoken = strtok(NULL, "\r\n"); // skip end of line
+				goto skip_lump;
+			}
+
+			// No existing musicdefs
+			if (!musicdefstart)
+			{
+				musicdefstart = Z_Calloc(sizeof (musicdef_t), PU_STATIC, NULL);
+				STRBUFCPY(musicdefstart->name, value);
+				strlwr(musicdefstart->name);
+				def = musicdefstart;
+				//CONS_Printf("S_LoadMusicDefs: Initialized musicdef w/ song '%s'\n", def->name);
+			}
+			else
+			{
+				def = musicdefstart;
+
+				// Search if this is a replacement
+				//CONS_Printf("S_LoadMusicDefs: Searching for song replacement...\n");
+				while (def)
+				{
+					if (!stricmp(def->name, value))
+					{
+						//CONS_Printf("S_LoadMusicDefs: Found song replacement '%s'\n", def->name);
+						break;
+					}
+
+					prev = def;
+					def = def->next;
+				}
+
+				// Nothing found, abort.
+				if (!def)
+				{
+					CONS_Alert(CONS_WARNING, "MUSCINFO: Music def for '%s' does not exist. (file %s, line %d)\n", stoken, wadfiles[wadnum]->filename, line);
+					free(buf2);
+					return;
+				}
+			}
+
+skip_lump:
+			stoken = strtok(NULL, "\r\n ");
+			line++;
+		}
+		else
+		{
+			value = strtok(NULL, "\r\n= ");
+
+			if (!value)
+			{
+				CONS_Alert(CONS_WARNING, "MUSCINFO: Field '%s' is missing value. (file %s, line %d)\n", stoken, wadfiles[wadnum]->filename, line);
+				stoken = strtok(NULL, "\r\n"); // skip end of line
+				goto skip_field;
+			}
+
+			if (!def)
+			{
+				CONS_Alert(CONS_ERROR, "MUSCINFO: No music definition before field '%s'. (file %s, line %d)\n", stoken, wadfiles[wadnum]->filename, line);
+				free(buf2);
+				return;
+			}
+			
+			if (!stricmp(stoken, "title")) {
+				def->use_info = true;
+				STRBUFCPY(def->title, value);
+				for (value = def->title; *value; value++)
+					if (*value == '_') *value = ' '; // turn _ into spaces.
+				//CONS_Printf("S_LoadMusicDefs: Set source to '%s'\n", def->source);
+			} else if (!stricmp(stoken, "alttitle")) {
+				STRBUFCPY(def->alttitle, value);
+				for (value = def->alttitle; *value; value++)
+					if (*value == '_') *value = ' '; // turn _ into spaces.
+				//CONS_Printf("S_LoadMusicDefs: Set source to '%s'\n", def->source);
+			} else if (!stricmp(stoken, "authors")) {
+				STRBUFCPY(def->authors, value);
+				for (value = def->authors; *value; value++)
+					if (*value == '_') *value = ' '; // turn _ into spaces.
+				//CONS_Printf("S_LoadMusicDefs: Set source to '%s'\n", def->source);
+			} else {
+				CONS_Alert(CONS_WARNING, "MUSCINFO: Invalid field '%s'. (file %s, line %d)\n", stoken, wadfiles[wadnum]->filename, line);
+			}
+
+skip_field:
+			stoken = strtok(NULL, "\r\n= ");
+			line++;
+		}
+	}
+
+	free(buf2);
+	return;
+}
+
+void S_InitMTDefs(void)
+{
+	UINT16 i;
+	for (i = 0; i < numwadfiles; i++)
+		S_LoadMTDefs(i);
+}
 //
 // S_FindMusicCredit
 //
@@ -1549,6 +1740,42 @@ void S_ShowMusicCredit(void)
 {
 	S_ShowSpecifiedMusicCredit(music_name);
 }
+
+musicdef_t **soundtestdefs = NULL;
+INT32 numsoundtestdefs = 0;
+
+//
+// S_PrepareSoundTest
+//
+// Prepare sound test. What am I, your butler?
+//
+boolean S_PrepareSoundTest(void)
+{
+	musicdef_t *def;
+	INT32 pos = numsoundtestdefs = 0;
+
+	for (def = musicdefstart; def; def = def->next)
+	{
+		numsoundtestdefs++;
+	}
+
+	if (!numsoundtestdefs)
+		return false;
+
+	if (soundtestdefs)
+		Z_Free(soundtestdefs);
+
+	if (!(soundtestdefs = Z_Malloc(numsoundtestdefs*sizeof(musicdef_t *), PU_STATIC, NULL)))
+		I_Error("S_PrepareSoundTest(): could not allocate soundtestdefs.");
+
+	for (def = musicdefstart; def /*&& i < numsoundtestdefs*/; def = def->next)
+	{
+		soundtestdefs[pos++] = def;
+	}
+
+	return true;
+}
+
 
 /// ------------------------
 /// Music Status
