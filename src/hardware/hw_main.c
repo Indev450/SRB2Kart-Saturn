@@ -6251,15 +6251,8 @@ void RecursivePortalRendering(portal_t *rootportal, const float fpov, player_t *
 		if (!rootportal && portallist.base && !skybox)// if portals have been drawn in the main view, then render skywalls differently
 			gr_collect_skywalls = true;
 
-		// HAYA: Save the old portal state, and turn portals off while normally rendering the BSP tree.
-		// This fixes specific effects not working, such as horizon lines.
-		int oldportal_state = gr_portal;
-
-		gr_portal = GRPORTAL_OFF; // TURN IT OFF
 		// Recursively "render" the BSP tree.
 		HWR_RenderBSPNode((INT32)numnodes-1);
-		// woo we back
-		gr_portal = oldportal_state;
 
 		PS_STOP_TIMING(ps_bsptime);
 
