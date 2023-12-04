@@ -193,7 +193,7 @@ INT32 M_MapNumber(char first, char second)
 // ==========================================================================
 
 // some libcs has no access function, make our own
-#if defined (_WIN32_WCE) || defined (_WII)
+#if 0
 int access(const char *path, int amode)
 {
 	int accesshandle = -1;

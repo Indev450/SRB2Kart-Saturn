@@ -36,11 +36,7 @@
 #define ZWAD
 
 #ifdef ZWAD
-#ifdef _WIN32_WCE
-#define AVOID_ERRNO
-#else
 #include <errno.h>
-#endif
 #include "lzf.h"
 #endif
 
@@ -145,7 +141,7 @@ static char filenamebuf[MAX_WADPATH];
 
 // This #if is copied from filesrch.c, so not sure if it is 100% suitable for
 // this
-#if defined (_WIN32) && !defined (_XBOX)
+#if defined (_WIN32)
 //#define WIN32_LEAN_AND_MEAN
 #define RPC_NO_WINDOWS_H
 #include <windows.h>
