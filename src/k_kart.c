@@ -8246,10 +8246,9 @@ static void K_DrawKartPositionNum(INT32 num)
 		scale *= 2;
 		overtake = true;	// this is used for splitscreen stuff in conjunction with flipdraw.
 	}
-	if (splitscreen)
-		scale /= 2;
-	if (cv_showinput.value && !splitscreen) // anuther one.
-		scale /= 2;
+	
+	if (splitscreen || (cv_showinput.value && !splitscreen))
+    scale /= 2;
 
 	W = FixedMul(W<<FRACBITS, scale)>>FRACBITS;
 
@@ -9164,12 +9163,12 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags, pat
 	{
 		UINT8 *colormap = R_GetTranslationColormap((mo->colorized) ? TC_RAINBOW : skin, mo->color, GTC_CACHE);
 		
-		if (cv_minihead.value == 1)
+		if (cv_minihead.value)
 		{
 			colormap = R_GetLocalTranslationColormap(mo->skin, mo->localskin, mo->color, GTC_CACHE, skinlocal);
 			V_DrawFixedPatch(amxpos + (2 * FRACUNIT), amypos + (2 * FRACUNIT), FRACUNIT/2, flags, ( (skinlocal) ? localfacemmapprefix : facemmapprefix )[skin], colormap);
 		}
-		else if (cv_minihead.value == 0)
+		else
 		{
 			colormap = R_GetLocalTranslationColormap(mo->skin, mo->localskin, mo->color, GTC_CACHE, skinlocal);
 			V_DrawFixedPatch(amxpos, amypos, FRACUNIT, flags, ( (skinlocal) ? localfacemmapprefix : facemmapprefix )[skin], colormap);
@@ -9184,9 +9183,9 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags, pat
 			&& ((G_RaceGametype() && mo->player->kartstuff[k_position] == spbplace)
 			|| (G_BattleGametype() && K_IsPlayerWanted(mo->player))))
 		{
-			if (cv_minihead.value == 1)
+			if (cv_minihead.value)
 			V_DrawFixedPatch(amxpos, amypos, FRACUNIT / 2, flags, kp_wantedreticle, NULL);
-			else if (cv_minihead.value == 0)
+			else
 			V_DrawFixedPatch(amxpos - (4<<FRACBITS), amypos - (4<<FRACBITS), FRACUNIT, flags, kp_wantedreticle, NULL);
 		}
 	}
