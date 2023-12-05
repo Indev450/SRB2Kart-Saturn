@@ -5693,24 +5693,23 @@ boolean M_CanShowLevelInList(INT32 mapnum, INT32 gt)
 				//return false;
 			
 			// Should the map be hidden? <-- well imma wanna toggle it, its just annoying being unable to select hell maps in mapselect
-			if (cv_showallmaps.value)
+			if ((mapheaderinfo[mapnum]->menuflags & LF2_HIDEINMENU && mapnum+1 != gamemap) && (gt == GT_RACE && (mapheaderinfo[mapnum]->typeoflevel & TOL_RACE))) // map hell
 			{
-				if ((mapheaderinfo[mapnum]->menuflags & LF2_HIDEINMENU && mapnum+1 != gamemap) && (gt == GT_RACE && (mapheaderinfo[mapnum]->typeoflevel & TOL_RACE)))
-					return true; // map hell
-			}
-			else if ((mapheaderinfo[mapnum]->menuflags & LF2_HIDEINMENU && mapnum+1 != gamemap) && (gt == GT_RACE && (mapheaderinfo[mapnum]->typeoflevel & TOL_RACE)))
+				if (cv_showallmaps.value)
+					return true;
+				else
 					return false;
+			}
 
 			// same goes here, just show every map if i want to
-			if (cv_showallmaps.value)
+			if (M_MapLocked(mapnum+1)) // not unlocked
 			{
-				if (M_MapLocked(mapnum+1))
-					return true; // not unlocked
-			} 
-			else if (M_MapLocked(mapnum+1))
-					return false; // not unlocked
-			
-			
+				if (cv_showallmaps.value)
+					return true;
+				else
+					return false;
+			}
+
 			/*if (gt == GT_COOP && (mapheaderinfo[mapnum]->typeoflevel & TOL_COOP))
 				return true;
 
