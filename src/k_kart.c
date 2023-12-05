@@ -8248,7 +8248,7 @@ static void K_DrawKartPositionNum(INT32 num)
 	}
 	
 	if (splitscreen || (cv_showinput.value && !splitscreen))
-    scale /= 2;
+		scale /= 2;
 
 	W = FixedMul(W<<FRACBITS, scale)>>FRACBITS;
 
@@ -8759,7 +8759,7 @@ static void K_drawKartSpeedometer(void)
 					V_DrawKartString(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, va("%4d %%", convSpeed));
 		}
 	}
-	else if (cv_newspeedometer.value == 2 && snw_speedo )  { // why bother if we dont?
+	else if (cv_newspeedometer.value == 2 && snw_speedo)  { // why bother if we dont?
 		if (!K_UseColorHud())
 			V_DrawScaledPatch(SPDM_X + 1, SPDM_Y + 4, (V_HUDTRANS|splitflags), (skp_smallsticker));
 		else
