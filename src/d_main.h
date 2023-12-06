@@ -33,13 +33,11 @@ extern boolean clr_hud; // colour hud check
 extern boolean big_lap; // bigger lap counter
 extern boolean big_lap_color; //bigger lap counter but colour
 extern boolean kartzspeedo; //kartZ speedo
-extern boolean statdp; //kartZ speedo
-
+extern boolean statdp; //stat display for extended player setup
 
 extern boolean autoloading;
 extern boolean autoloaded;
 extern boolean postautoloaded;
-extern boolean statdp; //kartZ speedo
 
 extern char *autoloadwadfilespost[MAX_WADFILES];
 
