@@ -165,6 +165,11 @@ boolean HWR_ShouldUsePaletteRendering(void)
 	return (cv_grpaletteshader.value && cv_grshaders.value);
 }
 
+boolean HWR_PalRenderFlashpal(void)
+{
+	return (cv_grpaletteshader.value && cv_grshaders.value && cv_grflashpal.value);
+}
+
 static void CV_filtermode_ONChange(void)
 {
 	if (rendermode == render_opengl)
@@ -6675,7 +6680,7 @@ void HWR_DoPostProcessor(player_t *player)
 
 	// Armageddon Blast Flash!
 	// Could this even be considered postprocessor?
-	if ((player->flashcount) && !(HWR_ShouldUsePaletteRendering() && cv_grflashpal.value))
+	if ((player->flashcount) && (!HWR_PalRenderFlashpal()))
 	{
 		FOutVector      v[4];
 		FSurfaceInfo Surf;
