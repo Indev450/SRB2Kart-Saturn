@@ -1905,15 +1905,7 @@ static void CL_LoadReceivedSavegame(void)
 	if (!postautoloaded) 
 	{
 		CONS_Printf("D_AutoloadFile(): Loading autoloaded addons...\n");
-		if (W_InitMultipleFiles(autoloadwadfilespost, true))
-		{
-			if (modifiedgame)
-			{
-				autoloaded = true;
-				modifiedgame = false;
-			}
-		}
-		else // snarky remark
+		if (W_AddAutoloadedLocalFiles(autoloadwadfilespost) == 0)
 			CONS_Printf("D_AutoloadFile(): Are you sure you put in valid files or what?\n");
 		D_CleanFile(autoloadwadfilespost);
 		postautoloaded = true;

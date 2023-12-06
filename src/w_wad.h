@@ -145,6 +145,9 @@ void W_UnloadWadFile(UINT16 num);
 // so that it stops with a message if a file was not found, but not if all is okay.
 INT32 W_InitMultipleFiles(char **filenames, boolean addons);
 
+// Used for autoload. Uses P_AddWadFileLocal instead of W_InitFiles.
+INT32 W_AddAutoloadedLocalFiles(char **filenames);
+
 #define W_FileHasFolders(wadfile) ((wadfile)->type == RET_PK3)
 
 const char *W_CheckNameForNumPwad(UINT16 wad, UINT16 lump);

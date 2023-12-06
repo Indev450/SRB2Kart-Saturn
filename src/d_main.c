@@ -1445,16 +1445,7 @@ void D_SRB2Main(void)
 	}
 
 	CONS_Printf("D_AutoloadFile(): Loading autoloaded addons...\n");
-	if (W_InitMultipleFiles(autoloadwadfiles, true))
-	{
-		if (modifiedgame)
-		{
-			autoloaded = true;
-			modifiedgame = false;
-		}
-		autoloading = false;
-	}
-	else // snarky remark
+	if (W_AddAutoloadedLocalFiles(autoloadwadfiles) == 0)
 		CONS_Printf("D_AutoloadFile(): Are you sure you put in valid files or what?\n");
 	D_CleanFile(autoloadwadfiles);
 
