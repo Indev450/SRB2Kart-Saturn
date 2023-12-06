@@ -66,6 +66,7 @@
 #include "p_setup.h" // P_ScanThings
 #endif
 #include "m_misc.h" // M_MapNumber
+#include "p_setup.h" // P_PartialAddFile mayb
 
 #ifdef HWRENDER
 #include "r_data.h"
@@ -936,6 +937,28 @@ INT32 W_InitMultipleFiles(char **filenames, boolean addons)
 	if (!numwadfiles)
 		I_Error("W_InitMultipleFiles: no files found");
 
+	return overallrc;
+}
+
+INT32 W_AddAutoloadedLocalFiles(char **filenames)
+{
+	UINT16 rc = 1;
+	INT32 overallrc = 1;
+
+	// will be realloced as lumps are added
+	for (; *filenames; filenames++)
+	{
+		rc = P_PartialAddWadFile(*filenames, true);
+		if (rc == UINT16_MAX)
+			CONS_Printf(M_GetText("Errors occurred while loading %s; not added.\n"), *filenames);
+		overallrc &= (rc != UINT16_MAX) ? 1 : 0;
+	}
+
+	if (!numwadfiles)
+		I_Error("W_AddAutoloadedLocalFiles: no files found");
+
+	if (P_PartialAddGetStage() >= 0)
+		P_MultiSetupWadFiles(true);
 	return overallrc;
 }
 

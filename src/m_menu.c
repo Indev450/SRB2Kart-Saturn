@@ -6462,6 +6462,64 @@ static void M_AddonExec(INT32 ch)
 	COM_BufAddText(va("exec \"%s%s\"", menupath, dirmenu[dir_on[menudepthleft]]+DIR_STRING));
 }
 
+// static void M_AddonAutoLoad(INT32 ch);
+// exports mods to a file, which helps in autoloading that file
+//
+static void M_AddonAutoLoad(INT32 ch)
+{
+	// initalize these variables //
+	const char *path;
+	FILE *autoloadconfigfile;
+
+	// check our controls //
+	if (ch != 'y' && ch != KEY_ENTER && ch != KEY_RSHIFT)
+	{
+		S_StartSound(NULL, sfx_s26d);
+		return;
+	}
+	
+	// first, find the file //
+	path = va("%s"PATHSEP"%s", srb2home, AUTOLOADCONFIGFILENAME);
+	autoloadconfigfile = fopen(path, "a");
+
+	// then, execute the addon and store it in our autoload.cfg //
+	switch (dirmenu[dir_on[menudepthleft]][DIR_TYPE])
+	{
+	    case EXT_FOLDER:
+	        M_StartMessage(va("%c%s\x80\nAutoloading folders is not supported as of yet. \n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), dirmenu[dir_on[menudepthleft]]+DIR_STRING),NULL,MM_NOTHING);
+            break;
+		case EXT_TXT:
+		case EXT_CFG:
+			CONS_Printf("Added the \x82%s\x80 console script to the autoload configuration list.\n", dirmenu[dir_on[menudepthleft]]+DIR_STRING);
+			fprintf(autoloadconfigfile, "%s\n", dirmenu[dir_on[menudepthleft]]+DIR_STRING);
+				
+			S_StartSound(NULL, sfx_s221);
+			break;
+		case EXT_LUA:
+		case EXT_SOC:
+		case EXT_WAD:
+		case EXT_KART:
+		case EXT_PK3:
+		default:
+			if (!(refreshdirmenu & REFRESHDIR_MAX))
+			{
+				CONS_Printf("Added \x82%s\x80 to the autoload configuration list.\n", dirmenu[dir_on[menudepthleft]]+DIR_STRING);
+				fprintf(autoloadconfigfile, "%s\n", dirmenu[dir_on[menudepthleft]]+DIR_STRING);
+				
+				S_StartSound(NULL, sfx_s221);
+			}
+			else
+			{
+				M_StartMessage(va("%c%s\x80\nToo many add-ons are loaded! \nYou need to restart the game to autoload more add-ons and folders. \nYou can still autoload console scripts though. \n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), dirmenu[dir_on[menudepthleft]]+DIR_STRING),NULL,MM_NOTHING);
+				S_StartSound(NULL, sfx_s26d);
+			}
+			break;
+	}
+	
+	// lastly, do some last things and close the autoload config file //
+	fclose(autoloadconfigfile);
+}
+
 #define len menusearch[0]
 static boolean M_ChangeStringAddons(INT32 choice)
 {
@@ -6643,6 +6701,53 @@ static void M_HandleAddons(INT32 choice)
 							break;
 						default:
 							S_StartSound(NULL, sfx_s26d);
+					}
+				}
+				if (refresh)
+					refreshdirmenu |= REFRESHDIR_NORMAL;
+			}
+			break;
+
+		case KEY_RSHIFT:
+			{
+				boolean refresh = true;
+				if (!dirmenu[dir_on[menudepthleft]])
+					S_StartSound(NULL, sfx_s26d);
+				else
+				{
+					switch (dirmenu[dir_on[menudepthleft]][DIR_TYPE])
+					{
+						case EXT_FOLDER:
+							M_StartMessage(va("%c%s%s\x80\nAutoloading a folder is not yet suppported. \n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), M_AddonsHeaderPath(), dirmenu[dir_on[menudepthleft]]+DIR_STRING),NULL,MM_NOTHING);
+							S_StartSound(NULL, sfx_s26d);
+							break;
+						case EXT_UP:
+							S_StartSound(NULL, sfx_s224);
+							M_StartMessage(va("%c%s%s\x80\nNice try. \n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), M_AddonsHeaderPath(), dirmenu[dir_on[menudepthleft]]+DIR_STRING),NULL,MM_NOTHING);
+							break;
+						case EXT_TXT:
+						case EXT_CFG:
+							if ((strcmp(dirmenu[dir_on[menudepthleft]]+DIR_STRING, CONFIGFILENAME) == 0)
+								|| (strcmp(dirmenu[dir_on[menudepthleft]]+DIR_STRING, AUTOLOADCONFIGFILENAME) == 0)
+								|| (strcmp(dirmenu[dir_on[menudepthleft]]+DIR_STRING, "kartserv.cfg") == 0)
+								|| (strcmp(dirmenu[dir_on[menudepthleft]]+DIR_STRING, "kartexec.cfg") == 0))
+							{	
+								M_StartMessage(va("%c%s\x80\nYou can't autoload this builds' base console scripts, silly!\n They're already autoloaded on startup! \n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), dirmenu[dir_on[menudepthleft]]+DIR_STRING),NULL,MM_NOTHING);
+								S_StartSound(NULL, sfx_s26d);
+							}
+							else
+								M_StartMessage(va("%c%s\x80\nYou're trying to autoload a console script. \nIgnore my warning anyways? \n\n(Press 'Y' to confirm)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), dirmenu[dir_on[menudepthleft]]+DIR_STRING),M_AddonAutoLoad,MM_YESNO);
+							break;
+						case EXT_LUA:
+						case EXT_SOC:
+						case EXT_WAD:
+						case EXT_KART:
+						case EXT_PK3:
+							M_StartMessage(va("%c%s\x80\nYou are trying to mark an addon to autoload\nat startup. This will skip modifiedgame checks. \n\n(Press 'Y' to confirm)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), dirmenu[dir_on[menudepthleft]]+DIR_STRING),M_AddonAutoLoad,MM_YESNO);
+							break;
+						default:
+							M_StartMessage(va("%c%s\x80\nIt may be dangerous to autoload this file. \nBut you're the boss, and I'm just hand-written code.\n Proceed? \n\n(Press 'Y' to confirm)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), dirmenu[dir_on[menudepthleft]]+DIR_STRING),M_AddonAutoLoad,MM_YESNO);
+							break;
 					}
 				}
 				if (refresh)
@@ -10716,7 +10821,7 @@ static void M_ConnectMenuModChecks(INT32 choice)
 	(void)choice;
 	// okay never mind we want to COMMUNICATE to the player pre-emptively instead of letting them try and then get confused when it doesn't work
 
-	if (modifiedgame)
+	if (modifiedgame || autoloaded)
 	{
 		M_StartMessage(M_GetText("You have addons loaded.\nYou won't be able to join netgames!\n\nTo play online, restart the game\nand don't load any addons.\nSRB2Kart will automatically add\neverything you need when you join.\n\n(Press a key)\n"),M_ConnectMenu,MM_EVENTHANDLER);
 		return;
