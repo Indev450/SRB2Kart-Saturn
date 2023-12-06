@@ -38,6 +38,10 @@ extern boolean statdp; //kartZ speedo
 
 extern boolean autoloading;
 extern boolean autoloaded;
+extern boolean postautoloaded;
+extern boolean statdp; //kartZ speedo
+
+extern char *autoloadwadfilespost[MAX_WADFILES];
 
 // the infinite loop of D_SRB2Loop() called from win_main for windows version
 void D_SRB2Loop(void) FUNCNORETURN;
@@ -53,6 +57,8 @@ void D_SRB2Main(void);
 void D_PostEvent(const event_t *ev);
 
 void D_ProcessEvents(void);
+
+void D_CleanFile(char **filearray);
 
 const char *D_Home(void);
 

@@ -105,8 +105,10 @@ static char *startuppwads[MAX_WADFILES];
 
 // autoloading
 static char *autoloadwadfiles[MAX_WADFILES];
+char *autoloadwadfilespost[MAX_WADFILES];
 boolean autoloading;
 boolean autoloaded;
+boolean postautoloaded;
 
 boolean devparm = false; // started game with -devparm
 
@@ -945,11 +947,26 @@ static void D_AutoloadFile(const char *file, char **filearray)
 		COM_BufAddText(va("exec %s\n", newfile));
 }
 
+static char *strremove(char *str, const char *sub) {
+    char *p, *q, *r;
+    if (*sub && (q = r = strstr(str, sub)) != NULL) {
+        size_t len = strlen(sub);
+        while ((r = strstr(p = r + len, sub)) != NULL) {
+            while (p < r)
+                *q++ = *p++;
+        }
+        while ((*q++ = *p++) != '\0')
+            continue;
+    }
+    return str;
+}
+
 // FIND THEM
 static void D_FindAddonsToAutoload(void)
 {
 	FILE *autoloadconfigfile;
 	const char *autoloadpath;
+	boolean postload;
 
 	INT32 i;
 	char wadsToAutoload[256] = "", renameAutoloadStrings[256] = "";
@@ -964,10 +981,16 @@ static void D_FindAddonsToAutoload(void)
 
 	while (fgets(wadsToAutoload, sizeof wadsToAutoload, autoloadconfigfile) != NULL)
 	{
+		postload = false;
 		// skip if commented or empty
 		if ((wadsToAutoload[1] == '\0' || wadsToAutoload[1] == '\n')
 			|| (wadsToAutoload[0] == '#'))
 			continue;
+		// this marks it so that it loads after loading server addons
+		else if (fastncmp(wadsToAutoload, "postload ", 9)) {
+			strremove(wadsToAutoload, "postload ");
+			postload = true;
+		}
 
 		// Remove Any Empty or Skipped Lines
 		for (i = 0; wadsToAutoload[i] != '\0'; i++)
@@ -977,7 +1000,10 @@ static void D_FindAddonsToAutoload(void)
 		}
 
 		// LOAD IT
-		D_AutoloadFile(wadsToAutoload, autoloadwadfiles);
+		if (!postload)
+			D_AutoloadFile(wadsToAutoload, autoloadwadfiles);
+		else
+			D_AutoloadFile(wadsToAutoload, autoloadwadfilespost);
 
 		// end it here
 		for (i = 0; wadsToAutoload[i] != '\0'; i++)
@@ -988,7 +1014,7 @@ static void D_FindAddonsToAutoload(void)
 	fclose(autoloadconfigfile);
 }
 
-static inline void D_CleanFile(char **filearray)
+void D_CleanFile(char **filearray)
 {
 	size_t pnumwadfiles;
 	for (pnumwadfiles = 0; filearray[pnumwadfiles]; pnumwadfiles++)

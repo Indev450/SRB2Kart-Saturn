@@ -47,6 +47,7 @@
 #include "k_kart.h"
 #include "s_sound.h" // sfx_syfail
 #include "m_perfstats.h"
+#include "d_main.h"
 
 #ifdef CLIENT_LOADINGSCREEN
 // cl loading screen
@@ -1900,6 +1901,23 @@ static void CL_LoadReceivedSavegame(void)
 	demo.playback = false;
 	demo.title = false;
 	automapactive = false;
+
+	if (!postautoloaded) 
+	{
+		CONS_Printf("D_AutoloadFile(): Loading autoloaded addons...\n");
+		if (W_InitMultipleFiles(autoloadwadfilespost, true))
+		{
+			if (modifiedgame)
+			{
+				autoloaded = true;
+				modifiedgame = false;
+			}
+		}
+		else // snarky remark
+			CONS_Printf("D_AutoloadFile(): Are you sure you put in valid files or what?\n");
+		D_CleanFile(autoloadwadfilespost);
+		postautoloaded = true;
+	}
 
 	// load a base level
 	if (P_LoadNetGame())
