@@ -5505,6 +5505,9 @@ void HWR_ProjectSprite(mobj_t *thing)
 	size_t lumpoff;
 	unsigned rot;
 	UINT8 flip;
+	boolean mirrored = thing->mirrored;
+	boolean hflip = (!(thing->frame & FF_HORIZONTALFLIP) != !mirrored);
+	
 	angle_t ang;
 	const boolean papersprite = (thing->frame & FF_PAPERSPRITE);
 	INT32 heightsec, phs;
@@ -5606,6 +5609,8 @@ void HWR_ProjectSprite(mobj_t *thing)
 #endif
 
 	ang = R_PointToAngle (interp.x, interp.y) - interp.angle;
+	if (mirrored)
+		ang = InvAngle(ang);
 
 	if (sprframe->rotate == SRF_SINGLE)
 	{
@@ -5710,6 +5715,8 @@ void HWR_ProjectSprite(mobj_t *thing)
 
 	this_xscale = spritexscale * this_scale;
 	this_yscale = spriteyscale * this_scale;
+	
+	flip = !flip != !hflip;
 
 	if (flip)
 	{

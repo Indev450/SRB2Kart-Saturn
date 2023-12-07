@@ -143,6 +143,7 @@ static const udata_field_t mobj_fields[] = {
     FIELD(mobj_t, cvmem,               udatalib_getter_int32,      udatalib_setter_int32),
     FIELD(mobj_t, standingslope,       udatalib_getter_slope,      mobj_standingslope_noset),
     FIELD(mobj_t, colorized,           udatalib_getter_boolean,    udatalib_setter_boolean),
+	FIELD(mobj_t, mirrored,           udatalib_getter_boolean,    udatalib_setter_boolean),
     FIELD(mobj_t, rollmodel,           udatalib_getter_boolean,    udatalib_setter_boolean),
     { NULL },
 };
