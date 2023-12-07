@@ -5143,7 +5143,12 @@ void HWR_AddTransparentFloor(lumpnum_t lumpnum, extrasubsector_t *xsub, boolean 
 
 	planeinfo->isceiling = isceiling;
 	planeinfo->fixedheight = fixedheight;
-	planeinfo->lightlevel = lightlevel;
+
+	if (HWR_ShouldUsePaletteRendering())
+		planeinfo->lightlevel = (planecolormap && (planecolormap->fog & 1)) ? 255 : lightlevel;
+	else
+		planeinfo->lightlevel = lightlevel;
+	
 	planeinfo->lumpnum = lumpnum;
 	planeinfo->xsub = xsub;
 	planeinfo->alpha = alpha;
@@ -5161,7 +5166,12 @@ void HWR_AddTransparentPolyobjectFloor(lumpnum_t lumpnum, polyobj_t *polysector,
 
 	polyplaneinfo->isceiling = isceiling;
 	polyplaneinfo->fixedheight = fixedheight;
-	polyplaneinfo->lightlevel = lightlevel;
+	
+	if (HWR_ShouldUsePaletteRendering())
+		polyplaneinfo->lightlevel = (planecolormap && (planecolormap->fog & 1)) ? 255 : lightlevel;
+	else
+		polyplaneinfo->lightlevel = lightlevel;
+	
 	polyplaneinfo->lumpnum = lumpnum;
 	polyplaneinfo->polysector = polysector;
 	polyplaneinfo->alpha = alpha;
