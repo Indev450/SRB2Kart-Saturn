@@ -477,6 +477,11 @@ static size_t gr_numportalcullsectors = 0;
 // Lighting
 // ==========================================================================
 
+static boolean HWR_UseShader(void)
+{
+	return (cv_grshaders.value && gr_shadersavailable);
+}
+
 void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *colormap)
 {
 	RGBA_t poly_color, tint_color, fade_color;
@@ -487,7 +492,7 @@ void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *col
 	fade_color.rgba = (colormap != NULL) ? (UINT32)colormap->fadergba : GL_DEFAULTFOG;
 
 	// Crappy backup coloring if you can't do shaders
-	if (!cv_grshaders.value || !gr_shadersavailable)
+	if (!HWR_UseShader())
 	{
 		// be careful, this may get negative for high lightlevel values.
 		float tint_alpha, fade_alpha;
@@ -572,7 +577,7 @@ UINT8 HWR_FogBlockAlpha(INT32 light, extracolormap_t *colormap) // Let's see if 
 
 	realcolor.rgba = (colormap != NULL) ? colormap->rgba : GL_DEFAULTMIX;
 
-	if (cv_grshaders.value && gr_shadersavailable)
+	if (HWR_UseShader())
 	{
 		surfcolor.s.alpha = (255 - light);
 	}
@@ -880,7 +885,7 @@ void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, boolean isc
 	else
 		PolyFlags |= PF_Masked|PF_Modulated;
 
-	if (cv_grshaders.value && gr_shadersavailable)
+	if (HWR_UseShader())
 	{	
 		if (PolyFlags & PF_Fog)
 			HWD.pfnSetShader(6);	// fog shader
@@ -1044,7 +1049,7 @@ static void HWR_DrawSegsSplats(FSurfaceInfo * pSurf)
 				break;
 		}
 
-		if (cv_grshaders.value && gr_shadersavailable)
+		if (HWR_UseShader())
 		{
 			HWD.pfnSetShader(HWR_ShouldUsePaletteRendering() ? 10 : 2);	// wall shader
 		}
@@ -1082,7 +1087,7 @@ void HWR_ProjectWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend
 {
 	HWR_Lighting(pSurf, lightlevel, wallcolormap);
 
-	if (cv_grshaders.value && gr_shadersavailable)
+	if (HWR_UseShader())
 	{
 		HWD.pfnSetShader(HWR_ShouldUsePaletteRendering() ? 10 : 2);	// wall shader
 		blendmode |= PF_ColorMapped;
@@ -3483,7 +3488,7 @@ void HWR_RenderPolyObjectPlane(polyobj_t *polysector, boolean isceiling, fixed_t
 	else
 		blendmode |= PF_Masked|PF_Modulated;
 
-	if (cv_grshaders.value && gr_shadersavailable)
+	if (HWR_UseShader())
 	{		
 		HWD.pfnSetShader(HWR_ShouldUsePaletteRendering() ? 9 : 1);	// floor shader
 		blendmode |= PF_ColorMapped;
@@ -4300,7 +4305,7 @@ static void HWR_DrawSpriteShadow(gr_vissprite_t *spr, GLPatch_t *gpatch, float t
 	{
 		sSurf.PolyColor.s.alpha = (UINT8)(sSurf.PolyColor.s.alpha - floorheight/4);
 		
-		if (cv_grshaders.value && gr_shadersavailable)
+		if (HWR_UseShader())
 		{
 			HWD.pfnSetShader(HWR_ShouldUsePaletteRendering() ? 9 : 1);	// floor shader
 		}
@@ -4672,7 +4677,7 @@ static void HWR_SplitSprite(gr_vissprite_t *spr)
 
 		Surf.PolyColor.s.alpha = alpha;
 		
-		if (cv_grshaders.value && gr_shadersavailable)
+		if (HWR_UseShader())
 		{
 			HWD.pfnSetShader(HWR_ShouldUsePaletteRendering() ? 10 : 3);	// sprite shader
 			blend |= PF_ColorMapped;
@@ -4717,7 +4722,7 @@ static void HWR_SplitSprite(gr_vissprite_t *spr)
 
 	Surf.PolyColor.s.alpha = alpha;
 
-	if (cv_grshaders.value && gr_shadersavailable)
+	if (HWR_UseShader())
 	{
 		HWD.pfnSetShader(HWR_ShouldUsePaletteRendering() ? 10 : 3);	// sprite shader
 		blend |= PF_ColorMapped;
@@ -4875,7 +4880,7 @@ static void HWR_DrawSprite(gr_vissprite_t *spr)
 			blend = PF_Translucent|PF_Occlude;
 		}
 
-		if (cv_grshaders.value && gr_shadersavailable)
+		if (HWR_UseShader())
 		{
 			HWD.pfnSetShader(HWR_ShouldUsePaletteRendering() ? 10 : 3);	// sprite shader
 			blend |= PF_ColorMapped;
@@ -4974,7 +4979,7 @@ static inline void HWR_DrawPrecipitationSprite(gr_vissprite_t *spr)
 		blend = PF_Translucent|PF_Occlude;
 	}
 
-	if (cv_grshaders.value && gr_shadersavailable)
+	if (HWR_UseShader())
 	{
 		HWD.pfnSetShader(HWR_ShouldUsePaletteRendering() ? 10 : 3);	// sprite shader
 		blend |= PF_ColorMapped;
@@ -6649,7 +6654,7 @@ void HWR_RenderWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend,
 
 	if (!fogwall)
 	{
-		if (cv_grshaders.value && gr_shadersavailable)
+		if (HWR_UseShader())
 		{
 			HWD.pfnSetShader(HWR_ShouldUsePaletteRendering() ? 10 : 2);	// wall shader
 			blendmode |= PF_ColorMapped;
