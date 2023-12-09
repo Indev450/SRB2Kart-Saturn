@@ -162,12 +162,12 @@ consvar_t cv_grslopecontrast = {"gr_slopecontrast", "Off", CV_SAVE, CV_OnOff, NU
 
 boolean HWR_ShouldUsePaletteRendering(void)
 {
-	return (cv_grpaletteshader.value && cv_grshaders.value);
+	return (cv_grpaletteshader.value && HWR_UseShader());
 }
 
 boolean HWR_PalRenderFlashpal(void)
 {
-	return (cv_grpaletteshader.value && cv_grshaders.value && cv_grflashpal.value);
+	return (cv_grpaletteshader.value && HWR_UseShader() && cv_grflashpal.value);
 }
 
 static void CV_filtermode_ONChange(void)
@@ -190,11 +190,11 @@ static void CV_screentextures_ONChange(void)
 
 static void CV_grshaders_OnChange(void)
 {
-	if (rendermode == render_opengl)	
+	if (rendermode == render_opengl)
 	{
 		if (HWR_ShouldUsePaletteRendering())
 		{
-			InitPalette(0, false);			
+			InitPalette(0, false);	
 		}
 		
 		V_SetPalette(0);
@@ -203,9 +203,9 @@ static void CV_grshaders_OnChange(void)
 
 static void CV_useCustomShaders_ONChange(void)
 {
-	if (rendermode == render_opengl)	
+	if (rendermode == render_opengl)
 	{
-		if (cv_grshaders.value)
+		if (HWR_UseShader())
 			HWD.pfnInitCustomShaders();
 	}
 }
@@ -477,7 +477,7 @@ static size_t gr_numportalcullsectors = 0;
 // Lighting
 // ==========================================================================
 
-static boolean HWR_UseShader(void)
+boolean HWR_UseShader(void)
 {
 	return (cv_grshaders.value && gr_shadersavailable);
 }
