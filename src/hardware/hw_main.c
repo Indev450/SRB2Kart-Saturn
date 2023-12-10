@@ -191,11 +191,11 @@ static void CV_grshaders_OnChange(void)
 	}
 }
 
-void CV_useCustomShaders_ONChange(void)
+static void CV_useCustomShaders_ONChange(void)
 {
 	if (rendermode == render_opengl)
 	{
-		if (cv_grshaders.value)
+		if (HWR_UseShader())
 			HWD.pfnInitCustomShaders();
 	}
 }
@@ -474,12 +474,12 @@ static boolean HWR_UseShader(void)
 
 boolean HWR_ShouldUsePaletteRendering(void)
 {
-	return (cv_grpaletteshader.value && cv_grshaders.value && gr_shadersavailable);
+	return (cv_grpaletteshader.value && HWR_UseShader());
 }
 
 boolean HWR_PalRenderFlashpal(void)
 {
-	return (cv_grpaletteshader.value && cv_grshaders.value && gr_shadersavailable && cv_grflashpal.value);
+	return (cv_grpaletteshader.value && HWR_UseShader() && cv_grflashpal.value);
 }
 
 void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *colormap)

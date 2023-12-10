@@ -89,6 +89,10 @@ void HWR_AddCommands(void);
 void HWR_SetTransform(float fpov, player_t *player);
 void HWR_ClearClipper(void);
 
+static boolean HWR_UseShader(void);
+boolean HWR_ShouldUsePaletteRendering(void);
+boolean HWR_PalRenderFlashpal(void);
+
 // My original intention was to split hw_main.c
 // into files like hw_bsp.c, hw_sprites.c...
 
