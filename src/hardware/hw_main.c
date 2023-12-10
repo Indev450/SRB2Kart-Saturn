@@ -160,16 +160,6 @@ consvar_t cv_grfakecontrast = {"gr_fakecontrast", "Standard", CV_SAVE, grfakecon
 consvar_t cv_grslopecontrast = {"gr_slopecontrast", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 
-boolean HWR_ShouldUsePaletteRendering(void)
-{
-	return (cv_grpaletteshader.value && HWR_UseShader());
-}
-
-boolean HWR_PalRenderFlashpal(void)
-{
-	return (cv_grpaletteshader.value && HWR_UseShader() && cv_grflashpal.value);
-}
-
 static void CV_filtermode_ONChange(void)
 {
 	if (rendermode == render_opengl)
@@ -201,11 +191,11 @@ static void CV_grshaders_OnChange(void)
 	}
 }
 
-static void CV_useCustomShaders_ONChange(void)
+void CV_useCustomShaders_ONChange(void)
 {
 	if (rendermode == render_opengl)
 	{
-		if (HWR_UseShader())
+		if (cv_grshaders.value)
 			HWD.pfnInitCustomShaders();
 	}
 }
@@ -477,9 +467,19 @@ static size_t gr_numportalcullsectors = 0;
 // Lighting
 // ==========================================================================
 
-boolean HWR_UseShader(void)
+static boolean HWR_UseShader(void)
 {
 	return (cv_grshaders.value && gr_shadersavailable);
+}
+
+boolean HWR_ShouldUsePaletteRendering(void)
+{
+	return (cv_grpaletteshader.value && cv_grshaders.value && gr_shadersavailable);
+}
+
+boolean HWR_PalRenderFlashpal(void)
+{
+	return (cv_grpaletteshader.value && cv_grshaders.value && gr_shadersavailable && cv_grflashpal.value);
 }
 
 void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *colormap)
