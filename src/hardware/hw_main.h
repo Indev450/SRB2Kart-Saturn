@@ -89,7 +89,7 @@ void HWR_AddCommands(void);
 void HWR_SetTransform(float fpov, player_t *player);
 void HWR_ClearClipper(void);
 
-static boolean HWR_UseShader(void);
+boolean HWR_UseShader(void);
 boolean HWR_ShouldUsePaletteRendering(void);
 boolean HWR_PalRenderFlashpal(void);
 

@@ -467,7 +467,7 @@ static size_t gr_numportalcullsectors = 0;
 // Lighting
 // ==========================================================================
 
-static boolean HWR_UseShader(void)
+boolean HWR_UseShader(void)
 {
 	return (cv_grshaders.value && gr_shadersavailable);
 }
