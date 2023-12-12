@@ -9754,9 +9754,6 @@ static void K_drawChallengerScreen(void)
 
 static void K_drawLapStartAnim(void)
 {
-	if (! cv_showlapemblem.value)
-		return;
-	
 	// This is an EVEN MORE insanely complicated animation.
 	const UINT8 progress = 80-stplyr->kartstuff[k_lapanimation];
 	UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
@@ -10136,7 +10133,7 @@ void K_drawKartHUD(void)
 	{
 		if (stplyr->exiting)
 			K_drawKartFinish();
-		else if (stplyr->kartstuff[k_lapanimation] && !splitscreen)
+		else if (stplyr->kartstuff[k_lapanimation] && !splitscreen && cv_showlapemblem.value)
 			K_drawLapStartAnim();
 	}
 
