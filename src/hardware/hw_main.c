@@ -3405,8 +3405,11 @@ void HWR_RenderPolyObjectPlane(polyobj_t *polysector, boolean isceiling, fixed_t
 	}
 
 	// reference point for flat texture coord for each vertex around the polygon
-	flatxref = (float)((polysector->origVerts[0].x & (~flatflag)) / fflatsize);
-	flatyref = (float)((polysector->origVerts[0].y & (~flatflag)) / fflatsize);
+	flatxref = FIXED_TO_FLOAT(polysector->origVerts[0].x);
+	flatyref = FIXED_TO_FLOAT(polysector->origVerts[0].y);
+
+	flatxref = (float)(((fixed_t)flatxref & (~flatflag)) / fflatsize);
+	flatyref = (float)(((fixed_t)flatyref & (~flatflag)) / fflatsize);
 
 	// transform
 	v3d = planeVerts;
