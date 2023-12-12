@@ -454,8 +454,10 @@ typedef GLint (APIENTRY * PFNgluBuild2DMipmaps) (GLenum target, GLint internalFo
 static PFNgluBuild2DMipmaps pgluBuild2DMipmaps;
 
 /* 3.0 functions */
+#ifdef GL_VERSION_3_0
 typedef void (APIENTRY * PFNglGenerateMipmap) (GLenum target);
 static PFNglGenerateMipmap pglGenerateMipmap;
+#endif
 
 /* 1.3 functions for multitexturing */
 typedef void (APIENTRY *PFNglActiveTexture) (GLenum);
@@ -1033,7 +1035,9 @@ void SetupGLFunc4(void)
 	// GLU
 	pgluBuild2DMipmaps = GetGLFunc("gluBuild2DMipmaps");
 	
+#ifdef GL_VERSION_3_0
 	pglGenerateMipmap = GetGLFunc("glGenerateMipmap");
+#endif
 }
 
 // jimita
@@ -2086,10 +2090,18 @@ EXPORT void HWRAPI(UpdateTexture) (FTextureInfo *pTexInfo)
 		//pglTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
 		if (MipMap)
 		{
-			pglTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
-			pglGenerateMipmap(GL_TEXTURE_2D);
-			
-			//pgluBuild2DMipmaps(GL_TEXTURE_2D, GL_LUMINANCE_ALPHA, w, h, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
+#ifdef GL_VERSION_3_0
+			if (gl_version[0] == '1' || gl_version[0] == '2')
+#endif
+				pgluBuild2DMipmaps(GL_TEXTURE_2D, GL_LUMINANCE_ALPHA, w, h, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
+#ifdef GL_VERSION_3_0	
+			else
+			{
+				pglTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
+				pglGenerateMipmap(GL_TEXTURE_2D);
+			}
+#endif
+
 			pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_LOD, 0);
 			if (pTexInfo->flags & TF_TRANSPARENT)
 				pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, 0); // No mippmaps on transparent stuff
@@ -2110,9 +2122,18 @@ EXPORT void HWRAPI(UpdateTexture) (FTextureInfo *pTexInfo)
 		//pglTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
 		if (MipMap)
 		{
-			pglTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
-			pglGenerateMipmap(GL_TEXTURE_2D);
-			//pgluBuild2DMipmaps(GL_TEXTURE_2D, GL_ALPHA, w, h, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
+#ifdef GL_VERSION_3_0
+			if (gl_version[0] == '1' || gl_version[0] == '2')
+#endif
+				pgluBuild2DMipmaps(GL_TEXTURE_2D, GL_ALPHA, w, h, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
+#ifdef GL_VERSION_3_0
+			else
+			{
+				pglTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
+				pglGenerateMipmap(GL_TEXTURE_2D);
+			}
+#endif		
+	
 			pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_LOD, 0);
 			if (pTexInfo->flags & TF_TRANSPARENT)
 				pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, 0); // No mippmaps on transparent stuff
@@ -2132,9 +2153,17 @@ EXPORT void HWRAPI(UpdateTexture) (FTextureInfo *pTexInfo)
 	{
 		if (MipMap)
 		{
-			pglTexImage2D(GL_TEXTURE_2D, 0, textureformatGL, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
-			pglGenerateMipmap(GL_TEXTURE_2D);
-			//pgluBuild2DMipmaps(GL_TEXTURE_2D, textureformatGL, w, h, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
+#ifdef GL_VERSION_3_0
+			if (gl_version[0] == '1' || gl_version[0] == '2')
+#endif
+				pgluBuild2DMipmaps(GL_TEXTURE_2D, textureformatGL, w, h, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
+#ifdef GL_VERSION_3_0			
+			else
+			{
+				pglTexImage2D(GL_TEXTURE_2D, 0, textureformatGL, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
+				pglGenerateMipmap(GL_TEXTURE_2D);
+			}
+#endif
 			// Control the mipmap level of detail
 			pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_LOD, 0); // the lower the number, the higer the detail
 			if (pTexInfo->flags & TF_TRANSPARENT)
@@ -3253,17 +3282,26 @@ EXPORT void HWRAPI(SetSpecialState) (hwdspecialstate_t IdState, INT32 Value)
 					mag_filter = GL_LINEAR;
 					min_filter = GL_NEAREST;
 			}
-			if (!pgluBuild2DMipmaps)
+#ifdef GL_VERSION_3_0
+			if (gl_version[0] == '1' || gl_version[0] == '2')
 			{
-				MipMap = GL_FALSE;
-				min_filter = GL_LINEAR;
+#endif
+				if (!pgluBuild2DMipmaps)
+				{
+					MipMap = GL_FALSE;
+					min_filter = GL_LINEAR;
+				}
+#ifdef GL_VERSION_3_0
 			}
-			
+			else
+	
 			if (!pglGenerateMipmap)
 			{
 				MipMap = GL_FALSE;
 				min_filter = GL_LINEAR;
 			}
+			
+#endif
 			
 			Flush(); //??? if we want to change filter mode by texture, remove this
 			break;
