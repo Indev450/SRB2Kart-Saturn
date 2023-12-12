@@ -166,6 +166,8 @@ static const GLfloat byte2float[256] = {
 	0.972549f, 0.976471f, 0.980392f, 0.984314f, 0.988235f, 0.992157f, 0.996078f, 1.000000f
 };
 
+// Loaded OpenGL version
+static int majorGL = 0, minorGL = 0;
 
 // -----------------+
 // GL_DBG_Printf    : Output debug messages to debug log if DEBUG_TO_FILE is defined,
@@ -1590,6 +1592,17 @@ EXPORT boolean HWRAPI(Init) (void)
 
 
 // -----------------+
+// SetupGLInfo      : Retreive and store currently loaded OpenGL version
+// -----------------+
+EXPORT void HWRAPI(SetupGLInfo) (void)
+{
+	const GLubyte *versionGL = pglGetString(GL_VERSION);
+	CONS_Printf("Loaded OpenGL version %s\n", (const char*)versionGL);
+	sscanf((const char*)versionGL, "%d.%d", &majorGL, &minorGL);
+}
+
+
+// -----------------+
 // ClearMipMapCache : Flush OpenGL textures from memory
 // -----------------+
 EXPORT void HWRAPI(ClearMipMapCache) (void)
@@ -1970,9 +1983,6 @@ EXPORT void HWRAPI(UpdateTexture) (FTextureInfo *pTexInfo)
 	INT32             w, h;
 	GLuint texnum = 0;
 	
-	const GLubyte *versionGL = pglGetString(GL_VERSION);
-	int majorGL, minorGL;
-	sscanf(versionGL, "%d.%d", &majorGL, &minorGL);
 
 	if (!pTexInfo->downloaded)
 	{
@@ -3244,10 +3254,6 @@ EXPORT void HWRAPI(RenderSkyDome) (INT32 tex, INT32 texture_width, INT32 texture
 // ==========================================================================
 EXPORT void HWRAPI(SetSpecialState) (hwdspecialstate_t IdState, INT32 Value)
 {
-	const GLubyte *versionGL = pglGetString(GL_VERSION);
-	int majorGL, minorGL;
-	sscanf(versionGL, "%d.%d", &majorGL, &minorGL);
-	
 	switch (IdState)
 	{
 		case HWD_SET_SHADERS:

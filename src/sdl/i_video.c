@@ -2109,6 +2109,7 @@ void I_StartupGraphics(void)
 	if (rendermode == render_opengl)
 	{
 		HWD.pfnInit             = hwSym("Init",NULL);
+		HWD.pfnSetupGLInfo      = hwSym("SetupGLInfo",NULL);
 		HWD.pfnFinishUpdate     = NULL;
 		HWD.pfnDraw2DLine       = hwSym("Draw2DLine",NULL);
 		HWD.pfnDrawPolygon      = hwSym("DrawPolygon",NULL);
