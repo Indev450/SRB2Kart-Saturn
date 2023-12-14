@@ -1990,6 +1990,8 @@ static void LoadMobjThinker(actionf_p1 thinker)
 	mobj->stretchslam = 0;
 	mobj->slamsoundtimer = 0;
 	
+	mobj->mirrored = 0;
+	
 	mobj->z = z;
 	mobj->floorz = floorz;
 	mobj->ceilingz = ceilingz;
