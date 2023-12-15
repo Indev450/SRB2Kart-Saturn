@@ -166,6 +166,8 @@ static const GLfloat byte2float[256] = {
 	0.972549f, 0.976471f, 0.980392f, 0.984314f, 0.988235f, 0.992157f, 0.996078f, 1.000000f
 };
 
+// Loaded OpenGL version
+static int majorGL = 0, minorGL = 0;
 
 // -----------------+
 // GL_DBG_Printf    : Output debug messages to debug log if DEBUG_TO_FILE is defined,
@@ -452,6 +454,12 @@ static PFNglCopyTexSubImage2D pglCopyTexSubImage2D;
 /* GLU functions */
 typedef GLint (APIENTRY * PFNgluBuild2DMipmaps) (GLenum target, GLint internalFormat, GLsizei width, GLsizei height, GLenum format, GLenum type, const void *data);
 static PFNgluBuild2DMipmaps pgluBuild2DMipmaps;
+
+/* 3.0 functions */
+#ifdef GL_VERSION_3_0
+typedef void (APIENTRY * PFNglGenerateMipmap) (GLenum target);
+static PFNglGenerateMipmap pglGenerateMipmap;
+#endif
 
 /* 1.3 functions for multitexturing */
 typedef void (APIENTRY *PFNglActiveTexture) (GLenum);
@@ -1028,6 +1036,10 @@ void SetupGLFunc4(void)
 
 	// GLU
 	pgluBuild2DMipmaps = GetGLFunc("gluBuild2DMipmaps");
+	
+#ifdef GL_VERSION_3_0
+	pglGenerateMipmap = GetGLFunc("glGenerateMipmap");
+#endif
 }
 
 // jimita
@@ -1580,6 +1592,17 @@ EXPORT boolean HWRAPI(Init) (void)
 
 
 // -----------------+
+// SetupGLInfo      : Retreive and store currently loaded OpenGL version
+// -----------------+
+EXPORT void HWRAPI(SetupGLInfo) (void)
+{
+	const GLubyte *versionGL = pglGetString(GL_VERSION);
+	CONS_Printf("Loaded OpenGL version %s\n", (const char*)versionGL);
+	sscanf((const char*)versionGL, "%d.%d", &majorGL, &minorGL);
+}
+
+
+// -----------------+
 // ClearMipMapCache : Flush OpenGL textures from memory
 // -----------------+
 EXPORT void HWRAPI(ClearMipMapCache) (void)
@@ -1959,6 +1982,7 @@ EXPORT void HWRAPI(UpdateTexture) (FTextureInfo *pTexInfo)
 	const GLvoid   *ptex = tex;
 	INT32             w, h;
 	GLuint texnum = 0;
+	
 
 	if (!pTexInfo->downloaded)
 	{
@@ -2080,12 +2104,25 @@ EXPORT void HWRAPI(UpdateTexture) (FTextureInfo *pTexInfo)
 		//pglTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
 		if (MipMap)
 		{
-			pgluBuild2DMipmaps(GL_TEXTURE_2D, GL_LUMINANCE_ALPHA, w, h, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
+			if (majorGL == 1 && minorGL >= 0 && minorGL < 4)
+				pgluBuild2DMipmaps(GL_TEXTURE_2D, GL_LUMINANCE_ALPHA, w, h, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
+			else if ((majorGL == 1 && minorGL >= 4) || (majorGL == 2))
+			{
+				pglTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
+				pglTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
+			}
+#ifdef GL_VERSION_3_0	
+			else if (majorGL >= 3)
+			{
+				pglTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
+				pglGenerateMipmap(GL_TEXTURE_2D);
+			}
+#endif
 			pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_LOD, 0);
 			if (pTexInfo->flags & TF_TRANSPARENT)
 				pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, 0); // No mippmaps on transparent stuff
 			else
-				pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, 4);
+				pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, 16);
 			//pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_LINEAR_MIPMAP_LINEAR);
 		}
 		else
@@ -2101,12 +2138,25 @@ EXPORT void HWRAPI(UpdateTexture) (FTextureInfo *pTexInfo)
 		//pglTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
 		if (MipMap)
 		{
-			pgluBuild2DMipmaps(GL_TEXTURE_2D, GL_ALPHA, w, h, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
+			if (majorGL == 1 && minorGL >= 0 && minorGL < 4)
+				pgluBuild2DMipmaps(GL_TEXTURE_2D, GL_ALPHA, w, h, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
+			else if ((majorGL == 1 && minorGL >= 4) || (majorGL == 2))
+			{
+				pglTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
+				pglTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
+			}
+#ifdef GL_VERSION_3_0
+			else if (majorGL >= 3)
+			{
+				pglTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
+				pglGenerateMipmap(GL_TEXTURE_2D);
+			}
+#endif		
 			pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_LOD, 0);
 			if (pTexInfo->flags & TF_TRANSPARENT)
 				pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, 0); // No mippmaps on transparent stuff
 			else
-				pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, 4);
+				pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, 16);
 			//pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_LINEAR_MIPMAP_LINEAR);
 		}
 		else
@@ -2121,13 +2171,26 @@ EXPORT void HWRAPI(UpdateTexture) (FTextureInfo *pTexInfo)
 	{
 		if (MipMap)
 		{
-			pgluBuild2DMipmaps(GL_TEXTURE_2D, textureformatGL, w, h, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
+			if (majorGL == 1 && minorGL >= 0 && minorGL < 4)
+				pgluBuild2DMipmaps(GL_TEXTURE_2D, textureformatGL, w, h, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
+			else if ((majorGL == 1 && minorGL >= 4) || (majorGL == 2))
+			{
+				pglTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
+				pglTexImage2D(GL_TEXTURE_2D, 0, textureformatGL, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
+			}
+#ifdef GL_VERSION_3_0			
+			else if (majorGL >= 3)
+			{
+				pglTexImage2D(GL_TEXTURE_2D, 0, textureformatGL, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
+				pglGenerateMipmap(GL_TEXTURE_2D);
+			}
+#endif
 			// Control the mipmap level of detail
 			pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_LOD, 0); // the lower the number, the higer the detail
 			if (pTexInfo->flags & TF_TRANSPARENT)
 				pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, 0); // No mippmaps on transparent stuff
 			else
-				pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, 5);
+				pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, 16);
 		}
 		else
 		{
@@ -3240,11 +3303,25 @@ EXPORT void HWRAPI(SetSpecialState) (hwdspecialstate_t IdState, INT32 Value)
 					mag_filter = GL_LINEAR;
 					min_filter = GL_NEAREST;
 			}
-			if (!pgluBuild2DMipmaps)
+			if (majorGL == 1 && minorGL >= 0 && minorGL < 4)
 			{
-				MipMap = GL_FALSE;
-				min_filter = GL_LINEAR;
+				if (!pgluBuild2DMipmaps)
+				{
+					MipMap = GL_FALSE;
+					min_filter = GL_LINEAR;
+				}
 			}
+#ifdef GL_VERSION_3_0
+			else
+			{
+				if (!pglGenerateMipmap)
+				{
+					MipMap = GL_FALSE;
+					min_filter = GL_LINEAR;
+				}
+			}	
+#endif
+			
 			Flush(); //??? if we want to change filter mode by texture, remove this
 			break;
 			

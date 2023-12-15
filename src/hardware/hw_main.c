@@ -6609,6 +6609,8 @@ void HWR_Startup(void)
 		CONS_Printf("HWR_Startup()...\n");
 		HWR_InitTextureCache();
 		HWR_InitMD2();
+
+		HWD.pfnSetupGLInfo();
 	}
 
 	if (rendermode == render_opengl)
