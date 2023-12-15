@@ -2081,8 +2081,6 @@ void S_StopMusic(void)
 
 	if ((cv_birdmusic.value) && (strcasecmp(music_name, mapmusname) == 0))
 		mapmusresume = I_GetSongPosition();
-	else
-		mapmusresume = 0;
 
 	if (I_SongPaused())
 		I_ResumeSong();
