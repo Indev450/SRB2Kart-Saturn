@@ -1489,19 +1489,15 @@ static void R_ProjectSprite(mobj_t *thing)
 	spr_topoffset = spritecachedinfo[lump].topoffset;
 
 #ifdef ROTSPRITE
-	if (thing->player)
-	{
-		sliptiderollangle = FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), ((cv_sloperoll.value == 1) ? thing->player->sliproll*(thing->player->sliptidemem) : 0));
-	}
-	else
-		sliptiderollangle = 0;
-
-	if ((thing->rollangle)||(thing->sloperoll)||sliptiderollangle)
+	if ((thing->rollangle)||(thing->sloperoll)||(thing->player && thing->player->sliproll))
 	{
 		if (thing->player)
-			rollsum = (thing->rollangle) + (thing->sloperoll) + sliptiderollangle;
+		{
+			sliptiderollangle = cv_sliptideroll.value ? thing->player->sliproll*(thing->player->sliptidemem) : 0;
+			rollsum = (thing->rollangle)+(thing->sloperoll)+FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), sliptiderollangle);
+		}
 		else
-			rollsum = (thing->rollangle) + (thing->sloperoll);
+			rollsum = (thing->rollangle)+(thing->sloperoll);
 
 		rollangle = R_GetRollAngle(rollsum);
 		rotsprite = Patch_GetRotatedSprite(sprframe, (thing->frame & FF_FRAMEMASK), rot, flip, false, sprinfo, rollangle);
