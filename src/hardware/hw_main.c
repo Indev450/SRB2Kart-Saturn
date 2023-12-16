@@ -237,6 +237,8 @@ static line_t *gr_linedef;
 static sector_t *gr_frontsector;
 static sector_t *gr_backsector;
 
+static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum, FSurfaceInfo* Surf, INT32 cutflag, ffloor_t *pfloor, FBITFIELD polyflags);
+
 boolean gr_shadersavailable = true;
 
 // Performance stats
