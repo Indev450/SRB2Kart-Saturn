@@ -1448,7 +1448,7 @@ void I_FinishUpdate(void)
 	if (I_SkipFrame())
 		return;
 
-	if (cv_ticrate.value)
+	if (cv_ticrate.value && st_overlay)
 		SCR_DisplayTicRate();
 
 	if (cv_showping.value && netgame && consoleplayer != serverplayer)
