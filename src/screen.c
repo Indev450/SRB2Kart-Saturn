@@ -70,7 +70,7 @@ consvar_t cv_shittyscreen = {"televisionsignal", "Okay", CV_NOSHOWHELP, shittysc
 
 static void SCR_ChangeFullscreen (void);
 
-static INT SCR_FPSflags(void);
+static INT32 SCR_FPSflags(void);
 
 consvar_t cv_fullscreen = {"fullscreen", "Yes", CV_SAVE|CV_CALL, CV_YesNo, SCR_ChangeFullscreen, 0, NULL, NULL, 0, 0, NULL};
 
@@ -414,23 +414,11 @@ void SCR_CalculateFPS(void)
 }
 
 // this is pretty dumb, but has to be done like this, otherwise the fps counter just disappears sometimes for no reason lol
-static INT SCR_FPSflags(void)
+static INT32 SCR_FPSflags(void)
 {
-    switch (cv_translucenthud.value) 
-	{
-		case 10:  return V_SNAPTOBOTTOM|V_SNAPTORIGHT;
-		case 9:   return V_SNAPTOBOTTOM|V_SNAPTORIGHT|V_10TRANS;
-		case 8:   return V_SNAPTOBOTTOM|V_SNAPTORIGHT|V_20TRANS;
-		case 7:   return V_SNAPTOBOTTOM|V_SNAPTORIGHT|V_30TRANS;
-		case 6:   return V_SNAPTOBOTTOM|V_SNAPTORIGHT|V_40TRANS;
-		case 5:   return V_SNAPTOBOTTOM|V_SNAPTORIGHT|V_TRANSLUCENT;
-		case 4:   return V_SNAPTOBOTTOM|V_SNAPTORIGHT|V_60TRANS;
-		case 3:   return V_SNAPTOBOTTOM|V_SNAPTORIGHT|V_70TRANS;
-		case 2:   return V_SNAPTOBOTTOM|V_SNAPTORIGHT|V_80TRANS;
-		case 1:   return V_SNAPTOBOTTOM|V_SNAPTORIGHT|V_90TRANS;
-		case 0:   return V_SNAPTOBOTTOM|V_SNAPTORIGHT|V_HUDTRANS; // eee kinda works ig
-		default:  return V_SNAPTOBOTTOM|V_SNAPTORIGHT;
-	}
+	if (!cv_translucenthud.value) return V_SNAPTOBOTTOM|V_SNAPTORIGHT|V_HUDTRANS; // eee kinda works ig
+
+	return (((10-cv_translucenthud.value)*V_10TRANS) & V_ALPHAMASK) | V_SNAPTOBOTTOM|V_SNAPTORIGHT;
 }
 
 void SCR_DisplayTicRate(void)
@@ -440,7 +428,7 @@ void SCR_DisplayTicRate(void)
 	UINT32 benchmark = (cap == 0) ? I_GetRefreshRate() : cap;
 	INT32 x = 318;
 	double fps = round(averageFPS);
-	int fpsflags = SCR_FPSflags();
+	INT32 fpsflags = SCR_FPSflags();
 	
 	if (gamestate == GS_NULL)
 		return;
