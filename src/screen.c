@@ -70,6 +70,8 @@ consvar_t cv_shittyscreen = {"televisionsignal", "Okay", CV_NOSHOWHELP, shittysc
 
 static void SCR_ChangeFullscreen (void);
 
+static INT SCR_FPSflags(void);
+
 consvar_t cv_fullscreen = {"fullscreen", "Yes", CV_SAVE|CV_CALL, CV_YesNo, SCR_ChangeFullscreen, 0, NULL, NULL, 0, 0, NULL};
 
 // =========================================================================
@@ -411,6 +413,26 @@ void SCR_CalculateFPS(void)
 #endif
 }
 
+// this is pretty dumb, but has to be done like this, otherwise the fps counter just disappears sometimes for no reason lol
+static INT SCR_FPSflags(void)
+{
+    switch (cv_translucenthud.value) 
+	{
+		case 10:  return V_SNAPTOBOTTOM|V_SNAPTORIGHT;
+		case 9:   return V_SNAPTOBOTTOM|V_SNAPTORIGHT|V_10TRANS;
+		case 8:   return V_SNAPTOBOTTOM|V_SNAPTORIGHT|V_20TRANS;
+		case 7:   return V_SNAPTOBOTTOM|V_SNAPTORIGHT|V_30TRANS;
+		case 6:   return V_SNAPTOBOTTOM|V_SNAPTORIGHT|V_40TRANS;
+		case 5:   return V_SNAPTOBOTTOM|V_SNAPTORIGHT|V_TRANSLUCENT;
+		case 4:   return V_SNAPTOBOTTOM|V_SNAPTORIGHT|V_60TRANS;
+		case 3:   return V_SNAPTOBOTTOM|V_SNAPTORIGHT|V_70TRANS;
+		case 2:   return V_SNAPTOBOTTOM|V_SNAPTORIGHT|V_80TRANS;
+		case 1:   return V_SNAPTOBOTTOM|V_SNAPTORIGHT|V_90TRANS;
+		case 0:   return V_SNAPTOBOTTOM|V_SNAPTORIGHT|V_HUDTRANS; // eee kinda works ig
+		default:  return V_SNAPTOBOTTOM|V_SNAPTORIGHT;
+	}
+}
+
 void SCR_DisplayTicRate(void)
 {
 	const UINT8 *ticcntcolor = NULL;
@@ -418,14 +440,15 @@ void SCR_DisplayTicRate(void)
 	UINT32 benchmark = (cap == 0) ? I_GetRefreshRate() : cap;
 	INT32 x = 318;
 	double fps = round(averageFPS);
+	int fpsflags = SCR_FPSflags();
 	
 	if (gamestate == GS_NULL)
 		return;
 
 	// draw "FPS"
 	if (cv_ticrate.value == 1)
-		V_DrawFixedPatch(306<<FRACBITS, 183<<FRACBITS, FRACUNIT, V_SNAPTOBOTTOM|V_SNAPTORIGHT, framecounter, R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_YELLOW, GTC_CACHE));
-
+		V_DrawFixedPatch(306<<FRACBITS, 183<<FRACBITS, FRACUNIT, fpsflags, framecounter, R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_YELLOW, GTC_CACHE));
+		
 	if (fps > (benchmark - 5))
 		ticcntcolor = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_MINT, GTC_CACHE);
 	else if (fps < 20)
@@ -443,15 +466,16 @@ void SCR_DisplayTicRate(void)
 		}
 
 		// draw total frame:
-		V_DrawPingNum(x, 190, V_SNAPTOBOTTOM|V_SNAPTORIGHT, cap, ticcntcolor);
+		V_DrawPingNum(x, 190, fpsflags, cap, ticcntcolor);
+		
 		x -= digits * 4;
 
-		// draw "/"
-		V_DrawFixedPatch(x<<FRACBITS, 190<<FRACBITS, FRACUNIT, V_SNAPTOBOTTOM|V_SNAPTORIGHT, frameslash, ticcntcolor);
+		// draw "/"	
+		V_DrawFixedPatch(x<<FRACBITS, 190<<FRACBITS, FRACUNIT, fpsflags, frameslash, ticcntcolor);
 	}
 
 	// draw our actual framerate
-	V_DrawPingNum(x, 190, V_SNAPTOBOTTOM|V_SNAPTORIGHT, fps, ticcntcolor);
+	V_DrawPingNum(x, 190, fpsflags, fps, ticcntcolor);
 }
 
 // SCR_DisplayLocalPing
@@ -460,9 +484,11 @@ void SCR_DisplayTicRate(void)
 void SCR_DisplayLocalPing(void)
 {
 	UINT32 ping = playerpingtable[consoleplayer];	// consoleplayer's ping is everyone's ping in a splitnetgame :P
+	int fpsflags = SCR_FPSflags();
+	
 	if (cv_showping.value == 1 || (cv_showping.value == 2 && ping > servermaxping))	// only show 2 (warning) if our ping is at a bad level
 	{
 		INT32 dispy = cv_ticrate.value ? 160 : 181;
-		HU_drawPing(307, dispy, ping, V_SNAPTORIGHT | V_SNAPTOBOTTOM);
+		HU_drawPing(307, dispy, ping, fpsflags);
 	}
 }
