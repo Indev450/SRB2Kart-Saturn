@@ -4117,7 +4117,12 @@ void M_StartControlPanel(void)
 
 		// Reset these in case splitscreen messes things up
 		MPauseMenu[mpause_addons].alphaKey = 8;
-		MPauseMenu[mpause_addlocalskins].alphaKey = 24;
+		
+		if (IsPlayerAdmin(consoleplayer))
+			MPauseMenu[mpause_addlocalskins].alphaKey = 8;
+		else
+			MPauseMenu[mpause_addlocalskins].alphaKey = 24;
+	
 		MPauseMenu[mpause_scramble].alphaKey = 8;
 		MPauseMenu[mpause_switchmap].alphaKey = 24;
 
