@@ -42,6 +42,7 @@ extern consvar_t cv_gamemidimusic;
 extern consvar_t cv_gamesounds;
 extern consvar_t cv_playmusicifunfocused;
 extern consvar_t cv_playsoundifunfocused;
+extern consvar_t cv_pausemusic;
 
 #ifdef HAVE_OPENMPT
 extern consvar_t cv_modfilter;
@@ -52,8 +53,22 @@ extern consvar_t cv_amigatype;
 #endif
 #endif
 
+//bird music stuff
 extern consvar_t cv_music_resync_threshold;
 extern consvar_t cv_music_resync_powerups_only;
+
+extern consvar_t cv_invincmusicfade;
+extern consvar_t cv_growmusicfade;
+
+extern consvar_t cv_respawnfademusicout;
+extern consvar_t cv_respawnfademusicback;
+
+extern consvar_t cv_resetspecialmusic;
+
+extern consvar_t cv_resume;
+extern consvar_t cv_fading;
+extern consvar_t cv_birdmusic;
+
 
 extern CV_PossibleValue_t soundvolume_cons_t[];
 
@@ -144,10 +159,24 @@ boolean S_SpeedMusic(float speed);
 typedef struct musicdef_s
 {
 	char name[7];
-	//char usage[256];
+	char usage[256];
 	char source[256];
+	char filename[256];
+	// for the music test stuff
+	// generally if these are present on vanilla the game would throw up a warning
+	// a sacrifice i suppose
+	char title[256];
+	char alttitle[256];
+	char authors[256];
+	boolean use_info;
 	struct musicdef_s *next;
 } musicdef_t;
+
+extern musicdef_t soundtestsfx;
+extern musicdef_t *musicdefstart;
+extern musicdef_t **soundtestdefs;
+extern INT32 numsoundtestdefs;
+extern UINT8 soundtestpage;
 
 extern struct cursongcredit
 {
@@ -157,13 +186,16 @@ extern struct cursongcredit
 	UINT8 trans;
 } cursongcredit;
 
-extern musicdef_t *musicdefstart;
 
 void S_LoadMusicDefs(UINT16 wadnum);
 void S_InitMusicDefs(void);
+void S_LoadMTDefs(UINT16 wadnum);
+void S_InitMTDefs(void);
 musicdef_t *S_FindMusicCredit(const char *musname);
 void S_ShowSpecifiedMusicCredit(const char *musname);
 void S_ShowMusicCredit(void);
+
+boolean S_PrepareSoundTest(void);
 
 //
 // Music Seeking

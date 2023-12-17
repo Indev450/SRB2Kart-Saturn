@@ -20,6 +20,7 @@
 enum drawitem_e {
 	DI_Draw = 0,
 	DI_DrawScaled,
+	DI_DrawStretched,
 	DI_DrawNum,
 	DI_DrawPaddedNum,
 	DI_DrawPingNum,
@@ -216,6 +217,29 @@ void LUA_HUD_AddDrawScaled(
 	item->colormap = colormap;
 }
 
+void LUA_HUD_AddDrawStretched(
+	huddrawlist_h list,
+	fixed_t x,
+	fixed_t y,
+	fixed_t hscale,
+	fixed_t vscale,
+	patch_t *patch,
+	INT32 flags,
+	UINT8 *colormap
+)
+{
+	size_t i = AllocateDrawItem(list);
+	drawitem_t *item = &list->items[i];
+	item->type = DI_DrawStretched;
+	item->x = x;
+	item->y = y;
+	item->hscale = hscale;
+	item->vscale = vscale;
+	item->patch = patch;
+	item->flags = flags;
+	item->colormap = colormap;
+}
+
 void LUA_HUD_AddDrawNum(
 	huddrawlist_h list,
 	INT32 x,
@@ -376,6 +400,9 @@ void LUA_HUD_DrawList(huddrawlist_h list)
 				break;
 			case DI_DrawScaled:
 				V_DrawFixedPatch(item->x, item->y, item->scale, item->flags, item->patch, item->colormap);
+				break;
+			case DI_DrawStretched:
+				V_DrawStretchyFixedPatch(item->x, item->y, item->hscale, item->vscale, item->flags, item->patch, item->colormap);
 				break;
 			case DI_DrawNum:
 				V_DrawTallNum(item->x, item->y, item->flags, item->num);

@@ -89,6 +89,7 @@ typedef enum
 	REFRESHDIR_GAMEDATA = 64
 } refreshdir_enum;
 
+INT32 pathisdirectory(const char *path);
 void closefilemenu(boolean validsize);
 void searchfilemenu(char *tempname);
 boolean preparefilemenu(boolean samedepth, boolean replayhut);

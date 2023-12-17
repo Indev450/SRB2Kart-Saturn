@@ -1149,6 +1149,7 @@ void HWR_DrawMD2(gr_vissprite_t *spr)
 		INT32 tics = spr->mobj->tics;
 		//mdlframe_t *next = NULL;
 		const UINT8 flip = (UINT8)((spr->mobj->eflags & MFE_VERTICALFLIP) == MFE_VERTICALFLIP);
+		const UINT8 hflip = (UINT8)(!(spr->mobj->mirrored) != !(spr->mobj->frame & FF_HORIZONTALFLIP));
 		spritedef_t *sprdef;
 		spriteframe_t *sprframe;
 		spriteinfo_t *sprinfo;
@@ -1366,17 +1367,16 @@ void HWR_DrawMD2(gr_vissprite_t *spr)
 		angle_t sliptideroll = 0;
 
 		if (spr->mobj->player)
-			sliptideroll = ((cv_sloperoll.value) ? spr->mobj->player->sliproll : 0);
+			sliptideroll = ((cv_sloperoll.value && cv_sliptideroll.value) ? spr->mobj->player->sliproll : 0);
 
-		if ((spr->mobj->rollangle)||sliptideroll)
+		if ((spr->mobj->rollangle)||(sliptideroll && cv_sliptideroll.value))
 		{
 			angle_t rollang = 0;
 			rollfactor = ((spr->mobj->rollmodel == true) ? 1 : 0);
 
-			if (spr->mobj->player)
-				rollang = (spr->mobj->rollangle*rollfactor) + (sliptideroll*spr->mobj->player->sliptidemem);
-			else
-				rollang = (spr->mobj->rollangle*rollfactor);
+			rollang = (spr->mobj->player && sliptideroll && cv_sliptideroll.value)
+            ? (spr->mobj->rollangle * rollfactor) + (sliptideroll * spr->mobj->player->sliptidemem)
+            : (spr->mobj->rollangle * rollfactor);
 			
 			fixed_t anglef = AngleFixed(rollang);
 			p.rollangle = FIXED_TO_FLOAT(anglef);
@@ -1423,7 +1423,7 @@ void HWR_DrawMD2(gr_vissprite_t *spr)
 
 		HWD.pfnSetShader(4);	// model shader
 		{
-		float this_scale = FIXED_TO_FLOAT(interp.scale);
+			float this_scale = FIXED_TO_FLOAT(interp.scale);
 
 			float xs = this_scale * FIXED_TO_FLOAT(interp.spritexscale);
 			float ys = this_scale * FIXED_TO_FLOAT(interp.spriteyscale);
@@ -1436,7 +1436,7 @@ void HWR_DrawMD2(gr_vissprite_t *spr)
 			p.y += ox * gr_viewcos;
 			p.z += oy;
 
-			HWD.pfnDrawModel(md2->model, frame, durs, tics, nextFrame, &p, md2->scale * xs, md2->scale * ys, flip, &Surf);
+			HWD.pfnDrawModel(md2->model, frame, durs, tics, nextFrame, &p, md2->scale * xs, md2->scale * ys, flip, hflip, &Surf);
 		}
 	}
 }

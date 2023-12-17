@@ -42,7 +42,9 @@ UINT8 *screens[5];
 static CV_PossibleValue_t gamma_cons_t[] = {{0, "MIN"}, {4, "MAX"}, {0, NULL}};
 static void CV_usegamma_OnChange(void);
 
-consvar_t cv_ticrate = {"showfps", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
+static CV_PossibleValue_t fps_cons_t[] = {{0, "No"}, {1, "Normal"}, {2, "Compact"}, {0, NULL}};
+consvar_t cv_ticrate = {"showfps", "No", CV_SAVE, fps_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 consvar_t cv_usegamma = {"gamma", "0", CV_SAVE|CV_CALL, gamma_cons_t, CV_usegamma_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_allcaps = {"allcaps", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -201,14 +203,14 @@ void V_SetPalette(INT32 palettenum)
 #ifdef HWRENDER
 	if (rendermode != render_soft && rendermode != render_none) {
 		// in palette rendering mode, we already manage our palette ourselves
-		if (cv_grpaletteshader.value == 1) 
+		if (HWR_ShouldUsePaletteRendering()) 
 		{
 			// reset our palette lookups n shit
 			gl_palette_initialized = false;
 			InitPalette(palettenum, true);
 		}
 		else
-			HWR_SetPalette(pLocalPalette);
+			HWR_SetPalette(&pLocalPalette[palettenum*256]);
 	}		
 #if defined (__unix__) || defined (UNIXCOMMON) || defined (HAVE_SDL)
 	else
@@ -223,12 +225,13 @@ void V_SetPaletteLump(const char *pal)
 	LoadPalette(pal);
 #ifdef HWRENDER
 	if (rendermode != render_soft && rendermode != render_none) {
-		if (cv_grpaletteshader.value == 1) 
+		if (HWR_ShouldUsePaletteRendering()) 
 		{
 			// reset our palette lookups n shit
 			gl_palette_initialized = false;
 			InitPalette(0, false);
 		}
+		
 		HWR_SetPalette(pLocalPalette);
 	}
 #if defined (__unix__) || defined (UNIXCOMMON) || defined (HAVE_SDL)
@@ -1150,10 +1153,31 @@ void V_DrawVhsEffect(boolean rewind)
 	if (rewind)
 		V_DrawVhsEffect(false); // experimentation
 
-	upbary -= FixedMul(vid.dupy * (rewind ? 3 : 1.8f), renderdeltatics);
-	downbary += FixedMul(vid.dupy * (rewind ? 2 : 1), renderdeltatics);
+	if (R_UsingFrameInterpolation()) // omg i fucking hate interp so much, its a bit smoother but still not great whatever, atleast like this shit wont completely go nuts when youre on high framerates
+	{
+		if (renderisnewtic)
+		{
+			upbary -= FixedMul(vid.dupy * (rewind ? 3 : 1.8f), 22937*3);
+			downbary += FixedMul(vid.dupy * (rewind ? 2 : 1), 22937*3);
+		}
+	}
+	else
+	{
+		upbary -= vid.dupy * (rewind ? 3 : 1.8f);
+		downbary += vid.dupy * (rewind ? 2 : 1);
+	}
+
+			
 	if (upbary < -barsize) upbary = vid.height;
 	if (downbary > vid.height) downbary = -barsize;
+
+#ifdef HWRENDER
+	if ((rendermode == render_opengl) && (cv_grvhseffect.value))
+	{
+		HWR_RenderVhsEffect(upbary, downbary, updistort, downdistort, barsize);
+		return;
+	}
+#endif
 
 	for (y = 0; y < vid.height; y+=2)
 	{

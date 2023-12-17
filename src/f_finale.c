@@ -520,6 +520,19 @@ static const char *credits[] = {
 	"Karol \"Fooruman\" D""\x1E""browski", // Dąbrowski, <Sryder> accents in srb2 :ytho:
 	"\"Virt\"",
 	"",
+	"\1Saturn",
+	"\"Alufolie91\" aka \"Alug\"",
+	"\"Indev\"",
+	"\"Haya\"",
+	"\"NepDisk\"",
+	"\"Xyzzy\"",
+	" ",
+	"\"Sunflower\" aka \"AnimeSonic\"",
+	"\"Yuz\" aka \"Yuzler\"",
+	"\"Democrab\"",
+	"\"Expand\" aka \"Maver\"",
+	"\"Nexit\"",
+	"",
 	"\1Special Thanks",
 	"SEGA",
 	"Sonic Team",
@@ -559,10 +572,11 @@ static struct {
 	{224, 80+(216*13), "K_ITMINE", SKINCOLOR_BRONZE},
 	{224, 80+(216*14), "K_ITTHNS", SKINCOLOR_RASPBERRY},
 	{224, 80+(216*15), "K_ITINV1", SKINCOLOR_GREY},
+	{224, 80+(216*16), "K_ITSINK", SKINCOLOR_PINETREE},
 	// This Tyler52 gag is troublesome
 	// Alignment should be ((spaces+1 * 100) + (headers+1 * 38) + (lines * 15))
 	// Current max image spacing: (216*17)
-	{112, (16*100)+(19*38)+(103*15), "TYLER52", SKINCOLOR_NONE},
+	{112, (17*100)+(20*38)+(114*15), "TYLER52", SKINCOLOR_NONE},
 	{0, 0, NULL, SKINCOLOR_NONE}
 };
 
@@ -595,6 +609,7 @@ void F_StartCredits(void)
 	animtimer = 0;
 	timetonext = 2*TICRATE;
 }
+
 
 void F_CreditDrawer(void)
 {
@@ -925,7 +940,6 @@ void F_GameEndTicker(void)
 		D_StartTitle();
 }
 
-
 // ==============
 //  TITLE SCREEN
 // ==============
@@ -988,7 +1002,7 @@ void F_TitleScreenDrawer(void)
 	else
 	{
 		INT32 transval = 0;
-
+		
 		if (finalecount <= (50+(9<<1)))
 			transval = (finalecount - 50)>>1;
 

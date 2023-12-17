@@ -640,9 +640,6 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 			break;
 		case SDL_WINDOWEVENT_MAXIMIZED:
 			break;
-		case SDL_WINDOWEVENT_MOVED:
-			window_x = evt.data1;
-			window_y = evt.data2;
 	}
 
 	if (mousefocus && kbfocus)
@@ -1451,7 +1448,7 @@ void I_FinishUpdate(void)
 	if (I_SkipFrame())
 		return;
 
-	if (cv_ticrate.value)
+	if (cv_ticrate.value && st_overlay)
 		SCR_DisplayTicRate();
 
 	if (cv_showping.value && netgame && consoleplayer != serverplayer)
@@ -1981,7 +1978,6 @@ void I_StartupGraphics(void)
 #ifdef HWRENDER
 	else if (M_CheckParm("-opengl"))
 		rendermode = render_opengl;
-#endif
 
     msaa = 0; boolean msaa_set = false;
     a2c = false; boolean a2c_set = false;
@@ -2011,7 +2007,6 @@ void I_StartupGraphics(void)
 		FILE * file = OpenRendererFile("r");
 		if (file != NULL)
 		{
-#ifdef HWRENDER
 			while (fgets(line, sizeof line, file) != NULL)
 			{
                 word = strtok(line, " \n");
@@ -2063,18 +2058,19 @@ void I_StartupGraphics(void)
 
 			fclose(file);
 		}
-#endif
-		if (rendermode == render_none)
-		{
-#ifdef HWRENDER
-			rendermode = render_opengl;
-			CONS_Printf("Defaulting to OpenGL renderer.\n");
-#else
-			rendermode = render_soft;
-			CONS_Printf("Using default software renderer.\n");
-#endif
-		}
     }
+#endif
+
+	if (rendermode == render_none)
+	{
+#ifdef HWRENDER
+		rendermode = render_opengl;
+		CONS_Printf("Defaulting to OpenGL renderer.\n");
+#else
+		rendermode = render_soft;
+		CONS_Printf("Using default software renderer.\n");
+#endif
+	}
 
 	{
 		FILE * file = OpenRendererFile("w");
@@ -2089,10 +2085,12 @@ void I_StartupGraphics(void)
 				fputs("opengl\n", file);
 			}
 
+#ifdef HWRENDER
             fprintf(file, "msaa %u\n", msaa);
 
             if (a2c)
                 fputs("a2c\n", file);
+#endif
 
             fclose(file);
 		}
@@ -2111,6 +2109,7 @@ void I_StartupGraphics(void)
 	if (rendermode == render_opengl)
 	{
 		HWD.pfnInit             = hwSym("Init",NULL);
+		HWD.pfnSetupGLInfo      = hwSym("SetupGLInfo",NULL);
 		HWD.pfnFinishUpdate     = NULL;
 		HWD.pfnDraw2DLine       = hwSym("Draw2DLine",NULL);
 		HWD.pfnDrawPolygon      = hwSym("DrawPolygon",NULL);
@@ -2134,6 +2133,7 @@ void I_StartupGraphics(void)
 		HWD.pfnDoScreenWipe     = hwSym("DoScreenWipe",NULL);
 		HWD.pfnDrawIntermissionBG=hwSym("DrawIntermissionBG",NULL);
 		HWD.pfnMakeScreenTexture= hwSym("MakeScreenTexture",NULL);
+		HWD.pfnRenderVhsEffect  = hwSym("RenderVhsEffect",NULL);
 		HWD.pfnMakeScreenFinalTexture=hwSym("MakeScreenFinalTexture",NULL);
 		HWD.pfnDrawScreenFinalTexture=hwSym("DrawScreenFinalTexture",NULL);
 
@@ -2150,7 +2150,7 @@ void I_StartupGraphics(void)
 
 		HWD.pfnStartBatching = hwSym("StartBatching",NULL);
 		HWD.pfnRenderBatches = hwSym("RenderBatches",NULL);
-		
+
 		HWD.pfnAddLightTable = hwSym("AddLightTable",NULL);
 		HWD.pfnClearLightTableCache = hwSym("ClearLightTableCache",NULL);
 

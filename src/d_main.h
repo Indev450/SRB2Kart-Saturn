@@ -32,6 +32,14 @@ extern boolean snw_speedo; // snowy speedometer check
 extern boolean clr_hud; // colour hud check
 extern boolean big_lap; // bigger lap counter
 extern boolean big_lap_color; //bigger lap counter but colour
+extern boolean kartzspeedo; //kartZ speedo
+extern boolean statdp; //stat display for extended player setup
+
+extern boolean autoloading;
+extern boolean autoloaded;
+extern boolean postautoloaded;
+
+extern char *autoloadwadfilespost[MAX_WADFILES];
 
 // the infinite loop of D_SRB2Loop() called from win_main for windows version
 void D_SRB2Loop(void) FUNCNORETURN;
@@ -47,6 +55,8 @@ void D_SRB2Main(void);
 void D_PostEvent(const event_t *ev);
 
 void D_ProcessEvents(void);
+
+void D_CleanFile(char **filearray);
 
 const char *D_Home(void);
 

@@ -416,8 +416,8 @@ typedef struct player_s
 	UINT8 skincolor;
 
 	INT32 skin;
-	INT32 localskin;
-	boolean skinlocal;
+	INT32 localskin; // current localskin number
+	boolean skinlocal; // determines if localskin is a skin already loaded in the server
 
 	UINT32 score; // player score
 	fixed_t dashspeed; // dashing speed

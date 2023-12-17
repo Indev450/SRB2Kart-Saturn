@@ -629,7 +629,7 @@ static void R_ParseSpriteInfo(boolean spr2)
 				strlwr(skinName);
 				Z_Free(sprinfoToken);
 
-				skinnum = R_SkinAvailable(skinName);
+				skinnum = R_AnySkinAvailable(skinName);
 				if (skinnum == -1)
 					I_Error("Error parsing SPRTINFO lump: Unknown skin \"%s\"", skinName);
 
@@ -640,6 +640,22 @@ static void R_ParseSpriteInfo(boolean spr2)
 			{
 				R_ParseSpriteInfoFrame(info);
 				Z_Free(sprinfoToken);
+				if (spr2)
+				{
+					if (!foundskins)
+						I_Error("Error parsing SPRTINFO lump: No skins specified in this sprite2 definition");
+					for (i = 0; i < foundskins; i++)
+					{
+						size_t skinnum = skinnumbers[i];
+						skin_t *skin;
+						if (allskins[skinnum].localskin)
+							skin = &localskins[allskins[skinnum].localnum];
+						else
+							skin = &skins[allskins[skinnum].localnum];
+						M_Memcpy(&skin->sprinfo, info, sizeof(spriteinfo_t));
+					}
+				}
+				else
 					M_Memcpy(&spriteinfo[sprnum], info, sizeof(spriteinfo_t));
 			}
 			else
@@ -694,6 +710,7 @@ void R_ParseSPRTINFOLump(UINT16 wadNum, UINT16 lumpNum)
 	sprinfoToken = M_GetToken(sprinfoText);
 	while (sprinfoToken != NULL)
 	{
+		CONS_Printf("Attempting to parse le SPRTINFO lump for ya..\n");
 		if (!stricmp(sprinfoToken, "SPRITE"))
 			R_ParseSpriteInfo(false);
 		else if (!stricmp(sprinfoToken, "SPRITE2"))
@@ -865,6 +882,7 @@ static void RotatedPatch_CalculateDimensions(
 	*newheight = max(height, max(h1, h2));
 }
 
+#ifdef HWRENDER
 static patch_t *R_CreateHardwarePatch(patch_t *patch)
 {
 	GLPatch_t *grPatch = Z_Calloc(sizeof(GLPatch_t), PU_HWRPATCHINFO, NULL);
@@ -873,6 +891,7 @@ static patch_t *R_CreateHardwarePatch(patch_t *patch)
 	HWR_MakePatch(patch, grPatch, grPatch->mipmap, false);
     return (patch_t *)grPatch;
 }
+#endif
 
 void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle, INT32 xpivot, INT32 ypivot, boolean flip)
 {

@@ -78,6 +78,7 @@ void *hwSym(const char *funcName,void *handle)
 		funcPointer = &OglSdlSetPalette;
 
 	GETFUNC(Init);
+	GETFUNC(SetupGLInfo);
 	GETFUNC(Draw2DLine);
 	GETFUNC(DrawPolygon);
 	GETFUNC(SetBlend);
@@ -99,6 +100,7 @@ void *hwSym(const char *funcName,void *handle)
 	GETFUNC(DoScreenWipe);
 	GETFUNC(DrawIntermissionBG);
 	GETFUNC(MakeScreenTexture);
+	GETFUNC(RenderVhsEffect);
 	GETFUNC(MakeScreenFinalTexture);
 	GETFUNC(DrawScreenFinalTexture);
 	

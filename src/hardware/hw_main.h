@@ -89,6 +89,10 @@ void HWR_AddCommands(void);
 void HWR_SetTransform(float fpov, player_t *player);
 void HWR_ClearClipper(void);
 
+boolean HWR_UseShader(void);
+boolean HWR_ShouldUsePaletteRendering(void);
+boolean HWR_PalRenderFlashpal(void);
+
 // My original intention was to split hw_main.c
 // into files like hw_bsp.c, hw_sprites.c...
 
@@ -107,11 +111,12 @@ void HWR_StartScreenWipe(void);
 void HWR_EndScreenWipe(void);
 void HWR_DrawIntermissionBG(void);
 void HWR_DoWipe(UINT8 wipenum, UINT8 scrnnum);
+void HWR_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8 downdistort, UINT8 barsize);
 void HWR_MakeScreenFinalTexture(void);
 void HWR_DrawScreenFinalTexture(int width, int height);
 
 // hw_main.c: Planes
-void HWR_RenderPlane(extrasubsector_t *xsub, boolean isceiling, fixed_t fixedheight, FBITFIELD PolyFlags, INT32 lightlevel, lumpnum_t lumpnum, sector_t *FOFsector, UINT8 alpha, extracolormap_t *planecolormap, subsector_t *subsector);
+void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, boolean isceiling, fixed_t fixedheight, FBITFIELD PolyFlags, INT32 lightlevel, lumpnum_t lumpnum, sector_t *FOFsector, UINT8 alpha, extracolormap_t *planecolormap);
 void HWR_AddTransparentFloor(lumpnum_t lumpnum, extrasubsector_t *xsub, boolean isceiling, fixed_t fixedheight, INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, boolean fogplane, extracolormap_t *planecolormap);
 
 #ifdef POLYOBJECTS
@@ -127,7 +132,7 @@ void HWR_ProcessSeg(void); // Sort of like GLWall::Process in GZDoom
 void HWR_RenderWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap);
 void HWR_ProjectWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blendmode, INT32 lightlevel, extracolormap_t *wallcolormap);
 void HWR_AddTransparentWall(FOutVector *wallVerts, FSurfaceInfo * pSurf, INT32 texnum, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap);
-void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum, FSurfaceInfo* Surf, INT32 cutflag, ffloor_t *pfloor, FBITFIELD polyflags);
+// moved HWR_SplitWall to hw_main.c
 void HWR_DrawSkyWall(FOutVector *wallVerts, FSurfaceInfo *Surf);
 void HWR_DrawSkyBackground(float fpov);
 
@@ -162,6 +167,10 @@ void HWR_CorrectSWTricks(void);
 
 // Console variables
 extern consvar_t cv_grshaders;
+extern consvar_t cv_grfofcut;
+extern consvar_t cv_fofzfightfix;
+extern consvar_t cv_splitwallfix;
+extern consvar_t cv_slopepegfix;
 extern consvar_t cv_grshearing;
 extern consvar_t cv_grfov;
 extern consvar_t cv_grmdls;
@@ -177,15 +186,18 @@ extern consvar_t cv_grfovchange;
 extern consvar_t cv_grsolvetjoin;
 extern consvar_t cv_grspritebillboarding;
 extern consvar_t cv_grfakecontrast;
+extern consvar_t cv_grslopecontrast;
 extern consvar_t cv_grfallbackplayermodel;
 extern consvar_t cv_grbatching;
 extern consvar_t cv_grrenderdistance;
 extern consvar_t cv_grusecustomshaders;
 extern consvar_t cv_grpaletteshader;
+extern consvar_t cv_grscreentextures;
 extern consvar_t cv_grflashpal;
 extern consvar_t cv_grportals;
 extern consvar_t cv_nostencil;
 extern consvar_t cv_secbright;
+extern consvar_t cv_grvhseffect;
 
 extern CV_PossibleValue_t granisotropicmode_cons_t[];
 

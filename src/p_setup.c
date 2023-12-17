@@ -3490,11 +3490,8 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, boolean local)
 
 	if (wadfiles[wadnum]->important)
 		partadd_important = true;
-	
-	if (local)
-		wadfiles[wadnum]->localfile = true;
-	else
-		wadfiles[wadnum]->localfile = false;
+
+	wadfiles[wadnum]->localfile = local;
 
 	//
 	// search for sound replacements
@@ -3555,6 +3552,11 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, boolean local)
 	S_LoadMusicDefs(wadnum);
 
 	//
+	// edit music defs for stuff like musictest
+	//
+	S_LoadMTDefs(wadnum);
+
+	//
 	// search for maps
 	//
 	lumpinfo = wadfiles[wadnum]->lumpinfo;
@@ -3586,6 +3588,9 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, boolean local)
 	}
 	if (!mapsadded)
 		CONS_Printf(M_GetText("No maps added\n"));
+
+	// TODO: Experimental SPRTINFO support, test first
+	R_LoadSpriteInfoLumps(wadnum, wadfiles[wadnum]->numlumps);
 
 	refreshdirmenu &= ~REFRESHDIR_GAMEDATA; // Under usual circumstances we'd wait for REFRESHDIR_GAMEDATA to disappear the next frame, but it's a bit too dangerous for that...
 	partadd_stage = 0;

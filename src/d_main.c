@@ -66,7 +66,7 @@
 #include "fastcmp.h"
 #include "r_fps.h" // Frame interpolation/uncapped
 #include "keys.h"
-#include "filesrch.h" // refreshdirmenu
+#include "filesrch.h" // refreshdirmenu, pathisdirectory
 #include "d_protocol.h"
 #include "m_perfstats.h"
 
@@ -94,8 +94,6 @@
 
 // platform independant focus loss
 UINT8 window_notinfocus = false;
-INT32 window_x;
-INT32 window_y;
 
 //
 // DEMO LOOP
@@ -104,6 +102,13 @@ INT32 window_y;
 static const char *pagename = "MAP1PIC";
 static char *startupwadfiles[MAX_WADFILES];
 static char *startuppwads[MAX_WADFILES];
+
+// autoloading
+static char *autoloadwadfiles[MAX_WADFILES];
+char *autoloadwadfilespost[MAX_WADFILES];
+boolean autoloading;
+boolean autoloaded;
+boolean postautoloaded;
 
 boolean devparm = false; // started game with -devparm
 
@@ -885,7 +890,131 @@ static void D_AddFile(const char *file, char **filearray)
 	filearray[pnumwadfiles] = newfile;
 }
 
-static inline void D_CleanFile(char **filearray)
+// Taken from TSoURDt3rd
+// https://github.com/StarManiaKG/The-Story-of-Uncapped-Revengence-Discord-the-3rd/blob/main/src/STAR/star_functions.c
+static INT32 D_DetectFileType(const char* filename)
+{
+	if (pathisdirectory(filename) == 1)
+		return 1;
+	else
+	{
+		if (!stricmp(&filename[strlen(filename) - 4], ".wad"))
+			return 2;
+		else if (!stricmp(&filename[strlen(filename) - 4], ".pk3"))
+			return 3;
+		else if (!stricmp(&filename[strlen(filename) - 5], ".kart"))
+			return 4;
+
+		else if (!stricmp(&filename[strlen(filename) - 4], ".lua"))
+			return 5;
+		else if (!stricmp(&filename[strlen(filename) - 4], ".soc"))
+			return 6;
+		
+		else if (!stricmp(&filename[strlen(filename) - 4], ".cfg"))
+			return 7;
+		else if (!stricmp(&filename[strlen(filename) - 4], ".txt"))
+			return 8;
+	}
+
+	return 0;
+}
+
+// autoload that shit
+static void D_AutoloadFile(const char *file, char **filearray)
+{
+	size_t pnumwadfiles;
+	char *newfile;
+	INT32 fileType = D_DetectFileType(file);
+
+	for (pnumwadfiles = 0; filearray[pnumwadfiles]; pnumwadfiles++)
+		;
+
+	newfile = malloc(strlen(file) + 1);
+	if (!newfile)
+		I_Error("No more free memory to AutoloadFile %s",file);
+
+	if (!fileType) 
+	{
+		CONS_Printf("D_AutoloadFile: File %s is unknown or invalid\n", file);
+		return;
+	}
+		
+	strcpy(newfile, file);
+
+	if (fileType <= 6)
+		filearray[pnumwadfiles] = newfile;
+	else
+		COM_BufAddText(va("exec %s\n", newfile));
+}
+
+static char *strremove(char *str, const char *sub) {
+    char *p, *q, *r;
+    if (*sub && (q = r = strstr(str, sub)) != NULL) {
+        size_t len = strlen(sub);
+        while ((r = strstr(p = r + len, sub)) != NULL) {
+            while (p < r)
+                *q++ = *p++;
+        }
+        while ((*q++ = *p++) != '\0')
+            continue;
+    }
+    return str;
+}
+
+// FIND THEM
+static void D_FindAddonsToAutoload(void)
+{
+	FILE *autoloadconfigfile;
+	const char *autoloadpath;
+	boolean postload;
+
+	INT32 i;
+	char wadsToAutoload[256] = "", renameAutoloadStrings[256] = "";
+
+	// does it exist tho
+	autoloadpath = va("%s"PATHSEP"%s",srb2home,AUTOLOADCONFIGFILENAME);
+	autoloadconfigfile = fopen(autoloadpath, "r");
+
+	// If the file is found, run our shit
+	if (!autoloadconfigfile) // nope outta here
+		return;
+
+	while (fgets(wadsToAutoload, sizeof wadsToAutoload, autoloadconfigfile) != NULL)
+	{
+		postload = false;
+		// skip if commented or empty
+		if ((wadsToAutoload[1] == '\0' || wadsToAutoload[1] == '\n')
+			|| (wadsToAutoload[0] == '#'))
+			continue;
+		// this marks it so that it loads after loading server addons
+		else if (fastncmp(wadsToAutoload, "postload ", 9)) {
+			strremove(wadsToAutoload, "postload ");
+			postload = true;
+		}
+
+		// Remove Any Empty or Skipped Lines
+		for (i = 0; wadsToAutoload[i] != '\0'; i++)
+		{
+			if (wadsToAutoload[i] == '\n')
+				wadsToAutoload[i] = '\0';
+		}
+
+		// LOAD IT
+		if (!postload)
+			D_AutoloadFile(wadsToAutoload, autoloadwadfiles);
+		else
+			D_AutoloadFile(wadsToAutoload, autoloadwadfilespost);
+
+		// end it here
+		for (i = 0; wadsToAutoload[i] != '\0'; i++)
+			wadsToAutoload[i] = '\0';
+	}
+
+	// we dont want memory leaks around here do we?
+	fclose(autoloadconfigfile);
+}
+
+void D_CleanFile(char **filearray)
 {
 	size_t pnumwadfiles;
 	for (pnumwadfiles = 0; filearray[pnumwadfiles]; pnumwadfiles++)
@@ -921,6 +1050,8 @@ boolean snw_speedo; // snowy speedometer check
 boolean clr_hud; // colour hud check
 boolean big_lap; // bigger lap counter
 boolean big_lap_color; // bigger lap counter but colour
+boolean kartzspeedo; // kartZ speedometer
+boolean statdp; // New stat
 
 static void IdentifyVersion(void)
 {
@@ -1186,6 +1317,9 @@ void D_SRB2Main(void)
 	if (M_CheckParm("-password") && M_IsNextParm())
 		D_SetPassword(M_GetNextParm());
 
+	// FIND THEM
+	D_FindAddonsToAutoload();
+
 	// add any files specified on the command line with -file wadfile
 	// to the wad list
 	if (!(M_CheckParm("-connect") && !M_CheckParm("-server")))
@@ -1278,24 +1412,41 @@ void D_SRB2Main(void)
 			mainwads++;
 		if (found_extra2_kart)
 			mainwads++;
-		
+
 		// now check for speedometer stuff
 		if (W_CheckMultipleLumps("SP_SMSTC", "K_TRNULL", "SP_MKMH", "SP_MMPH", "SP_MFRAC", "SP_MPERC", NULL))
 			snw_speedo = true;
-	
+
 		// check for bigger lap count
 		if (W_CheckMultipleLumps("K_STLAPB", "K_STLA2B", NULL)) 
 			big_lap = true;
-		
+
 		// now check for colour hud stuff
 		if (W_CheckMultipleLumps("K_SCTIME", "K_SCTIMW", "K_SCLAPS", "K_SCLAPW", \
 			"K_SCBALN", "K_SCBALW", "K_SCKARM", "K_SCTOUT", "K_ISMULC", "K_ITMULC", "K_ITBC","K_ITBCD", "K_ISBC", "K_ISBCD", NULL))
 			clr_hud = true;
-		
+
 		// check for bigger lap count but color** its color bitch
 		if (W_CheckMultipleLumps("K_SCLAPB", "K_SCLA2B", NULL)) 
 			big_lap_color = true;
+
+		// kartzspeedo
+		if (W_CheckMultipleLumps("K_KZSP1", "K_KZSP2", "K_KZSP3", "K_KZSP4", "K_KZSP5", \
+			"K_KZSP6", "K_KZSP7", "K_KZSP8", "K_KZSP9", "K_KZSP10", "K_KZSP11", "K_KZSP12", \
+			"K_KZSP13", "K_KZSP14", "K_KZSP15", "K_KZSP16", "K_KZSP17", "K_KZSP18", "K_KZSP19", \
+			"K_KZSP20", "K_KZSP21", "K_KZSP22", "K_KZSP23", "K_KZSP24", "K_KZSP25", NULL)) 
+			kartzspeedo = true;
+
+		// stat display for extended player setup
+		if (W_CheckMultipleLumps("K_STATNB", "K_STATN1", "K_STATN2", "K_STATN3", "K_STATN4", \
+			"K_STATN5", "K_STATN6", NULL)) 
+			statdp = true;
 	}
+
+	CONS_Printf("D_AutoloadFile(): Loading autoloaded addons...\n");
+	if (W_AddAutoloadedLocalFiles(autoloadwadfiles) == 0)
+		CONS_Printf("D_AutoloadFile(): Are you sure you put in valid files or what?\n");
+	D_CleanFile(autoloadwadfiles);
 
 	//
 	// search for maps
@@ -1491,6 +1642,7 @@ void D_SRB2Main(void)
 		I_InitMusic();
 		S_InitSfxChannels(cv_soundvolume.value);
 		S_InitMusicDefs();
+		S_InitMTDefs();
 	}
 
 	CONS_Printf("ST_Init(): Init status bar.\n");
