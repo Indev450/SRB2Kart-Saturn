@@ -140,7 +140,7 @@ static void WarnGUI (void)
 #ifdef HAVE_THREADS
 	I_lock_mutex(&m_menu_mutex);
 #endif
-	M_StartMessage(M_GetText("There was a problem connecting to\nthe Master Server\n\nCheck the console for details.\n"), NULL, MM_NOTHING);
+	M_PopupMasterServerConnectError();
 #ifdef HAVE_THREADS
 	I_unlock_mutex(m_menu_mutex);
 #endif

@@ -10824,6 +10824,12 @@ static void M_ConnectMenuModChecks(INT32 choice)
 
 boolean firstDismissedNagThisBoot = true;
 #ifdef MASTERSERVER
+
+enum {
+	CONNECT_MENU,
+	STARTSERVER_MENU,
+} connect_error_continue = CONNECT_MENU;
+
 static void M_HandleMasterServerResetChoice(event_t *ev)
 {
 	INT32 choice = -1;
@@ -10852,6 +10858,18 @@ static void M_HandleMasterServerResetChoice(event_t *ev)
 	}
 
 }
+
+void M_PopupMasterServerConnectError(void)
+{
+	if (!CV_IsSetToDefault(&cv_masterserver) && cv_masterserver_nagattempts.value > 0)
+	{
+		M_StartMessage(M_GetText("There was a problem connecting to\ncustom Master Server\n\nYou've changed the Server Browser address.\nUnless you're from the future, this probably isn't what you want.\n\n\x83Press Accel\x80 to fix this and continue.\n"), connect_error_continue == STARTSERVER_MENU ? M_PreStartServerMenuChoice : M_PreConnectMenuChoice,MM_EVENTHANDLER);
+	}
+	else
+	{
+		M_StartMessage(M_GetText("There was a problem connecting to\nthe Master Server\n\nCheck the console for details.\n"), NULL, MM_NOTHING);
+	}
+}
 #endif
 
 static void M_PreStartServerMenu(INT32 choice)
@@ -10859,11 +10877,7 @@ static void M_PreStartServerMenu(INT32 choice)
 
 	(void)choice;
 #ifdef MASTERSERVER
-	if (!CV_IsSetToDefault(&cv_masterserver) && cv_masterserver_nagattempts.value > 0)
-	{
-		M_StartMessage(M_GetText("Hey! You've changed the Server Browser address.\n\nYou won't be able to host games on the official Server Browser.\nUnless you're from the future, this probably isn't what you want.\n\n\x83Press Accel\x80 to fix this and continue.\x80\nPress any other key to continue anyway.\n"),M_PreStartServerMenuChoice,MM_EVENTHANDLER);
-		return;
-	}
+	connect_error_continue = STARTSERVER_MENU;
 #endif
 	M_StartServerMenu(-1);
 
@@ -10872,13 +10886,7 @@ static void M_PreStartServerMenu(INT32 choice)
 static void M_PreConnectMenu(INT32 choice)
 {
 	(void)choice;
-
-	if (!CV_IsSetToDefault(&cv_masterserver) && cv_masterserver_nagattempts.value > 0)
-	{
-		M_StartMessage(M_GetText("Hey! You've changed the Server Browser address.\n\nYou won't be able to see games from the official Server Browser.\nUnless you're from the future, this probably isn't what you want.\n\n\x83Press Accel\x80 to fix this and continue.\x80\nPress any other key to continue anyway.\n"),M_PreConnectMenuChoice,MM_EVENTHANDLER);
-		return;
-	}
-
+	connect_error_continue = CONNECT_MENU;
 	M_ConnectMenuModChecks(-1);
 }
 
