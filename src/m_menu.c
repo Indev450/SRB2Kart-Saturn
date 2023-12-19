@@ -2000,12 +2000,15 @@ static menuitem_t OP_SaturnMenu[] =
 	{IT_STRING | IT_CVAR, NULL, "Show Lap Emblem",		 				&cv_showlapemblem, 	 		60},
 	{IT_STRING | IT_CVAR, NULL,	"Show Minimap Names",   				&cv_showminimapnames, 		65},
 	{IT_STRING | IT_CVAR, NULL,	"Small Minimap Players",   				&cv_minihead, 				70},
-	{IT_STRING | IT_CVAR, NULL, "Less Midnight Channel Flicker", 		&cv_lessflicker, 		 	75},
+	{IT_STRING | IT_CVAR, NULL, "Show Cecho Messages", 					&cv_cechotoggle, 			80},
+	{IT_STRING | IT_CVAR, NULL, "Show Localskin Menus", 				&cv_showlocalskinmenus, 	85},
+	
+	{IT_STRING | IT_CVAR, NULL, "Midnight Channel Flicker Effect", 		&cv_lessflicker, 		 	95},
 
-	{IT_SUBMENU|IT_STRING,	NULL,	"Player distortion...", 			&OP_PlayerDistortDef,	 	85},
-	{IT_SUBMENU|IT_STRING,	NULL,	"Hud Offsets...", 					&OP_HudOffsetDef,		 	90},
+	{IT_SUBMENU|IT_STRING,	NULL,	"Player distortion...", 			&OP_PlayerDistortDef,	 	105},
+	{IT_SUBMENU|IT_STRING,	NULL,	"Hud Offsets...", 					&OP_HudOffsetDef,		 	110},
 
-	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Credits", 					&OP_SaturnCreditsDef,		105}, // uwu
+	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Credits", 					&OP_SaturnCreditsDef,		120}, // uwu
 };
 
 static const char* OP_SaturnTooltips[] =
@@ -2023,6 +2026,8 @@ static const char* OP_SaturnTooltips[] =
 	"Show the big 'LAP' text on a lap change.",
 	"Show player names on the minimap.",
 	"Minimize the player icons on the minimap.",
+	"Show the big Cecho Messages.",
+	"Show Localskin Menus.",
 	"Disables the flicker effect on Midnight Channel.",
 	"Options for player distortion effects.",
 	"Move position of HUD elements.",
@@ -4437,10 +4442,10 @@ void M_Init(void)
 	
 	if (snw_speedo && !kartzspeedo)
 		OP_SaturnMenu[sm_speedometer].text = "Speedometer (No PMeter)";
-	
-		
-	if (!clr_hud){ // uhguauhauguuhee
+
+	if (!clr_hud){	// uhguauhauguuhee
 		OP_SaturnMenu[sm_colorhud].status = IT_GRAYEDOUT;
+		OP_SaturnMenu[sm_coloritem].status = IT_GRAYEDOUT;
 		OP_SaturnMenu[sm_colorhud_customcolor].status = IT_GRAYEDOUT;
 	}
 
@@ -7778,6 +7783,8 @@ static void M_Options(INT32 choice)
 	OP_MainMenu[4].status = OP_MainMenu[5].status = (Playing() && !(server || IsPlayerAdmin(consoleplayer))) ? (IT_GRAYEDOUT) : (IT_STRING|IT_SUBMENU);
 
 	OP_MainMenu[8].status = (Playing()) ? (IT_GRAYEDOUT) : (IT_STRING|IT_CALL); // Play credits
+	
+	OP_MainMenu[11].status = (!cv_showlocalskinmenus.value) ? (IT_DISABLED) : (IT_CALL|IT_STRING);
 
 #ifdef HAVE_DISCORDRPC
 	OP_DataOptionsMenu[4].status = (Playing()) ? (IT_GRAYEDOUT) : (IT_STRING|IT_SUBMENU); // Erase data
@@ -7790,8 +7797,6 @@ static void M_Options(INT32 choice)
 
 	OP_MainDef.prevMenu = currentMenu;
 	M_SetupNextMenu(&OP_MainDef);
-	
-	OP_MainMenu[11].status = ((Playing() &&(server &&(!IsPlayerAdmin(consoleplayer)))) || (!cv_showlocalskinmenus.value)) ? (IT_DISABLED) : (IT_CALL|IT_STRING);
 }
 
 static void M_Manual(INT32 choice)
