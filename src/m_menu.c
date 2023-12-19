@@ -4437,10 +4437,10 @@ void M_Init(void)
 	
 	if (snw_speedo && !kartzspeedo)
 		OP_SaturnMenu[sm_speedometer].text = "Speedometer (No PMeter)";
-	
-		
-	if (!clr_hud){ // uhguauhauguuhee
+
+	if (!clr_hud){	// uhguauhauguuhee
 		OP_SaturnMenu[sm_colorhud].status = IT_GRAYEDOUT;
+		OP_SaturnMenu[sm_coloritem].status = IT_GRAYEDOUT;
 		OP_SaturnMenu[sm_colorhud_customcolor].status = IT_GRAYEDOUT;
 	}
 
