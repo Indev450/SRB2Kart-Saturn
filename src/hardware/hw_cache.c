@@ -702,12 +702,10 @@ static void HWR_LoadMappedPatch(GLMipmap_t *grmip, GLPatch_t *gpatch)
 	{
 		patch_t *patch = gpatch->rawpatch;
 		if (!patch)
-				patch = W_CacheLumpNumPwad(gpatch->wadnum, gpatch->lumpnum, PU_STATIC);
+			patch = W_CacheLumpNumPwad(gpatch->wadnum, gpatch->lumpnum, PU_STATIC);
 		HWR_MakePatch(patch, gpatch, grmip, true);
 
 		// You can't free rawpatch for some reason?
-		// (Obviously I can't, sprite rotation needs that...)
-
 		if (!gpatch->rawpatch)
 			Z_Free(patch);
 	}
@@ -726,7 +724,17 @@ void HWR_GetPatch(GLPatch_t *gpatch)
 {
 		/*if (needpatchflush)
 			W_FlushCachedPatches();*/
-
+		
+	if (!gpatch){
+		CONS_Printf("braaaaaaaaaaap gpatch broke");
+		return;
+	}
+	
+	if (!gpatch->mipmap){
+		CONS_Printf("braaaaaaaaaaap gpatch mipmap broke");
+		return;
+	}
+	
 	// is it in hardware cache
 	if (!gpatch->mipmap->downloaded && !gpatch->mipmap->grInfo.data)
 	{
@@ -739,6 +747,7 @@ void HWR_GetPatch(GLPatch_t *gpatch)
 
 		// this is inefficient.. but the hardware patch in heap is purgeable so it should
 		// not fragment memory, and besides the REAL cache here is the hardware memory
+		// You can't free rawpatch for some reason?
 		if (!gpatch->rawpatch)
 			Z_Free(ptr);
 	}
