@@ -127,8 +127,8 @@ extern char  logfilename[1024];
 #else
 #define VERSION    1 // Game version
 #define SUBVERSION 6 // more precise version number
-#define VERSIONSTRING "Saturn v5 "
-#define VERSIONSTRINGW L"Saturn v5"
+#define VERSIONSTRING "Saturn v5 lugdev Zzz..."
+#define VERSIONSTRINGW L"Saturn v5 lugdev Zzz..."
 // Hey! If you change this, add 1 to the MODVERSION below! Otherwise we can't force updates!
 // And change CMakeLists.txt (not src/, but in root), for CMake users!
 // AND appveyor.yml, for the build bots!
@@ -631,7 +631,7 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 
 /// Sprite rotation
 #define ROTSPRITE
-#define ROTANGLES 72 // Needs to be a divisor of 360 (45, 60, 90, 120...)
+#define ROTANGLES 180 // Needs to be a divisor of 360 (45, 60, 90, 120...)
 #define ROTANGDIFF (360 / ROTANGLES)
 
 /// Hardware renderer: OpenGL
