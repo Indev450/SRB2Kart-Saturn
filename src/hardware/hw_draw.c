@@ -141,11 +141,6 @@ void HWR_DrawStretchyFixedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t
 
 	if (alphalevel >= 10 && alphalevel < 13)
 		return;
-	
-	if (!gpatch){
-		CONS_Printf("braaaaaaaaaaap gpatch in stretchypatch broke");
-		return;
-	}
 
 	// make patch ready in hardware cache
 	if (!colormap)
