@@ -1414,6 +1414,14 @@ void CONS_Printf(const char *fmt, ...)
 	startup = con_startup;
 
 	Unlock_state();
+	
+
+#ifdef HAVE_THREADS
+	if (! I_on_main_thread())
+	{
+		return;
+	}
+#endif
 
 	// if not in display loop, force screen update
 	if (startup)
