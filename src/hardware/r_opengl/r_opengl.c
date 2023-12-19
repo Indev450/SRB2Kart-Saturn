@@ -4453,12 +4453,11 @@ EXPORT void HWRAPI(DrawScreenFinalTexture)(int width, int height)
 	clearColour.alpha = 1;
 	ClearBuffer(true, false, false, &clearColour);
 	pglBindTexture(GL_TEXTURE_2D, finalScreenTexture);
-	
-	// prepare shader, if it is enabled
-	Shader_SetUniforms(NULL, NULL, NULL, NULL);
-	
+
 	if (HWR_ShouldUsePaletteRendering())
 	{
+		Shader_SetUniforms(NULL, NULL, NULL, NULL); // prepare shader, if it is enabled
+
 		pglUseProgram(gl_shaderprograms[8].program); // palette shader
 		pglActiveTexture(GL_TEXTURE1);
 	}
