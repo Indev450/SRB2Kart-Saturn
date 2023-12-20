@@ -2995,8 +2995,6 @@ boolean P_SetupLevel(boolean skipprecip)
 	R_FlushTranslationColormapCache();
 
 	Z_FreeTags(PU_LEVEL, PU_PURGELEVEL - 1);
-	
-	mobjcache = NULL;
 
 #if defined (WALLSPLATS) || defined (FLOORSPLATS)
 	// clear the splats from previous level
