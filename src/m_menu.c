@@ -2000,12 +2000,15 @@ static menuitem_t OP_SaturnMenu[] =
 	{IT_STRING | IT_CVAR, NULL, "Show Lap Emblem",		 				&cv_showlapemblem, 	 		60},
 	{IT_STRING | IT_CVAR, NULL,	"Show Minimap Names",   				&cv_showminimapnames, 		65},
 	{IT_STRING | IT_CVAR, NULL,	"Small Minimap Players",   				&cv_minihead, 				70},
-	{IT_STRING | IT_CVAR, NULL, "Less Midnight Channel Flicker", 		&cv_lessflicker, 		 	75},
+	{IT_STRING | IT_CVAR, NULL, "Show Cecho Messages", 					&cv_cechotoggle, 			80},
+	{IT_STRING | IT_CVAR, NULL, "Show Localskin Menus", 				&cv_showlocalskinmenus, 	85},
+	
+	{IT_STRING | IT_CVAR, NULL, "Midnight Channel Flicker Effect", 		&cv_lessflicker, 		 	95},
 
-	{IT_SUBMENU|IT_STRING,	NULL,	"Player distortion...", 			&OP_PlayerDistortDef,	 	85},
-	{IT_SUBMENU|IT_STRING,	NULL,	"Hud Offsets...", 					&OP_HudOffsetDef,		 	90},
+	{IT_SUBMENU|IT_STRING,	NULL,	"Player distortion...", 			&OP_PlayerDistortDef,	 	105},
+	{IT_SUBMENU|IT_STRING,	NULL,	"Hud Offsets...", 					&OP_HudOffsetDef,		 	110},
 
-	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Credits", 					&OP_SaturnCreditsDef,		105}, // uwu
+	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Credits", 					&OP_SaturnCreditsDef,		120}, // uwu
 };
 
 static const char* OP_SaturnTooltips[] =
@@ -2023,6 +2026,8 @@ static const char* OP_SaturnTooltips[] =
 	"Show the big 'LAP' text on a lap change.",
 	"Show player names on the minimap.",
 	"Minimize the player icons on the minimap.",
+	"Show the big Cecho Messages.",
+	"Show Localskin Menus.",
 	"Disables the flicker effect on Midnight Channel.",
 	"Options for player distortion effects.",
 	"Move position of HUD elements.",
@@ -4437,10 +4442,10 @@ void M_Init(void)
 	
 	if (snw_speedo && !kartzspeedo)
 		OP_SaturnMenu[sm_speedometer].text = "Speedometer (No PMeter)";
-	
-		
-	if (!clr_hud){ // uhguauhauguuhee
+
+	if (!clr_hud){	// uhguauhauguuhee
 		OP_SaturnMenu[sm_colorhud].status = IT_GRAYEDOUT;
+		OP_SaturnMenu[sm_coloritem].status = IT_GRAYEDOUT;
 		OP_SaturnMenu[sm_colorhud_customcolor].status = IT_GRAYEDOUT;
 	}
 
@@ -7778,6 +7783,8 @@ static void M_Options(INT32 choice)
 	OP_MainMenu[4].status = OP_MainMenu[5].status = (Playing() && !(server || IsPlayerAdmin(consoleplayer))) ? (IT_GRAYEDOUT) : (IT_STRING|IT_SUBMENU);
 
 	OP_MainMenu[8].status = (Playing()) ? (IT_GRAYEDOUT) : (IT_STRING|IT_CALL); // Play credits
+	
+	OP_MainMenu[11].status = (!cv_showlocalskinmenus.value) ? (IT_DISABLED) : (IT_CALL|IT_STRING);
 
 #ifdef HAVE_DISCORDRPC
 	OP_DataOptionsMenu[4].status = (Playing()) ? (IT_GRAYEDOUT) : (IT_STRING|IT_SUBMENU); // Erase data
@@ -7790,8 +7797,6 @@ static void M_Options(INT32 choice)
 
 	OP_MainDef.prevMenu = currentMenu;
 	M_SetupNextMenu(&OP_MainDef);
-	
-	OP_MainMenu[11].status = ((Playing() &&(server &&(!IsPlayerAdmin(consoleplayer)))) || (!cv_showlocalskinmenus.value)) ? (IT_DISABLED) : (IT_CALL|IT_STRING);
 }
 
 static void M_Manual(INT32 choice)
@@ -10824,6 +10829,12 @@ static void M_ConnectMenuModChecks(INT32 choice)
 
 boolean firstDismissedNagThisBoot = true;
 #ifdef MASTERSERVER
+
+enum {
+	CONNECT_MENU,
+	STARTSERVER_MENU,
+} connect_error_continue = CONNECT_MENU;
+
 static void M_HandleMasterServerResetChoice(event_t *ev)
 {
 	INT32 choice = -1;
@@ -10852,6 +10863,18 @@ static void M_HandleMasterServerResetChoice(event_t *ev)
 	}
 
 }
+
+void M_PopupMasterServerConnectError(void)
+{
+	if (!CV_IsSetToDefault(&cv_masterserver) && cv_masterserver_nagattempts.value > 0)
+	{
+		M_StartMessage(M_GetText("There was a problem connecting to\ncustom Master Server\n\nYou've changed the Server Browser address.\nUnless you're from the future, this probably isn't what you want.\n\n\x83Press Accel\x80 to fix this and continue.\n"), connect_error_continue == STARTSERVER_MENU ? M_PreStartServerMenuChoice : M_PreConnectMenuChoice,MM_EVENTHANDLER);
+	}
+	else
+	{
+		M_StartMessage(M_GetText("There was a problem connecting to\nthe Master Server\n\nCheck the console for details.\n"), NULL, MM_NOTHING);
+	}
+}
 #endif
 
 static void M_PreStartServerMenu(INT32 choice)
@@ -10859,11 +10882,7 @@ static void M_PreStartServerMenu(INT32 choice)
 
 	(void)choice;
 #ifdef MASTERSERVER
-	if (!CV_IsSetToDefault(&cv_masterserver) && cv_masterserver_nagattempts.value > 0)
-	{
-		M_StartMessage(M_GetText("Hey! You've changed the Server Browser address.\n\nYou won't be able to host games on the official Server Browser.\nUnless you're from the future, this probably isn't what you want.\n\n\x83Press Accel\x80 to fix this and continue.\x80\nPress any other key to continue anyway.\n"),M_PreStartServerMenuChoice,MM_EVENTHANDLER);
-		return;
-	}
+	connect_error_continue = STARTSERVER_MENU;
 #endif
 	M_StartServerMenu(-1);
 
@@ -10872,13 +10891,7 @@ static void M_PreStartServerMenu(INT32 choice)
 static void M_PreConnectMenu(INT32 choice)
 {
 	(void)choice;
-
-	if (!CV_IsSetToDefault(&cv_masterserver) && cv_masterserver_nagattempts.value > 0)
-	{
-		M_StartMessage(M_GetText("Hey! You've changed the Server Browser address.\n\nYou won't be able to see games from the official Server Browser.\nUnless you're from the future, this probably isn't what you want.\n\n\x83Press Accel\x80 to fix this and continue.\x80\nPress any other key to continue anyway.\n"),M_PreConnectMenuChoice,MM_EVENTHANDLER);
-		return;
-	}
-
+	connect_error_continue = CONNECT_MENU;
 	M_ConnectMenuModChecks(-1);
 }
 

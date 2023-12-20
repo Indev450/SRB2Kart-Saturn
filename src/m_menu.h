@@ -285,6 +285,10 @@ INT32 HU_GetHighlightColor(void);
 
 void M_PopupMasterServerRules(void);
 
+#ifdef MASTERSERVER
+void M_PopupMasterServerConnectError(void);
+#endif
+
 // These defines make it a little easier to make menus
 #define DEFAULTMENUSTYLE(header, source, prev, x, y)\
 {\

@@ -101,7 +101,7 @@ static void DRPC_HandleReady(const DiscordUser *user)
 {
 	if (cv_discordstreamer.value)
 	{
-		CONS_Printf("Discord: connected to %s\n", user->username);
+		CONS_Printf("Discord: connection successful\n");
 	}
 	else
 	{

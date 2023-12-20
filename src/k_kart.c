@@ -9402,7 +9402,7 @@ static void K_drawBattleFullscreen(void)
 		else
 		{
 			if (!K_UseColorHud())
-				V_DrawFixedPatch(x<<FRACBITS, ty<<FRACBITS, scale, 0, kp_timeoutstickerclr, NULL);
+				V_DrawFixedPatch(x<<FRACBITS, ty<<FRACBITS, scale, 0, kp_timeoutsticker, NULL);
 			else //Colourized hud
 			{
 				UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
