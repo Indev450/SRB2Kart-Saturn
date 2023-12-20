@@ -693,10 +693,9 @@ static float shader_leveltime = 0;
 		"float lightz = clamp(z / 16.0, 0.0, 127.0);\n" \
 		"float startmap = (15.0 - lightnum) * 4.0;\n" \
 		"float scale = 160.0 / (lightz + 1.0);\n" \
-		"return startmap * 1.06 - scale * 0.5 * 1.15;\n" \
+		"float cap = (155.0 - light) * 0.26;\n" \
+		"return max(startmap * 1.06 - scale * 0.5 * 1.15, cap);\n" \
 	"}\n"
-
-// 1.06 and 1.15 were chosen when trying to match software lighting in a test map
 
 #define GLSL_DOOM_COLORMAP \
 	"float R_DoomColormap(float light, float z)\n" \
@@ -715,7 +714,8 @@ static float shader_leveltime = 0;
 		"float lightz = clamp(z / 16.0, 0.0, 127.0);\n" \
 		"float startmap = (15.0 - lightnum) * 4.0;\n" \
 		"float scale = 160.0 / (lightz + 1.0);\n" \
-		"return startmap * 1.05 - scale * 1.0 * 1.1;\n" \
+		"float cap = (155.0 - light) * 0.26;\n" \
+		"return max(startmap * 1.05 - scale * 0.5 * 2.2, cap);\n" \
 	"}\n"
 
 #define GLSL_DOOM_LIGHT_EQUATION \
