@@ -892,7 +892,7 @@ void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, boolean isc
 		if (PolyFlags & PF_Fog)
 			HWD.pfnSetShader(6);	// fog shader
 		else if (PolyFlags & PF_Ripple)
-			HWD.pfnSetShader(5);	// water shader
+			HWD.pfnSetShader(HWR_ShouldUsePaletteRendering() ? 12 : 5); // water shader
 		else
 			HWD.pfnSetShader(HWR_ShouldUsePaletteRendering() ? 9 : 1);	// floor shader
 		
