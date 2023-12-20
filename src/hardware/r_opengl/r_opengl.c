@@ -812,11 +812,6 @@ static float shader_leveltime = 0;
 	GLSL_SOFTWARE_PAL_MAIN \
 	"\0"
 
-#define GLSL_SOFTWARE_PAL_FRAGMENT_SHADER_POSTPROCESS \
-	GLSL_SOFTWARE_PAL_UNIFORMS \
-	GLSL_SOFTWARE_PAL_MAIN \
-	"\0"
-
 //
 // Water surface shader
 //
@@ -955,7 +950,7 @@ static const char *fragment_shaders[] = {
 	"void main(void) {\n"
 		"gl_FragColor = texture2D(tex, gl_TexCoord[0].st);\n"
 	"}\0",
-	
+
 	// Palette fragment shader
 	GLSL_PALETTE_FRAGMENT_SHADER,
 	
@@ -965,9 +960,6 @@ static const char *fragment_shaders[] = {
 	// Palette wall fudge shader
 	GLSL_SOFTWARE_PAL_FRAGMENT_SHADER_WALLS,
 
-	// Palette postprocess shader
-	GLSL_SOFTWARE_PAL_FRAGMENT_SHADER_POSTPROCESS,
-	
 	// Palette water shader
 	GLSL_PALETTE_WATER_FRAGMENT_SHADER,
 
@@ -1017,7 +1009,6 @@ static const char *vertex_shaders[] = {
 	GLSL_DEFAULT_VERTEX_SHADER,
 	
 	// Palette vertex shader
-	GLSL_DEFAULT_VERTEX_SHADER,
 	GLSL_DEFAULT_VERTEX_SHADER,
 	GLSL_DEFAULT_VERTEX_SHADER,
 	GLSL_DEFAULT_VERTEX_SHADER,
