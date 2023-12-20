@@ -865,7 +865,7 @@ static float shader_leveltime = 0;
 	"uniform float lighting;\n" \
 	"uniform float fade_start;\n" \
 	"uniform float fade_end;\n" \
-	GLSL_DOOM_COLORMAP \
+	GLSL_DOOM_COLORMAP_floors \
 	GLSL_DOOM_LIGHT_EQUATION \
 	"void main(void) {\n" \
 		"vec4 base_color = gl_Color;\n" \
