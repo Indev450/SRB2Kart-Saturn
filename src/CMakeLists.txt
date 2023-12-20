@@ -3,7 +3,6 @@
 # Core sources
 set(SRB2_CORE_SOURCES
 	am_map.c
-	args.c
 	b_bot.c
 	command.c
 	comptime.c
