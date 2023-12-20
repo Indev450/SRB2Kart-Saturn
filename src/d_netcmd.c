@@ -4605,14 +4605,6 @@ static void Command_Addfile(void)
 		SendNetXCmd(XD_ADDFILE, buf, buf_p - buf);
 }
 
-// i hate myself
-static boolean DumbStartsWith(const char *pre, const char *str)
-{
-    size_t lenpre = strlen(pre),
-           lenstr = strlen(str);
-    return lenstr < lenpre ? false : memcmp(pre, str, lenpre) == 0;
-}
-
 /** Adds something at runtime.
   */
 static void
@@ -4649,16 +4641,13 @@ Command_Addskins (void)
 	*/
 }
 
-// args n stuff
-#include "args.h"
-
-static void Command_GLocalSkin (void) 
+static void Command_GLocalSkin (void)
 {
 	size_t first_option;
 	size_t option_display;
 	size_t option_all;
 	size_t option_player;
-	
+
 	option_player	= COM_CheckPartialParm("-p");
 	option_display 	= COM_CheckPartialParm("-d");
 	option_all		= COM_CheckPartialParm("-a");
@@ -4686,31 +4675,27 @@ static void Command_GLocalSkin (void)
 
 	fuck = ConcatCommandArgv(1, first_option);
 
-	char* player_name = player_names[consoleplayer];
-	char* display_num = "0";
+	const char* player_name = player_names[consoleplayer];
+	const char* display_num = "0";
 	size_t dnum = 0;
 
 	if (option_display)  // -display
 	{
 		// handle default: 0
-		if (COM_Argv(option_display + 1)[0] == "" || COM_Argv(option_display + 1)[0] != "-")
+		if (COM_Argc() >= option_display)
 			display_num = COM_Argv(option_display + 1);
 
-		if (isdigit(display_num[0]) || display_num == "0") 
-		{
-			dnum = atoi(display_num);
-			if (dnum > 3 || dnum < 0) // nuh uh
-				dnum = 0;
-			SetLocalPlayerSkin(displayplayers[dnum], fuck, NULL);
+		dnum = atoi(display_num);
+		if (dnum > 3) // nuh uh
+			dnum = 0;
 
-			CONS_Printf("Successfully applied localskin to displayed player.\n");
-			return;
-		}
-		
-		CONS_Printf("Could not apply localskin.\n");
-		
+		SetLocalPlayerSkin(displayplayers[dnum], fuck, NULL);
+
+		CONS_Printf("Successfully applied localskin to displayed player.\n");
+
+		Z_Free(fuck);
 		return;
-	} 
+	}
 	else if (option_all) // -all
 	{
 		int i;
@@ -4723,34 +4708,38 @@ static void Command_GLocalSkin (void)
 		}
 		CONS_Printf("Successfully applied localskin to all players.\n");
 
+		Z_Free(fuck);
 		return;
-	} 
+	}
 	else // -player or no other arguments
 	{
-		if (option_player) 
+		if (option_player)
 		{
 			int i;
 			player_name = COM_Argv(option_player + 1);
 
-			for (i = 0; i < MAXPLAYERS; ++i) 
+			for (i = 0; i < MAXPLAYERS; ++i)
 			{
 				if (fasticmp(player_names[i], player_name))
 					SetLocalPlayerSkin(i, fuck, NULL);
 			}
 			CONS_Printf("Successfully applied localskin to specified player.\n");
 
+			Z_Free(fuck);
 			return;
-		} 
-		else 
+		}
+		else
 		{
 			SetLocalPlayerSkin(consoleplayer, fuck, &cv_localskin);
 			CONS_Printf("Successfully applied localskin.\n");
 
+			Z_Free(fuck);
 			return;
 		}
 
 		CONS_Printf("Could not apply localskin.\n");
 
+		Z_Free(fuck);
 		return;
 	}
 }
