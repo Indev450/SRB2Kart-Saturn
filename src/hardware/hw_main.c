@@ -2314,7 +2314,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 	{
 		ffloor_t * rover;
 		fixed_t    highcut = 0, lowcut = 0;
-		fixed_t lowcutslope, highcutslope;
+		fixed_t lowcutslope = 0, highcutslope = 0;
 
 		// Used for height comparisons and etc across FOFs and slopes
 		fixed_t high1, highslope1, low1, lowslope1;
