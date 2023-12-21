@@ -476,7 +476,8 @@ void SCR_DisplayLocalPing(void)
 	
 	if (cv_showping.value == 1 || (cv_showping.value == 2 && ping > servermaxping))	// only show 2 (warning) if our ping is at a bad level
 	{
-		INT32 dispy = cv_ticrate.value ? 160 : 181;
-		HU_drawPing(307, dispy, ping, fpsflags);
+		INT32 dispy = (cv_ticrate.value == 1) ? 165 : ((cv_ticrate.value == 2) ? 172 : 181);
+
+		HU_drawPing(308, dispy, ping, fpsflags);
 	}
 }
