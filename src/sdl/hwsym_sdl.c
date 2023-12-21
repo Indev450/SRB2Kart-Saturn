@@ -119,6 +119,7 @@ void *hwSym(const char *funcName,void *handle)
 	GETFUNC(StartBatching);
 	GETFUNC(RenderBatches);
 	
+	GETFUNC(InitPalette);
 	GETFUNC(AddLightTable);
 	GETFUNC(ClearLightTableCache);
 

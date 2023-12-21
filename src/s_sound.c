@@ -1323,19 +1323,6 @@ static UINT32    queue_fadeinms;
 musicdef_t *musicdefstart = NULL; // First music definition
 struct cursongcredit cursongcredit; // Currently displayed song credit info
 
-musicdef_t soundtestsfx = {
-	"_STSFX", // prevents exactly one valid track name from being used on the sound test
-	"Sound Effects",
-	"",
-	"SEGA, Sonic Team Jr, other sources",
-	1, // show on soundtest page 1
-	0, // with no conditions
-	0,
-	0,
-	false,
-	NULL
-};
-
 //
 // search for music definition in wad
 //

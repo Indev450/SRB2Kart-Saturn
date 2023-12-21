@@ -2579,54 +2579,92 @@ void HU_drawPing(INT32 x, INT32 y, UINT32 lag, INT32 flags)
 	UINT8 *colormap = NULL;
 	INT32 measureid = cv_pingmeasurement.value ? 1 : 0;
 	INT32 gfxnum; // gfx to draw
+	
+	//SRB2/Kart v1.0 style
+	UINT8 numbars = 0; // how many ping bars do we draw?
+	UINT8 barcolor = 31; // color we use for the bars (green, yellow, red or black)
+	SINT8 i = 0;
+	SINT8 yoffset = 6;
+	INT32 dx;
 
 	gfxnum = Ping_gfx_num(lag);
-
-	if (measureid == 1)
+	
+	if (!cv_pingstyle.value)
 	{
-		if (cv_ticrate.value == 2){
-			V_DrawScaledPatch(x+12 - pingmeasure[measureid]->width, y+22, flags, pingmeasure[measureid]);
-		}else{
+		if (measureid == 1)
 			V_DrawScaledPatch(x+11 - pingmeasure[measureid]->width, y+9, flags, pingmeasure[measureid]);
-		}	
-	}
-	
-	
-	if (cv_pingicon.value)
-	{	
-	if (cv_ticrate.value == 2){
-			V_DrawScaledPatch(x+2, y+13, flags, pinggfx[gfxnum]);
-		}else{
-			V_DrawScaledPatch(x+2, y, flags, pinggfx[gfxnum]);
-		}
-	}
-	
-
-	if (servermaxping && lag > servermaxping && hu_tick < 4)
-	{
-		// flash ping red if too high
-		colormap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_RASPBERRY, GTC_CACHE);
-	}
-
-	if (cv_pingmeasurement.value)
-	{
-		lag = (INT32)(lag * (1000.00f / TICRATE));
-	}
-	
-	if (cv_ticrate.value == 2){
-		x = V_DrawPingNum(x + (measureid == 1 ? 11 - pingmeasure[measureid]->width : 10), y+22, flags, lag, colormap);
-	}else{
-		x = V_DrawPingNum(x + (measureid == 1 ? 11 - pingmeasure[measureid]->width : 10), y+9, flags, lag, colormap);
-	}
-
-	if (measureid == 0){
-		if (cv_ticrate.value == 2){
-			V_DrawScaledPatch(x+1 - pingmeasure[measureid]->width, y+22, flags, pingmeasure[measureid]);
-		}else{
-			V_DrawScaledPatch(x+1 - pingmeasure[measureid]->width, y+9, flags, pingmeasure[measureid]);
-		}
-	}		
 		
+		if (cv_pingicon.value)
+			V_DrawScaledPatch(x+2, y, flags, pinggfx[gfxnum]);
+
+		if (servermaxping && lag > servermaxping && hu_tick < 4)
+			colormap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_RASPBERRY, GTC_CACHE); // flash ping red if too high
+
+		if (cv_pingmeasurement.value)
+			lag = (INT32)(lag * (1000.00f / TICRATE));
+
+		x = V_DrawPingNum(x + (measureid == 1 ? 11 - pingmeasure[measureid]->width : 10), y+9, flags, lag, colormap);
+
+		if (measureid == 0)
+				V_DrawScaledPatch(x+1 - pingmeasure[measureid]->width, y+9, flags, pingmeasure[measureid]);
+	}
+	else if (cv_pingstyle.value) // old style ping
+	{
+		if (cv_pingicon.value)
+		{
+			if (lag < 4)
+			{
+				numbars = 3;
+				barcolor = 184;
+			}
+			else if (lag < 7)
+			{
+				numbars = 2;	// Apparently ternaries w/ multiple statements don't look good in C so I decided against it.
+				barcolor = 103;
+			}
+			else if (lag < 10)
+			{
+				numbars = 1;
+				barcolor = 155; // need a better red
+			}
+			else // brazil
+			{
+				numbars = 0;
+				barcolor = 31;
+			}
+		}
+
+		if (cv_pingmeasurement.value)
+			lag = (INT32)(lag * (1000.00f / TICRATE));
+
+		if (vid.width >= 640)	// how sad, we're using a shit resolution.
+		{
+			if (measureid == 1)
+			{
+				//dx = x+1 - (V_SmallStringWidth(va("%dms", lag), V_ALLOWLOWERCASE|flags)/2);
+				//V_DrawSmallString(dx, y+4, V_ALLOWLOWERCASE|flags, va("%dms", lag));
+					V_DrawRightAlignedSmallString(x+12, y+13, V_ALLOWLOWERCASE|flags, va("%dms", lag));
+			}
+			else if (measureid == 0)
+			{
+				//dx = x+1 - (V_SmallStringWidth(va("d%d", lag), flags)/2);
+				//V_DrawSmallString(dx, y+4, flags, va("d%d", lag));
+					V_DrawRightAlignedSmallString(x+12, y+13, flags, va("d%d", lag));
+			}
+		}
+
+		if (cv_pingicon.value)
+		{	
+			for (i=0; (i<3); i++) // Draw the ping bar
+			{
+				V_DrawFill(x+2 *(i-1)+7, y+8+yoffset-4, 2, 8-yoffset, 31|flags);
+				if (i < numbars)
+					V_DrawFill(x+2 *(i-1)+7, y+8+yoffset-3, 1, 8-yoffset-1, barcolor|flags);
+
+				yoffset -= 2;
+			}
+		}
+	}
 }
 
 //

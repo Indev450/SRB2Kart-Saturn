@@ -85,6 +85,7 @@ EXPORT boolean HWRAPI(InitCustomShaders) (void);
 EXPORT void HWRAPI(StartBatching) (void);
 EXPORT void HWRAPI(RenderBatches) (precise_t *sSortTime, precise_t *sDrawTime, int *sNumPolys, int *sNumVerts, int *sNumCalls, int *sNumShaders, int *sNumTextures, int *sNumPolyFlags, int *sNumColors);
 
+EXPORT void HWRAPI(InitPalette) (int flashnum, boolean skiplut);
 EXPORT UINT32 HWRAPI(AddLightTable) (UINT8 *lighttable);
 EXPORT void HWRAPI(ClearLightTableCache) (void);
 
@@ -140,6 +141,7 @@ struct hwdriver_s
 	StartBatching 			pfnStartBatching;
 	RenderBatches 			pfnRenderBatches;
 	
+	InitPalette 			pfnInitPalette;
 	AddLightTable 			pfnAddLightTable;
 	ClearLightTableCache 	pfnClearLightTableCache;
 };

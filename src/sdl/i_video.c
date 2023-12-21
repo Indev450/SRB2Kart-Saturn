@@ -2152,6 +2152,7 @@ void I_StartupGraphics(void)
 		HWD.pfnStartBatching = hwSym("StartBatching",NULL);
 		HWD.pfnRenderBatches = hwSym("RenderBatches",NULL);
 
+		HWD.pfnInitPalette = hwSym("InitPalette",NULL);
 		HWD.pfnAddLightTable = hwSym("AddLightTable",NULL);
 		HWD.pfnClearLightTableCache = hwSym("ClearLightTableCache",NULL);
 

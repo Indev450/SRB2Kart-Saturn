@@ -1392,7 +1392,7 @@ static const char* OP_VideoTooltips[] =
 	"How far away weather is drawn.",
 	"Toggle being able to see the sky.",
 	"Player field of view.",
-	"Show current game framerate.",
+	"Show current game framerate and select the style.",
 	"Sync game framerate to refresh rate of monitor.",
 	"Set manual framerate cap.",
 	"Size of drift spark pulse.",
@@ -1762,23 +1762,24 @@ static menuitem_t OP_HUDOptionsMenu[] =
 static menuitem_t OP_ChatOptionsMenu[] =
 {
 	// will ANYONE who doesn't know how to use the console want to touch this one?
-	{IT_STRING | IT_CVAR, NULL, "Chat Mode",				&cv_consolechat,		10}, // nonetheless...
+	{IT_STRING | IT_CVAR, NULL, "Chat Mode",				&cv_consolechat,		5}, // nonetheless...
 
 	{IT_STRING | IT_CVAR | IT_CV_SLIDER,
-	                      NULL, "Chat Box Width",			&cv_chatwidth,			25},
+	                      NULL, "Chat Box Width",			&cv_chatwidth,			20},
 	{IT_STRING | IT_CVAR | IT_CV_SLIDER,
-	                      NULL, "Chat Box Height",			&cv_chatheight,			35},
+	                      NULL, "Chat Box Height",			&cv_chatheight,			30},
 
-	{IT_STRING | IT_CVAR, NULL, "Chat Background Tint",		&cv_chatbacktint,		50},
-	{IT_STRING | IT_CVAR, NULL, "Message Fadeout Time",		&cv_chattime,			60},
-	{IT_STRING | IT_CVAR, NULL, "Spam Protection",			&cv_chatspamprotection,	70},
-	{IT_STRING | IT_CVAR, NULL, "Max Chat Messages",		&cv_chatlogsize,		80},
+	{IT_STRING | IT_CVAR, NULL, "Chat Background Tint",		&cv_chatbacktint,		45},
+	{IT_STRING | IT_CVAR, NULL, "Message Fadeout Time",		&cv_chattime,			55},
+	{IT_STRING | IT_CVAR, NULL, "Spam Protection",			&cv_chatspamprotection,	65},
+	{IT_STRING | IT_CVAR, NULL, "Max Chat Messages",		&cv_chatlogsize,		75},
 
-	{IT_STRING | IT_CVAR, NULL, "Local ping display",		&cv_showping,			100},	// shows ping next to framerate if we want to.
-	{IT_STRING | IT_CVAR, NULL, "Ping measurement",			&cv_pingmeasurement,	110},
-	{IT_STRING | IT_CVAR, NULL, "Ping icon",				&cv_pingicon,			120},
-	
-	{IT_STRING | IT_CVAR, NULL, "Show IP addresses in playerlist",		&cv_shownodeip,	140},
+	{IT_STRING | IT_CVAR, NULL, "Local ping display",		&cv_showping,			95},	// shows ping above the framerate if we want to.
+	{IT_STRING | IT_CVAR, NULL, "Ping display style",		&cv_pingstyle,			105},
+	{IT_STRING | IT_CVAR, NULL, "Ping measurement",			&cv_pingmeasurement,	115},
+	{IT_STRING | IT_CVAR, NULL, "Ping icon",				&cv_pingicon,			125},
+
+	{IT_STRING | IT_CVAR, NULL, "Show IP address in playerlist",		&cv_shownodeip,	135},
 };
 
 static const char* OP_ChatOptionsTooltips[] =
@@ -1791,6 +1792,7 @@ static const char* OP_ChatOptionsTooltips[] =
 	"Spam protection for in-game chat.",
 	"Maxiumum amount of chat messages to look back at.",
 	"Show player ping.",
+	"Choose the looks of the ping display.", // this is ass idk english lmao
 	"Measurement used for ping.",
 	"Visibility of ping icon.",
 	"Should Player IP addresses be printed when using\nthe nodes or listplayers command?",

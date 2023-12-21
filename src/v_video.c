@@ -20,6 +20,8 @@
 #include "r_draw.h"
 #include "console.h"
 
+#include "r_fps.h" //vhs effect stuff
+
 #include "i_video.h" // rendermode
 #include "z_zone.h"
 #include "m_misc.h"
@@ -42,7 +44,7 @@ UINT8 *screens[5];
 static CV_PossibleValue_t gamma_cons_t[] = {{0, "MIN"}, {4, "MAX"}, {0, NULL}};
 static void CV_usegamma_OnChange(void);
 
-static CV_PossibleValue_t fps_cons_t[] = {{0, "No"}, {1, "Normal"}, {2, "Compact"}, {0, NULL}};
+static CV_PossibleValue_t fps_cons_t[] = {{0, "No"}, {1, "Normal"}, {2, "Compact"}, {3, "Old"}, {4, "Old Compact"}, {0, NULL}};
 consvar_t cv_ticrate = {"showfps", "No", CV_SAVE, fps_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_usegamma = {"gamma", "0", CV_SAVE|CV_CALL, gamma_cons_t, CV_usegamma_OnChange, 0, NULL, NULL, 0, 0, NULL};
@@ -207,7 +209,7 @@ void V_SetPalette(INT32 palettenum)
 		{
 			// reset our palette lookups n shit
 			gl_palette_initialized = false;
-			InitPalette(palettenum, true);
+			HWR_InitPalette(palettenum, true);
 		}
 		else
 			HWR_SetPalette(&pLocalPalette[palettenum*256]);
@@ -229,7 +231,7 @@ void V_SetPaletteLump(const char *pal)
 		{
 			// reset our palette lookups n shit
 			gl_palette_initialized = false;
-			InitPalette(0, false);
+			HWR_InitPalette(0, false);
 		}
 		
 		HWR_SetPalette(pLocalPalette);
