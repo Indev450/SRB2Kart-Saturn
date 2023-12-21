@@ -135,6 +135,5 @@ typedef enum
 
 // in order for custom playpals n shit to work properly
 extern boolean gl_palette_initialized;
-void InitPalette(int flashnum, boolean skiplut);
 
 #endif

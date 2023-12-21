@@ -207,7 +207,7 @@ void V_SetPalette(INT32 palettenum)
 		{
 			// reset our palette lookups n shit
 			gl_palette_initialized = false;
-			InitPalette(palettenum, true);
+			HWR_InitPalette(palettenum, true);
 		}
 		else
 			HWR_SetPalette(&pLocalPalette[palettenum*256]);
@@ -229,7 +229,7 @@ void V_SetPaletteLump(const char *pal)
 		{
 			// reset our palette lookups n shit
 			gl_palette_initialized = false;
-			InitPalette(0, false);
+			HWR_InitPalette(0, false);
 		}
 		
 		HWR_SetPalette(pLocalPalette);

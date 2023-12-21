@@ -183,9 +183,9 @@ static void CV_grshaders_OnChange(void)
 	if (rendermode == render_opengl)
 	{
 		if (HWR_ShouldUsePaletteRendering())
-		{
-			InitPalette(0, false);	
-		}
+			HWR_InitPalette(0, false);
+		
+		HWD.pfnSetSpecialState(HWD_PAL_SHADER, HWR_ShouldUsePaletteRendering());
 		
 		V_SetPalette(0);
 	}
@@ -197,6 +197,9 @@ static void CV_useCustomShaders_ONChange(void)
 	{
 		if (HWR_UseShader())
 			HWD.pfnInitCustomShaders();
+		
+		if (HWR_ShouldUsePaletteRendering())
+			HWR_InitPalette(0, false);
 	}
 }
 
@@ -205,6 +208,11 @@ static void CV_Gammaxxx_ONChange(void)
 {
 	if (rendermode == render_opengl)
 		V_SetPalette(0);
+}
+
+void HWR_InitPalette(int flashnum, boolean skiplut)
+{
+    HWD.pfnInitPalette(flashnum, skiplut);
 }
 
 
