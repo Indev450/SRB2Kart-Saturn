@@ -5936,9 +5936,79 @@ static void HWR_PortalClipping(gl_portal_t *portal)
 	gld_clipper_SafeAddClipRange(angle2, angle1);
 }
 
-//
-// Render portals recursively depth first. With portals disabled only current scene is rendered.
-//
+enum 
+{
+	HWR_STENCIL_NORMAL,
+	HWR_STENCIL_BEGIN,
+	HWR_STENCIL_REVERSE,
+	HWR_STENCIL_DEPTH,
+	HWR_STENCIL_SKY
+};
+
+// Changes the current stencil state.
+static void HWR_SetStencilState(int state, int level)
+{
+	if (!cv_nostencil.value && level > -1)
+		HWD.pfnSetSpecialState(HWD_SET_STENCIL_LEVEL, level);
+	HWD.pfnSetSpecialState(HWD_SET_PORTAL_MODE, state);
+}
+
+// Renders a portal segment.
+static void HWR_RenderPortalSeg(gl_portal_t* portal, int state)
+{
+	gl_drawing_stencil = true; // do not draw outside of the stencil buffer, idiot.
+	// set our portal state and prepare to render the seg
+	gr_portal = state;
+	gr_curline = portal->seg;
+	gr_frontsector = portal->seg->frontsector;
+	gr_backsector = portal->seg->backsector;
+	HWR_ProcessSeg();
+	gl_drawing_stencil = false;
+	// need to work around the r_opengl PF_Invisible bug with this call
+	// similarly as in the linkdraw hack in HWR_DrawSprites
+	HWD.pfnSetBlend(PF_Translucent|PF_Occlude|PF_Masked);
+}
+
+// Renders the current viewpoint, though takes portal arguments for recursive portals.
+static void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *player, int stencil_level, boolean allow_portals);
+
+// Renders a single portal from the current viewpoint.
+static void HWR_RenderPortal(gl_portal_t* portal, gl_portal_t* rootportal, const float fpov, player_t *player, int stencil_level)
+{
+	// draw portal seg to stencil buffer with increment
+	HWR_SetTransform(fpov, player);
+	HWR_ClearClipper();
+
+	HWR_SetStencilState(HWR_STENCIL_BEGIN, stencil_level);
+	HWR_RenderPortalSeg(portal, GRPORTAL_STENCIL);
+
+	// go to portal frame lmao
+	HWR_PortalFrame(portal);
+	// call HWR_RenderViewpoint
+	HWR_RenderViewpoint(portal, fpov, player, stencil_level + 1, true);
+	// return to current frame
+	if (rootportal)
+		HWR_PortalFrame(rootportal);
+	else // current frame is not a portal frame but the main view!
+	{
+		R_SetupFrame(player, false);
+		portalclipline = NULL;
+	}
+
+	// remove portal seg from stencil buffer
+	HWR_SetTransform(fpov, player);
+	HWR_ClearClipper();
+	
+	HWR_SetStencilState(HWR_STENCIL_REVERSE, stencil_level);
+	HWR_RenderPortalSeg(portal, GRPORTAL_STENCIL);
+
+	// draw portal seg to depth buffer
+	HWR_ClearClipper();
+	HWR_SetStencilState(HWR_STENCIL_DEPTH, stencil_level);
+	HWR_RenderPortalSeg(portal, GRPORTAL_DEPTH);
+}
+
+// Renders the current viewpoint, though takes portal arguments for recursive portals.
 static void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *player, int stencil_level, boolean allow_portals)
 {
 	gl_portallist_t portallist;
@@ -5967,75 +6037,14 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, playe
 		{
 			if (cv_portalline.value && cv_portalline.value != portal->startline)
 				continue;
-			if (!cv_nostencil.value)
-			{
-				// draw portal seg to stencil buffer with increment
-				HWR_SetTransform(fpov, player);
-				HWR_ClearClipper();
-				gl_drawing_stencil = true;
-				HWD.pfnSetSpecialState(HWD_SET_STENCIL_LEVEL, stencil_level);
-				HWD.pfnSetSpecialState(HWD_SET_PORTAL_MODE, HWD_PORTAL_STENCIL_SEGS);
-				gr_portal = GRPORTAL_STENCIL;
-				gr_frontsector = portal->seg->frontsector;
-				validcount++;
-				HWR_AddLine(portal->seg);
-				gl_drawing_stencil = false;
-				// need to work around the r_opengl PF_Invisible bug with this call
-				// similarly as in the linkdraw hack in HWR_DrawSprites
-				HWD.pfnSetBlend(PF_Translucent|PF_Occlude|PF_Masked);
-			}
-			// go to portal frame
-			HWR_PortalFrame(portal);
-			// call HWR_RenderViewpoint
-			HWR_RenderViewpoint(portal, fpov, player, stencil_level + 1, true);
-			// return to current frame
-			if (rootportal)
-				HWR_PortalFrame(rootportal);
-			else// current frame is not a portal frame but the main view!
-			{
-				R_SetupFrame(player, false);
-				portalclipline = NULL;
-			}
-			if (!cv_nostencil.value)
-			{
-				// remove portal seg from stencil buffer
-				HWR_SetTransform(fpov, player);
-				HWR_ClearClipper();
-				gl_drawing_stencil = true;
-				HWD.pfnSetSpecialState(HWD_SET_STENCIL_LEVEL, stencil_level);
-				HWD.pfnSetSpecialState(HWD_SET_PORTAL_MODE, HWD_PORTAL_STENCIL_REVERSE_SEGS);
-				gr_portal = GRPORTAL_STENCIL;
-				gr_frontsector = portal->seg->frontsector;
-				validcount++;
-				HWR_AddLine(portal->seg);
-				gl_drawing_stencil = false;
-				// need to work around the r_opengl PF_Invisible bug with this call
-				// similarly as in the linkdraw hack in HWR_DrawSprites
-				HWD.pfnSetBlend(PF_Translucent|PF_Occlude|PF_Masked);
-			}
-			// draw portal seg to depth buffer
-			HWR_ClearClipper();
-			gl_drawing_stencil = true;
-			if (!cv_nostencil.value)
-				HWD.pfnSetSpecialState(HWD_SET_STENCIL_LEVEL, stencil_level);
-			HWD.pfnSetSpecialState(HWD_SET_PORTAL_MODE, HWD_PORTAL_DEPTH_SEGS);
-			gr_portal = GRPORTAL_DEPTH;
-			gr_frontsector = portal->seg->frontsector;
-			validcount++;
-			HWR_AddLine(portal->seg);
-			gl_drawing_stencil = false;
-			// need to work around the r_opengl PF_Invisible bug with this call
-			// similarly as in the linkdraw hack in HWR_DrawSprites
-			HWD.pfnSetBlend(PF_Translucent|PF_Occlude|PF_Masked);
+			HWR_RenderPortal(portal, rootportal, fpov, player, stencil_level);
 		}
 		gr_portal = GRPORTAL_INSIDE;// when portal walls are encountered in following bsp traversal, nothing should be drawn
 	}
 	else
 		gr_portal = GRPORTAL_OFF;// there may be portals and they need to be drawn as regural walls
 	// draw normal things in current frame in current incremented stencil buffer area
-	if (!cv_nostencil.value)
-		HWD.pfnSetSpecialState(HWD_SET_STENCIL_LEVEL, stencil_level);
-	HWD.pfnSetSpecialState(HWD_SET_PORTAL_MODE, HWD_PORTAL_NORMAL);
+	HWR_SetStencilState(HWR_STENCIL_NORMAL, stencil_level);
 	if (!cv_portalonly.value || rootportal)
 	{
 		HWR_ClearClipper();
@@ -6083,15 +6092,13 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, playe
 		}
 		if (skyWallVertexArraySize)// if there are skywalls to draw using the alternate method
 		{
-			HWD.pfnSetSpecialState(HWD_SET_PORTAL_MODE, HWD_PORTAL_SKY_STENCIL_SEGS);
+			HWR_SetStencilState(HWR_STENCIL_SKY, -1);
 			HWR_DrawSkyWallList();
 			HWR_SkyWallList_Clear();
-			HWD.pfnSetSpecialState(HWD_SET_STENCIL_LEVEL, 1);
-			HWD.pfnSetSpecialState(HWD_SET_PORTAL_MODE, HWD_PORTAL_NORMAL);
+			HWR_SetStencilState(HWR_STENCIL_NORMAL, 1);
 			drewsky = false;
 			HWR_DrawSkyBackground(fpov);
-			HWD.pfnSetSpecialState(HWD_SET_STENCIL_LEVEL, 0);
-			HWD.pfnSetSpecialState(HWD_SET_PORTAL_MODE, HWD_PORTAL_NORMAL);
+			HWR_SetStencilState(HWR_STENCIL_NORMAL, 0);
 			HWD.pfnClearBuffer(false, false, true, 0);// clear skywall markings from the stencil buffer
 			HWR_SetTransform(fpov, player);// restore transform
 		}
