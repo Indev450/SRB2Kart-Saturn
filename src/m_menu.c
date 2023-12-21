@@ -1392,7 +1392,7 @@ static const char* OP_VideoTooltips[] =
 	"How far away weather is drawn.",
 	"Toggle being able to see the sky.",
 	"Player field of view.",
-	"Show current game framerate.",
+	"Show current game framerate and select the style.",
 	"Sync game framerate to refresh rate of monitor.",
 	"Set manual framerate cap.",
 	"Size of drift spark pulse.",
