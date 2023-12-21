@@ -172,7 +172,6 @@ typedef struct musicdef_s
 	struct musicdef_s *next;
 } musicdef_t;
 
-extern musicdef_t soundtestsfx;
 extern musicdef_t *musicdefstart;
 extern musicdef_t **soundtestdefs;
 extern INT32 numsoundtestdefs;
