@@ -850,33 +850,34 @@ static float shader_leveltime = 0;
 	"}\0"
 	
 #define GLSL_PALETTE_WATER_FRAGMENT_SHADER \
+	"const float freq = 0.025;\n" \
+    "const float amp = 0.025;\n" \
+    "const float speed = 2.0;\n" \
+    "const float pi = 3.14159;\n" \
     "uniform sampler2D tex;\n" \
-    "uniform sampler2D lighttable_tex;\n" \
+	"uniform sampler2D lighttable_tex;\n" \
 	"uniform sampler3D lookup_tex;\n" \
     "uniform int palette[768];\n" \
     "uniform vec4 poly_color;\n" \
     "uniform float lighting;\n" \
     "uniform float leveltime;\n" \
-	"const float freq = 0.025;\n" \
-    "const float amp = 0.025;\n" \
-    "const float speed = 2.0;\n" \
-    "const float pi = 3.14159;\n" \
     GLSL_DOOM_COLORMAP_floors \
     "void main(void) {\n" \
-        "float z = (gl_FragCoord.z / gl_FragCoord.w) / 2.0;\n" \
-        "float a = -pi * (z * freq) + (leveltime * speed);\n" \
-        "float sdistort = sin(a) * amp;\n" \
-        "float cdistort = cos(a) * amp;\n" \
-        "vec4 texel = texture2D(tex, vec2(gl_TexCoord[0].s - sdistort, gl_TexCoord[0].t - cdistort));\n" \
-        "int tex_pal_idx = int(texture3D(lookup_tex, vec3((texel * 63.0 + 0.5) / 64.0))[0] * 255.0);\n" \
-        "int light_y = int(clamp(floor(R_DoomColormap(lighting, z)), 0.0, 31.0));\n" \
-        "vec2 lighttable_coord = vec2((float(tex_pal_idx) + 0.5) / 256.0, (float(light_y) + 0.5) / 32.0);\n" \
-        "int final_idx = int(texture2D(lighttable_tex, lighttable_coord)[0] * 255.0);\n" \
+		"float water_z = (gl_FragCoord.z / gl_FragCoord.w) / 2.0;\n" \
+		"float a = -pi * (water_z * freq) + (leveltime * speed);\n" \
+		"float sdistort = sin(a) * amp;\n" \
+		"float cdistort = cos(a) * amp;\n" \
+		"vec4 texel = texture2D(tex, vec2(gl_TexCoord[0].s - sdistort, gl_TexCoord[0].t - cdistort));\n" \
+		"int tex_pal_idx = int(texture3D(lookup_tex, vec3((texel * 63.0 + 0.5) / 64.0))[0] * 255.0);\n" \
+		"float z = gl_FragCoord.z / gl_FragCoord.w;\n" \
+		"int light_y = int(clamp(floor(R_DoomColormap(lighting, z)), 0.0, 31.0));\n" \
+		"vec2 lighttable_coord = vec2((float(tex_pal_idx) + 0.5) / 256.0, (float(light_y) + 0.5) / 32.0);\n" \
+		"int final_idx = int(texture2D(lighttable_tex, lighttable_coord)[0] * 255.0);\n" \
 		"vec4 final_color = vec4(float(palette[final_idx*3])/255.0, float(palette[final_idx*3+1])/255.0, float(palette[final_idx*3+2])/255.0, 1.0);\n" \
         "final_color.a = texel.a * poly_color.a;\n" \
         "gl_FragColor = final_color;\n" \
     "}\0"
-
+	
 //
 // Fog block shader
 //
@@ -1434,6 +1435,12 @@ EXPORT void HWRAPI(InitPalette) (int flashnum, boolean skiplut)
 	// bind tex unit 2 to lighttable tex
 	pglUniform1i(gl_shaderprograms[10].uniforms[gluniform_lighttable_tex], 2);
 	pglUniform1i(gl_shaderprograms[10].uniforms[gluniform_color_lookup], 1);
+	// bind stuff to wöter shader
+	pglUseProgram(gl_shaderprograms[11].program);
+	pglUniform1iv(gl_shaderprograms[11].uniforms[gluniform_palette], 768, gl_palette);
+	pglUniform1i(gl_shaderprograms[11].uniforms[gluniform_lighttable_tex], 2);
+	pglUniform1i(gl_shaderprograms[11].uniforms[gluniform_color_lookup], 1);
+	
 	pglUseProgram(0);
 	pglBindTexture(GL_TEXTURE_3D, 0);
 
