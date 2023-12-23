@@ -332,6 +332,8 @@ void R_MapPlane(INT32 y, INT32 x1, INT32 x2)
 	ds_y = y;
 	ds_x1 = x1;
 	ds_x2 = x2;
+
+	spanfunc();
 }
 
 //
