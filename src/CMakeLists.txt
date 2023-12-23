@@ -52,7 +52,6 @@ set(SRB2_CORE_SOURCES
 
 set(SRB2_CORE_HEADERS
 	am_map.h
-	args.h
 	b_bot.h
 	byteptr.h
 	command.h
