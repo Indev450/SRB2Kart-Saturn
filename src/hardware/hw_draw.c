@@ -1063,7 +1063,7 @@ void HWR_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color)
 
 	Surf.PolyColor = V_GetColor(color);
 
-	if ((alphalevel) && (!(alphalevel >= 10 && alphalevel < 13)))
+	if (alphalevel)
 	{
 		if (alphalevel == 13) Surf.PolyColor.s.alpha = softwaretranstogl_lo[hudtrans];
 		else if (alphalevel == 14) Surf.PolyColor.s.alpha = softwaretranstogl[hudtrans];
