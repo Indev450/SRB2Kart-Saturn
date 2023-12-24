@@ -1248,19 +1248,6 @@ static boolean R_FFloorCanClip(visffloor_t *pfloor)
 #define HEIGHTBITS              12
 #define HEIGHTUNIT              (1<<HEIGHTBITS)
 
-
-//profile stuff ---------------------------------------------------------
-//#define TIMING
-#ifdef TIMING
-#include "p5prof.h"
-INT64 mycount;
-INT64 mytotal = 0;
-UINT32 nombre = 100000;
-//static   char runtest[10][80];
-#endif
-//profile stuff ---------------------------------------------------------
-
-
 static void R_RenderSegLoop (void)
 {
 	angle_t angle;
@@ -1517,21 +1504,7 @@ static void R_RenderSegLoop (void)
 				dc_texturemid = rw_midtexturemid;
 				dc_source = R_GetColumn(midtexture,texturecolumn);
 				dc_texheight = textureheight[midtexture]>>FRACBITS;
-
-				//profile stuff ---------------------------------------------------------
-#ifdef TIMING
-				ProfZeroTimer();
-#endif
 				colfunc();
-#ifdef TIMING
-				RDMSR(0x10,&mycount);
-				mytotal += mycount;      //64bit add
-
-				if (nombre--==0)
-					I_Error("R_DrawColumn CPU Spy reports: 0x%d %d\n", *((INT32 *)&mytotal+1),
-						(INT32)mytotal);
-#endif
-				//profile stuff ---------------------------------------------------------
 
 				// dont draw anything more for this column, since
 				// a midtexture blocks the view

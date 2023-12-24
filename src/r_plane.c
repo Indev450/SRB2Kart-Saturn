@@ -29,13 +29,6 @@
 #include "p_tick.h"
 #include "r_fps.h"
 
-#ifdef TIMING
-#include "p5prof.h"
-	INT64 mycount;
-	INT64 mytotal = 0;
-	UINT32 nombre = 100000;
-#endif
-
 //
 // opening
 //
@@ -340,19 +333,7 @@ void R_MapPlane(INT32 y, INT32 x1, INT32 x2)
 	ds_x1 = x1;
 	ds_x2 = x2;
 
-	// profile drawer
-#ifdef TIMING
-	ProfZeroTimer();
-#endif
-
 	spanfunc();
-
-#ifdef TIMING
-	RDMSR(0x10, &mycount);
-	mytotal += mycount; // 64bit add
-	if (!(nombre--))
-	I_Error("spanfunc() CPU Spy reports: 0x%d %d\n", *((INT32 *)&mytotal+1), (INT32)mytotal);
-#endif
 }
 
 //
