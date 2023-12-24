@@ -289,7 +289,7 @@ else
 endif
 else
 ifdef X86_64
-	ARCHOPTS?=-march=native -Ofast -flto -fgraphite-identity -ftree-loop-distribution -floop-nest-optimize
+	ARCHOPTS?=-mfpmath=both -march=native -Ofast -fgraphite-identity -ftree-loop-distribution -floop-nest-optimize 
 endif
 endif
 
