@@ -695,10 +695,13 @@ void V_DrawBlock(INT32 x, INT32 y, INT32 scrn, INT32 width, INT32 height, const 
 //
 // Fills a box of pixels with a single color, NOTE: scaled to screen size
 //
+// alug: now with translucency support X)
 void V_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c)
 {
 	UINT8 *dest;
 	const UINT8 *deststop;
+	INT32 u, v;
+	UINT32 alphalevel = 0;
 
 	if (rendermode == render_none)
 		return;
@@ -752,6 +755,7 @@ void V_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c)
 
 	if (x >= vid.width || y >= vid.height)
 		return; // off the screen
+	
 	if (x < 0)
 	{
 		w += x;
@@ -765,18 +769,45 @@ void V_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c)
 
 	if (w <= 0 || h <= 0)
 		return; // zero width/height wouldn't draw anything
+	
 	if (x + w > vid.width)
-		w = vid.width - x;
+		w = vid.width-x;
 	if (y + h > vid.height)
-		h = vid.height - y;
+		h = vid.height-y;
 
 	dest = screens[0] + y*vid.width + x;
 	deststop = screens[0] + vid.rowbytes * vid.height;
 
+	if ((alphalevel = ((c & V_ALPHAMASK) >> V_ALPHASHIFT)))
+	{
+		if (alphalevel == 13)
+			alphalevel = hudminusalpha[cv_translucenthud.value];
+		else if (alphalevel == 14)
+			alphalevel = 10 - cv_translucenthud.value;
+		else if (alphalevel == 15)
+			alphalevel = hudplusalpha[cv_translucenthud.value];
+
+		if (alphalevel >= 10)
+			return; // invis
+	}
+
 	c &= 255;
 
-	for (;(--h >= 0) && dest < deststop; dest += vid.width)
-		memset(dest, c, w * vid.bpp);
+	if (!alphalevel) {
+		for (;(--h >= 0) && dest < deststop; dest += vid.width)
+			memset(dest, c, w * vid.bpp);
+	} else { // holy fuck i hope this doesent break lmao
+		const UINT8 *fadetable = ((UINT8 *)transtables + ((alphalevel-1)<<FF_TRANSSHIFT) + (c*256));
+#define clip(x,y) (x>y) ? y : x
+		w = clip(w,vid.width);
+		h = clip(h,vid.height);
+#undef clip
+		for (v = 0; v < h; v++, dest += vid.width) {
+			for (u = 0; u < w; u++) {
+				dest[u] = fadetable[dest[u]];
+			}
+		}
+	}
 }
 
 #ifdef HWRENDER
