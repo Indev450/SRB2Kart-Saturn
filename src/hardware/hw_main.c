@@ -1492,6 +1492,8 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 	FUINT lightnum = 0; // shut up compiler
 	extracolormap_t *colormap;
 	FSurfaceInfo Surf;
+	
+	boolean noencore = false;
 
 	gr_sidedef = gr_curline->sidedef;
 	gr_linedef = gr_curline->linedef;
@@ -1575,6 +1577,8 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 	{
 		INT32 gr_toptexture, gr_bottomtexture;
 		// two sided line
+		
+		noencore = false;
 
 #ifdef ESLOPE
 		SLOPEPARAMS(gr_backsector->c_slope, worldhigh, worldhighslope, gr_backsector->ceilingheight)
@@ -1583,6 +1587,9 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 		worldhigh = gr_backsector->ceilingheight;
 		worldlow  = gr_backsector->floorheight;
 #endif
+
+		if (gr_linedef->flags & ML_TFERLINE)
+			noencore = true;
 
 		// Sky culling
 		if (!gr_curline->polyseg) // Don't do it for polyobjects
@@ -2328,7 +2335,6 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 		fixed_t high1, highslope1, low1, lowslope1;
 
 		INT32 texnum;
-		boolean noencore = false;
 		line_t * newline = NULL; // Multi-Property FOF
 
 		if (!cv_grfofcut.value)
@@ -2370,14 +2376,12 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 
 				texnum = R_GetTextureNum(sides[rover->master->sidenum[0]].midtexture);
-				noencore = false;
 
 				if (rover->master->flags & ML_TFERLINE)
 				{
 					size_t linenum = min(gr_curline->linedef-gr_backsector->lines[0], rover->master->frontsector->linecount);
 					newline = rover->master->frontsector->lines[0] + linenum;
 					texnum = R_GetTextureNum(sides[newline->sidenum[0]].midtexture);
-					noencore = true;
 				}
 
 #ifdef ESLOPE
@@ -2572,14 +2576,12 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 
 				texnum = R_GetTextureNum(sides[rover->master->sidenum[0]].midtexture);
-				noencore = false;
 
 				if (rover->master->flags & ML_TFERLINE)
 				{
 					size_t linenum = min(gr_curline->linedef-gr_backsector->lines[0], rover->master->frontsector->linecount);
 					newline = rover->master->frontsector->lines[0] + linenum;
 					texnum = R_GetTextureNum(sides[newline->sidenum[0]].midtexture);
-					noencore = true;
 				}
 #ifdef ESLOPE //backsides
 				h  = *rover->t_slope ? P_GetZAt(*rover->t_slope, v1x, v1y) : *rover->topheight;
