@@ -320,7 +320,7 @@ static UINT8 *MakeBlock(GLMipmap_t *grMipmap)
 // Create a composite texture from patches, adapt the texture size to a power of 2
 // height and width for the hardware texture cache.
 //
-static void HWR_GenerateTexture(INT32 texnum, GLTexture_t *grtex)
+static void HWR_GenerateTexture(INT32 texnum, GLTexture_t *grtex, boolean noencore)
 {
 	UINT8 *block;
 	texture_t *texture;
@@ -354,7 +354,7 @@ static void HWR_GenerateTexture(INT32 texnum, GLTexture_t *grtex)
 	grtex->mipmap.colormap = colormaps;
 
 #ifdef GLENCORE
-	if (encoremap)
+	if (encoremap && !noencore)
 		grtex->mipmap.colormap += (256*32);
 #endif
 
@@ -552,7 +552,7 @@ void HWR_PrepLevelCache(size_t pnumtextures)
 	HWR_FreeTextureCache();
 
 	gr_numtextures = pnumtextures;
-	gr_textures = calloc(pnumtextures, sizeof (*gr_textures));
+	gr_textures = calloc(pnumtextures, sizeof (*gr_textures)*2); // *2 - 1 for encore-remapped texture and another for noencore texture (unused when not in encore)
 	if (gr_textures == NULL)
 		I_Error("HWR_PrepLevelCache: can't alloc gr_textures");
 }
@@ -579,17 +579,17 @@ void HWR_SetPalette(RGBA_t *palette)
 // --------------------------------------------------------------------------
 // Make sure texture is downloaded and set it as the source
 // --------------------------------------------------------------------------
-GLTexture_t *HWR_GetTexture(INT32 tex)
+GLTexture_t *HWR_GetTexture(INT32 tex, boolean noencore)
 {
 	GLTexture_t *grtex;
 #ifdef PARANOIA
 	if ((unsigned)tex >= gr_numtextures)
 		I_Error("HWR_GetTexture: tex >= numtextures\n");
 #endif
-	grtex = &gr_textures[tex];
+	grtex = &gr_textures[tex*2 + (encoremap && !noencore ? 0 : 1)];
 
 	if (!grtex->mipmap.grInfo.data && !grtex->mipmap.downloaded)
-		HWR_GenerateTexture(tex, grtex);
+		HWR_GenerateTexture(tex, grtex, noencore);
 
 	HWD.pfnSetTexture(&grtex->mipmap);
 
