@@ -1569,7 +1569,10 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 		lightnum = HWR_CalcWallLight(gr_frontsector->lightlevel, vs.x, vs.y, ve.x, ve.y);
 		colormap = gr_frontsector->extra_colormap;
 	}
-		
+	
+	if (gr_linedef->flags & ML_TFERLINE)
+		noencore = true;
+
 	if (gr_frontsector)
 		Surf.PolyColor.s.alpha = 255;
 
@@ -1577,8 +1580,6 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 	{
 		INT32 gr_toptexture, gr_bottomtexture;
 		// two sided line
-		
-		noencore = false;
 
 #ifdef ESLOPE
 		SLOPEPARAMS(gr_backsector->c_slope, worldhigh, worldhighslope, gr_backsector->ceilingheight)
@@ -1587,9 +1588,6 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 		worldhigh = gr_backsector->ceilingheight;
 		worldlow  = gr_backsector->floorheight;
 #endif
-
-		if (gr_linedef->flags & ML_TFERLINE)
-			noencore = true;
 
 		// Sky culling
 		if (!gr_curline->polyseg) // Don't do it for polyobjects
