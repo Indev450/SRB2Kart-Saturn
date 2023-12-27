@@ -39,7 +39,7 @@ INT32 doorclosed;
 
 boolean R_NoEncore(sector_t *sector, boolean ceiling)
 {
-	boolean invertencore = (GETSECSPECIAL(sector->special, 2) == 15);
+	boolean invertencore = (GETSECSPECIAL(sector->special, 2) == 12);
 #if 0 // perfect implementation
 	INT32 val = GETSECSPECIAL(sector->special, 3);
 	if (val != 1 && val != 3 // spring panel

@@ -675,14 +675,6 @@ void HWR_GetFlat(lumpnum_t flatlumpnum, boolean noencoremap)
 		grmip->colormap += (256*32);
 #endif
 
-	grmip->colormap = colormaps;
-
-#ifdef GLENCORE
-	if (!noencoremap && encoremap)
-		grmip->colormap += (256*32);
-#endif
-
-
 	if (!grmip->downloaded && !grmip->grInfo.data)
 		HWR_CacheFlat(grmip, flatlumpnum);
 
