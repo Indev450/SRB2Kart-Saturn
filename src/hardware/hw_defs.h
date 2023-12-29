@@ -207,16 +207,7 @@ enum ETextureFlags
 	TF_TRANSPARENT = 0x00000040,        // texture with some alpha == 0
 };
 
-struct FTextureInfo
-{
-	UINT32 width, height;
-	UINT32 downloaded;
-	UINT32 format;
-
-	struct GLMipmap_s *texture;
-	struct FTextureInfo *prev, *next;
-};
-typedef struct FTextureInfo FTextureInfo;
+typedef struct GLMipmap_s FTextureInfo;
 
 struct FLightInfo
 {

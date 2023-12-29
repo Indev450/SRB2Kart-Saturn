@@ -161,7 +161,7 @@ void HWR_CreatePlanePolygons(INT32 bspnum);
 extern boolean gr_maphasportals;
 
 // hw_cache.c
-void HWR_LoadTextures(size_t pnumtextures);
+void HWR_PrepLevelCache(size_t pnumtextures);
 
 // hw_trick.c
 void HWR_CorrectSWTricks(void);

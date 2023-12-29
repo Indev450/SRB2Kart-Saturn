@@ -79,9 +79,8 @@ static  GLuint      tex_downloaded  = 0;
 static  GLfloat     fov             = 90.0f;
 static  FBITFIELD   CurrentPolyFlags;
 
-// Linked list of all textures.
-static FTextureInfo *TexCacheTail = NULL;
-static FTextureInfo *TexCacheHead = NULL;
+static  FTextureInfo *gr_cachetail = NULL;
+static  FTextureInfo *gr_cachehead = NULL;
 
 typedef struct LightTableCacheEntry_s
 {
@@ -250,6 +249,7 @@ static void GL_MSG_Error(const char *format, ...)
 	fwrite(str, strlen(str), 1, gllogstream);
 #endif
 }
+
 
 #ifdef STATIC_OPENGL
 /* 1.0 functions */
@@ -1548,39 +1548,6 @@ void SetStates(void)
 	pglEnable(GL_STENCIL_TEST);
 }
 
-
-// -----------------+
-// DeleteTexture    : Deletes a texture from the GPU and frees its data
-// -----------------+
-EXPORT void HWRAPI(DeleteTexture) (GLMipmap_t *pTexInfo)
-{
-	FTextureInfo *head = TexCacheHead;
-
-	if (!pTexInfo)
-		return;
-	else if (pTexInfo->downloaded)
-		pglDeleteTextures(1, (GLuint *)&pTexInfo->downloaded);
-
-	while (head)
-	{
-		if (head->downloaded == pTexInfo->downloaded)
-		{
-			if (head->next)
-				head->next->prev = head->prev;
-			if (head->prev)
-				head->prev->next = head->next;
-			free(head);
-			break;
-		}
-
-		head = head->next;
-	}
-
-	pTexInfo->downloaded = 0;
-}
-
-
-
 // -----------------+
 // Flush            : flush OpenGL textures
 //                  : Clear list of downloaded mipmaps
@@ -1589,28 +1556,19 @@ void Flush(void)
 {
 	//GL_DBG_Printf("HWR_Flush()\n");
 
-	while (TexCacheHead)
+	while (gr_cachehead)
 	{
-		FTextureInfo *pTexInfo = TexCacheHead;
-		GLMipmap_t *texture = pTexInfo->texture;
-
-		if (pTexInfo->downloaded)
-		{
-			pglDeleteTextures(1, (GLuint *)&pTexInfo->downloaded);
-			pTexInfo->downloaded = 0;
-		}
-	
-		if (texture)
-			texture->downloaded = 0;
-
-		TexCacheHead = pTexInfo->next;
-		free(pTexInfo);
+		// this is not necessary at all, because you have loaded them normally,
+		// and so they already are in your list!
+		if (gr_cachehead->downloaded)
+			pglDeleteTextures(1, (GLuint *)&gr_cachehead->downloaded);
+		gr_cachehead->downloaded = 0;
+		gr_cachehead = gr_cachehead->nextmipmap;
 	}
+	gr_cachetail = gr_cachehead = NULL; //Hurdler: well, gr_cachehead is already NULL
 
-	TexCacheTail = TexCacheHead = NULL; //Hurdler: well, TexCacheHead is already NULL
 	tex_downloaded = 0;
 }
-
 
 
 // -----------------+
@@ -2030,10 +1988,11 @@ EXPORT void HWRAPI(SetBlend) (FBITFIELD PolyFlags)
 	CurrentPolyFlags = PolyFlags;
 }
 
+
 // -----------------+
-// UpdateTexture    : Updates texture data.
+// UpdateTexture    : Updates the texture data.
 // -----------------+
-EXPORT void HWRAPI(UpdateTexture) (GLMipmap_t *pTexInfo)
+EXPORT void HWRAPI(UpdateTexture) (FTextureInfo *pTexInfo)
 {
 	// Download a mipmap
 	boolean updatemipmap = true;
@@ -2246,7 +2205,7 @@ EXPORT void HWRAPI(UpdateTexture) (GLMipmap_t *pTexInfo)
 // -----------------+
 // SetTexture       : The mipmap becomes the current texture source
 // -----------------+
-EXPORT void HWRAPI(SetTexture) (GLMipmap_t *pTexInfo)
+EXPORT void HWRAPI(SetTexture) (FTextureInfo *pTexInfo)
 {
 	if (!pTexInfo)
 	{
@@ -2263,25 +2222,15 @@ EXPORT void HWRAPI(SetTexture) (GLMipmap_t *pTexInfo)
 	}
 	else
 	{
-		FTextureInfo *newTex = calloc(1, sizeof (*newTex));
-		
 		UpdateTexture(pTexInfo);
-		newTex->texture = pTexInfo;
-		newTex->downloaded = (UINT32)pTexInfo->downloaded;
-		newTex->width = (UINT32)pTexInfo->width;
-		newTex->height = (UINT32)pTexInfo->height;
-		newTex->format = (UINT32)pTexInfo->grInfo.format;;
-
-		// insertion at the tail
-		if (TexCacheTail)
-		{ 
-			newTex->prev = TexCacheTail;
-			TexCacheTail->next = newTex;
-			TexCacheTail = newTex;
-
+		pTexInfo->nextmipmap = NULL;
+		if (gr_cachetail)
+		{ // insertion at the tail
+			gr_cachetail->nextmipmap = pTexInfo;
+			gr_cachetail = pTexInfo;
 		}
 		else // initialization of the linked list
-			TexCacheTail = TexCacheHead = newTex;
+			gr_cachetail = gr_cachehead =  pTexInfo;
 	}
 }
 
@@ -3947,7 +3896,7 @@ EXPORT void HWRAPI(SetTransform) (FTransform *stransform)
 
 EXPORT INT32  HWRAPI(GetTextureUsed) (void)
 {
-	FTextureInfo *tmp = TexCacheHead;
+	FTextureInfo *tmp = gr_cachehead;
 	INT32 res = 0;
 
 	while (tmp)
@@ -3956,7 +3905,7 @@ EXPORT INT32  HWRAPI(GetTextureUsed) (void)
 		// I don't know which one the game actually _uses_ but this
 		// follows format2bpp in hw_cache.c
 		int bpp = 1;
-		int format = tmp->format;
+		int format = tmp->grInfo.format;
 		if (format == GR_RGBA)
 			bpp = 4;
 		else if (format == GR_TEXFMT_RGB_565
@@ -3968,7 +3917,7 @@ EXPORT INT32  HWRAPI(GetTextureUsed) (void)
 
 		// Add it up!
 		res += tmp->height*tmp->width*bpp;
-		tmp = tmp->next;
+		tmp = tmp->nextmipmap;
 	}
 	
 	return res;
