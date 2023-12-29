@@ -3797,53 +3797,44 @@ static boolean HWR_PortalCheckBBox(fixed_t *bspcoord)
 
 #include <omp.h>
 
-inline void HWR_RenderBSPNode(INT32 bspnum)
+inline HWR_RenderBSPNode(INT32 bspnum)
 {
-    node_t *bsp = &nodes[bspnum];
+	node_t *bsp = &nodes[bspnum];
 
-    // Decide which side the view point is on
-    INT32 side;
+	// Decide which side the view point is on
+	INT32 side;
 
-    ps_numbspcalls.value.i++;
+	ps_numbspcalls.value.i++;
 
-    // Found a subsector?
-    if (bspnum & NF_SUBSECTOR)
-    {
-        // PORTAL CULLING
-        if (portalclipline)
-        {
-            sector_t *sect = subsectors[bspnum & ~NF_SUBSECTOR].sector;
-            if (portalcullsector)
-            {
-                if (sect != portalcullsector)
-                    return;
-                portalcullsector = NULL;
-            }
-        }
-        if (bspnum != -1)
-            HWR_Subsector(bspnum & (~NF_SUBSECTOR));
-        return;
-    }
+	// Found a subsector?
+	if (bspnum & NF_SUBSECTOR)
+	{
+		// PORTAL CULLING
+		if (portalclipline)
+		{
+			sector_t *sect = subsectors[bspnum & ~NF_SUBSECTOR].sector;
+			if (portalcullsector)
+			{
+				if (sect != portalcullsector)
+					return;
+				portalcullsector = NULL;
+			}
+		}
+		if (bspnum != -1)
+			HWR_Subsector(bspnum&(~NF_SUBSECTOR));
+		return;
+	}
 
-    // Decide which side the view point is on.
-    side = R_PointOnSide(viewx, viewy, bsp);
+	// Decide which side the view point is on.
+	side = R_PointOnSide(viewx, viewy, bsp);
 
-    #pragma omp parallel sections
-    {
-        #pragma omp section
-        {
-            // Recursively divide front space.
-            if (HWR_PortalCheckBBox(bsp->bbox[side]))
-                HWR_RenderBSPNode(bsp->children[side]);
-        }
+	// Recursively divide front space.
+	if (HWR_PortalCheckBBox(bsp->bbox[side]))
+		HWR_RenderBSPNode(bsp->children[side]);
 
-        #pragma omp section
-        {
-            // Possibly divide back space.
-            if (HWR_CheckBBox(bsp->bbox[side ^ 1]) && HWR_PortalCheckBBox(bsp->bbox[side ^ 1]))
-                HWR_RenderBSPNode(bsp->children[side ^ 1]);
-        }
-    }
+	// Possibly divide back space.
+	if (HWR_CheckBBox(bsp->bbox[side^1]) && HWR_PortalCheckBBox(bsp->bbox[side^1]))
+		HWR_RenderBSPNode(bsp->children[side^1]);
 }
 
 // ==========================================================================
