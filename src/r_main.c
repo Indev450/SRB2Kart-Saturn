@@ -325,9 +325,10 @@ static void FlipCam4_OnChange(void)
 //
 // killough 5/2/98: reformatted
 //
+#include <omp.h>
+
 inline INT32 R_PointOnSide(fixed_t x, fixed_t y, node_t *restrict node)
 {
-
     if (!node->dx)
         return x <= node->x ? node->dy > 0 : node->dy < 0;
 
@@ -337,34 +338,77 @@ inline INT32 R_PointOnSide(fixed_t x, fixed_t y, node_t *restrict node)
     x -= node->x;
     y -= node->y;
 
-    INT32 mask = (node->dy ^ node->dx ^ x ^ y) >> 31;
-    INT32 leftCheck = (node->dy ^ x) < 0;
+    INT32 mask, leftCheck;
 
-    return (mask & leftCheck) | (~mask & (FixedMul(y, node->dx >> FRACBITS) >= FixedMul(node->dy >> FRACBITS, x)));
+    #pragma omp parallel sections
+    {
+        #pragma omp section
+        {
+            mask = (node->dy ^ node->dx ^ x ^ y) >> 31;
+        }
+
+        #pragma omp section
+        {
+            leftCheck = (node->dy ^ x) < 0;
+        }
+    }
+
+    // Parallelize FixedMul calculations
+    fixed_t y_dx = FixedMul(y, node->dx >> FRACBITS);
+    fixed_t dy_x = FixedMul(node->dy >> FRACBITS, x);
+
+    #pragma omp parallel sections
+    {
+        #pragma omp section
+        {
+            y_dx = FixedMul(y, node->dx >> FRACBITS);
+        }
+
+        #pragma omp section
+        {
+            dy_x = FixedMul(node->dy >> FRACBITS, x);
+        }
+    }
+
+    return (mask & leftCheck) | (~mask & (y_dx >= dy_x));
 }
 
-
 // killough 5/2/98: reformatted
-INT32 R_PointOnSegSide(fixed_t x, fixed_t y, seg_t *line)
+inline INT32 R_PointOnSegSide(fixed_t x, fixed_t y, seg_t *line)
 {
-	fixed_t lx = line->v1->x;
-	fixed_t ly = line->v1->y;
-	fixed_t ldx = line->v2->x - lx;
-	fixed_t ldy = line->v2->y - ly;
+    fixed_t lx = line->v1->x;
+    fixed_t ly = line->v1->y;
+    fixed_t ldx = line->v2->x - lx;
+    fixed_t ldy = line->v2->y - ly;
 
-	if (!ldx)
-		return x <= lx ? ldy > 0 : ldy < 0;
+    if (!ldx)
+        return x <= lx ? ldy > 0 : ldy < 0;
 
-	if (!ldy)
-		return y <= ly ? ldx < 0 : ldx > 0;
+    if (!ldy)
+        return y <= ly ? ldx < 0 : ldx > 0;
 
-	x -= lx;
-	y -= ly;
+    x -= lx;
+    y -= ly;
 
-	// Try to quickly decide by looking at sign bits.
-	if ((ldy ^ ldx ^ x ^ y) < 0)
-		return (ldy ^ x) < 0;          // (left is negative)
-	return FixedMul(y, ldx>>FRACBITS) >= FixedMul(ldy>>FRACBITS, x);
+    INT32 result;
+
+    // Try to quickly decide by looking at sign bits.
+    #pragma omp parallel sections
+    {
+        #pragma omp section
+        {
+            result = (ldy ^ ldx ^ x ^ y) < 0;
+        }
+
+        #pragma omp section
+        {
+            if (!result) {
+                result = (ldy ^ x) < 0;
+            }
+        }
+    }
+
+    return result || FixedMul(y, ldx >> FRACBITS) >= FixedMul(ldy >> FRACBITS, x);
 }
 
 //
@@ -382,34 +426,100 @@ INT32 R_PointOnSegSide(fixed_t x, fixed_t y, seg_t *line)
 
 inline angle_t R_PointToAngle(fixed_t x, fixed_t y)
 {
-	return (y -= viewy, (x -= viewx) || y) ?
-	x >= 0 ?
-	y >= 0 ?
-		(x > y) ? tantoangle[SlopeDiv(y,x)] :                          // octant 0
-		ANGLE_90-tantoangle[SlopeDiv(x,y)] :                           // octant 1
-		x > (y = -y) ? 0-tantoangle[SlopeDiv(y,x)] :                   // octant 8
-		ANGLE_270+tantoangle[SlopeDiv(x,y)] :                          // octant 7
-		y >= 0 ? (x = -x) > y ? ANGLE_180-tantoangle[SlopeDiv(y,x)] :  // octant 3
-		ANGLE_90 + tantoangle[SlopeDiv(x,y)] :                         // octant 2
-		(x = -x) > (y = -y) ? ANGLE_180+tantoangle[SlopeDiv(y,x)] :    // octant 4
-		ANGLE_270-tantoangle[SlopeDiv(x,y)] :                          // octant 5
-		0;
+    #pragma omp parallel sections
+    {
+        #pragma omp section
+        {
+            y -= viewy;
+            x -= viewx;
+        }
+
+        #pragma omp section
+        {
+            if (x || y) {
+                if (x >= 0) {
+                    if (y >= 0) {
+                        if (x > y) {
+                            return tantoangle[SlopeDiv(y, x)];  // octant 0
+                        } else {
+                            return ANGLE_90 - tantoangle[SlopeDiv(x, y)];  // octant 1
+                        }
+                    } else {
+                        if (x > (y = -y)) {
+                            return 0 - tantoangle[SlopeDiv(y, x)];  // octant 8
+                        } else {
+                            return ANGLE_270 + tantoangle[SlopeDiv(x, y)];  // octant 7
+                        }
+                    }
+                } else {
+                    if (y >= 0) {
+                        if ((x = -x) > y) {
+                            return ANGLE_180 - tantoangle[SlopeDiv(y, x)];  // octant 3
+                        } else {
+                            return ANGLE_90 + tantoangle[SlopeDiv(x, y)];  // octant 2
+                        }
+                    } else {
+                        if ((x = -x) > (y = -y)) {
+                            return ANGLE_180 + tantoangle[SlopeDiv(y, x)];  // octant 4
+                        } else {
+                            return ANGLE_270 - tantoangle[SlopeDiv(x, y)];  // octant 5
+                        }
+                    }
+                }
+            } else {
+                return 0;  // Points coincide; angle is zero.
+            }
+        }
+    }
 }
 
 inline angle_t R_PointToAngle2(fixed_t pviewx, fixed_t pviewy, fixed_t x, fixed_t y)
 {
-	return (y -= pviewy, (x -= pviewx) || y) ?
-	x >= 0 ?
-	y >= 0 ?
-		(x > y) ? tantoangle[SlopeDiv(y,x)] :                          // octant 0
-		ANGLE_90-tantoangle[SlopeDiv(x,y)] :                           // octant 1
-		x > (y = -y) ? 0-tantoangle[SlopeDiv(y,x)] :                   // octant 8
-		ANGLE_270+tantoangle[SlopeDiv(x,y)] :                          // octant 7
-		y >= 0 ? (x = -x) > y ? ANGLE_180-tantoangle[SlopeDiv(y,x)] :  // octant 3
-		ANGLE_90 + tantoangle[SlopeDiv(x,y)] :                         // octant 2
-		(x = -x) > (y = -y) ? ANGLE_180+tantoangle[SlopeDiv(y,x)] :    // octant 4
-		ANGLE_270-tantoangle[SlopeDiv(x,y)] :                          // octant 5
-		0;
+    #pragma omp parallel sections
+    {
+        #pragma omp section
+        {
+            y -= pviewy;
+            x -= pviewx;
+        }
+
+        #pragma omp section
+        {
+            if (x || y) {
+                if (x >= 0) {
+                    if (y >= 0) {
+                        if (x > y) {
+                            return tantoangle[SlopeDiv(y, x)];  // octant 0
+                        } else {
+                            return ANGLE_90 - tantoangle[SlopeDiv(x, y)];  // octant 1
+                        }
+                    } else {
+                        if (x > (y = -y)) {
+                            return 0 - tantoangle[SlopeDiv(y, x)];  // octant 8
+                        } else {
+                            return ANGLE_270 + tantoangle[SlopeDiv(x, y)];  // octant 7
+                        }
+                    }
+                } else {
+                    if (y >= 0) {
+                        if ((x = -x) > y) {
+                            return ANGLE_180 - tantoangle[SlopeDiv(y, x)];  // octant 3
+                        } else {
+                            return ANGLE_90 + tantoangle[SlopeDiv(x, y)];  // octant 2
+                        }
+                    } else {
+                        if ((x = -x) > (y = -y)) {
+                            return ANGLE_180 + tantoangle[SlopeDiv(y, x)];  // octant 4
+                        } else {
+                            return ANGLE_270 - tantoangle[SlopeDiv(x, y)];  // octant 5
+                        }
+                    }
+                }
+            } else {
+                return 0;  // Points coincide; angle is zero.
+            }
+        }
+    }
 }
 
 fixed_t R_PointToDist2(fixed_t px2, fixed_t py2, fixed_t px1, fixed_t py1)
