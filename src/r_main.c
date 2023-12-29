@@ -325,23 +325,24 @@ static void FlipCam4_OnChange(void)
 //
 // killough 5/2/98: reformatted
 //
-INT32 R_PointOnSide(fixed_t x, fixed_t y, node_t *restrict node)
+inline INT32 R_PointOnSide(fixed_t x, fixed_t y, node_t *restrict node)
 {
-	if (!node->dx)
-		return x <= node->x ? node->dy > 0 : node->dy < 0;
 
-	if (!node->dy)
-		return y <= node->y ? node->dx < 0 : node->dx > 0;
+    if (!node->dx)
+        return x <= node->x ? node->dy > 0 : node->dy < 0;
 
-	x -= node->x;
-	y -= node->y;
+    if (!node->dy)
+        return y <= node->y ? node->dx < 0 : node->dx > 0;
 
-	// Try to quickly decide by looking at sign bits.	
-	// also use a mask to avoid branch prediction
-	INT32 mask = (node->dy ^ node->dx ^ x ^ y) >> 31;
-	return (mask & ((node->dy ^ x) < 0)) |  // (left is negative)
-		(~mask & (FixedMul(y, node->dx>>FRACBITS) >= FixedMul(node->dy>>FRACBITS, x)));
+    x -= node->x;
+    y -= node->y;
+
+    INT32 mask = (node->dy ^ node->dx ^ x ^ y) >> 31;
+    INT32 leftCheck = (node->dy ^ x) < 0;
+
+    return (mask & leftCheck) | (~mask & (FixedMul(y, node->dx >> FRACBITS) >= FixedMul(node->dy >> FRACBITS, x)));
 }
+
 
 // killough 5/2/98: reformatted
 INT32 R_PointOnSegSide(fixed_t x, fixed_t y, seg_t *line)
@@ -379,7 +380,7 @@ INT32 R_PointOnSegSide(fixed_t x, fixed_t y, seg_t *line)
 //
 // killough 5/2/98: reformatted, cleaned up
 
-angle_t R_PointToAngle(fixed_t x, fixed_t y)
+inline angle_t R_PointToAngle(fixed_t x, fixed_t y)
 {
 	return (y -= viewy, (x -= viewx) || y) ?
 	x >= 0 ?
@@ -395,7 +396,7 @@ angle_t R_PointToAngle(fixed_t x, fixed_t y)
 		0;
 }
 
-angle_t R_PointToAngle2(fixed_t pviewx, fixed_t pviewy, fixed_t x, fixed_t y)
+inline angle_t R_PointToAngle2(fixed_t pviewx, fixed_t pviewy, fixed_t x, fixed_t y)
 {
 	return (y -= pviewy, (x -= pviewx) || y) ?
 	x >= 0 ?
@@ -466,7 +467,7 @@ fixed_t R_PointToDist(fixed_t x, fixed_t y)
 	return R_PointToDist2(viewx, viewy, x, y);
 }
 
-angle_t R_PointToAngleEx(INT32 x2, INT32 y2, INT32 x1, INT32 y1)
+inline angle_t R_PointToAngleEx(INT32 x2, INT32 y2, INT32 x1, INT32 y1)
 {
 	INT64 dx = x1-x2;
 	INT64 dy = y1-y2;
