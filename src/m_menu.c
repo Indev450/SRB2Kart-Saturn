@@ -4126,7 +4126,7 @@ void M_StartControlPanel(void)
 		MPauseMenu[mpause_addons].alphaKey = 8;
 		
 		if (IsPlayerAdmin(consoleplayer))
-			MPauseMenu[mpause_addlocalskins].alphaKey = 8;
+			MPauseMenu[mpause_addlocalskins].alphaKey = 16;
 		else
 			MPauseMenu[mpause_addlocalskins].alphaKey = 24;
 	
