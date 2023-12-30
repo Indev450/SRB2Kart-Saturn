@@ -62,11 +62,11 @@ typedef off_t off64_t;
 #endif
 
 #if defined(__MINGW32__) && ((__GNUC__ > 7) || (__GNUC__ == 6 && __GNUC_MINOR__ >= 3)) && (__GNUC__ < 8)
-#define PRIdS "u"
+#define PRIdS "%u"
 #elif defined(_WIN32) && !defined(__MINGW64__)
-#define PRIdS "Iu"
+#define PRIdS "%Iu"
 #else
-#define PRIdS "zu"
+#define PRIdS "%zu"
 #endif
 
 #ifdef HAVE_PNG
@@ -1905,35 +1905,35 @@ TMatrix *RotateZMatrix(angle_t rad)
 char *sizeu1(size_t num)
 {
 	static char sizeu1_buf[28];
-	sprintf(sizeu1_buf, "%"PRIdS, num);
+	sprintf(sizeu1_buf, PRIdS, num);
 	return sizeu1_buf;
 }
 
 char *sizeu2(size_t num)
 {
 	static char sizeu2_buf[28];
-	sprintf(sizeu2_buf, "%"PRIdS, num);
+	sprintf(sizeu2_buf, PRIdS, num);
 	return sizeu2_buf;
 }
 
 char *sizeu3(size_t num)
 {
 	static char sizeu3_buf[28];
-	sprintf(sizeu3_buf, "%"PRIdS, num);
+	sprintf(sizeu3_buf, PRIdS, num);
 	return sizeu3_buf;
 }
 
 char *sizeu4(size_t num)
 {
 	static char sizeu4_buf[28];
-	sprintf(sizeu4_buf, "%"PRIdS, num);
+	sprintf(sizeu4_buf, PRIdS, num);
 	return sizeu4_buf;
 }
 
 char *sizeu5(size_t num)
 {
 	static char sizeu5_buf[28];
-	sprintf(sizeu5_buf, "%"PRIdS, num);
+	sprintf(sizeu5_buf, PRIdS, num);
 	return sizeu5_buf;
 }
 

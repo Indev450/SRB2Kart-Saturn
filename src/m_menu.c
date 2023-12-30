@@ -4783,11 +4783,11 @@ static void M_DrawSplitText(INT32 x, INT32 y, INT32 option, const char* str, INT
 
 	if (icopy == NULL) return;
 
-	char* token = strtok(icopy, "\n");
+	char* tok = strtok(icopy, "\n");
 
-	while (token != NULL)
+	while (tok != NULL)
 	{
-		char* line = strdup(token);
+		char* line = strdup(tok);
 
 		if (line == NULL) return;
 
@@ -4795,7 +4795,7 @@ static void M_DrawSplitText(INT32 x, INT32 y, INT32 option, const char* str, INT
 		clines[num_lines] = line;
 		num_lines++;
 
-		token = strtok(NULL, "\n");
+		tok = strtok(NULL, "\n");
 	}
 
 	free(icopy);
@@ -6090,7 +6090,7 @@ static void M_AddonsOptions(INT32 choice)
 #define LOCATIONSTRING1 "Visit \x83SRB2.ORG/MODS\x80 to get & make addons!"
 #define LOCATIONSTRING2 "Visit \x88SRB2.ORG/MODS\x80 to get & make addons!"
 
-static void M_AddonsInternal()
+static void M_AddonsInternal(void)
 {
 	const char *pathname = ".";
 
@@ -11726,7 +11726,6 @@ static void M_DrawSetupMultiPlayerMenu(void)
 
 			if (statdp == true)
 			{
-				int i;
 				//Background
 				V_DrawScaledPatch(statx - 50, staty + 4, 0, W_CachePatchName("K_STATNB", PU_CACHE));
 				
@@ -12027,22 +12026,22 @@ static void M_DrawSetupMultiPlayerMenu(void)
 		INT32 j = -colwidth;
 		INT16 col = setupm_fakecolor - colwidth;
 		INT32 x = mx;
-		INT32 w = indexwidth;
-		UINT8 h;
+		INT32 cw = indexwidth;
+		UINT8 ch;
 
 		while (col < 1)
 			col += MAXSKINCOLORS-1;
 		while (j <= colwidth)
 		{
 			if (!(j++))
-				w = charw;
+				cw = charw;
 			else
-				w = indexwidth;
-			for (h = 0; h < 16; h++)
-				V_DrawFill(x, my+(cv_skinselectmenu.value?176:162)+h, w, 1, colortranslations[col][h]);
+				cw = indexwidth;
+			for (ch = 0; ch < 16; ch++)
+				V_DrawFill(x, my+(cv_skinselectmenu.value?176:162)+ch, cw, 1, colortranslations[col][ch]);
 			if (++col >= MAXSKINCOLORS)
 				col -= MAXSKINCOLORS-1;
-			x += w;
+			x += cw;
 		}
 	}
 #undef indexwidth

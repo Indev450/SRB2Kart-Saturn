@@ -3191,7 +3191,7 @@ static void gld_BuildSky(int row_count, int col_count)
 //
 //-----------------------------------------------------------------------------
 
-static void RenderDome(INT32 skytexture)
+static void RenderDome(INT32 skytexnum)
 {
 	int i, j;
 	int vbosize;
@@ -3203,7 +3203,7 @@ static void RenderDome(INT32 skytexture)
 	vbosize = 2 * rows * (columns * 2 + 2) + columns * 2;
 
 	// Build the sky dome! Yes!
-	if (lasttex != skytexture)
+	if (lasttex != skytexnum)
 	{
 		// delete VBO when already exists
 		if (gl_ext_arb_vertex_buffer_object)
@@ -3212,7 +3212,7 @@ static void RenderDome(INT32 skytexture)
 				pglDeleteBuffers(1, &vbo->id);
 		}
 
-		lasttex = skytexture;
+		lasttex = skytexnum;
 		gld_BuildSky(rows, columns);
 
 		if (gl_ext_arb_vertex_buffer_object)
