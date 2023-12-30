@@ -68,9 +68,19 @@ FUNCMATH FUNCINLINE static ATTRINLINE fixed_t FloatToFixed(float f)
 */
 FUNCMATH FUNCINLINE static ATTRINLINE fixed_t FixedMul(fixed_t a, fixed_t b)
 {
-	// Need to cast to unsigned before shifting to avoid undefined behaviour
-	// for negative integers
-	return (fixed_t)(((UINT64)((INT64)a * b)) >> FRACBITS);
+    int32_t a_int = (int32_t)a;
+    int32_t b_int = (int32_t)b;
+
+    // Perform fixed-point multiplication using intrinsics
+    int64_t result_int = _mul128(a_int, b_int, NULL);
+
+    // Right shift by FRACBITS
+    result_int >>= FRACBITS;
+
+    // Cast the result back to fixed_t
+    fixed_t result = (fixed_t)result_int;
+
+    return result;
 }
 
 /**	\brief	The FixedDiv2 function
