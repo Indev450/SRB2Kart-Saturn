@@ -2314,7 +2314,7 @@ menu_t MISC_AddonsDef =
 	50, 28,
 	0,
 	NULL,
-	NULL
+	{NULL}
 };
 
 menu_t MISC_ReplayHutDef =
@@ -2327,7 +2327,7 @@ menu_t MISC_ReplayHutDef =
 	30, 80,
 	0,
 	M_QuitReplayHut,
-	NULL
+	{NULL}
 };
 
 menu_t MISC_ReplayOptionsDef =
@@ -2340,7 +2340,7 @@ menu_t MISC_ReplayOptionsDef =
 	27, 40,
 	0,
 	NULL,
-	NULL
+	{NULL}
 };
 
 menu_t MISC_ReplayStartDef =
@@ -2353,7 +2353,7 @@ menu_t MISC_ReplayStartDef =
 	30, 90,
 	0,
 	NULL,
-	NULL
+	{NULL}
 };
 
 menu_t PlaybackMenuDef = {
@@ -2366,7 +2366,7 @@ menu_t PlaybackMenuDef = {
 	BASEVIDWIDTH/2 - 88, 2,
 	0,
 	NULL,
-	NULL
+	{NULL}
 };
 
 menu_t MAPauseDef = PAUSEMENUSTYLE(MAPauseMenu, 40, 72);
@@ -2382,7 +2382,8 @@ menu_t MISC_DiscordRequestsDef = {
 	M_DrawDiscordRequests,
 	0, 0,
 	0,
-	NULL
+	NULL,
+	{NULL}
 };
 #endif
 
@@ -2478,7 +2479,7 @@ menu_t SR_PandoraDef =
 	60, 40,
 	0,
 	M_ExitPandorasBox,
-	NULL
+	{NULL}
 };
 menu_t SR_MainDef = CENTERMENUSTYLE(NULL, SR_MainMenu, &MainDef, 72);
 
@@ -2494,7 +2495,7 @@ menu_t SR_UnlockChecklistDef =
 	280, 185,
 	0,
 	NULL,
-	NULL
+	{NULL}
 };
 
 menu_t SR_MusicTestDef =
@@ -2507,7 +2508,7 @@ menu_t SR_MusicTestDef =
 	60, 150,
 	0,
 	NULL,
-	NULL
+	{NULL}
 };
 
 menu_t SR_EmblemHintDef =
@@ -2520,7 +2521,7 @@ menu_t SR_EmblemHintDef =
 	60, 150,
 	0,
 	NULL,
-	NULL
+	{NULL}
 };
 
 // Single Player
@@ -2548,7 +2549,7 @@ menu_t SP_LevelStatsDef =
 	280, 185,
 	0,
 	NULL,
-	NULL
+	{NULL}
 };
 
 static menu_t SP_TimeAttackDef =
@@ -2561,8 +2562,7 @@ static menu_t SP_TimeAttackDef =
 	34, 40,
 	0,
 	M_QuitTimeAttackMenu,
-	NULL,
-	NULL
+	{NULL}
 };
 static menu_t SP_ReplayDef =
 {
@@ -2574,8 +2574,7 @@ static menu_t SP_ReplayDef =
 	34, 40,
 	0,
 	NULL,
-	NULL,
-	NULL
+	{NULL}
 };
 static menu_t SP_GuestReplayDef =
 {
@@ -2587,8 +2586,7 @@ static menu_t SP_GuestReplayDef =
 	34, 40,
 	0,
 	NULL,
-	NULL,
-	NULL
+	{NULL}
 };
 static menu_t SP_GhostDef =
 {
@@ -2600,7 +2598,7 @@ static menu_t SP_GhostDef =
 	34, 40,
 	0,
 	NULL,
-	NULL
+	{NULL}
 };
 
 /*static menu_t SP_NightsAttackDef =
@@ -2676,7 +2674,7 @@ menu_t MP_MainDef =
 #else
 	NULL,
 #endif
-	NULL
+	{NULL}
 };
 
 menu_t MP_OfflineServerDef = MAPICONMENUSTYLE("M_MULTI", MP_OfflineServerMenu, &MP_MainDef);
@@ -2694,7 +2692,7 @@ menu_t MP_ConnectDef =
 	27,24,
 	0,
 	M_CancelConnect,
-	NULL
+	{NULL}
 };
 #endif
 menu_t MP_PlayerSetupDef =
@@ -2707,7 +2705,7 @@ menu_t MP_PlayerSetupDef =
 	36, 14,
 	0,
 	M_QuitMultiPlayerMenu,
-	NULL
+	{NULL}
 };
 
 // Options
@@ -2721,7 +2719,7 @@ menu_t OP_MainDef =
 	60, 30,
 	0,
 	NULL,
-	NULL
+	{NULL}
 };
 
 menu_t OP_ControlsDef = DEFAULTMENUSTYLE("M_CONTRO", OP_ControlsMenu, &OP_MainDef, 60, 30);
@@ -2742,7 +2740,7 @@ menu_t OP_JoystickSetDef =
 	50, 40,
 	0,
 	NULL,
-	NULL
+	{NULL}
 };
 
 menu_t OP_VideoOptionsDef =
@@ -2755,7 +2753,7 @@ menu_t OP_VideoOptionsDef =
 	30, 20,
 	0,
 	NULL,
-	NULL
+	{NULL}
 };
 
 menu_t OP_VideoModeDef =
@@ -2768,7 +2766,7 @@ menu_t OP_VideoModeDef =
 	48, 26,
 	0,
 	NULL,
-	NULL
+	{NULL}
 };
 
 menu_t OP_SoundOptionsDef =
@@ -2781,7 +2779,7 @@ menu_t OP_SoundOptionsDef =
 	30, 20,
 	0,
 	NULL,
-	NULL
+	{NULL}
 };
 
 
@@ -2795,7 +2793,7 @@ menu_t OP_HUDOptionsDef =
 	30, 20,
 	0,
 	NULL,
-	NULL
+	{NULL}
 };
 
 
@@ -2822,7 +2820,7 @@ menu_t OP_MonitorToggleDef =
 	47, 30,
 	0,
 	NULL,
-	NULL
+	{NULL}
 };
 
 #ifdef HWRENDER
@@ -2838,7 +2836,7 @@ menu_t OP_OpenGLColorDef =
 	60, 40,
 	0,
 	NULL,
-	NULL
+	{NULL}
 };
 #endif
 
@@ -2871,7 +2869,7 @@ menu_t OP_ForkedBirdDef = {
 	30, 6,
 	0,
 	NULL,
-	NULL
+	{NULL}
 };
 
 menu_t OP_LocalSkinDef = DEFAULTMENUSTYLE(NULL, OP_TiltMenu, &OP_ForkedBirdDef, 30, 60);
