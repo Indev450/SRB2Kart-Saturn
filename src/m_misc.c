@@ -65,8 +65,6 @@ typedef off_t off64_t;
 #define PRIdS "%u"
 #elif defined(_WIN32) && !defined(__MINGW64__)
 #define PRIdS "%Iu"
-#elif defined(__MINGW32__) && (__GNUC__ < 3)
-#define PRIdS "%Zu"
 #else
 #define PRIdS "%zu"
 #endif
