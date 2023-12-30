@@ -832,7 +832,8 @@ const char *G_BuildMapName(INT32 map)
 		map = G_RandMap(G_TOLFlag(cv_newgametype.value), map, false, 0, false, NULL)+1;
 	}
 
-	if (map < 100)
+
+	if (map < 100 && map >= 0) // ...but why use signed integer in first place? idk but this prevents warning (and potential buffer overflow lol)
 		sprintf(&mapname[3], "%.2d", map);
 	else
 	{
@@ -5383,7 +5384,7 @@ void G_ReadDemoExtraData(void)
 void G_WriteDemoExtraData(void)
 {
 	INT32 i;
-	char name[16];
+	char name[17];
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
@@ -5416,7 +5417,7 @@ void G_WriteDemoExtraData(void)
 			{
 				// Name
 				memset(name, 0, 16);
-				strncpy(name, player_names[i], 16);
+				memcpy(name, player_names[i], 15); // Keeping 1 null byte for safety, sorry players with name containing more than 15 characters
 				M_Memcpy(demo_p,name,16);
 				demo_p += 16;
 			}
@@ -6763,7 +6764,7 @@ void G_RecordMetal(void)
 void G_BeginRecording(void)
 {
 	UINT8 i, p;
-	char name[16];
+	char name[17];
 	player_t *player = &players[consoleplayer];
 
 	char *filename;
@@ -6864,7 +6865,7 @@ void G_BeginRecording(void)
 
 			// Name
 			memset(name, 0, 16);
-			strncpy(name, player_names[p], 16);
+			memcpy(name, player_names[p], 15);
 			M_Memcpy(demo_p,name,16);
 			demo_p += 16;
 
@@ -6951,7 +6952,7 @@ void G_BeginMetal(void)
 
 void G_WriteStanding(UINT8 ranking, char *name, INT32 skinnum, UINT8 color, UINT32 val)
 {
-	char temp[16];
+	char temp[17];
 
 	if (demoinfo_p && *(UINT32 *)demoinfo_p == 0)
 	{

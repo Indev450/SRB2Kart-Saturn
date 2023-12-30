@@ -2605,7 +2605,7 @@ INT32 I_NumJoys(void)
 	return numjoy;
 }
 
-static char joyname[255]; // MAX_PATH; joystick name is straight from the driver
+static char joyname[256]; // MAX_PATH; joystick name is straight from the driver
 
 const char *I_GetJoyName(INT32 joyindex)
 {
@@ -2616,7 +2616,10 @@ const char *I_GetJoyName(INT32 joyindex)
 	{
 		tempname = SDL_JoystickNameForIndex(joyindex);
 		if (tempname)
-			strncpy(joyname, tempname, 255);
+		{
+			memcpy(joyname, tempname, 255);
+			joyname[255] = '\0';
+		}
 	}
 	return joyname;
 }

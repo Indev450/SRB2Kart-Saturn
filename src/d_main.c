@@ -969,7 +969,7 @@ static void D_FindAddonsToAutoload(void)
 	boolean postload;
 
 	INT32 i;
-	char wadsToAutoload[256] = "", renameAutoloadStrings[256] = "";
+	char wadsToAutoload[256] = "";
 
 	// does it exist tho
 	autoloadpath = va("%s"PATHSEP"%s",srb2home,AUTOLOADCONFIGFILENAME);

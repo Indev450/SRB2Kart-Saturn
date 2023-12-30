@@ -337,7 +337,7 @@ static void Y_CalculateMatchData(UINT8 rankingsmode, void (*comparison)(INT32))
 // Y_AnimatedVoteScreenCheck
 //
 // Check if the lumps exist (checking for VEXTR(N|W)xx for race and VEXTRB(N|W)xx for battle)
-void Y_AnimatedVoteScreenCheck(void)
+static void Y_AnimatedVoteScreenCheck(void)
 {
 	char tmpPrefix[] = "INTS";
 	boolean stopSearching = false;
@@ -1055,7 +1055,7 @@ static void Y_UnloadData(void)
 //
 // Draw animated patch based on frame counter on vote screen
 //
-void Y_DrawAnimatedVoteScreenPatch(boolean widePatch){
+static void Y_DrawAnimatedVoteScreenPatch(boolean widePatch){
 	char tempAnimPrefix[7];
 	(widePatch) ? strcpy(tempAnimPrefix, animWidePrefix) : strcpy(tempAnimPrefix, animPrefix);
 	INT32 tempFoundAnimVoteFrames = (widePatch) ? foundAnimVoteWideFrames : foundAnimVoteFrames;

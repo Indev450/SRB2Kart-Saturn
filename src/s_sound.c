@@ -1429,8 +1429,9 @@ void S_LoadMusicDefs(UINT16 wadnum)
 					//CONS_Printf("S_LoadMusicDefs: Added song '%s'\n", def->name);
 				}
 			}
-			
-			strncpy(def->filename, wadfiles[wadnum]->filename, 256);
+
+			memcpy(def->filename, wadfiles[wadnum]->filename, 256);
+			def->filename[256] = '\0';
 
 skip_lump:
 			stoken = strtok(NULL, "\r\n ");
@@ -1981,14 +1982,14 @@ static void S_ChangeMusicToQueue(void)
 
 void S_ChangeMusicEx(const char *mmusic, UINT16 mflags, boolean looping, UINT32 position, UINT32 prefadems, UINT32 fadeinms)
 {
-	char newmusic[7];
+	char newmusic[7] = {0};
 
 	if (S_MusicDisabled()
 		|| demo.rewinding // Don't mess with music while rewinding!
 		|| demo.title) // SRB2Kart: Demos don't interrupt title screen music
 		return;
 
-	strncpy(newmusic, mmusic, 7);
+	strncpy(newmusic, mmusic, 6);
 #ifdef HAVE_BLUA
 	if(LUAh_MusicChange(music_name, newmusic, &mflags, &looping, &position, &prefadems, &fadeinms))
 		return;
@@ -2451,8 +2452,12 @@ void StereoSep_OnChange(void)
 void AmigaFilter_OnChange(void)
 {
 	if (openmpt_mhandle)
+#if OPENMPT_API_VERSION_MAJOR < 1 && OPENMPT_API_VERSION_MINOR > 4
+		openmpt_module_ctl_set_text(openmpt_mhandle, "render.resampler.emulate_amiga", cv_amigafilter.value ? "1" : "0");
+#else
 		openmpt_module_ctl_set(openmpt_mhandle, "render.resampler.emulate_amiga", cv_amigafilter.value ? "1" : "0");
-	}
+#endif
+}
 
 
 #if OPENMPT_API_VERSION_MAJOR < 1 && OPENMPT_API_VERSION_MINOR > 4
