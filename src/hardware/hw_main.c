@@ -3795,9 +3795,7 @@ static boolean HWR_PortalCheckBBox(fixed_t *bspcoord)
 //  traversing subtree recursively.
 // Just call with BSP root.
 
-#include <omp.h>
-
-inline HWR_RenderBSPNode(INT32 bspnum)
+void HWR_RenderBSPNode(INT32 bspnum)
 {
 	node_t *bsp = &nodes[bspnum];
 
