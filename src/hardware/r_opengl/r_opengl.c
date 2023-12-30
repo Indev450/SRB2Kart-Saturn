@@ -1651,7 +1651,7 @@ EXPORT UINT32 HWRAPI(AddLightTable) (UINT8 *lighttable)
 		ltcachetail = cache_entry;
 	}
 	ltcachetail->next = NULL;
-	
+
 	GLenum internalFormat;
 	if (gl_version[0] == '1' || gl_version[0] == '2')
 	{
@@ -1665,13 +1665,13 @@ EXPORT UINT32 HWRAPI(AddLightTable) (UINT8 *lighttable)
 	{
 		internalFormat = GL_R8;
 	}
-	
+
 	pglGenTextures(1, &ltcachetail->id);
 	if (!ltcachetail->id){
 		GL_MSG_Error("HWR Lighttable cache entry id is zero");
 		CV_Set(&cv_grpaletteshader, "Off"); // turn that thing off if you cant use it
-		return;
-	}	
+		return 0;
+	}
 	pglBindTexture(GL_TEXTURE_2D, ltcachetail->id);
 	pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -3065,15 +3065,15 @@ static void SkyVertex(vbo_vertex_t *vbo, int r, int c)
 	vbo->z = z;
 }
 
-void RevertStencilBuffer()// TODO need to add OpenGL stencil functions to function importing
+/*void RevertStencilBuffer()// TODO need to add OpenGL stencil functions to function importing
 {
-	/*const float screenVerts[12] =
+	const float screenVerts[12] =
 	{
 		-1.0f, -1.0f, 1.0f,
 		-1.0f, 1.0f, 1.0f,
 		1.0f, 1.0f, 1.0f,
 		1.0f, -1.0f, 1.0f
-	};*/
+	};
 
 	const float screenVerts[12] =
 	{
@@ -3112,6 +3112,7 @@ void RevertStencilBuffer()// TODO need to add OpenGL stencil functions to functi
 	pglEnable(GL_BLEND);
 	pglColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 }
+*/
 
 static GLSkyVBO sky_vbo;
 

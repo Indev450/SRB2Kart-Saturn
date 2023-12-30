@@ -136,7 +136,7 @@ FILE *W_OpenWadFile(const char **filename, boolean useerrors);
 //
 // if local is true, it wouldn't check if file adds complex things, therefore
 // allowing to still join server without the "you have wrong addons loaded" error
-UINT16 W_InitFile(const char *filename, const char *lumpname, UINT16 *wadnump, boolean local);
+UINT16 W_InitFile(const char *filename, boolean local);
 #ifdef DELFILE
 void W_UnloadWadFile(UINT16 num);
 #endif

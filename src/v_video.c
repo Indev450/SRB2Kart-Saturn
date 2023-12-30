@@ -177,7 +177,7 @@ const char *R_GetPalname(UINT16 num)
 	if (num > 0 && num <= 10000)
 		snprintf(newpal, 8, "PAL%04u", num-1);
 
-	strncpy(palname, newpal, 8);
+	memcpy(palname, newpal, 9);
 	return palname;
 }
 
@@ -536,7 +536,7 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 // Draws a patch cropped and scaled to arbitrary size.
 void V_DrawCroppedPatch(fixed_t x, fixed_t y, fixed_t pscale, INT32 scrn, patch_t *patch, fixed_t sx, fixed_t sy, fixed_t w, fixed_t h)
 {
-	fixed_t col, ofs, colfrac, rowfrac, fdup, vdup;
+	fixed_t col, ofs, colfrac, rowfrac, fdup;
 	INT32 dupx, dupy;
 	const column_t *column;
 	UINT8 *desttop, *dest;

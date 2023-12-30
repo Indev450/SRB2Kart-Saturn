@@ -139,7 +139,7 @@ static UINT8 localtextcmd3[MAXTEXTCMD]; // splitscreen == 2
 static UINT8 localtextcmd4[MAXTEXTCMD]; // splitscreen == 3
 static tic_t neededtic;
 SINT8 servernode = 0; // the number of the server node
-char connectedservername[MAXSERVERNAME];
+char connectedservername[MAXSERVERNAME+1];
 /// \brief do we accept new players?
 /// \todo WORK!
 boolean acceptnewnode = true;
@@ -1138,7 +1138,7 @@ static void GetPackets(void);
 static cl_mode_t cl_mode = CL_SEARCHING;
 
 #ifdef HAVE_CURL
-char http_source[MAX_MIRROR_LENGTH];
+char http_source[MAX_MIRROR_LENGTH+1];
 #endif
 
 static UINT16 cl_lastcheckedfilecount = 0;	// used for full file list
@@ -1625,7 +1625,12 @@ static void SV_SendPlayerInfo(INT32 node)
 		}
 
 		netbuffer->u.playerinfo[i].node = i;
+
+		// Can't really change this because net compatibility, but the warning is annoying
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
 		strncpy(netbuffer->u.playerinfo[i].name, (const char *)&player_names[i], MAXPLAYERNAME+1);
+#pragma GCC diagnostic pop
 		netbuffer->u.playerinfo[i].name[MAXPLAYERNAME] = '\0';
 
 		//fetch IP address
