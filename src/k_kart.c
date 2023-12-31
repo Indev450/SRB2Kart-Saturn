@@ -3104,7 +3104,6 @@ static void K_StretchPlayerGravity(player_t *p)
 
 	//CONS_Printf(M_GetText("div: %d, scale factor: %d, stretch value: %d\n"), rzsDiv, stretchScaleFactor, cv_gravstretch.value);
 
-
     I_Assert(p != NULL);
 	I_Assert(p->mo != NULL);
 	I_Assert(!P_MobjWasRemoved(p->mo));
@@ -3144,6 +3143,7 @@ static void K_StretchPlayerGravity(player_t *p)
 			slamDiv = 0;
 		else
 			slamDiv = FixedDiv(p->mo->stretchslam, stretchScaleFactor);
+		
         p->mo->spritexscale = (dxs+(((slamDiv*2)/3)*2));
         p->mo->spriteyscale = (dys-(slamDiv));
         if (p->mo->stretchslam > 0)
@@ -6957,7 +6957,6 @@ static patch_t *skp_smallstickerclr;
 static patch_t *kp_itemmulstickerclr[2];
 static patch_t *kp_itembgclr[4];
 
-
 //Kartz speedo
 static patch_t *kp_kartzspeedo[25];
 
@@ -7046,8 +7045,18 @@ void K_LoadKartHUDGraphics(void)
 	kp_karmasticker = 			W_CachePatchName("K_STKARM", PU_HUDGFX);
 	kp_splitkarmabomb = 		W_CachePatchName("K_SPTKRM", PU_HUDGFX);
 	kp_timeoutsticker = 		W_CachePatchName("K_STTOUT", PU_HUDGFX);
+	
+	if (snw_speedo) // snowy speedometer
+	{
+		skp_smallsticker = 	  W_CachePatchName("SP_SMSTC", PU_HUDGFX);
+		skp_speedpatches[0] = W_CachePatchName("K_TRNULL", PU_HUDGFX); // lolxd
+		skp_speedpatches[1] = W_CachePatchName("SP_MKMH",  PU_HUDGFX);
+		skp_speedpatches[2] = W_CachePatchName("SP_MMPH",  PU_HUDGFX);
+		skp_speedpatches[3] = W_CachePatchName("SP_MFRAC", PU_HUDGFX);
+		skp_speedpatches[4] = W_CachePatchName("SP_MPERC", PU_HUDGFX);
+	}
 
-	if (big_lap){		
+	if (big_lap){	
 			kp_lapstickerbig = 		W_CachePatchName("K_STLAPB", PU_HUDGFX);
 			kp_lapstickerbig2 = 		W_CachePatchName("K_STLA2B", PU_HUDGFX);
 	}
@@ -7069,6 +7078,7 @@ void K_LoadKartHUDGraphics(void)
 		kp_itembgclr[3] = 				W_CachePatchName("K_ISBCD", PU_HUDGFX);
 		kp_itemmulstickerclr[1] = 		W_CachePatchName("K_ISMULC", PU_HUDGFX);
 		kp_itemmulstickerclr[0] = 		W_CachePatchName("K_ITMULC", PU_HUDGFX);
+		
 		if (big_lap_color){		
 			kp_lapstickerbigclr = 		W_CachePatchName("K_SCLAPB", PU_HUDGFX);
 			kp_lapstickerbig2clr = 		W_CachePatchName("K_SCLA2B", PU_HUDGFX);
@@ -7081,31 +7091,18 @@ void K_LoadKartHUDGraphics(void)
 	//KartZ speedo
 	if (kartzspeedo)
 	{
-		kp_kartzspeedo[0] = 				W_CachePatchName("K_KZSP1", PU_HUDGFX);
-		kp_kartzspeedo[1] = 				W_CachePatchName("K_KZSP2", PU_HUDGFX);
-		kp_kartzspeedo[2] = 				W_CachePatchName("K_KZSP3", PU_HUDGFX);
-		kp_kartzspeedo[3] = 				W_CachePatchName("K_KZSP4", PU_HUDGFX);
-		kp_kartzspeedo[4] = 				W_CachePatchName("K_KZSP5", PU_HUDGFX);
-		kp_kartzspeedo[5] = 				W_CachePatchName("K_KZSP6", PU_HUDGFX);
-		kp_kartzspeedo[6] = 				W_CachePatchName("K_KZSP7", PU_HUDGFX);
-		kp_kartzspeedo[7] = 				W_CachePatchName("K_KZSP8", PU_HUDGFX);
-		kp_kartzspeedo[8] = 				W_CachePatchName("K_KZSP9", PU_HUDGFX);
-		kp_kartzspeedo[9] = 				W_CachePatchName("K_KZSP10", PU_HUDGFX);
-		kp_kartzspeedo[10] = 				W_CachePatchName("K_KZSP11", PU_HUDGFX);
-		kp_kartzspeedo[11] = 				W_CachePatchName("K_KZSP12", PU_HUDGFX);
-		kp_kartzspeedo[12] = 				W_CachePatchName("K_KZSP13", PU_HUDGFX);
-		kp_kartzspeedo[13] = 				W_CachePatchName("K_KZSP14", PU_HUDGFX);
-		kp_kartzspeedo[14] = 				W_CachePatchName("K_KZSP15", PU_HUDGFX);
-		kp_kartzspeedo[15] = 				W_CachePatchName("K_KZSP16", PU_HUDGFX);
-		kp_kartzspeedo[16] = 				W_CachePatchName("K_KZSP17", PU_HUDGFX);
-		kp_kartzspeedo[17] = 				W_CachePatchName("K_KZSP18", PU_HUDGFX);
-		kp_kartzspeedo[18] = 				W_CachePatchName("K_KZSP19", PU_HUDGFX);
-		kp_kartzspeedo[19] = 				W_CachePatchName("K_KZSP20", PU_HUDGFX);
-		kp_kartzspeedo[20] = 				W_CachePatchName("K_KZSP21", PU_HUDGFX);
-		kp_kartzspeedo[21] = 				W_CachePatchName("K_KZSP22", PU_HUDGFX);
-		kp_kartzspeedo[22] = 				W_CachePatchName("K_KZSP23", PU_HUDGFX);
-		kp_kartzspeedo[23] = 				W_CachePatchName("K_KZSP24", PU_HUDGFX);
-		kp_kartzspeedo[24] = 				W_CachePatchName("K_KZSP25", PU_HUDGFX);
+		const char* patchNames[] = {
+			"K_KZSP1", "K_KZSP2", "K_KZSP3", "K_KZSP4", "K_KZSP5",
+			"K_KZSP6", "K_KZSP7", "K_KZSP8", "K_KZSP9", "K_KZSP10",
+			"K_KZSP11", "K_KZSP12", "K_KZSP13", "K_KZSP14", "K_KZSP15",
+			"K_KZSP16", "K_KZSP17", "K_KZSP18", "K_KZSP19", "K_KZSP20",
+			"K_KZSP21", "K_KZSP22", "K_KZSP23", "K_KZSP24", "K_KZSP25"
+		};
+
+		for (size_t m = 0; m < sizeof(patchNames) / sizeof(patchNames[0]); ++m)
+		{
+			kp_kartzspeedo[m] = W_CachePatchName(patchNames[m], PU_HUDGFX);
+		}
 	}
 	
 	// Starting countdown
@@ -7333,16 +7330,6 @@ void K_LoadKartHUDGraphics(void)
 	}
 
 	kp_yougotem = (patch_t *) W_CachePatchName("YOUGOTEM", PU_HUDGFX);
-
-	if (snw_speedo) // snowy speedometer
-	{
-		skp_smallsticker = 	  W_CachePatchName("SP_SMSTC", PU_HUDGFX);
-		skp_speedpatches[0] = W_CachePatchName("K_TRNULL", PU_HUDGFX); // lolxd
-		skp_speedpatches[1] = W_CachePatchName("SP_MKMH",  PU_HUDGFX);
-		skp_speedpatches[2] = W_CachePatchName("SP_MMPH",  PU_HUDGFX);
-		skp_speedpatches[3] = W_CachePatchName("SP_MFRAC", PU_HUDGFX);
-		skp_speedpatches[4] = W_CachePatchName("SP_MPERC", PU_HUDGFX);
-	}
 }
 
 // For the item toggle menu
@@ -8653,7 +8640,7 @@ static void K_drawKartLaps(void)
 			else
 				V_DrawMappedPatch(LAPS_X, LAPS_Y, V_HUDTRANS|splitflags, kp_lapstickerclr, colormap);
 		}
-		
+
 		if (stplyr->exiting)
 			V_DrawKartString(LAPS_X+33, LAPS_Y+3, V_HUDTRANS|splitflags, "FIN");
 		else
@@ -8668,14 +8655,13 @@ static void K_drawKartSpeedometer(void)
 		return;
 
 	fixed_t convSpeed = 0;
-	
+
 	//KartZ speedo
 	fixed_t fuspeed = 0;
 	INT32 spdpatch = 0;
 	
 	INT32 speedtype = 0;
 	INT32 splitflags = K_calcSplitFlags(V_SNAPTOBOTTOM|V_SNAPTOLEFT);
-	
 
 	switch (cv_kartspeedometer.value)
 	{
@@ -8718,6 +8704,9 @@ static void K_drawKartSpeedometer(void)
 					V_DrawKartString(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, va("%4d P", convSpeed));
 				else
 					V_DrawKartString(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, va("%4d %%", convSpeed));
+				break;
+			default:
+				break;
 		}
 	}
 	else if (cv_newspeedometer.value == 2 && snw_speedo) // why bother if we dont?
