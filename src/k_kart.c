@@ -8726,66 +8726,26 @@ static void K_drawKartSpeedometer(void)
 	
 	// Kart Z speedo bullshit...
 	// Draw the Speed counter.
-	// Warning large if statement below...
 	else if (cv_newspeedometer.value == 3 && kartzspeedo)
 	{
 		fuspeed =  FixedDiv(stplyr->speed, mapobjectscale)/FRACUNIT;
 		
-		if (fuspeed < 2 && fuspeed > 0)
-			spdpatch = 0;
-		else if (fuspeed < 5 && fuspeed > 1)
-			spdpatch = 1;
-		else if (fuspeed < 7 && fuspeed > 4)
-			spdpatch = 2;
-		else if (fuspeed < 10 && fuspeed > 6)
-			spdpatch = 3;
-		else if (fuspeed < 12 && fuspeed > 9)
-			spdpatch = 4;
-		else if (fuspeed < 15 && fuspeed > 11)
-			spdpatch = 5;
-		else if (fuspeed < 17 && fuspeed > 14)
-			spdpatch = 6;
-		else if (fuspeed < 20 && fuspeed > 16)
-			spdpatch = 7;
-		else if (fuspeed < 22 && fuspeed > 19)
-			spdpatch = 8;
-		else if (fuspeed < 25 && fuspeed > 21)
-			spdpatch = 9;
-		else if (fuspeed < 27 && fuspeed > 24)
-			spdpatch = 10;
-		else if (fuspeed < 30 && fuspeed > 26)
-			spdpatch = 11;
-		else if (fuspeed < 32 && fuspeed > 29)
-			spdpatch = 12;
-		else if (fuspeed < 35 && fuspeed > 31)
-			spdpatch = 13;
-		else if (fuspeed < 37 && fuspeed > 34)
-			spdpatch = 14;
-		else if (fuspeed < 40 && fuspeed > 36)
-			spdpatch = 15;
-		else if (fuspeed < 42 && fuspeed > 39)
-			spdpatch = 16;
-		else if (fuspeed < 45 && fuspeed > 41)
-			spdpatch = 17;
-		else if (fuspeed < 47 && fuspeed > 44)
-			spdpatch = 18;
-		else if (fuspeed < 50 && fuspeed > 46)
-			spdpatch = 19;
-		else if (fuspeed < 52 && fuspeed > 49)
-			spdpatch = 20;
-		else if (fuspeed < 55 && fuspeed > 51)
-			spdpatch = 21;
-		else if (fuspeed < 57 && fuspeed > 54 && (leveltime&4))
+#define NUM_INTERVALS 22
+		const int speedIntervals[NUM_INTERVALS] = {2, 5, 7, 10, 12, 15, 17, 20, 22, 25, 27, 30, 32, 35, 37, 40, 42, 45, 47, 50, 52, 55};
+
+		for (int i = 0; i < NUM_INTERVALS; ++i) 
+		{
+			if (fuspeed < speedIntervals[i]) 
+			{
+				spdpatch = i;
+				break;
+			}
+		}
+#undef NUM_INTERVALS
+
+		if (((fuspeed < 57 && fuspeed > 54) || (fuspeed < 60 && fuspeed > 56) || (fuspeed > 59)) && (leveltime & 4))
 			spdpatch = 24;
-		else if (fuspeed < 57 && fuspeed > 54 && !(leveltime&4))
-			spdpatch = 23;
-		else if (fuspeed < 60 && fuspeed > 56 && (leveltime&4))
-			spdpatch = 24;
-		else if (fuspeed < 60 && fuspeed > 56  && !(leveltime&4))
-			spdpatch = 23;
-		else if (fuspeed > 59 && (leveltime&4))
-			spdpatch = 24;
-		else if (fuspeed > 59 && !(leveltime&4))
+		else if (((fuspeed < 57 && fuspeed > 54) || (fuspeed < 60 && fuspeed > 56) || (fuspeed > 59)) && !(leveltime & 4))
 			spdpatch = 23;
 
 		V_DrawScaledPatch(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, kp_kartzspeedo[spdpatch]);
