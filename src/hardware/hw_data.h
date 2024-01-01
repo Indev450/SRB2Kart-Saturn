@@ -111,7 +111,7 @@ struct GLPatch_s
 	GLMipmap_t         *mipmap;
 	
 	boolean             notfound; // if the texture file was not found, mark it here (used in model texture loading)
-} ATTRPACK;
+};
 typedef struct GLPatch_s GLPatch_t;
 
 #endif //_HWR_DATA_
