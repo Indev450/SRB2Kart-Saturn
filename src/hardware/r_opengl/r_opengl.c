@@ -2328,6 +2328,7 @@ typedef struct
 	GLuint shader;
 	// this tells batching that the plane belongs to a horizon line and must be drawn in correct order with the skywalls
 	boolean horizonSpecial;
+	INT32 hash;
 } PolygonArrayEntry;
 
 FOutVector* finalVertexArray = NULL;// contains subset of sorted vertices and texture coordinates to be sent to gpu
@@ -2341,7 +2342,7 @@ int finalVertexArrayAllocSize = 65536;
 
 PolygonArrayEntry* polygonArray = NULL;// contains the polygon data from DrawPolygon, waiting to be processed
 int polygonArraySize = 0;
-PolygonArrayEntry **polygonArraySorted = NULL;// contains sorted pointers to polygonArray
+UINT32* polygonIndexArray = NULL;// contains sorting pointers for polygonArray
 int polygonArrayAllocSize = 65536;
 
 FOutVector* unsortedVertexArray = NULL;// contains unsorted vertices and texture coordinates from DrawPolygon
@@ -2357,7 +2358,7 @@ EXPORT void HWRAPI(StartBatching) (void)
 		finalVertexArray = malloc(finalVertexArrayAllocSize * sizeof(FOutVector));
 		finalVertexIndexArray = malloc(finalVertexArrayAllocSize * 3 * sizeof(UINT32));
 		polygonArray = malloc(polygonArrayAllocSize * sizeof(PolygonArrayEntry));
-		polygonArraySorted = malloc(polygonArrayAllocSize * sizeof(PolygonArrayEntry *));
+		polygonIndexArray = malloc(polygonArrayAllocSize * sizeof(UINT32));
 		unsortedVertexArray = malloc(unsortedVertexArrayAllocSize * sizeof(FOutVector));
 	}
 	// drawing functions will now collect the drawing data instead of passing it to opengl
@@ -2365,81 +2366,161 @@ EXPORT void HWRAPI(StartBatching) (void)
 	//CONS_Printf("StartBatching end\n");
 }
 
-static int comparePolygons(const void *p1, const void *p2)
+// -----------------+
+// DrawPolygon      : Render a polygon, set the texture, set render mode
+// -----------------+
+EXPORT void HWRAPI(DrawPolygon) (FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags, boolean horizonSpecial)
 {
-	PolygonArrayEntry *poly1 = *(PolygonArrayEntry *const *)p1;
-	PolygonArrayEntry *poly2 = *(PolygonArrayEntry *const *)p2;
-	int diff;
-	INT64 diff64;
-
-	int shader1 = poly1->shader;
-	int shader2 = poly2->shader;
-	// make skywalls and horizon lines first in order
-	if (poly1->polyFlags & PF_NoTexture || poly1->horizonSpecial)
-		shader1 = -1;
-	if (poly2->polyFlags & PF_NoTexture || poly2->horizonSpecial)
-		shader2 = -1;
-	diff = shader1 - shader2;
-	if (diff != 0) return diff;
-
-	// skywalls and horizon lines must retain their order for horizon lines to work
-	if (shader1 == -1 && shader2 == -1)
-		return poly1 - poly2;
-
-	diff = poly1->texNum - poly2->texNum;
-	if (diff != 0) return diff;
-	
-	if (gl_palshader)
+	if (gl_batching)
 	{
-		diff = poly1->surf.LightTableId - poly2->surf.LightTableId;
-		if (diff != 0) return diff;
+		//CONS_Printf("Batched DrawPolygon\n");
+		if (!pSurf)
+			I_Error("Got a null FSurfaceInfo in batching");// nulls should only come in sky background pic drawing
+		if (polygonArraySize == polygonArrayAllocSize)
+		{
+			PolygonArrayEntry* new_array;
+			// ran out of space, make new array double the size
+			polygonArrayAllocSize *= 2;
+			new_array = malloc(polygonArrayAllocSize * sizeof(PolygonArrayEntry));
+			memcpy(new_array, polygonArray, polygonArraySize * sizeof(PolygonArrayEntry));
+			free(polygonArray);
+			polygonArray = new_array;
+			// also need to redo the index array, dont need to copy it though
+			free(polygonIndexArray);
+			polygonIndexArray = malloc(polygonArrayAllocSize * sizeof(UINT32));
+		}
+
+		while (unsortedVertexArraySize + (int)iNumPts > unsortedVertexArrayAllocSize)
+		{
+			FOutVector* new_array;
+			// need more space for vertices in unsortedVertexArray
+			unsortedVertexArrayAllocSize *= 2;
+			new_array = malloc(unsortedVertexArrayAllocSize * sizeof(FOutVector));
+			memcpy(new_array, unsortedVertexArray, unsortedVertexArraySize * sizeof(FOutVector));
+			free(unsortedVertexArray);
+			unsortedVertexArray = new_array;
+		}
+
+		// add the polygon data to the arrays
+
+		polygonArray[polygonArraySize].surf = *pSurf;
+		polygonArray[polygonArraySize].vertsIndex = unsortedVertexArraySize;
+		polygonArray[polygonArraySize].numVerts = iNumPts;
+		polygonArray[polygonArraySize].polyFlags = PolyFlags;
+		polygonArray[polygonArraySize].texNum = tex_downloaded;
+		polygonArray[polygonArraySize].shader = gl_currentshaderprogram;
+		polygonArray[polygonArraySize].horizonSpecial = horizonSpecial;
+		// default to polygonArraySize so we don't lose order on horizon lines
+		// (yes, it's supposed to be negative, since we're sorting in that direction)
+		polygonArray[polygonArraySize].hash = -polygonArraySize;
+		polygonArraySize++;
+		
+		if (!(PolyFlags & PF_NoTexture) && !horizonSpecial)
+		{
+			// use FNV-1a to hash polygons for later sorting.
+			INT32 hash = 0x811c9dc5;
+#define DIGEST(h, x) h ^= (x); h *= 0x01000193
+			if (tex_downloaded)
+			{
+				DIGEST(hash, tex_downloaded);
+			}
+			DIGEST(hash, PolyFlags);
+			DIGEST(hash, pSurf->PolyColor.rgba);
+			if (gl_allowshaders)
+			{
+				DIGEST(hash, gl_currentshaderprogram);
+				DIGEST(hash, pSurf->TintColor.rgba);
+				DIGEST(hash, pSurf->FadeColor.rgba);
+				DIGEST(hash, pSurf->LightInfo.light_level);
+				DIGEST(hash, pSurf->LightInfo.fade_start);
+				DIGEST(hash, pSurf->LightInfo.fade_end);
+				if (gl_palshader){
+					DIGEST(hash, pSurf->LightTableId);
+				}
+			}
+#undef DIGEST
+			// remove the sign bit to ensure that skybox and horizon line comes first.
+			polygonArray[polygonArraySize-1].hash = (hash & INT32_MAX);
+		}
+
+		memcpy(&unsortedVertexArray[unsortedVertexArraySize], pOutVerts, iNumPts * sizeof(FOutVector));
+		unsortedVertexArraySize += iNumPts;
 	}
+	else
+	{
+		static GLRGBAFloat poly = {0,0,0,0};
+		static GLRGBAFloat tint = {0,0,0,0};
+		static GLRGBAFloat fade = {0,0,0,0};
 
-	diff = poly1->polyFlags - poly2->polyFlags;
-	if (diff != 0) return diff;
+		SetBlend(PolyFlags);    //TODO: inline (#pragma..)
 
-	diff64 = poly1->surf.PolyColor.rgba - poly2->surf.PolyColor.rgba;
-	if (diff64 < 0) return -1; else if (diff64 > 0) return 1;
-	diff64 = poly1->surf.TintColor.rgba - poly2->surf.TintColor.rgba;
-	if (diff64 < 0) return -1; else if (diff64 > 0) return 1;
-	diff64 = poly1->surf.FadeColor.rgba - poly2->surf.FadeColor.rgba;
-	if (diff64 < 0) return -1; else if (diff64 > 0) return 1;
+		if (gl_portal_mode == HWD_PORTAL_NORMAL)
+		{
+			// PolyColor
+			if (pSurf)
+			{
+				// If modulated, mix the surface colour to the texture
+				if (CurrentPolyFlags & PF_Modulated)
+					pglColor4ubv((GLubyte*)&pSurf->PolyColor.s);
 
-	diff = poly1->surf.LightInfo.light_level - poly2->surf.LightInfo.light_level;
-	if (diff != 0) return diff;
-	diff = poly1->surf.LightInfo.fade_start - poly2->surf.LightInfo.fade_start;
-	if (diff != 0) return diff;
-	diff = poly1->surf.LightInfo.fade_end - poly2->surf.LightInfo.fade_end;
-	return diff;
+				// If the surface is either modulated or colormapped, or both
+				if (CurrentPolyFlags & (PF_Modulated | PF_ColorMapped))
+				{
+					poly.red   = byte2float[pSurf->PolyColor.s.red];
+					poly.green = byte2float[pSurf->PolyColor.s.green];
+					poly.blue  = byte2float[pSurf->PolyColor.s.blue];
+					poly.alpha = byte2float[pSurf->PolyColor.s.alpha];
+				}
+
+				// Only if the surface is colormapped
+				if (CurrentPolyFlags & PF_ColorMapped)
+				{
+					tint.red   = byte2float[pSurf->TintColor.s.red];
+					tint.green = byte2float[pSurf->TintColor.s.green];
+					tint.blue  = byte2float[pSurf->TintColor.s.blue];
+					tint.alpha = byte2float[pSurf->TintColor.s.alpha];
+
+					fade.red   = byte2float[pSurf->FadeColor.s.red];
+					fade.green = byte2float[pSurf->FadeColor.s.green];
+					fade.blue  = byte2float[pSurf->FadeColor.s.blue];
+					fade.alpha = byte2float[pSurf->FadeColor.s.alpha];
+				}
+			
+				if (gl_palshader && gl_allowshaders)
+				{
+					pglActiveTexture(GL_TEXTURE2);
+					pglBindTexture(GL_TEXTURE_2D, pSurf->LightTableId);
+					pglActiveTexture(GL_TEXTURE0);
+				}
+			}
+
+		Shader_Load(pSurf, &poly, &tint, &fade);
+		}
+		else
+			UnSetShader();
+
+		pglVertexPointer(3, GL_FLOAT, sizeof(FOutVector), &pOutVerts[0].x);
+		pglTexCoordPointer(2, GL_FLOAT, sizeof(FOutVector), &pOutVerts[0].s);
+		pglDrawArrays(GL_TRIANGLE_FAN, 0, iNumPts);
+
+		if (PolyFlags & PF_RemoveYWrap)
+			pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+		if (PolyFlags & PF_ForceWrapX)
+			Clamp2D(GL_TEXTURE_WRAP_S);
+
+		if (PolyFlags & PF_ForceWrapY)
+			Clamp2D(GL_TEXTURE_WRAP_T);
+	}
 }
 
-static int comparePolygonsNoShaders(const void *p1, const void *p2)
+static int comparePolygons(const void *p1, const void *p2)
 {
-	PolygonArrayEntry *poly1 = *(PolygonArrayEntry *const *)p1;
-	PolygonArrayEntry *poly2 = *(PolygonArrayEntry *const *)p2;
-	int diff;
-	INT64 diff64;
-
-	GLuint texNum1 = poly1->texNum;
-	GLuint texNum2 = poly2->texNum;
-	if (poly1->polyFlags & PF_NoTexture || poly1->horizonSpecial)
-		texNum1 = 0;
-	if (poly2->polyFlags & PF_NoTexture || poly2->horizonSpecial)
-		texNum2 = 0;
-	diff = texNum1 - texNum2;
-	if (diff != 0) return diff;
-
-	// skywalls and horizon lines must retain their order for horizon lines to work
-	if (texNum1 == 0 && texNum2 == 0)
-		return poly1 - poly2;
-
-	diff = poly1->polyFlags - poly2->polyFlags;
-	if (diff != 0) return diff;
-
-	diff64 = poly1->surf.PolyColor.rgba - poly2->surf.PolyColor.rgba;
-	if (diff64 < 0) return -1; else if (diff64 > 0) return 1;
-
-	return 0;
+	unsigned int index1 = *(const unsigned int*)p1;
+	unsigned int index2 = *(const unsigned int*)p2;
+	PolygonArrayEntry* poly1 = &polygonArray[index1];
+	PolygonArrayEntry* poly2 = &polygonArray[index2];
+	return poly1->hash - poly2->hash;
 }
 
 // the parameters for this functions (numPolys etc.) are used to return rendering stats
@@ -2477,31 +2558,20 @@ EXPORT void HWRAPI(RenderBatches) (precise_t *sSortTime, precise_t *sDrawTime, i
 	// init polygonArraySorted
 	for (i = 0; i < polygonArraySize; i++)
 	{
-		polygonArraySorted[i] = &polygonArray[i];
+		polygonIndexArray[i] = i;
 	}
 
-	// sort polygons
-	//CONS_Printf("qsort polys\n");
 	*sSortTime = I_GetPreciseTime();
-	if (gl_allowshaders)
-		qsort(polygonArraySorted, polygonArraySize, sizeof(PolygonArrayEntry *), comparePolygons);
-	else
-		qsort(polygonArraySorted, polygonArraySize, sizeof(PolygonArrayEntry *), comparePolygonsNoShaders);
+	qsort(polygonIndexArray, polygonArraySize, sizeof(unsigned int), comparePolygons);
 	*sSortTime = I_GetPreciseTime() - *sSortTime;
-	//CONS_Printf("sort done\n");
-	// sort order
-	// 1. shader
-	// 2. texture
-	// 3. polyflags
-	// 4. colors + light level
-	// not sure about order of last 2, or if it even matters
-
+	
 	*sDrawTime = I_GetPreciseTime();
 
-	currentShader = polygonArraySorted[0]->shader;
-	currentTexture = polygonArraySorted[0]->texNum;
-	currentPolyFlags = polygonArraySorted[0]->polyFlags;
-	currentSurfaceInfo = polygonArraySorted[0]->surf;
+	
+	currentShader = polygonArray[polygonIndexArray[0]].shader;
+	currentTexture = polygonArray[polygonIndexArray[0]].texNum;
+	currentPolyFlags = polygonArray[polygonIndexArray[0]].polyFlags;
+	currentSurfaceInfo = polygonArray[polygonIndexArray[0]].surf;
 	// For now, will sort and track the colors. Vertex attributes could be used instead of uniforms
 	// and a color array could replace the color calls.
 
@@ -2579,8 +2649,8 @@ EXPORT void HWRAPI(RenderBatches) (precise_t *sSortTime, precise_t *sDrawTime, i
 		// reset write pos
 		// repeat loop
 
-		PolygonArrayEntry *entry = polygonArraySorted[polygonReadPos++];
-		int numVerts = entry->numVerts;
+		int index = polygonIndexArray[polygonReadPos++];
+		int numVerts = polygonArray[index].numVerts;
 		// before writing, check if there is enough room
 		// using 'while' instead of 'if' here makes sure that there will *always* be enough room.
 		// probably never will this loop run more than once though
@@ -2588,7 +2658,6 @@ EXPORT void HWRAPI(RenderBatches) (precise_t *sSortTime, precise_t *sDrawTime, i
 		{
 			FOutVector* new_array;
 			unsigned int* new_index_array;
-			//CONS_Printf("final vert realloc\n");
 			finalVertexArrayAllocSize *= 2;
 			new_array = malloc(finalVertexArrayAllocSize * sizeof(FOutVector));
 			memcpy(new_array, finalVertexArray, finalVertexWritePos * sizeof(FOutVector));
@@ -2605,7 +2674,7 @@ EXPORT void HWRAPI(RenderBatches) (precise_t *sSortTime, precise_t *sDrawTime, i
 		}
 		//CONS_Printf("write verts to final\n");
 		// write the vertices of the polygon
-		memcpy(&finalVertexArray[finalVertexWritePos], &unsortedVertexArray[entry->vertsIndex],
+		memcpy(&finalVertexArray[finalVertexWritePos], &unsortedVertexArray[polygonArray[index].vertsIndex],
 			numVerts * sizeof(FOutVector));
 		// write the indexes, pointing to the fan vertexes but in triangles format
 		firstIndex = finalVertexWritePos;
@@ -2627,11 +2696,11 @@ EXPORT void HWRAPI(RenderBatches) (precise_t *sSortTime, precise_t *sDrawTime, i
 		{
 			//CONS_Printf("state change check\n");
 			// check if a state change is required, set the change bools and next vars
-			PolygonArrayEntry *nextEntry = polygonArraySorted[polygonReadPos];
-			nextShader = nextEntry->shader;
-			nextTexture = nextEntry->texNum;
-			nextPolyFlags = nextEntry->polyFlags;
-			nextSurfaceInfo = nextEntry->surf;
+			int nextIndex = polygonIndexArray[polygonReadPos];
+			nextShader = polygonArray[nextIndex].shader;
+			nextTexture = polygonArray[nextIndex].texNum;
+			nextPolyFlags = polygonArray[nextIndex].polyFlags;
+			nextSurfaceInfo = polygonArray[nextIndex].surf;
 			if (nextPolyFlags & PF_NoTexture)
 				nextTexture = 0;
 			if (currentShader != nextShader)
@@ -2814,123 +2883,6 @@ EXPORT void HWRAPI(RenderBatches) (precise_t *sSortTime, precise_t *sDrawTime, i
 	unsortedVertexArraySize = 0;
 
 	*sDrawTime = I_GetPreciseTime() - *sDrawTime;
-}
-
-// -----------------+
-// DrawPolygon      : Render a polygon, set the texture, set render mode
-// -----------------+
-EXPORT void HWRAPI(DrawPolygon) (FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags, boolean horizonSpecial)
-{
-	if (gl_batching)
-	{
-		//CONS_Printf("Batched DrawPolygon\n");
-		if (!pSurf)
-			I_Error("Got a null FSurfaceInfo in batching");// nulls should only come in sky background pic drawing
-		if (polygonArraySize == polygonArrayAllocSize)
-		{
-			PolygonArrayEntry* new_array;
-			// ran out of space, make new array double the size
-			polygonArrayAllocSize *= 2;
-			new_array = malloc(polygonArrayAllocSize * sizeof(PolygonArrayEntry));
-			memcpy(new_array, polygonArray, polygonArraySize * sizeof(PolygonArrayEntry));
-			free(polygonArray);
-			polygonArray = new_array;
-			// also need to redo the index array, dont need to copy it though
-			free(polygonArraySorted);
-			polygonArraySorted = malloc(polygonArrayAllocSize * sizeof(PolygonArrayEntry *));
-		}
-
-		while (unsortedVertexArraySize + (int)iNumPts > unsortedVertexArrayAllocSize)
-		{
-			FOutVector* new_array;
-			// need more space for vertices in unsortedVertexArray
-			unsortedVertexArrayAllocSize *= 2;
-			new_array = malloc(unsortedVertexArrayAllocSize * sizeof(FOutVector));
-			memcpy(new_array, unsortedVertexArray, unsortedVertexArraySize * sizeof(FOutVector));
-			free(unsortedVertexArray);
-			unsortedVertexArray = new_array;
-		}
-
-		// add the polygon data to the arrays
-
-		polygonArray[polygonArraySize].surf = *pSurf;
-		polygonArray[polygonArraySize].vertsIndex = unsortedVertexArraySize;
-		polygonArray[polygonArraySize].numVerts = iNumPts;
-		polygonArray[polygonArraySize].polyFlags = PolyFlags;
-		polygonArray[polygonArraySize].texNum = tex_downloaded;
-		polygonArray[polygonArraySize].shader = gl_currentshaderprogram;
-		polygonArray[polygonArraySize].horizonSpecial = horizonSpecial;
-		polygonArraySize++;
-
-		memcpy(&unsortedVertexArray[unsortedVertexArraySize], pOutVerts, iNumPts * sizeof(FOutVector));
-		unsortedVertexArraySize += iNumPts;
-	}
-	else
-	{
-		static GLRGBAFloat poly = {0,0,0,0};
-		static GLRGBAFloat tint = {0,0,0,0};
-		static GLRGBAFloat fade = {0,0,0,0};
-
-		SetBlend(PolyFlags);    //TODO: inline (#pragma..)
-
-		if (gl_portal_mode == HWD_PORTAL_NORMAL)
-		{
-			// PolyColor
-			if (pSurf)
-			{
-				// If modulated, mix the surface colour to the texture
-				if (CurrentPolyFlags & PF_Modulated)
-					pglColor4ubv((GLubyte*)&pSurf->PolyColor.s);
-
-				// If the surface is either modulated or colormapped, or both
-				if (CurrentPolyFlags & (PF_Modulated | PF_ColorMapped))
-				{
-					poly.red   = byte2float[pSurf->PolyColor.s.red];
-					poly.green = byte2float[pSurf->PolyColor.s.green];
-					poly.blue  = byte2float[pSurf->PolyColor.s.blue];
-					poly.alpha = byte2float[pSurf->PolyColor.s.alpha];
-				}
-
-				// Only if the surface is colormapped
-				if (CurrentPolyFlags & PF_ColorMapped)
-				{
-					tint.red   = byte2float[pSurf->TintColor.s.red];
-					tint.green = byte2float[pSurf->TintColor.s.green];
-					tint.blue  = byte2float[pSurf->TintColor.s.blue];
-					tint.alpha = byte2float[pSurf->TintColor.s.alpha];
-
-					fade.red   = byte2float[pSurf->FadeColor.s.red];
-					fade.green = byte2float[pSurf->FadeColor.s.green];
-					fade.blue  = byte2float[pSurf->FadeColor.s.blue];
-					fade.alpha = byte2float[pSurf->FadeColor.s.alpha];
-				}
-			
-				if (gl_palshader && gl_allowshaders)
-				{
-					pglActiveTexture(GL_TEXTURE2);
-					pglBindTexture(GL_TEXTURE_2D, pSurf->LightTableId);
-					pglActiveTexture(GL_TEXTURE0);
-				}
-			}
-
-		Shader_Load(pSurf, &poly, &tint, &fade);
-		}
-		else
-			UnSetShader();
-
-		pglVertexPointer(3, GL_FLOAT, sizeof(FOutVector), &pOutVerts[0].x);
-		pglTexCoordPointer(2, GL_FLOAT, sizeof(FOutVector), &pOutVerts[0].s);
-		pglDrawArrays(GL_TRIANGLE_FAN, 0, iNumPts);
-
-		if (PolyFlags & PF_RemoveYWrap)
-			pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-		if (PolyFlags & PF_ForceWrapX)
-			Clamp2D(GL_TEXTURE_WRAP_S);
-
-		if (PolyFlags & PF_ForceWrapY)
-			Clamp2D(GL_TEXTURE_WRAP_T);
-	}
 }
 
 // Sky dome code, taken/backported from SRB2
