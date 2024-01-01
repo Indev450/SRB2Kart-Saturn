@@ -6265,7 +6265,7 @@ void P_RollPitchMobj(mobj_t* mobj)
 
     if (cv_sloperoll.value == 1)
     {
-        K_RollMobjBySlopes(mobj, usedist, false);
+        K_RollMobjBySlopes(mobj, usedist);
     }
     else
     {

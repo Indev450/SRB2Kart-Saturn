@@ -3221,7 +3221,7 @@ static void K_QuiteSaltyHop(player_t *p)
 	}
 }
 
-static INT32 K_FindPlayerNum(player_t *plyr)
+/*static INT32 K_FindPlayerNum(player_t *plyr)
 {
 	INT32 i;
 	
@@ -3231,9 +3231,11 @@ static INT32 K_FindPlayerNum(player_t *plyr)
 			return i;
 	}
 	return 0; // technically defaulting to player 1 but fuck it
-}
+}*/
 
-void K_RollMobjBySlopes(mobj_t* mo, boolean usedistance, boolean camera_tilting)
+#define SLOPEROLL_DIV 3
+
+void K_RollMobjBySlopes(mobj_t* mo, boolean usedistance)
 {
     I_Assert(mo->subsector != NULL);
     I_Assert(mo->subsector->sector != NULL);
@@ -3256,7 +3258,7 @@ void K_RollMobjBySlopes(mobj_t* mo, boolean usedistance, boolean camera_tilting)
         // pitch
         if ((!usedistance) || (m_dist <= (rolldist)))
         {
-            an = (INT32)((angle_t)tempangle - mo->pitch_sprite) / (camera_tilting ? 1 : 3);
+            an = (INT32)((angle_t)tempangle - mo->pitch_sprite) / SLOPEROLL_DIV;
 
             mo->pitch_sprite = an ? mo->pitch_sprite + an : (angle_t)tempangle;
         }
@@ -3270,7 +3272,7 @@ void K_RollMobjBySlopes(mobj_t* mo, boolean usedistance, boolean camera_tilting)
 
         if ((!usedistance) || (m_dist <= (rolldist)))
         {
-            an = (INT32)((angle_t)tempangle - mo->roll_sprite) / (camera_tilting ? 1 : 3);
+            an = (INT32)((angle_t)tempangle - mo->roll_sprite) / SLOPEROLL_DIV;
 
             mo->roll_sprite = an ? mo->roll_sprite + an : (angle_t)tempangle;
         }
@@ -6440,15 +6442,13 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 	}
 
 	boolean usedist = false;
-	INT32 pNum = K_FindPlayerNum(player);
-	boolean camera_tilt = camspin[pNum] ? true : false;
 
 	if (cv_sloperolldist.value > 0)
 		usedist = true;
 	if (cv_sloperoll.value == 1)
 	{
 		if ((!player->mo->salty_jump)) // seeing a character rotate mid-hop looks really janky
-			K_RollMobjBySlopes(player->mo, usedist, camera_tilt);
+			K_RollMobjBySlopes(player->mo, usedist);
 	}
 	else
 	{
