@@ -845,9 +845,9 @@ static float shader_leveltime = 0;
 	"}\0"
 	
 #define GLSL_PALETTE_WATER_FRAGMENT_SHADER \
-	"const float freq = 0.025;\n" \
+	"const float freq = 0.03;\n" \
     "const float amp = 0.025;\n" \
-    "const float speed = 2.0;\n" \
+    "const float speed = 1.1;\n" \
     "const float pi = 3.14159;\n" \
     "uniform sampler2D tex;\n" \
 	"uniform sampler2D lighttable_tex;\n" \
@@ -859,9 +859,9 @@ static float shader_leveltime = 0;
     GLSL_DOOM_COLORMAP_floors \
     "void main(void) {\n" \
 		"float water_z = (gl_FragCoord.z / gl_FragCoord.w) / 2.0;\n" \
-		"float a = -pi * (water_z * freq) + (leveltime * speed);\n" \
-		"float sdistort = sin(a) * amp;\n" \
-		"float cdistort = cos(a) * amp;\n" \
+		"float a = -pi * (water_z * freq) + (leveltime * speed/ 2.0);\n" \
+		"float sdistort = sin(a) * amp * 5.0;\n" \
+		"float cdistort = cos(a) * amp * 6.0;\n" \
 		"vec4 texel = texture2D(tex, vec2(gl_TexCoord[0].s - sdistort, gl_TexCoord[0].t - cdistort));\n" \
 		"int tex_pal_idx = int(texture3D(lookup_tex, vec3((texel * 63.0 + 0.5) / 64.0))[0] * 255.0);\n" \
 		"float z = gl_FragCoord.z / gl_FragCoord.w;\n" \
