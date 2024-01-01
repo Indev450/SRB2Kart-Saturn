@@ -159,6 +159,7 @@ extern consvar_t cv_sloperoll;
 extern consvar_t cv_sliptideroll;
 extern consvar_t cv_slamsound;
 extern consvar_t cv_sloperolldist;
+extern consvar_t cv_sparkroll;
 
 extern consvar_t cv_cechotoggle;
 
