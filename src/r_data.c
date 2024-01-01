@@ -53,7 +53,7 @@ typedef struct
 {
 	INT16 originx, originy;
 	INT16 patch, stepdir, colormap;
-} ATTRPACK mappatch_t;
+}  mappatch_t;
 
 //
 // Texture definition.
@@ -69,7 +69,7 @@ typedef struct
 	INT32 columndirectory; // FIXTHIS: OBSOLETE
 	INT16 patchcount;
 	mappatch_t patches[1];
-} ATTRPACK maptexture_t;
+}  maptexture_t;
 
 #if defined(_MSC_VER)
 #pragma pack()

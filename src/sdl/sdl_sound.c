@@ -246,7 +246,7 @@ typedef struct
 	Uint16 samples;    // number of samples
 	Uint16 dummy;      // 0
 	Uint8  data[0];    // data;
-} ATTRPACK dssfx_t;
+}  dssfx_t;
 
 #ifdef _MSC_VER
 #pragma pack()

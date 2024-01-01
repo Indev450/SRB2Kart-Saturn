@@ -52,7 +52,7 @@ typedef struct
 	INT16 height          ; //15, 16
 	UINT8 image_pix_size  ; //17
 	UINT8 image_descriptor; //18
-} ATTRPACK TGAHeader; // sizeof is 18
+}  TGAHeader; // sizeof is 18
 #if defined(_MSC_VER)
 #pragma pack()
 #endif

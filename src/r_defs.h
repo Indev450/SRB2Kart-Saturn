@@ -587,7 +587,7 @@ typedef struct
 {
 	UINT8 topdelta; // -1 is the last post in a column
 	UINT8 length;   // length data bytes follows
-} ATTRPACK post_t;
+}post_t;
 
 #if defined(_MSC_VER)
 #pragma pack()
@@ -694,7 +694,7 @@ typedef struct
 	INT16 topoffset;      // pixels below the origin
 	INT32 columnofs[8];     // only [width] used
 	// the [0] is &columnofs[width]
-} ATTRPACK softwarepatch_t;
+}  softwarepatch_t;
 
 #ifdef _MSC_VER
 #pragma warning(disable :  4200)
@@ -710,7 +710,7 @@ typedef struct
 	INT16 height;
 	INT16 reserved1; // set to 0
 	UINT8 data[0];
-} ATTRPACK pic_t;
+}  pic_t;
 
 #ifdef _MSC_VER
 #pragma warning(default : 4200)

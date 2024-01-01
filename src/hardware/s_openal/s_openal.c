@@ -462,7 +462,7 @@ typedef struct
 	ALushort samples;    // number of samples
 	ALushort dummy;     // 0
 	ALubyte  data[0];    // data;
-} ATTRPACK dssfx_t;
+}  dssfx_t;
 
 #ifdef _MSC_VER
 #pragma pack()
