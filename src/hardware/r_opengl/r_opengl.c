@@ -3742,21 +3742,29 @@ static void DrawModelEx(model_t *model, INT32 frameIndex, float duration, float 
 	if (hflipped)
 		scalez = -scalez;
 #ifdef USE_FTRANSFORM_ANGLEZ
-	pglRotatef(pos->anglez, 0.0f, 0.0f, -1.0f); // rotate by slope from Kart
+	pglRotatef(pos->anglez2, 0.0f, 0.0f, -1.0f); // rotate by slope from Kart
 #endif
-	pglRotatef(pos->anglex, -1.0f, 0.0f, 0.0f);
+	pglRotatef(pos->anglex2, -1.0f, 0.0f, 0.0f);
 	pglRotatef(pos->angley, 0.0f, -1.0f, 0.0f);
 	
 	if (pos->roll)
 	{
 		float roll = (1.0f * pos->rollflip);
 		pglTranslatef(pos->centerx, pos->centery, 0);
+
+		// rotate model for pitch and roll
+		pglRotatef(pos->anglex, 1.0f, 0.0f, 0.0f);
+#ifdef USE_FTRANSFORM_ANGLEZ
+		pglRotatef(pos->anglez, 0.0f, 0.0f, -1.0f);
+#endif
+
 		if (pos->rotaxis == 2) // Z
 			pglRotatef(pos->rollangle, 0.0f, 0.0f, roll);
 		else if (pos->rotaxis == 1) // Y
 			pglRotatef(pos->rollangle, 0.0f, roll, 0.0f);
 		else // X
 			pglRotatef(pos->rollangle, roll, 0.0f, 0.0f);
+			
 		pglTranslatef(-pos->centerx, -pos->centery, 0);
 	}
 
