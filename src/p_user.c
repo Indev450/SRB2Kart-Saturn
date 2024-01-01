@@ -1697,11 +1697,15 @@ mobj_t *P_SpawnGhostMobj(mobj_t *mobj)
 	else
 		ghost->angle = mobj->angle;
 
+	ghost->pitch = mobj->pitch;
+	ghost->roll = mobj->roll;
+
 	ghost->sprite = mobj->sprite;
 	ghost->frame = mobj->frame;
 	ghost->tics = -1;
 	ghost->frame &= ~FF_TRANSMASK;
 	ghost->frame |= tr_trans50<<FF_TRANSSHIFT;
+	ghost->slopepitch = mobj->slopepitch; 
 	ghost->sloperoll = mobj->sloperoll;
 	
 	ghost->fuse = ghost->info->damage;
@@ -1724,6 +1728,10 @@ mobj_t *P_SpawnGhostMobj(mobj_t *mobj)
 	ghost->old_y = mobj->old_y2;
 	ghost->old_z = mobj->old_z2;
 	ghost->old_angle = (mobj->player ? mobj->player->old_frameangle2 : mobj->old_angle2);
+	ghost->old_pitch = mobj->old_pitch2;
+	ghost->old_roll = mobj->old_roll2;
+	ghost->old_sloperoll = mobj->old_sloperoll2;
+	ghost->old_slopepitch = mobj->old_slopepitch2;
 
 	return ghost;
 }
