@@ -3005,6 +3005,13 @@ static void K_SpawnDriftSparks(player_t *player)
 		spark->momy = player->mo->momy/2;
 		//spark->momz = player->mo->momz/2;
 
+		// rotate the sparks based on pitch and roll; it just looks neat
+		if (cv_sparkroll.value == 1)
+		{
+			spark->slopepitch = player->mo->slopepitch;
+			spark->sloperoll = player->mo->sloperoll;
+		}
+
 		if (player->kartstuff[k_driftcharge] >= K_GetKartDriftSparkValue(player)*4)
 		{
 			spark->color = (UINT8)(1 + (leveltime % (MAXSKINCOLORS-1)));
@@ -3214,7 +3221,7 @@ static void K_QuiteSaltyHop(player_t *p)
 	}
 }
 
-static INT32 K_FindPlayerNum(player_t *plyr)
+/*static INT32 K_FindPlayerNum(player_t *plyr)
 {
 	INT32 i;
 	
@@ -3224,95 +3231,61 @@ static INT32 K_FindPlayerNum(player_t *plyr)
 			return i;
 	}
 	return 0; // technically defaulting to player 1 but fuck it
-}
+}*/
 
-static angle_t K_GetSlopeRollAngle(player_t *p, boolean dontflip, boolean useReserves)
+#define SLOPEROLL_DIV 3
+
+void K_RollMobjBySlopes(mobj_t* mo, boolean usedistance)
 {
-	angle_t lookAngle = 0;
-	angle_t zangle = 0;
-	angle_t xydirection = 0;
-	angle_t an;
-	angle_t final_slope;
-	INT32 pNum = K_FindPlayerNum(p);
+    I_Assert(mo->subsector != NULL);
+    I_Assert(mo->subsector->sector != NULL);
 
-	I_Assert(p != NULL);
-	I_Assert(p->mo != NULL);
-	I_Assert(!P_MobjWasRemoved(p->mo));
+    angle_t an;
+    fixed_t m_dist = R_PointToDist(mo->x, mo->y);
+    fixed_t rolldist = cv_sloperolldist.value * mapobjectscale;
 
-	if (useReserves)
-	{
-		I_Assert(p->mo->reservezangle != NULL);
-		I_Assert(p->mo->reservexydir != NULL);
-	}
+    // lifted from hw_md2
+    if (mo->standingslope)
+    {
+        fixed_t tempz = mo->standingslope->normal.z;
+        fixed_t tempy = mo->standingslope->normal.y;
+        fixed_t tempx = mo->standingslope->normal.x;
+        fixed_t tempangle = -(R_PointToAngle2(
+            0, 0, FixedSqrt(FixedMul(tempy, tempy) + FixedMul(tempz, tempz)), tempx));
 
-	lookAngle = R_PointToAngle2(camera[pNum].x, camera[pNum].y, p->mo->x, p->mo->y);
+        // admittedly this is a very hacky way to do the pitch and roll easing
 
-	if (!R_PointToDist(p->mo->x, p->mo->y))
-		lookAngle = p->mo->angle;
+        // pitch
+        if ((!usedistance) || (m_dist <= (rolldist)))
+        {
+            an = (INT32)((angle_t)tempangle - mo->pitch_sprite) / SLOPEROLL_DIV;
 
-	if (!useReserves)
-	{
-		zangle = p->mo->standingslope->zangle;
-		xydirection = p->mo->standingslope->xydirection;
+            mo->pitch_sprite = an ? mo->pitch_sprite + an : (angle_t)tempangle;
+        }
+        else
+            mo->pitch_sprite = FixedAngle(0);
 
-    		p->mo->reservezangle = zangle;
-    		p->mo->reservexydir = xydirection;
-	}
-	else if (p->mo->reservezangle)
-	{
-		zangle = p->mo->reservezangle;
-		xydirection = p->mo->reservexydir;
-	}
+        mo->slopepitch = mo->pitch_sprite;
 
-	if ((p->mo->eflags & MFE_VERTICALFLIP) && (!dontflip))
-		zangle = InvAngle(zangle);
+        // roll
+        tempangle = (R_PointToAngle2(0, 0, tempz, tempy));
 
-	an = (lookAngle - xydirection);
-	final_slope = -(FixedMul(FINESINE(an>>ANGLETOFINESHIFT), zangle));
-		
-	an = (INT32)(final_slope - p->tilt_sprite) / (camspin[pNum] ? 1 : 3);
-	
-	p->tilt_sprite = an ? p->tilt_sprite + an : final_slope;	
-	return -p->tilt_sprite;
-}
+        if ((!usedistance) || (m_dist <= (rolldist)))
+        {
+            an = (INT32)((angle_t)tempangle - mo->roll_sprite) / SLOPEROLL_DIV;
 
-static void K_RollPlayerBySlopes(player_t *p, boolean usedistance) 
-{
-	I_Assert(p->mo->subsector != NULL);
-	I_Assert(p->mo->subsector->sector != NULL);
+            mo->roll_sprite = an ? mo->roll_sprite + an : (angle_t)tempangle;
+        }
+        else
+            mo->roll_sprite = FixedAngle(0);
 
-	INT32 pNum = K_FindPlayerNum(p);
-
-	fixed_t p_dist = R_PointToDist2(p->mo->x, p->mo->y, camera[pNum].x, camera[pNum].y);
-	fixed_t mos = mapobjectscale;
-	fixed_t rolldist = cv_sloperolldist.value*mos;
-
-	if (!P_IsObjectOnGround(p->mo))
-	{
-		if (!usedistance)
-			p->mo->sloperoll = K_GetSlopeRollAngle(p, false, true);
-		else if (p_dist <= (rolldist))
-			p->mo->sloperoll = K_GetSlopeRollAngle(p, false, true);
-		else
-			p->mo->sloperoll = FixedAngle(0);
-
-		return;
-	}
-
-	if (!p->mo->standingslope)
-	{
-		p->mo->sloperoll = FixedAngle(0);
-		p->mo->reservezangle = FixedAngle(0);
-    	p->mo->reservexydir = FixedAngle(0);
-		return;
-	}
-
-	if (!usedistance)
-		p->mo->sloperoll = K_GetSlopeRollAngle(p, false, false);
-	else if (p_dist <= (rolldist))
-		p->mo->sloperoll = K_GetSlopeRollAngle(p, false, false);
-	else
-		p->mo->sloperoll = FixedAngle(0);
+        mo->sloperoll = mo->roll_sprite;
+    }
+    else if (P_IsObjectOnGround(mo))
+    {
+        mo->sloperoll = FixedAngle(0);
+        mo->slopepitch = FixedAngle(0);
+    }
 }
 
 void K_SpawnBoostTrail(player_t *player)
@@ -3364,6 +3337,14 @@ void K_SpawnBoostTrail(player_t *player)
 		K_FlipFromObject(flame, player->mo);
 
 		flame->momx = 8;
+
+		// since you have to be on the ground for sneaker trails, this should be fine(?)
+		if (cv_sparkroll.value == 1)
+		{
+			flame->slopepitch = player->mo->slopepitch;
+			flame->sloperoll = player->mo->sloperoll;
+		}
+
 		P_XYMovement(flame);
 		if (P_MobjWasRemoved(flame))
 			continue;
@@ -6459,13 +6440,21 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 		player->mo->spritexscale = player->mo->realxscale;
 		player->mo->spriteyscale = player->mo->realyscale;
 	}
+
 	boolean usedist = false;
+
 	if (cv_sloperolldist.value > 0)
 		usedist = true;
 	if (cv_sloperoll.value == 1)
-		K_RollPlayerBySlopes(player, usedist);
+	{
+		if ((!player->mo->salty_jump)) // seeing a character rotate mid-hop looks really janky
+			K_RollMobjBySlopes(player->mo, usedist);
+	}
 	else
+	{
 		player->mo->sloperoll = FixedAngle(0);
+		player->mo->slopepitch = FixedAngle(0);
+	}
 
 
 	// Quick Turning

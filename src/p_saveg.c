@@ -1976,9 +1976,15 @@ static void LoadMobjThinker(actionf_p1 thinker)
 	mobj->thinker.function.acp1 = thinker;
 
 	mobj->rollangle = 0;
+
+	mobj->pitch = 0;
+	mobj->roll = 0;
+
 	mobj->sloperoll = 0;
-	mobj->reservexydir = 0;
-	mobj->reservezangle = 0;
+	mobj->slopepitch = 0;
+
+	mobj->pitch_sprite = 0;
+	mobj->roll_sprite = 0;
 	
 	mobj->spritexoffset = mobj->old_spritexoffset = 0;
 	mobj->spriteyoffset = mobj->old_spriteyoffset = 0;

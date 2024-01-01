@@ -5312,7 +5312,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 	boolean mirrored = thing->mirrored;
 	boolean hflip = (!(thing->frame & FF_HORIZONTALFLIP) != !mirrored);
 	
-	angle_t ang;
+	angle_t ang, camang;
 	const boolean papersprite = (thing->frame & FF_PAPERSPRITE);
 	INT32 heightsec, phs;
 
@@ -5412,6 +5412,8 @@ void HWR_ProjectSprite(mobj_t *thing)
 #endif
 
 	ang = R_PointToAngle (interp.x, interp.y) - interp.angle;
+	camang = R_PointToAngle (interp.x, interp.y);
+
 	if (mirrored)
 		ang = InvAngle(ang);
 
@@ -5462,15 +5464,22 @@ void HWR_ProjectSprite(mobj_t *thing)
 	spr_topoffset = spritecachedinfo[lumpoff].topoffset;
 
 #ifdef ROTSPRITE
-	if ((thing->rollangle)||(thing->sloperoll)||(thing->player && thing->player->sliproll))
+
+	rollangle = FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), interp.roll) 
+		+ FixedMul(FINESINE((ang) >> ANGLETOFINESHIFT), interp.pitch)
+		+ FixedMul(FINECOSINE((camang) >> ANGLETOFINESHIFT), interp.sloperoll) 
+		+ FixedMul(FINESINE((camang) >> ANGLETOFINESHIFT), interp.slopepitch)
+		+ thing->rollangle;
+
+	if ((rollangle)||(thing->player && thing->player->sliproll))
 	{
 		if (thing->player)
 		{
 			sliptiderollangle = cv_sliptideroll.value ? thing->player->sliproll*(thing->player->sliptidemem) : 0;
-			rollsum = (thing->rollangle)+(thing->sloperoll)+FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), sliptiderollangle);
+			rollsum = rollangle+FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), sliptiderollangle);
 		}
 		else
-			rollsum = (thing->rollangle)+(thing->sloperoll);
+			rollsum = rollangle;
 
 		rollangle = R_GetRollAngle(rollsum);
 		rotsprite = Patch_GetRotatedSprite(sprframe, (thing->frame & FF_FRAMEMASK), rot, flip, false, sprinfo, rollangle);

@@ -1934,6 +1934,7 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_sloperoll);
 	CV_RegisterVar(&cv_sliptideroll);
 	CV_RegisterVar(&cv_sloperolldist);
+	CV_RegisterVar(&cv_sparkroll);
 
 	CV_RegisterVar(&cv_showhud);
 	CV_RegisterVar(&cv_translucenthud);

@@ -1401,18 +1401,55 @@ void HWR_DrawMD2(gr_vissprite_t *spr)
 
 		
 		p.anglex = 0.0f;
+		p.anglex2 = 0.0f;
 #ifdef USE_FTRANSFORM_ANGLEZ
 		// Slope rotation from Kart
 		p.anglez = 0.0f;
+		p.anglez2 = 0.0f;
+
+		// use secondary angles for the slope rotation
 		if (spr->mobj->standingslope)
 		{
 			fixed_t tempz = spr->mobj->standingslope->normal.z;
 			fixed_t tempy = spr->mobj->standingslope->normal.y;
 			fixed_t tempx = spr->mobj->standingslope->normal.x;
 			fixed_t tempangle = AngleFixed(R_PointToAngle2(0, 0, FixedSqrt(FixedMul(tempy, tempy) + FixedMul(tempz, tempz)), tempx));
-			p.anglez = FIXED_TO_FLOAT(tempangle);
+			p.anglez2 = FIXED_TO_FLOAT(tempangle);
 			tempangle = -AngleFixed(R_PointToAngle2(0, 0, tempz, tempy));
-			p.anglex = FIXED_TO_FLOAT(tempangle);
+			p.anglex2 = FIXED_TO_FLOAT(tempangle);
+		}
+		else if ((spr->mobj->sloperoll || spr->mobj->slopepitch) && (!P_IsObjectOnGround(spr->mobj)) && (!paused))
+		{
+			SINT8 flipfactor = flip ? -1 : 1;
+
+			angle_t camang = R_PointToAngle(interp.x, interp.y);
+			angle_t mobjang;
+
+			if (spr->mobj->flags & (MF_NOTHINK|MF_SCENERY))
+				mobjang = spr->mobj->angle;
+			else
+				mobjang = interp.angle;
+
+			angle_t fmoang;
+			fmoang = camang - mobjang;
+
+			// slopepitch
+			p.anglex += flipfactor*FIXED_TO_FLOAT( AngleFixed(FixedMul(FINESINE((camang-fmoang) >> ANGLETOFINESHIFT), interp.slopepitch)) );
+			p.anglez -= flipfactor*FIXED_TO_FLOAT( AngleFixed(FixedMul(FINECOSINE((camang-fmoang) >> ANGLETOFINESHIFT), interp.slopepitch)) );
+
+			// sloperoll
+			p.anglex += flipfactor*FIXED_TO_FLOAT( AngleFixed(FixedMul(FINECOSINE((camang-fmoang) >> ANGLETOFINESHIFT), interp.sloperoll)) );
+			p.anglez += flipfactor*FIXED_TO_FLOAT( AngleFixed(FixedMul(FINESINE((camang-fmoang) >> ANGLETOFINESHIFT), interp.sloperoll)) );
+			p.roll = true;
+		}
+
+		// pitch and roll
+		if (interp.roll || interp.pitch)
+		{
+			SINT8 flipfactor = flip ? -1 : 1;
+			p.anglex += flipfactor*FIXED_TO_FLOAT(AngleFixed(interp.roll));
+			p.anglez -= flipfactor*FIXED_TO_FLOAT(AngleFixed(interp.pitch));
+			p.roll = true;
 		}
 #endif
 

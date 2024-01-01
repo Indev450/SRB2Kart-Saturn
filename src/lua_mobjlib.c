@@ -83,8 +83,11 @@ static const udata_field_t mobj_fields[] = {
     FIELD(mobj_t, snext,               udatalib_getter_mobj,       mobj_snext_noset),
     FIELD(mobj_t, sprev,               mobj_sprev_unimplemented,   mobj_sprev_unimplemented),
     FIELD(mobj_t, angle,               udatalib_getter_angle,      mobj_angle_setter),
+    FIELD(mobj_t, pitch,               udatalib_getter_angle,      udatalib_setter_angle),
+    FIELD(mobj_t, roll,                udatalib_getter_angle,      udatalib_setter_angle),
     FIELD(mobj_t, rollangle,           udatalib_getter_angle,      udatalib_setter_angle),
     FIELD(mobj_t, sloperoll,           udatalib_getter_angle,      mobj_sloperoll_noop),
+    FIELD(mobj_t, slopepitch,          udatalib_getter_angle,      mobj_sloperoll_noop),
 	// Macro fails here
 	{ "rollsum", 0, mobj_rollsum_getter, mobj_rollsum_noset },
     FIELD(mobj_t, sprite,              udatalib_getter_spritenum,  udatalib_setter_spritenum),
@@ -624,7 +627,9 @@ int mobj_rollsum_getter(lua_State *L)
 {
 	mobj_t *mo = GETMO();
 
-	angle_t rollsum = mo->rollangle + cv_sloperoll.value ? mo->sloperoll : 0;
+    angle_t pitchnroll = P_MobjPitchAndRoll(mo);
+
+	angle_t rollsum = mo->rollangle + pitchnroll;
 
 	if (mo->player)
 	{
