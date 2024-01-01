@@ -2007,7 +2007,7 @@ static menuitem_t OP_SaturnMenu[] =
 	
 	{IT_STRING | IT_CVAR, NULL, "Midnight Channel Flicker Effect", 		&cv_lessflicker, 		 	95},
 
-	{IT_SUBMENU|IT_STRING,	NULL,	"Player distortion...", 			&OP_PlayerDistortDef,	 	105},
+	{IT_SUBMENU|IT_STRING,	NULL,	"Sprite Distortion...", 			&OP_PlayerDistortDef,	 	105},
 	{IT_SUBMENU|IT_STRING,	NULL,	"Hud Offsets...", 					&OP_HudOffsetDef,		 	110},
 
 	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Credits", 					&OP_SaturnCreditsDef,		120}, // uwu
@@ -2031,7 +2031,7 @@ static const char* OP_SaturnTooltips[] =
 	"Show the big Cecho Messages.",
 	"Show Localskin Menus.",
 	"Disables the flicker effect on Midnight Channel.",
-	"Options for player distortion effects.",
+	"Options for sprite distortion effects.",
 	"Move position of HUD elements.",
 	"See the people who helped make this project possible!",
 };
@@ -2059,13 +2059,14 @@ enum
 
 static menuitem_t OP_PlayerDistortMenu[] =
 {
-	{IT_HEADER, NULL, "Player Distortion", NULL, 0},
+	{IT_HEADER, NULL, "Sprite Distortion", NULL, 0},
 
-	{IT_STRING | IT_CVAR, 	NULL, 	"Rotate players on slopes",       &cv_sloperoll, 	    20},
-	{IT_STRING | IT_CVAR, 	NULL, 	"Slope rotation distance",        &cv_sloperolldist,    35},
-	{IT_STRING | IT_CVAR, 	NULL, 	"Rotate players when sliptiding", &cv_sliptideroll, 	50},
-	{IT_STRING | IT_CVAR,	NULL,	"Player stretch factor",	      &cv_gravstretch,      65},
-	{IT_STRING | IT_CVAR,	NULL,	"Squish Sound Effect",	      	  &cv_slamsound,        80},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Rotate Objects on Slopes",       &cv_sloperoll, 	    20},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Slope Rotation Distance",        &cv_sloperolldist,    35},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Rotate Players when Sliptiding", &cv_sliptideroll, 	50},
+	{IT_STRING | IT_CVAR,	NULL,	"Rotate Sparks and Boost Trails", &cv_sparkroll,        65},
+	{IT_STRING | IT_CVAR,	NULL,	"Player Stretch Factor",	      &cv_gravstretch,      80},
+	{IT_STRING | IT_CVAR,	NULL,	"Squish Sound Effect",	      	  &cv_slamsound,        95},
 	{IT_STRING | IT_CVAR, 	NULL, 	"Saltyhop", &cv_saltyhop, 	110},
 	{IT_STRING | IT_CVAR,	NULL,	"Saltyhop Sound Effect",	      &cv_saltyhopsfx,      125},
 	{IT_STRING | IT_CVAR,	NULL,	"Saltyhop Squish",	      	  	&cv_saltysquish,        140},
@@ -2074,9 +2075,10 @@ static menuitem_t OP_PlayerDistortMenu[] =
 static const char* OP_PlayerDistortTooltips[] =
 {
 	NULL,
-	"Player rotation on slopes.",
-	"Distance player rotation should be visable.",
+	"Object rotation on slopes.",
+	"Distance object rotation should be visable.",
 	"Player rotation when sliptiding.",
+	"Rotation of a player's boost trails and drift sparks.",
 	"Player squash and stretch.",
 	"Player landing sound effect.",
 	"Kart hopping while drifting. This is purely visual.",
@@ -3138,7 +3140,9 @@ void PDistort_menu_Onchange(void)
 			status = IT_GRAYEDOUT;
 	}
 
+	// enable/disable rolldist and sparkroll options
 	OP_PlayerDistortMenu[2].status = status;
+	OP_PlayerDistortMenu[4].status = status;
 }
 
 void Bird_menu_Onchange(void)

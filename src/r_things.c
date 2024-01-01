@@ -1327,6 +1327,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	spritecut_e cut = SC_NONE;
 
 	angle_t ang = 0; // gcc 4.6 and lower fix
+	angle_t camang = 0;
 	fixed_t iscale;
 	fixed_t scalestep; // toast '16
 	fixed_t offset, offset2;
@@ -1346,6 +1347,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	patch_t *rotsprite = NULL;
 	INT32 rollangle = 0;
 	angle_t rollsum = 0;
+	angle_t pitchnroll = 0;
 	angle_t sliptiderollangle = 0;
 #endif
 
@@ -1446,6 +1448,8 @@ static void R_ProjectSprite(mobj_t *thing)
 	if (sprframe->rotate != SRF_SINGLE || papersprite)
 	{
 		ang = R_PointToAngle (interp.x, interp.y) - interp.angle;
+		camang = R_PointToAngle (interp.x, interp.y);
+
 		if (mirrored)
 			ang = InvAngle(ang);
 		if (papersprite)
@@ -1489,31 +1493,62 @@ static void R_ProjectSprite(mobj_t *thing)
 	spr_topoffset = spritecachedinfo[lump].topoffset;
 
 #ifdef ROTSPRITE
-	if ((thing->rollangle)||(thing->sloperoll)||(thing->player && thing->player->sliproll))
-	{
-		if (thing->player)
-		{
-			sliptiderollangle = cv_sliptideroll.value ? thing->player->sliproll*(thing->player->sliptidemem) : 0;
-			rollsum = (thing->rollangle)+(thing->sloperoll)+FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), sliptiderollangle);
-		}
-		else
-			rollsum = (thing->rollangle)+(thing->sloperoll);
+    pitchnroll = 0;  // set this to 0, non-paper sprites will affect this value
 
-		rollangle = R_GetRollAngle(rollsum);
-		rotsprite = Patch_GetRotatedSprite(sprframe, (thing->frame & FF_FRAMEMASK), rot, flip, false, sprinfo, rollangle);
+    if (papersprite)
+    {
+        if (ang >= ANGLE_180)
+        {
+            // Makes Software act much more sane like OpenGL
+            rollangle = InvAngle(thing->rollangle);
+        }
+        else
+        {
+            rollangle = thing->rollangle;
+        }
+    }
+    else
+    {
+        // this is very messy, but it on-the-fly calculates rotations for all the
+        // pitch and roll variables
+        pitchnroll = FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), interp.roll) +
+                     FixedMul(FINESINE((ang) >> ANGLETOFINESHIFT), interp.pitch) +
+                     FixedMul(FINECOSINE((camang) >> ANGLETOFINESHIFT), interp.sloperoll) +
+                     FixedMul(FINESINE((camang) >> ANGLETOFINESHIFT), interp.slopepitch);
 
-		if (rotsprite != NULL)
-		{
-			spr_width = rotsprite->width << FRACBITS;
-			spr_height = rotsprite->height << FRACBITS;
-			spr_offset = rotsprite->leftoffset << FRACBITS;
-			spr_topoffset = rotsprite->topoffset << FRACBITS;
-			spr_topoffset += FEETADJUST;
+        rollangle = thing->rollangle;
+    }
 
-			// flip -> rotate, not rotate -> flip
-			flip = 0;
-		}
-	}
+    if ((rollangle) || (pitchnroll) || (thing->player && thing->player->sliproll))
+    {
+        rollsum = pitchnroll;
+
+        if (thing->player)
+        {
+            sliptiderollangle =
+                cv_sliptideroll.value ? thing->player->sliproll * (thing->player->sliptidemem) : 0;
+            rollsum += thing->rollangle +
+                       FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), sliptiderollangle);
+        }
+        else
+            rollsum += thing->rollangle;
+
+        rollangle = R_GetRollAngle(rollsum);
+        rotsprite = Patch_GetRotatedSprite(
+            sprframe, (thing->frame & FF_FRAMEMASK), rot, flip, false, sprinfo, rollangle);
+
+        if (rotsprite != NULL)
+        {
+            spr_width = rotsprite->width << FRACBITS;
+            spr_height = rotsprite->height << FRACBITS;
+            spr_offset = rotsprite->leftoffset << FRACBITS;
+            spr_topoffset = rotsprite->topoffset << FRACBITS;
+            spr_topoffset += FEETADJUST;
+
+            // flip -> rotate, not rotate -> flip
+            flip = 0;
+        }
+    }
 #endif
 
 	// calculate edges of the shape
