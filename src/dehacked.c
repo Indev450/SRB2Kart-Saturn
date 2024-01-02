@@ -9942,15 +9942,15 @@ int LUA_EnumLib(lua_State *L)
 	PUSHGETTER(gamemap, i16);
 	PUSHGETTER(maptol, i16);
 	PUSHGETTER(ultimatemode, b8);
-	PUSHGETTER(circuitmap, b32);
-	PUSHGETTER(netgame, b32);
-	PUSHGETTER(multiplayer, b32);
+	PUSHGETTER(circuitmap, bool);
+	PUSHGETTER(netgame, bool);
+	PUSHGETTER(multiplayer, bool);
 	PUSHGETTER(modeattacking, b8);
 	PUSHGETTER(splitscreen, u8);
-	PUSHGETTER(gamecomplete, b32);
-	PUSHGETTER(devparm, b32);
-	PUSHGETTER(majormods, b32);
-	PUSHGETTER(menuactive, b32);
+	PUSHGETTER(gamecomplete, bool);
+	PUSHGETTER(devparm, bool);
+	PUSHGETTER(majormods, bool);
+	PUSHGETTER(menuactive, bool);
 	PUSHGETTER(paused, b8);
 	PUSHGETTER(gametype, i16);
 	PUSHGETTER(leveltime, u32);
@@ -9963,13 +9963,13 @@ int LUA_EnumLib(lua_State *L)
 	PUSHGETTER(mapmusposition, u32);
 	PUSHGETTER(gravity, fxp);
 	PUSHGETTER(gamespeed, u8);
-	PUSHGETTER(encoremode, b32);
-	PUSHGETTER(franticitems, b32);
-	PUSHGETTER(comeback, b32);
+	PUSHGETTER(encoremode, bool);
+	PUSHGETTER(franticitems, bool);
+	PUSHGETTER(comeback, bool);
 	PUSHGETTER(wantedcalcdelay, u32);
 	PUSHGETTER(indirectitemcooldown, u32);
 	PUSHGETTER(hyubgone, u32);
-	PUSHGETTER(thwompsactive, b32);
+	PUSHGETTER(thwompsactive, bool);
 	PUSHGETTER(spbplace, i8);
 	PUSHGETTER(mapobjectscale, fxp);
 	PUSHGETTER(racecountdown, u32);
@@ -10007,12 +10007,12 @@ int LUA_EnumLib(lua_State *L)
 
 	lua_pushcfunction(L, lua_glib_new_getter);
 	lua_pushliteral(L, "isserver");
-	lua_glib_push_b32_getter(L, &server);
+	lua_glib_push_bool_getter(L, &server);
 	lua_call(L, 2, 0);
 
 	lua_pushcfunction(L, lua_glib_new_getter);
 	lua_pushliteral(L, "isdedicatedserver");
-	lua_glib_push_b32_getter(L, &dedicated);
+	lua_glib_push_bool_getter(L, &dedicated);
 	lua_call(L, 2, 0);
 
 	lua_pushcfunction(L, lua_glib_new_getter);
@@ -10022,7 +10022,7 @@ int LUA_EnumLib(lua_State *L)
 
 	lua_pushcfunction(L, lua_glib_new_getter);
 	lua_pushliteral(L, "replayplayback");
-	lua_glib_push_b32_getter(L, &demo.playback);
+	lua_glib_push_bool_getter(L, &demo.playback);
 	lua_call(L, 2, 0);
 
 	if (!mathlib)
