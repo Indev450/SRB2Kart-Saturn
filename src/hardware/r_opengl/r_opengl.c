@@ -2326,6 +2326,8 @@ typedef struct
 	FBITFIELD polyFlags;
 	GLuint texNum;
 	GLuint shader;
+	// this tells batching that the plane belongs to a horizon line and must be drawn in correct order with the skywalls
+	boolean horizonSpecial;
 	INT32 hash;
 } PolygonArrayEntry;
 
@@ -2369,9 +2371,7 @@ EXPORT void HWRAPI(StartBatching) (void)
 // -----------------+
 EXPORT void HWRAPI(DrawPolygon) (FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags, boolean horizonSpecial)
 {
-	// draw skybox and horizon lines immediately so they don't bloat the polygon buffer.
-	// this is important for performance since horizon lines are order-sensitive and can't easily be batched.
-	if (gl_batching && !(PolyFlags & PF_NoTexture) && !horizonSpecial)
+	if (gl_batching)
 	{
 		//CONS_Printf("Batched DrawPolygon\n");
 		if (!pSurf)
@@ -2409,28 +2409,39 @@ EXPORT void HWRAPI(DrawPolygon) (FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUI
 		polygonArray[polygonArraySize].polyFlags = PolyFlags;
 		polygonArray[polygonArraySize].texNum = tex_downloaded;
 		polygonArray[polygonArraySize].shader = gl_currentshaderprogram;
+		polygonArray[polygonArraySize].horizonSpecial = horizonSpecial;
+		// default to polygonArraySize so we don't lose order on horizon lines
+		// (yes, it's supposed to be negative, since we're sorting in that direction)
+		polygonArray[polygonArraySize].hash = -polygonArraySize;
 		polygonArraySize++;
 		
-		// use FNV-1a to hash polygons for later sorting.
-		INT32 hash = 0x811c9dc5;
-#define DIGEST(h, x) h ^= (x); h *= 0x01000193
-		DIGEST(hash, tex_downloaded);
-		DIGEST(hash, PolyFlags);
-		DIGEST(hash, pSurf->PolyColor.rgba);
-		if (gl_allowshaders)
+		if (!(PolyFlags & PF_NoTexture) && !horizonSpecial)
 		{
-			DIGEST(hash, gl_currentshaderprogram);
-			DIGEST(hash, pSurf->TintColor.rgba);
-			DIGEST(hash, pSurf->FadeColor.rgba);
-			DIGEST(hash, pSurf->LightInfo.light_level);
-			DIGEST(hash, pSurf->LightInfo.fade_start);
-			DIGEST(hash, pSurf->LightInfo.fade_end);
-			if (gl_palshader){
-				DIGEST(hash, pSurf->LightTableId);
+			// use FNV-1a to hash polygons for later sorting.
+			INT32 hash = 0x811c9dc5;
+#define DIGEST(h, x) h ^= (x); h *= 0x01000193
+			if (tex_downloaded)
+			{
+				DIGEST(hash, tex_downloaded);
 			}
-		}
+			DIGEST(hash, PolyFlags);
+			DIGEST(hash, pSurf->PolyColor.rgba);
+			if (gl_allowshaders)
+			{
+				DIGEST(hash, gl_currentshaderprogram);
+				DIGEST(hash, pSurf->TintColor.rgba);
+				DIGEST(hash, pSurf->FadeColor.rgba);
+				DIGEST(hash, pSurf->LightInfo.light_level);
+				DIGEST(hash, pSurf->LightInfo.fade_start);
+				DIGEST(hash, pSurf->LightInfo.fade_end);
+				if (gl_palshader){
+					DIGEST(hash, pSurf->LightTableId);
+				}
+			}
 #undef DIGEST
-		polygonArray[polygonArraySize-1].hash = hash;
+			// remove the sign bit to ensure that skybox and horizon line comes first.
+			polygonArray[polygonArraySize-1].hash = (hash & INT32_MAX);
+		}
 
 		memcpy(&unsortedVertexArray[unsortedVertexArraySize], pOutVerts, iNumPts * sizeof(FOutVector));
 		unsortedVertexArraySize += iNumPts;
@@ -2599,6 +2610,8 @@ EXPORT void HWRAPI(RenderBatches) (precise_t *sSortTime, precise_t *sDrawTime, i
 		}
 	}
 
+	if (currentPolyFlags & PF_NoTexture)
+		currentTexture = 0;
 	pglBindTexture(GL_TEXTURE_2D, currentTexture);
 	tex_downloaded = currentTexture;
 
@@ -2688,6 +2701,8 @@ EXPORT void HWRAPI(RenderBatches) (precise_t *sSortTime, precise_t *sDrawTime, i
 			nextTexture = polygonArray[nextIndex].texNum;
 			nextPolyFlags = polygonArray[nextIndex].polyFlags;
 			nextSurfaceInfo = polygonArray[nextIndex].surf;
+			if (nextPolyFlags & PF_NoTexture)
+				nextTexture = 0;
 			if (currentShader != nextShader)
 			{
 				changeState = true;
