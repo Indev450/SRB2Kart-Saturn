@@ -326,7 +326,7 @@ static void FlipCam4_OnChange(void)
 // killough 5/2/98: reformatted
 //
 
-FUNCINLINE ATTRINLINE inline INT32 R_PointOnSide(fixed_t x, fixed_t y, node_t *restrict node)
+FUNCINLINE ATTRINLINE INT32 R_PointOnSide(fixed_t x, fixed_t y, node_t *restrict node)
 {
 	if (!node->dx)
 		return x <= node->x ? node->dy > 0 : node->dy < 0;
@@ -467,7 +467,7 @@ fixed_t R_PointToDist(fixed_t x, fixed_t y)
 	return R_PointToDist2(viewx, viewy, x, y);
 }
 
-inline angle_t R_PointToAngleEx(INT32 x2, INT32 y2, INT32 x1, INT32 y1)
+FUNCINLINE ATTRINLINE angle_t R_PointToAngleEx(INT32 x2, INT32 y2, INT32 x1, INT32 y1)
 {
 	INT64 dx = x1-x2;
 	INT64 dy = y1-y2;
@@ -659,7 +659,7 @@ static void R_InitTextureMapping(void)
 //
 #define DISTMAP 2
 
-static inline void R_InitLightTables(void)
+FUNCINLINE static ATTRINLINE void R_InitLightTables(void)
 {
 	INT32 i;
 	INT32 j;
@@ -1133,7 +1133,7 @@ void R_Init(void)
 //
 // R_PointInSubsector
 //
-FUNCINLINE ATTRINLINE inline subsector_t *R_PointInSubsector(fixed_t x, fixed_t y)
+FUNCINLINE ATTRINLINE subsector_t *R_PointInSubsector(fixed_t x, fixed_t y)
 {
 	size_t nodenum = numnodes-1;
 
@@ -1146,7 +1146,7 @@ FUNCINLINE ATTRINLINE inline subsector_t *R_PointInSubsector(fixed_t x, fixed_t 
 //
 // R_IsPointInSubsector, same as above but returns 0 if not in subsector
 //
-subsector_t *R_IsPointInSubsector(fixed_t x, fixed_t y)
+FUNCINLINE ATTRINLINE subsector_t *R_IsPointInSubsector(fixed_t x, fixed_t y)
 {
 	node_t *node;
 	INT32 side, i;

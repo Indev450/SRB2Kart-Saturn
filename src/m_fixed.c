@@ -23,7 +23,7 @@
 #include "m_fixed.h"
 #include "tables.h" // ANGLETOFINESHIFT
 
-fixed_t FixedSqrt(fixed_t x)
+FUNCINLINE ATTRINLINE fixed_t FixedSqrt(fixed_t x)
 {
 #ifdef HAVE_SQRT
 	const float fx = FIXED_TO_FLOAT(x);
