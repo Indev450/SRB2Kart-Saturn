@@ -61,7 +61,7 @@ fixed_t FixedSqrt(fixed_t x)
 #endif
 }
 
-fixed_t FixedHypot(fixed_t x, fixed_t y)
+FUNCINLINE ATTRINLINE fixed_t FixedHypot(fixed_t x, fixed_t y)
 {
 	// Moved the code from R_PointToDist2 to here,
 	// since R_PointToDist2 did the same thing,

@@ -46,7 +46,13 @@ typedef UINT32 ufixed_t;
 
 FUNCMATH FUNCINLINE static ATTRINLINE float FixedToFloat(fixed_t x)
 {
+#if defined(_WIN32) && defined(__MINGW64__)
+    __m128 divisor = _mm_set1_ps((float)FRACUNIT);
+    __m128 result = _mm_div_ps(_mm_cvtepi32_ps(_mm_set1_epi32(x)), divisor);
+    return _mm_cvtss_f32(result);
+#else
 	return x / (float)FRACUNIT;
+#endif
 }
 
 FUNCMATH FUNCINLINE static ATTRINLINE fixed_t FloatToFixed(float f)
@@ -84,9 +90,6 @@ FUNCMATH FUNCINLINE static ATTRINLINE fixed_t FixedMul(fixed_t a, fixed_t b)
 #endif
 }
 
-	
-
-
 /**	\brief	The FixedDiv2 function
 
 	\param	a	fixed_t number
@@ -120,8 +123,6 @@ FUNCMATH FUNCINLINE static ATTRINLINE fixed_t FixedInt(fixed_t a)
 	\param	b	fixed_t number
 
 	\return	a/b
-
-
 */
 FUNCMATH FUNCINLINE static ATTRINLINE fixed_t FixedDiv(fixed_t a, fixed_t b)
 {
@@ -155,8 +156,6 @@ FUNCMATH FUNCINLINE static ATTRINLINE fixed_t FixedRem(fixed_t x, fixed_t y)
 	\param	x	fixed_t number
 
 	\return	sqrt(x)
-
-
 */
 FUNCMATH fixed_t FixedSqrt(fixed_t x);
 
@@ -166,8 +165,6 @@ FUNCMATH fixed_t FixedSqrt(fixed_t x);
 	\param	y	fixed_t number
 
 	\return	sqrt(x*x+y*y)
-
-
 */
 FUNCMATH fixed_t FixedHypot(fixed_t x, fixed_t y);
 
@@ -176,8 +173,6 @@ FUNCMATH fixed_t FixedHypot(fixed_t x, fixed_t y);
 	\param	x	fixed_t number
 
 	\return	floor(x)
-
-
 */
 FUNCMATH FUNCINLINE static ATTRINLINE fixed_t FixedFloor(fixed_t x)
 {
@@ -201,8 +196,6 @@ FUNCMATH FUNCINLINE static ATTRINLINE fixed_t FixedFloor(fixed_t x)
 	\param	x	fixed_t number
 
 	\return trunc(x)
-
-
 */
 FUNCMATH FUNCINLINE static ATTRINLINE fixed_t FixedTrunc(fixed_t x)
 {
@@ -224,8 +217,6 @@ FUNCMATH FUNCINLINE static ATTRINLINE fixed_t FixedTrunc(fixed_t x)
 	\param	x	fixed_t number
 
 	\return	ceil(x)
-
-
 */
 FUNCMATH FUNCINLINE static ATTRINLINE fixed_t FixedCeil(fixed_t x)
 {
@@ -251,8 +242,6 @@ FUNCMATH FUNCINLINE static ATTRINLINE fixed_t FixedCeil(fixed_t x)
 	\param	x	fixed_t number
 
 	\return	round(x)
-
-
 */
 FUNCMATH FUNCINLINE static ATTRINLINE fixed_t FixedRound(fixed_t x)
 {
