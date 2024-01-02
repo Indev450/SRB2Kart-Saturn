@@ -336,7 +336,7 @@ int lua_glib_new_setter(lua_State *L)
 #define _GLIB_DECL_BOOL_SETTER(T, name) \
     int lua_glib_setter_##name(lua_State *L) { \
         T* ptr = (T*)lua_touserdata(L, lua_upvalueindex(1)); \
-        *ptr = (T)lua_toboolean(L, 1); \
+        *ptr = lua_toboolean(L, 1) ? true : false; \
         return 0; \
     }
 
@@ -352,6 +352,7 @@ _GLIB_DECL_BOOL_GETTER(uint8_t,  b8);
 _GLIB_DECL_BOOL_GETTER(uint16_t, b16);
 _GLIB_DECL_BOOL_GETTER(uint32_t, b32);
 _GLIB_DECL_BOOL_GETTER(uint64_t, b64);
+_GLIB_DECL_BOOL_GETTER(boolean, bool);
 
 _GLIB_DECL_INT_SETTER(int8_t,  i8);
 _GLIB_DECL_INT_SETTER(int16_t, i16);
@@ -365,6 +366,7 @@ _GLIB_DECL_BOOL_SETTER(uint8_t,  b8);
 _GLIB_DECL_BOOL_SETTER(uint16_t, b16);
 _GLIB_DECL_BOOL_SETTER(uint32_t, b32);
 _GLIB_DECL_BOOL_SETTER(uint64_t, b64);
+_GLIB_DECL_BOOL_SETTER(boolean, bool);
 
 int lua_glib_setter_fxp(lua_State *L)
 {
