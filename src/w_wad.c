@@ -1767,7 +1767,7 @@ void *W_CacheLumpName(const char *name, INT32 tag)
 
 // Software-only compile cache the data without conversion
 #ifdef HWRENDER
-static inline void *W_CachePatchNumPwad(UINT16 wad, UINT16 lump, INT32 tag)
+FUNCINLINE static ATTRINLINE void *W_CachePatchNumPwad(UINT16 wad, UINT16 lump, INT32 tag)
 {
 	GLPatch_t *grPatch;
 
