@@ -326,28 +326,26 @@ static void FlipCam4_OnChange(void)
 // killough 5/2/98: reformatted
 //
 
-inline INT32 R_PointOnSide(fixed_t x, fixed_t y, node_t *restrict node)
+FUNCINLINE ATTRINLINE inline INT32 R_PointOnSide(fixed_t x, fixed_t y, node_t *restrict node)
 {
-    if (!node->dx)
-        return x <= node->x ? node->dy > 0 : node->dy < 0;
+	if (!node->dx)
+		return x <= node->x ? node->dy > 0 : node->dy < 0;
 
-    if (!node->dy)
-        return y <= node->y ? node->dx < 0 : node->dx > 0;
+	if (!node->dy)
+		return y <= node->y ? node->dx < 0 : node->dx > 0;
 
-    x -= node->x;
-    y -= node->y;
+	x -= node->x;
+	y -= node->y;
 
-    fixed_t y_dx = FixedMul(y, node->dx >> FRACBITS);
-    fixed_t dy_x = FixedMul(node->dy >> FRACBITS, x);
-
-    INT32 mask = (node->dy ^ node->dx ^ x ^ y) >> 31;
-    INT32 leftCheck = (node->dy ^ x) < 0;
-
-    return (mask & leftCheck) | (~mask & (y_dx >= dy_x));
+	// Try to quickly decide by looking at sign bits.	
+	// also use a mask to avoid branch prediction
+	INT32 mask = (node->dy ^ node->dx ^ x ^ y) >> 31;
+	return (mask & ((node->dy ^ x) < 0)) |  // (left is negative)
+		(~mask & (FixedMul(y, node->dx>>FRACBITS) >= FixedMul(node->dy>>FRACBITS, x)));
 }
 
 // killough 5/2/98: reformatted
-inline INT32 R_PointOnSegSide(fixed_t x, fixed_t y, seg_t *line)
+FUNCINLINE ATTRINLINE INT32 R_PointOnSegSide(fixed_t x, fixed_t y, seg_t *line)
 {
 	fixed_t lx = line->v1->x;
 	fixed_t ly = line->v1->y;
@@ -382,7 +380,7 @@ inline INT32 R_PointOnSegSide(fixed_t x, fixed_t y, seg_t *line)
 //
 // killough 5/2/98: reformatted, cleaned up
 
-angle_t R_PointToAngle(fixed_t x, fixed_t y)
+FUNCINLINE ATTRINLINE angle_t R_PointToAngle(fixed_t x, fixed_t y)
 {
 	return (y -= viewy, (x -= viewx) || y) ?
 	x >= 0 ?
@@ -398,7 +396,7 @@ angle_t R_PointToAngle(fixed_t x, fixed_t y)
 		0;
 }
 
-angle_t R_PointToAngle2(fixed_t pviewx, fixed_t pviewy, fixed_t x, fixed_t y)
+FUNCINLINE ATTRINLINE angle_t R_PointToAngle2(fixed_t pviewx, fixed_t pviewy, fixed_t x, fixed_t y)
 {
 	return (y -= pviewy, (x -= pviewx) || y) ?
 	x >= 0 ?
@@ -492,7 +490,7 @@ inline angle_t R_PointToAngleEx(INT32 x2, INT32 y2, INT32 x1, INT32 y1)
 		0;
 }
 
-angle_t R_PointToAngleEx64(INT64 x2, INT64 y2, INT64 x1, INT64 y1)
+FUNCINLINE ATTRINLINE angle_t R_PointToAngleEx64(INT64 x2, INT64 y2, INT64 x1, INT64 y1)
 {
     INT64 dx = x1 - x2;
     INT64 dy = y1 - y2;
@@ -1135,7 +1133,7 @@ void R_Init(void)
 //
 // R_PointInSubsector
 //
-subsector_t *R_PointInSubsector(fixed_t x, fixed_t y)
+FUNCINLINE ATTRINLINE inline subsector_t *R_PointInSubsector(fixed_t x, fixed_t y)
 {
 	size_t nodenum = numnodes-1;
 
