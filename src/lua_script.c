@@ -29,11 +29,15 @@
 
 #include "lua_script.h"
 #include "lua_libs.h"
+#include "lua_glib.h"
 #include "lua_hook.h"
 
 #include "doomstat.h"
 
 lua_State *gL = NULL;
+
+// Mathlib global state
+static lua_State *mL = NULL;
 
 int hook_defrosting;
 
@@ -358,20 +362,22 @@ void LUA_DumpFile(const char *filename)
 
 fixed_t LUA_EvalMath(const char *word)
 {
-	lua_State *L = NULL;
 	char buf[1024], *b;
 	const char *p;
 	fixed_t res = 0;
 
 	// make a new state so SOC can't interefere with scripts
 	// allocate state
-	L = lua_newstate(LUA_Alloc, NULL);
-	lua_atpanic(L, LUA_Panic);
+	if (mL == NULL)
+	{
+		mL = lua_newstate(LUA_Alloc, NULL);
+		lua_atpanic(mL, LUA_Panic);
 
-	// open only enum lib
-	lua_pushcfunction(L, LUA_EnumLib);
-	lua_pushboolean(L, true);
-	lua_call(L, 1, 0);
+		// open only enum lib
+		lua_pushcfunction(mL, LUA_EnumLib);
+		lua_pushboolean(mL, true);
+		lua_call(mL, 1, 0);
+	}
 
 	// change ^ into ^^ for Lua.
 	strcpy(buf, "return ");
@@ -385,20 +391,28 @@ fixed_t LUA_EvalMath(const char *word)
 	*b = '\0';
 
 	// eval string.
-	lua_settop(L, 0);
-	if (luaL_dostring(L, buf))
+	lua_settop(mL, 0);
+	if (luaL_dostring(mL, buf))
 	{
-		p = lua_tostring(L, -1);
+		p = lua_tostring(mL, -1);
 		while (*p++ != ':' && *p) ;
 		p += 3; // "1: "
 		CONS_Alert(CONS_WARNING, "%s\n", p);
 	}
 	else
-		res = lua_tointeger(L, -1);
+		res = lua_tointeger(mL, -1);
 
-	// clean up and return.
-	lua_close(L);
 	return res;
+}
+
+void LUA_InvalidateMathlibCache(const char *name)
+{
+	// No state => no cache => nothing to invalidate :3
+	if (mL == NULL) return;
+
+	lua_pushcfunction(mL, lua_glib_invalidate_cache);
+	lua_pushstring(mL, name);
+	lua_call(mL, 1, 0);
 }
 
 // Takes a pointer, any pointer, and a metatable name
