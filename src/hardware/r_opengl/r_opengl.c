@@ -860,8 +860,8 @@ static float shader_leveltime = 0;
     "void main(void) {\n" \
 		"float water_z = (gl_FragCoord.z / gl_FragCoord.w) / 2.0;\n" \
 		"float a = -pi * (water_z * freq) + (leveltime * speed);\n" \
-		"float sdistort = sin(a) * amp;\n" \
-		"float cdistort = cos(a) * amp;\n" \
+		"float sdistort = sin(a) * amp * 1.5;\n" \
+		"float cdistort = cos(a) * amp * 1.5;\n" \
 		"vec4 texel = texture2D(tex, vec2(gl_TexCoord[0].s - sdistort, gl_TexCoord[0].t - cdistort));\n" \
 		"int tex_pal_idx = int(texture3D(lookup_tex, vec3((texel * 63.0 + 0.5) / 64.0))[0] * 255.0);\n" \
 		"float z = gl_FragCoord.z / gl_FragCoord.w;\n" \
