@@ -2412,7 +2412,7 @@ EXPORT void HWRAPI(DrawPolygon) (FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUI
 		polygonArray[polygonArraySize].horizonSpecial = horizonSpecial;
 		// default to polygonArraySize so we don't lose order on horizon lines
 		// (yes, it's supposed to be negative, since we're sorting in that direction)
-		polygonArray[polygonArraySize].hash = -polygonArraySize;
+		polygonArray[polygonArraySize].hash = polygonArraySize;
 		polygonArraySize++;
 		
 		if (!(PolyFlags & PF_NoTexture) && !horizonSpecial)
