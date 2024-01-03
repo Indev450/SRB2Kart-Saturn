@@ -1430,7 +1430,7 @@ void S_LoadMusicDefs(UINT16 wadnum)
 				}
 			}
 
-			memcpy(def->filename, wadfiles[wadnum]->filename, 256);
+			strncpy(def->filename, wadfiles[wadnum]->filename, 256);
 			def->filename[256] = '\0';
 
 skip_lump:
