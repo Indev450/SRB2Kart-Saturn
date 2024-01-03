@@ -845,7 +845,7 @@ static float shader_leveltime = 0;
 	"}\0"
 	
 #define GLSL_PALETTE_WATER_FRAGMENT_SHADER \
-	"const float freq = 0.025;\n" \
+	"const float freq = 0.030;\n" \
     "const float amp = 0.025;\n" \
     "const float speed = 2.0;\n" \
     "const float pi = 3.14159;\n" \
@@ -860,16 +860,17 @@ static float shader_leveltime = 0;
     "void main(void) {\n" \
 		"float water_z = (gl_FragCoord.z / gl_FragCoord.w) / 2.0;\n" \
 		"float a = -pi * (water_z * freq) + (leveltime * speed);\n" \
-		"float sdistort = sin(a) * amp * 1.5;\n" \
-		"float cdistort = cos(a) * amp * 1.5;\n" \
+		"float sdistort = sin(a) * amp * 2.0;\n" \
+		"float cdistort = cos(a) * amp * 2.5;\n" \
 		"vec4 texel = texture2D(tex, vec2(gl_TexCoord[0].s - sdistort, gl_TexCoord[0].t - cdistort));\n" \
 		"int tex_pal_idx = int(texture3D(lookup_tex, vec3((texel * 63.0 + 0.5) / 64.0))[0] * 255.0);\n" \
 		"float z = gl_FragCoord.z / gl_FragCoord.w;\n" \
 		"int light_y = int(clamp(floor(R_DoomColormap(lighting, z)), 0.0, 31.0));\n" \
 		"vec2 lighttable_coord = vec2((float(tex_pal_idx) + 0.5) / 256.0, (float(light_y) + 0.5) / 32.0);\n" \
 		"int final_idx = int(texture2D(lighttable_tex, lighttable_coord)[0] * 255.0);\n" \
-		"vec4 final_color = vec4(float(palette[final_idx*3])/255.0, float(palette[final_idx*3+1])/255.0, float(palette[final_idx*3+2])/255.0, 1.0);\n" \
+		"vec4 final_color = vec4(float(palette[final_idx*3])/255.0 *1.5, float(palette[final_idx*3+1])/255.0 *1.5, float(palette[final_idx*3+2])/255.0 *1.5, 1.0);\n" \
         "final_color.a = texel.a * poly_color.a;\n" \
+		"final_color.rgb *= 1.2;\n" \
         "gl_FragColor = final_color;\n" \
     "}\0"
 	
