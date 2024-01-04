@@ -868,9 +868,8 @@ static float shader_leveltime = 0;
 		"int light_y = int(clamp(floor(R_DoomColormap(lighting, z)), 0.0, 31.0));\n" \
 		"vec2 lighttable_coord = vec2((float(tex_pal_idx) + 0.5) / 256.0, (float(light_y) + 0.5) / 32.0);\n" \
 		"int final_idx = int(texture2D(lighttable_tex, lighttable_coord)[0] * 255.0);\n" \
-		"vec4 final_color = vec4(float(palette[final_idx*3])/255.0 *1.5, float(palette[final_idx*3+1])/255.0 *1.5, float(palette[final_idx*3+2])/255.0 *1.5, 1.0);\n" \
+		"vec4 final_color = vec4(float(palette[final_idx*3])/255.0, float(palette[final_idx*3+1])/255.0, float(palette[final_idx*3+2])/255.0, 1.0);\n" \
         "final_color.a = texel.a * poly_color.a;\n" \
-		"final_color.rgb *= 1.2;\n" \
         "gl_FragColor = final_color;\n" \
     "}\0"
 	
