@@ -490,6 +490,10 @@ static PFNglColorPointer pglColorPointer;
 #define GL_TEXTURE1 0x84C1
 #endif
 
+#ifndef GL_TEXTURE2
+#define GL_TEXTURE2 0x84C2
+#endif
+
 boolean SetupGLfunc(void)
 {
 #ifndef STATIC_OPENGL
@@ -4439,14 +4443,18 @@ EXPORT void HWRAPI(DrawScreenFinalTexture)(int width, int height)
 	clearColour.red = clearColour.green = clearColour.blue = 0;
 	clearColour.alpha = 1;
 	ClearBuffer(true, false, false, &clearColour);
-	pglBindTexture(GL_TEXTURE_2D, finalScreenTexture);
+	if (gl_palshader)
+	{
+		SetBlend(PF_NoDepthTest);
+		pglBindTexture(GL_TEXTURE_2D, finalScreenTexture);
+	}
+	else
+		pglBindTexture(GL_TEXTURE_2D, finalScreenTexture);
 
 	if (gl_palshader)
 	{
-		Shader_SetUniforms(NULL, NULL, NULL, NULL); // prepare shader, if it is enabled
-
-		pglUseProgram(gl_shaderprograms[8].program); // palette shader
-		pglActiveTexture(GL_TEXTURE1);
+		pglUseProgram(gl_shaderprograms[8].program); // palette postprocess shader
+		pglActiveTexture(GL_TEXTURE2);
 	}
 
 	pglColor4ubv(white);
