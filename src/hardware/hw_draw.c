@@ -567,9 +567,14 @@ void HWR_FadeScreenMenuBack(UINT16 color, UINT8 strength)
     }
     else // Do TRANSMAP** fade.
     {
-        Surf.PolyColor.rgba = pLocalPalette[color].rgba;
+        if (HWR_ShouldUsePaletteRendering()) 
+			Surf.PolyColor.rgba = pLocalPalette[color&0xFF].rgba;
+		else
+			Surf.PolyColor.rgba = pLocalPalette[color].rgba;
+		
         Surf.PolyColor.s.alpha = (UINT8)(strength*25.5f);
     }
+
     HWD.pfnDrawPolygon(&Surf, v, 4, PF_NoTexture|PF_Modulated|PF_Translucent|PF_NoDepthTest, false);
 }
 
