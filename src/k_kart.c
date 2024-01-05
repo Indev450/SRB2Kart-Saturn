@@ -26,37 +26,32 @@
 #include "d_main.h"		// found_extra_kart
 
 // Hud offset cvars
-consvar_t cv_item_xoffset = {"hud_item_xoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_item_yoffset = {"hud_item_yoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
+#define IMPL_HUD_OFFSET_X(name)\
+consvar_t cv_##name##_xoffset = {"hud_" #name "_xoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_time_xoffset = {"hud_time_xoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_time_yoffset = {"hud_time_yoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
+#define IMPL_HUD_OFFSET_Y(name)\
+consvar_t cv_##name##_yoffset = {"hud_" #name "_yoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_laps_xoffset = {"hud_laps_xoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_laps_yoffset = {"hud_laps_yoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
+#define IMPL_HUD_OFFSET(name)\
+IMPL_HUD_OFFSET_X(name)\
+IMPL_HUD_OFFSET_Y(name)
 
-consvar_t cv_spdm_xoffset = {"hud_speed_xoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_spdm_yoffset = {"hud_speed_yoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
+IMPL_HUD_OFFSET(item); // Item box
+IMPL_HUD_OFFSET(time); // Time
+IMPL_HUD_OFFSET(laps); // Number of laps
+IMPL_HUD_OFFSET(dnft); // Countdown (did not finish timer)
+IMPL_HUD_OFFSET(spdm); // Speedometer
+IMPL_HUD_OFFSET(posi); // Position in race
+IMPL_HUD_OFFSET(face); // Mini rankings
+IMPL_HUD_OFFSET(stcd); // Starting countdown
+IMPL_HUD_OFFSET_Y(chek); // Check gfx
+IMPL_HUD_OFFSET(mini); // Minimap
+IMPL_HUD_OFFSET(want); // Wanted
+IMPL_HUD_OFFSET(stat); // Stats
 
-consvar_t cv_posi_xoffset = {"hud_position_xoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_posi_yoffset = {"hud_position_yoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
-
-consvar_t cv_face_xoffset = {"hud_face_xoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_face_yoffset = {"hud_face_yoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
-
-consvar_t cv_stcd_xoffset = {"hud_startcountdown_xoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_stcd_yoffset = {"hud_startcountdown_yoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
-
-consvar_t cv_chek_yoffset = {"hud_check_yoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
-
-consvar_t cv_mini_xoffset = {"hud_minimap_xoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_mini_yoffset = {"hud_minimap_yoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
-
-consvar_t cv_want_xoffset = {"hud_wanted_xoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_want_yoffset = {"hud_wanted_yoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
-
-consvar_t cv_stat_xoffset = {"hud_stat_xoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_stat_yoffset = {"hud_stat_yoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
+#undef IMPL_HUD_OFFSET
+#undef IMPL_HUD_OFFSET_X
+#undef IMPL_HUD_OFFSET_Y
 
 //extra hud things
 consvar_t cv_showstats = {"showstats", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -675,29 +670,34 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartdebugcheckpoint);
 	CV_RegisterVar(&cv_kartdebugnodes);
 	CV_RegisterVar(&cv_kartdebugcolorize);
-	
-	CV_RegisterVar(&cv_item_xoffset);
-	CV_RegisterVar(&cv_item_yoffset);
-	CV_RegisterVar(&cv_time_xoffset);
-	CV_RegisterVar(&cv_time_yoffset);
-	CV_RegisterVar(&cv_laps_xoffset);
-	CV_RegisterVar(&cv_laps_yoffset);
-	CV_RegisterVar(&cv_spdm_xoffset);
-	CV_RegisterVar(&cv_spdm_yoffset);
-	CV_RegisterVar(&cv_posi_xoffset);
-	CV_RegisterVar(&cv_posi_yoffset);
-	CV_RegisterVar(&cv_face_xoffset);
-	CV_RegisterVar(&cv_face_yoffset);
-	CV_RegisterVar(&cv_stcd_xoffset);
-	CV_RegisterVar(&cv_stcd_yoffset);
-	CV_RegisterVar(&cv_chek_yoffset);
-	CV_RegisterVar(&cv_mini_xoffset);
-	CV_RegisterVar(&cv_mini_yoffset);
-	CV_RegisterVar(&cv_want_xoffset);
-	CV_RegisterVar(&cv_want_yoffset);
-	CV_RegisterVar(&cv_stat_xoffset);
-	CV_RegisterVar(&cv_stat_yoffset);
-	
+
+#define REG_HUD_OFFSET_X(name)\
+	CV_RegisterVar(&cv_##name##_xoffset);
+
+#define REG_HUD_OFFSET_Y(name)\
+	CV_RegisterVar(&cv_##name##_yoffset);
+
+#define REG_HUD_OFFSET(name)\
+	REG_HUD_OFFSET_X(name)\
+	REG_HUD_OFFSET_Y(name)
+
+	REG_HUD_OFFSET(item); // Item box
+	REG_HUD_OFFSET(time); // Time
+	REG_HUD_OFFSET(laps); // Number of laps
+	REG_HUD_OFFSET(dnft); // Countdown (did not finish timer)
+	REG_HUD_OFFSET(spdm); // Speedometer
+	REG_HUD_OFFSET(posi); // Position in race
+	REG_HUD_OFFSET(face); // Mini rankings
+	REG_HUD_OFFSET(stcd); // Starting countdown
+	REG_HUD_OFFSET_Y(chek); // Check gfx
+	REG_HUD_OFFSET(mini); // Minimap
+	REG_HUD_OFFSET(want); // Wanted
+	REG_HUD_OFFSET(stat); // Stats
+
+#undef REG_HUD_OFFSET
+#undef REG_HUD_OFFSET_X
+#undef REG_HUD_OFFSET_Y
+
 	CV_RegisterVar(&cv_showstats);
 	CV_RegisterVar(&cv_showinput);
 	CV_RegisterVar(&cv_newspeedometer);
@@ -8210,7 +8210,7 @@ static void K_DrawKartPositionNum(INT32 num)
 	if (!splitscreen)
 	{
 		fx = POSI_X + xoffs;
-		fy = BASEVIDHEIGHT - 8;
+		fy = BASEVIDHEIGHT - 8 + cv_posi_yoffset.value;
 		fflags = V_SNAPTOBOTTOM|V_SNAPTORIGHT;
 	}
 	else if (splitscreen == 1)	// for this splitscreen, we'll use case by case because it's a bit different.
@@ -8218,14 +8218,14 @@ static void K_DrawKartPositionNum(INT32 num)
 		fx = POSI_X;
 		if (stplyr == &players[displayplayers[0]])	// for player 1: display this at the top right, above the minimap.
 		{
-			fy = 30;
+			fy = 30 + cv_posi_yoffset.value;
 			fflags = V_SNAPTOTOP|V_SNAPTORIGHT;
 			if (overtake)
 				flipvdraw = true;	// make sure overtaking doesn't explode us
 		}
 		else	// if we're not p1, that means we're p2. display this at the bottom right, below the minimap.
 		{
-			fy = BASEVIDHEIGHT - 8;
+			fy = BASEVIDHEIGHT - 8 + cv_posi_yoffset.value;
 			fflags = V_SNAPTOBOTTOM|V_SNAPTORIGHT;
 		}
 	}
@@ -10056,12 +10056,16 @@ void K_drawKartHUD(void)
 	{
 		char *countstr = va("%d", racecountdown/TICRATE);
 
+		// Eeeh dunno if would be better to add another variable instead of LAPS_Y but this works too
+		int yoff = cv_dnft_yoffset.value - cv_laps_yoffset.value;
+		int xoff = cv_dnft_xoffset.value;
+
 		if (splitscreen > 1)
-			V_DrawCenteredString(BASEVIDWIDTH/4, LAPS_Y+1, K_calcSplitFlags(0), countstr);
+			V_DrawCenteredString(BASEVIDWIDTH/4+xoff, LAPS_Y+1+yoff, K_calcSplitFlags(0), countstr);
 		else
 		{
 			INT32 karlen = strlen(countstr)*6; // half of 12
-			V_DrawKartString((BASEVIDWIDTH/2)-karlen, LAPS_Y+3, K_calcSplitFlags(0), countstr);
+			V_DrawKartString((BASEVIDWIDTH/2)-karlen+xoff, LAPS_Y+3+yoff, K_calcSplitFlags(0), countstr);
 		}
 	}
 

@@ -127,25 +127,33 @@ extern consvar_t cv_turnaxis4,cv_moveaxis4,cv_brakeaxis4,cv_aimaxis4,cv_lookaxis
 extern consvar_t cv_ghost_besttime, cv_ghost_bestlap, cv_ghost_last, cv_ghost_guest, cv_ghost_staff;
 
 // Hud offsets
-extern consvar_t cv_item_xoffset;
-extern consvar_t cv_item_yoffset;
-extern consvar_t cv_time_xoffset;
-extern consvar_t cv_time_yoffset;
-extern consvar_t cv_laps_xoffset;
-extern consvar_t cv_laps_yoffset;
-extern consvar_t cv_spdm_xoffset;
-extern consvar_t cv_spdm_yoffset;
-extern consvar_t cv_posi_xoffset;
-extern consvar_t cv_posi_yoffset;
-extern consvar_t cv_face_xoffset;
-extern consvar_t cv_face_yoffset;
-extern consvar_t cv_stcd_xoffset;
-extern consvar_t cv_stcd_yoffset;
-extern consvar_t cv_chek_yoffset;
-extern consvar_t cv_mini_xoffset;
-extern consvar_t cv_mini_yoffset;
-extern consvar_t cv_want_xoffset;
-extern consvar_t cv_want_yoffset;
+#define DECL_HUD_OFFSET_X(name)\
+extern consvar_t cv_##name##_xoffset;
+
+#define DECL_HUD_OFFSET_Y(name)\
+extern consvar_t cv_##name##_yoffset;
+
+#define DECL_HUD_OFFSET(name)\
+DECL_HUD_OFFSET_X(name)\
+DECL_HUD_OFFSET_Y(name)
+
+DECL_HUD_OFFSET(item); // Item box
+DECL_HUD_OFFSET(time); // Time
+DECL_HUD_OFFSET(laps); // Number of laps
+DECL_HUD_OFFSET(dnft); // Countdown (did not finish timer)
+DECL_HUD_OFFSET(spdm); // Speedometer
+DECL_HUD_OFFSET(posi); // Position in race
+DECL_HUD_OFFSET(face); // Mini rankings
+DECL_HUD_OFFSET(stcd); // Starting countdown
+DECL_HUD_OFFSET_Y(chek); // Check gfx
+DECL_HUD_OFFSET(mini); // Minimap
+DECL_HUD_OFFSET(want); // Wanted
+DECL_HUD_OFFSET(stat); // Stats
+
+#undef DECL_HUD_OFFSET
+#undef DECL_HUD_OFFSET_X
+#undef DECL_HUD_OFFSET_Y
+
 extern consvar_t cv_showinput;
 extern consvar_t cv_newspeedometer;
 
