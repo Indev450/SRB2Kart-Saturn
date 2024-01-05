@@ -1451,7 +1451,7 @@ void I_FinishUpdate(void)
 	if (cv_ticrate.value && st_overlay)
 		SCR_DisplayTicRate();
 
-	if (cv_showping.value && netgame && consoleplayer != serverplayer)
+	if (cv_showping.value && netgame && consoleplayer != serverplayer && st_overlay)
 		SCR_DisplayLocalPing();
 
 #ifdef HAVE_DISCORDRPC
