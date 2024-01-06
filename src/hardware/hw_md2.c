@@ -1460,13 +1460,15 @@ void HWR_DrawMD2(gr_vissprite_t *spr)
 
 		HWD.pfnSetShader(4);	// model shader
 		{
+			SINT8 flipfactor = flip ? -1 : 1;
+			
 			float this_scale = FIXED_TO_FLOAT(interp.scale);
 
 			float xs = this_scale * FIXED_TO_FLOAT(interp.spritexscale);
 			float ys = this_scale * FIXED_TO_FLOAT(interp.spriteyscale);
 
-			float ox = xs * FIXED_TO_FLOAT(interp.spritexoffset);
-			float oy = ys * FIXED_TO_FLOAT(interp.spriteyoffset);
+			float ox = xs * flipfactor*FIXED_TO_FLOAT(interp.spritexoffset);
+			float oy = ys * flipfactor*FIXED_TO_FLOAT(interp.spriteyoffset);
 
 			// offset perpendicular to the camera angle
 			p.x -= ox * gr_viewsin;
