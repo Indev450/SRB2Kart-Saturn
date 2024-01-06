@@ -683,6 +683,17 @@ static float shader_leveltime = 0;
 // ========================
 
 //
+// GLSL generic fragment shader
+//
+
+#define GLSL_DEFAULT_FRAGMENT_SHADER \
+	"uniform sampler2D tex;\n" \
+	"uniform vec4 poly_color;\n" \
+	"void main(void) {\n" \
+		"gl_FragColor = texture2D(tex, gl_TexCoord[0].st) * poly_color;\n" \
+	"}\0"
+
+//
 // GLSL Software fragment shader
 //
 
@@ -914,14 +925,14 @@ static float shader_leveltime = 0;
 	"}\0"
 
 //
-// GLSL generic fragment shader
-//
-
-#define GLSL_DEFAULT_FRAGMENT_SHADER \
+// Sky fragment shader
+// Modulates poly_color with gl_Color
+//	
+#define GLSL_SKY_FRAGMENT_SHADER \
 	"uniform sampler2D tex;\n" \
 	"uniform vec4 poly_color;\n" \
 	"void main(void) {\n" \
-		"gl_FragColor = texture2D(tex, gl_TexCoord[0].st) * poly_color;\n" \
+		"gl_FragColor = texture2D(tex, gl_TexCoord[0].st) * gl_Color * poly_color;\n" \
 	"}\0"
 
 static const char *fragment_shaders[] = {
@@ -947,10 +958,7 @@ static const char *fragment_shaders[] = {
 	GLSL_FOG_FRAGMENT_SHADER,
 
 	// Sky fragment shader
-	"uniform sampler2D tex;\n"
-	"void main(void) {\n"
-		"gl_FragColor = texture2D(tex, gl_TexCoord[0].st);\n"
-	"}\0",
+	GLSL_SKY_FRAGMENT_SHADER,
 
 	// Palette fragment shader
 	GLSL_PALETTE_FRAGMENT_SHADER,
