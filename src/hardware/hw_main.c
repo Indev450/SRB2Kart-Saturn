@@ -518,7 +518,7 @@ void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *col
 			default_colormap = true;
 		}
 		if (!colormap->gl_lighttable_id)
-			{
+		{
 			UINT8 *colormap_pointer;
 
 			if (default_colormap)
@@ -798,7 +798,6 @@ void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, boolean isc
 
 	if (angle) // Only needs to be done if there's an altered angle
 	{
-
 		angle = InvAngle(angle)>>ANGLETOFINESHIFT;
 
 		// This needs to be done so that it scrolls in a different direction after rotation like software
