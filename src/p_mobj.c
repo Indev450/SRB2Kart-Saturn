@@ -6285,7 +6285,7 @@ angle_t P_MobjPitchAndRoll(mobj_t *mobj)
     if (P_MobjWasRemoved(mobj))
         return 0;
 	
-	if (cv_spriteroll.value)
+	if (!cv_spriteroll.value)
 		return 0;
 
     size_t rot = mobj->frame & FF_FRAMEMASK;
