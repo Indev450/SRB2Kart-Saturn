@@ -467,9 +467,7 @@ static void I_ReportSignal(int num, int coredumped)
 
 #ifdef HAVE_LIBBACKTRACE
 	strncat(msg, "\n\nCrash report have been saved into srb2kart-crash-log.txt", 255);
-#elif defined(_WIN32)
-	// Uuh assume we are on 32bit windows where we still have rpt files?
-	// Really unsure about this one
+#elif defined(_WIN32) && !defined(__MINGW64__)
 	strncat(msg, "\n\nCrash report have been saved into srb2kart.rpt", 255);
 #endif
 
