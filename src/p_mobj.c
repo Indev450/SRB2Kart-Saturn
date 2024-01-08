@@ -6281,12 +6281,12 @@ angle_t P_MobjPitchAndRoll(mobj_t *mobj)
     angle_t ang = 0;
 	angle_t camang = 0;
 	angle_t return_angle = 0;
-
-    if (P_MobjWasRemoved(mobj))
-        return 0;
 	
 	if (!cv_spriteroll.value)
 		return 0;
+
+    if (P_MobjWasRemoved(mobj))
+        return 0;
 
     size_t rot = mobj->frame & FF_FRAMEMASK;
     boolean papersprite = (mobj->frame & FF_PAPERSPRITE);
