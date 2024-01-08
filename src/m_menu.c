@@ -2005,7 +2005,7 @@ static menuitem_t OP_SaturnMenu[] =
 	{IT_STRING | IT_CVAR, NULL, "Show Cecho Messages", 					&cv_cechotoggle, 			80},
 	{IT_STRING | IT_CVAR, NULL, "Show Localskin Menus", 				&cv_showlocalskinmenus, 	85},
 	
-	{IT_STRING | IT_CVAR, NULL, "Midnight Channel Flicker Effect", 		&cv_lessflicker, 		 	95},
+	{IT_STRING | IT_CVAR, NULL, "Less Midnight Channel Flicker", 		&cv_lessflicker, 		 	95},
 
 	{IT_SUBMENU|IT_STRING,	NULL,	"Sprite Distortion...", 			&OP_PlayerDistortDef,	 	105},
 	{IT_SUBMENU|IT_STRING,	NULL,	"Hud Offsets...", 					&OP_HudOffsetDef,		 	110},
@@ -2061,21 +2061,23 @@ static menuitem_t OP_PlayerDistortMenu[] =
 {
 	{IT_HEADER, NULL, "Sprite Distortion", NULL, 0},
 
-	{IT_STRING | IT_CVAR, 	NULL, 	"Rotate Objects on Slopes",       &cv_sloperoll, 	    20},
-	{IT_STRING | IT_CVAR, 	NULL, 	"Slope Rotation Distance",        &cv_sloperolldist,    35},
-	{IT_STRING | IT_CVAR, 	NULL, 	"Rotate Players when Sliptiding", &cv_sliptideroll, 	50},
-	{IT_STRING | IT_CVAR,	NULL,	"Rotate Sparks and Boost Trails", &cv_sparkroll,        65},
-	{IT_STRING | IT_CVAR,	NULL,	"Player Stretch Factor",	      &cv_gravstretch,      80},
-	{IT_STRING | IT_CVAR,	NULL,	"Squish Sound Effect",	      	  &cv_slamsound,        95},
-	{IT_STRING | IT_CVAR, 	NULL, 	"Saltyhop", &cv_saltyhop, 	110},
-	{IT_STRING | IT_CVAR,	NULL,	"Saltyhop Sound Effect",	      &cv_saltyhopsfx,      125},
-	{IT_STRING | IT_CVAR,	NULL,	"Saltyhop Squish",	      	  	&cv_saltysquish,        140},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Sprite Rotation",       	  	  &cv_spriteroll, 	    15},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Sprite Slope Rotation",       	  &cv_sloperoll, 	    30},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Slope Rotation Distance",        &cv_sloperolldist,    45},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Rotate Players when Sliptiding", &cv_sliptideroll, 	60},
+	{IT_STRING | IT_CVAR,	NULL,	"Rotate Sparks and Boost Trails", &cv_sparkroll,        75},
+	{IT_STRING | IT_CVAR,	NULL,	"Player Stretch Factor",	      &cv_gravstretch,      90},
+	{IT_STRING | IT_CVAR,	NULL,	"Squish Sound Effect",	      	  &cv_slamsound,        105},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Saltyhop", 					  &cv_saltyhop, 		120},
+	{IT_STRING | IT_CVAR,	NULL,	"Saltyhop Sound Effect",	      &cv_saltyhopsfx,      135},
+	{IT_STRING | IT_CVAR,	NULL,	"Saltyhop Squish",	      	  	  &cv_saltysquish,      150},
 };
 
 static const char* OP_PlayerDistortTooltips[] =
 {
 	NULL,
-	"Object rotation on slopes.",
+	"Sprite rotation features.",
+	"Sprite rotation on slopes. Can either be just players or all objects.",
 	"Distance object rotation should be visable.",
 	"Player rotation when sliptiding.",
 	"Rotation of a player's boost trails and drift sparks.",
@@ -2088,9 +2090,12 @@ static const char* OP_PlayerDistortTooltips[] =
 
 enum
 {
+	spriteheader,
+	spriterotate,
 	sloperotate,
 	slrotatedist,
 	sliptide,
+	sparkrotate,
 	stretchyplayer,
 	squishsound,
 	salthmmm,
@@ -3127,20 +3132,26 @@ void Addons_option_Onchange(void)
 
 void PDistort_menu_Onchange(void)
 {
-	UINT16 status;
-
-	if (cv_sloperoll.value)
+	if (!cv_spriteroll.value)
 	{
-			status = IT_STRING | IT_CVAR;
+		OP_PlayerDistortMenu[sloperotate].status = IT_GRAYEDOUT;
+		OP_PlayerDistortMenu[sliptide].status = IT_GRAYEDOUT;
 	}
 	else
 	{
-			status = IT_GRAYEDOUT;
+		OP_PlayerDistortMenu[sloperotate].status = IT_STRING | IT_CVAR;
+		OP_PlayerDistortMenu[sliptide].status = IT_STRING | IT_CVAR;
 	}
 
-	// enable/disable rolldist and sparkroll options
-	OP_PlayerDistortMenu[2].status = status;
-	OP_PlayerDistortMenu[4].status = status;
+	if ((cv_sloperoll.value) && (cv_spriteroll.value)) //enable/disable sloperotate distance
+		OP_PlayerDistortMenu[slrotatedist].status = IT_STRING | IT_CVAR;
+	else
+		OP_PlayerDistortMenu[slrotatedist].status = IT_GRAYEDOUT;
+		
+	if ((cv_sloperoll.value == 2) && (cv_spriteroll.value)) //enable/disable sparkroll depending on which setting
+		OP_PlayerDistortMenu[sparkrotate].status = IT_STRING | IT_CVAR;
+	else
+		OP_PlayerDistortMenu[sparkrotate].status = IT_GRAYEDOUT;
 }
 
 void Bird_menu_Onchange(void)
@@ -3148,26 +3159,18 @@ void Bird_menu_Onchange(void)
 	UINT16 status;
 
 	if (cv_tilting.value)
-	{
 		status = IT_STRING | IT_CVAR;
-	}
 	else
-	{
 		status = IT_GRAYEDOUT;
-	}
 
 	OP_TiltMenu[tiltwturning].status = status;
 	OP_TiltMenu[smoothening].status = status;
 	OP_TiltMenu[tiltwquakes].status = status;
 
 	if (cv_fading.value)
-	{
 		status = IT_STRING | IT_CVAR;
-	}
 	else
-	{
 		status = IT_GRAYEDOUT;
-	}
 
 	OP_AdvancedBirdMenu[fadeinvinc].status = status;
 	OP_AdvancedBirdMenu[fadegrow].status = status;
@@ -3194,13 +3197,9 @@ void Saturn_menu_Onchange(void)
 	UINT16 status;
 
 	if (cv_colorizedhud.value)
-	{
-			status = IT_STRING | IT_CVAR;
-	}
+		status = IT_STRING | IT_CVAR;
 	else
-	{
-			status = IT_GRAYEDOUT;
-	}
+		status = IT_GRAYEDOUT;
 	
 	OP_SaturnMenu[sm_coloritem].status = status;
 	OP_SaturnMenu[sm_colorhud_customcolor].status = status;

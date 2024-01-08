@@ -143,11 +143,11 @@ static void R_InstallSpriteLump(UINT16 wad,            // graphics patch
 
 // rotsprite
 #ifdef ROTSPRITE
-		for (r = 0; r < 16; r++)
-		{
-			sprtemp[frame].rotated[0][r] = NULL;
-			sprtemp[frame].rotated[1][r] = NULL;
-		}
+	for (r = 0; r < 16; r++)
+	{
+		sprtemp[frame].rotated[0][r] = NULL;
+		sprtemp[frame].rotated[1][r] = NULL;
+	}
 #endif/*ROTSPRITE*/
 
 
@@ -1492,61 +1492,64 @@ static void R_ProjectSprite(mobj_t *thing)
 
 #ifdef ROTSPRITE
     pitchnroll = 0;  // set this to 0, non-paper sprites will affect this value
+	
+	if (cv_spriteroll.value)
+	{
+		if (papersprite)
+		{
+			if (ang >= ANGLE_180)
+			{
+				// Makes Software act much more sane like OpenGL
+				rollangle = InvAngle(thing->rollangle);
+			}
+			else
+			{
+				rollangle = thing->rollangle;
+			}
+		}
+		else
+		{
+			// this is very messy, but it on-the-fly calculates rotations for all the
+			// pitch and roll variables
+			pitchnroll = FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), interp.roll) +
+						 FixedMul(FINESINE((ang) >> ANGLETOFINESHIFT), interp.pitch) +
+						 FixedMul(FINECOSINE((camang) >> ANGLETOFINESHIFT), interp.sloperoll) +
+						 FixedMul(FINESINE((camang) >> ANGLETOFINESHIFT), interp.slopepitch);
 
-    if (papersprite)
-    {
-        if (ang >= ANGLE_180)
-        {
-            // Makes Software act much more sane like OpenGL
-            rollangle = InvAngle(thing->rollangle);
-        }
-        else
-        {
-            rollangle = thing->rollangle;
-        }
-    }
-    else
-    {
-        // this is very messy, but it on-the-fly calculates rotations for all the
-        // pitch and roll variables
-        pitchnroll = FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), interp.roll) +
-                     FixedMul(FINESINE((ang) >> ANGLETOFINESHIFT), interp.pitch) +
-                     FixedMul(FINECOSINE((camang) >> ANGLETOFINESHIFT), interp.sloperoll) +
-                     FixedMul(FINESINE((camang) >> ANGLETOFINESHIFT), interp.slopepitch);
+			rollangle = thing->rollangle;
+		}
 
-        rollangle = thing->rollangle;
-    }
+		if ((rollangle) || (pitchnroll) || (thing->player && thing->player->sliproll))
+		{
+			rollsum = pitchnroll;
 
-    if ((rollangle) || (pitchnroll) || (thing->player && thing->player->sliproll))
-    {
-        rollsum = pitchnroll;
+			if (thing->player)
+			{
+				sliptiderollangle =
+					cv_sliptideroll.value ? thing->player->sliproll * (thing->player->sliptidemem) : 0;
+				rollsum += thing->rollangle +
+						   FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), sliptiderollangle);
+			}
+			else
+				rollsum += thing->rollangle;
 
-        if (thing->player)
-        {
-            sliptiderollangle =
-                cv_sliptideroll.value ? thing->player->sliproll * (thing->player->sliptidemem) : 0;
-            rollsum += thing->rollangle +
-                       FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), sliptiderollangle);
-        }
-        else
-            rollsum += thing->rollangle;
+			rollangle = R_GetRollAngle(rollsum);
+			rotsprite = Patch_GetRotatedSprite(
+				sprframe, (thing->frame & FF_FRAMEMASK), rot, flip, false, sprinfo, rollangle);
 
-        rollangle = R_GetRollAngle(rollsum);
-        rotsprite = Patch_GetRotatedSprite(
-            sprframe, (thing->frame & FF_FRAMEMASK), rot, flip, false, sprinfo, rollangle);
+			if (rotsprite != NULL)
+			{
+				spr_width = rotsprite->width << FRACBITS;
+				spr_height = rotsprite->height << FRACBITS;
+				spr_offset = rotsprite->leftoffset << FRACBITS;
+				spr_topoffset = rotsprite->topoffset << FRACBITS;
+				spr_topoffset += FEETADJUST;
 
-        if (rotsprite != NULL)
-        {
-            spr_width = rotsprite->width << FRACBITS;
-            spr_height = rotsprite->height << FRACBITS;
-            spr_offset = rotsprite->leftoffset << FRACBITS;
-            spr_topoffset = rotsprite->topoffset << FRACBITS;
-            spr_topoffset += FEETADJUST;
-
-            // flip -> rotate, not rotate -> flip
-            flip = 0;
-        }
-    }
+				// flip -> rotate, not rotate -> flip
+				flip = 0;
+			}
+		}
+	}
 #endif
 
 	// calculate edges of the shape
@@ -1797,7 +1800,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	//Fab: lumppat is the lump number of the patch to use, this is different
 	//     than lumpid for sprites-in-pwad : the graphics are patched
 #ifdef ROTSPRITE
-	if (rotsprite != NULL)
+	if ((rotsprite != NULL) && (cv_spriteroll.value))
 		vis->patch = rotsprite;
 	else
 #endif
