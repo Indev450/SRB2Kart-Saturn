@@ -5318,8 +5318,6 @@ void HWR_ProjectSprite(mobj_t *thing)
 	angle_t sliptiderollangle = 0;
 #endif
 
-
-
 	// uncapped/interpolation
 	interpmobjstate_t interp = {0};
 
@@ -5457,36 +5455,38 @@ void HWR_ProjectSprite(mobj_t *thing)
 	spr_topoffset = spritecachedinfo[lumpoff].topoffset;
 
 #ifdef ROTSPRITE
-
-	rollangle = FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), interp.roll) 
-		+ FixedMul(FINESINE((ang) >> ANGLETOFINESHIFT), interp.pitch)
-		+ FixedMul(FINECOSINE((camang) >> ANGLETOFINESHIFT), interp.sloperoll) 
-		+ FixedMul(FINESINE((camang) >> ANGLETOFINESHIFT), interp.slopepitch)
-		+ thing->rollangle;
-
-	if ((rollangle)||(thing->player && thing->player->sliproll))
+	if (cv_sloperoll.value == 1)
 	{
-		if (thing->player)
-		{
-			sliptiderollangle = cv_sliptideroll.value ? thing->player->sliproll*(thing->player->sliptidemem) : 0;
-			rollsum = rollangle+FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), sliptiderollangle);
-		}
-		else
-			rollsum = rollangle;
+		rollangle = FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), interp.roll) 
+			+ FixedMul(FINESINE((ang) >> ANGLETOFINESHIFT), interp.pitch)
+			+ FixedMul(FINECOSINE((camang) >> ANGLETOFINESHIFT), interp.sloperoll) 
+			+ FixedMul(FINESINE((camang) >> ANGLETOFINESHIFT), interp.slopepitch)
+			+ thing->rollangle;
 
-		rollangle = R_GetRollAngle(rollsum);
-		rotsprite = Patch_GetRotatedSprite(sprframe, (thing->frame & FF_FRAMEMASK), rot, flip, false, sprinfo, rollangle);
-
-		if (rotsprite != NULL)
+		if ((rollangle)||(thing->player && thing->player->sliproll))
 		{
-			spr_width = rotsprite->width << FRACBITS;
-			spr_height = rotsprite->height << FRACBITS;
-			spr_offset = rotsprite->leftoffset << FRACBITS;
-			spr_topoffset = rotsprite->topoffset << FRACBITS;
-			spr_topoffset += FEETADJUST;
-			
-			// flip -> rotate, not rotate -> flip
-			flip = 0;
+			if (thing->player)
+			{
+				sliptiderollangle = cv_sliptideroll.value ? thing->player->sliproll*(thing->player->sliptidemem) : 0;
+				rollsum = rollangle+FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), sliptiderollangle);
+			}
+			else
+				rollsum = rollangle;
+
+			rollangle = R_GetRollAngle(rollsum);
+			rotsprite = Patch_GetRotatedSprite(sprframe, (thing->frame & FF_FRAMEMASK), rot, flip, false, sprinfo, rollangle);
+
+			if (rotsprite != NULL)
+			{
+				spr_width = rotsprite->width << FRACBITS;
+				spr_height = rotsprite->height << FRACBITS;
+				spr_offset = rotsprite->leftoffset << FRACBITS;
+				spr_topoffset = rotsprite->topoffset << FRACBITS;
+				spr_topoffset += FEETADJUST;
+				
+				// flip -> rotate, not rotate -> flip
+				flip = 0;
+			}
 		}
 	}
 #endif
@@ -5592,7 +5592,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 	vis->spriteyoffset = FIXED_TO_FLOAT(spr_topoffset);
 
 #ifdef ROTSPRITE
-	if (rotsprite)
+	if ((rotsprite) && (cv_sloperoll.value == 1))
 		vis->gpatch = (GLPatch_t *)rotsprite;
 	else
 #endif
