@@ -1495,7 +1495,7 @@ static void R_ProjectSprite(mobj_t *thing)
 #ifdef ROTSPRITE
     pitchnroll = 0;  // set this to 0, non-paper sprites will affect this value
 	
-	if (cv_sloperoll.value == 1)
+	if (cv_spriteroll.value)
 	{
 		if (papersprite)
 		{
@@ -1802,7 +1802,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	//Fab: lumppat is the lump number of the patch to use, this is different
 	//     than lumpid for sprites-in-pwad : the graphics are patched
 #ifdef ROTSPRITE
-	if ((rotsprite != NULL) && (cv_sloperoll.value == 1))
+	if ((rotsprite != NULL) && (cv_spriteroll.value))
 		vis->patch = rotsprite;
 	else
 #endif

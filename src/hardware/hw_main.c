@@ -5455,7 +5455,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 	spr_topoffset = spritecachedinfo[lumpoff].topoffset;
 
 #ifdef ROTSPRITE
-	if (cv_sloperoll.value == 1)
+	if (cv_spriteroll.value)
 	{
 		rollangle = FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), interp.roll) 
 			+ FixedMul(FINESINE((ang) >> ANGLETOFINESHIFT), interp.pitch)
@@ -5592,7 +5592,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 	vis->spriteyoffset = FIXED_TO_FLOAT(spr_topoffset);
 
 #ifdef ROTSPRITE
-	if ((rotsprite) && (cv_sloperoll.value == 1))
+	if ((rotsprite) && (cv_spriteroll.value))
 		vis->gpatch = (GLPatch_t *)rotsprite;
 	else
 #endif
