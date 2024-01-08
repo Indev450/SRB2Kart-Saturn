@@ -2144,13 +2144,14 @@ static menuitem_t OP_SaturnCreditsMenu[] =
 {
 	{IT_HEADER, NULL, "Saturn Credits", 									NULL,       0},
 	
-	{IT_HEADER, NULL, "Thanks to all contributers <3", 											NULL,      25},
+	{IT_HEADER, NULL, "Thanks to all contributers <3", 											NULL,      15},
 	
-	{IT_STRING2+IT_SPACE, NULL, 	"alufolie91 aka Alug",      						NULL, 	   30},
-	{IT_STRING2+IT_SPACE, NULL, 	"Indev",        									NULL,      40},
-	{IT_STRING2+IT_SPACE, NULL, 	"Haya",       										NULL,      50},
-	{IT_STRING2+IT_SPACE, NULL, 	"Nepdisk", 		 									NULL, 	   60},
-	{IT_STRING2+IT_SPACE, NULL, 	"xyzzy",     										NULL, 	   70},
+	{IT_STRING2+IT_SPACE, NULL, 	"alufolie91 aka Alug",      						NULL, 	   20},
+	{IT_STRING2+IT_SPACE, NULL, 	"Indev",        									NULL,      30},
+	{IT_STRING2+IT_SPACE, NULL, 	"Haya",       										NULL,      40},
+	{IT_STRING2+IT_SPACE, NULL, 	"Nepdisk", 		 									NULL, 	   50},
+	{IT_STRING2+IT_SPACE, NULL, 	"xyzzy",     										NULL, 	   60},
+	{IT_STRING2+IT_SPACE, NULL, 	"Chearii", 		 									NULL, 	   70},
 	
 	
 	{IT_STRING+IT_SPACE, NULL, "", 									NULL,       73},	// dummy text 
