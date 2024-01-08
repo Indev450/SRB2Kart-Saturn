@@ -6263,7 +6263,7 @@ void P_RollPitchMobj(mobj_t* mobj)
     if (cv_sloperolldist.value > 0)
         usedist = true;
 
-    if (cv_sloperoll.value == 1)
+    if ((cv_spriteroll.value) && (cv_sloperoll.value == 2))
     {
         K_RollMobjBySlopes(mobj, usedist);
     }
@@ -6284,6 +6284,9 @@ angle_t P_MobjPitchAndRoll(mobj_t *mobj)
 
     if (P_MobjWasRemoved(mobj))
         return 0;
+	
+	if (cv_spriteroll.value)
+		return 0;
 
     size_t rot = mobj->frame & FF_FRAMEMASK;
     boolean papersprite = (mobj->frame & FF_PAPERSPRITE);

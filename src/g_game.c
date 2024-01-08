@@ -511,8 +511,9 @@ static CV_PossibleValue_t sloperolldist_cons_t[] = {
 	{3072, "3072"},	{4096, "4096"},	{6144, "6144"},
 	{8192, "8192"},	{0, "Infinite"},	{0, NULL}};
 consvar_t cv_sloperolldist = {"sloperolldist", "Infinite", CV_SAVE, sloperolldist_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_sloperoll = {"sloperoll", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, PDistort_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
+static CV_PossibleValue_t sloperoll_cons_t[] = {{0, "Off"}, {1, "Players"}, {2, "Everything"}, {0, NULL}};
 consvar_t cv_spriteroll = {"spriteroll", "Off", CV_SAVE|CV_CALL, CV_OnOff, PDistort_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_sloperoll = {"sloperoll", "Off", CV_SAVE|CV_CALL, sloperoll_cons_t, PDistort_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_sparkroll = {"sparkroll", "Off", CV_SAVE|CV_CALL, CV_OnOff, PDistort_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_sliptideroll = {"sliptideroll", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 

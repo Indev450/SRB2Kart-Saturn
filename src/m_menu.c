@@ -2061,15 +2061,16 @@ static menuitem_t OP_PlayerDistortMenu[] =
 {
 	{IT_HEADER, NULL, "Sprite Distortion", NULL, 0},
 
-	{IT_STRING | IT_CVAR, 	NULL, 	"Rotate Objects on Slopes",       &cv_sloperoll, 	    20},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Sprite Rotation",       	  	  &cv_spriteroll, 	    10},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Sprite Slope Rotation",       	  &cv_sloperoll, 	    20},
 	{IT_STRING | IT_CVAR, 	NULL, 	"Slope Rotation Distance",        &cv_sloperolldist,    35},
 	{IT_STRING | IT_CVAR, 	NULL, 	"Rotate Players when Sliptiding", &cv_sliptideroll, 	50},
 	{IT_STRING | IT_CVAR,	NULL,	"Rotate Sparks and Boost Trails", &cv_sparkroll,        65},
 	{IT_STRING | IT_CVAR,	NULL,	"Player Stretch Factor",	      &cv_gravstretch,      80},
 	{IT_STRING | IT_CVAR,	NULL,	"Squish Sound Effect",	      	  &cv_slamsound,        95},
-	{IT_STRING | IT_CVAR, 	NULL, 	"Saltyhop", &cv_saltyhop, 	110},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Saltyhop", 					  &cv_saltyhop, 		110},
 	{IT_STRING | IT_CVAR,	NULL,	"Saltyhop Sound Effect",	      &cv_saltyhopsfx,      125},
-	{IT_STRING | IT_CVAR,	NULL,	"Saltyhop Squish",	      	  	&cv_saltysquish,        140},
+	{IT_STRING | IT_CVAR,	NULL,	"Saltyhop Squish",	      	  	  &cv_saltysquish,      140},
 };
 
 static const char* OP_PlayerDistortTooltips[] =

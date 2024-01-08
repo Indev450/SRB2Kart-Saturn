@@ -6446,7 +6446,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 
 	if (cv_sloperolldist.value > 0)
 		usedist = true;
-	if (cv_sloperoll.value == 1)
+	if ((cv_spriteroll.value) && (cv_sloperoll.value))
 	{
 		if ((!player->mo->salty_jump)) // seeing a character rotate mid-hop looks really janky
 			K_RollMobjBySlopes(player->mo, usedist);
