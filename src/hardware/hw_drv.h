@@ -30,9 +30,9 @@
 EXPORT boolean HWRAPI(Init) (void);
 EXPORT void HWRAPI(SetupGLInfo) (void);
 #if defined (PURESDL) || defined (macintosh)
-EXPORT void HWRAPI(SetPalette) (INT32 *, RGBA_t *gamma);
+EXPORT void HWRAPI(SetPalette) (INT32 *);
 #else
-EXPORT void HWRAPI(SetPalette) (RGBA_t *ppal, RGBA_t *pgamma);
+EXPORT void HWRAPI(SetPalette) (RGBA_t *ppal);
 #endif
 EXPORT void HWRAPI(FinishUpdate) (INT32 waitvbl);
 EXPORT void HWRAPI(Draw2DLine) (F2DCoord *v1, F2DCoord *v2, RGBA_t Color);
