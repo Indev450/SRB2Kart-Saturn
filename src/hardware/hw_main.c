@@ -517,6 +517,8 @@ void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *col
 
 		Surface->LightTableId = colormap->gl_lighttable_id;
 	}
+	else
+		Surface->LightTableId = 0;
 }
 
 void HWR_ClearLightTableCache(void)
