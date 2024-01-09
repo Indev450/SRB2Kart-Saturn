@@ -13996,9 +13996,9 @@ static void M_DrawColorMenu(void)
 				V_DrawString(x, y, V_TRANSLUCENT|V_OLDSPACING, M_CreateSecretMenuOption(currentMenu->menuitems[i].text));
 				break;
 			case IT_HEADERTEXT:
-				//V_DrawString(x-16, y, V_YELLOWMAP, currentMenu->menuitems[i].text);
-				V_DrawFill(19, y, 281, 9, currentMenu->menuitems[i+1].alphaKey);
-				V_DrawFill(300, y, 1, 9, 26);
+				V_DrawString(x-16, y, V_YELLOWMAP, currentMenu->menuitems[i].text);
+				//V_DrawFill(19, y, 281, 9, currentMenu->menuitems[i+1].alphaKey);
+				//V_DrawFill(300, y, 1, 9, 26);
 				//M_DrawLevelPlatterHeader(y - (lsheadingheight - 12), currentMenu->menuitems[i].text, false);
 				break;
 		}
