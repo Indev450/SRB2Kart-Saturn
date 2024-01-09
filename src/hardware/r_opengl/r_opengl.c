@@ -709,8 +709,7 @@ static float shader_leveltime = 0;
 		"float lightz = clamp(z / 16.0, 0.0, 127.0);\n" \
 		"float startmap = (15.0 - lightnum) * 4.0;\n" \
 		"float scale = 160.0 / (lightz + 1.0);\n" \
-		"float cap = (155.0 - light) * 0.26;\n" \
-		"return max(startmap * STARTMAP_FUDGE - scale * 0.5 * SCALE_FUDGE, cap);\n" \
+		"return (startmap * STARTMAP_FUDGE - scale * MULT_FUDGE * SCALE_FUDGE);\n" \
 	"}\n"
 
 #define GLSL_DOOM_LIGHT_EQUATION \
@@ -762,11 +761,13 @@ static float shader_leveltime = 0;
 
 #define GLSL_FLOOR_FUDGES \
 	"#define STARTMAP_FUDGE 1.06\n" \
+	"#define MULT_FUDGE 0.5\n" \
 	"#define SCALE_FUDGE 1.15\n"
 
 #define GLSL_WALL_FUDGES \
 	"#define STARTMAP_FUDGE 1.05\n" \
-	"#define SCALE_FUDGE 2.2\n"
+	"#define MULT_FUDGE 1.0\n" \
+	"#define SCALE_FUDGE 1.1\n"
 
 #define GLSL_SOFTWARE_FRAGMENT_SHADER_FLOORS \
 	GLSL_SOFTWARE_UNIFORMS \
