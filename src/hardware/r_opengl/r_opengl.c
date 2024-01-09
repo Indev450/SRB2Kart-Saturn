@@ -705,8 +705,7 @@ static float shader_leveltime = 0;
 		"float lightz = clamp(z / 16.0, 0.0, 127.0);\n" \
 		"float startmap = (15.0 - lightnum) * 4.0;\n" \
 		"float scale = 160.0 / (lightz + 1.0);\n" \
-		"float cap = (155.0 - light) * 0.26;\n" \
-		"return max(startmap * STARTMAP_FUDGE - scale * 0.5 * SCALE_FUDGE, cap);\n" \
+		"return (startmap * STARTMAP_FUDGE - scale * MULT_FUDGE * SCALE_FUDGE);\n" \
 	"}\n"
 
 #define GLSL_DOOM_LIGHT_EQUATION \
@@ -758,11 +757,13 @@ static float shader_leveltime = 0;
 
 #define GLSL_FLOOR_FUDGES \
 	"#define STARTMAP_FUDGE 1.06\n" \
+	"#define MULT_FUDGE 0.5\n" \
 	"#define SCALE_FUDGE 1.15\n"
 
 #define GLSL_WALL_FUDGES \
 	"#define STARTMAP_FUDGE 1.05\n" \
-	"#define SCALE_FUDGE 2.2\n"
+	"#define MULT_FUDGE 1.0\n" \
+	"#define SCALE_FUDGE 1.1\n"
 
 #define GLSL_SOFTWARE_FRAGMENT_SHADER_FLOORS \
 	GLSL_SOFTWARE_UNIFORMS \
@@ -915,7 +916,7 @@ static float shader_leveltime = 0;
 	"uniform int palette[768];\n" \
 	"void main(void) {\n" \
 		"vec3 texel = vec3(texture2D(tex, gl_TexCoord[0].st));\n" \
-		"int pal_idx = int(texture3D(lookup_tex, vec3((texel * 63.0 + 0.5) / 64.0))[0] * 255.0);\n" \
+		"int pal_idx = int(texture3D(lookup_tex, vec3((63.0/64.0) * texel + 1.0 / 128.0))[0] * 255.0);\n" \
 		"gl_FragColor = vec4(float(palette[pal_idx*3])/255.0, float(palette[pal_idx*3+1])/255.0, float(palette[pal_idx*3+2])/255.0, 1.0);\n" \
 	"}\0"
 
