@@ -238,7 +238,7 @@ void OglSdlFinishUpdate(boolean waitvbl)
 
 EXPORT void HWRAPI(OglSdlSetPalette) (RGBA_t *palette)
 {
-	INT32 i = 1;
+	INT32 i;
 
 	for (i = 0; i < 256; i++)
 	{
