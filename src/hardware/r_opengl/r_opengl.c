@@ -671,9 +671,9 @@ typedef enum
 	gluniform_fade_end,
 	
 	// palette rendering
-	gluniform_screen_palette_tex,
-	gluniform_palette_lookup_tex,
-	gluniform_lighttable_tex,
+	gluniform_palette_tex, // 1d texture containing a palette
+	gluniform_palette_lookup_tex, // 3d texture containing the rgb->index lookup table
+	gluniform_lighttable_tex, // 2d texture containing a light table
 
 	// misc.
 	gluniform_leveltime,
@@ -922,12 +922,12 @@ static float shader_leveltime = 0;
 #define GLSL_PALETTE_FRAGMENT_SHADER \
 	"uniform sampler2D tex;\n" \
 	"uniform sampler3D palette_lookup_tex;\n" \
-	"uniform sampler1D screen_palette_tex;\n" \
+	"uniform sampler1D palette_tex;\n" \
 	"void main(void) {\n" \
 		"vec4 texel = texture2D(tex, gl_TexCoord[0].st);\n" \
 		"float tex_pal_idx = texture3D(palette_lookup_tex, vec3((texel * 63.0 + 0.5) / 64.0))[0] * 255.0;\n" \
 		"float palette_coord = (tex_pal_idx + 0.5) / 256.0;\n" \
-		"vec4 final_color = texture1D(screen_palette_tex, palette_coord);\n" \
+		"vec4 final_color = texture1D(palette_tex, palette_coord);\n" \
 		"gl_FragColor = final_color;\n" \
 	"}\0"
 
@@ -1209,7 +1209,7 @@ EXPORT boolean HWRAPI(LoadShaders) (void)
 		shader->uniforms[gluniform_fade_end] = GETUNI("fade_end");
 			
 		// palette rendering
-		shader->uniforms[gluniform_screen_palette_tex] = GETUNI("screen_palette_tex");
+		shader->uniforms[gluniform_palette_tex] = GETUNI("palette_tex");
 		shader->uniforms[gluniform_palette_lookup_tex] = GETUNI("palette_lookup_tex");
 		shader->uniforms[gluniform_lighttable_tex] = GETUNI("lighttable_tex");
 
@@ -1225,7 +1225,7 @@ EXPORT boolean HWRAPI(LoadShaders) (void)
 	pglUseProgram(shader->program);
 
 	// texture unit numbers for the samplers used for palette rendering
-	UNIFORM_1(shader->uniforms[gluniform_screen_palette_tex], 2, pglUniform1i);
+	UNIFORM_1(shader->uniforms[gluniform_palette_tex], 2, pglUniform1i);
 	UNIFORM_1(shader->uniforms[gluniform_palette_lookup_tex], 1, pglUniform1i);
 	UNIFORM_1(shader->uniforms[gluniform_lighttable_tex], 2, pglUniform1i);
 
