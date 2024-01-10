@@ -27,9 +27,6 @@
 #include "r_opengl.h"
 #include "r_vbo.h"
 
-#include "../../v_video.h" // pLocalPalette
-#include "../../r_data.h" // NearestColor
-
 //#include "../../p_tick.h" // for leveltime (NOTE: THIS IS BAD, FIGURE OUT HOW TO PROPERLY IMPLEMENT gl_leveltime)
 #include "../../i_system.h" // for I_GetPreciseTime (batching time measurements)
 
@@ -79,7 +76,6 @@ static float NEAR_CLIPPING_PLANE =   NZCLIP_PLANE;
 // **************************************************************************
 //                                                                    GLOBALS
 // **************************************************************************
-
 
 static  GLuint      tex_downloaded  = 0;
 //static  GLuint      lt_downloaded   = 0; // currently bound lighttable texture - currentSurfaceInfo
@@ -206,7 +202,6 @@ FUNCPRINTF void GL_DBG_Printf(const char *format, ...)
 #endif
 }
 
-
 // -----------------+
 // GL_MSG_Warning   : Raises a warning.
 //                  :
@@ -257,7 +252,6 @@ static void GL_MSG_Error(const char *format, ...)
 	fwrite(str, strlen(str), 1, gllogstream);
 #endif
 }
-
 
 #ifdef STATIC_OPENGL
 /* 1.0 functions */
@@ -607,7 +601,6 @@ typedef void 	(APIENTRY *PFNglLinkProgram)		(GLuint);
 typedef void 	(APIENTRY *PFNglGetProgramiv)		(GLuint, GLenum, GLint*);
 typedef void 	(APIENTRY *PFNglUseProgram)			(GLuint);
 typedef void 	(APIENTRY *PFNglUniform1i)			(GLint, GLint);
-typedef void 	(APIENTRY *PFNglUniform1iv)			(GLint, GLsizei, const GLint*);
 typedef void 	(APIENTRY *PFNglUniform1f)			(GLint, GLfloat);
 typedef void 	(APIENTRY *PFNglUniform2f)			(GLint, GLfloat, GLfloat);
 typedef void 	(APIENTRY *PFNglUniform3f)			(GLint, GLfloat, GLfloat, GLfloat);
@@ -629,7 +622,6 @@ static PFNglLinkProgram pglLinkProgram;
 static PFNglGetProgramiv pglGetProgramiv;
 static PFNglUseProgram pglUseProgram;
 static PFNglUniform1i pglUniform1i;
-static PFNglUniform1iv pglUniform1iv;
 static PFNglUniform1f pglUniform1f;
 static PFNglUniform2f pglUniform2f;
 static PFNglUniform3f pglUniform3f;
@@ -1026,8 +1018,14 @@ static const char *vertex_shaders[] = {
 	
 	// Palette vertex shader
 	GLSL_DEFAULT_VERTEX_SHADER,
+	
+	// Palette floor vertex shader
 	GLSL_DEFAULT_VERTEX_SHADER,
+	
+	// Palette wall vertex shader
 	GLSL_DEFAULT_VERTEX_SHADER,
+	
+	// Palette water vertex shader
 	GLSL_DEFAULT_VERTEX_SHADER,
 
 	NULL,
@@ -1066,7 +1064,6 @@ void SetupGLFunc4(void)
 	pglGetProgramiv = GetGLFunc("glGetProgramiv");
 	pglUseProgram = GetGLFunc("glUseProgram");
 	pglUniform1i = GetGLFunc("glUniform1i");
-	pglUniform1iv = GetGLFunc("glUniform1iv");
 	pglUniform1f = GetGLFunc("glUniform1f");
 	pglUniform2f = GetGLFunc("glUniform2f");
 	pglUniform3f = GetGLFunc("glUniform3f");
