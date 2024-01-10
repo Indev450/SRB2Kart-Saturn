@@ -208,7 +208,7 @@ static void CV_grpaletterendering_OnChange(void)
 
 static void CV_grpalettedepth_OnChange(void)
 {
-	if (HWR_ShouldUsePaletteRendering())
+	if ((rendermode == render_opengl) && (HWR_ShouldUsePaletteRendering()))
 		HWR_SetPalette(pLocalPalette);
 }
 
