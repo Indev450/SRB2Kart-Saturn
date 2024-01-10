@@ -577,25 +577,6 @@ void HWR_PrepLevelCache(size_t pnumtextures)
 		I_Error("HWR_PrepLevelCache: can't alloc gr_textures");
 }
 
-/*void HWR_SetPalette(RGBA_t *palette)
-{
-	//Hudler: 16/10/99: added for OpenGL gamma correction
-	RGBA_t gamma_correction = {0x7F7F7F7F};
-
-	//Hurdler 16/10/99: added for OpenGL gamma correction
-	gamma_correction.s.red   = (UINT8)cv_grgammared.value;
-	gamma_correction.s.green = (UINT8)cv_grgammagreen.value;
-	gamma_correction.s.blue  = (UINT8)cv_grgammablue.value;
-	HWD.pfnSetPalette(palette, &gamma_correction);
-
-	// hardware driver will flush there own cache if cache is non paletized
-	// now flush data texture cache so 32 bit texture are recomputed
-	if (patchformat == GR_RGBA || textureformat == GR_RGBA)
-	{
-		Z_FreeTags(PU_HWRCACHE, PU_HWRCACHE);
-		Z_FreeTags(PU_HWRCACHE_UNLOCKED, PU_HWRCACHE_UNLOCKED);
-	}
-}*/
 // --------------------------------------------------------------------------
 // Make sure texture is downloaded and set it as the source
 // --------------------------------------------------------------------------
@@ -1000,7 +981,7 @@ static void HWR_SetPaletteLookup(RGBA_t *palette)
 			for (r = 0; r < HWR_PALETTE_LUT_SIZE; r++)
 			{
 				lut[b*HWR_PALETTE_LUT_SIZE*HWR_PALETTE_LUT_SIZE+g*HWR_PALETTE_LUT_SIZE+r] =
-					NearestColor(r*STEP_SIZE, g*STEP_SIZE, b*STEP_SIZE);
+					NearestPaletteColor(r*STEP_SIZE, g*STEP_SIZE, b*STEP_SIZE, palette);
 			}
 		}
 	}

@@ -3127,10 +3127,6 @@ EXPORT void HWRAPI(SetSpecialState) (hwdspecialstate_t IdState, INT32 Value)
 					break;
 			}
 			break;
-			
-		//case HWD_PAL_SHADER:
-			//gl_palshader = Value;
-			//break;
 
 		case HWD_SET_TEXTUREFILTERMODE:
 			switch (Value)
@@ -4324,19 +4320,22 @@ EXPORT void HWRAPI(DrawScreenFinalTexture)(int width, int height)
 	clearColour.red = clearColour.green = clearColour.blue = 0;
 	clearColour.alpha = 1;
 	ClearBuffer(true, false, false, &clearColour);
-	/*if (gl_palshader)
+	if (HWR_ShouldUsePaletteRendering())
 	{
 		SetBlend(PF_NoDepthTest);
 		pglBindTexture(GL_TEXTURE_2D, finalScreenTexture);
 	}
-	else*/
+	else
 		pglBindTexture(GL_TEXTURE_2D, finalScreenTexture);
 
-	//if (gl_palshader)
+	if (HWR_ShouldUsePaletteRendering())
 	{
 		pglUseProgram(gl_shaderprograms[8].program); // palette postprocess shader
 		pglActiveTexture(GL_TEXTURE2);
 	}
+	
+	// prepare shader, if it is enabled
+	//Shader_SetUniforms(NULL, NULL, NULL, NULL);
 
 	pglColor4ubv(white);
 	pglTexCoordPointer(2, GL_FLOAT, 0, fix);
@@ -4346,7 +4345,7 @@ EXPORT void HWRAPI(DrawScreenFinalTexture)(int width, int height)
 
 	tex_downloaded = finalScreenTexture;
 	
-	//if (gl_palshader)
+	if (HWR_ShouldUsePaletteRendering())
 	{
 		pglUseProgram(0);
 		pglActiveTexture(GL_TEXTURE0);

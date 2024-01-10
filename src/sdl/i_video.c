@@ -1483,6 +1483,18 @@ void I_FinishUpdate(void)
 #ifdef HWRENDER
 	else if (rendermode == render_opengl)
 	{
+		/*// Final postprocess step of palette rendering, after everything else has been drawn.
+		if (HWR_ShouldUsePaletteRendering())
+		{
+			// not using the function for its original named purpose but can be used like this too
+			HWR_MakeScreenFinalTexture();
+			HWD.pfnSetSpecialState(HWD_SET_SHADERS, 1);
+			HWD.pfnSetShader(8);
+			HWR_DrawScreenFinalTexture(vid.width, vid.height);
+			HWD.pfnUnSetShader();
+			HWD.pfnSetSpecialState(HWD_SET_SHADERS, 0);
+		}*/ //for some reason this does not work here,so ill keep it in DrawScreenFinalTexture itself for now
+
 		OglSdlFinishUpdate(cv_vidwait.value);
 	}
 #endif

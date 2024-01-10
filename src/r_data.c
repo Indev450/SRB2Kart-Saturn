@@ -1414,16 +1414,20 @@ INT32 R_CreateColormap(char *p1, char *p2, char *p3)
 
 // Thanks to quake2 source!
 // utils3/qdata/images.c
-UINT8 NearestColor(UINT8 r, UINT8 g, UINT8 b)
+UINT8 NearestPaletteColor(UINT8 r, UINT8 g, UINT8 b, RGBA_t *palette)
 {
 	int dr, dg, db;
 	int distortion, bestdistortion = 256 * 256 * 4, bestcolor = 0, i;
 
+	// Use local palette if none specified
+	if (palette == NULL)
+		palette = pLocalPalette;
+
 	for (i = 0; i < 256; i++)
 	{
-		dr = r - pLocalPalette[i].s.red;
-		dg = g - pLocalPalette[i].s.green;
-		db = b - pLocalPalette[i].s.blue;
+		dr = r - palette[i].s.red;
+		dg = g - palette[i].s.green;
+		db = b - palette[i].s.blue;
 		distortion = dr*dr + dg*dg + db*db;
 		if (distortion < bestdistortion)
 		{
