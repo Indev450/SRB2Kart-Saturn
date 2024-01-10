@@ -421,43 +421,35 @@ int mobj_localskin_setter(lua_State *L)
 
 	if (mo->player)
 	{
-		SetLocalPlayerSkin(mo->player - players, luaL_optstring(L, 2, "none"), NULL);
+		SetLocalPlayerSkin(mo->player - players, luaL_checkstring(L, 2), NULL);
 	}
 	else
 	{
 		INT32 i;
 		char skin[SKINNAMESIZE+1]; // all skin names are limited to this length
-		strlcpy(skin, luaL_optstring(L, 2, "none"), sizeof skin);
+		strlcpy(skin, luaL_checkstring(L, 2), sizeof skin);
 		strlwr(skin); // all skin names are lowercase
 
-		if (strcasecmp(skin, "none"))
+		// Try localskins
+		for (i = 0; i < numlocalskins; i++)
 		{
-			// Try localskins
-			for (i = 0; i < numlocalskins; i++)
+			if (stricmp(localskins[i].name, skin) == 0)
 			{
-				if (stricmp(localskins[i].name, skin) == 0)
-				{
-					mo->localskin = &localskins[i];
-					mo->skinlocal = true;
-					return 0;
-				}
-			}
-
-			// Try other skins
-			for (i = 0; i < numskins; i++)
-			{
-				if (fastcmp(skins[i].name, skin))
-				{
-					mo->localskin = &skins[i];
-					mo->skinlocal = false;
-					return 0;
-				}
+				mo->localskin = &localskins[i];
+				mo->skinlocal = true;
+				return 0;
 			}
 		}
-		else
+
+		// Try other skins
+		for (i = 0; i < numskins; i++)
 		{
-			mo->localskin = 0;
-			mo->skinlocal = false;
+			if (fastcmp(skins[i].name, skin))
+			{
+				mo->localskin = &skins[i];
+				mo->skinlocal = false;
+				return 0;
+			}
 		}
 	}
 

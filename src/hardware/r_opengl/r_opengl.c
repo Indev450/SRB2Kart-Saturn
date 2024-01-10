@@ -1339,17 +1339,30 @@ EXPORT void HWRAPI(InitPalette) (int flashnum, boolean skiplut)
 {	
 	int i, r, g, b;
 
+	//Hudler: 16/10/99: added for OpenGL gamma correction
+	RGBA_t gamma_correction = {0x7F7F7F7F};
+
+	//Hurdler 16/10/99: added for OpenGL gamma correction
+	gamma_correction.s.red   = (UINT8)cv_grgammared.value;
+	gamma_correction.s.green = (UINT8)cv_grgammagreen.value;
+	gamma_correction.s.blue  = (UINT8)cv_grgammablue.value;
+
 	// init the palette
 	int flashoffset = flashnum*256;
 	for (i = 0+flashoffset; i < 256+flashoffset; i++)
 	{
 		int fi = i-flashoffset;
 
-		// crush to 16-bit rgb565, like software currently does
-		float fred = (float)(pLocalPalette[i].s.red >> 3);
-		float fgreen = (float)(pLocalPalette[i].s.green >> 2);
-		float fblue = (float)(pLocalPalette[i].s.blue >> 3);
+		// gamma correction
+		int pr, pg, pb;
+		pr = (UINT8)MIN((pLocalPalette[i].s.red*gamma_correction.s.red)/127,     255);
+		pg = (UINT8)MIN((pLocalPalette[i].s.green*gamma_correction.s.green)/127,     255);
+		pb = (UINT8)MIN((pLocalPalette[i].s.blue*gamma_correction.s.blue)/127,     255);
 
+		// crush to 16-bit rgb565, like software currently does
+		float fred = (float)(pr >> 3);
+		float fgreen = (float)(pg >> 2);
+		float fblue = (float)(pb >> 3);
 		// restore to rgb888
 		gl_palette[fi*3] = (GLint)(fred / 31.0f * 255.0f);
 		gl_palette[fi*3+1] = (GLint)(fgreen / 63.0f * 255.0f);

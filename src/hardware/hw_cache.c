@@ -559,7 +559,14 @@ void HWR_PrepLevelCache(size_t pnumtextures)
 
 void HWR_SetPalette(RGBA_t *palette)
 {
-	HWD.pfnSetPalette(palette);
+	//Hudler: 16/10/99: added for OpenGL gamma correction
+	RGBA_t gamma_correction = {0x7F7F7F7F};
+
+	//Hurdler 16/10/99: added for OpenGL gamma correction
+	gamma_correction.s.red   = (UINT8)cv_grgammared.value;
+	gamma_correction.s.green = (UINT8)cv_grgammagreen.value;
+	gamma_correction.s.blue  = (UINT8)cv_grgammablue.value;
+	HWD.pfnSetPalette(palette, &gamma_correction);
 
 	// hardware driver will flush there own cache if cache is non paletized
 	// now flush data texture cache so 32 bit texture are recomputed
