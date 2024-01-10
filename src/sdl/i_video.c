@@ -2121,7 +2121,7 @@ void I_StartupGraphics(void)
 		HWD.pfnGClipRect        = hwSym("GClipRect",NULL);
 		HWD.pfnClearMipMapCache = hwSym("ClearMipMapCache",NULL);
 		HWD.pfnSetSpecialState  = hwSym("SetSpecialState",NULL);
-		HWD.pfnSetPalette       = hwSym("SetPalette",NULL);
+		HWD.pfnSetTexturePalette= hwSym("SetTexturePalette",NULL);
 		HWD.pfnGetTextureUsed   = hwSym("GetTextureUsed",NULL);
 		HWD.pfnDrawModel        = hwSym("DrawModel",NULL);
 		HWD.pfnCreateModelVBOs  = hwSym("CreateModelVBOs",NULL);
@@ -2151,9 +2151,10 @@ void I_StartupGraphics(void)
 		HWD.pfnStartBatching = hwSym("StartBatching",NULL);
 		HWD.pfnRenderBatches = hwSym("RenderBatches",NULL);
 
-		HWD.pfnInitPalette = hwSym("InitPalette",NULL);
-		HWD.pfnAddLightTable = hwSym("AddLightTable",NULL);
-		HWD.pfnClearLightTableCache = hwSym("ClearLightTableCache",NULL);
+		HWD.pfnSetPaletteLookup = hwSym("SetPaletteLookup",NULL);
+		HWD.pfnCreateLightTable = hwSym("CreateLightTable",NULL);
+		HWD.pfnClearLightTables = hwSym("ClearLightTables",NULL);
+		HWD.pfnSetScreenPalette = hwSym("SetScreenPalette",NULL);
 
 		if (!HWD.pfnInit()) // load the OpenGL library
 			rendermode = render_soft;

@@ -57,6 +57,12 @@
 // ==========================================================================
 struct hwdriver_s hwdriver;
 
+
+boolean gr_shadersavailable = true;
+
+// Whether the internal state is set to palette rendering or not.
+static boolean gr_palette_rendering_state = false;
+
 // ==========================================================================
 // Commands and console variables
 // ==========================================================================
@@ -66,15 +72,7 @@ static void CV_anisotropic_ONChange(void);
 static void CV_screentextures_ONChange(void);
 static void CV_useCustomShaders_ONChange(void); 
 static void CV_grshaders_OnChange(void);
-static void CV_Gammaxxx_ONChange(void);
-
-static CV_PossibleValue_t grgamma_cons_t[] = {{1, "MIN"}, {255, "MAX"}, {0, NULL}};
-consvar_t cv_grgammared = {"gr_gammared", "127", CV_SAVE|CV_CALL, grgamma_cons_t,
-                           CV_Gammaxxx_ONChange, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_grgammagreen = {"gr_gammagreen", "127", CV_SAVE|CV_CALL, grgamma_cons_t,
-                             CV_Gammaxxx_ONChange, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_grgammablue = {"gr_gammablue", "127", CV_SAVE|CV_CALL, grgamma_cons_t,
-                            CV_Gammaxxx_ONChange, 0, NULL, NULL, 0, 0, NULL};
+static void CV_grpaletterendering_OnChange(void);
 
 static CV_PossibleValue_t grfakecontrast_cons_t[] = {{0, "Off"}, {1, "Standard"}, {2, "Smooth"}, {0, NULL}};
 
@@ -147,9 +145,9 @@ consvar_t cv_grscreentextures = {"gr_screentextures", "On", CV_CALL|CV_SAVE, CV_
 consvar_t cv_grshaders = {"gr_shaders", "On", CV_CALL|CV_SAVE, CV_OnOff, CV_grshaders_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_grusecustomshaders = {"gr_usecustomshaders", "Yes", CV_CALL|CV_SAVE, CV_OnOff, CV_useCustomShaders_ONChange, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_grpaletteshader = {"gr_paletteshader", "Off", CV_CALL|CV_SAVE, CV_OnOff, CV_grshaders_OnChange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_grpaletterendering = {"gr_paletteshader", "Off", CV_CALL|CV_SAVE, CV_OnOff, CV_grpaletterendering_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_grflashpal = {"gr_flashpal", "On", CV_CALL|CV_SAVE, CV_OnOff, CV_grshaders_OnChange, 0, NULL, NULL, 0, 0, NULL};
+//consvar_t cv_grflashpal = {"gr_flashpal", "On", CV_CALL|CV_SAVE, CV_OnOff, CV_grshaders_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_grmdls = {"gr_mdls", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_grfallbackplayermodel = {"gr_fallbackplayermodel", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -181,13 +179,12 @@ static void CV_screentextures_ONChange(void)
 static void CV_grshaders_OnChange(void)
 {
 	if (rendermode == render_opengl)
-	{
-		if (HWR_ShouldUsePaletteRendering())
-			HWR_InitPalette(0, false);
-		
-		HWD.pfnSetSpecialState(HWD_PAL_SHADER, HWR_ShouldUsePaletteRendering());
-		
 		V_SetPalette(0);
+	
+	if (cv_grpaletterendering.value)
+	{
+		// can't do palette rendering without shaders, so update the state if needed
+		HWR_TogglePaletteRendering();
 	}
 }
 
@@ -197,24 +194,17 @@ static void CV_useCustomShaders_ONChange(void)
 	{
 		if (HWR_UseShader())
 			HWD.pfnInitCustomShaders();
-		
-		if (HWR_ShouldUsePaletteRendering())
-			HWR_InitPalette(0, false);
 	}
 }
 
-// change the palette directly to see the change
-static void CV_Gammaxxx_ONChange(void)
-{
-	if (rendermode == render_opengl)
-		V_SetPalette(0);
-}
 
-void HWR_InitPalette(int flashnum, boolean skiplut)
+static void CV_grpaletterendering_OnChange(void)
 {
-    HWD.pfnInitPalette(flashnum, skiplut);
+	if (gr_shadersavailable)
+	{
+		HWR_TogglePaletteRendering();
+	}
 }
-
 
 // ==========================================================================
 // Globals
@@ -246,8 +236,6 @@ static sector_t *gr_frontsector;
 static sector_t *gr_backsector;
 
 static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum, FSurfaceInfo* Surf, INT32 cutflag, ffloor_t *pfloor, FBITFIELD polyflags);
-
-boolean gr_shadersavailable = true;
 
 // Performance stats
 ps_metric_t ps_hw_nodesorttime = {0};
@@ -446,13 +434,13 @@ boolean HWR_UseShader(void)
 
 boolean HWR_ShouldUsePaletteRendering(void)
 {
-	return (cv_grpaletteshader.value && HWR_UseShader());
+	return (cv_grpaletterendering.value && HWR_UseShader());
 }
 
-boolean HWR_PalRenderFlashpal(void)
+/*boolean HWR_PalRenderFlashpal(void)
 {
-	return (cv_grpaletteshader.value && HWR_UseShader() && cv_grflashpal.value);
-}
+	return (cv_grpaletterendering.value && HWR_UseShader() && cv_grflashpal.value);
+}*/
 
 void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *colormap)
 {
@@ -512,34 +500,30 @@ void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *col
 	
 	if (HWR_ShouldUsePaletteRendering())
 	{
+		boolean default_colormap = false;
 		if (!colormap)
 		{
-			colormap = &extra_colormaps[num_extra_colormaps];
+			colormap = &extra_colormaps[num_extra_colormaps]; // a place to store the hw lighttable id
+			// alternatively could just store the id in a global variable if there are issues
 			default_colormap = true;
 		}
+		// create hw lighttable if there isn't one
 		if (!colormap->gl_lighttable_id)
-			{
+		{
 			UINT8 *colormap_pointer;
 
 			if (default_colormap)
-			{
-				colormap_pointer = colormaps;
-			}
+				colormap_pointer = colormaps; // don't actually use the data from the "default colormap"
 			else
-			{
 				colormap_pointer = colormap->colormap;
-			}
-			colormap->gl_lighttable_id = HWD.pfnAddLightTable(colormap_pointer);
+			colormap->gl_lighttable_id = HWR_CreateLightTable(colormap_pointer);
 		}
-
 		Surface->LightTableId = colormap->gl_lighttable_id;
 	}
-}
-
-void HWR_ClearLightTableCache(void)
-{
-	if (rendermode == render_opengl)
-		HWD.pfnClearLightTableCache();
+	else
+	{
+		Surface->LightTableId = 0;
+	}
 }
 
 UINT8 HWR_FogBlockAlpha(INT32 light, extracolormap_t *colormap) // Let's see if this can work
@@ -862,7 +846,8 @@ void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, boolean isc
 		if (PolyFlags & PF_Fog)
 			HWD.pfnSetShader(6);	// fog shader
 		else if (PolyFlags & PF_Ripple)
-			HWD.pfnSetShader(HWR_ShouldUsePaletteRendering() ? 11 : 5); // water shader
+			//HWD.pfnSetShader(HWR_ShouldUsePaletteRendering() ? 11 : 5); // water shader
+			HWD.pfnSetShader(5); // water shader
 		else
 			HWD.pfnSetShader(HWR_ShouldUsePaletteRendering() ? 9 : 1);	// floor shader
 		
@@ -6329,7 +6314,48 @@ void HWR_RenderPlayerView(INT32 viewnumber, player_t *player)
 	HWR_RenderFrame(viewnumber, player, false);
 }
 
+// enable or disable palette rendering state depending on settings and availability
+// called when relevant settings change
+// shader recompilation is done in the cvar callback
+void HWR_TogglePaletteRendering(void)
+{
+	// which state should we go to?
+	if (HWR_ShouldUsePaletteRendering())
+	{
+		// are we not in that state already?
+		if (!gr_palette_rendering_state)
+		{
+			gr_palette_rendering_state = true;
 
+			// The textures will still be converted to RGBA by r_opengl.
+			// This however makes hw_cache use paletted blending for composite textures!
+			// (patchformat is not touched)
+			textureformat = GR_TEXFMT_P_8;
+
+			HWR_SetMapPalette();
+			HWR_SetPalette(pLocalPalette);
+
+			// If the r_opengl "texture palette" stays the same during this switch, the textures
+			// will not be cleared out. However they are still out of date since the
+			// composite texture blending method has changed. Therefore they need to be cleared.
+			HWD.pfnClearMipMapCache();
+		}
+	}
+	else
+	{
+		// are we not in that state already?
+		if (gr_palette_rendering_state)
+		{
+			gr_palette_rendering_state = false;
+			textureformat = GR_RGBA;
+			HWR_SetPalette(pLocalPalette);
+			// If the r_opengl "texture palette" stays the same during this switch, the textures
+			// will not be cleared out. However they are still out of date since the
+			// composite texture blending method has changed. Therefore they need to be cleared.
+			HWD.pfnClearMipMapCache();
+		}
+	}
+}
 
 
 //added by Hurdler: console varibale that are saved
@@ -6351,9 +6377,6 @@ void HWR_AddCommands(void)
 	
 	CV_RegisterVar(&cv_grrenderdistance);
 	
-	CV_RegisterVar(&cv_grgammablue);
-	CV_RegisterVar(&cv_grgammagreen);
-	CV_RegisterVar(&cv_grgammared);
 	CV_RegisterVar(&cv_grfakecontrast);
 	CV_RegisterVar(&cv_grslopecontrast);
 	
@@ -6376,8 +6399,8 @@ void HWR_AddCommands(void)
 	
 	CV_RegisterVar(&cv_secbright);
 	
-	CV_RegisterVar(&cv_grpaletteshader);
-	CV_RegisterVar(&cv_grflashpal);	
+	CV_RegisterVar(&cv_grpaletterendering);
+	//CV_RegisterVar(&cv_grflashpal);	
 
 	CV_RegisterVar(&cv_grvhseffect);	
 }
@@ -6393,21 +6416,22 @@ void HWR_Startup(void)
 	if (!startupdone)
 	{
 		CONS_Printf("HWR_Startup()...\n");
+		textureformat = patchformat = GR_RGBA;
+		
 		HWR_InitTextureCache();
 		HWR_InitMD2();
 
 		HWD.pfnSetupGLInfo();
 	}
 
-	if (rendermode == render_opengl)
-		textureformat = patchformat = GR_RGBA;
-		
 	startupdone = true;
 
 	// jimita
 	HWD.pfnKillShaders();
 	if (!HWD.pfnLoadShaders())
 		gr_shadersavailable = false;
+	
+	HWR_TogglePaletteRendering();
 
 	if (msaa)
 	{
@@ -6490,7 +6514,7 @@ void HWR_DoPostProcessor(player_t *player)
 
 	// Armageddon Blast Flash!
 	// Could this even be considered postprocessor?
-	if ((player->flashcount) && (!HWR_PalRenderFlashpal()))
+	if (player->flashcount)
 	{
 		FOutVector      v[4];
 		FSurfaceInfo Surf;

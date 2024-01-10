@@ -28,6 +28,8 @@
 
 #ifdef HWRENDER
 #include "hardware/hw_main.h"
+
+#include "hardware/hw_glob.h" // HWR_ClearLightTables
 #endif
 
 #ifdef _WIN32
@@ -1139,8 +1141,8 @@ void R_ClearColormaps(void)
 	memset(extra_colormaps, 0, sizeof (extra_colormaps));
 
 #ifdef HWRENDER
-	HWR_ClearLightTableCache();
-#endif	
+	HWR_ClearLightTables();
+#endif
 }
 
 /*INT32 R_ColormapNumForName(char *name)
