@@ -36,7 +36,7 @@ INT32 textureformat = GR_TEXFMT_P_8; // use chromakey for hole
 RGBA_t mapPalette[256] = {0}; // the palette for the currently loaded level or menu etc.
 
 // Returns a pointer to the palette which should be used for caching textures.
-static RGBA_t *HWR_GetTexturePalette(void)
+RGBA_t *HWR_GetTexturePalette(void)
 {
 	return HWR_ShouldUsePaletteRendering() ? mapPalette : pLocalPalette;
 }
@@ -926,6 +926,7 @@ void HWR_SetPalette(RGBA_t *palette)
 	{
 		// set the palette for palette postprocessing
 
+		if (cv_grpalettedepth.value == 16)
 		{
 			// crush to 16-bit rgb565, like software currently does in the standard configuration
 			// Note: Software's screenshots have the 24-bit palette, but the screen gets
@@ -945,9 +946,13 @@ void HWR_SetPalette(RGBA_t *palette)
 			}
 			HWD.pfnSetScreenPalette(crushed_palette);
 		}
+		else
+		{
+			HWD.pfnSetScreenPalette(palette);
+		}
 
 		// this part is responsible for keeping track of the palette OUTSIDE of a level.
-		if (!(gamestate == GS_LEVEL || (gamestate == GS_TITLESCREEN)))
+		if ((!(gamestate == GS_LEVEL)) || (gamestate == GS_TITLESCREEN))
 			HWR_SetMapPalette();
 	}
 	else
@@ -999,11 +1004,11 @@ void HWR_SetMapPalette(void)
 	RGBA_t *palette;
 	int i;
 
-	if (!(gamestate == GS_LEVEL || (gamestate == GS_TITLESCREEN))) //we dont have a master palette
+	if ((!(gamestate == GS_LEVEL)) || (gamestate == GS_TITLESCREEN)) //we dont have a master palette
 	{
 		// outside of a level, pMasterPalette should have PLAYPAL ready for us
 		//palette = pMasterPalette; // we dont have this in kart so just use plocalpalette as before
-		
+
 		palette = pLocalPalette;
 	}
 	else

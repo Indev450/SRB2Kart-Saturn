@@ -92,6 +92,7 @@ void HWR_ClearClipper(void);
 boolean HWR_UseShader(void);
 boolean HWR_ShouldUsePaletteRendering(void);
 boolean HWR_PalRenderFlashpal(void);
+void HWR_TogglePaletteRendering(void);
 
 // My original intention was to split hw_main.c
 // into files like hw_bsp.c, hw_sprites.c...
@@ -162,6 +163,7 @@ extern boolean gr_maphasportals;
 
 // hw_cache.c
 void HWR_PrepLevelCache(size_t pnumtextures);
+RGBA_t *HWR_GetTexturePalette(void);
 
 // hw_trick.c
 void HWR_CorrectSWTricks(void);
@@ -190,8 +192,9 @@ extern consvar_t cv_grbatching;
 extern consvar_t cv_grrenderdistance;
 extern consvar_t cv_grusecustomshaders;
 extern consvar_t cv_grpaletterendering;
-extern consvar_t cv_grscreentextures;
+extern consvar_t cv_grpalettedepth;
 extern consvar_t cv_grflashpal;
+extern consvar_t cv_grscreentextures;
 extern consvar_t cv_grportals;
 extern consvar_t cv_nostencil;
 extern consvar_t cv_secbright;
