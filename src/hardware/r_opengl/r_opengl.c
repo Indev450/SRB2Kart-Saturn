@@ -861,16 +861,15 @@ static float shader_leveltime = 0;
 		"gl_FragColor = final_color;\n" \
 	"}\0"
 	
-/*#define GLSL_PALETTE_WATER_FRAGMENT_SHADER \
+#define GLSL_PALETTE_WATER_FRAGMENT_SHADER \
 	GLSL_FLOOR_FUDGES \
 	"const float freq = 0.025;\n" \
     "const float amp = 0.025;\n" \
     "const float speed = 2.0;\n" \
     "const float pi = 3.14159;\n" \
     "uniform sampler2D tex;\n" \
+	"uniform sampler3D palette_lookup_tex;\n" \
 	"uniform sampler2D lighttable_tex;\n" \
-	"uniform sampler3D lookup_tex;\n" \
-    "uniform int palette[768];\n" \
     "uniform vec4 poly_color;\n" \
     "uniform float lighting;\n" \
     "uniform float leveltime;\n" \
@@ -881,16 +880,15 @@ static float shader_leveltime = 0;
 		"float sdistort = sin(a) * amp;\n" \
 		"float cdistort = cos(a) * amp;\n" \
 		"vec4 texel = texture2D(tex, vec2(gl_TexCoord[0].s - sdistort, gl_TexCoord[0].t - cdistort));\n" \
-		"int tex_pal_idx = int(texture3D(lookup_tex, vec3((texel * 63.0 + 0.5) / 64.0))[0] * 255.0);\n" \
+		"float tex_pal_idx = texture3D(palette_lookup_tex, vec3((texel * 63.0 + 0.5) / 64.0))[0] * 255.0;\n" \
 		"float z = gl_FragCoord.z / gl_FragCoord.w;\n" \
-		"int light_y = int(clamp(floor(R_DoomColormap(lighting, z)), 0.0, 31.0));\n" \
-		"vec2 lighttable_coord = vec2((float(tex_pal_idx) + 0.5) / 256.0, (float(light_y) + 0.5) / 32.0);\n" \
-		"int final_idx = int(texture2D(lighttable_tex, lighttable_coord)[0] * 255.0);\n" \
-		"vec4 final_color = vec4(float(palette[final_idx*3])/255.0, float(palette[final_idx*3+1])/255.0, float(palette[final_idx*3+2])/255.0, 1.0);\n" \
+		"float light_y = clamp(floor(R_DoomColormap(lighting, z)), 0.0, 31.0);\n" \
+		"vec2 lighttable_coord = vec2((tex_pal_idx + 0.5) / 256.0, (light_y + 0.5) / 32.0);\n" \
+		"vec4 final_color = texture2D(lighttable_tex, lighttable_coord);\n" \
         "final_color.a = texel.a * poly_color.a;\n" \
         "gl_FragColor = final_color;\n" \
-    "}\0"*/
-	
+    "}\0"
+
 //
 // Fog block shader
 //
@@ -976,7 +974,7 @@ static const char *fragment_shaders[] = {
 	GLSL_SOFTWARE_PAL_FRAGMENT_SHADER_WALLS,
 
 	// Palette water shader
-	//GLSL_PALETTE_WATER_FRAGMENT_SHADER,
+	GLSL_PALETTE_WATER_FRAGMENT_SHADER,
 
 	NULL,
 };
@@ -1027,7 +1025,7 @@ static const char *vertex_shaders[] = {
 	GLSL_DEFAULT_VERTEX_SHADER,
 	GLSL_DEFAULT_VERTEX_SHADER,
 	GLSL_DEFAULT_VERTEX_SHADER,
-	//GLSL_DEFAULT_VERTEX_SHADER,
+	GLSL_DEFAULT_VERTEX_SHADER,
 
 	NULL,
 };
