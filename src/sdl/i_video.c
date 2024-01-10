@@ -1483,6 +1483,18 @@ void I_FinishUpdate(void)
 #ifdef HWRENDER
 	else if (rendermode == render_opengl)
 	{
+		/*// Final postprocess step of palette rendering, after everything else has been drawn.
+		if (HWR_ShouldUsePaletteRendering())
+		{
+			// not using the function for its original named purpose but can be used like this too
+			HWR_MakeScreenFinalTexture();
+			HWD.pfnSetSpecialState(HWD_SET_SHADERS, 1);
+			HWD.pfnSetShader(8);
+			HWR_DrawScreenFinalTexture(vid.width, vid.height);
+			HWD.pfnUnSetShader();
+			HWD.pfnSetSpecialState(HWD_SET_SHADERS, 0);
+		}*/ //for some reason this does not work here,so ill keep it in DrawScreenFinalTexture itself for now
+
 		OglSdlFinishUpdate(cv_vidwait.value);
 	}
 #endif
@@ -2121,7 +2133,7 @@ void I_StartupGraphics(void)
 		HWD.pfnGClipRect        = hwSym("GClipRect",NULL);
 		HWD.pfnClearMipMapCache = hwSym("ClearMipMapCache",NULL);
 		HWD.pfnSetSpecialState  = hwSym("SetSpecialState",NULL);
-		HWD.pfnSetPalette       = hwSym("SetPalette",NULL);
+		HWD.pfnSetTexturePalette= hwSym("SetTexturePalette",NULL);
 		HWD.pfnGetTextureUsed   = hwSym("GetTextureUsed",NULL);
 		HWD.pfnDrawModel        = hwSym("DrawModel",NULL);
 		HWD.pfnCreateModelVBOs  = hwSym("CreateModelVBOs",NULL);
@@ -2151,9 +2163,10 @@ void I_StartupGraphics(void)
 		HWD.pfnStartBatching = hwSym("StartBatching",NULL);
 		HWD.pfnRenderBatches = hwSym("RenderBatches",NULL);
 
-		HWD.pfnInitPalette = hwSym("InitPalette",NULL);
-		HWD.pfnAddLightTable = hwSym("AddLightTable",NULL);
-		HWD.pfnClearLightTableCache = hwSym("ClearLightTableCache",NULL);
+		HWD.pfnSetPaletteLookup = hwSym("SetPaletteLookup",NULL);
+		HWD.pfnCreateLightTable = hwSym("CreateLightTable",NULL);
+		HWD.pfnClearLightTables = hwSym("ClearLightTables",NULL);
+		HWD.pfnSetScreenPalette = hwSym("SetScreenPalette",NULL);
 
 		if (!HWD.pfnInit()) // load the OpenGL library
 			rendermode = render_soft;
