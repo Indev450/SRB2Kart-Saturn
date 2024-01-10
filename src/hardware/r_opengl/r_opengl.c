@@ -82,9 +82,9 @@ static float NEAR_CLIPPING_PLANE =   NZCLIP_PLANE;
 
 
 static  GLuint      tex_downloaded  = 0;
-static  GLuint      lt_downloaded   = 0; // currently bound lighttable texture - currentSurfaceInfo
-static  GLuint      lt_downloaded2   = 0; // currently bound lighttable texture - nextSurfaceInfo
-static  GLuint      lt_downloaded3   = 0; // currently bound lighttable texture - pSurf
+//static  GLuint      lt_downloaded   = 0; // currently bound lighttable texture - currentSurfaceInfo
+//static  GLuint      lt_downloaded2   = 0; // currently bound lighttable texture - nextSurfaceInfo
+//static  GLuint      lt_downloaded3   = 0; // currently bound lighttable texture - pSurf
 static  GLfloat     fov             = 90.0f;
 static  FBITFIELD   CurrentPolyFlags;
 
@@ -2361,12 +2361,13 @@ EXPORT void HWRAPI(RenderBatches) (precise_t *sSortTime, precise_t *sDrawTime, i
 	{
 		Shader_Load(&currentSurfaceInfo, &firstPoly, &firstTint, &firstFade);
 		
-		if (currentSurfaceInfo.LightTableId && currentSurfaceInfo.LightTableId != lt_downloaded)
+		//if (currentSurfaceInfo.LightTableId && currentSurfaceInfo.LightTableId != lt_downloaded)
+		if (HWR_ShouldUsePaletteRendering())
 		{
 			pglActiveTexture(GL_TEXTURE2);
 			pglBindTexture(GL_TEXTURE_2D, currentSurfaceInfo.LightTableId);
 			pglActiveTexture(GL_TEXTURE0);
-			lt_downloaded = currentSurfaceInfo.LightTableId;
+			//lt_downloaded = currentSurfaceInfo.LightTableId;
 		}
 	}
 
@@ -2625,12 +2626,13 @@ EXPORT void HWRAPI(RenderBatches) (precise_t *sSortTime, precise_t *sDrawTime, i
 
 				Shader_Load(&nextSurfaceInfo, &poly, &tint, &fade);
 
-				if (nextSurfaceInfo.LightTableId && nextSurfaceInfo.LightTableId != lt_downloaded2)
+				//if (nextSurfaceInfo.LightTableId && nextSurfaceInfo.LightTableId != lt_downloaded2)
+				if (HWR_ShouldUsePaletteRendering())
 				{
 					pglActiveTexture(GL_TEXTURE2);
 					pglBindTexture(GL_TEXTURE_2D, nextSurfaceInfo.LightTableId);
 					pglActiveTexture(GL_TEXTURE0);
-					lt_downloaded2 = nextSurfaceInfo.LightTableId;
+					//lt_downloaded2 = nextSurfaceInfo.LightTableId;
 				}
 			}
 
@@ -2736,12 +2738,13 @@ EXPORT void HWRAPI(DrawPolygon) (FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUI
 					fade.blue  = byte2float[pSurf->FadeColor.s.blue];
 					fade.alpha = byte2float[pSurf->FadeColor.s.alpha];
 					
-					if (pSurf->LightTableId && pSurf->LightTableId != lt_downloaded3)
+					//if (pSurf->LightTableId && pSurf->LightTableId != lt_downloaded3)
+					if (HWR_ShouldUsePaletteRendering())
 					{
 						pglActiveTexture(GL_TEXTURE2);
 						pglBindTexture(GL_TEXTURE_2D, pSurf->LightTableId);
 						pglActiveTexture(GL_TEXTURE0);
-						lt_downloaded3 = pSurf->LightTableId;
+						//lt_downloaded3 = pSurf->LightTableId;
 					}
 				}
 			}
@@ -4367,9 +4370,9 @@ EXPORT void HWRAPI(ClearLightTables)(void)
 	LightTablesTail = NULL;
 	
 	// we no longer have a bound light table (if we had one), we just deleted it!
-	lt_downloaded = 0;
-	lt_downloaded2 = 0;
-	lt_downloaded3 = 0;
+	//lt_downloaded = 0;
+	//lt_downloaded2 = 0;
+	//lt_downloaded3 = 0;
 }
 
 // This palette is used for the palette rendering postprocessing step.
