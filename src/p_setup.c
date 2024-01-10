@@ -3149,10 +3149,11 @@ boolean P_SetupLevel(boolean skipprecip)
 		// Correct missing sidedefs & deep water trick
 		HWR_CorrectSWTricks();
 		HWR_CreatePlanePolygons((INT32)numnodes - 1);
+		
+		if (HWR_ShouldUsePaletteRendering())
+			HWR_SetMapPalette();
 	}
-	
-	if (HWR_ShouldUsePaletteRendering())
-		HWR_SetMapPalette();
+
 #endif
 
 	// oh god I hope this helps
