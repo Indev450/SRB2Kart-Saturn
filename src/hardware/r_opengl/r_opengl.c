@@ -4329,10 +4329,7 @@ EXPORT void HWRAPI(DrawScreenFinalTexture)(int width, int height)
 		pglBindTexture(GL_TEXTURE_2D, finalScreenTexture);
 
 	if (HWR_ShouldUsePaletteRendering())
-	{
 		pglUseProgram(gl_shaderprograms[8].program); // palette postprocess shader
-		pglActiveTexture(GL_TEXTURE2);
-	}
 	
 	// prepare shader, if it is enabled
 	//Shader_SetUniforms(NULL, NULL, NULL, NULL);
@@ -4346,10 +4343,7 @@ EXPORT void HWRAPI(DrawScreenFinalTexture)(int width, int height)
 	tex_downloaded = finalScreenTexture;
 	
 	if (HWR_ShouldUsePaletteRendering())
-	{
 		pglUseProgram(0);
-		pglActiveTexture(GL_TEXTURE0);
-	}
 }
 
 
