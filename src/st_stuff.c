@@ -2207,7 +2207,7 @@ void ST_Drawer(void)
 	//25/08/99: Hurdler: palette changes is done for all players,
 	//                   not only player1! That's why this part
 	//                   of code is moved somewhere else.
-	if (rendermode == render_soft || HWR_PalRenderFlashpal())
+	if (rendermode == render_soft || (rendermode == render_opengl && HWR_PalRenderFlashpal()))
 #endif
 	if (rendermode != render_none) ST_doPaletteStuff();
 
