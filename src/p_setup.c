@@ -3149,7 +3149,7 @@ boolean P_SetupLevel(boolean skipprecip)
 		HWR_CorrectSWTricks();
 		HWR_CreatePlanePolygons((INT32)numnodes - 1);
 		
-		if (HWR_ShouldUsePaletteRendering())
+		if (HWR_ShouldUsePaletteRendering()) //unsure if this is the right place, but seems to work since we dont have HWR_LoadLevel like srb2
 			HWR_SetMapPalette();
 	}
 

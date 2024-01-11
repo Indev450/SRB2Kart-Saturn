@@ -189,7 +189,7 @@ static void CV_grshaders_OnChange(void)
 	}
 }
 
-static void CV_useCustomShaders_ONChange(void)
+static void CV_useCustomShaders_ONChange(void) // should we do a call to HWR_TogglePaletteRendering here aswell in pal rendering mode?
 {
 	if (rendermode == render_opengl)
 	{

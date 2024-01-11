@@ -78,6 +78,7 @@ static float NEAR_CLIPPING_PLANE =   NZCLIP_PLANE;
 // **************************************************************************
 
 static  GLuint      tex_downloaded  = 0;
+// these didnt work with karts batching system, hope this is not an issue
 //static  GLuint      lt_downloaded   = 0; // currently bound lighttable texture - currentSurfaceInfo
 //static  GLuint      lt_downloaded2   = 0; // currently bound lighttable texture - nextSurfaceInfo
 //static  GLuint      lt_downloaded3   = 0; // currently bound lighttable texture - pSurf
@@ -762,6 +763,7 @@ static float shader_leveltime = 0;
 	"}\n"
 
 // hand tuned adjustments for light level calculation
+// do those even work correctly without the preprocessor?
 #define GLSL_FLOOR_FUDGES \
 	"#define STARTMAP_FUDGE 1.06\n" \
 	"#define SCALE_FUDGE 1.15\n"
@@ -855,7 +857,8 @@ static float shader_leveltime = 0;
 		"final_color.a = texel.a * poly_color.a;\n" \
 		"gl_FragColor = final_color;\n" \
 	"}\0"
-	
+
+//TODO: make this not a hacky copy of two shaders mixed together
 #define GLSL_PALETTE_WATER_FRAGMENT_SHADER \
 	GLSL_FLOOR_FUDGES \
 	"const float freq = 0.025;\n" \
@@ -1229,7 +1232,7 @@ EXPORT boolean HWRAPI(LoadShaders) (void)
 	// restore gl shader state
 	//pglUseProgram(gl_shaderstate.program);
 	pglUseProgram(gl_currentshaderprogram);
-	//pglUseProgram(0);
+	//pglUseProgram(0); // dont remember why this was here in the first place, but seems fine?
 #undef UNIFORM_1
 	}
 #endif
@@ -4305,7 +4308,6 @@ EXPORT void HWRAPI(DrawScreenFinalTexture)(int width, int height)
 	off[10] = -yoff;
 	off[11] = 1.0f;
 
-
 	fix[0] = 0.0f;
 	fix[1] = 0.0f;
 	fix[2] = 0.0f;
@@ -4320,12 +4322,13 @@ EXPORT void HWRAPI(DrawScreenFinalTexture)(int width, int height)
 	clearColour.red = clearColour.green = clearColour.blue = 0;
 	clearColour.alpha = 1;
 	ClearBuffer(true, false, false, &clearColour);
+
 	if (HWR_ShouldUsePaletteRendering())
 		SetBlend(PF_NoDepthTest);
 
 	pglBindTexture(GL_TEXTURE_2D, finalScreenTexture);
 
-	if (HWR_ShouldUsePaletteRendering())
+	if (HWR_ShouldUsePaletteRendering()) // still quite hacky, but the replacement code in i_video didnt work and killed performance instead. somehow need to figure out whats up with that.
 		pglUseProgram(gl_shaderprograms[8].program); // palette postprocess shader
 
 	pglColor4ubv(white);
@@ -4364,7 +4367,7 @@ EXPORT void HWRAPI(SetPaletteLookup)(UINT8 *lut)
 	pglTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	pglTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	pglTexImage3D(GL_TEXTURE_3D, 0, internalFormat, HWR_PALETTE_LUT_SIZE, HWR_PALETTE_LUT_SIZE, HWR_PALETTE_LUT_SIZE,
-		0, GL_RED, GL_UNSIGNED_BYTE, lut);
+		0, GL_RED, GL_UNSIGNED_BYTE, lut); // should there be a safety guard here aswell as the old one had? cant really test since i dont have hardware which doesent support 3D textures
 	pglActiveTexture(GL_TEXTURE0);
 }
 
