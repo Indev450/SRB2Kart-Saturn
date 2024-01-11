@@ -28,7 +28,6 @@
 
 #ifdef HWRENDER
 #include "hardware/hw_main.h"
-
 #include "hardware/hw_glob.h" // HWR_ClearLightTables
 #endif
 
@@ -1141,7 +1140,8 @@ void R_ClearColormaps(void)
 	memset(extra_colormaps, 0, sizeof (extra_colormaps));
 
 #ifdef HWRENDER
-	HWR_ClearLightTables();
+	if (rendermode == render_opengl)
+		HWR_ClearLightTables();
 #endif
 }
 

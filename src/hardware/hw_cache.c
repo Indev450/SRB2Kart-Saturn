@@ -1099,6 +1099,7 @@ UINT32 HWR_GetLightTableID(extracolormap_t *colormap)
 void HWR_ClearLightTables(void)
 {
 	//if (vid.glstate == VID_GL_LIBRARY_LOADED)
+	if (rendermode == render_opengl)
 		HWD.pfnClearLightTables();
 }
 
