@@ -925,7 +925,6 @@ void HWR_SetPalette(RGBA_t *palette)
 	if (HWR_ShouldUsePaletteRendering())
 	{
 		// set the palette for palette postprocessing
-
 		if (cv_grpalettedepth.value == 16)
 		{
 			// crush to 16-bit rgb565, like software currently does in the standard configuration
@@ -963,6 +962,7 @@ void HWR_SetPalette(RGBA_t *palette)
 		memset(mapPalette, 0, sizeof(mapPalette));
 		// hardware driver will flush there own cache if cache is non paletized
 		// now flush data texture cache so 32 bit texture are recomputed
+
 		//if (patchformat == GL_TEXFMT_RGBA || textureformat == GL_TEXFMT_RGBA)
 		if (patchformat == GR_RGBA || textureformat == GR_RGBA)
 		{
@@ -1004,16 +1004,16 @@ void HWR_SetMapPalette(void)
 	RGBA_t *palette;
 	int i;
 
-	if ((!(gamestate == GS_LEVEL)) || (gamestate == GS_TITLESCREEN)) //we dont have a master palette
+	if ((!(gamestate == GS_LEVEL)) || (gamestate == GS_TITLESCREEN))
 	{
 		// outside of a level, pMasterPalette should have PLAYPAL ready for us
-		//palette = pMasterPalette; // we dont have this in kart so just use plocalpalette as before
+		//palette = pMasterPalette; // we dont have this in kart so just use pLocalPalette as before
 
 		palette = pLocalPalette;
 	}
 	else
 	{
-		// in a level pMasterPalette might have a flash palette, but we
+		// in a level pLocalPalette might have a flash palette, but we
 		// want the map's original palette.
 		lumpnum_t lumpnum = W_GetNumForName(GetPalette());
 		size_t palsize = W_LumpLength(lumpnum);
@@ -1040,6 +1040,7 @@ void HWR_SetMapPalette(void)
 		// and the lookup table is outdated
 		HWR_SetPaletteLookup(mapPalette);
 		HWD.pfnSetTexturePalette(mapPalette);
+
 		//if (patchformat == GL_TEXFMT_RGBA || textureformat == GL_TEXFMT_RGBA)
 		if (patchformat == GR_RGBA || textureformat == GR_RGBA)
 		{
@@ -1098,7 +1099,7 @@ UINT32 HWR_GetLightTableID(extracolormap_t *colormap)
 // call become invalid and must not be used.
 void HWR_ClearLightTables(void)
 {
-	//if (vid.glstate == VID_GL_LIBRARY_LOADED)
+	//if (vid.glstate == VID_GL_LIBRARY_LOADED) // we have pfnInit which is essentially the same, but it doesent work here for whatever reason, since this should not be done in software renderer ever!
 	if (rendermode == render_opengl)
 		HWD.pfnClearLightTables();
 }
