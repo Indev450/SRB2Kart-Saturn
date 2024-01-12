@@ -3626,9 +3626,7 @@ boolean P_MultiSetupWadFiles(boolean fullsetup)
 		ST_LoadGraphics();
 		ST_ReloadSkinFaceGraphics();
 
-		if (!partadd_important)
-			partadd_stage = -1; // everything done
-		else if (fullsetup)
+		if (fullsetup)
 			++partadd_stage; // run next stage too
 	}
 
@@ -3637,15 +3635,17 @@ boolean P_MultiSetupWadFiles(boolean fullsetup)
 		// Reload all textures, unconditionally for better or worse.
 		R_LoadTextures();
 
-		if (fullsetup)
+		// Reload ANIMATED / ANIMDEFS
+		P_InitPicAnims();
+
+		if (!partadd_important)
+			partadd_stage = -1; // everything done
+		else if (fullsetup)
 			++partadd_stage;
 	}
 
 	if (partadd_stage == 2)
 	{
-		// Reload ANIMATED / ANIMDEFS
-		P_InitPicAnims();
-
 		// reload status bar (warning should have valid player!)
 		if (gamestate == GS_LEVEL)
 			ST_Start();
