@@ -1205,7 +1205,7 @@ void V_DrawVhsEffect(boolean rewind)
 	if (downbary > vid.height) downbary = -barsize;
 
 #ifdef HWRENDER
-	if ((rendermode == render_opengl) && (cv_grvhseffect.value))
+	if (rendermode == render_opengl)
 	{
 		HWR_RenderVhsEffect(upbary, downbary, updistort, downdistort, barsize);
 		return;

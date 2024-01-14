@@ -198,7 +198,6 @@ extern consvar_t cv_grflashpal;
 extern consvar_t cv_grportals;
 extern consvar_t cv_nostencil;
 extern consvar_t cv_secbright;
-extern consvar_t cv_grvhseffect;
 
 extern CV_PossibleValue_t granisotropicmode_cons_t[];
 
