@@ -123,7 +123,6 @@ consvar_t cv_secbright = {"secbright", "0", CV_SAVE, secbright_cons_t,
 							
 consvar_t cv_grfovchange = {"gr_fovchange", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_grvhseffect = {"gr_vhseffect", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 							 
 // values for the far clipping plane
 static float clipping_distances[] = {1024.0f, 2048.0f, 4096.0f, 6144.0f, 8192.0f, 12288.0f, 16384.0f};
@@ -6405,8 +6404,6 @@ void HWR_AddCommands(void)
 	CV_RegisterVar(&cv_grpaletterendering);
 	CV_RegisterVar(&cv_grpalettedepth);
 	CV_RegisterVar(&cv_grflashpal);	
-
-	CV_RegisterVar(&cv_grvhseffect);	
 }
 
 // --------------------------------------------------------------------------
