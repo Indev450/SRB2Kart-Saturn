@@ -20,8 +20,6 @@
 #include "r_draw.h"
 #include "console.h"
 
-#include "r_fps.h" //vhs effect stuff
-
 #include "i_video.h" // rendermode
 #include "z_zone.h"
 #include "m_misc.h"
