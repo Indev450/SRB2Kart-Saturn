@@ -6160,7 +6160,7 @@ void HWR_RenderFrame(INT32 viewnumber, player_t *player, boolean skybox)
 		for (x = vid.width>>1; x < vid.width; x += pw)
 		{
 			for (y = vid.height>>1; y < vid.height; y += ph)
-				V_DrawScaledPatch(x, y, V_NOSCALESTART, gpatch);
+				HWR_DrawStretchyFixedPatch(gpatch, (x)<<FRACBITS, (y)<<FRACBITS, FRACUNIT, FRACUNIT, V_NOSCALESTART, NULL);
 		}
 	}
 
