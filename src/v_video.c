@@ -1186,21 +1186,12 @@ void V_DrawVhsEffect(boolean rewind)
 	if (rewind)
 		V_DrawVhsEffect(false); // experimentation
 
-	if (R_UsingFrameInterpolation()) // omg i fucking hate interp so much, its a bit smoother but still not great whatever, atleast like this shit wont completely go nuts when youre on high framerates
+	if (renderisnewtic)
 	{
-		if (renderisnewtic)
-		{
-			upbary -= FixedMul(vid.dupy * (rewind ? 3 : 1.8f), 22937*3);
-			downbary += FixedMul(vid.dupy * (rewind ? 2 : 1), 22937*3);
-		}
-	}
-	else
-	{
-		upbary -= vid.dupy * (rewind ? 3 : 1.8f);
-		downbary += vid.dupy * (rewind ? 2 : 1);
+		upbary -= (vid.dupy * (rewind ? 3 : 1.8f));
+		downbary += (vid.dupy * (rewind ? 2 : 1));
 	}
 
-			
 	if (upbary < -barsize) upbary = vid.height;
 	if (downbary > vid.height) downbary = -barsize;
 
