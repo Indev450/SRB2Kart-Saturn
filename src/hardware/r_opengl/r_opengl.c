@@ -76,7 +76,6 @@ static float NEAR_CLIPPING_PLANE =   NZCLIP_PLANE;
 
 
 static  GLuint      tex_downloaded  = 0;
-static  GLuint      lt_downloaded   = 0; // currently bound lighttable texture
 static  GLfloat     fov             = 90.0f;
 static  FBITFIELD   CurrentPolyFlags;
 
@@ -1690,7 +1689,6 @@ EXPORT void HWRAPI(ClearLightTableCache) (void)
 		ltcachehead = next;
 	}
 	ltcachetail = NULL;
-	lt_downloaded = 0;
 }
 
 // -----------------+
@@ -2570,12 +2568,11 @@ EXPORT void HWRAPI(RenderBatches) (precise_t *sSortTime, precise_t *sDrawTime, i
 	if (gl_allowshaders)
 	{
 		Shader_Load(&currentSurfaceInfo, &firstPoly, &firstTint, &firstFade);
-		if ((gl_palshader) && (currentSurfaceInfo.LightTableId && currentSurfaceInfo.LightTableId != lt_downloaded))
+		if (gl_palshader)
 		{
 			pglActiveTexture(GL_TEXTURE2);// this stuff could be done better but gonna do it quick like this for now
 			pglBindTexture(GL_TEXTURE_2D, currentSurfaceInfo.LightTableId);
 			pglActiveTexture(GL_TEXTURE0);
-			lt_downloaded = currentSurfaceInfo.LightTableId;
 		}
 	}
 
@@ -2833,12 +2830,11 @@ EXPORT void HWRAPI(RenderBatches) (precise_t *sSortTime, precise_t *sDrawTime, i
 
 				Shader_Load(&nextSurfaceInfo, &poly, &tint, &fade);
 				
-				if ((gl_palshader) && (nextSurfaceInfo.LightTableId && nextSurfaceInfo.LightTableId != lt_downloaded))
+				if (gl_palshader)
 				{
 					pglActiveTexture(GL_TEXTURE2);// this stuff could be done better but gonna do it quick like this for now
 					pglBindTexture(GL_TEXTURE_2D, nextSurfaceInfo.LightTableId);
 					pglActiveTexture(GL_TEXTURE0);
-					lt_downloaded = nextSurfaceInfo.LightTableId;
 				}
 			}
 
@@ -2945,12 +2941,11 @@ EXPORT void HWRAPI(DrawPolygon) (FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUI
 					fade.alpha = byte2float[pSurf->FadeColor.s.alpha];
 				}
 			
-				if ((gl_palshader && gl_allowshaders) && (pSurf->LightTableId && pSurf->LightTableId != lt_downloaded))
+				if (gl_palshader && gl_allowshaders)
 				{
 					pglActiveTexture(GL_TEXTURE2);
 					pglBindTexture(GL_TEXTURE_2D, pSurf->LightTableId);
 					pglActiveTexture(GL_TEXTURE0);
-					lt_downloaded = pSurf->LightTableId;
 				}
 			}
 
