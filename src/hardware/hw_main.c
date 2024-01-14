@@ -6150,6 +6150,20 @@ void HWR_RenderFrame(INT32 viewnumber, player_t *player, boolean skybox)
 		gr_windowcenterx += gr_viewwidth;
 	}
 
+	if (splitscreen == 2 && player == &players[displayplayers[2]])
+	{
+		// V_DrawPatchFill, but for the fourth screen only
+		GLPatch_t *gpatch = W_CachePatchName("SRB2BACK", PU_CACHE);
+		INT32 dupz = (vid.dupx < vid.dupy ? vid.dupx : vid.dupy);
+		INT32 x, y, pw = SHORT(gpatch->width) * dupz, ph = SHORT(gpatch->height) * dupz;
+
+		for (x = vid.width>>1; x < vid.width; x += pw)
+		{
+			for (y = vid.height>>1; y < vid.height; y += ph)
+				V_DrawScaledPatch(x, y, V_NOSCALESTART, gpatch);
+		}
+	}
+
 	// check for new console commands.
 	NetUpdate();
 

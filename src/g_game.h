@@ -141,7 +141,7 @@ DECL_HUD_OFFSET(item); // Item box
 DECL_HUD_OFFSET(time); // Time
 DECL_HUD_OFFSET(laps); // Number of laps
 DECL_HUD_OFFSET(dnft); // Countdown (did not finish timer)
-DECL_HUD_OFFSET(spdm); // Speedometer
+DECL_HUD_OFFSET(speed); // Speedometer
 DECL_HUD_OFFSET(posi); // Position in race
 DECL_HUD_OFFSET(face); // Mini rankings
 DECL_HUD_OFFSET(stcd); // Starting countdown
