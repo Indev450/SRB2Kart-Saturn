@@ -2170,7 +2170,7 @@ int finalVertexArrayAllocSize = 65536;
 
 PolygonArrayEntry* polygonArray = NULL;// contains the polygon data from DrawPolygon, waiting to be processed
 int polygonArraySize = 0;
-UINT32* polygonIndexArray = NULL;// contains sorting pointers for polygonArray
+PolygonArrayEntry **polygonArraySorted = NULL;// contains sorted pointers to polygonArray
 int polygonArrayAllocSize = 65536;
 
 FOutVector* unsortedVertexArray = NULL;// contains unsorted vertices and texture coordinates from DrawPolygon
@@ -2186,7 +2186,7 @@ EXPORT void HWRAPI(StartBatching) (void)
 		finalVertexArray = malloc(finalVertexArrayAllocSize * sizeof(FOutVector));
 		finalVertexIndexArray = malloc(finalVertexArrayAllocSize * 3 * sizeof(UINT32));
 		polygonArray = malloc(polygonArrayAllocSize * sizeof(PolygonArrayEntry));
-		polygonIndexArray = malloc(polygonArrayAllocSize * sizeof(UINT32));
+		polygonArraySorted = malloc(polygonArrayAllocSize * sizeof(PolygonArrayEntry *));
 		unsortedVertexArray = malloc(unsortedVertexArrayAllocSize * sizeof(FOutVector));
 	}
 	// drawing functions will now collect the drawing data instead of passing it to opengl
@@ -2196,12 +2196,79 @@ EXPORT void HWRAPI(StartBatching) (void)
 
 static int comparePolygons(const void *p1, const void *p2)
 {
-	unsigned int index1 = *(const unsigned int*)p1;
-	unsigned int index2 = *(const unsigned int*)p2;
-	PolygonArrayEntry* poly1 = &polygonArray[index1];
-	PolygonArrayEntry* poly2 = &polygonArray[index2];
+	PolygonArrayEntry *poly1 = *(PolygonArrayEntry *const *)p1;
+	PolygonArrayEntry *poly2 = *(PolygonArrayEntry *const *)p2;
+	int diff;
+	INT64 diff64;
 
-	return poly1->hash - poly2->hash;
+	int shader1 = poly1->shader;
+	int shader2 = poly2->shader;
+	// make skywalls and horizon lines first in order
+	if (poly1->polyFlags & PF_NoTexture || poly1->horizonSpecial)
+		shader1 = -1;
+	if (poly2->polyFlags & PF_NoTexture || poly2->horizonSpecial)
+		shader2 = -1;
+	diff = shader1 - shader2;
+	if (diff != 0) return diff;
+
+	// skywalls and horizon lines must retain their order for horizon lines to work
+	if (shader1 == -1 && shader2 == -1)
+		return poly1 - poly2;
+
+	diff = poly1->texNum - poly2->texNum;
+	if (diff != 0) return diff;
+	
+	if (gl_palshader)
+	{
+		diff = poly1->surf.LightTableId - poly2->surf.LightTableId;
+		if (diff != 0) return diff;
+	}
+
+	diff = poly1->polyFlags - poly2->polyFlags;
+	if (diff != 0) return diff;
+
+	diff64 = poly1->surf.PolyColor.rgba - poly2->surf.PolyColor.rgba;
+	if (diff64 < 0) return -1; else if (diff64 > 0) return 1;
+	diff64 = poly1->surf.TintColor.rgba - poly2->surf.TintColor.rgba;
+	if (diff64 < 0) return -1; else if (diff64 > 0) return 1;
+	diff64 = poly1->surf.FadeColor.rgba - poly2->surf.FadeColor.rgba;
+	if (diff64 < 0) return -1; else if (diff64 > 0) return 1;
+
+	diff = poly1->surf.LightInfo.light_level - poly2->surf.LightInfo.light_level;
+	if (diff != 0) return diff;
+	diff = poly1->surf.LightInfo.fade_start - poly2->surf.LightInfo.fade_start;
+	if (diff != 0) return diff;
+	diff = poly1->surf.LightInfo.fade_end - poly2->surf.LightInfo.fade_end;
+	return diff;
+}
+
+static int comparePolygonsNoShaders(const void *p1, const void *p2)
+{
+	PolygonArrayEntry *poly1 = *(PolygonArrayEntry *const *)p1;
+	PolygonArrayEntry *poly2 = *(PolygonArrayEntry *const *)p2;
+	int diff;
+	INT64 diff64;
+
+	GLuint texNum1 = poly1->texNum;
+	GLuint texNum2 = poly2->texNum;
+	if (poly1->polyFlags & PF_NoTexture || poly1->horizonSpecial)
+		texNum1 = 0;
+	if (poly2->polyFlags & PF_NoTexture || poly2->horizonSpecial)
+		texNum2 = 0;
+	diff = texNum1 - texNum2;
+	if (diff != 0) return diff;
+
+	// skywalls and horizon lines must retain their order for horizon lines to work
+	if (texNum1 == 0 && texNum2 == 0)
+		return poly1 - poly2;
+
+	diff = poly1->polyFlags - poly2->polyFlags;
+	if (diff != 0) return diff;
+
+	diff64 = poly1->surf.PolyColor.rgba - poly2->surf.PolyColor.rgba;
+	if (diff64 < 0) return -1; else if (diff64 > 0) return 1;
+
+	return 0;
 }
 
 // the parameters for this functions (numPolys etc.) are used to return rendering stats
@@ -2210,7 +2277,7 @@ EXPORT void HWRAPI(RenderBatches) (precise_t *sSortTime, precise_t *sDrawTime, i
 	int finalVertexWritePos = 0;// position in finalVertexArray
 	int finalIndexWritePos = 0;// position in finalVertexIndexArray
 
-	int polygonReadPos = 0;// position in polygonIndexArray
+	int polygonReadPos = 0;// position in polygonArraySorted
 
 	GLuint currentShader;
 	GLuint currentTexture;
@@ -2236,17 +2303,19 @@ EXPORT void HWRAPI(RenderBatches) (precise_t *sSortTime, precise_t *sDrawTime, i
 	*sNumPolys = polygonArraySize;
 	*sNumCalls = *sNumVerts = 0;
 	*sNumShaders = *sNumTextures = *sNumPolyFlags = *sNumColors = 1;
-	// init polygonIndexArray
+	// init polygonArraySorted
 	for (i = 0; i < polygonArraySize; i++)
 	{
-		polygonIndexArray[i] = i;
+		polygonArraySorted[i] = &polygonArray[i];
 	}
 
 	// sort polygons
 	//CONS_Printf("qsort polys\n");
 	*sSortTime = I_GetPreciseTime();
 	if (gl_allowshaders)
-		qsort(polygonIndexArray, polygonArraySize, sizeof(unsigned int), comparePolygons);
+		qsort(polygonArraySorted, polygonArraySize, sizeof(PolygonArrayEntry *), comparePolygons);
+	else
+		qsort(polygonArraySorted, polygonArraySize, sizeof(PolygonArrayEntry *), comparePolygonsNoShaders);
 	*sSortTime = I_GetPreciseTime() - *sSortTime;
 	//CONS_Printf("sort done\n");
 	// sort order
@@ -2258,10 +2327,10 @@ EXPORT void HWRAPI(RenderBatches) (precise_t *sSortTime, precise_t *sDrawTime, i
 
 	*sDrawTime = I_GetPreciseTime();
 
-	currentShader = polygonArray[polygonIndexArray[0]].shader;
-	currentTexture = polygonArray[polygonIndexArray[0]].texNum;
-	currentPolyFlags = polygonArray[polygonIndexArray[0]].polyFlags;
-	currentSurfaceInfo = polygonArray[polygonIndexArray[0]].surf;
+	currentShader = polygonArraySorted[0]->shader;
+	currentTexture = polygonArraySorted[0]->texNum;
+	currentPolyFlags = polygonArraySorted[0]->polyFlags;
+	currentSurfaceInfo = polygonArraySorted[0]->surf;
 	// For now, will sort and track the colors. Vertex attributes could be used instead of uniforms
 	// and a color array could replace the color calls.
 
@@ -2342,8 +2411,8 @@ EXPORT void HWRAPI(RenderBatches) (precise_t *sSortTime, precise_t *sDrawTime, i
 		// reset write pos
 		// repeat loop
 
-		int index = polygonIndexArray[polygonReadPos++];
-		int numVerts = polygonArray[index].numVerts;
+		PolygonArrayEntry *entry = polygonArraySorted[polygonReadPos++];
+		int numVerts = entry->numVerts;
 		// before writing, check if there is enough room
 		// using 'while' instead of 'if' here makes sure that there will *always* be enough room.
 		// probably never will this loop run more than once though
@@ -2368,7 +2437,7 @@ EXPORT void HWRAPI(RenderBatches) (precise_t *sSortTime, precise_t *sDrawTime, i
 		}
 		//CONS_Printf("write verts to final\n");
 		// write the vertices of the polygon
-		memcpy(&finalVertexArray[finalVertexWritePos], &unsortedVertexArray[polygonArray[index].vertsIndex],
+		memcpy(&finalVertexArray[finalVertexWritePos], &unsortedVertexArray[entry->vertsIndex],
 			numVerts * sizeof(FOutVector));
 		// write the indexes, pointing to the fan vertexes but in triangles format
 		firstIndex = finalVertexWritePos;
@@ -2390,9 +2459,14 @@ EXPORT void HWRAPI(RenderBatches) (precise_t *sSortTime, precise_t *sDrawTime, i
 		{
 			//CONS_Printf("state change check\n");
 			// check if a state change is required, set the change bools and next vars
-			int nextIndex = polygonIndexArray[polygonReadPos];
-			
-			if (polygonArray[index].hash != polygonArray[nextIndex].hash)
+			PolygonArrayEntry *nextEntry = polygonArraySorted[polygonReadPos];
+			nextShader = nextEntry->shader;
+			nextTexture = nextEntry->texNum;
+			nextPolyFlags = nextEntry->polyFlags;
+			nextSurfaceInfo = nextEntry->surf;
+			if (nextPolyFlags & PF_NoTexture)
+				nextTexture = 0;
+			if (currentShader != nextShader)
 			{
 				changeState = true;
 				nextShader = polygonArray[nextIndex].shader;
@@ -2605,8 +2679,8 @@ EXPORT void HWRAPI(DrawPolygon) (FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUI
 			free(polygonArray);
 			polygonArray = new_array;
 			// also need to redo the index array, dont need to copy it though
-			free(polygonIndexArray);
-			polygonIndexArray = malloc(polygonArrayAllocSize * sizeof(unsigned int));
+			free(polygonArraySorted);
+			polygonArraySorted = malloc(polygonArrayAllocSize * sizeof(PolygonArrayEntry *));
 		}
 
 		while (unsortedVertexArraySize + (int)iNumPts > unsortedVertexArrayAllocSize)
