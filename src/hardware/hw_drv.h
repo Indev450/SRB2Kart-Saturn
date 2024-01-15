@@ -38,7 +38,7 @@ EXPORT void HWRAPI(SetBlend) (FBITFIELD PolyFlags);
 EXPORT void HWRAPI(ClearBuffer) (FBOOLEAN ColorMask, FBOOLEAN DepthMask, FBOOLEAN StencilMask, FRGBAFloat *ClearColor);
 EXPORT void HWRAPI(SetTexture) (FTextureInfo *TexInfo);
 EXPORT void HWRAPI(UpdateTexture) (FTextureInfo *TexInfo);
-EXPORT void HWRAPI(ReadRect) (INT32 x, INT32 y, INT32 width, INT32 height, INT32 dst_stride, UINT16 *dst_data);
+EXPORT void HWRAPI(ReadScreenTexture) (int tex, UINT16 *dst_data);
 EXPORT void HWRAPI(GClipRect) (INT32 minx, INT32 miny, INT32 maxx, INT32 maxy, float nearclip, float farclip);
 EXPORT void HWRAPI(ClearMipMapCache) (void);
 
@@ -56,14 +56,12 @@ EXPORT INT32 HWRAPI(GetTextureUsed) (void);
 EXPORT void HWRAPI(RenderSkyDome) (INT32 tex, INT32 texture_width, INT32 texture_height, FTransform transform);
 
 EXPORT void HWRAPI(FlushScreenTextures) (void);
-EXPORT void HWRAPI(StartScreenWipe) (void);
-EXPORT void HWRAPI(EndScreenWipe) (void);
-EXPORT void HWRAPI(DoScreenWipe) (void);
-EXPORT void HWRAPI(DrawIntermissionBG) (void);
-EXPORT void HWRAPI(MakeScreenTexture) (void);
+EXPORT void HWRAPI(DoScreenWipe) (int wipeStart, int wipeEnd);
+EXPORT void HWRAPI(DrawScreenTexture) (int tex);
+EXPORT void HWRAPI(MakeScreenTexture) (int tex);
+EXPORT void HWRAPI(DrawScreenFinalTexture) (int tex, int width, int height);
+
 EXPORT void HWRAPI(RenderVhsEffect) (fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8 downdistort, UINT8 barsize);
-EXPORT void HWRAPI(MakeScreenFinalTexture) (void);
-EXPORT void HWRAPI(DrawScreenFinalTexture) (int width, int height);
 
 #define SCREENVERTS 10
 EXPORT void HWRAPI(PostImgRedraw) (float points[SCREENVERTS][SCREENVERTS][2]);
@@ -102,7 +100,7 @@ struct hwdriver_s
 	ClearBuffer         	pfnClearBuffer;
 	SetTexture          	pfnSetTexture;
 	UpdateTexture       	pfnUpdateTexture;
-	ReadRect            	pfnReadRect;
+	ReadScreenTexture   	pfnReadScreenTexture;
 	GClipRect           	pfnGClipRect;
 	ClearMipMapCache    	pfnClearMipMapCache;
 	SetSpecialState     	pfnSetSpecialState;
@@ -112,13 +110,10 @@ struct hwdriver_s
 	GetTextureUsed      	pfnGetTextureUsed;
 	PostImgRedraw       	pfnPostImgRedraw;
 	FlushScreenTextures 	pfnFlushScreenTextures;
-	StartScreenWipe     	pfnStartScreenWipe;
-	EndScreenWipe       	pfnEndScreenWipe;
 	DoScreenWipe        	pfnDoScreenWipe;
-	DrawIntermissionBG  	pfnDrawIntermissionBG;
+	DrawScreenTexture   	pfnDrawScreenTexture;
 	MakeScreenTexture   	pfnMakeScreenTexture;
-	RenderVhsEffect     pfnRenderVhsEffect;
-	MakeScreenFinalTexture  pfnMakeScreenFinalTexture;
+	RenderVhsEffect     	pfnRenderVhsEffect;
 	DrawScreenFinalTexture  pfnDrawScreenFinalTexture;
 
 	RenderSkyDome 			pfnRenderSkyDome;
