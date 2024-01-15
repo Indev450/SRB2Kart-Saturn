@@ -1483,17 +1483,12 @@ void I_FinishUpdate(void)
 #ifdef HWRENDER
 	else if (rendermode == render_opengl)
 	{
-		/*// Final postprocess step of palette rendering, after everything else has been drawn.
-		if (HWR_ShouldUsePaletteRendering())
+		// Final postprocess step of palette rendering, after everything else has been drawn.
+		if (HWR_ShouldUsePaletteRendering() && !cv_groldpal.value)
 		{
-			// not using the function for its original named purpose but can be used like this too
-			HWR_MakeScreenFinalTexture();
-			HWD.pfnSetSpecialState(HWD_SET_SHADERS, 1);
-			HWD.pfnSetShader(8);
-			HWR_DrawScreenFinalTexture(vid.width, vid.height);
-			HWD.pfnUnSetShader();
-			HWD.pfnSetSpecialState(HWD_SET_SHADERS, 0);
-		}*/ //for some reason this does not work here,so ill keep it in DrawScreenFinalTexture itself for now
+			HWD.pfnMakeScreenTexture(HWD_SCREENTEXTURE_GENERIC2);
+			HWD.pfnDrawScreenTexture(HWD_SCREENTEXTURE_GENERIC2);
+		}
 
 		OglSdlFinishUpdate(cv_vidwait.value);
 	}
@@ -2130,7 +2125,7 @@ void I_StartupGraphics(void)
 		HWD.pfnClearBuffer      = hwSym("ClearBuffer",NULL);
 		HWD.pfnSetTexture       = hwSym("SetTexture",NULL);
 		HWD.pfnUpdateTexture    = hwSym("UpdateTexture",NULL);
-		HWD.pfnReadRect         = hwSym("ReadRect",NULL);
+		HWD.pfnReadScreenTexture= hwSym("ReadScreenTexture",NULL);
 		HWD.pfnGClipRect        = hwSym("GClipRect",NULL);
 		HWD.pfnClearMipMapCache = hwSym("ClearMipMapCache",NULL);
 		HWD.pfnSetSpecialState  = hwSym("SetSpecialState",NULL);
@@ -2141,13 +2136,10 @@ void I_StartupGraphics(void)
 		HWD.pfnSetTransform     = hwSym("SetTransform",NULL);
 		HWD.pfnPostImgRedraw    = hwSym("PostImgRedraw",NULL);
 		HWD.pfnFlushScreenTextures=hwSym("FlushScreenTextures",NULL);
-		HWD.pfnStartScreenWipe  = hwSym("StartScreenWipe",NULL);
-		HWD.pfnEndScreenWipe    = hwSym("EndScreenWipe",NULL);
 		HWD.pfnDoScreenWipe     = hwSym("DoScreenWipe",NULL);
-		HWD.pfnDrawIntermissionBG=hwSym("DrawIntermissionBG",NULL);
+		HWD.pfnDrawScreenTexture= hwSym("DrawScreenTexture",NULL);
 		HWD.pfnMakeScreenTexture= hwSym("MakeScreenTexture",NULL);
 		HWD.pfnRenderVhsEffect  = hwSym("RenderVhsEffect",NULL);
-		HWD.pfnMakeScreenFinalTexture=hwSym("MakeScreenFinalTexture",NULL);
 		HWD.pfnDrawScreenFinalTexture=hwSym("DrawScreenFinalTexture",NULL);
 
 		HWD.pfnRenderSkyDome = hwSym("RenderSkyDome",NULL);
