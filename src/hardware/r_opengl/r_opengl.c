@@ -3407,10 +3407,9 @@ EXPORT void HWRAPI(DrawScreenTexture)(int tex, FSurfaceInfo *surf, FBITFIELD pol
 
 	pglBindTexture(GL_TEXTURE_2D, screenTextures[tex]);
 	
-	if (surf)
-		PreparePolygon(surf, NULL, polyflags);
-	else
-		Shader_SetUniforms(NULL, NULL, NULL, NULL); // prepare shader, if it is enabled
+	PreparePolygon(surf, NULL, surf ? polyflags : (PF_NoDepthTest));
+	if (!surf)
+		pglColor4ubv(white);
 
 	pglColor4ubv(white);
 
@@ -3705,6 +3704,7 @@ EXPORT void HWRAPI(DrawScreenFinalTexture)(int tex, int width, int height)
 	clearColour.red = clearColour.green = clearColour.blue = 0;
 	clearColour.alpha = 1;
 	ClearBuffer(true, false, false, &clearColour);
+	SetBlend(PF_NoDepthTest);
 
 	pglBindTexture(GL_TEXTURE_2D, screenTextures[tex]);
 	
