@@ -2397,6 +2397,13 @@ static void PreparePolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FBITFIELD
 		fade.green = byte2float[pSurf->FadeColor.s.green];
 		fade.blue  = byte2float[pSurf->FadeColor.s.blue];
 		fade.alpha = byte2float[pSurf->FadeColor.s.alpha];
+		
+		if (HWR_ShouldUsePaletteRendering && gl_allowshaders)
+		{
+			pglActiveTexture(GL_TEXTURE2);
+			pglBindTexture(GL_TEXTURE_2D, pSurf->LightTableId);
+			pglActiveTexture(GL_TEXTURE0);
+		}
 	}
 
 	Shader_Load(pSurf, &poly, &tint, &fade);
