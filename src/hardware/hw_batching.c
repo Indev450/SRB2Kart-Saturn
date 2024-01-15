@@ -161,12 +161,6 @@ static int comparePolygons(const void *p1, const void *p2)
 		downloaded2 = poly2->texture->downloaded;
 	diff64 = downloaded1 - downloaded2;
 	if (diff64 != 0) return diff64;
-	
-	if (HWR_ShouldUsePaletteRendering())
-	{
-		diff = poly1->surf.LightTableId - poly2->surf.LightTableId;
-		if (diff != 0) return diff;
-	}
 
 	diff = poly1->polyFlags - poly2->polyFlags;
 	if (diff != 0) return diff;
@@ -390,21 +384,7 @@ void HWR_RenderBatches(void)
 				changeState = true;
 				changePolyFlags = true;
 			}
-			if ((cv_grshaders.value && gr_shadersavailable) && (HWR_ShouldUsePaletteRendering()))
-			{
-				if (currentSurfaceInfo.PolyColor.rgba != nextSurfaceInfo.PolyColor.rgba ||
-					currentSurfaceInfo.TintColor.rgba != nextSurfaceInfo.TintColor.rgba ||
-					currentSurfaceInfo.FadeColor.rgba != nextSurfaceInfo.FadeColor.rgba ||
-					currentSurfaceInfo.LightInfo.light_level != nextSurfaceInfo.LightInfo.light_level ||
-					currentSurfaceInfo.LightInfo.fade_start != nextSurfaceInfo.LightInfo.fade_start ||
-					currentSurfaceInfo.LightInfo.fade_end != nextSurfaceInfo.LightInfo.fade_end ||
-					currentSurfaceInfo.LightTableId != nextSurfaceInfo.LightTableId)
-				{
-					changeState = true;
-					changeSurfaceInfo = true;
-				}
-			}
-			else if (cv_grshaders.value && gr_shadersavailable)
+			if (cv_grshaders.value && gr_shadersavailable)
 			{
 				if (currentSurfaceInfo.PolyColor.rgba != nextSurfaceInfo.PolyColor.rgba ||
 					currentSurfaceInfo.TintColor.rgba != nextSurfaceInfo.TintColor.rgba ||

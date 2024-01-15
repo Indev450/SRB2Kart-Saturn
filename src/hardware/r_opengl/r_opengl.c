@@ -79,10 +79,7 @@ static float NEAR_CLIPPING_PLANE =   NZCLIP_PLANE;
 // **************************************************************************
 
 static  GLuint      tex_downloaded  = 0;
-// these didnt work with karts batching system, hope this is not an issue
-//static  GLuint      lt_downloaded   = 0; // currently bound lighttable texture - currentSurfaceInfo
-//static  GLuint      lt_downloaded2   = 0; // currently bound lighttable texture - nextSurfaceInfo
-//static  GLuint      lt_downloaded3   = 0; // currently bound lighttable texture - pSurf
+static  GLuint      lt_downloaded   = 0; // currently bound lighttable texture
 static  GLfloat     fov             = 90.0f;
 static  FBITFIELD   CurrentPolyFlags;
 
@@ -2178,11 +2175,12 @@ static void PreparePolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FBITFIELD
 		fade.blue  = byte2float[pSurf->FadeColor.s.blue];
 		fade.alpha = byte2float[pSurf->FadeColor.s.alpha];
 		
-		if (HWR_ShouldUsePaletteRendering() && gl_allowshaders)
+		if (pSurf->LightTableId && pSurf->LightTableId != lt_downloaded)
 		{
 			pglActiveTexture(GL_TEXTURE2);
 			pglBindTexture(GL_TEXTURE_2D, pSurf->LightTableId);
 			pglActiveTexture(GL_TEXTURE0);
+			lt_downloaded = pSurf->LightTableId;
 		}
 	}
 
@@ -2946,6 +2944,14 @@ static void DrawModelEx(model_t *model, INT32 frameIndex, float duration, float 
 	fade.green = byte2float[Surface->FadeColor.s.green];
 	fade.blue  = byte2float[Surface->FadeColor.s.blue];
 	fade.alpha = byte2float[Surface->FadeColor.s.alpha];
+	
+	if (Surface->LightTableId && Surface->LightTableId != lt_downloaded)
+	{
+		pglActiveTexture(GL_TEXTURE2);
+		pglBindTexture(GL_TEXTURE_2D, Surface->LightTableId);
+		pglActiveTexture(GL_TEXTURE0);
+		lt_downloaded = Surface->LightTableId;
+	}
 
 	Shader_Load(Surface, &poly, &tint, &fade);
 
@@ -3810,9 +3816,7 @@ EXPORT void HWRAPI(ClearLightTables)(void)
 	LightTablesTail = NULL;
 	
 	// we no longer have a bound light table (if we had one), we just deleted it!
-	//lt_downloaded = 0;
-	//lt_downloaded2 = 0;
-	//lt_downloaded3 = 0;
+	lt_downloaded = 0;
 }
 
 // This palette is used for the palette rendering postprocessing step.
