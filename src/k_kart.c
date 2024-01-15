@@ -40,7 +40,7 @@ IMPL_HUD_OFFSET(item); // Item box
 IMPL_HUD_OFFSET(time); // Time
 IMPL_HUD_OFFSET(laps); // Number of laps
 IMPL_HUD_OFFSET(dnft); // Countdown (did not finish timer)
-IMPL_HUD_OFFSET(spdm); // Speedometer
+IMPL_HUD_OFFSET(speed); // Speedometer
 IMPL_HUD_OFFSET(posi); // Position in race
 IMPL_HUD_OFFSET(face); // Mini rankings
 IMPL_HUD_OFFSET(stcd); // Starting countdown
@@ -685,7 +685,7 @@ void K_RegisterKartStuff(void)
 	REG_HUD_OFFSET(time); // Time
 	REG_HUD_OFFSET(laps); // Number of laps
 	REG_HUD_OFFSET(dnft); // Countdown (did not finish timer)
-	REG_HUD_OFFSET(spdm); // Speedometer
+	REG_HUD_OFFSET(speed); // Speedometer
 	REG_HUD_OFFSET(posi); // Position in race
 	REG_HUD_OFFSET(face); // Mini rankings
 	REG_HUD_OFFSET(stcd); // Starting countdown
@@ -7451,8 +7451,8 @@ static void K_initKartHUD(void)
 	LAPS_X = 9 + cv_laps_xoffset.value;						//   9
 	LAPS_Y = BASEVIDHEIGHT - 29 + cv_laps_yoffset.value;	// 171
 	// Speedometer
-	SPDM_X = 9 + cv_spdm_xoffset.value; 					//   9
-	SPDM_Y = BASEVIDHEIGHT - 45 + cv_spdm_yoffset.value;	// 155
+	SPDM_X = 9 + cv_speed_xoffset.value; 					//   9
+	SPDM_Y = BASEVIDHEIGHT - 45 + cv_speed_yoffset.value;	// 155
 	// Position Number
 	POSI_X = BASEVIDWIDTH  - 9 + cv_posi_xoffset.value;		// 268
 	POSI_Y = BASEVIDHEIGHT - 9 + cv_posi_yoffset.value;		// 138

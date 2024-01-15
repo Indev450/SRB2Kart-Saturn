@@ -20,8 +20,6 @@
 #include "r_draw.h"
 #include "console.h"
 
-#include "r_fps.h" //vhs effect stuff
-
 #include "i_video.h" // rendermode
 #include "z_zone.h"
 #include "m_misc.h"
@@ -683,8 +681,7 @@ void V_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c)
 {
 	UINT8 *dest;
 	const UINT8 *deststop;
-	INT32 u, v;
-	UINT32 alphalevel = 0;
+	UINT32 alphalevel = ((c & V_ALPHAMASK) >> V_ALPHASHIFT);
 
 	if (rendermode == render_none)
 		return;
@@ -761,7 +758,7 @@ void V_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c)
 	dest = screens[0] + y*vid.width + x;
 	deststop = screens[0] + vid.rowbytes * vid.height;
 
-	if ((alphalevel = ((c & V_ALPHAMASK) >> V_ALPHASHIFT)))
+	if (alphalevel)
 	{
 		if (alphalevel == 13)
 			alphalevel = hudminusalpha[cv_translucenthud.value];
@@ -775,21 +772,20 @@ void V_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c)
 	}
 
 	c &= 255;
-
-	if (!alphalevel) {
+	
+	if (alphalevel)
+	{
+		const UINT8 *fadetable = ((UINT8 *)transtables + ((alphalevel-1)<<FF_TRANSSHIFT) + (c*256));
+		for (;(--h >= 0) && dest < deststop; dest += vid.width)
+		{
+			for (x = 0; x < w; x++)
+				dest[x] = fadetable[dest[x]];
+		}
+	}
+	else
+	{
 		for (;(--h >= 0) && dest < deststop; dest += vid.width)
 			memset(dest, c, w * vid.bpp);
-	} else { // holy fuck i hope this doesent break lmao
-		const UINT8 *fadetable = ((UINT8 *)transtables + ((alphalevel-1)<<FF_TRANSSHIFT) + (c*256));
-#define clip(x,y) (x>y) ? y : x
-		w = clip(w,vid.width);
-		h = clip(h,vid.height);
-#undef clip
-		for (v = 0; v < h; v++, dest += vid.width) {
-			for (u = 0; u < w; u++) {
-				dest[u] = fadetable[dest[u]];
-			}
-		}
 	}
 }
 
@@ -1169,26 +1165,17 @@ void V_DrawVhsEffect(boolean rewind)
 	if (rewind)
 		V_DrawVhsEffect(false); // experimentation
 
-	if (R_UsingFrameInterpolation()) // omg i fucking hate interp so much, its a bit smoother but still not great whatever, atleast like this shit wont completely go nuts when youre on high framerates
+	if (renderisnewtic)
 	{
-		if (renderisnewtic)
-		{
-			upbary -= FixedMul(vid.dupy * (rewind ? 3 : 1.8f), 22937*3);
-			downbary += FixedMul(vid.dupy * (rewind ? 2 : 1), 22937*3);
-		}
-	}
-	else
-	{
-		upbary -= vid.dupy * (rewind ? 3 : 1.8f);
-		downbary += vid.dupy * (rewind ? 2 : 1);
+		upbary -= (vid.dupy * (rewind ? 3 : 1.8f));
+		downbary += (vid.dupy * (rewind ? 2 : 1));
 	}
 
-			
 	if (upbary < -barsize) upbary = vid.height;
 	if (downbary > vid.height) downbary = -barsize;
 
 #ifdef HWRENDER
-	if ((rendermode == render_opengl) && (cv_grvhseffect.value))
+	if (rendermode == render_opengl)
 	{
 		HWR_RenderVhsEffect(upbary, downbary, updistort, downdistort, barsize);
 		return;
