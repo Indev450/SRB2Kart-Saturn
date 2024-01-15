@@ -186,6 +186,8 @@ void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2);
 
 UINT8 *R_GetSpriteTranslation(vissprite_t *vis);
 
+void R_ThingOffsetOverlay (mobj_t *thing, fixed_t *outx, fixed_t *outy);
+
 // ----------
 // DRAW NODES
 // ----------

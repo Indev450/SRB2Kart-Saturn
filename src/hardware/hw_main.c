@@ -5314,6 +5314,8 @@ void HWR_ProjectSprite(mobj_t *thing)
 
 
 	// transform the origin point
+	if (thing->type == MT_OVERLAY) // Handle overlays
+		R_ThingOffsetOverlay(thing, &interp.x, &interp.y);
 	tr_x = FIXED_TO_FLOAT(interp.x) - gr_viewx;
 	tr_y = FIXED_TO_FLOAT(interp.y) - gr_viewy;
 
