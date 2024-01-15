@@ -3332,17 +3332,13 @@ EXPORT void HWRAPI(DrawScreenTexture)(int tex)
 
 	pglBindTexture(GL_TEXTURE_2D, screenTextures[tex]);
 	
-	if (((HWR_ShouldUsePaletteRendering()) && (tex == HWD_SCREENTEXTURE_GENERIC2)) && !cv_groldpal.value)
-		pglUseProgram(gl_shaderprograms[8].program); // palette postprocess shader
+	Shader_SetUniforms(NULL, NULL, NULL, NULL); // prepare shader, if it is enabled
 
 	pglColor4ubv(white);
 
 	pglTexCoordPointer(2, GL_FLOAT, 0, fix);
 	pglVertexPointer(3, GL_FLOAT, 0, screenVerts);
 	pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-	
-	if (((HWR_ShouldUsePaletteRendering()) && (tex == HWD_SCREENTEXTURE_GENERIC2)) && !cv_groldpal.value)
-		pglUseProgram(0);
 
 	tex_downloaded = screenTextures[tex];
 }
@@ -3637,8 +3633,8 @@ EXPORT void HWRAPI(DrawScreenFinalTexture)(int tex, int width, int height)
 
 	pglBindTexture(GL_TEXTURE_2D, screenTextures[tex]);
 	
-	if ((HWR_ShouldUsePaletteRendering()) && cv_groldpal.value)
-		pglUseProgram(gl_shaderprograms[8].program); // palette postprocess shader
+	//if ((HWR_ShouldUsePaletteRendering()) && cv_groldpal.value)
+		//pglUseProgram(gl_shaderprograms[8].program); // palette postprocess shader
 
 	pglColor4ubv(white);
 
@@ -3647,8 +3643,8 @@ EXPORT void HWRAPI(DrawScreenFinalTexture)(int tex, int width, int height)
 
 	pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 	
-	if ((HWR_ShouldUsePaletteRendering()) && cv_groldpal.value)
-		pglUseProgram(0);
+	//if ((HWR_ShouldUsePaletteRendering()) && cv_groldpal.value)
+		//pglUseProgram(0);
 
 	tex_downloaded = screenTextures[tex];
 }
