@@ -563,7 +563,7 @@ void HWR_FadeScreenMenuBack(UINT16 color, UINT8 strength)
 
     if (color & 0xFF00) // Do COLORMAP fade.
     {
-		if (HWR_ShouldUsePaletteRendering() && !cv_groldpal.value)
+		if (HWR_ShouldUsePaletteRendering() && cv_grscreentextures.value)
 		{
 			const hwdscreentexture_t scr_tex = HWD_SCREENTEXTURE_GENERIC2;
 
@@ -1178,7 +1178,6 @@ static inline boolean saveTGA(const char *file_name, void *buffer,
 UINT8 *HWR_GetScreenshot(void)
 {
 	static UINT8 *buf = NULL;
-	int tex = ((HWR_ShouldUsePaletteRendering() && !cv_groldpal.value) ? HWD_SCREENTEXTURE_GENERIC3 : HWD_SCREENTEXTURE_GENERIC2);
 
 	buf = realloc(buf, vid.width * vid.height * 3);
 
@@ -1186,7 +1185,7 @@ UINT8 *HWR_GetScreenshot(void)
 		return NULL;
 
 	// returns 24bit 888 RGB
-	HWD.pfnReadScreenTexture(tex, (void *)buf);
+	HWD.pfnReadScreenTexture(HWD_SCREENTEXTURE_GENERIC2, (void *)buf);
 	return buf;
 }
 
@@ -1194,7 +1193,6 @@ boolean HWR_Screenshot(const char *pathname)
 {
 	boolean ret;
 	UINT8 *buf = malloc(vid.width * vid.height * 3 * sizeof (*buf));
-	int tex = ((HWR_ShouldUsePaletteRendering() && !cv_groldpal.value) ? HWD_SCREENTEXTURE_GENERIC3 : HWD_SCREENTEXTURE_GENERIC2);
 
 	if (!buf)
 	{
@@ -1203,7 +1201,7 @@ boolean HWR_Screenshot(const char *pathname)
 	}
 
 	// returns 24bit 888 RGB
-	HWD.pfnReadScreenTexture(tex, (void *)buf);
+	HWD.pfnReadScreenTexture(HWD_SCREENTEXTURE_GENERIC2, (void *)buf);
 
 #ifdef USE_PNG
 	ret = M_SavePNG(pathname, buf, vid.width, vid.height, NULL);

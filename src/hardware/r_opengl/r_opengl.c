@@ -3653,7 +3653,7 @@ EXPORT void HWRAPI(DrawScreenFinalTexture)(int tex, int width, int height)
 
 	pglBindTexture(GL_TEXTURE_2D, screenTextures[tex]);
 	
-	if ((HWR_ShouldUsePaletteRendering()) && cv_groldpal.value)
+	if (HWR_ShouldUsePaletteRendering())
 		pglUseProgram(gl_shaderprograms[8].program); // palette postprocess shader
 
 	pglColor4ubv(white);
@@ -3663,7 +3663,7 @@ EXPORT void HWRAPI(DrawScreenFinalTexture)(int tex, int width, int height)
 
 	pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 	
-	if ((HWR_ShouldUsePaletteRendering()) && cv_groldpal.value)
+	if (HWR_ShouldUsePaletteRendering())
 		pglUseProgram(0);
 
 	tex_downloaded = screenTextures[tex];

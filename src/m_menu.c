@@ -1495,7 +1495,6 @@ static menuitem_t OP_ExpOptionsMenu[] =
 	{IT_STRING | IT_CVAR, 	NULL, "Screen Textures", 				&cv_grscreentextures, 		 75},
 
 	{IT_STRING | IT_CVAR, 	NULL, "Palette Depth", 					&cv_grpalettedepth, 		 85},
-	{IT_STRING | IT_CVAR, 	NULL, "Old Palshader Screentexture", 	&cv_groldpal, 		 	 	 95},
 	
 	{IT_STRING | IT_CVAR, 	NULL, "Splitwall/Slope texture fix",	&cv_splitwallfix, 		 	105},
 	{IT_STRING | IT_CVAR, 	NULL, "Slope midtexture peg fix", 		&cv_slopepegfix, 		 	115},
@@ -1514,8 +1513,7 @@ static const char* OP_ExpTooltips[] =
 	"Hides Sprites which are not visible\npotentially resulting in a performance boost.",
 #ifdef HWRENDER
 	"Should the game do Screen Textures? Provides a good boost to frames\nat the cost of some visual effects not working when disabled.",
-	"Fixes issues that resulted in Textures sticking from the\nground sometimes.\nThis may be CPU heavy and result in worse performance in some cases.",
-	"Changes back to old Palette renderer screentexture behaviour\nthis makes performance better and keeps the old visuals\nat the cost of accuracy.",
+	"Change the depth of the Palette in Palette rendering mod\n 16 bits is like software looks ingame\nwhile 24 bits is how software looks in screenshots.",
 	"Fixes issues that resulted in Textures sticking from the ground sometimes.\n This may be CPU heavy and result in worse performance in some cases.",
 	"Fixes issues that resulted in Textures not being properly skewed\n example: Fences on slopes that didnt show proper.\n This may be CPU heavy and result in worse performance in some cases.",
 	"Fixes issues that resulted in Textures on Floor over Floors\nZFighting heavily.",
