@@ -698,8 +698,7 @@ void V_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c)
 {
 	UINT8 *dest;
 	const UINT8 *deststop;
-	INT32 u, v;
-	UINT32 alphalevel = 0;
+	UINT32 alphalevel = ((c & V_ALPHAMASK) >> V_ALPHASHIFT);
 
 	if (rendermode == render_none)
 		return;
@@ -776,7 +775,7 @@ void V_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c)
 	dest = screens[0] + y*vid.width + x;
 	deststop = screens[0] + vid.rowbytes * vid.height;
 
-	if ((alphalevel = ((c & V_ALPHAMASK) >> V_ALPHASHIFT)))
+	if (alphalevel)
 	{
 		if (alphalevel == 13)
 			alphalevel = hudminusalpha[cv_translucenthud.value];
@@ -790,21 +789,20 @@ void V_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c)
 	}
 
 	c &= 255;
-
-	if (!alphalevel) {
+	
+	if (alphalevel)
+	{
+		const UINT8 *fadetable = ((UINT8 *)transtables + ((alphalevel-1)<<FF_TRANSSHIFT) + (c*256));
+		for (;(--h >= 0) && dest < deststop; dest += vid.width)
+		{
+			for (x = 0; x < w; x++)
+				dest[x] = fadetable[dest[x]];
+		}
+	}
+	else
+	{
 		for (;(--h >= 0) && dest < deststop; dest += vid.width)
 			memset(dest, c, w * vid.bpp);
-	} else { // holy fuck i hope this doesent break lmao
-		const UINT8 *fadetable = ((UINT8 *)transtables + ((alphalevel-1)<<FF_TRANSSHIFT) + (c*256));
-#define clip(x,y) (x>y) ? y : x
-		w = clip(w,vid.width);
-		h = clip(h,vid.height);
-#undef clip
-		for (v = 0; v < h; v++, dest += vid.width) {
-			for (u = 0; u < w; u++) {
-				dest[u] = fadetable[dest[u]];
-			}
-		}
 	}
 }
 
