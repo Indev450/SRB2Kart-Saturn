@@ -122,7 +122,7 @@ void HWR_DrawPatch(GLPatch_t *gpatch, INT32 x, INT32 y, INT32 option)
 		flags |= PF_ForceWrapY;
 
 	// clip it since it is used for bunny scroll in doom I
-	HWD.pfnDrawPolygon(NULL, v, 4, flags, false);
+	HWD.pfnDrawPolygon(NULL, v, 4, flags);
 }
 
 void HWR_DrawStretchyFixedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale, fixed_t vscale, INT32 option, const UINT8 *colormap)
@@ -300,10 +300,10 @@ void HWR_DrawStretchyFixedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t
 		else if (alphalevel == 15) Surf.PolyColor.s.alpha = softwaretranstogl_hi[hudtrans];
 		else Surf.PolyColor.s.alpha = softwaretranstogl[10-alphalevel];
 		flags |= PF_Modulated;
-		HWD.pfnDrawPolygon(&Surf, v, 4, flags, false);
+		HWD.pfnDrawPolygon(&Surf, v, 4, flags);
 	}
 	else
-		HWD.pfnDrawPolygon(NULL, v, 4, flags, false);
+		HWD.pfnDrawPolygon(NULL, v, 4, flags);
 }
 
 void HWR_DrawCroppedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale, INT32 option, fixed_t sx, fixed_t sy, fixed_t w, fixed_t h)
@@ -454,10 +454,10 @@ void HWR_DrawCroppedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscal
 		else if (alphalevel == 15) Surf.PolyColor.s.alpha = softwaretranstogl_hi[cv_translucenthud.value];
 		else Surf.PolyColor.s.alpha = softwaretranstogl[10-alphalevel];
 		flags |= PF_Modulated;
-		HWD.pfnDrawPolygon(&Surf, v, 4, flags, false);
+		HWD.pfnDrawPolygon(&Surf, v, 4, flags);
 	}
 	else
-		HWD.pfnDrawPolygon(NULL, v, 4, flags, false);
+		HWD.pfnDrawPolygon(NULL, v, 4, flags);
 }
 
 // ==========================================================================
@@ -533,7 +533,7 @@ void HWR_DrawFlatFill (INT32 x, INT32 y, INT32 w, INT32 h, lumpnum_t flatlumpnum
 	// BTW, I see we put 0 for PFs, and If I'm right, that
 	// means we take the previous PFs as default
 	// how can we be sure they are ok?
-	HWD.pfnDrawPolygon(NULL, v, 4, PF_NoDepthTest, false); //PF_Translucent);
+	HWD.pfnDrawPolygon(NULL, v, 4, PF_NoDepthTest); //PF_Translucent);
 }
 
 
@@ -576,7 +576,7 @@ void HWR_FadeScreenMenuBack(UINT16 color, UINT8 strength)
 			Surf.PolyColor.s.alpha = (UINT8)(strength*25.5f);
     }
 
-    HWD.pfnDrawPolygon(&Surf, v, 4, PF_NoTexture|PF_Modulated|PF_Translucent|PF_NoDepthTest, false);
+    HWD.pfnDrawPolygon(&Surf, v, 4, PF_NoTexture|PF_Modulated|PF_Translucent|PF_NoDepthTest);
 }
 
 // Draw the console background with translucency support
@@ -603,7 +603,7 @@ void HWR_DrawConsoleBack(UINT32 color, INT32 height)
 	Surf.PolyColor.rgba = UINT2RGBA(color);
 	Surf.PolyColor.s.alpha = 0x80;
 
-	HWD.pfnDrawPolygon(&Surf, v, 4, PF_NoTexture|PF_Modulated|PF_Translucent|PF_NoDepthTest, false);
+	HWD.pfnDrawPolygon(&Surf, v, 4, PF_NoTexture|PF_Modulated|PF_Translucent|PF_NoDepthTest);
 }
 
 
@@ -854,7 +854,7 @@ void HWR_DrawDiag(INT32 x, INT32 y, INT32 wh, INT32 color)
 	Surf.PolyColor = palette[color&0xFF];
 
 	HWD.pfnDrawPolygon(&Surf, v, 4,
-		PF_Modulated|PF_NoTexture|PF_NoDepthTest, false);
+		PF_Modulated|PF_NoTexture|PF_NoDepthTest);
 }
 
 // -------------------+
@@ -963,7 +963,7 @@ void HWR_DrawConsoleFill(INT32 x, INT32 y, INT32 w, INT32 h, UINT32 color, INT32
 	Surf.PolyColor.rgba = UINT2RGBA(color);
 	Surf.PolyColor.s.alpha = 0x80;
 
-	HWD.pfnDrawPolygon(&Surf, v, 4, PF_NoTexture|PF_Modulated|PF_Translucent|PF_NoDepthTest, false);
+	HWD.pfnDrawPolygon(&Surf, v, 4, PF_NoTexture|PF_Modulated|PF_Translucent|PF_NoDepthTest);
 }
 
 // -----------------+
@@ -1081,7 +1081,7 @@ void HWR_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color)
 		else Surf.PolyColor.s.alpha = softwaretranstogl[10-alphalevel];
 	}
 
-	HWD.pfnDrawPolygon(&Surf, v, 4, PF_NoTexture|PF_Modulated|PF_Translucent|PF_NoDepthTest, false);
+	HWD.pfnDrawPolygon(&Surf, v, 4, PF_NoTexture|PF_Modulated|PF_Translucent|PF_NoDepthTest);
 }
 
 #ifdef HAVE_PNG

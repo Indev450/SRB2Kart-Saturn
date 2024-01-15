@@ -64,6 +64,8 @@ extern ps_metric_t ps_hw_numcolors;
 extern ps_metric_t ps_hw_batchsorttime;
 extern ps_metric_t ps_hw_batchdrawtime;
 
+extern boolean gr_shadersavailable;
+
 // hw_draw.c
 void HWR_DrawPatch(GLPatch_t *gpatch, INT32 x, INT32 y, INT32 option);
 void HWR_DrawStretchyFixedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale, fixed_t vscale, INT32 option, const UINT8 *colormap);

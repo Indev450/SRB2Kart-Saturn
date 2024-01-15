@@ -2125,6 +2125,7 @@ void I_StartupGraphics(void)
 		HWD.pfnFinishUpdate     = NULL;
 		HWD.pfnDraw2DLine       = hwSym("Draw2DLine",NULL);
 		HWD.pfnDrawPolygon      = hwSym("DrawPolygon",NULL);
+		HWD.pfnDrawIndexedTriangles = hwSym("DrawIndexedTriangles",NULL);
 		HWD.pfnSetBlend         = hwSym("SetBlend",NULL);
 		HWD.pfnClearBuffer      = hwSym("ClearBuffer",NULL);
 		HWD.pfnSetTexture       = hwSym("SetTexture",NULL);
@@ -2159,9 +2160,6 @@ void I_StartupGraphics(void)
 		HWD.pfnSetShaderInfo    = hwSym("SetShaderInfo",NULL);
 		HWD.pfnLoadCustomShader = hwSym("LoadCustomShader",NULL);
 		HWD.pfnInitCustomShaders = hwSym("InitCustomShaders",NULL);
-
-		HWD.pfnStartBatching = hwSym("StartBatching",NULL);
-		HWD.pfnRenderBatches = hwSym("RenderBatches",NULL);
 
 		HWD.pfnSetPaletteLookup = hwSym("SetPaletteLookup",NULL);
 		HWD.pfnCreateLightTable = hwSym("CreateLightTable",NULL);
