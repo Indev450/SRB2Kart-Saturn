@@ -781,10 +781,10 @@ void R_SetSlopePlane(pslope_t *slope, fixed_t xpos, fixed_t ypos, fixed_t zpos, 
 	n->x = sin(ang);
 	n->z = -cos(ang);
 
-	plangle >>= ANGLETOFINESHIFT;
-	temp = P_GetZAt(slope, xpos + FINESINE(plangle), ypos + FINECOSINE(plangle));
+	ang = ANG2RAD(plangle);
+	temp = P_GetZAt(slope, xpos + FloatToFixed(sin(ang)), ypos + FloatToFixed(cos(ang)));
 	m->y = FixedToFloat(temp - height);
-	temp = P_GetZAt(slope, xpos + FINECOSINE(plangle), ypos - FINESINE(plangle));
+	temp = P_GetZAt(slope, xpos + FloatToFixed(cos(ang)), ypos - FloatToFixed(sin(ang)));
 	n->y = FixedToFloat(temp - height);
 }
 
