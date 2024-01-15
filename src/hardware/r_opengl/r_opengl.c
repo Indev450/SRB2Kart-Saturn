@@ -128,8 +128,9 @@ static GLuint endScreenWipe = 0;
 static GLuint finalScreenTexture = 0;
 
 // Lactozilla: Set shader programs and uniforms
-static void *Shader_Load(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRGBAFloat *tint, GLRGBAFloat *fade);
 static void Shader_SetUniforms(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRGBAFloat *tint, GLRGBAFloat *fade);
+
+static GLRGBAFloat shader_defaultcolor = {1.0f, 1.0f, 1.0f, 1.0f};
 
 // shortcut for ((float)1/i)
 static const GLfloat byte2float[256] = {
@@ -2282,43 +2283,33 @@ EXPORT void HWRAPI(SetTexture) (FTextureInfo *pTexInfo)
 	}
 }
 
-
-static void *Shader_Load(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRGBAFloat *tint, GLRGBAFloat *fade)
-{
-#ifdef GL_SHADERS
-	if (gl_shadersenabled && pglUseProgram)
-	{
-		gl_shaderprogram_t *shader = &gl_shaderprograms[gl_currentshaderprogram];
-		if (shader->program)
-		{
-			if (gl_shaderprogramchanged)
-			{
-				pglUseProgram(gl_shaderprograms[gl_currentshaderprogram].program);
-				gl_shaderprogramchanged = false;
-			}
-			Shader_SetUniforms(Surface, poly, tint, fade);
-			return shader;
-		}
-		else
-			pglUseProgram(0);
-	}
-#else
-	(void)Surface;
-	(void)poly;
-	(void)tint;
-	(void)fade;
-#endif
-	return NULL;
-}
-
 static void Shader_SetUniforms(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRGBAFloat *tint, GLRGBAFloat *fade)
 {
+	gl_shaderprogram_t *shader = &gl_shaderprograms[gl_currentshaderprogram];
+	
 #ifdef GL_SHADERS
-	if (gl_shadersenabled)
+	if (gl_shadersenabled && (shader != NULL) && pglUseProgram)
 	{
-		gl_shaderprogram_t *shader = &gl_shaderprograms[gl_currentshaderprogram];
+
 		if (!shader->program)
+		{
+			pglUseProgram(0);
 			return;
+		}
+
+		if (gl_shaderprogramchanged)
+		{
+			pglUseProgram(gl_shaderprograms[gl_currentshaderprogram].program);
+			gl_shaderprogramchanged = false;
+		}
+		
+		// Color uniforms can be left NULL and will be set to white (1.0f, 1.0f, 1.0f, 1.0f)
+		if (poly == NULL)
+			poly = &shader_defaultcolor;
+		if (tint == NULL)
+			tint = &shader_defaultcolor;
+		if (fade == NULL)
+			fade = &shader_defaultcolor;
 
 		#define UNIFORM_1(uniform, a, function) \
 			if (uniform != -1) \
@@ -2406,7 +2397,7 @@ static void PreparePolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FBITFIELD
 		}
 	}
 
-	Shader_Load(pSurf, &poly, &tint, &fade);
+	Shader_SetUniforms(pSurf, &poly, &tint, &fade);
 }
 
 // -----------------+
@@ -3182,7 +3173,7 @@ static void DrawModelEx(model_t *model, INT32 frameIndex, float duration, float 
 	fade.blue  = byte2float[Surface->FadeColor.s.blue];
 	fade.alpha = byte2float[Surface->FadeColor.s.alpha];
 
-	Shader_Load(Surface, &poly, &tint, &fade);
+	Shader_SetUniforms(Surface, &poly, &tint, &fade);
 
 	pglEnable(GL_CULL_FACE);
 	pglEnable(GL_NORMALIZE);
