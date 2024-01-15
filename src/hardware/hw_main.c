@@ -182,6 +182,9 @@ static void CV_screentextures_ONChange(void)
 
 static void CV_grshaders_OnChange(void)
 {
+	if (rendermode == render_opengl)
+		HWR_SetShaderState();
+
 	if ((rendermode == render_opengl) && (cv_grpaletterendering.value))
 	{
 		// can't do palette rendering without shaders, so update the state if needed
@@ -210,6 +213,17 @@ static void CV_grpalettedepth_OnChange(void)
 {
 	if ((rendermode == render_opengl) && (HWR_ShouldUsePaletteRendering()))
 		HWR_SetPalette(pLocalPalette);
+}
+
+//
+// Sets the shader state.
+//
+void HWR_SetShaderState(void)
+{
+	INT32 state = cv_grshaders.value;
+
+	HWD.pfnSetSpecialState(HWD_SET_SHADERS, (INT32)state);
+	HWD.pfnSetShader(0);
 }
 
 // ==========================================================================
@@ -6448,7 +6462,9 @@ void HWR_Startup(void)
 	HWD.pfnKillShaders();
 	if (!HWD.pfnLoadShaders())
 		gr_shadersavailable = false;
-	
+
+	HWR_SetShaderState();
+
 	HWR_TogglePaletteRendering();
 
 	if (msaa)

@@ -167,6 +167,8 @@ RGBA_t *HWR_GetTexturePalette(void);
 // hw_trick.c
 void HWR_CorrectSWTricks(void);
 
+void HWR_SetShaderState(void);
+
 // Console variables
 extern consvar_t cv_grshaders;
 extern consvar_t cv_grfofcut;
