@@ -1489,7 +1489,7 @@ void I_FinishUpdate(void)
 			HWD.pfnMakeScreenTexture(HWD_SCREENTEXTURE_GENERIC2);
 			HWD.pfnSetSpecialState(HWD_SET_SHADERS, 1);
 			HWD.pfnSetShader(8);
-			HWD.pfnDrawScreenTexture(HWD_SCREENTEXTURE_GENERIC2);
+			HWD.pfnDrawScreenTexture(HWD_SCREENTEXTURE_GENERIC2, NULL, 0);
 			HWD.pfnUnSetShader();
 			HWD.pfnSetSpecialState(HWD_SET_SHADERS, 0);
 		}

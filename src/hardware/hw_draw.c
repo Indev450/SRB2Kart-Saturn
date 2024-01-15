@@ -562,6 +562,20 @@ void HWR_FadeScreenMenuBack(UINT16 color, UINT8 strength)
 
     if (color & 0xFF00) // Do COLORMAP fade.
     {
+		if (HWR_ShouldUsePaletteRendering())
+		{
+			const hwdscreentexture_t scr_tex = HWD_SCREENTEXTURE_GENERIC2;
+
+			Surf.LightTableId = HWR_GetLightTableID(NULL);
+			Surf.LightInfo.light_level = strength;
+			HWD.pfnMakeScreenTexture(scr_tex);
+			HWD.pfnSetShader(12);
+			HWD.pfnDrawScreenTexture(scr_tex, &Surf, PF_ColorMapped|PF_NoDepthTest);
+			HWD.pfnUnSetShader();
+
+			return;
+		}
+		
         Surf.PolyColor.rgba = UINT2RGBA(0x01010160);
         Surf.PolyColor.s.alpha = (strength*8);
     }
@@ -1158,7 +1172,7 @@ static inline boolean saveTGA(const char *file_name, void *buffer,
 UINT8 *HWR_GetScreenshot(void)
 {
 	static UINT8 *buf = NULL;
-	int tex = ((HWR_ShouldUsePaletteRendering() && !cv_groldpal.value) ? HWD_SCREENTEXTURE_GENERIC3 : HWD_SCREENTEXTURE_GENERIC2);
+	int tex = (HWR_ShouldUsePaletteRendering() ? HWD_SCREENTEXTURE_GENERIC3 : HWD_SCREENTEXTURE_GENERIC2);
 
 	buf = realloc(buf, vid.width * vid.height * 3);
 
@@ -1174,7 +1188,7 @@ boolean HWR_Screenshot(const char *pathname)
 {
 	boolean ret;
 	UINT8 *buf = malloc(vid.width * vid.height * 3 * sizeof (*buf));
-	int tex = ((HWR_ShouldUsePaletteRendering() && !cv_groldpal.value) ? HWD_SCREENTEXTURE_GENERIC3 : HWD_SCREENTEXTURE_GENERIC2);
+	int tex = (HWR_ShouldUsePaletteRendering() ? HWD_SCREENTEXTURE_GENERIC3 : HWD_SCREENTEXTURE_GENERIC2);
 
 	if (!buf)
 	{

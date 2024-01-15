@@ -57,7 +57,7 @@ EXPORT void HWRAPI(RenderSkyDome) (INT32 tex, INT32 texture_width, INT32 texture
 
 EXPORT void HWRAPI(FlushScreenTextures) (void);
 EXPORT void HWRAPI(DoScreenWipe) (int wipeStart, int wipeEnd);
-EXPORT void HWRAPI(DrawScreenTexture) (int tex);
+EXPORT void HWRAPI(DrawScreenTexture) (int tex, FSurfaceInfo *surf, FBITFIELD polyflags);
 EXPORT void HWRAPI(MakeScreenTexture) (int tex);
 EXPORT void HWRAPI(DrawScreenFinalTexture) (int tex, int width, int height);
 

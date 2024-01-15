@@ -921,6 +921,19 @@ static float shader_leveltime = 0;
 		"vec4 final_color = texture1D(palette_tex, palette_coord);\n" \
 		"gl_FragColor = final_color;\n" \
 	"}\0"
+	
+
+#define GLSL_UI_COLORMAP_FADE_SHADER \
+	"uniform sampler2D tex;\n" \
+	"uniform float lighting;\n" \
+	"uniform sampler3D palette_lookup_tex;\n" \
+	"uniform sampler2D lighttable_tex;\n" \
+	"void main(void) {\n" \
+		"vec4 texel = texture2D(tex, gl_TexCoord[0].st);\n" \
+		"float tex_pal_idx = texture3D(palette_lookup_tex, vec3((texel * 63.0 + 0.5) / 64.0))[0] * 255.0;\n" \
+		"vec2 lighttable_coord = vec2((tex_pal_idx + 0.5) / 256.0, (lighting + 0.5) / 32.0);\n" \
+		"gl_FragColor = texture2D(lighttable_tex, lighttable_coord);\n" \
+	"}\0" \
 
 //
 // Sky fragment shader
@@ -969,6 +982,9 @@ static const char *fragment_shaders[] = {
 
 	// Palette water shader
 	GLSL_PALETTE_WATER_FRAGMENT_SHADER,
+	
+	// UI colormap fade shader
+	GLSL_UI_COLORMAP_FADE_SHADER,
 
 	NULL,
 };
@@ -1025,6 +1041,9 @@ static const char *vertex_shaders[] = {
 	GLSL_DEFAULT_VERTEX_SHADER,
 	
 	// Palette water vertex shader
+	GLSL_DEFAULT_VERTEX_SHADER,
+	
+	// UI colormap fade shader
 	GLSL_DEFAULT_VERTEX_SHADER,
 
 	NULL,
@@ -1542,11 +1561,11 @@ EXPORT void HWRAPI(ReadScreenTexture) (int tex, UINT16 *dst_data)
 	// and draw generic2 back after reading the framebuffer.
 	// this hack is for some reason **much** faster than the simple solution of using glGetTexImage.
 	if (tex != HWD_SCREENTEXTURE_GENERIC2)
-		DrawScreenTexture(tex);
+		DrawScreenTexture(tex, NULL, 0);
 	pglPixelStorei(GL_PACK_ALIGNMENT, 1);
 	pglReadPixels(0, 0, screen_width, screen_height, GL_RGB, GL_UNSIGNED_BYTE, dst_data);
 	if (tex != HWD_SCREENTEXTURE_GENERIC2)
-		DrawScreenTexture(HWD_SCREENTEXTURE_GENERIC2);
+		DrawScreenTexture(HWD_SCREENTEXTURE_GENERIC2, NULL, 0);
 	// Flip image upside down.
 	// In other words, convert OpenGL's "bottom->top" row order into "top->bottom".
 	for(i = 0; i < screen_height/2; i++)
@@ -2156,6 +2175,7 @@ static void Shader_SetUniforms(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRGBAF
 }
 
 // code that is common between DrawPolygon and DrawIndexedTriangles
+// DrawScreenTexture also can use this function for fancier screen texture drawing
 // the corona thing is there too, i have no idea if that stuff works with DrawIndexedTriangles and batching
 static void PreparePolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FBITFIELD PolyFlags)
 {
@@ -3347,7 +3367,7 @@ EXPORT void HWRAPI(FlushScreenTextures) (void)
 		screenTextures[i] = 0;
 }
 
-EXPORT void HWRAPI(DrawScreenTexture)(int tex)
+EXPORT void HWRAPI(DrawScreenTexture)(int tex, FSurfaceInfo *surf, FBITFIELD polyflags)
 {
 	float xfix, yfix;
 	INT32 texsize = 512;
@@ -3387,7 +3407,10 @@ EXPORT void HWRAPI(DrawScreenTexture)(int tex)
 
 	pglBindTexture(GL_TEXTURE_2D, screenTextures[tex]);
 	
-	Shader_SetUniforms(NULL, NULL, NULL, NULL); // prepare shader, if it is enabled
+	if (surf)
+		PreparePolygon(surf, NULL, polyflags);
+	else
+		Shader_SetUniforms(NULL, NULL, NULL, NULL); // prepare shader, if it is enabled
 
 	pglColor4ubv(white);
 
@@ -3682,9 +3705,6 @@ EXPORT void HWRAPI(DrawScreenFinalTexture)(int tex, int width, int height)
 	clearColour.red = clearColour.green = clearColour.blue = 0;
 	clearColour.alpha = 1;
 	ClearBuffer(true, false, false, &clearColour);
-
-	if (HWR_ShouldUsePaletteRendering())
-		SetBlend(PF_NoDepthTest);
 
 	pglBindTexture(GL_TEXTURE_2D, screenTextures[tex]);
 	
