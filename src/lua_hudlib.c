@@ -409,12 +409,12 @@ static int libd_getSpritePatch(lua_State *L)
 	if ((i == SPR_PLAY) && (skn < 0))
 		return luaL_error(L, "You must provide a skin for player sprites!");
 
-	if (skn < 0)
+	if (skn < 0) // standard sprite
 	{
 		sprdef = &sprites[i];
 		sprinfo = &spriteinfo[i];
 	}
-	else
+	else // player skin
 	{
 		sprdef = &skins[skn].spritedef;
 		sprinfo = &skins[skn].sprinfo;
