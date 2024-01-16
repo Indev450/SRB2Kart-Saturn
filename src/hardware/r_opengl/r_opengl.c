@@ -3172,6 +3172,8 @@ EXPORT void HWRAPI(SetTransform) (FTransform *stransform)
 	if (shearing)
 	{
 		float dy = FIXED_TO_FLOAT(AIMINGTODY(stransform->viewaiming)) * 2; //screen_width/BASEVIDWIDTH;
+		if (stransform->flip)
+			dy *= -1.0f;
 		pglTranslatef(0.0f, -dy/BASEVIDHEIGHT, 0.0f);
 	}
 
