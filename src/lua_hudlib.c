@@ -347,15 +347,45 @@ static int libd_cachePatch(lua_State *L)
 	return 1;
 }
 
-// v.getSpritePatch(sprite, [frame, [angle, [rollangle]]])
+// this is structured like getSprite2Patch in vanilla 2.2
+// v.getSpritePatch(skin, sprite, [frame, [angle, [rollangle]]])
 static int libd_getSpritePatch(lua_State *L)
 {
 	UINT32 i; // sprite prefix
+	INT32 skn = -1; // skin number
 	UINT32 frame = 0; // 'A'
 	UINT8 angle = 0;
 	spritedef_t *sprdef;
 	spriteframe_t *sprframe;
+#ifdef ROTSPRITE
+	spriteinfo_t *sprinfo;
+#endif
 	HUDONLY
+
+	// mashing together the stuff from getSprite2Patch:
+	// get skin first!
+	if (!lua_isnoneornil(L, 1)) // ONLY do this if we have a skin
+	{
+		if (lua_isnumber(L, 1)) // find skin by number
+		{
+			skn = lua_tonumber(L, 1);
+			if (skn < 0 || skn >= MAXSKINS)
+				return luaL_error(L, "skin number %d out of range (0 - %d)", skn, MAXSKINS-1);
+			if (skn >= numskins)
+				return 0;
+		}
+		else // find skin by name
+		{
+			const char *name = luaL_checkstring(L, 1);
+			for (skn = 0; skn < numskins; skn++)
+				if (fastcmp(skins[skn].name, name))
+					break;
+			if (skn >= numskins)
+				return 0;
+		}
+	}
+
+	lua_remove(L, 1); // remove skin now
 
 	if (lua_isnumber(L, 1)) // sprite number given, e.g. SPR_THOK
 	{
@@ -375,11 +405,20 @@ static int libd_getSpritePatch(lua_State *L)
 	else
 		return 0;
 
-	// TODO: figure out a means of getting playersprites without crashes
-	if (i == SPR_PLAY) // not for players
-		return luaL_error(L, "Player sprites are not supported.");
+	// get outta dodge if we're a playersprite and have no skin
+	if ((i == SPR_PLAY) && (skn < 0))
+		return luaL_error(L, "You must provide a skin for player sprites!");
 
-	sprdef = &sprites[i];
+	if (skn < 0)
+	{
+		sprdef = &sprites[i];
+		sprinfo = &spriteinfo[i];
+	}
+	else
+	{
+		sprdef = &skins[skn].spritedef;
+		sprinfo = &skins[skn].sprinfo;
+	}
 
 	// set frame number
 	frame = luaL_optinteger(L, 2, 0);
@@ -406,7 +445,7 @@ static int libd_getSpritePatch(lua_State *L)
 		INT32 rot = R_GetRollAngle(rollangle);
 
 		if (rot) {
-			patch_t *rotsprite = Patch_GetRotatedSprite(sprframe, frame, angle, sprframe->flip & (1<<angle), false, &spriteinfo[i], rot);
+			patch_t *rotsprite = Patch_GetRotatedSprite(sprframe, frame, angle, sprframe->flip & (1<<angle), false, sprinfo, rot);
 			LUA_PushUserdata(L, rotsprite, META_PATCH);
 			lua_pushboolean(L, false);
 			lua_pushboolean(L, true);
