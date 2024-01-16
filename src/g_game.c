@@ -3351,7 +3351,7 @@ void G_AddPlayer(INT32 playernum)
 	p->jointime = 0;
 	p->playerstate = PST_REBORN;
 
-	demo_extradata[playernum] |= DXD_LOCALSKIN|DXD_PLAYSTATE|DXD_COLOR|DXD_NAME|DXD_SKIN; // Set everything
+	demo_extradata[playernum] |= DXD_PLAYSTATE|DXD_COLOR|DXD_NAME|DXD_SKIN|DXD_LOCALSKIN; // Set everything
 }
 
 void G_ExitLevel(void)
@@ -6109,8 +6109,6 @@ void G_GhostTicker(void)
 					g->p += 16; // yea
 				if (ziptic & DXD_PLAYSTATE && READUINT8(g->p) != DXD_PST_PLAYING)
 					I_Error("Ghost is not a record attack ghost"); //@TODO lmao don't blow up like this
-				if (ziptic & DXD_LOCALSKIN) // originally this line was above the playstate check which causes the crash so uhh dont do that
-					g->p += 16; // not you too!
 			}
 			else if (ziptic == DW_RNG)
 				g->p += 4; // RNG seed
