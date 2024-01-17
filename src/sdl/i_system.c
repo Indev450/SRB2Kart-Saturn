@@ -420,7 +420,7 @@ static void I_ReportSignal(int num, int coredumped)
 {
 	//static char msg[] = "oh no! back to reality!\r\n";
 	const char *      sigmsg;
-	char msg[128];
+	char msg[256];
 
 	switch (num)
 	{
@@ -459,15 +459,23 @@ static void I_ReportSignal(int num, int coredumped)
 			sprintf(msg, "%s (core dumped)", sigmsg);
 		else
 			strcat(msg, " (core dumped)");
-
-		sigmsg = msg;
 	}
+	else
+	{
+		sprintf(msg, "%s", sigmsg);
+	}
+
+#ifdef HAVE_LIBBACKTRACE
+	strncat(msg, "\n\nCrash report has been saved into srb2kart-crash-log.txt", 255);
+#elif defined(_WIN32) && !defined(__MINGW64__)
+	strncat(msg, "\n\nCrash report has been saved into srb2kart.rpt", 255);
+#endif
 
 	I_OutputMsg("\nProcess killed by signal: %s\n\n", sigmsg);
 
 	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
 		"Process killed by signal",
-		sigmsg, NULL);
+		msg, NULL);
 }
 
 #ifndef NEWSIGNALHANDLER
