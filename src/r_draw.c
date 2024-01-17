@@ -110,11 +110,12 @@ INT32 ds_y, ds_x1, ds_x2;
 lighttable_t *ds_colormap;
 fixed_t ds_xfrac, ds_yfrac, ds_xstep, ds_ystep;
 
-UINT8 *ds_source; // start of a 64*64 tile image
+UINT8 *ds_source; // points to the start of a flat
 UINT8 *ds_transmap; // one of the translucency tables
 
-pslope_t *ds_slope; // Current slope being used
-floatv3_t ds_su, ds_sv, ds_sz; // Vectors for... stuff?
+// Vectors for Software's tilted slope drawers
+floatv3_t *ds_su, *ds_sv, *ds_sz;
+floatv3_t *ds_sup, *ds_svp, *ds_szp;
 float focallengthf, zeroheight;
 
 /**	\brief Variable flat sizes
