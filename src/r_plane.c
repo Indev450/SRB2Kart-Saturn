@@ -802,7 +802,7 @@ void R_SetScaledSlopePlane(pslope_t *slope, fixed_t xpos, fixed_t ypos, fixed_t 
 	float ang;
 
 	R_SetSlopePlaneOrigin(slope, xpos, ypos, zpos, xoff, yoff, angle);
-	height = P_GetZAt(slope, xpos, ypos);
+	height = P_GetSlopeZAt(slope, xpos, ypos);
 	zeroheight = FixedToFloat(height - zpos);
 
 	// m is the v direction vector in view space
@@ -815,9 +815,9 @@ void R_SetScaledSlopePlane(pslope_t *slope, fixed_t xpos, fixed_t ypos, fixed_t 
 	n->z = -xscale * cos(ang);
 
 	ang = ANG2RAD(plangle);
-	temp = P_GetZAt(slope, xpos + FloatToFixed(yscale * sin(ang)), ypos + FloatToFixed(yscale * cos(ang)));
+	temp = P_GetSlopeZAt(slope, xpos + FloatToFixed(yscale * sin(ang)), ypos + FloatToFixed(yscale * cos(ang)));
 	m->y = FixedToFloat(temp - height);
-	temp = P_GetZAt(slope, xpos + FloatToFixed(xscale * cos(ang)), ypos - FloatToFixed(xscale * sin(ang)));
+	temp = P_GetSlopeZAt(slope, xpos + FloatToFixed(xscale * cos(ang)), ypos - FloatToFixed(xscale * sin(ang)));
 	n->y = FixedToFloat(temp - height);
 }
 
