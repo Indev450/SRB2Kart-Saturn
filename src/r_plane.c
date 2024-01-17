@@ -418,11 +418,11 @@ visplane_t *R_FindPlane(fixed_t height, INT32 picnum, INT32 lightlevel,
 		if (plangle != 0)
 		{
 			// Add the view offset, rotated by the plane angle.
-			float ang = ANG2RAD(plangle);
-			float x = FixedToFloat(xoff);
-			float y = FixedToFloat(yoff);
-			xoff = FloatToFixed(x * cos(ang) + y * sin(ang));
-			yoff = FloatToFixed(-x * sin(ang) + y * cos(ang));
+			fixed_t cosinecomponent = FINECOSINE(plangle>>ANGLETOFINESHIFT);
+			fixed_t sinecomponent = FINESINE(plangle>>ANGLETOFINESHIFT);
+			fixed_t oldxoff = xoff;
+			xoff = FixedMul(xoff,cosinecomponent)+FixedMul(yoff,sinecomponent);
+			yoff = -FixedMul(oldxoff,sinecomponent)+FixedMul(yoff,cosinecomponent);
 		}
 	}
 
@@ -747,19 +747,16 @@ static void R_SetSlopePlaneOrigin(pslope_t *slope, fixed_t xpos, fixed_t ypos, f
 {
 	floatv3_t *p = &ds_slope_origin;
 
-	INT64 vx = (INT64)xpos + (INT64)xoff;
-	INT64 vy = (INT64)ypos - (INT64)yoff;
-
-	float vxf = vx / (float)FRACUNIT;
-	float vyf = vy / (float)FRACUNIT;
+	float vx = FixedToFloat(xpos + xoff);
+	float vy = FixedToFloat(ypos - yoff);
 	float ang = ANG2RAD(ANGLE_270 - angle);
 
 	// p is the texture origin in view space
 	// Don't add in the offsets at this stage, because doing so can result in
 	// errors if the flat is rotated.
-	p->x = vxf * cos(ang) - vyf * sin(ang);
-	p->z = vxf * sin(ang) + vyf * cos(ang);
-	p->y = (R_GetZAt(slope, -xoff, yoff) - zpos) / (float)FRACUNIT;
+	p->x = vx * cos(ang) - vy * sin(ang);
+	p->z = vx * sin(ang) + vy * cos(ang);
+	p->y = FixedToFloat(P_GetZAt(slope, -xoff, yoff) - zpos);
 }
 
 // This function calculates all of the vectors necessary for drawing a sloped plane.
@@ -784,10 +781,10 @@ void R_SetSlopePlane(pslope_t *slope, fixed_t xpos, fixed_t ypos, fixed_t zpos, 
 	n->x = sin(ang);
 	n->z = -cos(ang);
 
-	plangle >>= ANGLETOFINESHIFT;
-	temp = P_GetZAt(slope, xpos + FINESINE(plangle), ypos + FINECOSINE(plangle));
+	ang = ANG2RAD(plangle);
+	temp = P_GetZAt(slope, xpos + FloatToFixed(sin(ang)), ypos + FloatToFixed(cos(ang)));
 	m->y = FixedToFloat(temp - height);
-	temp = P_GetZAt(slope, xpos + FINECOSINE(plangle), ypos - FINESINE(plangle));
+	temp = P_GetZAt(slope, xpos + FloatToFixed(cos(ang)), ypos - FloatToFixed(sin(ang)));
 	n->y = FixedToFloat(temp - height);
 }
 
@@ -802,7 +799,7 @@ void R_SetScaledSlopePlane(pslope_t *slope, fixed_t xpos, fixed_t ypos, fixed_t 
 	float ang;
 
 	R_SetSlopePlaneOrigin(slope, xpos, ypos, zpos, xoff, yoff, angle);
-	height = P_GetSlopeZAt(slope, xpos, ypos);
+	height = P_GetZAt(slope, xpos, ypos);
 	zeroheight = FixedToFloat(height - zpos);
 
 	// m is the v direction vector in view space
@@ -815,9 +812,9 @@ void R_SetScaledSlopePlane(pslope_t *slope, fixed_t xpos, fixed_t ypos, fixed_t 
 	n->z = -xscale * cos(ang);
 
 	ang = ANG2RAD(plangle);
-	temp = P_GetSlopeZAt(slope, xpos + FloatToFixed(yscale * sin(ang)), ypos + FloatToFixed(yscale * cos(ang)));
+	temp = P_GetZAt(slope, xpos + FloatToFixed(yscale * sin(ang)), ypos + FloatToFixed(yscale * cos(ang)));
 	m->y = FixedToFloat(temp - height);
-	temp = P_GetSlopeZAt(slope, xpos + FloatToFixed(xscale * cos(ang)), ypos - FloatToFixed(xscale * sin(ang)));
+	temp = P_GetZAt(slope, xpos + FloatToFixed(xscale * cos(ang)), ypos - FloatToFixed(xscale * sin(ang)));
 	n->y = FixedToFloat(temp - height);
 }
 
@@ -871,18 +868,28 @@ static void R_SetSlopePlaneVectors(visplane_t *pl, INT32 y, fixed_t xoff, fixed_
 	R_CalculateSlopeVectors();
 }
 
-static inline void R_AdjustSlopeCoordinates(vector3_t *origin)
+/*
+	Essentially: We can't & the components along the regular axes when the plane is rotated.
+	This is because the distance on each regular axis in order to loop is different.
+	We rotate them, & the components, add them together, & them again, and then rotate them back.
+	These three seperate & operations are done per axis in order to prevent overflows.
+	toast 10/04/17
+*/
+static inline void R_AdjustSlopeCoordinates(visplane_t *pl)
 {
 	const fixed_t modmask = ((1 << (32-nflatshiftup)) - 1);
 
-	fixed_t ox = (origin->x & modmask);
-	fixed_t oy = -(origin->y & modmask);
+	const fixed_t cosinecomponent = FINECOSINE(pl->plangle>>ANGLETOFINESHIFT);
+	const fixed_t sinecomponent = FINESINE(pl->plangle>>ANGLETOFINESHIFT);
 
-	xoffs &= modmask;
+	fixed_t temp = xoffs;
+	xoffs = (FixedMul(temp,cosinecomponent) & modmask) + (FixedMul(yoffs,sinecomponent) & modmask);
+	yoffs = (-FixedMul(temp,sinecomponent) & modmask) + (FixedMul(yoffs,cosinecomponent) & modmask);
+
+	temp = xoffs & modmask;
 	yoffs &= modmask;
-
-	xoffs -= (origin->x - ox);
-	yoffs += (origin->y + oy);
+	xoffs = FixedMul(temp,cosinecomponent)+FixedMul(yoffs,-sinecomponent); // negative sine for opposite direction
+	yoffs = -FixedMul(temp,-sinecomponent)+FixedMul(yoffs,cosinecomponent);
 }
 
 void R_DrawSinglePlane(visplane_t *pl)
@@ -1103,9 +1110,9 @@ void R_DrawSinglePlane(visplane_t *pl)
 
 	if (pl->slope)
 	{
-		if (!pl->plangle)
+		if (xoffs || yoffs)
 		{
-			R_AdjustSlopeCoordinates(&pl->slope->o);
+			R_AdjustSlopeCoordinates(pl);
 		}
 		
 		if (planeripple.active)
