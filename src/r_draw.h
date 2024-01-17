@@ -155,7 +155,9 @@ void R_DrawSpan_8(void);
 void R_CalcTiltedLighting(fixed_t start, fixed_t end);
 void R_DrawTiltedSpan_8(void);
 void R_DrawTiltedTranslucentSpan_8(void);
+#ifndef NOWATER
 void R_DrawTiltedTranslucentWaterSpan_8(void);
+#endif
 void R_DrawTiltedSplat_8(void);
 void R_DrawSplat_8(void);
 void R_DrawTranslucentSplat_8(void);

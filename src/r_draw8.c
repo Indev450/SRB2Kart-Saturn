@@ -644,7 +644,7 @@ void R_CalcTiltedLighting(fixed_t start, fixed_t end)
 	}
 }
 
-#define PLANELIGHTFLOAT (BASEVIDWIDTH * BASEVIDWIDTH / vid.width / zeroheight / 21.0f * FIXED_TO_FLOAT(fovtan))
+#define PLANELIGHTFLOAT (BASEVIDWIDTH * BASEVIDWIDTH / vid.width / (zeroheight - FIXED_TO_FLOAT(viewz)) / 21.0f * FIXED_TO_FLOAT(fovtan))
 
 /**	\brief The R_DrawTiltedSpan_8 function
 	Draw slopes! Holy sheit!
@@ -917,6 +917,7 @@ void R_DrawTiltedTranslucentSpan_8(void)
 #endif
 }
 
+#ifndef NOWATER
 /**	\brief The R_DrawTiltedTranslucentWaterSpan_8 function
 	Like DrawTiltedTranslucentSpan, but for water
 */
@@ -1053,6 +1054,7 @@ void R_DrawTiltedTranslucentWaterSpan_8(void)
 	}
 #endif
 }
+#endif // NOWATER
 
 void R_DrawTiltedSplat_8(void)
 {
@@ -1499,6 +1501,7 @@ void R_DrawTranslucentSpan_8 (void)
 	}
 }
 
+#ifndef NOWATER
 void R_DrawTranslucentWaterSpan_8(void)
 {
 	UINT32 xposition;
@@ -1575,6 +1578,7 @@ void R_DrawTranslucentWaterSpan_8(void)
 		yposition += ystep;
 	}
 }
+#endif
 
 /**	\brief The R_DrawFogSpan_8 function
 	Draws the actual span with fogging.
