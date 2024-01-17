@@ -70,8 +70,8 @@ typedef struct {
 	float x, y, z;
 } floatv3_t;
 
-// Vectors for Software's tilted slope drawers
-extern floatv3_t *ds_su, *ds_sv, *ds_sz;
+extern pslope_t *ds_slope; // Current slope being used
+extern floatv3_t ds_su[MAXVIDHEIGHT], ds_sv[MAXVIDHEIGHT], ds_sz[MAXVIDHEIGHT]; // Vectors for... stuff?
 extern floatv3_t *ds_sup, *ds_svp, *ds_szp;
 extern float focallengthf, zeroheight;
 
