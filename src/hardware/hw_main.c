@@ -1008,7 +1008,7 @@ static void HWR_DrawSegsSplats(FSurfaceInfo * pSurf)
 			shader = (HWR_ShouldUsePaletteRendering() ? 10 : 2);	// wall shader
 		}
 		
-		HWD.HWR_ProcessPolygon(&pSurf, wallVerts, 4, i|PF_Modulated|PF_Decal, shader, false);
+		HWR_ProcessPolygon(&pSurf, wallVerts, 4, i|PF_Modulated|PF_Decal, shader, false);
 	}
 }
 #endif
