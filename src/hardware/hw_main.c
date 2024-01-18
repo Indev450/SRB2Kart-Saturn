@@ -73,7 +73,7 @@ static void CV_screentextures_ONChange(void);
 static void CV_useCustomShaders_ONChange(void); 
 static void CV_grshaders_OnChange(void);
 static void CV_grpaletterendering_OnChange(void);
-static void CV_grpalettedepth_OnChange(void); 
+static void CV_grpalettedepth_OnChange(void);
 
 static CV_PossibleValue_t grfakecontrast_cons_t[] = {{0, "Off"}, {1, "Standard"}, {2, "Smooth"}, {0, NULL}};
 
@@ -6372,7 +6372,7 @@ void HWR_AddCommands(void)
 	CV_RegisterVar(&cv_grscreentextures);
 	
 	CV_RegisterVar(&cv_grrenderdistance);
-	
+
 	CV_RegisterVar(&cv_grfakecontrast);
 	CV_RegisterVar(&cv_grslopecontrast);
 	
