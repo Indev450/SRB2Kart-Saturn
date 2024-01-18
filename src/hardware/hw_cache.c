@@ -33,12 +33,20 @@ static INT32 blocksize, blockwidth, blockheight;
 INT32 patchformat = GR_TEXFMT_AP_88; // use alpha for holes
 INT32 textureformat = GR_TEXFMT_P_8; // use chromakey for hole
 
+RGBA_t mapPalette[256] = {0}; // the palette for the currently loaded level or menu etc.
+
+// Returns a pointer to the palette which should be used for caching textures.
+RGBA_t *HWR_GetTexturePalette(void)
+{
+	return HWR_ShouldUsePaletteRendering() ? mapPalette : pLocalPalette;
+}
+
 // sprite, use alpha and chroma key for hole
 static void HWR_DrawPatchInCache(GLMipmap_t *mipmap,
 	INT32 pblockwidth, INT32 pblockheight, INT32 blockmodulo,
 	INT32 ptexturewidth, INT32 ptextureheight,
 	INT32 originx, INT32 originy, // where to draw patch in surface block
-	const patch_t *realpatch, INT32 bpp)
+	const patch_t *realpatch, INT32 bpp, RGBA_t *palette)
 {
 	INT32 x, x1, x2;
 	INT32 col, ncols;
@@ -67,6 +75,8 @@ static void HWR_DrawPatchInCache(GLMipmap_t *mipmap,
 
 	if (!ptexturewidth)
 		return;
+	
+	palette = HWR_GetTexturePalette();
 
 	col = x * pblockwidth / ptexturewidth;
 	ncols = ((x2 - x) * pblockwidth) / ptexturewidth;
@@ -152,10 +162,10 @@ static void HWR_DrawPatchInCache(GLMipmap_t *mipmap,
 					case 2 : texelu16 = (UINT16)((alpha<<8) | texel);
 					         memcpy(dest, &texelu16, sizeof(UINT16));
 					         break;
-					case 3 : colortemp = V_GetColor(texel);
+					case 3 : colortemp = palette[texel];
 					         memcpy(dest, &colortemp, sizeof(RGBA_t)-sizeof(UINT8));
 					         break;
-					case 4 : colortemp = V_GetColor(texel);
+					case 4 : colortemp = palette[texel];
 					         colortemp.s.alpha = alpha;
 					         memcpy(dest, &colortemp, sizeof(RGBA_t));
 					         break;
@@ -329,6 +339,9 @@ static void HWR_GenerateTexture(INT32 texnum, GLTexture_t *grtex)
 
 	INT32 i;
 	boolean skyspecial = false; //poor hack for Legacy large skies..
+	
+	RGBA_t *palette;
+	palette = HWR_GetTexturePalette();
 
 	texture = textures[texnum];
 
@@ -349,7 +362,12 @@ static void HWR_GenerateTexture(INT32 texnum, GLTexture_t *grtex)
 	HWR_ResizeBlock (texture->width, texture->height, &grtex->mipmap.grInfo);
 	grtex->mipmap.width = (UINT16)blockwidth;
 	grtex->mipmap.height = (UINT16)blockheight;
-	grtex->mipmap.grInfo.format = textureformat;
+	//grtex->mipmap.grInfo.format = textureformat;
+	
+	if (skyspecial)
+		grtex->mipmap.grInfo.format = GR_RGBA; // that skyspecial code below assumes this format ...
+	else
+		grtex->mipmap.grInfo.format = textureformat;
 
 	grtex->mipmap.colormap = colormaps;
 
@@ -365,7 +383,7 @@ static void HWR_GenerateTexture(INT32 texnum, GLTexture_t *grtex)
 		INT32 j;
 		RGBA_t col;
 
-		col = V_GetColor(HWR_CHROMAKEY_EQUIVALENTCOLORINDEX);
+		col = palette[HWR_CHROMAKEY_EQUIVALENTCOLORINDEX];
 		for (j = 0; j < blockheight; j++)
 		{
 			for (i = 0; i < blockwidth; i++)
@@ -388,7 +406,7 @@ static void HWR_GenerateTexture(INT32 texnum, GLTexture_t *grtex)
 		                     texture->width, texture->height,
 		                     patch->originx, patch->originy,
 		                     realpatch,
-		                     format2bpp[grtex->mipmap.grInfo.format]);
+		                     format2bpp[grtex->mipmap.grInfo.format], palette);
 		Z_Unlock(realpatch);
 	}
 	//Hurdler: not efficient at all but I don't remember exactly how HWR_DrawPatchInCache works :(
@@ -412,6 +430,8 @@ static void HWR_GenerateTexture(INT32 texnum, GLTexture_t *grtex)
 void HWR_MakePatch (patch_t *patch, GLPatch_t *grPatch, GLMipmap_t *grMipmap, boolean makebitmap)
 {
 	INT32 newwidth, newheight;
+	
+	RGBA_t *palette = HWR_GetTexturePalette();
 
 	// don't do it twice (like a cache)
 	if (grMipmap->width == 0)
@@ -456,7 +476,7 @@ void HWR_MakePatch (patch_t *patch, GLPatch_t *grPatch, GLMipmap_t *grMipmap, bo
 			grPatch->width, grPatch->height,
 			0, 0,
 			patch,
-			format2bpp[grMipmap->grInfo.format]);
+			format2bpp[grMipmap->grInfo.format], palette);
 	}
 
 	grPatch->max_s = (float)newwidth / (float)blockwidth;
@@ -557,25 +577,6 @@ void HWR_PrepLevelCache(size_t pnumtextures)
 		I_Error("HWR_PrepLevelCache: can't alloc gr_textures");
 }
 
-void HWR_SetPalette(RGBA_t *palette)
-{
-	//Hudler: 16/10/99: added for OpenGL gamma correction
-	RGBA_t gamma_correction = {0x7F7F7F7F};
-
-	//Hurdler 16/10/99: added for OpenGL gamma correction
-	gamma_correction.s.red   = (UINT8)cv_grgammared.value;
-	gamma_correction.s.green = (UINT8)cv_grgammagreen.value;
-	gamma_correction.s.blue  = (UINT8)cv_grgammablue.value;
-	HWD.pfnSetPalette(palette, &gamma_correction);
-
-	// hardware driver will flush there own cache if cache is non paletized
-	// now flush data texture cache so 32 bit texture are recomputed
-	if (patchformat == GR_RGBA || textureformat == GR_RGBA)
-	{
-		Z_FreeTags(PU_HWRCACHE, PU_HWRCACHE);
-		Z_FreeTags(PU_HWRCACHE_UNLOCKED, PU_HWRCACHE_UNLOCKED);
-	}
-}
 // --------------------------------------------------------------------------
 // Make sure texture is downloaded and set it as the source
 // --------------------------------------------------------------------------
@@ -821,6 +822,7 @@ static void HWR_DrawFadeMaskInCache(GLMipmap_t *mipmap, INT32 pblockwidth, INT32
 	UINT8 *flat;
 	UINT8 *dest, *src, texel;
 	RGBA_t col;
+	RGBA_t *palette = HWR_GetTexturePalette();
 
 	// Place the flats data into flat
 	W_ReadLump(fademasklumpnum, Z_Malloc(W_LumpLength(fademasklumpnum),
@@ -838,7 +840,7 @@ static void HWR_DrawFadeMaskInCache(GLMipmap_t *mipmap, INT32 pblockwidth, INT32
 		{
 			// fademask bpp is always 1, and is used just for alpha
 			texel = src[(posx)>>FRACBITS];
-			col = V_GetColor(texel);
+			col = palette[texel];
 			*dest = col.s.red; // take the red level of the colour and use it for alpha, as fademasks do
 
 			dest++;
@@ -912,6 +914,194 @@ void HWR_GetFadeMask(lumpnum_t fademasklumpnum)
 
 	// The system-memory data can be purged now.
 	Z_ChangeTag(grmip->grInfo.data, PU_HWRCACHE_UNLOCKED);
+}
+
+// =================================================
+//             PALETTE HANDLING
+// =================================================
+
+void HWR_SetPalette(RGBA_t *palette)
+{
+	if (HWR_ShouldUsePaletteRendering())
+	{
+		// set the palette for palette postprocessing
+		if (cv_grpalettedepth.value == 16)
+		{
+			// crush to 16-bit rgb565, like software currently does in the standard configuration
+			// Note: Software's screenshots have the 24-bit palette, but the screen gets
+			// the 16-bit version! For making comparison screenshots either use an external screenshot
+			// tool or set the palette depth to 24 bits.
+			RGBA_t crushed_palette[256];
+			int i;
+			for (i = 0; i < 256; i++)
+			{
+				float fred = (float)(palette[i].s.red >> 3);
+				float fgreen = (float)(palette[i].s.green >> 2);
+				float fblue = (float)(palette[i].s.blue >> 3);
+				crushed_palette[i].s.red = (UINT8)(fred / 31.0f * 255.0f);
+				crushed_palette[i].s.green = (UINT8)(fgreen / 63.0f * 255.0f);
+				crushed_palette[i].s.blue = (UINT8)(fblue / 31.0f * 255.0f);
+				crushed_palette[i].s.alpha = 255;
+			}
+			HWD.pfnSetScreenPalette(crushed_palette);
+		}
+		else
+		{
+			HWD.pfnSetScreenPalette(palette);
+		}
+
+		// this part is responsible for keeping track of the palette OUTSIDE of a level.
+		if ((!(gamestate == GS_LEVEL)) || (gamestate == GS_TITLESCREEN))
+			HWR_SetMapPalette();
+	}
+	else
+	{
+		// set the palette for the textures
+		HWD.pfnSetTexturePalette(palette);
+		// reset mapPalette so next call to HWR_SetMapPalette will update everything correctly
+		memset(mapPalette, 0, sizeof(mapPalette));
+		// hardware driver will flush there own cache if cache is non paletized
+		// now flush data texture cache so 32 bit texture are recomputed
+
+		//if (patchformat == GL_TEXFMT_RGBA || textureformat == GL_TEXFMT_RGBA)
+		if (patchformat == GR_RGBA || textureformat == GR_RGBA)
+		{
+			Z_FreeTag(PU_HWRCACHE);
+			Z_FreeTag(PU_HWRCACHE_UNLOCKED);
+		}
+	}
+}
+
+static void HWR_SetPaletteLookup(RGBA_t *palette)
+{
+	int r, g, b;
+	UINT8 *lut = Z_Malloc(
+		HWR_PALETTE_LUT_SIZE*HWR_PALETTE_LUT_SIZE*HWR_PALETTE_LUT_SIZE*sizeof(UINT8),
+		PU_STATIC, NULL);
+#define STEP_SIZE (256/HWR_PALETTE_LUT_SIZE)
+	for (b = 0; b < HWR_PALETTE_LUT_SIZE; b++)
+	{
+		for (g = 0; g < HWR_PALETTE_LUT_SIZE; g++)
+		{
+			for (r = 0; r < HWR_PALETTE_LUT_SIZE; r++)
+			{
+				lut[b*HWR_PALETTE_LUT_SIZE*HWR_PALETTE_LUT_SIZE+g*HWR_PALETTE_LUT_SIZE+r] =
+					NearestPaletteColor(r*STEP_SIZE, g*STEP_SIZE, b*STEP_SIZE, palette);
+			}
+		}
+	}
+#undef STEP_SIZE
+	HWD.pfnSetPaletteLookup(lut);
+	Z_Free(lut);
+}
+
+// Updates mapPalette to reflect the loaded level or other game state.
+// Textures are flushed if needed.
+// Call this function only in palette rendering mode.
+void HWR_SetMapPalette(void)
+{
+	RGBA_t RGBA_converted[256];
+	RGBA_t *palette;
+	int i;
+
+	if ((!(gamestate == GS_LEVEL)) || (gamestate == GS_TITLESCREEN))
+	{
+		// outside of a level, pMasterPalette should have PLAYPAL ready for us
+		//palette = pMasterPalette; // we dont have this in kart so just use pLocalPalette as before
+
+		palette = pLocalPalette;
+	}
+	else
+	{
+		// in a level pLocalPalette might have a flash palette, but we
+		// want the map's original palette.
+		lumpnum_t lumpnum = W_GetNumForName(GetPalette());
+		size_t palsize = W_LumpLength(lumpnum);
+		UINT8 *RGB_data;
+		if (palsize < 768) // 256 * 3
+			I_Error("HWR_SetMapPalette: A programmer assumed palette lumps are at least 768 bytes long, but apparently this was a wrong assumption!\n");
+		RGB_data = W_CacheLumpNum(lumpnum, PU_CACHE);
+		// we got the RGB palette now, but we need it in RGBA format.
+		for (i = 0; i < 256; i++)
+		{
+			RGBA_converted[i].s.red = *(RGB_data++);
+			RGBA_converted[i].s.green = *(RGB_data++);
+			RGBA_converted[i].s.blue = *(RGB_data++);
+			RGBA_converted[i].s.alpha = 255;
+		}
+		palette = RGBA_converted;
+	}
+
+	// check if the palette has changed from the previous one
+	if (memcmp(mapPalette, palette, sizeof(mapPalette)))
+	{
+		memcpy(mapPalette, palette, sizeof(mapPalette));
+		// in palette rendering mode, this means that all rgba textures now have wrong colors
+		// and the lookup table is outdated
+		HWR_SetPaletteLookup(mapPalette);
+		HWD.pfnSetTexturePalette(mapPalette);
+
+		//if (patchformat == GL_TEXFMT_RGBA || textureformat == GL_TEXFMT_RGBA)
+		if (patchformat == GR_RGBA || textureformat == GR_RGBA)
+		{
+			Z_FreeTag(PU_HWRCACHE);
+			Z_FreeTag(PU_HWRCACHE_UNLOCKED);
+		}
+	}
+}
+
+// Creates a hardware lighttable from the supplied lighttable.
+// Returns the id of the hw lighttable, usable in FSurfaceInfo.
+UINT32 HWR_CreateLightTable(UINT8 *lighttable)
+{
+	UINT32 i, id;
+	RGBA_t *palette = HWR_GetTexturePalette();
+	RGBA_t *hw_lighttable = Z_Malloc(256 * 32 * sizeof(RGBA_t), PU_STATIC, NULL);
+
+	// To make the palette index -> RGBA mapping easier for the shader,
+	// the hardware lighttable is composed of RGBA colors instead of palette indices.
+	for (i = 0; i < 256 * 32; i++)
+		hw_lighttable[i] = palette[lighttable[i]];
+
+	id = HWD.pfnCreateLightTable(hw_lighttable);
+	Z_Free(hw_lighttable);
+	return id;
+}
+
+
+// get hwr lighttable id for colormap, create it if it doesn't already exist
+UINT32 HWR_GetLightTableID(extracolormap_t *colormap)
+{
+	boolean default_colormap = false;
+	if (!colormap)
+	{
+		colormap = &extra_colormaps[num_extra_colormaps]; // a place to store the hw lighttable id
+		// alternatively could just store the id in a global variable if there are issues
+		default_colormap = true;
+	}
+
+	// create hw lighttable if there isn't one
+	if (!colormap->gl_lighttable_id)
+	{
+		UINT8 *colormap_pointer;
+
+		if (default_colormap)
+			colormap_pointer = colormaps; // don't actually use the data from the "default colormap"
+		else
+			colormap_pointer = colormap->colormap;
+		colormap->gl_lighttable_id = HWR_CreateLightTable(colormap_pointer);
+	}
+
+	return colormap->gl_lighttable_id;
+}
+
+// Note: all hardware lighttable ids assigned before this
+// call become invalid and must not be used.
+void HWR_ClearLightTables(void)
+{
+	//if (vid.glstate == VID_GL_LIBRARY_LOADED) // we have pfnInit which is essentially the same, but it doesent work here for whatever reason, since this should not be done in software renderer ever!
+	if (rendermode == render_opengl)
+		HWD.pfnClearLightTables();
 }
 
 #endif //HWRENDER

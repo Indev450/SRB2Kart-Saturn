@@ -29,11 +29,7 @@
 
 EXPORT boolean HWRAPI(Init) (void);
 EXPORT void HWRAPI(SetupGLInfo) (void);
-#if defined (PURESDL) || defined (macintosh)
-EXPORT void HWRAPI(SetPalette) (INT32 *, RGBA_t *gamma);
-#else
-EXPORT void HWRAPI(SetPalette) (RGBA_t *ppal, RGBA_t *pgamma);
-#endif
+EXPORT void HWRAPI(SetTexturePalette) (RGBA_t *ppal);
 EXPORT void HWRAPI(FinishUpdate) (INT32 waitvbl);
 EXPORT void HWRAPI(Draw2DLine) (F2DCoord *v1, F2DCoord *v2, RGBA_t Color);
 EXPORT void HWRAPI(DrawPolygon) (FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags, boolean horizonSpecial);
@@ -84,9 +80,10 @@ EXPORT boolean HWRAPI(InitCustomShaders) (void);
 EXPORT void HWRAPI(StartBatching) (void);
 EXPORT void HWRAPI(RenderBatches) (precise_t *sSortTime, precise_t *sDrawTime, int *sNumPolys, int *sNumVerts, int *sNumCalls, int *sNumShaders, int *sNumTextures, int *sNumPolyFlags, int *sNumColors);
 
-EXPORT void HWRAPI(InitPalette) (int flashnum, boolean skiplut);
-EXPORT UINT32 HWRAPI(AddLightTable) (UINT8 *lighttable);
-EXPORT void HWRAPI(ClearLightTableCache) (void);
+EXPORT void HWRAPI(SetPaletteLookup)(UINT8 *lut);
+EXPORT UINT32 HWRAPI(CreateLightTable)(RGBA_t *hw_lighttable);
+EXPORT void HWRAPI(ClearLightTables)(void);
+EXPORT void HWRAPI(SetScreenPalette)(RGBA_t *palette);
 
 // ==========================================================================
 //                                      HWR DRIVER OBJECT, FOR CLIENT PROGRAM
@@ -98,7 +95,7 @@ struct hwdriver_s
 {
 	Init                	pfnInit;
 	SetupGLInfo             pfnSetupGLInfo;
-	SetPalette          	pfnSetPalette;
+	SetTexturePalette   pfnSetTexturePalette;
 	FinishUpdate        	pfnFinishUpdate;
 	Draw2DLine          	pfnDraw2DLine;
 	DrawPolygon         	pfnDrawPolygon;
@@ -139,9 +136,10 @@ struct hwdriver_s
 	StartBatching 			pfnStartBatching;
 	RenderBatches 			pfnRenderBatches;
 	
-	InitPalette 			pfnInitPalette;
-	AddLightTable 			pfnAddLightTable;
-	ClearLightTableCache 	pfnClearLightTableCache;
+	SetPaletteLookup    pfnSetPaletteLookup;
+	CreateLightTable    pfnCreateLightTable;
+	ClearLightTables    pfnClearLightTables;
+	SetScreenPalette    pfnSetScreenPalette;
 };
 
 extern struct hwdriver_s hwdriver;
