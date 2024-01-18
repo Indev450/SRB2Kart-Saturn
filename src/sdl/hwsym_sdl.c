@@ -74,7 +74,7 @@ void *hwSym(const char *funcName,void *handle)
 {
 	void *funcPointer = NULL;
 #ifdef HWRENDER
-	if (0 == strcmp("SetPalette", funcName))
+	if (0 == strcmp("SetTexturePalette", funcName))
 		funcPointer = &OglSdlSetPalette;
 
 	GETFUNC(Init);
@@ -115,10 +115,11 @@ void *hwSym(const char *funcName,void *handle)
 	GETFUNC(SetShaderInfo);
 	GETFUNC(LoadCustomShader);
 	GETFUNC(InitCustomShaders);
-
-	GETFUNC(InitPalette);
-	GETFUNC(AddLightTable);
-	GETFUNC(ClearLightTableCache);
+	
+	GETFUNC(SetPaletteLookup);
+	GETFUNC(CreateLightTable);
+	GETFUNC(ClearLightTables);
+	GETFUNC(SetScreenPalette);
 
 #else //HWRENDER
 	if (0 == strcmp("FinishUpdate", funcName))
