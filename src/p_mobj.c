@@ -8308,6 +8308,8 @@ void P_MobjThinker(mobj_t *mobj)
 			}
 
 			P_MoveOrigin(mobj, destx, desty, mobj->target->z);
+			mobj->spriteyoffset = mobj->target->spriteyoffset;
+			mobj->spritexoffset = mobj->target->spritexoffset;
 			break;
 		}
 		case MT_ROCKETSNEAKER:
@@ -11507,7 +11509,7 @@ void P_SpawnMapThing(mapthing_t *mthing)
 	mobj = P_SpawnMobj(x, y, z, i);
 
 	if (!mobj || P_MobjWasRemoved(mobj)) {
-		CONS_Alert(CONS_WARNING, "Failed to spawn map thing #%d at %d, %d\n", mthing->type, x>>FRACBITS, y>>FRACBITS);
+		CONS_Alert(CONS_ERROR, "Failed to spawn map thing #%d at %d, %d. This will crash vanilla clients!\n", mthing->type, x>>FRACBITS, y>>FRACBITS);
 		return;
 	}
 

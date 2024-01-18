@@ -57,6 +57,12 @@
 // ==========================================================================
 struct hwdriver_s hwdriver;
 
+
+boolean gr_shadersavailable = true;
+
+// Whether the internal state is set to palette rendering or not.
+static boolean gr_palette_rendering_state = false;
+
 // ==========================================================================
 // Commands and console variables
 // ==========================================================================
@@ -66,6 +72,8 @@ static void CV_anisotropic_ONChange(void);
 static void CV_screentextures_ONChange(void);
 static void CV_useCustomShaders_ONChange(void); 
 static void CV_grshaders_OnChange(void);
+static void CV_grpaletterendering_OnChange(void);
+static void CV_grpalettedepth_OnChange(void);
 
 static CV_PossibleValue_t grfakecontrast_cons_t[] = {{0, "Off"}, {1, "Standard"}, {2, "Smooth"}, {0, NULL}};
 
@@ -115,7 +123,6 @@ consvar_t cv_secbright = {"secbright", "0", CV_SAVE, secbright_cons_t,
 							
 consvar_t cv_grfovchange = {"gr_fovchange", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_grvhseffect = {"gr_vhseffect", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 							 
 // values for the far clipping plane
 static float clipping_distances[] = {1024.0f, 2048.0f, 4096.0f, 6144.0f, 8192.0f, 12288.0f, 16384.0f};
@@ -138,7 +145,10 @@ consvar_t cv_grscreentextures = {"gr_screentextures", "On", CV_CALL|CV_SAVE, CV_
 consvar_t cv_grshaders = {"gr_shaders", "On", CV_CALL|CV_SAVE, CV_OnOff, CV_grshaders_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_grusecustomshaders = {"gr_usecustomshaders", "Yes", CV_CALL|CV_SAVE, CV_OnOff, CV_useCustomShaders_ONChange, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_grpaletteshader = {"gr_paletteshader", "Off", CV_CALL|CV_SAVE, CV_OnOff, CV_grshaders_OnChange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_grpaletterendering = {"gr_paletteshader", "Off", CV_CALL|CV_SAVE, CV_OnOff, CV_grpaletterendering_OnChange, 0, NULL, NULL, 0, 0, NULL};
+
+static CV_PossibleValue_t glpalettedepth_cons_t[] = {{16, "16 bits"}, {24, "24 bits"}, {0, NULL}};
+consvar_t cv_grpalettedepth = {"gr_palettedepth", "16 bits", CV_SAVE|CV_CALL, glpalettedepth_cons_t, CV_grpalettedepth_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_grflashpal = {"gr_flashpal", "On", CV_CALL|CV_SAVE, CV_OnOff, CV_grshaders_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
@@ -171,32 +181,34 @@ static void CV_screentextures_ONChange(void)
 
 static void CV_grshaders_OnChange(void)
 {
-	if (rendermode == render_opengl)
+	if ((rendermode == render_opengl) && (cv_grpaletterendering.value))
 	{
-		if (HWR_ShouldUsePaletteRendering())
-			HWR_InitPalette(0, false);
-		
-		HWD.pfnSetSpecialState(HWD_PAL_SHADER, HWR_ShouldUsePaletteRendering());
-		
-		V_SetPalette(0);
+		// can't do palette rendering without shaders, so update the state if needed
+		HWR_TogglePaletteRendering();
 	}
 }
 
-static void CV_useCustomShaders_ONChange(void)
+static void CV_useCustomShaders_ONChange(void) // should we do a call to HWR_TogglePaletteRendering here aswell in pal rendering mode?
 {
 	if (rendermode == render_opengl)
 	{
 		if (HWR_UseShader())
 			HWD.pfnInitCustomShaders();
-		
-		if (HWR_ShouldUsePaletteRendering())
-			HWR_InitPalette(0, false);
 	}
 }
 
-void HWR_InitPalette(int flashnum, boolean skiplut)
+static void CV_grpaletterendering_OnChange(void)
 {
-    HWD.pfnInitPalette(flashnum, skiplut);
+	if ((rendermode == render_opengl) && (gr_shadersavailable))
+	{
+		HWR_TogglePaletteRendering();
+	}
+}
+
+static void CV_grpalettedepth_OnChange(void)
+{
+	if ((rendermode == render_opengl) && (HWR_ShouldUsePaletteRendering()))
+		HWR_SetPalette(pLocalPalette);
 }
 
 // ==========================================================================
@@ -229,8 +241,6 @@ static sector_t *gr_frontsector;
 static sector_t *gr_backsector;
 
 static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum, FSurfaceInfo* Surf, INT32 cutflag, ffloor_t *pfloor, FBITFIELD polyflags);
-
-boolean gr_shadersavailable = true;
 
 // Performance stats
 ps_metric_t ps_hw_nodesorttime = {0};
@@ -429,18 +439,17 @@ boolean HWR_UseShader(void)
 
 boolean HWR_ShouldUsePaletteRendering(void)
 {
-	return (cv_grpaletteshader.value && HWR_UseShader());
+	return (cv_grpaletterendering.value && HWR_UseShader());
 }
 
 boolean HWR_PalRenderFlashpal(void)
 {
-	return (cv_grpaletteshader.value && HWR_UseShader() && cv_grflashpal.value);
+	return (cv_grpaletterendering.value && HWR_UseShader() && cv_grflashpal.value);
 }
 
 void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *colormap)
 {
 	RGBA_t poly_color, tint_color, fade_color;
-	boolean default_colormap = false;
 
 	poly_color.rgba = 0xFFFFFFFF;
 	tint_color.rgba = (colormap != NULL) ? (UINT32)colormap->rgba : GL_DEFAULTMIX;
@@ -494,35 +503,9 @@ void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *col
 	Surface->LightInfo.fade_end = (colormap != NULL) ? colormap->fadeend : 31;
 	
 	if (HWR_ShouldUsePaletteRendering())
-	{
-		if (!colormap)
-		{
-			colormap = &extra_colormaps[num_extra_colormaps];
-			default_colormap = true;
-		}
-		if (!colormap->gl_lighttable_id)
-			{
-			UINT8 *colormap_pointer;
-
-			if (default_colormap)
-			{
-				colormap_pointer = colormaps;
-			}
-			else
-			{
-				colormap_pointer = colormap->colormap;
-			}
-			colormap->gl_lighttable_id = HWD.pfnAddLightTable(colormap_pointer);
-		}
-
-		Surface->LightTableId = colormap->gl_lighttable_id;
-	}
-}
-
-void HWR_ClearLightTableCache(void)
-{
-	if (rendermode == render_opengl)
-		HWD.pfnClearLightTableCache();
+		Surface->LightTableId = HWR_GetLightTableID(colormap);
+	else
+		Surface->LightTableId = 0;
 }
 
 UINT8 HWR_FogBlockAlpha(INT32 light, extracolormap_t *colormap) // Let's see if this can work
@@ -2875,8 +2858,8 @@ void HWR_AddLine(seg_t *line)
 	}
 
 	// OPTIMIZE: quickly reject orthogonal back sides.
-	angle1 = R_PointToAngleEx64(viewx, viewy, v1x, v1y);
-	angle2 = R_PointToAngleEx64(viewx, viewy, v2x, v2y);
+	angle1 = R_PointToAngle64(v1x, v1y);
+	angle2 = R_PointToAngle64(v2x, v2y);
 
 	// do an extra culling check when rendering portals
 	// check if any line vertex is on the viewable side of the portal target line
@@ -3069,8 +3052,8 @@ boolean HWR_CheckBBox(fixed_t *bspcoord)
 		if (mindist > current_bsp_culling_distance) return false;
 	}
 
-	angle1 = R_PointToAngleEx64(viewx, viewy, px1, py1);
-	angle2 = R_PointToAngleEx64(viewx, viewy, px2, py2);
+	angle1 = R_PointToAngle64(px1, py1);
+	angle2 = R_PointToAngle64(px2, py2);
 	return gld_clipper_SafeCheckRange(angle2, angle1);
 }
 
@@ -5929,8 +5912,8 @@ static void HWR_PortalClipping(gl_portal_t *portal)
 
 	line_t *line = &lines[portal->clipline];
 
-	angle1 = R_PointToAngleEx64(viewx, viewy, line->v1->x, line->v1->y);
-	angle2 = R_PointToAngleEx64(viewx, viewy, line->v2->x, line->v2->y);
+	angle1 = R_PointToAngleEx(viewx, viewy, line->v1->x, line->v1->y);
+	angle2 = R_PointToAngleEx(viewx, viewy, line->v2->x, line->v2->y);
 
 	// clip things that are not inside the portal window from our viewpoint
 	gld_clipper_SafeAddClipRange(angle2, angle1);
@@ -6160,6 +6143,20 @@ void HWR_RenderFrame(INT32 viewnumber, player_t *player, boolean skybox)
 		gr_windowcenterx += gr_viewwidth;
 	}
 
+	if (splitscreen == 2 && player == &players[displayplayers[2]])
+	{
+		// V_DrawPatchFill, but for the fourth screen only
+		GLPatch_t *gpatch = W_CachePatchName("SRB2BACK", PU_CACHE);
+		INT32 dupz = (vid.dupx < vid.dupy ? vid.dupx : vid.dupy);
+		INT32 x, y, pw = SHORT(gpatch->width) * dupz, ph = SHORT(gpatch->height) * dupz;
+
+		for (x = vid.width>>1; x < vid.width; x += pw)
+		{
+			for (y = vid.height>>1; y < vid.height; y += ph)
+				HWR_DrawStretchyFixedPatch(gpatch, (x)<<FRACBITS, (y)<<FRACBITS, FRACUNIT, FRACUNIT, V_NOSCALESTART, NULL);
+		}
+	}
+
 	// check for new console commands.
 	NetUpdate();
 
@@ -6312,8 +6309,50 @@ void HWR_RenderPlayerView(INT32 viewnumber, player_t *player)
 	HWR_RenderFrame(viewnumber, player, false);
 }
 
+// enable or disable palette rendering state depending on settings and availability
+// called when relevant settings change
+// shader recompilation is done in the cvar callback
+void HWR_TogglePaletteRendering(void)
+{
+	// which state should we go to?
+	if (HWR_ShouldUsePaletteRendering())
+	{
+		// are we not in that state already?
+		if (!gr_palette_rendering_state)
+		{
+			gr_palette_rendering_state = true;
 
+			// The textures will still be converted to RGBA by r_opengl.
+			// This however makes hw_cache use paletted blending for composite textures!
+			// (patchformat is not touched)
+			textureformat = GR_TEXFMT_P_8;
 
+			HWR_SetMapPalette();
+			HWR_SetPalette(pLocalPalette);
+
+			// If the r_opengl "texture palette" stays the same during this switch, these textures
+			// will not be cleared out. However they are still out of date since the
+			// composite texture blending method has changed. Therefore they need to be cleared.
+			//HWD.pfnClearMipMapCache();
+			HWR_PrepLevelCache(numtextures);
+		}
+	}
+	else
+	{
+		// are we not in that state already?
+		if (gr_palette_rendering_state)
+		{
+			gr_palette_rendering_state = false;
+			textureformat = GR_RGBA;
+			HWR_SetPalette(pLocalPalette);
+			// If the r_opengl "texture palette" stays the same during this switch, these textures
+			// will not be cleared out. However they are still out of date since the
+			// composite texture blending method has changed. Therefore they need to be cleared.
+			//HWD.pfnClearMipMapCache();
+			HWR_PrepLevelCache(numtextures);
+		}
+	}
+}
 
 //added by Hurdler: console varibale that are saved
 void HWR_AddCommands(void)
@@ -6356,10 +6395,9 @@ void HWR_AddCommands(void)
 	
 	CV_RegisterVar(&cv_secbright);
 	
-	CV_RegisterVar(&cv_grpaletteshader);
+	CV_RegisterVar(&cv_grpaletterendering);
+	CV_RegisterVar(&cv_grpalettedepth);
 	CV_RegisterVar(&cv_grflashpal);	
-
-	CV_RegisterVar(&cv_grvhseffect);	
 }
 
 // --------------------------------------------------------------------------
@@ -6373,21 +6411,22 @@ void HWR_Startup(void)
 	if (!startupdone)
 	{
 		CONS_Printf("HWR_Startup()...\n");
+		textureformat = patchformat = GR_RGBA;
+		
 		HWR_InitTextureCache();
 		HWR_InitMD2();
 
 		HWD.pfnSetupGLInfo();
 	}
 
-	if (rendermode == render_opengl)
-		textureformat = patchformat = GR_RGBA;
-		
 	startupdone = true;
 
 	// jimita
 	HWD.pfnKillShaders();
 	if (!HWD.pfnLoadShaders())
 		gr_shadersavailable = false;
+	
+	HWR_TogglePaletteRendering();
 
 	if (msaa)
 	{

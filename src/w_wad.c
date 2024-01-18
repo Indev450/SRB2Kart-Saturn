@@ -769,13 +769,10 @@ UINT16 W_InitFile(const char *filename, const char *lumpname, UINT16 *wadnump, b
 	{
 		if (!memcmp(wadfiles[i]->md5sum, md5sum, 16))
 		{
-			if (!local) {
-				CONS_Alert(CONS_ERROR, M_GetText("%s is already loaded\n"), filename);
-				if (handle)
-					fclose(handle);
-				return INT16_MAX;
-			}
-			CONS_Alert(CONS_WARNING, M_GetText("%s is a local skin that is already loaded\n"), filename);
+			CONS_Alert(CONS_ERROR, M_GetText("%s is already loaded\n"), filename);
+			if (handle)
+				fclose(handle);
+			return INT16_MAX;
 		}
 	}
 #endif

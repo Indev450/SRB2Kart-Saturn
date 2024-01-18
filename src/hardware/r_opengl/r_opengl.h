@@ -133,7 +133,4 @@ typedef enum
 	GLF_NOTEXENV   = 0x02,
 } oglflags_t;
 
-// in order for custom playpals n shit to work properly
-extern boolean gl_palette_initialized;
-
 #endif

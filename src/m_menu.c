@@ -1492,8 +1492,7 @@ static menuitem_t OP_ExpOptionsMenu[] =
 	{IT_STRING | IT_CVAR, 	NULL, "FFloorclip", 					&cv_ffloorclip, 		 	 85},
 	{IT_STRING | IT_CVAR, 	NULL, "Spriteclip", 					&cv_spriteclip, 		 	 95},
 #ifdef HWRENDER	
-	{IT_STRING | IT_CVAR, 	NULL, "Screen Textures", 				&cv_grscreentextures, 		 65},
-	{IT_STRING | IT_CVAR, 	NULL, "VHS effect", 					&cv_grvhseffect, 		 	 75},
+	{IT_STRING | IT_CVAR, 	NULL, "Screen Textures", 				&cv_grscreentextures, 		 75},
 	
 	{IT_STRING | IT_CVAR, 	NULL, "Splitwall/Slope texture fix",	&cv_splitwallfix, 		 	 95},
 	{IT_STRING | IT_CVAR, 	NULL, "Slope midtexture peg fix", 		&cv_slopepegfix, 		 	105},
@@ -1507,15 +1506,14 @@ static const char* OP_ExpTooltips[] =
 	NULL,
 	"Should weather be interpolated? Weather should look about the\nsame but perform a bit better when disabled.",
 	"When weather is on this will cut the object amount used in half.",
-	"Show a VHS-like effect when the game is paused or youre rewinding replays.",
+	"Show a VHS-like effect when the game is paused\n or youre rewinding replays.",
 	"Hides 3DFloors which are not visible\npotentially resulting in a performance boost.",
 	"Hides Sprites which are not visible\npotentially resulting in a performance boost.",
 #ifdef HWRENDER
 	"Should the game do Screen Textures? Provides a good boost to frames\nat the cost of some visual effects not working when disabled.",
-	"Show a VHS-like effect when the game is paused or youre rewinding replays.",
-	"Fixes issues that resulted in Textures sticking from the ground sometimes.\n This may be CPU heavy and result in worse performance in some cases.",
+	"Fixes issues that resulted in Textures sticking from the\nground sometimes.\nThis may be CPU heavy and result in worse performance in some cases.",
 	"Fixes issues that resulted in Textures not being properly skewed\n example: Fences on slopes that didnt show proper.\n This may be CPU heavy and result in worse performance in some cases.",
-	"Fixes issues that resulted in Textures on Floor over Floors ZFighting heavily.",
+	"Fixes issues that resulted in Textures on Floor over Floors\nZFighting heavily.",
 	"Toggle for FOF wall cutoff with slopes.",
 #endif
 };
@@ -1530,7 +1528,6 @@ enum
 	op_exp_sprclip,
 #ifdef HWRENDER
 	op_exp_grscrtx,
-	op_exp_grvhs,
 	op_exp_spltwal,
 	op_exp_pegging,
 	op_exp_fofzfight,
@@ -1546,7 +1543,7 @@ static menuitem_t OP_OpenGLOptionsMenu[] =
 	{IT_STRING | IT_CVAR,	NULL, "Fallback Player 3D Model",	&cv_grfallbackplayermodel,	 20},
 	{IT_STRING | IT_CVAR,	NULL, "Shaders",					&cv_grshaders,				 25},
 	//{IT_STRING|IT_CVAR,		NULL, "Use custom Shaders",			&cv_grusecustomshaders,		 35}, 
-	{IT_STRING | IT_CVAR,	NULL, "Palette Rendering",			&cv_grpaletteshader,		 30},
+	{IT_STRING | IT_CVAR,	NULL, "Palette Rendering",			&cv_grpaletterendering,		 30},
 	{IT_STRING | IT_CVAR,   NULL, "Flashpals in Palette Renderer", &cv_grflashpal, 		 	 35},
 	{IT_STRING | IT_CVAR, 	NULL, "Min Shader Brightness", 		&cv_secbright, 		 		 40},
 
@@ -1579,7 +1576,6 @@ static const char* OP_OpenGLTooltips[] =
 	"Should sprites always face the camera?",
 	"Recreates the look of software mode camera perspective.",
 	"How far the game world should be drawn.",
-	"Gamma (brightness) of colors.",
 };
 #endif
 
@@ -2160,8 +2156,8 @@ static menuitem_t OP_HudOffsetMenu[] =
 	{IT_STRING | IT_CVAR, 	NULL, 	"Vertical Offset",       		&cv_laps_yoffset,     	60},
 
 	{IT_HEADER, NULL, "Speedometer", NULL, 70},
-	{IT_STRING | IT_CVAR, 	NULL, 	"Horizontal Offset",  			&cv_spdm_xoffset, 		75},
-	{IT_STRING | IT_CVAR,	NULL,	"Vertical Offset",	  			&cv_spdm_yoffset,     	80},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Horizontal Offset",  			&cv_speed_xoffset, 		75},
+	{IT_STRING | IT_CVAR,	NULL,	"Vertical Offset",	  			&cv_speed_yoffset,     	80},
 
 	{IT_HEADER, NULL, "Mini Rankings", NULL, 90},
 	{IT_STRING | IT_CVAR, 	NULL, 	"Horizontal Offset",  			&cv_face_xoffset, 		95},
@@ -4479,7 +4475,6 @@ void M_Init(void)
 	{
 		OP_VideoOptionsMenu[op_video_ogl].status = IT_DISABLED;
 		OP_ExpOptionsMenu[op_exp_grscrtx].status = IT_DISABLED;
-		OP_ExpOptionsMenu[op_exp_grvhs].status = IT_DISABLED;
 		OP_ExpOptionsMenu[op_exp_spltwal].status = IT_DISABLED;
 		OP_ExpOptionsMenu[op_exp_pegging].status = IT_DISABLED;
 		OP_ExpOptionsMenu[op_exp_fofzfight].status = IT_DISABLED;
@@ -4487,7 +4482,6 @@ void M_Init(void)
 	}
 	
 	if (rendermode == render_opengl){
-		OP_ExpOptionsMenu[op_exp_vhs].status = IT_DISABLED;
 		OP_ExpOptionsMenu[op_exp_ffclip].status = IT_DISABLED;
 		OP_ExpOptionsMenu[op_exp_sprclip].status = IT_DISABLED;
 	}

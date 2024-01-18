@@ -39,7 +39,7 @@ INT32 doorclosed;
 
 boolean R_NoEncore(sector_t *sector, boolean ceiling)
 {
-	boolean invertencore = (GETSECSPECIAL(sector->special, 2) == 12);
+	boolean invertencore = (GETSECSPECIAL(sector->special, 2) == 15);
 #if 0 // perfect implementation
 	INT32 val = GETSECSPECIAL(sector->special, 3);
 	if (val != 1 && val != 3 // spring panel
@@ -410,8 +410,8 @@ static void R_AddLine(seg_t *line)
 		return;
 
 	// big room fix
-	angle1 = R_PointToAngleEx64(viewx, viewy, line->v1->x, line->v1->y);
-	angle2 = R_PointToAngleEx64(viewx, viewy, line->v2->x, line->v2->y);
+	angle1 = R_PointToAngle64(line->v1->x, line->v1->y);
+	angle2 = R_PointToAngle64(line->v2->x, line->v2->y);
 	curline = line;
 
 	// Clip to view edges.
@@ -613,8 +613,8 @@ static boolean R_CheckBBox(const fixed_t *bspcoord)
 	check = checkcoord[boxpos];
 
 	// big room fix
-	angle1 = R_PointToAngleEx64(viewx, viewy, bspcoord[check[0]], bspcoord[check[1]]) - viewangle;
-	angle2 = R_PointToAngleEx64(viewx, viewy, bspcoord[check[2]], bspcoord[check[3]]) - viewangle;
+	angle1 = R_PointToAngle64(bspcoord[check[0]], bspcoord[check[1]]) - viewangle;
+	angle2 = R_PointToAngle64(bspcoord[check[2]], bspcoord[check[3]]) - viewangle;
 
 	if ((signed)angle1 < (signed)angle2)
 	{
