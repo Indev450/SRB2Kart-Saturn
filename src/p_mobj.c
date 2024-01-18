@@ -8308,6 +8308,8 @@ void P_MobjThinker(mobj_t *mobj)
 			}
 
 			P_MoveOrigin(mobj, destx, desty, mobj->target->z);
+			mobj->spriteyoffset = mobj->target->spriteyoffset;
+			mobj->spritexoffset = mobj->target->spritexoffset;
 			break;
 		}
 		case MT_ROCKETSNEAKER:
