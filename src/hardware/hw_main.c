@@ -160,6 +160,8 @@ consvar_t cv_grspritebillboarding = {"gr_spritebillboarding", "On", CV_SAVE, CV_
 consvar_t cv_grfakecontrast = {"gr_fakecontrast", "Standard", CV_SAVE, grfakecontrast_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_grslopecontrast = {"gr_slopecontrast", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_grhorizonlines = {"gr_horizonlines", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; 
+
 
 static void CV_filtermode_ONChange(void)
 {
@@ -837,7 +839,7 @@ void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, boolean isc
 
 	HWD.pfnDrawPolygon(&Surf, planeVerts, nrPlaneVerts, PolyFlags, false);
 
-	if (subsector)
+	if (subsector && cv_grhorizonlines.value)
 	{
 		// Horizon lines
 		FOutVector horizonpts[6];
@@ -6375,6 +6377,7 @@ void HWR_AddCommands(void)
 
 	CV_RegisterVar(&cv_grfakecontrast);
 	CV_RegisterVar(&cv_grslopecontrast);
+	CV_RegisterVar(&cv_grhorizonlines);
 	
 	CV_RegisterVar(&cv_grfovchange);
 	
