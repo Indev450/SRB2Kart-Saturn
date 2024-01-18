@@ -1138,61 +1138,43 @@ void R_Init(void)
 boolean R_IsPointInSector(sector_t *sector, fixed_t x, fixed_t y)
 {
 	size_t i;
-	line_t *closest = NULL;
-	fixed_t closestdist = INT32_MAX;
+	size_t passes = 0;
 
 	for (i = 0; i < sector->linecount; i++)
 	{
-		vertex_t v, *v1, *v2;
-		fixed_t dist;
+		line_t *line = sector->lines[i];
+		vertex_t *v1, *v2;
 
-		// find the line closest to the point we're looking for.
-		P_ClosestPointOnLine(x, y, sector->lines[i], &v);
+		if (line->frontsector == line->backsector)
+			continue;
 
-		v1 = sector->lines[i]->v1;
-		v2 = sector->lines[i]->v2;
+		v1 = line->v1;
+		v2 = line->v2;
 
-		// do some correction in order to prevent points outside the line from being measured.
-		if (abs(v1->x - v2->x) > abs(v1->y - v2->y))
+		// make sure v1 is below v2
+		if (v1->y > v2->y)
 		{
-			if (v.x < v1->x && v.x < v2->x)
-				v = v1->x < v2->x ? *v1 : *v2;
-			else if (v.x > v1->x && v.x > v2->x)
-				v = v1->x > v2->x ? *v1 : *v2;
+			vertex_t *tmp = v1;
+			v1 = v2;
+			v2 = tmp;
 		}
-		else
-		{
-			if (v.y < v1->y && v.y < v2->y)
-				v = v1->y < v2->y ? *v1 : *v2;
-			else if (v.y > v1->y && v.y > v2->y)
-				v = v1->y > v2->y ? *v1 : *v2;
-		}
+		else if (v1->y == v2->y)
+			// horizontal line, we can't match this
+			continue;
 
-		dist = R_PointToDist2(v.x, v.y, x, y);
-		if (dist < closestdist)
+		if (v1->y < y && y <= v2->y)
 		{
-			closest = sector->lines[i];
-			closestdist = dist;
-		}
-		else if (dist == closestdist)
-		{
-			// We're probably matching against a corner here
-			// Of our two lines, find the one with an angle closest towards the mobj
-			// ...But in the end, we really only care whether the lesser angle is "less than 180",
-			// so we'll use P_PointOnLineSide on one line and switch to the other if it fails
-			if ((v.x == closest->v1->x && v.y == closest->v1->y && !P_PointOnLineSide(x, y, closest))
-			||  (v.x == closest->v2->x && v.y == closest->v2->y &&  P_PointOnLineSide(x, y, closest)))
-			{
-				closest = sector->lines[i];
-				closestdist = dist;
-			}
-			// If we're NOT at a corner, then either we're on the same side of both lines,
-			// or a later line in the sector will be closer, so don't bother switching now
+			// if the y axis in inside the line, find the point where we intersect on the x axis...
+			fixed_t vx = v1->x + (INT64)(v2->x - v1->x) * (y - v1->y) / (v2->y - v1->y);
+
+			// ...and if that point is to the left of the point, count it as inside.
+			if (vx < x)
+				passes++;
 		}
 	}
 
-	// if the side of the closest line is in this sector, we're inside of it.
-	return P_PointOnLineSide(x, y, closest) == 0 ? closest->frontsector == sector : closest->backsector == sector;
+	// and odd number of passes means we're inside the polygon.
+	return passes % 2;
 }
 
 //
