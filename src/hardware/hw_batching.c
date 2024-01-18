@@ -195,12 +195,6 @@ static int compareDrawCalls(const void *p1, const void *p2)
 		downloaded2 = poly2->texture->downloaded;
 	diff64 = downloaded1 - downloaded2;
 	if (diff64 != 0) return diff64;
-	
-	if (HWR_ShouldUsePaletteRendering())
-	{
-		diff = poly1->surf.LightTableId - poly2->surf.LightTableId;
-		if (diff != 0) return diff;
-	}
 
 	diff = poly1->polyFlags - poly2->polyFlags;
 	if (diff != 0) return diff;
