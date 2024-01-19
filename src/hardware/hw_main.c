@@ -4798,24 +4798,33 @@ static int CompareVisSprites(const void *p1, const void *p2)
 	gr_vissprite_t* spr2 = *(gr_vissprite_t*const*)p2;
 	int idiff;
 	float fdiff;
+	float tz1, tz2;
+	
+	int transparency1;
+	int transparency2;
 
 	// make transparent sprites last
 	// "boolean to int"
 
-	int transparency1 = (spr1->mobj->flags2 & MF2_SHADOW) || (spr1->mobj->frame & FF_TRANSMASK);
-	int transparency2 = (spr2->mobj->flags2 & MF2_SHADOW) || (spr2->mobj->frame & FF_TRANSMASK);
+	// check for precip first, because then sprX->mobj is actually a precipmobj_t and does not have flags2 or tracer
+	tz1 = spr1->tz;
+	transparency1 = (!spr1->precip && (spr1->mobj->flags2 & MF2_SHADOW)) || (spr1->mobj->frame & FF_TRANSMASK);
+	tz2 = spr2->tz;
+	transparency2 = (!spr2->precip && (spr2->mobj->flags2 & MF2_SHADOW)) || (spr2->mobj->frame & FF_TRANSMASK);
+	
+	// first compare transparency flags, then compare tz, then compare dispoffset
+
 	idiff = transparency1 - transparency2;
 	if (idiff != 0) return idiff;
 
-	fdiff = spr2->tz - spr1->tz;// this order seems correct when checking with apitrace. Back to front.
+	fdiff = tz2 - tz1; // this order seems correct when checking with apitrace. Back to front.
 	if (fabsf(fdiff) < 1.0E-36f)
-		return spr1->dispoffset - spr2->dispoffset;// smallest dispoffset first if sprites are at (almost) same location.
+		return spr1->dispoffset - spr2->dispoffset; // smallest dispoffset first if sprites are at (almost) same location.
 	else if (fdiff > 0)
 		return 1;
 	else
 		return -1;
 }
-
 
 static void HWR_SortVisSprites(void)
 {
