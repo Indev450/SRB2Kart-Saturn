@@ -6417,7 +6417,7 @@ void HWR_AddCommands(void)
 	CV_RegisterVar(&cv_grscreentextures);
 	
 	CV_RegisterVar(&cv_grrenderdistance);
-	
+
 	CV_RegisterVar(&cv_grfakecontrast);
 	CV_RegisterVar(&cv_grslopecontrast);
 	CV_RegisterVar(&cv_grhorizonlines);
