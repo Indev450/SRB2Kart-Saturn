@@ -72,10 +72,17 @@ typedef struct viddef_s
 #ifdef HWRENDER
 	INT32/*fixed_t*/ fsmalldupx, fsmalldupy;
 	INT32/*fixed_t*/ fmeddupx, fmeddupy;
+	INT32 glstate;
 #endif
 } viddef_t;
 #define VIDWIDTH vid.width
 #define VIDHEIGHT vid.height
+
+enum
+{
+	VID_GL_LIBRARY_LOADED     = 1,
+	VID_GL_LIBRARY_ERROR      = -1,
+};
 
 // internal additional info for vesa modes only
 typedef struct
