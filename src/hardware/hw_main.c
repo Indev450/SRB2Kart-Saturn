@@ -58,8 +58,8 @@
 // ==========================================================================
 struct hwdriver_s hwdriver;
 
-
-boolean gr_shadersavailable = true;
+// false if shaders have not been initialized yet, or if shaders are not available
+boolean gr_shadersavailable = false;
 
 // Whether the internal state is set to palette rendering or not.
 static boolean gr_palette_rendering_state = false;
@@ -6444,11 +6444,8 @@ void HWR_Startup(void)
 		HWR_InitMD2();
 
 		HWD.pfnSetupGLInfo();
-		
-		// jimita
-		HWD.pfnKillShaders();
-		if (!HWD.pfnLoadShaders())
-			gr_shadersavailable = false;
+
+		gr_shadersavailable = HWD.pfnLoadShaders();
 
 		HWR_SetShaderState();
 		HWR_TogglePaletteRendering();
