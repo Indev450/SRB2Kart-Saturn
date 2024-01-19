@@ -163,31 +163,31 @@ consvar_t cv_grslopecontrast = {"gr_slopecontrast", "Off", CV_SAVE, CV_OnOff, NU
 
 consvar_t cv_grhorizonlines = {"gr_horizonlines", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; 
 
+#define ONLY_IF_GL_LOADED if (vid.glstate != VID_GL_LIBRARY_LOADED) return;
 
 static void CV_filtermode_ONChange(void)
 {
-	if (rendermode == render_opengl)
-		HWD.pfnSetSpecialState(HWD_SET_TEXTUREFILTERMODE, cv_grfiltermode.value);
+	ONLY_IF_GL_LOADED
+	HWD.pfnSetSpecialState(HWD_SET_TEXTUREFILTERMODE, cv_grfiltermode.value);
 }
 
 static void CV_anisotropic_ONChange(void)
 {
-	if (rendermode == render_opengl)
-		HWD.pfnSetSpecialState(HWD_SET_TEXTUREANISOTROPICMODE, cv_granisotropicmode.value);
+	ONLY_IF_GL_LOADED
+	HWD.pfnSetSpecialState(HWD_SET_TEXTUREANISOTROPICMODE, cv_granisotropicmode.value);
 }
 
 static void CV_screentextures_ONChange(void)
 {
-	if (rendermode == render_opengl)
-		HWD.pfnSetSpecialState(HWD_SET_SCREEN_TEXTURES, cv_grscreentextures.value);
+	ONLY_IF_GL_LOADED
+	HWD.pfnSetSpecialState(HWD_SET_SCREEN_TEXTURES, cv_grscreentextures.value);
 }
 
 static void CV_grshaders_OnChange(void)
 {
-	if (rendermode == render_opengl)
-		HWR_SetShaderState();
-
-	if ((rendermode == render_opengl) && (cv_grpaletterendering.value))
+	ONLY_IF_GL_LOADED
+	HWR_SetShaderState();
+	if ((cv_grpaletterendering.value))
 	{
 		// can't do palette rendering without shaders, so update the state if needed
 		HWR_TogglePaletteRendering();
@@ -196,22 +196,22 @@ static void CV_grshaders_OnChange(void)
 
 static void CV_useCustomShaders_ONChange(void) // should we do a call to HWR_TogglePaletteRendering here aswell in pal rendering mode?
 {
-	if (rendermode == render_opengl)
-	{
-		if (HWR_UseShader())
-			HWD.pfnInitCustomShaders();
-	}
+	ONLY_IF_GL_LOADED
+	if (HWR_UseShader())
+		HWD.pfnInitCustomShaders();
 }
 
 static void CV_grpaletterendering_OnChange(void)
 {
-	if ((rendermode == render_opengl) && (gr_shadersavailable))
+	ONLY_IF_GL_LOADED
+	if (gr_shadersavailable)
 		HWR_TogglePaletteRendering();
 }
 
 static void CV_grpalettedepth_OnChange(void)
 {
-	if ((rendermode == render_opengl) && (HWR_ShouldUsePaletteRendering()))
+	ONLY_IF_GL_LOADED
+	if (HWR_ShouldUsePaletteRendering())
 		HWR_SetPalette(pLocalPalette);
 }
 
@@ -220,10 +220,7 @@ static void CV_grpalettedepth_OnChange(void)
 //
 void HWR_SetShaderState(void)
 {
-	INT32 state = cv_grshaders.value;
-
-	HWD.pfnSetSpecialState(HWD_SET_SHADERS, (INT32)state);
-	HWD.pfnSetShader(0);
+	HWD.pfnSetSpecialState(HWD_SET_SHADERS, HWR_UseShader());
 }
 
 // ==========================================================================
@@ -6289,8 +6286,8 @@ void HWR_RenderFrame(INT32 viewnumber, player_t *player, boolean skybox)
 	HWR_ClearClipper();
 
 	// Reset the shader state.
-	HWD.pfnSetSpecialState(HWD_SET_SHADERS, cv_grshaders.value);
-	HWD.pfnSetShader(0);
+	//HWD.pfnSetSpecialState(HWD_SET_SHADERS, cv_grshaders.value);
+	//HWD.pfnSetShader(0);
 
 	validcount++;
 
@@ -6463,25 +6460,24 @@ void HWR_Startup(void)
 		HWR_InitMD2();
 
 		HWD.pfnSetupGLInfo();
-	}
+		
+		// jimita
+		HWD.pfnKillShaders();
+		if (!HWD.pfnLoadShaders())
+			gr_shadersavailable = false;
 
+		HWR_SetShaderState();
+		HWR_TogglePaletteRendering();
+
+		if (msaa)
+		{
+			if (a2c)
+				HWD.pfnSetSpecialState(HWD_SET_MSAA, 2);
+			else
+				HWD.pfnSetSpecialState(HWD_SET_MSAA, 1);
+		}
+	}
 	startupdone = true;
-
-	// jimita
-	HWD.pfnKillShaders();
-	if (!HWD.pfnLoadShaders())
-		gr_shadersavailable = false;
-
-	HWR_SetShaderState();
-	HWR_TogglePaletteRendering();
-
-	if (msaa)
-	{
-		if (a2c)
-			HWD.pfnSetSpecialState(HWD_SET_MSAA, 2);
-		else
-			HWD.pfnSetSpecialState(HWD_SET_MSAA, 1);
-	}
 }
 
 // --------------------------------------------------------------------------

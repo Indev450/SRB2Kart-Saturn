@@ -1787,10 +1787,8 @@ static SDL_bool Impl_CreateWindow(SDL_bool fullscreen)
 		flags |= SDL_WINDOW_BORDERLESS;
 
 #ifdef HWRENDER
-	if (rendermode == render_opengl)
-	{
+	if (vid.glstate == VID_GL_LIBRARY_LOADED)
 		flags |= SDL_WINDOW_OPENGL;
-    }
 
 	if (msaa)
     {
@@ -1802,12 +1800,12 @@ static SDL_bool Impl_CreateWindow(SDL_bool fullscreen)
 	// Some GPU drivers may give us a 16-bit depth buffer since the
 	// default value for SDL_GL_DEPTH_SIZE is 16.
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-#endif
-
+	
 	// request stencil buffer. If there are problems on weaker hw the bit count could be reduced
 	// If only something like 1-bit or 2-bit stencil is available on some gpus then should implement limit for maxportals based on that.
 	// 4 bits would be enough for current limit in maxportals (12)
 	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 4);
+#endif
 
 	// Create a window
 	window = SDL_CreateWindow("SRB2Kart "VERSIONSTRING, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
@@ -1821,7 +1819,8 @@ static SDL_bool Impl_CreateWindow(SDL_bool fullscreen)
 
 	// Renderer-specific stuff
 #ifdef HWRENDER
-	if (rendermode == render_opengl)
+	if ((rendermode == render_opengl)
+	&& (vid.glstate != VID_GL_LIBRARY_ERROR))
 	{
 		sdlglcontext = SDL_GL_CreateContext(window);
 		if (sdlglcontext == NULL)
@@ -2151,8 +2150,11 @@ void I_StartupGraphics(void)
 		HWD.pfnClearLightTables = hwSym("ClearLightTables",NULL);
 		HWD.pfnSetScreenPalette = hwSym("SetScreenPalette",NULL);
 
-		if (!HWD.pfnInit()) // load the OpenGL library
+		vid.glstate = HWD.pfnInit() ? VID_GL_LIBRARY_LOADED : VID_GL_LIBRARY_ERROR; // let load the OpenGL library
+		if (vid.glstate == VID_GL_LIBRARY_ERROR)
+		{
 			rendermode = render_soft;
+		}
 	}
 #endif
 

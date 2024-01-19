@@ -112,6 +112,7 @@ void *hwSym(const char *funcName,void *handle)
 	GETFUNC(SetShaderInfo);
 	GETFUNC(LoadCustomShader);
 	GETFUNC(InitCustomShaders);
+	
 	GETFUNC(SetPaletteLookup);
 	GETFUNC(CreateLightTable);
 	GETFUNC(ClearLightTables);
