@@ -25,6 +25,7 @@ typedef struct
 	int shader;
 	// this tells batching that the plane belongs to a horizon line and must be drawn in correct order with the skywalls
 	boolean horizonSpecial;
+	INT32 hash;
 } DrawCallInfo;
 
 // The texture for the next polygon given to HWR_ProcessPolygon.
@@ -119,7 +120,33 @@ static void HWR_CollectDrawCallInfo(FSurfaceInfo *pSurf, FUINT iNumPts, FBITFIEL
 	drawCalls[drawCallsSize].texture = current_texture;
 	drawCalls[drawCallsSize].shader = shader;
 	drawCalls[drawCallsSize].horizonSpecial = horizonSpecial;
+	drawCalls[drawCallsSize].hash = drawCallsSize;
 	drawCallsSize++;
+	
+	if (!(PolyFlags & PF_NoTexture) && !horizonSpecial)
+	{
+		// use FNV-1a to hash polygons for later sorting.
+		INT32 hash = 0x811c9dc5;
+#define DIGEST(h, x) h ^= (x); h *= 0x01000193
+		if (current_texture)
+		{
+			DIGEST(hash, current_texture->downloaded);
+		}
+		DIGEST(hash, PolyFlags);
+		DIGEST(hash, pSurf->PolyColor.rgba);
+		if (cv_grshaders.value && gr_shadersavailable)
+		{
+			DIGEST(hash, shader);
+			DIGEST(hash, pSurf->TintColor.rgba);
+			DIGEST(hash, pSurf->FadeColor.rgba);
+			DIGEST(hash, pSurf->LightInfo.light_level);
+			DIGEST(hash, pSurf->LightInfo.fade_start);
+			DIGEST(hash, pSurf->LightInfo.fade_end);
+		}
+#undef DIGEST
+		// remove the sign bit to ensure that skybox and horizon line comes first.
+		drawCalls[drawCallsSize-1].hash = (hash & INT32_MAX);
+	}
 }
 
 static void HWR_CollectDrawCallVertices(FOutVector *pOutVerts, FUINT iNumPts)
@@ -170,84 +197,7 @@ static int compareDrawCalls(const void *p1, const void *p2)
 	UINT32 index2 = *(const UINT32*)p2;
 	DrawCallInfo* poly1 = &drawCalls[index1];
 	DrawCallInfo* poly2 = &drawCalls[index2];
-	int diff;
-	INT64 diff64;
-	UINT32 downloaded1 = 0;
-	UINT32 downloaded2 = 0;
-
-	int shader1 = poly1->shader;
-	int shader2 = poly2->shader;
-	// make skywalls and horizon lines first in order
-	if (poly1->polyFlags & PF_NoTexture || poly1->horizonSpecial)
-		shader1 = -1;
-	if (poly2->polyFlags & PF_NoTexture || poly2->horizonSpecial)
-		shader2 = -1;
-	diff = shader1 - shader2;
-	if (diff != 0) return diff;
-
-	// skywalls and horizon lines must retain their order for horizon lines to work
-	if (shader1 == -1 && shader2 == -1)
-		return index1 - index2;
-
-	if (poly1->texture)
-		downloaded1 = poly1->texture->downloaded; // there should be a opengl texture name here, usable for comparisons
-	if (poly2->texture)
-		downloaded2 = poly2->texture->downloaded;
-	diff64 = downloaded1 - downloaded2;
-	if (diff64 != 0) return diff64;
-
-	diff = poly1->polyFlags - poly2->polyFlags;
-	if (diff != 0) return diff;
-
-	diff64 = poly1->surf.PolyColor.rgba - poly2->surf.PolyColor.rgba;
-	if (diff64 < 0) return -1; else if (diff64 > 0) return 1;
-	diff64 = poly1->surf.TintColor.rgba - poly2->surf.TintColor.rgba;
-	if (diff64 < 0) return -1; else if (diff64 > 0) return 1;
-	diff64 = poly1->surf.FadeColor.rgba - poly2->surf.FadeColor.rgba;
-	if (diff64 < 0) return -1; else if (diff64 > 0) return 1;
-
-	diff = poly1->surf.LightInfo.light_level - poly2->surf.LightInfo.light_level;
-	if (diff != 0) return diff;
-	diff = poly1->surf.LightInfo.fade_start - poly2->surf.LightInfo.fade_start;
-	if (diff != 0) return diff;
-	diff = poly1->surf.LightInfo.fade_end - poly2->surf.LightInfo.fade_end;
-	return diff;
-}
-
-static int compareDrawCallsNoShaders(const void *p1, const void *p2)
-{
-	UINT32 index1 = *(const UINT32*)p1;
-	UINT32 index2 = *(const UINT32*)p2;
-	DrawCallInfo* poly1 = &drawCalls[index1];
-	DrawCallInfo* poly2 = &drawCalls[index2];
-	int diff;
-	INT64 diff64;
-
-	GLMipmap_t *texture1 = poly1->texture;
-	GLMipmap_t *texture2 = poly2->texture;
-	UINT32 downloaded1 = 0;
-	UINT32 downloaded2 = 0;
-	if (poly1->polyFlags & PF_NoTexture || poly1->horizonSpecial)
-		texture1 = NULL;
-	if (poly2->polyFlags & PF_NoTexture || poly2->horizonSpecial)
-		texture2 = NULL;
-	if (texture1)
-		downloaded1 = texture1->downloaded; // there should be a opengl texture name here, usable for comparisons
-	if (texture2)
-		downloaded2 = texture2->downloaded;
-	// skywalls and horizon lines must retain their order for horizon lines to work
-	if (!texture1 && !texture2)
-		return index1 - index2;
-	diff64 = downloaded1 - downloaded2;
-	if (diff64 != 0) return diff64;
-
-	diff = poly1->polyFlags - poly2->polyFlags;
-	if (diff != 0) return diff;
-
-	diff64 = poly1->surf.PolyColor.rgba - poly2->surf.PolyColor.rgba;
-	if (diff64 < 0) return -1; else if (diff64 > 0) return 1;
-
-	return 0;
+	return poly1->hash - poly2->hash;
 }
 
 static void HWR_CollectVerticesIntoBatch(DrawCallInfo *drawCall)
@@ -393,10 +343,7 @@ void HWR_RenderBatches(void)
 
 	// sort the draw calls
 	PS_START_TIMING(ps_hw_batchsorttime);
-	if (cv_grshaders.value && gr_shadersavailable)
-		qsort(drawCallOrder, drawCallsSize, sizeof(UINT32), compareDrawCalls);
-	else
-		qsort(drawCallOrder, drawCallsSize, sizeof(UINT32), compareDrawCallsNoShaders);
+	qsort(drawCallOrder, drawCallsSize, sizeof(UINT32), compareDrawCalls);
 	PS_STOP_TIMING(ps_hw_batchsorttime);
 	// sort grouping order
 	// 1. shader
