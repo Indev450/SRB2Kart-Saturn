@@ -41,7 +41,6 @@
 static boolean S_AdjustSoundParams(const mobj_t *listener, const mobj_t *source, INT32 *vol, INT32 *sep, INT32 *pitch, sfxinfo_t *sfxinfo);
 #endif
 
-CV_PossibleValue_t soundvolume_cons_t[] = {{0, "MIN"}, {31, "MAX"}, {0, NULL}};
 static void SetChannelsNum(void);
 static void Command_Tunes_f(void);
 static void Command_RestartAudio_f(void);
@@ -78,6 +77,7 @@ consvar_t stereoreverse = {"stereoreverse", "Off", CV_SAVE, CV_OnOff, NULL, 0, N
 consvar_t precachesound = {"precachesound", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, SoundPrecache_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 // actual general (maximum) sound & music volume, saved into the config
+static CV_PossibleValue_t soundvolume_cons_t[] = {{0, "MIN"}, {31, "MAX"}, {0, NULL}};
 consvar_t cv_soundvolume = {"soundvolume", "18", CV_SAVE, soundvolume_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_digmusicvolume = {"digmusicvolume", "18", CV_SAVE, soundvolume_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 #ifndef NO_MIDI
@@ -2375,7 +2375,7 @@ static void Command_ShowMusicCredit_f(void)
 	}
 }
 
-void GameSounds_OnChange(void)
+static void GameSounds_OnChange(void)
 {
 	if (M_CheckParm("-nosound") || M_CheckParm("-noaudio"))
 		return;
