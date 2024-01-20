@@ -37,7 +37,7 @@ extern consvar_t cv_audbuffersize;
 //extern consvar_t cv_resetmusic;
 extern consvar_t cv_gamedigimusic;
 #ifndef NO_MIDI
-extern consvar_t cv_gamemidimusic;
+extern consvar_t cv_gamemidimusic, cv_midimusicvolume;
 #endif
 extern consvar_t cv_gamesounds;
 extern consvar_t cv_playmusicifunfocused;
