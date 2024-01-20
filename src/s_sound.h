@@ -71,8 +71,6 @@ extern consvar_t cv_birdmusic;
 
 extern consvar_t precachesound;
 
-extern CV_PossibleValue_t soundvolume_cons_t[];
-
 typedef enum
 {
 	SF_TOTALLYSINGLE =  1, // Only play one of these sounds at a time...GLOBALLY
@@ -119,7 +117,6 @@ lumpnum_t S_GetSfxLumpNum(sfxinfo_t *sfx);
 //
 
 boolean S_SoundDisabled(void);
-
 
 //
 // Start sound for thing at <origin> using <sound_id> from sounds.h
