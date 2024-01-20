@@ -2938,7 +2938,7 @@ boolean P_SetupLevel(boolean skipprecip)
 	// Make sure all sounds are stopped before Z_FreeTags.
 	S_StopSounds();
 	
-	if ((!(!sound_disabled && (M_CheckParm("-precachesound")))) || (!precachesound.value)) //why do this with soundprecaching enabled??????
+	if (!(M_CheckParm("-precachesound") || precachesound.value)) //why do this with soundprecaching enabled??????
 	{
 		S_ClearSfx();
 	}
