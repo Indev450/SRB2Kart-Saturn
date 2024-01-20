@@ -53,6 +53,7 @@ static void Command_ShowMusicCredit_f(void);
 static void GameMIDIMusic_OnChange(void);
 #endif
 static void GameSounds_OnChange(void);
+static void SoundPrecache_OnChange(void);
 static void GameDigiMusic_OnChange(void);
 static void BufferSize_OnChange(void);
 
@@ -74,7 +75,7 @@ consvar_t cv_audbuffersize = {"buffersize", "2048", CV_SAVE, audbuffersize_cons_
 consvar_t stereoreverse = {"stereoreverse", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 // if true, all sounds are loaded at game startup
-static consvar_t precachesound = {"precachesound", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t precachesound = {"precachesound", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, SoundPrecache_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 // actual general (maximum) sound & music volume, saved into the config
 consvar_t cv_soundvolume = {"soundvolume", "18", CV_SAVE, soundvolume_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -1269,9 +1270,9 @@ void S_InitSfxChannels(INT32 sfxVolume)
 		// Initialize external data (all sounds) at start, keep static.
 		CONS_Printf(M_GetText("Loading sounds... "));
 
-		for (i = 1; i < NUMSFX; i++)
-			if (S_sfx[i].name)
-				S_sfx[i].data = I_GetSfx(&S_sfx[i]);
+			for (i = 1; i < NUMSFX; i++)
+				if (S_sfx[i].name && !S_sfx[i].data)
+					S_sfx[i].data = I_GetSfx(&S_sfx[i]);
 
 		CONS_Printf(M_GetText(" pre-cached all sound data\n"));
 	}
@@ -2389,6 +2390,19 @@ void GameSounds_OnChange(void)
 	}
 }
 
+static void SoundPrecache_OnChange(void)
+{
+	if ((precachesound.value) && (!sound_disabled))
+	{
+		S_InitSfxChannels(cv_soundvolume.value);
+	}
+	else if (!precachesound.value)
+	{
+		S_ClearSfx();
+		if (!sound_disabled)
+			S_InitSfxChannels(cv_soundvolume.value);
+	}
+}
 
 void GameDigiMusic_OnChange(void)
 {

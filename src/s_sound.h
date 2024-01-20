@@ -69,6 +69,7 @@ extern consvar_t cv_resume;
 extern consvar_t cv_fading;
 extern consvar_t cv_birdmusic;
 
+extern consvar_t precachesound;
 
 extern CV_PossibleValue_t soundvolume_cons_t[];
 
