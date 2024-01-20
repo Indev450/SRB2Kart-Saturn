@@ -2508,7 +2508,7 @@ static void GameMIDIMusic_OnChange(void)
 		else
 			S_ChangeMusicInternal("titles", looptitle);
 	}
-	else if (midi_disabled && !cv_gamemidimusic.value)
+	else if (!midi_disabled && cv_gamemidimusic.value)
 	{
 		midi_disabled = true;
 		if (S_MusicType() == MU_MID)
