@@ -83,6 +83,7 @@ consvar_t cv_digmusicvolume = {"digmusicvolume", "18", CV_SAVE, soundvolume_cons
 #ifndef NO_MIDI
 consvar_t cv_midimusicvolume = {"midimusicvolume", "18", CV_SAVE, soundvolume_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 #endif
+
 // number of channels available
 consvar_t cv_numChannels = {"snd_channels", "64", CV_SAVE|CV_CALL, CV_Unsigned, SetChannelsNum, 0, NULL, NULL, 0, 0, NULL};
 
@@ -121,7 +122,6 @@ consvar_t cv_resume = {"resume", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0
 consvar_t cv_fading = {"fading", "Off", CV_SAVE|CV_CALL, CV_OnOff, Bird_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_birdmusic = {"birdmusicstuff", "No", CV_SAVE|CV_CALL, CV_YesNo, Bird_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
 
-
 #ifdef HAVE_OPENMPT
 openmpt_module *openmpt_mhandle = NULL;
 
@@ -138,7 +138,6 @@ consvar_t cv_amigafilter = {"amigafilter", "1", CV_SAVE|CV_CALL, amigafilter_con
 static CV_PossibleValue_t amigatype_cons_t[] = {{0, "auto"}, {1, "a500"}, {2, "a1200"}, {0, NULL}};
 consvar_t cv_amigatype = {"amigatype", "0", CV_SAVE|CV_CALL|CV_NOINIT, amigatype_cons_t, AmigaType_OnChange, 0, NULL, NULL, 0, 0, NULL};
 #endif
-
 #endif
 
 #define S_MAX_VOLUME 127
@@ -345,7 +344,6 @@ static void SetChannelsNum(void)
 		channels[i].sfxinfo = 0;
 }
 
-
 // Retrieve the lump number of sfx
 //
 lumpnum_t S_GetSfxLumpNum(sfxinfo_t *sfx)
@@ -379,7 +377,6 @@ boolean S_SoundDisabled(void)
 			( window_notinfocus && ! cv_playsoundifunfocused.value )
 	);
 }
-
 
 // Stop all sounds, load level info, THEN start sounds.
 void S_StopSounds(void)
@@ -460,7 +457,6 @@ static INT32 S_ScaleVolumeWithSplitscreen(INT32 volume)
 		root
 	) / FRACUNIT;
 }
-
 
 void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
 {
@@ -1674,6 +1670,7 @@ void S_InitMTDefs(void)
 	for (i = 0; i < numwadfiles; i++)
 		S_LoadMTDefs(i);
 }
+
 //
 // S_FindMusicCredit
 //
@@ -1768,7 +1765,6 @@ boolean S_PrepareSoundTest(void)
 
 	return true;
 }
-
 
 /// ------------------------
 /// Music Status
