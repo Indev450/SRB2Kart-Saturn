@@ -1270,8 +1270,12 @@ void S_InitSfxChannels(INT32 sfxVolume)
 		// Initialize external data (all sounds) at start, keep static.
 		CONS_Printf(M_GetText("Loading sounds... "));
 
-			for (i = 1; i < NUMSFX; i++)
+			for (i = 1; i < sfx_freeslot0; i++)
 				if (S_sfx[i].name && !S_sfx[i].data)
+					S_sfx[i].data = I_GetSfx(&S_sfx[i]);
+
+			for (i = sfx_freeslot0; i < NUMSFX; i++)
+				if (S_sfx[i].priority && !S_sfx[i].data)
 					S_sfx[i].data = I_GetSfx(&S_sfx[i]);
 
 		CONS_Printf(M_GetText(" pre-cached all sound data\n"));
