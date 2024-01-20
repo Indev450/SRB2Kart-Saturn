@@ -2055,8 +2055,7 @@ void S_ChangeMusicEx(const char *mmusic, UINT16 mflags, boolean looping, UINT32 
 	}
 }
 
-void
-S_ChangeMusicSpecial (const char *mmusic)
+void S_ChangeMusicSpecial (const char *mmusic)
 {
 	if (cv_resetspecialmusic.value)
 		S_ChangeMusic(mmusic, MUSIC_FORCERESET, true);
@@ -2143,14 +2142,12 @@ void S_SetMusicVolume(INT32 digvolume, INT32 seqvolume)
 	}
 }
 
-void
-S_SetRestoreMusicFadeInCvar (consvar_t *cv)
+void S_SetRestoreMusicFadeInCvar (consvar_t *cv)
 {
 	music_refade_cv = cv;
 }
 
-int
-S_GetRestoreMusicFadeIn (void)
+int S_GetRestoreMusicFadeIn (void)
 {
 	if (music_refade_cv && cv_fading.value)
 		return music_refade_cv->value;
@@ -2158,15 +2155,13 @@ S_GetRestoreMusicFadeIn (void)
 		return 0;
 }
 
-void
-S_SetMusicUsage (int type)
+void S_SetMusicUsage (int type)
 {
 	music_usage = type;
 	I_UpdateSongLagConditions();
 }
 
-int
-S_MusicUsage (void)
+int S_MusicUsage (void)
 {
 	return music_usage;
 }
@@ -2379,14 +2374,14 @@ static void GameSounds_OnChange(void)
 	if (M_CheckParm("-nosound") || M_CheckParm("-noaudio"))
 		return;
 
-	if (sound_disabled)
+	if (sound_disabled && !cv_gamesounds.value)
 	{
 		sound_disabled = false;
 		I_StartupSound(); // will return early if initialised
 		S_InitSfxChannels(cv_soundvolume.value);
 		S_StartSound(NULL, sfx_strpst);
 	}
-	else
+	else if (!sound_disabled && cv_gamesounds.value)
 	{
 		sound_disabled = true;
 		S_StopSounds();
@@ -2407,14 +2402,14 @@ static void SoundPrecache_OnChange(void)
 	}
 }
 
-void GameDigiMusic_OnChange(void)
+static void GameDigiMusic_OnChange(void)
 {
 	if (M_CheckParm("-nomusic") || M_CheckParm("-noaudio"))
 		return;
 	else if (M_CheckParm("-nodigmusic"))
 		return;
 
-	if (digital_disabled)
+	if (digital_disabled && !cv_gamedigimusic.value)
 	{
 		digital_disabled = false;
 		I_StartupSound(); // will return early if initialised
@@ -2425,7 +2420,7 @@ void GameDigiMusic_OnChange(void)
 		else
 			S_ChangeMusicInternal("titles", looptitle);
 	}
-	else
+	else if (!digital_disabled && cv_gamedigimusic.value)
 	{
 		digital_disabled = true;
 		if (S_MusicType() != MU_MID)
@@ -2452,21 +2447,21 @@ void GameDigiMusic_OnChange(void)
 
 
 #ifdef HAVE_OPENMPT
-void ModFilter_OnChange(void)
+static void ModFilter_OnChange(void)
 {
 	if (openmpt_mhandle)
 		openmpt_module_set_render_param(openmpt_mhandle, OPENMPT_MODULE_RENDER_INTERPOLATIONFILTER_LENGTH, cv_modfilter.value);
 		
 }
 
-void StereoSep_OnChange(void)
+static void StereoSep_OnChange(void)
 {
 	if (openmpt_mhandle)
 		openmpt_module_set_render_param(openmpt_mhandle, OPENMPT_MODULE_RENDER_STEREOSEPARATION_PERCENT, cv_stereosep.value);
 		
 }
 
-void AmigaFilter_OnChange(void)
+static void AmigaFilter_OnChange(void)
 {
 	if (openmpt_mhandle)
 		openmpt_module_ctl_set(openmpt_mhandle, "render.resampler.emulate_amiga", cv_amigafilter.value ? "1" : "0");
@@ -2474,7 +2469,7 @@ void AmigaFilter_OnChange(void)
 
 
 #if OPENMPT_API_VERSION_MAJOR < 1 && OPENMPT_API_VERSION_MINOR > 4
-void AmigaType_OnChange(void)
+static void AmigaType_OnChange(void)
 {
 	if (openmpt_mhandle)
 		openmpt_module_ctl_set_text(openmpt_mhandle, "render.resampler.emulate_amiga_type", cv_amigatype.string);
@@ -2485,21 +2480,21 @@ void AmigaType_OnChange(void)
 #endif
 #endif
 
-void BufferSize_OnChange(void)
+static void BufferSize_OnChange(void)
 {
 	if (sound_started)
         COM_ImmedExecute("restartaudio");
 }
 
 #ifndef NO_MIDI
-void GameMIDIMusic_OnChange(void)
+static void GameMIDIMusic_OnChange(void)
 {
 	if (M_CheckParm("-nomusic") || M_CheckParm("-noaudio"))
 		return;
 	else if (M_CheckParm("-nomidimusic"))
 		return;
 
-	if (midi_disabled)
+	if (midi_disabled && !cv_gamemidimusic.value)
 	{
 		midi_disabled = false;
 		I_InitMusic();
@@ -2508,7 +2503,7 @@ void GameMIDIMusic_OnChange(void)
 		else
 			S_ChangeMusicInternal("titles", looptitle);
 	}
-	else
+	else if (midi_disabled && !cv_gamemidimusic.value)
 	{
 		midi_disabled = true;
 		if (S_MusicType() == MU_MID)
