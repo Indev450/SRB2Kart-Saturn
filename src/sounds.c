@@ -1033,9 +1033,7 @@ sfxenum_t S_AddSoundFx(const char *name, boolean singular, INT32 flags, boolean 
 			S_sfx[i].skinsound = -1;
 			S_sfx[i].usefulness = -1;
 
-			/// \todo if precached load it here
 			if (!sound_disabled && (M_CheckParm("-precachesound") || precachesound.value)){
-				CONS_Printf("Precaching sounds...\n");
 				S_sfx[i].data = I_GetSfx(&S_sfx[i]);
 			}
 			else
