@@ -3507,17 +3507,22 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, boolean local)
 	for (i = 0; i < numlumps; i++, lumpinfo++)
 	{
 		name = lumpinfo->name;
+		lumpnum_t lumpnum = i|(wadnum<<16);
 		if (name[0] == 'D')
 		{
 			if (name[1] == 'S') for (j = 1; j < NUMSFX; j++)
 			{
-				if (S_sfx[j].name && !strnicmp(S_sfx[j].name, name + 2, 6))
+				if (S_sfx[j].name && !strnicmp(S_sfx[j].name, name + 2, 6) && S_sfx[j].lumpnum != lumpnum && S_sfx[j].lumpnum != LUMPERROR)
 				{
 					// the sound will be reloaded when needed,
 					// since sfx->data will be NULL
 					CONS_Debug(DBG_SETUP, "Sound %.8s replaced\n", name);
 
 					I_FreeSfx(&S_sfx[j]);
+
+					// Re-cache it
+					if (!sound_disabled && (M_CheckParm("-precachesound") || precachesound.value))
+						S_sfx[j].data = I_GetSfx(&S_sfx[j]);
 
 					sreplaces++;
 				}
