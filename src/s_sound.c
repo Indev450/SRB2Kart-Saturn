@@ -380,11 +380,7 @@ boolean S_SoundDisabled(void)
 
 boolean S_PrecacheSound(void)
 {
-	if (!sound_disabled && (M_CheckParm("-precachesound")))
-		return true;
-	if (!sound_disabled && precachesound.value)
-		return true;
-	return false;
+	return (!sound_disabled && (M_CheckParm("-precachesound") || precachesound.value));
 }
 
 // Stop all sounds, load level info, THEN start sounds.
