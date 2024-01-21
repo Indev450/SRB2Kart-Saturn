@@ -3520,7 +3520,7 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, boolean local)
 					I_FreeSfx(&S_sfx[j]);
 
 					// Re-cache it
-					if (!sound_disabled && (M_CheckParm("-precachesound") || precachesound.value))
+					if (S_PrecacheSound())
 						S_sfx[j].data = I_GetSfx(&S_sfx[j]);
 
 					sreplaces++;
