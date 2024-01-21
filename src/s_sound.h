@@ -139,6 +139,7 @@ boolean S_MusicDisabled(void);
 boolean S_MusicPlaying(void);
 boolean S_MusicPaused(void);
 boolean S_MusicNotInFocus(void);
+boolean S_PrecacheSound(void);
 musictype_t S_MusicType(void);
 const char *S_MusicName(void);
 boolean S_MusicInfo(char *mname, UINT16 *mflags, boolean *looping);
@@ -246,7 +247,6 @@ void S_StopMusic(void);
 // Stop and resume music, during game PAUSE.
 void S_PauseAudio(void);
 void S_ResumeAudio(void);
-
 
 //
 // Music Fading

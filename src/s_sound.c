@@ -378,6 +378,15 @@ boolean S_SoundDisabled(void)
 	);
 }
 
+boolean S_PrecacheSound(void)
+{
+	if (!sound_disabled && (M_CheckParm("-precachesound")))
+		return true;
+	if (!sound_disabled && precachesound.value)
+		return true;
+	return false;
+}
+
 // Stop all sounds, load level info, THEN start sounds.
 void S_StopSounds(void)
 {
@@ -1260,8 +1269,8 @@ void S_InitSfxChannels(INT32 sfxVolume)
 		S_sfx[i].lumpnum = LUMPERROR;
 	}
 
-	// precache sounds if requested by cmdline, or precachesound var true
-	if (!sound_disabled && (M_CheckParm("-precachesound") || precachesound.value))
+	// Precache sounds if requested
+	if (S_PrecacheSound())
 	{
 		// Initialize external data (all sounds) at start, keep static.
 		CONS_Printf(M_GetText("Loading sounds... "));
@@ -2387,11 +2396,11 @@ static void GameSounds_OnChange(void)
 
 static void SoundPrecache_OnChange(void)
 {
-	if ((precachesound.value) && (!sound_disabled))
+	if (S_PrecacheSound())
 	{
 		S_InitSfxChannels(cv_soundvolume.value);
 	}
-	else if (!precachesound.value)
+	else if (!S_PrecacheSound())
 	{
 		S_ClearSfx();
 		if (!sound_disabled)
