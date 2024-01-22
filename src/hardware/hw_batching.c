@@ -96,7 +96,7 @@ void HWR_SetCurrentTexture(GLMipmap_t *texture)
 		HWD.pfnSetTexture(texture);
 }
 
-static void HWR_CollectDrawCallInfo(FSurfaceInfo *pSurf, FUINT iNumPts, FBITFIELD PolyFlags, int shader, boolean horizonSpecial)
+static void HWR_CollectDrawCallInfo(FSurfaceInfo *pSurf, FUINT iNumPts, FBITFIELD PolyFlags, int shader_target, boolean horizonSpecial)
 {
 	// make sure dynamic array has capacity
 	if (drawCallsSize == drawCallsCapacity)
@@ -118,7 +118,7 @@ static void HWR_CollectDrawCallInfo(FSurfaceInfo *pSurf, FUINT iNumPts, FBITFIEL
 	drawCalls[drawCallsSize].numVerts = iNumPts;
 	drawCalls[drawCallsSize].polyFlags = PolyFlags;
 	drawCalls[drawCallsSize].texture = current_texture;
-	drawCalls[drawCallsSize].shader = shader;
+	drawCalls[drawCallsSize].shader = (shader_target != -1) ? HWR_GetShaderFromTarget(shader_target) : shader_target;
 	drawCalls[drawCallsSize].horizonSpecial = horizonSpecial;
 	drawCalls[drawCallsSize].hash = drawCallsSize;
 	drawCallsSize++;
@@ -136,7 +136,7 @@ static void HWR_CollectDrawCallInfo(FSurfaceInfo *pSurf, FUINT iNumPts, FBITFIEL
 		DIGEST(hash, pSurf->PolyColor.rgba);
 		if (cv_grshaders.value && gr_shadersavailable)
 		{
-			DIGEST(hash, shader);
+			DIGEST(hash, shader_target);
 			DIGEST(hash, pSurf->TintColor.rgba);
 			DIGEST(hash, pSurf->FadeColor.rgba);
 			DIGEST(hash, pSurf->LightInfo.light_level);
@@ -170,7 +170,7 @@ static void HWR_CollectDrawCallVertices(FOutVector *pOutVerts, FUINT iNumPts)
 // If batching is enabled, this function collects the polygon data and the chosen texture
 // for later use in HWR_RenderBatches. Otherwise the rendering backend is used to
 // render the polygon immediately.
-void HWR_ProcessPolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags, int shader, boolean horizonSpecial)
+void HWR_ProcessPolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags, int shader_target, boolean horizonSpecial)
 {
 	if (currently_batching)
 	{
@@ -180,13 +180,13 @@ void HWR_ProcessPolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPt
 			I_Error("Got a null FSurfaceInfo in batching");
 		}
 
-		HWR_CollectDrawCallInfo(pSurf, iNumPts, PolyFlags, shader, horizonSpecial);
+		HWR_CollectDrawCallInfo(pSurf, iNumPts, PolyFlags, shader_target, horizonSpecial);
 		HWR_CollectDrawCallVertices(pOutVerts, iNumPts);
 	}
 	else
 	{
-        if (shader)
-            HWD.pfnSetShader(shader);
+        if (shader_target != -1)
+            HWD.pfnSetShader(HWR_GetShaderFromTarget(shader_target));
         HWD.pfnDrawPolygon(pSurf, pOutVerts, iNumPts, PolyFlags);
     }
 }

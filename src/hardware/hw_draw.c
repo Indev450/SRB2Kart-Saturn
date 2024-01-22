@@ -570,7 +570,7 @@ void HWR_FadeScreenMenuBack(UINT16 color, UINT8 strength)
 			Surf.LightTableId = HWR_GetLightTableID(NULL);
 			Surf.LightInfo.light_level = strength;
 			HWD.pfnMakeScreenTexture(scr_tex);
-			HWD.pfnSetShader(12);
+			HWD.pfnSetShader(HWR_GetShaderFromTarget(SHADER_UI_COLORMAP_FADE));
 			HWD.pfnDrawScreenTexture(scr_tex, &Surf, PF_ColorMapped|PF_NoDepthTest);
 			HWD.pfnUnSetShader();
 

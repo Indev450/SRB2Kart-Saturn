@@ -85,7 +85,6 @@ boolean HWR_Screenshot(const char *lbmname);
 // hw_main.c
 void HWR_RenderFrame(INT32 viewnumber, player_t *player, boolean skybox);
 void HWR_RenderPlayerView(INT32 viewnumber, player_t *player);
-void HWR_LoadShaders(UINT16 wadnum, boolean PK3);
 void HWR_SetViewSize(void);
 void HWR_AddCommands(void);
 void HWR_SetTransform(float fpov, player_t *player);
@@ -192,7 +191,7 @@ extern consvar_t cv_grhorizonlines;
 extern consvar_t cv_grfallbackplayermodel;
 extern consvar_t cv_grbatching;
 extern consvar_t cv_grrenderdistance;
-extern consvar_t cv_grusecustomshaders;
+//extern consvar_t cv_grusecustomshaders;
 extern consvar_t cv_grpaletterendering;
 extern consvar_t cv_grpalettedepth;
 extern consvar_t cv_grflashpal;
