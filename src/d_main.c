@@ -1474,11 +1474,6 @@ void D_SRB2Main(void)
 			statdp = true;
 	}
 
-	CONS_Printf("D_AutoloadFile(): Loading autoloaded addons...\n");
-	if (W_AddAutoloadedLocalFiles(autoloadwadfiles) == 0)
-		CONS_Printf("D_AutoloadFile(): Are you sure you put in valid files or what?\n");
-	D_CleanFile(autoloadwadfiles);
-
 	//
 	// search for maps
 	//
@@ -1679,6 +1674,11 @@ void D_SRB2Main(void)
 
 	CONS_Printf("ST_Init(): Init status bar.\n");
 	ST_Init();
+
+	CONS_Printf("D_AutoloadFile(): Loading autoloaded addons...\n");
+	if (W_AddAutoloadedLocalFiles(autoloadwadfiles) == 0)
+		CONS_Printf("D_AutoloadFile(): Are you sure you put in valid files or what?\n");
+	D_CleanFile(autoloadwadfiles);
 
 	// Set up splitscreen players before joining!
 	if (!dedicated && (M_CheckParm("-splitscreen") && M_IsNextParm()))
