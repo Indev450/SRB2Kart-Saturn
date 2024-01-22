@@ -216,7 +216,7 @@ static void CV_grpalettedepth_OnChange(void)
 //
 void HWR_SetShaderState(void)
 {
-	HWD.pfnSetSpecialState(HWD_SET_SHADERS, HWR_UseShader());
+	HWD.pfnSetSpecialState(HWD_SET_SHADERS, (INT32)HWR_UseShader());
 }
 
 // ==========================================================================
@@ -6263,8 +6263,7 @@ void HWR_RenderFrame(INT32 viewnumber, player_t *player, boolean skybox)
 	HWR_ClearClipper();
 
 	// Reset the shader state.
-	//HWD.pfnSetSpecialState(HWD_SET_SHADERS, cv_grshaders.value);
-	//HWD.pfnSetShader(0);
+	//HWR_SetShaderState();
 
 	validcount++;
 
