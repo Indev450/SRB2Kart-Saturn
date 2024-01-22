@@ -2376,14 +2376,14 @@ static void GameSounds_OnChange(void)
 	if (M_CheckParm("-nosound") || M_CheckParm("-noaudio"))
 		return;
 
-	if (sound_disabled && !cv_gamesounds.value)
+	if (sound_disabled && cv_gamesounds.value)
 	{
 		sound_disabled = false;
 		I_StartupSound(); // will return early if initialised
 		S_InitSfxChannels(cv_soundvolume.value);
 		S_StartSound(NULL, sfx_strpst);
 	}
-	else if (!sound_disabled && cv_gamesounds.value)
+	else if (!sound_disabled && !cv_gamesounds.value)
 	{
 		sound_disabled = true;
 		S_StopSounds();
@@ -2411,7 +2411,7 @@ static void GameDigiMusic_OnChange(void)
 	else if (M_CheckParm("-nodigmusic"))
 		return;
 
-	if (digital_disabled && !cv_gamedigimusic.value)
+	if (digital_disabled && cv_gamedigimusic.value)
 	{
 		digital_disabled = false;
 		I_StartupSound(); // will return early if initialised
@@ -2422,7 +2422,7 @@ static void GameDigiMusic_OnChange(void)
 		else
 			S_ChangeMusicInternal("titles", looptitle);
 	}
-	else if (!digital_disabled && cv_gamedigimusic.value)
+	else if (!digital_disabled && !cv_gamedigimusic.value)
 	{
 		digital_disabled = true;
 		if (S_MusicType() != MU_MID)
@@ -2500,7 +2500,7 @@ static void GameMIDIMusic_OnChange(void)
 	else if (M_CheckParm("-nomidimusic"))
 		return;
 
-	if (midi_disabled && !cv_gamemidimusic.value)
+	if (midi_disabled && cv_gamemidimusic.value)
 	{
 		midi_disabled = false;
 		I_InitMusic();
@@ -2509,7 +2509,7 @@ static void GameMIDIMusic_OnChange(void)
 		else
 			S_ChangeMusicInternal("titles", looptitle);
 	}
-	else if (!midi_disabled && cv_gamemidimusic.value)
+	else if (!midi_disabled && !cv_gamemidimusic.value)
 	{
 		midi_disabled = true;
 		if (S_MusicType() == MU_MID)
