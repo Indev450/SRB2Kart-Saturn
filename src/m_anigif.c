@@ -631,14 +631,6 @@ static void GIF_framewrite(void)
 //
 INT32 GIF_open(const char *filename)
 {
-#if 0
-	if (rendermode != render_soft)
-	{
-		CONS_Alert(CONS_WARNING, M_GetText("GIFs cannot be taken in non-software modes!\n"));
-		return 0;
-	}
-#endif
-
 	gif_out = fopen(filename, "wb");
 	if (!gif_out)
 		return 0;
