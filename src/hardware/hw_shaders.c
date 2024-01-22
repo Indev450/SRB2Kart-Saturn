@@ -400,7 +400,7 @@ int HWR_GetShaderFromTarget(int shader_target)
 	// - custom shaders are enabled
 	// - custom shaders are allowed by the server
 	if (custom_shader != -1 && gl_shaders[custom_shader].compiled &&
-		cv_grshaders.value)
+		cv_grshaders.value == 1)
 		return custom_shader;
 	else
 		return gl_shadertargets[shader_target].base_shader;
@@ -456,9 +456,6 @@ void HWR_LoadCustomShadersFromFile(UINT16 wadnum, boolean PK3)
 
 	if (!HWR_UseShader())
 		return;
-	
-	//if (!cv_grusecustomshaders.value)
-		//return;
 
 	lump = HWR_FindShaderDefs(wadnum);
 	if (lump == INT16_MAX)

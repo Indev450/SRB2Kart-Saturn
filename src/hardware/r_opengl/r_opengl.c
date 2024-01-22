@@ -33,8 +33,7 @@
 #include "../hw_main.h"
 #include "../hw_batching.h"
 
-// Eeeeh not sure is this right way, but it works < sry :c 
-extern consvar_t cv_grusecustomshaders;
+// Eeeeh not sure is this right way, but it works < sry :c < sry again it had to go :c
 
 extern fixed_t fovtan; // also extremely bad, I'm just too lazy!!!
 
