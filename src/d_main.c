@@ -968,8 +968,8 @@ static void D_FindAddonsToAutoload(void)
 	const char *autoloadpath;
 	boolean postload;
 
-	INT32 i;
-	char wadsToAutoload[256] = "";
+	INT32 i, len;
+	boolean hasprefix = false;
 
 	// does it exist tho
 	autoloadpath = va("%s"PATHSEP"%s",srb2home,AUTOLOADCONFIGFILENAME);
@@ -997,6 +997,36 @@ static void D_FindAddonsToAutoload(void)
 		{
 			if (wadsToAutoload[i] == '\n')
 				wadsToAutoload[i] = '\0';
+		}
+
+		len = strlen(wadsToAutoload);
+		hasprefix = false;
+
+		for (i = 0; i < len; ++i)
+		{
+			if (wadsToAutoload[i] == '_')
+			{
+				hasprefix = true;
+				break;
+			}
+		}
+
+		// Lets just hope no one adds bonuschars in autoload
+		if (hasprefix)
+		{
+			// We searching for c in prefix, which stands for "character" and doesn't work well with
+			// autoload atm, only fine for postload
+			for (i = 0; i < len; ++i)
+			{
+				if (wadsToAutoload[i] == '_') break; // Prefix end
+
+				if (wadsToAutoload[i] == 'c' || wadsToAutoload[i] == 'C')
+				{
+					CONS_Alert(CONS_WARNING, "forcing postload for %s as local skin\n", wadsToAutoload);
+					postload = true;
+					break; // Found it
+				}
+			}
 		}
 
 		// LOAD IT
@@ -1443,11 +1473,6 @@ void D_SRB2Main(void)
 			statdp = true;
 	}
 
-	CONS_Printf("D_AutoloadFile(): Loading autoloaded addons...\n");
-	if (W_AddAutoloadedLocalFiles(autoloadwadfiles) == 0)
-		CONS_Printf("D_AutoloadFile(): Are you sure you put in valid files or what?\n");
-	D_CleanFile(autoloadwadfiles);
-
 	//
 	// search for maps
 	//
@@ -1640,6 +1665,11 @@ void D_SRB2Main(void)
 
 	CONS_Printf("ST_Init(): Init status bar.\n");
 	ST_Init();
+
+	CONS_Printf("D_AutoloadFile(): Loading autoloaded addons...\n");
+	if (W_AddAutoloadedLocalFiles(autoloadwadfiles) == 0)
+		CONS_Printf("D_AutoloadFile(): Are you sure you put in valid files or what?\n");
+	D_CleanFile(autoloadwadfiles);
 
 	// Set up splitscreen players before joining!
 	if (!dedicated && (M_CheckParm("-splitscreen") && M_IsNextParm()))
