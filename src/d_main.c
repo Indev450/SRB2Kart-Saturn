@@ -970,6 +970,7 @@ static void D_FindAddonsToAutoload(void)
 
 	INT32 i, len;
 	boolean hasprefix = false;
+	char wadsToAutoload[256] = "";
 
 	// does it exist tho
 	autoloadpath = va("%s"PATHSEP"%s",srb2home,AUTOLOADCONFIGFILENAME);
