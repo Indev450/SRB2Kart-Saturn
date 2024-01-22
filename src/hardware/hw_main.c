@@ -6452,11 +6452,11 @@ void HWR_Startup(void)
 		HWD.pfnSetupGLInfo();
 
 		gr_shadersavailable = HWR_InitShaders();
+		HWR_SetShaderState();
 
 		//if (cv_grusecustomshaders.value)
 			HWR_LoadAllCustomShaders();
 
-		HWR_SetShaderState();
 		HWR_TogglePaletteRendering();
 
 		if (msaa)
