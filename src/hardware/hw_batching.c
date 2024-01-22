@@ -158,10 +158,9 @@ void HWR_ProcessPolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPt
 	}
 	else
 	{
-        if (shader_target != -1)
-            HWD.pfnSetShader(HWR_GetShaderFromTarget(shader_target));
-        HWD.pfnDrawPolygon(pSurf, pOutVerts, iNumPts, PolyFlags);
-    }
+		HWD.pfnSetShader((shader_target != SHADER_NONE) ? HWR_GetShaderFromTarget(shader_target) : shader_target);
+		HWD.pfnDrawPolygon(pSurf, pOutVerts, iNumPts, PolyFlags);
+	}
 }
 
 static int compareDrawCalls(const void *p1, const void *p2)
