@@ -71,7 +71,6 @@ static boolean gr_palette_rendering_state = false;
 static void CV_filtermode_ONChange(void);
 static void CV_anisotropic_ONChange(void);
 static void CV_screentextures_ONChange(void);
-//static void CV_useCustomShaders_ONChange(void);
 static void CV_grshaders_OnChange(void);
 static void CV_grpaletterendering_OnChange(void);
 static void CV_grpalettedepth_OnChange(void);
@@ -140,9 +139,9 @@ static INT32 current_bsp_culling_distance = 0;
 //  - full screen scaling (use native resolution or windowed mode to avoid this)
 consvar_t cv_grscreentextures = {"gr_screentextures", "On", CV_CALL|CV_SAVE, CV_OnOff,
                                  CV_screentextures_ONChange, 0, NULL, NULL, 0, 0, NULL};
-
-consvar_t cv_grshaders = {"gr_shaders", "On", CV_CALL|CV_SAVE, CV_OnOff, CV_grshaders_OnChange, 0, NULL, NULL, 0, 0, NULL};
-//consvar_t cv_grusecustomshaders = {"gr_usecustomshaders", "Yes", CV_CALL|CV_SAVE, CV_OnOff, CV_useCustomShaders_ONChange, 0, NULL, NULL, 0, 0, NULL};
+								 
+static CV_PossibleValue_t grshaders_cons_t[] = {{0, "Off"}, {1, "On"}, {2, "Ignore custom shaders"}, {0, NULL}};
+consvar_t cv_grshaders = {"gr_shaders", "On", CV_CALL|CV_SAVE, grshaders_cons_t, CV_grshaders_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_grpaletterendering = {"gr_paletteshader", "Off", CV_CALL|CV_SAVE, CV_OnOff, CV_grpaletterendering_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
@@ -191,18 +190,6 @@ static void CV_grshaders_OnChange(void)
 		HWR_TogglePaletteRendering();
 	}
 }
-
-/*static void CV_useCustomShaders_ONChange(void) // should we do a call to HWR_TogglePaletteRendering here aswell in pal rendering mode?
-{
-	ONLY_IF_GL_LOADED
-	if (HWR_UseShader() && cv_grusecustomshaders.value)
-	{
-		HWR_LoadAllCustomShaders();
-		HWR_CompileShaders();
-	}
-	else if (HWR_UseShader() && !cv_grusecustomshaders.value)
-		HWR_CompileShaders();
-}*/
 
 static void CV_grpaletterendering_OnChange(void)
 {
@@ -6430,7 +6417,6 @@ void HWR_AddCommands(void)
 	CV_RegisterVar(&cv_grshearing);
 	
 	CV_RegisterVar(&cv_grshaders);
-	//CV_RegisterVar(&cv_grusecustomshaders);
 	
 	CV_RegisterVar(&cv_grportals);
 	CV_RegisterVar(&cv_nostencil);
@@ -6464,9 +6450,7 @@ void HWR_Startup(void)
 
 		gr_shadersavailable = HWR_InitShaders();
 		HWR_SetShaderState();
-
-		//if (cv_grusecustomshaders.value)
-			HWR_LoadAllCustomShaders();
+		HWR_LoadAllCustomShaders();
 
 		HWR_TogglePaletteRendering();
 

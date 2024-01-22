@@ -191,7 +191,6 @@ extern consvar_t cv_grhorizonlines;
 extern consvar_t cv_grfallbackplayermodel;
 extern consvar_t cv_grbatching;
 extern consvar_t cv_grrenderdistance;
-//extern consvar_t cv_grusecustomshaders;
 extern consvar_t cv_grpaletterendering;
 extern consvar_t cv_grpalettedepth;
 extern consvar_t cv_grflashpal;
