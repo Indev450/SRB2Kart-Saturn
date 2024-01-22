@@ -6373,8 +6373,7 @@ void HWR_TogglePaletteRendering(void)
 			// If the r_opengl "texture palette" stays the same during this switch, these textures
 			// will not be cleared out. However they are still out of date since the
 			// composite texture blending method has changed. Therefore they need to be cleared.
-			//HWD.pfnClearMipMapCache();
-			HWR_PrepLevelCache(numtextures);
+			HWD.pfnClearMipMapCache();
 		}
 	}
 	else
@@ -6388,8 +6387,7 @@ void HWR_TogglePaletteRendering(void)
 			// If the r_opengl "texture palette" stays the same during this switch, these textures
 			// will not be cleared out. However they are still out of date since the
 			// composite texture blending method has changed. Therefore they need to be cleared.
-			//HWD.pfnClearMipMapCache();
-			HWR_PrepLevelCache(numtextures);
+			HWD.pfnClearMipMapCache();
 		}
 	}
 }
