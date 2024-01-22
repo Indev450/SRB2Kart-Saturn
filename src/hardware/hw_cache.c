@@ -400,12 +400,12 @@ static void FreeMipmapColormap(INT32 patchnum, void *patch)
 			Z_Free(next->data);
 		next->data = NULL;
 
-		// Free the old colormap from memory.
+		// Free the old colormap mipmap from memory.
 		free(next);
 	}
 }
 
-void HWR_FreeTextureCache(void)
+void HWR_FreeMipmapCache(void)
 {
 	INT32 i;
 	// free references to the textures
@@ -421,6 +421,12 @@ void HWR_FreeTextureCache(void)
 	// free all patch colormaps after each level: must be done after ClearMipMapCache!
 	for (i = 0; i < numwadfiles; i++)
 		M_AATreeIterate(wadfiles[i]->hwrcache, FreeMipmapColormap);
+}
+
+void HWR_FreeTextureCache(void)
+{
+	// free references to the textures
+	HWR_FreeMipmapCache();
 
 	// now the heap don't have any 'user' pointing to our
 	// texturecache info, we can free it
@@ -430,20 +436,15 @@ void HWR_FreeTextureCache(void)
 	gr_numtextures = 0;
 }
 
-void HWR_PrepLevelCache(size_t pnumtextures)
+void HWR_LoadTextures(size_t pnumtextures)
 {
-	// problem: the mipmap cache management hold a list of mipmaps.. but they are
-	//           reallocated on each level..
-	//sub-optimal, but 1) just need re-download stuff in hardware cache VERY fast
-	//   2) sprite/menu stuff mixed with level textures so can't do anything else
-
 	// we must free it since numtextures changed
 	HWR_FreeTextureCache();
 
 	gr_numtextures = pnumtextures;
 	gr_textures = calloc(pnumtextures, sizeof (*gr_textures));
 	if (gr_textures == NULL)
-		I_Error("HWR_PrepLevelCache: can't alloc gr_textures");
+		I_Error("HWR_LoadTextures: ran out of memory for OpenGL textures. Sad!");
 }
 
 // --------------------------------------------------------------------------
