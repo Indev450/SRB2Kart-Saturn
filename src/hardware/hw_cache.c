@@ -950,7 +950,7 @@ UINT32 HWR_GetLightTableID(extracolormap_t *colormap)
 	boolean default_colormap = false;
 	if (!colormap)
 	{
-		colormap = &extra_colormaps[num_extra_colormaps]; // a place to store the hw lighttable id
+		colormap = R_GetDefaultColormap(); // a place to store the hw lighttable id
 		// alternatively could just store the id in a global variable if there are issues
 		default_colormap = true;
 	}

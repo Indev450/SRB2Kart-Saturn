@@ -51,18 +51,25 @@ typedef struct
 typedef UINT8 lighttable_t;
 
 // ExtraColormap type. Use for extra_colormaps from now on.
-typedef struct
+typedef struct extracolormap_s
 {
-	UINT16 maskcolor, fadecolor;
-	double maskamt;
-	UINT16 fadestart, fadeend;
-	INT32 fog;
+	UINT8 fadestart, fadeend;
+	boolean fog;
 
-	// rgba is used in hw mode for colored sector lighting
+	// store rgba values in combined bitwise
+	// also used in OpenGL instead lighttables
 	INT32 rgba; // similar to maskcolor in sw mode
 	INT32 fadergba; // The colour the colourmaps fade to
 
 	lighttable_t *colormap;
+
+#ifdef EXTRACOLORMAPLUMPS
+	lumpnum_t lump; // for colormap lump matching, init to LUMPERROR
+	char lumpname[9]; // for netsyncing
+#endif
+
+	struct extracolormap_s *next;
+	struct extracolormap_s *prev;
 
 #ifdef HWRENDER
 	// The id of the hardware lighttable. Zero means it does not exist yet.
@@ -324,8 +331,6 @@ typedef struct sector_s
 
 	INT32 floorlightsec, ceilinglightsec;
 	INT32 crumblestate; // used for crumbling and bobbing
-
-	INT32 bottommap, midmap, topmap; // dynamic colormaps
 
 	// list of mobjs that are at least partially in the sector
 	// thinglist is a subset of touching_thinglist
