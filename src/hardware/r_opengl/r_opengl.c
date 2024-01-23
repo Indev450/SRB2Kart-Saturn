@@ -1868,9 +1868,6 @@ EXPORT void HWRAPI(UpdateTexture) (FTextureInfo *pTexInfo)
 
 	//GL_DBG_Printf("UpdateTexture %d %x\n", (INT32)num, pImgData);
 
-	if (w*h > 2048*2048 && pTexInfo->format != GL_RGBA)
-		I_Error("Tried to convert too big texture: %dx%d", w, h);
-
 	if ((pTexInfo->format == GL_TEXFMT_P_8) || (pTexInfo->format == GL_TEXFMT_AP_88))
 	{
 		AllocTextureBuffer(pTexInfo);
