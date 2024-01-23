@@ -116,7 +116,8 @@ lighttable_t *scalelightfixed[MAXLIGHTSCALE];
 lighttable_t *zlight[LIGHTLEVELS][MAXLIGHTZ];
 
 // Hack to support extra boom colormaps.
-extracolormap_t *extra_colormaps;
+size_t num_extra_colormaps;
+extracolormap_t extra_colormaps[MAXCOLORMAPS];
 
 // Performance stats
 precise_t ps_prevframetime = 0;

@@ -6701,7 +6701,7 @@ void P_SpawnSpecials(INT32 fromnetsave)
 
 			case 606: // HACK! Copy colormaps. Just plain colormaps.
 				for (s = -1; (s = P_FindSectorFromLineTag(lines + i, s)) >= 0 ;)
-					sectors[s].extra_colormap = lines[i].frontsector->extra_colormap;
+					sectors[s].midmap = lines[i].frontsector->midmap;
 				break;
 
 			case 720:

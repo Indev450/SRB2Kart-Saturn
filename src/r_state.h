@@ -48,7 +48,8 @@ extern UINT8 invertmap[256];
 // Had to put a limit on colormaps :(
 #define MAXCOLORMAPS 60
 
-extern extracolormap_t *extra_colormaps;
+extern size_t num_extra_colormaps;
+extern extracolormap_t extra_colormaps[MAXCOLORMAPS];
 
 // for global animation
 extern INT32 *texturetranslation;

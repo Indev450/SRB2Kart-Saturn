@@ -91,28 +91,14 @@ void R_ClearTextureNumCache(boolean btell);
 INT32 R_TextureNumForName(const char *name);
 INT32 R_CheckTextureNumForName(const char *name);
 
-// Extra Colormap lumps (C_START/C_END) are not used anywhere
-// Uncomment to enable
-//#define EXTRACOLORMAPLUMPS
-
-// Uncomment to make extra_colormaps order Newest -> Oldest
-//#define COLORMAPREVERSELIST
-
 void R_ReInitColormaps(UINT16 num, lumpnum_t newencoremap);
 void R_ClearColormaps(void);
-extracolormap_t *R_CreateDefaultColormap(boolean lighttable);
-extracolormap_t *R_GetDefaultColormap(void);
-boolean R_CheckDefaultColormapValues(extracolormap_t *extra_colormap, boolean checkrgba, boolean checkfadergba, boolean checkparams);
-void R_AddColormapToList(extracolormap_t *extra_colormap);
-lighttable_t *R_CreateLightTable(extracolormap_t *extra_colormap);
-extracolormap_t *R_CreateColormap(char *p1, char *p2, char *p3);
+INT32 R_ColormapNumForName(char *name);
+INT32 R_CreateColormap(char *p1, char *p2, char *p3);
 #ifdef HASINVERT
 void R_MakeInvertmap(void);
 #endif
-#ifdef EXTRACOLORMAPLUMPS
-extracolormap_t *R_ColormapForName(char *name);
-const char *R_NameForColormap(extracolormap_t *extra_colormap);
-#endif
+const char *R_ColormapNameForNum(INT32 num);
 
 UINT8 NearestPaletteColor(UINT8 r, UINT8 g, UINT8 b, RGBA_t *palette);
 #define NearestColor(r, g, b) NearestPaletteColor(r, g, b, NULL)
