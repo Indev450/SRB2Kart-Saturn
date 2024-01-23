@@ -1202,7 +1202,7 @@ void R_MakeInvertmap(void)
 	size_t i;
 
 	for (i = 0; i < 256; i++)
-		invertmap[i] = NearestColor(256 - pMasterPalette[i].s.red, 256 - pMasterPalette[i].s.green, 256 - pMasterPalette[i].s.blue);
+		invertmap[i] = NearestColor(256 - pLocalPalette[i].s.red, 256 - pLocalPalette[i].s.green, 256 - pLocalPalette[i].s.blue);
 }
 #endif
 
@@ -1227,9 +1227,9 @@ INT32 R_CreateColormap(char *p1, char *p2, char *p3)
 		{
 			i = encoremap[NearestColor((UINT8)cr, (UINT8)cg, (UINT8)cb)];
 			//CONS_Printf("R_CreateColormap: encoremap[%d] = %d\n", i, encoremap[i]); -- moved encoremap upwards for optimisation
-			cr = pMasterPalette[i].s.red;
-			cg = pMasterPalette[i].s.green;
-			cb = pMasterPalette[i].s.blue;
+			cr = pLocalPalette[i].s.red;
+			cg = pLocalPalette[i].s.green;
+			cb = pLocalPalette[i].s.blue;
 		}
 
 		cmaskr = cr;
@@ -1283,9 +1283,9 @@ INT32 R_CreateColormap(char *p1, char *p2, char *p3)
 		if (encoremap)
 		{
 			i = encoremap[NearestColor((UINT8)cr, (UINT8)cg, (UINT8)cb)];
-			cr = pMasterPalette[i].s.red;
-			cg = pMasterPalette[i].s.green;
-			cb = pMasterPalette[i].s.blue;
+			cr = pLocalPalette[i].s.red;
+			cg = pLocalPalette[i].s.green;
+			cb = pLocalPalette[i].s.blue;
 		}
 
 		cdestr = cr;
