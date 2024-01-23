@@ -1162,7 +1162,6 @@ extracolormap_t *R_CreateDefaultColormap(boolean lighttable)
 	exc->lumpname[0] = 0;
 #endif
 	exc->next = exc->prev = NULL;
-
 	return exc;
 }
 
@@ -1286,7 +1285,7 @@ void R_MakeInvertmap(void)
 	size_t i;
 
 	for (i = 0; i < 256; i++)
-		invertmap[i] = NearestColor(256 - pLocalPalette[i].s.red, 256 - pLocalPalette[i].s.green, 256 - pLocalPalette[i].s.blue);
+		invertmap[i] = NearestColor(256 - pMasterPalette[i].s.red, 256 - pMasterPalette[i].s.green, 256 - pMasterPalette[i].s.blue);
 }
 #endif
 
@@ -1369,9 +1368,9 @@ lighttable_t *R_CreateLightTable(extracolormap_t *extra_colormap)
 		//  map[i]'s values are decremented by after each use
 		for (i = 0; i < 256; i++)
 		{
-			r = pLocalPalette[i].s.red;
-			g = pLocalPalette[i].s.green;
-			b = pLocalPalette[i].s.blue;
+			r = pMasterPalette[i].s.red;
+			g = pMasterPalette[i].s.green;
+			b = pMasterPalette[i].s.blue;
 			cbrightness = sqrt((r*r) + (g*g) + (b*b));
 
 			map[i][0] = (cbrightness * cmaskr) + (r * othermask);
@@ -1468,9 +1467,9 @@ extracolormap_t *R_CreateColormap(char *p1, char *p2, char *p3)
 		{
 			i = encoremap[NearestColor((UINT8)cr, (UINT8)cg, (UINT8)cb)];
 			//CONS_Printf("R_CreateColormap: encoremap[%d] = %d\n", i, encoremap[i]); -- moved encoremap upwards for optimisation
-			cr = pLocalPalette[i].s.red;
-			cg = pLocalPalette[i].s.green;
-			cb = pLocalPalette[i].s.blue;
+			cr = pMasterPalette[i].s.red;
+			cg = pMasterPalette[i].s.green;
+			cb = pMasterPalette[i].s.blue;
 		}
 
 		if (p1[7] >= 'a' && p1[7] <= 'z')
@@ -1511,9 +1510,9 @@ extracolormap_t *R_CreateColormap(char *p1, char *p2, char *p3)
 		if (encoremap)
 		{
 			i = encoremap[NearestColor((UINT8)cr, (UINT8)cg, (UINT8)cb)];
-			cr = pLocalPalette[i].s.red;
-			cg = pLocalPalette[i].s.green;
-			cb = pLocalPalette[i].s.blue;
+			cr = pMasterPalette[i].s.red;
+			cg = pMasterPalette[i].s.green;
+			cb = pMasterPalette[i].s.blue;
 		}
 
 		if (p1[7] >= 'a' && p1[7] <= 'z')
@@ -1576,9 +1575,9 @@ UINT8 NearestPaletteColor(UINT8 r, UINT8 g, UINT8 b, RGBA_t *palette)
 	int dr, dg, db;
 	int distortion, bestdistortion = 256 * 256 * 4, bestcolor = 0, i;
 
-	// Use local palette if none specified
+	// Use MasterPalette palette if none specified
 	if (palette == NULL)
-		palette = pLocalPalette;
+		palette = pMasterPalette;
 
 	for (i = 0; i < 256; i++)
 	{
