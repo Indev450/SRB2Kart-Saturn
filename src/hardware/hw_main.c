@@ -3629,7 +3629,7 @@ void HWR_Subsector(size_t num)
 						HWR_AddTransparentFloor(0,
 					                       &extrasubsectors[num],
 										   true,
-					                       *rover->topheight-1000, //dumbass z-fight fix
+					                       *rover->topheight-5000, //dumbass z-fight fix
 					                       *gr_frontsector->lightlist[light].lightlevel,
 					                       alpha, rover->master->frontsector, PF_Fog|PF_NoTexture,
 										   true, rover->master->frontsector->extra_colormap);
@@ -3666,7 +3666,7 @@ void HWR_Subsector(size_t num)
 						HWR_AddTransparentFloor(0,
 					                       &extrasubsectors[num],
 										   true,
-					                       *rover->topheight-1000, //dumbass z-fight fix
+					                       *rover->topheight-5000, //dumbass z-fight fix
 					                       *gr_frontsector->lightlist[light].lightlevel,
 					                       alpha, rover->master->frontsector, PF_Fog|PF_NoTexture,
 										   true, rover->master->frontsector->extra_colormap);
