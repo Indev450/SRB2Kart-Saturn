@@ -883,7 +883,9 @@ void HWR_SetMapPalette(void)
 	if ((!(gamestate == GS_LEVEL)) || (gamestate == GS_TITLESCREEN))
 	{
 		// outside of a level, pMasterPalette should have PLAYPAL ready for us
-		palette = pMasterPalette;
+		//palette = pMasterPalette; // we dont have this in kart so just use pLocalPalette as before
+
+		palette = pLocalPalette;
 	}
 	else
 	{
@@ -972,7 +974,8 @@ UINT32 HWR_GetLightTableID(extracolormap_t *colormap)
 // call become invalid and must not be used.
 void HWR_ClearLightTables(void)
 {
-	if (vid.glstate == VID_GL_LIBRARY_LOADED)
+	//if (vid.glstate == VID_GL_LIBRARY_LOADED) // we have pfnInit which is essentially the same, but it doesent work here for whatever reason, since this should not be done in software renderer ever!
+	if (rendermode == render_opengl)
 		HWD.pfnClearLightTables();
 }
 

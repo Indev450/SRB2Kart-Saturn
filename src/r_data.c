@@ -1341,9 +1341,9 @@ INT32 R_CreateColormap(char *p1, char *p2, char *p3)
 		//  map[i]'s values are decremented by after each use
 		for (i = 0; i < 256; i++)
 		{
-			r = pMasterPalette[i].s.red;
-			g = pMasterPalette[i].s.green;
-			b = pMasterPalette[i].s.blue;
+			r = pLocalPalette[i].s.red;
+			g = pLocalPalette[i].s.green;
+			b = pLocalPalette[i].s.blue;
 			cbrightness = sqrt((r*r) + (g*g) + (b*b));
 
 			map[i][0] = (cbrightness * cmaskr) + (r * othermask);
@@ -1424,9 +1424,9 @@ UINT8 NearestPaletteColor(UINT8 r, UINT8 g, UINT8 b, RGBA_t *palette)
 	int dr, dg, db;
 	int distortion, bestdistortion = 256 * 256 * 4, bestcolor = 0, i;
 
-	// Use MasterPalette palette if none specified
+	// Use local palette if none specified
 	if (palette == NULL)
-		palette = pMasterPalette;
+		palette = pLocalPalette;
 
 	for (i = 0; i < 256; i++)
 	{

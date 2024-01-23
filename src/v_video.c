@@ -86,7 +86,6 @@ consvar_t cv_menucaps = {"menucaps", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NUL
 
 // local copy of the palette for V_GetColor()
 RGBA_t *pLocalPalette = NULL;
-RGBA_t *pMasterPalette = NULL;
 
 /*
 The following was an extremely helpful resource when developing my Colour Cube LUT.
@@ -314,18 +313,16 @@ static void LoadPalette(const char *lumpname)
 	UINT8 *pal;
 
 	Z_Free(pLocalPalette);
-	Z_Free(pMasterPalette);
 
 	pLocalPalette = Z_Malloc(sizeof (*pLocalPalette)*palsize, PU_STATIC, NULL);
-	pMasterPalette = Z_Malloc(sizeof (*pMasterPalette)*palsize, PU_STATIC, NULL);
 
 	pal = W_CacheLumpNum(lumpnum, PU_CACHE);
 	for (i = 0; i < palsize; i++)
 	{
-		pMasterPalette[i].s.red = pLocalPalette[i].s.red = correctiontable[*pal++];
-		pMasterPalette[i].s.green = pLocalPalette[i].s.green = correctiontable[*pal++];
-		pMasterPalette[i].s.blue = pLocalPalette[i].s.blue = correctiontable[*pal++];
-		pMasterPalette[i].s.alpha = pLocalPalette[i].s.alpha = 0xFF;
+		pLocalPalette[i].s.red = correctiontable[*pal++];
+		pLocalPalette[i].s.green = correctiontable[*pal++];
+		pLocalPalette[i].s.blue = correctiontable[*pal++];
+		pLocalPalette[i].s.alpha = 0xFF;
 
 		// lerp of colour cubing!
 		if (cube)
