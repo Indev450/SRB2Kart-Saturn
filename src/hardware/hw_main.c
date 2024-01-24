@@ -3364,6 +3364,7 @@ void HWR_Subsector(size_t num)
 	extracolormap_t *ceilingcolormap;
 	ffloor_t *rover;
 	boolean skipSprites = false;
+	postimg_t *postprocessor = &postimgtype[0];
 
 #ifdef PARANOIA //no risk while developing, enough debugging nights!
 	if (num >= addsubsector)
@@ -3489,16 +3490,31 @@ void HWR_Subsector(size_t num)
 	// yeah, easy backface cull! :)
 	if (cullFloorHeight < viewz)
 	{
+		FBITFIELD floorflags;
 		if (gr_frontsector->floorpic != skyflatnum)
 		{
 			if (sub->validcount != validcount)
 			{
+				if (gr_frontsector->ffloors) // holy fuck
+				{
+					for (rover = gr_frontsector->ffloors;
+							rover; rover = rover->next)
+					{
+						if ((rover->flags & FF_RIPPLE) && !(*postprocessor == postimg_water) && (*rover->topheight > locFloorHeight)) //this check is ass
+							floorflags = PF_Ripple|PF_Occlude;
+						else
+							floorflags = PF_Occlude;
+					}
+				}
+				else
+					floorflags = PF_Occlude;
+
 				HWR_GetFlat(levelflats[gr_frontsector->floorpic].lumpnum, R_NoEncore(gr_frontsector, false));
-				HWR_RenderPlane(sub, &extrasubsectors[num], false,
-					// Hack to make things continue to work around slopes.
-					locFloorHeight == cullFloorHeight ? locFloorHeight : gr_frontsector->floorheight,
-					// We now return you to your regularly scheduled rendering.
-					PF_Occlude, floorlightlevel, levelflats[gr_frontsector->floorpic].lumpnum, NULL, 255, floorcolormap);
+						HWR_RenderPlane(sub, &extrasubsectors[num], false,
+							// Hack to make things continue to work around slopes.
+							locFloorHeight == cullFloorHeight ? locFloorHeight : gr_frontsector->floorheight,
+							// We now return you to your regularly scheduled rendering.
+							floorflags, floorlightlevel, levelflats[gr_frontsector->floorpic].lumpnum, NULL, 255, floorcolormap);
 			}
 		}
 	}
