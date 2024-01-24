@@ -6533,23 +6533,20 @@ void HWR_RenderWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend,
 	if (blend & PF_Environment)
 		blendmode |= PF_Occlude;	// PF_Occlude must be used for solid objects
 
-	if (fogwall)
+	if (HWR_UseShader())
 	{
-		blendmode |= PF_Fog;
-		shader = SHADER_FOG;	// fog shader
-	}
+		if (fogwall)
+			shader = SHADER_FOG;
+		else
+			shader = SHADER_WALL;
 
-	blendmode |= PF_Modulated;	// No PF_Occlude means overlapping (incorrect) transparency
-
-	if (!fogwall)
-	{
-		if (HWR_UseShader())
-		{
-			shader = SHADER_WALL;	// wall shader
-			blendmode |= PF_ColorMapped;
-		}
+		blendmode |= PF_ColorMapped;
 	}
 	
+	if (fogwall)
+		blendmode |= PF_Fog;
+	
+	blendmode |= PF_Modulated;	// No PF_Occlude means overlapping (incorrect) transparency
 	HWR_ProcessPolygon(pSurf, wallVerts, 4, blendmode, shader, false);
 
 #ifdef WALLSPLATS
