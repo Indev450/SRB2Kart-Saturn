@@ -161,15 +161,15 @@
 #define GLSL_WATER_TEXEL \
 	"float water_z = (gl_FragCoord.z / gl_FragCoord.w) / 2.0;\n" \
 	"float a = -pi * (water_z * freq) + (leveltime * speed);\n" \
-	"float sdistort = sin(a) * amp;\n" \
-	"float cdistort = cos(a) * amp;\n" \
+	"float sdistort = sin(a) * amp * 1.5;\n" \
+	"float cdistort = cos(a) * amp * 2.2;\n" \
 	"vec4 texel = texture2D(tex, vec2(gl_TexCoord[0].s - sdistort, gl_TexCoord[0].t - cdistort));\n"
 
 #define GLSL_WATER_FRAGMENT_SHADER \
 	GLSL_FLOOR_FUDGES \
-	"const float freq = 0.025;\n" \
+	"const float freq = 0.03;\n" \
 	"const float amp = 0.025;\n" \
-	"const float speed = 2.0;\n" \
+	"const float speed = 1.6;\n" \
 	"const float pi = 3.14159;\n" \
 	"#ifdef SRB2_PALETTE_RENDERING\n" \
 	"uniform sampler2D tex;\n" \
