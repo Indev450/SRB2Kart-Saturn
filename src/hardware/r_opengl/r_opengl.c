@@ -122,6 +122,10 @@ static GLint   viewport[4];
 	GLubyte                 palette_tex[256*3];
 #endif
 
+GLuint FramebufferObject, FramebufferTexture, RenderbufferObject;
+GLboolean FrameBufferEnabled = GL_FALSE, RenderToFramebuffer = GL_FALSE;
+
+
 // Sryder:	NextTexAvail is broken for these because palette changes or changes to the texture filter or antialiasing
 //			flush all of the stored textures, leaving them unavailable at times such as between levels
 //			These need to start at 0 and be set to their number, and be reset to 0 when deleted so that Intel GPUs
@@ -321,6 +325,19 @@ static void GL_MSG_Error(const char *format, ...)
 #define pglCopyTexImage2D glCopyTexImage2D
 #define pglCopyTexSubImage2D glCopyTexSubImage2D
 
+/* 3.0 functions for framebuffers and renderbuffers */
+#define pglGenFramebuffers glGenFramebuffers
+#define pglBindFramebuffer glBindFramebuffer
+#define pglDeleteFramebuffers glDeleteFramebuffers
+#define pglFramebufferTexture2D glFramebufferTexture2D
+#define pglCheckFramebufferStatus glCheckFramebufferStatus
+#define pglGenRenderbuffers glGenRenderbuffers
+#define pglBindRenderbuffer glBindRenderbuffer
+#define pglDeleteRenderbuffers glDeleteRenderbuffers
+#define pglRenderbufferStorage glRenderbufferStorage
+#define pglFramebufferRenderbuffer glFramebufferRenderbuffer
+
+
 #else //!STATIC_OPENGL
 
 /* 1.0 functions */
@@ -452,6 +469,28 @@ static PFNglCopyTexSubImage2D pglCopyTexSubImage2D;
 typedef void (APIENTRY * PFNglGenerateMipmap) (GLenum target);
 static PFNglGenerateMipmap pglGenerateMipmap;
 
+/* 3.0 functions for framebuffers and renderbuffers */
+typedef void (APIENTRY * PFNglGenFramebuffers) (GLsizei n, GLuint *ids);
+static PFNglGenFramebuffers pglGenFramebuffers;
+typedef void (APIENTRY * PFNglBindFramebuffer) (GLenum target, GLuint framebuffer);
+static PFNglBindFramebuffer pglBindFramebuffer;
+typedef void (APIENTRY * PFNglDeleteFramebuffers) (GLsizei n, GLuint *ids);
+static PFNglDeleteFramebuffers pglDeleteFramebuffers;
+typedef void (APIENTRY * PFNglFramebufferTexture2D) (GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
+static PFNglFramebufferTexture2D pglFramebufferTexture2D;
+typedef GLenum (APIENTRY * PFNglCheckFramebufferStatus) (GLenum target);
+static PFNglCheckFramebufferStatus pglCheckFramebufferStatus;
+typedef void (APIENTRY * PFNglGenRenderbuffers) (GLsizei n, GLuint *renderbuffers);
+static PFNglGenRenderbuffers pglGenRenderbuffers;
+typedef void (APIENTRY * PFNglBindRenderbuffer) (GLenum target, GLuint renderbuffer);
+static PFNglBindRenderbuffer pglBindRenderbuffer;
+typedef void (APIENTRY * PFNglDeleteRenderbuffers) (GLsizei n, GLuint *renderbuffers);
+static PFNglDeleteRenderbuffers pglDeleteRenderbuffers;
+typedef void (APIENTRY * PFNglRenderbufferStorage) (GLenum target, GLenum internalformat, GLsizei width, GLsizei height);
+static PFNglRenderbufferStorage pglRenderbufferStorage;
+typedef void (APIENTRY * PFNglFramebufferRenderbuffer) (GLenum target, GLenum attachment, GLenum renderbuffertarget, GLenum renderbuffer);
+static PFNglFramebufferRenderbuffer pglFramebufferRenderbuffer;
+
 /* 1.2 functions for 3D textures */
 typedef void (APIENTRY * PFNglTexImage3D) (GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, const GLvoid *pixels);
 static PFNglTexImage3D pglTexImage3D;
@@ -503,6 +542,17 @@ boolean SetupGLfunc(void)
 	{ \
 		GL_MSG_Warning("failed to get OpenGL function: %s", #proc); \
 	} \
+
+	GETOPENGLFUNC(pglGenFramebuffers, glGenFramebuffers);
+	GETOPENGLFUNC(pglBindFramebuffer, glBindFramebuffer);
+	GETOPENGLFUNC(pglDeleteFramebuffers, glDeleteFramebuffers);
+	GETOPENGLFUNC(pglFramebufferTexture2D, glFramebufferTexture2D);
+	GETOPENGLFUNC(pglCheckFramebufferStatus, glCheckFramebufferStatus);
+	GETOPENGLFUNC(pglGenRenderbuffers, glGenRenderbuffers);
+	GETOPENGLFUNC(pglBindRenderbuffer, glBindRenderbuffer);
+	GETOPENGLFUNC(pglDeleteRenderbuffers, glDeleteRenderbuffers);
+	GETOPENGLFUNC(pglRenderbufferStorage, glRenderbufferStorage);
+	GETOPENGLFUNC(pglFramebufferRenderbuffer, glFramebufferRenderbuffer);
 
 	GETOPENGLFUNC(pglClearColor, glClearColor)
 
@@ -753,6 +803,17 @@ void SetupGLFunc4(void)
 #endif
 
 	pglGenerateMipmap = GetGLFunc("glGenerateMipmap");
+	
+	pglGenFramebuffers = GetGLFunc("glGenFramebuffers");
+	pglBindFramebuffer = GetGLFunc("glBindFramebuffer");
+	pglDeleteFramebuffers = GetGLFunc("glDeleteFramebuffers");
+	pglFramebufferTexture2D = GetGLFunc("glFramebufferTexture2D");
+	pglCheckFramebufferStatus = GetGLFunc("glCheckFramebufferStatus");
+	pglGenRenderbuffers = GetGLFunc("glGenRenderbuffers");
+	pglBindRenderbuffer = GetGLFunc("glBindRenderbuffer");
+	pglDeleteRenderbuffers = GetGLFunc("glDeleteRenderbuffers");
+	pglRenderbufferStorage = GetGLFunc("glRenderbufferStorage");
+	pglFramebufferRenderbuffer = GetGLFunc("glFramebufferRenderbuffer");
 }
 
 EXPORT boolean HWRAPI(InitShaders) (void)
@@ -942,13 +1003,6 @@ void SetModelView(GLint w, GLint h)
 {
 	//GL_DBG_Printf("SetModelView(): %dx%d\n", (int)w, (int)h);
 
-	// The screen textures need to be flushed if the width or height change so that they be remade for the correct size
-	if (screen_width != w || screen_height != h)
-		FlushScreenTextures();
-
-	screen_width = w;
-	screen_height = h;
-
 	pglViewport(0, 0, w, h);
 
 	pglMatrixMode(GL_PROJECTION);
@@ -998,6 +1052,99 @@ void SetStates(void)
 	pglGetFloatv(GL_MODELVIEW_MATRIX, modelMatrix); // added for new coronas' code (without depth buffer)
 	
 	pglEnable(GL_STENCIL_TEST);
+}
+
+
+void GLFramebuffer_Generate(void)
+{
+	// Generate the framebuffer
+	if (FramebufferObject == 0)
+		pglGenFramebuffers(1, &FramebufferObject);
+
+	if (pglCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE)
+		GLFramebuffer_GenerateAttachments();
+}
+
+void GLFramebuffer_Delete(void)
+{
+	// Unbind the framebuffer
+	pglBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	if (FramebufferObject)
+		pglDeleteFramebuffers(1, &FramebufferObject);
+
+	GLFramebuffer_DeleteAttachments();
+	FramebufferObject = 0;
+}
+
+void GLFramebuffer_GenerateAttachments(void)
+{
+	// Bind the framebuffer
+	pglBindFramebuffer(GL_FRAMEBUFFER, FramebufferObject);
+
+	// Generate the framebuffer texture
+	if (FramebufferTexture == 0)
+	{
+		pglGenTextures(1, &FramebufferTexture);
+		pglBindTexture(GL_TEXTURE_2D, FramebufferTexture);
+		pglTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, screen_width, screen_height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		pglBindTexture(GL_TEXTURE_2D, 0);
+
+		// Attach the framebuffer texture to the framebuffer
+		pglFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, FramebufferTexture, 0);
+	}
+
+	// Generate the renderbuffer
+	if (RenderbufferObject == 0)
+	{
+		pglGenRenderbuffers(1, &RenderbufferObject);
+
+		pglBindRenderbuffer(GL_RENDERBUFFER, RenderbufferObject);
+		pglRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, screen_width, screen_height);
+		pglFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, RenderbufferObject);
+
+		// Clear the renderbuffer
+		ClearBuffer(true, true, true, NULL);
+
+		pglBindRenderbuffer(GL_RENDERBUFFER, 0);
+	}
+
+	// Unbind the framebuffer
+	pglBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void GLFramebuffer_DeleteAttachments(void)
+{
+	// Unbind the framebuffer
+	pglBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	if (FramebufferTexture)
+		pglDeleteTextures(1, &FramebufferTexture);
+
+	if (RenderbufferObject)
+		pglDeleteRenderbuffers(1, &RenderbufferObject);
+
+	FramebufferTexture = 0;
+	RenderbufferObject = 0;
+}
+
+void GLFramebuffer_Enable(void)
+{
+	if (FramebufferObject == 0)
+		GLFramebuffer_Generate();
+	else if (FramebufferTexture == 0 || RenderbufferObject == 0)
+		GLFramebuffer_GenerateAttachments();
+
+	pglBindFramebuffer(GL_FRAMEBUFFER, FramebufferObject);
+	pglBindRenderbuffer(GL_RENDERBUFFER, RenderbufferObject);
+}
+
+void GLFramebuffer_Disable(void)
+{
+	pglBindFramebuffer(GL_FRAMEBUFFER, 0);
+	pglBindRenderbuffer(GL_RENDERBUFFER, 0);
 }
 
 // -----------------+
@@ -2213,6 +2360,10 @@ EXPORT void HWRAPI(SetSpecialState) (hwdspecialstate_t IdState, INT32 Value)
 		case HWD_SET_SHADERS:
 			gl_allowshaders = Value;
 			break;
+			
+		case HWD_SET_FRAMEBUFFER:
+			FrameBufferEnabled = Value ? GL_TRUE : GL_FALSE;
+			break;
 
 		case HWD_SET_TEXTUREFILTERMODE:
 			switch (Value)
@@ -3261,7 +3412,7 @@ EXPORT void HWRAPI(MakeScreenTexture) (int tex)
 	tex_downloaded = screenTextures[tex];
 }
 
-EXPORT void HWRAPI(DrawScreenFinalTexture)(int tex, int width, int height)
+EXPORT void HWRAPI(DrawScreenFinalTexture)(int tex, INT32 width, INT32 height)
 {
 	float xfix, yfix;
 	float origaspect, newaspect;
