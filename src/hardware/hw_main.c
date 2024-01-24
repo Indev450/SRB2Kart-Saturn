@@ -3490,31 +3490,31 @@ void HWR_Subsector(size_t num)
 	// yeah, easy backface cull! :)
 	if (cullFloorHeight < viewz)
 	{
-		FBITFIELD floorflags;
+		FBITFIELD floorflags = PF_Occlude;
+
 		if (gr_frontsector->floorpic != skyflatnum)
 		{
 			if (sub->validcount != validcount)
 			{
-				if (gr_frontsector->ffloors) // holy fuck
+				if (gr_frontsector->ffloors)
 				{
-					for (rover = gr_frontsector->ffloors;
-							rover; rover = rover->next)
+					for (rover = gr_frontsector->ffloors; rover; rover = rover->next)
 					{
-						if ((rover->flags & FF_RIPPLE) && !(*postprocessor == postimg_water) && (*rover->topheight > locFloorHeight)) //this check is ass
-							floorflags = PF_Ripple|PF_Occlude;
-						else
-							floorflags = PF_Occlude;
+						if ((rover->flags & FF_RIPPLE) && !(*postprocessor == postimg_water) &&
+							(*rover->topheight > (locFloorHeight == cullFloorHeight ? locFloorHeight : gr_frontsector->floorheight)) && ((*rover->bottomheight <= (locFloorHeight == cullFloorHeight ? locFloorHeight : gr_frontsector->floorheight)))&&
+							((viewz < *rover->topheight && !(rover->flags & FF_INVERTPLANES)) ||
+							 (viewz > *rover->topheight && (rover->flags & FF_BOTHPLANES || rover->flags & FF_INVERTPLANES))) &&
+							(rover->flags & FF_TRANSLUCENT && rover->alpha < 256)) // this check is ass
+						{
+							floorflags |= PF_Ripple;
+						}
 					}
 				}
-				else
-					floorflags = PF_Occlude;
 
 				HWR_GetFlat(levelflats[gr_frontsector->floorpic].lumpnum, R_NoEncore(gr_frontsector, false));
-						HWR_RenderPlane(sub, &extrasubsectors[num], false,
-							// Hack to make things continue to work around slopes.
-							locFloorHeight == cullFloorHeight ? locFloorHeight : gr_frontsector->floorheight,
-							// We now return you to your regularly scheduled rendering.
-							floorflags, floorlightlevel, levelflats[gr_frontsector->floorpic].lumpnum, NULL, 255, floorcolormap);
+				HWR_RenderPlane(sub, &extrasubsectors[num], false,
+								locFloorHeight == cullFloorHeight ? locFloorHeight : gr_frontsector->floorheight,
+								floorflags, floorlightlevel, levelflats[gr_frontsector->floorpic].lumpnum, NULL, 255, floorcolormap);
 			}
 		}
 	}
