@@ -3636,7 +3636,7 @@ void HWR_Subsector(size_t num)
 				{
 					light = R_GetPlaneLight(gr_frontsector, centerHeight, viewz < cullHeight ? true : false);
 
-					if(gr_frontsector->lightlist[light].extra_colormap)
+					if(gr_frontsector->lightlist[light].extra_colormap && rover->master->frontsector->extra_colormap)
 					{
 						UINT8 alpha;
 
