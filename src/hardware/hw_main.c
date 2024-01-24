@@ -3939,6 +3939,7 @@ static void HWR_DrawSpriteShadow(gr_vissprite_t *spr, GLPatch_t *gpatch, float t
 	mobjfloor = HWR_OpaqueFloorAtPos(
 		spr->mobj->x, spr->mobj->y,
 		spr->mobj->z, spr->mobj->height);
+
 	if (cv_shadowoffs.value)
 	{
 		angle_t shadowdir;
