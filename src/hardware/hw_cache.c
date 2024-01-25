@@ -215,8 +215,7 @@ bpp =  format2bpp(grMipmap->format);
 // Create a composite texture from patches, adapt the texture size to a power of 2
 // height and width for the hardware texture cache.
 //
-static void HWR_GenerateTexture(INT32 texnum, GLTexture_t *grtex)
-static void HWR_GenerateTexture(INT32 texnum, GLMapTexture_t *grtex, boolean noencore)
+static void HWR_GenerateTexture(INT32 texnum, GLMapTexture_t *grtex)
 {
 	UINT8 *block;
 	texture_t *texture;
@@ -450,8 +449,7 @@ void HWR_PrepLevelCache(size_t pnumtextures)
 // --------------------------------------------------------------------------
 // Make sure texture is downloaded and set it as the source
 // --------------------------------------------------------------------------
-GLTexture_t *HWR_GetTexture(INT32 tex)
-GLMapTexture_t *HWR_GetTexture(INT32 tex, boolean noencore)
+GLMapTexture_t *HWR_GetTexture(INT32 tex)
 {
 	GLMapTexture_t *grtex;
 #ifdef PARANOIA
