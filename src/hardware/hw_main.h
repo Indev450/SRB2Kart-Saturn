@@ -199,6 +199,7 @@ extern consvar_t cv_grscreentextures;
 extern consvar_t cv_grportals;
 extern consvar_t cv_nostencil;
 extern consvar_t cv_secbright;
+extern consvar_t cv_rippletest;
 
 extern CV_PossibleValue_t granisotropicmode_cons_t[];
 

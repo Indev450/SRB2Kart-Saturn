@@ -161,7 +161,8 @@ consvar_t cv_grspritebillboarding = {"gr_spritebillboarding", "On", CV_SAVE, CV_
 consvar_t cv_grfakecontrast = {"gr_fakecontrast", "Standard", CV_SAVE, grfakecontrast_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_grslopecontrast = {"gr_slopecontrast", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_grhorizonlines = {"gr_horizonlines", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; 
+consvar_t cv_grhorizonlines = {"gr_horizonlines", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_rippletest = {"rippletest", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 #define ONLY_IF_GL_LOADED if (vid.glstate != VID_GL_LIBRARY_LOADED) return;
 
@@ -3506,15 +3507,14 @@ void HWR_Subsector(size_t num)
 		{
 			if (sub->validcount != validcount)
 			{
-				if (gr_frontsector->ffloors)
+				if (gr_frontsector->ffloors && cv_rippletest.value)
 				{
 					for (rover = gr_frontsector->ffloors; rover; rover = rover->next)
 					{
 						if ((rover->flags & FF_RIPPLE) && !(*postprocessor == postimg_water) &&
-							(*rover->topheight > (locFloorHeight == cullFloorHeight ? locFloorHeight : gr_frontsector->floorheight)) && ((*rover->bottomheight <= (locFloorHeight == cullFloorHeight ? locFloorHeight : gr_frontsector->floorheight)))&&
+							(*rover->topheight > (locFloorHeight == cullFloorHeight ? locFloorHeight : gr_frontsector->floorheight)) && ((*rover->bottomheight <= (locFloorHeight == cullFloorHeight ? locFloorHeight : gr_frontsector->floorheight))) &&
 							((viewz < *rover->topheight && !(rover->flags & FF_INVERTPLANES)) ||
-							 (viewz > *rover->topheight && (rover->flags & FF_BOTHPLANES || rover->flags & FF_INVERTPLANES))) &&
-							(rover->flags & FF_TRANSLUCENT && rover->alpha < 256)) // this check is ass
+							 (viewz > *rover->topheight && (rover->flags & FF_BOTHPLANES || rover->flags & FF_INVERTPLANES)))) // this check is ass
 						{
 							floorflags |= PF_Ripple;
 						}
@@ -6481,6 +6481,7 @@ void HWR_AddCommands(void)
 	CV_RegisterVar(&cv_grpaletterendering);
 	CV_RegisterVar(&cv_grpalettedepth);
 	CV_RegisterVar(&cv_grflashpal);
+	CV_RegisterVar(&cv_rippletest);
 }
 
 // --------------------------------------------------------------------------
