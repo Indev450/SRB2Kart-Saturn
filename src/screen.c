@@ -248,11 +248,11 @@ void SCR_Recalc(void)
 
 	// scale 1,2,3 times in x and y the patches for the menus and overlays...
 	// calculated once and for all, used by routines in v_video.c
-	vid.dupx = vid.width / BASEVIDWIDTH;
-	vid.dupy = vid.height / BASEVIDHEIGHT;
+	vid.dupx = vid.width / BASEVIDWIDTH  / 1.2;
+	vid.dupy = vid.height / BASEVIDHEIGHT  / 1.2;
 	vid.dupx = vid.dupy = (vid.dupx < vid.dupy ? vid.dupx : vid.dupy);
-	vid.fdupx = FixedDiv(vid.width*FRACUNIT, BASEVIDWIDTH*FRACUNIT);
-	vid.fdupy = FixedDiv(vid.height*FRACUNIT, BASEVIDHEIGHT*FRACUNIT);
+	vid.fdupx = FixedDiv(vid.width*FRACUNIT, BASEVIDWIDTH*FRACUNIT) / 1.2;
+	vid.fdupy = FixedDiv(vid.height*FRACUNIT, BASEVIDHEIGHT*FRACUNIT) / 1.2;
 
 #ifdef HWRENDER
 	//if (rendermode != render_opengl && rendermode != render_none) // This was just placing it incorrectly at non aspect correct resolutions in opengl
