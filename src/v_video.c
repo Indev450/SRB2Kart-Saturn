@@ -1833,13 +1833,13 @@ void V_DrawKartString(INT32 x, INT32 y, INT32 option, const char *string)
 		else
 			w = SHORT(kart_font[c]->width) * dupx;
 
-		if (cx > scrwidth)
+		/*if (cx > scrwidth)
 			break;
 		if (cx+left + w < 0) //left boundary check
 		{
 			cx += w;
 			continue;
-		}
+		}*/
 
 		V_DrawFixedPatch((cx + center)<<FRACBITS, cy<<FRACBITS, FRACUNIT, option, kart_font[c], colormap);
 

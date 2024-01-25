@@ -183,6 +183,8 @@ extern consvar_t cv_ps_descriptor;
 
 extern consvar_t cv_showtrackaddon;
 
+extern consvar_t cv_smolhud;
+
 typedef enum
 {
 	SKINMENUTYPE_SCROLL = 0,

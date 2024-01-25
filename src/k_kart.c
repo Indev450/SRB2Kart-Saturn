@@ -60,6 +60,8 @@ consvar_t cv_showinput = {"showinput", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, 
 static CV_PossibleValue_t speedo_cons_t[] = {{1, "Default"}, {2, "Small"}, {3, "P-Meter"}, {0, NULL}};
 consvar_t cv_newspeedometer = {"newspeedometer", "Default", CV_SAVE, speedo_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_smolhud = {"smolhud", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 //hardcode saltyhop mhhm
 consvar_t cv_saltyhop = {"hardcodehop", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_saltyhopsfx = {"hardcodehopsfx", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -733,6 +735,8 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_lessflicker);
 	
 	CV_RegisterVar(&cv_mouseturn);
+	
+	CV_RegisterVar(&cv_smolhud);
 
 }
 
@@ -7567,6 +7571,10 @@ static void K_drawKartStats(void)
 	y = 150;
 	spdoffset = 0;
 	flags = V_SNAPTOBOTTOM|V_SNAPTOLEFT;
+	INT32 smol = 0;
+	
+	if (cv_smolhud.value)
+		smol = V_MEDSCALEPATCH;
 
 	UINT8 splitnum = 0;
 		
@@ -7656,20 +7664,20 @@ static void K_drawKartStats(void)
 	if (!splitscreen)
 	{
 		// Skin name
-		V_DrawSmallString(x+20, y+12, flags|V_ALLOWLOWERCASE, va("%c%s", V_GetSkincolorChar(stplyr->skincolor), fakeskin->realname));
+		V_DrawSmallString(x+20, y+12, smol|flags|V_ALLOWLOWERCASE, va("%c%s", V_GetSkincolorChar(stplyr->skincolor), fakeskin->realname));
 
 		// Icon and stats
 		if (cv_highresportrait.value)
-			V_DrawSmallMappedPatch(x, y, flags, R_GetSkinFaceWant(stplyr), R_GetLocalTranslationColormap(fakeskin, fakeskin, stplyr->skincolor, GTC_CACHE, stplyr->skinlocal));
+			V_DrawSmallMappedPatch(x, y, smol|flags, R_GetSkinFaceWant(stplyr), R_GetLocalTranslationColormap(fakeskin, fakeskin, stplyr->skincolor, GTC_CACHE, stplyr->skinlocal));
 		else
-			V_DrawMappedPatch(x, y, flags, R_GetSkinFaceRank(stplyr), R_GetLocalTranslationColormap(fakeskin, fakeskin, stplyr->skincolor, GTC_CACHE, stplyr->skinlocal));
-		V_DrawMappedPatch(x-3, y-2, flags, kp_facenum[min(9, max(1, stplyr->kartspeed))], R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_BLUEBERRY, GTC_CACHE));
-		V_DrawMappedPatch(x+10, y+10, flags, kp_facenum[min(9, max(1, stplyr->kartweight))], R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_BURGUNDY, GTC_CACHE));
+			V_DrawMappedPatch(x, y, smol|flags, R_GetSkinFaceRank(stplyr), R_GetLocalTranslationColormap(fakeskin, fakeskin, stplyr->skincolor, GTC_CACHE, stplyr->skinlocal));
+		V_DrawMappedPatch(x-3, y-2, smol|flags, kp_facenum[min(9, max(1, stplyr->kartspeed))], R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_BLUEBERRY, GTC_CACHE));
+		V_DrawMappedPatch(x+10, y+10, smol|flags, kp_facenum[min(9, max(1, stplyr->kartweight))], R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_BURGUNDY, GTC_CACHE));
 	}
 	else
 	{
 		// In splitscreen, just draw a string with stats
-		V_DrawString(x, y+10, flags, va("\x84%dS \x87%dW", stplyr->kartspeed, stplyr->kartweight));
+		V_DrawString(x, y+10, smol|flags, va("\x84%dS \x87%dW", stplyr->kartspeed, stplyr->kartweight));
 	}
 }
 
@@ -7700,7 +7708,7 @@ static void K_drawKartItem(void)
 	SINT8 colormode = TC_RAINBOW;
 	UINT8 *colmap = NULL;
 	UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
-	
+
 	boolean flipamount = false;	// Used for 3P/4P splitscreen to flip item amount stuff
 
 	if (stplyr->kartstuff[k_itemroulette])
@@ -8013,6 +8021,11 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 	// TIME_Y = 6;					//   6
 		
 	tic_t worktime;
+	
+	INT32 smol = 0;
+	
+	if ((cv_smolhud.value) && !(emblemmap && (modeattacking || (mode == 1)) && !demo.playback))
+		smol = V_MEDSCALEPATCH;
 
 	INT32 splitflags = 0;
 	if (!mode)
@@ -8028,11 +8041,11 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 	}
 
 	if (!K_UseColorHud())
-		V_DrawScaledPatch(TX, TY, splitflags, ((mode == 2) ? kp_lapstickerwide : kp_timestickerwide));
+		V_DrawScaledPatch(TX, TY, smol|splitflags, ((mode == 2) ? kp_lapstickerwide : kp_timestickerwide));
 	else //Colourized hud
 	{
 		UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
-		V_DrawMappedPatch(TX, TY, splitflags, ((mode == 2) ? kp_lapstickerwideclr : kp_timestickerwideclr), colormap);
+		V_DrawMappedPatch(TX, TY, smol|splitflags, ((mode == 2) ? kp_lapstickerwideclr : kp_timestickerwideclr), colormap);
 	}
 
 	TX += 33;
@@ -8040,60 +8053,60 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 	worktime = drawtime/(60*TICRATE);
 
 	if (mode && !drawtime)
-		V_DrawKartString(TX, TY+3, splitflags, va("--'--\"--"));
+		V_DrawKartString(TX, TY+3, smol|splitflags, va("--'--\"--"));
 	else if (worktime < 100) // 99:99:99 only
 	{
 		if ((cv_timelimit.value && G_BattleGametype()) && (!players[consoleplayer].exiting && (leveltime > (timelimitintics + starttime + TICRATE/2)) && cv_overtime.value)) // i hate this so much
 		{
-			V_DrawKartString(TX, TY+3, splitflags, va("OVERTIME"));
+			V_DrawKartString(TX, TY+3, smol|splitflags, va("OVERTIME"));
 				return;
 		}
 		
 		// zero minute
 		if (worktime < 10)
 		{
-			V_DrawKartString(TX, TY+3, splitflags, va("0"));
+			V_DrawKartString(TX, TY+3, smol|splitflags, va("0"));
 			// minutes time       0 __ __
-			V_DrawKartString(TX+12, TY+3, splitflags, va("%d", worktime));
+			V_DrawKartString(TX+12, TY+3, smol|splitflags, va("%d", worktime));
 		}
 		// minutes time       0 __ __
 		else
-			V_DrawKartString(TX, TY+3, splitflags, va("%d", worktime));
+			V_DrawKartString(TX, TY+3, smol|splitflags, va("%d", worktime));
 
 		// apostrophe location     _'__ __
-		V_DrawKartString(TX+24, TY+3, splitflags, va("'"));
+		V_DrawKartString(TX+24, TY+3, smol|splitflags, va("'"));
 
 		worktime = (drawtime/TICRATE % 60);
 
 		// zero second        _ 0_ __
 		if (worktime < 10)
 		{
-			V_DrawKartString(TX+36, TY+3, splitflags, va("0"));
+			V_DrawKartString(TX+36, TY+3, smol|splitflags, va("0"));
 		// seconds time       _ _0 __
-			V_DrawKartString(TX+48, TY+3, splitflags, va("%d", worktime));
+			V_DrawKartString(TX+48, TY+3, smol|splitflags, va("%d", worktime));
 		}
 		// zero second        _ 00 __
 		else
-			V_DrawKartString(TX+36, TY+3, splitflags, va("%d", worktime));
+			V_DrawKartString(TX+36, TY+3, smol|splitflags, va("%d", worktime));
 
 		// quotation mark location    _ __"__
-		V_DrawKartString(TX+60, TY+3, splitflags, va("\""));
+		V_DrawKartString(TX+60, TY+3, smol|splitflags, va("\""));
 
 		worktime = G_TicsToCentiseconds(drawtime);
 
 		// zero tick          _ __ 0_
 		if (worktime < 10)
 		{
-			V_DrawKartString(TX+72, TY+3, splitflags, va("0"));
+			V_DrawKartString(TX+72, TY+3, smol|splitflags, va("0"));
 		// tics               _ __ _0
-			V_DrawKartString(TX+84, TY+3, splitflags, va("%d", worktime));
+			V_DrawKartString(TX+84, TY+3, smol|splitflags, va("%d", worktime));
 		}
 		// zero tick          _ __ 00
 		else
-			V_DrawKartString(TX+72, TY+3, splitflags, va("%d", worktime));
+			V_DrawKartString(TX+72, TY+3, smol|splitflags, va("%d", worktime));
 	}
 	else if ((drawtime/TICRATE) & 1)
-		V_DrawKartString(TX, TY+3, splitflags, va("99'59\"99"));
+		V_DrawKartString(TX, TY+3, smol|splitflags, va("99'59\"99"));
 
 	if (emblemmap && (modeattacking || (mode == 1)) && !demo.playback) // emblem time!
 	{
@@ -8150,9 +8163,9 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 					goto bademblem;
 			}
 
-			V_DrawRightAlignedString(workx, worky, splitflags, targettext);
+			V_DrawRightAlignedString(workx, worky, smol|splitflags, targettext);
 			workx -= 67;
-			V_DrawSmallScaledPatch(workx + 4, worky, splitflags, W_CachePatchName("NEEDIT", PU_CACHE));
+			V_DrawSmallScaledPatch(workx + 4, worky, smol|splitflags, W_CachePatchName("NEEDIT", PU_CACHE));
 
 			break;
 
@@ -8165,7 +8178,7 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 		while (curemb--)
 		{
 			workx -= 12;
-			V_DrawSmallMappedPatch(workx + 4, worky, splitflags, emblempic[curemb], emblemcol[curemb]);
+			V_DrawSmallMappedPatch(workx + 4, worky, smol|splitflags, emblempic[curemb], emblemcol[curemb]);
 		}
 	}
 }
@@ -8571,6 +8584,10 @@ static void K_drawKartLaps(void)
 	INT32 fx = 0, fy = 0, fflags = 0;	// stuff for 3p / 4p splitscreen.
 	boolean flipstring = false;	// used for 3p or 4p
 	INT32 stringw = 0;	// used with the above
+	INT32 smol = 0;
+	
+	if (cv_smolhud.value)
+		smol = V_MEDSCALEPATCH;
 	
 	if (splitscreen > 1)
 	{
@@ -8600,21 +8617,21 @@ static void K_drawKartLaps(void)
 
 		if (stplyr->exiting)	// draw stuff as god intended.
 		{
-			V_DrawScaledPatch(fx, fy, V_HUDTRANS|fflags, kp_splitlapflag);
-			V_DrawString(fx+13, fy+1, V_HUDTRANS|fflags, "FIN");
+			V_DrawScaledPatch(fx, fy, smol|V_HUDTRANS|fflags, kp_splitlapflag);
+			V_DrawString(fx+13, fy+1, smol|V_HUDTRANS|fflags, "FIN");
 		}
 		else					// take flipstring into account here since we may have more laps than just 10
 			if (flipstring)
 			{
 				stringw = V_StringWidth(va("%d/%d", stplyr->laps+1, cv_numlaps.value), 0);
 
-				V_DrawScaledPatch(BASEVIDWIDTH-stringw-16, fy, V_HUDTRANS|fflags, kp_splitlapflag);
-				V_DrawRightAlignedString(BASEVIDWIDTH-3, fy+1, V_HUDTRANS|fflags, va("%d/%d", stplyr->laps+1, cv_numlaps.value));
+				V_DrawScaledPatch(BASEVIDWIDTH-stringw-16, fy, smol|V_HUDTRANS|fflags, kp_splitlapflag);
+				V_DrawRightAlignedString(BASEVIDWIDTH-3, fy+1, smol|V_HUDTRANS|fflags, va("%d/%d", stplyr->laps+1, cv_numlaps.value));
 			}
 			else	// draw stuff NORMALLY.
 			{
-				V_DrawScaledPatch(fx, fy, V_HUDTRANS|fflags, kp_splitlapflag);
-				V_DrawString(fx+13, fy+1, V_HUDTRANS|fflags, va("%d/%d", stplyr->laps+1, cv_numlaps.value));
+				V_DrawScaledPatch(fx, fy, smol|V_HUDTRANS|fflags, kp_splitlapflag);
+				V_DrawString(fx+13, fy+1, smol|V_HUDTRANS|fflags, va("%d/%d", stplyr->laps+1, cv_numlaps.value));
 			}
 	}
 	else
@@ -8622,23 +8639,23 @@ static void K_drawKartLaps(void)
 		if (!K_UseColorHud())
 		{
 			if (K_BigLapSticker())
-				V_DrawScaledPatch(LAPS_X, LAPS_Y, V_HUDTRANS|splitflags, ((stplyr->laps + 1 > 9) ? kp_lapstickerbig2 : kp_lapstickerbig));
+				V_DrawScaledPatch(LAPS_X, LAPS_Y, smol|V_HUDTRANS|splitflags, ((stplyr->laps + 1 > 9) ? kp_lapstickerbig2 : kp_lapstickerbig));
 			else
-				V_DrawScaledPatch(LAPS_X, LAPS_Y, V_HUDTRANS|splitflags, kp_lapsticker);
+				V_DrawScaledPatch(LAPS_X, LAPS_Y, smol|V_HUDTRANS|splitflags, kp_lapsticker);
 		}
 		else //Colourized hud
 		{
 			UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
 			if (K_BigLapSticker())
-				V_DrawMappedPatch(LAPS_X, LAPS_Y, V_HUDTRANS|splitflags, ((stplyr->laps + 1 > 9) ? kp_lapstickerbig2clr : kp_lapstickerbigclr), colormap);
+				V_DrawMappedPatch(LAPS_X, LAPS_Y, smol|V_HUDTRANS|splitflags, ((stplyr->laps + 1 > 9) ? kp_lapstickerbig2clr : kp_lapstickerbigclr), colormap);
 			else
-				V_DrawMappedPatch(LAPS_X, LAPS_Y, V_HUDTRANS|splitflags, kp_lapstickerclr, colormap);
+				V_DrawMappedPatch(LAPS_X, LAPS_Y, smol|V_HUDTRANS|splitflags, kp_lapstickerclr, colormap);
 		}
 
 		if (stplyr->exiting)
-			V_DrawKartString(LAPS_X+33, LAPS_Y+3, V_HUDTRANS|splitflags, "FIN");
+			V_DrawKartString(LAPS_X+33, LAPS_Y+3, smol|V_HUDTRANS|splitflags, "FIN");
 		else
-			V_DrawKartString(LAPS_X+33, LAPS_Y+3, V_HUDTRANS|splitflags, va("%d/%d", stplyr->laps+1, cv_numlaps.value));
+			V_DrawKartString(LAPS_X+33, LAPS_Y+3, smol|V_HUDTRANS|splitflags, va("%d/%d", stplyr->laps+1, cv_numlaps.value));
 	}
 }
 
@@ -8656,6 +8673,10 @@ static void K_drawKartSpeedometer(void)
 	
 	INT32 speedtype = 0;
 	INT32 splitflags = K_calcSplitFlags(V_SNAPTOBOTTOM|V_SNAPTOLEFT);
+	INT32 smol = 0;
+	
+	if (cv_smolhud.value)
+		smol = V_MEDSCALEPATCH;
 
 	switch (cv_kartspeedometer.value)
 	{
@@ -8685,19 +8706,19 @@ static void K_drawKartSpeedometer(void)
 	{
 		switch (speedtype) {
 			case 1:
-				V_DrawKartString(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, va("%3d km/h", convSpeed));
+				V_DrawKartString(SPDM_X, SPDM_Y, smol|V_HUDTRANS|splitflags, va("%3d km/h", convSpeed));
 				break;
 			case 2:
-				V_DrawKartString(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, va("%3d mph", convSpeed));
+				V_DrawKartString(SPDM_X, SPDM_Y, smol|V_HUDTRANS|splitflags, va("%3d mph", convSpeed));
 				break;
 			case 3:
-				V_DrawKartString(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, va("%3d fu/t", convSpeed));
+				V_DrawKartString(SPDM_X, SPDM_Y, smol|V_HUDTRANS|splitflags, va("%3d fu/t", convSpeed));
 				break;
 			case 4: // if extra.kart is found, use its included % symbol
 				if (!snw_speedo)
-					V_DrawKartString(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, va("%4d P", convSpeed));
+					V_DrawKartString(SPDM_X, SPDM_Y, smol|V_HUDTRANS|splitflags, va("%4d P", convSpeed));
 				else
-					V_DrawKartString(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, va("%4d %%", convSpeed));
+					V_DrawKartString(SPDM_X, SPDM_Y, smol|V_HUDTRANS|splitflags, va("%4d %%", convSpeed));
 				break;
 			default:
 				break;
@@ -8706,16 +8727,16 @@ static void K_drawKartSpeedometer(void)
 	else if (cv_newspeedometer.value == 2 && snw_speedo) // why bother if we dont?
 	{
 		if (!K_UseColorHud())
-			V_DrawScaledPatch(SPDM_X + 1, SPDM_Y + 4, (V_HUDTRANS|splitflags), (skp_smallsticker));
+			V_DrawScaledPatch(SPDM_X + 1, SPDM_Y + 4, (smol|V_HUDTRANS|splitflags), (skp_smallsticker));
 		else //Colourized hud
 		{
 			UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
-			V_DrawMappedPatch(SPDM_X + 1, SPDM_Y + 4, (V_HUDTRANS|splitflags), (skp_smallstickerclr), colormap);
+			V_DrawMappedPatch(SPDM_X + 1, SPDM_Y + 4, (smol|V_HUDTRANS|splitflags), (skp_smallstickerclr), colormap);
 		}
 
-		V_DrawRankNum(SPDM_X + 26, SPDM_Y + 4, V_HUDTRANS|splitflags, convSpeed, 3, NULL);
+		V_DrawRankNum(SPDM_X + 26, SPDM_Y + 4, smol|V_HUDTRANS|splitflags, convSpeed, 3, NULL);
 
-		V_DrawScaledPatch(SPDM_X + 31, SPDM_Y + 4, V_HUDTRANS|splitflags, skp_speedpatches[cv_kartspeedometer.value]);
+		V_DrawScaledPatch(SPDM_X + 31, SPDM_Y + 4, smol|V_HUDTRANS|splitflags, skp_speedpatches[cv_kartspeedometer.value]);
 	}
 	
 	// Kart Z speedo bullshit...
@@ -8742,7 +8763,7 @@ static void K_drawKartSpeedometer(void)
 		else if (((fuspeed < 57 && fuspeed > 54) || (fuspeed < 60 && fuspeed > 56) || (fuspeed > 59)) && !(leveltime & 4))
 			spdpatch = 23;
 
-		V_DrawScaledPatch(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, kp_kartzspeedo[spdpatch]);
+		V_DrawScaledPatch(SPDM_X, SPDM_Y, smol|V_HUDTRANS|splitflags, kp_kartzspeedo[spdpatch]);
 	}
 }
 
