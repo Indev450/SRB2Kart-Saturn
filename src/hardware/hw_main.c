@@ -85,8 +85,6 @@ static CV_PossibleValue_t grfiltermode_cons_t[]= {{HWD_SET_TEXTUREFILTER_POINTSA
 	{0, NULL}};
 CV_PossibleValue_t granisotropicmode_cons_t[] = {{1, "MIN"}, {16, "MAX"}, {0, NULL}};
 
-consvar_t cv_grrounddown = {"gr_rounddown", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-
 consvar_t cv_grfiltermode = {"gr_filtermode", "Nearest", CV_CALL|CV_SAVE, grfiltermode_cons_t,
                              CV_filtermode_ONChange, 0, NULL, NULL, 0, 0, NULL};
 							 
@@ -1448,7 +1446,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 	fixed_t v1x, v1y, v2x, v2y;
 #endif
 
-	GLTexture_t *grTex = NULL;
+	GLMapTexture_t *grTex = NULL;
 	float cliplow = 0.0f, cliphigh = 0.0f;
 	INT32 gr_midtexture;
 	fixed_t h, l; // 3D sides and 2s middle textures
@@ -6326,7 +6324,7 @@ void HWR_TogglePaletteRendering(void)
 			// The textures will still be converted to RGBA by r_opengl.
 			// This however makes hw_cache use paletted blending for composite textures!
 			// (patchformat is not touched)
-			textureformat = GR_TEXFMT_P_8;
+			textureformat = GL_TEXFMT_P_8;
 
 			HWR_SetMapPalette();
 			HWR_SetPalette(pLocalPalette);
@@ -6343,7 +6341,7 @@ void HWR_TogglePaletteRendering(void)
 		if (gr_palette_rendering_state)
 		{
 			gr_palette_rendering_state = false;
-			textureformat = GR_RGBA;
+			textureformat = GL_TEXFMT_RGBA;
 			HWR_SetPalette(pLocalPalette);
 			// If the r_opengl "texture palette" stays the same during this switch, these textures
 			// will not be cleared out. However they are still out of date since the
@@ -6356,7 +6354,6 @@ void HWR_TogglePaletteRendering(void)
 //added by Hurdler: console varibale that are saved
 void HWR_AddCommands(void)
 {
-	CV_RegisterVar(&cv_grrounddown);
 	CV_RegisterVar(&cv_grfiltermode);
 	CV_RegisterVar(&cv_granisotropicmode);
 	CV_RegisterVar(&cv_grcorrecttricks);
@@ -6411,7 +6408,7 @@ void HWR_Startup(void)
 	if (!startupdone)
 	{
 		CONS_Printf("HWR_Startup()...\n");
-		textureformat = patchformat = GR_RGBA;
+		textureformat = patchformat = GL_TEXFMT_RGBA;
 		
 		HWR_InitTextureCache();
 		HWR_InitMD2();
