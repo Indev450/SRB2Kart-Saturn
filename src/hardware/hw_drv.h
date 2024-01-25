@@ -67,14 +67,13 @@ EXPORT void HWRAPI(RenderVhsEffect) (fixed_t upbary, fixed_t downbary, UINT8 upd
 EXPORT void HWRAPI(PostImgRedraw) (float points[SCREENVERTS][SCREENVERTS][2]);
 
 // jimita
-EXPORT boolean HWRAPI(LoadShaders) (void);
-EXPORT void HWRAPI(KillShaders) (void);
-EXPORT void HWRAPI(SetShader) (int shader);
+EXPORT boolean HWRAPI(InitShaders) (void);
+EXPORT void HWRAPI(LoadShader) (int slot, char *code, hwdshaderstage_t stage);
+EXPORT boolean HWRAPI(CompileShader) (int slot);
+EXPORT void HWRAPI(SetShader) (int slot);
 EXPORT void HWRAPI(UnSetShader) (void);
 
 EXPORT void HWRAPI(SetShaderInfo) (hwdshaderinfo_t info, INT32 value);
-EXPORT void HWRAPI(LoadCustomShader) (int number, char *shader, size_t size, boolean fragment);
-EXPORT boolean HWRAPI(InitCustomShaders) (void);
 
 EXPORT void HWRAPI(SetPaletteLookup)(UINT8 *lut);
 EXPORT UINT32 HWRAPI(CreateLightTable)(RGBA_t *hw_lighttable);
@@ -118,14 +117,13 @@ struct hwdriver_s
 
 	RenderSkyDome 			pfnRenderSkyDome;
 
-	LoadShaders 			pfnLoadShaders;
-	KillShaders 			pfnKillShaders;
+	InitShaders         	pfnInitShaders;
+	LoadShader          	pfnLoadShader;
+	CompileShader       	pfnCompileShader;
 	SetShader 				pfnSetShader;
 	UnSetShader 			pfnUnSetShader;
 
 	SetShaderInfo       	pfnSetShaderInfo;
-	LoadCustomShader 		pfnLoadCustomShader;
-	InitCustomShaders 		pfnInitCustomShaders;
 
 	SetPaletteLookup    pfnSetPaletteLookup;
 	CreateLightTable    pfnCreateLightTable;

@@ -1521,12 +1521,6 @@ void D_SRB2Main(void)
 	// Has to be done before the configuration file loads,
 	// but after the OpenGL library loads.
 	HWR_AddCommands();
-
-	if (rendermode == render_opengl)
-	{
-		for (i = 0; i < numwadfiles; i++)
-			HWR_LoadShaders(i, (wadfiles[i]->type == RET_PK3));
-	}
 #endif
 
 	//--------------------------------------------------------- CONSOLE

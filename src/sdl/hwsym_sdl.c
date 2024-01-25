@@ -104,14 +104,13 @@ void *hwSym(const char *funcName,void *handle)
 	
 	GETFUNC(RenderSkyDome);
 
-	GETFUNC(LoadShaders);
-	GETFUNC(KillShaders);
+	GETFUNC(InitShaders);
+	GETFUNC(LoadShader);
+	GETFUNC(CompileShader);
 	GETFUNC(SetShader);
 	GETFUNC(UnSetShader);
 
 	GETFUNC(SetShaderInfo);
-	GETFUNC(LoadCustomShader);
-	GETFUNC(InitCustomShaders);
 	
 	GETFUNC(SetPaletteLookup);
 	GETFUNC(CreateLightTable);
