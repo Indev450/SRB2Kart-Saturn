@@ -2881,8 +2881,8 @@ void HWR_AddLine(seg_t *line)
 	}
 
 	// OPTIMIZE: quickly reject orthogonal back sides.
-	angle1 = R_PointToAngle64(v1x, v1y);
-	angle2 = R_PointToAngle64(v2x, v2y);
+	angle1 = R_PointToPseudoAngle(v1x, v1y);
+	angle2 = R_PointToPseudoAngle(v2x, v2y);
 
 	// do an extra culling check when rendering portals
 	// check if any line vertex is on the viewable side of the portal target line
@@ -3075,8 +3075,8 @@ boolean HWR_CheckBBox(fixed_t *bspcoord)
 		if (mindist > current_bsp_culling_distance) return false;
 	}
 
-	angle1 = R_PointToAngle64(px1, py1);
-	angle2 = R_PointToAngle64(px2, py2);
+	angle1 = R_PointToPseudoAngle(px1, py1);
+	angle2 = R_PointToPseudoAngle(px2, py2);
 	return gld_clipper_SafeCheckRange(angle2, angle1);
 }
 

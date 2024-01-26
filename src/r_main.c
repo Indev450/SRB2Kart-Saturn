@@ -32,6 +32,7 @@
 #include "m_random.h" // quake camera shake
 #include "doomstat.h" // MAXSPLITSCREENPLAYERS
 #include "r_fps.h" // Frame interpolation/uncapped
+#include "xs_Float.h"
 
 #ifdef HWRENDER
 #include "hardware/hw_main.h"
@@ -329,19 +330,18 @@ static void FlipCam4_OnChange(void)
 FUNCINLINE ATTRINLINE INT32 R_PointOnSide(fixed_t x, fixed_t y, node_t *restrict node)
 {
 	if (!node->dx)
-		return x <= node->x ? node->dy > 0 : node->dy < 0;
+	return x <= node->x ? node->dy > 0 : node->dy < 0;
 
 	if (!node->dy)
-		return y <= node->y ? node->dx < 0 : node->dx > 0;
+	return y <= node->y ? node->dx < 0 : node->dx > 0;
 
 	x -= node->x;
 	y -= node->y;
 
-	// Try to quickly decide by looking at sign bits.	
-	// also use a mask to avoid branch prediction
-	INT32 mask = (node->dy ^ node->dx ^ x ^ y) >> 31;
-	return (mask & ((node->dy ^ x) < 0)) |  // (left is negative)
-		(~mask & (FixedMul(y, node->dx>>FRACBITS) >= FixedMul(node->dy>>FRACBITS, x)));
+	// Try to quickly decide by looking at sign bits.
+	if ((node->dy ^ node->dx ^ x ^ y) < 0)
+		return (node->dy ^ x) < 0;  // (left is negative)
+	return (long long) y * node->dx >= (long long) x * node->dy;
 }
 
 // killough 5/2/98: reformatted
@@ -364,7 +364,7 @@ FUNCINLINE ATTRINLINE INT32 R_PointOnSegSide(fixed_t x, fixed_t y, seg_t *line)
 	// Try to quickly decide by looking at sign bits.
 	if ((ldy ^ ldx ^ x ^ y) < 0)
 		return (ldy ^ x) < 0;          // (left is negative)
-	return FixedMul(y, ldx>>FRACBITS) >= FixedMul(ldy>>FRACBITS, x);
+	return (long long) y * ldx >= (long long) x * ldy;
 }
 
 //
@@ -396,23 +396,6 @@ FUNCINLINE ATTRINLINE angle_t R_PointToAngle(fixed_t x, fixed_t y)
 		0;
 }
 
-// This version uses 64-bit variables to avoid overflows with large values.
-angle_t R_PointToAngle64(INT64 x, INT64 y)
-{
-	return (y -= viewy, (x -= viewx) || y) ?
-	x >= 0 ?
-	y >= 0 ?
-		(x > y) ? tantoangle[SlopeDivEx(y,x)] :                            // octant 0
-		ANGLE_90-tantoangle[SlopeDivEx(x,y)] :                               // octant 1
-		x > (y = -y) ? 0-tantoangle[SlopeDivEx(y,x)] :                    // octant 8
-		ANGLE_270+tantoangle[SlopeDivEx(x,y)] :                              // octant 7
-		y >= 0 ? (x = -x) > y ? ANGLE_180-tantoangle[SlopeDivEx(y,x)] :  // octant 3
-		ANGLE_90 + tantoangle[SlopeDivEx(x,y)] :                             // octant 2
-		(x = -x) > (y = -y) ? ANGLE_180+tantoangle[SlopeDivEx(y,x)] :    // octant 4
-		ANGLE_270-tantoangle[SlopeDivEx(x,y)] :                              // octant 5
-		0;
-}
-
 angle_t R_PointToAngle2(fixed_t pviewx, fixed_t pviewy, fixed_t x, fixed_t y)
 {
 	return (y -= pviewy, (x -= pviewx) || y) ?
@@ -427,6 +410,27 @@ angle_t R_PointToAngle2(fixed_t pviewx, fixed_t pviewy, fixed_t x, fixed_t y)
 		(x = -x) > (y = -y) ? ANGLE_180+tantoangle[SlopeDiv(y,x)] :    // octant 4
 		ANGLE_270-tantoangle[SlopeDiv(x,y)] :                          // octant 5
 		0;
+}
+
+angle_t R_PointToPseudoAngle (fixed_t x, fixed_t y)
+{
+  // Note: float won't work here as it's less precise than the BAM values being passed as parameters
+  double vecx = (double)x - viewx;
+  double vecy = (double)y - viewy;
+
+  if (vecx == 0 && vecy == 0)
+  {
+    return 0;
+  }
+  else
+  {
+    double result = vecy / (fabs(vecx) + fabs(vecy));
+    if (vecx < 0)
+    {
+      result = 2.0 - result;
+    }
+    return (angle_t)xs_CRoundToInt(result * (1 << 30));
+  }
 }
 
 fixed_t R_PointToDist2(fixed_t px2, fixed_t py2, fixed_t px1, fixed_t py1)
@@ -1183,6 +1187,10 @@ boolean R_IsPointInSector(sector_t *sector, fixed_t x, fixed_t y)
 FUNCINLINE ATTRINLINE subsector_t *R_PointInSubsector(fixed_t x, fixed_t y)
 {
 	size_t nodenum = numnodes-1;
+	
+	// special case for trivial maps (single subsector, no nodes)
+	if (numnodes == 0)
+		return subsectors;
 
 	while (!(nodenum & NF_SUBSECTOR))
 		nodenum = nodes[nodenum].children[R_PointOnSide(x, y, nodes+nodenum)];

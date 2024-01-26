@@ -136,33 +136,10 @@ void P_ClosestPointOnLine3D(fixed_t x, fixed_t y, fixed_t z, line_t *line, verte
 //
 INT32 P_PointOnLineSide(fixed_t x, fixed_t y, line_t *line)
 {
-	const vertex_t *v1 = line->v1;
-	fixed_t dx, dy, left, right;
-
-	if (!line->dx)
-	{
-		if (x <= v1->x)
-			return (line->dy > 0);
-
-		return (line->dy < 0);
-	}
-	if (!line->dy)
-	{
-		if (y <= v1->y)
-			return (line->dx < 0);
-
-		return (line->dx > 0);
-	}
-
-	dx = (x - v1->x);
-	dy = (y - v1->y);
-
-	left = FixedMul(line->dy>>FRACBITS, dx);
-	right = FixedMul(dy, line->dx>>FRACBITS);
-
-	if (right < left)
-		return 0; // front side
-	return 1; // back side
+  return
+    !line->dx ? x <= line->v1->x ? line->dy > 0 : line->dy < 0 :
+    !line->dy ? y <= line->v1->y ? line->dx < 0 : line->dx > 0 :
+    ((long long) y - line->v1->y) * line->dx >= ((long long) x - line->v1->x) * line->dy;
 }
 
 //
@@ -172,48 +149,27 @@ INT32 P_PointOnLineSide(fixed_t x, fixed_t y, line_t *line)
 //
 INT32 P_BoxOnLineSide(fixed_t *tmbox, line_t *ld)
 {
-	INT32 p1, p2;
-
-	switch (ld->slopetype)
-	{
-		case ST_HORIZONTAL:
-			p1 = tmbox[BOXTOP] > ld->v1->y;
-			p2 = tmbox[BOXBOTTOM] > ld->v1->y;
-			if (ld->dx < 0)
-			{
-				p1 ^= 1;
-				p2 ^= 1;
-			}
-			break;
-
-		case ST_VERTICAL:
-			p1 = tmbox[BOXRIGHT] < ld->v1->x;
-			p2 = tmbox[BOXLEFT] < ld->v1->x;
-			if (ld->dy < 0)
-			{
-				p1 ^= 1;
-				p2 ^= 1;
-			}
-			break;
-
-		case ST_POSITIVE:
-			p1 = P_PointOnLineSide(tmbox[BOXLEFT], tmbox[BOXTOP], ld);
-			p2 = P_PointOnLineSide(tmbox[BOXRIGHT], tmbox[BOXBOTTOM], ld);
-			break;
-
-		case ST_NEGATIVE:
-			p1 = P_PointOnLineSide(tmbox[BOXRIGHT], tmbox[BOXTOP], ld);
-			p2 = P_PointOnLineSide(tmbox[BOXLEFT], tmbox[BOXBOTTOM], ld);
-			break;
-
-		default:
-			I_Error("P_BoxOnLineSide: unknown slopetype %d\n", ld->slopetype);
-			return -1;
-	}
-
-	if (p1 == p2)
-		return p1;
-	return -1;
+  switch (ld->slopetype)
+    {
+      int p;
+    default: // shut up compiler warnings -- killough
+    case ST_HORIZONTAL:
+      return
+      (tmbox[BOXBOTTOM] > ld->v1->y) == (p = tmbox[BOXTOP] > ld->v1->y) ?
+        p ^ (ld->dx < 0) : -1;
+    case ST_VERTICAL:
+      return
+        (tmbox[BOXLEFT] < ld->v1->x) == (p = tmbox[BOXRIGHT] < ld->v1->x) ?
+        p ^ (ld->dy < 0) : -1;
+    case ST_POSITIVE:
+      return
+        P_PointOnLineSide(tmbox[BOXRIGHT], tmbox[BOXBOTTOM], ld) ==
+        (p = P_PointOnLineSide(tmbox[BOXLEFT], tmbox[BOXTOP], ld)) ? p : -1;
+    case ST_NEGATIVE:
+      return
+        (P_PointOnLineSide(tmbox[BOXLEFT], tmbox[BOXBOTTOM], ld)) ==
+        (p = P_PointOnLineSide(tmbox[BOXRIGHT], tmbox[BOXTOP], ld)) ? p : -1;
+    }
 }
 
 //
@@ -222,40 +178,11 @@ INT32 P_BoxOnLineSide(fixed_t *tmbox, line_t *ld)
 //
 static INT32 P_PointOnDivlineSide(fixed_t x, fixed_t y, divline_t *line)
 {
-	fixed_t dx, dy, left, right;
-
-	if (!line->dx)
-	{
-		if (x <= line->x)
-			return line->dy > 0;
-
-		return line->dy < 0;
-	}
-	if (!line->dy)
-	{
-		if (y <= line->y)
-			return line->dx < 0;
-
-		return line->dx > 0;
-	}
-
-	dx = (x - line->x);
-	dy = (y - line->y);
-
-	// try to quickly decide by looking at sign bits
-	if ((line->dy ^ line->dx ^ dx ^ dy) & 0x80000000)
-	{
-		if ((line->dy ^ dx) & 0x80000000)
-			return 1; // left is negative
-		return 0;
-	}
-
-	left = FixedMul(line->dy>>8, dx>>8);
-	right = FixedMul(dy>>8, line->dx>>8);
-
-	if (right < left)
-		return 0; // front side
-	return 1; // back side
+  return
+    !line->dx ? x <= line->x ? line->dy > 0 : line->dy < 0 :
+    !line->dy ? y <= line->y ? line->dx < 0 : line->dx > 0 :
+    (line->dy^line->dx^(x -= line->x)^(y -= line->y)) < 0 ? (line->dy^x) < 0 :
+    (long long) y * line->dx >= (long long) x * line->dy;
 }
 
 //
@@ -276,18 +203,13 @@ void P_MakeDivline(line_t *li, divline_t *dl)
 //
 fixed_t P_InterceptVector(divline_t *v2, divline_t *v1)
 {
-	fixed_t frac, num, den;
-
-	den = FixedMul(v1->dy>>8, v2->dx) - FixedMul(v1->dx>>8, v2->dy);
-
-	if (!den)
-		return 0;
-
-	num = FixedMul((v1->x - v2->x)>>8, v1->dy) + FixedMul((v2->y - v1->y)>>8, v1->dx);
-	frac = FixedDiv(num, den);
-
-	return frac;
-}
+    /* cph - This was introduced at prboom_4_compatibility - no precision/overflow problems */
+    int64_t den = (int64_t)v1->dy * v2->dx - (int64_t)v1->dx * v2->dy;
+    den >>= 16;
+    if (!den)
+      return 0;
+    return (fixed_t)(((int64_t)(v1->x - v2->x) * v1->dy - (int64_t)(v1->y - v2->y) * v1->dx) / den);
+  }
 
 //
 // P_LineOpening
