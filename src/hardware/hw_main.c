@@ -162,7 +162,6 @@ consvar_t cv_grfakecontrast = {"gr_fakecontrast", "Standard", CV_SAVE, grfakecon
 consvar_t cv_grslopecontrast = {"gr_slopecontrast", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_grhorizonlines = {"gr_horizonlines", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_rippletest = {"rippletest", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 #define ONLY_IF_GL_LOADED if (vid.glstate != VID_GL_LIBRARY_LOADED) return;
 
@@ -3505,24 +3504,10 @@ void HWR_Subsector(size_t num)
 		{
 			if (sub->validcount != validcount)
 			{
-				if (gr_frontsector->ffloors && cv_rippletest.value)
-				{
-					for (rover = gr_frontsector->ffloors; rover; rover = rover->next)
-					{
-						if ((rover->flags & FF_RIPPLE) && !(*postprocessor == postimg_water) &&
-							(*rover->topheight > (locFloorHeight == cullFloorHeight ? locFloorHeight : gr_frontsector->floorheight)) && ((*rover->bottomheight <= (locFloorHeight == cullFloorHeight ? locFloorHeight : gr_frontsector->floorheight))) &&
-							((viewz < *rover->topheight && !(rover->flags & FF_INVERTPLANES)) ||
-							 (viewz > *rover->topheight && (rover->flags & FF_BOTHPLANES || rover->flags & FF_INVERTPLANES)))) // this check is ass
-						{
-							floorflags |= PF_Ripple;
-						}
-					}
-				}
-
 				HWR_GetFlat(levelflats[gr_frontsector->floorpic].lumpnum, R_NoEncore(gr_frontsector, false));
 				HWR_RenderPlane(sub, &extrasubsectors[num], false,
 								locFloorHeight == cullFloorHeight ? locFloorHeight : gr_frontsector->floorheight,
-								floorflags, floorlightlevel, levelflats[gr_frontsector->floorpic].lumpnum, NULL, 255, floorcolormap);
+								PF_Ripple, floorlightlevel, levelflats[gr_frontsector->floorpic].lumpnum, NULL, 255, floorcolormap);
 			}
 		}
 	}
@@ -6460,7 +6445,6 @@ void HWR_AddCommands(void)
 	CV_RegisterVar(&cv_grpaletterendering);
 	CV_RegisterVar(&cv_grpalettedepth);
 	CV_RegisterVar(&cv_grflashpal);
-	CV_RegisterVar(&cv_rippletest);
 }
 
 // --------------------------------------------------------------------------
