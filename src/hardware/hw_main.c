@@ -3498,8 +3498,6 @@ void HWR_Subsector(size_t num)
 	// yeah, easy backface cull! :)
 	if (cullFloorHeight < viewz)
 	{
-		FBITFIELD floorflags = PF_Occlude;
-
 		if (gr_frontsector->floorpic != skyflatnum)
 		{
 			if (sub->validcount != validcount)
