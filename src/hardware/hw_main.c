@@ -3372,7 +3372,6 @@ void HWR_Subsector(size_t num)
 	extracolormap_t *ceilingcolormap;
 	ffloor_t *rover;
 	boolean skipSprites = false;
-	postimg_t *postprocessor = &postimgtype[0];
 
 #ifdef PARANOIA //no risk while developing, enough debugging nights!
 	if (num >= addsubsector)
