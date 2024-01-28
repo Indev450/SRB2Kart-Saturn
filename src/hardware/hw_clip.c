@@ -77,7 +77,6 @@
 #include "../tables.h"
 #include "r_opengl/r_opengl.h"
 #include "../r_main.h"	// for cv_fov
-#include "../xs_Float.h"
 
 #ifdef HAVE_SPHEREFRUSTRUM
 static GLdouble viewMatrix[16];

@@ -32,7 +32,6 @@
 #include "m_random.h" // quake camera shake
 #include "doomstat.h" // MAXSPLITSCREENPLAYERS
 #include "r_fps.h" // Frame interpolation/uncapped
-#include "xs_Float.h"
 
 #ifdef HWRENDER
 #include "hardware/hw_main.h"
