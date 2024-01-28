@@ -3505,7 +3505,7 @@ void HWR_Subsector(size_t num)
 				HWR_GetFlat(levelflats[gr_frontsector->floorpic].lumpnum, R_NoEncore(gr_frontsector, false));
 				HWR_RenderPlane(sub, &extrasubsectors[num], false,
 								locFloorHeight == cullFloorHeight ? locFloorHeight : gr_frontsector->floorheight,
-								PF_Ripple, floorlightlevel, levelflats[gr_frontsector->floorpic].lumpnum, NULL, 255, floorcolormap);
+								PF_Occlude, floorlightlevel, levelflats[gr_frontsector->floorpic].lumpnum, NULL, 255, floorcolormap);
 			}
 		}
 	}
