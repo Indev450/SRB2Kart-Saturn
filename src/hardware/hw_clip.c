@@ -344,9 +344,9 @@ angle_t gld_FrustumAngle(angle_t tiltangle)
 	// ok, this is a gross hack that barely works...
 	// but at least it doesn't overestimate too much...
 	floatangle = 2.0f + (45.0f + (tilt / 1.9f)) * (float)render_fov * 48.0f / render_multiplier / 90.0f;
-	a1 = ANG1 * (int)floatangle;
-	if (a1 >= ANGLE_180)
+	if (floatangle >= ANGLE_180)
 		return 0xffffffff;
+	a1 = (angle_t)xs_CRoundToInt(ANG1 * floatangle);
 	return a1;
 }
 
