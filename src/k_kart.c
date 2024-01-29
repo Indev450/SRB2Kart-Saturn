@@ -8727,12 +8727,12 @@ static void K_drawKartSpeedometer(void)
 	{
 		if (!K_UseColorHud())
 			//V_DrawScaledPatch(SPDM_X + 1, SPDM_Y + 4, (V_HUDTRANS|splitflags), (skp_smallsticker));
-			V_DrawStretchyFixedPatch((SPDM_X)<<FRACBITS, (SPDM_Y + 4)<<FRACBITS, 3*FRACUNIT/4, 14*FRACUNIT/20, (V_HUDTRANS|splitflags), (skp_smallsticker), NULL); // getting a 0.7 scale is pain lmao
+			V_DrawStretchyFixedPatch((SPDM_X-1)<<FRACBITS, (SPDM_Y + 4)<<FRACBITS, FRACUNIT*0.775, FRACUNIT*0.725, (V_HUDTRANS|splitflags), (skp_smallsticker), NULL);
 		else //Colourized hud
 		{
 			UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
 			//V_DrawMappedPatch(SPDM_X + 1, SPDM_Y + 4, (V_HUDTRANS|splitflags), (skp_smallstickerclr), colormap);
-			V_DrawStretchyFixedPatch((SPDM_X)<<FRACBITS, (SPDM_Y + 4)<<FRACBITS, 3*FRACUNIT/4, 14*FRACUNIT/20, (V_HUDTRANS|splitflags), (skp_smallstickerclr), colormap);
+			V_DrawStretchyFixedPatch((SPDM_X-1)<<FRACBITS, (SPDM_Y + 4)<<FRACBITS, FRACUNIT*0.775, FRACUNIT*0.725, (V_HUDTRANS|splitflags), (skp_smallstickerclr), colormap);
 		}
 
 		V_DrawRankNum(SPDM_X + 26, SPDM_Y + 4, V_HUDTRANS|splitflags, convSpeed, 3, NULL);
