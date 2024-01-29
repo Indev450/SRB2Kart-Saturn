@@ -2881,30 +2881,13 @@ void HWR_AddLine(seg_t *line)
 	angle1 = R_PointToPseudoAngle(v1x, v1y);
 	angle2 = R_PointToPseudoAngle(v2x, v2y);
 
-	// do an extra culling check when rendering portals
-	// check if any line vertex is on the viewable side of the portal target line
-	// if not, the line can be culled.
-	if (portalclipline)// portalclipline should be NULL when we are not rendering portal contents
+	// do extra checks on the seg when rendering portals:
+	// don't render segs that are behind the portal destination line
+	if (portalclipline && gr_portal !=
+				!HWR_PortalCheckPointSide(line->v1->x, line->v1->y) &&
+				!HWR_PortalCheckPointSide(line->v2->x, line->v2->y))
 	{
-		vertex_t closest_point;
-		boolean pass = false;
-
-		// similar idea than in PortalCheckBBox, but checking the line vertices instead
-		// TODO could make the check more efficient and not check anything if pass==true from earlier or something
-		P_ClosestPointOnLine(line->v1->x, line->v1->y, portalclipline, &closest_point);
-		if (closest_point.x != line->v1->x || closest_point.y != line->v1->y)
-		{
-			if (P_PointOnLineSide(line->v1->x, line->v1->y, portalclipline) != portalviewside)
-				pass = true;
-		}
-		P_ClosestPointOnLine(line->v2->x, line->v2->y, portalclipline, &closest_point);
-		if (closest_point.x != line->v2->x || closest_point.y != line->v2->y)
-		{
-			if (P_PointOnLineSide(line->v2->x, line->v2->y, portalclipline) != portalviewside)
-				pass = true;
-		}
-		if (!pass)
-			return;
+		return;
 	}
 
 	if (gr_portal == GRPORTAL_STENCIL || gr_portal == GRPORTAL_DEPTH)
@@ -3731,10 +3714,9 @@ skip_stuff_for_portals:
 // use returned value as multiplier for the added values from p_thrust thing
 // P_InterceptVector needs divlines which need dx and dy, dx=x2-x1 dy=y2-y1
 
-
 // returns true if the point is on the correct (viewable) side of the
 // portal destination line
-static boolean HWR_PortalCheckPointSide(fixed_t x, fixed_t y)
+boolean HWR_PortalCheckPointSide(fixed_t x, fixed_t y)
 {
 	// we are checking if the point is on the viewable side of the portal exit.
 	// being exactly on the portal exit line is not enough to pass the test.
@@ -3789,7 +3771,6 @@ void HWR_RenderBSPNode(INT32 bspnum)
 	{
 		if (bspnum == -1)
 		{
-			//*(gl_drawsubsector_p++) = 0;
 			HWR_Subsector(0);
 		}
 		else

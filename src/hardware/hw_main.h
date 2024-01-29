@@ -89,6 +89,7 @@ void HWR_SetViewSize(void);
 void HWR_AddCommands(void);
 void HWR_SetTransform(float fpov, player_t *player);
 void HWR_ClearClipper(void);
+boolean HWR_PortalCheckPointSide(fixed_t x, fixed_t y);
 
 boolean HWR_UseShader(void);
 boolean HWR_ShouldUsePaletteRendering(void);
