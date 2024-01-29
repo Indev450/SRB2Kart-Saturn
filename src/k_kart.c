@@ -8727,18 +8727,18 @@ static void K_drawKartSpeedometer(void)
 	{
 		if (!K_UseColorHud())
 			//V_DrawScaledPatch(SPDM_X + 1, SPDM_Y + 4, (V_HUDTRANS|splitflags), (skp_smallsticker));
-			V_DrawStretchyFixedPatch((SPDM_X-1)<<FRACBITS, (SPDM_Y + 4)<<FRACBITS, FRACUNIT*0.775, FRACUNIT*0.725, (V_HUDTRANS|splitflags), (skp_smallsticker), NULL);
+			V_DrawStretchyFixedPatch((SPDM_X-1)<<FRACBITS, (SPDM_Y + 5)<<FRACBITS, FRACUNIT*0.775, FRACUNIT*0.55, (V_HUDTRANS|splitflags), (skp_smallsticker), NULL);
 		else //Colourized hud
 		{
 			UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
 			//V_DrawMappedPatch(SPDM_X + 1, SPDM_Y + 4, (V_HUDTRANS|splitflags), (skp_smallstickerclr), colormap);
-			V_DrawStretchyFixedPatch((SPDM_X-1)<<FRACBITS, (SPDM_Y + 4)<<FRACBITS, FRACUNIT*0.775, FRACUNIT*0.725, (V_HUDTRANS|splitflags), (skp_smallstickerclr), colormap);
+			V_DrawStretchyFixedPatch((SPDM_X-1)<<FRACBITS, (SPDM_Y + 5)<<FRACBITS, FRACUNIT*0.775, FRACUNIT*0.55, (V_HUDTRANS|splitflags), (skp_smallstickerclr), colormap);
 		}
 
 		V_DrawRankNum(SPDM_X + 26, SPDM_Y + 4, V_HUDTRANS|splitflags, convSpeed, 3, NULL);
 
 		V_DrawScaledPatch(SPDM_X + 31, SPDM_Y + 4, V_HUDTRANS|splitflags, skp_speedpatches[cv_kartspeedometer.value]);
-	}	
+	}
 	/*else if (cv_newspeedometer.value == 2 && achi_speedo) // why bother if we dont?
 	{
 		if (!K_UseColorHud())
