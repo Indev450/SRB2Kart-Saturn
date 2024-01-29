@@ -3742,10 +3742,10 @@ static boolean HWR_PortalCheckPointSide(fixed_t x, fixed_t y)
 	// so first check if the point is precisely on the line, and then if not, check the side.
 
 	vertex_t closest_point;
-	P_ClosestPointOnLine(x, y, gl_portalclipline, &closest_point);
+	P_ClosestPointOnLine(x, y, portalclipline, &closest_point);
 	if (closest_point.x != x || closest_point.y != y)
 	{
-		if (P_PointOnLineSide(x, y, gl_portalclipline) != gl_portalviewside)
+		if (P_PointOnLineSide(x, y, portalclipline) != portalviewside)
 			return true;
 	}
 	return false;
