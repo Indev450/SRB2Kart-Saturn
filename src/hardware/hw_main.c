@@ -3731,40 +3731,39 @@ skip_stuff_for_portals:
 // use returned value as multiplier for the added values from p_thrust thing
 // P_InterceptVector needs divlines which need dx and dy, dx=x2-x1 dy=y2-y1
 
-static boolean HWR_PortalCheckBBox(fixed_t *bspcoord)
+
+// returns true if the point is on the correct (viewable) side of the
+// portal destination line
+static boolean HWR_PortalCheckPointSide(fixed_t x, fixed_t y)
 {
-	vertex_t closest_point;
-	if (!portalclipline)
-		return true;
-	
-	// we are looking for a bounding box corner that is on the viewable side of the portal exit.
+	// we are checking if the point is on the viewable side of the portal exit.
 	// being exactly on the portal exit line is not enough to pass the test.
 	// P_PointOnLineSide could behave differently from this expectation on this case,
 	// so first check if the point is precisely on the line, and then if not, check the side.
 
-	P_ClosestPointOnLine(bspcoord[BOXLEFT], bspcoord[BOXTOP], portalclipline, &closest_point);
-	if (closest_point.x != bspcoord[BOXLEFT] || closest_point.y != bspcoord[BOXTOP])
+	vertex_t closest_point;
+	P_ClosestPointOnLine(x, y, gl_portalclipline, &closest_point);
+	if (closest_point.x != x || closest_point.y != y)
 	{
-		if (P_PointOnLineSide(bspcoord[BOXLEFT], bspcoord[BOXTOP], portalclipline) != portalviewside)
+		if (P_PointOnLineSide(x, y, gl_portalclipline) != gl_portalviewside)
 			return true;
 	}
-	P_ClosestPointOnLine(bspcoord[BOXLEFT], bspcoord[BOXBOTTOM], portalclipline, &closest_point);
-	if (closest_point.x != bspcoord[BOXLEFT] || closest_point.y != bspcoord[BOXBOTTOM])
+	return false;
+}
+
+// Check if bounding box is (partially or fully) in the correct side
+// of the portal destination.
+static boolean HWR_PortalCheckBBox(fixed_t *bspcoord)
+{
+	if (!portalclipline)
+		return true;
+
+	if (HWR_PortalCheckPointSide(bspcoord[BOXLEFT], bspcoord[BOXTOP]) ||
+			HWR_PortalCheckPointSide(bspcoord[BOXLEFT], bspcoord[BOXBOTTOM]) ||
+			HWR_PortalCheckPointSide(bspcoord[BOXRIGHT], bspcoord[BOXTOP]) ||
+			HWR_PortalCheckPointSide(bspcoord[BOXRIGHT], bspcoord[BOXBOTTOM]))
 	{
-		if (P_PointOnLineSide(bspcoord[BOXLEFT], bspcoord[BOXBOTTOM], portalclipline) != portalviewside)
-			return true;
-	}
-	P_ClosestPointOnLine(bspcoord[BOXRIGHT], bspcoord[BOXTOP], portalclipline, &closest_point);
-	if (closest_point.x != bspcoord[BOXRIGHT] || closest_point.y != bspcoord[BOXTOP])
-	{
-		if (P_PointOnLineSide(bspcoord[BOXRIGHT], bspcoord[BOXTOP], portalclipline) != portalviewside)
-			return true;
-	}
-	P_ClosestPointOnLine(bspcoord[BOXRIGHT], bspcoord[BOXBOTTOM], portalclipline, &closest_point);
-	if (closest_point.x != bspcoord[BOXRIGHT] || closest_point.y != bspcoord[BOXBOTTOM])
-	{
-		if (P_PointOnLineSide(bspcoord[BOXRIGHT], bspcoord[BOXBOTTOM], portalclipline) != portalviewside)
-			return true;
+		return true;
 	}
 
 	// we did not find any reason to pass the check, so return failure
@@ -3788,19 +3787,26 @@ void HWR_RenderBSPNode(INT32 bspnum)
 	// Found a subsector?
 	if (bspnum & NF_SUBSECTOR)
 	{
-		// PORTAL CULLING
-		if (portalclipline)
+		if (bspnum == -1)
 		{
-			sector_t *sect = subsectors[bspnum & ~NF_SUBSECTOR].sector;
-			if (portalcullsector)
-			{
-				if (sect != portalcullsector)
-					return;
-				portalcullsector = NULL;
-			}
+			//*(gl_drawsubsector_p++) = 0;
+			HWR_Subsector(0);
 		}
-		if (bspnum != -1)
+		else
+		{
+			// PORTAL CULLING
+			if (portalclipline)
+			{
+				if (portalcullsector)
+				{
+					if (portalcullsector != subsectors[bspnum & ~NF_SUBSECTOR].sector)
+						return;
+					else
+						portalcullsector = NULL;
+				}
+			}
 			HWR_Subsector(bspnum&(~NF_SUBSECTOR));
+		}
 		return;
 	}
 
