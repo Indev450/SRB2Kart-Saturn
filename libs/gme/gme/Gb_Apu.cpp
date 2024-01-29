@@ -3,6 +3,7 @@
 #include "Gb_Apu.h"
 
 #include <string.h>
+#include <algorithm>
 
 /* Copyright (C) 2003-2006 Shay Green. This module is free software; you
 can redistribute it and/or modify it under the terms of the GNU Lesser
@@ -19,6 +20,9 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 
 unsigned const vol_reg    = 0xFF24;
 unsigned const status_reg = 0xFF26;
+
+using std::min;
+using std::max;
 
 Gb_Apu::Gb_Apu()
 {
@@ -123,7 +127,7 @@ void Gb_Apu::reset()
 		0x84,0x40,0x43,0xAA,0x2D,0x78,0x92,0x3C, // wave table
 		0x60,0x59,0x59,0xB0,0x34,0xB8,0x2E,0xDA
 	};
-	memcpy( wave.wave, initial_wave, sizeof wave.wave );
+	memcpy( wave.wave, initial_wave, sizeof initial_wave );
 }
 
 void Gb_Apu::run_until( blip_time_t end_time )

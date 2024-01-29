@@ -4,7 +4,7 @@ project(libgme)
 include (CheckCXXCompilerFlag)
 
 # When version is changed, also change the one in gme/gme.h to match
-set(GME_VERSION 0.6.2 CACHE INTERNAL "libgme Version")
+set(GME_VERSION 0.6.3 CACHE INTERNAL "libgme Version")
 
 # 2.6+ always assumes FATAL_ERROR, but 2.4 and below don't.
 # Of course, 2.4 might work, in which case you're welcome to drop
@@ -48,8 +48,16 @@ if (NOT DEFINED USE_GME_SPC)
     SET(USE_GME_SPC 1 CACHE BOOL "Enable SNES SPC music emulation")
 endif()
 
+if (NOT DEFINED GME_SPC_ISOLATED_ECHO_BUFFER)
+    option(GME_SPC_ISOLATED_ECHO_BUFFER "Enable isolated echo buffer on SPC emulator to allow correct playing of \"dodgy\" SPC files made for various ROM hacks ran on ZSNES" OFF)
+endif()
+
 if (NOT DEFINED USE_GME_VGM)
     SET(USE_GME_VGM 1 CACHE BOOL "Enable Sega VGM/VGZ music emulation")
+endif()
+
+if (NOT DEFINED GME_YM2612_EMU)
+    SET(GME_YM2612_EMU "Nuked" CACHE STRING "Which YM2612 emulator to use: \"Nuked\" (LGPLv2.1+), \"MAME\" (GPLv2+), or \"GENS\" (LGPLv2.1+)")
 endif()
 
 if (USE_GME_NSFE AND NOT USE_GME_NSF)
@@ -59,32 +67,36 @@ endif()
 
 option(BUILD_SHARED_LIBS "Build shared library (set to OFF for static library)" ON)
 
-# Check for GCC "visibility" support.
-if (CMAKE_COMPILER_IS_GNUCXX)
-   check_cxx_compiler_flag (-fvisibility=hidden __LIBGME_TEST_VISIBILITY)
-   set (ENABLE_VISIBILITY OFF)
-   if (__LIBGME_TEST_VISIBILITY)
-      # get the gcc version
-      exec_program(${CMAKE_CXX_COMPILER} ARGS --version OUTPUT_VARIABLE _gcc_version_info)
-      string (REGEX MATCH "[3-9]\\.[0-9]\\.[0-9]" _gcc_version "${_gcc_version_info}")
+option(ENABLE_UBSAN "Enable Undefined Behavior Sanitizer error-checking" ON)
 
-      # gcc <4.1 had poor support for symbol visibility
-      if ((${_gcc_version} VERSION_GREATER "4.1") OR (${_gcc_version} VERSION_EQUAL "4.1"))
-         set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden")
-         set (ENABLE_VISIBILITY ON)
-         add_definitions (-DLIBGME_VISIBILITY)
+option(BUILD_FRAMEWORK "Build framework instead of dylib (on macOS)" OFF)
 
-         # GCC >= 4.2 also correctly supports making inline members have hidden
-         # visibility by default.
-         if ((${_gcc_version} VERSION_GREATER "4.2") OR (${_gcc_version} VERSION_EQUAL "4.2"))
-            set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility-inlines-hidden")
-         endif()
-      endif()
-   endif() # test visibility
+# Check for GCC/Clang "visibility" support.
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU"
+    OR
+    CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 
-    # Cache this result
-    set( LIBGME_HAVE_GCC_VISIBILITY ${ENABLE_VISIBILITY} CACHE BOOL "GCC support for hidden visibility")
-endif (CMAKE_COMPILER_IS_GNUCXX)
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -W -Wextra")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+
+    # Assume we have visibility support on any compiler that supports C++11
+    add_definitions (-DLIBGME_VISIBILITY)
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden -fvisibility-inlines-hidden")
+
+    # Try to protect against undefined behavior from signed integer overflow
+    # This has caused miscompilation of code already and there are other
+    # potential uses; see https://bitbucket.org/mpyne/game-music-emu/issues/18/
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fwrapv")
+
+    if (ENABLE_UBSAN)
+        # GCC needs -static-libubsan
+        if (NOT BUILD_SHARED_LIBS AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+            set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=undefined -static-libubsan")
+        else()
+            set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=undefined")
+        endif()
+    endif()
+endif ()
 
 # Shared library defined here
 add_subdirectory(gme)

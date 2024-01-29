@@ -1,6 +1,6 @@
 // SPC emulation support: init, sample buffering, reset, SPC loading
 
-// Game_Music_Emu 0.6.0. http://www.slack.net/~ant/
+// Game_Music_Emu https://bitbucket.org/mpyne/game-music-emu/
 
 #include "Snes_Spc.h"
 
@@ -143,8 +143,8 @@ void Snes_Spc::ram_loaded()
 	load_regs( &RAM [0xF0] );
 	
 	// Put STOP instruction around memory to catch PC underflow/overflow
-	memset( m.ram.padding1, cpu_pad_fill, sizeof m.ram.padding1 );
-	memset( m.ram.padding2, cpu_pad_fill, sizeof m.ram.padding2 );
+	memset( m.ram.padding1,      cpu_pad_fill, sizeof m.ram.padding1 );
+	memset( m.ram.ram + 0x10000, cpu_pad_fill, sizeof m.ram.padding1 );
 }
 
 // Registers were just loaded. Applies these new values.
@@ -248,6 +248,8 @@ blargg_err_t Snes_Spc::load_spc( void const* data, long size )
 
 void Snes_Spc::clear_echo()
 {
+// Allows playback of dodgy Super Mario World mod SPCs
+#ifndef SPC_ISOLATED_ECHO_BUFFER
 	if ( !(dsp.read( Spc_Dsp::r_flg ) & 0x20) )
 	{
 		int addr = 0x100 * dsp.read( Spc_Dsp::r_esa );
@@ -256,6 +258,7 @@ void Snes_Spc::clear_echo()
 			end = 0x10000;
 		memset( &RAM [addr], 0xFF, end - addr );
 	}
+#endif
 }
 
 

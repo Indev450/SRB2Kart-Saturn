@@ -1,6 +1,6 @@
 // Simple game music file player
 
-// Game_Music_Emu 0.6.0
+// Game_Music_Emu https://bitbucket.org/mpyne/game-music-emu/
 #ifndef MUSIC_PLAYER_H
 #define MUSIC_PLAYER_H
 
@@ -48,6 +48,10 @@ public:
 	
 	// Set voice muting bitmask
 	void mute_voices( int );
+
+	// Toggle whether fadeout is used or not. If used, stops at track length,
+	// if not used, loop forever
+	void set_fadeout( bool do_fade );
 	
 	// Set buffer to copy samples from each buffer into, or NULL to disable
 	typedef short sample_t;

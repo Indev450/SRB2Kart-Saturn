@@ -1,6 +1,6 @@
 // Low-level parts of Vgm_Emu
 
-// Game_Music_Emu 0.6.0
+// Game_Music_Emu https://bitbucket.org/mpyne/game-music-emu/
 #ifndef VGM_EMU_IMPL_H
 #define VGM_EMU_IMPL_H
 
@@ -58,11 +58,13 @@ protected:
 	int dac_disabled; // -1 if disabled
 	void write_pcm( vgm_time_t, int amp );
 	
-	Ym_Emu<Ym2612_Emu> ym2612;
-	Ym_Emu<Ym2413_Emu> ym2413;
+	Ym_Emu<Ym2612_Emu> ym2612[2];
+	Ym_Emu<Ym2413_Emu> ym2413[2];
 	
 	Blip_Buffer blip_buf;
-	Sms_Apu psg;
+	Sms_Apu psg[2];
+	bool psg_dual;
+	bool psg_t6w28;
 	Blip_Synth<blip_med_quality,1> dac_synth;
 	
 	friend class Vgm_Emu;

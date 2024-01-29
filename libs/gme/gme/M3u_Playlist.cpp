@@ -1,4 +1,4 @@
-// Game_Music_Emu 0.6.0. http://www.slack.net/~ant/
+// Game_Music_Emu https://bitbucket.org/mpyne/game-music-emu/
 
 #include "M3u_Playlist.h"
 #include "Music_Emu.h"
@@ -52,9 +52,9 @@ blargg_err_t Gme_File::load_m3u( const char* path ) { return load_m3u_( playlist
 
 blargg_err_t Gme_File::load_m3u( Data_Reader& in )  { return load_m3u_( playlist.load( in ) ); }
 
-BLARGG_EXPORT gme_err_t gme_load_m3u( Music_Emu* me, const char* path ) { return me->load_m3u( path ); }
+gme_err_t gme_load_m3u( Music_Emu* me, const char* path ) { return me->load_m3u( path ); }
 
-BLARGG_EXPORT gme_err_t gme_load_m3u_data( Music_Emu* me, const void* data, long size )
+gme_err_t gme_load_m3u_data( Music_Emu* me, const void* data, long size )
 {
 	Mem_File_Reader in( data, size );
 	return me->load_m3u( in );
@@ -153,6 +153,23 @@ static char* parse_int_( char* in, int* out )
 	return in;
 }
 
+static char* parse_mil_( char* in, int* out )
+{
+	int n = 0;
+	int x = 100;
+	while ( 1 )
+	{
+		unsigned d = from_dec( *in );
+		if ( d > 9 )
+			break;
+		in++;
+		n += d * x;
+		x /= 10;
+		*out = n;
+	}
+	return in;
+}
+
 static char* parse_int( char* in, int* out, int* result )
 {
 	return next_field( parse_int_( in, out ), result );
@@ -200,12 +217,21 @@ static char* parse_time_( char* in, int* out )
 	if ( n >= 0 )
 	{
 		*out = n;
-		if ( *in == ':' )
+		while ( *in == ':' )
 		{
 			n = -1;
 			in = parse_int_( in + 1, &n );
 			if ( n >= 0 )
 				*out = *out * 60 + n;
+		}
+		*out *= 1000;
+
+		if ( *in == '.' )
+		{
+			n = -1;
+			in = parse_mil_( in + 1, &n );
+			if ( n >= 0 )
+				*out += n;
 		}
 	}
 	return in;

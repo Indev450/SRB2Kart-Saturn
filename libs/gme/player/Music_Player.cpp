@@ -1,4 +1,4 @@
-// Game_Music_Emu 0.6.0. http://www.slack.net/~ant/
+// Game_Music_Emu https://bitbucket.org/mpyne/game-music-emu/
 
 #include "Music_Player.h"
 
@@ -20,6 +20,7 @@ COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 
+#undef RETURN_ERR
 #define RETURN_ERR( expr ) \
 	do {\
 		gme_err_t err_ = (expr);\
@@ -28,7 +29,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 	} while ( 0 )
 
 // Number of audio buffers per second. Adjust if you encounter audio skipping.
-const int fill_rate = 45;
+// Note that this sets the floor on how often you'll see changes to the audio
+// scope
+const int fill_rate = 80;
 
 // Simple sound driver using SDL
 typedef void (*sound_callback_t)( void* data, short* out, int count );
@@ -176,6 +179,11 @@ void Music_Player::mute_voices( int mask )
 	resume();
 }
 
+void Music_Player::set_fadeout( bool fade )
+{
+	gme_set_fade( emu_, fade ? track_info_->length : -1 );
+}
+
 void Music_Player::fill_buffer( void* data, sample_t* out, int count )
 {
 	Music_Player* self = (Music_Player*) data;
@@ -195,7 +203,7 @@ void Music_Player::fill_buffer( void* data, sample_t* out, int count )
 static sound_callback_t sound_callback;
 static void* sound_callback_data;
 
-static void sdl_callback( void* data, Uint8* out, int count )
+static void sdl_callback( void* /* data */, Uint8* out, int count )
 {
 	if ( sound_callback )
 		sound_callback( sound_callback_data, (short*) out, count / 2 );

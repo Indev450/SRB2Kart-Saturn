@@ -1,4 +1,4 @@
-// Game_Music_Emu 0.6.0. http://www.slack.net/~ant/
+// Game_Music_Emu https://bitbucket.org/mpyne/game-music-emu/
 
 #include "Spc_Dsp.h"
 
@@ -28,11 +28,11 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 
 
 // TODO: add to blargg_endian.h
-#define GET_LE16SA( addr )      ((BOOST::int16_t) GET_LE16( addr ))
+#define GET_LE16SA( addr )      ((int16_t) GET_LE16( addr ))
 #define GET_LE16A( addr )       GET_LE16( addr )
 #define SET_LE16A( addr, data ) SET_LE16( addr, data )
 
-static BOOST::uint8_t const initial_regs [Spc_Dsp::register_count] =
+static uint8_t const initial_regs [Spc_Dsp::register_count] =
 {
 	0x45,0x8B,0x5A,0x9A,0xE4,0x82,0x1B,0x78,0x00,0x00,0xAA,0x96,0x89,0x0E,0xE0,0x80,
 	0x2A,0x49,0x3D,0xBA,0x14,0xA0,0xAC,0xC5,0x00,0x00,0x51,0xBB,0x9C,0x4E,0x7B,0xFF,
@@ -192,6 +192,9 @@ void Spc_Dsp::run( int clock_count )
 		return;
 	
 	uint8_t* const ram = m.ram;
+#ifdef SPC_ISOLATED_ECHO_BUFFER
+	uint8_t* const echo_ram = m.echo_ram;
+#endif
 	uint8_t const* const dir = &ram [REG(dir) * 0x100];
 	int const slow_gaussian = (REG(pmon) >> 1) | REG(non);
 	int const noise_rate = REG(flg) & 0x1F;
@@ -498,8 +501,9 @@ void Spc_Dsp::run( int clock_count )
 					// Decode four samples
 					for ( end = pos + 4; pos < end; pos++, nybbles <<= 4 )
 					{
-						// Extract upper nybble and scale appropriately
-						int s = ((int16_t) nybbles >> right_shift) << left_shift;
+						// Extract upper nybble and scale appropriately. Every cast is
+						// necessary to maintain correctness and avoid undef behavior
+						int s = int16_t(uint16_t((int16_t) nybbles >> right_shift) << left_shift);
 						
 						// Apply IIR filter (8 is the most commonly used)
 						int const filter = brr_header & 0x0C;
@@ -547,7 +551,12 @@ skip_brr:
 		
 		// Echo position
 		int echo_offset = m.echo_offset;
+#ifdef SPC_ISOLATED_ECHO_BUFFER
+		// And here, we win no awards for accuracy, but gain playback of dodgy Super Mario World mod SPCs
+		uint8_t* const echo_ptr = &echo_ram [(REG(esa) * 0x100 + echo_offset) & 0xFFFF];
+#else
 		uint8_t* const echo_ptr = &ram [(REG(esa) * 0x100 + echo_offset) & 0xFFFF];
+#endif
 		if ( !echo_offset )
 			m.echo_length = (REG(edl) & 0x0F) * 0x800;
 		echo_offset += 4;

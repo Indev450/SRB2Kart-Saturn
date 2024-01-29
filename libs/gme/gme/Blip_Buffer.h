@@ -231,6 +231,11 @@ private:
 public:
 	Blip_Synth() : impl( impulses, quality ) { }
 #endif
+
+	// disable broken defaulted constructors, Blip_Synth_ isn't safe to move/copy
+	Blip_Synth<quality, range>           (const Blip_Synth<quality, range>  &) = delete;
+	Blip_Synth<quality, range>           (      Blip_Synth<quality, range> &&) = delete;
+	Blip_Synth<quality, range>& operator=(const Blip_Synth<quality, range> &)  = delete;
 };
 
 // Low-pass equalization parameters

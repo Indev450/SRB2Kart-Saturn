@@ -1,4 +1,4 @@
-// Game_Music_Emu 0.6.0. http://www.slack.net/~ant/
+// Game_Music_Emu https://bitbucket.org/mpyne/game-music-emu/
 
 #include "Gb_Cpu.h"
 
@@ -96,8 +96,6 @@ bool Gb_Cpu::run( blargg_long cycle_count )
 	this->state = &s;
 	memcpy( &s, &this->state_, sizeof s );
 	
-	typedef BOOST::uint16_t uint16_t;
-	
 #if BLARGG_BIG_ENDIAN
 	#define R8( n ) (r8_ [n]) 
 #elif BLARGG_LITTLE_ENDIAN
@@ -110,11 +108,11 @@ bool Gb_Cpu::run( blargg_long cycle_count )
 		core_regs_t rg; // individual registers
 		
 		struct {
-			BOOST::uint16_t bc, de, hl, unused; // pairs
+			uint16_t bc, de, hl, unused; // pairs
 		} rp;
 		
 		uint8_t r8_ [8]; // indexed registers (use R8 macro due to endian dependence)
-		BOOST::uint16_t r16 [4]; // indexed pairs
+		uint16_t r16 [4]; // indexed pairs
 	};
 	BOOST_STATIC_ASSERT( sizeof rg == 8 && sizeof rp == 8 );
 	
@@ -162,7 +160,7 @@ loop:
 #define BRANCH( cond )\
 {\
 	pc++;\
-	int offset = (BOOST::int8_t) data;\
+	int offset = (int8_t) data;\
 	if ( !(cond) ) goto loop;\
 	pc = uint16_t (pc + offset);\
 	goto loop;\
@@ -262,7 +260,7 @@ loop:
 		if ( flags & z_flag )
 			goto loop;
 	call:
-		pc -= 2;
+		pc -= 2; // FALLTHRU
 	case 0xCD: // CALL (most-common)
 		data = pc + 2;
 		pc = GET_ADDR();
@@ -276,6 +274,7 @@ loop:
 	case 0xC8: // RNZ (next-most-common)
 		if ( !(flags & z_flag) )
 			goto loop;
+		// FALLTHRU
 	case 0xC9: // RET (most common)
 	ret:
 		pc = READ( sp );
@@ -433,7 +432,7 @@ loop:
 			goto rl_comm;
 		
 		case 0x3E: // SRL (HL)
-			data += 0x10; // bump up to 0x4n to avoid preserving sign bit
+			data += 0x10; /* fallthrough */ // bump up to 0x4n to avoid preserving sign bit
 		case 0x1E: // RR (HL)
 		case 0x0E: // RRC (HL)
 		case 0x2E: // SRA (HL)
@@ -441,7 +440,7 @@ loop:
 			goto rr_comm;
 		
 		case 0x38: case 0x39: case 0x3A: case 0x3B: case 0x3C: case 0x3D: case 0x3F: // SRL A
-			data += 0x10; // bump up to 0x4n
+			data += 0x10; /* fallthrough */ // bump up to 0x4n
 		case 0x18: case 0x19: case 0x1A: case 0x1B: case 0x1C: case 0x1D: case 0x1F: // RR A
 		case 0x08: case 0x09: case 0x0A: case 0x0B: case 0x0C: case 0x0D: case 0x0F: // RRC A
 		case 0x28: case 0x29: case 0x2A: case 0x2B: case 0x2C: case 0x2D: case 0x2F: // SRA A
@@ -450,6 +449,7 @@ loop:
 		
 	} // CB op
 	assert( false ); // unhandled CB op
+	// fallthrough
 
 	case 0x07: // RLCA
 	case 0x17: // RLA
@@ -682,7 +682,7 @@ loop:
 		unsigned prev;
 		
 	case 0xF8: // LD HL,SP+imm
-		temp = BOOST::int8_t (data); // sign-extend to 16 bits
+		temp = int8_t (data); // sign-extend to 16 bits
 		pc++;
 		flags = 0;
 		temp += sp;
@@ -690,7 +690,7 @@ loop:
 		goto add_16_hl;
 	
 	case 0xE8: // ADD SP,IMM
-		temp = BOOST::int8_t (data); // sign-extend to 16 bits
+		temp = int8_t (data); // sign-extend to 16 bits
 		pc++;
 		flags = 0;
 		temp += sp;
@@ -824,11 +824,11 @@ loop:
 	
 	case 0xA6: // AND (HL)
 		data = READ( rp.hl );
-		pc--;
+		pc--; // FALLTHRU
 	case 0xE6: // AND IMM
 		pc++;
 	and_comm:
-		rg.a &= data;
+		rg.a &= data; // FALLTHRU
 	case 0xA7: // AND A
 		flags = h_flag | (((rg.a - 1) >> 1) & z_flag);
 		goto loop;
@@ -844,11 +844,11 @@ loop:
 	
 	case 0xB6: // OR (HL)
 		data = READ( rp.hl );
-		pc--;
+		pc--; // FALLTHRU
 	case 0xF6: // OR IMM
 		pc++;
 	or_comm:
-		rg.a |= data;
+		rg.a |= data; // FALLTHRU
 	case 0xB7: // OR A
 		flags = ((rg.a - 1) >> 1) & z_flag;
 		goto loop;
@@ -864,7 +864,7 @@ loop:
 	
 	case 0xAE: // XOR (HL)
 		data = READ( rp.hl );
-		pc--;
+		pc--; // FALLTHRU
 	case 0xEE: // XOR IMM
 		pc++;
 	xor_comm:
@@ -914,6 +914,7 @@ loop:
 	case 0xFF:
 		if ( pc == idle_addr + 1 )
 			goto stop;
+		// FALLTHRU
 	case 0xC7: case 0xCF: case 0xD7: case 0xDF:  // RST
 	case 0xE7: case 0xEF: case 0xF7:
 		data = pc;

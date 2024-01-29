@@ -1,4 +1,4 @@
-// Game_Music_Emu 0.6.0. http://www.slack.net/~ant/
+// Game_Music_Emu https://bitbucket.org/mpyne/game-music-emu/
 
 #include "Fir_Resampler.h"
 
@@ -188,6 +188,8 @@ int Fir_Resampler_::skip_input( long count )
 {
 	int remain = write_pos - buf.begin();
 	int max_count = remain - width_ * stereo;
+	if ( max_count < 0 )
+		return 0;
 	if ( count > max_count )
 		count = max_count;
 	

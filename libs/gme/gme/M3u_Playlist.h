@@ -1,6 +1,6 @@
 // M3U playlist file parser, with support for subtrack information
 
-// Game_Music_Emu 0.6.0
+// Game_Music_Emu https://bitbucket.org/mpyne/game-music-emu/
 #ifndef M3U_PLAYLIST_H
 #define M3U_PLAYLIST_H
 
@@ -36,7 +36,7 @@ public:
 		bool decimal_track; // true if track was specified in hex
 		// integers are -1 if not present
 		int track;  // 1-based
-		int length; // seconds
+		int length; // milliseconds
 		int intro;
 		int loop;
 		int fade;

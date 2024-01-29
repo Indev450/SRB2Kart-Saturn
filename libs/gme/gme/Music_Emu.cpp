@@ -1,9 +1,10 @@
-// Game_Music_Emu 0.6.0. http://www.slack.net/~ant/
+// Game_Music_Emu https://bitbucket.org/mpyne/game-music-emu/
 
 #include "Music_Emu.h"
 
 #include "Multi_Buffer.h"
 #include <string.h>
+#include <algorithm>
 
 /* Copyright (C) 2003-2006 Shay Green. This module is free software; you
 can redistribute it and/or modify it under the terms of the GNU Lesser
@@ -18,11 +19,13 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 
 #include "blargg_source.h"
 
-int const stereo = 2; // number of channels for stereo
 int const silence_max = 6; // seconds
 int const silence_threshold = 0x10;
 long const fade_block_size = 512;
 int const fade_shift = 8; // fade ends with gain at 1.0 / (1 << fade_shift)
+
+using std::min;
+using std::max;
 
 Music_Emu::equalizer_t const Music_Emu::tv_eq =
 	Music_Emu::make_equalizer( -8.0, 180 );
@@ -52,7 +55,7 @@ void Music_Emu::unload()
 Music_Emu::Music_Emu()
 {
 	effects_buffer = 0;
-	
+	multi_channel_ = false;
 	sample_rate_ = 0;
 	mute_mask_   = 0;
 	tempo_       = 1.0;
@@ -65,6 +68,8 @@ Music_Emu::Music_Emu()
 	equalizer_.treble   = -1.0;
 	equalizer_.bass     = 60;
 	
+	emu_autoload_playback_limit_ = true;
+
 	static const char* const names [] = {
 		"Voice 1", "Voice 2", "Voice 3", "Voice 4",
 		"Voice 5", "Voice 6", "Voice 7", "Voice 8"
@@ -94,6 +99,25 @@ void Music_Emu::set_equalizer( equalizer_t const& eq )
 {
 	equalizer_ = eq;
 	set_equalizer_( eq );
+}
+
+bool Music_Emu::multi_channel() const
+{
+	return this->multi_channel_;
+}
+
+blargg_err_t Music_Emu::set_multi_channel( bool )
+{
+	// by default not supported, derived may override this
+	return "unsupported for this emulator type";
+}
+
+blargg_err_t Music_Emu::set_multi_channel_( bool isEnabled )
+{
+	// multi channel support must be set at the very beginning
+	require( !sample_rate() );
+	multi_channel_ = isEnabled;
+	return 0;
 }
 
 void Music_Emu::mute_voice( int index, bool mute )
@@ -145,7 +169,7 @@ blargg_err_t Music_Emu::start_track( int track )
 	if ( !ignore_silence_ )
 	{
 		// play until non-silence or end of track
-		for ( long end = max_initial_silence * stereo * sample_rate(); emu_time < end; )
+		for ( long end = max_initial_silence * out_channels() * sample_rate(); emu_time < end; )
 		{
 			fill_buf();
 			if ( buf_remain | (int) emu_track_ended_ )
@@ -169,13 +193,23 @@ void Music_Emu::end_track_if_error( blargg_err_t err )
 	}
 }
 
+bool Music_Emu::autoload_playback_limit() const
+{
+	return emu_autoload_playback_limit_;
+}
+
+void Music_Emu::set_autoload_playback_limit( bool do_autoload_limit )
+{
+	emu_autoload_playback_limit_ = do_autoload_limit;
+}
+
 // Tell/Seek
 
 blargg_long Music_Emu::msec_to_samples( blargg_long msec ) const
 {
 	blargg_long sec = msec / 1000;
 	msec -= sec * 1000;
-	return (sec * sample_rate() + msec * sample_rate() / 1000) * stereo;
+	return (sec * sample_rate() + msec * sample_rate() / 1000) * out_channels();
 }
 
 long Music_Emu::tell_samples() const
@@ -185,7 +219,7 @@ long Music_Emu::tell_samples() const
 
 long Music_Emu::tell() const
 {
-	blargg_long rate = sample_rate() * stereo;
+	blargg_long rate = sample_rate() * out_channels();
 	blargg_long sec = out_time / rate;
 	return sec * 1000 + (out_time - sec * rate) * 1000 / rate;
 }
@@ -263,7 +297,7 @@ blargg_err_t Music_Emu::skip_( long count )
 
 void Music_Emu::set_fade( long start_msec, long length_msec )
 {
-	fade_step = sample_rate() * length_msec / (fade_block_size * fade_shift * 1000 / stereo);
+	fade_step = sample_rate() * length_msec / (fade_block_size * fade_shift * 1000 / out_channels());
 	fade_start = msec_to_samples( start_msec );
 }
 
@@ -345,7 +379,7 @@ blargg_err_t Music_Emu::play( long out_count, sample_t* out )
 	else
 	{
 		require( current_track() >= 0 );
-		require( out_count % stereo == 0 );
+		require( out_count % out_channels() == 0 );
 		
 		assert( emu_time >= out_time );
 		
@@ -365,7 +399,7 @@ blargg_err_t Music_Emu::play( long out_count, sample_t* out )
 			memset( out, 0, pos * sizeof *out );
 			silence_count -= pos;
 			
-			if ( emu_time - silence_time > silence_max * stereo * sample_rate() )
+			if ( emu_time - silence_time > silence_max * out_channels() * sample_rate() )
 			{
 				track_ended_  = emu_track_ended_ = true;
 				silence_count = 0;
@@ -401,7 +435,7 @@ blargg_err_t Music_Emu::play( long out_count, sample_t* out )
 			}
 		}
 		
-		if ( out_time > fade_start )
+		if ( fade_start >= 0 && out_time > fade_start )
 			handle_fade( out_count, out );
 	}
 	out_time += out_count;

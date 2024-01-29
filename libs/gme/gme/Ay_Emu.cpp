@@ -1,9 +1,11 @@
-// Game_Music_Emu 0.6.0. http://www.slack.net/~ant/
+// Game_Music_Emu https://bitbucket.org/mpyne/game-music-emu/
 
 #include "Ay_Emu.h"
 
 #include "blargg_endian.h"
 #include <string.h>
+
+#include <algorithm> // min, max
 
 /* Copyright (C) 2006 Shay Green. This module is free software; you
 can redistribute it and/or modify it under the terms of the GNU Lesser
@@ -23,6 +25,9 @@ long const cpc_clock      = 2000000;
 
 unsigned const ram_start = 0x4000;
 int const osc_count = Ay_Apu::osc_count + 1;
+
+using std::min;
+using std::max;
 
 Ay_Emu::Ay_Emu()
 {
@@ -50,7 +55,7 @@ static byte const* get_data( Ay_Emu::file_t const& file, byte const* ptr, int mi
 	long pos = ptr - (byte const*) file.header;
 	long file_size = file.end - (byte const*) file.header;
 	assert( (unsigned long) pos <= (unsigned long) file_size - 2 );
-	int offset = (BOOST::int16_t) get_be16( ptr );
+	int offset = (int16_t) get_be16( ptr );
 	if ( !offset || blargg_ulong (pos + offset) > blargg_ulong (file_size - min_size) )
 		return 0;
 	return ptr + offset;
@@ -117,7 +122,7 @@ static Music_Emu* new_ay_emu () { return BLARGG_NEW Ay_Emu ; }
 static Music_Emu* new_ay_file() { return BLARGG_NEW Ay_File; }
 
 static gme_type_t_ const gme_ay_type_ = { "ZX Spectrum", 0, &new_ay_emu, &new_ay_file, "AY", 1 };
-gme_type_t const gme_ay_type = &gme_ay_type_;
+extern gme_type_t const gme_ay_type = &gme_ay_type_;
 
 // Setup
 
