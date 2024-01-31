@@ -1722,6 +1722,7 @@ boolean I_InitTcpNetwork(void)
 		// server address only in ip
 		if (serverhostname[0])
 		{
+			CV_Set(&cv_lastserver, serverhostname);
 			COM_BufAddText("connect \"");
 			COM_BufAddText(serverhostname);
 			COM_BufAddText("\"\n");
@@ -1731,6 +1732,9 @@ boolean I_InitTcpNetwork(void)
 		}
 		else
 		{
+			// Not quite sure if we want to save that but i'll do that for now
+			CV_Set(&cv_lastserver, "any");
+
 			// so we're on a LAN
 			COM_BufAddText("connect any\n");
 
