@@ -165,6 +165,46 @@ typedef struct
 	FLOAT       s,t;
 } FOutVector;
 
+#ifdef GL_SHADERS
+// Shader targets used to render specific types of geometry.
+// A shader target is resolved to an actual shader with HWR_GetShaderFromTarget.
+// The shader returned may be a base shader or a custom shader.
+enum
+{
+	SHADER_NONE = -1,
+	SHADER_FLOOR = 0,
+	SHADER_WALL,
+	SHADER_MODEL,
+	SHADER_SPRITE,
+	SHADER_WATER,
+	SHADER_FOG,
+	SHADER_SKY,
+	SHADER_PALETTE_POSTPROCESS,
+	SHADER_UI_COLORMAP_FADE,
+
+	NUMSHADERTARGETS
+};
+
+// Must be at least NUMSHADERTARGETS*2 to fit base and custom shaders for each shader target.
+#define HWR_MAXSHADERS NUMSHADERTARGETS*2
+
+// Custom shader reference table
+typedef struct
+{
+	const char *type;
+	INT32 id;
+} customshaderxlat_t;
+
+enum hwdshaderstage
+{
+	HWD_SHADERSTAGE_VERTEX,
+	HWD_SHADERSTAGE_FRAGMENT,
+};
+
+typedef enum hwdshaderstage hwdshaderstage_t;
+
+#endif
+
 // ==========================================================================
 //                                                               RENDER MODES
 // ==========================================================================
@@ -287,5 +327,16 @@ enum hwdfiltermode
 	HWD_SET_TEXTUREFILTER_MIXED2,
 	HWD_SET_TEXTUREFILTER_MIXED3,
 };
+
+// Screen texture slots
+enum hwdscreentexture
+{
+	HWD_SCREENTEXTURE_WIPE_START, // source image for the wipe/fade effect
+	HWD_SCREENTEXTURE_WIPE_END,   // destination image for the wipe/fade effect
+	HWD_SCREENTEXTURE_GENERIC1,   // underwater/heat effect, intermission background
+	HWD_SCREENTEXTURE_GENERIC2,   // palette-based colormap fade, final screen texture
+	NUMSCREENTEXTURES,            // (generic3 is unused if palette rendering is disabled)
+};
+typedef enum hwdscreentexture hwdscreentexture_t;
 
 #endif //_HWR_DEFS_
