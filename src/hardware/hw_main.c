@@ -194,7 +194,7 @@ static void CV_grshaders_OnChange(void)
 {
 	ONLY_IF_GL_LOADED
 	HWR_SetShaderState();
-	if (cv_grpaletterendering.value)
+	if ((cv_grpaletterendering.value))
 	{
 		// can't do palette rendering without shaders, so update the state if needed
 		HWR_TogglePaletteRendering();
@@ -6055,14 +6055,7 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, playe
 		else
 			HWR_PortalClipping(rootportal);
 		validcount++;
-		
-		if (cv_grbatching.value)
-			HWR_StartBatching();
-		
 		HWR_RenderBSPNode((INT32)numnodes-1);// no actual rendering happens
-		
-		if (cv_grbatching.value)
-			HWR_RenderBatches();
 
 		// for each found portal:
 		// note: if necessary, could sort the portals here?
