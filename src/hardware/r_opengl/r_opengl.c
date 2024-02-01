@@ -431,9 +431,6 @@ static PFNglCopyTexImage2D pglCopyTexImage2D;
 typedef void (APIENTRY * PFNglCopyTexSubImage2D) (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint x, GLint y, GLsizei width, GLsizei height);
 static PFNglCopyTexSubImage2D pglCopyTexSubImage2D;
 #endif
-/* GLU functions */
-typedef GLint (APIENTRY * PFNgluBuild2DMipmaps) (GLenum target, GLint internalFormat, GLsizei width, GLsizei height, GLenum format, GLenum type, const void *data);
-static PFNgluBuild2DMipmaps pgluBuild2DMipmaps;
 
 /* 3.0 functions */
 #ifdef GL_VERSION_3_0
@@ -753,9 +750,6 @@ void SetupGLFunc4(void)
 	pglGetUniformLocation = GetGLFunc("glGetUniformLocation");
 #endif
 
-	// GLU
-	pgluBuild2DMipmaps = GetGLFunc("gluBuild2DMipmaps");
-	
 #ifdef GL_VERSION_3_0
 	pglGenerateMipmap = GetGLFunc("glGenerateMipmap");
 #endif
@@ -1502,9 +1496,7 @@ EXPORT void HWRAPI(UpdateTexture) (FTextureInfo *pTexInfo)
 		//pglTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
 		if (MipMap)
 		{
-			if (majorGL == 1 && minorGL >= 0 && minorGL < 4)
-				pgluBuild2DMipmaps(GL_TEXTURE_2D, GL_LUMINANCE_ALPHA, w, h, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
-			else if ((majorGL == 1 && minorGL >= 4) || (majorGL == 2))
+			if ((majorGL == 1 && minorGL >= 4) || (majorGL == 2))
 			{
 				pglTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
 				pglTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
@@ -1536,9 +1528,7 @@ EXPORT void HWRAPI(UpdateTexture) (FTextureInfo *pTexInfo)
 		//pglTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
 		if (MipMap)
 		{
-			if (majorGL == 1 && minorGL >= 0 && minorGL < 4)
-				pgluBuild2DMipmaps(GL_TEXTURE_2D, GL_ALPHA, w, h, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
-			else if ((majorGL == 1 && minorGL >= 4) || (majorGL == 2))
+			if ((majorGL == 1 && minorGL >= 4) || (majorGL == 2))
 			{
 				pglTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
 				pglTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
@@ -1569,9 +1559,7 @@ EXPORT void HWRAPI(UpdateTexture) (FTextureInfo *pTexInfo)
 	{
 		if (MipMap)
 		{
-			if (majorGL == 1 && minorGL >= 0 && minorGL < 4)
-				pgluBuild2DMipmaps(GL_TEXTURE_2D, textureformatGL, w, h, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
-			else if ((majorGL == 1 && minorGL >= 4) || (majorGL == 2))
+			if ((majorGL == 1 && minorGL >= 4) || (majorGL == 2))
 			{
 				pglTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
 				pglTexImage2D(GL_TEXTURE_2D, 0, textureformatGL, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
@@ -2279,13 +2267,10 @@ EXPORT void HWRAPI(SetSpecialState) (hwdspecialstate_t IdState, INT32 Value)
 					mag_filter = GL_LINEAR;
 					min_filter = GL_NEAREST;
 			}
-			if (majorGL == 1 && minorGL >= 0 && minorGL < 4)
+			if (majorGL == 1 && minorGL <= 3)
 			{
-				if (!pgluBuild2DMipmaps)
-				{
-					MipMap = GL_FALSE;
-					min_filter = GL_LINEAR;
-				}
+				MipMap = GL_FALSE;
+				min_filter = GL_LINEAR;
 			}
 #ifdef GL_VERSION_3_0
 			else

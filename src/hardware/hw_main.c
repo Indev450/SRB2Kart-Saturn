@@ -6433,8 +6433,6 @@ void HWR_Startup(void)
 		HWR_InitTextureCache();
 		HWR_InitMD2();
 
-		HWD.pfnSetupGLInfo();
-
 		gr_shadersavailable = HWR_InitShaders();
 		HWR_SetShaderState();
 		HWR_LoadAllCustomShaders();
