@@ -95,6 +95,7 @@
 #define SLIDER_RANGE 10
 #define SLIDER_WIDTH (8*SLIDER_RANGE+6)
 #define SERVERS_PER_PAGE 11
+#define MAXSTAT 9 //Max number a stat can have
 
 typedef enum
 {
