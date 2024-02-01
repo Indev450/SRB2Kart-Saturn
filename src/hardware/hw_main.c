@@ -5411,8 +5411,8 @@ void HWR_ProjectSprite(mobj_t *thing)
 		I_Error("sprframes NULL for sprite %d\n", thing->sprite);
 #endif
 
-	ang = R_PointToAngle (interp.x, interp.y) - interp.angle;
-	camang = R_PointToAngle (interp.x, interp.y);
+	ang = R_PointToAngle(interp.x, interp.y) - interp.angle;
+	camang = R_PointToPseudoAngle(interp.x, interp.y);
 
 	if (mirrored)
 		ang = InvAngle(ang);
