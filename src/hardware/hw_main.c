@@ -3769,25 +3769,19 @@ void HWR_RenderBSPNode(INT32 bspnum)
 	// Found a subsector?
 	if (bspnum & NF_SUBSECTOR)
 	{
-		if (bspnum == -1)
+		// PORTAL CULLING
+		if (portalclipline)
 		{
-			HWR_Subsector(0);
-		}
-		else
-		{
-			// PORTAL CULLING
-			if (portalclipline)
+			sector_t *sect = subsectors[bspnum & ~NF_SUBSECTOR].sector;
+			if (portalcullsector)
 			{
-				if (portalcullsector)
-				{
-					if (portalcullsector != subsectors[bspnum & ~NF_SUBSECTOR].sector)
-						return;
-					else
-						portalcullsector = NULL;
-				}
+				if (sect != portalcullsector)
+					return;
+				portalcullsector = NULL;
 			}
-			HWR_Subsector(bspnum&(~NF_SUBSECTOR));
 		}
+		if (bspnum != -1)
+			HWR_Subsector(bspnum&(~NF_SUBSECTOR));
 		return;
 	}
 
