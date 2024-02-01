@@ -1445,11 +1445,14 @@ static void R_ProjectSprite(mobj_t *thing)
 		I_Error("R_ProjectSprite: sprframes NULL for sprite %d\n", thing->sprite);
 #endif
 
-	if (sprframe->rotate != SRF_SINGLE || papersprite)
+	if (sprframe->rotate != SRF_SINGLE || papersprite || (thing->type == MT_SHADOW && thing->state == &states[S_SHADOW] && cv_sloperoll.value && cv_spriteroll.value))
 	{
 		ang = R_PointToAngle (interp.x, interp.y) - interp.angle;
 		camang = R_PointToAngle (interp.x, interp.y);
+	}
 
+	if (sprframe->rotate != SRF_SINGLE || papersprite)
+	{
 		if (mirrored)
 			ang = InvAngle(ang);
 		if (papersprite)
