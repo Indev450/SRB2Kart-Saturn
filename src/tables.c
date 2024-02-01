@@ -26,7 +26,7 @@
 
 #include "tables.h"
 
-unsigned SlopeDiv(unsigned num, unsigned den)
+FUNCMATH FUNCINLINE inline unsigned SlopeDiv(unsigned num, unsigned den)
 {
 	unsigned ans;
 	num <<= (FINE_FRACBITS-FRACBITS);
@@ -37,7 +37,7 @@ unsigned SlopeDiv(unsigned num, unsigned den)
 	return ans <= SLOPERANGE ? ans : SLOPERANGE;
 }
 
-UINT64 SlopeDivEx(unsigned int num, unsigned int den)
+FUNCMATH FUNCINLINE inline UINT64 SlopeDivEx(unsigned int num, unsigned int den)
 {
 	UINT64 ans;
 	if (den < 512)
@@ -367,7 +367,7 @@ boolean FV3_IntersectedPolygon(const vector3_t *vPoly, const vector3_t *vLine, c
 //
 // Rotates a vector around another vector
 //
-void FV3_Rotate(vector3_t *rotVec, const vector3_t *axisVec, const angle_t angle)
+FUNCINLINE inline void FV3_Rotate(vector3_t *rotVec, const vector3_t *axisVec, const angle_t angle)
 {
 	// Rotate the point (x,y,z) around the vector (u,v,w)
 	fixed_t ux = FixedMul(axisVec->x, rotVec->x);
