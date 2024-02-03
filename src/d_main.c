@@ -836,6 +836,7 @@ void D_SRB2Loop(void)
 		precise_t capbudget;
 		precise_t enterprecise = I_GetPreciseTime();
 
+		memset(&g_dc, 0, sizeof(g_dc));
 		Z_Frame_Reset();
 
 		// Casting the return value of a function is bad practice (apparently)
