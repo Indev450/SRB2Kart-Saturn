@@ -27,11 +27,7 @@
 #include "r_opengl.h"
 #include "r_vbo.h"
 
-//#include "../../p_tick.h" // for leveltime (NOTE: THIS IS BAD, FIGURE OUT HOW TO PROPERLY IMPLEMENT gl_leveltime)
-#include "../../i_system.h" // for I_GetPreciseTime (batching time measurements)
-
 #include "../hw_main.h"
-#include "../hw_batching.h"
 
 // Eeeeh not sure is this right way, but it works < sry :c < sry again it had to go :c
 
@@ -63,7 +59,7 @@ typedef struct LTListItem LTListItem;
 static const GLubyte white[4] = { 255, 255, 255, 255 };
 
 // With OpenGL 1.1+, the first texture should be 1
-#define NOTEXTURE_NUM     0
+static GLuint NOTEXTURE_NUM = 0;
 
 #define      N_PI_DEMI               (M_PIl/2.0f) //(1.5707963268f)
 
@@ -532,7 +528,6 @@ static PFNglColorPointer pglColorPointer;
 #ifndef GL_TEXTURE1
 #define GL_TEXTURE1 0x84C1
 #endif
-
 #ifndef GL_TEXTURE2
 #define GL_TEXTURE2 0x84C2
 #endif
@@ -964,6 +959,8 @@ static void SetNoTexture(void)
 	// Disable texture.
 	if (tex_downloaded != NOTEXTURE_NUM)
 	{
+		if (NOTEXTURE_NUM == 0)
+			pglGenTextures(1, &NOTEXTURE_NUM);
 		pglBindTexture(GL_TEXTURE_2D, NOTEXTURE_NUM);
 		tex_downloaded = NOTEXTURE_NUM;
 	}
@@ -1028,11 +1025,13 @@ void SetStates(void)
 	pglEnable(GL_TEXTURE_2D);      // two-dimensional texturing
 	pglTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
+	pglEnable(GL_ALPHA_TEST);
 	pglAlphaFunc(GL_NOTEQUAL, 0.0f);
 	pglEnable(GL_BLEND);           // enable color blending
 
 	pglColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
+	pglEnable(GL_STENCIL_TEST);
 	pglEnable(GL_DEPTH_TEST);    // check the depth buffer
 	pglDepthMask(GL_TRUE);             // enable writing to depth buffer
 	pglClearDepth(1.0f);
@@ -1043,7 +1042,7 @@ void SetStates(void)
 	CurrentPolyFlags = 0xffffffff;
 	SetBlend(0);
 
-	//tex_downloaded = (GLuint)-1;
+	tex_downloaded = 0;
 	SetNoTexture();
 
 	pglPolygonOffset(-1.0f, -1.0f);
@@ -1052,8 +1051,6 @@ void SetStates(void)
 	pglLoadIdentity();
 	pglScalef(1.0f, 1.0f, -1.0f);
 	pglGetFloatv(GL_MODELVIEW_MATRIX, modelMatrix); // added for new coronas' code (without depth buffer)
-	
-	pglEnable(GL_STENCIL_TEST);
 }
 
 void GLFramebuffer_Generate(void)
@@ -1312,7 +1309,7 @@ EXPORT void HWRAPI(GClipRect) (INT32 minx, INT32 miny, INT32 maxx, INT32 maxy, f
 // -----------------+
 EXPORT void HWRAPI(ClearBuffer) (FBOOLEAN ColorMask,
                                     FBOOLEAN DepthMask,
-														FBOOLEAN StencilMask,
+									FBOOLEAN StencilMask,
                                     FRGBAFloat * ClearColor)
 {
 	//GL_DBG_Printf("ClearBuffer(%d)\n", alpha);
