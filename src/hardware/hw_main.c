@@ -124,6 +124,7 @@ consvar_t cv_secbright = {"secbright", "0", CV_SAVE, secbright_cons_t,
 			
 consvar_t cv_grfovchange = {"gr_fovchange", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_grfastsprites = {"gr_fastsprites", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 // values for the far clipping plane
 static float clipping_distances[] = {1024.0f, 2048.0f, 4096.0f, 6144.0f, 8192.0f, 12288.0f, 16384.0f};
@@ -4783,7 +4784,8 @@ static inline void HWR_DrawPrecipitationSprite(gr_vissprite_t *spr)
 // Sort vissprites by distance
 // --------------------------------------------------------------------------
 
-gr_vissprite_t* gr_vsprorder[MAXVISSPRITES];
+gr_vissprite_t* gr_tvsprorder[MAXVISSPRITES];
+UINT32 gr_tvisspritecount = 0;
 
 // For more correct transparency the transparent sprites would need to be
 // sorted and drawn together with transparent surfaces.
@@ -4824,11 +4826,14 @@ static int CompareVisSprites(const void *p1, const void *p2)
 static void HWR_SortVisSprites(void)
 {
 	UINT32 i;
+	gr_tvisspritecount = 0;
 	for (i = 0; i < gr_visspritecount; i++)
 	{
-		gr_vsprorder[i] = HWR_GetVisSprite(i);
+		gr_vissprite_t* spr = HWR_GetVisSprite(i);
+		if (!cv_grfastsprites.value || (spr->mobj->flags2 & MF2_SHADOW) || (spr->mobj->frame & FF_TRANSMASK))
+			gr_tvsprorder[gr_tvisspritecount++] = spr;
 	}
-	qsort(gr_vsprorder, gr_visspritecount, sizeof(gr_vissprite_t*), CompareVisSprites);
+	qsort(gr_tvsprorder, gr_tvisspritecount, sizeof(gr_vissprite_t*), CompareVisSprites);
 }
 
 // A drawnode is something that points to a 3D floor, 3D side, or masked
@@ -5107,9 +5112,88 @@ void HWR_RenderDrawNodes(void)
 void HWR_DrawSprites(void)
 {
 	UINT32 i;
-	for (i = 0; i < gr_visspritecount; i++)
+
+	// this is a bit repetitive. one other option would be to create arrays for these three stages
+	// and iterate them with simple for loops.
+	
+	// first draw solid sprites that dont have models
+	// separated from solid models to allow batching to work
+	if (cv_grfastsprites.value)
 	{
-		gr_vissprite_t *spr = gr_vsprorder[i];
+		if (cv_grbatching.value)
+			HWR_StartBatching();
+
+		for (i = 0; i < gr_visspritecount; i++)
+		{
+			gr_vissprite_t *spr = HWR_GetVisSprite(i);
+			if ((spr->mobj->flags2 & MF2_SHADOW) || (spr->mobj->frame & FF_TRANSMASK))
+				continue;
+			if (spr->precip)
+				HWR_DrawPrecipitationSprite(spr);
+			else
+				if (spr->mobj && spr->mobj->skin && spr->mobj->sprite == SPR_PLAY)
+				{
+					// 8/1/19: Only don't display player models if no default SPR_PLAY is found.
+					if (!cv_grmdls.value || ((md2_playermodels[(skin_t*)spr->mobj->skin-skins].notfound || md2_playermodels[(skin_t*)spr->mobj->skin-skins].scale < 0.0f) && ((!cv_grfallbackplayermodel.value) || md2_models[SPR_PLAY].notfound || md2_models[SPR_PLAY].scale < 0.0f)))
+						HWR_DrawSprite(spr);
+					else
+						continue;
+				}
+				else
+				{
+					if (!cv_grmdls.value || md2_models[spr->mobj->sprite].notfound || md2_models[spr->mobj->sprite].scale < 0.0f)
+						HWR_DrawSprite(spr);
+					else
+						continue;
+				}
+		}
+
+		if (cv_grbatching.value)
+			HWR_RenderBatches();
+
+		// then solid models
+		for (i = 0; i < gr_visspritecount; i++)
+		{
+			gr_vissprite_t *spr = HWR_GetVisSprite(i);
+			if ((spr->mobj->flags2 & MF2_SHADOW) || (spr->mobj->frame & FF_TRANSMASK))
+				continue;
+			if (spr->precip)
+				continue;//HWR_DrawPrecipitationSprite(spr);
+			else
+				if (spr->mobj && spr->mobj->skin && spr->mobj->sprite == SPR_PLAY)
+				{
+					md2_t *md2;
+					if (spr->mobj->localskin)
+					{
+						if (spr->mobj->skinlocal)
+							md2 = &md2_localplayermodels[(skin_t *)spr->mobj->localskin - localskins];
+						else
+							md2 = &md2_playermodels     [(skin_t *)spr->mobj->localskin -      skins];
+					}
+					else
+						md2 = &md2_playermodels[(skin_t *)spr->mobj->skin - skins];
+
+					// 8/1/19: Only don't display player models if no default SPR_PLAY is found.
+					if (!cv_grmdls.value || ((md2->notfound || md2->scale < 0.0f) && ((!cv_grfallbackplayermodel.value) || md2_models[SPR_PLAY].notfound || md2_models[SPR_PLAY].scale < 0.0f)) || spr->mobj->state == &states[S_PLAY_SIGN])
+						continue;
+					else
+						HWR_DrawMD2(spr);
+				}
+				else
+				{
+					if (!cv_grmdls.value || md2_models[spr->mobj->sprite].notfound || md2_models[spr->mobj->sprite].scale < 0.0f)
+						continue;
+					else
+						HWR_DrawMD2(spr);
+				}
+		}
+	}
+	
+	// then transparent sprites and models, which have been sorted
+	// if !cv_grfastsprites then this also includes everything else
+	for (i = 0; i < gr_tvisspritecount; i++)
+	{
+		gr_vissprite_t *spr = gr_tvsprorder[i];
 		if (spr->precip)
 			HWR_DrawPrecipitationSprite(spr);
 		else
@@ -6399,39 +6483,41 @@ void HWR_AddCommands(void)
 	CV_RegisterVar(&cv_granisotropicmode);
 	CV_RegisterVar(&cv_grcorrecttricks);
 	CV_RegisterVar(&cv_grsolvetjoin);
-	
+
 	CV_RegisterVar(&cv_grbatching);
 	CV_RegisterVar(&cv_grfofcut);
 	CV_RegisterVar(&cv_fofzfightfix);
 	CV_RegisterVar(&cv_splitwallfix);
 	CV_RegisterVar(&cv_slopepegfix);
-	
+
+	CV_RegisterVar(&cv_grfastsprites);
+
 	CV_RegisterVar(&cv_grscreentextures);
-	
+
 	CV_RegisterVar(&cv_grrenderdistance);
 
 	CV_RegisterVar(&cv_grfakecontrast);
 	CV_RegisterVar(&cv_grslopecontrast);
 	CV_RegisterVar(&cv_grhorizonlines);
-	
+
 	CV_RegisterVar(&cv_grfovchange);
-	
+
 	CV_RegisterVar(&cv_grmdls);
 	CV_RegisterVar(&cv_grfallbackplayermodel);
-	
+
 	CV_RegisterVar(&cv_grspritebillboarding);
-		
+
 	CV_RegisterVar(&cv_grshearing);
-	
+
 	CV_RegisterVar(&cv_grshaders);
-	
+
 	CV_RegisterVar(&cv_grportals);
 	CV_RegisterVar(&cv_nostencil);
 	CV_RegisterVar(&cv_portalline);
 	CV_RegisterVar(&cv_portalonly);
-	
+
 	CV_RegisterVar(&cv_secbright);
-	
+
 	CV_RegisterVar(&cv_grpaletterendering);
 	CV_RegisterVar(&cv_grpalettedepth);
 	CV_RegisterVar(&cv_grflashpal);
