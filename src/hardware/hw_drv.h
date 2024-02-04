@@ -32,12 +32,13 @@ EXPORT void HWRAPI(SetupGLInfo) (void);
 EXPORT void HWRAPI(SetTexturePalette) (RGBA_t *ppal);
 EXPORT void HWRAPI(FinishUpdate) (INT32 waitvbl);
 EXPORT void HWRAPI(Draw2DLine) (F2DCoord *v1, F2DCoord *v2, RGBA_t Color);
-EXPORT void HWRAPI(DrawPolygon) (FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags, boolean horizonSpecial);
+EXPORT void HWRAPI(DrawPolygon) (FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags);
+EXPORT void HWRAPI(DrawIndexedTriangles) (FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags, unsigned int *IndexArray);
 EXPORT void HWRAPI(SetBlend) (FBITFIELD PolyFlags);
 EXPORT void HWRAPI(ClearBuffer) (FBOOLEAN ColorMask, FBOOLEAN DepthMask, FBOOLEAN StencilMask, FRGBAFloat *ClearColor);
 EXPORT void HWRAPI(SetTexture) (FTextureInfo *TexInfo);
 EXPORT void HWRAPI(UpdateTexture) (FTextureInfo *TexInfo);
-EXPORT void HWRAPI(ReadRect) (INT32 x, INT32 y, INT32 width, INT32 height, INT32 dst_stride, UINT16 *dst_data);
+EXPORT void HWRAPI(ReadScreenTexture) (int tex, UINT16 *dst_data);
 EXPORT void HWRAPI(GClipRect) (INT32 minx, INT32 miny, INT32 maxx, INT32 maxy, float nearclip, float farclip);
 EXPORT void HWRAPI(ClearMipMapCache) (void);
 
@@ -55,30 +56,24 @@ EXPORT INT32 HWRAPI(GetTextureUsed) (void);
 EXPORT void HWRAPI(RenderSkyDome) (INT32 tex, INT32 texture_width, INT32 texture_height, FTransform transform);
 
 EXPORT void HWRAPI(FlushScreenTextures) (void);
-EXPORT void HWRAPI(StartScreenWipe) (void);
-EXPORT void HWRAPI(EndScreenWipe) (void);
-EXPORT void HWRAPI(DoScreenWipe) (void);
-EXPORT void HWRAPI(DrawIntermissionBG) (void);
-EXPORT void HWRAPI(MakeScreenTexture) (void);
+EXPORT void HWRAPI(DoScreenWipe) (int wipeStart, int wipeEnd);
+EXPORT void HWRAPI(DrawScreenTexture) (int tex, FSurfaceInfo *surf, FBITFIELD polyflags);
+EXPORT void HWRAPI(MakeScreenTexture) (int tex);
+EXPORT void HWRAPI(DrawScreenFinalTexture) (int tex, int width, int height);
+
 EXPORT void HWRAPI(RenderVhsEffect) (fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8 downdistort, UINT8 barsize);
-EXPORT void HWRAPI(MakeScreenFinalTexture) (void);
-EXPORT void HWRAPI(DrawScreenFinalTexture) (int width, int height);
 
 #define SCREENVERTS 10
 EXPORT void HWRAPI(PostImgRedraw) (float points[SCREENVERTS][SCREENVERTS][2]);
 
 // jimita
-EXPORT boolean HWRAPI(LoadShaders) (void);
-EXPORT void HWRAPI(KillShaders) (void);
-EXPORT void HWRAPI(SetShader) (int shader);
+EXPORT boolean HWRAPI(InitShaders) (void);
+EXPORT void HWRAPI(LoadShader) (int slot, char *code, hwdshaderstage_t stage);
+EXPORT boolean HWRAPI(CompileShader) (int slot);
+EXPORT void HWRAPI(SetShader) (int slot);
 EXPORT void HWRAPI(UnSetShader) (void);
 
 EXPORT void HWRAPI(SetShaderInfo) (hwdshaderinfo_t info, INT32 value);
-EXPORT void HWRAPI(LoadCustomShader) (int number, char *shader, size_t size, boolean fragment);
-EXPORT boolean HWRAPI(InitCustomShaders) (void);
-
-EXPORT void HWRAPI(StartBatching) (void);
-EXPORT void HWRAPI(RenderBatches) (precise_t *sSortTime, precise_t *sDrawTime, int *sNumPolys, int *sNumVerts, int *sNumCalls, int *sNumShaders, int *sNumTextures, int *sNumPolyFlags, int *sNumColors);
 
 EXPORT void HWRAPI(SetPaletteLookup)(UINT8 *lut);
 EXPORT UINT32 HWRAPI(CreateLightTable)(RGBA_t *hw_lighttable);
@@ -99,11 +94,12 @@ struct hwdriver_s
 	FinishUpdate        	pfnFinishUpdate;
 	Draw2DLine          	pfnDraw2DLine;
 	DrawPolygon         	pfnDrawPolygon;
+	DrawIndexedTriangles    pfnDrawIndexedTriangles;
 	SetBlend            	pfnSetBlend;
 	ClearBuffer         	pfnClearBuffer;
 	SetTexture          	pfnSetTexture;
 	UpdateTexture       	pfnUpdateTexture;
-	ReadRect            	pfnReadRect;
+	ReadScreenTexture   	pfnReadScreenTexture;
 	GClipRect           	pfnGClipRect;
 	ClearMipMapCache    	pfnClearMipMapCache;
 	SetSpecialState     	pfnSetSpecialState;
@@ -113,29 +109,22 @@ struct hwdriver_s
 	GetTextureUsed      	pfnGetTextureUsed;
 	PostImgRedraw       	pfnPostImgRedraw;
 	FlushScreenTextures 	pfnFlushScreenTextures;
-	StartScreenWipe     	pfnStartScreenWipe;
-	EndScreenWipe       	pfnEndScreenWipe;
 	DoScreenWipe        	pfnDoScreenWipe;
-	DrawIntermissionBG  	pfnDrawIntermissionBG;
+	DrawScreenTexture   	pfnDrawScreenTexture;
 	MakeScreenTexture   	pfnMakeScreenTexture;
-	RenderVhsEffect     pfnRenderVhsEffect;
-	MakeScreenFinalTexture  pfnMakeScreenFinalTexture;
+	RenderVhsEffect     	pfnRenderVhsEffect;
 	DrawScreenFinalTexture  pfnDrawScreenFinalTexture;
 
 	RenderSkyDome 			pfnRenderSkyDome;
 
-	LoadShaders 			pfnLoadShaders;
-	KillShaders 			pfnKillShaders;
+	InitShaders         	pfnInitShaders;
+	LoadShader          	pfnLoadShader;
+	CompileShader       	pfnCompileShader;
 	SetShader 				pfnSetShader;
 	UnSetShader 			pfnUnSetShader;
 
 	SetShaderInfo       	pfnSetShaderInfo;
-	LoadCustomShader 		pfnLoadCustomShader;
-	InitCustomShaders 		pfnInitCustomShaders;
 
-	StartBatching 			pfnStartBatching;
-	RenderBatches 			pfnRenderBatches;
-	
 	SetPaletteLookup    pfnSetPaletteLookup;
 	CreateLightTable    pfnCreateLightTable;
 	ClearLightTables    pfnClearLightTables;

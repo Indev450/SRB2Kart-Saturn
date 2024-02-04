@@ -6488,7 +6488,12 @@ void P_MobjThinker(mobj_t *mobj)
 					P_RemoveMobj(mobj);
 					return;
 				}
-
+				
+				if (mobj->state == &states[S_SHADOW] && cv_sloperoll.value == 2)
+				{
+					mobj->slopepitch = mobj->target->slopepitch;
+					mobj->sloperoll = mobj->target->sloperoll;
+				}
 				P_AddShadow(mobj);
 				break;
 			/*case MT_BLACKORB:

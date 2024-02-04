@@ -81,11 +81,12 @@ void *hwSym(const char *funcName,void *handle)
 	GETFUNC(SetupGLInfo);
 	GETFUNC(Draw2DLine);
 	GETFUNC(DrawPolygon);
+	GETFUNC(DrawIndexedTriangles);
 	GETFUNC(SetBlend);
 	GETFUNC(ClearBuffer);
 	GETFUNC(SetTexture);
 	GETFUNC(UpdateTexture);
-	GETFUNC(ReadRect);
+	GETFUNC(ReadScreenTexture);
 	GETFUNC(GClipRect);
 	GETFUNC(ClearMipMapCache);
 	GETFUNC(SetSpecialState);
@@ -95,28 +96,21 @@ void *hwSym(const char *funcName,void *handle)
 	GETFUNC(SetTransform);
 	GETFUNC(PostImgRedraw);
 	GETFUNC(FlushScreenTextures);
-	GETFUNC(StartScreenWipe);
-	GETFUNC(EndScreenWipe);
 	GETFUNC(DoScreenWipe);
-	GETFUNC(DrawIntermissionBG);
+	GETFUNC(DrawScreenTexture);
 	GETFUNC(MakeScreenTexture);
 	GETFUNC(RenderVhsEffect);
-	GETFUNC(MakeScreenFinalTexture);
 	GETFUNC(DrawScreenFinalTexture);
 	
 	GETFUNC(RenderSkyDome);
 
-	GETFUNC(LoadShaders);
-	GETFUNC(KillShaders);
+	GETFUNC(InitShaders);
+	GETFUNC(LoadShader);
+	GETFUNC(CompileShader);
 	GETFUNC(SetShader);
 	GETFUNC(UnSetShader);
 
 	GETFUNC(SetShaderInfo);
-	GETFUNC(LoadCustomShader);
-	GETFUNC(InitCustomShaders);
-	
-	GETFUNC(StartBatching);
-	GETFUNC(RenderBatches);
 	
 	GETFUNC(SetPaletteLookup);
 	GETFUNC(CreateLightTable);

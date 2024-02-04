@@ -64,6 +64,8 @@ extern ps_metric_t ps_hw_numcolors;
 extern ps_metric_t ps_hw_batchsorttime;
 extern ps_metric_t ps_hw_batchdrawtime;
 
+extern boolean gr_shadersavailable;
+
 // hw_draw.c
 void HWR_DrawPatch(GLPatch_t *gpatch, INT32 x, INT32 y, INT32 option);
 void HWR_DrawStretchyFixedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale, fixed_t vscale, INT32 option, const UINT8 *colormap);
@@ -83,7 +85,6 @@ boolean HWR_Screenshot(const char *lbmname);
 // hw_main.c
 void HWR_RenderFrame(INT32 viewnumber, player_t *player, boolean skybox);
 void HWR_RenderPlayerView(INT32 viewnumber, player_t *player);
-void HWR_LoadShaders(UINT16 wadnum, boolean PK3);
 void HWR_SetViewSize(void);
 void HWR_AddCommands(void);
 void HWR_SetTransform(float fpov, player_t *player);
@@ -165,6 +166,8 @@ RGBA_t *HWR_GetTexturePalette(void);
 // hw_trick.c
 void HWR_CorrectSWTricks(void);
 
+void HWR_SetShaderState(void);
+
 // Console variables
 extern consvar_t cv_grshaders;
 extern consvar_t cv_grfofcut;
@@ -188,7 +191,6 @@ extern consvar_t cv_grhorizonlines;
 extern consvar_t cv_grfallbackplayermodel;
 extern consvar_t cv_grbatching;
 extern consvar_t cv_grrenderdistance;
-extern consvar_t cv_grusecustomshaders;
 extern consvar_t cv_grpaletterendering;
 extern consvar_t cv_grpalettedepth;
 extern consvar_t cv_grflashpal;
