@@ -287,8 +287,6 @@ enum hwdsetspecialstate
 	HWD_SET_MSAA,
 
 	HWD_SET_SCREEN_TEXTURES,
-	
-	HWD_SET_DEPTH_ONLY_MODE,// for portals
 
 	HWD_SET_PORTAL_MODE,// new portal thing
 	HWD_SET_STENCIL_LEVEL,
