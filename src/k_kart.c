@@ -9011,7 +9011,7 @@ static void K_drawNameTags(void)
 		an = R_PointToAngle2(camera[0].x, camera[0].y, players[i].mo->x, players[i].mo->y) - camera[0].angle;
 		if (an > ANGLE_90 && an < ANGLE_270)
 			continue; // behind back
-		if (!P_CheckSight2(players[i].mo, stplyr->mo))
+		if (!P_CheckSight(players[i].mo, stplyr->mo))
 			continue;
 
 		cm = R_GetTranslationColormap(players[i].skin, players[i].mo->color, GTC_CACHE);
