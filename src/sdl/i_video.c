@@ -109,6 +109,7 @@ boolean a2c = false;
 #endif
 
 boolean highcolor = false;
+consvar_t cv_nativekeyboard = {"nativekeyboard", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static void Impl_SetVsync(void);
 
@@ -379,6 +380,156 @@ static INT32 Impl_SDL_Scancode_To_Keycode(SDL_Scancode code)
 		case SDL_SCANCODE_RGUI:   return KEY_RIGHTWIN;
 		default:                  break;
 	}
+	return 0;
+}
+
+// Get the equivalent ASCII (Unicode?) character for a keypress.
+static INT32 GetTypedChar(SDL_Scancode code, SDL_Keysym *sym)
+{
+        SDL_Event next_event;
+
+        // Special cases, where we always return a fixed value.
+        switch (sym->sym)
+        {
+            case SDLK_BACKSPACE: return KEY_BACKSPACE;
+            case SDLK_RETURN:    return KEY_ENTER;
+            default:
+                break;
+        }
+
+        // The following is a gross hack, but I don't see an easier way
+        // of doing this within the SDL2 API (in SDL1 it was easier).
+        // We want to get the fully transformed input character associated
+        // with this keypress - correct keyboard layout, appropriately
+        // transformed by any modifier keys, etc. So peek ahead in the SDL
+        // event queue and see if the key press is immediately followed by
+        // an SDL_TEXTINPUT event. If it is, it's reasonable to assume the
+        // key press and the text input are connected. Technically the SDL
+        // API does not guarantee anything of the sort, but in practice this
+        // is what happens and I've verified it through manual inspect of
+        // the SDL source code.
+        //
+        // In an ideal world we'd split out ev_keydown into a separate
+        // ev_textinput event, as SDL2 has done. But this doesn't work
+        // (I experimented with the idea), because lots of Doom's code is
+        // based around different responders "eating" events to stop them
+        // being passed on to another responder. If code is listening for
+        // a text input, it cannot block the corresponding keydown events
+        // which can affect other responders.
+        //
+        // So we're stuck with this as a rather fragile alternative.
+
+        if (SDL_PeepEvents(&next_event, 1, SDL_PEEKEVENT,
+                           SDL_FIRSTEVENT, SDL_LASTEVENT) == 1
+         && next_event.type == SDL_TEXTINPUT)
+        {
+            // If an SDL_TEXTINPUT event is found, we always assume it
+            // matches the key press. The input text must be a single
+            // ASCII character - if it isn't, it's possible the input
+            // char is a Unicode value instead; better to send a null
+            // character than the unshifted key.
+            if (strlen(next_event.text.text) == 1
+             && (next_event.text.text[0] & 0x80) == 0)
+            {
+                return next_event.text.text[0];
+            }
+	    else
+	    {
+		    // wtf
+		    if (strcmp(next_event.text.text, "ç"))
+			    return 'n';
+		    else if (strcmp(next_event.text.text, "ñ"))
+			    return 'c';
+	    }
+        }
+
+	if (code >= SDL_SCANCODE_1 && code <= SDL_SCANCODE_9)
+	{
+		return code - SDL_SCANCODE_1 + '1';
+	}
+	else if (code == SDL_SCANCODE_0)
+	{
+		return '0';
+	}
+	if (code >= SDL_SCANCODE_F1 && code <= SDL_SCANCODE_F10)
+	{
+		return KEY_F1 + (code - SDL_SCANCODE_F1);
+	}
+	
+	switch (code)
+	{
+		// F11 and F12 are separated from the rest of the function keys
+		case SDL_SCANCODE_F11: return KEY_F11;
+		case SDL_SCANCODE_F12: return KEY_F12;
+
+		case SDL_SCANCODE_KP_0: return KEY_KEYPAD0;
+		case SDL_SCANCODE_KP_1: return KEY_KEYPAD1;
+		case SDL_SCANCODE_KP_2: return KEY_KEYPAD2;
+		case SDL_SCANCODE_KP_3: return KEY_KEYPAD3;
+		case SDL_SCANCODE_KP_4: return KEY_KEYPAD4;
+		case SDL_SCANCODE_KP_5: return KEY_KEYPAD5;
+		case SDL_SCANCODE_KP_6: return KEY_KEYPAD6;
+		case SDL_SCANCODE_KP_7: return KEY_KEYPAD7;
+		case SDL_SCANCODE_KP_8: return KEY_KEYPAD8;
+		case SDL_SCANCODE_KP_9: return KEY_KEYPAD9;
+
+		case SDL_SCANCODE_RETURN:         return KEY_ENTER;
+		case SDL_SCANCODE_ESCAPE:         return KEY_ESCAPE;
+		case SDL_SCANCODE_BACKSPACE:      return KEY_BACKSPACE;
+		case SDL_SCANCODE_TAB:            return KEY_TAB;
+		case SDL_SCANCODE_SPACE:          return KEY_SPACE;
+		case SDL_SCANCODE_MINUS:          return KEY_MINUS;
+		case SDL_SCANCODE_EQUALS:         return KEY_EQUALS;
+		case SDL_SCANCODE_LEFTBRACKET:    return '[';
+		case SDL_SCANCODE_RIGHTBRACKET:   return ']';
+		case SDL_SCANCODE_BACKSLASH:      return '\\';
+		case SDL_SCANCODE_NONUSHASH:      return '#';
+		case SDL_SCANCODE_SEMICOLON:      return ';';
+		case SDL_SCANCODE_APOSTROPHE:     return '\'';
+		case SDL_SCANCODE_GRAVE:          return '`';
+		case SDL_SCANCODE_COMMA:          return ',';
+		case SDL_SCANCODE_PERIOD:         return '.';
+		case SDL_SCANCODE_SLASH:          return '/';
+		case SDL_SCANCODE_CAPSLOCK:       return KEY_CAPSLOCK;
+		case SDL_SCANCODE_PRINTSCREEN:    return 0; // undefined?
+		case SDL_SCANCODE_SCROLLLOCK:     return KEY_SCROLLLOCK;
+		case SDL_SCANCODE_PAUSE:          return KEY_PAUSE;
+		case SDL_SCANCODE_INSERT:         return KEY_INS;
+		case SDL_SCANCODE_HOME:           return KEY_HOME;
+		case SDL_SCANCODE_PAGEUP:         return KEY_PGUP;
+		case SDL_SCANCODE_DELETE:         return KEY_DEL;
+		case SDL_SCANCODE_END:            return KEY_END;
+		case SDL_SCANCODE_PAGEDOWN:       return KEY_PGDN;
+		case SDL_SCANCODE_RIGHT:          return KEY_RIGHTARROW;
+		case SDL_SCANCODE_LEFT:           return KEY_LEFTARROW;
+		case SDL_SCANCODE_DOWN:           return KEY_DOWNARROW;
+		case SDL_SCANCODE_UP:             return KEY_UPARROW;
+		case SDL_SCANCODE_NUMLOCKCLEAR:   return KEY_NUMLOCK;
+		case SDL_SCANCODE_KP_DIVIDE:      return KEY_KPADSLASH;
+		case SDL_SCANCODE_KP_MULTIPLY:    return '*'; // undefined?
+		case SDL_SCANCODE_KP_MINUS:       return KEY_MINUSPAD;
+		case SDL_SCANCODE_KP_PLUS:        return KEY_PLUSPAD;
+		case SDL_SCANCODE_KP_ENTER:       return KEY_ENTER;
+		case SDL_SCANCODE_KP_PERIOD:      return KEY_KPADDEL;
+		case SDL_SCANCODE_NONUSBACKSLASH: return '\\';
+
+		case SDL_SCANCODE_LSHIFT: return KEY_LSHIFT;
+		case SDL_SCANCODE_RSHIFT: return KEY_RSHIFT;
+		case SDL_SCANCODE_LCTRL:  return KEY_LCTRL;
+		case SDL_SCANCODE_RCTRL:  return KEY_RCTRL;
+		case SDL_SCANCODE_LALT:   return KEY_LALT;
+		case SDL_SCANCODE_RALT:   return KEY_RALT;
+		case SDL_SCANCODE_LGUI:   return KEY_LEFTWIN;
+		case SDL_SCANCODE_RGUI:   return KEY_RIGHTWIN;
+		default:                  break;
+	}
+
+	if (code >= SDL_SCANCODE_A && code <= SDL_SCANCODE_Z)
+	{
+		// get lowercase ASCII
+		return code - SDL_SCANCODE_A + 'a';
+	}
+
 	return 0;
 }
 
@@ -696,7 +847,12 @@ static void Impl_HandleKeyboardEvent(SDL_KeyboardEvent evt, Uint32 type)
 	{
 		return;
 	}
-	event.data1 = Impl_SDL_Scancode_To_Keycode(evt.keysym.scancode);
+
+	if (cv_nativekeyboard.value)
+		event.data1 = GetTypedChar(evt.keysym.scancode, &evt.keysym);
+	else
+		event.data1 = Impl_SDL_Scancode_To_Keycode(evt.keysym.scancode);
+
 	if (event.data1) D_PostEvent(&event);
 }
 
