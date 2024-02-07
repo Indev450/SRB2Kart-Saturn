@@ -13,6 +13,10 @@
 #ifndef __KEYS_H__
 #define __KEYS_H__
 
+#include "console.h"
+
+extern consvar_t cv_nativekeyboard;
+
 // These are the key codes as posted by the keyboard handler,
 // ascii codes are 0->127,
 // scancodes are 0x80 + 0->127
