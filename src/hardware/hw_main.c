@@ -4063,9 +4063,9 @@ static void HWR_DrawSpriteShadow(gr_vissprite_t *spr, GLPatch_t *gpatch, float t
 		swallVerts[0].t = swallVerts[1].t = gpatch->max_t;
 	}
 
-	sSurf.PolyColor.s.red = 0x00;
-	sSurf.PolyColor.s.blue = 0x00;
-	sSurf.PolyColor.s.green = 0x00;
+	sSurf.PolyColor.s.red = 0x01;
+	sSurf.PolyColor.s.blue = 0x01;
+	sSurf.PolyColor.s.green = 0x01;
 
 	// shadow is always half as translucent as the sprite itself
 	if (!cv_translucency.value) // use default translucency (main sprite won't have any translucency)
