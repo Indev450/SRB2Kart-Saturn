@@ -9028,6 +9028,7 @@ static void K_drawNameTags(void)
 		UINT8 *cm;
 		UINT8 *textcm;
 		fixed_t distance = 0;
+		//fixed_t maxdistance = (cv_nametagdist.value*10)<<FRACBITS;
 		fixed_t maxdistance = (10*cv_nametagdist.value)* mapobjectscale;
 		angle_t an;
 
