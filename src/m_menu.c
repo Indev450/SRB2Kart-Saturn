@@ -2057,9 +2057,9 @@ static menuitem_t OP_SaturnMenu[] =
 	{IT_STRING | IT_CVAR, NULL, "Less Midnight Channel Flicker", 		&cv_lessflicker, 		 	105},
 
 	{IT_SUBMENU|IT_STRING,	NULL,	"Sprite Distortion...", 			&OP_PlayerDistortDef,	 	115},
-	{IT_SUBMENU|IT_STRING,	NULL,	"Hud Offsets...", 					&OP_HudOffsetDef,		 	115},
+	{IT_SUBMENU|IT_STRING,	NULL,	"Hud Offsets...", 					&OP_HudOffsetDef,		 	120},
 
-	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Credits", 					&OP_SaturnCreditsDef,		125}, // uwu
+	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Credits", 					&OP_SaturnCreditsDef,		130}, // uwu
 };
 
 static const char* OP_SaturnTooltips[] =
@@ -2307,11 +2307,24 @@ static menuitem_t OP_NametagMenu[] =
 	{IT_HEADER, NULL, "Nametag", NULL, 0},
 	{IT_STRING | IT_CVAR, NULL, "Nametag", &cv_nametag, 10},
 	{IT_STRING | IT_CVAR, NULL, "Show Char image in Nametag", &cv_nametagfacerank, 20},
-	{IT_STRING | IT_CVAR, NULL, "Show own Nametag", &cv_showownnametag, 30},
+	{IT_STRING | IT_CVAR, NULL, "Show Own Nametag", &cv_showownnametag, 30},
 	{IT_STRING | IT_CVAR, NULL, "Nametag Max distance", &cv_nametagdist, 40},
 	{IT_STRING | IT_CVAR, NULL, "Nametag Max Display Players", &cv_nametagmaxplayers, 50},
 	{IT_STRING | IT_CVAR, NULL, "Nametag Transparency", &cv_nametagtrans, 60},
+	{IT_STRING | IT_CVAR, NULL, "Small Nametags", &cv_smallnametags, 70},
 	//{IT_STRING | IT_CVAR, NULL, "Nametag Scaling", &cv_nametagscaling, 70}
+};
+
+enum
+{
+	nt_header,
+	nt_nametag,
+	nt_ntchar,
+	nt_owntag,
+	nt_maxdist,
+	nt_maxplayer,
+	nt_nttrans,
+	nt_smol,
 };
 
 static menuitem_t OP_TiltMenu[] =
@@ -4535,8 +4548,8 @@ void M_Init(void)
 		OP_SaturnMenu[sm_colorhud_customcolor].status = IT_GRAYEDOUT;
 	}
 	
-	if (!nametaggfx)
-		OP_SaturnMenu[sm_nametagmen].status = IT_GRAYEDOUT;
+	if (cv_smallnametags.value || (!nametaggfx))
+		OP_NametagMenu[nt_ntchar].status = IT_GRAYEDOUT;
 
 #ifndef NONET
 	CV_RegisterVar(&cv_serversort);
