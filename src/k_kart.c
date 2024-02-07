@@ -8983,7 +8983,8 @@ static void K_drawNameTags(void)
 		if (!players[i].mo || P_MobjWasRemoved(players[i].mo) || players[i].spectator || !playeringame[i] || i == displayplayers[0])
 			continue;
 
-		array[i].dist = P_AproxDistance(players[i].mo->x - (stplyr->mo->x + stplyr->mo->momx), players[i].mo->y - (stplyr->mo->y + stplyr->mo->momy));
+		//array[i].dist = P_AproxDistance(players[i].mo->x - (stplyr->mo->x + stplyr->mo->momx), players[i].mo->y - (stplyr->mo->y + stplyr->mo->momy));
+		array[i].dist = R_PointToDist(players[i].mo->x, players[i].mo->y);
 		array[i].node = i;
 	}
 
@@ -8995,7 +8996,7 @@ static void K_drawNameTags(void)
 		UINT8 *cm;
 		UINT8 *textcm;
 		fixed_t distance = 0;
-		fixed_t maxdistance = (cv_nametagdist.value*10)<<FRACBITS;
+		fixed_t maxdistance = (10*cv_nametagdist.value)* mapobjectscale;
 		angle_t an;
 
 		if ((j - MAXPLAYERS) > cv_nametagmaxplayers.value)
