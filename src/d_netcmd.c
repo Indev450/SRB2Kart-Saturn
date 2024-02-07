@@ -517,7 +517,7 @@ static CV_PossibleValue_t nametagtrans_cons_t[] = {
 	{0, "Never"}, {1, "Far only"}, {2, "Dynamic"}, {3, "Always"}, {0, NULL}};
 /*static CV_PossibleValue_t nametagscaling_cons_t[] = {
 	{0, "MIN"},  {320, "MAX"}, {0, NULL}};*/
-consvar_t cv_nametag = {"kartnametag", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_nametag = {"kartnametag", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_nametagtrans = {"nametagtransparency", "Dynamic", CV_SAVE, nametagtrans_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_nametagfacerank = {"nametagfacerank", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_nametagdist = {"nametagdist", "300", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
