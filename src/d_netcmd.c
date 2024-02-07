@@ -525,7 +525,7 @@ consvar_t cv_nametagmaxplayers = {"nametagmaxplayers", "8", CV_SAVE, CV_Unsigned
 consvar_t cv_nametagmaxlenght = {"nametagmaxlenght", "12", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
 //consvar_t cv_nametagscaling = {"nametagscaling", "160", CV_SAVE, nametagscaling_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_showownnametag = {"showownnametag", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_smallnametags = {"smallnametags", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_smallnametags = {"smallnametags", "Off", CV_SAVE, CV_OnOff, Nametag_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
 
 static CV_PossibleValue_t skinselectspin_cons_t[] = {
 	{0, "Off"}, {1, "Slow"}, {2, "2"}, {3, "3"}, {4, "4"}, {5, "5"}, {6, "6"}, {7, "7"}, {8, "8"}, {9, "9"}, {10, "Fast"}, {SKINSELECTSPIN_PAIN, "Pain"}, {0, NULL}};

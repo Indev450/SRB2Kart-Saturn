@@ -9081,7 +9081,9 @@ static void K_drawNameTags(void)
 					trans = 0;
 				break;
 			case 3:
-				trans = V_60TRANS;
+				trans = V_HUDTRANS;
+				break;
+			default:
 				break;
 		}
 

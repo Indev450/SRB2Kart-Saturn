@@ -3292,6 +3292,12 @@ void Saturn_menu_Onchange(void)
 	OP_SaturnMenu[sm_colorhud_customcolor].status = status;
 }
 
+void Nametag_menu_Onchange(void) 
+{
+	if (cv_smallnametags.value || (!nametaggfx))
+		OP_NametagMenu[nt_ntchar].status = IT_GRAYEDOUT;
+}
+
 // ==========================================================================
 // END ORGANIZATION STUFF.
 // ==========================================================================
@@ -4545,7 +4551,7 @@ void M_Init(void)
 		OP_SaturnMenu[sm_colorhud_customcolor].status = IT_GRAYEDOUT;
 	}
 	
-	if (cv_smallnametags.value || (!nametaggfx))
+	if (!nametaggfx)
 		OP_NametagMenu[nt_ntchar].status = IT_GRAYEDOUT;
 
 #ifndef NONET
@@ -5065,11 +5071,9 @@ static void M_DrawGenericMenu(void)
 			W_CachePatchName("M_CURSOR", PU_CACHE));
 		V_DrawString(currentMenu->x, cursory, lowercase|highlightflags, currentMenu->menuitems[itemOn].text);
 	}
-	
-	
+
 	// dumb hack
 	// tooltips
-	
 	if (currentMenu == &OP_ControlsDef)
 	{
 		if (!(OP_ControlsTooltips[itemOn] == NULL)) 
@@ -5079,7 +5083,7 @@ static void M_DrawGenericMenu(void)
 				coolalphatimer--;
 		}
 	}
-	
+
 	if (currentMenu == &OP_MouseOptionsDef)
 	{
 		if (!(OP_MouseTooltips[itemOn] == NULL)) 
@@ -5089,7 +5093,7 @@ static void M_DrawGenericMenu(void)
 				coolalphatimer--;
 		}
 	}
-	
+
 	if (currentMenu == &OP_VideoOptionsDef)
 	{
 		if (!(OP_VideoTooltips[itemOn] == NULL)) 
@@ -5099,7 +5103,7 @@ static void M_DrawGenericMenu(void)
 				coolalphatimer--;
 		}
 	}
-	
+
 	if (currentMenu == &OP_SoundOptionsDef)
 	{
 		if (!(OP_SoundTooltips[itemOn] == NULL)) 
@@ -5109,7 +5113,7 @@ static void M_DrawGenericMenu(void)
 				coolalphatimer--;
 		}
 	}
-	
+
 	if (currentMenu == &OP_SoundAdvancedDef)
 	{
 		if (!(OP_SoundAdvancedTooltips[itemOn] == NULL)) 
@@ -5119,7 +5123,7 @@ static void M_DrawGenericMenu(void)
 				coolalphatimer--;
 		}
 	}
-	
+
 	if (currentMenu == &OP_ExpOptionsDef)
 	{
 		if (!(OP_ExpTooltips[itemOn] == NULL)) 
@@ -5129,7 +5133,7 @@ static void M_DrawGenericMenu(void)
 				coolalphatimer--;
 		}
 	}
-	
+
 	if (currentMenu == &OP_ChatOptionsDef)
 	{
 		if (!(OP_ChatOptionsTooltips[itemOn] == NULL)) 
@@ -5140,8 +5144,6 @@ static void M_DrawGenericMenu(void)
 		}
 	}
 	
-	
-		
 	if (currentMenu == &OP_GameOptionsDef)
 	{
 		if (!(OP_GameTooltips[itemOn] == NULL)) 
@@ -5151,8 +5153,7 @@ static void M_DrawGenericMenu(void)
 				coolalphatimer--;
 		}
 	}
-	
-	
+
 	if (currentMenu == &OP_ServerOptionsDef)
 	{
 		if (!(OP_ServerOptionsTooltips[itemOn] == NULL)) 
@@ -5162,8 +5163,7 @@ static void M_DrawGenericMenu(void)
 				coolalphatimer--;
 		}
 	}
-	
-	
+
 	if (currentMenu == &OP_AdvServerOptionsDef)
 	{
 		if (!(OP_AdvServerOptionsTooltips[itemOn] == NULL)) 
@@ -5174,9 +5174,6 @@ static void M_DrawGenericMenu(void)
 		}
 	}
 	
-	
-	
-		
 	if (currentMenu == &OP_PlayerDistortDef)
 	{
 		if (!(OP_PlayerDistortTooltips[itemOn] == NULL)) 
@@ -5186,10 +5183,7 @@ static void M_DrawGenericMenu(void)
 				coolalphatimer--;
 		}
 	}
-	
-	
-	
-	
+
 	if (currentMenu == &OP_SaturnCreditsDef) // C:
 	{
 		if (!(OP_CreditTooltips[itemOn] == NULL)) 
@@ -5199,7 +5193,7 @@ static void M_DrawGenericMenu(void)
 				coolalphatimer--;
 		}
 	}
-	
+
 	if (currentMenu == &OP_BirdDef)
 	{
 		if (!(OP_BirdTooltips[itemOn] == NULL)) 
@@ -5209,7 +5203,7 @@ static void M_DrawGenericMenu(void)
 				coolalphatimer--;
 		}
 	}
-	
+
 	if (currentMenu == &OP_TiltDef)
 	{
 		if (!(OP_TiltTooltips[itemOn] == NULL)) 
@@ -5219,7 +5213,7 @@ static void M_DrawGenericMenu(void)
 				coolalphatimer--;
 		}
 	}
-	
+
 	if (currentMenu == &OP_AdvancedBirdDef)
 	{
 		if (!(OP_AdvancedBirdTooltips[itemOn] == NULL)) 
@@ -5229,8 +5223,6 @@ static void M_DrawGenericMenu(void)
 				coolalphatimer--;
 		}
 	}
-	
-	
 }
 
 static void M_DrawGenericBackgroundMenu(void)
@@ -5240,8 +5232,6 @@ static void M_DrawGenericBackgroundMenu(void)
 }
 
 #define scrollareaheight 72
-
-
 
 // note that alphakey is multiplied by 2 for scrolling menus to allow greater usage in UINT8 range.
 static void M_DrawGenericScrollMenu(void)
