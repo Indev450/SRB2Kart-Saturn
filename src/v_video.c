@@ -2273,6 +2273,88 @@ void V_DrawSmallStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *st
 	}
 }
 
+void V_DrawSmallStringAtFixedCM(fixed_t x, fixed_t y, INT32 option, const char *string, UINT8* colormap)
+{
+	fixed_t cx = x, cy = y;
+	INT32 w, c, dupx, dupy, scrwidth, center = 0, left = 0;
+	const char *ch = string;
+	INT32 spacewidth = 2, charwidth = 0;
+	INT32 lowercase = (option & V_ALLOWLOWERCASE);
+	option &= ~V_FLIP; // which is also shared with V_ALLOWLOWERCASE...
+	if (option & V_NOSCALESTART)
+	{
+		dupx = vid.dupx;
+		dupy = vid.dupy;
+		scrwidth = vid.width;
+	}
+	else
+	{
+		dupx = dupy = 1;
+		scrwidth = vid.width/vid.dupx;
+		left = (scrwidth - BASEVIDWIDTH)/2;
+		scrwidth -= left;
+	}
+	if (option & V_NOSCALEPATCH)
+		scrwidth *= vid.dupx;
+	switch (option & V_SPACINGMASK)
+	{
+		case V_MONOSPACE:
+			spacewidth = 4;
+			/* FALLTHRU */
+		case V_OLDSPACING:
+			charwidth = 4;
+			break;
+		case V_6WIDTHSPACE:
+			spacewidth = 3;
+		default:
+			break;
+	}
+	for (;;ch++)
+	{
+		if (!*ch)
+			break;
+		if (*ch & 0x80) //color parsing -x 2.16.09
+			continue;
+
+		if (*ch == '\n')
+		{
+			cx = x;
+			if (option & V_RETURN8)
+				cy += (4*dupy)<<FRACBITS;
+			else
+				cy += (6*dupy)<<FRACBITS;
+			continue;
+		}
+		c = *ch;
+		if (!lowercase)
+			c = toupper(c);
+		c -= HU_FONTSTART;
+		// character does not exist or is a space
+		if (c < 0 || c >= HU_FONTSIZE || !hu_font[c])
+		{
+			cx += (spacewidth * dupx)<<FRACBITS;
+			continue;
+		}
+		if (charwidth)
+		{
+			w = charwidth * dupx;
+			center = w/2 - hu_font[c]->width*(dupx/4);
+		}
+		else
+			w = hu_font[c]->width * dupx / 2;
+		if ((cx>>FRACBITS) > scrwidth)
+			break;
+		if ((cx>>FRACBITS)+left + w < 0) //left boundary check
+		{
+			cx += w<<FRACBITS;
+			continue;
+		}
+
+		V_DrawFixedPatch(cx + (center<<FRACBITS), cy, FRACUNIT/2, option, hu_font[c], colormap);
+		cx += w<<FRACBITS;
+	}
+}
+
 void V_DrawCenteredSmallStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *string)
 {
 	x -= (V_SmallStringWidth(string, option) / 2)<<FRACBITS;

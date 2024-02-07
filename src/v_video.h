@@ -207,6 +207,7 @@ void V_DrawStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *string)
 
 void V_DrawSmallStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *string);
 void V_DrawCenteredSmallStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *string);
+void V_DrawSmallStringAtFixedCM(fixed_t x, fixed_t y, INT32 option, const char *string, UINT8* colormap);
 
 void V_DrawThinStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *string);
 void V_DrawThinStringAtFixedCM(fixed_t x, fixed_t y, INT32 option, const char *string, UINT8* colormap);
