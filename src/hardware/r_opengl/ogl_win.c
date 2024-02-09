@@ -117,7 +117,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, // handle to DLL module
 #define pwglDeleteContext wglDeleteContext;
 #define pwglMakeCurrent wglMakeCurrent;
 #else
-static HMODULE OGL32, GLU32;
+static HMODULE OGL32;
 typedef void *(WINAPI *PFNwglGetProcAddress) (const char *);
 static PFNwglGetProcAddress pwglGetProcAddress;
 typedef HGLRC (WINAPI *PFNwglCreateContext) (HDC hdc);
@@ -132,13 +132,6 @@ static PFNwglMakeCurrent pwglMakeCurrent;
 void *GetGLFunc(const char *proc)
 {
 	void *func = NULL;
-	if (strncmp(proc, "glu", 3) == 0)
-	{
-		if (GLU32)
-			func = GetProcAddress(GLU32, proc);
-		else
-			return NULL;
-	}
 	if (pwglGetProcAddress)
 		func = pwglGetProcAddress(proc);
 	if (!func)
@@ -154,8 +147,6 @@ boolean LoadGL(void)
 
 	if (!OGL32)
 		return 0;
-
-	GLU32 = LoadLibrary("GLU32.DLL");
 
 	pwglGetProcAddress = GetGLFunc("wglGetProcAddress");
 	pwglCreateContext = GetGLFunc("wglCreateContext");
@@ -528,7 +519,6 @@ EXPORT void HWRAPI(Shutdown) (void)
 		ReleaseDC(hWnd, hDC);
 		hDC = NULL;
 	}
-	FreeLibrary(GLU32);
 	FreeLibrary(OGL32);
 	DBG_Printf ("HWRAPI Shutdown(DONE)\n");
 }
@@ -564,15 +554,15 @@ EXPORT void HWRAPI(FinishUpdate) (INT32 waitvbl)
 //                  : in OpenGL, we store values for conversion of paletted graphics when
 //                  : they are downloaded to the 3D card.
 // -----------------+
-EXPORT void HWRAPI(SetPalette) (RGBA_t *pal, RGBA_t *gamma)
+EXPORT void HWRAPI(SetPalette) (RGBA_t *pal)
 {
 	INT32 i;
 
 	for (i = 0; i < 256; i++)
 	{
-		myPaletteData[i].s.red   = (UINT8)MIN((pal[i].s.red*gamma->s.red)/127,     255);
-		myPaletteData[i].s.green = (UINT8)MIN((pal[i].s.green*gamma->s.green)/127, 255);
-		myPaletteData[i].s.blue  = (UINT8)MIN((pal[i].s.blue*gamma->s.blue)/127,   255);
+		myPaletteData[i].s.red   = pal[i].s.red;
+		myPaletteData[i].s.green = pal[i].s.green;
+		myPaletteData[i].s.blue  = pal[i].s.blue;
 		myPaletteData[i].s.alpha = pal[i].s.alpha;
 	}
 

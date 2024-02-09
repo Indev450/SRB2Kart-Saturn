@@ -28,6 +28,7 @@
 
 #ifdef HWRENDER
 #include "hardware/hw_main.h"
+#include "hardware/hw_glob.h" // HWR_ClearLightTables
 #endif
 
 #ifdef _WIN32
@@ -39,11 +40,7 @@
 #endif
 
 // Not sure if this is necessary, but it was in w_wad.c, so I'm putting it here too -Shadow Hog
-#ifdef _WIN32_WCE
-#define AVOID_ERRNO
-#else
 #include <errno.h>
-#endif
 
 //
 // Texture definition.
@@ -1143,8 +1140,9 @@ void R_ClearColormaps(void)
 	memset(extra_colormaps, 0, sizeof (extra_colormaps));
 
 #ifdef HWRENDER
-	HWR_ClearLightTableCache();
-#endif	
+	if (rendermode == render_opengl)
+		HWR_ClearLightTables();
+#endif
 }
 
 /*INT32 R_ColormapNumForName(char *name)
@@ -1325,7 +1323,7 @@ INT32 R_CreateColormap(char *p1, char *p2, char *p3)
 	extra_colormaps[mapnum].fadeend = (UINT16)fadeend;
 	extra_colormaps[mapnum].fog = fog;
 	
-	if (rendermode == render_soft || rendermode == render_opengl)
+	if (rendermode != render_none)
 	{	
 		double r, g, b, cbrightness;
 		int p;
@@ -1416,16 +1414,20 @@ INT32 R_CreateColormap(char *p1, char *p2, char *p3)
 
 // Thanks to quake2 source!
 // utils3/qdata/images.c
-UINT8 NearestColor(UINT8 r, UINT8 g, UINT8 b)
+UINT8 NearestPaletteColor(UINT8 r, UINT8 g, UINT8 b, RGBA_t *palette)
 {
 	int dr, dg, db;
 	int distortion, bestdistortion = 256 * 256 * 4, bestcolor = 0, i;
 
+	// Use local palette if none specified
+	if (palette == NULL)
+		palette = pLocalPalette;
+
 	for (i = 0; i < 256; i++)
 	{
-		dr = r - pLocalPalette[i].s.red;
-		dg = g - pLocalPalette[i].s.green;
-		db = b - pLocalPalette[i].s.blue;
+		dr = r - palette[i].s.red;
+		dg = g - palette[i].s.green;
+		db = b - palette[i].s.blue;
 		distortion = dr*dr + dg*dg + db*db;
 		if (distortion < bestdistortion)
 		{

@@ -662,7 +662,10 @@ void P_Ticker(boolean run)
 		ps_checkposition_calls.value.i = 0;
 
 #ifdef HAVE_BLUA
+		PS_START_TIMING(ps_lua_prethinkframe_time);
 		LUAh_PreThinkFrame();
+		PS_STOP_TIMING(ps_lua_prethinkframe_time);
+
 #endif
 
 		PS_START_TIMING(ps_playerthink_time);
@@ -772,8 +775,6 @@ void P_Ticker(boolean run)
 			quake.x = M_RandomRange(-ir,ir);
 			quake.y = M_RandomRange(-ir,ir);
 			quake.z = M_RandomRange(-ir,ir);
-			if (cv_windowquake.value)
-				I_CursedWindowMovement(FixedInt(quake.x), FixedInt(quake.y));
 			ir >>= 2;
 			ir = M_RandomRange(-ir,ir);
 			if (ir < 0)
@@ -825,7 +826,11 @@ void P_Ticker(boolean run)
 				D_MapChange(gamemap, gametype, encoremode, true, 0, false, false);
 
 #ifdef HAVE_BLUA
+		
+		PS_START_TIMING(ps_lua_postthinkframe_time);
 		LUAh_PostThinkFrame();
+		PS_STOP_TIMING(ps_lua_postthinkframe_time);
+
 #endif
 	}
 
@@ -920,6 +925,8 @@ void P_PreTicker(INT32 frames)
 		// Run shield positioning
 		//P_RunShields();
 		P_RunOverlays();
+		
+		P_RunShadows();
 
 		P_UpdateSpecials();
 		P_RespawnSpecials();

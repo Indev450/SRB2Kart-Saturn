@@ -6063,13 +6063,22 @@ static void P_AddOverlay(mobj_t *thing)
 static void P_RemoveOverlay(mobj_t *thing)
 {
 	mobj_t *mo;
+	if (overlaycap == thing)
+	{
+		P_SetTarget(&overlaycap, thing->hnext);
+		P_SetTarget(&thing->hnext, NULL);
+		return;
+	}
+
 	for (mo = overlaycap; mo; mo = mo->hnext)
-		if (mo->hnext == thing)
-		{
-			P_SetTarget(&mo->hnext, thing->hnext);
-			P_SetTarget(&thing->hnext, NULL);
-			return;
-		}
+	{
+		if (mo->hnext != thing)
+			continue;
+
+		P_SetTarget(&mo->hnext, thing->hnext);
+		P_SetTarget(&thing->hnext, NULL);
+		return;
+	}
 }
 
 void P_RunShadows(void)
@@ -6175,12 +6184,14 @@ static void P_RemoveShadow(mobj_t *thing)
 	}
 
 	for (mo = shadowcap; mo; mo = mo->hnext)
-		if (mo->hnext == thing)
-		{
-			P_SetTarget(&mo->hnext, thing->hnext);
-			P_SetTarget(&thing->hnext, NULL);
-			return;
-		}
+	{
+		if (mo->hnext != thing)
+			continue;
+
+		P_SetTarget(&mo->hnext, thing->hnext);
+		P_SetTarget(&thing->hnext, NULL);
+		return;
+	}
 }
 
 void A_BossDeath(mobj_t *mo);
@@ -6238,6 +6249,87 @@ static void P_KoopaThinker(mobj_t *koopa)
 		hammer->momx = FixedMul(-5*FRACUNIT, hammer->scale);
 		hammer->momz = FixedMul(7*FRACUNIT, hammer->scale);
 	}
+}
+
+//
+// P_RollPitchMobj
+// Assigns slopepitch and sloperoll to objects, and resets said values when slope-rolling
+// is turned off completely.
+//
+void P_RollPitchMobj(mobj_t* mobj)
+{
+    boolean usedist = false;
+
+    if (cv_sloperolldist.value > 0)
+        usedist = true;
+
+    if ((cv_spriteroll.value) && (cv_sloperoll.value == 2))
+    {
+        K_RollMobjBySlopes(mobj, usedist);
+    }
+    else
+    {
+        mobj->sloperoll = FixedAngle(0);
+        mobj->slopepitch = FixedAngle(0);
+    }
+}
+
+angle_t P_MobjPitchAndRoll(mobj_t *mobj)
+{
+    spritedef_t *sprdef;
+    spriteframe_t *sprframe;
+    angle_t ang = 0;
+	angle_t camang = 0;
+	angle_t return_angle = 0;
+	
+	if (!cv_spriteroll.value)
+		return 0;
+
+    if (P_MobjWasRemoved(mobj))
+        return 0;
+
+    size_t rot = mobj->frame & FF_FRAMEMASK;
+    boolean papersprite = (mobj->frame & FF_PAPERSPRITE);
+
+	if (mobj->skin && mobj->sprite == SPR_PLAY)
+	{
+		sprdef = &((skin_t *)mobj->skin)->spritedef;
+
+		if (rot >= sprdef->numframes)
+			sprdef = &sprites[mobj->sprite];
+	}
+	else
+	{
+		sprdef = &sprites[mobj->sprite];
+	}
+
+	if (rot >= sprdef->numframes)
+	{
+		sprdef = &sprites[states[S_UNKNOWN].sprite];
+		rot = states[S_UNKNOWN].frame&FF_FRAMEMASK;
+	}
+
+	sprframe = &sprdef->spriteframes[rot];
+
+	// No sprite frame? I guess it is possible
+	if (!sprframe) return 0;
+
+	if (sprframe->rotate != SRF_SINGLE || papersprite)
+	{
+		ang = R_PointToAngle(mobj->x, mobj->y) - mobj->angle;
+		camang = R_PointToAngle(mobj->x, mobj->y);
+	}
+
+	return_angle = FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), mobj->roll) 
+			        + FixedMul(FINESINE((ang) >> ANGLETOFINESHIFT), mobj->pitch);
+
+	if (cv_sloperoll.value)
+	{
+		return_angle += FixedMul(FINECOSINE((camang) >> ANGLETOFINESHIFT), mobj->sloperoll) 
+						+ FixedMul(FINESINE((camang) >> ANGLETOFINESHIFT), mobj->slopepitch);
+	}
+
+	return return_angle;
 }
 
 //
@@ -6382,6 +6474,12 @@ void P_MobjThinker(mobj_t *mobj)
 					return;
 				}
 
+				if (mobj->state == &states[S_PLAY_SIGN]) // hack to make the player sign icon roll with the sign itself
+				{
+					mobj->slopepitch = mobj->target->slopepitch;
+					mobj->sloperoll = mobj->target->sloperoll;
+				}
+
 				P_AddOverlay(mobj);
 				break;
 			case MT_SHADOW:
@@ -6390,7 +6488,12 @@ void P_MobjThinker(mobj_t *mobj)
 					P_RemoveMobj(mobj);
 					return;
 				}
-
+				
+				if (mobj->state == &states[S_SHADOW] && cv_sloperoll.value == 2)
+				{
+					mobj->slopepitch = mobj->target->slopepitch;
+					mobj->sloperoll = mobj->target->sloperoll;
+				}
 				P_AddShadow(mobj);
 				break;
 			/*case MT_BLACKORB:
@@ -6417,6 +6520,7 @@ void P_MobjThinker(mobj_t *mobj)
 					P_RemoveMobj(mobj);
 					return;
 				}
+				P_RollPitchMobj(mobj);
 				break;
 			case MT_SMOLDERING:
 				if (leveltime % 2 == 0)
@@ -7845,6 +7949,7 @@ void P_MobjThinker(mobj_t *mobj)
 			fixed_t distbarrier = 512*mapobjectscale;
 			fixed_t distaway;
 
+			P_RollPitchMobj(mobj);
 			P_SpawnGhostMobj(mobj);
 
 			if (mobj->threshold > 0)
@@ -7912,6 +8017,7 @@ void P_MobjThinker(mobj_t *mobj)
 			}
 			else
 			{
+				P_RollPitchMobj(mobj);
 				P_SpawnGhostMobj(mobj);
 				mobj->angle = R_PointToAngle2(0, 0, mobj->momx, mobj->momy);
 				P_InstaThrust(mobj, mobj->angle, mobj->movefactor);
@@ -7945,6 +8051,9 @@ void P_MobjThinker(mobj_t *mobj)
 				mobj->momx = mobj->momy = 0;
 				mobj->health = 1;
 			}
+
+			P_RollPitchMobj(mobj);
+
 			if (mobj->threshold > 0)
 				mobj->threshold--;
 			break;
@@ -7991,6 +8100,8 @@ void P_MobjThinker(mobj_t *mobj)
 			if ((mobj->state >= &states[S_SSMINE1] && mobj->state <= &states[S_SSMINE4])
 				|| (mobj->state >= &states[S_SSMINE_DEPLOY8] && mobj->state <= &states[S_SSMINE_DEPLOY13]))
 				A_GrenadeRing(mobj);
+
+			P_RollPitchMobj(mobj);
 
 			if (mobj->threshold > 0)
 				mobj->threshold--;
@@ -8202,6 +8313,8 @@ void P_MobjThinker(mobj_t *mobj)
 			}
 
 			P_MoveOrigin(mobj, destx, desty, mobj->target->z);
+			mobj->spriteyoffset = mobj->target->spriteyoffset;
+			mobj->spritexoffset = mobj->target->spritexoffset;
 			break;
 		}
 		case MT_ROCKETSNEAKER:
@@ -8344,6 +8457,10 @@ void P_MobjThinker(mobj_t *mobj)
 					}
 				}
 			}
+
+			// fancy sign rotation
+			P_RollPitchMobj(mobj);
+
 			break;
 		case MT_CDUFO:
 			if (!mobj->spawnpoint || mobj->fuse)
@@ -9524,6 +9641,10 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 	mobj->height = info->height;
 	mobj->flags = info->flags;
 	mobj->sloperoll = 0;
+	mobj->slopepitch = 0;
+
+	mobj->pitch_sprite = 0;
+	mobj->roll_sprite = 0;
 
 	mobj->health = info->spawnhealth;
 
@@ -10359,7 +10480,7 @@ void P_SpawnPrecipitation(void)
 	subsector_t *precipsector = NULL;
 	precipmobj_t *rainmo = NULL;
 
-	if (dedicated || !(cv_drawdist_precip.value) || curWeather == PRECIP_NONE || curWeather == PRECIP_STORM_NORAIN) // SRB2Kart
+	if (dedicated || /*!cv_precipdensity*/!cv_drawdist_precip.value || curWeather == PRECIP_NONE) // SRB2Kart
 		return;
 
 	// Use the blockmap to narrow down our placing patterns
@@ -10370,8 +10491,16 @@ void P_SpawnPrecipitation(void)
 
 		//for (j = 0; j < cv_precipdensity.value; ++j) -- density is 1 for kart always
 		{
-			x = basex + ((M_RandomKey(MAPBLOCKUNITS<<3)<<FRACBITS)>>3);
-			y = basey + ((M_RandomKey(MAPBLOCKUNITS<<3)<<FRACBITS)>>3);
+			if (cv_lessprecip.value)
+			{
+				x = basex*1.5 + ((M_RandomKey(MAPBLOCKUNITS<<3)<<FRACBITS)>>3);
+				y = basey*1.5 + ((M_RandomKey(MAPBLOCKUNITS<<3)<<FRACBITS)>>3);
+			}
+			else
+			{
+				x = basex + ((M_RandomKey(MAPBLOCKUNITS<<3)<<FRACBITS)>>3);
+				y = basey + ((M_RandomKey(MAPBLOCKUNITS<<3)<<FRACBITS)>>3);
+			}
 
 			precipsector = R_IsPointInSubsector(x, y);
 
@@ -10402,12 +10531,21 @@ void P_SpawnPrecipitation(void)
 			}
 			else // everything else.
 				rainmo = P_SpawnRainMobj(x, y, height, MT_RAIN);
-			if (curWeather == PRECIP_BLANK)
-				rainmo->precipflags |= PCF_INVISIBLE;
 
 			// Randomly assign a height, now that floorz is set.
 			rainmo->z = M_RandomRange(rainmo->floorz>>FRACBITS, rainmo->ceilingz>>FRACBITS)<<FRACBITS;
 		}
+	}
+
+	if (curWeather == PRECIP_BLANK)
+	{
+		curWeather = PRECIP_RAIN;
+		P_SwitchWeather(PRECIP_BLANK);
+	}
+	else if (curWeather == PRECIP_STORM_NORAIN)
+	{
+		curWeather = PRECIP_RAIN;
+		P_SwitchWeather(PRECIP_STORM_NORAIN);
 	}
 }
 
@@ -11376,7 +11514,7 @@ void P_SpawnMapThing(mapthing_t *mthing)
 	mobj = P_SpawnMobj(x, y, z, i);
 
 	if (!mobj || P_MobjWasRemoved(mobj)) {
-		CONS_Alert(CONS_WARNING, "Failed to spawn map thing #%d at %d, %d\n", mthing->type, x>>FRACBITS, y>>FRACBITS);
+		CONS_Alert(CONS_ERROR, "Failed to spawn map thing #%d at %d, %d. This will crash vanilla clients!\n", mthing->type, x>>FRACBITS, y>>FRACBITS);
 		return;
 	}
 

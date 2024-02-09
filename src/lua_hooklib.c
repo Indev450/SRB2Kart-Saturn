@@ -430,6 +430,9 @@ void LUAh_PlayerJoin(int playernum)
 void LUAh_PreThinkFrame(void)
 {
 	hook_p hookp;
+	// variables used by perf stats
+	int hook_index = 0;
+	precise_t time_taken = 0;
 	if (!gL || !(hooksAvailable[hook_PreThinkFrame/8] & (1<<(hook_PreThinkFrame%8))))
 		return;
 	
@@ -437,19 +440,32 @@ void LUAh_PreThinkFrame(void)
 
 	for (hookp = roothook; hookp; hookp = hookp->next)
 	{
-		if (hookp->type != hook_PreThinkFrame)
-			continue;
-
-		lua_pushfstring(gL, FMT_HOOKID, hookp->id);
-		lua_gettable(gL, LUA_REGISTRYINDEX);
-		if (lua_pcall(gL, 0, 0, 1)) {
-			if (!hookp->error || cv_debug & DBG_LUA)
-				CONS_Alert(CONS_WARNING,"%s\n",lua_tostring(gL, -1));
-			lua_pop(gL, 1);
-			hookp->error = true;
+		if (hookp->type == hook_PreThinkFrame)
+		{	
+			if (cv_perfstats.value == 4)
+				time_taken = I_GetPreciseTime();
+			lua_pushfstring(gL, FMT_HOOKID, hookp->id);
+			lua_gettable(gL, LUA_REGISTRYINDEX);
+			if (lua_pcall(gL, 0, 0, 1)) {
+				if (!hookp->error || cv_debug & DBG_LUA)
+					CONS_Alert(CONS_WARNING,"%s\n",lua_tostring(gL, -1));
+				lua_pop(gL, 1);
+				hookp->error = true;
+			}
+			if (cv_perfstats.value == 4)
+			{
+				lua_Debug ar;
+				time_taken = I_GetPreciseTime() - time_taken;
+				// we need the function, let's just retrieve it again
+				lua_pushfstring(gL, FMT_HOOKID, hookp->id);
+				lua_gettable(gL, LUA_REGISTRYINDEX);
+				lua_getinfo(gL, ">S", &ar);
+				PS_SetPreThinkFrameHookInfo(hook_index, time_taken, ar.short_src);
+				hook_index++;
+			}
 		}
-	}
 	
+	}
 	lua_pop(gL, 1); // Pop error handler
 }
 
@@ -498,6 +514,9 @@ void LUAh_ThinkFrame(void)
 void LUAh_PostThinkFrame(void)
 {
 	hook_p hookp;
+	// variables used by perf stats
+	int hook_index = 0;
+	precise_t time_taken = 0;
 	if (!gL || !(hooksAvailable[hook_PostThinkFrame/8] & (1<<(hook_PostThinkFrame%8))))
 		return;
 	
@@ -505,19 +524,31 @@ void LUAh_PostThinkFrame(void)
 
 	for (hookp = roothook; hookp; hookp = hookp->next)
 	{
-		if (hookp->type != hook_PostThinkFrame)
-			continue;
-
-		lua_pushfstring(gL, FMT_HOOKID, hookp->id);
-		lua_gettable(gL, LUA_REGISTRYINDEX);
-		if (lua_pcall(gL, 0, 0, 1)) {
-			if (!hookp->error || cv_debug & DBG_LUA)
-				CONS_Alert(CONS_WARNING,"%s\n",lua_tostring(gL, -1));
-			lua_pop(gL, 1);
-			hookp->error = true;
+		if (hookp->type == hook_PostThinkFrame)
+		{	
+			if (cv_perfstats.value == 5)
+				time_taken = I_GetPreciseTime();
+			lua_pushfstring(gL, FMT_HOOKID, hookp->id);
+			lua_gettable(gL, LUA_REGISTRYINDEX);
+			if (lua_pcall(gL, 0, 0, 1)) {
+				if (!hookp->error || cv_debug & DBG_LUA)
+					CONS_Alert(CONS_WARNING,"%s\n",lua_tostring(gL, -1));
+				lua_pop(gL, 1);
+				hookp->error = true;
+			}
+			if (cv_perfstats.value == 5)
+			{
+				lua_Debug ar;
+				time_taken = I_GetPreciseTime() - time_taken;
+				// we need the function, let's just retrieve it again
+				lua_pushfstring(gL, FMT_HOOKID, hookp->id);
+				lua_gettable(gL, LUA_REGISTRYINDEX);
+				lua_getinfo(gL, ">S", &ar);
+				PS_SetPostThinkFrameHookInfo(hook_index, time_taken, ar.short_src);
+				hook_index++;
+			}
 		}
 	}
-	
 	lua_pop(gL, 1); // Pop error handler
 }
 

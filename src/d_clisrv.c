@@ -47,6 +47,7 @@
 #include "k_kart.h"
 #include "s_sound.h" // sfx_syfail
 #include "m_perfstats.h"
+#include "d_main.h"
 
 #ifdef CLIENT_LOADINGSCREEN
 // cl loading screen
@@ -170,6 +171,8 @@ static textcmdtic_t *textcmds[TEXTCMD_HASH_SIZE] = {NULL};
 
 
 consvar_t cv_showjoinaddress = {"showjoinaddress", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_shownodeip = {"showipinnodelist", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static CV_PossibleValue_t playbackspeed_cons_t[] = {{1, "MIN"}, {10, "MAX"}, {0, NULL}};
 consvar_t cv_playbackspeed = {"playbackspeed", "1", 0, playbackspeed_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -1899,6 +1902,15 @@ static void CL_LoadReceivedSavegame(void)
 	demo.title = false;
 	automapactive = false;
 
+	if (!postautoloaded) 
+	{
+		CONS_Printf("D_AutoloadFile(): Loading autoloaded addons...\n");
+		if (W_AddAutoloadedLocalFiles(autoloadwadfilespost) == 0)
+			CONS_Printf("D_AutoloadFile(): Are you sure you put in valid files or what?\n");
+		D_CleanFile(autoloadwadfilespost);
+		postautoloaded = true;
+	}
+
 	// load a base level
 	if (P_LoadNetGame())
 	{
@@ -1939,12 +1951,13 @@ static void CL_LoadReceivedSavegame(void)
 static void SendAskInfo(INT32 node)
 {
 	tic_t asktime;
-
+	#ifdef HOLEPUNCH
 	if (node != 0 && node != BROADCASTADDR &&
 			cv_rendezvousserver.string[0])
 	{
 		I_NetRequestHolePunch(node);
 	}
+	#endif
 
 	asktime = I_GetTime();
 
@@ -3345,7 +3358,7 @@ static void Command_Nodes(void)
 		{
 			CONS_Printf("%.2u: %*s", i, (int)maxlen, player_names[i]);
 			CONS_Printf(" - %.2d", playernode[i]);
-			if (I_GetNodeAddress && (address = I_GetNodeAddress(playernode[i])) != NULL)
+			if ((I_GetNodeAddress && (address = I_GetNodeAddress(playernode[i])) != NULL) && (cv_shownodeip.value))
 				CONS_Printf(" - %s", address);
 
 			if (IsPlayerAdmin(i))
@@ -3357,6 +3370,94 @@ static void Command_Nodes(void)
 			CONS_Printf("\n");
 		}
 	}
+}
+
+//Screw the base game nodes lets replace with listplayers instead.
+static void Command_Listplayers(void)
+{
+	const char *address;
+	int width = 0;
+
+	boolean admin;
+	boolean spectator;
+
+	/*
+	Mode of player status for an individual player (admin, spectator).
+	1 for admin
+	2 for spectator
+	4 for both
+	*/
+	int mode = 0;
+
+	INT32 totalplayers = 0;
+
+	const char *cc;
+	const char *pcc;
+
+	INT32 i;
+	int n;
+
+	for (i = 0; i < MAXPLAYERS; ++i)
+		if (playeringame[i])
+	{
+		n = strlen(player_names[i]);
+		if (n > width)
+			width = n;
+
+		if (mode != 7)
+		{
+			admin     = IsPlayerAdmin(i);
+			spectator = players[i].spectator;
+
+			if (admin)
+				mode |= 1;
+			if (spectator)
+				mode |= 2;
+			if (admin && spectator)
+				mode |= 4;
+		}
+	}
+
+	for (i = 0; i < MAXPLAYERS; ++i)
+		if (playeringame[i])
+	{
+		admin     = IsPlayerAdmin(i);
+		spectator = players[i].spectator;
+
+		if (admin)
+			cc = "\x85";/* red */
+		else if (spectator)
+			cc = "\x86";/* gray */
+		else
+			cc = "";
+
+		pcc = HU_SkinColorToConsoleColor(players[i].skincolor);
+
+		CONS_Printf("%.2d: ""%s""%-*s""\x80", i, pcc,width, player_names[i]);
+
+			if ((I_GetNodeAddress && (address = I_GetNodeAddress(playernode[i])) != NULL) && (cv_shownodeip.value))
+				CONS_Printf(" -- %s", address);
+			else/* print spacer */
+			{
+				/* ...but not if there's a crammed status and were admin */
+				if (mode != 7 || !admin)
+					CONS_Printf(" --     ");/* -- self */
+			}
+
+		if (admin)
+			CONS_Printf(M_GetText("%s"" (admin)"),cc);
+		if (spectator)
+			CONS_Printf(M_GetText("%s"" (spectator)"),cc);
+
+		CONS_Printf("\n");
+
+		totalplayers++;
+	}
+
+	if (totalplayers == 1)
+		CONS_Printf("\nThere is 1 player in the game.\n");
+	else
+		CONS_Printf("\nThere are %d players in the game.\n", totalplayers);
 }
 
 static void Command_Ban(void)
@@ -3924,6 +4025,7 @@ void D_ClientServerInit(void)
 	COM_AddCommand("reloadbans", Command_ReloadBan);
 	COM_AddCommand("connect", Command_connect);
 	COM_AddCommand("nodes", Command_Nodes);
+	COM_AddCommand("listplayers", Command_Listplayers);
 #ifdef HAVE_CURL
 	COM_AddCommand("set_http_login", Command_set_http_login);
 	COM_AddCommand("list_http_logins", Command_list_http_logins);
@@ -4214,6 +4316,13 @@ static void Got_RemovePlayer(UINT8 **p, INT32 playernum)
 
 	pnum = READUINT8(*p);
 	reason = READUINT8(*p);
+
+	if (pnum == serverplayer)
+	{
+		CONS_Alert(CONS_WARNING, "Attempt to remove server player\n");
+
+		return;
+	}
 
 	CL_RemovePlayer(pnum, reason);
 
@@ -4981,36 +5090,26 @@ static void HandlePacketFromPlayer(SINT8 node)
 			/// \todo Use a separate cvar for that kind of timeout?
 			freezetimeout[node] = I_GetTime() + connectiontimeout;
 
-			//Ported this from 2.2 Prevent dropped ticcmds due to interp timing jutter 
-			// If we've alredy received a ticcmd for this tic, just submit it for the next one.
-			tic_t faketic = maketic;
-			if ((!!(netcmds[maketic % TICQUEUE][netconsole].angleturn & TICCMD_RECEIVED))
-				&& (maketic - firstticstosend < TICQUEUE - 1))
-					faketic++;
-
-
-			
 			// Don't do anything for packets of type NODEKEEPALIVE?
 			// Sryder 2018/07/01: Update the freezetimeout still!
 			if (netbuffer->packettype == PT_NODEKEEPALIVE
 				|| netbuffer->packettype == PT_NODEKEEPALIVEMIS)
 				break;
 
-			// Copy ticcmd Prevent dropped ticcmds due to interp timing jutter 
-			G_MoveTiccmd(&netcmds[faketic%TICQUEUE][netconsole], &netbuffer->u.clientpak.cmd, 1);
-
+			// Copy ticcmd
+			G_MoveTiccmd(&netcmds[maketic%TICQUEUE][netconsole], &netbuffer->u.clientpak.cmd, 1);
 
 			// Check ticcmd for "speed hacks"
 			if (CheckForSpeedHacks((UINT8)netconsole))
 				break;
 
-			// Splitscreen cmd Prevent dropped ticcmds due to interp timing jutter 
+			// Splitscreen cmd
 			if (((netbuffer->packettype == PT_CLIENT2CMD || netbuffer->packettype == PT_CLIENT2MIS)
 				|| (netbuffer->packettype == PT_CLIENT3CMD || netbuffer->packettype == PT_CLIENT3MIS)
 				|| (netbuffer->packettype == PT_CLIENT4CMD || netbuffer->packettype == PT_CLIENT4MIS))
 				&& (nodetoplayer2[node] >= 0))
 			{
-				G_MoveTiccmd(&netcmds[faketic%TICQUEUE][(UINT8)nodetoplayer2[node]],
+				G_MoveTiccmd(&netcmds[maketic%TICQUEUE][(UINT8)nodetoplayer2[node]],
 					&netbuffer->u.client2pak.cmd2, 1);
 
 				if (CheckForSpeedHacks((UINT8)nodetoplayer2[node]))
@@ -5021,7 +5120,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 				|| (netbuffer->packettype == PT_CLIENT4CMD || netbuffer->packettype == PT_CLIENT4MIS))
 				&& (nodetoplayer3[node] >= 0))
 			{
-				G_MoveTiccmd(&netcmds[faketic%TICQUEUE][(UINT8)nodetoplayer3[node]],
+				G_MoveTiccmd(&netcmds[maketic%TICQUEUE][(UINT8)nodetoplayer3[node]],
 					&netbuffer->u.client3pak.cmd3, 1);
 
 				if (CheckForSpeedHacks((UINT8)nodetoplayer3[node]))
@@ -5031,7 +5130,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 			if ((netbuffer->packettype == PT_CLIENT4CMD || netbuffer->packettype == PT_CLIENT4MIS)
 				&& (nodetoplayer4[node] >= 0))
 			{
-				G_MoveTiccmd(&netcmds[faketic%TICQUEUE][(UINT8)nodetoplayer4[node]],
+				G_MoveTiccmd(&netcmds[maketic%TICQUEUE][(UINT8)nodetoplayer4[node]],
 					&netbuffer->u.client4pak.cmd4, 1);
 
 				if (CheckForSpeedHacks((UINT8)nodetoplayer4[node]))
@@ -5299,7 +5398,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 			}
 			else
 			{
-				DEBFILE(va("frame not in bound: %u\n", neededtic));
+				DEBFILE(va("frame not in bound: %u (bounds are from %u to %u)\n", neededtic, realstart, realend));
 				/*if (realend < neededtic - 2 * TICRATE || neededtic + 2 * TICRATE < realstart)
 					I_Error("Received an out of order PT_SERVERTICS packet!\n"
 							"Got tics %d-%d, needed tic %d\n\n"
@@ -6153,6 +6252,7 @@ static void UpdatePingTable(void)
 	}
 }
 
+#ifdef HOLEPUNCH
 static void RenewHolePunch(void)
 {
 	if (cv_rendezvousserver.string[0])
@@ -6168,6 +6268,7 @@ static void RenewHolePunch(void)
 		}
 	}
 }
+#endif
 
 // Handle timeouts to prevent definitive freezes from happenning
 static void HandleNodeTimeouts(void)
@@ -6201,11 +6302,14 @@ void NetKeepAlive(void)
 #ifdef MASTERSERVER
 	MasterClient_Ticker();
 #endif
-
+	
+	#ifdef HOLEPUNCH
 	if (netgame && serverrunning)
 	{
 		RenewHolePunch();
 	}
+	#endif
+
 
 	if (client)
 	{
@@ -6318,10 +6422,12 @@ void NetUpdate(void)
 	MasterClient_Ticker(); // Acking the Master Server
 #endif
 
+	#ifdef HOLEPUNCH
 	if (netgame && serverrunning)
 	{
 		RenewHolePunch();
 	}
+	#endif
 
 	if (client)
 	{

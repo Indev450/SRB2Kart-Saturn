@@ -1976,14 +1976,28 @@ static void LoadMobjThinker(actionf_p1 thinker)
 	mobj->thinker.function.acp1 = thinker;
 
 	mobj->rollangle = 0;
-	mobj->spritexoffset = mobj->spriteyoffset = mobj->old_spritexoffset = mobj->old_spriteyoffset = FRACUNIT;
-	mobj->spritexscale = mobj->spriteyscale = mobj->old_spritexscale = mobj->old_spriteyscale = FRACUNIT;
-	mobj->realxscale = mobj->realyscale = FRACUNIT;
+
+	mobj->pitch = 0;
+	mobj->roll = 0;
+
+	mobj->sloperoll = 0;
+	mobj->slopepitch = 0;
+
+	mobj->pitch_sprite = 0;
+	mobj->roll_sprite = 0;
+	
+	mobj->spritexoffset = mobj->old_spritexoffset = 0;
+	mobj->spriteyoffset = mobj->old_spriteyoffset = 0;
+	mobj->spritexscale = mobj->old_spritexscale = FRACUNIT;
+	mobj->spriteyscale = mobj->old_spriteyscale = FRACUNIT;
+	mobj->realxscale = FRACUNIT;
+	mobj->realyscale = FRACUNIT;
+	
 	mobj->stretchslam = 0;
 	mobj->slamsoundtimer = 0;
 	
-	mobj->sloperoll = mobj->reservezangle = mobj->reservexydir = 0;
-
+	mobj->mirrored = 0;
+	
 	mobj->z = z;
 	mobj->floorz = floorz;
 	mobj->ceilingz = ceilingz;
