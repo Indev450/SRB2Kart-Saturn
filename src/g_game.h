@@ -112,7 +112,7 @@ extern INT16 rw_maximums[NUM_WEAPONS];
 // used in game menu
 extern consvar_t cv_chatwidth, cv_chatnotifications, cv_chatheight, cv_chattime, cv_consolechat, cv_chatbacktint, cv_chatspamprotection/*, cv_compactscoreboard*/;
 extern consvar_t cv_songcredits;
-extern consvar_t cv_showfreeplay;
+
 extern consvar_t cv_growmusic, cv_supermusic;
 extern consvar_t cv_pauseifunfocused;
 //extern consvar_t cv_crosshair, cv_crosshair2, cv_crosshair3, cv_crosshair4;
@@ -125,6 +125,18 @@ extern consvar_t cv_turnaxis2,cv_moveaxis2,cv_brakeaxis2,cv_aimaxis2,cv_lookaxis
 extern consvar_t cv_turnaxis3,cv_moveaxis3,cv_brakeaxis3,cv_aimaxis3,cv_lookaxis3,cv_fireaxis3,cv_driftaxis3,cv_lookbackaxis3,cv_xdeadzone3,cv_ydeadzone3;
 extern consvar_t cv_turnaxis4,cv_moveaxis4,cv_brakeaxis4,cv_aimaxis4,cv_lookaxis4,cv_fireaxis4,cv_driftaxis4,cv_lookbackaxis4,cv_xdeadzone4,cv_ydeadzone4;
 extern consvar_t cv_ghost_besttime, cv_ghost_bestlap, cv_ghost_last, cv_ghost_guest, cv_ghost_staff;
+
+extern consvar_t cv_driftsparkpulse;
+
+// Sprite Rotation stuff
+extern consvar_t cv_gravstretch;
+extern consvar_t cv_sloperoll;
+extern consvar_t cv_spriteroll;
+extern consvar_t cv_sliptideroll;
+extern consvar_t cv_sloperolldist;
+extern consvar_t cv_sparkroll;
+
+extern consvar_t cv_cechotoggle;
 
 // Hud offsets
 #define DECL_HUD_OFFSET_X(name)\
@@ -153,24 +165,6 @@ DECL_HUD_OFFSET(stat); // Stats
 #undef DECL_HUD_OFFSET
 #undef DECL_HUD_OFFSET_X
 #undef DECL_HUD_OFFSET_Y
-
-extern consvar_t cv_showinput;
-extern consvar_t cv_newspeedometer;
-
-extern consvar_t cv_saltyhop;
-extern consvar_t cv_saltyhopsfx;
-extern consvar_t cv_saltysquish;
-
-extern consvar_t cv_driftsparkpulse;
-extern consvar_t cv_gravstretch;
-extern consvar_t cv_sloperoll;
-extern consvar_t cv_spriteroll;
-extern consvar_t cv_sliptideroll;
-extern consvar_t cv_slamsound;
-extern consvar_t cv_sloperolldist;
-extern consvar_t cv_sparkroll;
-
-extern consvar_t cv_cechotoggle;
 
 #ifndef NONET
 extern consvar_t cv_chatlogsize;
