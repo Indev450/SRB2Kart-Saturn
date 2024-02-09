@@ -7358,16 +7358,6 @@ void K_LoadKartHUDGraphics(void)
 	}
 
 	kp_yougotem = (patch_t *) W_CachePatchName("YOUGOTEM", PU_HUDGFX);
-
-	if (snw_speedo) // snowy speedometer
-	{
-		skp_smallsticker = 	  W_CachePatchName("SP_SMSTC", PU_HUDGFX);
-		skp_speedpatches[0] = W_CachePatchName("K_TRNULL", PU_HUDGFX); // lolxd
-		skp_speedpatches[1] = W_CachePatchName("SP_MKMH",  PU_HUDGFX);
-		skp_speedpatches[2] = W_CachePatchName("SP_MMPH",  PU_HUDGFX);
-		skp_speedpatches[3] = W_CachePatchName("SP_MFRAC", PU_HUDGFX);
-		skp_speedpatches[4] = W_CachePatchName("SP_MPERC", PU_HUDGFX);
-	}
 }
 
 // For the item toggle menu
