@@ -7063,8 +7063,8 @@ void K_LoadKartHUDGraphics(void)
 	}
 
 	if (big_lap){		
-			kp_lapstickerbig = 		W_CachePatchName("K_STLAPB", PU_HUDGFX);
-			kp_lapstickerbig2 = 		W_CachePatchName("K_STLA2B", PU_HUDGFX);
+		kp_lapstickerbig = 		W_CachePatchName("K_STLAPB", PU_HUDGFX);
+		kp_lapstickerbig2 = 	W_CachePatchName("K_STLA2B", PU_HUDGFX);
 	}
 
 	//Colourized hud
@@ -7089,10 +7089,10 @@ void K_LoadKartHUDGraphics(void)
 			kp_lapstickerbig2clr = 		W_CachePatchName("K_SCLA2B", PU_HUDGFX);
 		}
 
-		if (xtra_speedo)
+		if (xtra_speedo && xtra_speedo_clr)
 			skp_smallstickerclr = 	  	W_CachePatchName("SC_SMSTC", PU_HUDGFX);
 		
-		if (achi_speedo) 
+		if (achi_speedo && achi_speedo_clr) 
 		{
 			skp_smallstickerachiclr = 	  W_CachePatchName("SC_AMSTC", PU_HUDGFX);
 			skp_speedpatchesachiclr[0] = W_CachePatchName("K_TRNULL", PU_HUDGFX); // lolxd
@@ -8740,15 +8740,13 @@ static void K_drawKartSpeedometer(void)
 	}
 	else if (cv_newspeedometer.value == 2 && xtra_speedo) // why bother if we dont?
 	{
-		if (!K_UseColorHud())
-			//V_DrawScaledPatch(SPDM_X + 1, SPDM_Y + 4, (V_HUDTRANS|splitflags), (skp_smallsticker));
-			V_DrawStretchyFixedPatch((SPDM_X-1)<<FRACBITS, (SPDM_Y + 5)<<FRACBITS, FRACUNIT*0.765, FRACUNIT*0.55, (V_HUDTRANS|splitflags), (skp_smallsticker), NULL);
-		else //Colourized hud
+		if (K_UseColorHud() && xtra_speedo_clr) //Colourized hud
 		{
 			UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
-			//V_DrawMappedPatch(SPDM_X + 1, SPDM_Y + 4, (V_HUDTRANS|splitflags), (skp_smallstickerclr), colormap);
 			V_DrawStretchyFixedPatch((SPDM_X-1)<<FRACBITS, (SPDM_Y + 5)<<FRACBITS, FRACUNIT*0.765, FRACUNIT*0.55, (V_HUDTRANS|splitflags), (skp_smallstickerclr), colormap);
 		}
+		else
+			V_DrawStretchyFixedPatch((SPDM_X-1)<<FRACBITS, (SPDM_Y + 5)<<FRACBITS, FRACUNIT*0.765, FRACUNIT*0.55, (V_HUDTRANS|splitflags), (skp_smallsticker), NULL);
 
 		V_DrawRankNum(SPDM_X + 26, SPDM_Y + 4, V_HUDTRANS|splitflags, convSpeed, 3, NULL);
 
@@ -8756,19 +8754,19 @@ static void K_drawKartSpeedometer(void)
 	}
 	else if (cv_newspeedometer.value == 3 && achi_speedo) // why bother if we dont?
 	{
-		if (!K_UseColorHud())
-		{
-			V_DrawScaledPatch(SPDM_X + 1, SPDM_Y + 4, (V_HUDTRANS|splitflags), (skp_smallstickerachi));
-			V_DrawRankNum(SPDM_X + 26, SPDM_Y + 4, V_HUDTRANS|splitflags, convSpeed, 3, NULL);
-			V_DrawScaledPatch(SPDM_X + 31, SPDM_Y + 4, V_HUDTRANS|splitflags, skp_speedpatchesachi[cv_kartspeedometer.value]);
-		}
-		else //Colourized hud
+		if (K_UseColorHud() && achi_speedo_clr) //Colourized hud
 		{
 			UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
 			V_DrawMappedPatch(SPDM_X + 1, SPDM_Y + 4, (V_HUDTRANS|splitflags), (skp_smallstickerachiclr), colormap);
 			V_DrawRankNum(SPDM_X + 26, SPDM_Y + 4, V_HUDTRANS|splitflags, convSpeed, 3, NULL);
 			V_DrawMappedPatch(SPDM_X + 31, SPDM_Y + 4, V_HUDTRANS|splitflags, skp_speedpatchesachiclr[cv_kartspeedometer.value], colormap);
 		}
+		else
+		{
+			V_DrawScaledPatch(SPDM_X + 1, SPDM_Y + 4, (V_HUDTRANS|splitflags), (skp_smallstickerachi));
+			V_DrawRankNum(SPDM_X + 26, SPDM_Y + 4, V_HUDTRANS|splitflags, convSpeed, 3, NULL);
+			V_DrawScaledPatch(SPDM_X + 31, SPDM_Y + 4, V_HUDTRANS|splitflags, skp_speedpatchesachi[cv_kartspeedometer.value]);
+		}	
 	}
 	
 	// Kart Z speedo bullshit...
