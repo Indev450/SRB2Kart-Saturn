@@ -17,7 +17,7 @@ extern const UINT8 KartColor_Opposite[MAXSKINCOLORS*2];
 void K_RainbowColormap(UINT8 *dest_colormap, UINT8 skincolor);
 void K_GenerateKartColormap(UINT8 *dest_colormap, INT32 skinnum, UINT8 color, boolean local);
 UINT8 K_GetKartColorByName(const char *name);
-UINT8 K_GetHudColor();
+UINT8 K_GetHudColor(void);
 
 void K_RegisterKartStuff(void);
 
@@ -26,6 +26,10 @@ extern consvar_t cv_colorizeditembox;
 extern consvar_t cv_colorizedhudcolor;
 extern consvar_t cv_darkitembox;
 extern consvar_t cv_biglaps;
+extern consvar_t cv_highresportrait;
+extern consvar_t cv_stat_xoffset;
+extern consvar_t cv_stat_yoffset;
+extern consvar_t cv_showstats;
 
 boolean K_IsPlayerLosing(player_t *player);
 boolean K_IsPlayerWanted(player_t *player);
@@ -45,6 +49,7 @@ void K_ExplodePlayer(player_t *player, mobj_t *source, mobj_t *inflictor);
 void K_StealBumper(player_t *player, player_t *victim, boolean force);
 void K_SpawnKartExplosion(fixed_t x, fixed_t y, fixed_t z, fixed_t radius, INT32 number, mobjtype_t type, angle_t rotangle, boolean spawncenter, boolean ghostit, mobj_t *source);
 void K_SpawnMineExplosion(mobj_t *source, UINT8 color);
+void K_RollMobjBySlopes(mobj_t *mo, boolean usedistance);
 void K_SpawnBoostTrail(player_t *player);
 void K_SpawnSparkleTrail(mobj_t *mo);
 void K_SpawnWipeoutTrail(mobj_t *mo, boolean translucent);

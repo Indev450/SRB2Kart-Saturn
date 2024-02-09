@@ -63,7 +63,6 @@ typedef struct
 	INT32 fadergba; // The colour the colourmaps fade to
 
 	lighttable_t *colormap;
-	
 
 #ifdef HWRENDER
 	// The id of the hardware lighttable. Zero means it does not exist yet.
@@ -406,6 +405,8 @@ typedef enum
 	ST_POSITIVE,
 	ST_NEGATIVE
 } slopetype_t;
+
+#define HORIZONSPECIAL 41
 
 typedef struct line_s
 {

@@ -1342,7 +1342,7 @@ void CURLGetFile(void)
 				if (easyres == CURLE_HTTP_RETURNED_ERROR)
 					curl_easy_getinfo(e, CURLINFO_RESPONSE_CODE, &response_code);
 
-				easy_handle_error = (response_code) ? va("HTTP reponse code %ld", response_code) : curl_easy_strerror(easyres);
+				easy_handle_error = (response_code) ? va("HTTP response code %ld", response_code) : curl_easy_strerror(easyres);
 				curl_curfile->status = FS_FALLBACK;
 				curl_curfile->currentsize = curl_origfilesize;
 				curl_curfile->totalsize = curl_origtotalfilesize;

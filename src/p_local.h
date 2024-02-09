@@ -142,7 +142,6 @@ extern consvar_t cv_quaketilt;
 extern consvar_t cv_tiltsmoothing;
 
 extern consvar_t cv_actionmovie;
-extern consvar_t cv_windowquake;
 
 extern fixed_t t_cam_dist, t_cam_height, t_cam_rotate;
 extern fixed_t t_cam2_dist, t_cam2_height, t_cam2_rotate;

@@ -1149,6 +1149,7 @@ void HWR_DrawMD2(gr_vissprite_t *spr)
 		INT32 tics = spr->mobj->tics;
 		//mdlframe_t *next = NULL;
 		const UINT8 flip = (UINT8)((spr->mobj->eflags & MFE_VERTICALFLIP) == MFE_VERTICALFLIP);
+		const UINT8 hflip = (UINT8)(!(spr->mobj->mirrored) != !(spr->mobj->frame & FF_HORIZONTALFLIP));
 		spritedef_t *sprdef;
 		spriteframe_t *sprframe;
 		spriteinfo_t *sprinfo;
@@ -1366,17 +1367,16 @@ void HWR_DrawMD2(gr_vissprite_t *spr)
 		angle_t sliptideroll = 0;
 
 		if (spr->mobj->player)
-			sliptideroll = ((cv_sloperoll.value) ? spr->mobj->player->sliproll : 0);
+			sliptideroll = ((cv_sloperoll.value && cv_sliptideroll.value) ? spr->mobj->player->sliproll : 0);
 
-		if ((spr->mobj->rollangle)||sliptideroll)
+		if ((spr->mobj->rollangle)||(sliptideroll && cv_sliptideroll.value))
 		{
 			angle_t rollang = 0;
 			rollfactor = ((spr->mobj->rollmodel == true) ? 1 : 0);
 
-			if (spr->mobj->player)
-				rollang = (spr->mobj->rollangle*rollfactor) + (sliptideroll*spr->mobj->player->sliptidemem);
-			else
-				rollang = (spr->mobj->rollangle*rollfactor);
+			rollang = (spr->mobj->player && sliptideroll && cv_sliptideroll.value)
+            ? (spr->mobj->rollangle * rollfactor) + (sliptideroll * spr->mobj->player->sliptidemem)
+            : (spr->mobj->rollangle * rollfactor);
 			
 			fixed_t anglef = AngleFixed(rollang);
 			p.rollangle = FIXED_TO_FLOAT(anglef);
@@ -1401,18 +1401,55 @@ void HWR_DrawMD2(gr_vissprite_t *spr)
 
 		
 		p.anglex = 0.0f;
+		p.anglex2 = 0.0f;
 #ifdef USE_FTRANSFORM_ANGLEZ
 		// Slope rotation from Kart
 		p.anglez = 0.0f;
+		p.anglez2 = 0.0f;
+
+		// use secondary angles for the slope rotation
 		if (spr->mobj->standingslope)
 		{
 			fixed_t tempz = spr->mobj->standingslope->normal.z;
 			fixed_t tempy = spr->mobj->standingslope->normal.y;
 			fixed_t tempx = spr->mobj->standingslope->normal.x;
 			fixed_t tempangle = AngleFixed(R_PointToAngle2(0, 0, FixedSqrt(FixedMul(tempy, tempy) + FixedMul(tempz, tempz)), tempx));
-			p.anglez = FIXED_TO_FLOAT(tempangle);
+			p.anglez2 = FIXED_TO_FLOAT(tempangle);
 			tempangle = -AngleFixed(R_PointToAngle2(0, 0, tempz, tempy));
-			p.anglex = FIXED_TO_FLOAT(tempangle);
+			p.anglex2 = FIXED_TO_FLOAT(tempangle);
+		}
+		else if ((spr->mobj->sloperoll || spr->mobj->slopepitch) && (!P_IsObjectOnGround(spr->mobj)) && (!paused))
+		{
+			SINT8 flipfactor = flip ? -1 : 1;
+
+			angle_t camang = R_PointToAngle(interp.x, interp.y);
+			angle_t mobjang;
+
+			if (spr->mobj->flags & (MF_NOTHINK|MF_SCENERY))
+				mobjang = spr->mobj->angle;
+			else
+				mobjang = interp.angle;
+
+			angle_t fmoang;
+			fmoang = camang - mobjang;
+
+			// slopepitch
+			p.anglex += flipfactor*FIXED_TO_FLOAT( AngleFixed(FixedMul(FINESINE((camang-fmoang) >> ANGLETOFINESHIFT), interp.slopepitch)) );
+			p.anglez -= flipfactor*FIXED_TO_FLOAT( AngleFixed(FixedMul(FINECOSINE((camang-fmoang) >> ANGLETOFINESHIFT), interp.slopepitch)) );
+
+			// sloperoll
+			p.anglex += flipfactor*FIXED_TO_FLOAT( AngleFixed(FixedMul(FINECOSINE((camang-fmoang) >> ANGLETOFINESHIFT), interp.sloperoll)) );
+			p.anglez += flipfactor*FIXED_TO_FLOAT( AngleFixed(FixedMul(FINESINE((camang-fmoang) >> ANGLETOFINESHIFT), interp.sloperoll)) );
+			p.roll = true;
+		}
+
+		// pitch and roll
+		if (interp.roll || interp.pitch)
+		{
+			SINT8 flipfactor = flip ? -1 : 1;
+			p.anglex += flipfactor*FIXED_TO_FLOAT(AngleFixed(interp.roll));
+			p.anglez -= flipfactor*FIXED_TO_FLOAT(AngleFixed(interp.pitch));
+			p.roll = true;
 		}
 #endif
 
@@ -1421,22 +1458,24 @@ void HWR_DrawMD2(gr_vissprite_t *spr)
 		p.mirror = atransform.mirror; // from Kart
 #endif
 
-		HWD.pfnSetShader(4);	// model shader
+		HWD.pfnSetShader(SHADER_MODEL);	// model shader
 		{
-		float this_scale = FIXED_TO_FLOAT(interp.scale);
+			SINT8 flipfactor = flip ? -1 : 1;
+			
+			float this_scale = FIXED_TO_FLOAT(interp.scale);
 
 			float xs = this_scale * FIXED_TO_FLOAT(interp.spritexscale);
 			float ys = this_scale * FIXED_TO_FLOAT(interp.spriteyscale);
 
-			float ox = xs * FIXED_TO_FLOAT(interp.spritexoffset);
-			float oy = ys * FIXED_TO_FLOAT(interp.spriteyoffset);
+			float ox = xs * flipfactor*FIXED_TO_FLOAT(interp.spritexoffset);
+			float oy = ys * flipfactor*FIXED_TO_FLOAT(interp.spriteyoffset);
 
 			// offset perpendicular to the camera angle
 			p.x -= ox * gr_viewsin;
 			p.y += ox * gr_viewcos;
 			p.z += oy;
 
-			HWD.pfnDrawModel(md2->model, frame, durs, tics, nextFrame, &p, md2->scale * xs, md2->scale * ys, flip, &Surf);
+			HWD.pfnDrawModel(md2->model, frame, durs, tics, nextFrame, &p, md2->scale * xs, md2->scale * ys, flip, hflip, &Surf);
 		}
 	}
 }

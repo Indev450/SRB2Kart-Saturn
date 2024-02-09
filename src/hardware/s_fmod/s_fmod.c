@@ -534,9 +534,6 @@ EXPORT INT32 HWRAPI(Startup) (I_Error_t FatalErrorFunction, snddev_t *snd_dev)
 			case FSOUND_OUTPUT_A3D:
 				DBG_Printf("FMOD driver: A3D driver.\n");
 				break;
-			case FSOUND_OUTPUT_XBOX:
-				DBG_Printf("FMOD driver: Xbox driver\n");
-				break;
 			case FSOUND_OUTPUT_OSS:
 				DBG_Printf("FMOD driver: Linux/Unix OSS (Open Sound System) driver, i.e. the kernel sound drivers.\n");
 				break;
@@ -548,12 +545,6 @@ EXPORT INT32 HWRAPI(Startup) (I_Error_t FatalErrorFunction, snddev_t *snd_dev)
 				break;
 			case FSOUND_OUTPUT_MAC:
 				DBG_Printf("FMOD driver: Mac SoundManager driver\n");
-				break;
-			case FSOUND_OUTPUT_PS2:
-				DBG_Printf("FMOD driver: PlayStation 2 driver\n");
-				break;
-			case FSOUND_OUTPUT_GC:
-				DBG_Printf("FMOD driver: Gamecube driver\n");
 				break;
 			case FSOUND_OUTPUT_NOSOUND_NONREALTIME:
 				DBG_Printf("FMOD driver: This is the same as nosound, but the sound generation is driven by FSOUND_Update\n");

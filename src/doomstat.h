@@ -108,8 +108,6 @@ extern boolean digital_disabled;
 extern boolean menuactive; // Menu overlaid?
 extern UINT8 paused; // Game paused?
 extern UINT8 window_notinfocus; // are we in focus? (backend independant -- handles auto pausing and display of "focus lost" message)
-extern INT32 window_x;
-extern INT32 window_y;
 
 extern boolean nodrawers;
 extern boolean noblit;

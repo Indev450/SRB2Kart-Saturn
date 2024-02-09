@@ -541,11 +541,20 @@ void Y_IntermissionDrawer(void)
 					// i fucking hate this i fucking hate this i hate this so much
 					if (!players[data.match.num[i]].skinlocal) {
 						if (!players[data.match.num[i]].localskin)
-							V_DrawMappedPatch(x+16, y-4, 0, facerankprefix[*data.match.character[i]], colormap);
+							if (cv_highresportrait.value)
+								V_DrawSmallMappedPatch(x+16, y-4, 0, facewantprefix[*data.match.character[i]], colormap);
+							else	
+								V_DrawMappedPatch(x+16, y-4, 0, facerankprefix[*data.match.character[i]], colormap);
 						else
-							V_DrawMappedPatch(x+16, y-4, 0, facerankprefix[players[data.match.num[i]].localskin - 1], colormap);
+							if (cv_highresportrait.value)
+								V_DrawSmallMappedPatch(x+16, y-4, 0, facewantprefix[players[data.match.num[i]].localskin - 1], colormap);
+							else
+								V_DrawMappedPatch(x+16, y-4, 0, facerankprefix[players[data.match.num[i]].localskin - 1], colormap);
 					} else {
-						V_DrawMappedPatch(x+16, y-4, 0, localfacerankprefix[players[data.match.num[i]].localskin - 1], colormap);
+						if (cv_highresportrait.value)
+							V_DrawSmallMappedPatch(x+16, y-4, 0, localfacewantprefix[players[data.match.num[i]].localskin - 1], colormap);
+						else
+							V_DrawMappedPatch(x+16, y-4, 0, localfacerankprefix[players[data.match.num[i]].localskin - 1], colormap);
 					}
 				}
 
@@ -1320,7 +1329,10 @@ void Y_VoteDrawer(void)
 			if (players[i].skincolor)
 			{
 				UINT8 *colormap = R_GetTranslationColormap(players[i].skin, players[i].skincolor, GTC_CACHE);
-				V_DrawMappedPatch(x+24, y+9, V_SNAPTOLEFT, (players[i].skinlocal ? localfacerankprefix : facerankprefix)[((players[i].localskin) ? players[i].localskin-1 : players[i].skin)], colormap);
+				if (cv_highresportrait.value)
+					V_DrawSmallMappedPatch(x+24, y+9, V_SNAPTOLEFT, (players[i].skinlocal ? localfacewantprefix : facewantprefix)[((players[i].localskin) ? players[i].localskin-1 : players[i].skin)], colormap);
+				else
+					V_DrawMappedPatch(x+24, y+9, V_SNAPTOLEFT, (players[i].skinlocal ? localfacerankprefix : facerankprefix)[((players[i].localskin) ? players[i].localskin-1 : players[i].skin)], colormap);
 			}
 
 			if (!splitscreen && i == consoleplayer)

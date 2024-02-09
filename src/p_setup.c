@@ -2936,7 +2936,9 @@ boolean P_SetupLevel(boolean skipprecip)
 
 	// Make sure all sounds are stopped before Z_FreeTags.
 	S_StopSounds();
-	S_ClearSfx();
+
+	if (!S_PrecacheSound())
+		S_ClearSfx();
 
 	// As oddly named as this is, this handles music only.
 	// We should be fine starting it here.
@@ -3148,7 +3150,11 @@ boolean P_SetupLevel(boolean skipprecip)
 		// Correct missing sidedefs & deep water trick
 		HWR_CorrectSWTricks();
 		HWR_CreatePlanePolygons((INT32)numnodes - 1);
+		
+		if (HWR_ShouldUsePaletteRendering()) //unsure if this is the right place, but seems to work since we dont have HWR_LoadLevel like srb2
+			HWR_SetMapPalette();
 	}
+
 #endif
 
 	// oh god I hope this helps
@@ -3490,11 +3496,8 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, boolean local)
 
 	if (wadfiles[wadnum]->important)
 		partadd_important = true;
-	
-	if (local)
-		wadfiles[wadnum]->localfile = true;
-	else
-		wadfiles[wadnum]->localfile = false;
+
+	wadfiles[wadnum]->localfile = local;
 
 	//
 	// search for sound replacements
@@ -3503,17 +3506,22 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, boolean local)
 	for (i = 0; i < numlumps; i++, lumpinfo++)
 	{
 		name = lumpinfo->name;
+		lumpnum_t lumpnum = i|(wadnum<<16);
 		if (name[0] == 'D')
 		{
 			if (name[1] == 'S') for (j = 1; j < NUMSFX; j++)
 			{
-				if (S_sfx[j].name && !strnicmp(S_sfx[j].name, name + 2, 6))
+				if (S_sfx[j].name && !strnicmp(S_sfx[j].name, name + 2, 6) && S_sfx[j].lumpnum != lumpnum && S_sfx[j].lumpnum != LUMPERROR)
 				{
 					// the sound will be reloaded when needed,
 					// since sfx->data will be NULL
 					CONS_Debug(DBG_SETUP, "Sound %.8s replaced\n", name);
 
 					I_FreeSfx(&S_sfx[j]);
+
+					// Re-cache it
+					if (S_PrecacheSound())
+						S_sfx[j].data = I_GetSfx(&S_sfx[j]);
 
 					sreplaces++;
 				}
@@ -3555,6 +3563,11 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, boolean local)
 	S_LoadMusicDefs(wadnum);
 
 	//
+	// edit music defs for stuff like musictest
+	//
+	S_LoadMTDefs(wadnum);
+
+	//
 	// search for maps
 	//
 	lumpinfo = wadfiles[wadnum]->lumpinfo;
@@ -3586,6 +3599,9 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, boolean local)
 	}
 	if (!mapsadded)
 		CONS_Printf(M_GetText("No maps added\n"));
+
+	// TODO: Experimental SPRTINFO support, test first
+	R_LoadSpriteInfoLumps(wadnum, wadfiles[wadnum]->numlumps);
 
 	refreshdirmenu &= ~REFRESHDIR_GAMEDATA; // Under usual circumstances we'd wait for REFRESHDIR_GAMEDATA to disappear the next frame, but it's a bit too dangerous for that...
 	partadd_stage = 0;

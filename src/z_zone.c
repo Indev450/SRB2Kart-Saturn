@@ -574,6 +574,9 @@ void Z_ChangeTag(void *ptr, INT32 tag)
 		I_Error("Internal memory management error: "
 			"tried to make block purgable but it has no owner");
 
+	// No, please, don't make my PU_STATIC patch NULL! It supposed to be always valid!
+	if (block->tag < 10) return;
+
 	block->tag = tag;
 }
 

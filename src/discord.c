@@ -101,7 +101,7 @@ static void DRPC_HandleReady(const DiscordUser *user)
 {
 	if (cv_discordstreamer.value)
 	{
-		CONS_Printf("Discord: connected to %s\n", user->username);
+		CONS_Printf("Discord: connection successful\n");
 	}
 	else
 	{
@@ -480,14 +480,18 @@ void DRPC_UpdatePresence(void)
 	// Server info
 	if (netgame)
 	{
+#ifdef MASTERSERVER
 		if (cv_advertise.value)
 		{
 			discordPresence.state = "Public";
 		}
 		else
 		{
+#endif
 			discordPresence.state = "Private";
+#ifdef MASTERSERVER			
 		}
+#endif
 
 		discordPresence.partyId = server_context; // Thanks, whoever gave us Mumble support, for implementing the EXACT thing Discord wanted for this field!
 		discordPresence.partySize = D_NumPlayers(); // Players in server
