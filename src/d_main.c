@@ -1079,7 +1079,9 @@ boolean found_extra_kart;
 boolean found_extra2_kart;
 
 boolean xtra_speedo; // extra speedometer check
+boolean xtra_speedo_clr; // extra speedometer colour check
 boolean achi_speedo; // achiiro speedometer check
+boolean achi_speedo_clr; // extra speedometer colour check
 boolean clr_hud; // colour hud check
 boolean big_lap; // bigger lap counter
 boolean big_lap_color; // bigger lap counter but colour
@@ -1451,9 +1453,15 @@ void D_SRB2Main(void)
 		if (W_CheckMultipleLumps("SP_SMSTC", "K_TRNULL", "SP_MKMH", "SP_MMPH", "SP_MFRAC", "SP_MPERC", NULL))
 			xtra_speedo = true;
 		
+		if (W_CheckMultipleLumps("SC_SMSTC", NULL))
+			xtra_speedo_clr = true;
+
 		// now check for achii speedometer stuff
 		if (W_CheckMultipleLumps("SP_AMSTC", "K_TRNULL", "SP_AKMH", "SP_AMPH", "SP_AFRAC", "SP_APERC", NULL))
 			achi_speedo = true;
+		
+		if (W_CheckMultipleLumps("SC_AMSTC", "K_TRNULL", "SC_AKMH", "SC_AMPH", "SC_AFRAC", "SC_APERC", NULL))
+			achi_speedo_clr = true;
 
 		// check for bigger lap count
 		if (W_CheckMultipleLumps("K_STLAPB", "K_STLA2B", NULL)) 
@@ -1461,7 +1469,7 @@ void D_SRB2Main(void)
 
 		// now check for colour hud stuff
 		if (W_CheckMultipleLumps("K_SCTIME", "K_SCTIMW", "K_SCLAPS", "K_SCLAPW", \
-			"K_SCBALN", "K_SCBALW", "K_SCKARM", "K_SCTOUT", "K_ISMULC", "K_ITMULC", "K_ITBC","K_ITBCD", "K_ISBC", "K_ISBCD", NULL))
+			"K_SCBALN", "K_SCBALW", "K_SCKARM", "K_SCTOUT", "K_ISMULC", "K_ITMULC", "K_ITBC", "K_ITBCD", "K_ISBC", "K_ISBCD", NULL))
 			clr_hud = true;
 
 		// check for bigger lap count but color** its color bitch
