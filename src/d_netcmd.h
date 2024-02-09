@@ -167,21 +167,15 @@ extern consvar_t cv_showlapemblem;
 extern consvar_t cv_showviewpointtext;
 extern consvar_t cv_luaimmersion;
 extern consvar_t cv_fakelocalskin;
-extern consvar_t cv_showlocalskinmenus;
 
 extern consvar_t cv_skipmapcheck;
 
 extern consvar_t cv_sleep;
 
-#define SKINSELECTSPIN_PAIN 25
-extern consvar_t cv_skinselectspin;
-
 extern consvar_t cv_perfstats;
 extern consvar_t cv_ps_thinkframe_page;
 extern consvar_t cv_ps_samplesize;
 extern consvar_t cv_ps_descriptor;
-
-extern consvar_t cv_showtrackaddon;
 
 typedef enum
 {

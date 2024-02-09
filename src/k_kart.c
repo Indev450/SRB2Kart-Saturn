@@ -701,35 +701,33 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_showstats);
 	CV_RegisterVar(&cv_showinput);
 	CV_RegisterVar(&cv_newspeedometer);
-	
-	
+
 	CV_RegisterVar(&cv_saltyhop);
 	CV_RegisterVar(&cv_saltyhopsfx);
 	CV_RegisterVar(&cv_saltysquish);
-	
+
 	//Colourized HUD
 	CV_RegisterVar(&cv_colorizedhud);
 	CV_RegisterVar(&cv_colorizedhudcolor);
 	CV_RegisterVar(&cv_colorizeditembox);
-	
+
 	CV_RegisterVar(&cv_darkitembox);
-	
+
 	CV_RegisterVar(&cv_biglaps);
-	
+
 	CV_RegisterVar(&cv_highresportrait);
-	
+
 	CV_RegisterVar(&cv_slamsound);
-	
+
 	CV_RegisterVar(&cv_minihead);
 	CV_RegisterVar(&cv_showminimapnames);
 	CV_RegisterVar(&cv_showlapemblem);
-	
-	CV_RegisterVar(&cv_stagetitle);	
-	
-	CV_RegisterVar(&cv_lessflicker);
-	
-	CV_RegisterVar(&cv_mouseturn);
 
+	CV_RegisterVar(&cv_stagetitle);	
+
+	CV_RegisterVar(&cv_lessflicker);
+
+	CV_RegisterVar(&cv_mouseturn);
 }
 
 //}
