@@ -531,6 +531,12 @@ static consvar_t cv_dummycontinues = {"dummycontinues", "0", CV_HIDEN, liveslimi
 //static consvar_t cv_dummymares = {"dummymares", "Overall", CV_HIDEN|CV_CALL, dummymares_cons_t, Dummymares_OnChange, 0, NULL, NULL, 0, 0, NULL};
 static consvar_t cv_dummystaff = {"dummystaff", "0", CV_HIDEN|CV_CALL, dummystaff_cons_t, Dummystaff_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_showtrackaddon = {"showtrackaddon", "Yes", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+static CV_PossibleValue_t skinselectspin_cons_t[] = {
+	{0, "Off"}, {1, "Slow"}, {2, "2"}, {3, "3"}, {4, "4"}, {5, "5"}, {6, "6"}, {7, "7"}, {8, "8"}, {9, "9"}, {10, "Fast"}, {SKINSELECTSPIN_PAIN, "Pain"}, {0, NULL}};
+consvar_t cv_skinselectspin = {"skinselectspin", "5", CV_SAVE, skinselectspin_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 // ==========================================================================
 // ORGANIZATION START.
 // ==========================================================================

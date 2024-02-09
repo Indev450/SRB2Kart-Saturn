@@ -20,15 +20,23 @@ UINT8 K_GetKartColorByName(const char *name);
 
 void K_RegisterKartStuff(void);
 
-extern consvar_t cv_colorizedhud;
-extern consvar_t cv_colorizeditembox;
-extern consvar_t cv_colorizedhudcolor;
+extern consvar_t cv_showinput;
+extern consvar_t cv_newspeedometer;
 extern consvar_t cv_darkitembox;
 extern consvar_t cv_biglaps;
 extern consvar_t cv_highresportrait;
-extern consvar_t cv_stat_xoffset;
-extern consvar_t cv_stat_yoffset;
 extern consvar_t cv_showstats;
+extern consvar_t cv_showfreeplay;
+
+extern consvar_t cv_colorizedhud;
+extern consvar_t cv_colorizeditembox;
+extern consvar_t cv_colorizedhudcolor;
+
+extern consvar_t cv_saltyhop;
+extern consvar_t cv_saltyhopsfx;
+extern consvar_t cv_saltysquish;
+extern consvar_t cv_slamsound;
+
 
 boolean K_IsPlayerLosing(player_t *player);
 boolean K_IsPlayerWanted(player_t *player);

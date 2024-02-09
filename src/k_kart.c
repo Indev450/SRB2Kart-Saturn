@@ -76,6 +76,8 @@ consvar_t cv_saltyhop = {"hardcodehop", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL,
 consvar_t cv_saltyhopsfx = {"hardcodehopsfx", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_saltysquish = {"hardcodehopsquish", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_slamsound = {"slamsound", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 //Colourized HUD
 consvar_t cv_colorizedhud = {"colorizedhud", "Off", CV_SAVE|CV_CALL, CV_OnOff, Saturn_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_colorizeditembox = {"colorizeditembox", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -88,6 +90,9 @@ consvar_t cv_highresportrait = {"highresportrait", "Off", CV_SAVE, CV_OnOff, NUL
 consvar_t cv_darkitembox = {"darkitembox", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; //itembox gets a dark box with specific items
 
 consvar_t cv_biglaps = {"biglaphud", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; //here for ppl who dont want to make 2 more patches for their custom hud
+
+// Show "FREE PLAY" when you're alone. :(
+consvar_t cv_showfreeplay = {"showfreeplay", "Yes", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 // SOME IMPORTANT VARIABLES DEFINED IN DOOMDEF.H:
 // gamespeed is cc (0 for easy, 1 for normal, 2 for hard)
@@ -716,35 +721,35 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_showstats);
 	CV_RegisterVar(&cv_showinput);
 	CV_RegisterVar(&cv_newspeedometer);
-	
-	
+
 	CV_RegisterVar(&cv_saltyhop);
 	CV_RegisterVar(&cv_saltyhopsfx);
 	CV_RegisterVar(&cv_saltysquish);
-	
+
 	//Colourized HUD
 	CV_RegisterVar(&cv_colorizedhud);
 	CV_RegisterVar(&cv_colorizedhudcolor);
 	CV_RegisterVar(&cv_colorizeditembox);
-	
+
 	CV_RegisterVar(&cv_darkitembox);
 	
+	CV_RegisterVar(&cv_showfreeplay);
+
 	CV_RegisterVar(&cv_biglaps);
-	
+
 	CV_RegisterVar(&cv_highresportrait);
-	
+
 	CV_RegisterVar(&cv_slamsound);
-	
+
 	CV_RegisterVar(&cv_minihead);
 	CV_RegisterVar(&cv_showminimapnames);
 	CV_RegisterVar(&cv_showlapemblem);
-	
-	CV_RegisterVar(&cv_stagetitle);	
-	
-	CV_RegisterVar(&cv_lessflicker);
-	
-	CV_RegisterVar(&cv_mouseturn);
 
+	CV_RegisterVar(&cv_stagetitle);	
+
+	CV_RegisterVar(&cv_lessflicker);
+
+	CV_RegisterVar(&cv_mouseturn);
 }
 
 //}

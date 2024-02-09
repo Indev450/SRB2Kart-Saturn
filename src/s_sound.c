@@ -273,6 +273,13 @@ void S_RegisterSoundStuff(void)
 		sound_disabled = true;
 		return;
 	}
+	
+	CV_RegisterVar(&cv_soundvolume);
+	CV_RegisterVar(&cv_digmusicvolume);
+#ifndef NO_MIDI
+	CV_RegisterVar(&cv_midimusicvolume);
+#endif
+	CV_RegisterVar(&cv_numChannels);
 
 	CV_RegisterVar(&stereoreverse);
 	CV_RegisterVar(&precachesound);
@@ -283,6 +290,17 @@ void S_RegisterSoundStuff(void)
 	CV_RegisterVar(&cv_gamedigimusic);
 #ifndef NO_MIDI
 	CV_RegisterVar(&cv_gamemidimusic);
+#endif
+
+	CV_RegisterVar(&cv_audbuffersize); 
+
+#ifdef HAVE_OPENMPT
+	CV_RegisterVar(&cv_modfilter);
+	CV_RegisterVar(&cv_stereosep);
+	CV_RegisterVar(&cv_amigafilter);
+#if OPENMPT_API_VERSION_MAJOR < 1 && OPENMPT_API_VERSION_MINOR > 4
+	CV_RegisterVar(&cv_amigatype);
+#endif
 #endif
 
 	//bird music stuff
