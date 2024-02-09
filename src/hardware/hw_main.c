@@ -2697,7 +2697,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 boolean checkforemptylines = true;
 // Don't modify anything here, just check
 // Kalaron: Modified for sloped linedefs
-static boolean CheckClip(sector_t * afrontsector, sector_t * abacksector)
+FUNCINLINE ATTRINLINE static boolean CheckClip(sector_t * afrontsector, sector_t * abacksector)
 {
 	fixed_t frontf1,frontf2, frontc1, frontc2; // front floor/ceiling ends
 	fixed_t backf1, backf2, backc1, backc2; // back floor ceiling ends
@@ -2753,7 +2753,8 @@ static boolean CheckClip(sector_t * afrontsector, sector_t * abacksector)
 	}
 
 	// using this check with portals causes weird culling issues on ante-station
-	if (!portalclipline && (afrontsector == viewsector || abacksector == viewsector))
+	//if (!portalclipline && (afrontsector == viewsector || abacksector == viewsector))
+	if (afrontsector == viewsector || abacksector == viewsector)
 	{
 		fixed_t viewf1, viewf2, viewc1, viewc2;
 		if (afrontsector == viewsector)
@@ -2787,9 +2788,9 @@ static boolean CheckClip(sector_t * afrontsector, sector_t * abacksector)
 	if (backc1 <= frontf1 && backc2 <= frontf2)
 	{
 		checkforemptylines = false;
-		if (portalclipline)// during portal rendering view position may cause undesired culling and the above code has some wrong side effects
-			return false;
-		else
+		//if (portalclipline)// during portal rendering view position may cause undesired culling and the above code has some wrong side effects
+			//return false;
+		//else
 			return true;
 	}
 
@@ -2882,6 +2883,18 @@ void HWR_AddLine(seg_t *line)
 	angle1 = R_PointToPseudoAngle(v1x, v1y);
 	angle2 = R_PointToPseudoAngle(v2x, v2y);
 
+	 // PrBoom: Back side, i.e. backface culling - read: endAngle >= startAngle!
+	if (angle2 - angle1 < ANGLE_180)
+		return;
+
+	// PrBoom: use REAL clipping math YAYYYYYYY!!!
+	if (!gld_clipper_SafeCheckRange(angle2, angle1))
+		return;
+
+	checkforemptylines = true;
+
+	gr_backsector = line->backsector;
+	
 	// do an extra culling check when rendering portals
 	// check if any line vertex is on the viewable side of the portal target line
 	// if not, the line can be culled.
@@ -2913,18 +2926,6 @@ void HWR_AddLine(seg_t *line)
 		gr_backsector = line->backsector;
 		goto doaddline;
 	}
-
-	 // PrBoom: Back side, i.e. backface culling - read: endAngle >= startAngle!
-	if (angle2 - angle1 < ANGLE_180)
-		return;
-
-	// PrBoom: use REAL clipping math YAYYYYYYY!!!
-	if (!gld_clipper_SafeCheckRange(angle2, angle1))
-		return;
-
-	checkforemptylines = true;
-
-	gr_backsector = line->backsector;
 
 	if (line->linedef->special == 40)
 	{

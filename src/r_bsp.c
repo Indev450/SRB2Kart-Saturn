@@ -368,7 +368,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec, INT32 *floorlightlevel,
 	return sec;
 }
 
-boolean R_IsEmptyLine(seg_t *line, sector_t *front, sector_t *back)
+FUNCINLINE ATTRINLINE boolean R_IsEmptyLine(seg_t *line, sector_t *front, sector_t *back)
 {
 	return (
 		!line->polyseg &&
