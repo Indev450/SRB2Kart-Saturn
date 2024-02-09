@@ -1079,7 +1079,7 @@ boolean found_extra_kart;
 boolean found_extra2_kart;
 
 boolean xtra_speedo; // extra speedometer check
-//boolean achi_speedo; // achiiro speedometer check
+boolean achi_speedo; // achiiro speedometer check
 boolean clr_hud; // colour hud check
 boolean big_lap; // bigger lap counter
 boolean big_lap_color; // bigger lap counter but colour
@@ -1452,8 +1452,8 @@ void D_SRB2Main(void)
 			xtra_speedo = true;
 		
 		// now check for achii speedometer stuff
-		//if (W_CheckMultipleLumps("SP_SMSTC", "K_TRNULL", "SP_MKMH", "SP_MMPH", "SP_MFRAC", "SP_MPERC", NULL))
-			//achi_speedo = true;
+		if (W_CheckMultipleLumps("SP_AMSTC", "K_TRNULL", "SP_AKMH", "SP_AMPH", "SP_AFRAC", "SP_APERC", NULL))
+			achi_speedo = true;
 
 		// check for bigger lap count
 		if (W_CheckMultipleLumps("K_STLAPB", "K_STLA2B", NULL)) 

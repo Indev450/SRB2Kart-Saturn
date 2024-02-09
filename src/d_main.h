@@ -30,7 +30,7 @@ extern boolean found_extra2_kart; // for use in k_kart.c
 
 // extra graphic patches for saturn specific thingies
 extern boolean xtra_speedo; // extra speedometer check
-//boolean achi_speedo; // achiiro speedometer check
+extern boolean achi_speedo; // achiiro speedometer check
 extern boolean clr_hud; // colour hud check
 extern boolean big_lap; // bigger lap counter
 extern boolean big_lap_color; // bigger lap counter but colour
