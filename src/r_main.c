@@ -437,7 +437,7 @@ angle_t R_PointToAngle2(fixed_t pviewx, fixed_t pviewy, fixed_t x, fixed_t y)
 		0;
 }
 
-angle_t R_PointToPseudoAngle (fixed_t x, fixed_t y)
+FUNCINLINE ATTRINLINE angle_t R_PointToPseudoAngle (fixed_t x, fixed_t y)
 {
 	// Note: float won't work here as it's less precise than the BAM values being passed as parameters
 	double vecx = (double)x - viewx;
