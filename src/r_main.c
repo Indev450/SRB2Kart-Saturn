@@ -1945,4 +1945,5 @@ void R_RegisterEngineStuff(void)
 	// Frame interpolation/uncapped
 	CV_RegisterVar(&cv_fpscap);
 	CV_RegisterVar(&cv_precipinterp);
+	CV_RegisterVar(&cv_mobjssector);
 }
