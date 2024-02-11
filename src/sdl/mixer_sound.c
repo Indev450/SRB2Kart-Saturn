@@ -267,13 +267,13 @@ void I_UpdateSound(void)
 
 // this is as fast as I can possibly make it.
 // sorry. more asm needed.
-static Mix_Chunk *ds2chunk(void *stream)
+static Mix_Chunk *ds2chunk(const void *stream)
 {
 	UINT16 ver, freq;
 	UINT32 samples, i, newsamples;
 	UINT8 *sound;
 
-	SINT8 *s;
+	const SINT8 *s;
 	INT16 *d;
 	INT16 o;
 	fixed_t step, frac;
@@ -326,7 +326,7 @@ static Mix_Chunk *ds2chunk(void *stream)
 
 	sound = Z_Malloc(newsamples<<2, PU_SOUND, NULL); // samples * frequency shift * bytes per sample * channels
 
-	s = (SINT8 *)stream;
+	s = (const SINT8 *)stream;
 	d = (INT16 *)sound;
 
 	i = 0;

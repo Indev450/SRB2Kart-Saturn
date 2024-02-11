@@ -281,7 +281,7 @@ char *com_argv[MAX_ARGS];
 static const char *com_null_string = "";
 static char *com_args = NULL; // current command args or NULL
 
-static void Got_NetVar(UINT8 **p, INT32 playernum);
+static void Got_NetVar(const UINT8 **p, INT32 playernum);
 
 /** Initializes command buffer and adds basic commands.
   */
@@ -1500,11 +1500,11 @@ badinput:
 
 static boolean serverloading = false;
 
-static void Got_NetVar(UINT8 **p, INT32 playernum)
+static void Got_NetVar(const UINT8 **p, INT32 playernum)
 {
 	consvar_t *cvar;
 	UINT16 netid;
-	char *svalue;
+	const char *svalue;
 	UINT8 stealth = false;
 
 	if (playernum != serverplayer && !IsPlayerAdmin(playernum) && !serverloading)
@@ -1518,9 +1518,10 @@ static void Got_NetVar(UINT8 **p, INT32 playernum)
 		}
 		return;
 	}
+
 	netid = READUINT16(*p);
 	cvar = CV_FindNetVar(netid);
-	svalue = (char *)*p;
+	svalue = (const char *)*p;
 	SKIPSTRING(*p);
 	stealth = READUINT8(*p);
 
@@ -1576,8 +1577,9 @@ void CV_SaveNetVars(UINT8 **p, boolean isdemorecording)
 	WRITEUINT16(count_p, count);
 }
 
-void CV_LoadNetVars(UINT8 **p)
+size_t CV_LoadNetVars(const UINT8 *bufstart)
 {
+	const UINT8 *p = bufstart;
 	consvar_t *cvar;
 	UINT16 count;
 
@@ -1588,11 +1590,13 @@ void CV_LoadNetVars(UINT8 **p)
 		if (cvar->flags & CV_NETVAR)
 			Setvalue(cvar, cvar->defaultvalue, true);
 
-	count = READUINT16(*p);
+	count = READUINT16(p);
 	while (count--)
-		Got_NetVar(p, 0);
+		Got_NetVar(&p, 0);
 
 	serverloading = false;
+
+	return p - bufstart;
 }
 
 static void CV_SetCVar(consvar_t *var, const char *value, boolean stealth);

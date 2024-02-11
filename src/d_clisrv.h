@@ -604,7 +604,7 @@ extern consvar_t cv_serverinfoscreen;
 void D_ClientServerInit(void);
 
 // Initialise the other field
-void RegisterNetXCmd(netxcmd_t id, void (*cmd_f)(UINT8 **p, INT32 playernum));
+void RegisterNetXCmd(netxcmd_t id, void (*cmd_f)(const UINT8 **p, INT32 playernum));
 void SendNetXCmdForPlayer(UINT8 playerid, netxcmd_t id, const void *param, size_t nparam);
 #define SendNetXCmd(id, param, nparam) SendNetXCmdForPlayer(0, id, param, nparam) // Shortcut for P1
 void SendKick(UINT8 playernum, UINT8 msg);
