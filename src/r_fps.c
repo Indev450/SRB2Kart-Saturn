@@ -39,6 +39,8 @@ consvar_t cv_fpscap = {"fpscap", "Match refresh rate", CV_SAVE, fpscap_cons_t, N
 
 consvar_t cv_precipinterp = {"precipinterpolation", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_mobjssector = {"mobjsubsectorinterp", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 UINT32 R_GetFramerateCap(void)
 {
 	if (rendermode == render_none)
@@ -315,7 +317,10 @@ void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 	//out->spritexoffset = mobj->spritexoffset;
 	//out->spriteyoffset = mobj->spriteyoffset;
 
-	out->subsector = R_PointInSubsector(out->x, out->y);
+	if (cv_mobjssector.value)
+		out->subsector = R_PointInSubsector(out->x, out->y);
+	else
+		out->subsector = mobj->subsector;
 
 	if (mobj->player)
 	{
@@ -361,7 +366,10 @@ void R_InterpolatePrecipMobjState(precipmobj_t *mobj, fixed_t frac, interpmobjst
 		out->spritexoffset = mobj->spritexoffset;
 		out->spriteyoffset = mobj->spriteyoffset;
 
-		out->subsector = R_PointInSubsector(out->x, out->y);
+		if (cv_mobjssector.value)
+			out->subsector = R_PointInSubsector(out->x, out->y);
+		else
+			out->subsector = mobj->subsector;
 
 		out->angle = R_LerpAngle(mobj->old_angle, mobj->angle, frac);
 }
