@@ -298,11 +298,29 @@ void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 	out->x = R_LerpFixed(mobj->old_x, mobj->x, frac);
 	out->y = R_LerpFixed(mobj->old_y, mobj->y, frac);
 	out->z = R_LerpFixed(mobj->old_z, mobj->z, frac);
-	out->spritexscale = mobj->resetinterp ? mobj->spritexscale : R_LerpFixed(mobj->old_spritexscale, mobj->spritexscale, frac);
-	out->spriteyscale = mobj->resetinterp ? mobj->spriteyscale : R_LerpFixed(mobj->old_spriteyscale, mobj->spriteyscale, frac);
-	out->spritexoffset = mobj->resetinterp ? mobj->spritexoffset : R_LerpFixed(mobj->old_spritexoffset, mobj->spritexoffset, frac);
-	out->spriteyoffset = mobj->resetinterp ? mobj->spriteyoffset : R_LerpFixed(mobj->old_spriteyoffset, mobj->spriteyoffset, frac);
-	
+
+	if (cv_gravstretch.value || cv_saltysquish.value) // for now we only use it for those two features so no need to interpolate this when we dont use stuff
+	{
+		out->spritexscale = mobj->resetinterp ? mobj->spritexscale : R_LerpFixed(mobj->old_spritexscale, mobj->spritexscale, frac);
+		out->spriteyscale = mobj->resetinterp ? mobj->spriteyscale : R_LerpFixed(mobj->old_spriteyscale, mobj->spriteyscale, frac);
+	}
+	else
+	{
+		out->spritexscale = mobj->spritexscale;
+		out->spriteyscale = mobj->spriteyscale;
+	}
+
+	if (cv_saltyhop.value) // same here
+	{
+		out->spritexoffset = mobj->resetinterp ? mobj->spritexoffset : R_LerpFixed(mobj->old_spritexoffset, mobj->spritexoffset, frac);
+		out->spriteyoffset = mobj->resetinterp ? mobj->spriteyoffset : R_LerpFixed(mobj->old_spriteyoffset, mobj->spriteyoffset, frac);
+	}
+	else
+	{
+		out->spritexoffset = mobj->spritexoffset;
+		out->spriteyoffset = mobj->spriteyoffset;
+	}
+
 	if (mobj->scale == mobj->old_scale) // Tiny optimisation - scale is usually unchanging, so let's skip a lerp, two FixedMuls, and two FixedDivs
 	{
 		out->scale = mobj->scale;
@@ -311,11 +329,6 @@ void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 	{
 		out->scale = R_LerpFixed(mobj->old_scale, mobj->scale, frac);
 	}
-
-	// Sprite offsets are not interpolated until we have a way to interpolate them explicitly in Lua.
-	// It seems existing mods visually break more often than not if it is interpolated.
-	//out->spritexoffset = mobj->spritexoffset;
-	//out->spriteyoffset = mobj->spriteyoffset;
 
 	if (cv_mobjssector.value)
 		out->subsector = R_PointInSubsector(out->x, out->y);
