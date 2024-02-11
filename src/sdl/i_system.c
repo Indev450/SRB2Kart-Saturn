@@ -3159,12 +3159,24 @@ static Uint64 timer_frequency;
 
 precise_t I_GetPreciseTime(void)
 {
+#if defined(_WIN32)
+	LARGE_INTEGER counter;
+	QueryPerformanceCounter(&counter);
+	 return counter.QuadPart;
+#else
 	return SDL_GetPerformanceCounter();
+#endif
 }
 
 UINT64 I_GetPrecisePrecision(void)
 {
+#if defined(_WIN32)
+	LARGE_INTEGER frequency;
+	QueryPerformanceFrequency(&frequency);
+	return frequency.QuadPart;
+#else
 	return SDL_GetPerformanceFrequency();
+#endif
 }
 
 static UINT32 frame_rate;
@@ -3234,46 +3246,67 @@ void I_Sleep(UINT32 ms)
 void I_SleepDuration(precise_t duration)
 {
 #if defined(__linux__) || defined(__FreeBSD__)
-	UINT64 precision = I_GetPrecisePrecision();
-	struct timespec ts = {
-		.tv_sec = duration / precision,
-		.tv_nsec = duration * 1000000000 / precision % 1000000000,
-	};
-	int status;
-	do status = clock_nanosleep(CLOCK_MONOTONIC, 0, &ts, &ts);
-	while (status == EINTR);
+    UINT64 precision = I_GetPrecisePrecision();
+    struct timespec ts = {
+        .tv_sec = duration / precision,
+        .tv_nsec = duration * 1000000000 / precision % 1000000000,
+    };
+    int status;
+    do status = clock_nanosleep(CLOCK_MONOTONIC, 0, &ts, &ts);
+    while (status == EINTR);
+#elif defined(_WIN32)
+    LARGE_INTEGER frequency;
+    LARGE_INTEGER start, current;
+
+    QueryPerformanceCounter(&start);
+
+    LONGLONG targetTicks = duration * frequency.QuadPart;
+
+    do {
+        QueryPerformanceCounter(&current);
+        LONGLONG elapsedTicks = current.QuadPart - start.QuadPart;
+
+        LONGLONG remainingTicks = targetTicks - elapsedTicks;
+
+        LONGLONG remainingTime = remainingTicks / frequency.QuadPart;
+
+        if (remainingTime > 0.001) {
+            Sleep((DWORD)(remainingTime * 1000));
+        }
+
+    } while (current.QuadPart - start.QuadPart < targetTicks);
 #else
-	UINT64 precision = I_GetPrecisePrecision();
-	INT32 sleepvalue = cv_sleep.value;
-	UINT64 delaygranularity;
-	precise_t cur;
-	precise_t dest;
+    UINT64 precision = I_GetPrecisePrecision();
+    INT32 sleepvalue = cv_sleep.value;
+    UINT64 delaygranularity;
+    precise_t cur;
+    precise_t dest;
 
-	{
-		double gran = round(((double)(precision / 1000) * sleepvalue * MIN_SLEEP_DURATION_MS));
-		delaygranularity = (UINT64)gran;
-	}
+    {
+        double gran = round(((double)(precision / 1000) * sleepvalue * MIN_SLEEP_DURATION_MS));
+        delaygranularity = (UINT64)gran;
+    }
 
-	cur = I_GetPreciseTime();
-	dest = cur + duration;
+    cur = I_GetPreciseTime();
+    dest = cur + duration;
 
 	// the reason this is not dest > cur is because the precise counter may wrap
 	// two's complement arithmetic is our friend here, though!
 	// e.g. cur 0xFFFFFFFFFFFFFFFE = -2, dest 0x0000000000000001 = 1
 	// 0x0000000000000001 - 0xFFFFFFFFFFFFFFFE = 3
-	while ((INT64)(dest - cur) > 0)
-	{
+    while ((INT64)(dest - cur) > 0)
+    {
 		// If our cv_sleep value exceeds the remaining sleep duration, use the
 		// hard sleep function.
-		if (sleepvalue > 0 && (dest - cur) > delaygranularity)
-		{
-			I_Sleep(sleepvalue);
-		}
+        if (sleepvalue > 0 && (dest - cur) > delaygranularity)
+        {
+            I_Sleep(sleepvalue);
+        }
 
 		// Otherwise, this is a spinloop.
 
-		cur = I_GetPreciseTime();
-	}
+        cur = I_GetPreciseTime();
+    }
 #endif
 }
 
