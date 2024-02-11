@@ -117,6 +117,7 @@ extern consvar_t /*cv_precipdensity,*/ cv_drawdist, /*cv_drawdist_nights,*/ cv_d
 extern consvar_t cv_fov;
 extern consvar_t cv_skybox;
 extern consvar_t cv_tailspickup;
+extern consvar_t cv_grmaxinterpdist;
 
 // Called by startup code.
 void R_Init(void);
