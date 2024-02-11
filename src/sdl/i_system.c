@@ -3276,28 +3276,6 @@ void I_SleepDuration(precise_t duration)
     int status;
     do status = clock_nanosleep(CLOCK_MONOTONIC, 0, &ts, &ts);
     while (status == EINTR);
-#elif defined(_WIN32)
-    LARGE_INTEGER frequency;
-    LARGE_INTEGER start, current;
-
-    QueryPerformanceFrequency(&frequency);
-    QueryPerformanceCounter(&start);
-
-    LONGLONG targetTicks = duration * frequency.QuadPart;
-
-    do {
-        QueryPerformanceCounter(&current);
-        LONGLONG elapsedTicks = current.QuadPart - start.QuadPart;
-
-        LONGLONG remainingTicks = targetTicks - elapsedTicks;
-
-        LONGLONG remainingTime = remainingTicks / frequency.QuadPart;
-
-        if (remainingTime > 0.001) {
-            Sleep((DWORD)(remainingTime * 1000));
-        }
-
-    } while (current.QuadPart - start.QuadPart < targetTicks);
 #else
     UINT64 precision = I_GetPrecisePrecision();
     INT32 sleepvalue = cv_sleep.value;
