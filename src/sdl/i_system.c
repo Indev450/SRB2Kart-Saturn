@@ -3286,6 +3286,7 @@ void I_SleepDuration(precise_t duration)
     LARGE_INTEGER frequency;
     LARGE_INTEGER start, current;
 
+    QueryPerformanceFrequency(&frequency);
     QueryPerformanceCounter(&start);
 
     LONGLONG targetTicks = duration * frequency.QuadPart;
