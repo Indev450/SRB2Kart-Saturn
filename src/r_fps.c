@@ -16,6 +16,7 @@
 
 #include "r_main.h"
 #include "g_game.h"
+#include "k_kart.h" // saltyhop stuffs
 #include "i_video.h"
 #include "r_plane.h"
 #include "p_spec.h"
