@@ -466,17 +466,16 @@ angle_t R_PointToAngleEx(INT32 x2, INT32 y2, INT32 x1, INT32 y1)
 angle_t R_PointToPseudoAngle(fixed_t x, fixed_t y)
 {
 	// Note: float won't work here as it's less precise than the BAM values being passed as parameters
-	double vecx = (double)x - viewx;
-	double vecy = (double)y - viewy;
-	double epsilon = 1e-9;
+	INT64 vecx = x - viewx;
+	INT64 vecy = y - viewy;
 
-	if (fabs(vecx) < epsilon && fabs(vecy) < epsilon)
+	if (vecx == 0 && vecy == 0)
 	{
 		return 0;
 	}
 	else
 	{
-		double result = vecy / (fabs(vecx) + fabs(vecy));
+		INT64 result = vecy / (vecx + vecy);
 		if (vecx < 0)
 		{
 			result = 2.0 - result;
