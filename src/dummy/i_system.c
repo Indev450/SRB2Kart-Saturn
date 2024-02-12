@@ -179,5 +179,11 @@ char *I_ClipboardPaste(void)
 
 void I_RegisterSysCommands(void) {}
 
+
+const char *I_GetSysName(void)
+{
+	return NULL;
+}
+
 #include "../sdl/dosstr.c"
 
