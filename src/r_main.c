@@ -475,7 +475,7 @@ angle_t R_PointToPseudoAngle(fixed_t x, fixed_t y)
 	}
 	else
 	{
-		double result = vecy / (vecx + vecy);
+		INT64 result = vecy / (vecx + vecy);
 		if (vecx < 0)
 		{
 			result = 2.0 - result;
