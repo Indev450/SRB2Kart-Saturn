@@ -1248,6 +1248,8 @@ static boolean R_FFloorCanClip(visffloor_t *pfloor)
 #define HEIGHTBITS              12
 #define HEIGHTUNIT              (1<<HEIGHTBITS)
 
+static boolean didsolidcol; // True if at least one column was marked solid
+
 static void R_RenderSegLoop (void)
 {
 	angle_t angle;
@@ -1600,11 +1602,16 @@ static void R_RenderSegLoop (void)
 			else if (markfloor && (!rw_floormarked)) // no bottom wall
 				floorclip[rw_x] = bottomclip;
 		}
+		
+		if ((markceiling || markfloor) && (floorclip[rw_x] <= ceilingclip[rw_x] + 1))
+		{
+			solidcol[rw_x] = 1;
+			didsolidcol = true;
+		}
 
 		if (maskedtexture || numthicksides)
 		{
-			// save texturecol
-			//  for backdrawing of masked mid texture
+			// save texturecol for backdrawing of masked mid texture
 			maskedtexturecol[rw_x] = (INT16)texturecolumn;
 
 			if (maskedtextureheight != NULL) {
@@ -1644,6 +1651,8 @@ static void R_RenderSegLoop (void)
 		topfrac += topstep;
 		bottomfrac += bottomstep;
 	}
+	
+	colfunc = wallcolfunc;
 }
 
 // Uses precalculated seg->length
@@ -1660,6 +1669,33 @@ static INT64 R_CalcSegDist(seg_t* seg, INT64 x2, INT64 y2)
 		INT64 vdx = x2-(seg->v1->x);
 		INT64 vdy = y2-(seg->v1->y);
 		return ((dy*vdx)-(dx*vdy))/(seg->length);
+	}
+}
+
+static size_t maxdrawsegs = 0;
+
+static fixed_t *frontscaletable = NULL;
+static fixed_t *maskedheighttable = NULL;
+
+void R_AllocSegMemory(void)
+{
+	if (!maxdrawsegs)
+		return;
+
+	frontscaletable = Z_Realloc(frontscaletable, sizeof(*frontscaletable) * (maxdrawsegs * viewwidth), PU_STATIC, NULL);
+	maskedheighttable = Z_Realloc(maskedheighttable, sizeof(*maskedheighttable) * (maxdrawsegs * viewwidth), PU_STATIC, NULL);
+
+	drawseg_t *lastseg = drawsegs + maxdrawsegs;
+
+	fixed_t *frontscale_p = frontscaletable;
+	fixed_t *maskedheight_p = maskedheighttable;
+
+	for (drawseg_t *ds = drawsegs; ds < lastseg; ds++)
+	{
+		ds->frontscale = frontscale_p;
+		ds->maskedtextureheight = maskedheight_p;
+		frontscale_p += viewwidth;
+		maskedheight_p += viewwidth;
 	}
 }
 
@@ -1681,7 +1717,6 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 	INT32 range;
 	vertex_t segleft, segright;
 	fixed_t ceilingfrontslide, floorfrontslide, ceilingbackslide, floorbackslide;
-	static size_t maxdrawsegs = 0;
 
 	maskedtextureheight = NULL;
 	//initialize segleft and segright
@@ -1699,6 +1734,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 		maxdrawsegs = newmax;
 		if (firstseg)
 			firstseg = drawsegs + (size_t)firstseg;
+		R_AllocSegMemory();
 	}
 
 	sidedef = curline->sidedef;
@@ -2890,6 +2926,8 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 	rw_silhouette = &(ds_p->silhouette);
 	rw_tsilheight = &(ds_p->tsilheight);
 	rw_bsilheight = &(ds_p->bsilheight);
+	
+	didsolidcol = false;
 
 #ifdef WALLSPLATS
 	if (linedef->splats && cv_splats.value)
@@ -2905,12 +2943,27 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 	else
 #endif
 		R_RenderSegLoop();
-	colfunc = wallcolfunc;
+	//colfunc = wallcolfunc;
 
 	if (portalline) // if curline is a portal, set portalrender for drawseg
 		ds_p->portalpass = portalrender+1;
 	else
 		ds_p->portalpass = 0;
+	
+	// cph - if a column was made solid by this wall, we _must_ save full clipping info
+	if (backsector && didsolidcol)
+	{
+		if (!(ds_p->silhouette & SIL_BOTTOM))
+		{
+			ds_p->silhouette |= SIL_BOTTOM;
+			ds_p->bsilheight = backsector->f_slope ? INT32_MAX : backsector->floorheight;
+		}
+		if (!(ds_p->silhouette & SIL_TOP))
+		{
+			ds_p->silhouette |= SIL_TOP;
+			ds_p->tsilheight = backsector->c_slope ? INT32_MIN : backsector->ceilingheight;
+		}
+	}
 
 	// save sprite clipping info
 	if (((ds_p->silhouette & SIL_TOP) || maskedtexture) && !ds_p->sprtopclip)
