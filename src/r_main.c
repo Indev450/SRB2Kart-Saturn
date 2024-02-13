@@ -333,8 +333,7 @@ static void FlipCam4_OnChange(void)
 //
 // killough 5/2/98: reformatted
 //
-
-FUNCINLINE ATTRINLINE INT32 R_PointOnSide(fixed_t x, fixed_t y, node_t *restrict node)
+INT32 R_PointOnSide(fixed_t x, fixed_t y, node_t *restrict node)
 {
 	if (!node->dx)
 		return x <= node->x ? node->dy > 0 : node->dy < 0;
@@ -353,7 +352,7 @@ FUNCINLINE ATTRINLINE INT32 R_PointOnSide(fixed_t x, fixed_t y, node_t *restrict
 }
 
 // killough 5/2/98: reformatted
-FUNCINLINE ATTRINLINE INT32 R_PointOnSegSide(fixed_t x, fixed_t y, seg_t *line)
+INT32 R_PointOnSegSide(fixed_t x, fixed_t y, seg_t *line)
 {
 	fixed_t lx = line->v1->x;
 	fixed_t ly = line->v1->y;
@@ -388,7 +387,7 @@ FUNCINLINE ATTRINLINE INT32 R_PointOnSegSide(fixed_t x, fixed_t y, seg_t *line)
 //
 // killough 5/2/98: reformatted, cleaned up
 
-FUNCINLINE ATTRINLINE angle_t R_PointToAngle(fixed_t x, fixed_t y)
+angle_t R_PointToAngle(fixed_t x, fixed_t y)
 {
 	return (y -= viewy, (x -= viewx) || y) ?
 	x >= 0 ?
@@ -492,7 +491,7 @@ fixed_t R_PointToDist(fixed_t x, fixed_t y)
 	return R_PointToDist2(viewx, viewy, x, y);
 }
 
-FUNCINLINE ATTRINLINE angle_t R_PointToAngleEx(INT32 x2, INT32 y2, INT32 x1, INT32 y1)
+angle_t R_PointToAngleEx(INT32 x2, INT32 y2, INT32 x1, INT32 y1)
 {
 	INT64 dx = x1-x2;
 	INT64 dy = y1-y2;
@@ -1107,7 +1106,7 @@ boolean R_IsPointInSector(sector_t *sector, fixed_t x, fixed_t y)
 //
 // R_PointInSubsector
 //
-FUNCINLINE ATTRINLINE subsector_t *R_PointInSubsector(fixed_t x, fixed_t y)
+subsector_t *R_PointInSubsector(fixed_t x, fixed_t y)
 {
 	size_t nodenum = numnodes-1;
 
@@ -1120,12 +1119,13 @@ FUNCINLINE ATTRINLINE subsector_t *R_PointInSubsector(fixed_t x, fixed_t y)
 //
 // R_IsPointInSubsector, same as above but returns 0 if not in subsector
 //
-FUNCINLINE ATTRINLINE subsector_t *R_IsPointInSubsector(fixed_t x, fixed_t y)
+subsector_t *R_IsPointInSubsector(fixed_t x, fixed_t y)
 {
 	node_t *node;
 	INT32 side, i;
 	size_t nodenum;
 	subsector_t *ret;
+	seg_t *seg;
 
 	// single subsector is a special case
 	if (numnodes == 0)

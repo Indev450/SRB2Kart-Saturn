@@ -41,13 +41,7 @@ typedef UINT32 ufixed_t;
 
 FUNCMATH FUNCINLINE static ATTRINLINE float FixedToFloat(fixed_t x)
 {
-#if defined(_WIN32) && defined(__MINGW64__)
-    __m128 divisor = _mm_set1_ps((float)FRACUNIT);
-    __m128 result = _mm_div_ps(_mm_cvtepi32_ps(_mm_set1_epi32(x)), divisor);
-    return _mm_cvtss_f32(result);
-#else
 	return x / (float)FRACUNIT;
-#endif
 }
 
 FUNCMATH FUNCINLINE static ATTRINLINE fixed_t FloatToFixed(float f)
@@ -69,20 +63,9 @@ FUNCMATH FUNCINLINE static ATTRINLINE fixed_t FloatToFixed(float f)
 */
 FUNCMATH FUNCINLINE static ATTRINLINE fixed_t FixedMul(fixed_t a, fixed_t b)
 {
-#if defined(_WIN32) && defined(__MINGW64__)
-    int32_t a_int = (int32_t)a;
-    int32_t b_int = (int32_t)b;
-
-    int64_t result_int = _mul128(a_int, b_int, NULL);
-
-    result_int >>= FRACBITS;
-
-    fixed_t result = (fixed_t)result_int;
-
-    return result;
-#else
+	// Need to cast to unsigned before shifting to avoid undefined behaviour
+	// for negative integers
 	return (fixed_t)(((UINT64)((INT64)a * b)) >> FRACBITS);
-#endif
 }
 
 /**	\brief	The FixedDiv2 function

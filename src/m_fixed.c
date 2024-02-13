@@ -23,7 +23,7 @@
 #include "m_fixed.h"
 #include "tables.h" // ANGLETOFINESHIFT
 
-FUNCINLINE ATTRINLINE fixed_t FixedSqrt(fixed_t x)
+fixed_t FixedSqrt(fixed_t x)
 {
 #ifdef HAVE_SQRT
 	const float fx = FIXED_TO_FLOAT(x);
@@ -61,7 +61,7 @@ FUNCINLINE ATTRINLINE fixed_t FixedSqrt(fixed_t x)
 #endif
 }
 
-FUNCINLINE ATTRINLINE fixed_t FixedHypot(fixed_t x, fixed_t y)
+fixed_t FixedHypot(fixed_t x, fixed_t y)
 {
 	// Moved the code from R_PointToDist2 to here,
 	// since R_PointToDist2 did the same thing,
