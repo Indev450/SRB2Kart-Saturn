@@ -109,7 +109,7 @@ INT32 viewangletox[FINEANGLES/2];
 // The xtoviewangleangle[] table maps a screen pixel
 // to the lowest viewangle that maps back to x ranges
 // from clipangle to -clipangle.
-angle_t xtoviewangle[MAXVIDWIDTH+1];
+angle_t *xtoviewangle;
 
 lighttable_t *scalelight[LIGHTLEVELS][MAXLIGHTSCALE];
 lighttable_t *scalelightfixed[MAXLIGHTSCALE];
@@ -697,7 +697,7 @@ static struct {
 	INT32 scrmapsize;
 
 	INT32 x1; // clip rendering horizontally for efficiency
-	INT16 ceilingclip[MAXVIDWIDTH], floorclip[MAXVIDWIDTH];
+	INT16 *ceilingclip, *floorclip;
 
 	boolean use;
 } viewmorph = {
@@ -708,7 +708,7 @@ static struct {
 	0,
 
 	0,
-	{}, {},
+	NULL, NULL,
 
 	false
 };
@@ -746,10 +746,10 @@ void R_CheckViewMorph(void)
 
 	if (viewmorph.scrmapsize != vid.width*vid.height)
 	{
-		if (viewmorph.scrmap)
-			free(viewmorph.scrmap);
-		viewmorph.scrmap = malloc(vid.width*vid.height * sizeof(INT32));
 		viewmorph.scrmapsize = vid.width*vid.height;
+		viewmorph.scrmap = realloc(viewmorph.scrmap, vid.width*vid.height * sizeof(INT32));
+		viewmorph.ceilingclip = realloc(viewmorph.ceilingclip, vid.width * sizeof(INT16));
+		viewmorph.floorclip = realloc(viewmorph.floorclip, vid.width * sizeof(INT16));
 	}
 
 	temp = FINECOSINE(rollangle);
@@ -939,18 +939,19 @@ void R_ExecuteSetViewSize(void)
 	// status bar overlay
 	st_overlay = cv_showhud.value;
 
-	scaledviewwidth = vid.width;
+	//scaledviewwidth = vid.width;
+	viewwidth = vid.width;
 	viewheight = vid.height;
 
 	if (splitscreen)
 		viewheight >>= 1;
 
-	viewwidth = scaledviewwidth;
+	//viewwidth = scaledviewwidth;
 
 	if (splitscreen > 1)
 	{
 		viewwidth >>= 1;
-		scaledviewwidth >>= 1;
+		//scaledviewwidth >>= 1;
 	}
 
 	centerx = viewwidth/2;
@@ -965,13 +966,17 @@ void R_ExecuteSetViewSize(void)
 
 	projection = projectiony = FixedDiv(centerxfrac, fovtan);
 
-	R_InitViewBuffer(scaledviewwidth, viewheight);
+	//R_InitViewBuffer(scaledviewwidth, viewheight);
+	R_InitViewBuffer(viewwidth, viewheight);
 
 	R_InitTextureMapping();
 
 	// thing clipping
 	for (i = 0; i < viewwidth; i++)
+	{
+		negonearray[i] = -1;
 		screenheightarray[i] = (INT16)viewheight;
+	}
 
 	// setup sky scaling
 	R_SetSkyScale();
@@ -1043,7 +1048,7 @@ void R_Init(void)
 	R_SetViewSize(); // setsizeneeded is set true
 
 	//I_OutputMsg("\nR_InitPlanes");
-	R_InitPlanes();
+	//R_InitPlanes();
 
 	// this is now done by SCR_Recalc() at the first mode set
 	//I_OutputMsg("\nR_InitLightTables");
