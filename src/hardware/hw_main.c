@@ -2697,7 +2697,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 boolean checkforemptylines = true;
 // Don't modify anything here, just check
 // Kalaron: Modified for sloped linedefs
-FUNCINLINE ATTRINLINE static boolean CheckClip(sector_t * afrontsector, sector_t * abacksector)
+static boolean CheckClip(sector_t * afrontsector, sector_t * abacksector)
 {
 	fixed_t frontf1,frontf2, frontc1, frontc2; // front floor/ceiling ends
 	fixed_t backf1, backf2, backc1, backc2; // back floor ceiling ends
@@ -5440,8 +5440,6 @@ void HWR_ProjectSprite(mobj_t *thing)
 
 
 	// transform the origin point
-	if (thing->type == MT_OVERLAY) // Handle overlays
-		R_ThingOffsetOverlay(thing, &interp.x, &interp.y);
 	tr_x = FIXED_TO_FLOAT(interp.x) - gr_viewx;
 	tr_y = FIXED_TO_FLOAT(interp.y) - gr_viewy;
 
