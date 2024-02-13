@@ -1130,7 +1130,6 @@ subsector_t *R_IsPointInSubsector(fixed_t x, fixed_t y)
 	INT32 side, i;
 	size_t nodenum;
 	subsector_t *ret;
-	seg_t *seg;
 
 	// single subsector is a special case
 	if (numnodes == 0)
