@@ -5972,11 +5972,10 @@ void P_RunOverlays(void)
 {
 	// run overlays
 	mobj_t *mo, *next = NULL;
+	fixed_t destx,desty,zoffs;
 
 	for (mo = overlaycap; mo; mo = next)
 	{
-		fixed_t zoffs;
-		
 		I_Assert(!P_MobjWasRemoved(mo));
 
 		// grab next in chain, then unset the chain target
@@ -5985,12 +5984,31 @@ void P_RunOverlays(void)
 
 		if (!mo->target)
 			continue;
+		if (!splitscreen /*&& rendermode != render_soft*/)
+		{
+			angle_t viewingangle;
+
+			if (players[displayplayers[0]].awayviewtics)
+				viewingangle = R_PointToAngle2(mo->target->x, mo->target->y, players[displayplayers[0]].awayviewmobj->x, players[displayplayers[0]].awayviewmobj->y);
+			else if (!camera[0].chase && players[displayplayers[0]].mo)
+				viewingangle = R_PointToAngle2(mo->target->x, mo->target->y, players[displayplayers[0]].mo->x, players[displayplayers[0]].mo->y);
+			else
+				viewingangle = R_PointToAngle2(mo->target->x, mo->target->y, camera[0].x, camera[0].y);
+
+			if (!(mo->state->frame & FF_ANIMATE) && mo->state->var1)
+				viewingangle += ANGLE_180;
+			destx = mo->target->x + P_ReturnThrustX(mo->target, viewingangle, FixedMul(FRACUNIT/4, mo->scale));
+			desty = mo->target->y + P_ReturnThrustY(mo->target, viewingangle, FixedMul(FRACUNIT/4, mo->scale));
+		}
+		else
+		{
+			destx = mo->target->x;
+			desty = mo->target->y;
+		}
 
 		mo->eflags = (mo->eflags & ~MFE_VERTICALFLIP) | (mo->target->eflags & MFE_VERTICALFLIP);
 		mo->scale = mo->destscale = mo->target->scale;
-		mo->old_scale = mo->target->old_scale;
 		mo->angle = mo->target->angle;
-		mo->old_angle = (mo->target->player ? mo->target->player->old_frameangle : mo->target->old_angle) + mo->movedir;
 
 		if ((mo->flags & MF_DONTENCOREMAP) != (mo->target->flags & MF_DONTENCOREMAP))
 			mo->flags ^= MF_DONTENCOREMAP;
@@ -6003,26 +6021,15 @@ void P_RunOverlays(void)
 			zoffs = 0;
 
 		P_UnsetThingPosition(mo);
-		mo->x = mo->target->x;
-		mo->y = mo->target->y;
-		mo->old_x = mo->target->old_x;
-		mo->old_y = mo->target->old_y;
+		mo->x = destx;
+		mo->y = desty;
 		mo->radius = mo->target->radius;
 		mo->height = mo->target->height;
 		if (mo->eflags & MFE_VERTICALFLIP)
-		{
-			mo->z         = mo->target->z     + mo->target->height - mo->height - zoffs;
-			if (mo->scale == mo->old_scale)
-				mo->old_z = mo->target->old_z + mo->target->height - mo->height - zoffs;
-			else // Interpolate height scale changes - mo and mo->target have the same scales here, so don't interpolate them individually
-				mo->old_z = mo->target->old_z + FixedMul(mo->target->height - mo->height, FixedDiv(mo->old_scale, mo->scale)) - zoffs;
-		}
+			mo->z = (mo->target->z + mo->target->height - mo->height) - zoffs;
 		else
-		{
-			mo->z     = mo->target->z     + zoffs;
-			mo->old_z = mo->target->old_z + zoffs;
-		}
-		if (!(mo->state->frame & FF_ANIMATE) && mo->state->var1)
+			mo->z = mo->target->z + zoffs;
+		if (mo->state->var1)
 			P_SetUnderlayPosition(mo);
 		else
 			P_SetThingPosition(mo);
