@@ -1935,7 +1935,6 @@ static void CL_LoadReceivedSavegame(void)
 	}
 	else
 	{
-		CONS_Alert(CONS_ERROR, M_GetText("Can't load the level!\n"));
 		Z_Free(savebuffer);
 		save_p = NULL;
 		if (unlink(tmpsave) == -1)

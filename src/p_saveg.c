@@ -3364,7 +3364,10 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(void)
 	encoremode = (boolean)READUINT8(save_p);
 
 	if (!P_SetupLevel(true))
+	{
+		CONS_Alert(CONS_ERROR, M_GetText("Can't load the level!\n"));
 		return false;
+	}
 
 	// get the time
 	leveltime = READUINT32(save_p);
@@ -3499,7 +3502,10 @@ boolean P_LoadGame(INT16 mapoverride)
 
 	// Savegame end marker
 	if (READUINT8(save_p) != 0x1d)
+	{
+		CONS_Alert(CONS_ERROR, M_GetText("Corrupt Luabanks! (Failed consistency check)\n"));
 		return false;
+	}
 
 	// Only do this after confirming savegame is ok
 	G_DeferedInitNew(false, G_BuildMapName(gamemap), savedata.skin, 0, true);
