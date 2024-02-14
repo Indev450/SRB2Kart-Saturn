@@ -328,7 +328,7 @@ void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 	}
 	else
 	{
-		out->scale = R_LerpFixed(mobj->old_scale, mobj->scale, frac);
+		out->scale = mobj->resetinterp ? mobj->scale : R_LerpFixed(mobj->old_scale, mobj->scale, frac);
 	}
 
 	if (cv_mobjssector.value)
