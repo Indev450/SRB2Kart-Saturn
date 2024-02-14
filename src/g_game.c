@@ -3913,7 +3913,6 @@ static void G_DoCompleted(void)
 			nextmap = G_RandMap(G_TOLFlag(gametype), prevmap, false, 0, false, NULL);
 	}
 
-
 	// We are committed to this map now.
 	// We may as well allocate its header if it doesn't exist
 	// (That is, if it's a real map)
@@ -8892,4 +8891,3 @@ INT32 G_TicsToMilliseconds(tic_t tics)
 {
 	return (INT32)((tics%TICRATE) * (1000.00f/TICRATE));
 }
-
