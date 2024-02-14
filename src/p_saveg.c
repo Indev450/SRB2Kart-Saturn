@@ -2142,7 +2142,7 @@ static void LoadMobjThinker(actionf_p1 thinker)
 		mobj->colorized = READUINT8(save_p);
 
 	// Saturn stuff, needs to be set, but shouldnt be synched
-	
+
 	// Sprite Rotation
 	mobj->rollangle = 0;
 	mobj->pitch = 0;
@@ -2161,7 +2161,7 @@ static void LoadMobjThinker(actionf_p1 thinker)
 	mobj->spritexscale = FRACUNIT;
 	mobj->spriteyscale = FRACUNIT;
 	mobj->stretchslam = 0;
-	
+
 	// Timer for slam sound effect
 	mobj->slamsoundtimer = 0;
 	//
@@ -2351,6 +2351,7 @@ static void LoadGlowThinker(actionf_p1 thinker)
 		ht->sector->lightingdata = ht;
 	P_AddThinker(&ht->thinker);
 }
+
 //
 // LoadFireflickerThinker
 //
@@ -2369,6 +2370,7 @@ static void LoadFireflickerThinker(actionf_p1 thinker)
 		ht->sector->lightingdata = ht;
 	P_AddThinker(&ht->thinker);
 }
+
 //
 // LoadElevatorThinker
 //
