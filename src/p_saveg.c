@@ -1990,6 +1990,8 @@ static void LoadMobjThinker(actionf_p1 thinker)
 	mobj->spriteyoffset = mobj->old_spriteyoffset = 0;
 	mobj->spritexscale = mobj->old_spritexscale = FRACUNIT;
 	mobj->spriteyscale = mobj->old_spriteyscale = FRACUNIT;
+	mobj->realxscale = FRACUNIT;
+	mobj->realyscale = FRACUNIT;
 	
 	mobj->stretchslam = 0;
 	mobj->slamsoundtimer = 0;

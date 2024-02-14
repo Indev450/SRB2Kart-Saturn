@@ -297,6 +297,8 @@ typedef struct mobj_s
 	fixed_t old_spritexscale, old_spriteyscale;
 	fixed_t old_spritexoffset, old_spriteyoffset;
 
+	fixed_t realxscale, realyscale; // funn-E streeetch
+
 	fixed_t stretchslam; // "squish" effect when you land
 
 	//sloperollangle
