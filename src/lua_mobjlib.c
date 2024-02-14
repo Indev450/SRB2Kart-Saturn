@@ -271,9 +271,9 @@ int mobj_spritescale_setter(lua_State *L)
     {
         // Mmm yea
         if (spritescale == &mo->spritexscale)
-            mo->realxscale = luaL_checkfixed(L, 2);
+            mo->spritexscale = luaL_checkfixed(L, 2);
         else
-            mo->realyscale = luaL_checkfixed(L, 2);
+            mo->spriteyscale = luaL_checkfixed(L, 2);
     }
     return 0;
 }
