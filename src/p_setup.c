@@ -382,7 +382,7 @@ UINT32 P_GetScoreForGrade(INT16 map, UINT8 mare, UINT8 grade)
   * \sa ML_VERTEXES
   */
 
-static inline void P_LoadRawVertexes(UINT8 *data, size_t i)
+FUNCINLINE static ATTRINLINE void P_LoadRawVertexes(UINT8 *data, size_t i)
 {
 	mapvertex_t *ml;
 	vertex_t *li;
@@ -506,7 +506,7 @@ static void P_LoadSegs(lumpnum_t lumpnum)
   * \param lump Lump number of the SSECTORS resource.
   * \sa ::ML_SSECTORS
   */
-static inline void P_LoadRawSubsectors(void *data, size_t i)
+FUNCINLINE static ATTRINLINE void P_LoadRawSubsectors(void *data, size_t i)
 {
 	mapsubsector_t *ms;
 	subsector_t *ss;
