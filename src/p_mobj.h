@@ -448,10 +448,8 @@ typedef struct precipmobj_s
 	fixed_t old_spritexscale, old_spriteyscale;
 	fixed_t old_spritexoffset, old_spriteyoffset;
 
-	fixed_t realxscale, realyscale; // funn-E streeetch
-
 	fixed_t stretchslam; // "squish" effect when you land
-	
+
 	//sloperollangle
 	angle_t sloperoll, slopepitch;
 	angle_t old_sloperoll, old_slopepitch;
