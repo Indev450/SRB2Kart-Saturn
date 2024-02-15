@@ -3145,16 +3145,8 @@ boolean P_SetupLevel(boolean skipprecip)
 		P_SpawnPrecipitation();
 
 #ifdef HWRENDER // not win32 only 19990829 by Kin
-	if (rendermode != render_soft && rendermode != render_none)
-	{
-		// Correct missing sidedefs & deep water trick
-		HWR_CorrectSWTricks();
-		HWR_CreatePlanePolygons((INT32)numnodes - 1);
-		
-		if (HWR_ShouldUsePaletteRendering()) //unsure if this is the right place, but seems to work since we dont have HWR_LoadLevel like srb2
-			HWR_SetMapPalette();
-	}
-
+	if (rendermode == render_opengl)
+		HWR_LoadLevel();
 #endif
 
 	// oh god I hope this helps
@@ -3361,14 +3353,6 @@ boolean P_SetupLevel(boolean skipprecip)
 	// clear special respawning que
 	iquehead = iquetail = 0;
 
-	// preload graphics
-#ifdef HWRENDER // not win32 only 19990829 by Kin
-	if (rendermode != render_soft && rendermode != render_none)
-	{
-		HWR_PrepLevelCache(numtextures);
-	}
-#endif
-
 	P_MapEnd();
 
 	// Remove the loading shit from the screen
@@ -3425,6 +3409,19 @@ boolean P_SetupLevel(boolean skipprecip)
 
 	return true;
 }
+
+#ifdef HWRENDER
+void HWR_LoadLevel(void)
+{
+	HWR_FreeMipmapCache();
+	// Correct missing sidedefs & deep water trick
+	HWR_CorrectSWTricks();
+	HWR_CreatePlanePolygons((INT32)numnodes - 1);
+
+	if (HWR_ShouldUsePaletteRendering())
+		HWR_SetMapPalette();
+}
+#endif
 
 //
 // P_RunSOC

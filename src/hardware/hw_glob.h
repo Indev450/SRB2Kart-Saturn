@@ -57,12 +57,13 @@ extern size_t addsubsector;
 // --------
 void HWR_InitTextureCache(void);
 void HWR_FreeTextureCache(void);
+void HWR_FreeMipmapCache(void);
 void HWR_FreeExtraSubsectors(void);
 
 void HWR_GetFlat(lumpnum_t flatlumpnum, boolean noencoremap);
 // ^ some flats must NOT be remapped to encore, since we remap them as we cache them for ease, adding a toggle here seems wise.
 
-GLTexture_t *HWR_GetTexture(INT32 tex);
+GLMapTexture_t *HWR_GetTexture(INT32 tex);
 void HWR_GetPatch(GLPatch_t *gpatch);
 void HWR_GetMappedPatch(GLPatch_t *gpatch, const UINT8 *colormap);
 void HWR_MakePatch(patch_t *patch, GLPatch_t *grPatch, GLMipmap_t *grMipmap, boolean makebitmap);
@@ -80,8 +81,6 @@ void HWR_GetFadeMask(lumpnum_t fademasklumpnum);
 // --------
 // hw_draw.c
 // --------
-extern consvar_t cv_grrounddown; // on/off
-
 extern INT32 patchformat;
 extern INT32 textureformat;
 
