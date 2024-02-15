@@ -207,7 +207,7 @@ consvar_t cv_drawdist_precip = {"drawdist_precip", "1024", CV_SAVE, drawdist_pre
 consvar_t cv_lessprecip = {"lessweathereffects", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 //consvar_t cv_precipdensity = {"precipdensity", "Moderate", CV_SAVE, precipdensity_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_grmaxinterpdist = {"gr_maxinterpdist", "Infinite", 0, maxinterpdist_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_grmaxinterpdist = {"gr_maxinterpdist", "Infinite", CV_SAVE, maxinterpdist_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 // cap fov, fov too high tears software apart.
 consvar_t cv_fov = {"fov", "90", CV_FLOAT|CV_CALL|CV_SAVE, fov_cons_t, Fov_OnChange, 0, NULL, NULL, 0, 0, NULL};
