@@ -47,6 +47,10 @@ void LUA_LoadLump(UINT16 wad, UINT16 lump);
 void LUA_DumpFile(const char *filename);
 #endif
 fixed_t LUA_EvalMath(const char *word);
+
+// Need better name for this ;-;
+void LUA_InvalidateMathlibCache(const char *name);
+
 void LUA_PushUserdata(lua_State *L, void *data, const char *meta);
 void LUA_InvalidateUserdata(void *data);
 void LUA_InvalidateLevel(void);
