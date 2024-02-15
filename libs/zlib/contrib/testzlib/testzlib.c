@@ -116,10 +116,10 @@ DWORD GetMsecSincePerfCounter(LARGE_INTEGER beginTime64,BOOL fComputeTimeQueryPe
     return dwRet;
 }
 
-int ReadFileMemory(const char* filename,long* plFileSize,void** pFilePtr)
+int ReadFileMemory(const char* filename,long* plFileSize,unsigned char** pFilePtr)
 {
     FILE* stream;
-    void* ptr;
+    unsigned char* ptr;
     int retVal=1;
     stream=fopen(filename, "rb");
     if (stream==NULL)
@@ -169,7 +169,7 @@ int main(int argc, char *argv[])
         printf("error reading %s\n",argv[1]);
         return 1;
     }
-    else printf("file %s read, %u bytes\n",argv[1],lFileSize);
+    else printf("file %s read, %ld bytes\n",argv[1],lFileSize);
 
     if (argc>=3)
         BlockSizeCompress=atol(argv[2]);
