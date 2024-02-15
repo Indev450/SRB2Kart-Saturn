@@ -533,6 +533,11 @@ void R_LoadTextures(void)
 			i++;
 		}
 	}
+
+#ifdef HWRENDER
+	if (rendermode == render_opengl)
+		HWR_LoadTextures(numtextures);
+#endif
 }
 
 static texpatch_t *R_ParsePatch(boolean actuallyLoadPatch)
