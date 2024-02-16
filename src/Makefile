@@ -290,7 +290,7 @@ else
 endif
 else
 ifdef X86_64
-	ARCHOPTS?=-march=native -O3 -mfpmath=both -funroll-loops -finline-functions -funswitch-loops -fpeel-loops -fipa-pta -fprefetch-loop-arrays -ftree-loop-linear -ftree-vectorize -floop-strip-mine -fgraphite-identity -falign-functions -falign-loops -ftree-loop-distribution -floop-nest-optimize
+	ARCHOPTS?=-march=native -O3
 endif
 endif
 
