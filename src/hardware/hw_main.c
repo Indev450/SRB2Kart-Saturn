@@ -670,6 +670,12 @@ void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, boolean isc
 	// no convex poly were generated for this subsector
 	if (!xsub->planepoly)
 		return;
+	
+	pv  = xsub->planepoly->pts;
+	nrPlaneVerts = xsub->planepoly->numpts;
+
+	if (nrPlaneVerts < 3)   //not even a triangle ?
+		return;
 
 #ifdef ESLOPE
 	// Get the slope pointer to simplify future code
@@ -694,12 +700,6 @@ void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, boolean isc
 #endif
 
 	height = FIXED_TO_FLOAT(fixedheight);
-
-	pv  = xsub->planepoly->pts;
-	nrPlaneVerts = xsub->planepoly->numpts;
-
-	if (nrPlaneVerts < 3)   //not even a triangle ?
-		return;
 
 	// Allocate plane-vertex buffer if we need to
 	if (!planeVerts || nrPlaneVerts > numAllocedPlaneVerts)
