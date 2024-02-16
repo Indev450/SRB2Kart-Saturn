@@ -39,8 +39,8 @@
 #define BASEVIDHEIGHT 200
 
 // Max screen size
-#define MAXVIDWIDTH 3840
-#define MAXVIDHEIGHT 2160
+#define MAXVIDWIDTH 15360
+#define MAXVIDHEIGHT 8640
 
 // global video state
 typedef struct viddef_s
