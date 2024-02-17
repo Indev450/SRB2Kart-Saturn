@@ -113,10 +113,10 @@ static GLfloat modelMatrix[16];
 static GLfloat projMatrix[16];
 static GLint   viewport[4];
 
-static boolean gl_framebuffer_init(void);
 
 GLuint FramebufferObject, FramebufferTexture, RenderbufferObject;
 GLboolean FrameBufferEnabled = GL_FALSE, RenderToFramebuffer = GL_FALSE;
+
 
 // Sryder:	NextTexAvail is broken for these because palette changes or changes to the texture filter or antialiasing
 //			flush all of the stored textures, leaving them unavailable at times such as between levels
@@ -324,6 +324,7 @@ static void GL_MSG_Error(const char *format, ...)
 #define pglRenderbufferStorage glRenderbufferStorage
 #define pglFramebufferRenderbuffer glFramebufferRenderbuffer
 
+
 #else //!STATIC_OPENGL
 
 /* 1.0 functions */
@@ -441,6 +442,7 @@ typedef void (APIENTRY * PFNglCopyTexImage2D) (GLenum target, GLint level, GLenu
 static PFNglCopyTexImage2D pglCopyTexImage2D;
 typedef void (APIENTRY * PFNglCopyTexSubImage2D) (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint x, GLint y, GLsizei width, GLsizei height);
 static PFNglCopyTexSubImage2D pglCopyTexSubImage2D;
+#endif
 
 /* 3.0 functions */
 typedef void (APIENTRY * PFNglGenerateMipmap) (GLenum target);
@@ -448,38 +450,25 @@ static PFNglGenerateMipmap pglGenerateMipmap;
 
 /* 3.0 functions for framebuffers and renderbuffers */
 typedef void (APIENTRY * PFNglGenFramebuffers) (GLsizei n, GLuint *ids);
-extern PFNglGenFramebuffers pglGenFramebuffers;
+static PFNglGenFramebuffers pglGenFramebuffers;
 typedef void (APIENTRY * PFNglBindFramebuffer) (GLenum target, GLuint framebuffer);
-extern PFNglBindFramebuffer pglBindFramebuffer;
+static PFNglBindFramebuffer pglBindFramebuffer;
 typedef void (APIENTRY * PFNglDeleteFramebuffers) (GLsizei n, GLuint *ids);
-extern PFNglDeleteFramebuffers pglDeleteFramebuffers;
+static PFNglDeleteFramebuffers pglDeleteFramebuffers;
 typedef void (APIENTRY * PFNglFramebufferTexture2D) (GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
-extern PFNglFramebufferTexture2D pglFramebufferTexture2D;
+static PFNglFramebufferTexture2D pglFramebufferTexture2D;
 typedef GLenum (APIENTRY * PFNglCheckFramebufferStatus) (GLenum target);
-extern PFNglCheckFramebufferStatus pglCheckFramebufferStatus;
+static PFNglCheckFramebufferStatus pglCheckFramebufferStatus;
 typedef void (APIENTRY * PFNglGenRenderbuffers) (GLsizei n, GLuint *renderbuffers);
-extern PFNglGenRenderbuffers pglGenRenderbuffers;
+static PFNglGenRenderbuffers pglGenRenderbuffers;
 typedef void (APIENTRY * PFNglBindRenderbuffer) (GLenum target, GLuint renderbuffer);
-extern PFNglBindRenderbuffer pglBindRenderbuffer;
+static PFNglBindRenderbuffer pglBindRenderbuffer;
 typedef void (APIENTRY * PFNglDeleteRenderbuffers) (GLsizei n, GLuint *renderbuffers);
-extern PFNglDeleteRenderbuffers pglDeleteRenderbuffers;
+static PFNglDeleteRenderbuffers pglDeleteRenderbuffers;
 typedef void (APIENTRY * PFNglRenderbufferStorage) (GLenum target, GLenum internalformat, GLsizei width, GLsizei height);
-extern PFNglRenderbufferStorage pglRenderbufferStorage;
+static PFNglRenderbufferStorage pglRenderbufferStorage;
 typedef void (APIENTRY * PFNglFramebufferRenderbuffer) (GLenum target, GLenum attachment, GLenum renderbuffertarget, GLenum renderbuffer);
-extern PFNglFramebufferRenderbuffer pglFramebufferRenderbuffer;
-
-/* 3.0 functions for framebuffers and renderbuffers */
-PFNglGenFramebuffers pglGenFramebuffers;
-PFNglBindFramebuffer pglBindFramebuffer;
-PFNglDeleteFramebuffers pglDeleteFramebuffers;
-PFNglFramebufferTexture2D pglFramebufferTexture2D;
-PFNglCheckFramebufferStatus pglCheckFramebufferStatus;
-PFNglGenRenderbuffers pglGenRenderbuffers;
-PFNglBindRenderbuffer pglBindRenderbuffer;
-PFNglDeleteRenderbuffers pglDeleteRenderbuffers;
-PFNglRenderbufferStorage pglRenderbufferStorage;
-PFNglFramebufferRenderbuffer pglFramebufferRenderbuffer;
-#endif
+static PFNglFramebufferRenderbuffer pglFramebufferRenderbuffer;
 
 /* 1.2 functions for 3D textures */
 typedef void (APIENTRY * PFNglTexImage3D) (GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, const GLvoid *pixels);
@@ -541,6 +530,17 @@ boolean SetupGLfunc(void)
 	{ \
 		GL_MSG_Warning("failed to get OpenGL function: %s", #proc); \
 	} \
+
+	GETOPENGLFUNC(pglGenFramebuffers, glGenFramebuffers);
+	GETOPENGLFUNC(pglBindFramebuffer, glBindFramebuffer);
+	GETOPENGLFUNC(pglDeleteFramebuffers, glDeleteFramebuffers);
+	GETOPENGLFUNC(pglFramebufferTexture2D, glFramebufferTexture2D);
+	GETOPENGLFUNC(pglCheckFramebufferStatus, glCheckFramebufferStatus);
+	GETOPENGLFUNC(pglGenRenderbuffers, glGenRenderbuffers);
+	GETOPENGLFUNC(pglBindRenderbuffer, glBindRenderbuffer);
+	GETOPENGLFUNC(pglDeleteRenderbuffers, glDeleteRenderbuffers);
+	GETOPENGLFUNC(pglRenderbufferStorage, glRenderbufferStorage);
+	GETOPENGLFUNC(pglFramebufferRenderbuffer, glFramebufferRenderbuffer);
 
 	GETOPENGLFUNC(pglClearColor, glClearColor)
 
@@ -806,13 +806,6 @@ void SetupGLFunc4(void)
 	pglFramebufferRenderbuffer = GetGLFunc("glFramebufferRenderbuffer");
 }
 
-static boolean gl_framebuffer_init(void)
-{
-	return (pglGenFramebuffers && pglBindFramebuffer && pglDeleteFramebuffers && pglFramebufferTexture2D && pglCheckFramebufferStatus && 
-	pglGenRenderbuffers && pglBindRenderbuffer && pglDeleteRenderbuffers && pglRenderbufferStorage && pglFramebufferRenderbuffer);
-}
-
-
 EXPORT boolean HWRAPI(InitShaders) (void)
 {
 #ifdef GL_SHADERS
@@ -1055,9 +1048,6 @@ void SetStates(void)
 
 void GLFramebuffer_Generate(void)
 {
-	if (!gl_framebuffer_init())
-		return;
-
 	// Generate the framebuffer
 	if (FramebufferObject == 0)
 		pglGenFramebuffers(1, &FramebufferObject);
@@ -1068,9 +1058,6 @@ void GLFramebuffer_Generate(void)
 
 void GLFramebuffer_Delete(void)
 {
-	if (!gl_framebuffer_init())
-		return;
-
 	// Unbind the framebuffer
 	pglBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -1083,9 +1070,6 @@ void GLFramebuffer_Delete(void)
 
 void GLFramebuffer_GenerateAttachments(void)
 {
-	if (!gl_framebuffer_init())
-		return;
-
 	// Bind the framebuffer
 	pglBindFramebuffer(GL_FRAMEBUFFER, FramebufferObject);
 
@@ -1124,9 +1108,6 @@ void GLFramebuffer_GenerateAttachments(void)
 
 void GLFramebuffer_DeleteAttachments(void)
 {
-	if (!gl_framebuffer_init())
-		return;
-
 	// Unbind the framebuffer
 	pglBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -1142,9 +1123,6 @@ void GLFramebuffer_DeleteAttachments(void)
 
 void GLFramebuffer_Enable(void)
 {
-	if (!gl_framebuffer_init())
-		return;
-
 	if (FramebufferObject == 0)
 		GLFramebuffer_Generate();
 	else if (FramebufferTexture == 0 || RenderbufferObject == 0)
@@ -1156,9 +1134,6 @@ void GLFramebuffer_Enable(void)
 
 void GLFramebuffer_Disable(void)
 {
-	if (!gl_framebuffer_init())
-		return;
-
 	pglBindFramebuffer(GL_FRAMEBUFFER, 0);
 	pglBindRenderbuffer(GL_RENDERBUFFER, 0);
 }

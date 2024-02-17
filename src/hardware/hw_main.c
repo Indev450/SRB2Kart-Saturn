@@ -97,7 +97,7 @@ consvar_t cv_grsolvetjoin = {"gr_solvetjoin", "On", 0, CV_OnOff, NULL, 0, NULL, 
 
 consvar_t cv_grbatching = {"gr_batching", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_grframebuffer = {"gr_framebuffer", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, CV_grframebuffer_OnChange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_grframebuffer = {"gr_framebuffer", "On", CV_SAVE|CV_CALL, CV_OnOff, CV_grframebuffer_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_grfofcut = {"gr_fofcut", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -170,7 +170,6 @@ static void CV_grframebuffer_OnChange(void)
 {
 	ONLY_IF_GL_LOADED
 	HWD.pfnSetSpecialState(HWD_SET_FRAMEBUFFER, cv_grframebuffer.value);
-	OglSdlSurface(vid.width, vid.height); //this is really dumb but it works TODO: fix compiler warning, cant include the proper header file here
 }
 
 static void CV_filtermode_ONChange(void)
@@ -6558,8 +6557,6 @@ void HWR_Startup(void)
 		HWR_LoadAllCustomShaders();
 
 		HWR_TogglePaletteRendering();
-		
-		HWD.pfnSetSpecialState(HWD_SET_FRAMEBUFFER, cv_grframebuffer.value);
 
 		if (msaa)
 		{
