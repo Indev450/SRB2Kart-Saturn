@@ -2183,6 +2183,97 @@ void V_DrawStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *string)
 	}
 }
 
+// Draws a string at a fixed_t location.
+void V_DrawStringAtFixedCM(fixed_t x, fixed_t y, INT32 option, const char *string, UINT8* colormap)
+{
+	fixed_t cx = x, cy = y;
+	INT32 w, c, dupx, dupy, scrwidth, center = 0, left = 0;
+	const char *ch = string;
+	INT32 spacewidth = 4, charwidth = 0;
+
+	INT32 lowercase = (option & V_ALLOWLOWERCASE);
+	option &= ~V_FLIP; // which is also shared with V_ALLOWLOWERCASE...
+
+	if (option & V_NOSCALESTART)
+	{
+		dupx = vid.dupx;
+		dupy = vid.dupy;
+		scrwidth = vid.width;
+	}
+	else
+	{
+		dupx = dupy = 1;
+		scrwidth = vid.width/vid.dupx;
+		left = (scrwidth - BASEVIDWIDTH)/2;
+		scrwidth -= left;
+	}
+
+	switch (option & V_SPACINGMASK)
+	{
+		case V_MONOSPACE:
+			spacewidth = 8;
+			/* FALLTHRU */
+		case V_OLDSPACING:
+			charwidth = 8;
+			break;
+		case V_6WIDTHSPACE:
+			spacewidth = 6;
+		default:
+			break;
+	}
+
+	for (;;ch++)
+	{
+		if (!*ch)
+			break;
+		if (*ch & 0x80) //color ignoring
+			continue;
+		if (*ch == '\n')
+		{
+			cx = x;
+
+			if (option & V_RETURN8)
+				cy += (8*dupy)<<FRACBITS;
+			else
+				cy += (12*dupy)<<FRACBITS;
+
+			continue;
+		}
+
+		c = *ch;
+		if (!lowercase)
+			c = toupper(c);
+		c -= HU_FONTSTART;
+
+		// character does not exist or is a space
+		if (c < 0 || c >= HU_FONTSIZE || !hu_font[c])
+		{
+			cx += (spacewidth * dupx)<<FRACBITS;
+			continue;
+		}
+
+		if (charwidth)
+		{
+			w = charwidth * dupx;
+			center = w/2 - SHORT(hu_font[c]->width)*(dupx/2);
+		}
+		else
+			w = SHORT(hu_font[c]->width) * dupx;
+
+		if ((cx>>FRACBITS) > scrwidth)
+			break;
+		if ((cx>>FRACBITS)+left + w < 0) //left boundary check
+		{
+			cx += w<<FRACBITS;
+			continue;
+		}
+
+		V_DrawFixedPatch(cx + (center<<FRACBITS), cy, FRACUNIT, option, hu_font[c], colormap);
+
+		cx += w<<FRACBITS;
+	}
+}
+
 // Jaden: awesome!
 void V_DrawSmallStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *string)
 {

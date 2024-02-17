@@ -181,6 +181,7 @@ extern consvar_t cv_nametagmaxlenght;
 extern consvar_t cv_nametagdist;
 extern consvar_t cv_showownnametag;
 extern consvar_t cv_smallnametags;
+extern consvar_t cv_nametagrestat;
 
 extern consvar_t cv_perfstats;
 extern consvar_t cv_ps_thinkframe_page;

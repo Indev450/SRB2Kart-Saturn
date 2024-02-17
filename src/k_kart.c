@@ -7032,6 +7032,8 @@ static patch_t *kp_lapanim_hand[3];
 
 static patch_t *nametagpic;
 static patch_t *nametagline;
+static patch_t *nametagspeed;
+static patch_t *nametagweight;
 
 static patch_t *kp_yougotem;
 
@@ -7148,6 +7150,9 @@ void K_LoadKartHUDGraphics(void)
 	if (nametaggfx){
 		nametagpic = W_CachePatchName("NTLINE", PU_HUDGFX);	
 		nametagline = W_CachePatchName("NTLINEV", PU_HUDGFX);
+		nametagspeed = W_CachePatchName("NTSP", PU_HUDGFX);
+		nametagweight = W_CachePatchName("NTWH", PU_HUDGFX);
+		
 	}
 
 	// Starting countdown
@@ -8905,7 +8910,7 @@ static void K_GenerateNametagTextColormap(void)
 
 //Shoutout to Lat for the ScreenCoords
 //With alot of edit because of god damn no-green-screen, fov, and render bullshit
-static void K_GetNameTagPos(vector2_t *vec, player_t player, camera_t camera, float mx, float my, float mz)
+static void K_GetNameTagPos(vector2_t *vec, player_t player, camera_t came, float mx, float my, float mz)
 {
 	fixed_t camx, camy, camz, camangle, camaiming;
 	fixed_t finalset;
@@ -8924,12 +8929,12 @@ static void K_GetNameTagPos(vector2_t *vec, player_t player, camera_t camera, fl
 		camangle = player.awayviewmobj->angle;
 		camaiming = player.awayviewaiming;
 	}
-	else if (camera.chase) {
-		camx = camera.x;
-		camy = camera.y;
-		camz = camera.z;
-		camangle = camera.angle;
-		camaiming = camera.aiming;
+	else if (came.chase) {
+		camx = came.x;
+		camy = came.y;
+		camz = came.z;
+		camangle = came.angle;
+		camaiming = came.aiming;
 	}
 	else {
 		camx = player.mo->x;
@@ -8971,36 +8976,21 @@ static void K_GetNameTagPos(vector2_t *vec, player_t player, camera_t camera, fl
 	vec->x = x;
 }
 
-typedef struct
-{
-	fixed_t dist;
-	UINT8 node;
-} sortarray;
-
-static int nametagsort(const void* a, const void* b)
-{
-	const sortarray *a2 = (const sortarray*)a;
-	const sortarray *b2 = (const sortarray*)b;
-	return (a2->dist - b2->dist);
-}
-
+//Slighty fixed by Alug and further rewritten by NepDisk
 static void K_drawNameTags(void)
 {
-	sortarray array[MAXPLAYERS];
-	UINT8 i, j;
+	UINT8 i;
 	INT32 trans = 0;
 	vector2_t pos;
 	fixed_t st;
 	int smol = 0;
+	fixed_t posx,posy,pos2x,pos2y;
 
 	if (!stplyr->mo || stplyr->spectator || splitscreen)
 		return;
 
 	if (!nametagtxtcm[MAXSKINCOLORS-1])
 		K_GenerateNametagTextColormap();
-
-	if (leveltime < starttime)
-		goto showownnametag;
 
 	if (cv_smallnametags.value)
 		smol = (20<<FRACBITS);
@@ -9009,40 +8999,26 @@ static void K_drawNameTags(void)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (!players[i].mo || P_MobjWasRemoved(players[i].mo) || players[i].spectator || !playeringame[i] || i == displayplayers[0])
-			continue;
-
-		//array[i].dist = P_AproxDistance(players[i].mo->x - (stplyr->mo->x + stplyr->mo->momx), players[i].mo->y - (stplyr->mo->y + stplyr->mo->momy));
-		array[i].dist = R_PointToDist(players[i].mo->x, players[i].mo->y);
-		array[i].node = i;
-	}
-
-	// sort
-	qsort(array, MAXPLAYERS, sizeof(sortarray), nametagsort);
-
-	for (j = MAXPLAYERS; j > 0; j--)
-	{
 		UINT8 *cm;
 		UINT8 *textcm;
 		fixed_t distance = 0;
-		//fixed_t maxdistance = (cv_nametagdist.value*10)<<FRACBITS;
 		fixed_t maxdistance = (10*cv_nametagdist.value)* mapobjectscale;
 		angle_t an;
 
-		if ((j - MAXPLAYERS) > cv_nametagmaxplayers.value)
+		if ((i - MAXPLAYERS) > cv_nametagmaxplayers.value)
 			return;
-
-		i = array[j].node;
-
+		
 		if (i > PLAYERSMASK)
-			continue;
-		if (i == displayplayers[0])
 			continue;
 		if (!players[i].mo || P_MobjWasRemoved(players[i].mo) || players[i].spectator || !playeringame[i])
 			continue;
+		if (i == displayplayers[0] && !cv_showownnametag.value && !(leveltime < 130))
+			continue;
+		if (!(i == displayplayers[0]) && leveltime < starttime)
+			continue;
 		if (players[i].kartstuff[k_hyudorotimer]) // player is invisible
 			continue;
-		distance = array[j].dist;
+		distance = R_PointToDist(players[i].mo->x, players[i].mo->y);
 		if (distance > maxdistance)
 			continue;
 		an = R_PointToAngle2(camera[0].x, camera[0].y, players[i].mo->x, players[i].mo->y) - camera[0].angle;
@@ -9080,6 +9056,9 @@ static void K_drawNameTags(void)
 					trans = 0;
 				break;
 			case 3:
+				trans =  V_40TRANS;
+				break;
+			case 4:
 				trans = V_HUDTRANS;
 				break;
 			default:
@@ -9095,100 +9074,120 @@ static void K_drawNameTags(void)
 		if (encoremode)
 			pos.x = (320<<FRACBITS)-pos.x;
 
-		st = V_ThinStringWidth(player_names[i], V_ALLOWLOWERCASE);
-
-		if (players[i].mo->eflags & MFE_VERTICALFLIP && !(players[i].pflags & PF_FLIPCAM))
+		st = cv_smallnametags.value ? V_SmallStringWidth(player_names[i], V_ALLOWLOWERCASE) : V_ThinStringWidth(player_names[i], V_ALLOWLOWERCASE);
+		
+		if (cv_smallnametags.value == 2 || !nametaggfx)
 		{
-			if (cv_smallnametags.value || !nametaggfx)
-				V_DrawSmallStringAtFixedCM(pos.x+(5<<FRACBITS), pos.y+(13<<FRACBITS)+smol, V_ALLOWLOWERCASE | trans, player_names[i], textcm);
+			if (players[i].mo->eflags & MFE_VERTICALFLIP && !(players[i].pflags & PF_FLIPCAM))
+				posy = pos.y+(13<<FRACBITS)+smol;
+			else
+				posy = pos.y+smol;
+				
+			posx = pos.x+(5<<FRACBITS);
+			V_DrawSmallStringAtFixedCM(posx, posy, V_ALLOWLOWERCASE | trans, player_names[i], textcm);
+		}
+		else if (cv_smallnametags.value == 1)
+		{
+			if (players[i].mo->eflags & MFE_VERTICALFLIP && !(players[i].pflags & PF_FLIPCAM))
+			{
+				posy = pos.y+smol;
+				pos2y = pos.y+(8<<FRACBITS)+smol;
+			}
 			else
 			{
-				V_DrawFixedPatch(pos.x, pos.y-(3<<FRACBITS), FRACUNIT, trans|V_FLIP, nametagline, cm);
-				V_DrawThinStringAtFixedCM(pos.x+(5<<FRACBITS), pos.y+(13<<FRACBITS), V_ALLOWLOWERCASE | trans, player_names[i], textcm);
+				posy = pos.y+(5<<FRACBITS)+smol;
+				pos2y = pos.y+smol;
 			}
+			posx = pos.x;
+			pos2x = pos.x+(2<<FRACBITS);
+			V_DrawFixedPatch(posx, posy, FRACUNIT/2, trans, nametagline, cm);
+			V_DrawSmallStringAtFixedCM(pos2x, pos2y, V_ALLOWLOWERCASE | trans, player_names[i], textcm);
 		}
 		else
 		{
-			if (cv_smallnametags.value || !nametaggfx)
-				V_DrawSmallStringAtFixedCM(pos.x+(5<<FRACBITS), pos.y+smol, V_ALLOWLOWERCASE | trans, player_names[i], textcm);
+			if (players[i].mo->eflags & MFE_VERTICALFLIP && !(players[i].pflags & PF_FLIPCAM))
+			{
+
+				posy = pos.y-(3<<FRACBITS);
+				pos2y = pos.y+(13<<FRACBITS);
+			}
 			else
 			{
-				V_DrawFixedPatch(pos.x, pos.y+(10<<FRACBITS), FRACUNIT, trans, nametagline, cm);
-				V_DrawThinStringAtFixedCM(pos.x+(5<<FRACBITS), pos.y, V_ALLOWLOWERCASE | trans, player_names[i], textcm);
+				posy = pos.y+(10<<FRACBITS);
+				pos2y = pos.y;
 			}
+			posx = pos.x;
+			pos2x = pos.x+(5<<FRACBITS);
+			V_DrawFixedPatch(posx, posy, FRACUNIT, trans, nametagline, cm);
+			V_DrawThinStringAtFixedCM(pos2x, pos2y, V_ALLOWLOWERCASE | trans, player_names[i], textcm);
 		}
 
-		if ((!cv_smallnametags.value) && nametaggfx)
+		if (nametaggfx)
 		{
-			if (cv_nametagfacerank.value)
+			if ((!cv_smallnametags.value) && cv_nametagfacerank.value)
 			{
 				V_DrawStretchyFixedPatch(pos.x+(6<<FRACBITS), pos.y+(10<<FRACBITS),
 					(st<<FRACBITS)+(15<<FRACBITS), FRACUNIT, trans, nametagpic, cm);
-				if (stplyr->mo->eflags & MFE_VERTICALFLIP && !(stplyr->pflags & PF_FLIPCAM))
-					V_DrawFixedPatch(pos.x+((st+8)<<FRACBITS),
-							pos.y+(13<<FRACBITS), FRACUNIT, trans, facemmapprefix[players[i].skin], cm);
-				else 
-					V_DrawFixedPatch(pos.x+((st+7)<<FRACBITS),
-							pos.y, FRACUNIT, trans, facemmapprefix[players[i].skin], cm);
+				if (players[i].mo->eflags & MFE_VERTICALFLIP && !(players[i].pflags & PF_FLIPCAM))
+				{
+					posx = pos.x+((st+8)<<FRACBITS);
+					posy = pos.y+(13<<FRACBITS);
+				}
+				else
+				{
+					posx = pos.x+((st+7)<<FRACBITS);
+					posy = pos.y;
+				}
+				V_DrawFixedPatch(posx,posy, FRACUNIT, trans, facemmapprefix[players[i].skin], cm);
 			}
 			else
 			{
-				V_DrawStretchyFixedPatch(pos.x+(6<<FRACBITS), pos.y+(10<<FRACBITS),
-				st<<FRACBITS, FRACUNIT, trans, nametagpic, cm);
+				if (!cv_smallnametags.value)
+					V_DrawStretchyFixedPatch(pos.x+(6<<FRACBITS), pos.y+(10<<FRACBITS),
+						st<<FRACBITS, FRACUNIT, trans, nametagpic, cm);
+				else if (cv_smallnametags.value == 1)
+					V_DrawStretchyFixedPatch(pos.x+(3<<FRACBITS), pos.y+(5<<FRACBITS)+smol,
+						st<<FRACBITS, FRACUNIT/2, trans, nametagpic, cm);
 			}
 		}
-	}
+		
 
-	if (cv_showownnametag.value)
-showownnametag:
-	{
-		UINT8 p = displayplayers[0];
-		K_GetNameTagPos(&pos, *stplyr, camera[0], stplyr->mo->x, stplyr->mo->y, stplyr->mo->z + stplyr->mo->height);
-
-		pos.y -= stplyr->mo->height/2;
-
-		if (encoremode)
-			pos.x = (320<<FRACBITS)-pos.x;
-
-		if (leveltime*4 < starttime)
-			trans = V_60TRANS;
-		else if (leveltime*3 < starttime)
-			trans = V_40TRANS;
-		else if (leveltime*2 < starttime)
-			trans = V_20TRANS;
-		else if (leveltime > starttime/2)
-			trans = V_60TRANS;
-		else if (leveltime > starttime/2.95)
-			trans = V_40TRANS;
-		else if (leveltime > starttime/1.8)
-			trans = V_20TRANS;
-
-		UINT8 *cm = R_GetTranslationColormap(stplyr->skin, stplyr->mo->color, GTC_CACHE);
-
-		st = V_ThinStringWidth(player_names[p], V_ALLOWLOWERCASE);
-
-		if (cv_smallnametags.value || !nametaggfx)
-			V_DrawSmallStringAtFixedCM(pos.x+(5<<FRACBITS), pos.y+smol, V_ALLOWLOWERCASE | trans, player_names[p], nametagtxtcm[stplyr->mo->color]);
+		if (cv_smallnametags.value == 1 || cv_smallnametags.value == 2)
+		{
+			if ((cv_nametagrestat.value == 1 && (players[i].kartspeed != skins[players[i].skin].kartspeed || players[i].kartweight != skins[players[i].skin].kartweight)) || cv_nametagrestat.value == 2)
+			{
+				if (cv_smallnametags.value == 1)
+				{	
+					posx = pos.x+(2<<FRACBITS);
+					pos2x = pos.x+(12<<FRACBITS);		
+				}
+				else
+				{
+					posx = pos.x+(5<<FRACBITS);
+					pos2x = pos.x+(15<<FRACBITS);					
+				
+				}
+					
+				posy = pos.y-(5<<FRACBITS)+smol;
+				V_DrawSmallStringAtFixedCM(posx, posy, trans, va("S%d ", players[i].kartspeed),nametagtxtcm[SKINCOLOR_BLUE]);
+				V_DrawSmallStringAtFixedCM(pos2x, posy, trans, va("W%d ", players[i].kartweight),nametagtxtcm[SKINCOLOR_ORANGE]);
+			}
+		}
 		else
-		{
-			V_DrawFixedPatch(pos.x, pos.y+(10<<FRACBITS), FRACUNIT, trans, nametagline, cm);
-			V_DrawThinStringAtFixedCM(pos.x+(5<<FRACBITS), pos.y, V_ALLOWLOWERCASE | trans, player_names[p], nametagtxtcm[stplyr->mo->color]);
-		}
-
-		if ((!cv_smallnametags.value) && nametaggfx)
-		{
-			if (!cv_nametagfacerank.value)
+		{	
+			
+			if ((cv_nametagrestat.value == 1 && (players[i].kartspeed != skins[players[i].skin].kartspeed || players[i].kartweight != skins[players[i].skin].kartweight)) || cv_nametagrestat.value == 2)
 			{
-				V_DrawStretchyFixedPatch(pos.x+(6<<FRACBITS), pos.y+(10<<FRACBITS),
-					st<<FRACBITS, FRACUNIT, trans, nametagpic, cm);
-			}
-			else
-			{
-				V_DrawStretchyFixedPatch(pos.x+(6<<FRACBITS), pos.y+(10<<FRACBITS),
-					(st<<FRACBITS)+(15<<FRACBITS), FRACUNIT, trans, nametagpic, cm);
-				V_DrawFixedPatch(pos.x+((st+7)<<FRACBITS), pos.y, FRACUNIT, trans, facemmapprefix[stplyr->skin], cm);
+				V_DrawStringAtFixedCM(pos.x+(13<<FRACBITS), pos.y-(10<<FRACBITS), trans, va("%d ", players[i].kartspeed),nametagtxtcm[SKINCOLOR_BLUE]);
+				V_DrawStringAtFixedCM(pos.x+(33<<FRACBITS), pos.y-(10<<FRACBITS), trans, va("%d ", players[i].kartweight),nametagtxtcm[SKINCOLOR_ORANGE]);
+				if (nametaggfx)
+				{
+					V_DrawFixedPatch(pos.x+(4<<FRACBITS), pos.y-(11<<FRACBITS), FRACUNIT, trans, nametagspeed, cm);
+					V_DrawFixedPatch(pos.x+(24<<FRACBITS), pos.y-(11<<FRACBITS), FRACUNIT, trans, nametagweight, cm);
+				}
 			}
 		}
+			
 	}
 }
 

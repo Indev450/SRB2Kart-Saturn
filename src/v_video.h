@@ -204,6 +204,7 @@ void V_DrawCenteredThinString(INT32 x, INT32 y, INT32 option, const char *string
 void V_DrawRightAlignedThinString(INT32 x, INT32 y, INT32 option, const char *string);
 
 void V_DrawStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *string);
+void V_DrawStringAtFixedCM(fixed_t x, fixed_t y, INT32 option, const char *string, UINT8* colormap);
 
 void V_DrawSmallStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *string);
 void V_DrawCenteredSmallStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *string);

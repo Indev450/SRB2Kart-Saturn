@@ -1483,7 +1483,7 @@ void D_SRB2Main(void)
 			statdp = true;
 
 		// Nametag stuffs
-		if (W_CheckMultipleLumps("NTLINE", "NTLINEV", NULL)) 
+		if (W_CheckMultipleLumps("NTLINE", "NTLINEV","NTSP","NTWH", NULL)) 
 			nametaggfx = true;
 	}
 

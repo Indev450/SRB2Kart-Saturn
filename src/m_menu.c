@@ -2323,8 +2323,22 @@ static menuitem_t OP_NametagMenu[] =
 	{IT_STRING | IT_CVAR, NULL, "Nametag Max distance", &cv_nametagdist, 40},
 	{IT_STRING | IT_CVAR, NULL, "Nametag Max Display Players", &cv_nametagmaxplayers, 50},
 	{IT_STRING | IT_CVAR, NULL, "Nametag Transparency", &cv_nametagtrans, 60},
-	{IT_STRING | IT_CVAR, NULL, "Small Nametags", &cv_smallnametags, 70},
+	{IT_STRING | IT_CVAR, NULL, "Nametag Restat", &cv_nametagrestat, 70},
+	{IT_STRING | IT_CVAR, NULL, "Small Nametags", &cv_smallnametags, 80},
 	//{IT_STRING | IT_CVAR, NULL, "Nametag Scaling", &cv_nametagscaling, 70}
+};
+
+static const char* OP_NametagTooltips[] =
+{
+	NULL,
+	"Enable nametags in game.",
+	"Show character icon in nametag.",
+	"Show your own nametag in game.",
+	"Distance nametags are visible.",
+	"Maximum amount of nametags on screen.",
+	"Transparency of nametags.",
+	"Show stats in nametags.",
+	"Alternative smaller nametags.",
 };
 
 enum
@@ -2336,8 +2350,11 @@ enum
 	nt_maxdist,
 	nt_maxplayer,
 	nt_nttrans,
+	nt_ntrestat,
 	nt_smol,
 };
+
+
 
 static menuitem_t OP_TiltMenu[] =
 {
@@ -5235,6 +5252,16 @@ static void M_DrawGenericMenu(void)
 		if (!(OP_AdvancedBirdTooltips[itemOn] == NULL)) 
 		{
 			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_AdvancedBirdTooltips[itemOn], coolalphatimer);
+			if (coolalphatimer > 0 && interpTimerHackAllow)
+				coolalphatimer--;
+		}
+	}
+	
+	if (currentMenu == &OP_NametagDef)
+	{
+		if (!(OP_NametagTooltips[itemOn] == NULL)) 
+		{
+			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_NametagTooltips[itemOn], coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
 				coolalphatimer--;
 		}
