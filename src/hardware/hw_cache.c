@@ -566,6 +566,10 @@ GLMapTexture_t *HWR_GetTexture(INT32 tex, boolean noencore)
 	if ((unsigned)tex >= gr_numtextures)
 		I_Error("HWR_GetTexture: tex >= numtextures\n");
 #endif
+
+	if (!tex)
+		I_Error ("HWR_GetTexture: There was an issue passing a Texture to HWR_GetTexture\nthis should never happen and is\nnmost likely and issue with the map\n");
+
 	grtex = &gr_textures[tex*2 + (encoremap && !noencore ? 0 : 1)];
 
 	if (!grtex->mipmap.data && !grtex->mipmap.downloaded)
