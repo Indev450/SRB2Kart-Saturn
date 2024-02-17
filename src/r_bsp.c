@@ -82,7 +82,7 @@ void R_AllocClipSegMemory(void)
 //
 // Replaces the old R_Clip*WallSegment functions. It draws bits of walls in those
 // columns which aren't solid, and updates the solidcol[] array appropriately
-static void R_ClipWallSegment(int first, int last, boolean solid)
+static void R_ClipWallSegment(INT32 first, INT32 last, boolean solid)
 {
 	while (first < last)
 	{
@@ -123,6 +123,7 @@ void R_ClearClipSegs(void)
 {
 	memset(solidcol, 0, viewwidth);
 }
+
 void R_PortalClearClipSegs(INT32 start, INT32 end)
 {
 	R_ClearClipSegs();
@@ -518,7 +519,21 @@ static boolean R_CheckBBox(const fixed_t *bspcoord)
 	const INT32* check;
 
 	// Find the corners of the box that define the edges from current viewpoint.
-	if ((boxpos = (viewx <= bspcoord[BOXLEFT] ? 0 : viewx < bspcoord[BOXRIGHT] ? 1 : 2) + (viewy >= bspcoord[BOXTOP] ? 0 : viewy > bspcoord[BOXBOTTOM] ? 4 : 8)) == 5)
+	if (viewx <= bspcoord[BOXLEFT])
+		boxpos = 0;
+	else if (viewx < bspcoord[BOXRIGHT])
+		boxpos = 1;
+	else
+		boxpos = 2;
+
+	if (viewy >= bspcoord[BOXTOP])
+		boxpos |= 0;
+	else if (viewy > bspcoord[BOXBOTTOM])
+		boxpos |= 1<<2;
+	else
+		boxpos |= 2<<2;
+
+	if (boxpos == 5)
 		return true;
 
 	check = checkcoord[boxpos];
