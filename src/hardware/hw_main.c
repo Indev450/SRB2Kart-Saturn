@@ -170,7 +170,7 @@ static void CV_grframebuffer_OnChange(void)
 {
 	ONLY_IF_GL_LOADED
 	HWD.pfnSetSpecialState(HWD_SET_FRAMEBUFFER, cv_grframebuffer.value);
-	RefreshSDLSurface();
+	OglSdlSurface(vid.width, vid.height); //this is really dumb but it works TODO: fix compiler warning, cant include the proper header file here
 }
 
 static void CV_filtermode_ONChange(void)
