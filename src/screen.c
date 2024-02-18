@@ -201,11 +201,22 @@ void SCR_Startup(void)
 
 	vid.modenum = 0;
 
-	vid.dupx = vid.width / BASEVIDWIDTH;
-	vid.dupy = vid.height / BASEVIDHEIGHT;
-	vid.dupx = vid.dupy = (vid.dupx < vid.dupy ? vid.dupx : vid.dupy);
-	vid.fdupx = FixedDiv(vid.width*FRACUNIT, BASEVIDWIDTH*FRACUNIT);
-	vid.fdupy = FixedDiv(vid.height*FRACUNIT, BASEVIDHEIGHT*FRACUNIT);
+	if ((vid.width > 720) && (vid.height > 1280)) // i hate the scaling above 720p making everything comically large
+	{
+		vid.dupx = (vid.width / BASEVIDWIDTH)  / 1.2;
+		vid.dupy = (vid.height / BASEVIDHEIGHT) / 1.2;
+		vid.dupx = vid.dupy = (vid.dupx < vid.dupy ? vid.dupx : vid.dupy);
+		vid.fdupx = FixedDiv(vid.width*FRACUNIT, BASEVIDWIDTH*FRACUNIT) / 1.2;
+		vid.fdupy = FixedDiv(vid.height*FRACUNIT, BASEVIDHEIGHT*FRACUNIT) / 1.2;
+	}
+	else
+	{
+		vid.dupx = vid.width / BASEVIDWIDTH;
+		vid.dupy = vid.height / BASEVIDHEIGHT;
+		vid.dupx = vid.dupy = (vid.dupx < vid.dupy ? vid.dupx : vid.dupy);
+		vid.fdupx = FixedDiv(vid.width*FRACUNIT, BASEVIDWIDTH*FRACUNIT);
+		vid.fdupy = FixedDiv(vid.height*FRACUNIT, BASEVIDHEIGHT*FRACUNIT);
+	}
 
 //#ifdef HWRENDER
 	//if (rendermode != render_opengl && rendermode != render_none) // This was just placing it incorrectly at non aspect correct resolutions in opengl
@@ -282,11 +293,11 @@ void SCR_Recalc(void)
 	// calculated once and for all, used by routines in v_video.c
 	if ((vid.width > 720) && (vid.height > 1280)) // i hate the scaling above 720p making everything comically large
 	{
-		vid.dupx = (vid.width / BASEVIDWIDTH)  / 1.15;
-		vid.dupy = (vid.height / BASEVIDHEIGHT) / 1.15;
+		vid.dupx = (vid.width / BASEVIDWIDTH)  / 1.2;
+		vid.dupy = (vid.height / BASEVIDHEIGHT) / 1.2;
 		vid.dupx = vid.dupy = (vid.dupx < vid.dupy ? vid.dupx : vid.dupy);
-		vid.fdupx = FixedDiv(vid.width*FRACUNIT, BASEVIDWIDTH*FRACUNIT) / 1.15;
-		vid.fdupy = FixedDiv(vid.height*FRACUNIT, BASEVIDHEIGHT*FRACUNIT) / 1.15;
+		vid.fdupx = FixedDiv(vid.width*FRACUNIT, BASEVIDWIDTH*FRACUNIT) / 1.2;
+		vid.fdupy = FixedDiv(vid.height*FRACUNIT, BASEVIDHEIGHT*FRACUNIT) / 1.2;
 	}
 	else
 	{
