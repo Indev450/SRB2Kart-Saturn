@@ -33,7 +33,6 @@
 boolean LUA_CallAction(const char *action, mobj_t *actor);
 #endif
 
-player_t *stplyr;
 INT32 var1;
 INT32 var2;
 

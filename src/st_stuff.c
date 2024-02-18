@@ -150,6 +150,10 @@ static patch_t *hud_tv2;
 static patch_t *envelope;
 #endif
 
+// current player for overlay drawing
+player_t *stplyr;
+UINT8 stplyrnum;
+
 // SRB2kart
 
 hudinfo_t hudinfo[NUMHUDITEMS] =
@@ -2223,6 +2227,7 @@ void ST_Drawer(void)
 		for (i = 0; i <= splitscreen; i++)
 		{
 			stplyr = &players[displayplayers[i]];
+			stplyrnum = i;
 			ST_overlayDrawer();
 		}
 
