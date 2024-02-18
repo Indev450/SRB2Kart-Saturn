@@ -1126,9 +1126,7 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_scr_height);
 
 	CV_RegisterVar(&cv_soundtest);
-	
-	CV_RegisterVar(&cv_skinselectspin);
-	
+
 	CV_RegisterVar(&cv_nametag);
 	CV_RegisterVar(&cv_nametagtrans);
 	CV_RegisterVar(&cv_nametagfacerank);
