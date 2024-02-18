@@ -969,13 +969,6 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_chatbacktint);
 	CV_RegisterVar(&cv_songcredits);
 	
-	// m_menu.c
-	CV_RegisterVar(&cv_showtrackaddon);
-	CV_RegisterVar(&cv_showlocalskinmenus);
-	CV_RegisterVar(&cv_skinselectspin);
-	CV_RegisterVar(&cv_showallmaps);
-	CV_RegisterVar(&cv_showmusicfilename);
-	
 	CV_RegisterVar(&cv_growmusic);
 	CV_RegisterVar(&cv_supermusic);
 			

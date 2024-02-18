@@ -4511,6 +4511,13 @@ void M_Init(void)
 	//CV_RegisterVar(&cv_dummymares);
 	CV_RegisterVar(&cv_dummystaff);
 
+	CV_RegisterVar(&cv_showtrackaddon);
+	CV_RegisterVar(&cv_showlocalskinmenus);
+
+	CV_RegisterVar(&cv_skinselectspin);
+	CV_RegisterVar(&cv_showallmaps);
+	CV_RegisterVar(&cv_showmusicfilename);
+
 	quitmsg[QUITMSG] = M_GetText("Eggman's tied explosives\nto your girlfriend, and\nwill activate them if\nyou press the 'Y' key!\nPress 'N' to save her!\n\n(Press 'Y' to quit)");
 	quitmsg[QUITMSG1] = M_GetText("What would Tails say if\nhe saw you quitting the game?\n\n(Press 'Y' to quit)");
 	quitmsg[QUITMSG2] = M_GetText("Hey!\nWhere do ya think you're goin'?\n\n(Press 'Y' to quit)");
