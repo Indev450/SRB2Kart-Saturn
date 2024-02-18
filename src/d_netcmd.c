@@ -936,7 +936,6 @@ void D_RegisterClientCommands(void)
 #ifdef SEENAMES
 	CV_RegisterVar(&cv_seenames);
 #endif
-
 	CV_RegisterVar(&cv_rollingdemos);
 	CV_RegisterVar(&cv_netstat);
 	CV_RegisterVar(&cv_netticbuffer);
@@ -958,7 +957,7 @@ void D_RegisterClientCommands(void)
 
 	COM_AddCommand("displayplayer", Command_Displayplayer_f);
 
-	// hu_stuff.c
+	// m_menu.c
 	//CV_RegisterVar(&cv_compactscoreboard);
 	CV_RegisterVar(&cv_chatheight);
 	CV_RegisterVar(&cv_chatwidth);
@@ -968,6 +967,7 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_chatnotifications);
 	CV_RegisterVar(&cv_chatbacktint);
 	CV_RegisterVar(&cv_songcredits);
+	CV_RegisterVar(&cv_showfreeplay);	
 	
 	CV_RegisterVar(&cv_growmusic);
 	CV_RegisterVar(&cv_supermusic);
