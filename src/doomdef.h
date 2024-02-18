@@ -559,7 +559,7 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 // Compile them at your own risk!
 
 /// Undefine to use the new method of Gamma correction see colour cube in v_video.c
-#define BACKWARDSCOMPATCORRECTION
+//#define BACKWARDSCOMPATCORRECTION
 
 /// Kalaron/Eternity Engine slope code (SRB2CB ported) 
 #define ESLOPE
