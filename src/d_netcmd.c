@@ -819,8 +819,6 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_pingtimeout);
 	CV_RegisterVar(&cv_showping);
 	CV_RegisterVar(&cv_pingmeasurement);
-	CV_RegisterVar(&cv_pingicon);
-	CV_RegisterVar(&cv_pingstyle);
 
 #ifdef SEENAMES
 	CV_RegisterVar(&cv_allowseenames);
@@ -838,9 +836,6 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_recordmultiplayerdemos);
 	CV_RegisterVar(&cv_netdemosyncquality);
 	CV_RegisterVar(&cv_maxdemosize);
-	
-	CV_RegisterVar(&cv_cechotoggle);
-	
 	CV_RegisterVar(&cv_nativekeyboard);
 }
 
@@ -959,6 +954,11 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_timetic);
 	CV_RegisterVar(&cv_itemfinder);
 
+	CV_RegisterVar(&cv_pingicon);
+	CV_RegisterVar(&cv_pingstyle);
+
+	CV_RegisterVar(&cv_cechotoggle);
+
 	// time attack ghost options are also saved to config
 	CV_RegisterVar(&cv_ghost_besttime);
 	CV_RegisterVar(&cv_ghost_bestlap);
@@ -967,17 +967,8 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_ghost_staff);
 
 	COM_AddCommand("displayplayer", Command_Displayplayer_f);
-	
+
 	CV_RegisterVar(&cv_audbuffersize); 
-	
-#ifdef HAVE_OPENMPT
-	CV_RegisterVar(&cv_modfilter);
-	CV_RegisterVar(&cv_stereosep);
-	CV_RegisterVar(&cv_amigafilter);
-#if OPENMPT_API_VERSION_MAJOR < 1 && OPENMPT_API_VERSION_MINOR > 4
-	CV_RegisterVar(&cv_amigatype);
-#endif
-#endif
 
 	// m_menu.c
 	//CV_RegisterVar(&cv_compactscoreboard);
@@ -990,16 +981,18 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_chatbacktint);
 	CV_RegisterVar(&cv_songcredits);
 	CV_RegisterVar(&cv_showfreeplay);	
+	CV_RegisterVar(&cv_skinselectspin);
+	CV_RegisterVar(&cv_showallmaps);
 	
 	CV_RegisterVar(&cv_growmusic);
 	CV_RegisterVar(&cv_supermusic);
-			
+
 	CV_RegisterVar(&cv_showtrackaddon);
 	CV_RegisterVar(&cv_showviewpointtext);
-	
+
 	CV_RegisterVar(&cv_luaimmersion);
 	CV_RegisterVar(&cv_fakelocalskin);
-	
+
 	CV_RegisterVar(&cv_showlocalskinmenus);
 
 	//CV_RegisterVar(&cv_crosshair);
@@ -1113,6 +1106,15 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_midimusicvolume);
 #endif
 	CV_RegisterVar(&cv_numChannels);
+	
+#ifdef HAVE_OPENMPT
+	CV_RegisterVar(&cv_modfilter);
+	CV_RegisterVar(&cv_stereosep);
+	CV_RegisterVar(&cv_amigafilter);
+#if OPENMPT_API_VERSION_MAJOR < 1 && OPENMPT_API_VERSION_MINOR > 4
+	CV_RegisterVar(&cv_amigatype);
+#endif
+#endif
 
 	// screen.c
 	CV_RegisterVar(&cv_fullscreen);
@@ -1143,11 +1145,10 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_ps_thinkframe_page);
 	CV_RegisterVar(&cv_ps_samplesize);
 	CV_RegisterVar(&cv_ps_descriptor);
-	
+
 	//Value used to store last server player has joined
 	CV_RegisterVar(&cv_lastserver);
-	
-	CV_RegisterVar(&cv_showallmaps);
+
 	CV_RegisterVar(&cv_showmusicfilename);
 
 	// ingame object placing
