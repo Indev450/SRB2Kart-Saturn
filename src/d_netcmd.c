@@ -196,6 +196,7 @@ static void Command_Cheats_f(void);
 static void Command_ListSkins(void);
 static void Command_SkinSearch(void);
 
+
 #ifdef _DEBUG
 static void Command_Togglemodified_f(void);
 #ifdef HAVE_BLUA
@@ -512,6 +513,10 @@ consvar_t cv_mute = {"mute", "Off", CV_NETVAR|CV_CALL, CV_OnOff, Mute_OnChange, 
 
 consvar_t cv_sleep = {"cpusleep", "1", CV_SAVE, sleeping_cons_t, NULL, -1, NULL, NULL, 0, 0, NULL};
 
+static CV_PossibleValue_t skinselectspin_cons_t[] = {
+	{0, "Off"}, {1, "Slow"}, {2, "2"}, {3, "3"}, {4, "4"}, {5, "5"}, {6, "6"}, {7, "7"}, {8, "8"}, {9, "9"}, {10, "Fast"}, {SKINSELECTSPIN_PAIN, "Pain"}, {0, NULL}};
+consvar_t cv_skinselectspin = {"skinselectspin", "5", CV_SAVE, skinselectspin_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 static CV_PossibleValue_t nametagtrans_cons_t[] = {
 	{0, "Never"}, {1, "Far only"}, {2, "Dynamic"}, {3, "Always"}, {4, "HUD Trans."}, {0, NULL}};
 /*static CV_PossibleValue_t nametagscaling_cons_t[] = {
@@ -546,6 +551,8 @@ consvar_t cv_ps_samplesize = {"ps_samplesize", "1", CV_CALL, ps_samplesize_cons_
 static CV_PossibleValue_t ps_descriptor_cons_t[] = {
 	{1, "Average"}, {2, "SD"}, {3, "Minimum"}, {4, "Maximum"}, {0, NULL}};
 consvar_t cv_ps_descriptor = {"ps_descriptor", "Average", 0, ps_descriptor_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_showtrackaddon = {"showtrackaddon", "Yes", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static CV_PossibleValue_t skinselectmenu_t[] = {{SKINMENUTYPE_SCROLL, "Scroll"}, {SKINMENUTYPE_2D, "2d"}, {SKINMENUTYPE_GRID, "Grid"}, {SKINMENUTYPE_EXTENDED, "Extended"}, {0, NULL}};
 consvar_t cv_skinselectmenu = {"skinselectmenu", "Extended", CV_SAVE, skinselectmenu_t, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -812,6 +819,8 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_pingtimeout);
 	CV_RegisterVar(&cv_showping);
 	CV_RegisterVar(&cv_pingmeasurement);
+	CV_RegisterVar(&cv_pingicon);
+	CV_RegisterVar(&cv_pingstyle);
 
 #ifdef SEENAMES
 	CV_RegisterVar(&cv_allowseenames);
@@ -829,6 +838,8 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_recordmultiplayerdemos);
 	CV_RegisterVar(&cv_netdemosyncquality);
 	CV_RegisterVar(&cv_maxdemosize);
+	
+	CV_RegisterVar(&cv_cechotoggle);
 	
 	CV_RegisterVar(&cv_nativekeyboard);
 }
@@ -956,6 +967,17 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_ghost_staff);
 
 	COM_AddCommand("displayplayer", Command_Displayplayer_f);
+	
+	CV_RegisterVar(&cv_audbuffersize); 
+	
+#ifdef HAVE_OPENMPT
+	CV_RegisterVar(&cv_modfilter);
+	CV_RegisterVar(&cv_stereosep);
+	CV_RegisterVar(&cv_amigafilter);
+#if OPENMPT_API_VERSION_MAJOR < 1 && OPENMPT_API_VERSION_MINOR > 4
+	CV_RegisterVar(&cv_amigatype);
+#endif
+#endif
 
 	// m_menu.c
 	//CV_RegisterVar(&cv_compactscoreboard);
@@ -972,10 +994,13 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_growmusic);
 	CV_RegisterVar(&cv_supermusic);
 			
+	CV_RegisterVar(&cv_showtrackaddon);
 	CV_RegisterVar(&cv_showviewpointtext);
 	
 	CV_RegisterVar(&cv_luaimmersion);
 	CV_RegisterVar(&cv_fakelocalskin);
+	
+	CV_RegisterVar(&cv_showlocalskinmenus);
 
 	//CV_RegisterVar(&cv_crosshair);
 	//CV_RegisterVar(&cv_crosshair2);
@@ -1081,7 +1106,26 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_useranalog3);
 	CV_RegisterVar(&cv_useranalog4);*/
 
+	// s_sound.c
+	CV_RegisterVar(&cv_soundvolume);
+	CV_RegisterVar(&cv_digmusicvolume);
+#ifndef NO_MIDI
+	CV_RegisterVar(&cv_midimusicvolume);
+#endif
+	CV_RegisterVar(&cv_numChannels);
+
+	// screen.c
+	CV_RegisterVar(&cv_fullscreen);
+	CV_RegisterVar(&cv_renderview);
+	CV_RegisterVar(&cv_vhseffect);
+	CV_RegisterVar(&cv_shittyscreen);
+	CV_RegisterVar(&cv_scr_depth);
+	CV_RegisterVar(&cv_scr_width);
+	CV_RegisterVar(&cv_scr_height);
+
 	CV_RegisterVar(&cv_soundtest);
+	
+	CV_RegisterVar(&cv_skinselectspin);
 	
 	CV_RegisterVar(&cv_nametag);
 	CV_RegisterVar(&cv_nametagtrans);
@@ -1100,13 +1144,11 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_ps_samplesize);
 	CV_RegisterVar(&cv_ps_descriptor);
 	
-	CV_RegisterVar(&cv_cechotoggle);
-	
-	CV_RegisterVar(&cv_pingicon);
-	CV_RegisterVar(&cv_pingstyle);
-
 	//Value used to store last server player has joined
 	CV_RegisterVar(&cv_lastserver);
+	
+	CV_RegisterVar(&cv_showallmaps);
+	CV_RegisterVar(&cv_showmusicfilename);
 
 	// ingame object placing
 	COM_AddCommand("objectplace", Command_ObjectPlace_f);

@@ -244,14 +244,6 @@ void SCR_Startup(void)
 	CV_RegisterVar(&cv_menucaps);
 	CV_RegisterVar(&cv_constextsize);
 
-	CV_RegisterVar(&cv_fullscreen);
-	CV_RegisterVar(&cv_renderview);
-	CV_RegisterVar(&cv_vhseffect);
-	CV_RegisterVar(&cv_shittyscreen);
-	CV_RegisterVar(&cv_scr_depth);
-	CV_RegisterVar(&cv_scr_width);
-	CV_RegisterVar(&cv_scr_height);
-
 	CV_RegisterVar(&cv_globalgamma);
 	CV_RegisterVar(&cv_globalsaturation);
 
