@@ -2311,8 +2311,11 @@ static menuitem_t OP_NametagMenu[] =
 	{IT_STRING | IT_CVAR, NULL, "Nametag Max distance", &cv_nametagdist, 40},
 	{IT_STRING | IT_CVAR, NULL, "Nametag Max Display Players", &cv_nametagmaxplayers, 50},
 	{IT_STRING | IT_CVAR, NULL, "Nametag Transparency", &cv_nametagtrans, 60},
-	{IT_STRING | IT_CVAR, NULL, "Nametag Restat", &cv_nametagrestat, 70},
-	{IT_STRING | IT_CVAR, NULL, "Small Nametags", &cv_smallnametags, 80},
+	{IT_STRING | IT_CVAR, NULL, "Nametag Score", &cv_nametagscore, 70},
+	{IT_STRING | IT_CVAR, NULL, "Nametag Restat", &cv_nametagrestat, 80},
+	{IT_STRING | IT_CVAR, NULL, "Nametag Health", &cv_nametaghealth, 90},
+	{IT_STRING | IT_CVAR, NULL, "Nametag Hop", &cv_nametaghop, 100},
+	{IT_STRING | IT_CVAR, NULL, "Small Nametags", &cv_smallnametags, 110},
 	//{IT_STRING | IT_CVAR, NULL, "Nametag Scaling", &cv_nametagscaling, 70}
 };
 
@@ -2325,7 +2328,10 @@ static const char* OP_NametagTooltips[] =
 	"Distance nametags are visible.",
 	"Maximum amount of nametags on screen.",
 	"Transparency of nametags.",
+	"Show player score in nametag.",
 	"Show stats in nametags.",
+	"Show health in nametags if used by script.",
+	"Enable Saltyhop support for nametags.",
 	"Alternative smaller nametags.",
 };
 
@@ -2338,7 +2344,10 @@ enum
 	nt_maxdist,
 	nt_maxplayer,
 	nt_nttrans,
+	nt_ntpscore,
 	nt_ntrestat,
+	nt_nthealth,
+	nt_nthop,
 	nt_smol,
 };
 
