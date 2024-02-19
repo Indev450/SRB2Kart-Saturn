@@ -1074,6 +1074,7 @@ static boolean AddIWAD(void)
 	}
 }
 
+// extra graphic patches for saturn specific thingies
 boolean found_extra_kart;
 boolean found_extra2_kart;
 
@@ -1081,8 +1082,9 @@ boolean snw_speedo; // snowy speedometer check
 boolean clr_hud; // colour hud check
 boolean big_lap; // bigger lap counter
 boolean big_lap_color; // bigger lap counter but colour
-boolean kartzspeedo; // kartZ speedometer
-boolean statdp; // New stat
+boolean kartzspeedo; // kartZ speedo
+boolean statdp; // stat display for extended player setup
+boolean nametaggfx; // Nametag stuffs
 
 static void IdentifyVersion(void)
 {
@@ -1472,6 +1474,10 @@ void D_SRB2Main(void)
 		if (W_CheckMultipleLumps("K_STATNB", "K_STATN1", "K_STATN2", "K_STATN3", "K_STATN4", \
 			"K_STATN5", "K_STATN6", NULL)) 
 			statdp = true;
+
+		// Nametag stuffs
+		if (W_CheckMultipleLumps("NTLINE", "NTLINEV", NULL)) 
+			nametaggfx = true;
 	}
 
 	//

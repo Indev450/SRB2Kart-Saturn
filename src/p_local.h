@@ -363,6 +363,8 @@ void P_BounceMove(mobj_t *mo);
 boolean P_CheckSight(mobj_t *t1, mobj_t *t2);
 void P_CheckHoopPosition(mobj_t *hoopthing, fixed_t x, fixed_t y, fixed_t z, fixed_t radius);
 
+boolean P_CheckSight2(mobj_t *t1, mobj_t *t2);
+
 boolean P_CheckSector(sector_t *sector, boolean crunch);
 
 void P_DelSeclist(msecnode_t *node);

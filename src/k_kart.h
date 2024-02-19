@@ -81,6 +81,7 @@ void K_CalculateBattleWanted(void);
 void K_CheckBumpers(void);
 void K_CheckSpectateStatus(void);
 void K_UpdateSpectateGrief(void);
+void K_AutoAdjustNameTagPos(void);
 
 // sound stuff for lua
 void K_PlayAttackTaunt(mobj_t *source);

@@ -358,11 +358,16 @@ menu_t OP_SaturnCreditsDef;
 
 // Bird
 menu_t OP_BirdDef;
+
 // Stuff, yknow.
 menu_t OP_ForkedBirdDef;
 menu_t OP_LocalSkinDef;
 menu_t OP_TiltDef;
 menu_t OP_AdvancedBirdDef;
+
+// Chaotic
+menu_t OP_NametagDef;
+//menu_t OP_OGLShadowsDef;
 
 #define numaddonsshown 4
 
@@ -460,6 +465,7 @@ static CV_PossibleValue_t map_cons_t[] = {
 	{0, NULL}
 };
 consvar_t cv_nextmap = {"nextmap", "1", CV_HIDEN|CV_CALL, map_cons_t, Nextmap_OnChange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_nextmapaddon = {"nextmapaddon", "1", CV_HIDEN|CV_CALL, NULL, Nextmap_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 static CV_PossibleValue_t skins_cons_t[MAXSKINS+1] = {{1, DEFAULTSKIN}};
 consvar_t cv_chooseskin = {"chooseskin", DEFAULTSKIN, CV_HIDEN|CV_CALL, skins_cons_t, Nextmap_OnChange, 0, NULL, NULL, 0, 0, NULL};
@@ -1153,7 +1159,7 @@ enum
 // Prefix: OP_
 static menuitem_t OP_MainMenu[] =
 {
-	{IT_SUBMENU|IT_STRING,		NULL, "Control Setup...",		&OP_ControlsDef,			 0},
+	{IT_SUBMENU|IT_STRING,		NULL, "Control Setup...",		&OP_ControlsDef,			  0},
 
 	{IT_SUBMENU|IT_STRING,		NULL, "Video Options...",		&OP_VideoOptionsDef,		 20},
 	{IT_SUBMENU|IT_STRING,		NULL, "Sound Options...",		&OP_SoundOptionsDef,		 30},
@@ -1162,15 +1168,15 @@ static menuitem_t OP_MainMenu[] =
 	{IT_SUBMENU|IT_STRING,		NULL, "Gameplay Options...",	&OP_GameOptionsDef,			 60},
 	{IT_SUBMENU|IT_STRING,		NULL, "Server Options...",		&OP_ServerOptionsDef,		 70},
 
-	{IT_SUBMENU|IT_STRING,		NULL, "Data Options...",		&OP_DataOptionsDef,			90},
+	{IT_SUBMENU|IT_STRING,		NULL, "Data Options...",		&OP_DataOptionsDef,			 90},
 
 	{IT_CALL|IT_STRING,			NULL, "Tricks & Secrets (F1)",	M_Manual,					110},
 	{IT_CALL|IT_STRING,			NULL, "Play Credits",			M_Credits,					120},
 
 	{IT_SUBMENU|IT_STRING,		NULL, "Saturn Options...",		&OP_SaturnDef,				140},
 
-	{IT_SUBMENU|IT_STRING,		NULL, "Bird",	&OP_BirdDef,	150},
-	{IT_CALL|IT_STRING,		NULL, "Local Skin Options...",	M_LocalSkinMenu,	160},
+	{IT_SUBMENU|IT_STRING,		NULL, "Bird",	&OP_BirdDef,								150},
+	{IT_CALL|IT_STRING,			NULL, "Local Skin Options...",	M_LocalSkinMenu,			160},
 };
 
 static menuitem_t OP_ControlsMenu[] =
@@ -2044,13 +2050,16 @@ static menuitem_t OP_SaturnMenu[] =
 	{IT_STRING | IT_CVAR, NULL,	"Small Minimap Players",   				&cv_minihead, 				70},
 	{IT_STRING | IT_CVAR, NULL, "Show Cecho Messages", 					&cv_cechotoggle, 			80},
 	{IT_STRING | IT_CVAR, NULL, "Show Localskin Menus", 				&cv_showlocalskinmenus, 	85},
-	
-	{IT_STRING | IT_CVAR, NULL, "Less Midnight Channel Flicker", 		&cv_lessflicker, 		 	95},
+	{IT_STRING | IT_SUBMENU, NULL, "Nametags...", 						&OP_NametagDef, 			90},
 
-	{IT_SUBMENU|IT_STRING,	NULL,	"Sprite Distortion...", 			&OP_PlayerDistortDef,	 	105},
-	{IT_SUBMENU|IT_STRING,	NULL,	"Hud Offsets...", 					&OP_HudOffsetDef,		 	110},
+	{IT_STRING | IT_CVAR, NULL, "Native keyboard layout", 				&cv_nativekeyboard, 		95},
 
-	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Credits", 					&OP_SaturnCreditsDef,		120}, // uwu
+	{IT_STRING | IT_CVAR, NULL, "Less Midnight Channel Flicker", 		&cv_lessflicker, 		 	105},
+
+	{IT_SUBMENU|IT_STRING,	NULL,	"Sprite Distortion...", 			&OP_PlayerDistortDef,	 	115},
+	{IT_SUBMENU|IT_STRING,	NULL,	"Hud Offsets...", 					&OP_HudOffsetDef,		 	115},
+
+	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Credits", 					&OP_SaturnCreditsDef,		125}, // uwu
 };
 
 static const char* OP_SaturnTooltips[] =
@@ -2070,6 +2079,8 @@ static const char* OP_SaturnTooltips[] =
 	"Minimize the player icons on the minimap.",
 	"Show the big Cecho Messages.",
 	"Show Localskin Menus.",
+	"Nametag Options.",
+	"Use your native Keyboard Layout.",
 	"Disables the flicker effect on Midnight Channel.",
 	"Options for sprite distortion effects.",
 	"Move position of HUD elements.",
@@ -2091,6 +2102,10 @@ enum
 	sm_lapemblem,
 	sm_mapnames,
 	sm_smallmap,
+	sm_cechotogle,
+	sm_showlocalskin,
+	sm_nametagmen,
+	sm_nativkey,
 	sm_pisschannel,
 	sm_distortionmenu,
 	sm_hudoffsets,
@@ -2285,6 +2300,18 @@ static menuitem_t OP_ForkedBirdMenu[] =
 	{IT_STRING | IT_CALL, NULL, "Apply to Displaying Player", M_LocalSkinChange, 150},
 	{IT_STRING | IT_CALL, NULL, "Apply to Yourself", M_LocalSkinChange, 160},
 	{IT_STRING | IT_CVAR, NULL, "Lua Immersion", &cv_luaimmersion, 170},
+};
+
+static menuitem_t OP_NametagMenu[] =
+{
+	{IT_HEADER, NULL, "Nametag", NULL, 0},
+	{IT_STRING | IT_CVAR, NULL, "Nametag", &cv_nametag, 10},
+	{IT_STRING | IT_CVAR, NULL, "Show Char image in Nametag", &cv_nametagfacerank, 20},
+	{IT_STRING | IT_CVAR, NULL, "Show own Nametag", &cv_showownnametag, 30},
+	{IT_STRING | IT_CVAR, NULL, "Nametag Max distance", &cv_nametagdist, 40},
+	{IT_STRING | IT_CVAR, NULL, "Nametag Max Display Players", &cv_nametagmaxplayers, 50},
+	{IT_STRING | IT_CVAR, NULL, "Nametag Transparency", &cv_nametagtrans, 60},
+	//{IT_STRING | IT_CVAR, NULL, "Nametag Scaling", &cv_nametagscaling, 70}
 };
 
 static menuitem_t OP_TiltMenu[] =
@@ -2909,6 +2936,8 @@ menu_t OP_HudOffsetDef = DEFAULTSCROLLSTYLE(NULL, OP_HudOffsetMenu, &OP_SaturnDe
 menu_t OP_SaturnCreditsDef = DEFAULTMENUSTYLE(NULL, OP_SaturnCreditsMenu, &OP_SaturnDef, 30, 10);
 
 menu_t OP_BirdDef = DEFAULTMENUSTYLE(NULL, OP_BirdMenu, &OP_MainDef, 30, 30);
+menu_t OP_NametagDef = DEFAULTMENUSTYLE(NULL, OP_NametagMenu, &OP_SaturnDef, 30, 60);
+
 menu_t OP_TiltDef = DEFAULTMENUSTYLE(NULL, OP_TiltMenu, &OP_BirdDef, 30, 60);
 menu_t OP_AdvancedBirdDef = DEFAULTMENUSTYLE(NULL, OP_AdvancedBirdMenu, &OP_BirdDef, 30, 60);
 
@@ -4502,6 +4531,9 @@ void M_Init(void)
 		OP_SaturnMenu[sm_coloritem].status = IT_GRAYEDOUT;
 		OP_SaturnMenu[sm_colorhud_customcolor].status = IT_GRAYEDOUT;
 	}
+	
+	if (!nametaggfx)
+		OP_SaturnMenu[sm_nametagmen].status = IT_GRAYEDOUT;
 
 #ifndef NONET
 	CV_RegisterVar(&cv_serversort);
@@ -5342,8 +5374,6 @@ static void M_DrawGenericScrollMenu(void)
 		}
 	}
 #endif
-	
-	
 	
 	if (currentMenu == &OP_SaturnDef)
 	{

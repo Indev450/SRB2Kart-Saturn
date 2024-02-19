@@ -5,16 +5,27 @@
 ///        All of the SRB2kart-unique stuff.
 
 #include "doomdef.h"
+#include "doomstat.h"
+#include "doomtype.h"
+#include "command.h"
+#include "d_netcmd.h"
+#include "d_player.h"
 #include "hu_stuff.h"
 #include "g_game.h"
+#include "m_fixed.h"
 #include "m_random.h"
 #include "m_menu.h" // ffdhidshfuisduifigergho9igj89dgodhfih AAAAAAAAAA
 #include "p_local.h"
 #include "p_slopes.h"
+#include "r_defs.h"
 #include "r_draw.h"
 #include "r_local.h"
+#include "r_state.h"
+#include "r_things.h"
 #include "s_sound.h"
+#include "screen.h"
 #include "st_stuff.h"
+#include "tables.h"
 #include "v_video.h"
 #include "z_zone.h"
 #include "m_misc.h"
@@ -7011,6 +7022,9 @@ static patch_t *kp_lapanim_number[10][3];
 static patch_t *kp_lapanim_emblem[2];
 static patch_t *kp_lapanim_hand[3];
 
+static patch_t *nametagpic;
+static patch_t *nametagline;
+
 static patch_t *kp_yougotem;
 
 static patch_t *skp_smallsticker;
@@ -7042,7 +7056,7 @@ void K_LoadKartHUDGraphics(void)
 			kp_lapstickerbig2 = 		W_CachePatchName("K_STLA2B", PU_HUDGFX);
 	}
 
-	//Colourized hud
+	// Colourized hud
 	if (clr_hud)
 	{
 		kp_timestickerclr = 			W_CachePatchName("K_SCTIME", PU_HUDGFX);
@@ -7068,7 +7082,7 @@ void K_LoadKartHUDGraphics(void)
 			skp_smallstickerclr = 	  	W_CachePatchName("SC_SMSTC", PU_HUDGFX);
 	}
 
-	//KartZ speedo
+	// KartZ speedo
 	if (kartzspeedo)
 	{
 		kp_kartzspeedo[0] = 				W_CachePatchName("K_KZSP1", PU_HUDGFX);
@@ -7097,7 +7111,13 @@ void K_LoadKartHUDGraphics(void)
 		kp_kartzspeedo[23] = 				W_CachePatchName("K_KZSP24", PU_HUDGFX);
 		kp_kartzspeedo[24] = 				W_CachePatchName("K_KZSP25", PU_HUDGFX);
 	}
-	
+
+	// Nametags
+	if (nametaggfx){
+		nametagpic = W_CachePatchName("NTLINE", PU_HUDGFX);	
+		nametagline = W_CachePatchName("NTLINEV", PU_HUDGFX);
+	}
+
 	// Starting countdown
 	kp_startcountdown[0] = 		W_CachePatchName("K_CNT3A", PU_HUDGFX);
 	kp_startcountdown[1] = 		W_CachePatchName("K_CNT2A", PU_HUDGFX);
@@ -8862,6 +8882,288 @@ static void K_drawKartBumpersOrKarma(void)
 	}
 }
 
+static UINT8 *nametagtxtcm[MAXSKINCOLORS];
+
+static void K_GenerateNametagTextColormap(void)
+{
+	INT32 i;
+
+	for (i = 0; i < MAXSKINCOLORS && !nametagtxtcm[i]; i++)
+	{
+		nametagtxtcm[i] = Z_Malloc(121, PU_STATIC, NULL);
+		nametagtxtcm[i][31] = 31;
+		nametagtxtcm[i][120] = colortranslations[i][8];
+		
+		// too dark
+		if (nametagtxtcm[i][120] > 20 && nametagtxtcm[i][120] <= 31)
+			nametagtxtcm[i][120] = 20;
+		else if (nametagtxtcm[i][120] > 107 && nametagtxtcm[i][120] <= 111)
+			nametagtxtcm[i][120] = 107;
+		else if (nametagtxtcm[i][120] > 235 && nametagtxtcm[i][120] <= 246)
+			nametagtxtcm[i][120] = 235;
+	}
+}
+
+// \/ ported from the nametag addon with permission
+
+//Shoutout to Lat for the ScreenCoords
+//With alot of edit because of god damn no-green-screen, fov, and render bullshit
+static void K_GetNameTagPos(vector2_t *vec, player_t player, camera_t camera, float mx, float my, float mz)
+{
+	fixed_t camx, camy, camz, camangle, camaiming;
+	fixed_t finalset;
+	fixed_t distfact;
+	fixed_t res;
+	fixed_t resfov;
+	fixed_t fovplz;
+	fixed_t adjustres;
+	fixed_t y;
+	angle_t x;
+
+	if (player.awayviewtics) {
+		camx = player.awayviewmobj->x;
+		camy = player.awayviewmobj->y;
+		camz = player.awayviewmobj->z;
+		camangle = player.awayviewmobj->angle;
+		camaiming = player.awayviewaiming;
+	}
+	else if (camera.chase) {
+		camx = camera.x;
+		camy = camera.y;
+		camz = camera.z;
+		camangle = camera.angle;
+		camaiming = camera.aiming;
+	}
+	else {
+		camx = player.mo->x;
+		camy = player.mo->y;
+		camz = player.viewz-20*FRACUNIT;
+		camangle = player.mo->angle;
+		camaiming = player.aiming;
+	}
+
+	x = camangle-R_PointToAngle2(camx, camy, mx, my);
+
+	res = (vid.width*100)/(vid.height); // we do a simple math
+	fovplz = (cv_fov.value/FRACUNIT)*res/90; //adding fov support, not everybody use 90
+	resfov = (res*2)-fovplz; //more maths
+	adjustres = 0; //because square resolutions are motherfuckers
+	
+	if (res == fovplz) {
+		if (res < 160) //Square resolution
+			adjustres = 160-res;
+		else if (res > 160) //Wide Resolution
+			adjustres = res-160;
+	}
+
+	finalset = (resfov)+(adjustres); //+(players[i].djust.value)
+	//tadaa, and we add the adjust command incase some resolution doesn't work
+
+	distfact = FINECOSINE((x>>ANGLETOFINESHIFT) & FINEMASK);
+	if (!distfact)
+		distfact = 1;
+
+	x = FixedMul(FINETANGENT(((x+ANGLE_90)>>ANGLETOFINESHIFT) & 4095), finalset<<FRACBITS)+(160<<FRACBITS);
+
+	y = camz-mz;
+	y = FixedDiv(y, FixedMul(distfact, R_PointToDist2(camx, camy, mx, my)));
+	y = (y*finalset)+(100<<FRACBITS);
+	y = y+FINETANGENT(((camaiming+ANGLE_90)>>ANGLETOFINESHIFT) & 4095)*finalset;
+
+	vec->y = y;
+	vec->x = x;
+}
+
+typedef struct
+{
+	fixed_t dist;
+	UINT8 node;
+} sortarray;
+
+static int nametagsort(const void* a, const void* b)
+{
+	const sortarray *a2 = (const sortarray*)a;
+	const sortarray *b2 = (const sortarray*)b;
+	return (a2->dist - b2->dist);
+}
+
+static void K_drawNameTags(void)
+{
+	sortarray array[MAXPLAYERS];
+	UINT8 i, j;
+	INT32 trans = 0;
+	vector2_t pos;
+	fixed_t st;
+	
+	if (!stplyr->mo || stplyr->spectator || splitscreen)
+		return;
+
+	if (!nametagtxtcm[MAXSKINCOLORS-1])
+		K_GenerateNametagTextColormap();
+
+	if (leveltime < starttime)
+		goto showownnametag;
+	
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		if (!players[i].mo || P_MobjWasRemoved(players[i].mo) || players[i].spectator || !playeringame[i] || i == displayplayers[0])
+			continue;
+
+		array[i].dist = P_AproxDistance(players[i].mo->x - (stplyr->mo->x + stplyr->mo->momx), players[i].mo->y - (stplyr->mo->y + stplyr->mo->momy));
+		array[i].node = i;
+	}
+
+	// sort
+	qsort(array, MAXPLAYERS, sizeof(sortarray), nametagsort);
+
+	for (j = MAXPLAYERS; j > 0; j--)
+	{
+		UINT8 *cm;
+		UINT8 *textcm;
+		fixed_t distance = 0;
+		fixed_t maxdistance = (cv_nametagdist.value*10)<<FRACBITS;
+		angle_t an;
+
+		if ((j - MAXPLAYERS) > cv_nametagmaxplayers.value)
+			return;
+
+		i = array[j].node;
+
+		if (i > PLAYERSMASK)
+			continue;
+		if (i == displayplayers[0])
+			continue;
+		if (!players[i].mo || P_MobjWasRemoved(players[i].mo) || players[i].spectator || !playeringame[i])
+			continue;
+		if (players[i].kartstuff[k_hyudorotimer]) // player is invisible
+			continue;
+		distance = array[j].dist;
+		if (distance > maxdistance)
+			continue;
+		an = R_PointToAngle2(camera[0].x, camera[0].y, players[i].mo->x, players[i].mo->y) - camera[0].angle;
+		if (an > ANGLE_90 && an < ANGLE_270)
+			continue; // behind back
+		if (!P_CheckSight2(players[i].mo, stplyr->mo))
+			continue;
+
+		cm = R_GetTranslationColormap(players[i].skin, players[i].mo->color, GTC_CACHE);
+		textcm = nametagtxtcm[players[i].mo->color];
+
+		switch (cv_nametagtrans.value)
+		{
+			case 0:
+				trans = 0;
+				break;
+			case 1:
+				if (distance > (maxdistance*3/4))
+					trans = V_60TRANS;
+				else
+					trans = 0;
+				break;
+			case 2:
+				if (distance > (maxdistance*3/1))
+					trans = V_90TRANS;
+				else if (distance > (maxdistance*3/2))
+					trans = V_80TRANS;
+				else if (distance > (maxdistance*3/3))
+					trans = V_60TRANS;
+				else if (distance > (maxdistance*3/4))
+					trans = V_40TRANS;
+				else if (distance > (maxdistance*3/5))
+					trans = V_20TRANS;
+				else 
+					trans = 0;
+				break;
+			case 3:
+				trans = V_60TRANS;
+				break;
+		}
+
+		K_GetNameTagPos(&pos, *stplyr, camera[0], players[i].mo->x, players[i].mo->y, players[i].mo->z + players[i].mo->height);
+
+		pos.y -= players[i].mo->height/2;
+		if (players[i].mo->eflags & MFE_VERTICALFLIP && !(players[i].pflags & PF_FLIPCAM))
+			pos.y += players[i].mo->height; 
+		
+		if (encoremode)
+			pos.x = (320<<FRACBITS)-pos.x;
+
+		st = V_ThinStringWidth(player_names[i], V_ALLOWLOWERCASE);
+
+		if (players[i].mo->eflags & MFE_VERTICALFLIP && !(players[i].pflags & PF_FLIPCAM))
+		{
+			V_DrawFixedPatch(pos.x, pos.y-(3<<FRACBITS), FRACUNIT, trans|V_FLIP, nametagline, cm);
+			V_DrawThinStringAtFixedCM(pos.x+(5<<FRACBITS), pos.y+(13<<FRACBITS), V_ALLOWLOWERCASE | trans, player_names[i], textcm);
+		}
+		else
+		{
+			V_DrawFixedPatch(pos.x, pos.y+(10<<FRACBITS), FRACUNIT, trans, nametagline, cm);
+			V_DrawThinStringAtFixedCM(pos.x+(5<<FRACBITS), pos.y, V_ALLOWLOWERCASE | trans, player_names[i], textcm);
+		}
+	
+		if (cv_nametagfacerank.value)
+		{
+			V_DrawStretchyFixedPatch(pos.x+(6<<FRACBITS), pos.y+(10<<FRACBITS),
+				(st<<FRACBITS)+(15<<FRACBITS), FRACUNIT, trans, nametagpic, cm);
+			if (stplyr->mo->eflags & MFE_VERTICALFLIP && !(stplyr->pflags & PF_FLIPCAM))
+				V_DrawFixedPatch(pos.x+((st+8)<<FRACBITS),
+						pos.y+(13<<FRACBITS), FRACUNIT, trans, facemmapprefix[players[i].skin], cm);
+			else 
+				V_DrawFixedPatch(pos.x+((st+7)<<FRACBITS),
+						pos.y, FRACUNIT, trans, facemmapprefix[players[i].skin], cm);
+		}
+		else
+		{
+			V_DrawStretchyFixedPatch(pos.x+(6<<FRACBITS), pos.y+(10<<FRACBITS),
+			st<<FRACBITS, FRACUNIT, trans, nametagpic, cm);
+		}
+	}
+	
+	if (cv_showownnametag.value)
+showownnametag:
+	{
+		UINT8 p = displayplayers[0];
+		K_GetNameTagPos(&pos, *stplyr, camera[0], stplyr->mo->x, stplyr->mo->y, stplyr->mo->z + stplyr->mo->height);
+
+		pos.y -= stplyr->mo->height/2;
+
+		if (encoremode)
+			pos.x = (320<<FRACBITS)-pos.x;
+
+		if (leveltime*4 < starttime)
+			trans = V_60TRANS;
+		else if (leveltime*3 < starttime)
+			trans = V_40TRANS;
+		else if (leveltime*2 < starttime)
+			trans = V_20TRANS;
+		else if (leveltime > starttime/2)
+			trans = V_60TRANS;
+		else if (leveltime > starttime/2.95)
+			trans = V_40TRANS;
+		else if (leveltime > starttime/1.8)
+			trans = V_20TRANS;
+
+		UINT8 *cm = R_GetTranslationColormap(stplyr->skin, stplyr->mo->color, GTC_CACHE);
+
+		st = V_ThinStringWidth(player_names[p], V_ALLOWLOWERCASE);
+
+		V_DrawFixedPatch(pos.x, pos.y+(10<<FRACBITS), FRACUNIT, trans, nametagline, cm);
+		V_DrawThinStringAtFixedCM(pos.x+(5<<FRACBITS), pos.y, V_ALLOWLOWERCASE | trans, player_names[p], nametagtxtcm[stplyr->mo->color]);
+
+		if (!cv_nametagfacerank.value)
+		{
+			V_DrawStretchyFixedPatch(pos.x+(6<<FRACBITS), pos.y+(10<<FRACBITS),
+				st<<FRACBITS, FRACUNIT, trans, nametagpic, cm);
+		}
+		else
+		{
+			V_DrawStretchyFixedPatch(pos.x+(6<<FRACBITS), pos.y+(10<<FRACBITS),
+				(st<<FRACBITS)+(15<<FRACBITS), FRACUNIT, trans, nametagpic, cm);
+			V_DrawFixedPatch(pos.x+((st+7)<<FRACBITS), pos.y, FRACUNIT, trans, facemmapprefix[stplyr->skin], cm);
+		}
+	}
+}
+
 static fixed_t K_FindCheckX(fixed_t px, fixed_t py, angle_t ang, fixed_t mx, fixed_t my)
 {
 	fixed_t dist, x;
@@ -9946,6 +10248,9 @@ void K_drawKartHUD(void)
 	if (LUA_HudEnabled(hud_item) && !freecam)
 #endif
 		K_drawKartItem();
+		
+	if (cv_nametag.value && nametaggfx)
+		K_drawNameTags();
 
 	// If not splitscreen, draw...
 	if (!splitscreen && !demo.title)
