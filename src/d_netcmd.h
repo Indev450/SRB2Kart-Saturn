@@ -181,6 +181,7 @@ extern consvar_t cv_nametagmaxlenght;
 //extern consvar_t cv_nametagscaling;
 extern consvar_t cv_nametagdist;
 extern consvar_t cv_showownnametag;
+extern consvar_t cv_smallnametags;
 
 #define SKINSELECTSPIN_PAIN 25
 extern consvar_t cv_skinselectspin;
