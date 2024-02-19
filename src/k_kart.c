@@ -9051,7 +9051,7 @@ static void K_drawNameTags(void)
 
 		if ((i - MAXPLAYERS) > cv_nametagmaxplayers.value)
 			return;
-		
+
 		if (i > PLAYERSMASK)
 			continue;
 		if (!players[i].mo || P_MobjWasRemoved(players[i].mo) || players[i].spectator || !playeringame[i])
@@ -9107,45 +9107,44 @@ static void K_drawNameTags(void)
 		}
 
 		dup = vid.dupx;
-		
+
 		K_GetScreenCoords(&pos, stplyr, camera, players[i].mo->x, players[i].mo->y, players[i].mo->z + players[i].mo->height);
-		
+
 		//Flipcam off
 		if (players[i].mo->eflags & MFE_VERTICALFLIP && !(players[i].pflags & PF_FLIPCAM))
 			pos.y += players[i].mo->height; 
-		
+
 		//Flipcam on
 		if (players[i].mo->eflags & MFE_VERTICALFLIP && (players[i].pflags & PF_FLIPCAM))
 			pos.y -= ((30*dup)<<FRACBITS); 
-		
+
 		//Flipcam off
 		if (players[i].mo->eflags & MFE_VERTICALFLIP && !(players[i].pflags & PF_FLIPCAM))
 			flipped = players[i].mo->eflags & MFE_VERTICALFLIP && !(players[i].pflags & PF_FLIPCAM);
-		
+
 		//Saltyhop hehe
 		if (cv_saltyhop.value && cv_nametaghop.value)
 			pos.y -= flipped ? -players[i].mo->spriteyoffset : players[i].mo->spriteyoffset;
-		
+
 		namex = pos.x>>FRACBITS;
 		namey = pos.y>>FRACBITS;
-		
+
 		tag = va("%s%s ", HU_SkinColorToConsoleColor(players[i].mo->color),player_names[i]);
 		icon = R_GetSkinFaceMini(players[i].mo->player);
-		
+
 		cm = R_GetTranslationColormap(players[i].skin, players[i].mo->color, GTC_CACHE);
 		tagcolor = colortranslations[players[i].mo->color][7];
 		vflags = trans | V_NOSCALESTART;
 		tagwidth = cv_smallnametags.value ? dup*V_SmallStringWidth(player_names[i], V_ALLOWLOWERCASE) : dup*V_ThinStringWidth(player_names[i], V_ALLOWLOWERCASE);
 		tagwidthsmall = cv_smallnametags.value ? V_SmallStringWidth(player_names[i], V_ALLOWLOWERCASE) : V_ThinStringWidth(player_names[i], V_ALLOWLOWERCASE);
-		
+
 		if (cv_smallnametags.value == 2 || cv_smallnametags.value == 1 || !nametaggfx)
 		{
-			
 			if (flipped)
 				namey += dup*5;
 			else // small offset
 				namey -= dup*3;
-			
+
 			if (nametaggfx && cv_smallnametags.value == 1)
 			{
 				if (cv_nametagfacerank.value)
@@ -9160,42 +9159,35 @@ static void K_drawNameTags(void)
 				namex += dup*2;
 				namey -= dup*4;
 			}
-			
+
 			if (cv_nametagfacerank.value)
 			{
 					V_DrawFixedPatch(namex<<FRACBITS, (namey - icon->height/2)<<FRACBITS, FRACUNIT/2, vflags, icon,  cm);
 					namex += dup*(1+icon->width/2); // add offset to other stuff
 			}
-		
+
 			//Name
 			V_DrawSmallString(namex, namey, V_ALLOWLOWERCASE | vflags, tag);
-				
-			// If you take this for a vanilla-compat client remove hpmod stuff.
-			if (cv_nametaghealth.value && players[i].kartstuff[k_hphealth])
-					V_DrawSmallString(namex, namey - dup*5, vflags, va("\x8D%d ", players[i].kartstuff[k_hphealth]));
-				
-			//If you take this for a vanilla-compat client remove the hp check.
-			if (((cv_nametagrestat.value == 1 && (players[i].kartspeed != skins[players[i].skin].kartspeed || players[i].kartweight != skins[players[i].skin].kartweight)) || cv_nametagrestat.value == 2) && !(cv_nametaghealth.value && players[i].kartstuff[k_hphealth]))
+
+			if ((cv_nametagrestat.value == 1 && (players[i].kartspeed != skins[players[i].skin].kartspeed || players[i].kartweight != skins[players[i].skin].kartweight)) || cv_nametagrestat.value == 2)
 			{
 				V_DrawSmallString(namex, namey - dup*5, vflags, va("\x84S%d ", players[i].kartspeed));
 				V_DrawSmallString(namex + dup+40, namey - dup*5, vflags, va("\x87W%d ", players[i].kartweight));
 			}
 			
-			//If you take this for a vanilla-compat client remove the hp check.
 			if (cv_nametagscore.value)
 			{
-				if ((cv_nametagrestat.value == 1 && (players[i].kartspeed != skins[players[i].skin].kartspeed || players[i].kartweight != skins[players[i].skin].kartweight)) || cv_nametagrestat.value == 2 || (cv_nametaghealth.value && players[i].kartstuff[k_hphealth]))
+				if ((cv_nametagrestat.value == 1 && (players[i].kartspeed != skins[players[i].skin].kartspeed || players[i].kartweight != skins[players[i].skin].kartweight)) || cv_nametagrestat.value == 2)
 			 		V_DrawSmallString(namex, namey - dup*10, V_ALLOWLOWERCASE | vflags, va("\x8A%d ", players[i].score));
 				else
 					V_DrawSmallString(namex, namey - dup*5, V_ALLOWLOWERCASE | vflags, va("\x8A%d ", players[i].score));
 			}
-			
 		}
 		else
 		{
 			if (cv_nametagfacerank.value)
 				tagwidth += dup*(icon->width+1);
-			
+
 			if (flipped)
 			{
 				for	(j = 0; j < 4; j++)
@@ -9224,35 +9216,26 @@ static void K_drawNameTags(void)
 					V_DrawFill(namex+dup, namey, tagwidth - dup*2, dup*3, 31 | vflags);
 					V_DrawFill(namex+dup, namey+dup, tagwidth - dup*3, dup, tagcolor | vflags);
 			}
-			
+
 			if (cv_nametagfacerank.value)
 			{	
 				V_DrawMappedPatch(namex, namey - dup*(icon->height+1), vflags, icon, cm);
 				namex += dup*(icon->height+1); // add offset to other stuff
 			}
-			
+
 			V_DrawThinString(namex, namey - dup*10, V_ALLOWLOWERCASE | vflags, tag);
-			
-			// If you take this for a vanilla-compat client remove hpmod stuff.
-			if (cv_nametaghealth.value && players[i].kartstuff[k_hphealth])
-			{
-				V_DrawScaledPatch(namex, namey - dup*20, vflags, nametaghealth);
-				V_DrawString(namex + dup*10, namey - dup*19, vflags, va("\x8D%d ", players[i].kartstuff[k_hphealth]));
-			}
-			
-			//If you take this for a vanilla-compat client remove the hp check.
-			if (((cv_nametagrestat.value == 1 && (players[i].kartspeed != skins[players[i].skin].kartspeed || players[i].kartweight != skins[players[i].skin].kartweight)) || cv_nametagrestat.value == 2) && !(cv_nametaghealth.value && players[i].kartstuff[k_hphealth]))
+
+			if ((cv_nametagrestat.value == 1 && (players[i].kartspeed != skins[players[i].skin].kartspeed || players[i].kartweight != skins[players[i].skin].kartweight)) || cv_nametagrestat.value == 2)
 			{
 				V_DrawScaledPatch(namex, namey - dup*20, vflags, nametagspeed);
 				V_DrawScaledPatch(namex + dup*18, namey - dup*20, vflags, nametagweight);
 				V_DrawString(namex + dup*9, namey - dup*19, V_ALLOWLOWERCASE | vflags, va("\x84%d ", players[i].kartspeed));
 				V_DrawString(namex + dup*27, namey - dup*19, V_ALLOWLOWERCASE | vflags, va("\x87%d ", players[i].kartweight));
 			}
-			
-			//If you take this for a vanilla-compat client remove the hp check.
+
 			if (cv_nametagscore.value)
 			{
-				if ((cv_nametagrestat.value == 1 && (players[i].kartspeed != skins[players[i].skin].kartspeed || players[i].kartweight != skins[players[i].skin].kartweight)) || cv_nametagrestat.value == 2 || (cv_nametaghealth.value && players[i].kartstuff[k_hphealth]))
+				if ((cv_nametagrestat.value == 1 && (players[i].kartspeed != skins[players[i].skin].kartspeed || players[i].kartweight != skins[players[i].skin].kartweight)) || cv_nametagrestat.value == 2)
 			 		V_DrawSmallString(namex, namey - dup*25, V_ALLOWLOWERCASE | vflags, va("\x8A%d ", players[i].score));
 				else
 					V_DrawSmallString(namex, namey - dup*15, V_ALLOWLOWERCASE | vflags, va("\x8A%d ", players[i].score));

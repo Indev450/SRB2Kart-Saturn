@@ -536,7 +536,6 @@ consvar_t cv_showownnametag = {"nametagshowown", "Off", CV_SAVE, CV_OnOff, NULL,
 consvar_t cv_smallnametags = {"nametagsmall", "Off", CV_SAVE, nametagsize_cons_t, Nametag_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_nametaghop = {"nametaghop", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_nametagscore = {"nametagscore", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_nametaghealth = {"nametaghealth", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static CV_PossibleValue_t skinselectspin_cons_t[] = {
 	{0, "Off"}, {1, "Slow"}, {2, "2"}, {3, "3"}, {4, "4"}, {5, "5"}, {6, "6"}, {7, "7"}, {8, "8"}, {9, "9"}, {10, "Fast"}, {SKINSELECTSPIN_PAIN, "Pain"}, {0, NULL}};
@@ -1141,9 +1140,6 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_nametagrestat);
 	CV_RegisterVar(&cv_nametaghop);
 	CV_RegisterVar(&cv_nametagscore);
-	// If you take this for a vanilla-compat client remove hpmod stuff.
-	CV_RegisterVar(&cv_nametaghealth);
-
 
 	CV_RegisterVar(&cv_perfstats);
 	CV_RegisterVar(&cv_ps_thinkframe_page);
