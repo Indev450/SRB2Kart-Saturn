@@ -523,6 +523,8 @@ static CV_PossibleValue_t nametagtrans_cons_t[] = {
 	{0, "MIN"},  {320, "MAX"}, {0, NULL}};*/
 static CV_PossibleValue_t nametagdistance_cons_t[] = {
 	{0, "MIN"},  {640, "MAX"}, {0, NULL}};
+static CV_PossibleValue_t nametagmaxplayer_cons_t[] = {
+    {1, "MIN"}, {MAXPLAYERS, "MAX"}, {0, NULL}};
 static CV_PossibleValue_t nametagsize_cons_t[] = {
 	{0, "Off"}, {1, "Small"}, {2, "Minimal"}, {0, NULL}};
 static CV_PossibleValue_t nametagrestat_cons_t[] = {
@@ -533,7 +535,7 @@ consvar_t cv_nametagtrans = {"nametagtransparency", "Dynamic", CV_SAVE, nametagt
 consvar_t cv_nametagfacerank = {"nametagfacerank", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_nametagrestat = {"nametagrestat", "Restat", CV_SAVE, nametagrestat_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_nametagdist = {"nametagdist", "300", CV_SAVE, nametagdistance_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_nametagmaxplayers = {"nametagmaxplayers", "8", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_nametagmaxplayers = {"nametagmaxplayers", "3", CV_SAVE, nametagmaxplayer_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_nametagmaxlenght = {"nametagmaxlenght", "12", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
 //consvar_t cv_nametagscaling = {"nametagscaling", "160", CV_SAVE, nametagscaling_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_showownnametag = {"nametagshowown", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
