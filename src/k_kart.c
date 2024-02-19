@@ -7032,8 +7032,6 @@ static patch_t *nametagpic;
 static patch_t *nametagline;
 static patch_t *nametagspeed;
 static patch_t *nametagweight;
-// Remove Health if you plan to use for vanilla-compat client
-static patch_t *nametaghealth;
 
 static patch_t *kp_yougotem;
 
@@ -7123,15 +7121,13 @@ void K_LoadKartHUDGraphics(void)
 	}
 
 	// Nametags
-	// Remove Health if you plan to use for vanilla-compat client
-	if (nametaggfx){
+	if (nametaggfx)
+	{
 		
 		nametagpic = W_CachePatchName("NTLINE", PU_HUDGFX);
 		nametagline = W_CachePatchName("NTLINEV", PU_HUDGFX);
 		nametagspeed = W_CachePatchName("NTSP", PU_HUDGFX);
 		nametagweight = W_CachePatchName("NTWH", PU_HUDGFX);
-		nametaghealth = W_CachePatchName("NTHP", PU_HUDGFX);
-		
 	}
 
 	// Starting countdown
