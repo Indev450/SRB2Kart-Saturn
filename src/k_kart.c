@@ -9163,7 +9163,7 @@ static void K_drawNameTags(void)
 			if ((cv_nametagrestat.value == 1 && (players[i].kartspeed != skins[players[i].skin].kartspeed || players[i].kartweight != skins[players[i].skin].kartweight)) || cv_nametagrestat.value == 2)
 			{
 				V_DrawSmallString(namex, namey - dup*5, vflags, va("\x84S%d ", players[i].kartspeed));
-				V_DrawSmallString(namex + dup+40, namey - dup*5, vflags, va("\x87W%d ", players[i].kartweight));
+				V_DrawSmallString(namex + dup*10, namey - dup*5, vflags, va("\x87W%d ", players[i].kartweight));
 			}
 			
 			if (cv_nametagscore.value)
