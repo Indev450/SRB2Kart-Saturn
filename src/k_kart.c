@@ -9024,6 +9024,7 @@ static void K_drawNameTags(void)
 	int tagcolor = 0;
 	int vflags = 0;
 	int flipped = 0;
+	int tagsdisplayed = 0;
 	char *tag;
 	patch_t *icon;
 
@@ -9036,10 +9037,7 @@ static void K_drawNameTags(void)
 		fixed_t distance = 0;
 		fixed_t maxdistance = (10*cv_nametagdist.value)* mapobjectscale;
 		angle_t an;
-
-		if ((i - MAXPLAYERS) > cv_nametagmaxplayers.value)
-			return;
-
+		
 		if (i > PLAYERSMASK)
 			continue;
 		if (!players[i].mo || P_MobjWasRemoved(players[i].mo) || players[i].spectator || !playeringame[i])
@@ -9058,6 +9056,11 @@ static void K_drawNameTags(void)
 			continue; // behind back
 		if (!P_CheckSight(players[i].mo, stplyr->mo))
 			continue;
+		
+		tagsdisplayed += 1;
+			
+		if (tagsdisplayed > cv_nametagmaxplayers.value)
+			break;
 
 		switch (cv_nametagtrans.value)
 		{
