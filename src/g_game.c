@@ -5033,10 +5033,8 @@ void G_FreeMapSearch(mapsearchfreq_t *freq, INT32 freqc)
 INT32 G_FindMapByNameOrCode(const char *mapname, char **realmapnamep)
 {
 	boolean usemapcode = false;
-	INT32 newmapnum;
-
+	INT32 newmapnum = -1;
 	size_t mapnamelen = strlen(mapname);
-
 	char *p;
 	
 	if (mapnamelen == 1)
@@ -7008,7 +7006,7 @@ static void G_LoadDemoExtraFiles(UINT8 **pp)
 	UINT8 totalfiles;
 	char filename[MAX_WADPATH];
 	UINT8 md5sum[16];
-	filestatus_t ncs;
+	filestatus_t ncs = FS_NOTFOUND;
 	boolean toomany = false;
 	boolean alreadyloaded;
 	UINT8 i, j;
