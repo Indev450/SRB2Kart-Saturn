@@ -1082,6 +1082,7 @@ boolean big_lap_color; // bigger lap counter but colour
 boolean kartzspeedo; // kartZ speedo
 boolean statdp; // stat display for extended player setup
 boolean nametaggfx; // Nametag stuffs
+boolean driftgaugegfx;
 
 static void IdentifyVersion(void)
 {
@@ -1485,6 +1486,9 @@ void D_SRB2Main(void)
 		// Nametag stuffs
 		if (W_CheckMultipleLumps("NTLINE", "NTLINEV", "NTSP", "NTWH", NULL)) 
 			nametaggfx = true;
+		
+		if (W_CheckMultipleLumps("K_DGAU","K_DCAU","K_DGSU","K_DCSU", NULL)) 
+			driftgaugegfx = true;
 	}
 
 	//
