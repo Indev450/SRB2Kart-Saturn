@@ -9048,8 +9048,7 @@ static void K_drawNameTags(void)
 		UINT8 *cm;
 		fixed_t distance = 0;
 		fixed_t maxdistance = (10*cv_nametagdist.value)* mapobjectscale;
-		angle_t an;
-		
+
 		if (i > PLAYERSMASK)
 			continue;
 		if (!players[i].mo || P_MobjWasRemoved(players[i].mo) || players[i].spectator || !playeringame[i])
@@ -9065,9 +9064,9 @@ static void K_drawNameTags(void)
 			continue;
 		if (!P_CheckSight(stplyr->mo, players[i].mo))
 			continue;
-		
+
 		tagsdisplayed += 1;
-			
+
 		if (tagsdisplayed > cv_nametagmaxplayers.value)
 			break;
 
@@ -9109,11 +9108,11 @@ static void K_drawNameTags(void)
 		dup = vid.dupx;
 
 		K_GetScreenCoords(&pos, stplyr, camera, players[i].mo->x, players[i].mo->y, players[i].mo->z + players[i].mo->height);
-		
+
 		//Check for negative screencoords
 		if (pos.x == -1 || pos.y == -1)
 			continue;
-		
+
 		//Flipcam off
 		if (players[i].mo->eflags & MFE_VERTICALFLIP && !(players[i].pflags & PF_FLIPCAM))
 			pos.y += players[i].mo->height; 
@@ -9153,13 +9152,13 @@ static void K_drawNameTags(void)
 			{
 				if (cv_nametagfacerank.value)
 					tagwidthsmall += icon->width - dup;
-				
+
 				// Have to draw the nametag using patches here since drawfill can't draw at this scale...
 				if (!flipped)
 					V_DrawFixedPatch(namex<<FRACBITS, namey<<FRACBITS, FRACUNIT/2, vflags, nametagline, cm);
 				V_DrawStretchyFixedPatch(((namex+dup*3)<<FRACBITS), namey<<FRACBITS,
 					tagwidthsmall<<FRACBITS, FRACUNIT/2, vflags, nametagpic, cm);
-				
+
 				namex += dup*2;
 				namey -= dup*4;
 			}
@@ -9178,7 +9177,7 @@ static void K_drawNameTags(void)
 				V_DrawSmallString(namex, namey - dup*5, vflags, va("\x84S%d ", players[i].kartspeed));
 				V_DrawSmallString(namex + dup*10, namey - dup*5, vflags, va("\x87W%d ", players[i].kartweight));
 			}
-			
+
 			if (cv_nametagscore.value)
 			{
 				if ((cv_nametagrestat.value == 1 && (players[i].kartspeed != skins[players[i].skin].kartspeed || players[i].kartweight != skins[players[i].skin].kartweight)) || cv_nametagrestat.value == 2)
@@ -9277,27 +9276,26 @@ static void K_drawDriftGauge(void)
 
 	if (!stplyr->kartstuff[k_drift])
 		return;
-		
-		
+
 	K_GetScreenCoords(&pos, stplyr, camera, stplyr->mo->x, stplyr->mo->y, stplyr->mo->z+FixedMul(cv_driftgaugeofs.value, cv_driftgaugeofs.value > 0 ? stplyr->mo->scale : mapobjectscale));
-	
+
 	//Flipcam on
 	if (stplyr->mo->eflags & MFE_VERTICALFLIP && (stplyr->pflags & PF_FLIPCAM))
 		pos.y += ((25*dup)<<FRACBITS); 
-	
+
 	basex = pos.x>>FRACBITS; 
 	basey = pos.y>>FRACBITS;
 	
 	fixed_t barx;
 	fixed_t bary;
 	INT32 BAR_WIDTH;
-	
+
 	if (cv_driftgaugetrans.value)
 		drifttrans = V_HUDTRANS;
 	else
 		drifttrans = 0;
-	
-	switch(cv_driftgaugestyle.value)
+
+	switch (cv_driftgaugestyle.value)
 	{
 		case 1:
 		case 2:
@@ -9307,7 +9305,6 @@ static void K_drawDriftGauge(void)
 				if (cv_driftgaugestyle.value == 1 || cv_driftgaugestyle.value == 3)
 				{
 					barx = basex - dup*23;
-
 					BAR_WIDTH = dup*47;
 				}
 				else
@@ -9330,7 +9327,6 @@ static void K_drawDriftGauge(void)
 					UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
 					V_DrawMappedPatch(cv_driftgaugestyle.value == 2 ? basex + dup*11 : basex, basey, V_NOSCALESTART|V_OFFSET|drifttrans, cv_driftgaugestyle.value == 2 ? driftgaugesmallcolor : driftgaugecolor, colormap);
 				}
-
 
 				if (driftcharge >= driftval*4) // rainbow sparks
 				{
@@ -9361,12 +9357,11 @@ static void K_drawDriftGauge(void)
 			}
 
 			break;
-			
 		case 4:	
 			V_DrawPaddedTallNum(basex + (dup*16), basey, V_NOSCALESTART|V_OFFSET|drifttrans, driftcharge*100 / driftval, 3);
 			break;
-			
-		
+		default:
+			break;
 	}
 }
 
