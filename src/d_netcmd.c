@@ -525,8 +525,6 @@ static CV_PossibleValue_t nametagsize_cons_t[] = {
 	{0, "Off"}, {1, "Small"}, {2, "Minimal"}, {0, NULL}};
 static CV_PossibleValue_t nametagrestat_cons_t[] = {
 	{0, "Off"}, {1, "Restat"}, {2, "Always"}, {0, NULL}};
-static CV_PossibleValue_t nametagmaxplayer_cons_t[] = {
-	{1, "MIN"}, {MAXPLAYERS, "MAX"}, {0, NULL}};
 
 
 consvar_t cv_nametag = {"kartnametag", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
