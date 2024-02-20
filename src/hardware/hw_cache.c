@@ -568,8 +568,7 @@ GLMapTexture_t *HWR_GetTexture(INT32 tex)
 #ifdef PARANOIA
 		I_Error("HWR_GetTexture: Invalid texture ID %d", tex);
 #else
-		HWR_SetCurrentTexture(NULL);
-		return NULL;
+		tex = 0;
 #endif
 	}
 
