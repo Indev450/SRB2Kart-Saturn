@@ -9264,7 +9264,7 @@ static void K_drawDriftGauge(void)
 	vector2_t pos = {0};
 	fixed_t basex,basey;
 	INT32 drifttrans = 0;
-	int dup = 0;
+	int dup = vid.dupx;
 	int i;
 
 	UINT8 driftcolors[3][4] = {
@@ -9289,9 +9289,12 @@ static void K_drawDriftGauge(void)
 		
 	K_GetScreenCoords(&pos, stplyr, camera, stplyr->mo->x, stplyr->mo->y, stplyr->mo->z+FixedMul(cv_driftgaugeofs.value, cv_driftgaugeofs.value > 0 ? stplyr->mo->scale : mapobjectscale));
 	
+	//Flipcam on
+	if (stplyr->mo->eflags & MFE_VERTICALFLIP && (stplyr->pflags & PF_FLIPCAM))
+		pos.y += ((25*dup)<<FRACBITS); 
+	
 	basex = pos.x>>FRACBITS; 
 	basey = pos.y>>FRACBITS;
-	dup = vid.dupx;
 	
 	fixed_t barx;
 	fixed_t bary;
