@@ -1324,8 +1324,8 @@ static const char* OP_VideoTooltips[] =
 	"Enable fullscreen.",
 #endif
 	"Gamma (brightness) of the game.",
-	NULL,
-	NULL,
+	"Saturation of the game.",
+	"Advanced color settings of the game.",
 	"How far away objects are drawn.",
 	"How far away weather is drawn.",
 	"Toggle being able to see the sky.",
