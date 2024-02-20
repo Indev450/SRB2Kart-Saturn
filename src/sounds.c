@@ -14,6 +14,8 @@
 #include "doomtype.h"
 #include "i_sound.h"
 #include "sounds.h"
+#include "s_sound.h" //for soundprecaching
+#include "m_argv.h"
 #include "r_defs.h"
 #include "r_things.h"
 #include "z_zone.h"
@@ -1031,8 +1033,10 @@ sfxenum_t S_AddSoundFx(const char *name, boolean singular, INT32 flags, boolean 
 			S_sfx[i].skinsound = -1;
 			S_sfx[i].usefulness = -1;
 
-			/// \todo if precached load it here
-			S_sfx[i].data = NULL;
+			if (S_PrecacheSound())
+				S_sfx[i].data = I_GetSfx(&S_sfx[i]);
+			else
+				S_sfx[i].data = NULL;
 			return i;
 		}
 	}

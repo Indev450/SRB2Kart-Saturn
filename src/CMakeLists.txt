@@ -239,6 +239,7 @@ if(${SRB2_CONFIG_HAVE_BLUA})
 		lua_skinlib.c
 		lua_thinkerlib.c
 		lua_udatalib.c
+		lua_glib.c
 	)
 	set(SRB2_LUA_HEADERS
 		lua_hook.h
@@ -247,6 +248,7 @@ if(${SRB2_CONFIG_HAVE_BLUA})
 		lua_libs.h
 		lua_script.h
 		lua_udatalib.h
+		lua_glib.h
 	)
 
 	prepend_sources(SRB2_LUA_SOURCES)
@@ -452,6 +454,8 @@ endif()
 if(${SRB2_CONFIG_HWRENDER})
 	add_definitions(-DHWRENDER)
 	set(SRB2_HWRENDER_SOURCES
+		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_batching.c
+		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_shaders.c
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_bsp.c
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_cache.c
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_clip.c
@@ -467,6 +471,8 @@ if(${SRB2_CONFIG_HWRENDER})
 	)
 
 	set (SRB2_HWRENDER_HEADERS
+		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_batching.h
+		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_shaders.h
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_clip.h
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_data.h
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_defs.h

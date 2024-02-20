@@ -395,6 +395,23 @@ angle_t R_PointToAngle(fixed_t x, fixed_t y)
 		0;
 }
 
+// This version uses 64-bit variables to avoid overflows with large values.
+angle_t R_PointToAngle64(INT64 x, INT64 y)
+{
+	return (y -= viewy, (x -= viewx) || y) ?
+	x >= 0 ?
+	y >= 0 ?
+		(x > y) ? tantoangle[SlopeDivEx(y,x)] :                            // octant 0
+		ANGLE_90-tantoangle[SlopeDivEx(x,y)] :                               // octant 1
+		x > (y = -y) ? 0-tantoangle[SlopeDivEx(y,x)] :                    // octant 8
+		ANGLE_270+tantoangle[SlopeDivEx(x,y)] :                              // octant 7
+		y >= 0 ? (x = -x) > y ? ANGLE_180-tantoangle[SlopeDivEx(y,x)] :  // octant 3
+		ANGLE_90 + tantoangle[SlopeDivEx(x,y)] :                             // octant 2
+		(x = -x) > (y = -y) ? ANGLE_180+tantoangle[SlopeDivEx(y,x)] :    // octant 4
+		ANGLE_270-tantoangle[SlopeDivEx(x,y)] :                              // octant 5
+		0;
+}
+
 angle_t R_PointToAngle2(fixed_t pviewx, fixed_t pviewy, fixed_t x, fixed_t y)
 {
 	return (y -= pviewy, (x -= pviewx) || y) ?
@@ -487,32 +504,6 @@ angle_t R_PointToAngleEx(INT32 x2, INT32 y2, INT32 x1, INT32 y1)
 		(x1 = -x1) > (y1 = -y1) ? ANGLE_180+tantoangle[SlopeDivEx(y1,x1)] :    // octant 4
 		ANGLE_270-tantoangle[SlopeDivEx(x1,y1)] :                              // octant 5
 		0;
-}
-
-angle_t R_PointToAngleEx64(INT64 x2, INT64 y2, INT64 x1, INT64 y1)
-{
-    INT64 dx = x1 - x2;
-    INT64 dy = y1 - y2;
-
-    // Check for potential overflow or underflow
-    if (dx < INT64_MIN || dx > INT64_MAX || dy < INT64_MIN || dy > INT64_MAX)
-    {
-        x1 = (INT64)(dx / 2 + x2);
-        y1 = (INT64)(dy / 2 + y2);
-    }
-
-    return (y1 -= y2, (x1 -= x2) || y1) ?
-    x1 >= 0 ?
-    y1 >= 0 ?
-         (x1 > y1) ? tantoangle[SlopeDivEx(y1, x1)] :                            // octant 0
-         ANGLE_90 - tantoangle[SlopeDivEx(x1, y1)] :                               // octant 1
-         x1 > (y1 = -y1) ? 0 - tantoangle[SlopeDivEx(y1, x1)] :                    // octant 8
-         ANGLE_270 + tantoangle[SlopeDivEx(x1, y1)] :                              // octant 7
-         y1 >= 0 ? (x1 = -x1) > y1 ? ANGLE_180 - tantoangle[SlopeDivEx(y1, x1)] :  // octant 3
-         ANGLE_90 + tantoangle[SlopeDivEx(x1, y1)] :                             // octant 2
-         (x1 = -x1) > (y1 = -y1) ? ANGLE_180 + tantoangle[SlopeDivEx(y1, x1)] :    // octant 4
-         ANGLE_270 - tantoangle[SlopeDivEx(x1, y1)] :                              // octant 5
-        0;
 }
 
 //
@@ -690,14 +681,8 @@ static inline void R_InitLightTables(void)
 	}
 }
 
-//#define WOUGHMP_WOUGHMP // I got a fish-eye lens - I'll make a rap video with a couple of friends
-// it's kinda laggy sometimes
-
 static struct {
 	angle_t rollangle; // pre-shifted by fineshift
-#ifdef WOUGHMP_WOUGHMP
-	fixed_t fisheye;
-#endif
 
 	fixed_t zoomneeded;
 	INT32 *scrmap;
@@ -709,9 +694,6 @@ static struct {
 	boolean use;
 } viewmorph = {
 	0,
-#ifdef WOUGHMP_WOUGHMP
-	0,
-#endif
 
 	FRACUNIT,
 	NULL,
@@ -730,39 +712,20 @@ void R_CheckViewMorph(void)
 	fixed_t temp;
 	INT32 end, vx, vy, pos, usedpos;
 	INT32 usedx, usedy, halfwidth = vid.width/2, halfheight = vid.height/2;
-#ifdef WOUGHMP_WOUGHMP
-	float fisheyemap[MAXVIDWIDTH/2 + 1];
-#endif
 
 	angle_t rollangle = players[displayplayers[0]].viewrollangle;
-#ifdef WOUGHMP_WOUGHMP
-	fixed_t fisheye = cv_cam2_turnmultiplier.value; // temporary test value
-#endif
 
 	rollangle >>= ANGLETOFINESHIFT;
 	rollangle = ((rollangle+2) & ~3) & FINEMASK; // Limit the distinct number of angles to reduce recalcs from angles changing a lot.
 
-#ifdef WOUGHMP_WOUGHMP
-	fisheye &= ~0x7FF; // Same
-#endif
 
 	if (rollangle == viewmorph.rollangle &&
-#ifdef WOUGHMP_WOUGHMP
-		fisheye == viewmorph.fisheye &&
-#endif
 		viewmorph.scrmapsize == vid.width*vid.height)
 		return; // No change
 
 	viewmorph.rollangle = rollangle;
-#ifdef WOUGHMP_WOUGHMP
-	viewmorph.fisheye = fisheye;
-#endif
 
-	if (viewmorph.rollangle == 0
-#ifdef WOUGHMP_WOUGHMP
-		 && viewmorph.fisheye == 0
-#endif
-	 )
+	if (viewmorph.rollangle == 0)
 	{
 		viewmorph.use = false;
 		viewmorph.x1 = 0;
@@ -789,22 +752,6 @@ void R_CheckViewMorph(void)
 	// Calculate maximum zoom needed
 	x1 = (vid.width*fabsf(rollcos) + vid.height*fabsf(rollsin)) / vid.width;
 	y1 = (vid.height*fabsf(rollcos) + vid.width*fabsf(rollsin)) / vid.height;
-
-#ifdef WOUGHMP_WOUGHMP
-	if (fisheye)
-	{
-		float f = FIXED_TO_FLOAT(fisheye);
-		for (vx = 0; vx <= halfwidth; vx++)
-			fisheyemap[vx] = 1.0f / cos(atan(vx * f / halfwidth));
-
-		f = cos(atan(f));
-		if (f < 1.0f)
-		{
-			x1 /= f;
-			y1 /= f;
-		}
-	}
-#endif
 
 	temp = max(x1, y1)*FRACUNIT;
 	if (temp < FRACUNIT)
@@ -833,11 +780,6 @@ void R_CheckViewMorph(void)
 	x1 = -(halfwidth * rollcos - halfheight * rollsin);
 	y1 = -(halfheight * rollcos + halfwidth * rollsin);
 
-#ifdef WOUGHMP_WOUGHMP
-	if (fisheye)
-		viewmorph.x1 = (INT32)(halfwidth - (halfwidth * fabsf(rollcos) + halfheight * fabsf(rollsin)) * fisheyemap[halfwidth]);
-	else
-#endif
 	viewmorph.x1 = (INT32)(halfwidth - (halfwidth * fabsf(rollcos) + halfheight * fabsf(rollsin)));
 	//CONS_Printf("saving %d cols\n", viewmorph.x1);
 
@@ -884,35 +826,6 @@ void R_CheckViewMorph(void)
 
 	//CONS_Printf("Top left corner is %f %f\n", x1, y1);
 
-#ifdef WOUGHMP_WOUGHMP
-	if (fisheye)
-	{
-		for (vy = 0; vy < halfheight; vy++)
-		{
-			x2 = x1;
-			y2 = y1;
-			x1 -= rollsin;
-			y1 += rollcos;
-
-			for (vx = 0; vx < vid.width; vx++)
-			{
-				usedx = halfwidth + x2*fisheyemap[(int) floorf(fabsf(y2*zoomfactor))];
-				usedy = halfheight + y2*fisheyemap[(int) floorf(fabsf(x2*zoomfactor))];
-
-				usedpos = usedx + usedy*vid.width;
-
-				viewmorph.scrmap[pos] = usedpos;
-				viewmorph.scrmap[end-pos] = end-usedpos;
-
-				x2 += rollcos;
-				y2 += rollsin;
-				pos++;
-			}
-		}
-	}
-	else
-	{
-#endif
 	x1 += halfwidth;
 	y1 += halfheight;
 
@@ -938,9 +851,6 @@ void R_CheckViewMorph(void)
 			pos++;
 		}
 	}
-#ifdef WOUGHMP_WOUGHMP
-	}
-#endif
 
 	viewmorph.use = true;
 }
@@ -1069,6 +979,16 @@ void R_ExecuteSetViewSize(void)
 			dy = FixedMul(abs(dy), fovtan);
 			yslopetab[i] = FixedDiv(centerx*FRACUNIT, dy);
 		}
+		
+		if (ds_su)
+			Z_Free(ds_su);
+		if (ds_sv)
+			Z_Free(ds_sv);
+		if (ds_sz)
+			Z_Free(ds_sz);
+
+		ds_su = ds_sv = ds_sz = NULL;
+		ds_sup = ds_svp = ds_szp = NULL;
 	}
 
 	memset(scalelight, 0xFF, sizeof(scalelight));
@@ -1929,8 +1849,10 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_driftsparkpulse);
 	CV_RegisterVar(&cv_gravstretch);
 	CV_RegisterVar(&cv_sloperoll);
+	CV_RegisterVar(&cv_spriteroll);
 	CV_RegisterVar(&cv_sliptideroll);
 	CV_RegisterVar(&cv_sloperolldist);
+	CV_RegisterVar(&cv_sparkroll);
 
 	CV_RegisterVar(&cv_showhud);
 	CV_RegisterVar(&cv_translucenthud);

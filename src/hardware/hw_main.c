@@ -19,6 +19,7 @@
 #include "hw_main.h"
 #include "hw_glob.h"
 #include "hw_drv.h"
+#include "hw_batching.h"
 #include "hw_md2.h"
 #include "hw_clip.h"
 #include "hw_light.h"
@@ -57,6 +58,12 @@
 // ==========================================================================
 struct hwdriver_s hwdriver;
 
+// false if shaders have not been initialized yet, or if shaders are not available
+boolean gr_shadersavailable = false;
+
+// Whether the internal state is set to palette rendering or not.
+static boolean gr_palette_rendering_state = false;
+
 // ==========================================================================
 // Commands and console variables
 // ==========================================================================
@@ -64,17 +71,9 @@ struct hwdriver_s hwdriver;
 static void CV_filtermode_ONChange(void);
 static void CV_anisotropic_ONChange(void);
 static void CV_screentextures_ONChange(void);
-static void CV_useCustomShaders_ONChange(void); 
 static void CV_grshaders_OnChange(void);
-static void CV_Gammaxxx_ONChange(void);
-
-static CV_PossibleValue_t grgamma_cons_t[] = {{1, "MIN"}, {255, "MAX"}, {0, NULL}};
-consvar_t cv_grgammared = {"gr_gammared", "127", CV_SAVE|CV_CALL, grgamma_cons_t,
-                           CV_Gammaxxx_ONChange, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_grgammagreen = {"gr_gammagreen", "127", CV_SAVE|CV_CALL, grgamma_cons_t,
-                             CV_Gammaxxx_ONChange, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_grgammablue = {"gr_gammablue", "127", CV_SAVE|CV_CALL, grgamma_cons_t,
-                            CV_Gammaxxx_ONChange, 0, NULL, NULL, 0, 0, NULL};
+static void CV_grpaletterendering_OnChange(void);
+static void CV_grpalettedepth_OnChange(void);
 
 static CV_PossibleValue_t grfakecontrast_cons_t[] = {{0, "Off"}, {1, "Standard"}, {2, "Smooth"}, {0, NULL}};
 
@@ -86,14 +85,12 @@ static CV_PossibleValue_t grfiltermode_cons_t[]= {{HWD_SET_TEXTUREFILTER_POINTSA
 	{0, NULL}};
 CV_PossibleValue_t granisotropicmode_cons_t[] = {{1, "MIN"}, {16, "MAX"}, {0, NULL}};
 
-consvar_t cv_grrounddown = {"gr_rounddown", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-
 consvar_t cv_grfiltermode = {"gr_filtermode", "Nearest", CV_CALL|CV_SAVE, grfiltermode_cons_t,
                              CV_filtermode_ONChange, 0, NULL, NULL, 0, 0, NULL};
-							 
+
 consvar_t cv_granisotropicmode = {"gr_anisotropicmode", "1", CV_CALL|CV_SAVE, granisotropicmode_cons_t,
                              CV_anisotropic_ONChange, 0, NULL, NULL, 0, 0, NULL};
-							 
+
 consvar_t cv_grcorrecttricks = {"gr_correcttricks", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_grsolvetjoin = {"gr_solvetjoin", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -112,7 +109,7 @@ static CV_PossibleValue_t grrenderdistance_cons_t[] = {
 	{6, "12288"}, {7, "16384"}, {0, NULL}};
 consvar_t cv_grrenderdistance = {"gr_renderdistance", "Max", CV_SAVE, grrenderdistance_cons_t,
 							NULL, 0, NULL, NULL, 0, 0, NULL};
-							
+
 consvar_t cv_grportals = {"gr_portals", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_nostencil = {"nostencil", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_portalline = {"portalline", "0", 0, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -121,18 +118,17 @@ CV_PossibleValue_t secbright_cons_t[] = {{0, "MIN"}, {255, "MAX"}, {0, NULL}};
 
 consvar_t cv_secbright = {"secbright", "0", CV_SAVE, secbright_cons_t,
 							NULL, 0, NULL, NULL, 0, 0, NULL};
-							
+
 consvar_t cv_grfovchange = {"gr_fovchange", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_grvhseffect = {"gr_vhseffect", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-							 
+
 // values for the far clipping plane
 static float clipping_distances[] = {1024.0f, 2048.0f, 4096.0f, 6144.0f, 8192.0f, 12288.0f, 16384.0f};
 // values for bsp culling
 // slightly higher than the far clipping plane to compensate for impreciseness
 static INT32 bsp_culling_distances[] = {(1024+512)*FRACUNIT, (2048+512)*FRACUNIT, (4096+512)*FRACUNIT,
 	(6144+512)*FRACUNIT, (8192+512)*FRACUNIT, (12288+512)*FRACUNIT, (16384+512)*FRACUNIT};
-	
+
 static INT32 current_bsp_culling_distance = 0;
 
 // The current screen texture implementation is inefficient and disabling it can result in significant
@@ -143,13 +139,16 @@ static INT32 current_bsp_culling_distance = 0;
 //  - full screen scaling (use native resolution or windowed mode to avoid this)
 consvar_t cv_grscreentextures = {"gr_screentextures", "On", CV_CALL|CV_SAVE, CV_OnOff,
                                  CV_screentextures_ONChange, 0, NULL, NULL, 0, 0, NULL};
-								 
-consvar_t cv_grshaders = {"gr_shaders", "On", CV_CALL|CV_SAVE, CV_OnOff, CV_grshaders_OnChange, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_grusecustomshaders = {"gr_usecustomshaders", "Yes", CV_CALL|CV_SAVE, CV_OnOff, CV_useCustomShaders_ONChange, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_grpaletteshader = {"gr_paletteshader", "Off", CV_CALL|CV_SAVE, CV_OnOff, CV_grshaders_OnChange, 0, NULL, NULL, 0, 0, NULL};
+static CV_PossibleValue_t grshaders_cons_t[] = {{0, "Off"}, {1, "On"}, {2, "Ignore custom shaders"}, {0, NULL}};
+consvar_t cv_grshaders = {"gr_shaders", "On", CV_CALL|CV_SAVE, grshaders_cons_t, CV_grshaders_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_grflashpal = {"gr_flashpal", "On", CV_CALL|CV_SAVE, CV_OnOff, CV_grshaders_OnChange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_grpaletterendering = {"gr_paletteshader", "Off", CV_CALL|CV_SAVE, CV_OnOff, CV_grpaletterendering_OnChange, 0, NULL, NULL, 0, 0, NULL};
+
+static CV_PossibleValue_t glpalettedepth_cons_t[] = {{16, "16 bits"}, {24, "24 bits"}, {0, NULL}};
+consvar_t cv_grpalettedepth = {"gr_palettedepth", "16 bits", CV_SAVE|CV_CALL, glpalettedepth_cons_t, CV_grpalettedepth_OnChange, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_grflashpal = {"gr_flashpal", "On", CV_CALL|CV_SAVE, CV_OnOff, CV_grpaletterendering_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_grmdls = {"gr_mdls", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_grfallbackplayermodel = {"gr_fallbackplayermodel", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -159,62 +158,64 @@ consvar_t cv_grspritebillboarding = {"gr_spritebillboarding", "On", CV_SAVE, CV_
 consvar_t cv_grfakecontrast = {"gr_fakecontrast", "Standard", CV_SAVE, grfakecontrast_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_grslopecontrast = {"gr_slopecontrast", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_grhorizonlines = {"gr_horizonlines", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; 
+
+ 
+#define ONLY_IF_GL_LOADED if (vid.glstate != VID_GL_LIBRARY_LOADED) return;
 
 static void CV_filtermode_ONChange(void)
 {
-	if (rendermode == render_opengl)
+	ONLY_IF_GL_LOADED
 	HWD.pfnSetSpecialState(HWD_SET_TEXTUREFILTERMODE, cv_grfiltermode.value);
 }
 
 static void CV_anisotropic_ONChange(void)
 {
-	if (rendermode == render_opengl)
+	ONLY_IF_GL_LOADED
 	HWD.pfnSetSpecialState(HWD_SET_TEXTUREANISOTROPICMODE, cv_granisotropicmode.value);
 }
 
 static void CV_screentextures_ONChange(void)
 {
-	if (rendermode == render_opengl)
+	ONLY_IF_GL_LOADED
 	HWD.pfnSetSpecialState(HWD_SET_SCREEN_TEXTURES, cv_grscreentextures.value);
 }
 
 static void CV_grshaders_OnChange(void)
 {
-	if (rendermode == render_opengl)
+	ONLY_IF_GL_LOADED
+	HWR_SetShaderState();
+	if ((cv_grpaletterendering.value))
 	{
-		if (HWR_ShouldUsePaletteRendering())
-			HWR_InitPalette(0, false);
-		
-		HWD.pfnSetSpecialState(HWD_PAL_SHADER, HWR_ShouldUsePaletteRendering());
-		
-		V_SetPalette(0);
+		// can't do palette rendering without shaders, so update the state if needed
+		HWR_TogglePaletteRendering();
 	}
 }
 
-static void CV_useCustomShaders_ONChange(void)
+static void CV_grpaletterendering_OnChange(void)
 {
-	if (rendermode == render_opengl)
+	ONLY_IF_GL_LOADED
+	if (gr_shadersavailable)
 	{
-		if (HWR_UseShader())
-			HWD.pfnInitCustomShaders();
-		
-		if (HWR_ShouldUsePaletteRendering())
-			HWR_InitPalette(0, false);
+		HWR_CompileShaders();
+		HWR_TogglePaletteRendering();
 	}
 }
 
-// change the palette directly to see the change
-static void CV_Gammaxxx_ONChange(void)
+static void CV_grpalettedepth_OnChange(void)
 {
-	if (rendermode == render_opengl)
-		V_SetPalette(0);
+	ONLY_IF_GL_LOADED
+	if (HWR_ShouldUsePaletteRendering())
+		HWR_SetPalette(pLocalPalette);
 }
 
-void HWR_InitPalette(int flashnum, boolean skiplut)
+//
+// Sets the shader state.
+//
+void HWR_SetShaderState(void)
 {
-    HWD.pfnInitPalette(flashnum, skiplut);
+	HWD.pfnSetSpecialState(HWD_SET_SHADERS, (INT32)HWR_UseShader());
 }
-
 
 // ==========================================================================
 // Globals
@@ -246,8 +247,6 @@ static sector_t *gr_frontsector;
 static sector_t *gr_backsector;
 
 static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum, FSurfaceInfo* Surf, INT32 cutflag, ffloor_t *pfloor, FBITFIELD polyflags);
-
-boolean gr_shadersavailable = true;
 
 // Performance stats
 ps_metric_t ps_hw_nodesorttime = {0};
@@ -446,18 +445,17 @@ boolean HWR_UseShader(void)
 
 boolean HWR_ShouldUsePaletteRendering(void)
 {
-	return (cv_grpaletteshader.value && HWR_UseShader());
+	return (cv_grpaletterendering.value && HWR_UseShader());
 }
 
 boolean HWR_PalRenderFlashpal(void)
 {
-	return (cv_grpaletteshader.value && HWR_UseShader() && cv_grflashpal.value);
+	return (HWR_ShouldUsePaletteRendering() && cv_grflashpal.value);
 }
 
 void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *colormap)
 {
 	RGBA_t poly_color, tint_color, fade_color;
-	boolean default_colormap = false;
 
 	poly_color.rgba = 0xFFFFFFFF;
 	tint_color.rgba = (colormap != NULL) ? (UINT32)colormap->rgba : GL_DEFAULTMIX;
@@ -503,6 +501,12 @@ void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *col
 	// Clamp the light level, since it can sometimes go out of the 0-255 range from animations
 	light_level = min(max(light_level, cv_secbright.value), 255);
 
+	// in palette rendering mode, this is not needed since it properly takes the changes to the palette itself
+	if (!HWR_ShouldUsePaletteRendering())
+	{
+		V_CubeApply(&tint_color.s.red, &tint_color.s.green, &tint_color.s.blue);
+		V_CubeApply(&fade_color.s.red, &fade_color.s.green, &fade_color.s.blue);
+	}
 	Surface->PolyColor.rgba = poly_color.rgba;
 	Surface->TintColor.rgba = tint_color.rgba;
 	Surface->FadeColor.rgba = fade_color.rgba;
@@ -511,35 +515,9 @@ void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *col
 	Surface->LightInfo.fade_end = (colormap != NULL) ? colormap->fadeend : 31;
 	
 	if (HWR_ShouldUsePaletteRendering())
-	{
-		if (!colormap)
-		{
-			colormap = &extra_colormaps[num_extra_colormaps];
-			default_colormap = true;
-		}
-		if (!colormap->gl_lighttable_id)
-			{
-			UINT8 *colormap_pointer;
-
-			if (default_colormap)
-			{
-				colormap_pointer = colormaps;
-			}
-			else
-			{
-				colormap_pointer = colormap->colormap;
-			}
-			colormap->gl_lighttable_id = HWD.pfnAddLightTable(colormap_pointer);
-		}
-
-		Surface->LightTableId = colormap->gl_lighttable_id;
-	}
-}
-
-void HWR_ClearLightTableCache(void)
-{
-	if (rendermode == render_opengl)
-		HWD.pfnClearLightTableCache();
+		Surface->LightTableId = HWR_GetLightTableID(colormap);
+	else
+		Surface->LightTableId = 0;
 }
 
 UINT8 HWR_FogBlockAlpha(INT32 light, extracolormap_t *colormap) // Let's see if this can work
@@ -571,7 +549,6 @@ UINT8 HWR_FogBlockAlpha(INT32 light, extracolormap_t *colormap) // Let's see if 
 
 	return surfcolor.s.alpha;
 }
-
 
 static FUINT HWR_CalcWallLight(FUINT lightnum, fixed_t v1x, fixed_t v1y, fixed_t v2x, fixed_t v2y)
 {
@@ -683,6 +660,8 @@ void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, boolean isc
 
 	static FOutVector *planeVerts = NULL;
 	static UINT16 numAllocedPlaneVerts = 0;
+	
+	INT32 shader = SHADER_NONE;
 
 	// no convex poly were generated for this subsector
 	if (!xsub->planepoly)
@@ -860,18 +839,18 @@ void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, boolean isc
 	if (HWR_UseShader())
 	{	
 		if (PolyFlags & PF_Fog)
-			HWD.pfnSetShader(6);	// fog shader
+			shader = SHADER_FOG;	// fog shader
 		else if (PolyFlags & PF_Ripple)
-			HWD.pfnSetShader(HWR_ShouldUsePaletteRendering() ? 11 : 5); // water shader
+			shader = SHADER_WATER; // water shader
 		else
-			HWD.pfnSetShader(HWR_ShouldUsePaletteRendering() ? 9 : 1);	// floor shader
+			shader = SHADER_FLOOR;	// floor shader
 		
 		PolyFlags |= PF_ColorMapped;
 	}
 
-	HWD.pfnDrawPolygon(&Surf, planeVerts, nrPlaneVerts, PolyFlags, false);
+	HWR_ProcessPolygon(&Surf, planeVerts, nrPlaneVerts, PolyFlags, shader, false);
 
-	if (subsector)
+	if (subsector && cv_grhorizonlines.value)
 	{
 		// Horizon lines
 		FOutVector horizonpts[6];
@@ -954,7 +933,7 @@ void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, boolean isc
 					horizonpts[4].y = gr_viewz;
 
 					// Draw
-					HWD.pfnDrawPolygon(&Surf, horizonpts, 6, PolyFlags, true);
+					HWR_ProcessPolygon(&Surf, horizonpts, 6, PolyFlags, shader, true);
 				}
 			}
 		}
@@ -970,6 +949,8 @@ static void HWR_DrawSegsSplats(FSurfaceInfo * pSurf)
 	fixed_t i;
 	// seg bbox
 	fixed_t segbbox[4];
+	
+	INT32 shader = SHADER_NONE;
 
 	M_ClearBox(segbbox);
 	M_AddToBox(segbbox,
@@ -1022,11 +1003,9 @@ static void HWR_DrawSegsSplats(FSurfaceInfo * pSurf)
 		}
 
 		if (HWR_UseShader())
-		{
-			HWD.pfnSetShader(HWR_ShouldUsePaletteRendering() ? 10 : 2);	// wall shader
-		}
+			shader = SHADER_WALL;	// wall shader
 		
-		HWD.pfnDrawPolygon(&pSurf, wallVerts, 4, i|PF_Modulated|PF_Decal, false);
+		HWR_ProcessPolygon(&pSurf, wallVerts, 4, i|PF_Modulated|PF_Decal, shader, false);
 	}
 }
 #endif
@@ -1057,11 +1036,13 @@ FBITFIELD HWR_TranstableToAlpha(INT32 transtablenum, FSurfaceInfo *pSurf)
 //
 void HWR_ProjectWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blendmode, INT32 lightlevel, extracolormap_t *wallcolormap)
 {
+	INT32 shader = SHADER_NONE;
+	
 	HWR_Lighting(pSurf, lightlevel, wallcolormap);
 
 	if (HWR_UseShader())
 	{
-		HWD.pfnSetShader(HWR_ShouldUsePaletteRendering() ? 10 : 2);	// wall shader
+		shader = SHADER_WALL;	// wall shader
 		blendmode |= PF_ColorMapped;
 	}
 
@@ -1072,7 +1053,7 @@ void HWR_ProjectWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend
 		blendmode &= ~PF_Masked;
 	}
 
-	HWD.pfnDrawPolygon(pSurf, wallVerts, 4, blendmode|PF_Modulated|PF_Occlude, false);
+	HWR_ProcessPolygon(pSurf, wallVerts, 4, blendmode|PF_Modulated|PF_Occlude, shader, false); // wall shader
 
 #ifdef WALLSPLATS
 	if (gr_curline->linedef->splats && cv_splats.value)
@@ -1148,8 +1129,8 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 			{
 				if (HWR_ShouldUsePaletteRendering())
 				{
+					lightnum = (pfloor->master->frontsector->lightlevel >> LIGHTSEGSHIFT) << LIGHTSEGSHIFT;
 					colormap = pfloor->master->frontsector->extra_colormap;
-					lightnum = pfloor->master->frontsector->lightlevel;
 					lightnum = colormap ? lightnum : HWR_CalcWallLight(lightnum, v1x, v1y, v2x, v2y);
 				}else{
 					lightnum = HWR_CalcWallLight(pfloor->master->frontsector->lightlevel, v1x, v1y, v2x, v2y);
@@ -1160,8 +1141,8 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 			{
 				if (HWR_ShouldUsePaletteRendering())
 				{
+					lightnum = (*list[i].lightlevel >> LIGHTSEGSHIFT) << LIGHTSEGSHIFT;
 					colormap = list[i].extra_colormap;
-					lightnum = *list[i].lightlevel;
 					lightnum = colormap ? lightnum : HWR_CalcWallLight(lightnum, v1x, v1y, v2x, v2y);
 				}else{
 					lightnum = HWR_CalcWallLight(*list[i].lightlevel, v1x, v1y, v2x, v2y);
@@ -1428,11 +1409,11 @@ static void HWR_DrawSkyWallList(void)
 
 	surf.PolyColor.rgba = 0xFFFFFFFF;
 
-	HWD.pfnSetTexture(NULL);
+	HWR_SetCurrentTexture(NULL);
 	HWD.pfnUnSetShader();
 	for (i = 0; i < skyWallVertexArraySize; i++)
 	{
-		HWD.pfnDrawPolygon(&surf, skyWallVertexArray + i * 4, 4, PF_Occlude|PF_Invisible|PF_NoTexture, false);
+		HWD.pfnDrawPolygon(&surf, skyWallVertexArray + i * 4, 4, PF_Occlude|PF_Invisible|PF_NoTexture);
 	}
 }
 
@@ -1453,7 +1434,7 @@ void HWR_DrawSkyWall(FOutVector *wallVerts, FSurfaceInfo *Surf)
 	}
 	else
 	{
-		HWD.pfnSetTexture(NULL);
+		HWR_SetCurrentTexture(NULL);
 		HWR_ProjectWall(wallVerts, Surf, PF_Invisible|PF_NoTexture, 255, NULL);
 	}
 	// PF_Invisible so it's not drawn into the colour buffer
@@ -1481,7 +1462,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 	fixed_t v1x, v1y, v2x, v2y;
 #endif
 
-	GLTexture_t *grTex = NULL;
+	GLMapTexture_t *grTex = NULL;
 	float cliplow = 0.0f, cliphigh = 0.0f;
 	INT32 gr_midtexture;
 	fixed_t h, l; // 3D sides and 2s middle textures
@@ -1560,8 +1541,8 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 	if (HWR_ShouldUsePaletteRendering())
 	{
+		lightnum = (gr_frontsector->lightlevel >> LIGHTSEGSHIFT) << LIGHTSEGSHIFT;
 		colormap = gr_frontsector->extra_colormap;
-		lightnum = gr_frontsector->lightlevel;
 		lightnum = colormap ? lightnum : HWR_CalcWallLight(lightnum, vs.x, vs.y, ve.x, ve.y);
 	}else{
 		lightnum = HWR_CalcWallLight(gr_frontsector->lightlevel, vs.x, vs.y, ve.x, ve.y);
@@ -2508,8 +2489,8 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 					if (HWR_ShouldUsePaletteRendering())
 					{
+						lightnum = (rover->master->frontsector->lightlevel >> LIGHTSEGSHIFT) << LIGHTSEGSHIFT;
 						colormap = rover->master->frontsector->extra_colormap;
-						lightnum = rover->master->frontsector->lightlevel;
 						lightnum = colormap ? lightnum : HWR_CalcWallLight(lightnum, vs.x, vs.y, ve.x, ve.y);
 					}else{
 						lightnum = HWR_CalcWallLight(rover->master->frontsector->lightlevel, vs.x, vs.y, ve.x, ve.y);
@@ -2659,8 +2640,8 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 					if (HWR_ShouldUsePaletteRendering())
 					{
+						lightnum = (rover->master->frontsector->lightlevel >> LIGHTSEGSHIFT) << LIGHTSEGSHIFT;
 						colormap = rover->master->frontsector->extra_colormap;
-						lightnum = rover->master->frontsector->lightlevel;
 						lightnum = colormap ? lightnum : HWR_CalcWallLight(lightnum, vs.x, vs.y, ve.x, ve.y);
 					}else{
 						lightnum = HWR_CalcWallLight(rover->master->frontsector->lightlevel, vs.x, vs.y, ve.x, ve.y);
@@ -2892,8 +2873,8 @@ void HWR_AddLine(seg_t *line)
 	}
 
 	// OPTIMIZE: quickly reject orthogonal back sides.
-	angle1 = R_PointToAngleEx64(viewx, viewy, v1x, v1y);
-	angle2 = R_PointToAngleEx64(viewx, viewy, v2x, v2y);
+	angle1 = R_PointToAngle64(v1x, v1y);
+	angle2 = R_PointToAngle64(v2x, v2y);
 
 	// do an extra culling check when rendering portals
 	// check if any line vertex is on the viewable side of the portal target line
@@ -2955,6 +2936,8 @@ void HWR_AddLine(seg_t *line)
 					dont_draw = true;
 			}
 		}
+		else
+			return;// dont do anything with the other side i guess?
 	}
 
 doaddline:
@@ -3086,8 +3069,8 @@ boolean HWR_CheckBBox(fixed_t *bspcoord)
 		if (mindist > current_bsp_culling_distance) return false;
 	}
 
-	angle1 = R_PointToAngleEx64(viewx, viewy, px1, py1);
-	angle2 = R_PointToAngleEx64(viewx, viewy, px2, py2);
+	angle1 = R_PointToAngle64(px1, py1);
+	angle2 = R_PointToAngle64(px2, py2);
 	return gld_clipper_SafeCheckRange(angle2, angle1);
 }
 
@@ -3148,6 +3131,8 @@ void HWR_RenderPolyObjectPlane(polyobj_t *polysector, boolean isceiling, fixed_t
 
 	static FOutVector *planeVerts = NULL;
 	static UINT16 numAllocedPlaneVerts = 0;
+	
+	INT32 shader = SHADER_NONE;
 
 	nrPlaneVerts = polysector->numVertices;
 
@@ -3293,11 +3278,11 @@ void HWR_RenderPolyObjectPlane(polyobj_t *polysector, boolean isceiling, fixed_t
 
 	if (HWR_UseShader())
 	{		
-		HWD.pfnSetShader(HWR_ShouldUsePaletteRendering() ? 9 : 1);	// floor shader
+		shader = SHADER_FLOOR;	// floor shader
 		blendmode |= PF_ColorMapped;
 	}
 		
-	HWD.pfnDrawPolygon(&Surf, planeVerts, nrPlaneVerts, blendmode, false);
+	HWR_ProcessPolygon(&Surf, planeVerts, nrPlaneVerts, blendmode, shader, false); // floor shader
 }
 
 void HWR_AddPolyObjectPlanes(void)
@@ -3494,12 +3479,12 @@ void HWR_Subsector(size_t num)
 
 		light = R_GetPlaneLight(gr_frontsector, locFloorHeight, false);
 		if (gr_frontsector->floorlightsec == -1)
-			floorlightlevel = *gr_frontsector->lightlist[light].lightlevel;
+			floorlightlevel = HWR_ShouldUsePaletteRendering() ? (*gr_frontsector->lightlist[light].lightlevel >> LIGHTSEGSHIFT) << LIGHTSEGSHIFT : *gr_frontsector->lightlist[light].lightlevel;
 		floorcolormap = gr_frontsector->lightlist[light].extra_colormap;
 
 		light = R_GetPlaneLight(gr_frontsector, locCeilingHeight, false);
 		if (gr_frontsector->ceilinglightsec == -1)
-			ceilinglightlevel = *gr_frontsector->lightlist[light].lightlevel;
+			ceilinglightlevel = HWR_ShouldUsePaletteRendering() ? (*gr_frontsector->lightlist[light].lightlevel >> LIGHTSEGSHIFT) << LIGHTSEGSHIFT : *gr_frontsector->lightlist[light].lightlevel;;
 		ceilingcolormap = gr_frontsector->lightlist[light].extra_colormap;
 	}
 
@@ -3574,13 +3559,16 @@ void HWR_Subsector(size_t num)
 
 					light = R_GetPlaneLight(gr_frontsector, centerHeight, viewz < cullHeight ? true : false);
 
-					alpha = HWR_FogBlockAlpha(*gr_frontsector->lightlist[light].lightlevel, rover->master->frontsector->extra_colormap);
+					if (HWR_ShouldUsePaletteRendering())
+						alpha = HWR_FogBlockAlpha((*gr_frontsector->lightlist[light].lightlevel >> LIGHTSEGSHIFT) << LIGHTSEGSHIFT, rover->master->frontsector->extra_colormap);
+					else
+						alpha = HWR_FogBlockAlpha(*gr_frontsector->lightlist[light].lightlevel, rover->master->frontsector->extra_colormap);
 
 					HWR_AddTransparentFloor(0,
 					                       &extrasubsectors[num],
 										   false,
 					                       *rover->bottomheight,
-					                       *gr_frontsector->lightlist[light].lightlevel,
+					                       HWR_ShouldUsePaletteRendering() ? (*gr_frontsector->lightlist[light].lightlevel >> LIGHTSEGSHIFT) << LIGHTSEGSHIFT : *gr_frontsector->lightlist[light].lightlevel,
 					                       alpha, rover->master->frontsector, PF_Fog|PF_NoTexture,
 										   true, rover->master->frontsector->extra_colormap);
 				}
@@ -3591,15 +3579,15 @@ void HWR_Subsector(size_t num)
 					                       &extrasubsectors[num],
 										   false,
 					                       *rover->bottomheight,
-					                       *gr_frontsector->lightlist[light].lightlevel,
-					                       rover->alpha-1 > 255 ? 255 : rover->alpha-1, rover->master->frontsector, (rover->flags & FF_RIPPLE ? PF_Ripple : 0)|PF_Translucent,
+					                       HWR_ShouldUsePaletteRendering() ? (*gr_frontsector->lightlist[light].lightlevel >> LIGHTSEGSHIFT) << LIGHTSEGSHIFT : *gr_frontsector->lightlist[light].lightlevel,
+					                       max(0, min(rover->alpha, 255)), rover->master->frontsector, (rover->flags & FF_RIPPLE ? PF_Ripple : 0)|PF_Translucent,
 					                       false, gr_frontsector->lightlist[light].extra_colormap);
 				}
 				else
 				{
 					HWR_GetFlat(levelflats[*rover->bottompic].lumpnum, R_NoEncore(gr_frontsector, false));
 					light = R_GetPlaneLight(gr_frontsector, centerHeight, viewz < cullHeight ? true : false);
-					HWR_RenderPlane(sub, &extrasubsectors[num], false, *rover->bottomheight, (rover->flags & FF_RIPPLE ? PF_Ripple : 0)|PF_Occlude, *gr_frontsector->lightlist[light].lightlevel, levelflats[*rover->bottompic].lumpnum,
+					HWR_RenderPlane(sub, &extrasubsectors[num], false, *rover->bottomheight, (rover->flags & FF_RIPPLE ? PF_Ripple : 0)|PF_Occlude, HWR_ShouldUsePaletteRendering() ? (*gr_frontsector->lightlist[light].lightlevel >> LIGHTSEGSHIFT) << LIGHTSEGSHIFT : *gr_frontsector->lightlist[light].lightlevel, levelflats[*rover->bottompic].lumpnum,
 					                rover->master->frontsector, 255, gr_frontsector->lightlist[light].extra_colormap);
 				}
 			}
@@ -3625,14 +3613,17 @@ void HWR_Subsector(size_t num)
 					UINT8 alpha;
 
 					light = R_GetPlaneLight(gr_frontsector, centerHeight, viewz < cullHeight ? true : false);
-
-					alpha = HWR_FogBlockAlpha(*gr_frontsector->lightlist[light].lightlevel, rover->master->frontsector->extra_colormap);
+					
+					if (HWR_ShouldUsePaletteRendering())
+						alpha = HWR_FogBlockAlpha((*gr_frontsector->lightlist[light].lightlevel >> LIGHTSEGSHIFT) << LIGHTSEGSHIFT, rover->master->frontsector->extra_colormap);
+					else
+						alpha = HWR_FogBlockAlpha(*gr_frontsector->lightlist[light].lightlevel, rover->master->frontsector->extra_colormap);
 
 					HWR_AddTransparentFloor(0,
 					                       &extrasubsectors[num],
 										   true,
 					                       *rover->topheight,
-					                       *gr_frontsector->lightlist[light].lightlevel,
+					                       HWR_ShouldUsePaletteRendering() ? (*gr_frontsector->lightlist[light].lightlevel >> LIGHTSEGSHIFT) << LIGHTSEGSHIFT : *gr_frontsector->lightlist[light].lightlevel,
 					                       alpha, rover->master->frontsector, PF_Fog|PF_NoTexture,
 										   true, rover->master->frontsector->extra_colormap);
 				}
@@ -3642,17 +3633,17 @@ void HWR_Subsector(size_t num)
 					HWR_AddTransparentFloor(levelflats[*rover->toppic].lumpnum,
 					                        &extrasubsectors[num],
 											true,
-					                        *rover->topheight,
-					                        *gr_frontsector->lightlist[light].lightlevel,
-					                        rover->alpha-1 > 255 ? 255 : rover->alpha-1, rover->master->frontsector, (rover->flags & FF_RIPPLE ? PF_Ripple : 0)|PF_Translucent,
-					                        false, gr_frontsector->lightlist[light].extra_colormap);
+											*rover->topheight,
+											HWR_ShouldUsePaletteRendering() ? (*gr_frontsector->lightlist[light].lightlevel >> LIGHTSEGSHIFT) << LIGHTSEGSHIFT : *gr_frontsector->lightlist[light].lightlevel,
+											max(0, min(rover->alpha, 255)), rover->master->frontsector, (rover->flags & FF_RIPPLE ? PF_Ripple : 0)|PF_Translucent,
+											false, gr_frontsector->lightlist[light].extra_colormap);
 				}
 				else
 				{
 					HWR_GetFlat(levelflats[*rover->toppic].lumpnum, R_NoEncore(gr_frontsector, true));
 					light = R_GetPlaneLight(gr_frontsector, centerHeight, viewz < cullHeight ? true : false);
-					HWR_RenderPlane(sub, &extrasubsectors[num], true, *rover->topheight, (rover->flags & FF_RIPPLE ? PF_Ripple : 0)|PF_Occlude, *gr_frontsector->lightlist[light].lightlevel, levelflats[*rover->toppic].lumpnum,
-					                  rover->master->frontsector, 255, gr_frontsector->lightlist[light].extra_colormap);
+					HWR_RenderPlane(sub, &extrasubsectors[num], true, *rover->topheight, (rover->flags & FF_RIPPLE ? PF_Ripple : 0)|PF_Occlude, HWR_ShouldUsePaletteRendering() ? (*gr_frontsector->lightlist[light].lightlevel >> LIGHTSEGSHIFT) << LIGHTSEGSHIFT : *gr_frontsector->lightlist[light].lightlevel, levelflats[*rover->toppic].lumpnum,
+									  rover->master->frontsector, 255, gr_frontsector->lightlist[light].extra_colormap);
 				}
 			}
 		}
@@ -3953,11 +3944,14 @@ static void HWR_DrawSpriteShadow(gr_vissprite_t *spr, GLPatch_t *gpatch, float t
 	fixed_t slopez;
 	float offset = 0;
 	
+	INT32 shader = SHADER_NONE;
+	
 	R_GetShadowZ(spr->mobj, &floorslope);
 
 	mobjfloor = HWR_OpaqueFloorAtPos(
 		spr->mobj->x, spr->mobj->y,
 		spr->mobj->z, spr->mobj->height);
+
 	if (cv_shadowoffs.value)
 	{
 		angle_t shadowdir;
@@ -4079,9 +4073,9 @@ static void HWR_DrawSpriteShadow(gr_vissprite_t *spr, GLPatch_t *gpatch, float t
 		swallVerts[0].t = swallVerts[1].t = gpatch->max_t;
 	}
 
-	sSurf.PolyColor.s.red = 0x00;
-	sSurf.PolyColor.s.blue = 0x00;
-	sSurf.PolyColor.s.green = 0x00;
+	sSurf.PolyColor.s.red = 0x01;
+	sSurf.PolyColor.s.blue = 0x01;
+	sSurf.PolyColor.s.green = 0x01;
 
 	// shadow is always half as translucent as the sprite itself
 	if (!cv_translucency.value) // use default translucency (main sprite won't have any translucency)
@@ -4102,10 +4096,10 @@ static void HWR_DrawSpriteShadow(gr_vissprite_t *spr, GLPatch_t *gpatch, float t
 		
 		if (HWR_UseShader())
 		{
-			HWD.pfnSetShader(HWR_ShouldUsePaletteRendering() ? 9 : 1);	// floor shader
+			shader = SHADER_FLOOR;	// floor shader
 		}
-		
-		HWD.pfnDrawPolygon(&sSurf, swallVerts, 4, PF_Translucent|PF_Modulated, false);
+
+		HWR_ProcessPolygon(&sSurf, swallVerts, 4, PF_Translucent|PF_Modulated, shader, false);
 	}
 }
 
@@ -4200,6 +4194,8 @@ static void HWR_SplitSprite(gr_vissprite_t *spr)
 	fixed_t temp;
 	fixed_t v1x, v1y, v2x, v2y;
 #endif
+
+	INT32 shader = SHADER_NONE;
 
 	this_scale = FIXED_TO_FLOAT(spr->mobj->scale);
 
@@ -4318,7 +4314,8 @@ static void HWR_SplitSprite(gr_vissprite_t *spr)
 	
 
 	// Start with the lightlevel and colormap from the top of the sprite
-	lightlevel = *list[sector->numlights - 1].lightlevel;
+	lightlevel = HWR_ShouldUsePaletteRendering() ? (*list[sector->numlights - 1].lightlevel >> LIGHTSEGSHIFT) << LIGHTSEGSHIFT : *list[sector->numlights - 1].lightlevel;
+
 	colormap = list[sector->numlights - 1].extra_colormap;
 	i = 0;
 	temp = FLOAT_TO_FIXED(realtop);
@@ -4334,7 +4331,7 @@ static void HWR_SplitSprite(gr_vissprite_t *spr)
 		if (h <= temp)
 		{
 			if (!(spr->mobj->frame & FF_FULLBRIGHT))
-				lightlevel = *list[i-1].lightlevel > 255 ? 255 : *list[i-1].lightlevel;
+				lightlevel = *list[i-1].lightlevel > 255 ? 255 : HWR_ShouldUsePaletteRendering() ? (*list[i-1].lightlevel >> LIGHTSEGSHIFT) << LIGHTSEGSHIFT : *list[i-1].lightlevel;
 			colormap = list[i-1].extra_colormap;
 			break;
 		}
@@ -4342,7 +4339,7 @@ static void HWR_SplitSprite(gr_vissprite_t *spr)
 #else
 	i = R_GetPlaneLight(sector, temp, false);
 	if (!(spr->mobj->frame & FF_FULLBRIGHT))
-		lightlevel = *list[i].lightlevel > 255 ? 255 : *list[i].lightlevel;
+		lightlevel = *list[i].lightlevel > 255 ? 255 : HWR_ShouldUsePaletteRendering() ? (*list[i].lightlevel >> LIGHTSEGSHIFT) << LIGHTSEGSHIFT : *list[i].lightlevel;
 	colormap = list[i].extra_colormap;
 #endif
 
@@ -4358,7 +4355,7 @@ static void HWR_SplitSprite(gr_vissprite_t *spr)
 		if (!(list[i].flags & FF_NOSHADE) && (list[i].flags & FF_CUTSPRITES))
 		{
 			if (!(spr->mobj->frame & FF_FULLBRIGHT))
-				lightlevel = *list[i].lightlevel > 255 ? 255 : *list[i].lightlevel;
+				lightlevel = *list[i].lightlevel > 255 ? 255 : HWR_ShouldUsePaletteRendering() ? (*list[i].lightlevel >> LIGHTSEGSHIFT) << LIGHTSEGSHIFT : *list[i].lightlevel;
 			colormap = list[i].extra_colormap;
 		}
 
@@ -4474,11 +4471,11 @@ static void HWR_SplitSprite(gr_vissprite_t *spr)
 		
 		if (HWR_UseShader())
 		{
-			HWD.pfnSetShader(HWR_ShouldUsePaletteRendering() ? 10 : 3);	// sprite shader
+			shader = SHADER_SPRITE;	// sprite shader
 			blend |= PF_ColorMapped;
 		}
 			
-		HWD.pfnDrawPolygon(&Surf, wallVerts, 4, blend|PF_Modulated, false);
+		HWR_ProcessPolygon(&Surf, wallVerts, 4, blend|PF_Modulated, shader, false); // sprite shader
 
 		top = bot;
 #ifdef ESLOPE
@@ -4519,11 +4516,11 @@ static void HWR_SplitSprite(gr_vissprite_t *spr)
 
 	if (HWR_UseShader())
 	{
-		HWD.pfnSetShader(HWR_ShouldUsePaletteRendering() ? 10 : 3);	// sprite shader
+		shader = SHADER_SPRITE;	// sprite shader
 		blend |= PF_ColorMapped;
 	}
 		
-	HWD.pfnDrawPolygon(&Surf, wallVerts, 4, blend|PF_Modulated, false);
+	HWR_ProcessPolygon(&Surf, wallVerts, 4, blend|PF_Modulated, shader, false); // sprite shader
 }
 
 // -----------------+
@@ -4537,6 +4534,9 @@ static void HWR_DrawSprite(gr_vissprite_t *spr)
 	FOutVector wallVerts[4];
 	GLPatch_t *gpatch; // sprite patch converted to hardware
 	FSurfaceInfo Surf;
+	
+	INT32 shader = SHADER_NONE;
+	
 	const boolean hires = (spr->mobj && spr->mobj->skin && ((skin_t *)( (spr->mobj->localskin) ? spr->mobj->localskin : spr->mobj->skin ))->flags & SF_HIRES);
 	if (spr->mobj)
 		this_scale = FIXED_TO_FLOAT(spr->mobj->scale);
@@ -4646,7 +4646,7 @@ static void HWR_DrawSprite(gr_vissprite_t *spr)
 		extracolormap_t *colormap = sector->extra_colormap;
 
 		if (!(spr->mobj->frame & FF_FULLBRIGHT))
-			lightlevel = sector->lightlevel > 255 ? 255 : sector->lightlevel;
+			lightlevel = sector->lightlevel > 255 ? 255 : HWR_ShouldUsePaletteRendering() ? (sector->lightlevel >> LIGHTSEGSHIFT) << LIGHTSEGSHIFT : sector->lightlevel;
 
 		HWR_Lighting(&Surf, lightlevel, colormap);
 	}
@@ -4677,11 +4677,11 @@ static void HWR_DrawSprite(gr_vissprite_t *spr)
 
 		if (HWR_UseShader())
 		{
-			HWD.pfnSetShader(HWR_ShouldUsePaletteRendering() ? 10 : 3);	// sprite shader
+			shader = SHADER_SPRITE;	// sprite shader
 			blend |= PF_ColorMapped;
 		}
 		
-		HWD.pfnDrawPolygon(&Surf, wallVerts, 4, blend|PF_Modulated, false);
+		HWR_ProcessPolygon(&Surf, wallVerts, 4, blend|PF_Modulated, shader, false);
 	}
 }
 
@@ -4692,6 +4692,8 @@ static inline void HWR_DrawPrecipitationSprite(gr_vissprite_t *spr)
 	FOutVector wallVerts[4];
 	GLPatch_t *gpatch; // sprite patch converted to hardware
 	FSurfaceInfo Surf;
+	
+	INT32 shader = SHADER_NONE;
 
 	if (!spr->mobj)
 		return;
@@ -4745,7 +4747,7 @@ static inline void HWR_DrawPrecipitationSprite(gr_vissprite_t *spr)
 			light = R_GetPlaneLight(sector, spr->mobj->z + spr->mobj->height, false); // Always use the light at the top instead of whatever I was doing before
 
 			if (!(spr->mobj->frame & FF_FULLBRIGHT))
-				lightlevel = *sector->lightlist[light].lightlevel > 255 ? 255 : *sector->lightlist[light].lightlevel;
+			lightlevel = *sector->lightlist[light].lightlevel > 255 ? 255 : HWR_ShouldUsePaletteRendering() ? (*sector->lightlist[light].lightlevel >> LIGHTSEGSHIFT) << LIGHTSEGSHIFT : *sector->lightlist[light].lightlevel;
 
 			if (sector->lightlist[light].extra_colormap)
 				colormap = sector->lightlist[light].extra_colormap;
@@ -4753,7 +4755,7 @@ static inline void HWR_DrawPrecipitationSprite(gr_vissprite_t *spr)
 		else
 		{
 			if (!(spr->mobj->frame & FF_FULLBRIGHT))
-				lightlevel = sector->lightlevel > 255 ? 255 : sector->lightlevel;
+			lightlevel = sector->lightlevel > 255 ? 255 : HWR_ShouldUsePaletteRendering() ? (sector->lightlevel >> LIGHTSEGSHIFT) << LIGHTSEGSHIFT : sector->lightlevel;
 
 			if (sector->extra_colormap)
 				colormap = sector->extra_colormap;
@@ -4776,11 +4778,11 @@ static inline void HWR_DrawPrecipitationSprite(gr_vissprite_t *spr)
 
 	if (HWR_UseShader())
 	{
-		HWD.pfnSetShader(HWR_ShouldUsePaletteRendering() ? 10 : 3);	// sprite shader
+		shader = SHADER_SPRITE;	// sprite shader
 		blend |= PF_ColorMapped;
 	}
 		
-	HWD.pfnDrawPolygon(&Surf, wallVerts, 4, blend|PF_Modulated, false);
+	HWR_ProcessPolygon(&Surf, wallVerts, 4, blend|PF_Modulated, shader, false);
 }
 
 // --------------------------------------------------------------------------
@@ -5305,7 +5307,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 	boolean mirrored = thing->mirrored;
 	boolean hflip = (!(thing->frame & FF_HORIZONTALFLIP) != !mirrored);
 	
-	angle_t ang;
+	angle_t ang, camang;
 	const boolean papersprite = (thing->frame & FF_PAPERSPRITE);
 	INT32 heightsec, phs;
 
@@ -5317,8 +5319,6 @@ void HWR_ProjectSprite(mobj_t *thing)
 	angle_t rollsum = 0;
 	angle_t sliptiderollangle = 0;
 #endif
-
-
 
 	// uncapped/interpolation
 	interpmobjstate_t interp = {0};
@@ -5405,6 +5405,8 @@ void HWR_ProjectSprite(mobj_t *thing)
 #endif
 
 	ang = R_PointToAngle (interp.x, interp.y) - interp.angle;
+	camang = R_PointToAngle (interp.x, interp.y);
+
 	if (mirrored)
 		ang = InvAngle(ang);
 
@@ -5455,29 +5457,38 @@ void HWR_ProjectSprite(mobj_t *thing)
 	spr_topoffset = spritecachedinfo[lumpoff].topoffset;
 
 #ifdef ROTSPRITE
-	if ((thing->rollangle)||(thing->sloperoll)||(thing->player && thing->player->sliproll))
+	if (cv_spriteroll.value)
 	{
-		if (thing->player)
-		{
-			sliptiderollangle = cv_sliptideroll.value ? thing->player->sliproll*(thing->player->sliptidemem) : 0;
-			rollsum = (thing->rollangle)+(thing->sloperoll)+FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), sliptiderollangle);
-		}
-		else
-			rollsum = (thing->rollangle)+(thing->sloperoll);
+		rollangle = FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), interp.roll) 
+			+ FixedMul(FINESINE((ang) >> ANGLETOFINESHIFT), interp.pitch)
+			+ FixedMul(FINECOSINE((camang) >> ANGLETOFINESHIFT), interp.sloperoll) 
+			+ FixedMul(FINESINE((camang) >> ANGLETOFINESHIFT), interp.slopepitch)
+			+ thing->rollangle;
 
-		rollangle = R_GetRollAngle(rollsum);
-		rotsprite = Patch_GetRotatedSprite(sprframe, (thing->frame & FF_FRAMEMASK), rot, flip, false, sprinfo, rollangle);
-
-		if (rotsprite != NULL)
+		if ((rollangle)||(thing->player && thing->player->sliproll))
 		{
-			spr_width = rotsprite->width << FRACBITS;
-			spr_height = rotsprite->height << FRACBITS;
-			spr_offset = rotsprite->leftoffset << FRACBITS;
-			spr_topoffset = rotsprite->topoffset << FRACBITS;
-			spr_topoffset += FEETADJUST;
-			
-			// flip -> rotate, not rotate -> flip
-			flip = 0;
+			if (thing->player)
+			{
+				sliptiderollangle = cv_sliptideroll.value ? thing->player->sliproll*(thing->player->sliptidemem) : 0;
+				rollsum = rollangle+FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), sliptiderollangle);
+			}
+			else
+				rollsum = rollangle;
+
+			rollangle = R_GetRollAngle(rollsum);
+			rotsprite = Patch_GetRotatedSprite(sprframe, (thing->frame & FF_FRAMEMASK), rot, flip, false, sprinfo, rollangle);
+
+			if (rotsprite != NULL)
+			{
+				spr_width = rotsprite->width << FRACBITS;
+				spr_height = rotsprite->height << FRACBITS;
+				spr_offset = rotsprite->leftoffset << FRACBITS;
+				spr_topoffset = rotsprite->topoffset << FRACBITS;
+				spr_topoffset += FEETADJUST;
+				
+				// flip -> rotate, not rotate -> flip
+				flip = 0;
+			}
 		}
 	}
 #endif
@@ -5583,7 +5594,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 	vis->spriteyoffset = FIXED_TO_FLOAT(spr_topoffset);
 
 #ifdef ROTSPRITE
-	if (rotsprite)
+	if ((rotsprite) && (cv_spriteroll.value))
 		vis->gpatch = (GLPatch_t *)rotsprite;
 	else
 #endif
@@ -5798,9 +5809,9 @@ void HWR_DrawSkyBackground(float fpov)
 	dometransform.splitscreen = splitscreen;
 
 	HWR_GetTexture(texturetranslation[skytexture]);
-	HWD.pfnSetShader(7);	// sky shader
+	if (HWR_UseShader())
+		HWD.pfnSetShader(HWR_GetShaderFromTarget(SHADER_SKY));// sky shader
 	HWD.pfnRenderSkyDome(skytexture, textures[skytexture]->width, textures[skytexture]->height, dometransform);
-	HWD.pfnSetShader(0);
 }
 
 
@@ -5937,8 +5948,8 @@ static void HWR_PortalClipping(gl_portal_t *portal)
 
 	line_t *line = &lines[portal->clipline];
 
-	angle1 = R_PointToAngleEx64(viewx, viewy, line->v1->x, line->v1->y);
-	angle2 = R_PointToAngleEx64(viewx, viewy, line->v2->x, line->v2->y);
+	angle1 = R_PointToAngleEx(viewx, viewy, line->v1->x, line->v1->y);
+	angle2 = R_PointToAngleEx(viewx, viewy, line->v2->x, line->v2->y);
 
 	// clip things that are not inside the portal window from our viewpoint
 	gld_clipper_SafeAddClipRange(angle2, angle1);
@@ -6068,8 +6079,9 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, playe
 		}
 		//drawcount = 0;
 		validcount++;
+		
 		if (cv_grbatching.value)
-			HWD.pfnStartBatching();
+			HWR_StartBatching();
 
 		ps_numbspcalls.value.i = 0;
 		ps_numpolyobjects.value.i = 0;
@@ -6090,14 +6102,10 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, playe
 		gr_portal = oldgl_portal_state;
 
 		PS_STOP_TIMING(ps_bsptime);
-
+		
 		if (cv_grbatching.value)
-		{
-			HWD.pfnRenderBatches(&ps_hw_batchsorttime.value.p, &ps_hw_batchdrawtime.value.p,
-			&ps_hw_numpolys.value.i, &ps_hw_numverts.value.i, &ps_hw_numcalls.value.i,
-			&ps_hw_numshaders.value.i, &ps_hw_numtextures.value.i, &ps_hw_numpolyflags.value.i,
-			&ps_hw_numcolors.value.i);
-		}
+			HWR_RenderBatches();
+
 		if (skyWallVertexArraySize)// if there are skywalls to draw using the alternate method
 		{
 			HWR_SetStencilState(HWR_STENCIL_SKY, -1);
@@ -6166,6 +6174,20 @@ void HWR_RenderFrame(INT32 viewnumber, player_t *player, boolean skybox)
 	{
 		gr_viewwindowx += gr_viewwidth;
 		gr_windowcenterx += gr_viewwidth;
+	}
+
+	if (splitscreen == 2 && player == &players[displayplayers[2]])
+	{
+		// V_DrawPatchFill, but for the fourth screen only
+		GLPatch_t *gpatch = W_CachePatchName("SRB2BACK", PU_CACHE);
+		INT32 dupz = (vid.dupx < vid.dupy ? vid.dupx : vid.dupy);
+		INT32 x, y, pw = SHORT(gpatch->width) * dupz, ph = SHORT(gpatch->height) * dupz;
+
+		for (x = vid.width>>1; x < vid.width; x += pw)
+		{
+			for (y = vid.height>>1; y < vid.height; y += ph)
+				HWR_DrawStretchyFixedPatch(gpatch, (x)<<FRACBITS, (y)<<FRACBITS, FRACUNIT, FRACUNIT, V_NOSCALESTART, NULL);
+		}
 	}
 
 	// check for new console commands.
@@ -6255,8 +6277,7 @@ void HWR_RenderFrame(INT32 viewnumber, player_t *player, boolean skybox)
 	HWR_ClearClipper();
 
 	// Reset the shader state.
-	HWD.pfnSetSpecialState(HWD_SET_SHADERS, cv_grshaders.value);
-	HWD.pfnSetShader(0);
+	//HWR_SetShaderState();
 
 	validcount++;
 
@@ -6320,18 +6341,57 @@ void HWR_RenderPlayerView(INT32 viewnumber, player_t *player)
 	HWR_RenderFrame(viewnumber, player, false);
 }
 
+// enable or disable palette rendering state depending on settings and availability
+// called when relevant settings change
+// shader recompilation is done in the cvar callback
+void HWR_TogglePaletteRendering(void)
+{
+	// which state should we go to?
+	if (HWR_ShouldUsePaletteRendering())
+	{
+		// are we not in that state already?
+		if (!gr_palette_rendering_state)
+		{
+			gr_palette_rendering_state = true;
 
+			// The textures will still be converted to RGBA by r_opengl.
+			// This however makes hw_cache use paletted blending for composite textures!
+			// (patchformat is not touched)
+			textureformat = GL_TEXFMT_P_8;
 
+			HWR_SetMapPalette();
+			HWR_SetPalette(pLocalPalette);
+
+			// If the r_opengl "texture palette" stays the same during this switch, these textures
+			// will not be cleared out. However they are still out of date since the
+			// composite texture blending method has changed. Therefore they need to be cleared.
+			HWD.pfnClearMipMapCache();
+		}
+	}
+	else
+	{
+		// are we not in that state already?
+		if (gr_palette_rendering_state)
+		{
+			gr_palette_rendering_state = false;
+			textureformat = GL_TEXFMT_RGBA;
+			HWR_SetPalette(pLocalPalette);
+			// If the r_opengl "texture palette" stays the same during this switch, these textures
+			// will not be cleared out. However they are still out of date since the
+			// composite texture blending method has changed. Therefore they need to be cleared.
+			HWD.pfnClearMipMapCache();
+		}
+	}
+}
 
 //added by Hurdler: console varibale that are saved
 void HWR_AddCommands(void)
 {
-	CV_RegisterVar(&cv_grrounddown);
 	CV_RegisterVar(&cv_grfiltermode);
 	CV_RegisterVar(&cv_granisotropicmode);
 	CV_RegisterVar(&cv_grcorrecttricks);
 	CV_RegisterVar(&cv_grsolvetjoin);
-
+	
 	CV_RegisterVar(&cv_grbatching);
 	CV_RegisterVar(&cv_grfofcut);
 	CV_RegisterVar(&cv_fofzfightfix);
@@ -6341,12 +6401,10 @@ void HWR_AddCommands(void)
 	CV_RegisterVar(&cv_grscreentextures);
 	
 	CV_RegisterVar(&cv_grrenderdistance);
-	
-	CV_RegisterVar(&cv_grgammablue);
-	CV_RegisterVar(&cv_grgammagreen);
-	CV_RegisterVar(&cv_grgammared);
+
 	CV_RegisterVar(&cv_grfakecontrast);
 	CV_RegisterVar(&cv_grslopecontrast);
+	CV_RegisterVar(&cv_grhorizonlines);
 	
 	CV_RegisterVar(&cv_grfovchange);
 	
@@ -6358,7 +6416,6 @@ void HWR_AddCommands(void)
 	CV_RegisterVar(&cv_grshearing);
 	
 	CV_RegisterVar(&cv_grshaders);
-	CV_RegisterVar(&cv_grusecustomshaders);
 	
 	CV_RegisterVar(&cv_grportals);
 	CV_RegisterVar(&cv_nostencil);
@@ -6367,10 +6424,9 @@ void HWR_AddCommands(void)
 	
 	CV_RegisterVar(&cv_secbright);
 	
-	CV_RegisterVar(&cv_grpaletteshader);
-	CV_RegisterVar(&cv_grflashpal);	
-
-	CV_RegisterVar(&cv_grvhseffect);	
+	CV_RegisterVar(&cv_grpaletterendering);
+	CV_RegisterVar(&cv_grpalettedepth);
+	CV_RegisterVar(&cv_grflashpal);
 }
 
 // --------------------------------------------------------------------------
@@ -6384,29 +6440,26 @@ void HWR_Startup(void)
 	if (!startupdone)
 	{
 		CONS_Printf("HWR_Startup()...\n");
+		textureformat = patchformat = GL_TEXFMT_RGBA;
+		
 		HWR_InitTextureCache();
 		HWR_InitMD2();
 
-		HWD.pfnSetupGLInfo();
-	}
+		gr_shadersavailable = HWR_InitShaders();
+		HWR_SetShaderState();
+		HWR_LoadAllCustomShaders();
 
-	if (rendermode == render_opengl)
-		textureformat = patchformat = GR_RGBA;
-		
+		HWR_TogglePaletteRendering();
+
+		if (msaa)
+		{
+			if (a2c)
+				HWD.pfnSetSpecialState(HWD_SET_MSAA, 2);
+			else
+				HWD.pfnSetSpecialState(HWD_SET_MSAA, 1);
+		}
+	}
 	startupdone = true;
-
-	// jimita
-	HWD.pfnKillShaders();
-	if (!HWD.pfnLoadShaders())
-		gr_shadersavailable = false;
-
-	if (msaa)
-	{
-		if (a2c)
-			HWD.pfnSetSpecialState(HWD_SET_MSAA, 2);
-		else
-			HWD.pfnSetSpecialState(HWD_SET_MSAA, 1);
-	}
 }
 
 // --------------------------------------------------------------------------
@@ -6416,6 +6469,7 @@ void HWR_Shutdown(void)
 {
 	CONS_Printf("HWR_Shutdown()\n");
 	HWR_FreeExtraSubsectors();
+	HWR_FreeMipmapCache();
 	HWR_FreeTextureCache();
 	HWD.pfnFlushScreenTextures();
 }
@@ -6424,6 +6478,8 @@ void HWR_RenderWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend,
 {
 	FBITFIELD blendmode = blend;
 	UINT8 alpha = pSurf->PolyColor.s.alpha; // retain the alpha
+	
+	INT32 shader = SHADER_NONE;
 
 	// Lighting is done here instead so that fog isn't drawn incorrectly on transparent walls after sorting
 	HWR_Lighting(pSurf, lightlevel, wallcolormap);
@@ -6433,24 +6489,21 @@ void HWR_RenderWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend,
 	if (blend & PF_Environment)
 		blendmode |= PF_Occlude;	// PF_Occlude must be used for solid objects
 
-	if (fogwall)
+	if (HWR_UseShader())
 	{
-		blendmode |= PF_Fog;
-		HWD.pfnSetShader(6);	// fog shader
-	}
+		if (fogwall)
+			shader = SHADER_FOG;
+		else
+			shader = SHADER_WALL;
 
-	blendmode |= PF_Modulated;	// No PF_Occlude means overlapping (incorrect) transparency
-
-	if (!fogwall)
-	{
-		if (HWR_UseShader())
-		{
-			HWD.pfnSetShader(HWR_ShouldUsePaletteRendering() ? 10 : 2);	// wall shader
-			blendmode |= PF_ColorMapped;
-		}
+		blendmode |= PF_ColorMapped;
 	}
 	
-	HWD.pfnDrawPolygon(pSurf, wallVerts, 4, blendmode, false);
+	if (fogwall)
+		blendmode |= PF_Fog;
+	
+	blendmode |= PF_Modulated;	// No PF_Occlude means overlapping (incorrect) transparency
+	HWR_ProcessPolygon(pSurf, wallVerts, 4, blendmode, shader, false);
 
 #ifdef WALLSPLATS
 	if (gr_curline->linedef->splats && cv_splats.value)
@@ -6501,7 +6554,7 @@ void HWR_DoPostProcessor(player_t *player)
 
 		Surf.PolyColor.s.alpha = 0xc0; // match software mode
 
-		HWD.pfnDrawPolygon(&Surf, v, 4, PF_Modulated|PF_Translucent|PF_NoTexture|PF_NoDepthTest, false);
+		HWD.pfnDrawPolygon(&Surf, v, 4, PF_Modulated|PF_Translucent|PF_NoTexture|PF_NoDepthTest);
 	}
 
 	if (!cv_grscreentextures.value) // screen textures are needed for the rest of the effects
@@ -6509,7 +6562,7 @@ void HWR_DoPostProcessor(player_t *player)
 
 	// Capture the screen for intermission and screen waving
 	if(gamestate != GS_INTERMISSION)
-		HWD.pfnMakeScreenTexture();
+		HWD.pfnMakeScreenTexture(HWD_SCREENTEXTURE_GENERIC1);
 
 	if (splitscreen) // Not supported in splitscreen - someone want to add support?
 		return;
@@ -6553,24 +6606,24 @@ void HWR_DoPostProcessor(player_t *player)
 
 		// Capture the screen again for screen waving on the intermission
 		if(gamestate != GS_INTERMISSION)
-			HWD.pfnMakeScreenTexture();
+			HWD.pfnMakeScreenTexture(HWD_SCREENTEXTURE_GENERIC1);
 	}
 	// Flipping of the screen isn't done here anymore
 }
 
 void HWR_StartScreenWipe(void)
 {
-	HWD.pfnStartScreenWipe();
+	HWD.pfnMakeScreenTexture(HWD_SCREENTEXTURE_WIPE_START);
 }
 
 void HWR_EndScreenWipe(void)
 {
-	HWD.pfnEndScreenWipe();
+	HWD.pfnMakeScreenTexture(HWD_SCREENTEXTURE_WIPE_END);
 }
 
 void HWR_DrawIntermissionBG(void)
 {
-	HWD.pfnDrawIntermissionBG();
+	HWD.pfnDrawScreenTexture(HWD_SCREENTEXTURE_GENERIC1, NULL, 0);
 }
 
 void HWR_DoWipe(UINT8 wipenum, UINT8 scrnnum)
@@ -6598,7 +6651,7 @@ void HWR_DoWipe(UINT8 wipenum, UINT8 scrnnum)
 	}
 
 	HWR_GetFadeMask(lumpnum);
-	HWD.pfnDoScreenWipe();
+	HWD.pfnDoScreenWipe(HWD_SCREENTEXTURE_WIPE_START, HWD_SCREENTEXTURE_WIPE_END);
 }
 
 void HWR_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8 downdistort, UINT8 barsize)
@@ -6608,169 +6661,11 @@ void HWR_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT
 
 void HWR_MakeScreenFinalTexture(void)
 {
-    HWD.pfnMakeScreenFinalTexture();
+	HWD.pfnMakeScreenTexture(HWD_SCREENTEXTURE_GENERIC2);
 }
 
 void HWR_DrawScreenFinalTexture(int width, int height)
 {
-    HWD.pfnDrawScreenFinalTexture(width, height);
+	HWD.pfnDrawScreenFinalTexture(HWD_SCREENTEXTURE_GENERIC2, width, height);
 }
-
-// jimita 18032019
-typedef struct
-{
-	char type[16];
-	INT32 id;
-} shaderxlat_t;
-
-static inline UINT16 HWR_CheckShader(UINT16 wadnum)
-{
-	UINT16 i;
-	lumpinfo_t *lump_p;
-
-	lump_p = wadfiles[wadnum]->lumpinfo;
-	for (i = 0; i < wadfiles[wadnum]->numlumps; i++, lump_p++)
-		if (memcmp(lump_p->name, "SHADERS", 7) == 0)
-			return i;
-
-	return INT16_MAX;
-}
-
-void HWR_LoadShaders(UINT16 wadnum, boolean PK3)
-{
-	UINT16 lump;
-	char *shaderdef, *line;
-	char *stoken;
-	char *value;
-	size_t size;
-	int linenum = 1;
-	int shadertype = 0;
-	int i;
-
-	#define SHADER_TYPES 7
-	shaderxlat_t shaderxlat[SHADER_TYPES] =
-	{
-		{"Flat", 1},
-		{"WallTexture", 2},
-		{"Sprite", 3},
-		{"Model", 4},
-		{"WaterRipple", 5},
-		{"Fog", 6},
-		{"Sky", 7},
-	};
-
-	lump = HWR_CheckShader(wadnum);
-	if (lump == INT16_MAX)
-		return;
-
-	shaderdef = W_CacheLumpNumPwad(wadnum, lump, PU_CACHE);
-	size = W_LumpLengthPwad(wadnum, lump);
-
-	line = Z_Malloc(size+1, PU_STATIC, NULL);
-	if (!line)
-		I_Error("HWR_LoadShaders: No more free memory\n");
-
-	M_Memcpy(line, shaderdef, size);
-	line[size] = '\0';
-
-	stoken = strtok(line, "\r\n ");
-	while (stoken)
-	{
-		if ((stoken[0] == '/' && stoken[1] == '/')
-			|| (stoken[0] == '#'))// skip comments
-		{
-			stoken = strtok(NULL, "\r\n");
-			goto skip_field;
-		}
-
-		if (!stricmp(stoken, "GLSL"))
-		{
-			value = strtok(NULL, "\r\n ");
-			if (!value)
-			{
-				CONS_Alert(CONS_WARNING, "HWR_LoadShaders: Missing shader type (file %s, line %d)\n", wadfiles[wadnum]->filename, linenum);
-				stoken = strtok(NULL, "\r\n"); // skip end of line
-				goto skip_lump;
-			}
-
-			if (!stricmp(value, "VERTEX"))
-				shadertype = 1;
-			else if (!stricmp(value, "FRAGMENT"))
-				shadertype = 2;
-
-skip_lump:
-			stoken = strtok(NULL, "\r\n ");
-			linenum++;
-		}
-		else
-		{
-			value = strtok(NULL, "\r\n= ");
-			if (!value)
-			{
-				CONS_Alert(CONS_WARNING, "HWR_LoadShaders: Missing shader target (file %s, line %d)\n", wadfiles[wadnum]->filename, linenum);
-				stoken = strtok(NULL, "\r\n"); // skip end of line
-				goto skip_field;
-			}
-
-			if (!shadertype)
-			{
-				CONS_Alert(CONS_ERROR, "HWR_LoadShaders: Missing shader type (file %s, line %d)\n", wadfiles[wadnum]->filename, linenum);
-				Z_Free(line);
-				return;
-			}
-
-			for (i = 0; i < SHADER_TYPES; i++)
-			{
-				if (!stricmp(shaderxlat[i].type, stoken))
-				{
-					size_t shader_size;
-					char *shader_source;
-					char *shader_lumpname;
-					UINT16 shader_lumpnum;
-
-					if (PK3)
-					{
-						shader_lumpname = Z_Malloc(strlen(value) + 12, PU_STATIC, NULL);
-						strcpy(shader_lumpname, "Shaders/sh_");
-						strcat(shader_lumpname, value);
-						shader_lumpnum = W_CheckNumForFullNamePK3(shader_lumpname, wadnum, 0);
-					}
-					else
-					{
-						shader_lumpname = Z_Malloc(strlen(value) + 4, PU_STATIC, NULL);
-						strcpy(shader_lumpname, "SH_");
-						strcat(shader_lumpname, value);
-						shader_lumpnum = W_CheckNumForNamePwad(shader_lumpname, wadnum, 0);
-					}
-
-					if (shader_lumpnum == INT16_MAX)
-					{
-						CONS_Alert(CONS_ERROR, "HWR_LoadShaders: Missing shader source %s (file %s, line %d)\n", shader_lumpname, wadfiles[wadnum]->filename, linenum);
-						Z_Free(shader_lumpname);
-						continue;
-					}
-
-					shader_size = W_LumpLengthPwad(wadnum, shader_lumpnum);
-					shader_source = Z_Malloc(shader_size, PU_STATIC, NULL);
-					W_ReadLumpPwad(wadnum, shader_lumpnum, shader_source);
-
-					HWD.pfnLoadCustomShader(shaderxlat[i].id, shader_source, shader_size, (shadertype == 2));
-
-					Z_Free(shader_source);
-					Z_Free(shader_lumpname);
-				}
-			}
-
-skip_field:
-			stoken = strtok(NULL, "\r\n= ");
-			linenum++;
-		}
-	}
-
-	HWD.pfnInitCustomShaders();
-
-	Z_Free(line);
-	return;
-}
-
 #endif // HWRENDER

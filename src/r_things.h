@@ -182,7 +182,6 @@ typedef struct vissprite_s
 extern UINT32 visspritecount, numvisiblesprites;
 
 void R_ClipSprites(void);
-void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2);
 
 UINT8 *R_GetSpriteTranslation(vissprite_t *vis);
 

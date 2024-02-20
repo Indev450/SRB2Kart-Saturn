@@ -544,6 +544,8 @@ HMS_fetch_rules (char *buffer, size_t buffer_size)
 		else
 			buffer = NULL;
 	}
+	else
+		buffer = NULL;
 
 	HMS_end(hms);
 

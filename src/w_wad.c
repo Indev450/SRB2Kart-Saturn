@@ -693,18 +693,6 @@ static lumpinfo_t* ResGetLumpsZip (FILE* handle, UINT16* nlmp)
 	return lumpinfo;
 }
 
-static void W_ReadFileShaders(wadfile_t *wadfile)
-{
-#ifdef HWRENDER
-        if (rendermode == render_opengl)
-        {
-                HWR_LoadShaders(numwadfiles - 1, W_FileHasFolders(wadfile));
-        }
-#else
-        (void)wadfile;
-#endif
-}
-
 //  Allocate a wadfile, setup the lumpinfo (directory) and
 //  lumpcache, add the wadfile to the current active wadfiles
 //
@@ -769,13 +757,10 @@ UINT16 W_InitFile(const char *filename, boolean local)
 	{
 		if (!memcmp(wadfiles[i]->md5sum, md5sum, 16))
 		{
-			if (!local) {
-				CONS_Alert(CONS_ERROR, M_GetText("%s is already loaded\n"), filename);
-				if (handle)
-					fclose(handle);
-				return INT16_MAX;
-			}
-			CONS_Alert(CONS_WARNING, M_GetText("%s is a local skin that is already loaded\n"), filename);
+			CONS_Alert(CONS_ERROR, M_GetText("%s is already loaded\n"), filename);
+			if (handle)
+				fclose(handle);
+			return INT16_MAX;
 		}
 	}
 #endif
@@ -841,7 +826,8 @@ UINT16 W_InitFile(const char *filename, boolean local)
 	numwadfiles++; // must come BEFORE W_LoadDehackedLumps, so any addfile called by COM_BufInsertText called by Lua doesn't overwrite what we just loaded
 
 		// Read shaders from file
-		W_ReadFileShaders(wadfile);
+		if (rendermode == render_opengl && (vid.glstate == VID_GL_LIBRARY_LOADED))
+			HWR_LoadCustomShadersFromFile(numwadfiles - 1, (type == RET_PK3));
 
 	// TODO: HACK ALERT - Load Lua & SOC stuff right here. I feel like this should be out of this place, but... Let's stick with this for now.
 	switch (wadfile->type)
@@ -1750,11 +1736,11 @@ FUNCINLINE static ATTRINLINE void *W_CachePatchNumPwad(UINT16 wad, UINT16 lump, 
 
 	grPatch = HWR_GetCachedGLPatchPwad(wad, lump);
 
-	if (grPatch->mipmap->grInfo.data)
+	if (grPatch->mipmap->data)
 	{
 		if (tag == PU_CACHE)
 			tag = PU_HWRCACHE;
-		Z_ChangeTag(grPatch->mipmap->grInfo.data, tag);
+		Z_ChangeTag(grPatch->mipmap->data, tag);
 	}
 	else
 	{
