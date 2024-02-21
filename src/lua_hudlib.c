@@ -170,6 +170,16 @@ static const char *const camera_opt[] = {
 	"pnum",
 	NULL};
 
+enum hudpatch {
+	hudpatch_item = 0,
+	hudpatch_itemmul
+};
+
+static const char *const hud_patch_options[] = {
+	"item",
+	"itemmul",
+	NULL};
+
 static int lib_getHudInfo(lua_State *L)
 {
 	UINT32 i;
@@ -745,68 +755,6 @@ static int libd_drawStretched(lua_State *L)
 	return 0;
 }
 
-static int libd_drawItemBox(lua_State *L)
-{
-	HUDONLY
-	INT32 x = luaL_checkinteger(L, 1);
-	INT32 y = luaL_checkinteger(L, 2);
-	INT32 flags = luaL_optinteger(L, 3, 0);
-	boolean small = lua_optboolean(L, 4);
-	boolean dark = lua_optboolean(L, 5);
-	UINT8 *colormap = NULL;
-
-	flags &= ~V_PARAMMASK; // Don't let crashes happen.
-
-	if (!lua_isnoneornil(L, 6))
-		colormap = *((UINT8 **)luaL_checkudata(L, 6, META_COLORMAP));
-	else if (cv_colorizeditembox.value && K_UseColorHud())
-		colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
-
-	patch_t *localbg = K_getItemBoxPatch(small, dark);
-
-	lua_getfield(L, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
-	huddrawlist_h list = (huddrawlist_h) lua_touserdata(L, -1);
-	lua_pop(L, 1);
-
-	if (LUA_HUD_IsDrawListValid(list))
-		LUA_HUD_AddDraw(list, x, y, localbg, flags, colormap);
-	else
-		V_DrawMappedPatch(x, y, flags, localbg, colormap);
-
-	return 0;
-}
-
-static int libd_drawItemMul(lua_State *L)
-{
-	HUDONLY
-	INT32 x = luaL_checkinteger(L, 1);
-	INT32 y = luaL_checkinteger(L, 2);
-	INT32 flags = luaL_optinteger(L, 3, 0);
-	boolean small = lua_optboolean(L, 4);
-	UINT8 *colormap = NULL;
-
-	flags &= ~V_PARAMMASK; // Don't let crashes happen.
-
-	if (!lua_isnoneornil(L, 5))
-		colormap = *((UINT8 **)luaL_checkudata(L, 5, META_COLORMAP));
-	else if (K_UseColorHud())
-		colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
-
-	patch_t *patch = K_getItemMulPatch(small);
-
-	lua_getfield(L, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
-	huddrawlist_h list = (huddrawlist_h) lua_touserdata(L, -1);
-	lua_pop(L, 1);
-
-	if (LUA_HUD_IsDrawListValid(list))
-		LUA_HUD_AddDraw(list, x, y, patch, flags, colormap);
-	else
-		V_DrawMappedPatch(x, y, flags, patch, colormap);
-
-	return 0;
-}
-
-
 static int libd_drawNum(lua_State *L)
 {
 	INT32 x, y, flags, num;
@@ -1069,6 +1017,39 @@ static int libd_getColormap(lua_State *L)
 	return 1;
 }
 
+static int libd_getColorHudPatch(lua_State *L)
+{
+	HUDONLY
+	enum hudpatch option = luaL_checkoption(L, 1, NULL, hud_patch_options);
+	patch_t *patch;
+	UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
+	boolean small, dark;
+
+	switch (option) {
+		case hudpatch_item:
+			small = lua_optboolean(L, 2);
+			dark = lua_optboolean(L, 3);
+			patch = K_getItemBoxPatch(small, dark);
+			if (!cv_colorizeditembox.value)
+				colormap = NULL;
+			break;
+		case hudpatch_itemmul:
+			small = lua_optboolean(L, 2);
+			patch = K_getItemMulPatch(small);
+			break;
+		default:
+			return 0; // you shouldn't be here
+	}
+
+	LUA_PushUserdata(L, patch, META_PATCH);
+	if (colormap && K_UseColorHud())
+		LUA_PushUserdata(L, colormap, META_COLORMAP);
+	else
+		lua_pushnil(L);
+
+	return 2;
+}
+
 static int libd_getHudColor(lua_State *L)
 {
 	HUDONLY
@@ -1177,8 +1158,7 @@ static luaL_Reg lib_draw[] = {
 	{"renderer", libd_renderer},
 	{"localTransFlag", libd_getlocaltransflag},
 	{"drawOnMinimap", libd_drawOnMinimap},
-	{"drawItemBox", libd_drawItemBox},
-	{"drawItemMul", libd_drawItemMul},
+	{"getColorHudPatch", libd_getColorHudPatch},
 	{"getDrawInfo", libd_getDrawInfo},
 	{"getHudColor", libd_getHudColor},
 	{"useColorHud", libd_useColorHud},

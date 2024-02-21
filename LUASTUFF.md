@@ -33,18 +33,16 @@ Uses the same strings as `hud.enabled`.
 Returns the X, Y and flags where the given HUD item will be drawn for the current displayplayer.
 Available for `item`, `gametypeinfo` and `minimap`.
 
-## v.drawItemBox(x, y, flags, small, dark, colormap)
+## patch, colormap = v.getColorHudPatch(item)
 
-Draws an item box at the given coordinates.
-`small`: true to draw small item box, false to draw large item box.
-`dark`: true if item box should be darkened.
-`colormap`: Colormap to draw the item box with. If nil, use displayplayer's HUD colormap.
-
-## v.drawItemMul(x, y, flags, small, colormap)
-
-Draws a multi-item sticker at the given coordinates.
-`small`: true to draw small sticker, false to draw large sticker.
-`colormap`: Colormap to draw the sticker with. If nil, use displayplayer's HUD colormap.
+Returns the patch and colormap to use for the given HUD item. Colorization is based on the user's settings.
+Available for `item` and `itemmul`.
+Extra arguments for some items:
+### item
+* `small`: true for small item box, false for big item box.
+* `dark`: true to darken item box. Depends on `darkitembox`.
+### itemmul
+* `small`: true for small sticker, false for big sticker.
 
 ## hudcolor = v.getHudColor()
 
