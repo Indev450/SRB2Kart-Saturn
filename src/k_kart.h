@@ -17,6 +17,8 @@ extern const UINT8 KartColor_Opposite[MAXSKINCOLORS*2];
 void K_RainbowColormap(UINT8 *dest_colormap, UINT8 skincolor);
 void K_GenerateKartColormap(UINT8 *dest_colormap, INT32 skinnum, UINT8 color, boolean local);
 UINT8 K_GetKartColorByName(const char *name);
+UINT8 K_GetHudColor(void);
+boolean K_UseColorHud(void);
 
 void K_RegisterKartStuff(void);
 
@@ -95,6 +97,19 @@ void K_LoadKartHUDGraphics(void);
 void K_drawKartHUD(void);
 void K_drawKartFreePlay(UINT32 flashtime);
 void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UINT8 mode);
+
+typedef struct
+{
+	INT32 x;
+	INT32 y;
+	INT32 flags;
+} drawinfo_t;
+
+patch_t *K_getItemBoxPatch(boolean small, boolean dark);
+patch_t *K_getItemMulPatch(boolean small);
+drawinfo_t K_getItemBoxDrawinfo(void);
+drawinfo_t K_getLapsDrawinfo(void);
+drawinfo_t K_getMinimapDrawinfo(void);
 
 // =========================================================================
 #endif  // __K_KART__
