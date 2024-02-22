@@ -26,37 +26,32 @@
 #include "d_main.h"		// found_extra_kart
 
 // Hud offset cvars
-consvar_t cv_item_xoffset = {"hud_item_xoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_item_yoffset = {"hud_item_yoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
+#define IMPL_HUD_OFFSET_X(name)\
+consvar_t cv_##name##_xoffset = {"hud_" #name "_xoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_time_xoffset = {"hud_time_xoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_time_yoffset = {"hud_time_yoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
+#define IMPL_HUD_OFFSET_Y(name)\
+consvar_t cv_##name##_yoffset = {"hud_" #name "_yoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_laps_xoffset = {"hud_laps_xoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_laps_yoffset = {"hud_laps_yoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
+#define IMPL_HUD_OFFSET(name)\
+IMPL_HUD_OFFSET_X(name)\
+IMPL_HUD_OFFSET_Y(name)
 
-consvar_t cv_spdm_xoffset = {"hud_speed_xoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_spdm_yoffset = {"hud_speed_yoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
+IMPL_HUD_OFFSET(item); // Item box
+IMPL_HUD_OFFSET(time); // Time
+IMPL_HUD_OFFSET(laps); // Number of laps
+IMPL_HUD_OFFSET(dnft); // Countdown (did not finish timer)
+IMPL_HUD_OFFSET(speed); // Speedometer
+IMPL_HUD_OFFSET(posi); // Position in race
+IMPL_HUD_OFFSET(face); // Mini rankings
+IMPL_HUD_OFFSET(stcd); // Starting countdown
+IMPL_HUD_OFFSET_Y(chek); // Check gfx
+IMPL_HUD_OFFSET(mini); // Minimap
+IMPL_HUD_OFFSET(want); // Wanted
+IMPL_HUD_OFFSET(stat); // Stats
 
-consvar_t cv_posi_xoffset = {"hud_position_xoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_posi_yoffset = {"hud_position_yoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
-
-consvar_t cv_face_xoffset = {"hud_face_xoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_face_yoffset = {"hud_face_yoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
-
-consvar_t cv_stcd_xoffset = {"hud_startcountdown_xoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_stcd_yoffset = {"hud_startcountdown_yoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
-
-consvar_t cv_chek_yoffset = {"hud_check_yoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
-
-consvar_t cv_mini_xoffset = {"hud_minimap_xoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_mini_yoffset = {"hud_minimap_yoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
-
-consvar_t cv_want_xoffset = {"hud_wanted_xoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_want_yoffset = {"hud_wanted_yoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
-
-consvar_t cv_stat_xoffset = {"hud_stat_xoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_stat_yoffset = {"hud_stat_yoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
+#undef IMPL_HUD_OFFSET
+#undef IMPL_HUD_OFFSET_X
+#undef IMPL_HUD_OFFSET_Y
 
 //extra hud things
 consvar_t cv_showstats = {"showstats", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -675,29 +670,34 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartdebugcheckpoint);
 	CV_RegisterVar(&cv_kartdebugnodes);
 	CV_RegisterVar(&cv_kartdebugcolorize);
-	
-	CV_RegisterVar(&cv_item_xoffset);
-	CV_RegisterVar(&cv_item_yoffset);
-	CV_RegisterVar(&cv_time_xoffset);
-	CV_RegisterVar(&cv_time_yoffset);
-	CV_RegisterVar(&cv_laps_xoffset);
-	CV_RegisterVar(&cv_laps_yoffset);
-	CV_RegisterVar(&cv_spdm_xoffset);
-	CV_RegisterVar(&cv_spdm_yoffset);
-	CV_RegisterVar(&cv_posi_xoffset);
-	CV_RegisterVar(&cv_posi_yoffset);
-	CV_RegisterVar(&cv_face_xoffset);
-	CV_RegisterVar(&cv_face_yoffset);
-	CV_RegisterVar(&cv_stcd_xoffset);
-	CV_RegisterVar(&cv_stcd_yoffset);
-	CV_RegisterVar(&cv_chek_yoffset);
-	CV_RegisterVar(&cv_mini_xoffset);
-	CV_RegisterVar(&cv_mini_yoffset);
-	CV_RegisterVar(&cv_want_xoffset);
-	CV_RegisterVar(&cv_want_yoffset);
-	CV_RegisterVar(&cv_stat_xoffset);
-	CV_RegisterVar(&cv_stat_yoffset);
-	
+
+#define REG_HUD_OFFSET_X(name)\
+	CV_RegisterVar(&cv_##name##_xoffset);
+
+#define REG_HUD_OFFSET_Y(name)\
+	CV_RegisterVar(&cv_##name##_yoffset);
+
+#define REG_HUD_OFFSET(name)\
+	REG_HUD_OFFSET_X(name)\
+	REG_HUD_OFFSET_Y(name)
+
+	REG_HUD_OFFSET(item); // Item box
+	REG_HUD_OFFSET(time); // Time
+	REG_HUD_OFFSET(laps); // Number of laps
+	REG_HUD_OFFSET(dnft); // Countdown (did not finish timer)
+	REG_HUD_OFFSET(speed); // Speedometer
+	REG_HUD_OFFSET(posi); // Position in race
+	REG_HUD_OFFSET(face); // Mini rankings
+	REG_HUD_OFFSET(stcd); // Starting countdown
+	REG_HUD_OFFSET_Y(chek); // Check gfx
+	REG_HUD_OFFSET(mini); // Minimap
+	REG_HUD_OFFSET(want); // Wanted
+	REG_HUD_OFFSET(stat); // Stats
+
+#undef REG_HUD_OFFSET
+#undef REG_HUD_OFFSET_X
+#undef REG_HUD_OFFSET_Y
+
 	CV_RegisterVar(&cv_showstats);
 	CV_RegisterVar(&cv_showinput);
 	CV_RegisterVar(&cv_newspeedometer);
@@ -3005,6 +3005,13 @@ static void K_SpawnDriftSparks(player_t *player)
 		spark->momy = player->mo->momy/2;
 		//spark->momz = player->mo->momz/2;
 
+		// rotate the sparks based on pitch and roll; it just looks neat
+		if (cv_sparkroll.value == 1)
+		{
+			spark->slopepitch = player->mo->slopepitch;
+			spark->sloperoll = player->mo->sloperoll;
+		}
+
 		if (player->kartstuff[k_driftcharge] >= K_GetKartDriftSparkValue(player)*4)
 		{
 			spark->color = (UINT8)(1 + (leveltime % (MAXSKINCOLORS-1)));
@@ -3214,7 +3221,7 @@ static void K_QuiteSaltyHop(player_t *p)
 	}
 }
 
-static INT32 K_FindPlayerNum(player_t *plyr)
+/*static INT32 K_FindPlayerNum(player_t *plyr)
 {
 	INT32 i;
 	
@@ -3224,95 +3231,62 @@ static INT32 K_FindPlayerNum(player_t *plyr)
 			return i;
 	}
 	return 0; // technically defaulting to player 1 but fuck it
-}
+}*/
 
-static angle_t K_GetSlopeRollAngle(player_t *p, boolean dontflip, boolean useReserves)
+#define SLOPEROLL_DIV 3
+
+void K_RollMobjBySlopes(mobj_t* mo, boolean usedistance)
 {
-	angle_t lookAngle = 0;
-	angle_t zangle = 0;
-	angle_t xydirection = 0;
-	angle_t an;
-	angle_t final_slope;
-	INT32 pNum = K_FindPlayerNum(p);
+    I_Assert(mo->subsector != NULL);
+    I_Assert(mo->subsector->sector != NULL);
 
-	I_Assert(p != NULL);
-	I_Assert(p->mo != NULL);
-	I_Assert(!P_MobjWasRemoved(p->mo));
+    angle_t an;
+    boolean flip = mo->eflags & MFE_VERTICALFLIP;
+    fixed_t m_dist = R_PointToDist(mo->x, mo->y);
+    fixed_t rolldist = cv_sloperolldist.value * mapobjectscale;
 
-	if (useReserves)
-	{
-		I_Assert(p->mo->reservezangle != NULL);
-		I_Assert(p->mo->reservexydir != NULL);
-	}
+    // lifted from hw_md2
+    if (mo->standingslope)
+    {
+        fixed_t tempz = mo->standingslope->normal.z;
+        fixed_t tempy = mo->standingslope->normal.y;
+        fixed_t tempx = mo->standingslope->normal.x;
+        fixed_t tempangle = -(R_PointToAngle2(
+            0, 0, FixedSqrt(FixedMul(tempy, tempy) + FixedMul(tempz, tempz)), tempx));
 
-	lookAngle = R_PointToAngle2(camera[pNum].x, camera[pNum].y, p->mo->x, p->mo->y);
+        // admittedly this is a very hacky way to do the pitch and roll easing
 
-	if (!R_PointToDist(p->mo->x, p->mo->y))
-		lookAngle = p->mo->angle;
+        // pitch
+        if ((!usedistance) || (m_dist <= (rolldist)))
+        {
+            an = (INT32)((angle_t)tempangle - mo->pitch_sprite) / SLOPEROLL_DIV;
 
-	if (!useReserves)
-	{
-		zangle = p->mo->standingslope->zangle;
-		xydirection = p->mo->standingslope->xydirection;
+            mo->pitch_sprite = an ? mo->pitch_sprite + an : (angle_t)tempangle;
+        }
+        else
+            mo->pitch_sprite = FixedAngle(0);
 
-    		p->mo->reservezangle = zangle;
-    		p->mo->reservexydir = xydirection;
-	}
-	else if (p->mo->reservezangle)
-	{
-		zangle = p->mo->reservezangle;
-		xydirection = p->mo->reservexydir;
-	}
+        mo->slopepitch = flip ? InvAngle(mo->pitch_sprite) : mo->pitch_sprite;
 
-	if ((p->mo->eflags & MFE_VERTICALFLIP) && (!dontflip))
-		zangle = InvAngle(zangle);
+        // roll
+        tempangle = (R_PointToAngle2(0, 0, tempz, tempy));
 
-	an = (lookAngle - xydirection);
-	final_slope = -(FixedMul(FINESINE(an>>ANGLETOFINESHIFT), zangle));
-		
-	an = (INT32)(final_slope - p->tilt_sprite) / (camspin[pNum] ? 1 : 3);
-	
-	p->tilt_sprite = an ? p->tilt_sprite + an : final_slope;	
-	return -p->tilt_sprite;
-}
+        if ((!usedistance) || (m_dist <= (rolldist)))
+        {
+            an = (INT32)((angle_t)tempangle - mo->roll_sprite) / SLOPEROLL_DIV;
 
-static void K_RollPlayerBySlopes(player_t *p, boolean usedistance) 
-{
-	I_Assert(p->mo->subsector != NULL);
-	I_Assert(p->mo->subsector->sector != NULL);
+            mo->roll_sprite = an ? mo->roll_sprite + an : (angle_t)tempangle;
+        }
+        else
+            mo->roll_sprite = FixedAngle(0);
 
-	INT32 pNum = K_FindPlayerNum(p);
-
-	fixed_t p_dist = R_PointToDist2(p->mo->x, p->mo->y, camera[pNum].x, camera[pNum].y);
-	fixed_t mos = mapobjectscale;
-	fixed_t rolldist = cv_sloperolldist.value*mos;
-
-	if (!P_IsObjectOnGround(p->mo))
-	{
-		if (!usedistance)
-			p->mo->sloperoll = K_GetSlopeRollAngle(p, false, true);
-		else if (p_dist <= (rolldist))
-			p->mo->sloperoll = K_GetSlopeRollAngle(p, false, true);
-		else
-			p->mo->sloperoll = FixedAngle(0);
-
-		return;
-	}
-
-	if (!p->mo->standingslope)
-	{
-		p->mo->sloperoll = FixedAngle(0);
-		p->mo->reservezangle = FixedAngle(0);
-    	p->mo->reservexydir = FixedAngle(0);
-		return;
-	}
-
-	if (!usedistance)
-		p->mo->sloperoll = K_GetSlopeRollAngle(p, false, false);
-	else if (p_dist <= (rolldist))
-		p->mo->sloperoll = K_GetSlopeRollAngle(p, false, false);
-	else
-		p->mo->sloperoll = FixedAngle(0);
+        mo->sloperoll = flip ? InvAngle(mo->roll_sprite) : mo->roll_sprite;
+    }
+    else if (P_IsObjectOnGround(mo))
+    {
+        mo->sloperoll = FixedAngle(0);
+        mo->slopepitch = FixedAngle(0);
+    }
 }
 
 void K_SpawnBoostTrail(player_t *player)
@@ -3364,6 +3338,14 @@ void K_SpawnBoostTrail(player_t *player)
 		K_FlipFromObject(flame, player->mo);
 
 		flame->momx = 8;
+
+		// since you have to be on the ground for sneaker trails, this should be fine(?)
+		if (cv_sparkroll.value == 1)
+		{
+			flame->slopepitch = player->mo->slopepitch;
+			flame->sloperoll = player->mo->sloperoll;
+		}
+
 		P_XYMovement(flame);
 		if (P_MobjWasRemoved(flame))
 			continue;
@@ -6459,13 +6441,21 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 		player->mo->spritexscale = player->mo->realxscale;
 		player->mo->spriteyscale = player->mo->realyscale;
 	}
+
 	boolean usedist = false;
+
 	if (cv_sloperolldist.value > 0)
 		usedist = true;
-	if (cv_sloperoll.value == 1)
-		K_RollPlayerBySlopes(player, usedist);
+	if ((cv_spriteroll.value) && (cv_sloperoll.value))
+	{
+		if ((!player->mo->salty_jump)) // seeing a character rotate mid-hop looks really janky
+			K_RollMobjBySlopes(player->mo, usedist);
+	}
 	else
+	{
 		player->mo->sloperoll = FixedAngle(0);
+		player->mo->slopepitch = FixedAngle(0);
+	}
 
 
 	// Quick Turning
@@ -7461,8 +7451,8 @@ static void K_initKartHUD(void)
 	LAPS_X = 9 + cv_laps_xoffset.value;						//   9
 	LAPS_Y = BASEVIDHEIGHT - 29 + cv_laps_yoffset.value;	// 171
 	// Speedometer
-	SPDM_X = 9 + cv_spdm_xoffset.value; 					//   9
-	SPDM_Y = BASEVIDHEIGHT - 45 + cv_spdm_yoffset.value;	// 155
+	SPDM_X = 9 + cv_speed_xoffset.value; 					//   9
+	SPDM_Y = BASEVIDHEIGHT - 45 + cv_speed_yoffset.value;	// 155
 	// Position Number
 	POSI_X = BASEVIDWIDTH  - 9 + cv_posi_xoffset.value;		// 268
 	POSI_Y = BASEVIDHEIGHT - 9 + cv_posi_yoffset.value;		// 138
@@ -8221,7 +8211,7 @@ static void K_DrawKartPositionNum(INT32 num)
 	if (!splitscreen)
 	{
 		fx = POSI_X + xoffs;
-		fy = BASEVIDHEIGHT - 8;
+		fy = BASEVIDHEIGHT - 8 + cv_posi_yoffset.value;
 		fflags = V_SNAPTOBOTTOM|V_SNAPTORIGHT;
 	}
 	else if (splitscreen == 1)	// for this splitscreen, we'll use case by case because it's a bit different.
@@ -8229,14 +8219,14 @@ static void K_DrawKartPositionNum(INT32 num)
 		fx = POSI_X;
 		if (stplyr == &players[displayplayers[0]])	// for player 1: display this at the top right, above the minimap.
 		{
-			fy = 30;
+			fy = 30 + cv_posi_yoffset.value;
 			fflags = V_SNAPTOTOP|V_SNAPTORIGHT;
 			if (overtake)
 				flipvdraw = true;	// make sure overtaking doesn't explode us
 		}
 		else	// if we're not p1, that means we're p2. display this at the bottom right, below the minimap.
 		{
-			fy = BASEVIDHEIGHT - 8;
+			fy = BASEVIDHEIGHT - 8 + cv_posi_yoffset.value;
 			fflags = V_SNAPTOBOTTOM|V_SNAPTORIGHT;
 		}
 	}
@@ -8718,6 +8708,9 @@ static void K_drawKartSpeedometer(void)
 					V_DrawKartString(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, va("%4d P", convSpeed));
 				else
 					V_DrawKartString(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, va("%4d %%", convSpeed));
+				break;
+			default:
+				break;
 		}
 	}
 	else if (cv_newspeedometer.value == 2 && snw_speedo) // why bother if we dont?
@@ -9592,7 +9585,7 @@ static void K_drawInput(void)
 		return;
 
 	static INT32 pn = 0;
-	INT32 target = 0, splitflags = (V_SNAPTOBOTTOM|V_SNAPTORIGHT);
+	INT32 target = 0, splitflags = (V_SNAPTOBOTTOM|V_SNAPTORIGHT|V_HUDTRANS);
 	INT32 x = BASEVIDWIDTH - 32 + cv_posi_xoffset.value, y = BASEVIDHEIGHT-24 + cv_posi_yoffset.value, offs, col;
 	const INT32 accent1 = splitflags|colortranslations[K_GetHudColor()][5];
 	const INT32 accent2 = splitflags|colortranslations[K_GetHudColor()][9];
@@ -10064,12 +10057,16 @@ void K_drawKartHUD(void)
 	{
 		char *countstr = va("%d", racecountdown/TICRATE);
 
+		// Eeeh dunno if would be better to add another variable instead of LAPS_Y but this works too
+		int yoff = cv_dnft_yoffset.value - cv_laps_yoffset.value;
+		int xoff = cv_dnft_xoffset.value;
+
 		if (splitscreen > 1)
-			V_DrawCenteredString(BASEVIDWIDTH/4, LAPS_Y+1, K_calcSplitFlags(0), countstr);
+			V_DrawCenteredString(BASEVIDWIDTH/4+xoff, LAPS_Y+1+yoff, K_calcSplitFlags(0), countstr);
 		else
 		{
 			INT32 karlen = strlen(countstr)*6; // half of 12
-			V_DrawKartString((BASEVIDWIDTH/2)-karlen, LAPS_Y+3, K_calcSplitFlags(0), countstr);
+			V_DrawKartString((BASEVIDWIDTH/2)-karlen+xoff, LAPS_Y+3+yoff, K_calcSplitFlags(0), countstr);
 		}
 	}
 

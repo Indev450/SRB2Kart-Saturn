@@ -303,7 +303,7 @@ int player_localskin_setter(lua_State *L)
 {
 	player_t *plr = GETPLAYER();
 
-	SetLocalPlayerSkin(plr - players, luaL_checkstring(L, 2), NULL);
+	SetLocalPlayerSkin(plr - players, luaL_optstring(L, 2, "none"), NULL);
 
 	return 0;
 }

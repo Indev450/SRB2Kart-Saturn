@@ -282,6 +282,10 @@ void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 		out->scale = mobj->scale;
 		out->subsector = mobj->subsector;
 		out->angle = mobj->player ? mobj->player->frameangle : mobj->angle;
+		out->pitch = mobj->pitch;
+		out->roll = mobj->roll;
+		out->slopepitch = mobj->slopepitch;
+		out->sloperoll = mobj->sloperoll;
 		out->spritexscale = mobj->spritexscale;
 		out->spriteyscale = mobj->spriteyscale;
 		out->spritexoffset = mobj->spritexoffset;
@@ -292,11 +296,19 @@ void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 	out->x = R_LerpFixed(mobj->old_x, mobj->x, frac);
 	out->y = R_LerpFixed(mobj->old_y, mobj->y, frac);
 	out->z = R_LerpFixed(mobj->old_z, mobj->z, frac);
-	out->scale = mobj->resetinterp ? mobj->scale : R_LerpFixed(mobj->old_scale, mobj->scale, frac);
 	out->spritexscale = mobj->resetinterp ? mobj->spritexscale : R_LerpFixed(mobj->old_spritexscale, mobj->spritexscale, frac);
 	out->spriteyscale = mobj->resetinterp ? mobj->spriteyscale : R_LerpFixed(mobj->old_spriteyscale, mobj->spriteyscale, frac);
 	out->spritexoffset = mobj->resetinterp ? mobj->spritexoffset : R_LerpFixed(mobj->old_spritexoffset, mobj->spritexoffset, frac);
 	out->spriteyoffset = mobj->resetinterp ? mobj->spriteyoffset : R_LerpFixed(mobj->old_spriteyoffset, mobj->spriteyoffset, frac);
+	
+	if (mobj->scale == mobj->old_scale) // Tiny optimisation - scale is usually unchanging, so let's skip a lerp, two FixedMuls, and two FixedDivs
+	{
+		out->scale = mobj->scale;
+	}
+	else
+	{
+		out->scale = mobj->resetinterp ? mobj->scale : R_LerpFixed(mobj->old_scale, mobj->scale, frac);
+	}
 
 	// Sprite offsets are not interpolated until we have a way to interpolate them explicitly in Lua.
 	// It seems existing mods visually break more often than not if it is interpolated.
@@ -313,6 +325,14 @@ void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 	{
 		out->angle = mobj->resetinterp ? mobj->angle : R_LerpAngle(mobj->old_angle, mobj->angle, frac);
 	}
+
+	// pitch roll stuff
+	out->pitch = mobj->resetinterp ? mobj->pitch : R_LerpAngle(mobj->old_pitch, mobj->pitch, frac);
+	out->roll = mobj->resetinterp ? mobj->roll : R_LerpAngle(mobj->old_roll, mobj->roll, frac);
+
+	// and the slope stuff
+	out->slopepitch = mobj->resetinterp ? mobj->slopepitch : R_LerpAngle(mobj->old_slopepitch, mobj->slopepitch, frac);
+	out->sloperoll = mobj->resetinterp ? mobj->sloperoll : R_LerpAngle(mobj->old_sloperoll, mobj->sloperoll, frac);
 }
 
 void R_InterpolatePrecipMobjState(precipmobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
@@ -755,10 +775,27 @@ void R_ResetMobjInterpolationState(mobj_t *mobj)
 	mobj->old_z2 = mobj->old_z;
 	mobj->old_angle2 = mobj->old_angle;
 	mobj->old_scale2 = mobj->old_scale;
+
+	// rotation humor
+	mobj->old_pitch2 = mobj->old_pitch;
+	mobj->old_roll2 = mobj->old_roll;
+	mobj->old_slopepitch2 = mobj->old_slopepitch;
+	mobj->old_sloperoll2 = mobj->old_sloperoll;
+
 	mobj->old_x = mobj->x;
 	mobj->old_y = mobj->y;
 	mobj->old_z = mobj->z;
 	mobj->old_angle = mobj->angle;
+
+	// rotation humor, again
+
+	// pitch and roll first
+	mobj->old_pitch = mobj->pitch;
+	mobj->old_roll = mobj->roll;
+
+	mobj->old_slopepitch = mobj->slopepitch;
+	mobj->old_sloperoll = mobj->sloperoll;
+
 	mobj->old_scale = mobj->scale;
 	mobj->old_spritexscale = mobj->spritexscale;
 	mobj->old_spriteyscale = mobj->spriteyscale;
