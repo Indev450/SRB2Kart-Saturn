@@ -383,6 +383,7 @@ static void md2_loadTexture(md2_t *model)
 	if (!grpatch->mipmap->downloaded && !grpatch->mipmap->data)
 	{
 		int w = 0, h = 0;
+
 #ifdef HAVE_PNG
 		grpatch->mipmap->format = PNG_Load(filename, &w, &h, grpatch);
 		if (grpatch->mipmap->format == 0)
@@ -401,6 +402,21 @@ static void md2_loadTexture(md2_t *model)
 		grpatch->height = (INT16)h;
 		grpatch->mipmap->width = (UINT16)w;
 		grpatch->mipmap->height = (UINT16)h;
+		
+		// for palette rendering, color cube is applied in post-processing instead of here
+		if (!HWR_ShouldUsePaletteRendering())
+		{
+			UINT32 size;
+			RGBA_t *image;
+			// Lactozilla: Apply colour cube
+			image = grpatch->mipmap->data;
+			size = w*h;
+			while (size--)
+			{
+				V_CubeApply(&image->s.red, &image->s.green, &image->s.blue);
+				image++;
+			}
+		}
 	}
 	HWD.pfnSetTexture(grpatch->mipmap);
 	HWR_UnlockCachedPatch(grpatch);
