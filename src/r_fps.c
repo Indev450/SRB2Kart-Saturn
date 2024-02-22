@@ -305,56 +305,36 @@ void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 		out->y = mobj->old_y;
 	else
 		out->y = R_LerpFixed(mobj->old_y, mobj->y, frac);
-	
+
 	if (mobj->z == mobj->old_z)
 		out->z = mobj->old_z;
 	else
 		out->z = R_LerpFixed(mobj->old_z, mobj->z, frac);
 
-	if (cv_gravstretch.value || cv_saltysquish.value) // for now we only use it for those two features so no need to interpolate this when we dont use stuff
-	{
-		if (mobj->spritexscale == mobj->old_spritexscale)
-			out->spritexscale = mobj->old_spritexscale;
-		else
-			out->spritexscale = mobj->resetinterp ? mobj->spritexscale : R_LerpFixed(mobj->old_spritexscale, mobj->spritexscale, frac);
-		
-		if (mobj->spriteyscale == mobj->old_spriteyscale)
-			out->spriteyscale = mobj->old_spriteyscale;
-		else
-			out->spriteyscale = mobj->resetinterp ? mobj->spriteyscale : R_LerpFixed(mobj->old_spriteyscale, mobj->spriteyscale, frac);
-	}
+	if (mobj->spritexscale == mobj->old_spritexscale)
+		out->spritexscale = mobj->old_spritexscale;
 	else
-	{
-		out->spritexscale = mobj->spritexscale;
-		out->spriteyscale = mobj->spriteyscale;
-	}
+		out->spritexscale = mobj->resetinterp ? mobj->spritexscale : R_LerpFixed(mobj->old_spritexscale, mobj->spritexscale, frac);
 
-	if (cv_saltyhop.value) // same here
-	{
-		if (mobj->spritexoffset == mobj->old_spritexoffset)
-			out->spritexoffset = mobj->old_spritexoffset;
-		else
-			out->spritexoffset = mobj->resetinterp ? mobj->spritexoffset : R_LerpFixed(mobj->old_spritexoffset, mobj->spritexoffset, frac);
-
-		if (mobj->spriteyoffset == mobj->old_spriteyoffset)
-			out->spriteyoffset = mobj->old_spriteyoffset;
-		else
-			out->spriteyoffset = mobj->resetinterp ? mobj->spriteyoffset : R_LerpFixed(mobj->old_spriteyoffset, mobj->spriteyoffset, frac);
-	}
+	if (mobj->spriteyscale == mobj->old_spriteyscale)
+		out->spriteyscale = mobj->old_spriteyscale;
 	else
-	{
-		out->spritexoffset = mobj->spritexoffset;
-		out->spriteyoffset = mobj->spriteyoffset;
-	}
+		out->spriteyscale = mobj->resetinterp ? mobj->spriteyscale : R_LerpFixed(mobj->old_spriteyscale, mobj->spriteyscale, frac);
+
+	if (mobj->spritexoffset == mobj->old_spritexoffset)
+		out->spritexoffset = mobj->old_spritexoffset;
+	else
+		out->spritexoffset = mobj->resetinterp ? mobj->spritexoffset : R_LerpFixed(mobj->old_spritexoffset, mobj->spritexoffset, frac);
+
+	if (mobj->spriteyoffset == mobj->old_spriteyoffset)
+		out->spriteyoffset = mobj->old_spriteyoffset;
+	else
+		out->spriteyoffset = mobj->resetinterp ? mobj->spriteyoffset : R_LerpFixed(mobj->old_spriteyoffset, mobj->spriteyoffset, frac);
 
 	if (mobj->scale == mobj->old_scale) // Tiny optimisation - scale is usually unchanging, so let's skip a lerp, two FixedMuls, and two FixedDivs
-	{
 		out->scale = mobj->scale;
-	}
 	else
-	{
 		out->scale = mobj->resetinterp ? mobj->scale : R_LerpFixed(mobj->old_scale, mobj->scale, frac);
-	}
 
 	if (cv_mobjssector.value)
 		out->subsector = R_PointInSubsector(out->x, out->y);
@@ -362,9 +342,7 @@ void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 		out->subsector = mobj->subsector;
 
 	if (mobj->player)
-	{
 		out->angle = mobj->resetinterp ? mobj->player->frameangle : R_LerpAngle(mobj->player->old_frameangle, mobj->player->frameangle, frac);
-	}
 	else
 	{
 		if (mobj->angle == mobj->old_angle)
