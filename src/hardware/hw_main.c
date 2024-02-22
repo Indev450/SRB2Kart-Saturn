@@ -2499,7 +2499,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 						colormap = rover->master->frontsector->extra_colormap;
 					}
 					
-					Surf.PolyColor.s.alpha = HWR_FogBlockAlpha(rover->master->frontsector->lightlevel, rover->master->frontsector->extra_colormap);
+					Surf.PolyColor.s.alpha = HWR_FogBlockAlpha(SOFTLIGHT(rover->master->frontsector->lightlevel), rover->master->frontsector->extra_colormap);
 
 					if (gr_frontsector->numlights)
 						HWR_SplitWall(gr_frontsector, wallVerts, 0, &Surf, rover->flags, rover, 0);
@@ -2650,7 +2650,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 						colormap = rover->master->frontsector->extra_colormap;
 					}
 
-					Surf.PolyColor.s.alpha = HWR_FogBlockAlpha(rover->master->frontsector->lightlevel, rover->master->frontsector->extra_colormap);
+					Surf.PolyColor.s.alpha = HWR_FogBlockAlpha(SOFTLIGHT(rover->master->frontsector->lightlevel), rover->master->frontsector->extra_colormap);
 
 					if (gr_backsector->numlights)
 						HWR_SplitWall(gr_backsector, wallVerts, 0, &Surf, rover->flags, rover, 0);
