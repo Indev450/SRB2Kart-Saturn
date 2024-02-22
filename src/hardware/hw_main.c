@@ -5812,10 +5812,9 @@ void HWR_DrawSkyBackground(float fpov)
 	dometransform.roll = atransform.roll;
 	dometransform.splitscreen = splitscreen;
 
+	HWR_GetTexture(texturetranslation[skytexture], false);
 	if (HWR_UseShader())
 		HWD.pfnSetShader(HWR_GetShaderFromTarget(SHADER_SKY));// sky shader
-	HWR_GetTexture(texturetranslation[skytexture], false);
-	HWD.pfnSetShader(7);	// sky shader
 	HWD.pfnRenderSkyDome(skytexture, textures[skytexture]->width, textures[skytexture]->height, dometransform);
 }
 
