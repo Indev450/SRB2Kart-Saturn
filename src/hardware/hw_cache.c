@@ -562,10 +562,16 @@ void HWR_LoadTextures(size_t pnumtextures)
 GLMapTexture_t *HWR_GetTexture(INT32 tex)
 {
 	GLMapTexture_t *grtex;
+	
+	if (tex < 0 || tex >= (signed)gr_numtextures)
+	{
 #ifdef PARANOIA
-	if ((unsigned)tex >= gr_numtextures)
-		I_Error("HWR_GetTexture: tex >= numtextures\n");
+		I_Error("HWR_GetTexture: Invalid texture ID %d", tex);
+#else
+		tex = 0;
 #endif
+	}
+
 	grtex = &gr_textures[tex];
 
 	if (!grtex->mipmap.data && !grtex->mipmap.downloaded)
