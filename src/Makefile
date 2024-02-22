@@ -288,7 +288,7 @@ else
 endif
 else
 ifdef X86_64
-	ARCHOPTS?=-march=native -O3
+	ARCHOPTS?=-march=native -O3 -finline-functions
 endif
 endif
 
