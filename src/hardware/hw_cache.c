@@ -321,7 +321,7 @@ bpp =  format2bpp(grMipmap->format);
 // Create a composite texture from patches, adapt the texture size to a power of 2
 // height and width for the hardware texture cache.
 //
-static void HWR_GenerateTexture(INT32 texnum, GLMapTexture_t *grtex)
+static void HWR_GenerateTexture(INT32 texnum, GLMapTexture_t *grtex, boolean noencore)
 {
 	UINT8 *block;
 	texture_t *texture;
@@ -362,7 +362,7 @@ static void HWR_GenerateTexture(INT32 texnum, GLMapTexture_t *grtex)
 	grtex->mipmap.colormap = colormaps;
 
 #ifdef GLENCORE
-	if (encoremap)
+	if (encoremap && !noencore)
 		grtex->mipmap.colormap += (256*32);
 #endif
 	
@@ -551,7 +551,7 @@ void HWR_LoadTextures(size_t pnumtextures)
 	HWR_FreeTextureCache();
 
 	gr_numtextures = pnumtextures;
-	gr_textures = calloc(pnumtextures, sizeof (*gr_textures));
+	gr_textures = calloc(pnumtextures, sizeof (*gr_textures)*2); // *2 - 1 for encore-remapped texture and another for noencore texture (unused when not in encore)
 	if (gr_textures == NULL)
 		I_Error("HWR_LoadTextures: ran out of memory for OpenGL textures. Sad!");
 }
@@ -559,10 +559,10 @@ void HWR_LoadTextures(size_t pnumtextures)
 // --------------------------------------------------------------------------
 // Make sure texture is downloaded and set it as the source
 // --------------------------------------------------------------------------
-GLMapTexture_t *HWR_GetTexture(INT32 tex)
+GLMapTexture_t *HWR_GetTexture(INT32 tex, boolean noencore)
 {
 	GLMapTexture_t *grtex;
-	
+
 	if (tex < 0 || tex >= (signed)gr_numtextures)
 	{
 #ifdef PARANOIA
@@ -571,16 +571,16 @@ GLMapTexture_t *HWR_GetTexture(INT32 tex)
 		tex = 0;
 #endif
 	}
-
-	grtex = &gr_textures[tex];
+	
+	grtex = &gr_textures[tex*2 + (encoremap && !noencore ? 0 : 1)];
 
 	if (!grtex->mipmap.data && !grtex->mipmap.downloaded)
-		HWR_GenerateTexture(tex, grtex);
+		HWR_GenerateTexture(tex, grtex, noencore);
 
 	// If hardware does not have the texture, then call pfnSetTexture to upload it
 	if (!grtex->mipmap.downloaded)
 		HWD.pfnSetTexture(&grtex->mipmap);
-	
+
 	HWR_SetCurrentTexture(&grtex->mipmap);
 
 	// The system-memory data can be purged now.
@@ -589,7 +589,6 @@ GLMapTexture_t *HWR_GetTexture(INT32 tex)
 	return grtex;
 }
 
-
 static void HWR_CacheFlat(GLMipmap_t *grMipmap, lumpnum_t flatlumpnum)
 {
 #ifdef GLENCORE
@@ -597,7 +596,6 @@ static void HWR_CacheFlat(GLMipmap_t *grMipmap, lumpnum_t flatlumpnum)
 	size_t steppy;
 #endif
 	size_t size, pflatsize;
-
 
 	// setup the texture info
 	grMipmap->format = GL_TEXFMT_P_8;
@@ -643,7 +641,6 @@ static void HWR_CacheFlat(GLMipmap_t *grMipmap, lumpnum_t flatlumpnum)
 			flat[steppy] = grMipmap->colormap[flat[steppy]];
 #endif
 }
-
 
 // Download a Doom 'flat' to the hardware cache and make it ready for use
 void HWR_GetFlat(lumpnum_t flatlumpnum, boolean noencoremap)
