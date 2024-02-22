@@ -133,7 +133,7 @@ void HWR_AddTransparentPolyobjectFloor(lumpnum_t lumpnum, polyobj_t *polysector,
 void HWR_ProcessSeg(void); // Sort of like GLWall::Process in GZDoom
 void HWR_RenderWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap);
 void HWR_ProjectWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blendmode, INT32 lightlevel, extracolormap_t *wallcolormap);
-void HWR_AddTransparentWall(FOutVector *wallVerts, FSurfaceInfo * pSurf, INT32 texnum, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap);
+void HWR_AddTransparentWall(FOutVector *wallVerts, FSurfaceInfo * pSurf, INT32 texnum, boolean noencore, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap);
 // moved HWR_SplitWall to hw_main.c
 void HWR_DrawSkyWall(FOutVector *wallVerts, FSurfaceInfo *Surf);
 void HWR_DrawSkyBackground(float fpov);
