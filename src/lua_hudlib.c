@@ -180,6 +180,48 @@ static const char *const hud_patch_options[] = {
 	"itemmul",
 	NULL};
 
+enum hudoffsets {
+	hudoffsets_item = 0,
+	hudoffsets_time,
+	hudoffsets_gametypeinfo,
+	hudoffsets_countdown,
+	hudoffsets_speedometer,
+	hudoffsets_position,
+	hudoffsets_minirankings,
+	hudoffsets_startcountdown,
+	hudoffsets_check,
+	hudoffsets_minimap,
+	hudoffsets_wanted,
+	hudoffsets_statdisplay
+};
+
+static const char *const hud_offsets_options[] = {
+	"item",
+	"time",
+	"gametypeinfo",
+	"countdown",
+	"speedometer",
+	"position",
+	"minirankings",
+	"startcountdown",
+	"check",
+	"minimap",
+	"wanted",
+	"statdisplay",
+	NULL};
+
+enum huddrawinfo {
+	huddrawinfo_item = 0,
+	huddrawinfo_gametypeinfo,
+	huddrawinfo_minimap
+};
+
+static const char *const hud_drawinfo_options[] = {
+	"item",
+	"gametypeinfo",
+	"minimap",
+	NULL};
+
 static int lib_getHudInfo(lua_State *L)
 {
 	UINT32 i;
@@ -1118,15 +1160,15 @@ static int libd_getlocaltransflag(lua_State *L)
 static int libd_getDrawInfo(lua_State *L)
 {
 	HUDONLY
-	enum hud option = luaL_checkoption(L, 1, NULL, hud_disable_options);
+	enum huddrawinfo option = luaL_checkoption(L, 1, NULL, hud_drawinfo_options);
 	drawinfo_t info;
 
 	switch(option) {
-		case hud_item:          info = K_getItemBoxDrawinfo();  break;
-		case hud_gametypeinfo:  info = K_getLapsDrawinfo();     break;
-		case hud_minimap:       info = K_getMinimapDrawinfo();  break;
+		case huddrawinfo_item:          info = K_getItemBoxDrawinfo();  break;
+		case huddrawinfo_gametypeinfo:  info = K_getLapsDrawinfo();     break;
+		case huddrawinfo_minimap:       info = K_getMinimapDrawinfo();  break;
 		default:
-			return 0; // not available
+			return 0; // unreachable
 	}
 
 	lua_pushinteger(L, info.x);
@@ -1254,28 +1296,29 @@ static int lib_hudsetvotebackground(lua_State *L)
 
 static int lib_hudgetoffsets(lua_State *L)
 {
-	enum hud option = luaL_checkoption(L, 1, NULL, hud_disable_options);
+	enum hudoffsets option = luaL_checkoption(L, 1, NULL, hud_offsets_options);
 	INT32 ofx, ofy;
 
-#define OFS(x, y) ofx = x.value; ofy = y.value; break;
-#define OFY(y) ofx = 0; ofy = y.value; break;
+#define OFS(it) ofx = cv_##it##_xoffset.value; ofy = cv_##it##_yoffset.value; break;
+#define OFY(it) ofx = 0; ofy = cv_##it##_yoffset.value; break;
 	switch(option) {
-		case hud_item:          OFS(cv_item_xoffset, cv_item_yoffset)
-		case hud_time:          OFS(cv_time_xoffset, cv_time_yoffset)
-		case hud_gametypeinfo:  OFS(cv_laps_xoffset, cv_laps_yoffset)
-		//case TODO:              OFS(cv_dnft_xoffset, cv_dnft_yoffset)
-		case hud_speedometer:   OFS(cv_speed_xoffset, cv_speed_yoffset)
-		case hud_position:      OFS(cv_posi_xoffset, cv_posi_yoffset)
-		case hud_minirankings:  OFS(cv_face_xoffset, cv_face_yoffset)
-		//case TODO:              OFS(cv_stcd_xoffset, cv_stcd_yoffset)
-		case hud_check:         OFY(cv_chek_yoffset);
-		case hud_minimap:       OFS(cv_mini_xoffset, cv_mini_yoffset)
-		case hud_wanted:        OFS(cv_want_xoffset, cv_want_yoffset)
-		case hud_statdisplay:   OFS(cv_stat_xoffset, cv_stat_yoffset)
+		case hudoffsets_item:           OFS(item)
+		case hudoffsets_time:           OFS(time)
+		case hudoffsets_gametypeinfo:   OFS(laps)
+		case hudoffsets_countdown:      OFS(dnft)
+		case hudoffsets_speedometer:    OFS(speed)
+		case hudoffsets_position:       OFS(posi)
+		case hudoffsets_minirankings:   OFS(face)
+		case hudoffsets_startcountdown: OFS(stcd)
+		case hudoffsets_check:          OFY(chek)
+		case hudoffsets_minimap:        OFS(mini)
+		case hudoffsets_wanted:         OFS(want)
+		case hudoffsets_statdisplay:    OFS(stat)
 		default:
-			return 0; // not available
+			return 0; // unreachable
 	}
 #undef OFS
+#undef OFY
 
 	lua_pushinteger(L, ofx);
 	lua_pushinteger(L, ofy);

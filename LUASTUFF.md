@@ -25,8 +25,8 @@ exist.
 
 ## x, y = hud.getOffsets(item)
 
-Returns the values of the given HUD item's `xoffset`/`yoffset` cvars, or nil if unsupported.
-Uses the same strings as `hud.enabled`.
+Returns the values of the given HUD item's `xoffset`/`yoffset` cvars.
+Available for any HUD item with offset cvars.
 
 ## x, y, flags = v.getDrawInfo(item)
 
