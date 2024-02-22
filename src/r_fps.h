@@ -78,7 +78,7 @@ typedef enum {
 	LVLINTERP_SectorScroll,
 	LVLINTERP_SideScroll,
 	LVLINTERP_Polyobj,
-	LVLINTERP_DynSlope,
+	//LVLINTERP_DynSlope,
 } levelinterpolator_type_e;
 
 // Tagged union of a level interpolator
