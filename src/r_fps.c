@@ -342,7 +342,12 @@ void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 		out->subsector = mobj->subsector;
 
 	if (mobj->player)
-		out->angle = mobj->resetinterp ? mobj->player->frameangle : R_LerpAngle(mobj->player->old_frameangle, mobj->player->frameangle, frac);
+	{
+		if (mobj->angle == mobj->player->old_frameangle)
+			out->angle = mobj->player->frameangle;
+		else
+			out->angle = mobj->resetinterp ? mobj->player->frameangle : R_LerpAngle(mobj->player->old_frameangle, mobj->player->frameangle, frac);
+	}
 	else
 	{
 		if (mobj->angle == mobj->old_angle)
