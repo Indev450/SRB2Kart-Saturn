@@ -9310,6 +9310,10 @@ static void K_drawDriftGauge(void)
 		return;
 
 	K_GetScreenCoords(&pos, stplyr, camera, stplyr->mo->x, stplyr->mo->y, stplyr->mo->z+FixedMul(cv_driftgaugeofs.value, cv_driftgaugeofs.value > 0 ? stplyr->mo->scale : mapobjectscale));
+	
+	//Check for negative screencoords
+	if (pos.x == -1 || pos.y == -1)
+		return;
 
 	//Flipcam on
 	if (stplyr->mo->eflags & MFE_VERTICALFLIP && (stplyr->pflags & PF_FLIPCAM))
