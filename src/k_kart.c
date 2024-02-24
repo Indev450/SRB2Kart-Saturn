@@ -8911,8 +8911,8 @@ static void K_GetScreenCoords(vector2_t *vec, player_t *player, camera_t *came, 
 	fixed_t fovratio;
 	fixed_t offset;
 	boolean srcflip;
-	long y;
-	long x;
+	fixed_t y;
+	fixed_t x;
 
     // In case of early return we can check if those are negative
     vec->x = -1;
