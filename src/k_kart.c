@@ -9309,6 +9309,10 @@ static void K_drawDriftGauge(void)
 	if (!stplyr->kartstuff[k_drift])
 		return;
 
+	//dont draw if we dont use chasecam
+	if (!camera->chase)
+		return;
+
 	K_GetScreenCoords(&pos, stplyr, camera, stplyr->mo->x, stplyr->mo->y, stplyr->mo->z+FixedMul(cv_driftgaugeofs.value, cv_driftgaugeofs.value > 0 ? stplyr->mo->scale : mapobjectscale));
 	
 	//Check for negative screencoords
