@@ -10459,7 +10459,7 @@ void K_drawKartHUD(void)
 		K_drawKartItem();
 		
 	
-	if (cv_driftgauge.value)
+	if (cv_driftgauge.value && !modeattacking)
 		K_drawDriftGauge();
 	
 	if (cv_nametag.value)
