@@ -5075,7 +5075,7 @@ static void M_DrawGenericMenu(void)
 	{
 		if (!(OP_DriftGaugeTooltips[itemOn] == NULL)) 
 		{
-			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_DriftGaugeTooltips[itemOn], coolalphatimer);
+			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_DriftGaugeTooltips[itemOn], 30, coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
 				coolalphatimer--;
 		}
