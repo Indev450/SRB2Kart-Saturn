@@ -9147,11 +9147,11 @@ static void K_drawNameTags(void)
 
 		//Flipcam off
 		if (players[i].mo->eflags & MFE_VERTICALFLIP && !(players[i].pflags & PF_FLIPCAM))
-			pos.y += players[i].mo->height; 
+			pos.y += players[i].mo->height;
 
 		//Flipcam on
 		if (players[i].mo->eflags & MFE_VERTICALFLIP && (players[i].pflags & PF_FLIPCAM))
-			pos.y -= ((30*dup)<<FRACBITS); 
+			pos.y -= ((30*dup)<<FRACBITS);
 
 		//Flipcam off
 		if (players[i].mo->eflags & MFE_VERTICALFLIP && !(players[i].pflags & PF_FLIPCAM))
@@ -9306,11 +9306,7 @@ static void K_drawDriftGauge(void)
 		0, 31, 47, 63, 79, 95, 111, 119, 127, 143, 159, 175, 183, 191, 199, 207, 223, 247
 	};
 
-	if (!stplyr->kartstuff[k_drift])
-		return;
-
-	//dont draw if we dont use chasecam
-	if (!camera->chase)
+	if (!stplyr->mo || !stplyr->kartstuff[k_drift] || !camera->chase || splitscreen)
 		return;
 
 	K_GetScreenCoords(&pos, stplyr, camera, stplyr->mo->x, stplyr->mo->y, stplyr->mo->z+FixedMul(cv_driftgaugeofs.value, cv_driftgaugeofs.value > 0 ? stplyr->mo->scale : mapobjectscale));
@@ -9395,7 +9391,6 @@ static void K_drawDriftGauge(void)
 				else
 					V_DrawPingNum(cv_driftgaugestyle.value == 2 ? basex + (dup*22) : basex + (dup*32), basey, V_NOSCALESTART|V_OFFSET|drifttrans, driftcharge*100 / driftval, cmap);
 			}
-
 			break;
 		case 4:	
 			V_DrawPaddedTallNum(basex + (dup*16), basey, V_NOSCALESTART|V_OFFSET|drifttrans, driftcharge*100 / driftval, 3);
