@@ -35,6 +35,8 @@ extern boolean big_lap_color; // bigger lap counter but colour
 extern boolean kartzspeedo; // kartZ speedo
 extern boolean statdp; // stat display for extended player setup
 extern boolean nametaggfx; // Nametag stuffs
+extern boolean driftgaugegfx;
+
 
 extern boolean autoloading;
 extern boolean autoloaded;
