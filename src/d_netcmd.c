@@ -536,7 +536,7 @@ consvar_t cv_nametagmaxplayers = {"kartnametagmaxplayers", "3", CV_SAVE, nametag
 consvar_t cv_nametagmaxlenght = {"kartnametagmaxlenght", "12", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
 //consvar_t cv_nametagscaling = {"nametagscaling", "160", CV_SAVE, nametagscaling_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_showownnametag = {"kartnametagshowown", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_smallnametags = {"kartnametagsmall", "Off", CV_SAVE, nametagsize_cons_t, Nametag_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_smallnametags = {"kartnametagsmall", "Off", CV_SAVE, nametagsize_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_nametaghop = {"kartnametaghop", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_nametagscore = {"kartnametagscore", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 

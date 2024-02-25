@@ -9024,7 +9024,30 @@ static void K_GetScreenCoords(vector2_t *vec, player_t *player, camera_t *came, 
 
 	// project the angle to get our final X coordinate
 	x = FixedMul(FINETANGENT(((x+ANGLE_90)>>ANGLETOFINESHIFT) & 4095), fov);
+	if (splitscreen == 1) // divide by 320/200 (1.6) on 2P splitscreen
+		x = (x/2) + (x/8); 
 	x = x + xres;
+	
+	
+	// get splitscreen index
+	int splitindex = stplyrnum;
+
+	// adjust coords for splitscreen
+	if (splitscreen == 1){ // 2P
+		y = y>>1;
+		if (splitindex)
+			y = y + yres;
+	}
+	if (splitscreen >= 2) { // 3P or 4P
+		x = x>>1;
+		y = y>>1;
+		if (splitindex & 1)
+			x = x + xres;
+		if (splitindex >= 2)
+			y = y + yres;
+	}
+	
+	
 
 	vec->y = y;
 	vec->x = x;
@@ -9034,7 +9057,7 @@ static void K_GetScreenCoords(vector2_t *vec, player_t *player, camera_t *came, 
 //Decided to port and highly modify sunflower version for the main nametag drawing with additions by NepDisk. My previous one was broken anyway due to the changed screencoords and noscalestart
 static void K_drawNameTags(void)
 {
-	UINT8 i,j;
+	UINT8 i,j,k;
 	INT32 trans = 0;
 	vector2_t pos = {0};
 	fixed_t tagwidth;
@@ -9114,9 +9137,9 @@ static void K_drawNameTags(void)
 		}
 
 		dup = vid.dupx;
-
+		
 		K_GetScreenCoords(&pos, stplyr, camera, players[i].mo->x, players[i].mo->y, players[i].mo->z + players[i].mo->height);
-
+		
 		//Check for negative screencoords
 		if (pos.x == -1 || pos.y == -1)
 			continue;
@@ -9264,7 +9287,7 @@ static void K_drawDriftGauge(void)
 	fixed_t basex,basey;
 	INT32 drifttrans = 0;
 	int dup = vid.dupx;
-	int i;
+	int i,j;
 
 	UINT8 driftcolors[3][4] = {
 		{0, 0, 10, 16},       // no drift
@@ -9282,10 +9305,18 @@ static void K_drawDriftGauge(void)
 		0, 31, 47, 63, 79, 95, 111, 119, 127, 143, 159, 175, 183, 191, 199, 207, 223, 247
 	};
 
-	if (!stplyr->mo || !stplyr->kartstuff[k_drift] || !camera->chase || splitscreen)
+	if (!stplyr->mo || !stplyr->kartstuff[k_drift] || !camera->chase)
 		return;
-
-	K_GetScreenCoords(&pos, stplyr, camera, stplyr->mo->x, stplyr->mo->y, stplyr->mo->z+FixedMul(cv_driftgaugeofs.value, cv_driftgaugeofs.value > 0 ? stplyr->mo->scale : mapobjectscale));
+	
+	
+	if (!splitscreen)
+		K_GetScreenCoords(&pos, stplyr, camera, stplyr->mo->x, stplyr->mo->y, stplyr->mo->z+FixedMul(cv_driftgaugeofs.value, cv_driftgaugeofs.value > 0 ? stplyr->mo->scale : mapobjectscale));
+	else
+	{
+		//Loop through each player camera for splitscreen.
+		for (j = 0; j <= stplyrnum; j++)
+			K_GetScreenCoords(&pos, stplyr, &camera[j], stplyr->mo->x, stplyr->mo->y, stplyr->mo->z+FixedMul(cv_driftgaugeofs.value, cv_driftgaugeofs.value > 0 ? stplyr->mo->scale : mapobjectscale));
+	}
 	
 	//Check for negative screencoords
 	if (pos.x == -1 || pos.y == -1)

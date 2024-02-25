@@ -3194,12 +3194,6 @@ void Saturn_menu_Onchange(void)
 	OP_SaturnMenu[sm_colorhud_customcolor].status = status;
 }
 
-void Nametag_menu_Onchange(void) 
-{
-	if (!nametaggfx)
-		OP_NametagMenu[nt_ntchar].status = IT_GRAYEDOUT;
-}
-
 // ==========================================================================
 // END ORGANIZATION STUFF.
 // ==========================================================================
