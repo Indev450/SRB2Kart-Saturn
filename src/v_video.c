@@ -2471,6 +2471,27 @@ void V_DrawPaddedTallNum(INT32 x, INT32 y, INT32 flags, INT32 num, INT32 digits)
 	} while (--digits);
 }
 
+// Draws a number with a set number of digits.
+// Does not handle negative numbers in a special way, don't try to feed it any.
+void V_DrawPaddedTallColorNum(INT32 x, INT32 y, INT32 flags, INT32 num, INT32 digits, const UINT8 *colormap)
+{
+	INT32 w = SHORT(tallnum[0]->width);
+
+	if (flags & V_NOSCALESTART)
+		w *= vid.dupx;
+
+	if (num < 0)
+		num = -num;
+
+	// draw the number
+	do
+	{
+		x -= w;
+		V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, FRACUNIT, flags, tallnum[num % 10], colormap);
+		num /= 10;
+	} while (--digits);
+}
+
 // Draws a number using the PING font thingy.
 // TODO: Merge number drawing functions into one with "font name" selection.
 
