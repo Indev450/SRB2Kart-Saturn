@@ -9057,7 +9057,7 @@ static void K_GetScreenCoords(vector2_t *vec, player_t *player, camera_t *came, 
 //Decided to port and highly modify sunflower version for the main nametag drawing with additions by NepDisk. My previous one was broken anyway due to the changed screencoords and noscalestart
 static void K_drawNameTags(void)
 {
-	UINT8 i,j,k;
+	UINT8 i,j;
 	INT32 trans = 0;
 	vector2_t pos = {0};
 	fixed_t tagwidth;
@@ -9137,9 +9137,9 @@ static void K_drawNameTags(void)
 		}
 
 		dup = vid.dupx;
-		
+
 		K_GetScreenCoords(&pos, stplyr, camera, players[i].mo->x, players[i].mo->y, players[i].mo->z + players[i].mo->height);
-		
+
 		//Check for negative screencoords
 		if (pos.x == -1 || pos.y == -1)
 			continue;
@@ -9307,8 +9307,7 @@ static void K_drawDriftGauge(void)
 
 	if (!stplyr->mo || !stplyr->kartstuff[k_drift] || !camera->chase)
 		return;
-	
-	
+
 	if (!splitscreen)
 		K_GetScreenCoords(&pos, stplyr, camera, stplyr->mo->x, stplyr->mo->y, stplyr->mo->z+FixedMul(cv_driftgaugeofs.value, cv_driftgaugeofs.value > 0 ? stplyr->mo->scale : mapobjectscale));
 	else
@@ -9317,7 +9316,7 @@ static void K_drawDriftGauge(void)
 		for (j = 0; j <= stplyrnum; j++)
 			K_GetScreenCoords(&pos, stplyr, &camera[j], stplyr->mo->x, stplyr->mo->y, stplyr->mo->z+FixedMul(cv_driftgaugeofs.value, cv_driftgaugeofs.value > 0 ? stplyr->mo->scale : mapobjectscale));
 	}
-	
+
 	//Check for negative screencoords
 	if (pos.x == -1 || pos.y == -1)
 		return;
@@ -9328,7 +9327,7 @@ static void K_drawDriftGauge(void)
 
 	basex = pos.x>>FRACBITS; 
 	basey = pos.y>>FRACBITS;
-	
+
 	fixed_t barx;
 	fixed_t bary;
 	INT32 BAR_WIDTH;
