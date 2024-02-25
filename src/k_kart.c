@@ -9061,11 +9061,6 @@ static void K_drawNameTags(void)
 			continue;
 		if (!P_CheckSight(stplyr->mo, players[i].mo))
 			continue;
-		
-		tagsdisplayed += 1;
-			
-		if (tagsdisplayed > cv_nametagmaxplayers.value)
-			break;
 
 		switch (cv_nametagtrans.value)
 		{
@@ -9110,6 +9105,11 @@ static void K_drawNameTags(void)
 		if (pos.x == -1 || pos.y == -1)
 			continue;
 		
+		tagsdisplayed += 1;
+
+		if (tagsdisplayed > cv_nametagmaxplayers.value)
+			break;
+
 		//Flipcam off
 		if (players[i].mo->eflags & MFE_VERTICALFLIP && !(players[i].pflags & PF_FLIPCAM))
 			pos.y += players[i].mo->height; 
