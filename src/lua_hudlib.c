@@ -58,6 +58,7 @@ static const char *const hud_disable_options[] = {
 	"speedometer",
 	"statdisplay",
 	"nametags",
+	"driftgauge",
 	"freeplay",
 	"rankings",
 	NULL};

@@ -10523,12 +10523,16 @@ void K_drawKartHUD(void)
 #ifdef HAVE_BLUA
 	if (LUA_HudEnabled(hud_item) && !freecam)
 #endif
-		K_drawKartItem();
-		
-	
+		K_drawKartItem();	
+
 	if (cv_driftgauge.value && !modeattacking)
+	{
+#ifdef HAVE_BLUA
+	if (LUA_HudEnabled(hud_driftgauge))
+#endif
 		K_drawDriftGauge();
-	
+	}
+
 	if (cv_nametag.value)
 	{
 #ifdef HAVE_BLUA
