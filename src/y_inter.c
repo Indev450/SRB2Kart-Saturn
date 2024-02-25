@@ -1077,10 +1077,11 @@ static void Y_DrawAnimatedVoteScreenPatch(boolean widePatch){
 				(vid.height / vid.dupy) - SHORT(currPatch->height),
 				V_SNAPTOTOP|V_SNAPTOLEFT, currPatch);
 	if(votetic % 3 == 0 && !paused){*/
-		
+
 	{
 		patch_t *background = W_CachePatchName(va("%s%d", tempAnimPrefix, currentAnimFrame + 1), PU_CACHE);		
-		V_DrawScaledPatch(160 - (background->width / 2), (200 - (background->height)), flags, background);		
+		//V_DrawScaledPatch(160 - (background->width / 2), (200 - (background->height)), flags, background);
+		V_DrawFixedPatch((160 - (background->width / 2)), ((200 - (background->height))), FRACUNIT *1.2, flags, background, NULL);
 	}
 	if (lastvotetic != votetic && lastvotetic % 2 == 0) {
 		currentAnimFrame = (currentAnimFrame+1 > tempFoundAnimVoteFrames-1) ? 0 : currentAnimFrame + 1; // jeez no fucking idea how to make this shit not go nuts with interpolation
@@ -1118,9 +1119,13 @@ void Y_VoteDrawer(void)
 	if (widebgpatch && vid.width / vid.dupx > 320) {
 
 		if(foundAnimVoteWideFrames == 0){
-			V_DrawScaledPatch(((vid.width/2) / vid.dupx) - (SHORT(widebgpatch->width)/2),
+			/*V_DrawScaledPatch(((vid.width/2) / vid.dupx) - (SHORT(widebgpatch->width)/2),
 								(vid.height / vid.dupy) - SHORT(widebgpatch->height),
-								V_SNAPTOTOP|V_SNAPTOLEFT, widebgpatch);
+								V_SNAPTOTOP|V_SNAPTOLEFT, widebgpatch);*/
+								
+			V_DrawFixedPatch((((vid.width/2) / vid.dupx) - (SHORT(widebgpatch->width)/2)),
+								((vid.height / vid.dupy) - SHORT(widebgpatch->height)), FRACUNIT*1.15,
+								V_SNAPTOBOTTOM|V_SNAPTOLEFT, widebgpatch, NULL);
 		} else {
 			// patch_t *currPatch = W_CachePatchName(va("%s%d", animPrefix, currentAnimFrame+1), PU_CACHE);
 			// V_DrawScaledPatch(((vid.width/2) / vid.dupx) - (SHORT(currPatch->width)/2), // Keep the width/height adjustments, for screens that are less wide than 320(?)
@@ -1133,9 +1138,13 @@ void Y_VoteDrawer(void)
 		}
 	} else {
 		if(foundAnimVoteFrames == 0) {
-			V_DrawScaledPatch(((vid.width/2) / vid.dupx) - (SHORT(bgpatch->width)/2), // Keep the width/height adjustments, for screens that are less wide than 320(?)
+			/*V_DrawScaledPatch(((vid.width/2) / vid.dupx) - (SHORT(bgpatch->width)/2), // Keep the width/height adjustments, for screens that are less wide than 320(?)
 								(vid.height / vid.dupy) - SHORT(bgpatch->height),
-								V_SNAPTOTOP|V_SNAPTOLEFT, bgpatch);
+								V_SNAPTOTOP|V_SNAPTOLEFT, bgpatch);*/
+		
+			V_DrawFixedPatch((((vid.width/2) / vid.dupx) - (SHORT(bgpatch->width)/2)),
+								((vid.height / vid.dupy) - SHORT(bgpatch->height)), FRACUNIT*1.15,
+								V_SNAPTOBOTTOM|V_SNAPTOLEFT, bgpatch, NULL);
 		} else {
 			Y_DrawAnimatedVoteScreenPatch(false);
 		}
