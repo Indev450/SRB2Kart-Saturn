@@ -2586,7 +2586,6 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 	// Call it only once by tic
 	if (*oldtic != I_GetTime())
 	{
-
 		INT32 key;
 
 		I_OsPolling();
@@ -2610,6 +2609,7 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 #ifdef CLIENT_LOADINGSCREEN
 		if (client && cl_mode != CL_CONNECTED && cl_mode != CL_ABORTED)
 		{
+			M_ClearMenus(false);
 			F_TitleScreenTicker(true);
 			F_TitleScreenDrawer();
 			CL_DrawConnectionStatus();
