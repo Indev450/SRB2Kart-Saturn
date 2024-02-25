@@ -43,12 +43,15 @@ typedef HANDLE (WINAPI *p_OpenFileMappingA) (DWORD, BOOL, LPCSTR);
 typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 #endif
 
-
 // A little more than the minimum sleep duration on Windows.
 // May be incorrect for other platforms, but we don't currently have a way to
 // query the scheduler granularity. SDL will do what's needed to make this as
 // low as possible though.
+#if defined(_WIN32)
+#define MIN_SLEEP_DURATION_MS 1.6
+#else
 #define MIN_SLEEP_DURATION_MS 2.1
+#endif
 
 #include <stdio.h>
 #include <time.h>
@@ -3190,7 +3193,7 @@ precise_t I_GetPreciseTime(void)
 #if defined(_WIN32)
 	LARGE_INTEGER counter;
 	QueryPerformanceCounter(&counter);
-	 return counter.QuadPart;
+	return counter.QuadPart;
 #else
 	return SDL_GetPerformanceCounter();
 #endif
@@ -3278,11 +3281,11 @@ double I_GetFrameTime(void)
 void I_StartupTimer(void)
 {
 #if defined(_WIN32)
-		LARGE_INTEGER frequency;
-		QueryPerformanceFrequency(&frequency);
-		timer_frequency = frequency.QuadPart;
+	LARGE_INTEGER frequency;
+	QueryPerformanceFrequency(&frequency);
+	timer_frequency = frequency.QuadPart;
 #else
-		timer_frequency = SDL_GetPerformanceFrequency();
+	timer_frequency = SDL_GetPerformanceFrequency();
 #endif
 	I_InitFrameTime(0, R_GetFramerateCap());
 	elapsed_frames  = 0.0;
@@ -3329,7 +3332,12 @@ void I_SleepDuration(precise_t duration)
 		// hard sleep function.
 		if (sleepvalue > 0 && (dest - cur) > delaygranularity)
 		{
+#if defined(_WIN32)
+			DWORD sleepDuration = (DWORD)min((INT64)(dest - cur), sleepvalue);
+			SleepEx(sleepDuration, TRUE);
+#else
 			I_Sleep(sleepvalue);
+#endif
 		}
 
 		// Otherwise, this is a spinloop.
