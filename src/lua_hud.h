@@ -33,6 +33,7 @@ enum hud {
 	hud_speedometer,
 	hud_statdisplay,
 	hud_nametags,
+	hud_driftgauge,
 	hud_freeplay,
 	hud_rankings,		// Tab rankings
 
