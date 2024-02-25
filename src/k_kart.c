@@ -9096,11 +9096,6 @@ static void K_drawNameTags(void)
 		if (!P_CheckSight(stplyr->mo, players[i].mo))
 			continue;
 
-		tagsdisplayed += 1;
-
-		if (tagsdisplayed > cv_nametagmaxplayers.value)
-			break;
-
 		switch (cv_nametagtrans.value)
 		{
 			case 0:
@@ -9143,6 +9138,11 @@ static void K_drawNameTags(void)
 		//Check for negative screencoords
 		if (pos.x == -1 || pos.y == -1)
 			continue;
+		
+		tagsdisplayed += 1;
+
+		if (tagsdisplayed > cv_nametagmaxplayers.value)
+			break;
 
 		//Flipcam off
 		if (players[i].mo->eflags & MFE_VERTICALFLIP && !(players[i].pflags & PF_FLIPCAM))
