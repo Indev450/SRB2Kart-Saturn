@@ -10530,7 +10530,12 @@ void K_drawKartHUD(void)
 		K_drawDriftGauge();
 	
 	if (cv_nametag.value)
+	{
+#ifdef HAVE_BLUA
+	if (LUA_HudEnabled(hud_nametags))
+#endif
 		K_drawNameTags();
+	}
 
 	// If not splitscreen, draw...
 	if (!splitscreen && !demo.title)
