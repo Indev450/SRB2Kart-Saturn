@@ -9072,7 +9072,7 @@ static void K_drawNameTags(void)
 	patch_t *icon;
 	INT32 hudtransflag = V_LocalTransFlag();
 
-	if (!stplyr->mo || stplyr->spectator || splitscreen)
+	if (!stplyr->mo || stplyr->spectator || splitscreen || (stplyr->exiting && !cv_shownametagfinish.value))
 		return;
 
 	for (i = 0; i < MAXPLAYERS; i++)
@@ -9139,7 +9139,7 @@ static void K_drawNameTags(void)
 		//Check for negative screencoords
 		if (pos.x == -1 || pos.y == -1)
 			continue;
-		
+
 		tagsdisplayed += 1;
 
 		if (tagsdisplayed > cv_nametagmaxplayers.value)
@@ -9253,7 +9253,7 @@ static void K_drawNameTags(void)
 			}
 
 			if (cv_nametagfacerank.value)
-			{	
+			{
 				V_DrawMappedPatch(namex, namey - dup*(icon->height+1), vflags, icon, cm);
 				namex += dup*(icon->height+1); // add offset to other stuff
 			}

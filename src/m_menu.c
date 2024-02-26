@@ -367,7 +367,6 @@ menu_t OP_AdvancedBirdDef;
 
 // Chaotic
 menu_t OP_NametagDef;
-//menu_t OP_OGLShadowsDef;
 
 //Driftgauge
 menu_t OP_DriftGaugeDef;
@@ -2234,6 +2233,7 @@ static menuitem_t OP_NametagMenu[] =
 	{IT_STRING | IT_CVAR, NULL, "Nametag Restat", &cv_nametagrestat, 80},
 	{IT_STRING | IT_CVAR, NULL, "Nametag Hop", &cv_nametaghop, 90},
 	{IT_STRING | IT_CVAR, NULL, "Small Nametags", &cv_smallnametags, 100},
+	{IT_STRING | IT_CVAR, NULL, "Show Nametags after Race finish", &cv_shownametagfinish, 110},
 	//{IT_STRING | IT_CVAR, NULL, "Nametag Scaling", &cv_nametagscaling, 70}
 };
 
@@ -2251,6 +2251,7 @@ static const char* OP_NametagTooltips[] =
 	"Show stats in nametags.",
 	"Enable Saltyhop support for nametags.",
 	"Alternative smaller nametags.",
+	"Toggles being able to see Nametags after finishing a race.",
 };
 
 enum
@@ -2266,6 +2267,7 @@ enum
 	nt_ntrestat,
 	nt_nthop,
 	nt_smol,
+	nt_finish,
 };
 
 

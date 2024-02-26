@@ -185,6 +185,7 @@ extern consvar_t cv_smallnametags;
 extern consvar_t cv_nametagrestat;
 extern consvar_t cv_nametaghop;
 extern consvar_t cv_nametagscore;
+extern consvar_t cv_shownametagfinish;
 
 #define SKINSELECTSPIN_PAIN 25
 extern consvar_t cv_skinselectspin;
