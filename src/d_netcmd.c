@@ -539,6 +539,7 @@ consvar_t cv_smallnametags = {"kartnametagsmall", "Off", CV_SAVE, nametagsize_co
 consvar_t cv_nametaghop = {"kartnametaghop", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_nametagscore = {"kartnametagscore", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_shownametagfinish = {"kartshownametagfinished", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_shownametagspectator = {"kartshownametagspectator", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static CV_PossibleValue_t skinselectspin_cons_t[] = {
 	{0, "Off"}, {1, "Slow"}, {2, "2"}, {3, "3"}, {4, "4"}, {5, "5"}, {6, "6"}, {7, "7"}, {8, "8"}, {9, "9"}, {10, "Fast"}, {SKINSELECTSPIN_PAIN, "Pain"}, {0, NULL}};
@@ -1144,6 +1145,7 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_nametaghop);
 	CV_RegisterVar(&cv_nametagscore);
 	CV_RegisterVar(&cv_shownametagfinish);
+	CV_RegisterVar(&cv_shownametagspectator);
 
 	CV_RegisterVar(&cv_perfstats);
 	CV_RegisterVar(&cv_ps_thinkframe_page);
