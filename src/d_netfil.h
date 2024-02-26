@@ -107,6 +107,7 @@ size_t nameonlylength(const char *s);
 
 #ifdef HAVE_CURL
 void CURLPrepareFile(const char* url, int dfilenum);
+void CURLAbortFile(void);
 void CURLGetFile(void);
 HTTP_login * CURLGetLogin (const char *url, HTTP_login ***return_prev_next);
 size_t curlwrite_data(void *ptr, size_t size, size_t nmemb, FILE *stream);
