@@ -2169,6 +2169,18 @@ static void M_ConfirmConnect(event_t *ev)
 #endif
 }
 
+static void AbortConnection(void)
+{
+	CURLAbortFile();
+	D_QuitNetGame();
+	CL_Reset();
+	D_StartTitle();
+
+	// Will be reset by caller. Signals refusal.
+	cl_mode = CL_ABORTED;
+}
+
+
 static boolean CL_FinishedFileList(void)
 {
 	INT32 i;
@@ -2181,9 +2193,7 @@ static boolean CL_FinishedFileList(void)
 	}
 	else if (i == 3) // too many files
 	{
-		D_QuitNetGame();
-		CL_Reset();
-		D_StartTitle();
+		AbortConnection();
 		M_StartMessage(M_GetText(
 			"You have too many WAD files loaded\n"
 			"to add ones the server is using.\n"
@@ -2194,9 +2204,7 @@ static boolean CL_FinishedFileList(void)
 	}
 	else if (i == 2) // cannot join for some reason
 	{
-		D_QuitNetGame();
-		CL_Reset();
-		D_StartTitle();
+		AbortConnection();
 		M_StartMessage(M_GetText(
 			"You have the wrong addons loaded.\n\n"
 			"To play on this server, restart\n"
@@ -2233,9 +2241,7 @@ static boolean CL_FinishedFileList(void)
 		{
 			if (!CL_CheckDownloadable()) // nope!
 			{
-				D_QuitNetGame();
-				CL_Reset();
-				D_StartTitle();
+				AbortConnection();
 				M_StartMessage(M_GetText(
 					"An error occured when trying to\n"
 					"download missing addons.\n"
@@ -2460,9 +2466,6 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 					break;
 				}
 
-			if (curl_running)
-				CURLGetFile();
-
 			if (waitmore)
 				break; // exit the case
 
@@ -2496,9 +2499,7 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 			{
 				CONS_Printf(M_GetText("Legacy downloader request packet failed.\n"));
 				CONS_Printf(M_GetText("Network game synchronization aborted.\n"));
-				D_QuitNetGame();
-				CL_Reset();
-				D_StartTitle();
+				AbortConnection();
 				M_StartMessage(M_GetText(
 					"The direct download encountered an error.\n"
 					"See the logfile for more info.\n"
@@ -2525,9 +2526,7 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 			{
 				CONS_Printf("%d minute wait time exceeded.\n", cv_connectawaittime.value);
 				CONS_Printf(M_GetText("Network game synchronization aborted.\n"));
-				D_QuitNetGame();
-				CL_Reset();
-				D_StartTitle();
+				AbortConnection();
 				M_StartMessage(va(
 					"%d minute wait time exceeded.\n"
 					"You may retry connection.\n"
@@ -2599,9 +2598,7 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 		if (!modeattacking && (key == KEY_ESCAPE || key == KEY_JOY1+1 || cl_mode == CL_ABORTED))
 		{
 			CONS_Printf(M_GetText("Network game synchronization aborted.\n"));
-			D_QuitNetGame();
-			CL_Reset();
-			D_StartTitle();
+			AbortConnection();
 
 			return false;
 		}
@@ -3841,9 +3838,7 @@ static void Got_KickCmd(UINT8 **p, INT32 playernum)
 #ifdef DUMPCONSISTENCY
 		if (msg == KICK_MSG_CON_FAIL) SV_SavedGame();
 #endif
-		D_QuitNetGame();
-		CL_Reset();
-		D_StartTitle();
+		AbortConnection();
 
 		if (msg == KICK_MSG_CON_FAIL)
 			M_StartMessage(M_GetText("Server closed connection\n(Synch failure)\nPress ESC\n"), NULL, MM_NOTHING);
