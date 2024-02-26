@@ -9035,6 +9035,7 @@ static void K_drawNameTags(void)
 	int tagsdisplayed = 0;
 	char *tag;
 	patch_t *icon;
+	INT32 hudtransflag = V_LocalTransFlag();
 
 	if (!stplyr->mo || stplyr->spectator || splitscreen)
 		return;
@@ -9091,7 +9092,7 @@ static void K_drawNameTags(void)
 				trans =  V_40TRANS;
 				break;
 			case 4:
-				trans = V_HUDTRANS;
+				trans = hudtransflag;
 				break;
 			default:
 				break;
