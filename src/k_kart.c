@@ -9311,6 +9311,7 @@ static void K_drawDriftGauge(void)
 	vector2_t pos = {0};
 	fixed_t basex,basey;
 	INT32 drifttrans = 0;
+	INT32 hudtransflag = V_LocalTransFlag();
 	int dup = vid.dupx;
 	int i,j;
 
@@ -9358,7 +9359,7 @@ static void K_drawDriftGauge(void)
 	INT32 BAR_WIDTH;
 
 	if (cv_driftgaugetrans.value)
-		drifttrans = V_HUDTRANS;
+		drifttrans = hudtransflag;
 	else
 		drifttrans = 0;
 
@@ -9430,7 +9431,7 @@ static void K_drawDriftGauge(void)
 				cmap = R_GetTranslationColormap(TC_RAINBOW, 1 + leveltime % (MAXSKINCOLORS-1),GTC_CACHE);
 			else
 				cmap =  R_GetTranslationColormap(TC_RAINBOW, driftskins[level],GTC_CACHE);
-			
+
 			V_DrawPaddedTallColorNum(basex + (dup*16), basey, V_NOSCALESTART|V_OFFSET|drifttrans, driftcharge*100 / driftval, 3, cmap);
 			break;
 		default:
