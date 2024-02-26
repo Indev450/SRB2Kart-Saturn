@@ -36,11 +36,7 @@
 #define ZWAD
 
 #ifdef ZWAD
-#ifdef _WIN32_WCE
-#define AVOID_ERRNO
-#else
 #include <errno.h>
-#endif
 #include "lzf.h"
 #endif
 
@@ -70,6 +66,7 @@
 #include "p_setup.h" // P_ScanThings
 #endif
 #include "m_misc.h" // M_MapNumber
+#include "p_setup.h" // P_PartialAddFile mayb
 
 #ifdef HWRENDER
 #include "r_data.h"
@@ -145,7 +142,7 @@ static char filenamebuf[MAX_WADPATH];
 
 // This #if is copied from filesrch.c, so not sure if it is 100% suitable for
 // this
-#if defined (_WIN32) && !defined (_XBOX)
+#if defined (_WIN32)
 //#define WIN32_LEAN_AND_MEAN
 #define RPC_NO_WINDOWS_H
 #include <windows.h>
@@ -202,7 +199,7 @@ FILE *W_OpenWadFile(const char **filename, boolean useerrors)
 
 		// If findfile finds the file, the full path will be returned
 		// in filenamebuf == *filename.
-		if (findfile(filenamebuf, NULL, true))
+		if (findfile(filenamebuf, NULL, true) == FS_FOUND)
 		{
 			if ((handle = fopen_utf8(*filename, "rb")) == NULL)
 			{
@@ -696,18 +693,6 @@ static lumpinfo_t* ResGetLumpsZip (FILE* handle, UINT16* nlmp)
 	return lumpinfo;
 }
 
-static void W_ReadFileShaders(wadfile_t *wadfile)
-{
-#ifdef HWRENDER
-        if (rendermode == render_opengl)
-        {
-                HWR_LoadShaders(numwadfiles - 1, W_FileHasFolders(wadfile));
-        }
-#else
-        (void)wadfile;
-#endif
-}
-
 //  Allocate a wadfile, setup the lumpinfo (directory) and
 //  lumpcache, add the wadfile to the current active wadfiles
 //
@@ -772,13 +757,10 @@ UINT16 W_InitFile(const char *filename, const char *lumpname, UINT16 *wadnump, b
 	{
 		if (!memcmp(wadfiles[i]->md5sum, md5sum, 16))
 		{
-			if (!local) {
-				CONS_Alert(CONS_ERROR, M_GetText("%s is already loaded\n"), filename);
-				if (handle)
-					fclose(handle);
-				return INT16_MAX;
-			}
-			CONS_Alert(CONS_WARNING, M_GetText("%s is a local skin that is already loaded\n"), filename);
+			CONS_Alert(CONS_ERROR, M_GetText("%s is already loaded\n"), filename);
+			if (handle)
+				fclose(handle);
+			return INT16_MAX;
 		}
 	}
 #endif
@@ -844,7 +826,8 @@ UINT16 W_InitFile(const char *filename, const char *lumpname, UINT16 *wadnump, b
 	numwadfiles++; // must come BEFORE W_LoadDehackedLumps, so any addfile called by COM_BufInsertText called by Lua doesn't overwrite what we just loaded
 
 		// Read shaders from file
-		W_ReadFileShaders(wadfile);
+		if (rendermode == render_opengl && (vid.glstate == VID_GL_LIBRARY_LOADED))
+			HWR_LoadCustomShadersFromFile(numwadfiles - 1, (type == RET_PK3));
 
 	// TODO: HACK ALERT - Load Lua & SOC stuff right here. I feel like this should be out of this place, but... Let's stick with this for now.
 	switch (wadfile->type)
@@ -969,6 +952,28 @@ INT32 W_InitMultipleFiles(char **filenames, boolean addons)
 	if (!numwadfiles)
 		I_Error("W_InitMultipleFiles: no files found");
 
+	return overallrc;
+}
+
+INT32 W_AddAutoloadedLocalFiles(char **filenames)
+{
+	UINT16 rc = 1;
+	INT32 overallrc = 1;
+
+	// will be realloced as lumps are added
+	for (; *filenames; filenames++)
+	{
+		rc = P_PartialAddWadFile(*filenames, true);
+		if (rc == UINT16_MAX)
+			CONS_Printf(M_GetText("Errors occurred while loading %s; not added.\n"), *filenames);
+		overallrc &= (rc != UINT16_MAX) ? 1 : 0;
+	}
+
+	if (!numwadfiles)
+		I_Error("W_AddAutoloadedLocalFiles: no files found");
+
+	if (P_PartialAddGetStage() >= 0)
+		P_MultiSetupWadFiles(true);
 	return overallrc;
 }
 
@@ -1760,11 +1765,11 @@ static inline void *W_CachePatchNumPwad(UINT16 wad, UINT16 lump, INT32 tag)
 
 	grPatch = HWR_GetCachedGLPatchPwad(wad, lump);
 
-	if (grPatch->mipmap->grInfo.data)
+	if (grPatch->mipmap->data)
 	{
 		if (tag == PU_CACHE)
 			tag = PU_HWRCACHE;
-		Z_ChangeTag(grPatch->mipmap->grInfo.data, tag);
+		Z_ChangeTag(grPatch->mipmap->data, tag);
 	}
 	else
 	{
@@ -2166,6 +2171,10 @@ int W_VerifyNMUSlumps(const char *filename)
 		{"MKFNT", 5}, // Kart font changes
 		{"K_", 2}, // Kart graphic changes
 		{"MUSICDEF", 8}, // Kart song definitions
+		{"SP_", 3}, // Speedometer changes do not count either.
+		{"SC_", 3}, // Colored speedometer stuff too.
+		{"SPRTINFO", 8}, // Sprite info
+		{"MUSCINFO", 8}, // Music test definitions
 
 #ifdef HWRENDER
 		{"SHADERS", 7},

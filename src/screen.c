@@ -231,6 +231,30 @@ void SCR_Startup(void)
 	CV_RegisterVar(&cv_menucaps);
 	CV_RegisterVar(&cv_constextsize);
 
+	CV_RegisterVar(&cv_globalgamma);
+	CV_RegisterVar(&cv_globalsaturation);
+
+	CV_RegisterVar(&cv_rhue);
+	CV_RegisterVar(&cv_yhue);
+	CV_RegisterVar(&cv_ghue);
+	CV_RegisterVar(&cv_chue);
+	CV_RegisterVar(&cv_bhue);
+	CV_RegisterVar(&cv_mhue);
+
+	CV_RegisterVar(&cv_rgamma);
+	CV_RegisterVar(&cv_ygamma);
+	CV_RegisterVar(&cv_ggamma);
+	CV_RegisterVar(&cv_cgamma);
+	CV_RegisterVar(&cv_bgamma);
+	CV_RegisterVar(&cv_mgamma);
+
+	CV_RegisterVar(&cv_rsaturation);
+	CV_RegisterVar(&cv_ysaturation);
+	CV_RegisterVar(&cv_gsaturation);
+	CV_RegisterVar(&cv_csaturation);
+	CV_RegisterVar(&cv_bsaturation);
+	CV_RegisterVar(&cv_msaturation);
+
 	V_SetPalette(0);
 }
 
@@ -418,40 +442,66 @@ void SCR_DisplayTicRate(void)
 	UINT32 benchmark = (cap == 0) ? I_GetRefreshRate() : cap;
 	INT32 x = 318;
 	double fps = round(averageFPS);
+	INT32 fpsflags = V_LocalTransFlag()|V_SNAPTOBOTTOM|V_SNAPTORIGHT;
+	const char *fps_string;
+	
+	INT32 ticcntcolor2 = 0;
 	
 	if (gamestate == GS_NULL)
 		return;
 
-	// draw "FPS"
-	if (cv_ticrate.value == 1)
-		V_DrawFixedPatch(306<<FRACBITS, 183<<FRACBITS, FRACUNIT, V_SNAPTOBOTTOM|V_SNAPTORIGHT, framecounter, R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_YELLOW, GTC_CACHE));
-
-	if (fps > (benchmark - 5))
-		ticcntcolor = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_MINT, GTC_CACHE);
-	else if (fps < 20)
-		ticcntcolor = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_RASPBERRY, GTC_CACHE);
-
-	if (cap != 0)
+	// new kart counter
+	if ((cv_ticrate.value == 1) || (cv_ticrate.value == 2))
 	{
-		UINT32 digits = 1;
-		UINT32 c2 = cap;
+		// draw "FPS"
+		if (cv_ticrate.value == 1)
+			V_DrawFixedPatch(306<<FRACBITS, 183<<FRACBITS, FRACUNIT, fpsflags, framecounter, R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_YELLOW, GTC_CACHE));
+			
+		if (fps > (benchmark - 5))
+			ticcntcolor = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_MINT, GTC_CACHE);
+		else if (fps < 20)
+			ticcntcolor = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_RASPBERRY, GTC_CACHE);
 
-		while (c2 > 0)
+		if (cap != 0)
 		{
-			c2 = c2 / 10;
-			digits++;
+			UINT32 digits = 1;
+			UINT32 c2 = cap;
+
+			while (c2 > 0)
+			{
+				c2 = c2 / 10;
+				digits++;
+			}
+
+			// draw total frame:
+			V_DrawPingNum(x, 190, fpsflags, cap, ticcntcolor);
+			
+			x -= digits * 4;
+
+			// draw "/"	
+			V_DrawFixedPatch(x<<FRACBITS, 190<<FRACBITS, FRACUNIT, fpsflags, frameslash, ticcntcolor);
 		}
 
-		// draw total frame:
-		V_DrawPingNum(x, 190, V_SNAPTOBOTTOM|V_SNAPTORIGHT, cap, ticcntcolor);
-		x -= digits * 4;
-
-		// draw "/"
-		V_DrawFixedPatch(x<<FRACBITS, 190<<FRACBITS, FRACUNIT, V_SNAPTOBOTTOM|V_SNAPTORIGHT, frameslash, ticcntcolor);
+		// draw our actual framerate
+		V_DrawPingNum(x, 190, fpsflags, fps, ticcntcolor);
 	}
+	else if ((cv_ticrate.value == 3)||(cv_ticrate.value == 4)) // kart v1.0/srb2 counter
+	{
+		if (fps > (benchmark - 5))
+			ticcntcolor2 = V_GREENMAP;
+		else if (fps < 20)
+			ticcntcolor2 = V_REDMAP;
 
-	// draw our actual framerate
-	V_DrawPingNum(x, 190, V_SNAPTOBOTTOM|V_SNAPTORIGHT, fps, ticcntcolor);
+		if (cap != 0)
+			fps_string = va("%d/%d\x82", (INT32)fps, cap);
+		else
+			fps_string = va("%d\x82", (INT32)fps);
+	
+		if (cv_ticrate.value == 3)
+			V_DrawRightAlignedString(319, 181, V_YELLOWMAP|fpsflags, "FPS");
+			
+		V_DrawRightAlignedString(319, 190, ticcntcolor2|fpsflags, fps_string);
+	}
 }
 
 // SCR_DisplayLocalPing
@@ -460,9 +510,12 @@ void SCR_DisplayTicRate(void)
 void SCR_DisplayLocalPing(void)
 {
 	UINT32 ping = playerpingtable[consoleplayer];	// consoleplayer's ping is everyone's ping in a splitnetgame :P
+	INT32 pingflags = V_LocalTransFlag()|V_SNAPTOBOTTOM|V_SNAPTORIGHT;
+	
 	if (cv_showping.value == 1 || (cv_showping.value == 2 && ping > servermaxping))	// only show 2 (warning) if our ping is at a bad level
 	{
-		INT32 dispy = cv_ticrate.value ? 160 : 181;
-		HU_drawPing(307, dispy, ping, V_SNAPTORIGHT | V_SNAPTOBOTTOM);
+		INT32 dispy = (cv_ticrate.value == 1) ? 165 : ((cv_ticrate.value == 2 || cv_ticrate.value == 4) ? 172 : ((cv_ticrate.value == 3) ? 163 : 181)); // absolute buttpain
+		
+		HU_drawPing(308, dispy, ping, pingflags);
 	}
 }

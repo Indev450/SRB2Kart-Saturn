@@ -127,8 +127,8 @@ extern char  logfilename[1024];
 #else
 #define VERSION    1 // Game version
 #define SUBVERSION 6 // more precise version number
-#define VERSIONSTRING "Saturn v4 "
-#define VERSIONSTRINGW L"Saturn v4"
+#define VERSIONSTRING "Saturn v5.1 "
+#define VERSIONSTRINGW L"Saturn v5.1"
 // Hey! If you change this, add 1 to the MODVERSION below! Otherwise we can't force updates!
 // And change CMakeLists.txt (not src/, but in root), for CMake users!
 // AND appveyor.yml, for the build bots!
@@ -558,7 +558,10 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 // None of these that are disabled in the normal build are guaranteed to work perfectly
 // Compile them at your own risk!
 
-/// Kalaron/Eternity Engine slope code (SRB2CB ported)
+/// Undefine to use the new method of Gamma correction see colour cube in v_video.c
+#define BACKWARDSCOMPATCORRECTION
+
+/// Kalaron/Eternity Engine slope code (SRB2CB ported) 
 #define ESLOPE
 
 /// Backwards compatibility with SRB2CB's slope linedef types.
@@ -621,13 +624,6 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 
 /// SRB2Kart: MIDI support is shitty and busted and we don't want it, lets throw it behind a define
 #define NO_MIDI
-
-/// FINALLY some real clipping that doesn't make walls dissappear AND speeds the game up
-/// (that was the original comment from SRB2CB, sadly it is a lie and actually slows game down)
-/// on the bright side it fixes some weird issues with translucent walls
-/// \note	SRB2CB port.
-///      	SRB2CB itself ported this from PrBoom+
-//#define NEWCLIP
 
 /// Sprite rotation
 #define ROTSPRITE

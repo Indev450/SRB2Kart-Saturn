@@ -6252,6 +6252,87 @@ static void P_KoopaThinker(mobj_t *koopa)
 }
 
 //
+// P_RollPitchMobj
+// Assigns slopepitch and sloperoll to objects, and resets said values when slope-rolling
+// is turned off completely.
+//
+void P_RollPitchMobj(mobj_t* mobj)
+{
+    boolean usedist = false;
+
+    if (cv_sloperolldist.value > 0)
+        usedist = true;
+
+    if ((cv_spriteroll.value) && (cv_sloperoll.value == 2))
+    {
+        K_RollMobjBySlopes(mobj, usedist);
+    }
+    else
+    {
+        mobj->sloperoll = FixedAngle(0);
+        mobj->slopepitch = FixedAngle(0);
+    }
+}
+
+angle_t P_MobjPitchAndRoll(mobj_t *mobj)
+{
+    spritedef_t *sprdef;
+    spriteframe_t *sprframe;
+    angle_t ang = 0;
+	angle_t camang = 0;
+	angle_t return_angle = 0;
+	
+	if (!cv_spriteroll.value)
+		return 0;
+
+    if (P_MobjWasRemoved(mobj))
+        return 0;
+
+    size_t rot = mobj->frame & FF_FRAMEMASK;
+    boolean papersprite = (mobj->frame & FF_PAPERSPRITE);
+
+	if (mobj->skin && mobj->sprite == SPR_PLAY)
+	{
+		sprdef = &((skin_t *)mobj->skin)->spritedef;
+
+		if (rot >= sprdef->numframes)
+			sprdef = &sprites[mobj->sprite];
+	}
+	else
+	{
+		sprdef = &sprites[mobj->sprite];
+	}
+
+	if (rot >= sprdef->numframes)
+	{
+		sprdef = &sprites[states[S_UNKNOWN].sprite];
+		rot = states[S_UNKNOWN].frame&FF_FRAMEMASK;
+	}
+
+	sprframe = &sprdef->spriteframes[rot];
+
+	// No sprite frame? I guess it is possible
+	if (!sprframe) return 0;
+
+	if (sprframe->rotate != SRF_SINGLE || papersprite)
+	{
+		ang = R_PointToAngle(mobj->x, mobj->y) - mobj->angle;
+		camang = R_PointToAngle(mobj->x, mobj->y);
+	}
+
+	return_angle = FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), mobj->roll) 
+			        + FixedMul(FINESINE((ang) >> ANGLETOFINESHIFT), mobj->pitch);
+
+	if (cv_sloperoll.value)
+	{
+		return_angle += FixedMul(FINECOSINE((camang) >> ANGLETOFINESHIFT), mobj->sloperoll) 
+						+ FixedMul(FINESINE((camang) >> ANGLETOFINESHIFT), mobj->slopepitch);
+	}
+
+	return return_angle;
+}
+
+//
 // P_MobjThinker
 //
 void P_MobjThinker(mobj_t *mobj)
@@ -6393,6 +6474,12 @@ void P_MobjThinker(mobj_t *mobj)
 					return;
 				}
 
+				if (mobj->state == &states[S_PLAY_SIGN]) // hack to make the player sign icon roll with the sign itself
+				{
+					mobj->slopepitch = mobj->target->slopepitch;
+					mobj->sloperoll = mobj->target->sloperoll;
+				}
+
 				P_AddOverlay(mobj);
 				break;
 			case MT_SHADOW:
@@ -6401,7 +6488,12 @@ void P_MobjThinker(mobj_t *mobj)
 					P_RemoveMobj(mobj);
 					return;
 				}
-
+				
+				if (mobj->state == &states[S_SHADOW] && cv_sloperoll.value == 2)
+				{
+					mobj->slopepitch = mobj->target->slopepitch;
+					mobj->sloperoll = mobj->target->sloperoll;
+				}
 				P_AddShadow(mobj);
 				break;
 			/*case MT_BLACKORB:
@@ -6428,6 +6520,7 @@ void P_MobjThinker(mobj_t *mobj)
 					P_RemoveMobj(mobj);
 					return;
 				}
+				P_RollPitchMobj(mobj);
 				break;
 			case MT_SMOLDERING:
 				if (leveltime % 2 == 0)
@@ -7856,6 +7949,7 @@ void P_MobjThinker(mobj_t *mobj)
 			fixed_t distbarrier = 512*mapobjectscale;
 			fixed_t distaway;
 
+			P_RollPitchMobj(mobj);
 			P_SpawnGhostMobj(mobj);
 
 			if (mobj->threshold > 0)
@@ -7923,6 +8017,7 @@ void P_MobjThinker(mobj_t *mobj)
 			}
 			else
 			{
+				P_RollPitchMobj(mobj);
 				P_SpawnGhostMobj(mobj);
 				mobj->angle = R_PointToAngle2(0, 0, mobj->momx, mobj->momy);
 				P_InstaThrust(mobj, mobj->angle, mobj->movefactor);
@@ -7956,6 +8051,9 @@ void P_MobjThinker(mobj_t *mobj)
 				mobj->momx = mobj->momy = 0;
 				mobj->health = 1;
 			}
+
+			P_RollPitchMobj(mobj);
+
 			if (mobj->threshold > 0)
 				mobj->threshold--;
 			break;
@@ -8002,6 +8100,8 @@ void P_MobjThinker(mobj_t *mobj)
 			if ((mobj->state >= &states[S_SSMINE1] && mobj->state <= &states[S_SSMINE4])
 				|| (mobj->state >= &states[S_SSMINE_DEPLOY8] && mobj->state <= &states[S_SSMINE_DEPLOY13]))
 				A_GrenadeRing(mobj);
+
+			P_RollPitchMobj(mobj);
 
 			if (mobj->threshold > 0)
 				mobj->threshold--;
@@ -8213,6 +8313,8 @@ void P_MobjThinker(mobj_t *mobj)
 			}
 
 			P_MoveOrigin(mobj, destx, desty, mobj->target->z);
+			mobj->spriteyoffset = mobj->target->spriteyoffset;
+			mobj->spritexoffset = mobj->target->spritexoffset;
 			break;
 		}
 		case MT_ROCKETSNEAKER:
@@ -8355,6 +8457,10 @@ void P_MobjThinker(mobj_t *mobj)
 					}
 				}
 			}
+
+			// fancy sign rotation
+			P_RollPitchMobj(mobj);
+
 			break;
 		case MT_CDUFO:
 			if (!mobj->spawnpoint || mobj->fuse)
@@ -9535,6 +9641,10 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 	mobj->height = info->height;
 	mobj->flags = info->flags;
 	mobj->sloperoll = 0;
+	mobj->slopepitch = 0;
+
+	mobj->pitch_sprite = 0;
+	mobj->roll_sprite = 0;
 
 	mobj->health = info->spawnhealth;
 
@@ -11404,7 +11514,7 @@ void P_SpawnMapThing(mapthing_t *mthing)
 	mobj = P_SpawnMobj(x, y, z, i);
 
 	if (!mobj || P_MobjWasRemoved(mobj)) {
-		CONS_Alert(CONS_WARNING, "Failed to spawn map thing #%d at %d, %d\n", mthing->type, x>>FRACBITS, y>>FRACBITS);
+		CONS_Alert(CONS_ERROR, "Failed to spawn map thing #%d at %d, %d. This will crash vanilla clients!\n", mthing->type, x>>FRACBITS, y>>FRACBITS);
 		return;
 	}
 

@@ -83,8 +83,11 @@ static const udata_field_t mobj_fields[] = {
     FIELD(mobj_t, snext,               udatalib_getter_mobj,       mobj_snext_noset),
     FIELD(mobj_t, sprev,               mobj_sprev_unimplemented,   mobj_sprev_unimplemented),
     FIELD(mobj_t, angle,               udatalib_getter_angle,      mobj_angle_setter),
+    FIELD(mobj_t, pitch,               udatalib_getter_angle,      udatalib_setter_angle),
+    FIELD(mobj_t, roll,                udatalib_getter_angle,      udatalib_setter_angle),
     FIELD(mobj_t, rollangle,           udatalib_getter_angle,      udatalib_setter_angle),
     FIELD(mobj_t, sloperoll,           udatalib_getter_angle,      mobj_sloperoll_noop),
+    FIELD(mobj_t, slopepitch,          udatalib_getter_angle,      mobj_sloperoll_noop),
 	// Macro fails here
 	{ "rollsum", 0, mobj_rollsum_getter, mobj_rollsum_noset },
     FIELD(mobj_t, sprite,              udatalib_getter_spritenum,  udatalib_setter_spritenum),
@@ -143,6 +146,7 @@ static const udata_field_t mobj_fields[] = {
     FIELD(mobj_t, cvmem,               udatalib_getter_int32,      udatalib_setter_int32),
     FIELD(mobj_t, standingslope,       udatalib_getter_slope,      mobj_standingslope_noset),
     FIELD(mobj_t, colorized,           udatalib_getter_boolean,    udatalib_setter_boolean),
+	FIELD(mobj_t, mirrored,           udatalib_getter_boolean,    udatalib_setter_boolean),
     FIELD(mobj_t, rollmodel,           udatalib_getter_boolean,    udatalib_setter_boolean),
     { NULL },
 };
@@ -217,7 +221,7 @@ UNIMPLEMENTED(mobjnum)
 
 // For some dumb reason it is valid to set sloperoll, even though it is read
 // only
-int mobj_sloperoll_noop(lua_State *L) { return 0; }
+int mobj_sloperoll_noop(lua_State *L) { (void)L; return 0; }
 
 // Now other getters/setters with arbitary logic
 
@@ -415,13 +419,48 @@ int mobj_localskin_setter(lua_State *L)
 {
 	mobj_t *mo = GETMO();
 
-	// TODO - add ability to set localskin to non-player mobjs
-	// Will probably just need to reimplement SetLocalPlayerSkin as something
-	// like SetLocalObjectSkin
-	if (!mo->player)
-		return luaL_error(L, "mobj.localskin can't be set for non-player mobjs!");
+	if (mo->player)
+	{
+		SetLocalPlayerSkin(mo->player - players, luaL_optstring(L, 2, "none"), NULL);
+	}
+	else
+	{
+		INT32 i;
+		char skin[SKINNAMESIZE+1]; // all skin names are limited to this length
+		strlcpy(skin, luaL_optstring(L, 2, "none"), sizeof skin);
+		strlwr(skin); // all skin names are lowercase
 
-	SetLocalPlayerSkin(mo->player - players, luaL_checkstring(L, 2), NULL);
+		if (strcasecmp(skin, "none"))
+		{
+			// Try localskins
+			for (i = 0; i < numlocalskins; i++)
+			{
+				if (stricmp(localskins[i].name, skin) == 0)
+				{
+					mo->localskin = &localskins[i];
+					mo->skinlocal = true;
+					return 0;
+				}
+			}
+
+			// Try other skins
+			for (i = 0; i < numskins; i++)
+			{
+				if (fastcmp(skins[i].name, skin))
+				{
+					mo->localskin = &skins[i];
+					mo->skinlocal = false;
+					return 0;
+				}
+			}
+		}
+		else
+		{
+			mo->localskin = 0;
+			mo->skinlocal = false;
+		}
+	}
+
 
 	return 0;
 }
@@ -596,7 +635,9 @@ int mobj_rollsum_getter(lua_State *L)
 {
 	mobj_t *mo = GETMO();
 
-	angle_t rollsum = mo->rollangle + cv_sloperoll.value ? mo->sloperoll : 0;
+    angle_t pitchnroll = P_MobjPitchAndRoll(mo);
+
+	angle_t rollsum = mo->rollangle + pitchnroll;
 
 	if (mo->player)
 	{

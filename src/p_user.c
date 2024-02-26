@@ -1135,6 +1135,46 @@ void P_PlayVictorySound(mobj_t *source)
 		S_StartSound(source, sfx_kwin);
 }
 
+// Can't rely on k_position and K_IsPlayerLosing in battle smh
+static UINT8 getPlayerPos(player_t *player)
+{
+	if (G_BattleGametype())
+	{
+		UINT8 pos = 1;
+
+		for (int i = 0; i < MAXPLAYERS; ++i) {
+			if (!playeringame[i] || players[i].spectator) continue;
+			if (players[i].marescore > player->marescore) ++pos;
+		}
+
+		return pos;
+	}
+
+	return player->kartstuff[k_position];
+}
+
+static boolean isPlayerLosing(player_t *player)
+{
+	if (G_BattleGametype()) {
+		UINT8 pos = 1;
+		UINT8 maxpos = 1;
+
+		for (int i = 0; i < MAXPLAYERS; ++i) {
+			if (!playeringame[i] || players[i].spectator) continue;
+			if (players[i].marescore > player->marescore) ++pos;
+			maxpos = max(getPlayerPos(&players[i]), maxpos);
+		}
+
+		if (maxpos == 1) return false;
+
+		if (maxpos % 2) ++maxpos;
+
+		return pos > (maxpos / 2);
+	}
+
+	return K_IsPlayerLosing(player);
+}
+
 //
 // P_EndingMusic
 //
@@ -1164,12 +1204,12 @@ boolean P_EndingMusic(player_t *player)
 			return false;
 
 		bestlocalplayer = &players[displayplayers[0]];
-		bestlocalpos = ((players[displayplayers[0]].pflags & PF_TIMEOVER) ? MAXPLAYERS+1 : players[displayplayers[0]].kartstuff[k_position]);
+		bestlocalpos = ((players[displayplayers[0]].pflags & PF_TIMEOVER) ? MAXPLAYERS+1 : getPlayerPos(&players[displayplayers[0]]));
 #define setbests(p) \
-	if (((players[p].pflags & PF_TIMEOVER) ? MAXPLAYERS+1 : players[p].kartstuff[k_position]) < bestlocalpos) \
+	if (((players[p].pflags & PF_TIMEOVER) ? MAXPLAYERS+1 : getPlayerPos(&players[p])) < bestlocalpos) \
 	{ \
 		bestlocalplayer = &players[p]; \
-		bestlocalpos = ((players[p].pflags & PF_TIMEOVER) ? MAXPLAYERS+1 : players[p].kartstuff[k_position]); \
+		bestlocalpos = ((players[p].pflags & PF_TIMEOVER) ? MAXPLAYERS+1 : getPlayerPos(&players[p])); \
 	}
 		setbests(displayplayers[1]);
 		if (splitscreen > 1)
@@ -1184,7 +1224,7 @@ boolean P_EndingMusic(player_t *player)
 			return false;
 
 		bestlocalplayer = player;
-		bestlocalpos = ((player->pflags & PF_TIMEOVER) ? MAXPLAYERS+1 : player->kartstuff[k_position]);
+		bestlocalpos = ((player->pflags & PF_TIMEOVER) ? MAXPLAYERS+1 : getPlayerPos(player));
 	}
 
 	if (G_RaceGametype() && bestlocalpos == MAXPLAYERS+1)
@@ -1193,7 +1233,7 @@ boolean P_EndingMusic(player_t *player)
 	{
 		if (bestlocalpos == 1)
 			sprintf(buffer, "k*win");
-		else if (K_IsPlayerLosing(bestlocalplayer))
+		else if (isPlayerLosing(bestlocalplayer))
 			sprintf(buffer, "k*lose");
 		else
 			sprintf(buffer, "k*ok");
@@ -1281,13 +1321,17 @@ void P_RestoreMusic(player_t *player)
 		if (wantedmus == 2 && cv_growmusic.value)
 		{
 			S_ChangeMusicInternal("kgrow", true);
-			S_SetRestoreMusicFadeInCvar(&cv_growmusicfade);
+			
+			if (cv_birdmusic.value)
+				S_SetRestoreMusicFadeInCvar(&cv_growmusicfade);
 		}
 		// Item - Invincibility
 		else if (wantedmus == 1 && cv_supermusic.value)
 		{
 			S_ChangeMusicInternal("kinvnc", true);
-			S_SetRestoreMusicFadeInCvar(&cv_invincmusicfade);
+			
+			if (cv_birdmusic.value)
+				S_SetRestoreMusicFadeInCvar(&cv_invincmusicfade);
 		}
 		else
 		{
@@ -1297,14 +1341,20 @@ void P_RestoreMusic(player_t *player)
 			if (G_RaceGametype() && player->laps >= (UINT8)(cv_numlaps.value - 1))
 				S_SpeedMusic(1.2f);
 #endif
-			if (mapmusresume && cv_resume.value)
-				position = mapmusresume;
-			else
-				position = mapmusposition;
+			if (cv_birdmusic.value)
+			{
+				if (mapmusresume && cv_resume.value)
+					position = mapmusresume;
+				else
+					position = mapmusposition;
 
-			S_ChangeMusicEx(mapmusname, mapmusflags, true, position, 0,
-					S_GetRestoreMusicFadeIn());
-			S_ClearRestoreMusicFadeInCvar();
+				S_ChangeMusicEx(mapmusname, mapmusflags, true, position, 0,
+						S_GetRestoreMusicFadeIn());
+				S_ClearRestoreMusicFadeInCvar();
+			}
+			else
+				S_ChangeMusicEx(mapmusname, mapmusflags, true, mapmusposition, 0, 0);
+			
 			mapmusresume = 0;
 		}
 	}
@@ -1687,11 +1737,15 @@ mobj_t *P_SpawnGhostMobj(mobj_t *mobj)
 	else
 		ghost->angle = mobj->angle;
 
+	ghost->pitch = mobj->pitch;
+	ghost->roll = mobj->roll;
+
 	ghost->sprite = mobj->sprite;
 	ghost->frame = mobj->frame;
 	ghost->tics = -1;
 	ghost->frame &= ~FF_TRANSMASK;
 	ghost->frame |= tr_trans50<<FF_TRANSSHIFT;
+	ghost->slopepitch = mobj->slopepitch; 
 	ghost->sloperoll = mobj->sloperoll;
 	
 	ghost->fuse = ghost->info->damage;
@@ -1714,6 +1768,10 @@ mobj_t *P_SpawnGhostMobj(mobj_t *mobj)
 	ghost->old_y = mobj->old_y2;
 	ghost->old_z = mobj->old_z2;
 	ghost->old_angle = (mobj->player ? mobj->player->old_frameangle2 : mobj->old_angle2);
+	ghost->old_pitch = mobj->old_pitch2;
+	ghost->old_roll = mobj->old_roll2;
+	ghost->old_sloperoll = mobj->old_sloperoll2;
+	ghost->old_slopepitch = mobj->old_slopepitch2;
 
 	return ghost;
 }

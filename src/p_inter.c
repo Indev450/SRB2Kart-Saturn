@@ -2348,7 +2348,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 		}
 		target->player->playerstate = PST_DEAD;
 
-		if (cv_fading.value && P_IsLocalPlayer(target->player))
+		if (cv_fading.value && cv_birdmusic.value && P_IsLocalPlayer(target->player))
 		{
 			if (netgame || multiplayer)
 				ms = cv_respawntime.value * 1000;

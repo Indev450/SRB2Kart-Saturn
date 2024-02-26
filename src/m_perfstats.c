@@ -63,7 +63,10 @@ static ps_metric_t ps_removecount = {0};
 
 ps_metric_t ps_checkposition_calls = {0};
 
+ps_metric_t ps_lua_prethinkframe_time = {0};
 ps_metric_t ps_lua_thinkframe_time = {0};
+ps_metric_t ps_lua_postthinkframe_time = {0};
+
 ps_metric_t ps_lua_mobjhooks = {0};
 
 ps_metric_t ps_otherlogictime = {0};
@@ -156,7 +159,9 @@ perfstatrow_t gamelogic_rows[] = {
 	{"  mobjs  ", "  Mobjs:          ", &ps_thlist_times[THINK_MOBJ], PS_TIME|PS_LEVEL},
 	{"  dynslop", "  Dynamic slopes: ", &ps_thlist_times[THINK_DYNSLOPE], PS_TIME|PS_LEVEL},
 	{"  precip ", "  Precipitation:  ", &ps_thlist_times[THINK_PRECIP], PS_TIME|PS_LEVEL},*/
+	{" lprethinkf", " LUAh_PreThinkFrame:", &ps_lua_prethinkframe_time, PS_TIME|PS_LEVEL},
 	{" lthinkf", " LUAh_ThinkFrame:", &ps_lua_thinkframe_time, PS_TIME|PS_LEVEL},
+	{" lpostthinkf", " LUAh_PostThinkFrame:", &ps_lua_postthinkframe_time, PS_TIME|PS_LEVEL},
 	{" other  ", " Other:          ", &ps_otherlogictime, PS_TIME|PS_LEVEL},
 	{0}
 };
@@ -189,9 +194,42 @@ int ps_frame_index = 0;
 int ps_tick_index = 0;
 
 // dynamically allocated resizeable array for thinkframe hook stats
+ps_hookinfo_t *prethinkframe_hooks = NULL;
+int prethinkframe_hooks_length = 0;
+int prethinkframe_hooks_capacity = 16;
+
 ps_hookinfo_t *thinkframe_hooks = NULL;
 int thinkframe_hooks_length = 0;
 int thinkframe_hooks_capacity = 16;
+
+ps_hookinfo_t *postthinkframe_hooks = NULL;
+int postthinkframe_hooks_length = 0;
+int postthinkframe_hooks_capacity = 16;
+
+void PS_SetPreThinkFrameHookInfo(int index, precise_t time_taken, char* short_src)
+{
+	if (!prethinkframe_hooks)
+	{
+		// array needs to be initialized
+		prethinkframe_hooks = Z_Calloc(sizeof(ps_hookinfo_t) * prethinkframe_hooks_capacity, PU_STATIC, NULL);
+	}
+	if (index >= prethinkframe_hooks_capacity)
+	{
+		// array needs more space, realloc with double size
+		int new_capacity = prethinkframe_hooks_capacity * 2;
+		prethinkframe_hooks = Z_Realloc(prethinkframe_hooks,
+			sizeof(ps_hookinfo_t) * new_capacity, PU_STATIC, NULL);
+		// initialize new memory with zeros so the pointers in the structs are null
+		memset(&prethinkframe_hooks[prethinkframe_hooks_capacity], 0,
+			sizeof(ps_hookinfo_t) * prethinkframe_hooks_capacity);
+		prethinkframe_hooks_capacity = new_capacity;
+	}
+	prethinkframe_hooks[index].time_taken.value.p = time_taken;
+	memcpy(prethinkframe_hooks[index].short_src, short_src, LUA_IDSIZE * sizeof(char));
+	// since the values are set sequentially from begin to end, the last call should leave
+	// the correct value to this variable
+	prethinkframe_hooks_length = index + 1;
+}
 
 void PS_SetThinkFrameHookInfo(int index, precise_t time_taken, char* short_src)
 {
@@ -217,6 +255,33 @@ void PS_SetThinkFrameHookInfo(int index, precise_t time_taken, char* short_src)
 	// the correct value to this variable
 	thinkframe_hooks_length = index + 1;
 }
+
+void PS_SetPostThinkFrameHookInfo(int index, precise_t time_taken, char* short_src)
+{
+	if (!postthinkframe_hooks)
+	{
+		// array needs to be initialized
+		postthinkframe_hooks = Z_Calloc(sizeof(ps_hookinfo_t) * postthinkframe_hooks_capacity, PU_STATIC, NULL);
+	}
+	if (index >= postthinkframe_hooks_capacity)
+	{
+		// array needs more space, realloc with double size
+		int new_capacity = postthinkframe_hooks_capacity * 2;
+		postthinkframe_hooks = Z_Realloc(postthinkframe_hooks,
+			sizeof(ps_hookinfo_t) * new_capacity, PU_STATIC, NULL);
+		// initialize new memory with zeros so the pointers in the structs are null
+		memset(&postthinkframe_hooks[postthinkframe_hooks_capacity], 0,
+			sizeof(ps_hookinfo_t) * postthinkframe_hooks_capacity);
+		postthinkframe_hooks_capacity = new_capacity;
+	}
+	postthinkframe_hooks[index].time_taken.value.p = time_taken;
+	memcpy(postthinkframe_hooks[index].short_src, short_src, LUA_IDSIZE * sizeof(char));
+	// since the values are set sequentially from begin to end, the last call should leave
+	// the correct value to this variable
+	postthinkframe_hooks_length = index + 1;
+}
+
+
 
 static boolean PS_HighResolution(void)
 {
@@ -578,7 +643,11 @@ void PS_UpdateTickStats(void)
 				ps_tictime.value.p -
 				ps_playerthink_time.value.p -
 				ps_thinkertime.value.p -
-				ps_lua_thinkframe_time.value.p;
+				ps_lua_prethinkframe_time.value.p -
+				ps_lua_thinkframe_time.value.p -
+				ps_lua_postthinkframe_time.value.p;
+
+
 
 			PS_CountThinkers();
 		}
@@ -590,21 +659,37 @@ void PS_UpdateTickStats(void)
 			PS_UpdateRowHistories(misc_calls_rows, false);
 		}
 	}
-	if (cv_perfstats.value == 3 && cv_ps_samplesize.value > 1 && PS_IsLevelActive())
+	if (cv_ps_samplesize.value > 1)
 	{
-		int i;
-		for (i = 0; i < thinkframe_hooks_length; i++)
+		if(cv_perfstats.value >= 3 && PS_IsLevelActive())
 		{
-			PS_UpdateMetricHistory(&thinkframe_hooks[i].time_taken, true, false, false);
+						int i;
+			if (cv_perfstats.value == 3)
+			{
+				for (i = 0; i < thinkframe_hooks_length; i++)
+					PS_UpdateMetricHistory(&thinkframe_hooks[i].time_taken, true, false, false);
+			}
+			else if (cv_perfstats.value == 4)
+			{
+				for (i = 0; i < prethinkframe_hooks_length; i++)
+					PS_UpdateMetricHistory(&prethinkframe_hooks[i].time_taken, true, false, false);
+			}
+			else if (cv_perfstats.value == 5)
+			{
+				for (i = 0; i < postthinkframe_hooks_length; i++)
+					PS_UpdateMetricHistory(&postthinkframe_hooks[i].time_taken, true, false, false);
+			}
 		}
-	}
-	if (cv_perfstats.value && cv_ps_samplesize.value > 1)
-	{
-		ps_tick_index++;
-		if (ps_tick_index >= cv_ps_samplesize.value)
-			ps_tick_index = 0;
-		if (ps_tick_samples_left)
-			ps_tick_samples_left--;
+		if (cv_perfstats.value)
+		{
+			ps_tick_index++;
+			if (ps_tick_index >= cv_ps_samplesize.value)
+				ps_tick_index = 0;
+			if (ps_tick_samples_left)
+				ps_tick_samples_left--;
+
+		}
+
 	}
 }
 
@@ -624,7 +709,7 @@ static void PS_DrawDescriptorHeader(void)
 		int samples_left = max(ps_frame_samples_left, ps_tick_samples_left);
 		int x, y;
 
-		if (cv_perfstats.value == 3)
+		if (cv_perfstats.value >= 3)		
 		{
 			x = 2;
 			y = 0;
@@ -717,21 +802,20 @@ static void PS_DrawGameLogicStats(void)
 #define WIDTH   106
 #define HEIGHT  4
 #define MAX_X   214
-#define MAX_Y   192
+#define MAX_Y   182
 #define START_X 2
 #define START_Y 4
 
 #define PAGE_ENTRIES ((MAX_Y - START_Y) / HEIGHT)
 
-static void PS_DrawThinkFrameStats(void)
+static void draw_think_frame_stats(int hook_length, ps_hookinfo_t *hook)
 {
     char s[100];
 	int i;
-    int maxpage = thinkframe_hooks_length/PAGE_ENTRIES + 1;
-    int page = max(1, min(cv_ps_thinkframe_page.value, maxpage));
-
-    int pagestart = min((page - 1)*PAGE_ENTRIES, thinkframe_hooks_length);
-    int pageend   = min(pagestart + PAGE_ENTRIES, thinkframe_hooks_length);
+	int maxpage = 0;
+    int page = 0;
+    int pagestart = 0;
+    int pageend = 0;
 	// text writing position
 	int x = START_X;
 	int y = START_Y;
@@ -741,19 +825,44 @@ static void PS_DrawThinkFrameStats(void)
 	last_mod_name[0] = '\0';
     INT32 total = 0;
 
+	//Decide page length based and drawn text on choosen thinker type
+	if (cv_perfstats.value == 3){
+    	maxpage = thinkframe_hooks_length/PAGE_ENTRIES + 1;
+		page = max(1, min(cv_ps_thinkframe_page.value, maxpage));
+    	pagestart = min((page - 1)*PAGE_ENTRIES, thinkframe_hooks_length);
+    	pageend   = min(pagestart + PAGE_ENTRIES, thinkframe_hooks_length);
+		
+		V_DrawSmallString(MAX_X-50, MAX_Y+2*HEIGHT, V_MONOSPACE | V_GREENMAP, "ThinkFrame");
+	}
+	else if (cv_perfstats.value == 4){
+		maxpage = prethinkframe_hooks_length/PAGE_ENTRIES + 1;
+		page = max(1, min(cv_ps_thinkframe_page.value, maxpage));
+    	pagestart = min((page - 1)*PAGE_ENTRIES, prethinkframe_hooks_length);
+    	pageend   = min(pagestart + PAGE_ENTRIES, prethinkframe_hooks_length);
+		V_DrawSmallString(MAX_X-60, MAX_Y+2*HEIGHT, V_MONOSPACE | V_GREENMAP, "PreThinkFrame");
+	}
+	else if (cv_perfstats.value == 5){
+		maxpage = postthinkframe_hooks_length/PAGE_ENTRIES + 1;
+		page = max(1, min(cv_ps_thinkframe_page.value, maxpage));
+    	pagestart = min((page - 1)*PAGE_ENTRIES, postthinkframe_hooks_length);
+    	pageend   = min(pagestart + PAGE_ENTRIES, postthinkframe_hooks_length);
+		V_DrawSmallString(MAX_X-65, MAX_Y+2*HEIGHT, V_MONOSPACE | V_GREENMAP, "PostThinkFrame");
+
+	}
+	
 	PS_DrawDescriptorHeader();
 
-	for (i = 0; i < thinkframe_hooks_length; i++)
+	for (i = 0; i < hook_length; i++)	
 	{
 
 #define NEXT_ROW() y += HEIGHT;
 
-        INT32 value = PS_GetMetricScreenValue(&thinkframe_hooks[i].time_taken, true);
+        INT32 value = PS_GetMetricScreenValue(&hook[i].time_taken, true);
         total += value;
 
         if (i < pagestart || i >= pageend) continue;
 
-		char* str = thinkframe_hooks[i].short_src;
+		char* str = hook[i].short_src;
 		char* tempstr = tempbuffer;
 		int len = (int)strlen(str);
 		char* str_ptr;
@@ -808,6 +917,8 @@ static void PS_DrawThinkFrameStats(void)
         snprintf(s, sizeof s - 1, "PAGE %d", page);
         V_DrawSmallString(START_X, MAX_Y+2*HEIGHT, V_MONOSPACE | V_GREENMAP, s);
     }
+	
+	
 }
 
 void PS_ThinkFrame_Page_OnChange(void)
@@ -828,6 +939,24 @@ void PS_ThinkFrame_Page_OnChange(void)
 
 #undef PAGE_ENTRIES
 
+
+
+static void PS_DrawPreThinkFrameStats(void)
+{
+	draw_think_frame_stats(prethinkframe_hooks_length, prethinkframe_hooks);
+}
+
+static void PS_DrawThinkFrameStats(void)
+{
+	draw_think_frame_stats(thinkframe_hooks_length, thinkframe_hooks);
+}
+
+static void PS_DrawPostThinkFrameStats(void)
+{
+	draw_think_frame_stats(postthinkframe_hooks_length, postthinkframe_hooks);
+}
+
+
 void M_DrawPerfStats(void)
 {
 	if (cv_perfstats.value == 1) // rendering
@@ -841,7 +970,7 @@ void M_DrawPerfStats(void)
 		// tics when frame skips happen
 		PS_DrawGameLogicStats();
 	}
-	else if (cv_perfstats.value == 3) // lua thinkframe
+	else if (cv_perfstats.value >= 3) // lua thinkframe	
 	{
 		if (!PS_IsLevelActive())
 			return;
@@ -850,13 +979,23 @@ void M_DrawPerfStats(void)
 			// Low resolutions can't really use V_DrawSmallString that is used by thinkframe stats.
 			// A low-res version using V_DrawThinString could be implemented,
 			// but it would have much less space for information.
-			V_DrawThinString(80, 92, V_MONOSPACE | V_ALLOWLOWERCASE | V_YELLOWMAP, "Perfstats 3 is not available");
+			V_DrawThinString(80, 92, V_MONOSPACE | V_ALLOWLOWERCASE | V_YELLOWMAP, "Lua Perfstats is not available");
 			V_DrawThinString(80, 100, V_MONOSPACE | V_ALLOWLOWERCASE | V_YELLOWMAP, "for resolutions below 640x400.");
+			return;
 		}
-		else
+		if (cv_perfstats.value == 3)
 		{
 			PS_DrawThinkFrameStats();
 		}
+		else if (cv_perfstats.value == 4)
+		{
+			PS_DrawPreThinkFrameStats();
+		}
+		else if (cv_perfstats.value == 5)
+		{
+			PS_DrawPostThinkFrameStats();
+		}
+
 	}
 }
 
@@ -867,9 +1006,17 @@ static void PS_ClearHistory(void)
 
 	Z_FreeTags(PU_PERFSTATS, PU_PERFSTATS);
 	// thinkframe hook metric history pointers need to be cleared manually
+	for (i = 0; i < prethinkframe_hooks_length; i++)
+	{
+		prethinkframe_hooks[i].time_taken.history = NULL;
+	}
 	for (i = 0; i < thinkframe_hooks_length; i++)
 	{
 		thinkframe_hooks[i].time_taken.history = NULL;
+	}
+	for (i = 0; i < postthinkframe_hooks_length; i++)
+	{
+		postthinkframe_hooks[i].time_taken.history = NULL;
 	}
 
 	ps_frame_index = ps_tick_index = 0;

@@ -143,11 +143,11 @@ static void R_InstallSpriteLump(UINT16 wad,            // graphics patch
 
 // rotsprite
 #ifdef ROTSPRITE
-		for (r = 0; r < 16; r++)
-		{
-			sprtemp[frame].rotated[0][r] = NULL;
-			sprtemp[frame].rotated[1][r] = NULL;
-		}
+	for (r = 0; r < 16; r++)
+	{
+		sprtemp[frame].rotated[0][r] = NULL;
+		sprtemp[frame].rotated[1][r] = NULL;
+	}
 #endif/*ROTSPRITE*/
 
 
@@ -643,9 +643,12 @@ void R_InitSprites(void)
 
 	// it can be is do before loading config for skin cvar possible value
 	R_InitSkins();
-	for (i = 0; i < numwadfiles; i++)
+	for (i = 0; i < numwadfiles; i++) 
+	{
 		R_AddSkins((UINT16)i, false);
-
+		R_LoadSpriteInfoLumps(i, wadfiles[i]->numlumps);
+	}
+		
 	//
 	// check if all sprites have frames
 	//
@@ -1312,9 +1315,10 @@ static void R_ProjectSprite(mobj_t *thing)
 
 	size_t rot;
 	UINT8 flip;
-	/*boolean vflip = (!(thing->eflags & MFE_VERTICALFLIP) != !R_ThingVerticallyFlipped(thing));
+	/*boolean vflip = (!(thing->eflags & MFE_VERTICALFLIP) != !R_ThingVerticallyFlipped(thing));*/
+	
 	boolean mirrored = thing->mirrored;
-	boolean hflip = (!R_ThingHorizontallyFlipped(thing) != !mirrored);*/
+	boolean hflip = (!(thing->frame & FF_HORIZONTALFLIP) != !mirrored);
 
 	INT32 lindex;
 
@@ -1323,6 +1327,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	spritecut_e cut = SC_NONE;
 
 	angle_t ang = 0; // gcc 4.6 and lower fix
+	angle_t camang = 0;
 	fixed_t iscale;
 	fixed_t scalestep; // toast '16
 	fixed_t offset, offset2;
@@ -1342,6 +1347,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	patch_t *rotsprite = NULL;
 	INT32 rollangle = 0;
 	angle_t rollsum = 0;
+	angle_t pitchnroll = 0;
 	angle_t sliptiderollangle = 0;
 #endif
 
@@ -1396,11 +1402,11 @@ static void R_ProjectSprite(mobj_t *thing)
 	rot = thing->frame&FF_FRAMEMASK;
 
 	//Fab : 02-08-98: 'skin' override spritedef currently used for skin
-	if (thing->skin && thing->sprite == SPR_PLAY)
+	if ((thing->skin || thing->localskin) && thing->sprite == SPR_PLAY)
 	{
 		sprdef = &((skin_t *)( (thing->localskin) ? thing->localskin : thing->skin ))->spritedef;
 #ifdef ROTSPRITE
-		sprinfo = &spriteinfo[thing->sprite];
+		sprinfo = &((skin_t *)( (thing->localskin) ? thing->localskin : thing->skin ))->sprinfo;
 #endif
 
 		if (rot >= sprdef->numframes)
@@ -1439,9 +1445,16 @@ static void R_ProjectSprite(mobj_t *thing)
 		I_Error("R_ProjectSprite: sprframes NULL for sprite %d\n", thing->sprite);
 #endif
 
-	if (sprframe->rotate != SRF_SINGLE || papersprite)
+	if (sprframe->rotate != SRF_SINGLE || papersprite || (cv_sloperoll.value == 2 && cv_spriteroll.value))
 	{
 		ang = R_PointToAngle (interp.x, interp.y) - interp.angle;
+		camang = R_PointToAngle (interp.x, interp.y);
+	}
+
+	if (sprframe->rotate != SRF_SINGLE || papersprite)
+	{
+		if (mirrored)
+			ang = InvAngle(ang);
 		if (papersprite)
 			ang_scale = abs(FINESINE(ang>>ANGLETOFINESHIFT));
 	}
@@ -1483,33 +1496,63 @@ static void R_ProjectSprite(mobj_t *thing)
 	spr_topoffset = spritecachedinfo[lump].topoffset;
 
 #ifdef ROTSPRITE
-	if (thing->player)
+    pitchnroll = 0;  // set this to 0, non-paper sprites will affect this value
+	
+	if (cv_spriteroll.value)
 	{
-		sliptiderollangle = FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), ((cv_sloperoll.value == 1) ? thing->player->sliproll*(thing->player->sliptidemem) : 0));
-	}
-	else
-		sliptiderollangle = 0;
-
-	if ((thing->rollangle)||(thing->sloperoll)||sliptiderollangle)
-	{
-		if (thing->player)
-			rollsum = (thing->rollangle) + (thing->sloperoll) + sliptiderollangle;
-		else
-			rollsum = (thing->rollangle) + (thing->sloperoll);
-
-		rollangle = R_GetRollAngle(rollsum);
-		rotsprite = Patch_GetRotatedSprite(sprframe, (thing->frame & FF_FRAMEMASK), rot, flip, false, sprinfo, rollangle);
-
-		if (rotsprite != NULL)
+		if (papersprite)
 		{
-			spr_width = rotsprite->width << FRACBITS;
-			spr_height = rotsprite->height << FRACBITS;
-			spr_offset = rotsprite->leftoffset << FRACBITS;
-			spr_topoffset = rotsprite->topoffset << FRACBITS;
-			spr_topoffset += FEETADJUST;
+			if (ang >= ANGLE_180)
+			{
+				// Makes Software act much more sane like OpenGL
+				rollangle = InvAngle(thing->rollangle);
+			}
+			else
+			{
+				rollangle = thing->rollangle;
+			}
+		}
+		else
+		{
+			// this is very messy, but it on-the-fly calculates rotations for all the
+			// pitch and roll variables
+			pitchnroll = FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), interp.roll) +
+						 FixedMul(FINESINE((ang) >> ANGLETOFINESHIFT), interp.pitch) +
+						 FixedMul(FINECOSINE((camang) >> ANGLETOFINESHIFT), interp.sloperoll) +
+						 FixedMul(FINESINE((camang) >> ANGLETOFINESHIFT), interp.slopepitch);
 
-			// flip -> rotate, not rotate -> flip
-			flip = 0;
+			rollangle = thing->rollangle;
+		}
+
+		if ((rollangle) || (pitchnroll) || (thing->player && thing->player->sliproll))
+		{
+			rollsum = pitchnroll;
+
+			if (thing->player)
+			{
+				sliptiderollangle =
+					cv_sliptideroll.value ? thing->player->sliproll * (thing->player->sliptidemem) : 0;
+				rollsum += thing->rollangle +
+						   FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), sliptiderollangle);
+			}
+			else
+				rollsum += thing->rollangle;
+
+			rollangle = R_GetRollAngle(rollsum);
+			rotsprite = Patch_GetRotatedSprite(
+				sprframe, (thing->frame & FF_FRAMEMASK), rot, flip, false, sprinfo, rollangle);
+
+			if (rotsprite != NULL)
+			{
+				spr_width = rotsprite->width << FRACBITS;
+				spr_height = rotsprite->height << FRACBITS;
+				spr_offset = rotsprite->leftoffset << FRACBITS;
+				spr_topoffset = rotsprite->topoffset << FRACBITS;
+				spr_topoffset += FEETADJUST;
+
+				// flip -> rotate, not rotate -> flip
+				flip = 0;
+			}
 		}
 	}
 #endif
@@ -1536,6 +1579,8 @@ static void R_ProjectSprite(mobj_t *thing)
 		spr_offset += interp.spritexoffset * flipoffset;
 		spr_topoffset += interp.spriteyoffset * flipoffset;
 	}
+	
+	flip = !flip != !hflip;
 
 	if (flip)
 		offset = spr_offset - spr_width;
@@ -1760,7 +1805,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	//Fab: lumppat is the lump number of the patch to use, this is different
 	//     than lumpid for sprites-in-pwad : the graphics are patched
 #ifdef ROTSPRITE
-	if (rotsprite != NULL)
+	if ((rotsprite != NULL) && (cv_spriteroll.value))
 		vis->patch = rotsprite;
 	else
 #endif
@@ -2627,7 +2672,7 @@ static boolean R_CheckSpriteVisible(vissprite_t *spr, INT32 x1, INT32 x2)
 
 // R_ClipVisSprite
 // Clips vissprites without drawing, so that portals can work. -Red
-void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2)
+static void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2)
 {
 	drawseg_t *ds;
 	INT32		x;
@@ -2992,6 +3037,7 @@ UINT8 skinstatscount[9][9] = {
 UINT8 skinsorted[MAXSKINS];
 skin_t localskins[MAXSKINS];
 skin_t allskins[MAXSKINS*2];
+
 // FIXTHIS: don't work because it must be inistilised before the config load
 //#define SKINVALUES
 #ifdef SKINVALUES
@@ -3084,6 +3130,7 @@ void R_InitSkins(void)
 
 	skin->spritedef.numframes = sprites[SPR_PLAY].numframes;
 	skin->spritedef.spriteframes = sprites[SPR_PLAY].spriteframes;
+	skin->sprinfo = spriteinfo[SPR_PLAY];
 	ST_LoadFaceGraphics(skin->facerank, skin->facewant, skin->facemmap, 0);
 
 	// Set values for Sonic skin
@@ -3608,6 +3655,7 @@ next_token:
 		free(buf2);
 
 		lump++; // if no sprite defined use spirte just after this one
+		INT32 sprnum;
 		if (skin->sprite[0] == '\0')
 		{
 			const char *csprname = W_CheckNameForNumPwad(wadnum, lump);
@@ -3618,6 +3666,9 @@ next_token:
 				lastlump++;
 			// allocate (or replace) sprite frames, and set spritedef
 			R_AddSingleSpriteDef(csprname, &skin->spritedef, wadnum, lump, lastlump);
+
+			// i feel like generally most skin authors just use PLAY here, so just assume PLAY
+			sprnum = SPR_PLAY;
 		}
 		else
 		{
@@ -3664,6 +3715,8 @@ next_token:
 
 				R_AddSingleSpriteDef(sprname, &skin->spritedef, wadnum, lstart, lend);
 			}
+
+			sprnum = numspritelumps - 1;
 
 			// I don't particularly care about skipping to the end of the used frames.
 			// We could be using frames from ANYWHERE in the current WAD file, including

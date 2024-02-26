@@ -79,6 +79,7 @@ typedef struct
 {
 	char name[SKINNAMESIZE+1]; // INT16 descriptive name of the skin
 	spritedef_t spritedef;
+	spriteinfo_t sprinfo;
 	UINT16 wadnum;
 	char sprite[4]; // Sprite name, if seperated from S_SKIN.
 	skinflags_t flags;
@@ -181,7 +182,6 @@ typedef struct vissprite_s
 extern UINT32 visspritecount, numvisiblesprites;
 
 void R_ClipSprites(void);
-void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2);
 
 UINT8 *R_GetSpriteTranslation(vissprite_t *vis);
 
