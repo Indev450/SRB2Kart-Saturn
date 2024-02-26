@@ -183,12 +183,6 @@ boolean P_SetPlayerMobjState(mobj_t *mobj, statenum_t state)
 		player->panim = PA_WALK;
 	else if (state >= S_KART_RUN1 && state <= S_KART_DRIFT2_R)
 		player->panim = PA_RUN;
-	//else if (state >= S_PLAY_ATK1 && state <= S_PLAY_ATK4)
-	//	player->panim = PA_ROLL;
-	//else if (state >= S_PLAY_FALL1 && state <= S_PLAY_FALL2)
-	//	player->panim = PA_FALL;
-	//else if (state >= S_PLAY_ABL1 && state <= S_PLAY_ABL2)
-	//	player->panim = PA_ABILITY;
 	else
 		player->panim = PA_ETC;
 
@@ -262,6 +256,9 @@ boolean P_SetMobjState(mobj_t *mobj, statenum_t state)
 	if (mobj->player != NULL)
 		I_Error("P_SetMobjState used for player mobj. Use P_SetPlayerMobjState instead!\n(State called: %d)", state);
 #endif
+
+	if (mobj->player != NULL)
+		return P_SetPlayerMobjState(mobj, state);
 
 	if (recursion++) // if recursion detected,
 		memset(seenstate = tempstate, 0, sizeof tempstate); // clear state table
@@ -393,182 +390,6 @@ boolean P_WeaponOrPanel(mobjtype_t type)
 
 	return false;
 }
-
-//
-// P_EmeraldManager
-//
-// Power Stone emerald management
-//
-/*void P_EmeraldManager(void)
-{
-	thinker_t *think;
-	mobj_t *mo;
-	INT32 i,j;
-	INT32 numtospawn;
-	INT32 emeraldsspawned = 0;
-
-	boolean hasemerald[MAXHUNTEMERALDS];
-	INT32 numwithemerald = 0;
-
-	// record empty spawn points
-	mobj_t *spawnpoints[MAXHUNTEMERALDS];
-	INT32 numspawnpoints = 0;
-
-	for (i = 0; i < MAXHUNTEMERALDS; i++)
-	{
-		hasemerald[i] = false;
-		spawnpoints[i] = NULL;
-	}
-
-	for (think = thinkercap.next; think != &thinkercap; think = think->next)
-	{
-		if (think->function.acp1 != (actionf_p1)P_MobjThinker)
-			continue; // not a mobj thinker
-
-		mo = (mobj_t *)think;
-
-		if (mo->type == MT_EMERALDSPAWN)
-		{
-			if (mo->threshold || mo->target) // Either has the emerald spawned or is spawning
-			{
-				numwithemerald++;
-				emeraldsspawned |= mobjinfo[mo->reactiontime].speed;
-			}
-			else if (numspawnpoints < MAXHUNTEMERALDS)
-				spawnpoints[numspawnpoints++] = mo; // empty spawn points
-		}
-		else if (mo->type == MT_FLINGEMERALD)
-		{
-			numwithemerald++;
-			emeraldsspawned |= mo->threshold;
-		}
-	}
-
-	if (numspawnpoints == 0)
-		return;
-
-	// But wait! We need to check all the players too, to see if anyone has some of the emeralds.
-	for (i = 0; i < MAXPLAYERS; i++)
-	{
-		if (!playeringame[i] || players[i].spectator)
-			continue;
-
-		if (!players[i].mo)
-			continue;
-
-		if (players[i].powers[pw_emeralds] & EMERALD1)
-		{
-			numwithemerald++;
-			emeraldsspawned |= EMERALD1;
-		}
-		if (players[i].powers[pw_emeralds] & EMERALD2)
-		{
-			numwithemerald++;
-			emeraldsspawned |= EMERALD2;
-		}
-		if (players[i].powers[pw_emeralds] & EMERALD3)
-		{
-			numwithemerald++;
-			emeraldsspawned |= EMERALD3;
-		}
-		if (players[i].powers[pw_emeralds] & EMERALD4)
-		{
-			numwithemerald++;
-			emeraldsspawned |= EMERALD4;
-		}
-		if (players[i].powers[pw_emeralds] & EMERALD5)
-		{
-			numwithemerald++;
-			emeraldsspawned |= EMERALD5;
-		}
-		if (players[i].powers[pw_emeralds] & EMERALD6)
-		{
-			numwithemerald++;
-			emeraldsspawned |= EMERALD6;
-		}
-		if (players[i].powers[pw_emeralds] & EMERALD7)
-		{
-			numwithemerald++;
-			emeraldsspawned |= EMERALD7;
-		}
-	}
-
-	// All emeralds spawned, no worries
-	if (numwithemerald >= 7)
-		return;
-
-	// Set up spawning for the emeralds
-	numtospawn = 7 - numwithemerald;
-
-#ifdef PARANOIA
-	if (numtospawn <= 0) // ???
-		I_Error("P_EmeraldManager: numtospawn is %d!\n", numtospawn);
-#endif
-
-	for (i = 0, j = 0; i < numtospawn; i++)
-	{
-		INT32 tries = 0;
-		while (true)
-		{
-			tries++;
-
-			if (tries > 50)
-				break;
-
-			j = P_RandomKey(numspawnpoints);
-
-			if (hasemerald[j])
-				continue;
-
-			hasemerald[j] = true;
-
-			if (!(emeraldsspawned & EMERALD1))
-			{
-				spawnpoints[j]->reactiontime = MT_EMERALD1;
-				emeraldsspawned |= EMERALD1;
-			}
-			else if (!(emeraldsspawned & EMERALD2))
-			{
-				spawnpoints[j]->reactiontime = MT_EMERALD2;
-				emeraldsspawned |= EMERALD2;
-			}
-			else if (!(emeraldsspawned & EMERALD3))
-			{
-				spawnpoints[j]->reactiontime = MT_EMERALD3;
-				emeraldsspawned |= EMERALD3;
-			}
-			else if (!(emeraldsspawned & EMERALD4))
-			{
-				spawnpoints[j]->reactiontime = MT_EMERALD4;
-				emeraldsspawned |= EMERALD4;
-			}
-			else if (!(emeraldsspawned & EMERALD5))
-			{
-				spawnpoints[j]->reactiontime = MT_EMERALD5;
-				emeraldsspawned |= EMERALD5;
-			}
-			else if (!(emeraldsspawned & EMERALD6))
-			{
-				spawnpoints[j]->reactiontime = MT_EMERALD6;
-				emeraldsspawned |= EMERALD6;
-			}
-			else if (!(emeraldsspawned & EMERALD7))
-			{
-				spawnpoints[j]->reactiontime = MT_EMERALD7;
-				emeraldsspawned |= EMERALD7;
-			}
-			else
-				break;
-
-			if (leveltime < TICRATE) // Start of map
-				spawnpoints[j]->threshold = 60*TICRATE + P_RandomByte() * (TICRATE/5);
-			else
-				spawnpoints[j]->threshold = P_RandomByte() * (TICRATE/5);
-
-			break;
-		}
-	}
-}*/
 
 //
 // P_ExplodeMissile
@@ -3588,6 +3409,9 @@ static void P_PlayerMobjThinker(mobj_t *mobj)
 
 	P_ButteredSlope(mobj);
 
+	if (P_MobjWasRemoved(mobj))
+		return;
+
 	// momentum movement
 	mobj->eflags &= ~MFE_JUSTSTEPPEDDOWN;
 
@@ -5850,124 +5674,6 @@ static void P_NightsItemChase(mobj_t *thing)
 	P_Attract(thing, thing->tracer, true);
 }
 
-/*static boolean P_ShieldLook(mobj_t *thing, shieldtype_t shield)
-{
-	if (!thing->target || thing->target->health <= 0 || !thing->target->player
-		|| (thing->target->player->powers[pw_shield] & SH_NOSTACK) == SH_NONE || thing->target->player->powers[pw_super]
-		|| thing->target->player->powers[pw_invulnerability] > 1)
-	{
-		P_RemoveMobj(thing);
-		return false;
-	}
-
-	// TODO: Make an MT_SHIELDORB which changes color/states to always match the appropriate shield,
-	// instead of having completely seperate mobjtypes.
-	if (shield != SH_FORCE)
-	{ // Regular shields check for themselves only
-		if ((shieldtype_t)(thing->target->player->powers[pw_shield] & SH_NOSTACK) != shield)
-		{
-			P_RemoveMobj(thing);
-			return false;
-		}
-	}
-	else if (!(thing->target->player->powers[pw_shield] & SH_FORCE))
-	{ // Force shields check for any force shield
-		P_RemoveMobj(thing);
-		return false;
-	}
-
-	if (shield == SH_FORCE && thing->movecount != (thing->target->player->powers[pw_shield] & 0xFF))
-	{
-		thing->movecount = (thing->target->player->powers[pw_shield] & 0xFF);
-		if (thing->movecount < 1)
-		{
-			if (thing->info->painstate)
-				P_SetMobjState(thing,thing->info->painstate);
-			else
-				thing->flags2 |= MF2_SHADOW;
-		}
-		else
-		{
-			if (thing->info->painstate)
-				P_SetMobjState(thing,thing->info->spawnstate);
-			else
-				thing->flags2 &= ~MF2_SHADOW;
-		}
-	}
-
-	thing->flags |= MF_NOCLIPHEIGHT;
-	thing->eflags = (thing->eflags & ~MFE_VERTICALFLIP)|(thing->target->eflags & MFE_VERTICALFLIP);
-
-	P_SetScale(thing, thing->target->scale);
-	P_UnsetThingPosition(thing);
-	thing->x = thing->target->x;
-	thing->y = thing->target->y;
-	if (thing->eflags & MFE_VERTICALFLIP)
-		thing->z = thing->target->z + thing->target->height - thing->height + FixedDiv(P_GetPlayerHeight(thing->target->player) - thing->target->height, 3*FRACUNIT) - FixedMul(2*FRACUNIT, thing->target->scale);
-	else
-		thing->z = thing->target->z - FixedDiv(P_GetPlayerHeight(thing->target->player) - thing->target->height, 3*FRACUNIT) + FixedMul(2*FRACUNIT, thing->target->scale);
-	P_SetThingPosition(thing);
-	P_CheckPosition(thing, thing->x, thing->y);
-
-	if (P_MobjWasRemoved(thing))
-		return false;
-
-//	if (thing->z < thing->floorz)
-//		thing->z = thing->floorz;
-
-	return true;
-}
-
-mobj_t *shields[MAXPLAYERS*2];
-INT32 numshields = 0;
-
-void P_RunShields(void)
-{
-	INT32 i;
-
-	// run shields
-	for (i = 0; i < numshields; i++)
-	{
-		P_ShieldLook(shields[i], shields[i]->info->speed);
-		P_SetTarget(&shields[i], NULL);
-	}
-	numshields = 0;
-}
-
-static boolean P_AddShield(mobj_t *thing)
-{
-	shieldtype_t shield = thing->info->speed;
-
-	if (!thing->target || thing->target->health <= 0 || !thing->target->player
-		|| (thing->target->player->powers[pw_shield] & SH_NOSTACK) == SH_NONE || thing->target->player->powers[pw_super]
-		|| thing->target->player->powers[pw_invulnerability] > 1)
-	{
-		P_RemoveMobj(thing);
-		return false;
-	}
-
-	if (shield != SH_FORCE)
-	{ // Regular shields check for themselves only
-		if ((shieldtype_t)(thing->target->player->powers[pw_shield] & SH_NOSTACK) != shield)
-		{
-			P_RemoveMobj(thing);
-			return false;
-		}
-	}
-	else if (!(thing->target->player->powers[pw_shield] & SH_FORCE))
-	{ // Force shields check for any force shield
-		P_RemoveMobj(thing);
-		return false;
-	}
-
-	// Queue has been hit... why?!?
-	if (numshields >= MAXPLAYERS*2)
-		return P_ShieldLook(thing, thing->info->speed);
-
-	P_SetTarget(&shields[numshields++], thing);
-	return true;
-}*/
-
 void P_RunOverlays(void)
 {
 	// run overlays
@@ -6496,15 +6202,6 @@ void P_MobjThinker(mobj_t *mobj)
 				}
 				P_AddShadow(mobj);
 				break;
-			/*case MT_BLACKORB:
-			case MT_WHITEORB:
-			case MT_GREENORB:
-			case MT_YELLOWORB:
-			case MT_BLUEORB:
-			case MT_PITYORB:
-				if (!P_AddShield(mobj))
-					return;
-				break;*/
 			//{ SRB2kart mobs
 			case MT_ORBINAUT_SHIELD: // Kart orbit/trail items
 			case MT_JAWZ_SHIELD:
@@ -7473,11 +7170,6 @@ void P_MobjThinker(mobj_t *mobj)
 			{
 				if (mobj->lastlook > mobj->movecount)
 					mobj->lastlook--;
-/*
-				if (mobj->threshold > mobj->movefactor)
-					mobj->threshold -= FRACUNIT;
-				else if (mobj->threshold < mobj->movefactor)
-					mobj->threshold += FRACUNIT;*/
 			}
 			break;
 		case MT_EGGCAPSULE:
@@ -9628,6 +9320,9 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 	const mobjinfo_t *info = &mobjinfo[type];
 	state_t *st;
 	mobj_t *mobj = Z_Calloc(sizeof (*mobj), PU_LEVEL, NULL);
+	
+	if (type == MT_NULL)
+		return NULL;
 
 	// this is officially a mobj, declared as soon as possible.
 	mobj->thinker.function.acp1 = (actionf_p1)P_MobjThinker;
@@ -10894,6 +10589,7 @@ void P_SpawnPlayer(INT32 playernum)
 	}
 
 	mobj = P_SpawnMobj(0, 0, 0, MT_PLAYER);
+	I_Assert(mobj != NULL);
 	(mobj->player = p)->mo = mobj;
 
 	mobj->angle = 0;
@@ -12309,285 +12005,6 @@ void P_SpawnHoopsAndRings(mapthing_t *mthing)
 		return;
 	}
 	else return; // srb2kart - no rings or ring-like objects in R1
-	/*
-	// Wing logo item.
-	else if (mthing->type == mobjinfo[MT_NIGHTSWING].doomednum)
-	{
-		z =
-			sec->f_slope ? P_GetZAt(sec->f_slope, x, y) :
-			sec->floorheight;
-		if (mthing->options >> ZSHIFT)
-			z += ((mthing->options >> ZSHIFT) << FRACBITS);
-
-		mthing->z = (INT16)(z>>FRACBITS);
-
-		mobj = P_SpawnMobj(x, y, z, MT_NIGHTSWING);
-		mobj->spawnpoint = mthing;
-
-		if (G_IsSpecialStage(gamemap) && useNightsSS)
-			P_SetMobjState(mobj, mobj->info->meleestate);
-		else if (maptol & TOL_XMAS)
-			P_SetMobjState(mobj, mobj->info->seestate);
-
-		mobj->angle = FixedAngle(mthing->angle*FRACUNIT);
-		mobj->flags2 |= MF2_AMBUSH;
-		mthing->mobj = mobj;
-	}
-	// All manners of rings and coins
-	else if (mthing->type == mobjinfo[MT_RING].doomednum || mthing->type == mobjinfo[MT_COIN].doomednum ||
-	         mthing->type == mobjinfo[MT_REDTEAMRING].doomednum || mthing->type == mobjinfo[MT_BLUETEAMRING].doomednum)
-	{
-		mobjtype_t ringthing = MT_RING;
-
-		// No rings in Ultimate!
-		if (ultimatemode && !(G_IsSpecialStage(gamemap) || maptol & TOL_NIGHTS))
-			return;
-
-		// Which ringthing to use
-		switch (mthing->type)
-		{
-			case 1800:
-				ringthing = MT_COIN;
-				break;
-			case 308: // No team rings in non-CTF
-				ringthing = (gametype == GT_CTF) ? MT_REDTEAMRING : MT_RING;
-				break;
-			case 309: // No team rings in non-CTF
-				ringthing = (gametype == GT_CTF) ? MT_BLUETEAMRING : MT_RING;
-				break;
-			default:
-				// Spawn rings as blue spheres in special stages, ala S3+K.
-				if (G_IsSpecialStage(gamemap) && useNightsSS)
-					ringthing = MT_BLUEBALL;
-				break;
-		}
-
-		// Set proper height
-		if (mthing->options & MTF_OBJECTFLIP)
-		{
-			z = (
-			sec->c_slope ? P_GetZAt(sec->c_slope, x, y) :
-			sec->ceilingheight) - mobjinfo[ringthing].height;
-			if (mthing->options >> ZSHIFT)
-				z -= ((mthing->options >> ZSHIFT) << FRACBITS);
-		}
-		else
-		{
-			z =
-			sec->f_slope ? P_GetZAt(sec->f_slope, x, y) :
-			sec->floorheight;
-			if (mthing->options >> ZSHIFT)
-				z += ((mthing->options >> ZSHIFT) << FRACBITS);
-		}
-
-		if (mthing->options & MTF_AMBUSH) // Special flag for rings
-		{
-			if (mthing->options & MTF_OBJECTFLIP)
-				z -= 24*FRACUNIT;
-			else
-				z += 24*FRACUNIT;
-		}
-
-		mthing->z = (INT16)(z>>FRACBITS);
-
-		mobj = P_SpawnMobj(x, y, z, ringthing);
-		mobj->spawnpoint = mthing;
-
-		if (mthing->options & MTF_OBJECTFLIP)
-		{
-			mobj->eflags |= MFE_VERTICALFLIP;
-			mobj->flags2 |= MF2_OBJECTFLIP;
-		}
-
-		mobj->angle = FixedAngle(mthing->angle*FRACUNIT);
-		mobj->flags2 |= MF2_AMBUSH;
-		mthing->mobj = mobj;
-	}
-	// ***
-	// Special placement patterns
-	// ***
-
-	// Vertical Rings - Stack of 5 (handles both red and yellow)
-	else if (mthing->type == 600 || mthing->type == 601)
-	{
-		INT32 dist = 64*FRACUNIT;
-		mobjtype_t ringthing = MT_RING;
-		if (mthing->type == 601)
-			dist = 128*FRACUNIT;
-
-		// No rings in Ultimate!
-		if (ultimatemode && !(G_IsSpecialStage(gamemap) || maptol & TOL_NIGHTS))
-			return;
-
-		// Spawn rings as blue spheres in special stages, ala S3+K.
-		if (G_IsSpecialStage(gamemap) && useNightsSS)
-			ringthing = MT_BLUEBALL;
-
-		for (r = 1; r <= 5; r++)
-		{
-			if (mthing->options & MTF_OBJECTFLIP)
-			{
-				z = (
-					sec->c_slope ? P_GetZAt(sec->c_slope, x, y) :
-					sec->ceilingheight) - mobjinfo[ringthing].height - dist*r;
-				if (mthing->options >> ZSHIFT)
-					z -= ((mthing->options >> ZSHIFT) << FRACBITS);
-			}
-			else
-			{
-				z = (
-					sec->f_slope ? P_GetZAt(sec->f_slope, x, y) :
-					sec->floorheight) + dist*r;
-				if (mthing->options >> ZSHIFT)
-					z += ((mthing->options >> ZSHIFT) << FRACBITS);
-			}
-
-			mobj = P_SpawnMobj(x, y, z, ringthing);
-
-			if (mthing->options & MTF_OBJECTFLIP)
-			{
-				mobj->eflags |= MFE_VERTICALFLIP;
-				mobj->flags2 |= MF2_OBJECTFLIP;
-			}
-
-			mobj->angle = FixedAngle(mthing->angle*FRACUNIT);
-			if (mthing->options & MTF_AMBUSH)
-				mobj->flags2 |= MF2_AMBUSH;
-		}
-	}
-	// Diagonal rings (handles both types)
-	else if (mthing->type == 602 || mthing->type == 603) // Diagonal rings (5)
-	{
-		angle_t angle = FixedAngle(mthing->angle*FRACUNIT);
-		mobjtype_t ringthing = MT_RING;
-		INT32 iterations = 5;
-		if (mthing->type == 603)
-			iterations = 10;
-
-		// No rings in Ultimate!
-		if (ultimatemode && !(G_IsSpecialStage(gamemap) || maptol & TOL_NIGHTS))
-			return;
-
-		// Spawn rings as blue spheres in special stages, ala S3+K.
-		if (G_IsSpecialStage(gamemap) && useNightsSS)
-			ringthing = MT_BLUEBALL;
-
-		angle >>= ANGLETOFINESHIFT;
-
-		for (r = 1; r <= iterations; r++)
-		{
-			x += FixedMul(64*FRACUNIT, FINECOSINE(angle));
-			y += FixedMul(64*FRACUNIT, FINESINE(angle));
-
-			if (mthing->options & MTF_OBJECTFLIP)
-			{
-				z = (
-					sec->c_slope ? P_GetZAt(sec->c_slope, x, y) :
-					sec->ceilingheight) - mobjinfo[ringthing].height - 64*FRACUNIT*r;
-				if (mthing->options >> ZSHIFT)
-					z -= ((mthing->options >> ZSHIFT) << FRACBITS);
-			}
-			else
-			{
-				z = (
-					sec->f_slope ? P_GetZAt(sec->f_slope, x, y) :
-					sec->floorheight) + 64*FRACUNIT*r;
-				if (mthing->options >> ZSHIFT)
-					z += ((mthing->options >> ZSHIFT) << FRACBITS);
-			}
-
-			mobj = P_SpawnMobj(x, y, z, ringthing);
-
-			if (mthing->options & MTF_OBJECTFLIP)
-			{
-				mobj->eflags |= MFE_VERTICALFLIP;
-				mobj->flags2 |= MF2_OBJECTFLIP;
-			}
-
-			mobj->angle = FixedAngle(mthing->angle*FRACUNIT);
-			if (mthing->options & MTF_AMBUSH)
-				mobj->flags2 |= MF2_AMBUSH;
-		}
-	}
-	// Rings of items (all six of them)
-	else if (mthing->type >= 604 && mthing->type <= 609)
-	{
-		INT32 numitems = 8;
-		INT32 size = 96*FRACUNIT;
-		mobjtype_t itemToSpawn = MT_NIGHTSWING;
-
-		if (mthing->type & 1)
-		{
-			numitems = 16;
-			size = 192*FRACUNIT;
-		}
-
-		z =
-			sec->f_slope ? P_GetZAt(sec->f_slope, x, y) :
-			sec->floorheight;
-		if (mthing->options >> ZSHIFT)
-			z += ((mthing->options >> ZSHIFT) << FRACBITS);
-
-		closestangle = FixedAngle(mthing->angle*FRACUNIT);
-
-		// Create the hoop!
-		for (i = 0; i < numitems; i++)
-		{
-			switch (mthing->type)
-			{
-				case 604:
-				case 605:
-					itemToSpawn = MT_RING;
-					break;
-				case 608:
-				case 609:
-					itemToSpawn = (i & 1) ? MT_NIGHTSWING : MT_RING;
-					break;
-				case 606:
-				case 607:
-					itemToSpawn = MT_NIGHTSWING;
-					break;
-				default:
-					break;
-			}
-
-			// No rings in Ultimate!
-			if (itemToSpawn == MT_RING)
-			{
-				if (ultimatemode && !(G_IsSpecialStage(gamemap) || (maptol & TOL_NIGHTS)))
-					continue;
-
-				// Spawn rings as blue spheres in special stages, ala S3+K.
-				if (G_IsSpecialStage(gamemap) && useNightsSS)
-					itemToSpawn = MT_BLUEBALL;
-			}
-
-			fa = i*FINEANGLES/numitems;
-			v[0] = FixedMul(FINECOSINE(fa),size);
-			v[1] = 0;
-			v[2] = FixedMul(FINESINE(fa),size);
-			v[3] = FRACUNIT;
-
-			res = VectorMatrixMultiply(v, *RotateZMatrix(closestangle));
-			M_Memcpy(&v, res, sizeof (v));
-
-			finalx = x + v[0];
-			finaly = y + v[1];
-			finalz = z + v[2];
-
-			mobj = P_SpawnMobj(finalx, finaly, finalz, itemToSpawn);
-			mobj->z -= mobj->height/2;
-
-			if (itemToSpawn == MT_NIGHTSWING)
-			{
-				if (G_IsSpecialStage(gamemap) && useNightsSS)
-					P_SetMobjState(mobj, mobj->info->meleestate);
-				else if ((maptol & TOL_XMAS))
-					P_SetMobjState(mobj, mobj->info->seestate);
-			}
-		}
-		return;
-	}*/
 }
 
 //
