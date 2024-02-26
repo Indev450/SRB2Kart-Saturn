@@ -189,6 +189,7 @@ extern consvar_t cv_nametagrestat;
 extern consvar_t cv_nametaghop;
 extern consvar_t cv_nametagscore;
 extern consvar_t cv_shownametagfinish;
+extern consvar_t cv_shownametagspectator;
 
 extern consvar_t cv_driftgauge;
 extern consvar_t cv_driftgaugeofs;

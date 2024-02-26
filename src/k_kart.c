@@ -9096,7 +9096,7 @@ static void K_drawNameTags(void)
 	patch_t *icon;
 	INT32 hudtransflag = V_LocalTransFlag();
 
-	if (!stplyr->mo || stplyr->spectator || splitscreen || (stplyr->exiting && !cv_shownametagfinish.value))
+	if (!stplyr->mo || (stplyr->spectator && !cv_shownametagspectator.value) || splitscreen || (stplyr->exiting && !cv_shownametagfinish.value))
 		return;
 
 	for (i = 0; i < MAXPLAYERS; i++)

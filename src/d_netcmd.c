@@ -540,6 +540,7 @@ consvar_t cv_smallnametags = {"kartnametagsmall", "Off", CV_SAVE, nametagsize_co
 consvar_t cv_nametaghop = {"kartnametaghop", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_nametagscore = {"kartnametagscore", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_shownametagfinish = {"kartshownametagfinished", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_shownametagspectator = {"kartshownametagspectator", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static CV_PossibleValue_t driftgaugeoffset_cons_t[] = {
 	{-FRACUNIT*128, "MIN"}, {FRACUNIT*128, "MAX"}, {0, NULL}};
@@ -1156,6 +1157,7 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_nametaghop);
 	CV_RegisterVar(&cv_nametagscore);
 	CV_RegisterVar(&cv_shownametagfinish);
+	CV_RegisterVar(&cv_shownametagspectator);
 
 	CV_RegisterVar(&cv_driftgauge);
 	CV_RegisterVar(&cv_driftgaugeofs);
