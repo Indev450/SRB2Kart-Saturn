@@ -4113,8 +4113,10 @@ static void HWR_RotateSpritePolyToAim(gr_vissprite_t *spr, FOutVector *wallVerts
 		interpmobjstate_t interp = {0};
 		float basey, lowy;
 
+		INT32 dist = R_QuickCamDist(spr->mobj->x, spr->mobj->y);
+
 		// do interpolation
-		if (R_UsingFrameInterpolation() && !paused)
+		if (R_UsingFrameInterpolation() && !paused && (!cv_grmaxinterpdist.value || dist < cv_grmaxinterpdist.value))
 		{
 			if (precip)
 			{
@@ -5330,7 +5332,9 @@ void HWR_ProjectSprite(mobj_t *thing)
 	if (!thing)
 		return;
 
-	if (R_UsingFrameInterpolation() && !paused)
+	INT32 dist = R_QuickCamDist(thing->x, thing->y);
+
+	if (R_UsingFrameInterpolation() && !paused && (!cv_grmaxinterpdist.value || dist < cv_grmaxinterpdist.value))
 	{
 		R_InterpolateMobjState(thing, rendertimefrac, &interp);
 	}
@@ -5670,12 +5674,14 @@ void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 
 	if (!thing)
 		return;
-	
+
+	INT32 dist = R_QuickCamDist(thing->x, thing->y);
+
 	// uncapped/interpolation
 	interpmobjstate_t interp = {0};
 
 	// do interpolation
-	if (R_UsingFrameInterpolation() && !paused)
+	if (R_UsingFrameInterpolation() && !paused && (!cv_grmaxinterpdist.value || dist < cv_grmaxinterpdist.value))
 	{
 		R_InterpolatePrecipMobjState(thing, rendertimefrac, &interp);
 	}

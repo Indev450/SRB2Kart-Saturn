@@ -32,6 +32,12 @@
 
 #define FEETADJUST (4<<FRACBITS) // R_AddSingleSpriteDef
 
+// Takes 2 fixed-point coordinates, returns "distance" between them and camera,
+// as an non-fixed-point integer.
+// It is very rough, tho it is used only for optimizing out unnecessary
+// interpolation, so it is kinda ok on big distances.
+#define R_QuickCamDist(x, y) max(abs(((x)>>FRACBITS) - (viewx>>FRACBITS)), abs(((y)>>FRACBITS) - (viewy>>FRACBITS)))
+
 // Constant arrays used for psprite clipping
 //  and initializing clipping.
 extern INT16 negonearray[MAXVIDWIDTH];
