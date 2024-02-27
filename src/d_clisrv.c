@@ -3959,6 +3959,8 @@ consvar_t cv_netticbuffer = {"netticbuffer", "1", CV_SAVE, netticbuffer_cons_t, 
 
 static void Joinable_OnChange(void);
 
+consvar_t cv_joinrefusemessage = {"joinrefusemessage", "The server is not accepting\njoins for the moment.", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 consvar_t cv_allownewplayer = {"allowjoin", "On", CV_SAVE|CV_CALL, CV_OnOff, Joinable_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 #ifdef VANILLAJOINNEXTROUND
@@ -4586,7 +4588,7 @@ static void HandleConnect(SINT8 node)
 	}
 	else if (!cv_allownewplayer.value && node)
 	{
-		SV_SendRefuse(node, M_GetText("The server is not accepting\njoins for the moment."));
+		SV_SendRefuse(node, M_GetText(cv_joinrefusemessage.string));
 	}
 	else if (connectedplayers >= maxplayers)
 	{
