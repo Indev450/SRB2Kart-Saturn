@@ -1164,9 +1164,9 @@ static int libd_getDrawInfo(lua_State *L)
 	drawinfo_t info;
 
 	switch(option) {
-		case huddrawinfo_item:          info = K_getItemBoxDrawinfo();  break;
-		case huddrawinfo_gametypeinfo:  info = K_getLapsDrawinfo();     break;
-		case huddrawinfo_minimap:       info = K_getMinimapDrawinfo();  break;
+		case huddrawinfo_item:          K_getItemBoxDrawinfo(&info);  break;
+		case huddrawinfo_gametypeinfo:  K_getLapsDrawinfo(&info);     break;
+		case huddrawinfo_minimap:       K_getMinimapDrawinfo(&info);  break;
 		default:
 			return 0; // unreachable
 	}
