@@ -7628,10 +7628,9 @@ INT32 K_calcSplitFlags(INT32 snapflags)
 	return (splitflags|snapflags);
 }
 
-drawinfo_t K_getItemBoxDrawinfo(void)
+void K_getItemBoxDrawinfo(drawinfo_t *out)
 {
 	INT32 fx, fy, fflags;
-	drawinfo_t info;
 
 	// pain and suffering defined below
 	if (splitscreen < 2) // don't change shit for THIS splitscreen.
@@ -7656,16 +7655,14 @@ drawinfo_t K_getItemBoxDrawinfo(void)
 		}
 	}
 
-	info.x = fx;
-	info.y = fy;
-	info.flags = fflags;
-	return info;
+	out->x = fx;
+	out->y = fy;
+	out->flags = fflags;
 }
 
-drawinfo_t K_getLapsDrawinfo(void)
+void K_getLapsDrawinfo(drawinfo_t *out)
 {
 	INT32 fx, fy, fflags;
-	drawinfo_t info;
 
 	// pain and suffering defined below
 	if (splitscreen < 2)	// don't change shit for THIS splitscreen.
@@ -7690,21 +7687,18 @@ drawinfo_t K_getLapsDrawinfo(void)
 		}
 	}
 
-	info.x = fx;
-	info.y = fy;
-	info.flags = fflags;
-	return info;
+	out->x = fx;
+	out->y = fy;
+	out->flags = fflags;
 }
 
-drawinfo_t K_getMinimapDrawinfo(void)
+void K_getMinimapDrawinfo(drawinfo_t *out)
 {
 	INT32 fx = MINI_X, fy = MINI_Y, fflags = (splitscreen == 3 ? 0 : V_SNAPTORIGHT);	// flags should only be 0 when it's centered (4p split)
-	drawinfo_t info;
 
-	info.x = fx;
-	info.y = fy;
-	info.flags = fflags;
-	return info;
+	out->x = fx;
+	out->y = fy;
+	out->flags = fflags;
 }
 
 patch_t *K_getItemBoxPatch(boolean small, boolean dark)
@@ -8079,7 +8073,8 @@ static void K_drawKartItem(void)
 	}
 
 	localbg = K_getItemBoxPatch((boolean)offset, dark);
-	drawinfo_t info = K_getItemBoxDrawinfo();
+	drawinfo_t info;
+	K_getItemBoxDrawinfo(&info);
 	fx = info.x;
 	fy = info.y;
 	fflags = info.flags;
@@ -8703,7 +8698,8 @@ static void K_drawKartLaps(void)
 	boolean flipstring = splitscreen > 1 && stplyrnum & 1;  // used for 3p or 4p
 	INT32 stringw = 0;	// used with the above
 
-	drawinfo_t info = K_getLapsDrawinfo();
+	drawinfo_t info;
+	K_getLapsDrawinfo(&info);
 	fx = info.x;
 	fy = info.y;
 	fflags = info.flags;
@@ -8881,7 +8877,8 @@ static void K_drawKartBumpersOrKarma(void)
 	boolean flipstring = splitscreen > 1 && stplyrnum & 1;  // same as laps, used for splitscreen
 	INT32 stringw = 0;	// used with the above
 
-	drawinfo_t info = K_getLapsDrawinfo();
+	drawinfo_t info;
+	K_getLapsDrawinfo(&info);
 	fx = info.x;
 	fy = info.y;
 	fflags = info.flags;
@@ -9718,7 +9715,8 @@ static void K_drawKartMinimap(void)
 	else
 		return; // no pic, just get outta here
 
-	drawinfo_t info = K_getMinimapDrawinfo();
+	drawinfo_t info;
+	K_getMinimapDrawinfo(&info);
 	x = info.x - (AutomapPic->width/2);
 	y = info.y - (AutomapPic->height/2);
 	splitflags = info.flags;

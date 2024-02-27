@@ -107,9 +107,9 @@ typedef struct
 
 patch_t *K_getItemBoxPatch(boolean small, boolean dark);
 patch_t *K_getItemMulPatch(boolean small);
-drawinfo_t K_getItemBoxDrawinfo(void);
-drawinfo_t K_getLapsDrawinfo(void);
-drawinfo_t K_getMinimapDrawinfo(void);
+void K_getItemBoxDrawinfo(drawinfo_t *out);
+void K_getLapsDrawinfo(drawinfo_t *out);
+void K_getMinimapDrawinfo(drawinfo_t *out);
 
 // =========================================================================
 #endif  // __K_KART__
