@@ -1648,6 +1648,7 @@ static void R_RenderSegLoop (void)
 		{
 			if (curline->polyseg && (ffloor[i].polyobj != curline->polyseg))
 				continue;
+
 			ffloor[i].f_frac += ffloor[i].f_step;
 		}
 
