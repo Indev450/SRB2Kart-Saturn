@@ -3959,7 +3959,7 @@ consvar_t cv_netticbuffer = {"netticbuffer", "1", CV_SAVE, netticbuffer_cons_t, 
 
 static void Joinable_OnChange(void);
 
-consvar_t cv_joinrefusemessage = {"joinrefusemessage", "The server is not accepting\njoins for the moment.", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_joinrefusemessage = {"joinrefusemessage", "The server is not accepting joins for the moment.", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_allownewplayer = {"allowjoin", "On", CV_SAVE|CV_CALL, CV_OnOff, Joinable_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
