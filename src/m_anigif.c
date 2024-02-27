@@ -18,8 +18,8 @@
 #include "z_zone.h"
 #include "v_video.h"
 #include "i_video.h"
-
-#include "i_system.h" // I_GetTimeMicros
+#include "i_system.h" // I_GetPreciseTime
+#include "doomstat.h" // singletics
 
 #ifdef HWRENDER
 #include "hardware/hw_main.h"
