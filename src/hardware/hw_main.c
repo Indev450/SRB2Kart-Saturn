@@ -5529,7 +5529,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 #endif
 
 	ang = R_PointToAngle(interp.x, interp.y) - interp.angle;
-	camang = R_PointToAngle64(interp.x, interp.y);
+	camang = R_PointToAngle(interp.x, interp.y);
 
 	if (mirrored)
 		ang = InvAngle(ang);
