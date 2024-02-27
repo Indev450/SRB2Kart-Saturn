@@ -115,7 +115,7 @@ void HWR_DrawIntermissionBG(void);
 void HWR_DoWipe(UINT8 wipenum, UINT8 scrnnum);
 void HWR_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8 downdistort, UINT8 barsize);
 void HWR_MakeScreenFinalTexture(void);
-void HWR_DrawScreenFinalTexture(int width, int height);
+void HWR_DrawScreenFinalTexture(INT32 width, INT32 height);
 
 // hw_main.c: Planes
 void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, boolean isceiling, fixed_t fixedheight, FBITFIELD PolyFlags, INT32 lightlevel, lumpnum_t lumpnum, sector_t *FOFsector, UINT8 alpha, extracolormap_t *planecolormap);
