@@ -566,7 +566,7 @@ void HWR_LoadTextures(size_t pnumtextures)
 GLMapTexture_t *HWR_GetTexture(INT32 tex, boolean noencore)
 {
 	GLMapTexture_t *grtex;
-	
+
 	if (tex < 0 || tex >= (signed)gr_numtextures)
 	{
 #ifdef PARANOIA
@@ -575,7 +575,7 @@ GLMapTexture_t *HWR_GetTexture(INT32 tex, boolean noencore)
 		tex = 0;
 #endif
 	}
-
+	
 	grtex = &gr_textures[tex*2 + (encoremap && !noencore ? 0 : 1)];
 
 	if (!grtex->mipmap.data && !grtex->mipmap.downloaded)
@@ -584,6 +584,7 @@ GLMapTexture_t *HWR_GetTexture(INT32 tex, boolean noencore)
 	// If hardware does not have the texture, then call pfnSetTexture to upload it
 	if (!grtex->mipmap.downloaded)
 		HWD.pfnSetTexture(&grtex->mipmap);
+
 	HWR_SetCurrentTexture(&grtex->mipmap);
 
 	// The system-memory data can be purged now.
@@ -592,7 +593,6 @@ GLMapTexture_t *HWR_GetTexture(INT32 tex, boolean noencore)
 	return grtex;
 }
 
-
 static void HWR_CacheFlat(GLMipmap_t *grMipmap, lumpnum_t flatlumpnum)
 {
 #ifdef GLENCORE
@@ -600,7 +600,6 @@ static void HWR_CacheFlat(GLMipmap_t *grMipmap, lumpnum_t flatlumpnum)
 	size_t steppy;
 #endif
 	size_t size, pflatsize;
-
 
 	// setup the texture info
 	grMipmap->format = GL_TEXFMT_P_8;
@@ -646,7 +645,6 @@ static void HWR_CacheFlat(GLMipmap_t *grMipmap, lumpnum_t flatlumpnum)
 			flat[steppy] = grMipmap->colormap[flat[steppy]];
 #endif
 }
-
 
 // Download a Doom 'flat' to the hardware cache and make it ready for use
 void HWR_GetFlat(lumpnum_t flatlumpnum, boolean noencoremap)
