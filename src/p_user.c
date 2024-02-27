@@ -2260,9 +2260,7 @@ static void P_CheckInvincibilityTimer(player_t *player)
 	if (!player->powers[pw_invulnerability] && !player->kartstuff[k_invincibilitytimer])
 		return;
 
-	{
-		player->mo->color = (UINT8)(1 + (leveltime % (MAXSKINCOLORS-1)));
-	}
+	player->mo->color = (UINT8)(1 + (leveltime % (MAXSKINCOLORS-1)));
 
 	// Resume normal music stuff.
 	if (player->powers[pw_invulnerability] == 1 || player->kartstuff[k_invincibilitytimer] == 1)
@@ -2278,10 +2276,10 @@ static void P_CheckInvincibilityTimer(player_t *player)
 			P_SpawnShieldOrb(player);
 		}
 
-		if (!player->powers[pw_super] || (mapheaderinfo[gamemap-1]->levelflags & LF_NOSSMUSIC))*/
-			P_RestoreMusic(player);
+		P_RestoreMusic(player);
 	}
 }
+
 
 //
 // P_DoBubbleBreath
@@ -5397,7 +5395,7 @@ void P_PlayerThink(player_t *player)
 #ifdef HAVE_BLUA
 	LUAh_PlayerThink(player);
 #endif
-
+}
 
 //
 // P_PlayerAfterThink
