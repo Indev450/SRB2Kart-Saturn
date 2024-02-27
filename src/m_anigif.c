@@ -19,6 +19,8 @@
 #include "v_video.h"
 #include "i_video.h"
 
+#include "i_system.h" // I_GetTimeMicros
+
 #ifdef HWRENDER
 #include "hardware/hw_main.h"
 #endif
@@ -26,15 +28,25 @@
 // GIFs are always little-endian
 #include "byteptr.h"
 
+CV_PossibleValue_t gif_dynamicdelay_cons_t[] = {
+	{0, "Off"},
+	{1, "On"},
+	{2, "Accurate, experimental"},
+{0, NULL}};
+
 consvar_t cv_gif_optimize = {"gif_optimize", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_gif_downscale =  {"gif_downscale", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_gif_dynamicdelay = {"gif_dynamicdelay", "On", CV_SAVE, gif_dynamicdelay_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 #ifdef HAVE_ANIGIF
 static boolean gif_optimize = false; // So nobody can do something dumb
 static boolean gif_downscale = false; // like changing cvars mid output
+static UINT8 gif_dynamicdelay = (UINT8)0; // and messing something up
 
 static FILE *gif_out = NULL;
 static INT32 gif_frames = 0;
+static precise_t gif_prevframetime = 0;
+static UINT32 gif_delayus = 0; // "us" is microseconds
 static UINT8 gif_writeover = 0;
 
 
@@ -548,10 +560,38 @@ static void GIF_framewrite(void)
 
 	// screen regions are handled in GIF_lzw
 	{
-		int d1 = (int)((100.0f/NEWTICRATE)*(gif_frames+1));
-		int d2 = (int)((100.0f/NEWTICRATE)*(gif_frames));
-		UINT16 delay = d1-d2;
+		UINT16 delay = 0;
 		INT32 startline;
+
+		if (gif_dynamicdelay ==(UINT8) 2 && !singletics)
+		{
+			// golden's attempt at creating a "dynamic delay"
+			UINT16 mingifdelay = 10; // minimum gif delay in milliseconds (keep at 10 because gifs can't get more precise).
+			gif_delayus += (I_GetPreciseTime() - gif_prevframetime) / (I_GetPrecisePrecision() / 1000000); // increase delay by how much time was spent between last measurement
+
+			if (gif_delayus/1000 >= mingifdelay) // delay is big enough to be able to effect gif frame delay?
+			{
+				int frames = (gif_delayus/1000) / mingifdelay; // get amount of frames to delay.
+				delay = frames; // set the delay to delay that amount of frames.
+				gif_delayus -= frames*(mingifdelay*1000); // remove frames by the amount of milliseconds they take. don't reset to 0, the microseconds help consistency.
+			}
+		}
+		else if (gif_dynamicdelay ==(UINT8) 1 && !singletics)
+		{
+			float delayf = ceil(100.0f/NEWTICRATE);
+
+			delay = (UINT16)((I_GetPreciseTime() - gif_prevframetime)) / (I_GetPrecisePrecision() / 1000000) /10/1000;
+
+			if (delay < (UINT16)(delayf))
+				delay = (UINT16)(delayf);
+		}
+		else
+		{
+			// the original code
+			int d1 = (int)((100.0f/NEWTICRATE)*(gif_frames+1));
+			int d2 = (int)((100.0f/NEWTICRATE)*(gif_frames));
+			delay = d1-d2;
+		}
 
 		WRITEMEM(p, gifframe_gchead, 4);
 
@@ -617,6 +657,7 @@ static void GIF_framewrite(void)
 	}
 	fwrite(gifframe_data, 1, (p - gifframe_data), gif_out);
 	++gif_frames;
+	gif_prevframetime = I_GetPreciseTime();
 }
 
 
@@ -637,8 +678,11 @@ INT32 GIF_open(const char *filename)
 
 	gif_optimize = (!!cv_gif_optimize.value);
 	gif_downscale = (!!cv_gif_downscale.value);
+	gif_dynamicdelay = (UINT8)cv_gif_dynamicdelay.value;
 	GIF_headwrite();
 	gif_frames = 0;
+	gif_prevframetime = I_GetPreciseTime();
+	gif_delayus = 0;
 	return 1;
 }
 
