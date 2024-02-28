@@ -10,8 +10,6 @@
 /// \file  lua_script.h
 /// \brief Lua scripting basics
 
-#ifdef HAVE_BLUA
-
 #include "m_fixed.h"
 #include "doomtype.h"
 #include "d_player.h"
@@ -95,5 +93,3 @@ void COM_Lua_f(void);
 		CONS_Alert(CONS_WARNING,"%s\n", warningmsg);\
 	}\
 }
-
-#endif

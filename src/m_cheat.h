@@ -67,7 +67,7 @@ void Command_Weather_f(void);
 #ifdef _DEBUG
 void Command_CauseCfail_f(void);
 #endif
-#if defined(HAVE_BLUA) && defined(LUA_ALLOW_BYTECODE)
+#if defined(LUA_ALLOW_BYTECODE)
 void Command_Dumplua_f(void);
 #endif
 

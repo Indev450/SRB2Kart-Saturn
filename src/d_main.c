@@ -70,6 +70,8 @@
 #include "d_protocol.h"
 #include "m_perfstats.h"
 
+#include "lua_script.h"
+
 #ifdef CMAKECONFIG
 #include "config.h"
 #else
@@ -82,10 +84,6 @@
 
 #ifdef HW3SOUND
 #include "hardware/hw3sound.h"
-#endif
-
-#ifdef HAVE_BLUA
-#include "lua_script.h"
 #endif
 
 #ifdef HAVE_DISCORDRPC
@@ -771,9 +769,7 @@ void D_SRB2Loop(void)
 		HW3S_EndFrameUpdate();
 #endif
 
-#ifdef HAVE_BLUA
 		LUA_Step();
-#endif
 
 #ifdef HAVE_DISCORDRPC
 		if (! dedicated)

@@ -2889,9 +2889,7 @@ boolean P_SetupLevel(boolean skipprecip)
 		I_UpdateNoVsync();
 	}*/
 
-#ifdef HAVE_BLUA
 	LUA_InvalidateLevel();
-#endif
 
 	for (ss = sectors; sectors+numsectors != ss; ss++)
 	{
@@ -3306,9 +3304,7 @@ boolean P_SetupLevel(boolean skipprecip)
 				G_CopyTiccmd(&players[i].cmd, &netcmds[buf][i], 1);
 		}
 		P_PreTicker(2);
-#ifdef HAVE_BLUA
 		LUAh_MapLoad();
-#endif
 	}
 
 	G_AddMapToBuffer(gamemap-1);

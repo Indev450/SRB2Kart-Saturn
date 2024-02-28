@@ -11,7 +11,6 @@
 /// \brief player object library for Lua scripting
 
 #include "doomdef.h"
-#ifdef HAVE_BLUA
 #include "fastcmp.h"
 #include "r_main.h"
 #include "r_things.h"
@@ -821,5 +820,3 @@ int LUA_PlayerLib(lua_State *L)
 
 	return 0;
 }
-
-#endif
