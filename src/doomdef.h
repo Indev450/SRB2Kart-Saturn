@@ -561,9 +561,6 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 /// Undefine to use the new method of Gamma correction see colour cube in v_video.c
 #define BACKWARDSCOMPATCORRECTION
 
-/// Kalaron/Eternity Engine slope code (SRB2CB ported) 
-#define ESLOPE
-
 /// Backwards compatibility with SRB2CB's slope linedef types.
 ///	\note	A simple shim that prints a warning.
 #define ESLOPE_TYPESHIM
