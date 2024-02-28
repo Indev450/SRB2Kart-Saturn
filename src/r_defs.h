@@ -25,8 +25,6 @@
 
 #include "screen.h" // MAXVIDWIDTH, MAXVIDHEIGHT
 
-#define POLYOBJECTS
-
 // Silhouette, needed for clipping segs (mainly) and sprites representing things.
 #define SIL_NONE   0
 #define SIL_BOTTOM 1
