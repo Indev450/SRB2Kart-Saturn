@@ -163,9 +163,6 @@ extern boolean gr_maphasportals;
 void HWR_LoadTextures(size_t pnumtextures);
 RGBA_t *HWR_GetTexturePalette(void);
 
-// hw_trick.c
-void HWR_CorrectSWTricks(void);
-
 void HWR_SetShaderState(void);
 
 // Console variables
