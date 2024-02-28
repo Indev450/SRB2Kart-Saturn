@@ -60,11 +60,11 @@ void P_ScanThings(INT16 mapnum, INT16 wadnum, INT16 lumpnum);
 #endif
 void P_LoadThingsOnly(void);
 boolean P_SetupLevel(boolean skipprecip);
+#ifdef HWRENDER
+void HWR_LoadLevel(void);
+#endif
 boolean P_AddWadFile(const char *wadfilename, boolean local);
 boolean P_AddWadFileLocal(const char *wadfilename);
-#ifdef DELFILE
-boolean P_DelWadFile(void);
-#endif
 
 // WARNING: The following functions should be grouped as follows:
 // any amount of PartialAdds followed by MultiSetups until returned true,

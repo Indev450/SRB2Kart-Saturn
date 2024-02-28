@@ -125,11 +125,8 @@ static INT32 foundAnimVoteWideFrames = 0;
 
 intertype_t intertype = int_none;
 
-
-#ifdef HAVE_BLUA
 static huddrawlist_h luahuddrawlist_intermission = NULL;
 static huddrawlist_h luahuddrawlist_vote = NULL;
-#endif
 
 static void Y_FollowIntermission(void);
 static void Y_UnloadData(void);
@@ -675,14 +672,12 @@ dotimer:
 	if (cv_scrambleonchange.value && cv_teamscramble.value && (intertic/TICRATE % 2 == 0))
 		V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT/2, hilicol, M_GetText("Teams will be scrambled next round!"));
 
-#ifdef HAVE_BLUA
 	if (renderisnewtic)
 	{
 		LUA_HUD_ClearDrawList(luahuddrawlist_intermission);
 		LUAh_IntermissionHUD(luahuddrawlist_intermission);
 	}
 	LUA_HUD_DrawList(luahuddrawlist_intermission);
-#endif
 }
 
 //
@@ -710,21 +705,9 @@ void Y_Ticker(void)
 	if (paused || P_AutoPause())
 		return;
 
-#ifdef HAVE_BLUA
 	LUAh_IntermissionThinker();
-#endif
 
 	intertic++;
-
-	// Team scramble code for team match and CTF.
-	// Don't do this if we're going to automatically scramble teams next round.
-	/*if (G_GametypeHasTeams() && cv_teamscramble.value && !cv_scrambleonchange.value && server)
-	{
-		// If we run out of time in intermission, the beauty is that
-		// the P_Ticker() team scramble code will pick it up.
-		if ((intertic % (TICRATE/7)) == 0)
-			P_DoTeamscrambling();
-	}*/
 
 	// multiplayer uses timer (based on cv_inttime)
 	if (timer)
@@ -944,11 +927,6 @@ void Y_StartIntermission(void)
 				mapvisited[gamemap-1] |= MV_BEATEN;
 				if (ALL7EMERALDS(emeralds))
 					mapvisited[gamemap-1] |= MV_ALLEMERALDS;
-				/*if (ultimatemode)
-					mapvisited[gamemap-1] |= MV_ULTIMATE;
-				if (data.coop.gotperfbonus)
-					mapvisited[gamemap-1] |= MV_PERFECT;*/
-
 				if (modeattacking == ATTACKING_RECORD)
 					Y_UpdateRecordReplays();
 			}
@@ -970,10 +948,8 @@ void Y_StartIntermission(void)
 		usebuffer = true;
 	}
 
-#ifdef HAVE_BLUA
 	LUA_HUD_DestroyDrawList(luahuddrawlist_intermission);
 	luahuddrawlist_intermission = LUA_HUD_CreateDrawList();
-#endif
 }
 
 // ======
@@ -1366,14 +1342,12 @@ void Y_VoteDrawer(void)
 	
 	lastvotetic = votetic;
 
-#ifdef HAVE_BLUA
 	if (renderisnewtic)
 	{
 		LUA_HUD_ClearDrawList(luahuddrawlist_vote);
 		LUAh_VoteHUD(luahuddrawlist_vote);
 	}
 	LUA_HUD_DrawList(luahuddrawlist_vote);
-#endif
 }
 
 //
@@ -1418,9 +1392,7 @@ void Y_VoteTicker(void)
 	if (paused || P_AutoPause() || !voteclient.loaded)
 		return;
 
-#ifdef HAVE_BLUA
 	LUAh_VoteThinker();
-#endif
 
 	votetic++;
 
@@ -1706,10 +1678,8 @@ void Y_StartVote(void)
 
 	voteclient.loaded = true;
 
-#ifdef HAVE_BLUA
 	LUA_HUD_DestroyDrawList(luahuddrawlist_vote);
 	luahuddrawlist_vote = LUA_HUD_CreateDrawList();
-#endif
 }
 
 //

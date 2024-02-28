@@ -42,18 +42,16 @@
 #include "p_local.h" // camera[]
 #include "p_tick.h"
 
-#ifdef HWRENDER
-#include "hardware/hw_main.h"
-#endif
-
-#ifdef HAVE_BLUA
 #include "lua_hud.h"
 #include "lua_hudlib_drawlist.h"
 #include "lua_hook.h"
-#endif
 
 #include "s_sound.h" // song credits
 #include "k_kart.h"
+
+#ifdef HWRENDER
+#include "hardware/hw_main.h"
+#endif
 
 // coords are scaled
 #define HU_INPUTX 0
@@ -94,9 +92,7 @@ static boolean headsupactive = false;
 boolean hu_showscores; // draw rankings
 static char hu_tick;
 
-#ifdef HAVE_BLUA
 static huddrawlist_h luahuddrawlist_scores;
-#endif
 
 patch_t *rflagico;
 patch_t *bflagico;
@@ -349,9 +345,7 @@ void HU_Init(void)
 	// set shift translation table
 	shiftxform = english_shiftxform;
 
-#ifdef HAVE_BLUA
 	luahuddrawlist_scores = LUA_HUD_CreateDrawList();
-#endif
 
 	HU_LoadGraphics();
 }
@@ -887,10 +881,8 @@ static void Got_Saycmd(UINT8 **p, INT32 playernum)
 
 	// run the lua hook even if we were supposed to eat the msg, netgame consistency goes first.
 
-#ifdef HAVE_BLUA
 	if (LUAh_PlayerMsg(playernum, target, flags, msg, spam_eatmsg))
 		return;
-#endif
 
 	if (spam_eatmsg)
 		return; // don't proceed if we were supposed to eat the message.
@@ -2425,19 +2417,18 @@ void HU_Drawer(void)
 	{
 		if (netgame || multiplayer)
 		{
-#ifdef HAVE_BLUA
 			if (LUA_HudEnabled(hud_rankings))
-#endif
 				HU_DrawRankings();
-#ifdef HAVE_BLUA
-		if (renderisnewtic)
-		{
-			LUA_HUD_ClearDrawList(luahuddrawlist_scores);
-			LUAh_ScoresHUD(luahuddrawlist_scores);
+
+			if (renderisnewtic)
+			{
+				LUA_HUD_ClearDrawList(luahuddrawlist_scores);
+				LUAh_ScoresHUD(luahuddrawlist_scores);
+			}
+
+			LUA_HUD_DrawList(luahuddrawlist_scores);
 		}
-		LUA_HUD_DrawList(luahuddrawlist_scores);
-#endif
-		}
+
 		if (demo.playback)
 		{
 			HU_DrawDemoInfo();

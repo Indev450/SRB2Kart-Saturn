@@ -1621,10 +1621,8 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 			-Making some galaxy brain autopilot Lua if you're a masochist
 			-Making a Mario Kart 8 Deluxe tier baby mode that steers you away from walls and whatnot. You know what, do what you want!
 	*/
-#ifdef HAVE_BLUA
 	if (gamestate == GS_LEVEL)
 		LUAh_PlayerCmd(player, cmd);
-#endif
 
 	//Reset away view if a command is given.
 	if ((cmd->forwardmove || cmd->sidemove || cmd->buttons)
@@ -2954,9 +2952,7 @@ void G_SpawnPlayer(INT32 playernum, boolean starpost)
 	if (starpost) //Don't even bother with looking for a place to spawn.
 	{
 		P_MovePlayerToStarpost(playernum);
-#ifdef HAVE_BLUA
 		LUAh_PlayerSpawn(&players[playernum]); // Lua hook for player spawning :)
-#endif
 		return;
 	}
 
@@ -3012,10 +3008,7 @@ void G_SpawnPlayer(INT32 playernum, boolean starpost)
 	}
 	P_MovePlayerToSpawn(playernum, spawnpoint);
 
-#ifdef HAVE_BLUA
 	LUAh_PlayerSpawn(&players[playernum]); // Lua hook for player spawning :)
-#endif
-
 }
 
 mapthing_t *G_FindCTFStart(INT32 playernum)
@@ -3310,9 +3303,7 @@ void G_DoReborn(INT32 playernum)
 		}
 		else
 		{
-#ifdef HAVE_BLUA
 			LUAh_MapChange(gamemap);
-#endif
 			G_DoLoadLevel(true);
 		}
 	}*/
@@ -4784,9 +4775,7 @@ void G_InitNew(UINT8 pencoremode, const char *mapname, boolean resetplayer, bool
 		F_StartCustomCutscene(mapheaderinfo[gamemap-1]->precutscenenum-1, true, resetplayer);
 	else
 	{
-#ifdef HAVE_BLUA
 		LUAh_MapChange(gamemap);
-#endif
 		G_DoLoadLevel(resetplayer);
 	}
 
@@ -5109,9 +5098,7 @@ INT32 G_FindMapByNameOrCode(const char *mapname, char **realmapnamep)
 #define DF_NIGHTSATTACK 0x04 // This demo is from NiGHTS attack and contains its time left, score, and mares!
 #define DF_ATTACKMASK   0x06 // This demo is from ??? attack and contains ???
 
-#ifdef HAVE_BLUA
 #define DF_LUAVARS		0x20 // this demo contains extra lua vars; this is mostly used for backwards compability
-#endif
 
 #define DF_ATTACKSHIFT  1
 #define DF_ENCORE       0x40
@@ -6780,11 +6767,9 @@ void G_BeginRecording(void)
 	if (encoremode)
 		demoflags |= DF_ENCORE;
 
-#ifdef HAVE_BLUA
 	if (!modeattacking && gL)	// Ghosts don't read luavars, and you shouldn't ever need to save Lua in replays, you doof!
 						// SERIOUSLY THOUGH WHY WOULD YOU LOAD HOSTMOD AND RECORD A GHOST WITH IT !????
 		demoflags |= DF_LUAVARS;
-#endif
 
 	// Setup header.
 	M_Memcpy(demo_p, DEMOHEADER, 12); demo_p += 12;
@@ -6892,11 +6877,9 @@ void G_BeginRecording(void)
 
 	WRITEUINT8(demo_p, 0xFF); // Denote the end of the player listing
 
-#ifdef HAVE_BLUA
 	// player lua vars, always saved even if empty... Unless it's record attack.
 	if (demoflags & DF_LUAVARS)
 		LUA_ArchiveDemo();
-#endif
 
 	memset(&oldcmd,0,sizeof(oldcmd));
 	memset(&oldghost,0,sizeof(oldghost));
@@ -7882,9 +7865,8 @@ void G_DoPlayDemo(char *defdemoname)
 	// didn't start recording right away.
 	demo.deferstart = false;
 
-/*#ifdef HAVE_BLUA
-	LUAh_MapChange(gamemap);
-#endif*/
+	//LUAh_MapChange(gamemap);
+
 	displayplayers[0] = consoleplayer = 0;
 	memset(playeringame,0,sizeof(playeringame));
 
@@ -7971,7 +7953,6 @@ void G_DoPlayDemo(char *defdemoname)
 
 // end of player read (the 0xFF marker)
 // so this is where we are to read our lua variables (if possible!)
-#ifdef HAVE_BLUA
 	if (demoflags & DF_LUAVARS)	// again, used for compability, lua shit will be saved to replays regardless of if it's even been loaded
 	{
 		if (!gL)	// No Lua state! ...I guess we'll just start one...
@@ -7980,7 +7961,6 @@ void G_DoPlayDemo(char *defdemoname)
 		// No modeattacking check, DF_LUAVARS won't be present here.
 		LUA_UnArchiveDemo();
 	}
-#endif
 
 	splitscreen = 0;
 

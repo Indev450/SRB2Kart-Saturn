@@ -239,6 +239,7 @@ if(${SRB2_CONFIG_HAVE_BLUA})
 		lua_skinlib.c
 		lua_thinkerlib.c
 		lua_udatalib.c
+		lua_glib.c
 	)
 	set(SRB2_LUA_HEADERS
 		lua_hook.h
@@ -247,6 +248,7 @@ if(${SRB2_CONFIG_HAVE_BLUA})
 		lua_libs.h
 		lua_script.h
 		lua_udatalib.h
+		lua_glib.h
 	)
 
 	prepend_sources(SRB2_LUA_SOURCES)
@@ -464,7 +466,6 @@ if(${SRB2_CONFIG_HWRENDER})
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_md2load.c
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_md3load.c
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_model.c
-		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_trick.c
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/u_list.c
 	)
 

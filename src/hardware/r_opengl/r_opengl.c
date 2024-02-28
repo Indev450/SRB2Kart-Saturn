@@ -81,6 +81,9 @@ static  FBITFIELD   CurrentPolyFlags;
 static  FTextureInfo *gr_cachetail = NULL;
 static  FTextureInfo *gr_cachehead = NULL;
 
+static RGBA_t *textureBuffer = NULL;
+static size_t textureBufferSize = 0;
+
 // Linked list of all lighttables.
 static LTListItem *LightTablesTail = NULL;
 static LTListItem *LightTablesHead = NULL;
@@ -564,7 +567,6 @@ static PFNglStencilFuncSeparate pglStencilFuncSeparate;
 typedef void    (APIENTRY *PFNglStencilOpSeparate)          (GLenum, GLenum, GLenum, GLenum);
 static PFNglStencilOpSeparate pglStencilOpSeparate;
 
-#ifdef GL_SHADERS
 typedef GLuint 	(APIENTRY *PFNglCreateShader)		(GLenum);
 typedef void 	(APIENTRY *PFNglShaderSource)		(GLuint, GLsizei, const GLchar**, GLint*);
 typedef void 	(APIENTRY *PFNglCompileShader)		(GLuint);
@@ -695,7 +697,6 @@ static GLRGBAFloat shader_defaultcolor = {1.0f, 1.0f, 1.0f, 1.0f};
 		"gl_FragColor = texture2D(tex, gl_TexCoord[0].st) * poly_color;\n" \
 	"}\0"
 
-#endif	// GL_SHADERS
 
 void SetupGLFunc4(void)
 {
@@ -717,7 +718,6 @@ void SetupGLFunc4(void)
 	pglStencilFuncSeparate = GetGLFunc("glStencilFuncSeparate");
 	pglStencilOpSeparate = GetGLFunc("glStencilOpSeparate");
 
-#ifdef GL_SHADERS
 	pglCreateShader = GetGLFunc("glCreateShader");
 	pglShaderSource = GetGLFunc("glShaderSource");
 	pglCompileShader = GetGLFunc("glCompileShader");
@@ -739,7 +739,6 @@ void SetupGLFunc4(void)
 	pglUniform2fv = GetGLFunc("glUniform2fv");
 	pglUniform3fv = GetGLFunc("glUniform3fv");
 	pglGetUniformLocation = GetGLFunc("glGetUniformLocation");
-#endif
 
 #ifdef GL_VERSION_3_0
 	pglGenerateMipmap = GetGLFunc("glGenerateMipmap");
@@ -748,7 +747,6 @@ void SetupGLFunc4(void)
 
 EXPORT boolean HWRAPI(InitShaders) (void)
 {
-#ifdef GL_SHADERS
 	if (!pglUseProgram)
 		return false;
 	
@@ -762,14 +760,10 @@ EXPORT boolean HWRAPI(InitShaders) (void)
 	}
 
 	return true;
-#else
-	return false;
-#endif
 }
 
 EXPORT void HWRAPI(LoadShader) (int slot, char *code, hwdshaderstage_t stage)
 {
-#ifdef GL_SHADERS
 	gl_shader_t *shader;
 
 	if (slot < 0 || slot >= HWR_MAXSHADERS)
@@ -791,16 +785,10 @@ EXPORT void HWRAPI(LoadShader) (int slot, char *code, hwdshaderstage_t stage)
 		I_Error("LoadShader: invalid shader stage");
 
 #undef LOADSHADER
-#else
-	(void)slot;
-	(void)code;
-	(void)stage;
-#endif
 }
 
 EXPORT boolean HWRAPI(CompileShader) (int slot)
 {
-#ifdef GL_SHADERS
 	if (slot < 0 || slot >= HWR_MAXSHADERS)
 		I_Error("CompileShader: Invalid slot %d", slot);
 
@@ -813,10 +801,6 @@ EXPORT boolean HWRAPI(CompileShader) (int slot)
 		gl_shaders[slot].program = 0;
 		return false;
 	}
-#else
-	(void)slot;
-	return false;
-#endif
 }
 
 //
@@ -826,7 +810,6 @@ EXPORT boolean HWRAPI(CompileShader) (int slot)
 
 EXPORT void HWRAPI(SetShaderInfo) (hwdshaderinfo_t info, INT32 value)
 {
-#ifdef GL_SHADERS
 	switch (info)
 	{
 		case HWD_SHADERINFO_LEVELTIME:
@@ -835,15 +818,10 @@ EXPORT void HWRAPI(SetShaderInfo) (hwdshaderinfo_t info, INT32 value)
 		default:
 			break;
 	}
-#else
-	(void)info;
-	(void)value;
-#endif
 }
 
 EXPORT void HWRAPI(SetShader) (int slot)
 {
-#ifdef GL_SHADERS
 	if (gl_allowshaders)
 	{
 		gl_shader_t *next_shader = &gl_shaders[slot]; // the gl_shader_t we are going to switch to
@@ -864,22 +842,17 @@ EXPORT void HWRAPI(SetShader) (int slot)
 
 		return;
 	}
-#else
-	(void)slot;
-#endif
 	gl_shadersenabled = false;
 }
 
 EXPORT void HWRAPI(UnSetShader) (void)
 {
-#ifdef GL_SHADERS
 	gl_shaderstate.current = NULL;
 	gl_shaderstate.type = 0;
 	gl_shaderstate.program = 0;
 
 	if (pglUseProgram)
 		pglUseProgram(0);
-#endif
 
 	gl_shadersenabled = false;
 }
@@ -1013,6 +986,10 @@ void Flush(void)
 	gr_cachetail = gr_cachehead = NULL; //Hurdler: well, gr_cachehead is already NULL
 
 	tex_downloaded = 0;
+	
+	free(textureBuffer);
+	textureBuffer = NULL;
+	textureBufferSize = 0;
 }
 
 
@@ -1353,42 +1330,48 @@ EXPORT void HWRAPI(SetBlend) (FBITFIELD PolyFlags)
 	CurrentPolyFlags = PolyFlags;
 }
 
+static void AllocTextureBuffer(GLMipmap_t *pTexInfo)
+{
+	size_t size = pTexInfo->width * pTexInfo->height;
+	if (size > textureBufferSize)
+	{
+		textureBuffer = realloc(textureBuffer, size * sizeof(RGBA_t));
+		if (textureBuffer == NULL)
+			I_Error("AllocTextureBuffer: out of memory allocating %s bytes", sizeu1(size * sizeof(RGBA_t)));
+		textureBufferSize = size;
+	}
+}
 
 // -----------------+
-// UpdateTexture    : Updates the texture data.
+// UpdateTexture    : Updates texture data.
 // -----------------+
 EXPORT void HWRAPI(UpdateTexture) (FTextureInfo *pTexInfo)
 {
-	// Download a mipmap
-	boolean updatemipmap = true;
-	static RGBA_t   tex[2048*2048];
-	const GLvoid   *ptex = tex;
-	INT32             w, h;
-	GLuint texnum = 0;
+	// Upload a texture
+	GLuint num = pTexInfo->downloaded;
+	boolean update = true;
+
+	INT32 w = pTexInfo->width, h = pTexInfo->height;
+	INT32 i, j;
+
+	const GLubyte *pImgData = (const GLubyte *)pTexInfo->data;
+	const GLvoid *ptex = NULL;
+	RGBA_t *tex = NULL;
 	
-
-	if (!pTexInfo->downloaded)
+	// Generate a new texture name.
+	if (!num)
 	{
-		pglGenTextures(1, &texnum);
-		pTexInfo->downloaded = texnum;
-		updatemipmap = false;
+		pglGenTextures(1, &num);
+		pTexInfo->downloaded = num;
+		update = false;
 	}
-	else
-		texnum = pTexInfo->downloaded;
 
-	//GL_DBG_Printf ("DownloadMipmap %d %x\n",(INT32)texnum,pTexInfo->grInfo.data);
+	//GL_DBG_Printf("UpdateTexture %d %x\n", (INT32)num, pImgData);
 
-	w = pTexInfo->width;
-	h = pTexInfo->height;
-
-	if (w*h > 2048*2048 && pTexInfo->grInfo.format != GL_RGBA)
-		I_Error("Tried to convert too big texture: %dx%d", w, h);
-
-	if ((pTexInfo->grInfo.format == GR_TEXFMT_P_8) ||
-		(pTexInfo->grInfo.format == GR_TEXFMT_AP_88))
+	if ((pTexInfo->format == GL_TEXFMT_P_8) || (pTexInfo->format == GL_TEXFMT_AP_88))
 	{
-		const GLubyte *pImgData = (const GLubyte *)pTexInfo->grInfo.data;
-		INT32 i, j;
+		AllocTextureBuffer(pTexInfo);
+		ptex = tex = textureBuffer;
 
 		for (j = 0; j < h; j++)
 		{
@@ -1413,7 +1396,7 @@ EXPORT void HWRAPI(UpdateTexture) (FTextureInfo *pTexInfo)
 
 				pImgData++;
 
-				if (pTexInfo->grInfo.format == GR_TEXFMT_AP_88)
+				if (pTexInfo->format == GL_TEXFMT_AP_88)
 				{
 					if (!(pTexInfo->flags & TF_CHROMAKEYED))
 						tex[w*j+i].s.alpha = *pImgData;
@@ -1423,16 +1406,15 @@ EXPORT void HWRAPI(UpdateTexture) (FTextureInfo *pTexInfo)
 			}
 		}
 	}
-	else if (pTexInfo->grInfo.format == GR_RGBA)
+	else if (pTexInfo->format == GL_TEXFMT_RGBA)
 	{
-		// corona test : passed as ARGB 8888, which is not in glide formats
-		// Hurdler: not used for coronas anymore, just for dynamic lighting
-		ptex = pTexInfo->grInfo.data;
+		// Directly upload the texture data without any kind of conversion.
+		ptex = pImgData;
 	}
-	else if (pTexInfo->grInfo.format == GR_TEXFMT_ALPHA_INTENSITY_88)
+	else if (pTexInfo->format == GL_TEXFMT_ALPHA_INTENSITY_88)
 	{
-		const GLubyte *pImgData = (const GLubyte *)pTexInfo->grInfo.data;
-		INT32 i, j;
+		AllocTextureBuffer(pTexInfo);
+		ptex = tex = textureBuffer;
 
 		for (j = 0; j < h; j++)
 		{
@@ -1447,10 +1429,10 @@ EXPORT void HWRAPI(UpdateTexture) (FTextureInfo *pTexInfo)
 			}
 		}
 	}
-	else if (pTexInfo->grInfo.format == GR_TEXFMT_ALPHA_8) // Used for fade masks
+	else if (pTexInfo->format == GL_TEXFMT_ALPHA_8) // Used for fade masks
 	{
-		const GLubyte *pImgData = (const GLubyte *)pTexInfo->grInfo.data;
-		INT32 i, j;
+		AllocTextureBuffer(pTexInfo);
+		ptex = tex = textureBuffer;
 
 		for (j = 0; j < h; j++)
 		{
@@ -1465,12 +1447,10 @@ EXPORT void HWRAPI(UpdateTexture) (FTextureInfo *pTexInfo)
 		}
 	}
 	else
-		GL_MSG_Warning ("SetTexture(bad format) %ld\n", pTexInfo->grInfo.format);
+		GL_MSG_Warning("UpdateTexture: bad format %d\n", pTexInfo->format);
 
-
-	// the texture number was already generated by pglGenTextures
-	pglBindTexture(GL_TEXTURE_2D, texnum);
-	tex_downloaded = texnum;
+	pglBindTexture(GL_TEXTURE_2D, num);
+	tex_downloaded = num;
 
 	// disable texture filtering on any texture that has holes so there's no dumb borders or blending issues
 	if (pTexInfo->flags & TF_TRANSPARENT)
@@ -1484,7 +1464,7 @@ EXPORT void HWRAPI(UpdateTexture) (FTextureInfo *pTexInfo)
 		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter);
 	}
 
-	if (pTexInfo->grInfo.format == GR_TEXFMT_ALPHA_INTENSITY_88)
+	if (pTexInfo->format == GL_TEXFMT_ALPHA_INTENSITY_88)
 	{
 		//pglTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
 		if (MipMap)
@@ -1510,13 +1490,13 @@ EXPORT void HWRAPI(UpdateTexture) (FTextureInfo *pTexInfo)
 		}
 		else
 		{
-			if (updatemipmap)
+			if (update)
 				pglTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
 			else
 				pglTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
 		}
 	}
-	else if (pTexInfo->grInfo.format == GR_TEXFMT_ALPHA_8)
+	else if (pTexInfo->format == GL_TEXFMT_ALPHA_8)
 	{
 		//pglTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
 		if (MipMap)
@@ -1542,7 +1522,7 @@ EXPORT void HWRAPI(UpdateTexture) (FTextureInfo *pTexInfo)
 		}
 		else
 		{
-			if (updatemipmap)
+			if (update)
 				pglTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
 			else
 				pglTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
@@ -1573,7 +1553,7 @@ EXPORT void HWRAPI(UpdateTexture) (FTextureInfo *pTexInfo)
 		}
 		else
 		{
-			if (updatemipmap)
+			if (update)
 				pglTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
 			else
 				pglTexImage2D(GL_TEXTURE_2D, 0, textureformatGL, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
@@ -1629,7 +1609,6 @@ EXPORT void HWRAPI(SetTexture) (FTextureInfo *pTexInfo)
 
 static void Shader_SetUniforms(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRGBAFloat *tint, GLRGBAFloat *fade)
 {
-#ifdef GL_SHADERS
 	gl_shader_t *shader = gl_shaderstate.current;
 
 	if (gl_shadersenabled && (shader != NULL) && pglUseProgram)
@@ -1689,12 +1668,6 @@ static void Shader_SetUniforms(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRGBAF
 		#undef UNIFORM_3
 		#undef UNIFORM_4
 	}
-#else
-	(void)Surface;
-	(void)poly;
-	(void)tint;
-	(void)fade;
-#endif
 }
 
 static boolean Shader_CompileProgram(gl_shader_t *shader, GLint i)
@@ -2836,14 +2809,10 @@ EXPORT INT32  HWRAPI(GetTextureUsed) (void)
 		// I don't know which one the game actually _uses_ but this
 		// follows format2bpp in hw_cache.c
 		int bpp = 1;
-		int format = tmp->grInfo.format;
-		if (format == GR_RGBA)
+		int format = tmp->format;
+		if (format == GL_TEXFMT_RGBA)
 			bpp = 4;
-		else if (format == GR_TEXFMT_RGB_565
-			|| format == GR_TEXFMT_ARGB_1555
-			|| format == GR_TEXFMT_ARGB_4444
-			|| format == GR_TEXFMT_ALPHA_INTENSITY_88
-			|| format == GR_TEXFMT_AP_88)
+		else if (format == GL_TEXFMT_ALPHA_INTENSITY_88 || format == GL_TEXFMT_AP_88)
 			bpp = 2;
 
 		// Add it up!

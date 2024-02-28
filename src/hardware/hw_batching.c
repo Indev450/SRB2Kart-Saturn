@@ -15,54 +15,29 @@
 #include "hw_main.h"
 #include "../i_system.h"
 
-typedef struct
-{
-	FSurfaceInfo surf; // surf also has its own polyflags for some reason, but it seems unused
-	unsigned int vertsIndex; // location of verts in unsortedVertices
-	FUINT numVerts;
-	FBITFIELD polyFlags;
-	GLMipmap_t *texture;
-	int shader;
-	// this tells batching that the plane belongs to a horizon line and must be drawn in correct order with the skywalls
-	boolean horizonSpecial;
-} DrawCallInfo;
-
 // The texture for the next polygon given to HWR_ProcessPolygon.
 // Set with HWR_SetCurrentTexture.
 GLMipmap_t *current_texture = NULL;
 
 boolean currently_batching = false;
 
-// Dynamic arrays for:
-//   - unsorted draw calls
-//   - sorted order of draw calls
-//   - unsorted vertices
-//   - final (sorted) vertices
-//   - vertex indices for sorted vertices
+FOutVector* finalVertexArray = NULL;// contains subset of sorted vertices and texture coordinates to be sent to gpu
+UINT32* finalVertexIndexArray = NULL;// contains indexes for glDrawElements, taking into account fan->triangles conversion
+//     NOTE have this alloced as 3x finalVertexArray size
+int finalVertexArrayAllocSize = 65536;
+//GLubyte* colorArray = NULL;// contains color data to be sent to gpu, if needed
+//int colorArrayAllocSize = 65536;
+// not gonna use this for now, just sort by color and change state when it changes
+// later maybe when using vertex attributes if it's needed
 
-// contains the draw calls from DrawPolygon, waiting to be processed
-DrawCallInfo* drawCalls = NULL;
-int drawCallsSize = 0;
-int drawCallsCapacity = 65536;
+PolygonArrayEntry* polygonArray = NULL;// contains the polygon data from DrawPolygon, waiting to be processed
+int polygonArraySize = 0;
+UINT32* polygonIndexArray = NULL;// contains sorting pointers for polygonArray
+int polygonArrayAllocSize = 65536;
 
-// contains sorted order (array indices) for drawCalls
-// (therefore size and capacity shared with it)
-UINT32* drawCallOrder = NULL;
-
-// contains unsorted vertices and texture coordinates from DrawPolygon
-FOutVector* unsortedVertices = NULL;
-int unsortedVerticesSize = 0;
-int unsortedVerticesCapacity = 65536;
-
-// contains subset of sorted vertices and texture coordinates to be sent to gpu
-FOutVector* finalVertices = NULL;
-int finalVerticesSize = 0;
-int finalVerticesCapacity = 65536;
-
-// contains vertex indices into finalVertices for glDrawElements,
-// taking into account fan->triangles conversion
-UINT32* finalIndices = NULL; // this is alloced with 3x finalVertices size
-int finalIndicesSize = 0;
+FOutVector* unsortedVertexArray = NULL;// contains unsorted vertices and texture coordinates from DrawPolygon
+int unsortedVertexArraySize = 0;
+int unsortedVertexArrayAllocSize = 65536;
 
 // Enables batching mode. HWR_ProcessPolygon will collect polygons instead of passing them directly to the rendering backend.
 // Call HWR_RenderBatches to render all the collected geometry.
@@ -72,13 +47,13 @@ void HWR_StartBatching(void)
         I_Error("Repeat call to HWR_StartBatching without HWR_RenderBatches");
 
     // init arrays if that has not been done yet
-	if (!finalVertices)
+	if (!finalVertexArray)
 	{
-		finalVertices = malloc(finalVerticesCapacity * sizeof(FOutVector));
-		finalIndices = malloc(finalVerticesCapacity * 3 * sizeof(UINT32));
-		drawCalls = malloc(drawCallsCapacity * sizeof(DrawCallInfo));
-		drawCallOrder = malloc(drawCallsCapacity * sizeof(UINT32));
-		unsortedVertices = malloc(unsortedVerticesCapacity * sizeof(FOutVector));
+		finalVertexArray = malloc(finalVertexArrayAllocSize * sizeof(FOutVector));
+		finalVertexIndexArray = malloc(finalVertexArrayAllocSize * 3 * sizeof(UINT32));
+		polygonArray = malloc(polygonArrayAllocSize * sizeof(PolygonArrayEntry));
+		polygonIndexArray = malloc(polygonArrayAllocSize * sizeof(UINT32));
+		unsortedVertexArray = malloc(unsortedVertexArrayAllocSize * sizeof(FOutVector));
 	}
 
     currently_batching = true;
@@ -89,55 +64,14 @@ void HWR_StartBatching(void)
 // Doing this was easier than getting a texture pointer to HWR_ProcessPolygon.
 void HWR_SetCurrentTexture(GLMipmap_t *texture)
 {
-   if (currently_batching)
-		current_texture = texture;
-	else
-		HWD.pfnSetTexture(texture);
-}
-
-static void HWR_CollectDrawCallInfo(FSurfaceInfo *pSurf, FUINT iNumPts, FBITFIELD PolyFlags, int shader_target, boolean horizonSpecial)
-{
-	// make sure dynamic array has capacity
-	if (drawCallsSize == drawCallsCapacity)
-	{
-		DrawCallInfo* new_array;
-		// ran out of space, make new array double the size
-		drawCallsCapacity *= 2;
-		new_array = malloc(drawCallsCapacity * sizeof(DrawCallInfo));
-		memcpy(new_array, drawCalls, drawCallsSize * sizeof(DrawCallInfo));
-		free(drawCalls);
-		drawCalls = new_array;
-		// also need to redo the index array, dont need to copy it though
-		free(drawCallOrder);
-		drawCallOrder = malloc(drawCallsCapacity * sizeof(UINT32));
-	}
-	// add entry to array
-	drawCalls[drawCallsSize].surf = *pSurf;
-	drawCalls[drawCallsSize].vertsIndex = unsortedVerticesSize;
-	drawCalls[drawCallsSize].numVerts = iNumPts;
-	drawCalls[drawCallsSize].polyFlags = PolyFlags;
-	drawCalls[drawCallsSize].texture = current_texture;
-	drawCalls[drawCallsSize].shader = (shader_target != -1) ? HWR_GetShaderFromTarget(shader_target) : shader_target;
-	drawCalls[drawCallsSize].horizonSpecial = horizonSpecial;
-	drawCallsSize++;
-}
-
-static void HWR_CollectDrawCallVertices(FOutVector *pOutVerts, FUINT iNumPts)
-{
-	// make sure dynamic array has capacity
-	while (unsortedVerticesSize + (int)iNumPts > unsortedVerticesCapacity)
-	{
-		FOutVector* new_array;
-		// need more space for vertices in unsortedVertices
-		unsortedVerticesCapacity *= 2;
-		new_array = malloc(unsortedVerticesCapacity * sizeof(FOutVector));
-		memcpy(new_array, unsortedVertices, unsortedVerticesSize * sizeof(FOutVector));
-		free(unsortedVertices);
-		unsortedVertices = new_array;
-	}
-	// add vertices to array
-	memcpy(&unsortedVertices[unsortedVerticesSize], pOutVerts, iNumPts * sizeof(FOutVector));
-	unsortedVerticesSize += iNumPts;
+    if (currently_batching)
+    {
+        current_texture = texture;
+    }
+    else
+    {
+        HWD.pfnSetTexture(texture);
+    }
 }
 
 // If batching is enabled, this function collects the polygon data and the chosen texture
@@ -145,16 +79,48 @@ static void HWR_CollectDrawCallVertices(FOutVector *pOutVerts, FUINT iNumPts)
 // render the polygon immediately.
 void HWR_ProcessPolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags, int shader_target, boolean horizonSpecial)
 {
-	if (currently_batching)
+    if (currently_batching)
 	{
 		if (!pSurf)
+			I_Error("Got a null FSurfaceInfo in batching");// nulls should not come in the stuff that batching currently applies to
+		if (polygonArraySize == polygonArrayAllocSize)
 		{
-			// handling null FSurfaceInfo is not implemented
-			I_Error("Got a null FSurfaceInfo in batching");
+			PolygonArrayEntry* new_array;
+			// ran out of space, make new array double the size
+			polygonArrayAllocSize *= 2;
+			new_array = malloc(polygonArrayAllocSize * sizeof(PolygonArrayEntry));
+			memcpy(new_array, polygonArray, polygonArraySize * sizeof(PolygonArrayEntry));
+			free(polygonArray);
+			polygonArray = new_array;
+			// also need to redo the index array, dont need to copy it though
+			free(polygonIndexArray);
+			polygonIndexArray = malloc(polygonArrayAllocSize * sizeof(UINT32));
 		}
 
-		HWR_CollectDrawCallInfo(pSurf, iNumPts, PolyFlags, shader_target, horizonSpecial);
-		HWR_CollectDrawCallVertices(pOutVerts, iNumPts);
+		while (unsortedVertexArraySize + (int)iNumPts > unsortedVertexArrayAllocSize)
+		{
+			FOutVector* new_array;
+			// need more space for vertices in unsortedVertexArray
+			unsortedVertexArrayAllocSize *= 2;
+			new_array = malloc(unsortedVertexArrayAllocSize * sizeof(FOutVector));
+			memcpy(new_array, unsortedVertexArray, unsortedVertexArraySize * sizeof(FOutVector));
+			free(unsortedVertexArray);
+			unsortedVertexArray = new_array;
+		}
+
+		// add the polygon data to the arrays
+
+		polygonArray[polygonArraySize].surf = *pSurf;
+		polygonArray[polygonArraySize].vertsIndex = unsortedVertexArraySize;
+		polygonArray[polygonArraySize].numVerts = iNumPts;
+		polygonArray[polygonArraySize].polyFlags = PolyFlags;
+		polygonArray[polygonArraySize].texture = current_texture;
+		polygonArray[polygonArraySize].shader = (shader_target != -1) ? HWR_GetShaderFromTarget(shader_target) : shader_target;
+		polygonArray[polygonArraySize].horizonSpecial = horizonSpecial;
+		polygonArraySize++;
+
+		memcpy(&unsortedVertexArray[unsortedVertexArraySize], pOutVerts, iNumPts * sizeof(FOutVector));
+		unsortedVertexArraySize += iNumPts;
 	}
 	else
 	{
@@ -163,12 +129,12 @@ void HWR_ProcessPolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPt
 	}
 }
 
-static int compareDrawCalls(const void *p1, const void *p2)
+static int comparePolygons(const void *p1, const void *p2)
 {
-	UINT32 index1 = *(const UINT32*)p1;
-	UINT32 index2 = *(const UINT32*)p2;
-	DrawCallInfo* poly1 = &drawCalls[index1];
-	DrawCallInfo* poly2 = &drawCalls[index2];
+	unsigned int index1 = *(const unsigned int*)p1;
+	unsigned int index2 = *(const unsigned int*)p2;
+	PolygonArrayEntry* poly1 = &polygonArray[index1];
+	PolygonArrayEntry* poly2 = &polygonArray[index2];
 	int diff;
 	INT64 diff64;
 	UINT32 downloaded1 = 0;
@@ -213,12 +179,12 @@ static int compareDrawCalls(const void *p1, const void *p2)
 	return diff;
 }
 
-static int compareDrawCallsNoShaders(const void *p1, const void *p2)
+static int comparePolygonsNoShaders(const void *p1, const void *p2)
 {
-	UINT32 index1 = *(const UINT32*)p1;
-	UINT32 index2 = *(const UINT32*)p2;
-	DrawCallInfo* poly1 = &drawCalls[index1];
-	DrawCallInfo* poly2 = &drawCalls[index2];
+	unsigned int index1 = *(const unsigned int*)p1;
+	unsigned int index2 = *(const unsigned int*)p2;
+	PolygonArrayEntry* poly1 = &polygonArray[index1];
+	PolygonArrayEntry* poly2 = &polygonArray[index2];
 	int diff;
 	INT64 diff64;
 
@@ -249,155 +215,60 @@ static int compareDrawCallsNoShaders(const void *p1, const void *p2)
 	return 0;
 }
 
-static void HWR_CollectVerticesIntoBatch(DrawCallInfo *drawCall)
-{
-	int firstVIndex;
-	int lastVIndex;
-	int numVerts = drawCall->numVerts;
-	// before writing, check if there is enough room
-	// using 'while' instead of 'if' here makes sure that there will *always* be enough room.
-	// probably never will this loop run more than once though
-	while (finalVerticesSize + numVerts > finalVerticesCapacity)
-	{
-		FOutVector* new_array;
-		UINT32* new_index_array;
-		finalVerticesCapacity *= 2;
-		new_array = malloc(finalVerticesCapacity * sizeof(FOutVector));
-		memcpy(new_array, finalVertices, finalVerticesSize * sizeof(FOutVector));
-		free(finalVertices);
-		finalVertices = new_array;
-		// also increase size of index array, 3x of vertex array since
-		// going from fans to triangles increases vertex count to 3x
-		new_index_array = malloc(finalVerticesCapacity * 3 * sizeof(UINT32));
-		memcpy(new_index_array, finalIndices, finalIndicesSize * sizeof(UINT32));
-		free(finalIndices);
-		finalIndices = new_index_array;
-	}
-	// write the vertices of the polygon
-	memcpy(&finalVertices[finalVerticesSize], &unsortedVertices[drawCall->vertsIndex],
-		numVerts * sizeof(FOutVector));
-	// write the indexes, pointing to the fan vertexes but in triangles format
-	firstVIndex = finalVerticesSize;
-	lastVIndex = finalVerticesSize + numVerts;
-	finalVerticesSize += 2;
-	while (finalVerticesSize < lastVIndex)
-	{
-		finalIndices[finalIndicesSize++] = firstVIndex;
-		finalIndices[finalIndicesSize++] = finalVerticesSize - 1;
-		finalIndices[finalIndicesSize++] = finalVerticesSize++;
-	}
-}
-
-static GLMipmap_t *HWR_GetDrawCallTexture(DrawCallInfo *dc)
-{
-	return (dc->polyFlags & PF_NoTexture) ? NULL : dc->texture;
-}
-
-// flags returned by HWR_MarkStateChanges
-#define SHADER_CHANGED      1
-#define TEXTURE_CHANGED     2
-#define POLYFLAGS_CHANGED   4
-#define SURFACEINFO_CHANGED 8
-
-static unsigned int HWR_MarkStateChanges(DrawCallInfo *current, DrawCallInfo *next)
-{
-	unsigned int stateChanges = 0;
-	FSurfaceInfo *currentSI = &current->surf;
-	FSurfaceInfo *nextSI = &next->surf;
-
-	// check if a state change is required and flag it to stateChanges
-
-	if (current->shader != next->shader && cv_grshaders.value && gr_shadersavailable)
-		stateChanges |= SHADER_CHANGED;
-	if (HWR_GetDrawCallTexture(current) != HWR_GetDrawCallTexture(next))
-		stateChanges |= TEXTURE_CHANGED;
-	if (current->polyFlags != next->polyFlags)
-		stateChanges |= POLYFLAGS_CHANGED;
-	if (cv_grshaders.value && gr_shadersavailable)
-	{
-		if (currentSI->PolyColor.rgba != nextSI->PolyColor.rgba ||
-			currentSI->TintColor.rgba != nextSI->TintColor.rgba ||
-			currentSI->FadeColor.rgba != nextSI->FadeColor.rgba ||
-			currentSI->LightInfo.light_level != nextSI->LightInfo.light_level ||
-			currentSI->LightInfo.fade_start != nextSI->LightInfo.fade_start ||
-			currentSI->LightInfo.fade_end != nextSI->LightInfo.fade_end)
-		{
-			stateChanges |= SURFACEINFO_CHANGED;
-		}
-	}
-	else
-	{
-		if (currentSI->PolyColor.rgba != nextSI->PolyColor.rgba)
-			stateChanges |= SURFACEINFO_CHANGED;
-	}
-
-	return stateChanges;
-}
-
-static void HWR_ExecuteStateChanges(unsigned int stateChanges, DrawCallInfo *dc)
-{
-	if ((stateChanges & SHADER_CHANGED) && cv_grshaders.value && gr_shadersavailable)
-	{
-		HWD.pfnSetShader(dc->shader);
-		ps_hw_numshaders.value.i++;
-	}
-	if (stateChanges & TEXTURE_CHANGED)
-	{
-		// for PF_NoTexture the texture is set in DrawIndexedTriangles
-		if (!(dc->polyFlags & PF_NoTexture))
-		{
-			// texture should be already ready for use from calls to
-			// SetTexture during batch collection
-			HWD.pfnSetTexture(dc->texture);
-		}
-		ps_hw_numtextures.value.i++;
-	}
-	// these two are just parameters to DrawIndexedTriangles
-	// (changes to polyflags states are tracked in r_opengl.c though)
-	if (stateChanges & POLYFLAGS_CHANGED)
-		ps_hw_numpolyflags.value.i++;
-	if (stateChanges & SURFACEINFO_CHANGED)
-		ps_hw_numcolors.value.i++;
-}
-
-
-static void HWR_InitBatchingStats(void)
-{
-	ps_hw_numpolys.value.i = drawCallsSize;
-	ps_hw_numcalls.value.i = ps_hw_numverts.value.i
-		= ps_hw_numshaders.value.i = ps_hw_numtextures.value.i
-		= ps_hw_numpolyflags.value.i = ps_hw_numcolors.value.i = 0;
-}
-
-// This function organizes the geometry and draw calls collected by HWR_ProcessPolygon
-// calls into batches and uses the rendering backend to draw them.
+// This function organizes the geometry collected by HWR_ProcessPolygon calls into batches and uses
+// the rendering backend to draw them.
 void HWR_RenderBatches(void)
 {
-	int drawCallReadPos = 0; // position in drawCallOrder
+    int finalVertexWritePos = 0;// position in finalVertexArray
+	int finalIndexWritePos = 0;// position in finalVertexIndexArray
+
+	int polygonReadPos = 0;// position in polygonIndexArray
+
+	int currentShader;
+	int nextShader = 0;
+	GLMipmap_t *currentTexture;
+	GLMipmap_t *nextTexture = NULL;
+	FBITFIELD currentPolyFlags = 0;
+	FBITFIELD nextPolyFlags = 0;
+	FSurfaceInfo currentSurfaceInfo;
+	FSurfaceInfo nextSurfaceInfo;
+
 	int i;
 
-	if (!currently_batching)
+    if (!currently_batching)
 		I_Error("HWR_RenderBatches called without starting batching");
 
-	currently_batching = false; // no longer collecting batches
+	nextSurfaceInfo.LightInfo.fade_end = 0;
+	nextSurfaceInfo.LightInfo.fade_start = 0;
+	nextSurfaceInfo.LightInfo.light_level = 0;
 
-	HWR_InitBatchingStats();
+	currently_batching = false;// no longer collecting batches
+	if (!polygonArraySize)
+	{
+		ps_hw_numpolys.value.i = ps_hw_numcalls.value.i = ps_hw_numshaders.value.i
+			= ps_hw_numtextures.value.i = ps_hw_numpolyflags.value.i
+			= ps_hw_numcolors.value.i = 0;
+		return;// nothing to draw
+	}
+	// init stats vars
+	ps_hw_numpolys.value.i = polygonArraySize;
+	ps_hw_numcalls.value.i = ps_hw_numverts.value.i = 0;
+	ps_hw_numshaders.value.i = ps_hw_numtextures.value.i
+		= ps_hw_numpolyflags.value.i = ps_hw_numcolors.value.i = 1;
+	// init polygonIndexArray
+	for (i = 0; i < polygonArraySize; i++)
+	{
+		polygonIndexArray[i] = i;
+	}
 
-	if (!drawCallsSize)
-		return; // nothing to draw
-
-	// init drawCallOrder
-	for (i = 0; i < drawCallsSize; i++)
-		drawCallOrder[i] = i;
-
-	// sort the draw calls
+	// sort polygons
 	PS_START_TIMING(ps_hw_batchsorttime);
 	if (cv_grshaders.value && gr_shadersavailable)
-		qsort(drawCallOrder, drawCallsSize, sizeof(UINT32), compareDrawCalls);
+		qsort(polygonIndexArray, polygonArraySize, sizeof(unsigned int), comparePolygons);
 	else
-		qsort(drawCallOrder, drawCallsSize, sizeof(UINT32), compareDrawCallsNoShaders);
+		qsort(polygonIndexArray, polygonArraySize, sizeof(unsigned int), comparePolygonsNoShaders);
 	PS_STOP_TIMING(ps_hw_batchsorttime);
-	// sort grouping order
+	// sort order
 	// 1. shader
 	// 2. texture
 	// 3. polyflags
@@ -406,57 +277,191 @@ void HWR_RenderBatches(void)
 
 	PS_START_TIMING(ps_hw_batchdrawtime);
 
+	currentShader = polygonArray[polygonIndexArray[0]].shader;
+	currentTexture = polygonArray[polygonIndexArray[0]].texture;
+	currentPolyFlags = polygonArray[polygonIndexArray[0]].polyFlags;
+	currentSurfaceInfo = polygonArray[polygonIndexArray[0]].surf;
+	// For now, will sort and track the colors. Vertex attributes could be used instead of uniforms
+	// and a color array could replace the color calls.
+
 	// set state for first batch
-	HWR_ExecuteStateChanges(0xFFFF, &drawCalls[drawCallOrder[0]]);
 
-	// - iterate through draw calls
-	// - accumulate converted vertices and indices into finalVertices and finalIndices
-	//   and send them as a combined draw call when a state change occurs
-	while (1)
+	if (cv_grshaders.value && gr_shadersavailable)
 	{
+		HWD.pfnSetShader(currentShader);
+	}
+
+	if (currentPolyFlags & PF_NoTexture)
+		currentTexture = NULL;
+    else
+	    HWD.pfnSetTexture(currentTexture);
+
+	while (1)// note: remember handling notexture polyflag as having texture number 0 (also in comparePolygons)
+	{
+		int firstIndex;
+		int lastIndex;
+
 		boolean stopFlag = false;
-		unsigned int stateChanges = 0; // flags defined above HWR_MarkStateChanges
-		DrawCallInfo *currentDrawCall = &drawCalls[drawCallOrder[drawCallReadPos++]];
-		DrawCallInfo *nextDrawCall = NULL;
+		boolean changeState = false;
+		boolean changeShader = false;
+		boolean changeTexture = false;
+		boolean changePolyFlags = false;
+		boolean changeSurfaceInfo = false;
 
-		HWR_CollectVerticesIntoBatch(currentDrawCall);
+		// steps:
+		// write vertices
+		// check for changes or end, otherwise go back to writing
+			// changes will affect the next vars and the change bools
+			// end could set flag for stopping
+		// execute draw call
+		// could check ending flag here
+		// change states according to next vars and change bools, updating the current vars and reseting the bools
+		// reset write pos
+		// repeat loop
 
-		if (drawCallReadPos >= drawCallsSize) // was that the last draw call?
+		int index = polygonIndexArray[polygonReadPos++];
+		int numVerts = polygonArray[index].numVerts;
+		// before writing, check if there is enough room
+		// using 'while' instead of 'if' here makes sure that there will *always* be enough room.
+		// probably never will this loop run more than once though
+		while (finalVertexWritePos + numVerts > finalVertexArrayAllocSize)
+		{
+			FOutVector* new_array;
+			unsigned int* new_index_array;
+			finalVertexArrayAllocSize *= 2;
+			new_array = malloc(finalVertexArrayAllocSize * sizeof(FOutVector));
+			memcpy(new_array, finalVertexArray, finalVertexWritePos * sizeof(FOutVector));
+			free(finalVertexArray);
+			finalVertexArray = new_array;
+			// also increase size of index array, 3x of vertex array since
+			// going from fans to triangles increases vertex count to 3x
+			new_index_array = malloc(finalVertexArrayAllocSize * 3 * sizeof(UINT32));
+			memcpy(new_index_array, finalVertexIndexArray, finalIndexWritePos * sizeof(UINT32));
+			free(finalVertexIndexArray);
+			finalVertexIndexArray = new_index_array;
+		}
+		// write the vertices of the polygon
+		memcpy(&finalVertexArray[finalVertexWritePos], &unsortedVertexArray[polygonArray[index].vertsIndex],
+			numVerts * sizeof(FOutVector));
+		// write the indexes, pointing to the fan vertexes but in triangles format
+		firstIndex = finalVertexWritePos;
+		lastIndex = finalVertexWritePos + numVerts;
+		finalVertexWritePos += 2;
+		while (finalVertexWritePos < lastIndex)
+		{
+			finalVertexIndexArray[finalIndexWritePos++] = firstIndex;
+			finalVertexIndexArray[finalIndexWritePos++] = finalVertexWritePos - 1;
+			finalVertexIndexArray[finalIndexWritePos++] = finalVertexWritePos++;
+		}
+
+		if (polygonReadPos >= polygonArraySize)
 		{
 			stopFlag = true;
 		}
 		else
 		{
-			nextDrawCall = &drawCalls[drawCallOrder[drawCallReadPos]];
-			stateChanges = HWR_MarkStateChanges(currentDrawCall, nextDrawCall);
+			// check if a state change is required, set the change bools and next vars
+			int nextIndex = polygonIndexArray[polygonReadPos];
+			nextShader = polygonArray[nextIndex].shader;
+			nextTexture = polygonArray[nextIndex].texture;
+			nextPolyFlags = polygonArray[nextIndex].polyFlags;
+			nextSurfaceInfo = polygonArray[nextIndex].surf;
+			if (nextPolyFlags & PF_NoTexture)
+				nextTexture = 0;
+			if (currentShader != nextShader && cv_grshaders.value && gr_shadersavailable)
+			{
+				changeState = true;
+				changeShader = true;
+			}
+			if (currentTexture != nextTexture)
+			{
+				changeState = true;
+				changeTexture = true;
+			}
+			if (currentPolyFlags != nextPolyFlags)
+			{
+				changeState = true;
+				changePolyFlags = true;
+			}
+			if (cv_grshaders.value && gr_shadersavailable)
+			{
+				if (currentSurfaceInfo.PolyColor.rgba != nextSurfaceInfo.PolyColor.rgba ||
+					currentSurfaceInfo.TintColor.rgba != nextSurfaceInfo.TintColor.rgba ||
+					currentSurfaceInfo.FadeColor.rgba != nextSurfaceInfo.FadeColor.rgba ||
+					currentSurfaceInfo.LightInfo.light_level != nextSurfaceInfo.LightInfo.light_level ||
+					currentSurfaceInfo.LightInfo.fade_start != nextSurfaceInfo.LightInfo.fade_start ||
+					currentSurfaceInfo.LightInfo.fade_end != nextSurfaceInfo.LightInfo.fade_end)
+				{
+					changeState = true;
+					changeSurfaceInfo = true;
+				}
+			}
+			else
+			{
+				if (currentSurfaceInfo.PolyColor.rgba != nextSurfaceInfo.PolyColor.rgba)
+				{
+					changeState = true;
+					changeSurfaceInfo = true;
+				}
+			}
 		}
 
-		if (stateChanges || stopFlag)
+		if (changeState || stopFlag)
 		{
-			// execute combined draw call
-			HWD.pfnDrawIndexedTriangles(&currentDrawCall->surf, finalVertices,
-					finalIndicesSize, currentDrawCall->polyFlags, finalIndices);
+			// execute draw call
+            HWD.pfnDrawIndexedTriangles(&currentSurfaceInfo, finalVertexArray, finalIndexWritePos, currentPolyFlags, finalVertexIndexArray);
 			// update stats
 			ps_hw_numcalls.value.i++;
-			ps_hw_numverts.value.i += finalIndicesSize;
-			// reset final geometry collection arrays
-			finalVerticesSize = 0;
-			finalIndicesSize = 0;
+			ps_hw_numverts.value.i += finalIndexWritePos;
+			// reset write positions
+			finalVertexWritePos = 0;
+			finalIndexWritePos = 0;
 		}
-		else
-			continue;
+		else continue;
 
 		// if we're here then either its time to stop or time to change state
-		if (stopFlag)
-			break;
-		else
-			HWR_ExecuteStateChanges(stateChanges, nextDrawCall);
+		if (stopFlag) break;
+
+		// change state according to change bools and next vars, update current vars and reset bools
+		if (changeShader)
+		{
+			HWD.pfnSetShader(nextShader);
+			currentShader = nextShader;
+			changeShader = false;
+
+			ps_hw_numshaders.value.i++;
+		}
+		if (changeTexture)
+		{
+			// texture should be already ready for use from calls to SetTexture during batch collection
+		    HWD.pfnSetTexture(nextTexture);
+			currentTexture = nextTexture;
+			changeTexture = false;
+
+			ps_hw_numtextures.value.i++;
+		}
+		if (changePolyFlags)
+		{
+			currentPolyFlags = nextPolyFlags;
+			changePolyFlags = false;
+
+			ps_hw_numpolyflags.value.i++;
+		}
+		if (changeSurfaceInfo)
+		{
+			currentSurfaceInfo = nextSurfaceInfo;
+			changeSurfaceInfo = false;
+
+			ps_hw_numcolors.value.i++;
+		}
+		// and that should be it?
 	}
 	// reset the arrays (set sizes to 0)
-	drawCallsSize = 0;
-	unsortedVerticesSize = 0;
+	polygonArraySize = 0;
+	unsortedVertexArraySize = 0;
 
 	PS_STOP_TIMING(ps_hw_batchdrawtime);
 }
+
 
 #endif // HWRENDER

@@ -622,62 +622,8 @@ void R_RenderMaskedSegRange(drawseg_t *ds, INT32 x1, INT32 x2)
 
 				// draw the texture
 				col = (column_t *)((UINT8 *)R_GetColumn(texnum, maskedtexturecol[dc_x]) - 3);
-
-//#ifdef POLYOBJECTS_PLANES
-#if 0 // Disabling this allows inside edges to render below the planes, for until the clipping is fixed to work right when POs are near the camera. -Red
-				if (curline->dontrenderme && curline->polyseg && (curline->polyseg->flags & POF_RENDERPLANES))
-				{
-					fixed_t my_topscreen;
-					fixed_t my_bottomscreen;
-					fixed_t my_yl, my_yh;
-
-					my_topscreen = sprtopscreen + spryscale*col->topdelta;
-					my_bottomscreen = sprbotscreen == INT32_MAX ? my_topscreen + spryscale*col->length
-					                                         : sprbotscreen + spryscale*col->length;
-
-					my_yl = (my_topscreen+FRACUNIT-1)>>FRACBITS;
-					my_yh = (my_bottomscreen-1)>>FRACBITS;
-	//				CONS_Debug(DBG_RENDER, "my_topscreen: %d\nmy_bottomscreen: %d\nmy_yl: %d\nmy_yh: %d\n", my_topscreen, my_bottomscreen, my_yl, my_yh);
-
-					if (numffloors)
-					{
-						INT32 top = my_yl;
-						INT32 bottom = my_yh;
-
-						for (i = 0; i < numffloors; i++)
-						{
-							if (!ffloor[i].polyobj || ffloor[i].polyobj != curline->polyseg)
-								continue;
-
-							if (ffloor[i].height < viewz)
-							{
-								INT32 top_w = ffloor[i].plane->top[dc_x];
-
-	//							CONS_Debug(DBG_RENDER, "Leveltime : %d\n", leveltime);
-	//							CONS_Debug(DBG_RENDER, "Top is %d, top_w is %d\n", top, top_w);
-								if (top_w < top)
-								{
-									ffloor[i].plane->top[dc_x] = (INT16)top;
-									ffloor[i].plane->picnum = 0;
-								}
-	//							CONS_Debug(DBG_RENDER, "top_w is now %d\n", ffloor[i].plane->top[dc_x]);
-							}
-							else if (ffloor[i].height > viewz)
-							{
-								INT32 bottom_w = ffloor[i].plane->bottom[dc_x];
-
-								if (bottom_w > bottom)
-								{
-									ffloor[i].plane->bottom[dc_x] = (INT16)bottom;
-									ffloor[i].plane->picnum = 0;
-								}
-							}
-						}
-					}
-				}
-				else
-#endif
-					colfunc_2s(col);
+				
+				colfunc_2s(col);
 			}
 			spryscale += rw_scalestep;
 		}
@@ -2634,13 +2580,8 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			}
 			else
 			{
-#ifdef ESLOPE
 				ffloor[i].f_frac = (centeryfrac>>4) - FixedMul(ffloor[i].f_pos, rw_scale);
 				ffloor[i].f_step = ((centeryfrac>>4) - FixedMul(ffloor[i].f_pos_slope, ds_p->scale2) - ffloor[i].f_frac)/(range);
-#else
-				ffloor[i].f_step = FixedMul(-rw_scalestep, ffloor[i].f_pos);
-				ffloor[i].f_frac = (centeryfrac>>4) - FixedMul(ffloor[i].f_pos, rw_scale);
-#endif
 			}
 		}
 	}

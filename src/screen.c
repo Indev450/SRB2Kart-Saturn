@@ -70,8 +70,6 @@ consvar_t cv_shittyscreen = {"televisionsignal", "Okay", CV_NOSHOWHELP, shittysc
 
 static void SCR_ChangeFullscreen (void);
 
-static INT32 SCR_FPSflags(void);
-
 consvar_t cv_fullscreen = {"fullscreen", "Yes", CV_SAVE|CV_CALL, CV_YesNo, SCR_ChangeFullscreen, 0, NULL, NULL, 0, 0, NULL};
 
 // =========================================================================
@@ -437,14 +435,6 @@ void SCR_CalculateFPS(void)
 #endif
 }
 
-// this is pretty dumb, but has to be done like this, otherwise the fps counter just disappears sometimes for no reason lol
-static INT32 SCR_FPSflags(void)
-{
-	if (!cv_translucenthud.value) return V_SNAPTOBOTTOM|V_SNAPTORIGHT|V_HUDTRANS; // eee kinda works ig
-
-	return (((10-cv_translucenthud.value)*V_10TRANS) & V_ALPHAMASK) | V_SNAPTOBOTTOM|V_SNAPTORIGHT;
-}
-
 void SCR_DisplayTicRate(void)
 {
 	const UINT8 *ticcntcolor = NULL;
@@ -452,7 +442,7 @@ void SCR_DisplayTicRate(void)
 	UINT32 benchmark = (cap == 0) ? I_GetRefreshRate() : cap;
 	INT32 x = 318;
 	double fps = round(averageFPS);
-	INT32 fpsflags = SCR_FPSflags();
+	INT32 fpsflags = V_LocalTransFlag()|V_SNAPTOBOTTOM|V_SNAPTORIGHT;
 	const char *fps_string;
 	
 	INT32 ticcntcolor2 = 0;
@@ -520,12 +510,12 @@ void SCR_DisplayTicRate(void)
 void SCR_DisplayLocalPing(void)
 {
 	UINT32 ping = playerpingtable[consoleplayer];	// consoleplayer's ping is everyone's ping in a splitnetgame :P
-	INT32 fpsflags = SCR_FPSflags();
+	INT32 pingflags = V_LocalTransFlag()|V_SNAPTOBOTTOM|V_SNAPTORIGHT;
 	
 	if (cv_showping.value == 1 || (cv_showping.value == 2 && ping > servermaxping))	// only show 2 (warning) if our ping is at a bad level
 	{
 		INT32 dispy = (cv_ticrate.value == 1) ? 165 : ((cv_ticrate.value == 2 || cv_ticrate.value == 4) ? 172 : ((cv_ticrate.value == 3) ? 163 : 181)); // absolute buttpain
 		
-		HU_drawPing(308, dispy, ping, fpsflags);
+		HU_drawPing(308, dispy, ping, pingflags);
 	}
 }
