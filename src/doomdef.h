@@ -577,10 +577,6 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 ///	See name of player in your crosshair
 //#define SEENAMES
 
-///	Who put weights on my recycler?  ... Inuyasha did.
-///	\note	XMOD port.
-//#define WEIGHTEDRECYCLER
-
 ///	Allow loading of savegames between different versions of the game.
 ///	\note	XMOD port.
 ///	    	Most modifications should probably enable this.
