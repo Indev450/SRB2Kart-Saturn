@@ -661,7 +661,12 @@ void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, boolean isc
 	// no convex poly were generated for this subsector
 	if (!xsub->planepoly)
 		return;
+	
+	pv  = xsub->planepoly->pts;
+	nrPlaneVerts = xsub->planepoly->numpts;
 
+	if (nrPlaneVerts < 3)   //not even a triangle ?
+		return;
 
 	// Get the slope pointer to simplify future code
 	if (FOFsector)
@@ -684,12 +689,6 @@ void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, boolean isc
 		fixedheight = P_GetZAt(slope, viewx, viewy);
 
 	height = FIXED_TO_FLOAT(fixedheight);
-
-	pv  = xsub->planepoly->pts;
-	nrPlaneVerts = xsub->planepoly->numpts;
-
-	if (nrPlaneVerts < 3)   //not even a triangle ?
-		return;
 
 	// Allocate plane-vertex buffer if we need to
 	if (!planeVerts || nrPlaneVerts > numAllocedPlaneVerts)
@@ -771,7 +770,6 @@ void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, boolean isc
 
 	if (angle) // Only needs to be done if there's an altered angle
 	{
-
 		angle = InvAngle(angle)>>ANGLETOFINESHIFT;
 
 		// This needs to be done so that it scrolls in a different direction after rotation like software
@@ -2667,6 +2665,18 @@ void HWR_AddLine(seg_t *line)
 		angle2 = R_PointToAngleEx(viewx, viewy, v2x, v2y);
 	}
 
+	 // PrBoom: Back side, i.e. backface culling - read: endAngle >= startAngle!
+	if (angle2 - angle1 < ANGLE_180)
+		return;
+
+	// PrBoom: use REAL clipping math YAYYYYYYY!!!
+	if (!gld_clipper_SafeCheckRange(angle2, angle1))
+		return;
+
+	checkforemptylines = true;
+
+	gr_backsector = line->backsector;
+	
 	// do an extra culling check when rendering portals
 	// check if any line vertex is on the viewable side of the portal target line
 	// if not, the line can be culled.
@@ -2698,18 +2708,6 @@ void HWR_AddLine(seg_t *line)
 		gr_backsector = line->backsector;
 		goto doaddline;
 	}
-
-	 // PrBoom: Back side, i.e. backface culling - read: endAngle >= startAngle!
-	if (angle2 - angle1 < ANGLE_180)
-		return;
-
-	// PrBoom: use REAL clipping math YAYYYYYYY!!!
-	if (!gld_clipper_SafeCheckRange(angle2, angle1))
-		return;
-
-	checkforemptylines = true;
-
-	gr_backsector = line->backsector;
 
 	if (line->linedef->special == 40)
 	{
