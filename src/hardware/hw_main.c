@@ -1417,12 +1417,12 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 	FUINT lightnum = 0; // shut up compiler
 	extracolormap_t *colormap;
 	FSurfaceInfo Surf;
-	
+
 	boolean noencore = false;
 
 	gr_sidedef = gr_curline->sidedef;
 	gr_linedef = gr_curline->linedef;
-	
+
 	if (gr_curline->pv1)
 	{
 		vs.x = ((polyvertex_t *)gr_curline->pv1)->x;
@@ -1483,11 +1483,13 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 		lightnum = SOFTLIGHT(gr_frontsector->lightlevel);
 		colormap = gr_frontsector->extra_colormap;
 		lightnum = colormap ? lightnum : HWR_CalcWallLight(lightnum, vs.x, vs.y, ve.x, ve.y);
-	}else{
+	}
+	else
+	{
 		lightnum = HWR_CalcWallLight(gr_frontsector->lightlevel, vs.x, vs.y, ve.x, ve.y);
 		colormap = gr_frontsector->extra_colormap;
 	}
-	
+
 	if (gr_linedef->flags & ML_TFERLINE)
 		noencore = true;
 
@@ -1575,7 +1577,6 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 				wallVerts[2].y = FIXED_TO_FLOAT(worldlowslope);
 				HWR_DrawSkyWall(wallVerts, &Surf);
 			}
-
 		}
 
 		// hack to allow height changes in outdoor areas
@@ -2016,16 +2017,14 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 					if (!(blendmode & PF_Masked))
 						HWR_SplitWall(gr_frontsector, wallVerts, gr_midtexture, gr_linedef->flags & ML_TFERLINE, &Surf, FF_TRANSLUCENT, NULL, PF_Decal);
 					else
-					{
 						HWR_SplitWall(gr_frontsector, wallVerts, gr_midtexture, gr_linedef->flags & ML_TFERLINE, &Surf, FF_CUTLEVEL, NULL, PF_Decal);
-					}
-				}else{
+				}
+				else
+				{
 					if (!(blendmode & PF_Masked))
 						HWR_SplitWall(gr_frontsector, wallVerts, gr_midtexture, gr_linedef->flags & ML_TFERLINE, &Surf, FF_TRANSLUCENT, NULL, 0);
 					else
-					{
 						HWR_SplitWall(gr_frontsector, wallVerts, gr_midtexture, gr_linedef->flags & ML_TFERLINE, &Surf, FF_CUTLEVEL, NULL, 0);
-					}
 				}
 			}
 			else if (!gl_drawing_stencil && !(blendmode & PF_Masked))
@@ -2101,7 +2100,6 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 			HWR_DrawSkyWall(wallVerts, &Surf);
 		}
 
-
 		// Single sided lines are simple for skywalls, just need to draw from the top or bottom of the sector if there's
 		// a sky flat
 		if (!gr_curline->polyseg)
@@ -2123,7 +2121,6 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 			}
 		}
 	}
-
 
 	//Hurdler: 3d-floors test
 	if (!gl_drawing_stencil && gr_frontsector && gr_backsector && gr_frontsector->tag != gr_backsector->tag && (gr_backsector->ffloors || gr_frontsector->ffloors))
@@ -2153,7 +2150,6 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 			highcutslope = min(worldtopslope, worldhighslope);
 		}
 
-
 		if (gr_backsector->ffloors)
 		{
 			for (rover = gr_backsector->ffloors; rover; rover = rover->next)
@@ -2174,7 +2170,6 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 					if ((high1 < lowcut && highslope1 < lowcutslope) || (low1 > highcut && lowslope1 > highcutslope))
 						continue;
 				}
-
 
 				texnum = R_GetTextureNum(sides[rover->master->sidenum[0]].midtexture);
 
@@ -2211,7 +2206,6 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 						lS = lowcutslope;
 					}
 				}
-
 
 				//Hurdler: HW code starts here
 				//FIXME: check if peging is correct
