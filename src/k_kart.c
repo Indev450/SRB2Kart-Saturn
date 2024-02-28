@@ -10455,6 +10455,7 @@ void K_drawKartHUD(void)
 	}
 
 	// Draw the item window
+		K_drawKartItem();	
 	if (LUA_HudEnabled(hud_item) && !freecam)
 		K_drawKartItem();	
 
