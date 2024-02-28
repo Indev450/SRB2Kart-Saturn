@@ -1187,6 +1187,8 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_discordasks);
 #endif
 
+	CV_RegisterVar(&cv_showspecstuff);
+
 	COM_AddCommand("listskins", Command_ListSkins);
 	COM_AddCommand("skinsearch", Command_SkinSearch);
 }
