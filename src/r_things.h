@@ -32,6 +32,12 @@
 
 #define FEETADJUST (4<<FRACBITS) // R_AddSingleSpriteDef
 
+// Takes 2 fixed-point coordinates, returns "distance" between them and camera,
+// as an non-fixed-point integer.
+// It is very rough, tho it is used only for optimizing out unnecessary
+// interpolation, so it is kinda ok on big distances.
+#define R_QuickCamDist(x, y) max(abs(((x)>>FRACBITS) - (viewx>>FRACBITS)), abs(((y)>>FRACBITS) - (viewy>>FRACBITS)))
+
 // Constant arrays used for psprite clipping
 //  and initializing clipping.
 extern INT16 negonearray[MAXVIDWIDTH];
@@ -54,10 +60,6 @@ void R_SortVisSprites(void);
 //faB: find sprites in wadfile, replace existing, add new ones
 //     (only sprites from namelist are added or replaced)
 void R_AddSpriteDefs(UINT16 wadnum);
-
-#ifdef DELFILE
-void R_DelSpriteDefs(UINT16 wadnum);
-#endif
 
 //SoM: 6/5/2000: Light sprites correctly!
 void R_AddSprites(sector_t *sec, INT32 lightlevel);
@@ -222,10 +224,6 @@ INT32 R_SkinAvailable(const char *name);
 INT32 R_AnySkinAvailable(const char *name);
 INT32 R_LocalSkinAvailable(const char *name, boolean local);
 void R_AddSkins(UINT16 wadnum, boolean local);
-
-#ifdef DELFILE
-void R_DelSkins(UINT16 wadnum);
-#endif
 
 void R_InitDrawNodes(void);
 

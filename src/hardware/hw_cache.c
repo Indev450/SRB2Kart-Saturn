@@ -502,6 +502,9 @@ static void FreeMipmapColormap(INT32 patchnum, void *patch)
 
 		// Set the first colormap to the one that comes after it.
 		next = pat->mipmap->nextcolormap;
+		if (!next)
+			break;
+
 		pat->mipmap->nextcolormap = next->nextcolormap;
 
 		// Free image data from memory.
@@ -646,6 +649,9 @@ static void HWR_CacheFlat(GLMipmap_t *grMipmap, lumpnum_t flatlumpnum)
 void HWR_GetFlat(lumpnum_t flatlumpnum, boolean noencoremap)
 {
 	GLMipmap_t *grmip;
+	
+	if (flatlumpnum == LUMPERROR)
+		return;
 
 	grmip = HWR_GetCachedGLPatch(flatlumpnum)->mipmap;
 
@@ -662,7 +668,6 @@ void HWR_GetFlat(lumpnum_t flatlumpnum, boolean noencoremap)
 	// If hardware does not have the texture, then call pfnSetTexture to upload it
 	if (!grmip->downloaded)
 		HWD.pfnSetTexture(grmip);
-	
 	HWR_SetCurrentTexture(grmip);
 
 	// The system-memory data can be purged now.
@@ -1085,8 +1090,7 @@ UINT32 HWR_GetLightTableID(extracolormap_t *colormap)
 // call become invalid and must not be used.
 void HWR_ClearLightTables(void)
 {
-	//if (vid.glstate == VID_GL_LIBRARY_LOADED) // we have pfnInit which is essentially the same, but it doesent work here for whatever reason, since this should not be done in software renderer ever!
-	if (rendermode == render_opengl)
+	if (vid.glstate == VID_GL_LIBRARY_LOADED)
 		HWD.pfnClearLightTables();
 }
 

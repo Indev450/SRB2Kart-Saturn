@@ -115,19 +115,15 @@ void HWR_DrawIntermissionBG(void);
 void HWR_DoWipe(UINT8 wipenum, UINT8 scrnnum);
 void HWR_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8 downdistort, UINT8 barsize);
 void HWR_MakeScreenFinalTexture(void);
-void HWR_DrawScreenFinalTexture(int width, int height);
+void HWR_DrawScreenFinalTexture(INT32 width, INT32 height);
 
 // hw_main.c: Planes
 void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, boolean isceiling, fixed_t fixedheight, FBITFIELD PolyFlags, INT32 lightlevel, lumpnum_t lumpnum, sector_t *FOFsector, UINT8 alpha, extracolormap_t *planecolormap);
 void HWR_AddTransparentFloor(lumpnum_t lumpnum, extrasubsector_t *xsub, boolean isceiling, fixed_t fixedheight, INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, boolean fogplane, extracolormap_t *planecolormap);
 
-#ifdef POLYOBJECTS
-#ifdef POLYOBJECTS_PLANES
 void HWR_RenderPolyObjectPlane(polyobj_t *polysector, boolean isceiling, fixed_t fixedheight, FBITFIELD blendmode, UINT8 lightlevel, lumpnum_t lumpnum, sector_t *FOFsector, UINT8 alpha, extracolormap_t *planecolormap);
 void HWR_AddPolyObjectPlanes(void);
 void HWR_AddTransparentPolyobjectFloor(lumpnum_t lumpnum, polyobj_t *polysector, boolean isceiling, fixed_t fixedheight, INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, extracolormap_t *planecolormap);
-#endif
-#endif
 
 // hw_main.c: Segs
 void HWR_ProcessSeg(void); // Sort of like GLWall::Process in GZDoom
@@ -138,9 +134,7 @@ void HWR_AddTransparentWall(FOutVector *wallVerts, FSurfaceInfo * pSurf, INT32 t
 void HWR_DrawSkyWall(FOutVector *wallVerts, FSurfaceInfo *Surf);
 void HWR_DrawSkyBackground(float fpov);
 
-#ifdef POLYOBJECTS
 void HWR_AddPolyObjectSegs(void);
-#endif
 
 // hw_main.c: BSP
 void HWR_RenderBSPNode(INT32 bspnum);
@@ -162,9 +156,6 @@ extern boolean gr_maphasportals;
 // hw_cache.c
 void HWR_LoadTextures(size_t pnumtextures);
 RGBA_t *HWR_GetTexturePalette(void);
-
-// hw_trick.c
-void HWR_CorrectSWTricks(void);
 
 void HWR_SetShaderState(void);
 

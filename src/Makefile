@@ -272,7 +272,7 @@ ifdef NOHW
 else
 	OPTS+=-DHWRENDER
 	OBJS+=$(OBJDIR)/hw_bsp.o $(OBJDIR)/hw_draw.o $(OBJDIR)/hw_light.o \
-		 $(OBJDIR)/hw_main.o $(OBJDIR)/hw_clip.o $(OBJDIR)/hw_md2.o $(OBJDIR)/hw_cache.o $(OBJDIR)/hw_trick.o \
+		 $(OBJDIR)/hw_main.o $(OBJDIR)/hw_clip.o $(OBJDIR)/hw_md2.o $(OBJDIR)/hw_cache.o \
 		 $(OBJDIR)/hw_md2load.o $(OBJDIR)/hw_md3load.o $(OBJDIR)/hw_model.o $(OBJDIR)/u_list.o $(OBJDIR)/hw_batching.o $(OBJDIR)/hw_shaders.o
 endif
 
@@ -389,9 +389,7 @@ CFLAGS+=-DHAVE_DISCORDRPC -DUSE_STUN
 OBJS+=$(OBJDIR)/discord.o $(OBJDIR)/stun.o
 endif
 
-ifndef NO_LUA
 	include blua/Makefile.cfg
-endif
 
 ifdef NOMD5
 	OPTS+=-DNOMD5
@@ -721,9 +719,9 @@ $(OBJDIR)/depend.dep:
 ifndef NOHW
 	$(CC) $(CFLAGS) -MM hardware/*.c >> $(OBJDIR)/depend.ped
 endif
-ifndef NO_LUA
+
 	$(CC) $(CFLAGS) -MM blua/*.c >> $(OBJDIR)/depend.ped
-endif
+
 	@sed -e 's,\(.*\)\.o: ,$(subst /,\/,$(OBJDIR))\/&,g' < $(OBJDIR)/depend.ped > $(OBJDIR)/depend.dep
 	$(REMOVE) $(OBJDIR)/depend.ped
 	@echo "Created dependency file, depend.dep"
