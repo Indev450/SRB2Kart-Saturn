@@ -10455,24 +10455,19 @@ void K_drawKartHUD(void)
 	}
 
 	// Draw the item window
-		K_drawKartItem();	
 	if (LUA_HudEnabled(hud_item) && !freecam)
 		K_drawKartItem();	
 
 	if (cv_driftgauge.value && !modeattacking)
 	{
-#ifdef HAVE_BLUA
-	if (LUA_HudEnabled(hud_driftgauge))
-#endif
-		K_drawDriftGauge();
+		if (LUA_HudEnabled(hud_driftgauge))
+			K_drawDriftGauge();
 	}
 
 	if (cv_nametag.value)
 	{
-#ifdef HAVE_BLUA
-	if (LUA_HudEnabled(hud_nametags))
-#endif
-		K_drawNameTags();
+		if (LUA_HudEnabled(hud_nametags))
+			K_drawNameTags();
 	}
 
 	// If not splitscreen, draw...
