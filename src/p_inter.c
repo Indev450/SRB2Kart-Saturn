@@ -288,43 +288,12 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 	if (special->flags & MF_BOSS && special->flags2 & MF2_FRET)
 		return;
 
-#ifdef HAVE_BLUA
 	if (LUAh_TouchSpecial(special, toucher) || P_MobjWasRemoved(special))
 		return;
-#endif
 
 	if (special->flags & MF_BOSS)
 	{
-		/*if (special->type == MT_BLACKEGGMAN)
-		{
-			P_DamageMobj(toucher, special, special, 1); // ouch
-			return;
-		}
-
-		if (((player->pflags & PF_NIGHTSMODE) && (player->pflags & PF_DRILLING))
-		|| (player->pflags & (PF_JUMPED|PF_SPINNING|PF_GLIDING))
-		|| player->powers[pw_invulnerability] || player->powers[pw_super]) // Do you possess the ability to subdue the object?
-		{
-			if (P_MobjFlip(toucher)*toucher->momz < 0)
-				toucher->momz = -toucher->momz;
-			toucher->momx = -toucher->momx;
-			toucher->momy = -toucher->momy;
-			P_DamageMobj(special, toucher, toucher, 1);
-		}
-		else if (((toucher->z < special->z && !(toucher->eflags & MFE_VERTICALFLIP))
-		|| (toucher->z + toucher->height > special->z + special->height && (toucher->eflags & MFE_VERTICALFLIP)))
-		&& player->charability == CA_FLY
-		&& (player->powers[pw_tailsfly]
-		|| (toucher->state >= &states[S_PLAY_SPC1] && toucher->state <= &states[S_PLAY_SPC4]))) // Tails can shred stuff with his propeller.
-		{
-			toucher->momz = -toucher->momz/2;
-
-			P_DamageMobj(special, toucher, toucher, 1);
-		}
-		// SRB2kart - Removed: No more fly states
-		else*/
-			P_DamageMobj(toucher, special, special, 1);
-
+		P_DamageMobj(toucher, special, special, 1);
 		return;
 	}
 	else if ((special->flags & MF_ENEMY) && !(special->flags & MF_MISSILE)
@@ -2163,10 +2132,8 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 	target->flags2 &= ~(MF2_SKULLFLY|MF2_NIGHTSPULL);
 	target->health = 0; // This makes it easy to check if something's dead elsewhere.
 
-#ifdef HAVE_BLUA
 	if (LUAh_MobjDeath(target, inflictor, source) || P_MobjWasRemoved(target))
 		return;
-#endif
 
 	// SRB2kart
 	// I wish I knew a better way to do this
@@ -3129,11 +3096,7 @@ static void P_RingDamage(player_t *player, mobj_t *inflictor, mobj_t *source, IN
 boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage)
 {
 	player_t *player;
-#ifdef HAVE_BLUA
 	boolean force = false;
-#else
-	static const boolean force = false;
-#endif
 
 	if (objectplacing)
 		return false;
@@ -3153,7 +3116,6 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 			return false;
 	}
 
-#ifdef HAVE_BLUA
 	// Everything above here can't be forced.
 	if (!metalrecording)
 	{
@@ -3167,7 +3129,6 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 		else if (shouldForce == 2)
 			return false;
 	}
-#endif
 
 	if (!force)
 	{
@@ -3201,10 +3162,8 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 		if (!force && target->fuse) // Invincible
 			return false;
 
-#ifdef HAVE_BLUA
 		if (LUAh_MobjDamage(target, inflictor, source, damage) || P_MobjWasRemoved(target))
 			return true;
-#endif
 
 		if (target->health > 1)
 		{
@@ -3229,21 +3188,17 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 		if (!force && target->flags2 & MF2_FRET) // Currently flashing from being hit
 			return false;
 
-#ifdef HAVE_BLUA
 		if (LUAh_MobjDamage(target, inflictor, source, damage) || P_MobjWasRemoved(target))
 			return true;
-#endif
 
 		if (target->health > 1)
 			target->flags2 |= MF2_FRET;
 	}
-#ifdef HAVE_BLUA
 	else if (target->flags & MF_ENEMY)
 	{
 		if (LUAh_MobjDamage(target, inflictor, source, damage) || P_MobjWasRemoved(target))
 			return true;
 	}
-#endif
 
 	player = target->player;
 
@@ -3269,18 +3224,16 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 				|| (G_GametypeHasTeams() && target->player->ctfteam == source->player->ctfteam)))
 					return false; // Don't run eachother over in special stages and team games and such
 			}
-#ifdef HAVE_BLUA
+
 			if (LUAh_MobjDamage(target, inflictor, source, damage))
 				return true;
-#endif
+
 			P_NiGHTSDamage(target, source); // -5s :(
 			return true;
 		}
 
-#ifdef HAVE_BLUA	// Add this back here for ACTUAL NORMAL DAMAGE. The funny shit is that the player is barely ever "actually" damaged.
 		if (LUAh_MobjDamage(target, inflictor, source, damage))
 			return true;
-#endif
 
 		if (!force && inflictor && (inflictor->flags & MF_FIRE))
 		{
@@ -3343,72 +3296,6 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 			}
 			return true;
 		}
-		/* // SRB2kart - don't need these
-		else if (metalrecording)
-		{
-			if (!inflictor)
-				inflictor = source;
-			if (inflictor && inflictor->flags & MF_ENEMY)
-			{ // Metal Sonic destroy enemy !!
-				P_KillMobj(inflictor, NULL, target);
-				return false;
-			}
-			else if (inflictor && inflictor->flags & MF_MISSILE)
-				return false; // Metal Sonic walk through flame !!
-			else
-			{ // Oh no! Metal Sonic is hit !!
-				P_ShieldDamage(player, inflictor, source, damage);
-				return true;
-			}
-		}
-		else if (player->powers[pw_invulnerability] || player->powers[pw_flashing] // ignore bouncing & such in invulnerability
-			|| (player->powers[pw_super] && !(ALL7EMERALDS(player->powers[pw_emeralds]) && inflictor && ((inflictor->flags & MF_MISSILE) || inflictor->player))))
-		{
-			if (force || (inflictor && (inflictor->flags & MF_MISSILE)
-				&& (inflictor->flags2 & MF2_SUPERFIRE)
-				&& player->powers[pw_super]))
-			{
-#ifdef HAVE_BLUA
-				if (!LUAh_MobjDamage(target, inflictor, source, damage))
-#endif
-					P_SuperDamage(player, inflictor, source, damage);
-				return true;
-			}
-			else
-				return false;
-		}
-#ifdef HAVE_BLUA
-		else if (LUAh_MobjDamage(target, inflictor, source, damage))
-			return true;
-#endif
-		else if (!player->powers[pw_super] && (player->powers[pw_shield] || player->bot))  //If One-Hit Shield
-		{
-			P_ShieldDamage(player, inflictor, source, damage);
-			damage = 0;
-		}
-		else if (player->mo->health > 1) // No shield but have rings.
-		{
-			damage = player->mo->health - 1;
-			P_RingDamage(player, inflictor, source, damage);
-		}
-		else // No shield, no rings, no invincibility.
-		{
-			// To reduce griefing potential, don't allow players to be killed
-			// by friendly fire. Spilling their rings and other items is enough.
-			if (force || !(G_GametypeHasTeams()
-				&& source && source->player && (source->player->ctfteam == player->ctfteam)
-				&& cv_friendlyfire.value))
-			{
-				damage = 1;
-				P_KillPlayer(player, source, damage);
-			}
-			else
-			{
-				damage = 0;
-				P_ShieldDamage(player, inflictor, source, damage);
-			}
-		}
-		*/
 
 		if (inflictor && ((inflictor->flags & MF_MISSILE) || inflictor->player) && player->powers[pw_super] && ALL7EMERALDS(player->powers[pw_emeralds]))
 		{

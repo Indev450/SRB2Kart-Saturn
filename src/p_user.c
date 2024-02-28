@@ -4326,9 +4326,7 @@ void P_PlayerThink(player_t *player)
 		}
 		if (player->playerstate == PST_REBORN)
 		{
-#ifdef HAVE_BLUA
 			LUAh_PlayerThink(player);
-#endif
 			return;
 		}
 	}
@@ -4435,9 +4433,7 @@ void P_PlayerThink(player_t *player)
 
 				if (player->playerstate == PST_DEAD)
 				{
-#ifdef HAVE_BLUA
 					LUAh_PlayerThink(player);
-#endif
 					return;
 				}
 			}
@@ -4503,9 +4499,7 @@ void P_PlayerThink(player_t *player)
 		else
 			player->mo->flags2 &= ~MF2_SHADOW;
 		P_DeathThink(player);
-#ifdef HAVE_BLUA
 		LUAh_PlayerThink(player);
-#endif
 		return;
 	}
 
@@ -4670,9 +4664,7 @@ void P_PlayerThink(player_t *player)
 
 	if (!player->mo)
 	{
-#ifdef HAVE_BLUA
 		LUAh_PlayerThink(player);
-#endif
 		return; // P_MovePlayer removed player->mo.
 	}
 
@@ -4856,9 +4848,7 @@ void P_PlayerThink(player_t *player)
 	if (rendermode != render_none)
 		DoABarrelRoll(player);
 
-#ifdef HAVE_BLUA
 	LUAh_PlayerThink(player);
-#endif
 }
 
 //

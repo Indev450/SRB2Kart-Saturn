@@ -12,7 +12,6 @@
 
 #include "doomdef.h"
 #include "fastcmp.h"
-#ifdef HAVE_BLUA
 #include "r_defs.h"
 #include "r_local.h"
 #include "st_stuff.h" // hudinfo[]
@@ -1570,5 +1569,3 @@ void LUAh_VoteHUD(huddrawlist_h list)
 	lua_pushlightuserdata(gL, NULL);
 	lua_setfield(gL, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
 }
-
-#endif

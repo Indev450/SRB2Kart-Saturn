@@ -13,7 +13,6 @@
 #include <stddef.h>
 
 #include "doomdef.h"
-#ifdef HAVE_BLUA
 #include "fastcmp.h"
 #include "r_things.h"
 #include "r_main.h"
@@ -927,5 +926,3 @@ int LUA_MobjLib(lua_State *L)
 	lua_setglobal(L, "mapthings");
 	return 0;
 }
-
-#endif
