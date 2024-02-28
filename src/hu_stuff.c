@@ -2563,28 +2563,31 @@ static inline void HU_DrawSpectatorTicker(void)
 
 				V_DrawString(templength - duptweak, height, V_TRANSLUCENT|V_ALLOWLOWERCASE, current);
 			}
-			
-			if (players[i].mo && cv_showspecstuff.value)
-			{
-				player_t *p;
-				p = &players[i];
-							
-				if (netgame && i != serverplayer)
-					HU_drawPing((templength - duptweak)+8, height-20, playerpingtable[i], V_TRANSLUCENT);
-					
-				if (players[i].mo->color)
-				{
-					const UINT8 *colormap;
-					if (players[i].mo->colorized)
-						colormap = R_GetTranslationColormap(TC_RAINBOW, players[i].mo->color, GTC_CACHE);
-					else
-						colormap = R_GetTranslationColormap(players[i].skin, players[i].mo->color, GTC_CACHE);
 
-					if (cv_highresportrait.value)
-						V_DrawSmallMappedPatch((templength - duptweak), height+10, V_TRANSLUCENT, R_GetSkinFaceWant(p), colormap);
-					else	
-						V_DrawMappedPatch((templength - duptweak), height+10, V_TRANSLUCENT, R_GetSkinFaceRank(p), colormap);
+			if (cv_showspecstuff.value)
+			{
+				if (players[i].mo)
+				{
+					player_t *p;
+					p = &players[i];
+
+					if (players[i].mo->color)
+					{
+						const UINT8 *colormap;
+						if (players[i].mo->colorized)
+							colormap = R_GetTranslationColormap(TC_RAINBOW, players[i].mo->color, GTC_CACHE);
+						else
+							colormap = R_GetTranslationColormap(players[i].skin, players[i].mo->color, GTC_CACHE);
+
+						if (cv_highresportrait.value)
+							V_DrawSmallMappedPatch((templength - duptweak), height+10, V_TRANSLUCENT, R_GetSkinFaceWant(p), colormap);
+						else	
+							V_DrawMappedPatch((templength - duptweak), height+10, V_TRANSLUCENT, R_GetSkinFaceRank(p), colormap);
+					}
 				}
+
+				if (netgame && i != serverplayer)
+						HU_drawPing((templength - duptweak)+8, height-20, playerpingtable[i], V_TRANSLUCENT);
 			}
 
 			if ((length += len) >= dupadjust+8)
@@ -2592,6 +2595,7 @@ static inline void HU_DrawSpectatorTicker(void)
 		}
 	}
 }
+
 
 //
 // HU_DrawRankings
