@@ -3602,9 +3602,10 @@ void HWR_Subsector(size_t num)
 				continue;
 			
 			// rendering heights for bottom and top planes
+			// yes there were functions for this stuff, no idea why it wasnt used but bleh
 			bottomCullHeight = P_GetFFloorBottomZAt(rover, viewx, viewy);
 			topCullHeight = P_GetFFloorTopZAt(rover, viewx, viewy);
-			
+
 			if (gr_frontsector->cullheight)
 			{
 				if (HWR_DoCulling(gr_frontsector->cullheight, viewsector->cullheight, gr_viewz, FIXED_TO_FLOAT(bottomCullHeight), FIXED_TO_FLOAT(topCullHeight)))
@@ -3655,14 +3656,7 @@ void HWR_Subsector(size_t num)
 			}
 
 			// top plane
-#ifdef ESLOPE
-			if (*rover->t_slope)
-			{
-				centerHeight = P_GetZAt(*rover->t_slope, gr_frontsector->soundorg.x, gr_frontsector->soundorg.y);
-			}
-			else
-#endif
-			centerHeight = *rover->topheight;
+			centerHeight = P_GetFFloorTopZAt(rover, gr_frontsector->soundorg.x, gr_frontsector->soundorg.y);
 
 			if (centerHeight >= locFloorHeight &&
 			    centerHeight <= locCeilingHeight &&
