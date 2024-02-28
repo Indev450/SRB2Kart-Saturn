@@ -579,7 +579,7 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 //#define DUMPCONSISTENCY
 
 ///	See name of player in your crosshair
-#define SEENAMES
+//#define SEENAMES
 
 ///	Who put weights on my recycler?  ... Inuyasha did.
 ///	\note	XMOD port.
