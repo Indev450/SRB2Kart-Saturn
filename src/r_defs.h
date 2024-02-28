@@ -25,7 +25,6 @@
 
 #include "screen.h" // MAXVIDWIDTH, MAXVIDHEIGHT
 
-#define POLYOBJECTS
 
 //
 // ClipWallSegment
