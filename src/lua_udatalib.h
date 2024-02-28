@@ -1,8 +1,6 @@
 #ifndef __LUA_UDATALIB_H__
 #define __LUA_UDATALIB_H__
 
-#ifdef HAVE_BLUA
-
 #include "doomdef.h"
 #include "lua_script.h"
 #include "lua_libs.h"
@@ -101,7 +99,5 @@ void udatalib_addfields(lua_State *L, int mt, const udata_field_t fields[]);
     *field = checkf(L, 2); \
     return 0; \
 }
-
-#endif
 
 #endif

@@ -27,12 +27,7 @@ typedef enum
 	UNDO_DONE = 0,
 } undotype_f;
 
-#ifdef DELFILE
-void DEH_WriteUndoline(const char *value, const char *data, undotype_f flags);
-void DEH_UnloadDehackedWad(UINT16 wad);
-#else // null the undo lines
 #define DEH_WriteUndoline(a,b,c)
-#endif
 
 void DEH_LoadDehackedLump(lumpnum_t lumpnum);
 void DEH_LoadDehackedLumpPwad(UINT16 wad, UINT16 lump);
@@ -43,11 +38,9 @@ void DEH_Check(void);
 
 fixed_t get_number(const char *word);
 
-#ifdef HAVE_BLUA
 boolean LUA_SetLuaAction(void *state, const char *actiontocompare);
 const char *LUA_GetActionName(void *action);
 void LUA_SetActionByName(void *state, const char *actiontocompare);
-#endif
 
 extern boolean deh_loaded;
 

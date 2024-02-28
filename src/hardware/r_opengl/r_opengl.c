@@ -567,7 +567,6 @@ static PFNglStencilFuncSeparate pglStencilFuncSeparate;
 typedef void    (APIENTRY *PFNglStencilOpSeparate)          (GLenum, GLenum, GLenum, GLenum);
 static PFNglStencilOpSeparate pglStencilOpSeparate;
 
-#ifdef GL_SHADERS
 typedef GLuint 	(APIENTRY *PFNglCreateShader)		(GLenum);
 typedef void 	(APIENTRY *PFNglShaderSource)		(GLuint, GLsizei, const GLchar**, GLint*);
 typedef void 	(APIENTRY *PFNglCompileShader)		(GLuint);
@@ -698,7 +697,6 @@ static GLRGBAFloat shader_defaultcolor = {1.0f, 1.0f, 1.0f, 1.0f};
 		"gl_FragColor = texture2D(tex, gl_TexCoord[0].st) * poly_color;\n" \
 	"}\0"
 
-#endif	// GL_SHADERS
 
 void SetupGLFunc4(void)
 {
@@ -720,7 +718,6 @@ void SetupGLFunc4(void)
 	pglStencilFuncSeparate = GetGLFunc("glStencilFuncSeparate");
 	pglStencilOpSeparate = GetGLFunc("glStencilOpSeparate");
 
-#ifdef GL_SHADERS
 	pglCreateShader = GetGLFunc("glCreateShader");
 	pglShaderSource = GetGLFunc("glShaderSource");
 	pglCompileShader = GetGLFunc("glCompileShader");
@@ -742,7 +739,6 @@ void SetupGLFunc4(void)
 	pglUniform2fv = GetGLFunc("glUniform2fv");
 	pglUniform3fv = GetGLFunc("glUniform3fv");
 	pglGetUniformLocation = GetGLFunc("glGetUniformLocation");
-#endif
 
 #ifdef GL_VERSION_3_0
 	pglGenerateMipmap = GetGLFunc("glGenerateMipmap");
@@ -751,7 +747,6 @@ void SetupGLFunc4(void)
 
 EXPORT boolean HWRAPI(InitShaders) (void)
 {
-#ifdef GL_SHADERS
 	if (!pglUseProgram)
 		return false;
 	
@@ -765,14 +760,10 @@ EXPORT boolean HWRAPI(InitShaders) (void)
 	}
 
 	return true;
-#else
-	return false;
-#endif
 }
 
 EXPORT void HWRAPI(LoadShader) (int slot, char *code, hwdshaderstage_t stage)
 {
-#ifdef GL_SHADERS
 	gl_shader_t *shader;
 
 	if (slot < 0 || slot >= HWR_MAXSHADERS)
@@ -794,16 +785,10 @@ EXPORT void HWRAPI(LoadShader) (int slot, char *code, hwdshaderstage_t stage)
 		I_Error("LoadShader: invalid shader stage");
 
 #undef LOADSHADER
-#else
-	(void)slot;
-	(void)code;
-	(void)stage;
-#endif
 }
 
 EXPORT boolean HWRAPI(CompileShader) (int slot)
 {
-#ifdef GL_SHADERS
 	if (slot < 0 || slot >= HWR_MAXSHADERS)
 		I_Error("CompileShader: Invalid slot %d", slot);
 
@@ -816,10 +801,6 @@ EXPORT boolean HWRAPI(CompileShader) (int slot)
 		gl_shaders[slot].program = 0;
 		return false;
 	}
-#else
-	(void)slot;
-	return false;
-#endif
 }
 
 //
@@ -829,7 +810,6 @@ EXPORT boolean HWRAPI(CompileShader) (int slot)
 
 EXPORT void HWRAPI(SetShaderInfo) (hwdshaderinfo_t info, INT32 value)
 {
-#ifdef GL_SHADERS
 	switch (info)
 	{
 		case HWD_SHADERINFO_LEVELTIME:
@@ -838,15 +818,10 @@ EXPORT void HWRAPI(SetShaderInfo) (hwdshaderinfo_t info, INT32 value)
 		default:
 			break;
 	}
-#else
-	(void)info;
-	(void)value;
-#endif
 }
 
 EXPORT void HWRAPI(SetShader) (int slot)
 {
-#ifdef GL_SHADERS
 	if (gl_allowshaders)
 	{
 		gl_shader_t *next_shader = &gl_shaders[slot]; // the gl_shader_t we are going to switch to
@@ -867,22 +842,17 @@ EXPORT void HWRAPI(SetShader) (int slot)
 
 		return;
 	}
-#else
-	(void)slot;
-#endif
 	gl_shadersenabled = false;
 }
 
 EXPORT void HWRAPI(UnSetShader) (void)
 {
-#ifdef GL_SHADERS
 	gl_shaderstate.current = NULL;
 	gl_shaderstate.type = 0;
 	gl_shaderstate.program = 0;
 
 	if (pglUseProgram)
 		pglUseProgram(0);
-#endif
 
 	gl_shadersenabled = false;
 }
@@ -1639,7 +1609,6 @@ EXPORT void HWRAPI(SetTexture) (FTextureInfo *pTexInfo)
 
 static void Shader_SetUniforms(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRGBAFloat *tint, GLRGBAFloat *fade)
 {
-#ifdef GL_SHADERS
 	gl_shader_t *shader = gl_shaderstate.current;
 
 	if (gl_shadersenabled && (shader != NULL) && pglUseProgram)
@@ -1699,12 +1668,6 @@ static void Shader_SetUniforms(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRGBAF
 		#undef UNIFORM_3
 		#undef UNIFORM_4
 	}
-#else
-	(void)Surface;
-	(void)poly;
-	(void)tint;
-	(void)fade;
-#endif
 }
 
 static boolean Shader_CompileProgram(gl_shader_t *shader, GLint i)
