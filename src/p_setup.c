@@ -2356,15 +2356,7 @@ static void P_LevelInitStuff(void)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-#if 0
-		if ((netgame || multiplayer) && (gametype == GT_COMPETITION || players[i].lives <= 0))
-		{
-			// In Co-Op, replenish a user's lives if they are depleted.
-			players[i].lives = cv_startinglives.value;
-		}
-#else
 		players[i].lives = 1; // SRB2Kart
-#endif
 
 		players[i].realtime = racecountdown = exitcountdown = 0;
 		curlap = bestlap = 0; // SRB2Kart
@@ -2687,47 +2679,6 @@ static void P_LoadRecordGhosts(void)
 
 	free(gpath);
 }
-
-/*static void P_LoadNightsGhosts(void)
-{
-	const size_t glen = strlen(srb2home)+1+strlen("replay")+1+strlen(timeattackfolder)+1+strlen("MAPXX")+1;
-	char *gpath = malloc(glen);
-
-	if (!gpath)
-		return;
-
-	sprintf(gpath,"%s"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s", srb2home, timeattackfolder, G_BuildMapName(gamemap));
-
-	// Best Score ghost
-	if (cv_ghost_bestscore.value && FIL_FileExists(va("%s-score-best.lmp", gpath)))
-			G_AddGhost(va("%s-score-best.lmp", gpath));
-
-	// Best Time ghost
-	if (cv_ghost_besttime.value && FIL_FileExists(va("%s-time-best.lmp", gpath)))
-			G_AddGhost(va("%s-time-best.lmp", gpath));
-
-	// Last ghost
-	if (cv_ghost_last.value && FIL_FileExists(va("%s-last.lmp", gpath)))
-		G_AddGhost(va("%s-last.lmp", gpath));
-
-	// Guest ghost
-	if (cv_ghost_guest.value && FIL_FileExists(va("%s-guest.lmp", gpath)))
-		G_AddGhost(va("%s-guest.lmp", gpath));
-
-	// Staff Attack ghosts
-	if (cv_ghost_staff.value)
-	{
-		lumpnum_t l;
-		UINT8 i = 1;
-		while (i <= 99 && (l = W_CheckNumForName(va("%sS%02u",G_BuildMapName(gamemap),i))) != LUMPERROR)
-		{
-			G_AddGhost(va("%sS%02u",G_BuildMapName(gamemap),i));
-			i++;
-		}
-	}
-
-	free(gpath);
-}*/
 
 static void P_SetupCamera(UINT8 pnum, camera_t *cam)
 {
