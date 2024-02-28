@@ -3931,13 +3931,6 @@ static boolean PIT_ChangeSector(mobj_t *thing, boolean realcrush)
 				topheight = *rover->topheight;
 				bottomheight = *rover->bottomheight;
 
-/*#ifdef ESLOPE
-				if (rover->t_slope)
-					topheight = P_GetZAt(rover->t_slope, thing->x, thing->y);
-				if (rover->b_slope)
-					bottomheight = P_GetZAt(rover->b_slope, thing->x, thing->y);
-#endif*/
-
 				delta1 = thing->z - (bottomheight + topheight)/2;
 				delta2 = thingtop - (bottomheight + topheight)/2;
 				if (bottomheight <= thing->ceilingz && abs(delta1) >= abs(delta2))
