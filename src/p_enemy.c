@@ -765,78 +765,6 @@ static boolean P_LookForShield(mobj_t *actor)
 	//return false;
 }
 
-#ifdef WEIGHTEDRECYCLER
-// Compares players to see who currently has the "best" items, etc.
-static int P_RecycleCompare(const void *p1, const void *p2)
-{
-	player_t *player1 = &players[*(const UINT8 *)p1];
-	player_t *player2 = &players[*(const UINT8 *)p2];
-
-	// Non-shooting gametypes
-	if (!G_RaceGametype())
-	{
-		// Invincibility.
-		if (player1->powers[pw_invulnerability] > player2->powers[pw_invulnerability]) return -1;
-		else if (player2->powers[pw_invulnerability] > player1->powers[pw_invulnerability]) return 1;
-
-		// One has a shield, the other doesn't.
-		if (player1->powers[pw_shield] && !player2->powers[pw_shield]) return -1;
-		else if (player2->powers[pw_shield] && !player1->powers[pw_shield]) return 1;
-
-		// Sneakers.
-		if (player1->powers[pw_sneakers] > player2->powers[pw_sneakers]) return -1;
-		else if (player2->powers[pw_sneakers] > player1->powers[pw_sneakers]) return 1;
-	}
-	else // Match, Team Match, CTF, Tag, Etc.
-	{
-		UINT8 player1_em = M_CountBits((UINT32)player1->powers[pw_emeralds], 7);
-		UINT8 player2_em = M_CountBits((UINT32)player2->powers[pw_emeralds], 7);
-
-		UINT8 player1_rw = M_CountBits((UINT32)player1->ringweapons, NUM_WEAPONS-1);
-		UINT8 player2_rw = M_CountBits((UINT32)player2->ringweapons, NUM_WEAPONS-1);
-
-		UINT16 player1_am = player1->powers[pw_infinityring]          // max 800
-		                  + player1->powers[pw_automaticring]         // max 300
-		                  + (player1->powers[pw_bouncering]    * 3)   // max 100
-		                  + (player1->powers[pw_explosionring] * 6)   // max 50
-		                  + (player1->powers[pw_scatterring]   * 3)   // max 100
-		                  + (player1->powers[pw_grenadering]   * 6)   // max 50
-		                  + (player1->powers[pw_railring]      * 6);  // max 50
-		UINT16 player2_am = player2->powers[pw_infinityring]          // max 800
-		                  + player2->powers[pw_automaticring]         // max 300
-		                  + (player2->powers[pw_bouncering]    * 3)   // max 100
-		                  + (player2->powers[pw_explosionring] * 6)   // max 50
-		                  + (player2->powers[pw_scatterring]   * 3)   // max 100
-		                  + (player2->powers[pw_grenadering]   * 6)   // max 50
-		                  + (player2->powers[pw_railring]      * 6);  // max 50
-
-		// Super trumps everything.
-		if (player1->powers[pw_super] && !player2->powers[pw_super]) return -1;
-		else if (player2->powers[pw_super] && !player1->powers[pw_super]) return 1;
-
-		// Emerald count if neither player is Super.
-		if (player1_em > player2_em) return -1;
-		else if (player1_em < player2_em) return 1;
-
-		// One has a shield, the other doesn't.
-		// (the likelihood of a shielded player being worse off than one without one is low.)
-		if (player1->powers[pw_shield] && !player2->powers[pw_shield]) return -1;
-		else if (player2->powers[pw_shield] && !player1->powers[pw_shield]) return 1;
-
-		// Ring weapons count
-		if (player1_rw > player2_rw) return -1;
-		else if (player1_rw < player2_rw) return 1;
-
-		// Ring ammo if they have the same number of weapons
-		if (player1_am > player2_am) return -1;
-		else if (player1_am < player2_am) return 1;
-	}
-
-	// Identical for our purposes
-	return 0;
-}
-#endif
-
 //
 // ACTION ROUTINES
 //
@@ -5833,9 +5761,6 @@ void A_RecyclePowers(mobj_t *actor)
 {
 	INT32 i, j, k, numplayers = 0;
 
-#ifdef WEIGHTEDRECYCLER
-	UINT8 beneficiary = 255;
-#endif
 	UINT8 playerslist[MAXPLAYERS];
 	UINT8 postscramble[MAXPLAYERS];
 
@@ -5848,7 +5773,7 @@ void A_RecyclePowers(mobj_t *actor)
 		return;
 #endif
 
-#if !defined(WEIGHTEDRECYCLER) && !defined(HAVE_BLUA)
+#if !defined(HAVE_BLUA)
 	// actor is used in all scenarios but this one, funny enough
 	(void)actor;
 #endif
@@ -5864,19 +5789,11 @@ void A_RecyclePowers(mobj_t *actor)
 		if (playeringame[i] && players[i].mo && players[i].mo->health > 0 && players[i].playerstate == PST_LIVE
 			&& !players[i].exiting && !((netgame || multiplayer) && players[i].spectator))
 		{
-#ifndef WEIGHTEDRECYCLER
 			if (players[i].powers[pw_super])
 				continue; // Ignore super players
-#endif
 
 			numplayers++;
 			postscramble[j] = playerslist[j] = (UINT8)i;
-
-#ifdef WEIGHTEDRECYCLER
-			// The guy who started the recycle gets the best result
-			if (actor && actor->target && actor->target->player && &players[i] == actor->target->player)
-				beneficiary = (UINT8)i;
-#endif
 
 			// Save powers
 			for (k = 0; k < NUMPOWERS; k++)
@@ -5909,25 +5826,6 @@ void A_RecyclePowers(mobj_t *actor)
 		postscramble[j] = postscramble[i];
 		postscramble[i] = tempint;
 	}
-
-#ifdef WEIGHTEDRECYCLER
-	//the joys of qsort...
-	if (beneficiary != 255) {
-		qsort(playerslist, numplayers, sizeof(UINT8), P_RecycleCompare);
-
-		// now, make sure the benificiary is in the best slot
-		// swap out whatever poor sap was going to get the best items
-		for (i = 0; i < numplayers; i++)
-		{
-			if (postscramble[i] == beneficiary)
-			{
-				postscramble[i] = postscramble[0];
-				postscramble[0] = beneficiary;
-				break;
-			}
-		}
-	}
-#endif
 
 	// now assign!
 	for (i = 0; i < numplayers; i++)
