@@ -3584,31 +3584,3 @@ boolean P_MultiSetupWadFiles(boolean fullsetup)
 		return false;
 	}
 }
-
-#ifdef DELFILE
-boolean P_DelWadFile(void)
-{
-	sfxenum_t i;
-	const UINT16 wadnum = (UINT16)(numwadfiles - 1);
-	const lumpnum_t lumpnum = numwadfiles<<16;
-	//lumpinfo_t *lumpinfo = wadfiles[wadnum]->lumpinfo;
-	R_DelSkins(wadnum); // only used by DELFILE
-	R_DelSpriteDefs(wadnum); // only used by DELFILE
-	for (i = 0; i < NUMSFX; i++)
-	{
-		if (S_sfx[i].lumpnum != LUMPERROR && S_sfx[i].lumpnum >= lumpnum)
-		{
-			S_StopSoundByNum(i);
-			S_RemoveSoundFx(i);
-			if (S_sfx[i].lumpnum != LUMPERROR)
-			{
-				I_FreeSfx(&S_sfx[i]);
-				S_sfx[i].lumpnum = LUMPERROR;
-			}
-		}
-	}
-	W_UnloadWadFile(wadnum); // only used by DELFILE
-	R_LoadTextures();
-	return false;
-}
-#endif

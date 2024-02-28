@@ -61,10 +61,6 @@ void R_SortVisSprites(void);
 //     (only sprites from namelist are added or replaced)
 void R_AddSpriteDefs(UINT16 wadnum);
 
-#ifdef DELFILE
-void R_DelSpriteDefs(UINT16 wadnum);
-#endif
-
 //SoM: 6/5/2000: Light sprites correctly!
 void R_AddSprites(sector_t *sec, INT32 lightlevel);
 void R_InitSprites(void);
@@ -228,10 +224,6 @@ INT32 R_SkinAvailable(const char *name);
 INT32 R_AnySkinAvailable(const char *name);
 INT32 R_LocalSkinAvailable(const char *name, boolean local);
 void R_AddSkins(UINT16 wadnum, boolean local);
-
-#ifdef DELFILE
-void R_DelSkins(UINT16 wadnum);
-#endif
 
 void R_InitDrawNodes(void);
 
