@@ -165,7 +165,6 @@ typedef struct
 	FLOAT       s,t;
 } FOutVector;
 
-#ifdef GL_SHADERS
 // Shader targets used to render specific types of geometry.
 // A shader target is resolved to an actual shader with HWR_GetShaderFromTarget.
 // The shader returned may be a base shader or a custom shader.
@@ -203,7 +202,6 @@ enum hwdshaderstage
 
 typedef enum hwdshaderstage hwdshaderstage_t;
 
-#endif
 
 // ==========================================================================
 //                                                               RENDER MODES

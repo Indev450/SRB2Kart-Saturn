@@ -624,9 +624,6 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 #define ROTANGLES 180 // Needs to be a divisor of 360 (45, 60, 90, 120...)
 #define ROTANGDIFF (360 / ROTANGLES)
 
-/// Hardware renderer: OpenGL
-#define GL_SHADERS
-
 #if defined (HAVE_CURL) && ! defined (NONET)
 #define MASTERSERVER
 #define HOLEPUNCH
