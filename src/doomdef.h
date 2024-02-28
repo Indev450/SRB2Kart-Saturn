@@ -561,10 +561,6 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 /// Undefine to use the new method of Gamma correction see colour cube in v_video.c
 #define BACKWARDSCOMPATCORRECTION
 
-///	Delete file while the game is running.
-///	\note	EXTREMELY buggy, tends to crash game.
-//#define DELFILE
-
 ///	Allows the use of devmode in multiplayer. AKA "fishcake"
 //#define NETGAME_DEVMODE
 
