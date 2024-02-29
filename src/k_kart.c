@@ -9117,16 +9117,19 @@ static void K_drawNameTags(void)
 			break;
 
 		//Flipcam off
-		if (players[i].mo->eflags & MFE_VERTICALFLIP && !(players[i].pflags & PF_FLIPCAM))
+		//if (players[i].mo->eflags & MFE_VERTICALFLIP && !(players[i].pflags & PF_FLIPCAM))
+		if (stplyr->mo->eflags & MFE_VERTICALFLIP && !(stplyr->pflags & PF_FLIPCAM))
 			pos.y += players[i].mo->height;
 
 		//Flipcam on
-		if (players[i].mo->eflags & MFE_VERTICALFLIP && (players[i].pflags & PF_FLIPCAM))
+		//if (players[i].mo->eflags & MFE_VERTICALFLIP && (players[i].pflags & PF_FLIPCAM))
+		if (stplyr->mo->eflags & MFE_VERTICALFLIP && (stplyr->pflags & PF_FLIPCAM))
 			pos.y -= ((30*dup)<<FRACBITS);
 
 		//Flipcam off
-		if (players[i].mo->eflags & MFE_VERTICALFLIP && !(players[i].pflags & PF_FLIPCAM))
-			flipped = players[i].mo->eflags & MFE_VERTICALFLIP && !(players[i].pflags & PF_FLIPCAM);
+		//if (players[i].mo->eflags & MFE_VERTICALFLIP && !(players[i].pflags & PF_FLIPCAM))
+		if (stplyr->mo->eflags & MFE_VERTICALFLIP && !(stplyr->pflags & PF_FLIPCAM))
+			flipped = players[i].mo->eflags & MFE_VERTICALFLIP;
 
 		//Saltyhop hehe
 		if (cv_saltyhop.value && cv_nametaghop.value)
