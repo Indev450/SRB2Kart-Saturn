@@ -7740,6 +7740,9 @@ void T_Pusher(pusher_t *p)
 		xh = (unsigned)(tmbbox[BOXRIGHT] - bmaporgx + MAXRADIUS)>>MAPBLOCKSHIFT;
 		yl = (unsigned)(tmbbox[BOXBOTTOM] - bmaporgy - MAXRADIUS)>>MAPBLOCKSHIFT;
 		yh = (unsigned)(tmbbox[BOXTOP] - bmaporgy + MAXRADIUS)>>MAPBLOCKSHIFT;
+
+		BMBOUNDFIX(xl, xh, yl, yh);
+
 		for (bx = xl; bx <= xh; bx++)
 			for (by = yl; by <= yh; by++)
 				P_BlockThingsIterator(bx,by, PIT_PushThing);

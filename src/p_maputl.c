@@ -26,6 +26,7 @@
 //
 // P_ClosestPointOnLine
 // Finds the closest point on a given line to the supplied point
+// Considers line length to be infinite, and can return results outside of the actual line
 //
 void P_ClosestPointOnLine(fixed_t x, fixed_t y, line_t *line, vertex_t *result)
 {
@@ -62,6 +63,29 @@ void P_ClosestPointOnLine(fixed_t x, fixed_t y, line_t *line, vertex_t *result)
 	//Add (&Line[0], &V, out);
 	result->x = startx + vx;
 	result->y = starty + vy;
+	return;
+}
+
+//
+// P_ClosestPointOnLineWithinLine
+// Finds the closest point on a given line to the supplied point
+// Like P_ClosestPointOnLine, except the result is constrained within the actual line
+//
+void P_ClosestPointOnLineWithinLine(fixed_t x, fixed_t y, line_t *line, vertex_t *result)
+{
+	fixed_t maxx, maxy, minx, miny;
+
+	P_ClosestPointOnLine(x, y, line, result);
+
+	// Determine max and min bounds of the line
+	maxx = max(line->v1->x, line->v2->x);
+	maxy = max(line->v1->y, line->v2->y);
+	minx = min(line->v1->x, line->v2->x);
+	miny = min(line->v1->y, line->v2->y);
+
+	// Constrain result to line by ensuring x and y don't go beyond the maximums
+	result->x = min(max(result->x, minx),maxx);
+	result->y = min(max(result->y, miny),maxy);
 	return;
 }
 
@@ -167,7 +191,7 @@ INT32 P_PointOnLineSide(fixed_t x, fixed_t y, line_t *line)
 
 //
 // P_BoxOnLineSide
-// Considers the line to be infinite
+// Clips line, not infinite, prevents false positive collisions
 // Returns side 0 or 1, -1 if box crosses the line.
 //
 INT32 P_BoxOnLineSide(fixed_t *tmbox, line_t *ld)
@@ -214,6 +238,23 @@ INT32 P_BoxOnLineSide(fixed_t *tmbox, line_t *ld)
 	if (p1 == p2)
 		return p1;
 	return -1;
+}
+
+//
+// P_CircleOnLineSide
+// Considers the line to be infinite
+// Returns side 0 or 1, -1 if circle crosses the line.
+// Man, circles are easier than boxes
+//
+INT32 P_CircleOnLineSide(fixed_t x, fixed_t y, fixed_t radius, line_t *ld)
+{
+	vertex_t closestpoint;	
+	P_ClosestPointOnLineWithinLine(x, y, ld, &closestpoint);
+
+	if (abs(R_PointToDist2(closestpoint.x, closestpoint.y, x, y)) < radius)
+		return -1; // Inside circle
+	else
+		return P_PointOnLineSide(x, y, ld); // Not inside so just return this instead
 }
 
 //
@@ -1324,7 +1365,7 @@ boolean P_PathTraverse(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2,
 		}
 	}
 	// Go through the sorted list
-	return P_TraverseIntercepts(trav, FRACUNIT);
+	return P_TraverseIntercepts(trav, 256*FRACUNIT);
 }
 
 
@@ -1337,13 +1378,12 @@ boolean P_PathTraverse(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2,
 // returns FALSE if the loop exited early after a false return
 // value from your user function
 
-//abandoned, maybe I'll need it someday..
-/*
 boolean P_RadiusLinesCheck(fixed_t radius, fixed_t x, fixed_t y,
 	boolean (*func)(line_t *))
 {
 	INT32 xl, xh, yl, yh;
 	INT32 bx, by;
+	boolean blockval = true;
 
 	tmbbox[BOXTOP] = y + radius;
 	tmbbox[BOXBOTTOM] = y - radius;
@@ -1355,11 +1395,14 @@ boolean P_RadiusLinesCheck(fixed_t radius, fixed_t x, fixed_t y,
 	xh = (unsigned)(tmbbox[BOXRIGHT] - bmaporgx)>>MAPBLOCKSHIFT;
 	yl = (unsigned)(tmbbox[BOXBOTTOM] - bmaporgy)>>MAPBLOCKSHIFT;
 	yh = (unsigned)(tmbbox[BOXTOP] - bmaporgy)>>MAPBLOCKSHIFT;
+	
+	BMBOUNDFIX(xl, xh, yl, yh);
+
+	validcount++;
 
 	for (bx = xl; bx <= xh; bx++)
 		for (by = yl; by <= yh; by++)
 			if (!P_BlockLinesIterator(bx, by, func))
-				return false;
-	return true;
+				blockval = false;
+	return blockval;
 }
-*/

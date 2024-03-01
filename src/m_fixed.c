@@ -179,9 +179,7 @@ fixed_t FV2_Distance(const vector2_t *p1, const vector2_t *p2)
 
 fixed_t FV2_Magnitude(const vector2_t *a_normal)
 {
-	fixed_t xs = FixedMul(a_normal->x, a_normal->x);
-	fixed_t ys = FixedMul(a_normal->y, a_normal->y);
-	return FixedSqrt(xs + ys);
+	return FixedHypot(a_normal->x, a_normal->y); // Much less prone to overflowing
 }
 
 // Also returns the magnitude
