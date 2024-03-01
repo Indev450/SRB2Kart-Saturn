@@ -8985,6 +8985,8 @@ static void K_GetScreenCoords(vector2_t *vec, player_t *player, camera_t *came, 
 #endif
 		// thanks fickle
 		offset = FixedDiv(offset, fovratio);
+		if (srcflip)
+			offset = -offset; // flipcam
 		y = y + offset;
 	}
 
@@ -9012,8 +9014,6 @@ static void K_GetScreenCoords(vector2_t *vec, player_t *player, camera_t *came, 
 		if (splitindex >= 2)
 			y = y + yres;
 	}
-	
-	
 
 	vec->y = y;
 	vec->x = x;
