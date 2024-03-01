@@ -8973,12 +8973,29 @@ static void K_GetScreenCoords(vector2_t *vec, player_t *player, camera_t *came, 
 #endif
 		// thanks fickle
 		offset = FixedDiv(offset, fovratio);
+		if (srcflip)
+			offset = -offset; // flipcam
 		y = y + offset;
 	}
 
 	// project the angle to get our final X coordinate
 	x = FixedMul(FINETANGENT(((x+ANGLE_90)>>ANGLETOFINESHIFT) & 4095), fov);
 	x = x + xres;
+
+	// adjust coords for splitscreen
+	if (splitscreen == 1){ // 2P
+		y = y>>1;
+		if (splitindex)
+			y = y + yres;
+	}
+	if (splitscreen >= 2) { // 3P or 4P
+		x = x>>1;
+		y = y>>1;
+		if (splitindex & 1)
+			x = x + xres;
+		if (splitindex >= 2)
+			y = y + yres;
+	}
 
 	vec->y = y;
 	vec->x = x;
