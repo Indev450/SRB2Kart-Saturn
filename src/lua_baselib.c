@@ -24,6 +24,7 @@
 #include "console.h"
 #include "k_kart.h" // SRB2Kart
 #include "d_netcmd.h" // IsPlayerAdmin
+#include "m_misc.h" // M_MapNumber
 
 #include "lua_script.h"
 #include "lua_libs.h"
@@ -150,6 +151,23 @@ static int lib_isPlayerAdmin(lua_State *L)
 	if (!player)
 		return LUA_ErrInvalid(L, "player_t");
 	lua_pushboolean(L, IsPlayerAdmin(player-players));
+	return 1;
+}
+
+// M_MISC
+//////////////
+
+static int lib_mMapNumber(lua_State *L)
+{
+	const char *arg = luaL_checkstring(L, 1);
+	size_t len = strlen(arg);
+	if (len == 2 || len == 5) {
+		char first = arg[len-2];
+		char second = arg[len-1];
+		lua_pushinteger(L, M_MapNumber(first, second));
+	} else {
+		lua_pushinteger(L, 0);
+	}
 	return 1;
 }
 
@@ -780,6 +798,17 @@ static int lib_pSetObjectMomZ(lua_State *L)
 	return 0;
 }
 
+static int lib_pIsLocalPlayer(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	//NOHUD
+	//INLEVEL
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	lua_pushboolean(L, P_IsLocalPlayer(player));
+	return 1;
+}
+
 static int lib_pRestoreMusic(lua_State *L)
 {
 	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
@@ -954,6 +983,19 @@ static int lib_pHomingAttack(lua_State *L)
 	if (!source || !enemy)
 		return LUA_ErrInvalid(L, "mobj_t");
 	P_HomingAttack(source, enemy);
+	return 0;
+}
+
+static int lib_pResetCamera(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	camera_t *cam = *((camera_t **)luaL_checkudata(L, 2, META_CAMERA));
+
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	if (!cam)
+		return LUA_ErrInvalid(L, "camera_t");
+	P_ResetCamera(player, cam);
 	return 0;
 }
 
@@ -1634,6 +1676,17 @@ static int lib_pGetZAt(lua_State *L)
 	return 1;
 }
 
+static int lib_pButteredSlope(lua_State *L)
+{
+	mobj_t *mobj = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));
+	NOHUD
+	//INLEVEL
+	if (!mobj)
+		return LUA_ErrInvalid(L, "mobj_t");
+	P_ButteredSlope(mobj);
+	return 0;
+}
+
 // R_DEFS
 ////////////
 
@@ -1683,6 +1736,20 @@ static int lib_rPointInSubsector(lua_State *L)
 	fixed_t y = luaL_checkfixed(L, 2);
 	//HUDSAFE
 	LUA_PushUserdata(L, R_PointInSubsector(x, y), META_SUBSECTOR);
+	return 1;
+}
+
+static int lib_rIsPointInSubsector(lua_State *L)
+{
+	fixed_t x = luaL_checkfixed(L, 1);
+	fixed_t y = luaL_checkfixed(L, 2);
+	subsector_t *sub = R_IsPointInSubsector(x, y);
+	//HUDSAFE
+	//INLEVEL
+	if (sub)
+		LUA_PushUserdata(L, sub, META_SUBSECTOR);
+	else
+		lua_pushnil(L);
 	return 1;
 }
 
@@ -3007,6 +3074,9 @@ static luaL_Reg lib[] = {
 	{"EvalMath", lib_evalMath},
 	{"IsPlayerAdmin", lib_isPlayerAdmin},
 
+	// m_misc
+	{"M_MapNumber",lib_mMapNumber},
+
 	// m_random
 	{"P_RandomFixed",lib_pRandomFixed},
 	{"P_RandomByte",lib_pRandomByte},
@@ -3067,6 +3137,7 @@ static luaL_Reg lib[] = {
 	{"P_InSpaceSector",lib_pInSpaceSector},
 	{"P_InQuicksand",lib_pInQuicksand},
 	{"P_SetObjectMomZ",lib_pSetObjectMomZ},
+	{"P_IsLocalPlayer",lib_pIsLocalPlayer},
 	{"P_RestoreMusic",lib_pRestoreMusic},
 	{"P_SpawnShieldOrb",lib_pSpawnShieldOrb},
 	{"P_SpawnGhostMobj",lib_pSpawnGhostMobj},
@@ -3083,6 +3154,7 @@ static luaL_Reg lib[] = {
 	{"P_LookForEnemies",lib_pLookForEnemies},
 	{"P_NukeEnemies",lib_pNukeEnemies},
 	{"P_HomingAttack",lib_pHomingAttack},
+	{"P_ResetCamera",lib_pResetCamera},
 	//{"P_SuperReady",lib_pSuperReady},
 	{"P_Telekinesis",lib_pTelekinesis},
 
@@ -3137,6 +3209,7 @@ static luaL_Reg lib[] = {
 
 	// p_slopes
 	{"P_GetZAt",lib_pGetZAt},
+	{"P_ButteredSlope",lib_pButteredSlope},
 
 	// r_defs
 	{"R_PointToAngle",lib_rPointToAngle},
@@ -3144,6 +3217,7 @@ static luaL_Reg lib[] = {
 	{"R_PointToDist",lib_rPointToDist},
 	{"R_PointToDist2",lib_rPointToDist2},
 	{"R_PointInSubsector",lib_rPointInSubsector},
+	{"R_IsPointInSubsector",lib_rIsPointInSubsector},
 
 	// r_things (sprite)
 	{"R_Char2Frame",lib_rChar2Frame},

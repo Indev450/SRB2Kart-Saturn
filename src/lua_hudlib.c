@@ -140,6 +140,7 @@ enum cameraf {
 	camera_x,
 	camera_y,
 	camera_z,
+	camera_reset,
 	camera_angle,
 	camera_subsector,
 	camera_floorz,
@@ -159,6 +160,7 @@ static const char *const camera_opt[] = {
 	"x",
 	"y",
 	"z",
+	"reset",
 	"angle",
 	"subsector",
 	"floorz",
@@ -348,6 +350,9 @@ static int camera_get(lua_State *L)
 		break;
 	case camera_z:
 		lua_pushinteger(L, cam->z);
+		break;
+	case camera_reset:
+		lua_pushboolean(L, cam->reset);
 		break;
 	case camera_angle:
 		lua_pushinteger(L, cam->angle);
