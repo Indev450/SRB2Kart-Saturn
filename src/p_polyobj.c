@@ -177,12 +177,26 @@ boolean P_PointInsidePolyobj(polyobj_t *po, fixed_t x, fixed_t y)
 //
 boolean P_MobjTouchingPolyobj(polyobj_t *po, mobj_t *mo)
 {
+	fixed_t mbbox[4];
 	size_t i;
+	
+	mbbox[BOXTOP] = mo->y + mo->radius;
+	mbbox[BOXBOTTOM] = mo->y - mo->radius;
+	mbbox[BOXRIGHT] = mo->x + mo->radius;
+	mbbox[BOXLEFT] = mo->x - mo->radius;
 
 	for (i = 0; i < po->numLines; i++)
 	{
-		if (P_CircleOnLineSide(mo->x, mo->y, mo->radius, po->lines[i]) == -1)
-			return true;
+		if (mo->player)
+		{
+			if (P_CircleOnLineSide(mo->x, mo->y, mo->radius, po->lines[i]) == -1)
+				return true;
+		}
+		else
+		{
+			if (P_BoxOnLineSide(mbbox, po->lines[i]) == -1)
+				return true;
+		}	
 	}
 
 	return false;
@@ -195,12 +209,26 @@ boolean P_MobjTouchingPolyobj(polyobj_t *po, mobj_t *mo)
 //
 boolean P_MobjInsidePolyobj(polyobj_t *po, mobj_t *mo)
 {
+	fixed_t mbbox[4];
 	size_t i;
+	
+	mbbox[BOXTOP] = mo->y + mo->radius;
+	mbbox[BOXBOTTOM] = mo->y - mo->radius;
+	mbbox[BOXRIGHT] = mo->x + mo->radius;
+	mbbox[BOXLEFT] = mo->x - mo->radius;
 
 	for (i = 0; i < po->numLines; i++)
 	{
-		if (P_CircleOnLineSide(mo->x, mo->y, mo->radius, po->lines[i]) == 0)
-			return false;
+		if (mo->player)
+		{
+			if (P_CircleOnLineSide(mo->x, mo->y, mo->radius, po->lines[i]) == 0)
+				return false;
+		}
+		else
+		{
+			if (P_BoxOnLineSide(mbbox, po->lines[i]) == 0)
+				return false;
+		}
 	}
 
 	return true;

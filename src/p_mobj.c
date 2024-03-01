@@ -559,9 +559,17 @@ fixed_t P_MobjFloorZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed_t
 				if (bbox[BOXRIGHT] <= ld->bbox[BOXLEFT] || bbox[BOXLEFT] >= ld->bbox[BOXRIGHT]
 				|| bbox[BOXTOP] <= ld->bbox[BOXBOTTOM] || bbox[BOXBOTTOM] >= ld->bbox[BOXTOP])
 					continue;
-
-				if (P_CircleOnLineSide(x, y, mobj->radius, ld) != -1)
-					continue;
+				
+				if (mobj->player)
+				{
+					if (P_CircleOnLineSide(x, y, mobj->radius, ld) != -1)
+						continue;
+				}
+				else
+				{
+					if (P_BoxOnLineSide(bbox, ld) != -1)
+						continue;
+				}
 
 				if (lowest)
 					finalheight = min(finalheight, HighestOnLine(mobj->radius, x, y, ld, slope, true));
@@ -623,8 +631,16 @@ fixed_t P_MobjCeilingZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed
 				|| bbox[BOXTOP] <= ld->bbox[BOXBOTTOM] || bbox[BOXBOTTOM] >= ld->bbox[BOXTOP])
 					continue;
 
-				if (P_CircleOnLineSide(x, y, mobj->radius, ld) != -1)
-					continue;
+				if (mobj->player)
+				{
+					if (P_CircleOnLineSide(x, y, mobj->radius, ld) != -1)
+						continue;
+				}
+				else
+				{
+					if (P_BoxOnLineSide(bbox, ld) != -1)
+						continue;
+				}
 
 				if (lowest)
 					finalheight = min(finalheight, HighestOnLine(mobj->radius, x, y, ld, slope, true));

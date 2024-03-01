@@ -1921,8 +1921,16 @@ static boolean PIT_CheckLine(line_t *ld)
 	|| tmbbox[BOXTOP] <= ld->bbox[BOXBOTTOM] || tmbbox[BOXBOTTOM] >= ld->bbox[BOXTOP])
 		return true;
 
-	if (P_CircleOnLineSide(tmx, tmy, tmthing->radius, ld) != -1)
-		return true;
+	if (tmthing->player)
+	{
+		if (P_CircleOnLineSide(tmx, tmy, tmthing->radius, ld) != -1)
+			return true;
+	}
+	else
+	{
+		if (P_BoxOnLineSide(tmbbox, ld) != -1)
+			return true;
+	}
 
 	if (tmthing->flags & MF_PAPERCOLLISION) // Caution! Turning whilst up against a wall will get you stuck. You probably shouldn't give the player this flag.
 	{
