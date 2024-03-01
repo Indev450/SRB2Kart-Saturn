@@ -2006,6 +2006,20 @@ void T_ThwompSector(levelspecthink_t *thwomp)
 #undef ceilingwasheight
 }
 
+
+static void T_UpdateMobjPlaneZ(sector_t *sec)
+{
+	msecnode_t *node = sec->touching_thinglist; // things touching this sector
+	mobj_t *mo;
+	while (node)
+	{
+		mo = node->m_thing;
+		mo->floorz = P_FloorzAtPos(mo->x, mo->y, mo->z, mo->height);
+		mo->ceilingz = P_CeilingzAtPos(mo->x, mo->y, mo->z, mo->height);
+		node = node->m_thinglist_next;
+	}
+}
+
 //
 // T_NoEnemiesThinker
 //
@@ -3072,6 +3086,7 @@ void EV_CrumbleChain(sector_t *sec, ffloor_t *rover)
 	// no longer exists (can't collide with again)
 	rover->flags &= ~FF_EXISTS;
 	rover->master->frontsector->moved = true;
+	T_UpdateMobjPlaneZ(sec); // prevent objects from floating
 	sec->moved = true;
 }
 
