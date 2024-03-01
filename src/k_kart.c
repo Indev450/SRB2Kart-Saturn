@@ -9002,9 +9002,13 @@ static void K_drawNameTags(void)
 	char *tag;
 	patch_t *icon;
 	INT32 hudtransflag = V_LocalTransFlag();
+	boolean flipcam;
 
 	if (!stplyr->mo || (stplyr->spectator && !cv_shownametagspectator.value) || splitscreen || (stplyr->exiting && !cv_shownametagfinish.value))
 		return;
+
+	// True if currently viewed player is flipped and has flipcam on
+	flipcam = (stplyr->pflags & PF_FLIPCAM) && (stplyr->mo->eflags & MFE_VERTICALFLIP);
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
@@ -9012,6 +9016,8 @@ static void K_drawNameTags(void)
 		fixed_t distance = 0;
 		fixed_t maxdistance = (10*cv_nametagdist.value)* mapobjectscale;
 		angle_t an;
+		flipped = 0;
+		fixed_t z;
 		
 		if (i > PLAYERSMASK)
 			continue;
@@ -9066,8 +9072,24 @@ static void K_drawNameTags(void)
 
 		dup = vid.dupx;
 
-		K_GetScreenCoords(&pos, stplyr, camera, players[i].mo->x, players[i].mo->y, players[i].mo->z + players[i].mo->height);
-		
+		// If flipcam is on, other player is flipped relative to us when we have different
+		// verticalflip flag value. Otherwise, they are simply flipped when verticalflip flag says
+		// so
+		if (flipcam)
+			flipped = (players[i].mo->eflags & MFE_VERTICALFLIP) != (stplyr->mo->eflags & MFE_VERTICALFLIP);
+		else
+			flipped = players[i].mo->eflags & MFE_VERTICALFLIP;
+
+		z = players[i].mo->z;
+
+		z += (players[i].mo->eflags & MFE_VERTICALFLIP) ? -players[i].mo->height/2 : players[i].mo->height;
+
+		//Saltyhop hehe
+		if (cv_saltyhop.value && cv_nametaghop.value)
+			z += (players[i].mo->eflags & MFE_VERTICALFLIP) ? -players[i].mo->spriteyoffset : players[i].mo->spriteyoffset;
+
+		K_GetScreenCoords(&pos, stplyr, camera, players[i].mo->x, players[i].mo->y, z);
+
 		//Check for negative screencoords
 		if (pos.x == -1 || pos.y == -1)
 			continue;
@@ -9076,22 +9098,6 @@ static void K_drawNameTags(void)
 
 		if (tagsdisplayed > cv_nametagmaxplayers.value)
 			break;
-
-		//Flipcam off
-		if (players[i].mo->eflags & MFE_VERTICALFLIP && !(players[i].pflags & PF_FLIPCAM))
-			pos.y += players[i].mo->height; 
-
-		//Flipcam on
-		if (players[i].mo->eflags & MFE_VERTICALFLIP && (players[i].pflags & PF_FLIPCAM))
-			pos.y -= ((30*dup)<<FRACBITS); 
-
-		//Flipcam off
-		if (players[i].mo->eflags & MFE_VERTICALFLIP && !(players[i].pflags & PF_FLIPCAM))
-			flipped = players[i].mo->eflags & MFE_VERTICALFLIP && !(players[i].pflags & PF_FLIPCAM);
-
-		//Saltyhop hehe
-		if (cv_saltyhop.value && cv_nametaghop.value)
-			pos.y -= flipped ? -players[i].mo->spriteyoffset : players[i].mo->spriteyoffset;
 
 		namex = pos.x>>FRACBITS;
 		namey = pos.y>>FRACBITS;
