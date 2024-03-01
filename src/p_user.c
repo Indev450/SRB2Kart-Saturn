@@ -2120,6 +2120,7 @@ static void P_3dMovement(player_t *player)
 			player->mo->momy = tempmomy + player->cmomy;
 		}
 	}
+	player->mo->friction = ORIG_FRICTION; //katsy: reset player friction AFTER movement code
 }
 
 //
