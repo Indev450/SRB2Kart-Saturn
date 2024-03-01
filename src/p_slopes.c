@@ -816,7 +816,7 @@ void P_ReverseQuantizeMomentumToSlope(vector3_t *momentum, pslope_t *slope)
 
 // SRB2Kart: This fixes all slope-based jumps for different scales in Kart automatically without map tweaking.
 // However, they will always feel off every single time... see for yourself: https://cdn.discordapp.com/attachments/270211093761097728/484924392128774165/kart0181.gif
-//#define GROWNEVERMISSES
+#define GROWNEVERMISSES
 
 //
 // P_SlopeLaunch
@@ -837,10 +837,18 @@ void P_SlopeLaunch(mobj_t *mo)
 
 #ifdef GROWNEVERMISSES
 		{
-			const fixed_t xyscale = mapobjectscale + (mapobjectscale - mo->scale);
+			//const fixed_t xyscale = mapobjectscale + (mapobjectscale - mo->scale);
 			const fixed_t zscale = mapobjectscale + (mapobjectscale - mo->scale);
-			mo->momx = FixedMul(slopemom.x, xyscale);
-			mo->momy = FixedMul(slopemom.y, xyscale);
+
+			// instead of scaling x and y momentum...
+			//mo->momx = FixedMul(slopemom.x, xyscale);
+			//mo->momy = FixedMul(slopemom.y, xyscale);
+			// we leave it unscaled
+			mo->momx = slopemom.x;
+			mo->momy = slopemom.y;
+			
+			// final notes: horizontal speed still feels good while having the player feel "heavier"
+			// would need practical testing in custom maps to see if it's actually consistent however
 			mo->momz = FixedMul(slopemom.z, zscale);
 		}
 #else
