@@ -9264,6 +9264,7 @@ static void K_drawDriftGauge(void)
 	INT32 hudtransflag = V_LocalTransFlag();
 	int dup = vid.dupx;
 	int i,j;
+	fixed_t z;
 
 	UINT8 driftcolors[3][4] = {
 		{0, 0, 10, 16},       // no drift
@@ -9283,23 +9284,25 @@ static void K_drawDriftGauge(void)
 
 	if (!stplyr->mo || !stplyr->kartstuff[k_drift] || (!splitscreen && !camera->chase))
 		return;
+	
+	z = stplyr->mo->z;
+	
+	//vertical flip
+	if (stplyr->mo->eflags & MFE_VERTICALFLIP)
+		z += stplyr->mo->height*2;
 
 	if (!splitscreen)
-		K_GetScreenCoords(&pos, stplyr, camera, stplyr->mo->x, stplyr->mo->y, stplyr->mo->z+FixedMul(cv_driftgaugeofs.value, cv_driftgaugeofs.value > 0 ? stplyr->mo->scale : mapobjectscale));
+		K_GetScreenCoords(&pos, stplyr, camera, stplyr->mo->x, stplyr->mo->y, z+FixedMul(cv_driftgaugeofs.value, cv_driftgaugeofs.value > 0 ? stplyr->mo->scale : mapobjectscale));
 	else
 	{
 		//Loop through each player camera for splitscreen.
 		for (j = 0; j <= stplyrnum; j++)
-			K_GetScreenCoords(&pos, stplyr, &camera[j], stplyr->mo->x, stplyr->mo->y, stplyr->mo->z+FixedMul(cv_driftgaugeofs.value, cv_driftgaugeofs.value > 0 ? stplyr->mo->scale : mapobjectscale));
+			K_GetScreenCoords(&pos, stplyr, &camera[j], stplyr->mo->x, stplyr->mo->y, z+FixedMul(cv_driftgaugeofs.value, cv_driftgaugeofs.value > 0 ? stplyr->mo->scale : mapobjectscale));
 	}
 
 	//Check for negative screencoords
 	if (pos.x == -1 || pos.y == -1)
 		return;
-
-	//Flipcam on
-	if (stplyr->mo->eflags & MFE_VERTICALFLIP && (stplyr->pflags & PF_FLIPCAM))
-		pos.y += ((25*dup)<<FRACBITS); 
 
 	basex = pos.x>>FRACBITS; 
 	basey = pos.y>>FRACBITS;
