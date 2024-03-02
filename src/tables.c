@@ -459,9 +459,6 @@ matrix_t *FM_Rotate(matrix_t *dest, angle_t angle, fixed_t x, fixed_t y, fixed_t
 	M(1, 3) = 0;
 	M(2, 3) = 0;
 	M(3, 3) = FRACUNIT;
-
-	return dest;
-}
-
 #undef M
+	return dest;
 }
