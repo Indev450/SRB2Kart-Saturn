@@ -8,7 +8,7 @@
 // terms of the GNU General Public License, version 2.
 // See the 'LICENSE' file for more details.
 //-----------------------------------------------------------------------------
-/// \file
+/// \file r_opengl.c
 /// \brief OpenGL API for Sonic Robo Blast 2
 
 #if defined (_WIN32)
@@ -26,7 +26,7 @@
 #include "../../r_local.h" // For rendertimefrac, used for the leveltime shader uniform
 #include "r_opengl.h"
 #include "r_vbo.h"
-
+#include "../hw_shaders.h"
 #include "../hw_main.h"
 
 // Eeeeh not sure is this right way, but it works < sry :c < sry again it had to go :c
@@ -674,29 +674,6 @@ static void Shader_SetUniforms(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRGBAF
 static GLRGBAFloat shader_defaultcolor = {1.0f, 1.0f, 1.0f, 1.0f};
 
 //
-// Generic vertex shader
-//
-
-#define GLSL_FALLBACK_VERTEX_SHADER \
-	"void main()\n" \
-	"{\n" \
-		"gl_Position = gl_ProjectionMatrix * gl_ModelViewMatrix * gl_Vertex;\n" \
-		"gl_FrontColor = gl_Color;\n" \
-		"gl_TexCoord[0].xy = gl_MultiTexCoord0.xy;\n" \
-		"gl_ClipVertex = gl_ModelViewMatrix * gl_Vertex;\n" \
-	"}\0"
-
-//
-// Generic fragment shader
-//
-
-#define GLSL_FALLBACK_FRAGMENT_SHADER \
-	"uniform sampler2D tex;\n" \
-	"uniform vec4 poly_color;\n" \
-	"void main(void) {\n" \
-		"gl_FragColor = texture2D(tex, gl_TexCoord[0].st) * poly_color;\n" \
-	"}\0"
-
 
 void SetupGLFunc4(void)
 {
@@ -894,7 +871,7 @@ static void GLPerspective(GLfloat fovy, GLfloat aspect)
 	const GLfloat zNear = NEAR_CLIPPING_PLANE;
 	const GLfloat zFar = FAR_CLIPPING_PLANE;
 	const GLfloat radians = (GLfloat)(fovy / 2.0f * M_PIl / 180.0f);
-	const GLfloat sine = sin(radians);
+	const GLfloat sine = (GLfloat)sin(radians);
 	const GLfloat deltaZ = zFar - zNear;
 	GLfloat cotangent;
 
@@ -1666,9 +1643,9 @@ static void Shader_SetUniforms(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRGBAF
 
 		if (Surface != NULL)
 		{
-			UNIFORM_1(shader->uniforms[gluniform_lighting], Surface->LightInfo.light_level, pglUniform1f);
-			UNIFORM_1(shader->uniforms[gluniform_fade_start], Surface->LightInfo.fade_start, pglUniform1f);
-			UNIFORM_1(shader->uniforms[gluniform_fade_end], Surface->LightInfo.fade_end, pglUniform1f);
+			UNIFORM_1(shader->uniforms[gluniform_lighting], (GLfloat)Surface->LightInfo.light_level, pglUniform1f);
+			UNIFORM_1(shader->uniforms[gluniform_fade_start], (GLfloat)Surface->LightInfo.fade_start, pglUniform1f);
+			UNIFORM_1(shader->uniforms[gluniform_fade_end], (GLfloat)Surface->LightInfo.fade_end, pglUniform1f);
 		}
 
 		UNIFORM_1(shader->uniforms[gluniform_leveltime], ((float)shader_leveltime) / TICRATE, pglUniform1f);
@@ -1824,31 +1801,32 @@ static void PreparePolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FBITFIELD
 
 	SetBlend(PolyFlags);    //TODO: inline (#pragma..)
 
-	// PolyColor
 	if (pSurf)
 	{
-		// If Modulated, mix the surface colour to the texture
+		// If modulated, mix the surface colour to the texture
 		if (CurrentPolyFlags & PF_Modulated)
-		{
-			// Poly color
-			poly.red    = byte2float[pSurf->PolyColor.s.red];
-			poly.green  = byte2float[pSurf->PolyColor.s.green];
-			poly.blue   = byte2float[pSurf->PolyColor.s.blue];
-			poly.alpha  = byte2float[pSurf->PolyColor.s.alpha];
-
 			pglColor4ubv((GLubyte*)&pSurf->PolyColor.s);
+
+		// If the surface is either modulated or colormapped, or both
+		if (CurrentPolyFlags & (PF_Modulated | PF_ColorMapped))
+		{
+			poly.red   = byte2float[pSurf->PolyColor.s.red];
+			poly.green = byte2float[pSurf->PolyColor.s.green];
+			poly.blue  = byte2float[pSurf->PolyColor.s.blue];
+			poly.alpha = byte2float[pSurf->PolyColor.s.alpha];
 		}
 
-		// Tint color
-		tint.red   = byte2float[pSurf->TintColor.s.red];
-		tint.green = byte2float[pSurf->TintColor.s.green];
-		tint.blue  = byte2float[pSurf->TintColor.s.blue];
-		tint.alpha = byte2float[pSurf->TintColor.s.alpha];
+		// Only if the surface is colormapped
+		if (CurrentPolyFlags & PF_ColorMapped)
+		{
+			tint.red   = byte2float[pSurf->TintColor.s.red];
+			tint.green = byte2float[pSurf->TintColor.s.green];
+			tint.blue  = byte2float[pSurf->TintColor.s.blue];
+			tint.alpha = byte2float[pSurf->TintColor.s.alpha];
 
-		// Fade color
-		fade.red   = byte2float[pSurf->FadeColor.s.red];
-		fade.green = byte2float[pSurf->FadeColor.s.green];
-		fade.blue  = byte2float[pSurf->FadeColor.s.blue];
+			fade.red   = byte2float[pSurf->FadeColor.s.red];
+			fade.green = byte2float[pSurf->FadeColor.s.green];
+			fade.blue  = byte2float[pSurf->FadeColor.s.blue];
 		fade.alpha = byte2float[pSurf->FadeColor.s.alpha];
 		
 		if (pSurf->LightTableId && pSurf->LightTableId != lt_downloaded)
