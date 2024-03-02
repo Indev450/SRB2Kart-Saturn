@@ -1183,12 +1183,17 @@ static void R_ProjectSprite(mobj_t *thing)
 #endif
 
 	fixed_t ang_scale = FRACUNIT;
+	
+	INT32 dist = -1;
+
+	if (cv_grmaxinterpdist.value)
+		dist = R_QuickCamDist(thing->x, thing->y);
 
 	// uncapped/interpolation
 	interpmobjstate_t interp = {0};
 
 	// do interpolation
-	if (R_UsingFrameInterpolation() && !paused && (!cv_grmaxinterpdist.value || R_QuickCamDist(thing->x, thing->y) < cv_grmaxinterpdist.value))
+	if (R_UsingFrameInterpolation() && !paused && (!cv_grmaxinterpdist.value || dist < cv_grmaxinterpdist.value))
 	{
 		R_InterpolateMobjState(oldthing, rendertimefrac, &interp);
 	}
@@ -1708,11 +1713,16 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 	//SoM: 3/17/2000
 	fixed_t gz ,gzt;
 
+	INT32 dist = 1;
+
+	if (cv_grmaxinterpdist.value)
+		dist = R_QuickCamDist(thing->x, thing->y);
+
 	// uncapped/interpolation
 	interpmobjstate_t interp = {0};
 
 	// do interpolation
-	if (R_UsingFrameInterpolation() && !paused && (!cv_grmaxinterpdist.value || R_QuickCamDist(thing->x, thing->y) < cv_grmaxinterpdist.value))
+	if (R_UsingFrameInterpolation() && !paused && (!cv_grmaxinterpdist.value || dist < cv_grmaxinterpdist.value))
 	{
 		R_InterpolatePrecipMobjState(thing, rendertimefrac, &interp);
 	}
