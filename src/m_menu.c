@@ -7716,8 +7716,8 @@ void M_SlotCvarIntoModMenu(consvar_t* cvar, const char* category, const char* na
 
 	if (minmax)
 		OP_CustomCvarMenu[ccvarposition] = (menuitem_t){ IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, Z_StrDup(name), cvar, ccvaralphakey };
-	else if (cvar->flags & CV_FLOAT)
-		OP_CustomCvarMenu[ccvarposition] = (menuitem_t){ IT_STRING | IT_CVAR , NULL, Z_StrDup(name), cvar, ccvaralphakey };
+	//else if (cvar->flags & CV_FLOAT)
+		//OP_CustomCvarMenu[ccvarposition] = (menuitem_t){ IT_STRING | IT_CVAR | IT_CV_FLOATSLIDER , NULL, Z_StrDup(name), cvar, ccvaralphakey };
 	else
 		OP_CustomCvarMenu[ccvarposition] = (menuitem_t){ IT_STRING | IT_CVAR, NULL, Z_StrDup(name), cvar, ccvaralphakey };
 
