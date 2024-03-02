@@ -894,12 +894,15 @@ EXPORT void HWRAPI(SetShader) (int slot)
 
 EXPORT void HWRAPI(UnSetShader) (void)
 {
-	gl_shaderstate.current = NULL;
-	gl_shaderstate.type = 0;
-	gl_shaderstate.program = 0;
+	if (gl_shadersenabled) // don't repeatedly call glUseProgram if not needed
+	{
+		gl_shaderstate.current = NULL;
+		gl_shaderstate.type = 0;
+		gl_shaderstate.program = 0;
 
-	if (pglUseProgram)
-		pglUseProgram(0);
+		if (pglUseProgram)
+			pglUseProgram(0);
+	}
 
 	gl_shadersenabled = false;
 }
@@ -3442,7 +3445,7 @@ EXPORT void HWRAPI(DrawScreenFinalTexture)(int tex, INT32 width, INT32 height)
 	pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 	
 	if (HWR_ShouldUsePaletteRendering())
-		UnSetShader();
+		pglUseProgram(0);
 
 	tex_downloaded = screenTextures[tex];
 }
