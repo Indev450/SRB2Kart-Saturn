@@ -816,7 +816,7 @@ void P_ReverseQuantizeMomentumToSlope(vector3_t *momentum, pslope_t *slope)
 
 // SRB2Kart: This fixes all slope-based jumps for different scales in Kart automatically without map tweaking.
 // However, they will always feel off every single time... see for yourself: https://cdn.discordapp.com/attachments/270211093761097728/484924392128774165/kart0181.gif
-#define GROWNEVERMISSES
+//#define GROWNEVERMISSES
 
 //
 // P_SlopeLaunch
