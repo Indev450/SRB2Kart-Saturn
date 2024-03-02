@@ -3240,7 +3240,7 @@ isblocking:
 //
 // PTR_SlideTraverse
 //
-static boolean PTR_SlideTraverse(line_t *li)
+static boolean PTR_SlideTraversePlayer(line_t *li)
 {
 	fixed_t mmomx, mmomy, x, y, dist;
 	vertex_t closestpoint;
@@ -3317,6 +3317,67 @@ isblocking:
 	}
 
 	return true;
+}
+
+static boolean PTR_SlideTraverse(intercept_t *in)
+{
+	line_t *li;
+
+	I_Assert(in->isaline);
+
+	li = in->d.line;
+
+	// one-sided linedefs are always solid to sliding movement.
+	// one-sided linedef
+	if (!li->backsector)
+	{
+		if (P_PointOnLineSide(slidemo->x, slidemo->y, li))
+			return true; // don't hit the back side
+		goto isblocking;
+	}
+
+	if (!(slidemo->flags & MF_MISSILE))
+	{
+		if (li->flags & ML_IMPASSIBLE)
+			goto isblocking;
+
+		if ((slidemo->flags & (MF_ENEMY|MF_BOSS)) && li->flags & ML_BLOCKMONSTERS)
+			goto isblocking;
+	}
+
+	// set openrange, opentop, openbottom
+	P_LineOpening(li, slidemo);
+
+	if (openrange < slidemo->height)
+		goto isblocking; // doesn't fit
+
+	if (opentop - slidemo->z < slidemo->height)
+		goto isblocking; // mobj is too high
+
+	if (openbottom - slidemo->z > FixedMul(MAXSTEPMOVE, mapobjectscale))
+		goto isblocking; // too big a step up
+
+	// this line doesn't block movement
+	return true;
+
+	// the line does block movement,
+	// see if it is closer than best so far
+isblocking:
+	if (li->polyobj && slidemo->player)
+	{
+		if ((li->polyobj->lines[0]->backsector->flags & SF_TRIGGERSPECIAL_TOUCH) && !(li->polyobj->flags & POF_NOSPECIALS))
+			P_ProcessSpecialSector(slidemo->player, slidemo->subsector->sector, li->polyobj->lines[0]->backsector);
+	}
+
+	if (in->frac < bestslidefrac)
+	{
+		secondslidefrac = bestslidefrac;
+		secondslideline = bestslideline;
+		bestslidefrac = in->frac;
+		bestslideline = li;
+	}
+
+	return false; // stop
 }
 
 //
@@ -3429,6 +3490,7 @@ stairstep:
 //
 void P_SlideMove(mobj_t *mo, boolean forceslide)
 {
+	fixed_t leadx, leady, trailx, traily;
 	fixed_t newx, newy;
 	fixed_t mmomx, mmomy;
 	fixed_t maxslidefrac;
@@ -3481,14 +3543,47 @@ retry:
 	}
 	else
 	{
-		mmomx = mo->momx;
-		mmomy = mo->momy;
+		if (mo->momx > 0)
+		{
+			leadx = mo->x + mo->radius;
+			trailx = mo->x - mo->radius;
+		}
+		else
+		{
+			leadx = mo->x - mo->radius;
+			trailx = mo->x + mo->radius;
+		}
+		
+		if (mo->momy > 0)
+		{
+			leady = mo->y + mo->radius;
+			traily = mo->y - mo->radius;
+		}
+		else
+		{
+			leady = mo->y - mo->radius;
+			traily = mo->y + mo->radius;
+		}
 	}
 
-	maxslidefrac = mo->radius + FixedHypot(mmomx, mmomy);
-	bestslidefrac = maxslidefrac;
-
-	P_RadiusLinesCheck(mo->radius, mo->x + mmomx, mo->y + mmomy, PTR_SlideTraverse);
+	if (mo->player)
+	{
+		maxslidefrac = mo->radius + FixedHypot(mmomx, mmomy);
+		bestslidefrac = maxslidefrac;
+		
+		P_RadiusLinesCheck(mo->radius, mo->x + mmomx, mo->y + mmomy, PTR_SlideTraversePlayer);
+	}
+	else
+	{
+		bestslidefrac = FRACUNIT+1;
+		
+		P_PathTraverse(leadx, leady, leadx + mo->momx, leady + mo->momy,
+			PT_ADDLINES, PTR_SlideTraverse);
+		P_PathTraverse(trailx, leady, trailx + mo->momx, leady + mo->momy,
+			PT_ADDLINES, PTR_SlideTraverse);
+		P_PathTraverse(leadx, traily, leadx + mo->momx, traily + mo->momy,
+			PT_ADDLINES, PTR_SlideTraverse);
+	}
 
 	// Some walls are bouncy even if you're not
 	if (!forceslide && bestslideline && !(bestslideline->flags & ML_BOUNCY)) // SRB2kart - All walls are bouncy unless specified otherwise
@@ -3498,7 +3593,7 @@ retry:
 	}
 
 	// move up to the wall
-	if (bestslidefrac == maxslidefrac)
+	if ((mo->player && bestslidefrac == maxslidefrac) || (!mo->player && bestslidefrac == FRACUNIT+1))
 	{
 		// the move must have hit the middle, so stairstep
 stairstep:
@@ -3608,7 +3703,7 @@ void P_BouncePlayerMove(mobj_t *mo)
 	maxslidefrac = mo->radius + FixedHypot(mmomx, mmomy);
 	bestslidefrac = maxslidefrac;
 
-	P_RadiusLinesCheck(mo->radius, mo->x + mmomx, mo->y + mmomy, PTR_SlideTraverse);
+	P_RadiusLinesCheck(mo->radius, mo->x + mmomx, mo->y + mmomy, PTR_SlideTraversePlayer);
 
 	// Now continue along the wall.
 	// First calculate remainder.
@@ -3662,10 +3757,11 @@ void P_BouncePlayerMove(mobj_t *mo)
 //
 void P_BounceMove(mobj_t *mo)
 {
+	fixed_t leadx, leady;
+	fixed_t trailx, traily;
 	fixed_t newx, newy;
 	INT32 hitcount;
 	fixed_t mmomx = 0, mmomy = 0;
-	fixed_t maxslidefrac;
 
 	if (mo->player)
 	{
@@ -3689,13 +3785,37 @@ retry:
 	mmomx = mo->momx;
 	mmomy = mo->momy;
 
-	maxslidefrac = mo->radius + FixedHypot(mmomx, mmomy);
-	bestslidefrac = maxslidefrac;
+	// trace along the three leading corners
+	if (mo->momx > 0)
+	{
+		leadx = mo->x + mo->radius;
+		trailx = mo->x - mo->radius;
+	}
+	else
+	{
+		leadx = mo->x - mo->radius;
+		trailx = mo->x + mo->radius;
+	}
 
-	P_RadiusLinesCheck(mo->radius, mo->x + mmomx, mo->y + mmomy, PTR_SlideTraverse);
+	if (mo->momy > 0)
+	{
+		leady = mo->y + mo->radius;
+		traily = mo->y - mo->radius;
+	}
+	else
+	{
+		leady = mo->y - mo->radius;
+		traily = mo->y + mo->radius;
+	}
+
+	bestslidefrac = FRACUNIT + 1;
+	
+	P_PathTraverse(leadx, leady, leadx + mmomx, leady + mmomy, PT_ADDLINES, PTR_SlideTraverse);
+	P_PathTraverse(trailx, leady, trailx + mmomx, leady + mmomy, PT_ADDLINES, PTR_SlideTraverse);
+	P_PathTraverse(leadx, traily, leadx + mmomx, traily + mmomy, PT_ADDLINES, PTR_SlideTraverse);
 
 	// move up to the wall
-	if (bestslidefrac == maxslidefrac)
+	if (bestslidefrac == FRACUNIT+1)
 	{
 		// the move must have hit the middle, so bounce straight back
 bounceback:
