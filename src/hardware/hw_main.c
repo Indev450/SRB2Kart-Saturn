@@ -3829,8 +3829,10 @@ static void HWR_RotateSpritePolyToAim(gr_vissprite_t *spr, FOutVector *wallVerts
 		// uncapped/interpolation
 		interpmobjstate_t interp = {0};
 		float basey, lowy;
+		INT32 dist = -1;
 
-		INT32 dist = R_QuickCamDist(spr->mobj->x, spr->mobj->y);
+		if (cv_grmaxinterpdist.value)
+			dist = R_QuickCamDist(spr->mobj->x, spr->mobj->y);
 
 		// do interpolation
 		if (R_UsingFrameInterpolation() && !paused && (!cv_grmaxinterpdist.value || dist < cv_grmaxinterpdist.value))
@@ -5047,10 +5049,11 @@ void HWR_ProjectSprite(mobj_t *thing)
 	UINT8 flip;
 	boolean mirrored = thing->mirrored;
 	boolean hflip = (!(thing->frame & FF_HORIZONTALFLIP) != !mirrored);
-	
+
 	angle_t ang, camang;
 	const boolean papersprite = (thing->frame & FF_PAPERSPRITE);
 	INT32 heightsec, phs;
+	INT32 dist = -1;
 
 	fixed_t spr_width, spr_height;
 	fixed_t spr_offset, spr_topoffset;
@@ -5067,7 +5070,8 @@ void HWR_ProjectSprite(mobj_t *thing)
 	if (!thing)
 		return;
 
-	INT32 dist = R_QuickCamDist(thing->x, thing->y);
+	if (cv_grmaxinterpdist.value)
+		dist = R_QuickCamDist(thing->x, thing->y);
 
 	if (R_UsingFrameInterpolation() && !paused && (!cv_grmaxinterpdist.value || dist < cv_grmaxinterpdist.value))
 	{
@@ -5406,11 +5410,13 @@ void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 	size_t lumpoff;
 	unsigned rot = 0;
 	UINT8 flip;
+	INT32 dist = -1;
 
 	if (!thing)
 		return;
 
-	INT32 dist = R_QuickCamDist(thing->x, thing->y);
+	if (cv_grmaxinterpdist.value)
+		dist = R_QuickCamDist(thing->x, thing->y);
 
 	// uncapped/interpolation
 	interpmobjstate_t interp = {0};
