@@ -2438,9 +2438,18 @@ UINT32 I_GetRefreshRate(void)
 
 static void Impl_SetVsync(void)
 {
-#if SDL_VERSION_ATLEAST(2,0,18)
-	if (renderer)
-		SDL_RenderSetVSync(renderer, cv_vidwait.value);
+	if (renderer && rendermode == render_soft)
+	{
+#if SDL_VERSION_ATLEAST(2, 0, 18)
+		SDL_RenderSetVSync(renderer, cv_vidwait.value ? 1 : 0);
+#endif
+	}
+#ifdef HWRENDER
+	else if (rendermode == render_opengl && sdlglcontext != NULL && SDL_GL_GetCurrentContext() == sdlglcontext)
+	{
+		SDL_GL_SetSwapInterval(cv_vidwait.value ? 1 : 0);
+	}
 #endif
 }
+
 #endif
