@@ -722,7 +722,6 @@ static void Shader_SetUniforms(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRGBAF
 
 static GLRGBAFloat shader_defaultcolor = {1.0f, 1.0f, 1.0f, 1.0f};
 
-//
 
 void SetupGLFunc4(void)
 {
@@ -2021,14 +2020,15 @@ static void PreparePolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FBITFIELD
 			fade.red   = byte2float[pSurf->FadeColor.s.red];
 			fade.green = byte2float[pSurf->FadeColor.s.green];
 			fade.blue  = byte2float[pSurf->FadeColor.s.blue];
-		fade.alpha = byte2float[pSurf->FadeColor.s.alpha];
-		
-		if (pSurf->LightTableId && pSurf->LightTableId != lt_downloaded)
-		{
-			pglActiveTexture(GL_TEXTURE2);
-			pglBindTexture(GL_TEXTURE_2D, pSurf->LightTableId);
-			pglActiveTexture(GL_TEXTURE0);
-			lt_downloaded = pSurf->LightTableId;
+			fade.alpha = byte2float[pSurf->FadeColor.s.alpha];
+
+			if (pSurf->LightTableId && pSurf->LightTableId != lt_downloaded)
+			{
+				pglActiveTexture(GL_TEXTURE2);
+				pglBindTexture(GL_TEXTURE_2D, pSurf->LightTableId);
+				pglActiveTexture(GL_TEXTURE0);
+				lt_downloaded = pSurf->LightTableId;
+			}
 		}
 	}
 
