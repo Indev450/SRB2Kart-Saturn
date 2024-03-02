@@ -407,9 +407,10 @@ void FV3_Rotate(vector3_t *rotVec, const vector3_t *axisVec, const angle_t angle
 	rotVec->z = az+dz+ez;
 }
 
-#define M(row,col) dest->m[row * 4 + col]
-matrix_t *FM_Rotate(matrix_t *dest, angle_t angle, fixed_t x, fixed_t y, fixed_t z)
+
+void FM_Rotate(matrix_t *dest, angle_t angle, fixed_t x, fixed_t y, fixed_t z)
 {
+#define M(row,col) dest->m[row * 4 + col]
 	const fixed_t sinA = FINESINE(angle>>ANGLETOFINESHIFT);
 	const fixed_t cosA = FINECOSINE(angle>>ANGLETOFINESHIFT);
 	const fixed_t invCosA = FRACUNIT - cosA;
@@ -459,6 +460,6 @@ matrix_t *FM_Rotate(matrix_t *dest, angle_t angle, fixed_t x, fixed_t y, fixed_t
 	M(1, 3) = 0;
 	M(2, 3) = 0;
 	M(3, 3) = FRACUNIT;
-#undef M
-	return dest;
+	#undef M
 }
+
