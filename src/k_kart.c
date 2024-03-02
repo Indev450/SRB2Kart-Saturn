@@ -8865,7 +8865,7 @@ static void K_drawKartBumpersOrKarma(void)
 // Code updated in Lua by GenericHeroGuy for libSG
 // Badly ported to C by NepDisk and acutally made to work and fixed by Indev!(Thanks so much!)
 // original code by Lat'
-static void K_GetScreenCoords(vector2_t *vec, player_t *player, camera_t *came, mobj_t *target, fixed_t hofs)
+static void K_GetScreenCoords(vector2_t *vec, player_t *player, camera_t *came, mobj_t *target, fixed_t hofs, boolean dontclip)
 {
 	fixed_t camx, camy, camz;
     angle_t camangle, camaiming;
@@ -8988,6 +8988,10 @@ static void K_GetScreenCoords(vector2_t *vec, player_t *player, camera_t *came, 
 	// project the angle to get our final X coordinate
 	x = FixedMul(FINETANGENT(((x+ANGLE_90)>>ANGLETOFINESHIFT) & 4095), fov);
 	x = x + xres;
+	
+	// now clip in screen-space
+	if (!dontclip && (x < 0 || x > xres*2 || y < 0 || y > yres*2))
+		return;
 
 	// adjust coords for splitscreen
 	if (splitscreen == 1){ // 2P
@@ -9109,7 +9113,7 @@ static void K_drawNameTags(void)
 		if (cv_saltyhop.value && cv_nametaghop.value)
 			z += players[i].mo->spriteyoffset;
 
-		K_GetScreenCoords(&pos, stplyr, camera, players[i].mo, z);
+		K_GetScreenCoords(&pos, stplyr, camera, players[i].mo, z, false);
 
 		//Check for negative screencoords
 		if (pos.x == -1 || pos.y == -1)
