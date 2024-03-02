@@ -8865,7 +8865,7 @@ static void K_drawKartBumpersOrKarma(void)
 // Code updated in Lua by GenericHeroGuy for libSG
 // Badly ported to C by NepDisk and acutally made to work and fixed by Indev!(Thanks so much!)
 // original code by Lat'
-static void K_GetScreenCoords(vector2_t *vec, player_t *player, camera_t *came, fixed_t mx, fixed_t my, fixed_t mz)
+static void K_GetScreenCoords(vector2_t *vec, player_t *player, camera_t *came, mobj_t *target, fixed_t hofs)
 {
 	fixed_t camx, camy, camz;
     angle_t camangle, camaiming;
@@ -8877,12 +8877,16 @@ static void K_GetScreenCoords(vector2_t *vec, player_t *player, camera_t *came, 
 	fixed_t fovratio;
 	fixed_t offset;
 	boolean srcflip;
+	boolean targflip;
 	fixed_t y;
 	fixed_t x;
 
     // In case of early return we can check if those are negative
     vec->x = -1;
     vec->y = -1;
+
+	if (!target)
+		return;
 
 	if (player->awayviewtics) {
 		camx = player->awayviewmobj->x;
@@ -8912,7 +8916,7 @@ static void K_GetScreenCoords(vector2_t *vec, player_t *player, camera_t *came, 
 
 	// X coordinate
 	// get difference between camangle and angle towards target
-	x = (INT32)camangle - (INT32)R_PointToAngle2(camx, camy, mx, my);
+	x = (INT32)camangle - (INT32)R_PointToAngle2(camx, camy, target->x, target->y);
 
 	distfact = FINECOSINE((x>>ANGLETOFINESHIFT) & FINEMASK);
     if (!distfact) distfact = 1;
@@ -8923,15 +8927,18 @@ static void K_GetScreenCoords(vector2_t *vec, player_t *player, camera_t *came, 
 		return;
 
 	// flipping
+	targflip = target->eflags & MFE_VERTICALFLIP;
 	srcflip = player->pflags & PF_FLIPCAM && player->mo->eflags & MFE_VERTICALFLIP;
 
 	// Y coordinate
 	// getting the angle difference here is a bit more involved...
 	// start by getting the height difference between the camera and target
-	y = camz - mz;
+	y = camz - target->z - (targflip ? target->height/1.5 : 0); // for some reason needs to be divided by 1.5 idk
+	if (hofs)
+		y = y - (targflip ? -hofs : hofs);
 
 	// then get the distance between camera and target
-	dist = R_PointToDist2(camx, camy, mx, my);
+	dist = R_PointToDist2(camx, camy, target->x, target->y);
 
 #ifdef HWRENDER
 	// NOW we can get the angle differnce
@@ -9096,15 +9103,13 @@ static void K_drawNameTags(void)
 		else
 			flipped = players[i].mo->eflags & MFE_VERTICALFLIP;
 
-		z = players[i].mo->z;
-
-		z += (players[i].mo->eflags & MFE_VERTICALFLIP) ? -players[i].mo->height/2 : players[i].mo->height;
+		z = players[i].mo->height;
 
 		//Saltyhop hehe
 		if (cv_saltyhop.value && cv_nametaghop.value)
-			z += (players[i].mo->eflags & MFE_VERTICALFLIP) ? -players[i].mo->spriteyoffset : players[i].mo->spriteyoffset;
+			z += players[i].mo->spriteyoffset;
 
-		K_GetScreenCoords(&pos, stplyr, camera, players[i].mo->x, players[i].mo->y, z);
+		K_GetScreenCoords(&pos, stplyr, camera, players[i].mo, z);
 
 		//Check for negative screencoords
 		if (pos.x == -1 || pos.y == -1)
