@@ -82,7 +82,6 @@ void P_Thrust(mobj_t *mo, angle_t angle, fixed_t move)
 		mo->momy += FixedMul(move, FINESINE(angle));
 }
 
-
 //
 // P_InstaThrust
 // Moves the given origin along a given angle instantly.
@@ -264,7 +263,6 @@ void P_ResetScore(player_t *player)
 
 	player->scoreadd = 0;
 }
-
 
 //
 // P_FindLowestLap
@@ -632,7 +630,8 @@ static UINT8 getPlayerPos(player_t *player)
 
 static boolean isPlayerLosing(player_t *player)
 {
-	if (G_BattleGametype()) {
+	if (G_BattleGametype())
+	{
 		UINT8 pos = 1;
 		UINT8 maxpos = 1;
 
@@ -1829,7 +1828,6 @@ static void P_DoPlayerHeadSigns(player_t *player)
 		}
 	}
 }
-
 
 //
 // P_DoJumpShield
@@ -3312,7 +3310,6 @@ void P_DemoCameraMovement(camera_t *cam)
 		cam->aiming = R_PointToAngle2(0, cam->z, R_PointToDist2(cam->x, cam->y, lastp->mo->x, lastp->mo->y), lastp->mo->z + lastp->mo->scale*128*P_MobjFlip(lastp->mo));	// This is still unholy. Aim a bit above their heads.
 	}
 
-
 	cam->momx = cam->momy = cam->momz = 0;
 	if (cmd->forwardmove != 0)
 	{
@@ -3527,7 +3524,6 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 
 	if (P_CameraThinker(player, thiscam, resetcalled))
 		return true;
-
 
 	if (thiscam == &camera[1]) // Camera 2
 	{
@@ -4820,8 +4816,7 @@ void P_PlayerThink(player_t *player)
 		player->losstime--;
 
 	// Flash player after being hit.
-	if (!(//player->pflags & PF_NIGHTSMODE ||
-		player->kartstuff[k_hyudorotimer] // SRB2kart - fixes Hyudoro not flashing when it should.
+	if (!(player->kartstuff[k_hyudorotimer] // SRB2kart - fixes Hyudoro not flashing when it should.
 		|| player->kartstuff[k_growshrinktimer] > 0 // Grow doesn't flash either.
 		|| player->kartstuff[k_respawn] // Respawn timer (for drop dash effect)
 		|| (player->pflags & PF_TIMEOVER) // NO CONTEST explosion
