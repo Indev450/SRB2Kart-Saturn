@@ -8877,7 +8877,7 @@ static void K_drawKartBumpersOrKarma(void)
 // Code updated in Lua by GenericHeroGuy for libSG
 // Badly ported to C by NepDisk and acutally made to work and fixed by Indev!(Thanks so much!)
 // original code by Lat'
-static void K_GetScreenCoords(vector2_t *vec, player_t *player, camera_t *came, mobj_t *target, fixed_t hofs)
+static void K_GetScreenCoords(vector2_t *vec, player_t *player, camera_t *came, mobj_t *target, fixed_t hofs, boolean dontclip)
 {
 	fixed_t camx, camy, camz;
     angle_t camangle, camaiming;
@@ -9002,6 +9002,10 @@ static void K_GetScreenCoords(vector2_t *vec, player_t *player, camera_t *came, 
 	if (splitscreen == 1) // divide by 320/200 (1.6) on 2P splitscreen
 		x = (x/2) + (x/8); 
 	x = x + xres;
+	
+	// now clip in screen-space
+	if (!dontclip && (x < 0 || x > xres*2 || y < 0 || y > yres*2))
+		return;
 
 	// get splitscreen index
 	int splitindex = stplyrnum;
@@ -9126,7 +9130,7 @@ static void K_drawNameTags(void)
 		if (cv_saltyhop.value && cv_nametaghop.value)
 			z += players[i].mo->spriteyoffset;
 
-		K_GetScreenCoords(&pos, stplyr, camera, players[i].mo, z);
+		K_GetScreenCoords(&pos, stplyr, camera, players[i].mo, z, false);
 
 		//Check for negative screencoords
 		if (pos.x == -1 || pos.y == -1)
@@ -9287,12 +9291,12 @@ static void K_drawDriftGauge(void)
 		return;
 
 	if (!splitscreen)
-		K_GetScreenCoords(&pos, stplyr, camera, stplyr->mo, FixedMul(cv_driftgaugeofs.value, cv_driftgaugeofs.value > 0 ? stplyr->mo->scale : mapobjectscale));
+		K_GetScreenCoords(&pos, stplyr, camera, stplyr->mo, FixedMul(cv_driftgaugeofs.value, cv_driftgaugeofs.value > 0 ? stplyr->mo->scale : mapobjectscale), false);
 	else
 	{
 		//Loop through each player camera for splitscreen.
 		for (j = 0; j <= stplyrnum; j++)
-			K_GetScreenCoords(&pos, stplyr, &camera[j], stplyr->mo, FixedMul(cv_driftgaugeofs.value, cv_driftgaugeofs.value > 0 ? stplyr->mo->scale : mapobjectscale));
+			K_GetScreenCoords(&pos, stplyr, &camera[j], stplyr->mo, FixedMul(cv_driftgaugeofs.value, cv_driftgaugeofs.value > 0 ? stplyr->mo->scale : mapobjectscale), false);
 	}
 
 	//Check for negative screencoords
