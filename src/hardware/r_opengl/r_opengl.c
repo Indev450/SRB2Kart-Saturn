@@ -887,6 +887,11 @@ EXPORT void HWRAPI(SetShaderInfo) (hwdshaderinfo_t info, INT32 value)
 
 EXPORT void HWRAPI(SetShader) (int slot)
 {
+	if (slot == SHADER_NONE)
+	{
+		UnSetShader();
+		return;
+	}
 	if (gl_allowshaders)
 	{
 		gl_shader_t *next_shader = &gl_shaders[slot]; // the gl_shader_t we are going to switch to
@@ -907,20 +912,25 @@ EXPORT void HWRAPI(SetShader) (int slot)
 
 		return;
 	}
+
 	gl_shadersenabled = false;
 }
 
 EXPORT void HWRAPI(UnSetShader) (void)
 {
-	gl_shaderstate.current = NULL;
-	gl_shaderstate.type = 0;
-	gl_shaderstate.program = 0;
+	if (gl_shadersenabled) // don't repeatedly call glUseProgram if not needed
+	{
+		gl_shaderstate.current = NULL;
+		gl_shaderstate.type = 0;
+		gl_shaderstate.program = 0;
 
-	if (pglUseProgram)
-		pglUseProgram(0);
+		if (pglUseProgram)
+			pglUseProgram(0);
+	}
 
 	gl_shadersenabled = false;
 }
+
 
 // -----------------+
 // SetNoTexture     : Disable texture
