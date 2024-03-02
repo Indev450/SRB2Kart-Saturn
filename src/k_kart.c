@@ -8902,7 +8902,8 @@ static void K_GetScreenCoords(vector2_t *vec, player_t *player, camera_t *came, 
     vec->x = -1;
     vec->y = -1;
 
-	if (!target)
+	// this should never happen but its also kart so ¯\_(ツ)_/¯
+	if (!player || !target || !came)
 		return;
 
 	if (player->awayviewtics) {
