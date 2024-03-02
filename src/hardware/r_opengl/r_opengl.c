@@ -1792,7 +1792,7 @@ static boolean Shader_CompileProgram(gl_shader_t *shader, GLint i)
 // code that is common between DrawPolygon and DrawIndexedTriangles
 // DrawScreenTexture also can use this function for fancier screen texture drawing
 // the corona thing is there too, i have no idea if that stuff works with DrawIndexedTriangles and batching
-static void PreparePolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FBITFIELD PolyFlags)
+static void PreparePolygon(FSurfaceInfo *pSurf, FBITFIELD PolyFlags)
 {
 	static GLRGBAFloat poly = {0,0,0,0};
 	static GLRGBAFloat tint = {0,0,0,0};
@@ -1846,7 +1846,7 @@ static void PreparePolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FBITFIELD
 // -----------------+
 EXPORT void HWRAPI(DrawPolygon) (FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags)
 {
-	PreparePolygon(pSurf, pOutVerts, PolyFlags);
+	PreparePolygon(pSurf, PolyFlags);
 
 	pglVertexPointer(3, GL_FLOAT, sizeof(FOutVector), &pOutVerts[0].x);
 	pglTexCoordPointer(2, GL_FLOAT, sizeof(FOutVector), &pOutVerts[0].s);
@@ -1864,7 +1864,7 @@ EXPORT void HWRAPI(DrawPolygon) (FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUI
 
 EXPORT void HWRAPI(DrawIndexedTriangles) (FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags, unsigned int *IndexArray)
 {
-	PreparePolygon(pSurf, pOutVerts, PolyFlags);
+	PreparePolygon(pSurf, PolyFlags);
 
 	pglVertexPointer(3, GL_FLOAT, sizeof(FOutVector), &pOutVerts[0].x);
 	pglTexCoordPointer(2, GL_FLOAT, sizeof(FOutVector), &pOutVerts[0].s);
@@ -2946,7 +2946,7 @@ EXPORT void HWRAPI(DrawScreenTexture)(int tex, FSurfaceInfo *surf, FBITFIELD pol
 
 	pglBindTexture(GL_TEXTURE_2D, screenTextures[tex]);
 	
-	PreparePolygon(surf, NULL, surf ? polyflags : (PF_NoDepthTest));
+	PreparePolygon(surf, surf ? polyflags : (PF_NoDepthTest));
 	if (!surf)
 		pglColor4ubv(white);
 
