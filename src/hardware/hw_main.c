@@ -247,6 +247,7 @@ static float gr_windowcentery;
 
 static float gr_pspritexscale, gr_pspriteyscale;
 
+
 static seg_t *gr_curline;
 static side_t *gr_sidedef;
 static line_t *gr_linedef;
@@ -694,6 +695,10 @@ void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, boolean isc
 			slope = gr_frontsector->c_slope;
 	}
 
+	// Set fixedheight to the slope's height from our viewpoint, if we have a slope
+	if (slope)
+		fixedheight = P_GetZAt(slope, viewx, viewy);
+
 	height = FIXED_TO_FLOAT(fixedheight);
 
 	// Allocate plane-vertex buffer if we need to
@@ -772,6 +777,7 @@ void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, boolean isc
 			angle = gr_frontsector->ceilingpic_angle;
 		}
 	}
+
 
 	if (angle) // Only needs to be done if there's an altered angle
 	{
@@ -1156,13 +1162,23 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 		else
 			solid = false;
 
-		height = FixedToFloat(P_GetLightZAt(&list[i], v1x, v1y));
-		endheight = FixedToFloat(P_GetLightZAt(&list[i], v2x, v2y));
-
+		if (list[i].slope)
+		{
+			height = FixedToFloat(P_GetZAt(list[i].slope, v1x, v1y));
+			endheight = FixedToFloat(P_GetZAt(list[i].slope, v2x, v2y));
+		}
+		else
+			height = endheight = FIXED_TO_FLOAT(list[i].height);
+		
 		if (solid)
 		{
-			height = FixedToFloat(P_GetFFloorBottomZAt(list[i].caster, v1x, v1y));
-			endbheight = FixedToFloat(P_GetFFloorBottomZAt(list[i].caster, v2x, v2y));
+			if (*list[i].caster->b_slope)
+			{
+				bheight = FixedToFloat(P_GetZAt(*list[i].caster->b_slope, v1x, v1y));
+				endbheight = FixedToFloat(P_GetZAt(*list[i].caster->b_slope, v2x, v2y));
+			}
+			else
+				bheight = endbheight = FIXED_TO_FLOAT(*list[i].caster->bottomheight);
 		}
 
 		if (endheight >= endtop && height >= top)
@@ -1176,8 +1192,13 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 
 		if (i + 1 < sector->numlights)
 		{
-			bheight = FixedToFloat(P_GetLightZAt(&list[i+1], v1x, v1y));
-			endbheight = FixedToFloat(P_GetLightZAt(&list[i+1], v2x, v2y));
+			if (list[i+1].slope)
+			{
+				bheight = FixedToFloat(P_GetZAt(list[i+1].slope, v1x, v1y));
+				endbheight = FixedToFloat(P_GetZAt(list[i+1].slope, v2x, v2y));
+			}
+			else
+				bheight = endbheight = FIXED_TO_FLOAT(list[i+1].height);
 		}
 		else
 		{
@@ -4068,10 +4089,15 @@ static void HWR_SplitSprite(gr_vissprite_t *spr)
 
 		if (i + 1 < sector->numlights)
 		{
-			temp = P_GetLightZAt(&list[i+1], v1x, v1y);
-			bheight = FIXED_TO_FLOAT(temp);
-			temp = P_GetLightZAt(&list[i+1], v2x, v2y);
-			endbheight = FIXED_TO_FLOAT(temp);
+			if (list[i+1].slope)
+			{
+				temp = P_GetZAt(list[i+1].slope, v1x, v1y);
+				bheight = FIXED_TO_FLOAT(temp);
+				temp = P_GetZAt(list[i+1].slope, v2x, v2y);
+				endbheight = FIXED_TO_FLOAT(temp);
+			}
+			else
+				bheight = endbheight = FIXED_TO_FLOAT(list[i+1].height);
 		}
 		else
 		{
@@ -4223,6 +4249,7 @@ static void HWR_DrawSprite(gr_vissprite_t *spr)
 	wallVerts[2].x = wallVerts[1].x = spr->x2;
 	wallVerts[2].y = wallVerts[3].y = spr->gzt;
 	wallVerts[0].y = wallVerts[1].y = spr->gz;
+
 
 	// make a wall polygon (with 2 triangles), using the floor/ceiling heights,
 	// and the 2d map coords of start/end vertices
