@@ -32,6 +32,7 @@ INT32 patchformat = GL_TEXFMT_AP_88; // use alpha for holes
 INT32 textureformat = GL_TEXFMT_P_8; // use chromakey for hole
 
 RGBA_t mapPalette[256] = {0}; // the palette for the currently loaded level or menu etc.
+
 // Returns a pointer to the palette which should be used for caching textures.
 RGBA_t *HWR_GetTexturePalette(void)
 {
@@ -85,7 +86,6 @@ static void HWR_DrawColumnInCache(const column_t *patchcol, UINT8 *block, GLMipm
 		position = originy + topdelta;
 
 		yfrac = 0;
-		//yfracstep = (patchcol->length << FRACBITS) / count;
 		if (position < 0)
 		{
 			yfrac = -position<<FRACBITS;
@@ -107,18 +107,14 @@ static void HWR_DrawColumnInCache(const column_t *patchcol, UINT8 *block, GLMipm
 			count--;
 
 			texel = source[yfrac>>FRACBITS];
-
 			alpha = 0xff;
 
 			//Hurdler: not perfect, but better than holes
 			if (texel == HWR_PATCHES_CHROMAKEY_COLORINDEX && (mipmap->flags & TF_CHROMAKEYED))
 				alpha = 0x00;
 
-					//texel = HWR_CHROMAKEY_EQUIVALENTCOLORINDEX;
-				// Lat:  Don't do that, some weirdos still use CYAN on their WALLTEXTURES for translucency :V
-
 			//Hurdler: 25/04/2000: now support colormap in hardware mode
-			else if (mipmap->colormap)
+			if (mipmap->colormap)
 				texel = mipmap->colormap[texel];
 
 			// hope compiler will get this switch out of the loops (dreams...)
@@ -172,15 +168,10 @@ static void HWR_DrawPatchInCache(GLMipmap_t *mipmap,
 	
 	palette = HWR_GetTexturePalette();
 
-	//ncols = (pwidth * pblockwidth) / pwidth;
 	ncols = pwidth;
 
 	// source advance
 	xfrac = 0;
-	//xfracstep = (pwidth        << FRACBITS) / pblockwidth;
-	//yfracstep = (pheight       << FRACBITS) / pblockheight;
-	//scale_y   = (pblockheight  << FRACBITS) / pheight;
-	
 	xfracstep = FRACUNIT;
 	yfracstep = FRACUNIT;
 	scale_y   = FRACUNIT;
@@ -254,14 +245,6 @@ static void HWR_DrawTexturePatchInCache(GLMipmap_t *mipmap,
 	col = x * pblockwidth / texture->width;
 	ncols = ((x2 - x) * pblockwidth) / texture->width;
 
-/*
-	CONS_Debug(DBG_RENDER, "patch %dx%d texture %dx%d block %dx%d\n",
-															width, height,
-															texture->width,          texture->height,
-															pblockwidth,             pblockheight);
-	CONS_Debug(DBG_RENDER, "      col %d ncols %d x %d\n", col, ncols, x);
-*/
-
 	// source advance
 	xfrac = 0;
 	if (x1 < 0)
@@ -291,7 +274,6 @@ static void HWR_DrawTexturePatchInCache(GLMipmap_t *mipmap,
 	}
 }
 
-
 static UINT8 *MakeBlock(GLMipmap_t *grMipmap)
 {
 	UINT8 *block;
@@ -299,8 +281,8 @@ static UINT8 *MakeBlock(GLMipmap_t *grMipmap)
 	UINT16 bu16 = ((0x00 <<8) | HWR_PATCHES_CHROMAKEY_COLORINDEX);
 	INT32 blocksize = (grMipmap->width * grMipmap->height);
 
-bpp =  format2bpp(grMipmap->format);
-	block = Z_Malloc(blocksize*bpp, PU_HWRCACHE, &(grMipmap->data));;
+	bpp =  format2bpp(grMipmap->format);
+	block = Z_Malloc(blocksize*bpp, PU_HWRCACHE, &(grMipmap->data));
 
 	switch (bpp)
 	{
@@ -309,7 +291,6 @@ bpp =  format2bpp(grMipmap->format);
 				// fill background with chromakey, alpha = 0
 				for (i = 0; i < blocksize; i++)
 					memcpy(block+i*sizeof(UINT16), &bu16, sizeof(UINT16));
-
 				break;
 		case 4: memset(block, 0x00, blocksize*sizeof(UINT32)); break;
 	}
@@ -892,7 +873,6 @@ static void HWR_CacheFadeMask(GLMipmap_t *grMipmap, lumpnum_t fademasklumpnum)
 	HWR_DrawFadeMaskInCache(grMipmap, fmwidth, fmheight, fademasklumpnum, fmwidth, fmheight);
 	// I DO need to convert this because it isn't power of 2 and we need the alpha
 }
-
 
 void HWR_GetFadeMask(lumpnum_t fademasklumpnum)
 {
