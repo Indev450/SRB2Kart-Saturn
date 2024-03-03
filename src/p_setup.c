@@ -3307,10 +3307,13 @@ boolean P_SetupLevel(boolean skipprecip)
 		P_PreTicker(2);
 		LUAh_MapLoad();
 	}
-	
-	R_ResetViewInterpolation(0);
-	R_ResetViewInterpolation(0);
-	R_UpdateMobjInterpolators();
+
+	if (rendermode != render_none)
+	{
+		R_ResetViewInterpolation(0);
+		R_ResetViewInterpolation(0);
+		R_UpdateMobjInterpolators();
+	}
 
 	G_AddMapToBuffer(gamemap-1);
 
