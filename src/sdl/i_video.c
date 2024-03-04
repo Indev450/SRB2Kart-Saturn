@@ -492,7 +492,7 @@ static INT32 GetTypedChar(SDL_Scancode code, SDL_Keysym *sym)
 		case SDL_SCANCODE_EQUALS:         return KEY_EQUALS;
 		case SDL_SCANCODE_LEFTBRACKET:    return '[';
 		case SDL_SCANCODE_RIGHTBRACKET:   return ']';
-		case SDL_SCANCODE_BACKSLASH:      return KEY_BACKSLASH;
+		case SDL_SCANCODE_BACKSLASH:      return '\\';
 		case SDL_SCANCODE_NONUSHASH:      return '#';
 		case SDL_SCANCODE_SEMICOLON:      return ';';
 		case SDL_SCANCODE_APOSTROPHE: 	  return '\'';
