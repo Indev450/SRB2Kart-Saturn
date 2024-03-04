@@ -134,17 +134,6 @@ extern void (*transtransfunc)(void);
 extern void (*twosmultipatchfunc)(void);
 extern void (*twosmultipatchtransfunc)(void);
 
-// -----
-// CPUID
-// -----
-extern boolean R_ASM;
-extern boolean R_486;
-extern boolean R_586;
-extern boolean R_MMX;
-extern boolean R_3DNow;
-extern boolean R_MMXExt;
-extern boolean R_SSE2;
-
 // ----------------
 // screen variables
 // ----------------
