@@ -293,7 +293,7 @@ void M_PopupMasterServerRules(void);
 void M_PopupMasterServerConnectError(void);
 #endif
 
-void M_SlotCvarIntoModMenu(consvar_t* cvar, const char* category, const char* name, boolean minmax);
+void M_SlotCvarIntoModMenu(consvar_t* cvar, const char* category, const char* name);
 
 // These defines make it a little easier to make menus
 #define DEFAULTMENUSTYLE(header, source, prev, x, y)\

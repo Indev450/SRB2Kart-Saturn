@@ -330,7 +330,6 @@ static int lib_cvRegisterVar(lua_State *L)
 	cvar = lua_newuserdata(L, sizeof(consvar_t));
 	luaL_getmetatable(L, META_CVAR);
 	lua_setmetatable(L, -2);
-	boolean hasminmax = false;
 
 #define FIELDERROR(f, e) luaL_error(L, "bad value for " LUA_QL(f) " in table passed to " LUA_QL("CV_RegisterVar") " (%s)", e);
 #define TYPEERROR(f, t) FIELDERROR(f, va("%s expected, got %s", lua_typename(L, t), luaL_typename(L, -1)))
@@ -396,17 +395,13 @@ static int lib_cvRegisterVar(lua_State *L)
 					if (lua_type(L, 5) != LUA_TSTRING
 					|| lua_type(L, 6) != LUA_TNUMBER)
 						FIELDERROR("PossibleValue", "custom PossibleValue table requires a format of string=integer, i.e. {MIN=0, MAX=9999}");
-					char *strvalue = Z_StrDup(lua_tostring(L, 5));
-					if (fasticmp(strvalue, "MIN"))
-						hasminmax = true;
-					cvpv[i].strvalue = strvalue;
+					cvpv[i].strvalue = Z_StrDup(lua_tostring(L, 5));
 					cvpv[i].value = (INT32)lua_tonumber(L, 6);
 					i++;
 					lua_pop(L, 1);
 				}
 				cvpv[i].value = 0;
 				cvpv[i].strvalue = NULL;
-				hasminmax = false;
 				cvar->PossibleValue = cvpv;
 			} else
 				FIELDERROR("PossibleValue", va("%s or CV_PossibleValue_t expected, got %s", lua_typename(L, LUA_TTABLE), luaL_typename(L, -1)))
@@ -467,9 +462,9 @@ static int lib_cvRegisterVar(lua_State *L)
 		}
 
 		if (menu_name && menu_name[0] != '\0')
-			M_SlotCvarIntoModMenu(cvar, category, menu_name, hasminmax);
+			M_SlotCvarIntoModMenu(cvar, category, menu_name);
 		else
-			M_SlotCvarIntoModMenu(cvar, category, cvar->name, hasminmax);
+			M_SlotCvarIntoModMenu(cvar, category, cvar->name);
 	}
 
 	// return cvar userdata
