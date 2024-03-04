@@ -151,6 +151,8 @@ boolean browselocalskins = false;
 boolean menuactive = false;
 boolean fromlevelselect = false;
 
+boolean menu_text_input = false;
+
 static INT32 coolalphatimer = 9;
 
 typedef enum
@@ -3620,6 +3622,7 @@ boolean M_Responder(event_t *ev)
 	// Handle menuitems which need a specific key handling
 	if (routine && (currentMenu->menuitems[itemOn].status & IT_TYPE) == IT_KEYHANDLER)
 	{
+		menu_text_input = true;
 		if (shiftdown && ch >= 32 && ch <= 127)
 			ch = shiftxform[ch];
 		routine(ch);
@@ -3660,7 +3663,7 @@ boolean M_Responder(event_t *ev)
 	{
 		if ((currentMenu->menuitems[itemOn].status & IT_CVARTYPE) == IT_CV_STRING)
 		{
-
+			menu_text_input = true;
 			if (shiftdown && ch >= 32 && ch <= 127)
 				ch = shiftxform[ch];
 			if (M_ChangeStringCvar(ch))
