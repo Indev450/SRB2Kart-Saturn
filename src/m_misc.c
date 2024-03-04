@@ -1938,32 +1938,9 @@ char *sizeu5(size_t num)
 	return sizeu5_buf;
 }
 
-// Alam: why? memcpy may be __cdecl/_System and our code may be not the same type
-static void *cpu_cpy(void *dest, const void *src, size_t n)
+void *M_Memcpy(void *dest, const void *src, size_t n)
 {
-	if (src == NULL)
-	{
-		CONS_Debug(DBG_MEMORY, "Memcpy from 0x0?!: %p %p %s\n", dest, src, sizeu1(n));
-		return dest;
-	}
-
-	if(dest == NULL)
-	{
-		CONS_Debug(DBG_MEMORY, "Memcpy to 0x0?!: %p %p %s\n", dest, src, sizeu1(n));
-		return dest;
-	}
-
 	return memcpy(dest, src, n);
-}
-
-void *(*M_Memcpy)(void* dest, const void* src, size_t n) = cpu_cpy;
-
-/** Memcpy that uses MMX, 3DNow, MMXExt or even SSE
-  * Do not use on overlapped memory, use memmove for that
-  */
-void M_SetupMemcpy(void)
-{
-	M_Memcpy = cpu_cpy;
 }
 
 /** Return the appropriate message for a file error or end of file.

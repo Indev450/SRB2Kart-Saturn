@@ -139,8 +139,6 @@ void SCR_SetMode(void)
 //
 void SCR_Startup(void)
 {
-	M_SetupMemcpy();
-
 	if (dedicated)
 	{
 		V_Init();
