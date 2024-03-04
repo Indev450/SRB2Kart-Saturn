@@ -451,7 +451,7 @@ static int lib_cvRegisterVar(lua_State *L)
 	if (cvar->flags & CV_MODIFIED)
 		return luaL_error(L, "failed to register cvar (probable conflict with internal variable/command names)");
 
-	if (!(((cvar->flags & CV_HIDEN)) || (cvar->flags & CV_NOSHOWHELP)))
+	if (!(((cvar->flags & CV_HIDEN)) || (cvar->flags & CV_NOSHOWHELP)) && (cvar->PossibleValue || !(cvar->value == 0 && stricmp(cvar->string, "0"))))
 	{
 		if (!category)
 		{
