@@ -445,19 +445,12 @@ static INT32 GetTypedChar(SDL_Scancode code, SDL_Keysym *sym)
             // ASCII character - if it isn't, it's possible the input
             // char is a Unicode value instead; better to send a null
             // character than the unshifted key.
-            if (strlen(next_event.text.text) == 1
-             && (next_event.text.text[0] & 0x80) == 0)
-            {
-                return next_event.text.text[0];
-            }
-	    else
-	    {
-		    // wtf
-		    if (strcmp(next_event.text.text, "ç"))
-			    return 'n';
-		    else if (strcmp(next_event.text.text, "ñ"))
-			    return 'c';
-	    }
+            if (strlen(next_event.text.text) == 1 &&
+				(next_event.text.text[0] >= ' ' && next_event.text.text[0] <= '~')) {
+				return next_event.text.text[0];
+			} else {
+				return '\0';
+			}
         }
 
 	if (code >= SDL_SCANCODE_1 && code <= SDL_SCANCODE_9)
@@ -499,10 +492,10 @@ static INT32 GetTypedChar(SDL_Scancode code, SDL_Keysym *sym)
 		case SDL_SCANCODE_EQUALS:         return KEY_EQUALS;
 		case SDL_SCANCODE_LEFTBRACKET:    return '[';
 		case SDL_SCANCODE_RIGHTBRACKET:   return ']';
-		case SDL_SCANCODE_BACKSLASH:      return '\\';
+		case SDL_SCANCODE_BACKSLASH:      return KEY_BACKSLASH;
 		case SDL_SCANCODE_NONUSHASH:      return '#';
 		case SDL_SCANCODE_SEMICOLON:      return ';';
-		case SDL_SCANCODE_APOSTROPHE:     return '\'';
+		case SDL_SCANCODE_APOSTROPHE: 	  return '\'';
 		case SDL_SCANCODE_GRAVE:          return '`';
 		case SDL_SCANCODE_COMMA:          return ',';
 		case SDL_SCANCODE_PERIOD:         return '.';
