@@ -415,14 +415,14 @@ static int lib_cvRegisterVar(lua_State *L)
 			lua_pop(L, 1);
 			cvar->func = Lua_OnChange;
 		}
-		else if (((i == 5 && !(cvar->flags & CV_CALL)) 
-				|| (cvar->flags & CV_CALL && i == 7)) 
+		else if (((i == 5 && !(cvar->flags & CV_CALL))
+				|| (cvar->flags & CV_CALL && i == 6)) 
 				|| (k && fasticmp(k, "category")))
-		{ 
+		{
 			category = lua_isnoneornil(L, 4) ? NULL : lua_tostring(L, 4);
 		}
 		else if (((i == 6 && !(cvar->flags & CV_CALL))
-			|| (cvar->flags & CV_CALL && i == 8))
+			|| (cvar->flags & CV_CALL && i == 7))
 			|| (k && fasticmp(k, "menuname")))
 		{
 			menu_name = lua_isnoneornil(L, 4) ? NULL : lua_tostring(L, 4);
