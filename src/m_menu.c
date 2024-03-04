@@ -7684,7 +7684,7 @@ INT16 ccvarlaststheader = 0;
 
 INT32 CVARSETUP;
 
-void M_SlotCvarIntoModMenu(consvar_t* cvar, const char* category, const char* name, boolean minmax)
+void M_SlotCvarIntoModMenu(consvar_t* cvar, const char* category, const char* name)
 {
 	if (ccvarposition == INT16_MAX)
 		return;
@@ -7714,11 +7714,7 @@ void M_SlotCvarIntoModMenu(consvar_t* cvar, const char* category, const char* na
 		++ccvarposition;
 	}
 
-	if (minmax)
-		OP_CustomCvarMenu[ccvarposition] = (menuitem_t){ IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, Z_StrDup(name), cvar, ccvaralphakey };
-	//else if (cvar->flags & CV_FLOAT)
-		//OP_CustomCvarMenu[ccvarposition] = (menuitem_t){ IT_STRING | IT_CVAR | IT_CV_FLOATSLIDER , NULL, Z_StrDup(name), cvar, ccvaralphakey };
-	else if (cvar->flags & CV_NETVAR)
+	if (cvar->flags & CV_NETVAR)
 		OP_CustomCvarMenu[ccvarposition] = (menuitem_t){ IT_STRING | IT_CVAR , NULL, Z_StrDup(va("\x85 %s", name)), cvar, ccvaralphakey };
 	else
 		OP_CustomCvarMenu[ccvarposition] = (menuitem_t){ IT_STRING | IT_CVAR, NULL, Z_StrDup(name), cvar, ccvaralphakey };
