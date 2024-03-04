@@ -75,6 +75,7 @@
 #include "../command.h"
 #include "sdlmain.h"
 #include "../i_system.h"
+#include "../hu_stuff.h" // for chat_on
 #ifdef HWRENDER
 #include "../hardware/hw_main.h"
 #include "../hardware/hw_drv.h"
@@ -848,7 +849,7 @@ static void Impl_HandleKeyboardEvent(SDL_KeyboardEvent evt, Uint32 type)
 		return;
 	}
 
-	if (cv_nativekeyboard.value)
+	if (cv_nativekeyboard.value && (chat_on || CON_Ready() || menu_text_input)) //only use this this if on chat or console
 		event.data1 = GetTypedChar(evt.keysym.scancode, &evt.keysym);
 	else
 		event.data1 = Impl_SDL_Scancode_To_Keycode(evt.keysym.scancode);
