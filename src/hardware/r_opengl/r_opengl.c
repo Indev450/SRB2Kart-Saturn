@@ -970,7 +970,7 @@ void SetStates(void)
 
 	pglEnable(GL_STENCIL_TEST);
 	pglEnable(GL_DEPTH_TEST);    // check the depth buffer
-	pglDepthMask(GL_TRUE);             // enable writing to depth buffer
+	pglDepthMask(GL_TRUE);       // enable writing to depth buffer
 	pglClearDepth(1.0f);
 	pglDepthRange(0.0f, 1.0f);
 	pglDepthFunc(GL_LEQUAL);
@@ -2314,6 +2314,9 @@ EXPORT void HWRAPI(SetSpecialState) (hwdspecialstate_t IdState, INT32 Value)
 			
 		case HWD_SET_FRAMEBUFFER:
 			FrameBufferEnabled = Value ? GL_TRUE : GL_FALSE;
+			
+			if (!GLFramebuffer_IsFuncAvailible())
+				FrameBufferEnabled = GL_FALSE;
 			break;
 
 		case HWD_SET_TEXTUREFILTERMODE:
