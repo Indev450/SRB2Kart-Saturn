@@ -2897,7 +2897,7 @@ static void M_CustomCvarMenu(INT32 choice)
 /*menu_t OP_CustomCvarMenuDef = DEFAULTSCROLLMENUSTYLE(
 	MTREE3(MN_OP_MAIN, MN_OP_DATA, MN_OP_ADDONS),
 	"M_ADDONS", OP_CustomCvarMenu, &OP_MainDef, 30, 30);*/
-menu_t OP_CustomCvarMenuDef = DEFAULTSCROLLSTYLE("M_ADDONS", OP_CustomCvarMenu, &OP_MainDef, 30, 30);
+menu_t OP_CustomCvarMenuDef = DEFAULTSCROLLSTYLE("M_ADDONS", OP_CustomCvarMenu, &OP_MainDef, 10, 30);
 
 menu_t OP_ForkedBirdDef = {
 	NULL,
