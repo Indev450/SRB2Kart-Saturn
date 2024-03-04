@@ -2858,7 +2858,7 @@ boolean HWR_CheckBBox(fixed_t *bspcoord)
 // Adds all segs in all polyobjects in the given subsector.
 // Modified for hardware rendering.
 //
-void HWR_AddPolyObjectSegs(void)
+static inline void HWR_AddPolyObjectSegs(void)
 {
 	size_t i, j;
 	seg_t gr_fakeline;
