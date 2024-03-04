@@ -3752,6 +3752,7 @@ boolean M_Responder(event_t *ev)
 		case KEY_BACKSPACE:
 			if ((currentMenu->menuitems[itemOn].status) == IT_CONTROL)
 			{
+				menu_text_input = false; //never use native layout for control setup
 				// detach any keys associated with the game control
 				G_ClearControlKeys(setupcontrols, currentMenu->menuitems[itemOn].alphaKey);
 				S_StartSound(NULL, sfx_shldls);

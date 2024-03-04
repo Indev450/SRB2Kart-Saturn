@@ -849,7 +849,7 @@ static void Impl_HandleKeyboardEvent(SDL_KeyboardEvent evt, Uint32 type)
 		return;
 	}
 
-	if (cv_nativekeyboard.value && (chat_on || CON_Ready() || menu_text_input)) //only use this this if on chat or console
+	if (cv_nativekeyboard.value && (chat_on || CON_Ready() || (menu_text_input && menuactive))) //only use this this if on chat or console or the current menu wants inputs from us (except if its the control setup menu ig)
 		event.data1 = GetTypedChar(evt.keysym.scancode, &evt.keysym);
 	else
 		event.data1 = Impl_SDL_Scancode_To_Keycode(evt.keysym.scancode);
