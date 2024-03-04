@@ -247,7 +247,6 @@ static float gr_windowcentery;
 
 static float gr_pspritexscale, gr_pspriteyscale;
 
-
 static seg_t *gr_curline;
 static side_t *gr_sidedef;
 static line_t *gr_linedef;
@@ -695,10 +694,6 @@ void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, boolean isc
 			slope = gr_frontsector->c_slope;
 	}
 
-	// Set fixedheight to the slope's height from our viewpoint, if we have a slope
-	if (slope)
-		fixedheight = P_GetZAt(slope, viewx, viewy);
-
 	height = FIXED_TO_FLOAT(fixedheight);
 
 	// Allocate plane-vertex buffer if we need to
@@ -777,7 +772,6 @@ void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, boolean isc
 			angle = gr_frontsector->ceilingpic_angle;
 		}
 	}
-
 
 	if (angle) // Only needs to be done if there's an altered angle
 	{
@@ -1162,23 +1156,13 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 		else
 			solid = false;
 
-		if (list[i].slope)
-		{
-			height = FixedToFloat(P_GetZAt(list[i].slope, v1x, v1y));
-			endheight = FixedToFloat(P_GetZAt(list[i].slope, v2x, v2y));
-		}
-		else
-			height = endheight = FIXED_TO_FLOAT(list[i].height);
-		
+		height = FixedToFloat(P_GetLightZAt(&list[i], v1x, v1y));
+		endheight = FixedToFloat(P_GetLightZAt(&list[i], v2x, v2y));
+
 		if (solid)
 		{
-			if (*list[i].caster->b_slope)
-			{
-				bheight = FixedToFloat(P_GetZAt(*list[i].caster->b_slope, v1x, v1y));
-				endbheight = FixedToFloat(P_GetZAt(*list[i].caster->b_slope, v2x, v2y));
-			}
-			else
-				bheight = endbheight = FIXED_TO_FLOAT(*list[i].caster->bottomheight);
+			bheight = FixedToFloat(P_GetFFloorBottomZAt(list[i].caster, v1x, v1y));
+			endbheight = FixedToFloat(P_GetFFloorBottomZAt(list[i].caster, v2x, v2y));
 		}
 
 		if (endheight >= endtop && height >= top)
@@ -1192,13 +1176,8 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 
 		if (i + 1 < sector->numlights)
 		{
-			if (list[i+1].slope)
-			{
-				bheight = FixedToFloat(P_GetZAt(list[i+1].slope, v1x, v1y));
-				endbheight = FixedToFloat(P_GetZAt(list[i+1].slope, v2x, v2y));
-			}
-			else
-				bheight = endbheight = FIXED_TO_FLOAT(list[i+1].height);
+			bheight = FixedToFloat(P_GetLightZAt(&list[i+1], v1x, v1y));
+			endbheight = FixedToFloat(P_GetLightZAt(&list[i+1], v2x, v2y));
 		}
 		else
 		{
@@ -2879,7 +2858,7 @@ boolean HWR_CheckBBox(fixed_t *bspcoord)
 // Adds all segs in all polyobjects in the given subsector.
 // Modified for hardware rendering.
 //
-void HWR_AddPolyObjectSegs(void)
+static inline void HWR_AddPolyObjectSegs(void)
 {
 	size_t i, j;
 	seg_t gr_fakeline;
@@ -3348,8 +3327,8 @@ void HWR_Subsector(size_t num)
 			centerHeight = P_GetFFloorBottomZAt(rover, gr_frontsector->soundorg.x, gr_frontsector->soundorg.y);
 
 			if (centerHeight <= locCeilingHeight && centerHeight >= locFloorHeight &&
-				((viewz < bottomCullHeight && !(rover->flags & FF_INVERTPLANES)) ||
-				(viewz > bottomCullHeight && (rover->flags & FF_BOTHPLANES || rover->flags & FF_INVERTPLANES))))
+			    ((viewz < bottomCullHeight && (rover->flags & FF_BOTHPLANES || !(rover->flags & FF_INVERTPLANES))) ||
+			     (viewz > bottomCullHeight && (rover->flags & FF_BOTHPLANES || rover->flags & FF_INVERTPLANES))))
 			{
 				if (rover->flags & FF_FOG)
 				{
@@ -3392,8 +3371,8 @@ void HWR_Subsector(size_t num)
 
 			if (centerHeight >= locFloorHeight &&
 			    centerHeight <= locCeilingHeight &&
-			    ((viewz > topCullHeight  && !(rover->flags & FF_INVERTPLANES)) ||
-			     (viewz < topCullHeight  && (rover->flags & FF_BOTHPLANES || rover->flags & FF_INVERTPLANES))))
+			    ((viewz > topCullHeight && (rover->flags & FF_BOTHPLANES || !(rover->flags & FF_INVERTPLANES))) ||
+			     (viewz < topCullHeight && (rover->flags & FF_BOTHPLANES || rover->flags & FF_INVERTPLANES))))
 			{
 				if (rover->flags & FF_FOG)
 				{
@@ -3850,8 +3829,10 @@ static void HWR_RotateSpritePolyToAim(gr_vissprite_t *spr, FOutVector *wallVerts
 		// uncapped/interpolation
 		interpmobjstate_t interp = {0};
 		float basey, lowy;
+		INT32 dist = -1;
 
-		INT32 dist = R_QuickCamDist(spr->mobj->x, spr->mobj->y);
+		if (cv_grmaxinterpdist.value)
+			dist = R_QuickCamDist(spr->mobj->x, spr->mobj->y);
 
 		// do interpolation
 		if (R_UsingFrameInterpolation() && !paused && (!cv_grmaxinterpdist.value || dist < cv_grmaxinterpdist.value))
@@ -4087,15 +4068,10 @@ static void HWR_SplitSprite(gr_vissprite_t *spr)
 
 		if (i + 1 < sector->numlights)
 		{
-			if (list[i+1].slope)
-			{
-				temp = P_GetZAt(list[i+1].slope, v1x, v1y);
-				bheight = FIXED_TO_FLOAT(temp);
-				temp = P_GetZAt(list[i+1].slope, v2x, v2y);
-				endbheight = FIXED_TO_FLOAT(temp);
-			}
-			else
-				bheight = endbheight = FIXED_TO_FLOAT(list[i+1].height);
+			temp = P_GetLightZAt(&list[i+1], v1x, v1y);
+			bheight = FIXED_TO_FLOAT(temp);
+			temp = P_GetLightZAt(&list[i+1], v2x, v2y);
+			endbheight = FIXED_TO_FLOAT(temp);
 		}
 		else
 		{
@@ -4208,12 +4184,6 @@ static void HWR_DrawSprite(gr_vissprite_t *spr)
 	FSurfaceInfo Surf;
 	
 	INT32 shader = SHADER_NONE;
-	
-	const boolean hires = (spr->mobj && spr->mobj->skin && ((skin_t *)( (spr->mobj->localskin) ? spr->mobj->localskin : spr->mobj->skin ))->flags & SF_HIRES);
-	if (spr->mobj)
-		this_scale = FIXED_TO_FLOAT(spr->mobj->scale);
-	if (hires)
-		this_scale = this_scale * FIXED_TO_FLOAT(((skin_t *)( (spr->mobj->localskin) ? spr->mobj->localskin : spr->mobj->skin ))->highresscale);
 
 	if (!spr->mobj)
 		return;
@@ -4226,6 +4196,12 @@ static void HWR_DrawSprite(gr_vissprite_t *spr)
 		HWR_SplitSprite(spr);
 		return;
 	}
+
+	const boolean hires = (spr->mobj && spr->mobj->skin && ((skin_t *)( (spr->mobj->localskin) ? spr->mobj->localskin : spr->mobj->skin ))->flags & SF_HIRES);
+	if (spr->mobj)
+		this_scale = FIXED_TO_FLOAT(spr->mobj->scale);
+	if (hires)
+		this_scale = this_scale * FIXED_TO_FLOAT(((skin_t *)( (spr->mobj->localskin) ? spr->mobj->localskin : spr->mobj->skin ))->highresscale);
 
 	// cache sprite graphics
 	//12/12/99: Hurdler:
@@ -4247,7 +4223,6 @@ static void HWR_DrawSprite(gr_vissprite_t *spr)
 	wallVerts[2].x = wallVerts[1].x = spr->x2;
 	wallVerts[2].y = wallVerts[3].y = spr->gzt;
 	wallVerts[0].y = wallVerts[1].y = spr->gz;
-
 
 	// make a wall polygon (with 2 triangles), using the floor/ceiling heights,
 	// and the 2d map coords of start/end vertices
@@ -4352,7 +4327,7 @@ static void HWR_DrawSprite(gr_vissprite_t *spr)
 			shader = SHADER_SPRITE;	// sprite shader
 			blend |= PF_ColorMapped;
 		}
-		
+
 		HWR_ProcessPolygon(&Surf, wallVerts, 4, blend|PF_Modulated, shader, false);
 	}
 }
@@ -5074,10 +5049,11 @@ void HWR_ProjectSprite(mobj_t *thing)
 	UINT8 flip;
 	boolean mirrored = thing->mirrored;
 	boolean hflip = (!(thing->frame & FF_HORIZONTALFLIP) != !mirrored);
-	
+
 	angle_t ang, camang;
 	const boolean papersprite = (thing->frame & FF_PAPERSPRITE);
 	INT32 heightsec, phs;
+	INT32 dist = -1;
 
 	fixed_t spr_width, spr_height;
 	fixed_t spr_offset, spr_topoffset;
@@ -5094,7 +5070,8 @@ void HWR_ProjectSprite(mobj_t *thing)
 	if (!thing)
 		return;
 
-	INT32 dist = R_QuickCamDist(thing->x, thing->y);
+	if (cv_grmaxinterpdist.value)
+		dist = R_QuickCamDist(thing->x, thing->y);
 
 	if (R_UsingFrameInterpolation() && !paused && (!cv_grmaxinterpdist.value || dist < cv_grmaxinterpdist.value))
 	{
@@ -5433,11 +5410,13 @@ void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 	size_t lumpoff;
 	unsigned rot = 0;
 	UINT8 flip;
+	INT32 dist = -1;
 
 	if (!thing)
 		return;
 
-	INT32 dist = R_QuickCamDist(thing->x, thing->y);
+	if (cv_grmaxinterpdist.value)
+		dist = R_QuickCamDist(thing->x, thing->y);
 
 	// uncapped/interpolation
 	interpmobjstate_t interp = {0};

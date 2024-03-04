@@ -18,7 +18,6 @@
 
 #include "doomdef.h"
 #include "doomstat.h"
-#include "d_main.h"
 #include "command.h"
 #include "console.h"
 #include "z_zone.h"
@@ -35,8 +34,6 @@
 #include "p_setup.h"
 #include "lua_script.h"
 #include "d_netfil.h" // findfile
-#include "d_async.h"
-#include "filesrch.h"
 
 //========
 // protos.
@@ -124,9 +121,11 @@ void COM_BufAddText(const char *ptext)
 	l = strlen(ptext);
 
 	if (com_text.cursize + l >= com_text.maxsize)
+	{
 		CONS_Alert(CONS_WARNING, M_GetText("Command buffer full!\n"));
-	else
-		VS_Write(&com_text, ptext, l);
+		return;
+	}
+	VS_Write(&com_text, ptext, l);
 }
 
 /** Adds command text and executes it immediately.
@@ -749,60 +748,12 @@ static void COM_CEchoDuration_f(void)
 		HU_SetCEchoDuration(atoi(COM_Argv(1)));
 }
 
-struct COM_Exec_Ctx
-{
-	boolean   noerror;
-	boolean   silent;
-	UINT8   * buf;
-};
-
-static void Free_COM_Exec_Ctx (struct COM_Exec_Ctx *ctx)
-{
-	Z_Free(ctx->buf);
-	Z_Free(ctx);
-}
-
-void COM_ExecuteFile (void *p, void *u)
-{
-	filequery_t         * q   = p;
-	struct COM_Exec_Ctx * ctx = u;
-
-	ctx->buf = NULL;
-
-	if (q->status == FS_FOUND)
-	{
-		FIL_ReadFile(q->filename, &ctx->buf);
-	}
-
-	if (ctx->buf)
-	{
-		if (! ctx->silent)
-			CONS_Printf(M_GetText("executing %s\n"), q->filename);
-
-		// insert text file into the command buffer
-		COM_BufAddText((char *)ctx->buf);
-		COM_BufAddText("\n");
-	}
-	else
-	{
-		if (! ctx->noerror)
-			CONS_Printf(M_GetText("couldn't execute file %s\n"), q->filename);
-	}
-
-	Free_COM_Exec_Ctx(ctx);
-}
-
 /** Executes a script file.
   */
 static void COM_Exec_f(void)
 {
-	char filenamebuf[MAX_WADPATH];
-
-	struct COM_Exec_Ctx *ctx;
-
-	const char * filename;
-
-	filequery_t q;
+	UINT8 *buf = NULL;
+	char filename[256];
 
 	if (COM_Argc() < 2 || COM_Argc() > 3)
 	{
@@ -810,38 +761,36 @@ static void COM_Exec_f(void)
 		return;
 	}
 
-	filename = COM_Argv(1);
+	// load file
+	// Try with Argv passed verbatim first, for back compat
+	FIL_ReadFile(COM_Argv(1), &buf);
 
-	ctx = ZZ_Alloc(sizeof *ctx);
-
-	ctx->noerror  = COM_CheckParm("-noerror");
-	ctx->silent   = COM_CheckParm("-silent");
-
-	if (COM_CheckParm("-sync"))
+	if (!buf)
 	{
-		q.filename = filenamebuf;
+		// Now try by searching the file path
+		// filename is modified with the full found path
+		strcpy(filename, COM_Argv(1));
+		if (findfile(filename, NULL, true) != FS_NOTFOUND)
+			FIL_ReadFile(filename, &buf);
 
-		strcpy(q.filename, filename);
-
-		if (FIL_FileOK(filename))
+		if (!buf)
 		{
-			q.status = FS_FOUND;
+			if (!COM_CheckParm("-noerror"))
+				CONS_Printf(M_GetText("couldn't execute file %s\n"), COM_Argv(1));
+			return;
 		}
-		else
-		{
-			q.status = findfile(q.filename, NULL, true);
-		}
-
-		COM_ExecuteFile(&q, ctx);
-	}
-	else
-	{
-		q.filename = strcpy(ZZ_Alloc(MAX_WADPATH), filename);
-		Append_async_addfile(ASYNC_EXEC, q.filename, ctx);
 	}
 
+	if (!COM_CheckParm("-silent"))
+		CONS_Printf(M_GetText("executing %s\n"), COM_Argv(1));
+
+	// insert text file into the command buffer
+	COM_BufAddText((char *)buf);
+	COM_BufAddText("\n");
+
+	// free buffer
+	Z_Free(buf);
 }
-
 
 /** Delays execution of the rest of the commands until the next frame.
   * Allows sequences of commands like "jump; fire; backward".

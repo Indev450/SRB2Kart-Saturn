@@ -134,8 +134,6 @@ void HWR_AddTransparentWall(FOutVector *wallVerts, FSurfaceInfo * pSurf, INT32 t
 void HWR_DrawSkyWall(FOutVector *wallVerts, FSurfaceInfo *Surf);
 void HWR_DrawSkyBackground(float fpov);
 
-void HWR_AddPolyObjectSegs(void);
-
 // hw_main.c: BSP
 void HWR_RenderBSPNode(INT32 bspnum);
 void HWR_Subsector(size_t num);

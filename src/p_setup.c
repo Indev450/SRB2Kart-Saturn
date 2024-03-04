@@ -3308,6 +3308,13 @@ boolean P_SetupLevel(boolean skipprecip)
 		LUAh_MapLoad();
 	}
 
+	if (rendermode != render_none)
+	{
+		R_ResetViewInterpolation(0);
+		R_ResetViewInterpolation(0);
+		R_UpdateMobjInterpolators();
+	}
+
 	G_AddMapToBuffer(gamemap-1);
 
 	return true;
@@ -3443,6 +3450,8 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, boolean local)
 	if (!devparm && digmreplaces)
 		CONS_Printf(M_GetText("%s digital musics replaced\n"), sizeu1(digmreplaces));
 
+	R_LoadTexturesPwad(wadnum);
+
 	//
 	// search for sprite replacements
 	//
@@ -3537,7 +3546,7 @@ boolean P_MultiSetupWadFiles(boolean fullsetup)
 	if (partadd_stage == 1)
 	{
 		// Reload all textures, unconditionally for better or worse.
-		R_LoadTextures();
+		//R_LoadTextures();
 
 		// Reload ANIMATED / ANIMDEFS
 		P_InitPicAnims();
