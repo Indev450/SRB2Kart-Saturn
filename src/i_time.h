@@ -29,6 +29,7 @@ typedef struct timestate_s {
 
 extern timestate_t g_time;
 extern consvar_t cv_timescale;
+extern fixed_t entertic, oldentertics;
 
 /**	\brief  Called by D_SRB2Loop, returns current time in game tics.
 */

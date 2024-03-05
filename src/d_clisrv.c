@@ -81,7 +81,7 @@ boolean nodownload = false;
 boolean serverrunning = false;
 INT32 serverplayer = 0;
 char motd[254], server_context[8]; // Message of the Day, Unique Context (even without Mumble support)
-//char netDebugText[10000];
+//char netDebugText[10000];		   //TODO move debug text out of d_clisrv, this is ass
 
 // Server specific vars
 UINT8 playernode[MAXPLAYERS];
@@ -4936,7 +4936,7 @@ static void HandlePacketFromAwayNode(SINT8 node)
 
 			scp = netbuffer->u.servercfg.varlengthinputs;
 			CV_LoadPlayerNames(&scp);
-			CV_LoadNetVars(&scp, false);
+			CV_LoadNetVars(&scp);
 #ifdef JOININGAME
 			/// \note Wait. What if a Lua script uses some global custom variables synched with the NetVars hook?
 			///       Shouldn't them be downloaded even at intermission time?
@@ -6219,49 +6219,64 @@ boolean TryRunTics(tic_t realtics)
 
 	ticking = neededtic > gametic;
 	
-	// record the actual local controls
+	// detect if we can do simulation
 	boolean canSimulate = (gamestate == GS_LEVEL)
-				&& leveltime >= TICRATE*4 
-				&& gametic >= TICRATE 
-				//&& !countdown2 //SRB2Kart: No simulating after everyone has finished ... it breaks stuff
+				&& leveltime >= NEWTICRATE && gametic >= NEWTICRATE && (cv_simulate.value && !server)
 				&& !exitcountdown //SRB2Kart: No simulating after everyone has finished ... it breaks stuff //countdown 2? the sequel? idk 
-				&& (cv_simulate.value && !server) //SRB2Kart: make it impossible to sim before the start of the race
-				&& !resynch_local_inprogress && gametic >= lastSavestateClearedTic + TICRATE;
-	boolean recordingStates = canSimulate;
+				&& !resynch_local_inprogress && gametic >= lastSavestateClearedTic + NEWTICRATE; //do not simulate for one second after clearing
 
 	if (simtic > gametic && !canSimulate)
 	{
-		// if we can't simulate anymore, we ought to reload and invalidate the savestates
+		// if we can't simulate anymore, we ought to reload a valid "server's"
+		// (in fact, our own) gamestate and then invalidate all of them.
+		// TODO 2.2.9 sends/receives savestates, we have to rewrite this later.
+		// maybe we should __specifically__ request the savestate from the server.
+		// we'll be requesting it anyway because if we desynched, we can't simulate.
 		if (gameStateBufferIsValid[gametic % BACKUPTICS])
-			P_LoadGameState(&gameStateBuffer[gametic % BACKUPTICS]);
+		{
+			if (!(gamestate == GS_INTERMISSION))
+				P_LoadGameState(&gameStateBuffer[gametic % MAXSIMULATIONS]);
+			// Most of the time the RandSeed is correct (e.g. lua map voting)
+			// because we always load "real state" before making sims
+			// so setting it up explicitly for the intermission isn't needed.
+			// If RandSeed is not in synch with the server for whateva reason, it's
+			// an issue with vanilla SRB2(?) or we saved a bad gamestate
+			// TODO improve intermission handling later
+			// because we can get into intermission during sim with lua.
+			// it happened once with "battleroyale" lua mod
+		}
 		else
-			CONS_Printf("Problem: game state buffer inaccessible! (simtic %d gametic %d)\n", simtic, gametic);
+			// CONS_Printf("Game state buffer is invalid! (simtic %d gametic %d)\n", simtic, gametic);
+			DEBFILE(va("NETPLUS: Game state buffer is invalid! (simtic %d gametic %d)\n", simtic, gametic));
 
 		simtic = gametic;
-		CONS_Printf("Clearing savestates due to !canSim\n");
+		// CONS_Printf("Not simulating, clearing savestates...\n");
+		DEBFILE("NETPLUS: Not simulating, clearing savestates...\n");
 		InvalidateSavestates();
 	}
 
 	PerformDebugRewinds();
 
-	liveTic = I_GetTime();
+	liveTic = entertic; //we get entertic from SRB2Loop()
 
 	// record the actual local controls for this frame
 	for (tic_t i = 0; i < realtics; i++)
 		localTicBuffer[(liveTic - i) % BACKUPTICS] = localcmds;
 
-	if (ticking && !resynch_local_inprogress)
+	if (ticking)
 	{
-		// Load the real state if it exists
-		if (simtic != gametic && gameStateBufferIsValid[gametic % BACKUPTICS])
+		// Load the real state if it exists before doing anything
+		// The server will resynch us anyway if things would go wrong
+		if (simtic > gametic && gameStateBufferIsValid[gametic % BACKUPTICS])
 		{
 			P_LoadGameState(&gameStateBuffer[gametic % BACKUPTICS]);
-
-			if (Consistancy() != consistancy[gametic%BACKUPTICS])
-				CONS_Printf("oops, consistency error, even I got that one!\n");
+			if (Consistancy() != consistancy[gametic % TICQUEUE])
+				// CONS_Alert(CONS_WARNING, "Saved state at %d isn't consistent with recorded checksum\n", gametic);
+				DEBFILE(va("NETPLUS: Saved state at %d isn't consistent with recorded checksum\n", gametic));
 		}
 		else if (simtic != gametic && !gameStateBufferIsValid[gametic % BACKUPTICS])
-			CONS_Printf("Problem: game state buffer inaccessible but a simulation happened!!\n");
+			// CONS_Alert(CONS_WARNING, "Game state buffer is inaccessible but a simulation happened\n");
+			DEBFILE("NETPLUS: Game state buffer is inaccessible but a simulation happened\n");
 
 		// run the count * tics
 		while (neededtic > gametic)
@@ -6282,27 +6297,29 @@ boolean TryRunTics(tic_t realtics)
 
 			consistancy[gametic%TICQUEUE] = Consistancy();
 
-			if (recordingStates)
+			if (canSimulate)
 			{
-				// store this real state
-				P_SaveGameState(&gameStateBuffer[gametic % BACKUPTICS]);
-
-				gameStateBufferIsValid[gametic % BACKUPTICS] = true;
-
-				// store the ticcmds used during this game tic
+				if (neededtic == gametic)
+				{
+					// store this real state (hopefully accurate to the one from server)
+					P_SaveGameState(&gameStateBuffer[gametic % BACKUPTICS]);
+					gameStateBufferIsValid[gametic % BACKUPTICS] = true;
+				}
+				// store the ticcmds used during this game tic for simulations
+				// TODO optimize it in a way that they won't be saved when we finished chasing to server's gamestate
 				for (int i = 0; i < MAXPLAYERS; i++)
-					gameTicBuffer[gametic % BACKUPTICS][i] = netcmds[(gametic - 1) % BACKUPTICS][i];
+					gameTicBuffer[gametic % MAXSIMULATIONS][i] = netcmds[(gametic - 1) % BACKUPTICS][i];
 			}
+			// Leave a certain amount of tics present in the net buffer as long as we've ran at least one tic this frame.
+			if (!canSimulate) //do not use the vanilla netbuffer or simulations will be doubled/tripled/so on
+				if (client && gamestate == GS_LEVEL && leveltime > 3 && neededtic <= gametic + cv_netticbuffer.value)
+						break;
 
 			if (update_stats)
 			{
 				PS_STOP_TIMING(ps_tictime);
 				PS_UpdateTickStats();
 			}
-
-			// Leave a certain amount of tics present in the net buffer as long as we've ran at least one tic this frame.
-			if (client && gamestate == GS_LEVEL && leveltime > 3 && neededtic <= gametic + cv_netticbuffer.value)
-				break;
 		}
 	}
 
@@ -6339,7 +6356,11 @@ UINT64 simEndTime;
 static void RunSimulations()
 {
 	if (!gameStateBufferIsValid[gametic % BACKUPTICS])
+	{
+		// CONS_Alert(CONS_WARNING, "Can't simulate, save on %d is invalid!\n", gametic);
+		DEBFILE(va("NETPLUS: Can't simulate, save on %d is invalid!\n", gametic));
 		return; // do not simulate if we cannot guarantee a recovery
+	}
 
 	static int lastsimtic = 0;
 
@@ -6422,25 +6443,33 @@ static void RunSimulations()
 
 	// simulate the rest o da future
 	issimulation = true;
-	con_muted = true;
 
 	simStartTime = I_GetPrecisePrecision();
 
+	// localangle_sim[liveTic % MAXSIMULATIONS] = localangle;
 	for (int i = 0; i < numToSimulate; i++)
 	{
-		// control other players (just use their previous control for now)
+		// // control other players (just use their previous control for now)
+		// here you can do all sorts of player predictions.
 		for (int j = 0; j < MAXPLAYERS; j++)
 		{
 			if (playeringame[j] && j != consoleplayer)
-				netcmds[gametic % BACKUPTICS][j] = gameTicBuffer[(min(simtic + 1, gametic) + BACKUPTICS) % BACKUPTICS][j];
+				//simtic+1 это для херни со smoothedTic
+				//use Memcpy or G_CopyTiccmd for that
+				netcmds[gametic % BACKUPTICS][j] = gameTicBuffer[(min(simtic + 1, gametic) + MAXSIMULATIONS) % MAXSIMULATIONS][j];
 		}
 
 		// control the local player
 		if (simtic + i < gametic) // game is smoothed, take tics from the _actual_ received state
-			netcmds[gametic % BACKUPTICS][consoleplayer] = gameTicBuffer[(simtic + 1) % BACKUPTICS][consoleplayer];
+		{
+			netcmds[gametic % BACKUPTICS][consoleplayer] = gameTicBuffer[(simtic + 1) % MAXSIMULATIONS][consoleplayer];
+		}
 		else
-			netcmds[gametic % BACKUPTICS][consoleplayer] = localTicBuffer[(liveTic - estimatedRTT + i + 1 + BACKUPTICS) % BACKUPTICS];
+		{
+			netcmds[gametic % BACKUPTICS][consoleplayer] = localTicBuffer[(liveTic - estimatedRTT + i + 1 + MAXSIMULATIONS) % MAXSIMULATIONS];
+		}
 
+		DEBFILE(va("============ Running SIM tic %d (local %d) (sim %d)\n", gametic, localgametic, simtic));
 		G_Ticker(true); // tic a bunch of times lol see what happens lolol
 		simtic++;
 
@@ -6458,12 +6487,11 @@ static void RunSimulations()
 	}
 
 	issimulation = false;
-	con_muted = false;
 
 	// Finalise steadyplayers
 	if (numToSimulate > 0)
 	{
-		int histIndex = max((int)(simtic - smoothedTic) - cv_netsteadyplayers.value, 0); // up to cv_netsteadyplayers.value behind the simulation
+		int histIndex = max((int)(simtic - gametic) - cv_netsteadyplayers.value, 0); // up to cv_netsteadyplayers.value behind the simulation
 		for (int i = 0; i < MAXPLAYERS; i++)
 		{
 			if (playeringame[i] && players[i].mo && i != consoleplayer && !players[i].spectator)
@@ -6477,11 +6505,11 @@ static void RunSimulations()
 				P_SetThingPosition(players[i].mo);
 
 				// fill any holes in the simulation history (due to frame skips)
-				for (int j = (int)max(lastsimtic + 1, (int)simtic - 5); j <= (int)simtic; j++)
+				for (int j = (int)max(lastsimtic + 2, (int)simtic - 5); j <= (int)simtic; j++)
 				{
-					steadyplayers[i].simx[j % BACKUPTICS] = steadyplayers[i].histx[histIndex];
-					steadyplayers[i].simy[j % BACKUPTICS] = steadyplayers[i].histy[histIndex];
-					steadyplayers[i].simz[j % BACKUPTICS] = steadyplayers[i].histz[histIndex];
+					steadyplayers[i].simx[j % MAXSIMULATIONS] = steadyplayers[i].histx[histIndex];
+					steadyplayers[i].simy[j % MAXSIMULATIONS] = steadyplayers[i].histy[histIndex];
+					steadyplayers[i].simz[j % MAXSIMULATIONS] = steadyplayers[i].histz[histIndex];
 				}
 
 				// Generate trails
@@ -6492,12 +6520,12 @@ static void RunSimulations()
 					for (int s = 0; s < trailLifetime; s++)
 					{
 						// If there is a big discrepency between the player's current position and their last one, spawn a trail showing their movements
-						fixed_t prevx = steadyplayers[i].simx[(simtic - s - 1) % BACKUPTICS], prevy = steadyplayers[i].simy[(simtic - s - 1) % BACKUPTICS],
-							prevz = steadyplayers[i].simz[(simtic - s - 1) % BACKUPTICS];
-						fixed_t curx = steadyplayers[i].simx[(simtic - s) % BACKUPTICS], cury = steadyplayers[i].simy[(simtic - s) % BACKUPTICS],
-							curz = steadyplayers[i].simz[(simtic - s) % BACKUPTICS];
+						fixed_t prevx = steadyplayers[i].simx[(simtic - s - 1) % MAXSIMULATIONS], prevy = steadyplayers[i].simy[(simtic - s - 1) % MAXSIMULATIONS],
+								prevz = steadyplayers[i].simz[(simtic - s - 1) % MAXSIMULATIONS];
+						fixed_t curx = steadyplayers[i].simx[(simtic - s) % MAXSIMULATIONS], cury = steadyplayers[i].simy[(simtic - s) % MAXSIMULATIONS],
+								curz = steadyplayers[i].simz[(simtic - s) % MAXSIMULATIONS];
 						fixed_t distance = max(abs(curx - prevx), max(abs(cury - prevy), abs(curz - prevz)));
-						fixed_t stepDistance = 60 << FRACBITS; // distance between trail steps
+						fixed_t stepDistance = 60 << FRACBITS;		 // distance between trail steps
 						fixed_t activationDistance = 60 << FRACBITS; // distance between trail steps
 
 						// If player is changing direction quickly in a net simulation, create a ghost trail
@@ -6509,7 +6537,7 @@ static void RunSimulations()
 
 							for (currentStep = step; currentStep < (1 << FRACBITS); currentStep += step)
 							{
-								mobj_t* ghost = P_SpawnGhostMobj(players[i].mo);
+								mobj_t *ghost = P_SpawnGhostMobj(players[i].mo);
 
 								ghost->x = prevx + FixedMul(curx - prevx, currentStep);
 								ghost->y = prevy + FixedMul(cury - prevy, currentStep);
@@ -6526,17 +6554,19 @@ static void RunSimulations()
 		// move steadyplayer shields and signs
 		if (cv_netsteadyplayers.value)
 		{
-			mobj_t* mobj;
-			player_t* redflagplayer = NULL;
-			player_t* blueflagplayer = NULL;
+			mobj_t *mobj;
+			player_t *redflagplayer = NULL;
+			player_t *blueflagplayer = NULL;
 
-#define ADJUSTPOSITION(obj, player) do { \
-			P_UnsetThingPosition(obj); \
-			obj->x += steadyplayers[player].histx[histIndex] - steadyplayers[player].histx[simtic - gametic]; \
-			obj->y += steadyplayers[player].histy[histIndex] - steadyplayers[player].histy[simtic - gametic]; \
-			obj->z += steadyplayers[player].histz[histIndex] - steadyplayers[player].histz[simtic - gametic]; \
-			P_SetThingPosition(obj); \
-} while(0)
+#define ADJUSTPOSITION(obj, player)                                                                       \
+	do                                                                                                    \
+	{                                                                                                     \
+		P_UnsetThingPosition(obj);                                                                        \
+		obj->x += steadyplayers[player].histx[histIndex] - steadyplayers[player].histx[simtic - gametic]; \
+		obj->y += steadyplayers[player].histy[histIndex] - steadyplayers[player].histy[simtic - gametic]; \
+		obj->z += steadyplayers[player].histz[histIndex] - steadyplayers[player].histz[simtic - gametic]; \
+		P_SetThingPosition(obj);                                                                          \
+	} while (0)
 
 			for (int i = 0; i < MAXPLAYERS; i++)
 			{
@@ -6548,19 +6578,19 @@ static void RunSimulations()
 						blueflagplayer = &players[i];
 				}
 
-//				if (players[i].followmobj)
-//					ADJUSTPOSITION(players[i].followmobj, i);
+				//if (players[i].followmobj)
+					//ADJUSTPOSITION(players[i].followmobj, i);
 			}
 
-			//for (mobj = (mobj_t*)thlist[THINK_MOBJ].next; mobj != (mobj_t*)&thlist[THINK_MOBJ]; mobj = (mobj_t*)mobj->thinker.next)
-			//{
-//				if (mobj->flags2 & MF2_SHIELD && mobj->target != NULL && mobj->target->player != NULL && mobj->target != players[consoleplayer].mo)
-//					ADJUSTPOSITION(mobj, mobj->target->player - players);
-//				else if (mobj->type == MT_BLUEFLAG && blueflagplayer)
-//					ADJUSTPOSITION(mobj, blueflagplayer - players);
-//				else if (mobj->type == MT_REDFLAG && redflagplayer)
-//					ADJUSTPOSITION(mobj, redflagplayer - players);
-			//}
+			/*for (mobj = (mobj_t *)thlist[THINK_MOBJ].next; mobj != (mobj_t *)&thlist[THINK_MOBJ]; mobj = (mobj_t *)mobj->thinker.next)
+			{
+				if (mobj->flags2 & MF2_SHIELD && mobj->target != NULL && mobj->target->player != NULL && mobj->target != players[consoleplayer].mo)
+					ADJUSTPOSITION(mobj, mobj->target->player - players);
+				else if (mobj->type == MT_BLUEFLAG && blueflagplayer)
+					ADJUSTPOSITION(mobj, blueflagplayer - players);
+				else if (mobj->type == MT_REDFLAG && redflagplayer)
+					ADJUSTPOSITION(mobj, redflagplayer - players);
+			}*/
 		}
 	}
 
