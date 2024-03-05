@@ -1197,9 +1197,6 @@ void F_WaitingPlayersTicker(void)
 
 void F_WaitingPlayersDrawer(void)
 {
-	if (!waitcolormap)
-		F_StartWaitingPlayers();
-
 	UINT32 frame = (finalecount % 8) / 4; // The game only tics every other frame while waitingplayers
 	INT32 flags = V_FLIP;
 	const char *waittext1 = "You will join";

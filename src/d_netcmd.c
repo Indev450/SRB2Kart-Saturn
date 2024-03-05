@@ -50,6 +50,7 @@
 #include "y_inter.h"
 #include "fastcmp.h"
 #include "m_perfstats.h"
+#include "i_net.h"
 
 #ifdef NETGAME_DEVMODE
 #define CV_RESTRICT CV_NETVAR
@@ -120,18 +121,10 @@ static void KartSpeed_OnChange(void);
 static void KartEncore_OnChange(void);
 static void KartComeback_OnChange(void);
 static void KartEliminateLast_OnChange(void);
-static void Command_Savestate(void);
-static void Command_Loadstate(void);
-static void Command_Rewind(void);
-static void Command_Saveloadtest(void);
-static void Command_Autotimefudge(void);
 
 //netplus stuff
-static void Command_Savestate(void);
-static void Command_Loadstate(void);
-static void Command_Rewind(void);
-static void Command_Saveloadtest(void);
-static void Command_Autotimefudge(void);
+static void TimeFudge_OnChange(void);
+void Command_Autotimefudge(void);
 
 #ifdef NETGAME_DEVMODE
 static void Fishcake_OnChange(void);
@@ -470,7 +463,7 @@ consvar_t cv_allowexitlevel = {"allowexitlevel", "No", CV_NETVAR, CV_YesNo, NULL
 
 consvar_t cv_killingdead = {"killingdead", "Off", CV_NETVAR|CV_NOSHOWHELP, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_netsimstat = { "netsimstat", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL };
+consvar_t cv_netsimstat = { "netsimstat", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL }; //srb2netplus, shows simulation stats
 
 consvar_t cv_netstat = {"netstat", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; // show bandwidth statistics
 static CV_PossibleValue_t nettimeout_cons_t[] = {{TICRATE/7, "MIN"}, {60*TICRATE, "MAX"}, {0, NULL}};
@@ -558,21 +551,27 @@ boolean deferencoremode = false;
 UINT8 splitscreen = 0;
 boolean circuitmap = true; // SRB2kart
 
-consvar_t cv_simulate = { "simulate", "Yes", 0, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL };
+consvar_t cv_simulate = { "sim", "Yes", 0, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL };
 
 static CV_PossibleValue_t simulateTics_cons_t[] = { {0, "MIN"}, {MAXSIMULATIONS - 1, "MAX"}, {0, NULL} };
 consvar_t cv_simulatetics = { "simtics", "MAX", 0, simulateTics_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL };
 
+consvar_t cv_simmisstics = { "simmisstics", "Yes", 0, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL };
+consvar_t cv_jittersmoothing = { "jittersmoothing", "Yes", 0, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL };
+
 static CV_PossibleValue_t simulateculldistance_cons_t[] = { {0, "MIN"}, {10000, "MAX"}, {0, NULL} };
 consvar_t cv_simulateculldistance = { "simcull", "MIN", 0, simulateculldistance_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL };
+
+static CV_PossibleValue_t siminaccuracy_cons_t[] = { {1, "MIN"}, {10, "MAX"}, {0, NULL} };
+consvar_t cv_siminaccuracy = { "siminaccuracy", "MIN", 0, siminaccuracy_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL };
 
 static CV_PossibleValue_t netsteadyplayers_cons_t[] = { {0, "MIN"}, {MAXSIMULATIONS - 1, "MAX"}, {0, NULL} };
 consvar_t cv_netsteadyplayers = { "simsteadyplayers", "0", 0, netsteadyplayers_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL };
 
-static CV_PossibleValue_t nettrails_cons_t[] = { {0, "MIN"}, {5, "MAX"}, {0, NULL} };
+static CV_PossibleValue_t nettrails_cons_t[] = { {0, "MIN"}, {10, "MAX"}, {0, NULL} };
 consvar_t cv_nettrails = { "simtrails", "5", 0, nettrails_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL };
 
-consvar_t cv_netslingdelay = { "simslingdelay", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL };
+consvar_t cv_netslingdelay = { "simslingdelay", "No", 0, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL };
 
 static CV_PossibleValue_t netdelay_cons_t[] = { {0, "MIN"}, {250, "MAX"}, {0, NULL} };
 consvar_t cv_netdelay = { "netdelay", "0", 0, netdelay_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL };
@@ -584,23 +583,18 @@ consvar_t cv_netsmoothing = { "netsmoothing", "Off", 0, CV_OnOff, NULL, 0, NULL,
 
 consvar_t cv_netspikes = { "netspikes", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL };
 
-static CV_PossibleValue_t debugsimulaterewind_cons_t[] = { {0, "MIN"}, {TICQUEUE - 1, "MAX"}, {0, NULL} };
+static CV_PossibleValue_t netvariabletime_cons_t[] = { {-1, "MIN"}, {100, "MAX"}, {0, NULL} };
+consvar_t cv_netvariabletime = { "netvariabletime", "-1", 0, netvariabletime_cons_t, NULL, -1, NULL, NULL, 0, 0, NULL };
+
+static CV_PossibleValue_t debugsimulaterewind_cons_t[] = { {0, "MIN"}, {BACKUPTICS - 1, "MAX"}, {0, NULL} };
 consvar_t cv_debugsimulaterewind = { "debugsimulaterewind", "0", 0, debugsimulaterewind_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL };
 
 static CV_PossibleValue_t timefudge_cons_t[] = { {0, "MIN"}, {100, "MAX"}, {0, NULL} };
-consvar_t cv_timefudge = { "timefudge", "0", 0, timefudge_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL };
+consvar_t cv_timefudge = { "timefudge", "0", CV_CALL, timefudge_cons_t, TimeFudge_OnChange, 0, NULL, NULL, 0, 0, NULL };
 
-char timedemo_name[256];
-boolean timedemo_csv;
-char timedemo_csv_id[256];
-boolean timedemo_quit;
+consvar_t cv_autoupdatetimefudge = {"autoupdatetimefudge", "No", 0, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 INT32 adminplayers[MAXPLAYERS];
-
-char timedemo_name[256];
-boolean timedemo_csv;
-char timedemo_csv_id[256];
-boolean timedemo_quit;
 
 /// \warning Keep this up-to-date if you add/remove/rename net text commands
 const char *netxcmdnames[MAXNETXCMD - 1] =
@@ -734,16 +728,14 @@ void D_RegisterServerCommands(void)
 
 	COM_AddCommand("replaymarker", Command_ReplayMarker);
 
-	// experimental load/save game state for possible rewinding in netgames
-	COM_AddCommand("savestate", Command_Savestate);
-	COM_AddCommand("loadstate", Command_Loadstate);
-	COM_AddCommand("rewind", Command_Rewind);
-	COM_AddCommand("saveloadtest", Command_Saveloadtest);
 	COM_AddCommand("autotimefudge", Command_Autotimefudge);
 
 	CV_RegisterVar(&cv_simulate);
 	CV_RegisterVar(&cv_simulatetics);
+	CV_RegisterVar(&cv_simmisstics);
+	CV_RegisterVar(&cv_jittersmoothing);
 	CV_RegisterVar(&cv_simulateculldistance);
+	CV_RegisterVar(&cv_siminaccuracy);
 	CV_RegisterVar(&cv_netdelay);
 	CV_RegisterVar(&cv_netjitter);
 	CV_RegisterVar(&cv_netsmoothing);
@@ -751,8 +743,10 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_netsteadyplayers);
 	CV_RegisterVar(&cv_debugsimulaterewind);
 	CV_RegisterVar(&cv_timefudge);
+	CV_RegisterVar(&cv_autoupdatetimefudge);
 	CV_RegisterVar(&cv_nettrails);
 	CV_RegisterVar(&cv_netslingdelay);
+	CV_RegisterVar(&cv_netvariabletime);
 
 	// for master server connection
 	AddMServCommands();
@@ -860,84 +854,7 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_maxdemosize);
 }
 
-// =========================================================================
-// Louis' nasty test bed
-// =========================================================================
-#include "p_saveg.h"
-UINT8* savedState = NULL;
-
-static void Command_Savestate(void)
-{
-	CONS_Printf("Saving game state!\n");
-
-	savedState = (UINT8 *)malloc(1024*768 /* lol, 1998 screen resolution */);
-	if (!savedState)
-	{
-		CONS_Alert(CONS_ERROR, M_GetText("Wtf this machine is weak\n"));
-		return;
-	}
-
-	// Leave room for the uncompressed length.
-	save_p = savedState;
-
-	P_SaveNetGame();
-}
-
-static void Command_Loadstate(void)
-{
-	save_p = savedState;
-
-	P_LoadNetGame(true);
-
-	// try and execute 10 ticcmds...
-
-	CONS_Printf("Loading game state!\n");
-}
-
-extern boolean rewindingWow;
-extern int rewindingTarget;
-extern boolean memleak;
-
-static void Command_Rewind(void)
-{
-	rewindingWow = true;
-	rewindingTarget = COM_Argc() > 1 ? atoi(COM_Argv(1)) : 0;
-}
-
-void MemShow() {
-	Z_CheckHeap(-1);
-	CONS_Printf("\x82%s", M_GetText("Memory Info\n"));
-	CONS_Printf(M_GetText("Total heap used   : %7s KB\n"), sizeu1(Z_TagsUsage(0, INT32_MAX)>>10));
-	CONS_Printf(M_GetText("Static            : %7s KB\n"), sizeu1(Z_TagUsage(PU_STATIC) >> 10));
-	CONS_Printf(M_GetText("Static (sound)    : %7s KB\n"), sizeu1(Z_TagUsage(PU_SOUND) >> 10));
-	CONS_Printf(M_GetText("Static (music)    : %7s KB\n"), sizeu1(Z_TagUsage(PU_MUSIC) >> 10));
-	CONS_Printf(M_GetText("Locked cache      : %7s KB\n"), sizeu1(Z_TagUsage(PU_CACHE) >> 10));
-	CONS_Printf(M_GetText("Level             : %7s KB\n"), sizeu1(Z_TagUsage(PU_LEVEL) >> 10));
-	CONS_Printf(M_GetText("Special thinker   : %7s KB\n"), sizeu1(Z_TagUsage(PU_LEVSPEC) >> 10));
-	CONS_Printf(M_GetText("All purgable      : %7s KB\n"),
-		sizeu1(Z_TagsUsage(PU_PURGELEVEL, INT32_MAX) >> 10));
-}
-
-static savestate_t save;
-static void Command_Saveloadtest(void)
-{
-	memleak = true;
-
-	MemShow();
-
-	for (int i = 0; i < 2; i++) {
-		P_SaveGameState(&save);
-		P_LoadGameState(&save);
-	}
-
-	MemShow();
-
-	memleak = false;
-}
-
-#include "i_net.h"
-
-extern int netUpdateFudge;
+extern double netUpdateFudge;
 void Command_Autotimefudge(void)
 {
 	// you can use SDL_GetPerformanceFrequency() instead of tic_frequency to get more precise timings
@@ -960,10 +877,10 @@ void Command_Autotimefudge(void)
 		I_NetGet();
 		if ((doomcom->remotenode != -1)) // Packet received
 		{
-			packetTimeFudge[numReceivedPackets] = 100 * abs(((double)SDL_GetPerformanceCounter() / I_GetPrecisePrecision() - lastTimeReceivedPacket) - netUpdateFudge); // gets the time fudge offset (0-100)
+			packetTimeFudge[numReceivedPackets] = 100 * abs(((double)I_GetPreciseTime() / I_GetPrecisePrecision() - lastTimeReceivedPacket) - netUpdateFudge); // gets the time fudge offset (0-100)
 			CONS_Printf("%i: %d\n", numReceivedPackets, packetTimeFudge[numReceivedPackets]);
 			numReceivedPackets++;
-			lastTimeReceivedPacket = (double)SDL_GetPerformanceCounter() / I_GetPrecisePrecision();
+			lastTimeReceivedPacket = (double)I_GetPreciseTime() / I_GetPrecisePrecision();
 		}
 	}
 
@@ -1013,7 +930,6 @@ void Command_Autotimefudge(void)
 		CV_SetValue(&cv_timefudge, newTimeFudge);
 	}
 }
-
 
 // =========================================================================
 //                           CLIENT STARTUP
@@ -5213,7 +5129,6 @@ void ItemFinder_OnChange(void)
   * \sa cv_pointlimit, TimeLimit_OnChange
   * \author Graue <graue@oceanbase.org>
   */
-static int lastpointlimit;
   
 static void PointLimit_OnChange(void)
 {
@@ -5225,20 +5140,15 @@ static void PointLimit_OnChange(void)
 		return;
 	}
 
-	if (cv_pointlimit.value != lastpointlimit)
+	if (cv_pointlimit.value)
 	{
-		if (cv_pointlimit.value)
-		{
-			CONS_Printf(M_GetText("Levels will end after %s scores %d point%s.\n"),
-				G_GametypeHasTeams() ? M_GetText("a team") : M_GetText("someone"),
-				cv_pointlimit.value,
-				cv_pointlimit.value > 1 ? "s" : "");
-		}
-		else if (netgame || multiplayer)
-			CONS_Printf(M_GetText("Point limit disabled\n"));
+		CONS_Printf(M_GetText("Levels will end after %s scores %d point%s.\n"),
+			G_GametypeHasTeams() ? M_GetText("a team") : M_GetText("someone"),
+			cv_pointlimit.value,
+			cv_pointlimit.value > 1 ? "s" : "");
 	}
-	
-	lastpointlimit = cv_pointlimit.value;
+	else if (netgame || multiplayer)
+			CONS_Printf(M_GetText("Point limit disabled\n"));
 }
 
 static void NumLaps_OnChange(void)
@@ -5287,28 +5197,19 @@ static void TimeLimit_OnChange(void)
 
 	if (cv_timelimit.value != 0)
 	{
-		UINT32 newtimelimit = cv_timelimit.value * 60 * TICRATE;
+		CONS_Printf(M_GetText("Levels will end after %d minute%s.\n"),cv_timelimit.value,cv_timelimit.value == 1 ? "" : "s"); // Graue 11-17-2003
+		timelimitintics = cv_timelimit.value * 60 * TICRATE;
 
 		//add hidetime for tag too!
 		if (G_TagGametype())
-			newtimelimit += hidetime * TICRATE;
-
-		if (newtimelimit != timelimitintics)
-		{
-			CONS_Printf(M_GetText("Levels will end after %d minute%s.\n"), cv_timelimit.value, cv_timelimit.value == 1 ? "" : "s"); // Graue 11-17-2003
-
-			timelimitintics = newtimelimit; // ...and slightly modified by LX 12-11-2019 <3
-		}
+			timelimitintics += hidetime * TICRATE;
 
 		// Note the deliberate absence of any code preventing
 		//   pointlimit and timelimit from being set simultaneously.
 		// Some people might like to use them together. It works.
 	}
-	else if ((netgame || multiplayer) && timelimitintics > 0)
-	{
-		timelimitintics = 0;
+	else if (netgame || multiplayer)
 		CONS_Printf(M_GetText("Time limit disabled\n"));
-	}
 
 #ifdef HAVE_DISCORDRPC
 	DRPC_UpdatePresence();
@@ -5491,6 +5392,12 @@ static void SoundTest_OnChange(void)
 	S_StopSounds();
 	S_StartSound(NULL, cv_soundtest.value);
 }
+
+static void TimeFudge_OnChange(void)
+{
+	I_SetTime(I_GetPreciseTime(), cv_timefudge.value, true);
+}
+
 
 static void AutoBalance_OnChange(void)
 {

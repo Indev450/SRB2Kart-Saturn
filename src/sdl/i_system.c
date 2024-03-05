@@ -3191,6 +3191,16 @@ UINT64 I_GetPrecisePrecision(void)
 	return SDL_GetPerformanceFrequency();
 }
 
+double elapsed;
+
+void I_SetTime(tic_t tic, int fudge, boolean useAbsoluteFudge)
+{
+	tic = max(tic, SDL_GetTicks());
+	if (useAbsoluteFudge)
+		elapsed = elapsed + (fudge / 100) * SDL_GetPerformanceFrequency();
+}
+
+
 static UINT32 frame_rate;
 
 static double frame_frequency;

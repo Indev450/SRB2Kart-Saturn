@@ -28,7 +28,4 @@ boolean I_InitTcpNetwork(void);
 boolean I_InitTcpDriver(void);
 void I_ShutdownTcpDriver(void);
 
-// for debug delayed networking
-void SOCK_FlushDelayBuffers(boolean);
-
 #endif

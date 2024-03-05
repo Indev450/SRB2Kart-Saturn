@@ -12926,7 +12926,7 @@ mobj_t *P_SPMAngle(mobj_t *source, mobjtype_t type, angle_t angle, UINT8 allowai
 
 	if (cv_netslingdelay.value && issimulation && (tic_t)cv_netsteadyplayers.value >= targetsimtic - simtic && source == players[consoleplayer].mo)
 	{
-		z = 0x80000000; // don't make rings appear when using netslingdelay
+		z = 0x80000000; // don't make rings appear when using netslingdelay, teleport them somewhere else
 		th->flags |= MF_NOTHINK;
 		th->sprite = SPR_NULL;
 	}

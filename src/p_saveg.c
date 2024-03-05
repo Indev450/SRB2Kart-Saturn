@@ -4498,6 +4498,13 @@ boolean P_LoadNetGame(boolean preserveLevel)
 	return READUINT8(save_p) == 0x1d;
 }
 
+void P_GameStateFreeMemory(savestate_t* savestate)
+{
+	for (size_t i = 0; i < sizeof(savestate->buffer) / sizeof(savestate->buffer[0]); i++) {
+    savestate->buffer[i] = 0;  // Or any other suitable value
+}
+}
+
 extern UINT64 saveStateBenchmark;
 extern UINT64 loadStateBenchmark;
 

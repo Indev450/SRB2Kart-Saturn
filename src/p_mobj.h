@@ -530,7 +530,6 @@ void P_XYMovement(mobj_t *mo);
 void P_EmeraldManager(void);
 
 extern INT32 modulothing;
-
 extern UINT32 globalmobjnum;
 
 #define MAXHUNTEMERALDS 64

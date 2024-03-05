@@ -162,7 +162,10 @@ extern consvar_t cv_pingstyle;
 //netplus stuff
 extern consvar_t cv_simulate;
 extern consvar_t cv_simulatetics;
+extern consvar_t cv_simmisstics;
+extern consvar_t cv_jittersmoothing;
 extern consvar_t cv_simulateculldistance;
+extern consvar_t cv_siminaccuracy;
 extern consvar_t cv_netdelay;
 extern consvar_t cv_netjitter;
 extern consvar_t cv_netsmoothing;
@@ -170,8 +173,10 @@ extern consvar_t cv_netspikes;
 extern consvar_t cv_netsteadyplayers;
 extern consvar_t cv_debugsimulaterewind;
 extern consvar_t cv_timefudge;
+extern consvar_t cv_autoupdatetimefudge;
 extern consvar_t cv_nettrails;
 extern consvar_t cv_netslingdelay;
+extern consvar_t cv_netvariabletime;
 
 //extern consvar_t cv_smallpos;
 extern consvar_t cv_showminimapnames;

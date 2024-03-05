@@ -125,13 +125,18 @@ INT32 consoleplayer; // player taking events and displaying
 INT32 displayplayers[MAXSPLITSCREENPLAYERS]; // view being displayed
 
 tic_t gametic;
-tic_t simtic; // simulated tic
-tic_t targetsimtic; // target simulated tic
-tic_t smoothedTic;
 tic_t levelstarttic; // gametic at level start
 UINT32 totalrings; // for intermission
 INT16 lastmap; // last level you were at (returning from special stages)
 tic_t timeinmap; // Ticker for time spent in level (used for levelcard display)
+
+tic_t simtic; // simulated tic
+tic_t neededtic;
+tic_t targetsimtic; // target simulated tic
+tic_t smoothedTic;
+boolean canSimulate;
+tic_t finaltargetsimtic;
+// boolean canPlaySounds;
 
 INT16 spstage_start;
 INT16 sstage_start;

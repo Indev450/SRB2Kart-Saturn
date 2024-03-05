@@ -51,7 +51,8 @@ applications may follow different packet versions.
 #define TICCMD_TIME_SIZE (1<<(TICCMD_TIMEBITS_AIMING+TICCMD_TIMEBITS_ANGLE))
 
 // Maximum number of client-side simulations allowed. A simulation is a version of the game state extrapolated some frames ahead to cancel out network latency
-#define MAXSIMULATIONS (TICCMD_TIME_SIZE-1)
+#define MAXSIMULATIONS TICRATE //one second of simulations
+#define MAXLOCALSAVESTATES 8
 
 //
 // Packet structure
@@ -561,7 +562,7 @@ typedef struct
 	fixed_t histx[MAXSIMULATIONS + 1], histy[MAXSIMULATIONS + 1], histz[MAXSIMULATIONS + 1];
 
 	// stores the final simulated position for each simulated gametic
-	fixed_t simx[TICQUEUE], simy[TICQUEUE], simz[TICQUEUE];
+	fixed_t simx[MAXSIMULATIONS], simy[MAXSIMULATIONS], simz[MAXSIMULATIONS];
 
 } steadyplayer_t;
 
