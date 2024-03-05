@@ -162,6 +162,8 @@ static       SDL_bool    videoblitok = SDL_FALSE;
 static       SDL_bool    exposevideo = SDL_FALSE;
 static       SDL_bool    usesdl2soft = SDL_FALSE;
 static       SDL_bool    borderlesswindow = SDL_FALSE;
+static 		 SDL_DisplayMode currentDisplayMode;
+static 		 SDL_DisplayMode currentWindowMode;
 
 // SDL2 vars
 SDL_Window   *window;
@@ -227,6 +229,7 @@ static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen)
 	Uint32 amask;
 	int bpp = 16;
 	int sw_texture_format = SDL_PIXELFORMAT_ABGR8888;
+	int index = SDL_GetWindowDisplayIndex(window);
 
 	realwidth = vid.width;
 	realheight = vid.height;
@@ -241,7 +244,8 @@ static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen)
 		else if (fullscreen && cv_fullscreen.value == 2)
 		{
 			wasfullscreen = SDL_TRUE;
-			SDL_SetWindowSize(window, realwidth, realheight);
+			SDL_GetDesktopDisplayMode(index, &currentWindowMode);
+			SDL_SetWindowSize(window, currentWindowMode.w, currentWindowMode.h);
 			SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN);
 		}
 		else // windowed mode
@@ -275,7 +279,8 @@ static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen)
 		else if (fullscreen && cv_fullscreen.value == 2)
 		{
 			wasfullscreen = SDL_TRUE;
-			SDL_SetWindowSize(window, realwidth, realheight);
+			SDL_GetDesktopDisplayMode(index, &currentWindowMode);
+			SDL_SetWindowSize(window, currentWindowMode.w, currentWindowMode.h);
 			SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN);
 		}
 	}
@@ -1992,8 +1997,11 @@ static SDL_bool Impl_CreateWindow(SDL_bool fullscreen)
 
 	// Create a window
 	if (cv_fullscreen.value == 2)
+	{
+		SDL_GetDesktopDisplayMode(0, &currentDisplayMode);
 		window = SDL_CreateWindow("SRB2Kart "VERSIONSTRING, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-			vid.width, vid.height, flags);
+			 currentDisplayMode.w, currentDisplayMode.h, flags);
+	}
 	else
 		window = SDL_CreateWindow("SRB2Kart "VERSIONSTRING, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
 			realwidth, realheight, flags);
