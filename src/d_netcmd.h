@@ -86,6 +86,7 @@ extern consvar_t cv_teamscramble;
 extern consvar_t cv_scrambleonchange;
 
 extern consvar_t cv_netstat;
+extern consvar_t cv_netsimstat;
 #ifdef WALLSPLATS
 extern consvar_t cv_splats;
 #endif
@@ -157,6 +158,20 @@ extern consvar_t cv_showping;
 extern consvar_t cv_pingmeasurement;
 extern consvar_t cv_pingicon;
 extern consvar_t cv_pingstyle;
+
+//netplus stuff
+extern consvar_t cv_simulate;
+extern consvar_t cv_simulatetics;
+extern consvar_t cv_simulateculldistance;
+extern consvar_t cv_netdelay;
+extern consvar_t cv_netjitter;
+extern consvar_t cv_netsmoothing;
+extern consvar_t cv_netspikes;
+extern consvar_t cv_netsteadyplayers;
+extern consvar_t cv_debugsimulaterewind;
+extern consvar_t cv_timefudge;
+extern consvar_t cv_nettrails;
+extern consvar_t cv_netslingdelay;
 
 //extern consvar_t cv_smallpos;
 extern consvar_t cv_showminimapnames;

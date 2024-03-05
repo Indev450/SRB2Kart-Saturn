@@ -796,6 +796,35 @@ static boolean SOCK_CanGet(void)
 #endif
 
 #ifndef NONET
+typedef struct {
+	boolean inUse;
+
+	UINT8* data;
+	int dataLength;
+
+	int time;
+	SOCKET_TYPE socket;
+	mysockaddr_t sockaddr;
+	int sockaddr_size;
+} DelayBuffer;
+
+#define NUMDELAYPACKETS 200
+DelayBuffer delayPackets[NUMDELAYPACKETS];
+tic_t nextSpikeTime = 0;
+tic_t nextSpikeDuration = 0;
+
+void SOCK_FlushDelayBuffers(boolean flushImmediate)
+{
+	int time = I_GetPreciseTime();
+
+	for (int i = 0; i < NUMDELAYPACKETS; i++) {
+		if (delayPackets[i].inUse && ((time - delayPackets[i].time) * 1000 / TICRATE >= cv_netdelay.value || flushImmediate)) {
+			sendto(delayPackets[i].socket, (char *)delayPackets[i].data, delayPackets[i].dataLength, 0, &delayPackets[i].sockaddr.any, delayPackets[i].sockaddr_size);
+			delayPackets[i].inUse = false;
+		}
+	}
+}
+
 static inline ssize_t SOCK_SendToAddr(SOCKET_TYPE socket, mysockaddr_t *sockaddr)
 {
 	socklen_t d4 = (socklen_t)sizeof(struct sockaddr_in);
@@ -803,6 +832,8 @@ static inline ssize_t SOCK_SendToAddr(SOCKET_TYPE socket, mysockaddr_t *sockaddr
 	socklen_t d6 = (socklen_t)sizeof(struct sockaddr_in6);
 #endif
 	socklen_t d, da = (socklen_t)sizeof(mysockaddr_t);
+
+	tic_t time = I_GetPreciseTime();
 
 	switch (sockaddr->any.sa_family)
 	{
@@ -813,7 +844,39 @@ static inline ssize_t SOCK_SendToAddr(SOCKET_TYPE socket, mysockaddr_t *sockaddr
 		default:       d = da; break;
 	}
 
-	return sendto(socket, (char *)&doomcom->data, doomcom->datalength, 0, &sockaddr->any, d);
+	if (cv_netspikes.value && time >= nextSpikeTime + nextSpikeDuration)
+	{
+		nextSpikeTime = time + (rand() % 35) + 1 * TICRATE;
+		nextSpikeDuration = (rand() % 10) + 1;
+	}
+
+	if (cv_netdelay.value > 0 || cv_netjitter.value > 0 || (cv_netspikes.value && time >= nextSpikeTime)) {
+		// add a nasty packet delay for testing!
+		boolean writtenPacket = false;
+		int addSpike = (cv_netspikes.value && time >= nextSpikeTime) ? nextSpikeDuration : 0;
+
+		for (int i = 0; i < NUMDELAYPACKETS; i++) {
+			if (!delayPackets[i].inUse) {
+				delayPackets[i].data = malloc(doomcom->datalength);
+				delayPackets[i].dataLength = doomcom->datalength;
+				delayPackets[i].socket = socket;
+				delayPackets[i].sockaddr = *sockaddr;
+				delayPackets[i].time = time + (rand() % (cv_netjitter.value + 1)) + addSpike;
+				delayPackets[i].sockaddr_size = d;
+				delayPackets[i].inUse = true;
+				memcpy(delayPackets[i].data, doomcom->data, doomcom->datalength);
+
+				break;
+			}
+		}
+
+		return doomcom->datalength;
+	}
+	else
+	{
+		// send it now like a normal human netcode
+		return sendto(socket, (char *)&doomcom->data, doomcom->datalength, 0, &sockaddr->any, d);
+	}
 }
 
 static void SOCK_Send(void)

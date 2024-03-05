@@ -503,6 +503,11 @@ extern UINT32 timesBeatenWithEmeralds;
 //  WAD, partly set at startup time.
 
 extern tic_t gametic;
+
+extern tic_t simtic; // current tic at simulation, if applicable (if no simulation happened, this=gametic)
+extern tic_t targetsimtic; // the target sim tic, if applicable
+extern tic_t smoothedTic; // current game tic when smoothing is enabled (\todo: could cause problems if the game objects care about gametic)
+
 #define localgametic leveltime
 
 // Player spawn spots.

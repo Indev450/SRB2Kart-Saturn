@@ -58,6 +58,10 @@ UINT64 I_GetPrecisePrecision(void);
 */
 double I_GetFrameTime(void);
 
+/** \brief Gets the current time in microseconds
+*/
+UINT64 I_GetTimeUs(void);
+
 /**	\brief	Sleeps for the given duration in milliseconds. Depending on the
             operating system's scheduler, the calling thread may give up its
 			time slice for a longer duration. The implementation should give a

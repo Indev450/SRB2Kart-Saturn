@@ -178,7 +178,7 @@ void CV_SaveVariables(FILE *f);
 
 // load/save gamesate (load and save option and for network join in game)
 void CV_SaveNetVars(UINT8 **p, boolean isdemorecording);
-void CV_LoadNetVars(UINT8 **p);
+void CV_LoadNetVars(UINT8 **p, boolean onlyIfChanged);
 
 // reset cheat netvars after cheats is deactivated
 void CV_ResetCheatNetVars(void);

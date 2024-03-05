@@ -2714,6 +2714,11 @@ static boolean P_CanSave(void)
   */
 boolean P_SetupLevel(boolean skipprecip)
 {
+	if (issimulation)
+	{
+		return true;
+	}
+
 	// use gamemap to get map number.
 	// 99% of the things already did, so.
 	// Map header should always be in place at this point
@@ -2731,6 +2736,13 @@ boolean P_SetupLevel(boolean skipprecip)
 
 	CON_Drawer(); // let the user know what we are going to do
 	I_FinishUpdate(); // page flip or blit buffer
+
+	// Reset the palette
+	if (rendermode != render_none)
+		V_SetPaletteLump("PLAYPAL");
+
+	// Invalidate simulation save states
+	InvalidateSavestates();
 
 	// Initialize sector node list.
 	P_Initsecnode();

@@ -121,6 +121,13 @@ static void KartEncore_OnChange(void);
 static void KartComeback_OnChange(void);
 static void KartEliminateLast_OnChange(void);
 
+//netplus stuff
+static void Command_Savestate(void);
+static void Command_Loadstate(void);
+static void Command_Rewind(void);
+static void Command_Saveloadtest(void);
+static void Command_Autotimefudge(void);
+
 #ifdef NETGAME_DEVMODE
 static void Fishcake_OnChange(void);
 #endif
@@ -458,6 +465,8 @@ consvar_t cv_allowexitlevel = {"allowexitlevel", "No", CV_NETVAR, CV_YesNo, NULL
 
 consvar_t cv_killingdead = {"killingdead", "Off", CV_NETVAR|CV_NOSHOWHELP, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_netsimstat = { "netsimstat", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL };
+
 consvar_t cv_netstat = {"netstat", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; // show bandwidth statistics
 static CV_PossibleValue_t nettimeout_cons_t[] = {{TICRATE/7, "MIN"}, {60*TICRATE, "MAX"}, {0, NULL}};
 consvar_t cv_nettimeout = {"nettimeout", "210", CV_CALL|CV_SAVE, nettimeout_cons_t, NetTimeout_OnChange, 0, NULL, NULL, 0, 0, NULL};
@@ -544,6 +553,43 @@ boolean deferencoremode = false;
 UINT8 splitscreen = 0;
 boolean circuitmap = true; // SRB2kart
 INT32 adminplayers[MAXPLAYERS];
+
+consvar_t cv_simulate = { "simulate", "Yes", 0, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL };
+
+static CV_PossibleValue_t simulateTics_cons_t[] = { {0, "MIN"}, {MAXSIMULATIONS - 1, "MAX"}, {0, NULL} };
+consvar_t cv_simulatetics = { "simtics", "MAX", 0, simulateTics_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL };
+
+static CV_PossibleValue_t simulateculldistance_cons_t[] = { {0, "MIN"}, {10000, "MAX"}, {0, NULL} };
+consvar_t cv_simulateculldistance = { "simcull", "MIN", 0, simulateculldistance_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL };
+
+static CV_PossibleValue_t netsteadyplayers_cons_t[] = { {0, "MIN"}, {MAXSIMULATIONS - 1, "MAX"}, {0, NULL} };
+consvar_t cv_netsteadyplayers = { "simsteadyplayers", "0", 0, netsteadyplayers_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL };
+
+static CV_PossibleValue_t nettrails_cons_t[] = { {0, "MIN"}, {5, "MAX"}, {0, NULL} };
+consvar_t cv_nettrails = { "simtrails", "5", 0, nettrails_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL };
+
+consvar_t cv_netslingdelay = { "simslingdelay", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL };
+
+static CV_PossibleValue_t netdelay_cons_t[] = { {0, "MIN"}, {250, "MAX"}, {0, NULL} };
+consvar_t cv_netdelay = { "netdelay", "0", 0, netdelay_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL };
+
+static CV_PossibleValue_t netjitter_cons_t[] = { {0, "MIN"}, {5, "MAX"}, {0, NULL} };
+consvar_t cv_netjitter = { "netjitter", "0", 0, netdelay_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL };
+
+consvar_t cv_netsmoothing = { "netsmoothing", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL };
+
+consvar_t cv_netspikes = { "netspikes", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL };
+
+static CV_PossibleValue_t debugsimulaterewind_cons_t[] = { {0, "MIN"}, {BACKUPTICS - 1, "MAX"}, {0, NULL} };
+consvar_t cv_debugsimulaterewind = { "debugsimulaterewind", "0", 0, debugsimulaterewind_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL };
+
+static CV_PossibleValue_t timefudge_cons_t[] = { {0, "MIN"}, {100, "MAX"}, {0, NULL} };
+consvar_t cv_timefudge = { "timefudge", "0", 0, timefudge_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL };
+
+char timedemo_name[256];
+boolean timedemo_csv;
+char timedemo_csv_id[256];
+boolean timedemo_quit;
 
 /// \warning Keep this up-to-date if you add/remove/rename net text commands
 const char *netxcmdnames[MAXNETXCMD - 1] =
@@ -677,6 +723,26 @@ void D_RegisterServerCommands(void)
 
 	COM_AddCommand("replaymarker", Command_ReplayMarker);
 
+	// experimental load/save game state for possible rewinding in netgames
+	COM_AddCommand("savestate", Command_Savestate);
+	COM_AddCommand("loadstate", Command_Loadstate);
+	COM_AddCommand("rewind", Command_Rewind);
+	COM_AddCommand("saveloadtest", Command_Saveloadtest);
+	COM_AddCommand("autotimefudge", Command_Autotimefudge);
+
+	CV_RegisterVar(&cv_simulate);
+	CV_RegisterVar(&cv_simulatetics);
+	CV_RegisterVar(&cv_simulateculldistance);
+	CV_RegisterVar(&cv_netdelay);
+	CV_RegisterVar(&cv_netjitter);
+	CV_RegisterVar(&cv_netsmoothing);
+	CV_RegisterVar(&cv_netspikes);
+	CV_RegisterVar(&cv_netsteadyplayers);
+	CV_RegisterVar(&cv_debugsimulaterewind);
+	CV_RegisterVar(&cv_timefudge);
+	CV_RegisterVar(&cv_nettrails);
+	CV_RegisterVar(&cv_netslingdelay);
+
 	// for master server connection
 	AddMServCommands();
 
@@ -781,6 +847,151 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_recordmultiplayerdemos);
 	CV_RegisterVar(&cv_netdemosyncquality);
 	CV_RegisterVar(&cv_maxdemosize);
+}
+
+// =========================================================================
+// Louis' nasty test bed
+// =========================================================================
+#include "p_saveg.h"
+UINT8* savedState = NULL;
+
+static void Command_Savestate(void)
+{
+	CONS_Printf("Saving game state!\n");
+
+	savedState = (UINT8 *)malloc(1024*768 /* lol, 1998 screen resolution */);
+	if (!savedState)
+	{
+		CONS_Alert(CONS_ERROR, M_GetText("Wtf this machine is weak\n"));
+		return;
+	}
+
+	// Leave room for the uncompressed length.
+	save_p = savedState;
+
+	P_SaveNetGame();
+}
+
+static void Command_Loadstate(void)
+{
+	save_p = savedState;
+
+	P_LoadNetGame(true);
+
+	// try and execute 10 ticcmds...
+
+	CONS_Printf("Loading game state!\n");
+}
+
+extern boolean rewindingWow;
+extern int rewindingTarget;
+extern boolean memleak;
+
+static void Command_Rewind(void)
+{
+	rewindingWow = true;
+	rewindingTarget = COM_Argc() > 1 ? atoi(COM_Argv(1)) : 0;
+}
+
+void MemShow() {
+	Z_CheckHeap(-1);
+	CONS_Printf("\x82%s", M_GetText("Memory Info\n"));
+	CONS_Printf(M_GetText("Total heap used   : %7s KB\n"), sizeu1(Z_TagsUsage(0, INT32_MAX)>>10));
+	CONS_Printf(M_GetText("Static            : %7s KB\n"), sizeu1(Z_TagUsage(PU_STATIC) >> 10));
+	CONS_Printf(M_GetText("Static (sound)    : %7s KB\n"), sizeu1(Z_TagUsage(PU_SOUND) >> 10));
+	CONS_Printf(M_GetText("Static (music)    : %7s KB\n"), sizeu1(Z_TagUsage(PU_MUSIC) >> 10));
+	CONS_Printf(M_GetText("Locked cache      : %7s KB\n"), sizeu1(Z_TagUsage(PU_CACHE) >> 10));
+	CONS_Printf(M_GetText("Level             : %7s KB\n"), sizeu1(Z_TagUsage(PU_LEVEL) >> 10));
+	CONS_Printf(M_GetText("Special thinker   : %7s KB\n"), sizeu1(Z_TagUsage(PU_LEVSPEC) >> 10));
+	CONS_Printf(M_GetText("All purgable      : %7s KB\n"),
+		sizeu1(Z_TagsUsage(PU_PURGELEVEL, INT32_MAX) >> 10));
+}
+
+static savestate_t save;
+static void Command_Saveloadtest(void)
+{
+	memleak = true;
+
+	MemShow();
+
+	for (int i = 0; i < 2; i++) {
+		P_SaveGameState(&save);
+		P_LoadGameState(&save);
+	}
+
+	MemShow();
+
+	memleak = false;
+}
+
+#include "i_net.h"
+
+extern int netUpdateFudge;
+static void Command_Autotimefudge(void)
+{
+	UINT64 startTime = I_GetTimeUs();
+	static UINT64 packetTimeFudge[512];
+	int numReceivedPackets = 0;
+	int numSampleTics = 14;
+	int i;
+
+	if (server)
+	{
+		if (netgame)
+		{
+			CONS_Printf("Servers do not need a time fudge! Heck, why are you hosting with this exe anyway? You don't need to ;)\n");
+		}
+		return;
+	}
+
+	// New experimental version! Run a precise while loop that picks up packets instantly
+	while (I_GetTimeUs() - startTime < ((UINT64)numSampleTics * 1000000 / NEWTICRATE))
+	{
+		I_NetGet();
+		if (doomcom->remotenode != -1 && I_GetTimeUs() - startTime > (unsigned long long)2*1000000/NEWTICRATE) // wait a couple frames before recording
+		{
+			unsigned long long frame = I_GetTimeUs() * NEWTICRATE / 1000000;
+			packetTimeFudge[numReceivedPackets++] = (I_GetTimeUs() - frame * 1000000 / NEWTICRATE) * 100 * NEWTICRATE / 1000000
+				- netUpdateFudge; // gets the time fudge offset (0-100)
+		}
+	}
+
+	if (numReceivedPackets > 0)
+	{
+		int minOffset = 100, maxOffset = 0, averageOffset = 0;
+		int newTimeFudge;
+		int estimatedRange;
+
+		for (i = 0; i < numReceivedPackets; i++)
+		{
+			minOffset = min(minOffset, packetTimeFudge[i]);
+			maxOffset = max(maxOffset, packetTimeFudge[i]);
+		}
+
+		if (maxOffset - minOffset > 50)
+		{
+			// say maxOffset = 90 and minOffset = 20, we want the average to be 30...
+			maxOffset = maxOffset - 100;
+
+			if (minOffset > maxOffset)
+			{
+				int swap = maxOffset;
+				maxOffset = minOffset;
+				minOffset = swap;
+			}
+		}
+
+		estimatedRange = maxOffset - minOffset;
+		averageOffset = (maxOffset + minOffset) / 2;
+
+		CONS_Printf("%i packets, min: %d max: %d avg: %d est. range: %d (mynetupdate: %i)\n", numReceivedPackets, minOffset, maxOffset, averageOffset,
+			estimatedRange, netUpdateFudge);
+
+		newTimeFudge = (cv_timefudge.value + averageOffset + 50) % 100;
+		CONS_Printf("New time fudge: %i%%\n", newTimeFudge);
+
+		CV_SetValue(&cv_timefudge, newTimeFudge);
+	}
 }
 
 // =========================================================================
@@ -889,6 +1100,7 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_rollingdemos);
 	CV_RegisterVar(&cv_netstat);
 	CV_RegisterVar(&cv_netticbuffer);
+	CV_RegisterVar(&cv_netsimstat);
 
 #ifdef NETGAME_DEVMODE
 	CV_RegisterVar(&cv_fishcake);
@@ -4980,6 +5192,8 @@ void ItemFinder_OnChange(void)
   * \sa cv_pointlimit, TimeLimit_OnChange
   * \author Graue <graue@oceanbase.org>
   */
+static int lastpointlimit;
+  
 static void PointLimit_OnChange(void)
 {
 	// Don't allow pointlimit in Single Player/Co-Op/Race!
@@ -4990,15 +5204,20 @@ static void PointLimit_OnChange(void)
 		return;
 	}
 
-	if (cv_pointlimit.value)
+	if (cv_pointlimit.value != lastpointlimit)
 	{
-		CONS_Printf(M_GetText("Levels will end after %s scores %d point%s.\n"),
-			G_GametypeHasTeams() ? M_GetText("a team") : M_GetText("someone"),
-			cv_pointlimit.value,
-			cv_pointlimit.value > 1 ? "s" : "");
+		if (cv_pointlimit.value)
+		{
+			CONS_Printf(M_GetText("Levels will end after %s scores %d point%s.\n"),
+				G_GametypeHasTeams() ? M_GetText("a team") : M_GetText("someone"),
+				cv_pointlimit.value,
+				cv_pointlimit.value > 1 ? "s" : "");
+		}
+		else if (netgame || multiplayer)
+			CONS_Printf(M_GetText("Point limit disabled\n"));
 	}
-	else if (netgame || multiplayer)
-		CONS_Printf(M_GetText("Point limit disabled\n"));
+	
+	lastpointlimit = cv_pointlimit.value;
 }
 
 static void NumLaps_OnChange(void)
@@ -5047,19 +5266,28 @@ static void TimeLimit_OnChange(void)
 
 	if (cv_timelimit.value != 0)
 	{
-		CONS_Printf(M_GetText("Levels will end after %d minute%s.\n"),cv_timelimit.value,cv_timelimit.value == 1 ? "" : "s"); // Graue 11-17-2003
-		timelimitintics = cv_timelimit.value * 60 * TICRATE;
+		UINT32 newtimelimit = cv_timelimit.value * 60 * TICRATE;
 
 		//add hidetime for tag too!
 		if (G_TagGametype())
-			timelimitintics += hidetime * TICRATE;
+			newtimelimit += hidetime * TICRATE;
+
+		if (newtimelimit != timelimitintics)
+		{
+			CONS_Printf(M_GetText("Levels will end after %d minute%s.\n"), cv_timelimit.value, cv_timelimit.value == 1 ? "" : "s"); // Graue 11-17-2003
+
+			timelimitintics = newtimelimit; // ...and slightly modified by LX 12-11-2019 <3
+		}
 
 		// Note the deliberate absence of any code preventing
 		//   pointlimit and timelimit from being set simultaneously.
 		// Some people might like to use them together. It works.
 	}
-	else if (netgame || multiplayer)
+	else if ((netgame || multiplayer) && timelimitintics > 0)
+	{
+		timelimitintics = 0;
 		CONS_Printf(M_GetText("Time limit disabled\n"));
+	}
 
 #ifdef HAVE_DISCORDRPC
 	DRPC_UpdatePresence();

@@ -103,6 +103,10 @@ typedef struct polyobj_s
 
 	// these are saved for netgames, so do not let Lua touch these!
 	INT32 spawnflags; // Flags the polyobject originally spawned with
+	INT32 spawntrans; // Translucency the polyobject originally spawned with
+
+	fixed_t origx, origy, origz;
+	INT16 origangle;
 } polyobj_t;
 
 //

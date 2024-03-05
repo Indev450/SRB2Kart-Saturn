@@ -49,6 +49,8 @@ static mobj_t *overlaycap = NULL;
 static mobj_t *shadowcap = NULL;
 mobj_t *waypointcap = NULL;
 
+UINT32 globalmobjnum = 0; // this should never overflow, but 4 billion would be an impressive number to reach. \todo ensure this never happens
+
 void P_InitCachedActions(void)
 {
 	actioncachehead.prev = actioncachehead.next = &actioncachehead;
@@ -389,6 +391,12 @@ boolean P_WeaponOrPanel(mobjtype_t type)
 		return true;
 
 	return false;
+}
+
+boolean P_IsProjectile(mobjtype_t type)
+{
+	return type == MT_THROWNBOUNCE || type == MT_THROWNINFINITY || type == MT_THROWNAUTOMATIC || type == MT_THROWNSCATTER
+		|| type == MT_THROWNEXPLOSION || type == MT_THROWNGRENADE || type == MT_REDRING;
 }
 
 //
@@ -6340,6 +6348,9 @@ void P_MobjThinker(mobj_t *mobj)
 	if (mobj->flags & MF_NOTHINK)
 		return;
 
+	if ((mobj->flags & MF_BOSS) && mobj->spawnpoint)
+		return;
+
 	// Remove dead target/tracer.
 	if (mobj->target && P_MobjWasRemoved(mobj->target))
 		P_SetTarget(&mobj->target, NULL);
@@ -9614,6 +9625,7 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 	mobj->thinker.function.acp1 = (actionf_p1)P_MobjThinker;
 	mobj->type = type;
 	mobj->info = info;
+	mobj->localmobjnum = globalmobjnum++;
 
 	mobj->x = x;
 	mobj->y = y;
@@ -10427,7 +10439,16 @@ void P_RemoveSavegameMobj(mobj_t *mobj)
 	}
 
 	// stop any playing sound
-	S_StopSound(mobj);
+	if (!preserveLevel)
+	{
+		S_StopSound(mobj);
+	}
+	else
+	{
+		// detach any playing sounds from this mobj, but don't destroy them as they might still be there
+		S_DetachChannelsFromOrigin(mobj);
+	}
+
 	R_RemoveMobjInterpolator(mobj);
 
 	// free block
@@ -12900,6 +12921,13 @@ mobj_t *P_SPMAngle(mobj_t *source, mobjtype_t type, angle_t angle, UINT8 allowai
 		z = source->z + source->height/3;
 
 	th = P_SpawnMobj(x, y, z, type);
+
+	if (cv_netslingdelay.value && issimulation && (tic_t)cv_netsteadyplayers.value >= targetsimtic - simtic && source == players[consoleplayer].mo)
+	{
+		z = 0x80000000; // don't make rings appear when using netslingdelay
+		th->flags |= MF_NOTHINK;
+		th->sprite = SPR_NULL;
+	}
 
 	if (source->eflags & MFE_VERTICALFLIP)
 		th->flags2 |= MF2_OBJECTFLIP;

@@ -41,6 +41,18 @@ applications may follow different packet versions.
 #define BACKUPTICS 32
 #define TICQUEUE 512 // more than enough for most timeouts....
 #define MAXTEXTCMD 256
+
+// How many time bits to encode into ticcmds (aiming and angle components, respectively)
+#define ENCODE_TICCMD_TIMES
+#define TICCMD_TIMEBITS_AIMING 3
+#define TICCMD_TIMEBITS_ANGLE 2
+#define TICCMD_TIMEMASK_AIMING (~(0xFFFFFFFF<<TICCMD_TIMEBITS_AIMING))
+#define TICCMD_TIMEMASK_ANGLE  (~(0xFFFFFFFF<<TICCMD_TIMEBITS_ANGLE))
+#define TICCMD_TIME_SIZE (1<<(TICCMD_TIMEBITS_AIMING+TICCMD_TIMEBITS_ANGLE))
+
+// Maximum number of client-side simulations allowed. A simulation is a version of the game state extrapolated some frames ahead to cancel out network latency
+#define MAXSIMULATIONS (TICCMD_TIME_SIZE-1)
+
 //
 // Packet structure
 //
@@ -542,6 +554,17 @@ typedef enum
 
 } kickreason_t;
 
+// Player movement histories for simulated gamestates
+typedef struct
+{
+	// stores historical simulated positions where 0 is the real game position and simtic-gametic is the latest simulated position
+	fixed_t histx[MAXSIMULATIONS + 1], histy[MAXSIMULATIONS + 1], histz[MAXSIMULATIONS + 1];
+
+	// stores the final simulated position for each simulated gametic
+	fixed_t simx[BACKUPTICS], simy[BACKUPTICS], simz[BACKUPTICS];
+
+} steadyplayer_t;
+
 /* the max number of name changes in some time period */
 #define MAXNAMECHANGES (5)
 #define NAMECHANGERATE (60*TICRATE)
@@ -554,6 +577,9 @@ extern UINT16 software_MAXPACKETLENGTH;
 extern boolean acceptnewnode;
 extern SINT8 servernode;
 extern char connectedservername[MAXSERVERNAME];
+
+extern boolean issimulation; // whether the currently executed tic is part of a simulated gamestate
+extern steadyplayer_t steadyplayers[MAXPLAYERS];
 
 void Command_Ping_f(void);
 extern tic_t connectiontimeout;
@@ -610,6 +636,9 @@ void D_QuitNetGame(void);
 
 //? How many ticks to run?
 boolean TryRunTics(tic_t realtic);
+
+// Invalidates save states used in simulations
+void InvalidateSavestates();
 
 // extra data for lmps
 // these functions scare me. they contain magic.
