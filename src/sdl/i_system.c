@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
-// Copyright (C) 2014-2018 by Sonic Team Junior.
+// Copyright (C) 2014-2019 by Sonic Team Junior.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -400,12 +400,11 @@ static void JoyReset(SDLJoyInfo_t *JoySet)
 
 /**	\brief First joystick up and running
 */
-static INT32 joystick_started  = 0;
+static INT32 joystick_started = 0;
 
 /**	\brief SDL info about joystick 1
 */
 SDLJoyInfo_t JoyInfo;
-
 
 /**	\brief Second joystick up and running
 */
@@ -772,7 +771,7 @@ static void Impl_HandleKeyboardConsoleEvent(KEY_EVENT_RECORD evt, HANDLE co)
 				break;
 			case VK_RETURN:
 				entering_con_command = false;
-				// Fall through.
+				/* FALLTHRU */
 			default:
 				//event.data1 = MapVirtualKey(evt.wVirtualKeyCode,2); // convert in to char
 				event.data1 = evt.uChar.AsciiChar;
@@ -1109,7 +1108,6 @@ INT32 I_GetJoystickDeviceIndex(SDL_GameController *dev)
 
 	return -1;
 }
-
 // Misleading function: updates device indices for all players BUT the one specified.
 // Necessary for SDL_JOYDEVICEADDED events
 void I_UpdateJoystickDeviceIndices(INT32 player)
@@ -2399,7 +2397,6 @@ void I_InitJoystick(void)
 	SDL_GameController *newcontroller = NULL;
 
 	//I_ShutdownJoystick();
-	//SDL_SetHintWithPriority("SDL_XINPUT_ENABLED", "0", SDL_HINT_OVERRIDE);
 	if (M_CheckParm("-nojoy"))
 		return;
 
@@ -2457,13 +2454,13 @@ void I_InitJoystick2(void)
 	SDL_GameController *newcontroller = NULL;
 
 	//I_ShutdownJoystick2();
-	//SDL_SetHintWithPriority("SDL_XINPUT_ENABLED", "0", SDL_HINT_OVERRIDE);
 	if (M_CheckParm("-nojoy"))
 		return;
 
 	if (SDL_WasInit(SDL_INIT_JOYSTICK) == 0)
 	{
 		CONS_Printf("I_InitJoystick2()...\n");
+
 		if (SDL_InitSubSystem(SDL_INIT_JOYSTICK) == -1)
 		{
 			CONS_Printf(M_GetText("Couldn't initialize joystick: %s\n"), SDL_GetError());
@@ -2638,7 +2635,7 @@ INT32 I_NumJoys(void)
 	return numjoy;
 }
 
-static char joyname[255]; // MAX_PATH; joystick name is straight from the driver
+static char joyname[255]; // joystick name is straight from the driver
 
 const char *I_GetJoyName(INT32 joyindex)
 {
@@ -3179,6 +3176,8 @@ ticcmd_t *I_BaseTiccmd4(void)
 {
 	return &emptycmd4;
 }
+static int lastTimeFudge = -1;
+extern consvar_t cv_timefudge;
 
 static Uint64 timer_frequency;
 
@@ -3518,7 +3517,7 @@ void I_Error(const char *error, ...)
 			// which should fail gracefully if it can't put a message box up
 			// on the target system
 			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
-				"SRB2Kart "VERSIONSTRING" Recursive Error",
+				"SRB2 "VERSIONSTRING" Recursive Error",
 				buffer, NULL);
 
 			W_Shutdown();
@@ -3741,7 +3740,7 @@ char *I_GetUserName(void)
 INT32 I_mkdir(const char *dirname, INT32 unixright)
 {
 //[segabor]
-#if defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON) || defined (__CYGWIN__) || defined (__OS2__)
+#if defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON) || defined (__CYGWIN__)
 	return mkdir(dirname, unixright);
 #elif defined (_WIN32)
 	UNREFERENCED_PARAMETER(unixright); /// \todo should implement ntright under nt...
@@ -3880,7 +3879,7 @@ static const char *searchWad(const char *searchDir)
 		pathonly(tempsw);
 		return tempsw;
 	}
-
+	
 	strcpy(tempsw, WADKEYWORD2);
 	fstemp = filesearch(tempsw, searchDir, NULL, true, 20);
 	if (fstemp == FS_FOUND)

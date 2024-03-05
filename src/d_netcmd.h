@@ -184,6 +184,19 @@ extern consvar_t cv_luaimmersion;
 extern consvar_t cv_fakelocalskin;
 extern consvar_t cv_showlocalskinmenus;
 
+extern consvar_t cv_simulate;
+extern consvar_t cv_simulatetics;
+extern consvar_t cv_simulateculldistance;
+extern consvar_t cv_netdelay;
+extern consvar_t cv_netjitter;
+extern consvar_t cv_netsmoothing;
+extern consvar_t cv_netspikes;
+extern consvar_t cv_netsteadyplayers;
+extern consvar_t cv_debugsimulaterewind;
+extern consvar_t cv_timefudge;
+extern consvar_t cv_nettrails;
+extern consvar_t cv_netslingdelay;
+
 extern consvar_t cv_skipmapcheck;
 
 extern consvar_t cv_sleep;

@@ -414,6 +414,8 @@ typedef struct mobj_s
 	boolean salty_jump;
 	boolean init_salty;
 
+	boolean isculled; // Whether the mobj is being culled during simulations
+
 	// WARNING: New fields must be added separately to savegame and Lua.
 } mobj_t;
 

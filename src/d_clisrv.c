@@ -5589,16 +5589,11 @@ static INT16 Consistancy(void)
 		ret += P_GetRandSeed();
 
 #ifdef MOBJCONSISTANCY
-	if (!thinkercap.next)
-	{
-		DEBFILE(va("Consistancy = %u\n", ret));
-		return ret;
-	}
 	if (gamestate == GS_LEVEL)
 	{
-		for (th = thinkercap.next; th != &thinkercap; th = th->next)
+		for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 		{
-			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 				continue;
 
 			mo = (mobj_t *)th;
@@ -5702,6 +5697,7 @@ static INT16 Consistancy(void)
 				ret -= mo->sprite;
 				ret += mo->frame;
 			}
+			
 		}
 	}
 #endif
@@ -6771,9 +6767,198 @@ boolean CompareTiccmd(const ticcmd_t* a, const ticcmd_t* b)
 	We call this once per second and check for people's pings. If their ping happens to be too high, we increment some timer and kick them out.
 	If they're not lagging, decrement the timer by 1. Of course, reset all of this if they leave.
 
-	Why do we do that? Well, I'm a person with unfortunately sometimes unstable internet and happen to keep getting kicked very unconveniently for very short high spikes. (700+ ms)
-	Because my spikes are so high, the average ping is exponentially higher too (700s really add up...!) which leads me to getting kicked for a short burst of spiking.
-	With this change here, this doesn't happen anymore as it checks if my ping has been CONSISTENTLY bad for long enough before killing me.
+	lastSavestateClearedTic = gametic;
+}
+
+int rttBuffer[70];
+int rttBufferIndex = 0;
+int rttBufferMax = 70;
+
+void DetermineNetConditions()
+{
+	// Refresh the time offset between real time and server time
+	minLiveTicOffset = INT_MAX;
+	maxLiveTicOffset = INT_MIN;
+
+	ticTimeOffsetHistory[liveTic % MAXOFFSETHISTORY] = (int)liveTic - (int)gametic;
+
+	// Find the net jitter based on the last 20 frames
+	for (int i = 0; i < MAXOFFSETHISTORY; i++)
+	{
+		minLiveTicOffset = min(minLiveTicOffset, ticTimeOffsetHistory[i]);
+		maxLiveTicOffset = max(maxLiveTicOffset, ticTimeOffsetHistory[i]);
+	}
+
+	serverJitter = min(5, maxLiveTicOffset - minLiveTicOffset);
+
+	// Estimate the RTT (once used awkward tic matching stuff, now uses sneaky encoded angles)
+#ifndef ENCODE_TICCMD_TIMES
+	if (!(gametic % 35))
+	{
+		int matchingLiveTic, matchingGameTic;
+		if (FindMatchingTics(&matchingLiveTic, &matchingGameTic) && matchingLiveTic - matchingGameTic < BACKUPTICS - 2)
+		{
+			estimatedRTT = matchingLiveTic - matchingGameTic;
+		}
+	}
+#else
+	for (int j = 1; j < TICCMD_TIME_SIZE - 1; j++)
+	{
+		if (CompareTiccmd(&gameTicBuffer[gametic % BACKUPTICS][consoleplayer], &localTicBuffer[(liveTic - j + BACKUPTICS) % BACKUPTICS]))
+		{
+			estimatedRTT = j;
+			break;
+		}
+	}
+#endif
+
+	// estimate RTT jitter
+	minRTT = INT_MAX;
+	maxRTT = INT_MIN;
+
+	rttBuffer[rttBufferIndex] = estimatedRTT;
+	rttBufferIndex = (rttBufferIndex + 1) % rttBufferMax;
+
+	for (int i = 0; i < rttBufferMax; i++)
+	{
+		minRTT = min(minRTT, rttBuffer[i]);
+		maxRTT = max(maxRTT, rttBuffer[i]);
+	}
+
+	rttJitter = maxRTT - minRTT;
+
+	// stable server conditions? (but not just a big lag spike?)
+	if (rttJitter <= 2 && maxRTT < BACKUPTICS - 1)
+	{
+		// we know roughly how much we should simulate then!
+		recommendedSimulateTics = maxRTT + 1;
+	}
+}
+
+static void PerformDebugRewinds()
+{
+	if (rewindingWow && rewindingTarget > 0 && gameStateBufferIsValid[(gametic - rewindingTarget) % BACKUPTICS])
+	{
+		P_LoadGameState(&gameStateBuffer[(gametic - rewindingTarget) % BACKUPTICS]);
+		
+		for (int i = 0; i < rewindingTarget; i++)
+		{
+			netcmds[gametic%BACKUPTICS][consoleplayer] = gameTicBuffer[(gametic - rewindingTarget + i) % BACKUPTICS][consoleplayer];
+			G_Ticker(true);
+		}
+
+		rewindingWow = false;
+	}
+
+	if (gameStateBufferIsValid[gametic % BACKUPTICS] && cv_debugsimulaterewind.value > 0 && players[consoleplayer].mo) {
+		short consis = Consistancy();
+
+		for (int i = 0; i < cv_debugsimulaterewind.value; i++)
+			G_Ticker(true);
+
+		P_LoadGameState(&gameStateBuffer[gametic % BACKUPTICS]);
+
+		if (Consistancy() != consis)
+			CONS_Printf("General consistency error...\n");
+	}
+}
+
+extern UINT32 saveTimes[12];
+extern UINT32 loadTimes[12];
+
+void MakeNetDebugString()
+{
+	netDebugText[0] = 0;
+
+	for (int i = min(maxRTT + 4, 16); i >= 0; i--)
+	{
+		if (simtic - (tic_t)i <= gametic) {
+			char missed[2] = "+";
+
+			if (DecodeTiccmdTime(&(gameTicBuffer[(simtic - i) % BACKUPTICS][consoleplayer])) != 
+			   (DecodeTiccmdTime(&(gameTicBuffer[(simtic - i - 1) % BACKUPTICS][consoleplayer])) + 1) % TICCMD_TIME_SIZE)
+				missed[0] = 'X'; // missed tic
+
+			// show tics and matches
+			sprintf(&netDebugText[strlen(netDebugText)], 
+				"%s srv: %02d%slcl: %02d%s\n", 
+					missed,
+						 DecodeTiccmdTime(&(gameTicBuffer[(simtic - i) % BACKUPTICS][consoleplayer])), 
+						    (i == gametic ? "<" : " "),
+								   (liveTic - i) & (TICCMD_TIME_SIZE-1), 
+									   (i == estimatedRTT ? "<" : " "));
+		}
+		else {
+			sprintf(&netDebugText[strlen(netDebugText)],
+				"____ %02d_lcl: %02d%s\n",
+				0,
+				//(i == matchingGameTic ? "<" : " "),
+				DecodeTiccmdTime(&localTicBuffer[(liveTic - i) % BACKUPTICS]),
+				(i == estimatedRTT ? "<" : " "));
+		}
+	}
+
+	static tic_t lastSim = 0;
+	sprintf(&netDebugText[strlen(netDebugText)], "\n\nJitter: %d", serverJitter);
+	sprintf(&netDebugText[strlen(netDebugText)], "\nEstRTT: %d", estimatedRTT);
+	sprintf(&netDebugText[strlen(netDebugText)], "\nGame: %d", gametic);
+	sprintf(&netDebugText[strlen(netDebugText)], "\nSim: %d", simtic);
+	sprintf(&netDebugText[strlen(netDebugText)], "\nSim-Game: %d", simtic - gametic);
+	sprintf(&netDebugText[strlen(netDebugText)], "\nSimDelta: %d", simtic - lastSim);
+	sprintf(&netDebugText[strlen(netDebugText)], "\nLive: %d", liveTic);
+	sprintf(&netDebugText[strlen(netDebugText)], "\nTime save/load: %.2f/%.2f", (float)saveStateBenchmark/1000.0f, (float)loadStateBenchmark/1000.0f);
+	sprintf(&netDebugText[strlen(netDebugText)], "\nTotal +ms: %d", (int)((simEndTime - simStartTime + saveStateBenchmark + loadStateBenchmark) / 1000));
+	sprintf(&netDebugText[strlen(netDebugText)], "\nseed: %d", P_GetRandSeed());
+	lastSim = simtic;
+
+	unsigned int rtts[20] = { 0 };
+	for (int i = 0; i < rttBufferMax; i++)
+	{
+		if (rttBuffer[i] < 20)
+			rtts[rttBuffer[i]]++;
+	}
+
+	for (int i = 0; i < 20; i++)
+	{
+		if (rtts[i] > 0)
+			sprintf(&netDebugText[strlen(netDebugText)], "\nRTT %i: %i", i, rtts[i] * 100 / rttBufferMax);
+	}
+}
+
+// startTic and endTics are tics going back in time from the current liveTic
+boolean FindMatchingTics(int* liveTicOut, int* gameTicOut) {
+	int latestGameTic = INT_MAX;
+
+	for (int i = 0; i < BACKUPTICS; i++) {
+		// display estimated matching frames
+		for (int j = 0; j < BACKUPTICS - 1; j++) {
+			// if this and the previous tic were different (interesting delta), and this matches some point in the tic buffer, say wow and use that towel
+			if (!CompareTiccmd(&localTicBuffer[(liveTic - i + BACKUPTICS) % BACKUPTICS], &localTicBuffer[(liveTic - i - 1 + BACKUPTICS) % BACKUPTICS])
+				&& CompareTiccmd(&localTicBuffer[(liveTic - i + BACKUPTICS) % BACKUPTICS], &gameTicBuffer[(smoothedTic - j + BACKUPTICS) % BACKUPTICS][consoleplayer])
+				&& CompareTiccmd(&localTicBuffer[(liveTic - i - 1 + BACKUPTICS) % BACKUPTICS], &gameTicBuffer[(smoothedTic - j - 1 + BACKUPTICS) % BACKUPTICS][consoleplayer]))
+			{
+				if (j < latestGameTic && i >= j) { // i >= j: uses >= because gameTicBuffer[gametic] is actually the controls used in the -last- tic
+					latestGameTic = j;
+					*liveTicOut = i;
+					*gameTicOut = j;
+				}
+			}
+		}
+	}
+	
+	return (latestGameTic != INT_MAX);
+}
+
+boolean CompareTiccmd(const ticcmd_t* a, const ticcmd_t* b)
+{
+	return a->aiming == b->aiming && (a->angleturn&~TICCMD_RECEIVED) == (b->angleturn&~TICCMD_RECEIVED) && a->buttons == b->buttons
+		&& a->forwardmove == b->forwardmove && a->sidemove == b->sidemove;
+}
+
+/*
+Ping Update except better:
+We call this once per second and check for people's pings. If their ping happens to be too high, we increment some timer and kick them out.
+If they're not lagging, decrement the timer by 1. Of course, reset all of this if they leave.
 */
 
 static INT32 pingtimeout[MAXPLAYERS];

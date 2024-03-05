@@ -18,8 +18,17 @@
 #pragma interface
 #endif
 
-// Persistent storage/archiving.
-// These are the load / save game routines.
+typedef struct
+{
+	UINT8 skincolor;
+	UINT8 skin;
+	UINT8 botskin;
+	UINT8 botcolor;
+	INT32 score;
+	INT32 lives;
+	INT32 continues;
+	UINT16 emeralds;
+} savedata_t;
 
 typedef struct
 {
@@ -37,18 +46,6 @@ boolean P_LoadNetGame(boolean preserveLevel);
 boolean P_LoadGameState(const savestate_t* savestate);
 
 mobj_t *P_FindNewPosition(UINT32 oldposition);
-
-typedef struct
-{
-	UINT8 skincolor;
-	UINT8 skin;
-	UINT8 botskin;
-	UINT8 botcolor;
-	INT32 score;
-	INT32 lives;
-	INT32 continues;
-	UINT16 emeralds;
-} savedata_t;
 
 extern savedata_t savedata;
 extern UINT8 *save_p;
