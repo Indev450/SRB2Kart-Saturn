@@ -3101,7 +3101,7 @@ static void P_LocalUnArchiveThinkers()
 	UINT8 restoreExecutors = false;
 	int32_t i, j, list;
 	//int skyviewid = 0;
-	i//nt skycenterid = 0;
+	//int skycenterid = 0;
 	thinker_t newthinkers[NUM_THINKERLISTS] = { 0 };
 	static thinker_t* thinkersbytype[tc_end][16384];
 	static uint32_t numthinkersbytype[tc_end];
