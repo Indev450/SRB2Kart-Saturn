@@ -402,8 +402,6 @@ typedef struct mobj_s
 	boolean mirrored; // The object's rotations will be mirrored left to right, e.g., see frame AL from the right and AR from the left
 	boolean rollmodel; // OpenGL: Should this model rotate?
 
-	boolean isculled; // Whether the mobj is being culled during simulations
-
 	tic_t slamsoundtimer;
 
 	// saltyhop! hardcode edition
