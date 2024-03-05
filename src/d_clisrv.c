@@ -5758,7 +5758,7 @@ static void CL_SendClientCmd(void)
 	{
 		ticcmd_t adjustedCmd = localcmds;
 		packetsize = sizeof (clientcmd_pak);
-		//G_MoveTiccmd(&netbuffer->u.clientpak.cmd, &localcmds, 1);
+		AdjustSimulatedTiccmdInputs(&adjustedCmd);
 		//AdjustSimulatedTiccmdInputs(&adjustedCmd); // adjust ticcmds for simulations
 
 		G_MoveTiccmd(&netbuffer->u.clientpak.cmd, &adjustedCmd, 1);
@@ -5951,18 +5951,18 @@ static void SV_SendTics(void)
 	supposedtics[0] = maketic;
 }
 
-void EncodeTiccmdTime(ticcmd_t* ticcmd, tic_t time)
+void EncodeTiccmdTime(ticcmd_t *ticcmd, tic_t time)
 {
 #ifdef ENCODE_TICCMD_TIMES
 	ticcmd->aiming = (ticcmd->aiming & ~TICCMD_TIMEMASK_AIMING) | (time & TICCMD_TIMEMASK_AIMING);
-	ticcmd->angleturn = (ticcmd->angleturn & ~(TICCMD_TIMEMASK_ANGLE<<1)) | (((time>>TICCMD_TIMEBITS_AIMING) & TICCMD_TIMEMASK_ANGLE) << 1); // <<1 due to TICCMD_RECEIVED :/
+	ticcmd->angleturn = (ticcmd->angleturn & ~(TICCMD_TIMEMASK_ANGLE << 1)) | (((time >> TICCMD_TIMEBITS_AIMING) & TICCMD_TIMEMASK_ANGLE) << 1); // <<1 due to TICCMD_RECEIVED :/
 #endif
 }
 
-tic_t DecodeTiccmdTime(const ticcmd_t* ticcmd)
+tic_t DecodeTiccmdTime(const ticcmd_t *ticcmd)
 {
 #ifdef ENCODE_TICCMD_TIMES
-	return (ticcmd->aiming & TICCMD_TIMEMASK_AIMING) + (((ticcmd->angleturn & (TICCMD_TIMEMASK_ANGLE<<1)) >> 1) << TICCMD_TIMEBITS_AIMING);
+	return (ticcmd->aiming & TICCMD_TIMEMASK_AIMING) + (((ticcmd->angleturn & (TICCMD_TIMEMASK_ANGLE << 1)) >> 1) << TICCMD_TIMEBITS_AIMING);
 #else
 	return 0;
 #endif
@@ -5994,13 +5994,15 @@ fixed_t FixedDistance2(fixed_t aX, fixed_t aY, fixed_t bX, fixed_t bY)
 }
 
 static ticcmd_t lastCmds;
+INT16 oldAngle;
 
-static void AdjustSimulatedTiccmdInputs(ticcmd_t* cmds)
+static void AdjustSimulatedTiccmdInputs(ticcmd_t *cmds)
 {
 	if (server || simtic == gametic)
 		return;
 
-	INT16 oldAngle = cmds->angleturn;
+	if (!oldAngle)
+		oldAngle = cmds->angleturn;
 
 	//Kart doesnt have match mode where this is relevant
 	//if (gamestate == GS_LEVEL && cv_netsteadyplayers.value && !cv_netslingdelay.value)
@@ -6010,6 +6012,7 @@ static void AdjustSimulatedTiccmdInputs(ticcmd_t* cmds)
 	{
 		// If the aiming angles are different, readjust movements to go towards the player's original intended direction
 		angle_t difference = (cmds->angleturn - oldAngle) << 16;
+		oldAngle = cmds->angleturn;
 		char oldSidemove = cmds->sidemove, oldForwardmove = cmds->forwardmove;
 
 		cmds->sidemove = (FixedMul((fixed_t)(oldSidemove<<FRACBITS), FINECOSINE(difference>>ANGLETOFINESHIFT))
@@ -6128,17 +6131,18 @@ gameStateBuffer[gametic] is the game state before 'gametic' executes
 tic_t liveTic;
 
 int serverJitter;
-int rttJitter;
-int estimatedRTT;
+int rttJitter; //Round Trip Time jitter
+int estimatedRTT = 0;
 int minRTT;
 int maxRTT;
 int maxLiveTicOffset;
 int minLiveTicOffset;
-int recommendedSimulateTics = 0; // simulateTics recommendation based on the last known 'stable' RTT (range <= 2). Used for avoiding spike lag future-past-teleports.
+int recommendedSimulateTics = 0;
 int smoothingDelay;
-UINT64 saveStateBenchmark = 0;
-UINT64 loadStateBenchmark = 0;
-int netUpdateFudge; // our last net update fudge
+precise_t saveStateBenchmark = 0;
+precise_t loadStateBenchmark = 0;
+precise_t loadUnArchiveMisc = 0;
+double netUpdateFudge; // our last net update fudge
 
 tic_t lastSavestateClearedTic;
 
@@ -6175,8 +6179,8 @@ boolean TryRunTics(tic_t realtics)
 	}
 	
 	// Get packets from the server
-	unsigned long long int frame = (I_GetPrecisePrecision() * NEWTICRATE / 1000000);
-	netUpdateFudge = (I_GetPrecisePrecision() - frame * 1000000 / NEWTICRATE) * 100 * NEWTICRATE / 1000000; // record the timefudge where the net update typically occurs
+	double frame = ((double)SDL_GetPerformanceCounter() / tic_frequency);
+	netUpdateFudge = (((double)SDL_GetPerformanceCounter() / tic_frequency) - frame); // record the timefudge where the net update typically occurs
 
 	NetUpdate();
 
