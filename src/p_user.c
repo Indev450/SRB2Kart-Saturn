@@ -82,6 +82,7 @@ void P_Thrust(mobj_t *mo, angle_t angle, fixed_t move)
 		mo->momy += FixedMul(move, FINESINE(angle));
 }
 
+
 //
 // P_InstaThrust
 // Moves the given origin along a given angle instantly.
