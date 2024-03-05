@@ -940,7 +940,7 @@ static void Command_Saveloadtest(void)
 extern int netUpdateFudge;
 static void Command_Autotimefudge(void)
 {
-	UINT64 startTime = I_GetTimeUs();
+	UINT64 startTime = I_GetPrecisePrecision();
 	static UINT64 packetTimeFudge[512];
 	int numReceivedPackets = 0;
 	int numSampleTics = 14;
@@ -956,13 +956,13 @@ static void Command_Autotimefudge(void)
 	}
 
 	// New experimental version! Run a precise while loop that picks up packets instantly
-	while (I_GetTimeUs() - startTime < ((UINT64)numSampleTics * 1000000 / NEWTICRATE))
+	while (I_GetPrecisePrecision() - startTime < ((UINT64)numSampleTics * 1000000 / NEWTICRATE))
 	{
 		I_NetGet();
-		if (doomcom->remotenode != -1 && I_GetTimeUs() - startTime > (unsigned long long)2*1000000/NEWTICRATE) // wait a couple frames before recording
+		if (doomcom->remotenode != -1 && I_GetPrecisePrecision() - startTime > (unsigned long long)2*1000000/NEWTICRATE) // wait a couple frames before recording
 		{
-			unsigned long long frame = I_GetTimeUs() * NEWTICRATE / 1000000;
-			packetTimeFudge[numReceivedPackets++] = (I_GetTimeUs() - frame * 1000000 / NEWTICRATE) * 100 * NEWTICRATE / 1000000
+			unsigned long long frame = I_GetPrecisePrecision() * NEWTICRATE / 1000000;
+			packetTimeFudge[numReceivedPackets++] = (I_GetPrecisePrecision() - frame * 1000000 / NEWTICRATE) * 100 * NEWTICRATE / 1000000
 				- netUpdateFudge; // gets the time fudge offset (0-100)
 		}
 	}

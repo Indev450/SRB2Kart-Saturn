@@ -6175,8 +6175,8 @@ boolean TryRunTics(tic_t realtics)
 	}
 	
 	// Get packets from the server
-	unsigned long long int frame = (I_GetTimeUs() * NEWTICRATE / 1000000);
-	netUpdateFudge = (I_GetTimeUs() - frame * 1000000 / NEWTICRATE) * 100 * NEWTICRATE / 1000000; // record the timefudge where the net update typically occurs
+	unsigned long long int frame = (I_GetPrecisePrecision() * NEWTICRATE / 1000000);
+	netUpdateFudge = (I_GetPrecisePrecision() - frame * 1000000 / NEWTICRATE) * 100 * NEWTICRATE / 1000000; // record the timefudge where the net update typically occurs
 
 	NetUpdate();
 
@@ -6382,7 +6382,7 @@ static void RunSimulations()
 			}
 		}
 
-		// and cull distant thinkers if enabled //// FIXME i have no idea how this shit works without the split thinker lists lmao
+		// and cull distant thinkers if enabled
 		if (cv_simulateculldistance.value > 0)
 		{
 			thinker_t* current;
@@ -6399,8 +6399,7 @@ static void RunSimulations()
 				}
 			}
 
-			for (thinker = thlist[i].next; thinker != &thlist[i]; thinker = thinker->next)
-			//for (current = thlist[THINK_MOBJ].next; current != &thlist[THINK_MOBJ]; current = current->next)
+			for (current = thlist[THINK_MOBJ].next; current != &thlist[THINK_MOBJ]; current = current->next)
 			{
 				for (i = 0; i < numPlayers; i++)
 				{
@@ -6421,7 +6420,7 @@ static void RunSimulations()
 	issimulation = true;
 	con_muted = true;
 
-	simStartTime = I_GetTimeUs();
+	simStartTime = I_GetPrecisePrecision();
 
 	for (int i = 0; i < numToSimulate; i++)
 	{
@@ -6561,7 +6560,7 @@ static void RunSimulations()
 		}
 	}
 
-	simEndTime = I_GetTimeUs();
+	simEndTime = I_GetPrecisePrecision();
 
 	lastsimtic = simtic;
 	rendergametic = gametic;

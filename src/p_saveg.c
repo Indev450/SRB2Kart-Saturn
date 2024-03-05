@@ -1186,7 +1186,7 @@ typedef enum
 	MD2_COLORIZED	= 1<<9,
 	MD2_WAYPOINTCAP	= 1<<10
 	, MD2_SLOPE       = 1<<11
-#endif
+
 //	MD2_PMOM         = 1<<14
 } mobj_diff2_t;
 
@@ -1281,7 +1281,6 @@ static const specialdef_t specialDefs[] =
 	NOSECTOR(T_NoEnemiesSector, levelspecthink_t),      // tc_noenemies
 	NOSECTOR(T_EachTimeThinker, levelspecthink_t),      // tc_eachtime
 	NOSECTOR(T_Disappear, disappear_t),                // tc_disappear
-#ifdef POLYOBJECTS
 	NOSECTOR(T_PolyObjRotate, polyrotate_t),            // tc_polyrotate
 	NOSECTOR(T_PolyObjMove, polymove_t),                // tc_polymove
 	NOSECTOR(T_PolyObjWaypoint, polywaypoint_t),        // tc_polywaypoint
@@ -1289,7 +1288,6 @@ static const specialdef_t specialDefs[] =
 	NOSECTOR(T_PolyDoorSwing, polyswingdoor_t),         // tc_polyswingdoor
 	NOSECTOR(T_PolyObjFlag, polymove_t),                // tc_polyflag
 	NOSECTOR(T_PolyObjDisplace, polydisplace_t),        // tc_polydisplace
-#endif
 };
 #undef A
 
@@ -2141,7 +2139,6 @@ static void P_NetArchiveThinkers(void)
 				SaveDisappearThinker(th, tc_disappear);
 				continue;
 			}
-#ifdef POLYOBJECTS
 			else if (th->function.acp1 == (actionf_p1)T_PolyObjRotate)
 			{
 				SavePolyrotatetThinker(th, tc_polyrotate);
@@ -2177,7 +2174,6 @@ static void P_NetArchiveThinkers(void)
 				SavePolydisplaceThinker(th, tc_polydisplace);
 				continue;
 			}
-#endif
 #ifdef PARANOIA
 			else if (th->function.acp1 != P_RemoveThinkerDelayed) // wait garbage collection
 				I_Error("unknown thinker type %p", th->function.acp1);
@@ -3006,7 +3002,7 @@ static void CollectDebugObjectList(void) {
 	}
 }
 
-void S_DetachChannelsFromOrigin(void* origin);
+//void S_DetachChannelsFromOrigin(void* origin);
 
 typedef struct
 {
@@ -3277,7 +3273,7 @@ static void P_LocalUnArchiveThinkers()
 				}
 
 				// detach any playing sounds from this object if we can (still need to work on doing this properly!)
-				S_DetachChannelsFromOrigin((mobj_t*)newthinker);
+				//S_DetachChannelsFromOrigin((mobj_t*)newthinker);
 
 				// unlink it from the old list (if it's not a nothinker)
 				if (!(tclass == tc_mobj && (((mobj_t*)newthinker)->flags & MF_NOTHINK)))
@@ -3536,10 +3532,6 @@ static void P_NetUnArchiveThinkers(boolean preserveLevel)
 	UINT8 restoreNum = false;
 	UINT32 i;
 	UINT32 numloaded = 0;
-	int skyviewid = -1;
-	int skycenterid = -1;
-
-	mobj_t* currentmobj;
 	int skyviewid = -1;
 	int skycenterid = -1;
 
@@ -3952,7 +3944,7 @@ static void P_LocalUnArchivePolyObjects(void)
 		Polyobj_linkToBlockmap(&PolyObjects[i]);
 	}*/
 }
-#endif
+
 //
 // P_FinishMobjs
 //
@@ -4295,8 +4287,6 @@ static inline boolean P_NetUnArchiveMisc(boolean preserveLevel)
 	INT32 i;
 	INT16 oldMap = gamemap;
 
-	INT16 oldMap = gamemap;
-
 	if (READUINT32(save_p) != ARCHIVEBLOCK_MISC)
 		I_Error("Bad $$$.sav at archive block Misc");
 
@@ -4424,8 +4414,6 @@ static inline void P_LocalUnArchiveCameras()
 		camera[i].chase = chase[i];
 }
 
-UINT64 I_GetTimeUs(void);
-
 void P_SaveGame(void)
 {
 	P_ArchiveMisc();
@@ -4534,8 +4522,6 @@ void P_SaveGameState(savestate_t* savestate)
 	size_t s = 0;
 	int mobjnum = 1;
 
-	UINT64 time = I_GetTimeUs();
-
 	save_p = savestate->buffer;
 
 	WRITEINT16(save_p, gamemap);
@@ -4572,27 +4558,19 @@ void P_SaveGameState(savestate_t* savestate)
 	P_NetArchiveMisc();
 	P_LocalArchivePlayers();
 	P_LocalArchiveWorld();
-#ifdef POLYOBJECTS
 	P_LocalArchivePolyObjects();
-#endif
 	P_LocalArchiveThinkers();
 	P_NetArchiveSpecials();
 	P_LocalArchiveCameras();
-
-#ifdef HAVE_BLUA
 	LUA_Archive();
-#endif
 
 	//P_ArchiveLuabanksAndConsistency();
-
-	saveStateBenchmark = I_GetTimeUs() - time;
 }
 
 // P_LoadGameState is a within-level-only mechanism for loading the game state. It must not be used cross level. Used for simulation backtracking.
 // It uses a mixture of existing NetUnArchive functions and faster LocalUnArchive functions to do the job
 boolean P_LoadGameState(const savestate_t* savestate)
 {
-	UINT64 time = I_GetTimeUs();
 	angle_t preserveAngle = localangle;
 	INT32 preserveAiming = localaiming;
 	INT16 savedGameMap;
@@ -4624,7 +4602,6 @@ boolean P_LoadGameState(const savestate_t* savestate)
 	//P_SetRandSeed(P_GetInitSeed());
 
 	//P_UnArchiveLuabanksAndConsistency();
-	loadStateBenchmark = I_GetTimeUs() - time;
 
 	return true;
 }

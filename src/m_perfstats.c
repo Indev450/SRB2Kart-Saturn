@@ -564,6 +564,7 @@ static void PS_UpdateFrameStats(void)
 // Update thinker counters by iterating the thinker lists.
 static void PS_CountThinkers(void)
 {
+	int i;
 	thinker_t *thinker;
 
 	ps_thinkercount.value.i = 0;
@@ -574,38 +575,14 @@ static void PS_CountThinkers(void)
 	ps_otherthcount.value.i = 0;
 	ps_precipcount.value.i = 0;
 	ps_removecount.value.i = 0;
-	for (thinker = thinkercap.next; thinker != &thinkercap; thinker = thinker->next)
-	{
-		ps_thinkercount.value.i++;
-		if (thinker->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-			ps_removecount.value.i++;
-		else if (thinker->function.acp1 == (actionf_p1)P_MobjThinker)
-		{
-			mobj_t *mobj = (mobj_t*)thinker;
-			ps_mobjcount.value.i++;
-			if (mobj->flags & MF_NOTHINK)
-				ps_nothinkcount.value.i++;
-			else if (mobj->flags & MF_SCENERY)
-				ps_scenerycount.value.i++;
-			else
-				ps_regularcount.value.i++;
-		}
-		else if (thinker->function.acp1 == (actionf_p1)P_NullPrecipThinker)
-			ps_precipcount.value.i++;
-		else
-			ps_otherthcount.value.i++;
-	}
-	/*for (i = 0; i < NUM_THINKERLISTS; i++)
+
+	for (i = 0; i < NUM_THINKERLISTS; i++)
 	{
 		for (thinker = thlist[i].next; thinker != &thlist[i]; thinker = thinker->next)
 		{
 			ps_thinkercount.value.i++;
 			if (thinker->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 				ps_removecount.value.i++;
-			else if (i == THINK_POLYOBJ)
-				ps_polythcount.value.i++;
-			else if (i == THINK_MAIN)
-				ps_mainthcount.value.i++;
 			else if (i == THINK_MOBJ)
 			{
 				if (thinker->function.acp1 == (actionf_p1)P_MobjThinker)
@@ -620,12 +597,10 @@ static void PS_CountThinkers(void)
 						ps_regularcount.value.i++;
 				}
 			}
-			else if (i == THINK_DYNSLOPE)
-				ps_dynslopethcount.value.i++;
 			else if (i == THINK_PRECIP)
 				ps_precipcount.value.i++;
 		}
-	}*/
+	}
 }
 
 // Update all metrics that are calculated on every tick.
