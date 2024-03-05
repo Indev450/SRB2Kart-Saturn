@@ -6179,8 +6179,8 @@ boolean TryRunTics(tic_t realtics)
 	}
 	
 	// Get packets from the server
-	double frame = ((double)SDL_GetPerformanceCounter() / tic_frequency);
-	netUpdateFudge = (((double)SDL_GetPerformanceCounter() / tic_frequency) - frame); // record the timefudge where the net update typically occurs
+	double frame = ((double)I_GetPreciseTime() / I_GetPrecisePrecision());
+	netUpdateFudge = (((double)I_GetPreciseTime() / I_GetPrecisePrecision()) - frame); // record the timefudge where the net update typically occurs
 
 	NetUpdate();
 
