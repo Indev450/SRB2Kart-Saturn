@@ -70,7 +70,8 @@ consvar_t cv_shittyscreen = {"televisionsignal", "Okay", CV_NOSHOWHELP, shittysc
 
 static void SCR_ChangeFullscreen (void);
 
-consvar_t cv_fullscreen = {"fullscreen", "Yes", CV_SAVE|CV_CALL, CV_YesNo, SCR_ChangeFullscreen, 0, NULL, NULL, 0, 0, NULL};
+static CV_PossibleValue_t fullscreen_cons_t[] = {{0, "Off"}, {1, "Normal"}, {2, "Exclusive"}, {0, NULL}};
+consvar_t cv_fullscreen = {"fullscreen", "Normal", CV_SAVE|CV_CALL, fullscreen_cons_t, SCR_ChangeFullscreen, 0, NULL, NULL, 0, 0, NULL};
 
 // =========================================================================
 //                           SCREEN VARIABLES
