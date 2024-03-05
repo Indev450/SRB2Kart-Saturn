@@ -149,8 +149,8 @@ boolean serverisfull = false; //lets us be aware if the server was full after we
 tic_t firstconnectattempttime = 0;
 
 // Net simulation stuff
-savestate_t gameStateBuffer[TICQUEUE];
-boolean gameStateBufferIsValid[TICQUEUE];
+savestate_t gameStateBuffer[BACKUPTICS];
+boolean gameStateBufferIsValid[BACKUPTICS];
 
 ticcmd_t gameTicBuffer[TICQUEUE][MAXPLAYERS];
 ticcmd_t localTicBuffer[TICQUEUE];
