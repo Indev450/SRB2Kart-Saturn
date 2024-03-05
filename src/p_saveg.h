@@ -21,10 +21,20 @@
 // Persistent storage/archiving.
 // These are the load / save game routines.
 
+typedef struct
+{
+	UINT8 buffer[16 * 1024 * 1024]; // 16 megs per frame should do
+} savestate_t;
+
+// Persistent storage/archiving.
+// These are the load / save game routines.
+
 void P_SaveGame(void);
 void P_SaveNetGame(void);
+void P_SaveGameState(savestate_t* savestate);
 boolean P_LoadGame(INT16 mapoverride);
-boolean P_LoadNetGame(void);
+boolean P_LoadNetGame(boolean preserveLevel);
+boolean P_LoadGameState(const savestate_t* savestate);
 
 mobj_t *P_FindNewPosition(UINT32 oldposition);
 

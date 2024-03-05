@@ -6223,7 +6223,8 @@ boolean TryRunTics(tic_t realtics)
 	boolean canSimulate = (gamestate == GS_LEVEL)
 				&& leveltime >= TICRATE*4 
 				&& gametic >= TICRATE 
-				&& !countdown2 //SRB2Kart: No simulating after everyone has finished ... it breaks stuff
+				//&& !countdown2 //SRB2Kart: No simulating after everyone has finished ... it breaks stuff
+				&& !exitcountdown //SRB2Kart: No simulating after everyone has finished ... it breaks stuff //countdown 2? the sequel? idk 
 				&& (cv_simulate.value && !server) //SRB2Kart: make it impossible to sim before the start of the race
 				&& !resynch_local_inprogress && gametic >= lastSavestateClearedTic + TICRATE;
 	boolean recordingStates = canSimulate;
@@ -6385,7 +6386,7 @@ static void RunSimulations()
 			}
 		}
 
-		// and cull distant thinkers if enabled
+		// and cull distant thinkers if enabled //// FIXME i have no idea how this shit works without the split thinker lists lmao
 		if (cv_simulateculldistance.value > 0)
 		{
 			thinker_t* current;
@@ -6402,7 +6403,8 @@ static void RunSimulations()
 				}
 			}
 
-			for (current = thlist[THINK_MOBJ].next; current != &thlist[THINK_MOBJ]; current = current->next)
+			for (thinker = thlist[i].next; thinker != &thlist[i]; thinker = thinker->next)
+			//for (current = thlist[THINK_MOBJ].next; current != &thlist[THINK_MOBJ]; current = current->next)
 			{
 				for (i = 0; i < numPlayers; i++)
 				{
@@ -7209,7 +7211,7 @@ rewind_t *CL_RewindToTime(tic_t time)
 		return NULL;
 
 	save_p = rewindhead->savebuffer;
-	P_LoadNetGame();
+	P_LoadNetGame(false); // i guess should be false???
 	wipegamestate = gamestate; // No fading back in!
 	timeinmap = leveltime;
 
