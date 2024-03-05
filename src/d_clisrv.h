@@ -561,7 +561,7 @@ typedef struct
 	fixed_t histx[MAXSIMULATIONS + 1], histy[MAXSIMULATIONS + 1], histz[MAXSIMULATIONS + 1];
 
 	// stores the final simulated position for each simulated gametic
-	fixed_t simx[BACKUPTICS], simy[BACKUPTICS], simz[BACKUPTICS];
+	fixed_t simx[TICQUEUE], simy[TICQUEUE], simz[TICQUEUE];
 
 } steadyplayer_t;
 

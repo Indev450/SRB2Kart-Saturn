@@ -9038,10 +9038,10 @@ void A_SetObjectTypeState(mobj_t *actor)
 	if (LUA_CallAction("A_SetObjectTypeState", actor))
 		return;
 
-		for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
-		{
-			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-				continue;
+	for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
+	{
+		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+			continue;
 
 		mo2 = (mobj_t *)th;
 
