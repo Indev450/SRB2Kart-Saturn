@@ -136,7 +136,7 @@ char srb2path[256] = ".";
 boolean usehome = true;
 const char *pandf = "%s" PATHSEP "%s";
 
-extern char netDebugText[10000];
+//extern char netDebugText[10000];
 
 //
 // EVENT HANDLING
@@ -596,7 +596,7 @@ static void D_Display(void)
 			V_DrawRightAlignedString(BASEVIDWIDTH, BASEVIDHEIGHT-ST_HEIGHT-10, V_YELLOWMAP, s);
 		}
 
-		if (cv_netsimstat.value && netDebugText[0] != 0)
+		/*if (cv_netsimstat.value && netDebugText[0] != 0)
 		{
 			const char* str = netDebugText;
 			int y = 0;
@@ -615,7 +615,7 @@ static void D_Display(void)
 				y += 5;
 				str = nextStr ? nextStr + 1 : NULL;
 			}
-		}
+		}*/
 
 		if (cv_shittyscreen.value)
 			V_DrawVhsEffect(cv_shittyscreen.value == 2);
