@@ -900,8 +900,6 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 								downsample = true;
 								RefreshSDLSurface();
 							}
-							else
-								downsample = false;
 
 							if (cv_fullscreen.value == 2) //exclusive
 								SDLSetMode(curmode.w, curmode.h, true);
@@ -2002,8 +2000,6 @@ INT32 VID_SetMode(INT32 modeNum)
 			downsample = true;
 			RefreshSDLSurface();
 		}
-		else
-			downsample = false;
 	}
 
 	SDLSetMode(vid.width, vid.height, USE_FULLSCREEN);
