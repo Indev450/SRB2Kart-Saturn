@@ -162,7 +162,6 @@ static       SDL_bool    videoblitok = SDL_FALSE;
 static       SDL_bool    exposevideo = SDL_FALSE;
 static       SDL_bool    usesdl2soft = SDL_FALSE;
 static       SDL_bool    borderlesswindow = SDL_FALSE;
-static 		 SDL_DisplayMode currentDisplayMode;
 
 static boolean displayinit = false;
 static int currentDisplayIndex = -1;
