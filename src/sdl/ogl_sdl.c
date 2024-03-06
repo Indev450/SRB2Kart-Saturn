@@ -183,7 +183,7 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 	RenderToFramebuffer = FrameBufferEnabled;
 	GLFramebuffer_Disable();
 
-	if (RenderToFramebuffer && downsample)
+	if (RenderToFramebuffer && downsample)//uuuuuuuuhuhuuhuhhuhuuh well changing resolutions can break this thing
 		GLFramebuffer_Enable();
 
 	HWR_Startup();
