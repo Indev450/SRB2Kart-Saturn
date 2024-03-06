@@ -871,8 +871,8 @@ void Command_Autotimefudge(void)
 		return;
 	}
 
-	lastTimeReceivedPacket = (double)SDL_GetPerformanceCounter() / tic_frequency;
-	while ((abs((double)SDL_GetPerformanceCounter() / tic_frequency - startTime) < numSampleTics) || numReceivedPackets < 10)
+	lastTimeReceivedPacket = (double)I_GetPreciseTime() / tic_frequency;
+	while ((abs((double)I_GetPreciseTime() / tic_frequency - startTime) < numSampleTics) || numReceivedPackets < 10)
 	{
 		I_NetGet();
 		if ((doomcom->remotenode != -1)) // Packet received

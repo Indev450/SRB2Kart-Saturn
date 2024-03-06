@@ -34,6 +34,8 @@
 #include "p_slopes.h"
 #include "console.h"
 
+#include "hashtable.h"
+
 savedata_t savedata;
 UINT8 *save_p;
 
@@ -62,6 +64,34 @@ typedef enum
 	FIRSTAXIS  = 0x10,
 	SECONDAXIS = 0x20,
 } player_saveflags;
+
+
+// Now save the pointers, tracer and target, but at load time we must
+// relink to this; the savegame contains the old position in the pointer
+// field copyed in the info field temporarily, but finally we just search
+// for the old position and relink to it.
+mobj_t *P_FindNewPosition_Hashtable(UINT32 oldposition)
+{
+	thinker_t *th;
+	mobj_t *mobj;
+	th = mobjnum_ht_linkedList_Find(oldposition);
+	if (th && ((mobj_t *)th)->mobjnum == oldposition && !(th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed))
+		return (mobj_t *)th;
+	for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
+	{
+		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+			continue;
+
+		mobj = (mobj_t *)th;
+		if (mobj->mobjnum != oldposition)
+			continue;
+
+		return mobj;
+	}
+	CONS_Debug(DBG_GAMELOGIC, "mobj not found\n");
+	return NULL;
+}
+
 
 //
 // P_ArchivePlayer
@@ -3714,56 +3744,32 @@ static void P_NetUnArchiveThinkers(boolean preserveLevel)
 			default:
 				CONS_Alert(CONS_ERROR, "Found mobj with unknown map thing type NULL\n");
 		}
-		if (th)
-			P_AddThinker(thinkerlist, th);
+			if (th)
+			{
+				P_AddThinker(thinkerlist, th);
+				if (thinkerlist == THINK_MOBJ && tclass == tc_mobj)
+					mobjnum_ht_linkedList_AddEntry(th);
+			}
 	}
 
 	if (restoreNum)
 	{
 		executor_t *delay = NULL;
 		UINT32 mobjnum;
-		for (currentthinker = thlist[THINK_MAIN].next; currentthinker != &thlist[THINK_MAIN];
-			currentthinker = currentthinker->next)
+		for (currentthinker = thlist[THINK_MAIN].next; currentthinker != &thlist[THINK_MAIN]; currentthinker = currentthinker->next)
 		{
 			if (currentthinker->function.acp1 != (actionf_p1)T_ExecutorDelay)
 				continue;
 			delay = (void *)currentthinker;
 			if (!(mobjnum = (UINT32)(size_t)delay->caller))
 				continue;
-			delay->caller = P_FindNewPosition(mobjnum);
+			delay->caller = P_FindNewPosition_Hashtable(mobjnum);
 		}
 	}
 	
 	// restore skyboxes, if applicable
 	for (i = 0; i < sizeof(skyboxmo) / sizeof(skyboxmo[0]); i++)
 		skyboxmo[i] = NULL;
-
-	/*
-	for (i = 0; i < sizeof(skyboxcenterpnts) / sizeof(skyboxcenterpnts[0]); i++)
-	{
-		skyboxcenterpnts[i] = NULL;
-		skyboxviewpnts[i] = NULL;
-	}
-	
-
-	for (currentmobj = (mobj_t*)thlist[THINK_MOBJ].next; currentmobj != (mobj_t*)&thlist[THINK_MOBJ]; currentmobj = (mobj_t*)currentmobj->thinker.next)
-	{
-		if (currentmobj->type == MT_SKYBOX)
-		{
-			if ((currentmobj->extravalue2 >> 16) == 1)
-			{
-				skyboxcenterpnts[currentmobj->extravalue2 & 0xFFFF] = currentmobj;
-			}
-			else
-			{
-				skyboxviewpnts[currentmobj->extravalue2 & 0xFFFF] = currentmobj;
-			}
-		}
-	}
-
-	skyboxmo[0] = skyboxviewpnts[(skyviewid >= 0) ? skyviewid : 0];
-	skyboxmo[1] = skyboxcenterpnts[(skycenterid >= 0) ? skycenterid : 0];
-	*/
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -3925,56 +3931,56 @@ static void P_RelinkPointers(void)
 		{
 			temp = (UINT32)(size_t)mobj->tracer;
 			mobj->tracer = NULL;
-			if (!P_SetTarget(&mobj->tracer, P_FindNewPosition(temp)))
+			if (!P_SetTarget(&mobj->tracer, P_FindNewPosition_Hashtable(temp)))
 				CONS_Debug(DBG_GAMELOGIC, "tracer not found on %d\n", mobj->type);
 		}
 		if (mobj->target)
 		{
 			temp = (UINT32)(size_t)mobj->target;
 			mobj->target = NULL;
-			if (!P_SetTarget(&mobj->target, P_FindNewPosition(temp)))
+			if (!P_SetTarget(&mobj->target, P_FindNewPosition_Hashtable(temp)))
 				CONS_Debug(DBG_GAMELOGIC, "target not found on %d\n", mobj->type);
 		}
 		if (mobj->hnext)
 		{
 			temp = (UINT32)(size_t)mobj->hnext;
 			mobj->hnext = NULL;
-			if (!(mobj->hnext = P_FindNewPosition(temp)))
+			if (!(mobj->hnext = P_FindNewPosition_Hashtable(temp)))
 				CONS_Debug(DBG_GAMELOGIC, "hnext not found on %d\n", mobj->type);
 		}
 		if (mobj->hprev)
 		{
 			temp = (UINT32)(size_t)mobj->hprev;
 			mobj->hprev = NULL;
-			if (!(mobj->hprev = P_FindNewPosition(temp)))
+			if (!(mobj->hprev = P_FindNewPosition_Hashtable(temp)))
 				CONS_Debug(DBG_GAMELOGIC, "hprev not found on %d\n", mobj->type);
 		}
 		if (mobj->player && mobj->player->capsule)
 		{
 			temp = (UINT32)(size_t)mobj->player->capsule;
 			mobj->player->capsule = NULL;
-			if (!P_SetTarget(&mobj->player->capsule, P_FindNewPosition(temp)))
+			if (!P_SetTarget(&mobj->player->capsule, P_FindNewPosition_Hashtable(temp)))
 				CONS_Debug(DBG_GAMELOGIC, "capsule not found on %d\n", mobj->type);
 		}
 		if (mobj->player && mobj->player->axis1)
 		{
 			temp = (UINT32)(size_t)mobj->player->axis1;
 			mobj->player->axis1 = NULL;
-			if (!P_SetTarget(&mobj->player->axis1, P_FindNewPosition(temp)))
+			if (!P_SetTarget(&mobj->player->axis1, P_FindNewPosition_Hashtable(temp)))
 				CONS_Debug(DBG_GAMELOGIC, "axis1 not found on %d\n", mobj->type);
 		}
 		if (mobj->player && mobj->player->axis2)
 		{
 			temp = (UINT32)(size_t)mobj->player->axis2;
 			mobj->player->axis2 = NULL;
-			if (!P_SetTarget(&mobj->player->axis2, P_FindNewPosition(temp)))
+			if (!P_SetTarget(&mobj->player->axis2, P_FindNewPosition_Hashtable(temp)))
 				CONS_Debug(DBG_GAMELOGIC, "axis2 not found on %d\n", mobj->type);
 		}
 		if (mobj->player && mobj->player->awayviewmobj)
 		{
 			temp = (UINT32)(size_t)mobj->player->awayviewmobj;
 			mobj->player->awayviewmobj = NULL;
-			if (!P_SetTarget(&mobj->player->awayviewmobj, P_FindNewPosition(temp)))
+			if (!P_SetTarget(&mobj->player->awayviewmobj, P_FindNewPosition_Hashtable(temp)))
 				CONS_Debug(DBG_GAMELOGIC, "awayviewmobj not found on %d\n", mobj->type);
 		}
 	}
@@ -4418,8 +4424,20 @@ boolean P_LoadGame(INT16 mapoverride)
 	return true;
 }
 
+void P_GameStateFreeMemory(savestate_t* savestate)
+{
+	// if (gamestate != GS_LEVEL)
+	Z_Free(savestate->buffer);
+	savestate->buffer = NULL; //a hacky way to invalidate the memory
+}
+
+
 boolean P_LoadNetGame(boolean preserveLevel)
 {
+	mobjnum_ht_linkedList_Init(); //clean up hashtables to avoid lua stuff using them
+								  //this is temporary and will be rewritten to use in vanilla code
+								  //once rollback netcode will be stable
+
 	CV_LoadNetVars(&save_p, false);
 	if (!P_NetUnArchiveMisc(preserveLevel))
 		return false;
@@ -4459,8 +4477,13 @@ void P_SaveGameState(savestate_t* savestate)
 	thinker_t* th;
 	size_t s = 0;
 	int mobjnum = 1;
+	
+	if (savestate->buffer == NULL)
+	{
+		savestate->buffer = Z_Malloc(10 * 1024 * 1024, PU_STATIC, NULL); //ten megabytes?
+	}
 
-	save_p = ((unsigned char*)savestate->buffer);
+	save_p = savestate->buffer;
 
 	WRITEINT16(save_p, gamemap);
 	WRITEUINT32(save_p, globalmobjnum);
@@ -4507,22 +4530,67 @@ void P_SaveGameState(savestate_t* savestate)
 	LUA_Archive();
 }
 
+/*void P_SaveGameState(savestate_t* savestate)
+{
+	thinker_t *th;
+	mobj_t *mobj;
+	INT32 i = 1; // don't start from 0, it'd be confused with a blank pointer otherwise
+
+    if (savestate->buffer == NULL)
+	{
+		savestate->buffer = Z_Malloc(10 * 1024 * 1024, PU_STATIC, NULL); //ten megabytes?
+	}
+
+    save_p = savestate->buffer;
+
+	WRITEINT16(save_p, gamemap);
+	WRITEUINT32(save_p, globalmobjnum);
+
+	CV_SaveNetVars(&save_p, false);
+	P_NetArchiveMisc();
+
+	// Assign the mobjnumber for pointer tracking
+	for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
+	{
+		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+			continue;
+
+		mobj = (mobj_t *)th;
+		if (mobj->type == MT_HOOP || mobj->type == MT_HOOPCOLLIDE || mobj->type == MT_HOOPCENTER)
+			continue;
+		mobj->mobjnum = i++;
+	}
+
+	P_NetArchivePlayers();
+	if (gamestate == GS_LEVEL)
+	{
+		// P_NetArchiveWorld();
+		P_LocalArchiveWorld();
+		P_ArchivePolyObjects();
+		P_NetArchiveThinkers();
+		P_NetArchiveSpecials();
+	}
+	LUA_Archive();
+}*/
+
+
 // P_LoadGameState is a within-level-only mechanism for loading the game state. It must not be used cross level. Used for simulation backtracking.
 // It uses a mixture of existing NetUnArchive functions and faster LocalUnArchive functions to do the job
 boolean P_LoadGameState(const savestate_t* savestate)
 {
 	INT16 savedGameMap;
+	mobjnum_ht_linkedList_Init();
 	
-	save_p = savestate->buffer;
+	if (savestate->buffer == NULL)
+		return false;
+	
+	save_p = ((unsigned char*)savestate->buffer);
 
 	savedGameMap = READINT16(save_p);
 	globalmobjnum = READUINT32(save_p);
 
 	if (savedGameMap != gamemap)
-	{
-		// savestates do not work cross-level
 		return false;
-	}
 
 	con_muted = true;
 	CV_LoadNetVars(&save_p, true);
@@ -4548,3 +4616,58 @@ boolean P_LoadGameState(const savestate_t* savestate)
 
 	return true;
 }
+
+/*boolean P_LoadGameState(const savestate_t* savestate)
+{
+    INT16 savedGameMap;
+	mobjnum_ht_linkedList_Init();
+
+	if (savestate->buffer == NULL)
+		return false;
+
+	save_p = ((unsigned char*)savestate->buffer);
+
+    savedGameMap = READINT16(save_p);
+
+	if (savedGameMap != gamemap)
+		return false;
+
+	globalmobjnum = READUINT32(save_p);
+
+	con_muted = true;
+	CV_LoadNetVars(&save_p, true);
+	con_muted = false;
+
+	if (!P_NetUnArchiveMisc(true))
+	{
+		return false;
+	}
+
+	P_NetUnArchivePlayers();
+	if (gamestate == GS_LEVEL)
+	{
+		// P_NetUnArchiveWorld();
+		P_LocalUnArchiveWorld();
+		P_UnArchivePolyObjects();
+		P_NetUnArchiveThinkers(true);
+		P_NetUnArchiveSpecials();
+		P_RelinkPointers(); //candidate for optimization
+		P_FinishMobjs();
+	}
+	con_muted = true;
+	LUA_UnArchive(); //candidate for optimization
+	con_muted = false;
+
+	// This is stupid and hacky, but maybe it'll work!
+	P_SetRandSeed(P_GetInitSeed());
+
+	// The precipitation would normally be spawned in P_SetupLevel, which is called by
+	// P_NetUnArchiveMisc above. However, that would place it up before P_NetUnArchiveThinkers,
+	// so the thinkers would be deleted later. Therefore, P_SetupLevel will *not* spawn
+	// precipitation when loading a netgame save. Instead, precip has to be spawned here.
+	// This is done in P_NetUnArchiveSpecials now.
+	//P_UnArchiveLuabanksAndConsistency();
+	// save_p = NULL; //invalidate it//why??
+	return 0;
+}*/
+

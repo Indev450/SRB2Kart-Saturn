@@ -533,6 +533,7 @@ OBJS:=$(i_main_o) \
 		$(OBJDIR)/i_time.o   \
 		$(OBJDIR)/lzf.o	     \
 		$(OBJDIR)/b_bot.o \
+		$(OBJDIR)/hashtable.o  \
 		$(i_net_o)      \
 		$(i_system_o)   \
 		$(i_sound_o)    \

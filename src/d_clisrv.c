@@ -6268,7 +6268,7 @@ boolean TryRunTics(tic_t realtics)
 		simtic = gametic;
 		// CONS_Printf("Not simulating, clearing savestates...\n");
 		DEBFILE("NETPLUS: Not simulating, clearing savestates...\n");
-		//InvalidateSavestates();
+		InvalidateSavestates();
 	}
 	
 	// see if we have enough latency to simulate lots of sims
@@ -6724,6 +6724,27 @@ static void RunSimulations()
 int rttBuffer[20];
 int rttBufferIndex = 0;
 int rttBufferMax = 20;
+
+void InvalidateSavestates()
+{
+	if (simtic > gametic)
+		DEBFILE("NETPLUS: Savestates were invalidated during a simulation\n");
+		// CONS_Printf("Warning: Savestates were invalidated during a simulation!!\n");
+
+	for (int i = 0; i < MAXLOCALSAVESTATES; i++)
+	{
+		if (gameStateBufferIsValid[i] == true)
+			if (&gameStateBuffer[i].buffer != NULL)
+			{
+				//we don't want to store old states because a client might not want to simulate
+				//the game anymore or saved games are not valid anymore due to resynch
+				P_GameStateFreeMemory(&gameStateBuffer[i]);
+			}
+		gameStateBufferIsValid[i] = false;
+	}
+	SavestatesClearedTic = gametic;
+}
+
 
 void DetermineNetConditions()
 {

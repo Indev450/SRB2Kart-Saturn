@@ -26,6 +26,8 @@
 #include "d_netfil.h" // for LUA_DumpFile
 #endif
 
+#include "hashtable.h"
+
 #include "lua_script.h"
 #include "lua_libs.h"
 #include "lua_glib.h"
@@ -1622,6 +1624,7 @@ void LUA_UnArchive(void)
 
 	do {
 		mobjnum = READUINT32(save_p); // read a mobjnum
+		th = mobjnum_ht_linkedList_Find(mobjnum);
 		for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 		{
 			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
