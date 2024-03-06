@@ -139,6 +139,4 @@ UINT32 I_GetRefreshRate(void);
 
 void RefreshSDLSurface(void);
 
-extern boolean downsample;
-
 #endif
