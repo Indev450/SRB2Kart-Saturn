@@ -871,8 +871,6 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 
 	if (windowmoved)
 	{
-		currentDisplayIndex = SDL_GetWindowDisplayIndex(window);
-
 		if (!displayinit) // dont need to recheck for new displays i think noone adds a display while playing kart lmkao
 		{
 			numDisplays = SDL_GetNumVideoDisplays();
@@ -880,37 +878,41 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 			displayinit = true;
 		}
 
-		if (currentDisplayIndex != previousDisplayIndex)
+		if (numDisplays > 1)
 		{
-			//CONS_Printf("Window has changed displays.\n");
-			for (int i = 0; i < numDisplays; ++i)
+			currentDisplayIndex = SDL_GetWindowDisplayIndex(window);
+			if (currentDisplayIndex != previousDisplayIndex)
 			{
-				if (currentDisplayIndex == i)
+				//CONS_Printf("Window has changed displays.\n");
+				for (int i = 0; i < numDisplays; ++i)
 				{
-					SDL_DisplayMode curmode;
-					if (SDL_GetCurrentDisplayMode(i, &curmode) == 0)
+					if (currentDisplayIndex == i)
 					{
-						//CONS_Printf("Current Display Info:\n");
-						//CONS_Printf("  Resolution: %dx%d\n", curmode.w, curmode.h);
-						//CONS_Printf("  Refresh rate: %d Hz\n", curmode.refresh_rate);
-
-						if (cv_grframebuffer.value && ((vid.width > curmode.w) || (vid.height > curmode.h))) //framebuffer downsampler thinge
+						SDL_DisplayMode curmode;
+						if (SDL_GetCurrentDisplayMode(i, &curmode) == 0)
 						{
-							downsample = true;
-							RefreshSDLSurface();
-						}
+							//CONS_Printf("Current Display Info:\n");
+							//CONS_Printf("  Resolution: %dx%d\n", curmode.w, curmode.h);
+							//CONS_Printf("  Refresh rate: %d Hz\n", curmode.refresh_rate);
 
-						if (cv_fullscreen.value == 2) //exclusive
-							SDLSetMode(curmode.w, curmode.h, true);
-						else if (cv_fullscreen.value == 1) //borderless sdl thing
-							SDLSetMode(vid.width, vid.height, true);
-						else //windowed mode
-							SDLSetMode(vid.width, vid.height, false);
+							if (cv_grframebuffer.value && ((vid.width > curmode.w) || (vid.height > curmode.h))) //framebuffer downsampler thinge
+							{
+								downsample = true;
+								RefreshSDLSurface();
+							}
+
+							if (cv_fullscreen.value == 2) //exclusive
+								SDLSetMode(curmode.w, curmode.h, true);
+							else if (cv_fullscreen.value == 1) //borderless sdl thing
+								SDLSetMode(vid.width, vid.height, true);
+							else //windowed mode
+								SDLSetMode(vid.width, vid.height, false);
+						}
+						break; // found our current display break outta here
 					}
-					break; // found our current display break outta here
 				}
+				previousDisplayIndex = currentDisplayIndex;
 			}
-			previousDisplayIndex = currentDisplayIndex;
 		}
 	}
 }
