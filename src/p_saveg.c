@@ -662,6 +662,8 @@ static void P_LocalUnArchiveWorld(void)
 
 	memcpy(preservedSectors, sectors, numsectors * sizeof(sector_t));
 
+	UINT32 sectorSize = READUINT32(get);
+	UINT32 lineSize = READUINT32(get);
 	READMEM(get, sectors, numsectors * sizeof(sectors[0]));
 	READMEM(get, lines, numlines * sizeof(lines[0]));
 
@@ -4458,7 +4460,7 @@ void P_SaveGameState(savestate_t* savestate)
 	size_t s = 0;
 	int mobjnum = 1;
 
-	save_p = savestate->buffer;
+	save_p = ((unsigned char*)savestate->buffer);
 
 	WRITEINT16(save_p, gamemap);
 	WRITEUINT32(save_p, globalmobjnum);
