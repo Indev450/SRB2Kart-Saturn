@@ -25,6 +25,7 @@
 */
 #define MAX_QUIT_FUNCS     16
 
+extern double tic_frequency;
 
 /**	\brief Graphic system had started up
 */

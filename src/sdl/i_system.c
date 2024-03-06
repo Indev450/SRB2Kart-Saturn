@@ -3180,6 +3180,7 @@ static int lastTimeFudge = -1;
 extern consvar_t cv_timefudge;
 
 static Uint64 timer_frequency;
+double tic_frequency;
 
 precise_t I_GetPreciseTime(void)
 {
@@ -3197,7 +3198,7 @@ void I_SetTime(tic_t tic, int fudge, boolean useAbsoluteFudge)
 {
 	tic = max(tic, SDL_GetTicks());
 	if (useAbsoluteFudge)
-		elapsed = elapsed + (fudge / 100) * SDL_GetPerformanceFrequency();
+		elapsed = elapsed + (fudge / 100) * tic_frequency;
 }
 
 
@@ -3258,6 +3259,8 @@ void I_StartupTimer(void)
 
 	I_InitFrameTime(0, R_GetFramerateCap());
 	elapsed_frames  = 0.0;
+	
+	tic_frequency   = timer_frequency / (double)NEWTICRATE;
 }
 
 void I_Sleep(UINT32 ms)

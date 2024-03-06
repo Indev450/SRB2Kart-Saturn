@@ -577,7 +577,7 @@ static CV_PossibleValue_t netdelay_cons_t[] = { {0, "MIN"}, {250, "MAX"}, {0, NU
 consvar_t cv_netdelay = { "netdelay", "0", 0, netdelay_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL };
 
 static CV_PossibleValue_t netjitter_cons_t[] = { {0, "MIN"}, {5, "MAX"}, {0, NULL} };
-consvar_t cv_netjitter = { "netjitter", "0", 0, netdelay_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL };
+consvar_t cv_netjitter = { "netjitter", "0", 0, netjitter_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL };
 
 consvar_t cv_netsmoothing = { "netsmoothing", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL };
 
@@ -858,7 +858,7 @@ extern double netUpdateFudge;
 void Command_Autotimefudge(void)
 {
 	// you can use SDL_GetPerformanceFrequency() instead of tic_frequency to get more precise timings
-	double startTime = ((double)I_GetPreciseTime() / I_GetPrecisePrecision());
+	double startTime = ((double)I_GetPreciseTime() / tic_frequency);
 	double packetTimeFudge[64];
 	int numReceivedPackets = 0;
 	const double numSampleTics = 10;
@@ -871,16 +871,16 @@ void Command_Autotimefudge(void)
 		return;
 	}
 
-	lastTimeReceivedPacket = (double)SDL_GetPerformanceCounter() / I_GetPrecisePrecision();
-	while ((abs((double)SDL_GetPerformanceCounter() / I_GetPrecisePrecision() - startTime) < numSampleTics) || numReceivedPackets < 10)
+	lastTimeReceivedPacket = (double)SDL_GetPerformanceCounter() / tic_frequency;
+	while ((abs((double)SDL_GetPerformanceCounter() / tic_frequency - startTime) < numSampleTics) || numReceivedPackets < 10)
 	{
 		I_NetGet();
 		if ((doomcom->remotenode != -1)) // Packet received
 		{
-			packetTimeFudge[numReceivedPackets] = 100 * abs(((double)I_GetPreciseTime() / I_GetPrecisePrecision() - lastTimeReceivedPacket) - netUpdateFudge); // gets the time fudge offset (0-100)
+			packetTimeFudge[numReceivedPackets] = 100 * abs(((double)I_GetPreciseTime() / tic_frequency - lastTimeReceivedPacket) - netUpdateFudge); // gets the time fudge offset (0-100)
 			CONS_Printf("%i: %d\n", numReceivedPackets, packetTimeFudge[numReceivedPackets]);
 			numReceivedPackets++;
-			lastTimeReceivedPacket = (double)I_GetPreciseTime() / I_GetPrecisePrecision();
+			lastTimeReceivedPacket = (double)I_GetPreciseTime() / tic_frequency;
 		}
 	}
 
