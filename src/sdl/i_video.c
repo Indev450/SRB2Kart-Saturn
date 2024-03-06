@@ -164,11 +164,6 @@ static       SDL_bool    usesdl2soft = SDL_FALSE;
 static       SDL_bool    borderlesswindow = SDL_FALSE;
 static 		 SDL_DisplayMode currentDisplayMode;
 
-static boolean displayinit = false;
-static int currentDisplayIndex = -1;
-static int previousDisplayIndex = -1;
-static int numDisplays = -1;
-
 // SDL2 vars
 SDL_Window   *window;
 SDL_Renderer *renderer;
@@ -801,16 +796,7 @@ static INT32 SDLJoyAxis(const Sint16 axis, evtype_t which)
 	return raxis;
 }
 
-static void SDL_CheckDisplays(void)
-{
-	if (!displayinit)
-	{
-		numDisplays = SDL_GetNumVideoDisplays();
-		displayinit = true;
-	}
-
-	currentDisplayIndex = SDL_GetWindowDisplayIndex(window);
-}
+boolean displayinit = false;
 
 static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 {
@@ -818,6 +804,10 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 	static SDL_bool mousefocus = SDL_TRUE;
 	static SDL_bool kbfocus = SDL_TRUE;
 	static SDL_bool windowmoved = SDL_FALSE;
+	
+	static int currentDisplayIndex = -1;
+	static int previousDisplayIndex = -1;
+	static int numDisplays = -1;
 
 	switch (evt.event)
 	{
@@ -881,12 +871,19 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 
 	if (windowmoved)
 	{
-		SDL_CheckDisplays();
+		if (!displayinit) // dont need to recheck for new displays i think noone adds a display while playing kart lmkao
+		{
+			numDisplays = SDL_GetNumVideoDisplays();
+			//CONS_Printf("Number of connected displays: %d\n", numDisplays);
+			displayinit = true;
+		}
+
 		if (numDisplays > 1)
 		{
 			currentDisplayIndex = SDL_GetWindowDisplayIndex(window);
 			if (currentDisplayIndex != previousDisplayIndex)
 			{
+				//CONS_Printf("Window has changed displays.\n");
 				for (int i = 0; i < numDisplays; ++i)
 				{
 					if (currentDisplayIndex == i)
@@ -894,6 +891,10 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 						SDL_DisplayMode curmode;
 						if (SDL_GetCurrentDisplayMode(i, &curmode) == 0)
 						{
+							//CONS_Printf("Current Display Info:\n");
+							//CONS_Printf("  Resolution: %dx%d\n", curmode.w, curmode.h);
+							//CONS_Printf("  Refresh rate: %d Hz\n", curmode.refresh_rate);
+
 							if (cv_grframebuffer.value && ((vid.width > curmode.w) || (vid.height > curmode.h))) //framebuffer downsampler thinge
 							{
 								downsample = true;
@@ -1955,6 +1956,7 @@ static UINT32 VID_GetRefreshRate(void)
 
 INT32 VID_SetMode(INT32 modeNum)
 {
+	SDL_DisplayMode balls;
 	SDLdoUngrabMouse();
 
 	vid.recalc = 1;
@@ -1991,24 +1993,16 @@ INT32 VID_SetMode(INT32 modeNum)
 		vid.modenum = -1;
 	}
 	//Impl_SetWindowName("SRB2Kart "VERSIONSTRING);
-
-	for (int i = 0; i < numDisplays; ++i)
+	
+	if (SDL_GetDesktopDisplayMode(0, &balls) == 0)
 	{
-		if (currentDisplayIndex == i)
+		if (cv_grframebuffer.value && ((vid.width > balls.w) || (vid.height > balls.h))) //framebuffer downsampler thinge
 		{
-			SDL_DisplayMode curmode;
-			if (SDL_GetCurrentDisplayMode(i, &curmode) == 0)
-			{
-				if (cv_grframebuffer.value && ((vid.width > curmode.w) || (vid.height > curmode.h))) //framebuffer downsampler thinge
-				{
-					downsample = true;
-					RefreshSDLSurface();
-				}
-				else
-					downsample = false;
-			}
-			break; // found our current display break outta here
+			downsample = true;
+			RefreshSDLSurface();
 		}
+		else
+			downsample = false;
 	}
 
 	SDLSetMode(vid.width, vid.height, USE_FULLSCREEN);
@@ -2073,19 +2067,9 @@ static SDL_bool Impl_CreateWindow(SDL_bool fullscreen)
 	// Create a window
 	if (cv_fullscreen.value == 2)
 	{
-		for (int i = 0; i < numDisplays; ++i)
-		{
-			if (currentDisplayIndex == i)
-			{
-				SDL_DisplayMode curmode;
-				if (SDL_GetCurrentDisplayMode(i, &curmode) == 0)
-				{
-					window = SDL_CreateWindow("SRB2Kart "VERSIONSTRING, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-						curmode.w, curmode.h, flags);
-					break; // found our current display break outta here
-				}
-			}
-		}
+		SDL_GetDesktopDisplayMode(0, &currentDisplayMode);
+		window = SDL_CreateWindow("SRB2Kart "VERSIONSTRING, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+			 currentDisplayMode.w, currentDisplayMode.h, flags);
 	}
 	else
 		window = SDL_CreateWindow("SRB2Kart "VERSIONSTRING, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
@@ -2441,9 +2425,6 @@ void I_StartupGraphics(void)
 
 	// Fury: we do window initialization after GL setup to allow
 	// SDL_GL_LoadLibrary to work well on Windows
-
-	//check for display things
-	SDL_CheckDisplays();
 
 	// Create window
 	//Impl_CreateWindow(USE_FULLSCREEN);
