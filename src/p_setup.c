@@ -2908,6 +2908,8 @@ boolean P_SetupLevel(boolean skipprecip)
 	R_ClearLevelSplats();
 #endif
 
+	mobjcache = NULL;
+
 	R_InitializeLevelInterpolators();
 
 	P_InitThinkers();
