@@ -163,7 +163,6 @@ static       SDL_bool    exposevideo = SDL_FALSE;
 static       SDL_bool    usesdl2soft = SDL_FALSE;
 static       SDL_bool    borderlesswindow = SDL_FALSE;
 static 		 SDL_DisplayMode currentDisplayMode;
-static 		 SDL_DisplayMode currentWindowMode;
 
 // SDL2 vars
 SDL_Window   *window;
@@ -215,6 +214,8 @@ static SDL_bool Impl_CreateWindow(SDL_bool fullscreen);
 //static void Impl_SetWindowName(const char *title);
 static void Impl_SetWindowIcon(void);
 
+boolean downsample = false;
+
 void RefreshSDLSurface(void)
 {
 	OglSdlSurface(vid.width, vid.height);
@@ -229,7 +230,6 @@ static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen)
 	Uint32 amask;
 	int bpp = 16;
 	int sw_texture_format = SDL_PIXELFORMAT_ABGR8888;
-	int index = SDL_GetWindowDisplayIndex(window);
 
 	realwidth = vid.width;
 	realheight = vid.height;
@@ -245,8 +245,7 @@ static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen)
 		else if (fullscreen && cv_fullscreen.value == 2)
 		{
 			wasfullscreen = SDL_TRUE;
-			SDL_GetDesktopDisplayMode(index, &currentWindowMode);
-			SDL_SetWindowSize(window, currentWindowMode.w, currentWindowMode.h);
+			SDL_SetWindowSize(window, width, height);
 			SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN);
 		}
 		else // windowed mode
@@ -280,8 +279,7 @@ static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen)
 		else if (fullscreen && cv_fullscreen.value == 2)
 		{
 			wasfullscreen = SDL_TRUE;
-			SDL_GetDesktopDisplayMode(index, &currentWindowMode);
-			SDL_SetWindowSize(window, currentWindowMode.w, currentWindowMode.h);
+			SDL_SetWindowSize(window, width, height);
 			SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN);
 		}
 	}
@@ -798,11 +796,18 @@ static INT32 SDLJoyAxis(const Sint16 axis, evtype_t which)
 	return raxis;
 }
 
+boolean displayinit = false;
+
 static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 {
 	static SDL_bool firsttimeonmouse = SDL_TRUE;
 	static SDL_bool mousefocus = SDL_TRUE;
 	static SDL_bool kbfocus = SDL_TRUE;
+	static SDL_bool windowmoved = SDL_FALSE;
+	
+	static int currentDisplayIndex = -1;
+	static int previousDisplayIndex = -1;
+	static int numDisplays = -1;
 
 	switch (evt.event)
 	{
@@ -822,6 +827,9 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 			break;
 		case SDL_WINDOWEVENT_MAXIMIZED:
 			break;
+		case SDL_WINDOWEVENT_MOVED:
+			windowmoved = SDL_TRUE;
+            break;
 	}
 
 	if (mousefocus && kbfocus)
@@ -861,6 +869,52 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 		}
 	}
 
+	if (windowmoved)
+	{
+		currentDisplayIndex = SDL_GetWindowDisplayIndex(window);
+
+		if (!displayinit) // dont need to recheck for new displays i think noone adds a display while playing kart lmkao
+		{
+			numDisplays = SDL_GetNumVideoDisplays();
+			//CONS_Printf("Number of connected displays: %d\n", numDisplays);
+			displayinit = true;
+		}
+
+		if (currentDisplayIndex != previousDisplayIndex)
+		{
+			//CONS_Printf("Window has changed displays.\n");
+			for (int i = 0; i < numDisplays; ++i)
+			{
+				if (currentDisplayIndex == i)
+				{
+					SDL_DisplayMode curmode;
+					if (SDL_GetCurrentDisplayMode(i, &curmode) == 0)
+					{
+						//CONS_Printf("Current Display Info:\n");
+						//CONS_Printf("  Resolution: %dx%d\n", curmode.w, curmode.h);
+						//CONS_Printf("  Refresh rate: %d Hz\n", curmode.refresh_rate);
+						
+						if (cv_grframebuffer.value && ((vid.width > curmode.w) || (vid.height > curmode.h))) //framebuffer downsampler thinge
+						{
+							downsample = true;
+							RefreshSDLSurface();
+						}
+						else
+							downsample = false;
+
+						if (cv_fullscreen.value == 2) //exclusive
+							SDLSetMode(curmode.w, curmode.h, true);
+						else if (cv_fullscreen.value == 1) //borderless sdl thing
+							SDLSetMode(vid.width, vid.height, true);
+						else //windowed mode
+							SDLSetMode(vid.width, vid.height, false);
+					}
+					break; // found our current display break outta here
+				}
+			}
+			previousDisplayIndex = currentDisplayIndex;
+		}
+	}
 }
 
 static void Impl_HandleKeyboardEvent(SDL_KeyboardEvent evt, Uint32 type)
@@ -1900,6 +1954,8 @@ static UINT32 VID_GetRefreshRate(void)
 
 INT32 VID_SetMode(INT32 modeNum)
 {
+	int index = SDL_GetWindowDisplayIndex(window);
+	SDL_DisplayMode balls;
 	SDLdoUngrabMouse();
 
 	vid.recalc = 1;
@@ -1936,6 +1992,17 @@ INT32 VID_SetMode(INT32 modeNum)
 		vid.modenum = -1;
 	}
 	//Impl_SetWindowName("SRB2Kart "VERSIONSTRING);
+	
+	if (SDL_GetCurrentDisplayMode(index, &balls) == 0)
+	{
+		if (cv_grframebuffer.value && ((vid.width > balls.w) || (vid.height > balls.h))) //framebuffer downsampler thinge
+		{
+			downsample = true;
+			RefreshSDLSurface();
+		}
+		else
+			downsample = false;
+	}
 
 	SDLSetMode(vid.width, vid.height, USE_FULLSCREEN);
 	Impl_VideoSetupBuffer();
