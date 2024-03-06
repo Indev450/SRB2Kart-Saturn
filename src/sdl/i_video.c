@@ -239,7 +239,6 @@ static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen)
 		if (fullscreen && cv_fullscreen.value == 1)
 		{
 			wasfullscreen = SDL_TRUE;
-			SDL_SetWindowSize(window, width, height);
 			SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP);
 		}
 		else if (fullscreen && cv_fullscreen.value == 2)
