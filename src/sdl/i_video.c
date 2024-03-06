@@ -233,16 +233,10 @@ static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen)
 
 	if (window)
 	{
-		if (fullscreen && cv_fullscreen.value == 1)
+		if (fullscreen)
 		{
 			wasfullscreen = SDL_TRUE;
 			SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP);
-		}
-		else if (fullscreen && cv_fullscreen.value == 2)
-		{
-			wasfullscreen = SDL_TRUE;
-			SDL_SetWindowSize(window, realwidth, realheight);
-			SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN);
 		}
 		else // windowed mode
 		{
@@ -264,19 +258,10 @@ static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen)
 		Impl_CreateWindow(fullscreen);
 		Impl_SetWindowIcon();
 		wasfullscreen = fullscreen;
-		if (!fullscreen)
-			SDL_SetWindowSize(window, width, height);
-		else if (fullscreen && cv_fullscreen.value == 1)
+		SDL_SetWindowSize(window, width, height);
+		if (fullscreen)
 		{
-			wasfullscreen = SDL_TRUE;
-			SDL_SetWindowSize(window, width, height);
 			SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP);
-		}
-		else if (fullscreen && cv_fullscreen.value == 2)
-		{
-			wasfullscreen = SDL_TRUE;
-			SDL_SetWindowSize(window, realwidth, realheight);
-			SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN);
 		}
 	}
 
@@ -1961,10 +1946,8 @@ static SDL_bool Impl_CreateWindow(SDL_bool fullscreen)
 	if (window != NULL)
 		return SDL_FALSE;
 
-	if (fullscreen && cv_fullscreen.value == 1)
+	if (fullscreen)
 		flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
-	else if (fullscreen && cv_fullscreen.value == 2)
-		flags |= SDL_WINDOW_FULLSCREEN;
 
 	if (borderlesswindow)
 		flags |= SDL_WINDOW_BORDERLESS;
@@ -1991,11 +1974,7 @@ static SDL_bool Impl_CreateWindow(SDL_bool fullscreen)
 #endif
 
 	// Create a window
-	if (cv_fullscreen.value == 2)
-		window = SDL_CreateWindow("SRB2Kart "VERSIONSTRING, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-			vid.width, vid.height, flags);
-	else
-		window = SDL_CreateWindow("SRB2Kart "VERSIONSTRING, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+	window = SDL_CreateWindow("SRB2Kart "VERSIONSTRING, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
 			realwidth, realheight, flags);
 
 	if (window == NULL)
