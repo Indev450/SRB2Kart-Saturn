@@ -6331,7 +6331,6 @@ boolean TryRunTics(tic_t realtics)
 				ExtraDataTicker();
 				gametic++;
 				simtic = gametic; // game state is reset, we wanna resimulate from here
-
 				consistancy[gametic%TICQUEUE] = Consistancy();
 				
 				if (update_stats)
@@ -6586,7 +6585,7 @@ static void RunSimulations()
 	issimulation = true;
 	con_muted = true;
 
-	simStartTime = I_GetPrecisePrecision(); //for benchmarking
+	simStartTime = I_GetPreciseTime(); //for benchmarking
 
 	// localangle_sim[liveTic % MAXSIMULATIONS] = localangle;
 	for (int i = 0; i < numToSimulate; i++)
@@ -6704,16 +6703,6 @@ static void RunSimulations()
 			player_t *redflagplayer = NULL;
 			player_t *blueflagplayer = NULL;
 
-#define ADJUSTPOSITION(obj, player)                                                                       \
-	do                                                                                                    \
-	{                                                                                                     \
-		P_UnsetThingPosition(obj);                                                                        \
-		obj->x += steadyplayers[player].histx[histIndex] - steadyplayers[player].histx[simtic - gametic]; \
-		obj->y += steadyplayers[player].histy[histIndex] - steadyplayers[player].histy[simtic - gametic]; \
-		obj->z += steadyplayers[player].histz[histIndex] - steadyplayers[player].histz[simtic - gametic]; \
-		P_SetThingPosition(obj);                                                                          \
-	} while (0)
-
 			for (int i = 0; i < MAXPLAYERS; i++)
 			{
 				if (playeringame[i])
@@ -6723,24 +6712,11 @@ static void RunSimulations()
 					if (players[i].gotflag & GF_BLUEFLAG)
 						blueflagplayer = &players[i];
 				}
-
-				//if (players[i].followmobj)
-				//	ADJUSTPOSITION(players[i].followmobj, i);
 			}
-
-			/*for (mobj = (mobj_t *)thlist[THINK_MOBJ].next; mobj != (mobj_t *)&thlist[THINK_MOBJ]; mobj = (mobj_t *)mobj->thinker.next)
-			{
-				if (mobj->flags2 & MF2_SHIELD && mobj->target != NULL && mobj->target->player != NULL && mobj->target != players[consoleplayer].mo)
-					ADJUSTPOSITION(mobj, mobj->target->player - players);
-				else if (mobj->type == MT_BLUEFLAG && blueflagplayer)
-					ADJUSTPOSITION(mobj, blueflagplayer - players);
-				else if (mobj->type == MT_REDFLAG && redflagplayer)
-					ADJUSTPOSITION(mobj, redflagplayer - players);
-			}*/
 		}
 	}
 
-	simEndTime = I_GetPrecisePrecision();
+	simEndTime = I_GetPreciseTime();
 
 	rendergametic = gametic;
 }
@@ -6822,6 +6798,7 @@ void DetermineNetConditions()
 		recommendedSimulateTics = maxRTT + 1;
 	}
 }
+
 
 /*void MakeNetDebugString()
 {
