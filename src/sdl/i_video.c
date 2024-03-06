@@ -893,12 +893,14 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 						//CONS_Printf("Current Display Info:\n");
 						//CONS_Printf("  Resolution: %dx%d\n", curmode.w, curmode.h);
 						//CONS_Printf("  Refresh rate: %d Hz\n", curmode.refresh_rate);
-
+						
 						if (cv_grframebuffer.value && ((vid.width > curmode.w) || (vid.height > curmode.h))) //framebuffer downsampler thinge
 						{
 							downsample = true;
 							RefreshSDLSurface();
 						}
+						else
+							downsample = false;
 
 						if (cv_fullscreen.value == 2) //exclusive
 							SDLSetMode(curmode.w, curmode.h, true);
@@ -1998,6 +2000,8 @@ INT32 VID_SetMode(INT32 modeNum)
 			downsample = true;
 			RefreshSDLSurface();
 		}
+		else
+			downsample = false;
 	}
 
 	SDLSetMode(vid.width, vid.height, USE_FULLSCREEN);
