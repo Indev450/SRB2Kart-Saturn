@@ -6307,7 +6307,7 @@ boolean TryRunTics(tic_t realtics)
 			if (simtic > gametic && gameStateBufferIsValid[gametic % MAXLOCALSAVESTATES])
 			{
 				P_LoadGameState(&gameStateBuffer[gametic % MAXLOCALSAVESTATES]);
-				if (Consistancy() != consistancy[gametic % BACKUPTICS])
+				if (Consistancy() != consistancy[gametic % TICQUEUE])
 					// CONS_Alert(CONS_WARNING, "Saved state at %d isn't consistent with recorded checksum\n", gametic);
 					DEBFILE(va("NETPLUS: Saved state at %d isn't consistent with recorded checksum\n", gametic));
 			}
