@@ -871,6 +871,8 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 
 	if (windowmoved)
 	{
+		currentDisplayIndex = SDL_GetWindowDisplayIndex(window);
+
 		if (!displayinit) // dont need to recheck for new displays i think noone adds a display while playing kart lmkao
 		{
 			numDisplays = SDL_GetNumVideoDisplays();
@@ -878,41 +880,37 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 			displayinit = true;
 		}
 
-		if (numDisplays > 1)
+		if (currentDisplayIndex != previousDisplayIndex)
 		{
-			currentDisplayIndex = SDL_GetWindowDisplayIndex(window);
-			if (currentDisplayIndex != previousDisplayIndex)
+			//CONS_Printf("Window has changed displays.\n");
+			for (int i = 0; i < numDisplays; ++i)
 			{
-				//CONS_Printf("Window has changed displays.\n");
-				for (int i = 0; i < numDisplays; ++i)
+				if (currentDisplayIndex == i)
 				{
-					if (currentDisplayIndex == i)
+					SDL_DisplayMode curmode;
+					if (SDL_GetCurrentDisplayMode(i, &curmode) == 0)
 					{
-						SDL_DisplayMode curmode;
-						if (SDL_GetCurrentDisplayMode(i, &curmode) == 0)
+						//CONS_Printf("Current Display Info:\n");
+						//CONS_Printf("  Resolution: %dx%d\n", curmode.w, curmode.h);
+						//CONS_Printf("  Refresh rate: %d Hz\n", curmode.refresh_rate);
+
+						if (cv_grframebuffer.value && ((vid.width > curmode.w) || (vid.height > curmode.h))) //framebuffer downsampler thinge
 						{
-							//CONS_Printf("Current Display Info:\n");
-							//CONS_Printf("  Resolution: %dx%d\n", curmode.w, curmode.h);
-							//CONS_Printf("  Refresh rate: %d Hz\n", curmode.refresh_rate);
-
-							if (cv_grframebuffer.value && ((vid.width > curmode.w) || (vid.height > curmode.h))) //framebuffer downsampler thinge
-							{
-								downsample = true;
-								RefreshSDLSurface();
-							}
-
-							if (cv_fullscreen.value == 2) //exclusive
-								SDLSetMode(curmode.w, curmode.h, true);
-							else if (cv_fullscreen.value == 1) //borderless sdl thing
-								SDLSetMode(vid.width, vid.height, true);
-							else //windowed mode
-								SDLSetMode(vid.width, vid.height, false);
+							downsample = true;
+							RefreshSDLSurface();
 						}
-						break; // found our current display break outta here
+
+						if (cv_fullscreen.value == 2) //exclusive
+							SDLSetMode(curmode.w, curmode.h, true);
+						else if (cv_fullscreen.value == 1) //borderless sdl thing
+							SDLSetMode(vid.width, vid.height, true);
+						else //windowed mode
+							SDLSetMode(vid.width, vid.height, false);
 					}
+					break; // found our current display break outta here
 				}
-				previousDisplayIndex = currentDisplayIndex;
 			}
+			previousDisplayIndex = currentDisplayIndex;
 		}
 	}
 }
