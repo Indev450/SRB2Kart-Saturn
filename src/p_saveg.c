@@ -3097,13 +3097,14 @@ static void P_LocalUnArchiveThinkers()
 {
 	thinker_t *thinker;
 	mobj_t* mobj;
-	//mobj_t* currentmobj;
 	UINT8 tclass;
 	UINT8 restoreExecutors = false;
-	int32_t i, j, list;
+	INT32 i, j, list;
+	int skyviewid = 0;
+	int skycenterid = 0;
 	thinker_t newthinkers[NUM_THINKERLISTS] = { 0 };
 	static thinker_t* thinkersbytype[tc_end][16384];
-	static uint32_t numthinkersbytype[tc_end];
+	static int numthinkersbytype[tc_end];
 	static mobjloclink_t mobjByLoc[32768][MAXNUMMOBJSBYLOC];
 	static int numMobjsByLoc[32768];
 	static mobj_t* mobjByNum[16384];
@@ -3119,6 +3120,18 @@ static void P_LocalUnArchiveThinkers()
 	if (READUINT32(save_p) != ARCHIVEBLOCK_THINKERS)
 		I_Error("Bad SaveState at archive block Thinkers");
 
+	// preserve sky box indexes
+	/*  Probably unused
+	for (i = 0; i < 16; i++)
+	{
+		if (skyboxmo[0] == skyboxviewpnts[i])
+			skyviewid = i; // save id just in case
+		if (skyboxmo[1] == skyboxcenterpnts[i])
+			skycenterid = i; // save id just in case
+		skyboxviewpnts[i] = NULL;
+		skyboxcenterpnts[i] = NULL;
+	}
+	*/
 	skyboxmo[0] = skyboxmo[1] = NULL;
 
 	// sort thinkers into maps to speed up replacement searches
@@ -3129,7 +3142,7 @@ static void P_LocalUnArchiveThinkers()
 
 		for (thinker = thlist[i].next; thinker != &thlist[i]; thinker = thinker->next)
 		{
-			if (thinker->function.acp1 == P_RemoveThinkerDelayed || thinker->function.acp1 == (actionf_p1)P_NullPrecipThinker)
+			if (thinker->function.acp1 == P_RemoveThinkerDelayed)
 				continue;
 			for (j = 0; j < tc_end; j++)
 			{
@@ -3157,12 +3170,13 @@ static void P_LocalUnArchiveThinkers()
 
 	// remove from item respawn queues
 	iquetail = iquehead = 0;
+	waypointcap = NULL;
 
 	// clear sector thinker pointers so they don't point to non-existant thinkers for all of eternity
 	for (i = 0; i < (int)numsectors; i++)
 	{
 		mobj_t* thing = sectors[i].thinglist, *next;
-		sectors[i].floordata = sectors[i].ceilingdata = sectors[i].lightingdata = NULL;
+		sectors[i].floordata = sectors[i].ceilingdata = sectors[i].lightingdata;
 
 		// clear nothinkers too
 		while (thing)
@@ -3183,11 +3197,8 @@ static void P_LocalUnArchiveThinkers()
 	{
 		for (;;)
 		{
-			msecnode_t* preserveTouchingSectorlist = NULL;
-			sector_t* preserveSubsector = NULL;
-
 			tclass = READUINT8(save_p);
-			
+
 			if (tclass == 0xFF)
 				break; // next list
 
@@ -3224,7 +3235,7 @@ static void P_LocalUnArchiveThinkers()
 			{
 				for (j = numthinkersbytype[tclass] - 1; j >= 0; j--)
 				{
-					if (!thinkersbytype[tclass][j])
+					if (thinkersbytype[tclass][j] == NULL)
 					{
 						numthinkersbytype[tclass]--;
 						continue;
@@ -3252,7 +3263,7 @@ static void P_LocalUnArchiveThinkers()
 				}
 
 				// detach any playing sounds from this object if we can (still need to work on doing this properly!)
-				// S_DetachChannelsFromOrigin((mobj_t*)newthinker);
+				//S_DetachChannelsFromOrigin((mobj_t*)newthinker);
 
 				// unlink it from the old list (if it's not a nothinker)
 				if (!(tclass == tc_mobj && (((mobj_t*)newthinker)->flags & MF_NOTHINK)))
@@ -3392,21 +3403,17 @@ static void P_LocalUnArchiveThinkers()
 	for (i = 0; i < NUM_THINKERLISTS; i++)
 	{
 		thinker_t* next;
-		int ind = 0;
 
 		for (thinker = thlist[i].next; thinker != &thlist[i]; thinker = next)
 		{
 			next = thinker->next;
 
-			ind++;
 			thinker->references = 0;
 
 			if (thinker->function.acp1 == (actionf_p1)P_MobjThinker)
 				P_RemoveSavegameMobj((mobj_t *)thinker, true);
 			else if (thinker->function.acp1 == (actionf_p1)P_NullPrecipThinker)
-				// P_RemovePrecipMobj((precipmobj_t*)thinker); // i bet this is gonna break :D
-				// the problem was in using NetUnarchiving, we have to use our function to fix the weather
-				continue;
+				P_RemovePrecipMobj((precipmobj_t*)thinker); // i bet this is gonna break :D
 			else
 			{
 				// we can remove this thinker manually, bye!
@@ -3415,7 +3422,7 @@ static void P_LocalUnArchiveThinkers()
 				Z_Free(thinker);
 			}
 		}
-
+		
 		// connect the new linker list to the old linker list
 		newthinkers[i].prev->next = thlist[i].next;
 		thlist[i].next->prev = newthinkers[i].prev;
@@ -3442,6 +3449,7 @@ static void P_LocalUnArchiveThinkers()
 
 	// restore pointers
 #define RELINK(var) if (var) { UINT32 index = (UINT32)var; var = NULL; P_SetTarget(&var, mobjByNum[index]); }
+
 	for (thinker = thlist[THINK_MOBJ].next; thinker != &thlist[THINK_MOBJ]; thinker = thinker->next)
 	{
 		if (thinker->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
@@ -3486,6 +3494,10 @@ static void P_LocalUnArchiveThinkers()
 		}
 	}
 #undef RELINK
+
+	// restore skyboxes
+	//skyboxmo[0] = skyboxviewpnts[(skyviewid >= 0) ? skyviewid : 0];
+	//skyboxmo[1] = skyboxcenterpnts[(skycenterid >= 0) ? skycenterid : 0];
 }
 
 //
@@ -4415,8 +4427,8 @@ void P_SaveNetGame(void)
 		P_NetArchiveThinkers();
 		P_NetArchiveSpecials();
 	}
-
 	LUA_Archive();
+
 	WRITEUINT8(save_p, 0x1d); // consistency marker
 }
 
@@ -4517,16 +4529,18 @@ void P_SaveGameState(savestate_t* savestate)
 		}
 	}
 
-	P_NetArchiveMisc();
-	P_LocalArchivePlayers();
-	P_LocalArchiveWorld();
-	P_LocalArchivePolyObjects();
-	P_LocalArchiveThinkers();
-	P_NetArchiveSpecials();
-	P_LocalArchiveCameras();
-	LUA_Archive();
+	if (gamestate == GS_LEVEL)
+	{
+		P_NetArchiveMisc();
+		P_LocalArchivePlayers();
+		P_LocalArchiveWorld();
+		P_LocalArchivePolyObjects();
+		P_LocalArchiveThinkers();
+		P_NetArchiveSpecials();
+		P_LocalArchiveCameras();
+	}
 
-	//P_ArchiveLuabanksAndConsistency();
+	LUA_Archive();
 }
 
 // P_LoadGameState is a within-level-only mechanism for loading the game state. It must not be used cross level. Used for simulation backtracking.
@@ -4535,7 +4549,7 @@ boolean P_LoadGameState(const savestate_t* savestate)
 {
 	INT16 savedGameMap;
 	
-	save_p = (unsigned char *)(uintptr_t)savestate->buffer;
+	save_p = ((unsigned char*)savestate->buffer);
 
 	savedGameMap = READINT16(save_p);
 	globalmobjnum = READUINT32(save_p);
@@ -4550,13 +4564,16 @@ boolean P_LoadGameState(const savestate_t* savestate)
 	CV_LoadNetVars(&save_p, true);
 	con_muted = false;
 
-	P_NetUnArchiveMisc(true);
-	P_LocalUnArchivePlayers();
-	P_LocalUnArchiveWorld();
-	P_LocalUnArchivePolyObjects();
-	P_LocalUnArchiveThinkers();
-	P_NetUnArchiveSpecials();
-	P_LocalUnArchiveCameras();
+	if (gamestate == GS_LEVEL)
+	{
+		P_NetUnArchiveMisc(true);
+		P_LocalUnArchivePlayers();
+		P_LocalUnArchiveWorld();
+		P_LocalUnArchivePolyObjects();
+		P_LocalUnArchiveThinkers();
+		P_NetUnArchiveSpecials();
+		P_LocalUnArchiveCameras();
+	}
 
 	con_muted = true;
 	LUA_UnArchive();
@@ -4564,8 +4581,6 @@ boolean P_LoadGameState(const savestate_t* savestate)
 
 	// This is stupid and hacky _squared_, but it's in the net load code and it says it might work, so I guess it might work!
 	//P_SetRandSeed(P_GetInitSeed());
-
-	//P_UnArchiveLuabanksAndConsistency();
 
 	return true;
 }
