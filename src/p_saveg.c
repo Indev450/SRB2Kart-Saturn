@@ -474,7 +474,7 @@ static void P_LocalArchivePlayers(void)
 
 		player_t* player = &((player_t*)save_p)[-1];
 
-#define RELINK(var) if (var) var = (mobj_t*)var->mobjnum
+#define RELINK(var) if (var) var = (mobj_t*)(uintptr_t)var->mobjnum
 		RELINK(player->capsule);
 		RELINK(player->axis1);
 		RELINK(player->axis2);
@@ -662,8 +662,6 @@ static void P_LocalUnArchiveWorld(void)
 
 	memcpy(preservedSectors, sectors, numsectors * sizeof(sector_t));
 
-	UINT32 sectorSize = READUINT32(get);
-	UINT32 lineSize = READUINT32(get);
 	READMEM(get, sectors, numsectors * sizeof(sectors[0]));
 	READMEM(get, lines, numlines * sizeof(lines[0]));
 
@@ -1238,7 +1236,7 @@ typedef struct
 
 // special function/data size associations
 #define NOSECTOR(func, type) (actionf_p1)func, sizeof(type), 0, 0
-#define WITHSECTOR(func, type, targets) (actionf_p1)func, sizeof(type), (UINT32)&((type*)NULL)->sector, targets
+#define WITHSECTOR(func, type, targets) (actionf_p1)func, sizeof(type), (uintptr_t)&((type*)NULL)->sector, targets
 static const specialdef_t specialDefs[] =
 {
 	NOSECTOR(P_MobjThinker, mobj_t),                   // tc_mobj
@@ -2957,42 +2955,6 @@ static inline thinker_t* LoadPolydisplaceThinker(actionf_p1 thinker)
 	return &ht->thinker;
 }
 
-/*
-//
-// LoadWhatThinker
-//
-// load a what_t thinker
-//
-static inline void LoadWhatThinker(actionf_p1 thinker)
-{
-	what_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
-	ht->thinker.function.acp1 = thinker;
-}
-*/
-
-// debug lists for the confused programmer
-thinker_t* debugThinkerLists[NUM_THINKERLISTS][4096];
-mobj_t* debugMobjLists[NUM_THINKERLISTS][4096];
-int numDebugThinkers[NUM_THINKERLISTS];
-
-static void CollectDebugObjectList(void) {
-	int i;
-	for (i = 0; i < NUM_THINKERLISTS; i++) {
-		int count = 0;
-		thinker_t* test;
-		thinker_t* testNext;
-		for (test = thlist[i].next; test != &thlist[i]; test = testNext) {
-			testNext = test->next;
-			debugThinkerLists[i][count] = test;
-			debugMobjLists[i][count] = (mobj_t*)test;
-			count++;
-		}
-		numDebugThinkers[i] = count;
-	}
-}
-
-//void S_DetachChannelsFromOrigin(void* origin);
-
 typedef struct
 {
 	mobj_t* mobj;
@@ -3002,16 +2964,14 @@ typedef struct
 #define HASHLOC(x, y, z) (((x>>4)-(y>>8)+(z>>12)-(x>>16)+(y>>20)-(z>>24)+(x>>28)-(y>>24)+(z>>20)-(x>>16)+(y>>8)-(z>>4)) & 0x7FFF)
 #define MAXNUMMOBJSBYLOC 15
 
-
-
 //
 // P_LocalArchiveThinkers
 // Archives the world's thinkers locally. Used for within-level savestates
 //
 static void P_LocalArchiveThinkers(void)
 {
-	int i, j;
-	size_t s;
+	int i;
+	size_t s, j;
 	const thinker_t* thinker;
 	mobj_t* savedMobj;
 	UINT8* original = save_p;
@@ -3021,7 +2981,9 @@ static void P_LocalArchiveThinkers(void)
 	{
 // #define RELINK(var) if (var != NULL) var = (mobj_t*)(var->mobjnum)
 //thanks to GoldenTails for pointing out some nuances
-#define RELINK(var) if (var && var->mobjnum) var = (mobj_t*)(var->mobjnum) 
+
+#define RELINK(var) if (var && var->mobjnum) var = (mobj_t*)(uintptr_t)(var->mobjnum)
+
 		for (thinker = thlist[i].next; thinker != &thlist[i]; thinker = thinker->next)
 		{
 			actionf_p1 acp1 = thinker->function.acp1;
@@ -3142,7 +3104,7 @@ static void P_LocalUnArchiveThinkers()
 
 		for (thinker = thlist[i].next; thinker != &thlist[i]; thinker = thinker->next)
 		{
-			if (thinker->function.acp1 == P_RemoveThinkerDelayed)
+			if (thinker->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 				continue;
 			for (j = 0; j < tc_end; j++)
 			{
@@ -3154,7 +3116,7 @@ static void P_LocalUnArchiveThinkers()
 			thinkersbytype[j][numthinkersbytype[j]] = thinker;
 			numthinkersbytype[j]++;
 
-			if (thinker->function.acp1 == P_MobjThinker)
+			if (thinker->function.acp1 == (actionf_p1)P_MobjThinker)
 			{
 				UINT16 locHash = HASHLOC(((mobj_t*)thinker)->x, ((mobj_t*)thinker)->y, ((mobj_t*)thinker)->z);
 
@@ -3448,7 +3410,7 @@ static void P_LocalUnArchiveThinkers()
 	}
 
 	// restore pointers
-#define RELINK(var) if (var) { UINT32 index = (UINT32)var; var = NULL; P_SetTarget(&var, mobjByNum[index]); }
+#define RELINK(var) if (var) { uintptr_t index = (uintptr_t)var; var = NULL; P_SetTarget(&var, mobjByNum[index]); }
 
 	for (thinker = thlist[THINK_MOBJ].next; thinker != &thlist[THINK_MOBJ]; thinker = thinker->next)
 	{
@@ -3483,14 +3445,14 @@ static void P_LocalUnArchiveThinkers()
 	}
 
 	// restore player pointers (the above doesn't always seem to work perhaps because playeringame is false?
-	for (int i = 0; i < MAXPLAYERS; i++)
+	for (int f = 0; f < MAXPLAYERS; f++)
 	{
 		if (playeringame[i])
 		{
-			RELINK(players[i].capsule);
-			RELINK(players[i].axis1);
-			RELINK(players[i].axis2);
-			RELINK(players[i].awayviewmobj);
+			RELINK(players[f].capsule);
+			RELINK(players[f].axis1);
+			RELINK(players[f].axis2);
+			RELINK(players[f].awayviewmobj);
 		}
 	}
 #undef RELINK
@@ -3585,7 +3547,7 @@ static void P_NetUnArchiveThinkers(boolean preserveLevel)
 	for (;;)
 	{
 		thinklistnum_t thinkerlist = THINK_MAIN;
-		thinker_t* th;
+		thinker_t* th = NULL;
 		tclass = READUINT8(save_p);
 
 		if (tclass == tc_end)
@@ -4549,7 +4511,7 @@ boolean P_LoadGameState(const savestate_t* savestate)
 {
 	INT16 savedGameMap;
 	
-	save_p = ((unsigned char*)savestate->buffer);
+	save_p = savestate->buffer;
 
 	savedGameMap = READINT16(save_p);
 	globalmobjnum = READUINT32(save_p);
