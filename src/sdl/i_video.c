@@ -1956,8 +1956,7 @@ static UINT32 VID_GetRefreshRate(void)
 
 INT32 VID_SetMode(INT32 modeNum)
 {
-	int index = SDL_GetWindowDisplayIndex(window);
-	SDL_DisplayMode balls;
+	//SDL_DisplayMode balls;
 	SDLdoUngrabMouse();
 
 	vid.recalc = 1;
@@ -1995,8 +1994,9 @@ INT32 VID_SetMode(INT32 modeNum)
 	}
 	//Impl_SetWindowName("SRB2Kart "VERSIONSTRING);
 	
-	if (SDL_GetCurrentDisplayMode(index, &balls) == 0)
+	/*if (SDL_GetWindowDisplayMode(window, &balls) == 0)
 	{
+		CONS_Printf("  Resolution: %dx%d\n", balls.w, balls.h);
 		if (cv_grframebuffer.value && ((vid.width > balls.w) || (vid.height > balls.h))) //framebuffer downsampler thinge
 		{
 			downsample = true;
@@ -2004,7 +2004,7 @@ INT32 VID_SetMode(INT32 modeNum)
 		}
 		else
 			downsample = false;
-	}
+	}*/
 
 	SDLSetMode(vid.width, vid.height, USE_FULLSCREEN);
 	Impl_VideoSetupBuffer();
