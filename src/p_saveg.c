@@ -32,6 +32,7 @@
 #include "p_polyobj.h"
 #include "lua_script.h"
 #include "p_slopes.h"
+#include "console.h"
 
 savedata_t savedata;
 UINT8 *save_p;
@@ -473,13 +474,11 @@ static void P_LocalArchivePlayers(void)
 
 		player_t* player = &((player_t*)save_p)[-1];
 
-#define RELINK(var) if (var != NULL) var = (mobj_t*)var->mobjnum
+#define RELINK(var) if (var) var = (mobj_t*)var->mobjnum
 		RELINK(player->capsule);
 		RELINK(player->axis1);
 		RELINK(player->axis2);
 		RELINK(player->awayviewmobj);
-		//RELINK(player->followmobj);
-		//RELINK(player->drone);
 #undef RELINK
 	}
 }
@@ -585,8 +584,9 @@ static void ResetSectors(void)
 		ss->floorpic_angle = ss->spawn_flrpic_angle;
 		ss->ceilingpic_angle = ss->spawn_ceilpic_angle;
 		ss->tag = ms->tag; // DON'T use P_ChangeSectorTag
-		ss->firsttag = ss->spawn_firsttag;
-		ss->nexttag = ss->spawn_nexttag;
+
+		//ss->firsttag = ss->spawn_firsttag;
+		//ss->nexttag = ss->spawn_nexttag;
 		//ss->extra_colormap = GetNetColormapFromList(READUINT32(get));
 
 		ffloor_t* floor = ss->ffloors;
@@ -635,9 +635,6 @@ static void P_LocalArchiveWorld(void)
 {
 	UINT8* put;
 
-	// paranoia something something
-	//ClearNetColormaps();
-
 	WRITEUINT32(save_p, ARCHIVEBLOCK_WORLD);
 	put = save_p;
 
@@ -657,7 +654,7 @@ static void P_LocalUnArchiveWorld(void)
 
 	if (READUINT32(get) != ARCHIVEBLOCK_WORLD)
 	{
-		I_Error("Bad SaveState at archive block World");
+		I_Error("Bad rollback savestate at archive block World");
 	}
 
 	// preserve certain local variables
@@ -3017,16 +3014,20 @@ static void P_LocalArchiveThinkers(void)
 	size_t s;
 	const thinker_t* thinker;
 	mobj_t* savedMobj;
-	executor_t* savedExecutor;
 	UINT8* original = save_p;
 	WRITEUINT32(save_p, ARCHIVEBLOCK_THINKERS);
 
 	for (i = 0; i < NUM_THINKERLISTS; i++)
 	{
-#define RELINK(var) if (var != NULL) var = (mobj_t*)(var->mobjnum)
+// #define RELINK(var) if (var != NULL) var = (mobj_t*)(var->mobjnum)
+//thanks to GoldenTails for pointing out some nuances
+#define RELINK(var) if (var && var->mobjnum) var = (mobj_t*)(var->mobjnum) 
 		for (thinker = thlist[i].next; thinker != &thlist[i]; thinker = thinker->next)
 		{
 			actionf_p1 acp1 = thinker->function.acp1;
+			if (acp1 == (actionf_p1)P_RemoveThinkerDelayed
+			  || acp1 == (actionf_p1)P_NullPrecipThinker)
+				continue;
 
 			// find the associated special def
 			for (j = 0; j < sizeof(specialDefs) / sizeof(specialDefs[0]); j++)
@@ -3053,6 +3054,7 @@ static void P_LocalArchiveThinkers(void)
 
 			if (j == tc_executor)
 			{
+				executor_t* savedExecutor;
 				savedExecutor = &((executor_t*)save_p)[-1];
 				RELINK(savedExecutor->caller);
 			}
@@ -3061,7 +3063,6 @@ static void P_LocalArchiveThinkers(void)
 		WRITEUINT8(save_p, 0xFF); // next list (or end)
 	}
 
-	//RELINK(waypointcap);
 	// now write the nothinkers...
 	// turns out that MF_NOTHINKs aren't in thinker lists lol....
 	// makes sense, but doesn't make life easier. I just wanted an object list. Ah well.
@@ -3082,7 +3083,6 @@ static void P_LocalArchiveThinkers(void)
 				RELINK(savedMobj->target);
 				RELINK(savedMobj->hnext);
 				RELINK(savedMobj->hprev);
-
 			}
 			thing = thing->snext;
 		}
@@ -3092,6 +3092,7 @@ static void P_LocalArchiveThinkers(void)
 	WRITEUINT8(save_p, 0xFF);
 }
 
+
 static void P_LocalUnArchiveThinkers()
 {
 	thinker_t *thinker;
@@ -3100,8 +3101,6 @@ static void P_LocalUnArchiveThinkers()
 	UINT8 tclass;
 	UINT8 restoreExecutors = false;
 	int32_t i, j, list;
-	//int skyviewid = 0;
-	//int skycenterid = 0;
 	thinker_t newthinkers[NUM_THINKERLISTS] = { 0 };
 	static thinker_t* thinkersbytype[tc_end][16384];
 	static uint32_t numthinkersbytype[tc_end];
@@ -3120,18 +3119,6 @@ static void P_LocalUnArchiveThinkers()
 	if (READUINT32(save_p) != ARCHIVEBLOCK_THINKERS)
 		I_Error("Bad SaveState at archive block Thinkers");
 
-	// preserve sky box indexes
-	/*  Probably unused
-	for (i = 0; i < 16; i++)
-	{
-		if (skyboxmo[0] == skyboxviewpnts[i])
-			skyviewid = i; // save id just in case
-		if (skyboxmo[1] == skyboxcenterpnts[i])
-			skycenterid = i; // save id just in case
-		skyboxviewpnts[i] = NULL;
-		skyboxcenterpnts[i] = NULL;
-	}
-	*/
 	skyboxmo[0] = skyboxmo[1] = NULL;
 
 	// sort thinkers into maps to speed up replacement searches
@@ -3354,12 +3341,6 @@ static void P_LocalUnArchiveThinkers()
 					target->ceilingdata = newthinker;
 				if (specialDefs[tclass].sectorTargets & ST_FLOORDATA)
 					target->floordata = newthinker;
-				/*
-				if (specialDefs[tclass].sectorTargets & ST_LIGHTDATA)
-					target->lightingdata = newthinker;
-				if (specialDefs[tclass].sectorTargets & ST_FADEMAPDATA)
-					target->fadecolormapdata = newthinker;
-				*/
 			}
 
 			// relink into the new thinker list
@@ -3460,7 +3441,6 @@ static void P_LocalUnArchiveThinkers()
 	}
 
 	// restore pointers
-
 #define RELINK(var) if (var) { UINT32 index = (UINT32)var; var = NULL; P_SetTarget(&var, mobjByNum[index]); }
 	for (thinker = thlist[THINK_MOBJ].next; thinker != &thlist[THINK_MOBJ]; thinker = thinker->next)
 	{
@@ -3907,9 +3887,7 @@ static void P_LocalArchivePolyObjects(void)
 {
 	P_ArchivePolyObjects();
 	/*WRITEUINT32(save_p, ARCHIVEBLOCK_POBJS);
-
 	WRITEINT32(save_p, numPolyObjects);
-
 	WRITEMEM(save_p, PolyObjects, numPolyObjects * sizeof(PolyObjects[0]));*/
 }
 
@@ -3918,13 +3896,9 @@ static void P_LocalUnArchivePolyObjects(void)
 	P_UnArchivePolyObjects();
 	/*if (READUINT32(save_p) != ARCHIVEBLOCK_POBJS)
 		I_Error("Bad savestate at archive block polyobjects");
-
 	numPolyObjects = READINT32(save_p);
-
 	READMEM(save_p, PolyObjects, numPolyObjects * sizeof(PolyObjects[0]));
-
 	bmap_freelist = NULL;
-
 	for (int i = 0; i < numPolyObjects; i++)
 	{
 		PolyObjects[i].thinker = NULL;
@@ -4470,7 +4444,7 @@ boolean P_LoadGame(INT16 mapoverride)
 
 boolean P_LoadNetGame(boolean preserveLevel)
 {
-	CV_LoadNetVars(&save_p);
+	CV_LoadNetVars(&save_p, false);
 	if (!P_NetUnArchiveMisc(preserveLevel))
 		return false;
 	P_NetUnArchivePlayers();
@@ -4496,13 +4470,6 @@ boolean P_LoadNetGame(boolean preserveLevel)
 	// This is done in P_NetUnArchiveSpecials now.
 
 	return READUINT8(save_p) == 0x1d;
-}
-
-void P_GameStateFreeMemory(savestate_t* savestate)
-{
-	for (size_t i = 0; i < sizeof(savestate->buffer) / sizeof(savestate->buffer[0]); i++) {
-    savestate->buffer[i] = 0;  // Or any other suitable value
-}
 }
 
 extern UINT64 saveStateBenchmark;
@@ -4579,7 +4546,9 @@ boolean P_LoadGameState(const savestate_t* savestate)
 		return false;
 	}
 
-	CV_LoadNetVars(&save_p);
+	con_muted = true;
+	CV_LoadNetVars(&save_p, true);
+	con_muted = false;
 
 	P_NetUnArchiveMisc(true);
 	P_LocalUnArchivePlayers();
@@ -4589,7 +4558,9 @@ boolean P_LoadGameState(const savestate_t* savestate)
 	P_NetUnArchiveSpecials();
 	P_LocalUnArchiveCameras();
 
+	con_muted = true;
 	LUA_UnArchive();
+	con_muted = false;
 
 	// This is stupid and hacky _squared_, but it's in the net load code and it says it might work, so I guess it might work!
 	//P_SetRandSeed(P_GetInitSeed());

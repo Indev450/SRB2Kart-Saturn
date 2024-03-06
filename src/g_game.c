@@ -7789,7 +7789,7 @@ void G_DoPlayDemo(char *defdemoname)
 			}
 
 		// net var data
-		CV_LoadNetVars(&demo_p);
+		CV_LoadNetVars(&demo_p, false);
 
 		// Sigh ... it's an empty demo.
 		if (*demo_p == DEMOMARKER)
@@ -7833,7 +7833,7 @@ void G_DoPlayDemo(char *defdemoname)
 #endif
 
 	// net var data
-	CV_LoadNetVars(&demo_p);
+	CV_LoadNetVars(&demo_p, false);
 
 	// Sigh ... it's an empty demo.
 	if (*demo_p == DEMOMARKER)

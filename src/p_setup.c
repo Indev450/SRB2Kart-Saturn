@@ -2736,9 +2736,6 @@ boolean P_SetupLevel(boolean skipprecip)
 	if (rendermode != render_none)
 		V_SetPaletteLump("PLAYPAL");
 
-	// Invalidate simulation save states
-	InvalidateSavestates();
-
 	// Initialize sector node list.
 	P_Initsecnode();
 

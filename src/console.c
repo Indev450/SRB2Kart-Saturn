@@ -54,6 +54,7 @@ static boolean con_started = false; // console has been initialised
        boolean con_startup = false; // true at game startup, screen need refreshing
 static boolean con_forcepic = true; // at startup toggle console translucency when first off
        boolean con_recalc;          // set true when screen size has changed
+	   boolean con_muted = false;
 
 static tic_t con_tick; // console ticker for anim or blinking prompt cursor
                         // con_scrollup should use time (currenttime - lasttime)..
@@ -1260,7 +1261,7 @@ static void CON_Print(char *msg)
 	INT32 controlchars = 0; // for color changing
 	char color = '\x80';  // keep color across lines
 
-	if (msg == NULL)
+	if (msg == NULL || con_muted)
 		return;
 
 	if (*msg == '\3') // chat text, makes ding sound
