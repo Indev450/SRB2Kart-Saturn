@@ -15,6 +15,8 @@
 #include "hw_main.h"
 #include "../i_system.h"
 
+#include "../doomdef.h"
+
 #include "../qs22j.h"
 
 
@@ -92,7 +94,7 @@ void HWR_ProcessPolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPt
 			// ran out of space, make new array double the size
 			polygonArrayAllocSize *= 2;
 			new_array = malloc(polygonArrayAllocSize * sizeof(PolygonArrayEntry));
-			memcpy(new_array, polygonArray, polygonArraySize * sizeof(PolygonArrayEntry));
+			memcpy_fast(new_array, polygonArray, polygonArraySize * sizeof(PolygonArrayEntry));
 			free(polygonArray);
 			polygonArray = new_array;
 			// also need to redo the index array, dont need to copy it though
@@ -106,7 +108,7 @@ void HWR_ProcessPolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPt
 			// need more space for vertices in unsortedVertexArray
 			unsortedVertexArrayAllocSize *= 2;
 			new_array = malloc(unsortedVertexArrayAllocSize * sizeof(FOutVector));
-			memcpy(new_array, unsortedVertexArray, unsortedVertexArraySize * sizeof(FOutVector));
+			memcpy_fast(new_array, unsortedVertexArray, unsortedVertexArraySize * sizeof(FOutVector));
 			free(unsortedVertexArray);
 			unsortedVertexArray = new_array;
 		}
@@ -122,7 +124,7 @@ void HWR_ProcessPolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPt
 		polygonArray[polygonArraySize].horizonSpecial = horizonSpecial;
 		polygonArraySize++;
 
-		memcpy(&unsortedVertexArray[unsortedVertexArraySize], pOutVerts, iNumPts * sizeof(FOutVector));
+		memcpy_fast(&unsortedVertexArray[unsortedVertexArraySize], pOutVerts, iNumPts * sizeof(FOutVector));
 		unsortedVertexArraySize += iNumPts;
 	}
 	else
@@ -333,18 +335,18 @@ void HWR_RenderBatches(void)
 			unsigned int* new_index_array;
 			finalVertexArrayAllocSize *= 2;
 			new_array = malloc(finalVertexArrayAllocSize * sizeof(FOutVector));
-			memcpy(new_array, finalVertexArray, finalVertexWritePos * sizeof(FOutVector));
+			memcpy_fast(new_array, finalVertexArray, finalVertexWritePos * sizeof(FOutVector));
 			free(finalVertexArray);
 			finalVertexArray = new_array;
 			// also increase size of index array, 3x of vertex array since
 			// going from fans to triangles increases vertex count to 3x
 			new_index_array = malloc(finalVertexArrayAllocSize * 3 * sizeof(UINT32));
-			memcpy(new_index_array, finalVertexIndexArray, finalIndexWritePos * sizeof(UINT32));
+			memcpy_fast(new_index_array, finalVertexIndexArray, finalIndexWritePos * sizeof(UINT32));
 			free(finalVertexIndexArray);
 			finalVertexIndexArray = new_index_array;
 		}
 		// write the vertices of the polygon
-		memcpy(&finalVertexArray[finalVertexWritePos], &unsortedVertexArray[polygonArray[index].vertsIndex],
+		memcpy_fast(&finalVertexArray[finalVertexWritePos], &unsortedVertexArray[polygonArray[index].vertsIndex],
 			numVerts * sizeof(FOutVector));
 		// write the indexes, pointing to the fan vertexes but in triangles format
 		firstIndex = finalVertexWritePos;

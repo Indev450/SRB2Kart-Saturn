@@ -14,6 +14,7 @@
 #include <math.h>
 
 #include "../doomstat.h"
+#include "../doomdef.h"
 
 #include "../qs22j.h"
 
@@ -1331,7 +1332,7 @@ static void HWR_SkyWallList_Add(FOutVector *wallVerts)
 		skyWallVertexArray = Z_Realloc(skyWallVertexArray, sizeof(FOutVector) * 4 * skyWallVertexArrayAllocSize, PU_STATIC, NULL);
 	}
 
-	memcpy(skyWallVertexArray + skyWallVertexArraySize * 4, wallVerts, sizeof(FOutVector) * 4);
+	memcpy_fast(skyWallVertexArray + skyWallVertexArraySize * 4, wallVerts, sizeof(FOutVector) * 4);
 	skyWallVertexArraySize++;
 }
 
@@ -4010,7 +4011,7 @@ static void HWR_SplitSprite(gr_vissprite_t *spr)
 	// copy the contents of baseWallVerts into the drawn wallVerts array
 	// baseWallVerts is used to know the final shape to easily get the vertex
 	// co-ordinates
-	memcpy(wallVerts, baseWallVerts, sizeof(baseWallVerts));
+	memcpy_fast(wallVerts, baseWallVerts, sizeof(baseWallVerts));
 
 	if (!cv_translucency.value) // translucency disabled
 	{
