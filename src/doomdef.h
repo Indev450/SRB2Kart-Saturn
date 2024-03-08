@@ -469,7 +469,6 @@ void M_StartupLocale(void);
 #define M_GetText(x) (x)
 #endif
 void *M_Memcpy(void* dest, const void* src, size_t n);
-void *memcpy_fast(void *destination, const void *source, size_t size);
 char *va(const char *format, ...) FUNCPRINTF;
 char *M_GetToken(const char *inputString);
 char *sizeu1(size_t num);

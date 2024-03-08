@@ -1016,8 +1016,7 @@ static void *cpu_cpy(void *dest, const void *src, size_t n)
 	return memcpy(dest, src, n);
 }
 
-//void *(*M_Memcpy)(void* dest, const void* src, size_t n) = cpu_cpy;
-void *(*M_Memcpy)(void* dest, const void* src, size_t n) = memcpy_fast;
+void *(*M_Memcpy)(void* dest, const void* src, size_t n) = cpu_cpy;
 
 void I_Error(const char *error, ...)
 {
