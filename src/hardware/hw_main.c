@@ -683,6 +683,10 @@ void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, boolean isc
 			slope = gr_frontsector->c_slope;
 	}
 
+	// Set fixedheight to the slope's height from our viewpoint, if we have a slope
+	if (slope)
+		fixedheight = P_GetZAt(slope, viewx, viewy);
+
 	height = FIXED_TO_FLOAT(fixedheight);
 
 	// Allocate plane-vertex buffer if we need to
