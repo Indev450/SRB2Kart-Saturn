@@ -1089,24 +1089,26 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 
 	realtop = top = wallVerts[3].y;
 	realbot = bot = wallVerts[0].y;
-	diff = top - bot;
-	
 	pegt = wallVerts[3].t;
 	pegb = wallVerts[0].t;
 
 	// Lactozilla: If both heights of a side lay on the same position, then this wall is a triangle.
 	// To avoid division by zero, which would result in a NaN, we check if the vertical difference
 	// between the two vertices is not zero.
-	if (fpclassify(diff) == FP_ZERO)
+	if (fpclassify(top - bot) == FP_ZERO && cv_splitwallfix.value)
 		pegmul = 0.0;
 	else
-		pegmul = (pegb - pegt) / diff;
+		pegmul = (pegb - pegt) / (top - bot);
 
 	endrealtop = endtop = wallVerts[2].y;
-	endrealbot = endbot = wallVerts[1].y;	
+	endrealbot = endbot = wallVerts[1].y;
 	endpegt = wallVerts[2].t;
 	endpegb = wallVerts[1].t;
-	endpegmul = (endpegb - endpegt) / (endtop - endbot);
+
+	if (fpclassify(endtop - endbot) == FP_ZERO && cv_splitwallfix.value)
+		endpegmul = 0.0;
+	else
+		endpegmul = (endpegb - endpegt) / (endtop - endbot);
 
 	for (INT32 i = 0; i < sector->numlights; i++)
 	{
@@ -1173,7 +1175,6 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 		{
 			if (solid && top > bheight)
 				top = bheight;
-
 			if (solid && endtop > endbheight)
 				endtop = endbheight;
 		}
@@ -1188,34 +1189,27 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 			bheight = realbot;
 			endbheight = endrealbot;
 		}
-
+		
 		if (cv_splitwallfix.value)
 		{
 			if (endbheight > endtop)
 				endbot = endtop;
-			
-			if (bheight >= top)
-				continue;
-
-			//Found a break;
-			bot = bheight;
-
-			if (bot < realbot)
-				bot = realbot;
-
-			endbot = min(max(endbheight, endrealbot), endtop);
 		}
+
+		if (endbheight >= endtop && bheight >= top && !cv_splitwallfix.value || bheight >= top && cv_splitwallfix.value)
+			continue;
+
+		// Found a break
+		// The heights are clamped to ensure the polygon doesn't cross itself.
+		bot = bheight;
+
+		if (bot < realbot)
+			bot = realbot;
+
+		if (cv_splitwallfix.value)
+			endbot = min(max(endbheight, endrealbot), endtop);
 		else
 		{
-			if (endbheight >= endtop && bheight >= top)
-				continue;
-
-			//Found a break;
-			bot = bheight;
-
-			if (bot < realbot)
-				bot = realbot;
-
 			endbot = endbheight;
 
 			if (endbot < endrealbot)
@@ -1235,24 +1229,12 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 		wallVerts[0].y = bot;
 		wallVerts[1].y = endbot;
 
-		if (cv_fofzfightfix.value)
-		{
-			if (cutflag & FF_FOG)
-				HWR_AddTransparentWall(wallVerts, Surf, texnum, noencore, PF_Fog|PF_NoTexture|polyflags, true, lightnum, colormap);
-			else if (cutflag & FF_TRANSLUCENT)
-				HWR_AddTransparentWall(wallVerts, Surf, texnum, noencore, PF_Translucent|polyflags, false, lightnum, colormap);
-			else
-				HWR_ProjectWall(wallVerts, Surf, PF_Masked|polyflags, lightnum, colormap);
-		}
+		if (cutflag & FF_FOG)
+			HWR_AddTransparentWall(wallVerts, Surf, texnum, noencore, PF_Fog|PF_NoTexture|polyflags, true, lightnum, colormap);
+		else if (cutflag & FF_TRANSLUCENT)
+			HWR_AddTransparentWall(wallVerts, Surf, texnum, noencore, PF_Translucent|polyflags, false, lightnum, colormap);
 		else
-		{
-			if (cutflag & FF_FOG)
-				HWR_AddTransparentWall(wallVerts, Surf, texnum, noencore, PF_Fog|PF_NoTexture, true, lightnum, colormap);
-			else if (cutflag & FF_TRANSLUCENT)
-				HWR_AddTransparentWall(wallVerts, Surf, texnum, noencore, PF_Translucent, false, lightnum, colormap);
-			else
-				HWR_ProjectWall(wallVerts, Surf, PF_Masked, lightnum, colormap);
-		}
+			HWR_ProjectWall(wallVerts, Surf, PF_Masked|polyflags, lightnum, colormap);
 
 		top = bot;
 		endtop = endbot;
@@ -1276,24 +1258,12 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 	wallVerts[0].y = bot;
 	wallVerts[1].y = endbot;
 
-	if (cv_fofzfightfix.value)
-	{
-		if (cutflag & FF_FOG)
-			HWR_AddTransparentWall(wallVerts, Surf, texnum, noencore, PF_Fog|PF_NoTexture|polyflags, true, lightnum, colormap);
-		else if (cutflag & FF_TRANSLUCENT)
-			HWR_AddTransparentWall(wallVerts, Surf, texnum, noencore, PF_Translucent|polyflags, false, lightnum, colormap);
-		else
-			HWR_ProjectWall(wallVerts, Surf, PF_Masked|polyflags, lightnum, colormap);
-	}
+	if (cutflag & FF_FOG)
+		HWR_AddTransparentWall(wallVerts, Surf, texnum, noencore, PF_Fog|PF_NoTexture|polyflags, true, lightnum, colormap);
+	else if (cutflag & FF_TRANSLUCENT)
+		HWR_AddTransparentWall(wallVerts, Surf, texnum, noencore, PF_Translucent|polyflags, false, lightnum, colormap);
 	else
-	{
-		if (cutflag & FF_FOG)
-			HWR_AddTransparentWall(wallVerts, Surf, texnum, noencore, PF_Fog|PF_NoTexture, true, lightnum, colormap);
-		else if (cutflag & FF_TRANSLUCENT)
-			HWR_AddTransparentWall(wallVerts, Surf, texnum, noencore, PF_Translucent, false, lightnum, colormap);
-		else
-			HWR_ProjectWall(wallVerts, Surf, PF_Masked, lightnum, colormap);
-	}		
+		HWR_ProjectWall(wallVerts, Surf, PF_Masked|polyflags, lightnum, colormap);
 }
 
 // skywall list system for fixing portal issues by postponing skywall rendering (and using stencil buffer for them)
@@ -1994,20 +1964,10 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 			if (!gl_drawing_stencil && gr_frontsector->numlights)
 			{
-				if (cv_fofzfightfix.value)
-				{
-					if (!(blendmode & PF_Masked))
-						HWR_SplitWall(gr_frontsector, wallVerts, gr_midtexture, gr_linedef->flags & ML_TFERLINE, &Surf, FF_TRANSLUCENT, NULL, PF_Decal);
-					else
-						HWR_SplitWall(gr_frontsector, wallVerts, gr_midtexture, gr_linedef->flags & ML_TFERLINE, &Surf, FF_CUTLEVEL, NULL, PF_Decal);
-				}
+				if (!(blendmode & PF_Masked))
+					HWR_SplitWall(gr_frontsector, wallVerts, gr_midtexture, gr_linedef->flags & ML_TFERLINE, &Surf, FF_TRANSLUCENT, NULL, cv_fofzfightfix.value ? PF_Decal : 0);
 				else
-				{
-					if (!(blendmode & PF_Masked))
-						HWR_SplitWall(gr_frontsector, wallVerts, gr_midtexture, gr_linedef->flags & ML_TFERLINE, &Surf, FF_TRANSLUCENT, NULL, 0);
-					else
-						HWR_SplitWall(gr_frontsector, wallVerts, gr_midtexture, gr_linedef->flags & ML_TFERLINE, &Surf, FF_CUTLEVEL, NULL, 0);
-				}
+					HWR_SplitWall(gr_frontsector, wallVerts, gr_midtexture, gr_linedef->flags & ML_TFERLINE, &Surf, FF_CUTLEVEL, NULL, cv_fofzfightfix.value ? PF_Decal : 0);
 			}
 			else if (!gl_drawing_stencil && !(blendmode & PF_Masked))
 				HWR_AddTransparentWall(wallVerts, &Surf, gr_midtexture, gr_linedef->flags & ML_TFERLINE, blendmode, false, lightnum, colormap);
