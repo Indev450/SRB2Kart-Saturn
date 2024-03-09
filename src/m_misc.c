@@ -1946,9 +1946,18 @@ char *sizeu5(size_t num)
 }*/
 
 void *M_Memcpy(void *dest, const void *src, size_t n)
+#if defined(_WIN32) && defined(__MINGW64__)
 {
 	return memcpy_fast(dest, src, n);
 }
+#else
+{
+	return memcpy(dest, src, n);
+}
+#endif
+
+
+#if defined(_WIN32) && defined(__MINGW64__)
 
 #include <stddef.h>
 #include <stdint.h>
@@ -2426,6 +2435,8 @@ void* memcpy_fast(void *destination, const void *source, size_t size)
 	return destination;
 }
 #pragma GCC diagnostic pop
+
+#endif
 
 /** Return the appropriate message for a file error or end of file.
 */
