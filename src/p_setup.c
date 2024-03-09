@@ -832,9 +832,6 @@ void P_ReloadRings(void)
 		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 			continue;
 
-		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-			continue;
-
 		mo = (mobj_t *)th;
 
 		if (mo->type == MT_HOOPCENTER)

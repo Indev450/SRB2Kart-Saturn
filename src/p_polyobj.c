@@ -1516,9 +1516,6 @@ void Polyobj_InitLevel(void)
 	{
 		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 				continue;
-
-			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-				continue;
 		{
 			mobj_t *mo = (mobj_t *)th;
 
