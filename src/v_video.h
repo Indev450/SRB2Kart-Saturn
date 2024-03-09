@@ -27,7 +27,7 @@
 
 extern UINT8 *screens[5];
 
-extern consvar_t cv_ticrate, cv_allcaps, cv_constextsize, cv_menucaps, cv_scalequality,\
+extern consvar_t cv_ticrate, cv_accuratefps, cv_allcaps, cv_constextsize, cv_menucaps, cv_scalequality,\
 cv_globalgamma, cv_globalsaturation,\
 cv_rhue, cv_yhue, cv_ghue, cv_chue, cv_bhue, cv_mhue,\
 cv_rgamma, cv_ygamma, cv_ggamma, cv_cgamma, cv_bgamma, cv_mgamma,\
