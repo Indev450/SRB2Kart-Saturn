@@ -2418,9 +2418,11 @@ void A_1upThinker(mobj_t *actor)
 	if (closestplayer == -1 || skins[players[closestplayer].skin].spritedef.numframes <= states[S_PLAY_BOX1].frame)
 	{ // Closest player not found (no players in game?? may be empty dedicated server!), or does not have correct sprite.
 		actor->frame = 0;
-		if (actor->tracer) {
-			P_RemoveMobj(actor->tracer);
-			P_SetTarget(&actor->target, NULL);
+		if (actor->tracer)
+		{
+			mobj_t *tracer = actor->tracer;
+			P_SetTarget(&actor->tracer, NULL);
+			P_RemoveMobj(tracer);
 		}
 		return;
 	}

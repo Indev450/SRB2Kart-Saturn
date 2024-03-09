@@ -1514,7 +1514,8 @@ void Polyobj_InitLevel(void)
 	// the mobj_t pointers on a queue for use below.
 	for (th = thinkercap.next; th != &thinkercap; th = th->next)
 	{
-		if (th->function.acp1 == (actionf_p1)P_MobjThinker)
+		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+				continue;
 		{
 			mobj_t *mo = (mobj_t *)th;
 
@@ -1907,23 +1908,23 @@ void T_PolyObjWaypoint(polywaypoint_t *th)
 				if (mo2->type != MT_TUBEWAYPOINT)
 					continue;
 
-				if (mo2->threshold == th->sequence)
+				if (mo2->threshold != th->sequence)
+					continue;
+
+				if (th->direction == -1)
 				{
-					if (th->direction == -1)
+					if (mo2->health == target->health - 1)
 					{
-						if (mo2->health == target->health - 1)
-						{
-							waypoint = mo2;
-							break;
-						}
+						waypoint = mo2;
+						break;
 					}
-					else
+				}
+				else
+				{
+					if (mo2->health == target->health + 1)
 					{
-						if (mo2->health == target->health + 1)
-						{
-							waypoint = mo2;
-							break;
-						}
+						waypoint = mo2;
+						break;
 					}
 				}
 			}
@@ -1946,22 +1947,22 @@ void T_PolyObjWaypoint(polywaypoint_t *th)
 					if (mo2->type != MT_TUBEWAYPOINT)
 						continue;
 
-					if (mo2->threshold == th->sequence)
+					if (mo2->threshold != th->sequence)
+						continue;
+
+					if (th->direction == -1)
 					{
-						if (th->direction == -1)
+						if (waypoint == NULL)
+							waypoint = mo2;
+						else if (mo2->health > waypoint->health)
+							waypoint = mo2;
+					}
+					else
+					{
+						if (mo2->health == 0)
 						{
-							if (waypoint == NULL)
-								waypoint = mo2;
-							else if (mo2->health > waypoint->health)
-								waypoint = mo2;
-						}
-						else
-						{
-							if (mo2->health == 0)
-							{
-								waypoint = mo2;
-								break;
-							}
+							waypoint = mo2;
+							break;
 						}
 					}
 				}
@@ -1983,23 +1984,23 @@ void T_PolyObjWaypoint(polywaypoint_t *th)
 					if (mo2->type != MT_TUBEWAYPOINT)
 						continue;
 
-					if (mo2->threshold == th->sequence)
+					if (mo2->threshold != th->sequence)
+						continue;
+
+					if (th->direction == -1)
 					{
-						if (th->direction == -1)
+						if (mo2->health == target->health - 1)
 						{
-							if (mo2->health == target->health - 1)
-							{
-								waypoint = mo2;
-								break;
-							}
+							waypoint = mo2;
+							break;
 						}
-						else
+					}
+					else
+					{
+						if (mo2->health == target->health + 1)
 						{
-							if (mo2->health == target->health + 1)
-							{
-								waypoint = mo2;
-								break;
-							}
+							waypoint = mo2;
+							break;
 						}
 					}
 				}
@@ -2503,31 +2504,31 @@ INT32 EV_DoPolyObjWaypoint(polywaypointdata_t *pwdata)
 		if (mo2->type != MT_TUBEWAYPOINT)
 			continue;
 
-		if (mo2->threshold == th->sequence)
+		if (mo2->threshold != th->sequence)
+			continue;
+
+		if (th->direction == -1) // highest waypoint #
 		{
-			if (th->direction == -1) // highest waypoint #
+			if (mo2->health == 0)
+				last = mo2;
+			else
 			{
-				if (mo2->health == 0)
-					last = mo2;
-				else
-				{
-					if (first == NULL)
-						first = mo2;
-					else if (mo2->health > first->health)
-						first = mo2;
-				}
-			}
-			else // waypoint 0
-			{
-				if (mo2->health == 0)
+				if (first == NULL)
 					first = mo2;
-				else
-				{
-					if (last == NULL)
-						last = mo2;
-					else if (mo2->health > last->health)
-						last = mo2;
-				}
+				else if (mo2->health > first->health)
+					first = mo2;
+			}
+		}
+		else // waypoint 0
+		{
+			if (mo2->health == 0)
+				first = mo2;
+			else
+			{
+				if (last == NULL)
+					last = mo2;
+				else if (mo2->health > last->health)
+					last = mo2;
 			}
 		}
 	}
