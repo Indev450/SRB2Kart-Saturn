@@ -21,6 +21,8 @@
 #include "p_slopes.h"
 #include "z_zone.h" // Check R_Prep3DFloors
 
+#include "qs22j.h"
+
 seg_t *curline;
 side_t *sidedef;
 line_t *linedef;
