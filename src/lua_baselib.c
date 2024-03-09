@@ -216,7 +216,7 @@ static int lib_mRandomRange(lua_State *L)
 	if ((b-a+1) > 65536)
 		LUA_UsageWarning(L, "M_RandomRange: range > 65536 is undefined behavior");
 	lua_pushinteger(L, M_RandomRange(a, b));
-	demo_writerng = 2;
+	demo_writerng = 0;
 	return 1;
 }
 
