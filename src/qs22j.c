@@ -94,70 +94,104 @@ void qs22j(void *base, size_t nmemb, size_t size,
     swapf_typ swapf, vecswapf;
 
     vecswapf = swapf = swapbytes;
-    if ((ptr_to_int(left) | size) % sizeof(WORD)) {
+    if ((ptr_to_int(left) | size) % sizeof(WORD))
+	{
         ;  // unaligned or not multple of WORD size; swap bytes
-    } else if (size == sizeof(DWORD)) {
+    }
+	else if (size == sizeof(DWORD))
+	{
         swapf = swapdword;
         vecswapf = swapdwords;
         if (size == sizeof(pref_typ))
             swap_type = 0;
-    } else if (size == sizeof(WORD)) {
+    }
+	else if (size == sizeof(WORD))
+	{
         swapf = swapword;
         vecswapf = swapwords;
         if (size == sizeof(pref_typ))
             swap_type = 0;
-    } else if ((size % sizeof(DWORD)) == 0) {
+    } 
+	else if ((size % sizeof(DWORD)) == 0)
+	{
         swapf = vecswapf = swapdwords;
-    } else if ((size % sizeof(WORD)) == 0) {
+    }
+	else if ((size % sizeof(WORD)) == 0)
+	{
         swapf = vecswapf = swapwords;
     }
-    for (;;) {
+    for (;;)
+	{
         nmemb = (limit - left) / size;
         for (i = left + size; i < limit && COMP(i - size, i) <= 0; i += size)
             ;
+
         if (i == limit)                     // if already in order
             goto pop;
-        if (nmemb >= INSORTTHRESH) {        // otherwise use insertion sort
+
+        if (nmemb >= INSORTTHRESH) // otherwise use insertion sort
+		{        
             char *right = limit - size;
             // best so far? fewer compares, a few more swaps
             char *p = left + (nmemb / 2) * size;
-            if (nmemb >= MIDTHRESH) {
+            if (nmemb >= MIDTHRESH)
+			{
                 char *pleft = left + size;
                 char *pright = right - size;
-                if (nmemb >= MEDOF3THRESH) {
+
+                if (nmemb >= MEDOF3THRESH)
+				{
                     size_t k = (nmemb / 8) * size;
                     pleft = med3(pleft, left + k, left + k * 2, compar);
                     p = med3(p - k, p, p + k, compar);
                     pright = med3(right - k * 2, right - k, pright, compar);
                 }
+
                 p = med3(pleft, p, pright, compar);
             }
 
             i = ii = left;                  // i scans left to right
             j = jj = right;                 // j scans right to left
-            for (;;) {
+            for (;;)
+			{
 
-                while (i <= j) {
-                    if (i != p && ((ki = COMP(i, p)) >= 0)) {
+                while (i <= j)
+				{
+                    if (i != p && ((ki = COMP(i, p)) >= 0))
+					{
                         if (ki)
                             break;
+
                         if (ii == p)
+						{
                             p = i;
+						}
                         else if (i != ii)
+						{
                             SWAP(i, ii);
+						}
+
                         ii += size;
                     }
                     i += size;
                 }
 
-                while (i < j) {
-                    if (j != p && ((kj = COMP(j, p)) <= 0)) {
+                while (i < j)
+				{
+                    if (j != p && ((kj = COMP(j, p)) <= 0))
+					{
                         if (kj)
                             break;
+
                         if (jj == p)
+						{
                             p = j;
+						}
                         else if (j != jj)
+						{
                             SWAP(j, jj);
+						}
+
                         jj -= size;
                     }
                     j -= size;
@@ -165,6 +199,7 @@ void qs22j(void *base, size_t nmemb, size_t size,
 
                 if (i >= j)
                     break;
+
                 SWAP(i, j);
                 i += size;
                 j -= size;
@@ -172,50 +207,71 @@ void qs22j(void *base, size_t nmemb, size_t size,
 
             if (p < i)
                 i -= size;
+
             if (p != i)
+			{
                 SWAP(p, i);
+			}
 
             ptrdiff_t lessthan = i - ii;
             size_t k = min(lessthan, ii - left);
+
             if (k)
                 vecswapf(left, i - k, k);
+
             ptrdiff_t morethan = jj - i;
             k = min(morethan, right - jj);
+
             if (k)
                 vecswapf(i + size, limit - k, k);
 
-            if (lessthan > morethan) {
-                if (lessthan > 1) {
+            if (lessthan > morethan)
+			{
+                if (lessthan > 1)
+				{
                     sp[0] = left;
                     sp[1] = left + lessthan;
                     sp += 2;                // increment stack pointer
                 }
+
                 if (morethan <= 1)
                     goto pop;
+
                 left = limit - morethan;
-            } else {
-                if (morethan > 1) {
+            }
+			else
+			{
+                if (morethan > 1)
+				{
                     sp[0] = limit - morethan;
                     sp[1] = limit;
                     sp += 2;                // increment stack pointer
                 }
+
                 if (lessthan <= 1)
                     goto pop;
+
                 limit = left + lessthan;
             }
 
-        } else {                // else subfile is small, use insertion sort
-            for (i = left + size; i < limit; i += size) {
-                for (j = i; j != left && COMP(j - size, j) > 0; j -= size) {
+        }
+		else			// else subfile is small, use insertion sort
+		{
+            for (i = left + size; i < limit; i += size)
+			{
+                for (j = i; j != left && COMP(j - size, j) > 0; j -= size)
+				{
                     SWAP(j - size, j);
                 }
             }
 pop:
-            if (sp != stack) {              // if any entries on stack
+            if (sp != stack)				// if any entries on stack
+			{
                 sp -= 2;                    // pop the left and limit
                 left = sp[0];
                 limit = sp[1];
-            } else                          // else stack empty, done
+            }
+			else                          // else stack empty, done
                 break;
         }
     }
