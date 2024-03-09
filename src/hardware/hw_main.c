@@ -15,6 +15,8 @@
 
 #include "../doomstat.h"
 
+#include "../qs22j.h"
+
 #ifdef HWRENDER
 #include "hw_main.h"
 #include "hw_glob.h"
@@ -4425,7 +4427,7 @@ static void HWR_SortVisSprites(void)
 	{
 		gr_vsprorder[i] = HWR_GetVisSprite(i);
 	}
-	qsort(gr_vsprorder, gr_visspritecount, sizeof(gr_vissprite_t*), CompareVisSprites);
+	qs22j(gr_tvsprorder, gr_tvisspritecount, sizeof(gr_vissprite_t*), CompareVisSprites);
 }
 
 // A drawnode is something that points to a 3D floor, 3D side, or masked
@@ -4633,7 +4635,7 @@ void HWR_RenderDrawNodes(void)
 			if (run_end > run_start) // if there are multiple consecutive planes, not just one
 			{
 				// consecutive run of planes found, now sort it
-				qsort(sortindex + run_start, run_end - run_start + 1, sizeof(INT32), CompareDrawNodePlanes);
+				qs22j(sortindex + run_start, run_end - run_start + 1, sizeof(INT32), CompareDrawNodePlanes);
 			}
 			run_start = run_end + 1; // continue looking for runs coming right after this one
 		}

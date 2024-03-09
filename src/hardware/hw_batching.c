@@ -15,6 +15,9 @@
 #include "hw_main.h"
 #include "../i_system.h"
 
+#include "../qs22j.h"
+
+
 // The texture for the next polygon given to HWR_ProcessPolygon.
 // Set with HWR_SetCurrentTexture.
 GLMipmap_t *current_texture = NULL;
@@ -264,9 +267,9 @@ void HWR_RenderBatches(void)
 	// sort polygons
 	PS_START_TIMING(ps_hw_batchsorttime);
 	if (cv_grshaders.value && gr_shadersavailable)
-		qsort(polygonIndexArray, polygonArraySize, sizeof(unsigned int), comparePolygons);
+		qs22j(polygonIndexArray, polygonArraySize, sizeof(unsigned int), comparePolygons);
 	else
-		qsort(polygonIndexArray, polygonArraySize, sizeof(unsigned int), comparePolygonsNoShaders);
+		qs22j(polygonIndexArray, polygonArraySize, sizeof(unsigned int), comparePolygonsNoShaders);
 	PS_STOP_TIMING(ps_hw_batchsorttime);
 	// sort order
 	// 1. shader
