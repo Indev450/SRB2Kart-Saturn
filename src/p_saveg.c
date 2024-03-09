@@ -1897,7 +1897,8 @@ mobj_t *P_FindNewPosition(UINT32 oldposition)
 	{
 		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 			continue;
-
+		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+			continue;
 		mobj = (mobj_t *)th;
 		if (mobj->mobjnum != oldposition)
 			continue;
@@ -3474,6 +3475,8 @@ void P_SaveNetGame(void)
 		for (th = thinkercap.next; th != &thinkercap; th = th->next)
 		{
 			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+				continue;
+			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 				continue;
 			mobj = (mobj_t *)th;
 			if (mobj->type == MT_HOOP || mobj->type == MT_HOOPCOLLIDE || mobj->type == MT_HOOPCENTER)

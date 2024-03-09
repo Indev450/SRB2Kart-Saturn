@@ -1144,6 +1144,9 @@ void P_SpawnShieldOrb(player_t *player)
 		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 			continue;
 
+		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+			continue;
+
 		shieldobj = (mobj_t *)th;
 
 		if (shieldobj->type == orbtype && shieldobj->target == player->mo)
@@ -1870,6 +1873,9 @@ void P_Telekinesis(player_t *player, fixed_t thrust, fixed_t range)
 	for (th = thinkercap.next; th != &thinkercap; th = th->next)
 	{
 		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+			continue;
+
+		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 			continue;
 
 		mo2 = (mobj_t *)th;
@@ -2624,7 +2630,10 @@ static void P_DoZoomTube(player_t *player)
 		// Find next waypoint
 		for (th = thinkercap.next; th != &thinkercap; th = th->next)
 		{
-			if (th->function.acp1 != (actionf_p1)P_MobjThinker) // Not a mobj thinker
+			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+				continue;
+
+			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 				continue;
 
 			mo2 = (mobj_t *)th;
@@ -2925,6 +2934,9 @@ void P_FindEmerald(void)
 	for (th = thinkercap.next; th != &thinkercap; th = th->next)
 	{
 		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+			continue;
+
+		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 			continue;
 
 		mo2 = (mobj_t *)th;
@@ -4621,6 +4633,9 @@ void P_PlayerThink(player_t *player)
 		for (th = thinkercap.next; th != &thinkercap; th = th->next)
 		{
 			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+				continue;
+
+			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 				continue;
 
 			mo2 = (mobj_t *)th;

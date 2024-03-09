@@ -2959,6 +2959,9 @@ void G_ChangePlayerReferences(mobj_t *oldmo, mobj_t *newmo)
 		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 			continue;
 
+		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+			continue;
+
 		mo2 = (mobj_t *)th;
 
 		if (!(mo2->flags & MF_MISSILE))
@@ -5624,6 +5627,9 @@ void G_ConsGhostTic(INT32 playernum)
 				{
 					if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 						continue;
+
+					if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+						continue;
 					mobj = (mobj_t *)th;
 					if (mobj->type == (mobjtype_t)type && mobj->x == x && mobj->y == y && mobj->z == z)
 						break;
@@ -8091,6 +8097,9 @@ void G_DoPlayMetal(void)
 	for (th = thinkercap.next; th != &thinkercap; th = th->next)
 	{
 		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+			continue;
+
+		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 			continue;
 
 		mo = (mobj_t *)th;

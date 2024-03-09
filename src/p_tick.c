@@ -151,6 +151,9 @@ void Command_CountMobjs_f(void)
 				if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 					continue;
 
+				if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+					continue;
+
 				if (((mobj_t *)th)->type == i)
 					count++;
 			}
@@ -169,6 +172,9 @@ void Command_CountMobjs_f(void)
 		for (th = thinkercap.next; th != &thinkercap; th = th->next)
 		{
 			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+				continue;
+
+			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 				continue;
 
 			if (((mobj_t *)th)->type == i)

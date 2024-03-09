@@ -4104,6 +4104,9 @@ DoneSection2:
 					if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 						continue;
 
+					if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+						continue;
+
 					mo2 = (mobj_t *)th;
 
 					if (mo2->type != MT_TUBEWAYPOINT)
@@ -4181,6 +4184,9 @@ DoneSection2:
 				for (th = thinkercap.next; th != &thinkercap; th = th->next)
 				{
 					if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+						continue;
+
+					if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 						continue;
 
 					mo2 = (mobj_t *)th;
@@ -4405,6 +4411,9 @@ DoneSection2:
 					if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 						continue;
 
+					if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+						continue;
+
 					mo2 = (mobj_t *)th;
 
 					if (mo2->type != MT_TUBEWAYPOINT)
@@ -4443,6 +4452,9 @@ DoneSection2:
 					if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 						continue;
 
+					if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+						continue;
+
 					mo2 = (mobj_t *)th;
 
 					if (mo2->type != MT_TUBEWAYPOINT)
@@ -4468,6 +4480,9 @@ DoneSection2:
 				for (th = thinkercap.next; th != &thinkercap; th = th->next)
 				{
 					if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+						continue;
+
+					if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 						continue;
 
 					mo2 = (mobj_t *)th;
