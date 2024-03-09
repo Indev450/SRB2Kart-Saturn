@@ -125,8 +125,6 @@ consvar_t cv_secbright = {"secbright", "0", CV_SAVE, secbright_cons_t,
 
 consvar_t cv_grfovchange = {"gr_fovchange", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_grfastsprites = {"gr_fastsprites", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-
 // values for the far clipping plane
 static float clipping_distances[] = {1024.0f, 2048.0f, 4096.0f, 6144.0f, 8192.0f, 12288.0f, 16384.0f};
 // values for bsp culling
@@ -668,7 +666,7 @@ void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, boolean isc
 
 	static FOutVector *planeVerts = NULL;
 	static UINT16 numAllocedPlaneVerts = 0;
-	
+
 	INT32 shader = SHADER_NONE;
 
 	// no convex poly were generated for this subsector
@@ -3659,7 +3657,6 @@ static fixed_t HWR_OpaqueFloorAtPos(fixed_t x, fixed_t y, fixed_t z, fixed_t hei
 	return floorz;
 }
 
-
 static void HWR_DrawSpriteShadow(gr_vissprite_t *spr, GLPatch_t *gpatch, float this_scale)
 {
 	FOutVector swallVerts[4];
@@ -3768,12 +3765,13 @@ static void HWR_DrawSpriteShadow(gr_vissprite_t *spr, GLPatch_t *gpatch, float t
 	}
 	
 	if (floorslope)
+	{
 		for (int i = 0; i < 4; i++)
 		{
 			slopez = P_GetZAt(floorslope, FLOAT_TO_FIXED(swallVerts[i].x), FLOAT_TO_FIXED(swallVerts[i].z));
 			swallVerts[i].y = FIXED_TO_FLOAT(slopez) + 0.05f;
 		}
-
+	}
 
 	if (spr->flip)
 	{
@@ -3818,7 +3816,7 @@ static void HWR_DrawSpriteShadow(gr_vissprite_t *spr, GLPatch_t *gpatch, float t
 	if (sSurf.PolyColor.s.alpha > floorheight/4)
 	{
 		sSurf.PolyColor.s.alpha = (UINT8)(sSurf.PolyColor.s.alpha - floorheight/4);
-		
+
 		if (HWR_UseShader())
 		{
 			shader = SHADER_FLOOR;	// floor shader
@@ -4037,7 +4035,6 @@ static void HWR_SplitSprite(gr_vissprite_t *spr)
 
 	alpha = Surf.PolyColor.s.alpha;
 	
-
 	// Start with the lightlevel and colormap from the top of the sprite
 	lightlevel = SOFTLIGHT(*list[sector->numlights - 1].lightlevel);
 
@@ -4346,7 +4343,7 @@ static inline void HWR_DrawPrecipitationSprite(gr_vissprite_t *spr)
 	FOutVector wallVerts[4];
 	GLPatch_t *gpatch; // sprite patch converted to hardware
 	FSurfaceInfo Surf;
-	
+
 	INT32 shader = SHADER_NONE;
 
 	if (!spr->mobj)
@@ -4401,7 +4398,7 @@ static inline void HWR_DrawPrecipitationSprite(gr_vissprite_t *spr)
 			light = R_GetPlaneLight(sector, spr->mobj->z + spr->mobj->height, false); // Always use the light at the top instead of whatever I was doing before
 
 			if (!(spr->mobj->frame & FF_FULLBRIGHT))
-			lightlevel = *sector->lightlist[light].lightlevel > 255 ? 255 : SOFTLIGHT(*sector->lightlist[light].lightlevel);
+				lightlevel = *sector->lightlist[light].lightlevel > 255 ? 255 : SOFTLIGHT(*sector->lightlist[light].lightlevel);
 
 			if (sector->lightlist[light].extra_colormap)
 				colormap = sector->lightlist[light].extra_colormap;
@@ -4435,7 +4432,7 @@ static inline void HWR_DrawPrecipitationSprite(gr_vissprite_t *spr)
 		shader = SHADER_SPRITE;	// sprite shader
 		blend |= PF_ColorMapped;
 	}
-		
+
 	HWR_ProcessPolygon(&Surf, wallVerts, 4, blend|PF_Modulated, shader, false);
 }
 
@@ -4443,8 +4440,7 @@ static inline void HWR_DrawPrecipitationSprite(gr_vissprite_t *spr)
 // Sort vissprites by distance
 // --------------------------------------------------------------------------
 
-gr_vissprite_t* gr_tvsprorder[MAXVISSPRITES];
-UINT32 gr_tvisspritecount = 0;
+gr_vissprite_t* gr_vsprorder[MAXVISSPRITES];
 
 // For more correct transparency the transparent sprites would need to be
 // sorted and drawn together with transparent surfaces.
@@ -4487,12 +4483,9 @@ static int CompareVisSprites(const void *p1, const void *p2)
 static void HWR_SortVisSprites(void)
 {
 	UINT32 i;
-	gr_tvisspritecount = 0;
 	for (i = 0; i < gr_visspritecount; i++)
 	{
-		gr_vissprite_t* spr = HWR_GetVisSprite(i);
-		if (!cv_grfastsprites.value || (spr->mobj->flags2 & MF2_SHADOW) || (spr->mobj->frame & FF_TRANSMASK))
-			gr_tvsprorder[gr_tvisspritecount++] = spr;
+		gr_vsprorder[i] = HWR_GetVisSprite(i);
 	}
 	qs22j(gr_tvsprorder, gr_tvisspritecount, sizeof(gr_vissprite_t*), CompareVisSprites);
 }
@@ -4773,88 +4766,9 @@ void HWR_RenderDrawNodes(void)
 void HWR_DrawSprites(void)
 {
 	UINT32 i;
-
-	// this is a bit repetitive. one other option would be to create arrays for these three stages
-	// and iterate them with simple for loops.
-	
-	// first draw solid sprites that dont have models
-	// separated from solid models to allow batching to work
-	if (cv_grfastsprites.value)
+	for (i = 0; i < gr_visspritecount; i++)
 	{
-		if (cv_grbatching.value)
-			HWR_StartBatching();
-
-		for (i = 0; i < gr_visspritecount; i++)
-		{
-			gr_vissprite_t *spr = HWR_GetVisSprite(i);
-			if ((spr->mobj->flags2 & MF2_SHADOW) || (spr->mobj->frame & FF_TRANSMASK))
-				continue;
-			if (spr->precip)
-				HWR_DrawPrecipitationSprite(spr);
-			else
-				if (spr->mobj && spr->mobj->skin && spr->mobj->sprite == SPR_PLAY)
-				{
-					// 8/1/19: Only don't display player models if no default SPR_PLAY is found.
-					if (!cv_grmdls.value || ((md2_playermodels[(skin_t*)spr->mobj->skin-skins].notfound || md2_playermodels[(skin_t*)spr->mobj->skin-skins].scale < 0.0f) && ((!cv_grfallbackplayermodel.value) || md2_models[SPR_PLAY].notfound || md2_models[SPR_PLAY].scale < 0.0f)))
-						HWR_DrawSprite(spr);
-					else
-						continue;
-				}
-				else
-				{
-					if (!cv_grmdls.value || md2_models[spr->mobj->sprite].notfound || md2_models[spr->mobj->sprite].scale < 0.0f)
-						HWR_DrawSprite(spr);
-					else
-						continue;
-				}
-		}
-
-		if (cv_grbatching.value)
-			HWR_RenderBatches();
-
-		// then solid models
-		for (i = 0; i < gr_visspritecount; i++)
-		{
-			gr_vissprite_t *spr = HWR_GetVisSprite(i);
-			if ((spr->mobj->flags2 & MF2_SHADOW) || (spr->mobj->frame & FF_TRANSMASK))
-				continue;
-			if (spr->precip)
-				continue;//HWR_DrawPrecipitationSprite(spr);
-			else
-				if (spr->mobj && spr->mobj->skin && spr->mobj->sprite == SPR_PLAY)
-				{
-					md2_t *md2;
-					if (spr->mobj->localskin)
-					{
-						if (spr->mobj->skinlocal)
-							md2 = &md2_localplayermodels[(skin_t *)spr->mobj->localskin - localskins];
-						else
-							md2 = &md2_playermodels     [(skin_t *)spr->mobj->localskin -      skins];
-					}
-					else
-						md2 = &md2_playermodels[(skin_t *)spr->mobj->skin - skins];
-
-					// 8/1/19: Only don't display player models if no default SPR_PLAY is found.
-					if (!cv_grmdls.value || ((md2->notfound || md2->scale < 0.0f) && ((!cv_grfallbackplayermodel.value) || md2_models[SPR_PLAY].notfound || md2_models[SPR_PLAY].scale < 0.0f)) || spr->mobj->state == &states[S_PLAY_SIGN])
-						continue;
-					else
-						HWR_DrawMD2(spr);
-				}
-				else
-				{
-					if (!cv_grmdls.value || md2_models[spr->mobj->sprite].notfound || md2_models[spr->mobj->sprite].scale < 0.0f)
-						continue;
-					else
-						HWR_DrawMD2(spr);
-				}
-		}
-	}
-	
-	// then transparent sprites and models, which have been sorted
-	// if !cv_grfastsprites then this also includes everything else
-	for (i = 0; i < gr_tvisspritecount; i++)
-	{
-		gr_vissprite_t *spr = gr_tvsprorder[i];
+		gr_vissprite_t *spr = gr_vsprorder[i];
 		if (spr->precip)
 			HWR_DrawPrecipitationSprite(spr);
 		else
@@ -5095,7 +5009,6 @@ void HWR_ProjectSprite(mobj_t *thing)
 	this_scale = FIXED_TO_FLOAT(interp.scale);
 	spritexscale = FIXED_TO_FLOAT(interp.spritexscale);
 	spriteyscale = FIXED_TO_FLOAT(interp.spriteyscale);
-
 
 	// transform the origin point
 	tr_x = FIXED_TO_FLOAT(interp.x) - gr_viewx;
@@ -5783,7 +5696,7 @@ static void HWR_RenderPortal(gl_portal_t* portal, gl_portal_t* rootportal, const
 	// remove portal seg from stencil buffer
 	HWR_SetTransform(fpov, player);
 	HWR_ClearClipper();
-	
+
 	HWR_SetStencilState(HWR_STENCIL_REVERSE, stencil_level);
 	HWR_RenderPortalSeg(portal, GRPORTAL_STENCIL);
 
@@ -6163,8 +6076,6 @@ void HWR_AddCommands(void)
 	CV_RegisterVar(&cv_fofzfightfix);
 	CV_RegisterVar(&cv_splitwallfix);
 	CV_RegisterVar(&cv_slopepegfix);
-
-	CV_RegisterVar(&cv_grfastsprites);
 
 	CV_RegisterVar(&cv_grscreentextures);
 
