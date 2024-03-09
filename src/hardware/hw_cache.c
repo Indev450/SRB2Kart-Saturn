@@ -123,14 +123,14 @@ static void HWR_DrawColumnInCache(const column_t *patchcol, UINT8 *block, GLMipm
 			switch (bpp)
 			{
 				case 2 : texelu16 = (UINT16)((alpha<<8) | texel);
-						 memcpy(dest, &texelu16, sizeof(UINT16));
+						 memcpy_fast(dest, &texelu16, sizeof(UINT16));
 						 break;
 				case 3 : colortemp = palette[texel];
-						 memcpy(dest, &colortemp, sizeof(RGBA_t)-sizeof(UINT8));
+						 memcpy_fast(dest, &colortemp, sizeof(RGBA_t)-sizeof(UINT8));
 						 break;
 				case 4 : colortemp = palette[texel];
 						 colortemp.s.alpha = alpha;
-						 memcpy(dest, &colortemp, sizeof(RGBA_t));
+						 memcpy_fast(dest, &colortemp, sizeof(RGBA_t));
 						 break;
 				// default is 1
 				default: *dest = texel;
