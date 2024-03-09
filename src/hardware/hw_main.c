@@ -1196,7 +1196,7 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 				endbot = endtop;
 		}
 
-		if (endbheight >= endtop && bheight >= top && !cv_splitwallfix.value || bheight >= top && cv_splitwallfix.value)
+		if ((endbheight >= endtop && bheight >= top && !cv_splitwallfix.value) || (bheight >= top && cv_splitwallfix.value))
 			continue;
 
 		// Found a break
