@@ -5547,7 +5547,7 @@ void HWR_ClearClipper(void)
 	gld_clipper_Clear();
 	gld_clipper_SafeAddClipRange(viewangle + a1, viewangle - a1);
 #ifdef HAVE_SPHEREFRUSTRUM
-	gld_FrustrumSetup();
+	gld_FrustumSetup();
 #endif
 }
 

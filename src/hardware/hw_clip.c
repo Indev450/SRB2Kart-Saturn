@@ -68,15 +68,10 @@
  **
  */
 
-#include <math.h>
-#include "../v_video.h"
-#include "hw_main.h"
 #include "hw_clip.h"
-#include "hw_glob.h"
-#include "../r_state.h"
-#include "../tables.h"
-#include "r_opengl/r_opengl.h"
-#include "../r_main.h"	// for cv_fov
+
+// clipping code moved to r_opengl.c, let me qoute the below comment "only r_opengl.c can use the base gl funcs as it turns out.."
+
 
 #ifdef HAVE_SPHEREFRUSTRUM
 static GLdouble viewMatrix[16];
@@ -84,15 +79,13 @@ static GLdouble projMatrix[16];
 float frustum[6][4];
 #endif
 
-
-
 // SRB2CB I don't think used any of this stuff, let's disable for now since SRB2 probably doesn't want it either
 // compiler complains about (p)glGetFloatv anyway, in case anyone wants this
 // only r_opengl.c can use the base gl funcs as it turns out, that's a problem for whoever wants sphere frustum checks
 // btw to renable define HAVE_SPHEREFRUSTRUM in hw_clip.h
 #ifdef HAVE_SPHEREFRUSTRUM
 //
-// gld_FrustrumSetup
+// gld_FrustumSetup
 //
 
 #define CALCMATRIX(a, b, c, d, e, f, g, h)\
@@ -111,7 +104,7 @@ frustum[i][1] /= t; \
 frustum[i][2] /= t; \
 frustum[i][3] /= t
 
-void gld_FrustrumSetup(void)
+void gld_FrustumSetup(void)
 {
 	float t;
 	float clip[16];
