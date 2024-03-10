@@ -1001,30 +1001,29 @@ static void Y_UnloadData(void)
 //
 // Draw animated patch based on frame counter on vote screen
 //
-static void Y_DrawAnimatedVoteScreenPatch(boolean widePatch)
+static inline void Y_DrawAnimatedVoteScreenPatch(boolean widePatch)
 {
 	char tempAnimPrefix[7];
 	(widePatch) ? strcpy(tempAnimPrefix, animWidePrefix) : strcpy(tempAnimPrefix, animPrefix);
 	INT32 tempFoundAnimVoteFrames = (widePatch) ? foundAnimVoteWideFrames : foundAnimVoteFrames;
-	INT32 flags = V_SNAPTOBOTTOM | V_SNAPTOTOP;
 
 	// Just in case someone provides LESS widescreen frames than normal frames or vice versa, reset the frame counter to 0
 	if (widePatch)
 	{
 		if (currentAnimFrame > foundAnimVoteWideFrames-1)
 			currentAnimFrame = 0;
-	} 
-	else 
+	}
+	else
 	{
 		if (currentAnimFrame > foundAnimVoteFrames-1)
 			currentAnimFrame = 0;
 	}
 
 	patch_t *background = W_CachePatchName(va("%s%d", tempAnimPrefix, currentAnimFrame + 1), PU_CACHE);		
-	V_DrawScaledPatch(160 - (background->width / 2), (200 - (background->height)), flags, background);		
+	V_DrawScaledPatch(160 - (background->width / 2), (200 - (background->height)), V_SNAPTOBOTTOM|V_SNAPTOTOP, background);		
 
 	if (lastvotetic != votetic && lastvotetic % 2 == 0)
-		currentAnimFrame = (currentAnimFrame+1 > tempFoundAnimVoteFrames-1) ? 0 : currentAnimFrame + 1; // jeez no fucking idea how to make this shit not go nuts with interpolation
+		currentAnimFrame = (currentAnimFrame + 1 > tempFoundAnimVoteFrames - 1) ? 0 : currentAnimFrame + 1; // jeez no fucking idea how to make this shit not go nuts with interpolation
 }
 
 //
