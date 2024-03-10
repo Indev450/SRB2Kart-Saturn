@@ -497,9 +497,7 @@ void R_InitSprites(void)
 #ifdef ROTSPRITE
 	INT32 angle;
 	float fa;
-#endif
 
-#ifdef ROTSPRITE
 	for (angle = 1; angle < ROTANGLES; angle++)
 	{
 		fa = ANG2RAD(FixedAngle((ROTANGDIFF * angle)<<FRACBITS));
