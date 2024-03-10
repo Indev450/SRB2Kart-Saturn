@@ -457,6 +457,40 @@ angle_t R_PointToAngle2(fixed_t pviewx, fixed_t pviewy, fixed_t x, fixed_t y)
 		0;
 }
 
+//
+// R_PointToPseudoAngle
+// ! Returns the pseudoangle between the line p1 to (infinity, p1.y) and the
+// line from p1 to p2. The pseudoangle has the property that the ordering of
+// points by true angle anround p1 and ordering of points by pseudoangle are the
+// same.
+//
+// For clipping exact angles are not needed. Only the ordering matters.
+// This is about as fast as the fixed point R_PointToAngle2 but without
+// the precision issues associated with that function.
+//
+
+FUNCINLINE ATTRINLINE angle_t R_PointToPseudoAngle (fixed_t x, fixed_t y)
+{
+	// Note: float won't work here as it's less precise than the BAM values being passed as parameters
+	double vecx = (double)x - viewx;
+	double vecy = (double)y - viewy;
+	double epsilon = 1e-9;
+
+	if (fabs(vecx) < epsilon && fabs(vecy) < epsilon)
+	{
+		return 0;
+	}
+	else
+	{
+		double result = vecy / (fabs(vecx) + fabs(vecy));
+		if (vecx < 0)
+		{
+			result = 2.0 - result;
+		}
+		return (angle_t)xs_CRoundToInt(result * (1 << 30));
+	}
+}
+
 fixed_t R_PointToDist2(fixed_t px2, fixed_t py2, fixed_t px1, fixed_t py1)
 {
 	return FixedHypot(px1 - px2, py1 - py2);

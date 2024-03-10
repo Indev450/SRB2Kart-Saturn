@@ -260,6 +260,41 @@ typedef struct
 	fixed_t y;
 } vector2_t;
 
+// Source: "Know Your FPU: Fixing Floating Fast"
+//         http://www.stereopsis.com/sree/fpu2006.html
+//
+// xs_CRoundToInt:  Round toward nearest, but ties round toward even (just like FISTP)
+// taken from prboom+ for OpenGL big room fix
+#ifndef _xs_DEFAULT_CONVERSION
+#define _xs_DEFAULT_CONVERSION      0
+#endif //_xs_DEFAULT_CONVERSION
+
+#ifdef WORDS_BIGENDIAN
+	#define _xs_iexp_				0
+	#define _xs_iman_				1
+#else
+	#define _xs_iexp_				1       //intel is little endian
+	#define _xs_iman_				0
+#endif //BigEndian_
+
+typedef double	real64;
+typedef union _xs_doubleints
+{
+	real64 val;
+	unsigned ival[2];
+} _xs_doubleints;
+
+FUNCMATH FUNCINLINE ATTRINLINE int xs_CRoundToInt(real64 val)
+{
+#if _xs_DEFAULT_CONVERSION==0
+	_xs_doubleints uval;
+	uval.val = val + 6755399441055744.0;
+	return uval.ival[_xs_iman_];
+#else
+    return int(floor(val+.5));
+#endif
+}
+
 vector2_t *FV2_Load(vector2_t *vec, fixed_t x, fixed_t y);
 vector2_t *FV2_UnLoad(vector2_t *vec, fixed_t *x, fixed_t *y);
 vector2_t *FV2_Copy(vector2_t *a_o, const vector2_t *a_i);
