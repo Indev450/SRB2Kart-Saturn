@@ -799,16 +799,16 @@ static void ST_overlayDrawer(void)
 					strlcpy(name, player_names[stplyr-players], 13);*/
 
 					// Show name of player being displayed
-					V_DrawCenteredString((BASEVIDWIDTH/2), BASEVIDHEIGHT-40, V_HUDTRANS, M_GetText("VIEWPOINT:"));
-					V_DrawCenteredString((BASEVIDWIDTH/2), BASEVIDHEIGHT-32, V_HUDTRANS|V_ALLOWLOWERCASE, player_names[stplyr-players]);
+					V_DrawCenteredString((BASEVIDWIDTH/2), BASEVIDHEIGHT-40, V_SNAPTOBOTTOM|V_HUDTRANS, M_GetText("VIEWPOINT:"));
+					V_DrawCenteredString((BASEVIDWIDTH/2), BASEVIDHEIGHT-32, V_SNAPTOBOTTOM|V_HUDTRANS|V_ALLOWLOWERCASE, player_names[stplyr-players]);
 				}
 			}
 			else if (!demo.title)
 			{
 				if (!splitscreen)
 				{
-					V_DrawCenteredString((BASEVIDWIDTH/2), BASEVIDHEIGHT-40, V_HUDTRANSHALF, M_GetText("VIEWPOINT:"));
-					V_DrawCenteredString((BASEVIDWIDTH/2), BASEVIDHEIGHT-32, V_HUDTRANSHALF|V_ALLOWLOWERCASE, player_names[stplyr-players]);
+					V_DrawCenteredString((BASEVIDWIDTH/2), BASEVIDHEIGHT-40, V_SNAPTOBOTTOM|V_HUDTRANSHALF, M_GetText("VIEWPOINT:"));
+					V_DrawCenteredString((BASEVIDWIDTH/2), BASEVIDHEIGHT-32, V_SNAPTOBOTTOM|V_HUDTRANSHALF|V_ALLOWLOWERCASE, player_names[stplyr-players]);
 				}
 				else if (splitscreen == 1)
 				{
