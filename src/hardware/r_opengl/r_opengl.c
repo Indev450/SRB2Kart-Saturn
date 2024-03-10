@@ -3353,6 +3353,16 @@ EXPORT void HWRAPI(SetScreenPalette)(RGBA_t *palette)
 	}
 }
 
+
+/*
+ *  hw_clip
+ *  SRB2CB
+ *
+ *  PrBoom's OpenGL clipping
+ *
+ *
+ */
+
 typedef struct clipnode_s
 	{
 		struct clipnode_s *prev, *next;
