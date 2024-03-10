@@ -5891,6 +5891,9 @@ void HWR_RenderFrame(INT32 viewnumber, player_t *player, boolean skybox)
 	}
 
 	HWR_ClearClipper();
+	
+	// Set transform.
+	HWD.pfnSetTransform(&atransform);
 
 	// Reset the shader state.
 	//HWR_SetShaderState();
