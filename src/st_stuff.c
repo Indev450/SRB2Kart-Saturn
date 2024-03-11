@@ -746,13 +746,13 @@ static void ST_drawLevelTitle(void)
 
 	{
 		dupcalc = (dupcalc - BASEVIDWIDTH)>>1;
-		V_DrawFill(sub - dupcalc, bary+9, ttlnumxpos+dupcalc + 1, 2, 31);
-		V_DrawDiag(sub + ttlnumxpos + 1, bary, 11, 31);
-		V_DrawFill(sub - dupcalc, bary, ttlnumxpos+dupcalc, 10, gtc);
-		V_DrawDiag(sub + ttlnumxpos, bary, 10, gtc);
+		V_DrawFill(sub - dupcalc, bary+9, ttlnumxpos+dupcalc + 1, 2, 31|V_SNAPTOBOTTOM);
+		V_DrawDiag(sub + ttlnumxpos + 1, bary, 11, 31|V_SNAPTOBOTTOM);
+		V_DrawFill(sub - dupcalc, bary, ttlnumxpos+dupcalc, 10, gtc|V_SNAPTOBOTTOM);
+		V_DrawDiag(sub + ttlnumxpos, bary, 10, gtc|V_SNAPTOBOTTOM);
 
 		if (subttl[0])
-			V_DrawRightAlignedString(sub + zonexpos - 8, bary+1, V_ALLOWLOWERCASE, subttl);
+			V_DrawRightAlignedString(sub + zonexpos - 8, bary+1, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, subttl);
 		//else
 			//V_DrawRightAlignedString(sub + zonexpos - 8, bary+1, V_ALLOWLOWERCASE, va("%s Mode", gametype_cons_t[gametype].strvalue));
 	}
@@ -761,15 +761,15 @@ static void ST_drawLevelTitle(void)
 	lvlttlxpos += sub;
 	zonexpos += sub;
 
-	V_DrawLevelTitle(lvlttlxpos, bary-18, 0, lvlttl);
+	V_DrawLevelTitle(lvlttlxpos, bary-18, V_SNAPTOBOTTOM, lvlttl);
 
 	if (strlen(zonttl) > 0)
-		V_DrawLevelTitle(zonexpos, bary+6, 0, zonttl);
+		V_DrawLevelTitle(zonexpos, bary+6, V_SNAPTOBOTTOM, zonttl);
 	else if (!(mapheaderinfo[gamemap-1]->levelflags & LF_NOZONE))
-		V_DrawLevelTitle(zonexpos, bary+6, 0, M_GetText("Zone"));
+		V_DrawLevelTitle(zonexpos, bary+6, V_SNAPTOBOTTOM, M_GetText("Zone"));
 
 	if (actnum[0])
-		V_DrawLevelTitle(ttlnumxpos+12, bary+6, 0, actnum);
+		V_DrawLevelTitle(ttlnumxpos+12, bary+6, V_SNAPTOBOTTOM, actnum);
 }
 
 // Draw the status bar overlay, customisable: the user chooses which
