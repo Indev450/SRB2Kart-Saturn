@@ -271,8 +271,6 @@ FTransform atransform;
 static float gr_viewx, gr_viewy, gr_viewz;
 float gr_viewsin, gr_viewcos;
 
-static fixed_t dup_viewx, dup_viewy, dup_viewz;
-
 static angle_t gr_aimingangle;
 static float gr_viewludsin, gr_viewludcos;
 
@@ -854,7 +852,7 @@ void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, boolean isc
 
 		for (i = 0; i < subsector->numlines; i++, line++)
 		{
-			if (line->linedef->special == HORIZONSPECIAL && R_PointOnSegSide(dup_viewx, dup_viewy, line) == 0)
+			if (line->linedef->special == HORIZONSPECIAL && R_PointOnSegSide(viewx, viewy, line) == 0)
 			{
 				P_ClosestPointOnLine(viewx, viewy, line->linedef, &v);
 				dist = FIXED_TO_FLOAT(R_PointToDist(v.x, v.y));
@@ -5472,11 +5470,6 @@ void HWR_SetTransform(float fpov, player_t *player)
 	postimg_t *postprocessor = &postimgtype[0];
 	INT32 i;
 
-	// copy view cam position for local use
-	dup_viewx = viewx;
-	dup_viewy = viewy;
-	dup_viewz = viewz;
-
 	gr_viewx = FIXED_TO_FLOAT(viewx);
 	gr_viewy = FIXED_TO_FLOAT(viewy);
 	gr_viewz = FIXED_TO_FLOAT(viewz);
@@ -5663,7 +5656,9 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, playe
 			portalclipline = NULL;
 		else
 			HWR_PortalClipping(rootportal);
+
 		validcount++;
+
 		HWR_RenderBSPNode((INT32)numnodes-1);// no actual rendering happens
 
 		// for each found portal:
@@ -5681,11 +5676,12 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, playe
 	// draw normal things in current frame in current incremented stencil buffer area
 	HWR_SetStencilState(HWR_STENCIL_NORMAL, stencil_level);
 	if (!cv_portalonly.value || rootportal)
-	{
+	{	
+		HWR_SetTransform(fpov, player);
+
 		HWR_ClearClipper();
 		HWR_ClearSprites();
-		// the frame should be correct, set by either the for loop or the above layer in recursion
-		HWR_SetTransform(fpov, player);
+
 		if (!rootportal)
 			portalclipline = NULL;
 		else
@@ -5693,7 +5689,10 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, playe
 			HWR_PortalFrame(rootportal);// for portalclipsector, it could have gone null from search
 			HWR_PortalClipping(rootportal);
 		}
-		//drawcount = 0;
+		
+		// Set transform.
+		HWD.pfnSetTransform(&atransform);
+
 		validcount++;
 		
 		if (cv_grbatching.value)
@@ -5769,8 +5768,6 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, playe
 void HWR_RenderFrame(INT32 viewnumber, player_t *player, boolean skybox)
 {
 	const float fpov = FIXED_TO_FLOAT(cv_fov.value+player->fovadd);
-	postimg_t *postprocessor = &postimgtype[0];
-	INT32 i;
 
 	// set window position
 	gr_centerx = gr_basecenterx;
@@ -5809,67 +5806,8 @@ void HWR_RenderFrame(INT32 viewnumber, player_t *player, boolean skybox)
 	// check for new console commands.
 	NetUpdate();
 
-	gr_viewx = FIXED_TO_FLOAT(viewx);
-	gr_viewy = FIXED_TO_FLOAT(viewy);
-	gr_viewz = FIXED_TO_FLOAT(viewz);
-	gr_viewsin = FIXED_TO_FLOAT(viewsin);
-	gr_viewcos = FIXED_TO_FLOAT(viewcos);
-
-	memset(&atransform, 0x00, sizeof(FTransform));
-
-	// Set T&L transform
-	atransform.x = gr_viewx;
-	atransform.y = gr_viewy;
-	atransform.z = gr_viewz;
-
-	atransform.scalex = 1;
-	atransform.scaley = (float)vid.width/vid.height;
-	atransform.scalez = 1;
-
-	// 14042019
-	gr_aimingangle = aimingangle;
-	atransform.shearing = false;
-	atransform.viewaiming = aimingangle;
-
-	if (cv_grshearing.value)
-	{
-		gr_aimingangle = 0;
-		atransform.shearing = true;
-	}
-
-	gr_viewludsin = FIXED_TO_FLOAT(FINECOSINE(gr_aimingangle>>ANGLETOFINESHIFT));
-	gr_viewludcos = FIXED_TO_FLOAT(-FINESINE(gr_aimingangle>>ANGLETOFINESHIFT));
-
-	atransform.anglex = (float)(gr_aimingangle>>ANGLETOFINESHIFT)*(360.0f/(float)FINEANGLES);
-	atransform.angley = (float)(viewangle>>ANGLETOFINESHIFT)*(360.0f/(float)FINEANGLES);
-
-	atransform.fovxangle = fpov; // Tails
-	atransform.fovyangle = fpov; // Tails
-	if (player->viewrollangle != 0)
-	{
-		fixed_t rol = AngleFixed(player->viewrollangle);
-		atransform.rollangle = FIXED_TO_FLOAT(rol);
-		atransform.roll = true;
-	}
-	atransform.splitscreen = splitscreen;
-
-	for (i = 0; i <= splitscreen; i++)
-	{
-		if (player == &players[displayplayers[i]])
-			postprocessor = &postimgtype[i];
-	}
-
-	atransform.flip = false;
-	if (*postprocessor == postimg_flip)
-		atransform.flip = true;
-
-	atransform.mirror = false;
-	if (*postprocessor == postimg_mirror)
-		atransform.mirror = true;
-
 	// Clear view, set viewport (glViewport), set perspective...
 	HWR_ClearView();
-	HWR_ClearSprites();
 
 	ST_doPaletteStuff();
 
@@ -5890,19 +5828,8 @@ void HWR_RenderFrame(INT32 viewnumber, player_t *player, boolean skybox)
 		current_bsp_culling_distance = bsp_culling_distances[cv_grrenderdistance.value - 1];
 	}
 
-	HWR_ClearClipper();
-	
-	// Set transform.
-	HWD.pfnSetTransform(&atransform);
-
-	// Reset the shader state.
-	//HWR_SetShaderState();
-
-	validcount++;
-
 	portalclipline = NULL;
 	HWR_RenderViewpoint(NULL, fpov, player, 0, !skybox);
-	HWR_SetTransform(fpov, player);// not sure if needed
 
 	// Unset transform and shader
 	HWD.pfnSetTransform(NULL);
