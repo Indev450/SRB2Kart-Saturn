@@ -208,7 +208,6 @@ static inline void *G_ScpyTiccmd(ticcmd_t* dest, void* src, const size_t n)
 }
 
 
-
 // Some software don't support largest packet
 // (original sersetup, not exactely, but the probability of sending a packet
 // of 512 bytes is like 0.1)

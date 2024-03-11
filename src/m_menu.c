@@ -1543,14 +1543,14 @@ static menuitem_t OP_SoundOptionsMenu[] =
 	{IT_STRING|IT_CVAR|IT_CV_SLIDER,
 												NULL, "Music Volume",					&cv_digmusicvolume,		 	38},
 
-/* -- :nonnathisshit:
+#ifndef NO_MIDI
 	{IT_STRING|IT_CVAR,			NULL, "MIDI",					&cv_gamemidimusic,		 50},
 	{IT_STRING|IT_CVAR|IT_CV_SLIDER,
 								NULL, "MIDI Volume",			&cv_midimusicvolume,	 58},
-*/
+#endif
 
 	//{IT_STRING|IT_CALL,			NULL, "Restart Audio System",	M_RestartAudio,			 50},
-
+#ifdef NO_MIDI
 	{IT_STRING|IT_CVAR,							NULL, "Reverse L/R Channels",			&stereoreverse,			 	50},
 	{IT_STRING|IT_CVAR,							NULL, "Surround Sound",					&surround,			 	 	60},
 
@@ -1564,14 +1564,33 @@ static menuitem_t OP_SoundOptionsMenu[] =
 	{IT_STRING|IT_CVAR,        					NULL, "Play Music While Unfocused", 	&cv_playmusicifunfocused, 	125},
 	{IT_STRING|IT_CVAR,        					NULL, "Play SFX While Unfocused", 		&cv_playsoundifunfocused, 	135},
 	{IT_STRING|IT_SUBMENU, 						NULL, "Advanced Settings...", 			&OP_SoundAdvancedDef, 		155}
+#else
+	{IT_STRING|IT_CVAR,							NULL, "Reverse L/R Channels",			&stereoreverse,			 	60},
+	{IT_STRING|IT_CVAR,							NULL, "Surround Sound",					&surround,			 	 	70},
+
+	{IT_STRING|IT_CVAR,							NULL, "Chat Notifications",				&cv_chatnotifications,	 	85},
+	{IT_STRING|IT_CVAR,							NULL, "Character voices",				&cv_kartvoices,			 	95},
+	{IT_STRING|IT_CVAR,							NULL, "Powerup Warning",				&cv_kartinvinsfx,		 	105},
+	
+	{IT_KEYHANDLER|IT_STRING,					NULL, "Sound Test",						M_HandleSoundTest,			115},
+	{IT_STRING|IT_CALL,							NULL, "Music Test",						M_MusicTest,				125},
+
+	{IT_STRING|IT_CVAR,        					NULL, "Play Music While Unfocused", 	&cv_playmusicifunfocused, 	135},
+	{IT_STRING|IT_CVAR,        					NULL, "Play SFX While Unfocused", 		&cv_playsoundifunfocused, 	145},
+	{IT_STRING|IT_SUBMENU, 						NULL, "Advanced Settings...", 			&OP_SoundAdvancedDef, 		165}
+#endif
 };
 
 static const char* OP_SoundTooltips[] =
 {
 	"Turn Sound effects on or off.",
-	"Volume of sound effects.",
-	"Turn Sound effects on or off.",
-	"Volume of music.",
+	"Volume of Sound effects.",
+	"Turn Music on or off.",
+	"Volume of Music.",
+#ifndef NO_MIDI
+	"Turn Midi Music on or off.",
+	"Volume of Midi Music.",
+#endif
 	"Reverse left and right channels of audio.",
 	"Surround Sound.",
 	"Chat notification sound.",
@@ -1888,8 +1907,7 @@ static menuitem_t OP_AdvServerOptionsMenu[] =
 
 #ifndef NONET
 static const char* OP_AdvServerOptionsTooltips[] =
-{
-	
+{	
 	"Server used for master server.",
 	"Attempts to resynchronise player to server.",
 	"Maximum allowed delay.",
@@ -4140,7 +4158,7 @@ void M_StartControlPanel(void)
 
 		Dummymenuplayer_OnChange();
 
-		if ((server || IsPlayerAdmin(consoleplayer)))
+		if (server || IsPlayerAdmin(consoleplayer))
 		{
 			MPauseMenu[mpause_switchmap].status = IT_STRING | IT_CALL;
 			MPauseMenu[mpause_addons].status = IT_STRING | IT_CALL;
@@ -4910,7 +4928,7 @@ static void M_DrawGenericMenu(void)
 	// tooltips
 	if (currentMenu == &OP_ControlsDef)
 	{
-		if (!(OP_ControlsTooltips[itemOn] == NULL)) 
+		if (!(OP_ControlsTooltips[itemOn] == NULL))
 		{
 			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_ControlsTooltips[itemOn], coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
@@ -4920,7 +4938,7 @@ static void M_DrawGenericMenu(void)
 
 	if (currentMenu == &OP_MouseOptionsDef)
 	{
-		if (!(OP_MouseTooltips[itemOn] == NULL)) 
+		if (!(OP_MouseTooltips[itemOn] == NULL))
 		{
 			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_MouseTooltips[itemOn], coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
@@ -4930,7 +4948,7 @@ static void M_DrawGenericMenu(void)
 
 	if (currentMenu == &OP_VideoOptionsDef)
 	{
-		if (!(OP_VideoTooltips[itemOn] == NULL)) 
+		if (!(OP_VideoTooltips[itemOn] == NULL))
 		{
 			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_VideoTooltips[itemOn], coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
@@ -4940,7 +4958,7 @@ static void M_DrawGenericMenu(void)
 
 	if (currentMenu == &OP_SoundOptionsDef)
 	{
-		if (!(OP_SoundTooltips[itemOn] == NULL)) 
+		if (!(OP_SoundTooltips[itemOn] == NULL))
 		{
 			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_SoundTooltips[itemOn], coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
@@ -4950,7 +4968,7 @@ static void M_DrawGenericMenu(void)
 
 	if (currentMenu == &OP_SoundAdvancedDef)
 	{
-		if (!(OP_SoundAdvancedTooltips[itemOn] == NULL)) 
+		if (!(OP_SoundAdvancedTooltips[itemOn] == NULL))
 		{
 			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_SoundAdvancedTooltips[itemOn], coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
@@ -4960,7 +4978,7 @@ static void M_DrawGenericMenu(void)
 
 	if (currentMenu == &OP_ExpOptionsDef)
 	{
-		if (!(OP_ExpTooltips[itemOn] == NULL)) 
+		if (!(OP_ExpTooltips[itemOn] == NULL))
 		{
 			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_ExpTooltips[itemOn], coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
@@ -4970,7 +4988,7 @@ static void M_DrawGenericMenu(void)
 
 	if (currentMenu == &OP_ChatOptionsDef)
 	{
-		if (!(OP_ChatOptionsTooltips[itemOn] == NULL)) 
+		if (!(OP_ChatOptionsTooltips[itemOn] == NULL))
 		{
 			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_ChatOptionsTooltips[itemOn], coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
@@ -4980,7 +4998,7 @@ static void M_DrawGenericMenu(void)
 	
 	if (currentMenu == &OP_GameOptionsDef)
 	{
-		if (!(OP_GameTooltips[itemOn] == NULL)) 
+		if (!(OP_GameTooltips[itemOn] == NULL))
 		{
 			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_GameTooltips[itemOn], coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
@@ -4990,7 +5008,7 @@ static void M_DrawGenericMenu(void)
 
 	if (currentMenu == &OP_ServerOptionsDef)
 	{
-		if (!(OP_ServerOptionsTooltips[itemOn] == NULL)) 
+		if (!(OP_ServerOptionsTooltips[itemOn] == NULL))
 		{
 			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_ServerOptionsTooltips[itemOn], coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
@@ -5000,7 +5018,7 @@ static void M_DrawGenericMenu(void)
 
 	if (currentMenu == &OP_AdvServerOptionsDef)
 	{
-		if (!(OP_AdvServerOptionsTooltips[itemOn] == NULL)) 
+		if (!(OP_AdvServerOptionsTooltips[itemOn] == NULL))
 		{
 			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_AdvServerOptionsTooltips[itemOn], coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
@@ -5010,7 +5028,7 @@ static void M_DrawGenericMenu(void)
 	
 	if (currentMenu == &OP_PlayerDistortDef)
 	{
-		if (!(OP_PlayerDistortTooltips[itemOn] == NULL)) 
+		if (!(OP_PlayerDistortTooltips[itemOn] == NULL))
 		{
 			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_PlayerDistortTooltips[itemOn], coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
@@ -5020,7 +5038,7 @@ static void M_DrawGenericMenu(void)
 
 	if (currentMenu == &OP_SaturnCreditsDef) // C:
 	{
-		if (!(OP_CreditTooltips[itemOn] == NULL)) 
+		if (!(OP_CreditTooltips[itemOn] == NULL))
 		{
 			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_CreditTooltips[itemOn], coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
@@ -5030,7 +5048,7 @@ static void M_DrawGenericMenu(void)
 
 	if (currentMenu == &OP_BirdDef)
 	{
-		if (!(OP_BirdTooltips[itemOn] == NULL)) 
+		if (!(OP_BirdTooltips[itemOn] == NULL))
 		{
 			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_BirdTooltips[itemOn], coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
@@ -5040,7 +5058,7 @@ static void M_DrawGenericMenu(void)
 
 	if (currentMenu == &OP_TiltDef)
 	{
-		if (!(OP_TiltTooltips[itemOn] == NULL)) 
+		if (!(OP_TiltTooltips[itemOn] == NULL))
 		{
 			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_TiltTooltips[itemOn], coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
@@ -5050,7 +5068,7 @@ static void M_DrawGenericMenu(void)
 
 	if (currentMenu == &OP_AdvancedBirdDef)
 	{
-		if (!(OP_AdvancedBirdTooltips[itemOn] == NULL)) 
+		if (!(OP_AdvancedBirdTooltips[itemOn] == NULL))
 		{
 			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_AdvancedBirdTooltips[itemOn], coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
@@ -5060,7 +5078,7 @@ static void M_DrawGenericMenu(void)
 	
 	if (currentMenu == &OP_NametagDef)
 	{
-		if (!(OP_NametagTooltips[itemOn] == NULL)) 
+		if (!(OP_NametagTooltips[itemOn] == NULL))
 		{
 			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_NametagTooltips[itemOn], coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
@@ -5070,7 +5088,7 @@ static void M_DrawGenericMenu(void)
 	
 	if (currentMenu == &OP_DriftGaugeDef)
 	{
-		if (!(OP_DriftGaugeTooltips[itemOn] == NULL)) 
+		if (!(OP_DriftGaugeTooltips[itemOn] == NULL))
 		{
 			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_DriftGaugeTooltips[itemOn], coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
@@ -8013,17 +8031,21 @@ static void M_DrawSkyRoom(void)
 			(digital_disabled ? warningflags : highlightflags),
 			(digital_disabled ? "OFF" : "ON"));
 
-		/*V_DrawRightAlignedString(BASEVIDWIDTH - currentMenu->x,
+#ifndef NO_MIDI
+		V_DrawRightAlignedString(BASEVIDWIDTH - currentMenu->x,
 			currentMenu->y+currentMenu->menuitems[5].alphaKey,
 			(midi_disabled ? warningflags : highlightflags),
-			(midi_disabled ? "OFF" : "ON"));*/
+			(midi_disabled ? "OFF" : "ON"));
+#endif
 
 		if (itemOn == 0)
 			lengthstring = 8*(sound_disabled ? 3 : 2);
 		else if (itemOn == 2)
 			lengthstring = 8*(digital_disabled ? 3 : 2);
-		/*else if (itemOn == 5)
-			lengthstring = 8*(midi_disabled ? 3 : 2);*/
+#ifndef NO_MIDI
+		else if (itemOn == 5)
+			lengthstring = 8*(midi_disabled ? 3 : 2);
+#endif
 	}
 
 	for (i = 0; i < currentMenu->numitems; ++i)
@@ -9083,8 +9105,6 @@ void M_ModeAttackRetry(INT32 choice)
 	G_CheckDemoStatus(); // Cancel recording
 	if (modeattacking == ATTACKING_RECORD)
 		M_ChooseTimeAttack(0);
-	/*else if (modeattacking == ATTACKING_NIGHTS)
-		M_ChooseNightsAttack(0);*/
 }
 
 static void M_ModeAttackEndGame(INT32 choice)
