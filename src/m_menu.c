@@ -11441,6 +11441,8 @@ static void M_SetupMultiPlayer(INT32 choice)
 	//change the y offsets of the menu depending on cvar settings
 	SKINSELECTMENUEDIT
 
+	sortSkinGrid();
+
 	MP_PlayerSetupDef.prevMenu = currentMenu;
 	M_SetupNextMenu(&MP_PlayerSetupDef);
 }
@@ -11477,6 +11479,8 @@ static void M_SetupMultiPlayer2(INT32 choice)
 
 	//change the y offsets of the menu depending on cvar settings
 	SKINSELECTMENUEDIT
+
+	sortSkinGrid();
 
 	MP_PlayerSetupDef.prevMenu = currentMenu;
 	M_SetupNextMenu(&MP_PlayerSetupDef);
@@ -11515,6 +11519,8 @@ static void M_SetupMultiPlayer3(INT32 choice)
 	//change the y offsets of the menu depending on cvar settings
 	SKINSELECTMENUEDIT
 
+	sortSkinGrid();
+
 	MP_PlayerSetupDef.prevMenu = currentMenu;
 	M_SetupNextMenu(&MP_PlayerSetupDef);
 }
@@ -11551,6 +11557,8 @@ static void M_SetupMultiPlayer4(INT32 choice)
 
 	//change the y offsets of the menu depending on cvar settings
 	SKINSELECTMENUEDIT
+	
+	sortSkinGrid();
 
 	MP_PlayerSetupDef.prevMenu = currentMenu;
 	M_SetupNextMenu(&MP_PlayerSetupDef);
@@ -11575,6 +11583,7 @@ static boolean M_QuitMultiPlayerMenu(void)
 	COM_BufAddText (va("%s %d\n",setupm_cvcolor->name,setupm_fakecolor));	
 	return true;
 }
+
 
 // =================
 // DATA OPTIONS MENU
