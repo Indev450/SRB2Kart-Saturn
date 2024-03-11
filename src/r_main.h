@@ -65,8 +65,8 @@ extern lighttable_t *zlight[LIGHTLEVELS][MAXLIGHTZ];
 #define NUMCOLORMAPS 32
 
 // Utility functions.
-INT32 R_PointOnSide(fixed_t x, fixed_t y, node_t *node);
-INT32 R_PointOnSegSide(fixed_t x, fixed_t y, seg_t *line);
+INT32 R_PointOnSide(fixed_t x, fixed_t y, const node_t *node);
+INT32 R_PointOnSegSide(fixed_t x, fixed_t y, const seg_t *line);
 angle_t R_PointToAngle(fixed_t x, fixed_t y);
 angle_t R_PointToAngle64(INT64 x, INT64 y);
 angle_t R_PointToAngleEx(INT32 x2, INT32 y2, INT32 x1, INT32 y1);

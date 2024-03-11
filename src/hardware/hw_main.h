@@ -138,7 +138,7 @@ void HWR_DrawSkyBackground(float fpov);
 void HWR_RenderBSPNode(INT32 bspnum);
 void HWR_Subsector(size_t num);
 void HWR_AddLine(seg_t *line);
-boolean HWR_CheckBBox(fixed_t *bspcoord);
+boolean HWR_CheckBBox(const fixed_t *bspcoord);
 void HWR_RenderDrawNodes(void);
 
 // hw_main.c: Sprites

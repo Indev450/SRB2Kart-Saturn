@@ -2701,7 +2701,7 @@ doaddline:
 //
 // modified to use local variables
 
-boolean HWR_CheckBBox(fixed_t *bspcoord)
+boolean HWR_CheckBBox(const fixed_t *bspcoord)
 {
 	INT32 boxpos;
 	fixed_t px1, py1, px2, py2;
@@ -3452,7 +3452,7 @@ skip_stuff_for_portals:
 // use returned value as multiplier for the added values from p_thrust thing
 // P_InterceptVector needs divlines which need dx and dy, dx=x2-x1 dy=y2-y1
 
-static boolean HWR_PortalCheckBBox(fixed_t *bspcoord)
+static boolean HWR_PortalCheckBBox(const fixed_t *bspcoord)
 {
 	vertex_t closest_point;
 	if (!portalclipline)
@@ -3503,7 +3503,7 @@ void HWR_RenderBSPNode(INT32 bspnum)
 
 	while (!(bspnum & NF_SUBSECTOR))  // Found a subsector?
 	{
-		node_t *bsp = &nodes[bspnum];
+		const node_t *bsp = &nodes[bspnum];
 
 		// Decide which side the view point is on.
 		INT32 side = R_PointOnSide(viewx, viewy, bsp);
