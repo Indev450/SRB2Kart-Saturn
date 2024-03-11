@@ -3513,8 +3513,7 @@ void HWR_RenderBSPNode(INT32 bspnum)
 	// PORTAL CULLING
 	if (portalclipline && portalcullsector)
 	{
-		const sector_t *sect = subsectors[bspnum & ~NF_SUBSECTOR].sector;
-		if (sect != portalcullsector)
+		if (portalcullsector != subsectors[bspnum & ~NF_SUBSECTOR].sector)
 			return;
 		portalcullsector = NULL;
 	}
