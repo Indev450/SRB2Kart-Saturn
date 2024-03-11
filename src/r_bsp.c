@@ -1311,9 +1311,9 @@ void R_RenderBSPNode(INT32 bspnum)
 {
 	node_t *bsp;
 	INT32 side;
-	
+
 	ps_numbspcalls.value.i++;
-	
+
 	while (!(bspnum & NF_SUBSECTOR))  // Found a subsector?
 	{
 		bsp = &nodes[bspnum];
@@ -1324,7 +1324,6 @@ void R_RenderBSPNode(INT32 bspnum)
 		R_RenderBSPNode(bsp->children[side]);
 
 		// Possibly divide back space.
-
 		if (!R_CheckBBox(bsp->bbox[side^1]))
 			return;
 
@@ -1332,7 +1331,8 @@ void R_RenderBSPNode(INT32 bspnum)
 	}
 
 	// PORTAL CULLING
-	if (portalcullsector) {
+	if (portalcullsector)
+	{
 		sector_t *sect = subsectors[bspnum & ~NF_SUBSECTOR].sector;
 		if (sect != portalcullsector)
 			return;

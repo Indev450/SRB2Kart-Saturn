@@ -3490,42 +3490,36 @@ static boolean HWR_PortalCheckBBox(fixed_t *bspcoord)
 
 void HWR_RenderBSPNode(INT32 bspnum)
 {
-	node_t *bsp = &nodes[bspnum];
-
-	// Decide which side the view point is on
-	INT32 side;
-
 	ps_numbspcalls.value.i++;
 
-	// Found a subsector?
-	if (bspnum & NF_SUBSECTOR)
+	while (!(bspnum & NF_SUBSECTOR))  // Found a subsector?
 	{
-		// PORTAL CULLING
-		if (portalclipline)
-		{
-			sector_t *sect = subsectors[bspnum & ~NF_SUBSECTOR].sector;
-			if (portalcullsector)
-			{
-				if (sect != portalcullsector)
-					return;
-				portalcullsector = NULL;
-			}
-		}
-		if (bspnum != -1)
-			HWR_Subsector(bspnum&(~NF_SUBSECTOR));
-		return;
+		node_t *bsp = &nodes[bspnum];
+
+		// Decide which side the view point is on.
+		INT32 side = R_PointOnSide(viewx, viewy, bsp);
+
+		// Recursively divide front space.
+		if (HWR_PortalCheckBBox(bsp->bbox[side]))
+			HWR_RenderBSPNode(bsp->children[side]);
+
+        // Possibly divide back space
+        if (!(HWR_CheckBBox(bsp->bbox[side^1]) && HWR_PortalCheckBBox(bsp->bbox[side^1])))
+            return;
+
+		bspnum = bsp->children[side^1];
 	}
 
-	// Decide which side the view point is on.
-	side = R_PointOnSide(viewx, viewy, bsp);
-
-	// Recursively divide front space.
-	if (HWR_PortalCheckBBox(bsp->bbox[side]))
-		HWR_RenderBSPNode(bsp->children[side]);
-
-	// Possibly divide back space.
-	if (HWR_CheckBBox(bsp->bbox[side^1]) && HWR_PortalCheckBBox(bsp->bbox[side^1]))
-		HWR_RenderBSPNode(bsp->children[side^1]);
+	// PORTAL CULLING
+	if (portalclipline && portalcullsector)
+	{
+		const sector_t *sect = subsectors[bspnum & ~NF_SUBSECTOR].sector;
+		if (sect != portalcullsector)
+			return;
+		portalcullsector = NULL;
+	}
+	// e6y: support for extended nodes
+	HWR_Subsector(bspnum == -1 ? 0 : bspnum & ~NF_SUBSECTOR);
 }
 
 // ==========================================================================
