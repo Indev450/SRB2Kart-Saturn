@@ -9588,7 +9588,6 @@ static void M_CheckMODVersion(int id)
 static void
 Check_new_version_thread (int *id)
 {
-
 	M_SetWaitingMode(M_WAITING_VERSION);
 
 	M_CheckMODVersion(*id);
@@ -9601,7 +9600,6 @@ Check_new_version_thread (int *id)
 	{
 		free(id);
 	}
-
 }
 #endif
 #endif/*defined (UPDATE_ALERT) && defined (HAVE_THREADS)*/
@@ -9650,7 +9648,6 @@ static void M_ConnectMenu(INT32 choice)
 	M_Refresh(0);
 #endif/*defined (MASTERSERVER) && defined (HAVE_THREADS)*/
 }
-
 
 static void M_ConnectMenuModChecks(INT32 choice)
 {
@@ -9701,7 +9698,6 @@ static void M_HandleMasterServerResetChoice(event_t *ev)
 			}
 		}
 	}
-
 }
 
 void M_PopupMasterServerConnectError(void)
@@ -10419,8 +10415,6 @@ static void M_DrawSetupMultiPlayerMenu(void)
 		break;
 	}
 
-	
-	
 	M_DrawTextBox(mx + 32, my - 8 + nameboxaddy, MAXPLAYERNAME, 1);
 	V_DrawString(mx + 40, my + nameboxaddy, V_ALLOWLOWERCASE, setupm_name);
 
@@ -10585,9 +10579,9 @@ static void M_DrawSetupMultiPlayerMenu(void)
 						V_DrawScaledPatch(statx - 30, staty + 63 -(5 *i), 0, W_CachePatchName("K_STATN5", PU_CACHE));
 				}
 			}
+
 #undef GETSELECTEDSPEED
 #undef GETSELECTEDWEIGHT
-			
 
 			break;
 		case SKINMENUTYPE_GRID:
@@ -11338,7 +11332,8 @@ static void M_HandleSetupMultiPlayer(INT32 choice)
 		default:
 			if (choice < 32 || choice > 127)
 				break;
-			if (itemOn == 0){
+			if (itemOn == 0)
+			{
 				l = strlen(setupm_name);
 				if (l < MAXPLAYERNAME)
 				{
@@ -11348,10 +11343,6 @@ static void M_HandleSetupMultiPlayer(INT32 choice)
 				}
 			}
 			break;
-			
-			
-			
-			
 		}
 #undef BREAKWHENLOCKED
 
@@ -11557,7 +11548,7 @@ static void M_SetupMultiPlayer4(INT32 choice)
 
 	//change the y offsets of the menu depending on cvar settings
 	SKINSELECTMENUEDIT
-	
+
 	sortSkinGrid();
 
 	MP_PlayerSetupDef.prevMenu = currentMenu;
