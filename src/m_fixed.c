@@ -61,6 +61,8 @@ fixed_t FixedSqrt(fixed_t x)
 #endif
 }
 
+#define MAXINT2 ((int)0x7fffffff)
+
 fixed_t FixedHypot(fixed_t x, fixed_t y)
 {
 	// Moved the code from R_PointToDist2 to here,
@@ -69,29 +71,34 @@ fixed_t FixedHypot(fixed_t x, fixed_t y)
 
 	angle_t angle;
 	fixed_t dist;
+	fixed_t temp;
 
 	x = abs(x);
 	y = abs(y);
 
 	if (y > x)
 	{
-		fixed_t temp;
-
-		temp = x;
+		fixed_t temp_var = x;
 		x = y;
-		y = temp;
+		y = temp_var;
 	}
 
 	if (!y)
 		return x;
 
-	angle = (tantoangle[FixedDiv(y, x)>>DBITS] + ANGLE_90) >> ANGLETOFINESHIFT;
+	//angle = (tantoangle[FixedDiv(y, x)>>DBITS] + ANGLE_90) >> ANGLETOFINESHIFT;
+	angle = (tantoangle[((y >> 14 >= x) ? ((y ^ x) >> 31) ^ MAXINT2 : FixedDiv2(y, x)) >> DBITS] + ANGLE_90) >> ANGLETOFINESHIFT;
 
 	// use as cosine
-	dist = FixedDiv(x, FINESINE(angle));
+	//dist = FixedDiv(x, FINESINE(angle));
+	
+	temp = finesine[angle];
+    dist = ((x >> 14) >= abs(temp)) ? ((x ^ temp) >> 31) ^ MAXINT2 : FixedDiv2(x, temp);
 
 	return dist;
 }
+
+#undef MAXINT2
 
 vector2_t *FV2_Load(vector2_t *vec, fixed_t x, fixed_t y)
 {
