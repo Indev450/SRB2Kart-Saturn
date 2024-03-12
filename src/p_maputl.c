@@ -976,7 +976,7 @@ boolean P_BlockLinesIterator(INT32 x, INT32 y, boolean (*func)(line_t *))
 //
 // P_BlockThingsIterator
 //
-boolean P_BlockThingsIterator(INT32 x, INT32 y, boolean (*func)(mobj_t *))
+FUNCINLINE ATTRINLINE boolean P_BlockThingsIterator(INT32 x, INT32 y, boolean (*func)(mobj_t *))
 {
 	mobj_t *mobj, *bnext = NULL;
 
