@@ -248,26 +248,6 @@ boolean P_DoSpring(mobj_t *spring, mobj_t *object)
 
 		//pflags = object->player->pflags & (PF_JUMPED|PF_SPINNING|PF_THOKKED); // I still need these.
 		P_ResetPlayer(object->player);
-
-		/* // SRB2kart - Springs don't need to change player state in kart.
-		if (P_MobjFlip(object)*vertispeed > 0)
-			P_SetPlayerMobjState(object, S_PLAY_SPRING);
-		else if (P_MobjFlip(object)*vertispeed < 0)
-			P_SetPlayerMobjState(object, S_PLAY_FALL1);
-		else // horizontal spring
-		{
-			if (pflags & (PF_JUMPED|PF_SPINNING) && object->player->panim == PA_ROLL)
-				object->player->pflags = pflags;
-			else
-				P_SetPlayerMobjState(object, S_PLAY_RUN1);
-		}
-
-		if (spring->info->painchance)
-		{
-			object->player->pflags |= PF_JUMPED;
-			P_SetPlayerMobjState(object, S_PLAY_ATK1);
-		}
-		*/
 	}
 	return true;
 }
@@ -314,14 +294,6 @@ static void P_DoFanAndGasJet(mobj_t *spring, mobj_t *object)
 			if (flipval*object->momz > FixedMul(speed, spring->scale))
 				object->momz = flipval*FixedMul(speed, spring->scale);
 
-			/* // SRB2kart - don't need state change
-			if (p && !p->powers[pw_tailsfly]) // doesn't reset anim for Tails' flight
-			{
-				P_ResetPlayer(p);
-				if (p->panim != PA_FALL)
-					P_SetPlayerMobjState(object, S_PLAY_FALL1);
-			}
-			*/
 			break;
 		case MT_STEAM: // Steam
 			if (zdist > FixedMul(16*FRACUNIT, spring->scale))
@@ -341,14 +313,6 @@ static void P_DoFanAndGasJet(mobj_t *spring, mobj_t *object)
 			else
 				object->momz = flipval*FixedMul(speed, FixedSqrt(FixedMul(spring->scale, object->scale))); // scale the speed with both objects' scales, just like with springs!
 
-			/* // SRB2kart - don't need state change
-			if (p)
-			{
-				P_ResetPlayer(p);
-				if (p->panim != PA_FALL)
-					P_SetPlayerMobjState(object, S_PLAY_FALL1);
-			}
-			*/
 			break;
 		default:
 			break;
@@ -365,10 +329,6 @@ static void P_DoTailsCarry(player_t *sonic, player_t *tails)
 		return;
 	if ((sonic->pflags & PF_CARRIED) && sonic->mo->tracer == tails->mo)
 		return;
-
-	//if (!tails->powers[pw_tailsfly] && !(tails->charability == CA_FLY && (tails->mo->state >= &states[S_PLAY_SPC1] && tails->mo->state <= &states[S_PLAY_SPC4])))
-	//	return; // SRB2kart - no changey statey
-
 	if (tails->bot == 1)
 		return;
 
@@ -407,13 +367,6 @@ static void P_DoTailsCarry(player_t *sonic, player_t *tails)
 	{
 	// Why block opposing teams from tailsflying each other?
 		// Sneaking into the hands of a flying tails player in Race might be a viable strategy, who knows.
-		/*
-		if (gametype == GT_RACE || gametype == GT_COMPETITION
-			|| (netgame && (tails->spectator || sonic->spectator))
-			|| (G_TagGametype() && (!(tails->pflags & PF_TAGIT) != !(sonic->pflags & PF_TAGIT)))
-			|| (gametype == GT_MATCH)
-			|| (G_GametypeHasTeams() && tails->ctfteam != sonic->ctfteam))
-			sonic->pflags &= ~PF_CARRIED; */
 		if (tails->spectator || sonic->spectator || G_RaceGametype()) // SRB2kart
 			sonic->pflags &= ~PF_CARRIED;
 		else
@@ -486,35 +439,6 @@ static boolean PIT_CheckThing(mobj_t *thing)
 		return false;
 	}
 #endif
-
-	// Metal Sonic destroys tiny baby objects.
-	/*if (tmthing->type == MT_METALSONIC_RACE
-	&& (thing->flags & (MF_MISSILE|MF_ENEMY|MF_BOSS) || thing->type == MT_SPIKE))
-	{
-		if ((thing->flags & (MF_ENEMY|MF_BOSS)) && (thing->health <= 0 || !(thing->flags & MF_SHOOTABLE)))
-			return true;
-		blockdist = thing->radius + tmthing->radius;
-		if (abs(thing->x - tmx) >= blockdist || abs(thing->y - tmy) >= blockdist)
-			return true; // didn't hit it
-		// see if it went over / under
-		if (tmthing->z > thing->z + thing->height)
-			return true; // overhead
-		if (tmthing->z + tmthing->height < thing->z)
-			return true; // underneath
-		if (thing->type == MT_SPIKE)
-		{
-			S_StartSound(tmthing, thing->info->deathsound);
-			for (thing = thing->subsector->sector->thinglist; thing; thing = thing->snext)
-				if (thing->type == MT_SPIKE && thing->health > 0 && thing->flags & MF_SOLID && P_AproxDistance(thing->x - tmthing->x, thing->y - tmthing->y) < FixedMul(56*FRACUNIT, thing->scale))
-					P_KillMobj(thing, tmthing, tmthing);
-		}
-		else
-		{
-			thing->health = 0;
-			P_KillMobj(thing, tmthing, tmthing);
-		}
-		return true;
-	}*/
 
 	if (!(thing->flags & (MF_SOLID|MF_SPECIAL|MF_PAIN|MF_SHOOTABLE)) || (thing->flags & MF_NOCLIPTHING))
 		return true;
@@ -1207,21 +1131,7 @@ static boolean PIT_CheckThing(mobj_t *thing)
 		if ((tmthing->type == MT_THROWNBOUNCE && tmthing->fuse > 8*TICRATE) && thing->flags & MF_SOLID)
 			return true;
 
-		// Missiles ignore Brak's helper.
-		/*if (thing->type == MT_BLACKEGGMAN_HELPER)
-			return true;
-
-		// Hurting Brak
-		if (tmthing->type == MT_BLACKEGGMAN_MISSILE
-		    && thing->type == MT_BLACKEGGMAN && tmthing->target != thing)
-		{
-			// Not if Brak's already in pain
-			if (!(thing->state >= &states[S_BLACKEGG_PAIN1] && thing->state <= &states[S_BLACKEGG_PAIN35]))
-				P_SetMobjState(thing, thing->info->painstate);
-			return false;
-		}*/
-
-		if (!(thing->flags & MF_SHOOTABLE)/* && !(thing->type == MT_EGGSHIELD)*/)
+		if (!(thing->flags & MF_SHOOTABLE))
 		{
 			// didn't do any damage
 			return !(thing->flags & MF_SOLID);
@@ -1232,80 +1142,11 @@ static boolean PIT_CheckThing(mobj_t *thing)
 		&& thing->player->pflags & PF_CARRIED && thing->tracer == tmthing->target)
 			return true; // Don't give rings to your carry player by accident.
 
-		/*if (thing->type == MT_EGGSHIELD)
-		{
-			fixed_t touchx, touchy;
-			angle_t angle;
-
-			if (P_AproxDistance(tmthing->x-thing->x, tmthing->y-thing->y) >
-				P_AproxDistance((tmthing->x-tmthing->momx)-thing->x, (tmthing->y-tmthing->momy)-thing->y))
-			{
-				touchx = tmthing->x + tmthing->momx;
-				touchy = tmthing->y + tmthing->momy;
-			}
-			else
-			{
-				touchx = tmthing->x;
-				touchy = tmthing->y;
-			}
-
-			angle = R_PointToAngle2(thing->x, thing->y, touchx, touchy) - thing->angle;
-
-			if (!(angle > ANGLE_90 && angle < ANGLE_270)) // hit front of shield, didn't destroy it
-				return false;
-			else // hit shield from behind, shield is destroyed!
-			{
-				P_KillMobj(thing, tmthing, tmthing);
-				return false;
-			}
-		}*/
-
 		if (tmthing->type == MT_SHELL && tmthing->threshold > TICRATE)
 			return true;
 		// damage / explode
 		if (tmthing->flags & MF_ENEMY) // An actual ENEMY! (Like the deton, for example)
 			P_DamageMobj(thing, tmthing, tmthing, 1);
-		/*else if (tmthing->type == MT_BLACKEGGMAN_MISSILE && thing->player
-			&& (thing->player->pflags & PF_JUMPED)
-			&& !thing->player->powers[pw_flashing]
-			&& thing->tracer != tmthing
-			&& tmthing->target != thing)
-		{
-			// Hop on the missile for a ride!
-			thing->player->pflags |= PF_ITEMHANG;
-			thing->player->pflags &= ~PF_JUMPED;
-			P_SetTarget(&thing->tracer, tmthing);
-			P_SetTarget(&tmthing->target, thing); // Set owner to the player
-			P_SetTarget(&tmthing->tracer, NULL); // Disable homing-ness
-			tmthing->momz = 0;
-
-			thing->angle = tmthing->angle;
-
-			if (!demo.playback || P_AnalogMove(thing->player))
-			{
-				if (thing->player == &players[consoleplayer])
-					localangle[0] = thing->angle;
-				else if (thing->player == &players[displayplayers[1]])
-					localangle[1] = thing->angle;
-				else if (thing->player == &players[displayplayers[2]])
-					localangle[2] = thing->angle;
-				else if (thing->player == &players[displayplayers[3]])
-					localangle[3] = thing->angle;
-			}
-
-			return true;
-		}
-		else if (tmthing->type == MT_BLACKEGGMAN_MISSILE && thing->player && ((thing->player->pflags & PF_ITEMHANG) || (thing->player->pflags & PF_JUMPED)))
-		{
-			// Ignore
-		}
-		else if (tmthing->type == MT_BLACKEGGMAN_GOOPFIRE)
-		{
-			P_UnsetThingPosition(tmthing);
-			tmthing->x = thing->x;
-			tmthing->y = thing->y;
-			P_SetThingPosition(tmthing);
-		}*/
 		else
 			P_DamageMobj(thing, tmthing, tmthing->target, 1);
 
@@ -1373,29 +1214,6 @@ static boolean PIT_CheckThing(mobj_t *thing)
 
 		P_SetTarget(&thing->target, tmthing);
 	}
-
-	// Respawn rings and items
-	/*if ((tmthing->type == MT_NIGHTSDRONE || thing->type == MT_NIGHTSDRONE)
-	 && (tmthing->player || thing->player))
-	{
-		mobj_t *droneobj = (tmthing->type == MT_NIGHTSDRONE) ? tmthing : thing;
-		player_t *pl = (droneobj == thing) ? tmthing->player : thing->player;
-
-		// Must be in bonus time, and must be NiGHTS, must wait about a second
-		// must be flying in the SAME DIRECTION as the last time you came through.
-		// not (your direction) xor (stored direction)
-		// In other words, you can't u-turn and respawn rings near the drone.
-		if (pl->bonustime && (pl->pflags & PF_NIGHTSMODE) && (INT32)leveltime > droneobj->extravalue2 && (
-		   !(pl->flyangle > 90 &&   pl->flyangle < 270)
-		^ (droneobj->extravalue1 > 90 && droneobj->extravalue1 < 270)
-		))
-		{
-			// Reload all the fancy ring stuff!
-			P_ReloadRings();
-		}
-		droneobj->extravalue1 = pl->flyangle;
-		droneobj->extravalue2 = (INT32)leveltime + TICRATE;
-	}*/
 
 	// check for special pickup
 	if (thing->flags & MF_SPECIAL && tmthing->player)
@@ -1469,71 +1287,10 @@ static boolean PIT_CheckThing(mobj_t *thing)
 			P_DamageMobj(thing, tmthing, tmthing, 1);
 		else if (thing->player->kartstuff[k_invincibilitytimer] && !tmthing->player->kartstuff[k_invincibilitytimer])
 			P_DamageMobj(tmthing, thing, thing, 1);
-
-		/*if (G_BattleGametype() && (!G_GametypeHasTeams() || tmthing->player->ctfteam != thing->player->ctfteam))
-		{
-			if ((tmthing->player->powers[pw_invulnerability] || tmthing->player->powers[pw_super])
-				&& !thing->player->powers[pw_super])
-				P_DamageMobj(thing, tmthing, tmthing, 1);
-			else if ((thing->player->powers[pw_invulnerability] || thing->player->powers[pw_super])
-				&& !tmthing->player->powers[pw_super])
-				P_DamageMobj(tmthing, thing, thing, 1);
-		}
-
-		// If players are using touch tag, seekers damage hiders.
-		if (G_TagGametype() && cv_touchtag.value &&
-			((thing->player->pflags & PF_TAGIT) != (tmthing->player->pflags & PF_TAGIT)))
-		{
-			if ((tmthing->player->pflags & PF_TAGIT) && !(thing->player->pflags & PF_TAGIT))
-				P_DamageMobj(thing, tmthing, tmthing, 1);
-			else if ((thing->player->pflags & PF_TAGIT) && !(tmthing->player->pflags & PF_TAGIT))
-				P_DamageMobj(tmthing, thing, tmthing, 1);
-		}*/
 	}
-
-	// Force solid players in hide and seek to avoid corner stacking.
-	// Kart: No Tailspickup ever, players are always solid
-	/*if (cv_tailspickup.value && gametype != GT_HIDEANDSEEK)
-	{
-		if (tmthing->player && thing->player)
-		{
-			P_DoTailsCarry(thing->player, tmthing->player);
-			return true;
-		}
-	}
-	else if (thing->player) {
-		if (thing->player-players == consoleplayer && botingame)
-			//CV_SetValue(&cv_analog2, true);
-		thing->player->pflags &= ~PF_CARRIED;
-	}*/
 
 	if (thing->player)
 	{
-		// Doesn't matter what gravity player's following! Just do your stuff in YOUR direction only
-		/*if (tmthing->eflags & MFE_VERTICALFLIP
-		&& (tmthing->z + tmthing->height + tmthing->momz < thing->z
-		 || tmthing->z + tmthing->height + tmthing->momz >= thing->z + thing->height))
-			;
-		else if (!(tmthing->eflags & MFE_VERTICALFLIP)
-		&& (tmthing->z + tmthing->momz > thing->z + thing->height
-		 || tmthing->z + tmthing->momz <= thing->z))
-			;
-		else if  (P_IsObjectOnGround(thing)
-			&& !P_IsObjectOnGround(tmthing) // Don't crush if the monitor is on the ground...
-			&& (tmthing->flags & MF_SOLID))
-		{
-			if (tmthing->flags & (MF_MONITOR|MF_PUSHABLE))
-			{
-				// Objects kill you if it falls from above.
-				if (thing != tmthing->target)
-					P_DamageMobj(thing, tmthing, tmthing->target, 10000);
-
-				tmthing->momz = -tmthing->momz/2; // Bounce, just for fun!
-				// The tmthing->target allows the pusher of the object
-				// to get the point if he topples it on an opponent.
-			}
-		}*/
-
 		if (tmthing->type == MT_FAN || tmthing->type == MT_STEAM)
 			P_DoFanAndGasJet(tmthing, thing);
 	}
@@ -1755,9 +1512,7 @@ static boolean PIT_CheckThing(mobj_t *thing)
 		; // Fix a few nasty spring-jumping bugs that happen sometimes.
 	// Monitors are not treated as solid to players who are jumping, spinning or gliding,
 	// unless it's a CTF team monitor and you're on the wrong team
-	/*else if (thing->flags & MF_MONITOR && tmthing->player && tmthing->player->pflags & (PF_JUMPED|PF_SPINNING|PF_GLIDING)
-	&& !((thing->type == MT_REDRINGBOX && tmthing->player->ctfteam != 1) || (thing->type == MT_BLUERINGBOX && tmthing->player->ctfteam != 2)))
-		;*/
+
 	// z checking at last
 	// Treat noclip things as non-solid!
 	else if ((thing->flags & (MF_SOLID|MF_NOCLIP)) == MF_SOLID
