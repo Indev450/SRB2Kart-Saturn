@@ -220,20 +220,18 @@ UINT16 software_MAXPACKETLENGTH;
   * \return The full tic value
   *
   */
-inline tic_t ExpandTics(INT32 low, tic_t basetic)
+tic_t ExpandTics(INT32 low, tic_t basetic)
 {
 	INT32 delta;
-	INT32 opt;
 
 	delta = low - (basetic & UINT8_MAX);
-	opt = basetic & ~UINT8_MAX;
 
-	if (delta < 64)
-		return opt + 256 + low;
+	if (delta >= -64 && delta <= 64)
+		return (basetic & ~UINT8_MAX) + low;
 	else if (delta > 64)
-		return opt - 256 + low;
-
-	return opt + low;
+		return (basetic & ~UINT8_MAX) - 256 + low;
+	else //if (delta < -64)
+		return (basetic & ~UINT8_MAX) + 256 + low;
 }
 
 // -----------------------------------------------------------------
