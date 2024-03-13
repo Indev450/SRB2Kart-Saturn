@@ -4340,7 +4340,6 @@ void M_Init(void)
 	
 	if (rendermode == render_opengl)
 	{
-		OP_ExpOptionsMenu[op_exp_angleshit].status = IT_DISABLED;
 		OP_ExpOptionsMenu[op_exp_ffclip].status = IT_DISABLED;
 		OP_ExpOptionsMenu[op_exp_sprclip].status = IT_DISABLED;
 	}
