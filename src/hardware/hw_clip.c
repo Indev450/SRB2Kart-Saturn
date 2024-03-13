@@ -324,8 +324,6 @@ angle_t gld_FrustumAngle(angle_t tiltangle)
 
 	float tilt = (float)fabs(((double)(int)tiltangle) / ANG1);
 
-	// NEWCLIP TODO: SRB2CBTODO: make a global render_fov for this function
-
 	if (tilt > 90.0f)
 		tilt = 90.0f;
 
@@ -342,7 +340,6 @@ angle_t gld_FrustumAngle(angle_t tiltangle)
 	a1 = ANG1 * (int)floatangle;
 	return a1;
 }
-
 
 
 // SRB2CB I don't think used any of this stuff, let's disable for now since SRB2 probably doesn't want it either
