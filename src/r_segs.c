@@ -1175,19 +1175,6 @@ void R_RenderThickSideRange(drawseg_t *ds, INT32 x1, INT32 x2, ffloor_t *pfloor)
 #undef CLAMPMIN
 }
 
-// R_ExpandPlaneY
-//
-// A simple function to modify a visplane's top and bottom for a particular column
-// Sort of like R_ExpandPlane in r_plane.c, except this is vertical expansion
-static inline void R_ExpandPlaneY(visplane_t *pl, INT32 x, INT16 top, INT16 bottom)
-{
-	// Expand the plane, don't shrink it!
-	// note: top and bottom default to 0xFFFF and 0x0000 respectively, which is totally compatible with this
-	if (pl->top[x] > top)       pl->top[x] = top;
-	if (pl->bottom[x] < bottom) pl->bottom[x] = bottom;
-}
-
-
 // R_FFloorCanClip
 //
 // Returns true if a fake floor can clip a column away.
@@ -1237,10 +1224,16 @@ static void R_RenderSegLoop (void)
 
 		if (markceiling)
 		{
-			bottom = yl > floorclip[rw_x] ? floorclip[rw_x] : yl;
+			bottom = yl-1;
 
-			if (top <= --bottom && ceilingplane)
-				R_ExpandPlaneY(ceilingplane, rw_x, top, bottom);
+			if (bottom >= floorclip[rw_x])
+				bottom = floorclip[rw_x]-1;
+
+			if (top <= bottom && ceilingplane)
+			{
+				ceilingplane->top[rw_x] = (INT16)top;
+				ceilingplane->bottom[rw_x] = (INT16)bottom;
+			}
 		}
 
 		yh = bottomfrac>>HEIGHTBITS;
@@ -1255,7 +1248,10 @@ static void R_RenderSegLoop (void)
 			top = yh < ceilingclip[rw_x] ? ceilingclip[rw_x] : yh;
 
 			if (++top <= bottom && floorplane)
-				R_ExpandPlaneY(floorplane, rw_x, top, bottom);
+			{
+				floorplane->top[rw_x] = (INT16)top;
+				floorplane->bottom[rw_x] = (INT16)bottom;
+			}
 		}
 
 		rw_floormarked = false;
@@ -1552,8 +1548,8 @@ static void R_RenderSegLoop (void)
 			else if (markfloor && (!rw_floormarked)) // no bottom wall
 				floorclip[rw_x] = bottomclip;
 		}
-		
-		if (floorclip[rw_x] <= ceilingclip[rw_x] + 1)
+
+		if ((markceiling || markfloor) && (floorclip[rw_x] <= ceilingclip[rw_x] + 1))
 		{
 			solidcol[rw_x] = 1;
 			didsolidcol = true;
@@ -1604,77 +1600,6 @@ static void R_RenderSegLoop (void)
 	}
 	
 	colfunc = wallcolfunc;
-}
-
-
-static void R_MarkSegBounds(void)
-{
-	INT32 top, bottom;
-	INT16 topclip, bottomclip;
-
-	for (; rw_x < rw_stopx; rw_x++)
-	{
-		// mark floor / ceiling areas
-		INT32 yl = (topfrac+HEIGHTUNIT-1)>>HEIGHTBITS;
-		INT32 yh = bottomfrac>>HEIGHTBITS;
-
-		// Mark ceiling
-		top = ceilingclip[rw_x]+1;
-
-		// no space above wall?
-		if (yl < top)
-			yl = top;
-
-		if (markceiling)
-		{
-			if (yl > floorclip[rw_x])
-				bottom = floorclip[rw_x] - 1;
-			else
-				bottom = yl - 1;
-
-			if (ceilingplane && top <= bottom)
-				R_ExpandPlaneY(ceilingplane, rw_x, top, bottom);
-		}
-
-		// Mark floor
-		bottom = floorclip[rw_x]-1;
-
-		// no space below floor?
-		if (yh > bottom)
-			yh = bottom;
-
-		if (markfloor)
-		{
-			if (yh < ceilingclip[rw_x])
-				top = ceilingclip[rw_x] + 1;
-			else
-				top = yh + 1;
-
-			if (floorplane && top <= bottom)
-				R_ExpandPlaneY(floorplane, rw_x, top, bottom);
-		}
-
-		frontscale[rw_x] = rw_scale;
-
-		topclip = (yl >= 0) ? ((yl > viewheight) ? (INT16)viewheight : (INT16)((INT16)yl - 1)) : -1;
-		bottomclip = (yh < viewheight) ? ((yh < -1) ? -1 : (INT16)((INT16)yh + 1)) : (INT16)viewheight;
-
-		if (markceiling) // no top wall
-			ceilingclip[rw_x] = topclip;
-
-		if (markfloor) // no bottom wall
-			floorclip[rw_x] = bottomclip;
-
-		if (floorclip[rw_x] <= ceilingclip[rw_x] + 1)
-		{
-			solidcol[rw_x] = 1;
-			didsolidcol = true;
-		}
-
-		rw_scale += rw_scalestep;
-		topfrac += topstep;
-		bottomfrac += bottomstep;
-	}
 }
 
 // Uses precalculated seg->length
@@ -2555,7 +2480,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 	if (frontsector->numlights)
 	{
 		dc_numlights = frontsector->numlights;
-		if (dc_numlights > dc_maxlights)
+		if (dc_numlights >= dc_maxlights)
 		{
 			dc_maxlights = dc_numlights;
 			dc_lightlist = Z_Realloc(dc_lightlist, sizeof (*dc_lightlist) * dc_maxlights, PU_STATIC, NULL);
@@ -2696,9 +2621,8 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 
 					if ((roverleft>>4 <= worldhigh || roverright>>4 <= worldhighslope) &&
 					    (roverleft>>4 >= worldlow || roverright>>4 >= worldlowslope) &&
-					    					    ((viewz < planevistest && !(rover->flags & FF_INVERTPLANES)) ||
+					    ((viewz < planevistest && !(rover->flags & FF_INVERTPLANES)) ||
 					     (viewz > planevistest && (rover->flags & FF_BOTHPLANES))))
-
 					{
 						//ffloor[i].slope = *rover->b_slope;
 						ffloor[i].b_pos = roverleft;
@@ -2720,9 +2644,8 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 
 					if ((roverleft>>4 <= worldhigh || roverright>>4 <= worldhighslope) &&
 					    (roverleft>>4 >= worldlow || roverright>>4 >= worldlowslope) &&
-					    					    ((viewz > planevistest && !(rover->flags & FF_INVERTPLANES)) ||
+					    ((viewz > planevistest && !(rover->flags & FF_INVERTPLANES)) ||
 					     (viewz < planevistest && (rover->flags & FF_BOTHPLANES))))
-
 					{
 						//ffloor[i].slope = *rover->t_slope;
 						ffloor[i].b_pos = roverleft;
@@ -2755,8 +2678,8 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 
 					if ((roverleft>>4 <= worldhigh || roverright>>4 <= worldhighslope) &&
 					    (roverleft>>4 >= worldlow || roverright>>4 >= worldlowslope) &&
-					    ((viewz < planevistest && (rover->flags & FF_BOTHPLANES || !(rover->flags & FF_INVERTPLANES))) ||
-					     (viewz > planevistest && (rover->flags & FF_BOTHPLANES || rover->flags & FF_INVERTPLANES))))
+					    ((viewz < planevistest && !(rover->flags & FF_INVERTPLANES)) ||
+					     (viewz > planevistest && (rover->flags & FF_BOTHPLANES))))
 					{
 						//ffloor[i].slope = *rover->b_slope;
 						ffloor[i].b_pos = roverleft;
@@ -2778,8 +2701,8 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 
 					if ((roverleft>>4 <= worldhigh || roverright>>4 <= worldhighslope) &&
 					    (roverleft>>4 >= worldlow || roverright>>4 >= worldlowslope) &&
-					    ((viewz > planevistest && (rover->flags & FF_BOTHPLANES || !(rover->flags & FF_INVERTPLANES))) ||
-					     (viewz < planevistest && (rover->flags & FF_BOTHPLANES || rover->flags & FF_INVERTPLANES))))
+					    ((viewz > planevistest && !(rover->flags & FF_INVERTPLANES)) ||
+					     (viewz < planevistest && (rover->flags & FF_BOTHPLANES))))
 					{
 						//ffloor[i].slope = *rover->t_slope;
 						ffloor[i].b_pos = roverleft;
@@ -2900,29 +2823,11 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 		}
 	}
 
+	rw_silhouette = &(ds_p->silhouette);
+	rw_tsilheight = &(ds_p->tsilheight);
+	rw_bsilheight = &(ds_p->bsilheight);
+
 	didsolidcol = false;
-
-	if (!segtextured && !numffloors)
-	{
-		if (markfloor || markceiling)
-			R_MarkSegBounds();
-		else
-		{
-			for (; rw_x < rw_stopx; rw_x++)
-			{
-				frontscale[rw_x] = rw_scale;
-				rw_scale += rw_scalestep;
-			}
-		}
-	}
-	else
-	{
-		rw_silhouette = &ds_p->silhouette;
-		rw_tsilheight = &ds_p->tsilheight;
-		rw_bsilheight = &ds_p->bsilheight;
-
-		R_RenderSegLoop();
-	}
 
 #ifdef WALLSPLATS
 	if (linedef->splats && cv_splats.value)
@@ -2938,27 +2843,13 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 	else
 #endif
 
+	R_RenderSegLoop();
 	//colfunc = wallcolfunc;
 
 	if (portalline) // if curline is a portal, set portalrender for drawseg
 		ds_p->portalpass = portalrender+1;
 	else
 		ds_p->portalpass = 0;
-	
-	// cph - if a column was made solid by this wall, we _must_ save full clipping info
-	if (backsector && didsolidcol)
-	{
-		if (!(ds_p->silhouette & SIL_BOTTOM))
-		{
-			ds_p->silhouette |= SIL_BOTTOM;
-			ds_p->bsilheight = backsector->f_slope ? INT32_MAX : backsector->floorheight;
-		}
-		if (!(ds_p->silhouette & SIL_TOP))
-		{
-			ds_p->silhouette |= SIL_TOP;
-			ds_p->tsilheight = backsector->c_slope ? INT32_MIN : backsector->ceilingheight;
-		}
-	}
 
 	// save sprite clipping info
 	if (maskedtexture || (ds_p->silhouette & (SIL_TOP | SIL_BOTTOM)))
