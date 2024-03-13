@@ -205,9 +205,9 @@ PUREFUNC INT32 P_BoxOnLineSide(fixed_t *tmbox, const line_t *ld)
 // P_PointOnDivlineSide
 // Returns 0 or 1.
 //
-PUREFUNC FUNCINLINE static ATTRINLINE INT32 P_PointOnDivlineSide(fixed_t x, fixed_t y, const divline_t *restrict line)
+PUREFUNC FUNCINLINE static ATTRINLINE INT32 P_PointOnDivlineSide(fixed_t x, fixed_t y, const divline_t *line)
 {
-	fixed_t dx, dy;
+	fixed_t dx, dy, left, right;
 
 	if (!line->dx)
 		return (x <= line->x) ^ (line->dy <= 0);
@@ -218,13 +218,19 @@ PUREFUNC FUNCINLINE static ATTRINLINE INT32 P_PointOnDivlineSide(fixed_t x, fixe
 	dx = (x - line->x);
 	dy = (y - line->y);
 
-	// Try to quickly decide by looking at sign bits.	
-	// also use a mask to avoid branch prediction
-	INT32 mask = (line->dy ^ line->dx ^ dx ^ dy) >> 31;
-	return (mask & ((line->dy ^ dx) < 0)) |  // (left is negative)
-		(~mask & (FixedMul(dy>>8, line->dx>>8) >= FixedMul(line->dy>>8, dx>>8)));
-}
+	// try to quickly decide by looking at sign bits
+	if ((line->dy ^ line->dx ^ dx ^ dy) & 0x80000000)
+	{
+		if ((line->dy ^ dx) & 0x80000000)
+			return 1; // left is negative
+		return 0;
+	}
 
+	left = FixedMul(line->dy>>8, dx>>8);
+	right = FixedMul(dy>>8, line->dx>>8);
+
+	return right >= left;
+}
 
 //
 // P_MakeDivline
