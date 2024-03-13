@@ -5377,9 +5377,9 @@ void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 #endif
 
 	// set top/bottom coords
-	vis->ty = FIXED_TO_FLOAT(thing->z + spritecachedinfo[lumpoff].topoffset);
+	vis->ty = FIXED_TO_FLOAT(interp.z + spritecachedinfo[lumpoff].topoffset);
 
-	vis->gzt = FIXED_TO_FLOAT(thing->z + spritecachedinfo[lumpoff].topoffset);
+	vis->gzt = FIXED_TO_FLOAT(interp.z + spritecachedinfo[lumpoff].topoffset);
 	vis->gz = vis->gzt - FIXED_TO_FLOAT(spritecachedinfo[lumpoff].height);
 
 	vis->precip = true;
