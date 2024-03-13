@@ -824,7 +824,7 @@ void P_SetThingPosition(mobj_t *thing)
 			// pointer-to-pointer prev pointers --
 			// allows head nodes to be treated like everything else
 
-			mobj_t **link = &blocklinks[bmapwidthmuls[blocky] + blockx];
+			mobj_t **link = &blocklinks[blocky*bmapwidth + blockx];
 			mobj_t *bnext = *link;
 			if ((thing->bnext = bnext) != NULL)
 				bnext->bprev = &thing->bnext;
@@ -928,7 +928,7 @@ boolean P_BlockLinesIterator(INT32 x, INT32 y, boolean (*func)(line_t *))
 	if (x < 0 || y < 0 || x >= bmapwidth || y >= bmapheight)
 		return true;
 
-	offset = bmapwidthmuls[y] + x;
+	offset = y*bmapwidth + x;
 
 	// haleyjd 02/22/06: consider polyobject lines
 	plink = polyblocklinks[offset];
@@ -984,7 +984,7 @@ boolean P_BlockThingsIterator(INT32 x, INT32 y, boolean (*func)(mobj_t *))
 		return true;
 
 	// Check interaction with the objects in the blockmap.
-	for (mobj = blocklinks[bmapwidthmuls[y] + x]; mobj; mobj = bnext)
+	for (mobj = blocklinks[y*bmapwidth + x]; mobj; mobj = bnext)
 	{
 		P_SetTarget(&bnext, mobj->bnext); // We want to note our reference to bnext here incase it is MF_NOTHINK and gets removed!
 		if (!func(mobj))

@@ -386,7 +386,6 @@ extern INT32 bmapheight; // in mapblocks
 extern fixed_t bmaporgx;
 extern fixed_t bmaporgy; // origin of block map
 extern mobj_t **blocklinks; // for thing chains
-extern int *bmapwidthmuls; // LUT bmapwidth muls
 
 //
 // P_INTER

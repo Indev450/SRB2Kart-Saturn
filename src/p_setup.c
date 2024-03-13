@@ -127,8 +127,6 @@ INT32 *blockmaplump; // Big blockmap
 fixed_t bmaporgx, bmaporgy;
 // for thing chains
 mobj_t **blocklinks;
-// LUT bmapwidth muls
-int *bmapwidthmuls;
 
 // REJECT
 // For fast sight rejection.
@@ -1945,14 +1943,6 @@ static void P_CreateBlockMap(void)
 		blocklinks = Z_Calloc(count, PU_LEVEL, NULL);
 		blockmap = blockmaplump + 4;
 
-		// LUT bmapwidth muls
-		count = sizeof(int) * bmapheight;
-		bmapwidthmuls = Z_Calloc(count, PU_LEVEL, NULL);
-
-		for (int f = 0; f < bmapheight; f++){
-			bmapwidthmuls[f] = f * bmapwidth;
-		}
-
 		// haleyjd 2/22/06: setup polyobject blockmap
 		count = sizeof(*polyblocklinks) * bmapwidth * bmapheight;
 		polyblocklinks = Z_Calloc(count, PU_LEVEL, NULL);
@@ -2027,14 +2017,6 @@ static boolean P_LoadBlockMap(lumpnum_t lumpnum)
 	count = sizeof (*blocklinks)* bmapwidth*bmapheight;
 	blocklinks = Z_Calloc(count, PU_LEVEL, NULL);
 	blockmap = blockmaplump+4;
-	
-	// LUT bmapwidth muls
-    count = sizeof(int) * bmapheight;
-    bmapwidthmuls = Z_Calloc(count, PU_LEVEL, NULL);
-
-    for (int i = 0; i < bmapheight; i++){
-        bmapwidthmuls[i] = i * bmapwidth;
-    }
 
 	// haleyjd 2/22/06: setup polyobject blockmap
 	count = sizeof(*polyblocklinks) * bmapwidth * bmapheight;
@@ -2099,14 +2081,6 @@ static boolean P_LoadRawBlockMap(UINT8 *data, size_t count, const char *lumpname
 	count = sizeof (*blocklinks)* bmapwidth*bmapheight;
 	blocklinks = Z_Calloc(count, PU_LEVEL, NULL);
 	blockmap = blockmaplump+4;
-	
-	// LUT bmapwidth muls
-    count = sizeof(int) * bmapheight;
-    bmapwidthmuls = Z_Calloc(count, PU_LEVEL, NULL);
-
-    for (int i = 0; i < bmapheight; i++){
-        bmapwidthmuls[i] = i * bmapwidth;
-    }
 
 	// haleyjd 2/22/06: setup polyobject blockmap
 	count = sizeof(*polyblocklinks) * bmapwidth * bmapheight;
