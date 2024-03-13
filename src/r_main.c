@@ -331,7 +331,7 @@ static void FlipCam4_OnChange(void)
 //
 // killough 5/2/98: reformatted
 //
-PUREFUNC FUNCINLINE ATTRINLINE INT32 R_PointOnSide(fixed_t x, fixed_t y, const node_t *restrict node)
+PUREFUNC INT32 R_PointOnSide(fixed_t x, fixed_t y, const node_t *restrict node)
 {
 	if (!node->dx)
 		return x <= node->x ? node->dy > 0 : node->dy < 0;
