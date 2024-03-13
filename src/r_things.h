@@ -24,7 +24,7 @@
 
 // number of sprite lumps for spritewidth,offset,topoffset lookup tables
 // Fab: this is a hack : should allocate the lookup tables per sprite
-#define MAXVISSPRITES 2048 // added 2-2-98 was 128
+#define MAXVISSPRITES 4096 // added 2-2-98 was 128
 
 #define VISSPRITECHUNKBITS 6	// 2^6 = 64 sprites per chunk
 #define VISSPRITESPERCHUNK (1 << VISSPRITECHUNKBITS)
