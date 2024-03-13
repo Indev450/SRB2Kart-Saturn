@@ -148,10 +148,11 @@ PUREFUNC FUNCINLINE ATTRINLINE INT32 P_PointOnLineSide(fixed_t x, fixed_t y, con
 	dx = (x - v1->x);
 	dy = (y - v1->y);
 
-	left = FixedMul(line->dy>>FRACBITS, dx);
-	right = FixedMul(dy, line->dx>>FRACBITS);
-
-	return right < left ? 0 : 1;
+	// Try to quickly decide by looking at sign bits.	
+	// also use a mask to avoid branch prediction
+	INT32 mask = (line->dy ^ line->dx ^ dx ^ dy) >> 31;
+	return (mask & ((line->dy ^ dx) < 0)) |  // (left is negative)
+		(~mask & (FixedMul(dy, line->dx>>FRACBITS) >= FixedMul(line->dy>>FRACBITS, dx)));
 }
 
 //
@@ -177,7 +178,7 @@ PUREFUNC INT32 P_BoxOnLineSide(fixed_t *tmbox, const line_t *ld)
 		case ST_VERTICAL:
 			p1 = tmbox[BOXRIGHT] < ld->v1->x;
 			p2 = tmbox[BOXLEFT] < ld->v1->x;
-			optCmp = ld->dy < 0;
+			optCmp = ld->dx < 0;
 			p1 ^= optCmp;
 			p2 ^= optCmp;
 			break;
@@ -223,7 +224,7 @@ PUREFUNC FUNCINLINE static ATTRINLINE INT32 P_PointOnDivlineSide(fixed_t x, fixe
 	// also use a mask to avoid branch prediction
 	INT32 mask = (line->dy ^ line->dx ^ dx ^ dy) >> 31;
 	return (mask & ((line->dy ^ dx) < 0)) |  // (left is negative)
-		(~mask & (FixedMul(dy>>8, line->dx>>8) >= FixedMul(line->dy>>8, dx>>8)));
+		(~mask & (FixedMul(dy, line->dx>>FRACBITS) >= FixedMul(line->dy>>FRACBITS, dx)));
 }
 
 
