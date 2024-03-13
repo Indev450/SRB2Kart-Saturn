@@ -27,7 +27,7 @@
 
 #include "tables.h"
 
-FUNCINLINE ATTRINLINE unsigned SlopeDiv(unsigned num, unsigned den)
+unsigned SlopeDiv(unsigned num, unsigned den)
 {
 	unsigned ans;
 	num <<= (FINE_FRACBITS-FRACBITS);
@@ -38,7 +38,7 @@ FUNCINLINE ATTRINLINE unsigned SlopeDiv(unsigned num, unsigned den)
 	return ans <= SLOPERANGE ? ans : SLOPERANGE;
 }
 
-FUNCINLINE ATTRINLINE UINT64 SlopeDivEx(unsigned int num, unsigned int den)
+UINT64 SlopeDivEx(unsigned int num, unsigned int den)
 {
 	UINT64 ans;
 	if (den < 512)
