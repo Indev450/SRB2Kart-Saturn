@@ -10131,16 +10131,8 @@ void P_SpawnPrecipitation(void)
 
 		//for (j = 0; j < cv_precipdensity.value; ++j) -- density is 1 for kart always
 		{
-			if (cv_lessprecip.value)
-			{
-				x = basex*1.5 + ((M_RandomKey(MAPBLOCKUNITS<<3)<<FRACBITS)>>3);
-				y = basey*1.5 + ((M_RandomKey(MAPBLOCKUNITS<<3)<<FRACBITS)>>3);
-			}
-			else
-			{
-				x = basex + ((M_RandomKey(MAPBLOCKUNITS<<3)<<FRACBITS)>>3);
-				y = basey + ((M_RandomKey(MAPBLOCKUNITS<<3)<<FRACBITS)>>3);
-			}
+			x = ((cv_lessprecip.value ? basex*1.5 : basex) + ((M_RandomKey(MAPBLOCKUNITS<<3)<<FRACBITS)>>3));
+			y = ((cv_lessprecip.value ? basey*1.5 : basey) + ((M_RandomKey(MAPBLOCKUNITS<<3)<<FRACBITS)>>3));
 
 			precipsector = R_IsPointInSubsector(x, y);
 
