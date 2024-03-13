@@ -1341,7 +1341,7 @@ void HWR_DrawSkyWall(FOutVector *wallVerts, FSurfaceInfo *Surf)
 // Returns true if the midtexture is visible, and false if... it isn't...
 static boolean HWR_BlendMidtextureSurface(FSurfaceInfo *pSurf)
 {
-	FUINT blendmode = 0;
+	FUINT blendmode = PF_Masked;
 
 	pSurf->PolyColor.s.alpha = 0xFF;
 
