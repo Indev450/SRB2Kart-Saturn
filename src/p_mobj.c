@@ -10379,9 +10379,7 @@ void P_RemoveMobj(mobj_t *mobj)
 // To test it in Lua, check mobj.valid
 boolean P_MobjWasRemoved(mobj_t *mobj)
 {
-	if (mobj && mobj->thinker.function.acp1 == (actionf_p1)P_MobjThinker)
-		return false;
-	return true;
+    return !(mobj && mobj->thinker.function.acp1 == (actionf_p1)P_MobjThinker);
 }
 
 void P_RemovePrecipMobj(precipmobj_t *mobj)
