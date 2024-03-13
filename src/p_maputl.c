@@ -136,21 +136,22 @@ void P_ClosestPointOnLine3D(fixed_t x, fixed_t y, fixed_t z, line_t *line, verte
 //
 PUREFUNC INT32 P_PointOnLineSide(fixed_t x, fixed_t y, const line_t *line)
 {
+	const vertex_t *v1 = line->v1;
 	fixed_t dx, dy, left, right;
 
 	if (!line->dx)
-        return (x <= line->v1->x) ^ (line->dy <= 0);
+		return x <= v1->x ? line->dy > 0 : line->dy < 0;
 
 	if (!line->dy)
-        return (y <= line->v1->y) ^ (line->dx >= 0);
+		return y <= v1->y ? line->dx < 0 : line->dx > 0;
 
-	dx = (x - line->v1->x);
-    dy = (y - line->v1->y);
+	dx = (x - v1->x);
+	dy = (y - v1->y);
 
 	left = FixedMul(line->dy>>FRACBITS, dx);
 	right = FixedMul(dy, line->dx>>FRACBITS);
 
-	return right >= left;
+	return (right < left) ? 0 : 1;
 }
 
 //
@@ -210,10 +211,10 @@ PUREFUNC FUNCINLINE static ATTRINLINE INT32 P_PointOnDivlineSide(fixed_t x, fixe
 	fixed_t dx, dy;
 
 	if (!line->dx)
-		return (x <= line->x) ^ (line->dy <= 0);
+		return x <= line->x ? line->dy > 0 : line->dy < 0;
 
 	if (!line->dy)
-		return (y <= line->y) ^ (line->dx >= 0);
+		return y <= line->y ? line->dx < 0 : line->dx > 0;
 
 	dx = (x - line->x);
 	dy = (y - line->y);
