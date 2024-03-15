@@ -527,7 +527,7 @@ static void D_Display(void)
 		else
 			py = viewwindowy + 4;
 		patch = W_CachePatchName("M_PAUSE", PU_CACHE);
-		V_DrawScaledPatch(viewwindowx + (BASEVIDWIDTH - SHORT(patch->width))/2, py, 0, patch);
+		V_DrawScaledPatch(viewwindowx + (BASEVIDWIDTH - SHORT(patch->width))/2, py, V_SNAPTOTOP, patch);
 	}
 
 	if (demo.rewinding)
