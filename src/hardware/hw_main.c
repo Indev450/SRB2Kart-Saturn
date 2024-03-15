@@ -2619,7 +2619,7 @@ static void HWR_AddLine(seg_t *line)
 	}
 
 	 // PrBoom: Back side, i.e. backface culling - read: endAngle >= startAngle!
-	if (angle2 - angle1 < ANGLE_180)
+	if (angle2 - angle1 < ANGLE_180 || !gr_curline->linedef)
 		return;
 
 	// PrBoom: use REAL clipping math YAYYYYYYY!!!
@@ -2736,9 +2736,9 @@ static boolean HWR_CheckBBox(const fixed_t *bspcoord)
 	if (viewy >= bspcoord[BOXTOP])
 		boxpos |= 0;
 	else if (viewy > bspcoord[BOXBOTTOM])
-		boxpos |= 1<<2;
+		boxpos |= 4;
 	else
-		boxpos |= 2<<2;
+		boxpos |= 8;
 
 	if (boxpos == 5)
 		return true;
@@ -3883,7 +3883,6 @@ static void HWR_SplitSprite(gr_vissprite_t *spr)
 	float endrealheight;
 	fixed_t temp;
 	fixed_t v1x, v1y, v2x, v2y;
-
 	INT32 shader = SHADER_NONE;
 
 	this_scale = FIXED_TO_FLOAT(spr->mobj->scale);
@@ -3997,6 +3996,12 @@ static void HWR_SplitSprite(gr_vissprite_t *spr)
 		blend = PF_Translucent|PF_Occlude;
 	}
 
+	if (HWR_UseShader())
+	{
+		shader = SHADER_SPRITE;
+		blend |= PF_ColorMapped;
+	}
+
 	alpha = Surf.PolyColor.s.alpha;
 	
 	// Start with the lightlevel and colormap from the top of the sprite
@@ -4096,13 +4101,7 @@ static void HWR_SplitSprite(gr_vissprite_t *spr)
 		HWR_Lighting(&Surf, lightlevel, colormap);
 
 		Surf.PolyColor.s.alpha = alpha;
-		
-		if (HWR_UseShader())
-		{
-			shader = SHADER_SPRITE;	// sprite shader
-			blend |= PF_ColorMapped;
-		}
-			
+
 		HWR_ProcessPolygon(&Surf, wallVerts, 4, blend|PF_Modulated, shader, false); // sprite shader
 
 		top = bot;
@@ -4130,12 +4129,6 @@ static void HWR_SplitSprite(gr_vissprite_t *spr)
 
 	Surf.PolyColor.s.alpha = alpha;
 
-	if (HWR_UseShader())
-	{
-		shader = SHADER_SPRITE;	// sprite shader
-		blend |= PF_ColorMapped;
-	}
-		
 	HWR_ProcessPolygon(&Surf, wallVerts, 4, blend|PF_Modulated, shader, false); // sprite shader
 }
 
