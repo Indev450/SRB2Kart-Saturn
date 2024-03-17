@@ -1065,8 +1065,6 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 	float endrealtop, endrealbot, endtop, endbot;
 	float endpegt, endpegb, endpegmul;
 	float endheight = 0.0f, endbheight = 0.0f;
-	
-	float diff;
 
 	fixed_t v1x = FloatToFixed(wallVerts[0].x);
 	fixed_t v1y = FloatToFixed(wallVerts[0].z);
@@ -1186,7 +1184,7 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 				endbot = endtop;
 		}
 
-		if (endbheight >= endtop && bheight >= top && !cv_splitwallfix.value || bheight >= top && cv_splitwallfix.value)
+		if ((endbheight >= endtop && bheight >= top && !cv_splitwallfix.value) || (bheight >= top && cv_splitwallfix.value))
 			continue;
 
 		// Found a break
@@ -1332,6 +1330,88 @@ void HWR_DrawSkyWall(FOutVector *wallVerts, FSurfaceInfo *Surf)
 	// PF_Occlude is set in HWR_ProjectWall to draw into the depth buffer
 }
 
+// Returns true if the midtexture is visible, and false if... it isn't...
+static boolean HWR_BlendMidtextureSurface(FSurfaceInfo *pSurf)
+{
+	FUINT blendmode = PF_Masked;
+
+	pSurf->PolyColor.s.alpha = 0xFF;
+
+	if (!gr_curline->polyseg)
+	{
+		// set alpha for transparent walls
+		switch (gr_linedef->special)
+		{
+			case 900:
+				blendmode = HWR_TranstableToAlpha(tr_trans10, pSurf);
+				break;
+			case 901:
+				blendmode = HWR_TranstableToAlpha(tr_trans20, pSurf);
+				break;
+			case 902:
+				blendmode = HWR_TranstableToAlpha(tr_trans30, pSurf);
+				break;
+			case 903:
+				blendmode = HWR_TranstableToAlpha(tr_trans40, pSurf);
+				break;
+			case 904:
+				blendmode = HWR_TranstableToAlpha(tr_trans50, pSurf);
+				break;
+			case 905:
+				blendmode = HWR_TranstableToAlpha(tr_trans60, pSurf);
+				break;
+			case 906:
+				blendmode = HWR_TranstableToAlpha(tr_trans70, pSurf);
+				break;
+			case 907:
+				blendmode = HWR_TranstableToAlpha(tr_trans80, pSurf);
+				break;
+			case 908:
+				blendmode = HWR_TranstableToAlpha(tr_trans90, pSurf);
+				break;
+			//  Translucent
+			case 102:
+			case 121:
+			case 123:
+			case 124:
+			case 125:
+			case 141:
+			case 142:
+			case 144:
+			case 145:
+			case 174:
+			case 175:
+			case 192:
+			case 195:
+			case 221:
+			case 253:
+			case 256:
+				blendmode = PF_Translucent;
+				break;
+			default:
+				blendmode = PF_Masked;
+				break;
+		}
+	}
+	else if (gr_curline->polyseg->translucency > 0)
+	{
+		// Polyobject translucency is shared between all of its lines
+		if (gr_curline->polyseg->translucency >= NUMTRANSMAPS) // wall not drawn
+			return false;
+			//Surf.PolyColor.s.alpha = 0x00; // This shouldn't draw anything regardless of blendmode
+			//blendmode = PF_Masked;
+		else
+			blendmode = HWR_TranstableToAlpha(gr_curline->polyseg->translucency, pSurf);
+	}
+
+	if (blendmode != PF_Masked && pSurf->PolyColor.s.alpha == 0x00)
+		return false;
+
+	pSurf->PolyFlags = blendmode;
+
+	return true;
+}
+
 //
 // HWR_ProcessSeg
 // A portion or all of a wall segment will be drawn, from startfrac to endfrac,
@@ -1350,9 +1430,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 	fixed_t worldhighslope = 0, worldlowslope = 0;
 	fixed_t v1x, v1y, v2x, v2y;
 
-	GLMapTexture_t *grTex = NULL;
 	float cliplow = 0.0f, cliphigh = 0.0f;
-	INT32 gr_midtexture;
 	fixed_t h, l; // 3D sides and 2s middle textures
 	fixed_t hS, lS;
 
@@ -1414,11 +1492,9 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 	wallVerts[2].z = wallVerts[1].z = ve.y;
 
 	// x offset the texture
-	{
-		fixed_t texturehpeg = gr_sidedef->textureoffset + gr_curline->offset;
-		cliplow = (float)texturehpeg;
-		cliphigh = (float)(texturehpeg + (gr_curline->flength*FRACUNIT));
-	}
+	fixed_t texturehpeg = gr_sidedef->textureoffset + gr_curline->offset;
+	cliplow = (float)texturehpeg;
+	cliphigh = (float)(texturehpeg + (gr_curline->flength*FRACUNIT));
 
 	if (HWR_ShouldUsePaletteRendering())
 	{
@@ -1435,13 +1511,15 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 	if (gr_linedef->flags & ML_TFERLINE)
 		noencore = true;
 
-	if (gr_frontsector)
-		Surf.PolyColor.s.alpha = 255;
+	Surf.PolyColor.s.alpha = 255;
+	
+	INT32 gr_midtexture = R_GetTextureNum(gr_sidedef->midtexture);
+	GLMapTexture_t *grTex = NULL;
 
+	// two sided line
 	if (gr_backsector)
 	{
 		INT32 gr_toptexture, gr_bottomtexture;
-		// two sided line
 
 		SLOPEPARAMS(gr_backsector->c_slope, worldhigh, worldhighslope, gr_backsector->ceilingheight)
 		SLOPEPARAMS(gr_backsector->f_slope, worldlow,  worldlowslope,  gr_backsector->floorheight)
@@ -1660,8 +1738,8 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 			else
 				HWR_ProjectWall(wallVerts, &Surf, PF_Masked, lightnum, colormap);
 		}
-		gr_midtexture = R_GetTextureNum(gr_sidedef->midtexture);
-		if (gr_midtexture || gr_portal == GRPORTAL_STENCIL || gr_portal == GRPORTAL_DEPTH || gl_drawing_stencil)
+
+		if ((gr_midtexture && HWR_BlendMidtextureSurface(&Surf)) || gr_portal == GRPORTAL_STENCIL || gr_portal == GRPORTAL_DEPTH || gl_drawing_stencil)
 		{
 			sector_t *front, *back;
 			INT32 repeats;
@@ -1880,72 +1958,8 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 				}
 			}
 
-			// set alpha for transparent walls (new boom and legacy linedef types)
-			FBITFIELD blendmode;
-
-			switch (gr_linedef->special)
-			{
-				case 900:
-					blendmode = HWR_TranstableToAlpha(tr_trans10, &Surf);
-					break;
-				case 901:
-					blendmode = HWR_TranstableToAlpha(tr_trans20, &Surf);
-					break;
-				case 902:
-					blendmode = HWR_TranstableToAlpha(tr_trans30, &Surf);
-					break;
-				case 903:
-					blendmode = HWR_TranstableToAlpha(tr_trans40, &Surf);
-					break;
-				case 904:
-					blendmode = HWR_TranstableToAlpha(tr_trans50, &Surf);
-					break;
-				case 905:
-					blendmode = HWR_TranstableToAlpha(tr_trans60, &Surf);
-					break;
-				case 906:
-					blendmode = HWR_TranstableToAlpha(tr_trans70, &Surf);
-					break;
-				case 907:
-					blendmode = HWR_TranstableToAlpha(tr_trans80, &Surf);
-					break;
-				case 908:
-					blendmode = HWR_TranstableToAlpha(tr_trans90, &Surf);
-					break;
-				//  Translucent
-				case 102:
-				case 121:
-				case 123:
-				case 124:
-				case 125:
-				case 141:
-				case 142:
-				case 144:
-				case 145:
-				case 174:
-				case 175:
-				case 192:
-				case 195:
-				case 221:
-				case 253:
-				case 256:
-					blendmode = PF_Translucent;
-					break;
-				default:
-					blendmode = PF_Masked;
-					break;
-			}
-
-			if (gr_curline->polyseg && gr_curline->polyseg->translucency > 0)
-			{
-				if (gr_curline->polyseg->translucency >= NUMTRANSMAPS) // wall not drawn
-				{
-					Surf.PolyColor.s.alpha = 0x00; // This shouldn't draw anything regardless of blendmode
-					blendmode = PF_Masked;
-				}
-				else
-					blendmode = HWR_TranstableToAlpha(gr_curline->polyseg->translucency, &Surf);
-			}
+			// TODO: Actually use the surface's flags so that I don't have to do this
+			FUINT blendmode = Surf.PolyFlags;
 
 			// Render midtextures on two-sided lines with a z-buffer offset.
 			// This will cause the midtexture appear on top, if a FOF overlaps with it.
@@ -1968,7 +1982,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 	else
 	{
 		// Single sided line... Deal only with the middletexture (if one exists)
-		gr_midtexture = R_GetTextureNum(gr_sidedef->midtexture);
+
 		if (gr_midtexture && gr_linedef->special != HORIZONSPECIAL) // Ignore horizon line for OGL
 		{
 			{
@@ -2546,7 +2560,7 @@ static boolean CheckClip(sector_t * afrontsector, sector_t * abacksector)
 
 // HWR_AddLine
 // Clips the given segment and adds any visible pieces to the line list.
-void HWR_AddLine(seg_t *line)
+static void HWR_AddLine(seg_t *line)
 {
 	angle_t angle1, angle2;
 
@@ -2606,7 +2620,7 @@ void HWR_AddLine(seg_t *line)
 	checkforemptylines = true;
 
 	gr_backsector = line->backsector;
-	
+
 	// do an extra culling check when rendering portals
 	// check if any line vertex is on the viewable side of the portal target line
 	// if not, the line can be culled.
@@ -2668,6 +2682,7 @@ doaddline:
 	else
 	{
 		gr_backsector = R_FakeFlat(gr_backsector, &tempsec, NULL, NULL, true);
+
 		if (CheckClip(gr_frontsector, gr_backsector))
 		{
 			gld_clipper_SafeAddClipRange(angle2, angle1);
@@ -2694,7 +2709,7 @@ doaddline:
 //
 // modified to use local variables
 
-boolean HWR_CheckBBox(fixed_t *bspcoord)
+static boolean HWR_CheckBBox(const fixed_t *bspcoord)
 {
 	INT32 boxpos;
 	fixed_t px1, py1, px2, py2;
@@ -3119,7 +3134,7 @@ static boolean HWR_DoCulling(line_t *cullheight, line_t *viewcullheight, float v
 //                  : Add sprites of things in sector.
 //                  : Draw one or more line segments.
 // -----------------+
-void HWR_Subsector(size_t num)
+static void HWR_Subsector(size_t num)
 {
 	INT16 count;
 	seg_t *line;
@@ -3447,7 +3462,7 @@ skip_stuff_for_portals:
 // use returned value as multiplier for the added values from p_thrust thing
 // P_InterceptVector needs divlines which need dx and dy, dx=x2-x1 dy=y2-y1
 
-static boolean HWR_PortalCheckBBox(fixed_t *bspcoord)
+static boolean HWR_PortalCheckBBox(const fixed_t *bspcoord)
 {
 	vertex_t closest_point;
 	if (!portalclipline)
@@ -3492,44 +3507,37 @@ static boolean HWR_PortalCheckBBox(fixed_t *bspcoord)
 //  traversing subtree recursively.
 // Just call with BSP root.
 
-void HWR_RenderBSPNode(INT32 bspnum)
+static void HWR_RenderBSPNode(INT32 bspnum)
 {
-	node_t *bsp = &nodes[bspnum];
-
-	// Decide which side the view point is on
-	INT32 side;
-
 	ps_numbspcalls.value.i++;
 
-	// Found a subsector?
-	if (bspnum & NF_SUBSECTOR)
+	while (!(bspnum & NF_SUBSECTOR))  // Found a subsector?
 	{
-		// PORTAL CULLING
-		if (portalclipline)
-		{
-			sector_t *sect = subsectors[bspnum & ~NF_SUBSECTOR].sector;
-			if (portalcullsector)
-			{
-				if (sect != portalcullsector)
-					return;
-				portalcullsector = NULL;
-			}
-		}
-		if (bspnum != -1)
-			HWR_Subsector(bspnum&(~NF_SUBSECTOR));
-		return;
+		const node_t *bsp = &nodes[bspnum];
+
+		// Decide which side the view point is on.
+		INT32 side = R_PointOnSide(viewx, viewy, bsp);
+
+		// Recursively divide front space.
+		if (HWR_PortalCheckBBox(bsp->bbox[side]))
+			HWR_RenderBSPNode(bsp->children[side]);
+
+        // Possibly divide back space
+        if (!(HWR_CheckBBox(bsp->bbox[side^1]) && HWR_PortalCheckBBox(bsp->bbox[side^1])))
+            return;
+
+		bspnum = bsp->children[side^1];
 	}
 
-	// Decide which side the view point is on.
-	side = R_PointOnSide(viewx, viewy, bsp);
-
-	// Recursively divide front space.
-	if (HWR_PortalCheckBBox(bsp->bbox[side]))
-		HWR_RenderBSPNode(bsp->children[side]);
-
-	// Possibly divide back space.
-	if (HWR_CheckBBox(bsp->bbox[side^1]) && HWR_PortalCheckBBox(bsp->bbox[side^1]))
-		HWR_RenderBSPNode(bsp->children[side^1]);
+	// PORTAL CULLING
+	if (portalclipline && portalcullsector)
+	{
+		if (portalcullsector != subsectors[bspnum & ~NF_SUBSECTOR].sector)
+			return;
+		portalcullsector = NULL;
+	}
+	// e6y: support for extended nodes
+	HWR_Subsector(bspnum == -1 ? 0 : bspnum & ~NF_SUBSECTOR);
 }
 
 // ==========================================================================
@@ -4594,7 +4602,7 @@ static int CompareDrawNodePlanes(const void *p1, const void *p2)
 //
 // HWR_RenderDrawNodes
 // Sorts and renders the list of drawnodes for the scene being rendered.
-void HWR_RenderDrawNodes(void)
+static void HWR_RenderDrawNodes(void)
 {
 	INT32 i = 0, run_start = 0;
 
@@ -5371,9 +5379,9 @@ void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 #endif
 
 	// set top/bottom coords
-	vis->ty = FIXED_TO_FLOAT(thing->z + spritecachedinfo[lumpoff].topoffset);
+	vis->ty = FIXED_TO_FLOAT(interp.z + spritecachedinfo[lumpoff].topoffset);
 
-	vis->gzt = FIXED_TO_FLOAT(thing->z + spritecachedinfo[lumpoff].topoffset);
+	vis->gzt = FIXED_TO_FLOAT(interp.z + spritecachedinfo[lumpoff].topoffset);
 	vis->gz = vis->gzt - FIXED_TO_FLOAT(spritecachedinfo[lumpoff].height);
 
 	vis->precip = true;

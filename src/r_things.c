@@ -3191,93 +3191,92 @@ static int skinSortFunc(const void *a, const void *b) //tbh i have no clue what 
 	const UINT8 val_a = *((const UINT8 *)a);
 	const UINT8 val_b = *((const UINT8 *)b);
 
-
 	//return (strcmp(in1->realname, in2->realname) < 0) || (strcmp(in1->realname, in2->realname) ==);
 
 	switch (cv_skinselectgridsort.value)
 	{
-	case SKINMENUSORT_REALNAME:
-		//CONS_Printf("Sorting by realname\n");
-		// check name
-		if ((temp = strcmp(in1->realname, in2->realname)))
-			return temp;
-		// sort by internal name
-		return strcmp(in1->name, in2->name);
-		break;
+		case SKINMENUSORT_REALNAME:
+			//CONS_Printf("Sorting by realname\n");
+			// check name
+			if ((temp = strcmp(in1->realname, in2->realname)))
+				return temp;
+			// sort by internal name
+			return strcmp(in1->name, in2->name);
+			break;
 
-	case SKINMENUSORT_NAME:
-		//CONS_Printf("Sorting by name\n");
-		return strcmp(in1->name, in2->name);
-		break;
+		case SKINMENUSORT_NAME:
+			//CONS_Printf("Sorting by name\n");
+			return strcmp(in1->name, in2->name);
+			break;
 
-	case SKINMENUSORT_SPEED:
-		//CONS_Printf("Sorting by speed\n");
-		// check speed
-		if (in1->kartspeed < in2->kartspeed)
-			return -1;
-		else if (in2->kartspeed < in1->kartspeed)
-			return 1;
-		// then check weight
-		if (in1->kartweight < in2->kartweight)
-			return -1;
-		else if (in2->kartweight < in1->kartweight)
-			return 1;
-		// then check name
-		if ((temp = strcmp(in1->realname, in2->realname)))
-			return temp;
-		// sort by internal name
-		return strcmp(in1->name, in2->name);
-		break;
+		case SKINMENUSORT_SPEED:
+			//CONS_Printf("Sorting by speed\n");
+			// check speed
+			if (in1->kartspeed < in2->kartspeed)
+				return -1;
+			else if (in2->kartspeed < in1->kartspeed)
+				return 1;
+			// then check weight
+			if (in1->kartweight < in2->kartweight)
+				return -1;
+			else if (in2->kartweight < in1->kartweight)
+				return 1;
+			// then check name
+			if ((temp = strcmp(in1->realname, in2->realname)))
+				return temp;
+			// sort by internal name
+			return strcmp(in1->name, in2->name);
+			break;
 
-	case SKINMENUSORT_WEIGHT:
-		//CONS_Printf("Sorting by weight\n");
-		// check weight
-		if (in1->kartweight < in2->kartweight)
-			return -1;
-		else if (in2->kartweight < in1->kartweight)
-			return 1;
-		// then check speed
-		if (in1->kartspeed < in2->kartspeed)
-			return -1;
-		else if (in2->kartspeed < in1->kartspeed)
-			return 1;
-		// then check name
-		if ((temp = strcmp(in1->realname, in2->realname)))
-			return temp;
-		// sort by internal name
-		return strcmp(in1->name, in2->name);
-		break;
+		case SKINMENUSORT_WEIGHT:
+			//CONS_Printf("Sorting by weight\n");
+			// check weight
+			if (in1->kartweight < in2->kartweight)
+				return -1;
+			else if (in2->kartweight < in1->kartweight)
+				return 1;
+			// then check speed
+			if (in1->kartspeed < in2->kartspeed)
+				return -1;
+			else if (in2->kartspeed < in1->kartspeed)
+				return 1;
+			// then check name
+			if ((temp = strcmp(in1->realname, in2->realname)))
+				return temp;
+			// sort by internal name
+			return strcmp(in1->name, in2->name);
+			break;
 
-	case SKINMENUSORT_PREFCOLOR:
-		//CONS_Printf("Sorting by prefcolor\n");
-		// check prefcolor
-		if (in1->prefcolor < in2->prefcolor)
-			return -1;
-		else if (in2->prefcolor < in1->prefcolor)
-			return 1;
-		// then check name
-		if ((temp = strcmp(in1->realname, in2->realname)))
-			return temp;
-		// sort by internal name
-		return strcmp(in1->name, in2->name);
-		break;
+		case SKINMENUSORT_PREFCOLOR:
+			//CONS_Printf("Sorting by prefcolor\n");
+			// check prefcolor
+			if (in1->prefcolor < in2->prefcolor)
+				return -1;
+			else if (in2->prefcolor < in1->prefcolor)
+				return 1;
+			// then check name
+			if ((temp = strcmp(in1->realname, in2->realname)))
+				return temp;
+			// sort by internal name
+			return strcmp(in1->name, in2->name);
+			break;
 
-	case SKINMENUSORT_ID:
-		//CONS_Printf("Sorting by id\n");
-		//how do i do by ID?????
-		//wait why dont i just convert the inputs to UINT32s
-		//please tell me im allowed to define variables in here since its a block
+		case SKINMENUSORT_ID:
+			//CONS_Printf("Sorting by id\n");
+			//how do i do by ID?????
+			//wait why dont i just convert the inputs to UINT32s
+			//please tell me im allowed to define variables in here since its a block
 
-		if (val_a == val_b)
-			return 0;
-		else if (val_a < val_b)
-			return -1;
-		else
-			return 1;
+			if (val_a == val_b)
+				return 0;
+			else if (val_a < val_b)
+				return -1;
+			else
+				return 1;
 
-	default:
-		return strcmp(in1->name, in2->name);
-		break;
+		default:
+			return strcmp(in1->name, in2->name);
+			break;
 	}
 	//im scared this somehow will sometimes end up here so im gonna add this here just to be safe
 	return strcmp(in1->name, in2->name);
@@ -3285,8 +3284,8 @@ static int skinSortFunc(const void *a, const void *b) //tbh i have no clue what 
 
 void sortSkinGrid(void)
 {
-	CONS_Printf("Sorting skin list (%d)...\n", cv_skinselectgridsort.value);
-	qs22j(skinsorted, numskins, sizeof(UINT8), skinSortFunc);
+	//CONS_Printf("Sorting skin list (%d)...\n", cv_skinselectgridsort.value);
+  qs22j(skinsorted, numskins, sizeof(UINT8), skinSortFunc);
 }
 
 //
@@ -3601,7 +3600,7 @@ next_token:
 		numallskins++;
 	}
 
-	sortSkinGrid();
+	//sortSkinGrid();
 
 	return;
 }
