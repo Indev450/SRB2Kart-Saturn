@@ -43,12 +43,15 @@ typedef HANDLE (WINAPI *p_OpenFileMappingA) (DWORD, BOOL, LPCSTR);
 typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 #endif
 
-
 // A little more than the minimum sleep duration on Windows.
 // May be incorrect for other platforms, but we don't currently have a way to
 // query the scheduler granularity. SDL will do what's needed to make this as
 // low as possible though.
+#if defined(_WIN32)
+#define MIN_SLEEP_DURATION_MS 1.6
+#else
 #define MIN_SLEEP_DURATION_MS 2.1
+#endif
 
 #include <stdio.h>
 #include <time.h>
@@ -3187,12 +3190,24 @@ static Uint64 timer_frequency;
 
 precise_t I_GetPreciseTime(void)
 {
+#if defined(_WIN32)
+	LARGE_INTEGER counter;
+	QueryPerformanceCounter(&counter);
+	return counter.QuadPart;
+#else
 	return SDL_GetPerformanceCounter();
+#endif
 }
 
 UINT64 I_GetPrecisePrecision(void)
 {
+#if defined(_WIN32)
+	LARGE_INTEGER frequency;
+	QueryPerformanceFrequency(&frequency);
+	return frequency.QuadPart;
+#else
 	return SDL_GetPerformanceFrequency();
+#endif
 }
 
 static UINT32 frame_rate;
@@ -3219,14 +3234,24 @@ static void I_InitFrameTime(const UINT64 now, const UINT32 cap)
 }
 
 double I_GetFrameTime(void)
-{
+{	
+#if defined(_WIN32)
+	LARGE_INTEGER now;
+    QueryPerformanceCounter(&now);
+    const UINT64 nowValue = now.QuadPart;
+#else
 	const UINT64 now = SDL_GetPerformanceCounter();
+#endif
 	const UINT32 cap = R_GetFramerateCap();
 
 	if (cap != frame_rate)
 	{
 		// Maybe do this in a OnChange function for cv_fpscap?
+#if defined(_WIN32)
+		I_InitFrameTime(nowValue, cap);
+#else
 		I_InitFrameTime(now, cap);
+#endif	
 	}
 
 	if (frame_rate == 0)
@@ -3236,10 +3261,17 @@ double I_GetFrameTime(void)
 	}
 	else
 	{
+#if defined(_WIN32)
+		elapsed_frames += (nowValue - frame_epoch) / frame_frequency;
+#else
 		elapsed_frames += (now - frame_epoch) / frame_frequency;
+#endif
 	}
-
-	frame_epoch = now; // moving epoch
+#if defined(_WIN32)
+		frame_epoch = nowValue; // moving epoch
+#else
+		frame_epoch = now; // moving epoch
+#endif
 	return elapsed_frames;
 }
 
@@ -3248,8 +3280,13 @@ double I_GetFrameTime(void)
 //
 void I_StartupTimer(void)
 {
+#if defined(_WIN32)
+	LARGE_INTEGER frequency;
+	QueryPerformanceFrequency(&frequency);
+	timer_frequency = frequency.QuadPart;
+#else
 	timer_frequency = SDL_GetPerformanceFrequency();
-
+#endif
 	I_InitFrameTime(0, R_GetFramerateCap());
 	elapsed_frames  = 0.0;
 }
@@ -3295,7 +3332,12 @@ void I_SleepDuration(precise_t duration)
 		// hard sleep function.
 		if (sleepvalue > 0 && (dest - cur) > delaygranularity)
 		{
+#if defined(_WIN32)
+			DWORD sleepDuration = (DWORD)min((INT64)(dest - cur), sleepvalue);
+			SleepEx(sleepDuration, TRUE);
+#else
 			I_Sleep(sleepvalue);
+#endif
 		}
 
 		// Otherwise, this is a spinloop.
