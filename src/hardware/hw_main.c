@@ -213,7 +213,7 @@ static void CV_grpalettedepth_OnChange(void)
 //
 void HWR_SetShaderState(void)
 {
-	HWD.pfnSetSpecialState(HWD_SET_SHADERS, (INT32)HWR_UseShader());
+	HWD.pfnSetSpecialState(HWD_SET_SHADERS, HWR_UseShader() ? 1 : 0);
 }
 
 // ==========================================================================
