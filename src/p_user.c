@@ -59,10 +59,6 @@
 #include "hardware/hw_main.h"
 #endif
 
-#if 0
-static void P_NukeAllPlayers(player_t *player);
-#endif
-
 //
 // Movement.
 //
@@ -86,46 +82,6 @@ void P_Thrust(mobj_t *mo, angle_t angle, fixed_t move)
 		mo->momy += FixedMul(move, FINESINE(angle));
 }
 
-#if 0
-static inline void P_ThrustEvenIn2D(mobj_t *mo, angle_t angle, fixed_t move)
-{
-	angle >>= ANGLETOFINESHIFT;
-
-	mo->momx += FixedMul(move, FINECOSINE(angle));
-	mo->momy += FixedMul(move, FINESINE(angle));
-}
-
-static inline void P_VectorInstaThrust(fixed_t xa, fixed_t xb, fixed_t xc, fixed_t ya, fixed_t yb, fixed_t yc,
-	fixed_t za, fixed_t zb, fixed_t zc, fixed_t momentum, mobj_t *mo)
-{
-	fixed_t a1, b1, c1, a2, b2, c2, i, j, k;
-
-	a1 = xb - xa;
-	b1 = yb - ya;
-	c1 = zb - za;
-	a2 = xb - xc;
-	b2 = yb - yc;
-	c2 = zb - zc;
-/*
-	// Convert to unit vectors...
-	a1 = FixedDiv(a1,FixedSqrt(FixedMul(a1,a1) + FixedMul(b1,b1) + FixedMul(c1,c1)));
-	b1 = FixedDiv(b1,FixedSqrt(FixedMul(a1,a1) + FixedMul(b1,b1) + FixedMul(c1,c1)));
-	c1 = FixedDiv(c1,FixedSqrt(FixedMul(c1,c1) + FixedMul(c1,c1) + FixedMul(c1,c1)));
-
-	a2 = FixedDiv(a2,FixedSqrt(FixedMul(a2,a2) + FixedMul(c2,c2) + FixedMul(c2,c2)));
-	b2 = FixedDiv(b2,FixedSqrt(FixedMul(a2,a2) + FixedMul(c2,c2) + FixedMul(c2,c2)));
-	c2 = FixedDiv(c2,FixedSqrt(FixedMul(a2,a2) + FixedMul(c2,c2) + FixedMul(c2,c2)));
-*/
-	// Calculate the momx, momy, and momz
-	i = FixedMul(momentum, FixedMul(b1, c2) - FixedMul(c1, b2));
-	j = FixedMul(momentum, FixedMul(c1, a2) - FixedMul(a1, c2));
-	k = FixedMul(momentum, FixedMul(a1, b2) - FixedMul(a1, c2));
-
-	mo->momx = i;
-	mo->momy = j;
-	mo->momz = k;
-}
-#endif
 
 //
 // P_InstaThrust
@@ -195,12 +151,6 @@ void P_CalcHeight(player_t *player)
 	// Note: a LUT allows for effects
 	//  like a ramp with low health.
 
-	/*player->bob = (FixedMul(player->rmomx,player->rmomx)
-		+ FixedMul(player->rmomy,player->rmomy))>>2;
-
-	if (player->bob > FixedMul(MAXBOB, mo->scale))
-		player->bob = FixedMul(MAXBOB, mo->scale);*/
-
 	if (!P_IsObjectOnGround(mo))
 	{
 		if (mo->eflags & MFE_VERTICALFLIP)
@@ -218,36 +168,8 @@ void P_CalcHeight(player_t *player)
 		return;
 	}
 
-	//angle = (FINEANGLES/20*localgametic)&FINEMASK;
-	//bob = FixedMul(player->bob/2, FINESINE(angle));
-
 	// move viewheight
 	player->viewheight = FixedMul(32 << FRACBITS, mo->scale); // default eye view height
-
-	/*if (player->playerstate == PST_LIVE)
-	{
-		player->viewheight += player->deltaviewheight;
-
-		if (player->viewheight > pviewheight)
-		{
-			player->viewheight = pviewheight;
-			player->deltaviewheight = 0;
-		}
-
-		if (player->viewheight < pviewheight/2)
-		{
-			player->viewheight = pviewheight/2;
-			if (player->deltaviewheight <= 0)
-				player->deltaviewheight = 1;
-		}
-
-		if (player->deltaviewheight)
-		{
-			player->deltaviewheight += FixedMul(FRACUNIT/4, mo->scale);
-			if (!player->deltaviewheight)
-				player->deltaviewheight = 1;
-		}
-	}*/
 
 	if (player->mo->eflags & MFE_VERTICALFLIP)
 		player->viewz = mo->z + mo->height - player->viewheight; //- bob
@@ -343,43 +265,6 @@ void P_ResetScore(player_t *player)
 	player->scoreadd = 0;
 }
 
-//
-// P_FindLowestMare
-//
-// Returns the lowest open mare available
-//
-/*UINT8 P_FindLowestMare(void)
-{
-	thinker_t *th;
-	mobj_t *mo2;
-	UINT8 mare = UINT8_MAX;
-
-	if (G_RaceGametype())
-		return 0;
-
-	// scan the thinkers
-	// to find the egg capsule with the lowest mare
-	for (th = thinkercap.next; th != &thinkercap; th = th->next)
-	{
-		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
-			continue;
-
-		mo2 = (mobj_t *)th;
-
-		if (mo2->type == MT_EGGCAPSULE && mo2->health > 0)
-		{
-			const UINT8 threshold = (UINT8)mo2->threshold;
-			if (mare == 255)
-				mare = threshold;
-			else if (threshold < mare)
-				mare = threshold;
-		}
-	}
-
-	CONS_Debug(DBG_NIGHTS, "Lowest mare found: %d\n", mare);
-
-	return mare;
-}*/
 
 //
 // P_FindLowestLap
@@ -436,393 +321,6 @@ UINT8 P_FindHighestLap(void)
 }
 
 //
-// P_TransferToNextMare
-//
-// Transfers the player to the next Mare.
-// (Finds the lowest mare # for capsules that have not been destroyed).
-// Returns true if successful, false if there is no other mare.
-//
-/*boolean P_TransferToNextMare(player_t *player)
-{
-	thinker_t *th;
-	mobj_t *mo2;
-	mobj_t *closestaxis = NULL;
-	INT32 lowestaxisnum = -1;
-	UINT8 mare = P_FindLowestMare();
-	fixed_t dist1, dist2 = 0;
-
-	if (mare == 255)
-		return false;
-
-	CONS_Debug(DBG_NIGHTS, "Mare is %d\n", mare);
-
-	player->mare = mare;
-
-	// scan the thinkers
-	// to find the closest axis point
-	for (th = thinkercap.next; th != &thinkercap; th = th->next)
-	{
-		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
-			continue;
-
-		mo2 = (mobj_t *)th;
-
-		if (mo2->type == MT_AXIS)
-		{
-			if (mo2->threshold == mare)
-			{
-				if (closestaxis == NULL)
-				{
-					closestaxis = mo2;
-					lowestaxisnum = mo2->health;
-					dist2 = R_PointToDist2(player->mo->x, player->mo->y, mo2->x, mo2->y)-mo2->radius;
-				}
-				else if (mo2->health < lowestaxisnum)
-				{
-					dist1 = R_PointToDist2(player->mo->x, player->mo->y, mo2->x, mo2->y)-mo2->radius;
-
-					if (dist1 < dist2)
-					{
-						closestaxis = mo2;
-						lowestaxisnum = mo2->health;
-						dist2 = dist1;
-					}
-				}
-			}
-		}
-	}
-
-	if (closestaxis == NULL)
-		return false;
-
-	P_SetTarget(&player->mo->target, closestaxis);
-	return true;
-}
-
-//
-// P_FindAxis
-//
-// Given a mare and axis number, returns
-// the mobj for that axis point.
-static mobj_t *P_FindAxis(INT32 mare, INT32 axisnum)
-{
-	thinker_t *th;
-	mobj_t *mo2;
-
-	// scan the thinkers
-	// to find the closest axis point
-	for (th = thinkercap.next; th != &thinkercap; th = th->next)
-	{
-		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
-			continue;
-
-		mo2 = (mobj_t *)th;
-
-		// Axis things are only at beginning of list.
-		if (!(mo2->flags2 & MF2_AXIS))
-			return NULL;
-
-		if (mo2->type == MT_AXIS)
-		{
-			if (mo2->health == axisnum && mo2->threshold == mare)
-				return mo2;
-		}
-	}
-
-	return NULL;
-}
-
-//
-// P_FindAxisTransfer
-//
-// Given a mare and axis number, returns
-// the mobj for that axis transfer point.
-static mobj_t *P_FindAxisTransfer(INT32 mare, INT32 axisnum, mobjtype_t type)
-{
-	thinker_t *th;
-	mobj_t *mo2;
-
-	// scan the thinkers
-	// to find the closest axis point
-	for (th = thinkercap.next; th != &thinkercap; th = th->next)
-	{
-		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
-			continue;
-
-		mo2 = (mobj_t *)th;
-
-		// Axis things are only at beginning of list.
-		if (!(mo2->flags2 & MF2_AXIS))
-			return NULL;
-
-		if (mo2->type == type)
-		{
-			if (mo2->health == axisnum && mo2->threshold == mare)
-				return mo2;
-		}
-	}
-
-	return NULL;
-}
-
-//
-// P_TransferToAxis
-//
-// Finds the CLOSEST axis with the number specified.
-void P_TransferToAxis(player_t *player, INT32 axisnum)
-{
-	thinker_t *th;
-	mobj_t *mo2;
-	mobj_t *closestaxis;
-	INT32 mare = player->mare;
-	fixed_t dist1, dist2 = 0;
-
-	CONS_Debug(DBG_NIGHTS, "Transferring to axis %d\nLeveltime: %u...\n", axisnum, leveltime);
-
-	closestaxis = NULL;
-
-	// scan the thinkers
-	// to find the closest axis point
-	for (th = thinkercap.next; th != &thinkercap; th = th->next)
-	{
-		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
-			continue;
-
-		mo2 = (mobj_t *)th;
-
-		if (mo2->type == MT_AXIS)
-		{
-			if (mo2->health == axisnum && mo2->threshold == mare)
-			{
-				if (closestaxis == NULL)
-				{
-					closestaxis = mo2;
-					dist2 = R_PointToDist2(player->mo->x, player->mo->y, mo2->x, mo2->y)-mo2->radius;
-				}
-				else
-				{
-					dist1 = R_PointToDist2(player->mo->x, player->mo->y, mo2->x, mo2->y)-mo2->radius;
-
-					if (dist1 < dist2)
-					{
-						closestaxis = mo2;
-						dist2 = dist1;
-					}
-				}
-			}
-		}
-	}
-
-	if (!closestaxis)
-	{
-		CONS_Debug(DBG_NIGHTS, "ERROR: Specified axis point to transfer to not found!\n%d\n", axisnum);
-	}
-	else
-	{
-		CONS_Debug(DBG_NIGHTS, "Transferred to axis %d, mare %d\n", closestaxis->health, closestaxis->threshold);
-	}
-
-	P_SetTarget(&player->mo->target, closestaxis);
-}
-
-//
-// P_DeNightserizePlayer
-//
-// Whoops! Ran out of NiGHTS time!
-//
-static void P_DeNightserizePlayer(player_t *player)
-{
-	thinker_t *th;
-	mobj_t *mo2;
-
-	player->pflags &= ~PF_NIGHTSMODE;
-
-	//if (player->mo->tracer)
-		//P_RemoveMobj(player->mo->tracer);
-
-	player->powers[pw_underwater] = 0;
-	player->pflags &= ~(PF_USEDOWN|PF_JUMPDOWN|PF_ATTACKDOWN|PF_STARTDASH|PF_GLIDING|PF_JUMPED|PF_THOKKED|PF_SPINNING|PF_DRILLING|PF_TRANSFERTOCLOSEST);
-	player->secondjump = 0;
-	player->jumping = 0;
-	player->homing = 0;
-	player->climbing = 0;
-	player->mo->fuse = 0;
-	player->speed = 0;
-	P_SetTarget(&player->mo->target, NULL);
-	P_SetTarget(&player->axis1, P_SetTarget(&player->axis2, NULL));
-
-	player->mo->flags &= ~MF_NOGRAVITY;
-
-	player->mo->flags2 &= ~MF2_DONTDRAW;
-
-	// Restore aiming angle
-	if (player == &players[consoleplayer])
-		localaiming[0] = 0;
-	else if (player == &players[displayplayers[1]])
-		localaiming[1] = 0;
-	else if (player == &players[displayplayers[2]])
-		localaiming[2] = 0;
-	else if (player == &players[displayplayers[3]])
-		localaiming[3] = 0;
-
-	if (player->mo->tracer)
-		P_RemoveMobj(player->mo->tracer);
-	//P_SetPlayerMobjState(player->mo, S_PLAY_FALL1); // SRB2kart
-	player->pflags |= PF_NIGHTSFALL;
-
-	// If in a special stage, add some preliminary exit time.
-	if (G_IsSpecialStage(gamemap))
-	{
-		INT32 i;
-		for (i = 0; i < MAXPLAYERS; i++)
-			if (playeringame[i] && players[i].pflags & PF_NIGHTSMODE)
-				players[i].nightstime = 1; // force everyone else to fall too.
-		player->exiting = raceexittime+2;
-		stagefailed = true; // NIGHT OVER
-	}
-
-	// Check to see if the player should be killed.
-	for (th = thinkercap.next; th != &thinkercap; th = th->next)
-	{
-		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
-			continue;
-
-		mo2 = (mobj_t *)th;
-		if (!(mo2->type == MT_NIGHTSDRONE))
-			continue;
-
-		if (mo2->flags2 & MF2_AMBUSH)
-			P_DamageMobj(player->mo, NULL, NULL, 10000);
-
-		break;
-	}
-
-	// Restore from drowning music
-	P_RestoreMusic(player);
-}
-//
-// P_NightserizePlayer
-//
-// NiGHTS Time!
-void P_NightserizePlayer(player_t *player, INT32 nighttime)
-{
-	INT32 oldmare;
-
-	// Bots can't be super, silly!1 :P
-	if (player->bot)
-		return;
-
-	if (!(player->pflags & PF_NIGHTSMODE))
-	{
-		P_SetTarget(&player->mo->tracer, P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_NIGHTSCHAR));
-		player->mo->tracer->destscale = player->mo->scale;
-		P_SetScale(player->mo->tracer, player->mo->scale);
-		player->mo->tracer->eflags = (player->mo->tracer->eflags & ~MFE_VERTICALFLIP)|(player->mo->eflags & MFE_VERTICALFLIP);
-		player->mo->height = player->mo->tracer->height;
-	}
-
-	player->pflags &= ~(PF_USEDOWN|PF_JUMPDOWN|PF_ATTACKDOWN|PF_STARTDASH|PF_GLIDING|PF_JUMPED|PF_THOKKED|PF_SPINNING|PF_DRILLING);
-	player->homing = 0;
-	player->mo->fuse = 0;
-	player->speed = 0;
-	player->climbing = 0;
-	player->secondjump = 0;
-
-	player->powers[pw_shield] = SH_NONE;
-
-	player->mo->flags |= MF_NOGRAVITY;
-
-	player->mo->flags2 |= MF2_DONTDRAW;
-
-	player->nightstime = player->startedtime = nighttime*TICRATE;
-	player->bonustime = false;
-
-	P_RestoreMusic(player);
-	P_SetMobjState(player->mo->tracer, S_SUPERTRANS1);
-
-	if (G_RaceGametype())
-	{
-		if (player->drillmeter < 48*20)
-			player->drillmeter = 48*20;
-	}
-	else
-	{
-		if (player->drillmeter < 40*20)
-			player->drillmeter = 40*20;
-	}
-
-	oldmare = player->mare;
-
-	if (P_TransferToNextMare(player) == false)
-	{
-		INT32 i;
-		INT32 total_rings = 0;
-
-		P_SetTarget(&player->mo->target, NULL);
-
-		if (G_IsSpecialStage(gamemap))
-		{
-			for (i = 0; i < MAXPLAYERS; i++)
-				if (playeringame[i])
-					total_rings += players[i].health-1;
-		}
-
-		for (i = 0; i < MAXPLAYERS; i++)
-		{
-			if (!playeringame[i] || !players[i].mo || players[i].spectator)
-				continue;
-
-			players[i].texttimer = (3 * TICRATE) - 10;
-			players[i].textvar = 4; // Score and grades
-			players[i].lastmare = players[i].mare;
-			if (G_IsSpecialStage(gamemap))
-			{
-				players[i].finishedrings = (INT16)total_rings;
-				P_AddPlayerScore(player, total_rings * 50);
-			}
-			else
-			{
-				players[i].finishedrings = (INT16)(players[i].health - 1);
-				P_AddPlayerScore(&players[i], (players[i].health - 1) * 50);
-			}
-
-			// transfer scores anyway
-
-			players[i].mo->health = players[i].health = 1;
-			P_DoPlayerExit(&players[i]);
-		}
-	}
-	else if (oldmare != player->mare)
-	{
-		/// \todo Handle multi-mare special stages.
-		// Ring bonus
-		P_AddPlayerScore(player, (player->health - 1) * 50);
-
-		player->lastmare = (UINT8)oldmare;
-		player->texttimer = 4*TICRATE;
-		player->textvar = 4; // Score and grades
-		player->finishedrings = (INT16)(player->health - 1);
-
-		// Starting a new mare, transfer scores
-		player->marebegunat = leveltime;
-
-		player->mo->health = player->health = 1;
-	}
-	else
-	{
-		player->textvar = 5; // Nothing, just tells it to go to the GET n RINGS/SPHERES text in a bit
-		player->texttimer = 40;
-
-		// Don't show before title card
-		// Not consistency safe, but this only affects drawing
-		if (timeinmap + 40 < 110)
-			player->texttimer = (UINT8)(110 - timeinmap);
-	}
-
-	player->pflags |= PF_NIGHTSMODE;
-}*/
-
-//
 // P_PlayerInPain
 //
 // Is player in pain??
@@ -830,6 +328,10 @@ void P_NightserizePlayer(player_t *player, INT32 nighttime)
 //
 boolean P_PlayerInPain(player_t *player)
 {
+	// If the player doesn't have a mobj, it can't be in pain.
+	if (!player->mo)
+		return false;
+
 	// no silly, sliding isn't pain
 	if (!(player->pflags & PF_SLIDING) && player->mo->state == &states[player->mo->info->painstate] && player->powers[pw_flashing])
 		return true;
@@ -904,16 +406,6 @@ void P_DoPlayerPain(player_t *player, mobj_t *source, mobj_t *inflictor)
 	if (player->pflags & PF_ROPEHANG)
 		P_SetTarget(&player->mo->tracer, NULL);
 
-	// Point penalty for hitting a hazard during tag.
-	// Discourages players from intentionally hurting themselves to avoid being tagged.
-	/*if (gametype == GT_TAG && (!(player->pflags & PF_TAGGED) && !(player->pflags & PF_TAGIT)))
-	{
-		if (player->score >= 50)
-			player->score -= 50;
-		else
-			player->score = 0;
-	}*/
-
 	P_ResetPlayer(player);
 	P_SetPlayerMobjState(player->mo, player->mo->info->painstate);
 	player->powers[pw_flashing] = K_GetKartFlashing(player);
@@ -962,14 +454,6 @@ void P_GivePlayerRings(player_t *player, INT32 num_rings)
 		player->totalring += num_rings;
 
 	//{ SRB2kart - rings don't really do anything, but we don't want the player spilling them later.
-	/*
-	// Can only get up to 9999 rings, sorry!
-	if (player->mo->health > 10000)
-	{
-		player->mo->health = 10000;
-		player->health = 10000;
-	}
-	else if (player->mo->health < 1)*/
 	{
 		player->mo->health = 1;
 		player->health = 1;
@@ -1076,13 +560,6 @@ void P_AddPlayerScore(player_t *player, UINT32 amount)
 		player->marescore += amount;
 	else
 		player->marescore = MAXSCORE;
-
-	// check for extra lives every 50000 pts
-	/*if (!ultimatemode && !modeattacking && player->score > oldscore && player->score % 50000 < amount && (gametype == GT_COMPETITION || gametype == GT_COOP))
-	{
-		P_GivePlayerLives(player, (player->score/50000) - (oldscore/50000));
-		P_PlayLivesJingle(player);
-	}*/
 
 	// In team match, all awarded points are incremented to the team's running score.
 	if (gametype == GT_TEAMMATCH)
