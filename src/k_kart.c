@@ -10259,57 +10259,51 @@ static void K_drawLapStartAnim(void)
 	// This is an EVEN MORE insanely complicated animation.
 	const UINT8 progress = 80-stplyr->kartstuff[k_lapanimation];
 	UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
+	INT32 vflags = V_SNAPTOTOP|V_HUDTRANS;
 
-	V_DrawFixedPatch((BASEVIDWIDTH/2 + (32*max(0, stplyr->kartstuff[k_lapanimation]-76)))*FRACUNIT,
-		(48 - (32*max(0, progress-76)))*FRACUNIT,
-		FRACUNIT, V_SNAPTOTOP|V_HUDTRANS,
-		(modeattacking ? kp_lapanim_emblem[1] : kp_lapanim_emblem[0]), colormap);
+	fixed_t frac = rendertimefrac & FRACMASK;
+	fixed_t slideout = max(0, 32*(((progress - 76)*FRACUNIT) + frac));
+	fixed_t slidein = max(0, 32*(((stplyr->kartstuff[k_lapanimation] - 76)*FRACUNIT) - frac));
 
-	if (stplyr->kartstuff[k_laphand] >= 1 && stplyr->kartstuff[k_laphand] <= 3)
+	// First, draw the emblem and hand
+	INT32 emblemx = (BASEVIDWIDTH << (FRACBITS - 1)) + slidein;
+	INT32 y = 48*FRACUNIT - slideout;
+
+	V_DrawFixedPatch(emblemx, y, FRACUNIT, vflags, kp_lapanim_emblem[modeattacking ? 1 : 0], colormap);
+
+	INT32 hand = stplyr->kartstuff[k_laphand];
+	if (hand >= 1 && hand <= 3)
 	{
-		V_DrawFixedPatch((BASEVIDWIDTH/2 + (32*max(0, stplyr->kartstuff[k_lapanimation]-76)))*FRACUNIT,
-			(48 - (32*max(0, progress-76))
-				+ 4 - abs((signed)((leveltime % 8) - 4)))*FRACUNIT,
-			FRACUNIT, V_SNAPTOTOP|V_HUDTRANS,
-			kp_lapanim_hand[stplyr->kartstuff[k_laphand]-1], NULL);
+		y += 4*FRACUNIT - abs((int)(leveltime % 8)*FRACUNIT + rendertimefrac - 4*FRACUNIT);
+		V_DrawFixedPatch(emblemx, y, FRACUNIT, vflags, kp_lapanim_hand[hand - 1], NULL);
 	}
+
+	// Then the text
+	INT32 leftx = 82*FRACUNIT - slideout;
+	INT32 rightx = 188*FRACUNIT + slideout;
+	y = 30*FRACUNIT;
 
 	if (stplyr->laps == (UINT8)(cv_numlaps.value - 1))
 	{
-		V_DrawFixedPatch((62 - (32*max(0, progress-76)))*FRACUNIT, // 27
-			30*FRACUNIT, // 24
-			FRACUNIT, V_SNAPTOTOP|V_HUDTRANS,
-			kp_lapanim_final[min(progress/2, 10)], NULL);
+		// FINAL
+		V_DrawFixedPatch(leftx - 20*FRACUNIT, y, FRACUNIT, vflags, kp_lapanim_final[min(progress/2, 10)], NULL);
 
-		if (progress/2-12 >= 0)
-		{
-			V_DrawFixedPatch((188 + (32*max(0, progress-76)))*FRACUNIT, // 194
-				30*FRACUNIT, // 24
-				FRACUNIT, V_SNAPTOTOP|V_HUDTRANS,
-				kp_lapanim_lap[min(progress/2-12, 6)], NULL);
-		}
+		// LAP
+		if (progress/2 - 12 >= 0)
+			V_DrawFixedPatch(rightx, y, FRACUNIT, vflags, kp_lapanim_lap[min(progress/2 - 12, 6)], NULL);
 	}
 	else
 	{
-		V_DrawFixedPatch((82 - (32*max(0, progress-76)))*FRACUNIT, // 61
-			30*FRACUNIT, // 24
-			FRACUNIT, V_SNAPTOTOP|V_HUDTRANS,
-			kp_lapanim_lap[min(progress/2, 6)], NULL);
+		// LAP
+		V_DrawFixedPatch(leftx, y, FRACUNIT, vflags, kp_lapanim_lap[min(progress/2, 6)], NULL);
 
-		if (progress/2-8 >= 0)
+		char *lapnum = va("%02d", stplyr->laps + 1);
+		for (int i = 0; i < (int)strlen(lapnum); i++)
 		{
-			V_DrawFixedPatch((188 + (32*max(0, progress-76)))*FRACUNIT, // 194
-				30*FRACUNIT, // 24
-				FRACUNIT, V_SNAPTOTOP|V_HUDTRANS,
-				kp_lapanim_number[(((UINT32)stplyr->laps+1) / 10)][min(progress/2-8, 2)], NULL);
-
-			if (progress/2-10 >= 0)
-			{
-				V_DrawFixedPatch((208 + (32*max(0, progress-76)))*FRACUNIT, // 221
-					30*FRACUNIT, // 24
-					FRACUNIT, V_SNAPTOTOP|V_HUDTRANS,
-					kp_lapanim_number[(((UINT32)stplyr->laps+1) % 10)][min(progress/2-10, 2)], NULL);
-			}
+			int digit = lapnum[i] - '0';
+			int frame = min(2, progress/2 - 8 - (i*2));
+			if (frame >= 0)
+				V_DrawFixedPatch(rightx + (i*20*FRACUNIT), y, FRACUNIT, vflags, kp_lapanim_number[digit][frame], NULL);
 		}
 	}
 }
