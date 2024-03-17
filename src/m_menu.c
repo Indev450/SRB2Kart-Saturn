@@ -54,6 +54,8 @@
 
 #include "fastcmp.h"
 
+#include "qs22j.h"
+
 #ifdef HWRENDER
 #include "hardware/hw_main.h"
 #endif
@@ -365,11 +367,18 @@ menu_t OP_SaturnCreditsDef;
 
 // Bird
 menu_t OP_BirdDef;
+
 // Stuff, yknow.
 menu_t OP_ForkedBirdDef;
 menu_t OP_LocalSkinDef;
 menu_t OP_TiltDef;
 menu_t OP_AdvancedBirdDef;
+
+// Chaotic
+menu_t OP_NametagDef;
+
+//Driftgauge
+menu_t OP_DriftGaugeDef;
 
 #define numaddonsshown 4
 
@@ -464,6 +473,7 @@ static CV_PossibleValue_t map_cons_t[] = {
 	{0, NULL}
 };
 consvar_t cv_nextmap = {"nextmap", "1", CV_HIDEN|CV_CALL, map_cons_t, Nextmap_OnChange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_nextmapaddon = {"nextmapaddon", "1", CV_HIDEN|CV_CALL, NULL, Nextmap_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 static CV_PossibleValue_t skins_cons_t[MAXSKINS+1] = {{1, DEFAULTSKIN}};
 consvar_t cv_chooseskin = {"chooseskin", DEFAULTSKIN, CV_HIDEN|CV_CALL, skins_cons_t, Nextmap_OnChange, 0, NULL, NULL, 0, 0, NULL};
@@ -1084,7 +1094,7 @@ enum
 // Prefix: OP_
 static menuitem_t OP_MainMenu[] =
 {
-	{IT_SUBMENU|IT_STRING,		NULL, "Control Setup...",		&OP_ControlsDef,			 0},
+	{IT_SUBMENU|IT_STRING,		NULL, "Control Setup...",		&OP_ControlsDef,			  0},
 
 	{IT_SUBMENU|IT_STRING,		NULL, "Video Options...",		&OP_VideoOptionsDef,		 20},
 	{IT_SUBMENU|IT_STRING,		NULL, "Sound Options...",		&OP_SoundOptionsDef,		 30},
@@ -1094,6 +1104,7 @@ static menuitem_t OP_MainMenu[] =
 	{IT_SUBMENU|IT_STRING,		NULL, "Server Options...",		&OP_ServerOptionsDef,		 70},
 
 	{IT_SUBMENU|IT_STRING,		NULL, "Data Options...",		&OP_DataOptionsDef,			 90},
+
 	{IT_CALL|IT_STRING, 		NULL, "Custom Options...",	   	M_CustomCvarMenu,   		100},
 
 	{IT_CALL|IT_STRING,			NULL, "Tricks & Secrets (F1)",	M_Manual,					110},
@@ -1101,8 +1112,8 @@ static menuitem_t OP_MainMenu[] =
 
 	{IT_SUBMENU|IT_STRING,		NULL, "Saturn Options...",		&OP_SaturnDef,				140},
 
-	{IT_SUBMENU|IT_STRING,		NULL, "Bird",	&OP_BirdDef,	150},
-	{IT_CALL|IT_STRING,		NULL, "Local Skin Options...",	M_LocalSkinMenu,	160},
+	{IT_SUBMENU|IT_STRING,		NULL, "Bird",	&OP_BirdDef,								150},
+	{IT_CALL|IT_STRING,			NULL, "Local Skin Options...",	M_LocalSkinMenu,			160},
 };
 
 static menuitem_t OP_ControlsMenu[] =
@@ -1532,14 +1543,14 @@ static menuitem_t OP_SoundOptionsMenu[] =
 	{IT_STRING|IT_CVAR|IT_CV_SLIDER,
 												NULL, "Music Volume",					&cv_digmusicvolume,		 	38},
 
-/* -- :nonnathisshit:
+#ifndef NO_MIDI
 	{IT_STRING|IT_CVAR,			NULL, "MIDI",					&cv_gamemidimusic,		 50},
 	{IT_STRING|IT_CVAR|IT_CV_SLIDER,
 								NULL, "MIDI Volume",			&cv_midimusicvolume,	 58},
-*/
+#endif
 
 	//{IT_STRING|IT_CALL,			NULL, "Restart Audio System",	M_RestartAudio,			 50},
-
+#ifdef NO_MIDI
 	{IT_STRING|IT_CVAR,							NULL, "Reverse L/R Channels",			&stereoreverse,			 	50},
 	{IT_STRING|IT_CVAR,							NULL, "Surround Sound",					&surround,			 	 	60},
 
@@ -1553,14 +1564,33 @@ static menuitem_t OP_SoundOptionsMenu[] =
 	{IT_STRING|IT_CVAR,        					NULL, "Play Music While Unfocused", 	&cv_playmusicifunfocused, 	125},
 	{IT_STRING|IT_CVAR,        					NULL, "Play SFX While Unfocused", 		&cv_playsoundifunfocused, 	135},
 	{IT_STRING|IT_SUBMENU, 						NULL, "Advanced Settings...", 			&OP_SoundAdvancedDef, 		155}
+#else
+	{IT_STRING|IT_CVAR,							NULL, "Reverse L/R Channels",			&stereoreverse,			 	60},
+	{IT_STRING|IT_CVAR,							NULL, "Surround Sound",					&surround,			 	 	70},
+
+	{IT_STRING|IT_CVAR,							NULL, "Chat Notifications",				&cv_chatnotifications,	 	85},
+	{IT_STRING|IT_CVAR,							NULL, "Character voices",				&cv_kartvoices,			 	95},
+	{IT_STRING|IT_CVAR,							NULL, "Powerup Warning",				&cv_kartinvinsfx,		 	105},
+	
+	{IT_KEYHANDLER|IT_STRING,					NULL, "Sound Test",						M_HandleSoundTest,			115},
+	{IT_STRING|IT_CALL,							NULL, "Music Test",						M_MusicTest,				125},
+
+	{IT_STRING|IT_CVAR,        					NULL, "Play Music While Unfocused", 	&cv_playmusicifunfocused, 	135},
+	{IT_STRING|IT_CVAR,        					NULL, "Play SFX While Unfocused", 		&cv_playsoundifunfocused, 	145},
+	{IT_STRING|IT_SUBMENU, 						NULL, "Advanced Settings...", 			&OP_SoundAdvancedDef, 		165}
+#endif
 };
 
 static const char* OP_SoundTooltips[] =
 {
 	"Turn Sound effects on or off.",
-	"Volume of sound effects.",
-	"Turn Sound effects on or off.",
-	"Volume of music.",
+	"Volume of Sound effects.",
+	"Turn Music on or off.",
+	"Volume of Music.",
+#ifndef NO_MIDI
+	"Turn Midi Music on or off.",
+	"Volume of Midi Music.",
+#endif
 	"Reverse left and right channels of audio.",
 	"Surround Sound.",
 	"Chat notification sound.",
@@ -1877,8 +1907,7 @@ static menuitem_t OP_AdvServerOptionsMenu[] =
 
 #ifndef NONET
 static const char* OP_AdvServerOptionsTooltips[] =
-{
-	
+{	
 	"Server used for master server.",
 	"Attempts to resynchronise player to server.",
 	"Maximum allowed delay.",
@@ -1976,15 +2005,18 @@ static menuitem_t OP_SaturnMenu[] =
 	{IT_STRING | IT_CVAR, NULL, "Show Lap Emblem",		 				&cv_showlapemblem, 	 		60},
 	{IT_STRING | IT_CVAR, NULL,	"Show Minimap Names",   				&cv_showminimapnames, 		65},
 	{IT_STRING | IT_CVAR, NULL,	"Small Minimap Players",   				&cv_minihead, 				70},
+	
 	{IT_STRING | IT_CVAR, NULL, "Show Cecho Messages", 					&cv_cechotoggle, 			80},
 	{IT_STRING | IT_CVAR, NULL, "Show Localskin Menus", 				&cv_showlocalskinmenus, 	85},
-	
-	{IT_STRING | IT_CVAR, NULL, "Less Midnight Channel Flicker", 		&cv_lessflicker, 		 	95},
+	{IT_STRING | IT_SUBMENU, NULL, "Nametags...", 						&OP_NametagDef, 			90},
+	{IT_STRING | IT_SUBMENU, NULL, "Driftgauge...", 					&OP_DriftGaugeDef, 			95},
 
-	{IT_SUBMENU|IT_STRING,	NULL,	"Sprite Distortion...", 			&OP_PlayerDistortDef,	 	105},
-	{IT_SUBMENU|IT_STRING,	NULL,	"Hud Offsets...", 					&OP_HudOffsetDef,		 	110},
+	{IT_STRING | IT_CVAR, NULL, "Less Midnight Channel Flicker", 		&cv_lessflicker, 		 	115},
 
-	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Credits", 					&OP_SaturnCreditsDef,		120}, // uwu
+	{IT_SUBMENU|IT_STRING,	NULL,	"Sprite Distortion...", 			&OP_PlayerDistortDef,	 	125},
+	{IT_SUBMENU|IT_STRING,	NULL,	"Hud Offsets...", 					&OP_HudOffsetDef,		 	130},
+
+	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Credits", 					&OP_SaturnCreditsDef,		140}, // uwu
 };
 
 static const char* OP_SaturnTooltips[] =
@@ -2004,6 +2036,8 @@ static const char* OP_SaturnTooltips[] =
 	"Minimize the player icons on the minimap.",
 	"Show the big Cecho Messages.",
 	"Show Localskin Menus.",
+	"Nametag Options.",
+	"Driftgauge Options.",
 	"Disables the flicker effect on Midnight Channel.",
 	"Options for sprite distortion effects.",
 	"Move position of HUD elements.",
@@ -2025,6 +2059,10 @@ enum
 	sm_lapemblem,
 	sm_mapnames,
 	sm_smallmap,
+	sm_cechotogle,
+	sm_showlocalskin,
+	sm_nametagmen,
+	sm_driftgaugemen,
 	sm_pisschannel,
 	sm_distortionmenu,
 	sm_hudoffsets,
@@ -2220,6 +2258,88 @@ static menuitem_t OP_ForkedBirdMenu[] =
 	{IT_STRING | IT_CALL, NULL, "Apply to Yourself", M_LocalSkinChange, 160},
 	{IT_STRING | IT_CVAR, NULL, "Lua Immersion", &cv_luaimmersion, 170},
 };
+
+static menuitem_t OP_NametagMenu[] =
+{
+	{IT_HEADER, NULL, "Nametag", NULL, 0},
+	{IT_STRING | IT_CVAR, NULL, "Nametag", &cv_nametag, 20},
+	{IT_STRING | IT_CVAR, NULL, "Show Char image in Nametag", &cv_nametagfacerank, 30},
+	{IT_STRING | IT_CVAR, NULL, "Show Own Nametag", &cv_showownnametag, 40},
+	{IT_STRING | IT_CVAR, NULL, "Nametag Max distance", &cv_nametagdist, 50},
+	{IT_STRING | IT_CVAR, NULL, "Nametag Max Display Players", &cv_nametagmaxplayers, 60},
+	{IT_STRING | IT_CVAR, NULL, "Nametag Transparency", &cv_nametagtrans, 70},
+	{IT_STRING | IT_CVAR, NULL, "Nametag Score", &cv_nametagscore, 80},
+	{IT_STRING | IT_CVAR, NULL, "Nametag Restat", &cv_nametagrestat, 90},
+	{IT_STRING | IT_CVAR, NULL, "Nametag Hop", &cv_nametaghop, 100},
+	{IT_STRING | IT_CVAR, NULL, "Small Nametags", &cv_smallnametags, 110},
+	{IT_STRING | IT_CVAR, NULL, "Show Nametags after Race finish", &cv_shownametagfinish, 120},
+	{IT_STRING | IT_CVAR, NULL, "Show Nametags in Spectator Mode", &cv_shownametagspectator, 130},
+	//{IT_STRING | IT_CVAR, NULL, "Nametag Scaling", &cv_nametagscaling, 70}
+};
+
+
+static const char* OP_NametagTooltips[] =
+{
+	NULL,
+	"Enable nametags in game.",
+	"Show character icon in nametag.",
+	"Show your own nametag in game.",
+	"Distance nametags are visible.",
+	"Maximum amount of nametags on screen.",
+	"Transparency of nametags.",
+	"Show player score in nametag.",
+	"Show stats in nametags.",
+	"Enable Saltyhop support for nametags.",
+	"Alternative smaller nametags.",
+	"Show Nametags after Race finish.",
+	"Show Nametags when you are spectating.",
+};
+
+enum
+{
+	nt_header,
+	nt_nametag,
+	nt_ntchar,
+	nt_owntag,
+	nt_maxdist,
+	nt_maxplayer,
+	nt_nttrans,
+	nt_ntpscore,
+	nt_ntrestat,
+	nt_nthop,
+	nt_smol,
+	nt_finish,
+	nt_spec,
+};
+
+
+static menuitem_t OP_DriftGaugeMenu[] =
+{
+	{IT_HEADER, NULL, "Driftgauge", NULL, 0},
+	{IT_STRING | IT_CVAR, NULL, "Driftgauge", &cv_driftgauge, 20},
+	{IT_STRING | IT_CVAR, NULL, "Driftgauge Transparency", &cv_driftgaugetrans, 30},
+	{IT_STRING | IT_CVAR, NULL, "Driftgauge Offset", &cv_driftgaugeofs, 40},
+	{IT_STRING | IT_CVAR, NULL, "Driftgauge Style", &cv_driftgaugestyle, 50},
+};
+
+static const char* OP_DriftGaugeTooltips[] =
+{
+	NULL,
+	"Enable driftgauge in game.",
+	"Have driftgauge use hud transparency.",
+	"Vertical driftgauge offset.",
+	"Driftgauge style.",
+};
+
+enum
+{
+	dg_header,
+	dg_dg,
+	dg_dgtrans,
+	dg_dgoffset,
+	dg_dgstyle,
+};
+
 
 static menuitem_t OP_TiltMenu[] =
 {
@@ -2775,6 +2895,10 @@ menu_t OP_HudOffsetDef = DEFAULTSCROLLSTYLE(NULL, OP_HudOffsetMenu, &OP_SaturnDe
 menu_t OP_SaturnCreditsDef = DEFAULTMENUSTYLE(NULL, OP_SaturnCreditsMenu, &OP_SaturnDef, 30, 10);
 
 menu_t OP_BirdDef = DEFAULTMENUSTYLE(NULL, OP_BirdMenu, &OP_MainDef, 30, 30);
+menu_t OP_NametagDef = DEFAULTMENUSTYLE(NULL, OP_NametagMenu, &OP_SaturnDef, 30, 40);
+
+menu_t OP_DriftGaugeDef = DEFAULTMENUSTYLE(NULL, OP_DriftGaugeMenu, &OP_SaturnDef, 30, 60);
+
 menu_t OP_TiltDef = DEFAULTMENUSTYLE(NULL, OP_TiltMenu, &OP_BirdDef, 30, 60);
 menu_t OP_AdvancedBirdDef = DEFAULTMENUSTYLE(NULL, OP_AdvancedBirdMenu, &OP_BirdDef, 30, 60);
 
@@ -4079,7 +4203,7 @@ void M_StartControlPanel(void)
 
 		Dummymenuplayer_OnChange();
 
-		if ((server || IsPlayerAdmin(consoleplayer)))
+		if (server || IsPlayerAdmin(consoleplayer))
 		{
 			MPauseMenu[mpause_switchmap].status = IT_STRING | IT_CALL;
 			MPauseMenu[mpause_addons].status = IT_STRING | IT_CALL;
@@ -4365,7 +4489,8 @@ void M_Init(void)
 		OP_ExpOptionsMenu[op_exp_fofcut].status = IT_DISABLED;
 	}
 	
-	if (rendermode == render_opengl){
+	if (rendermode == render_opengl)
+	{
 		OP_ExpOptionsMenu[op_exp_ffclip].status = IT_DISABLED;
 		OP_ExpOptionsMenu[op_exp_sprclip].status = IT_DISABLED;
 	}
@@ -4385,6 +4510,9 @@ void M_Init(void)
 		OP_SaturnMenu[sm_coloritem].status = IT_GRAYEDOUT;
 		OP_SaturnMenu[sm_colorhud_customcolor].status = IT_GRAYEDOUT;
 	}
+	
+	if (!nametaggfx)
+		OP_NametagMenu[nt_ntchar].status = IT_GRAYEDOUT;
 
 #ifndef NONET
 	CV_RegisterVar(&cv_serversort);
@@ -4838,74 +4966,72 @@ static void M_DrawGenericMenu(void)
 			W_CachePatchName("M_CURSOR", PU_CACHE));
 		V_DrawString(currentMenu->x, cursory, lowercase|highlightflags, currentMenu->menuitems[itemOn].text);
 	}
-	
-	
+
 	// dumb hack
 	// tooltips
-	
 	if (currentMenu == &OP_ControlsDef)
 	{
-		if (!(OP_ControlsTooltips[itemOn] == NULL)) 
+		if (!(OP_ControlsTooltips[itemOn] == NULL))
 		{
 			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_ControlsTooltips[itemOn], 30, coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
 				coolalphatimer--;
 		}
 	}
-	
+
 	if (currentMenu == &OP_MouseOptionsDef)
 	{
-		if (!(OP_MouseTooltips[itemOn] == NULL)) 
+		if (!(OP_MouseTooltips[itemOn] == NULL))
 		{
 			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_MouseTooltips[itemOn], 30, coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
 				coolalphatimer--;
 		}
 	}
-	
+
 	if (currentMenu == &OP_VideoOptionsDef)
 	{
-		if (!(OP_VideoTooltips[itemOn] == NULL)) 
+		if (!(OP_VideoTooltips[itemOn] == NULL))
 		{
 			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_VideoTooltips[itemOn], 30, coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
 				coolalphatimer--;
 		}
 	}
-	
+
 	if (currentMenu == &OP_SoundOptionsDef)
 	{
-		if (!(OP_SoundTooltips[itemOn] == NULL)) 
+		if (!(OP_SoundTooltips[itemOn] == NULL))
 		{
 			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_SoundTooltips[itemOn], 30, coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
 				coolalphatimer--;
 		}
 	}
-	
+
 	if (currentMenu == &OP_SoundAdvancedDef)
 	{
-		if (!(OP_SoundAdvancedTooltips[itemOn] == NULL)) 
+		if (!(OP_SoundAdvancedTooltips[itemOn] == NULL))
 		{
 			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_SoundAdvancedTooltips[itemOn], 30, coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
 				coolalphatimer--;
 		}
 	}
-	
+
 	if (currentMenu == &OP_ExpOptionsDef)
 	{
-		if (!(OP_ExpTooltips[itemOn] == NULL)) 
+		if (!(OP_ExpTooltips[itemOn] == NULL))
 		{
 			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_ExpTooltips[itemOn], 30, coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
 				coolalphatimer--;
 		}
 	}
-	
+
 	if (currentMenu == &OP_ChatOptionsDef)
 	{
-		if (!(OP_ChatOptionsTooltips[itemOn] == NULL)) 
+		if (!(OP_ChatOptionsTooltips[itemOn] == NULL))
 		{
 			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_ChatOptionsTooltips[itemOn], 30, coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
@@ -4913,33 +5039,29 @@ static void M_DrawGenericMenu(void)
 		}
 	}
 	
-	
-		
 	if (currentMenu == &OP_GameOptionsDef)
 	{
-		if (!(OP_GameTooltips[itemOn] == NULL)) 
+		if (!(OP_GameTooltips[itemOn] == NULL))
 		{
 			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_GameTooltips[itemOn], 30, coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
 				coolalphatimer--;
 		}
 	}
-	
-	
+
 	if (currentMenu == &OP_ServerOptionsDef)
 	{
-		if (!(OP_ServerOptionsTooltips[itemOn] == NULL)) 
+		if (!(OP_ServerOptionsTooltips[itemOn] == NULL))
 		{
 			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_ServerOptionsTooltips[itemOn], 30, coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
 				coolalphatimer--;
 		}
 	}
-	
-	
+
 	if (currentMenu == &OP_AdvServerOptionsDef)
 	{
-		if (!(OP_AdvServerOptionsTooltips[itemOn] == NULL)) 
+		if (!(OP_AdvServerOptionsTooltips[itemOn] == NULL))
 		{
 			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_AdvServerOptionsTooltips[itemOn], 30, coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
@@ -4947,55 +5069,49 @@ static void M_DrawGenericMenu(void)
 		}
 	}
 	
-	
-	
-		
 	if (currentMenu == &OP_PlayerDistortDef)
 	{
-		if (!(OP_PlayerDistortTooltips[itemOn] == NULL)) 
+		if (!(OP_PlayerDistortTooltips[itemOn] == NULL))
 		{
 			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_PlayerDistortTooltips[itemOn], 30, coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
 				coolalphatimer--;
 		}
 	}
-	
-	
-	
-	
+
 	if (currentMenu == &OP_SaturnCreditsDef) // C:
 	{
-		if (!(OP_CreditTooltips[itemOn] == NULL)) 
+		if (!(OP_CreditTooltips[itemOn] == NULL))
 		{
 			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_CreditTooltips[itemOn], 30, coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
 				coolalphatimer--;
 		}
 	}
-	
+
 	if (currentMenu == &OP_BirdDef)
 	{
-		if (!(OP_BirdTooltips[itemOn] == NULL)) 
+		if (!(OP_BirdTooltips[itemOn] == NULL))
 		{
 			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_BirdTooltips[itemOn], 30, coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
 				coolalphatimer--;
 		}
 	}
-	
+
 	if (currentMenu == &OP_TiltDef)
 	{
-		if (!(OP_TiltTooltips[itemOn] == NULL)) 
+		if (!(OP_TiltTooltips[itemOn] == NULL))
 		{
 			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_TiltTooltips[itemOn], 30, coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
 				coolalphatimer--;
 		}
 	}
-	
+
 	if (currentMenu == &OP_AdvancedBirdDef)
 	{
-		if (!(OP_AdvancedBirdTooltips[itemOn] == NULL)) 
+		if (!(OP_AdvancedBirdTooltips[itemOn] == NULL))
 		{
 			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_AdvancedBirdTooltips[itemOn], 30, coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
@@ -5003,7 +5119,25 @@ static void M_DrawGenericMenu(void)
 		}
 	}
 	
+	if (currentMenu == &OP_NametagDef)
+	{
+		if (!(OP_NametagTooltips[itemOn] == NULL)) 
+		{
+			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_NametagTooltips[itemOn], 30, coolalphatimer);
+			if (coolalphatimer > 0 && interpTimerHackAllow)
+				coolalphatimer--;
+		}
+	}
 	
+	if (currentMenu == &OP_DriftGaugeDef)
+	{
+		if (!(OP_DriftGaugeTooltips[itemOn] == NULL)) 
+		{
+			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_DriftGaugeTooltips[itemOn], 30, coolalphatimer);
+			if (coolalphatimer > 0 && interpTimerHackAllow)
+				coolalphatimer--;
+		}
+	}
 }
 
 static void M_DrawGenericBackgroundMenu(void)
@@ -5013,8 +5147,6 @@ static void M_DrawGenericBackgroundMenu(void)
 }
 
 #define scrollareaheight 72
-
-
 
 // note that alphakey is multiplied by 2 for scrolling menus to allow greater usage in UINT8 range.
 static void M_DrawGenericScrollMenu(void)
@@ -5160,8 +5292,6 @@ static void M_DrawGenericScrollMenu(void)
 		}
 	}
 #endif
-	
-	
 	
 	if (currentMenu == &OP_SaturnDef)
 	{
@@ -7990,17 +8120,21 @@ static void M_DrawSkyRoom(void)
 			(digital_disabled ? warningflags : highlightflags),
 			(digital_disabled ? "OFF" : "ON"));
 
-		/*V_DrawRightAlignedString(BASEVIDWIDTH - currentMenu->x,
+#ifndef NO_MIDI
+		V_DrawRightAlignedString(BASEVIDWIDTH - currentMenu->x,
 			currentMenu->y+currentMenu->menuitems[5].alphaKey,
 			(midi_disabled ? warningflags : highlightflags),
-			(midi_disabled ? "OFF" : "ON"));*/
+			(midi_disabled ? "OFF" : "ON"));
+#endif
 
 		if (itemOn == 0)
 			lengthstring = 8*(sound_disabled ? 3 : 2);
 		else if (itemOn == 2)
 			lengthstring = 8*(digital_disabled ? 3 : 2);
-		/*else if (itemOn == 5)
-			lengthstring = 8*(midi_disabled ? 3 : 2);*/
+#ifndef NO_MIDI
+		else if (itemOn == 5)
+			lengthstring = 8*(midi_disabled ? 3 : 2);
+#endif
 	}
 
 	for (i = 0; i < currentMenu->numitems; ++i)
@@ -9334,8 +9468,6 @@ void M_ModeAttackRetry(INT32 choice)
 	G_CheckDemoStatus(); // Cancel recording
 	if (modeattacking == ATTACKING_RECORD)
 		M_ChooseTimeAttack(0);
-	/*else if (modeattacking == ATTACKING_NIGHTS)
-		M_ChooseNightsAttack(0);*/
 }
 
 static void M_ModeAttackEndGame(INT32 choice)
@@ -9794,22 +9926,22 @@ void M_SortServerList(void)
 	switch(cv_serversort.value)
 	{
 	case 0:		// Ping.
-		qsort(serverlist, serverlistcount, sizeof(serverelem_t), ServerListEntryComparator_time);
+		qs22j(serverlist, serverlistcount, sizeof(serverelem_t), ServerListEntryComparator_time);
 		break;
 	case 1:		// Modified state.
-		qsort(serverlist, serverlistcount, sizeof(serverelem_t), ServerListEntryComparator_modified);
+		qs22j(serverlist, serverlistcount, sizeof(serverelem_t), ServerListEntryComparator_modified);
 		break;
 	case 2:		// Most players.
-		qsort(serverlist, serverlistcount, sizeof(serverelem_t), ServerListEntryComparator_numberofplayer_reverse);
+		qs22j(serverlist, serverlistcount, sizeof(serverelem_t), ServerListEntryComparator_numberofplayer_reverse);
 		break;
 	case 3:		// Least players.
-		qsort(serverlist, serverlistcount, sizeof(serverelem_t), ServerListEntryComparator_numberofplayer);
+		qs22j(serverlist, serverlistcount, sizeof(serverelem_t), ServerListEntryComparator_numberofplayer);
 		break;
 	case 4:		// Max players.
-		qsort(serverlist, serverlistcount, sizeof(serverelem_t), ServerListEntryComparator_maxplayer_reverse);
+		qs22j(serverlist, serverlistcount, sizeof(serverelem_t), ServerListEntryComparator_maxplayer_reverse);
 		break;
 	case 5:		// Gametype.
-		qsort(serverlist, serverlistcount, sizeof(serverelem_t), ServerListEntryComparator_gametype);
+		qs22j(serverlist, serverlistcount, sizeof(serverelem_t), ServerListEntryComparator_gametype);
 		break;
 	}
 #endif
@@ -11696,6 +11828,8 @@ static void M_SetupMultiPlayer(INT32 choice)
 	//change the y offsets of the menu depending on cvar settings
 	SKINSELECTMENUEDIT
 
+	sortSkinGrid();
+
 	MP_PlayerSetupDef.prevMenu = currentMenu;
 	M_SetupNextMenu(&MP_PlayerSetupDef);
 }
@@ -11732,6 +11866,8 @@ static void M_SetupMultiPlayer2(INT32 choice)
 
 	//change the y offsets of the menu depending on cvar settings
 	SKINSELECTMENUEDIT
+
+	sortSkinGrid();
 
 	MP_PlayerSetupDef.prevMenu = currentMenu;
 	M_SetupNextMenu(&MP_PlayerSetupDef);
@@ -11770,6 +11906,8 @@ static void M_SetupMultiPlayer3(INT32 choice)
 	//change the y offsets of the menu depending on cvar settings
 	SKINSELECTMENUEDIT
 
+	sortSkinGrid();
+
 	MP_PlayerSetupDef.prevMenu = currentMenu;
 	M_SetupNextMenu(&MP_PlayerSetupDef);
 }
@@ -11806,6 +11944,8 @@ static void M_SetupMultiPlayer4(INT32 choice)
 
 	//change the y offsets of the menu depending on cvar settings
 	SKINSELECTMENUEDIT
+	
+	sortSkinGrid();
 
 	MP_PlayerSetupDef.prevMenu = currentMenu;
 	M_SetupNextMenu(&MP_PlayerSetupDef);
@@ -11830,6 +11970,7 @@ static boolean M_QuitMultiPlayerMenu(void)
 	COM_BufAddText (va("%s %d\n",setupm_cvcolor->name,setupm_fakecolor));	
 	return true;
 }
+
 
 // =================
 // DATA OPTIONS MENU
