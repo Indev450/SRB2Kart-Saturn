@@ -429,16 +429,15 @@ void Y_IntermissionDrawer(void)
 	else
 		hilicol = ((intertype == int_race) ? V_SKYMAP : V_REDMAP);
 
-	if (sorttic != -1 && intertic > sorttic && !demo.playback)
+	if (sorttic != -1 && intertic >= sorttic && !demo.playback)
 	{
 		INT32 count = (intertic - sorttic);
+		INT32 frac = rendertimefrac & FRACMASK;
 
 		if (count < 8)
-			x -= ((count * vid.width) / (8 * vid.dupx));
-		else if (count == 8)
-			goto dotimer;
+			x -= ((((count<<FRACBITS) + frac) * vid.width)>>FRACBITS) / (8 * vid.dupx);
 		else if (count < 16)
-			x += (((16 - count) * vid.width) / (8 * vid.dupx));
+			x += (((((16 - count)<<FRACBITS) - frac) * vid.width)>>FRACBITS) / (8 * vid.dupx);
 	}
 
 	// SRB2kart 290117 - compeltely replaced this block.
@@ -632,7 +631,6 @@ void Y_IntermissionDrawer(void)
 		}
 	}
 
-dotimer:
 	if (timer)
 	{
 		char *string;
