@@ -9636,8 +9636,10 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags, pat
 	yscale = FixedDiv(AutomapPic->height, mapheight);
 	zoom = FixedMul(min(xscale, yscale), FRACUNIT-FRACUNIT/20);
 
-	amnumxpos = (FixedMul(mo->x, zoom) - FixedMul(xoffset, zoom));
-	amnumypos = -(FixedMul(mo->y, zoom) - FixedMul(yoffset, zoom));
+	#define lerp(from, to) from + FixedMul(rendertimefrac, to - from)
+	amnumxpos = (FixedMul(lerp(mo->old_x, mo->x), zoom) - FixedMul(xoffset, zoom));
+	amnumypos = -(FixedMul(lerp(mo->old_y, mo->y), zoom) - FixedMul(yoffset, zoom));
+	#undef lerp
 
 	if (encoremode)
 		amnumxpos = -amnumxpos;
