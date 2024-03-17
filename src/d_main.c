@@ -964,7 +964,7 @@ static void D_FindAddonsToAutoload(void)
 	const char *autoloadpath;
 	boolean postload;
 
-	INT32 i;
+	INT32 i, len;
 	boolean hasprefix = false;
 	char wadsToAutoload[256] = "";
 

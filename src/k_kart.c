@@ -608,7 +608,7 @@ UINT8 K_GetKartColorByName(const char *name)
 	return 0;
 }
 
-static UINT8 K_GetHudColor(void)
+UINT8 K_GetHudColor(void)
 {
 	if (cv_colorizedhud.value){
 		if (cv_colorizedhudcolor.value) return cv_colorizedhudcolor.value;
@@ -617,7 +617,7 @@ static UINT8 K_GetHudColor(void)
 	return ((stplyr && gamestate == GS_LEVEL) ? stplyr->skincolor : cv_playercolor.value);
 }
 
-static boolean K_UseColorHud(void)
+boolean K_UseColorHud(void)
 {
 	return (cv_colorizedhud.value && clr_hud);
 }
