@@ -306,9 +306,6 @@ void P_FlashPal(player_t *pl, UINT16 type, UINT16 duration);
 // P_ENEMY
 //
 
-// main player in game
-extern player_t *stplyr; // for splitscreen correct palette changes and overlay
-
 // Is there a better place for these?
 extern INT32 var1;
 extern INT32 var2;

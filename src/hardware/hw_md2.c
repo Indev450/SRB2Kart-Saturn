@@ -1163,7 +1163,7 @@ void HWR_DrawMD2(gr_vissprite_t *spr)
 		angle_t ang;
 		interpmobjstate_t interp;
 
-		if (R_UsingFrameInterpolation() && !paused)
+		if (R_UsingFrameInterpolation() && !paused && (!cv_grmaxinterpdist.value || R_QuickCamDist(spr->mobj->x, spr->mobj->y) < cv_grmaxinterpdist.value))
 		{
 			R_InterpolateMobjState(spr->mobj, rendertimefrac, &interp);
 		}

@@ -31,18 +31,18 @@
 #include "r_data.h"
 #include "r_patch.h"
 #include "r_sky.h"
+#include "r_draw.h" // translation colormap consts (for lua)
 #include "fastcmp.h"
 #include "lua_script.h"
 #include "lua_glib.h"
 #include "lua_hook.h"
 #include "d_clisrv.h"
+#include "v_video.h" // video flags (for lua)
+
+#include "lua_script.h"
+#include "lua_libs.h"
 
 #include "m_cond.h"
-
-#ifdef HAVE_BLUA
-#include "v_video.h" // video flags (for lua)
-#include "r_draw.h" // translation colormap consts (for lua)
-#endif
 
 #define REQUIRE_MATHLIB_GUID "{748fcbc8-6480-4013-ac4e-7afce6cab766}"
 
@@ -67,103 +67,9 @@ static sfxenum_t get_sfx(const char *word);
 static UINT16 get_mus(const char *word, UINT8 dehacked_mode);
 #endif
 static hudnum_t get_huditem(const char *word);
-#ifndef HAVE_BLUA
-static powertype_t get_power(const char *word);
-#endif
 
 boolean deh_loaded = false;
 static int dbg_line;
-
-#ifdef DELFILE
-typedef struct undehacked_s
-{
-	char *undata;
-	struct undehacked_s *next;
-} undehacked_t;
-
-static UINT16 unsocwad;
-static undehacked_t *unsocdata[MAX_WADFILES];
-static boolean disableundo = false;
-
-void DEH_WriteUndoline(const char *value, const char *data, undotype_f flags)
-{
-	const char *eqstr = " = ";
-	const char *space = " ";
-	const char *pader = eqstr;
-	undehacked_t *newdata;
-
-	if (disableundo || !unsocwad)
-		return;
-
-	if ((newdata = malloc(sizeof(*newdata))) == NULL)
-		I_Error("Out of memory for unsoc line");
-
-	if (flags & UNDO_SPACE)
-		pader = space;
-
-	if (flags & UNDO_ENDTEXT && !data)
-		data = space;
-
-	if (value)
-	{
-		const size_t plen = strlen(pader);
-		const char *pound = "#";
-		char *undata = NULL;
-		const size_t elen = strlen(pound);
-		size_t vlen = strlen(value), dlen = 0, len = 1;
-
-		if (*(value+vlen-1) == '\n')
-			vlen--; // lnet not copy the ending \n
-
-		if (flags & UNDO_ENDTEXT)
-			len += elen; // let malloc more space
-
-		if (flags & UNDO_NEWLINE)
-			len++; // more space for the beginning \n
-
-		if (data)
-		{
-			dlen = strlen(data);
-			if (flags & UNDO_CUTLINE && *(data+dlen-1) == '\n')
-				dlen--; // let not copy the ending \n
-			newdata->undata = malloc(vlen+plen+dlen+len);
-			newdata->undata[vlen+plen+dlen+len-1] = '\0';
-		}
-		else
-		{
-			newdata->undata = malloc(vlen+len);
-			newdata->undata[vlen+len-1] = '\0';
-		}
-
-		if (newdata->undata)
-		{
-			undata = newdata->undata;
-			*undata = '\0';
-		}
-		else
-		{
-			free(newdata);
-			I_Error("Out of memory for unsoc data");
-		}
-
-		if (flags & UNDO_NEWLINE) // let start with \n
-			strcat(undata, "\n");
-
-		strncat(undata, value, vlen);
-
-		if (data) // value+pader+data
-			strncat(strncat(undata, pader, plen), data, dlen);
-
-		if (flags & UNDO_ENDTEXT) // let end the text
-			strncat(undata, pound, elen);
-	}
-	else
-		newdata->undata = NULL;
-
-	newdata->next = unsocdata[unsocwad];
-	unsocdata[unsocwad] = newdata;
-}
-#endif
 
 ATTRINLINE static FUNCINLINE char myfget_color(MYFILE *f)
 {
@@ -361,56 +267,6 @@ static void clear_levels(void)
 	P_AllocMapHeader(gamemap-1);
 }
 
-/*
-// Edits an animated texture slot on the array
-// Tails 12-27-2003
-static void readAnimTex(MYFILE *f, INT32 num)
-{
-	char s[MAXLINELEN];
-	char *word;
-	char *word2;
-	INT32 i;
-
-	do {
-		if (myfgets(s, sizeof s, f) != NULL)
-		{
-			if (s[0] == '\n') break;
-
-			tmp = strchr(s, '#');
-			if (tmp)
-				*tmp = '\0';
-			// set the value in the appropriate field
-
-			word = strtok(s, " ");
-			if (word)
-				strupr(word);
-			else
-				break;
-
-			word2 = strtok(NULL, " = ");
-			if (word2)
-				strupr(word2);
-			else
-				break;
-
-			if (word2[strlen(word2)-1] == '\n')
-				word2[strlen(word2)-1] = '\0';
-
-			i = atoi(word2);
-
-			if (fastcmp(word, "START"))
-				strncpy(harddefs[num].startname, word2, 8);
-			if (fastcmp(word, "END"))
-				strncpy(harddefs[num].endname, word2, 8);
-			else if (fastcmp(word, "SPEED")) harddefs[num].speed = i;
-			else if (fastcmp(word, "ISTEXTURE")) harddefs[num].istexture = i;
-
-			else deh_warning("readAnimTex %d: unknown word '%s'", num, word);
-		}
-	} while (s[0] != '\n' && !myfeof(f)); //finish when the line is empty
-}
-*/
-
 static boolean findFreeSlot(INT32 *num)
 {
 	// Send the character select entry to a free slot.
@@ -502,29 +358,7 @@ static void readPlayer(MYFILE *f, INT32 num)
 				word2[strlen(word2)-1] = '\0';
 			i = atoi(word2);
 
-			/*if (fastcmp(word, "PLAYERNAME"))
-			{
-				if (!slotfound && (slotfound = findFreeSlot(&num)) == false)
-					goto done;
-				DEH_WriteUndoline(word, description[num].text, UNDO_NONE);
-				strlcpy(description[num].text, word2, sizeof (description[num].text));
-				for (word2 = description[num].text; *word2; word2++)
-					if (*word2 == '_')
-						*word2 = ' ';
-				PlayerMenu[num].text = description[num].text;
-			}*/
-/* 			else if (fastcmp(word, "MENUPOSITION"))
-			{ // Make sure you make MENUPOSITION the first thing under CHARACTER if you're using it!
-				// This is to manually choose a slot and overwrite existing characters! It is NOT necessary for most individual character wads!!
-#ifdef DELFILE
-				if (disableundo)
-#endif
-				{
-					slotfound = true;
-					num = i;
-				}
-			} */
-			/*else*/ if (fastcmp(word, "PICNAME"))
+			if (fastcmp(word, "PICNAME"))
 			{
 				if (!slotfound && (slotfound = findFreeSlot(&num)) == false)
 					goto done;
@@ -570,11 +404,6 @@ static void readPlayer(MYFILE *f, INT32 num)
 				deh_warning("readPlayer %d: unknown word '%s'", num, word);
 		}
 	} while (!myfeof(f)); // finish when the line is empty
-
-#ifdef DELFILE
-	if (slotfound)
-		DEH_WriteUndoline("MENUPOSITION", va("%d", num), UNDO_NONE);
-#endif
 
 done:
 	Z_Free(s);
@@ -963,7 +792,6 @@ static void readlevelheader(MYFILE *f, INT32 num, INT32 wadnum)
 			// Lua custom options also go above, contents may be case sensitive.
 			if (fastncmp(word, "LUA.", 4))
 			{
-#ifdef HAVE_BLUA
 				UINT8 j;
 				customoption_t *modoption;
 
@@ -997,9 +825,6 @@ static void readlevelheader(MYFILE *f, INT32 num, INT32 wadnum)
 				modoption->option[31] = '\0';
 				strncpy(modoption->value,  word2, 255);
 				modoption->value[255] = '\0';
-#else
-				// Silently ignore.
-#endif
 				continue;
 			}
 
@@ -1479,9 +1304,6 @@ static void readcutscene(MYFILE *f, INT32 num)
 	char *word2;
 	char *tmp;
 	INT32 value;
-#ifdef DELFILE
-	const INT32 oldnumscenes = cutscenes[num]->numscenes;
-#endif
 
 	// Allocate memory for this cutscene if we don't yet have any
 	if (!cutscenes[num])
@@ -1919,10 +1741,8 @@ static void readframe(MYFILE *f, INT32 num)
 				}
 
 				z = 0;
-#ifdef HAVE_BLUA
 				found = LUA_SetLuaAction(&states[num], actiontocompare);
 				if (!found)
-#endif
 				while (actionpointers[z].name)
 				{
 					if (fastcmp(actiontocompare, actionpointers[z].name))
@@ -1973,21 +1793,7 @@ static void readsound(MYFILE *f, INT32 num, const char *savesfxnames[])
 			else
 				break;
 
-/*			if (fastcmp(word, "OFFSET"))
-			{
-				value -= 150360;
-				if (value <= 64)
-					value /= 8;
-				else if (value <= 260)
-					value = (value+4)/8;
-				else
-					value = (value+8)/8;
-				if (value >= -1 && value < sfx_freeslot0 - 1)
-					S_sfx[num].name = savesfxnames[value+1];
-				else
-					deh_warning("Sound %d: offset out of bounds", num);
-			}
-			else */if (fastcmp(word, "SINGULAR"))
+			if (fastcmp(word, "SINGULAR"))
 			{
 				DEH_WriteUndoline(word, va("%d", S_sfx[num].singularity), UNDO_NONE);
 				S_sfx[num].singularity = value;
@@ -2171,10 +1977,6 @@ static void reademblemdata(MYFILE *f, INT32 num)
 	// Default sprite and color definitions for lazy people like me
 	if (!emblemlocations[num-1].sprite) switch (emblemlocations[num-1].type)
 	{
-		/*case ET_RINGS:
-			emblemlocations[num-1].sprite = 'R'; break;
-		case ET_SCORE: case ET_NGRADE:
-			emblemlocations[num-1].sprite = 'S'; break;*/
 		case ET_TIME: //case ET_NTIME:
 			emblemlocations[num-1].sprite = 'B'; break;
 		default:
@@ -2182,12 +1984,6 @@ static void reademblemdata(MYFILE *f, INT32 num)
 	}
 	if (!emblemlocations[num-1].color) switch (emblemlocations[num-1].type)
 	{
-		/*case ET_RINGS:
-			emblemlocations[num-1].color = SKINCOLOR_GOLD; break;
-		case ET_SCORE:
-			emblemlocations[num-1].color = SKINCOLOR_BROWN; break;
-		case ET_NGRADE:
-			emblemlocations[num-1].color = SKINCOLOR_TEAL; break;*/
 		case ET_TIME: //case ET_NTIME:
 			emblemlocations[num-1].color = SKINCOLOR_GREY; break;
 		default:
@@ -2494,34 +2290,6 @@ static void readcondition(UINT8 set, UINT32 id, char *word2)
 			return;
 		}
 	}
-	/*else if ((offset=0) || fastcmp(params[0], "NIGHTSSCORE")
-	||        (++offset && fastcmp(params[0], "NIGHTSTIME"))
-	||        (++offset && fastcmp(params[0], "NIGHTSGRADE")))
-	{
-		PARAMCHECK(2); // one optional one
-
-		ty = UC_NIGHTSSCORE + offset;
-		re = atoi(params[2 + !!(params[3])]);
-
-		// Convert to map number if it appears to be one
-		if (params[1][0] >= 'A' && params[1][0] <= 'Z')
-			x1 = (INT16)M_MapNumber(params[1][0], params[1][1]);
-		else
-			x1 = (INT16)atoi(params[1]);
-
-		if (x1 < 0 || x1 >= NUMMAPS)
-		{
-			deh_warning("Level number %d out of range (1 - %d)", re, NUMMAPS);
-			return;
-		}
-
-		// Mare number (0 for overall)
-		if (params[3]) // Only if we actually got 3 params (so the second one == mare and not requirement)
-			x2 = (INT16)atoi(params[2]);
-		else
-			x2 = 0;
-
-	}*/
 	else if (fastcmp(params[0], "TRIGGER"))
 	{
 		PARAMCHECK(1);
@@ -2718,15 +2486,6 @@ static void readpatch(MYFILE *f, const char *name, UINT16 wad)
 				deh_warning("readpatch: unknown word '%s'", word);
 		}
 	} while (!myfeof(f));
-
-	// Error checking.
-	/* // Irrelevant. Origins cannot be unsigned.
-	if (patch.originx == UINT16_MAX)
-		I_Error("Patch %s on texture %s has no X position!\n", name, textures[i]->name);
-
-	if (patch.originy == UINT16_MAX)
-		I_Error("Patch %s on texture %s has no Y position!\n", name, textures[i]->name);
-*/
 
 	// Set the patch as that patch number.
 	textures[i]->patches[j] = patch;
@@ -3338,29 +3097,6 @@ static void DEH_LoadDehackedFile(MYFILE *f, UINT16 wad)
 					}
 					DEH_WriteUndoline(word, word2, UNDO_HEADER);
 				}
-				// <Callum> Added translations to this just in case its re-enabled
-/*				else if (fastcmp(word, "POINTER"))
-				{
-					word = strtok(NULL, " "); // get frame
-					word = strtok(NULL, ")");
-					if (word)
-					{
-						i = atoi(word);
-						if (i < NUMSTATES && i >= 0)
-						{
-							if (myfgets(s, MAXLINELEN, f))
-								states[i].action = saveactions[searchvalue(s)];
-						}
-						else
-						{
-							deh_warning("Pointer: Frame %d doesn't exist", i);
-							ignorelines(f);
-						}
-					}
-					else
-						deh_warning("pointer (Frame %d) : missing ')'", i);
-					G_SetGameModified(multiplayer, true);
-				}*/
 				else if (fastcmp(word, "SOUND"))
 				{
 					if (i == 0 && word2[0] != '0') // If word2 isn't a number
@@ -3375,27 +3111,6 @@ static void DEH_LoadDehackedFile(MYFILE *f, UINT16 wad)
 					DEH_WriteUndoline(word, word2, UNDO_HEADER);
 					// This is not a major mod.
 				}
-/*				else if (fastcmp(word, "SPRITE"))
-				{
-					if (i < NUMSPRITES && i >= 0)
-					{
-						if (myfgets(s, MAXLINELEN, f))
-						{
-							INT32 k;
-							k = (searchvalue(s) - 151328)/8;
-							if (k >= 0 && k < NUMSPRITES)
-								sprnames[i] = savesprnames[k];
-							else
-							{
-								deh_warning("Sprite %d: offset out of bounds", i);
-								ignorelines(f);
-							}
-						}
-					}
-					else
-						deh_warning("Sprite %d doesn't exist",i);
-					// This is not a major mod.
-				}*/
 				else if (fastcmp(word, "HUDITEM"))
 				{
 					if (i == 0 && word2[0] != '0') // If word2 isn't a number
@@ -3540,9 +3255,6 @@ static void DEH_LoadDehackedFile(MYFILE *f, UINT16 wad)
 			deh_warning("No word in this line: %s", s);
 	} // end while
 
-	/*if (gamedataadded) -- REFRESHDIR_GAMEDATA murdered this
-		G_LoadGameData();*/
-
 	dbg_line = -1;
 	if (deh_num_warning)
 	{
@@ -3563,9 +3275,6 @@ static void DEH_LoadDehackedFile(MYFILE *f, UINT16 wad)
 void DEH_LoadDehackedLumpPwad(UINT16 wad, UINT16 lump)
 {
 	MYFILE f;
-#ifdef DELFILE
-	unsocwad = wad;
-#endif
 	f.wad = wad;
 	f.size = W_LumpLengthPwad(wad, lump);
 	f.data = Z_Malloc(f.size + 1, PU_STATIC, NULL);
@@ -3581,67 +3290,6 @@ void DEH_LoadDehackedLump(lumpnum_t lumpnum)
 {
 	DEH_LoadDehackedLumpPwad(WADFILENUM(lumpnum),LUMPNUM(lumpnum));
 }
-
-#ifdef DELFILE
-#define DUMPUNDONE
-
-// read (un)dehacked lump in wad's memory
-void DEH_UnloadDehackedWad(UINT16 wad)
-{
-	undehacked_t *tmp, *curundo = unsocdata[wad];
-	MYFILE f;
-	size_t len = 0;
-	char *data;
-#ifdef DUMPUNDONE
-	FILE *UNDO = fopen("undo.soc", "wt");
-#endif
-	CONS_Printf(M_GetText("Unloading WAD SOC edits\n"));
-	while (curundo)
-	{
-		data = curundo->undata;
-		curundo = curundo->next;
-		if (data)
-			len += strlen(data);
-		len += 1;
-#ifdef DUMPUNDONE
-		if (UNDO)
-		{
-			if (data)
-				fprintf(UNDO, "%s\n", data);
-			else
-				fprintf(UNDO, "\n");
-		}
-#endif
-	}
-#ifndef DUMPUNDONE
-	if (UNDO) fclose(UNDO);
-#endif
-	if (!len) return;
-	f.size = len;
-	data = f.data = Z_Malloc(f.size + 1, PU_STATIC, NULL);
-	curundo = unsocdata[wad];
-	unsocdata[wad] = NULL;
-	while (curundo)
-	{
-		tmp = curundo;
-		curundo = curundo->next;
-		if (tmp->undata)
-			data += sprintf(data, "%s\n", tmp->undata);
-		else
-			data += sprintf(data, "\n");
-		if (tmp->undata) free(tmp->undata);
-		free(tmp);
-	}
-	f.wad = wad;
-	f.curpos = f.data;
-	f.data[f.size] = 0;
-	disableundo = true;
-	DEH_LoadDehackedFile(&f);
-	disableundo = false;
-	Z_Free(f.data);
-}
-#endif //DELFILE
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // CRAZY LIST OF STATE NAMES AND ALL FROM HERE DOWN
@@ -3696,63 +3344,6 @@ static const char *const STATE_LIST[] = { // array length left dynamic for sanit
 	"S_KART_SPIN",
 	"S_KART_PAIN",
 	"S_KART_SQUISH",
-	/*
-	"S_PLAY_STND",
-	"S_PLAY_TAP1",
-	"S_PLAY_TAP2",
-	"S_PLAY_RUN1",
-	"S_PLAY_RUN2",
-	"S_PLAY_RUN3",
-	"S_PLAY_RUN4",
-	"S_PLAY_RUN5",
-	"S_PLAY_RUN6",
-	"S_PLAY_RUN7",
-	"S_PLAY_RUN8",
-	"S_PLAY_SPD1",
-	"S_PLAY_SPD2",
-	"S_PLAY_SPD3",
-	"S_PLAY_SPD4",
-	"S_PLAY_ATK1",
-	"S_PLAY_ATK2",
-	"S_PLAY_ATK3",
-	"S_PLAY_ATK4",
-	"S_PLAY_SPRING",
-	"S_PLAY_FALL1",
-	"S_PLAY_FALL2",
-	"S_PLAY_ABL1",
-	"S_PLAY_ABL2",
-	"S_PLAY_SPC1",
-	"S_PLAY_SPC2",
-	"S_PLAY_SPC3",
-	"S_PLAY_SPC4",
-	"S_PLAY_CLIMB1",
-	"S_PLAY_CLIMB2",
-	"S_PLAY_CLIMB3",
-	"S_PLAY_CLIMB4",
-	"S_PLAY_CLIMB5",
-	"S_PLAY_GASP",
-	"S_PLAY_PAIN",
-	"S_PLAY_DIE",
-	"S_PLAY_TEETER1",
-	"S_PLAY_TEETER2",
-	"S_PLAY_CARRY",
-	"S_PLAY_SUPERSTAND",
-	"S_PLAY_SUPERWALK1",
-	"S_PLAY_SUPERWALK2",
-	"S_PLAY_SUPERFLY1",
-	"S_PLAY_SUPERFLY2",
-	"S_PLAY_SUPERTEETER",
-	"S_PLAY_SUPERHIT",
-	"S_PLAY_SUPERTRANS1",
-	"S_PLAY_SUPERTRANS2",
-	"S_PLAY_SUPERTRANS3",
-	"S_PLAY_SUPERTRANS4",
-	"S_PLAY_SUPERTRANS5",
-	"S_PLAY_SUPERTRANS6",
-	"S_PLAY_SUPERTRANS7",
-	"S_PLAY_SUPERTRANS8",
-	"S_PLAY_SUPERTRANS9", // This has special significance in the code. If you add more frames, search for it and make the appropriate changes.
-	*/
 
 	// technically the player goes here but it's an infinite tic state
 	"S_OBJPLACE_DUMMY",
@@ -7803,14 +7394,12 @@ static const char *const MOBJEFLAG_LIST[] = {
 	NULL
 };
 
-#ifdef HAVE_BLUA
 static const char *const MAPTHINGFLAG_LIST[4] = {
 	NULL,
 	"OBJECTFLIP", // Reverse gravity flag for objects.
 	"OBJECTSPECIAL", // Special flag used with certain objects.
 	"AMBUSH" // Deaf monsters/do not react to sound.
 };
-#endif
 
 static const char *const PLAYERFLAG_LIST[] = {
 	// Flip camera angle with gravity flip prefrence.
@@ -7883,7 +7472,6 @@ static const char *const PLAYERFLAG_LIST[] = {
 	NULL // stop loop here.
 };
 
-#ifdef HAVE_BLUA
 // Linedef flags
 static const char *const ML_LIST[16] = {
 	"IMPASSIBLE",
@@ -7903,7 +7491,6 @@ static const char *const ML_LIST[16] = {
 	"BOUNCY",
 	"TFERLINE"
 };
-#endif
 
 // This DOES differ from r_draw's Color_Names, unfortunately.
 // Also includes Super colors
@@ -8110,7 +7697,6 @@ static const char *const POWERS_LIST[] = {
 	"INGOOP" // In goop
 };
 
-#ifdef HAVE_BLUA
 static const char *const KARTSTUFF_LIST[] = {
 	"POSITION",
 	"OLDPOSITION",
@@ -8197,7 +7783,6 @@ static const char *const KARTSTUFF_LIST[] = {
 	"SPECTATEWAIT",
 	"GROWCANCEL"
 };
-#endif
 
 static const char *const HUDITEMS_LIST[] = {
 	"LIVESNAME",
@@ -8240,11 +7825,7 @@ static const char *const HUDITEMS_LIST[] = {
 struct {
 	const char *n;
 	// has to be able to hold both fixed_t and angle_t, so drastic measure!!
-#ifdef HAVE_BLUA
 	lua_Integer v;
-#else
-	INT64 v;
-#endif
 } const INT_CONST[] = {
 	// If a mod removes some variables here,
 	// please leave the names in-tact and just set
@@ -8433,7 +8014,6 @@ struct {
 	{"SF_NOINTERRUPT",SF_NOINTERRUPT},
 	{"SF_X2AWAYSOUND",SF_X2AWAYSOUND},
 
-#ifdef HAVE_BLUA
 	// p_local.h constants
 	{"FLOATSPEED",FLOATSPEED},
 	{"MAXSTEPMOVE",MAXSTEPMOVE},
@@ -8741,7 +8321,6 @@ struct {
 	// Custom client features exposed to lua
 	{"FEATURE_INTERMISSIONHUD",1},
 	{"FEATURE_VOTEHUD",1},
-#endif
 
 	{NULL,0}
 };
@@ -8870,249 +8449,10 @@ static hudnum_t get_huditem(const char *word)
 	return HUD_LIVESNAME;
 }
 
-#ifndef HAVE_BLUA
-static powertype_t get_power(const char *word)
-{ // Returns the vlaue of pw_ enumerations
-	powertype_t i;
-	if (*word >= '0' && *word <= '9')
-		return atoi(word);
-	if (fastncmp("PW_",word,3))
-		word += 3; // take off the pw_
-	for (i = 0; i < NUMPOWERS; i++)
-		if (fastcmp(word, POWERS_LIST[i]))
-			return i;
-	deh_warning("Couldn't find power named 'pw_%s'",word);
-	return pw_invulnerability;
-}
-
-/// \todo Make ANY of this completely over-the-top math craziness obey the order of operations.
-static fixed_t op_mul(fixed_t a, fixed_t b) { return a*b; }
-static fixed_t op_div(fixed_t a, fixed_t b) { return a/b; }
-static fixed_t op_add(fixed_t a, fixed_t b) { return a+b; }
-static fixed_t op_sub(fixed_t a, fixed_t b) { return a-b; }
-static fixed_t op_or(fixed_t a, fixed_t b) { return a|b; }
-static fixed_t op_and(fixed_t a, fixed_t b) { return a&b; }
-static fixed_t op_lshift(fixed_t a, fixed_t b) { return a<<b; }
-static fixed_t op_rshift(fixed_t a, fixed_t b) { return a>>b; }
-
-struct {
-	const char c;
-	fixed_t (*v)(fixed_t,fixed_t);
-} OPERATIONS[] = {
-	{'*',op_mul},
-	{'/',op_div},
-	{'+',op_add},
-	{'-',op_sub},
-	{'|',op_or},
-	{'&',op_and},
-	{'<',op_lshift},
-	{'>',op_rshift},
-	{0,NULL}
-};
-
-// Returns the full word, cut at the first symbol or whitespace
-static char *read_word(const char *line)
-{
-	// Part 1: You got the start of the word, now find the end.
-  const char *p;
-	INT32 i;
-	for (p = line+1; *p; p++) {
-		if (*p == ' ' || *p == '\t')
-			break;
-		for (i = 0; OPERATIONS[i].c; i++)
-			if (*p == OPERATIONS[i].c) {
-				i = -1;
-				break;
-			}
-		if (i == -1)
-			break;
-	}
-
-	// Part 2: Make a copy of the word and return it.
-	{
-		size_t len = (p-line);
-		char *word = malloc(len+1);
-		M_Memcpy(word,line,len);
-		word[len] = '\0';
-		return word;
-	}
-}
-
-static INT32 operation_pad(const char **word)
-{ // Brings word the next operation and returns the operation number.
-	INT32 i;
-	for (; **word; (*word)++) {
-		if (**word == ' ' || **word == '\t')
-			continue;
-		for (i = 0; OPERATIONS[i].c; i++)
-			if (**word == OPERATIONS[i].c)
-			{
-				if ((**word == '<' && *(*word+1) == '<') || (**word == '>' && *(*word+1) == '>')) (*word)++; // These operations are two characters long.
-				else if (**word == '<' || **word == '>') continue; // ... do not accept one character long.
-				(*word)++;
-				return i;
-			}
-		deh_warning("Unknown operation '%c'",**word);
-		return -1;
-	}
-	return -1;
-}
-
-static void const_warning(const char *type, const char *word)
-{
-	deh_warning("Couldn't find %s named '%s'",type,word);
-}
-
-static fixed_t find_const(const char **rword)
-{ // Finds the value of constants and returns it, bringing word to the next operation.
-	INT32 i;
-	fixed_t r;
-	char *word = read_word(*rword);
-	*rword += strlen(word);
-	if ((*word >= '0' && *word <= '9') || *word == '-') { // Parse a number
-		r = atoi(word);
-		free(word);
-		return r;
-	}
-	if (!*(word+1) && // Turn a single A-z symbol into numbers, like sprite frames.
-	 ((*word >= 'A' && *word <= 'Z') || (*word >= 'a' && *word <= 'z'))) {
-		r = R_Char2Frame(*word);
-		free(word);
-		return r;
-	}
-	if (fastncmp("MF_", word, 3)) {
-		char *p = word+3;
-		for (i = 0; MOBJFLAG_LIST[i]; i++)
-			if (fastcmp(p, MOBJFLAG_LIST[i])) {
-				free(word);
-				return (1<<i);
-			}
-
-		// Not found error
-		const_warning("mobj flag",word);
-		free(word);
-		return 0;
-	}
-	else if (fastncmp("MF2_", word, 4)) {
-		char *p = word+4;
-		for (i = 0; MOBJFLAG2_LIST[i]; i++)
-			if (fastcmp(p, MOBJFLAG2_LIST[i])) {
-				free(word);
-				return (1<<i);
-			}
-
-		// Not found error
-		const_warning("mobj flag2",word);
-		free(word);
-		return 0;
-	}
-	else if (fastncmp("MFE_", word, 4)) {
-		char *p = word+4;
-		for (i = 0; MOBJEFLAG_LIST[i]; i++)
-			if (fastcmp(p, MOBJEFLAG_LIST[i])) {
-				free(word);
-				return (1<<i);
-			}
-
-		// Not found error
-		const_warning("mobj eflag",word);
-		free(word);
-		return 0;
-	}
-	else if (fastncmp("PF_", word, 3)) {
-		char *p = word+3;
-		for (i = 0; PLAYERFLAG_LIST[i]; i++)
-			if (fastcmp(p, PLAYERFLAG_LIST[i])) {
-				free(word);
-				return (1<<i);
-			}
-		if (fastcmp(p, "FULLSTASIS"))
-			return PF_FULLSTASIS;
-
-		// Not found error
-		const_warning("player flag",word);
-		free(word);
-		return 0;
-	}
-	else if (fastncmp("S_",word,2)) {
-		r = get_state(word);
-		free(word);
-		return r;
-	}
-	else if (fastncmp("MT_",word,3)) {
-		r = get_mobjtype(word);
-		free(word);
-		return r;
-	}
-	else if (fastncmp("SPR_",word,4)) {
-		r = get_sprite(word);
-		free(word);
-		return r;
-	}
-	else if (fastncmp("SFX_",word,4) || fastncmp("DS",word,2)) {
-		r = get_sfx(word);
-		free(word);
-		return r;
-	}
-#ifdef MUSICSLOT_COMPATIBILITY
-	else if (fastncmp("MUS_",word,4) || fastncmp("O_",word,2)) {
-		r = get_mus(word, true);
-		free(word);
-		return r;
-	}
-#endif
-	else if (fastncmp("PW_",word,3)) {
-		r = get_power(word);
-		free(word);
-		return r;
-	}
-	else if (fastncmp("HUD_",word,4)) {
-		r = get_huditem(word);
-		free(word);
-		return r;
-	}
-	else if (fastncmp("SKINCOLOR_",word,10)) {
-		char *p = word+10;
-		for (i = 0; i < MAXTRANSLATIONS; i++)
-			if (fastcmp(p, COLOR_ENUMS[i])) {
-				free(word);
-				return i;
-			}
-		const_warning("color",word);
-		free(word);
-		return 0;
-	}
-	for (i = 0; INT_CONST[i].n; i++)
-		if (fastcmp(word,INT_CONST[i].n)) {
-			free(word);
-			return INT_CONST[i].v;
-		}
-
-	// Not found error.
-	const_warning("constant",word);
-	free(word);
-	return 0;
-}
-#endif
-
 // Loops through every constant and operation in word and performs its calculations, returning the final value.
 fixed_t get_number(const char *word)
 {
-#ifdef HAVE_BLUA
 	return LUA_EvalMath(word);
-#else
-	// DESPERATELY NEEDED: Order of operations support! :x
-	fixed_t i = find_const(&word);
-	INT32 o;
-	while(*word) {
-		o = operation_pad(&word);
-		if (o != -1)
-			i = OPERATIONS[o].v(i,find_const(&word));
-		else
-			break;
-	}
-	return i;
-#endif
 }
 
 void DEH_Check(void)
@@ -9140,10 +8480,6 @@ void DEH_Check(void)
 		I_Error("You forgot to update the Dehacked colors list, you dolt!\n(%d colors defined, versus %s in the Dehacked list)\n", MAXTRANSLATIONS, sizeu1(dehcolors));
 #endif
 }
-
-#ifdef HAVE_BLUA
-#include "lua_script.h"
-#include "lua_libs.h"
 
 // freeslot takes a name (string only!)
 // and allocates it to the appropriate free slot.
@@ -10083,5 +9419,3 @@ void LUA_SetActionByName(void *state, const char *actiontocompare)
 		}
 	}
 }
-
-#endif // HAVE_BLUA

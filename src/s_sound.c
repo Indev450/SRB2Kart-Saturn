@@ -30,9 +30,7 @@
 #include "m_cond.h" // for conditionsets
 #include "m_menu.h" // bird music stuff
 
-#ifdef HAVE_BLUA
 #include "lua_hook.h" // MusicChange hook
-#endif
 
 #ifdef HW3SOUND
 // 3D Sound Interface
@@ -1996,11 +1994,11 @@ void S_ChangeMusicEx(const char *mmusic, UINT16 mflags, boolean looping, UINT32 
 		return;
 
 	strncpy(newmusic, mmusic, 6);
+
 #ifdef HAVE_BLUA
 	if(LUAh_MusicChange(music_name, newmusic, &mflags, &looping, &position, &prefadems, &fadeinms))
 		return;
 #endif
-	newmusic[6] = 0;
 
  	// No Music (empty string)
 	if (newmusic[0] == 0)

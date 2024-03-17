@@ -208,7 +208,6 @@ static inline void *G_ScpyTiccmd(ticcmd_t* dest, void* src, const size_t n)
 }
 
 
-
 // Some software don't support largest packet
 // (original sersetup, not exactely, but the probability of sending a packet
 // of 512 bytes is like 0.1)
@@ -2596,7 +2595,7 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 
 		key = I_GetKey();
 		// Only ESC and non-keyboard keys abort connection
-		if (!modeattacking && (key == KEY_ESCAPE || key >= KEY_MOUSE1 || cl_mode == CL_ABORTED))
+		if (!modeattacking && (key == KEY_ESCAPE || key == KEY_JOY1+1 || cl_mode == CL_ABORTED))
 		{
 			CONS_Printf(M_GetText("Network game synchronization aborted.\n"));
 			D_QuitNetGame();
@@ -3191,11 +3190,7 @@ void CL_RemovePlayer(INT32 playernum, INT32 reason)
 		}
 	}
 
-#ifdef HAVE_BLUA
 	LUAh_PlayerQuit(&players[playernum], reason); // Lua hook for player quitting
-#else
-	(void)reason;
-#endif
 
 	// Reset player data
 	CL_ClearPlayer(playernum);
@@ -3219,13 +3214,9 @@ void CL_RemovePlayer(INT32 playernum, INT32 reason)
 	if (playernum == displayplayers[0] && !demo.playback)
 		displayplayers[0] = consoleplayer; // don't look through someone's view who isn't there
 
-#ifdef HAVE_BLUA
 	LUA_InvalidatePlayer(&players[playernum]);
-#endif
 
-	/*if (G_TagGametype()) //Check if you still have a game. Location flexible. =P
-		P_CheckSurvivors();
-	else*/ if (G_BattleGametype()) // SRB2Kart
+	if (G_BattleGametype()) // SRB2Kart
 		K_CheckBumpers();
 	else if (G_RaceGametype())
 		P_CheckRacers();
@@ -4102,9 +4093,7 @@ void SV_ResetServer(void)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-#ifdef HAVE_BLUA
 		LUA_InvalidatePlayer(&players[i]);
-#endif
 		playeringame[i] = false;
 		playernode[i] = UINT8_MAX;
 		sprintf(player_names[i], "Player %d", i + 1);
@@ -4290,9 +4279,7 @@ static void Got_AddPlayer(UINT8 **p, INT32 playernum)
 	if (server && multiplayer && motd[0] != '\0')
 		COM_BufAddText(va("sayto %d %s\n", newplayernum, motd));
 
-#ifdef HAVE_BLUA
 	LUAh_PlayerJoin(newplayernum);
-#endif
 
 #ifdef HAVE_DISCORDRPC
 	DRPC_UpdatePresence();

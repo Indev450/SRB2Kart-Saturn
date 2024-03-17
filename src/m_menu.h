@@ -91,6 +91,8 @@ void M_QuitResponse(INT32 ch);
 // Determines whether to show a level in the list
 boolean M_CanShowLevelInList(INT32 mapnum, INT32 gt);
 
+extern boolean menu_text_input;
+
 // flags for items in the menu
 // menu handle (what we do when key is pressed
 #define IT_TYPE             14     // (2+4+8)
@@ -147,6 +149,8 @@ boolean M_CanShowLevelInList(INT32 mapnum, INT32 gt);
 
 #define MAXSTRINGLENGTH 32
 
+#define MAXMENUCCVARS 999
+
 #define MAXTOOLTIPS 255
 
 typedef union
@@ -171,7 +175,7 @@ typedef struct menuitem_s
 	void *itemaction;
 
 	// hotkey in menu or y of the item
-	UINT8 alphaKey;
+	UINT16 alphaKey;
 } menuitem_t;
 
 extern menuitem_t PlayerMenu[MAXSKINS];
@@ -289,6 +293,8 @@ void M_PopupMasterServerRules(void);
 void M_PopupMasterServerConnectError(void);
 #endif
 
+void M_SlotCvarIntoModMenu(consvar_t* cvar, const char* category, const char* name);
+
 // These defines make it a little easier to make menus
 #define DEFAULTMENUSTYLE(header, source, prev, x, y)\
 {\
@@ -315,6 +321,7 @@ void M_PopupMasterServerConnectError(void);
 	NULL,\
 	{NULL}\
 }
+
 
 #define PAUSEMENUSTYLE(source, x, y)\
 {\
