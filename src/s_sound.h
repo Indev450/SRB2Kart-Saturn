@@ -160,7 +160,7 @@ typedef struct musicdef_s
 	char name[7];
 	char usage[256];
 	char source[256];
-	char filename[256];
+	char filename[256+1];
 	// for the music test stuff
 	// generally if these are present on vanilla the game would throw up a warning
 	// a sacrifice i suppose

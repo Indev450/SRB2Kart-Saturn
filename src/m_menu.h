@@ -306,7 +306,7 @@ void M_SlotCvarIntoModMenu(consvar_t* cvar, const char* category, const char* na
 	x, y,\
 	0,\
 	NULL,\
-	NULL\
+	{NULL}\
 }
 
 #define DEFAULTSCROLLSTYLE(header, source, prev, x, y)\
@@ -319,7 +319,7 @@ void M_SlotCvarIntoModMenu(consvar_t* cvar, const char* category, const char* na
 	x, y,\
 	0,\
 	NULL,\
-	NULL\
+	{NULL}\
 }
 
 
@@ -333,7 +333,7 @@ void M_SlotCvarIntoModMenu(consvar_t* cvar, const char* category, const char* na
 	x, y,\
 	0,\
 	NULL,\
-	NULL\
+	{NULL}\
 }
 
 #define CENTERMENUSTYLE(header, source, prev, y)\
@@ -346,7 +346,7 @@ void M_SlotCvarIntoModMenu(consvar_t* cvar, const char* category, const char* na
 	BASEVIDWIDTH/2, y,\
 	0,\
 	NULL,\
-	NULL\
+	{NULL}\
 }
 
 #define MAPICONMENUSTYLE(header, source, prev)\
@@ -359,7 +359,7 @@ void M_SlotCvarIntoModMenu(consvar_t* cvar, const char* category, const char* na
 	24,40,\
 	0,\
 	NULL,\
-	NULL\
+	{NULL}\
 }
 
 #define CONTROLMENUSTYLE(source, prev)\
@@ -372,7 +372,7 @@ void M_SlotCvarIntoModMenu(consvar_t* cvar, const char* category, const char* na
 	26, 40,\
 	0,\
 	NULL,\
-	NULL\
+	{NULL}\
 }
 
 #define IMAGEDEF(source)\
@@ -385,7 +385,7 @@ void M_SlotCvarIntoModMenu(consvar_t* cvar, const char* category, const char* na
 	0, 0,\
 	0,\
 	NULL,\
-	NULL\
+	{NULL}\
 }
 
 #endif //__X_MENU__

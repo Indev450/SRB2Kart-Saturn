@@ -148,7 +148,7 @@ static char filenamebuf[MAX_WADPATH];
 #include <windows.h>
 
 // Windows can't open utf-8 path so it must be converted to utf-16
-FILE* fopen_utf8(const char* filename, const char* mode)
+static FILE* fopen_utf8(const char* filename, const char* mode)
 {
 	static const int MY_PATH_MAX =  2048;
 	WCHAR nameW[MY_PATH_MAX];
@@ -701,7 +701,7 @@ static lumpinfo_t* ResGetLumpsZip (FILE* handle, UINT16* nlmp)
 //
 // Can now load dehacked files (.soc)
 //
-UINT16 W_InitFile(const char *filename, const char *lumpname, UINT16 *wadnump, boolean local)
+UINT16 W_InitFile(const char *filename, boolean local)
 {
 	FILE *handle;
 	lumpinfo_t *lumpinfo = NULL;
@@ -876,7 +876,7 @@ INT32 W_InitMultipleFiles(char **filenames, boolean addons)
 			G_SetGameModified(true, false);
 
 		//CONS_Debug(DBG_SETUP, "Loading %s\n", *filenames);
-		rc = W_InitFile(*filenames, 0, 0, false);
+		rc = W_InitFile(*filenames, false);
 		if (rc == INT16_MAX)
 			CONS_Printf(M_GetText("Errors occurred while loading %s; not added.\n"), *filenames);
 		overallrc &= (rc != INT16_MAX) ? 1 : 0;
@@ -1686,7 +1686,7 @@ void *W_CacheLumpName(const char *name, INT32 tag)
 
 // Software-only compile cache the data without conversion
 #ifdef HWRENDER
-static inline void *W_CachePatchNumPwad(UINT16 wad, UINT16 lump, INT32 tag)
+FUNCINLINE static ATTRINLINE void *W_CachePatchNumPwad(UINT16 wad, UINT16 lump, INT32 tag)
 {
 	GLPatch_t *grPatch;
 

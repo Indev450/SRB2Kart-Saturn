@@ -549,7 +549,8 @@ static void DoSayCommand(SINT8 target, size_t usedargs, UINT8 flags)
 		const char *newmsg;
 		INT32 spc = 1; // used if nodenum[1] is a space.
 		char *nodenum = (char*) malloc(3);
-		strncpy(nodenum, msg+3, 3);
+		memcpy(nodenum, msg+3, 2);
+		nodenum[2] = '\0';
 		// check for undesirable characters in our "number"
 		if 	(((nodenum[0] < '0') || (nodenum[0] > '9')) || ((nodenum[1] < '0') || (nodenum[1] > '9')))
 		{
@@ -565,15 +566,15 @@ static void DoSayCommand(SINT8 target, size_t usedargs, UINT8 flags)
 			}
 		}
 		// I'm very bad at C, I swear I am, additional checks eww!
-			if (spc != 0)
+		if (spc != 0)
+		{
+			if (msg[5] != ' ')
 			{
-				if (msg[5] != ' ')
-				{
-					HU_AddChatText("\x82NOTICE: \x80Invalid command format. Correct format is \'/pm<node> \'.", false);
-					free(nodenum);
-					return;
-				}
+				HU_AddChatText("\x82NOTICE: \x80Invalid command format. Correct format is \'/pm<node> \'.", false);
+				free(nodenum);
+				return;
 			}
+		}
 
 		target = atoi((const char*) nodenum); // turn that into a number
 		free(nodenum);
@@ -1225,7 +1226,8 @@ static void HU_queueChatChar(INT32 c)
 				return;
 			}
 
-			strncpy(nodenum, msg+3, 3);
+			memcpy(nodenum, msg+3, 2);
+			nodenum[2] = '\0';
 
 			// check for undesirable characters in our "number"
 			if 	(((nodenum[0] < '0') || (nodenum[0] > '9')) || ((nodenum[1] < '0') || (nodenum[1] > '9')))
@@ -1936,7 +1938,8 @@ static void HU_DrawChat(void)
 
 
 				nodenum = (char*) malloc(3);
-				strncpy(nodenum, w_chat+3, 3);
+				memcpy(nodenum, w_chat+3, 2);
+				nodenum[2] = '\0';
 				n = atoi((const char*) nodenum); // turn that into a number
 				free(nodenum);
 				// special cases:
@@ -2576,7 +2579,7 @@ void HU_drawPing(INT32 x, INT32 y, UINT32 lag, INT32 flags)
 	UINT8 barcolor = 31; // color we use for the bars (green, yellow, red or black)
 	SINT8 i = 0;
 	SINT8 yoffset = 6;
-	INT32 dx;
+	//INT32 dx;
 
 	gfxnum = Ping_gfx_num(lag);
 	
@@ -2923,7 +2926,10 @@ void HU_DoCEcho(const char *msg)
 	
 	I_OutputMsg("%s\n", msg); // print to log
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-truncation" // This is fine, we set null byte later
 	strncpy(cechotext, msg, sizeof(cechotext));
+#pragma GCC diagnostic pop
 	strncat(cechotext, "\\", sizeof(cechotext) - strlen(cechotext) - 1);
 	cechotext[sizeof(cechotext) - 1] = '\0';
 	cechotimer = cechoduration;

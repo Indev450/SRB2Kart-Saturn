@@ -2422,7 +2422,7 @@ menu_t MISC_AddonsDef =
 	50, 28,
 	0,
 	NULL,
-	NULL
+	{NULL}
 };
 
 menu_t MISC_ReplayHutDef =
@@ -2435,7 +2435,7 @@ menu_t MISC_ReplayHutDef =
 	30, 80,
 	0,
 	M_QuitReplayHut,
-	NULL
+	{NULL}
 };
 
 menu_t MISC_ReplayOptionsDef =
@@ -2448,7 +2448,7 @@ menu_t MISC_ReplayOptionsDef =
 	27, 40,
 	0,
 	NULL,
-	NULL
+	{NULL}
 };
 
 menu_t MISC_ReplayStartDef =
@@ -2461,7 +2461,7 @@ menu_t MISC_ReplayStartDef =
 	30, 90,
 	0,
 	NULL,
-	NULL
+	{NULL}
 };
 
 menu_t PlaybackMenuDef = {
@@ -2474,7 +2474,7 @@ menu_t PlaybackMenuDef = {
 	BASEVIDWIDTH/2 - 88, 2,
 	0,
 	NULL,
-	NULL
+	{NULL}
 };
 
 menu_t MAPauseDef = PAUSEMENUSTYLE(MAPauseMenu, 40, 72);
@@ -2490,7 +2490,8 @@ menu_t MISC_DiscordRequestsDef = {
 	M_DrawDiscordRequests,
 	0, 0,
 	0,
-	NULL
+	NULL,
+	{NULL}
 };
 #endif
 
@@ -2586,7 +2587,7 @@ menu_t SR_PandoraDef =
 	60, 40,
 	0,
 	M_ExitPandorasBox,
-	NULL
+	{NULL}
 };
 menu_t SR_MainDef = CENTERMENUSTYLE(NULL, SR_MainMenu, &MainDef, 72);
 
@@ -2602,7 +2603,7 @@ menu_t SR_UnlockChecklistDef =
 	280, 185,
 	0,
 	NULL,
-	NULL
+	{NULL}
 };
 
 menu_t SR_MusicTestDef =
@@ -2615,7 +2616,7 @@ menu_t SR_MusicTestDef =
 	60, 150,
 	0,
 	NULL,
-	NULL
+	{NULL}
 };
 
 menu_t SR_EmblemHintDef =
@@ -2628,7 +2629,7 @@ menu_t SR_EmblemHintDef =
 	60, 150,
 	0,
 	NULL,
-	NULL
+	{NULL}
 };
 
 // Single Player
@@ -2644,7 +2645,7 @@ menu_t SP_LevelStatsDef =
 	280, 185,
 	0,
 	NULL,
-	NULL
+	{NULL}
 };
 
 static menu_t SP_TimeAttackDef =
@@ -2657,8 +2658,7 @@ static menu_t SP_TimeAttackDef =
 	34, 40,
 	0,
 	M_QuitTimeAttackMenu,
-	NULL,
-	NULL
+	{NULL}
 };
 static menu_t SP_ReplayDef =
 {
@@ -2670,8 +2670,7 @@ static menu_t SP_ReplayDef =
 	34, 40,
 	0,
 	NULL,
-	NULL,
-	NULL
+	{NULL}
 };
 static menu_t SP_GuestReplayDef =
 {
@@ -2683,8 +2682,7 @@ static menu_t SP_GuestReplayDef =
 	34, 40,
 	0,
 	NULL,
-	NULL,
-	NULL
+	{NULL}
 };
 static menu_t SP_GhostDef =
 {
@@ -2696,7 +2694,7 @@ static menu_t SP_GhostDef =
 	34, 40,
 	0,
 	NULL,
-	NULL
+	{NULL}
 };
 
 // Multiplayer
@@ -2714,7 +2712,7 @@ menu_t MP_MainDef =
 #else
 	NULL,
 #endif
-	NULL
+	{NULL}
 };
 
 menu_t MP_OfflineServerDef = MAPICONMENUSTYLE("M_MULTI", MP_OfflineServerMenu, &MP_MainDef);
@@ -2732,7 +2730,7 @@ menu_t MP_ConnectDef =
 	27,24,
 	0,
 	M_CancelConnect,
-	NULL
+	{NULL}
 };
 #endif
 menu_t MP_PlayerSetupDef =
@@ -2745,7 +2743,7 @@ menu_t MP_PlayerSetupDef =
 	36, 14,
 	0,
 	M_QuitMultiPlayerMenu,
-	NULL
+	{NULL}
 };
 
 // Options
@@ -2759,7 +2757,7 @@ menu_t OP_MainDef =
 	60, 30,
 	0,
 	NULL,
-	NULL
+	{NULL}
 };
 
 menu_t OP_ControlsDef = DEFAULTMENUSTYLE("M_CONTRO", OP_ControlsMenu, &OP_MainDef, 60, 30);
@@ -2780,7 +2778,7 @@ menu_t OP_JoystickSetDef =
 	50, 40,
 	0,
 	NULL,
-	NULL
+	{NULL}
 };
 
 menu_t OP_VideoOptionsDef =
@@ -2793,7 +2791,7 @@ menu_t OP_VideoOptionsDef =
 	30, 20,
 	0,
 	NULL,
-	NULL
+	{NULL}
 };
 
 menu_t OP_VideoModeDef =
@@ -2806,7 +2804,7 @@ menu_t OP_VideoModeDef =
 	48, 26,
 	0,
 	NULL,
-	NULL
+	{NULL}
 };
 
 menu_t OP_ColorOptionsDef =
@@ -2832,7 +2830,7 @@ menu_t OP_SoundOptionsDef =
 	30, 20,
 	0,
 	NULL,
-	NULL
+	{NULL}
 };
 
 
@@ -2846,7 +2844,7 @@ menu_t OP_HUDOptionsDef =
 	30, 20,
 	0,
 	NULL,
-	NULL
+	{NULL}
 };
 
 
@@ -2873,7 +2871,7 @@ menu_t OP_MonitorToggleDef =
 	47, 30,
 	0,
 	NULL,
-	NULL
+	{NULL}
 };
 
 #ifdef HWRENDER
@@ -2930,7 +2928,7 @@ menu_t OP_ForkedBirdDef = {
 	30, 6,
 	0,
 	NULL,
-	NULL
+	{NULL}
 };
 
 menu_t OP_LocalSkinDef = DEFAULTMENUSTYLE(NULL, OP_TiltMenu, &OP_ForkedBirdDef, 30, 60);
@@ -4777,27 +4775,27 @@ static void M_DrawMenuTitle(void)
 }
 
 // TODO: This is fucking terrible.
-static void M_DrawSplitText(INT32 x, INT32 y, INT32 option, const char* str, INT32 box_x, INT32 alpha) 
+static void M_DrawSplitText(INT32 x, INT32 y, INT32 option, const char* str, INT32 alpha)
 {
-	const char* icopy = strdup(str);
-	const char** clines = NULL;
+	char* icopy = strdup(str);
+	char** clines = NULL;
 	INT16 num_lines = 0;
 
 	if (icopy == NULL) return;
 
-	char* token = strtok(icopy, "\n");
+	char* tok = strtok(icopy, "\n");
 
-	while (token != NULL) 
+	while (tok != NULL)
 	{
-		const char* line = strdup(token);
+		char* line = strdup(tok);
 
 		if (line == NULL) return;
 
-		clines = (const char**)realloc(clines, (num_lines + 1) * sizeof(const char*));
+		clines = realloc(clines, (num_lines + 1) * sizeof(char*));
 		clines[num_lines] = line;
 		num_lines++;
 
-		token = strtok(NULL, "\n");
+		tok = strtok(NULL, "\n");
 	}
 
 	free(icopy);
@@ -4821,7 +4819,7 @@ static void M_DrawSplitText(INT32 x, INT32 y, INT32 option, const char* str, INT
 		V_DrawCenteredThinString(x, y + yoffset, option|V_YELLOWMAP|((9 - alpha) << V_ALPHASHIFT), clines[i]);
 		yoffset += 10;
         // Remember to free the memory for each line when you're done with it.
-        free((void*)clines[i]);
+        free(clines[i]);
     }
 
 	free(clines);
@@ -4977,7 +4975,7 @@ static void M_DrawGenericMenu(void)
 	{
 		if (!(OP_ControlsTooltips[itemOn] == NULL))
 		{
-			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_ControlsTooltips[itemOn], 30, coolalphatimer);
+			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_ControlsTooltips[itemOn], coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
 				coolalphatimer--;
 		}
@@ -4987,7 +4985,7 @@ static void M_DrawGenericMenu(void)
 	{
 		if (!(OP_MouseTooltips[itemOn] == NULL))
 		{
-			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_MouseTooltips[itemOn], 30, coolalphatimer);
+			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_MouseTooltips[itemOn], coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
 				coolalphatimer--;
 		}
@@ -4997,7 +4995,7 @@ static void M_DrawGenericMenu(void)
 	{
 		if (!(OP_VideoTooltips[itemOn] == NULL))
 		{
-			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_VideoTooltips[itemOn], 30, coolalphatimer);
+			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_VideoTooltips[itemOn], coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
 				coolalphatimer--;
 		}
@@ -5007,7 +5005,7 @@ static void M_DrawGenericMenu(void)
 	{
 		if (!(OP_SoundTooltips[itemOn] == NULL))
 		{
-			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_SoundTooltips[itemOn], 30, coolalphatimer);
+			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_SoundTooltips[itemOn], coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
 				coolalphatimer--;
 		}
@@ -5017,7 +5015,7 @@ static void M_DrawGenericMenu(void)
 	{
 		if (!(OP_SoundAdvancedTooltips[itemOn] == NULL))
 		{
-			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_SoundAdvancedTooltips[itemOn], 30, coolalphatimer);
+			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_SoundAdvancedTooltips[itemOn], coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
 				coolalphatimer--;
 		}
@@ -5027,7 +5025,7 @@ static void M_DrawGenericMenu(void)
 	{
 		if (!(OP_ExpTooltips[itemOn] == NULL))
 		{
-			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_ExpTooltips[itemOn], 30, coolalphatimer);
+			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_ExpTooltips[itemOn], coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
 				coolalphatimer--;
 		}
@@ -5037,7 +5035,7 @@ static void M_DrawGenericMenu(void)
 	{
 		if (!(OP_ChatOptionsTooltips[itemOn] == NULL))
 		{
-			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_ChatOptionsTooltips[itemOn], 30, coolalphatimer);
+			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_ChatOptionsTooltips[itemOn], coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
 				coolalphatimer--;
 		}
@@ -5047,7 +5045,7 @@ static void M_DrawGenericMenu(void)
 	{
 		if (!(OP_GameTooltips[itemOn] == NULL))
 		{
-			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_GameTooltips[itemOn], 30, coolalphatimer);
+			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_GameTooltips[itemOn], coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
 				coolalphatimer--;
 		}
@@ -5057,7 +5055,7 @@ static void M_DrawGenericMenu(void)
 	{
 		if (!(OP_ServerOptionsTooltips[itemOn] == NULL))
 		{
-			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_ServerOptionsTooltips[itemOn], 30, coolalphatimer);
+			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_ServerOptionsTooltips[itemOn], coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
 				coolalphatimer--;
 		}
@@ -5067,7 +5065,7 @@ static void M_DrawGenericMenu(void)
 	{
 		if (!(OP_AdvServerOptionsTooltips[itemOn] == NULL))
 		{
-			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_AdvServerOptionsTooltips[itemOn], 30, coolalphatimer);
+			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_AdvServerOptionsTooltips[itemOn], coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
 				coolalphatimer--;
 		}
@@ -5077,7 +5075,7 @@ static void M_DrawGenericMenu(void)
 	{
 		if (!(OP_PlayerDistortTooltips[itemOn] == NULL))
 		{
-			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_PlayerDistortTooltips[itemOn], 30, coolalphatimer);
+			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_PlayerDistortTooltips[itemOn], coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
 				coolalphatimer--;
 		}
@@ -5087,7 +5085,7 @@ static void M_DrawGenericMenu(void)
 	{
 		if (!(OP_CreditTooltips[itemOn] == NULL))
 		{
-			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_CreditTooltips[itemOn], 30, coolalphatimer);
+			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_CreditTooltips[itemOn], coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
 				coolalphatimer--;
 		}
@@ -5097,7 +5095,7 @@ static void M_DrawGenericMenu(void)
 	{
 		if (!(OP_BirdTooltips[itemOn] == NULL))
 		{
-			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_BirdTooltips[itemOn], 30, coolalphatimer);
+			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_BirdTooltips[itemOn], coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
 				coolalphatimer--;
 		}
@@ -5107,7 +5105,7 @@ static void M_DrawGenericMenu(void)
 	{
 		if (!(OP_TiltTooltips[itemOn] == NULL))
 		{
-			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_TiltTooltips[itemOn], 30, coolalphatimer);
+			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_TiltTooltips[itemOn], coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
 				coolalphatimer--;
 		}
@@ -5117,7 +5115,7 @@ static void M_DrawGenericMenu(void)
 	{
 		if (!(OP_AdvancedBirdTooltips[itemOn] == NULL))
 		{
-			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_AdvancedBirdTooltips[itemOn], 30, coolalphatimer);
+			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_AdvancedBirdTooltips[itemOn], coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
 				coolalphatimer--;
 		}
@@ -5127,7 +5125,7 @@ static void M_DrawGenericMenu(void)
 	{
 		if (!(OP_NametagTooltips[itemOn] == NULL)) 
 		{
-			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_NametagTooltips[itemOn], 30, coolalphatimer);
+			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_NametagTooltips[itemOn], coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
 				coolalphatimer--;
 		}
@@ -5137,7 +5135,7 @@ static void M_DrawGenericMenu(void)
 	{
 		if (!(OP_DriftGaugeTooltips[itemOn] == NULL)) 
 		{
-			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_DriftGaugeTooltips[itemOn], 30, coolalphatimer);
+			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_DriftGaugeTooltips[itemOn], coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
 				coolalphatimer--;
 		}
@@ -5290,7 +5288,7 @@ static void M_DrawGenericScrollMenu(void)
 	{
 		if (!(OP_OpenGLTooltips[itemOn] == NULL)) 
 		{
-			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_OpenGLTooltips[itemOn], 30, coolalphatimer);
+			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_OpenGLTooltips[itemOn], coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
 				coolalphatimer--;
 		}
@@ -5301,7 +5299,7 @@ static void M_DrawGenericScrollMenu(void)
 	{
 		if (!(OP_SaturnTooltips[itemOn] == NULL)) 
 		{
-			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_SaturnTooltips[itemOn], 30, coolalphatimer);
+			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_SaturnTooltips[itemOn], coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
 				coolalphatimer--;
 		}
@@ -5772,7 +5770,8 @@ menu_t MessageDef =
 	M_DrawMessageMenu,  // drawing routine ->
 	0, 0,               // x, y                (TO HACK)
 	0,                  // lastOn, flags       (TO HACK)
-	NULL
+	NULL,
+	{0},
 };
 
 
@@ -6037,7 +6036,7 @@ static void M_AddonsOptions(INT32 choice)
 #define LOCATIONSTRING1 "Visit \x83SRB2.ORG/MODS\x80 to get & make addons!"
 #define LOCATIONSTRING2 "Visit \x88SRB2.ORG/MODS\x80 to get & make addons!"
 
-static void M_AddonsInternal()
+static void M_AddonsInternal(void)
 {
 	const char *pathname = ".";
 
@@ -6748,7 +6747,9 @@ static void PrepReplayList(void)
 		else
 		{
 			demolist[i].type = MD_NOTLOADED;
-			snprintf(demolist[i].filepath, 255, "%s%s", menupath, dirmenu[i] + DIR_STRING);
+			// FIXME - do something with buffer sizes. menupath is 1024 chars but filepath is only
+			// 256. I'm not really sure what to do here but don't want to leave warnings...
+			snprintf(demolist[i].filepath, 255, "%.254s%s", menupath, dirmenu[i] + DIR_STRING);
 			sprintf(demolist[i].title, ".....");
 		}
 	}
@@ -8223,9 +8224,11 @@ static size_t st_namescrollstate = 0;
 
 static void M_MusicTest(INT32 choice)
 {
-	INT32 ul = skyRoomMenuTranslations[choice-1];
-	UINT8 i;
-	char buf[8];
+	//INT32 ul = skyRoomMenuTranslations[choice-1];
+	//UINT8 i;
+	//char buf[8];
+
+	(void)choice;
 
 	if (!S_PrepareSoundTest())
 	{
@@ -8262,7 +8265,7 @@ static void M_MusicTest(INT32 choice)
 static void M_DrawMusicTest(void)
 {
 	INT32 x, y, i;
-	char* title;
+	//char* title;
 	//fixed_t hscale = FRACUNIT/2, vscale = FRACUNIT/2, bounce = 0;
 	//UINT8 frame[4] = {0, 0, -1, SKINCOLOR_RUBY};
 
@@ -8498,9 +8501,9 @@ static void M_DrawMusicTest(void)
 				}
 
 				if (soundtestdefs[t]->title[0])
-					strncpy(buf, soundtestdefs[t]->title + nameoffset, MAXLENGTH);
+					memcpy(buf, soundtestdefs[t]->title + nameoffset, MAXLENGTH);
 				else
-					strncpy(buf, soundtestdefs[t]->source + nameoffset, MAXLENGTH);
+					memcpy(buf, soundtestdefs[t]->source + nameoffset, MAXLENGTH);
 				buf[MAXLENGTH] = 0;
 
 				V_DrawString(x, y, (t == st_sel ? V_YELLOWMAP : 0)|V_ALLOWLOWERCASE|V_MONOSPACE, buf);
@@ -10252,7 +10255,7 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 	if (cv_nextmap.value && cv_showtrackaddon.value)
 	{
 		char *addonname = wadfiles[mapwads[cv_nextmap.value-1]]->filename;
-		INT32 len, sw = 0;
+		INT32 len;
 		INT32 charlimit = 21 + (dupadjust/5);
 		nameonly(addonname);
 		len = strlen(addonname);
@@ -10752,7 +10755,7 @@ static boolean setupm_skinlockedselect;
 #define SKINGRIDNEWWIDTH 8
 #define SKINGRIDNEWHEIGHT 9
 
-static char *sortNames[] = {
+static const char *sortNames[] = {
 	"Name",
 	"Internal name",
 	"Speed",
@@ -10949,7 +10952,6 @@ static void M_DrawSetupMultiPlayerMenu(void)
 
 			if (statdp == true)
 			{
-				int i;
 				//Background
 				V_DrawScaledPatch(statx - 50, staty + 4, 0, W_CachePatchName("K_STATNB", PU_CACHE));
 				
@@ -11250,22 +11252,22 @@ static void M_DrawSetupMultiPlayerMenu(void)
 		INT32 j = -colwidth;
 		INT16 col = setupm_fakecolor - colwidth;
 		INT32 x = mx;
-		INT32 w = indexwidth;
-		UINT8 h;
+		INT32 cw = indexwidth;
+		UINT8 ch;
 
 		while (col < 1)
 			col += MAXSKINCOLORS-1;
 		while (j <= colwidth)
 		{
 			if (!(j++))
-				w = charw;
+				cw = charw;
 			else
-				w = indexwidth;
-			for (h = 0; h < 16; h++)
-				V_DrawFill(x, my+(cv_skinselectmenu.value?176:162)+h, w, 1, colortranslations[col][h]);
+				cw = indexwidth;
+			for (ch = 0; ch < 16; ch++)
+				V_DrawFill(x, my+(cv_skinselectmenu.value?176:162)+ch, cw, 1, colortranslations[col][ch]);
 			if (++col >= MAXSKINCOLORS)
 				col -= MAXSKINCOLORS-1;
-			x += w;
+			x += cw;
 		}
 	}
 #undef indexwidth

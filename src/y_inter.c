@@ -334,7 +334,7 @@ static void Y_CalculateMatchData(UINT8 rankingsmode, void (*comparison)(INT32))
 // Y_AnimatedVoteScreenCheck
 //
 // Check if the lumps exist (checking for VEXTR(N|W)xx for race and VEXTRB(N|W)xx for battle)
-void Y_AnimatedVoteScreenCheck(void)
+static void Y_AnimatedVoteScreenCheck(void)
 {
 	char tmpPrefix[] = "INTS";
 	boolean stopSearching = false;

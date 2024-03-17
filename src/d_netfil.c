@@ -825,7 +825,6 @@ void SV_FileSendTicker(void)
 	size_t size;
 	filetx_t *f;
 	INT32 packetsent, ram, i, j;
-	INT32 maxpacketsent;
 
 	if (!filestosend) // No file to send
 		return;

@@ -553,17 +553,18 @@ levelflat_t *levelflats;
 size_t P_PrecacheLevelFlats(void)
 {
 	lumpnum_t lump;
-	size_t i, flatmemory = 0;
+	size_t i, flatmem = 0;
 
 	//SoM: 4/18/2000: New flat code to make use of levelflats.
 	for (i = 0; i < numlevelflats; i++)
 	{
 		lump = levelflats[i].lumpnum;
 		if (devparm)
-			flatmemory += W_LumpLength(lump);
+			flatmem += W_LumpLength(lump);
 		R_GetFlat(lump);
 	}
-	return flatmemory;
+
+	return flatmem;
 }
 
 // help function for P_LoadSectors, find a flat in the active wad files,
@@ -3383,7 +3384,7 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, boolean local)
 	boolean mapsadded = false;
 	lumpinfo_t *lumpinfo;
 
-	if ((numlumps = W_InitFile(wadfilename, 0, &wadnum, local)) == INT16_MAX)
+	if ((numlumps = W_InitFile(wadfilename, local)) == INT16_MAX)
 	{
 		refreshdirmenu |= REFRESHDIR_NOTLOADED;
 		CONS_Printf(M_GetText("Errors occurred while loading %s; not added.\n"), wadfilename);

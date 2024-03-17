@@ -1260,30 +1260,30 @@ void HWR_DrawMD2(gr_vissprite_t *spr)
 				md2->blendgrpatch && ((GLPatch_t *)md2->blendgrpatch)->mipmap->format
 				&& gpatch->width == ((GLPatch_t *)md2->blendgrpatch)->width && gpatch->height == ((GLPatch_t *)md2->blendgrpatch)->height)
 			{
-				INT32 skinnum = TC_DEFAULT;
+				INT32 tcskinnum = TC_DEFAULT;
 				if ((spr->mobj->flags & MF_BOSS) && (spr->mobj->flags2 & MF2_FRET) && (leveltime & 1)) // Bosses "flash"
 				{
 					if (spr->mobj->type == MT_CYBRAKDEMON)
-						skinnum = TC_ALLWHITE;
+						tcskinnum = TC_ALLWHITE;
 					else if (spr->mobj->type == MT_METALSONIC_BATTLE)
-						skinnum = TC_METALSONIC;
+						tcskinnum = TC_METALSONIC;
 					else
-						skinnum = TC_BOSS;
+						tcskinnum = TC_BOSS;
 				}
 				else if (spr->mobj->color)
 				{
 					if (spr->mobj->skin && spr->mobj->sprite == SPR_PLAY)
 					{
 						if (spr->mobj->colorized)
-							skinnum = TC_RAINBOW;
+							tcskinnum = TC_RAINBOW;
 						else
 						{
-							skinnum = (INT32)((skin_t*)( (spr->mobj->localskin) ? spr->mobj->localskin : spr->mobj->skin ) - ( (spr->mobj->skinlocal) ? localskins : skins ));
+							tcskinnum = (INT32)((skin_t*)( (spr->mobj->localskin) ? spr->mobj->localskin : spr->mobj->skin ) - ( (spr->mobj->skinlocal) ? localskins : skins ));
 						}
 					}
-					else skinnum = TC_DEFAULT;
+					else tcskinnum = TC_DEFAULT;
 				}
-				HWR_GetBlendedTexture(gpatch, (GLPatch_t *)md2->blendgrpatch, skinnum, spr->colormap, (skincolors_t)spr->mobj->color);
+				HWR_GetBlendedTexture(gpatch, (GLPatch_t *)md2->blendgrpatch, tcskinnum, spr->colormap, (skincolors_t)spr->mobj->color);
 			}
 			else
 			{

@@ -102,6 +102,7 @@ ifeq ($(OS),Windows_NT) # all windows are Windows_NT...
  MINGW=1
  SDL=1
  WINDOWSHELL=1
+ NOUPX=1
 
 else # if you on the *nix
 

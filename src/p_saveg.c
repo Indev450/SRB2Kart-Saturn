@@ -2507,7 +2507,7 @@ static inline void LoadLaserThinker(actionf_p1 thinker)
 //
 // Loads a lightlevel_t from a save game
 //
-static inline void LoadLightlevelThinker(actionf_p1 thinker)
+FUNCINLINE static ATTRINLINE void LoadLightlevelThinker(actionf_p1 thinker)
 {
 	lightlevel_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
 	ht->thinker.function.acp1 = thinker;
@@ -3337,7 +3337,7 @@ static void P_NetArchiveMisc(void)
 		WRITEUINT8(save_p, 0x2e);
 }
 
-static inline boolean P_NetUnArchiveMisc(void)
+FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(void)
 {
 	UINT32 pig;
 	INT32 i;

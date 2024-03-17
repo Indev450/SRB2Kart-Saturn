@@ -475,12 +475,14 @@ void LUAh_ThinkFrame(void)
 	// variables used by perf stats
 	int hook_index = 0;
 	precise_t time_taken = 0;
+
 	if (!gL || !(hooksAvailable[hook_ThinkFrame/8] & (1<<(hook_ThinkFrame%8))))
 		return;
-	
+
 	lua_pushcfunction(gL, LUA_GetErrorMessage);
 
 	for (hookp = roothook; hookp; hookp = hookp->next)
+	{
 		if (hookp->type == hook_ThinkFrame)
 		{
 			if (cv_perfstats.value == 3)
@@ -505,8 +507,9 @@ void LUAh_ThinkFrame(void)
 				hook_index++;
 			}
 		}
-		
-		lua_pop(gL, 1); // Pop error handler
+	}
+
+	lua_pop(gL, 1); // Pop error handler
 }
 
 // Hook for frame (at end of tick, ie after overlays, precipitation, specials)
@@ -518,13 +521,13 @@ void LUAh_PostThinkFrame(void)
 	precise_t time_taken = 0;
 	if (!gL || !(hooksAvailable[hook_PostThinkFrame/8] & (1<<(hook_PostThinkFrame%8))))
 		return;
-	
+
 	lua_pushcfunction(gL, LUA_GetErrorMessage);
 
 	for (hookp = roothook; hookp; hookp = hookp->next)
 	{
 		if (hookp->type == hook_PostThinkFrame)
-		{	
+		{
 			if (cv_perfstats.value == 5)
 				time_taken = I_GetPreciseTime();
 			lua_pushfstring(gL, FMT_HOOKID, hookp->id);
@@ -548,6 +551,7 @@ void LUAh_PostThinkFrame(void)
 			}
 		}
 	}
+
 	lua_pop(gL, 1); // Pop error handler
 }
 
@@ -555,12 +559,14 @@ void LUAh_PostThinkFrame(void)
 void LUAh_IntermissionThinker(void)
 {
 	hook_p hookp;
+
 	if (!gL || !(hooksAvailable[hook_IntermissionThinker/8] & (1<<(hook_IntermissionThinker%8))))
 		return;
-	
+
 	lua_pushcfunction(gL, LUA_GetErrorMessage);
 
 	for (hookp = roothook; hookp; hookp = hookp->next)
+	{
 		if (hookp->type == hook_IntermissionThinker)
 		{
 			lua_pushfstring(gL, FMT_HOOKID, hookp->id);
@@ -572,20 +578,23 @@ void LUAh_IntermissionThinker(void)
 				hookp->error = true;
 			}
 		}
-		
-		lua_pop(gL, 1); // Pop error handler
+	}
+
+	lua_pop(gL, 1); // Pop error handler
 }
 
 // Hook for Y_VoteTicker
 void LUAh_VoteThinker(void)
 {
 	hook_p hookp;
+
 	if (!gL || !(hooksAvailable[hook_VoteThinker/8] & (1<<(hook_VoteThinker%8))))
 		return;
-	
+
 	lua_pushcfunction(gL, LUA_GetErrorMessage);
 
 	for (hookp = roothook; hookp; hookp = hookp->next)
+	{
 		if (hookp->type == hook_VoteThinker)
 		{
 			lua_pushfstring(gL, FMT_HOOKID, hookp->id);
@@ -597,8 +606,9 @@ void LUAh_VoteThinker(void)
 				hookp->error = true;
 			}
 		}
-		
-		lua_pop(gL, 1); // Pop error handler
+	}
+
+	lua_pop(gL, 1); // Pop error handler
 }
 
 

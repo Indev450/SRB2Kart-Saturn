@@ -1149,15 +1149,13 @@ static void R_ProjectSprite(mobj_t *thing)
 	size_t rot;
 	UINT8 flip;
 	/*boolean vflip = (!(thing->eflags & MFE_VERTICALFLIP) != !R_ThingVerticallyFlipped(thing));*/
-	
+
 	boolean mirrored = thing->mirrored;
 	boolean hflip = (!(thing->frame & FF_HORIZONTALFLIP) != !mirrored);
 
 	INT32 lindex;
 
 	vissprite_t *vis;
-	
-	spritecut_e cut = SC_NONE;
 
 	angle_t ang = 0; // gcc 4.6 and lower fix
 	angle_t camang = 0;
@@ -3413,22 +3411,25 @@ void R_AddSkins(UINT16 wadnum, boolean local)
 			else if (!stricmp(stoken, "sprite"))
 			{
 				strupr(value);
-				strncpy(skin->sprite, value, sizeof skin->sprite);
+				memcpy(skin->sprite, value, sizeof skin->sprite);
 			}
 			else if (!stricmp(stoken, "facerank"))
 			{
 				strupr(value);
-				strncpy(skin->facerank, value, sizeof skin->facerank);
+				memcpy(skin->facerank, value, sizeof(skin->facerank)-1);
+				skin->facerank[sizeof(skin->facerank)-1] = '\0';
 			}
 			else if (!stricmp(stoken, "facewant"))
 			{
 				strupr(value);
-				strncpy(skin->facewant, value, sizeof skin->facewant);
+				memcpy(skin->facewant, value, sizeof(skin->facewant)-1);
+				skin->facewant[sizeof(skin->facewant)-1] = '\0';
 			}
 			else if (!stricmp(stoken, "facemmap"))
 			{
 				strupr(value);
-				strncpy(skin->facemmap, value, sizeof skin->facemmap);
+				strncpy(skin->facemmap, value, sizeof(skin->facemmap)-1);
+				skin->facemmap[sizeof(skin->facemmap)-1] = '\0';
 			}
 
 #define FULLPROCESS(field) else if (!stricmp(stoken, #field)) skin->field = get_number(value);
@@ -3483,7 +3484,6 @@ next_token:
 		free(buf2);
 
 		lump++; // if no sprite defined use spirte just after this one
-		INT32 sprnum;
 		if (skin->sprite[0] == '\0')
 		{
 			const char *csprname = W_CheckNameForNumPwad(wadnum, lump);
@@ -3494,9 +3494,6 @@ next_token:
 				lastlump++;
 			// allocate (or replace) sprite frames, and set spritedef
 			R_AddSingleSpriteDef(csprname, &skin->spritedef, wadnum, lump, lastlump);
-
-			// i feel like generally most skin authors just use PLAY here, so just assume PLAY
-			sprnum = SPR_PLAY;
 		}
 		else
 		{
@@ -3543,8 +3540,6 @@ next_token:
 
 				R_AddSingleSpriteDef(sprname, &skin->spritedef, wadnum, lstart, lend);
 			}
-
-			sprnum = numspritelumps - 1;
 
 			// I don't particularly care about skipping to the end of the used frames.
 			// We could be using frames from ANYWHERE in the current WAD file, including

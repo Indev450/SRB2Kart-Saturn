@@ -1242,7 +1242,7 @@ boolean I_PlaySong(boolean looping)
 		gme_equalizer_t eq = {GME_TREBLE, GME_BASS, 0,0,0,0,0,0,0,0};
 #if defined (GME_VERSION) && GME_VERSION >= 0x000603
         gme_set_autoload_playback_limit(gme, 0);
-#endif        
+#endif
 		gme_set_equalizer(gme, &eq);
 		gme_start_track(gme, 0);
 		current_track = 0;
@@ -1255,12 +1255,25 @@ boolean I_PlaySong(boolean looping)
 	if (openmpt_mhandle)
 	{
 		openmpt_module_select_subsong(openmpt_mhandle, 0);
+
+#if OPENMPT_API_VERSION_MAJOR < 1 && OPENMPT_API_VERSION_MINOR > 4
+		openmpt_module_ctl_set_text(openmpt_mhandle, "dither", "1");
+#else
 		openmpt_module_ctl_set(openmpt_mhandle, "dither", "1");
+#endif
+
 		openmpt_module_set_render_param(openmpt_mhandle, OPENMPT_MODULE_RENDER_STEREOSEPARATION_PERCENT, cv_stereosep.value); //have a feeling some might like it
+
+#if OPENMPT_API_VERSION_MAJOR < 1 && OPENMPT_API_VERSION_MINOR > 4
+		openmpt_module_ctl_set_boolean(openmpt_mhandle, "render.resampler.emulate_amiga", cv_amigafilter.value);
+#else
 		openmpt_module_ctl_set(openmpt_mhandle, "render.resampler.emulate_amiga", cv_amigafilter.value ? "1" : "0");
+#endif
+
 #if OPENMPT_API_VERSION_MAJOR < 1 && OPENMPT_API_VERSION_MINOR > 4
 		openmpt_module_ctl_set_text(openmpt_mhandle, "render.resampler.emulate_amiga_type", cv_amigatype.string);
 #endif
+
 		openmpt_module_set_render_param(openmpt_mhandle, OPENMPT_MODULE_RENDER_INTERPOLATIONFILTER_LENGTH, cv_modfilter.value);
 		if (looping)
 			openmpt_module_set_repeat_count(openmpt_mhandle, -1); // Always repeat
