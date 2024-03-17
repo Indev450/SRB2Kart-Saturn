@@ -50,6 +50,10 @@
 #include "p_setup.h"
 #include "f_finale.h"
 
+#include "lua_libs.h"
+
+#include "fastcmp.h"
+
 #include "qs22j.h"
 
 #ifdef HWRENDER
@@ -304,6 +308,7 @@ static void M_SetupMultiHandler(INT32 choice);
 menu_t OP_ControlsDef, OP_AllControlsDef;
 menu_t OP_MouseOptionsDef, OP_Mouse2OptionsDef;
 menu_t OP_Joystick1Def, OP_Joystick2Def, OP_Joystick3Def, OP_Joystick4Def;
+menu_t OP_CustomCvarMenuDef;
 static void M_VideoModeMenu(INT32 choice);
 static void M_Setup1PControlsMenu(INT32 choice);
 static void M_Setup2PControlsMenu(INT32 choice);
@@ -348,6 +353,8 @@ static void M_AddonsInternal();
 static void M_Addons(INT32 choice);
 static void M_LocalSkins(INT32 choice);
 static void M_AddonsOptions(INT32 choice);
+
+static void M_CustomCvarMenu(INT32 choice);
 static patch_t *addonsp[NUM_EXT+5];
 
 static void M_DeleteProtocol(void);
@@ -1097,6 +1104,8 @@ static menuitem_t OP_MainMenu[] =
 	{IT_SUBMENU|IT_STRING,		NULL, "Server Options...",		&OP_ServerOptionsDef,		 70},
 
 	{IT_SUBMENU|IT_STRING,		NULL, "Data Options...",		&OP_DataOptionsDef,			 90},
+
+	{IT_CALL|IT_STRING, 		NULL, "Custom Options...",	   	M_CustomCvarMenu,   		100},
 
 	{IT_CALL|IT_STRING,			NULL, "Tricks & Secrets (F1)",	M_Manual,					110},
 	{IT_CALL|IT_STRING,			NULL, "Play Credits",			M_Credits,					120},
@@ -2392,6 +2401,8 @@ enum
 	syncspecialonly,
 };
 
+menuitem_t OP_CustomCvarMenu[MAXMENUCCVARS];
+
 // ==========================================================================
 // ALL MENU DEFINITIONS GO HERE
 // ==========================================================================
@@ -2890,6 +2901,23 @@ menu_t OP_DriftGaugeDef = DEFAULTMENUSTYLE(NULL, OP_DriftGaugeMenu, &OP_SaturnDe
 
 menu_t OP_TiltDef = DEFAULTMENUSTYLE(NULL, OP_TiltMenu, &OP_BirdDef, 30, 60);
 menu_t OP_AdvancedBirdDef = DEFAULTMENUSTYLE(NULL, OP_AdvancedBirdMenu, &OP_BirdDef, 30, 60);
+
+INT16 ccvarposition = 0;
+
+static void M_CustomCvarMenu(INT32 choice)
+{
+	(void)choice;
+
+	if (ccvarposition)
+		M_SetupNextMenu(&OP_CustomCvarMenuDef);
+	else
+		M_StartMessage(M_GetText("No custom options were found\n"), NULL, MM_NOTHING);
+}
+
+/*menu_t OP_CustomCvarMenuDef = DEFAULTSCROLLMENUSTYLE(
+	MTREE3(MN_OP_MAIN, MN_OP_DATA, MN_OP_ADDONS),
+	"M_ADDONS", OP_CustomCvarMenu, &OP_MainDef, 30, 30);*/
+menu_t OP_CustomCvarMenuDef = DEFAULTSCROLLSTYLE("M_ADDONS", OP_CustomCvarMenu, &OP_MainDef, 10, 30);
 
 menu_t OP_ForkedBirdDef = {
 	NULL,
@@ -7775,6 +7803,54 @@ void M_PopupMasterServerRules(void)
 		}
 	}
 #endif
+}
+
+#define CCVHEIGHT 5
+#define CCVHEIGHTHEADER 1
+#define CCVHEIGHTHEADERAFTER 6
+
+UINT16 ccvaralphakey = 4;
+INT16 ccvarlaststheader = 0;
+
+INT32 CVARSETUP;
+
+void M_SlotCvarIntoModMenu(consvar_t* cvar, const char* category, const char* name)
+{
+	if (ccvarposition == INT16_MAX)
+		return;
+
+	if (ccvarposition >= MAXMENUCCVARS - 2)
+	{
+		CONS_Printf("failed to register cvar into custom settings menu as menu reached limit\n");
+		ccvarposition = INT16_MAX;
+		return;
+	}
+
+	if (!CVARSETUP)
+	{
+		CONS_Printf("custom settings menu initiation\n");
+		for (CVARSETUP = 0; CVARSETUP < MAXMENUCCVARS; ++CVARSETUP)
+			OP_CustomCvarMenu[CVARSETUP] = (menuitem_t){IT_DISABLED, NULL, "", 0, INT16_MAX};
+	}
+
+	if (category && ((ccvarposition == 0 && category[0] != '\0') || !fasticmp(category, OP_CustomCvarMenu[ccvarlaststheader].text)))
+	{
+		ccvarlaststheader = ccvarposition;
+		ccvaralphakey += CCVHEIGHTHEADER;
+
+		OP_CustomCvarMenu[ccvarposition] = (menuitem_t){IT_HEADER, NULL, Z_StrDup(category), NULL, ccvaralphakey};
+		ccvaralphakey += CCVHEIGHTHEADERAFTER;
+
+		++ccvarposition;
+	}
+
+	if (cvar->flags & CV_NETVAR)
+		OP_CustomCvarMenu[ccvarposition] = (menuitem_t){ IT_STRING | IT_CVAR , NULL, Z_StrDup(va("\x85 %s", name)), cvar, ccvaralphakey };
+	else
+		OP_CustomCvarMenu[ccvarposition] = (menuitem_t){ IT_STRING | IT_CVAR, NULL, Z_StrDup(name), cvar, ccvaralphakey };
+
+	ccvaralphakey += CCVHEIGHT;
+	++ccvarposition;
 }
 
 // ======
