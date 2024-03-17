@@ -4461,7 +4461,8 @@ void M_Init(void)
 		OP_ExpOptionsMenu[op_exp_fofcut].status = IT_DISABLED;
 	}
 	
-	if (rendermode == render_opengl){
+	if (rendermode == render_opengl)
+	{
 		OP_ExpOptionsMenu[op_exp_ffclip].status = IT_DISABLED;
 		OP_ExpOptionsMenu[op_exp_sprclip].status = IT_DISABLED;
 	}

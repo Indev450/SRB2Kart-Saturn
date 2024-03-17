@@ -19,6 +19,6 @@ void gld_clipper_SafeAddClipRange(angle_t startangle, angle_t endangle);
 void gld_clipper_Clear(void);
 angle_t gld_FrustumAngle(angle_t tiltangle);
 #ifdef HAVE_SPHEREFRUSTRUM
-void gld_FrustrumSetup(void);
+void gld_FrustumSetup(void);
 boolean gld_SphereInFrustum(float x, float y, float z, float radius);
 #endif
