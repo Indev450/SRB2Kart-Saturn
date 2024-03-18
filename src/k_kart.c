@@ -10152,7 +10152,8 @@ static void K_drawInput(void)
 
 	static INT32 pn = 0;
 	INT32 target = 0, splitflags = (V_SNAPTOBOTTOM|V_SNAPTORIGHT|V_HUDTRANS);
-	INT32 x = BASEVIDWIDTH - 32 + cv_posi_xoffset.value, y = BASEVIDHEIGHT-24 + cv_posi_yoffset.value, offs, col;
+	INT32 x = (BASEVIDWIDTH - 32 + cv_posi_xoffset.value)*FRACUNIT, y = (BASEVIDHEIGHT - 24 + cv_posi_yoffset.value)*FRACUNIT;
+	INT32 offs, col;
 	const INT32 accent1 = splitflags|colortranslations[K_GetHudColor()][5];
 	const INT32 accent2 = splitflags|colortranslations[K_GetHudColor()][9];
 	ticcmd_t *cmd = &stplyr->cmd;
@@ -10163,10 +10164,12 @@ static void K_drawInput(void)
 	if (timeinmap < 113)
 	{
 		INT32 count = ((INT32)(timeinmap) - 105);
-		offs = 64;
+		INT32 frac = count > 0 && count < 6 ? rendertimefrac << (FRACBITS - count - 11) : 0;
+
+		offs = 64*FRACUNIT;
 		while (count-- > 0)
 			offs >>= 1;
-		x += offs;
+		x += offs - frac;
 	}
 
 #define BUTTW 8
@@ -10175,17 +10178,17 @@ static void K_drawInput(void)
 #define drawbutt(xoffs, butt, symb)\
 	if (stplyr->cmd.buttons & butt)\
 	{\
-		offs = 2;\
+		offs = 2*FRACUNIT;\
 		col = accent1;\
 	}\
 	else\
 	{\
 		offs = 0;\
 		col = accent2;\
-		V_DrawFill(x+(xoffs), y+BUTTH, BUTTW-1, 2, splitflags|31);\
+		V_DrawFill((x + xoffs*FRACUNIT)>>FRACBITS, (y + BUTTH*FRACUNIT)>>FRACBITS, BUTTW-1, 2, splitflags|31);\
 	}\
-	V_DrawFill(x+(xoffs), y+offs, BUTTW-1, BUTTH, col);\
-	V_DrawFixedPatch((x+1+(xoffs))<<FRACBITS, (y+offs+1)<<FRACBITS, FRACUNIT, splitflags, tny_font[symb-HU_FONTSTART], NULL)
+	V_DrawFill((x + xoffs*FRACUNIT)>>FRACBITS, (y+offs)>>FRACBITS, BUTTW-1, BUTTH, col);\
+	V_DrawFixedPatch(x + FRACUNIT + xoffs*FRACUNIT, y + offs + FRACUNIT, FRACUNIT, splitflags, tny_font[symb-HU_FONTSTART], NULL)
 
 	drawbutt(-2*BUTTW, BT_ACCELERATE, 'A');
 	drawbutt(  -BUTTW, BT_BRAKE,      'B');
@@ -10197,7 +10200,7 @@ static void K_drawInput(void)
 #undef BUTTW
 #undef BUTTH
 
-	y -= 1;
+	y -= FRACUNIT;
 
 	if (!cmd->driftturn) // no turn
 		target = 0;
@@ -10223,7 +10226,7 @@ static void K_drawInput(void)
 	if (pn < 0)
 	{
 		splitflags |= V_FLIP; // right turn
-		x--;
+		x -= FRACUNIT;
 	}
 
 	target = abs(pn);
@@ -10231,12 +10234,12 @@ static void K_drawInput(void)
 		target = 4;
 
 	if (!K_GetHudColor())
-		V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, FRACUNIT, splitflags, kp_inputwheel[target], NULL);
+		V_DrawFixedPatch(x, y, FRACUNIT, splitflags, kp_inputwheel[target], NULL);
 	else
 	{
 		UINT8 *colormap;
 		colormap = R_GetTranslationColormap(0, K_GetHudColor(), GTC_CACHE);
-		V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, FRACUNIT, splitflags, kp_inputwheel[target], colormap);
+		V_DrawFixedPatch(x, y, FRACUNIT, splitflags, kp_inputwheel[target], colormap);
 	}
 }
 
@@ -10543,7 +10546,7 @@ void K_drawKartHUD(void)
 
 		if (demo.title) // Draw title logo instead in demo.titles
 		{
-			INT32 x = BASEVIDWIDTH - 32, y = 128, offs;
+			INT32 x = (BASEVIDWIDTH - 32)*FRACUNIT, y = 128*FRACUNIT, offs;
 
 			if (splitscreen == 3)
 			{
@@ -10554,14 +10557,16 @@ void K_drawKartHUD(void)
 			if (timeinmap < 113)
 			{
 				INT32 count = ((INT32)(timeinmap) - 104);
-				offs = 256;
+				INT32 frac = count > 0 ? rendertimefrac << max(0, FRACBITS - count - 9) : 0;
+
+				offs = 256*FRACUNIT;
 				while (count-- > 0)
 					offs >>= 1;
-				x += offs;
+				x += offs - frac;
 			}
 
-			V_DrawTinyScaledPatch(x-54, y, 0, W_CachePatchName("TTKBANNR", PU_CACHE));
-			V_DrawTinyScaledPatch(x-54, y+25, 0, W_CachePatchName("TTKART", PU_CACHE));
+			V_DrawSciencePatch(x - (54*FRACUNIT), y, 0, W_CachePatchName("TTKBANNR", PU_CACHE), FRACUNIT/4);
+			V_DrawSciencePatch(x - (54*FRACUNIT), y + (25*FRACUNIT), 0, W_CachePatchName("TTKART", PU_CACHE), FRACUNIT/4);
 		}
 		else if (G_RaceGametype()) // Race-only elements
 		{
