@@ -4969,6 +4969,8 @@ void K_KartPlayerHUDUpdate(player_t *player)
 
 	if (G_BattleGametype() && (player->exiting || player->kartstuff[k_comebacktimer]))
 	{
+		player->kartstuff[k_oldcardanimation] = player->kartstuff[k_cardanimation];
+
 		if (player->exiting)
 		{
 			if (player->exiting < 6*TICRATE)
@@ -9868,8 +9870,12 @@ static void K_drawKartFinish(void)
 
 static void K_drawBattleFullscreen(void)
 {
+	#define lerp(from, to) (from) + FixedMul(rendertimefrac, (to) - (from))
+	INT32 cardanim = lerp(stplyr->kartstuff[k_oldcardanimation]<<FRACBITS, stplyr->kartstuff[k_cardanimation]<<FRACBITS);
+	#undef lerp
+
 	INT32 x = BASEVIDWIDTH/2;
-	INT32 y = -64+(stplyr->kartstuff[k_cardanimation]); // card animation goes from 0 to 164, 164 is the middle of the screen
+	INT32 y = (-64*FRACUNIT) + cardanim; // card animation goes from 0 to 164, 164 is the middle of the screen
 	INT32 splitflags = V_SNAPTOTOP; // I don't feel like properly supporting non-green resolutions, so you can have a misuse of SNAPTO instead
 	fixed_t scale = FRACUNIT;
 	boolean drawcomebacktimer = true;	// lazy hack because it's cleaner in the long run.
@@ -9881,11 +9887,11 @@ static void K_drawBattleFullscreen(void)
 	{
 		if ((splitscreen == 1 && stplyrnum == 1) || (splitscreen > 1 && stplyrnum & 2))
 		{
-			y = 232-(stplyr->kartstuff[k_cardanimation]/2);
+			y = (232*FRACUNIT) - (cardanim/2);
 			splitflags = V_SNAPTOBOTTOM;
 		}
 		else
-			y = -32+(stplyr->kartstuff[k_cardanimation]/2);
+			y = (-32*FRACUNIT) + (cardanim/2);
 
 		if (splitscreen > 1)
 		{
@@ -9917,9 +9923,9 @@ static void K_drawBattleFullscreen(void)
 		if (stplyr->exiting < 6*TICRATE && !stplyr->spectator)
 		{
 			if (stplyr->kartstuff[k_position] == 1)
-				V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, scale, splitflags, kp_battlewin, NULL);
+				V_DrawFixedPatch(x<<FRACBITS, y, scale, splitflags, kp_battlewin, NULL);
 			else
-				V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, scale, splitflags, (K_IsPlayerLosing(stplyr) ? kp_battlelose : kp_battlecool), NULL);
+				V_DrawFixedPatch(x<<FRACBITS, y, scale, splitflags, (K_IsPlayerLosing(stplyr) ? kp_battlelose : kp_battlecool), NULL);
 		}
 		else
 			K_drawKartFinish();
@@ -9949,9 +9955,9 @@ static void K_drawBattleFullscreen(void)
 			V_DrawFadeScreen(0xFF00, 16);
 
 		if (!comebackshowninfo)
-			V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, scale, splitflags, kp_battleinfo, NULL);
+			V_DrawFixedPatch(x<<FRACBITS, y, scale, splitflags, kp_battleinfo, NULL);
 		else
-			V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, scale, splitflags, kp_battlewait, NULL);
+			V_DrawFixedPatch(x<<FRACBITS, y, scale, splitflags, kp_battlewait, NULL);
 
 		if (splitscreen > 1)
 			V_DrawString(x-txoff, ty, 0, va("%d", stplyr->kartstuff[k_comebacktimer]/TICRATE));

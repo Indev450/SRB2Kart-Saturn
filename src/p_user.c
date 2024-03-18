@@ -1322,7 +1322,7 @@ void P_DoPlayerExit(player_t *player)
 
 	player->powers[pw_underwater] = 0;
 	player->powers[pw_spacetime] = 0;
-	player->kartstuff[k_cardanimation] = 0; // srb2kart: reset battle animation
+	player->kartstuff[k_cardanimation] = player->kartstuff[k_oldcardanimation] = 0; // srb2kart: reset battle animation
 
 	if (player == &players[consoleplayer])
 		demo.savebutton = leveltime;
