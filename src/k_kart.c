@@ -4969,8 +4969,6 @@ void K_KartPlayerHUDUpdate(player_t *player)
 
 	if (G_BattleGametype() && (player->exiting || player->kartstuff[k_comebacktimer]))
 	{
-		player->kartstuff[k_oldcardanimation] = player->kartstuff[k_cardanimation];
-
 		if (player->exiting)
 		{
 			if (player->exiting < 6*TICRATE)
@@ -9870,9 +9868,17 @@ static void K_drawKartFinish(void)
 
 static void K_drawBattleFullscreen(void)
 {
-	#define lerp(from, to) (from) + FixedMul(rendertimefrac, (to) - (from))
-	INT32 cardanim = lerp(stplyr->kartstuff[k_oldcardanimation]<<FRACBITS, stplyr->kartstuff[k_cardanimation]<<FRACBITS);
-	#undef lerp
+	INT32 cardanim = stplyr->kartstuff[k_cardanimation] << FRACBITS;
+
+	// fill in the fractional bits
+	if (cardanim && cardanim != 164*FRACUNIT)
+	{
+		INT32 frac = (rendertimefrac & FRACMASK) * ((164 - stplyr->kartstuff[k_cardanimation])/8 + 1);
+		if (stplyr->exiting)
+			cardanim += frac;
+		else
+			cardanim += stplyr->kartstuff[k_comebacktimer] < 6*TICRATE ? -frac : frac;
+	}
 
 	INT32 x = BASEVIDWIDTH/2;
 	INT32 y = (-64*FRACUNIT) + cardanim; // card animation goes from 0 to 164, 164 is the middle of the screen
