@@ -11,12 +11,16 @@
 /// \brief console modifying/etc library for Lua scripting
 
 #include "doomdef.h"
-#ifdef HAVE_BLUA
 #include "fastcmp.h"
 #include "p_local.h"
 #include "g_game.h"
 #include "byteptr.h"
 #include "z_zone.h"
+
+#include "d_netfil.h"
+
+#include "m_menu.h"
+#include "w_wad.h"
 
 #include "lua_script.h"
 #include "lua_libs.h"
@@ -187,8 +191,8 @@ static int lib_comAddCommand(lua_State *L)
 	const char *luaname = luaL_checkstring(L, 1);
 
 	// must store in all lowercase
-	char *name = Z_StrDup(luaname);
-	strlwr(name);
+	char *comname = Z_StrDup(luaname);
+	strlwr(comname);
 
 	luaL_checktype(L, 2, LUA_TFUNCTION);
 	NOHUD
@@ -221,25 +225,26 @@ static int lib_comAddCommand(lua_State *L)
 
 		lua_pushvalue(L, 3);
 		lua_rawseti(L, -2, 2);
-	lua_setfield(L, -2, name);
+	lua_setfield(L, -2, comname);
 
 	// Try to add the Lua command
-	com_return = COM_AddLuaCommand(name);
+	com_return = COM_AddLuaCommand(comname);
 
 	if (com_return < 0)
 	{ // failed to add -- free the lowercased name and return error
-		Z_Free(name);
+		Z_Free(comname);
 		return luaL_error(L, "Couldn't add a new console command \"%s\"", luaname);
 	}
 	else if (com_return == 1)
 	{ // command existed already -- free our name as the old string will continue to be used
-		CONS_Printf("Replaced command \"%s\"\n", name);
-		Z_Free(name);
+		CONS_Printf("Replaced command \"%s\"\n", comname);
+		Z_Free(comname);
 	}
 	else
 	{ // new command was added -- do NOT free the string as it will forever be used by the console
-		CONS_Printf("Added command \"%s\"\n", name);
+		CONS_Printf("Added command \"%s\"\n", comname);
 	}
+
 	return 0;
 }
 
@@ -315,6 +320,10 @@ static int lib_cvRegisterVar(lua_State *L)
 	const char *k;
 	lua_Integer i;
 	consvar_t *cvar;
+
+	const char* category = NULL;
+	const char* menu_name = NULL;
+
 	luaL_checktype(L, 1, LUA_TTABLE);
 	lua_settop(L, 1); // Clear out all other possible arguments, leaving only the first one.
 	NOHUD
@@ -406,6 +415,18 @@ static int lib_cvRegisterVar(lua_State *L)
 			lua_pop(L, 1);
 			cvar->func = Lua_OnChange;
 		}
+		else if (((i == 5 && !(cvar->flags & CV_CALL))
+				|| (cvar->flags & CV_CALL && i == 6)) 
+				|| (k && fasticmp(k, "category")))
+		{
+			category = lua_isnoneornil(L, 4) ? NULL : lua_tostring(L, 4);
+		}
+		else if (((i == 6 && !(cvar->flags & CV_CALL))
+			|| (cvar->flags & CV_CALL && i == 7))
+			|| (k && fasticmp(k, "menuname")))
+		{
+			menu_name = lua_isnoneornil(L, 4) ? NULL : lua_tostring(L, 4);
+		}
 		lua_pop(L, 1);
 	}
 #undef FIELDERROR
@@ -429,6 +450,22 @@ static int lib_cvRegisterVar(lua_State *L)
 	CV_RegisterVar(cvar);
 	if (cvar->flags & CV_MODIFIED)
 		return luaL_error(L, "failed to register cvar (probable conflict with internal variable/command names)");
+
+	if (!(((cvar->flags & CV_HIDEN)) || (cvar->flags & CV_NOSHOWHELP)) && (cvar->PossibleValue || !(cvar->value == 0 && stricmp(cvar->string, "0"))))
+	{
+		if (!category)
+		{
+			char *temp = strdup(wadfiles[numwadfiles - 1]->filename);
+			nameonly(temp);
+
+			category = temp;
+		}
+
+		if (menu_name && menu_name[0] != '\0')
+			M_SlotCvarIntoModMenu(cvar, category, menu_name);
+		else
+			M_SlotCvarIntoModMenu(cvar, category, cvar->name);
+	}
 
 	// return cvar userdata
 	return 1;
@@ -601,5 +638,3 @@ int LUA_ConsoleLib(lua_State *L)
 	luaL_register(L, NULL, lib);
 	return 0;
 }
-
-#endif

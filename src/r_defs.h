@@ -25,7 +25,6 @@
 
 #include "screen.h" // MAXVIDWIDTH, MAXVIDHEIGHT
 
-#define POLYOBJECTS
 
 //
 // ClipWallSegment
@@ -211,19 +210,6 @@ typedef struct r_lightlist_s
 	INT32 lightnum;
 } r_lightlist_t;
 
-// ----- for special tricks with HW renderer -----
-
-//
-// For creating a chain with the lines around a sector
-//
-typedef struct linechain_s
-{
-	struct line_s *line;
-	struct linechain_s *next;
-} linechain_t;
-// ----- end special tricks -----
-
-
 
 // Slopes
 typedef enum {
@@ -351,17 +337,6 @@ typedef struct sector_s
 
 	// per-sector colormaps!
 	extracolormap_t *extra_colormap;
-
-#ifdef HWRENDER // ----- for special tricks with HW renderer -----
-	boolean pseudoSector;
-	boolean virtualFloor;
-	fixed_t virtualFloorheight;
-	boolean virtualCeiling;
-	fixed_t virtualCeilingheight;
-	linechain_t *sectorLines;
-	struct sector_s **stackList;
-	double lineoutLength;
-#endif // ----- end special tricks -----
 
 	// This points to the master's floorheight, so it can be changed in realtime!
 	fixed_t *gravity; // per-sector gravity

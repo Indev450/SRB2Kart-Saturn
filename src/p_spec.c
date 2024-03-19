@@ -472,7 +472,8 @@ void P_ParseAnimationDefintion(SINT8 istexture)
 		// Increase the size to make room for the new animation definition
 		maxanims++;
 		animdefs = (animdef_t *)Z_Realloc(animdefs, sizeof(animdef_t)*(maxanims + 1), PU_STATIC, NULL);
-		strncpy(animdefs[i].startname, animdefsToken, 9);
+		memcpy(animdefs[i].startname, animdefsToken, 9);
+		animdefs[i].startname[8] = '\0';
 	}
 
 	// animdefs[i].startname is now set to animdefsToken either way.
@@ -3110,14 +3111,10 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 		}
 
 		case 443: // Calls a named Lua function
-#ifdef HAVE_BLUA
 			if (line->text)
 				LUAh_LinedefExecute(line, mo, callsec);
 			else
 				CONS_Alert(CONS_WARNING, "Linedef %s is missing the hook name of the Lua function to call! (This should be given in the front texture fields)\n", sizeu1(line-lines));
-#else
-			CONS_Alert(CONS_ERROR, "The map is trying to run a Lua script, but this exe was not compiled with Lua support!\n");
-#endif
 			break;
 
 		case 444: // Earthquake camera

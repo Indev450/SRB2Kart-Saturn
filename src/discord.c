@@ -47,7 +47,7 @@ struct discordInfo_s discordInfo;
 
 discordRequest_t *discordRequestList = NULL;
 
-static char self_ip[IP_SIZE];
+static char self_ip[IP_SIZE+1];
 
 boolean drpc_init = false;
 

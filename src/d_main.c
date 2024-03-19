@@ -70,6 +70,8 @@
 #include "d_protocol.h"
 #include "m_perfstats.h"
 
+#include "lua_script.h"
+
 #ifdef CMAKECONFIG
 #include "config.h"
 #else
@@ -82,10 +84,6 @@
 
 #ifdef HW3SOUND
 #include "hardware/hw3sound.h"
-#endif
-
-#ifdef HAVE_BLUA
-#include "lua_script.h"
 #endif
 
 #ifdef HAVE_DISCORDRPC
@@ -529,7 +527,7 @@ static void D_Display(void)
 		else
 			py = viewwindowy + 4;
 		patch = W_CachePatchName("M_PAUSE", PU_CACHE);
-		V_DrawScaledPatch(viewwindowx + (BASEVIDWIDTH - SHORT(patch->width))/2, py, 0, patch);
+		V_DrawScaledPatch(viewwindowx + (BASEVIDWIDTH - SHORT(patch->width))/2, py, V_SNAPTOTOP, patch);
 	}
 
 	if (demo.rewinding)
@@ -771,9 +769,7 @@ void D_SRB2Loop(void)
 		HW3S_EndFrameUpdate();
 #endif
 
-#ifdef HAVE_BLUA
 		LUA_Step();
-#endif
 
 #ifdef HAVE_DISCORDRPC
 		if (! dedicated)
@@ -970,7 +966,7 @@ static void D_FindAddonsToAutoload(void)
 
 	INT32 i, len;
 	boolean hasprefix = false;
-	char wadsToAutoload[256] = "", renameAutoloadStrings[256] = "";
+	char wadsToAutoload[256] = "";
 
 	// does it exist tho
 	autoloadpath = va("%s"PATHSEP"%s",srb2home,AUTOLOADCONFIGFILENAME);
@@ -1074,6 +1070,7 @@ static boolean AddIWAD(void)
 	}
 }
 
+// extra graphic patches for saturn specific thingies
 boolean found_extra_kart;
 boolean found_extra2_kart;
 
@@ -1084,8 +1081,10 @@ boolean achi_speedo_clr; // extra speedometer colour check
 boolean clr_hud; // colour hud check
 boolean big_lap; // bigger lap counter
 boolean big_lap_color; // bigger lap counter but colour
-boolean kartzspeedo; // kartZ speedometer
-boolean statdp; // New stat
+boolean kartzspeedo; // kartZ speedo
+boolean statdp; // stat display for extended player setup
+boolean nametaggfx; // Nametag stuffs
+boolean driftgaugegfx;
 
 static void IdentifyVersion(void)
 {
@@ -1485,6 +1484,13 @@ void D_SRB2Main(void)
 		if (W_CheckMultipleLumps("K_STATNB", "K_STATN1", "K_STATN2", "K_STATN3", "K_STATN4", \
 			"K_STATN5", "K_STATN6", NULL)) 
 			statdp = true;
+
+		// Nametag stuffs
+		if (W_CheckMultipleLumps("NTLINE", "NTLINEV", "NTSP", "NTWH", NULL)) 
+			nametaggfx = true;
+		
+		if (W_CheckMultipleLumps("K_DGAU","K_DCAU","K_DGSU","K_DCSU", NULL)) 
+			driftgaugegfx = true;
 	}
 
 	//

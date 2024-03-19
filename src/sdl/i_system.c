@@ -43,12 +43,15 @@ typedef HANDLE (WINAPI *p_OpenFileMappingA) (DWORD, BOOL, LPCSTR);
 typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 #endif
 
-
 // A little more than the minimum sleep duration on Windows.
 // May be incorrect for other platforms, but we don't currently have a way to
 // query the scheduler granularity. SDL will do what's needed to make this as
 // low as possible though.
+#if defined(_WIN32)
+#define MIN_SLEEP_DURATION_MS 1.6
+#else
 #define MIN_SLEEP_DURATION_MS 2.1
+#endif
 
 #include <stdio.h>
 #include <time.h>
@@ -342,6 +345,9 @@ static void write_backtrace(bt_crash_reason_t reason)
 
 	if (compdate && comptime && comprevision && compbranch)
 	fprintf(out, "Compiled: %s %s, commit %s, branch %s\n", compdate, comptime, comprevision, compbranch);
+
+	if (gamestate == GS_LEVEL)
+		fprintf(out, "Game map: %s\n", G_BuildMapName(gamemap));
 
 	fprintf(out, "Time of crash: %s\n", asctime(timeinfo));
 
@@ -2638,7 +2644,7 @@ INT32 I_NumJoys(void)
 	return numjoy;
 }
 
-static char joyname[255]; // MAX_PATH; joystick name is straight from the driver
+static char joyname[256]; // MAX_PATH; joystick name is straight from the driver
 
 const char *I_GetJoyName(INT32 joyindex)
 {
@@ -2649,7 +2655,10 @@ const char *I_GetJoyName(INT32 joyindex)
 	{
 		tempname = SDL_JoystickNameForIndex(joyindex);
 		if (tempname)
-			strncpy(joyname, tempname, 255);
+		{
+			memcpy(joyname, tempname, 255);
+			joyname[255] = '\0';
+		}
 	}
 	return joyname;
 }
@@ -3184,12 +3193,24 @@ static Uint64 timer_frequency;
 
 precise_t I_GetPreciseTime(void)
 {
+#if defined(_WIN32)
+	LARGE_INTEGER counter;
+	QueryPerformanceCounter(&counter);
+	return counter.QuadPart;
+#else
 	return SDL_GetPerformanceCounter();
+#endif
 }
 
 UINT64 I_GetPrecisePrecision(void)
 {
+#if defined(_WIN32)
+	LARGE_INTEGER frequency;
+	QueryPerformanceFrequency(&frequency);
+	return frequency.QuadPart;
+#else
 	return SDL_GetPerformanceFrequency();
+#endif
 }
 
 static UINT32 frame_rate;
@@ -3216,14 +3237,24 @@ static void I_InitFrameTime(const UINT64 now, const UINT32 cap)
 }
 
 double I_GetFrameTime(void)
-{
+{	
+#if defined(_WIN32)
+	LARGE_INTEGER now;
+    QueryPerformanceCounter(&now);
+    const UINT64 nowValue = now.QuadPart;
+#else
 	const UINT64 now = SDL_GetPerformanceCounter();
+#endif
 	const UINT32 cap = R_GetFramerateCap();
 
 	if (cap != frame_rate)
 	{
 		// Maybe do this in a OnChange function for cv_fpscap?
+#if defined(_WIN32)
+		I_InitFrameTime(nowValue, cap);
+#else
 		I_InitFrameTime(now, cap);
+#endif	
 	}
 
 	if (frame_rate == 0)
@@ -3233,10 +3264,17 @@ double I_GetFrameTime(void)
 	}
 	else
 	{
+#if defined(_WIN32)
+		elapsed_frames += (nowValue - frame_epoch) / frame_frequency;
+#else
 		elapsed_frames += (now - frame_epoch) / frame_frequency;
+#endif
 	}
-
-	frame_epoch = now; // moving epoch
+#if defined(_WIN32)
+		frame_epoch = nowValue; // moving epoch
+#else
+		frame_epoch = now; // moving epoch
+#endif
 	return elapsed_frames;
 }
 
@@ -3245,8 +3283,13 @@ double I_GetFrameTime(void)
 //
 void I_StartupTimer(void)
 {
+#if defined(_WIN32)
+	LARGE_INTEGER frequency;
+	QueryPerformanceFrequency(&frequency);
+	timer_frequency = frequency.QuadPart;
+#else
 	timer_frequency = SDL_GetPerformanceFrequency();
-
+#endif
 	I_InitFrameTime(0, R_GetFramerateCap());
 	elapsed_frames  = 0.0;
 }
@@ -3292,7 +3335,12 @@ void I_SleepDuration(precise_t duration)
 		// hard sleep function.
 		if (sleepvalue > 0 && (dest - cur) > delaygranularity)
 		{
+#if defined(_WIN32)
+			DWORD sleepDuration = (DWORD)min((INT64)(dest - cur), sleepvalue);
+			SleepEx(sleepDuration, TRUE);
+#else
 			I_Sleep(sleepvalue);
+#endif
 		}
 
 		// Otherwise, this is a spinloop.
@@ -3791,10 +3839,10 @@ const char *I_ClipboardPaste(void)
 
 	if (!SDL_HasClipboardText())
 		return NULL;
+
 	clipboard_contents = SDL_GetClipboardText();
-	memcpy(clipboard_modified, clipboard_contents, 255);
+	strlcpy(clipboard_modified, clipboard_contents, 256);
 	SDL_free(clipboard_contents);
-	clipboard_modified[255] = 0;
 
 	while (*i)
 	{
@@ -4180,69 +4228,6 @@ size_t I_GetFreeMem(size_t *total)
 	if (total)
 		*total = 48<<20;
 	return 48<<20;
-#endif
-}
-
-const CPUInfoFlags *I_CPUInfo(void)
-{
-#if defined (_WIN32)
-	static CPUInfoFlags WIN_CPUInfo;
-	SYSTEM_INFO SI;
-	p_IsProcessorFeaturePresent pfnCPUID = (p_IsProcessorFeaturePresent)(LPVOID)GetProcAddress(GetModuleHandleA("kernel32.dll"), "IsProcessorFeaturePresent");
-
-	ZeroMemory(&WIN_CPUInfo,sizeof (WIN_CPUInfo));
-	if (pfnCPUID)
-	{
-		WIN_CPUInfo.FPPE       = pfnCPUID( 0); //PF_FLOATING_POINT_PRECISION_ERRATA
-		WIN_CPUInfo.FPE        = pfnCPUID( 1); //PF_FLOATING_POINT_EMULATED
-		WIN_CPUInfo.cmpxchg    = pfnCPUID( 2); //PF_COMPARE_EXCHANGE_DOUBLE
-		WIN_CPUInfo.MMX        = pfnCPUID( 3); //PF_MMX_INSTRUCTIONS_AVAILABLE
-		WIN_CPUInfo.PPCMM64    = pfnCPUID( 4); //PF_PPC_MOVEMEM_64BIT_OK
-		WIN_CPUInfo.ALPHAbyte  = pfnCPUID( 5); //PF_ALPHA_BYTE_INSTRUCTIONS
-		WIN_CPUInfo.SSE        = pfnCPUID( 6); //PF_XMMI_INSTRUCTIONS_AVAILABLE
-		WIN_CPUInfo.AMD3DNow   = pfnCPUID( 7); //PF_3DNOW_INSTRUCTIONS_AVAILABLE
-		WIN_CPUInfo.RDTSC      = pfnCPUID( 8); //PF_RDTSC_INSTRUCTION_AVAILABLE
-		WIN_CPUInfo.PAE        = pfnCPUID( 9); //PF_PAE_ENABLED
-		WIN_CPUInfo.SSE2       = pfnCPUID(10); //PF_XMMI64_INSTRUCTIONS_AVAILABLE
-		//WIN_CPUInfo.blank    = pfnCPUID(11); //PF_SSE_DAZ_MODE_AVAILABLE
-		WIN_CPUInfo.DEP        = pfnCPUID(12); //PF_NX_ENABLED
-		WIN_CPUInfo.SSE3       = pfnCPUID(13); //PF_SSE3_INSTRUCTIONS_AVAILABLE
-		WIN_CPUInfo.cmpxchg16b = pfnCPUID(14); //PF_COMPARE_EXCHANGE128
-		WIN_CPUInfo.cmp8xchg16 = pfnCPUID(15); //PF_COMPARE64_EXCHANGE128
-		WIN_CPUInfo.PFC        = pfnCPUID(16); //PF_CHANNELS_ENABLED
-	}
-#ifdef HAVE_SDLCPUINFO
-	else
-	{
-		WIN_CPUInfo.RDTSC       = SDL_HasRDTSC();
-		WIN_CPUInfo.MMX         = SDL_HasMMX();
-		WIN_CPUInfo.AMD3DNow    = SDL_Has3DNow();
-		WIN_CPUInfo.SSE         = SDL_HasSSE();
-		WIN_CPUInfo.SSE2        = SDL_HasSSE2();
-		WIN_CPUInfo.AltiVec     = SDL_HasAltiVec();
-	}
-	WIN_CPUInfo.MMXExt      = SDL_FALSE; //SDL_HasMMXExt(); No longer in SDL2
-	WIN_CPUInfo.AMD3DNowExt = SDL_FALSE; //SDL_Has3DNowExt(); No longer in SDL2
-#endif
-	GetSystemInfo(&SI);
-	WIN_CPUInfo.CPUs = SI.dwNumberOfProcessors;
-	WIN_CPUInfo.IA64 = (SI.dwProcessorType == 2200); // PROCESSOR_INTEL_IA64
-	WIN_CPUInfo.AMD64 = (SI.dwProcessorType == 8664); // PROCESSOR_AMD_X8664
-	return &WIN_CPUInfo;
-#elif defined (HAVE_SDLCPUINFO)
-	static CPUInfoFlags SDL_CPUInfo;
-	memset(&SDL_CPUInfo,0,sizeof (CPUInfoFlags));
-	SDL_CPUInfo.RDTSC       = SDL_HasRDTSC();
-	SDL_CPUInfo.MMX         = SDL_HasMMX();
-	SDL_CPUInfo.MMXExt      = SDL_FALSE; //SDL_HasMMXExt(); No longer in SDL2
-	SDL_CPUInfo.AMD3DNow    = SDL_Has3DNow();
-	SDL_CPUInfo.AMD3DNowExt = SDL_FALSE; //SDL_Has3DNowExt(); No longer in SDL2
-	SDL_CPUInfo.SSE         = SDL_HasSSE();
-	SDL_CPUInfo.SSE2        = SDL_HasSSE2();
-	SDL_CPUInfo.AltiVec     = SDL_HasAltiVec();
-	return &SDL_CPUInfo;
-#else
-	return NULL; /// \todo CPUID asm
 #endif
 }
 

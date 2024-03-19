@@ -348,8 +348,8 @@ void R_FlushTranslationColormapCache(void)
 	for (i = 0; i < (INT32)(sizeof(translationtablecache) / sizeof(translationtablecache[0])); i++)
 		if (translationtablecache[i])
 			memset(translationtablecache[i], 0, MAXTRANSLATIONS * sizeof(UINT8**));
-		
-		for (i = 0; i < (INT32)(sizeof(localtranslationtablecache) / sizeof(localtranslationtablecache[0])); i++)
+
+	for (i = 0; i < (INT32)(sizeof(localtranslationtablecache) / sizeof(localtranslationtablecache[0])); i++)
 		if (localtranslationtablecache[i])
 			memset(localtranslationtablecache[i], 0, MAXTRANSLATIONS * sizeof(UINT8**));
 }

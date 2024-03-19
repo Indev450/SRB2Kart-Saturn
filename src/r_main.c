@@ -145,17 +145,20 @@ static CV_PossibleValue_t drawdist_cons_t[] = {
 	{3072, "3072"},	{4096, "4096"},	{6144, "6144"},
 	{8192, "8192"},	{0, "Infinite"},	{0, NULL}};
 
-//static CV_PossibleValue_t precipdensity_cons_t[] = {{0, "None"}, {1, "Light"}, {2, "Moderate"}, {4, "Heavy"}, {6, "Thick"}, {8, "V.Thick"}, {0, NULL}};
-
 static CV_PossibleValue_t drawdist_precip_cons_t[] = {
 	{256, "256"},	{512, "512"},	{768, "768"},
 	{1024, "1024"},	{1536, "1536"},	{2048, "2048"},
 	{3072, "3072"}, {0, "None"},	{0, NULL}};
 	
 
+static CV_PossibleValue_t maxinterpdist_cons_t[] = {
+       /*{256, "256"},*/       {512, "512"},   {768, "768"},
+       {1024, "1024"}, {1536, "1536"}, {2048, "2048"},
+       {3072, "3072"}, {4096, "4096"}, {6144, "6144"},
+       {8192, "8192"}, {0, "Infinite"},        {0, NULL}};
+
 static CV_PossibleValue_t fov_cons_t[] = {{5*FRACUNIT, "MIN"}, {178*FRACUNIT, "MAX"}, {0, NULL}};
 
-//static CV_PossibleValue_t precipdensity_cons_t[] = {{0, "None"}, {1, "Light"}, {2, "Moderate"}, {4, "Heavy"}, {6, "Thick"}, {8, "V.Thick"}, {0, NULL}};
 static CV_PossibleValue_t translucenthud_cons_t[] = {{0, "MIN"}, {10, "MAX"}, {0, NULL}};
 static CV_PossibleValue_t maxportals_cons_t[] = {{0, "MIN"}, {12, "MAX"}, {0, NULL}}; // lmao rendering 32 portals, you're a card
 static CV_PossibleValue_t homremoval_cons_t[] = {{0, "No"}, {1, "Yes"}, {2, "Flash"}, {0, NULL}};
@@ -196,10 +199,10 @@ consvar_t cv_translucenthud = {"translucenthud", "10", CV_SAVE, translucenthud_c
 
 consvar_t cv_translucency = {"translucency", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_drawdist = {"drawdist", "Infinite", CV_SAVE, drawdist_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-//consvar_t cv_drawdist_nights = {"drawdist_nights", "2048", CV_SAVE, drawdist_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_drawdist_precip = {"drawdist_precip", "1024", CV_SAVE, drawdist_precip_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_lessprecip = {"lessweathereffects", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-//consvar_t cv_precipdensity = {"precipdensity", "Moderate", CV_SAVE, precipdensity_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_grmaxinterpdist = {"gr_maxinterpdist", "Infinite", CV_SAVE, maxinterpdist_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 // cap fov, fov too high tears software apart.
 consvar_t cv_fov = {"fov", "90", CV_FLOAT|CV_CALL|CV_SAVE, fov_cons_t, Fov_OnChange, 0, NULL, NULL, 0, 0, NULL};
@@ -208,6 +211,9 @@ consvar_t cv_fov = {"fov", "90", CV_FLOAT|CV_CALL|CV_SAVE, fov_cons_t, Fov_OnCha
 consvar_t cv_homremoval = {"homremoval", "Yes", CV_SAVE, homremoval_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_maxportals = {"maxportals", "2", CV_SAVE, maxportals_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+static CV_PossibleValue_t pointoangle_cons_t[] = {{0, "Ex"}, {1, "64"}, {0, NULL}};
+consvar_t cv_pointoangleexor64 = {"r_pointtoangle", "64", CV_SAVE, pointoangle_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 void SplitScreen_OnChange(void)
 {
@@ -325,7 +331,7 @@ static void FlipCam4_OnChange(void)
 //
 // killough 5/2/98: reformatted
 //
-INT32 R_PointOnSide(fixed_t x, fixed_t y, node_t *restrict node)
+PUREFUNC INT32 R_PointOnSide(fixed_t x, fixed_t y, const node_t *restrict node)
 {
 	if (!node->dx)
 		return x <= node->x ? node->dy > 0 : node->dy < 0;
@@ -344,7 +350,7 @@ INT32 R_PointOnSide(fixed_t x, fixed_t y, node_t *restrict node)
 }
 
 // killough 5/2/98: reformatted
-INT32 R_PointOnSegSide(fixed_t x, fixed_t y, seg_t *line)
+PUREFUNC INT32 R_PointOnSegSide(fixed_t x, fixed_t y, const seg_t *line)
 {
 	fixed_t lx = line->v1->x;
 	fixed_t ly = line->v1->y;
@@ -409,6 +415,29 @@ angle_t R_PointToAngle64(INT64 x, INT64 y)
 		ANGLE_90 + tantoangle[SlopeDivEx(x,y)] :                             // octant 2
 		(x = -x) > (y = -y) ? ANGLE_180+tantoangle[SlopeDivEx(y,x)] :    // octant 4
 		ANGLE_270-tantoangle[SlopeDivEx(x,y)] :                              // octant 5
+		0;
+}
+
+angle_t R_PointToAngleEx(INT32 x2, INT32 y2, INT32 x1, INT32 y1)
+{
+	INT64 dx = x1-x2;
+	INT64 dy = y1-y2;
+	if (dx < INT32_MIN || dx > INT32_MAX || dy < INT32_MIN || dy > INT32_MAX)
+	{
+		x1 = (int)(dx / 2 + x2);
+		y1 = (int)(dy / 2 + y2);
+	}
+	return (y1 -= y2, (x1 -= x2) || y1) ?
+	x1 >= 0 ?
+	y1 >= 0 ?
+		(x1 > y1) ? tantoangle[SlopeDivEx(y1,x1)] :                            // octant 0
+		ANGLE_90-tantoangle[SlopeDivEx(x1,y1)] :                               // octant 1
+		x1 > (y1 = -y1) ? 0-tantoangle[SlopeDivEx(y1,x1)] :                    // octant 8
+		ANGLE_270+tantoangle[SlopeDivEx(x1,y1)] :                              // octant 7
+		y1 >= 0 ? (x1 = -x1) > y1 ? ANGLE_180-tantoangle[SlopeDivEx(y1,x1)] :  // octant 3
+		ANGLE_90 + tantoangle[SlopeDivEx(x1,y1)] :                             // octant 2
+		(x1 = -x1) > (y1 = -y1) ? ANGLE_180+tantoangle[SlopeDivEx(y1,x1)] :    // octant 4
+		ANGLE_270-tantoangle[SlopeDivEx(x1,y1)] :                              // octant 5
 		0;
 }
 
@@ -1048,7 +1077,6 @@ subsector_t *R_IsPointInSubsector(fixed_t x, fixed_t y)
 	INT32 side, i;
 	size_t nodenum;
 	subsector_t *ret;
-	seg_t *seg;
 
 	// single subsector is a special case
 	if (numnodes == 0)
@@ -1077,31 +1105,6 @@ subsector_t *R_IsPointInSubsector(fixed_t x, fixed_t y)
 //
 
 static mobj_t *viewmobj;
-
-// recalc necessary stuff for mouseaiming
-// slopes are already calculated for the full possible view (which is 4*viewheight).
-// 18/08/18: (No it's actually 16*viewheight, thanks Jimita for finding this out)
-static void R_SetupFreelook(void)
-{
-	INT32 dy = 0;
-
-	// clip it in the case we are looking a hardware 90 degrees full aiming
-	// (lmps, network and use F12...)
-	if (rendermode == render_soft
-#ifdef HWRENDER
-		|| cv_grshearing.value
-#endif
-	)
-		G_SoftwareClipAimingPitch((INT32 *)&aimingangle);
-
-	if (rendermode == render_soft)
-	{
-		dy = (AIMINGTODY(aimingangle)>>FRACBITS) * viewwidth/BASEVIDWIDTH;
-		yslope = &yslopetab[viewheight*8 - (viewheight/2 + dy)];
-	}
-	centery = (viewheight/2) + dy;
-	centeryfrac = centery<<FRACBITS;
-}
 
 void R_SkyboxFrame(player_t *player)
 {
@@ -1861,6 +1864,10 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_translucenthud);
 
 	CV_RegisterVar(&cv_maxportals);
+	
+	CV_RegisterVar(&cv_pointoangleexor64);
+
+	CV_RegisterVar(&cv_grmaxinterpdist);
 
 	// Default viewheight is changeable,
 	// initialized to standard viewheight
@@ -1869,4 +1876,5 @@ void R_RegisterEngineStuff(void)
 	// Frame interpolation/uncapped
 	CV_RegisterVar(&cv_fpscap);
 	CV_RegisterVar(&cv_precipinterp);
+	CV_RegisterVar(&cv_mobjssector);
 }

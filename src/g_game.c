@@ -832,7 +832,8 @@ const char *G_BuildMapName(INT32 map)
 		map = G_RandMap(G_TOLFlag(cv_newgametype.value), map, false, 0, false, NULL)+1;
 	}
 
-	if (map < 100)
+
+	if (map < 100 && map >= 0) // ...but why use signed integer in first place? idk but this prevents warning (and potential buffer overflow lol)
 		sprintf(&mapname[3], "%.2d", map);
 	else
 	{
@@ -1621,10 +1622,8 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 			-Making some galaxy brain autopilot Lua if you're a masochist
 			-Making a Mario Kart 8 Deluxe tier baby mode that steers you away from walls and whatnot. You know what, do what you want!
 	*/
-#ifdef HAVE_BLUA
 	if (gamestate == GS_LEVEL)
 		LUAh_PlayerCmd(player, cmd);
-#endif
 
 	//Reset away view if a command is given.
 	if ((cmd->forwardmove || cmd->sidemove || cmd->buttons)
@@ -2954,9 +2953,7 @@ void G_SpawnPlayer(INT32 playernum, boolean starpost)
 	if (starpost) //Don't even bother with looking for a place to spawn.
 	{
 		P_MovePlayerToStarpost(playernum);
-#ifdef HAVE_BLUA
 		LUAh_PlayerSpawn(&players[playernum]); // Lua hook for player spawning :)
-#endif
 		return;
 	}
 
@@ -3012,10 +3009,7 @@ void G_SpawnPlayer(INT32 playernum, boolean starpost)
 	}
 	P_MovePlayerToSpawn(playernum, spawnpoint);
 
-#ifdef HAVE_BLUA
 	LUAh_PlayerSpawn(&players[playernum]); // Lua hook for player spawning :)
-#endif
-
 }
 
 mapthing_t *G_FindCTFStart(INT32 playernum)
@@ -3310,9 +3304,7 @@ void G_DoReborn(INT32 playernum)
 		}
 		else
 		{
-#ifdef HAVE_BLUA
 			LUAh_MapChange(gamemap);
-#endif
 			G_DoLoadLevel(true);
 		}
 	}*/
@@ -4784,9 +4776,7 @@ void G_InitNew(UINT8 pencoremode, const char *mapname, boolean resetplayer, bool
 		F_StartCustomCutscene(mapheaderinfo[gamemap-1]->precutscenenum-1, true, resetplayer);
 	else
 	{
-#ifdef HAVE_BLUA
 		LUAh_MapChange(gamemap);
-#endif
 		G_DoLoadLevel(resetplayer);
 	}
 
@@ -5032,10 +5022,8 @@ void G_FreeMapSearch(mapsearchfreq_t *freq, INT32 freqc)
 INT32 G_FindMapByNameOrCode(const char *mapname, char **realmapnamep)
 {
 	boolean usemapcode = false;
-	INT32 newmapnum;
-
+	INT32 newmapnum = -1;
 	size_t mapnamelen = strlen(mapname);
-
 	char *p;
 	
 	if (mapnamelen == 1)
@@ -5109,9 +5097,7 @@ INT32 G_FindMapByNameOrCode(const char *mapname, char **realmapnamep)
 #define DF_NIGHTSATTACK 0x04 // This demo is from NiGHTS attack and contains its time left, score, and mares!
 #define DF_ATTACKMASK   0x06 // This demo is from ??? attack and contains ???
 
-#ifdef HAVE_BLUA
 #define DF_LUAVARS		0x20 // this demo contains extra lua vars; this is mostly used for backwards compability
-#endif
 
 #define DF_ATTACKSHIFT  1
 #define DF_ENCORE       0x40
@@ -5274,7 +5260,6 @@ void G_ReadDemoExtraData(void)
 			kartspeed = READUINT8(demo_p);
 			kartweight = READUINT8(demo_p);
 
-
 			if (stricmp(skins[players[p].skin].name, name) != 0)
 				FindClosestSkinForStats(p, kartspeed, kartweight);
 
@@ -5383,7 +5368,7 @@ void G_ReadDemoExtraData(void)
 void G_WriteDemoExtraData(void)
 {
 	INT32 i;
-	char name[16];
+	char name[17];
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
@@ -5416,7 +5401,7 @@ void G_WriteDemoExtraData(void)
 			{
 				// Name
 				memset(name, 0, 16);
-				strncpy(name, player_names[i], 16);
+				memcpy(name, player_names[i], 15); // Keeping 1 null byte for safety, sorry players with name containing more than 15 characters
 				M_Memcpy(demo_p,name,16);
 				demo_p += 16;
 			}
@@ -6763,7 +6748,7 @@ void G_RecordMetal(void)
 void G_BeginRecording(void)
 {
 	UINT8 i, p;
-	char name[16];
+	char name[17];
 	player_t *player = &players[consoleplayer];
 
 	char *filename;
@@ -6780,11 +6765,9 @@ void G_BeginRecording(void)
 	if (encoremode)
 		demoflags |= DF_ENCORE;
 
-#ifdef HAVE_BLUA
 	if (!modeattacking && gL)	// Ghosts don't read luavars, and you shouldn't ever need to save Lua in replays, you doof!
 						// SERIOUSLY THOUGH WHY WOULD YOU LOAD HOSTMOD AND RECORD A GHOST WITH IT !????
 		demoflags |= DF_LUAVARS;
-#endif
 
 	// Setup header.
 	M_Memcpy(demo_p, DEMOHEADER, 12); demo_p += 12;
@@ -6864,7 +6847,7 @@ void G_BeginRecording(void)
 
 			// Name
 			memset(name, 0, 16);
-			strncpy(name, player_names[p], 16);
+			memcpy(name, player_names[p], 15);
 			M_Memcpy(demo_p,name,16);
 			demo_p += 16;
 
@@ -6892,11 +6875,9 @@ void G_BeginRecording(void)
 
 	WRITEUINT8(demo_p, 0xFF); // Denote the end of the player listing
 
-#ifdef HAVE_BLUA
 	// player lua vars, always saved even if empty... Unless it's record attack.
 	if (demoflags & DF_LUAVARS)
 		LUA_ArchiveDemo();
-#endif
 
 	memset(&oldcmd,0,sizeof(oldcmd));
 	memset(&oldghost,0,sizeof(oldghost));
@@ -6951,7 +6932,7 @@ void G_BeginMetal(void)
 
 void G_WriteStanding(UINT8 ranking, char *name, INT32 skinnum, UINT8 color, UINT32 val)
 {
-	char temp[16];
+	char temp[17];
 
 	if (demoinfo_p && *(UINT32 *)demoinfo_p == 0)
 	{
@@ -7007,7 +6988,7 @@ static void G_LoadDemoExtraFiles(UINT8 **pp)
 	UINT8 totalfiles;
 	char filename[MAX_WADPATH];
 	UINT8 md5sum[16];
-	filestatus_t ncs;
+	filestatus_t ncs = FS_NOTFOUND;
 	boolean toomany = false;
 	boolean alreadyloaded;
 	UINT8 i, j;
@@ -7882,9 +7863,8 @@ void G_DoPlayDemo(char *defdemoname)
 	// didn't start recording right away.
 	demo.deferstart = false;
 
-/*#ifdef HAVE_BLUA
-	LUAh_MapChange(gamemap);
-#endif*/
+	//LUAh_MapChange(gamemap);
+
 	displayplayers[0] = consoleplayer = 0;
 	memset(playeringame,0,sizeof(playeringame));
 
@@ -7971,7 +7951,6 @@ void G_DoPlayDemo(char *defdemoname)
 
 // end of player read (the 0xFF marker)
 // so this is where we are to read our lua variables (if possible!)
-#ifdef HAVE_BLUA
 	if (demoflags & DF_LUAVARS)	// again, used for compability, lua shit will be saved to replays regardless of if it's even been loaded
 	{
 		if (!gL)	// No Lua state! ...I guess we'll just start one...
@@ -7980,7 +7959,6 @@ void G_DoPlayDemo(char *defdemoname)
 		// No modeattacking check, DF_LUAVARS won't be present here.
 		LUA_UnArchiveDemo();
 	}
-#endif
 
 	splitscreen = 0;
 
