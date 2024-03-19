@@ -74,7 +74,7 @@ IMPL_HUD_OFFSET(stat); // Stats
 consvar_t cv_showstats = {"showstats", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_showinput = {"showinput", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-static CV_PossibleValue_t speedo_cons_t[] = {{1, "Default"}, {2, "Small"}, {3, "P-Meter"}, {0, NULL}};
+CV_PossibleValue_t speedo_cons_t[NUMSPEEDOSTUFF];
 consvar_t cv_newspeedometer = {"newspeedometer", "Default", CV_SAVE, speedo_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 //hardcode saltyhop mhhm
@@ -6941,6 +6941,7 @@ static patch_t *kp_bumperstickerwideclr;
 static patch_t *kp_karmastickerclr;
 static patch_t *kp_timeoutstickerclr;
 static patch_t *skp_smallstickerclr;
+static patch_t *skp_smallstickerclr3;
 static patch_t *kp_itemmulstickerclr[2];
 static patch_t *kp_itembgclr[4];
 
@@ -7021,7 +7022,13 @@ static patch_t *driftgaugesmallcolor;
 static patch_t *kp_yougotem;
 
 static patch_t *skp_smallsticker;
+static patch_t *skp_smallsticker3;
 static patch_t *skp_speedpatches[5];
+
+static patch_t *skp_smallstickerachi;
+static patch_t *skp_speedpatchesachi[5];
+static patch_t *skp_smallstickerachiclr;
+static patch_t *skp_speedpatchesachiclr[5];
 
 void K_LoadKartHUDGraphics(void)
 {
@@ -7043,10 +7050,35 @@ void K_LoadKartHUDGraphics(void)
 	kp_karmasticker = 			W_CachePatchName("K_STKARM", PU_HUDGFX);
 	kp_splitkarmabomb = 		W_CachePatchName("K_SPTKRM", PU_HUDGFX);
 	kp_timeoutsticker = 		W_CachePatchName("K_STTOUT", PU_HUDGFX);
+	
+	if (xtra_speedo) // snowy speedometer
+	{
+		skp_smallsticker = 	  W_CachePatchName("SP_SMSTC", PU_HUDGFX);
+		skp_speedpatches[0] = W_CachePatchName("K_TRNULL", PU_HUDGFX); // lolxd
+		skp_speedpatches[1] = W_CachePatchName("SP_MKMH",  PU_HUDGFX);
+		skp_speedpatches[2] = W_CachePatchName("SP_MMPH",  PU_HUDGFX);
+		skp_speedpatches[3] = W_CachePatchName("SP_MFRAC", PU_HUDGFX);
+		skp_speedpatches[4] = W_CachePatchName("SP_MPERC", PU_HUDGFX);
+	}
+
+	if (xtra_speedo3) // 80x11 patch scaled to size
+	{
+		skp_smallsticker3 = 	  W_CachePatchName("SP_SM3TC", PU_HUDGFX);
+	}
+	
+	if (achi_speedo) 
+	{
+		skp_smallstickerachi = 	  W_CachePatchName("SP_AMSTC", PU_HUDGFX);
+		skp_speedpatchesachi[0] = W_CachePatchName("K_TRNULL", PU_HUDGFX); // lolxd
+		skp_speedpatchesachi[1] = W_CachePatchName("SP_AKMH",  PU_HUDGFX);
+		skp_speedpatchesachi[2] = W_CachePatchName("SP_AMPH",  PU_HUDGFX);
+		skp_speedpatchesachi[3] = W_CachePatchName("SP_AFRAC", PU_HUDGFX);
+		skp_speedpatchesachi[4] = W_CachePatchName("SP_APERC", PU_HUDGFX);
+	}
 
 	if (big_lap){		
-			kp_lapstickerbig = 		W_CachePatchName("K_STLAPB", PU_HUDGFX);
-			kp_lapstickerbig2 = 		W_CachePatchName("K_STLA2B", PU_HUDGFX);
+		kp_lapstickerbig = 		W_CachePatchName("K_STLAPB", PU_HUDGFX);
+		kp_lapstickerbig2 = 	W_CachePatchName("K_STLA2B", PU_HUDGFX);
 	}
 
 	// Colourized hud
@@ -7071,8 +7103,21 @@ void K_LoadKartHUDGraphics(void)
 			kp_lapstickerbig2clr = 		W_CachePatchName("K_SCLA2B", PU_HUDGFX);
 		}
 
-		if (snw_speedo)
+		if (xtra_speedo && xtra_speedo_clr)
 			skp_smallstickerclr = 	  	W_CachePatchName("SC_SMSTC", PU_HUDGFX);
+
+		if (xtra_speedo3 && xtra_speedo_clr3) // 80x11 patch scaled to size
+			skp_smallstickerclr3 = 	  	W_CachePatchName("SC_SM3TC", PU_HUDGFX);
+		
+		if (achi_speedo && achi_speedo_clr) 
+		{
+			skp_smallstickerachiclr = 	  W_CachePatchName("SC_AMSTC", PU_HUDGFX);
+			skp_speedpatchesachiclr[0] = W_CachePatchName("K_TRNULL", PU_HUDGFX); // lolxd
+			skp_speedpatchesachiclr[1] = W_CachePatchName("SC_AKMH",  PU_HUDGFX);
+			skp_speedpatchesachiclr[2] = W_CachePatchName("SC_AMPH",  PU_HUDGFX);
+			skp_speedpatchesachiclr[3] = W_CachePatchName("SC_AFRAC", PU_HUDGFX);
+			skp_speedpatchesachiclr[4] = W_CachePatchName("SC_APERC", PU_HUDGFX);
+		}
 	}
 
 	// KartZ speedo
@@ -7347,16 +7392,6 @@ void K_LoadKartHUDGraphics(void)
 	}
 
 	kp_yougotem = (patch_t *) W_CachePatchName("YOUGOTEM", PU_HUDGFX);
-
-	if (snw_speedo) // snowy speedometer
-	{
-		skp_smallsticker = 	  W_CachePatchName("SP_SMSTC", PU_HUDGFX);
-		skp_speedpatches[0] = W_CachePatchName("K_TRNULL", PU_HUDGFX); // lolxd
-		skp_speedpatches[1] = W_CachePatchName("SP_MKMH",  PU_HUDGFX);
-		skp_speedpatches[2] = W_CachePatchName("SP_MMPH",  PU_HUDGFX);
-		skp_speedpatches[3] = W_CachePatchName("SP_MFRAC", PU_HUDGFX);
-		skp_speedpatches[4] = W_CachePatchName("SP_MPERC", PU_HUDGFX);
-	}
 }
 
 // For the item toggle menu
@@ -7743,7 +7778,7 @@ static void K_drawKartStats(void)
 	//Internal offset for speedometer
 	if (cv_kartspeedometer.value)
 	{
-		if (cv_newspeedometer.value == 2 && snw_speedo)
+		if ((cv_newspeedometer.value == 2 && xtra_speedo) || (cv_newspeedometer.value == 3 && achi_speedo) || (cv_newspeedometer.value == 5 && xtra_speedo3))
 			spdoffset = -10;
 		else
 			spdoffset = -14;
@@ -8741,7 +8776,7 @@ static void K_drawKartSpeedometer(void)
 	}
 
 	// man.
-	if ((cv_newspeedometer.value == 1) || (cv_newspeedometer.value == 2 && !snw_speedo) || (cv_newspeedometer.value == 3 && !kartzspeedo)) 
+	if ((cv_newspeedometer.value == 1) || (cv_newspeedometer.value == 2 && !xtra_speedo) || (cv_newspeedometer.value == 3 && !achi_speedo) || (cv_newspeedometer.value == 4 && !kartzspeedo) || (cv_newspeedometer.value == 5 && !xtra_speedo3)) 
 	{
 		switch (speedtype) {
 			case 1:
@@ -8754,7 +8789,7 @@ static void K_drawKartSpeedometer(void)
 				V_DrawKartString(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, va("%3d fu/t", convSpeed));
 				break;
 			case 4: // if extra.kart is found, use its included % symbol
-				if (!snw_speedo)
+				if (!xtra_speedo)
 					V_DrawKartString(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, va("%4d P", convSpeed));
 				else
 					V_DrawKartString(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, va("%4d %%", convSpeed));
@@ -8763,25 +8798,53 @@ static void K_drawKartSpeedometer(void)
 				break;
 		}
 	}
-	else if (cv_newspeedometer.value == 2 && snw_speedo) // why bother if we dont?
+	else if (cv_newspeedometer.value == 2 && xtra_speedo) // why bother if we dont?
 	{
-		if (!K_UseColorHud())
-			V_DrawScaledPatch(SPDM_X + 1, SPDM_Y + 4, (V_HUDTRANS|splitflags), (skp_smallsticker));
-		else //Colourized hud
+		if (K_UseColorHud() && xtra_speedo_clr) //Colourized hud
 		{
 			UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
 			V_DrawMappedPatch(SPDM_X + 1, SPDM_Y + 4, (V_HUDTRANS|splitflags), (skp_smallstickerclr), colormap);
 		}
+		else
+			V_DrawScaledPatch(SPDM_X + 1, SPDM_Y + 4, (V_HUDTRANS|splitflags), (skp_smallsticker));
 
 		V_DrawRankNum(SPDM_X + 26, SPDM_Y + 4, V_HUDTRANS|splitflags, convSpeed, 3, NULL);
+		V_DrawScaledPatch(SPDM_X + 31, SPDM_Y + 4, V_HUDTRANS|splitflags, skp_speedpatches[cv_kartspeedometer.value]);
+	}
+	else if (cv_newspeedometer.value == 3 && achi_speedo) // why bother if we dont?
+	{
+		if (K_UseColorHud() && achi_speedo_clr) //Colourized hud
+		{
+			UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
+			V_DrawMappedPatch(SPDM_X + 1, SPDM_Y + 4, (V_HUDTRANS|splitflags), (skp_smallstickerachiclr), colormap);
+			V_DrawRankNum(SPDM_X + 26, SPDM_Y + 4, V_HUDTRANS|splitflags, convSpeed, 3, NULL);
+			V_DrawMappedPatch(SPDM_X + 31, SPDM_Y + 4, V_HUDTRANS|splitflags, skp_speedpatchesachiclr[cv_kartspeedometer.value], colormap);
+		}
+		else
+		{
+			V_DrawScaledPatch(SPDM_X + 1, SPDM_Y + 4, (V_HUDTRANS|splitflags), (skp_smallstickerachi));
+			V_DrawRankNum(SPDM_X + 26, SPDM_Y + 4, V_HUDTRANS|splitflags, convSpeed, 3, NULL);
+			V_DrawScaledPatch(SPDM_X + 31, SPDM_Y + 4, V_HUDTRANS|splitflags, skp_speedpatchesachi[cv_kartspeedometer.value]);
+		}	
+	}
+	else if (cv_newspeedometer.value == 5 && xtra_speedo3) // why bother if we dont?
+	{
+		if (K_UseColorHud() && xtra_speedo_clr3) //Colourized hud
+		{
+			UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
+			V_DrawStretchyFixedPatch((SPDM_X-1)<<FRACBITS, (SPDM_Y + 5)<<FRACBITS, FRACUNIT*0.765, FRACUNIT*0.55, (V_HUDTRANS|splitflags), (skp_smallstickerclr3), colormap);
+		}
+		else
+			V_DrawStretchyFixedPatch((SPDM_X-1)<<FRACBITS, (SPDM_Y + 5)<<FRACBITS, FRACUNIT*0.765, FRACUNIT*0.55, (V_HUDTRANS|splitflags), (skp_smallsticker3), NULL);
 
+		V_DrawRankNum(SPDM_X + 26, SPDM_Y + 4, V_HUDTRANS|splitflags, convSpeed, 3, NULL);
 		V_DrawScaledPatch(SPDM_X + 31, SPDM_Y + 4, V_HUDTRANS|splitflags, skp_speedpatches[cv_kartspeedometer.value]);
 	}
 	
 	// Kart Z speedo bullshit...
 	// Draw the Speed counter.
 	// Warning large if statement below...
-	else if (cv_newspeedometer.value == 3 && kartzspeedo)
+	else if (cv_newspeedometer.value == 4 && kartzspeedo)
 	{
 		fuspeed =  FixedDiv(stplyr->speed, mapobjectscale)/FRACUNIT;
 		
