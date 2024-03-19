@@ -249,6 +249,8 @@ void ST_doPaletteStuff(void)
 		palette = 0; // No flashpals here in OpenGL
 #endif
 
+	palette = min(max(palette, 0), 13);
+
 	if (palette != st_palette)
 	{
 		st_palette = palette;
