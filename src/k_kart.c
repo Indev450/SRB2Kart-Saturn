@@ -95,6 +95,8 @@ consvar_t cv_darkitembox = {"darkitembox", "On", CV_SAVE, CV_OnOff, NULL, 0, NUL
 
 consvar_t cv_biglaps = {"biglaphud", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; //here for ppl who dont want to make 2 more patches for their custom hud
 
+consvar_t cv_battlespeedo = {"battlespeedo", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; //toggle for showing the speedometer in battlemode
+
 // SOME IMPORTANT VARIABLES DEFINED IN DOOMDEF.H:
 // gamespeed is cc (0 for easy, 1 for normal, 2 for hard)
 // franticitems is Frantic Mode items, bool
@@ -719,6 +721,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_showinput);
 	CV_RegisterVar(&cv_newspeedometer);
 	
+	CV_RegisterVar(&cv_battlespeedo);
 	
 	CV_RegisterVar(&cv_saltyhop);
 	CV_RegisterVar(&cv_saltyhopsfx);
@@ -8721,7 +8724,6 @@ static void K_drawKartSpeedometer(void)
 	
 	INT32 speedtype = 0;
 	INT32 splitflags = K_calcSplitFlags(V_SNAPTOBOTTOM|V_SNAPTOLEFT);
-	
 
 	switch (cv_kartspeedometer.value)
 	{
@@ -10595,6 +10597,14 @@ void K_drawKartHUD(void)
 			// Draw the hits left!
 			if (LUA_HudEnabled(hud_gametypeinfo))
 				K_drawKartBumpersOrKarma();
+
+			if ((!splitscreen) && cv_battlespeedo.value)
+			{
+				// Draw the speedometer but in battle
+				// TODO: Make a better speedometer. << done :p
+				if (LUA_HudEnabled(hud_speedometer))
+					K_drawKartSpeedometer();
+			}
 		}
 	}
 
