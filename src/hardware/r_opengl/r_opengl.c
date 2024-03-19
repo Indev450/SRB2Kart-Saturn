@@ -3185,7 +3185,7 @@ EXPORT void HWRAPI(MakeScreenTexture) (int tex)
 	tex_downloaded = screenTextures[tex];
 }
 
-EXPORT void HWRAPI(DrawScreenFinalTexture)(int tex, int width, int height)
+EXPORT void HWRAPI(DrawScreenFinalTexture)(int tex, INT32 width, INT32 height)
 {
 	float xfix, yfix;
 	float origaspect, newaspect;
