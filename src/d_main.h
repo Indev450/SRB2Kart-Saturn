@@ -27,8 +27,14 @@ extern char srb2path[256]; //Alam: SRB2's Home
 
 extern boolean found_extra_kart; // for use in k_kart.c
 extern boolean found_extra2_kart; // for use in k_kart.c
+extern boolean found_extra3_kart; // for use in k_kart.c
 
-extern boolean snw_speedo; // snowy speedometer check
+extern boolean xtra_speedo; // extra speedometer check
+extern boolean xtra_speedo_clr; // extra speedometer colour check
+extern boolean xtra_speedo3; // 80x11 extra speedometer check
+extern boolean xtra_speedo_clr3; // 80x11 extra speedometer colour check
+extern boolean achi_speedo; // achiiro speedometer check
+extern boolean achi_speedo_clr; // extra speedometer colour check
 extern boolean clr_hud; // colour hud check
 extern boolean big_lap; // bigger lap counter
 extern boolean big_lap_color; // bigger lap counter but colour
