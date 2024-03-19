@@ -134,7 +134,7 @@ void P_ClosestPointOnLine3D(fixed_t x, fixed_t y, fixed_t z, line_t *line, verte
 // P_PointOnLineSide
 // Returns 0 or 1
 //
-INT32 P_PointOnLineSide(fixed_t x, fixed_t y, line_t *line)
+INT32 P_PointOnLineSide(fixed_t x, fixed_t y, const line_t *line)
 {
 	fixed_t dx, dy, left, right;
 
@@ -158,7 +158,7 @@ INT32 P_PointOnLineSide(fixed_t x, fixed_t y, line_t *line)
 // Considers the line to be infinite
 // Returns side 0 or 1, -1 if box crosses the line.
 //
-INT32 P_BoxOnLineSide(fixed_t *tmbox, line_t *ld)
+INT32 P_BoxOnLineSide(fixed_t *tmbox, const line_t *ld)
 {
 	INT32 p1, p2;
 
