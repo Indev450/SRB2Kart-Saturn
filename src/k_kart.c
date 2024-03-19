@@ -7107,31 +7107,18 @@ void K_LoadKartHUDGraphics(void)
 	// KartZ speedo
 	if (kartzspeedo)
 	{
-		kp_kartzspeedo[0] = 				W_CachePatchName("K_KZSP1", PU_HUDGFX);
-		kp_kartzspeedo[1] = 				W_CachePatchName("K_KZSP2", PU_HUDGFX);
-		kp_kartzspeedo[2] = 				W_CachePatchName("K_KZSP3", PU_HUDGFX);
-		kp_kartzspeedo[3] = 				W_CachePatchName("K_KZSP4", PU_HUDGFX);
-		kp_kartzspeedo[4] = 				W_CachePatchName("K_KZSP5", PU_HUDGFX);
-		kp_kartzspeedo[5] = 				W_CachePatchName("K_KZSP6", PU_HUDGFX);
-		kp_kartzspeedo[6] = 				W_CachePatchName("K_KZSP7", PU_HUDGFX);
-		kp_kartzspeedo[7] = 				W_CachePatchName("K_KZSP8", PU_HUDGFX);
-		kp_kartzspeedo[8] = 				W_CachePatchName("K_KZSP9", PU_HUDGFX);
-		kp_kartzspeedo[9] = 				W_CachePatchName("K_KZSP10", PU_HUDGFX);
-		kp_kartzspeedo[10] = 				W_CachePatchName("K_KZSP11", PU_HUDGFX);
-		kp_kartzspeedo[11] = 				W_CachePatchName("K_KZSP12", PU_HUDGFX);
-		kp_kartzspeedo[12] = 				W_CachePatchName("K_KZSP13", PU_HUDGFX);
-		kp_kartzspeedo[13] = 				W_CachePatchName("K_KZSP14", PU_HUDGFX);
-		kp_kartzspeedo[14] = 				W_CachePatchName("K_KZSP15", PU_HUDGFX);
-		kp_kartzspeedo[15] = 				W_CachePatchName("K_KZSP16", PU_HUDGFX);
-		kp_kartzspeedo[16] = 				W_CachePatchName("K_KZSP17", PU_HUDGFX);
-		kp_kartzspeedo[17] = 				W_CachePatchName("K_KZSP18", PU_HUDGFX);
-		kp_kartzspeedo[18] = 				W_CachePatchName("K_KZSP19", PU_HUDGFX);
-		kp_kartzspeedo[19] = 				W_CachePatchName("K_KZSP20", PU_HUDGFX);
-		kp_kartzspeedo[20] = 				W_CachePatchName("K_KZSP21", PU_HUDGFX);
-		kp_kartzspeedo[21] = 				W_CachePatchName("K_KZSP22", PU_HUDGFX);
-		kp_kartzspeedo[22] = 				W_CachePatchName("K_KZSP23", PU_HUDGFX);
-		kp_kartzspeedo[23] = 				W_CachePatchName("K_KZSP24", PU_HUDGFX);
-		kp_kartzspeedo[24] = 				W_CachePatchName("K_KZSP25", PU_HUDGFX);
+		const char* patchNames[] = {
+			"K_KZSP1", "K_KZSP2", "K_KZSP3", "K_KZSP4", "K_KZSP5",
+			"K_KZSP6", "K_KZSP7", "K_KZSP8", "K_KZSP9", "K_KZSP10",
+			"K_KZSP11", "K_KZSP12", "K_KZSP13", "K_KZSP14", "K_KZSP15",
+			"K_KZSP16", "K_KZSP17", "K_KZSP18", "K_KZSP19", "K_KZSP20",
+			"K_KZSP21", "K_KZSP22", "K_KZSP23", "K_KZSP24", "K_KZSP25"
+		};
+
+		for (size_t m = 0; m < sizeof(patchNames) / sizeof(patchNames[0]); ++m)
+		{
+			kp_kartzspeedo[m] = W_CachePatchName(patchNames[m], PU_HUDGFX);
+		}
 	}
 
 	// Nametags
@@ -8810,14 +8797,14 @@ static void K_drawKartSpeedometer(void)
 			V_DrawRankNum(SPDM_X + 26, SPDM_Y + 4, V_HUDTRANS|splitflags, convSpeed, 3, NULL);
 			V_DrawScaledPatch(SPDM_X + 31, SPDM_Y + 4, V_HUDTRANS|splitflags, skp_speedpatchesachi[cv_kartspeedometer.value]);
 		}	
-	}
+		}	
 	else if (cv_newspeedometer.value == 5 && xtra_speedo3) // why bother if we dont?
 	{
 		if (K_UseColorHud() && xtra_speedo_clr3) //Colourized hud
 		{
 			UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
 			V_DrawStretchyFixedPatch((SPDM_X-1)<<FRACBITS, (SPDM_Y + 5)<<FRACBITS, FRACUNIT*0.765, FRACUNIT*0.55, (V_HUDTRANS|splitflags), (skp_smallstickerclr3), colormap);
-		}
+	}
 		else
 			V_DrawStretchyFixedPatch((SPDM_X-1)<<FRACBITS, (SPDM_Y + 5)<<FRACBITS, FRACUNIT*0.765, FRACUNIT*0.55, (V_HUDTRANS|splitflags), (skp_smallsticker3), NULL);
 
@@ -8827,66 +8814,26 @@ static void K_drawKartSpeedometer(void)
 	
 	// Kart Z speedo bullshit...
 	// Draw the Speed counter.
-	// Warning large if statement below...
 	else if (cv_newspeedometer.value == 4 && kartzspeedo)
 	{
 		fuspeed =  FixedDiv(stplyr->speed, mapobjectscale)/FRACUNIT;
 		
-		if (fuspeed < 2 && fuspeed > 0)
-			spdpatch = 0;
-		else if (fuspeed < 5 && fuspeed > 1)
-			spdpatch = 1;
-		else if (fuspeed < 7 && fuspeed > 4)
-			spdpatch = 2;
-		else if (fuspeed < 10 && fuspeed > 6)
-			spdpatch = 3;
-		else if (fuspeed < 12 && fuspeed > 9)
-			spdpatch = 4;
-		else if (fuspeed < 15 && fuspeed > 11)
-			spdpatch = 5;
-		else if (fuspeed < 17 && fuspeed > 14)
-			spdpatch = 6;
-		else if (fuspeed < 20 && fuspeed > 16)
-			spdpatch = 7;
-		else if (fuspeed < 22 && fuspeed > 19)
-			spdpatch = 8;
-		else if (fuspeed < 25 && fuspeed > 21)
-			spdpatch = 9;
-		else if (fuspeed < 27 && fuspeed > 24)
-			spdpatch = 10;
-		else if (fuspeed < 30 && fuspeed > 26)
-			spdpatch = 11;
-		else if (fuspeed < 32 && fuspeed > 29)
-			spdpatch = 12;
-		else if (fuspeed < 35 && fuspeed > 31)
-			spdpatch = 13;
-		else if (fuspeed < 37 && fuspeed > 34)
-			spdpatch = 14;
-		else if (fuspeed < 40 && fuspeed > 36)
-			spdpatch = 15;
-		else if (fuspeed < 42 && fuspeed > 39)
-			spdpatch = 16;
-		else if (fuspeed < 45 && fuspeed > 41)
-			spdpatch = 17;
-		else if (fuspeed < 47 && fuspeed > 44)
-			spdpatch = 18;
-		else if (fuspeed < 50 && fuspeed > 46)
-			spdpatch = 19;
-		else if (fuspeed < 52 && fuspeed > 49)
-			spdpatch = 20;
-		else if (fuspeed < 55 && fuspeed > 51)
-			spdpatch = 21;
-		else if (fuspeed < 57 && fuspeed > 54 && (leveltime&4))
+#define NUM_INTERVALS 22
+		const int speedIntervals[NUM_INTERVALS] = {2, 5, 7, 10, 12, 15, 17, 20, 22, 25, 27, 30, 32, 35, 37, 40, 42, 45, 47, 50, 52, 55};
+
+		for (int i = 0; i < NUM_INTERVALS; ++i) 
+		{
+			if (fuspeed < speedIntervals[i]) 
+			{
+				spdpatch = i;
+				break;
+			}
+		}
+#undef NUM_INTERVALS
+
+		if (((fuspeed < 57 && fuspeed > 54) || (fuspeed < 60 && fuspeed > 56) || (fuspeed > 59)) && (leveltime & 4))
 			spdpatch = 24;
-		else if (fuspeed < 57 && fuspeed > 54 && !(leveltime&4))
-			spdpatch = 23;
-		else if (fuspeed < 60 && fuspeed > 56 && (leveltime&4))
-			spdpatch = 24;
-		else if (fuspeed < 60 && fuspeed > 56  && !(leveltime&4))
-			spdpatch = 23;
-		else if (fuspeed > 59 && (leveltime&4))
-			spdpatch = 24;
-		else if (fuspeed > 59 && !(leveltime&4))
+		else if (((fuspeed < 57 && fuspeed > 54) || (fuspeed < 60 && fuspeed > 56) || (fuspeed > 59)) && !(leveltime & 4))
 			spdpatch = 23;
 
 		V_DrawScaledPatch(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, kp_kartzspeedo[spdpatch]);
