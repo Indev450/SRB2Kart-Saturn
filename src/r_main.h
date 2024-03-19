@@ -106,7 +106,7 @@ extern ps_metric_t ps_numpolyobjects;
 // REFRESH - the actual rendering functions.
 //
 
-extern consvar_t cv_showhud, cv_translucenthud;
+extern consvar_t cv_showhud, cv_translucenthud, cv_uncappedhud;
 extern consvar_t cv_homremoval;
 extern consvar_t cv_chasecam, cv_chasecam2, cv_chasecam3, cv_chasecam4;
 extern consvar_t cv_flipcam, cv_flipcam2, cv_flipcam3, cv_flipcam4;
@@ -140,4 +140,7 @@ void R_RenderPlayerView(player_t *player);
 
 // add commands related to engine, at game startup
 void R_RegisterEngineStuff(void);
+
+// return multiplier for HUD uncap
+INT32 R_GetHudUncap(void);
 #endif
