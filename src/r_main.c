@@ -1346,7 +1346,7 @@ void R_SkyboxFrame(player_t *player)
 	// newview->sin = FINESINE(viewangle>>ANGLETOFINESHIFT);
 	// newview->cos = FINECOSINE(viewangle>>ANGLETOFINESHIFT);
 
-	R_InterpolateView(R_UsingFrameInterpolation() ? rendertimefrac : FRACUNIT);
+	R_InterpolateView(R_UsingFrameInterpolation() ? rendertimefrac : FRACUNIT, false);
 }
 
 void R_SetupFrame(player_t *player, boolean skybox)
@@ -1495,7 +1495,7 @@ void R_SetupFrame(player_t *player, boolean skybox)
 	// newview->sin = FINESINE(viewangle>>ANGLETOFINESHIFT);
 	// newview->cos = FINECOSINE(viewangle>>ANGLETOFINESHIFT);
 
-	R_InterpolateView(R_UsingFrameInterpolation() ? rendertimefrac : FRACUNIT);
+	R_InterpolateView(R_UsingFrameInterpolation() ? rendertimefrac : FRACUNIT, false);
 }
 
 #define ANGLED_PORTALS

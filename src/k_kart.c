@@ -22,6 +22,7 @@
 #include "r_local.h"
 #include "r_state.h"
 #include "r_things.h"
+#include "r_fps.h"
 #include "s_sound.h"
 #include "screen.h"
 #include "st_stuff.h"
@@ -7551,6 +7552,10 @@ static void K_initKartHUD(void)
 		hudtrans = ((((INT32)timeinmap) - 105)*cv_translucenthud.value)/(113-105);
 	else
 		hudtrans = 0;
+
+	// K_GetScreenCoords needs the right view* variables
+	R_SetViewContext(stplyrnum);
+	R_InterpolateView(R_UsingFrameInterpolation() ? rendertimefrac : FRACUNIT, !cv_uncappedhud.value);
 }
 
 INT32 K_calcSplitFlags(INT32 snapflags)
@@ -8903,15 +8908,16 @@ static void K_drawKartBumpersOrKarma(void)
 	}
 }
 
+#define lerp(from, to) cv_uncappedhud.value ? from + FixedMul(rendertimefrac, to - from) : to
+
 // converts mobj coordinates into screen coordinates
 // NOTE: use with V_NOSCALESTART!
 // Code updated in Lua by GenericHeroGuy for libSG
 // Badly ported to C by NepDisk and acutally made to work and fixed by Indev!(Thanks so much!)
+// Badly uncapped in C by GenericHeroGuy
 // original code by Lat'
-static void K_GetScreenCoords(vector2_t *vec, player_t *player, camera_t *came, mobj_t *target, fixed_t hofs, boolean dontclip)
+static boolean K_GetScreenCoords(vector2_t *vec, player_t *player, mobj_t *target, fixed_t hofs, boolean dontclip)
 {
-	fixed_t camx, camy, camz;
-    angle_t camangle, camaiming;
 	fixed_t distfact;
 	fixed_t dist;
 	fixed_t xres;
@@ -8924,43 +8930,21 @@ static void K_GetScreenCoords(vector2_t *vec, player_t *player, camera_t *came, 
 	fixed_t y;
 	fixed_t x;
 
-    // In case of early return we can check if those are negative
-    vec->x = -1;
-    vec->y = -1;
-
 	// this should never happen but its also kart so ¯\_(ツ)_/¯
-	if (!player || !target || !came)
-		return;
-
-	if (player->awayviewtics) {
-		camx = player->awayviewmobj->x;
-		camy = player->awayviewmobj->y;
-		camz = player->awayviewmobj->z;
-		camangle = player->awayviewmobj->angle;
-		camaiming = player->awayviewaiming;
-	}
-	else if (came->chase) {
-		camx = came->x;
-		camy = came->y;
-		camz = came->z + (player->mo->eflags & MFE_VERTICALFLIP && came->height);
-		camangle = came->angle;
-		camaiming = came->aiming;
-	}
-	else {
-		camx = player->mo->x;
-		camy = player->mo->y;
-		camz = player->viewz;
-		camangle = player->mo->angle;
-		camaiming = player->aiming;
-	}
+	if (!player || !target)
+		return false;
 
 	xres = vid.width<<(FRACBITS-1);
 	yres = vid.height<<(FRACBITS-1);
 	fov = FixedDiv(xres, FINETANGENT(((FixedAngle(cv_fov.value/2)+ANGLE_90)>>ANGLETOFINESHIFT) & 4095));
 
+	fixed_t targx = lerp(target->old_x, target->x);
+	fixed_t targy = lerp(target->old_y, target->y);
+	fixed_t targz = lerp(target->old_z, target->z);
+
 	// X coordinate
 	// get difference between camangle and angle towards target
-	x = (INT32)camangle - (INT32)R_PointToAngle2(camx, camy, target->x, target->y);
+	x = (INT32)viewangle - (INT32)R_PointToAngle(targx, targy);
 
 	distfact = FINECOSINE((x>>ANGLETOFINESHIFT) & FINEMASK);
     if (!distfact) distfact = 1;
@@ -8968,7 +8952,7 @@ static void K_GetScreenCoords(vector2_t *vec, player_t *player, camera_t *came, 
 	if (encoremode)
 		x = -x;
 	if (x < (fixed_t)ANGLE_270 || x > (fixed_t)ANGLE_90)
-		return;
+		return false;
 
 	// flipping
 	targflip = target->eflags & MFE_VERTICALFLIP;
@@ -8977,12 +8961,12 @@ static void K_GetScreenCoords(vector2_t *vec, player_t *player, camera_t *came, 
 	// Y coordinate
 	// getting the angle difference here is a bit more involved...
 	// start by getting the height difference between the camera and target
-	y = camz - target->z - (targflip ? target->height/1.5 : 0); // for some reason needs to be divided by 1.5 idk
+	y = viewz - targz - (targflip ? target->height/1.5 : 0); // for some reason needs to be divided by 1.5 idk
 	if (hofs)
 		y = y - (targflip ? -hofs : hofs);
 
 	// then get the distance between camera and target
-	dist = R_PointToDist2(camx, camy, target->x, target->y);
+	dist = R_PointToDist(targx, targy);
 
 #ifdef HWRENDER
 	// NOW we can get the angle differnce
@@ -8990,10 +8974,10 @@ static void K_GetScreenCoords(vector2_t *vec, player_t *player, camera_t *came, 
 	{
 		angle_t yang = R_PointToAngle2(0, 0, dist, y); // not perspective
 		x = FixedMul(x, FINECOSINE((yang>>ANGLETOFINESHIFT) & FINEMASK)); // perspective
-		y = -camaiming - FixedDiv(yang, distfact);
+		y = -aimingangle - FixedDiv(yang, distfact);
 
 		if (y < (fixed_t)ANGLE_270 || y > (fixed_t)ANGLE_90) // clip points behind the camera
-			return;
+			return false;
 		if (splitscreen == 1) // multiply by 1.25 for 2P splitscreen
 			y = y + (y/4) ;
 		if (srcflip) // flipcam
@@ -9013,7 +8997,7 @@ static void K_GetScreenCoords(vector2_t *vec, player_t *player, camera_t *came, 
 			y = FixedMul(FixedDiv(y, fovratio), xres) + yres;
 		//else print("NOPE!")
 
-		offset = FixedMul(FINETANGENT(((camaiming+ANGLE_90)>>ANGLETOFINESHIFT) & 4095), xres);
+		offset = FixedMul(FINETANGENT(((aimingangle+ANGLE_90)>>ANGLETOFINESHIFT) & 4095), xres);
 		// this isn't fovtan... what am i even doing anymore
 		if (splitscreen == 1)
 			offset = 17*offset/10;
@@ -9037,7 +9021,7 @@ static void K_GetScreenCoords(vector2_t *vec, player_t *player, camera_t *came, 
 	
 	// now clip in screen-space
 	if (!dontclip && (x < 0 || x > xres*2 || y < 0 || y > yres*2))
-		return;
+		return false;
 
 	// get splitscreen index
 	int splitindex = stplyrnum;
@@ -9059,6 +9043,7 @@ static void K_GetScreenCoords(vector2_t *vec, player_t *player, camera_t *came, 
 
 	vec->y = y;
 	vec->x = x;
+	return true;
 }
 
 //Slighty fixed by Alug and further rewritten by NepDisk
@@ -9081,7 +9066,7 @@ static void K_drawNameTags(void)
 	INT32 hudtransflag = V_LocalTransFlag();
 	boolean flipcam;
 
-	if (!stplyr->mo || (stplyr->spectator && !cv_shownametagspectator.value) || splitscreen || (stplyr->exiting && !cv_shownametagfinish.value))
+	if (!stplyr->mo || (stplyr->spectator && !cv_shownametagspectator.value) || (stplyr->exiting && !cv_shownametagfinish.value))
 		return;
 
 	// True if currently viewed player is flipped and has flipcam on
@@ -9099,9 +9084,9 @@ static void K_drawNameTags(void)
 			continue;
 		if (!players[i].mo || P_MobjWasRemoved(players[i].mo) || players[i].spectator || !playeringame[i])
 			continue;
-		if (i == displayplayers[0] && !cv_showownnametag.value && !(leveltime < 130))
+		if (i == stplyrnum && !cv_showownnametag.value && !(leveltime < 130))
 			continue;
-		if (!(i == displayplayers[0]) && leveltime < starttime)
+		if (i != stplyrnum && leveltime < starttime)
 			continue;
 		if (players[i].kartstuff[k_hyudorotimer]) // player is invisible
 			continue;
@@ -9160,12 +9145,9 @@ static void K_drawNameTags(void)
 
 		//Saltyhop hehe
 		if (cv_saltyhop.value && cv_nametaghop.value)
-			z += players[i].mo->spriteyoffset;
+			z += lerp(players[i].mo->old_spriteyoffset, players[i].mo->spriteyoffset);
 
-		K_GetScreenCoords(&pos, stplyr, camera, players[i].mo, z, false);
-
-		//Check for negative screencoords
-		if (pos.x == -1 || pos.y == -1)
+		if (!K_GetScreenCoords(&pos, stplyr, players[i].mo, z, false))
 			continue;
 
 		tagsdisplayed += 1;
@@ -9301,7 +9283,7 @@ static void K_drawDriftGauge(void)
 	INT32 drifttrans = 0;
 	INT32 hudtransflag = V_LocalTransFlag();
 	int dup = vid.dupx;
-	int i,j;
+	int i;
 
 	UINT8 driftcolors[3][4] = {
 		{0, 0, 10, 16},       // no drift
@@ -9322,17 +9304,7 @@ static void K_drawDriftGauge(void)
 	if (!stplyr->mo || !stplyr->kartstuff[k_drift] || (!splitscreen && !camera->chase))
 		return;
 
-	if (!splitscreen)
-		K_GetScreenCoords(&pos, stplyr, camera, stplyr->mo, FixedMul(cv_driftgaugeofs.value, cv_driftgaugeofs.value > 0 ? stplyr->mo->scale : mapobjectscale), false);
-	else
-	{
-		//Loop through each player camera for splitscreen.
-		for (j = 0; j <= stplyrnum; j++)
-			K_GetScreenCoords(&pos, stplyr, &camera[j], stplyr->mo, FixedMul(cv_driftgaugeofs.value, cv_driftgaugeofs.value > 0 ? stplyr->mo->scale : mapobjectscale), false);
-	}
-
-	//Check for negative screencoords
-	if (pos.x == -1 || pos.y == -1)
+	if (!K_GetScreenCoords(&pos, stplyr, stplyr->mo, FixedMul(cv_driftgaugeofs.value, cv_driftgaugeofs.value > 0 ? stplyr->mo->scale : mapobjectscale), false))
 		return;
 
 	basex = pos.x>>FRACBITS; 
@@ -9636,10 +9608,8 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags, pat
 	yscale = FixedDiv(AutomapPic->height, mapheight);
 	zoom = FixedMul(min(xscale, yscale), FRACUNIT-FRACUNIT/20);
 
-	#define lerp(from, to) cv_uncappedhud.value ? from + FixedMul(rendertimefrac, to - from) : to
 	amnumxpos = (FixedMul(lerp(mo->old_x, mo->x), zoom) - FixedMul(xoffset, zoom));
 	amnumypos = -(FixedMul(lerp(mo->old_y, mo->y), zoom) - FixedMul(yoffset, zoom));
-	#undef lerp
 
 	if (encoremode)
 		amnumxpos = -amnumxpos;
@@ -9678,6 +9648,8 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags, pat
 		}
 	}
 }
+
+#undef lerp
 
 static void K_drawKartMinimap(void)
 {
