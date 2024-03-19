@@ -3216,18 +3216,6 @@ static void K_QuiteSaltyHop(player_t *p)
 	}
 }
 
-/*static INT32 K_FindPlayerNum(player_t *plyr)
-{
-	INT32 i;
-	
-	for(i = 0; i < 4; i++)
-	{
-		if (plyr == &players[displayplayers[i]])
-			return i;
-	}
-	return 0; // technically defaulting to player 1 but fuck it
-}*/
-
 #define SLOPEROLL_DIV 3
 
 void K_RollMobjBySlopes(mobj_t* mo, boolean usedistance)
@@ -3373,14 +3361,10 @@ void K_SpawnSparkleTrail(mobj_t *mo)
 		sparkle = P_SpawnMobj(newx, newy, newz, MT_SPARKLETRAIL);
 		K_FlipFromObject(sparkle, mo);
 
-		//if (i == 0)
-			//P_SetMobjState(sparkle, S_KARTINVULN_LARGE1);
-
 		P_SetTarget(&sparkle->target, mo);
 		sparkle->destscale = mo->destscale;
 		P_SetScale(sparkle, mo->scale);
 		sparkle->color = mo->color;
-		//sparkle->colorized = mo->colorized;
 	}
 
 	P_SetMobjState(sparkle, S_KARTINVULN_LARGE1);
