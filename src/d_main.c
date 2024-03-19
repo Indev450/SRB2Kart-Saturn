@@ -1073,9 +1073,12 @@ static boolean AddIWAD(void)
 // extra graphic patches for saturn specific thingies
 boolean found_extra_kart;
 boolean found_extra2_kart;
+boolean found_extra3_kart;
 
 boolean xtra_speedo; // extra speedometer check
 boolean xtra_speedo_clr; // extra speedometer colour check
+boolean xtra_speedo3; // 80x 11 extra speedometer check
+boolean xtra_speedo_clr3; // 80x 11 extra speedometer colour check
 boolean achi_speedo; // achiiro speedometer check
 boolean achi_speedo_clr; // extra speedometer colour check
 boolean clr_hud; // colour hud check
@@ -1091,6 +1094,7 @@ static void IdentifyVersion(void)
 	const char *srb2waddir = NULL;
 	found_extra_kart = false;
 	found_extra2_kart = false;
+	found_extra3_kart = false;
 
 #if defined (__unix__) || defined (UNIXCOMMON) || defined (HAVE_SDL)
 	// change to the directory where 'srb2.srb' is found
@@ -1147,6 +1151,11 @@ static void IdentifyVersion(void)
 	if (FIL_ReadFileOK(va(pandf,srb2waddir,"extra2.kart"))) {
 		D_AddFile(va(pandf,srb2waddir,"extra2.kart"), startupwadfiles);
 		found_extra2_kart = true;
+	}
+	
+	if (FIL_ReadFileOK(va(pandf,srb2waddir,"extra3.kart"))) {
+		D_AddFile(va(pandf,srb2waddir,"extra3.kart"), startupwadfiles);
+		found_extra3_kart = true;
 	}
 
 #if !defined (HAVE_SDL) || defined (HAVE_MIXER)
@@ -1491,6 +1500,19 @@ void D_SRB2Main(void)
 		
 		if (W_CheckMultipleLumps("K_DGAU","K_DCAU","K_DGSU","K_DCSU", NULL)) 
 			driftgaugegfx = true;
+	}
+
+	if (found_extra3_kart)
+	{
+		if (found_extra3_kart)
+			mainwads++;
+
+		// 80x11 speedometer crap
+		if (W_CheckMultipleLumps("SP_SM3TC", NULL))
+			xtra_speedo3 = true;
+
+		if (W_CheckMultipleLumps("SC_SM3TC", NULL))
+			xtra_speedo_clr3 = true;
 	}
 
 	//
