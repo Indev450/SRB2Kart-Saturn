@@ -69,6 +69,7 @@
 #include "filesrch.h" // refreshdirmenu, pathisdirectory
 #include "d_protocol.h"
 #include "m_perfstats.h"
+#include "k_kart.h"
 
 #include "lua_script.h"
 
@@ -1447,6 +1448,11 @@ void D_SRB2Main(void)
 
 #endif //ifndef DEVELOP
 
+	// Possible value that changes depending on whether required files for speedometer are found or not
+	CV_PossibleValue_t speedo_cons_temp[NUMSPEEDOSTUFF] = {{1, "Default"}, {0, NULL}, {0, NULL}, {0, NULL}, {0, NULL}, {0, NULL}};
+	unsigned last_speedo_i = 0;
+#define PUSHSPEEDO(id, name) { ++last_speedo_i; speedo_cons_temp[last_speedo_i].value = id; speedo_cons_temp[last_speedo_i].strvalue = name; CONS_Printf("[speedostuff] Added %s!\n", name); }
+
 	if (found_extra_kart || found_extra2_kart) // found the funny, add it in!
 	{
 		// HAYA: These are seperated for a reason lmao
@@ -1457,15 +1463,21 @@ void D_SRB2Main(void)
 
 		// now check for extra speedometer stuff
 		if (W_CheckMultipleLumps("SP_SMSTC", "K_TRNULL", "SP_MKMH", "SP_MMPH", "SP_MFRAC", "SP_MPERC", NULL))
+		{
 			xtra_speedo = true;
-		
+			PUSHSPEEDO(2, "Small");
+		}
+
 		if (W_CheckMultipleLumps("SC_SMSTC", NULL))
 			xtra_speedo_clr = true;
 
 		// now check for achii speedometer stuff
 		if (W_CheckMultipleLumps("SP_AMSTC", "K_TRNULL", "SP_AKMH", "SP_AMPH", "SP_AFRAC", "SP_APERC", NULL))
+		{
 			achi_speedo = true;
-		
+			PUSHSPEEDO(3, "Achii");
+		}
+
 		if (W_CheckMultipleLumps("SC_AMSTC", "K_TRNULL", "SC_AKMH", "SC_AMPH", "SC_AFRAC", "SC_APERC", NULL))
 			achi_speedo_clr = true;
 
@@ -1486,8 +1498,11 @@ void D_SRB2Main(void)
 		if (W_CheckMultipleLumps("K_KZSP1", "K_KZSP2", "K_KZSP3", "K_KZSP4", "K_KZSP5", \
 			"K_KZSP6", "K_KZSP7", "K_KZSP8", "K_KZSP9", "K_KZSP10", "K_KZSP11", "K_KZSP12", \
 			"K_KZSP13", "K_KZSP14", "K_KZSP15", "K_KZSP16", "K_KZSP17", "K_KZSP18", "K_KZSP19", \
-			"K_KZSP20", "K_KZSP21", "K_KZSP22", "K_KZSP23", "K_KZSP24", "K_KZSP25", NULL)) 
+			"K_KZSP20", "K_KZSP21", "K_KZSP22", "K_KZSP23", "K_KZSP24", "K_KZSP25", NULL))
+		{
 			kartzspeedo = true;
+			PUSHSPEEDO(4, "P-Meter");
+		}
 
 		// stat display for extended player setup
 		if (W_CheckMultipleLumps("K_STATNB", "K_STATN1", "K_STATN2", "K_STATN3", "K_STATN4", \
@@ -1497,7 +1512,7 @@ void D_SRB2Main(void)
 		// Nametag stuffs
 		if (W_CheckMultipleLumps("NTLINE", "NTLINEV", "NTSP", "NTWH", NULL)) 
 			nametaggfx = true;
-		
+
 		if (W_CheckMultipleLumps("K_DGAU","K_DCAU","K_DGSU","K_DCSU", NULL)) 
 			driftgaugegfx = true;
 	}
@@ -1509,11 +1524,17 @@ void D_SRB2Main(void)
 
 		// 80x11 speedometer crap
 		if (W_CheckMultipleLumps("SP_SM3TC", NULL))
+		{
 			xtra_speedo3 = true;
+			PUSHSPEEDO(5, "Extra");
+		}
 
 		if (W_CheckMultipleLumps("SC_SM3TC", NULL))
 			xtra_speedo_clr3 = true;
 	}
+
+#undef PUSHSPEEDO
+	memcpy(speedo_cons_t, speedo_cons_temp, sizeof(speedo_cons_t));
 
 	//
 	// search for maps

@@ -32,6 +32,9 @@ extern consvar_t cv_stat_xoffset;
 extern consvar_t cv_stat_yoffset;
 extern consvar_t cv_showstats;
 
+#define NUMSPEEDOSTUFF 6
+extern CV_PossibleValue_t speedo_cons_t[NUMSPEEDOSTUFF];
+
 boolean K_IsPlayerLosing(player_t *player);
 boolean K_IsPlayerWanted(player_t *player);
 void K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean solid);
