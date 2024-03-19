@@ -1451,7 +1451,7 @@ void D_SRB2Main(void)
 	// Possible value that changes depending on whether required files for speedometer are found or not
 	CV_PossibleValue_t speedo_cons_temp[NUMSPEEDOSTUFF] = {{1, "Default"}, {0, NULL}, {0, NULL}, {0, NULL}, {0, NULL}, {0, NULL}};
 	unsigned last_speedo_i = 0;
-#define PUSHSPEEDO(id, name) { ++last_speedo_i; speedo_cons_temp[last_speedo_i].value = id; speedo_cons_temp[last_speedo_i].strvalue = name; CONS_Printf("[speedostuff] Added %s!\n", name); }
+#define PUSHSPEEDO(id, name) { ++last_speedo_i; speedo_cons_temp[last_speedo_i].value = id; speedo_cons_temp[last_speedo_i].strvalue = name; }
 
 	if (found_extra_kart || found_extra2_kart) // found the funny, add it in!
 	{
