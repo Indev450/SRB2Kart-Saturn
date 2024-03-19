@@ -422,7 +422,7 @@ void *I_GetSfx(sfxinfo_t *sfx)
 			zErr = inflate(&stream, Z_FINISH);
 			if (zErr == Z_STREAM_END) {
 				// Run GME on new data
-				if (!gme_open_data(inflatedData, inflatedLen, &emu, 44100))
+				if (!gme_open_data(inflatedData, inflatedLen, &emu, SAMPLERATE))
 				{
 					short *mem;
 					UINT32 len;
@@ -456,7 +456,7 @@ void *I_GetSfx(sfxinfo_t *sfx)
 #endif
 	}
 	// Try to read it as a GME sound
-	else if (!gme_open_data(lump, sfx->length, &emu, 44100))
+	else if (!gme_open_data(lump, sfx->length, &emu, SAMPLERATE))
 	{
 		short *mem;
 		UINT32 len;
@@ -1109,9 +1109,10 @@ boolean I_LoadSong(char *data, size_t len)
 		if (zErr == Z_OK) // We're good to go
 		{
 			zErr = inflate(&stream, Z_FINISH);
-			if (zErr == Z_STREAM_END) {
+			if (zErr == Z_STREAM_END)
+			{
 				// Run GME on new data
-				if (!gme_open_data(inflatedData, inflatedLen, &gme, 44100))
+				if (!gme_open_data(inflatedData, inflatedLen, &gme, SAMPLERATE))
 				{
 					Z_Free(inflatedData); // GME supposedly makes a copy for itself, so we don't need this lying around
 					return true;
@@ -1130,7 +1131,7 @@ boolean I_LoadSong(char *data, size_t len)
 		return false;
 #endif
 	}
-	else if (!gme_open_data(data, len, &gme, 44100))
+	else if (!gme_open_data(data, len, &gme, SAMPLERATE))
 		return true;
 #endif
 

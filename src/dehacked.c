@@ -8628,7 +8628,7 @@ static int lib_dummysuper(lua_State *L)
 	return luaL_error(L, "Can't call super() outside of hardcode-replacing A_Action functions being called by state changes!"); // convoluted, I know. @_@;;
 }
 
-static inline int lib_getenum(lua_State *L)
+FUNCINLINE static ATTRINLINE int lib_getenum(lua_State *L)
 {
 	const int UV_MATHLIB = lua_upvalueindex(1);
 	const int GLIB_PROXY = lua_upvalueindex(2);

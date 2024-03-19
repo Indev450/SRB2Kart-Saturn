@@ -82,7 +82,6 @@ subsector_t *R_IsPointInSubsector(fixed_t x, fixed_t y);
 boolean R_DoCulling(line_t *cullheight, line_t *viewcullheight, fixed_t vz, fixed_t bottomh, fixed_t toph);
 
 // Performance stats
-
 extern precise_t ps_prevframetime;// time when previous frame was rendered
 extern ps_metric_t ps_rendercalltime;
 extern ps_metric_t ps_otherrendertime;
@@ -113,7 +112,7 @@ extern consvar_t cv_flipcam, cv_flipcam2, cv_flipcam3, cv_flipcam4;
 extern consvar_t cv_shadow, cv_shadowoffs;
 extern consvar_t cv_ffloorclip, cv_spriteclip;
 extern consvar_t cv_translucency;
-extern consvar_t /*cv_precipdensity,*/ cv_drawdist, /*cv_drawdist_nights,*/ cv_drawdist_precip, cv_lessprecip;
+extern consvar_t cv_drawdist, cv_drawdist_precip, cv_lessprecip;
 extern consvar_t cv_fov;
 extern consvar_t cv_skybox;
 extern consvar_t cv_tailspickup;
