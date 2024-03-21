@@ -2003,10 +2003,6 @@ static menuitem_t OP_SaturnMenu[] =
 	{IT_STRING | IT_CVAR, NULL, "Show Localskin Menus", 				&cv_showlocalskinmenus, 	85},
 	{IT_STRING | IT_SUBMENU, NULL, "Nametags...", 						&OP_NametagDef, 			90},
 	{IT_STRING | IT_SUBMENU, NULL, "Driftgauge...", 					&OP_DriftGaugeDef, 			95},
-	{IT_STRING | IT_SUBMENU, NULL, "Nametags...", 						&OP_NametagDef, 			90},
-	{IT_STRING | IT_SUBMENU, NULL, "Driftgauge...", 					&OP_DriftGaugeDef, 			95},
-	{IT_STRING | IT_CVAR, NULL, "Native keyboard layout", 				&cv_nativekeyboard, 		105},
-
 	{IT_STRING | IT_CVAR, NULL, "Uncapped HUD", 						&cv_uncappedhud, 		 	105},
 
 	{IT_STRING | IT_CVAR, NULL, "Less Midnight Channel Flicker", 		&cv_lessflicker, 		 	115},
