@@ -18,6 +18,8 @@
 #include "v_video.h"
 #include "hu_stuff.h"
 #include "r_draw.h"
+#include "r_main.h"
+#include "r_fps.h"
 #include "console.h"
 
 #include "i_video.h" // rendermode
@@ -1391,7 +1393,7 @@ void V_DrawPatchFill(patch_t *pat)
 
 void V_DrawVhsEffect(boolean rewind)
 {
-	static fixed_t upbary = 100, downbary = 150;
+	static fixed_t upbary = 100*FRACUNIT, downbary = 150*FRACUNIT;
 
 	UINT8 *buf = screens[0], *tmp = screens[4];
 	UINT16 y;
@@ -1411,19 +1413,19 @@ void V_DrawVhsEffect(boolean rewind)
 	if (rewind)
 		V_DrawVhsEffect(false); // experimentation
 
-	if (renderisnewtic)
-	{
-		upbary -= (vid.dupy * (rewind ? 3 : 1.8f));
-		downbary += (vid.dupy * (rewind ? 2 : 1));
-	}
+	fixed_t frac = R_UsingFrameInterpolation() ? renderdeltatics : FRACUNIT;
+	upbary -= frac * (vid.dupy * (rewind ? 3 : 1.8f));
+	downbary += frac * (vid.dupy * (rewind ? 2 : 1));
 
-	if (upbary < -barsize) upbary = vid.height;
-	if (downbary > vid.height) downbary = -barsize;
+	if (upbary < -barsize*FRACUNIT) upbary = vid.height<<FRACBITS;
+	if (downbary > vid.height<<FRACBITS) downbary = -barsize*FRACUNIT;
+
+	fixed_t uby = upbary>>FRACBITS, dby = downbary>>FRACBITS;
 
 #ifdef HWRENDER
 	if (rendermode == render_opengl)
 	{
-		HWR_RenderVhsEffect(upbary, downbary, updistort, downdistort, barsize);
+		HWR_RenderVhsEffect(uby, dby, updistort, downdistort, barsize);
 		return;
 	}
 #endif
@@ -1433,15 +1435,15 @@ void V_DrawVhsEffect(boolean rewind)
 		thismapstart = normalmapstart;
 		offs = 0;
 
-		if (y >= upbary && y < upbary+barsize)
+		if (y >= uby && y < uby+barsize)
 		{
 			thismapstart -= (2<<FF_TRANSSHIFT) - (5<<8);
-			offs += updistort * 2.0f * min(y-upbary, upbary+barsize-y) / barsize;
+			offs += updistort * 2.0f * min(y-uby, uby+barsize-y) / barsize;
 		}
-		if (y >= downbary && y < downbary+barsize)
+		if (y >= dby && y < dby+barsize)
 		{
 			thismapstart -= (2<<FF_TRANSSHIFT) - (5<<8);
-			offs -= downdistort * 2.0f * min(y-downbary, downbary+barsize-y) / barsize;
+			offs -= downdistort * 2.0f * min(y-dby, dby+barsize-y) / barsize;
 		}
 		offs += M_RandomKey(vid.dupx<<1);
 
