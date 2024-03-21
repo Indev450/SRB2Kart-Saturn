@@ -333,7 +333,7 @@ angle_t gld_FrustumAngle(angle_t tiltangle)
 
 	// ok, this is a gross hack that barely works...
 	// but at least it doesn't overestimate too much...
-	clipfov = atan(1 / projMatrix[0]) * 360 / M_PIl;
+	clipfov = atan(1 / projMatrix[0]) * 360 / M_PI;
 	floatangle = 2.0f + (45.0f + (tilt / 1.9f)) * clipfov / 90.0f;
 	if (floatangle >= 180.0)
 		return 0xffffffff;
