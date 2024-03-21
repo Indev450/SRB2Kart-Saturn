@@ -19,7 +19,6 @@
 
 #include "../qs22j.h"
 
-
 // The texture for the next polygon given to HWR_ProcessPolygon.
 // Set with HWR_SetCurrentTexture.
 GLMipmap_t *current_texture = NULL;

@@ -173,9 +173,6 @@ extern consvar_t cv_skipmapcheck;
 
 extern consvar_t cv_sleep;
 
-#define SKINSELECTSPIN_PAIN 25
-extern consvar_t cv_skinselectspin;
-
 extern consvar_t cv_nametag;
 extern consvar_t cv_nametagtrans;
 extern consvar_t cv_nametagfacerank;
@@ -190,6 +187,9 @@ extern consvar_t cv_nametaghop;
 extern consvar_t cv_nametagscore;
 extern consvar_t cv_shownametagfinish;
 extern consvar_t cv_shownametagspectator;
+
+#define SKINSELECTSPIN_PAIN 25
+extern consvar_t cv_skinselectspin;
 
 extern consvar_t cv_driftgauge;
 extern consvar_t cv_driftgaugeofs;

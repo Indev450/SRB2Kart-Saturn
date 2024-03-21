@@ -5222,7 +5222,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 		vis->gpatch = (GLPatch_t *)rotsprite;
 	else
 #endif
-			vis->gpatch = (GLPatch_t *)W_CachePatchNum(sprframe->lumppat[rot], PU_CACHE);
+		vis->gpatch = (GLPatch_t *)W_CachePatchNum(sprframe->lumppat[rot], PU_CACHE);
 
 	vis->mobj = thing;
 
@@ -6131,7 +6131,7 @@ void HWR_DoPostProcessor(player_t *player)
 		return;
 
 	// Capture the screen for intermission and screen waving
-	if(gamestate != GS_INTERMISSION)
+	if (gamestate != GS_INTERMISSION)
 		HWD.pfnMakeScreenTexture(HWD_SCREENTEXTURE_GENERIC1);
 
 	if (splitscreen) // Not supported in splitscreen - someone want to add support?
