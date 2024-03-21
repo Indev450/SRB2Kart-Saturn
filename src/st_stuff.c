@@ -740,10 +740,15 @@ static void ST_drawLevelTitle(void)
 	if (timeinmap > 105)
 	{
 		INT32 count = (113 - (INT32)(timeinmap));
+
+		// uh... "fill in the bits" of sub, or something... no idea what I came up with
+		// VERY janky, but doesn't require m_easing
+		INT32 frac = (FixedMul(R_GetHudUncap(), FixedDiv(dupcalc, BASEVIDWIDTH)) >> (count + 4))/13; // these two magic numbers seem to do the trick
+
 		sub = dupcalc;
 		while (count-- > 0)
 			sub >>= 1;
-		sub = -sub;
+		sub = -sub - frac;
 	}
 
 	{

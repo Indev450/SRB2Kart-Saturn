@@ -2007,6 +2007,8 @@ static menuitem_t OP_SaturnMenu[] =
 	{IT_STRING | IT_SUBMENU, NULL, "Driftgauge...", 					&OP_DriftGaugeDef, 			95},
 	{IT_STRING | IT_CVAR, NULL, "Native keyboard layout", 				&cv_nativekeyboard, 		105},
 
+	{IT_STRING | IT_CVAR, NULL, "Uncapped HUD", 						&cv_uncappedhud, 		 	105},
+
 	{IT_STRING | IT_CVAR, NULL, "Less Midnight Channel Flicker", 		&cv_lessflicker, 		 	115},
 
 	{IT_SUBMENU|IT_STRING,	NULL,	"Sprite Distortion...", 			&OP_PlayerDistortDef,	 	125},
@@ -2034,7 +2036,7 @@ static const char* OP_SaturnTooltips[] =
 	"Show Localskin Menus.",
 	"Nametag Options.",
 	"Driftgauge Options.",
-	"Use your native Keyboard Layout.",
+	"Uncaps the HUD framerate, making it appear smoother.",
 	"Disables the flicker effect on Midnight Channel.",
 	"Options for sprite distortion effects.",
 	"Move position of HUD elements.",
@@ -2060,7 +2062,7 @@ enum
 	sm_showlocalskin,
 	sm_nametagmen,
 	sm_driftgaugemen,
-	sm_nativkey,
+	sm_uncappedhud,
 	sm_pisschannel,
 	sm_distortionmenu,
 	sm_hudoffsets,

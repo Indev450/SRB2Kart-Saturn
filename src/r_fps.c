@@ -146,7 +146,7 @@ static void R_SetupFreelook(void)
 
 #undef AIMINGTODY
 
-void R_InterpolateView(fixed_t frac)
+void R_InterpolateView(fixed_t frac, boolean forceinvalid)
 {
 	viewvars_t* prevview = oldview;
 	UINT8 i;
@@ -165,7 +165,7 @@ void R_InterpolateView(fixed_t frac)
 		i = viewcontext - VIEWCONTEXT_PLAYER1;
 	}
 
-	if (oldview_invalid[i] != 0)
+	if (oldview_invalid[i] != 0 || forceinvalid)
 	{
 		// interpolate from newview to newview
 		prevview = newview;
