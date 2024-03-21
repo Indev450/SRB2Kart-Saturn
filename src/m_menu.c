@@ -1429,11 +1429,6 @@ static menuitem_t OP_ExpOptionsMenu[] =
 	
 	{IT_STRING | IT_CVAR, 	NULL, "FFloorclip", 					&cv_ffloorclip, 		 	 95},
 	{IT_STRING | IT_CVAR, 	NULL, "Spriteclip", 					&cv_spriteclip, 		 	105},
-	
-#if defined(HAVE_SDL)
-	{IT_STRING | IT_CVAR,	NULL,	"Scale Quality",				&cv_scalequality,			115},
-#endif	
-
 #ifdef HWRENDER	
 	{IT_STRING | IT_CVAR, 	NULL, "Screen Textures", 				&cv_grscreentextures, 		 95},
 
@@ -1458,7 +1453,6 @@ static const char* OP_ExpTooltips[] =
 	"Which version of R_PointToAngle should\nbe used for Sector Clipping?\n64 may fix rendering issues on larger maps\nat the cost of performance.",
 	"Hides 3DFloors which are not visible\npotentially resulting in a performance boost.",
 	"Hides Sprites which are not visible\npotentially resulting in a performance boost.",
-	"Scale Quality",
 #ifdef HWRENDER
 	"Should the game do Screen Textures? Provides a good boost to frames\nat the cost of some visual effects not working when disabled.",
 	"Change the depth of the Palette in Palette rendering mod\n 16 bits is like software looks ingame\nwhile 24 bits is how software looks in screenshots.",
@@ -1480,7 +1474,6 @@ enum
 	op_exp_angleshit,
 	op_exp_ffclip,
 	op_exp_sprclip,
-	op_exp_sclqal,
 #ifdef HWRENDER
 	op_exp_grscrtx,
 	op_exp_spltwal,
@@ -4449,7 +4442,6 @@ void M_Init(void)
 	{
 		OP_ExpOptionsMenu[op_exp_ffclip].status = IT_DISABLED;
 		OP_ExpOptionsMenu[op_exp_sprclip].status = IT_DISABLED;
-		OP_ExpOptionsMenu[op_exp_sclqal].status = IT_DISABLED;
 	}
 #endif
 
