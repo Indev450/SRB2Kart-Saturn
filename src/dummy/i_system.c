@@ -178,11 +178,5 @@ size_t I_GetRandomBytes(char *destination, size_t amount)
 {
 	return 0;
 }
-
-const char *I_GetSysName(void)
-{
-	return NULL;
-}
-
 #include "../sdl/dosstr.c"
 
