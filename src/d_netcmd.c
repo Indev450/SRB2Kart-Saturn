@@ -4932,7 +4932,18 @@ static void Command_Version_f(void)
 #endif
 
 	// OS
-	CONS_Printf("%s ", I_GetSysName());
+	// Would be nice to use SDL_GetPlatform for this
+#if defined (_WIN32) || defined (_WIN64)
+	CONS_Printf("Windows ");
+#elif defined(__linux__)
+	CONS_Printf("Linux ");
+#elif defined(MACOSX)
+	CONS_Printf("macOS ");
+#elif defined(UNIXCOMMON)
+	CONS_Printf("Unix (Common) ");
+#else
+	CONS_Printf("Other OS ");
+#endif
 
 	// Bitness
 	if (sizeof(void*) == 4)
