@@ -19,6 +19,7 @@
 #include "hu_stuff.h"
 #include "r_draw.h"
 #include "r_main.h"
+#include "r_fps.h"
 #include "console.h"
 
 #include "i_video.h" // rendermode
@@ -1412,7 +1413,7 @@ void V_DrawVhsEffect(boolean rewind)
 	if (rewind)
 		V_DrawVhsEffect(false); // experimentation
 
-	fixed_t frac = cv_uncappedhud.value ? FixedMul(renderdeltatics, cv_timescale.value) : (renderisnewtic ? FRACUNIT : 0);
+	fixed_t frac = R_UsingFrameInterpolation() ? renderdeltatics : FRACUNIT;
 	upbary -= frac * (vid.dupy * (rewind ? 3 : 1.8f));
 	downbary += frac * (vid.dupy * (rewind ? 2 : 1));
 
