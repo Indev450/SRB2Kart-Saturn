@@ -1166,13 +1166,12 @@ void F_StartWaitingPlayers(void)
 {
 	INT32 i;
 	INT32 randskin;
-	boolean waithires = skins[randskin].flags && SF_HIRES;
 	spriteframe_t *sprframe;
-
 	wipegamestate = GS_TITLESCREEN; // technically wiping from title screen
 	finalecount = 0;
 
 	randskin = M_RandomKey(numskins);
+	boolean waithires = skins[randskin].flags && SF_HIRES;
 
 	if (waitcolormap)
 		Z_Free(waitcolormap);
