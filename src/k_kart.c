@@ -9080,9 +9080,9 @@ static void K_drawNameTags(void)
 			continue;
 		if (!players[i].mo || P_MobjWasRemoved(players[i].mo) || players[i].spectator || !playeringame[i])
 			continue;
-		if (i == stplyrnum && !cv_showownnametag.value && !(leveltime < 130))
+		if (i == displayplayers[stplyrnum] && !cv_showownnametag.value && !(leveltime < 130))
 			continue;
-		if (i != stplyrnum && leveltime < starttime)
+		if (i != displayplayers[stplyrnum] && leveltime < starttime)
 			continue;
 		if (players[i].kartstuff[k_hyudorotimer]) // player is invisible
 			continue;
