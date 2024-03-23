@@ -2153,37 +2153,34 @@ static menuitem_t OP_HudOffsetMenu[] =
 
 static menuitem_t OP_SaturnCreditsMenu[] =
 {
-	{IT_HEADER, NULL, "Saturn Credits", 									NULL,       0},
-	
-	{IT_HEADER, NULL, "Thanks to all contributers <3", 											NULL,      15},
-	
-	{IT_STRING2+IT_SPACE, NULL, 	"alufolie91 aka Alug",      						NULL, 	   20},
+	{IT_HEADER, NULL, "Saturn Credits", 												NULL,       0},
+
+	{IT_HEADER, NULL, "Thanks to all contributers <3", 									NULL,      15},
+
+	{IT_STRING2+IT_SPACE, NULL, 	"Alug",      										NULL, 	   20},
 	{IT_STRING2+IT_SPACE, NULL, 	"Indev",        									NULL,      30},
 	{IT_STRING2+IT_SPACE, NULL, 	"Haya",       										NULL,      40},
 	{IT_STRING2+IT_SPACE, NULL, 	"Nepdisk", 		 									NULL, 	   50},
-	{IT_STRING2+IT_SPACE, NULL, 	"xyzzy",     										NULL, 	   60},
-	{IT_STRING2+IT_SPACE, NULL, 	"Chearii", 		 									NULL, 	   70},
-	
-	
-	{IT_STRING+IT_SPACE, NULL, "", 									NULL,       73},	// dummy text 
-	
-	{IT_STRING2+IT_SPACE, NULL, 	"Sunflower aka AnimeSonic", 		 				NULL, 	   80},
-	{IT_STRING2+IT_SPACE, NULL, 	"Yuz aka Yuzler", 		  							NULL, 	  90},
-	{IT_STRING2+IT_SPACE, NULL, 	"Democrab", 		  								NULL, 	   100},
-	{IT_STRING2+IT_SPACE, NULL, 	"EXpand aka Maver", 		 						NULL, 	  110},
-	{IT_STRING2+IT_SPACE, NULL, 	"Nexit", 		 						NULL, 	  120},
-	
-	{IT_HEADER, NULL, "Special Thanks <3", 									NULL,     130},
-	
-	
-	{IT_STRING2+IT_SPACE,	NULL,	"All of Sunflower's Garden",	      				NULL,     150},
-	{IT_STRING2+IT_SPACE, NULL, 	"Galactice",       									NULL,     160},
-	{IT_STRING2+IT_SPACE, NULL, 	"Himie and",       									NULL,     170},	
-	{IT_STRING2+IT_SPACE, NULL, 	"The Moe Mansion / Birdhouse Team",       			NULL,     180},
-	
+	{IT_STRING2+IT_SPACE, NULL, 	"GenericHeroGuy", 		 							NULL, 	   60},
+	{IT_STRING2+IT_SPACE, NULL, 	"xyzzy",     										NULL, 	   70},
+	{IT_STRING2+IT_SPACE, NULL, 	"Chearii", 		 									NULL, 	   80},
 
-	{IT_STRING+IT_SPACE, NULL, "", 									NULL,       190},	// dummy text II
-	{IT_STRING, NULL, "", 									NULL,       200},	// dummy text III
+	{IT_STRING+IT_SPACE, NULL, 		"", 												NULL,      83},	// dummy text 
+
+	{IT_STRING2+IT_SPACE, NULL, 	"Sunflower aka AnimeSonic", 		 				NULL, 	   90},
+	{IT_STRING2+IT_SPACE, NULL, 	"Yuz aka Yuzler", 		  							NULL, 	  100},
+	{IT_STRING2+IT_SPACE, NULL, 	"Democrab", 		  								NULL, 	  110},
+	{IT_STRING2+IT_SPACE, NULL, 	"EXpand aka Maver", 		 						NULL, 	  120},
+	{IT_STRING2+IT_SPACE, NULL, 	"Nexit", 		 									NULL, 	  130},
+
+	{IT_HEADER, 		  NULL, 	"Special Thanks <3", 								NULL,     140},
+
+	{IT_STRING2+IT_SPACE, NULL,		"All of Sunflower's Garden",	      				NULL,     160},
+	{IT_STRING2+IT_SPACE, NULL, 	"The Moe Mansion and Birdhouse Team",       		NULL,     170},
+	{IT_STRING2+IT_SPACE, NULL, 	"Galactice for Galaxy",       						NULL,     180},
+
+	{IT_STRING+IT_SPACE, NULL, "", 														NULL,     190},	// dummy text II
+	{IT_STRING, NULL, "", 																NULL,     200},	// dummy text III
 };
 
 static const char* OP_CreditTooltips[] =
@@ -2249,7 +2246,7 @@ static menuitem_t OP_ForkedBirdMenu[] =
 {
 	{IT_HEADER, NULL, "Local Skins", NULL, 0},
 	{IT_STRING | IT_CVAR | IT_CV_STRING, NULL, "Local Skin Name", &cv_fakelocalskin, 10},
-	{IT_STRING2 | IT_SPACE, NULL, "Set to None for no Local Skin", NULL, 20},
+	{IT_STRING2 | IT_SPACE, NULL, "SET TO NONE FOR NO LOCAL SKIN", NULL, 20},
 	{IT_STRING | IT_CALL, NULL, "Apply to All Players", M_LocalSkinChange, 140},
 	{IT_STRING | IT_CALL, NULL, "Apply to Displaying Player", M_LocalSkinChange, 150},
 	{IT_STRING | IT_CALL, NULL, "Apply to Yourself", M_LocalSkinChange, 160},
@@ -4866,7 +4863,7 @@ static void M_DrawGenericMenu(void)
 					y += STRINGHEIGHT;
 					break;
 			case IT_STRING2:
-				V_DrawString(((BASEVIDWIDTH - V_StringWidth(currentMenu->menuitems[i].text, 0))>>1), y, 0, currentMenu->menuitems[i].text);
+				V_DrawString(((BASEVIDWIDTH - V_StringWidth(currentMenu->menuitems[i].text, 0))>>1), y, lowercase, currentMenu->menuitems[i].text);
 				/* FALLTHRU */
 			case IT_DYLITLSPACE:
 				y += SMALLLINEHEIGHT;
