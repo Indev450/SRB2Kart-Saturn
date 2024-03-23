@@ -68,6 +68,15 @@ consvar_t cv_renderview = {"renderview", "On", 0, CV_OnOff, NULL, 0, NULL, NULL,
 consvar_t cv_vhseffect = {"vhspause", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_shittyscreen = {"televisionsignal", "Okay", CV_NOSHOWHELP, shittyscreen_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+static void Highreshudscale_OnChange(void);
+static CV_PossibleValue_t highreshudscale_cons_t[] = {{4*FRACUNIT/5, "MIN"}, {6*FRACUNIT/5, "MAX"}, {0, NULL}};
+consvar_t cv_highreshudscale = {"highreshudscale", "1", CV_SAVE|CV_FLOAT|CV_CALL|CV_NOINIT|CV_NOSHOWHELP, highreshudscale_cons_t, Highreshudscale_OnChange, 0, NULL, NULL, 0, 0, NULL};
+
+static void Highreshudscale_OnChange(void)
+{
+	SCR_Recalc();
+}
+
 static void SCR_ChangeFullscreen (void);
 
 consvar_t cv_fullscreen = {"fullscreen", "Yes", CV_SAVE|CV_CALL, CV_YesNo, SCR_ChangeFullscreen, 0, NULL, NULL, 0, 0, NULL};
@@ -178,6 +187,7 @@ void SCR_Startup(void)
 	vid.baseratio = FRACUNIT;
 
 	V_Init();
+	CV_RegisterVar(&cv_highreshudscale);
 	CV_RegisterVar(&cv_ticrate);
 	CV_RegisterVar(&cv_accuratefps);
 	CV_RegisterVar(&cv_menucaps);
@@ -227,6 +237,14 @@ void SCR_Recalc(void)
 	vid.dupx = vid.dupy = (vid.dupx < vid.dupy ? vid.dupx : vid.dupy);
 	vid.fdupx = FixedDiv(vid.width*FRACUNIT, BASEVIDWIDTH*FRACUNIT);
 	vid.fdupy = FixedDiv(vid.height*FRACUNIT, BASEVIDHEIGHT*FRACUNIT);
+
+	if ((vid.width > 720) && (vid.height > 1280)) // ehhhh well this thing has so many issues, so ill lock it to higher resolutions instead
+	{
+		vid.dupx = FixedDiv(vid.dupx, cv_highreshudscale.value);
+		vid.dupy = FixedDiv(vid.dupy, cv_highreshudscale.value);
+		vid.fdupx = FixedDiv(vid.fdupx, cv_highreshudscale.value);
+		vid.fdupy = FixedDiv(vid.fdupy, cv_highreshudscale.value);
+	}
 
 #ifdef HWRENDER
 	//if (rendermode != render_opengl && rendermode != render_none) // This was just placing it incorrectly at non aspect correct resolutions in opengl
