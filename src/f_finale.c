@@ -64,6 +64,7 @@ static patch_t *ttkflash; // flash screen
 
 static patch_t *driver[2]; // Driving character on the waiting screen
 static UINT8 *waitcolormap; // colormap for the spinning character
+static INT32 waitscale = 1<<FRACBITS; // scale for the character on waiting screen; very hacky crap
 
 static void F_SkyScroll(INT32 scrollspeed);
 
@@ -1166,16 +1167,19 @@ void F_StartWaitingPlayers(void)
 	INT32 i;
 	INT32 randskin;
 	spriteframe_t *sprframe;
-
 	wipegamestate = GS_TITLESCREEN; // technically wiping from title screen
 	finalecount = 0;
 
 	randskin = M_RandomKey(numskins);
+	boolean waithires = skins[randskin].flags && SF_HIRES;
 
 	if (waitcolormap)
 		Z_Free(waitcolormap);
 
 	waitcolormap = R_GetTranslationColormap(randskin, skins[randskin].prefcolor, 0);
+
+	if (waithires)
+		waitscale = waitscale * FIXED_TO_FLOAT(skins[randskin].highresscale); // need to set scale here cause im lazy
 
 	for (i = 0; i < 2; i++)
 	{
@@ -1205,7 +1209,7 @@ void F_WaitingPlayersDrawer(void)
 	V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 31);
 	V_DrawCreditString((160 - (V_CreditStringWidth(waittext1)>>1))<<FRACBITS, 48<<FRACBITS, 0, waittext1);
 	V_DrawCreditString((160 - (V_CreditStringWidth(waittext2)>>1))<<FRACBITS, 64<<FRACBITS, 0, waittext2);
-	V_DrawFixedPatch((160<<FRACBITS) - driver[frame]->width / 2, 150<<FRACBITS, 1<<FRACBITS, flags, driver[frame], waitcolormap);
+	V_DrawFixedPatch((160<<FRACBITS) - driver[frame]->width / 2, 150<<FRACBITS, waitscale, flags, driver[frame], waitcolormap); // "1<<FRACBITS"
 }
 
 // ==========

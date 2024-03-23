@@ -896,7 +896,12 @@ static patch_t *R_CreateHardwarePatch(patch_t *patch)
 void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle, INT32 xpivot, INT32 ypivot, boolean flip)
 {
 	UINT32 i;
-	patch_t *rotated, *hwpatch;
+	patch_t *rotated;
+
+#ifdef HWRENDER
+	patch_t *hwpatch;
+#endif
+
 	UINT16 *rawdst, *rawconv;
 	size_t size;
 	INT32 bflip = (flip != 0x00);
