@@ -1434,7 +1434,9 @@ static void P_LoadRawSideDefs2(void *data)
 			case 606: //SoM: 4/4/2000: Just colormap transfer
 				// SoM: R_CreateColormap will only create a colormap in software mode...
 				// Perhaps we should just call it instead of doing the calculations here.
-				if (rendermode == render_soft || rendermode == render_none)
+#ifdef HWRENDER
+				if (rendermode != render_opengl)
+#endif
 				{
 					if (msd->toptexture[0] == '#' || msd->bottomtexture[0] == '#')
 					{
