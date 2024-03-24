@@ -124,6 +124,9 @@ static patch_t *songcreditbg;
 // -------
 static void HU_DrawRankings(void);
 
+
+consvar_t cv_showspecstuff = {"showspecstuff", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 //======================================================================
 //                 KEYBOARD LAYOUTS FOR ENTERING TEXT
 //======================================================================
@@ -2519,6 +2522,7 @@ static inline void HU_DrawSpectatorTicker(void)
 	length += dupadjust;
 
 	for (i = 0; i < MAXPLAYERS; i++)
+	{
 		if (playeringame[i] && players[i].spectator)
 		{
 			char *pos;
@@ -2560,10 +2564,38 @@ static inline void HU_DrawSpectatorTicker(void)
 				V_DrawString(templength - duptweak, height, V_TRANSLUCENT|V_ALLOWLOWERCASE, current);
 			}
 
+			if (cv_showspecstuff.value)
+			{
+				if (players[i].mo)
+				{
+					player_t *p;
+					p = &players[i];
+
+					if (players[i].mo->color)
+					{
+						const UINT8 *colormap;
+						if (players[i].mo->colorized)
+							colormap = R_GetTranslationColormap(TC_RAINBOW, players[i].mo->color, GTC_CACHE);
+						else
+							colormap = R_GetTranslationColormap(players[i].skin, players[i].mo->color, GTC_CACHE);
+
+						if (cv_highresportrait.value)
+							V_DrawSmallMappedPatch((templength - duptweak), height+10, V_TRANSLUCENT, R_GetSkinFaceWant(p), colormap);
+						else	
+							V_DrawMappedPatch((templength - duptweak), height+10, V_TRANSLUCENT, R_GetSkinFaceRank(p), colormap);
+					}
+				}
+
+				if (netgame && i != serverplayer)
+						HU_drawPing((templength - duptweak)+8, height-20, playerpingtable[i], V_TRANSLUCENT);
+			}
+
 			if ((length += len) >= dupadjust+8)
 				break;
 		}
+	}
 }
+
 
 //
 // HU_DrawRankings
