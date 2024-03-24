@@ -2431,7 +2431,7 @@ static void P_MovePlayer(player_t *player)
 	else if (!S_SoundPlaying(player->mo, sfx_drift) && onground && player->kartstuff[k_drift] != 0)
 		S_StartSound(player->mo, sfx_drift);
 	// Ok, we'll stop now.
-	else if (player->kartstuff[k_drift] == 0)
+	else if (player->kartstuff[k_drift] == 0 || !onground)
 		S_StopSoundByID(player->mo, sfx_drift);
 
 	K_MoveKartPlayer(player, onground);
