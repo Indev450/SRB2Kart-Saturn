@@ -953,7 +953,6 @@ void S_ClearSfx(void)
 
 static void S_StopChannel(INT32 cnum)
 {
-	INT32 i;
 	channel_t *c = &channels[cnum];
 
 	if (c->sfxinfo)
@@ -961,12 +960,6 @@ static void S_StopChannel(INT32 cnum)
 		// stop the sound playing
 		if (I_SoundIsPlaying(c->handle))
 			I_StopSound(c->handle);
-
-		// check to see
-		//  if other channels are playing the sound
-		for (i = 0; i < numofchannels; i++)
-			if (cnum != i && c->sfxinfo == channels[i].sfxinfo)
-				break;
 
 		// degrade usefulness of sound data
 		c->sfxinfo->usefulness--;
