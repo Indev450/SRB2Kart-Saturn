@@ -165,7 +165,8 @@ static size_t CopyString(huddrawlist_h list, const char* str)
 	if (list->strbuf_capacity <= list->strbuf_len + lenstr + 1)
 	{
 		if (list->strbuf_capacity == 0) list->strbuf_capacity = 256;
-		else list->strbuf_capacity *= 2;
+		while (list->strbuf_capacity <= list->strbuf_len + lenstr + 1)
+			list->strbuf_capacity *= 2;
 		list->strbuf = (char*) Z_Realloc(list->strbuf, sizeof(char) * list->strbuf_capacity, PU_STATIC, NULL);
 	}
 
