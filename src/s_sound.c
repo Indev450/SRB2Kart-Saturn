@@ -970,9 +970,10 @@ static void S_StopChannel(INT32 cnum)
 
 		// degrade usefulness of sound data
 		c->sfxinfo->usefulness--;
-
 		c->sfxinfo = 0;
 	}
+
+	c->origin = NULL;
 }
 
 //
