@@ -1298,9 +1298,9 @@ void CURLPrepareFile(const char* url, int dfilenum)
 
 		curl_multi_perform(multi_handle, &curl_runninghandles);
 		curl_starttime = time(NULL);
-		
+
 		curl_running = true;
-		
+
 		I_spawn_thread("http-download", (I_thread_fn)CURLGetFile, NULL);
 	}
 }
@@ -1384,7 +1384,6 @@ void CURLGetFile(void)
 						curl_curfile->status = FS_FOUND;
 					}
 				}
-
 
 				Z_Free(filename);
 				curl_curfile->file = NULL;

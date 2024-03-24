@@ -2248,7 +2248,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 					if (rover->flags & FF_TRANSLUCENT && rover->alpha < 256)
 					{
 						blendmode = PF_Translucent;
-						Surf.PolyColor.s.alpha = (UINT8)rover->alpha-1 > 255 ? 255 : rover->alpha-1;
+						Surf.PolyColor.s.alpha = max(0, min(rover->alpha, 255));
 					}
 
 					if (gr_frontsector->numlights)
@@ -2607,7 +2607,7 @@ static void HWR_AddLine(seg_t *line)
 	}
 
 	 // PrBoom: Back side, i.e. backface culling - read: endAngle >= startAngle!
-	if (angle2 - angle1 < ANGLE_180)
+	if (angle2 - angle1 < ANGLE_180 || !gr_curline->linedef)
 		return;
 
 	// PrBoom: use REAL clipping math YAYYYYYYY!!!
