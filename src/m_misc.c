@@ -51,8 +51,6 @@
 #include "hardware/hw_main.h"
 #endif
 
-#include "types.h" //for local_memcpy
-
 #ifdef HAVE_SDL
 #include "sdl/hwsym_sdl.h"
 #ifdef __linux__
