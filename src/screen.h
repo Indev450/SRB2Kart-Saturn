@@ -34,19 +34,13 @@
 #define ST_HEIGHT 32
 #define ST_WIDTH 320
 
-// used now as a maximum video mode size for extra vesa modes.
+// NEVER CHANGE THIS! This is the original resolution of the graphics.
+#define BASEVIDWIDTH 320
+#define BASEVIDHEIGHT 200
 
-// we try to re-allocate a minimum of buffers for stability of the memory,
-// so all the small-enough tables based on screen size, are allocated once
-// and for all at the maximum size.
-#define MAXVIDWIDTH 2560 // don't set this too high because actually
-#define MAXVIDHEIGHT 1440 // lots of tables are allocated with the MAX size.
-#define BASEVIDWIDTH 320 // NEVER CHANGE THIS! This is the original
-#define BASEVIDHEIGHT 200 // resolution of the graphics.
-
-// max res for png capture; seperated it so both MAXVID values can be lower for software performance reasons; OpenGL does not care about those anyways
-#define MAXPNGWIDTH 3840
-#define MAXPNGHEIGHT 2160
+// Max screen size
+#define MAXVIDWIDTH 3840
+#define MAXVIDHEIGHT 2160
 
 // global video state
 typedef struct viddef_s

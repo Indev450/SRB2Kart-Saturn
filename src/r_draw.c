@@ -40,31 +40,6 @@
 */
 INT32 viewwidth, scaledviewwidth, viewheight, viewwindowx, viewwindowy;
 
-/**	\brief pointer to the start of each line of the screen,
-*/
-UINT8 *ylookup[MAXVIDHEIGHT*4];
-
-/**	\brief pointer to the start of each line of the screen, for view1 (splitscreen)
-*/
-UINT8 *ylookup1[MAXVIDHEIGHT*4];
-
-/**	\brief pointer to the start of each line of the screen, for view2 (splitscreen)
-*/
-UINT8 *ylookup2[MAXVIDHEIGHT*4];
-
-/**	\brief pointer to the start of each line of the screen, for view3 (splitscreen)
-*/
-UINT8 *ylookup3[MAXVIDHEIGHT*4];
-
-/**	\brief pointer to the start of each line of the screen, for view4 (splitscreen)
-*/
-UINT8 *ylookup4[MAXVIDHEIGHT*4];
-
-/**	\brief  x byte offset for columns inside the viewwindow,
-	so the first column starts at (SCRWIDTH - VIEWWIDTH)/2
-*/
-INT32 columnofs[MAXVIDWIDTH*4];
-
 UINT8 *topleft;
 
 // =========================================================================
@@ -75,8 +50,6 @@ lighttable_t *dc_colormap;
 INT32 dc_x = 0, dc_yl = 0, dc_yh = 0;
 
 fixed_t dc_iscale, dc_texturemid;
-UINT8 dc_hires; // under MSVC boolean is a byte, while on other systems, it a bit,
-               // soo lets make it a byte on all system for the ASM code
 UINT8 *dc_source;
 
 // -----------------------
@@ -122,6 +95,9 @@ float focallengthf, zeroheight;
 */
 
 UINT32 nflatxshift, nflatyshift, nflatshiftup, nflatmask;
+
+// For, uh, tilted lighting, duh.
+static INT32 *tiltlighting;
 
 // ==========================================================================
 //                        OLD DOOM FUZZY EFFECT
@@ -367,16 +343,6 @@ UINT8 R_GetColorByName(const char *name)
 }
 */
 
-// ==========================================================================
-//               COMMON DRAWER FOR 8 AND 16 BIT COLOR MODES
-// ==========================================================================
-
-// in a perfect world, all routines would be compatible for either mode,
-// and optimised enough
-//
-// in reality, the few routines that can work for either mode, are
-// put here
-
 /**	\brief	The R_InitViewBuffer function
 
 	Creates lookup tables for getting the framebuffer address
@@ -390,9 +356,30 @@ UINT8 R_GetColorByName(const char *name)
 
 */
 
+static void R_AllocViewMemory(void)
+{
+	negonearray = Z_Realloc(negonearray, sizeof(*negonearray) * viewwidth, PU_STATIC, NULL);
+	screenheightarray = Z_Realloc(screenheightarray, sizeof(*screenheightarray) * viewwidth, PU_STATIC, NULL);
+
+	floorclip = Z_Realloc(floorclip, sizeof(*floorclip) * viewwidth, PU_STATIC, NULL);
+	ceilingclip = Z_Realloc(ceilingclip, sizeof(*ceilingclip) * viewwidth, PU_STATIC, NULL);
+
+	frontscale = Z_Realloc(frontscale, sizeof(*frontscale) * viewwidth, PU_STATIC, NULL);
+
+	xtoviewangle = Z_Realloc(xtoviewangle, sizeof(*xtoviewangle) * (viewwidth + 1), PU_STATIC, NULL);
+	
+	tiltlighting = Z_Realloc(tiltlighting, sizeof(*tiltlighting) * viewwidth, PU_STATIC, NULL);
+
+	R_AllocSegMemory();
+	R_AllocClipSegMemory();
+	R_AllocPlaneMemory();
+	//R_AllocFloorSpriteTables();
+	R_AllocVisSpriteMemory();
+}
+
 void R_InitViewBuffer(INT32 width, INT32 height)
 {
-	INT32 i, bytesperpixel = vid.bpp;
+	INT32 bytesperpixel = vid.bpp;
 
 	if (width > MAXVIDWIDTH)
 		width = MAXVIDWIDTH;
@@ -401,24 +388,10 @@ void R_InitViewBuffer(INT32 width, INT32 height)
 	if (bytesperpixel < 1 || bytesperpixel > 4)
 		I_Error("R_InitViewBuffer: wrong bytesperpixel value %d\n", bytesperpixel);
 
+	R_AllocViewMemory();
+
 	viewwindowx = 0;
 	viewwindowy = 0;
-
-	// Column offset for those columns of the view window, but relative to the entire screen
-	for (i = 0; i < width; i++)
-		columnofs[i] = (viewwindowx + i) * bytesperpixel;
-
-	// Precalculate all row offsets.
-	for (i = 0; i < height; i++)
-	{
-		ylookup[i] = ylookup1[i] = screens[0] + i*vid.width*bytesperpixel;
-		if (splitscreen == 1)
-			ylookup2[i] = screens[0] + (i+viewheight)*vid.width*bytesperpixel;
-		else
-			ylookup2[i] = screens[0] + i*vid.width*bytesperpixel + (viewwidth*bytesperpixel);
-		ylookup3[i] = screens[0] + (i+viewheight)*vid.width*bytesperpixel;
-		ylookup4[i] = screens[0] + (i+viewheight)*vid.width*bytesperpixel + (viewwidth*bytesperpixel);
-	}
 }
 
 /**	\brief viewborder patches lump numbers
