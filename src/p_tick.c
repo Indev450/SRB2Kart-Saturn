@@ -221,23 +221,27 @@ static thinker_t *currentthinker;
 // remove it, and set currentthinker to one node preceeding it, so
 // that the next step in P_RunThinkers() will get its successor.
 //
-void P_RemoveThinkerDelayed(void *pthinker)
+void P_RemoveThinkerDelayed(thinker_t *thinker)
 {
-	thinker_t *thinker = pthinker;
-	if (!thinker->references)
-	{
-		{
-			/* Remove from main thinker list */
-			thinker_t *next = thinker->next;
-			/* Note that currentthinker is guaranteed to point to us,
-			 * and since we're freeing our memory, we had better change that. So
-			 * point it to thinker->prev, so the iterator will correctly move on to
-			 * thinker->prev->next = thinker->next */
-			(next->prev = currentthinker = thinker->prev)->next = next;
-		}
-		R_DestroyLevelInterpolators(thinker);
-		Z_Free(thinker);
-	}
+	thinker_t *next;
+#ifdef PARANOIA
+	if (thinker->next)
+		thinker->next = NULL;
+	else if (thinker->references) // Usually gets cleared up in one frame; what's going on here, then?
+		CONS_Printf("Number of potentially faulty references: %d\n", thinker->references);
+#endif
+	if (thinker->references)
+		return;
+
+	/* Remove from main thinker list */
+	next = thinker->next;
+	/* Note that currentthinker is guaranteed to point to us,
+	* and since we're freeing our memory, we had better change that. So
+	* point it to thinker->prev, so the iterator will correctly move on to
+	* thinker->prev->next = thinker->next */
+	(next->prev = currentthinker = thinker->prev)->next = next;
+	R_DestroyLevelInterpolators(thinker);
+	Z_Free(thinker);
 }
 
 //
@@ -255,7 +259,7 @@ void P_RemoveThinkerDelayed(void *pthinker)
 void P_RemoveThinker(thinker_t *thinker)
 {
 	LUA_InvalidateUserdata(thinker);
-	thinker->function.acp1 = P_RemoveThinkerDelayed;
+	thinker->function.acp1 = (actionf_p1)P_RemoveThinkerDelayed;
 }
 
 /*
@@ -305,7 +309,9 @@ static inline void P_RunThinkers(void)
 {
 	for (currentthinker = thinkercap.next; currentthinker != &thinkercap; currentthinker = currentthinker->next)
 	{
-		if (currentthinker->function.acp1)
+#ifdef PARANOIA
+			I_Assert(currentthinker->function.acp1 != NULL)
+#endif
 			currentthinker->function.acp1(currentthinker);
 	}
 }

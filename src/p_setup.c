@@ -2394,18 +2394,13 @@ static void P_LevelInitStuff(void)
 void P_LoadThingsOnly(void)
 {
 	// Search through all the thinkers.
-	mobj_t *mo;
 	thinker_t *think;
 
 	for (think = thinkercap.next; think != &thinkercap; think = think->next)
 	{
 		if (think->function.acp1 != (actionf_p1)P_MobjThinker)
-			continue; // not a mobj thinker
-
-		mo = (mobj_t *)think;
-
-		if (mo)
-			P_RemoveMobj(mo);
+			continue;
+		P_RemoveMobj((mobj_t *)think);
 	}
 
 	P_LevelInitStuff();
