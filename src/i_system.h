@@ -42,6 +42,10 @@ extern UINT8 keyboard_started;
 */
 size_t I_GetFreeMem(size_t *total);
 
+/**	\brief	Fills a buffer with random data, returns amount of data obtained.
+  */
+size_t I_GetRandomBytes(char *destination, size_t count);
+
 /**	\brief	Returns precise time value for performance measurement. The precise
             time should be a monotonically increasing counter, and will wrap.
 			precise_t is internally represented as an unsigned integer and
