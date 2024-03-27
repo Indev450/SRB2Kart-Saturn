@@ -42,6 +42,7 @@
 #include "../i_system.h"
 #include "hwsym_sdl.h"
 #include "../m_argv.h"
+#include "../i_video.h"
 
 #ifdef DEBUG_TO_FILE
 #include <stdarg.h>
@@ -149,22 +150,22 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 					"- GPU vendor has dropped OpenGL support on your GPU and OS. (Old GPU?)\n"
 					"- GPU drivers are missing or broken. You may need to update your drivers.");
 		}
+		
+		if (isExtAvailable("GL_EXT_texture_filter_anisotropic", gl_extensions))
+			pglGetIntegerv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maximumAnisotropy);
+		else
+			maximumAnisotropy = 1;
+
+		SetupGLInfo();
+
+		SetupGLFunc4();
+
+		granisotropicmode_cons_t[1].value = maximumAnisotropy;
 	}
 	first_init = true;
 
-	if (isExtAvailable("GL_EXT_texture_filter_anisotropic", gl_extensions))
-		pglGetIntegerv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maximumAnisotropy);
-	else
-		maximumAnisotropy = 1;
-	
-	SetupGLInfo();
-
-	SetupGLFunc4();
-
-	granisotropicmode_cons_t[1].value = maximumAnisotropy;
-	
 	SDL_GL_SetSwapInterval(cv_vidwait.value ? 1 : 0);
-	
+
 	// The screen textures need to be flushed if the width or height change so that they be remade for the correct size
 	if (screen_width != w || screen_height != h)
 	{
@@ -182,7 +183,7 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 	RenderToFramebuffer = FrameBufferEnabled;
 	GLFramebuffer_Disable();
 
-	if (RenderToFramebuffer)
+	if (RenderToFramebuffer && downsample)
 		GLFramebuffer_Enable();
 
 	HWR_Startup();
@@ -216,7 +217,7 @@ void OglSdlFinishUpdate(boolean waitvbl)
 	
 	HWR_DrawScreenFinalTexture(sdlw, sdlh);
 	
-	if (RenderToFramebuffer)
+	if (RenderToFramebuffer && downsample)
 		GLFramebuffer_Enable();
 
 	SDL_GL_SwapWindow(window);

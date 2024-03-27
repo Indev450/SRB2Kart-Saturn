@@ -159,12 +159,23 @@ static       SDL_bool    exposevideo = SDL_FALSE;
 static       SDL_bool    usesdl2soft = SDL_FALSE;
 static       SDL_bool    borderlesswindow = SDL_FALSE;
 
+static boolean displayinit = false;
+static int currentDisplayIndex = -1;
+static int previousDisplayIndex = -1;
+static int numDisplays = -1;
+
 // SDL2 vars
 SDL_Window   *window;
 SDL_Renderer *renderer;
 static SDL_Texture  *texture;
 static SDL_bool      havefocus = SDL_TRUE;
 static const char *fallback_resolution_name = "Fallback";
+
+static void ScaleQuality_OnChange(void)
+{
+	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, cv_scalequality.string);
+	COM_ImmedExecute(va("vid_mode %d", vid.modenum)); // Hack to make it apply without restarting
+}
 
 // windowed video modes from which to choose from.
 static INT32 windowedModes[MAXWINMODES][2] =
@@ -203,7 +214,8 @@ static SDL_bool Impl_CreateWindow(SDL_bool fullscreen);
 //static void Impl_SetWindowName(const char *title);
 static void Impl_SetWindowIcon(void);
 
-#ifdef HWRENDER
+boolean downsample = false;
+
 void RefreshSDLSurface(void)
 {
 	OglSdlSurface(vid.width, vid.height);
@@ -769,11 +781,23 @@ static INT32 SDLJoyAxis(const Sint16 axis, evtype_t which)
 	return raxis;
 }
 
+static void SDL_CheckDisplays(void)
+{
+	if (!displayinit)
+	{
+		numDisplays = SDL_GetNumVideoDisplays();
+		displayinit = true;
+	}
+
+	currentDisplayIndex = SDL_GetWindowDisplayIndex(window);
+}
+
 static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 {
 	static SDL_bool firsttimeonmouse = SDL_TRUE;
 	static SDL_bool mousefocus = SDL_TRUE;
 	static SDL_bool kbfocus = SDL_TRUE;
+	static SDL_bool windowmoved = SDL_FALSE;
 
 	switch (evt.event)
 	{
@@ -793,6 +817,9 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 			break;
 		case SDL_WINDOWEVENT_MAXIMIZED:
 			break;
+		case SDL_WINDOWEVENT_MOVED:
+			windowmoved = SDL_TRUE;
+            break;
 	}
 
 	if (mousefocus && kbfocus)
@@ -832,6 +859,43 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 		}
 	}
 
+	if (windowmoved)
+	{
+		SDL_CheckDisplays();
+		if (numDisplays > 1)
+		{
+			currentDisplayIndex = SDL_GetWindowDisplayIndex(window);
+			if (currentDisplayIndex != previousDisplayIndex)
+			{
+				for (int i = 0; i < numDisplays; ++i)
+				{
+					if (currentDisplayIndex == i)
+					{
+						SDL_DisplayMode curmode;
+						if (SDL_GetCurrentDisplayMode(i, &curmode) == 0)
+						{
+							if (cv_grframebuffer.value && ((vid.width > curmode.w) || (vid.height > curmode.h))) //framebuffer downsampler thinge
+							{
+								downsample = true;
+								RefreshSDLSurface();
+							}
+							else
+								downsample = false;
+
+							if (cv_fullscreen.value == 2) //exclusive
+								SDLSetMode(curmode.w, curmode.h, true);
+							else if (cv_fullscreen.value == 1) //borderless sdl thing
+								SDLSetMode(vid.width, vid.height, true);
+							else //windowed mode
+								SDLSetMode(vid.width, vid.height, false);
+						}
+						break; // found our current display break outta here
+					}
+				}
+				previousDisplayIndex = currentDisplayIndex;
+			}
+		}
+	}
 }
 
 static void Impl_HandleKeyboardEvent(SDL_KeyboardEvent evt, Uint32 type)
@@ -1908,6 +1972,25 @@ INT32 VID_SetMode(INT32 modeNum)
 	}
 	//Impl_SetWindowName("SRB2Kart "VERSIONSTRING);
 
+	for (int i = 0; i < numDisplays; ++i)
+	{
+		if (currentDisplayIndex == i)
+		{
+			SDL_DisplayMode curmode;
+			if (SDL_GetCurrentDisplayMode(i, &curmode) == 0)
+			{
+				if (cv_grframebuffer.value && ((vid.width > curmode.w) || (vid.height > curmode.h))) //framebuffer downsampler thinge
+				{
+					downsample = true;
+					RefreshSDLSurface();
+				}
+				else
+					downsample = false;
+			}
+			break; // found our current display break outta here
+		}
+	}
+
 	SDLSetMode(vid.width, vid.height, USE_FULLSCREEN);
 	Impl_VideoSetupBuffer();
 
@@ -2317,6 +2400,9 @@ void I_StartupGraphics(void)
 
 	// Fury: we do window initialization after GL setup to allow
 	// SDL_GL_LoadLibrary to work well on Windows
+
+	//check for display things
+	SDL_CheckDisplays();
 
 	// Create window
 	//Impl_CreateWindow(USE_FULLSCREEN);
