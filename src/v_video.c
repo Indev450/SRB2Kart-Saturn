@@ -3202,19 +3202,19 @@ Unoptimized version
 
 UINT8 colorlookup[CLUTSIZE][CLUTSIZE][CLUTSIZE];
 
-void InitColorLUT(RGBA_t *palette)
+void InitColorLUT(void)
 {
 	UINT8 r, g, b;
 	static boolean clutinit = false;
 	static RGBA_t *lastpalette = NULL;
-	if ((!clutinit) || (lastpalette != palette))
+	if ((!clutinit) || (lastpalette != pLocalPalette))
 	{
 		for (r = 0; r < CLUTSIZE; r++)
 			for (g = 0; g < CLUTSIZE; g++)
 				for (b = 0; b < CLUTSIZE; b++)
-					colorlookup[r][g][b] = NearestPaletteColor(r << SHIFTCOLORBITS, g << SHIFTCOLORBITS, b << SHIFTCOLORBITS, palette);
+					colorlookup[r][g][b] = NearestColor(r << SHIFTCOLORBITS, g << SHIFTCOLORBITS, b << SHIFTCOLORBITS);
 		clutinit = true;
-		lastpalette = palette;
+		lastpalette = pLocalPalette;
 	}
 }
 

@@ -1716,13 +1716,13 @@ static void readframe(MYFILE *f, INT32 num)
 			{
 				size_t z;
 				boolean found = false;
-				size_t actionlen = strlen(word2) + 1;
-				char *actiontocompare = calloc(actionlen, 1);
+				char actiontocompare[32];
 
-				strcpy(actiontocompare, word2);
+				memset(actiontocompare, 0x00, sizeof(actiontocompare));
+				strlcpy(actiontocompare, word2, sizeof (actiontocompare));
 				strupr(actiontocompare);
 
-				for (z = 0; z < actionlen; z++)
+				for (z = 0; z < 32; z++)
 				{
 					if (actiontocompare[z] == '\n' || actiontocompare[z] == '\r')
 					{
@@ -1758,8 +1758,6 @@ static void readframe(MYFILE *f, INT32 num)
 
 				if (!found)
 					deh_warning("Unknown action %s", actiontocompare);
-				
-				free(actiontocompare);
 			}
 			else
 				deh_warning("Frame %d: unknown word '%s'", num, word1);

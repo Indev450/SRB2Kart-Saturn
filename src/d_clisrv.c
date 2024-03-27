@@ -1933,6 +1933,7 @@ static void CL_LoadReceivedSavegame(void)
 	}
 	else
 	{
+		CONS_Alert(CONS_ERROR, M_GetText("Can't load the level!\n"));
 		Z_Free(savebuffer);
 		save_p = NULL;
 		if (unlink(tmpsave) == -1)
@@ -3944,7 +3945,7 @@ static void Command_list_http_logins (void)
 }
 #endif/*HAVE_CURL*/
 
-static CV_PossibleValue_t netticbuffer_cons_t[] = {{0, "MIN"}, {1, "1"}, {2, "2"}, {3, "MAX"}, {0, NULL}};
+static CV_PossibleValue_t netticbuffer_cons_t[] = {{0, "MIN"}, {3, "MAX"}, {0, NULL}};
 consvar_t cv_netticbuffer = {"netticbuffer", "1", CV_SAVE, netticbuffer_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static void Joinable_OnChange(void);

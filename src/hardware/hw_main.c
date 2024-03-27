@@ -2481,8 +2481,7 @@ static boolean CheckClip(sector_t * afrontsector, sector_t * abacksector)
 	}
 
 	// using this check with portals causes weird culling issues on ante-station
-	//if (!portalclipline && (afrontsector == viewsector || abacksector == viewsector))
-	if (afrontsector == viewsector || abacksector == viewsector)
+	if (!portalclipline && (afrontsector == viewsector || abacksector == viewsector))
 	{
 		fixed_t viewf1, viewf2, viewc1, viewc2;
 		if (afrontsector == viewsector)
@@ -2516,9 +2515,9 @@ static boolean CheckClip(sector_t * afrontsector, sector_t * abacksector)
 	if (backc1 <= frontf1 && backc2 <= frontf2)
 	{
 		checkforemptylines = false;
-		//if (portalclipline)// during portal rendering view position may cause undesired culling and the above code has some wrong side effects
-			//return false;
-		//else
+		if (portalclipline)// during portal rendering view position may cause undesired culling and the above code has some wrong side effects
+			return false;
+		else
 			return true;
 	}
 
@@ -2736,9 +2735,9 @@ static boolean HWR_CheckBBox(const fixed_t *bspcoord)
 	if (viewy >= bspcoord[BOXTOP])
 		boxpos |= 0;
 	else if (viewy > bspcoord[BOXBOTTOM])
-		boxpos |= 4;
+		boxpos |= 1<<2;
 	else
-		boxpos |= 8;
+		boxpos |= 2<<2;
 
 	if (boxpos == 5)
 		return true;
@@ -3253,8 +3252,10 @@ static void HWR_Subsector(size_t num)
 			{
 				HWR_GetFlat(levelflats[gr_frontsector->floorpic].lumpnum, R_NoEncore(gr_frontsector, false));
 				HWR_RenderPlane(sub, &extrasubsectors[num], false,
-								locFloorHeight == cullFloorHeight ? locFloorHeight : gr_frontsector->floorheight,
-								PF_Occlude, floorlightlevel, levelflats[gr_frontsector->floorpic].lumpnum, NULL, 255, floorcolormap);
+					// Hack to make things continue to work around slopes.
+					locFloorHeight == cullFloorHeight ? locFloorHeight : gr_frontsector->floorheight,
+					// We now return you to your regularly scheduled rendering.
+					PF_Occlude, floorlightlevel, levelflats[gr_frontsector->floorpic].lumpnum, NULL, 255, floorcolormap);
 			}
 		}
 	}
@@ -4407,28 +4408,18 @@ static int CompareVisSprites(const void *p1, const void *p2)
 	gr_vissprite_t* spr2 = *(gr_vissprite_t*const*)p2;
 	int idiff;
 	float fdiff;
-	float tz1, tz2;
-	
-	int transparency1;
-	int transparency2;
 
 	// make transparent sprites last
 	// "boolean to int"
 
-	// check for precip first, because then sprX->mobj is actually a precipmobj_t and does not have flags2 or tracer
-	tz1 = spr1->tz;
-	transparency1 = (!spr1->precip && (spr1->mobj->flags2 & MF2_SHADOW)) || (spr1->mobj->frame & FF_TRANSMASK);
-	tz2 = spr2->tz;
-	transparency2 = (!spr2->precip && (spr2->mobj->flags2 & MF2_SHADOW)) || (spr2->mobj->frame & FF_TRANSMASK);
-	
-	// first compare transparency flags, then compare tz, then compare dispoffset
-
+	int transparency1 = (spr1->mobj->flags2 & MF2_SHADOW) || (spr1->mobj->frame & FF_TRANSMASK);
+	int transparency2 = (spr2->mobj->flags2 & MF2_SHADOW) || (spr2->mobj->frame & FF_TRANSMASK);
 	idiff = transparency1 - transparency2;
 	if (idiff != 0) return idiff;
 
-	fdiff = tz2 - tz1; // this order seems correct when checking with apitrace. Back to front.
+	fdiff = spr2->tz - spr1->tz;// this order seems correct when checking with apitrace. Back to front.
 	if (fabsf(fdiff) < 1.0E-36f)
-		return spr1->dispoffset - spr2->dispoffset; // smallest dispoffset first if sprites are at (almost) same location.
+		return spr1->dispoffset - spr2->dispoffset;// smallest dispoffset first if sprites are at (almost) same location.
 	else if (fdiff > 0)
 		return 1;
 	else
@@ -5028,8 +5019,8 @@ void HWR_ProjectSprite(mobj_t *thing)
 		I_Error("sprframes NULL for sprite %d\n", thing->sprite);
 #endif
 
-	ang = R_PointToAngle(interp.x, interp.y) - interp.angle;
-	camang = R_PointToAngle(interp.x, interp.y);
+	ang = R_PointToAngle (interp.x, interp.y) - interp.angle;
+	camang = R_PointToAngle (interp.x, interp.y);
 
 	if (mirrored)
 		ang = InvAngle(ang);

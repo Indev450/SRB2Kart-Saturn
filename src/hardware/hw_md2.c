@@ -243,7 +243,7 @@ static GLTextureFormat_t PNG_Load(const char *filename, int *w, int *h, GLPatch_
 
 	{
 		png_uint_32 i, pitch = png_get_rowbytes(png_ptr, png_info_ptr);
-		png_bytep PNG_image = Z_Malloc(pitch*height, PU_HWRMODELTEXTURE, &grpatch->mipmap->data);
+		png_bytep PNG_image = Z_Malloc(pitch*height, PU_HWRCACHE, &grpatch->mipmap->data);
 		png_bytepp row_pointers = png_malloc(png_ptr, height * sizeof (png_bytep));
 		for (i = 0; i < height; i++)
 			row_pointers[i] = PNG_image + i*pitch;
@@ -323,7 +323,7 @@ static GLTextureFormat_t PCX_Load(const char *filename, int *w, int *h,
 
 	pw = *w = header.xmax - header.xmin + 1;
 	ph = *h = header.ymax - header.ymin + 1;
-	image = Z_Malloc(pw*ph*4, PU_HWRMODELTEXTURE, &grpatch->mipmap->data);
+	image = Z_Malloc(pw*ph*4, PU_HWRCACHE, &grpatch->mipmap->data);
 
 	if (fread(palette, sizeof (UINT8), PALSIZE, file) != PALSIZE)
 	{
@@ -712,7 +712,7 @@ static void HWR_CreateBlendedTexture(GLPatch_t *gpatch, GLPatch_t *blendgpatch, 
 		grmip->data = NULL;
 	}
 
-	cur = Z_Malloc(size*4, PU_HWRMODELTEXTURE, &grmip->data);
+	cur = Z_Malloc(size*4, PU_HWRCACHE, &grmip->data);
 	memset(cur, 0x00, size*4);
 
 	image = gpatch->mipmap->data;
@@ -1062,7 +1062,7 @@ static void HWR_GetBlendedTexture(GLPatch_t *gpatch, GLPatch_t *blendgpatch, INT
 			if (grmip->downloaded && grmip->data)
 			{
 				HWD.pfnSetTexture(grmip); // found the colormap, set it to the correct texture
-				Z_ChangeTag(grmip->data, PU_HWRMODELTEXTURE_UNLOCKED);
+				Z_ChangeTag(grmip->data, PU_HWRCACHE_UNLOCKED);
 				return;
 			}
 		}
@@ -1084,7 +1084,7 @@ static void HWR_GetBlendedTexture(GLPatch_t *gpatch, GLPatch_t *blendgpatch, INT
 	HWR_CreateBlendedTexture(gpatch, blendgpatch, newmip, skinnum, color);
 
 	HWD.pfnSetTexture(newmip);
-	Z_ChangeTag(newmip->data, PU_HWRMODELTEXTURE_UNLOCKED);
+	Z_ChangeTag(newmip->data, PU_HWRCACHE_UNLOCKED);
 }
 
 

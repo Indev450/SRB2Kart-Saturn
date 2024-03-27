@@ -3,7 +3,6 @@
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 // Copyright (C) 1999-2018 by Sonic Team Junior.
-// Copyright (C) 2009 by Stephen McGranahan.
 //
 // This program is free software distributed under the
 // terms of the GNU General Public License, version 2.
@@ -407,7 +406,6 @@ void FV3_Rotate(vector3_t *rotVec, const vector3_t *axisVec, const angle_t angle
 	rotVec->z = az+dz+ez;
 }
 
-
 void FM_Rotate(matrix_t *dest, angle_t angle, fixed_t x, fixed_t y, fixed_t z)
 {
 #define M(row,col) dest->m[row * 4 + col]
@@ -460,6 +458,5 @@ void FM_Rotate(matrix_t *dest, angle_t angle, fixed_t x, fixed_t y, fixed_t z)
 	M(1, 3) = 0;
 	M(2, 3) = 0;
 	M(3, 3) = FRACUNIT;
-	#undef M
+#undef M
 }
-
