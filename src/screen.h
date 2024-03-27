@@ -160,6 +160,8 @@ void SCR_Startup (void);
 
 void SCR_CalculateFPS(void);
 
+extern int hrscale_shit;
+
 FUNCMATH boolean SCR_IsAspectCorrect(INT32 width, INT32 height);
 
 // move out to main code for consistency

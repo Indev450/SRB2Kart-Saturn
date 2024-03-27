@@ -50,6 +50,8 @@ void (*transtransfunc)(void); // translucent translated column drawer
 void (*twosmultipatchfunc)(void); // for cols with transparent pixels
 void (*twosmultipatchtransfunc)(void); // for cols with transparent pixels AND translucency
 
+int hrscale_shit = 0;
+
 // ------------------
 // global video state
 // ------------------
@@ -74,7 +76,8 @@ consvar_t cv_highreshudscale = {"highreshudscale", "1", CV_SAVE|CV_FLOAT|CV_CALL
 
 static void Highreshudscale_OnChange(void)
 {
-	SCR_Recalc();
+	if (hrscale_shit)
+		SCR_Recalc();
 }
 
 static void SCR_ChangeFullscreen (void);
