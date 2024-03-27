@@ -260,6 +260,7 @@ if(${SRB2_CONFIG_HAVE_BLUA})
 		blua/lapi.c
 		blua/lauxlib.c
 		blua/lbaselib.c
+		blua/ldblib.c
 		blua/lcode.c
 		blua/ldebug.c
 		blua/ldo.c
