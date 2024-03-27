@@ -432,9 +432,11 @@ static PFNglCopyTexImage2D pglCopyTexImage2D;
 typedef void (APIENTRY * PFNglCopyTexSubImage2D) (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint x, GLint y, GLsizei width, GLsizei height);
 static PFNglCopyTexSubImage2D pglCopyTexSubImage2D;
 
+#ifdef GL_VERSION_3_0
 /* 3.0 functions */
 typedef void (APIENTRY * PFNglGenerateMipmap) (GLenum target);
 static PFNglGenerateMipmap pglGenerateMipmap;
+#endif
 
 /* 3.0 functions for framebuffers and renderbuffers */
 typedef void (APIENTRY * PFNglGenFramebuffers) (GLsizei n, GLuint *ids);
@@ -742,7 +744,9 @@ void SetupGLFunc4(void)
 	pglUniform3fv = GetGLFunc("glUniform3fv");
 	pglGetUniformLocation = GetGLFunc("glGetUniformLocation");
 
+#ifdef GL_VERSION_3_0
 	pglGenerateMipmap = GetGLFunc("glGenerateMipmap");
+#endif
 
 	if (GLFramebuffer_IsFuncAvailible())
 	{
@@ -1100,40 +1104,6 @@ void GLFramebuffer_Disable(void)
 
 	pglBindFramebuffer(GL_FRAMEBUFFER, 0);
 	pglBindRenderbuffer(GL_RENDERBUFFER, 0);
-}
-
-// -----------------+
-// DeleteTexture    : Deletes a texture from the GPU and frees its data
-// -----------------+
-EXPORT void HWRAPI(DeleteTexture) (GLMipmap_t *pTexInfo)
-{
-	FTextureInfo *head = TexCacheHead;
-
-	if (!pTexInfo)
-		return;
-	else if (pTexInfo->downloaded)
-		pglDeleteTextures(1, (GLuint *)&pTexInfo->downloaded);
-
-	while (head)
-	{
-		if (head->downloaded == pTexInfo->downloaded)
-		{
-			if (head->next)
-				head->next->prev = head->prev;
-			else // no next -> tail is being deleted -> update TexCacheTail
-				TexCacheTail = head->prev;
-			if (head->prev)
-				head->prev->next = head->next;
-			else // no prev -> head is being deleted -> update TexCacheHead
-				TexCacheHead = head->next;
-			free(head);
-			break;
-		}
-
-		head = head->next;
-	}
-
-	pTexInfo->downloaded = 0;
 }
 
 
