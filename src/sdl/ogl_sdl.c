@@ -161,6 +161,11 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 
 	SetupGLFunc4();
 
+	if (majorGL == 1 && minorGL <= 3) // GL_GENERATE_MIPMAP is unavailible for OGL 1.3 and below
+		supportMipMap = false;
+	else
+		supportMipMap = true;
+
 	granisotropicmode_cons_t[1].value = maximumAnisotropy;
 
 	SDL_GL_SetSwapInterval(cv_vidwait.value ? 1 : 0);

@@ -112,11 +112,14 @@ extern const GLubyte	*gl_version;
 extern const GLubyte	*gl_renderer;
 extern const GLubyte	*gl_extensions;
 
+extern int 				majorGL, minorGL;
+
 extern RGBA_t			myPaletteData[];
 extern GLint			screen_width;
 extern GLint			screen_height;
 extern GLbyte			screen_depth;
 extern GLint			maximumAnisotropy;
+extern boolean 			supportMipMap;
 
 /**	\brief OpenGL flags for video driver
 */
