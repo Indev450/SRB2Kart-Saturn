@@ -163,7 +163,15 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 
 	granisotropicmode_cons_t[1].value = maximumAnisotropy;
 
-	SDL_GL_SetSwapInterval(cv_vidwait.value ? 1 : 0);
+	if (cv_vidwait.value)
+	{
+		if (SDL_GL_SetSwapInterval(-1) != 0) // try async vsync
+			SDL_GL_SetSwapInterval(1); // normal vsync
+	}
+	else
+		SDL_GL_SetSwapInterval(0);
+
+	//SDL_GL_SetSwapInterval(cv_vidwait.value ? 1 : 0);
 
 	SetModelView(w, h);
 	SetStates();
@@ -187,7 +195,14 @@ void OglSdlFinishUpdate(boolean waitvbl)
 	int sdlw, sdlh;
 	if (oldwaitvbl != waitvbl)
 	{
-		SDL_GL_SetSwapInterval(waitvbl ? 1 : 0);
+		if (waitvbl)
+		{
+			if (SDL_GL_SetSwapInterval(-1) != 0) // try async vsync
+				SDL_GL_SetSwapInterval(1); // normal vsync
+		}
+		else
+			SDL_GL_SetSwapInterval(0);
+		//SDL_GL_SetSwapInterval(waitvbl ? 1 : 0);
 	}
 
 	oldwaitvbl = waitvbl;
