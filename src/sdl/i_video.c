@@ -171,12 +171,6 @@ static SDL_Texture  *texture;
 static SDL_bool      havefocus = SDL_TRUE;
 static const char *fallback_resolution_name = "Fallback";
 
-static void ScaleQuality_OnChange(void)
-{
-	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, cv_scalequality.string);
-	COM_ImmedExecute(va("vid_mode %d", vid.modenum)); // Hack to make it apply without restarting
-}
-
 // windowed video modes from which to choose from.
 static INT32 windowedModes[MAXWINMODES][2] =
 {
@@ -216,6 +210,7 @@ static void Impl_SetWindowIcon(void);
 
 boolean downsample = false;
 
+#ifdef HWRENDER
 void RefreshSDLSurface(void)
 {
 	OglSdlSurface(vid.width, vid.height);
@@ -881,13 +876,6 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 							}
 							else
 								downsample = false;
-
-							if (cv_fullscreen.value == 2) //exclusive
-								SDLSetMode(curmode.w, curmode.h, true);
-							else if (cv_fullscreen.value == 1) //borderless sdl thing
-								SDLSetMode(vid.width, vid.height, true);
-							else //windowed mode
-								SDLSetMode(vid.width, vid.height, false);
 						}
 						break; // found our current display break outta here
 					}
