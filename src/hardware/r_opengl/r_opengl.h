@@ -104,6 +104,18 @@ static PFNglEnableClientState pglEnableClientState;
 #endif
 #endif
 
+void GLFramebuffer_Generate(void);
+void GLFramebuffer_Delete(void);
+
+void GLFramebuffer_GenerateAttachments(void);
+void GLFramebuffer_DeleteAttachments(void);
+
+void GLFramebuffer_Enable(void);
+void GLFramebuffer_Disable(void);
+
+extern GLuint FramebufferObject, FramebufferTexture, RenderbufferObject;
+extern GLboolean FrameBufferEnabled, RenderToFramebuffer;
+
 // ==========================================================================
 //                                                                     GLOBAL
 // ==========================================================================

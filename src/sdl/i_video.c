@@ -203,6 +203,13 @@ static SDL_bool Impl_CreateWindow(SDL_bool fullscreen);
 //static void Impl_SetWindowName(const char *title);
 static void Impl_SetWindowIcon(void);
 
+#ifdef HWRENDER
+void RefreshSDLSurface(void)
+{
+	OglSdlSurface(vid.width, vid.height);
+}
+#endif
+
 static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen)
 {
 	static SDL_bool wasfullscreen = SDL_FALSE;

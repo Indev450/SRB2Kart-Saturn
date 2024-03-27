@@ -137,4 +137,6 @@ void I_EndRead(void);
 
 UINT32 I_GetRefreshRate(void);
 
+void RefreshSDLSurface(void);
+
 #endif
