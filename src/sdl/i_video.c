@@ -1960,7 +1960,7 @@ INT32 VID_SetMode(INT32 modeNum)
 	}
 	//Impl_SetWindowName("SRB2Kart "VERSIONSTRING);
 
-	for (int i = 0; i < numDisplays; ++i) // go through all displays again
+	for (int i = 0; i < numDisplays; ++i) // go through all displays again cause our vidya mode changed
 	{
 		if (currentDisplayIndex == i) // find the current display
 		{
@@ -1975,7 +1975,7 @@ INT32 VID_SetMode(INT32 modeNum)
 				else
 					downsample = false;
 			}
-			break; // found our current display break outta here
+			break; // did everything so done lul
 		}
 	}
 
