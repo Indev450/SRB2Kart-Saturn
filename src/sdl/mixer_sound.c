@@ -9,7 +9,7 @@
 /// \file
 /// \brief SDL Mixer interface for sound
 
-#ifdef HAVE_GME
+#ifdef HAVE_LIBGME
 #ifdef HAVE_ZLIB
 #ifndef _MSC_VER
 #ifndef _LARGEFILE64_SOURCE
@@ -1036,7 +1036,6 @@ UINT32 I_GetSongPosition(void)
 	if (!music || I_SongType() == MU_MID)
 		return 0;
 	else
-	{
 		return (UINT32)(music_bytes/44100.0L*1000.0L/4); //assume 44.1khz
 		// 4 = byte length for 16-bit samples (AUDIO_S16SYS), stereo (2-channel)
 		// This is hardcoded in I_StartupSound. Other formats for factor:
@@ -1244,7 +1243,7 @@ boolean I_PlaySong(boolean looping)
 		gme_equalizer_t eq = {GME_TREBLE, GME_BASS, 0,0,0,0,0,0,0,0};
 #if defined (GME_VERSION) && GME_VERSION >= 0x000603
 		if (looping)
-        gme_set_autoload_playback_limit(gme, 0);
+			gme_set_autoload_playback_limit(gme, 0);
 #endif
 		gme_set_equalizer(gme, &eq);
 		gme_start_track(gme, 0);
