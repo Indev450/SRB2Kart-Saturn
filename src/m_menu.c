@@ -4022,7 +4022,11 @@ void M_Drawer(void)
 	{
 		// now that's more readable with a faded background (yeah like Quake...)
 		if (!WipeInAction && currentMenu != &PlaybackMenuDef) // Replay playback has its own background
+		{
+			if ((!netgame) && gamestate == GS_LEVEL) //only paused when not in netgame
+				V_DrawVhsEffect(false);
 			V_DrawFadeScreen(0xFF00, 16);
+		}
 
 		if (currentMenu->drawroutine)
 		{
