@@ -104,11 +104,15 @@ static GLboolean MipMap = GL_FALSE;
 static GLint min_filter = GL_LINEAR;
 static GLint mag_filter = GL_LINEAR;
 static GLint anisotropic_filter = 0;
+boolean supportMipMap = false;
 static FTransform  md2_transform;
 
 const GLubyte *gl_version = NULL;
 const GLubyte *gl_renderer = NULL;
 const GLubyte *gl_extensions = NULL;
+
+// Loaded OpenGL version
+int majorGL = 0, minorGL = 0;
 
 //Hurdler: 04/10/2000: added for the kick ass coronas as Boris wanted;-)
 static GLfloat modelMatrix[16];
@@ -162,9 +166,6 @@ static const GLfloat byte2float[256] = {
 	0.941177f, 0.945098f, 0.949020f, 0.952941f, 0.956863f, 0.960784f, 0.964706f, 0.968628f,
 	0.972549f, 0.976471f, 0.980392f, 0.984314f, 0.988235f, 0.992157f, 0.996078f, 1.000000f
 };
-
-// Loaded OpenGL version
-static int majorGL = 0, minorGL = 0;
 
 // -----------------+
 // GL_DBG_Printf    : Output debug messages to debug log if DEBUG_TO_FILE is defined,
@@ -432,10 +433,6 @@ typedef void (APIENTRY * PFNglCopyTexImage2D) (GLenum target, GLint level, GLenu
 static PFNglCopyTexImage2D pglCopyTexImage2D;
 typedef void (APIENTRY * PFNglCopyTexSubImage2D) (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint x, GLint y, GLsizei width, GLsizei height);
 static PFNglCopyTexSubImage2D pglCopyTexSubImage2D;
-
-/* 3.0 functions */
-typedef void (APIENTRY * PFNglGenerateMipmap) (GLenum target);
-static PFNglGenerateMipmap pglGenerateMipmap;
 
 /* 3.0 functions for framebuffers and renderbuffers */
 typedef void (APIENTRY * PFNglGenFramebuffers) (GLsizei n, GLuint *ids);
@@ -742,8 +739,6 @@ void SetupGLFunc4(void)
 	pglUniform2fv = GetGLFunc("glUniform2fv");
 	pglUniform3fv = GetGLFunc("glUniform3fv");
 	pglGetUniformLocation = GetGLFunc("glGetUniformLocation");
-
-	pglGenerateMipmap = GetGLFunc("glGenerateMipmap");
 
 	if (GLFramebuffer_IsFuncAvailible())
 	{
@@ -1648,9 +1643,8 @@ EXPORT void HWRAPI(UpdateTexture) (GLMipmap_t *pTexInfo)
 		//pglTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
 		if (MipMap)
 		{
-
+			pglTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
 			pglTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
-			pglGenerateMipmap(GL_TEXTURE_2D);
 
 			pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_LOD, 0);
 			if (pTexInfo->flags & TF_TRANSPARENT)
@@ -1672,8 +1666,8 @@ EXPORT void HWRAPI(UpdateTexture) (GLMipmap_t *pTexInfo)
 		//pglTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
 		if (MipMap)
 		{
+			pglTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
 			pglTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
-			pglGenerateMipmap(GL_TEXTURE_2D);
 
 			pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_LOD, 0);
 			if (pTexInfo->flags & TF_TRANSPARENT)
@@ -1694,8 +1688,8 @@ EXPORT void HWRAPI(UpdateTexture) (GLMipmap_t *pTexInfo)
 	{
 		if (MipMap)
 		{
+			pglTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
 			pglTexImage2D(GL_TEXTURE_2D, 0, textureformatGL, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
-			pglGenerateMipmap(GL_TEXTURE_2D);
 
 			// Control the mipmap level of detail
 			pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_LOD, 0); // the lower the number, the higer the detail
@@ -2357,13 +2351,12 @@ EXPORT void HWRAPI(SetSpecialState) (hwdspecialstate_t IdState, INT32 Value)
 					mag_filter = GL_LINEAR;
 					min_filter = GL_NEAREST;
 			}
-			
-			if (!pglGenerateMipmap)
+			if (!supportMipMap)
 			{
 				MipMap = GL_FALSE;
 				min_filter = GL_LINEAR;
 			}
-			
+
 			Flush(); //??? if we want to change filter mode by texture, remove this
 			break;
 			
