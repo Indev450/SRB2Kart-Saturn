@@ -163,7 +163,7 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 
 	granisotropicmode_cons_t[1].value = maximumAnisotropy;
 
-	SDL_GL_SetSwapInterval(cv_vidwait.value ? 1 : 0);
+	SDL_GL_SetSwapInterval(cv_vidwait.value ? -1 : 0);
 	
 	// The screen textures need to be flushed if the width or height change so that they be remade for the correct size
 	if (screen_width != w || screen_height != h)
@@ -203,7 +203,7 @@ void OglSdlFinishUpdate(boolean waitvbl)
 	int sdlw, sdlh;
 	if (oldwaitvbl != waitvbl)
 	{
-		SDL_GL_SetSwapInterval(waitvbl ? 1 : 0);
+		SDL_GL_SetSwapInterval(waitvbl ? -1 : 0);
 	}
 
 	oldwaitvbl = waitvbl;

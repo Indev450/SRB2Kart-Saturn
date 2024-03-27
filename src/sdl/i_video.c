@@ -2429,12 +2429,6 @@ static void Impl_SetVsync(void)
 		SDL_RenderSetVSync(renderer, cv_vidwait.value ? 1 : 0);
 #endif
 	}
-#ifdef HWRENDER
-	else if (rendermode == render_opengl && sdlglcontext != NULL && SDL_GL_GetCurrentContext() == sdlglcontext)
-	{
-		SDL_GL_SetSwapInterval(cv_vidwait.value ? 1 : 0);
-	}
-#endif
 }
 
 #endif
