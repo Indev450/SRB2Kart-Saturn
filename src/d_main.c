@@ -1772,8 +1772,6 @@ void D_SRB2Main(void)
 		COM_ImmedExecute(va("exec \"%s"PATHSEP"kartserv.cfg\"\n", srb2home));
 	else
 		COM_ImmedExecute(va("exec \"%s"PATHSEP"kartexec.cfg\" -noerror\n", srb2home));
-	
-	hrscale_shit = 1;
 
 	if (!autostart)
 		M_PushSpecialParameters(); // push all "+" parameters at the command buffer
