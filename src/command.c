@@ -872,7 +872,8 @@ static void COM_Help_f(void)
 				return;
 			}
 
-			CONS_Printf("No variable or command named %s", help);
+			CONS_Printf("No variable or command named %s\n", help);
+			CONS_Printf("If you don't know exact name, try \"find %s\" command", help);
 			CONS_Printf("\x82""\nCheck wiki.srb2.org for more or try typing help without arguments\n");
 
 		}
