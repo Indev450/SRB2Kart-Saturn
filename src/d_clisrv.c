@@ -5082,7 +5082,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 			// If we've alredy received a ticcmd for this tic, just submit it for the next one.
 			tic_t faketic = maketic;
 			if ((!!(netcmds[maketic % TICQUEUE][netconsole].angleturn & TICCMD_RECEIVED))
-				&& (maketic - firstticstosend < TICQUEUE))
+				&& (maketic - firstticstosend < TICQUEUE - 1))
 				faketic++;
 
 			// Don't do anything for packets of type NODEKEEPALIVE?
