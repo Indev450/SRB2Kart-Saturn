@@ -36,8 +36,6 @@ void P_LinkSlopeThinkers (void)
 	size_t i;
 	thinker_t *th = dynthinklist;
 
-	CONS_Printf("Number of dynamic thinkers: %d\n", dynthinknum);
-
 	for (i = 0; i < dynthinknum; i++)
 	{
 		thinker_t *next = th->next;
