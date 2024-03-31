@@ -22,7 +22,7 @@
 #include "r_main.h"
 #include "p_maputl.h"
 #include "w_wad.h"
-
+#include "r_fps.h"
 
 pslope_t *slopelist = NULL;
 UINT16 slopecount = 0;
@@ -219,6 +219,9 @@ static inline void P_AddDynSlopeThinker (pslope_t* slope, dynplanetype_t type, l
 	th->type = type;
 
 	P_QueueSlopeThinker(&th->thinker);
+
+	// interpolation
+	R_CreateInterpolator_DynSlope(&th->thinker, slope);
 }
 
 
