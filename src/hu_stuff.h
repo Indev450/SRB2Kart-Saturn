@@ -47,6 +47,12 @@
 extern char *shiftxform; // english translation shift table
 extern char english_shiftxform[];
 
+extern char french_shiftxform[];
+extern char french_altgrxform[];
+
+//fallback for special letter non displayable in the game (i.e.: 'é','à',etc.)
+INT32 HU_FallBackFrSpecialLetter(INT32 key);
+
 //------------------------------------
 //        sorted player lines
 //------------------------------------
@@ -108,6 +114,8 @@ void HU_LoadGraphics(void);
 
 // reset heads up when consoleplayer respawns.
 void HU_Start(void);
+
+void HU_Shiftform(void);
 
 boolean HU_Responder(event_t *ev);
 void HU_Ticker(void);

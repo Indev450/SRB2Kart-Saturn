@@ -643,6 +643,30 @@ INT32 CON_ShiftChar(INT32 ch)
 	return ch;
 }
 
+INT32 CON_ShitAndAltGrChar(INT32 ch)
+{
+	if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z'))
+	{
+		if (shiftdown ^ capslock)
+			ch = shiftxform[ch];
+	}
+	else	// if we're holding shift we should still shift non letter symbols
+	{
+		if (shiftdown)
+			ch = shiftxform[ch];
+		else if (altdown & 0x2)
+		{
+			ch = french_altgrxform[ch];
+		}
+		else
+		{
+			ch = HU_FallBackFrSpecialLetter(ch);
+		}
+	}
+
+	return ch;
+}
+
 // Clear time of console heads up messages
 //
 void CON_ClearHUD(void)
@@ -941,7 +965,7 @@ boolean CON_Responder(event_t *ev)
 		return true;
 
 	// ctrl modifier -- changes behavior, adds shortcuts
-	if (ctrldown)
+	if ((cv_keyboardlayout.value != 3 && ctrldown) || (cv_keyboardlayout.value == 3 && ctrldown && !altdown))
 	{
 		// show all cvars/commands that match what we have inputted
 		if (key == KEY_TAB)
@@ -1211,13 +1235,37 @@ boolean CON_Responder(event_t *ev)
 	// same capslock code as hu_stuff.c's HU_responder. Check there for details.
 	if ((key >= 'a' && key <= 'z') || (key >= 'A' && key <= 'Z'))
 	{
-		if (shiftdown ^ capslock)
-			key = shiftxform[key];
+		if (cv_keyboardlayout.value == 3)
+		{
+			if (shiftdown ^ capslock)
+				key = shiftxform[key];
+			else if (altdown & 0x2)
+				key = french_altgrxform[key];
+			else
+				key = HU_FallBackFrSpecialLetter(key);
+		}
+		else
+		{
+			if (shiftdown ^ capslock)
+				key = shiftxform[key];
+		}
 	}
 	else
 	{
-		if (shiftdown)
-			key = shiftxform[key];
+		if (cv_keyboardlayout.value == 3)
+		{
+			if (shiftdown)
+				key = shiftxform[key];
+			else if (altdown & 0x2)
+				key = french_altgrxform[key];
+			else
+				key = HU_FallBackFrSpecialLetter(key);
+		}
+		else
+		{
+			if (shiftdown)
+				key = shiftxform[key];
+		}
 	}
 
 	// enter a char into the command prompt

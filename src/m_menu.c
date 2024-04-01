@@ -2011,7 +2011,7 @@ static menuitem_t OP_SaturnMenu[] =
 	{IT_STRING | IT_CVAR, NULL, "Show Localskin Menus", 				&cv_showlocalskinmenus, 	90},
 	{IT_STRING | IT_CVAR, NULL, "Uppercase Menu",						&cv_menucaps,   		    95},
 
-	{IT_STRING | IT_CVAR, NULL, "Native Keyboard Layout",				&cv_nativekeyboard,   	   105},
+	{IT_STRING | IT_CVAR, NULL, "Keyboard Layout",						&cv_keyboardlayout,   	   105},
 
 	{IT_STRING | IT_CVAR, NULL, "Less Midnight Channel Flicker", 		&cv_lessflicker, 		   115},
 
@@ -2043,7 +2043,7 @@ static const char* OP_SaturnTooltips[] =
 	"Show the big Cecho Messages.",
 	"Show Localskin Menus.",
 	"Force menu to only use uppercase.",
-	"Use your native Keyboard Layout for Text Input\nThis does not affect gameplay!.",
+	"Use your desired Keyboard Layout for Text Input\nthis is either the Default, Native or Azerty\nNative does not affect Gameplay only Text!",
 	"Disables the flicker effect on Midnight Channel.",
 	"Nametag Options.",
 	"Driftgauge Options.",
@@ -3300,8 +3300,23 @@ static boolean M_ChangeStringCvar(INT32 choice)
 	char buf[MAXSTRINGLENGTH];
 	size_t len;
 
-	if (shiftdown && choice >= 32 && choice <= 127)
-		choice = shiftxform[choice];
+	if (cv_keyboardlayout.value == 3)
+	{
+		if (choice >= 32 && choice <= 141)
+		{
+			if (shiftdown)
+				choice = shiftxform[choice];
+			else if (altdown & 0x2)
+				choice = french_altgrxform[choice];
+			else
+				choice = HU_FallBackFrSpecialLetter(choice);
+		}
+	}
+	else
+	{
+		if (shiftdown && choice >= 32 && choice <= 127)
+			choice = shiftxform[choice];
+	}
 
 	switch (choice)
 	{
@@ -3323,7 +3338,7 @@ static boolean M_ChangeStringCvar(INT32 choice)
 			}
 			return true;
 		default:
-			if (choice >= 32 && choice <= 127)
+			if ((cv_keyboardlayout.value != 3 && choice >= 32 && choice <= 127) || (cv_keyboardlayout.value == 3 && choice >= 32 && choice <= 141))
 			{
 				len = strlen(cv->string);
 				if (len < MAXSTRINGLENGTH - 1)
@@ -3648,8 +3663,23 @@ boolean M_Responder(event_t *ev)
 	if (routine && (currentMenu->menuitems[itemOn].status & IT_TYPE) == IT_KEYHANDLER)
 	{
 		menu_text_input = true;
-		if (shiftdown && ch >= 32 && ch <= 127)
-			ch = shiftxform[ch];
+		if (cv_keyboardlayout.value == 3)
+		{
+			if(ch >= 32 && ch <= 141)
+			{
+				if (shiftdown)
+					ch = shiftxform[ch];
+				else if (altdown & 0x2)
+					ch = french_altgrxform[ch];
+				else
+					ch = HU_FallBackFrSpecialLetter(ch);
+			}
+		}
+		else 
+		{
+			if (shiftdown && ch >= 32 && ch <= 127)
+				ch = shiftxform[ch];
+		}
 		routine(ch);
 		return true;
 	}
@@ -3689,8 +3719,23 @@ boolean M_Responder(event_t *ev)
 		if ((currentMenu->menuitems[itemOn].status & IT_CVARTYPE) == IT_CV_STRING)
 		{
 			menu_text_input = true;
-			if (shiftdown && ch >= 32 && ch <= 127)
-				ch = shiftxform[ch];
+			if (cv_keyboardlayout.value == 3)
+			{
+				if(ch >= 32 && ch <= 141)
+				{
+					if (shiftdown)
+						ch = shiftxform[ch];
+					else if (altdown & 0x2)
+						ch = french_altgrxform[ch];
+					else
+						ch = HU_FallBackFrSpecialLetter(ch);
+				}
+			}
+			else
+			{
+				if (shiftdown && ch >= 32 && ch <= 127)
+					ch = shiftxform[ch];
+			}
 			if (M_ChangeStringCvar(ch))
 				return true;
 			else
@@ -6389,8 +6434,23 @@ static void M_AddonAutoLoad(INT32 ch)
 #define len menusearch[0]
 static boolean M_ChangeStringAddons(INT32 choice)
 {
-	if (shiftdown && choice >= 32 && choice <= 127)
-		choice = shiftxform[choice];
+	if (cv_keyboardlayout.value == 3)
+	{
+		if(choice >= 32 && choice <= 141)
+		{
+			if(shiftdown)
+				choice = shiftxform[choice];
+			else if(altdown & 0x2)
+				choice = french_altgrxform[choice];
+			else
+				choice = HU_FallBackFrSpecialLetter(choice);
+		}
+	}
+	else
+	{
+		if (shiftdown && choice >= 32 && choice <= 127)
+			choice = shiftxform[choice];
+	}
 
 	switch (choice)
 	{
