@@ -2043,7 +2043,7 @@ static const char* OP_SaturnTooltips[] =
 	"Show the big Cecho Messages.",
 	"Show Localskin Menus.",
 	"Force menu to only use uppercase.",
-	"Use your desired Keyboard Layout for Text Input\nthis is either the Default, Native or Azerty\nNative does not affect Gameplay only Text!.",
+	"Use your desired Keyboard Layout for Text Input\nthis is either the Default, Native or Azerty\nNative does not affect Gameplay only Text!",
 	"Disables the flicker effect on Midnight Channel.",
 	"Nametag Options.",
 	"Driftgauge Options.",
