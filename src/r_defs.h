@@ -214,7 +214,7 @@ typedef struct r_lightlist_s
 // Slopes
 typedef enum {
 	SL_NOPHYSICS = 1, /// This plane will have no physics applied besides the positioning.
-	SL_DYNAMIC = 1<<1, /// This plane slope will be assigned a thinker to make it dynamic.
+	SL_NODYNAMIC = 1<<1, // Slope will never need to move during the level, so don't fuss with recalculating it
 } slopeflags_t;
 
 typedef struct pslope_s

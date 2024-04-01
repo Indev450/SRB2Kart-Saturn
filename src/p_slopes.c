@@ -311,8 +311,8 @@ static void line_SpawnViaLine(const int linenum, const boolean spawnthinker)
 	UINT8 flags = 0; // Slope flags
 	if (line->flags & ML_NOSONIC)
 		flags |= SL_NOPHYSICS;
-	if (line->flags & ML_NOTAILS)
-		flags |= SL_DYNAMIC;
+	if (!(line->flags & ML_NOTAILS))
+		flags |= SL_NODYNAMIC;
 
 	if(!frontfloor && !backfloor && !frontceil && !backceil)
 	{
@@ -379,7 +379,7 @@ static void line_SpawnViaLine(const int linenum, const boolean spawnthinker)
 
 			P_CalculateSlopeNormal(fslope);
 
-			if (spawnthinker && (flags & SL_DYNAMIC))
+			if (spawnthinker && !(flags & SL_NODYNAMIC))
 				P_AddDynSlopeThinker(fslope, DP_FRONTFLOOR, line, extent, NULL, NULL);
 		}
 		if(frontceil)
@@ -399,7 +399,7 @@ static void line_SpawnViaLine(const int linenum, const boolean spawnthinker)
 
 			P_CalculateSlopeNormal(cslope);
 
-			if (spawnthinker && (flags & SL_DYNAMIC))
+			if (spawnthinker && !(flags & SL_NODYNAMIC))
 				P_AddDynSlopeThinker(cslope, DP_FRONTCEIL, line, extent, NULL, NULL);
 		}
 	}
@@ -442,7 +442,7 @@ static void line_SpawnViaLine(const int linenum, const boolean spawnthinker)
 
 			P_CalculateSlopeNormal(fslope);
 
-			if (spawnthinker && (flags & SL_DYNAMIC))
+			if (spawnthinker && !(flags & SL_NODYNAMIC))
 				P_AddDynSlopeThinker(fslope, DP_BACKFLOOR, line, extent, NULL, NULL);
 		}
 		if(backceil)
@@ -462,7 +462,7 @@ static void line_SpawnViaLine(const int linenum, const boolean spawnthinker)
 
 			P_CalculateSlopeNormal(cslope);
 
-			if (spawnthinker && (flags & SL_DYNAMIC))
+			if (spawnthinker && !(flags & SL_NODYNAMIC))
 				P_AddDynSlopeThinker(cslope, DP_BACKCEIL, line, extent, NULL, NULL);
 		}
 	}
@@ -510,7 +510,7 @@ static pslope_t *MakeViaMapthings(INT16 tag1, INT16 tag2, INT16 tag3, UINT8 flag
 
 	ReconfigureViaVertexes(ret, vx[0], vx[1], vx[2]);
 
-	if (spawnthinker && (flags & SL_DYNAMIC))
+	if (spawnthinker && !(flags & SL_NODYNAMIC))
 		P_AddDynSlopeThinker(ret, DP_VERTEX, NULL, 0, tags, vx);
 
 	return ret;
@@ -527,8 +527,8 @@ static void line_SpawnViaVertexes(const int linenum, const boolean spawnthinker)
 	UINT8 flags = 0;
 	if (line->flags & ML_NOSONIC)
 		flags |= SL_NOPHYSICS;
-	if (line->flags & ML_NOTAILS)
-		flags |= SL_DYNAMIC;
+	if (!(line->flags & ML_NOTAILS))
+		flags |= SL_NODYNAMIC;
 
 	switch(line->special)
 	{

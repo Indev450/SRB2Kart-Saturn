@@ -8135,8 +8135,8 @@ struct {
 	{"FF_GOOWATER",FF_GOOWATER},               ///< Used with ::FF_SWIMMABLE. Makes thick bouncey goop.
 
 	// Slope flags
-	{"SL_NOPHYSICS",SL_NOPHYSICS},
-	{"SL_DYNAMIC",SL_DYNAMIC},
+	{"SL_NOPHYSICS",SL_NOPHYSICS},      // Don't do momentum adjustment with this slope
+	{"SL_NODYNAMIC",SL_NODYNAMIC},      // Slope will never need to move during the level, so don't fuss with recalculating it
 
 	// Angles
 	{"ANG1",ANG1},
