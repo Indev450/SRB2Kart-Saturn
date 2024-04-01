@@ -37,7 +37,7 @@ extern consvar_t cv_audbuffersize;
 //extern consvar_t cv_resetmusic;
 extern consvar_t cv_gamedigimusic;
 #ifndef NO_MIDI
-extern consvar_t cv_gamemidimusic;
+extern consvar_t cv_gamemidimusic, cv_midimusicvolume;
 #endif
 extern consvar_t cv_gamesounds;
 extern consvar_t cv_playmusicifunfocused;
@@ -69,8 +69,7 @@ extern consvar_t cv_resume;
 extern consvar_t cv_fading;
 extern consvar_t cv_birdmusic;
 
-
-extern CV_PossibleValue_t soundvolume_cons_t[];
+extern consvar_t precachesound;
 
 typedef enum
 {
@@ -119,7 +118,6 @@ lumpnum_t S_GetSfxLumpNum(sfxinfo_t *sfx);
 
 boolean S_SoundDisabled(void);
 
-
 //
 // Start sound for thing at <origin> using <sound_id> from sounds.h
 //
@@ -141,6 +139,7 @@ boolean S_MusicDisabled(void);
 boolean S_MusicPlaying(void);
 boolean S_MusicPaused(void);
 boolean S_MusicNotInFocus(void);
+boolean S_PrecacheSound(void);
 musictype_t S_MusicType(void);
 const char *S_MusicName(void);
 boolean S_MusicInfo(char *mname, UINT16 *mflags, boolean *looping);
@@ -161,7 +160,7 @@ typedef struct musicdef_s
 	char name[7];
 	char usage[256];
 	char source[256];
-	char filename[256];
+	char filename[256+1];
 	// for the music test stuff
 	// generally if these are present on vanilla the game would throw up a warning
 	// a sacrifice i suppose
@@ -172,7 +171,6 @@ typedef struct musicdef_s
 	struct musicdef_s *next;
 } musicdef_t;
 
-extern musicdef_t soundtestsfx;
 extern musicdef_t *musicdefstart;
 extern musicdef_t **soundtestdefs;
 extern INT32 numsoundtestdefs;
@@ -249,7 +247,6 @@ void S_StopMusic(void);
 // Stop and resume music, during game PAUSE.
 void S_PauseAudio(void);
 void S_ResumeAudio(void);
-
 
 //
 // Music Fading

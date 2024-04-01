@@ -39,10 +39,14 @@
 // we try to re-allocate a minimum of buffers for stability of the memory,
 // so all the small-enough tables based on screen size, are allocated once
 // and for all at the maximum size.
-#define MAXVIDWIDTH 3840 // don't set this too high because actually
-#define MAXVIDHEIGHT 2160 // lots of tables are allocated with the MAX size.
+#define MAXVIDWIDTH 2560 // don't set this too high because actually
+#define MAXVIDHEIGHT 1440 // lots of tables are allocated with the MAX size.
 #define BASEVIDWIDTH 320 // NEVER CHANGE THIS! This is the original
 #define BASEVIDHEIGHT 200 // resolution of the graphics.
+
+// max res for png capture; seperated it so both MAXVID values can be lower for software performance reasons; OpenGL does not care about those anyways
+#define MAXPNGWIDTH 3840
+#define MAXPNGHEIGHT 2160
 
 // global video state
 typedef struct viddef_s
@@ -72,10 +76,17 @@ typedef struct viddef_s
 #ifdef HWRENDER
 	INT32/*fixed_t*/ fsmalldupx, fsmalldupy;
 	INT32/*fixed_t*/ fmeddupx, fmeddupy;
+	INT32 glstate;
 #endif
 } viddef_t;
 #define VIDWIDTH vid.width
 #define VIDHEIGHT vid.height
+
+enum
+{
+	VID_GL_LIBRARY_LOADED     = 1,
+	VID_GL_LIBRARY_ERROR      = -1,
+};
 
 // internal additional info for vesa modes only
 typedef struct
@@ -123,17 +134,6 @@ extern void (*transtransfunc)(void);
 extern void (*twosmultipatchfunc)(void);
 extern void (*twosmultipatchtransfunc)(void);
 
-// -----
-// CPUID
-// -----
-extern boolean R_ASM;
-extern boolean R_486;
-extern boolean R_586;
-extern boolean R_MMX;
-extern boolean R_3DNow;
-extern boolean R_MMXExt;
-extern boolean R_SSE2;
-
 // ----------------
 // screen variables
 // ----------------
@@ -145,6 +145,7 @@ extern INT32 scr_bpp;
 extern UINT8 *scr_borderpatch; // patch used to fill the view borders
 
 extern consvar_t cv_scr_width, cv_scr_height, cv_scr_depth, cv_renderview, cv_fullscreen, cv_vhseffect, cv_shittyscreen;
+extern consvar_t cv_highreshudscale;
 // wait for page flipping to end or not
 extern consvar_t cv_vidwait;
 extern consvar_t cv_timescale;

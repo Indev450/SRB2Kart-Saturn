@@ -125,11 +125,8 @@ static INT32 foundAnimVoteWideFrames = 0;
 
 intertype_t intertype = int_none;
 
-
-#ifdef HAVE_BLUA
 static huddrawlist_h luahuddrawlist_intermission = NULL;
 static huddrawlist_h luahuddrawlist_vote = NULL;
-#endif
 
 static void Y_FollowIntermission(void);
 static void Y_UnloadData(void);
@@ -337,20 +334,17 @@ static void Y_CalculateMatchData(UINT8 rankingsmode, void (*comparison)(INT32))
 // Y_AnimatedVoteScreenCheck
 //
 // Check if the lumps exist (checking for VEXTR(N|W)xx for race and VEXTRB(N|W)xx for battle)
-void Y_AnimatedVoteScreenCheck(void)
+static void Y_AnimatedVoteScreenCheck(void)
 {
 	char tmpPrefix[] = "INTS";
 	boolean stopSearching = false;
 
 	if (luaVoteScreen)
-	{
 		strncpy(tmpPrefix, luaVoteScreen, 4);
-	}
 	else
 	{
-		if(G_BattleGametype()) {
+		if(G_BattleGametype())
 			strcpy(tmpPrefix, "BTLS");
-		}
 	}
 
 	strncpy(animPrefix, tmpPrefix, 4);
@@ -363,20 +357,22 @@ void Y_AnimatedVoteScreenCheck(void)
 	currentAnimFrame = 0;
 
 	INT32 i = 1;
-	while(!stopSearching){
+	while(!stopSearching)
+	{
 		boolean normalLumpExists = W_LumpExists(va("%sC%d", tmpPrefix, i));
 		boolean wideLumpExists = W_LumpExists(va("%sW%d", tmpPrefix, i));
 
-		if(normalLumpExists || wideLumpExists){
-			if(normalLumpExists){
+		if (normalLumpExists || wideLumpExists)
+		{
+			if (normalLumpExists)
 				foundAnimVoteFrames++;
-			}
-			if(wideLumpExists){
+
+			if (wideLumpExists)
 				foundAnimVoteWideFrames++;
-			}
-		} else { // If we don't find at least frame 1 (e.g VEXTRN1), let's just stop looking
-			stopSearching = true;
 		}
+		else // If we don't find at least frame 1 (e.g VEXTRN1), let's just stop looking
+			stopSearching = true;
+
 		i++;
 	}
 }
@@ -433,16 +429,14 @@ void Y_IntermissionDrawer(void)
 	else
 		hilicol = ((intertype == int_race) ? V_SKYMAP : V_REDMAP);
 
-	if (sorttic != -1 && intertic > sorttic && !demo.playback)
+	if (sorttic != -1 && intertic >= sorttic && !demo.playback)
 	{
 		INT32 count = (intertic - sorttic);
 
 		if (count < 8)
-			x -= ((count * vid.width) / (8 * vid.dupx));
-		else if (count == 8)
-			goto dotimer;
+			x -= ((((count<<FRACBITS) + R_GetHudUncap()) * vid.width)>>FRACBITS) / (8 * vid.dupx);
 		else if (count < 16)
-			x += (((16 - count) * vid.width) / (8 * vid.dupx));
+			x += (((((16 - count)<<FRACBITS) - R_GetHudUncap()) * vid.width)>>FRACBITS) / (8 * vid.dupx);
 	}
 
 	// SRB2kart 290117 - compeltely replaced this block.
@@ -539,22 +533,21 @@ void Y_IntermissionDrawer(void)
 				{
 					UINT8 *colormap = R_GetTranslationColormap(*data.match.character[i], *data.match.color[i], GTC_CACHE);
 					// i fucking hate this i fucking hate this i hate this so much
-					if (!players[data.match.num[i]].skinlocal) {
-						if (!players[data.match.num[i]].localskin)
-							if (cv_highresportrait.value)
-								V_DrawSmallMappedPatch(x+16, y-4, 0, facewantprefix[*data.match.character[i]], colormap);
-							else	
-								V_DrawMappedPatch(x+16, y-4, 0, facerankprefix[*data.match.character[i]], colormap);
-						else
-							if (cv_highresportrait.value)
-								V_DrawSmallMappedPatch(x+16, y-4, 0, facewantprefix[players[data.match.num[i]].localskin - 1], colormap);
-							else
-								V_DrawMappedPatch(x+16, y-4, 0, facerankprefix[players[data.match.num[i]].localskin - 1], colormap);
-					} else {
+					if (!players[data.match.num[i]].skinlocal)
+					{
+						int skinIndex = players[data.match.num[i]].localskin ? players[data.match.num[i]].localskin - 1 : *data.match.character[i];
+
 						if (cv_highresportrait.value)
-							V_DrawSmallMappedPatch(x+16, y-4, 0, localfacewantprefix[players[data.match.num[i]].localskin - 1], colormap);
+							V_DrawSmallMappedPatch(x + 16, y - 4, 0, facewantprefix[skinIndex], colormap);
 						else
-							V_DrawMappedPatch(x+16, y-4, 0, localfacerankprefix[players[data.match.num[i]].localskin - 1], colormap);
+							V_DrawMappedPatch(x + 16, y - 4, 0, facerankprefix[skinIndex], colormap);
+					}
+					else
+					{
+						if (cv_highresportrait.value)
+							V_DrawSmallMappedPatch(x + 16, y - 4, 0, localfacewantprefix[players[data.match.num[i]].localskin - 1], colormap);
+						else
+							V_DrawMappedPatch(x + 16, y - 4, 0, localfacerankprefix[players[data.match.num[i]].localskin - 1], colormap);
 					}
 				}
 
@@ -637,7 +630,6 @@ void Y_IntermissionDrawer(void)
 		}
 	}
 
-dotimer:
 	if (timer)
 	{
 		char *string;
@@ -675,14 +667,12 @@ dotimer:
 	if (cv_scrambleonchange.value && cv_teamscramble.value && (intertic/TICRATE % 2 == 0))
 		V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT/2, hilicol, M_GetText("Teams will be scrambled next round!"));
 
-#ifdef HAVE_BLUA
 	if (renderisnewtic)
 	{
 		LUA_HUD_ClearDrawList(luahuddrawlist_intermission);
 		LUAh_IntermissionHUD(luahuddrawlist_intermission);
 	}
 	LUA_HUD_DrawList(luahuddrawlist_intermission);
-#endif
 }
 
 //
@@ -710,21 +700,9 @@ void Y_Ticker(void)
 	if (paused || P_AutoPause())
 		return;
 
-#ifdef HAVE_BLUA
 	LUAh_IntermissionThinker();
-#endif
 
 	intertic++;
-
-	// Team scramble code for team match and CTF.
-	// Don't do this if we're going to automatically scramble teams next round.
-	/*if (G_GametypeHasTeams() && cv_teamscramble.value && !cv_scrambleonchange.value && server)
-	{
-		// If we run out of time in intermission, the beauty is that
-		// the P_Ticker() team scramble code will pick it up.
-		if ((intertic % (TICRATE/7)) == 0)
-			P_DoTeamscrambling();
-	}*/
 
 	// multiplayer uses timer (based on cv_inttime)
 	if (timer)
@@ -944,11 +922,6 @@ void Y_StartIntermission(void)
 				mapvisited[gamemap-1] |= MV_BEATEN;
 				if (ALL7EMERALDS(emeralds))
 					mapvisited[gamemap-1] |= MV_ALLEMERALDS;
-				/*if (ultimatemode)
-					mapvisited[gamemap-1] |= MV_ULTIMATE;
-				if (data.coop.gotperfbonus)
-					mapvisited[gamemap-1] |= MV_PERFECT;*/
-
 				if (modeattacking == ATTACKING_RECORD)
 					Y_UpdateRecordReplays();
 			}
@@ -970,10 +943,8 @@ void Y_StartIntermission(void)
 		usebuffer = true;
 	}
 
-#ifdef HAVE_BLUA
 	LUA_HUD_DestroyDrawList(luahuddrawlist_intermission);
 	luahuddrawlist_intermission = LUA_HUD_CreateDrawList();
-#endif
 }
 
 // ======
@@ -1019,34 +990,6 @@ static void Y_UnloadData(void)
 	UNLOAD(widebgpatch);
 	UNLOAD(bgtile);
 	UNLOAD(interpic);
-
-	/*switch (intertype)
-	{
-		case int_coop:
-			// unload the coop and single player patches
-			UNLOAD(data.coop.ttlnum);
-			UNLOAD(data.coop.bonuspatches[3]);
-			UNLOAD(data.coop.bonuspatches[2]);
-			UNLOAD(data.coop.bonuspatches[1]);
-			UNLOAD(data.coop.bonuspatches[0]);
-			UNLOAD(data.coop.ptotal);
-			break;
-		case int_spec:
-			// unload the special stage patches
-			//UNLOAD(data.spec.cemerald);
-			//UNLOAD(data.spec.nowsuper);
-			UNLOAD(data.spec.bonuspatch);
-			UNLOAD(data.spec.pscore);
-			UNLOAD(data.spec.pcontinues);
-			break;
-		case int_match:
-		case int_race:
-		default:
-			//without this default,
-			//int_none, int_tag, int_chaos, and int_classicrace
-			//are not handled
-			break;
-	}*/
 }
 
 // SRB2Kart: Voting!
@@ -1055,36 +998,29 @@ static void Y_UnloadData(void)
 //
 // Draw animated patch based on frame counter on vote screen
 //
-void Y_DrawAnimatedVoteScreenPatch(boolean widePatch){
+static inline void Y_DrawAnimatedVoteScreenPatch(boolean widePatch)
+{
 	char tempAnimPrefix[7];
 	(widePatch) ? strcpy(tempAnimPrefix, animWidePrefix) : strcpy(tempAnimPrefix, animPrefix);
 	INT32 tempFoundAnimVoteFrames = (widePatch) ? foundAnimVoteWideFrames : foundAnimVoteFrames;
-	INT32 flags = V_SNAPTOBOTTOM | V_SNAPTOTOP;
 
 	// Just in case someone provides LESS widescreen frames than normal frames or vice versa, reset the frame counter to 0
-	if(widePatch) {
-		if(currentAnimFrame > foundAnimVoteWideFrames-1){
+	if (widePatch)
+	{
+		if (currentAnimFrame > foundAnimVoteWideFrames-1)
 			currentAnimFrame = 0;
-		}
-	} else {
-		if(currentAnimFrame > foundAnimVoteFrames-1){
+	}
+	else
+	{
+		if (currentAnimFrame > foundAnimVoteFrames-1)
 			currentAnimFrame = 0;
-		}
 	}
 
-	/*patch_t *currPatch = W_CachePatchName(va("%s%d", tempAnimPrefix, currentAnimFrame+1), PU_CACHE);
-	V_DrawScaledPatch(((vid.width/2) / vid.dupx) - (SHORT(currPatch->width)/2), // Keep the width/height adjustments, for screens that are less wide than 320(?)
-				(vid.height / vid.dupy) - SHORT(currPatch->height),
-				V_SNAPTOTOP|V_SNAPTOLEFT, currPatch);
-	if(votetic % 3 == 0 && !paused){*/
-		
-	{
-		patch_t *background = W_CachePatchName(va("%s%d", tempAnimPrefix, currentAnimFrame + 1), PU_CACHE);		
-		V_DrawScaledPatch(160 - (background->width / 2), (200 - (background->height)), flags, background);		
-	}
-	if (lastvotetic != votetic && lastvotetic % 2 == 0) {
-		currentAnimFrame = (currentAnimFrame+1 > tempFoundAnimVoteFrames-1) ? 0 : currentAnimFrame + 1; // jeez no fucking idea how to make this shit not go nuts with interpolation
-	}
+	patch_t *background = W_CachePatchName(va("%s%d", tempAnimPrefix, currentAnimFrame + 1), PU_CACHE);		
+	V_DrawScaledPatch(160 - (background->width / 2), (200 - (background->height)), V_SNAPTOBOTTOM|V_SNAPTOTOP, background);		
+
+	if (lastvotetic != votetic && lastvotetic % 2 == 0)
+		currentAnimFrame = (currentAnimFrame + 1 > tempFoundAnimVoteFrames - 1) ? 0 : currentAnimFrame + 1; // jeez no fucking idea how to make this shit not go nuts with interpolation
 }
 
 //
@@ -1107,42 +1043,30 @@ void Y_VoteDrawer(void)
 	if (!voteclient.loaded)
 		return;
 
-	{
-		static angle_t rubyfloattime = 0;
-		rubyheight = FINESINE(rubyfloattime>>ANGLETOFINESHIFT);
-		rubyfloattime += FixedMul(ANGLE_MAX/NEWTICRATE, renderdeltatics);
-	}
+	static angle_t rubyfloattime = 0;
+	rubyheight = FINESINE(rubyfloattime>>ANGLETOFINESHIFT);
+	rubyfloattime += FixedMul(ANGLE_MAX/NEWTICRATE, renderdeltatics);
 
 	V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 31);
 
-	if (widebgpatch && vid.width / vid.dupx > 320) {
-
-		if(foundAnimVoteWideFrames == 0){
+	if (widebgpatch && vid.width / vid.dupx > 320)
+	{
+		if (foundAnimVoteWideFrames == 0)
 			V_DrawScaledPatch(((vid.width/2) / vid.dupx) - (SHORT(widebgpatch->width)/2),
 								(vid.height / vid.dupy) - SHORT(widebgpatch->height),
 								V_SNAPTOTOP|V_SNAPTOLEFT, widebgpatch);
-		} else {
-			// patch_t *currPatch = W_CachePatchName(va("%s%d", animPrefix, currentAnimFrame+1), PU_CACHE);
-			// V_DrawScaledPatch(((vid.width/2) / vid.dupx) - (SHORT(currPatch->width)/2), // Keep the width/height adjustments, for screens that are less wide than 320(?)
-			// 			(vid.height / vid.dupy) - SHORT(currPatch->height),
-			// 			V_SNAPTOTOP|V_SNAPTOLEFT, currPatch);
-			// if(votetic % 4 == 0 && !paused){
-			// 	currentAnimFrame = (currentAnimFrame+1 > foundAnimVoteFrames-1) ? 0 : currentAnimFrame + 1;
-			// }
+		else
 			Y_DrawAnimatedVoteScreenPatch(true);
-		}
-	} else {
-		if(foundAnimVoteFrames == 0) {
+	}
+	else
+	{
+		if (foundAnimVoteFrames == 0)
 			V_DrawScaledPatch(((vid.width/2) / vid.dupx) - (SHORT(bgpatch->width)/2), // Keep the width/height adjustments, for screens that are less wide than 320(?)
 								(vid.height / vid.dupy) - SHORT(bgpatch->height),
 								V_SNAPTOTOP|V_SNAPTOLEFT, bgpatch);
-		} else {
+		else
 			Y_DrawAnimatedVoteScreenPatch(false);
-		}
-
-
 	}
-							
 
 	for (i = 0; i < 4; i++) // First, we need to figure out the height of this thing...
 	{
@@ -1366,14 +1290,12 @@ void Y_VoteDrawer(void)
 	
 	lastvotetic = votetic;
 
-#ifdef HAVE_BLUA
 	if (renderisnewtic)
 	{
 		LUA_HUD_ClearDrawList(luahuddrawlist_vote);
 		LUAh_VoteHUD(luahuddrawlist_vote);
 	}
 	LUA_HUD_DrawList(luahuddrawlist_vote);
-#endif
 }
 
 //
@@ -1418,9 +1340,7 @@ void Y_VoteTicker(void)
 	if (paused || P_AutoPause() || !voteclient.loaded)
 		return;
 
-#ifdef HAVE_BLUA
 	LUAh_VoteThinker();
-#endif
 
 	votetic++;
 
@@ -1706,10 +1626,8 @@ void Y_StartVote(void)
 
 	voteclient.loaded = true;
 
-#ifdef HAVE_BLUA
 	LUA_HUD_DestroyDrawList(luahuddrawlist_vote);
 	luahuddrawlist_vote = LUA_HUD_CreateDrawList();
-#endif
 }
 
 //

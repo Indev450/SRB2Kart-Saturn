@@ -11,7 +11,6 @@
 /// \brief player object library for Lua scripting
 
 #include "doomdef.h"
-#ifdef HAVE_BLUA
 #include "fastcmp.h"
 #include "r_main.h"
 #include "r_things.h"
@@ -303,7 +302,7 @@ int player_localskin_setter(lua_State *L)
 {
 	player_t *plr = GETPLAYER();
 
-	SetLocalPlayerSkin(plr - players, luaL_checkstring(L, 2), NULL);
+	SetLocalPlayerSkin(plr - players, luaL_optstring(L, 2, "none"), NULL);
 
 	return 0;
 }
@@ -821,5 +820,3 @@ int LUA_PlayerLib(lua_State *L)
 
 	return 0;
 }
-
-#endif

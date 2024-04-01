@@ -134,35 +134,23 @@ void P_ClosestPointOnLine3D(fixed_t x, fixed_t y, fixed_t z, line_t *line, verte
 // P_PointOnLineSide
 // Returns 0 or 1
 //
-INT32 P_PointOnLineSide(fixed_t x, fixed_t y, line_t *line)
+INT32 P_PointOnLineSide(fixed_t x, fixed_t y, const line_t *line)
 {
-	const vertex_t *v1 = line->v1;
 	fixed_t dx, dy, left, right;
 
 	if (!line->dx)
-	{
-		if (x <= v1->x)
-			return (line->dy > 0);
+		return x <= line->v1->x ? line->dy > 0 : line->dy < 0;
 
-		return (line->dy < 0);
-	}
 	if (!line->dy)
-	{
-		if (y <= v1->y)
-			return (line->dx < 0);
+		return y <= line->v1->y ? line->dx < 0 : line->dx > 0;
 
-		return (line->dx > 0);
-	}
-
-	dx = (x - v1->x);
-	dy = (y - v1->y);
+	dx = (x - line->v1->x);
+	dy = (y - line->v1->y);
 
 	left = FixedMul(line->dy>>FRACBITS, dx);
 	right = FixedMul(dy, line->dx>>FRACBITS);
 
-	if (right < left)
-		return 0; // front side
-	return 1; // back side
+	return right < left ? 0 : 1;
 }
 
 //
@@ -170,7 +158,7 @@ INT32 P_PointOnLineSide(fixed_t x, fixed_t y, line_t *line)
 // Considers the line to be infinite
 // Returns side 0 or 1, -1 if box crosses the line.
 //
-INT32 P_BoxOnLineSide(fixed_t *tmbox, line_t *ld)
+INT32 P_BoxOnLineSide(fixed_t *tmbox, const line_t *ld)
 {
 	INT32 p1, p2;
 
@@ -225,38 +213,24 @@ static INT32 P_PointOnDivlineSide(fixed_t x, fixed_t y, divline_t *line)
 	fixed_t dx, dy, left, right;
 
 	if (!line->dx)
-	{
-		if (x <= line->x)
-			return line->dy > 0;
+		return x <= line->x ? line->dy > 0 : line->dy < 0;
 
-		return line->dy < 0;
-	}
 	if (!line->dy)
-	{
-		if (y <= line->y)
-			return line->dx < 0;
-
-		return line->dx > 0;
-	}
+		return y <= line->y ? line->dx < 0 : line->dx > 0;
 
 	dx = (x - line->x);
 	dy = (y - line->y);
 
 	// try to quickly decide by looking at sign bits
 	if ((line->dy ^ line->dx ^ dx ^ dy) & 0x80000000)
-	{
-		if ((line->dy ^ dx) & 0x80000000)
-			return 1; // left is negative
-		return 0;
-	}
+		return ((line->dy ^ dx) & 0x80000000) ? 1 : 0;
 
 	left = FixedMul(line->dy>>8, dx>>8);
 	right = FixedMul(dy>>8, line->dx>>8);
 
-	if (right < left)
-		return 0; // front side
-	return 1; // back side
+	return right < left ? 0 : 1;
 }
+
 
 //
 // P_MakeDivline
@@ -546,22 +520,6 @@ void P_LineOpening(line_t *linedef, mobj_t *mobj)
 				texheight = textures[texnum]->height << FRACBITS;
 
 				// Set texbottom and textop to the Z coordinates of the texture's boundaries
-#if 0 // #ifdef POLYOBJECTS
-				// don't remove this code unless solid midtextures
-				// on non-solid polyobjects should NEVER happen in the future
-				if (linedef->polyobj && (linedef->polyobj->flags & POF_TESTHEIGHT)) {
-					if (linedef->flags & ML_EFFECT5 && !side->repeatcnt) { // "infinite" repeat
-						texbottom = back->floorheight + side->rowoffset;
-						textop = back->ceilingheight + side->rowoffset;
-					} else if (!!(linedef->flags & ML_DONTPEGBOTTOM) ^ !!(linedef->flags & ML_EFFECT3)) {
-						texbottom = back->floorheight + side->rowoffset;
-						textop = texbottom + texheight*(side->repeatcnt+1);
-					} else {
-						textop = back->ceilingheight + side->rowoffset;
-						texbottom = textop - texheight*(side->repeatcnt+1);
-					}
-				} else
-#endif
 				{
 					if (linedef->flags & ML_EFFECT5 && !side->repeatcnt) { // "infinite" repeat
 						texbottom = openbottom + side->rowoffset;

@@ -156,6 +156,7 @@ extern consvar_t cv_pingtimeout;
 extern consvar_t cv_showping;
 extern consvar_t cv_pingmeasurement;
 extern consvar_t cv_pingicon;
+extern consvar_t cv_pingstyle;
 
 //extern consvar_t cv_smallpos;
 extern consvar_t cv_showminimapnames;
@@ -172,8 +173,28 @@ extern consvar_t cv_skipmapcheck;
 
 extern consvar_t cv_sleep;
 
+extern consvar_t cv_nametag;
+extern consvar_t cv_nametagtrans;
+extern consvar_t cv_nametagfacerank;
+extern consvar_t cv_nametagmaxplayers;
+extern consvar_t cv_nametagmaxlenght;
+//extern consvar_t cv_nametagscaling;
+extern consvar_t cv_nametagdist;
+extern consvar_t cv_showownnametag;
+extern consvar_t cv_smallnametags;
+extern consvar_t cv_nametagrestat;
+extern consvar_t cv_nametaghop;
+extern consvar_t cv_nametagscore;
+extern consvar_t cv_shownametagfinish;
+extern consvar_t cv_shownametagspectator;
+
 #define SKINSELECTSPIN_PAIN 25
 extern consvar_t cv_skinselectspin;
+
+extern consvar_t cv_driftgauge;
+extern consvar_t cv_driftgaugeofs;
+extern consvar_t cv_driftgaugetrans;
+extern consvar_t cv_driftgaugestyle;
 
 extern consvar_t cv_perfstats;
 extern consvar_t cv_ps_thinkframe_page;
@@ -181,6 +202,8 @@ extern consvar_t cv_ps_samplesize;
 extern consvar_t cv_ps_descriptor;
 
 extern consvar_t cv_showtrackaddon;
+
+extern consvar_t cv_showspecstuff;
 
 typedef enum
 {
@@ -232,10 +255,8 @@ typedef enum
 	XD_PICKVOTE,    // 24
 	XD_REMOVEPLAYER,// 25
 	XD_DISCORD,     // 26
-#ifdef HAVE_BLUA
 	XD_LUACMD,      // 27
 	XD_LUAVAR,      // 28
-#endif
 	MAXNETXCMD
 } netxcmd_t;
 

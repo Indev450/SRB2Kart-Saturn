@@ -13,7 +13,6 @@
 #include <stddef.h>
 
 #include "doomdef.h"
-#ifdef HAVE_BLUA
 #include "fastcmp.h"
 #include "r_things.h"
 #include "r_main.h"
@@ -83,8 +82,11 @@ static const udata_field_t mobj_fields[] = {
     FIELD(mobj_t, snext,               udatalib_getter_mobj,       mobj_snext_noset),
     FIELD(mobj_t, sprev,               mobj_sprev_unimplemented,   mobj_sprev_unimplemented),
     FIELD(mobj_t, angle,               udatalib_getter_angle,      mobj_angle_setter),
+    FIELD(mobj_t, pitch,               udatalib_getter_angle,      udatalib_setter_angle),
+    FIELD(mobj_t, roll,                udatalib_getter_angle,      udatalib_setter_angle),
     FIELD(mobj_t, rollangle,           udatalib_getter_angle,      udatalib_setter_angle),
     FIELD(mobj_t, sloperoll,           udatalib_getter_angle,      mobj_sloperoll_noop),
+    FIELD(mobj_t, slopepitch,          udatalib_getter_angle,      mobj_sloperoll_noop),
 	// Macro fails here
 	{ "rollsum", 0, mobj_rollsum_getter, mobj_rollsum_noset },
     FIELD(mobj_t, sprite,              udatalib_getter_spritenum,  udatalib_setter_spritenum),
@@ -418,35 +420,43 @@ int mobj_localskin_setter(lua_State *L)
 
 	if (mo->player)
 	{
-		SetLocalPlayerSkin(mo->player - players, luaL_checkstring(L, 2), NULL);
+		SetLocalPlayerSkin(mo->player - players, luaL_optstring(L, 2, "none"), NULL);
 	}
 	else
 	{
 		INT32 i;
 		char skin[SKINNAMESIZE+1]; // all skin names are limited to this length
-		strlcpy(skin, luaL_checkstring(L, 2), sizeof skin);
+		strlcpy(skin, luaL_optstring(L, 2, "none"), sizeof skin);
 		strlwr(skin); // all skin names are lowercase
 
-		// Try localskins
-		for (i = 0; i < numlocalskins; i++)
+		if (strcasecmp(skin, "none"))
 		{
-			if (stricmp(localskins[i].name, skin) == 0)
+			// Try localskins
+			for (i = 0; i < numlocalskins; i++)
 			{
-				mo->localskin = &localskins[i];
-				mo->skinlocal = true;
-				return 0;
+				if (stricmp(localskins[i].name, skin) == 0)
+				{
+					mo->localskin = &localskins[i];
+					mo->skinlocal = true;
+					return 0;
+				}
+			}
+
+			// Try other skins
+			for (i = 0; i < numskins; i++)
+			{
+				if (fastcmp(skins[i].name, skin))
+				{
+					mo->localskin = &skins[i];
+					mo->skinlocal = false;
+					return 0;
+				}
 			}
 		}
-
-		// Try other skins
-		for (i = 0; i < numskins; i++)
+		else
 		{
-			if (fastcmp(skins[i].name, skin))
-			{
-				mo->localskin = &skins[i];
-				mo->skinlocal = false;
-				return 0;
-			}
+			mo->localskin = 0;
+			mo->skinlocal = false;
 		}
 	}
 
@@ -624,7 +634,9 @@ int mobj_rollsum_getter(lua_State *L)
 {
 	mobj_t *mo = GETMO();
 
-	angle_t rollsum = mo->rollangle + cv_sloperoll.value ? mo->sloperoll : 0;
+    angle_t pitchnroll = P_MobjPitchAndRoll(mo);
+
+	angle_t rollsum = mo->rollangle + pitchnroll;
 
 	if (mo->player)
 	{
@@ -914,5 +926,3 @@ int LUA_MobjLib(lua_State *L)
 	lua_setglobal(L, "mapthings");
 	return 0;
 }
-
-#endif

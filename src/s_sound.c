@@ -30,9 +30,7 @@
 #include "m_cond.h" // for conditionsets
 #include "m_menu.h" // bird music stuff
 
-#ifdef HAVE_BLUA
 #include "lua_hook.h" // MusicChange hook
-#endif
 
 #ifdef HW3SOUND
 // 3D Sound Interface
@@ -41,7 +39,6 @@
 static boolean S_AdjustSoundParams(const mobj_t *listener, const mobj_t *source, INT32 *vol, INT32 *sep, INT32 *pitch, sfxinfo_t *sfxinfo);
 #endif
 
-CV_PossibleValue_t soundvolume_cons_t[] = {{0, "MIN"}, {31, "MAX"}, {0, NULL}};
 static void SetChannelsNum(void);
 static void Command_Tunes_f(void);
 static void Command_RestartAudio_f(void);
@@ -53,6 +50,7 @@ static void Command_ShowMusicCredit_f(void);
 static void GameMIDIMusic_OnChange(void);
 #endif
 static void GameSounds_OnChange(void);
+static void SoundPrecache_OnChange(void);
 static void GameDigiMusic_OnChange(void);
 static void BufferSize_OnChange(void);
 
@@ -67,21 +65,23 @@ static void AmigaType_OnChange(void);
 
 consvar_t cv_samplerate = {"samplerate", "44100", 0, CV_Unsigned, NULL, 22050, NULL, NULL, 0, 0, NULL}; //Alam: For easy hacking?
 
-static CV_PossibleValue_t audbuffersize_cons_t[] = {{1024, "1024"}, {2048, "2048"}, {4096, "4096"}, {0, NULL}};
+static CV_PossibleValue_t audbuffersize_cons_t[] = {{512, "512"}, {1024, "1024"}, {2048, "2048"}, {4096, "4096"}, {0, NULL}};
 consvar_t cv_audbuffersize = {"buffersize", "2048", CV_SAVE, audbuffersize_cons_t, BufferSize_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 // stereo reverse
 consvar_t stereoreverse = {"stereoreverse", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 // if true, all sounds are loaded at game startup
-static consvar_t precachesound = {"precachesound", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t precachesound = {"precachesound", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, SoundPrecache_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 // actual general (maximum) sound & music volume, saved into the config
+static CV_PossibleValue_t soundvolume_cons_t[] = {{0, "MIN"}, {31, "MAX"}, {0, NULL}};
 consvar_t cv_soundvolume = {"soundvolume", "18", CV_SAVE, soundvolume_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_digmusicvolume = {"digmusicvolume", "18", CV_SAVE, soundvolume_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 #ifndef NO_MIDI
 consvar_t cv_midimusicvolume = {"midimusicvolume", "18", CV_SAVE, soundvolume_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 #endif
+
 // number of channels available
 consvar_t cv_numChannels = {"snd_channels", "64", CV_SAVE|CV_CALL, CV_Unsigned, SetChannelsNum, 0, NULL, NULL, 0, 0, NULL};
 
@@ -120,7 +120,6 @@ consvar_t cv_resume = {"resume", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0
 consvar_t cv_fading = {"fading", "Off", CV_SAVE|CV_CALL, CV_OnOff, Bird_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_birdmusic = {"birdmusicstuff", "No", CV_SAVE|CV_CALL, CV_YesNo, Bird_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
 
-
 #ifdef HAVE_OPENMPT
 openmpt_module *openmpt_mhandle = NULL;
 
@@ -137,7 +136,6 @@ consvar_t cv_amigafilter = {"amigafilter", "1", CV_SAVE|CV_CALL, amigafilter_con
 static CV_PossibleValue_t amigatype_cons_t[] = {{0, "auto"}, {1, "a500"}, {2, "a1200"}, {0, NULL}};
 consvar_t cv_amigatype = {"amigatype", "0", CV_SAVE|CV_CALL|CV_NOINIT, amigatype_cons_t, AmigaType_OnChange, 0, NULL, NULL, 0, 0, NULL};
 #endif
-
 #endif
 
 #define S_MAX_VOLUME 127
@@ -344,7 +342,6 @@ static void SetChannelsNum(void)
 		channels[i].sfxinfo = 0;
 }
 
-
 // Retrieve the lump number of sfx
 //
 lumpnum_t S_GetSfxLumpNum(sfxinfo_t *sfx)
@@ -379,6 +376,10 @@ boolean S_SoundDisabled(void)
 	);
 }
 
+boolean S_PrecacheSound(void)
+{
+	return (!sound_disabled && (M_CheckParm("-precachesound") || precachesound.value));
+}
 
 // Stop all sounds, load level info, THEN start sounds.
 void S_StopSounds(void)
@@ -459,7 +460,6 @@ static INT32 S_ScaleVolumeWithSplitscreen(INT32 volume)
 		root
 	) / FRACUNIT;
 }
-
 
 void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
 {
@@ -970,9 +970,10 @@ static void S_StopChannel(INT32 cnum)
 
 		// degrade usefulness of sound data
 		c->sfxinfo->usefulness--;
-
 		c->sfxinfo = 0;
 	}
+
+	c->origin = NULL;
 }
 
 //
@@ -1263,15 +1264,19 @@ void S_InitSfxChannels(INT32 sfxVolume)
 		S_sfx[i].lumpnum = LUMPERROR;
 	}
 
-	// precache sounds if requested by cmdline, or precachesound var true
-	if (!sound_disabled && (M_CheckParm("-precachesound") || precachesound.value))
+	// Precache sounds if requested
+	if (S_PrecacheSound())
 	{
 		// Initialize external data (all sounds) at start, keep static.
 		CONS_Printf(M_GetText("Loading sounds... "));
 
-		for (i = 1; i < NUMSFX; i++)
-			if (S_sfx[i].name)
-				S_sfx[i].data = I_GetSfx(&S_sfx[i]);
+			for (i = 1; i < sfx_freeslot0; i++)
+				if (S_sfx[i].name && !S_sfx[i].data)
+					S_sfx[i].data = I_GetSfx(&S_sfx[i]);
+
+			for (i = sfx_freeslot0; i < NUMSFX; i++)
+				if (S_sfx[i].priority && !S_sfx[i].data)
+					S_sfx[i].data = I_GetSfx(&S_sfx[i]);
 
 		CONS_Printf(M_GetText(" pre-cached all sound data\n"));
 	}
@@ -1322,19 +1327,6 @@ static UINT32    queue_fadeinms;
 
 musicdef_t *musicdefstart = NULL; // First music definition
 struct cursongcredit cursongcredit; // Currently displayed song credit info
-
-musicdef_t soundtestsfx = {
-	"_STSFX", // prevents exactly one valid track name from being used on the sound test
-	"Sound Effects",
-	"",
-	"SEGA, Sonic Team Jr, other sources",
-	1, // show on soundtest page 1
-	0, // with no conditions
-	0,
-	0,
-	false,
-	NULL
-};
 
 //
 // search for music definition in wad
@@ -1442,8 +1434,9 @@ void S_LoadMusicDefs(UINT16 wadnum)
 					//CONS_Printf("S_LoadMusicDefs: Added song '%s'\n", def->name);
 				}
 			}
-			
+
 			strncpy(def->filename, wadfiles[wadnum]->filename, 256);
+			def->filename[256] = '\0';
 
 skip_lump:
 			stoken = strtok(NULL, "\r\n ");
@@ -1681,6 +1674,7 @@ void S_InitMTDefs(void)
 	for (i = 0; i < numwadfiles; i++)
 		S_LoadMTDefs(i);
 }
+
 //
 // S_FindMusicCredit
 //
@@ -1775,7 +1769,6 @@ boolean S_PrepareSoundTest(void)
 
 	return true;
 }
-
 
 /// ------------------------
 /// Music Status
@@ -1994,19 +1987,17 @@ static void S_ChangeMusicToQueue(void)
 
 void S_ChangeMusicEx(const char *mmusic, UINT16 mflags, boolean looping, UINT32 position, UINT32 prefadems, UINT32 fadeinms)
 {
-	char newmusic[7];
+	char newmusic[7] = {0};
 
 	if (S_MusicDisabled()
 		|| demo.rewinding // Don't mess with music while rewinding!
 		|| demo.title) // SRB2Kart: Demos don't interrupt title screen music
 		return;
 
-	strncpy(newmusic, mmusic, 7);
-#ifdef HAVE_BLUA
+	strncpy(newmusic, mmusic, 6);
+
 	if(LUAh_MusicChange(music_name, newmusic, &mflags, &looping, &position, &prefadems, &fadeinms))
 		return;
-#endif
-	newmusic[6] = 0;
 
  	// No Music (empty string)
 	if (newmusic[0] == 0)
@@ -2063,8 +2054,7 @@ void S_ChangeMusicEx(const char *mmusic, UINT16 mflags, boolean looping, UINT32 
 	}
 }
 
-void
-S_ChangeMusicSpecial (const char *mmusic)
+void S_ChangeMusicSpecial (const char *mmusic)
 {
 	if (cv_resetspecialmusic.value)
 		S_ChangeMusic(mmusic, MUSIC_FORCERESET, true);
@@ -2151,14 +2141,12 @@ void S_SetMusicVolume(INT32 digvolume, INT32 seqvolume)
 	}
 }
 
-void
-S_SetRestoreMusicFadeInCvar (consvar_t *cv)
+void S_SetRestoreMusicFadeInCvar (consvar_t *cv)
 {
 	music_refade_cv = cv;
 }
 
-int
-S_GetRestoreMusicFadeIn (void)
+int S_GetRestoreMusicFadeIn (void)
 {
 	if (music_refade_cv && cv_fading.value)
 		return music_refade_cv->value;
@@ -2166,15 +2154,13 @@ S_GetRestoreMusicFadeIn (void)
 		return 0;
 }
 
-void
-S_SetMusicUsage (int type)
+void S_SetMusicUsage (int type)
 {
 	music_usage = type;
 	I_UpdateSongLagConditions();
 }
 
-int
-S_MusicUsage (void)
+int S_MusicUsage (void)
 {
 	return music_usage;
 }
@@ -2382,34 +2368,47 @@ static void Command_ShowMusicCredit_f(void)
 	}
 }
 
-void GameSounds_OnChange(void)
+static void GameSounds_OnChange(void)
 {
 	if (M_CheckParm("-nosound") || M_CheckParm("-noaudio"))
 		return;
 
-	if (sound_disabled)
+	if (sound_disabled && cv_gamesounds.value)
 	{
 		sound_disabled = false;
 		I_StartupSound(); // will return early if initialised
 		S_InitSfxChannels(cv_soundvolume.value);
 		S_StartSound(NULL, sfx_strpst);
 	}
-	else
+	else if (!sound_disabled && !cv_gamesounds.value)
 	{
 		sound_disabled = true;
 		S_StopSounds();
 	}
 }
 
+static void SoundPrecache_OnChange(void)
+{
+	if (S_PrecacheSound())
+	{
+		S_InitSfxChannels(cv_soundvolume.value);
+	}
+	else if (!S_PrecacheSound())
+	{
+		S_ClearSfx();
+		if (!sound_disabled)
+			S_InitSfxChannels(cv_soundvolume.value);
+	}
+}
 
-void GameDigiMusic_OnChange(void)
+static void GameDigiMusic_OnChange(void)
 {
 	if (M_CheckParm("-nomusic") || M_CheckParm("-noaudio"))
 		return;
 	else if (M_CheckParm("-nodigmusic"))
 		return;
 
-	if (digital_disabled)
+	if (digital_disabled && cv_gamedigimusic.value)
 	{
 		digital_disabled = false;
 		I_StartupSound(); // will return early if initialised
@@ -2420,7 +2419,7 @@ void GameDigiMusic_OnChange(void)
 		else
 			S_ChangeMusicInternal("titles", looptitle);
 	}
-	else
+	else if (!digital_disabled && !cv_gamedigimusic.value)
 	{
 		digital_disabled = true;
 		if (S_MusicType() != MU_MID)
@@ -2447,29 +2446,33 @@ void GameDigiMusic_OnChange(void)
 
 
 #ifdef HAVE_OPENMPT
-void ModFilter_OnChange(void)
+static void ModFilter_OnChange(void)
 {
 	if (openmpt_mhandle)
 		openmpt_module_set_render_param(openmpt_mhandle, OPENMPT_MODULE_RENDER_INTERPOLATIONFILTER_LENGTH, cv_modfilter.value);
 		
 }
 
-void StereoSep_OnChange(void)
+static void StereoSep_OnChange(void)
 {
 	if (openmpt_mhandle)
 		openmpt_module_set_render_param(openmpt_mhandle, OPENMPT_MODULE_RENDER_STEREOSEPARATION_PERCENT, cv_stereosep.value);
 		
 }
 
-void AmigaFilter_OnChange(void)
+static void AmigaFilter_OnChange(void)
 {
 	if (openmpt_mhandle)
+#if OPENMPT_API_VERSION_MAJOR < 1 && OPENMPT_API_VERSION_MINOR > 4
+		openmpt_module_ctl_set_boolean(openmpt_mhandle, "render.resampler.emulate_amiga", cv_amigafilter.value);
+#else
 		openmpt_module_ctl_set(openmpt_mhandle, "render.resampler.emulate_amiga", cv_amigafilter.value ? "1" : "0");
-	}
+#endif
+}
 
 
 #if OPENMPT_API_VERSION_MAJOR < 1 && OPENMPT_API_VERSION_MINOR > 4
-void AmigaType_OnChange(void)
+static void AmigaType_OnChange(void)
 {
 	if (openmpt_mhandle)
 		openmpt_module_ctl_set_text(openmpt_mhandle, "render.resampler.emulate_amiga_type", cv_amigatype.string);
@@ -2480,21 +2483,21 @@ void AmigaType_OnChange(void)
 #endif
 #endif
 
-void BufferSize_OnChange(void)
+static void BufferSize_OnChange(void)
 {
 	if (sound_started)
         COM_ImmedExecute("restartaudio");
 }
 
 #ifndef NO_MIDI
-void GameMIDIMusic_OnChange(void)
+static void GameMIDIMusic_OnChange(void)
 {
 	if (M_CheckParm("-nomusic") || M_CheckParm("-noaudio"))
 		return;
 	else if (M_CheckParm("-nomidimusic"))
 		return;
 
-	if (midi_disabled)
+	if (midi_disabled && cv_gamemidimusic.value)
 	{
 		midi_disabled = false;
 		I_InitMusic();
@@ -2503,7 +2506,7 @@ void GameMIDIMusic_OnChange(void)
 		else
 			S_ChangeMusicInternal("titles", looptitle);
 	}
-	else
+	else if (!midi_disabled && !cv_gamemidimusic.value)
 	{
 		midi_disabled = true;
 		if (S_MusicType() == MU_MID)

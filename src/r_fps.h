@@ -21,6 +21,7 @@
 
 extern consvar_t cv_fpscap;
 extern consvar_t cv_precipinterp;
+extern consvar_t cv_mobjssector;
 
 UINT32 R_GetFramerateCap(void);
 boolean R_UsingFrameInterpolation(void);
@@ -65,6 +66,8 @@ typedef struct {
 	fixed_t spriteyscale;
 	fixed_t spritexoffset;
 	fixed_t spriteyoffset;
+	angle_t pitch, roll;
+	angle_t sloperoll, slopepitch;
 } interpmobjstate_t;
 
 // Level interpolators
@@ -75,7 +78,7 @@ typedef enum {
 	LVLINTERP_SectorScroll,
 	LVLINTERP_SideScroll,
 	LVLINTERP_Polyobj,
-	LVLINTERP_DynSlope,
+	//LVLINTERP_DynSlope,
 } levelinterpolator_type_e;
 
 // Tagged union of a level interpolator
@@ -115,7 +118,7 @@ typedef struct levelinterpolator_s {
 } levelinterpolator_t;
 
 // Interpolates the current view variables (r_state.h) against the selected view context in R_SetViewContext
-void R_InterpolateView(fixed_t frac);
+void R_InterpolateView(fixed_t frac, boolean forceinvalid);
 // Buffer the current new views into the old views. Call once after each real tic.
 void R_UpdateViewInterpolation(void);
 // Reset the view states (e.g. after level load) so R_InterpolateView doesn't interpolate invalid data

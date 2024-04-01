@@ -25,7 +25,6 @@
 
 #include "screen.h" // MAXVIDWIDTH, MAXVIDHEIGHT
 
-#define POLYOBJECTS
 
 //
 // ClipWallSegment
@@ -63,7 +62,6 @@ typedef struct
 	INT32 fadergba; // The colour the colourmaps fade to
 
 	lighttable_t *colormap;
-	
 
 #ifdef HWRENDER
 	// The id of the hardware lighttable. Zero means it does not exist yet.
@@ -212,19 +210,6 @@ typedef struct r_lightlist_s
 	INT32 lightnum;
 } r_lightlist_t;
 
-// ----- for special tricks with HW renderer -----
-
-//
-// For creating a chain with the lines around a sector
-//
-typedef struct linechain_s
-{
-	struct line_s *line;
-	struct linechain_s *next;
-} linechain_t;
-// ----- end special tricks -----
-
-
 
 // Slopes
 typedef enum {
@@ -352,17 +337,6 @@ typedef struct sector_s
 
 	// per-sector colormaps!
 	extracolormap_t *extra_colormap;
-
-#ifdef HWRENDER // ----- for special tricks with HW renderer -----
-	boolean pseudoSector;
-	boolean virtualFloor;
-	fixed_t virtualFloorheight;
-	boolean virtualCeiling;
-	fixed_t virtualCeilingheight;
-	linechain_t *sectorLines;
-	struct sector_s **stackList;
-	double lineoutLength;
-#endif // ----- end special tricks -----
 
 	// This points to the master's floorheight, so it can be changed in realtime!
 	fixed_t *gravity; // per-sector gravity
@@ -665,6 +639,10 @@ typedef struct
 // textures from the TEXTURE1 list of patches.
 //
 // WARNING: this structure is cloned in GLPatch_t
+#if defined(_MSC_VER)
+#pragma pack(1)
+#endif
+
 typedef struct
 {
 	INT16 width;          // bounding box size
@@ -681,20 +659,6 @@ typedef struct
 	rotsprite_t *rotated; // Rotated patches
 #endif
 } patch_t;
-
-#if defined(_MSC_VER)
-#pragma pack(1)
-#endif
-
-typedef struct
-{
-	INT16 width;          // bounding box size
-	INT16 height;
-	INT16 leftoffset;     // pixels to the left of origin
-	INT16 topoffset;      // pixels below the origin
-	INT32 columnofs[8];     // only [width] used
-	// the [0] is &columnofs[width]
-} ATTRPACK softwarepatch_t;
 
 #ifdef _MSC_VER
 #pragma warning(disable :  4200)

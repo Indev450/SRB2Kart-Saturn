@@ -24,13 +24,23 @@
 
 // number of sprite lumps for spritewidth,offset,topoffset lookup tables
 // Fab: this is a hack : should allocate the lookup tables per sprite
+#if defined(__x86_64__) || defined(__amd64__) || defined(__aarch64__) || defined(__arm64__) // only for 64bit (idk how else to proper check lmao)
+#define MAXVISSPRITES 4096
+#else
 #define MAXVISSPRITES 2048 // added 2-2-98 was 128
+#endif
 
 #define VISSPRITECHUNKBITS 6	// 2^6 = 64 sprites per chunk
 #define VISSPRITESPERCHUNK (1 << VISSPRITECHUNKBITS)
 #define VISSPRITEINDEXMASK (VISSPRITESPERCHUNK - 1)
 
 #define FEETADJUST (4<<FRACBITS) // R_AddSingleSpriteDef
+
+// Takes 2 fixed-point coordinates, returns "distance" between them and camera,
+// as an non-fixed-point integer.
+// It is very rough, tho it is used only for optimizing out unnecessary
+// interpolation, so it is kinda ok on big distances.
+#define R_QuickCamDist(x, y) max(abs(((x)>>FRACBITS) - (viewx>>FRACBITS)), abs(((y)>>FRACBITS) - (viewy>>FRACBITS)))
 
 // Constant arrays used for psprite clipping
 //  and initializing clipping.
@@ -54,10 +64,6 @@ void R_SortVisSprites(void);
 //faB: find sprites in wadfile, replace existing, add new ones
 //     (only sprites from namelist are added or replaced)
 void R_AddSpriteDefs(UINT16 wadnum);
-
-#ifdef DELFILE
-void R_DelSpriteDefs(UINT16 wadnum);
-#endif
 
 //SoM: 6/5/2000: Light sprites correctly!
 void R_AddSprites(sector_t *sec, INT32 lightlevel);
@@ -182,7 +188,6 @@ typedef struct vissprite_s
 extern UINT32 visspritecount, numvisiblesprites;
 
 void R_ClipSprites(void);
-void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2);
 
 UINT8 *R_GetSpriteTranslation(vissprite_t *vis);
 
@@ -223,10 +228,6 @@ INT32 R_SkinAvailable(const char *name);
 INT32 R_AnySkinAvailable(const char *name);
 INT32 R_LocalSkinAvailable(const char *name, boolean local);
 void R_AddSkins(UINT16 wadnum, boolean local);
-
-#ifdef DELFILE
-void R_DelSkins(UINT16 wadnum);
-#endif
 
 void R_InitDrawNodes(void);
 

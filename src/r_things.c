@@ -36,6 +36,8 @@
 #include "hardware/hw_md2.h"
 #endif
 
+#include "qs22j.h"
+
 #ifdef PC_DOS
 #include <stdio.h> // for snprintf
 int	snprintf(char *str, size_t n, const char *fmt, ...);
@@ -143,11 +145,11 @@ static void R_InstallSpriteLump(UINT16 wad,            // graphics patch
 
 // rotsprite
 #ifdef ROTSPRITE
-		for (r = 0; r < 16; r++)
-		{
-			sprtemp[frame].rotated[0][r] = NULL;
-			sprtemp[frame].rotated[1][r] = NULL;
-		}
+	for (r = 0; r < 16; r++)
+	{
+		sprtemp[frame].rotated[0][r] = NULL;
+		sprtemp[frame].rotated[1][r] = NULL;
+	}
 #endif/*ROTSPRITE*/
 
 
@@ -475,116 +477,6 @@ void R_AddSpriteDefs(UINT16 wadnum)
 	CONS_Printf(M_GetText("%s added %d frames in %s sprites\n"), wadname, end-start, sizeu1(addsprites));
 }
 
-#ifdef DELFILE
-static void R_RemoveSpriteLump(UINT16 wad,            // graphics patch
-                               UINT16 lump,
-                               size_t lumpid,      // identifier
-                               UINT8 frame,
-                               UINT8 rotation,
-                               UINT8 flipped)
-{
-	(void)wad; /// \todo: how do I remove sprites?
-	(void)lump;
-	(void)lumpid;
-	(void)frame;
-	(void)rotation;
-	(void)flipped;
-}
-
-static boolean R_DelSingleSpriteDef(const char *sprname, spritedef_t *spritedef, UINT16 wadnum, UINT16 startlump, UINT16 endlump)
-{
-	UINT16 l;
-	UINT8 frame;
-	UINT8 rotation;
-	lumpinfo_t *lumpinfo;
-
-	maxframe = (size_t)-1;
-
-	// scan the lumps,
-	//  filling in the frames for whatever is found
-	lumpinfo = wadfiles[wadnum]->lumpinfo;
-	if (endlump > wadfiles[wadnum]->numlumps)
-		endlump = wadfiles[wadnum]->numlumps;
-
-	for (l = startlump; l < endlump; l++)
-	{
-		if (memcmp(lumpinfo[l].name,sprname,4)==0)
-		{
-			frame = (UINT8)(lumpinfo[l].name[4] - 'A');
-			rotation = (UINT8)(lumpinfo[l].name[5] - '0');
-
-			// skip NULL sprites from very old dmadds pwads
-			if (W_LumpLengthPwad(wadnum,l)<=8)
-				continue;
-
-			//----------------------------------------------------
-
-			R_RemoveSpriteLump(wadnum, l, numspritelumps, frame, rotation, 0);
-
-			if (lumpinfo[l].name[6])
-			{
-				frame = (UINT8)(lumpinfo[l].name[6] - 'A');
-				rotation = (UINT8)(lumpinfo[l].name[7] - '0');
-				R_RemoveSpriteLump(wadnum, l, numspritelumps, frame, rotation, 1);
-			}
-		}
-	}
-
-	if (maxframe == (size_t)-1)
-		return false;
-
-	spritedef->numframes = 0;
-	Z_Free(spritedef->spriteframes);
-	spritedef->spriteframes = NULL;
-	return true;
-}
-
-void R_DelSpriteDefs(UINT16 wadnum)
-{
-	size_t i, delsprites = 0;
-	UINT16 start, end;
-
-	// find the sprites section in this pwad
-	// we need at least the S_END
-	// (not really, but for speedup)
-
-	start = W_CheckNumForNamePwad("S_START", wadnum, 0);
-	if (start == INT16_MAX)
-		start = W_CheckNumForNamePwad("SS_START", wadnum, 0); //deutex compatib.
-	if (start == INT16_MAX)
-		start = 0; //let say S_START is lump 0
-	else
-		start++;   // just after S_START
-
-	end = W_CheckNumForNamePwad("S_END",wadnum,start);
-	if (end == INT16_MAX)
-		end = W_CheckNumForNamePwad("SS_END",wadnum,start);     //deutex compatib.
-	if (end == INT16_MAX)
-	{
-		CONS_Debug(DBG_SETUP, "no sprites in pwad %d\n", wadnum);
-		return;
-		//I_Error("R_DelSpriteDefs: S_END, or SS_END missing for sprites "
-		//         "in pwad %d\n",wadnum);
-	}
-
-	//
-	// scan through lumps, for each sprite, find all the sprite frames
-	//
-	for (i = 0; i < numsprites; i++)
-	{
-		spritename = sprnames[i];
-
-		if (R_DelSingleSpriteDef(spritename, &sprites[i], wadnum, start, end))
-		{
-			// if a new sprite was removed (not just replaced)
-			delsprites++;
-			CONS_Debug(DBG_SETUP, "sprite %s set in pwad %d\n", spritename, wadnum);
-		}
-	}
-
-	CONS_Printf(M_GetText("%s sprites removed from file %s\n"), sizeu1(delsprites), wadfiles[wadnum]->filename);
-}
-#endif
 
 //
 // GAME FUNCTIONS
@@ -1225,65 +1117,6 @@ fixed_t R_GetShadowZ(mobj_t *thing, pslope_t **shadowslope)
 		groundslope = NULL;
 	}
 
-#if 0 // Unfortunately, this drops CEZ2 down to sub-17 FPS on my i7.
-	// NOTE: this section was not updated to reflect reverse gravity support
-	// Check polyobjects and see if groundz needs to be altered, for rings only because they don't update floorz
-	if (thing->type == MT_RING)
-	{
-		INT32 xl, xh, yl, yh, bx, by;
-
-		xl = (unsigned)(thing->x - thing->radius - bmaporgx)>>MAPBLOCKSHIFT;
-		xh = (unsigned)(thing->x + thing->radius - bmaporgx)>>MAPBLOCKSHIFT;
-		yl = (unsigned)(thing->y - thing->radius - bmaporgy)>>MAPBLOCKSHIFT;
-		yh = (unsigned)(thing->y + thing->radius - bmaporgy)>>MAPBLOCKSHIFT;
-
-		BMBOUNDFIX(xl, xh, yl, yh);
-
-		validcount++;
-
-		for (by = yl; by <= yh; by++)
-			for (bx = xl; bx <= xh; bx++)
-			{
-				INT32 offset;
-				polymaplink_t *plink; // haleyjd 02/22/06
-
-				if (bx < 0 || by < 0 || bx >= bmapwidth || by >= bmapheight)
-					continue;
-
-				offset = by*bmapwidth + bx;
-
-				// haleyjd 02/22/06: consider polyobject lines
-				plink = polyblocklinks[offset];
-
-				while (plink)
-				{
-					polyobj_t *po = plink->po;
-
-					if (po->validcount != validcount) // if polyobj hasn't been checked
-					{
-						po->validcount = validcount;
-
-						if (!P_MobjInsidePolyobj(po, thing) || !(po->flags & POF_RENDERPLANES))
-						{
-							plink = (polymaplink_t *)(plink->link.next);
-							continue;
-						}
-
-						// We're inside it! Yess...
-						z = po->lines[0]->backsector->ceilingheight;
-
-						if (z < thing->z+thing->height/2 && z > groundz)
-						{
-							groundz = z;
-							groundslope = NULL;
-						}
-					}
-					plink = (polymaplink_t *)(plink->link.next);
-				}
-			}
-	}
-#endif
-
 	if (shadowslope != NULL)
 		*shadowslope = groundslope;
 
@@ -1316,17 +1149,16 @@ static void R_ProjectSprite(mobj_t *thing)
 	size_t rot;
 	UINT8 flip;
 	/*boolean vflip = (!(thing->eflags & MFE_VERTICALFLIP) != !R_ThingVerticallyFlipped(thing));*/
-	
+
 	boolean mirrored = thing->mirrored;
 	boolean hflip = (!(thing->frame & FF_HORIZONTALFLIP) != !mirrored);
 
 	INT32 lindex;
 
 	vissprite_t *vis;
-	
-	spritecut_e cut = SC_NONE;
 
 	angle_t ang = 0; // gcc 4.6 and lower fix
+	angle_t camang = 0;
 	fixed_t iscale;
 	fixed_t scalestep; // toast '16
 	fixed_t offset, offset2;
@@ -1346,16 +1178,22 @@ static void R_ProjectSprite(mobj_t *thing)
 	patch_t *rotsprite = NULL;
 	INT32 rollangle = 0;
 	angle_t rollsum = 0;
+	angle_t pitchnroll = 0;
 	angle_t sliptiderollangle = 0;
 #endif
 
 	fixed_t ang_scale = FRACUNIT;
+	
+	INT32 dist = -1;
+
+	if (cv_grmaxinterpdist.value)
+		dist = R_QuickCamDist(thing->x, thing->y);
 
 	// uncapped/interpolation
 	interpmobjstate_t interp = {0};
 
 	// do interpolation
-	if (R_UsingFrameInterpolation() && !paused)
+	if (R_UsingFrameInterpolation() && !paused && (!cv_grmaxinterpdist.value || dist < cv_grmaxinterpdist.value))
 	{
 		R_InterpolateMobjState(oldthing, rendertimefrac, &interp);
 	}
@@ -1443,9 +1281,14 @@ static void R_ProjectSprite(mobj_t *thing)
 		I_Error("R_ProjectSprite: sprframes NULL for sprite %d\n", thing->sprite);
 #endif
 
-	if (sprframe->rotate != SRF_SINGLE || papersprite)
+	if (sprframe->rotate != SRF_SINGLE || papersprite || (cv_sloperoll.value == 2 && cv_spriteroll.value))
 	{
 		ang = R_PointToAngle (interp.x, interp.y) - interp.angle;
+		camang = R_PointToAngle (interp.x, interp.y);
+	}
+
+	if (sprframe->rotate != SRF_SINGLE || papersprite)
+	{
 		if (mirrored)
 			ang = InvAngle(ang);
 		if (papersprite)
@@ -1489,29 +1332,63 @@ static void R_ProjectSprite(mobj_t *thing)
 	spr_topoffset = spritecachedinfo[lump].topoffset;
 
 #ifdef ROTSPRITE
-	if ((thing->rollangle)||(thing->sloperoll)||(thing->player && thing->player->sliproll))
+    pitchnroll = 0;  // set this to 0, non-paper sprites will affect this value
+	
+	if (cv_spriteroll.value)
 	{
-		if (thing->player)
+		if (papersprite)
 		{
-			sliptiderollangle = cv_sliptideroll.value ? thing->player->sliproll*(thing->player->sliptidemem) : 0;
-			rollsum = (thing->rollangle)+(thing->sloperoll)+FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), sliptiderollangle);
+			if (ang >= ANGLE_180)
+			{
+				// Makes Software act much more sane like OpenGL
+				rollangle = InvAngle(thing->rollangle);
+			}
+			else
+			{
+				rollangle = thing->rollangle;
+			}
 		}
 		else
-			rollsum = (thing->rollangle)+(thing->sloperoll);
-
-		rollangle = R_GetRollAngle(rollsum);
-		rotsprite = Patch_GetRotatedSprite(sprframe, (thing->frame & FF_FRAMEMASK), rot, flip, false, sprinfo, rollangle);
-
-		if (rotsprite != NULL)
 		{
-			spr_width = rotsprite->width << FRACBITS;
-			spr_height = rotsprite->height << FRACBITS;
-			spr_offset = rotsprite->leftoffset << FRACBITS;
-			spr_topoffset = rotsprite->topoffset << FRACBITS;
-			spr_topoffset += FEETADJUST;
+			// this is very messy, but it on-the-fly calculates rotations for all the
+			// pitch and roll variables
+			pitchnroll = FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), interp.roll) +
+						 FixedMul(FINESINE((ang) >> ANGLETOFINESHIFT), interp.pitch) +
+						 FixedMul(FINECOSINE((camang) >> ANGLETOFINESHIFT), interp.sloperoll) +
+						 FixedMul(FINESINE((camang) >> ANGLETOFINESHIFT), interp.slopepitch);
 
-			// flip -> rotate, not rotate -> flip
-			flip = 0;
+			rollangle = thing->rollangle;
+		}
+
+		if ((rollangle) || (pitchnroll) || (thing->player && thing->player->sliproll))
+		{
+			rollsum = pitchnroll;
+
+			if (thing->player)
+			{
+				sliptiderollangle =
+					cv_sliptideroll.value ? thing->player->sliproll * (thing->player->sliptidemem) : 0;
+				rollsum += thing->rollangle +
+						   FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), sliptiderollangle);
+			}
+			else
+				rollsum += thing->rollangle;
+
+			rollangle = R_GetRollAngle(rollsum);
+			rotsprite = Patch_GetRotatedSprite(
+				sprframe, (thing->frame & FF_FRAMEMASK), rot, flip, false, sprinfo, rollangle);
+
+			if (rotsprite != NULL)
+			{
+				spr_width = rotsprite->width << FRACBITS;
+				spr_height = rotsprite->height << FRACBITS;
+				spr_offset = rotsprite->leftoffset << FRACBITS;
+				spr_topoffset = rotsprite->topoffset << FRACBITS;
+				spr_topoffset += FEETADJUST;
+
+				// flip -> rotate, not rotate -> flip
+				flip = 0;
+			}
 		}
 	}
 #endif
@@ -1764,7 +1641,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	//Fab: lumppat is the lump number of the patch to use, this is different
 	//     than lumpid for sprites-in-pwad : the graphics are patched
 #ifdef ROTSPRITE
-	if (rotsprite != NULL)
+	if ((rotsprite != NULL) && (cv_spriteroll.value))
 		vis->patch = rotsprite;
 	else
 #endif
@@ -1836,11 +1713,16 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 	//SoM: 3/17/2000
 	fixed_t gz ,gzt;
 
+	INT32 dist = 1;
+
+	if (cv_grmaxinterpdist.value)
+		dist = R_QuickCamDist(thing->x, thing->y);
+
 	// uncapped/interpolation
 	interpmobjstate_t interp = {0};
 
 	// do interpolation
-	if (R_UsingFrameInterpolation() && !paused)
+	if (R_UsingFrameInterpolation() && !paused && (!cv_grmaxinterpdist.value || dist < cv_grmaxinterpdist.value))
 	{
 		R_InterpolatePrecipMobjState(thing, rendertimefrac, &interp);
 	}
@@ -2454,20 +2336,6 @@ static void R_CreateDrawNodes(void)
 			}
 			else if (r2->seg)
 			{
-#if 0 //#ifdef POLYOBJECTS_PLANES
-				if (r2->seg->curline->polyseg && rover->mobj && P_MobjInsidePolyobj(r2->seg->curline->polyseg, rover->mobj)) {
-					// Determine if we need to sort in front of the polyobj, based on the planes. This fixes the issue where
-					// polyobject planes render above the object standing on them. (A bit hacky... but it works.) -Red
-					mobj_t *mo = rover->mobj;
-					sector_t *po = r2->seg->curline->backsector;
-
-					if (po->ceilingheight < viewz && mo->z+mo->height > po->ceilingheight)
-						continue;
-
-					if (po->floorheight > viewz && mo->z < po->floorheight)
-						continue;
-				}
-#endif
 				if (rover->x1 > r2->seg->x2 || rover->x2 < r2->seg->x1)
 					continue;
 
@@ -2631,7 +2499,7 @@ static boolean R_CheckSpriteVisible(vissprite_t *spr, INT32 x1, INT32 x2)
 
 // R_ClipVisSprite
 // Clips vissprites without drawing, so that portals can work. -Red
-void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2)
+static void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2)
 {
 	drawseg_t *ds;
 	INT32		x;
@@ -3321,93 +3189,92 @@ static int skinSortFunc(const void *a, const void *b) //tbh i have no clue what 
 	const UINT8 val_a = *((const UINT8 *)a);
 	const UINT8 val_b = *((const UINT8 *)b);
 
-
 	//return (strcmp(in1->realname, in2->realname) < 0) || (strcmp(in1->realname, in2->realname) ==);
 
 	switch (cv_skinselectgridsort.value)
 	{
-	case SKINMENUSORT_REALNAME:
-		//CONS_Printf("Sorting by realname\n");
-		// check name
-		if ((temp = strcmp(in1->realname, in2->realname)))
-			return temp;
-		// sort by internal name
-		return strcmp(in1->name, in2->name);
-		break;
+		case SKINMENUSORT_REALNAME:
+			//CONS_Printf("Sorting by realname\n");
+			// check name
+			if ((temp = strcmp(in1->realname, in2->realname)))
+				return temp;
+			// sort by internal name
+			return strcmp(in1->name, in2->name);
+			break;
 
-	case SKINMENUSORT_NAME:
-		//CONS_Printf("Sorting by name\n");
-		return strcmp(in1->name, in2->name);
-		break;
+		case SKINMENUSORT_NAME:
+			//CONS_Printf("Sorting by name\n");
+			return strcmp(in1->name, in2->name);
+			break;
 
-	case SKINMENUSORT_SPEED:
-		//CONS_Printf("Sorting by speed\n");
-		// check speed
-		if (in1->kartspeed < in2->kartspeed)
-			return -1;
-		else if (in2->kartspeed < in1->kartspeed)
-			return 1;
-		// then check weight
-		if (in1->kartweight < in2->kartweight)
-			return -1;
-		else if (in2->kartweight < in1->kartweight)
-			return 1;
-		// then check name
-		if ((temp = strcmp(in1->realname, in2->realname)))
-			return temp;
-		// sort by internal name
-		return strcmp(in1->name, in2->name);
-		break;
+		case SKINMENUSORT_SPEED:
+			//CONS_Printf("Sorting by speed\n");
+			// check speed
+			if (in1->kartspeed < in2->kartspeed)
+				return -1;
+			else if (in2->kartspeed < in1->kartspeed)
+				return 1;
+			// then check weight
+			if (in1->kartweight < in2->kartweight)
+				return -1;
+			else if (in2->kartweight < in1->kartweight)
+				return 1;
+			// then check name
+			if ((temp = strcmp(in1->realname, in2->realname)))
+				return temp;
+			// sort by internal name
+			return strcmp(in1->name, in2->name);
+			break;
 
-	case SKINMENUSORT_WEIGHT:
-		//CONS_Printf("Sorting by weight\n");
-		// check weight
-		if (in1->kartweight < in2->kartweight)
-			return -1;
-		else if (in2->kartweight < in1->kartweight)
-			return 1;
-		// then check speed
-		if (in1->kartspeed < in2->kartspeed)
-			return -1;
-		else if (in2->kartspeed < in1->kartspeed)
-			return 1;
-		// then check name
-		if ((temp = strcmp(in1->realname, in2->realname)))
-			return temp;
-		// sort by internal name
-		return strcmp(in1->name, in2->name);
-		break;
+		case SKINMENUSORT_WEIGHT:
+			//CONS_Printf("Sorting by weight\n");
+			// check weight
+			if (in1->kartweight < in2->kartweight)
+				return -1;
+			else if (in2->kartweight < in1->kartweight)
+				return 1;
+			// then check speed
+			if (in1->kartspeed < in2->kartspeed)
+				return -1;
+			else if (in2->kartspeed < in1->kartspeed)
+				return 1;
+			// then check name
+			if ((temp = strcmp(in1->realname, in2->realname)))
+				return temp;
+			// sort by internal name
+			return strcmp(in1->name, in2->name);
+			break;
 
-	case SKINMENUSORT_PREFCOLOR:
-		//CONS_Printf("Sorting by prefcolor\n");
-		// check prefcolor
-		if (in1->prefcolor < in2->prefcolor)
-			return -1;
-		else if (in2->prefcolor < in1->prefcolor)
-			return 1;
-		// then check name
-		if ((temp = strcmp(in1->realname, in2->realname)))
-			return temp;
-		// sort by internal name
-		return strcmp(in1->name, in2->name);
-		break;
+		case SKINMENUSORT_PREFCOLOR:
+			//CONS_Printf("Sorting by prefcolor\n");
+			// check prefcolor
+			if (in1->prefcolor < in2->prefcolor)
+				return -1;
+			else if (in2->prefcolor < in1->prefcolor)
+				return 1;
+			// then check name
+			if ((temp = strcmp(in1->realname, in2->realname)))
+				return temp;
+			// sort by internal name
+			return strcmp(in1->name, in2->name);
+			break;
 
-	case SKINMENUSORT_ID:
-		//CONS_Printf("Sorting by id\n");
-		//how do i do by ID?????
-		//wait why dont i just convert the inputs to UINT32s
-		//please tell me im allowed to define variables in here since its a block
+		case SKINMENUSORT_ID:
+			//CONS_Printf("Sorting by id\n");
+			//how do i do by ID?????
+			//wait why dont i just convert the inputs to UINT32s
+			//please tell me im allowed to define variables in here since its a block
 
-		if (val_a == val_b)
-			return 0;
-		else if (val_a < val_b)
-			return -1;
-		else
-			return 1;
+			if (val_a == val_b)
+				return 0;
+			else if (val_a < val_b)
+				return -1;
+			else
+				return 1;
 
-	default:
-		return strcmp(in1->name, in2->name);
-		break;
+		default:
+			return strcmp(in1->name, in2->name);
+			break;
 	}
 	//im scared this somehow will sometimes end up here so im gonna add this here just to be safe
 	return strcmp(in1->name, in2->name);
@@ -3415,8 +3282,8 @@ static int skinSortFunc(const void *a, const void *b) //tbh i have no clue what 
 
 void sortSkinGrid(void)
 {
-	CONS_Printf("Sorting skin list (%d)...\n", cv_skinselectgridsort.value);
-	qsort(skinsorted, numskins, sizeof(UINT8), skinSortFunc);
+	//CONS_Printf("Sorting skin list (%d)...\n", cv_skinselectgridsort.value);
+  qs22j(skinsorted, numskins, sizeof(UINT8), skinSortFunc);
 }
 
 //
@@ -3544,22 +3411,25 @@ void R_AddSkins(UINT16 wadnum, boolean local)
 			else if (!stricmp(stoken, "sprite"))
 			{
 				strupr(value);
-				strncpy(skin->sprite, value, sizeof skin->sprite);
+				memcpy(skin->sprite, value, sizeof skin->sprite);
 			}
 			else if (!stricmp(stoken, "facerank"))
 			{
 				strupr(value);
-				strncpy(skin->facerank, value, sizeof skin->facerank);
+				memcpy(skin->facerank, value, sizeof(skin->facerank)-1);
+				skin->facerank[sizeof(skin->facerank)-1] = '\0';
 			}
 			else if (!stricmp(stoken, "facewant"))
 			{
 				strupr(value);
-				strncpy(skin->facewant, value, sizeof skin->facewant);
+				memcpy(skin->facewant, value, sizeof(skin->facewant)-1);
+				skin->facewant[sizeof(skin->facewant)-1] = '\0';
 			}
 			else if (!stricmp(stoken, "facemmap"))
 			{
 				strupr(value);
-				strncpy(skin->facemmap, value, sizeof skin->facemmap);
+				strncpy(skin->facemmap, value, sizeof(skin->facemmap)-1);
+				skin->facemmap[sizeof(skin->facemmap)-1] = '\0';
 			}
 
 #define FULLPROCESS(field) else if (!stricmp(stoken, #field)) skin->field = get_number(value);
@@ -3614,7 +3484,6 @@ next_token:
 		free(buf2);
 
 		lump++; // if no sprite defined use spirte just after this one
-		INT32 sprnum;
 		if (skin->sprite[0] == '\0')
 		{
 			const char *csprname = W_CheckNameForNumPwad(wadnum, lump);
@@ -3625,9 +3494,6 @@ next_token:
 				lastlump++;
 			// allocate (or replace) sprite frames, and set spritedef
 			R_AddSingleSpriteDef(csprname, &skin->spritedef, wadnum, lump, lastlump);
-
-			// i feel like generally most skin authors just use PLAY here, so just assume PLAY
-			sprnum = SPR_PLAY;
 		}
 		else
 		{
@@ -3674,8 +3540,6 @@ next_token:
 
 				R_AddSingleSpriteDef(sprname, &skin->spritedef, wadnum, lstart, lend);
 			}
-
-			sprnum = numspritelumps - 1;
 
 			// I don't particularly care about skipping to the end of the used frames.
 			// We could be using frames from ANYWHERE in the current WAD file, including
@@ -3731,53 +3595,7 @@ next_token:
 		numallskins++;
 	}
 
-	sortSkinGrid();
+	//sortSkinGrid();
 
 	return;
 }
-
-#ifdef DELFILE
-void R_DelSkins(UINT16 wadnum)
-{
-	UINT16 lump, lastlump = 0;
-	while ((lump = W_CheckForSkinMarkerInPwad(wadnum, lastlump)) != INT16_MAX)
-	{
-		if (skins[numskins].wadnum != wadnum)
-			break;
-		numskins--;
-		ST_UnLoadFaceGraphics(numskins); // only used by DELFILE
-		if (skins[numskins].sprite[0] != '\0')
-		{
-			const char *csprname = W_CheckNameForNumPwad(wadnum, lump);
-
-			// skip to end of this skin's frames
-			lastlump = lump;
-			while (W_CheckNameForNumPwad(wadnum,lastlump) && memcmp(W_CheckNameForNumPwad(wadnum, lastlump),csprname,4)==0)
-				lastlump++;
-			// allocate (or replace) sprite frames, and set spritedef
-			R_DelSingleSpriteDef(csprname, &skins[numskins].spritedef, wadnum, lump, lastlump);
-		}
-		else
-		{
-			// search in the normal sprite tables
-			size_t name;
-			boolean found = false;
-			const char *sprname = skins[numskins].sprite;
-			for (name = 0;sprnames[name][0] != '\0';name++)
-				if (strcmp(sprnames[name], sprname) == 0)
-				{
-					found = true;
-					skins[numskins].spritedef = sprites[name];
-				}
-
-			// not found so make a new one
-			if (!found)
-				R_DelSingleSpriteDef(sprname, &skins[numskins].spritedef, wadnum, 0, INT16_MAX);
-
-			while (W_CheckNameForNumPwad(wadnum,lastlump) && memcmp(W_CheckNameForNumPwad(wadnum, lastlump),sprname,4)==0)
-				lastlump++;
-		}
-		CONS_Printf(M_GetText("Removed skin '%s'\n"), skins[numskins].name);
-	}
-}
-#endif

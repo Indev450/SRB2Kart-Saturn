@@ -636,8 +636,6 @@ pslope_t *P_SlopeById(UINT16 id)
 // Reset the dynamic slopes pointer, and read all of the fancy schmancy slopes
 void P_ResetDynamicSlopes(void) {
 	size_t i;
-#ifdef ESLOPE_TYPESHIM // Rewrite old specials to new ones, and give a console warning
-	boolean warned = false;
 
 	slopelist = NULL;
 	slopecount = 0;
@@ -648,13 +646,10 @@ void P_ResetDynamicSlopes(void) {
 	{
 		switch (lines[i].special)
 		{
-#ifdef ESLOPE_TYPESHIM // Rewrite old specials to new ones, and give a console warning
-#define WARNME if (!warned) {warned = true; CONS_Alert(CONS_WARNING, "This level uses old slope specials.\nA conversion will be needed before 2.2's release.\n");}
 			case 386:
 			case 387:
 			case 388:
 				lines[i].special += 700-386;
-				WARNME
 				P_SpawnSlope_Line(i);
 				break;
 
@@ -663,13 +658,11 @@ void P_ResetDynamicSlopes(void) {
 			case 391:
 			case 392:
 				lines[i].special += 710-389;
-				WARNME
 				P_SpawnSlope_Line(i);
 				break;
 
 			case 393:
 				lines[i].special = 703;
-				WARNME
 				P_SpawnSlope_Line(i);
 				break;
 
@@ -677,10 +670,7 @@ void P_ResetDynamicSlopes(void) {
 			case 395:
 			case 396:
 				lines[i].special += 720-394;
-				WARNME
 				break;
-
-#endif
 
 			case 700:
 			case 701:
@@ -945,4 +935,3 @@ void P_ButteredSlope(mobj_t *mo)
 }
 
 // EOF
-#endif // #ifdef ESLOPE

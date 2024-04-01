@@ -139,7 +139,7 @@ static UINT8 localtextcmd3[MAXTEXTCMD]; // splitscreen == 2
 static UINT8 localtextcmd4[MAXTEXTCMD]; // splitscreen == 3
 static tic_t neededtic;
 SINT8 servernode = 0; // the number of the server node
-char connectedservername[MAXSERVERNAME];
+char connectedservername[MAXSERVERNAME+1];
 /// \brief do we accept new players?
 /// \todo WORK!
 boolean acceptnewnode = true;
@@ -206,7 +206,6 @@ static inline void *G_ScpyTiccmd(ticcmd_t* dest, void* src, const size_t n)
 		G_MoveTiccmd(dest, src, d);
 	return ret+n;
 }
-
 
 
 // Some software don't support largest packet
@@ -1138,7 +1137,7 @@ static void GetPackets(void);
 static cl_mode_t cl_mode = CL_SEARCHING;
 
 #ifdef HAVE_CURL
-char http_source[MAX_MIRROR_LENGTH];
+char http_source[MAX_MIRROR_LENGTH+1];
 #endif
 
 static UINT16 cl_lastcheckedfilecount = 0;	// used for full file list
@@ -1618,14 +1617,19 @@ static void SV_SendPlayerInfo(INT32 node)
 			continue;
 		}
 
-		if (!playeringame[i])
+		if (playeringame[i] == UINT8_MAX || !playeringame[i])
 		{
 			netbuffer->u.playerinfo[i].node = 255; // This slot is empty.
 			continue;
 		}
 
 		netbuffer->u.playerinfo[i].node = i;
+
+		// Can't really change this because net compatibility, but the warning is annoying
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
 		strncpy(netbuffer->u.playerinfo[i].name, (const char *)&player_names[i], MAXPLAYERNAME+1);
+#pragma GCC diagnostic pop
 		netbuffer->u.playerinfo[i].name[MAXPLAYERNAME] = '\0';
 
 		//fetch IP address
@@ -2164,6 +2168,18 @@ static void M_ConfirmConnect(event_t *ev)
 #endif
 }
 
+static void AbortConnection(void)
+{
+	CURLAbortFile();
+	D_QuitNetGame();
+	CL_Reset();
+	D_StartTitle();
+
+	// Will be reset by caller. Signals refusal.
+	cl_mode = CL_ABORTED;
+}
+
+
 static boolean CL_FinishedFileList(void)
 {
 	INT32 i;
@@ -2176,9 +2192,7 @@ static boolean CL_FinishedFileList(void)
 	}
 	else if (i == 3) // too many files
 	{
-		D_QuitNetGame();
-		CL_Reset();
-		D_StartTitle();
+		AbortConnection();
 		M_StartMessage(M_GetText(
 			"You have too many WAD files loaded\n"
 			"to add ones the server is using.\n"
@@ -2189,9 +2203,7 @@ static boolean CL_FinishedFileList(void)
 	}
 	else if (i == 2) // cannot join for some reason
 	{
-		D_QuitNetGame();
-		CL_Reset();
-		D_StartTitle();
+		AbortConnection();
 		M_StartMessage(M_GetText(
 			"You have the wrong addons loaded.\n\n"
 			"To play on this server, restart\n"
@@ -2228,9 +2240,7 @@ static boolean CL_FinishedFileList(void)
 		{
 			if (!CL_CheckDownloadable()) // nope!
 			{
-				D_QuitNetGame();
-				CL_Reset();
-				D_StartTitle();
+				AbortConnection();
 				M_StartMessage(M_GetText(
 					"An error occured when trying to\n"
 					"download missing addons.\n"
@@ -2455,9 +2465,6 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 					break;
 				}
 
-			if (curl_running)
-				CURLGetFile();
-
 			if (waitmore)
 				break; // exit the case
 
@@ -2491,9 +2498,7 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 			{
 				CONS_Printf(M_GetText("Legacy downloader request packet failed.\n"));
 				CONS_Printf(M_GetText("Network game synchronization aborted.\n"));
-				D_QuitNetGame();
-				CL_Reset();
-				D_StartTitle();
+				AbortConnection();
 				M_StartMessage(M_GetText(
 					"The direct download encountered an error.\n"
 					"See the logfile for more info.\n"
@@ -2520,9 +2525,7 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 			{
 				CONS_Printf("%d minute wait time exceeded.\n", cv_connectawaittime.value);
 				CONS_Printf(M_GetText("Network game synchronization aborted.\n"));
-				D_QuitNetGame();
-				CL_Reset();
-				D_StartTitle();
+				AbortConnection();
 				M_StartMessage(va(
 					"%d minute wait time exceeded.\n"
 					"You may retry connection.\n"
@@ -2591,12 +2594,10 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 
 		key = I_GetKey();
 		// Only ESC and non-keyboard keys abort connection
-		if (!modeattacking && (key == KEY_ESCAPE || key >= KEY_MOUSE1 || cl_mode == CL_ABORTED))
+		if (!modeattacking && (key == KEY_ESCAPE || key == KEY_JOY1+1 || cl_mode == CL_ABORTED))
 		{
 			CONS_Printf(M_GetText("Network game synchronization aborted.\n"));
-			D_QuitNetGame();
-			CL_Reset();
-			D_StartTitle();
+			AbortConnection();
 
 			return false;
 		}
@@ -3186,11 +3187,7 @@ void CL_RemovePlayer(INT32 playernum, INT32 reason)
 		}
 	}
 
-#ifdef HAVE_BLUA
 	LUAh_PlayerQuit(&players[playernum], reason); // Lua hook for player quitting
-#else
-	(void)reason;
-#endif
 
 	// Reset player data
 	CL_ClearPlayer(playernum);
@@ -3214,13 +3211,9 @@ void CL_RemovePlayer(INT32 playernum, INT32 reason)
 	if (playernum == displayplayers[0] && !demo.playback)
 		displayplayers[0] = consoleplayer; // don't look through someone's view who isn't there
 
-#ifdef HAVE_BLUA
 	LUA_InvalidatePlayer(&players[playernum]);
-#endif
 
-	/*if (G_TagGametype()) //Check if you still have a game. Location flexible. =P
-		P_CheckSurvivors();
-	else*/ if (G_BattleGametype()) // SRB2Kart
+	if (G_BattleGametype()) // SRB2Kart
 		K_CheckBumpers();
 	else if (G_RaceGametype())
 		P_CheckRacers();
@@ -3836,9 +3829,7 @@ static void Got_KickCmd(UINT8 **p, INT32 playernum)
 #ifdef DUMPCONSISTENCY
 		if (msg == KICK_MSG_CON_FAIL) SV_SavedGame();
 #endif
-		D_QuitNetGame();
-		CL_Reset();
-		D_StartTitle();
+		AbortConnection();
 
 		if (msg == KICK_MSG_CON_FAIL)
 			M_StartMessage(M_GetText("Server closed connection\n(Synch failure)\nPress ESC\n"), NULL, MM_NOTHING);
@@ -3958,6 +3949,8 @@ static CV_PossibleValue_t netticbuffer_cons_t[] = {{0, "MIN"}, {3, "MAX"}, {0, N
 consvar_t cv_netticbuffer = {"netticbuffer", "1", CV_SAVE, netticbuffer_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static void Joinable_OnChange(void);
+
+consvar_t cv_joinrefusemessage = {"joinrefusemessage", "The server is not accepting joins for the moment.", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_allownewplayer = {"allowjoin", "On", CV_SAVE|CV_CALL, CV_OnOff, Joinable_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
@@ -4097,9 +4090,7 @@ void SV_ResetServer(void)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-#ifdef HAVE_BLUA
 		LUA_InvalidatePlayer(&players[i]);
-#endif
 		playeringame[i] = false;
 		playernode[i] = UINT8_MAX;
 		sprintf(player_names[i], "Player %d", i + 1);
@@ -4285,9 +4276,7 @@ static void Got_AddPlayer(UINT8 **p, INT32 playernum)
 	if (server && multiplayer && motd[0] != '\0')
 		COM_BufAddText(va("sayto %d %s\n", newplayernum, motd));
 
-#ifdef HAVE_BLUA
 	LUAh_PlayerJoin(newplayernum);
-#endif
 
 #ifdef HAVE_DISCORDRPC
 	DRPC_UpdatePresence();
@@ -4586,7 +4575,7 @@ static void HandleConnect(SINT8 node)
 	}
 	else if (!cv_allownewplayer.value && node)
 	{
-		SV_SendRefuse(node, M_GetText("The server is not accepting\njoins for the moment."));
+		SV_SendRefuse(node, M_GetText(cv_joinrefusemessage.string));
 	}
 	else if (connectedplayers >= maxplayers)
 	{

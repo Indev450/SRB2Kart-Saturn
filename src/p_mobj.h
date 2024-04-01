@@ -283,9 +283,9 @@ typedef struct mobj_s
 	struct mobj_s **sprev; // killough 8/11/98: change to ptr-to-ptr
 
 	// More drawing info: to determine current sprite.
-	angle_t angle;  // orientation
-	angle_t old_angle; // orientation interpolation
-	angle_t old_angle2;	
+	angle_t angle, pitch, roll; // orientation
+	angle_t old_angle, old_pitch, old_roll; // orientation interpolation
+	angle_t old_angle2, old_pitch2, old_roll2;
 	angle_t rollangle;
 	spritenum_t sprite; // used to find patch_t and flip value
 	UINT32 frame; // frame number, plus bits see p_pspr.h
@@ -302,7 +302,10 @@ typedef struct mobj_s
 	fixed_t stretchslam; // "squish" effect when you land
 
 	//sloperollangle
-	angle_t sloperoll, reservezangle, reservexydir;
+	angle_t sloperoll, slopepitch;
+	angle_t old_sloperoll, old_slopepitch;
+	angle_t old_sloperoll2, old_slopepitch2;
+	angle_t pitch_sprite, roll_sprite;
 
 	struct msecnode_s *touching_sectorlist; // a linked list of sectors where this object appears
 
@@ -433,9 +436,9 @@ typedef struct precipmobj_s
 	struct precipmobj_s **sprev; // killough 8/11/98: change to ptr-to-ptr
 
 	// More drawing info: to determine current sprite.
-	angle_t angle;  // orientation
-	angle_t old_angle; // orientation interpolation
-	angle_t old_angle2;
+	angle_t angle, pitch, roll; // orientation
+	angle_t old_angle, old_pitch, old_roll; // orientation interpolation
+	angle_t old_angle2, old_pitch2, old_roll2;
 	angle_t rollangle;
 	spritenum_t sprite; // used to find patch_t and flip value
 	UINT32 frame; // frame number, plus bits see p_pspr.h
@@ -452,7 +455,10 @@ typedef struct precipmobj_s
 	fixed_t stretchslam; // "squish" effect when you land
 	
 	//sloperollangle
-	angle_t sloperoll, reservezangle, reservexydir;
+	angle_t sloperoll, slopepitch;
+	angle_t old_sloperoll, old_slopepitch;
+	angle_t old_sloperoll2, old_slopepitch2;
+	angle_t pitch_sprite, roll_sprite;
 
 	struct mprecipsecnode_s *touching_sectorlist; // a linked list of sectors where this object appears
 
@@ -493,6 +499,10 @@ void P_AddCachedAction(mobj_t *mobj, INT32 statenum);
 
 // check mobj against water content, before movement code
 void P_MobjCheckWater(mobj_t *mobj);
+
+// fancy sprite rotation
+void P_RollPitchMobj(mobj_t *mobj);
+angle_t P_MobjPitchAndRoll(mobj_t *mobj);
 
 // Player spawn points
 void P_SpawnPlayer(INT32 playernum);

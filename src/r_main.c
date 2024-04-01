@@ -145,17 +145,26 @@ static CV_PossibleValue_t drawdist_cons_t[] = {
 	{3072, "3072"},	{4096, "4096"},	{6144, "6144"},
 	{8192, "8192"},	{0, "Infinite"},	{0, NULL}};
 
-//static CV_PossibleValue_t precipdensity_cons_t[] = {{0, "None"}, {1, "Light"}, {2, "Moderate"}, {4, "Heavy"}, {6, "Thick"}, {8, "V.Thick"}, {0, NULL}};
-
+#if defined(__x86_64__) || defined(__amd64__) || defined(__aarch64__) || defined(__arm64__) // only for 64bit (idk how else to proper check lmao)
 static CV_PossibleValue_t drawdist_precip_cons_t[] = {
 	{256, "256"},	{512, "512"},	{768, "768"},
 	{1024, "1024"},	{1536, "1536"},	{2048, "2048"},
-	{3072, "3072"}, {0, "None"},	{0, NULL}};
-	
+	{3072, "3072"},	{4096, "4096"}, {0, "None"},	{0, NULL}};
+#else
+static CV_PossibleValue_t drawdist_precip_cons_t[] = {
+	{256, "256"},	{512, "512"},	{768, "768"},
+	{1024, "1024"},	{1536, "1536"},	{2048, "2048"},
+	{0, "None"},	{0, NULL}};
+#endif
+
+static CV_PossibleValue_t maxinterpdist_cons_t[] = {
+       /*{256, "256"},*/       {512, "512"},   {768, "768"},
+       {1024, "1024"}, {1536, "1536"}, {2048, "2048"},
+       {3072, "3072"}, {4096, "4096"}, {6144, "6144"},
+       {8192, "8192"}, {0, "Infinite"},        {0, NULL}};
 
 static CV_PossibleValue_t fov_cons_t[] = {{5*FRACUNIT, "MIN"}, {178*FRACUNIT, "MAX"}, {0, NULL}};
 
-//static CV_PossibleValue_t precipdensity_cons_t[] = {{0, "None"}, {1, "Light"}, {2, "Moderate"}, {4, "Heavy"}, {6, "Thick"}, {8, "V.Thick"}, {0, NULL}};
 static CV_PossibleValue_t translucenthud_cons_t[] = {{0, "MIN"}, {10, "MAX"}, {0, NULL}};
 static CV_PossibleValue_t maxportals_cons_t[] = {{0, "MIN"}, {12, "MAX"}, {0, NULL}}; // lmao rendering 32 portals, you're a card
 static CV_PossibleValue_t homremoval_cons_t[] = {{0, "No"}, {1, "Yes"}, {2, "Flash"}, {0, NULL}};
@@ -193,13 +202,14 @@ consvar_t cv_soniccd = {"soniccd", "Off", CV_NETVAR|CV_NOSHOWHELP, CV_OnOff, NUL
 consvar_t cv_allowmlook = {"allowmlook", "Yes", CV_NETVAR, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_showhud = {"showhud", "Yes", CV_CALL,  CV_YesNo, R_SetViewSize, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_translucenthud = {"translucenthud", "10", CV_SAVE, translucenthud_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_uncappedhud = {"uncappedhud", "Yes", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_translucency = {"translucency", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_drawdist = {"drawdist", "Infinite", CV_SAVE, drawdist_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-//consvar_t cv_drawdist_nights = {"drawdist_nights", "2048", CV_SAVE, drawdist_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_drawdist_precip = {"drawdist_precip", "1024", CV_SAVE, drawdist_precip_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_lessprecip = {"lessweathereffects", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-//consvar_t cv_precipdensity = {"precipdensity", "Moderate", CV_SAVE, precipdensity_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_grmaxinterpdist = {"gr_maxinterpdist", "Infinite", CV_SAVE, maxinterpdist_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 // cap fov, fov too high tears software apart.
 consvar_t cv_fov = {"fov", "90", CV_FLOAT|CV_CALL|CV_SAVE, fov_cons_t, Fov_OnChange, 0, NULL, NULL, 0, 0, NULL};
@@ -208,6 +218,9 @@ consvar_t cv_fov = {"fov", "90", CV_FLOAT|CV_CALL|CV_SAVE, fov_cons_t, Fov_OnCha
 consvar_t cv_homremoval = {"homremoval", "Yes", CV_SAVE, homremoval_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_maxportals = {"maxportals", "2", CV_SAVE, maxportals_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+static CV_PossibleValue_t pointoangle_cons_t[] = {{0, "Ex"}, {1, "64"}, {0, NULL}};
+consvar_t cv_pointoangleexor64 = {"r_pointtoangle", "64", CV_SAVE, pointoangle_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 void SplitScreen_OnChange(void)
 {
@@ -325,7 +338,7 @@ static void FlipCam4_OnChange(void)
 //
 // killough 5/2/98: reformatted
 //
-INT32 R_PointOnSide(fixed_t x, fixed_t y, node_t *restrict node)
+PUREFUNC INT32 R_PointOnSide(fixed_t x, fixed_t y, const node_t *restrict node)
 {
 	if (!node->dx)
 		return x <= node->x ? node->dy > 0 : node->dy < 0;
@@ -344,7 +357,7 @@ INT32 R_PointOnSide(fixed_t x, fixed_t y, node_t *restrict node)
 }
 
 // killough 5/2/98: reformatted
-INT32 R_PointOnSegSide(fixed_t x, fixed_t y, seg_t *line)
+PUREFUNC INT32 R_PointOnSegSide(fixed_t x, fixed_t y, const seg_t *line)
 {
 	fixed_t lx = line->v1->x;
 	fixed_t ly = line->v1->y;
@@ -392,6 +405,46 @@ angle_t R_PointToAngle(fixed_t x, fixed_t y)
 		ANGLE_90 + tantoangle[SlopeDiv(x,y)] :                         // octant 2
 		(x = -x) > (y = -y) ? ANGLE_180+tantoangle[SlopeDiv(y,x)] :    // octant 4
 		ANGLE_270-tantoangle[SlopeDiv(x,y)] :                          // octant 5
+		0;
+}
+
+// This version uses 64-bit variables to avoid overflows with large values.
+angle_t R_PointToAngle64(INT64 x, INT64 y)
+{
+	return (y -= viewy, (x -= viewx) || y) ?
+	x >= 0 ?
+	y >= 0 ?
+		(x > y) ? tantoangle[SlopeDivEx(y,x)] :                            // octant 0
+		ANGLE_90-tantoangle[SlopeDivEx(x,y)] :                               // octant 1
+		x > (y = -y) ? 0-tantoangle[SlopeDivEx(y,x)] :                    // octant 8
+		ANGLE_270+tantoangle[SlopeDivEx(x,y)] :                              // octant 7
+		y >= 0 ? (x = -x) > y ? ANGLE_180-tantoangle[SlopeDivEx(y,x)] :  // octant 3
+		ANGLE_90 + tantoangle[SlopeDivEx(x,y)] :                             // octant 2
+		(x = -x) > (y = -y) ? ANGLE_180+tantoangle[SlopeDivEx(y,x)] :    // octant 4
+		ANGLE_270-tantoangle[SlopeDivEx(x,y)] :                              // octant 5
+		0;
+}
+
+angle_t R_PointToAngleEx(INT32 x2, INT32 y2, INT32 x1, INT32 y1)
+{
+	INT64 dx = x1-x2;
+	INT64 dy = y1-y2;
+	if (dx < INT32_MIN || dx > INT32_MAX || dy < INT32_MIN || dy > INT32_MAX)
+	{
+		x1 = (int)(dx / 2 + x2);
+		y1 = (int)(dy / 2 + y2);
+	}
+	return (y1 -= y2, (x1 -= x2) || y1) ?
+	x1 >= 0 ?
+	y1 >= 0 ?
+		(x1 > y1) ? tantoangle[SlopeDivEx(y1,x1)] :                            // octant 0
+		ANGLE_90-tantoangle[SlopeDivEx(x1,y1)] :                               // octant 1
+		x1 > (y1 = -y1) ? 0-tantoangle[SlopeDivEx(y1,x1)] :                    // octant 8
+		ANGLE_270+tantoangle[SlopeDivEx(x1,y1)] :                              // octant 7
+		y1 >= 0 ? (x1 = -x1) > y1 ? ANGLE_180-tantoangle[SlopeDivEx(y1,x1)] :  // octant 3
+		ANGLE_90 + tantoangle[SlopeDivEx(x1,y1)] :                             // octant 2
+		(x1 = -x1) > (y1 = -y1) ? ANGLE_180+tantoangle[SlopeDivEx(y1,x1)] :    // octant 4
+		ANGLE_270-tantoangle[SlopeDivEx(x1,y1)] :                              // octant 5
 		0;
 }
 
@@ -466,53 +519,9 @@ fixed_t R_PointToDist(fixed_t x, fixed_t y)
 	return R_PointToDist2(viewx, viewy, x, y);
 }
 
-angle_t R_PointToAngleEx(INT32 x2, INT32 y2, INT32 x1, INT32 y1)
+INT32 R_GetHudUncap(void)
 {
-	INT64 dx = x1-x2;
-	INT64 dy = y1-y2;
-	if (dx < INT32_MIN || dx > INT32_MAX || dy < INT32_MIN || dy > INT32_MAX)
-	{
-		x1 = (int)(dx / 2 + x2);
-		y1 = (int)(dy / 2 + y2);
-	}
-	return (y1 -= y2, (x1 -= x2) || y1) ?
-	x1 >= 0 ?
-	y1 >= 0 ?
-		(x1 > y1) ? tantoangle[SlopeDivEx(y1,x1)] :                            // octant 0
-		ANGLE_90-tantoangle[SlopeDivEx(x1,y1)] :                               // octant 1
-		x1 > (y1 = -y1) ? 0-tantoangle[SlopeDivEx(y1,x1)] :                    // octant 8
-		ANGLE_270+tantoangle[SlopeDivEx(x1,y1)] :                              // octant 7
-		y1 >= 0 ? (x1 = -x1) > y1 ? ANGLE_180-tantoangle[SlopeDivEx(y1,x1)] :  // octant 3
-		ANGLE_90 + tantoangle[SlopeDivEx(x1,y1)] :                             // octant 2
-		(x1 = -x1) > (y1 = -y1) ? ANGLE_180+tantoangle[SlopeDivEx(y1,x1)] :    // octant 4
-		ANGLE_270-tantoangle[SlopeDivEx(x1,y1)] :                              // octant 5
-		0;
-}
-
-angle_t R_PointToAngleEx64(INT64 x2, INT64 y2, INT64 x1, INT64 y1)
-{
-    INT64 dx = x1 - x2;
-    INT64 dy = y1 - y2;
-
-    // Check for potential overflow or underflow
-    if (dx < INT64_MIN || dx > INT64_MAX || dy < INT64_MIN || dy > INT64_MAX)
-    {
-        x1 = (INT64)(dx / 2 + x2);
-        y1 = (INT64)(dy / 2 + y2);
-    }
-
-    return (y1 -= y2, (x1 -= x2) || y1) ?
-    x1 >= 0 ?
-    y1 >= 0 ?
-         (x1 > y1) ? tantoangle[SlopeDivEx(y1, x1)] :                            // octant 0
-         ANGLE_90 - tantoangle[SlopeDivEx(x1, y1)] :                               // octant 1
-         x1 > (y1 = -y1) ? 0 - tantoangle[SlopeDivEx(y1, x1)] :                    // octant 8
-         ANGLE_270 + tantoangle[SlopeDivEx(x1, y1)] :                              // octant 7
-         y1 >= 0 ? (x1 = -x1) > y1 ? ANGLE_180 - tantoangle[SlopeDivEx(y1, x1)] :  // octant 3
-         ANGLE_90 + tantoangle[SlopeDivEx(x1, y1)] :                             // octant 2
-         (x1 = -x1) > (y1 = -y1) ? ANGLE_180 + tantoangle[SlopeDivEx(y1, x1)] :    // octant 4
-         ANGLE_270 - tantoangle[SlopeDivEx(x1, y1)] :                              // octant 5
-        0;
+	return cv_uncappedhud.value ? rendertimefrac & FRACMASK : 0;
 }
 
 //
@@ -690,14 +699,8 @@ static inline void R_InitLightTables(void)
 	}
 }
 
-//#define WOUGHMP_WOUGHMP // I got a fish-eye lens - I'll make a rap video with a couple of friends
-// it's kinda laggy sometimes
-
 static struct {
 	angle_t rollangle; // pre-shifted by fineshift
-#ifdef WOUGHMP_WOUGHMP
-	fixed_t fisheye;
-#endif
 
 	fixed_t zoomneeded;
 	INT32 *scrmap;
@@ -709,9 +712,6 @@ static struct {
 	boolean use;
 } viewmorph = {
 	0,
-#ifdef WOUGHMP_WOUGHMP
-	0,
-#endif
 
 	FRACUNIT,
 	NULL,
@@ -730,39 +730,20 @@ void R_CheckViewMorph(void)
 	fixed_t temp;
 	INT32 end, vx, vy, pos, usedpos;
 	INT32 usedx, usedy, halfwidth = vid.width/2, halfheight = vid.height/2;
-#ifdef WOUGHMP_WOUGHMP
-	float fisheyemap[MAXVIDWIDTH/2 + 1];
-#endif
 
 	angle_t rollangle = players[displayplayers[0]].viewrollangle;
-#ifdef WOUGHMP_WOUGHMP
-	fixed_t fisheye = cv_cam2_turnmultiplier.value; // temporary test value
-#endif
 
 	rollangle >>= ANGLETOFINESHIFT;
 	rollangle = ((rollangle+2) & ~3) & FINEMASK; // Limit the distinct number of angles to reduce recalcs from angles changing a lot.
 
-#ifdef WOUGHMP_WOUGHMP
-	fisheye &= ~0x7FF; // Same
-#endif
 
 	if (rollangle == viewmorph.rollangle &&
-#ifdef WOUGHMP_WOUGHMP
-		fisheye == viewmorph.fisheye &&
-#endif
 		viewmorph.scrmapsize == vid.width*vid.height)
 		return; // No change
 
 	viewmorph.rollangle = rollangle;
-#ifdef WOUGHMP_WOUGHMP
-	viewmorph.fisheye = fisheye;
-#endif
 
-	if (viewmorph.rollangle == 0
-#ifdef WOUGHMP_WOUGHMP
-		 && viewmorph.fisheye == 0
-#endif
-	 )
+	if (viewmorph.rollangle == 0)
 	{
 		viewmorph.use = false;
 		viewmorph.x1 = 0;
@@ -789,22 +770,6 @@ void R_CheckViewMorph(void)
 	// Calculate maximum zoom needed
 	x1 = (vid.width*fabsf(rollcos) + vid.height*fabsf(rollsin)) / vid.width;
 	y1 = (vid.height*fabsf(rollcos) + vid.width*fabsf(rollsin)) / vid.height;
-
-#ifdef WOUGHMP_WOUGHMP
-	if (fisheye)
-	{
-		float f = FIXED_TO_FLOAT(fisheye);
-		for (vx = 0; vx <= halfwidth; vx++)
-			fisheyemap[vx] = 1.0f / cos(atan(vx * f / halfwidth));
-
-		f = cos(atan(f));
-		if (f < 1.0f)
-		{
-			x1 /= f;
-			y1 /= f;
-		}
-	}
-#endif
 
 	temp = max(x1, y1)*FRACUNIT;
 	if (temp < FRACUNIT)
@@ -833,11 +798,6 @@ void R_CheckViewMorph(void)
 	x1 = -(halfwidth * rollcos - halfheight * rollsin);
 	y1 = -(halfheight * rollcos + halfwidth * rollsin);
 
-#ifdef WOUGHMP_WOUGHMP
-	if (fisheye)
-		viewmorph.x1 = (INT32)(halfwidth - (halfwidth * fabsf(rollcos) + halfheight * fabsf(rollsin)) * fisheyemap[halfwidth]);
-	else
-#endif
 	viewmorph.x1 = (INT32)(halfwidth - (halfwidth * fabsf(rollcos) + halfheight * fabsf(rollsin)));
 	//CONS_Printf("saving %d cols\n", viewmorph.x1);
 
@@ -884,35 +844,6 @@ void R_CheckViewMorph(void)
 
 	//CONS_Printf("Top left corner is %f %f\n", x1, y1);
 
-#ifdef WOUGHMP_WOUGHMP
-	if (fisheye)
-	{
-		for (vy = 0; vy < halfheight; vy++)
-		{
-			x2 = x1;
-			y2 = y1;
-			x1 -= rollsin;
-			y1 += rollcos;
-
-			for (vx = 0; vx < vid.width; vx++)
-			{
-				usedx = halfwidth + x2*fisheyemap[(int) floorf(fabsf(y2*zoomfactor))];
-				usedy = halfheight + y2*fisheyemap[(int) floorf(fabsf(x2*zoomfactor))];
-
-				usedpos = usedx + usedy*vid.width;
-
-				viewmorph.scrmap[pos] = usedpos;
-				viewmorph.scrmap[end-pos] = end-usedpos;
-
-				x2 += rollcos;
-				y2 += rollsin;
-				pos++;
-			}
-		}
-	}
-	else
-	{
-#endif
 	x1 += halfwidth;
 	y1 += halfheight;
 
@@ -938,9 +869,6 @@ void R_CheckViewMorph(void)
 			pos++;
 		}
 	}
-#ifdef WOUGHMP_WOUGHMP
-	}
-#endif
 
 	viewmorph.use = true;
 }
@@ -1069,6 +997,16 @@ void R_ExecuteSetViewSize(void)
 			dy = FixedMul(abs(dy), fovtan);
 			yslopetab[i] = FixedDiv(centerx*FRACUNIT, dy);
 		}
+		
+		if (ds_su)
+			Z_Free(ds_su);
+		if (ds_sv)
+			Z_Free(ds_sv);
+		if (ds_sz)
+			Z_Free(ds_sz);
+
+		ds_su = ds_sv = ds_sz = NULL;
+		ds_sup = ds_svp = ds_szp = NULL;
 	}
 
 	memset(scalelight, 0xFF, sizeof(scalelight));
@@ -1151,7 +1089,6 @@ subsector_t *R_IsPointInSubsector(fixed_t x, fixed_t y)
 	INT32 side, i;
 	size_t nodenum;
 	subsector_t *ret;
-	seg_t *seg;
 
 	// single subsector is a special case
 	if (numnodes == 0)
@@ -1180,31 +1117,6 @@ subsector_t *R_IsPointInSubsector(fixed_t x, fixed_t y)
 //
 
 static mobj_t *viewmobj;
-
-// recalc necessary stuff for mouseaiming
-// slopes are already calculated for the full possible view (which is 4*viewheight).
-// 18/08/18: (No it's actually 16*viewheight, thanks Jimita for finding this out)
-static void R_SetupFreelook(void)
-{
-	INT32 dy = 0;
-
-	// clip it in the case we are looking a hardware 90 degrees full aiming
-	// (lmps, network and use F12...)
-	if (rendermode == render_soft
-#ifdef HWRENDER
-		|| cv_grshearing.value
-#endif
-	)
-		G_SoftwareClipAimingPitch((INT32 *)&aimingangle);
-
-	if (rendermode == render_soft)
-	{
-		dy = (AIMINGTODY(aimingangle)>>FRACBITS) * viewwidth/BASEVIDWIDTH;
-		yslope = &yslopetab[viewheight*8 - (viewheight/2 + dy)];
-	}
-	centery = (viewheight/2) + dy;
-	centeryfrac = centery<<FRACBITS;
-}
 
 void R_SkyboxFrame(player_t *player)
 {
@@ -1440,7 +1352,7 @@ void R_SkyboxFrame(player_t *player)
 	// newview->sin = FINESINE(viewangle>>ANGLETOFINESHIFT);
 	// newview->cos = FINECOSINE(viewangle>>ANGLETOFINESHIFT);
 
-	R_InterpolateView(R_UsingFrameInterpolation() ? rendertimefrac : FRACUNIT);
+	R_InterpolateView(R_UsingFrameInterpolation() ? rendertimefrac : FRACUNIT, false);
 }
 
 void R_SetupFrame(player_t *player, boolean skybox)
@@ -1589,7 +1501,7 @@ void R_SetupFrame(player_t *player, boolean skybox)
 	// newview->sin = FINESINE(viewangle>>ANGLETOFINESHIFT);
 	// newview->cos = FINECOSINE(viewangle>>ANGLETOFINESHIFT);
 
-	R_InterpolateView(R_UsingFrameInterpolation() ? rendertimefrac : FRACUNIT);
+	R_InterpolateView(R_UsingFrameInterpolation() ? rendertimefrac : FRACUNIT, false);
 }
 
 #define ANGLED_PORTALS
@@ -1955,13 +1867,20 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_driftsparkpulse);
 	CV_RegisterVar(&cv_gravstretch);
 	CV_RegisterVar(&cv_sloperoll);
+	CV_RegisterVar(&cv_spriteroll);
 	CV_RegisterVar(&cv_sliptideroll);
 	CV_RegisterVar(&cv_sloperolldist);
+	CV_RegisterVar(&cv_sparkroll);
 
 	CV_RegisterVar(&cv_showhud);
 	CV_RegisterVar(&cv_translucenthud);
+	CV_RegisterVar(&cv_uncappedhud);
 
 	CV_RegisterVar(&cv_maxportals);
+	
+	CV_RegisterVar(&cv_pointoangleexor64);
+
+	CV_RegisterVar(&cv_grmaxinterpdist);
 
 	// Default viewheight is changeable,
 	// initialized to standard viewheight
@@ -1970,4 +1889,5 @@ void R_RegisterEngineStuff(void)
 	// Frame interpolation/uncapped
 	CV_RegisterVar(&cv_fpscap);
 	CV_RegisterVar(&cv_precipinterp);
+	CV_RegisterVar(&cv_mobjssector);
 }

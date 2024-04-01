@@ -120,32 +120,40 @@ extern consvar_t cv_invertmouse/*, cv_alwaysfreelook, cv_chasefreelook, cv_mouse
 extern consvar_t cv_invertmouse2/*, cv_alwaysfreelook2, cv_chasefreelook2, cv_mousemove2*/;
 extern consvar_t cv_useranalog, cv_useranalog2, cv_useranalog3, cv_useranalog4;
 extern consvar_t cv_analog, cv_analog2, cv_analog3, cv_analog4;
-extern consvar_t cv_turnaxis,cv_moveaxis,cv_brakeaxis,cv_aimaxis,cv_lookaxis,cv_fireaxis,cv_driftaxis,cv_lookbackaxis,cv_xdeadzone,cv_ydeadzone;
-extern consvar_t cv_turnaxis2,cv_moveaxis2,cv_brakeaxis2,cv_aimaxis2,cv_lookaxis2,cv_fireaxis2,cv_driftaxis2,cv_lookbackaxis2,cv_xdeadzone2,cv_ydeadzone2;
-extern consvar_t cv_turnaxis3,cv_moveaxis3,cv_brakeaxis3,cv_aimaxis3,cv_lookaxis3,cv_fireaxis3,cv_driftaxis3,cv_lookbackaxis3,cv_xdeadzone3,cv_ydeadzone3;
-extern consvar_t cv_turnaxis4,cv_moveaxis4,cv_brakeaxis4,cv_aimaxis4,cv_lookaxis4,cv_fireaxis4,cv_driftaxis4,cv_lookbackaxis4,cv_xdeadzone4,cv_ydeadzone4;
+extern consvar_t cv_turnaxis,cv_moveaxis,cv_brakeaxis,cv_aimaxis,cv_lookaxis,cv_fireaxis,cv_driftaxis,cv_lookbackaxis,cv_custom1axis,cv_custom2axis,cv_custom3axis,cv_xdeadzone,cv_ydeadzone;
+extern consvar_t cv_turnaxis2,cv_moveaxis2,cv_brakeaxis2,cv_aimaxis2,cv_lookaxis2,cv_fireaxis2,cv_driftaxis2,cv_lookbackaxis2,cv_custom1axis2,cv_custom2axis2,cv_custom3axis2,cv_xdeadzone2,cv_ydeadzone2;
+extern consvar_t cv_turnaxis3,cv_moveaxis3,cv_brakeaxis3,cv_aimaxis3,cv_lookaxis3,cv_fireaxis3,cv_driftaxis3,cv_lookbackaxis3,cv_custom1axis3,cv_custom2axis3,cv_custom3axis3,cv_xdeadzone3,cv_ydeadzone3;
+extern consvar_t cv_turnaxis4,cv_moveaxis4,cv_brakeaxis4,cv_aimaxis4,cv_lookaxis4,cv_fireaxis4,cv_driftaxis4,cv_lookbackaxis4,cv_custom1axis4,cv_custom2axis4,cv_custom3axis4,cv_xdeadzone4,cv_ydeadzone4;
 extern consvar_t cv_ghost_besttime, cv_ghost_bestlap, cv_ghost_last, cv_ghost_guest, cv_ghost_staff;
 
 // Hud offsets
-extern consvar_t cv_item_xoffset;
-extern consvar_t cv_item_yoffset;
-extern consvar_t cv_time_xoffset;
-extern consvar_t cv_time_yoffset;
-extern consvar_t cv_laps_xoffset;
-extern consvar_t cv_laps_yoffset;
-extern consvar_t cv_spdm_xoffset;
-extern consvar_t cv_spdm_yoffset;
-extern consvar_t cv_posi_xoffset;
-extern consvar_t cv_posi_yoffset;
-extern consvar_t cv_face_xoffset;
-extern consvar_t cv_face_yoffset;
-extern consvar_t cv_stcd_xoffset;
-extern consvar_t cv_stcd_yoffset;
-extern consvar_t cv_chek_yoffset;
-extern consvar_t cv_mini_xoffset;
-extern consvar_t cv_mini_yoffset;
-extern consvar_t cv_want_xoffset;
-extern consvar_t cv_want_yoffset;
+#define DECL_HUD_OFFSET_X(name)\
+extern consvar_t cv_##name##_xoffset;
+
+#define DECL_HUD_OFFSET_Y(name)\
+extern consvar_t cv_##name##_yoffset;
+
+#define DECL_HUD_OFFSET(name)\
+DECL_HUD_OFFSET_X(name)\
+DECL_HUD_OFFSET_Y(name)
+
+DECL_HUD_OFFSET(item); // Item box
+DECL_HUD_OFFSET(time); // Time
+DECL_HUD_OFFSET(laps); // Number of laps
+DECL_HUD_OFFSET(dnft); // Countdown (did not finish timer)
+DECL_HUD_OFFSET(speed); // Speedometer
+DECL_HUD_OFFSET(posi); // Position in race
+DECL_HUD_OFFSET(face); // Mini rankings
+DECL_HUD_OFFSET(stcd); // Starting countdown
+DECL_HUD_OFFSET_Y(chek); // Check gfx
+DECL_HUD_OFFSET(mini); // Minimap
+DECL_HUD_OFFSET(want); // Wanted
+DECL_HUD_OFFSET(stat); // Stats
+
+#undef DECL_HUD_OFFSET
+#undef DECL_HUD_OFFSET_X
+#undef DECL_HUD_OFFSET_Y
+
 extern consvar_t cv_showinput;
 extern consvar_t cv_newspeedometer;
 
@@ -156,9 +164,11 @@ extern consvar_t cv_saltysquish;
 extern consvar_t cv_driftsparkpulse;
 extern consvar_t cv_gravstretch;
 extern consvar_t cv_sloperoll;
+extern consvar_t cv_spriteroll;
 extern consvar_t cv_sliptideroll;
 extern consvar_t cv_slamsound;
 extern consvar_t cv_sloperolldist;
+extern consvar_t cv_sparkroll;
 
 extern consvar_t cv_cechotoggle;
 
@@ -178,6 +188,9 @@ typedef enum
 	AXISFIRE,
 	AXISDRIFT,
 	AXISLOOKBACK,
+	AXISCUSTOM1,
+	AXISCUSTOM2,
+	AXISCUSTOM3
 } axis_input_e;
 
 // mouseaiming (looking up/down with the mouse or keyboard)

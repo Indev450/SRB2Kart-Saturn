@@ -1382,6 +1382,7 @@ static void SaveGlowThinker(const thinker_t *th, const UINT8 type)
 	WRITEINT32(save_p, ht->direction);
 	WRITEINT32(save_p, ht->speed);
 }
+
 //
 // SaveFireflickerThinker
 //
@@ -1397,6 +1398,7 @@ static inline void SaveFireflickerThinker(const thinker_t *th, const UINT8 type)
 	WRITEINT32(save_p, ht->maxlight);
 	WRITEINT32(save_p, ht->minlight);
 }
+
 //
 // SaveElevatorThinker
 //
@@ -1975,23 +1977,6 @@ static void LoadMobjThinker(actionf_p1 thinker)
 	// declare this as a valid mobj as soon as possible.
 	mobj->thinker.function.acp1 = thinker;
 
-	mobj->rollangle = 0;
-	mobj->sloperoll = 0;
-	mobj->reservexydir = 0;
-	mobj->reservezangle = 0;
-	
-	mobj->spritexoffset = mobj->old_spritexoffset = 0;
-	mobj->spriteyoffset = mobj->old_spriteyoffset = 0;
-	mobj->spritexscale = mobj->old_spritexscale = FRACUNIT;
-	mobj->spriteyscale = mobj->old_spriteyscale = FRACUNIT;
-	mobj->realxscale = FRACUNIT;
-	mobj->realyscale = FRACUNIT;
-	
-	mobj->stretchslam = 0;
-	mobj->slamsoundtimer = 0;
-	
-	mobj->mirrored = 0;
-	
 	mobj->z = z;
 	mobj->floorz = floorz;
 	mobj->ceilingz = ceilingz;
@@ -2155,6 +2140,39 @@ static void LoadMobjThinker(actionf_p1 thinker)
 		mobj->standingslope = P_SlopeById(READUINT16(save_p));
 	if (diff2 & MD2_COLORIZED)
 		mobj->colorized = READUINT8(save_p);
+
+	//{ Saturn stuff, needs to be set, but shouldnt be synched
+
+	// Sprite Rotation
+	mobj->rollangle = 0;
+	mobj->pitch = 0;
+	mobj->roll = 0;
+	mobj->sloperoll = 0;
+	mobj->slopepitch = 0;
+	mobj->pitch_sprite = 0;
+	mobj->roll_sprite = 0;
+
+	// Horizontal flip
+	mobj->mirrored = 0;
+
+	// Sprite Rendering stuff
+	mobj->spritexoffset = 0;
+	mobj->spriteyoffset = 0;
+	mobj->spritexscale = FRACUNIT;
+	mobj->spriteyscale = FRACUNIT;
+	mobj->realxscale = FRACUNIT;
+	mobj->realyscale = FRACUNIT;
+	mobj->stretchslam = 0;
+
+	mobj->stretchslam = 0;
+	mobj->slamsoundtimer = 0;
+
+	mobj->mirrored = 0;
+
+	// Timer for slam sound effect
+	mobj->slamsoundtimer = 0;
+
+	//}
 
 	if (diff & MD_REDFLAG)
 	{
@@ -2341,6 +2359,7 @@ static void LoadGlowThinker(actionf_p1 thinker)
 		ht->sector->lightingdata = ht;
 	P_AddThinker(&ht->thinker);
 }
+
 //
 // LoadFireflickerThinker
 //
@@ -2359,6 +2378,7 @@ static void LoadFireflickerThinker(actionf_p1 thinker)
 		ht->sector->lightingdata = ht;
 	P_AddThinker(&ht->thinker);
 }
+
 //
 // LoadElevatorThinker
 //
@@ -2487,7 +2507,7 @@ static inline void LoadLaserThinker(actionf_p1 thinker)
 //
 // Loads a lightlevel_t from a save game
 //
-static inline void LoadLightlevelThinker(actionf_p1 thinker)
+FUNCINLINE static ATTRINLINE void LoadLightlevelThinker(actionf_p1 thinker)
 {
 	lightlevel_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
 	ht->thinker.function.acp1 = thinker;
@@ -3317,7 +3337,7 @@ static void P_NetArchiveMisc(void)
 		WRITEUINT8(save_p, 0x2e);
 }
 
-static inline boolean P_NetUnArchiveMisc(void)
+FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(void)
 {
 	UINT32 pig;
 	INT32 i;
@@ -3467,10 +3487,8 @@ void P_SaveNetGame(void)
 		P_NetArchiveThinkers();
 		P_NetArchiveSpecials();
 	}
-#ifdef HAVE_BLUA
-	LUA_Archive();
-#endif
 
+	LUA_Archive();
 	WRITEUINT8(save_p, 0x1d); // consistency marker
 }
 
@@ -3511,9 +3529,8 @@ boolean P_LoadNetGame(void)
 		P_RelinkPointers();
 		P_FinishMobjs();
 	}
-#ifdef HAVE_BLUA
+
 	LUA_UnArchive();
-#endif
 
 	// This is stupid and hacky, but maybe it'll work!
 	P_SetRandSeed(P_GetInitSeed());

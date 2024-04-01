@@ -11,7 +11,7 @@
 /// \brief custom HUD rendering library for Lua scripting
 
 #include "doomdef.h"
-#ifdef HAVE_BLUA
+#include "fastcmp.h"
 #include "r_defs.h"
 #include "r_local.h"
 #include "st_stuff.h" // hudinfo[]
@@ -23,6 +23,7 @@
 #include "v_video.h"
 #include "w_wad.h"
 #include "z_zone.h"
+#include "k_kart.h"
 
 #include "lua_script.h"
 #include "lua_libs.h"
@@ -55,6 +56,8 @@ static const char *const hud_disable_options[] = {
 	"wanted",
 	"speedometer",
 	"statdisplay",
+	"nametags",
+	"driftgauge",
 	"freeplay",
 	"rankings",
 	NULL};
@@ -166,6 +169,58 @@ static const char *const camera_opt[] = {
 	"momy",
 	"momz",
 	"pnum",
+	NULL};
+
+enum hudpatch {
+	hudpatch_item = 0,
+	hudpatch_itemmul
+};
+
+static const char *const hud_patch_options[] = {
+	"item",
+	"itemmul",
+	NULL};
+
+enum hudoffsets {
+	hudoffsets_item = 0,
+	hudoffsets_time,
+	hudoffsets_gametypeinfo,
+	hudoffsets_countdown,
+	hudoffsets_speedometer,
+	hudoffsets_position,
+	hudoffsets_minirankings,
+	hudoffsets_startcountdown,
+	hudoffsets_check,
+	hudoffsets_minimap,
+	hudoffsets_wanted,
+	hudoffsets_statdisplay
+};
+
+static const char *const hud_offsets_options[] = {
+	"item",
+	"time",
+	"gametypeinfo",
+	"countdown",
+	"speedometer",
+	"position",
+	"minirankings",
+	"startcountdown",
+	"check",
+	"minimap",
+	"wanted",
+	"statdisplay",
+	NULL};
+
+enum huddrawinfo {
+	huddrawinfo_item = 0,
+	huddrawinfo_gametypeinfo,
+	huddrawinfo_minimap
+};
+
+static const char *const hud_drawinfo_options[] = {
+	"item",
+	"gametypeinfo",
+	"minimap",
 	NULL};
 
 static int lib_getHudInfo(lua_State *L)
@@ -344,6 +399,118 @@ static int libd_cachePatch(lua_State *L)
 	HUDONLY
 	LUA_PushUserdata(L, W_CachePatchName(luaL_checkstring(L, 1), PU_STATIC), META_PATCH);
 	return 1;
+}
+
+// this is structured like getSprite2Patch in vanilla 2.2
+// v.getSpritePatch(skin, sprite, [frame, [angle, [rollangle]]])
+static int libd_getSpritePatch(lua_State *L)
+{
+	UINT32 i; // sprite prefix
+	INT32 skn = -1; // skin number
+	UINT32 frame = 0; // 'A'
+	UINT8 angle = 0;
+	spritedef_t *sprdef;
+	spriteframe_t *sprframe;
+#ifdef ROTSPRITE
+	spriteinfo_t *sprinfo;
+#endif
+	HUDONLY
+
+	// mashing together the stuff from getSprite2Patch:
+	// get skin first!
+	if (!lua_isnoneornil(L, 1)) // ONLY do this if we have a skin
+	{
+		if (lua_isnumber(L, 1)) // find skin by number
+		{
+			skn = lua_tonumber(L, 1);
+			if (skn < 0 || skn >= MAXSKINS)
+				return luaL_error(L, "skin number %d out of range (0 - %d)", skn, MAXSKINS-1);
+			if (skn >= numskins)
+				return 0;
+		}
+		else // find skin by name
+		{
+			const char *name = luaL_checkstring(L, 1);
+			for (skn = 0; skn < numskins; skn++)
+				if (fastcmp(skins[skn].name, name))
+					break;
+			if (skn >= numskins)
+				return 0;
+		}
+	}
+
+	lua_remove(L, 1); // remove skin now
+
+	if (lua_isnumber(L, 1)) // sprite number given, e.g. SPR_THOK
+	{
+		i = lua_tonumber(L, 1);
+		if (i >= NUMSPRITES)
+			return 0;
+	}
+	else if (lua_isstring(L, 1)) // sprite prefix name given, e.g. "THOK"
+	{
+		const char *name = lua_tostring(L, 1);
+		for (i = 0; i < NUMSPRITES; i++)
+			if (fastcmp(name, sprnames[i]))
+				break;
+		if (i >= NUMSPRITES)
+			return 0;
+	}
+	else
+		return 0;
+
+	// get outta dodge if we're a playersprite and have no skin
+	if ((i == SPR_PLAY) && (skn < 0))
+		return luaL_error(L, "You must provide a skin for player sprites!");
+
+	if (skn < 0) // standard sprite
+	{
+		sprdef = &sprites[i];
+		sprinfo = &spriteinfo[i];
+	}
+	else // player skin
+	{
+		sprdef = &skins[skn].spritedef;
+		sprinfo = &skins[skn].sprinfo;
+	}
+
+	// set frame number
+	frame = luaL_optinteger(L, 2, 0);
+	frame &= FF_FRAMEMASK; // ignore any bits that are not the actual frame, just in case
+	if (frame >= sprdef->numframes)
+		return 0;
+	// set angle number
+	sprframe = &sprdef->spriteframes[frame];
+	angle = luaL_optinteger(L, 3, 1);
+
+	// convert WAD editor angle numbers (1-8) to internal angle numbers (0-7)
+	// keep 0 the same since we'll make it default to angle 1 (which is internally 0)
+	// in case somebody didn't know that angle 0 really just maps all 8 angles to the same patch
+	if (angle != 0)
+		angle--;
+
+	if (angle >= 8) // out of range?
+		angle = (angle & 7); // modulus angle by 8
+
+	// rotsprite?????
+	if (lua_isnumber(L, 4) && (cv_spriteroll.value))
+	{
+		angle_t rollangle = luaL_checkangle(L, 4);
+		INT32 rot = R_GetRollAngle(rollangle);
+
+		if (rot) {
+			patch_t *rotsprite = Patch_GetRotatedSprite(sprframe, frame, angle, sprframe->flip & (1<<angle), false, sprinfo, rot);
+			LUA_PushUserdata(L, rotsprite, META_PATCH);
+			lua_pushboolean(L, false);
+			lua_pushboolean(L, true);
+			return 3;
+		}
+	}
+
+	// push both the patch and its "flip" value
+	LUA_PushUserdata(L, W_CachePatchNum(sprframe->lumppat[angle], PU_STATIC), META_PATCH);
+	lua_pushboolean(L, (sprframe->flip & (1<<angle)) != 0);
+	return 2;
 }
 
 static int libd_draw(lua_State *L)
@@ -631,7 +798,6 @@ static int libd_drawStretched(lua_State *L)
 	return 0;
 }
 
-
 static int libd_drawNum(lua_State *L)
 {
 	INT32 x, y, flags, num;
@@ -894,6 +1060,54 @@ static int libd_getColormap(lua_State *L)
 	return 1;
 }
 
+static int libd_getColorHudPatch(lua_State *L)
+{
+	HUDONLY
+	enum hudpatch option = luaL_checkoption(L, 1, NULL, hud_patch_options);
+	patch_t *patch;
+	UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
+	boolean small, dark;
+
+	switch (option) {
+		case hudpatch_item:
+			small = lua_optboolean(L, 2);
+			dark = lua_optboolean(L, 3);
+			patch = K_getItemBoxPatch(small, dark);
+			if (!cv_colorizeditembox.value)
+				colormap = NULL;
+			break;
+		case hudpatch_itemmul:
+			small = lua_optboolean(L, 2);
+			patch = K_getItemMulPatch(small);
+			break;
+		default:
+			return 0; // you shouldn't be here
+	}
+
+	LUA_PushUserdata(L, patch, META_PATCH);
+	if (colormap && K_UseColorHud())
+		LUA_PushUserdata(L, colormap, META_COLORMAP);
+	else
+		lua_pushnil(L);
+
+	return 2;
+}
+
+static int libd_getHudColor(lua_State *L)
+{
+	HUDONLY
+	lua_pushinteger(L, K_GetHudColor());
+	return 1;
+}
+
+static int libd_useColorHud(lua_State *L)
+{
+	HUDONLY
+	lua_pushboolean(L, K_UseColorHud());
+	return 1;
+}
+
+
 static int libd_width(lua_State *L)
 {
 	HUDONLY
@@ -944,6 +1158,26 @@ static int libd_getlocaltransflag(lua_State *L)
 	return 1;
 }
 
+static int libd_getDrawInfo(lua_State *L)
+{
+	HUDONLY
+	enum huddrawinfo option = luaL_checkoption(L, 1, NULL, hud_drawinfo_options);
+	drawinfo_t info;
+
+	switch(option) {
+		case huddrawinfo_item:          K_getItemBoxDrawinfo(&info);  break;
+		case huddrawinfo_gametypeinfo:  K_getLapsDrawinfo(&info);     break;
+		case huddrawinfo_minimap:       K_getMinimapDrawinfo(&info);  break;
+		default:
+			return 0; // unreachable
+	}
+
+	lua_pushinteger(L, info.x);
+	lua_pushinteger(L, info.y);
+	lua_pushinteger(L, info.flags);
+	return 3;
+}
+
 static luaL_Reg lib_draw[] = {
 	{"patchExists", libd_patchExists},
 	{"cachePatch", libd_cachePatch},
@@ -954,6 +1188,7 @@ static luaL_Reg lib_draw[] = {
 	{"drawPaddedNum", libd_drawPaddedNum},
 	{"drawPingNum", libd_drawPingNum},
 	{"drawFill", libd_drawFill},
+	{"getSpritePatch",libd_getSpritePatch},
 	{"fadeScreen", libd_fadeScreen},
 	{"drawString", libd_drawString},
 	{"drawKartString", libd_drawKartString},
@@ -966,6 +1201,10 @@ static luaL_Reg lib_draw[] = {
 	{"renderer", libd_renderer},
 	{"localTransFlag", libd_getlocaltransflag},
 	{"drawOnMinimap", libd_drawOnMinimap},
+	{"getColorHudPatch", libd_getColorHudPatch},
+	{"getDrawInfo", libd_getDrawInfo},
+	{"getHudColor", libd_getHudColor},
+	{"useColorHud", libd_useColorHud},
 	{NULL, NULL}
 };
 
@@ -1056,12 +1295,44 @@ static int lib_hudsetvotebackground(lua_State *L)
 	return 0;
 }
 
+static int lib_hudgetoffsets(lua_State *L)
+{
+	enum hudoffsets option = luaL_checkoption(L, 1, NULL, hud_offsets_options);
+	INT32 ofx, ofy;
+
+#define OFS(it) ofx = cv_##it##_xoffset.value; ofy = cv_##it##_yoffset.value; break;
+#define OFY(it) ofx = 0; ofy = cv_##it##_yoffset.value; break;
+	switch(option) {
+		case hudoffsets_item:           OFS(item)
+		case hudoffsets_time:           OFS(time)
+		case hudoffsets_gametypeinfo:   OFS(laps)
+		case hudoffsets_countdown:      OFS(dnft)
+		case hudoffsets_speedometer:    OFS(speed)
+		case hudoffsets_position:       OFS(posi)
+		case hudoffsets_minirankings:   OFS(face)
+		case hudoffsets_startcountdown: OFS(stcd)
+		case hudoffsets_check:          OFY(chek)
+		case hudoffsets_minimap:        OFS(mini)
+		case hudoffsets_wanted:         OFS(want)
+		case hudoffsets_statdisplay:    OFS(stat)
+		default:
+			return 0; // unreachable
+	}
+#undef OFS
+#undef OFY
+
+	lua_pushinteger(L, ofx);
+	lua_pushinteger(L, ofy);
+	return 2;
+}
+
 static luaL_Reg lib_hud[] = {
 	{"enable", lib_hudenable},
 	{"disable", lib_huddisable},
 	{"enabled", lib_hudenabled},
 	{"add", lib_hudadd},
 	{"setVoteBackground", lib_hudsetvotebackground},
+	{"getOffsets", lib_hudgetoffsets},
 	{NULL, NULL}
 };
 
@@ -1298,5 +1569,3 @@ void LUAh_VoteHUD(huddrawlist_h list)
 	lua_pushlightuserdata(gL, NULL);
 	lua_setfield(gL, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
 }
-
-#endif

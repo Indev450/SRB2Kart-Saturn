@@ -472,7 +472,8 @@ void P_ParseAnimationDefintion(SINT8 istexture)
 		// Increase the size to make room for the new animation definition
 		maxanims++;
 		animdefs = (animdef_t *)Z_Realloc(animdefs, sizeof(animdef_t)*(maxanims + 1), PU_STATIC, NULL);
-		strncpy(animdefs[i].startname, animdefsToken, 9);
+		memcpy(animdefs[i].startname, animdefsToken, 9);
+		animdefs[i].startname[8] = '\0';
 	}
 
 	// animdefs[i].startname is now set to animdefsToken either way.
@@ -3110,14 +3111,10 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 		}
 
 		case 443: // Calls a named Lua function
-#ifdef HAVE_BLUA
 			if (line->text)
 				LUAh_LinedefExecute(line, mo, callsec);
 			else
 				CONS_Alert(CONS_WARNING, "Linedef %s is missing the hook name of the Lua function to call! (This should be given in the front texture fields)\n", sizeu1(line-lines));
-#else
-			CONS_Alert(CONS_ERROR, "The map is trying to run a Lua script, but this exe was not compiled with Lua support!\n");
-#endif
 			break;
 
 		case 444: // Earthquake camera
@@ -3627,8 +3624,8 @@ void P_ProcessSpecialSector(player_t *player, sector_t *sector, sector_t *rovers
 		case 5: // Spikes
 			// Don't do anything. In Soviet Russia, spikes find you.
 			break;
-		case 6: // Death Pit (Camera Mod)
-		case 7: // Death Pit (No Camera Mod)
+		case 6: // Death Pit (Camera Tilt)
+		case 7: // Death Pit (No Camera Tilt)
 			if (roversector || P_MobjReadyToTrigger(player->mo, sector))
 				P_DamageMobj(player->mo, NULL, NULL, 10000);
 			break;
@@ -3685,8 +3682,8 @@ void P_ProcessSpecialSector(player_t *player, sector_t *sector, sector_t *rovers
 	{
 		case 1: // Trigger Linedef Exec (Pushable Objects)
 			break;
-		case 2: // Linedef executor requires all players present+doesn't require touching floor
-		case 3: // Linedef executor requires all players present
+		case 2: // Linedef executor requires all players present+doesn't require touching floor // Trigger Linedef Exec (Anywhere, All Players)
+		case 3: // Linedef executor requires all players present // Trigger Linedef Exec (Floor Touch, All Players)
 			/// \todo check continues for proper splitscreen support?
 			for (i = 0; i < MAXPLAYERS; i++)
 				if (playeringame[i] && !players[i].bot && players[i].mo && (gametype != GT_COOP || players[i].lives > 0))
@@ -3743,16 +3740,16 @@ void P_ProcessSpecialSector(player_t *player, sector_t *sector, sector_t *rovers
 					}
 				}
 			/* FALLTHRU */
-		case 4: // Linedef executor that doesn't require touching floor
-		case 5: // Linedef executor
-		case 6: // Linedef executor (7 Emeralds)
-		case 7: // Linedef executor (NiGHTS Mare)
+		case 4: // Linedef executor that doesn't require touching floor // Trigger Linedef Exec (Anywhere in Sector)
+		case 5: // Linedef executor // Trigger Linedef Exec (Floor Touch)
+		case 6: // Linedef executor (7 Emeralds) // unused
+		case 7: // SRB2kart: Linedef executor (Race Lap)
 			if (!player->bot)
 				P_LinedefExecute(sector->tag, player->mo, sector);
 			break;
-		case 8: // Tells pushable things to check FOFs
+		case 8: // Tells pushable things to check FOFs // Check for Linedef Executor on FOFs
 			break;
-		case 9: // Egg trap capsule
+		case 9: // Egg trap capsule // unused
 		{
 			thinker_t *th;
 			mobj_t *mo2;
@@ -3792,12 +3789,12 @@ void P_ProcessSpecialSector(player_t *player, sector_t *sector, sector_t *rovers
 				P_DoPlayerExit(&players[i]);
 			break;
 		}
-		case 10: // Special Stage Time/Rings
+		case 10: // Special Stage Time/Rings // unused
 		case 11: // Custom Gravity
 			break;
-		case 12: // Lua sector special
+		case 12: // SRB2kart: Invert Encore Remap
 			break;
-		case 15: // Invert Encore Remap
+		case 15: // no idea but keep it dont want anything to break
 			break;
 	}
 DoneSection2:

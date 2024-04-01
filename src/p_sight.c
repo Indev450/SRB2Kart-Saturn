@@ -169,6 +169,7 @@ static boolean P_CrossSubsecPolyObj(polyobj_t *po, register los_t *los)
 	return true;
 }
 
+
 //
 // P_CrossSubsector
 //

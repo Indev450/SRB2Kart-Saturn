@@ -11,7 +11,6 @@
 /// \brief basic functions for Lua scripting
 
 #include "doomdef.h"
-#ifdef HAVE_BLUA
 #include "p_local.h"
 #include "p_setup.h" // So we can have P_SetupLevelSky
 #include "p_slopes.h" // P_GetZAt
@@ -535,6 +534,18 @@ static int lib_pFlashPal(lua_State *L)
 	if (!pl)
 		return LUA_ErrInvalid(L, "player_t");
 	P_FlashPal(pl, type, duration);
+	return 0;
+}
+
+
+// not sure if this is netsafe...
+static int lib_pRollPitchMobj(lua_State *L)
+{
+	mobj_t *source = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));
+	NOHUD
+	if (!source)
+		return LUA_ErrInvalid(L, "mobj_t");
+	P_RollPitchMobj(source);
 	return 0;
 }
 
@@ -3033,6 +3044,7 @@ static luaL_Reg lib[] = {
 	{"P_GetMobjGravity",lib_pGetMobjGravity},
 	{"P_WeaponOrPanel",lib_pWeaponOrPanel},
 	{"P_FlashPal",lib_pFlashPal},
+	{"P_RollPitchMobj",lib_pRollPitchMobj},
 	{"P_GetClosestAxis",lib_pGetClosestAxis},
 	{"P_SpawnParaloop",lib_pSpawnParaloop},
 	{"P_BossTargetPlayer",lib_pBossTargetPlayer},
@@ -3255,5 +3267,3 @@ int LUA_BaseLib(lua_State *L)
 	luaL_register(L, NULL, lib);
 	return 0;
 }
-
-#endif

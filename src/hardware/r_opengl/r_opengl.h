@@ -35,7 +35,6 @@
 
 #else
 #include <GL/gl.h>
-#include <GL/glu.h>
 
 #ifdef STATIC_OPENGL // Because of the 1.3 functions, you'll need GLext to compile it if static
 #define GL_GLEXT_PROTOTYPES
@@ -46,6 +45,7 @@
 #define  _CREATE_DLL_  // necessary for Unix AND Windows
 #include "../../doomdef.h"
 #include "../hw_drv.h"
+#include "../../z_zone.h"
 
 // ==========================================================================
 //                                                                DEFINITIONS
@@ -73,10 +73,6 @@ void Flush(void);
 INT32 isExtAvailable(const char *extension, const GLubyte *start);
 void SetModelView(GLint w, GLint h);
 void SetStates(void);
-#ifdef USE_PALETTED_TEXTURE
-extern PFNGLCOLORTABLEEXTPROC glColorTableEXT;
-extern GLubyte                palette_tex[256*3];
-#endif
 
 #ifndef GL_EXT_texture_filter_anisotropic
 #define GL_TEXTURE_MAX_ANISOTROPY_EXT     0x84FE
@@ -116,25 +112,26 @@ extern const GLubyte	*gl_version;
 extern const GLubyte	*gl_renderer;
 extern const GLubyte	*gl_extensions;
 
+extern int 				majorGL, minorGL;
+
 extern RGBA_t			myPaletteData[];
 extern GLint			screen_width;
 extern GLint			screen_height;
 extern GLbyte			screen_depth;
 extern GLint			maximumAnisotropy;
+extern boolean 			supportMipMap;
 
 /**	\brief OpenGL flags for video driver
 */
 extern INT32            oglflags;
 extern GLint            textureformatGL;
 
+extern GLfloat projMatrix[16];
+
 typedef enum
 {
 	GLF_NOZBUFREAD = 0x01,
 	GLF_NOTEXENV   = 0x02,
 } oglflags_t;
-
-// in order for custom playpals n shit to work properly
-extern boolean gl_palette_initialized;
-void InitPalette(int flashnum, boolean skiplut);
 
 #endif

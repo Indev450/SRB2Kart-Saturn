@@ -42,18 +42,16 @@
 #include "p_local.h" // camera[]
 #include "p_tick.h"
 
-#ifdef HWRENDER
-#include "hardware/hw_main.h"
-#endif
-
-#ifdef HAVE_BLUA
 #include "lua_hud.h"
 #include "lua_hudlib_drawlist.h"
 #include "lua_hook.h"
-#endif
 
 #include "s_sound.h" // song credits
 #include "k_kart.h"
+
+#ifdef HWRENDER
+#include "hardware/hw_main.h"
+#endif
 
 // coords are scaled
 #define HU_INPUTX 0
@@ -94,9 +92,7 @@ static boolean headsupactive = false;
 boolean hu_showscores; // draw rankings
 static char hu_tick;
 
-#ifdef HAVE_BLUA
 static huddrawlist_h luahuddrawlist_scores;
-#endif
 
 patch_t *rflagico;
 patch_t *bflagico;
@@ -127,6 +123,9 @@ static patch_t *songcreditbg;
 // protos.
 // -------
 static void HU_DrawRankings(void);
+
+
+consvar_t cv_showspecstuff = {"showspecstuff", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 //======================================================================
 //                 KEYBOARD LAYOUTS FOR ENTERING TEXT
@@ -174,6 +173,107 @@ char english_shiftxform[] =
 	'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
 	'{', '|', '}', '~', 127
 };
+
+char french_shiftxform[] =
+{
+	0,
+	1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+	11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+	21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+	31,
+	' ','$', //shift-!
+	'3', //shift-"
+	'#', '$', '%', 
+	'1', //shift-&
+	'4', // shift-'
+	'5', // shift-(
+	')', // shift-)
+	'*', '+',
+	'?', // shift-,
+	'6', // shift--
+	'.', '/',
+	'0', '1', '2', '3', '4', '5',
+	'6', '7', '8', '9', 
+	'/', // shitf-:
+	'.', // shift-;
+	'>', // shift-<
+	'+', // shift-=
+	'>', '?', '@',
+	'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
+	'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+	'[', '\\', ']', '^',
+	'8', //shift-_
+	'`',
+	'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
+	'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+	'{', '|', '}', '~', 127,
+	128, 129,
+	'2',
+	131, 132,
+	'0',
+	134,
+	'9',
+	136, 137,
+	'7',
+	139, 140,
+	'%'
+};
+
+char french_altgrxform[] =
+{
+	0,
+	1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+	11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+	21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+	31,
+	' ', '!',
+	'#', //altgr-"
+	'#', '$', '%', '&',
+	'{', //altgr-'
+	'[', //altgr-(
+	']', //altgr-)
+	'*', '+', ',',
+	'|', //altg--
+	'.', '/',
+	'0', '1', '2', '3', '4', '5',
+	'6', '7', '8', '9', 
+	':', ';', '<',
+	'}', //altgr-=
+	'>', '?', '@',
+    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
+	'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+	'[', '\\', ']', '^',
+	'\\', //altgr-backslash
+	'`',
+	'a', 'b', 'c', 'd', 'E', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n',
+	'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+	'{', '|', '}', '~', 127,
+	128, 129,
+	'~',
+	131, 132,
+	'@',
+	134,
+	'^',
+	136, 137,
+	'`',
+	139, 140,
+	KEY_FR_U_GRAVE
+};
+
+//fallback for special letter non displayable in the game (i.e.: 'é','à',etc.)
+INT32 HU_FallBackFrSpecialLetter(INT32 key)
+{
+	switch(key){
+		case KEY_FR_E_AIGUE:     return 'e';
+		case KEY_FR_E_GRAVE:     return 'e';
+		case KEY_FR_C_CEDILLE:   return 'c';
+		case KEY_FR_A_GRAVE:     return 'a';
+		case KEY_FR_U_GRAVE:     return 'u';
+		default:       return key;
+	}
+}
+
+
 
 static char cechotext[1024];
 static tic_t cechotimer = 0;
@@ -349,9 +449,7 @@ void HU_Init(void)
 	// set shift translation table
 	shiftxform = english_shiftxform;
 
-#ifdef HAVE_BLUA
 	luahuddrawlist_scores = LUA_HUD_CreateDrawList();
-#endif
 
 	HU_LoadGraphics();
 }
@@ -372,6 +470,11 @@ void HU_Start(void)
 	plr = &players[consoleplayer];
 
 	headsupactive = true;
+}
+
+void HU_Shiftform(void)
+{
+	shiftxform = cv_keyboardlayout.value == 3 ? french_shiftxform : english_shiftxform;
 }
 
 //======================================================================
@@ -555,7 +658,8 @@ static void DoSayCommand(SINT8 target, size_t usedargs, UINT8 flags)
 		const char *newmsg;
 		INT32 spc = 1; // used if nodenum[1] is a space.
 		char *nodenum = (char*) malloc(3);
-		strncpy(nodenum, msg+3, 3);
+		memcpy(nodenum, msg+3, 2);
+		nodenum[2] = '\0';
 		// check for undesirable characters in our "number"
 		if 	(((nodenum[0] < '0') || (nodenum[0] > '9')) || ((nodenum[1] < '0') || (nodenum[1] > '9')))
 		{
@@ -571,15 +675,15 @@ static void DoSayCommand(SINT8 target, size_t usedargs, UINT8 flags)
 			}
 		}
 		// I'm very bad at C, I swear I am, additional checks eww!
-			if (spc != 0)
+		if (spc != 0)
+		{
+			if (msg[5] != ' ')
 			{
-				if (msg[5] != ' ')
-				{
-					HU_AddChatText("\x82NOTICE: \x80Invalid command format. Correct format is \'/pm<node> \'.", false);
-					free(nodenum);
-					return;
-				}
+				HU_AddChatText("\x82NOTICE: \x80Invalid command format. Correct format is \'/pm<node> \'.", false);
+				free(nodenum);
+				return;
 			}
+		}
 
 		target = atoi((const char*) nodenum); // turn that into a number
 		free(nodenum);
@@ -887,10 +991,8 @@ static void Got_Saycmd(UINT8 **p, INT32 playernum)
 
 	// run the lua hook even if we were supposed to eat the msg, netgame consistency goes first.
 
-#ifdef HAVE_BLUA
 	if (LUAh_PlayerMsg(playernum, target, flags, msg, spam_eatmsg))
 		return;
-#endif
 
 	if (spam_eatmsg)
 		return; // don't proceed if we were supposed to eat the message.
@@ -1233,7 +1335,8 @@ static void HU_queueChatChar(INT32 c)
 				return;
 			}
 
-			strncpy(nodenum, msg+3, 3);
+			memcpy(nodenum, msg+3, 2);
+			nodenum[2] = '\0';
 
 			// check for undesirable characters in our "number"
 			if 	(((nodenum[0] < '0') || (nodenum[0] > '9')) || ((nodenum[1] < '0') || (nodenum[1] > '9')))
@@ -1381,7 +1484,7 @@ boolean HU_Responder(event_t *ev)
 		&& ev->data1 != gamecontrol[gc_talkkey][1]))
 			return false;
 
-		c = CON_ShiftChar(c);
+		c = cv_keyboardlayout.value == 3 ? CON_ShitAndAltGrChar(c) : CON_ShiftChar(c);
 
 		// pasting. pasting is cool. chat is a bit limited, though :(
 		if (((c == 'v' || c == 'V') && ctrldown) && !CHAT_MUTE)
@@ -1944,7 +2047,8 @@ static void HU_DrawChat(void)
 
 
 				nodenum = (char*) malloc(3);
-				strncpy(nodenum, w_chat+3, 3);
+				memcpy(nodenum, w_chat+3, 2);
+				nodenum[2] = '\0';
 				n = atoi((const char*) nodenum); // turn that into a number
 				free(nodenum);
 				// special cases:
@@ -1997,8 +2101,6 @@ static void HU_DrawChat(void)
 
 
 // For anyone who, for some godforsaken reason, likes oldchat.
-
-
 static void HU_DrawChat_Old(void)
 {
 	INT32 t = 0, c = 0, y = HU_INPUTY;
@@ -2068,164 +2170,6 @@ static void HU_DrawChat_Old(void)
 	}
 }
 #endif
-
-// draw the Crosshair, at the exact center of the view.
-//
-// Crosshairs are pre-cached at HU_Init
-
-/*static inline void HU_DrawCrosshair(void)
-{
-	INT32 i, x, y;
-
-	i = cv_crosshair.value & 3;
-	if (!i)
-		return;
-
-	if ((netgame || multiplayer) && players[displayplayers[0]].spectator)
-		return;
-
-#ifdef HWRENDER
-	if (rendermode != render_soft)
-	{
-		x = (INT32)gr_basewindowcenterx;
-		y = (INT32)gr_basewindowcentery;
-	}
-	else
-#endif
-	{
-		x = viewwindowx + (viewwidth>>1);
-		y = viewwindowy + (viewheight>>1);
-	}
-
-	V_DrawScaledPatch(x, y, V_NOSCALESTART|V_OFFSET|V_TRANSLUCENT, crosshair[i - 1]);
-}
-
-static inline void HU_DrawCrosshair2(void)
-{
-	INT32 i, x, y;
-
-	i = cv_crosshair2.value & 3;
-	if (!i)
-		return;
-
-	if ((netgame || multiplayer) && players[displayplayers[1]].spectator)
-		return;
-
-#ifdef HWRENDER
-	if (rendermode != render_soft)
-	{
-		x = (INT32)gr_basewindowcenterx;
-		y = (INT32)gr_basewindowcentery;
-	}
-	else
-#endif
-	{
-		x = viewwindowx + (viewwidth>>1);
-		y = viewwindowy + (viewheight>>1);
-	}
-
-	if (splitscreen)
-	{
-		if (splitscreen > 1)
-#ifdef HWRENDER
-			if (rendermode != render_soft)
-				x += (INT32)gr_viewwidth;
-			else
-#endif
-				x += viewwidth;
-		else
-		{
-#ifdef HWRENDER
-			if (rendermode != render_soft)
-				y += (INT32)gr_viewheight;
-			else
-#endif
-				y += viewheight;
-		}
-
-		V_DrawScaledPatch(x, y, V_NOSCALESTART|V_OFFSET|V_TRANSLUCENT, crosshair[i - 1]);
-	}
-}
-
-static inline void HU_DrawCrosshair3(void)
-{
-	INT32 i, x, y;
-
-	i = cv_crosshair3.value & 3;
-	if (!i)
-		return;
-
-	if ((netgame || multiplayer) && players[displayplayers[2]].spectator)
-		return;
-
-#ifdef HWRENDER
-	if (rendermode != render_soft)
-	{
-		x = (INT32)gr_basewindowcenterx;
-		y = (INT32)gr_basewindowcentery;
-	}
-	else
-#endif
-	{
-		x = viewwindowx + (viewwidth>>1);
-		y = viewwindowy + (viewheight>>1);
-	}
-
-	if (splitscreen > 1)
-	{
-#ifdef HWRENDER
-		if (rendermode != render_soft)
-			y += (INT32)gr_viewheight;
-		else
-#endif
-			y += viewheight;
-
-		V_DrawScaledPatch(x, y, V_NOSCALESTART|V_OFFSET|V_TRANSLUCENT, crosshair[i - 1]);
-	}
-}
-
-static inline void HU_DrawCrosshair4(void)
-{
-	INT32 i, x, y;
-
-	i = cv_crosshair4.value & 3;
-	if (!i)
-		return;
-
-	if ((netgame || multiplayer) && players[displayplayers[3]].spectator)
-		return;
-
-#ifdef HWRENDER
-	if (rendermode != render_soft)
-	{
-		x = (INT32)gr_basewindowcenterx;
-		y = (INT32)gr_basewindowcentery;
-	}
-	else
-#endif
-	{
-		x = viewwindowx + (viewwidth>>1);
-		y = viewwindowy + (viewheight>>1);
-	}
-
-	if (splitscreen > 2)
-	{
-#ifdef HWRENDER
-		if (rendermode != render_soft)
-		{
-			x += (INT32)gr_viewwidth;
-			y += (INT32)gr_viewheight;
-		}
-		else
-#endif
-		{
-			x += viewwidth;
-			y += viewheight;
-		}
-
-		V_DrawScaledPatch(x, y, V_NOSCALESTART|V_OFFSET|V_TRANSLUCENT, crosshair[i - 1]);
-	}
-}*/
 
 static void HU_DrawCEcho(void)
 {
@@ -2425,19 +2369,18 @@ void HU_Drawer(void)
 	{
 		if (netgame || multiplayer)
 		{
-#ifdef HAVE_BLUA
 			if (LUA_HudEnabled(hud_rankings))
-#endif
 				HU_DrawRankings();
-#ifdef HAVE_BLUA
-		if (renderisnewtic)
-		{
-			LUA_HUD_ClearDrawList(luahuddrawlist_scores);
-			LUAh_ScoresHUD(luahuddrawlist_scores);
+
+			if (renderisnewtic)
+			{
+				LUA_HUD_ClearDrawList(luahuddrawlist_scores);
+				LUAh_ScoresHUD(luahuddrawlist_scores);
+			}
+
+			LUA_HUD_DrawList(luahuddrawlist_scores);
 		}
-		LUA_HUD_DrawList(luahuddrawlist_scores);
-#endif
-		}
+
 		if (demo.playback)
 		{
 			HU_DrawDemoInfo();
@@ -2579,54 +2522,92 @@ void HU_drawPing(INT32 x, INT32 y, UINT32 lag, INT32 flags)
 	UINT8 *colormap = NULL;
 	INT32 measureid = cv_pingmeasurement.value ? 1 : 0;
 	INT32 gfxnum; // gfx to draw
+	
+	//SRB2/Kart v1.0 style
+	UINT8 numbars = 0; // how many ping bars do we draw?
+	UINT8 barcolor = 31; // color we use for the bars (green, yellow, red or black)
+	SINT8 i = 0;
+	SINT8 yoffset = 6;
+	//INT32 dx;
 
 	gfxnum = Ping_gfx_num(lag);
-
-	if (measureid == 1)
+	
+	if (!cv_pingstyle.value)
 	{
-		if (cv_ticrate.value == 2){
-			V_DrawScaledPatch(x+12 - pingmeasure[measureid]->width, y+22, flags, pingmeasure[measureid]);
-		}else{
+		if (measureid == 1)
 			V_DrawScaledPatch(x+11 - pingmeasure[measureid]->width, y+9, flags, pingmeasure[measureid]);
-		}	
-	}
-	
-	
-	if (cv_pingicon.value)
-	{	
-	if (cv_ticrate.value == 2){
-			V_DrawScaledPatch(x+2, y+13, flags, pinggfx[gfxnum]);
-		}else{
-			V_DrawScaledPatch(x+2, y, flags, pinggfx[gfxnum]);
-		}
-	}
-	
-
-	if (servermaxping && lag > servermaxping && hu_tick < 4)
-	{
-		// flash ping red if too high
-		colormap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_RASPBERRY, GTC_CACHE);
-	}
-
-	if (cv_pingmeasurement.value)
-	{
-		lag = (INT32)(lag * (1000.00f / TICRATE));
-	}
-	
-	if (cv_ticrate.value == 2){
-		x = V_DrawPingNum(x + (measureid == 1 ? 11 - pingmeasure[measureid]->width : 10), y+22, flags, lag, colormap);
-	}else{
-		x = V_DrawPingNum(x + (measureid == 1 ? 11 - pingmeasure[measureid]->width : 10), y+9, flags, lag, colormap);
-	}
-
-	if (measureid == 0){
-		if (cv_ticrate.value == 2){
-			V_DrawScaledPatch(x+1 - pingmeasure[measureid]->width, y+22, flags, pingmeasure[measureid]);
-		}else{
-			V_DrawScaledPatch(x+1 - pingmeasure[measureid]->width, y+9, flags, pingmeasure[measureid]);
-		}
-	}		
 		
+		if (cv_pingicon.value)
+			V_DrawScaledPatch(x+2, y, flags, pinggfx[gfxnum]);
+
+		if (servermaxping && lag > servermaxping && hu_tick < 4)
+			colormap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_RASPBERRY, GTC_CACHE); // flash ping red if too high
+
+		if (cv_pingmeasurement.value)
+			lag = (INT32)(lag * (1000.00f / TICRATE));
+
+		x = V_DrawPingNum(x + (measureid == 1 ? 11 - pingmeasure[measureid]->width : 10), y+9, flags, lag, colormap);
+
+		if (measureid == 0)
+				V_DrawScaledPatch(x+1 - pingmeasure[measureid]->width, y+9, flags, pingmeasure[measureid]);
+	}
+	else if (cv_pingstyle.value) // old style ping
+	{
+		if (cv_pingicon.value)
+		{
+			if (lag < 4)
+			{
+				numbars = 3;
+				barcolor = 184;
+			}
+			else if (lag < 7)
+			{
+				numbars = 2;	// Apparently ternaries w/ multiple statements don't look good in C so I decided against it.
+				barcolor = 103;
+			}
+			else if (lag < 10)
+			{
+				numbars = 1;
+				barcolor = 155; // need a better red
+			}
+			else // brazil
+			{
+				numbars = 0;
+				barcolor = 31;
+			}
+		}
+
+		if (cv_pingmeasurement.value)
+			lag = (INT32)(lag * (1000.00f / TICRATE));
+
+		if (vid.width >= 640)	// how sad, we're using a shit resolution.
+		{
+			if (measureid == 1)
+			{
+				//dx = x+1 - (V_SmallStringWidth(va("%dms", lag), V_ALLOWLOWERCASE|flags)/2);
+				//V_DrawSmallString(dx, y+4, V_ALLOWLOWERCASE|flags, va("%dms", lag));
+					V_DrawRightAlignedSmallString(x+12, y+13, V_ALLOWLOWERCASE|flags, va("%dms", lag));
+			}
+			else if (measureid == 0)
+			{
+				//dx = x+1 - (V_SmallStringWidth(va("d%d", lag), flags)/2);
+				//V_DrawSmallString(dx, y+4, flags, va("d%d", lag));
+					V_DrawRightAlignedSmallString(x+12, y+13, flags, va("d%d", lag));
+			}
+		}
+
+		if (cv_pingicon.value)
+		{	
+			for (i=0; (i<3); i++) // Draw the ping bar
+			{
+				V_DrawFill(x+2 *(i-1)+7, y+8+yoffset-4, 2, 8-yoffset, 31|flags);
+				if (i < numbars)
+					V_DrawFill(x+2 *(i-1)+7, y+8+yoffset-3, 1, 8-yoffset-1, barcolor|flags);
+
+				yoffset -= 2;
+			}
+		}
+	}
 }
 
 //
@@ -2647,6 +2628,7 @@ static inline void HU_DrawSpectatorTicker(void)
 	length += dupadjust;
 
 	for (i = 0; i < MAXPLAYERS; i++)
+	{
 		if (playeringame[i] && players[i].spectator)
 		{
 			char *pos;
@@ -2688,10 +2670,38 @@ static inline void HU_DrawSpectatorTicker(void)
 				V_DrawString(templength - duptweak, height, V_TRANSLUCENT|V_ALLOWLOWERCASE, current);
 			}
 
+			if (cv_showspecstuff.value)
+			{
+				if (players[i].mo)
+				{
+					player_t *p;
+					p = &players[i];
+
+					if (players[i].mo->color)
+					{
+						const UINT8 *colormap;
+						if (players[i].mo->colorized)
+							colormap = R_GetTranslationColormap(TC_RAINBOW, players[i].mo->color, GTC_CACHE);
+						else
+							colormap = R_GetTranslationColormap(players[i].skin, players[i].mo->color, GTC_CACHE);
+
+						if (cv_highresportrait.value)
+							V_DrawSmallMappedPatch((templength - duptweak), height+10, V_TRANSLUCENT, R_GetSkinFaceWant(p), colormap);
+						else	
+							V_DrawMappedPatch((templength - duptweak), height+10, V_TRANSLUCENT, R_GetSkinFaceRank(p), colormap);
+					}
+				}
+
+				if (netgame && i != serverplayer)
+						HU_drawPing((templength - duptweak)+8, height-20, playerpingtable[i], V_TRANSLUCENT);
+			}
+
 			if ((length += len) >= dupadjust+8)
 				break;
 		}
+	}
 }
+
 
 //
 // HU_DrawRankings
@@ -2894,7 +2904,10 @@ void HU_DoCEcho(const char *msg)
 	
 	I_OutputMsg("%s\n", msg); // print to log
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-truncation" // This is fine, we set null byte later
 	strncpy(cechotext, msg, sizeof(cechotext));
+#pragma GCC diagnostic pop
 	strncat(cechotext, "\\", sizeof(cechotext) - strlen(cechotext) - 1);
 	cechotext[sizeof(cechotext) - 1] = '\0';
 	cechotimer = cechoduration;

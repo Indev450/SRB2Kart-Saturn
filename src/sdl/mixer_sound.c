@@ -9,6 +9,26 @@
 /// \file
 /// \brief SDL Mixer interface for sound
 
+#ifdef HAVE_LIBGME
+#ifdef HAVE_ZLIB
+#ifndef _MSC_VER
+#ifndef _LARGEFILE64_SOURCE
+#define _LARGEFILE64_SOURCE
+#endif
+#endif
+
+#ifndef _LFS64_LARGEFILE
+#define _LFS64_LARGEFILE
+#endif
+
+#ifndef _FILE_OFFSET_BITS
+#define _FILE_OFFSET_BITS 0
+#endif
+
+#include <zlib.h>
+#endif // HAVE_ZLIB
+#endif // HAVE_GME
+
 #include "../doomdef.h"
 
 #if defined(HAVE_SDL) && defined(HAVE_MIXER) && SOUND==SOUND_MIXER
@@ -55,28 +75,10 @@ write netcode into the sound code, OKAY?
 #endif
 
 #ifdef HAVE_LIBGME
-#include "gme/gme.h"
+#include <gme/gme.h>
 #define GME_TREBLE 5.0f
 #define GME_BASS 1.0f
-
-#ifdef HAVE_ZLIB
-#ifndef _MSC_VER
-#ifndef _LARGEFILE64_SOURCE
-#define _LARGEFILE64_SOURCE
-#endif
-#endif
-
-#ifndef _LFS64_LARGEFILE
-#define _LFS64_LARGEFILE
-#endif
-
-#ifndef _FILE_OFFSET_BITS
-#define _FILE_OFFSET_BITS 0
-#endif
-
-#include "zlib.h"
-#endif // HAVE_ZLIB
-#endif // HAVE_LIBGME
+#endif // HAVE_GME
 
  
 //static UINT16 BUFFERSIZE = 2048;
@@ -130,7 +132,7 @@ static int result;
 
 static void var_cleanup(void)
 {
-	loop_point = song_length =\
+	song_length = loop_point = 0.0f;
 	 music_bytes = fading_source = fading_target =\
 	 fading_timer = fading_duration = 0;
 	music_end_bytes = 0;
@@ -174,7 +176,9 @@ static const char* get_zlib_error(int zErr)
 
 void I_StartupSound(void)
 {
-	I_Assert(!sound_started);
+	//I_Assert(!sound_started);
+	if (sound_started)
+		return;
 
 #ifdef _WIN32
 	// Force DirectSound instead of WASAPI
@@ -422,7 +426,7 @@ void *I_GetSfx(sfxinfo_t *sfx)
 			zErr = inflate(&stream, Z_FINISH);
 			if (zErr == Z_STREAM_END) {
 				// Run GME on new data
-				if (!gme_open_data(inflatedData, inflatedLen, &emu, 44100))
+				if (!gme_open_data(inflatedData, inflatedLen, &emu, SAMPLERATE))
 				{
 					short *mem;
 					UINT32 len;
@@ -436,7 +440,7 @@ void *I_GetSfx(sfxinfo_t *sfx)
 					gme_track_info(emu, &info, 0);
 
 					len = (info->play_length * 441 / 10) << 2;
-					mem = malloc(len);
+					mem = Z_Malloc(len, PU_SOUND, 0);
 					gme_play(emu, len >> 1, mem);
 					gme_free_info(info);
 					gme_delete(emu);
@@ -456,7 +460,7 @@ void *I_GetSfx(sfxinfo_t *sfx)
 #endif
 	}
 	// Try to read it as a GME sound
-	else if (!gme_open_data(lump, sfx->length, &emu, 44100))
+	else if (!gme_open_data(lump, sfx->length, &emu, SAMPLERATE))
 	{
 		short *mem;
 		UINT32 len;
@@ -469,7 +473,7 @@ void *I_GetSfx(sfxinfo_t *sfx)
 		gme_track_info(emu, &info, 0);
 
 		len = (info->play_length * 441 / 10) << 2;
-		mem = malloc(len);
+		mem = Z_Malloc(len, PU_SOUND, 0);
 		gme_play(emu, len >> 1, mem);
 		gme_free_info(info);
 		gme_delete(emu);
@@ -635,7 +639,7 @@ static void music_loop(void)
 		music_end_bytes = music_bytes;
 		Mix_PlayMusic(music, 0);
 		Mix_SetMusicPosition(loop_point);
-		music_bytes = loop_point*44100.0L*4; //assume 44.1khz, 4-byte length (see I_GetSongPosition)
+		music_bytes = (UINT32)(loop_point*44100.0L*4); //assume 44.1khz, 4-byte length (see I_GetSongPosition)
 	}
 	else
 		I_StopSong();
@@ -701,7 +705,6 @@ static void mix_gme(void *udata, Uint8 *stream, int len)
 }
 #endif
 
-
 #ifdef HAVE_OPENMPT
 static void mix_openmpt(void *udata, Uint8 *stream, int len)
 {
@@ -749,7 +752,6 @@ musictype_t I_SongType(void)
 	if (gme)
 		return MU_GME;
 	else
-
 #endif
 #ifdef HAVE_OPENMPT
 	if (openmpt_mhandle)
@@ -772,7 +774,6 @@ boolean I_SongPlaying(void)
 	return (
 #ifdef HAVE_LIBGME
 		(I_SongType() == MU_GME && gme) ||
-
 #endif
 #ifdef HAVE_OPENMPT
 		(I_SongType() == MU_MOD_EX && openmpt_mhandle) ||
@@ -981,7 +982,7 @@ boolean I_SetSongPosition(UINT32 position)
 
 		Mix_RewindMusic(); // needed for mp3
 		if(Mix_SetMusicPosition((float)(position/1000.0L)) == 0)
-			music_bytes = position/1000.0L*44100.0L*4; //assume 44.1khz, 4-byte length (see I_GetSongPosition)
+			music_bytes = (UINT32)(position/1000.0L*44100.0L*4); //assume 44.1khz, 4-byte length (see I_GetSongPosition)
 		else
 			// NOTE: This block fires on incorrect song format,
 			// NOT if position input is greater than song length.
@@ -1035,7 +1036,7 @@ UINT32 I_GetSongPosition(void)
 	if (!music || I_SongType() == MU_MID)
 		return 0;
 	else
-		return music_bytes/44100.0L*1000.0L/4; //assume 44.1khz
+		return (UINT32)(music_bytes/44100.0L*1000.0L/4); //assume 44.1khz
 		// 4 = byte length for 16-bit samples (AUDIO_S16SYS), stereo (2-channel)
 		// This is hardcoded in I_StartupSound. Other formats for factor:
 		// 8M: 1 | 8S: 2 | 16M: 2 | 16S: 4
@@ -1069,7 +1070,6 @@ boolean I_LoadSong(char *data, size_t len)
 	const size_t key1len = strlen(key1);
 	const size_t key2len = strlen(key2);
 	const size_t key3len = strlen(key3);
-
 	char *p = data;
 	SDL_RWops *rw;
 
@@ -1109,9 +1109,10 @@ boolean I_LoadSong(char *data, size_t len)
 		if (zErr == Z_OK) // We're good to go
 		{
 			zErr = inflate(&stream, Z_FINISH);
-			if (zErr == Z_STREAM_END) {
+			if (zErr == Z_STREAM_END)
+			{
 				// Run GME on new data
-				if (!gme_open_data(inflatedData, inflatedLen, &gme, 44100))
+				if (!gme_open_data(inflatedData, inflatedLen, &gme, SAMPLERATE))
 				{
 					Z_Free(inflatedData); // GME supposedly makes a copy for itself, so we don't need this lying around
 					return true;
@@ -1126,11 +1127,11 @@ boolean I_LoadSong(char *data, size_t len)
 		Z_Free(inflatedData); // GME didn't open jack, but don't let that stop us from freeing this up
 		return false;
 #else
-		CONS_Alert(CONS_ERROR,"Cannot decompress VGZ; no zlib support\n");
+		CONS_Alert(CONS_ERROR, "Cannot decompress VGZ; no zlib support\n");
 		return false;
 #endif
 	}
-	else if (!gme_open_data(data, len, &gme, 44100))
+	else if (!gme_open_data(data, len, &gme, SAMPLERATE))
 		return true;
 #endif
 
@@ -1241,8 +1242,9 @@ boolean I_PlaySong(boolean looping)
 	{
 		gme_equalizer_t eq = {GME_TREBLE, GME_BASS, 0,0,0,0,0,0,0,0};
 #if defined (GME_VERSION) && GME_VERSION >= 0x000603
-        gme_set_autoload_playback_limit(gme, 0);
-#endif        
+		if (looping)
+			gme_set_autoload_playback_limit(gme, 0);
+#endif
 		gme_set_equalizer(gme, &eq);
 		gme_start_track(gme, 0);
 		current_track = 0;
@@ -1255,12 +1257,25 @@ boolean I_PlaySong(boolean looping)
 	if (openmpt_mhandle)
 	{
 		openmpt_module_select_subsong(openmpt_mhandle, 0);
+
+#if OPENMPT_API_VERSION_MAJOR < 1 && OPENMPT_API_VERSION_MINOR > 4
+		openmpt_module_ctl_set_text(openmpt_mhandle, "dither", "1");
+#else
 		openmpt_module_ctl_set(openmpt_mhandle, "dither", "1");
+#endif
+
 		openmpt_module_set_render_param(openmpt_mhandle, OPENMPT_MODULE_RENDER_STEREOSEPARATION_PERCENT, cv_stereosep.value); //have a feeling some might like it
+
+#if OPENMPT_API_VERSION_MAJOR < 1 && OPENMPT_API_VERSION_MINOR > 4
+		openmpt_module_ctl_set_boolean(openmpt_mhandle, "render.resampler.emulate_amiga", cv_amigafilter.value);
+#else
 		openmpt_module_ctl_set(openmpt_mhandle, "render.resampler.emulate_amiga", cv_amigafilter.value ? "1" : "0");
+#endif
+
 #if OPENMPT_API_VERSION_MAJOR < 1 && OPENMPT_API_VERSION_MINOR > 4
 		openmpt_module_ctl_set_text(openmpt_mhandle, "render.resampler.emulate_amiga_type", cv_amigatype.string);
 #endif
+
 		openmpt_module_set_render_param(openmpt_mhandle, OPENMPT_MODULE_RENDER_INTERPOLATIONFILTER_LENGTH, cv_modfilter.value);
 		if (looping)
 			openmpt_module_set_repeat_count(openmpt_mhandle, -1); // Always repeat
@@ -1378,7 +1393,6 @@ void I_SetMusicVolume(UINT8 volume)
 boolean I_SetSongTrack(INT32 track)
 {
 #ifdef HAVE_LIBGME
-
 	// If the specified track is within the number of tracks playing, then change it
 	if (gme)
 	{

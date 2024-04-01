@@ -35,7 +35,6 @@
 #include "p_spec.h"
 #include "m_cheat.h"
 #include "d_clisrv.h"
-#include "v_video.h"
 #include "d_main.h"
 #include "m_random.h"
 #include "f_finale.h"
@@ -74,9 +73,6 @@ static void Got_SetupVotecmd(UINT8 **cp, INT32 playernum);
 static void Got_ModifyVotecmd(UINT8 **cp, INT32 playernum);
 static void Got_PickVotecmd(UINT8 **cp, INT32 playernum);
 static void Got_RequestAddfilecmd(UINT8 **cp, INT32 playernum);
-#ifdef DELFILE
-static void Got_Delfilecmd(UINT8 **cp, INT32 playernum);
-#endif
 static void Got_Addfilecmd(UINT8 **cp, INT32 playernum);
 static void Got_Pause(UINT8 **cp, INT32 playernum);
 static void Got_Respawn(UINT8 **cp, INT32 playernum);
@@ -145,9 +141,6 @@ static void Command_Addfile(void);
 static void Command_Addskins(void);
 static void Command_GLocalSkin(void);
 static void Command_ListWADS_f(void);
-#ifdef DELFILE
-static void Command_Delfile(void);
-#endif
 static void Command_RunSOC(void);
 static void Command_Pause(void);
 static void Command_Respawn(void);
@@ -200,9 +193,7 @@ static void Command_SkinSearch(void);
 
 #ifdef _DEBUG
 static void Command_Togglemodified_f(void);
-#ifdef HAVE_BLUA
 static void Command_Archivetest_f(void);
-#endif
 #endif
 
 // =========================================================================
@@ -461,7 +452,7 @@ static CV_PossibleValue_t basenumlaps_cons_t[] = {{1, "MIN"}, {50, "MAX"}, {0, "
 consvar_t cv_basenumlaps = {"basenumlaps", "Map default", CV_NETVAR|CV_CALL|CV_CHEAT, basenumlaps_cons_t, BaseNumLaps_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_forceskin = {"forceskin", "Off", CV_NETVAR|CV_CALL|CV_CHEAT, Forceskin_cons_t, ForceSkin_OnChange, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_fakelocalskin = {"fakelocalskin", "None", CV_SAVE, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_fakelocalskin = {"fakelocalskin", "None", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_downloading = {"downloading", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_allowexitlevel = {"allowexitlevel", "No", CV_NETVAR, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -484,6 +475,10 @@ consvar_t cv_showping = {"showping", "Always", CV_SAVE, showping_cons_t, NULL, 0
 static CV_PossibleValue_t pingmeasurement_cons_t[] = {{0, "Frames"}, {1, "Milliseconds"}, {0, NULL}};
 consvar_t cv_pingmeasurement = {"pingmeasurement", "Frames", CV_SAVE, pingmeasurement_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_pingicon = {"pingicon", "On", CV_SAVE, CV_OnOff, 0, 0, NULL, NULL, 0, 0, NULL};
+
+static CV_PossibleValue_t cv_pingstyle_cons_t[] = {{0, "New"}, {1, "Old"}, {0, NULL}};
+consvar_t cv_pingstyle = {"pingstyle", "New", CV_SAVE, cv_pingstyle_cons_t, 0, 0, NULL, NULL, 0, 0, NULL};
+
 consvar_t cv_luaimmersion = {"luaimmersion", "On", CV_SAVE, CV_OnOff, 0, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_minihead = {"smallminimapplayers", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -509,6 +504,45 @@ consvar_t cv_pause = {"pausepermission", "Server", CV_NETVAR, pause_cons_t, NULL
 consvar_t cv_mute = {"mute", "Off", CV_NETVAR|CV_CALL, CV_OnOff, Mute_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_sleep = {"cpusleep", "1", CV_SAVE, sleeping_cons_t, NULL, -1, NULL, NULL, 0, 0, NULL};
+
+static CV_PossibleValue_t nametagtrans_cons_t[] = {
+	{0, "Never"}, {1, "Far only"}, {2, "Dynamic"}, {3, "Always"}, {4, "HUD Trans."}, {0, NULL}};
+/*static CV_PossibleValue_t nametagscaling_cons_t[] = {
+	{0, "MIN"},  {320, "MAX"}, {0, NULL}};*/
+static CV_PossibleValue_t nametagdistance_cons_t[] = {
+	{0, "MIN"},  {640, "MAX"}, {0, NULL}};
+static CV_PossibleValue_t nametagmaxplayer_cons_t[] = {
+    {1, "MIN"}, {MAXPLAYERS, "MAX"}, {0, NULL}};
+static CV_PossibleValue_t nametagsize_cons_t[] = {
+	{0, "Off"}, {1, "Small"}, {2, "Minimal"}, {0, NULL}};
+static CV_PossibleValue_t nametagrestat_cons_t[] = {
+	{0, "Off"}, {1, "Restat"}, {2, "Always"}, {0, NULL}};
+
+consvar_t cv_nametag = {"kartnametag", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_nametagtrans = {"kartnametagtransparency", "Dynamic", CV_SAVE, nametagtrans_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_nametagfacerank = {"kartnametagfacerank", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_nametagrestat = {"kartnametagrestat", "Restat", CV_SAVE, nametagrestat_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_nametagdist = {"kartnametagdist", "320", CV_SAVE, nametagdistance_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_nametagmaxplayers = {"kartnametagmaxplayers", "3", CV_SAVE, nametagmaxplayer_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_nametagmaxlenght = {"kartnametagmaxlenght", "12", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
+//consvar_t cv_nametagscaling = {"nametagscaling", "160", CV_SAVE, nametagscaling_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_showownnametag = {"kartnametagshowown", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_smallnametags = {"kartnametagsmall", "Off", CV_SAVE, nametagsize_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_nametaghop = {"kartnametaghop", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_nametagscore = {"kartnametagscore", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_shownametagfinish = {"kartshownametagfinished", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_shownametagspectator = {"kartshownametagspectator", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+static CV_PossibleValue_t driftgaugeoffset_cons_t[] = {
+	{-FRACUNIT*128, "MIN"}, {FRACUNIT*128, "MAX"}, {0, NULL}};
+
+static CV_PossibleValue_t driftgaugestyle_cons_t[] = {
+	{1, "Default"}, {2, "Small"}, {3, "Big Numbers"}, {4, "Numbers Only"}, {0, NULL}};
+
+consvar_t cv_driftgauge = {"kartdriftgauge", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_driftgaugeofs = {"kartdriftgaugeoffset", "-20", CV_FLOAT|CV_SAVE, driftgaugeoffset_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_driftgaugetrans = {"kartdriftgaugetransparency", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_driftgaugestyle = {"kartdriftgaugestyle", "1", CV_SAVE, driftgaugestyle_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static CV_PossibleValue_t skinselectspin_cons_t[] = {
 	{0, "Off"}, {1, "Slow"}, {2, "2"}, {3, "3"}, {4, "4"}, {5, "5"}, {6, "6"}, {7, "7"}, {8, "8"}, {9, "9"}, {10, "Fast"}, {SKINSELECTSPIN_PAIN, "Pain"}, {0, NULL}};
@@ -570,7 +604,7 @@ const char *netxcmdnames[MAXNETXCMD - 1] =
 	"RANDOMSEED",
 	"RUNSOC",
 	"REQADDFILE",
-	"DELFILE",
+	"DELFILE", // sigh well this prob needs to be still here to not screw up maxnetxcmd
 	"SETMOTD",
 	"RESPAWN",
 	"DEMOTED",
@@ -578,10 +612,8 @@ const char *netxcmdnames[MAXNETXCMD - 1] =
 	"MODIFYVOTE",
 	"PICKVOTE",
 	"REMOVEPLAYER",
-#ifdef HAVE_BLUA
 	"LUACMD",
 	"LUAVAR"
-#endif
 };
 
 // =========================================================================
@@ -619,15 +651,10 @@ void D_RegisterServerCommands(void)
 	RegisterNetXCmd(XD_EXITLEVEL, Got_ExitLevelcmd);
 	RegisterNetXCmd(XD_ADDFILE, Got_Addfilecmd);
 	RegisterNetXCmd(XD_REQADDFILE, Got_RequestAddfilecmd);
-#ifdef DELFILE
-	RegisterNetXCmd(XD_DELFILE, Got_Delfilecmd);
-#endif
 	RegisterNetXCmd(XD_PAUSE, Got_Pause);
 	RegisterNetXCmd(XD_RESPAWN, Got_Respawn);
 	RegisterNetXCmd(XD_RUNSOC, Got_RunSOCcmd);
-#ifdef HAVE_BLUA
 	RegisterNetXCmd(XD_LUACMD, Got_Luacmd);
-#endif
 
 	RegisterNetXCmd(XD_SETUPVOTE, Got_SetupVotecmd);
 	RegisterNetXCmd(XD_MODIFYVOTE, Got_ModifyVotecmd);
@@ -664,9 +691,6 @@ void D_RegisterServerCommands(void)
 	COM_AddCommand("localskin", Command_GLocalSkin);
 	COM_AddCommand("listwad", Command_ListWADS_f);
 
-#ifdef DELFILE
-	COM_AddCommand("delfile", Command_Delfile);
-#endif
 	COM_AddCommand("runsoc", Command_RunSOC);
 	COM_AddCommand("pause", Command_Pause);
 	COM_AddCommand("respawn", Command_Respawn);
@@ -687,9 +711,7 @@ void D_RegisterServerCommands(void)
 	COM_AddCommand("cheats", Command_Cheats_f); // test
 #ifdef _DEBUG
 	COM_AddCommand("togglemodified", Command_Togglemodified_f);
-#ifdef HAVE_BLUA
 	COM_AddCommand("archivetest", Command_Archivetest_f);
-#endif
 #endif
 
 	COM_AddCommand("replaymarker", Command_ReplayMarker);
@@ -729,19 +751,6 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_competitionboxes);
 	CV_RegisterVar(&cv_matchboxes);
 
-	/*CV_RegisterVar(&cv_recycler);
-	CV_RegisterVar(&cv_teleporters);
-	CV_RegisterVar(&cv_superring);
-	CV_RegisterVar(&cv_supersneakers);
-	CV_RegisterVar(&cv_invincibility);
-	CV_RegisterVar(&cv_jumpshield);
-	CV_RegisterVar(&cv_watershield);
-	CV_RegisterVar(&cv_ringshield);
-	CV_RegisterVar(&cv_forceshield);
-	CV_RegisterVar(&cv_bombshield);
-	CV_RegisterVar(&cv_1up);
-	CV_RegisterVar(&cv_eggmanbox);*/
-
 	K_RegisterKartStuff(); // SRB2kart
 
 	CV_RegisterVar(&cv_ringslinger);
@@ -775,6 +784,7 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_httpsource);
 #ifndef NONET
 	CV_RegisterVar(&cv_allownewplayer);
+	CV_RegisterVar(&cv_joinrefusemessage);
 	CV_RegisterVar(&cv_chatlogsize);
 #ifdef VANILLAJOINNEXTROUND
 	CV_RegisterVar(&cv_joinnextround);
@@ -794,7 +804,6 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_pingtimeout);
 	CV_RegisterVar(&cv_showping);
 	CV_RegisterVar(&cv_pingmeasurement);
-	CV_RegisterVar(&cv_pingicon);
 
 #ifdef SEENAMES
 	CV_RegisterVar(&cv_allowseenames);
@@ -812,8 +821,7 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_recordmultiplayerdemos);
 	CV_RegisterVar(&cv_netdemosyncquality);
 	CV_RegisterVar(&cv_maxdemosize);
-	
-	CV_RegisterVar(&cv_cechotoggle);
+	CV_RegisterVar(&cv_keyboardlayout);
 }
 
 // =========================================================================
@@ -931,6 +939,11 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_timetic);
 	CV_RegisterVar(&cv_itemfinder);
 
+	CV_RegisterVar(&cv_pingicon);
+	CV_RegisterVar(&cv_pingstyle);
+
+	CV_RegisterVar(&cv_cechotoggle);
+
 	// time attack ghost options are also saved to config
 	CV_RegisterVar(&cv_ghost_besttime);
 	CV_RegisterVar(&cv_ghost_bestlap);
@@ -939,20 +952,8 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_ghost_staff);
 
 	COM_AddCommand("displayplayer", Command_Displayplayer_f);
-	
-	CV_RegisterVar(&cv_audbuffersize); 
-	
-#ifdef HAVE_OPENMPT
-	CV_RegisterVar(&cv_modfilter);
-	CV_RegisterVar(&cv_stereosep);
-	CV_RegisterVar(&cv_amigafilter);
-#if OPENMPT_API_VERSION_MAJOR < 1 && OPENMPT_API_VERSION_MINOR > 4
-	CV_RegisterVar(&cv_amigatype);
-#endif
-#endif
 
-	// FIXME: not to be here.. but needs be done for config loading
-	CV_RegisterVar(&cv_usegamma);
+	CV_RegisterVar(&cv_audbuffersize); 
 
 	// m_menu.c
 	//CV_RegisterVar(&cv_compactscoreboard);
@@ -965,16 +966,18 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_chatbacktint);
 	CV_RegisterVar(&cv_songcredits);
 	CV_RegisterVar(&cv_showfreeplay);	
+	CV_RegisterVar(&cv_skinselectspin);
+	CV_RegisterVar(&cv_showallmaps);
 	
 	CV_RegisterVar(&cv_growmusic);
 	CV_RegisterVar(&cv_supermusic);
-			
+
 	CV_RegisterVar(&cv_showtrackaddon);
 	CV_RegisterVar(&cv_showviewpointtext);
-	
+
 	CV_RegisterVar(&cv_luaimmersion);
 	CV_RegisterVar(&cv_fakelocalskin);
-	
+
 	CV_RegisterVar(&cv_showlocalskinmenus);
 
 	//CV_RegisterVar(&cv_crosshair);
@@ -1021,6 +1024,18 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_lookbackaxis2);
 	CV_RegisterVar(&cv_lookbackaxis3);
 	CV_RegisterVar(&cv_lookbackaxis4);
+	CV_RegisterVar(&cv_custom1axis);
+	CV_RegisterVar(&cv_custom1axis2);
+	CV_RegisterVar(&cv_custom1axis3);
+	CV_RegisterVar(&cv_custom1axis4);
+	CV_RegisterVar(&cv_custom2axis);
+	CV_RegisterVar(&cv_custom2axis2);
+	CV_RegisterVar(&cv_custom2axis3);
+	CV_RegisterVar(&cv_custom2axis4);
+	CV_RegisterVar(&cv_custom3axis);
+	CV_RegisterVar(&cv_custom3axis2);
+	CV_RegisterVar(&cv_custom3axis3);
+	CV_RegisterVar(&cv_custom3axis4);
 	CV_RegisterVar(&cv_xdeadzone);
 	CV_RegisterVar(&cv_ydeadzone);
 	CV_RegisterVar(&cv_xdeadzone2);
@@ -1088,6 +1103,15 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_midimusicvolume);
 #endif
 	CV_RegisterVar(&cv_numChannels);
+	
+#ifdef HAVE_OPENMPT
+	CV_RegisterVar(&cv_modfilter);
+	CV_RegisterVar(&cv_stereosep);
+	CV_RegisterVar(&cv_amigafilter);
+#if OPENMPT_API_VERSION_MAJOR < 1 && OPENMPT_API_VERSION_MINOR > 4
+	CV_RegisterVar(&cv_amigatype);
+#endif
+#endif
 
 	// screen.c
 	CV_RegisterVar(&cv_fullscreen);
@@ -1100,17 +1124,34 @@ void D_RegisterClientCommands(void)
 
 	CV_RegisterVar(&cv_soundtest);
 	
-	CV_RegisterVar(&cv_skinselectspin);
+	CV_RegisterVar(&cv_nametag);
+	CV_RegisterVar(&cv_nametagtrans);
+	CV_RegisterVar(&cv_nametagfacerank);
+	CV_RegisterVar(&cv_nametagmaxplayers);
+	CV_RegisterVar(&cv_nametagmaxlenght);
+	//CV_RegisterVar(&cv_nametagscaling);
+	CV_RegisterVar(&cv_nametagdist);
+	CV_RegisterVar(&cv_showownnametag);
+	CV_RegisterVar(&cv_smallnametags);
+	CV_RegisterVar(&cv_nametagrestat);
+	CV_RegisterVar(&cv_nametaghop);
+	CV_RegisterVar(&cv_nametagscore);
+	CV_RegisterVar(&cv_shownametagfinish);
+	CV_RegisterVar(&cv_shownametagspectator);
+	
+	CV_RegisterVar(&cv_driftgauge);
+	CV_RegisterVar(&cv_driftgaugeofs);
+	CV_RegisterVar(&cv_driftgaugetrans);
+	CV_RegisterVar(&cv_driftgaugestyle);
 
 	CV_RegisterVar(&cv_perfstats);
 	CV_RegisterVar(&cv_ps_thinkframe_page);
 	CV_RegisterVar(&cv_ps_samplesize);
 	CV_RegisterVar(&cv_ps_descriptor);
-	
+
 	//Value used to store last server player has joined
 	CV_RegisterVar(&cv_lastserver);
-	
-	CV_RegisterVar(&cv_showallmaps);
+
 	CV_RegisterVar(&cv_showmusicfilename);
 
 	// ingame object placing
@@ -1119,8 +1160,8 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_speed);
 	CV_RegisterVar(&cv_opflags);
 	CV_RegisterVar(&cv_mapthingnum);
-//	CV_RegisterVar(&cv_grid);
-//	CV_RegisterVar(&cv_snapto);
+	//CV_RegisterVar(&cv_grid);
+	//CV_RegisterVar(&cv_snapto);
 
 	// add cheat commands
 	COM_AddCommand("noclip", Command_CheatNoClip_f);
@@ -1146,7 +1187,7 @@ void D_RegisterClientCommands(void)
 #ifdef _DEBUG
 	COM_AddCommand("causecfail", Command_CauseCfail_f);
 #endif
-#if defined(HAVE_BLUA) && defined(LUA_ALLOW_BYTECODE)
+#if defined(LUA_ALLOW_BYTECODE)
 	COM_AddCommand("dumplua", Command_Dumplua_f);
 #endif
 
@@ -1155,6 +1196,8 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_discordstreamer);
 	CV_RegisterVar(&cv_discordasks);
 #endif
+
+	CV_RegisterVar(&cv_showspecstuff);
 
 	COM_AddCommand("listskins", Command_ListSkins);
 	COM_AddCommand("skinsearch", Command_SkinSearch);
@@ -2914,9 +2957,7 @@ static void Got_Mapcmd(UINT8 **cp, INT32 playernum)
 	INT32 resetplayer = 1, lastgametype;
 	UINT8 skipprecutscene, FLS;
 	boolean pencoremode;
-/*#ifdef HAVE_BLUA
-	INT16 mapnumber;
-#endif*/
+	//INT16 mapnumber;
 
 	forceresetplayers = deferencoremode = false;
 
@@ -2982,10 +3023,8 @@ static void Got_Mapcmd(UINT8 **cp, INT32 playernum)
 	if (modeattacking) // i remember moving this here in internal fixed a heisenbug so
 		SetPlayerSkinByNum(0, cv_chooseskin.value-1);
 
-/*#ifdef HAVE_BLUA
-	mapnumber = M_MapNumber(mapname[3], mapname[4]);
-	LUAh_MapChange(mapnumber);
-#endif*/
+	//mapnumber = M_MapNumber(mapname[3], mapname[4]);
+	//LUAh_MapChange(mapnumber);
 
 	demo.savemode = (cv_recordmultiplayerdemos.value == 2) ? DSM_WILLAUTOSAVE : DSM_NOTSAVING;
 	demo.savebutton = 0;
@@ -4605,14 +4644,6 @@ static void Command_Addfile(void)
 		SendNetXCmd(XD_ADDFILE, buf, buf_p - buf);
 }
 
-// i hate myself
-static boolean DumbStartsWith(const char *pre, const char *str)
-{
-    size_t lenpre = strlen(pre),
-           lenstr = strlen(str);
-    return lenstr < lenpre ? false : memcmp(pre, str, lenpre) == 0;
-}
-
 /** Adds something at runtime.
   */
 static void
@@ -4649,16 +4680,13 @@ Command_Addskins (void)
 	*/
 }
 
-// args n stuff
-#include "args.h"
-
-static void Command_GLocalSkin (void) 
+static void Command_GLocalSkin (void)
 {
 	size_t first_option;
 	size_t option_display;
 	size_t option_all;
 	size_t option_player;
-	
+
 	option_player	= COM_CheckPartialParm("-p");
 	option_display 	= COM_CheckPartialParm("-d");
 	option_all		= COM_CheckPartialParm("-a");
@@ -4686,31 +4714,27 @@ static void Command_GLocalSkin (void)
 
 	fuck = ConcatCommandArgv(1, first_option);
 
-	char* player_name = player_names[consoleplayer];
-	char* display_num = "0";
+	const char* player_name = player_names[consoleplayer];
+	const char* display_num = "0";
 	size_t dnum = 0;
 
 	if (option_display)  // -display
 	{
 		// handle default: 0
-		if (COM_Argv(option_display + 1)[0] == "" || COM_Argv(option_display + 1)[0] != "-")
+		if (COM_Argc() >= option_display)
 			display_num = COM_Argv(option_display + 1);
 
-		if (isdigit(display_num[0]) || display_num == "0") 
-		{
-			dnum = atoi(display_num);
-			if (dnum > 3 || dnum < 0) // nuh uh
-				dnum = 0;
-			SetLocalPlayerSkin(displayplayers[dnum], fuck, NULL);
+		dnum = atoi(display_num);
+		if (dnum > 3) // nuh uh
+			dnum = 0;
 
-			CONS_Printf("Successfully applied localskin to displayed player.\n");
-			return;
-		}
-		
-		CONS_Printf("Could not apply localskin.\n");
-		
+		SetLocalPlayerSkin(displayplayers[dnum], fuck, NULL);
+
+		CONS_Printf("Successfully applied localskin to displayed player.\n");
+
+		Z_Free(fuck);
 		return;
-	} 
+	}
 	else if (option_all) // -all
 	{
 		int i;
@@ -4723,73 +4747,41 @@ static void Command_GLocalSkin (void)
 		}
 		CONS_Printf("Successfully applied localskin to all players.\n");
 
+		Z_Free(fuck);
 		return;
-	} 
+	}
 	else // -player or no other arguments
 	{
-		if (option_player) 
+		if (option_player)
 		{
 			int i;
 			player_name = COM_Argv(option_player + 1);
 
-			for (i = 0; i < MAXPLAYERS; ++i) 
+			for (i = 0; i < MAXPLAYERS; ++i)
 			{
 				if (fasticmp(player_names[i], player_name))
 					SetLocalPlayerSkin(i, fuck, NULL);
 			}
 			CONS_Printf("Successfully applied localskin to specified player.\n");
 
+			Z_Free(fuck);
 			return;
-		} 
-		else 
+		}
+		else
 		{
 			SetLocalPlayerSkin(consoleplayer, fuck, &cv_localskin);
 			CONS_Printf("Successfully applied localskin.\n");
 
+			Z_Free(fuck);
 			return;
 		}
 
 		CONS_Printf("Could not apply localskin.\n");
 
+		Z_Free(fuck);
 		return;
 	}
 }
-
-#ifdef DELFILE
-/** removes the last added pwad at runtime.
-  * Searches for sounds, maps, music and images to remove
-  */
-static void Command_Delfile(void)
-{
-	if (gamestate == GS_LEVEL)
-	{
-		CONS_Printf(M_GetText("You must NOT be in a level to use this.\n"));
-		return;
-	}
-
-	if (netgame && !(server || adminplayer == consoleplayer))
-	{
-		CONS_Printf(M_GetText("Only the server or a remote admin can use this.\n"));
-		return;
-	}
-
-	if (numwadfiles <= mainwads)
-	{
-		CONS_Printf(M_GetText("No additional WADs are loaded.\n"));
-		return;
-	}
-
-	if (!(netgame || multiplayer))
-	{
-		P_DelWadFile();
-		if (mainwads == numwadfiles && modifiedgame)
-			modifiedgame = false;
-		return;
-	}
-
-	SendNetXCmd(XD_DELFILE, NULL, 0);
-}
-#endif
 
 static void Got_RequestAddfilecmd(UINT8 **cp, INT32 playernum)
 {
@@ -4858,33 +4850,6 @@ static void Got_RequestAddfilecmd(UINT8 **cp, INT32 playernum)
 
 	COM_BufAddText(va("addfile %s\n", filename));
 }
-
-#ifdef DELFILE
-static void Got_Delfilecmd(UINT8 **cp, INT32 playernum)
-{
-	if (playernum != serverplayer && playernum != adminplayer)
-	{
-		CONS_Alert(CONS_WARNING, M_GetText("Illegal delfile command received from %s\n"), player_names[playernum]);
-		if (server)
-		{
-			UINT8 buf[2];
-
-			buf[0] = (UINT8)playernum;
-			buf[1] = KICK_MSG_CON_FAIL;
-			SendNetXCmd(XD_KICK, &buf, 2);
-		}
-		return;
-	}
-	(void)cp;
-
-	if (numwadfiles <= mainwads) //sanity
-		return;
-
-	P_DelWadFile();
-	if (mainwads == numwadfiles && modifiedgame)
-		modifiedgame = false;
-}
-#endif
 
 static void Got_Addfilecmd(UINT8 **cp, INT32 playernum)
 {
@@ -5800,7 +5765,6 @@ static void Command_Togglemodified_f(void)
 	modifiedgame = !modifiedgame;
 }
 
-#ifdef HAVE_BLUA
 extern UINT8 *save_p;
 static void Command_Archivetest_f(void)
 {
@@ -5844,7 +5808,6 @@ static void Command_Archivetest_f(void)
 	Z_Free(buf);
 	CONS_Printf("Done. No crash.\n");
 }
-#endif
 #endif
 
 /** Makes a change to ::cv_forceskin take effect immediately.

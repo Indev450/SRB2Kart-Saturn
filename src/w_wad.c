@@ -148,7 +148,7 @@ static char filenamebuf[MAX_WADPATH];
 #include <windows.h>
 
 // Windows can't open utf-8 path so it must be converted to utf-16
-FILE* fopen_utf8(const char* filename, const char* mode)
+static FILE* fopen_utf8(const char* filename, const char* mode)
 {
 	static const int MY_PATH_MAX =  2048;
 	WCHAR nameW[MY_PATH_MAX];
@@ -222,7 +222,7 @@ FILE *W_OpenWadFile(const char **filename, boolean useerrors)
 static inline void W_LoadDehackedLumpsPK3(UINT16 wadnum)
 {
 	UINT16 posStart, posEnd;
-#ifdef HAVE_BLUA
+
 	posStart = W_CheckNumForFolderStartPK3("Lua/", wadnum, 0);
 	if (posStart != INT16_MAX)
 	{
@@ -230,7 +230,6 @@ static inline void W_LoadDehackedLumpsPK3(UINT16 wadnum)
 		for (; posStart < posEnd; posStart++)
 			LUA_LoadLump(wadnum, posStart);
 	}
-#endif
 
 	posStart = W_CheckNumForFolderStartPK3("SOC/", wadnum, 0);
 	if (posStart != INT16_MAX)
@@ -255,7 +254,6 @@ static inline void W_LoadDehackedLumps(UINT16 wadnum)
 {
 	UINT16 lump;
 
-#ifdef HAVE_BLUA
 	// Find Lua scripts before SOCs to allow new A_Actions in SOC editing.
 	{
 		lumpinfo_t *lump_p = wadfiles[wadnum]->lumpinfo;
@@ -263,7 +261,6 @@ static inline void W_LoadDehackedLumps(UINT16 wadnum)
 			if (memcmp(lump_p->name,"LUA_",4)==0)
 				LUA_LoadLump(wadnum, lump);
 	}
-#endif
 
 	{
 		lumpinfo_t *lump_p = wadfiles[wadnum]->lumpinfo;
@@ -693,18 +690,6 @@ static lumpinfo_t* ResGetLumpsZip (FILE* handle, UINT16* nlmp)
 	return lumpinfo;
 }
 
-static void W_ReadFileShaders(wadfile_t *wadfile)
-{
-#ifdef HWRENDER
-        if (rendermode == render_opengl)
-        {
-                HWR_LoadShaders(numwadfiles - 1, W_FileHasFolders(wadfile));
-        }
-#else
-        (void)wadfile;
-#endif
-}
-
 //  Allocate a wadfile, setup the lumpinfo (directory) and
 //  lumpcache, add the wadfile to the current active wadfiles
 //
@@ -716,7 +701,7 @@ static void W_ReadFileShaders(wadfile_t *wadfile)
 //
 // Can now load dehacked files (.soc)
 //
-UINT16 W_InitFile(const char *filename, const char *lumpname, UINT16 *wadnump, boolean local)
+UINT16 W_InitFile(const char *filename, boolean local)
 {
 	FILE *handle;
 	lumpinfo_t *lumpinfo = NULL;
@@ -769,13 +754,10 @@ UINT16 W_InitFile(const char *filename, const char *lumpname, UINT16 *wadnump, b
 	{
 		if (!memcmp(wadfiles[i]->md5sum, md5sum, 16))
 		{
-			if (!local) {
-				CONS_Alert(CONS_ERROR, M_GetText("%s is already loaded\n"), filename);
-				if (handle)
-					fclose(handle);
-				return INT16_MAX;
-			}
-			CONS_Alert(CONS_WARNING, M_GetText("%s is a local skin that is already loaded\n"), filename);
+			CONS_Alert(CONS_ERROR, M_GetText("%s is already loaded\n"), filename);
+			if (handle)
+				fclose(handle);
+			return INT16_MAX;
 		}
 	}
 #endif
@@ -785,11 +767,9 @@ UINT16 W_InitFile(const char *filename, const char *lumpname, UINT16 *wadnump, b
 	case RET_SOC:
 		lumpinfo = ResGetLumpsStandalone(handle, &numlumps, "OBJCTCFG");
 		break;
-#ifdef HAVE_BLUA
 	case RET_LUA:
 		lumpinfo = ResGetLumpsStandalone(handle, &numlumps, "LUA_INIT");
 		break;
-#endif
 	case RET_PK3:
 		lumpinfo = ResGetLumpsZip(handle, &numlumps);
 		break;
@@ -840,8 +820,11 @@ UINT16 W_InitFile(const char *filename, const char *lumpname, UINT16 *wadnump, b
 	wadfiles[numwadfiles] = wadfile;
 	numwadfiles++; // must come BEFORE W_LoadDehackedLumps, so any addfile called by COM_BufInsertText called by Lua doesn't overwrite what we just loaded
 
-		// Read shaders from file
-		W_ReadFileShaders(wadfile);
+#ifdef HWRENDER
+	// Read shaders from file
+	if (rendermode == render_opengl && (vid.glstate == VID_GL_LIBRARY_LOADED))
+		HWR_LoadCustomShadersFromFile(numwadfiles - 1, (type == RET_PK3));
+#endif
 
 	// TODO: HACK ALERT - Load Lua & SOC stuff right here. I feel like this should be out of this place, but... Let's stick with this for now.
 	switch (wadfile->type)
@@ -856,11 +839,9 @@ UINT16 W_InitFile(const char *filename, const char *lumpname, UINT16 *wadnump, b
 		CONS_Printf(M_GetText("Loading SOC from %s\n"), wadfile->filename);
 		DEH_LoadDehackedLumpPwad(numwadfiles - 1, 0);
 		break;
-#ifdef HAVE_BLUA
 	case RET_LUA:
 		LUA_LoadLump(numwadfiles - 1, 0);
 		break;
-#endif
 	default:
 		break;
 	}
@@ -873,37 +854,6 @@ UINT16 W_InitFile(const char *filename, const char *lumpname, UINT16 *wadnump, b
 	return wadfile->numlumps;
 }
 
-#ifdef DELFILE
-void W_UnloadWadFile(UINT16 num)
-{
-	INT32 i;
-	wadfile_t *delwad = wadfiles[num];
-	lumpcache_t *lumpcache;
-	if (num == 0)
-		return;
-	CONS_Printf(M_GetText("Removing WAD %s...\n"), wadfiles[num]->filename);
-
-	DEH_UnloadDehackedWad(num);
-	wadfiles[num] = NULL;
-	lumpcache = delwad->lumpcache;
-	numwadfiles--;
-#ifdef HWRENDER
-	if (rendermode != render_soft && rendermode != render_none)
-		HWR_FreeTextureCache();
-	M_AATreeFree(delwad->hwrcache);
-#endif
-	if (*lumpcache)
-	{
-		for (i = 0;i < delwad->numlumps;i++)
-			Z_ChangeTag(lumpcache[i], PU_PURGELEVEL);
-	}
-	Z_Free(lumpcache);
-	fclose(delwad->handle);
-	Z_Free(delwad->filename);
-	Z_Free(delwad);
-	CONS_Printf(M_GetText("Done unloading WAD.\n"));
-}
-#endif
 
 /** Tries to load a series of files.
   * All files are wads unless they have an extension of ".soc" or ".lua".
@@ -928,7 +878,7 @@ INT32 W_InitMultipleFiles(char **filenames, boolean addons)
 			G_SetGameModified(true, false);
 
 		//CONS_Debug(DBG_SETUP, "Loading %s\n", *filenames);
-		rc = W_InitFile(*filenames, 0, 0, false);
+		rc = W_InitFile(*filenames, false);
 		if (rc == INT16_MAX)
 			CONS_Printf(M_GetText("Errors occurred while loading %s; not added.\n"), *filenames);
 		overallrc &= (rc != INT16_MAX) ? 1 : 0;
@@ -1738,7 +1688,7 @@ void *W_CacheLumpName(const char *name, INT32 tag)
 
 // Software-only compile cache the data without conversion
 #ifdef HWRENDER
-static inline void *W_CachePatchNumPwad(UINT16 wad, UINT16 lump, INT32 tag)
+FUNCINLINE static ATTRINLINE void *W_CachePatchNumPwad(UINT16 wad, UINT16 lump, INT32 tag)
 {
 	GLPatch_t *grPatch;
 
@@ -1750,11 +1700,11 @@ static inline void *W_CachePatchNumPwad(UINT16 wad, UINT16 lump, INT32 tag)
 
 	grPatch = HWR_GetCachedGLPatchPwad(wad, lump);
 
-	if (grPatch->mipmap->grInfo.data)
+	if (grPatch->mipmap->data)
 	{
 		if (tag == PU_CACHE)
 			tag = PU_HWRCACHE;
-		Z_ChangeTag(grPatch->mipmap->grInfo.data, tag);
+		Z_ChangeTag(grPatch->mipmap->data, tag);
 	}
 	else
 	{

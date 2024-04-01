@@ -553,7 +553,7 @@ extern boolean dedicated; // For dedicated server
 extern UINT16 software_MAXPACKETLENGTH;
 extern boolean acceptnewnode;
 extern SINT8 servernode;
-extern char connectedservername[MAXSERVERNAME];
+extern char connectedservername[MAXSERVERNAME+1];
 
 void Command_Ping_f(void);
 extern tic_t connectiontimeout;
@@ -567,7 +567,7 @@ extern consvar_t
 #ifdef VANILLAJOINNEXTROUND
 	cv_joinnextround,
 #endif
-	cv_netticbuffer, cv_allownewplayer, cv_maxplayers, cv_resynchattempts, cv_blamecfail, cv_maxsend, cv_noticedownload, cv_downloadspeed;
+	cv_netticbuffer, cv_allownewplayer, cv_joinrefusemessage, cv_maxplayers, cv_resynchattempts, cv_blamecfail, cv_maxsend, cv_noticedownload, cv_downloadspeed;
 
 extern consvar_t cv_connectawaittime;
 

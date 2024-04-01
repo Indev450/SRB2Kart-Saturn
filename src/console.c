@@ -66,8 +66,8 @@ static INT32 con_curlines;  // vid lines currently used by console
 
        INT32 con_clipviewtop; // (useless)
 
-static INT32 con_hudlines;        // number of console heads up message lines
-static INT32 con_hudtime[MAXHUDLINES];      // remaining time of display for hud msg lines
+static UINT8  con_hudlines;             // number of console heads up message lines
+static UINT32 con_hudtime[MAXHUDLINES]; // remaining time of display for hud msg lines
 
        INT32 con_clearlines;      // top screen lines to refresh when view reduced
        boolean con_hudupdate;   // when messages scroll, we need a backgrnd refresh
@@ -112,16 +112,18 @@ static void CONS_backcolor_Change(void);
 #ifdef macintosh
 #define CON_BUFFERSIZE 4096 // my compiler can't handle local vars >32k
 #else
-#define CON_BUFFERSIZE 16384
+#define CON_BUFFERSIZE 32768
 #endif
 
 static char con_buffer[CON_BUFFERSIZE];
 
-// how many seconds the hud messages lasts on the screen
-static consvar_t cons_msgtimeout = {"con_hudtime", "5", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
+// CV_Unsigned can overflow when multiplied by TICRATE later, so let's use a 3-year limit instead
+static CV_PossibleValue_t hudtime_cons_t[] = {{0, "MIN"}, {99999999, "MAX"}, {0, NULL}};
+static consvar_t cons_hudtime = {"con_hudtime", "5", CV_SAVE, hudtime_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 // number of lines displayed on the HUD
-static consvar_t cons_hudlines = {"con_hudlines", "5", CV_CALL|CV_SAVE, CV_Unsigned, CONS_hudlines_Change, 0, NULL, NULL, 0, 0, NULL};
+static CV_PossibleValue_t hudlines_cons_t[] = {{0, "MIN"}, {MAXHUDLINES, "MAX"}, {0, NULL}};
+static consvar_t cons_hudlines = {"con_hudlines", "5", CV_CALL|CV_SAVE, hudlines_cons_t, CONS_hudlines_Change, 0, NULL, NULL, 0, 0, NULL};
 
 // number of lines console move per frame
 // (con_speed needs a limit, apparently)
@@ -180,11 +182,6 @@ static void CONS_hudlines_Change(void)
 	// Clear the currently displayed lines
 	for (i = 0; i < con_hudlines; i++)
 		con_hudtime[i] = 0;
-
-	if (cons_hudlines.value < 1)
-		cons_hudlines.value = 1;
-	else if (cons_hudlines.value > MAXHUDLINES)
-		cons_hudlines.value = MAXHUDLINES;
 
 	con_hudlines = cons_hudlines.value;
 
@@ -426,7 +423,7 @@ void CON_Init(void)
 
 		Unlock_state();
 
-		CV_RegisterVar(&cons_msgtimeout);
+		CV_RegisterVar(&cons_hudtime);
 		CV_RegisterVar(&cons_hudlines);
 		CV_RegisterVar(&cons_speed);
 		CV_RegisterVar(&cons_height);
@@ -646,6 +643,30 @@ INT32 CON_ShiftChar(INT32 ch)
 	return ch;
 }
 
+INT32 CON_ShitAndAltGrChar(INT32 ch)
+{
+	if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z'))
+	{
+		if (shiftdown ^ capslock)
+			ch = shiftxform[ch];
+	}
+	else	// if we're holding shift we should still shift non letter symbols
+	{
+		if (shiftdown)
+			ch = shiftxform[ch];
+		else if (altdown & 0x2)
+		{
+			ch = french_altgrxform[ch];
+		}
+		else
+		{
+			ch = HU_FallBackFrSpecialLetter(ch);
+		}
+	}
+
+	return ch;
+}
+
 // Clear time of console heads up messages
 //
 void CON_ClearHUD(void)
@@ -743,9 +764,8 @@ void CON_Ticker(void)
 	// make overlay messages disappear after a while
 	for (i = 0; i < con_hudlines; i++)
 	{
-		con_hudtime[i]--;
-		if (con_hudtime[i] < 0)
-			con_hudtime[i] = 0;
+		if (con_hudtime[i])
+			con_hudtime[i]--;
 	}
 
 	Unlock_state();
@@ -945,7 +965,7 @@ boolean CON_Responder(event_t *ev)
 		return true;
 
 	// ctrl modifier -- changes behavior, adds shortcuts
-	if (ctrldown)
+	if ((cv_keyboardlayout.value != 3 && ctrldown) || (cv_keyboardlayout.value == 3 && ctrldown && !altdown))
 	{
 		// show all cvars/commands that match what we have inputted
 		if (key == KEY_TAB)
@@ -1215,13 +1235,37 @@ boolean CON_Responder(event_t *ev)
 	// same capslock code as hu_stuff.c's HU_responder. Check there for details.
 	if ((key >= 'a' && key <= 'z') || (key >= 'A' && key <= 'Z'))
 	{
-		if (shiftdown ^ capslock)
-			key = shiftxform[key];
+		if (cv_keyboardlayout.value == 3)
+		{
+			if (shiftdown ^ capslock)
+				key = shiftxform[key];
+			else if (altdown & 0x2)
+				key = french_altgrxform[key];
+			else
+				key = HU_FallBackFrSpecialLetter(key);
+		}
+		else
+		{
+			if (shiftdown ^ capslock)
+				key = shiftxform[key];
+		}
 	}
 	else
 	{
-		if (shiftdown)
-			key = shiftxform[key];
+		if (cv_keyboardlayout.value == 3)
+		{
+			if (shiftdown)
+				key = shiftxform[key];
+			else if (altdown & 0x2)
+				key = french_altgrxform[key];
+			else
+				key = HU_FallBackFrSpecialLetter(key);
+		}
+		else
+		{
+			if (shiftdown)
+				key = shiftxform[key];
+		}
 	}
 
 	// enter a char into the command prompt
@@ -1244,7 +1288,8 @@ boolean CON_Responder(event_t *ev)
 static void CON_Linefeed(void)
 {
 	// set time for heads up messages
-	con_hudtime[con_cy%con_hudlines] = cons_msgtimeout.value*TICRATE;
+	if (con_hudlines)
+		con_hudtime[con_cy%con_hudlines] = cons_hudtime.value*TICRATE;
 
 	con_cy++;
 	con_cx = 0;
@@ -1600,7 +1645,7 @@ static void CON_DrawHudlines(void)
 	INT32 charwidth = 8 * con_scalefactor;
 	INT32 charheight = 8 * con_scalefactor;
 
-	if (con_hudlines <= 0)
+	if (!con_hudlines)
 		return;
 
 	if (chat_on && OLDCHAT)
@@ -1608,7 +1653,7 @@ static void CON_DrawHudlines(void)
 	else
 		y = 0;
 
-	for (i = con_cy - con_hudlines+1; i <= con_cy; i++)
+	for (i = con_cy - con_hudlines; i <= con_cy; i++)
 	{
 		size_t c;
 		INT32 x;

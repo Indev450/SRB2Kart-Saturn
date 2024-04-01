@@ -254,9 +254,7 @@ void P_RemoveThinkerDelayed(void *pthinker)
 //
 void P_RemoveThinker(thinker_t *thinker)
 {
-#ifdef HAVE_BLUA
 	LUA_InvalidateUserdata(thinker);
-#endif
 	thinker->function.acp1 = P_RemoveThinkerDelayed;
 }
 
@@ -661,12 +659,9 @@ void P_Ticker(boolean run)
 		ps_lua_mobjhooks.value.i = 0;
 		ps_checkposition_calls.value.i = 0;
 
-#ifdef HAVE_BLUA
 		PS_START_TIMING(ps_lua_prethinkframe_time);
 		LUAh_PreThinkFrame();
 		PS_STOP_TIMING(ps_lua_prethinkframe_time);
-
-#endif
 
 		PS_START_TIMING(ps_playerthink_time);
 		for (i = 0; i < MAXPLAYERS; i++)
@@ -679,12 +674,6 @@ void P_Ticker(boolean run)
 	if (!demo.playback) // Don't increment if a demo is playing.
 		totalplaytime++;
 
-	/*if (!useNightsSS && G_IsSpecialStage(gamemap))
-		P_DoSpecialStageStuff();
-
-	if (runemeraldmanager)
-		P_EmeraldManager(); // Power stone mode*/
-
 	if (run)
 	{
 		PS_START_TIMING(ps_thinkertime);
@@ -696,11 +685,9 @@ void P_Ticker(boolean run)
 			if (playeringame[i] && players[i].mo && !P_MobjWasRemoved(players[i].mo))
 				P_PlayerAfterThink(&players[i]);
 
-#ifdef HAVE_BLUA
 		PS_START_TIMING(ps_lua_thinkframe_time);
 		LUAh_ThinkFrame();
 		PS_STOP_TIMING(ps_lua_thinkframe_time);
-#endif
 	}
 
 	// Run shield positioning
@@ -825,13 +812,9 @@ void P_Ticker(boolean run)
 			&& server) // Remember: server uses it for mapchange, but EVERYONE ticks down for the animation
 				D_MapChange(gamemap, gametype, encoremode, true, 0, false, false);
 
-#ifdef HAVE_BLUA
-		
 		PS_START_TIMING(ps_lua_postthinkframe_time);
 		LUAh_PostThinkFrame();
 		PS_STOP_TIMING(ps_lua_postthinkframe_time);
-
-#endif
 	}
 
 	// Always move the camera.
@@ -891,9 +874,7 @@ void P_PreTicker(INT32 frames)
 
 		R_UpdateMobjInterpolators();
 
-#ifdef HAVE_BLUA
 		LUAh_PreThinkFrame();
-#endif
 
 		for (i = 0; i < MAXPLAYERS; i++)
 			if (playeringame[i] && players[i].mo && !P_MobjWasRemoved(players[i].mo))
@@ -918,22 +899,15 @@ void P_PreTicker(INT32 frames)
 			if (playeringame[i] && players[i].mo && !P_MobjWasRemoved(players[i].mo))
 				P_PlayerAfterThink(&players[i]);
 
-#ifdef HAVE_BLUA
 		LUAh_ThinkFrame();
-#endif
 
-		// Run shield positioning
-		//P_RunShields();
 		P_RunOverlays();
-		
 		P_RunShadows();
 
 		P_UpdateSpecials();
 		P_RespawnSpecials();
 
-#ifdef HAVE_BLUA
 		LUAh_PostThinkFrame();
-#endif
 
 		R_UpdateLevelInterpolators();
 		R_UpdateViewInterpolation();

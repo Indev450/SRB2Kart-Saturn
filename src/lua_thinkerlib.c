@@ -11,7 +11,6 @@
 /// \brief thinker library for Lua scripting
 
 #include "doomdef.h"
-#ifdef HAVE_BLUA
 #include "p_local.h"
 #include "lua_script.h"
 #include "lua_libs.h"
@@ -132,5 +131,3 @@ int LUA_ThinkerLib(lua_State *L)
 	lua_setglobal(L, "thinkers");
 	return 0;
 }
-
-#endif

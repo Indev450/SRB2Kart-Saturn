@@ -288,43 +288,12 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 	if (special->flags & MF_BOSS && special->flags2 & MF2_FRET)
 		return;
 
-#ifdef HAVE_BLUA
 	if (LUAh_TouchSpecial(special, toucher) || P_MobjWasRemoved(special))
 		return;
-#endif
 
 	if (special->flags & MF_BOSS)
 	{
-		/*if (special->type == MT_BLACKEGGMAN)
-		{
-			P_DamageMobj(toucher, special, special, 1); // ouch
-			return;
-		}
-
-		if (((player->pflags & PF_NIGHTSMODE) && (player->pflags & PF_DRILLING))
-		|| (player->pflags & (PF_JUMPED|PF_SPINNING|PF_GLIDING))
-		|| player->powers[pw_invulnerability] || player->powers[pw_super]) // Do you possess the ability to subdue the object?
-		{
-			if (P_MobjFlip(toucher)*toucher->momz < 0)
-				toucher->momz = -toucher->momz;
-			toucher->momx = -toucher->momx;
-			toucher->momy = -toucher->momy;
-			P_DamageMobj(special, toucher, toucher, 1);
-		}
-		else if (((toucher->z < special->z && !(toucher->eflags & MFE_VERTICALFLIP))
-		|| (toucher->z + toucher->height > special->z + special->height && (toucher->eflags & MFE_VERTICALFLIP)))
-		&& player->charability == CA_FLY
-		&& (player->powers[pw_tailsfly]
-		|| (toucher->state >= &states[S_PLAY_SPC1] && toucher->state <= &states[S_PLAY_SPC4]))) // Tails can shred stuff with his propeller.
-		{
-			toucher->momz = -toucher->momz/2;
-
-			P_DamageMobj(special, toucher, toucher, 1);
-		}
-		// SRB2kart - Removed: No more fly states
-		else*/
-			P_DamageMobj(toucher, special, special, 1);
-
+		P_DamageMobj(toucher, special, special, 1);
 		return;
 	}
 	else if ((special->flags & MF_ENEMY) && !(special->flags & MF_MISSILE)
@@ -949,201 +918,6 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			}
 			return;
 
-// ********************************** //
-// NiGHTS gameplay items and powerups //
-// ********************************** //
-		/*case MT_NIGHTSDRONE:
-			if (player->bot)
-				return;
-			if (player->exiting)
-				return;
-			if (player->bonustime)
-			{
-				if (G_IsSpecialStage(gamemap)) //After-mare bonus time/emerald reward in special stages.
-				{
-					// only allow the player with the emerald in-hand to leave.
-					if (toucher->tracer && toucher->tracer->target
-					&& toucher->tracer->target->type == MT_GOTEMERALD)
-					{
-					}
-					else // Make sure that SOMEONE has the emerald, at least!
-					{
-						for (i = 0; i < MAXPLAYERS; i++)
-							if (playeringame[i] && players[i].playerstate == PST_LIVE
-							&& players[i].mo->tracer && players[i].mo->tracer->target
-							&& players[i].mo->tracer->target->type == MT_GOTEMERALD)
-								return;
-						// Well no one has an emerald, so exit anyway!
-					}
-					P_GiveEmerald(false);
-					// Don't play Ideya sound in special stage mode
-				}
-				else
-					S_StartSound(toucher, special->info->activesound);
-			}
-			else //Initial transformation. Don't allow second chances in special stages!
-			{
-				if (player->pflags & PF_NIGHTSMODE)
-					return;
-
-				S_StartSound(toucher, sfx_supert);
-			}
-			if (!(netgame || multiplayer) && !(player->pflags & PF_NIGHTSMODE))
-				P_SetTarget(&special->tracer, toucher);
-			P_NightserizePlayer(player, special->health); // Transform!
-			return;
-		case MT_NIGHTSLOOPHELPER:
-			// One second delay
-			if (special->fuse < toucher->fuse - TICRATE)
-			{
-				thinker_t *th;
-				mobj_t *mo2;
-				INT32 count;
-				fixed_t x,y,z, gatherradius;
-				angle_t d;
-				statenum_t sparklestate = S_NULL;
-
-				if (special->target != toucher) // These ain't your helpers, pal!
-					return;
-
-				x = special->x>>FRACBITS;
-				y = special->y>>FRACBITS;
-				z = special->z>>FRACBITS;
-				count = 1;
-
-				// scan the remaining thinkers
-				for (th = thinkercap.next; th != &thinkercap; th = th->next)
-				{
-					if (th->function.acp1 != (actionf_p1)P_MobjThinker)
-						continue;
-
-					mo2 = (mobj_t *)th;
-
-					if (mo2 == special)
-						continue;
-
-					// Not our stuff!
-					if (mo2->target != toucher)
-						continue;
-
-					if (mo2->type == MT_NIGHTSPARKLE)
-						mo2->tics = 1;
-					else if (mo2->type == MT_NIGHTSLOOPHELPER)
-					{
-						if (mo2->fuse >= special->fuse)
-						{
-							count++;
-							x += mo2->x>>FRACBITS;
-							y += mo2->y>>FRACBITS;
-							z += mo2->z>>FRACBITS;
-						}
-						P_RemoveMobj(mo2);
-					}
-				}
-				x = (x/count)<<FRACBITS;
-				y = (y/count)<<FRACBITS;
-				z = (z/count)<<FRACBITS;
-				gatherradius = P_AproxDistance(P_AproxDistance(special->x - x, special->y - y), special->z - z);
-				P_RemoveMobj(special);
-
-				if (player->powers[pw_nights_superloop])
-				{
-					gatherradius *= 2;
-					sparklestate = mobjinfo[MT_NIGHTSPARKLE].seestate;
-				}
-
-				if (gatherradius < 30*FRACUNIT) // Player is probably just sitting there.
-					return;
-
-				for (d = 0; d < 16; d++)
-					P_SpawnParaloop(x, y, z, gatherradius, 16, MT_NIGHTSPARKLE, sparklestate, d*ANGLE_22h, false);
-
-				S_StartSound(toucher, sfx_prloop);
-
-				// Now we RE-scan all the thinkers to find close objects to pull
-				// in from the paraloop. Isn't this just so efficient?
-				for (th = thinkercap.next; th != &thinkercap; th = th->next)
-				{
-					if (th->function.acp1 != (actionf_p1)P_MobjThinker)
-						continue;
-
-					mo2 = (mobj_t *)th;
-
-					if (P_AproxDistance(P_AproxDistance(mo2->x - x, mo2->y - y), mo2->z - z) > gatherradius)
-						continue;
-
-					if (mo2->flags & MF_SHOOTABLE)
-					{
-						P_DamageMobj(mo2, toucher, toucher, 1);
-						continue;
-					}
-
-					// Make these APPEAR!
-					// Tails 12-15-2003
-					if (mo2->flags & MF_NIGHTSITEM)
-					{
-						// Requires Bonus Time
-						if ((mo2->flags2 & MF2_STRONGBOX) && !player->bonustime)
-							continue;
-
-						if (!(mo2->flags & MF_SPECIAL) && mo2->health)
-						{
-							P_SetMobjState(mo2, mo2->info->seestate);
-							mo2->flags |= MF_SPECIAL;
-							mo2->flags &= ~MF_NIGHTSITEM;
-							S_StartSound(toucher, sfx_hidden);
-							continue;
-						}
-					}
-
-					if (!(mo2->type == MT_NIGHTSWING || mo2->type == MT_RING || mo2->type == MT_COIN
-					   || mo2->type == MT_BLUEBALL))
-						continue;
-
-					// Yay! The thing's in reach! Pull it in!
-					mo2->flags |= MF_NOCLIP|MF_NOCLIPHEIGHT;
-					mo2->flags2 |= MF2_NIGHTSPULL;
-					P_SetTarget(&mo2->tracer, toucher);
-				}
-			}
-			return;
-		case MT_EGGCAPSULE:
-			if (player->bot)
-				return;
-
-			// make sure everything is as it should be, THEN take rings from players in special stages
-			if (player->pflags & PF_NIGHTSMODE && !toucher->target)
-				return;
-
-			if (player->mare != special->threshold) // wrong mare
-				return;
-
-			if (special->reactiontime > 0) // capsule already has a player attacking it, ignore
-				return;
-
-			if (G_IsSpecialStage(gamemap) && !player->exiting)
-			{ // In special stages, share rings. Everyone gives up theirs to the player who touched the capsule
-				for (i = 0; i < MAXPLAYERS; i++)
-					if (playeringame[i] && (&players[i] != player) && players[i].mo->health > 1)
-					{
-						toucher->health += players[i].mo->health-1;
-						player->health = toucher->health;
-						players[i].mo->health = 1;
-						players[i].health = players[i].mo->health;
-					}
-			}
-
-			if (!(player->health > 1) || player->exiting)
-				return;
-
-			// Mark the player as 'pull into the capsule'
-			P_SetTarget(&player->capsule, special);
-			special->reactiontime = (player-players)+1;
-			P_SetTarget(&special->target, NULL);
-
-			// Clear text
-			player->texttimer = 0;
-			return;*/
 		case MT_NIGHTSBUMPER:
 			// Don't trigger if the stage is ended/failed
 			if (player->exiting)
@@ -2163,10 +1937,8 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 	target->flags2 &= ~(MF2_SKULLFLY|MF2_NIGHTSPULL);
 	target->health = 0; // This makes it easy to check if something's dead elsewhere.
 
-#ifdef HAVE_BLUA
 	if (LUAh_MobjDeath(target, inflictor, source) || P_MobjWasRemoved(target))
 		return;
-#endif
 
 	// SRB2kart
 	// I wish I knew a better way to do this
@@ -3129,11 +2901,7 @@ static void P_RingDamage(player_t *player, mobj_t *inflictor, mobj_t *source, IN
 boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage)
 {
 	player_t *player;
-#ifdef HAVE_BLUA
 	boolean force = false;
-#else
-	static const boolean force = false;
-#endif
 
 	if (objectplacing)
 		return false;
@@ -3153,19 +2921,19 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 			return false;
 	}
 
-#ifdef HAVE_BLUA
 	// Everything above here can't be forced.
 	if (!metalrecording)
 	{
 		UINT8 shouldForce = LUAh_ShouldDamage(target, inflictor, source, damage);
 		if (P_MobjWasRemoved(target))
 			return (shouldForce == 1); // mobj was removed
+		if (P_MobjWasRemoved(source))
+			source = NULL;
 		if (shouldForce == 1)
 			force = true;
 		else if (shouldForce == 2)
 			return false;
 	}
-#endif
 
 	if (!force)
 	{
@@ -3199,10 +2967,8 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 		if (!force && target->fuse) // Invincible
 			return false;
 
-#ifdef HAVE_BLUA
 		if (LUAh_MobjDamage(target, inflictor, source, damage) || P_MobjWasRemoved(target))
 			return true;
-#endif
 
 		if (target->health > 1)
 		{
@@ -3227,21 +2993,17 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 		if (!force && target->flags2 & MF2_FRET) // Currently flashing from being hit
 			return false;
 
-#ifdef HAVE_BLUA
 		if (LUAh_MobjDamage(target, inflictor, source, damage) || P_MobjWasRemoved(target))
 			return true;
-#endif
 
 		if (target->health > 1)
 			target->flags2 |= MF2_FRET;
 	}
-#ifdef HAVE_BLUA
 	else if (target->flags & MF_ENEMY)
 	{
 		if (LUAh_MobjDamage(target, inflictor, source, damage) || P_MobjWasRemoved(target))
 			return true;
 	}
-#endif
 
 	player = target->player;
 
@@ -3267,18 +3029,16 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 				|| (G_GametypeHasTeams() && target->player->ctfteam == source->player->ctfteam)))
 					return false; // Don't run eachother over in special stages and team games and such
 			}
-#ifdef HAVE_BLUA
+
 			if (LUAh_MobjDamage(target, inflictor, source, damage))
 				return true;
-#endif
+
 			P_NiGHTSDamage(target, source); // -5s :(
 			return true;
 		}
 
-#ifdef HAVE_BLUA	// Add this back here for ACTUAL NORMAL DAMAGE. The funny shit is that the player is barely ever "actually" damaged.
 		if (LUAh_MobjDamage(target, inflictor, source, damage))
 			return true;
-#endif
 
 		if (!force && inflictor && (inflictor->flags & MF_FIRE))
 		{
@@ -3341,72 +3101,6 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 			}
 			return true;
 		}
-		/* // SRB2kart - don't need these
-		else if (metalrecording)
-		{
-			if (!inflictor)
-				inflictor = source;
-			if (inflictor && inflictor->flags & MF_ENEMY)
-			{ // Metal Sonic destroy enemy !!
-				P_KillMobj(inflictor, NULL, target);
-				return false;
-			}
-			else if (inflictor && inflictor->flags & MF_MISSILE)
-				return false; // Metal Sonic walk through flame !!
-			else
-			{ // Oh no! Metal Sonic is hit !!
-				P_ShieldDamage(player, inflictor, source, damage);
-				return true;
-			}
-		}
-		else if (player->powers[pw_invulnerability] || player->powers[pw_flashing] // ignore bouncing & such in invulnerability
-			|| (player->powers[pw_super] && !(ALL7EMERALDS(player->powers[pw_emeralds]) && inflictor && ((inflictor->flags & MF_MISSILE) || inflictor->player))))
-		{
-			if (force || (inflictor && (inflictor->flags & MF_MISSILE)
-				&& (inflictor->flags2 & MF2_SUPERFIRE)
-				&& player->powers[pw_super]))
-			{
-#ifdef HAVE_BLUA
-				if (!LUAh_MobjDamage(target, inflictor, source, damage))
-#endif
-					P_SuperDamage(player, inflictor, source, damage);
-				return true;
-			}
-			else
-				return false;
-		}
-#ifdef HAVE_BLUA
-		else if (LUAh_MobjDamage(target, inflictor, source, damage))
-			return true;
-#endif
-		else if (!player->powers[pw_super] && (player->powers[pw_shield] || player->bot))  //If One-Hit Shield
-		{
-			P_ShieldDamage(player, inflictor, source, damage);
-			damage = 0;
-		}
-		else if (player->mo->health > 1) // No shield but have rings.
-		{
-			damage = player->mo->health - 1;
-			P_RingDamage(player, inflictor, source, damage);
-		}
-		else // No shield, no rings, no invincibility.
-		{
-			// To reduce griefing potential, don't allow players to be killed
-			// by friendly fire. Spilling their rings and other items is enough.
-			if (force || !(G_GametypeHasTeams()
-				&& source && source->player && (source->player->ctfteam == player->ctfteam)
-				&& cv_friendlyfire.value))
-			{
-				damage = 1;
-				P_KillPlayer(player, source, damage);
-			}
-			else
-			{
-				damage = 0;
-				P_ShieldDamage(player, inflictor, source, damage);
-			}
-		}
-		*/
 
 		if (inflictor && ((inflictor->flags & MF_MISSILE) || inflictor->player) && player->powers[pw_super] && ALL7EMERALDS(player->powers[pw_emeralds]))
 		{
@@ -3485,6 +3179,9 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 			P_SetMobjState(target, target->info->painstate);
 			break;
 		}
+		
+	if (P_MobjWasRemoved(target))
+		return false;
 
 	if (!P_MobjWasRemoved(target))
 	{

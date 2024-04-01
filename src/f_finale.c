@@ -64,6 +64,7 @@ static patch_t *ttkflash; // flash screen
 
 static patch_t *driver[2]; // Driving character on the waiting screen
 static UINT8 *waitcolormap; // colormap for the spinning character
+static INT32 waitscale = 1<<FRACBITS; // scale for the character on waiting screen; very hacky crap
 
 static void F_SkyScroll(INT32 scrollspeed);
 
@@ -166,30 +167,31 @@ static void F_SkyScroll(INT32 scrollspeed)
 	pat = W_CachePatchName("TITLEBG1", PU_CACHE);
 	pat2 = W_CachePatchName("TITLEBG2", PU_CACHE);
 
-	w = vid.width / vid.dupx;
+	w = (vid.width / vid.dupx)<<FRACBITS;
 
-	animtimer = ((finalecount*scrollspeed)/16) % SHORT(pat->width);
-	anim2 = SHORT(pat2->width) - (((finalecount*scrollspeed)/16) % SHORT(pat2->width));
+	// The scroll offset MUST be clamped before shifting by FRACBITS, or else it'll overflow in about 3 minutes
+	animtimer = ((((finalecount * scrollspeed) % (SHORT(pat->width)*16))<<FRACBITS) + (R_GetHudUncap() * scrollspeed))/16;
+	anim2 = (SHORT(pat2->width)<<FRACBITS) - ((((finalecount * scrollspeed) % (SHORT(pat2->width)*16))<<FRACBITS) + (R_GetHudUncap() * scrollspeed))/16;
 
 	// SRB2Kart: F_DrawPatchCol is over-engineered; recoded to be less shitty and error-prone
 	if (rendermode != render_none)
 	{
 		V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 120);
 
-		x = -((INT32)animtimer);
+		x = -animtimer;
 		y = 0;
 		while (x < w)
 		{
-			V_DrawFixedPatch(x*FRACUNIT, y*FRACUNIT, FRACUNIT, V_SNAPTOTOP|V_SNAPTOLEFT, pat, NULL);
-			x += SHORT(pat->width);
+			V_DrawFixedPatch(x, y, FRACUNIT, V_SNAPTOTOP|V_SNAPTOLEFT, pat, NULL);
+			x += SHORT(pat->width)<<FRACBITS;
 		}
 
 		x = -anim2;
-		y = BASEVIDHEIGHT - SHORT(pat2->height);
+		y = (BASEVIDHEIGHT - SHORT(pat2->height))<<FRACBITS;
 		while (x < w)
 		{
-			V_DrawFixedPatch(x*FRACUNIT, y*FRACUNIT, FRACUNIT, V_SNAPTOBOTTOM|V_SNAPTOLEFT, pat2, NULL);
-			x += SHORT(pat2->width);
+			V_DrawFixedPatch(x, y, FRACUNIT, V_SNAPTOBOTTOM|V_SNAPTOLEFT, pat2, NULL);
+			x += SHORT(pat2->width)<<FRACBITS;
 		}
 	}
 
@@ -521,11 +523,13 @@ static const char *credits[] = {
 	"\"Virt\"",
 	"",
 	"\1Saturn",
-	"\"Alufolie91\" aka \"Alug\"",
+	"\"Alug\"",
 	"\"Indev\"",
 	"\"Haya\"",
 	"\"NepDisk\"",
+	"\"GenericHeroGuy\"",
 	"\"Xyzzy\"",
+	"\"Chearii\"",
 	" ",
 	"\"Sunflower\" aka \"AnimeSonic\"",
 	"\"Yuz\" aka \"Yuzler\"",
@@ -992,7 +996,7 @@ void F_TitleScreenDrawer(void)
 		if (finalecount >= 20)
 			V_DrawSmallScaledPatch(84, 87, 0, ttkart);
 		else if (finalecount >= 10)
-			V_DrawSciencePatch((84<<FRACBITS) - FixedDiv(180<<FRACBITS, 10<<FRACBITS)*(20-finalecount), (87<<FRACBITS), 0, ttkart, FRACUNIT/2);
+			V_DrawSciencePatch((84<<FRACBITS) - 18*(((20 - finalecount)<<FRACBITS) - R_GetHudUncap()), 87<<FRACBITS, 0, ttkart, FRACUNIT/2);
 	}
 	else if (finalecount < 52)
 	{
@@ -1008,8 +1012,8 @@ void F_TitleScreenDrawer(void)
 
 		F_SkyScroll(titlescrollspeed);
 
-		V_DrawSciencePatch(0, 0 - FixedMul(40<<FRACBITS, FixedDiv(finalecount%70, 70)), V_SNAPTOTOP|V_SNAPTOLEFT, ttcheckers, FRACUNIT);
-		V_DrawSciencePatch(280<<FRACBITS, -(40<<FRACBITS) + FixedMul(40<<FRACBITS, FixedDiv(finalecount%70, 70)), V_SNAPTOTOP|V_SNAPTORIGHT, ttcheckers, FRACUNIT);
+		V_DrawSciencePatch(0, -40*FixedDiv(((finalecount % 70)<<FRACBITS) + R_GetHudUncap(), 70<<FRACBITS), V_SNAPTOTOP|V_SNAPTOLEFT, ttcheckers, FRACUNIT);
+		V_DrawSciencePatch(280<<FRACBITS, -(40<<FRACBITS) + 40*FixedDiv(((finalecount % 70)<<FRACBITS) + R_GetHudUncap(), 70<<FRACBITS), V_SNAPTOTOP|V_SNAPTORIGHT, ttcheckers, FRACUNIT);
 
 		if (transval)
 			V_DrawFadeScreen(120, 10 - transval);
@@ -1165,16 +1169,19 @@ void F_StartWaitingPlayers(void)
 	INT32 i;
 	INT32 randskin;
 	spriteframe_t *sprframe;
-
 	wipegamestate = GS_TITLESCREEN; // technically wiping from title screen
 	finalecount = 0;
 
 	randskin = M_RandomKey(numskins);
+	boolean waithires = skins[randskin].flags && SF_HIRES;
 
 	if (waitcolormap)
 		Z_Free(waitcolormap);
 
 	waitcolormap = R_GetTranslationColormap(randskin, skins[randskin].prefcolor, 0);
+
+	if (waithires)
+		waitscale = waitscale * FIXED_TO_FLOAT(skins[randskin].highresscale); // need to set scale here cause im lazy
 
 	for (i = 0; i < 2; i++)
 	{
@@ -1204,7 +1211,7 @@ void F_WaitingPlayersDrawer(void)
 	V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 31);
 	V_DrawCreditString((160 - (V_CreditStringWidth(waittext1)>>1))<<FRACBITS, 48<<FRACBITS, 0, waittext1);
 	V_DrawCreditString((160 - (V_CreditStringWidth(waittext2)>>1))<<FRACBITS, 64<<FRACBITS, 0, waittext2);
-	V_DrawFixedPatch((160<<FRACBITS) - driver[frame]->width / 2, 150<<FRACBITS, 1<<FRACBITS, flags, driver[frame], waitcolormap);
+	V_DrawFixedPatch((160<<FRACBITS) - driver[frame]->width / 2, 150<<FRACBITS, waitscale, flags, driver[frame], waitcolormap); // "1<<FRACBITS"
 }
 
 // ==========

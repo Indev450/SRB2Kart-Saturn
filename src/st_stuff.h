@@ -53,9 +53,6 @@ void ST_LoadGraphics(void);
 void ST_LoadFaceGraphics(char *rankstr, char *wantstr, char *mmapstr, INT32 playernum);
 void ST_LoadLocalFaceGraphics(char *rankstr, char *wantstr, char *mmapstr, INT32 playernum);
 void ST_ReloadSkinFaceGraphics(void);
-#ifdef DELFILE
-void ST_UnLoadFaceGraphics(INT32 skinnum);
-#endif
 
 void ST_doPaletteStuff(void);
 
@@ -68,6 +65,8 @@ boolean ST_SameTeam(player_t *a, player_t *b);
 
 extern boolean st_overlay; // sb overlay on or off when fullscreen
 extern INT32 st_palette; // 0 is default, any others are special palettes.
+extern player_t *stplyr; // for splitscreen correct palette changes and overlay
+extern UINT8 stplyrnum;
 
 extern lumpnum_t st_borderpatchnum;
 // patches, also used in intermission

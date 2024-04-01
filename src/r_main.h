@@ -65,12 +65,12 @@ extern lighttable_t *zlight[LIGHTLEVELS][MAXLIGHTZ];
 #define NUMCOLORMAPS 32
 
 // Utility functions.
-INT32 R_PointOnSide(fixed_t x, fixed_t y, node_t *node);
-INT32 R_PointOnSegSide(fixed_t x, fixed_t y, seg_t *line);
+INT32 R_PointOnSide(fixed_t x, fixed_t y, const node_t *node);
+INT32 R_PointOnSegSide(fixed_t x, fixed_t y, const seg_t *line);
 angle_t R_PointToAngle(fixed_t x, fixed_t y);
-angle_t R_PointToAngle2(fixed_t px2, fixed_t py2, fixed_t px1, fixed_t py1);
+angle_t R_PointToAngle64(INT64 x, INT64 y);
 angle_t R_PointToAngleEx(INT32 x2, INT32 y2, INT32 x1, INT32 y1);
-angle_t R_PointToAngleEx64(INT64 x2, INT64 y2, INT64 x1, INT64 y1);
+angle_t R_PointToAngle2(fixed_t px2, fixed_t py2, fixed_t px1, fixed_t py1);
 fixed_t R_PointToDist(fixed_t x, fixed_t y);
 fixed_t R_PointToDist2(fixed_t px2, fixed_t py2, fixed_t px1, fixed_t py1);
 angle_t R_PlayerSliptideAngle(player_t *player);
@@ -82,7 +82,6 @@ subsector_t *R_IsPointInSubsector(fixed_t x, fixed_t y);
 boolean R_DoCulling(line_t *cullheight, line_t *viewcullheight, fixed_t vz, fixed_t bottomh, fixed_t toph);
 
 // Performance stats
-
 extern precise_t ps_prevframetime;// time when previous frame was rendered
 extern ps_metric_t ps_rendercalltime;
 extern ps_metric_t ps_otherrendertime;
@@ -106,17 +105,18 @@ extern ps_metric_t ps_numpolyobjects;
 // REFRESH - the actual rendering functions.
 //
 
-extern consvar_t cv_showhud, cv_translucenthud;
+extern consvar_t cv_showhud, cv_translucenthud, cv_uncappedhud;
 extern consvar_t cv_homremoval;
 extern consvar_t cv_chasecam, cv_chasecam2, cv_chasecam3, cv_chasecam4;
 extern consvar_t cv_flipcam, cv_flipcam2, cv_flipcam3, cv_flipcam4;
 extern consvar_t cv_shadow, cv_shadowoffs;
 extern consvar_t cv_ffloorclip, cv_spriteclip;
 extern consvar_t cv_translucency;
-extern consvar_t /*cv_precipdensity,*/ cv_drawdist, /*cv_drawdist_nights,*/ cv_drawdist_precip, cv_lessprecip;
+extern consvar_t cv_drawdist, cv_drawdist_precip, cv_lessprecip;
 extern consvar_t cv_fov;
 extern consvar_t cv_skybox;
 extern consvar_t cv_tailspickup;
+extern consvar_t cv_grmaxinterpdist;
 
 // Called by startup code.
 void R_Init(void);
@@ -139,4 +139,7 @@ void R_RenderPlayerView(player_t *player);
 
 // add commands related to engine, at game startup
 void R_RegisterEngineStuff(void);
+
+// return multiplier for HUD uncap
+INT32 R_GetHudUncap(void);
 #endif

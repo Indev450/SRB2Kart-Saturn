@@ -25,6 +25,12 @@
 #define NZCLIP_PLANE 0.9f // Seems to be only used for the HUD and screen textures
 #define FAR_ZCLIP_DEFAULT 32768.0f
 
+// The width/height/depth of the palette lookup table used by palette rendering.
+// Changing this also requires changing the shader code!
+// Also assumed to be a power of two in some parts of the code.
+// 64 seems to work perfectly for the vanilla palette.
+#define HWR_PALETTE_LUT_SIZE 64
+
 // ==========================================================================
 //                                                               SIMPLE TYPES
 // ==========================================================================
@@ -129,8 +135,10 @@ typedef struct
 	FLOAT       x,y,z;           // position
 #ifdef USE_FTRANSFORM_ANGLEZ
 	FLOAT       anglex,angley,anglez;   // aimingangle / viewangle
+	FLOAT       anglex2,anglez2;        // secondaries
 #else
 	FLOAT       anglex,angley;   // aimingangle / viewangle
+	FLOAT       anglex2;         // secondaries
 #endif
 	FLOAT       scalex,scaley,scalez;
 	FLOAT       spritexscale,spriteyscale;
@@ -156,6 +164,44 @@ typedef struct
 	FLOAT       x,y,z;
 	FLOAT       s,t;
 } FOutVector;
+
+// Shader targets used to render specific types of geometry.
+// A shader target is resolved to an actual shader with HWR_GetShaderFromTarget.
+// The shader returned may be a base shader or a custom shader.
+enum
+{
+	SHADER_NONE = -1,
+	SHADER_FLOOR = 0,
+	SHADER_WALL,
+	SHADER_MODEL,
+	SHADER_SPRITE,
+	SHADER_WATER,
+	SHADER_FOG,
+	SHADER_SKY,
+	SHADER_PALETTE_POSTPROCESS,
+	SHADER_UI_COLORMAP_FADE,
+
+	NUMSHADERTARGETS
+};
+
+// Must be at least NUMSHADERTARGETS*2 to fit base and custom shaders for each shader target.
+#define HWR_MAXSHADERS NUMSHADERTARGETS*2
+
+// Custom shader reference table
+typedef struct
+{
+	const char *type;
+	INT32 id;
+} customshaderxlat_t;
+
+enum hwdshaderstage
+{
+	HWD_SHADERSTAGE_VERTEX,
+	HWD_SHADERSTAGE_FRAGMENT,
+};
+
+typedef enum hwdshaderstage hwdshaderstage_t;
+
 
 // ==========================================================================
 //                                                               RENDER MODES
@@ -207,7 +253,17 @@ enum ETextureFlags
 	TF_TRANSPARENT = 0x00000040,        // texture with some alpha == 0
 };
 
-typedef struct GLMipmap_s FTextureInfo;
+struct FTextureInfo
+{
+	UINT32 width, height;
+	UINT32 downloaded;
+	UINT32 format;
+
+	struct GLMipmap_s *texture;
+	struct FTextureInfo *prev, *next;
+};
+typedef struct FTextureInfo FTextureInfo;
+
 
 struct FLightInfo
 {
@@ -232,7 +288,6 @@ typedef struct FSurfaceInfo FSurfaceInfo;
 enum hwdsetspecialstate
 {
 	HWD_SET_SHADERS,
-	HWD_SET_PALETTE_SHADER_ENABLED,
 
 	HWD_SET_TEXTUREFILTERMODE,
 	HWD_SET_TEXTUREANISOTROPICMODE,
@@ -240,8 +295,6 @@ enum hwdsetspecialstate
 	HWD_SET_MSAA,
 
 	HWD_SET_SCREEN_TEXTURES,
-	
-	HWD_SET_DEPTH_ONLY_MODE,// for portals
 
 	HWD_SET_PORTAL_MODE,// new portal thing
 	HWD_SET_STENCIL_LEVEL,
@@ -280,5 +333,16 @@ enum hwdfiltermode
 	HWD_SET_TEXTUREFILTER_MIXED2,
 	HWD_SET_TEXTUREFILTER_MIXED3,
 };
+
+// Screen texture slots
+enum hwdscreentexture
+{
+	HWD_SCREENTEXTURE_WIPE_START, // source image for the wipe/fade effect
+	HWD_SCREENTEXTURE_WIPE_END,   // destination image for the wipe/fade effect
+	HWD_SCREENTEXTURE_GENERIC1,   // underwater/heat effect, intermission background
+	HWD_SCREENTEXTURE_GENERIC2,   // palette-based colormap fade, final screen texture
+	NUMSCREENTEXTURES,            // (generic3 is unused if palette rendering is disabled)
+};
+typedef enum hwdscreentexture hwdscreentexture_t;
 
 #endif //_HWR_DEFS_

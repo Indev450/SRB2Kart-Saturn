@@ -28,3 +28,7 @@ and don't forget to build r_opengl.dll for srb2dd.
 * libs\SDL2\x86_64-w64-mingw32\bin\SDL2.dll
 * libs\SDL2_mixer\x86_64-w64-mingw32\bin\*.dll (get everything)
 * libs\libopenmpt\x86_64\bin\mingw\libopenmpt.dll
+
+Updated 2/17/2024 (v1.6 Saturn)
+No i threw everthing into dll-binaries
+theres no reason at all to have stuff spread across multiple directories

@@ -68,11 +68,21 @@ consvar_t cv_renderview = {"renderview", "On", 0, CV_OnOff, NULL, 0, NULL, NULL,
 consvar_t cv_vhseffect = {"vhspause", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_shittyscreen = {"televisionsignal", "Okay", CV_NOSHOWHELP, shittyscreen_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+static void Highreshudscale_OnChange(void);
+static CV_PossibleValue_t highreshudscale_cons_t[] = {{4*FRACUNIT/5, "MIN"}, {6*FRACUNIT/5, "MAX"}, {0, NULL}};
+consvar_t cv_highreshudscale = {"highreshudscale", "1", CV_SAVE|CV_FLOAT|CV_CALL|CV_NOINIT|CV_NOSHOWHELP, highreshudscale_cons_t, Highreshudscale_OnChange, 0, NULL, NULL, 0, 0, NULL};
+
+static void Highreshudscale_OnChange(void)
+{
+	if (!con_startup)
+		SCR_Recalc();
+}
+
 static void SCR_ChangeFullscreen (void);
 
-static INT32 SCR_FPSflags(void);
-
 consvar_t cv_fullscreen = {"fullscreen", "Yes", CV_SAVE|CV_CALL, CV_YesNo, SCR_ChangeFullscreen, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_accuratefps = {"accuratefpscounter", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 // =========================================================================
 //                           SCREEN VARIABLES
@@ -85,15 +95,6 @@ UINT8 *scr_borderpatch; // flat used to fill the reduced view borders set at ST_
 
 //  Short and Tall sky drawer, for the current color mode
 void (*walldrawerfunc)(void);
-
-boolean R_486 = false;
-boolean R_586 = false;
-boolean R_MMX = false;
-boolean R_SSE = false;
-boolean R_3DNow = false;
-boolean R_MMXExt = false;
-boolean R_SSE2 = false;
-
 
 void SCR_SetMode(void)
 {
@@ -150,48 +151,6 @@ void SCR_SetMode(void)
 //
 void SCR_Startup(void)
 {
-	const CPUInfoFlags *RCpuInfo = I_CPUInfo();
-	if (!M_CheckParm("-NOCPUID") && RCpuInfo)
-	{
-#if defined (__i386__) || defined (_M_IX86) || defined (__WATCOMC__)
-		R_486 = true;
-#endif
-		if (RCpuInfo->RDTSC)
-			R_586 = true;
-		if (RCpuInfo->MMX)
-			R_MMX = true;
-		if (RCpuInfo->AMD3DNow)
-			R_3DNow = true;
-		if (RCpuInfo->MMXExt)
-			R_MMXExt = true;
-		if (RCpuInfo->SSE)
-			R_SSE = true;
-		if (RCpuInfo->SSE2)
-			R_SSE2 = true;
-		CONS_Printf("CPU Info: 486: %i, 586: %i, MMX: %i, 3DNow: %i, MMXExt: %i, SSE2: %i\n", R_486, R_586, R_MMX, R_3DNow, R_MMXExt, R_SSE2);
-	}
-
-	if (M_CheckParm("-486"))
-		R_486 = true;
-	if (M_CheckParm("-586"))
-		R_586 = true;
-	if (M_CheckParm("-MMX"))
-		R_MMX = true;
-	if (M_CheckParm("-3DNow"))
-		R_3DNow = true;
-	if (M_CheckParm("-MMXExt"))
-		R_MMXExt = true;
-
-	if (M_CheckParm("-SSE"))
-		R_SSE = true;
-	if (M_CheckParm("-noSSE"))
-		R_SSE = false;
-
-	if (M_CheckParm("-SSE2"))
-		R_SSE2 = true;
-
-	M_SetupMemcpy();
-
 	if (dedicated)
 	{
 		V_Init();
@@ -229,9 +188,35 @@ void SCR_Startup(void)
 	vid.baseratio = FRACUNIT;
 
 	V_Init();
+	CV_RegisterVar(&cv_highreshudscale);
 	CV_RegisterVar(&cv_ticrate);
+	CV_RegisterVar(&cv_accuratefps);
 	CV_RegisterVar(&cv_menucaps);
 	CV_RegisterVar(&cv_constextsize);
+
+	CV_RegisterVar(&cv_globalgamma);
+	CV_RegisterVar(&cv_globalsaturation);
+
+	CV_RegisterVar(&cv_rhue);
+	CV_RegisterVar(&cv_yhue);
+	CV_RegisterVar(&cv_ghue);
+	CV_RegisterVar(&cv_chue);
+	CV_RegisterVar(&cv_bhue);
+	CV_RegisterVar(&cv_mhue);
+
+	CV_RegisterVar(&cv_rgamma);
+	CV_RegisterVar(&cv_ygamma);
+	CV_RegisterVar(&cv_ggamma);
+	CV_RegisterVar(&cv_cgamma);
+	CV_RegisterVar(&cv_bgamma);
+	CV_RegisterVar(&cv_mgamma);
+
+	CV_RegisterVar(&cv_rsaturation);
+	CV_RegisterVar(&cv_ysaturation);
+	CV_RegisterVar(&cv_gsaturation);
+	CV_RegisterVar(&cv_csaturation);
+	CV_RegisterVar(&cv_bsaturation);
+	CV_RegisterVar(&cv_msaturation);
 
 	V_SetPalette(0);
 }
@@ -253,6 +238,14 @@ void SCR_Recalc(void)
 	vid.dupx = vid.dupy = (vid.dupx < vid.dupy ? vid.dupx : vid.dupy);
 	vid.fdupx = FixedDiv(vid.width*FRACUNIT, BASEVIDWIDTH*FRACUNIT);
 	vid.fdupy = FixedDiv(vid.height*FRACUNIT, BASEVIDHEIGHT*FRACUNIT);
+
+	if ((vid.width > 720) && (vid.height > 1280)) // ehhhh well this thing has so many issues, so ill lock it to higher resolutions instead
+	{
+		vid.dupx = FixedDiv(vid.dupx, cv_highreshudscale.value);
+		vid.dupy = FixedDiv(vid.dupy, cv_highreshudscale.value);
+		vid.fdupx = FixedDiv(vid.fdupx, cv_highreshudscale.value);
+		vid.fdupy = FixedDiv(vid.fdupy, cv_highreshudscale.value);
+	}
 
 #ifdef HWRENDER
 	//if (rendermode != render_opengl && rendermode != render_none) // This was just placing it incorrectly at non aspect correct resolutions in opengl
@@ -375,9 +368,13 @@ double averageFPS = 0.0f;
 #ifdef USE_FPS_SAMPLES
 #define MAX_FRAME_TIME 0.05
 #define NUM_FPS_SAMPLES (16) // Number of samples to store
+#define NUM_FPS_SAMPLES2 (32) // Number of samples to store for inaccurate counter
 
 static double total_frame_time = 0.0;
 static int frame_index;
+
+static double fps_samples[NUM_FPS_SAMPLES2];
+static int fps_index;
 #endif
 
 static boolean fps_init = false;
@@ -386,6 +383,7 @@ static precise_t fps_enter = 0;
 void SCR_CalculateFPS(void)
 {
 	precise_t fps_finish = 0;
+	int i;
 
 	double frameElapsed = 0.0;
 
@@ -400,25 +398,31 @@ void SCR_CalculateFPS(void)
 	fps_enter = fps_finish;
 
 #ifdef USE_FPS_SAMPLES
-	total_frame_time += frameElapsed;
-	if (frame_index++ >= NUM_FPS_SAMPLES || total_frame_time >= MAX_FRAME_TIME)
+
+	if (cv_accuratefps.value)
 	{
-		averageFPS = 1.0 / (total_frame_time / frame_index);
-		total_frame_time = 0.0;
-		frame_index = 0;
+		total_frame_time += frameElapsed;
+		if (frame_index++ >= NUM_FPS_SAMPLES || total_frame_time >= MAX_FRAME_TIME)
+		{
+			averageFPS = 1.0 / (total_frame_time / frame_index);
+			total_frame_time = 0.0;
+			frame_index = 0;
+		}
+	}
+	else
+	{
+		fps_samples[fps_index] = frameElapsed / NUM_FPS_SAMPLES2;
+		fps_index = (fps_index + 1) % NUM_FPS_SAMPLES2;
+
+		averageFPS = 0.0;
+		for (i = 0; i < NUM_FPS_SAMPLES2; i++)
+			averageFPS += fps_samples[i];
+		averageFPS = 1.0 / averageFPS;
 	}
 #else
 	// Direct, unsampled counter.
 	averageFPS = 1.0 / frameElapsed;
 #endif
-}
-
-// this is pretty dumb, but has to be done like this, otherwise the fps counter just disappears sometimes for no reason lol
-static INT32 SCR_FPSflags(void)
-{
-	if (!cv_translucenthud.value) return V_SNAPTOBOTTOM|V_SNAPTORIGHT|V_HUDTRANS; // eee kinda works ig
-
-	return (((10-cv_translucenthud.value)*V_10TRANS) & V_ALPHAMASK) | V_SNAPTOBOTTOM|V_SNAPTORIGHT;
 }
 
 void SCR_DisplayTicRate(void)
@@ -428,42 +432,66 @@ void SCR_DisplayTicRate(void)
 	UINT32 benchmark = (cap == 0) ? I_GetRefreshRate() : cap;
 	INT32 x = 318;
 	double fps = round(averageFPS);
-	INT32 fpsflags = SCR_FPSflags();
+	INT32 fpsflags = V_LocalTransFlag()|V_SNAPTOBOTTOM|V_SNAPTORIGHT;
+	const char *fps_string;
+	
+	INT32 ticcntcolor2 = 0;
 	
 	if (gamestate == GS_NULL)
 		return;
 
-	// draw "FPS"
-	if (cv_ticrate.value == 1)
-		V_DrawFixedPatch(306<<FRACBITS, 183<<FRACBITS, FRACUNIT, fpsflags, framecounter, R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_YELLOW, GTC_CACHE));
-		
-	if (fps > (benchmark - 5))
-		ticcntcolor = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_MINT, GTC_CACHE);
-	else if (fps < 20)
-		ticcntcolor = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_RASPBERRY, GTC_CACHE);
-
-	if (cap != 0)
+	// new kart counter
+	if ((cv_ticrate.value == 1) || (cv_ticrate.value == 2))
 	{
-		UINT32 digits = 1;
-		UINT32 c2 = cap;
+		// draw "FPS"
+		if (cv_ticrate.value == 1)
+			V_DrawFixedPatch(306<<FRACBITS, 183<<FRACBITS, FRACUNIT, fpsflags, framecounter, R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_YELLOW, GTC_CACHE));
+			
+		if (fps > (benchmark - 5))
+			ticcntcolor = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_MINT, GTC_CACHE);
+		else if (fps < 20)
+			ticcntcolor = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_RASPBERRY, GTC_CACHE);
 
-		while (c2 > 0)
+		if (cap != 0)
 		{
-			c2 = c2 / 10;
-			digits++;
+			UINT32 digits = 1;
+			UINT32 c2 = cap;
+
+			while (c2 > 0)
+			{
+				c2 = c2 / 10;
+				digits++;
+			}
+
+			// draw total frame:
+			V_DrawPingNum(x, 190, fpsflags, cap, ticcntcolor);
+			
+			x -= digits * 4;
+
+			// draw "/"	
+			V_DrawFixedPatch(x<<FRACBITS, 190<<FRACBITS, FRACUNIT, fpsflags, frameslash, ticcntcolor);
 		}
 
-		// draw total frame:
-		V_DrawPingNum(x, 190, fpsflags, cap, ticcntcolor);
-		
-		x -= digits * 4;
-
-		// draw "/"	
-		V_DrawFixedPatch(x<<FRACBITS, 190<<FRACBITS, FRACUNIT, fpsflags, frameslash, ticcntcolor);
+		// draw our actual framerate
+		V_DrawPingNum(x, 190, fpsflags, fps, ticcntcolor);
 	}
+	else if ((cv_ticrate.value == 3)||(cv_ticrate.value == 4)) // kart v1.0/srb2 counter
+	{
+		if (fps > (benchmark - 5))
+			ticcntcolor2 = V_GREENMAP;
+		else if (fps < 20)
+			ticcntcolor2 = V_REDMAP;
 
-	// draw our actual framerate
-	V_DrawPingNum(x, 190, fpsflags, fps, ticcntcolor);
+		if (cap != 0)
+			fps_string = va("%d/%d\x82", (INT32)fps, cap);
+		else
+			fps_string = va("%d\x82", (INT32)fps);
+	
+		if (cv_ticrate.value == 3)
+			V_DrawRightAlignedString(319, 181, V_YELLOWMAP|fpsflags, "FPS");
+			
+		V_DrawRightAlignedString(319, 190, ticcntcolor2|fpsflags, fps_string);
+	}
 }
 
 // SCR_DisplayLocalPing
@@ -472,11 +500,12 @@ void SCR_DisplayTicRate(void)
 void SCR_DisplayLocalPing(void)
 {
 	UINT32 ping = playerpingtable[consoleplayer];	// consoleplayer's ping is everyone's ping in a splitnetgame :P
-	INT32 fpsflags = SCR_FPSflags();
+	INT32 pingflags = V_LocalTransFlag()|V_SNAPTOBOTTOM|V_SNAPTORIGHT;
 	
 	if (cv_showping.value == 1 || (cv_showping.value == 2 && ping > servermaxping))	// only show 2 (warning) if our ping is at a bad level
 	{
-		INT32 dispy = cv_ticrate.value ? 160 : 181;
-		HU_drawPing(307, dispy, ping, fpsflags);
+		INT32 dispy = (cv_ticrate.value == 1) ? 165 : ((cv_ticrate.value == 2 || cv_ticrate.value == 4) ? 172 : ((cv_ticrate.value == 3) ? 163 : 181)); // absolute buttpain
+		
+		HU_drawPing(308, dispy, ping, pingflags);
 	}
 }

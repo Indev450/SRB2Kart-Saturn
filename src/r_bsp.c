@@ -21,6 +21,8 @@
 #include "p_slopes.h"
 #include "z_zone.h" // Check R_Prep3DFloors
 
+#include "qs22j.h"
+
 seg_t *curline;
 side_t *sidedef;
 line_t *linedef;
@@ -410,8 +412,18 @@ static void R_AddLine(seg_t *line)
 		return;
 
 	// big room fix
-	angle1 = R_PointToAngleEx64(viewx, viewy, line->v1->x, line->v1->y);
-	angle2 = R_PointToAngleEx64(viewx, viewy, line->v2->x, line->v2->y);
+	
+	if (cv_pointoangleexor64.value)
+	{
+		angle1 = R_PointToAngle64(line->v1->x, line->v1->y);
+		angle2 = R_PointToAngle64(line->v2->x, line->v2->y);
+	}
+	else
+	{
+		angle1 = R_PointToAngleEx(viewx, viewy, line->v1->x, line->v1->y);
+		angle2 = R_PointToAngleEx(viewx, viewy, line->v2->x, line->v2->y);
+	}
+
 	curline = line;
 
 	// Clip to view edges.
@@ -613,8 +625,16 @@ static boolean R_CheckBBox(const fixed_t *bspcoord)
 	check = checkcoord[boxpos];
 
 	// big room fix
-	angle1 = R_PointToAngleEx64(viewx, viewy, bspcoord[check[0]], bspcoord[check[1]]) - viewangle;
-	angle2 = R_PointToAngleEx64(viewx, viewy, bspcoord[check[2]], bspcoord[check[3]]) - viewangle;
+	if (cv_pointoangleexor64.value)
+	{
+		angle1 = R_PointToAngle64(bspcoord[check[0]], bspcoord[check[1]]) - viewangle;
+		angle2 = R_PointToAngle64(bspcoord[check[2]], bspcoord[check[3]]) - viewangle;
+	}
+	else
+	{
+		angle1 = R_PointToAngleEx(viewx, viewy, bspcoord[check[0]], bspcoord[check[1]]) - viewangle;
+		angle2 = R_PointToAngleEx(viewx, viewy, bspcoord[check[2]], bspcoord[check[3]]) - viewangle;
+	}
 
 	if ((signed)angle1 < (signed)angle2)
 	{
@@ -707,7 +727,7 @@ void R_SortPolyObjects(subsector_t *sub)
 		// 03/10/06: only bother if there are actually polys to sort
 		if (numpolys >= 2)
 		{
-			qsort(po_ptrs, numpolys, sizeof(polyobj_t *),
+			qs22j(po_ptrs, numpolys, sizeof(polyobj_t *),
 				R_PolyobjCompare);
 		}
 	}
@@ -810,7 +830,7 @@ static void R_AddPolyObjects(subsector_t *sub)
 	// render polyobjects
 	for (i = 0; i < numpolys; ++i)
 	{
-		qsort(po_ptrs[i]->segs, po_ptrs[i]->segCount, sizeof(seg_t *), R_PolysegCompare);
+		qs22j(po_ptrs[i]->segs, po_ptrs[i]->segCount, sizeof(seg_t *), R_PolysegCompare);
 		for (j = 0; j < po_ptrs[i]->segCount; ++j)
 			R_AddLine(po_ptrs[i]->segs[j]);
 	}
@@ -1293,9 +1313,9 @@ void R_RenderBSPNode(INT32 bspnum)
 {
 	node_t *bsp;
 	INT32 side;
-	
+
 	ps_numbspcalls.value.i++;
-	
+
 	while (!(bspnum & NF_SUBSECTOR))  // Found a subsector?
 	{
 		bsp = &nodes[bspnum];
@@ -1306,7 +1326,6 @@ void R_RenderBSPNode(INT32 bspnum)
 		R_RenderBSPNode(bsp->children[side]);
 
 		// Possibly divide back space.
-
 		if (!R_CheckBBox(bsp->bbox[side^1]))
 			return;
 
@@ -1314,7 +1333,8 @@ void R_RenderBSPNode(INT32 bspnum)
 	}
 
 	// PORTAL CULLING
-	if (portalcullsector) {
+	if (portalcullsector)
+	{
 		sector_t *sect = subsectors[bspnum & ~NF_SUBSECTOR].sector;
 		if (sect != portalcullsector)
 			return;
