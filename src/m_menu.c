@@ -1831,19 +1831,20 @@ static menuitem_t OP_GameOptionsMenu[] =
 {
 	{IT_STRING | IT_SUBMENU, NULL, "Random Item Toggles...",	&OP_MonitorToggleDef,	 10},
 
-	{IT_STRING | IT_CVAR, NULL, "Game Speed",					&cv_kartspeed,			 30},
-	{IT_STRING | IT_CVAR, NULL, "Frantic Items",				&cv_kartfrantic,		 40},
-	{IT_SECRET,           NULL, "Encore Mode",					&cv_kartencore,			 50},
+	{IT_STRING | IT_CVAR, NULL, "Race Game Speed",				&cv_kartspeed,			 30},
+	{IT_STRING | IT_CVAR, NULL, "Battle Game Speed",			&cv_kartbattlespeed, 	 40},
+	{IT_STRING | IT_CVAR, NULL, "Frantic Items",				&cv_kartfrantic,		 50},
+	{IT_SECRET,           NULL, "Encore Mode",					&cv_kartencore,			 60},
 
-	{IT_STRING | IT_CVAR, NULL, "Number of Laps",				&cv_basenumlaps,		 70},
-	{IT_STRING | IT_CVAR, NULL, "Exit Countdown Timer",			&cv_countdowntime,		 80},
+	{IT_STRING | IT_CVAR, NULL, "Number of Laps",				&cv_basenumlaps,		 80},
+	{IT_STRING | IT_CVAR, NULL, "Exit Countdown Timer",			&cv_countdowntime,		 90},
 
-	{IT_STRING | IT_CVAR, NULL, "Time Limit",					&cv_timelimit,			100},
-	{IT_STRING | IT_CVAR, NULL, "Starting Bumpers",				&cv_kartbumpers,		110},
-	{IT_STRING | IT_CVAR, NULL, "Karma Comeback",				&cv_kartcomeback,		120},
+	{IT_STRING | IT_CVAR, NULL, "Time Limit",					&cv_timelimit,			110},
+	{IT_STRING | IT_CVAR, NULL, "Starting Bumpers",				&cv_kartbumpers,		120},
+	{IT_STRING | IT_CVAR, NULL, "Karma Comeback",				&cv_kartcomeback,		130},
 
-	{IT_STRING | IT_CVAR, NULL, "Force Character",				&cv_forceskin,          140},
-	{IT_STRING | IT_CVAR, NULL, "Restrict Character Changes",	&cv_restrictskinchange, 150},
+	{IT_STRING | IT_CVAR, NULL, "Force Character",				&cv_forceskin,          150},
+	{IT_STRING | IT_CVAR, NULL, "Restrict Character Changes",	&cv_restrictskinchange, 160},
 };
 
 static const char* OP_GameTooltips[] =
@@ -7673,7 +7674,7 @@ static void M_Options(INT32 choice)
 	OP_DataOptionsMenu[3].status = (Playing()) ? (IT_GRAYEDOUT) : (IT_STRING|IT_SUBMENU); // Erase data
 #endif
 
-	OP_GameOptionsMenu[3].status =
+	OP_GameOptionsMenu[4].status =
 		(M_SecretUnlocked(SECRET_ENCORE)) ? (IT_CVAR|IT_STRING) : IT_SECRET; // cv_kartencore
 
 	OP_MainDef.prevMenu = currentMenu;

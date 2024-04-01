@@ -670,6 +670,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartcheck);
 	CV_RegisterVar(&cv_kartinvinsfx);
 	CV_RegisterVar(&cv_kartspeed);
+	CV_RegisterVar(&cv_kartbattlespeed);
 	CV_RegisterVar(&cv_kartbumpers);
 	CV_RegisterVar(&cv_kartfrantic);
 	CV_RegisterVar(&cv_kartcomeback);

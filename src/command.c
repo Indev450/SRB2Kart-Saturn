@@ -1646,7 +1646,7 @@ static void CV_SetCVar(consvar_t *var, const char *value, boolean stealth)
 			return;
 		}
 
-		if (var == &cv_kartspeed && !M_SecretUnlocked(SECRET_HARDSPEED))
+		if ((var == &cv_kartspeed || var == &cv_kartbattlespeed) && !M_SecretUnlocked(SECRET_HARDSPEED))
 		{
 			if (!stricmp(value, "Hard") || atoi(value) == 2)
 			{
@@ -1895,7 +1895,7 @@ void CV_AddValue(consvar_t *var, INT32 increment)
 					return;
 				}
 			}
-			else if (var == &cv_kartspeed)
+			else if (var == &cv_kartspeed || var == &cv_kartbattlespeed)
 			{
 				max = (M_SecretUnlocked(SECRET_HARDSPEED) ? 3 : 2);
 			}
