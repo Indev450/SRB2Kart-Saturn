@@ -37,27 +37,32 @@ typedef struct drawitem_s {
 	enum drawitem_e type;
 	fixed_t x;
 	fixed_t y;
-	fixed_t w;
-	fixed_t h;
-	INT32 c;
-	fixed_t scale;
-	fixed_t hscale;
-	fixed_t vscale;
-	patch_t *patch;
-	INT32 flags;
-	UINT16 basecolor;
-	UINT16 outlinecolor;
+	union {
+		INT32 flags;
+		INT32 c;
+	};
+
+	union {
+		fixed_t scale;  // drawScaled
+		fixed_t hscale; // drawStretched
+		fixed_t w;      // drawFill
+		INT32 align;    // drawString
+		INT32 num;      // drawNum, drawPaddedNum, drawPingNum
+		UINT16 color;   // fadeScreen
+	};
+	union {
+		fixed_t vscale; // drawStretched
+		fixed_t h;      // drawFill
+		INT32 digits;   // drawPaddedNum
+		UINT8 strength; // fadeScreen
+	};
+
+	// pointers (and size_t's) last, for potentially better packing
+	union {
+		patch_t *patch;
+		size_t stroffset; // offset into strbuf to get str
+	};
 	const UINT8 *colormap;
-	UINT8 *basecolormap;
-	UINT8 *outlinecolormap;
-	fixed_t sx;
-	fixed_t sy;
-	INT32 num;
-	INT32 digits;
-	size_t stroffset; // offset into strbuf to get str
-	UINT16 color;
-	UINT8 strength;
-	INT32 align;
 } drawitem_t;
 
 // The internal structure of a drawlist.
