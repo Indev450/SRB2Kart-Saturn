@@ -2268,6 +2268,7 @@ void I_StartupGraphics(void)
 		HWD.pfnClearBuffer      = hwSym("ClearBuffer",NULL);
 		HWD.pfnSetTexture       = hwSym("SetTexture",NULL);
 		HWD.pfnUpdateTexture    = hwSym("UpdateTexture",NULL);
+		HWD.pfnDeleteTexture    = hwSym("DeleteTexture",NULL);
 		HWD.pfnReadScreenTexture= hwSym("ReadScreenTexture",NULL);
 		HWD.pfnGClipRect        = hwSym("GClipRect",NULL);
 		HWD.pfnClearMipMapCache = hwSym("ClearMipMapCache",NULL);
