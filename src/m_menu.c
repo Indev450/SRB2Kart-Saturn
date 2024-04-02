@@ -3937,7 +3937,6 @@ boolean M_Responder(event_t *ev)
 		case KEY_BACKSPACE:
 			if ((currentMenu->menuitems[itemOn].status) == IT_CONTROL)
 			{
-				menu_text_input = false; //never use native layout for control setup
 				// detach any keys associated with the game control
 				G_ClearControlKeys(setupcontrols, currentMenu->menuitems[itemOn].alphaKey);
 				S_StartSound(NULL, sfx_shldls);
@@ -12136,6 +12135,7 @@ static void M_DrawControl(void)
 	char tmp[50];
 	INT32 x, y, i, max, cursory = 0, iter;
 	INT32 keys[2];
+	menu_text_input = false; //never use native layout for control setup
 
 	x = currentMenu->x;
 	y = currentMenu->y;
@@ -12252,6 +12252,7 @@ static void M_ChangecontrolResponse(event_t *ev)
 	INT32        control;
 	INT32        found;
 	INT32        ch = ev->data1;
+	menu_text_input = false; //never use native layout for control setup
 
 	// ESCAPE cancels; dummy out PAUSE
 	if (ch != KEY_ESCAPE && ch != KEY_PAUSE)
