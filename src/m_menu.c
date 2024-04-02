@@ -533,6 +533,32 @@ static consvar_t cv_dummylives = {"dummylives", "0", CV_HIDEN, liveslimit_cons_t
 static consvar_t cv_dummycontinues = {"dummycontinues", "0", CV_HIDEN, liveslimit_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 static consvar_t cv_dummystaff = {"dummystaff", "0", CV_HIDEN|CV_CALL, dummystaff_cons_t, Dummystaff_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
+static INT32 M_ShiftChar(INT32 ch)
+{
+	if (I_UseNativeKeyboard())
+		return ch;
+
+	if (cv_keyboardlayout.value == 3)
+	{
+		if (ch >= 32 && ch <= 141)
+		{
+			if (shiftdown)
+				ch = shiftxform[ch];
+			else if (altdown & 0x2)
+				ch = french_altgrxform[ch];
+			else
+				ch = HU_FallBackFrSpecialLetter(ch);
+		}
+	}
+	else
+	{
+		if (shiftdown && ch >= 32 && ch <= 127)
+			ch = shiftxform[ch];
+	}
+
+	return ch;
+}
+
 // ==========================================================================
 // ORGANIZATION START.
 // ==========================================================================
@@ -3300,26 +3326,7 @@ static boolean M_ChangeStringCvar(INT32 choice)
 	char buf[MAXSTRINGLENGTH];
 	size_t len;
 
-	if (!I_UseNativeKeyboard())
-	{
-		if (cv_keyboardlayout.value == 3)
-		{
-			if (choice >= 32 && choice <= 141)
-			{
-				if (shiftdown)
-					choice = shiftxform[choice];
-				else if (altdown & 0x2)
-					choice = french_altgrxform[choice];
-				else
-					choice = HU_FallBackFrSpecialLetter(choice);
-			}
-		}
-		else
-		{
-			if (shiftdown && choice >= 32 && choice <= 127)
-				choice = shiftxform[choice];
-		}
-	}
+	choice = M_ShiftChar(choice);
 
 	switch (choice)
 	{
@@ -3666,26 +3673,7 @@ boolean M_Responder(event_t *ev)
 	if (routine && (currentMenu->menuitems[itemOn].status & IT_TYPE) == IT_KEYHANDLER)
 	{
 		menu_text_input = true;
-		if (!I_UseNativeKeyboard())
-		{
-			if (cv_keyboardlayout.value == 3)
-			{
-				if(ch >= 32 && ch <= 141)
-				{
-					if (shiftdown)
-						ch = shiftxform[ch];
-					else if (altdown & 0x2)
-						ch = french_altgrxform[ch];
-					else
-						ch = HU_FallBackFrSpecialLetter(ch);
-				}
-			}
-			else 
-			{
-				if (shiftdown && ch >= 32 && ch <= 127)
-					ch = shiftxform[ch];
-			}
-		}
+		ch = M_ShiftChar(ch);
 		routine(ch);
 		return true;
 	}
@@ -3725,26 +3713,7 @@ boolean M_Responder(event_t *ev)
 		if ((currentMenu->menuitems[itemOn].status & IT_CVARTYPE) == IT_CV_STRING)
 		{
 			menu_text_input = true;
-			if (!I_UseNativeKeyboard())
-			{
-				if (cv_keyboardlayout.value == 3)
-				{
-					if(ch >= 32 && ch <= 141)
-					{
-						if (shiftdown)
-							ch = shiftxform[ch];
-						else if (altdown & 0x2)
-							ch = french_altgrxform[ch];
-						else
-							ch = HU_FallBackFrSpecialLetter(ch);
-					}
-				}
-				else
-				{
-					if (shiftdown && ch >= 32 && ch <= 127)
-						ch = shiftxform[ch];
-				}
-			}
+			ch = M_ShiftChar(ch);
 			if (M_ChangeStringCvar(ch))
 				return true;
 			else
@@ -6438,26 +6407,7 @@ static void M_AddonAutoLoad(INT32 ch)
 #define len menusearch[0]
 static boolean M_ChangeStringAddons(INT32 choice)
 {
-	if (!I_UseNativeKeyboard())
-	{
-		if (cv_keyboardlayout.value == 3)
-		{
-			if(choice >= 32 && choice <= 141)
-			{
-				if(shiftdown)
-					choice = shiftxform[choice];
-				else if(altdown & 0x2)
-					choice = french_altgrxform[choice];
-				else
-					choice = HU_FallBackFrSpecialLetter(choice);
-			}
-		}
-		else
-		{
-			if (shiftdown && choice >= 32 && choice <= 127)
-				choice = shiftxform[choice];
-		}
-	}
+	choice = M_ShiftChar(choice);
 
 	switch (choice)
 	{
