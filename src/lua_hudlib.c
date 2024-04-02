@@ -1413,7 +1413,7 @@ boolean LUA_HudEnabled(enum hud option)
 }
 
 // Hook for HUD rendering
-void LUAh_GameHUD(player_t *stplayr, huddrawlist_h list)
+void LUAh_GameHUD(huddrawlist_h list)
 {
 	if (!gL || !(hudAvailable & (1<<hudhook_game)))
 		return;
@@ -1434,33 +1434,14 @@ void LUAh_GameHUD(player_t *stplayr, huddrawlist_h list)
 	lua_rawgeti(gL, -2, 1); // HUD[1] = lib_draw
 	I_Assert(lua_istable(gL, -1));
 	lua_remove(gL, -3); // pop HUD
-	LUA_PushUserdata(gL, stplayr, META_PLAYER);
-
-	if (splitscreen > 2 && stplayr == &players[displayplayers[3]])
-	{
-		LUA_PushUserdata(gL, &camera[3], META_CAMERA);
-		camnum = 4;
-	}
-	else if (splitscreen > 1 && stplayr == &players[displayplayers[2]])
-	{
-		LUA_PushUserdata(gL, &camera[2], META_CAMERA);
-		camnum = 3;
-	}
-	else if (splitscreen && stplayr == &players[displayplayers[1]])
-	{
-		LUA_PushUserdata(gL, &camera[1], META_CAMERA);
-		camnum = 2;
-	}
-	else
-	{
-		LUA_PushUserdata(gL, &camera[0], META_CAMERA);
-		camnum = 1;
-	}
+	LUA_PushUserdata(gL, stplyr, META_PLAYER);
+	LUA_PushUserdata(gL, &camera[stplyrnum], META_CAMERA);
+	camnum = stplyrnum + 1;
 
 	lua_pushnil(gL);
 	while (lua_next(gL, -5) != 0) {
 		lua_pushvalue(gL, -5); // graphics library (HUD[1])
-		lua_pushvalue(gL, -5); // stplayr
+		lua_pushvalue(gL, -5); // stplyr
 		lua_pushvalue(gL, -5); // camera
 		LUA_Call(gL, 3, 0, 1);
 	}
