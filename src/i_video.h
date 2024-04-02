@@ -139,4 +139,6 @@ UINT32 I_GetRefreshRate(void);
 
 void RefreshSDLSurface(void);
 
+boolean I_UseNativeKeyboard(void);
+
 #endif
