@@ -41,6 +41,9 @@ enum hud {
 };
 
 extern boolean hud_running;
+extern UINT8 hud_interptag;
+extern UINT32 hud_interpcounter;
+extern boolean hud_interpstring;
 
 boolean LUA_HudEnabled(enum hud option);
 
