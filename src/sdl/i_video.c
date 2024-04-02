@@ -414,7 +414,7 @@ static INT32 GetTypedChar(SDL_Scancode code, SDL_Keysym *sym)
 
 	if (Text_Input_Only)
 	{
-		while (SDL_PollEvent(&next_event) && next_event.type == SDL_TEXTINPUT)
+		if (SDL_PeepEvents(&next_event, 1, SDL_PEEKEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT) == 1 && next_event.type == SDL_TEXTINPUT)
 		{
 			if (next_event.text.text[1] == '\0') // limit to ASCII
 				return next_event.text.text[0];
