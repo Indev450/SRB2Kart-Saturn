@@ -401,6 +401,7 @@ static INT32 Impl_SDL_Scancode_To_Keycode(SDL_Scancode code)
 static INT32 GetTypedChar(SDL_Scancode code, SDL_Keysym *sym)
 {
 	SDL_Event next_event;
+	boolean Text_Input_Only = (chat_on || CON_Ready() || (menu_text_input && menuactive));  //only use this this if on chat or console or the current menu wants inputs from us (except if its the control setup menu ig)
 
 	// Special cases, where we always return a fixed value.
 	switch (sym->sym)
@@ -411,10 +412,13 @@ static INT32 GetTypedChar(SDL_Scancode code, SDL_Keysym *sym)
 			break;
 	}
 
-	while (SDL_PollEvent(&next_event) && next_event.type == SDL_TEXTINPUT)
+	if (Text_Input_Only)
 	{
-		if (next_event.text.text[1] == '\0') // limit to ASCII
-			return next_event.text.text[0];
+		while (SDL_PollEvent(&next_event) && next_event.type == SDL_TEXTINPUT)
+		{
+			if (next_event.text.text[1] == '\0') // limit to ASCII
+				return next_event.text.text[0];
+		}
 	}
 
 	return Impl_SDL_Scancode_To_Keycode(code); //fallback
@@ -813,7 +817,7 @@ static void Impl_HandleKeyboardEvent(SDL_KeyboardEvent evt, Uint32 type)
 		return;
 	}
 
-	if (cv_keyboardlayout.value == 2 && (chat_on || CON_Ready() || (menu_text_input && menuactive))) //only use this this if on chat or console or the current menu wants inputs from us (except if its the control setup menu ig)
+	if (cv_keyboardlayout.value == 2)
 		event.data1 = GetTypedChar(evt.keysym.scancode, &evt.keysym);
 	else if (cv_keyboardlayout.value == 3)
 		event.data1 = Impl_SDL_Keysym_To_Keycode(evt.keysym);
