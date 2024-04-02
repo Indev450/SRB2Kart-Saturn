@@ -196,6 +196,116 @@ static size_t CopyString(huddrawlist_h list, const char* str)
 	}
 }
 
+static void CalcCoords(huddrawlist_h list, drawitem_t *item)
+{
+	if (!(item->flags & V_NOSCALESTART) && cv_uncappedhud.value)
+	{
+		INT32 dupx = vid.dupx;
+		INT32 dupy = vid.dupy;
+
+		item->flags |= V_NOSCALESTART;
+
+		if (item->flags & V_SCALEPATCHMASK) switch ((item->flags & V_SCALEPATCHMASK) >> V_SCALEPATCHSHIFT)
+		{
+			case 1: // V_NOSCALEPATCH
+				dupx = dupy = 1;
+				break;
+			case 2: // V_SMALLSCALEPATCH
+				dupx = vid.smalldupx;
+				dupy = vid.smalldupy;
+				break;
+			case 3: // V_MEDSCALEPATCH
+				dupx = vid.meddupx;
+				dupy = vid.meddupy;
+				break;
+			default:
+				break;
+		}
+
+		// only use one dup, to avoid stretching (har har)
+		dupx = dupy = (dupx < dupy ? dupx : dupy);
+
+		INT32 x = item->x * dupx;
+		INT32 y = item->y * dupy;
+
+		if (vid.width != BASEVIDWIDTH * dupx)
+		{
+			// dupx adjustments pretend that screen width is BASEVIDWIDTH * dupx,
+			// so center this imaginary screen
+			if ((item->flags & (V_HORZSCREEN|V_SNAPTOLEFT)) == (V_HORZSCREEN|V_SNAPTOLEFT))
+				x += (vid.width/2 - (BASEVIDWIDTH/2 * dupx));
+			else if (item->flags & V_SNAPTORIGHT)
+				x += (vid.width - (BASEVIDWIDTH * dupx));
+			else if (!(item->flags & V_SNAPTOLEFT))
+				x += (vid.width - (BASEVIDWIDTH * dupx)) / 2;
+		}
+		if (vid.height != BASEVIDHEIGHT * dupy)
+		{
+			// same thing here
+			if ((item->flags & (V_SPLITSCREEN|V_SNAPTOTOP)) == (V_SPLITSCREEN|V_SNAPTOTOP))
+				y += (vid.height/2 - (BASEVIDHEIGHT/2 * dupy));
+			else if (item->flags & V_SNAPTOBOTTOM)
+				y += (vid.height - (BASEVIDHEIGHT * dupy));
+			else if (!(item->flags & V_SNAPTOTOP))
+				y += (vid.height - (BASEVIDHEIGHT * dupy)) / 2;
+		}
+
+		// need to compensate for dup here
+
+		if (item->align == align_center)
+			x -= (V_StringWidth(&list->strbuf[item->stroffset], item->flags) * (dupx - 1))/2;
+		if (item->align == align_right)
+			x -= V_StringWidth(&list->strbuf[item->stroffset], item->flags) * (dupx - 1);
+		if (item->align == align_thinright)
+			x -= V_ThinStringWidth(&list->strbuf[item->stroffset], item->flags) * (dupx - 1);
+
+		item->x = x;
+		item->y = y;
+	}
+}
+
+static void CalcFillCoords(drawitem_t *item)
+{
+	if (!(item->flags & V_NOSCALESTART) && cv_uncappedhud.value)
+	{
+		INT32 dupx = vid.dupx;
+		INT32 dupy = vid.dupy;
+		INT32 x = item->x * dupx;
+		INT32 y = item->y * dupy;
+		INT32 c = item->c;
+
+		item->flags |= V_NOSCALESTART;
+		item->w *= dupx;
+		item->h *= dupy;
+
+		// Center it if necessary
+		if (vid.width != BASEVIDWIDTH * dupx)
+		{
+			// dupx adjustments pretend that screen width is BASEVIDWIDTH * dupx,
+			// so center this imaginary screen
+			if (c & V_SNAPTORIGHT)
+				x += (vid.width - (BASEVIDWIDTH * dupx));
+			else if (!(c & V_SNAPTOLEFT))
+				x += (vid.width - (BASEVIDWIDTH * dupx)) / 2;
+		}
+		if (vid.height != BASEVIDHEIGHT * dupy)
+		{
+			// same thing here
+			if (c & V_SNAPTOBOTTOM)
+				y += (vid.height - (BASEVIDHEIGHT * dupy));
+			else if (!(c & V_SNAPTOTOP))
+				y += (vid.height - (BASEVIDHEIGHT * dupy)) / 2;
+		}
+		if (c & V_SPLITSCREEN)
+			y += (BASEVIDHEIGHT * dupy)/2;
+		if (c & V_HORZSCREEN)
+			x += (BASEVIDWIDTH * dupx)/2;
+
+		item->x = x;
+		item->y = y;
+	}
+}
+
 // leave bit 0 free for the string mode
 #define INTERP_LATCH 1
 
@@ -346,6 +456,7 @@ void LUA_HUD_AddDrawFill(
 	item->w = w;
 	item->h = h;
 	item->c = c;
+	CalcFillCoords(item);
 }
 
 void LUA_HUD_AddDrawString(
@@ -366,6 +477,7 @@ void LUA_HUD_AddDrawString(
 	item->stroffset = CopyString(list, str);
 	item->flags = flags;
 	item->align = align;
+	CalcCoords(list, item);
 }
 
 void LUA_HUD_AddDrawKartString(
@@ -436,7 +548,7 @@ void LUA_HUD_DrawList(huddrawlist_h list)
 		drawitem_t *olditem = NULL;
 		const char *itemstr = &list->strbuf[item->stroffset];
 
-		if (item->id) {
+		if (item->id && cv_uncappedhud.value) {
 			// find the old one too
 			// this is kinda cursed... we need to check every item
 			// but stop when the first-checked item is reached again
@@ -475,7 +587,10 @@ void LUA_HUD_DrawList(huddrawlist_h list)
 		}
 
 		#define LERP(it) (olditem ? olditem->it + FixedMul(frac, item->it - olditem->it) : item->it)
-		#define LERPS(it) (olditem ? (latchitem ? (latchitem->it + (item->it - latchitem->it)) - (latchitem->it - oldlatchitem->it) : olditem->it) + lerp##it : item->it)
+
+		// half of this could be done when the coordinates are latched... zzzzzz
+		#define LERPS(it) (latchitem ? ((latchitem->it + (item->it - latchitem->it)) - (latchitem->it - oldlatchitem->it)) + lerp##it : (olditem ? olditem->it + lerp##it : item->it))
+		//define LERPS(it) (olditem ? (latchitem ? (latchitem->it + (item->it - latchitem->it)) - (latchitem->it - oldlatchitem->it) : olditem->it) + lerp##it : item->it)
 
 		switch (item->type)
 		{
