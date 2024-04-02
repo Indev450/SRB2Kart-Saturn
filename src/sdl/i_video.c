@@ -413,11 +413,14 @@ static INT32 GetTypedChar(SDL_Scancode code, SDL_Keysym *sym)
 
 	if (SDL_PollEvent(&next_event) && next_event.type == SDL_TEXTINPUT)
 	{
-		if (strlen(next_event.text.text) == 1)
-			return next_event.text.text[0];
+		if (next_event.text.text[1] == '\0') // limit to ASCII
+		{
+			if (strlen(next_event.text.text) == 1)
+				return next_event.text.text[0];
+		}
 	}
 
-	return Impl_SDL_Scancode_To_Keycode(code);
+	return Impl_SDL_Scancode_To_Keycode(code); //fallback
 }
 
 static INT32 Impl_SDL_Keysym_To_Keycode(SDL_Keysym keysym)
