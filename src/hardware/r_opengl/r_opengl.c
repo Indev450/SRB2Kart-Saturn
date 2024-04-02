@@ -2996,6 +2996,8 @@ EXPORT void HWRAPI(DoScreenWipe)(int wipeStart, int wipeEnd)
 		1.0f, 1.0f
 	};
 
+	if (!gl_enable_screen_textures) return;
+
 	// look for power of two that is large enough for the screen
 	while (texsize < screen_width || texsize < screen_height)
 		texsize <<= 1;
@@ -3074,6 +3076,8 @@ EXPORT void HWRAPI(RenderVhsEffect) (fixed_t upbary, fixed_t downbary, UINT8 upd
 		1.0f, 1.0f, 1.0f,
 		1.0f, -1.0f, 1.0f
 	};
+
+	if (!gl_enable_screen_textures) return;
 
 	// look for power of two that is large enough for the screen
 	while (texsize < screen_width || texsize < screen_height)
