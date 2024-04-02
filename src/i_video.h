@@ -137,4 +137,6 @@ void I_EndRead(void);
 
 UINT32 I_GetRefreshRate(void);
 
+boolean I_UseNativeKeyboard(void);
+
 #endif
