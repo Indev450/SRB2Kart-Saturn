@@ -3174,7 +3174,7 @@ EXPORT void HWRAPI(MakeScreenTexture) (int tex)
 	INT32 texsize = 512;
 	boolean firstTime = (screenTextures[tex] == 0);
 	
-	if (!gl_enable_screen_textures || (gl_enable_screen_textures == 1 && tex != (HWD_SCREENTEXTURE_WIPE_START || HWD_SCREENTEXTURE_WIPE_END)))
+	if (!gl_enable_screen_textures)
 		return;
 
 	// look for power of two that is large enough for the screen
