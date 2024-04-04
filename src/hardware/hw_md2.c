@@ -70,7 +70,7 @@
 #endif
 
 #ifndef errno
-#include "errno.h"
+#include <errno.h>
 #endif
 
 md2_t md2_models[NUMSPRITES];
