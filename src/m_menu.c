@@ -321,7 +321,11 @@ static void M_ChangeControl(INT32 choice);
 static void M_ResetControls(INT32 choice);
 
 // Video & Sound
+#ifdef OLDGAMMA
+menu_t OP_VideoOptionsDef, OP_VideoModeDef, OP_ExpOptionsDef;
+#else
 menu_t OP_VideoOptionsDef, OP_VideoModeDef, OP_ExpOptionsDef, OP_ColorOptionsDef;
+#endif
 #ifdef HWRENDER
 menu_t OP_OpenGLOptionsDef;
 #endif
@@ -419,7 +423,9 @@ static void M_DrawControl(void);
 static void M_DrawVideoMenu(void);
 static void M_DrawHUDOptions(void);
 static void M_DrawVideoMode(void);
+#ifndef OLDGAMMA
 static void M_DrawColorMenu(void);
+#endif
 static void M_DrawMonitorToggles(void);
 static void M_DrawMPMainMenu(void);
 #ifndef NONET
@@ -1327,6 +1333,15 @@ static const char* OP_MouseTooltips[] =
 
 static menuitem_t OP_VideoOptionsMenu[] =
 {
+#ifdef OLDGAMMA
+	{IT_STRING | IT_CALL,	NULL,	"Set Resolution...",	M_VideoModeMenu,		  20},
+#if defined (__unix__) || defined (UNIXCOMMON) || defined (HAVE_SDL)
+	{IT_STRING|IT_CVAR,		NULL,	"Fullscreen",			&cv_fullscreen,			  30},
+#endif
+
+	{IT_STRING | IT_CVAR | IT_CV_SLIDER,
+							NULL,	"Gamma",			&cv_globalgamma,		  	  40},
+#else
 	{IT_STRING | IT_CALL,	NULL,	"Set Resolution...",	M_VideoModeMenu,		  10},
 #if defined (__unix__) || defined (UNIXCOMMON) || defined (HAVE_SDL)
 	{IT_STRING|IT_CVAR,		NULL,	"Fullscreen",			&cv_fullscreen,			  20},
@@ -1338,7 +1353,7 @@ static menuitem_t OP_VideoOptionsMenu[] =
 	                        NULL, 	"Saturation",      		&cv_globalsaturation ,    40},
 							
 	{IT_SUBMENU|IT_STRING, NULL, "Advanced Color Settings...", &OP_ColorOptionsDef,   50},
-
+#endif // OLDGAMMA
 	{IT_STRING | IT_CVAR,	NULL,	"Draw Distance",		&cv_drawdist,			  65},
 	{IT_STRING | IT_CVAR,	NULL,	"Weather Draw Distance",&cv_drawdist_precip,	  75},
 	{IT_STRING | IT_CVAR,	NULL,	"Field of View",		&cv_fov,				  95},
@@ -1362,8 +1377,10 @@ static const char* OP_VideoTooltips[] =
 	"Enable fullscreen.",
 #endif
 	"Gamma (brightness) of the game.",
+#ifndef OLDGAMMA
 	"Saturation of the game.",
 	"Advanced color settings of the game.",
+#endif
 	"How far away objects are drawn.",
 	"How far away weather is drawn.",
 	"Player field of view.",
@@ -1386,8 +1403,10 @@ enum
 	op_video_fullscreen,
 #endif
 	op_video_gamma,
+#ifndef OLDGAMMA
 	op_video_sat,
 	op_video_color,
+#endif
 	op_video_dd,
 	op_video_wdd,
 	op_video_fov,
@@ -1407,6 +1426,7 @@ static menuitem_t OP_VideoModeMenu[] =
 	{IT_KEYHANDLER | IT_NOTHING, NULL, "", M_HandleVideoMode, '\0'},     // dummy menuitem for the control func
 };
 
+#ifndef OLDGAMMA
 static menuitem_t OP_ColorOptionsMenu[] =
 {
 	{IT_STRING | IT_CALL, NULL, "Reset all", M_ResetCvars, 0},
@@ -1447,6 +1467,7 @@ static menuitem_t OP_ColorOptionsMenu[] =
 	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Saturation",   &cv_msaturation, 145},
 	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Brightness",   &cv_mgamma,      150},
 };
+#endif
 
 static menuitem_t OP_ExpOptionsMenu[] =
 {
@@ -2837,7 +2858,7 @@ menu_t OP_VideoModeDef =
 	NULL,
 	{NULL}
 };
-
+#ifndef OLDGAMMA
 menu_t OP_ColorOptionsDef =
 {
 	"M_VIDEO",
@@ -2850,7 +2871,7 @@ menu_t OP_ColorOptionsDef =
 	NULL,
 	{NULL}
 };
-
+#endif
 menu_t OP_SoundOptionsDef =
 {
 	"M_SOUND",
@@ -12724,7 +12745,7 @@ static void M_DrawVideoMode(void)
 	V_DrawScaledPatch(i - 8, j, 0,
 		W_CachePatchName("M_CURSOR", PU_CACHE));
 }
-
+#ifndef OLDGAMMA
 // Just M_DrawGenericScrollMenu but showing a backing behind the headers.
 static void M_DrawColorMenu(void)
 {
@@ -12835,7 +12856,7 @@ static void M_DrawColorMenu(void)
 	V_DrawScaledPatch(currentMenu->x - 24, cursory, 0,
 		W_CachePatchName("M_CURSOR", PU_CACHE));
 }
-
+#endif
 
 // special menuitem key handler for video mode list
 static void M_HandleVideoMode(INT32 ch)

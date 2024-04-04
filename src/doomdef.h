@@ -559,7 +559,8 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 // Compile them at your own risk!
 
 /// Undefine to use the new method of Gamma correction see colour cube in v_video.c
-#define BACKWARDSCOMPATCORRECTION
+#define OLDGAMMA
+//#define BACKWARDSCOMPATCORRECTION
 
 ///	Allows the use of devmode in multiplayer. AKA "fishcake"
 //#define NETGAME_DEVMODE

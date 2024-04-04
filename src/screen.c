@@ -195,6 +195,7 @@ void SCR_Startup(void)
 	CV_RegisterVar(&cv_constextsize);
 
 	CV_RegisterVar(&cv_globalgamma);
+#ifndef OLDGAMMA
 	CV_RegisterVar(&cv_globalsaturation);
 
 	CV_RegisterVar(&cv_rhue);
@@ -217,7 +218,7 @@ void SCR_Startup(void)
 	CV_RegisterVar(&cv_csaturation);
 	CV_RegisterVar(&cv_bsaturation);
 	CV_RegisterVar(&cv_msaturation);
-
+#endif
 	V_SetPalette(0);
 }
 
