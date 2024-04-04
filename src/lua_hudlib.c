@@ -32,9 +32,12 @@
 #define HUDONLY if (!hud_running) return luaL_error(L, "HUD rendering code should not be called outside of rendering hooks!");
 
 boolean hud_running = false;
+
+boolean hud_interpolate = false;
 UINT8 hud_interptag = 0;
 UINT32 hud_interpcounter = 0;
 boolean hud_interpstring = false;
+boolean hud_interplatch = false;
 static UINT8 hud_enabled[(hud_MAX/8)+1];
 
 static UINT8 hudAvailable; // hud hooks field
@@ -1184,14 +1187,35 @@ static int libd_getDrawInfo(lua_State *L)
 static int libd_interpolate(lua_State *L)
 {
 	HUDONLY
-	hud_interptag = luaL_checkinteger(L, 1);
+
+	// do type checking even if interpolation is disabled
+	boolean newinterpolate;
+	UINT8 newtag;
+
+	if (lua_isnumber(L, 1))
+	{
+		newinterpolate = true;
+		newtag = luaL_checkinteger(L, 1);
+	}
+	else
+	{
+		newinterpolate = luaL_checkboolean(L, 1);
+		newtag = 0;
+	}
+
+	if (!cv_uncappedhud.value)
+		return 0;
+
+	hud_interpolate = newinterpolate;
+	hud_interptag = newtag;
+
 	return 0;
 }
 
 static int libd_interpString(lua_State *L)
 {
 	HUDONLY
-	hud_interpstring = luaL_checkboolean(L, 1);
+	hud_interpstring = hud_interplatch = luaL_checkboolean(L, 1);
 	return 0;
 }
 
@@ -1460,7 +1484,7 @@ void LUAh_GameHUD(huddrawlist_h list)
 	hud_interpcounter = 0;
 	lua_pushnil(gL);
 	while (lua_next(gL, -5) != 0) {
-		hud_interptag = 0;
+		hud_interpolate = hud_interpstring = hud_interplatch = false;
 		hud_interpcounter++;
 		lua_pushvalue(gL, -5); // graphics library (HUD[1])
 		lua_pushvalue(gL, -5); // stplyr
@@ -1498,7 +1522,7 @@ void LUAh_ScoresHUD(huddrawlist_h list)
 	lua_pushnil(gL);
 	hud_interpcounter = 0;
 	while (lua_next(gL, -3) != 0) {
-		hud_interptag = 0;
+		hud_interpolate = hud_interpstring = hud_interplatch = false;
 		hud_interpcounter++;
 		lua_pushvalue(gL, -3); // graphics library (HUD[1])
 		LUA_Call(gL, 1, 0, 1);
@@ -1534,7 +1558,7 @@ void LUAh_IntermissionHUD(huddrawlist_h list)
 	lua_pushnil(gL);
 	hud_interpcounter = 0;
 	while (lua_next(gL, -3) != 0) {
-		hud_interptag = 0;
+		hud_interpolate = hud_interpstring = hud_interplatch = false;
 		hud_interpcounter++;
 		lua_pushvalue(gL, -3); // graphics library (HUD[1])
 		LUA_Call(gL, 1, 0, 1);
@@ -1570,7 +1594,7 @@ void LUAh_VoteHUD(huddrawlist_h list)
 	lua_pushnil(gL);
 	hud_interpcounter = 0;
 	while (lua_next(gL, -3) != 0) {
-		hud_interptag = 0;
+		hud_interpolate = hud_interpstring = hud_interplatch = false;
 		hud_interpcounter++;
 		lua_pushvalue(gL, -3); // graphics library (HUD[1])
 		LUA_Call(gL, 1, 0, 1);

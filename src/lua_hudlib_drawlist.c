@@ -306,13 +306,27 @@ static void CalcFillCoords(drawitem_t *item)
 	}
 }
 
-// leave bit 0 free for the string mode
 #define INTERP_LATCH 1
+#define INTERP_STRING 2
 
-#define GETITEMID \
-    item->id = hud_interptag \
-    ? (((UINT64)gL->savedpc << 32) | (hud_interpcounter << 9) | (hud_interptag << 1) | (hud_interpstring ? INTERP_LATCH : 0)) \
-    : 0;
+static UINT64 GetItemId(void)
+{
+	if (!hud_interpolate)
+		return 0;
+
+	// leave bits 0 and 1 free for the string mode
+	UINT64 id = ((UINT64)gL->savedpc << 32) | (hud_interpcounter << 10) | (hud_interptag << 2);
+
+	if (hud_interplatch)
+	{
+		id |= INTERP_LATCH;
+		hud_interplatch = false;
+	}
+	if (hud_interpstring)
+		id |= INTERP_STRING;
+
+	return id;
+}
 
 void LUA_HUD_AddDraw(
 	huddrawlist_h list,
@@ -325,7 +339,7 @@ void LUA_HUD_AddDraw(
 {
 	size_t i = AllocateDrawItem(list);
 	drawitem_t *item = &list->items[i];
-	GETITEMID
+	item->id = GetItemId();
 	item->type = DI_Draw;
 	item->x = x << FRACBITS;
 	item->y = y << FRACBITS;
@@ -346,7 +360,7 @@ void LUA_HUD_AddDrawScaled(
 {
 	size_t i = AllocateDrawItem(list);
 	drawitem_t *item = &list->items[i];
-	GETITEMID
+	item->id = GetItemId();
 	item->type = DI_DrawScaled;
 	item->x = x;
 	item->y = y;
@@ -369,7 +383,7 @@ void LUA_HUD_AddDrawStretched(
 {
 	size_t i = AllocateDrawItem(list);
 	drawitem_t *item = &list->items[i];
-	GETITEMID
+	item->id = GetItemId();
 	item->type = DI_DrawStretched;
 	item->x = x;
 	item->y = y;
@@ -390,7 +404,7 @@ void LUA_HUD_AddDrawNum(
 {
 	size_t i = AllocateDrawItem(list);
 	drawitem_t *item = &list->items[i];
-	GETITEMID
+	item->id = GetItemId();
 	item->type = DI_DrawNum;
 	item->x = x;
 	item->y = y;
@@ -409,7 +423,7 @@ void LUA_HUD_AddDrawPaddedNum(
 {
 	size_t i = AllocateDrawItem(list);
 	drawitem_t *item = &list->items[i];
-	GETITEMID
+	item->id = GetItemId();
 	item->type = DI_DrawPaddedNum;
 	item->x = x;
 	item->y = y;
@@ -429,7 +443,7 @@ void LUA_HUD_AddDrawPingNum(
 {
 	size_t i = AllocateDrawItem(list);
 	drawitem_t *item = &list->items[i];
-	GETITEMID
+	item->id = GetItemId();
 	item->type = DI_DrawPingNum;
 	item->x = x;
 	item->y = y;
@@ -449,7 +463,7 @@ void LUA_HUD_AddDrawFill(
 {
 	size_t i = AllocateDrawItem(list);
 	drawitem_t *item = &list->items[i];
-	GETITEMID
+	item->id = GetItemId();
 	item->type = DI_DrawFill;
 	item->x = x;
 	item->y = y;
@@ -470,7 +484,7 @@ void LUA_HUD_AddDrawString(
 {
 	size_t i = AllocateDrawItem(list);
 	drawitem_t *item = &list->items[i];
-	GETITEMID
+	item->id = GetItemId();
 	item->type = DI_DrawString;
 	item->x = x;
 	item->y = y;
@@ -490,7 +504,7 @@ void LUA_HUD_AddDrawKartString(
 {
 	size_t i = AllocateDrawItem(list);
 	drawitem_t *item = &list->items[i];
-	GETITEMID
+	item->id = GetItemId();
 	item->type = DI_DrawKartString;
 	item->x = x;
 	item->y = y;
@@ -508,7 +522,7 @@ void LUA_HUD_AddDrawLevelTitle(
 {
 	size_t i = AllocateDrawItem(list);
 	drawitem_t *item = &list->items[i];
-	GETITEMID
+	item->id = GetItemId();
 	item->type = DI_DrawLevelTitle;
 	item->x = x;
 	item->y = y;
@@ -524,6 +538,8 @@ void LUA_HUD_AddFadeScreen(
 {
 	size_t i = AllocateDrawItem(list);
 	drawitem_t *item = &list->items[i];
+	// nothing to interpolate here
+	item->id = 0;
 	item->type = DI_FadeScreen;
 	item->color = color;
 	item->strength = strength;
@@ -548,7 +564,7 @@ void LUA_HUD_DrawList(huddrawlist_h list)
 		drawitem_t *olditem = NULL;
 		const char *itemstr = &list->strbuf[item->stroffset];
 
-		if (item->id && cv_uncappedhud.value) {
+		if (item->id) {
 			// find the old one too
 			// this is kinda cursed... we need to check every item
 			// but stop when the first-checked item is reached again
@@ -568,13 +584,11 @@ void LUA_HUD_DrawList(huddrawlist_h list)
 					// gotcha!
 					olditem = old;
 					if (item->id & INTERP_LATCH) {
-						if (!latchitem) {
-							lerpx = FixedMul(frac, item->x - olditem->x);
-							lerpy = FixedMul(frac, item->y - olditem->y);
-							latchitem = item;
-							oldlatchitem = olditem;
-						}
-					} else {
+						lerpx = FixedMul(frac, item->x - olditem->x);
+						lerpy = FixedMul(frac, item->y - olditem->y);
+						latchitem = item;
+						oldlatchitem = olditem;
+					} else if (!(item->id & INTERP_STRING)) {
 						lerpx = FixedMul(frac, item->x - olditem->x);
 						lerpy = FixedMul(frac, item->y - olditem->y);
 						latchitem = NULL;
@@ -584,6 +598,9 @@ void LUA_HUD_DrawList(huddrawlist_h list)
 				if (j == stop)
 					break;
 			}
+		} else {
+			lerpx = lerpy = 0;
+			latchitem = NULL;
 		}
 
 		#define LERP(it) (olditem ? olditem->it + FixedMul(frac, item->it - olditem->it) : item->it)
