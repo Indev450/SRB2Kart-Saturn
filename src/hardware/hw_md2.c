@@ -402,7 +402,7 @@ static void md2_loadTexture(md2_t *model)
 		grpatch->height = (INT16)h;
 		grpatch->mipmap->width = (UINT16)w;
 		grpatch->mipmap->height = (UINT16)h;
-#ifndef OLDGAMMA	
+		
 		// for palette rendering, color cube is applied in post-processing instead of here
 		if (!HWR_ShouldUsePaletteRendering())
 		{
@@ -417,7 +417,6 @@ static void md2_loadTexture(md2_t *model)
 				image++;
 			}
 		}
-#endif
 	}
 	HWD.pfnSetTexture(grpatch->mipmap);
 	HWR_UnlockCachedPatch(grpatch);
