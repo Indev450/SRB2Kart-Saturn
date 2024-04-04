@@ -209,13 +209,18 @@ void D_SetupProtocol(void)
 	if (result) 
 	{
 		if (strcmp(buffer, "no") == 0)
-			return;
+        {
+            fclose(fp);
+            return;
+        }
 		else if (strcmp(buffer, exe_path) != 0)
 		{
 			// overwrite
+			fclose(fp);
 			fp = fopen(protocolfile, "w");
 			RegisterProtocols(exe_path);
 			fprintf(fp, "%s", exe_path);
+			fclose(fp);
 			return;
 		}
 	}
