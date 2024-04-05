@@ -612,7 +612,7 @@ static PFNglGetUniformLocation pglGetUniformLocation;
 static boolean gl_shadersenabled = false;
 static INT32 gl_allowshaders = 0;
 
-static INT32 gl_enable_screen_textures = 1;
+static INT32 gl_enable_screen_textures = 2;
 
 static GLint gl_portal_stencil_level = 0;
 
@@ -2838,7 +2838,8 @@ EXPORT void HWRAPI(PostImgRedraw) (float points[SCREENVERTS][SCREENVERTS][2])
 		16.0f, -16.0f, 6.0f
 	};
 	
-	if (!gl_enable_screen_textures) return;
+	if (gl_enable_screen_textures != 2) 
+		return;
 
 	// look for power of two that is large enough for the screen
 	while (texsize < screen_width || texsize < screen_height)
@@ -2933,7 +2934,8 @@ EXPORT void HWRAPI(DrawScreenTexture)(int tex, FSurfaceInfo *surf, FBITFIELD pol
 
 	float fix[8];
 	
-	if (!gl_enable_screen_textures) return;
+	if (gl_enable_screen_textures != 2) 
+		return;
 
 	// look for power of two that is large enough for the screen
 	while (texsize < screen_width || texsize < screen_height)
@@ -2995,6 +2997,9 @@ EXPORT void HWRAPI(DoScreenWipe)(int wipeStart, int wipeEnd)
 		1.0f, 0.0f,
 		1.0f, 1.0f
 	};
+
+	if (!gl_enable_screen_textures) 
+		return;
 
 	// look for power of two that is large enough for the screen
 	while (texsize < screen_width || texsize < screen_height)
@@ -3074,6 +3079,9 @@ EXPORT void HWRAPI(RenderVhsEffect) (fixed_t upbary, fixed_t downbary, UINT8 upd
 		1.0f, 1.0f, 1.0f,
 		1.0f, -1.0f, 1.0f
 	};
+
+	if (gl_enable_screen_textures != 2) 
+		return;
 
 	// look for power of two that is large enough for the screen
 	while (texsize < screen_width || texsize < screen_height)
@@ -3166,7 +3174,8 @@ EXPORT void HWRAPI(MakeScreenTexture) (int tex)
 	INT32 texsize = 512;
 	boolean firstTime = (screenTextures[tex] == 0);
 	
-	if (!gl_enable_screen_textures) return;
+	if (!gl_enable_screen_textures)
+		return;
 
 	// look for power of two that is large enough for the screen
 	while (texsize < screen_width || texsize < screen_height)
@@ -3202,7 +3211,8 @@ EXPORT void HWRAPI(DrawScreenFinalTexture)(int tex, INT32 width, INT32 height)
 	float off[12];
 	float fix[8];
 	
-	if (!gl_enable_screen_textures) return;
+	if (gl_enable_screen_textures != 2)
+		return;
 
 	// look for power of two that is large enough for the screen
 	while (texsize < screen_width || texsize < screen_height)

@@ -136,7 +136,8 @@ static INT32 current_bsp_culling_distance = 0;
 //  - water and heat wave effects
 //  - intermission background
 //  - full screen scaling (use native resolution or windowed mode to avoid this)
-consvar_t cv_grscreentextures = {"gr_screentextures", "On", CV_CALL|CV_SAVE, CV_OnOff,
+static CV_PossibleValue_t grscreentextures_cons_t[] = {{0, "Off"}, {1, "Wipes Only"}, {2, "All"}, {0, NULL}};
+consvar_t cv_grscreentextures = {"gr_screentextures", "All", CV_CALL|CV_SAVE, grscreentextures_cons_t,
                                  CV_screentextures_ONChange, 0, NULL, NULL, 0, 0, NULL};
 
 static CV_PossibleValue_t grshaders_cons_t[] = {{0, "Off"}, {1, "On"}, {2, "Ignore custom shaders"}, {0, NULL}};
