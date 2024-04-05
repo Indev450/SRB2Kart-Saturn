@@ -63,7 +63,6 @@ enum
 	PU_HWRCACHE_UNLOCKED     = 102, // 'unlocked' PU_HWRCACHE memory:
 									// 'second-level' cache for graphics
                                     // stored in hardware format and downloaded as needed
-	PU_HWRPATCHINFO_UNLOCKED = 103, // 'unlocked' PU_HWRMODELTEXTURE memory
 };
 
 //
