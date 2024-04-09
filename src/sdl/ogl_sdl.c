@@ -42,6 +42,7 @@
 #include "../i_system.h"
 #include "hwsym_sdl.h"
 #include "../m_argv.h"
+#include "../i_video.h"
 
 #ifdef DEBUG_TO_FILE
 #include <stdarg.h>
@@ -195,7 +196,7 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 	RenderToFramebuffer = FrameBufferEnabled;
 	GLFramebuffer_Disable();
 
-	if (RenderToFramebuffer)
+	if (RenderToFramebuffer && downsample)
 		GLFramebuffer_Enable();
 
 	HWR_Startup();
@@ -236,7 +237,7 @@ void OglSdlFinishUpdate(boolean waitvbl)
 	
 	HWR_DrawScreenFinalTexture(sdlw, sdlh);
 	
-	if (RenderToFramebuffer)
+	if (RenderToFramebuffer && downsample)
 		GLFramebuffer_Enable();
 
 	SDL_GL_SwapWindow(window);
