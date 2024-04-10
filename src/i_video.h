@@ -137,11 +137,12 @@ void I_EndRead(void);
 
 UINT32 I_GetRefreshRate(void);
 
-void RefreshSDLSurface(void);
-
 boolean I_UseNativeKeyboard(void);
 
+#ifdef HWRENDER
 void I_DownSample(void);
+void RefreshSDLSurface(void);
 extern boolean downsample;
+#endif
 
 #endif
