@@ -759,10 +759,6 @@ void I_DownSample(void)
 	SDL_DisplayMode curmode;
 	if (SDL_GetCurrentDisplayMode(currentDisplayIndex, &curmode) == 0)
 	{
-		CONS_Printf(" Width: %d\n", curmode.w);
-		CONS_Printf(" Height: %d\n", curmode.h);
-		CONS_Printf(" Refresh Rate: %d Hz\n", curmode.refresh_rate);
-		CONS_Printf(" Display Index: %d\n", currentDisplayIndex);
 		if (cv_grframebuffer.value && ((vid.width > curmode.w) || (vid.height > curmode.h))) //framebuffer downsampler thinge
 		{
 			downsample = true;
