@@ -220,6 +220,7 @@ boolean downsample = false;
 #ifdef HWRENDER
 void RefreshSDLSurface(void)
 {
+	I_DownSample();
 	OglSdlSurface(vid.width, vid.height);
 }
 #endif
