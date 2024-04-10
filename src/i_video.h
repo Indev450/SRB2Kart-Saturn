@@ -141,7 +141,12 @@ void RefreshSDLSurface(void);
 
 boolean I_UseNativeKeyboard(void);
 
+#ifdef HWRENDER
+#ifdef GL_VERSION_3_0
+void RefreshSDLSurface(void);
 void I_DownSample(void);
 extern boolean downsample;
+#endif
+#endif
 
 #endif

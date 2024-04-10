@@ -104,6 +104,7 @@ static PFNglEnableClientState pglEnableClientState;
 #endif
 #endif
 
+#ifdef GL_VERSION_3_0
 void GLFramebuffer_Generate(void);
 void GLFramebuffer_Delete(void);
 
@@ -115,6 +116,7 @@ void GLFramebuffer_Disable(void);
 
 extern GLuint FramebufferObject, FramebufferTexture, RenderbufferObject;
 extern GLboolean FrameBufferEnabled, RenderToFramebuffer;
+#endif
 
 // ==========================================================================
 //                                                                     GLOBAL
