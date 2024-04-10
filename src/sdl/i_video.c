@@ -216,11 +216,13 @@ static SDL_bool Impl_CreateWindow(SDL_bool fullscreen);
 static void Impl_SetWindowIcon(void);
 
 #ifdef HWRENDER
+#ifdef GL_VERSION_3_0
 boolean downsample = false;
 void RefreshSDLSurface(void)
 {
 	OglSdlSurface(vid.width, vid.height);
 }
+#endif
 #endif
 
 static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen)
@@ -745,6 +747,7 @@ static INT32 SDLJoyAxis(const Sint16 axis, evtype_t which)
 }
 
 #ifdef HWRENDER
+#ifdef GL_VERSION_3_0
 void I_DownSample(void)
 {
 	if (!cv_grframebuffer.value)
@@ -770,6 +773,7 @@ void I_DownSample(void)
 			downsample = false; // couldnt get display info so turn the thing off
 }
 #endif
+#endif
 
 static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 {
@@ -777,7 +781,9 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 	static SDL_bool mousefocus = SDL_TRUE;
 	static SDL_bool kbfocus = SDL_TRUE;
 #ifdef HWRENDER
+#ifdef GL_VERSION_3_0
 	static SDL_bool windowmoved = SDL_FALSE;
+#endif
 #endif
 
 	switch (evt.event)
@@ -799,9 +805,11 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 		case SDL_WINDOWEVENT_MAXIMIZED:
 			break;
 #ifdef HWRENDER
+#ifdef GL_VERSION_3_0
 		case SDL_WINDOWEVENT_MOVED:
 			windowmoved = SDL_TRUE;
             break;
+#endif
 #endif
 	}
 
@@ -843,10 +851,12 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 	}
 
 #ifdef HWRENDER
+#ifdef GL_VERSION_3_0
 	if (windowmoved)
 	{
 		I_DownSample();
 	}
+#endif
 #endif
 }
 
@@ -1927,7 +1937,9 @@ INT32 VID_SetMode(INT32 modeNum)
 	//Impl_SetWindowName("SRB2Kart "VERSIONSTRING);
 
 #ifdef HWRENDER
+#ifdef GL_VERSION_3_0
 	I_DownSample();
+#endif
 #endif
 
 	SDLSetMode(vid.width, vid.height, USE_FULLSCREEN);
