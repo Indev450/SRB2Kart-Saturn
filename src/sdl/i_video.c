@@ -208,7 +208,6 @@ boolean downsample = false;
 #ifdef HWRENDER
 void RefreshSDLSurface(void)
 {
-	I_DownSample();
 	OglSdlSurface(vid.width, vid.height);
 }
 #endif
@@ -781,8 +780,8 @@ void I_DownSample(void)
 	}
 
 	int currentDisplayIndex = SDL_GetWindowDisplayIndex(window);
-
 	SDL_DisplayMode curmode;
+
 	if (SDL_GetCurrentDisplayMode(currentDisplayIndex, &curmode) == 0)
 	{
 		if (cv_grframebuffer.value && ((vid.width > curmode.w) || (vid.height > curmode.h))) //framebuffer downsampler thinge

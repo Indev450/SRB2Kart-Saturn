@@ -168,6 +168,7 @@ static void CV_grframebuffer_OnChange(void)
 {
 	ONLY_IF_GL_LOADED
 	HWD.pfnSetSpecialState(HWD_SET_FRAMEBUFFER, cv_grframebuffer.value);
+	I_DownSample();
 	RefreshSDLSurface();
 }
 
