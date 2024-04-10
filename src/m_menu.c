@@ -533,6 +533,32 @@ static consvar_t cv_dummylives = {"dummylives", "0", CV_HIDEN, liveslimit_cons_t
 static consvar_t cv_dummycontinues = {"dummycontinues", "0", CV_HIDEN, liveslimit_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 static consvar_t cv_dummystaff = {"dummystaff", "0", CV_HIDEN|CV_CALL, dummystaff_cons_t, Dummystaff_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
+static INT32 M_ShiftChar(INT32 ch)
+{
+	if (I_UseNativeKeyboard())
+		return ch;
+
+	if (cv_keyboardlayout.value == 3)
+	{
+		if (ch >= 32 && ch <= 141)
+		{
+			if (shiftdown)
+				ch = shiftxform[ch];
+			else if (altdown & 0x2)
+				ch = french_altgrxform[ch];
+			else
+				ch = HU_FallBackFrSpecialLetter(ch);
+		}
+	}
+	else
+	{
+		if (shiftdown && ch >= 32 && ch <= 127)
+			ch = shiftxform[ch];
+	}
+
+	return ch;
+}
+
 // ==========================================================================
 // ORGANIZATION START.
 // ==========================================================================
@@ -2011,7 +2037,7 @@ static menuitem_t OP_SaturnMenu[] =
 	{IT_STRING | IT_CVAR, NULL, "Show Localskin Menus", 				&cv_showlocalskinmenus, 	90},
 	{IT_STRING | IT_CVAR, NULL, "Uppercase Menu",						&cv_menucaps,   		    95},
 
-	{IT_STRING | IT_CVAR, NULL, "Native Keyboard Layout",				&cv_nativekeyboard,   	   105},
+	{IT_STRING | IT_CVAR, NULL, "Keyboard Layout",						&cv_keyboardlayout,   	   105},
 
 	{IT_STRING | IT_CVAR, NULL, "Less Midnight Channel Flicker", 		&cv_lessflicker, 		   115},
 
@@ -2043,7 +2069,7 @@ static const char* OP_SaturnTooltips[] =
 	"Show the big Cecho Messages.",
 	"Show Localskin Menus.",
 	"Force menu to only use uppercase.",
-	"Use your native Keyboard Layout for Text Input\nThis does not affect gameplay!.",
+	"Use your desired Keyboard Layout for Text Input\nthis is either the Default, Native or Azerty\nNative does not affect Gameplay only Text!",
 	"Disables the flicker effect on Midnight Channel.",
 	"Nametag Options.",
 	"Driftgauge Options.",
@@ -3300,8 +3326,7 @@ static boolean M_ChangeStringCvar(INT32 choice)
 	char buf[MAXSTRINGLENGTH];
 	size_t len;
 
-	if (shiftdown && choice >= 32 && choice <= 127)
-		choice = shiftxform[choice];
+	choice = M_ShiftChar(choice);
 
 	switch (choice)
 	{
@@ -3323,7 +3348,7 @@ static boolean M_ChangeStringCvar(INT32 choice)
 			}
 			return true;
 		default:
-			if (choice >= 32 && choice <= 127)
+			if ((cv_keyboardlayout.value != 3 && choice >= 32 && choice <= 127) || (cv_keyboardlayout.value == 3 && choice >= 32 && choice <= 141))
 			{
 				len = strlen(cv->string);
 				if (len < MAXSTRINGLENGTH - 1)
@@ -3648,8 +3673,7 @@ boolean M_Responder(event_t *ev)
 	if (routine && (currentMenu->menuitems[itemOn].status & IT_TYPE) == IT_KEYHANDLER)
 	{
 		menu_text_input = true;
-		if (shiftdown && ch >= 32 && ch <= 127)
-			ch = shiftxform[ch];
+		ch = M_ShiftChar(ch);
 		routine(ch);
 		return true;
 	}
@@ -3689,8 +3713,7 @@ boolean M_Responder(event_t *ev)
 		if ((currentMenu->menuitems[itemOn].status & IT_CVARTYPE) == IT_CV_STRING)
 		{
 			menu_text_input = true;
-			if (shiftdown && ch >= 32 && ch <= 127)
-				ch = shiftxform[ch];
+			ch = M_ShiftChar(ch);
 			if (M_ChangeStringCvar(ch))
 				return true;
 			else
@@ -3883,7 +3906,6 @@ boolean M_Responder(event_t *ev)
 		case KEY_BACKSPACE:
 			if ((currentMenu->menuitems[itemOn].status) == IT_CONTROL)
 			{
-				menu_text_input = false; //never use native layout for control setup
 				// detach any keys associated with the game control
 				G_ClearControlKeys(setupcontrols, currentMenu->menuitems[itemOn].alphaKey);
 				S_StartSound(NULL, sfx_shldls);
@@ -6385,8 +6407,7 @@ static void M_AddonAutoLoad(INT32 ch)
 #define len menusearch[0]
 static boolean M_ChangeStringAddons(INT32 choice)
 {
-	if (shiftdown && choice >= 32 && choice <= 127)
-		choice = shiftxform[choice];
+	choice = M_ShiftChar(choice);
 
 	switch (choice)
 	{
@@ -8945,6 +8966,8 @@ static void M_ChooseTimeAttack(INT32 choice)
 		G_RecordDemo(nameofdemo);
 
 	G_DeferedInitNew(false, G_BuildMapName(cv_nextmap.value), (UINT8)(cv_chooseskin.value-1), 0, false);
+
+	free(gpath);
 }
 
 static void M_HandleStaffReplay(INT32 choice)
@@ -12060,6 +12083,7 @@ static void M_DrawControl(void)
 	char tmp[50];
 	INT32 x, y, i, max, cursory = 0, iter;
 	INT32 keys[2];
+	menu_text_input = false; //never use native layout for control setup
 
 	x = currentMenu->x;
 	y = currentMenu->y;
@@ -12176,6 +12200,7 @@ static void M_ChangecontrolResponse(event_t *ev)
 	INT32        control;
 	INT32        found;
 	INT32        ch = ev->data1;
+	menu_text_input = false; //never use native layout for control setup
 
 	// ESCAPE cancels; dummy out PAUSE
 	if (ch != KEY_ESCAPE && ch != KEY_PAUSE)

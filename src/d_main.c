@@ -1453,12 +1453,14 @@ void D_SRB2Main(void)
 	unsigned last_speedo_i = 0;
 #define PUSHSPEEDO(id, name) { ++last_speedo_i; speedo_cons_temp[last_speedo_i].value = id; speedo_cons_temp[last_speedo_i].strvalue = name; }
 
-	if (found_extra_kart || found_extra2_kart) // found the funny, add it in!
+	if (found_extra_kart || found_extra2_kart || found_extra3_kart) // found the funny, add it in!
 	{
 		// HAYA: These are seperated for a reason lmao
 		if (found_extra_kart) 
 			mainwads++;
 		if (found_extra2_kart)
+			mainwads++;
+		if (found_extra3_kart)
 			mainwads++;
 
 		// now check for extra speedometer stuff
@@ -1468,7 +1470,7 @@ void D_SRB2Main(void)
 			PUSHSPEEDO(2, "Small");
 		}
 
-		if (W_CheckMultipleLumps("SC_SMSTC", NULL))
+		if (W_LumpExists("SC_SMSTC"))
 			xtra_speedo_clr = true;
 
 		// now check for achii speedometer stuff
@@ -1515,23 +1517,20 @@ void D_SRB2Main(void)
 
 		if (W_CheckMultipleLumps("K_DGAU","K_DCAU","K_DGSU","K_DCSU", NULL)) 
 			driftgaugegfx = true;
-	}
-
-	if (found_extra3_kart)
-	{
+		
 		if (found_extra3_kart)
-			mainwads++;
-
-		// 80x11 speedometer crap
-		if (W_CheckMultipleLumps("SP_SM3TC", NULL))
 		{
-			xtra_speedo3 = true;
-			PUSHSPEEDO(5, "Extra");
-		}
+			// 80x11 speedometer crap
+			if (W_LumpExists("SP_SM3TC"))
+			{
+				xtra_speedo3 = true;
+				PUSHSPEEDO(5, "Extra");
+			}
 
-		if (W_CheckMultipleLumps("SC_SM3TC", NULL))
-			xtra_speedo_clr3 = true;
-	}
+			if (W_LumpExists("SC_SM3TC"))
+				xtra_speedo_clr3 = true;
+		}
+	}	
 
 #undef PUSHSPEEDO
 	memcpy(speedo_cons_t, speedo_cons_temp, sizeof(speedo_cons_t));

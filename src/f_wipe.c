@@ -383,7 +383,7 @@ void F_RunWipe(UINT8 wipetype, boolean drawMenu)
 		I_OsPolling();
 		I_UpdateNoBlit();
 
-		if (drawMenu)
+		if (rendermode != render_none && drawMenu)
 		{
 #ifdef HAVE_THREADS
 			I_lock_mutex(&m_menu_mutex);

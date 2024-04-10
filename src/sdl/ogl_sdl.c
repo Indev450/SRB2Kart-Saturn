@@ -175,6 +175,11 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 		GLFramebuffer_DeleteAttachments();
 	}
 
+	if (majorGL == 1 && minorGL <= 3) // GL_GENERATE_MIPMAP is unavailible for OGL 1.3 and below
+		supportMipMap = false;
+	else
+		supportMipMap = true;
+
 	screen_width = (GLint)w;
 	screen_height = (GLint)h;
 
@@ -233,13 +238,16 @@ void OglSdlFinishUpdate(boolean waitvbl)
 
 EXPORT void HWRAPI(OglSdlSetPalette) (RGBA_t *palette)
 {
-	size_t palsize = (sizeof(RGBA_t) * 256);
-	// on a palette change, you have to reload all of the textures
-	if (memcmp(&myPaletteData, palette, palsize))
+	INT32 i;
+
+	for (i = 0; i < 256; i++)
 	{
-		memcpy(&myPaletteData, palette, palsize);
-		Flush();
+		myPaletteData[i].s.red   = palette[i].s.red;
+		myPaletteData[i].s.green = palette[i].s.green;
+		myPaletteData[i].s.blue  = palette[i].s.blue;
+		myPaletteData[i].s.alpha = palette[i].s.alpha;
 	}
+	Flush();
 }
 
 #endif //HWRENDER

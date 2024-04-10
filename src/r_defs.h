@@ -639,6 +639,10 @@ typedef struct
 // textures from the TEXTURE1 list of patches.
 //
 // WARNING: this structure is cloned in GLPatch_t
+#if defined(_MSC_VER)
+#pragma pack(1)
+#endif
+
 typedef struct
 {
 	INT16 width;          // bounding box size
@@ -655,20 +659,6 @@ typedef struct
 	rotsprite_t *rotated; // Rotated patches
 #endif
 } patch_t;
-
-#if defined(_MSC_VER)
-#pragma pack(1)
-#endif
-
-typedef struct
-{
-	INT16 width;          // bounding box size
-	INT16 height;
-	INT16 leftoffset;     // pixels to the left of origin
-	INT16 topoffset;      // pixels below the origin
-	INT32 columnofs[8];     // only [width] used
-	// the [0] is &columnofs[width]
-} ATTRPACK softwarepatch_t;
 
 #ifdef _MSC_VER
 #pragma warning(disable :  4200)

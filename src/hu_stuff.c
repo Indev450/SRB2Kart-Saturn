@@ -174,6 +174,107 @@ char english_shiftxform[] =
 	'{', '|', '}', '~', 127
 };
 
+char french_shiftxform[] =
+{
+	0,
+	1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+	11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+	21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+	31,
+	' ','$', //shift-!
+	'3', //shift-"
+	'#', '$', '%', 
+	'1', //shift-&
+	'4', // shift-'
+	'5', // shift-(
+	')', // shift-)
+	'*', '+',
+	'?', // shift-,
+	'6', // shift--
+	'.', '/',
+	'0', '1', '2', '3', '4', '5',
+	'6', '7', '8', '9', 
+	'/', // shitf-:
+	'.', // shift-;
+	'>', // shift-<
+	'+', // shift-=
+	'>', '?', '@',
+	'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
+	'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+	'[', '\\', ']', '^',
+	'8', //shift-_
+	'`',
+	'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
+	'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+	'{', '|', '}', '~', 127,
+	128, 129,
+	'2',
+	131, 132,
+	'0',
+	134,
+	'9',
+	136, 137,
+	'7',
+	139, 140,
+	'%'
+};
+
+char french_altgrxform[] =
+{
+	0,
+	1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+	11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+	21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+	31,
+	' ', '!',
+	'#', //altgr-"
+	'#', '$', '%', '&',
+	'{', //altgr-'
+	'[', //altgr-(
+	']', //altgr-)
+	'*', '+', ',',
+	'|', //altg--
+	'.', '/',
+	'0', '1', '2', '3', '4', '5',
+	'6', '7', '8', '9', 
+	':', ';', '<',
+	'}', //altgr-=
+	'>', '?', '@',
+    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
+	'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+	'[', '\\', ']', '^',
+	'\\', //altgr-backslash
+	'`',
+	'a', 'b', 'c', 'd', 'E', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n',
+	'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+	'{', '|', '}', '~', 127,
+	128, 129,
+	'~',
+	131, 132,
+	'@',
+	134,
+	'^',
+	136, 137,
+	'`',
+	139, 140,
+	KEY_FR_U_GRAVE
+};
+
+//fallback for special letter non displayable in the game (i.e.: 'é','à',etc.)
+INT32 HU_FallBackFrSpecialLetter(INT32 key)
+{
+	switch(key){
+		case KEY_FR_E_AIGUE:     return 'e';
+		case KEY_FR_E_GRAVE:     return 'e';
+		case KEY_FR_C_CEDILLE:   return 'c';
+		case KEY_FR_A_GRAVE:     return 'a';
+		case KEY_FR_U_GRAVE:     return 'u';
+		default:       return key;
+	}
+}
+
+
+
 static char cechotext[1024];
 static tic_t cechotimer = 0;
 static tic_t cechoduration = 5*TICRATE;
@@ -369,6 +470,11 @@ void HU_Start(void)
 	plr = &players[consoleplayer];
 
 	headsupactive = true;
+}
+
+void HU_Shiftform(void)
+{
+	shiftxform = cv_keyboardlayout.value == 3 ? french_shiftxform : english_shiftxform;
 }
 
 //======================================================================
@@ -1378,7 +1484,7 @@ boolean HU_Responder(event_t *ev)
 		&& ev->data1 != gamecontrol[gc_talkkey][1]))
 			return false;
 
-		c = CON_ShiftChar(c);
+		c = cv_keyboardlayout.value == 3 ? CON_ShitAndAltGrChar(c) : CON_ShiftChar(c);
 
 		// pasting. pasting is cool. chat is a bit limited, though :(
 		if (((c == 'v' || c == 'V') && ctrldown) && !CHAT_MUTE)

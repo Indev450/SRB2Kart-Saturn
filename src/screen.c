@@ -74,7 +74,8 @@ consvar_t cv_highreshudscale = {"highreshudscale", "1", CV_SAVE|CV_FLOAT|CV_CALL
 
 static void Highreshudscale_OnChange(void)
 {
-	SCR_Recalc();
+	if (!con_startup)
+		SCR_Recalc();
 }
 
 static void SCR_ChangeFullscreen (void);

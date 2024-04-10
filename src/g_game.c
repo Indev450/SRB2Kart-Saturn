@@ -8461,7 +8461,7 @@ boolean G_DemoTitleResponder(event_t *ev)
 		if (len < 64)
 		{
 			demo.titlename[len+1] = 0;
-			demo.titlename[len] = CON_ShiftChar(ch);
+			demo.titlename[len] = cv_keyboardlayout.value == 3 ? CON_ShitAndAltGrChar(ch) : CON_ShiftChar(ch);
 		}
 	}
 	else if (ch == KEY_BACKSPACE)
