@@ -150,7 +150,12 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 					"- GPU vendor has dropped OpenGL support on your GPU and OS. (Old GPU?)\n"
 					"- GPU drivers are missing or broken. You may need to update your drivers.");
 		}
-		
+
+		if (majorGL == 1 && minorGL <= 3) // GL_GENERATE_MIPMAP is unavailible for OGL 1.3 and below
+			supportMipMap = false;
+		else
+			supportMipMap = true;
+
 		if (isExtAvailable("GL_EXT_texture_filter_anisotropic", gl_extensions))
 			pglGetIntegerv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maximumAnisotropy);
 		else
