@@ -224,6 +224,7 @@ void OglSdlFinishUpdate(boolean waitvbl)
 		}
 		else
 			SDL_GL_SetSwapInterval(0);
+
 		//SDL_GL_SetSwapInterval(waitvbl ? -1 : 0);
 	}
 

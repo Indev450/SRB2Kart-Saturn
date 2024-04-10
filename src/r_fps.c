@@ -34,7 +34,7 @@ static CV_PossibleValue_t fpscap_cons_t[] = {
 #else
 	{TICRATE, "MIN"},
 #endif
-	{300, "MAX"},
+	{500, "MAX"},
 	{-1, "Unlimited"},
 	{0, "Match refresh rate"},
 	{0, NULL}
