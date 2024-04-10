@@ -141,6 +141,7 @@ void RefreshSDLSurface(void);
 
 boolean I_UseNativeKeyboard(void);
 
+void I_DownSample(void);
 extern boolean downsample;
 
 #endif
