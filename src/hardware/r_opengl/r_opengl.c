@@ -119,11 +119,12 @@ static GLfloat modelMatrix[16];
 GLfloat projMatrix[16];
 static GLint   viewport[4];
 
+#ifdef GL_VERSION_3_0
 static boolean GLFramebuffer_IsFuncAvailible(void);
-
 
 GLuint FramebufferObject, FramebufferTexture, RenderbufferObject;
 GLboolean FrameBufferEnabled = GL_FALSE, RenderToFramebuffer = GL_FALSE;
+#endif
 
 // Sryder:	NextTexAvail is broken for these because palette changes or changes to the texture filter or antialiasing
 //			flush all of the stored textures, leaving them unavailable at times such as between levels
@@ -457,6 +458,7 @@ static PFNglRenderbufferStorage pglRenderbufferStorage;
 typedef void (APIENTRY * PFNglFramebufferRenderbuffer) (GLenum target, GLenum attachment, GLenum renderbuffertarget, GLenum renderbuffer);
 static PFNglFramebufferRenderbuffer pglFramebufferRenderbuffer;
 #endif
+#endif //!STATIC_OPENGL
 
 /* 1.2 functions for 3D textures */
 typedef void (APIENTRY * PFNglTexImage3D) (GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, const GLvoid *pixels);
@@ -740,6 +742,7 @@ void SetupGLFunc4(void)
 	pglUniform2fv = GetGLFunc("glUniform2fv");
 	pglUniform3fv = GetGLFunc("glUniform3fv");
 	pglGetUniformLocation = GetGLFunc("glGetUniformLocation");
+
 #ifdef GL_VERSION_3_0
 	if (GLFramebuffer_IsFuncAvailible())
 	{
@@ -757,12 +760,14 @@ void SetupGLFunc4(void)
 #endif
 }
 
+#ifdef GL_VERSION_3_0
 static boolean GLFramebuffer_IsFuncAvailible(void)
 {
 	return((isExtAvailable("GL_ARB_framebuffer_no_attachments",gl_extensions)) && 
 	(isExtAvailable("GL_ARB_framebuffer_object",gl_extensions)) && 
 	(isExtAvailable("GL_ARB_framebuffer_sRGB",gl_extensions)));
 }
+#endif
 
 EXPORT boolean HWRAPI(InitShaders) (void)
 {
@@ -1023,7 +1028,7 @@ EXPORT void HWRAPI(DeleteTexture) (GLMipmap_t *pTexInfo)
 	pTexInfo->downloaded = 0;
 }
 
-
+#ifdef GL_VERSION_3_0
 void GLFramebuffer_Generate(void)
 {
 	if (!GLFramebuffer_IsFuncAvailible())
@@ -1133,7 +1138,7 @@ void GLFramebuffer_Disable(void)
 	pglBindFramebuffer(GL_FRAMEBUFFER, 0);
 	pglBindRenderbuffer(GL_RENDERBUFFER, 0);
 }
-
+#endif
 
 // -----------------+
 // Flush            : flush OpenGL textures
@@ -2310,14 +2315,14 @@ EXPORT void HWRAPI(SetSpecialState) (hwdspecialstate_t IdState, INT32 Value)
 		case HWD_SET_SHADERS:
 			gl_allowshaders = Value;
 			break;
-			
+#ifdef GL_VERSION_3_0
 		case HWD_SET_FRAMEBUFFER:
 			FrameBufferEnabled = Value ? GL_TRUE : GL_FALSE;
 			
 			if (!GLFramebuffer_IsFuncAvailible())
 				FrameBufferEnabled = GL_FALSE;
 			break;
-
+#endif
 		case HWD_SET_TEXTUREFILTERMODE:
 			switch (Value)
 			{

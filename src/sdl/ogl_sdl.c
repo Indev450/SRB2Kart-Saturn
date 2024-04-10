@@ -166,8 +166,10 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 		SetupGLFunc4();
 
 		granisotropicmode_cons_t[1].value = maximumAnisotropy;
-		
+
+#ifdef GL_VERSION_3_0	
 		I_DownSample();
+#endif
 	}
 	first_init = true;
 
@@ -177,7 +179,9 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 	if (screen_width != w || screen_height != h)
 	{
 		FlushScreenTextures();
+#ifdef GL_VERSION_3_0
 		GLFramebuffer_DeleteAttachments();
+#endif
 	}
 
 	screen_width = (GLint)w;
@@ -186,12 +190,14 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 	SetModelView(w, h);
 	SetStates();
 	pglClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
-	
+
+#ifdef GL_VERSION_3_0
 	RenderToFramebuffer = FrameBufferEnabled;
 	GLFramebuffer_Disable();
 
 	if (RenderToFramebuffer && downsample)
 		GLFramebuffer_Enable();
+#endif
 
 	HWR_Startup();
 	textureformatGL = cbpp > 16 ? GL_RGBA : GL_RGB5_A1;
@@ -218,14 +224,18 @@ void OglSdlFinishUpdate(boolean waitvbl)
 
 	SDL_GetWindowSize(window, &sdlw, &sdlh);
 	HWR_MakeScreenFinalTexture();
-	
+
+#ifdef GL_VERSION_3_0
 	GLFramebuffer_Disable();
 	RenderToFramebuffer = FrameBufferEnabled;
+#endif
 	
 	HWR_DrawScreenFinalTexture(sdlw, sdlh);
-	
+
+#ifdef GL_VERSION_3_0
 	if (RenderToFramebuffer && downsample)
 		GLFramebuffer_Enable();
+#endif
 
 	SDL_GL_SwapWindow(window);
 
