@@ -161,6 +161,8 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 		SetupGLFunc4();
 
 		granisotropicmode_cons_t[1].value = maximumAnisotropy;
+		
+		I_DownSample();
 	}
 	first_init = true;
 

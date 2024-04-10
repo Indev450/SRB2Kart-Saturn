@@ -159,8 +159,6 @@ static       SDL_bool    exposevideo = SDL_FALSE;
 static       SDL_bool    usesdl2soft = SDL_FALSE;
 static       SDL_bool    borderlesswindow = SDL_FALSE;
 
-static int currentDisplayIndex = -1;
-
 // SDL2 vars
 SDL_Window   *window;
 SDL_Renderer *renderer;
@@ -773,6 +771,35 @@ static INT32 SDLJoyAxis(const Sint16 axis, evtype_t which)
 	return raxis;
 }
 
+void I_DownSample(void)
+{
+	if (!cv_grframebuffer.value)
+	{
+		downsample = false;
+		return;
+	}
+
+	int currentDisplayIndex = SDL_GetWindowDisplayIndex(window);
+
+	SDL_DisplayMode curmode;
+	if (SDL_GetCurrentDisplayMode(currentDisplayIndex, &curmode) == 0)
+	{
+		CONS_Printf(" Width: %d\n", curmode.w);
+		CONS_Printf(" Height: %d\n", curmode.h);
+		CONS_Printf(" Refresh Rate: %d Hz\n", curmode.refresh_rate);
+		CONS_Printf(" Display Index: %d\n", currentDisplayIndex);
+		if (cv_grframebuffer.value && ((vid.width > curmode.w) || (vid.height > curmode.h))) //framebuffer downsampler thinge
+		{
+			downsample = true;
+			RefreshSDLSurface();
+		}
+		else
+			downsample = false;
+	}
+	else
+			downsample = false; // couldnt get display info so turn the thing off
+}
+
 static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 {
 	static SDL_bool firsttimeonmouse = SDL_TRUE;
@@ -842,24 +869,7 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 
 	if (windowmoved)
 	{
-		if (cv_grframebuffer.value)
-		{
-			currentDisplayIndex = SDL_GetWindowDisplayIndex(window);
-
-			SDL_DisplayMode curmode;
-			if (SDL_GetCurrentDisplayMode(currentDisplayIndex, &curmode) == 0)
-			{
-				if (cv_grframebuffer.value && ((vid.width > curmode.w) || (vid.height > curmode.h))) //framebuffer downsampler thinge
-				{
-					downsample = true;
-					RefreshSDLSurface();
-				}
-				else
-					downsample = false;
-			}
-			else
-					downsample = false; // couldnt get display info so turn the thing off
-		}
+		I_DownSample();
 	}
 }
 
@@ -1937,22 +1947,7 @@ INT32 VID_SetMode(INT32 modeNum)
 	}
 	//Impl_SetWindowName("SRB2Kart "VERSIONSTRING);
 
-	if (cv_grframebuffer.value)
-	{
-		SDL_DisplayMode curmode;
-		if (SDL_GetCurrentDisplayMode(currentDisplayIndex, &curmode) == 0)
-		{
-			if (cv_grframebuffer.value && ((vid.width > curmode.w) || (vid.height > curmode.h))) //framebuffer downsampler thinge
-			{
-				downsample = true;
-				RefreshSDLSurface(); // refresh crap so our fbo and screentextures dont break
-			}
-			else
-				downsample = false;
-		}
-		else
-			downsample = false;
-	}
+	I_DownSample();
 
 	SDLSetMode(vid.width, vid.height, USE_FULLSCREEN);
 	Impl_VideoSetupBuffer();
