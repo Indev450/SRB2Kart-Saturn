@@ -159,10 +159,7 @@ static       SDL_bool    exposevideo = SDL_FALSE;
 static       SDL_bool    usesdl2soft = SDL_FALSE;
 static       SDL_bool    borderlesswindow = SDL_FALSE;
 
-static boolean displayinit = false;
 static int currentDisplayIndex = -1;
-static int previousDisplayIndex = -1;
-static int numDisplays = -1;
 
 // SDL2 vars
 SDL_Window   *window;
@@ -776,17 +773,6 @@ static INT32 SDLJoyAxis(const Sint16 axis, evtype_t which)
 	return raxis;
 }
 
-static void SDL_CheckDisplays(void)
-{
-	if (!displayinit) // only do this once, dont think someone ever unplugs or adds a new display during gaming lul
-	{
-		numDisplays = SDL_GetNumVideoDisplays(); // get all available displays
-		displayinit = true;
-	}
-
-	currentDisplayIndex = SDL_GetWindowDisplayIndex(window); // this is the current display our game window resides in
-}
-
 static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 {
 	static SDL_bool firsttimeonmouse = SDL_TRUE;
@@ -856,32 +842,23 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 
 	if (windowmoved)
 	{
-		SDL_CheckDisplays();
-		if (numDisplays > 1)
+		if (cv_grframebuffer.value)
 		{
-			currentDisplayIndex = SDL_GetWindowDisplayIndex(window); // check the display index
-			if (currentDisplayIndex != previousDisplayIndex) // did the display change from previous index entry?
+			currentDisplayIndex = SDL_GetWindowDisplayIndex(window);
+
+			SDL_DisplayMode curmode;
+			if (SDL_GetCurrentDisplayMode(currentDisplayIndex, &curmode) == 0)
 			{
-				for (int i = 0; i < numDisplays; ++i) // go through all detected displays
+				if (cv_grframebuffer.value && ((vid.width > curmode.w) || (vid.height > curmode.h))) //framebuffer downsampler thinge
 				{
-					if (currentDisplayIndex == i) // found our current display?
-					{
-						SDL_DisplayMode curmode;
-						if (SDL_GetCurrentDisplayMode(i, &curmode) == 0) // get info for the current display
-						{
-							if (cv_grframebuffer.value && ((vid.width > curmode.w) || (vid.height > curmode.h))) //framebuffer downsampler thinge
-							{
-								downsample = true;
-								RefreshSDLSurface();
-							}
-							else
-								downsample = false;
-						}
-						break; // found our current display break outta here
-					}
+					downsample = true;
+					RefreshSDLSurface();
 				}
-				previousDisplayIndex = currentDisplayIndex; // set current display to index
+				else
+					downsample = false;
 			}
+			else
+					downsample = false; // couldnt get display info so turn the thing off
 		}
 	}
 }
@@ -1960,23 +1937,21 @@ INT32 VID_SetMode(INT32 modeNum)
 	}
 	//Impl_SetWindowName("SRB2Kart "VERSIONSTRING);
 
-	for (int i = 0; i < numDisplays; ++i) // go through all displays again cause our vidya mode changed
+	if (cv_grframebuffer.value)
 	{
-		if (currentDisplayIndex == i) // find the current display
+		SDL_DisplayMode curmode;
+		if (SDL_GetCurrentDisplayMode(currentDisplayIndex, &curmode) == 0)
 		{
-			SDL_DisplayMode curmode;
-			if (SDL_GetCurrentDisplayMode(i, &curmode) == 0) // get the info on current display
+			if (cv_grframebuffer.value && ((vid.width > curmode.w) || (vid.height > curmode.h))) //framebuffer downsampler thinge
 			{
-				if (cv_grframebuffer.value && ((vid.width > curmode.w) || (vid.height > curmode.h))) //framebuffer downsampler thinge
-				{
-					downsample = true;
-					RefreshSDLSurface(); // refresh crap so our fbo and screentextures dont break
-				}
-				else
-					downsample = false;
+				downsample = true;
+				RefreshSDLSurface(); // refresh crap so our fbo and screentextures dont break
 			}
-			break; // did everything so done lul
+			else
+				downsample = false;
 		}
+		else
+			downsample = false;
 	}
 
 	SDLSetMode(vid.width, vid.height, USE_FULLSCREEN);
@@ -2388,9 +2363,6 @@ void I_StartupGraphics(void)
 
 	// Fury: we do window initialization after GL setup to allow
 	// SDL_GL_LoadLibrary to work well on Windows
-
-	//check for display things
-	SDL_CheckDisplays();
 
 	// Create window
 	//Impl_CreateWindow(USE_FULLSCREEN);
