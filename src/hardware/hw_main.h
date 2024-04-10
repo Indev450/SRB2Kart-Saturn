@@ -150,9 +150,7 @@ void HWR_SetShaderState(void);
 
 // Console variables
 extern consvar_t cv_grshaders;
-#ifdef GL_VERSION_3_0
 extern consvar_t cv_grframebuffer;
-#endif
 extern consvar_t cv_grfofcut;
 extern consvar_t cv_fofzfightfix;
 extern consvar_t cv_splitwallfix;
