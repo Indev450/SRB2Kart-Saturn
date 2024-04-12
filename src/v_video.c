@@ -2944,6 +2944,9 @@ INT32 V_ThinStringWidth(const char *string, INT32 option)
 		if ((UINT8)c >= 0x80 && (UINT8)c <= 0x8F) //color parsing! -Inuyasha 2.16.09
 			continue;
 
+		if (c < HU_FONTSTART)
+			continue;
+
 		if (!lowercase || !tny_font[c-HU_FONTSTART])
 			c = toupper(c);
 		c -= HU_FONTSTART;
