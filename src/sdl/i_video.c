@@ -749,7 +749,7 @@ static INT32 SDLJoyAxis(const Sint16 axis, evtype_t which)
 #ifdef HWRENDER
 void I_DownSample(void)
 {
-	if (!cv_grframebuffer.value || !rendermode == render_opengl)
+	if (!cv_grframebuffer.value || !(rendermode == render_opengl))
 	{
 		downsample = false;
 		return;
