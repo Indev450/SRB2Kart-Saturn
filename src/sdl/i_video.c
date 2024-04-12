@@ -220,7 +220,8 @@ boolean downsample = false;
 
 void RefreshSDLSurface(void)
 {
-	OglSdlSurface(vid.width, vid.height);
+	if (rendermode == render_opengl)
+		OglSdlSurface(vid.width, vid.height);
 }
 #endif
 
@@ -748,7 +749,7 @@ static INT32 SDLJoyAxis(const Sint16 axis, evtype_t which)
 #ifdef HWRENDER
 void I_DownSample(void)
 {
-	if (!cv_grframebuffer.value)
+	if (!cv_grframebuffer.value || !rendermode == render_opengl)
 	{
 		downsample = false;
 		return;
@@ -843,7 +844,7 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 		}
 	}
 #ifdef HWRENDER
-	if (windowmoved)
+	if (windowmoved && rendermode == render_opengl)
 	{
 		I_DownSample();
 	}
@@ -1926,7 +1927,8 @@ INT32 VID_SetMode(INT32 modeNum)
 	}
 	//Impl_SetWindowName("SRB2Kart "VERSIONSTRING);
 #ifdef HWRENDER
-	I_DownSample();
+	if (rendermode == render_opengl)
+		I_DownSample();
 #endif
 
 	SDLSetMode(vid.width, vid.height, USE_FULLSCREEN);
