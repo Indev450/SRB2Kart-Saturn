@@ -196,7 +196,7 @@ static size_t CopyString(huddrawlist_h list, const char* str)
 	}
 }
 
-static void CalcCoords(huddrawlist_h list, drawitem_t *item)
+static void CalcStringCoords(drawitem_t *item, const char *string)
 {
 	if (!(item->flags & V_NOSCALESTART) && cv_uncappedhud.value)
 	{
@@ -228,6 +228,12 @@ static void CalcCoords(huddrawlist_h list, drawitem_t *item)
 		INT32 x = item->x * dupx;
 		INT32 y = item->y * dupy;
 
+		if (item->flags & V_SPLITSCREEN)
+			y += (BASEVIDHEIGHT * (dupy - 1))/2;
+
+		if (item->flags & V_HORZSCREEN)
+			x += (BASEVIDWIDTH * (dupx - 1))/2;
+
 		if (vid.width != BASEVIDWIDTH * dupx)
 		{
 			// dupx adjustments pretend that screen width is BASEVIDWIDTH * dupx,
@@ -251,13 +257,17 @@ static void CalcCoords(huddrawlist_h list, drawitem_t *item)
 		}
 
 		// need to compensate for dup here
-
-		if (item->align == align_center)
-			x -= (V_StringWidth(&list->strbuf[item->stroffset], item->flags) * (dupx - 1))/2;
-		if (item->align == align_right)
-			x -= V_StringWidth(&list->strbuf[item->stroffset], item->flags) * (dupx - 1);
-		if (item->align == align_thinright)
-			x -= V_ThinStringWidth(&list->strbuf[item->stroffset], item->flags) * (dupx - 1);
+		if (item->type == DI_DrawString)
+		{
+			if (item->align == align_center)
+				x -= (V_StringWidth(string, item->flags) * (dupx - 1))/2;
+			if (item->align == align_right)
+				x -= V_StringWidth(string, item->flags) * (dupx - 1);
+			if (item->align == align_smallright)
+				x -= V_SmallStringWidth(string, item->flags) * (dupx - 1);
+			if (item->align == align_thinright)
+				x -= V_ThinStringWidth(string, item->flags) * (dupx - 1);
+		}
 
 		item->x = x;
 		item->y = y;
@@ -410,6 +420,7 @@ void LUA_HUD_AddDrawNum(
 	item->y = y;
 	item->num = num;
 	item->flags = flags;
+	CalcStringCoords(item, NULL);
 }
 
 void LUA_HUD_AddDrawPaddedNum(
@@ -430,6 +441,7 @@ void LUA_HUD_AddDrawPaddedNum(
 	item->num = num;
 	item->digits = digits;
 	item->flags = flags;
+	CalcStringCoords(item, NULL);
 }
 
 void LUA_HUD_AddDrawPingNum(
@@ -450,6 +462,7 @@ void LUA_HUD_AddDrawPingNum(
 	item->num = num;
 	item->flags = flags;
 	item->colormap = colormap;
+	CalcStringCoords(item, NULL);
 }
 
 void LUA_HUD_AddDrawFill(
@@ -491,7 +504,8 @@ void LUA_HUD_AddDrawString(
 	item->stroffset = CopyString(list, str);
 	item->flags = flags;
 	item->align = align;
-	CalcCoords(list, item);
+	if (item->align != align_fixed)
+		CalcStringCoords(item, str);
 }
 
 void LUA_HUD_AddDrawKartString(
@@ -510,6 +524,7 @@ void LUA_HUD_AddDrawKartString(
 	item->y = y;
 	item->stroffset = CopyString(list, str);
 	item->flags = flags;
+	CalcStringCoords(item, str);
 }
 
 void LUA_HUD_AddDrawLevelTitle(
@@ -528,6 +543,7 @@ void LUA_HUD_AddDrawLevelTitle(
 	item->y = y;
 	item->stroffset = CopyString(list, str);
 	item->flags = flags;
+	CalcStringCoords(item, str);
 }
 
 void LUA_HUD_AddFadeScreen(
