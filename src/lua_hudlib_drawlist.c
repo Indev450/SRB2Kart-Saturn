@@ -595,7 +595,7 @@ void LUA_HUD_DrawList(huddrawlist_h list)
 						break;
 				}
 				drawitem_t *old = &list->olditems[j++];
-				if (old->id == item->id)
+				if ((old->id & ~3) == (item->id & ~3))
 				{
 					// gotcha!
 					olditem = old;
