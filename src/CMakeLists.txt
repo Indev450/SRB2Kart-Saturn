@@ -38,6 +38,7 @@ set(SRB2_CORE_SOURCES
 	md5.c
 	mserv.c
 	http-mserv.c
+	qs22j.c
 	s_sound.c
 	screen.c
 	sounds.c
@@ -105,6 +106,7 @@ set(SRB2_CORE_HEADERS
 	m_swap.h
 	md5.h
 	mserv.h
+	qs22j.h
 	s_sound.h
 	screen.h
 	sounds.h
