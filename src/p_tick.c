@@ -237,32 +237,7 @@ void P_RemoveThinkerDelayed(thinker_t *thinker)
 	thinker_t *next;
 
 	if (thinker->references != 0)
-	{
-#ifdef PARANOIA
-		if (thinker->debug_time > leveltime)
-		{
-			thinker->debug_time = leveltime + 2; // do not print errors again
-		}
-		// Removed mobjs can be the target of another mobj. In
-		// that case, the other mobj will manage its reference
-		// to the removed mobj in P_MobjThinker. However, if
-		// the removed mobj is removed after the other object
-		// thinks, the reference management is delayed by one
-		// tic.
-		else if (thinker->debug_time < leveltime)
-		{
-			CONS_Printf(
-					"PARANOIA/P_RemoveThinkerDelayed: %p %s references=%d\n",
-					(void*)thinker,
-					MobjTypeName((mobj_t*)thinker),
-					thinker->references
-			);
-
-			thinker->debug_time = leveltime + 2; // do not print this error again
-		}
-#endif
 		return;
-	}
 
 	/* Remove from main thinker list */
 	next = thinker->next;
@@ -283,7 +258,6 @@ void P_RemoveThinkerDelayed(thinker_t *thinker)
 	{
 		Z_Free(thinker);
 	}
-
 }
 
 //
@@ -318,12 +292,17 @@ void P_RemoveThinker(thinker_t *thinker)
 
 mobj_t *P_SetTarget(mobj_t **mop, mobj_t *targ)
 {
-	if (*mop)              // If there was a target already, decrease its refcount
+	if (*mop) // If there was a target already, decrease its refcount
 		(*mop)->thinker.references--;
-	if ((*mop = targ) != NULL) // Set new target and if non-NULL, increase its counter
-			targ->thinker.references++;
+
+	if (targ != NULL) // Set new target and if non-NULL, increase its counter
+		targ->thinker.references++;
+
+	*mop = targ;
+
 	return targ;
 }
+
 
 //
 // P_RunThinkers
@@ -360,7 +339,6 @@ static inline void P_RunThinkers(void)
 			currentthinker->function.acp1(currentthinker);
 		}
 	}
-
 }
 
 //
