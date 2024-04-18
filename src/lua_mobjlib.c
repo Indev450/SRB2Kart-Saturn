@@ -480,8 +480,8 @@ int mobj_hnext_setter(lua_State *L)
 {
     mobj_t *mo = GETMO();
 
-	if ((mo->hnext && P_MobjWasRemoved(mo->hnext)) || lua_isnil(L, 2))
-		P_SetTarget(&mo->hnext, NULL);
+    if (lua_isnil(L, 2))
+        P_SetTarget(&mo->hnext, NULL);
     else
     {
         mobj_t *hnext = *((mobj_t **)luaL_checkudata(L, 2, META_MOBJ));
@@ -495,7 +495,7 @@ int mobj_hprev_setter(lua_State *L)
 {
     mobj_t *mo = GETMO();
 
-    if ((mo->hprev && P_MobjWasRemoved(mo->hprev)) || lua_isnil(L, 2))
+    if (lua_isnil(L, 2))
         P_SetTarget(&mo->hprev, NULL);
     else
     {
