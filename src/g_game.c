@@ -3005,9 +3005,9 @@ void G_ChangePlayerReferences(mobj_t *oldmo, mobj_t *newmo)
 	I_Assert((oldmo != NULL) && (newmo != NULL));
 
 	// scan all thinkers
-	for (th = thinkercap.next; th != &thinkercap; th = th->next)
+	for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 	{
-		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 			continue;
 
 		mo2 = (mobj_t *)th;
@@ -5671,16 +5671,16 @@ void G_ConsGhostTic(INT32 playernum)
 				demo_p += sizeof(angle_t); // angle, unnecessary for cons.
 
 				mobj = NULL;
-				for (th = thinkercap.next; th != &thinkercap; th = th->next)
+				for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 				{
-					if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+					if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 						continue;
+
 					mobj = (mobj_t *)th;
 					if (mobj->type == (mobjtype_t)type && mobj->x == x && mobj->y == y && mobj->z == z)
 						break;
-					mobj = NULL; // wasn't this one, keep searching.
 				}
-				if (mobj && mobj->health != health) // Wasn't damaged?! This is desync! Fix it!
+				if (th != &thlist[THINK_MOBJ] && mobj->health != health) // Wasn't damaged?! This is desync! Fix it!
 				{
 					if (demosynced)
 						CONS_Alert(CONS_WARNING, M_GetText("Demo playback has desynced!\n"));
@@ -8139,16 +8139,16 @@ void G_DoPlayMetal(void)
 		metalbuffer = metal_p = W_CacheLumpNum(l, PU_STATIC);
 
 	// find metal sonic
-	for (th = thinkercap.next; th != &thinkercap; th = th->next)
+	for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 	{
-		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 			continue;
 
 		mo = (mobj_t *)th;
 		if (mo->type == MT_METALSONIC_RACE)
 			break;
 	}
-	if (!mo)
+	if (th == &thlist[THINK_MOBJ])
 	{
 		CONS_Alert(CONS_ERROR, M_GetText("Failed to find bot entity.\n"));
 		Z_Free(metalbuffer);

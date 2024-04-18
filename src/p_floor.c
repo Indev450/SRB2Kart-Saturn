@@ -1968,9 +1968,6 @@ void T_ThwompSector(levelspecthink_t *thwomp)
 	}
 	else // Not going anywhere, so look for players.
 	{
-		//thinker_t *th;
-		//mobj_t *mo;
-
 		thwomp->direction = -1;
 
 		/* // SRB2kart 170217 - Thwomps are automatic.
@@ -1978,19 +1975,25 @@ void T_ThwompSector(levelspecthink_t *thwomp)
 		if (!rover || (rover->flags & FF_EXISTS))
 		{
 			// scan the thinkers to find players!
-			for (th = thinkercap.next; th != &thinkercap; th = th->next)
+			UINT8 i;
+			// scan the players to find victims!
+			for (i = 0; i < MAXPLAYERS; i++)
 			{
-				if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+				if (!playeringame[i])
+					continue;
+				if (players[i].spectator)
+					continue;
+				if (!players[i].mo)
+					continue;
+				if (!players[i].mo->health)
+					continue;
+				if (players[i].mo->z > thwomp->sector->ceilingheight)
+					continue;
+				if (P_AproxDistance(thwompx - players[i].mo->x, thwompy - players[i].mo->y) > 96 * FRACUNIT)
 					continue;
 
-				mo = (mobj_t *)th;
-				if (mo->type == MT_PLAYER && mo->health && mo->player && !mo->player->spectator
-				    && mo->z <= thwomp->sector->ceilingheight
-					&& P_AproxDistance(thwompx - mo->x, thwompy - mo->y) <= 96*FRACUNIT)
-				{
-					thwomp->direction = -1;
-					break;
-				}
+				thwomp->direction = -1;
+				break;
 			}
 		}*/
 
@@ -2678,7 +2681,7 @@ INT32 EV_DoFloor(line_t *line, floor_e floortype)
 		// new floor thinker
 		rtn = 1;
 		dofloor = Z_Calloc(sizeof (*dofloor), PU_LEVSPEC, NULL);
-		P_AddThinker(&dofloor->thinker);
+		P_AddThinker(THINK_MAIN, &dofloor->thinker);
 
 		// make sure another floor thinker won't get started over this one
 		sec->floordata = dofloor;
@@ -2902,7 +2905,7 @@ INT32 EV_DoElevator(line_t *line, elevator_e elevtype, boolean customspeed)
 		// create and initialize new elevator thinker
 		rtn = 1;
 		elevator = Z_Calloc(sizeof (*elevator), PU_LEVSPEC, NULL);
-		P_AddThinker(&elevator->thinker);
+		P_AddThinker(THINK_MAIN, &elevator->thinker);
 		sec->floordata = elevator;
 		sec->ceilingdata = elevator;
 		elevator->thinker.function.acp1 = (actionf_p1)T_MoveElevator;
@@ -3088,7 +3091,7 @@ INT32 EV_BounceSector(sector_t *sec, fixed_t momz, line_t *sourceline)
 		return 0;
 
 	bouncer = Z_Calloc(sizeof (*bouncer), PU_LEVSPEC, NULL);
-	P_AddThinker(&bouncer->thinker);
+	P_AddThinker(THINK_MAIN, &bouncer->thinker);
 	sec->ceilingdata = bouncer;
 	bouncer->thinker.function.acp1 = (actionf_p1)T_BounceCheese;
 
@@ -3126,7 +3129,7 @@ INT32 EV_DoContinuousFall(sector_t *sec, sector_t *backsector, fixed_t spd, bool
 
 	// create and initialize new thinker
 	faller = Z_Calloc(sizeof (*faller), PU_LEVSPEC, NULL);
-	P_AddThinker(&faller->thinker);
+	P_AddThinker(THINK_MAIN, &faller->thinker);
 	faller->thinker.function.acp1 = (actionf_p1)T_ContinuousFalling;
 
 	// set up the fields
@@ -3179,7 +3182,7 @@ INT32 EV_StartCrumble(sector_t *sec, ffloor_t *rover, boolean floating,
 
 	// create and initialize new elevator thinker
 	elevator = Z_Calloc(sizeof (*elevator), PU_LEVSPEC, NULL);
-	P_AddThinker(&elevator->thinker);
+	P_AddThinker(THINK_MAIN, &elevator->thinker);
 	elevator->thinker.function.acp1 = (actionf_p1)T_StartCrumble;
 
 	// Does this crumbler return?
@@ -3257,7 +3260,7 @@ INT32 EV_MarioBlock(sector_t *sec, sector_t *roversector, fixed_t topheight, mob
 		// create and initialize new elevator thinker
 
 		block = Z_Calloc(sizeof (*block), PU_LEVSPEC, NULL);
-		P_AddThinker(&block->thinker);
+		P_AddThinker(THINK_MAIN, &block->thinker);
 		sec->floordata = block;
 		sec->ceilingdata = block;
 		block->thinker.function.acp1 = (actionf_p1)T_MarioBlock;
