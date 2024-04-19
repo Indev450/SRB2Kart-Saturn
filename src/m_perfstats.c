@@ -50,17 +50,14 @@ ps_metric_t ps_tictime = {0};
 ps_metric_t ps_playerthink_time = {0};
 ps_metric_t ps_thinkertime = {0};
 
-ps_metric_t ps_thlist_times[NUM_THINKERLISTS];
+//ps_metric_t ps_thlist_times[NUM_THINKERLISTS];
 
 static ps_metric_t ps_thinkercount = {0};
-static ps_metric_t ps_polythcount = {0};
-static ps_metric_t ps_mainthcount = {0};
 static ps_metric_t ps_mobjcount = {0};
 static ps_metric_t ps_regularcount = {0};
 static ps_metric_t ps_scenerycount = {0};
 static ps_metric_t ps_nothinkcount = {0};
-//static ps_metric_t ps_otherthcount = {0};
-//static ps_metric_t ps_dynslopethcount = {0};
+static ps_metric_t ps_otherthcount = {0};
 static ps_metric_t ps_precipcount = {0};
 static ps_metric_t ps_removecount = {0};
 
@@ -157,11 +154,11 @@ perfstatrow_t gamelogic_rows[] = {
 	{"logic  ", "Game logic:     ", &ps_tictime, PS_TIME},
 	{" plrthnk", " P_PlayerThink:  ", &ps_playerthink_time, PS_TIME|PS_LEVEL},
 	{" thnkers", " P_RunThinkers:  ", &ps_thinkertime, PS_TIME|PS_LEVEL},
-	{"  plyobjs", "  Polyobjects:    ", &ps_thlist_times[THINK_POLYOBJ], PS_TIME|PS_LEVEL},
+/*	{"  plyobjs", "  Polyobjects:    ", &ps_thlist_times[THINK_POLYOBJ], PS_TIME|PS_LEVEL},
 	{"  main   ", "  Main:           ", &ps_thlist_times[THINK_MAIN], PS_TIME|PS_LEVEL},
 	{"  mobjs  ", "  Mobjs:          ", &ps_thlist_times[THINK_MOBJ], PS_TIME|PS_LEVEL},
-	//{"  dynslop", "  Dynamic slopes: ", &ps_thlist_times[THINK_DYNSLOPE], PS_TIME|PS_LEVEL},
-	{"  precip ", "  Precipitation:  ", &ps_thlist_times[THINK_PRECIP], PS_TIME|PS_LEVEL},
+	{"  dynslop", "  Dynamic slopes: ", &ps_thlist_times[THINK_DYNSLOPE], PS_TIME|PS_LEVEL},
+	{"  precip ", "  Precipitation:  ", &ps_thlist_times[THINK_PRECIP], PS_TIME|PS_LEVEL},*/
 	{" lprethinkf", " LUAh_PreThinkFrame:", &ps_lua_prethinkframe_time, PS_TIME|PS_LEVEL},
 	{" lthinkf", " LUAh_ThinkFrame:", &ps_lua_thinkframe_time, PS_TIME|PS_LEVEL},
 	{" lpostthinkf", " LUAh_PostThinkFrame:", &ps_lua_postthinkframe_time, PS_TIME|PS_LEVEL},
@@ -171,14 +168,11 @@ perfstatrow_t gamelogic_rows[] = {
 
 perfstatrow_t thinkercount_rows[] = {
 	{"thnkers", "Thinkers:       ", &ps_thinkercount, PS_LEVEL},
-	{" plyobjs", " Polyobjects:    ", &ps_polythcount, PS_LEVEL},
-	{" main   ", " Main:           ", &ps_mainthcount, PS_LEVEL},
 	{" mobjs  ", " Mobjs:          ", &ps_mobjcount, PS_LEVEL},
 	{"  regular", "  Regular:        ", &ps_regularcount, PS_LEVEL},
 	{"  scenery", "  Scenery:        ", &ps_scenerycount, PS_LEVEL},
 	{"  nothink", "  Nothink:        ", &ps_nothinkcount, PS_HIDE_ZERO|PS_LEVEL},
-	//{" dynslop", " Dynamic slopes: ", &ps_dynslopethcount, PS_LEVEL},
-	//{" other  ", " Other:          ", &ps_otherthcount, PS_LEVEL},
+	{" other  ", " Other:          ", &ps_otherthcount, PS_LEVEL},
 	{" precip ", " Precipitation:  ", &ps_precipcount, PS_LEVEL},
 	{" remove ", " Pending removal:", &ps_removecount, PS_LEVEL},
 	{0}
@@ -573,18 +567,14 @@ static void PS_CountThinkers(void)
 	thinker_t *thinker;
 
 	ps_thinkercount.value.i = 0;
-	ps_polythcount.value.i = 0;
-	ps_mainthcount.value.i = 0;
 	ps_mobjcount.value.i = 0;
 	ps_regularcount.value.i = 0;
 	ps_scenerycount.value.i = 0;
 	ps_nothinkcount.value.i = 0;
-	//ps_otherthcount.value.i = 0;
-	//ps_dynslopethcount.value.i = 0;
+	ps_otherthcount.value.i = 0;
 	ps_precipcount.value.i = 0;
 	ps_removecount.value.i = 0;
-
-	/*for (thinker = thlist[THINK_MAIN].next; thinker != &thlist[THINK_MAIN]; thinker = thinker->next)
+	for (thinker = thlist[THINK_MAIN].next; thinker != &thlist[THINK_MAIN]; thinker = thinker->next)
 	{
 		ps_thinkercount.value.i++;
 		if (thinker->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
@@ -604,9 +594,8 @@ static void PS_CountThinkers(void)
 			ps_precipcount.value.i++;
 		else
 			ps_otherthcount.value.i++;
-	}*/
-
-	for (int i = 0; i < NUM_THINKERLISTS; i++)
+	}
+	/*for (i = 0; i < NUM_THINKERLISTS; i++)
 	{
 		for (thinker = thlist[i].next; thinker != &thlist[i]; thinker = thinker->next)
 		{
@@ -631,12 +620,12 @@ static void PS_CountThinkers(void)
 						ps_regularcount.value.i++;
 				}
 			}
-			//else if (i == THINK_DYNSLOPE)
-				//ps_dynslopethcount.value.i++;
+			else if (i == THINK_DYNSLOPE)
+				ps_dynslopethcount.value.i++;
 			else if (i == THINK_PRECIP)
 				ps_precipcount.value.i++;
 		}
-	}
+	}*/
 }
 
 // Update all metrics that are calculated on every tick.

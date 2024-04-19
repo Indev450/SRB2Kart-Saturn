@@ -2417,7 +2417,6 @@ void A_1upThinker(mobj_t *actor)
 
 	if (closestplayer == -1 || skins[players[closestplayer].skin].spritedef.numframes <= states[S_PLAY_BOX1].frame)
 	{ // Closest player not found (no players in game?? may be empty dedicated server!), or does not have correct sprite.
-		actor->frame = 0;
 		if (actor->tracer)
 		{
 			mobj_t *tracer = actor->tracer;
@@ -2637,10 +2636,7 @@ void A_BossDeath(mobj_t *mo)
 			continue;
 
 		mo2 = (mobj_t *)th;
-		if (mo2 == mo)
-			continue;
-
-		if ((mo2->flags & MF_BOSS) && mo2->health > 0)
+		if (mo2 != mo && (mo2->flags & MF_BOSS) && mo2->health > 0)
 			goto bossjustdie; // other boss not dead - just go straight to dying!
 	}
 
@@ -2695,7 +2691,7 @@ bossjustdie:
 		for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 		{
 			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-				continue;
+					continue;
 
 			mo2 = (mobj_t *)th;
 
@@ -6870,7 +6866,7 @@ void A_Boss3Path(mobj_t *actor)
 		for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 		{
 			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-				continue;
+					continue;
 
 			mo2 = (mobj_t *)th;
 

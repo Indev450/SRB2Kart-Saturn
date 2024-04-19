@@ -4119,6 +4119,8 @@ static void P_Boss3Thinker(mobj_t *mobj)
 				continue;
 			if (mo2->spawnpoint->angle != mobj->threshold)
 				continue;
+			if (mo2->spawnpoint->extrainfo != mobj->cusval)
+				continue;
 
 			P_SetTarget(&mobj->tracer, mo2);
 			break;
