@@ -2998,7 +2998,7 @@ static inline void P_UnArchivePolyObj(polyobj_t *po)
 		return;
 
 	// rotate and translate polyobject
-	Polyobj_MoveOnLoad(po, angle, x, y);
+	Polyobj_MoveOnLoad(po, angle + (po->origangle - po->angle), x + (po->origx - po->spawnSpot.x), y + (po->origy - po->spawnSpot.y));
 }
 
 static inline void P_ArchivePolyObjects(void)
