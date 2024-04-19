@@ -4978,18 +4978,17 @@ static void P_Boss9Thinker(mobj_t *mobj)
 				mobj->angle -= InvAngle(angle)/8;
 
 			// Spawn energy particles
-			for (spawner = mobj->hnext; spawner; spawner = spawner->hnext) {
+			for (spawner = mobj->hnext; spawner; spawner = spawner->hnext)
+			{
 				dist = P_AproxDistance(spawner->x - mobj->x, spawner->y - mobj->y);
 				if (P_RandomRange(1,(dist>>FRACBITS)/16) == 1)
 					break;
 			}
-			if (spawner) {
+			if (spawner && dist)
+			{
 				mobj_t *missile = P_SpawnMissile(spawner, mobj, MT_MSGATHER);
 				missile->momz = FixedDiv(missile->momz, 7*FRACUNIT/4);
-				if (dist == 0)
-					missile->fuse = 0;
-				else
-					missile->fuse = (dist/P_AproxDistance(missile->momx, missile->momy));
+				missile->fuse = (dist/P_AproxDistance(missile->momx, missile->momy));
 				if (missile->fuse > mobj->fuse)
 					P_RemoveMobj(missile);
 			}
