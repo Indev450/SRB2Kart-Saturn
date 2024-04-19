@@ -902,9 +902,9 @@ static mapthing_t *OP_CreateNewMapThing(player_t *player, UINT16 type, boolean c
 		thinker_t *th;
 		mobj_t *mo;
 
-		for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
+		for (th = thinkercap.next; th != &thinkercap; th = th->next)
 		{
-			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 				continue;
 
 			mo = (mobj_t *)th;

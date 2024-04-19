@@ -410,7 +410,7 @@ INT32 EV_DoCeiling(line_t *line, ceiling_e type)
 		// new door thinker
 		rtn = 1;
 		ceiling = Z_Calloc(sizeof (*ceiling), PU_LEVSPEC, NULL);
-		P_AddThinker(THINK_MAIN, &ceiling->thinker);
+		P_AddThinker(&ceiling->thinker);
 		sec->ceilingdata = ceiling;
 		ceiling->thinker.function.acp1 = (actionf_p1)T_MoveCeiling;
 		ceiling->sector = sec;
@@ -633,7 +633,7 @@ INT32 EV_DoCrush(line_t *line, ceiling_e type)
 		// new door thinker
 		rtn = 1;
 		ceiling = Z_Calloc(sizeof (*ceiling), PU_LEVSPEC, NULL);
-		P_AddThinker(THINK_MAIN, &ceiling->thinker);
+		P_AddThinker(&ceiling->thinker);
 		sec->ceilingdata = ceiling;
 		ceiling->thinker.function.acp1 = (actionf_p1)T_CrushCeiling;
 		ceiling->sector = sec;

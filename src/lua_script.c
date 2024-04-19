@@ -494,9 +494,8 @@ void LUA_InvalidateLevel(void)
 	if (!gL)
 		return;
 
-	for (i = 0; i < NUM_THINKERLISTS; i++)
-		for (th = thlist[i].next; th && th != &thlist[i]; th = th->next)
-			LUA_InvalidateUserdata(th);
+	for (th = thinkercap.next; th && th != &thinkercap; th = th->next)
+		LUA_InvalidateUserdata(th);
 
 	LUA_InvalidateMapthings();
 
@@ -1587,17 +1586,15 @@ void LUA_Archive(void)
 
 	if (gamestate == GS_LEVEL)
 	{
-		for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
+		for (th = thinkercap.next; th != &thinkercap; th = th->next)
 		{
-			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 				continue;
-
 			// archive function will determine when to skip mobjs,
 			// and write mobjnum in otherwise.
 			ArchiveExtVars(th, "mobj");
 		}
 	}
-
 	WRITEUINT32(save_p, UINT32_MAX); // end of mobjs marker, replaces mobjnum.
 
 	LUAh_NetArchiveHook(NetArchive); // call the NetArchive hook in archive mode
@@ -1625,9 +1622,9 @@ void LUA_UnArchive(void)
 
 	do {
 		mobjnum = READUINT32(save_p); // read a mobjnum	
-		for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
+		for (th = thinkercap.next; th != &thinkercap; th = th->next)
 		{
-			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 				continue;
 			if (((mobj_t *)th)->mobjnum != mobjnum) // find matching mobj
 				continue;

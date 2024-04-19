@@ -57,7 +57,7 @@ static int lib_iterateThinkers(lua_State *L)
 	lua_settop(L, 2);
 
 	if (lua_isnil(L, 2))
-		th = &thlist[THINK_MOBJ]; // ye this is fine since we only can access mobjs here anyways
+		th = &thinkercap;
 	else if (lua_isuserdata(L, 2))
 	{
 		if (lua_islightuserdata(L, 2))
@@ -87,11 +87,11 @@ static int lib_iterateThinkers(lua_State *L)
 	if (!next)
 		return luaL_error(L, "next thinker invalidated during iteration");
 
-	for (; next != &thlist[THINK_MOBJ]; next = next->next)
+	for (; next != &thinkercap; next = next->next)
 		if (!it->filter || next->function.acp1 == it->filter)
 		{
 			push_thinker(next);
-			if (next->next != &thlist[THINK_MOBJ])
+			if (next->next != &thinkercap)
 			{
 				push_thinker(next->next);
 				it->next = luaL_ref(L, LUA_REGISTRYINDEX);

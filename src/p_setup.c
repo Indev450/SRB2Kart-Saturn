@@ -827,9 +827,9 @@ void P_ReloadRings(void)
 	mapthing_t *mt = mapthings;
 
 	// scan the thinkers to find rings/wings/hoops to unset
-	for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
+	for (th = thinkercap.next; th != &thinkercap; th = th->next)
 	{
-		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 			continue;
 
 		mo = (mobj_t *)th;
@@ -2396,9 +2396,9 @@ void P_LoadThingsOnly(void)
 	// Search through all the thinkers.
 	thinker_t *think;
 
-	for (think = thlist[THINK_MOBJ].next; think != &thlist[THINK_MOBJ]; think = think->next)
+	for (think = thinkercap.next; think != &thinkercap; think = think->next)
 	{
-		if (think->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+		if (think->function.acp1 != (actionf_p1)P_MobjThinker)
 			continue;
 		P_RemoveMobj((mobj_t *)think);
 	}
@@ -2899,7 +2899,6 @@ boolean P_SetupLevel(boolean skipprecip)
 	R_FlushTranslationColormapCache();
 
 	Z_FreeTags(PU_LEVEL, PU_PURGELEVEL - 1);
-	mobjcache = NULL;
 
 #if defined (WALLSPLATS) || defined (FLOORSPLATS)
 	// clear the splats from previous level

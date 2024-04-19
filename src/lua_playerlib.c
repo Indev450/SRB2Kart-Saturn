@@ -313,10 +313,7 @@ int player_axis_setter(lua_State *L)
 
     UDATALIB_GETFIELD(mobj_t*, axis);
 
-	mobj_t *mo = NULL;
-	if (!lua_isnil(L, 2))
-		mo = *((mobj_t **)luaL_checkudata(L, 2, META_MOBJ));
-	P_SetTarget(axis, mo);
+	P_SetTarget(axis, *((mobj_t **)luaL_checkudata(L, 2, META_MOBJ)));
 
     return 0;
 }

@@ -48,7 +48,6 @@ actioncache_t actioncachehead;
 static mobj_t *overlaycap = NULL;
 static mobj_t *shadowcap = NULL;
 mobj_t *waypointcap = NULL;
-mobj_t *mobjcache = NULL;
 
 void P_InitCachedActions(void)
 {
@@ -3210,10 +3209,10 @@ void P_DestroyRobots(void)
 	mobj_t *mo;
 	thinker_t *think;
 
-	for (think = thlist[THINK_MOBJ].next; think != &thlist[THINK_MOBJ]; think = think->next)
+	for (think = thinkercap.next; think != &thinkercap; think = think->next)
 	{
-		if (think->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-			continue;
+		if (think->function.acp1 != (actionf_p1)P_MobjThinker)
+			continue; // not a mobj thinker
 
 		mo = (mobj_t *)think;
 		if (mo->health <= 0 || !(mo->flags & MF_ENEMY || mo->flags & MF_BOSS))
@@ -4015,9 +4014,9 @@ static void P_Boss3Thinker(mobj_t *mobj)
 
 			// scan the thinkers to make sure all the old pinch dummies are gone before making new ones
 			// this can happen if the boss was hurt earlier than expected
-			for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
+			for (th = thinkercap.next; th != &thinkercap; th = th->next)
 			{
-				if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+				if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 					continue;
 
 				mo2 = (mobj_t *)th;
@@ -4106,24 +4105,17 @@ static void P_Boss3Thinker(mobj_t *mobj)
 		// scan the thinkers
 		// to find a point that matches
 		// the number
-		for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
+		for (th = thinkercap.next; th != &thinkercap; th = th->next)
 		{
-			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-					continue;
+			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+				continue;
 
 			mo2 = (mobj_t *)th;
-
-			if (mo2->type != MT_BOSS3WAYPOINT)
-				continue;
-			if (!mo2->spawnpoint)
-				continue;
-			if (mo2->spawnpoint->angle != mobj->threshold)
-				continue;
-			if (mo2->spawnpoint->extrainfo != mobj->cusval)
-				continue;
-
-			P_SetTarget(&mobj->tracer, mo2);
-			break;
+			if (mo2->type == MT_BOSS3WAYPOINT && mo2->spawnpoint && mo2->spawnpoint->angle == mobj->threshold)
+			{
+				P_SetTarget(&mobj->target, mo2);
+				break;
+			}
 		}
 
 		if (!mobj->target) // Should NEVER happen
@@ -4734,9 +4726,9 @@ static void P_Boss7Thinker(mobj_t *mobj)
 				closestdist = 16384*FRACUNIT; // Just in case...
 
 				// Find waypoint he is closest to
-				for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
+				for (th = thinkercap.next; th != &thinkercap; th = th->next)
 				{
-					if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+					if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 						continue;
 
 					mo2 = (mobj_t *)th;
@@ -4789,9 +4781,9 @@ static void P_Boss7Thinker(mobj_t *mobj)
 
 		// scan the thinkers to find
 		// the waypoint to use
-		for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
+		for (th = thinkercap.next; th != &thinkercap; th = th->next)
 		{
-			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 				continue;
 
 			mo2 = (mobj_t *)th;
@@ -4912,9 +4904,9 @@ static void P_Boss9Thinker(mobj_t *mobj)
 
 		// Run through the thinkers ONCE and find all of the MT_BOSS9GATHERPOINT in the map.
 		// Build a hoop linked list of 'em!
-		for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
+		for (th = thinkercap.next; th != &thinkercap; th = th->next)
 		{
-			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 				continue;
 
 			mo2 = (mobj_t *)th;
@@ -5346,9 +5338,9 @@ mobj_t *P_GetClosestAxis(mobj_t *source)
 	fixed_t dist1, dist2 = 0;
 
 	// scan the thinkers to find the closest axis point
-	for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
+	for (th = thinkercap.next; th != &thinkercap; th = th->next)
 	{
-		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 			continue;
 
 		mo2 = (mobj_t *)th;
@@ -9298,19 +9290,7 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 {
 	const mobjinfo_t *info = &mobjinfo[type];
 	state_t *st;
-	mobj_t *mobj;
-	
-	if (mobjcache != NULL)
-	{
-		mobj = mobjcache;
-		mobjcache = mobjcache->hnext;
-		memset(mobj, 0, sizeof(*mobj));
-	}
-	else
-	{
-		mobj = Z_Calloc(sizeof (*mobj), PU_LEVEL, NULL);
-	}
-
+	mobj_t *mobj = Z_Calloc(sizeof (*mobj), PU_LEVEL, NULL);
 
 	// this is officially a mobj, declared as soon as possible.
 	mobj->thinker.function.acp1 = (actionf_p1)P_MobjThinker;
@@ -9704,7 +9684,7 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 	}
 
 	if (!(mobj->flags & MF_NOTHINK))
-		P_AddThinker(THINK_MOBJ, &mobj->thinker); // Needs to come before the shadow spawn, or else the shadow's reference gets forgotten
+		P_AddThinker(&mobj->thinker); // Needs to come before the shadow spawn, or else the shadow's reference gets forgotten
 
 	switch (mobj->type)
 	{
@@ -9770,19 +9750,7 @@ mobj_t *P_SpawnShadowMobj(mobj_t * caster)
 {
 	const mobjinfo_t *info = &mobjinfo[MT_SHADOW];
 	state_t *st;
-	mobj_t *mobj;
-	
-	if (mobjcache != NULL)
-	{
-		mobj = mobjcache;
-		mobjcache = mobjcache->hnext;
-		memset(mobj, 0, sizeof(*mobj));
-	}
-	else
-	{
-		mobj = Z_Calloc(sizeof (*mobj), PU_LEVEL, NULL);
-	}
-
+	mobj_t *mobj = Z_Calloc(sizeof (*mobj), PU_LEVEL, NULL);
 
 	// this is officially a mobj, declared as soon as possible.
 	mobj->thinker.function.acp1 = (actionf_p1)P_MobjThinker;
@@ -9853,7 +9821,7 @@ mobj_t *P_SpawnShadowMobj(mobj_t * caster)
 		mobj->eflags |= MFE_ONGROUND;
 
 	if (!(mobj->flags & MF_NOTHINK))
-		P_AddThinker(THINK_MOBJ, &mobj->thinker);
+		P_AddThinker(&mobj->thinker);
 
 	// Call action functions when the state is set
 	if (st->action.acp1 && (mobj->flags & MF_RUNSPAWNFUNC))
@@ -9920,7 +9888,7 @@ static precipmobj_t *P_SpawnPrecipMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype
 	mobj->momz = mobjinfo[type].speed;
 
 	mobj->thinker.function.acp1 = (actionf_p1)P_NullPrecipThinker;
-	P_AddThinker(THINK_PRECIP, &mobj->thinker);
+	P_AddThinker(&mobj->thinker);
 
 	CalculatePrecipFloor(mobj);
 
@@ -10046,25 +10014,28 @@ void P_RemoveMobj(mobj_t *mobj)
 
 	R_RemoveMobjInterpolator(mobj);
 
+#ifdef SCRAMBLE_REMOVED
+	// Invalidate mobj_t data to cause crashes if accessed!
+	memset((UINT8 *)mobj + sizeof(thinker_t), 0xff, sizeof(mobj_t) - sizeof(thinker_t));
+#endif
+
 	// free block
 	if (!mobj->thinker.next)
 	{ // Uh-oh, the mobj doesn't think, P_RemoveThinker would never go through!
 		INT32 prevreferences;
 		if (!mobj->thinker.references)
 		{
-			// no references, dump it directly in the mobj cache
-			mobj->hnext = mobjcache;
-			mobjcache = mobj;
+			Z_Free(mobj); // No references? Can be removed immediately! :D
 			return;
 		}
 
 		prevreferences = mobj->thinker.references;
-		P_AddThinker(THINK_MOBJ, (thinker_t *)mobj);
+		P_AddThinker((thinker_t *)mobj);
 		mobj->thinker.references = prevreferences;
 	}
 
 	P_RemoveThinker((thinker_t *)mobj);
-	
+
 	// DBG: set everything in mobj_t to 0xFF instead of leaving it. debug memory error.
 #ifdef SCRAMBLE_REMOVED
 	// Invalidate mobj_t data to cause crashes if accessed!
@@ -10346,12 +10317,12 @@ void P_RespawnSpecials(void)
 	{
 		thinker_t *th;
 
-		for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
+		for (th = thinkercap.next; th != &thinkercap; th = th->next)
 		{
 			mobj_t *box;
 			mobj_t *newmobj;
 
-			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+			if (th->function.acp1 != (actionf_p1)P_MobjThinker)	// not a mobj
 				continue;
 
 			box = (mobj_t *)th;
@@ -11493,9 +11464,9 @@ ML_NOCLIMB : Direction not controllable
 		mobj->health = (mthing->angle / 360) + 1;
 
 		// See if other starposts exist in this level that have the same value.
-		for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
+		for (th = thinkercap.next; th != &thinkercap; th = th->next)
 		{
-			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 				continue;
 
 			mo2 = (mobj_t *)th;

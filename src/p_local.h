@@ -60,20 +60,15 @@
 #define mariomode (maptol & TOL_MARIO)
 #define twodlevel (maptol & TOL_2D)
 
+//
+// P_TICK
+//
+
 // both the head and tail of the thinker list
-typedef enum
-{
-	THINK_POLYOBJ,
-	THINK_MAIN,
-	THINK_MOBJ,
-	THINK_PRECIP,
-	NUM_THINKERLISTS
-} thinklistnum_t; /**< Thinker lists. */
-extern thinker_t thlist[];
-extern mobj_t *mobjcache;
+extern thinker_t thinkercap;
 
 void P_InitThinkers(void);
-void P_AddThinker(const thinklistnum_t n, thinker_t *thinker);
+void P_AddThinker(thinker_t *thinker);
 void P_RemoveThinker(thinker_t *thinker);
 
 //

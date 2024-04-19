@@ -574,7 +574,7 @@ static void PS_CountThinkers(void)
 	ps_otherthcount.value.i = 0;
 	ps_precipcount.value.i = 0;
 	ps_removecount.value.i = 0;
-	for (thinker = thlist[THINK_MAIN].next; thinker != &thlist[THINK_MAIN]; thinker = thinker->next)
+	for (thinker = thinkercap.next; thinker != &thinkercap; thinker = thinker->next)
 	{
 		ps_thinkercount.value.i++;
 		if (thinker->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
