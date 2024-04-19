@@ -189,8 +189,8 @@ FILE *W_OpenWadFile(const char **filename, boolean useerrors)
 	if (filenamebuf != *filename)
 	{
 		strncpy(filenamebuf, *filename, MAX_WADPATH);
-	filenamebuf[MAX_WADPATH - 1] = '\0';
-	*filename = filenamebuf;
+		filenamebuf[MAX_WADPATH - 1] = '\0';
+		*filename = filenamebuf;
 	}
 
 	// open wad file
@@ -761,6 +761,8 @@ UINT16 W_InitFile(const char *filename, boolean local)
 		if (!memcmp(wadfiles[i]->md5sum, md5sum, 16))
 		{
 			CONS_Alert(CONS_ERROR, M_GetText("%s is already loaded\n"), filename);
+			if (important)
+				packetsizetally -= nameonlylength(filename) + 22;
 			if (handle)
 				fclose(handle);
 			return INT16_MAX;
