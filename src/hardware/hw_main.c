@@ -177,6 +177,8 @@ static void CV_anisotropic_ONChange(void)
 static void CV_screentextures_ONChange(void)
 {
 	ONLY_IF_GL_LOADED
+	if (cv_grscreentextures.value != 3)
+		CV_Set(&cv_grpaletterendering, "Off");
 	HWD.pfnSetSpecialState(HWD_SET_SCREEN_TEXTURES, cv_grscreentextures.value);
 }
 
