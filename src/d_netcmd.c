@@ -2659,13 +2659,9 @@ void D_ModifyClientVote(SINT8 voted, UINT8 splitplayer)
 {
 	char buf[2];
 	char *p = buf;
-	UINT8 player = consoleplayer;
-
-	if (splitplayer > 0)
-		player = displayplayers[splitplayer];
 
 	WRITESINT8(p, voted);
-	WRITEUINT8(p, player);
+	WRITEUINT8(p, splitplayer);
 	SendNetXCmd(XD_MODIFYVOTE, &buf, 2);
 }
 

@@ -4920,11 +4920,11 @@ void HWR_ProjectSprite(mobj_t *thing)
 	size_t lumpoff;
 	unsigned rot;
 	UINT8 flip;
-	boolean mirrored = thing->mirrored;
-	boolean hflip = (!(thing->frame & FF_HORIZONTALFLIP) != !mirrored);
+	boolean mirrored;
+	boolean hflip;
 
 	angle_t ang, camang;
-	const boolean papersprite = (thing->frame & FF_PAPERSPRITE);
+	boolean papersprite;
 	INT32 heightsec, phs;
 	INT32 dist = -1;
 
@@ -4942,6 +4942,10 @@ void HWR_ProjectSprite(mobj_t *thing)
 
 	if (!thing)
 		return;
+
+	mirrored = thing->mirrored;
+	hflip = (!(thing->frame & FF_HORIZONTALFLIP) != !mirrored);
+	papersprite = (thing->frame & FF_PAPERSPRITE);
 
 	if (cv_grmaxinterpdist.value)
 		dist = R_QuickCamDist(thing->x, thing->y);

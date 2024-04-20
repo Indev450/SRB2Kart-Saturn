@@ -8377,7 +8377,7 @@ void G_SaveDemo(void)
 		size_t i, strindex = 0;
 		boolean dash = true;
 
-		for (i = 0; demo.titlename[i] && i < 127; i++)
+		for (i = 0; i < 127 && demo.titlename[i]; i++)
 		{
 			if ((demo.titlename[i] >= 'a' && demo.titlename[i] <= 'z') ||
 				(demo.titlename[i] >= '0' && demo.titlename[i] <= '9'))

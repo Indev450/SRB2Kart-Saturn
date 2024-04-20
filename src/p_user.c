@@ -2510,18 +2510,15 @@ static void P_MovePlayer(player_t *player)
 	if ((player->mo->ceilingz - player->mo->floorz < player->mo->height)
 		&& !(player->mo->flags & MF_NOCLIP))
 	{
-		if (player->mo->ceilingz - player->mo->floorz < player->mo->height)
+		if ((netgame || multiplayer) && player->spectator)
+			P_DamageMobj(player->mo, NULL, NULL, 42000); // Respawn crushed spectators
+		else
 		{
-			if ((netgame || multiplayer) && player->spectator)
-				P_DamageMobj(player->mo, NULL, NULL, 42000); // Respawn crushed spectators
-			else
-			{
-				K_SquishPlayer(player, NULL, NULL); // SRB2kart - we don't kill when squished, we squish when squished.
-			}
-
-			if (player->playerstate == PST_DEAD)
-				return;
+			K_SquishPlayer(player, NULL, NULL); // SRB2kart - we don't kill when squished, we squish when squished.
 		}
+
+		if (player->playerstate == PST_DEAD)
+			return;
 	}
 
 #ifdef HWRENDER
