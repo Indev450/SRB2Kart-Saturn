@@ -129,6 +129,10 @@ extern boolean menu_text_input;
 #define IT_CV_NOMOD       2048
 #define IT_CV_INVISSLIDER 2560
 
+// For cv_float's, will use 1/2 as increment instead of 1/16
+// Not sure if i should add it to cvartype, since its more a flag than type
+#define IT_CV_BIGFLOAT    4096
+
 //call/submenu specific
 // There used to be a lot more here but ...
 // A lot of them became redundant with the advent of the Pause menu, so they were removed
