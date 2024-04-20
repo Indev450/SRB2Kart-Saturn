@@ -8940,7 +8940,11 @@ static char *lua_enumlib_sprintf_upper(char **buf, int* size, const char *format
 	if (length > *size)
 	{
 		void *ptr = realloc(*buf, length+1);
-		if (!ptr) return NULL;
+		if (!ptr)
+		{
+			va_end(va);
+			return NULL;
+		}
 		*buf = ptr;
 		*size = length+1;
 
