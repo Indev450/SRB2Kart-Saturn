@@ -896,10 +896,7 @@ static SOCKET_TYPE UDP_Bind(int family, struct sockaddr *addr, socklen_t addrlen
 	socklen_t len = sizeof(sin);
 
 	if (s == (SOCKET_TYPE)ERRSOCKET)
-	{
-		close(s);
 		return (SOCKET_TYPE)ERRSOCKET;
-	}
 #ifdef USE_WINSOCK
 	{ // Alam_GBC: disable the new UDP connection reset behavior for Win2k and up
 #ifdef USE_WINSOCK2
