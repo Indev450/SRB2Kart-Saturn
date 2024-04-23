@@ -3452,8 +3452,6 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, boolean local)
 	if (!devparm && digmreplaces)
 		CONS_Printf(M_GetText("%s digital musics replaced\n"), sizeu1(digmreplaces));
 
-	R_LoadTexturesPwad(wadnum);
-
 	//
 	// search for sprite replacements
 	//
@@ -3550,7 +3548,7 @@ boolean P_MultiSetupWadFiles(boolean fullsetup)
 	if (partadd_stage == 1)
 	{
 		// Reload all textures, unconditionally for better or worse.
-		//R_LoadTextures();
+		R_LoadTextures();
 
 		if (fullsetup)
 			++partadd_stage;
