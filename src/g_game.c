@@ -2439,6 +2439,9 @@ void G_PlayerReborn(INT32 player)
 	// SRB2kart
 	UINT8 kartspeed;
 	UINT8 kartweight;
+	boolean followerready;
+	INT32 followerskin;
+	mobj_t *follower;	// old follower, will probably be removed by the time we're dead but you never know.
 	//
 	INT32 charflags;
 	INT32 pflags;
@@ -2509,6 +2512,9 @@ void G_PlayerReborn(INT32 player)
 	// SRB2kart
 	kartspeed = players[player].kartspeed;
 	kartweight = players[player].kartweight;
+	follower = players[player].follower;
+	followerready = players[player].followerready;
+	followerskin = players[player].followerskin;
 	//
 	charflags = players[player].charflags;
 
@@ -2633,6 +2639,13 @@ void G_PlayerReborn(INT32 player)
 	p->kartstuff[k_wanted] = wanted;
 	p->kartstuff[k_eggmanblame] = -1;
 	p->kartstuff[k_starpostflip] = respawnflip;
+
+	if (follower)
+		P_RemoveMobj(follower);
+
+	p->followerready = followerready;
+	p->followerskin = followerskin;
+	p->follower = NULL;	// respawn a new one with you, it looks better.
 
 	p->spectatorreentry = spectatorreentry;
 	p->grieftime = grieftime;

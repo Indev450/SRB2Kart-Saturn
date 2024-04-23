@@ -788,6 +788,8 @@ typedef enum sprite
 	SPR_XMS4,
 	SPR_XMS5,
 
+	SPR_GCHA,	// follower: generic chao
+
 	// First person view sprites; this is a sprite so that it can be replaced by a specialized MD2 draw later
 	SPR_VIEW,
 
@@ -4075,6 +4077,19 @@ typedef enum state
 	S_OPAQUESMOKE4,
 	S_OPAQUESMOKE5,
 
+	// followers:
+	// generic chao:
+	S_GCHAOIDLE,
+	S_GCHAOFLY,
+	S_GCHAOSAD1,
+	S_GCHAOSAD2,
+	S_GCHAOSAD3,
+	S_GCHAOSAD4,
+	S_GCHAOHAPPY1,
+	S_GCHAOHAPPY2,
+	S_GCHAOHAPPY3,
+	S_GCHAOHAPPY4,
+
 #ifdef SEENAMES
 	S_NAMECHECK,
 #endif
@@ -4885,6 +4900,8 @@ typedef enum mobj_type
 	MT_TUMBLECOIN,
 
 	MT_KARMAFIREWORK,
+	
+	MT_FOLLOWER,
 
 #ifdef SEENAMES
 	MT_NAMECHECK,

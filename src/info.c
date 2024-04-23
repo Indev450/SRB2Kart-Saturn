@@ -66,7 +66,7 @@ char sprnames[NUMSPRITES + 1][5] =
 	"CNDL","DOCH","DUCK","GTRE","CHES","CHIM","DRGN","LZMN","PGSS","ZTCH",
 	"MKMA","MKMP","RTCH","BOWL","BOWH","BRRL","BRRR","HRSE","TOAH","BFRT",
 	"OFRT","RFRT","PFRT","ASPK","HBST","HBSO","HBSF","WBLZ","WBLN","OPUL",
-	"TGEM","TCOI","FWRK","XMS4","XMS5","VIEW"
+	"TGEM","TCOI","FWRK","XMS4","XMS5","GCHA","VIEW"
 };
 
 // Doesn't work with g++, needs actionf_p1 (don't modify this comment)
@@ -3406,6 +3406,19 @@ state_t states[NUMSTATES] =
 	{SPR_SMOK, 2, 6, {NULL}, 0, 0, S_OPAQUESMOKE4}, // S_OPAQUESMOKE3
 	{SPR_SMOK, 3, 7, {NULL}, 0, 0, S_OPAQUESMOKE5}, // S_OPAQUESMOKE4
 	{SPR_SMOK, 4, 8, {NULL}, 0, 0, S_NULL},         // S_OPAQUESMOKE5
+	
+	// followers:
+	// generic chao:
+	{SPR_GCHA, FF_ANIMATE, -1, {NULL}, 1, 4, S_GCHAOIDLE},		//S_GCHAOIDLE
+	{SPR_GCHA, 2|FF_ANIMATE, -1, {NULL}, 1, 2, S_GCHAOFLY},	//S_GCHAOFLY
+	{SPR_GCHA, 7, 5, {NULL}, 0, 0, S_GCHAOSAD2},	//S_GCHAOSAD1
+	{SPR_GCHA, 8, 3, {NULL}, 0, 0, S_GCHAOSAD3},	//S_GCHAOSAD2
+	{SPR_GCHA, 9, 6, {NULL}, 0, 0, S_GCHAOSAD4},	//S_GCHAOSAD3
+	{SPR_GCHA, 8, 3, {NULL}, 0, 0, S_GCHAOSAD1},	//S_GCHAOSAD4
+	{SPR_GCHA, 4, 8, {NULL}, 0, 0, S_GCHAOHAPPY2},	//S_GCHAOHAPPY1
+	{SPR_GCHA, 5, 4, {NULL}, 0, 0, S_GCHAOHAPPY3},	//S_GCHAOHAPPY2
+	{SPR_GCHA, 6, 8, {NULL}, 0, 0, S_GCHAOHAPPY4},	//S_GCHAOHAPPY3
+	{SPR_GCHA, 5, 4, {NULL}, 0, 0, S_GCHAOHAPPY1},	//S_GCHAOHAPPY4
 
 #ifdef SEENAMES
 	{SPR_NULL, 0, 1, {NULL}, 0, 0, S_NULL}, // S_NAMECHECK
@@ -20170,6 +20183,33 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] =
 	    0,              // damage
 	    sfx_None,       // activesound
 	    MF_NOCLIPTHING|MF_BOUNCE|MF_GRENADEBOUNCE, // flags
+	    S_NULL          // raisestate
+	},
+
+	{           // MT_FOLLOWER
+	    -1,             // doomednum
+	    S_INVISIBLE, // spawnstate
+	    1000,           // spawnhealth
+	    S_NULL,         // seestate
+	    sfx_None,       // seesound
+	    8,              // reactiontime
+	    sfx_None,       // attacksound
+	    S_NULL,         // painstate
+	    0,              // painchance
+	    sfx_None,       // painsound
+	    S_NULL,         // meleestate
+	    S_NULL,         // missilestate
+	    S_NULL,         // deathstate
+	    S_NULL,         // xdeathstate
+	    sfx_None,       // deathsound
+	    0,              // speed
+	    8<<FRACBITS,    // radius
+	    16<<FRACBITS,   // height
+	    1,              // display offset
+	    100,            // mass
+	    0,              // damage
+	    sfx_None,       // activesound
+	    MF_NOCLIPTHING|MF_NOGRAVITY|MF_NOCLIP|MF_NOCLIPHEIGHT, // flags
 	    S_NULL          // raisestate
 	},
 
