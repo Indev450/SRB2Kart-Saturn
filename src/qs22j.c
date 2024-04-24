@@ -41,33 +41,33 @@ typedef void *pref_typ;
 
 #define  COMP(a, b)  ((*compar)((void *)(a), (void *)(b)))
 
-static void swapbytes(void *a0, void *b0, size_t n)
+static inline void swapbytes(void *a0, void *b0, size_t n)
 {
     char *a = a0, *b = b0, t;
     do {ASWAP(*a, *b, t); a++; b++;} while (--n);
 }
 
-static void swapdword(void *a0, void *b0, size_t n)
+static inline void swapdword(void *a0, void *b0, size_t n)
 {
     DWORD *a = a0, *b = b0, t;
     ASWAP(*a, *b, t);
     (void)n;
 }
 
-static void swapdwords(void *a0, void *b0, size_t n)
+static inline void swapdwords(void *a0, void *b0, size_t n)
 {
     DWORD *a = a0, *b = b0, t;
     do {ASWAP(*a, *b, t); a++; b++;} while (n -= sizeof(DWORD));
 }
 
-static void swapword(void *a0, void *b0, size_t n)
+static inline void swapword(void *a0, void *b0, size_t n)
 {
     WORD *a = a0, *b = b0, t;
     ASWAP(*a, *b, t);
     (void)n;
 }
 
-static void swapwords(void *a0, void *b0, size_t n)
+static inline void swapwords(void *a0, void *b0, size_t n)
 {
     WORD *a = a0, *b = b0, t;
     do {ASWAP(*a, *b, t); a++; b++;} while (n -= sizeof(WORD));
@@ -75,7 +75,7 @@ static void swapwords(void *a0, void *b0, size_t n)
 
 typedef void (*swapf_typ)(void *, void *, size_t);
 
-static char *med3(char *a, char *b, char *c, int (*compar)(const void *, const void *))
+static inline char *med3(char *a, char *b, char *c, int (*compar)(const void *, const void *))
 {
     return COMP(a, b) < 0 ?
         (COMP(b, c) < 0 ? b : COMP(a, c) < 0 ? c : a) :
