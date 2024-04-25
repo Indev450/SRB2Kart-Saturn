@@ -10136,6 +10136,9 @@ void P_SpawnPrecipitation(void)
 
 		//for (j = 0; j < cv_precipdensity.value; ++j) -- density is 1 for kart always
 		{
+			INT32 floorz;
+			INT32 ceilingz;
+
 			x = ((cv_lessprecip.value ? basex*1.5 : basex) + ((M_RandomKey(MAPBLOCKUNITS<<3)<<FRACBITS)>>3));
 			y = ((cv_lessprecip.value ? basey*1.5 : basey) + ((M_RandomKey(MAPBLOCKUNITS<<3)<<FRACBITS)>>3));
 
@@ -10169,8 +10172,19 @@ void P_SpawnPrecipitation(void)
 			else // everything else.
 				rainmo = P_SpawnRainMobj(x, y, height, MT_RAIN);
 
-			// Randomly assign a height, now that floorz is set.
-			rainmo->z = M_RandomRange(rainmo->floorz>>FRACBITS, rainmo->ceilingz>>FRACBITS)<<FRACBITS;
+			floorz = rainmo->floorz >> FRACBITS;
+			ceilingz = rainmo->ceilingz >> FRACBITS;
+
+			if (floorz < ceilingz)
+			{
+				// Randomly assign a height, now that floorz is set.
+				rainmo->z = M_RandomRange(floorz, ceilingz) << FRACBITS;
+			}
+			else
+			{
+				// ...except if the floor is above the ceiling.
+				rainmo->z = ceilingz << FRACBITS;
+			}
 		}
 	}
 
