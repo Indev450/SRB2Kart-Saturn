@@ -496,6 +496,8 @@ void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *col
 		poly_color.s.blue = (UINT8)blue;
 	}
 
+	light_level = SOFTLIGHT(light_level);
+
 	// Clamp the light level, since it can sometimes go out of the 0-255 range from animations
 	light_level = min(max(light_level, cv_secbright.value), 255);
 
@@ -1111,7 +1113,7 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 			{
 				if (HWR_ShouldUsePaletteRendering())
 				{
-					lightnum = SOFTLIGHT(pfloor->master->frontsector->lightlevel);
+					lightnum = pfloor->master->frontsector->lightlevel;
 					colormap = pfloor->master->frontsector->extra_colormap;
 					lightnum = colormap ? lightnum : HWR_CalcWallLight(lightnum, v1x, v1y, v2x, v2y);
 				}else{
@@ -1123,7 +1125,7 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 			{
 				if (HWR_ShouldUsePaletteRendering())
 				{
-					lightnum = SOFTLIGHT(*list[i].lightlevel);
+					lightnum = *list[i].lightlevel;
 					colormap = list[i].extra_colormap;
 					lightnum = colormap ? lightnum : HWR_CalcWallLight(lightnum, v1x, v1y, v2x, v2y);
 				}else{
@@ -1498,7 +1500,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 	if (HWR_ShouldUsePaletteRendering())
 	{
-		lightnum = SOFTLIGHT(gr_frontsector->lightlevel);
+		lightnum = gr_frontsector->lightlevel;
 		colormap = gr_frontsector->extra_colormap;
 		lightnum = colormap ? lightnum : HWR_CalcWallLight(lightnum, vs.x, vs.y, ve.x, ve.y);
 	}
@@ -2229,7 +2231,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 					if (HWR_ShouldUsePaletteRendering())
 					{
-						lightnum = SOFTLIGHT(rover->master->frontsector->lightlevel);
+						lightnum = rover->master->frontsector->lightlevel;
 						colormap = rover->master->frontsector->extra_colormap;
 						lightnum = colormap ? lightnum : HWR_CalcWallLight(lightnum, vs.x, vs.y, ve.x, ve.y);
 					}else{
@@ -2237,7 +2239,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 						colormap = rover->master->frontsector->extra_colormap;
 					}
 					
-					Surf.PolyColor.s.alpha = HWR_FogBlockAlpha(SOFTLIGHT(rover->master->frontsector->lightlevel), rover->master->frontsector->extra_colormap);
+					Surf.PolyColor.s.alpha = HWR_FogBlockAlpha(rover->master->frontsector->lightlevel, rover->master->frontsector->extra_colormap);
 
 					if (gr_frontsector->numlights)
 						HWR_SplitWall(gr_frontsector, wallVerts, 0, false, &Surf, rover->flags, rover, 0);
@@ -2368,7 +2370,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 					if (HWR_ShouldUsePaletteRendering())
 					{
-						lightnum = SOFTLIGHT(rover->master->frontsector->lightlevel);
+						lightnum = rover->master->frontsector->lightlevel;
 						colormap = rover->master->frontsector->extra_colormap;
 						lightnum = colormap ? lightnum : HWR_CalcWallLight(lightnum, vs.x, vs.y, ve.x, ve.y);
 					}else{
@@ -2376,7 +2378,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 						colormap = rover->master->frontsector->extra_colormap;
 					}
 
-					Surf.PolyColor.s.alpha = HWR_FogBlockAlpha(SOFTLIGHT(rover->master->frontsector->lightlevel), rover->master->frontsector->extra_colormap);
+					Surf.PolyColor.s.alpha = HWR_FogBlockAlpha(rover->master->frontsector->lightlevel, rover->master->frontsector->extra_colormap);
 
 					if (gr_backsector->numlights)
 						HWR_SplitWall(gr_backsector, wallVerts, 0, false, &Surf, rover->flags, rover, 0);
@@ -3053,13 +3055,13 @@ void HWR_AddPolyObjectPlanes(void)
 				FSurfaceInfo Surf;
 				FBITFIELD blendmode = HWR_TranstableToAlpha(po_ptrs[i]->translucency, &Surf);
 				HWR_AddTransparentPolyobjectFloor(levelflats[polyobjsector->floorpic].lumpnum, po_ptrs[i], false, polyobjsector->floorheight,
-													SOFTLIGHT(polyobjsector->lightlevel), Surf.PolyColor.s.alpha, polyobjsector, blendmode, NULL);
+													polyobjsector->lightlevel, Surf.PolyColor.s.alpha, polyobjsector, blendmode, NULL);
 			}
 			else
 			{
 				HWR_GetFlat(levelflats[polyobjsector->floorpic].lumpnum, R_NoEncore(polyobjsector, false));
 				HWR_RenderPolyObjectPlane(po_ptrs[i], false, polyobjsector->floorheight, PF_Occlude,
-										SOFTLIGHT(polyobjsector->lightlevel), levelflats[polyobjsector->floorpic].lumpnum,
+										polyobjsector->lightlevel, levelflats[polyobjsector->floorpic].lumpnum,
 										polyobjsector, 255, NULL);
 			}
 		}
@@ -3075,13 +3077,13 @@ void HWR_AddPolyObjectPlanes(void)
 				memset(&Surf, 0x00, sizeof(Surf));
 				blendmode = HWR_TranstableToAlpha(po_ptrs[i]->translucency, &Surf);
 				HWR_AddTransparentPolyobjectFloor(levelflats[polyobjsector->ceilingpic].lumpnum, po_ptrs[i], true, polyobjsector->ceilingheight,
-				                                  SOFTLIGHT(polyobjsector->lightlevel), Surf.PolyColor.s.alpha, polyobjsector, blendmode, NULL);
+				                                  polyobjsector->lightlevel, Surf.PolyColor.s.alpha, polyobjsector, blendmode, NULL);
 			}
 			else
 			{
 				HWR_GetFlat(levelflats[polyobjsector->ceilingpic].lumpnum, R_NoEncore(polyobjsector, true));
 				HWR_RenderPolyObjectPlane(po_ptrs[i], true, polyobjsector->ceilingheight, PF_Occlude,
-				                          SOFTLIGHT(polyobjsector->lightlevel), levelflats[polyobjsector->ceilingpic].lumpnum,
+				                          polyobjsector->lightlevel, levelflats[polyobjsector->ceilingpic].lumpnum,
 				                          polyobjsector, 255, NULL);
 			}
 		}
@@ -3223,12 +3225,12 @@ static void HWR_Subsector(size_t num)
 
 		light = R_GetPlaneLight(gr_frontsector, locFloorHeight, false);
 		if (gr_frontsector->floorlightsec == -1)
-			floorlightlevel = SOFTLIGHT(*gr_frontsector->lightlist[light].lightlevel);
+			floorlightlevel = *gr_frontsector->lightlist[light].lightlevel;
 		floorcolormap = gr_frontsector->lightlist[light].extra_colormap;
 
 		light = R_GetPlaneLight(gr_frontsector, locCeilingHeight, false);
 		if (gr_frontsector->ceilinglightsec == -1)
-			ceilinglightlevel = SOFTLIGHT(*gr_frontsector->lightlist[light].lightlevel);
+			ceilinglightlevel = *gr_frontsector->lightlist[light].lightlevel;
 		ceilingcolormap = gr_frontsector->lightlist[light].extra_colormap;
 	}
 
@@ -3305,13 +3307,13 @@ static void HWR_Subsector(size_t num)
 
 					light = R_GetPlaneLight(gr_frontsector, centerHeight, viewz < bottomCullHeight  ? true : false);
 
-					alpha = HWR_FogBlockAlpha(SOFTLIGHT(*gr_frontsector->lightlist[light].lightlevel), rover->master->frontsector->extra_colormap);
+					alpha = HWR_FogBlockAlpha(*gr_frontsector->lightlist[light].lightlevel, rover->master->frontsector->extra_colormap);
 
 					HWR_AddTransparentFloor(0,
 					                       &extrasubsectors[num],
 										   false,
 					                       *rover->bottomheight,
-					                       SOFTLIGHT(*gr_frontsector->lightlist[light].lightlevel),
+					                       *gr_frontsector->lightlist[light].lightlevel,
 					                       alpha, rover->master->frontsector, PF_Fog|PF_NoTexture,
 										   true, rover->master->frontsector->extra_colormap);
 				}
@@ -3322,7 +3324,7 @@ static void HWR_Subsector(size_t num)
 					                       &extrasubsectors[num],
 										   false,
 					                       *rover->bottomheight,
-					                       SOFTLIGHT(*gr_frontsector->lightlist[light].lightlevel),
+					                       *gr_frontsector->lightlist[light].lightlevel,
 					                       max(0, min(rover->alpha, 255)), rover->master->frontsector, (rover->flags & FF_RIPPLE ? PF_Ripple : 0)|PF_Translucent,
 					                       false, gr_frontsector->lightlist[light].extra_colormap);
 				}
@@ -3330,7 +3332,7 @@ static void HWR_Subsector(size_t num)
 				{
 					HWR_GetFlat(levelflats[*rover->bottompic].lumpnum, R_NoEncore(gr_frontsector, false));
 					light = R_GetPlaneLight(gr_frontsector, centerHeight, viewz < bottomCullHeight  ? true : false);
-					HWR_RenderPlane(sub, &extrasubsectors[num], false, *rover->bottomheight, (rover->flags & FF_RIPPLE ? PF_Ripple : 0)|PF_Occlude, SOFTLIGHT(*gr_frontsector->lightlist[light].lightlevel), levelflats[*rover->bottompic].lumpnum,
+					HWR_RenderPlane(sub, &extrasubsectors[num], false, *rover->bottomheight, (rover->flags & FF_RIPPLE ? PF_Ripple : 0)|PF_Occlude, *gr_frontsector->lightlist[light].lightlevel, levelflats[*rover->bottompic].lumpnum,
 					                rover->master->frontsector, 255, gr_frontsector->lightlist[light].extra_colormap);
 				}
 			}
@@ -3349,13 +3351,13 @@ static void HWR_Subsector(size_t num)
 
 					light = R_GetPlaneLight(gr_frontsector, centerHeight, viewz < topCullHeight  ? true : false);
 
-					alpha = HWR_FogBlockAlpha(SOFTLIGHT(*gr_frontsector->lightlist[light].lightlevel), rover->master->frontsector->extra_colormap);
+					alpha = HWR_FogBlockAlpha(*gr_frontsector->lightlist[light].lightlevel, rover->master->frontsector->extra_colormap);
 
 					HWR_AddTransparentFloor(0,
 					                       &extrasubsectors[num],
 										   true,
 					                       *rover->topheight,
-					                       SOFTLIGHT(*gr_frontsector->lightlist[light].lightlevel),
+					                       *gr_frontsector->lightlist[light].lightlevel,
 					                       alpha, rover->master->frontsector, PF_Fog|PF_NoTexture,
 										   true, rover->master->frontsector->extra_colormap);
 				}
@@ -3366,7 +3368,7 @@ static void HWR_Subsector(size_t num)
 					                        &extrasubsectors[num],
 											true,
 											*rover->topheight,
-											SOFTLIGHT(*gr_frontsector->lightlist[light].lightlevel),
+											*gr_frontsector->lightlist[light].lightlevel,
 											max(0, min(rover->alpha, 255)), rover->master->frontsector, (rover->flags & FF_RIPPLE ? PF_Ripple : 0)|PF_Translucent,
 											false, gr_frontsector->lightlist[light].extra_colormap);
 				}
@@ -3374,7 +3376,7 @@ static void HWR_Subsector(size_t num)
 				{
 					HWR_GetFlat(levelflats[*rover->toppic].lumpnum, R_NoEncore(gr_frontsector, true));
 					light = R_GetPlaneLight(gr_frontsector, centerHeight, viewz < topCullHeight  ? true : false);
-					HWR_RenderPlane(sub, &extrasubsectors[num], true, *rover->topheight, (rover->flags & FF_RIPPLE ? PF_Ripple : 0)|PF_Occlude, SOFTLIGHT(*gr_frontsector->lightlist[light].lightlevel), levelflats[*rover->toppic].lumpnum,
+					HWR_RenderPlane(sub, &extrasubsectors[num], true, *rover->topheight, (rover->flags & FF_RIPPLE ? PF_Ripple : 0)|PF_Occlude, *gr_frontsector->lightlist[light].lightlevel, levelflats[*rover->toppic].lumpnum,
 									  rover->master->frontsector, 255, gr_frontsector->lightlist[light].extra_colormap);
 				}
 			}
@@ -3998,7 +4000,7 @@ static void HWR_SplitSprite(gr_vissprite_t *spr)
 	alpha = Surf.PolyColor.s.alpha;
 	
 	// Start with the lightlevel and colormap from the top of the sprite
-	lightlevel = SOFTLIGHT(*list[sector->numlights - 1].lightlevel);
+	lightlevel = *list[sector->numlights - 1].lightlevel;
 
 	colormap = list[sector->numlights - 1].extra_colormap;
 	i = 0;
@@ -4013,7 +4015,7 @@ static void HWR_SplitSprite(gr_vissprite_t *spr)
 		if (h <= temp)
 		{
 			if (!(spr->mobj->frame & FF_FULLBRIGHT))
-				lightlevel = *list[i-1].lightlevel > 255 ? 255 : SOFTLIGHT(*list[i-1].lightlevel);
+				lightlevel = *list[i-1].lightlevel > 255 ? 255 : *list[i-1].lightlevel;
 			colormap = list[i-1].extra_colormap;
 			break;
 		}
@@ -4028,7 +4030,7 @@ static void HWR_SplitSprite(gr_vissprite_t *spr)
 		if (!(list[i].flags & FF_NOSHADE) && (list[i].flags & FF_CUTSPRITES))
 		{
 			if (!(spr->mobj->frame & FF_FULLBRIGHT))
-				lightlevel = *list[i].lightlevel > 255 ? 255 : SOFTLIGHT(*list[i].lightlevel);
+				lightlevel = *list[i].lightlevel > 255 ? 255 : *list[i].lightlevel;
 			colormap = list[i].extra_colormap;
 		}
 
@@ -4247,7 +4249,7 @@ static void HWR_DrawSprite(gr_vissprite_t *spr)
 		extracolormap_t *colormap = sector->extra_colormap;
 
 		if (!(spr->mobj->frame & FF_FULLBRIGHT))
-			lightlevel = sector->lightlevel > 255 ? 255 : SOFTLIGHT(sector->lightlevel);
+			lightlevel = sector->lightlevel > 255 ? 255 : sector->lightlevel;
 
 		HWR_Lighting(&Surf, lightlevel, colormap);
 	}
@@ -4348,7 +4350,7 @@ static inline void HWR_DrawPrecipitationSprite(gr_vissprite_t *spr)
 			light = R_GetPlaneLight(sector, spr->mobj->z + spr->mobj->height, false); // Always use the light at the top instead of whatever I was doing before
 
 			if (!(spr->mobj->frame & FF_FULLBRIGHT))
-			lightlevel = *sector->lightlist[light].lightlevel > 255 ? 255 : SOFTLIGHT(*sector->lightlist[light].lightlevel);
+				lightlevel = *sector->lightlist[light].lightlevel > 255 ? 255 : *sector->lightlist[light].lightlevel;
 
 			if (sector->lightlist[light].extra_colormap)
 				colormap = sector->lightlist[light].extra_colormap;
@@ -4356,7 +4358,7 @@ static inline void HWR_DrawPrecipitationSprite(gr_vissprite_t *spr)
 		else
 		{
 			if (!(spr->mobj->frame & FF_FULLBRIGHT))
-			lightlevel = sector->lightlevel > 255 ? 255 : SOFTLIGHT(sector->lightlevel);
+			lightlevel = sector->lightlevel > 255 ? 255 : sector->lightlevel;
 
 			if (sector->extra_colormap)
 				colormap = sector->extra_colormap;
@@ -4417,8 +4419,6 @@ static int CompareVisSprites(const void *p1, const void *p2)
 	else
 		return -1;
 }
-
-#undef SOFTLIGHT
 
 static void HWR_SortVisSprites(void)
 {
