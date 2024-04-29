@@ -2938,6 +2938,8 @@ void P_MobjCheckWater(mobj_t *mobj)
 		p->powers[pw_underwater] = 0;
 	}
 
+	K_SpawnWaterRunParticles(mobj);
+
 	// The rest of this code only executes on a water state change.
 	if (waterwasnotset || !!(mobj->eflags & MFE_UNDERWATER) == wasinwater)
 		return;

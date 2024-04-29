@@ -5041,12 +5041,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 		flip = sprframe->flip; // Will only be 0x00 or 0xFF
 
 		if (papersprite && ang < ANGLE_180)
-		{
-			if (flip)
-				flip = 0;
-			else
-				flip = 255;
-		}
+			flip ^= 0xFFFF;
 	}
 	else
 	{
@@ -5063,12 +5058,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 		flip = sprframe->flip & (1<<rot);
 
 		if (papersprite && ang < ANGLE_180)
-		{
-			if (flip)
-				flip = 0;
-			else
-				flip = 1<<rot;
-		}
+			flip ^= (1<<rot);
 	}
 
 	if (thing->skin && ((skin_t *)( (thing->localskin) ? thing->localskin : thing->skin ))->flags & SF_HIRES)
