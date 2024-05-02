@@ -59,7 +59,7 @@ void P_SetupLevelSky(INT32 skynum, boolean global);
 void P_ScanThings(INT16 mapnum, INT16 wadnum, INT16 lumpnum);
 #endif
 void P_LoadThingsOnly(void);
-boolean P_SetupLevel(boolean skipprecip);
+boolean P_SetupLevel(boolean skipprecip, boolean reloadinggamestate);
 #ifdef HWRENDER
 void HWR_LoadLevel(void);
 #endif
