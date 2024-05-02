@@ -2937,6 +2937,8 @@ boolean P_SetupLevel(boolean skipprecip, boolean reloadinggamestate)
 	// SRB2 determines the sky texture to be used depending on the map header.
 	P_SetupLevelSky(mapheaderinfo[gamemap-1]->skynum, true);
 
+	P_InitSlopes();
+
 	P_MakeMapMD5(lastloadedmaplumpnum, &mapmd5);
 
 	// HACK ALERT: Cache the WAD, get the map data into the tables, free memory.

@@ -18,7 +18,8 @@ extern UINT16 slopecount;
 void P_LinkSlopeThinkers (void);
 
 void P_CalculateSlopeNormal(pslope_t *slope);
-void P_ResetDynamicSlopes(const UINT32 fromsave);
+void P_ResetDynamicSlopes(const boolean fromsave);
+void P_InitSlopes(void);
 
 //
 // P_CopySectorSlope

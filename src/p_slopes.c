@@ -572,23 +572,28 @@ static void line_SpawnViaVertexes(const int linenum, const boolean spawnthinker)
 //
 void P_CopySectorSlope(line_t *line)
 {
-   sector_t *fsec = line->frontsector;
-   int i, special = line->special;
+	sector_t *fsec = line->frontsector;
+	int i, special = line->special;
 
-   // Check for copy linedefs
-   for(i = -1; (i = P_FindSectorFromLineTag(line, i)) >= 0;)
-   {
-      sector_t *srcsec = sectors + i;
+	// Check for copy linedefs
+	for(i = -1; (i = P_FindSectorFromLineTag(line, i)) >= 0;)
+	{
+		sector_t *srcsec = sectors + i;
 
-      if((special - 719) & 1 && !fsec->f_slope && srcsec->f_slope)
-         fsec->f_slope = srcsec->f_slope; //P_CopySlope(srcsec->f_slope);
-      if((special - 719) & 2 && !fsec->c_slope && srcsec->c_slope)
-         fsec->c_slope = srcsec->c_slope; //P_CopySlope(srcsec->c_slope);
-   }
+		if ((special - 719) & 1 && !fsec->f_slope && srcsec->f_slope)
+			fsec->f_slope = srcsec->f_slope; //P_CopySlope(srcsec->f_slope);
+		if ((special - 719) & 2 && !fsec->c_slope && srcsec->c_slope)
+			fsec->c_slope = srcsec->c_slope; //P_CopySlope(srcsec->c_slope);
+	}
 
-   fsec->hasslope = true;
+	fsec->hasslope = true;
 
-   line->special = 0; // Linedef was use to set slopes, it finished its job, so now make it a normal linedef
+	// if this is an FOF control sector, make sure any target sectors also are marked as having slopes
+	if (fsec->numattached)
+		for (i = 0; i < (int)fsec->numattached; i++)
+			sectors[fsec->attached[i]].hasslope = true;
+
+	line->special = 0; // Linedef was use to set slopes, it finished its job, so now make it a normal linedef
 }
 
 //
@@ -604,16 +609,9 @@ pslope_t *P_SlopeById(UINT16 id)
 }
 
 /// Reset slopes and read them from special lines.
-void P_ResetDynamicSlopes(const UINT32 fromsave) {
+void P_ResetDynamicSlopes(const boolean fromsave)
+{
 	size_t i;
-
-	boolean spawnthinkers = !(boolean)fromsave;
-
-	slopelist = NULL;
-	slopecount = 0;
-
-	dynthinklist = NULL;
-	dynthinknum = 0;
 
 	/// Generates line special-defined slopes.
 	for (i = 0; i < numlines; i++)
@@ -628,37 +626,31 @@ void P_ResetDynamicSlopes(const UINT32 fromsave) {
 			case 711:
 			case 712:
 			case 713:
-				line_SpawnViaLine(i, spawnthinkers);
+				line_SpawnViaLine(i, !fromsave);
 				break;
 
 			case 704:
 			case 705:
 			case 714:
 			case 715:
-				line_SpawnViaVertexes(i, spawnthinkers);
+				line_SpawnViaVertexes(i, !fromsave);
 				break;
 
 			default:
 				break;
 		}
 	}
-
-	/// Copies slopes from tagged sectors via line specials.
-	/// \note Doesn't actually copy, but instead they share the same pointers.
-	for (i = 0; i < numlines; i++)
-		switch (lines[i].special)
-		{
-			case 720:
-			case 721:
-			case 722:
-				P_CopySectorSlope(&lines[i]);
-			default:
-				break;
-		}
 }
 
+/// Initializes slopes.
+void P_InitSlopes(void)
+{
+	slopelist = NULL;
+	slopecount = 0;
 
-
+	dynthinklist = NULL;
+	dynthinknum = 0;
+}
 
 
 // ============================================================================

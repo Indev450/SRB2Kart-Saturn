@@ -3472,7 +3472,7 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(boolean reloading)
 
 	encoremode = (boolean)READUINT8(save_p);
 
-	if (!P_SetupLevel(true,reloading))
+	if (!P_SetupLevel(true, reloading))
 		return false;
 
 	// get the time
