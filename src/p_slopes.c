@@ -131,7 +131,6 @@ static void ReconfigureViaVertexes (pslope_t *slope, const vector3_t v1, const v
 			slope->zangle = slope->xydirection = 0;
 			slope->zdelta = slope->d.x = slope->d.y = 0;
 		} else {
-			slope->extent = extent;
 			slope->xydirection = slope->real_xydirection;
 			slope->zangle = slope->real_zangle;
 		}
