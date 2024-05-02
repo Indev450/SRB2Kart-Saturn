@@ -2725,32 +2725,6 @@ static void P_KillPlayer(player_t *player, mobj_t *source, INT32 damage)
 
 	P_SetPlayerMobjState(player->mo, player->mo->info->deathstate);
 
-	/*if (gametype == GT_CTF && (player->gotflag & (GF_REDFLAG|GF_BLUEFLAG)))
-	{
-		P_PlayerFlagBurst(player, false);
-		if (source && source->player)
-		{
-			// Award no points when players shoot each other when cv_friendlyfire is on.
-			if (!G_GametypeHasTeams() || !(source->player->ctfteam == player->ctfteam && source != player->mo))
-				P_AddPlayerScore(source->player, 1);
-		}
-	}
-	if (source && source->player && !player->powers[pw_super]) //don't score points against super players
-	{
-		// Award no points when players shoot each other when cv_friendlyfire is on.
-		if (!G_GametypeHasTeams() || !(source->player->ctfteam == player->ctfteam && source != player->mo))
-			P_AddPlayerScore(source->player, 1);
-	}
-
-	// If the player was super, tell them he/she ain't so super nomore.
-	if (gametype != GT_COOP && player->powers[pw_super])
-	{
-		S_StartSound(NULL, sfx_s3k66); //let all players hear it.
-		HU_SetCEchoFlags(0);
-		HU_SetCEchoDuration(5);
-		HU_DoCEcho(va("%s\\is no longer super.\\\\\\\\", player_names[player-players]));
-	}*/
-
 	if (player->pflags & PF_TIMEOVER)
 	{
 		mobj_t *boom;
@@ -2811,40 +2785,6 @@ void P_RemoveShield(player_t *player)
 		player->powers[pw_shield] = player->powers[pw_shield] & SH_STACK;
 }
 
-/*
-static void P_ShieldDamage(player_t *player, mobj_t *inflictor, mobj_t *source, INT32 damage) // SRB2kart - unused.
-{
-	// Must do pain first to set flashing -- P_RemoveShield can cause damage
-	P_DoPlayerPain(player, source, inflictor);
-
-	P_RemoveShield(player);
-
-	P_ForceFeed(player, 40, 10, TICRATE, 40 + min(damage, 100)*2);
-
-	if (source && (source->type == MT_SPIKE || (source->type == MT_NULL && source->threshold == 43))) // spikes
-		S_StartSound(player->mo, sfx_spkdth);
-	else
-		S_StartSound (player->mo, sfx_shldls); // Ba-Dum! Shield loss.
-
-	if (gametype == GT_CTF && (player->gotflag & (GF_REDFLAG|GF_BLUEFLAG)))
-	{
-		P_PlayerFlagBurst(player, false);
-		if (source && source->player)
-		{
-			// Award no points when players shoot each other when cv_friendlyfire is on.
-			if (!G_GametypeHasTeams() || !(source->player->ctfteam == player->ctfteam && source != player->mo))
-				P_AddPlayerScore(source->player, 25);
-		}
-	}
-	if (source && source->player && !player->powers[pw_super]) //don't score points against super players
-	{
-		// Award no points when players shoot each other when cv_friendlyfire is on.
-		if (!G_GametypeHasTeams() || !(source->player->ctfteam == player->ctfteam && source != player->mo))
-			P_AddPlayerScore(source->player, cv_match_scoring.value == 1 ? 25 : 50);
-	}
-}
-*/
-
 static void P_RingDamage(player_t *player, mobj_t *inflictor, mobj_t *source, INT32 damage)
 {
 	//const UINT8 scoremultiply = ((K_IsWantedPlayer(player) && !trapitem) : 2 ? 1);
@@ -2858,24 +2798,6 @@ static void P_RingDamage(player_t *player, mobj_t *inflictor, mobj_t *source, IN
 		if (source && (source->type == MT_SPIKE || (source->type == MT_NULL && source->threshold == 43))) // spikes
 			S_StartSound(player->mo, sfx_spkdth);
 	}
-
-	/*if (source && source->player && !player->powers[pw_super]) //don't score points against super players
-	{
-		// Award no points when players shoot each other when cv_friendlyfire is on.
-		if (!G_GametypeHasTeams() || !(source->player->ctfteam == player->ctfteam && source != player->mo))
-			P_AddPlayerScore(source->player, scoremultiply);
-	}
-
-	if (gametype == GT_CTF && (player->gotflag & (GF_REDFLAG|GF_BLUEFLAG)))
-	{
-		P_PlayerFlagBurst(player, false);
-		if (source && source->player)
-		{
-			// Award no points when players shoot each other when cv_friendlyfire is on.
-			if (!G_GametypeHasTeams() || !(source->player->ctfteam == player->ctfteam && source != player->mo))
-				P_AddPlayerScore(source->player, scoremultiply);
-		}
-	}*/
 
 	// Ring loss sound plays despite hitting spikes
 	P_PlayRinglossSound(player->mo); // Ringledingle!

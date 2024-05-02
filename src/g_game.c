@@ -3142,14 +3142,53 @@ void G_DoReborn(INT32 playernum)
 	}
 }
 
+// These are the barest esentials.
+// This func probably doesn't even need to know if the player is a bot.
 void G_AddPlayer(INT32 playernum)
 {
-	player_t *p = &players[playernum];
+	CL_ClearPlayer(playernum);
 
-	p->jointime = 0;
-	p->playerstate = PST_REBORN;
+	playeringame[playernum] = true;
 
-	demo_extradata[playernum] |= DXD_PLAYSTATE|DXD_COLOR|DXD_NAME|DXD_SKIN; // Set everything
+	player_t *newplayer = &players[playernum];
+
+	newplayer->playerstate = PST_REBORN;
+	newplayer->jointime = 0;
+
+	demo_extradata[playernum] |= DXD_ADDPLAYER;
+}
+
+void G_SpectatePlayerOnJoin(INT32 playernum)
+{
+	// This is only ever called shortly after the above.
+	// That calls CL_ClearPlayer, so spectator is false by default
+
+	if (!netgame && !G_GametypeHasTeams() && !G_GametypeHasSpectators())
+		return;
+
+	// These are handled automatically elsewhere
+	if (demo.playback || players[playernum].bot)
+		return;
+
+	UINT8 i;
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		if (!playeringame[i])
+			continue;
+
+		// Spectators are of no consequence
+		if (players[i].spectator)
+			continue;
+
+		// Prevent splitscreen hosters/joiners from only adding 1 player at a time in empty servers (this will also catch yourself)
+		if (!players[i].jointime)
+			continue;
+
+		// A ha! An established player! It's time to spectate
+		players[playernum].spectator = true;
+		break;
+	}
+
 }
 
 void G_ExitLevel(void)
@@ -5012,29 +5051,24 @@ void G_ReadDemoExtraData(void)
 
 			switch (extradata) {
 			case DXD_PST_PLAYING:
-				players[p].pflags |= PF_WANTSTOJOIN; // fuck you
+				if (players[p].spectator == true)
+				{
+					players[p].pflags |= PF_WANTSTOJOIN; // fuck you
+				}
 				break;
 
 			case DXD_PST_SPECTATING:
-				players[p].pflags &= ~PF_WANTSTOJOIN; // double-fuck you
-				if (!playeringame[p])
+				if (players[p].spectator)
 				{
-					CL_ClearPlayer(p);
-					playeringame[p] = true;
-					G_AddPlayer(p);
-					players[p].spectator = true;
-
-					// There's likely an off-by-one error in timing recording or playback of joins. This hacks around it so I don't have to find out where that is. \o/
-					if (oldcmd[p].forwardmove)
-						P_RandomByte();
+					players[p].pflags &= ~PF_WANTSTOJOIN;
 				}
 				else
 				{
-					players[p].spectator = true;
 					if (players[p].mo)
-						P_DamageMobj(players[p].mo, NULL, NULL, 10000);
-					else
-						players[p].playerstate = PST_REBORN;
+					{
+						P_DamageMobj(players[p].mo, NULL, NULL, 42000);
+					}
+					P_SetPlayerSpectator(p);
 				}
 				break;
 
@@ -7604,7 +7638,7 @@ void G_DoPlayDemo(char *defdemoname)
 		if (!playeringame[displayplayers[0]] || players[displayplayers[0]].spectator)
 			displayplayers[0] = consoleplayer = serverplayer = p;
 
-		playeringame[p] = true;
+		G_AddPlayer(p);
 		players[p].spectator = spectator;
 
 		// Name

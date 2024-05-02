@@ -302,6 +302,8 @@ extern UINT8 demo_writerng;
 #define DXD_COLOR 0x08 // color changed
 #define DXD_PLAYSTATE 0x10 // state changed between playing, spectating, or not in-game
 
+#define DXD_ADDPLAYER (DXD_PLAYSTATE|DXD_COLOR|DXD_NAME|DXD_SKIN)
+
 #define DXD_PST_PLAYING 0x01
 #define DXD_PST_SPECTATING 0x02
 #define DXD_PST_LEFT 0x03
@@ -396,6 +398,7 @@ void G_ResetView(UINT8 viewnum, INT32 playernum, boolean onlyactive);
 void G_AdjustView(UINT8 viewnum, INT32 offset, boolean onlyactive);
 
 void G_AddPlayer(INT32 playernum);
+void G_SpectatePlayerOnJoin(INT32 playernum);
 
 void G_SetExitGameFlag(void);
 void G_ClearExitGameFlag(void);
