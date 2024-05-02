@@ -4984,9 +4984,6 @@ void P_UpdateSpecials(void)
 	// POINT LIMIT
 	P_CheckPointLimit();
 
-	// Dynamic slopeness
-	P_RunDynamicSlopes();
-
 	// ANIMATE TEXTURES
 	for (anim = anims; anim < lastanim; anim++)
 	{
@@ -6698,12 +6695,6 @@ void P_SpawnSpecials(INT32 fromnetsave)
 			case 606: // HACK! Copy colormaps. Just plain colormaps.
 				for (s = -1; (s = P_FindSectorFromLineTag(lines + i, s)) >= 0 ;)
 					sectors[s].midmap = lines[i].frontsector->midmap;
-				break;
-
-			case 720:
-			case 721:
-			case 722:
-				P_CopySectorSlope(&lines[i]);
 				break;
 
 			default:
