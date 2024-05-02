@@ -1657,7 +1657,7 @@ static void SendNameAndColor(void)
 	// Finally write out the complete packet and send it off.
 	WRITESTRINGN(p, cv_playername.zstring, MAXPLAYERNAME);
 	WRITEUINT8(p, (UINT8)cv_playercolor.value);
-	WRITEUINT8(p, (UINT8)cv_skin.value);
+	WRITEUINT16(p, (UINT16)cv_skin.value);
 	SendNetXCmd(XD_NAMEANDCOLOR, buf, p - buf);
 }
 
@@ -1786,7 +1786,7 @@ static void SendNameAndColor2(void)
 	// Finally write out the complete packet and send it off.
 	WRITESTRINGN(p, cv_playername2.zstring, MAXPLAYERNAME);
 	WRITEUINT8(p, (UINT8)cv_playercolor2.value);
-	WRITEUINT8(p, (UINT8)cv_skin2.value);
+	WRITEUINT16(p, (UINT16)cv_skin2.value);
 	SendNetXCmd2(XD_NAMEANDCOLOR, buf, p - buf);
 }
 
@@ -1906,7 +1906,7 @@ static void SendNameAndColor3(void)
 	// Finally write out the complete packet and send it off.
 	WRITESTRINGN(p, cv_playername3.zstring, MAXPLAYERNAME);
 	WRITEUINT8(p, (UINT8)cv_playercolor3.value);
-	WRITEUINT8(p, (UINT8)cv_skin3.value);
+	WRITEUINT16(p, (UINT16)cv_skin3.value);
 	SendNetXCmd3(XD_NAMEANDCOLOR, buf, p - buf);
 }
 
@@ -2034,7 +2034,7 @@ static void SendNameAndColor4(void)
 	// Finally write out the complete packet and send it off.
 	WRITESTRINGN(p, cv_playername4.zstring, MAXPLAYERNAME);
 	WRITEUINT8(p, (UINT8)cv_playercolor4.value);
-	WRITEUINT8(p, (UINT8)cv_skin4.value);
+	WRITEUINT16(p, (UINT16)cv_skin4.value);
 	SendNetXCmd4(XD_NAMEANDCOLOR, buf, p - buf);
 }
 
@@ -2042,7 +2042,8 @@ static void Got_NameAndColor(UINT8 **cp, INT32 playernum)
 {
 	player_t *p = &players[playernum];
 	char name[MAXPLAYERNAME+1];
-	UINT8 color, skin;
+	UINT8 color; 
+	UINT16 skin;
 
 #ifdef PARANOIA
 	if (playernum < 0 || playernum > MAXPLAYERS)
@@ -2065,7 +2066,7 @@ static void Got_NameAndColor(UINT8 **cp, INT32 playernum)
 
 	READSTRINGN(*cp, name, MAXPLAYERNAME);
 	color = READUINT8(*cp);
-	skin = READUINT8(*cp);
+	skin = READUINT16(*cp);
 
 	// set name
 	if (player_name_changes[playernum] < MAXNAMECHANGES)

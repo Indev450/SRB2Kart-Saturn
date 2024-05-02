@@ -236,8 +236,8 @@ typedef struct
 	char levelname[32];
 	UINT8 actnum;
 	UINT8 skincolor;
-	UINT8 skinnum;
-	UINT8 botskin;
+	UINT16 skinnum;
+	UINT16 botskin;
 	UINT8 botcolor;
 	UINT8 numemeralds;
 	INT32 lives;

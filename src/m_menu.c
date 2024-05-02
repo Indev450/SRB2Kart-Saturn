@@ -4406,7 +4406,7 @@ void M_Ticker(void)
 //
 void M_Init(void)
 {
-	UINT8 i;
+	UINT16 i;
 
 	COM_AddCommand("manual", Command_Manual_f);
 
@@ -4511,7 +4511,7 @@ void M_Init(void)
 
 void M_InitCharacterTables(void)
 {
-	UINT8 i;
+	UINT16 i;
 
 	// Setup PlayerMenu table
 	for (i = 0; i < MAXSKINS; i++)
@@ -10122,7 +10122,7 @@ Update the maxplayers label...
 #define iconwidth 32
 #define spacingwidth 32
 #define incrwidth (iconwidth + spacingwidth)
-		UINT8 i = 0, pskin, pcol;
+		UINT16 i = 0, pskin, pcol;
 		// player arrangement width, but there's also a chance i'm a furry, shhhhhh
 		const INT32 paw = iconwidth + 3*incrwidth;
 		INT32 trans = 0;
@@ -10432,7 +10432,7 @@ static void M_DrawSetupMultiPlayerMenu(void)
 	UINT8 frame;
 	UINT8 speed;
 	UINT8 weight;
-	UINT8 i;
+	UINT16 i;
 	UINT8 s, w;
 	const UINT8 *flashcol = V_GetStringColormap(highlightflags);
 	INT32 statx, staty;
@@ -10902,7 +10902,7 @@ static void M_DrawSetupMultiPlayerMenu(void)
 			colwidth = colwidth - 10;
 		
 		INT32 j = -colwidth;
-		INT16 col = setupm_fakecolor - colwidth;
+		INT32 col = setupm_fakecolor - colwidth;
 		INT32 x = mx;
 		INT32 cw = indexwidth;
 		UINT8 ch;
@@ -10930,7 +10930,7 @@ static void M_DrawSetupMultiPlayerMenu(void)
 	{
 		const INT32 icons = 4;
 		INT32 k = -icons;
-		INT16 col = setupm_fakeskin - icons;
+		INT32 col = setupm_fakeskin - icons;
 		INT32 x = BASEVIDWIDTH/2 - ((icons+1)*24) - 4;
 		fixed_t scale = FRACUNIT/2;
 		INT32 offx = 8, offy = 8;
