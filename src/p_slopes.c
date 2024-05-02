@@ -198,7 +198,7 @@ void T_DynamicSlopeVert (dynplanethink_t* th)
 	ReconfigureViaVertexes(slope, th->vex[0], th->vex[1], th->vex[2]);
 }
 
-static inline void P_AddDynSlopeThinker (pslope_t* slope, dynplanetype_t type, line_t* sourceline, fixed_t extent, const INT16 tags[3], const vector3_t vx[3])
+FUNCINLINE static ATTRINLINE void P_AddDynSlopeThinker (pslope_t* slope, dynplanetype_t type, line_t* sourceline, fixed_t extent, const INT16 tags[3], const vector3_t vx[3])
 {
 	dynplanethink_t* th = Z_Calloc(sizeof (*th), PU_LEVSPEC, NULL);
 	switch (type)
