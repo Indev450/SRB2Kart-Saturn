@@ -9552,7 +9552,7 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags, pat
 	// am xpos & ypos are the icon's starting position. Withouht
 	// it, they wouldn't 'spawn' on the top-right side of the HUD.
 
-	UINT8 skin = 0;
+	UINT16 skin = 0;
 	boolean skinlocal = mo->skinlocal;
 
 	fixed_t amnumxpos, amnumypos;
