@@ -126,9 +126,9 @@ extern char  logfilename[1024];
 // we use comprevision and compbranch instead.
 #else
 #define VERSION    1 // Game version
-#define SUBVERSION 6 // more precise version number
-#define VERSIONSTRING "Saturn v6.1 "
-#define VERSIONSTRINGW L"Saturn v6.1"
+#define SUBVERSION 67 // more precise version number
+#define VERSIONSTRING "Saturn v6.2 - SYNCH NETTEST"
+#define VERSIONSTRINGW L"Saturn v6.2 - SYNCH NETTEST"
 // Hey! If you change this, add 1 to the MODVERSION below! Otherwise we can't force updates!
 // And change CMakeLists.txt (not src/, but in root), for CMake users!
 // AND appveyor.yml, for the build bots!
@@ -419,7 +419,6 @@ typedef enum
 	SKINCOLOR_BOYSENBERRY,
 	SKINCOLOR_MYSTIC,
 	SKINCOLOR_WICKED,
-
 
 	// "Careful! MAXSKINCOLORS cannot be greater than 0x40 -- Which it is now."
 	// (This comment is a dirty liar! This is only limited by the integer type, so 255 for UINT8.)
