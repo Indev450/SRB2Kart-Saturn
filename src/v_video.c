@@ -3091,7 +3091,7 @@ char V_GetSkincolorChar(INT32 color)
 		case SKINCOLOR_CROCODILE:
 		case SKINCOLOR_OLIVE:
 		case SKINCOLOR_BANANA:
-		case SKINCOLOR_CITRINE:
+		case SKINCOLOR_LEMON:
 		case SKINCOLOR_MOON:
 			cstart = 0x82; // V_YELLOWMAP
 			break;
@@ -3151,7 +3151,7 @@ char V_GetSkincolorChar(INT32 color)
 		case SKINCOLOR_CERULEAN:
 		case SKINCOLOR_NAVY:
 		case SKINCOLOR_SAPPHIRE:
-		case SKINCOLOR_TOPAZ:
+		case SKINCOLOR_FROST:
 		case SKINCOLOR_WAVE:
 		case SKINCOLOR_ICY:
 		case SKINCOLOR_EVERGREEN:
