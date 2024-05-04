@@ -2351,7 +2351,7 @@ static menuitem_t OP_DriftGaugeMenu[] =
 	{IT_HEADER, NULL, "Driftgauge", NULL, 0},
 	{IT_STRING | IT_CVAR, NULL, "Driftgauge", &cv_driftgauge, 20},
 	{IT_STRING | IT_CVAR, NULL, "Driftgauge Transparency", &cv_driftgaugetrans, 30},
-	{IT_STRING | IT_CVAR | IT_CV_BIGFLOAT, NULL, "Driftgauge Offset", &cv_driftgaugeofs, 40},
+	{IT_STRING | IT_CVAR, NULL, "Driftgauge Offset", &cv_driftgaugeofs, 40},
 	{IT_STRING | IT_CVAR, NULL, "Driftgauge Style", &cv_driftgaugestyle, 50},
 };
 
