@@ -22,6 +22,8 @@
 #include "p_saveg.h"
 #include "p_local.h"
 #include "p_slopes.h" // for P_SlopeById
+#include "s_sound.h"
+#include "m_menu.h"
 #ifdef LUA_ALLOW_BYTECODE
 #include "d_netfil.h" // for LUA_DumpFile
 #endif
@@ -1315,6 +1317,9 @@ static UINT8 UnArchiveValue(int TABLESINDEX)
 		return 1;
 	default:
 		CONS_Alert(CONS_ERROR, "Unknown value type unarchived, save is corrupted!\n");
+		G_SetExitGameFlag();
+		S_StartSound(NULL, sfx_syfail); // he he he
+		M_StartMessage(M_GetText("Corrupted save received\nPress ESC\n"), NULL, MM_NOTHING);
 		return 1;
 	}
 	return 0;
