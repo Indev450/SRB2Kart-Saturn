@@ -42,6 +42,7 @@
 #include "../i_system.h"
 #include "hwsym_sdl.h"
 #include "../m_argv.h"
+#include "../i_video.h"
 
 #ifdef DEBUG_TO_FILE
 #include <stdarg.h>
@@ -149,30 +150,48 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 					"- GPU vendor has dropped OpenGL support on your GPU and OS. (Old GPU?)\n"
 					"- GPU drivers are missing or broken. You may need to update your drivers.");
 		}
+
+		if (majorGL == 1 && minorGL <= 3) // GL_GENERATE_MIPMAP is unavailible for OGL 1.3 and below
+			supportMipMap = false;
+		else
+			supportMipMap = true;
+
+		if (isExtAvailable("GL_EXT_texture_filter_anisotropic", gl_extensions))
+			pglGetIntegerv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maximumAnisotropy);
+		else
+			maximumAnisotropy = 1;
+
+		SetupGLInfo();
+
+		SetupGLFunc4();
+
+		granisotropicmode_cons_t[1].value = maximumAnisotropy;
+
+		I_DownSample();
 	}
 	first_init = true;
 
-	if (isExtAvailable("GL_EXT_texture_filter_anisotropic", gl_extensions))
-		pglGetIntegerv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maximumAnisotropy);
-	else
-		maximumAnisotropy = 1;
-	
-	SetupGLInfo();
-
-	SetupGLFunc4();
-
-	if (majorGL == 1 && minorGL <= 3) // GL_GENERATE_MIPMAP is unavailible for OGL 1.3 and below
-		supportMipMap = false;
-	else
-		supportMipMap = true;
-
-	granisotropicmode_cons_t[1].value = maximumAnisotropy;
-
 	SDL_GL_SetSwapInterval(cv_vidwait.value ? 1 : 0);
+
+	// The screen textures need to be flushed if the width or height change so that they be remade for the correct size
+	if (screen_width != w || screen_height != h)
+	{
+		FlushScreenTextures();
+		GLFramebuffer_DeleteAttachments();
+	}
+
+	screen_width = (GLint)w;
+	screen_height = (GLint)h;
 
 	SetModelView(w, h);
 	SetStates();
 	pglClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
+
+	RenderToFramebuffer = FrameBufferEnabled;
+	GLFramebuffer_Disable();
+
+	if (RenderToFramebuffer && downsample)
+		GLFramebuffer_Enable();
 
 	HWR_Startup();
 	textureformatGL = cbpp > 16 ? GL_RGBA : GL_RGB5_A1;
@@ -198,9 +217,16 @@ void OglSdlFinishUpdate(boolean waitvbl)
 	oldwaitvbl = waitvbl;
 
 	SDL_GetWindowSize(window, &sdlw, &sdlh);
-
 	HWR_MakeScreenFinalTexture();
+
+	GLFramebuffer_Disable();
+	RenderToFramebuffer = FrameBufferEnabled;
+	
 	HWR_DrawScreenFinalTexture(sdlw, sdlh);
+
+	if (RenderToFramebuffer && downsample)
+		GLFramebuffer_Enable();
+
 	SDL_GL_SwapWindow(window);
 
 	GClipRect(0, 0, realwidth, realheight, NZCLIP_PLANE, FAR_ZCLIP_DEFAULT);

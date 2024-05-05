@@ -215,6 +215,15 @@ static SDL_bool Impl_CreateWindow(SDL_bool fullscreen);
 //static void Impl_SetWindowName(const char *title);
 static void Impl_SetWindowIcon(void);
 
+#ifdef HWRENDER
+boolean downsample = false;
+void RefreshSDLSurface(void)
+{
+	if (rendermode == render_opengl)
+		OglSdlSurface(vid.width, vid.height);
+}
+#endif
+
 static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen)
 {
 	static SDL_bool wasfullscreen = SDL_FALSE;
@@ -736,11 +745,41 @@ static INT32 SDLJoyAxis(const Sint16 axis, evtype_t which)
 	return raxis;
 }
 
+#ifdef HWRENDER
+void I_DownSample(void)
+{
+	if (!cv_grframebuffer.value || !(rendermode == render_opengl))
+	{
+		downsample = false;
+		return;
+	}
+
+	int currentDisplayIndex = SDL_GetWindowDisplayIndex(window);
+	SDL_DisplayMode curmode;
+
+	if (SDL_GetCurrentDisplayMode(currentDisplayIndex, &curmode) == 0)
+	{
+		if (cv_grframebuffer.value && ((vid.width > curmode.w) || (vid.height > curmode.h))) //framebuffer downsampler thinge
+		{
+			downsample = true;
+			RefreshSDLSurface();
+		}
+		else
+			downsample = false;
+	}
+	else
+			downsample = false; // couldnt get display info so turn the thing off
+}
+#endif
+
 static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 {
 	static SDL_bool firsttimeonmouse = SDL_TRUE;
 	static SDL_bool mousefocus = SDL_TRUE;
 	static SDL_bool kbfocus = SDL_TRUE;
+#ifdef HWRENDER
+	static SDL_bool windowmoved = SDL_FALSE;
+#endif
 
 	switch (evt.event)
 	{
@@ -760,6 +799,11 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 			break;
 		case SDL_WINDOWEVENT_MAXIMIZED:
 			break;
+#ifdef HWRENDER
+		case SDL_WINDOWEVENT_MOVED:
+			windowmoved = SDL_TRUE;
+            break;
+#endif
 	}
 
 	if (mousefocus && kbfocus)
@@ -799,6 +843,12 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 		}
 	}
 
+#ifdef HWRENDER
+	if (windowmoved && rendermode == render_opengl)
+	{
+		I_DownSample();
+	}
+#endif
 }
 
 static void Impl_HandleKeyboardEvent(SDL_KeyboardEvent evt, Uint32 type)
@@ -1876,6 +1926,11 @@ INT32 VID_SetMode(INT32 modeNum)
 		vid.modenum = -1;
 	}
 	//Impl_SetWindowName("SRB2Kart "VERSIONSTRING);
+
+#ifdef HWRENDER
+	if (rendermode == render_opengl)
+		I_DownSample();
+#endif
 
 	SDLSetMode(vid.width, vid.height, USE_FULLSCREEN);
 	Impl_VideoSetupBuffer();
