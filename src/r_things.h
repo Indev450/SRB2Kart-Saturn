@@ -67,6 +67,7 @@ void R_AddSpriteDefs(UINT16 wadnum);
 
 //SoM: 6/5/2000: Light sprites correctly!
 void R_AddSprites(sector_t *sec, INT32 lightlevel);
+void R_AddPrecipitationSprites(void);
 void R_InitSprites(void);
 void R_ClearSprites(void);
 void R_DrawMasked(void);

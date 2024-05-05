@@ -277,6 +277,8 @@ ps_metric_t ps_hw_numcolors = {0};
 ps_metric_t ps_hw_batchsorttime = {0};
 ps_metric_t ps_hw_batchdrawtime = {0};
 
+static void HWR_AddPrecipitationSprites(void);
+
 // ==========================================================================
 // View position
 // ==========================================================================
@@ -4418,8 +4420,9 @@ static int CompareVisSprites(const void *p1, const void *p2)
 	// make transparent sprites last
 	// "boolean to int"
 
-	int transparency1 = (spr1->mobj->flags2 & MF2_SHADOW) || (spr1->mobj->frame & FF_TRANSMASK);
-	int transparency2 = (spr2->mobj->flags2 & MF2_SHADOW) || (spr2->mobj->frame & FF_TRANSMASK);
+	int transparency1 = (!spr1->precip && (spr1->mobj->flags2 & MF2_SHADOW)) || (spr1->mobj->frame & FF_TRANSMASK);
+	int transparency2 = (!spr2->precip && (spr2->mobj->flags2 & MF2_SHADOW)) || (spr2->mobj->frame & FF_TRANSMASK);
+
 	idiff = transparency1 - transparency2;
 	if (idiff != 0) return idiff;
 
@@ -4760,8 +4763,7 @@ void HWR_DrawSprites(void)
 void HWR_AddSprites(sector_t *sec)
 {
 	mobj_t *thing;
-	precipmobj_t *precipthing;
-	fixed_t approx_dist, limit_dist, precip_limit_dist;
+	fixed_t approx_dist, limit_dist;
 
 	INT32 splitflags;
 	boolean split_drawsprite;	// drawing with splitscreen flags
@@ -4783,13 +4785,9 @@ void HWR_AddSprites(sector_t *sec)
 			limit_dist = min(current_bsp_culling_distance, cv_drawdist.value << FRACBITS);
 		else
 			limit_dist = current_bsp_culling_distance;
-		precip_limit_dist = min(current_bsp_culling_distance, cv_drawdist_precip.value << FRACBITS);
 	}
 	else
-	{
 		limit_dist = cv_drawdist.value << FRACBITS;
-		precip_limit_dist = cv_drawdist_precip.value << FRACBITS;
-	}
 
 	// Handle all things in sector.
 	// If a limit exists, handle things a tiny bit different.
@@ -4797,7 +4795,6 @@ void HWR_AddSprites(sector_t *sec)
 	{
 		for (thing = sec->thinglist; thing; thing = thing->snext)
 		{
-
 			split_drawsprite = false;
 
 			if (thing->sprite == SPR_NULL || thing->flags2 & MF2_DONTDRAW)
@@ -4842,7 +4839,6 @@ void HWR_AddSprites(sector_t *sec)
 		// Draw everything in sector, no checks
 		for (thing = sec->thinglist; thing; thing = thing->snext)
 		{
-
 			split_drawsprite = false;
 
 			if (thing->sprite == SPR_NULL || thing->flags2 & MF2_DONTDRAW)
@@ -4877,21 +4873,46 @@ void HWR_AddSprites(sector_t *sec)
 			HWR_ProjectSprite(thing);
 		}
 	}
+}
+
+// --------------------------------------------------------------------------
+// HWR_AddPrecipitationSprites
+// This renders through the blockmap instead of BSP to avoid
+// iterating a huge amount of precipitation sprites in sectors
+// that are beyond drawdist.
+// --------------------------------------------------------------------------
+static void HWR_AddPrecipitationSprites(void)
+{
+	//const fixed_t drawdist = cv_drawdist_precip.value * mapobjectscale;
+	fixed_t drawdist;
+
+	INT32 xl, xh, yl, yh, bx, by;
+	precipmobj_t *th;
+	
+	if (current_bsp_culling_distance)
+		drawdist = min(current_bsp_culling_distance, cv_drawdist_precip.value * mapobjectscale);
+	else
+		drawdist = cv_drawdist_precip.value * mapobjectscale;
 
 	// No to infinite precipitation draw distance.
-	if (precip_limit_dist)
+	if (drawdist == 0)
 	{
-		for (precipthing = sec->preciplist; precipthing; precipthing = precipthing->snext)
+		return;
+	}
+
+	R_GetRenderBlockMapDimensions(drawdist, &xl, &xh, &yl, &yh);
+
+	for (bx = xl; bx <= xh; bx++)
+	{
+		for (by = yl; by <= yh; by++)
 		{
-			if (precipthing->precipflags & PCF_INVISIBLE)
-				continue;
+			for (th = precipblocklinks[(by * bmapwidth) + bx]; th; th = th->bnext)
+			{
+				if (th->precipflags & PCF_INVISIBLE)
+					continue;
 
-			approx_dist = P_AproxDistance(viewx-precipthing->x, viewy-precipthing->y);
-
-			if (approx_dist > precip_limit_dist)
-				continue;
-
-			HWR_ProjectPrecipitationSprite(precipthing);
+				HWR_ProjectPrecipitationSprite(th);
+			}
 		}
 	}
 }
@@ -5709,6 +5730,8 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, playe
 		if (cv_grbatching.value)
 			HWR_StartBatching();
 
+		HWR_AddPrecipitationSprites();
+
 		ps_numbspcalls.value.i = 0;
 		ps_numpolyobjects.value.i = 0;
 		PS_START_TIMING(ps_bsptime);
@@ -5728,7 +5751,7 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, playe
 		gr_portal = oldgl_portal_state;
 
 		PS_STOP_TIMING(ps_bsptime);
-		
+
 		if (cv_grbatching.value)
 			HWR_RenderBatches();
 

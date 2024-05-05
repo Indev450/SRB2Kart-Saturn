@@ -1915,7 +1915,6 @@ weatherthink:
 void R_AddSprites(sector_t *sec, INT32 lightlevel)
 {
 	mobj_t *thing;
-	precipmobj_t *precipthing; // Tails 08-25-2002
 	INT32 lightnum;
 	fixed_t approx_dist, limit_dist;
 
@@ -2034,21 +2033,42 @@ void R_AddSprites(sector_t *sec, INT32 lightlevel)
 			R_ProjectSprite(thing);
 		}
 	}
+}
+
+// R_AddPrecipitationSprites
+// This renders through the blockmap instead of BSP to avoid
+// iterating a huge amount of precipitation sprites in sectors
+// that are beyond drawdist.
+//
+void R_AddPrecipitationSprites(void)
+{
+	const fixed_t drawdist = cv_drawdist_precip.value * mapobjectscale;
+
+	INT32 xl, xh, yl, yh, bx, by;
+	precipmobj_t *th, *next;
+
+	if (drawdist == 0)
+	{
+		return;
+	}
+
+	R_GetRenderBlockMapDimensions(drawdist, &xl, &xh, &yl, &yh);
 
 	// no, no infinite draw distance for precipitation. this option at zero is supposed to turn it off
-	if ((limit_dist = (fixed_t)cv_drawdist_precip.value << FRACBITS))
+	for (bx = xl; bx <= xh; bx++)
 	{
-		for (precipthing = sec->preciplist; precipthing; precipthing = precipthing->snext)
+		for (by = yl; by <= yh; by++)
 		{
-			if (precipthing->precipflags & PCF_INVISIBLE)
-				continue;
+			for (th = precipblocklinks[(by * bmapwidth) + bx]; th; th = next)
+			{
+				// Store this beforehand because R_ProjectPrecipitionSprite may free th (see P_PrecipThinker)
+				next = th->bnext;
 
-			approx_dist = P_AproxDistance(viewx-precipthing->x, viewy-precipthing->y);
+				if (th->precipflags & PCF_INVISIBLE)
+					continue;
 
-			if (approx_dist > limit_dist)
-				continue;
-
-			R_ProjectPrecipitationSprite(precipthing);
+				R_ProjectPrecipitationSprite(th);
+			}
 		}
 	}
 }
