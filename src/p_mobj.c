@@ -338,7 +338,7 @@ static boolean P_SetPrecipMobjState(precipmobj_t *mobj, statenum_t state)
 
 	if (state == S_NULL)
 	{ // Remove mobj
-		P_FreePrecipMobj(mobj);
+		P_RemovePrecipMobj(mobj);
 		return false;
 	}
 	st = &states[state];
@@ -3592,35 +3592,26 @@ void P_RecalcPrecipInSector(sector_t *sector)
 //
 // P_NullPrecipThinker
 //
-// Just the identification of a precip thinker. The thinker
-// should never actually be called!
+// For "Blank" precipitation
 //
 void P_NullPrecipThinker(precipmobj_t *mobj)
 {
-	(void)mobj;
-	I_Assert("P_NullPrecipThinker should not be called" == 0);
+	//(void)mobj;
+	mobj->precipflags &= ~PCF_THUNK;
+	R_ResetPrecipitationMobjInterpolationState(mobj);
 }
 
-boolean P_PrecipThinker(precipmobj_t *mobj)
+void P_PrecipThinker(precipmobj_t *mobj)
 {
-	if (mobj->lastThink == leveltime)
-		return true; // already thinked this tick
-
-	mobj->lastThink = leveltime;
-
-	R_ResetPrecipitationMobjInterpolationState(mobj);
 	P_CycleStateAnimation((mobj_t *)mobj);
 
 	if (mobj->state == &states[S_RAINRETURN])
 	{
 		// Reset to ceiling!
-		if (!P_SetPrecipMobjState(mobj, mobj->info->spawnstate))
-			return false;
-
+		P_SetPrecipMobjState(mobj, mobj->info->spawnstate);
 		mobj->z = mobj->ceilingz;
 		mobj->momz = mobj->info->speed;
 		mobj->precipflags &= ~PCF_SPLASH;
-		R_ResetPrecipitationMobjInterpolationState(mobj);
 	}
 
 	if (mobj->tics != -1)
@@ -3637,23 +3628,20 @@ boolean P_PrecipThinker(precipmobj_t *mobj)
 				// HACK: sprite changes are 1 tic late, so you would see splashes on the ceiling if not for this state.
 				// We need to use the settings from the previous state, since some of those are NOT 1 tic late.
 				INT32 frame = (mobj->frame & ~FF_FRAMEMASK);
-
-				if (!P_SetPrecipMobjState(mobj, S_RAINRETURN))
-					return false;
-
+				P_SetPrecipMobjState(mobj, S_RAINRETURN);
 				mobj->frame = frame;
-				return true;
+				return;
 			}
 			else
 			{
 				if (!P_SetPrecipMobjState(mobj, mobj->state->nextstate))
-					return false;
+					return;
 			}
 		}
 	}
 
 	if (mobj->precipflags & PCF_SPLASH)
-		return true;
+		return;
 
 	// adjust height
 	if ((mobj->z += mobj->momz) <= mobj->floorz)
@@ -3661,20 +3649,14 @@ boolean P_PrecipThinker(precipmobj_t *mobj)
 		if ((mobj->info->deathstate == S_NULL) || (mobj->precipflags & PCF_PIT)) // no splashes on sky or bottomless pits
 		{
 			mobj->z = mobj->ceilingz;
-			R_ResetPrecipitationMobjInterpolationState(mobj);
 		}
 		else
 		{
-			if (!P_SetPrecipMobjState(mobj, mobj->info->deathstate))
-				return false;
-
+			P_SetPrecipMobjState(mobj, mobj->info->deathstate);
 			mobj->z = mobj->floorz;
 			mobj->precipflags |= PCF_SPLASH;
-			R_ResetPrecipitationMobjInterpolationState(mobj);
 		}
 	}
-
-	return true;
 }
 
 static void P_RingThinker(mobj_t *mobj)
@@ -10062,7 +10044,7 @@ boolean P_MobjWasRemoved(mobj_t *mobj)
     return !(mobj && mobj->thinker.function.acp1 == (actionf_p1)P_MobjThinker);
 }
 
-void P_FreePrecipMobj(precipmobj_t *mobj)
+void P_RemovePrecipMobj(precipmobj_t *mobj)
 {
 	// unlink from sector and block lists
 	P_UnsetPrecipThingPosition(mobj);
@@ -10074,9 +10056,7 @@ void P_FreePrecipMobj(precipmobj_t *mobj)
 	}
 
 	// free block
-	// Precipmobjs don't actually think using their thinker,
-	// so the free cannot be delayed.
-	P_UnlinkThinker((thinker_t*)mobj);
+	P_RemoveThinker((thinker_t *)mobj);
 }
 
 // Clearing out stuff for savegames
@@ -10112,7 +10092,12 @@ void P_RemoveSavegameMobj(mobj_t *mobj)
 
 	// free block
 	// Here we use the same code as R_RemoveThinkerDelayed, but without reference counting (we're removing everything so it shouldn't matter) and without touching currentthinker since we aren't in P_RunThinkers
-	P_UnlinkThinker((thinker_t*)mobj);
+	{
+		thinker_t *thinker = (thinker_t *)mobj;
+		thinker_t *next = thinker->next;
+		(next->prev = thinker->prev)->next = next;
+		Z_Free(thinker);
+	}
 }
 
 static CV_PossibleValue_t respawnitemtime_cons_t[] = {{1, "MIN"}, {300, "MAX"}, {0, NULL}};
