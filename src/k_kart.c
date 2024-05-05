@@ -5912,11 +5912,11 @@ void K_SpawnWaterRunParticles(mobj_t *mobj)
 		}
 
 		// Little water sound while touching water - just a nicety.
-		if ((mobj->eflags & MFE_TOUCHWATER) && !(mobj->eflags & MFE_UNDERWATER))
+		/*if ((mobj->eflags & MFE_TOUCHWATER) && !(mobj->eflags & MFE_UNDERWATER))
 		{
-			if (P_RandomChance(FRACUNIT/2) && leveltime % TICRATE == 0)
+			if (M_RandomChance(FRACUNIT/2) && leveltime % TICRATE == 0)
 				S_StartSound(mobj, sfx_floush);
-		}
+		}*/
 	}
 }
 

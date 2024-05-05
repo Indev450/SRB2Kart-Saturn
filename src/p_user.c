@@ -2482,14 +2482,14 @@ static void P_MovePlayer(player_t *player)
 		water->destscale = player->mo->scale;
 		P_SetScale(water, player->mo->scale);
 	}
-
+#endif
 	// Little water sound while touching water - just a nicety.
 	if ((player->mo->eflags & MFE_TOUCHWATER) && !(player->mo->eflags & MFE_UNDERWATER) && !player->spectator)
 	{
 		if (P_RandomChance(FRACUNIT/2) && leveltime % TICRATE == 0)
 			S_StartSound(player->mo, sfx_floush);
 	}
-#endif
+
 
 	////////////////////////////
 	//SPINNING AND SPINDASHING//
