@@ -42,8 +42,8 @@ tic_t leveltime;
 // but the first element must be thinker_t.
 //
 
-// Both the head and tail of the thinker list.
-thinker_t thinkercap;
+// The entries will behave like both the head and tail of the lists.
+thinker_t thlist[NUM_THINKERLISTS];
 
 void Command_Numthinkers_f(void)
 {
@@ -51,6 +51,9 @@ void Command_Numthinkers_f(void)
 	INT32 count = 0;
 	actionf_p1 action;
 	thinker_t *think;
+	thinklistnum_t start = 0;
+	thinklistnum_t end = NUM_THINKERLISTS - 1;
+	thinklistnum_t i;
 
 	if (gamestate != GS_LEVEL)
 	{
@@ -77,26 +80,22 @@ void Command_Numthinkers_f(void)
 	switch (num)
 	{
 		case 1:
+			start = end = THINK_MOBJ;
 			action = (actionf_p1)P_MobjThinker;
 			CONS_Printf(M_GetText("Number of %s: "), "P_MobjThinker");
 			break;
-		/*case 2:
-			action = (actionf_p1)P_RainThinker;
-			CONS_Printf(M_GetText("Number of %s: "), "P_RainThinker");
-			break;
-		case 3:
-			action = (actionf_p1)P_SnowThinker;
-			CONS_Printf(M_GetText("Number of %s: "), "P_SnowThinker");
-			break;*/
 		case 2:
+			start = end = THINK_PRECIP;
 			action = (actionf_p1)P_NullPrecipThinker;
 			CONS_Printf(M_GetText("Number of %s: "), "P_NullPrecipThinker");
 			break;
 		case 3:
+			start = end = THINK_MAIN;
 			action = (actionf_p1)T_Friction;
 			CONS_Printf(M_GetText("Number of %s: "), "T_Friction");
 			break;
 		case 4:
+			start = end = THINK_MAIN;
 			action = (actionf_p1)T_Pusher;
 			CONS_Printf(M_GetText("Number of %s: "), "T_Pusher");
 			break;
@@ -109,12 +108,15 @@ void Command_Numthinkers_f(void)
 			return;
 	}
 
-	for (think = thinkercap.next; think != &thinkercap; think = think->next)
+	for (i = start; i <= end; i++)
 	{
-		if (think->function.acp1 != action)
-			continue;
+		for (think = thlist[i].next; think != &thlist[i]; think = think->next)
+		{
+			if (think->function.acp1 != action)
+				continue;
 
-		count++;
+			count++;
+		}
 	}
 
 	CONS_Printf("%d\n", count);
@@ -146,9 +148,9 @@ void Command_CountMobjs_f(void)
 
 			count = 0;
 
-			for (th = thinkercap.next; th != &thinkercap; th = th->next)
+			for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 			{
-				if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+				if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 					continue;
 
 				if (((mobj_t *)th)->type == i)
@@ -166,9 +168,9 @@ void Command_CountMobjs_f(void)
 	{
 		count = 0;
 
-		for (th = thinkercap.next; th != &thinkercap; th = th->next)
+		for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 		{
-			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 				continue;
 
 			if (((mobj_t *)th)->type == i)
@@ -185,23 +187,32 @@ void Command_CountMobjs_f(void)
 //
 void P_InitThinkers(void)
 {
-	thinkercap.prev = thinkercap.next = &thinkercap;
-	waypointcap = NULL;
+	UINT8 i;
+	for (i = 0; i < NUM_THINKERLISTS; i++)
+		thlist[i].prev = thlist[i].next = &thlist[i];
+	
+	waypointcap = NULL; //Hack transplant
 }
 
 //
 // P_AddThinker
 // Adds a new thinker at the end of the list.
 //
-void P_AddThinker(thinker_t *thinker)
+void P_AddThinker(const thinklistnum_t n, thinker_t *thinker)
 {
-	thinkercap.prev->next = thinker;
-	thinker->next = &thinkercap;
-	thinker->prev = thinkercap.prev;
-	thinkercap.prev = thinker;
+#ifdef PARANOIA
+	I_Assert(n < NUM_THINKERLISTS);
+#endif
+
+	thlist[n].prev->next = thinker;
+	thinker->next = &thlist[n];
+	thinker->prev = thlist[n].prev;
+	thlist[n].prev = thinker;
 
 	thinker->references = 0;    // killough 11/98: init reference counter to 0
+	thinker->cachable = n == THINK_MOBJ;
 }
+
 
 //
 // killough 11/98:
@@ -223,21 +234,56 @@ static thinker_t *currentthinker;
 //
 void P_RemoveThinkerDelayed(void *pthinker)
 {
-	thinker_t *thinker = pthinker;
-	if (!thinker->references)
+	thinker_t *next;
+
+	if (thinker->references != 0)
 	{
+#ifdef PARANOIA
+		if (thinker->debug_time > leveltime)
 		{
-			/* Remove from main thinker list */
-			thinker_t *next = thinker->next;
-			/* Note that currentthinker is guaranteed to point to us,
-			 * and since we're freeing our memory, we had better change that. So
-			 * point it to thinker->prev, so the iterator will correctly move on to
-			 * thinker->prev->next = thinker->next */
-			(next->prev = currentthinker = thinker->prev)->next = next;
+			thinker->debug_time = leveltime + 2; // do not print errors again
 		}
-		R_DestroyLevelInterpolators(thinker);
+		// Removed mobjs can be the target of another mobj. In
+		// that case, the other mobj will manage its reference
+		// to the removed mobj in P_MobjThinker. However, if
+		// the removed mobj is removed after the other object
+		// thinks, the reference management is delayed by one
+		// tic.
+		else if (thinker->debug_time < leveltime)
+		{
+			CONS_Printf(
+					"PARANOIA/P_RemoveThinkerDelayed: %p %s references=%d\n",
+					(void*)thinker,
+					MobjTypeName((mobj_t*)thinker),
+					thinker->references
+			);
+
+			thinker->debug_time = leveltime + 2; // do not print this error again
+		}
+#endif
+		return;
+	}
+
+	/* Remove from main thinker list */
+	next = thinker->next;
+	/* Note that currentthinker is guaranteed to point to us,
+	* and since we're freeing our memory, we had better change that. So
+	* point it to thinker->prev, so the iterator will correctly move on to
+	* thinker->prev->next = thinker->next */
+	(next->prev = currentthinker = thinker->prev)->next = next;
+
+	R_DestroyLevelInterpolators(thinker);
+	if (thinker->cachable)
+	{
+		// put cachable thinkers in the mobj cache, so we can avoid allocations
+		((mobj_t *)thinker)->hnext = mobjcache;
+		mobjcache = (mobj_t *)thinker;
+	}
+	else
+	{
 		Z_Free(thinker);
 	}
+
 }
 
 //
@@ -274,8 +320,8 @@ mobj_t *P_SetTarget(mobj_t **mop, mobj_t *targ)
 {
 	if (*mop)              // If there was a target already, decrease its refcount
 		(*mop)->thinker.references--;
-if ((*mop = targ) != NULL) // Set new target and if non-NULL, increase its counter
-		targ->thinker.references++;
+	if ((*mop = targ) != NULL) // Set new target and if non-NULL, increase its counter
+			targ->thinker.references++;
 	return targ;
 }
 
@@ -303,11 +349,18 @@ if ((*mop = targ) != NULL) // Set new target and if non-NULL, increase its count
 //
 static inline void P_RunThinkers(void)
 {
-	for (currentthinker = thinkercap.next; currentthinker != &thinkercap; currentthinker = currentthinker->next)
+	size_t i;
+	for (i = 0; i < NUM_THINKERLISTS; i++)
 	{
-		if (currentthinker->function.acp1)
+		for (currentthinker = thlist[i].next; currentthinker != &thlist[i]; currentthinker = currentthinker->next)
+		{
+#ifdef PARANOIA
+			I_Assert(currentthinker->function.acp1 != NULL);
+#endif
 			currentthinker->function.acp1(currentthinker);
+		}
 	}
+
 }
 
 //

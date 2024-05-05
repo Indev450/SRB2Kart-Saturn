@@ -2417,10 +2417,11 @@ void A_1upThinker(mobj_t *actor)
 
 	if (closestplayer == -1 || skins[players[closestplayer].skin].spritedef.numframes <= states[S_PLAY_BOX1].frame)
 	{ // Closest player not found (no players in game?? may be empty dedicated server!), or does not have correct sprite.
-		actor->frame = 0;
-		if (actor->tracer) {
-			P_RemoveMobj(actor->tracer);
-			P_SetTarget(&actor->target, NULL);
+		if (actor->tracer)
+		{
+			mobj_t *tracer = actor->tracer;
+			P_SetTarget(&actor->tracer, NULL);
+			P_RemoveMobj(tracer);
 		}
 		return;
 	}
@@ -2629,9 +2630,9 @@ void A_BossDeath(mobj_t *mo)
 
 	// scan the remaining thinkers to see
 	// if all bosses are dead
-	for (th = thinkercap.next; th != &thinkercap; th = th->next)
+	for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 	{
-		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 			continue;
 
 		mo2 = (mobj_t *)th;
@@ -2687,10 +2688,10 @@ bossjustdie:
 
 		// Flee! Flee! Find a point to escape to! If none, just shoot upward!
 		// scan the thinkers to find the runaway point
-		for (th = thinkercap.next; th != &thinkercap; th = th->next)
+		for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 		{
-			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
-				continue;
+			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+					continue;
 
 			mo2 = (mobj_t *)th;
 
@@ -5294,9 +5295,9 @@ void A_RingExplode(mobj_t *actor)
 
 	S_StartSound(actor, sfx_prloop);
 
-	for (th = thinkercap.next; th != &thinkercap; th = th->next)
+	for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 	{
-		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 			continue;
 
 		mo2 = (mobj_t *)th;
@@ -6862,17 +6863,24 @@ void A_Boss3Path(mobj_t *actor)
 		// scan the thinkers
 		// to find a point that matches
 		// the number
-		for (th = thinkercap.next; th != &thinkercap; th = th->next)
+		for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 		{
-			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
-				continue;
+			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+					continue;
 
 			mo2 = (mobj_t *)th;
-			if (mo2->type == MT_BOSS3WAYPOINT && mo2->spawnpoint && mo2->spawnpoint->angle == actor->threshold)
-			{
-				P_SetTarget(&actor->target, mo2);
-				break;
-			}
+
+			if (mo2->type != MT_BOSS3WAYPOINT)
+				continue;
+			if (!mo2->spawnpoint)
+				continue;
+			if (mo2->spawnpoint->angle != actor->threshold)
+				continue;
+			if (mo2->spawnpoint->extrainfo != actor->cusval)
+				continue;
+
+			P_SetTarget(&actor->target, mo2);
+			break;
 		}
 
 		if (!actor->target) // Should NEVER happen
@@ -7299,9 +7307,9 @@ void A_FindTarget(mobj_t *actor)
 	CONS_Debug(DBG_GAMELOGIC, "A_FindTarget called from object type %d, var1: %d, var2: %d\n", actor->type, locvar1, locvar2);
 
 	// scan the thinkers
-	for (th = thinkercap.next; th != &thinkercap; th = th->next)
+	for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 	{
-		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 			continue;
 
 		mo2 = (mobj_t *)th;
@@ -7363,9 +7371,9 @@ void A_FindTracer(mobj_t *actor)
 	CONS_Debug(DBG_GAMELOGIC, "A_FindTracer called from object type %d, var1: %d, var2: %d\n", actor->type, locvar1, locvar2);
 
 	// scan the thinkers
-	for (th = thinkercap.next; th != &thinkercap; th = th->next)
+	for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 	{
-		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 			continue;
 
 		mo2 = (mobj_t *)th;
@@ -7905,9 +7913,9 @@ void A_RemoteAction(mobj_t *actor)
 		fixed_t dist1 = 0, dist2 = 0;
 
 		// scan the thinkers
-		for (th = thinkercap.next; th != &thinkercap; th = th->next)
+		for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 		{
-			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 				continue;
 
 			mo2 = (mobj_t *)th;
@@ -8683,9 +8691,9 @@ void A_MementosTPParticles(mobj_t *actor)
 	// Doesn't seem like much given the small amount of mobjs this map has but heh.
 	if (!actor->target)
 	{
-		for (th = thinkercap.next; th != &thinkercap; th = th->next)
+		for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 		{
-			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 				continue;
 
 			mo2 = (mobj_t *)th;
@@ -8782,9 +8790,9 @@ void A_ReaperThinker(mobj_t *actor)
 		}
 
 		// We have no target and oughta find one, so let's scan through thinkers for a waypoint of angle 0, or something.
-		for (th = thinkercap.next; th != &thinkercap; th = th->next)
+		for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 		{
-			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 				continue;
 
 			mo2 = (mobj_t *)th;
@@ -8848,9 +8856,9 @@ void A_ReaperThinker(mobj_t *actor)
 				P_SetTarget(&actor->target, NULL);	// remove target so we can default back to first waypoint if things go ham.
 
 				// If we reach close to a waypoint, then we should go to the NEXT one.
-				for (th = thinkercap.next; th != &thinkercap; th = th->next)
+				for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 				{
-					if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+					if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 						continue;
 
 					mo2 = (mobj_t *)th;
@@ -9023,9 +9031,9 @@ void A_SetObjectTypeState(mobj_t *actor)
 	if (LUA_CallAction("A_SetObjectTypeState", actor))
 		return;
 
-	for (th = thinkercap.next; th != &thinkercap; th = th->next)
+	for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 	{
-		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 			continue;
 
 		mo2 = (mobj_t *)th;
@@ -9645,9 +9653,9 @@ void A_CheckThingCount(mobj_t *actor)
 	if (LUA_CallAction("A_CheckThingCount", actor))
 		return;
 
-	for (th = thinkercap.next; th != &thinkercap; th = th->next)
+	for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 	{
-		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 			continue;
 
 		mo2 = (mobj_t *)th;
