@@ -42,38 +42,18 @@ extern UINT32 mapmusresume;
 
 extern INT16 maptol;
 extern UINT8 globalweather;
-extern UINT8 curWeather;
+extern INT32 curWeather;
 extern INT32 cursaveslot;
 extern INT16 lastmapsaved;
 extern boolean gamecomplete;
 
-#define PRECIP_BLANK PRECIP_NONE //uuhhhhhhhhhhhhhhh cant really remove shit from dehacked so this´ll do ig
-
-typedef enum
-{
-	PRECIP_NONE = 0,
-	PRECIP_RAIN,
-	PRECIP_SNOW,
-	PRECIP_STORM,
-	PRECIP_STORM_NORAIN,
-	PRECIP_STORM_NOSTRIKES,
-	MAXPRECIP
-} preciptype_t;
-
-typedef enum
-{
-	PRECIPFX_THUNDER = 1,
-	PRECIPFX_LIGHTNING = 1<<1
-} precipeffect_t;
-
-typedef struct
-{
-	mobjtype_t type;
-	precipeffect_t effects;
-	UINT8 randomstates;
-} precipprops_t;
-
-extern precipprops_t precipprops[MAXPRECIP];
+#define PRECIP_NONE  0
+#define PRECIP_STORM 1
+#define PRECIP_SNOW  2
+#define PRECIP_RAIN  3
+#define PRECIP_BLANK 4
+#define PRECIP_STORM_NORAIN 5
+#define PRECIP_STORM_NOSTRIKES 6
 
 // Set if homebrew PWAD stuff has been added.
 extern boolean modifiedgame;

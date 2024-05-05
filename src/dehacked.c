@@ -9314,7 +9314,7 @@ int LUA_EnumLib(lua_State *L)
 	PUSHGETTER(paused, b8);
 	PUSHGETTER(gametype, i16);
 	PUSHGETTER(leveltime, u32);
-	PUSHGETTER(curWeather, u8);
+	PUSHGETTER(curWeather, i32);
 	PUSHGETTER(globalweather, u8);
 	PUSHGETTER(levelskynum, i32);
 	PUSHGETTER(globallevelskynum, i32);

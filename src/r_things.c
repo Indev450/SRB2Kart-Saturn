@@ -1900,9 +1900,13 @@ weatherthink:
 	// okay... this is a hack, but weather isn't networked, so it should be ok
 	if (!(thing->precipflags & PCF_THUNK))
 	{
-		P_PrecipThinker(thing);
+		if (thing->precipflags & PCF_RAIN)
+			P_RainThinker(thing);
+		else
+			P_SnowThinker(thing);
 		thing->precipflags |= PCF_THUNK;
 	}
+
 }
 
 // R_AddSprites
