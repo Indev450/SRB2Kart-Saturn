@@ -1761,7 +1761,7 @@ void R_RenderPlayerView(player_t *player)
 	R_ClipSprites();
 	PS_STOP_TIMING(ps_sw_spritecliptime);
 	
-	//ps_numsprites.value.i = numvisiblesprites;
+	ps_numsprites.value.i = numvisiblesprites;
 
 	// PORTAL RENDERING
 	PS_START_TIMING(ps_sw_portaltime);
