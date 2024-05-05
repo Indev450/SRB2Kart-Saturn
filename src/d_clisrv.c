@@ -4430,11 +4430,11 @@ static void HandlePacketFromAwayNode(SINT8 node)
   * \sa HandlePacketFromPlayer
   *
   */
-static boolean CheckForSpeedHacks(UINT8 p)
+static boolean CheckForSpeedHacks(UINT8 p, tic_t faketic)
 {
-	if (netcmds[maketic%TICQUEUE][p].forwardmove > MAXPLMOVE || netcmds[maketic%TICQUEUE][p].forwardmove < -MAXPLMOVE
-		|| netcmds[maketic%TICQUEUE][p].sidemove > MAXPLMOVE || netcmds[maketic%TICQUEUE][p].sidemove < -MAXPLMOVE
-		|| netcmds[maketic%TICQUEUE][p].driftturn > KART_FULLTURN || netcmds[maketic%TICQUEUE][p].driftturn < -KART_FULLTURN)
+	if (netcmds[faketic%TICQUEUE][p].forwardmove > MAXPLMOVE || netcmds[faketic%TICQUEUE][p].forwardmove < -MAXPLMOVE
+		|| netcmds[faketic%TICQUEUE][p].sidemove > MAXPLMOVE || netcmds[faketic%TICQUEUE][p].sidemove < -MAXPLMOVE
+		|| netcmds[faketic%TICQUEUE][p].driftturn > KART_FULLTURN || netcmds[faketic%TICQUEUE][p].driftturn < -KART_FULLTURN)
 	{
 		char buf[2];
 		CONS_Alert(CONS_WARNING, M_GetText("Illegal movement value received from node %d\n"), playernode[p]);
@@ -4520,6 +4520,12 @@ static void HandlePacketFromPlayer(SINT8 node)
 			// As long as clients send valid ticcmds, the server can keep running, so reset the timeout
 			/// \todo Use a separate cvar for that kind of timeout?
 			freezetimeout[node] = I_GetTime() + connectiontimeout;
+			
+			// If we've alredy received a ticcmd for this tic, just submit it for the next one.
+			tic_t faketic = maketic;
+			if ((!!(netcmds[maketic % TICQUEUE][netconsole].angleturn & TICCMD_RECEIVED))
+				&& (maketic - firstticstosend < TICQUEUE - 1))
+				faketic++;
 
 			// Don't do anything for packets of type NODEKEEPALIVE?
 			// Sryder 2018/07/01: Update the freezetimeout still!
@@ -4528,10 +4534,10 @@ static void HandlePacketFromPlayer(SINT8 node)
 				break;
 
 			// Copy ticcmd
-			G_MoveTiccmd(&netcmds[maketic%TICQUEUE][netconsole], &netbuffer->u.clientpak.cmd, 1);
+			G_MoveTiccmd(&netcmds[faketic%TICQUEUE][netconsole], &netbuffer->u.clientpak.cmd, 1);
 
 			// Check ticcmd for "speed hacks"
-			if (CheckForSpeedHacks((UINT8)netconsole))
+			if (CheckForSpeedHacks((UINT8)netconsole, faketic))
 				break;
 
 			// Splitscreen cmd
@@ -4540,10 +4546,10 @@ static void HandlePacketFromPlayer(SINT8 node)
 				|| (netbuffer->packettype == PT_CLIENT4CMD || netbuffer->packettype == PT_CLIENT4MIS))
 				&& (nodetoplayer2[node] >= 0))
 			{
-				G_MoveTiccmd(&netcmds[maketic%TICQUEUE][(UINT8)nodetoplayer2[node]],
+				G_MoveTiccmd(&netcmds[faketic%TICQUEUE][(UINT8)nodetoplayer2[node]],
 					&netbuffer->u.client2pak.cmd2, 1);
 
-				if (CheckForSpeedHacks((UINT8)nodetoplayer2[node]))
+				if (CheckForSpeedHacks((UINT8)nodetoplayer2[node], faketic))
 					break;
 			}
 
@@ -4551,20 +4557,20 @@ static void HandlePacketFromPlayer(SINT8 node)
 				|| (netbuffer->packettype == PT_CLIENT4CMD || netbuffer->packettype == PT_CLIENT4MIS))
 				&& (nodetoplayer3[node] >= 0))
 			{
-				G_MoveTiccmd(&netcmds[maketic%TICQUEUE][(UINT8)nodetoplayer3[node]],
+				G_MoveTiccmd(&netcmds[faketic%TICQUEUE][(UINT8)nodetoplayer3[node]],
 					&netbuffer->u.client3pak.cmd3, 1);
 
-				if (CheckForSpeedHacks((UINT8)nodetoplayer3[node]))
+				if (CheckForSpeedHacks((UINT8)nodetoplayer3[node], faketic))
 					break;
 			}
 
 			if ((netbuffer->packettype == PT_CLIENT4CMD || netbuffer->packettype == PT_CLIENT4MIS)
 				&& (nodetoplayer4[node] >= 0))
 			{
-				G_MoveTiccmd(&netcmds[maketic%TICQUEUE][(UINT8)nodetoplayer4[node]],
+				G_MoveTiccmd(&netcmds[faketic%TICQUEUE][(UINT8)nodetoplayer4[node]],
 					&netbuffer->u.client4pak.cmd4, 1);
 
-				if (CheckForSpeedHacks((UINT8)nodetoplayer4[node]))
+				if (CheckForSpeedHacks((UINT8)nodetoplayer4[node], faketic))
 					break;
 			}
 
