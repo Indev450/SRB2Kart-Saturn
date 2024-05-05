@@ -2063,7 +2063,7 @@ void P_SwitchWeather(INT32 weathernum)
 
 			precipmobj = (precipmobj_t *)think;
 
-			P_RemovePrecipMobj(precipmobj);
+			P_FreePrecipMobj(precipmobj);
 		}
 	}
 	else if (swap && !((swap == PRECIP_BLANK && curWeather == PRECIP_STORM_NORAIN) || (swap == PRECIP_STORM_NORAIN && curWeather == PRECIP_BLANK))) // Rather than respawn all that crap, reuse it!
@@ -2090,7 +2090,6 @@ void P_SwitchWeather(INT32 weathernum)
 
 				precipmobj->precipflags &= ~PCF_INVISIBLE;
 
-				precipmobj->precipflags |= PCF_RAIN;
 				//think->function.acp1 = (actionf_p1)P_RainThinker;
 			}
 			else if (swap == PRECIP_SNOW) // Rain To Snow
@@ -2114,7 +2113,7 @@ void P_SwitchWeather(INT32 weathernum)
 				precipmobj->frame = st->frame;
 				precipmobj->momz = mobjinfo[MT_SNOWFLAKE].speed;
 
-				precipmobj->precipflags &= ~(PCF_INVISIBLE|PCF_RAIN);
+				precipmobj->precipflags &= ~(PCF_INVISIBLE);
 
 				//think->function.acp1 = (actionf_p1)P_SnowThinker;
 			}
