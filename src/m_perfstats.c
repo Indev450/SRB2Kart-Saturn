@@ -50,16 +50,16 @@ ps_metric_t ps_tictime = {0};
 ps_metric_t ps_playerthink_time = {0};
 ps_metric_t ps_thinkertime = {0};
 
-//ps_metric_t ps_thlist_times[NUM_THINKERLISTS];
+ps_metric_t ps_thlist_times[NUM_THINKERLISTS];
 
-static ps_metric_t ps_thinkercount = {0};
+/*static ps_metric_t ps_thinkercount = {0};
 static ps_metric_t ps_mobjcount = {0};
 static ps_metric_t ps_regularcount = {0};
 static ps_metric_t ps_scenerycount = {0};
 static ps_metric_t ps_nothinkcount = {0};
 static ps_metric_t ps_otherthcount = {0};
 static ps_metric_t ps_precipcount = {0};
-static ps_metric_t ps_removecount = {0};
+static ps_metric_t ps_removecount = {0};*/
 
 ps_metric_t ps_checkposition_calls = {0};
 
@@ -154,11 +154,11 @@ perfstatrow_t gamelogic_rows[] = {
 	{"logic  ", "Game logic:     ", &ps_tictime, PS_TIME},
 	{" plrthnk", " P_PlayerThink:  ", &ps_playerthink_time, PS_TIME|PS_LEVEL},
 	{" thnkers", " P_RunThinkers:  ", &ps_thinkertime, PS_TIME|PS_LEVEL},
-/*	{"  plyobjs", "  Polyobjects:    ", &ps_thlist_times[THINK_POLYOBJ], PS_TIME|PS_LEVEL},
+	{"  plyobjs", "  Polyobjects:    ", &ps_thlist_times[THINK_POLYOBJ], PS_TIME|PS_LEVEL},
 	{"  main   ", "  Main:           ", &ps_thlist_times[THINK_MAIN], PS_TIME|PS_LEVEL},
 	{"  mobjs  ", "  Mobjs:          ", &ps_thlist_times[THINK_MOBJ], PS_TIME|PS_LEVEL},
 	{"  dynslop", "  Dynamic slopes: ", &ps_thlist_times[THINK_DYNSLOPE], PS_TIME|PS_LEVEL},
-	{"  precip ", "  Precipitation:  ", &ps_thlist_times[THINK_PRECIP], PS_TIME|PS_LEVEL},*/
+	{"  precip ", "  Precipitation:  ", &ps_thlist_times[THINK_PRECIP], PS_TIME|PS_LEVEL},
 	{" lprethinkf", " LUAh_PreThinkFrame:", &ps_lua_prethinkframe_time, PS_TIME|PS_LEVEL},
 	{" lthinkf", " LUAh_ThinkFrame:", &ps_lua_thinkframe_time, PS_TIME|PS_LEVEL},
 	{" lpostthinkf", " LUAh_PostThinkFrame:", &ps_lua_postthinkframe_time, PS_TIME|PS_LEVEL},
@@ -166,7 +166,7 @@ perfstatrow_t gamelogic_rows[] = {
 	{0}
 };
 
-perfstatrow_t thinkercount_rows[] = {
+/*perfstatrow_t thinkercount_rows[] = {
 	{"thnkers", "Thinkers:       ", &ps_thinkercount, PS_LEVEL},
 	{" mobjs  ", " Mobjs:          ", &ps_mobjcount, PS_LEVEL},
 	{"  regular", "  Regular:        ", &ps_regularcount, PS_LEVEL},
@@ -176,7 +176,7 @@ perfstatrow_t thinkercount_rows[] = {
 	{" precip ", " Precipitation:  ", &ps_precipcount, PS_LEVEL},
 	{" remove ", " Pending removal:", &ps_removecount, PS_LEVEL},
 	{0}
-};
+};*/
 
 perfstatrow_t misc_calls_rows[] = {
 	{"lmhook", "Lua mobj hooks: ", &ps_lua_mobjhooks, PS_LEVEL},
@@ -562,7 +562,7 @@ static void PS_UpdateFrameStats(void)
 }
 
 // Update thinker counters by iterating the thinker lists.
-static void PS_CountThinkers(void)
+/*static void PS_CountThinkers(void)
 {
 	thinker_t *thinker;
 
@@ -595,7 +595,7 @@ static void PS_CountThinkers(void)
 		else
 			ps_otherthcount.value.i++;
 	}
-	/*for (i = 0; i < NUM_THINKERLISTS; i++)
+	for (i = 0; i < NUM_THINKERLISTS; i++)
 	{
 		for (thinker = thlist[i].next; thinker != &thlist[i]; thinker = thinker->next)
 		{
@@ -625,8 +625,8 @@ static void PS_CountThinkers(void)
 			else if (i == THINK_PRECIP)
 				ps_precipcount.value.i++;
 		}
-	}*/
-}
+	}
+}*/
 
 // Update all metrics that are calculated on every tick.
 void PS_UpdateTickStats(void)
@@ -647,15 +647,13 @@ void PS_UpdateTickStats(void)
 				ps_lua_thinkframe_time.value.p -
 				ps_lua_postthinkframe_time.value.p;
 
-
-
-			PS_CountThinkers();
+			//PS_CountThinkers();
 		}
 
 		if (cv_ps_samplesize.value > 1)
 		{
 			PS_UpdateRowHistories(gamelogic_rows, false);
-			PS_UpdateRowHistories(thinkercount_rows, false);
+			//PS_UpdateRowHistories(thinkercount_rows, false);
 			PS_UpdateRowHistories(misc_calls_rows, false);
 		}
 	}
@@ -785,8 +783,8 @@ static void PS_DrawGameLogicStats(void)
 
 	PS_DrawPerfRows(20, 10, V_YELLOWMAP, gamelogic_rows);
 
-	x = hires ? 115 : 90;
-	PS_DrawPerfRows(x, 10, V_BLUEMAP, thinkercount_rows);
+	//x = hires ? 115 : 90;
+	//PS_DrawPerfRows(x, 10, V_BLUEMAP, thinkercount_rows);
 
 	if (hires)
 		V_DrawSmallString(212, 10, V_MONOSPACE | V_ALLOWLOWERCASE | V_PURPLEMAP, "Calls:");

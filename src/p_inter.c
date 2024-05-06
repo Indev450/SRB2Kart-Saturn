@@ -1211,11 +1211,11 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 						continue;
 
 					mo2 = (mobj_t *)th;
-					if (mo2->type == MT_KOOPA)
-					{
-						mo2->momz = 5*FRACUNIT;
-						break;
-					}
+					if (mo2->type != MT_KOOPA)
+						continue;
+
+					mo2->momz = 5*FRACUNIT;
+					break;
 				}
 			}
 			break;
@@ -2369,12 +2369,14 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 				continue;
 
 			mo = (mobj_t *)th;
-			if (mo->type == (mobjtype_t)target->info->mass && mo->tracer == target)
-			{
-				P_RemoveMobj(mo);
-				i++;
-			}
-			if (i == 2) // we've already removed 2 of these, let's stop now
+			if (mo->type != (mobjtype_t)target->info->mass)
+				continue;
+			if (mo->tracer != target)
+				continue;
+
+			P_RemoveMobj(mo);
+
+			if (++i == 2) // we've already removed 2 of these, let's stop now
 				break;
 		}
 	}

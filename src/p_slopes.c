@@ -182,7 +182,7 @@ FUNCINLINE static ATTRINLINE void P_AddDynSlopeThinker (pslope_t* slope, dynplan
 	th->slope = slope;
 	th->type = type;
 
-	P_AddThinker(THINK_MAIN, &th->thinker);
+	P_AddThinker(THINK_DYNSLOPE, &th->thinker);
 
 	// interpolation
 	R_CreateInterpolator_DynSlope(&th->thinker, slope);

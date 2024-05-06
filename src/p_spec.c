@@ -3760,11 +3760,16 @@ void P_ProcessSpecialSector(player_t *player, sector_t *sector, sector_t *rovers
 			// The chimps are my friends.. heeheeheheehehee..... - LouisJM
 			for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 			{
-				if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-					continue;
 				mo2 = (mobj_t *)th;
+				if (!mo2)
+					continue;
+
 				if (mo2->type != MT_EGGTRAP)
 					continue;
+
+				if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+					continue;
+
 				P_KillMobj(mo2, NULL, player->mo);
 			}
 

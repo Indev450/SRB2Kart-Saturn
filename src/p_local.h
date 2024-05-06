@@ -67,6 +67,7 @@ typedef enum
 	THINK_MAIN,
 	THINK_MOBJ,
 	THINK_PRECIP,
+	THINK_DYNSLOPE,
 	NUM_THINKERLISTS
 } thinklistnum_t; /**< Thinker lists. */
 extern thinker_t thlist[];
