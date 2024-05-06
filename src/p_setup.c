@@ -2376,7 +2376,6 @@ static void P_LevelInitStuff(boolean reloadinggamestate)
 void P_LoadThingsOnly(void)
 {
 	// Search through all the thinkers.
-	mobj_t *mo;
 	thinker_t *think;
 
 	for (think = thlist[THINK_MOBJ].next; think != &thlist[THINK_MOBJ]; think = think->next)
@@ -3019,7 +3018,6 @@ boolean P_SetupLevel(boolean skipprecip, boolean reloadinggamestate)
 	}
 
 	P_ResetDynamicSlopes(fromnetsave);
-	P_LinkSlopeThinkers(); // Spawn slope thinkers just after plane move thinkers to avoid movement/update delays.
 
 	P_LoadThings();
 

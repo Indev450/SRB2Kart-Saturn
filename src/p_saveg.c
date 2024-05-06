@@ -1717,7 +1717,6 @@ static void P_NetArchiveThinkers(void)
 	for (i = 0; i < NUM_THINKERLISTS; i++)
 	{
 		UINT32 numsaved = 0;
-
 		// save off the current thinkers
 		for (th = thlist[i].next; th != &thlist[i]; th = th->next)
 		{
@@ -1733,201 +1732,199 @@ static void P_NetArchiveThinkers(void)
 #ifdef PARANOIA
 			else if (th->function.acp1 == (actionf_p1)P_NullPrecipThinker);
 #endif
-		else if (th->function.acp1 == (actionf_p1)T_MoveCeiling)
-		{
-			SaveCeilingThinker(th, tc_ceiling);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_CrushCeiling)
-		{
-			SaveCeilingThinker(th, tc_crushceiling);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_MoveFloor)
-		{
-			SaveFloormoveThinker(th, tc_floor);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_LightningFlash)
-		{
-			SaveLightflashThinker(th, tc_flash);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_StrobeFlash)
-		{
-			SaveStrobeThinker(th, tc_strobe);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_Glow)
-		{
-			SaveGlowThinker(th, tc_glow);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_FireFlicker)
-		{
-			SaveFireflickerThinker(th, tc_fireflicker);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_MoveElevator)
-		{
-			SaveElevatorThinker(th, tc_elevator);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_ContinuousFalling)
-		{
-			SaveSpecialLevelThinker(th, tc_continuousfalling);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_ThwompSector)
-		{
-			SaveSpecialLevelThinker(th, tc_thwomp);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_NoEnemiesSector)
-		{
-			SaveSpecialLevelThinker(th, tc_noenemies);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_EachTimeThinker)
-		{
-			SaveSpecialLevelThinker(th, tc_eachtime);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_RaiseSector)
-		{
-			SaveSpecialLevelThinker(th, tc_raisesector);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_CameraScanner)
-		{
-			SaveElevatorThinker(th, tc_camerascanner);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_Scroll)
-		{
-			SaveScrollThinker(th, tc_scroll);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_Friction)
-		{
-			SaveFrictionThinker(th, tc_friction);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_Pusher)
-		{
-			SavePusherThinker(th, tc_pusher);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_BounceCheese)
-		{
-			SaveSpecialLevelThinker(th, tc_bouncecheese);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_StartCrumble)
-		{
-			SaveElevatorThinker(th, tc_startcrumble);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_MarioBlock)
-		{
-			SaveSpecialLevelThinker(th, tc_marioblock);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_MarioBlockChecker)
-		{
-			SaveSpecialLevelThinker(th, tc_marioblockchecker);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_SpikeSector)
-		{
-			SaveSpecialLevelThinker(th, tc_spikesector);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_FloatSector)
-		{
-			SaveSpecialLevelThinker(th, tc_floatsector);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_BridgeThinker)
-		{
-			SaveSpecialLevelThinker(th, tc_bridgethinker);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_LaserFlash)
-		{
-			SaveLaserThinker(th, tc_laserflash);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_LightFade)
-		{
-			SaveLightlevelThinker(th, tc_lightfade);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_ExecutorDelay)
-		{
-			SaveExecutorThinker(th, tc_executor);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_Disappear)
-		{
-			SaveDisappearThinker(th, tc_disappear);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_DynamicSlopeLine)
-		{
-			SaveDynamicSlopeThinker(th, tc_dynslopeline);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_DynamicSlopeVert)
-		{
-			SaveDynamicSlopeThinker(th, tc_dynslopevert);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_PolyObjRotate)
-		{
-			SavePolyrotatetThinker(th, tc_polyrotate);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_PolyObjMove)
-		{
-			SavePolymoveThinker(th, tc_polymove);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_PolyObjWaypoint)
-		{
-			SavePolywaypointThinker(th, tc_polywaypoint);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_PolyDoorSlide)
-		{
-			SavePolyslidedoorThinker(th, tc_polyslidedoor);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_PolyDoorSwing)
-		{
-			SavePolyswingdoorThinker(th, tc_polyswingdoor);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_PolyObjFlag)
-		{
-			SavePolymoveThinker(th, tc_polyflag);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_PolyObjDisplace)
-		{
-			SavePolydisplaceThinker(th, tc_polydisplace);
-			continue;
-		}
+			else if (th->function.acp1 == (actionf_p1)T_MoveCeiling)
+			{
+				SaveCeilingThinker(th, tc_ceiling);
+				continue;
+			}
+			else if (th->function.acp1 == (actionf_p1)T_CrushCeiling)
+			{
+				SaveCeilingThinker(th, tc_crushceiling);
+				continue;
+			}
+			else if (th->function.acp1 == (actionf_p1)T_MoveFloor)
+			{
+				SaveFloormoveThinker(th, tc_floor);
+				continue;
+			}
+			else if (th->function.acp1 == (actionf_p1)T_LightningFlash)
+			{
+				SaveLightflashThinker(th, tc_flash);
+				continue;
+			}
+			else if (th->function.acp1 == (actionf_p1)T_StrobeFlash)
+			{
+				SaveStrobeThinker(th, tc_strobe);
+				continue;
+			}
+			else if (th->function.acp1 == (actionf_p1)T_Glow)
+			{
+				SaveGlowThinker(th, tc_glow);
+				continue;
+			}
+			else if (th->function.acp1 == (actionf_p1)T_FireFlicker)
+			{
+				SaveFireflickerThinker(th, tc_fireflicker);
+				continue;
+			}
+			else if (th->function.acp1 == (actionf_p1)T_MoveElevator)
+			{
+				SaveElevatorThinker(th, tc_elevator);
+				continue;
+			}
+			else if (th->function.acp1 == (actionf_p1)T_ContinuousFalling)
+			{
+				SaveSpecialLevelThinker(th, tc_continuousfalling);
+				continue;
+			}
+			else if (th->function.acp1 == (actionf_p1)T_ThwompSector)
+			{
+				SaveSpecialLevelThinker(th, tc_thwomp);
+				continue;
+			}
+			else if (th->function.acp1 == (actionf_p1)T_NoEnemiesSector)
+			{
+				SaveSpecialLevelThinker(th, tc_noenemies);
+				continue;
+			}
+			else if (th->function.acp1 == (actionf_p1)T_EachTimeThinker)
+			{
+				SaveSpecialLevelThinker(th, tc_eachtime);
+				continue;
+			}
+			else if (th->function.acp1 == (actionf_p1)T_RaiseSector)
+			{
+				SaveSpecialLevelThinker(th, tc_raisesector);
+				continue;
+			}
+			else if (th->function.acp1 == (actionf_p1)T_CameraScanner)
+			{
+				SaveElevatorThinker(th, tc_camerascanner);
+				continue;
+			}
+			else if (th->function.acp1 == (actionf_p1)T_Scroll)
+			{
+				SaveScrollThinker(th, tc_scroll);
+				continue;
+			}
+			else if (th->function.acp1 == (actionf_p1)T_Friction)
+			{
+				SaveFrictionThinker(th, tc_friction);
+				continue;
+			}
+			else if (th->function.acp1 == (actionf_p1)T_Pusher)
+			{
+				SavePusherThinker(th, tc_pusher);
+				continue;
+			}
+			else if (th->function.acp1 == (actionf_p1)T_BounceCheese)
+			{
+				SaveSpecialLevelThinker(th, tc_bouncecheese);
+				continue;
+			}
+			else if (th->function.acp1 == (actionf_p1)T_StartCrumble)
+			{
+				SaveElevatorThinker(th, tc_startcrumble);
+				continue;
+			}
+			else if (th->function.acp1 == (actionf_p1)T_MarioBlock)
+			{
+				SaveSpecialLevelThinker(th, tc_marioblock);
+				continue;
+			}
+			else if (th->function.acp1 == (actionf_p1)T_MarioBlockChecker)
+			{
+				SaveSpecialLevelThinker(th, tc_marioblockchecker);
+				continue;
+			}
+			else if (th->function.acp1 == (actionf_p1)T_SpikeSector)
+			{
+				SaveSpecialLevelThinker(th, tc_spikesector);
+				continue;
+			}
+			else if (th->function.acp1 == (actionf_p1)T_FloatSector)
+			{
+				SaveSpecialLevelThinker(th, tc_floatsector);
+				continue;
+			}
+			else if (th->function.acp1 == (actionf_p1)T_BridgeThinker)
+			{
+				SaveSpecialLevelThinker(th, tc_bridgethinker);
+				continue;
+			}
+			else if (th->function.acp1 == (actionf_p1)T_LaserFlash)
+			{
+				SaveLaserThinker(th, tc_laserflash);
+				continue;
+			}
+			else if (th->function.acp1 == (actionf_p1)T_LightFade)
+			{
+				SaveLightlevelThinker(th, tc_lightfade);
+				continue;
+			}
+			else if (th->function.acp1 == (actionf_p1)T_ExecutorDelay)
+			{
+				SaveExecutorThinker(th, tc_executor);
+				continue;
+			}
+			else if (th->function.acp1 == (actionf_p1)T_Disappear)
+			{
+				SaveDisappearThinker(th, tc_disappear);
+				continue;
+			}
+			else if (th->function.acp1 == (actionf_p1)T_DynamicSlopeLine)
+			{
+				SaveDynamicSlopeThinker(th, tc_dynslopeline);
+				continue;
+			}
+			else if (th->function.acp1 == (actionf_p1)T_DynamicSlopeVert)
+			{
+				SaveDynamicSlopeThinker(th, tc_dynslopevert);
+				continue;
+			}
+			else if (th->function.acp1 == (actionf_p1)T_PolyObjRotate)
+			{
+				SavePolyrotatetThinker(th, tc_polyrotate);
+				continue;
+			}
+			else if (th->function.acp1 == (actionf_p1)T_PolyObjMove)
+			{
+				SavePolymoveThinker(th, tc_polymove);
+				continue;
+			}
+			else if (th->function.acp1 == (actionf_p1)T_PolyObjWaypoint)
+			{
+				SavePolywaypointThinker(th, tc_polywaypoint);
+				continue;
+			}
+			else if (th->function.acp1 == (actionf_p1)T_PolyDoorSlide)
+			{
+				SavePolyslidedoorThinker(th, tc_polyslidedoor);
+				continue;
+			}
+			else if (th->function.acp1 == (actionf_p1)T_PolyDoorSwing)
+			{
+				SavePolyswingdoorThinker(th, tc_polyswingdoor);
+				continue;
+			}
+			else if (th->function.acp1 == (actionf_p1)T_PolyObjFlag)
+			{
+				SavePolymoveThinker(th, tc_polyflag);
+				continue;
+			}
+			else if (th->function.acp1 == (actionf_p1)T_PolyObjDisplace)
+			{
+				SavePolydisplaceThinker(th, tc_polydisplace);
+				continue;
+			}
 #ifdef PARANOIA
-			else if (th->function.acp1 != P_RemoveThinkerDelayed) // wait garbage collection
-				I_Error("unknown thinker type %p", th->function.acp1);
+			else
+				I_Assert(th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed); // wait garbage collection
 #endif
 		}
-
 		CONS_Debug(DBG_NETPLAY, "%u thinkers saved in list %d\n", numsaved, i);
+		WRITEUINT8(save_p, tc_end);
 	}
-
-	WRITEUINT8(save_p, tc_end);
 }
 
 // Now save the pointers, tracer and target, but at load time we must
@@ -1945,8 +1942,10 @@ mobj_t *P_FindNewPosition(UINT32 oldposition)
 			continue;
 
 		mobj = (mobj_t *)th;
-		if (mobj->mobjnum == oldposition)
-			return mobj;
+		if (mobj->mobjnum != oldposition)
+			continue;
+
+		return mobj;
 	}
 	CONS_Debug(DBG_GAMELOGIC, "mobj not found\n");
 	return NULL;
@@ -2614,8 +2613,7 @@ static inline thinker_t* LoadDisappearThinker(actionf_p1 thinker)
 	return &ht->thinker;
 }
 
-/// Save a dynamic slope thinker.
-static inline void LoadDynamicSlopeThinker(actionf_p1 thinker)
+static inline thinker_t* LoadDynamicSlopeThinker(actionf_p1 thinker)
 {
 	dynplanethink_t* ht = Z_Malloc(sizeof(*ht), PU_LEVSPEC, NULL);
 	ht->thinker.function.acp1 = thinker;
@@ -2626,10 +2624,8 @@ static inline void LoadDynamicSlopeThinker(actionf_p1 thinker)
 	ht->extent = READFIXED(save_p);
 	READMEM(save_p, ht->tags, sizeof(ht->tags));
 	READMEM(save_p, ht->vex, sizeof(ht->vex));
-
-	P_AddThinker(&ht->thinker);
+	return &ht->thinker;
 }
-
 
 //
 // LoadPolyrotateThinker
@@ -2931,12 +2927,15 @@ static void P_NetUnArchiveThinkers(void)
 			case tc_disappear:
 				th = LoadDisappearThinker((actionf_p1)T_Disappear);
 				break;
+
 			case tc_dynslopeline:
-				LoadDynamicSlopeThinker((actionf_p1)T_DynamicSlopeLine);
+				th = LoadDynamicSlopeThinker((actionf_p1)T_DynamicSlopeLine);
 				break;
+
 			case tc_dynslopevert:
-				LoadDynamicSlopeThinker((actionf_p1)T_DynamicSlopeVert);
+				th = LoadDynamicSlopeThinker((actionf_p1)T_DynamicSlopeVert);
 				break;
+
 			case tc_polyrotate:
 				th = LoadPolyrotatetThinker((actionf_p1)T_PolyObjRotate);
 				thinkerlist = THINK_POLYOBJ;
@@ -2997,15 +2996,14 @@ static void P_NetUnArchiveThinkers(void)
 	{
 		executor_t *delay = NULL;
 		UINT32 mobjnum;
-		for (currentthinker = thlist[THINK_MAIN].next; currentthinker != &thlist[THINK_MAIN];
-			currentthinker = currentthinker->next)
+		for (currentthinker = thlist[THINK_MAIN].next; currentthinker != &thlist[THINK_MAIN]; currentthinker = currentthinker->next)
 		{
-			if (currentthinker->function.acp1 == (actionf_p1)T_ExecutorDelay)
-			{
-				delay = (void *)currentthinker;
-				if ((mobjnum = (UINT32)(size_t)delay->caller))
-					delay->caller = P_FindNewPosition(mobjnum);
-			}
+			if (currentthinker->function.acp1 != (actionf_p1)T_ExecutorDelay)
+				continue;
+			delay = (void *)currentthinker;
+			if (!(mobjnum = (UINT32)(size_t)delay->caller))
+				continue;
+			delay->caller = P_FindNewPosition(mobjnum);
 		}
 	}
 }
@@ -3136,65 +3134,66 @@ static void P_RelinkPointers(void)
 		if (currentthinker->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 			continue;
 
-			if (mobj->type == MT_HOOP || mobj->type == MT_HOOPCOLLIDE || mobj->type == MT_HOOPCENTER)
-				continue;
+		mobj = (mobj_t *)currentthinker;
 
-			if (mobj->tracer)
-			{
-				temp = (UINT32)(size_t)mobj->tracer;
-				mobj->tracer = NULL;
-				if (!P_SetTarget(&mobj->tracer, P_FindNewPosition(temp)))
-					CONS_Debug(DBG_GAMELOGIC, "tracer not found on %d\n", mobj->type);
-			}
-			if (mobj->target)
-			{
-				temp = (UINT32)(size_t)mobj->target;
-				mobj->target = NULL;
-				if (!P_SetTarget(&mobj->target, P_FindNewPosition(temp)))
-					CONS_Debug(DBG_GAMELOGIC, "target not found on %d\n", mobj->type);
-			}
-			if (mobj->hnext)
-			{
-				temp = (UINT32)(size_t)mobj->hnext;
-				mobj->hnext = NULL;
-				if (!P_SetTarget(&mobj->hnext, P_FindNewPosition(temp)))
-					CONS_Debug(DBG_GAMELOGIC, "hnext not found on %d\n", mobj->type);
-			}
-			if (mobj->hprev)
-			{
-				temp = (UINT32)(size_t)mobj->hprev;
-				mobj->hprev = NULL;
-				if (!P_SetTarget(&mobj->hprev, P_FindNewPosition(temp)))
-					CONS_Debug(DBG_GAMELOGIC, "hprev not found on %d\n", mobj->type);
-			}
-			if (mobj->player && mobj->player->capsule)
-			{
-				temp = (UINT32)(size_t)mobj->player->capsule;
-				mobj->player->capsule = NULL;
-				if (!P_SetTarget(&mobj->player->capsule, P_FindNewPosition(temp)))
-					CONS_Debug(DBG_GAMELOGIC, "capsule not found on %d\n", mobj->type);
-			}
-			if (mobj->player && mobj->player->axis1)
-			{
-				temp = (UINT32)(size_t)mobj->player->axis1;
-				mobj->player->axis1 = NULL;
-				if (!P_SetTarget(&mobj->player->axis1, P_FindNewPosition(temp)))
-					CONS_Debug(DBG_GAMELOGIC, "axis1 not found on %d\n", mobj->type);
-			}
-			if (mobj->player && mobj->player->axis2)
-			{
-				temp = (UINT32)(size_t)mobj->player->axis2;
-				mobj->player->axis2 = NULL;
-				if (!P_SetTarget(&mobj->player->axis2, P_FindNewPosition(temp)))
-					CONS_Debug(DBG_GAMELOGIC, "axis2 not found on %d\n", mobj->type);
-			}
-			if (mobj->player && mobj->player->awayviewmobj)
-			{
-				temp = (UINT32)(size_t)mobj->player->awayviewmobj;
-				mobj->player->awayviewmobj = NULL;
-				if (!P_SetTarget(&mobj->player->awayviewmobj, P_FindNewPosition(temp)))
-					CONS_Debug(DBG_GAMELOGIC, "awayviewmobj not found on %d\n", mobj->type);
-			}
+		if (mobj->type == MT_HOOP || mobj->type == MT_HOOPCOLLIDE || mobj->type == MT_HOOPCENTER)
+			continue;
+
+		if (mobj->tracer)
+		{
+			temp = (UINT32)(size_t)mobj->tracer;
+			mobj->tracer = NULL;
+			if (!P_SetTarget(&mobj->tracer, P_FindNewPosition(temp)))
+				CONS_Debug(DBG_GAMELOGIC, "tracer not found on %d\n", mobj->type);
+		}
+		if (mobj->target)
+		{
+			temp = (UINT32)(size_t)mobj->target;
+			mobj->target = NULL;
+			if (!P_SetTarget(&mobj->target, P_FindNewPosition(temp)))
+				CONS_Debug(DBG_GAMELOGIC, "target not found on %d\n", mobj->type);
+		}
+		if (mobj->hnext)
+		{
+			temp = (UINT32)(size_t)mobj->hnext;
+			mobj->hnext = NULL;
+			if (!(mobj->hnext = P_FindNewPosition(temp)))
+				CONS_Debug(DBG_GAMELOGIC, "hnext not found on %d\n", mobj->type);
+		}
+		if (mobj->hprev)
+		{
+			temp = (UINT32)(size_t)mobj->hprev;
+			mobj->hprev = NULL;
+			if (!(mobj->hprev = P_FindNewPosition(temp)))
+				CONS_Debug(DBG_GAMELOGIC, "hprev not found on %d\n", mobj->type);
+		}
+		if (mobj->player && mobj->player->capsule)
+		{
+			temp = (UINT32)(size_t)mobj->player->capsule;
+			mobj->player->capsule = NULL;
+			if (!P_SetTarget(&mobj->player->capsule, P_FindNewPosition(temp)))
+				CONS_Debug(DBG_GAMELOGIC, "capsule not found on %d\n", mobj->type);
+		}
+		if (mobj->player && mobj->player->axis1)
+		{
+			temp = (UINT32)(size_t)mobj->player->axis1;
+			mobj->player->axis1 = NULL;
+			if (!P_SetTarget(&mobj->player->axis1, P_FindNewPosition(temp)))
+				CONS_Debug(DBG_GAMELOGIC, "axis1 not found on %d\n", mobj->type);
+		}
+		if (mobj->player && mobj->player->axis2)
+		{
+			temp = (UINT32)(size_t)mobj->player->axis2;
+			mobj->player->axis2 = NULL;
+			if (!P_SetTarget(&mobj->player->axis2, P_FindNewPosition(temp)))
+				CONS_Debug(DBG_GAMELOGIC, "axis2 not found on %d\n", mobj->type);
+		}
+		if (mobj->player && mobj->player->awayviewmobj)
+		{
+			temp = (UINT32)(size_t)mobj->player->awayviewmobj;
+			mobj->player->awayviewmobj = NULL;
+			if (!P_SetTarget(&mobj->player->awayviewmobj, P_FindNewPosition(temp)))
+				CONS_Debug(DBG_GAMELOGIC, "awayviewmobj not found on %d\n", mobj->type);
 		}
 	}
 }
@@ -3579,18 +3578,15 @@ void P_SaveNetGame(boolean resending)
 	P_NetArchiveMisc(resending);
 
 	// Assign the mobjnumber for pointer tracking
-	if (gamestate == GS_LEVEL)
+	for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 	{
-		for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
-		{
-			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-				continue;
+		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+			continue;
 
-			mobj = (mobj_t *)th;
-			if (mobj->type == MT_HOOP || mobj->type == MT_HOOPCOLLIDE || mobj->type == MT_HOOPCENTER)
-				continue;
-			mobj->mobjnum = i++;
-		}
+		mobj = (mobj_t *)th;
+		if (mobj->type == MT_HOOP || mobj->type == MT_HOOPCOLLIDE || mobj->type == MT_HOOPCENTER)
+			continue;
+		mobj->mobjnum = i++;
 	}
 
 	P_NetArchivePlayers();
@@ -3601,8 +3597,8 @@ void P_SaveNetGame(boolean resending)
 		P_NetArchiveThinkers();
 		P_NetArchiveSpecials();
 	}
-
 	LUA_Archive();
+
 	WRITEUINT8(save_p, 0x1d); // consistency marker
 }
 
@@ -3643,7 +3639,6 @@ boolean P_LoadNetGame(boolean reloading)
 		P_RelinkPointers();
 		P_FinishMobjs();
 	}
-
 	LUA_UnArchive();
 
 	// This is stupid and hacky, but maybe it'll work!

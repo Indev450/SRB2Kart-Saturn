@@ -232,7 +232,7 @@ static thinker_t *currentthinker;
 // remove it, and set currentthinker to one node preceeding it, so
 // that the next step in P_RunThinkers() will get its successor.
 //
-void P_RemoveThinkerDelayed(void *pthinker)
+void P_RemoveThinkerDelayed(thinker_t *thinker)
 {
 	thinker_t *next;
 

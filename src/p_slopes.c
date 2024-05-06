@@ -30,41 +30,6 @@ UINT16 slopecount = 0;
 thinker_t *dynthinklist;
 size_t dynthinknum;
 
-/// Links previously queued thinker list to the main thinker list.
-void P_LinkSlopeThinkers (void)
-{
-	size_t i;
-	thinker_t *th = dynthinklist;
-
-	for (i = 0; i < dynthinknum; i++)
-	{
-		thinker_t *next = th->next;
-		P_AddThinker(th);
-		th = next;
-	}
-}
-
-/// Queues a thinker to a partial linked list to be immediately incorporated later via P_LinkSlopeThinkers().
-static void P_QueueSlopeThinker (thinker_t* th)
-{
-	thinker_t* last = dynthinklist;
-
-	// First entry.
-	if (!last)
-	{
-		dynthinklist = th;
-		dynthinknum++;
-		return;
-	}
-
-	while (last->next)
-		last = last->next;
-
-	last->next = th;
-
-	dynthinknum++;
-}
-
 // Calculate line normal
 void P_CalculateSlopeNormal(pslope_t *slope) {
 	slope->normal.z = FINECOSINE(slope->zangle>>ANGLETOFINESHIFT);
@@ -217,7 +182,7 @@ FUNCINLINE static ATTRINLINE void P_AddDynSlopeThinker (pslope_t* slope, dynplan
 	th->slope = slope;
 	th->type = type;
 
-	P_QueueSlopeThinker(&th->thinker);
+	P_AddThinker(THINK_MAIN, &th->thinker);
 
 	// interpolation
 	R_CreateInterpolator_DynSlope(&th->thinker, slope);
@@ -647,9 +612,6 @@ void P_InitSlopes(void)
 {
 	slopelist = NULL;
 	slopecount = 0;
-
-	dynthinklist = NULL;
-	dynthinknum = 0;
 }
 
 

@@ -3313,7 +3313,7 @@ boolean P_IsFlagAtBase(mobjtype_t flag)
 {
 	thinker_t *think;
 	mobj_t *mo;
-	INT32 specialnum = 0;
+	INT32 specialnum = (flag == MT_REDFLAG) ? 3 : 4;
 
 	for (think = thlist[THINK_MOBJ].next; think != &thlist[THINK_MOBJ]; think = think->next)
 	{
@@ -3344,9 +3344,11 @@ boolean P_IsFlagAtBase(mobjtype_t flag)
 				if (GETSECSPECIAL(rover->master->frontsector->special, 4) != specialnum)
 					continue;
 
-				if (mo->z <= P_GetSpecialTopZ(mo, sectors + rover->secnum, mo->subsector->sector)
-					&& mo->z >= P_GetSpecialBottomZ(mo, sectors + rover->secnum, mo->subsector->sector))
-					return true;
+				if (!(mo->z <= P_GetSpecialTopZ(mo, sectors + rover->secnum, mo->subsector->sector)
+					&& mo->z >= P_GetSpecialBottomZ(mo, sectors + rover->secnum, mo->subsector->sector)))
+					continue;
+
+				return true;
 			}
 		}
 	}
@@ -3761,8 +3763,9 @@ void P_ProcessSpecialSector(player_t *player, sector_t *sector, sector_t *rovers
 				if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 					continue;
 				mo2 = (mobj_t *)th;
-				if (mo2->type == MT_EGGTRAP)
-					P_KillMobj(mo2, NULL, player->mo);
+				if (mo2->type != MT_EGGTRAP)
+					continue;
+				P_KillMobj(mo2, NULL, player->mo);
 			}
 
 			// clear the special so you can't push the button twice.
@@ -4103,12 +4106,15 @@ DoneSection2:
 
 					mo2 = (mobj_t *)th;
 
-					if (mo2->type == MT_TUBEWAYPOINT && mo2->threshold == sequence
-						&& mo2->health == 0)
-					{
-						waypoint = mo2;
-						break;
-					}
+					if (mo2->type != MT_TUBEWAYPOINT)
+						continue;
+					if (mo2->threshold != sequence)
+						continue;
+					if (mo2->health != 0)
+						continue;
+
+					waypoint = mo2;
+					break;
 				}
 
 				if (!waypoint)
@@ -4179,13 +4185,16 @@ DoneSection2:
 
 					mo2 = (mobj_t *)th;
 
-					if (mo2->type == MT_TUBEWAYPOINT && mo2->threshold == sequence)
-					{
-						if (!waypoint)
-							waypoint = mo2;
-						else if (mo2->health > waypoint->health)
-							waypoint = mo2;
-					}
+					if (mo2->type != MT_TUBEWAYPOINT)
+						continue;
+					if (mo2->threshold != sequence)
+						continue;
+
+					if (!waypoint)
+						waypoint = mo2;
+					else if (mo2->health > waypoint->health)
+						waypoint = mo2;
+					break;
 				}
 
 				if (!waypoint)
