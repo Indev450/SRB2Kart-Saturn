@@ -14,10 +14,6 @@
 #ifndef __BYTEPTR_H__
 #define __BYTEPTR_H__
 
-#if defined (__alpha__) || defined (__arm__) || defined (__mips__) || defined (__ia64__) || defined (__clang__)
-#define DEALIGNED
-#endif
-
 #include "endian.h"
 
 #ifdef __cplusplus
@@ -28,7 +24,6 @@ extern "C" {
 //
 // Little-endian machines
 //
-#ifdef DEALIGNED
 #define WRITEUINT8(p,b)     do {   UINT8 *p_tmp = (  UINT8 *)p; const   UINT8 tv = (  UINT8)(b); memcpy(p, &tv, sizeof(  UINT8)); p_tmp++; *(void**)(&(p)) = (void *)p_tmp; } while (0)
 #define WRITESINT8(p,b)     do {   SINT8 *p_tmp = (  SINT8 *)p; const   SINT8 tv = (  UINT8)(b); memcpy(p, &tv, sizeof(  UINT8)); p_tmp++; *(void**)(&(p)) = (void *)p_tmp; } while (0)
 #define WRITEINT16(p,b)     do {   INT16 *p_tmp = (  INT16 *)p; const   INT16 tv = (  INT16)(b); memcpy(p, &tv, sizeof(  INT16)); p_tmp++; *(void**)(&(p)) = (void *)p_tmp; } while (0)
@@ -38,20 +33,9 @@ extern "C" {
 #define WRITECHAR(p,b)      do {    char *p_tmp = (   char *)p; const    char tv = (   char)(b); memcpy(p, &tv, sizeof(   char)); p_tmp++; *(void**)(&(p)) = (void *)p_tmp; } while (0)
 #define WRITEFIXED(p,b)     do { fixed_t *p_tmp = (fixed_t *)p; const fixed_t tv = (fixed_t)(b); memcpy(p, &tv, sizeof(fixed_t)); p_tmp++; *(void**)(&(p)) = (void *)p_tmp; } while (0)
 #define WRITEANGLE(p,b)     do { angle_t *p_tmp = (angle_t *)p; const angle_t tv = (angle_t)(b); memcpy(p, &tv, sizeof(angle_t)); p_tmp++; *(void**)(&(p)) = (void *)p_tmp; } while (0)
-#else
-#define WRITEUINT8(p,b)     do {   UINT8 *p_tmp = (  UINT8 *)p; *p_tmp = (  UINT8)(b); p_tmp++; *(void**)(&(p)) = (void *)p_tmp; } while (0)
-#define WRITESINT8(p,b)     do {   SINT8 *p_tmp = (  SINT8 *)p; *p_tmp = (  SINT8)(b); p_tmp++; *(void**)(&(p)) = (void *)p_tmp; } while (0)
-#define WRITEINT16(p,b)     do {   INT16 *p_tmp = (  INT16 *)p; *p_tmp = (  INT16)(b); p_tmp++; *(void**)(&(p)) = (void *)p_tmp; } while (0)
-#define WRITEUINT16(p,b)    do {  UINT16 *p_tmp = ( UINT16 *)p; *p_tmp = ( UINT16)(b); p_tmp++; *(void**)(&(p)) = (void *)p_tmp; } while (0)
-#define WRITEINT32(p,b)     do {   INT32 *p_tmp = (  INT32 *)p; *p_tmp = (  INT32)(b); p_tmp++; *(void**)(&(p)) = (void *)p_tmp; } while (0)
-#define WRITEUINT32(p,b)    do {  UINT32 *p_tmp = ( UINT32 *)p; *p_tmp = ( UINT32)(b); p_tmp++; *(void**)(&(p)) = (void *)p_tmp; } while (0)
-#define WRITECHAR(p,b)      do {    char *p_tmp = (   char *)p; *p_tmp = (   char)(b); p_tmp++; *(void**)(&(p)) = (void *)p_tmp; } while (0)
-#define WRITEFIXED(p,b)     do { fixed_t *p_tmp = (fixed_t *)p; *p_tmp = (fixed_t)(b); p_tmp++; *(void**)(&(p)) = (void *)p_tmp; } while (0)
-#define WRITEANGLE(p,b)     do { angle_t *p_tmp = (angle_t *)p; *p_tmp = (angle_t)(b); p_tmp++; *(void**)(&(p)) = (void *)p_tmp; } while (0)
-#endif
 
 // what is this?
-#if defined (__GNUC__) && defined (DEALIGNED)
+#if defined (__GNUC__)
 #define READUINT8(p)        ({   UINT8 *p_tmp = (UINT8   *)p;   UINT8 b; memcpy(&b, p, sizeof(  UINT8)); p_tmp++; *(void**)(&(p)) = (void *)p_tmp; b; })
 #define READSINT8(p)        ({   SINT8 *p_tmp = (SINT8   *)p;   SINT8 b; memcpy(&b, p, sizeof(  SINT8)); p_tmp++; *(void**)(&(p)) = (void *)p_tmp; b; })
 #define READINT16(p)        ({   INT16 *p_tmp = (INT16   *)p;   INT16 b; memcpy(&b, p, sizeof(  INT16)); p_tmp++; *(void**)(&(p)) = (void *)p_tmp; b; })
@@ -143,8 +127,6 @@ FUNCINLINE static ATTRINLINE UINT32 readulong(void *ptr)
 #define READFIXED(p)        readlong(&((fixed_t*)(p = (void*)&((fixed_t*)p)[1]))[-1])
 #define READANGLE(p)        readulong(&((angle_t*)(p = (void*)&((angle_t*)p)[1]))[-1])
 #endif //SRB2_BIG_ENDIAN
-
-#undef DEALIGNED
 
 #define WRITESTRINGN(p, s, n) do {                          \
 	size_t tmp_i;                                           \
