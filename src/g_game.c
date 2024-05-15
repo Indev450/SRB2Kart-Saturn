@@ -5899,7 +5899,7 @@ void G_GhostTicker(void)
 			if (ziptic & EZT_THOKMASK)
 			{ // Let's only spawn ONE of these per frame, thanks.
 				mobj_t *mobj;
-				UINT32 type = MT_NULL;
+				INT32 type = -1;
 				if (g->mo->skin)
 				{
 					switch (ziptic & EZT_THOKMASK)
