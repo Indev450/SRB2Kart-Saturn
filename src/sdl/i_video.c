@@ -218,7 +218,7 @@ static void Impl_SetWindowIcon(void);
 
 #ifdef USE_FBO_OGL
 boolean downsample = false;
-void RefreshSDLSurface(void)
+void RefreshOGLSDLSurface(void)
 {
 	if (rendermode == render_opengl)
 		OglSdlSurface(vid.width, vid.height);
@@ -763,7 +763,7 @@ void I_DownSample(void)
 		if ((vid.width > curmode.w) || (vid.height > curmode.h)) //check if current resolution is higher than current display resolution
 		{
 			downsample = true;
-			RefreshSDLSurface();
+			RefreshOGLSDLSurface();
 		}
 		else
 			downsample = false; // its not so no need to do crap
