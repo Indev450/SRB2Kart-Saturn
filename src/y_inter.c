@@ -1486,7 +1486,7 @@ void Y_VoteTicker(void)
 
 				if ((InputDown(gc_accelerate, i+1) || JoyAxis(AXISMOVE, i+1) > 0) && !pressed)
 				{
-					D_ModifyClientVote(voteclient.playerinfo[i].selection, i);
+					D_ModifyClientVote(voteclient.playerinfo[i].selection, p);
 					pressed = true;
 				}
 			}

@@ -1339,9 +1339,9 @@ static menuitem_t OP_VideoOptionsMenu[] =
 							
 	{IT_SUBMENU|IT_STRING, NULL, "Advanced Color Settings...", &OP_ColorOptionsDef,   50},
 
-	{IT_STRING | IT_CVAR,	NULL,	"Draw Distance",		&cv_drawdist,			  65},
-	{IT_STRING | IT_CVAR,	NULL,	"Weather Draw Distance",&cv_drawdist_precip,	  75},
-	{IT_STRING | IT_CVAR,	NULL,	"Field of View",		&cv_fov,				  95},
+	{IT_STRING | IT_CVAR,	NULL,					"Draw Distance",		&cv_drawdist,			  65},
+	{IT_STRING | IT_CVAR,	NULL,					"Weather Draw Distance",&cv_drawdist_precip,	  75},
+	{IT_STRING | IT_CVAR | IT_CV_BIGFLOAT,	NULL,	"Field of View",		&cv_fov,				  95},
 
 	{IT_STRING | IT_CVAR,	NULL,	"Show FPS",				&cv_ticrate,			 105},
 	{IT_STRING | IT_CVAR,	NULL,	"Vertical Sync",		&cv_vidwait,			 115},
@@ -2351,7 +2351,7 @@ static menuitem_t OP_DriftGaugeMenu[] =
 	{IT_HEADER, NULL, "Driftgauge", NULL, 0},
 	{IT_STRING | IT_CVAR, NULL, "Driftgauge", &cv_driftgauge, 20},
 	{IT_STRING | IT_CVAR, NULL, "Driftgauge Transparency", &cv_driftgaugetrans, 30},
-	{IT_STRING | IT_CVAR, NULL, "Driftgauge Offset", &cv_driftgaugeofs, 40},
+	{IT_STRING | IT_CVAR | IT_CV_BIGFLOAT, NULL, "Driftgauge Offset", &cv_driftgaugeofs, 40},
 	{IT_STRING | IT_CVAR, NULL, "Driftgauge Style", &cv_driftgaugestyle, 50},
 };
 
@@ -3305,7 +3305,11 @@ static void M_ChangeCvar(INT32 choice)
 	else if (cv->flags & CV_FLOAT)
 	{
 		char s[20];
-		sprintf(s,"%f",FIXED_TO_FLOAT(cv->value)+(choice)*(1.0f/16.0f));
+		float increment;
+
+		increment = (currentMenu->menuitems[itemOn].status & IT_CV_BIGFLOAT) ? 0.5 : (1.f/16);
+
+		sprintf(s,"%f",FIXED_TO_FLOAT(cv->value)+(choice)*increment);
 		CV_Set(cv,s);
 	}
 	else
