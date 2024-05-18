@@ -80,6 +80,7 @@
 #ifdef HWRENDER
 #include "../hardware/hw_main.h"
 #include "../hardware/hw_drv.h"
+#include "../hardware/r_opengl/r_opengl.h" //for supportFBO
 // For dynamic referencing of HW rendering functions
 #include "hwsym_sdl.h"
 #include "ogl_sdl.h"
@@ -748,7 +749,7 @@ static INT32 SDLJoyAxis(const Sint16 axis, evtype_t which)
 #ifdef USE_FBO_OGL
 void I_DownSample(void)
 {
-	if (!cv_grframebuffer.value || !(rendermode == render_opengl))
+	if (!cv_grframebuffer.value || !(rendermode == render_opengl) || (!supportFBO)) //no sense to do this crap if we cant benefit from it
 	{
 		downsample = false;
 		return;
@@ -759,13 +760,13 @@ void I_DownSample(void)
 
 	if (SDL_GetCurrentDisplayMode(currentDisplayIndex, &curmode) == 0)
 	{
-		if (cv_grframebuffer.value && ((vid.width > curmode.w) || (vid.height > curmode.h))) //framebuffer downsampler thinge
+		if ((vid.width > curmode.w) || (vid.height > curmode.h)) //check if current resolution is higher than current display resolution
 		{
 			downsample = true;
 			RefreshSDLSurface();
 		}
 		else
-			downsample = false;
+			downsample = false; // its not so no need to do crap
 	}
 	else
 			downsample = false; // couldnt get display info so turn the thing off
