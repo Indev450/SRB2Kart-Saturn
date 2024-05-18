@@ -512,9 +512,11 @@ if(${SRB2_CONFIG_HWRENDER} AND ${SRB2_CONFIG_STATIC_OPENGL})
 	endif()
 endif()
 
-if(${SRB2_CONFIG_USE_FBO_OGL})
-	set(SRB2_USE_FBO_OGL ON)
-	add_definitions(-DUSE_FBO_OGL)
+if(${SRB2_CONFIG_HWRENDER})
+	if(${SRB2_CONFIG_USE_FBO_OGL})
+		set(SRB2_USE_FBO_OGL ON)
+		add_definitions(-DUSE_FBO_OGL)
+	endif()
 endif()
 
 # Targets

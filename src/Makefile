@@ -376,8 +376,10 @@ ifdef STATIC
 LIBS:=-static $(LIBS)
 endif
 
+ifndef NOHW
 ifdef USE_FBO_OGL
 OPTS+=-DUSE_FBO_OGL
+endif
 endif
 
 ifdef HAVE_MINIUPNPC
