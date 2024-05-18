@@ -215,7 +215,7 @@ static SDL_bool Impl_CreateWindow(SDL_bool fullscreen);
 //static void Impl_SetWindowName(const char *title);
 static void Impl_SetWindowIcon(void);
 
-#ifdef HWRENDER
+#ifdef USE_FBO_OGL
 boolean downsample = false;
 void RefreshSDLSurface(void)
 {
@@ -745,7 +745,7 @@ static INT32 SDLJoyAxis(const Sint16 axis, evtype_t which)
 	return raxis;
 }
 
-#ifdef HWRENDER
+#ifdef USE_FBO_OGL
 void I_DownSample(void)
 {
 	if (!cv_grframebuffer.value || !(rendermode == render_opengl))
@@ -777,7 +777,7 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 	static SDL_bool firsttimeonmouse = SDL_TRUE;
 	static SDL_bool mousefocus = SDL_TRUE;
 	static SDL_bool kbfocus = SDL_TRUE;
-#ifdef HWRENDER
+#ifdef USE_FBO_OGL
 	static SDL_bool windowmoved = SDL_FALSE;
 #endif
 
@@ -799,7 +799,7 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 			break;
 		case SDL_WINDOWEVENT_MAXIMIZED:
 			break;
-#ifdef HWRENDER
+#ifdef USE_FBO_OGL
 		case SDL_WINDOWEVENT_MOVED:
 			windowmoved = SDL_TRUE;
             break;
@@ -843,7 +843,7 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 		}
 	}
 
-#ifdef HWRENDER
+#ifdef USE_FBO_OGL
 	if (windowmoved && rendermode == render_opengl)
 	{
 		I_DownSample();
@@ -1927,7 +1927,7 @@ INT32 VID_SetMode(INT32 modeNum)
 	}
 	//Impl_SetWindowName("SRB2Kart "VERSIONSTRING);
 
-#ifdef HWRENDER
+#ifdef USE_FBO_OGL
 	if (rendermode == render_opengl)
 		I_DownSample();
 #endif

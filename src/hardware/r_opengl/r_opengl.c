@@ -119,10 +119,12 @@ static GLfloat modelMatrix[16];
 GLfloat projMatrix[16];
 static GLint   viewport[4];
 
+#ifdef USE_FBO_OGL
 static boolean GLFramebuffer_IsFuncAvailible(void);
 
 GLuint FramebufferObject, FramebufferTexture, RenderbufferObject;
 GLboolean FrameBufferEnabled = GL_FALSE, RenderToFramebuffer = GL_FALSE;
+#endif
 
 // Sryder:	NextTexAvail is broken for these because palette changes or changes to the texture filter or antialiasing
 //			flush all of the stored textures, leaving them unavailable at times such as between levels
@@ -433,6 +435,7 @@ static PFNglCopyTexImage2D pglCopyTexImage2D;
 typedef void (APIENTRY * PFNglCopyTexSubImage2D) (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint x, GLint y, GLsizei width, GLsizei height);
 static PFNglCopyTexSubImage2D pglCopyTexSubImage2D;
 
+#ifdef USE_FBO_OGL
 /* 3.0 functions for framebuffers and renderbuffers */
 typedef void (APIENTRY * PFNglGenFramebuffers) (GLsizei n, GLuint *ids);
 static PFNglGenFramebuffers pglGenFramebuffers;
@@ -454,6 +457,8 @@ typedef void (APIENTRY * PFNglRenderbufferStorage) (GLenum target, GLenum intern
 static PFNglRenderbufferStorage pglRenderbufferStorage;
 typedef void (APIENTRY * PFNglFramebufferRenderbuffer) (GLenum target, GLenum attachment, GLenum renderbuffertarget, GLenum renderbuffer);
 static PFNglFramebufferRenderbuffer pglFramebufferRenderbuffer;
+#endif // USE_FBO_OGL
+
 #endif //!STATIC_OPENGL
 
 /* 1.2 functions for 3D textures */
@@ -739,6 +744,7 @@ void SetupGLFunc4(void)
 	pglUniform3fv = GetGLFunc("glUniform3fv");
 	pglGetUniformLocation = GetGLFunc("glGetUniformLocation");
 
+#ifdef USE_FBO_OGL
 	if (GLFramebuffer_IsFuncAvailible())
 	{
 		pglGenFramebuffers = GetGLFunc("glGenFramebuffers");
@@ -752,14 +758,17 @@ void SetupGLFunc4(void)
 		pglRenderbufferStorage = GetGLFunc("glRenderbufferStorage");
 		pglFramebufferRenderbuffer = GetGLFunc("glFramebufferRenderbuffer");
 	}
+#endif
 }
 
+#ifdef USE_FBO_OGL
 static boolean GLFramebuffer_IsFuncAvailible(void)
 {
 	return((isExtAvailable("GL_ARB_framebuffer_no_attachments",gl_extensions)) && 
 	(isExtAvailable("GL_ARB_framebuffer_object",gl_extensions)) && 
 	(isExtAvailable("GL_ARB_framebuffer_sRGB",gl_extensions)));
 }
+#endif
 
 EXPORT boolean HWRAPI(InitShaders) (void)
 {
@@ -1020,6 +1029,7 @@ EXPORT void HWRAPI(DeleteTexture) (GLMipmap_t *pTexInfo)
 	pTexInfo->downloaded = 0;
 }
 
+#ifdef USE_FBO_OGL
 void GLFramebuffer_Generate(void)
 {
 	if (!GLFramebuffer_IsFuncAvailible())
@@ -1129,6 +1139,7 @@ void GLFramebuffer_Disable(void)
 	pglBindFramebuffer(GL_FRAMEBUFFER, 0);
 	pglBindRenderbuffer(GL_RENDERBUFFER, 0);
 }
+#endif
 
 // -----------------+
 // Flush            : flush OpenGL textures
@@ -2305,12 +2316,14 @@ EXPORT void HWRAPI(SetSpecialState) (hwdspecialstate_t IdState, INT32 Value)
 		case HWD_SET_SHADERS:
 			gl_allowshaders = Value;
 			break;
+#ifdef USE_FBO_OGL
 		case HWD_SET_FRAMEBUFFER:
 			FrameBufferEnabled = Value ? GL_TRUE : GL_FALSE;
 			
 			if (!GLFramebuffer_IsFuncAvailible())
 				FrameBufferEnabled = GL_FALSE;
 			break;
+#endif
 		case HWD_SET_TEXTUREFILTERMODE:
 			switch (Value)
 			{

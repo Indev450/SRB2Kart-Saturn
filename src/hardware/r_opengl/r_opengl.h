@@ -104,7 +104,7 @@ static PFNglEnableClientState pglEnableClientState;
 #endif
 #endif
 
-#ifdef GL_VERSION_3_0
+#ifdef USE_FBO_OGL
 void GLFramebuffer_Generate(void);
 void GLFramebuffer_Delete(void);
 
