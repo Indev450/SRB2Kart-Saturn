@@ -124,6 +124,8 @@ static boolean GLFramebuffer_IsFuncAvailible(void);
 
 GLuint FramebufferObject, FramebufferTexture, RenderbufferObject;
 GLboolean FrameBufferEnabled = GL_FALSE, RenderToFramebuffer = GL_FALSE;
+
+boolean supportFBO = false;
 #endif
 
 // Sryder:	NextTexAvail is broken for these because palette changes or changes to the texture filter or antialiasing
@@ -764,9 +766,15 @@ void SetupGLFunc4(void)
 #ifdef USE_FBO_OGL
 static boolean GLFramebuffer_IsFuncAvailible(void)
 {
+	//this stuff needs atleast OGL 3.0
+	if (majorGL < 3)
+		return false;
+
 	return((isExtAvailable("GL_ARB_framebuffer_no_attachments",gl_extensions)) && 
 	(isExtAvailable("GL_ARB_framebuffer_object",gl_extensions)) && 
 	(isExtAvailable("GL_ARB_framebuffer_sRGB",gl_extensions)));
+
+	return false;
 }
 #endif
 
@@ -2319,9 +2327,13 @@ EXPORT void HWRAPI(SetSpecialState) (hwdspecialstate_t IdState, INT32 Value)
 #ifdef USE_FBO_OGL
 		case HWD_SET_FRAMEBUFFER:
 			FrameBufferEnabled = Value ? GL_TRUE : GL_FALSE;
-			
-			if (!GLFramebuffer_IsFuncAvailible())
+			supportFBO = GLFramebuffer_IsFuncAvailible();
+
+			if (!supportFBO)
+			{
 				FrameBufferEnabled = GL_FALSE;
+				CV_Set(&cv_grframebuffer, "Off");
+			}
 			break;
 #endif
 		case HWD_SET_TEXTUREFILTERMODE:

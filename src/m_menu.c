@@ -58,6 +58,7 @@
 
 #ifdef HWRENDER
 #include "hardware/hw_main.h"
+#include "hardware/r_opengl/r_opengl.h"
 #endif
 
 #include "d_net.h"
@@ -4491,6 +4492,10 @@ void M_Init(void)
 	{
 		OP_ExpOptionsMenu[op_exp_ffclip].status = IT_DISABLED;
 		OP_ExpOptionsMenu[op_exp_sprclip].status = IT_DISABLED;
+#ifdef USE_FBO_OGL
+		if (!supportFBO)
+			OP_ExpOptionsMenu[op_exp_fbo].status = IT_GRAYEDOUT;
+#endif
 	}
 #endif
 

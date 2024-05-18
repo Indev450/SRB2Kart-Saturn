@@ -116,6 +116,7 @@ void GLFramebuffer_Disable(void);
 
 extern GLuint FramebufferObject, FramebufferTexture, RenderbufferObject;
 extern GLboolean FrameBufferEnabled, RenderToFramebuffer;
+extern boolean supportFBO;
 #endif
 
 // ==========================================================================

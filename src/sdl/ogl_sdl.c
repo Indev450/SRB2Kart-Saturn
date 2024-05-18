@@ -151,6 +151,10 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 					"- GPU drivers are missing or broken. You may need to update your drivers.");
 		}
 
+		SetupGLInfo();
+
+		SetupGLFunc4();
+
 		if (majorGL == 1 && minorGL <= 3) // GL_GENERATE_MIPMAP is unavailible for OGL 1.3 and below
 			supportMipMap = false;
 		else
@@ -160,10 +164,6 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 			pglGetIntegerv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maximumAnisotropy);
 		else
 			maximumAnisotropy = 1;
-
-		SetupGLInfo();
-
-		SetupGLFunc4();
 
 		granisotropicmode_cons_t[1].value = maximumAnisotropy;
 #ifdef USE_FBO_OGL
