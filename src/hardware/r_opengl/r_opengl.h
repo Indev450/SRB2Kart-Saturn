@@ -104,6 +104,21 @@ static PFNglEnableClientState pglEnableClientState;
 #endif
 #endif
 
+#ifdef USE_FBO_OGL
+void GLFramebuffer_Generate(void);
+void GLFramebuffer_Delete(void);
+
+void GLFramebuffer_GenerateAttachments(void);
+void GLFramebuffer_DeleteAttachments(void);
+
+void GLFramebuffer_Enable(void);
+void GLFramebuffer_Disable(void);
+
+extern GLuint FramebufferObject, FramebufferTexture, RenderbufferObject;
+extern GLboolean FrameBufferEnabled, RenderToFramebuffer;
+extern boolean supportFBO;
+#endif
+
 // ==========================================================================
 //                                                                     GLOBAL
 // ==========================================================================

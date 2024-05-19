@@ -69,6 +69,9 @@ static boolean gr_palette_rendering_state = false;
 // Commands and console variables
 // ==========================================================================
 
+#ifdef USE_FBO_OGL
+static void CV_grframebuffer_OnChange(void);
+#endif
 static void CV_filtermode_ONChange(void);
 static void CV_anisotropic_ONChange(void);
 static void CV_screentextures_ONChange(void);
@@ -95,6 +98,10 @@ consvar_t cv_granisotropicmode = {"gr_anisotropicmode", "1", CV_CALL|CV_SAVE, gr
 consvar_t cv_grsolvetjoin = {"gr_solvetjoin", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_grbatching = {"gr_batching", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+#ifdef USE_FBO_OGL
+consvar_t cv_grframebuffer = {"gr_framebuffer", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, CV_grframebuffer_OnChange, 0, NULL, NULL, 0, 0, NULL};
+#endif
 
 consvar_t cv_grfofcut = {"gr_fofcut", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -209,6 +216,16 @@ static void CV_grpalettedepth_OnChange(void)
 	if (HWR_ShouldUsePaletteRendering())
 		HWR_SetPalette(pLocalPalette);
 }
+
+#ifdef USE_FBO_OGL
+static void CV_grframebuffer_OnChange(void)
+{
+	ONLY_IF_GL_LOADED
+	HWD.pfnSetSpecialState(HWD_SET_FRAMEBUFFER, cv_grframebuffer.value);
+	I_DownSample();
+	RefreshOGLSDLSurface();
+}
+#endif
 
 //
 // Sets the shader state.
@@ -5965,6 +5982,9 @@ void HWR_TogglePaletteRendering(void)
 //added by Hurdler: console varibale that are saved
 void HWR_AddCommands(void)
 {
+#ifdef USE_FBO_OGL
+	CV_RegisterVar(&cv_grframebuffer);
+#endif
 	CV_RegisterVar(&cv_grfiltermode);
 	CV_RegisterVar(&cv_granisotropicmode);
 	CV_RegisterVar(&cv_grsolvetjoin);
@@ -6027,6 +6047,10 @@ void HWR_Startup(void)
 		HWR_LoadAllCustomShaders();
 
 		HWR_TogglePaletteRendering();
+
+#ifdef USE_FBO_OGL	
+		HWD.pfnSetSpecialState(HWD_SET_FRAMEBUFFER, cv_grframebuffer.value);
+#endif
 
 		if (msaa)
 		{
