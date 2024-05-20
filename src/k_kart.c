@@ -5833,6 +5833,8 @@ void K_SpawnWaterRunParticles(mobj_t *mobj)
 		{
 			trailScale = mapobjectscale; // Scaling is based off difference between runspeed and top speed
 		}
+		
+		trailScale = trailScale*0.70;
 
 		if (trailScale > 0)
 		{
@@ -5904,11 +5906,11 @@ void K_SpawnWaterRunParticles(mobj_t *mobj)
 			P_SetMobjState(water, curOverlayFrame);
 			P_SetTarget(&water, mobj);
 
-			if (!S_SoundPlaying(mobj, sfx_s3kdbs))
+			/*if (!S_SoundPlaying(mobj, sfx_s3kdbs))
 			{
 				const INT32 volume = (min(trailScale, FRACUNIT) * 255) / FRACUNIT;
 				S_StartSoundAtVolume(mobj, sfx_s3kdbs, volume);
-			}
+			}*/
 		}
 
 		// Little water sound while touching water - just a nicety.

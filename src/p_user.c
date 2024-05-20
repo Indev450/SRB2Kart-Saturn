@@ -2460,7 +2460,6 @@ static void P_MovePlayer(player_t *player)
 		player->climbing = 0;
 	}
 
-#if 0
 	// If you're running fast enough, you can create splashes as you run in shallow water.
 	if (!player->climbing
 	&& ((!(player->mo->eflags & MFE_VERTICALFLIP) && player->mo->z + player->mo->height >= player->mo->watertop && player->mo->z <= player->mo->watertop)
@@ -2482,7 +2481,7 @@ static void P_MovePlayer(player_t *player)
 		water->destscale = player->mo->scale;
 		P_SetScale(water, player->mo->scale);
 	}
-#endif
+
 	// Little water sound while touching water - just a nicety.
 	if ((player->mo->eflags & MFE_TOUCHWATER) && !(player->mo->eflags & MFE_UNDERWATER) && !player->spectator)
 	{
