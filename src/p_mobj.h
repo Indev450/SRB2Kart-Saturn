@@ -279,8 +279,8 @@ typedef struct mobj_s
 	fixed_t old_x2, old_y2, old_z2;
 
 	// More list: links in sector (if needed)
-	struct mobj_s *snext;
-	struct mobj_s **sprev; // killough 8/11/98: change to ptr-to-ptr
+	struct mobj_s *bnext;
+	struct mobj_s **bprev; // killough 8/11/98: change to ptr-to-ptr
 
 	// More drawing info: to determine current sprite.
 	angle_t angle, pitch, roll; // orientation
@@ -338,8 +338,8 @@ typedef struct mobj_s
 
 	// Interaction info, by BLOCKMAP.
 	// Links in blocks (if needed).
-	struct mobj_s *bnext;
-	struct mobj_s **bprev; // killough 8/11/98: change to ptr-to-ptr
+	struct mobj_s *snext;
+	struct mobj_s **sprev; // killough 8/11/98: change to ptr-to-ptr
 
 	// Additional pointers for NiGHTS hoops
 	struct mobj_s *hnext;
@@ -432,8 +432,8 @@ typedef struct precipmobj_s
 	fixed_t old_x2, old_y2, old_z2;
 
 	// More list: links in sector (if needed)
-	struct precipmobj_s *snext;
-	struct precipmobj_s **sprev; // killough 8/11/98: change to ptr-to-ptr
+	struct precipmobj_s *bnext;
+	struct precipmobj_s **bprev; // killough 8/11/98: change to ptr-to-ptr
 
 	// More drawing info: to determine current sprite.
 	angle_t angle, pitch, roll; // orientation

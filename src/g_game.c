@@ -2117,6 +2117,8 @@ void G_ResetView(UINT8 viewnum, INT32 playernum, boolean onlyactive)
 	{
 		camerap = &camera[viewnum-1];
 		P_ResetCamera(&players[(*displayplayerp)], camerap);
+
+		R_ResetViewInterpolation(viewnum);
 	}
 
 	if (viewnum > splits)
@@ -6221,7 +6223,10 @@ void G_ReadMetalTic(mobj_t *metal)
 	// Read changes from the tic
 	if (ziptic & GZT_XYZ)
 	{
-		P_MoveOrigin(metal, READFIXED(metal_p), READFIXED(metal_p), READFIXED(metal_p));
+		oldmetal.x = READFIXED(metal_p);
+		oldmetal.y = READFIXED(metal_p);
+		oldmetal.z = READFIXED(metal_p);
+		P_MoveOrigin(metal, oldmetal.x, oldmetal.y, oldmetal.z);
 		oldmetal.x = metal->x;
 		oldmetal.y = metal->y;
 		oldmetal.z = metal->z;
@@ -8374,7 +8379,7 @@ void G_SaveDemo(void)
 		size_t i, strindex = 0;
 		boolean dash = true;
 
-		for (i = 0; demo.titlename[i] && i < 127; i++)
+		for (i = 0; i < 127 && demo.titlename[i]; i++)
 		{
 			if ((demo.titlename[i] >= 'a' && demo.titlename[i] <= 'z') ||
 				(demo.titlename[i] >= '0' && demo.titlename[i] <= '9'))

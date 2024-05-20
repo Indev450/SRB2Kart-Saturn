@@ -80,6 +80,7 @@
 #ifdef HWRENDER
 #include "../hardware/hw_main.h"
 #include "../hardware/hw_drv.h"
+#include "../hardware/r_opengl/r_opengl.h" //for supportFBO
 // For dynamic referencing of HW rendering functions
 #include "hwsym_sdl.h"
 #include "ogl_sdl.h"
@@ -214,6 +215,15 @@ static void Impl_VideoSetupBuffer(void);
 static SDL_bool Impl_CreateWindow(SDL_bool fullscreen);
 //static void Impl_SetWindowName(const char *title);
 static void Impl_SetWindowIcon(void);
+
+#ifdef USE_FBO_OGL
+boolean downsample = false;
+void RefreshOGLSDLSurface(void)
+{
+	if (rendermode == render_opengl)
+		OglSdlSurface(vid.width, vid.height);
+}
+#endif
 
 static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen)
 {
@@ -736,11 +746,41 @@ static INT32 SDLJoyAxis(const Sint16 axis, evtype_t which)
 	return raxis;
 }
 
+#ifdef USE_FBO_OGL
+void I_DownSample(void)
+{
+	if (!cv_grframebuffer.value || !(rendermode == render_opengl) || (!supportFBO)) //no sense to do this crap if we cant benefit from it
+	{
+		downsample = false;
+		return;
+	}
+
+	int currentDisplayIndex = SDL_GetWindowDisplayIndex(window);
+	SDL_DisplayMode curmode;
+
+	if (SDL_GetCurrentDisplayMode(currentDisplayIndex, &curmode) == 0)
+	{
+		if ((vid.width > curmode.w) || (vid.height > curmode.h)) //check if current resolution is higher than current display resolution
+		{
+			downsample = true;
+			RefreshOGLSDLSurface();
+		}
+		else
+			downsample = false; // its not so no need to do crap
+	}
+	else
+			downsample = false; // couldnt get display info so turn the thing off
+}
+#endif
+
 static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 {
 	static SDL_bool firsttimeonmouse = SDL_TRUE;
 	static SDL_bool mousefocus = SDL_TRUE;
 	static SDL_bool kbfocus = SDL_TRUE;
+#ifdef USE_FBO_OGL
+	static SDL_bool windowmoved = SDL_FALSE;
+#endif
 
 	switch (evt.event)
 	{
@@ -760,6 +800,11 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 			break;
 		case SDL_WINDOWEVENT_MAXIMIZED:
 			break;
+#ifdef USE_FBO_OGL
+		case SDL_WINDOWEVENT_MOVED:
+			windowmoved = SDL_TRUE;
+            break;
+#endif
 	}
 
 	if (mousefocus && kbfocus)
@@ -799,6 +844,12 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 		}
 	}
 
+#ifdef USE_FBO_OGL
+	if (windowmoved && rendermode == render_opengl)
+	{
+		I_DownSample();
+	}
+#endif
 }
 
 static void Impl_HandleKeyboardEvent(SDL_KeyboardEvent evt, Uint32 type)
@@ -1876,6 +1927,11 @@ INT32 VID_SetMode(INT32 modeNum)
 		vid.modenum = -1;
 	}
 	//Impl_SetWindowName("SRB2Kart "VERSIONSTRING);
+
+#ifdef USE_FBO_OGL
+	if (rendermode == render_opengl)
+		I_DownSample();
+#endif
 
 	SDLSetMode(vid.width, vid.height, USE_FULLSCREEN);
 	Impl_VideoSetupBuffer();

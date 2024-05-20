@@ -139,4 +139,10 @@ UINT32 I_GetRefreshRate(void);
 
 boolean I_UseNativeKeyboard(void);
 
+#ifdef USE_FBO_OGL
+void RefreshOGLSDLSurface(void);
+void I_DownSample(void);
+extern boolean downsample;
+#endif
+
 #endif

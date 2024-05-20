@@ -186,9 +186,9 @@ FILE *W_OpenWadFile(const char **filename, boolean useerrors)
 	if (filenamebuf != *filename) {
 		// avoid overlap
 		strncpy(filenamebuf, *filename, MAX_WADPATH);
+		filenamebuf[MAX_WADPATH - 1] = '\0';
+		*filename = filenamebuf;
 	}
-	filenamebuf[MAX_WADPATH - 1] = '\0';
-	*filename = filenamebuf;
 
 	// open wad file
 	if ((handle = fopen_utf8(*filename, "rb")) == NULL)
