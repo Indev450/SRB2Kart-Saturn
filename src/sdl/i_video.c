@@ -1927,10 +1927,6 @@ INT32 VID_SetMode(INT32 modeNum)
 		vid.modenum = -1;
 	}
 	//Impl_SetWindowName("SRB2Kart "VERSIONSTRING);
-#ifdef HWRENDER
-	if (rendermode == render_opengl)
-		I_DownSample();
-#endif
 
 #ifdef USE_FBO_OGL
 	if (rendermode == render_opengl)
