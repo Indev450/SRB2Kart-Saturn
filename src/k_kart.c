@@ -3464,7 +3464,7 @@ void K_DriftDustHandling(mobj_t *spawner)
 	if (anglediff > ANGLE_180)
 		anglediff = InvAngle(anglediff);
 
-	/*if (anglediff > ANG10*4) // Trying to turn further than 40 degrees
+	if (anglediff > ANG10*4) // Trying to turn further than 40 degrees
 	{
 		fixed_t spawnx = P_RandomRange(-spawnrange, spawnrange)<<FRACBITS;
 		fixed_t spawny = P_RandomRange(-spawnrange, spawnrange)<<FRACBITS;
@@ -3481,39 +3481,6 @@ void K_DriftDustHandling(mobj_t *spawner)
 			S_StartSound(spawner, sfx_screec);
 
 		K_MatchGenericExtraFlags(dust, spawner);
-	}*/
-	
-	if (anglediff > ANG10*4) // Trying to turn further than 40 degrees
-	{
-		fixed_t spawnx = P_RandomRange(-spawnrange, spawnrange)<<FRACBITS;
-		fixed_t spawny = P_RandomRange(-spawnrange, spawnrange)<<FRACBITS;
-		INT32 speedrange = 2;
-		mobj_t *dust = P_SpawnMobj(spawner->x + spawnx, spawner->y + spawny, spawner->z, MT_STARDUST);
-		dust->momx = FixedMul(spawner->momx + (P_RandomRange(-speedrange, speedrange)<<FRACBITS), 3*(spawner->scale)/4);
-		dust->momy = FixedMul(spawner->momy + (P_RandomRange(-speedrange, speedrange)<<FRACBITS), 3*(spawner->scale)/4);
-		dust->momz = P_MobjFlip(spawner) * (P_RandomRange(1, 4) * (spawner->scale));
-		P_SetScale(dust, spawner->scale/2);
-		dust->destscale = spawner->scale * 3;
-		dust->scalespeed = spawner->scale/12;
-
-		if (leveltime % 6 == 0)
-			S_StartSound(spawner, sfx_screec);
-
-		K_MatchGenericExtraFlags(dust, spawner);
-
-		if (spawner->player->kartstuff[k_driftcharge] >= K_GetKartDriftSparkValue(spawner->player)*4)
-			dust->color = 1 + (leveltime % (MAXSKINCOLORS-1));
-		else if (spawner->player->kartstuff[k_driftcharge] >= K_GetKartDriftSparkValue(spawner->player)*2)
-		{
-				if (spawner->player->kartstuff[k_driftcharge] <= (K_GetKartDriftSparkValue(spawner->player)*2)+(24*3))
-					dust->color = SKINCOLOR_RASPBERRY; // transition
-				else
-					dust->color = SKINCOLOR_KETCHUP;
-		}
-		else if (spawner->player->kartstuff[k_driftcharge] >= K_GetKartDriftSparkValue(spawner->player))
-			dust->color = SKINCOLOR_SAPPHIRE;
-		else
-			dust->color = spawner->player->skincolor;
 	}
 }
 
