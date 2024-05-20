@@ -784,14 +784,16 @@ typedef enum sprite
 
 	SPR_FWRK,
 
-	SPR_WTRL, // Water Trail
-
 	// Xmas-specific sprites that don't fit aboxe
 	SPR_XMS4,
 	SPR_XMS5,
 
 	// First person view sprites; this is a sprite so that it can be replaced by a specialized MD2 draw later
 	SPR_VIEW,
+
+	SPR_WTRL, // Water Trail
+
+	SPR_DSTR, // Star Dust
 
 	SPR_FIRSTFREESLOT,
 	SPR_LASTFREESLOT = SPR_FIRSTFREESLOT + NUMSPRITEFREESLOTS - 1,
@@ -4077,6 +4079,10 @@ typedef enum state
 	S_OPAQUESMOKE4,
 	S_OPAQUESMOKE5,
 
+#ifdef SEENAMES
+	S_NAMECHECK,
+#endif
+
 	S_WATERTRAIL1,
 	S_WATERTRAIL2,
 	S_WATERTRAIL3,
@@ -4094,9 +4100,11 @@ typedef enum state
 	S_WATERTRAILUNDERLAY7,
 	S_WATERTRAILUNDERLAY8,
 
-#ifdef SEENAMES
-	S_NAMECHECK,
-#endif
+	// Star Smoke
+	S_DRIFTSTAR1,
+	S_DRIFTSTAR2,
+	S_DRIFTSTAR3,
+	S_DRIFTSTAR4,
 
 	S_FIRSTFREESLOT,
 	S_LASTFREESLOT = S_FIRSTFREESLOT + NUMSTATEFREESLOTS - 1,
@@ -4905,12 +4913,14 @@ typedef enum mobj_type
 
 	MT_KARMAFIREWORK,
 
-	MT_WATERTRAIL,
-	MT_WATERTRAILUNDERLAY,
-
 #ifdef SEENAMES
 	MT_NAMECHECK,
 #endif
+
+	MT_WATERTRAIL,
+	MT_WATERTRAILUNDERLAY,
+
+	MT_STARDUST,
 
 	MT_FIRSTFREESLOT,
 	MT_LASTFREESLOT = MT_FIRSTFREESLOT + NUMMOBJFREESLOTS - 1,
