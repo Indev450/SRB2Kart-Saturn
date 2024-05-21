@@ -5449,6 +5449,7 @@ void HWR_DrawSkyBackground(float fpov)
 
 	dometransform.flip = atransform.flip;
 	dometransform.mirror = atransform.mirror;
+	dometransform.mirrorflip = atransform.mirrorflip;
 	dometransform.shearing = atransform.shearing;
 	dometransform.viewaiming = atransform.viewaiming;
 
@@ -5574,6 +5575,10 @@ void HWR_SetTransform(float fpov, player_t *player)
 	atransform.mirror = false;
 	if (*postprocessor == postimg_mirror)
 		atransform.mirror = true;
+
+	atransform.mirrorflip = false;
+	if (*postprocessor == postimg_mirrorflip)
+		atransform.mirrorflip = true;
 
 	// Set transform.
 	HWD.pfnSetTransform(&atransform);

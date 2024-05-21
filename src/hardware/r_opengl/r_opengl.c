@@ -2927,6 +2927,8 @@ EXPORT void HWRAPI(SetTransform) (FTransform *stransform)
 		// mirroring from Kart
 		if (stransform->mirror)
 			pglScalef(-stransform->scalex, stransform->scaley, -stransform->scalez);
+		else if (stransform->mirrorflip)
+			pglScalef(-stransform->scalex, -stransform->scaley, -stransform->scalez);
 		else
 #endif
 		if (stransform->flip)
