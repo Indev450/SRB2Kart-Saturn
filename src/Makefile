@@ -199,8 +199,10 @@ ifndef NOOPENMPT
 HAVE_OPENMPT=1
 endif
 
+ifndef NOHW
 ifndef NOSCREENFBO
 USE_FBO_OGL=1
+endif
 endif
 
 ifdef MINGW
