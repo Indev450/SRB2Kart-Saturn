@@ -3433,6 +3433,11 @@ static void Command_Manual_f(void)
 	itemOn = 0;
 }
 
+boolean UPKEY = false;
+boolean DOWNKEY = false;
+boolean LEFTKEY = false;
+boolean RIGHTKEY = false;
+
 //
 // M_Responder
 //
@@ -3464,7 +3469,6 @@ boolean M_Responder(event_t *ev)
 	{
 		ch = ev->data1;
 
-		// added 5-2-98 remap virtual keys (mouse & joystick buttons)
 		switch (ch)
 		{
 			case KEY_MOUSE1:
@@ -3490,6 +3494,40 @@ boolean M_Responder(event_t *ev)
 				break;
 			case KEY_HAT1 + 3:
 				ch = KEY_RIGHTARROW;
+				break;
+		}
+
+		switch (ev->data1)
+		{
+			case KEY_HAT1:
+				UPKEY = true;
+				break;
+			case KEY_HAT1 + 1:
+				DOWNKEY = true;
+				break;
+			case KEY_HAT1 + 2:
+				LEFTKEY = true;
+				break;
+			case KEY_HAT1 + 3:
+				RIGHTKEY = true;
+				break;
+		}
+	}
+	else if (ev->type == ev_keyup)
+	{
+		switch (ev->data1)
+		{
+			case KEY_HAT1:
+				UPKEY = false;
+				break;
+			case KEY_HAT1 + 1:
+				DOWNKEY = false;
+				break;
+			case KEY_HAT1 + 2:
+				LEFTKEY = false;
+				break;
+			case KEY_HAT1 + 3:
+				RIGHTKEY = false;
 				break;
 		}
 	}

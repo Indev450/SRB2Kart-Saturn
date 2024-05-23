@@ -74,6 +74,11 @@ typedef enum
 } menumessagetype_t;
 void M_StartMessage(const char *string, void *routine, menumessagetype_t itemtype);
 
+extern boolean UPKEY;
+extern boolean DOWNKEY;
+extern boolean LEFTKEY;
+extern boolean RIGHTKEY;
+
 typedef enum
 {
 	M_NOT_WAITING,
