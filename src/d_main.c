@@ -776,7 +776,7 @@ void D_SRB2Loop(void)
 #endif
 
 		// this is absolutely awful and i hate it lmao
-		if (menuactive && (UPKEY || DOWNKEY || LEFTKEY || RIGHTKEY))
+		if (menuactive && (DPADUPSCROLL || DPADDOWNSCROLL || DPADLEFTSCROLL || DPADRIGHTSCROLL))
 		{
 			event_t myev;
 			myev.type = ev_keydown;
@@ -785,24 +785,24 @@ void D_SRB2Loop(void)
 			{
 				menuInputDelayTimer++;
 
-				if (menuInputDelayTimer >= 19)
+				if (menuInputDelayTimer >= 19) // TICRATE * ( (k+2) (1 - [wz + h + j - q]^2 - [(gk + 2g + k + 1)(h + j) + h - z]^2 - [16(k + 1)^3(k + 2)(n + 1)^2 + 1 - f^2]^2 calculated by my butt
 				{
-					if (UPKEY)
+					if (DPADUPSCROLL)
 					{
 						myev.data1 = KEY_UPARROW;
 						M_Responder(&myev);
 					}
-					else if (DOWNKEY)
+					else if (DPADDOWNSCROLL)
 					{
 						myev.data1 = KEY_DOWNARROW;
 						M_Responder(&myev);
 					}
-					else if (LEFTKEY)
+					else if (DPADLEFTSCROLL)
 					{
 						myev.data1 = KEY_LEFTARROW;
 						M_Responder(&myev);
 					}
-					else if (RIGHTKEY)
+					else if (DPADRIGHTSCROLL)
 					{
 						myev.data1 = KEY_RIGHTARROW;
 						M_Responder(&myev);

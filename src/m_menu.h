@@ -74,10 +74,10 @@ typedef enum
 } menumessagetype_t;
 void M_StartMessage(const char *string, void *routine, menumessagetype_t itemtype);
 
-extern boolean UPKEY;
-extern boolean DOWNKEY;
-extern boolean LEFTKEY;
-extern boolean RIGHTKEY;
+extern boolean DPADUPSCROLL;
+extern boolean DPADDOWNSCROLL;
+extern boolean DPADLEFTSCROLL;
+extern boolean DPADRIGHTSCROLL;
 
 typedef enum
 {
