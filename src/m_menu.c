@@ -58,6 +58,7 @@
 
 #ifdef HWRENDER
 #include "hardware/hw_main.h"
+#include "hardware/r_opengl/r_opengl.h"
 #endif
 
 #include "d_net.h"
@@ -532,6 +533,32 @@ static consvar_t cv_dummyrings = {"dummyrings", "0", CV_HIDEN, ringlimit_cons_t,
 static consvar_t cv_dummylives = {"dummylives", "0", CV_HIDEN, liveslimit_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 static consvar_t cv_dummycontinues = {"dummycontinues", "0", CV_HIDEN, liveslimit_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 static consvar_t cv_dummystaff = {"dummystaff", "0", CV_HIDEN|CV_CALL, dummystaff_cons_t, Dummystaff_OnChange, 0, NULL, NULL, 0, 0, NULL};
+
+static INT32 M_ShiftChar(INT32 ch)
+{
+	if (I_UseNativeKeyboard())
+		return ch;
+
+	if (cv_keyboardlayout.value == 3)
+	{
+		if (ch >= 32 && ch <= 141)
+		{
+			if (shiftdown)
+				ch = shiftxform[ch];
+			else if (altdown & 0x2)
+				ch = french_altgrxform[ch];
+			else
+				ch = HU_FallBackFrSpecialLetter(ch);
+		}
+	}
+	else
+	{
+		if (shiftdown && ch >= 32 && ch <= 127)
+			ch = shiftxform[ch];
+	}
+
+	return ch;
+}
 
 // ==========================================================================
 // ORGANIZATION START.
@@ -1313,9 +1340,9 @@ static menuitem_t OP_VideoOptionsMenu[] =
 							
 	{IT_SUBMENU|IT_STRING, NULL, "Advanced Color Settings...", &OP_ColorOptionsDef,   50},
 
-	{IT_STRING | IT_CVAR,	NULL,	"Draw Distance",		&cv_drawdist,			  65},
-	{IT_STRING | IT_CVAR,	NULL,	"Weather Draw Distance",&cv_drawdist_precip,	  75},
-	{IT_STRING | IT_CVAR,	NULL,	"Field of View",		&cv_fov,				  95},
+	{IT_STRING | IT_CVAR,	NULL,					"Draw Distance",		&cv_drawdist,			  65},
+	{IT_STRING | IT_CVAR,	NULL,					"Weather Draw Distance",&cv_drawdist_precip,	  75},
+	{IT_STRING | IT_CVAR | IT_CV_BIGFLOAT,	NULL,	"Field of View",		&cv_fov,				  95},
 
 	{IT_STRING | IT_CVAR,	NULL,	"Show FPS",				&cv_ticrate,			 105},
 	{IT_STRING | IT_CVAR,	NULL,	"Vertical Sync",		&cv_vidwait,			 115},
@@ -1425,26 +1452,29 @@ static menuitem_t OP_ColorOptionsMenu[] =
 static menuitem_t OP_ExpOptionsMenu[] =
 {
 	{IT_HEADER, NULL, "Experimental Options", NULL, 10},
-	{IT_STRING|IT_CVAR,		NULL, "Interpolation Distance",			&cv_grmaxinterpdist,		 25},
-	{IT_STRING|IT_CVAR,		NULL, "Mobj Subsector Interpolation",	&cv_mobjssector,		 	 35},
-	{IT_STRING | IT_CVAR, 	NULL, "Weather Interpolation", 			&cv_precipinterp, 		 	 45},
-	{IT_STRING | IT_CVAR, 	NULL, "Less Weather Effects", 			&cv_lessprecip, 		 	 55},
+	{IT_STRING|IT_CVAR,		NULL, "Interpolation Distance",			&cv_grmaxinterpdist,		 20},
+	{IT_STRING|IT_CVAR,		NULL, "Mobj Subsector Interpolation",	&cv_mobjssector,		 	 25},
+	{IT_STRING | IT_CVAR, 	NULL, "Weather Interpolation", 			&cv_precipinterp, 		 	 30},
+	{IT_STRING | IT_CVAR, 	NULL, "Less Weather Effects", 			&cv_lessprecip, 		 	 35},
 
-	{IT_STRING | IT_CVAR,	NULL, "Skyboxes",						&cv_skybox,				 	 70},
+	{IT_STRING | IT_CVAR,	NULL, "Skyboxes",						&cv_skybox,				 	 42},
 
-	{IT_STRING | IT_CVAR, 	NULL, "Clipping R_PointToAngle Version", &cv_pointoangleexor64, 	 85},
+	{IT_STRING | IT_CVAR, 	NULL, "Clipping R_PointToAngle Version", &cv_pointoangleexor64, 	 49},
 
-	{IT_STRING | IT_CVAR, 	NULL, "FFloorclip", 					&cv_ffloorclip, 		 	 95},
-	{IT_STRING | IT_CVAR, 	NULL, "Spriteclip", 					&cv_spriteclip, 		 	105},
+	{IT_STRING | IT_CVAR, 	NULL, "FFloorclip", 					&cv_ffloorclip, 		 	 56},
+	{IT_STRING | IT_CVAR, 	NULL, "Spriteclip", 					&cv_spriteclip, 		 	61},
 #ifdef HWRENDER	
-	{IT_STRING | IT_CVAR, 	NULL, "Screen Textures", 				&cv_grscreentextures, 		 95},
+	{IT_STRING | IT_CVAR, 	NULL, "Screen Textures", 				&cv_grscreentextures, 		 68},
+#ifdef USE_FBO_OGL
+	{IT_STRING | IT_CVAR, 	NULL, "FBO Downsampling support", 		&cv_grframebuffer, 			 73},
+#endif
 
-	{IT_STRING | IT_CVAR, 	NULL, "Palette Depth", 					&cv_grpalettedepth, 		105},
+	{IT_STRING | IT_CVAR, 	NULL, "Palette Depth", 					&cv_grpalettedepth, 		80},
 
-	{IT_STRING | IT_CVAR, 	NULL, "Splitwall/Slope texture fix",	&cv_splitwallfix, 		 	125},
-	{IT_STRING | IT_CVAR, 	NULL, "Slope midtexture peg fix", 		&cv_slopepegfix, 		 	135},
-	{IT_STRING | IT_CVAR, 	NULL, "ZFighting fix for fofs", 		&cv_fofzfightfix, 		 	145},
-	{IT_STRING | IT_CVAR, 	NULL, "FOF wall cutoff for slopes", 	&cv_grfofcut, 		 		155},
+	{IT_STRING | IT_CVAR, 	NULL, "Splitwall/Slope texture fix",	&cv_splitwallfix, 		 	87},
+	{IT_STRING | IT_CVAR, 	NULL, "Slope midtexture peg fix", 		&cv_slopepegfix, 		 	92},
+	{IT_STRING | IT_CVAR, 	NULL, "ZFighting fix for fofs", 		&cv_fofzfightfix, 		 	97},
+	{IT_STRING | IT_CVAR, 	NULL, "FOF wall cutoff for slopes", 	&cv_grfofcut, 		 		102},
 #endif	
 };
 
@@ -1461,6 +1491,9 @@ static const char* OP_ExpTooltips[] =
 	"Hides Sprites which are not visible\npotentially resulting in a performance boost.",
 #ifdef HWRENDER
 	"Should the game do Screen Textures? Provides a good boost to frames\nat the cost of some visual effects not working when disabled.",
+#ifdef USE_FBO_OGL
+	"Allows the game to downsample from a higher resolution than your display in OpenGL renderer mode\nrequires a GPU with atleast OpenGL 3.0 support.",
+#endif
 	"Change the depth of the Palette in Palette rendering mod\n 16 bits is like software looks ingame\nwhile 24 bits is how software looks in screenshots.",
 	"Fixes issues that resulted in Textures sticking from the ground sometimes.\n This may be CPU heavy and result in worse performance in some cases.",
 	"Fixes issues that resulted in Textures not being properly skewed\n example: Fences on slopes that didnt show proper.\n This may be CPU heavy and result in worse performance in some cases.",
@@ -1482,6 +1515,10 @@ enum
 	op_exp_sprclip,
 #ifdef HWRENDER
 	op_exp_grscrtx,
+#ifdef USE_FBO_OGL
+	op_exp_fbo,
+#endif
+	op_exp_paldepth,
 	op_exp_spltwal,
 	op_exp_pegging,
 	op_exp_fofzfight,
@@ -2325,7 +2362,7 @@ static menuitem_t OP_DriftGaugeMenu[] =
 	{IT_HEADER, NULL, "Driftgauge", NULL, 0},
 	{IT_STRING | IT_CVAR, NULL, "Driftgauge", &cv_driftgauge, 20},
 	{IT_STRING | IT_CVAR, NULL, "Driftgauge Transparency", &cv_driftgaugetrans, 30},
-	{IT_STRING | IT_CVAR, NULL, "Driftgauge Offset", &cv_driftgaugeofs, 40},
+	{IT_STRING | IT_CVAR | IT_CV_BIGFLOAT, NULL, "Driftgauge Offset", &cv_driftgaugeofs, 40},
 	{IT_STRING | IT_CVAR, NULL, "Driftgauge Style", &cv_driftgaugestyle, 50},
 };
 
@@ -2883,7 +2920,7 @@ menu_t OP_MonitorToggleDef =
 menu_t OP_OpenGLOptionsDef = DEFAULTSCROLLSTYLE("M_VIDEO", OP_OpenGLOptionsMenu, &OP_VideoOptionsDef, 30, 30);
 #endif
 
-menu_t OP_ExpOptionsDef = DEFAULTMENUSTYLE("M_VIDEO", OP_ExpOptionsMenu, &OP_VideoOptionsDef, 30, 20);
+menu_t OP_ExpOptionsDef = DEFAULTSCROLLSTYLE("M_VIDEO", OP_ExpOptionsMenu, &OP_VideoOptionsDef, 30, 35);
 
 menu_t OP_DataOptionsDef = DEFAULTMENUSTYLE("M_DATA", OP_DataOptionsMenu, &OP_MainDef, 60, 30);
 menu_t OP_ScreenshotOptionsDef = DEFAULTMENUSTYLE("M_SCSHOT", OP_ScreenshotOptionsMenu, &OP_DataOptionsDef, 30, 30);
@@ -3279,7 +3316,11 @@ static void M_ChangeCvar(INT32 choice)
 	else if (cv->flags & CV_FLOAT)
 	{
 		char s[20];
-		sprintf(s,"%f",FIXED_TO_FLOAT(cv->value)+(choice)*(1.0f/16.0f));
+		float increment;
+
+		increment = (currentMenu->menuitems[itemOn].status & IT_CV_BIGFLOAT) ? 0.5 : (1.f/16);
+
+		sprintf(s,"%f",FIXED_TO_FLOAT(cv->value)+(choice)*increment);
 		CV_Set(cv,s);
 	}
 	else
@@ -3300,23 +3341,7 @@ static boolean M_ChangeStringCvar(INT32 choice)
 	char buf[MAXSTRINGLENGTH];
 	size_t len;
 
-	if (cv_keyboardlayout.value == 3)
-	{
-		if (choice >= 32 && choice <= 141)
-		{
-			if (shiftdown)
-				choice = shiftxform[choice];
-			else if (altdown & 0x2)
-				choice = french_altgrxform[choice];
-			else
-				choice = HU_FallBackFrSpecialLetter(choice);
-		}
-	}
-	else
-	{
-		if (shiftdown && choice >= 32 && choice <= 127)
-			choice = shiftxform[choice];
-	}
+	choice = M_ShiftChar(choice);
 
 	switch (choice)
 	{
@@ -3663,23 +3688,7 @@ boolean M_Responder(event_t *ev)
 	if (routine && (currentMenu->menuitems[itemOn].status & IT_TYPE) == IT_KEYHANDLER)
 	{
 		menu_text_input = true;
-		if (cv_keyboardlayout.value == 3)
-		{
-			if(ch >= 32 && ch <= 141)
-			{
-				if (shiftdown)
-					ch = shiftxform[ch];
-				else if (altdown & 0x2)
-					ch = french_altgrxform[ch];
-				else
-					ch = HU_FallBackFrSpecialLetter(ch);
-			}
-		}
-		else 
-		{
-			if (shiftdown && ch >= 32 && ch <= 127)
-				ch = shiftxform[ch];
-		}
+		ch = M_ShiftChar(ch);
 		routine(ch);
 		return true;
 	}
@@ -3719,23 +3728,7 @@ boolean M_Responder(event_t *ev)
 		if ((currentMenu->menuitems[itemOn].status & IT_CVARTYPE) == IT_CV_STRING)
 		{
 			menu_text_input = true;
-			if (cv_keyboardlayout.value == 3)
-			{
-				if(ch >= 32 && ch <= 141)
-				{
-					if (shiftdown)
-						ch = shiftxform[ch];
-					else if (altdown & 0x2)
-						ch = french_altgrxform[ch];
-					else
-						ch = HU_FallBackFrSpecialLetter(ch);
-				}
-			}
-			else
-			{
-				if (shiftdown && ch >= 32 && ch <= 127)
-					ch = shiftxform[ch];
-			}
+			ch = M_ShiftChar(ch);
 			if (M_ChangeStringCvar(ch))
 				return true;
 			else
@@ -3928,7 +3921,6 @@ boolean M_Responder(event_t *ev)
 		case KEY_BACKSPACE:
 			if ((currentMenu->menuitems[itemOn].status) == IT_CONTROL)
 			{
-				menu_text_input = false; //never use native layout for control setup
 				// detach any keys associated with the game control
 				G_ClearControlKeys(setupcontrols, currentMenu->menuitems[itemOn].alphaKey);
 				S_StartSound(NULL, sfx_shldls);
@@ -4487,16 +4479,23 @@ void M_Init(void)
 	{
 		OP_VideoOptionsMenu[op_video_ogl].status = IT_DISABLED;
 		OP_ExpOptionsMenu[op_exp_grscrtx].status = IT_DISABLED;
+#ifdef USE_FBO_OGL
+		OP_ExpOptionsMenu[op_exp_fbo].status = IT_DISABLED;
+#endif
 		OP_ExpOptionsMenu[op_exp_spltwal].status = IT_DISABLED;
 		OP_ExpOptionsMenu[op_exp_pegging].status = IT_DISABLED;
 		OP_ExpOptionsMenu[op_exp_fofzfight].status = IT_DISABLED;
 		OP_ExpOptionsMenu[op_exp_fofcut].status = IT_DISABLED;
 	}
-	
+
 	if (rendermode == render_opengl)
 	{
 		OP_ExpOptionsMenu[op_exp_ffclip].status = IT_DISABLED;
 		OP_ExpOptionsMenu[op_exp_sprclip].status = IT_DISABLED;
+#ifdef USE_FBO_OGL
+		if (!supportFBO)
+			OP_ExpOptionsMenu[op_exp_fbo].status = IT_GRAYEDOUT;
+#endif
 	}
 #endif
 
@@ -6430,23 +6429,7 @@ static void M_AddonAutoLoad(INT32 ch)
 #define len menusearch[0]
 static boolean M_ChangeStringAddons(INT32 choice)
 {
-	if (cv_keyboardlayout.value == 3)
-	{
-		if(choice >= 32 && choice <= 141)
-		{
-			if(shiftdown)
-				choice = shiftxform[choice];
-			else if(altdown & 0x2)
-				choice = french_altgrxform[choice];
-			else
-				choice = HU_FallBackFrSpecialLetter(choice);
-		}
-	}
-	else
-	{
-		if (shiftdown && choice >= 32 && choice <= 127)
-			choice = shiftxform[choice];
-	}
+	choice = M_ShiftChar(choice);
 
 	switch (choice)
 	{
@@ -9005,6 +8988,8 @@ static void M_ChooseTimeAttack(INT32 choice)
 		G_RecordDemo(nameofdemo);
 
 	G_DeferedInitNew(false, G_BuildMapName(cv_nextmap.value), (UINT8)(cv_chooseskin.value-1), 0, false);
+
+	free(gpath);
 }
 
 static void M_HandleStaffReplay(INT32 choice)
@@ -12120,6 +12105,7 @@ static void M_DrawControl(void)
 	char tmp[50];
 	INT32 x, y, i, max, cursory = 0, iter;
 	INT32 keys[2];
+	menu_text_input = false; //never use native layout for control setup
 
 	x = currentMenu->x;
 	y = currentMenu->y;
@@ -12236,6 +12222,7 @@ static void M_ChangecontrolResponse(event_t *ev)
 	INT32        control;
 	INT32        found;
 	INT32        ch = ev->data1;
+	menu_text_input = false; //never use native layout for control setup
 
 	// ESCAPE cancels; dummy out PAUSE
 	if (ch != KEY_ESCAPE && ch != KEY_PAUSE)

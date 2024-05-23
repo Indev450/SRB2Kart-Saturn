@@ -4039,16 +4039,12 @@ static const char *locateWad(void)
 #endif
 #ifndef NOHOME
 	// find in $HOME
-	I_OutputMsg(",HOME/" DEFAULTDIR);
+	I_OutputMsg(",HOME");
 	if ((envstr = I_GetEnv("HOME")) != NULL)
 	{
-		char *tmp = malloc(strlen(envstr) + sizeof(DEFAULTDIR));
-		strcpy(tmp, envstr);
-		strcat(tmp, DEFAULTDIR);
 		WadPath = searchWad(envstr);
 		if (WadPath)
 			return WadPath;
-		free(tmp);
 	}
 #endif
 #ifdef DEFAULTSEARCHPATH1

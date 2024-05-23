@@ -2510,18 +2510,15 @@ static void P_MovePlayer(player_t *player)
 	if ((player->mo->ceilingz - player->mo->floorz < player->mo->height)
 		&& !(player->mo->flags & MF_NOCLIP))
 	{
-		if (player->mo->ceilingz - player->mo->floorz < player->mo->height)
+		if ((netgame || multiplayer) && player->spectator)
+			P_DamageMobj(player->mo, NULL, NULL, 42000); // Respawn crushed spectators
+		else
 		{
-			if ((netgame || multiplayer) && player->spectator)
-				P_DamageMobj(player->mo, NULL, NULL, 42000); // Respawn crushed spectators
-			else
-			{
-				K_SquishPlayer(player, NULL, NULL); // SRB2kart - we don't kill when squished, we squish when squished.
-			}
-
-			if (player->playerstate == PST_DEAD)
-				return;
+			K_SquishPlayer(player, NULL, NULL); // SRB2kart - we don't kill when squished, we squish when squished.
 		}
+
+		if (player->playerstate == PST_DEAD)
+			return;
 	}
 
 #ifdef HWRENDER
@@ -3962,7 +3959,6 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	{
 		P_MoveChaseCamera(player, thiscam, false);
 		R_ResetViewInterpolation(num + 1);
-		R_ResetViewInterpolation(num + 1);
 	}
 
 	return (x == thiscam->x && y == thiscam->y && z == thiscam->z && angle == thiscam->aiming);
@@ -4147,8 +4143,18 @@ static void P_CalcPostImg(player_t *player)
 		}
 	}
 
-	if (player->mo->eflags & MFE_VERTICALFLIP)
-		*type = postimg_flip;
+	if (!encoremode) // srb2kart
+	{
+		if (player->mo->eflags & MFE_VERTICALFLIP)
+			*type = postimg_flip;
+	}
+	else
+	{
+		if (player->mo->eflags & MFE_VERTICALFLIP)
+			*type = postimg_mirrorflip;
+		else
+			*type = postimg_mirror;
+	}
 
 #if 1
 	(void)param;
@@ -4163,9 +4169,6 @@ static void P_CalcPostImg(player_t *player)
 			*param = 5;
 	}
 #endif
-
-	if (encoremode) // srb2kart
-		*type = postimg_mirror;
 }
 
 void P_DoTimeOver(player_t *player)

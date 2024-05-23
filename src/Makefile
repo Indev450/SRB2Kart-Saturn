@@ -199,6 +199,12 @@ ifndef NOOPENMPT
 HAVE_OPENMPT=1
 endif
 
+ifndef NOHW
+ifndef NOSCREENFBO
+USE_FBO_OGL=1
+endif
+endif
+
 ifdef MINGW
 include win32/Makefile.cfg
 endif #ifdef MINGW
@@ -370,6 +376,12 @@ endif
 
 ifdef STATIC
 LIBS:=-static $(LIBS)
+endif
+
+ifndef NOHW
+ifdef USE_FBO_OGL
+OPTS+=-DUSE_FBO_OGL
+endif
 endif
 
 ifdef HAVE_MINIUPNPC

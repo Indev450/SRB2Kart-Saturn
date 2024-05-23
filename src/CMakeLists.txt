@@ -38,6 +38,7 @@ set(SRB2_CORE_SOURCES
 	md5.c
 	mserv.c
 	http-mserv.c
+	qs22j.c
 	s_sound.c
 	screen.c
 	sounds.c
@@ -105,6 +106,7 @@ set(SRB2_CORE_HEADERS
 	m_swap.h
 	md5.h
 	mserv.h
+	qs22j.h
 	s_sound.h
 	screen.h
 	sounds.h
@@ -214,6 +216,8 @@ set(SRB2_CONFIG_HWRENDER ON CACHE BOOL
 	"Enable hardware rendering through OpenGL.")
 set(SRB2_CONFIG_STATIC_OPENGL OFF CACHE BOOL
 	"Use statically linked OpenGL. NOT RECOMMENDED.")
+set(SRB2_CONFIG_USE_FBO_OGL ON CACHE BOOL
+	"Enable OpenGL FBO Downsampling support.")
 
 ### use internal libraries?
 if(${CMAKE_SYSTEM} MATCHES "Windows") ###set on Windows only
@@ -508,6 +512,12 @@ if(${SRB2_CONFIG_HWRENDER} AND ${SRB2_CONFIG_STATIC_OPENGL})
 	endif()
 endif()
 
+if(${SRB2_CONFIG_HWRENDER})
+	if(${SRB2_CONFIG_USE_FBO_OGL})
+		set(SRB2_USE_FBO_OGL ON)
+		add_definitions(-DUSE_FBO_OGL)
+	endif()
+endif()
 
 # Targets
 

@@ -17,7 +17,7 @@
 #ifndef __DOOMTYPE__
 #define __DOOMTYPE__
 
-#ifdef _WIN32
+#if defined (_WIN32)
 //#define WIN32_LEAN_AND_MEAN
 #define RPC_NO_WINDOWS_H
 #include <windows.h>
@@ -48,7 +48,6 @@ typedef long ssize_t;
 		#define PDWORD_PTR PDWORD
 	#endif
 #endif
-
 #else
 #define __STDC_LIMIT_MACROS
 #include <stdint.h>
@@ -350,7 +349,8 @@ typedef enum
 	postimg_motion,
 	postimg_flip,
 	postimg_heat,
-	postimg_mirror
+	postimg_mirror,
+	postimg_mirrorflip
 } postimg_t;
 
 typedef UINT32 lumpnum_t; // 16 : 16 unsigned long (wad num: lump num)

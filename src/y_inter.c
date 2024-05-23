@@ -163,7 +163,6 @@ typedef struct
 static y_votelvlinfo levelinfo[5];
 static y_voteclient voteclient;
 static INT32 votetic;
-static INT32 lastvotetic;
 static INT32 voteendtic = -1;
 static patch_t *cursor = NULL;
 static patch_t *cursor1 = NULL;
@@ -1016,11 +1015,13 @@ static inline void Y_DrawAnimatedVoteScreenPatch(boolean widePatch)
 			currentAnimFrame = 0;
 	}
 
-	patch_t *background = W_CachePatchName(va("%s%d", tempAnimPrefix, currentAnimFrame + 1), PU_CACHE);		
-	V_DrawScaledPatch(160 - (background->width / 2), (200 - (background->height)), V_SNAPTOBOTTOM|V_SNAPTOTOP, background);		
+	patch_t *background = W_CachePatchName(va("%s%d", tempAnimPrefix, currentAnimFrame + 1), PU_CACHE);
+	V_DrawScaledPatch(((vid.width/2) / vid.dupx) - (SHORT(background->width)/2), // Keep the width/height adjustments, for screens that are less wide than 320(?)
+				(vid.height / vid.dupy) - SHORT(background->height),
+				V_SNAPTOTOP|V_SNAPTOLEFT, background);
 
-	if (lastvotetic != votetic && lastvotetic % 2 == 0)
-		currentAnimFrame = (currentAnimFrame + 1 > tempFoundAnimVoteFrames - 1) ? 0 : currentAnimFrame + 1; // jeez no fucking idea how to make this shit not go nuts with interpolation
+	if (renderisnewtic && votetic % 2 == 0 && !paused)
+		currentAnimFrame = (currentAnimFrame + 1 > tempFoundAnimVoteFrames - 1) ? 0 : currentAnimFrame + 1;
 }
 
 //
@@ -1287,8 +1288,6 @@ void Y_VoteDrawer(void)
 		V_DrawCenteredString(BASEVIDWIDTH/2, 188, hilicol,
 			va("Vote ends in %d", tickdown));
 	}
-	
-	lastvotetic = votetic;
 
 	if (renderisnewtic)
 	{
@@ -1486,7 +1485,7 @@ void Y_VoteTicker(void)
 
 				if ((InputDown(gc_accelerate, i+1) || JoyAxis(AXISMOVE, i+1) > 0) && !pressed)
 				{
-					D_ModifyClientVote(voteclient.playerinfo[i].selection, i);
+					D_ModifyClientVote(voteclient.playerinfo[i].selection, p);
 					pressed = true;
 				}
 			}

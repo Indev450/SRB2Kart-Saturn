@@ -127,6 +127,7 @@ INT32 *blockmaplump; // Big blockmap
 fixed_t bmaporgx, bmaporgy;
 // for thing chains
 mobj_t **blocklinks;
+precipmobj_t **precipblocklinks;
 
 // REJECT
 // For fast sight rejection.
@@ -714,7 +715,7 @@ static void P_LoadRawSectors(UINT8 *data, size_t i)
 
 		ss->thinglist = NULL;
 		ss->touching_thinglist = NULL;
-		ss->preciplist = NULL;
+
 		ss->touching_preciplist = NULL;
 
 		ss->floordata = NULL;
@@ -1948,6 +1949,9 @@ static void P_CreateBlockMap(void)
 		// haleyjd 2/22/06: setup polyobject blockmap
 		count = sizeof(*polyblocklinks) * bmapwidth * bmapheight;
 		polyblocklinks = Z_Calloc(count, PU_LEVEL, NULL);
+
+		count = sizeof (*precipblocklinks)* bmapwidth*bmapheight;
+		precipblocklinks = Z_Calloc(count, PU_LEVEL, NULL);
 	}
 }
 
@@ -1982,10 +1986,6 @@ static void P_ReadBlockMapLump(INT16 *wadblockmaplump, size_t count)
 // this should return false.
 static boolean P_LoadBlockMap(lumpnum_t lumpnum)
 {
-#if 0
-	(void)lumpnum;
-	return false;
-#else
 	size_t count;
 	const char *lumpname = W_CheckNameForNum(lumpnum);
 
@@ -2023,27 +2023,11 @@ static boolean P_LoadBlockMap(lumpnum_t lumpnum)
 	// haleyjd 2/22/06: setup polyobject blockmap
 	count = sizeof(*polyblocklinks) * bmapwidth * bmapheight;
 	polyblocklinks = Z_Calloc(count, PU_LEVEL, NULL);
+
+	count = sizeof (*precipblocklinks)* bmapwidth*bmapheight;
+	precipblocklinks = Z_Calloc(count, PU_LEVEL, NULL);
+
 	return true;
-/* Original
-		blockmaplump = W_CacheLumpNum(lump, PU_LEVEL);
-		blockmap = blockmaplump+4;
-		count = W_LumpLength (lump)/2;
-
-		for (i = 0; i < count; i++)
-			blockmaplump[i] = SHORT(blockmaplump[i]);
-
-		bmaporgx = blockmaplump[0]<<FRACBITS;
-		bmaporgy = blockmaplump[1]<<FRACBITS;
-		bmapwidth = blockmaplump[2];
-		bmapheight = blockmaplump[3];
-	}
-
-	// clear out mobj chains
-	count = sizeof (*blocklinks)*bmapwidth*bmapheight;
-	blocklinks = Z_Calloc(count, PU_LEVEL, NULL);
-	return true;
-	*/
-#endif
 }
 
 // This needs to be a separate function
@@ -2052,12 +2036,6 @@ static boolean P_LoadBlockMap(lumpnum_t lumpnum)
 // -- Monster Iestyn 09/01/18
 static boolean P_LoadRawBlockMap(UINT8 *data, size_t count, const char *lumpname)
 {
-#if 0
-	(void)data;
-	(void)count;
-	(void)lumpname;
-	return false;
-#else
 	// Check if the lump is named "BLOCKMAP"
 	if (!lumpname || memcmp(lumpname, "BLOCKMAP", 8) != 0)
 	{
@@ -2087,8 +2065,11 @@ static boolean P_LoadRawBlockMap(UINT8 *data, size_t count, const char *lumpname
 	// haleyjd 2/22/06: setup polyobject blockmap
 	count = sizeof(*polyblocklinks) * bmapwidth * bmapheight;
 	polyblocklinks = Z_Calloc(count, PU_LEVEL, NULL);
+
+	count = sizeof (*precipblocklinks)* bmapwidth*bmapheight;
+	precipblocklinks = Z_Calloc(count, PU_LEVEL, NULL);
+
 	return true;
-#endif
 }
 
 //

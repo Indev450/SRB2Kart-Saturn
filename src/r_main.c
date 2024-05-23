@@ -32,6 +32,7 @@
 #include "m_random.h" // quake camera shake
 #include "doomstat.h" // MAXSPLITSCREENPLAYERS
 #include "r_fps.h" // Frame interpolation/uncapped
+#include "tables.h"
 
 #ifdef HWRENDER
 #include "hardware/hw_main.h"
@@ -592,6 +593,33 @@ boolean R_DoCulling(line_t *cullheight, line_t *viewcullheight, fixed_t vz, fixe
 	}
 
 	return false;
+}
+
+// Returns search dimensions within a blockmap, in the direction of viewangle and out to a certain distance.
+void R_GetRenderBlockMapDimensions(fixed_t drawdist, INT32 *xl, INT32 *xh, INT32 *yl, INT32 *yh)
+{
+	const angle_t left = viewangle - clipangle;
+	const angle_t right = viewangle + clipangle;
+
+	const fixed_t vxleft = viewx + FixedMul(drawdist, FCOS(left));
+	const fixed_t vyleft = viewy + FixedMul(drawdist, FSIN(left));
+
+	const fixed_t vxright = viewx + FixedMul(drawdist, FCOS(right));
+	const fixed_t vyright = viewy + FixedMul(drawdist, FSIN(right));
+
+	// Try to narrow the search to within only the field of view
+	*xl = (unsigned)(min(viewx, min(vxleft, vxright)) - bmaporgx)>>MAPBLOCKSHIFT;
+	*xh = (unsigned)(max(viewx, max(vxleft, vxright)) - bmaporgx)>>MAPBLOCKSHIFT;
+	*yl = (unsigned)(min(viewy, min(vyleft, vyright)) - bmaporgy)>>MAPBLOCKSHIFT;
+	*yh = (unsigned)(max(viewy, max(vyleft, vyright)) - bmaporgy)>>MAPBLOCKSHIFT;
+
+	if (*xh >= bmapwidth)
+		*xh = bmapwidth - 1;
+
+	if (*yh >= bmapheight)
+		*yh = bmapheight - 1;
+
+	BMBOUNDFIX(*xl, *xh, *yl, *yh);
 }
 
 //
@@ -1728,6 +1756,7 @@ void R_RenderPlayerView(player_t *player)
 	PS_START_TIMING(ps_bsptime);
 	R_RenderBSPNode((INT32)numnodes - 1);
 	PS_STOP_TIMING(ps_bsptime);
+	R_AddPrecipitationSprites();
 	PS_START_TIMING(ps_sw_spritecliptime);
 	R_ClipSprites();
 	PS_STOP_TIMING(ps_sw_spritecliptime);

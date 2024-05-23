@@ -1445,6 +1445,12 @@ void Command_Ping_f(void)
 			pingv[pingc].ms  = ms;
 			pingc++;
 		}
+		else
+		{
+			pingv[pingc].num = 0;
+			pingv[pingc].f   = 0;
+			pingv[pingc].ms  = 0;
+		}
 	}
 
 	     if (f_width < 10)  f_width = 1;

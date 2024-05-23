@@ -153,6 +153,7 @@ typedef struct
 	FLOAT       centerx, centery;
 #ifdef USE_FTRANSFORM_MIRROR
 	boolean     mirror;          // SRB2Kart: Encore Mode
+	boolean     mirrorflip;      // Encore Mode with Flipcam
 #endif
 	boolean     shearing;        // 14042019
 	angle_t     viewaiming;      // 17052019
@@ -287,6 +288,9 @@ typedef struct FSurfaceInfo FSurfaceInfo;
 
 enum hwdsetspecialstate
 {
+#ifdef USE_FBO_OGL
+	HWD_SET_FRAMEBUFFER,
+#endif
 	HWD_SET_SHADERS,
 
 	HWD_SET_TEXTUREFILTERMODE,

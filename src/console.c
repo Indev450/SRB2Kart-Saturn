@@ -629,15 +629,42 @@ static void CON_MoveConsole(void)
 
 INT32 CON_ShiftChar(INT32 ch)
 {
+	if (I_UseNativeKeyboard())
+		return ch;
+	
 	if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z'))
 	{
-		if (shiftdown ^ capslock)
-			ch = shiftxform[ch];
+		if (cv_keyboardlayout.value == 3)
+		{
+			if (shiftdown ^ capslock)
+				ch = shiftxform[ch];
+			else if (altdown & 0x2)
+				ch = french_altgrxform[ch];
+			else
+				ch = HU_FallBackFrSpecialLetter(ch);
+		}
+		else
+		{
+			if (shiftdown ^ capslock)
+				ch = shiftxform[ch];
+		}
 	}
 	else	// if we're holding shift we should still shift non letter symbols
 	{
-		if (shiftdown)
-			ch = shiftxform[ch];
+		if (cv_keyboardlayout.value == 3)
+		{
+			if (shiftdown)
+				ch = shiftxform[ch];
+			else if (altdown & 0x2)
+				ch = french_altgrxform[ch];
+			else
+				ch = HU_FallBackFrSpecialLetter(ch);
+		}
+		else
+		{
+			if (shiftdown)
+				ch = shiftxform[ch];
+		}
 	}
 
 	return ch;
@@ -1233,40 +1260,7 @@ boolean CON_Responder(event_t *ev)
 		key = '/';
 
 	// same capslock code as hu_stuff.c's HU_responder. Check there for details.
-	if ((key >= 'a' && key <= 'z') || (key >= 'A' && key <= 'Z'))
-	{
-		if (cv_keyboardlayout.value == 3)
-		{
-			if (shiftdown ^ capslock)
-				key = shiftxform[key];
-			else if (altdown & 0x2)
-				key = french_altgrxform[key];
-			else
-				key = HU_FallBackFrSpecialLetter(key);
-		}
-		else
-		{
-			if (shiftdown ^ capslock)
-				key = shiftxform[key];
-		}
-	}
-	else
-	{
-		if (cv_keyboardlayout.value == 3)
-		{
-			if (shiftdown)
-				key = shiftxform[key];
-			else if (altdown & 0x2)
-				key = french_altgrxform[key];
-			else
-				key = HU_FallBackFrSpecialLetter(key);
-		}
-		else
-		{
-			if (shiftdown)
-				key = shiftxform[key];
-		}
-	}
+	key = CON_ShiftChar(key);
 
 	// enter a char into the command prompt
 	if (key < 32 || key > 127)
