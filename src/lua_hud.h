@@ -42,11 +42,11 @@ enum hud {
 
 extern boolean hud_running;
 
-extern boolean hud_interpolate;
-extern UINT8 hud_interptag;
-extern UINT32 hud_interpcounter;
-extern boolean hud_interpstring;
-extern boolean hud_interplatch;
+extern boolean hud_interpolate; // interpolation enabled
+extern UINT8 hud_interptag; // current tag
+extern UINT32 hud_interpcounter; // number of HUD hooks ran
+extern boolean hud_interpstring; // string mode
+extern boolean hud_interplatch; // string mode was toggled
 
 boolean LUA_HudEnabled(enum hud option);
 
