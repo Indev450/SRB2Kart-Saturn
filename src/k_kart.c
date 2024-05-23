@@ -5834,13 +5834,13 @@ void K_SpawnWaterRunParticles(mobj_t *mobj)
 			trailScale = mapobjectscale; // Scaling is based off difference between runspeed and top speed
 		}
 		
-		trailScale = trailScale*0.70;
+		trailScale = FixedMul(trailScale, 3*FRACUNIT/4);
 
 		if (trailScale > 0)
 		{
 			const angle_t forwardangle = R_PointToAngle2(0, 0, mobj->momx, mobj->momy);
 			const fixed_t playerVisualRadius = mobj->radius + (8 * mobj->scale);
-			const size_t numFrames = S_WATERTRAIL8 - S_WATERTRAIL1;
+			const size_t numFrames = S_WATERTRAIL5 - S_WATERTRAIL1;
 			const statenum_t curOverlayFrame = S_WATERTRAIL1 + (leveltime % numFrames);
 			const statenum_t curUnderlayFrame = S_WATERTRAILUNDERLAY1 + (leveltime % numFrames);
 			fixed_t x1, x2, y1, y2;
@@ -5848,13 +5848,13 @@ void K_SpawnWaterRunParticles(mobj_t *mobj)
 
 			x1 = mobj->x + mobj->momx + P_ReturnThrustX(mobj, forwardangle + ANGLE_90, playerVisualRadius);
 			y1 = mobj->y + mobj->momy + P_ReturnThrustY(mobj, forwardangle + ANGLE_90, playerVisualRadius);
-			x1 = x1 + P_ReturnThrustX(mobj, forwardangle, playerVisualRadius);
-			y1 = y1 + P_ReturnThrustY(mobj, forwardangle, playerVisualRadius);
+			x1 = x1 + P_ReturnThrustX(mobj, forwardangle, playerVisualRadius) / 24;
+			y1 = y1 + P_ReturnThrustY(mobj, forwardangle, playerVisualRadius) / 24;
 
 			x2 = mobj->x + mobj->momx + P_ReturnThrustX(mobj, forwardangle - ANGLE_90, playerVisualRadius);
 			y2 = mobj->y + mobj->momy + P_ReturnThrustY(mobj, forwardangle - ANGLE_90, playerVisualRadius);
-			x2 = x2 + P_ReturnThrustX(mobj, forwardangle, playerVisualRadius);
-			y2 = y2 + P_ReturnThrustY(mobj, forwardangle, playerVisualRadius);
+			x2 = x2 + P_ReturnThrustX(mobj, forwardangle, playerVisualRadius) / 24;
+			y2 = y2 + P_ReturnThrustY(mobj, forwardangle, playerVisualRadius) / 24;
 
 			// Left
 			// underlay
@@ -5912,13 +5912,6 @@ void K_SpawnWaterRunParticles(mobj_t *mobj)
 				S_StartSoundAtVolume(mobj, sfx_s3kdbs, volume);
 			}*/
 		}
-
-		// Little water sound while touching water - just a nicety.
-		/*if ((mobj->eflags & MFE_TOUCHWATER) && !(mobj->eflags & MFE_UNDERWATER))
-		{
-			if (M_RandomChance(FRACUNIT/2) && leveltime % TICRATE == 0)
-				S_StartSound(mobj, sfx_floush);
-		}*/
 	}
 }
 
