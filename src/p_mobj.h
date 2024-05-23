@@ -406,6 +406,7 @@ typedef struct mobj_s
 	boolean init_salty;
 
 	// WARNING: New fields must be added separately to savegame and Lua.
+	struct mobj_s *watertrail[4];
 } mobj_t;
 
 //

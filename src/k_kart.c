@@ -5777,6 +5777,26 @@ void K_KartUpdatePosition(player_t *player)
 	player->kartstuff[k_position] = position;
 }
 
+static mobj_t *K_SpawnOrMoveMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type, mobj_t *source, int id) {
+	mobj_t *mobj = source->watertrail[id];
+
+	if (!mobj || P_MobjWasRemoved(mobj))
+	{
+		mobj = P_SpawnMobj(x, y, z, type);
+
+		P_SetTarget(&source->watertrail[id], mobj);
+	}
+	else
+	{
+		if ((mobj->state - states) == S_INVISIBLE)
+            P_SetOrigin(mobj, x, y, z);
+        else
+            P_MoveOrigin(mobj, x, y, z);
+	}
+
+	return mobj;
+}
+
 void K_SpawnWaterRunParticles(mobj_t *mobj)
 {
 	fixed_t runSpeed = 14 * mobj->scale;
@@ -5838,6 +5858,7 @@ void K_SpawnWaterRunParticles(mobj_t *mobj)
 
 		if (trailScale > 0)
 		{
+			//const angle_t forwardangle = K_MomentumAngle(mobj);
 			const angle_t forwardangle = R_PointToAngle2(0, 0, mobj->momx, mobj->momy);
 			const fixed_t playerVisualRadius = mobj->radius + (8 * mobj->scale);
 			const size_t numFrames = S_WATERTRAIL5 - S_WATERTRAIL1;
@@ -5858,8 +5879,9 @@ void K_SpawnWaterRunParticles(mobj_t *mobj)
 
 			// Left
 			// underlay
-			water = P_SpawnMobj(x1, y1,
-				((mobj->eflags & MFE_VERTICALFLIP) ? mobj->waterbottom - FixedMul(mobjinfo[MT_WATERTRAILUNDERLAY].height, mobj->scale) : mobj->watertop), MT_WATERTRAILUNDERLAY);
+			water = K_SpawnOrMoveMobj(x1, y1,
+				((mobj->eflags & MFE_VERTICALFLIP) ? mobj->waterbottom - FixedMul(mobjinfo[MT_WATERTRAILUNDERLAY].height, mobj->scale) : mobj->watertop), MT_WATERTRAILUNDERLAY,
+				mobj, 0);
 			water->angle = forwardangle - ANGLE_180 - ANGLE_22h;
 			water->destscale = trailScale;
 			water->momx = mobj->momx;
@@ -5870,8 +5892,9 @@ void K_SpawnWaterRunParticles(mobj_t *mobj)
 			P_SetTarget(&water, mobj);
 
 			// overlay
-			water = P_SpawnMobj(x1, y1,
-				((mobj->eflags & MFE_VERTICALFLIP) ? mobj->waterbottom - FixedMul(mobjinfo[MT_WATERTRAIL].height, mobj->scale) : mobj->watertop), MT_WATERTRAIL);
+			water = K_SpawnOrMoveMobj(x1, y1,
+				((mobj->eflags & MFE_VERTICALFLIP) ? mobj->waterbottom - FixedMul(mobjinfo[MT_WATERTRAIL].height, mobj->scale) : mobj->watertop), MT_WATERTRAIL,
+				mobj, 1);
 			water->angle = forwardangle - ANGLE_180 - ANGLE_22h;
 			water->destscale = trailScale;
 			water->momx = mobj->momx;
@@ -5883,8 +5906,9 @@ void K_SpawnWaterRunParticles(mobj_t *mobj)
 
 			// Right
 			// Underlay
-			water = P_SpawnMobj(x2, y2,
-				((mobj->eflags & MFE_VERTICALFLIP) ? mobj->waterbottom - FixedMul(mobjinfo[MT_WATERTRAILUNDERLAY].height, mobj->scale) : mobj->watertop), MT_WATERTRAILUNDERLAY);
+			water = K_SpawnOrMoveMobj(x2, y2,
+				((mobj->eflags & MFE_VERTICALFLIP) ? mobj->waterbottom - FixedMul(mobjinfo[MT_WATERTRAILUNDERLAY].height, mobj->scale) : mobj->watertop), MT_WATERTRAILUNDERLAY,
+				mobj, 2);
 			water->angle = forwardangle - ANGLE_180 + ANGLE_22h;
 			water->destscale = trailScale;
 			water->momx = mobj->momx;
@@ -5895,8 +5919,9 @@ void K_SpawnWaterRunParticles(mobj_t *mobj)
 			P_SetTarget(&water, mobj);
 
 			// Overlay
-			water = P_SpawnMobj(x2, y2,
-				((mobj->eflags & MFE_VERTICALFLIP) ? mobj->waterbottom - FixedMul(mobjinfo[MT_WATERTRAIL].height, mobj->scale) : mobj->watertop), MT_WATERTRAIL);
+			water = K_SpawnOrMoveMobj(x2, y2,
+				((mobj->eflags & MFE_VERTICALFLIP) ? mobj->waterbottom - FixedMul(mobjinfo[MT_WATERTRAIL].height, mobj->scale) : mobj->watertop), MT_WATERTRAIL,
+				mobj, 3);
 			water->angle = forwardangle - ANGLE_180 + ANGLE_22h;
 			water->destscale = trailScale;
 			water->momx = mobj->momx;
@@ -5905,12 +5930,6 @@ void K_SpawnWaterRunParticles(mobj_t *mobj)
 			P_SetScale(water, trailScale);
 			P_SetMobjState(water, curOverlayFrame);
 			P_SetTarget(&water, mobj);
-
-			/*if (!S_SoundPlaying(mobj, sfx_s3kdbs))
-			{
-				const INT32 volume = (min(trailScale, FRACUNIT) * 255) / FRACUNIT;
-				S_StartSoundAtVolume(mobj, sfx_s3kdbs, volume);
-			}*/
 		}
 	}
 }
