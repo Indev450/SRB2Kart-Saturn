@@ -318,6 +318,7 @@ static void CalcFillCoords(drawitem_t *item)
 
 #define INTERP_LATCH 1
 #define INTERP_STRING 2
+#define INTERP_FLAGS 3 // all bits combined
 
 static UINT64 GetItemId(void)
 {
@@ -325,7 +326,7 @@ static UINT64 GetItemId(void)
 		return 0;
 
 	// leave bits 0 and 1 free for the string mode
-	UINT64 id = ((UINT64)gL->savedpc << 32) | (hud_interpcounter << 10) | (hud_interptag << 2);
+	UINT64 id = ((uintptr_t)gL->savedpc << 32) | (hud_interpcounter << 10) | (hud_interptag << 2);
 
 	if (hud_interplatch)
 	{
@@ -580,7 +581,8 @@ void LUA_HUD_DrawList(huddrawlist_h list)
 		drawitem_t *olditem = NULL;
 		const char *itemstr = &list->strbuf[item->stroffset];
 
-		if (item->id) {
+		if (item->id)
+		{
 			// find the old one too
 			// this is kinda cursed... we need to check every item
 			// but stop when the first-checked item is reached again
@@ -595,16 +597,19 @@ void LUA_HUD_DrawList(huddrawlist_h list)
 						break;
 				}
 				drawitem_t *old = &list->olditems[j++];
-				if ((old->id & ~3) == (item->id & ~3))
+				if ((old->id & ~INTERP_FLAGS) == (item->id & ~INTERP_FLAGS)) // don't include flags in search
 				{
 					// gotcha!
 					olditem = old;
-					if (item->id & INTERP_LATCH) {
+					if (item->id & INTERP_LATCH)
+					{
 						lerpx = FixedMul(frac, item->x - olditem->x);
 						lerpy = FixedMul(frac, item->y - olditem->y);
 						latchitem = item;
 						oldlatchitem = olditem;
-					} else if (!(item->id & INTERP_STRING)) {
+					}
+					else if (!(item->id & INTERP_STRING))
+					{
 						lerpx = FixedMul(frac, item->x - olditem->x);
 						lerpy = FixedMul(frac, item->y - olditem->y);
 						latchitem = NULL;
@@ -614,7 +619,9 @@ void LUA_HUD_DrawList(huddrawlist_h list)
 				if (j == stop)
 					break;
 			}
-		} else {
+		}
+		else
+		{
 			lerpx = lerpy = 0;
 			latchitem = NULL;
 		}

@@ -52,6 +52,45 @@ Returns the displayplayer's HUD color.
 
 Returns true if colorization is enabled, false otherwise.
 
+## v.interpolate(true)
+
+Enables HUD interpolation. Each call to a drawing function will have its coordinates interpolated
+by assigning an unique ID to every call.
+For example, three successive calls to `v.draw` will each have their own ID and interpolation offsets.
+Pass `true` to enable interpolation, `false` to disable.
+
+Alternatively, pass a number to enable interpolation with the specified tag.
+Tags allow HUD items drawn by the same call to a drawing function to be differentiated.
+Valid tags range from 0-255.
+For example, when iterating players, use a unique tag for each player to avoid artifacting:
+```lua
+for p in players.iterate do
+	-- enable interpolation, using player numbers as the tag
+	-- every draw will have different interp offsets per player
+	v.interpolate(#p)
+
+	-- doesn't matter for unconditional draws like this one...
+	v.draw(...)
+
+	-- but it does matter if there's a condition!
+	-- without tags, this patch would warp between players
+	-- whenever their `someVar` changes
+	if p.someVar then v.draw(...) end
+end
+
+-- don't want interpolation anymore? then disable it
+v.interpolate(false)
+```
+NOTE: The default tag for `true` is 0.
+
+## v.interpString(true)
+
+Enables string interpolation mode. The next call to a drawing function will have its interpolation offsets
+latched and reused for all following draw calls.
+Disable with `false` when done.
+
+When using a custom string drawer, enable this mode to avoid interpolation artifacting when the string changes.
+
 ## mobj.spritexscale, mobj.spriteyscale, mobj.spritexoffset, mobj.spriteyoffset, mobj.rollangle, mobj.sloperoll, mobj.rollmodel fields
 
 Same fields as in SRB2 2.2
