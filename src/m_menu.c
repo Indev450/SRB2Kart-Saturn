@@ -3433,10 +3433,10 @@ static void Command_Manual_f(void)
 	itemOn = 0;
 }
 
-boolean UPKEY = false;
-boolean DOWNKEY = false;
-boolean LEFTKEY = false;
-boolean RIGHTKEY = false;
+boolean DPADUPSCROLL = false;
+boolean DPADDOWNSCROLL = false;
+boolean DPADLEFTSCROLL = false;
+boolean DPADRIGHTSCROLL = false;
 
 //
 // M_Responder
@@ -3497,37 +3497,37 @@ boolean M_Responder(event_t *ev)
 				break;
 		}
 
-		switch (ev->data1)
+		switch (ev->data1) // if you pressed it set those to true
 		{
 			case KEY_HAT1:
-				UPKEY = true;
+				DPADUPSCROLL = true;
 				break;
 			case KEY_HAT1 + 1:
-				DOWNKEY = true;
+				DPADDOWNSCROLL = true;
 				break;
 			case KEY_HAT1 + 2:
-				LEFTKEY = true;
+				DPADLEFTSCROLL = true;
 				break;
 			case KEY_HAT1 + 3:
-				RIGHTKEY = true;
+				DPADRIGHTSCROLL = true;
 				break;
 		}
 	}
 	else if (ev->type == ev_keyup)
 	{
-		switch (ev->data1)
+		switch (ev->data1) // if you let go of those set those to false
 		{
 			case KEY_HAT1:
-				UPKEY = false;
+				DPADUPSCROLL = false;
 				break;
 			case KEY_HAT1 + 1:
-				DOWNKEY = false;
+				DPADDOWNSCROLL = false;
 				break;
 			case KEY_HAT1 + 2:
-				LEFTKEY = false;
+				DPADLEFTSCROLL = false;
 				break;
 			case KEY_HAT1 + 3:
-				RIGHTKEY = false;
+				DPADRIGHTSCROLL = false;
 				break;
 		}
 	}
