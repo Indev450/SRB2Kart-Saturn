@@ -1311,7 +1311,7 @@ INT32 R_GetPlaneLight(sector_t *sector, fixed_t planeheight, boolean underside)
 
 void R_RenderBSPNode(INT32 bspnum)
 {
-	node_t *bsp;
+	const node_t *bsp;
 	INT32 side;
 
 	ps_numbspcalls.value.i++;

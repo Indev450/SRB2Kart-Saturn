@@ -3530,14 +3530,16 @@ static boolean HWR_PortalCheckBBox(const fixed_t *bspcoord)
 
 static void HWR_RenderBSPNode(INT32 bspnum)
 {
+	const node_t *bsp;
+	INT32 side;
 	ps_numbspcalls.value.i++;
 
 	while (!(bspnum & NF_SUBSECTOR))  // Found a subsector?
 	{
-		const node_t *bsp = &nodes[bspnum];
+		bsp = &nodes[bspnum];
 
 		// Decide which side the view point is on.
-		INT32 side = R_PointOnSide(viewx, viewy, bsp);
+		side = R_PointOnSide(viewx, viewy, bsp);
 
 		// Recursively divide front space.
 		if (HWR_PortalCheckBBox(bsp->bbox[side]))
@@ -3553,7 +3555,8 @@ static void HWR_RenderBSPNode(INT32 bspnum)
 	// PORTAL CULLING
 	if (portalclipline && portalcullsector)
 	{
-		if (portalcullsector != subsectors[bspnum & ~NF_SUBSECTOR].sector)
+		sector_t *sect = subsectors[bspnum & ~NF_SUBSECTOR].sector;
+		if (sect != portalcullsector)
 			return;
 		portalcullsector = NULL;
 	}
