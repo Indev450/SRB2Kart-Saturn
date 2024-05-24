@@ -1419,25 +1419,10 @@ static void readhuditem(MYFILE *f, INT32 num)
 	Z_Free(s);
 }
 
-/*
-Sprite number = 10
-Sprite subnumber = 32968
-Duration = 200
-Next frame = 200
-*/
 
-/** Action pointer for reading actions from Dehacked lumps.
-  */
-typedef struct
-{
-	actionf_t action; ///< Function pointer corresponding to the actual action.
-	const char *name; ///< Name of the action in ALL CAPS.
-} actionpointer_t;
-
-/** Array mapping action names to action functions.
-  * Names must be in ALL CAPS for case insensitive comparisons.
-  */
-static actionpointer_t actionpointers[] =
+// IMPORTANT!
+// DO NOT FORGET TO SYNC THIS LIST WITH THE ACTIONNUM ENUM IN INFO.H
+actionpointer_t actionpointers[] =
 {
 	{{A_Explode},              "A_EXPLODE"},
 	{{A_Pain},                 "A_PAIN"},
@@ -1592,6 +1577,7 @@ static actionpointer_t actionpointers[] =
 	{{A_FZBoomSmoke},          "A_FZBOOMSMOKE"}, //SRB2kart
 	{{A_RandomShadowFrame},	   "A_RANDOMSHADOWFRAME"}, //SRB2kart
 	{{A_RoamingShadowThinker}, "A_ROAMINGSHADOWTHINKER"}, //SRB2kart
+	{{A_MayonakaArrow}, 	   "A_MAYONAKAARROW"}, //SRB2kart
 	{{A_ReaperThinker}, 	   "A_REAPERTHINKER"}, //SRB2kart
 	{{A_MementosTPParticles},  "A_MEMENTOSTPPARTICLES"}, //SRB2kart
 	{{A_FlameParticle},        "A_FLAMEPARTICLE"}, // SRB2kart
@@ -9436,4 +9422,13 @@ void LUA_SetActionByName(void *state, const char *actiontocompare)
 			return;
 		}
 	}
+}
+
+enum actionnum LUA_GetActionNumByName(const char *actiontocompare)
+{
+	size_t z;
+	for (z = 0; actionpointers[z].name; z++)
+		if (fasticmp(actiontocompare, actionpointers[z].name))
+			return z;
+	return z;
 }
