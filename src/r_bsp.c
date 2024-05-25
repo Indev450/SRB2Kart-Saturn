@@ -39,6 +39,10 @@ drawseg_t *ds_p = NULL;
 // indicates doors closed wrt automap bugfix:
 INT32 doorclosed;
 
+// A wall was drawn covering the whole screen, which means we
+// can block off the BSP across that seg.
+boolean g_walloffscreen;
+
 boolean R_NoEncore(sector_t *sector, boolean ceiling)
 {
 	boolean invertencore = (GETSECSPECIAL(sector->special, 2) == 15);
@@ -163,7 +167,7 @@ crunch:
 // Clips the given range of columns, but does not include it in the clip list.
 // Does handle windows, e.g. LineDefs with upper and lower texture.
 //
-static inline void R_ClipPassWallSegment(INT32 first, INT32 last)
+static inline void R_ClipPassWallSegment(INT32 first, INT32 last, boolean soliddontrender)
 {
 	cliprange_t *start;
 
@@ -178,12 +182,14 @@ static inline void R_ClipPassWallSegment(INT32 first, INT32 last)
 		if (last < start->first - 1)
 		{
 			// Post is entirely visible (above start).
-			R_StoreWallRange(first, last);
+			if (!soliddontrender)
+				R_StoreWallRange(first, last);
 			return;
 		}
 
 		// There is a fragment above *start.
-		R_StoreWallRange(first, start->first - 1);
+		if (!soliddontrender)
+			R_StoreWallRange(first, start->first - 1);
 	}
 
 	// Bottom contained in start?
@@ -193,7 +199,8 @@ static inline void R_ClipPassWallSegment(INT32 first, INT32 last)
 	while (last >= (start+1)->first - 1)
 	{
 		// There is a fragment between two posts.
-		R_StoreWallRange(start->last + 1, (start+1)->first - 1);
+		if (!soliddontrender)
+			R_StoreWallRange(start->last + 1, (start+1)->first - 1);
 		start++;
 
 		if (last <= start->last)
@@ -201,7 +208,8 @@ static inline void R_ClipPassWallSegment(INT32 first, INT32 last)
 	}
 
 	// There is a fragment after *next.
-	R_StoreWallRange(start->last + 1, last);
+	if (!soliddontrender)
+		R_StoreWallRange(start->last + 1, last);
 }
 
 //
@@ -579,10 +587,15 @@ static void R_AddLine(seg_t *line)
 		return;
 
 clippass:
-	R_ClipPassWallSegment(x1, x2 - 1);
+	g_walloffscreen = false;
+	if (g_walloffscreen)
+		R_ClipPassWallSegment(x1, x2 - 1, true);
+	else
+		R_ClipPassWallSegment(x1, x2 - 1, false);
 	return;
 
 clipsolid:
+	g_walloffscreen = false;
 	R_ClipSolidWallSegment(x1, x2 - 1);
 }
 
