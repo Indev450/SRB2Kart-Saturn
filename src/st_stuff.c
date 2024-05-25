@@ -193,7 +193,7 @@ hudinfo_t hudinfo[NUMHUDITEMS] =
 	{ 240, 160}, // HUD_LAP
 };
 
-static huddrawlist_h luahuddrawlist_game;
+static huddrawlist_h luahuddrawlist_game[MAXSPLITSCREENPLAYERS];
 
 // variable to stop mayonaka static from flickering
 consvar_t cv_lessflicker = {"lessflicker", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -473,7 +473,8 @@ void ST_Init(void)
 
 	ST_LoadGraphics();
 
-	luahuddrawlist_game = LUA_HUD_CreateDrawList();
+	for (int i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+		luahuddrawlist_game[i] = LUA_HUD_CreateDrawList();
 }
 
 // change the status bar too, when pressing F12 while viewing a demo.
@@ -846,7 +847,7 @@ static void ST_overlayDrawer(void)
 	{
 		if (renderisnewtic)
 		{
-			LUAh_GameHUD(stplyr, luahuddrawlist_game);
+			LUAh_GameHUD(luahuddrawlist_game[stplyrnum]);
 		}
 	}
 
@@ -1024,7 +1025,8 @@ void ST_Drawer(void)
 	{
 		if (renderisnewtic)
 		{
-			LUA_HUD_ClearDrawList(luahuddrawlist_game);
+			for (i = 0; i <= splitscreen; i++)
+				LUA_HUD_ClearDrawList(luahuddrawlist_game[i]);
 		}
 
 		// No deadview!
@@ -1035,7 +1037,8 @@ void ST_Drawer(void)
 			ST_overlayDrawer();
 		}
 
-		LUA_HUD_DrawList(luahuddrawlist_game);
+		for (i = 0; i <= splitscreen; i++)
+			LUA_HUD_DrawList(luahuddrawlist_game[i]);
 
 		// draw Midnight Channel's overlay ontop
 		if (mapheaderinfo[gamemap-1]->typeoflevel & TOL_TV)	// Very specific Midnight Channel stuff.
