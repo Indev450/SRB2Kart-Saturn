@@ -1194,8 +1194,6 @@ static boolean R_FFloorCanClip(visffloor_t *pfloor)
 #define HEIGHTBITS              12
 #define HEIGHTUNIT              (1<<HEIGHTBITS)
 
-static boolean didsolidcol; // True if at least one column was marked solid
-
 static void R_RenderSegLoop (void)
 {
 	angle_t angle;
@@ -1549,12 +1547,6 @@ static void R_RenderSegLoop (void)
 				floorclip[rw_x] = bottomclip;
 		}
 
-		if ((markceiling || markfloor) && (floorclip[rw_x] <= ceilingclip[rw_x] + 1))
-		{
-			solidcol[rw_x] = 1;
-			didsolidcol = true;
-		}
-
 		if (maskedtexture || numthicksides)
 		{
 			// save texturecol for backdrawing of masked mid texture
@@ -1599,7 +1591,7 @@ static void R_RenderSegLoop (void)
 		bottomfrac += bottomstep;
 	}
 	
-	colfunc = wallcolfunc;
+	//colfunc = wallcolfunc;
 }
 
 // Uses precalculated seg->length
@@ -2830,8 +2822,6 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 	rw_tsilheight = &(ds_p->tsilheight);
 	rw_bsilheight = &(ds_p->bsilheight);
 
-	didsolidcol = false;
-
 #ifdef WALLSPLATS
 	if (linedef->splats && cv_splats.value)
 	{
@@ -2847,7 +2837,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 #endif
 
 	R_RenderSegLoop();
-	//colfunc = wallcolfunc;
+	colfunc = wallcolfunc;
 
 	if (portalline) // if curline is a portal, set portalrender for drawseg
 		ds_p->portalpass = portalrender+1;

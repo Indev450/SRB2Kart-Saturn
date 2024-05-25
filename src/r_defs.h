@@ -25,6 +25,17 @@
 
 #include "screen.h" // MAXVIDWIDTH, MAXVIDHEIGHT
 
+//
+// ClipWallSegment
+// Clips the given range of columns
+// and includes it in the new clip list.
+//
+typedef struct
+{
+	INT32 first;
+	INT32 last;
+} cliprange_t;
+
 // Silhouette, needed for clipping segs (mainly) and sprites representing things.
 #define SIL_NONE   0
 #define SIL_BOTTOM 1

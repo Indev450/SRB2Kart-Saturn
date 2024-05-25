@@ -34,8 +34,6 @@ extern drawseg_t *ds_p;
 extern INT32 doorclosed;
 extern boolean g_walloffscreen;
 
-extern UINT8 *solidcol;
-
 // BSP?
 void R_ClearClipSegs(void);
 void R_PortalClearClipSegs(INT32 start, INT32 end);

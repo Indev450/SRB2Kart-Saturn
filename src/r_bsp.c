@@ -71,56 +71,156 @@ void R_ClearDrawSegs(void)
 	ds_p = drawsegs;
 }
 
+// Fix from boom.
+static UINT32 maxsegs;
 
-// CPhipps -
-// Instead of clipsegs, let's try using an array with one entry for each column,
-// indicating whether it's blocked by a solid wall yet or not.
-UINT8 *solidcol;
+// newend is one past the last valid seg
+static cliprange_t *newend;
+static cliprange_t *solidsegs;
 
 void R_AllocClipSegMemory(void)
 {
-	solidcol = Z_Realloc(solidcol, sizeof(*solidcol) * viewwidth, PU_STATIC, NULL);
+	UINT32 newendpos = newend - solidsegs;
+
+	maxsegs = max(BASEVIDWIDTH/2+1, viewwidth/2+1);
+
+	solidsegs = Z_Realloc(solidsegs, sizeof(*solidsegs) * maxsegs, PU_STATIC, NULL);
+
+	newend = solidsegs + newendpos;
 }
 
 //
-// CPhipps -
-// R_ClipWallSegment
+// R_ClipSolidWallSegment
+// Does handle solid walls,
+//  e.g. single sided LineDefs (middle texture)
+//  that entirely block the view.
 //
-// Replaces the old R_Clip*WallSegment functions. It draws bits of walls in those
-// columns which aren't solid, and updates the solidcol[] array appropriately
-static void R_ClipWallSegment(INT32 first, INT32 last, boolean solid, boolean soliddontrender)
+static void R_ClipSolidWallSegment(INT32 first, INT32 last)
 {
-	while (first < last)
+	cliprange_t *next;
+	cliprange_t *start;
+
+	// Find the first range that touches the range (adjacent pixels are touching).
+	start = solidsegs;
+	while (start->last < first - 1)
+		start++;
+
+	if (first < start->first)
 	{
-		UINT8 *p;
-
-		if (solidcol[first])
+		if (last < start->first - 1)
 		{
-			p = memchr(solidcol+first, 0, last-first);
-			if (!p)
-				return; // All solid
+			// Post is entirely visible (above start), so insert a new clippost.
+			R_StoreWallRange(first, last);
+			next = newend;
+			newend++;
+			// NO MORE CRASHING!
+			if (newend - solidsegs > maxsegs)
+				I_Error("R_ClipSolidWallSegment: Solid Segs overflow!\n");
 
-			first = p - solidcol;
+			while (next != start)
+			{
+				*next = *(next-1);
+				next--;
+			}
+			next->first = first;
+			next->last = last;
+			return;
 		}
-		else
+
+		// There is a fragment above *start.
+		R_StoreWallRange(first, start->first - 1);
+		// Now adjust the clip size.
+		start->first = first;
+	}
+
+	// Bottom contained in start?
+	if (last <= start->last)
+		return;
+
+	next = start;
+	while (last >= (next+1)->first - 1)
+	{
+		// There is a fragment between two posts.
+		R_StoreWallRange(next->last + 1, (next+1)->first - 1);
+		next++;
+
+		if (last <= next->last)
 		{
-			p = memchr(solidcol+first, 1, last-first);
-
-			int to;
-			if (!p)
-				to = last;
-			else
-				to = p - solidcol;
-
-			if (!soliddontrender)
-				R_StoreWallRange(first, to-1);
-
-			if (solid)
-				memset(solidcol+first, 1, to-first);
-
-			first = to;
+			// Bottom is contained in next.
+			// Adjust the clip size.
+			start->last = next->last;
+			goto crunch;
 		}
 	}
+
+	// There is a fragment after *next.
+	R_StoreWallRange(next->last + 1, last);
+	// Adjust the clip size.
+	start->last = last;
+
+	// Remove start+1 to next from the clip list, because start now covers their area.
+crunch:
+	if (next == start)
+		return; // Post just extended past the bottom of one post.
+
+	while (next++ != newend)
+		*++start = *next; // Remove a post.
+
+	newend = start + 1;
+
+	// NO MORE CRASHING!
+	if (newend - solidsegs > maxsegs)
+		I_Error("R_ClipSolidWallSegment: Solid Segs overflow!\n");
+}
+
+//
+// R_ClipPassWallSegment
+// Clips the given range of columns, but does not include it in the clip list.
+// Does handle windows, e.g. LineDefs with upper and lower texture.
+//
+static inline void R_ClipPassWallSegment(INT32 first, INT32 last, boolean soliddontrender)
+{
+	cliprange_t *start;
+
+	// Find the first range that touches the range
+	//  (adjacent pixels are touching).
+	start = solidsegs;
+	while (start->last < first - 1)
+		start++;
+
+	if (first < start->first)
+	{
+		if (last < start->first - 1)
+		{
+			// Post is entirely visible (above start).
+			if (!soliddontrender)
+				R_StoreWallRange(first, last);
+			return;
+		}
+
+		// There is a fragment above *start.
+		if (!soliddontrender)
+			R_StoreWallRange(first, start->first - 1);
+	}
+
+	// Bottom contained in start?
+	if (last <= start->last)
+		return;
+
+	while (last >= (start+1)->first - 1)
+	{
+		// There is a fragment between two posts.
+		if (!soliddontrender)
+			R_StoreWallRange(start->last + 1, (start+1)->first - 1);
+		start++;
+
+		if (last <= start->last)
+			return;
+	}
+
+	// There is a fragment after *next.
+	if (!soliddontrender)
+		R_StoreWallRange(start->last + 1, last);
 }
 
 //
@@ -128,18 +228,19 @@ static void R_ClipWallSegment(INT32 first, INT32 last, boolean solid, boolean so
 //
 void R_ClearClipSegs(void)
 {
-	memset(solidcol, 0, viewwidth);
+	solidsegs[0].first = -0x7fffffff;
+	solidsegs[0].last = -1;
+	solidsegs[1].first = viewwidth;
+	solidsegs[1].last = 0x7fffffff;
+	newend = solidsegs + 2;
 }
-
 void R_PortalClearClipSegs(INT32 start, INT32 end)
 {
-	R_ClearClipSegs();
-
-	for (INT32 x = 0; x < start; x++)
-		solidcol[x] = 1;
-
-	for (INT32 x = end; x < viewwidth; x++)
-		solidcol[x] = 1;
+	solidsegs[0].first = -0x7fffffff;
+	solidsegs[0].last = start-1;
+	solidsegs[1].first = end;
+	solidsegs[1].last = 0x7fffffff;
+	newend = solidsegs + 2;
 }
 
 //
@@ -499,14 +600,14 @@ static void R_AddLine(seg_t *line)
 clippass:
 	g_walloffscreen = false;
 	if (g_walloffscreen)
-		R_ClipWallSegment(x1, x2, false , true);
+		R_ClipPassWallSegment(x1, x2 - 1, true);
 	else
-		R_ClipWallSegment(x1, x2, false , false);
+		R_ClipPassWallSegment(x1, x2 - 1, false);
 	return;
 
 clipsolid:
 	g_walloffscreen = false;
-	R_ClipWallSegment(x1, x2, false , false);
+	R_ClipSolidWallSegment(x1, x2 - 1);
 }
 
 //
@@ -539,6 +640,7 @@ static boolean R_CheckBBox(const fixed_t *bspcoord)
 	angle_t angle1, angle2;
 	INT32 sx1, sx2, boxpos;
 	const INT32* check;
+	cliprange_t *start;
 
 	// Find the corners of the box that define the edges from current viewpoint.
 	if (viewx <= bspcoord[BOXLEFT])
@@ -595,11 +697,12 @@ static boolean R_CheckBBox(const fixed_t *bspcoord)
 	if (sx1 >= sx2)
 		return false;
 
-	if (!memchr(solidcol+sx1, 0, sx2-sx1))
-	{
-		// All columns it covers are already solidly covered
-		return false;
-	}
+	start = solidsegs;
+	while (start->last < sx2)
+		start++;
+
+	if (sx1 >= start->first && sx2 <= start->last)
+		return false; // The clippost contains the new span.
 
 	return true;
 }
