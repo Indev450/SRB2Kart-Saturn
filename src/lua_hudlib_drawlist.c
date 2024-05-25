@@ -318,7 +318,7 @@ static void CalcFillCoords(drawitem_t *item)
 
 #define INTERP_LATCH 1
 #define INTERP_STRING 2
-#define INTERP_FLAGS 3 // all bits combined
+#define INTERP_FLAGMASK 0x3
 
 static UINT64 GetItemId(void)
 {
@@ -587,17 +587,15 @@ void LUA_HUD_DrawList(huddrawlist_h list)
 			// this is kinda cursed... we need to check every item
 			// but stop when the first-checked item is reached again
 			size_t stop = j;
-			while(true)
+			do
 			{
 				if (j == list->olditems_len)
 				{
-					// wrap around
 					j = 0;
-					if (j == stop) // i'm dumb
-						break;
+					continue;
 				}
 				drawitem_t *old = &list->olditems[j++];
-				if ((old->id & ~INTERP_FLAGS) == (item->id & ~INTERP_FLAGS)) // don't include flags in search
+				if ((old->id & ~INTERP_FLAGMASK) == (item->id & ~INTERP_FLAGMASK))
 				{
 					// gotcha!
 					olditem = old;
@@ -616,9 +614,8 @@ void LUA_HUD_DrawList(huddrawlist_h list)
 					}
 					break;
 				}
-				if (j == stop)
-					break;
 			}
+			while (j != stop);
 		}
 		else
 		{
@@ -653,7 +650,7 @@ void LUA_HUD_DrawList(huddrawlist_h list)
 				V_DrawPingNum(LERPS(x), LERPS(y), item->flags, item->num, item->colormap);
 				break;
 			case DI_DrawFill:
-				V_DrawFill(LERPS(x), LERPS(y), item->w, item->h, item->c);
+				V_DrawFill(LERPS(x), LERPS(y), LERP(w), LERP(h), item->c);
 				break;
 			case DI_DrawString:
 				switch(item->align)
