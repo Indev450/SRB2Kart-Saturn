@@ -5995,9 +5995,6 @@ void HWR_TogglePaletteRendering(void)
 //added by Hurdler: console varibale that are saved
 void HWR_AddCommands(void)
 {
-#ifdef USE_FBO_OGL
-	CV_RegisterVar(&cv_grframebuffer);
-#endif
 	CV_RegisterVar(&cv_grfiltermode);
 	CV_RegisterVar(&cv_granisotropicmode);
 	CV_RegisterVar(&cv_grsolvetjoin);
@@ -6007,9 +6004,7 @@ void HWR_AddCommands(void)
 	CV_RegisterVar(&cv_fofzfightfix);
 	CV_RegisterVar(&cv_splitwallfix);
 	CV_RegisterVar(&cv_slopepegfix);
-	
-	CV_RegisterVar(&cv_grscreentextures);
-	
+
 	CV_RegisterVar(&cv_grrenderdistance);
 
 	CV_RegisterVar(&cv_grfakecontrast);
@@ -6037,6 +6032,12 @@ void HWR_AddCommands(void)
 	CV_RegisterVar(&cv_grpaletterendering);
 	CV_RegisterVar(&cv_grpalettedepth);
 	CV_RegisterVar(&cv_grflashpal);
+
+#ifdef USE_FBO_OGL
+	CV_RegisterVar(&cv_grframebuffer);
+#endif
+
+	CV_RegisterVar(&cv_grscreentextures);
 }
 
 // --------------------------------------------------------------------------
