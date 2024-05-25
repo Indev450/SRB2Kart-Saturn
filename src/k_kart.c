@@ -3501,19 +3501,24 @@ void K_DriftDustHandling(mobj_t *spawner)
 
 		K_MatchGenericExtraFlags(dust, spawner);
 
-		if (spawner->player->kartstuff[k_driftcharge] >= K_GetKartDriftSparkValue(spawner->player)*4)
-			dust->color = 1 + (leveltime % (MAXSKINCOLORS-1));
-		else if (spawner->player->kartstuff[k_driftcharge] >= K_GetKartDriftSparkValue(spawner->player)*2)
+		if (!P_MobjWasRemoved(spawner) && spawner->player && spawner->player->mo)
 		{
-				if (spawner->player->kartstuff[k_driftcharge] <= (K_GetKartDriftSparkValue(spawner->player)*2)+(24*3))
-					dust->color = SKINCOLOR_RASPBERRY; // transition
-				else
-					dust->color = SKINCOLOR_KETCHUP;
+			if (spawner->player->kartstuff[k_driftcharge] >= K_GetKartDriftSparkValue(spawner->player)*4)
+				dust->color = (UINT8)(1 + (leveltime % (MAXSKINCOLORS-1)));
+			else if (spawner->player->kartstuff[k_driftcharge] >= K_GetKartDriftSparkValue(spawner->player)*2)
+			{
+					if (spawner->player->kartstuff[k_driftcharge] <= (K_GetKartDriftSparkValue(spawner->player)*2)+(24*3))
+						dust->color = SKINCOLOR_RASPBERRY; // transition
+					else
+						dust->color = SKINCOLOR_KETCHUP;
+			}
+			else if (spawner->player->kartstuff[k_driftcharge] >= K_GetKartDriftSparkValue(spawner->player))
+				dust->color = SKINCOLOR_SAPPHIRE;
+			else
+				dust->color = SKINCOLOR_SILVER;
 		}
-		else if (spawner->player->kartstuff[k_driftcharge] >= K_GetKartDriftSparkValue(spawner->player))
-			dust->color = SKINCOLOR_SAPPHIRE;
 		else
-			dust->color = spawner->player->skincolor;
+			dust->color = SKINCOLOR_SILVER;
 	}
 }
 
