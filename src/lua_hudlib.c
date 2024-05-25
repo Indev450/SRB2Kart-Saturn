@@ -1212,7 +1212,7 @@ static int libd_interpolate(lua_State *L)
 	return 0;
 }
 
-static int libd_interpString(lua_State *L)
+static int libd_interpLatch(lua_State *L)
 {
 	HUDONLY
 	hud_interpstring = hud_interplatch = luaL_checkboolean(L, 1);
@@ -1247,7 +1247,7 @@ static luaL_Reg lib_draw[] = {
 	{"getHudColor", libd_getHudColor},
 	{"useColorHud", libd_useColorHud},
 	{"interpolate", libd_interpolate},
-	{"interpString", libd_interpString},
+	{"interpLatch", libd_interpLatch},
 	{NULL, NULL}
 };
 

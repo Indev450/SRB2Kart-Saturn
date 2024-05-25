@@ -83,12 +83,37 @@ v.interpolate(false)
 ```
 NOTE: The default tag for `true` is 0.
 
-## v.interpString(true)
+## v.interpLatch(true)
 
-Enables string interpolation mode. The next call to a drawing function will have its interpolation offsets
-latched and reused for all following draw calls.
-Disable with `false` when done.
+Enables interpolation offset latching. The next call to a drawing function will have its lerp offsets
+saved and reused for all following draw calls. Disable with `false` when done.
+Interpolation cannot easily "snap" between two points; latching can help overcome this by manually
+setting the lerp offsets.
+```lua
+v.interpolate(true)
 
+-- X coordinate for the HUD item
+-- every so often, this will wrap around to zero
+local x = (leveltime*4) % 256
+
+-- draw an interpolated patch, but... when X rolls back to zero,
+-- the patch will slide all the way across the screen!
+v.draw(x, 100, ...)
+
+-- this is where interpLatch comes into play
+-- enable latching, then draw an invisible patch,
+-- moving at the same speed as the visible patch
+-- the exact coordinates don't matter, it just has to move at the right speed
+v.interpLatch(true)
+v.draw(leveltime*4, 0, v.cachePatch("K_TRNULL"))
+
+-- now we can draw the patch again, and when X becomes zero,
+-- it'll snap right back without sliding across the screen
+v.draw(x, 150, ...)
+
+-- don't forget to turn off latching!
+v.interpLatch(false)
+```
 When using a custom string drawer, enable this mode to avoid interpolation artifacting when the string changes.
 
 ## mobj.spritexscale, mobj.spriteyscale, mobj.spritexoffset, mobj.spriteyoffset, mobj.rollangle, mobj.sloperoll, mobj.rollmodel fields
