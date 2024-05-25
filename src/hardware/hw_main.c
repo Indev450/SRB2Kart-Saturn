@@ -185,7 +185,12 @@ static void CV_screentextures_ONChange(void)
 {
 	ONLY_IF_GL_LOADED
 	if (cv_grscreentextures.value != 3)
+	{
+#ifdef USE_FBO_OGL
+		CV_Set(&cv_grframebuffer, "Off");
+#endif
 		CV_Set(&cv_grpaletterendering, "Off");
+	}
 	HWD.pfnSetSpecialState(HWD_SET_SCREEN_TEXTURES, cv_grscreentextures.value);
 }
 
