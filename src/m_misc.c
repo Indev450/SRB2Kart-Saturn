@@ -1982,6 +1982,7 @@ void *M_Memcpy(void *dest, const void *src, size_t n)
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wcast-qual"
+#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
 
 //---------------------------------------------------------------------
 // fast copy for different sizes
@@ -2308,7 +2309,6 @@ static INLINE void *memcpy_tiny(void *dst, const void *src, size_t size) {
 
 	return dst;
 }
-
 
 //---------------------------------------------------------------------
 // main routine
