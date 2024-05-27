@@ -6238,7 +6238,12 @@ void HWR_EndScreenWipe(void)
 
 void HWR_DrawIntermissionBG(void)
 {
-	HWD.pfnDrawScreenTexture(HWD_SCREENTEXTURE_GENERIC1, NULL, 0);
+	patch_t *bgpatch = W_CachePatchName("SRB2BACK", PU_CACHE);
+
+	if (cv_grscreentextures.value != 3)
+		V_DrawPatchFill(bgpatch); // use the neato kart bg for intermission on disabled screen textures
+	else
+		HWD.pfnDrawScreenTexture(HWD_SCREENTEXTURE_GENERIC1, NULL, 0);
 }
 
 void HWR_DoWipe(UINT8 wipenum, UINT8 scrnnum)
