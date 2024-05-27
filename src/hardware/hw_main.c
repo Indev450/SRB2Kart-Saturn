@@ -6247,6 +6247,12 @@ void HWR_DoWipe(UINT8 wipenum, UINT8 scrnnum)
 	lumpnum_t lumpnum;
 	size_t lsize;
 
+	if (cv_grscreentextures.value == 0)
+	{
+		V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 31); // just draw a black screen instead of flashing and crap
+		return;
+	}
+
 	if (wipenum > 99 || scrnnum > 99) // not a valid wipe number
 		return; // shouldn't end up here really, the loop should've stopped running beforehand
 
