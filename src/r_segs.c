@@ -208,7 +208,7 @@ static void R_DrawWallSplats(void)
 				pindex = MAXLIGHTSCALE - 1;
 			dc_colormap = walllights[pindex];
 			if (encoremap && !(seg->linedef->flags & ML_TFERLINE))
-				dc_colormap += (256*32);
+				dc_colormap += COLORMAP_REMAPOFFSET;
 
 			if (frontsector->extra_colormap)
 				dc_colormap = frontsector->extra_colormap->colormap + (dc_colormap - colormaps);
@@ -573,7 +573,7 @@ void R_RenderMaskedSegRange(drawseg_t *ds, INT32 x1, INT32 x2)
 						{
 							dc_colormap = rlight->rcolormap;
 							if (encoremap && !(ldef->flags & ML_TFERLINE))
-								dc_colormap += (256*32);
+								dc_colormap += COLORMAP_REMAPOFFSET;
 							continue;
 						}
 
@@ -594,7 +594,7 @@ void R_RenderMaskedSegRange(drawseg_t *ds, INT32 x1, INT32 x2)
 						windowtop = windowbottom + 1;
 						dc_colormap = rlight->rcolormap;
 						if (encoremap && !(ldef->flags & ML_TFERLINE))
-							dc_colormap += (256*32);
+							dc_colormap += COLORMAP_REMAPOFFSET;
 					}
 					windowbottom = realbot;
 					if (windowtop < windowbottom)
@@ -612,7 +612,7 @@ void R_RenderMaskedSegRange(drawseg_t *ds, INT32 x1, INT32 x2)
 
 				dc_colormap = walllights[pindex];
 				if (encoremap && !(ldef->flags & ML_TFERLINE))
-					dc_colormap += (256*32);
+					dc_colormap += COLORMAP_REMAPOFFSET;
 
 				if (frontsector->extra_colormap)
 					dc_colormap = frontsector->extra_colormap->colormap + (dc_colormap - colormaps);
@@ -1107,7 +1107,7 @@ void R_RenderThickSideRange(drawseg_t *ds, INT32 x1, INT32 x2, ffloor_t *pfloor)
 						{
 							dc_colormap = rlight->rcolormap;
 							if (encoremap && !(curline->linedef->flags & ML_TFERLINE))
-								dc_colormap += (256*32);
+								dc_colormap += COLORMAP_REMAPOFFSET;
 						}
 						if (solid && windowtop < bheight)
 							windowtop = bheight;
@@ -1139,7 +1139,7 @@ void R_RenderThickSideRange(drawseg_t *ds, INT32 x1, INT32 x2, ffloor_t *pfloor)
 					{
 						dc_colormap = rlight->rcolormap;
 						if (encoremap && !(curline->linedef->flags & ML_TFERLINE))
-							dc_colormap += (256*32);
+							dc_colormap += COLORMAP_REMAPOFFSET;
 					}
 				}
 				windowbottom = sprbotscreen;
@@ -1160,7 +1160,7 @@ void R_RenderThickSideRange(drawseg_t *ds, INT32 x1, INT32 x2, ffloor_t *pfloor)
 			dc_colormap = walllights[pindex];
 
 			if (encoremap && !(curline->linedef->flags & ML_TFERLINE))
-				dc_colormap += (256*32);
+				dc_colormap += COLORMAP_REMAPOFFSET;
 
 			if (pfloor->flags & FF_FOG && pfloor->master->frontsector->extra_colormap)
 				dc_colormap = pfloor->master->frontsector->extra_colormap->colormap + (dc_colormap - colormaps);
@@ -1396,7 +1396,7 @@ static void R_RenderSegLoop (void)
 
 			dc_colormap = walllights[pindex];
 			if (encoremap && !(curline->linedef->flags & ML_TFERLINE))
-				dc_colormap += (256*32);
+				dc_colormap += COLORMAP_REMAPOFFSET;
 			dc_x = rw_x;
 			dc_iscale = 0xffffffffu / (unsigned)rw_scale;
 

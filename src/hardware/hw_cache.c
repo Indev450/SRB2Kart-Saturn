@@ -26,6 +26,7 @@
 #include "../z_zone.h"
 #include "../v_video.h"
 #include "../r_draw.h"
+#include "../r_main.h"
 #include "../r_patch.h"    // patch rotation
 
 INT32 patchformat = GL_TEXFMT_AP_88; // use alpha for holes
@@ -344,7 +345,7 @@ static void HWR_GenerateTexture(INT32 texnum, GLMapTexture_t *grtex, boolean noe
 
 #ifdef GLENCORE
 	if (encoremap && !noencore)
-		grtex->mipmap.colormap += (256*32);
+		grtex->mipmap.colormap += COLORMAP_REMAPOFFSET;
 #endif
 	
 	blockwidth = texture->width;
@@ -647,7 +648,7 @@ void HWR_GetFlat(lumpnum_t flatlumpnum, boolean noencoremap)
 
 #ifdef GLENCORE
 	if (!noencoremap && encoremap)
-		grmip->colormap += (256*32);
+		grmip->colormap += COLORMAP_REMAPOFFSET;
 #endif
 
 	if (!grmip->downloaded && !grmip->data)
@@ -729,7 +730,8 @@ void HWR_GetMappedPatch(GLPatch_t *gpatch, const UINT8 *colormap)
 {
 	GLMipmap_t *grmip, *newmip;
 
-	if (colormap == colormaps || colormap == NULL)
+	// Blatant hack for encore colormapping aside...
+	if (colormap == colormaps || colormap == NULL || colormap == (const UINT8*)(COLORMAP_REMAPOFFSET))
 	{
 		// Load the default (green) color in doom cache (temporary?) AND hardware cache
 		HWR_GetPatch(gpatch);
