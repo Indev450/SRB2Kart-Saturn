@@ -932,6 +932,7 @@ static void R_DrawPrecipitationVisSprite(vissprite_t *vis)
 #endif
 	fixed_t frac;
 	patch_t *patch;
+	fixed_t this_scale = vis->thingscale;
 	INT64 overflow_test;
 
 	//Fab : R_InitSprites now sets a wad lump number
@@ -955,7 +956,7 @@ static void R_DrawPrecipitationVisSprite(vissprite_t *vis)
 		dc_colormap += (256*32);
 
 	dc_iscale = FixedDiv(FRACUNIT, vis->scale);
-	dc_texturemid = vis->texturemid;
+	dc_texturemid = FixedDiv(vis->texturemid, this_scale);
 	dc_texheight = 0;
 
 	frac = vis->startfrac;
@@ -1729,7 +1730,8 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 	fixed_t iscale;
 
 	//SoM: 3/17/2000
-	fixed_t gz ,gzt;
+	fixed_t gz, gzt;
+	fixed_t this_scale;
 
 	INT32 dist = 1;
 
@@ -1749,6 +1751,8 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 		R_InterpolatePrecipMobjState(thing, FRACUNIT, &interp);
 	}
 
+	this_scale = interp.scale;
+
 	// transform the origin point
 	tr_x = interp.x - viewx;
 	tr_y = interp.y - viewy;
@@ -1759,7 +1763,7 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 	tz = gxt - gyt;
 
 	// thing is behind view plane?
-	if (tz < MINZ)
+	if (tz < FixedMul(MINZ, this_scale))
 		return;
 
 	gxt = -FixedMul(tr_x, viewsin);
@@ -1800,14 +1804,14 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 	lump = sprframe->lumpid[0];     //Fab: see note above
 
 	// calculate edges of the shape
-	tx -= spritecachedinfo[lump].offset;
+	tx -= FixedMul(spritecachedinfo[lump].offset, this_scale);
 	x1 = (centerxfrac + FixedMul (tx,xscale)) >>FRACBITS;
 
 	// off the right side?
 	if (x1 > viewwidth)
 		return;
 
-	tx += spritecachedinfo[lump].width;
+	tx += FixedMul(spritecachedinfo[lump].width, this_scale);
 	x2 = ((centerxfrac + FixedMul (tx,xscale)) >>FRACBITS) - 1;
 
 	// off the left side
@@ -1825,8 +1829,8 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 	}
 
 	//SoM: 3/17/2000: Disregard sprites that are out of view..
-	gzt = interp.z + spritecachedinfo[lump].topoffset;
-	gz = gzt - spritecachedinfo[lump].height;
+	gzt = interp.z + FixedMul(spritecachedinfo[lump].topoffset, this_scale);
+	gz = gzt - FixedMul(spritecachedinfo[lump].height, this_scale);
 
 	if (thing->subsector->sector->cullheight)
 	{
@@ -1836,7 +1840,9 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 
 	// store information in a vissprite
 	vis = R_NewVisSprite();
-	vis->scale = vis->sortscale = yscale; //<<detailshift;
+	vis->scale = FixedMul(yscale, this_scale);
+	vis->sortscale = yscale; //<<detailshift;
+	vis->thingscale = interp.scale;
 	vis->dispoffset = 0; // Monster Iestyn: 23/11/15
 	vis->gx = interp.x;
 	vis->gy = interp.y;
@@ -1868,7 +1874,7 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 	iscale = FixedDiv(FRACUNIT, xscale);
 
 	vis->startfrac = 0;
-	vis->xiscale = iscale;
+	vis->xiscale = FixedDiv(iscale, this_scale);
 
 	vis->thingscale = interp.scale;
 

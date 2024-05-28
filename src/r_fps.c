@@ -398,7 +398,7 @@ void R_InterpolatePrecipMobjState(precipmobj_t *mobj, fixed_t frac, interpmobjst
 		out->x = mobj->x;
 		out->y = mobj->y;
 		out->z = mobj->z;
-		out->scale = FRACUNIT;
+		out->scale = mapobjectscale;
 		out->subsector = mobj->subsector;
 		out->angle = mobj->angle;
 		out->spritexscale = mobj->spritexscale;
@@ -411,7 +411,7 @@ void R_InterpolatePrecipMobjState(precipmobj_t *mobj, fixed_t frac, interpmobjst
 		out->x = R_LerpFixed(mobj->old_x, mobj->x, frac);
 		out->y = R_LerpFixed(mobj->old_y, mobj->y, frac);
 		out->z = R_LerpFixed(mobj->old_z, mobj->z, frac);
-		out->scale = FRACUNIT;
+		out->scale = mapobjectscale;
 		out->spritexscale = mobj->spritexscale;
 		out->spriteyscale = mobj->spriteyscale;
 		out->spritexoffset = mobj->spritexoffset;
