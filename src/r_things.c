@@ -2056,6 +2056,7 @@ void R_AddPrecipitationSprites(void)
 	INT32 xl, xh, yl, yh, bx, by;
 	precipmobj_t *th, *next;
 
+	// no, no infinite draw distance for precipitation. this option at zero is supposed to turn it off
 	if (drawdist == 0)
 	{
 		return;
@@ -2063,7 +2064,6 @@ void R_AddPrecipitationSprites(void)
 
 	R_GetRenderBlockMapDimensions(drawdist, &xl, &xh, &yl, &yh);
 
-	// no, no infinite draw distance for precipitation. this option at zero is supposed to turn it off
 	for (bx = xl; bx <= xh; bx++)
 	{
 		for (by = yl; by <= yh; by++)
