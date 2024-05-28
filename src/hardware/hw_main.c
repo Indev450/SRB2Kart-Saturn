@@ -4796,9 +4796,9 @@ void HWR_AddSprites(sector_t *sec)
 	{
 		// Use the smaller setting
 		if (cv_drawdist.value)
-			limit_dist = min(current_bsp_culling_distance, (fixed_t)(cv_drawdist.value) * mapobjectscale);
+			limit_dist = min((fixed_t)current_bsp_culling_distance, (fixed_t)(cv_drawdist.value) * mapobjectscale);
 		else
-			limit_dist = current_bsp_culling_distance;
+			limit_dist = (fixed_t)current_bsp_culling_distance;
 	}
 	else
 		limit_dist = (fixed_t)(cv_drawdist.value) * mapobjectscale;
@@ -4904,7 +4904,7 @@ static void HWR_AddPrecipitationSprites(void)
 	precipmobj_t *th;
 	
 	if (current_bsp_culling_distance)
-		drawdist = min(current_bsp_culling_distance, (fixed_t)(cv_drawdist_precip.value) * mapobjectscale);
+		drawdist = min((fixed_t)current_bsp_culling_distance, (fixed_t)(cv_drawdist_precip.value) * mapobjectscale);
 	else
 		drawdist = (fixed_t)(cv_drawdist_precip.value) * mapobjectscale;
 
