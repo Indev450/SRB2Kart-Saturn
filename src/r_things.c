@@ -739,9 +739,7 @@ static void R_DrawFlippedMaskedColumn(column_t *column, INT32 texheight)
 static void R_DrawVisSprite(vissprite_t *vis)
 {
 	column_t *column;
-#ifdef RANGECHECK
 	INT32 texturecolumn;
-#endif
 	fixed_t frac;
 	patch_t *patch = vis->patch;
 	fixed_t this_scale = vis->thingscale;
@@ -889,12 +887,16 @@ static void R_DrawVisSprite(vissprite_t *vis)
 	}
 #endif
 
-	for (dc_x = vis->x1; dc_x <= vis->x2; dc_x++, frac += vis->xiscale)
+#define CLAMP(x, min_val, max_val) ((x) < (min_val) ? (min_val) : ((x) > (max_val) ? (max_val) : (x)))
+
+	// Split drawing loops for paper and non-paper to reduce conditional checks per sprite
+	if (vis->scalestep)
 	{
 		fixed_t scalestep = FixedMul(vis->scalestep, vis->spriteyscale);
-		if (vis->scalestep) // currently papersprites only
-		{
 
+		// Papersprite drawing loop
+		for (dc_x = vis->x1; dc_x <= vis->x2; dc_x++, frac += vis->xiscale)
+		{
 #ifndef RANGECHECK
 			if ((frac>>FRACBITS) < 0 || (frac>>FRACBITS) >= SHORT(patch->width)) // if this doesn't work i'm removing papersprites
 				break;
@@ -902,22 +904,30 @@ static void R_DrawVisSprite(vissprite_t *vis)
 			sprtopscreen = (centeryfrac - FixedMul(dc_texturemid, spryscale));
 			dc_iscale = (0xffffffffu / (unsigned)spryscale);
 			spryscale += scalestep;
+
+			texturecolumn = CLAMP(frac >> FRACBITS, 0, SHORT(patch->width) - 1);
+			column = (column_t *)((UINT8 *)patch + LONG(patch->columnofs[texturecolumn]));
+
+			if (vis->vflip)
+				R_DrawFlippedMaskedColumn(column, patch->height);
+			else
+				R_DrawMaskedColumn(column);
 		}
-#ifdef RANGECHECK
-		texturecolumn = frac>>FRACBITS;
-
-		if (texturecolumn < 0 || texturecolumn >= SHORT(patch->width))
-			I_Error("R_DrawSpriteRange: bad texturecolumn");
-		column = (column_t *)((UINT8 *)patch + LONG(patch->columnofs[texturecolumn]));
-#else
-		column = (column_t *)((UINT8 *)patch + LONG(patch->columnofs[frac>>FRACBITS]));
-#endif
-		if (vis->vflip)
-			R_DrawFlippedMaskedColumn(column, patch->height);
-		else
-			R_DrawMaskedColumn(column);
 	}
+	else
+	{
+		for (dc_x = vis->x1; dc_x <= vis->x2; dc_x++, frac += vis->xiscale)
+		{	
+			texturecolumn = CLAMP(frac >> FRACBITS, 0, SHORT(patch->width) - 1);
+			column = (column_t *)((UINT8 *)patch + LONG(patch->columnofs[texturecolumn]));
 
+			if (vis->vflip)
+				R_DrawFlippedMaskedColumn(column, patch->height);
+			else
+				R_DrawMaskedColumn(column);
+		}
+	}
+#undef CLAMP
 	colfunc = basecolfunc;
 	vis->x1 = x1;
 	vis->x2 = x2;
@@ -927,9 +937,7 @@ static void R_DrawVisSprite(vissprite_t *vis)
 static void R_DrawPrecipitationVisSprite(vissprite_t *vis)
 {
 	column_t *column;
-#ifdef RANGECHECK
 	INT32 texturecolumn;
-#endif
 	fixed_t frac;
 	patch_t *patch;
 	fixed_t this_scale = vis->thingscale;
@@ -970,20 +978,15 @@ static void R_DrawPrecipitationVisSprite(vissprite_t *vis)
 	if (vis->x2 >= vid.width)
 		vis->x2 = vid.width-1;
 
+#define CLAMP(x, min_val, max_val) ((x) < (min_val) ? (min_val) : ((x) > (max_val) ? (max_val) : (x)))
 	for (dc_x = vis->x1; dc_x <= vis->x2; dc_x++, frac += vis->xiscale)
 	{
-#ifdef RANGECHECK
-		texturecolumn = frac>>FRACBITS;
-
-		if (texturecolumn < 0 || texturecolumn >= SHORT(patch->width))
-			I_Error("R_DrawPrecipitationSpriteRange: bad texturecolumn");
-
+		texturecolumn = CLAMP(frac >> FRACBITS, 0, SHORT(patch->width) - 1);
 		column = (column_t *)((UINT8 *)patch + LONG(patch->columnofs[texturecolumn]));
-#else
-		column = (column_t *)((UINT8 *)patch + LONG(patch->columnofs[frac>>FRACBITS]));
-#endif
+
 		R_DrawMaskedColumn(column);
 	}
+#undef CLAMP
 
 	colfunc = basecolfunc;
 }
