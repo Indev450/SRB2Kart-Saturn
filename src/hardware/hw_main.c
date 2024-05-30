@@ -184,7 +184,7 @@ static void CV_anisotropic_ONChange(void)
 static void CV_screentextures_ONChange(void)
 {
 	ONLY_IF_GL_LOADED
-	if (cv_grscreentextures.value != 3)
+	if (cv_grscreentextures.value != 2)
 	{
 #ifdef USE_FBO_OGL
 		CV_Set(&cv_grframebuffer, "Off");
@@ -6240,10 +6240,10 @@ void HWR_DrawIntermissionBG(void)
 {
 	patch_t *bgpatch = W_CachePatchName("SRB2BACK", PU_CACHE);
 
-	if (cv_grscreentextures.value != 3)
-		V_DrawPatchFill(bgpatch); // use the neato kart bg for intermission on disabled screen textures
-	else
+	if (cv_grscreentextures.value == 2)
 		HWD.pfnDrawScreenTexture(HWD_SCREENTEXTURE_GENERIC1, NULL, 0);
+	else
+		V_DrawPatchFill(bgpatch); // use the neato kart bg for intermission on disabled screen textures
 }
 
 void HWR_DoWipe(UINT8 wipenum, UINT8 scrnnum)
