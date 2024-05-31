@@ -1389,8 +1389,7 @@ static void R_ProjectSprite(mobj_t *thing)
 				rollsum += thing->rollangle;
 
 			rollangle = R_GetRollAngle(rollsum);
-			rotsprite = Patch_GetRotatedSprite(
-				sprframe, (thing->frame & FF_FRAMEMASK), rot, flip, false, sprinfo, rollangle);
+			rotsprite = Patch_GetRotatedSprite(sprframe, (thing->frame & FF_FRAMEMASK), rot, flip, false, sprinfo, rollangle);
 
 			if (rotsprite != NULL)
 			{

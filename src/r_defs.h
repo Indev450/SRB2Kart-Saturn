@@ -647,7 +647,7 @@ typedef struct
 	INT16 height;
 	INT16 leftoffset;     // pixels to the left of origin
 	INT16 topoffset;      // pixels below the origin
-	INT32 columnofs[8];     // only [width] used
+	INT32 columnofs[];     // only [width] used
 	// the [0] is &columnofs[width]
 }ATTRPACK patch_t;
 
