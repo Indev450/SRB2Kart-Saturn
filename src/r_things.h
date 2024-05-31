@@ -172,11 +172,9 @@ typedef struct vissprite_s
 
 	spritecut_e cut;
 	UINT32 renderflags;
-	UINT8 rotateflags;
 
 	fixed_t spritexscale, spriteyscale;
 	fixed_t spritexoffset, spriteyoffset;
-
 
 	INT16 *clipbot, *cliptop;
 
