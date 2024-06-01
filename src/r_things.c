@@ -1138,7 +1138,6 @@ static void R_ProjectSprite(mobj_t *thing)
 	fixed_t xscale, yscale, sortscale; //added : 02-02-98 : aaargll..if I were a math-guy!!!
 
 	INT32 x1, x2;
-	INT32 x1test = 0, x2test = 0;
 
 	spritedef_t *sprdef;
 	spriteframe_t *sprframe;
@@ -1149,7 +1148,6 @@ static void R_ProjectSprite(mobj_t *thing)
 
 	size_t rot;
 	UINT8 flip;
-	/*boolean vflip = (!(thing->eflags & MFE_VERTICALFLIP) != !R_ThingVerticallyFlipped(thing));*/
 
 	boolean mirrored = thing->mirrored;
 	boolean hflip = (!(thing->frame & FF_HORIZONTALFLIP) != !mirrored);
@@ -1542,11 +1540,6 @@ static void R_ProjectSprite(mobj_t *thing)
 		//x1 = (centerxfrac + FixedMul(tx,xscale))>>FRACBITS;
 		x1 = centerx + (FixedMul(tx,xscale) / FRACUNIT);
 
-		x1test = (centerxfrac + FixedMul(tx,xscale))>>FRACBITS;
-
-		if (x1test > viewwidth)
-			x1test = 0;
-
 		// off the right side?
 		if (x1 > viewwidth)
 			return;
@@ -1554,11 +1547,6 @@ static void R_ProjectSprite(mobj_t *thing)
 		tx += offset2;
 		//x2 = ((centerxfrac + FixedMul(tx,xscale))>>FRACBITS); x2--;
 		x2 = (centerx + (FixedMul(tx,xscale) / FRACUNIT)) - 1;
-
-		x2test = ((centerxfrac + FixedMul(tx,xscale))>>FRACBITS) - 1;
-
-		if (x2test < 0)
-			x2test = 0;
 
 		// off the left side
 		if (x2 < 0)
