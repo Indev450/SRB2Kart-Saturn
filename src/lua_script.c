@@ -1680,6 +1680,8 @@ void LUA_UnArchiveDemo(void)
 // For mobj_t, player_t, etc. to take custom variables.
 int Lua_optoption(lua_State *L, int narg, int def, int list_ref)
 {
+	int result = -1;
+
 	if (lua_isnoneornil(L, narg))
 		return def;
 
@@ -1692,8 +1694,11 @@ int Lua_optoption(lua_State *L, int narg, int def, int list_ref)
 	lua_rawget(L, -2);
 
 	if (lua_isnumber(L, -1))
-		return lua_tointeger(L, -1);
-	return -1;
+		result = lua_tointeger(L, -1);
+
+	lua_pop(L, 2); // Pop result and fields table
+
+	return result;
 }
 
 
