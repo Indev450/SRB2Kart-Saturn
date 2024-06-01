@@ -759,7 +759,7 @@ static void R_DrawVisSprite(vissprite_t *vis)
 	// TODO This check should not be necessary. But Papersprites near to the camera will sometimes create invalid values
 	// for the vissprite's startfrac. This happens because they are not depth culled like other sprites.
 	// Someone who is more familiar with papersprites pls check and try to fix <3
-	if (vis->startfrac < 0 || vis->startfrac > (patch->width << FRACBITS))
+	if (vis->startfrac < 0 || vis->startfrac > (SHORT(patch->width) << FRACBITS))
 	{
 		// never draw vissprites with startfrac out of patch range
 		return;
@@ -1573,7 +1573,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	}
 
 	// PORTAL SPRITE CLIPPING
-	if (portalrender)
+	if (portalrender && portalclipline)
 	{
 		if (x2 < portalclipstart || x1 > portalclipend)
 			return;
@@ -1671,7 +1671,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	vis->x2 = x2 >= viewwidth ? viewwidth-1 : x2;
 
 	// PORTAL SEMI-CLIPPING
-	if (portalrender)
+	if (portalrender && portalclipline)
 	{
 		if (vis->x1 < portalclipstart)
 			vis->x1 = portalclipstart;
@@ -1831,7 +1831,7 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 	tx = -(gyt + gxt);
 
 	// too far off the side?
-	if (abs(tx) > tz<<2)
+	if (abs(tx) > FixedMul(tz, fovtan)<<2)
 		return;
 
 	// aspect ratio stuff :
@@ -1879,7 +1879,7 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 		return;
 
 	// PORTAL SPRITE CLIPPING
-	if (portalrender)
+	if (portalrender && portalclipline)
 	{
 		if (x2 < portalclipstart || x1 > portalclipend)
 			return;
@@ -1913,12 +1913,13 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 	vis->pzt = vis->pz + vis->thingheight;
 	vis->texturemid = vis->gzt - viewz;
 	vis->scalestep = 0;
+	vis->paperdistance = 0;
 
 	vis->x1 = x1 < 0 ? 0 : x1;
 	vis->x2 = x2 >= viewwidth ? viewwidth-1 : x2;
 
 	// PORTAL SEMI-CLIPPING
-	if (portalrender)
+	if (portalrender && portalclipline)
 	{
 		if (vis->x1 < portalclipstart)
 			vis->x1 = portalclipstart;
