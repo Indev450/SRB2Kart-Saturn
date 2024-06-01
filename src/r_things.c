@@ -152,7 +152,6 @@ static void R_InstallSpriteLump(UINT16 wad,            // graphics patch
 	}
 #endif/*ROTSPRITE*/
 
-
 	if (rotation == 0)
 	{
 		// the lump should be used for all rotations
@@ -578,10 +577,8 @@ static vissprite_t *R_GetVisSprite(UINT32 num)
 
 static vissprite_t *R_NewVisSprite(void)
 {
-	if (visspritecount == MAXVISSPRITES) {
-		//CONS_Alert(CONS_ERROR, M_GetText("R_NewVisSprite: too many vissprites requested (maximum is %i)\n"), MAXVISSPRITES);
+	if (visspritecount == MAXVISSPRITES)
 		return &overflowsprite;
-    }
 
 	return R_GetVisSprite(visspritecount++);
 }
@@ -655,8 +652,6 @@ void R_DrawMaskedColumn(column_t *column)
 
 	dc_texturemid = basetexturemid;
 }
-
-INT32 lengthcol; // column->length : for flipped column function pointers and multi-patch on 2sided wall = texture->height
 
 static void R_DrawFlippedMaskedColumn(column_t *column, INT32 texheight)
 {
@@ -860,9 +855,6 @@ static void R_DrawVisSprite(vissprite_t *vis)
 	if (vis->x2 >= vid.width)
 		vis->x2 = vid.width-1;
 
-	lengthcol = SHORT(patch->height);
-
-#if 1
 	// Something is occasionally setting 1px-wide sprites whose frac is exactly the width of the sprite, causing crashes due to
 	// accessing invalid column info. Until the cause is found, let's try to correct those manually...
 	{
@@ -870,7 +862,6 @@ static void R_DrawVisSprite(vissprite_t *vis)
 		if (temp > 0)
 			vis->x2 -= temp;
 	}
-#endif
 
 #define CLAMP(x, min_val, max_val) ((x) < (min_val) ? (min_val) : ((x) > (max_val) ? (max_val) : (x)))
 
@@ -1177,6 +1168,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	// rotsprite
 	fixed_t spr_width, spr_height;
 	fixed_t spr_offset, spr_topoffset;
+
 #ifdef ROTSPRITE
 	patch_t *rotsprite = NULL;
 	INT32 rollangle = 0;
@@ -1482,7 +1474,6 @@ static void R_ProjectSprite(mobj_t *thing)
 
 		scalestep = (yscale2 - yscale)/(x2 - x1);
 		scalestep = scalestep ? scalestep : 1;
-		
 
 		// The following two are alternate sorting methods which might be more applicable in some circumstances. TODO - maybe enable via MF2?
 		// sortscale = max(yscale, yscale2);
@@ -1558,16 +1549,13 @@ static void R_ProjectSprite(mobj_t *thing)
 
 	if (heightsec != -1 && phs != -1) // only clip things which are in special sectors
 	{
-		fixed_t top = gzt;
-		fixed_t bottom = interp.z;
-
 		if (viewz < sectors[phs].floorheight ?
-		bottom >= sectors[heightsec].floorheight :
-		top < sectors[heightsec].floorheight)
+		interp.z >= sectors[heightsec].floorheight :
+		gzt < sectors[heightsec].floorheight)
 			return;
 		if (viewz > sectors[phs].ceilingheight ?
-		top < sectors[heightsec].ceilingheight && viewz >= sectors[heightsec].ceilingheight :
-		bottom >= sectors[heightsec].ceilingheight)
+		gzt < sectors[heightsec].ceilingheight && viewz >= sectors[heightsec].ceilingheight :
+		interp.z >= sectors[heightsec].ceilingheight)
 			return;
 	}
 
@@ -1594,6 +1582,15 @@ static void R_ProjectSprite(mobj_t *thing)
 	vis->x1 = x1 < 0 ? 0 : x1;
 	vis->x2 = x2 >= viewwidth ? viewwidth-1 : x2;
 
+	// PORTAL SEMI-CLIPPING
+	if (portalrender)
+	{
+		if (vis->x1 < portalclipstart)
+			vis->x1 = portalclipstart;
+		if (vis->x2 > portalclipend)
+			vis->x2 = portalclipend;
+	}
+
 	vis->sector = thing->subsector->sector;
 	vis->szt = (INT16)((centeryfrac - FixedMul(vis->gzt - viewz, sortscale))>>FRACBITS);
 	vis->sz = (INT16)((centeryfrac - FixedMul(vis->gz - viewz, sortscale))>>FRACBITS);
@@ -1603,15 +1600,6 @@ static void R_ProjectSprite(mobj_t *thing)
 		vis->extra_colormap = thing->subsector->sector->lightlist[light].extra_colormap;
 	else
 		vis->extra_colormap = thing->subsector->sector->extra_colormap;
-
-	// PORTAL SEMI-CLIPPING
-	if (portalrender)
-	{
-		if (vis->x1 < portalclipstart)
-			vis->x1 = portalclipstart;
-		if (vis->x2 > portalclipend)
-			vis->x2 = portalclipend;
-	}
 
 	vis->xscale = FixedMul(spritexscale, xscale); //SoM: 4/17/2000
 	vis->scale = FixedMul(spriteyscale, yscale); //<<detailshift;

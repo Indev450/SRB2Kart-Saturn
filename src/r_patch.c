@@ -48,8 +48,8 @@ boolean R_CheckIfPatch(lumpnum_t lump)
 
 	patch = (patch_t *)W_CacheLumpNum(lump, PU_STATIC);
 
-	width = patch->width;
-	height = patch->height;
+	width = SHORT(patch->width);
+	height = SHORT(patch->height);
 
 	result = (height > 0 && height <= 16384 && width > 0 && width <= 16384 && width < (INT16)(size / 4));
 
