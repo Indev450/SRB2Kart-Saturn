@@ -3620,12 +3620,9 @@ static void HWR_DrawDropShadow(mobj_t *thing)
 	FSurfaceInfo sSurf;
 	float fscale; float fx; float fy; float offset;
 	float ph;
-	UINT8 lightlevel = 0;
-	extracolormap_t *colormap = NULL;
 	UINT8 i;
 	SINT8 flip = P_MobjFlip(thing);
 
-	INT32 light;
 	fixed_t scalemul;
 	fixed_t floordiff;
 	fixed_t groundz;
@@ -3655,12 +3652,7 @@ static void HWR_DrawDropShadow(mobj_t *thing)
 
 	floordiff = abs((flip < 0 ? thing->height : 0) + interp.z - groundz);
 	
-	gpatch = W_CachePatchNum(sprites[SPR_SHAD].spriteframes[0].lumppat[0], PU_CACHE);
-
-	if (thing->whiteshadow)
-		lightlevel = 255;
-	else
-		lightlevel = 0;
+	gpatch = W_CachePatchNum(sprites[SPR_THOK].spriteframes[0].lumppat[0], PU_CACHE);
 
 	if (!(gpatch && gpatch->mipmap->format)) return;
 	HWR_GetPatch(gpatch);
@@ -3721,23 +3713,8 @@ static void HWR_DrawDropShadow(mobj_t *thing)
 	shadowVerts[3].t = shadowVerts[2].t = 0;
 	shadowVerts[0].t = shadowVerts[1].t = gpatch->max_t;
 
-	if (thing->subsector->sector->numlights)
-	{
-		light = R_GetPlaneLight(thing->subsector->sector, groundz, false); // Always use the light at the top instead of whatever I was doing before
-
-		if (thing->subsector->sector->lightlist[light].extra_colormap)
-			colormap = thing->subsector->sector->lightlist[light].extra_colormap;
-	}
-	else
-	{
-		if (thing->subsector->sector->extra_colormap)
-			colormap = thing->subsector->sector->extra_colormap;
-	}
-
-	if (colormap)
-		HWR_Lighting(&sSurf, lightlevel, colormap);
-	else
-		HWR_Lighting(&sSurf, lightlevel, NULL);
+	if (thing->whiteshadow)
+		HWR_Lighting(&sSurf, 255, NULL);
 
 	sSurf.PolyColor.s.alpha = 127; // always draw half translucent
 

@@ -1227,7 +1227,7 @@ static void R_ProjectDropShadow(mobj_t *thing, vissprite_t *vis, fixed_t tx, fix
 
 	scalemul = FixedMul(FRACUNIT - floordiff/640, scale);
 
-	patch = W_CachePatchNum(sprites[SPR_SHAD].spriteframes[0].lumppat[0], PU_CACHE);
+	patch = W_CachePatchNum(sprites[SPR_THOK].spriteframes[0].lumppat[0], PU_CACHE);
 	xscale = FixedDiv(projection, tz);
 	yscale = FixedDiv(projectiony, tz);
 	shadowxscale = FixedMul(thing->radius*2, scalemul);
