@@ -3631,8 +3631,8 @@ static void HWR_DrawDropShadow(mobj_t *thing)
 	fixed_t groundz;
 	fixed_t slopez;
 	pslope_t *groundslope;
-	fixed_t scale = FixedDiv(5*thing->scale/4, mapobjectscale); // uuuhhh approximation of things done by my butt
-	
+	fixed_t scale = FixedDiv(4*thing->scale/3, mapobjectscale); // uuuhhh approximation of things done by my butt
+
 	// uncapped/interpolation
 	interpmobjstate_t interp = {0};
 	
