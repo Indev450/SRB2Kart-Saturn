@@ -655,7 +655,7 @@ static int lib_pSpawnShadowMobj(lua_State *L)
 	NOHUD
 	if (!caster)
 		return LUA_ErrInvalid(L, "mobj_t");
-	//P_SpawnShadowMobj(caster);
+	caster->haveshadow = true;
 	return 0;
 }
 

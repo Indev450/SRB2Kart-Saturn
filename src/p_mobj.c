@@ -9398,6 +9398,31 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 		mobj->z = z;
 
 	mobj->colorized = false;
+
+	// Those have shadow by default
+	switch (type)
+	{
+		case MT_PLAYER:
+		case MT_SMALLMACE:		case MT_BIGMACE:
+		case MT_PUMA:			case MT_BIGPUMA:
+		case MT_FALLINGROCK:
+		case MT_SMK_MOLE:		case MT_SMK_THWOMP:
+		//case MT_RANDOMITEM:
+		case MT_FLOATINGITEM:
+		case MT_BATTLEBUMPER:
+		case MT_BANANA:			case MT_BANANA_SHIELD:
+		//case MT_EGGMANITEM:	case MT_EGGMANITEM_SHIELD:
+		case MT_ORBINAUT:		case MT_ORBINAUT_SHIELD:
+		case MT_JAWZ:			case MT_JAWZ_DUD:		case MT_JAWZ_SHIELD:
+		case MT_SSMINE:			case MT_SSMINE_SHIELD:
+		case MT_BALLHOG:		case MT_SINK:
+		case MT_THUNDERSHIELD:	case MT_ROCKETSNEAKER:
+		case MT_SPB:
+			mobj->haveshadow = true;
+		default:
+			break;
+	}
+
 	mobj->whiteshadow = mobj->frame & FF_FULLBRIGHT;
 
 	// DANGER! This can cause P_SpawnMobj to return NULL!

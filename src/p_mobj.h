@@ -399,6 +399,7 @@ typedef struct mobj_s
 	boolean resetinterp; // if true, some fields should not be interpolated (see R_InterpolateMobjState implementation)
 	boolean colorized; // Whether the mobj uses the rainbow colormap
 
+	boolean haveshadow;
 	boolean whiteshadow; // Use white shadow, set to true by default for fullbright objects
 
 	boolean mirrored; // The object's rotations will be mirrored left to right, e.g., see frame AL from the right and AR from the left
