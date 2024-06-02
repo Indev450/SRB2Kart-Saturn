@@ -3620,6 +3620,8 @@ static void HWR_DrawDropShadow(mobj_t *thing, fixed_t scale)
 	FSurfaceInfo sSurf;
 	float fscale; float fx; float fy; float offset;
 	float ph;
+	FBITFIELD blendmode = 0;
+	INT32 shader = SHADER_NONE;
 	UINT8 i;
 	SINT8 flip = P_MobjFlip(thing);
 
@@ -3650,7 +3652,7 @@ static void HWR_DrawDropShadow(mobj_t *thing, fixed_t scale)
 	//if (abs(groundz - gr_viewz) / tz > 4) return; // Prevent stretchy shadows and possible crashes
 
 	floordiff = abs((flip < 0 ? thing->height : 0) + interp.z - groundz);
-	
+
 	gpatch = W_CachePatchNum(sprites[SPR_SHAD].spriteframes[0].lumppat[0], PU_CACHE);
 
 	if (!(gpatch && gpatch->mipmap->format)) return;
@@ -3717,7 +3719,13 @@ static void HWR_DrawDropShadow(mobj_t *thing, fixed_t scale)
 
 	sSurf.PolyColor.s.alpha = 127; // always draw half translucent
 
-	HWR_ProcessPolygon(&sSurf, shadowVerts, 4, PF_Translucent|PF_Modulated, SHADER_SPRITE, false); // sprite shader
+	if (HWR_UseShader())
+	{
+		shader = SHADER_SPRITE;
+		blendmode |= PF_ColorMapped;
+	}
+
+	HWR_ProcessPolygon(&sSurf, shadowVerts, 4, blendmode|PF_Translucent|PF_Modulated, shader, false); // sprite shader
 }
 
 // This is expecting a pointer to an array containing 4 wallVerts for a sprite
