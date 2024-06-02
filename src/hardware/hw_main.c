@@ -3653,7 +3653,10 @@ static void HWR_DrawDropShadow(mobj_t *thing, fixed_t scale)
 
 	floordiff = abs((flip < 0 ? thing->height : 0) + interp.z - groundz);
 
-	gpatch = W_CachePatchNum(sprites[SPR_SHAD].spriteframes[0].lumppat[0], PU_CACHE);
+	if (thing->whiteshadow)
+		gpatch = W_CachePatchNum(sprites[SPR_SHAD].spriteframes[1].lumppat[0], PU_CACHE);
+	else
+		gpatch = W_CachePatchNum(sprites[SPR_SHAD].spriteframes[0].lumppat[0], PU_CACHE);
 
 	if (!(gpatch && gpatch->mipmap->format)) return;
 	HWR_GetPatch(gpatch);
