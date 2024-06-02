@@ -1304,7 +1304,7 @@ static void R_ProjectDropShadow(mobj_t *thing, vissprite_t *vis, fixed_t tx, fix
 
 	shadow->extra_colormap = NULL;
 
-	shadow->transmap = transtables + (tr_trans30<<FF_TRANSSHIFT);
+	shadow->transmap = transtables + (tr_trans20<<FF_TRANSSHIFT);
 
 	if (thing->whiteshadow)
 		shadow->colormap = scalelight[LIGHTLEVELS - 1][0]; // full bright!
