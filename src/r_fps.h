@@ -59,6 +59,7 @@ typedef struct {
 	fixed_t x;
 	fixed_t y;
 	fixed_t z;
+	fixed_t floorz;
 	subsector_t *subsector;
 	angle_t angle;
 	fixed_t scale;

@@ -3635,8 +3635,6 @@ static void HWR_DrawDropShadow(mobj_t *thing)
 
 	// uncapped/interpolation
 	interpmobjstate_t interp = {0};
-	
-	groundz = R_GetShadowZ(thing, &groundslope);
 
 	// do interpolation
 	if (R_UsingFrameInterpolation() && !paused)
@@ -3648,8 +3646,13 @@ static void HWR_DrawDropShadow(mobj_t *thing)
 		R_InterpolateMobjState(thing, FRACUNIT, &interp);
 	}
 
+	if (cv_sloperoll.value && cv_spriteroll.value)
+		groundz = R_GetShadowZ(thing, &groundslope);
+	else
+		groundz = interp.floorz;
+
 	//if (abs(groundz - gr_viewz) / tz > 4) return; // Prevent stretchy shadows and possible crashes
-	
+
 	floordiff = abs((flip < 0 ? thing->height : 0) + interp.z - groundz);
 	
 	gpatch = W_CachePatchNum(sprites[SPR_SHAD].spriteframes[0].lumppat[0], PU_CACHE);
@@ -3698,18 +3701,18 @@ static void HWR_DrawDropShadow(mobj_t *thing)
 		shadowVerts[i].z = fy + ((oldx - fx) * gr_viewsin) + ((oldy - fy) * gr_viewcos);
 	}
 
-	if (groundslope)
+	if (groundslope && cv_sloperoll.value && cv_spriteroll.value)
 	{
 		for (i = 0; i < 4; i++)
 		{
 			slopez = P_GetZAt(groundslope, FLOAT_TO_FIXED(shadowVerts[i].x), FLOAT_TO_FIXED(shadowVerts[i].z));
-			shadowVerts[i].y = FIXED_TO_FLOAT(slopez) + flip * 0.05f;
+			shadowVerts[i].y = FIXED_TO_FLOAT(slopez) + 5 + flip * 0.05f;
 		}
 	}
 	else
 	{
 		for (i = 0; i < 4; i++)
-			shadowVerts[i].y = FIXED_TO_FLOAT(groundz) + flip * 0.05f;
+			shadowVerts[i].y = FIXED_TO_FLOAT(groundz) + 5 + flip * 0.05f;
 	}
 
 	shadowVerts[0].s = shadowVerts[3].s = 0;
