@@ -9289,6 +9289,65 @@ void P_SceneryThinker(mobj_t *mobj)
 // GAME SPAWN FUNCTIONS
 //
 
+static void P_DefaultMobjShadowScale(mobj_t *thing)
+{
+	thing->shadowscale = 0;
+	thing->whiteshadow = (thing->frame & FF_FULLBRIGHT);
+
+	// Those have shadow by default
+	switch (thing->type)
+	{
+		case MT_PLAYER:
+		case MT_SMALLMACE:
+		case MT_BIGMACE:
+		case MT_PUMA:
+		case MT_BIGPUMA:
+		case MT_FALLINGROCK:
+		case MT_SMK_MOLE:
+		case MT_SMK_THWOMP:
+		case MT_BATTLEBUMPER:
+		case MT_BANANA:
+		case MT_ORBINAUT:
+		case MT_ORBINAUT_SHIELD:
+		case MT_JAWZ:
+		case MT_JAWZ_DUD:
+		case MT_JAWZ_SHIELD:
+		case MT_SSMINE:
+		case MT_SSMINE_SHIELD:
+		case MT_BALLHOG:
+		case MT_SINK:
+		case MT_THUNDERSHIELD:
+		case MT_ROCKETSNEAKER:
+		case MT_SPB:
+			thing->shadowscale = 4*FRACUNIT/3;
+			thing->haveshadow = true;
+			break;
+		case MT_BANANA_SHIELD:
+			thing->shadowscale = 12*FRACUNIT/5;
+			thing->haveshadow = true;
+			break;
+		/*case MT_RANDOMITEM:
+			thing->shadowscale = FRACUNIT/2;
+			thing->whiteshadow = false;
+			break;
+		case MT_EGGMANITEM:
+			thing->shadowscale = FRACUNIT;
+			thing->whiteshadow = false;
+			break;
+		case MT_EGGMANITEM_SHIELD:
+			thing->shadowscale = 3*FRACUNIT/2;
+			thing->whiteshadow = false;
+			break;*/
+		case MT_FLOATINGITEM:
+			thing->shadowscale = FRACUNIT/2;
+			thing->haveshadow = true;
+			break;
+		default:
+			thing->shadowscale = 4*FRACUNIT/3;;
+			break;
+	}
+}
+
 //
 // P_SpawnMobj
 //
@@ -9399,31 +9458,8 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 
 	mobj->colorized = false;
 
-	// Those have shadow by default
-	switch (type)
-	{
-		case MT_PLAYER:
-		case MT_SMALLMACE:		case MT_BIGMACE:
-		case MT_PUMA:			case MT_BIGPUMA:
-		case MT_FALLINGROCK:
-		case MT_SMK_MOLE:		case MT_SMK_THWOMP:
-		//case MT_RANDOMITEM:
-		case MT_FLOATINGITEM:
-		case MT_BATTLEBUMPER:
-		case MT_BANANA:			case MT_BANANA_SHIELD:
-		//case MT_EGGMANITEM:	case MT_EGGMANITEM_SHIELD:
-		case MT_ORBINAUT:		case MT_ORBINAUT_SHIELD:
-		case MT_JAWZ:			case MT_JAWZ_DUD:		case MT_JAWZ_SHIELD:
-		case MT_SSMINE:			case MT_SSMINE_SHIELD:
-		case MT_BALLHOG:		case MT_SINK:
-		case MT_THUNDERSHIELD:	case MT_ROCKETSNEAKER:
-		case MT_SPB:
-			mobj->haveshadow = true;
-		default:
-			break;
-	}
-
-	mobj->whiteshadow = mobj->frame & FF_FULLBRIGHT;
+	// Set shadowscale here, before spawn hook so that Lua can change it
+	P_DefaultMobjShadowScale(mobj);
 
 	// DANGER! This can cause P_SpawnMobj to return NULL!
 	// Avoid using P_RemoveMobj on the newly created mobj in "MobjSpawn" Lua hooks!

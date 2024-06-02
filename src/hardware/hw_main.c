@@ -3613,7 +3613,7 @@ static gr_vissprite_t *HWR_NewVisSprite(void)
 	return HWR_GetVisSprite(gr_visspritecount++);
 }
 
-static void HWR_DrawDropShadow(mobj_t *thing)
+static void HWR_DrawDropShadow(mobj_t *thing, fixed_t scale)
 {
 	GLPatch_t *gpatch;
 	FOutVector shadowVerts[4];
@@ -3628,7 +3628,6 @@ static void HWR_DrawDropShadow(mobj_t *thing)
 	fixed_t groundz;
 	fixed_t slopez;
 	pslope_t *groundslope;
-	fixed_t scale = FixedDiv(4*thing->scale/3, mapobjectscale); // uuuhhh approximation of things done by my butt
 
 	// uncapped/interpolation
 	interpmobjstate_t interp = {0};
@@ -4604,7 +4603,7 @@ void HWR_DrawSprites(void)
 			if (spr->mobj && cv_shadow.value)
 			{
 				if (spr->mobj->haveshadow)
-					HWR_DrawDropShadow(spr->mobj);
+					HWR_DrawDropShadow(spr->mobj, spr->mobj->shadowscale);
 			}
 
 			if (spr->mobj && spr->mobj->skin && spr->mobj->sprite == SPR_PLAY)

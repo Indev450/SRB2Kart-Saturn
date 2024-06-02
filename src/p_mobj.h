@@ -400,6 +400,7 @@ typedef struct mobj_s
 	boolean colorized; // Whether the mobj uses the rainbow colormap
 
 	boolean haveshadow;
+	fixed_t shadowscale; // If this object casts a shadow, and the size relative to radius
 	boolean whiteshadow; // Use white shadow, set to true by default for fullbright objects
 
 	boolean mirrored; // The object's rotations will be mirrored left to right, e.g., see frame AL from the right and AR from the left

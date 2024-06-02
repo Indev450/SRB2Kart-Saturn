@@ -1196,7 +1196,7 @@ static void R_SkewShadowSprite(
 	*shadowskew = xslope;
 }
 
-static void R_ProjectDropShadow(mobj_t *thing, vissprite_t *vis, fixed_t tx, fixed_t tz)
+static void R_ProjectDropShadow(mobj_t *thing, vissprite_t *vis, fixed_t tx, fixed_t tz, fixed_t scale)
 {
 	vissprite_t *shadow;
 	patch_t *patch;
@@ -1206,7 +1206,6 @@ static void R_ProjectDropShadow(mobj_t *thing, vissprite_t *vis, fixed_t tx, fix
 	fixed_t groundz;
 	pslope_t *groundslope;
 	boolean isflipped = thing->eflags & MFE_VERTICALFLIP;
-	fixed_t scale = FixedDiv(4*thing->scale/3, mapobjectscale);
 	interpmobjstate_t interp = {0};
 
 	groundz = R_GetShadowZ(thing, &groundslope);
@@ -1946,7 +1945,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	if (cv_shadow.value)
 	{
 		if (oldthing->haveshadow)
-			R_ProjectDropShadow(oldthing, vis, basetx, basetz);
+			R_ProjectDropShadow(oldthing, vis, basetx, basetz, oldthing->shadowscale);
 	}
 
 	// Debug
