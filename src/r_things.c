@@ -1233,9 +1233,9 @@ static void R_ProjectDropShadow(mobj_t *thing, vissprite_t *vis, fixed_t tx, fix
 	shadowyscale = min(shadowyscale, shadowxscale) / SHORT(patch->height);
 	shadowxscale /= SHORT(patch->width);
 	shadowskew = 0;
-	
-	//if (groundslope)
-		//R_SkewShadowSprite(thing, groundslope, groundz, SHORT(patch->height), scalemul, &shadowyscale, &shadowskew); // idk whats up with this thing
+
+	if (groundslope && cv_sloperoll.value && cv_spriteroll.value)
+		R_SkewShadowSprite(thing, groundslope, groundz, SHORT(patch->height), scalemul, &shadowyscale, &shadowskew); // idk whats up with this thing
 
 	tx -= SHORT(patch->width) * shadowxscale/2;
 	x1 = (centerxfrac + FixedMul(tx,xscale))>>FRACBITS;
