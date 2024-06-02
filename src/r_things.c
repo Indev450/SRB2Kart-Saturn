@@ -1201,7 +1201,6 @@ static void R_ProjectDropShadow(mobj_t *thing, vissprite_t *vis, fixed_t tx, fix
 	vissprite_t *shadow;
 	patch_t *patch;
 	fixed_t xscale, yscale, shadowxscale, shadowyscale, shadowskew, x1, x2;
-	INT32 light = 0;
 	fixed_t scalemul;
 	fixed_t floordiff;
 	fixed_t groundz;
@@ -1227,7 +1226,7 @@ static void R_ProjectDropShadow(mobj_t *thing, vissprite_t *vis, fixed_t tx, fix
 
 	scalemul = FixedMul(FRACUNIT - floordiff/640, scale);
 
-	patch = W_CachePatchNum(sprites[SPR_THOK].spriteframes[0].lumppat[0], PU_CACHE);
+	patch = W_CachePatchNum(sprites[SPR_SHAD].spriteframes[0].lumppat[0], PU_CACHE);
 	xscale = FixedDiv(projection, tz);
 	yscale = FixedDiv(projectiony, tz);
 	shadowxscale = FixedMul(thing->radius*2, scalemul);
@@ -1303,25 +1302,7 @@ static void R_ProjectDropShadow(mobj_t *thing, vissprite_t *vis, fixed_t tx, fix
 	x1 += (x2-x1)/2;
 	shadow->shear.offset = shadow->x1-x1;
 
-	if (thing->subsector->sector->numlights)
-	{
-		INT32 lightnum;
-		light = thing->subsector->sector->numlights - 1;
-
-		// R_GetPlaneLight won't work on sloped lights!
-		for (lightnum = 1; lightnum < thing->subsector->sector->numlights; lightnum++) {
-			fixed_t h = P_GetLightZAt(&thing->subsector->sector->lightlist[lightnum], interp.x, interp.y);
-			if (h <= shadow->gzt) {
-				light = lightnum - 1;
-				break;
-			}
-		}
-	}
-
-	if (thing->subsector->sector->numlights)
-		shadow->extra_colormap = thing->subsector->sector->lightlist[light].extra_colormap;
-	else
-		shadow->extra_colormap = thing->subsector->sector->extra_colormap;
+	shadow->extra_colormap = NULL;
 
 	shadow->transmap = transtables + (tr_trans30<<FF_TRANSSHIFT);
 
