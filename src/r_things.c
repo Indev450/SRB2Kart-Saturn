@@ -1163,7 +1163,6 @@ static void R_SkewShadowSprite(
 			fixed_t groundz, INT32 spriteheight, fixed_t scalemul,
 			fixed_t *shadowyscale, fixed_t *shadowskew)
 {
-
 	// haha let's try some dumb stuff
 	fixed_t xslope, zslope;
 	angle_t sloperelang;
@@ -1192,7 +1191,7 @@ static void R_SkewShadowSprite(
 	else
 		*shadowyscale -= FixedMul(FixedMul(thing->radius*2 / spriteheight, scalemul), zslope);
 
-	*shadowyscale = abs((*shadowyscale));
+	*shadowyscale = abs(*shadowyscale);
 	*shadowskew = xslope;
 }
 

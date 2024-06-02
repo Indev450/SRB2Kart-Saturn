@@ -49,7 +49,7 @@ void (*basespanfunc)(void); // default span func for color mode
 void (*transtransfunc)(void); // translucent translated column drawer
 void (*twosmultipatchfunc)(void); // for cols with transparent pixels
 void (*twosmultipatchtransfunc)(void); // for cols with transparent pixels AND translucency
-void (*dropshadowcolfunc)(void); // for cols with transparent pixels AND translucency
+void (*dropshadowcolfunc)(void);
 
 // ------------------
 // global video state
