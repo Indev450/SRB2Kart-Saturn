@@ -3624,6 +3624,7 @@ static void HWR_DrawDropShadow(mobj_t *thing, fixed_t scale)
 	INT32 shader = SHADER_NONE;
 	UINT8 i;
 	SINT8 flip = P_MobjFlip(thing);
+	UINT8 lightlevel = 0;
 
 	fixed_t scalemul;
 	fixed_t floordiff;
@@ -3718,7 +3719,9 @@ static void HWR_DrawDropShadow(mobj_t *thing, fixed_t scale)
 	shadowVerts[0].t = shadowVerts[1].t = gpatch->max_t;
 
 	if (thing->whiteshadow)
-		HWR_Lighting(&sSurf, 255, NULL);
+		lightlevel = 255; // make crap FULLBRIGHT
+
+	HWR_Lighting(&sSurf, lightlevel, NULL);
 
 	sSurf.PolyColor.s.alpha = 127; // always draw half translucent
 
