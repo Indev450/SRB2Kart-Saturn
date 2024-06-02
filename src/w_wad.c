@@ -789,7 +789,7 @@ UINT16 W_InitFile(const char *filename, boolean local)
 	//
 	// link wad file to search files
 	//
-	wadfile = Z_Malloc(sizeof (*wadfile), PU_STATIC, NULL);
+	wadfile = Z_Calloc(sizeof (*wadfile), PU_STATIC, NULL);
 	wadfile->filename = Z_StrDup(filename);
 	wadfile->handle = handle;
 	wadfile->numlumps = (UINT16)numlumps;
@@ -798,7 +798,6 @@ UINT16 W_InitFile(const char *filename, boolean local)
 	fseek(handle, 0, SEEK_END);
 	wadfile->filesize = (unsigned)ftell(handle);
 	wadfile->type = type;
-	wadfile->majormod = false;
 
 	// already generated, just copy it over
 	M_Memcpy(&wadfile->md5sum, &md5sum, 16);
