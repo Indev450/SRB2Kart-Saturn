@@ -1092,11 +1092,16 @@ fixed_t R_GetShadowZ(
 	msecnode_t *node;
 	sector_t *sector;
 	ffloor_t *rover;
+	INT32 dist = -1;
 
 	// for frame interpolation
 	interpmobjstate_t interp = {0};
 
-	if (R_UsingFrameInterpolation() && !paused)
+	if (cv_grmaxinterpdist.value)
+		dist = R_QuickCamDist(thing->x, thing->y);
+
+	// do interpolation
+	if (R_UsingFrameInterpolation() && !paused && (!cv_grmaxinterpdist.value || dist < cv_grmaxinterpdist.value))
 	{
 		R_InterpolateMobjState(thing, rendertimefrac, &interp);
 	}
@@ -1205,13 +1210,18 @@ static void R_ProjectDropShadow(mobj_t *thing, vissprite_t *vis, fixed_t tx, fix
 	fixed_t groundz;
 	pslope_t *groundslope;
 	boolean isflipped = thing->eflags & MFE_VERTICALFLIP;
+	INT32 dist = -1;
 	interpmobjstate_t interp = {0};
 
 	groundz = R_GetShadowZ(thing, &groundslope);
 
 	if (abs(groundz-viewz)/tz > 4) return; // Prevent stretchy shadows and possible crashes
 
-	if (R_UsingFrameInterpolation() && !paused)
+	if (cv_grmaxinterpdist.value)
+		dist = R_QuickCamDist(thing->x, thing->y);
+
+	// do interpolation
+	if (R_UsingFrameInterpolation() && !paused && (!cv_grmaxinterpdist.value || dist < cv_grmaxinterpdist.value))
 	{
 		R_InterpolateMobjState(thing, rendertimefrac, &interp);
 	}

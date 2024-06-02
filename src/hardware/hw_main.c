@@ -3625,6 +3625,7 @@ static void HWR_DrawDropShadow(mobj_t *thing, fixed_t scale)
 	UINT8 i;
 	SINT8 flip = P_MobjFlip(thing);
 	UINT8 lightlevel = 0;
+	INT32 dist = -1;
 
 	fixed_t scalemul;
 	fixed_t floordiff;
@@ -3635,8 +3636,11 @@ static void HWR_DrawDropShadow(mobj_t *thing, fixed_t scale)
 	// uncapped/interpolation
 	interpmobjstate_t interp = {0};
 
+	if (cv_grmaxinterpdist.value)
+		dist = R_QuickCamDist(thing->x, thing->y);
+
 	// do interpolation
-	if (R_UsingFrameInterpolation() && !paused)
+	if (R_UsingFrameInterpolation() && !paused && (!cv_grmaxinterpdist.value || dist < cv_grmaxinterpdist.value))
 	{
 		R_InterpolateMobjState(thing, rendertimefrac, &interp);
 	}
@@ -3649,8 +3653,6 @@ static void HWR_DrawDropShadow(mobj_t *thing, fixed_t scale)
 		groundz = R_GetShadowZ(thing, &groundslope);
 	else
 		groundz = interp.floorz;
-
-	//if (abs(groundz - gr_viewz) / tz > 4) return; // Prevent stretchy shadows and possible crashes
 
 	floordiff = abs((flip < 0 ? thing->height : 0) + interp.z - groundz);
 
