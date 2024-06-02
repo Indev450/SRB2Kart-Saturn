@@ -46,6 +46,7 @@
 #include "../i_system.h"
 #include "../m_cheat.h"
 #include "../m_argv.h" // parm functions for msaa
+#include "../r_things.h" // R_GetShadowZ
 #include "../p_slopes.h"
 
 #include <stdlib.h> // qsort
@@ -3612,204 +3613,132 @@ static gr_vissprite_t *HWR_NewVisSprite(void)
 	return HWR_GetVisSprite(gr_visspritecount++);
 }
 
-// Finds a floor through which light does not pass.
-static fixed_t HWR_OpaqueFloorAtPos(fixed_t x, fixed_t y, fixed_t z, fixed_t height)
+static void HWR_DrawDropShadow(mobj_t *thing)
 {
-	const sector_t *sec = R_PointInSubsector(x, y)->sector;
-	fixed_t floorz = sec->floorheight;
-
-	if (sec->ffloors)
-	{
-		ffloor_t *rover;
-		fixed_t delta1, delta2;
-		const fixed_t thingtop = z + height;
-
-		for (rover = sec->ffloors; rover; rover = rover->next)
-		{
-			if (!(rover->flags & FF_EXISTS)
-			|| !(rover->flags & FF_RENDERPLANES)
-			|| rover->flags & FF_TRANSLUCENT
-			|| rover->flags & FF_FOG
-			|| rover->flags & FF_INVERTPLANES)
-				continue;
-
-			delta1 = z - (*rover->bottomheight + ((*rover->topheight - *rover->bottomheight)/2));
-			delta2 = thingtop - (*rover->bottomheight + ((*rover->topheight - *rover->bottomheight)/2));
-			if (*rover->topheight > floorz && abs(delta1) < abs(delta2))
-				floorz = *rover->topheight;
-		}
-	}
-
-	return floorz;
-}
-
-static void HWR_DrawSpriteShadow(gr_vissprite_t *spr, GLPatch_t *gpatch, float this_scale)
-{
-	FOutVector swallVerts[4];
+	GLPatch_t *gpatch;
+	FOutVector shadowVerts[4];
 	FSurfaceInfo sSurf;
-	fixed_t floorheight, mobjfloor;
-	pslope_t *floorslope;
+	float fscale; float fx; float fy; float offset;
+	float ph;
+	UINT8 lightlevel = 0;
+	extracolormap_t *colormap = NULL;
+	UINT8 i;
+	SINT8 flip = P_MobjFlip(thing);
+
+	INT32 light;
+	fixed_t scalemul;
+	fixed_t floordiff;
+	fixed_t groundz;
 	fixed_t slopez;
-	float offset = 0;
+	pslope_t *groundslope;
+	fixed_t scale = FixedDiv(5*thing->scale/4, mapobjectscale); // uuuhhh approximation of things done by my butt
 	
-	INT32 shader = SHADER_NONE;
+	// uncapped/interpolation
+	interpmobjstate_t interp = {0};
 	
-	R_GetShadowZ(spr->mobj, &floorslope);
+	groundz = R_GetShadowZ(thing, &groundslope);
 
-	mobjfloor = HWR_OpaqueFloorAtPos(
-		spr->mobj->x, spr->mobj->y,
-		spr->mobj->z, spr->mobj->height);
-
-	if (cv_shadowoffs.value)
+	// do interpolation
+	if (R_UsingFrameInterpolation() && !paused)
 	{
-		angle_t shadowdir;
-
-		// Set direction
-		if (splitscreen && stplyr == &players[displayplayers[1]])
-			shadowdir = localangle[1] + FixedAngle(cv_cam2_rotate.value);
-		else if (splitscreen > 1 && stplyr == &players[displayplayers[2]])
-			shadowdir = localangle[2] + FixedAngle(cv_cam3_rotate.value);
-		else if (splitscreen > 2 && stplyr == &players[displayplayers[3]])
-			shadowdir = localangle[3] + FixedAngle(cv_cam4_rotate.value);
-		else
-			shadowdir = localangle[0] + FixedAngle(cv_cam_rotate.value);
-
-		// Find floorheight
-		floorheight = HWR_OpaqueFloorAtPos(
-			spr->mobj->x + P_ReturnThrustX(spr->mobj, shadowdir, spr->mobj->z - mobjfloor),
-			spr->mobj->y + P_ReturnThrustY(spr->mobj, shadowdir, spr->mobj->z - mobjfloor),
-			spr->mobj->z, spr->mobj->height);
-
-		// The shadow is falling ABOVE it's mobj?
-		// Don't draw it, then!
-		if (spr->mobj->z < floorheight)
-			return;
-		else
-		{
-			fixed_t floorz;
-			floorz = HWR_OpaqueFloorAtPos(
-				spr->mobj->x + P_ReturnThrustX(spr->mobj, shadowdir, spr->mobj->z - floorheight),
-				spr->mobj->y + P_ReturnThrustY(spr->mobj, shadowdir, spr->mobj->z - floorheight),
-				spr->mobj->z, spr->mobj->height);
-			// The shadow would be falling on a wall? Don't draw it, then.
-			// Would draw midair otherwise.
-			if (floorz < floorheight)
-				return;
-		}
-
-		floorheight = FixedInt(spr->mobj->z - floorheight);
-
-		offset = floorheight;
+		R_InterpolateMobjState(thing, rendertimefrac, &interp);
 	}
 	else
-		floorheight = FixedInt(spr->mobj->z - mobjfloor);
+	{
+		R_InterpolateMobjState(thing, FRACUNIT, &interp);
+	}
 
-	// create the sprite billboard
-	//
+	//if (abs(groundz - gr_viewz) / tz > 4) return; // Prevent stretchy shadows and possible crashes
+	
+	floordiff = abs((flip < 0 ? thing->height : 0) + interp.z - groundz);
+	
+	gpatch = W_CachePatchNum(sprites[SPR_SHAD].spriteframes[0].lumppat[0], PU_CACHE);
+
+	if (thing->whiteshadow)
+		lightlevel = 255;
+	else
+		lightlevel = 0;
+
+	if (!(gpatch && gpatch->mipmap->format)) return;
+	HWR_GetPatch(gpatch);
+
+	scalemul = FixedMul(FRACUNIT - floordiff/640, scale);
+	scalemul = FixedMul(scalemul, (thing->radius*2) / SHORT(gpatch->height));
+
+	ph = (float)gpatch->height;
+
+	fscale = FIXED_TO_FLOAT(scalemul);
+	fx = FIXED_TO_FLOAT(interp.x);
+	fy = FIXED_TO_FLOAT(interp.y);
+
+	if (fscale > 0.0)
+	{
+		offset = (ph / 2) * fscale;
+	}
+	else
+	{
+		return;
+	}
+
 	//  3--2
 	//  | /|
 	//  |/ |
 	//  0--1
 
-	// x1/x2 were already scaled in HWR_ProjectSprite
-	// First match the normal sprite
-	swallVerts[0].x = swallVerts[3].x = spr->x1;
-	swallVerts[2].x = swallVerts[1].x = spr->x2;
-	swallVerts[0].z = swallVerts[3].z = spr->z1;
-	swallVerts[2].z = swallVerts[1].z = spr->z2;
+	shadowVerts[2].x = shadowVerts[3].x = fx + offset;
+	shadowVerts[1].x = shadowVerts[0].x = fx - offset;
+	shadowVerts[1].z = shadowVerts[2].z = fy - offset;
+	shadowVerts[0].z = shadowVerts[3].z = fy + offset;
 
-	if (spr->mobj && fabsf(this_scale - 1.0f) > 1.0E-36f)
+	for (i = 0; i < 4; i++)
 	{
-		// Always a pixel above the floor, perfectly flat.
-		swallVerts[0].y = swallVerts[1].y = swallVerts[2].y = swallVerts[3].y = spr->ty - gpatch->topoffset * this_scale - (floorheight+3);
-
-		// Now transform the TOP vertices along the floor in the direction of the camera
-		swallVerts[3].x = spr->x1 + ((gpatch->height * this_scale) + offset) * gr_viewcos;
-		swallVerts[2].x = spr->x2 + ((gpatch->height * this_scale) + offset) * gr_viewcos;
-		swallVerts[3].z = spr->z1 + ((gpatch->height * this_scale) + offset) * gr_viewsin;
-		swallVerts[2].z = spr->z2 + ((gpatch->height * this_scale) + offset) * gr_viewsin;
-	}
-	else
-	{
-		// Always a pixel above the floor, perfectly flat.
-		swallVerts[0].y = swallVerts[1].y = swallVerts[2].y = swallVerts[3].y = spr->ty - gpatch->topoffset - (floorheight+3);
-
-		// Now transform the TOP vertices along the floor in the direction of the camera
-		swallVerts[3].x = spr->x1 + (gpatch->height + offset) * gr_viewcos;
-		swallVerts[2].x = spr->x2 + (gpatch->height + offset) * gr_viewcos;
-		swallVerts[3].z = spr->z1 + (gpatch->height + offset) * gr_viewsin;
-		swallVerts[2].z = spr->z2 + (gpatch->height + offset) * gr_viewsin;
+		float oldx = shadowVerts[i].x;
+		float oldy = shadowVerts[i].z;
+		shadowVerts[i].x = fx + ((oldx - fx) * gr_viewcos) - ((oldy - fy) * gr_viewsin);
+		shadowVerts[i].z = fy + ((oldx - fx) * gr_viewsin) + ((oldy - fy) * gr_viewcos);
 	}
 
-	// We also need to move the bottom ones away when shadowoffs is on
-	if (cv_shadowoffs.value)
+	if (groundslope)
 	{
-		swallVerts[0].x = spr->x1 + offset * gr_viewcos;
-		swallVerts[1].x = spr->x2 + offset * gr_viewcos;
-		swallVerts[0].z = spr->z1 + offset * gr_viewsin;
-		swallVerts[1].z = spr->z2 + offset * gr_viewsin;
-	}
-	
-	if (floorslope)
-	{
-		for (int i = 0; i < 4; i++)
+		for (i = 0; i < 4; i++)
 		{
-			slopez = P_GetZAt(floorslope, FLOAT_TO_FIXED(swallVerts[i].x), FLOAT_TO_FIXED(swallVerts[i].z));
-			swallVerts[i].y = FIXED_TO_FLOAT(slopez) + 0.05f;
+			slopez = P_GetZAt(groundslope, FLOAT_TO_FIXED(shadowVerts[i].x), FLOAT_TO_FIXED(shadowVerts[i].z));
+			shadowVerts[i].y = FIXED_TO_FLOAT(slopez) + flip * 0.05f;
 		}
 	}
-
-	if (spr->flip)
+	else
 	{
-		swallVerts[0].s = swallVerts[3].s = gpatch->max_s;
-		swallVerts[2].s = swallVerts[1].s = 0;
+		for (i = 0; i < 4; i++)
+			shadowVerts[i].y = FIXED_TO_FLOAT(groundz) + flip * 0.05f;
+	}
+
+	shadowVerts[0].s = shadowVerts[3].s = 0;
+	shadowVerts[2].s = shadowVerts[1].s = gpatch->max_s;
+
+	shadowVerts[3].t = shadowVerts[2].t = 0;
+	shadowVerts[0].t = shadowVerts[1].t = gpatch->max_t;
+
+	if (thing->subsector->sector->numlights)
+	{
+		light = R_GetPlaneLight(thing->subsector->sector, groundz, false); // Always use the light at the top instead of whatever I was doing before
+
+		if (thing->subsector->sector->lightlist[light].extra_colormap)
+			colormap = thing->subsector->sector->lightlist[light].extra_colormap;
 	}
 	else
 	{
-		swallVerts[0].s = swallVerts[3].s = 0;
-		swallVerts[2].s = swallVerts[1].s = gpatch->max_s;
+		if (thing->subsector->sector->extra_colormap)
+			colormap = thing->subsector->sector->extra_colormap;
 	}
 
-	// flip the texture coords (look familiar?)
-	if (spr->vflip)
-	{
-		swallVerts[3].t = swallVerts[2].t = gpatch->max_t;
-		swallVerts[0].t = swallVerts[1].t = 0;
-	}
+	if (colormap)
+		HWR_Lighting(&sSurf, lightlevel, colormap);
 	else
-	{
-		swallVerts[3].t = swallVerts[2].t = 0;
-		swallVerts[0].t = swallVerts[1].t = gpatch->max_t;
-	}
+		HWR_Lighting(&sSurf, lightlevel, NULL);
 
-	sSurf.PolyColor.s.red = 0x01;
-	sSurf.PolyColor.s.blue = 0x01;
-	sSurf.PolyColor.s.green = 0x01;
+	sSurf.PolyColor.s.alpha = 127; // always draw half translucent
 
-	// shadow is always half as translucent as the sprite itself
-	if (!cv_translucency.value) // use default translucency (main sprite won't have any translucency)
-		sSurf.PolyColor.s.alpha = 0x80; // default
-	else if (spr->mobj->flags2 & MF2_SHADOW)
-		sSurf.PolyColor.s.alpha = 0x20;
-	else if (spr->mobj->frame & FF_TRANSMASK)
-	{
-		HWR_TranstableToAlpha((spr->mobj->frame & FF_TRANSMASK)>>FF_TRANSSHIFT, &sSurf);
-		sSurf.PolyColor.s.alpha /= 2; //cut alpha in half!
-	}
-	else
-		sSurf.PolyColor.s.alpha = 0x80; // default
-
-	if (sSurf.PolyColor.s.alpha > floorheight/4)
-	{
-		sSurf.PolyColor.s.alpha = (UINT8)(sSurf.PolyColor.s.alpha - floorheight/4);
-		
-		if (HWR_UseShader())
-		{
-			shader = SHADER_FLOOR;	// floor shader
-		}
-
-		HWR_ProcessPolygon(&sSurf, swallVerts, 4, PF_Translucent|PF_Modulated, shader, false);
-	}
+	HWR_ProcessPolygon(&sSurf, shadowVerts, 4, PF_Translucent|PF_Modulated, SHADER_SPRITE, false); // sprite shader
 }
 
 // This is expecting a pointer to an array containing 4 wallVerts for a sprite
@@ -3918,18 +3847,6 @@ static void HWR_SplitSprite(gr_vissprite_t *spr)
 	//12/12/99: Hurdler: same comment as above (for md2)
 	//Hurdler: 25/04/2000: now support colormap in hardware mode
 	HWR_GetMappedPatch(gpatch, spr->colormap);
-
-	// Draw shadow BEFORE sprite
-	if (cv_shadow.value // Shadows enabled
-		&& (spr->mobj->flags & (MF_SCENERY|MF_SPAWNCEILING|MF_NOGRAVITY)) != (MF_SCENERY|MF_SPAWNCEILING|MF_NOGRAVITY) // Ceiling scenery have no shadow.
-		&& !(spr->mobj->flags2 & MF2_DEBRIS) // Debris have no corona or shadow.
-		&& (spr->mobj->z >= spr->mobj->floorz)) // Without this, your shadow shows on the floor, even after you die and fall through the ground.
-	{
-		////////////////////
-		// SHADOW SPRITE! //
-		////////////////////
-		HWR_DrawSpriteShadow(spr, gpatch, this_scale);
-	}
 
 	baseWallVerts[0].x = baseWallVerts[3].x = spr->x1;
 	baseWallVerts[2].x = baseWallVerts[1].x = spr->x2;
@@ -4235,18 +4152,6 @@ static void HWR_DrawSprite(gr_vissprite_t *spr)
 	//12/12/99: Hurdler: same comment as above (for md2)
 	//Hurdler: 25/04/2000: now support colormap in hardware mode
 	HWR_GetMappedPatch(gpatch, spr->colormap);
-
-	// Draw shadow BEFORE sprite
-	if (cv_shadow.value // Shadows enabled
-		&& (spr->mobj->flags & (MF_SCENERY|MF_SPAWNCEILING|MF_NOGRAVITY)) != (MF_SCENERY|MF_SPAWNCEILING|MF_NOGRAVITY) // Ceiling scenery have no shadow.
-		&& !(spr->mobj->flags2 & MF2_DEBRIS) // Debris have no corona or shadow.
-		&& (spr->mobj->z >= spr->mobj->floorz)) // Without this, your shadow shows on the floor, even after you die and fall through the ground.
-	{
-		////////////////////
-		// SHADOW SPRITE! //
-		////////////////////
-		HWR_DrawSpriteShadow(spr, gpatch, this_scale);
-	}
 
 	// Let dispoffset work first since this adjust each vertex
 	// ...nah
@@ -4740,6 +4645,33 @@ void HWR_DrawSprites(void)
 		if (spr->precip)
 			HWR_DrawPrecipitationSprite(spr);
 		else
+		{
+			if (spr->mobj && cv_shadow.value)
+			{
+				switch (spr->mobj->type)
+				{
+					case MT_PLAYER:
+					case MT_SMALLMACE:		case MT_BIGMACE:
+					case MT_PUMA:			case MT_BIGPUMA:
+					case MT_FALLINGROCK:
+					case MT_SMK_MOLE:		case MT_SMK_THWOMP:
+					//case MT_RANDOMITEM:
+					case MT_FLOATINGITEM:
+					case MT_BATTLEBUMPER:
+					case MT_BANANA:			case MT_BANANA_SHIELD:
+					//case MT_EGGMANITEM:	case MT_EGGMANITEM_SHIELD:
+					case MT_ORBINAUT:		case MT_ORBINAUT_SHIELD:
+					case MT_JAWZ:			case MT_JAWZ_DUD:		case MT_JAWZ_SHIELD:
+					case MT_SSMINE:			case MT_SSMINE_SHIELD:
+					case MT_BALLHOG:		case MT_SINK:
+					case MT_THUNDERSHIELD:	case MT_ROCKETSNEAKER:
+					case MT_SPB:
+						HWR_DrawDropShadow(spr->mobj);
+					default:
+						break;
+				}
+			}
+
 			if (spr->mobj && spr->mobj->skin && spr->mobj->sprite == SPR_PLAY)
 			{
 				md2_t *md2;
@@ -4766,6 +4698,7 @@ void HWR_DrawSprites(void)
 				else
 					HWR_DrawMD2(spr);
 			}
+		}
 	}
 }
 
@@ -5137,10 +5070,10 @@ void HWR_ProjectSprite(mobj_t *thing)
 
 			if (rotsprite != NULL)
 			{
-				spr_width = rotsprite->width << FRACBITS;
-				spr_height = rotsprite->height << FRACBITS;
-				spr_offset = rotsprite->leftoffset << FRACBITS;
-				spr_topoffset = rotsprite->topoffset << FRACBITS;
+				spr_width = SHORT(rotsprite->width) << FRACBITS;
+				spr_height = SHORT(rotsprite->height) << FRACBITS;
+				spr_offset = SHORT(rotsprite->leftoffset) << FRACBITS;
+				spr_topoffset = SHORT(rotsprite->topoffset) << FRACBITS;
 				spr_topoffset += FEETADJUST;
 				
 				// flip -> rotate, not rotate -> flip

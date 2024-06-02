@@ -133,6 +133,7 @@ extern void (*splatfunc)(void);
 extern void (*transtransfunc)(void);
 extern void (*twosmultipatchfunc)(void);
 extern void (*twosmultipatchtransfunc)(void);
+extern void (*dropshadowcolfunc)(void);
 
 // ----------------
 // screen variables

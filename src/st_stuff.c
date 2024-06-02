@@ -153,7 +153,6 @@ player_t *stplyr;
 UINT8 stplyrnum;
 
 // SRB2kart
-
 hudinfo_t hudinfo[NUMHUDITEMS] =
 {
 	{  34, 176}, // HUD_LIVESNAME
@@ -526,17 +525,7 @@ static void ST_drawDebugInfo(void)
 
 	if (cv_debug & DBG_DETAILED)
 	{
-		//V_DrawRightAlignedString(320, height - 104, V_MONOSPACE, va("SHIELD: %5x", stplyr->powers[pw_shield]));
 		V_DrawRightAlignedString(320, height - 96,  V_MONOSPACE, va("SCALE: %5d%%", (stplyr->mo->scale*100)/FRACUNIT));
-		//V_DrawRightAlignedString(320, height - 88,  V_MONOSPACE, va("DASH: %3d/%3d", stplyr->dashspeed>>FRACBITS, FixedMul(stplyr->maxdash,stplyr->mo->scale)>>FRACBITS));
-		//V_DrawRightAlignedString(320, height - 80,  V_MONOSPACE, va("AIR: %4d, %3d", stplyr->powers[pw_underwater], stplyr->powers[pw_spacetime]));
-
-		// Flags
-		//V_DrawRightAlignedString(304-64, height - 72, V_MONOSPACE, "Flags:");
-		//V_DrawString(304-60,             height - 72, (stplyr->jumping) ? V_GREENMAP : V_REDMAP, "JM");
-		//V_DrawString(304-40,             height - 72, (stplyr->pflags & PF_JUMPED) ? V_GREENMAP : V_REDMAP, "JD");
-		//V_DrawString(304-20,             height - 72, (stplyr->pflags & PF_SPINNING) ? V_GREENMAP : V_REDMAP, "SP");
-		//V_DrawString(304,                height - 72, (stplyr->pflags & PF_STARTDASH) ? V_GREENMAP : V_REDMAP, "ST");
 
 		V_DrawRightAlignedString(320, height - 64, V_MONOSPACE, va("CEILZ: %6d", stplyr->mo->ceilingz>>FRACBITS));
 		V_DrawRightAlignedString(320, height - 56, V_MONOSPACE, va("FLOORZ: %6d", stplyr->mo->floorz>>FRACBITS));
@@ -569,132 +558,6 @@ static void ST_drawDebugInfo(void)
 	if (cv_debug & DBG_MEMORY)
 		V_DrawRightAlignedString(320, height,     V_MONOSPACE, va("Heap used: %7sKB", sizeu1(Z_TagsUsage(0, INT32_MAX)>>10)));
 }
-
-/*
-static void ST_drawScore(void)
-{
-	// SCORE:
-	ST_DrawPatchFromHud(HUD_SCORE, sboscore);
-	if (objectplacing)
-	{
-		if (op_displayflags > UINT16_MAX)
-			ST_DrawOverlayPatch(SCX(hudinfo[HUD_SCORENUM].x-tallminus->width), SCY(hudinfo[HUD_SCORENUM].y), tallminus);
-		else
-			ST_DrawNumFromHud(HUD_SCORENUM, op_displayflags);
-	}
-	else
-		ST_DrawNumFromHud(HUD_SCORENUM, stplyr->score);
-}
-*/
-
-/*
-static void ST_drawTime(void)
-{
-	INT32 seconds, minutes, tictrn, tics;
-
-	// TIME:
-	ST_DrawPatchFromHudWS(HUD_TIME, sbotime);
-
-	if (objectplacing)
-	{
-		tics    = objectsdrawn;
-		seconds = objectsdrawn%100;
-		minutes = objectsdrawn/100;
-		tictrn  = 0;
-	}
-	else
-	{
-		tics = stplyr->realtime;
-		seconds = G_TicsToSeconds(tics);
-		minutes = G_TicsToMinutes(tics, true);
-		tictrn  = G_TicsToCentiseconds(tics);
-	}
-
-	if (cv_timetic.value == 1) // Tics only -- how simple is this?
-		ST_DrawNumFromHudWS(HUD_SECONDS, tics);
-	else
-	{
-		ST_DrawNumFromHudWS(HUD_MINUTES, minutes); // Minutes
-		ST_DrawPatchFromHudWS(HUD_TIMECOLON, sbocolon); // Colon
-		ST_DrawPadNumFromHudWS(HUD_SECONDS, seconds, 2); // Seconds
-
-		if (!splitscreen && (cv_timetic.value == 2 || modeattacking)) // there's not enough room for tics in splitscreen, don't even bother trying!
-		{
-			ST_DrawPatchFromHud(HUD_TIMETICCOLON, sboperiod); // Period
-			ST_DrawPadNumFromHud(HUD_TICS, tictrn, 2); // Tics
-		}
-	}
-}
-*/
-
-/*
-static inline void ST_drawRings(void) // SRB2kart - unused.
-{
-	INT32 ringnum = max(stplyr->health-1, 0);
-
-	ST_DrawPatchFromHudWS(HUD_RINGS, ((stplyr->health <= 1 && leveltime/5 & 1) ? rrings : sborings));
-
-	if (objectplacing)
-		ringnum = op_currentdoomednum;
-	else if (!useNightsSS && G_IsSpecialStage(gamemap))
-	{
-		INT32 i;
-		ringnum = 0;
-		for (i = 0; i < MAXPLAYERS; i++)
-			if (playeringame[i] && players[i].mo && players[i].mo->health > 1)
-				ringnum += players[i].mo->health - 1;
-	}
-
-	ST_DrawNumFromHudWS(HUD_RINGSNUM, ringnum);
-}
-*/
-
-/*
-static void ST_drawLives(void) // SRB2kart - unused.
-{
-	const INT32 v_splitflag = (splitscreen && stplyr == &players[displayplayers[0]] ? V_SPLITSCREEN : 0);
-
-	if (!stplyr->skincolor)
-		return; // Just joined a server, skin isn't loaded yet!
-
-	// face background
-	V_DrawSmallScaledPatch(hudinfo[HUD_LIVESPIC].x, hudinfo[HUD_LIVESPIC].y + (v_splitflag ? -12 : 0),
-		V_SNAPTOLEFT|V_SNAPTOBOTTOM|V_HUDTRANS|v_splitflag, livesback);
-
-	// face
-	if (stplyr->mo && stplyr->mo->color)
-	{
-		// skincolor face/super
-		UINT8 *colormap = R_GetTranslationColormap(stplyr->skin, stplyr->mo->color, GTC_CACHE);
-		patch_t *face = facerankprefix[stplyr->skin];
-		if (stplyr->powers[pw_super] || stplyr->pflags & PF_NIGHTSMODE)
-			face = facewantprefix[stplyr->skin];
-		V_DrawSmallMappedPatch(hudinfo[HUD_LIVESPIC].x, hudinfo[HUD_LIVESPIC].y + (v_splitflag ? -12 : 0),
-			V_SNAPTOLEFT|V_SNAPTOBOTTOM|V_HUDTRANS|v_splitflag,face, colormap);
-	}
-	else if (stplyr->skincolor)
-	{
-		// skincolor face
-		UINT8 *colormap = R_GetTranslationColormap(stplyr->skin, stplyr->skincolor, GTC_CACHE);
-		V_DrawSmallMappedPatch(hudinfo[HUD_LIVESPIC].x, hudinfo[HUD_LIVESPIC].y + (v_splitflag ? -12 : 0),
-			V_SNAPTOLEFT|V_SNAPTOBOTTOM|V_HUDTRANS|v_splitflag,facerankprefix[stplyr->skin], colormap);
-	}
-
-	// name
-	if (strlen(skins[stplyr->skin].hudname) > 8)
-		V_DrawThinString(hudinfo[HUD_LIVESNAME].x, hudinfo[HUD_LIVESNAME].y + (v_splitflag ? -12 : 0),
-			V_HUDTRANS|V_SNAPTOLEFT|V_SNAPTOBOTTOM|V_MONOSPACE|V_YELLOWMAP|v_splitflag, skins[stplyr->skin].hudname);
-	else
-		V_DrawString(hudinfo[HUD_LIVESNAME].x, hudinfo[HUD_LIVESNAME].y + (v_splitflag ? -12 : 0),
-			V_HUDTRANS|V_SNAPTOLEFT|V_SNAPTOBOTTOM|V_MONOSPACE|V_YELLOWMAP|v_splitflag, skins[stplyr->skin].hudname);
-	// x
-	V_DrawScaledPatch(hudinfo[HUD_LIVESX].x, hudinfo[HUD_LIVESX].y + (v_splitflag ? -4 : 0),
-		V_SNAPTOLEFT|V_SNAPTOBOTTOM|V_HUDTRANS|v_splitflag, stlivex);
-	// lives
-	V_DrawRightAlignedString(hudinfo[HUD_LIVESNUM].x, hudinfo[HUD_LIVESNUM].y + (v_splitflag ? -4 : 0),
-		V_SNAPTOLEFT|V_SNAPTOBOTTOM|V_HUDTRANS|v_splitflag, va("%d",stplyr->lives));
-}
-*/
 
 static void ST_drawLevelTitle(void)
 {

@@ -701,7 +701,7 @@ void P_Ticker(boolean run)
 	//P_RunShields();
 	P_RunOverlays();
 
-	P_RunShadows();
+	//P_RunShadows();
 
 	P_UpdateSpecials();
 	P_RespawnSpecials();
@@ -908,7 +908,7 @@ void P_PreTicker(INT32 frames)
 		LUAh_ThinkFrame();
 
 		P_RunOverlays();
-		P_RunShadows();
+		//P_RunShadows();
 
 		P_UpdateSpecials();
 		P_RespawnSpecials();

@@ -119,11 +119,14 @@ extern CV_PossibleValue_t Forceskin_cons_t[];
 // -----------
 typedef enum
 {
-	SC_NONE = 0,
-	SC_TOP = 1,
-	SC_BOTTOM = 2,
-	SC_VFLIP = 3,
-	SC_NOTVISIBLE = 4,
+	// actual cuts
+	SC_NONE       = 0,
+	SC_TOP        = 1,
+	SC_BOTTOM     = 1<<1,
+	SC_VFLIP 	  = 1<<2,
+	SC_ISSCALED   = 1<<3,
+	SC_SHADOW 	  = 1<<4,
+	SC_NOTVISIBLE = 1<<5,
 	SC_CUTMASK    = SC_TOP|SC_BOTTOM|SC_NOTVISIBLE,
 	SC_FLAGMASK   = ~SC_CUTMASK
 } spritecut_e;
@@ -154,6 +157,11 @@ typedef struct vissprite_s
 
 	angle_t centerangle; // for paper sprites
 
+	struct {
+		fixed_t tan; // The amount to shear the sprite vertically per row
+		INT32 offset; // The center of the shearing location offset from x1
+	} shear;
+
 	fixed_t texturemid;
 	patch_t *patch;
 
@@ -183,7 +191,6 @@ typedef struct vissprite_s
 
 	boolean precip;
 	boolean vflip; // Flip vertically
-	boolean isScaled;
 	INT32 dispoffset; // copy of info->dispoffset, affects ordering but not drawing
 } vissprite_t;
 

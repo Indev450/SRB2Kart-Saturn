@@ -49,6 +49,7 @@ void (*basespanfunc)(void); // default span func for color mode
 void (*transtransfunc)(void); // translucent translated column drawer
 void (*twosmultipatchfunc)(void); // for cols with transparent pixels
 void (*twosmultipatchtransfunc)(void); // for cols with transparent pixels AND translucency
+void (*dropshadowcolfunc)(void); // for cols with transparent pixels AND translucency
 
 // ------------------
 // global video state
@@ -124,6 +125,7 @@ void SCR_SetMode(void)
 		walldrawerfunc = R_DrawWallColumn_8;
 		twosmultipatchfunc = R_Draw2sMultiPatchColumn_8;
 		twosmultipatchtransfunc = R_Draw2sMultiPatchTranslucentColumn_8;
+		dropshadowcolfunc = R_DrawDropShadowColumn_8;
 	}
 /*	else if (vid.bpp > 1)
 	{
