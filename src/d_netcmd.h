@@ -205,6 +205,8 @@ extern consvar_t cv_showtrackaddon;
 
 extern consvar_t cv_showspecstuff;
 
+extern consvar_t cv_betainterscreen;
+
 typedef enum
 {
 	SKINMENUTYPE_SCROLL = 0,
