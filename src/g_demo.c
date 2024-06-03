@@ -88,6 +88,8 @@ static UINT8 *metalbuffer = NULL;
 static UINT8 *metal_p;
 static UINT16 metalversion;
 
+consvar_t cv_resyncdemo = {"resyncdemo", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 // extra data stuff (events registered this frame while recording)
 static struct {
 	UINT8 flags; // EZT flags
@@ -1102,11 +1104,14 @@ void G_ConsGhostTic(INT32 playernum)
 					CONS_Alert(CONS_WARNING, "Demo playback has desynced (player %s)!\n", player_names[playernum]);
 				demosynced = false;
 
-				P_UnsetThingPosition(testmo);
-				testmo->x = oldghost[playernum].x;
-				testmo->y = oldghost[playernum].y;
-				P_SetThingPosition(testmo);
-				testmo->z = oldghost[playernum].z;
+				if (cv_resyncdemo.value)
+				{
+					P_UnsetThingPosition(testmo);
+					testmo->x = oldghost[playernum].x;
+					testmo->y = oldghost[playernum].y;
+					P_SetThingPosition(testmo);
+					testmo->z = oldghost[playernum].z;
+				}
 
 				if (abs(testmo->z - testmo->floorz) < 4*FRACUNIT)
 					testmo->z = testmo->floorz; // Sync players to the ground when they're likely supposed to be there...
