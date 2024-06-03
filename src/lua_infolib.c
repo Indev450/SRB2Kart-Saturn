@@ -26,32 +26,6 @@
 boolean LUA_CallAction(enum actionnum actionnum, mobj_t *actor);
 state_t *astate;
 
-enum sfxinfo_read {
-	sfxinfor_name = 0,
-	sfxinfor_singular,
-	sfxinfor_priority,
-	sfxinfor_flags, // "pitch"
-	sfxinfor_skinsound
-};
-const char *const sfxinfo_ropt[] = {
-	"name",
-	"singular",
-	"priority",
-	"flags",
-	"skinsound",
-	NULL};
-
-enum sfxinfo_write {
-	sfxinfow_singular = 0,
-	sfxinfow_priority,
-	sfxinfow_flags // "pitch"
-};
-const char *const sfxinfo_wopt[] = {
-	"singular",
-	"priority",
-	"flags",
-	NULL};
-
 boolean actionsoverridden[NUMACTIONS] = {false};
 
 //
@@ -103,7 +77,7 @@ static void A_Lua(mobj_t *actor)
 {
 	boolean found = false;
 	I_Assert(actor != NULL);
-	
+
 	lua_settop(gL, 0); // Just in case...
 	lua_pushcfunction(gL, LUA_GetErrorMessage);
 
@@ -326,49 +300,93 @@ boolean LUA_CallAction(enum actionnum actionnum, mobj_t *actor)
 	return true; // action successfully called.
 }
 
+enum state_e {
+	state_sprite = 0,
+	state_frame,
+	state_tics,
+	state_action,
+	state_var1,
+	state_var2,
+	state_nextstate,
+};
+
+const char *const state_opt[] = {
+	"sprite",
+	"frame",
+	"tics",
+	"action",
+	"var1",
+	"var2",
+	"nextstate",
+	NULL
+};
+
+static int state_fields_ref = LUA_NOREF;
+
 // state_t *, field -> number
 static int state_get(lua_State *L)
 {
 	state_t *st = *((state_t **)luaL_checkudata(L, 1, META_STATE));
-	const char *field = luaL_checkstring(L, 2);
+	enum state_e field = Lua_optoption(L, 2, -1, state_fields_ref);
 	lua_Integer number;
 
-	if (fastcmp(field,"sprite"))
-		number = st->sprite;
-	else if (fastcmp(field,"frame"))
-		number = st->frame;
-	else if (fastcmp(field,"tics"))
-		number = st->tics;
-	else if (fastcmp(field,"action")) {
-		const char *name;
-		if (!st->action.acp1) // Action is NULL.
-			return 0; // return nil.
-		if (st->action.acp1 == (actionf_p1)A_Lua) { // This is a Lua function?
-			lua_getfield(L, LUA_REGISTRYINDEX, LREG_STATEACTION);
-			I_Assert(lua_istable(L, -1));
-			lua_pushlightuserdata(L, st); // Push the state pointer and
-			lua_rawget(L, -2); // use it to get the actual Lua function.
-			lua_remove(L, -2); // pop LREG_STATEACTION
-			return 1; // Return the Lua function.
+	switch (field)
+	{
+		case state_sprite:
+			number = st->sprite;
+		break;
+
+		case state_frame:
+			number = st->frame;
+		break;
+
+		case state_tics:
+			number = st->tics;
+		break;
+
+		case state_action:
+		{
+			const char *name;
+			if (!st->action.acp1) // Action is NULL.
+				return 0; // return nil.
+			if (st->action.acp1 == (actionf_p1)A_Lua) { // This is a Lua function?
+				lua_getfield(L, LUA_REGISTRYINDEX, LREG_STATEACTION);
+				I_Assert(lua_istable(L, -1));
+				lua_pushlightuserdata(L, st); // Push the state pointer and
+				lua_rawget(L, -2); // use it to get the actual Lua function.
+				lua_remove(L, -2); // pop LREG_STATEACTION
+				return 1; // Return the Lua function.
+			}
+			name = LUA_GetActionName(&st->action); // find a hardcoded function name
+			if (!name) // If it's not a hardcoded function and it's not a Lua function...
+				return 0; // Just what is this??
+			// get the function from the global
+			// because the metatable will trigger.
+			lua_getglobal(L, name); // actually gets from LREG_ACTIONS if applicable, and pushes a new C closure if not.
+			lua_pushstring(L, name); // push the name we found.
+			return 2; // return both the function and its name, in case somebody wanted to do a comparison by name or something?
 		}
-		name = LUA_GetActionName(&st->action); // find a hardcoded function name
-		if (!name) // If it's not a hardcoded function and it's not a Lua function...
-			return 0; // Just what is this??
-		// get the function from the global
-		// because the metatable will trigger.
-		lua_getglobal(L, name); // actually gets from LREG_ACTIONS if applicable, and pushes a new C closure if not.
-		lua_pushstring(L, name); // push the name we found.
-		return 2; // return both the function and its name, in case somebody wanted to do a comparison by name or something?
-	} else if (fastcmp(field,"var1"))
-		number = st->var1;
-	else if (fastcmp(field,"var2"))
-		number = st->var2;
-	else if (fastcmp(field,"nextstate"))
-		number = st->nextstate;
-	else if (devparm)
-		return luaL_error(L, LUA_QL("state_t") " has no field named " LUA_QS, field);
-	else
-		return 0;
+		break;
+
+		case state_var1:
+			number = st->var1;
+		break;
+
+		case state_var2:
+			number = st->var2;
+		break;
+
+		case state_nextstate:
+			number = st->nextstate;
+		break;
+
+		default:
+		{
+			if (devparm)
+				return luaL_error(L, LUA_QL("state_t") " has no field named " LUA_QS, field);
+			return 0;
+		}
+	}
 
 	lua_pushinteger(L, number);
 	return 1;
@@ -378,7 +396,7 @@ static int state_get(lua_State *L)
 static int state_set(lua_State *L)
 {
 	state_t *st = *((state_t **)luaL_checkudata(L, 1, META_STATE));
-	const char *field = luaL_checkstring(L, 2);
+	enum state_e field = Lua_optoption(L, 2, -1, state_fields_ref);
 	lua_Integer value;
 
 	if (hud_running)
@@ -386,16 +404,24 @@ static int state_set(lua_State *L)
 	if (hook_cmd_running)
 		return luaL_error(L, "Do not alter states in BuildCMD code!");
 
-	if (fastcmp(field,"sprite")) {
+	switch (field)
+	{
+	case state_sprite:
 		value = luaL_checknumber(L, 3);
 		if (value < SPR_NULL || value >= NUMSPRITES)
 			return luaL_error(L, "sprite number %d is invalid.", value);
 		st->sprite = (spritenum_t)value;
-	} else if (fastcmp(field,"frame"))
+	break;
+
+	case state_frame:
 		st->frame = (UINT32)luaL_checknumber(L, 3);
-	else if (fastcmp(field,"tics"))
+	break;
+
+	case state_tics:
 		st->tics = (INT32)luaL_checknumber(L, 3);
-	else if (fastcmp(field,"action")) {
+	break;
+
+	case state_action:
 		switch(lua_type(L, 3))
 		{
 		case LUA_TNIL: // Null? Set the action to nothing, then.
@@ -416,17 +442,26 @@ static int state_set(lua_State *L)
 		default: // ?!
 			return luaL_typerror(L, 3, "function");
 		}
-	} else if (fastcmp(field,"var1"))
+	break;
+
+	case state_var1:
 		st->var1 = (INT32)luaL_checknumber(L, 3);
-	else if (fastcmp(field,"var2"))
+	break;
+
+	case state_var2:
 		st->var2 = (INT32)luaL_checknumber(L, 3);
-	else if (fastcmp(field,"nextstate")) {
+	break;
+
+	case state_nextstate:
 		value = luaL_checkinteger(L, 3);
 		if (value < S_NULL || value >= NUMSTATES)
 			return luaL_error(L, "nextstate number %d is invalid.", value);
 		st->nextstate = (statenum_t)value;
-	} else
+	break;
+
+	default:
 		return luaL_error(L, LUA_QL("state_t") " has no field named " LUA_QS, field);
+	}
 
 	return 0;
 }
@@ -623,7 +658,7 @@ static int mobjinfo_fields_ref = LUA_NOREF;
 static int mobjinfo_get(lua_State *L)
 {
 	mobjinfo_t *info = *((mobjinfo_t **)luaL_checkudata(L, 1, META_MOBJINFO));
-	enum mobjinfo_e field = luaL_checkoption(L, 2, mobjinfo_opt[0], mobjinfo_opt);
+	enum mobjinfo_e field = Lua_optoption(L, 2, -1, mobjinfo_fields_ref);
 
 	I_Assert(info != NULL);
 	I_Assert(info >= mobjinfo);
@@ -859,6 +894,25 @@ static int lib_getSfxInfo(lua_State *L)
 	return 1;
 }
 
+enum sfxinfo_e {
+	sfxinfo_name = 0,
+	sfxinfo_singular,
+	sfxinfo_priority,
+	sfxinfo_flags, // "pitch"
+	sfxinfo_skinsound
+};
+
+const char *const sfxinfo_opt[] = {
+	"name",
+	"singular",
+	"priority",
+	"flags",
+	"skinsound",
+	NULL
+};
+
+static int sfxinfo_fields_ref = LUA_NOREF;
+
 // stack: dummy, S_sfx[] table index, table of values to set.
 static int lib_setSfxInfo(lua_State *L)
 {
@@ -882,22 +936,44 @@ static int lib_setSfxInfo(lua_State *L)
 
 	lua_pushnil(L);
 	while (lua_next(L, 1)) {
-		enum sfxinfo_write i;
+		enum sfxinfo_e i;
 
 		if (lua_isnumber(L, 2))
-			i = lua_tointeger(L, 2) - 1; // lua is one based, this enum is zero based.
+		{
+			int j = lua_tointeger(L, 2) - 1;
+
+			// Read and Write enums were combined, need to do this switch now
+			switch (j)
+			{
+				case 1:
+					i = sfxinfo_singular;
+				break;
+
+				case 2:
+					i = sfxinfo_priority;
+				break;
+
+				case 3:
+					i = sfxinfo_flags;
+				break;
+
+				default:
+					i = -1;
+				break;
+			}
+		}
 		else
-			i = luaL_checkoption(L, 2, NULL, sfxinfo_wopt);
+			i = Lua_optoption(L, 2, -1, sfxinfo_fields_ref);
 
 		switch(i)
 		{
-		case sfxinfow_singular:
+		case sfxinfo_singular:
 			info->singularity = luaL_checkboolean(L, 3);
 			break;
-		case sfxinfow_priority:
+		case sfxinfo_priority:
 			info->priority = (INT32)luaL_checkinteger(L, 3);
 			break;
-		case sfxinfow_flags:
+		case sfxinfo_flags:
 			info->pitch = (INT32)luaL_checkinteger(L, 3);
 			break;
 		default:
@@ -919,29 +995,29 @@ static int lib_sfxlen(lua_State *L)
 static int sfxinfo_get(lua_State *L)
 {
 	sfxinfo_t *sfx = *((sfxinfo_t **)luaL_checkudata(L, 1, META_SFXINFO));
-	enum sfxinfo_read field = luaL_checkoption(L, 2, NULL, sfxinfo_ropt);
+	enum sfxinfo_e field = Lua_optoption(L, 2, -1, sfxinfo_fields_ref);
 
 	I_Assert(sfx != NULL);
 
 	switch (field)
 	{
-	case sfxinfor_name:
+	case sfxinfo_name:
 		lua_pushstring(L, sfx->name);
 		return 1;
-	case sfxinfor_singular:
+	case sfxinfo_singular:
 		lua_pushboolean(L, sfx->singularity);
 		return 1;
-	case sfxinfor_priority:
+	case sfxinfo_priority:
 		lua_pushinteger(L, sfx->priority);
 		return 1;
-	case sfxinfor_flags:
+	case sfxinfo_flags:
 		lua_pushinteger(L, sfx->pitch);
 		return 1;
-	case sfxinfor_skinsound:
+	case sfxinfo_skinsound:
 		lua_pushinteger(L, sfx->skinsound);
 		return 1;
 	default:
-		return luaL_error(L, "impossible error");
+		return luaL_error(L, LUA_QL("sfxinfo_t") " has no field named " LUA_QS, lua_tostring(L, 2));
 	}
 	return 0;
 }
@@ -950,7 +1026,7 @@ static int sfxinfo_get(lua_State *L)
 static int sfxinfo_set(lua_State *L)
 {
 	sfxinfo_t *sfx = *((sfxinfo_t **)luaL_checkudata(L, 1, META_SFXINFO));
-	enum sfxinfo_write field = luaL_checkoption(L, 2, NULL, sfxinfo_wopt);
+	int field = Lua_optoption(L, 2, -1, sfxinfo_fields_ref);
 
 	if (hud_running)
 		return luaL_error(L, "Do not alter S_sfx in HUD rendering code!");
@@ -965,17 +1041,20 @@ static int sfxinfo_set(lua_State *L)
 
 	switch (field)
 	{
-	case sfxinfow_singular:
+	case sfxinfo_singular:
 		sfx->singularity = luaL_checkboolean(L, 1);
 		break;
-	case sfxinfow_priority:
+	case sfxinfo_priority:
 		sfx->priority = luaL_checkinteger(L, 1);
 		break;
-	case sfxinfow_flags:
+	case sfxinfo_flags:
 		sfx->pitch = luaL_checkinteger(L, 1);
 		break;
 	default:
-		return luaL_error(L, "impossible error");
+		if (field == -1)
+			return luaL_error(L, LUA_QL("sfxinfo_t") " has no field named " LUA_QS, lua_tostring(L, 2));
+		else
+			return luaL_error(L, LUA_QL("sfxinfo_t") " field " LUA_QS " is read-only", lua_tostring(L, 2));
 	}
 	return 0;
 }
@@ -1017,6 +1096,8 @@ int LUA_InfoLib(lua_State *L)
 		lua_setfield(L, -2, "__len");
 	lua_pop(L, 1);
 
+	state_fields_ref = Lua_CreateFieldTable(L, state_opt);
+
 	luaL_newmetatable(L, META_MOBJINFO);
 		lua_pushcfunction(L, mobjinfo_get);
 		lua_setfield(L, -2, "__index");
@@ -1040,6 +1121,8 @@ int LUA_InfoLib(lua_State *L)
 		lua_pushcfunction(L, sfxinfo_num);
 		lua_setfield(L, -2, "__len");
 	lua_pop(L, 1);
+
+	sfxinfo_fields_ref = Lua_CreateFieldTable(L, sfxinfo_opt);
 
 	lua_newuserdata(L, 0);
 		lua_createtable(L, 0, 2);
