@@ -144,6 +144,26 @@
 		"gl_FragColor = final_color;\n" \
 	"}\n" \
 	"#endif\0"
+	
+#define GLSL_SOFTWARE_FRAGMENT_SHADER_NOPAL \
+	"uniform sampler2D tex;\n" \
+	"uniform vec4 poly_color;\n" \
+	"uniform vec4 tint_color;\n" \
+	"uniform vec4 fade_color;\n" \
+	"uniform float lighting;\n" \
+	"uniform float fade_start;\n" \
+	"uniform float fade_end;\n" \
+	GLSL_DOOM_COLORMAP \
+	GLSL_DOOM_LIGHT_EQUATION \
+	"void main(void) {\n" \
+		"vec4 texel = texture2D(tex, gl_TexCoord[0].st);\n" \
+		"vec4 base_color = texel * poly_color;\n" \
+		"vec4 final_color = base_color;\n" \
+		GLSL_SOFTWARE_TINT_EQUATION \
+		GLSL_SOFTWARE_FADE_EQUATION \
+		"final_color.a = texel.a * poly_color.a;\n" \
+		"gl_FragColor = final_color;\n" \
+	"}\n" \
 
 // hand tuned adjustments for light level calculation
 #define GLSL_FLOOR_FUDGES \
@@ -161,6 +181,10 @@
 #define GLSL_WALL_FRAGMENT_SHADER \
 	GLSL_WALL_FUDGES \
 	GLSL_SOFTWARE_FRAGMENT_SHADER
+	
+#define GLSL_SHADOW_FRAGMENT_SHADER \
+	GLSL_FLOOR_FUDGES \
+	GLSL_SOFTWARE_FRAGMENT_SHADER_NOPAL
 
 //
 // Water surface shader

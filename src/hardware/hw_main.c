@@ -3647,6 +3647,7 @@ static void HWR_DrawSpriteShadow(gr_vissprite_t *spr, GLPatch_t *gpatch, float t
 {
 	FOutVector swallVerts[4];
 	FSurfaceInfo sSurf;
+	FBITFIELD blendmode = 0;
 	fixed_t floorheight, mobjfloor;
 	pslope_t *floorslope;
 	fixed_t slopez;
@@ -3802,13 +3803,14 @@ static void HWR_DrawSpriteShadow(gr_vissprite_t *spr, GLPatch_t *gpatch, float t
 	if (sSurf.PolyColor.s.alpha > floorheight/4)
 	{
 		sSurf.PolyColor.s.alpha = (UINT8)(sSurf.PolyColor.s.alpha - floorheight/4);
-		
+
 		if (HWR_UseShader())
 		{
-			shader = SHADER_FLOOR;	// floor shader
+			shader = SHADER_SHADOW;
+			blendmode |= PF_ColorMapped;
 		}
 
-		HWR_ProcessPolygon(&sSurf, swallVerts, 4, PF_Translucent|PF_Modulated, shader, false);
+		HWR_ProcessPolygon(&sSurf, swallVerts, 4, blendmode|PF_Translucent|PF_Modulated, shader, false);
 	}
 }
 
