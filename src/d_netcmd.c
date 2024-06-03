@@ -1048,7 +1048,9 @@ void D_RegisterClientCommands(void)
 		CV_RegisterVar(&cv_verticallook[i]);
 	}
 
+	CV_RegisterVar(&cv_resyncdemo);
 	CV_RegisterVar(&cv_demodateformat);
+
 	CV_RegisterVar(&cv_showspecstuff);
 
 	// ingame object placing
