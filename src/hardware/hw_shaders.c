@@ -29,6 +29,9 @@ static struct {
 	// Floor shader
 	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_FLOOR_FRAGMENT_SHADER},
 
+	// Shadow shader
+	{GLSL_SPRITECLIP_HACK_VERTEX_SHADER, GLSL_SHADOW_FRAGMENT_SHADER},
+
 	// Wall shader
 	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_WALL_FRAGMENT_SHADER},
 
@@ -425,6 +428,7 @@ static inline UINT16 HWR_FindShaderDefs(UINT16 wadnum)
 customshaderxlat_t shaderxlat[] =
 {
 	{"Flat", SHADER_FLOOR},
+	{"Shadow", SHADER_SHADOW},
 	{"WallTexture", SHADER_WALL},
 	{"Sprite", SHADER_SPRITE},
 	{"SpriteClipHack", SHADER_SPRITECLIPHACK},
