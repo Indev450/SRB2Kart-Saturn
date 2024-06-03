@@ -180,7 +180,6 @@ typedef struct vissprite_s
 	fixed_t spritexoffset, spriteyoffset;
 
 	INT16 *clipbot, *cliptop;
-
 	boolean precip;
 	boolean vflip; // Flip vertically
 	boolean isScaled;

@@ -3648,6 +3648,7 @@ static void HWR_DrawSpriteShadow(gr_vissprite_t *spr, GLPatch_t *gpatch, float t
 {
 	FOutVector swallVerts[4];
 	FSurfaceInfo sSurf;
+	FBITFIELD blendmode = 0;
 	fixed_t floorheight, mobjfloor;
 	pslope_t *floorslope;
 	fixed_t slopez;
@@ -3806,10 +3807,11 @@ static void HWR_DrawSpriteShadow(gr_vissprite_t *spr, GLPatch_t *gpatch, float t
 
 		if (HWR_UseShader())
 		{
-			shader = SHADER_FLOOR;	// floor shader
+			shader = SHADER_SHADOW;
+			blendmode |= PF_ColorMapped;
 		}
 
-		HWR_ProcessPolygon(&sSurf, swallVerts, 4, PF_Translucent|PF_Modulated, shader, false);
+		HWR_ProcessPolygon(&sSurf, swallVerts, 4, blendmode|PF_Translucent|PF_Modulated, shader, false);
 	}
 }
 
@@ -3968,20 +3970,19 @@ static void HWR_SplitSprite(gr_vissprite_t *spr)
 		baseWallVerts[0].t = baseWallVerts[1].t = gpatch->max_t;
 	}
 
+	// if it has a dispoffset, push it a little towards the camera
+	if (spr->dispoffset)
+	{
+		float co = -gr_viewcos*(0.05f*spr->dispoffset);
+		float si = -gr_viewsin*(0.05f*spr->dispoffset);
+		baseWallVerts[0].z = baseWallVerts[3].z = baseWallVerts[0].z+si;
+		baseWallVerts[1].z = baseWallVerts[2].z = baseWallVerts[1].z+si;
+		baseWallVerts[0].x = baseWallVerts[3].x = baseWallVerts[0].x+co;
+		baseWallVerts[1].x = baseWallVerts[2].x = baseWallVerts[1].x+co;
+	}
+
 	// Let dispoffset work first since this adjust each vertex
 	HWR_RotateSpritePolyToAim(spr, baseWallVerts, false);
-
-	// push it toward the camera to mitigate floor-clipping sprites
-	{
-		float sprdist = sqrtf((spr->x1 - gr_viewx)*(spr->x1 - gr_viewx) + (spr->z1 - gr_viewy)*(spr->z1 - gr_viewy) + (spr->ty - gr_viewz)*(spr->ty - gr_viewz));
-		float distfact = ((2.0f*spr->dispoffset) + 20.0f) / sprdist;
-		for (i = 0; i < 4; i++)
-		{
-			baseWallVerts[i].x += (gr_viewx - baseWallVerts[i].x)*distfact;
-			baseWallVerts[i].z += (gr_viewy - baseWallVerts[i].z)*distfact;
-			baseWallVerts[i].y += (gr_viewz - baseWallVerts[i].y)*distfact;
-		}
-	}
 
 	realtop = top = baseWallVerts[3].y;
 	realbot = bot = baseWallVerts[0].y;
@@ -4249,22 +4250,19 @@ static void HWR_DrawSprite(gr_vissprite_t *spr)
 		HWR_DrawSpriteShadow(spr, gpatch, this_scale);
 	}
 
-	// Let dispoffset work first since this adjust each vertex
-	// ...nah
-	HWR_RotateSpritePolyToAim(spr, wallVerts, false);
-
-	// push it toward the camera to mitigate floor-clipping sprites
+	// if it has a dispoffset, push it a little towards the camera
+	if (spr->dispoffset)
 	{
-		float sprdist = sqrtf((spr->x1 - gr_viewx)*(spr->x1 - gr_viewx) + (spr->z1 - gr_viewy)*(spr->z1 - gr_viewy) + (spr->ty - gr_viewz)*(spr->ty - gr_viewz));
-		float distfact = ((2.0f*spr->dispoffset) + 20.0f) / sprdist;
-		size_t i;
-		for (i = 0; i < 4; i++)
-		{
-			wallVerts[i].x += (gr_viewx - wallVerts[i].x)*distfact;
-			wallVerts[i].z += (gr_viewy - wallVerts[i].z)*distfact;
-			wallVerts[i].y += (gr_viewz - wallVerts[i].y)*distfact;
-		}
+		float co = -gr_viewcos*(0.05f*spr->dispoffset);
+		float si = -gr_viewsin*(0.05f*spr->dispoffset);
+		wallVerts[0].z = wallVerts[3].z = wallVerts[0].z+si;
+		wallVerts[1].z = wallVerts[2].z = wallVerts[1].z+si;
+		wallVerts[0].x = wallVerts[3].x = wallVerts[0].x+co;
+		wallVerts[1].x = wallVerts[2].x = wallVerts[1].x+co;
 	}
+
+	// Let dispoffset work first since this adjust each vertex
+	HWR_RotateSpritePolyToAim(spr, wallVerts, false);
 
 	// This needs to be AFTER the shadows so that the regular sprites aren't drawn completely black.
 	// sprite lighting by modulating the RGB components
@@ -6235,12 +6233,7 @@ void HWR_EndScreenWipe(void)
 
 void HWR_DrawIntermissionBG(void)
 {
-	patch_t *bgpatch = W_CachePatchName("SRB2BACK", PU_CACHE);
-
-	if (cv_grscreentextures.value == 2)
-		HWD.pfnDrawScreenTexture(HWD_SCREENTEXTURE_GENERIC1, NULL, 0);
-	else
-		V_DrawPatchFill(bgpatch); // use the neato kart bg for intermission on disabled screen textures
+	HWD.pfnDrawScreenTexture(HWD_SCREENTEXTURE_GENERIC1, NULL, 0);
 }
 
 void HWR_DoWipe(UINT8 wipenum, UINT8 scrnnum)
