@@ -3705,13 +3705,13 @@ static void HWR_DrawDropShadow(mobj_t *thing, fixed_t scale)
 		for (i = 0; i < 4; i++)
 		{
 			slopez = P_GetZAt(groundslope, FLOAT_TO_FIXED(shadowVerts[i].x), FLOAT_TO_FIXED(shadowVerts[i].z));
-			shadowVerts[i].y = FIXED_TO_FLOAT(slopez) + 5 + flip * 0.05f;
+			shadowVerts[i].y = FIXED_TO_FLOAT(slopez) + 3 + flip * 0.05f;
 		}
 	}
 	else
 	{
 		for (i = 0; i < 4; i++)
-			shadowVerts[i].y = FIXED_TO_FLOAT(groundz) + 5 + flip * 0.05f;
+			shadowVerts[i].y = FIXED_TO_FLOAT(groundz) + 3 + flip * 0.05f;
 	}
 
 	shadowVerts[0].s = shadowVerts[3].s = 0;
