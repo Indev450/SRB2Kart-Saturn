@@ -299,8 +299,7 @@ static boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef,
 			spritecachedinfo[numspritelumps].height = SHORT(patch.height)<<FRACBITS;
 
 			//BP: we cannot use special tric in hardware mode because feet in ground caused by z-buffer
-			if (rendermode != render_none) // not for psprite
-				spritecachedinfo[numspritelumps].topoffset += 4<<FRACBITS;
+			spritecachedinfo[numspritelumps].topoffset += FEETADJUST;
 
 			// Being selective with this causes bad things. :( Like the special stage tokens breaking apart.
 			/*if (rendermode != render_none // not for psprite
