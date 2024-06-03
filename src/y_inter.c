@@ -100,10 +100,10 @@ static y_data data;
 static patch_t *bgpatch = NULL;     // INTERSCR
 static patch_t *widebgpatch = NULL; // INTERSCW
 static patch_t *bgtile = NULL;      // SPECTILE/SRB2BACK
-static patch_t *interpic = NULL;    // custom picture defined in map header
-static boolean usetile;
+//static patch_t *interpic = NULL;    // custom picture defined in map header
+//static boolean usetile;
 boolean usebuffer = false;
-static boolean useinterpic;
+//static boolean useinterpic;
 static INT32 timer;
 
 static INT32 intertic;
@@ -392,9 +392,16 @@ void Y_IntermissionDrawer(void)
 	if (!usebuffer)
 		V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 31);
 
-	if (useinterpic)
-		V_DrawScaledPatch(0, 0, 0, interpic);
-	else if (!usetile)
+	if (cv_betainterscreen.value 
+#ifdef HWRENDER	
+	|| (rendermode == render_opengl && cv_grscreentextures.value != 2) // use the neato kart bg for intermission on disabled screen textures
+#endif
+	)
+		V_DrawPatchFill(bgtile); // use the neato kart bg for intermission on disabled screen textures
+	//else if (useinterpic)
+		//V_DrawScaledPatch(0, 0, 0, interpic);
+	//else if (!usetile)
+	else
 	{
 		if (rendermode == render_soft && usebuffer)
 			VID_BlitLinearScreen(screens[1], screens[0], vid.width*vid.bpp, vid.height, vid.width*vid.bpp, vid.rowbytes);
@@ -412,8 +419,8 @@ void Y_IntermissionDrawer(void)
 				V_DrawScaledPatch(0, 0, 0, bgpatch);
 		}
 	}
-	else if (bgtile)
-		V_DrawPatchFill(bgtile);
+	//else if (bgtile)
+		//V_DrawPatchFill(bgtile);
 
 	if (usebuffer) // Fade everything out
 		V_DrawFadeScreen(0xFF00, 22);
@@ -937,8 +944,8 @@ void Y_StartIntermission(void)
 
 	//if (intertype == int_race || intertype == int_match)
 	{
-		//bgtile = W_CachePatchName("SRB2BACK", PU_STATIC);
-		usetile = useinterpic = false;
+		bgtile = W_CachePatchName("SRB2BACK", PU_STATIC);
+		//usetile = useinterpic = false;
 		usebuffer = true;
 	}
 
@@ -988,7 +995,7 @@ static void Y_UnloadData(void)
 	UNLOAD(bgpatch);
 	UNLOAD(widebgpatch);
 	UNLOAD(bgtile);
-	UNLOAD(interpic);
+	//UNLOAD(interpic);
 }
 
 // SRB2Kart: Voting!
