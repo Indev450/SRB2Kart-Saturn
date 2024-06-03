@@ -1950,7 +1950,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	if (thing->subsector->sector->numlights)
 		R_SplitSprite(vis, thing);
 
-	if (cv_shadow.value)
+	if (cv_dropshadow.value)
 	{
 		if (oldthing->haveshadow)
 			R_ProjectDropShadow(oldthing, vis, basetx, basetz, oldthing->shadowscale);

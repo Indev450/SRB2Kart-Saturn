@@ -3613,6 +3613,208 @@ static gr_vissprite_t *HWR_NewVisSprite(void)
 	return HWR_GetVisSprite(gr_visspritecount++);
 }
 
+// Finds a floor through which light does not pass.
+static fixed_t HWR_OpaqueFloorAtPos(fixed_t x, fixed_t y, fixed_t z, fixed_t height)
+{
+	const sector_t *sec = R_PointInSubsector(x, y)->sector;
+	fixed_t floorz = sec->floorheight;
+
+	if (sec->ffloors)
+	{
+		ffloor_t *rover;
+		fixed_t delta1, delta2;
+		const fixed_t thingtop = z + height;
+
+		for (rover = sec->ffloors; rover; rover = rover->next)
+		{
+			if (!(rover->flags & FF_EXISTS)
+			|| !(rover->flags & FF_RENDERPLANES)
+			|| rover->flags & FF_TRANSLUCENT
+			|| rover->flags & FF_FOG
+			|| rover->flags & FF_INVERTPLANES)
+				continue;
+
+			delta1 = z - (*rover->bottomheight + ((*rover->topheight - *rover->bottomheight)/2));
+			delta2 = thingtop - (*rover->bottomheight + ((*rover->topheight - *rover->bottomheight)/2));
+			if (*rover->topheight > floorz && abs(delta1) < abs(delta2))
+				floorz = *rover->topheight;
+		}
+	}
+
+	return floorz;
+}
+
+static void HWR_DrawSpriteShadow(gr_vissprite_t *spr, GLPatch_t *gpatch, float this_scale)
+{
+	FOutVector swallVerts[4];
+	FSurfaceInfo sSurf;
+	fixed_t floorheight, mobjfloor;
+	pslope_t *floorslope;
+	fixed_t slopez;
+	float offset = 0;
+	
+	INT32 shader = SHADER_NONE;
+	
+	R_GetShadowZ(spr->mobj, &floorslope);
+
+	mobjfloor = HWR_OpaqueFloorAtPos(
+		spr->mobj->x, spr->mobj->y,
+		spr->mobj->z, spr->mobj->height);
+
+	if (cv_shadowoffs.value)
+	{
+		angle_t shadowdir;
+
+		// Set direction
+		if (splitscreen && stplyr == &players[displayplayers[1]])
+			shadowdir = localangle[1] + FixedAngle(cv_cam2_rotate.value);
+		else if (splitscreen > 1 && stplyr == &players[displayplayers[2]])
+			shadowdir = localangle[2] + FixedAngle(cv_cam3_rotate.value);
+		else if (splitscreen > 2 && stplyr == &players[displayplayers[3]])
+			shadowdir = localangle[3] + FixedAngle(cv_cam4_rotate.value);
+		else
+			shadowdir = localangle[0] + FixedAngle(cv_cam_rotate.value);
+
+		// Find floorheight
+		floorheight = HWR_OpaqueFloorAtPos(
+			spr->mobj->x + P_ReturnThrustX(spr->mobj, shadowdir, spr->mobj->z - mobjfloor),
+			spr->mobj->y + P_ReturnThrustY(spr->mobj, shadowdir, spr->mobj->z - mobjfloor),
+			spr->mobj->z, spr->mobj->height);
+
+		// The shadow is falling ABOVE it's mobj?
+		// Don't draw it, then!
+		if (spr->mobj->z < floorheight)
+			return;
+		else
+		{
+			fixed_t floorz;
+			floorz = HWR_OpaqueFloorAtPos(
+				spr->mobj->x + P_ReturnThrustX(spr->mobj, shadowdir, spr->mobj->z - floorheight),
+				spr->mobj->y + P_ReturnThrustY(spr->mobj, shadowdir, spr->mobj->z - floorheight),
+				spr->mobj->z, spr->mobj->height);
+			// The shadow would be falling on a wall? Don't draw it, then.
+			// Would draw midair otherwise.
+			if (floorz < floorheight)
+				return;
+		}
+
+		floorheight = FixedInt(spr->mobj->z - floorheight);
+
+		offset = floorheight;
+	}
+	else
+		floorheight = FixedInt(spr->mobj->z - mobjfloor);
+
+	// create the sprite billboard
+	//
+	//  3--2
+	//  | /|
+	//  |/ |
+	//  0--1
+
+	// x1/x2 were already scaled in HWR_ProjectSprite
+	// First match the normal sprite
+	swallVerts[0].x = swallVerts[3].x = spr->x1;
+	swallVerts[2].x = swallVerts[1].x = spr->x2;
+	swallVerts[0].z = swallVerts[3].z = spr->z1;
+	swallVerts[2].z = swallVerts[1].z = spr->z2;
+
+	if (spr->mobj && fabsf(this_scale - 1.0f) > 1.0E-36f)
+	{
+		// Always a pixel above the floor, perfectly flat.
+		swallVerts[0].y = swallVerts[1].y = swallVerts[2].y = swallVerts[3].y = spr->ty - gpatch->topoffset * this_scale - (floorheight+3);
+
+		// Now transform the TOP vertices along the floor in the direction of the camera
+		swallVerts[3].x = spr->x1 + ((gpatch->height * this_scale) + offset) * gr_viewcos;
+		swallVerts[2].x = spr->x2 + ((gpatch->height * this_scale) + offset) * gr_viewcos;
+		swallVerts[3].z = spr->z1 + ((gpatch->height * this_scale) + offset) * gr_viewsin;
+		swallVerts[2].z = spr->z2 + ((gpatch->height * this_scale) + offset) * gr_viewsin;
+	}
+	else
+	{
+		// Always a pixel above the floor, perfectly flat.
+		swallVerts[0].y = swallVerts[1].y = swallVerts[2].y = swallVerts[3].y = spr->ty - gpatch->topoffset - (floorheight+3);
+
+		// Now transform the TOP vertices along the floor in the direction of the camera
+		swallVerts[3].x = spr->x1 + (gpatch->height + offset) * gr_viewcos;
+		swallVerts[2].x = spr->x2 + (gpatch->height + offset) * gr_viewcos;
+		swallVerts[3].z = spr->z1 + (gpatch->height + offset) * gr_viewsin;
+		swallVerts[2].z = spr->z2 + (gpatch->height + offset) * gr_viewsin;
+	}
+
+	// We also need to move the bottom ones away when shadowoffs is on
+	if (cv_shadowoffs.value)
+	{
+		swallVerts[0].x = spr->x1 + offset * gr_viewcos;
+		swallVerts[1].x = spr->x2 + offset * gr_viewcos;
+		swallVerts[0].z = spr->z1 + offset * gr_viewsin;
+		swallVerts[1].z = spr->z2 + offset * gr_viewsin;
+	}
+	
+	if (floorslope)
+	{
+		for (int i = 0; i < 4; i++)
+		{
+			slopez = P_GetZAt(floorslope, FLOAT_TO_FIXED(swallVerts[i].x), FLOAT_TO_FIXED(swallVerts[i].z));
+			swallVerts[i].y = FIXED_TO_FLOAT(slopez) + 0.05f;
+		}
+	}
+
+	if (spr->flip)
+	{
+		swallVerts[0].s = swallVerts[3].s = gpatch->max_s;
+		swallVerts[2].s = swallVerts[1].s = 0;
+	}
+	else
+	{
+		swallVerts[0].s = swallVerts[3].s = 0;
+		swallVerts[2].s = swallVerts[1].s = gpatch->max_s;
+	}
+
+	// flip the texture coords (look familiar?)
+	if (spr->vflip)
+	{
+		swallVerts[3].t = swallVerts[2].t = gpatch->max_t;
+		swallVerts[0].t = swallVerts[1].t = 0;
+	}
+	else
+	{
+		swallVerts[3].t = swallVerts[2].t = 0;
+		swallVerts[0].t = swallVerts[1].t = gpatch->max_t;
+	}
+
+	sSurf.PolyColor.s.red = 0x01;
+	sSurf.PolyColor.s.blue = 0x01;
+	sSurf.PolyColor.s.green = 0x01;
+
+	// shadow is always half as translucent as the sprite itself
+	if (!cv_translucency.value) // use default translucency (main sprite won't have any translucency)
+		sSurf.PolyColor.s.alpha = 0x80; // default
+	else if (spr->mobj->flags2 & MF2_SHADOW)
+		sSurf.PolyColor.s.alpha = 0x20;
+	else if (spr->mobj->frame & FF_TRANSMASK)
+	{
+		HWR_TranstableToAlpha((spr->mobj->frame & FF_TRANSMASK)>>FF_TRANSSHIFT, &sSurf);
+		sSurf.PolyColor.s.alpha /= 2; //cut alpha in half!
+	}
+	else
+		sSurf.PolyColor.s.alpha = 0x80; // default
+
+	if (sSurf.PolyColor.s.alpha > floorheight/4)
+	{
+		sSurf.PolyColor.s.alpha = (UINT8)(sSurf.PolyColor.s.alpha - floorheight/4);
+		
+		HWR_Lighting(&sSurf, 0, NULL);
+
+		if (HWR_UseShader())
+		{
+			shader = SHADER_FLOOR; // floor shader
+		}
+
+		HWR_ProcessPolygon(&sSurf, swallVerts, 4, PF_Translucent|PF_Modulated, shader, false);
+	}
+}
+
 static void HWR_DrawDropShadow(mobj_t *thing, fixed_t scale)
 {
 	GLPatch_t *gpatch;
@@ -3725,7 +3927,7 @@ static void HWR_DrawDropShadow(mobj_t *thing, fixed_t scale)
 
 	HWR_Lighting(&sSurf, lightlevel, NULL);
 
-	sSurf.PolyColor.s.alpha = 127; // always draw half translucent
+	sSurf.PolyColor.s.alpha = 0x80;
 
 	if (HWR_UseShader())
 	{
@@ -3842,6 +4044,18 @@ static void HWR_SplitSprite(gr_vissprite_t *spr)
 	//12/12/99: Hurdler: same comment as above (for md2)
 	//Hurdler: 25/04/2000: now support colormap in hardware mode
 	HWR_GetMappedPatch(gpatch, spr->colormap);
+
+	// Draw shadow BEFORE sprite
+	if (cv_shadow.value // Shadows enabled
+		&& (spr->mobj->flags & (MF_SCENERY|MF_SPAWNCEILING|MF_NOGRAVITY)) != (MF_SCENERY|MF_SPAWNCEILING|MF_NOGRAVITY) // Ceiling scenery have no shadow.
+		&& !(spr->mobj->flags2 & MF2_DEBRIS) // Debris have no corona or shadow.
+		&& (spr->mobj->z >= spr->mobj->floorz)) // Without this, your shadow shows on the floor, even after you die and fall through the ground.
+	{
+		////////////////////
+		// SHADOW SPRITE! //
+		////////////////////
+		HWR_DrawSpriteShadow(spr, gpatch, this_scale);
+	}
 
 	baseWallVerts[0].x = baseWallVerts[3].x = spr->x1;
 	baseWallVerts[2].x = baseWallVerts[1].x = spr->x2;
@@ -4146,6 +4360,18 @@ static void HWR_DrawSprite(gr_vissprite_t *spr)
 	//12/12/99: Hurdler: same comment as above (for md2)
 	//Hurdler: 25/04/2000: now support colormap in hardware mode
 	HWR_GetMappedPatch(gpatch, spr->colormap);
+
+	// Draw shadow BEFORE sprite
+	if (cv_shadow.value // Shadows enabled
+		&& (spr->mobj->flags & (MF_SCENERY|MF_SPAWNCEILING|MF_NOGRAVITY)) != (MF_SCENERY|MF_SPAWNCEILING|MF_NOGRAVITY) // Ceiling scenery have no shadow.
+		&& !(spr->mobj->flags2 & MF2_DEBRIS) // Debris have no corona or shadow.
+		&& (spr->mobj->z >= spr->mobj->floorz)) // Without this, your shadow shows on the floor, even after you die and fall through the ground.
+	{
+		////////////////////
+		// SHADOW SPRITE! //
+		////////////////////
+		HWR_DrawSpriteShadow(spr, gpatch, this_scale);
+	}
 
 	// if it has a dispoffset, push it a little towards the camera
 	if (spr->dispoffset)
@@ -4637,7 +4863,7 @@ void HWR_DrawSprites(void)
 			HWR_DrawPrecipitationSprite(spr);
 		else
 		{
-			if (spr->mobj && cv_shadow.value)
+			if (spr->mobj && cv_dropshadow.value)
 			{
 				if (spr->mobj->haveshadow)
 					HWR_DrawDropShadow(spr->mobj, spr->mobj->shadowscale);
