@@ -36,6 +36,9 @@ static struct {
 	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_WALL_FRAGMENT_SHADER},
 
 	// Sprite shader
+	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_WALL_FRAGMENT_SHADER},
+
+	// Sprite clipping hack shader (for pulling things out of the floor)
 	{GLSL_SPRITECLIP_HACK_VERTEX_SHADER, GLSL_WALL_FRAGMENT_SHADER},
 
 	// Model shader
@@ -428,6 +431,7 @@ customshaderxlat_t shaderxlat[] =
 	{"Shadow", SHADER_SHADOW},
 	{"WallTexture", SHADER_WALL},
 	{"Sprite", SHADER_SPRITE},
+	{"SpriteClipHack", SHADER_SPRITECLIPHACK},
 	{"Model", SHADER_MODEL},
 	{"WaterRipple", SHADER_WATER},
 	{"Fog", SHADER_FOG},
