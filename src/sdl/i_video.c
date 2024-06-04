@@ -316,6 +316,11 @@ static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen)
 		SDL_PixelFormatEnumToMasks(sw_texture_format, &bpp, &rmask, &gmask, &bmask, &amask);
 		vidSurface = SDL_CreateRGBSurface(0, width, height, bpp, rmask, gmask, bmask, amask);
 	}
+	
+	if (graphics_started)
+	{
+		I_UpdateNoVsync();
+	}
 }
 
 static INT32 Impl_SDL_Scancode_To_Keycode(SDL_Scancode code)
