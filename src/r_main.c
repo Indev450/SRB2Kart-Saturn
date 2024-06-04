@@ -1717,9 +1717,6 @@ void R_RenderPlayerView(player_t *player)
 	R_ClearVisibleFloorSplats();
 #endif
 
-	// check for new console commands.
-	NetUpdate();
-
 	// The head node is the last node output.
 
 	ps_numbspcalls.value.i = ps_numpolyobjects.value.i = ps_numdrawnodes.value.i = 0;
@@ -1776,9 +1773,6 @@ void R_RenderPlayerView(player_t *player)
 	PS_START_TIMING(ps_sw_maskedtime);
 	R_DrawMasked();
 	PS_STOP_TIMING(ps_sw_maskedtime);
-
-	// Check for new console commands.
-	NetUpdate();
 
 	// save value to skyVisiblePerPlayer
 	// this is so that P1 can't affect whether P2 can see a skybox or not, or vice versa

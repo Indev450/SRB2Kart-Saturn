@@ -4277,6 +4277,7 @@ static void HWR_SortVisSprites(void)
 	{
 		gr_vsprorder[i] = HWR_GetVisSprite(i);
 	}
+
 	qs22j(gr_vsprorder, gr_visspritecount, sizeof(gr_vissprite_t*), CompareVisSprites);
 }
 
@@ -5679,9 +5680,6 @@ void HWR_RenderFrame(INT32 viewnumber, player_t *player, boolean skybox)
 		}
 	}
 
-	// check for new console commands.
-	NetUpdate();
-
 	// Clear view, set viewport (glViewport), set perspective...
 	HWR_ClearView();
 
@@ -5714,9 +5712,6 @@ void HWR_RenderFrame(INT32 viewnumber, player_t *player, boolean skybox)
 	// Run post processor effects
 	if (!skybox)
 		HWR_DoPostProcessor(player);
-
-	// Check for new console commands.
-	NetUpdate();
 
 	// added by Hurdler for correct splitscreen
 	// moved here by hurdler so it works with the new near clipping plane

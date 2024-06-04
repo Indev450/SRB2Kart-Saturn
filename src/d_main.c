@@ -568,8 +568,6 @@ static boolean D_Display(void)
 		}
 	}
 
-	NetUpdate(); // send out any new accumulation
-
 	// It's safe to end the game now.
 	if (G_GetExitGameFlag())
 	{
