@@ -1960,7 +1960,7 @@ INT32 VID_SetMode(INT32 modeNum)
 
 static SDL_bool Impl_CreateWindow(SDL_bool fullscreen)
 {
-	int flags = 0;
+	int flags = SDL_WINDOW_ALLOW_HIGHDPI;
 
 	if (rendermode == render_none) // dedicated
 		return SDL_TRUE; // Monster Iestyn -- not sure if it really matters what we return here tbh

@@ -237,7 +237,7 @@ void OglSdlFinishUpdate(boolean waitvbl)
 
 	oldwaitvbl = waitvbl;
 
-	SDL_GetWindowSize(window, &sdlw, &sdlh);
+	SDL_GL_GetDrawableSize(window, &sdlw, &sdlh);
 	HWR_MakeScreenFinalTexture();
 
 #ifdef USE_FBO_OGL
