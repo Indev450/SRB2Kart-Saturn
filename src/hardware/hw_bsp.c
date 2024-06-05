@@ -772,9 +772,11 @@ static INT32 SolveTProblem(void)
 	for (l = 0; l < addsubsector; l++)
 	{
 		p = extrasubsectors[l].planepoly;
-		if (p)
-			for (i = 0; i < p->numpts; i++)
-				SearchSegInBSP((INT32)numnodes-1, &p->pts[i], p);
+		if (!p)
+			continue;
+
+		for (i = 0; i < p->numpts; i++)
+			SearchSegInBSP((INT32)numnodes-1, &p->pts[i], p);
 	}
 	//CONS_Debug(DBG_RENDER, "numsplitpoly %d\n", numsplitpoly);
 	return numsplitpoly;
@@ -802,8 +804,10 @@ static void AdjustSegs(void)
 		count = subsectors[i].numlines;
 		lseg = &segs[subsectors[i].firstline];
 		p = extrasubsectors[i].planepoly;
-		//if (!p)
-			//continue;
+
+		if (!p)
+			continue;
+
 		for (; count--; lseg++)
 		{
 			float distv1,distv2,tmp;

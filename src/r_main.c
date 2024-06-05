@@ -1687,11 +1687,11 @@ void R_RenderPlayerView(player_t *player)
 	// load previous saved value of skyVisible for the player
 	for (i = 0; i <= splitscreen; i++)
 	{
-		if (player == &players[displayplayers[i]])
-		{
-			skyVisible = skyVisiblePerPlayer[i];
-			break;
-		}
+		if (player != &players[displayplayers[i]])
+			continue;
+
+		skyVisible = skyVisiblePerPlayer[i];
+		break;
 	}
 
 	portalrender = 0;
@@ -1814,11 +1814,11 @@ void R_RenderPlayerView(player_t *player)
 	// this is so that P1 can't affect whether P2 can see a skybox or not, or vice versa
 	for (i = 0; i <= splitscreen; i++)
 	{
-		if (player == &players[displayplayers[i]])
-		{
-			skyVisiblePerPlayer[i] = skyVisible;
-			break;
-		}
+		if (player != &players[displayplayers[i]])
+			continue;
+
+		skyVisiblePerPlayer[i] = skyVisible;
+		break;
 	}
 }
 

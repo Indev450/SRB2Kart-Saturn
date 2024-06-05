@@ -429,21 +429,23 @@ void R_LoadTextures(void)
 		}
 
 		// Add all the textures between TX_START and TX_END
-		if (texstart != INT16_MAX && texend != INT16_MAX)
+		if (!(texstart != INT16_MAX && texend != INT16_MAX))
+			continue;
+
+		// PK3s have subfolders, so we can't just make a simple sum
+		if (W_FileHasFolders(wadfiles[w]))
 		{
-			// PK3s have subfolders, so we can't just make a simple sum
-			if (W_FileHasFolders(wadfiles[w]))
+			for (j = texstart; j < texend; j++)
 			{
-				for (j = texstart; j < texend; j++)
-				{
-					if (!W_IsLumpFolder((UINT16)w, j)) // Check if lump is a folder; if not, then count it
-						numtextures++;
-				}
+				if (W_IsLumpFolder((UINT16)w, j)) // Check if lump is a folder; if not, then count it
+					continue;
+
+				numtextures++;
 			}
-			else
-			{
-				numtextures += (UINT32)(texend - texstart);
-			}
+		}
+		else
+		{
+			numtextures += (UINT32)(texend - texstart);
 		}
 	}
 
@@ -1003,26 +1005,26 @@ lumpnum_t R_GetFlatNumForName(const char *name)
 	{
 		switch (wadfiles[i]->type)
 		{
-		case RET_WAD:
-			if ((start = W_CheckNumForNamePwad("F_START", (UINT16)i, 0)) == INT16_MAX)
-			{
-				if ((start = W_CheckNumForNamePwad("FF_START", (UINT16)i, 0)) == INT16_MAX)
+			case RET_WAD:
+				if ((start = W_CheckNumForNamePwad("F_START", (UINT16)i, 0)) == INT16_MAX)
+				{
+					if ((start = W_CheckNumForNamePwad("FF_START", (UINT16)i, 0)) == INT16_MAX)
+						continue;
+					else if ((end = W_CheckNumForNamePwad("FF_END", (UINT16)i, start)) == INT16_MAX)
+						continue;
+				}
+				else
+					if ((end = W_CheckNumForNamePwad("F_END", (UINT16)i, start)) == INT16_MAX)
+						continue;
+				break;
+			case RET_PK3:
+				if ((start = W_CheckNumForFolderStartPK3("Flats/", i, 0)) == INT16_MAX)
 					continue;
-				else if ((end = W_CheckNumForNamePwad("FF_END", (UINT16)i, start)) == INT16_MAX)
+				if ((end = W_CheckNumForFolderEndPK3("Flats/", i, start)) == INT16_MAX)
 					continue;
-			}
-			else
-				if ((end = W_CheckNumForNamePwad("F_END", (UINT16)i, start)) == INT16_MAX)
-					continue;
-			break;
-		case RET_PK3:
-			if ((start = W_CheckNumForFolderStartPK3("Flats/", i, 0)) == INT16_MAX)
+				break;
+			default:
 				continue;
-			if ((end = W_CheckNumForFolderEndPK3("Flats/", i, start)) == INT16_MAX)
-				continue;
-			break;
-		default:
-			continue;
 		}
 
 		// Now find lump with specified name in that range.
@@ -1310,6 +1312,7 @@ INT32 R_CreateColormap(char *p1, char *p2, char *p3)
 	{
 		if (foundcolormaps[i] != LUMPERROR)
 			continue;
+
 		if (maskcolor == extra_colormaps[i].maskcolor
 			&& fadecolor == extra_colormaps[i].fadecolor
 			&& fabs(maskamt - extra_colormaps[i].maskamt) < DBL_EPSILON
