@@ -3062,13 +3062,13 @@ void HWR_AddPolyObjectPlanes(void)
 
 	for (i  = 0; i < numpolys; i++)
 	{
-		polyobjsector = po_ptrs[i]->lines[0]->backsector; // the in-level polyobject sector
-
 		if (!(po_ptrs[i]->flags & POF_RENDERPLANES)) // Only render planes when you should
 			continue;
 
 		if (po_ptrs[i]->translucency >= NUMTRANSMAPS)
 			continue;
+		
+		polyobjsector = po_ptrs[i]->lines[0]->backsector; // the in-level polyobject sector
 
 		if (polyobjsector->floorheight <= gr_frontsector->ceilingheight
 			&& polyobjsector->floorheight >= gr_frontsector->floorheight
@@ -4739,35 +4739,39 @@ void HWR_DrawSprites(void)
 	for (i = 0; i < gr_visspritecount; i++)
 	{
 		gr_vissprite_t *spr = gr_vsprorder[i];
-		if (spr->precip)
-			HWR_DrawPrecipitationSprite(spr);
-		else
-			if (spr->mobj && spr->mobj->skin && spr->mobj->sprite == SPR_PLAY)
-			{
-				md2_t *md2;
-				if (spr->mobj->localskin)
-				{
-					if (spr->mobj->skinlocal)
-						md2 = &md2_localplayermodels[(skin_t *)spr->mobj->localskin - localskins];
-					else
-						md2 = &md2_playermodels     [(skin_t *)spr->mobj->localskin -      skins];
-				}
-				else
-					md2 = &md2_playermodels[(skin_t *)spr->mobj->skin - skins];
 
-				// 8/1/19: Only don't display player models if no default SPR_PLAY is found.
-				if (!cv_grmdls.value || ((md2->notfound || md2->scale < 0.0f) && ((!cv_grfallbackplayermodel.value) || md2_models[SPR_PLAY].notfound || md2_models[SPR_PLAY].scale < 0.0f)) || spr->mobj->state == &states[S_PLAY_SIGN])
-					HWR_DrawSprite(spr);
+		if (spr->precip)
+		{
+			HWR_DrawPrecipitationSprite(spr);
+			continue;
+		}
+
+		if (spr->mobj && spr->mobj->skin && spr->mobj->sprite == SPR_PLAY)
+		{
+			md2_t *md2;
+			if (spr->mobj->localskin)
+			{
+				if (spr->mobj->skinlocal)
+					md2 = &md2_localplayermodels[(skin_t *)spr->mobj->localskin - localskins];
 				else
-					HWR_DrawMD2(spr);
+					md2 = &md2_playermodels     [(skin_t *)spr->mobj->localskin -      skins];
 			}
 			else
+				md2 = &md2_playermodels[(skin_t *)spr->mobj->skin - skins];
+
+			// 8/1/19: Only don't display player models if no default SPR_PLAY is found.
+			if (!cv_grmdls.value || ((md2->notfound || md2->scale < 0.0f) && ((!cv_grfallbackplayermodel.value) || md2_models[SPR_PLAY].notfound || md2_models[SPR_PLAY].scale < 0.0f)) || spr->mobj->state == &states[S_PLAY_SIGN])
+				HWR_DrawSprite(spr);
+			else
+				HWR_DrawMD2(spr);
+		}
+		else
 			{
-				if (!cv_grmdls.value || md2_models[spr->mobj->sprite].notfound || md2_models[spr->mobj->sprite].scale < 0.0f)
-					HWR_DrawSprite(spr);
-				else
-					HWR_DrawMD2(spr);
-			}
+			if (!cv_grmdls.value || md2_models[spr->mobj->sprite].notfound || md2_models[spr->mobj->sprite].scale < 0.0f)
+				HWR_DrawSprite(spr);
+			else
+				HWR_DrawMD2(spr);
+		}
 	}
 }
 
@@ -4806,7 +4810,46 @@ void HWR_AddSprites(sector_t *sec)
 
 	// Handle all things in sector.
 	// If a limit exists, handle things a tiny bit different.
-	if (limit_dist)
+	if (limit_dist == 0)
+	{
+		// Draw everything in sector, no checks
+		for (thing = sec->thinglist; thing; thing = thing->snext)
+		{
+			split_drawsprite = false;
+
+			if (thing->sprite == SPR_NULL || thing->flags2 & MF2_DONTDRAW)
+				continue;
+
+			splitflags = thing->eflags & (MFE_DRAWONLYFORP1|MFE_DRAWONLYFORP2|MFE_DRAWONLYFORP3|MFE_DRAWONLYFORP4);
+
+			if (splitscreen && splitflags)
+			{
+				if (thing->eflags & MFE_DRAWONLYFORP1)
+					if (viewssnum == 0)
+						split_drawsprite = true;
+
+				if (thing->eflags & MFE_DRAWONLYFORP2)
+					if (viewssnum == 1)
+						split_drawsprite = true;
+
+				if (thing->eflags & MFE_DRAWONLYFORP3 && splitscreen > 1)
+					if (viewssnum == 2)
+						split_drawsprite = true;
+
+				if (thing->eflags & MFE_DRAWONLYFORP4 && splitscreen > 2)
+					if (viewssnum == 3)
+						split_drawsprite = true;
+			}
+			else
+				split_drawsprite = true;
+
+			if (!split_drawsprite)
+				continue;
+
+			HWR_ProjectSprite(thing);
+		}
+	}
+	else
 	{
 		for (thing = sec->thinglist; thing; thing = thing->snext)
 		{
@@ -4844,45 +4887,6 @@ void HWR_AddSprites(sector_t *sec)
 			approx_dist = P_AproxDistance(viewx-thing->x, viewy-thing->y);
 
 			if (approx_dist > limit_dist)
-				continue;
-
-			HWR_ProjectSprite(thing);
-		}
-	}
-	else
-	{
-		// Draw everything in sector, no checks
-		for (thing = sec->thinglist; thing; thing = thing->snext)
-		{
-			split_drawsprite = false;
-
-			if (thing->sprite == SPR_NULL || thing->flags2 & MF2_DONTDRAW)
-				continue;
-
-			splitflags = thing->eflags & (MFE_DRAWONLYFORP1|MFE_DRAWONLYFORP2|MFE_DRAWONLYFORP3|MFE_DRAWONLYFORP4);
-
-			if (splitscreen && splitflags)
-			{
-				if (thing->eflags & MFE_DRAWONLYFORP1)
-					if (viewssnum == 0)
-						split_drawsprite = true;
-
-				if (thing->eflags & MFE_DRAWONLYFORP2)
-					if (viewssnum == 1)
-						split_drawsprite = true;
-
-				if (thing->eflags & MFE_DRAWONLYFORP3 && splitscreen > 1)
-					if (viewssnum == 2)
-						split_drawsprite = true;
-
-				if (thing->eflags & MFE_DRAWONLYFORP4 && splitscreen > 2)
-					if (viewssnum == 3)
-						split_drawsprite = true;
-			}
-			else
-				split_drawsprite = true;
-
-			if (!split_drawsprite)
 				continue;
 
 			HWR_ProjectSprite(thing);
