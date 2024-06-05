@@ -277,11 +277,11 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec, INT32 *floorlightlevel,
 
 		for (i = 0; i <= splitscreen; i++)
 		{
-			if (viewplayer == &players[displayplayers[i]] && camera[i].chase)
-			{
-				heightsec = R_PointInSubsector(camera[i].x, camera[i].y)->sector->heightsec;
-				break;
-			}
+			if (!(viewplayer == &players[displayplayers[i]] && camera[i].chase))
+				continue;
+
+			heightsec = R_PointInSubsector(camera[i].x, camera[i].y)->sector->heightsec;
+			break;
 		}
 
 		if (i > splitscreen && viewmobj)
@@ -933,11 +933,11 @@ static void R_Subsector(size_t num)
 			{
 				sector_t *controlSec = &sectors[rover->secnum];
 
-				if (controlSec->moved == true)
-				{
-					anyMoved = true;
-					break;
-				}
+				if (controlSec->moved != true)
+					continue;
+
+				anyMoved = true;
+				break;
 			}
 		}
 
@@ -1211,13 +1211,13 @@ void R_Prep3DFloors(sector_t *sector)
 	count = 1;
 	for (rover = sector->ffloors; rover; rover = rover->next)
 	{
-		if ((rover->flags & FF_EXISTS) && (!(rover->flags & FF_NOSHADE)
-			|| (rover->flags & FF_CUTLEVEL) || (rover->flags & FF_CUTSPRITES)))
-		{
+		if (!((rover->flags & FF_EXISTS) && (!(rover->flags & FF_NOSHADE)
+			|| (rover->flags & FF_CUTLEVEL) || (rover->flags & FF_CUTSPRITES))))
+			continue;
+
+		count++;
+		if (rover->flags & FF_DOUBLESHADOW)
 			count++;
-			if (rover->flags & FF_DOUBLESHADOW)
-				count++;
-		}
 	}
 
 	if (count != sector->numlights)

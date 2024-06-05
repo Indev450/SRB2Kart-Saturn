@@ -381,16 +381,17 @@ static void HWR_GenerateTexture(INT32 texnum, GLMapTexture_t *grtex, boolean noe
 		                     realpatch);
 		Z_Unlock(realpatch);
 	}
+
 	//Hurdler: not efficient at all but I don't remember exactly how HWR_DrawPatchInCache works :(
 	if (format2bpp(grtex->mipmap.format)==4)
 	{
 		for (i = 3; i < blocksize*4; i += 4) // blocksize*4 because blocksize doesn't include the bpp
 		{
-			if (block[i] == 0)
-			{
-				grtex->mipmap.flags |= TF_TRANSPARENT;
-				break;
-			}
+			if (block[i] != 0)
+				continue;
+
+			grtex->mipmap.flags |= TF_TRANSPARENT;
+			break;
 		}
 	}
 
@@ -629,8 +630,12 @@ static void HWR_CacheFlat(GLMipmap_t *grMipmap, lumpnum_t flatlumpnum)
 #ifdef GLENCORE
 	flat = grMipmap->data;
 	for (steppy = 0; steppy < size; steppy++)
-		if (flat[steppy] != HWR_PATCHES_CHROMAKEY_COLORINDEX)
-			flat[steppy] = grMipmap->colormap[flat[steppy]];
+	{
+		if (flat[steppy] == HWR_PATCHES_CHROMAKEY_COLORINDEX)
+			continue;
+
+		flat[steppy] = grMipmap->colormap[flat[steppy]];
+	}
 #endif
 }
 
@@ -743,11 +748,12 @@ void HWR_GetMappedPatch(GLPatch_t *gpatch, const UINT8 *colormap)
 	for (grmip = gpatch->mipmap; grmip->nextcolormap; )
 	{
 		grmip = grmip->nextcolormap;
-		if (grmip->colormap == colormap)
-		{
-			HWR_LoadMappedPatch(grmip, gpatch);
-			return;
-		}
+
+		if (grmip->colormap != colormap)
+			continue;
+
+		HWR_LoadMappedPatch(grmip, gpatch);
+		return;
 	}
 	// not found, create it!
 	// If we are here, the sprite with the current colormap is not already in hardware memory

@@ -496,7 +496,6 @@ void R_RenderMaskedSegRange(drawseg_t *ds, INT32 x1, INT32 x2)
 			}
 		}
 
-
 		dc_texheight = textureheight[texnum]>>FRACBITS;
 
 		// draw the columns
@@ -983,7 +982,9 @@ void R_RenderThickSideRange(drawseg_t *ds, INT32 x1, INT32 x2, ffloor_t *pfloor)
 	// draw the columns
 	for (dc_x = x1; dc_x <= x2; dc_x++)
 	{
-		if (maskedtexturecol[dc_x] != INT16_MAX)
+		if (maskedtexturecol[dc_x] == INT16_MAX)
+			continue;
+
 		{
 			if (ffloortextureslide) { // skew FOF walls
 				if (oldx != -1)

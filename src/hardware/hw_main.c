@@ -883,75 +883,75 @@ void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, boolean isc
 
 		for (i = 0; i < subsector->numlines; i++, line++)
 		{
-			if (line->linedef->special == HORIZONSPECIAL && R_PointOnSegSide(viewx, viewy, line) == 0)
+			if (!(line->linedef->special == HORIZONSPECIAL && R_PointOnSegSide(viewx, viewy, line) == 0))
+				continue;
+
+			P_ClosestPointOnLine(viewx, viewy, line->linedef, &v);
+			dist = FIXED_TO_FLOAT(R_PointToDist(v.x, v.y));
+
+			if (line->pv1)
 			{
-				P_ClosestPointOnLine(viewx, viewy, line->linedef, &v);
-				dist = FIXED_TO_FLOAT(R_PointToDist(v.x, v.y));
-				
-				if (line->pv1)
-				{
-					x1 = ((polyvertex_t *)line->pv1)->x;
-					y1 = ((polyvertex_t *)line->pv1)->y;
-				}
-				else
-				{
-					x1 = FIXED_TO_FLOAT(line->v1->x);
-					y1 = FIXED_TO_FLOAT(line->v1->x);
-				}
-				if (line->pv2)
-				{
-					xd = ((polyvertex_t *)line->pv2)->x - x1;
-					yd = ((polyvertex_t *)line->pv2)->y - y1;
-				}
-				else
-				{
-					xd = FIXED_TO_FLOAT(line->v2->x) - x1;
-					yd = FIXED_TO_FLOAT(line->v2->y) - y1;
-				}
+				x1 = ((polyvertex_t *)line->pv1)->x;
+				y1 = ((polyvertex_t *)line->pv1)->y;
+			}
+			else
+			{
+				x1 = FIXED_TO_FLOAT(line->v1->x);
+				y1 = FIXED_TO_FLOAT(line->v1->x);
+			}
+			if (line->pv2)
+			{
+				xd = ((polyvertex_t *)line->pv2)->x - x1;
+				yd = ((polyvertex_t *)line->pv2)->y - y1;
+			}
+			else
+			{
+				xd = FIXED_TO_FLOAT(line->v2->x) - x1;
+				yd = FIXED_TO_FLOAT(line->v2->y) - y1;
+			}
 
-				// Based on the seg length and the distance from the line, split horizon into multiple poly sets to reduce distortion
-				dist = sqrtf((xd*xd) + (yd*yd)) / dist / 16.0f;
-				if (dist > 100.0f)
-					numplanes = 100;
-				else
-					numplanes = (UINT8)dist + 1;
+			// Based on the seg length and the distance from the line, split horizon into multiple poly sets to reduce distortion
+			dist = sqrtf((xd*xd) + (yd*yd)) / dist / 16.0f;
+			if (dist > 100.0f)
+				numplanes = 100;
+			else
+				numplanes = (UINT8)dist + 1;
 
-				for (j = 0; j < numplanes; j++)
-				{
-					// Left side
-					vx = x1 + xd * j / numplanes;
-					vy = y1 + yd * j / numplanes;
-					SETUP3DVERT((&horizonpts[1]), vx, vy);
+			for (j = 0; j < numplanes; j++)
+			{
+				// Left side
+				vx = x1 + xd * j / numplanes;
+				vy = y1 + yd * j / numplanes;
+				SETUP3DVERT((&horizonpts[1]), vx, vy);
 
-					dist = sqrtf(powf(vx - gr_viewx, 2) + powf(vy - gr_viewy, 2));
-					vx = (vx - gr_viewx) * renderdist / dist + gr_viewx;
-					vy = (vy - gr_viewy) * renderdist / dist + gr_viewy;
-					SETUP3DVERT((&horizonpts[0]), vx, vy);
+				dist = sqrtf(powf(vx - gr_viewx, 2) + powf(vy - gr_viewy, 2));
+				vx = (vx - gr_viewx) * renderdist / dist + gr_viewx;
+				vy = (vy - gr_viewy) * renderdist / dist + gr_viewy;
+				SETUP3DVERT((&horizonpts[0]), vx, vy);
 
-					// Right side
-					vx = x1 + xd * (j+1) / numplanes;
-					vy = y1 + yd * (j+1) / numplanes;
-					SETUP3DVERT((&horizonpts[2]), vx, vy);
+				// Right side
+				vx = x1 + xd * (j+1) / numplanes;
+				vy = y1 + yd * (j+1) / numplanes;
+				SETUP3DVERT((&horizonpts[2]), vx, vy);
 
-					dist = sqrtf(powf(vx - gr_viewx, 2) + powf(vy - gr_viewy, 2));
-					vx = (vx - gr_viewx) * renderdist / dist + gr_viewx;
-					vy = (vy - gr_viewy) * renderdist / dist + gr_viewy;
-					SETUP3DVERT((&horizonpts[3]), vx, vy);
+				dist = sqrtf(powf(vx - gr_viewx, 2) + powf(vy - gr_viewy, 2));
+				vx = (vx - gr_viewx) * renderdist / dist + gr_viewx;
+				vy = (vy - gr_viewy) * renderdist / dist + gr_viewy;
+				SETUP3DVERT((&horizonpts[3]), vx, vy);
 
-					// Horizon fills
-					vx = (horizonpts[0].x - gr_viewx) * farrenderdist / renderdist + gr_viewx;
-					vy = (horizonpts[0].z - gr_viewy) * farrenderdist / renderdist + gr_viewy;
-					SETUP3DVERT((&horizonpts[5]), vx, vy);
-					horizonpts[5].y = gr_viewz;
+				// Horizon fills
+				vx = (horizonpts[0].x - gr_viewx) * farrenderdist / renderdist + gr_viewx;
+				vy = (horizonpts[0].z - gr_viewy) * farrenderdist / renderdist + gr_viewy;
+				SETUP3DVERT((&horizonpts[5]), vx, vy);
+				horizonpts[5].y = gr_viewz;
 
-					vx = (horizonpts[3].x - gr_viewx) * farrenderdist / renderdist + gr_viewx;
-					vy = (horizonpts[3].z - gr_viewy) * farrenderdist / renderdist + gr_viewy;
-					SETUP3DVERT((&horizonpts[4]), vx, vy);
+				vx = (horizonpts[3].x - gr_viewx) * farrenderdist / renderdist + gr_viewx;
+				vy = (horizonpts[3].z - gr_viewy) * farrenderdist / renderdist + gr_viewy;
+				SETUP3DVERT((&horizonpts[4]), vx, vy);
 					horizonpts[4].y = gr_viewz;
 
-					// Draw
-					HWR_ProcessPolygon(&Surf, horizonpts, 6, PolyFlags, shader, true);
-				}
+				// Draw
+				HWR_ProcessPolygon(&Surf, horizonpts, 6, PolyFlags, shader, true);
 			}
 		}
 	}
@@ -3231,11 +3231,11 @@ static void HWR_Subsector(size_t num)
 			{
 				sector_t *controlSec = &sectors[rover->secnum];
 
-				if (controlSec->moved == true)
-				{
-					anyMoved = true;
-					break;
-				}
+				if (controlSec->moved != true)
+					continue;
+
+				anyMoved = true;
+				break;
 			}
 		}
 
@@ -3636,8 +3636,11 @@ static fixed_t HWR_OpaqueFloorAtPos(fixed_t x, fixed_t y, fixed_t z, fixed_t hei
 
 			delta1 = z - (*rover->bottomheight + ((*rover->topheight - *rover->bottomheight)/2));
 			delta2 = thingtop - (*rover->bottomheight + ((*rover->topheight - *rover->bottomheight)/2));
-			if (*rover->topheight > floorz && abs(delta1) < abs(delta2))
-				floorz = *rover->topheight;
+
+			if (!(*rover->topheight > floorz && abs(delta1) < abs(delta2)))
+				continue;
+
+			floorz = *rover->topheight;
 		}
 	}
 
@@ -4041,13 +4044,13 @@ static void HWR_SplitSprite(gr_vissprite_t *spr)
 	for (i = 1; i < sector->numlights; i++)
 	{
 		fixed_t h = P_GetLightZAt(&sector->lightlist[i], spr->mobj->x, spr->mobj->y);
-		if (h <= temp)
-		{
-			if (!(spr->mobj->frame & FF_FULLBRIGHT))
-				lightlevel = *list[i-1].lightlevel > 255 ? 255 : *list[i-1].lightlevel;
-			colormap = list[i-1].extra_colormap;
-			break;
-		}
+		if (!(h <= temp))
+			continue;
+
+		if (!(spr->mobj->frame & FF_FULLBRIGHT))
+			lightlevel = *list[i-1].lightlevel > 255 ? 255 : *list[i-1].lightlevel;
+		colormap = list[i-1].extra_colormap;
+		break;
 	}
 
 	for (i = 0; i < sector->numlights; i++)
@@ -5572,8 +5575,10 @@ void HWR_SetTransform(float fpov, player_t *player)
 
 	for (i = 0; i <= splitscreen; i++)
 	{
-		if (player == &players[displayplayers[i]])
-			postprocessor = &postimgtype[i];
+		if (player != &players[displayplayers[i]])
+			continue;
+
+		postprocessor = &postimgtype[i];
 	}
 
 	atransform.flip = false;
@@ -6134,11 +6139,11 @@ void HWR_DoPostProcessor(player_t *player)
 
 	for (i = splitscreen; i > 0; i--)
 	{
-		if (player == &players[displayplayers[i]])
-		{
-			type = &postimgtype[i];
-			break;
-		}
+		if (player != &players[displayplayers[i]])
+			continue;
+
+		type = &postimgtype[i];
+		break;
 	}
 
 	// Armageddon Blast Flash!

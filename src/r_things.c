@@ -447,6 +447,7 @@ void R_AddSpriteDefs(UINT16 wadnum)
 	for (i = 0; i < numsprites; i++)
 	{
 		spritename = sprnames[i];
+
 		if (spritename[4] && wadnum >= (UINT16)spritename[4])
 			continue;
 
