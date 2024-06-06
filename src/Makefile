@@ -107,6 +107,8 @@ ifeq ($(OS),Windows_NT) # all windows are Windows_NT...
 
 else # if you on the *nix
 
+ NOUPX=1
+
  system:=$(shell uname -s)
 
  ifeq ($(system),Linux)
