@@ -90,9 +90,11 @@ char *GetMODVersion(int id);
 #endif
 
 char *GetMasterServerRules(void);
+#endif
 
 void AddMServCommands(void);
 
+#ifdef MASTERSERVER
 /* HTTP */
 void HMS_set_api (char *api);
 int  HMS_register (void);
