@@ -100,6 +100,14 @@
 	#undef ETIMEDOUT
 	#endif
 	#define ETIMEDOUT WSAETIMEDOUT
+	#ifdef EHOSTUNREACH
+	#undef EHOSTUNREACH
+	#endif
+	#define EHOSTUNREACH WSAEHOSTUNREACH
+	#ifdef ENETUNREACH
+	#undef ENETUNREACH
+	#endif
+	#define ENETUNREACH WSAENETUNREACH
 	#ifndef IOC_VENDOR
 	#define IOC_VENDOR 0x18000000
 	#endif
@@ -816,6 +824,8 @@ static inline ssize_t SOCK_SendToAddr(SOCKET_TYPE socket, mysockaddr_t *sockaddr
 	return sendto(socket, (char *)&doomcom->data, doomcom->datalength, 0, &sockaddr->any, d);
 }
 
+#define ALLOWEDERROR(x) ((x) == ECONNREFUSED || (x) == EWOULDBLOCK || (x) == EHOSTUNREACH || (x) == ENETUNREACH)
+
 static void SOCK_Send(void)
 {
 	ssize_t c = ERRSOCKET;
@@ -831,19 +841,25 @@ static void SOCK_Send(void)
 			for (j = 0; j < broadcastaddresses; j++)
 			{
 				if (myfamily[i] == broadcastaddress[j].any.sa_family)
-					SOCK_SendToAddr(mysockets[i], &broadcastaddress[j]);
+				{
+					c = SOCK_SendToAddr(mysockets[i], &broadcastaddress[j]);
+					if (c == ERRSOCKET && !ALLOWEDERROR(errno))
+						break;
+				}
 			}
 		}
-		return;
 	}
 	else if (nodesocket[doomcom->remotenode] == (SOCKET_TYPE)ERRSOCKET)
 	{
 		for (i = 0; i < mysocketses; i++)
 		{
 			if (myfamily[i] == clientaddress[doomcom->remotenode].any.sa_family)
-				SOCK_SendToAddr(mysockets[i], &clientaddress[doomcom->remotenode]);
+			{
+				c = SOCK_SendToAddr(mysockets[i], &clientaddress[doomcom->remotenode]);
+				if (c == ERRSOCKET && !ALLOWEDERROR(errno))
+					break;
+			}
 		}
-		return;
 	}
 	else
 	{
@@ -853,12 +869,13 @@ static void SOCK_Send(void)
 	if (c == ERRSOCKET)
 	{
 		int e = errno; // save error code so it can't be modified later
-		if (e != ECONNREFUSED && e != EWOULDBLOCK)
+		if (!ALLOWEDERROR(e))
 			I_Error("SOCK_Send, error sending to node %d (%s) #%u: %s", doomcom->remotenode,
 				SOCK_GetNodeAddress(doomcom->remotenode), e, strerror(e));
 	}
 }
-#endif
+#undef ALLOWEDERROR
+#endif //NONET
 
 #ifndef NONET
 static void SOCK_FreeNodenum(INT32 numnode)
