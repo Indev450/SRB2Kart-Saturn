@@ -4164,6 +4164,11 @@ void M_StartControlPanel(void)
 
 	menuactive = true;
 
+	DPADUPSCROLL = false;
+	DPADDOWNSCROLL = false;
+	DPADLEFTSCROLL = false;
+	DPADRIGHTSCROLL = false;
+
 	if (demo.playback)
 	{
 		currentMenu = &PlaybackMenuDef;
