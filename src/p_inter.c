@@ -1908,8 +1908,8 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 	mobj_t *mo;
 	int ms;
 
-	//if (inflictor && (inflictor->type == MT_SHELL || inflictor->type == MT_FIREBALL))
-	//	P_SetTarget(&target->tracer, inflictor);
+	if (!target || P_MobjWasRemoved(target))
+		return;
 
 	if (!useNightsSS && G_IsSpecialStage(gamemap) && target->player && sstimer > 6)
 		sstimer = 6; // Just let P_Ticker take care of the rest.
