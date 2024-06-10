@@ -48,16 +48,6 @@ typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 #undef SystemFunction036
 #endif
 
-// A little more than the minimum sleep duration on Windows.
-// May be incorrect for other platforms, but we don't currently have a way to
-// query the scheduler granularity. SDL will do what's needed to make this as
-// low as possible though.
-#if defined(_WIN32)
-#define MIN_SLEEP_DURATION_MS 1.6
-#else
-#define MIN_SLEEP_DURATION_MS 2.1
-#endif
-
 #include <stdio.h>
 #include <time.h>
 #include <stdlib.h>
@@ -3194,28 +3184,21 @@ ticcmd_t *I_BaseTiccmd4(void)
 	return &emptycmd4;
 }
 
+//
+// I_GetTime
+// returns time in 1/TICRATE second tics
+//
+
 static Uint64 timer_frequency;
 
 precise_t I_GetPreciseTime(void)
 {
-#if defined(_WIN32)
-	LARGE_INTEGER counter;
-	QueryPerformanceCounter(&counter);
-	return counter.QuadPart;
-#else
 	return SDL_GetPerformanceCounter();
-#endif
 }
 
 UINT64 I_GetPrecisePrecision(void)
 {
-#if defined(_WIN32)
-	LARGE_INTEGER frequency;
-	QueryPerformanceFrequency(&frequency);
-	return frequency.QuadPart;
-#else
 	return SDL_GetPerformanceFrequency();
-#endif
 }
 
 static UINT32 frame_rate;
@@ -3242,24 +3225,14 @@ static void I_InitFrameTime(const UINT64 now, const UINT32 cap)
 }
 
 double I_GetFrameTime(void)
-{	
-#if defined(_WIN32)
-	LARGE_INTEGER now;
-    QueryPerformanceCounter(&now);
-    const UINT64 nowValue = now.QuadPart;
-#else
+{
 	const UINT64 now = SDL_GetPerformanceCounter();
-#endif
 	const UINT32 cap = R_GetFramerateCap();
 
 	if (cap != frame_rate)
 	{
 		// Maybe do this in a OnChange function for cv_fpscap?
-#if defined(_WIN32)
-		I_InitFrameTime(nowValue, cap);
-#else
 		I_InitFrameTime(now, cap);
-#endif	
 	}
 
 	if (frame_rate == 0)
@@ -3269,17 +3242,10 @@ double I_GetFrameTime(void)
 	}
 	else
 	{
-#if defined(_WIN32)
-		elapsed_frames += (nowValue - frame_epoch) / frame_frequency;
-#else
 		elapsed_frames += (now - frame_epoch) / frame_frequency;
-#endif
 	}
-#if defined(_WIN32)
-		frame_epoch = nowValue; // moving epoch
-#else
-		frame_epoch = now; // moving epoch
-#endif
+
+	frame_epoch = now; // moving epoch
 	return elapsed_frames;
 }
 
@@ -3288,13 +3254,8 @@ double I_GetFrameTime(void)
 //
 void I_StartupTimer(void)
 {
-#if defined(_WIN32)
-	LARGE_INTEGER frequency;
-	QueryPerformanceFrequency(&frequency);
-	timer_frequency = frequency.QuadPart;
-#else
 	timer_frequency = SDL_GetPerformanceFrequency();
-#endif
+
 	I_InitFrameTime(0, R_GetFramerateCap());
 	elapsed_frames  = 0.0;
 }
@@ -3302,57 +3263,6 @@ void I_StartupTimer(void)
 void I_Sleep(UINT32 ms)
 {
 	SDL_Delay(ms);
-}
-
-void I_SleepDuration(precise_t duration)
-{
-#if defined(__linux__) || defined(__FreeBSD__)
-	UINT64 precision = I_GetPrecisePrecision();
-	struct timespec ts = {
-		.tv_sec = duration / precision,
-		.tv_nsec = duration * 1000000000 / precision % 1000000000,
-	};
-	int status;
-	do status = clock_nanosleep(CLOCK_MONOTONIC, 0, &ts, &ts);
-	while (status == EINTR);
-#else
-	UINT64 precision = I_GetPrecisePrecision();
-	INT32 sleepvalue = cv_sleep.value;
-	UINT64 delaygranularity;
-	precise_t cur;
-	precise_t dest;
-
-	{
-		double gran = round(((double)(precision / 1000) * sleepvalue * MIN_SLEEP_DURATION_MS));
-		delaygranularity = (UINT64)gran;
-	}
-
-	cur = I_GetPreciseTime();
-	dest = cur + duration;
-
-	// the reason this is not dest > cur is because the precise counter may wrap
-	// two's complement arithmetic is our friend here, though!
-	// e.g. cur 0xFFFFFFFFFFFFFFFE = -2, dest 0x0000000000000001 = 1
-	// 0x0000000000000001 - 0xFFFFFFFFFFFFFFFE = 3
-	while ((INT64)(dest - cur) > 0)
-	{
-		// If our cv_sleep value exceeds the remaining sleep duration, use the
-		// hard sleep function.
-		if (sleepvalue > 0 && (dest - cur) > delaygranularity)
-		{
-#if defined(_WIN32)
-			DWORD sleepDuration = (DWORD)min((INT64)(dest - cur), sleepvalue);
-			SleepEx(sleepDuration, TRUE);
-#else
-			I_Sleep(sleepvalue);
-#endif
-		}
-
-		// Otherwise, this is a spinloop.
-
-		cur = I_GetPreciseTime();
-	}
-#endif
 }
 
 #ifdef NEWSIGNALHANDLER
