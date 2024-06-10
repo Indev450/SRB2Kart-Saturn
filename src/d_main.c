@@ -243,8 +243,9 @@ void D_ProcessEvents(void)
 // added comment : there is a wipe eatch change of the gamestate
 gamestate_t wipegamestate = GS_LEVEL;
 
-static void D_Display(void)
+static boolean D_Display(void)
 {
+	boolean ranwipe = false;
 	boolean forcerefresh = false;
 	static boolean wipe = false;
 	INT32 wipedefindex = 0;
@@ -253,7 +254,7 @@ static void D_Display(void)
 	if (!dedicated)
 	{
 		if (nodrawers)
-			return; // for comparative timing/profiling
+			return false; // for comparative timing/profiling
 
 		// check for change of screen size (video mode)
 		if (setmodeneeded && !wipe)
@@ -303,6 +304,7 @@ static void D_Display(void)
 				V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 31);
 				F_WipeEndScreen();
 				F_RunWipe(wipedefs[wipedefindex], gamestate != GS_TIMEATTACK);
+				ranwipe = true;
 			}
 
 			if (gamestate != GS_LEVEL && rendermode != render_none)
@@ -316,12 +318,13 @@ static void D_Display(void)
 		else //dedicated servers
 		{
 			F_RunWipe(wipedefs[wipedefindex], gamestate != GS_TIMEATTACK);
+			ranwipe = true;
 			wipegamestate = gamestate;
 		}
 	}
 
 	if (dedicated) //bail out after wipe logic
-		return;
+		return false;
 
 	// do buffered drawing
 	switch (gamestate)
@@ -556,6 +559,7 @@ static void D_Display(void)
 		{
 			F_WipeEndScreen();
 			F_RunWipe(wipedefs[wipedefindex], gamestate != GS_TIMEATTACK);
+			ranwipe = true;
 		}
 	}
 
@@ -603,6 +607,7 @@ static void D_Display(void)
 		PS_STOP_TIMING(ps_swaptime);
 	}
 
+	return ranwipe;
 }
 
 // =========================================================================
@@ -620,6 +625,7 @@ void D_SRB2Loop(void)
 
 	boolean interp = false;
 	boolean doDisplay = false;
+	int frameskip = 0;
 
 	if (dedicated)
 		server = true;
@@ -663,6 +669,8 @@ void D_SRB2Loop(void)
 			double budget = round((1.0 / R_GetFramerateCap()) * I_GetPrecisePrecision());
 			capbudget = (precise_t) budget;
 		}
+		
+		boolean ranwipe = false;
 
 		I_UpdateTime(cv_timescale.value);
 
@@ -696,9 +704,11 @@ void D_SRB2Loop(void)
 		HW3S_BeginFrameUpdate();
 #endif
 
+		renderisnewtic = (realtics > 0 || singletics);
+
 		refreshdirmenu = 0; // not sure where to put this, here as good as any?
 
-		if (realtics > 0 || singletics)
+		if (renderisnewtic)
 		{
 			// don't skip more than 10 frames at a time
 			// (fadein / fadeout cause massive frame skip!)
@@ -719,12 +729,6 @@ void D_SRB2Loop(void)
 			{
 				doDisplay = true;
 			}
-
-			renderisnewtic = true;
-		}
-		else
-		{
-			renderisnewtic = false;
 		}
 
 		if (interp)
@@ -746,9 +750,9 @@ void D_SRB2Loop(void)
 			rendertimefrac = FRACUNIT;
 		}
 
-		if (interp || doDisplay)
+		if ((interp || doDisplay) && !frameskip)
 		{
-			D_Display();
+			ranwipe = D_Display();
 		}
 
 		// Only take screenshots after drawing.
@@ -813,6 +817,27 @@ void D_SRB2Loop(void)
 
 		// Fully completed frame made.
 		finishprecise = I_GetPreciseTime();
+
+		deltasecs = (double)((INT64)(finishprecise - enterprecise)) / I_GetPrecisePrecision();
+		deltatics = deltasecs * NEWTICRATE;
+		
+		// If time spent this game loop exceeds a single tic,
+		// it's probably because of rendering.
+		//
+		// Skip rendering the next frame, up to a limit of 3
+		// frames before a frame is rendered no matter what.
+		//
+		// Wipes run an inner loop and artificially increase
+		// the measured time.
+		if (!ranwipe && frameskip < 3 && deltatics > 1.0)
+		{
+			frameskip++;
+		}
+		else
+		{
+			frameskip = 0;
+		}
+
 		if (!singletics)
 		{
 			INT64 elapsed = (INT64)(finishprecise - enterprecise);
@@ -827,8 +852,6 @@ void D_SRB2Loop(void)
 		}
 		// Capture the time once more to get the real delta time.
 		finishprecise = I_GetPreciseTime();
-		deltasecs = (double)((INT64)(finishprecise - enterprecise)) / I_GetPrecisePrecision();
-		deltatics = deltasecs * NEWTICRATE;
 	}
 }
 
