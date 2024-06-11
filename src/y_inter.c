@@ -437,7 +437,7 @@ void Y_IntermissionDrawer(void)
 
 	if (sorttic != -1 && intertic >= sorttic && !demo.playback)
 	{
-		INT32 count = (intertic - sorttic);
+		INT64 count = (intertic - sorttic);
 
 		if (count < 8)
 			x -= ((((count<<FRACBITS) + R_GetHudUncap()) * vid.width)>>FRACBITS) / (8 * vid.dupx);
