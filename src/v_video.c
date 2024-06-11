@@ -1529,7 +1529,11 @@ void V_DrawVhsEffect(boolean rewind)
 	SINT8 offs;
 
 	UINT8 barsize = vid.dupy<<5;
+	barsize *= (((vid.height > 1440) && (cv_highreshudscale.value > 1)) ? 3 : 1);
+	
 	UINT8 updistort = vid.dupx<<(rewind ? 5 : 3);
+	updistort *= (((vid.height > 1440) && (cv_highreshudscale.value > 1)) ? 3 : 1);
+
 	UINT8 downdistort = updistort>>1;
 
 	if (rewind)
