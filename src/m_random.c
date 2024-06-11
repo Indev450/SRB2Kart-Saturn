@@ -53,7 +53,7 @@ static inline UINT32 RandomState_Get32(rnstate_t *state) {
   * \param seeds A pointer to up to 3 UINT32s to use as seed data.
   * \param seed_count The number of seed words.
   */
-static inline void RandomState_Seed(rnstate_t *state, UINT32 *seeds, size_t seed_count)
+ATTRINLINE static void FUNCINLINE RandomState_Seed(rnstate_t *state, UINT32 *seeds, size_t seed_count)
 {
 	size_t i;
 
