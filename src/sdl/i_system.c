@@ -3306,12 +3306,7 @@ void I_SleepDuration(precise_t duration)
 		// hard sleep function.
 		if (sleepvalue > 0 && (dest - cur) > delaygranularity)
 		{
-#if defined(_WIN32)
-			DWORD sleepDuration = (DWORD)min((INT64)(dest - cur), sleepvalue);
-			SleepEx(sleepDuration, TRUE);
-#else
 			I_Sleep(sleepvalue);
-#endif
 		}
 
 		// Otherwise, this is a spinloop.
