@@ -943,7 +943,7 @@ void R_DrawTiltedTranslucentWaterSpan_8(void)
 
 	// Lighting is simple. It's just linear interpolation from start to end
 	{
-		float planelightfloat = BASEVIDWIDTH*BASEVIDWIDTH/vid.width / (zeroheight - FIXED_TO_FLOAT(viewz)) / 21.0f;
+		float planelightfloat = PLANELIGHTFLOAT;
 		float lightstart, lightend;
 
 		lightend = (iz + ds_szp->x*width) * planelightfloat;
