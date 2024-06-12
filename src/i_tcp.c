@@ -848,6 +848,7 @@ static void SOCK_Send(void)
 				}
 			}
 		}
+		return;
 	}
 	else if (nodesocket[doomcom->remotenode] == (SOCKET_TYPE)ERRSOCKET)
 	{
@@ -860,6 +861,7 @@ static void SOCK_Send(void)
 					break;
 			}
 		}
+		return;
 	}
 	else
 	{
