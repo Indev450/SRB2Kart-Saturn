@@ -2026,7 +2026,7 @@ static SDL_bool Impl_CreateWindow(SDL_bool fullscreen)
 #ifdef _WIN32
 		SDL_SetHint(SDL_HINT_RENDER_DRIVER, "direct3d11");
 #else
-		SDL_SetHint(SDL_HINT_RENDER_DRIVER, "opengl");
+		SDL_SetHint(SDL_HINT_RENDER_DRIVER, "opengles2");
 #endif
 
 		renderer = SDL_CreateRenderer(window, -1, flags);
