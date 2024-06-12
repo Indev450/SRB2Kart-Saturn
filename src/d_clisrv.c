@@ -75,7 +75,7 @@
 #define MAX_REASONLENGTH 30
 #define FORCECLOSE 0x8000
 
-static UINT64 packetstat[NUMPACKETTYPE+1] = {0};
+static long long unsigned packetstat[NUMPACKETTYPE+1] = {0};
 
 boolean server = true; // true or false but !server == client
 #define client (!server)
@@ -3115,7 +3115,7 @@ static void Command_Packetstat(void)
 
 	for (UINT8 i = 0; i <= NUMPACKETTYPE; ++i)
 	{
-		CONS_Printf("%16s: %lu%s", Net_GetPacketName(i), packetstat[i], (i % 2 == 1) ? "\n" : "\t|\t");
+		CONS_Printf("%16s: %llu%s", Net_GetPacketName(i), packetstat[i], (i % 2 == 1) ? "\n" : "\t|\t");
 	}
 }
 
