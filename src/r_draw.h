@@ -59,6 +59,8 @@ extern UINT8 *ds_transmap;
 
 extern INT32 ds_bgofs;
 
+extern INT32 *tiltlighting;
+
 typedef struct {
 	float x, y, z;
 } floatv3_t;

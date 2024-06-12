@@ -97,7 +97,7 @@ float focallengthf, zeroheight;
 UINT32 nflatxshift, nflatyshift, nflatshiftup, nflatmask;
 
 // For, uh, tilted lighting, duh.
-static INT32 *tiltlighting;
+INT32 *tiltlighting;
 
 // ==========================================================================
 //                        OLD DOOM FUZZY EFFECT

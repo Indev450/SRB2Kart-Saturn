@@ -901,7 +901,7 @@ void R_RenderThickSideRange(drawseg_t *ds, INT32 x1, INT32 x2, ffloor_t *pfloor)
 	if (slopeskew)
 		dc_texturemid = left_top;
 	else
-	dc_texturemid = *pfloor->topheight - viewz;
+		dc_texturemid = *pfloor->topheight - viewz;
 
 	if (newline)
 	{
@@ -1723,7 +1723,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			lastopening = openings + pos;
 			
 			if (oldopenings == NULL)
-			return;
+				return;
 
 			// borrowed fix from *cough* zdoom *cough*
 			// [RH] We also need to adjust the openings pointers that
@@ -1902,14 +1902,14 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 		texheight = textureheight[midtexture];
 		// a single sided line is terminal, so it must mark ends
 		markfloor = markceiling = true;
-		if (linedef->flags & ML_EFFECT2) {
+		if (linedef->flags & ML_EFFECT2)
+		{
 			if (linedef->flags & ML_DONTPEGBOTTOM)
 				rw_midtexturemid = frontsector->floorheight + texheight - viewz;
 			else
 				rw_midtexturemid = frontsector->ceilingheight - viewz;
 		}
-		else
-		if (linedef->flags & ML_DONTPEGBOTTOM)
+		else if (linedef->flags & ML_DONTPEGBOTTOM)
 		{
 			rw_midtexturemid = worldbottom + texheight;
 			rw_midtextureslide = floorfrontslide;
@@ -2340,32 +2340,36 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 
 			maskedtextureheight = ds_p->maskedtextureheight; // note to red, this == &(ds_p->maskedtextureheight[0])
 
-			if (curline->polyseg) { // use REAL front and back floors please, so midtexture rendering isn't mucked up
+			if (curline->polyseg)
+			{ // use REAL front and back floors please, so midtexture rendering isn't mucked up
 				rw_midtextureslide = rw_midtexturebackslide = 0;
 				if (!!(linedef->flags & ML_DONTPEGBOTTOM) ^ !!(linedef->flags & ML_EFFECT3))
 					rw_midtexturemid = rw_midtextureback = max(curline->frontsector->floorheight, curline->backsector->floorheight) - viewz;
 				else
 					rw_midtexturemid = rw_midtextureback = min(curline->frontsector->ceilingheight, curline->backsector->ceilingheight) - viewz;
-			} else
-			// Set midtexture starting height
-			if (linedef->flags & ML_EFFECT2) { // Ignore slopes when texturing
+			}
+			else if (linedef->flags & ML_EFFECT2) // Set midtexture starting height
+			{ // Ignore slopes when texturing
 				rw_midtextureslide = rw_midtexturebackslide = 0;
 				if (!!(linedef->flags & ML_DONTPEGBOTTOM) ^ !!(linedef->flags & ML_EFFECT3))
 					rw_midtexturemid = rw_midtextureback = max(frontsector->floorheight, backsector->floorheight) - viewz;
 				else
 					rw_midtexturemid = rw_midtextureback = min(frontsector->ceilingheight, backsector->ceilingheight) - viewz;
 
-			} else if (!!(linedef->flags & ML_DONTPEGBOTTOM) ^ !!(linedef->flags & ML_EFFECT3)) {
+			} else if (!!(linedef->flags & ML_DONTPEGBOTTOM) ^ !!(linedef->flags & ML_EFFECT3))
+			{
 				rw_midtexturemid = worldbottom;
 				rw_midtextureslide = floorfrontslide;
 				rw_midtextureback = worldlow;
 				rw_midtexturebackslide = floorbackslide;
-			} else {
+			} else
+			{
 				rw_midtexturemid = worldtop;
 				rw_midtextureslide = ceilingfrontslide;
 				rw_midtextureback = worldhigh;
 				rw_midtexturebackslide = ceilingbackslide;
 			}
+
 			rw_midtexturemid += sidedef->rowoffset;
 			rw_midtextureback += sidedef->rowoffset;
 
