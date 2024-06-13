@@ -1300,8 +1300,9 @@ void CURLPrepareFile(const char* url, int dfilenum)
 		curl_starttime = time(NULL);
 
 		curl_running = true;
-
+#ifdef HAVE_THREADS
 		I_spawn_thread("http-download", (I_thread_fn)CURLGetFile, NULL);
+#endif
 	}
 }
 
