@@ -44,7 +44,6 @@ struct GLMipmap_s
 	UINT16 					width, height;
 	UINT32 					downloaded;		// tex_downloaded
 
-	struct	GLMipmap_s		*nextmipmap;
 	struct	GLMipmap_s 		*nextcolormap;
 	const 	UINT8 			*colormap;
 };
