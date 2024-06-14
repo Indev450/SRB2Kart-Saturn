@@ -82,6 +82,9 @@
 // protocol handling
 #include "d_protocol.h"
 
+#include "z_zone.h"
+#include "mserv.h"
+
 #if defined(HAVE_SDL)
 #include "SDL.h"
 #if SDL_VERSION_ATLEAST(2,0,0)
@@ -10132,6 +10135,7 @@ static void M_StartServerMenu(INT32 choice)
 	levellistmode = LLM_CREATESERVER;
 	M_PrepareLevelSelect();
 	M_SetupNextMenu(&MP_ServerDef);
+	Get_rules();
 	M_PopupMasterServerRules();
 }
 
