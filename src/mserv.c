@@ -472,6 +472,7 @@ Get_masterserver_rules_thread (void)
 	// THIS FUNC has its own lock check in it
 	Get_masterserver_rules(true);
 }
+
 #endif/*HAVE_THREADS*/
 
 void RegisterServer(void)
@@ -585,15 +586,15 @@ Set_api (const char *api)
 void
 Get_rules (void)
 {
-	#ifdef HAVE_THREADS
+#ifdef HAVE_THREADS
 	I_spawn_thread(
 		"get-masterserver-rules",
 		(I_thread_fn)Get_masterserver_rules_thread,
 				   NULL
 	);
-	#else
+#else
 	Get_masterserver_rules(true);
-	#endif
+#endif
 }
 
 #endif/*MASTERSERVER*/
