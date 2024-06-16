@@ -301,7 +301,7 @@ static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen)
 			sw_texture_format = SDL_PIXELFORMAT_RGBA8888;
 		}
 
-		texture = SDL_CreateTexture(renderer, sw_texture_format, SDL_TEXTUREACCESS_STREAMING, width, height);
+		texture = SDL_CreateTexture(renderer, sw_texture_format, SDL_TEXTUREACCESS_STATIC, width, height);
 
 		// Set up SW surface
 		if (vidSurface != NULL)
@@ -1573,6 +1573,7 @@ void I_UpdateNoBlit(void)
 #endif
 		if (rendermode == render_soft)
 		{
+			SDL_RenderFlush(renderer);
 			SDL_RenderCopy(renderer, texture, NULL, NULL);
 			SDL_RenderPresent(renderer);
 		}
@@ -1653,6 +1654,7 @@ void I_FinishUpdate(void)
 			SDL_UnlockSurface(vidSurface);
 		}
 
+		SDL_RenderFlush(renderer);
 		SDL_RenderClear(renderer);
 		SDL_RenderCopy(renderer, texture, &src_rect, NULL);
 		SDL_RenderPresent(renderer);
@@ -2020,8 +2022,13 @@ static SDL_bool Impl_CreateWindow(SDL_bool fullscreen)
 		flags = 0; // Use this to set SDL_RENDERER_* flags now
 		if (usesdl2soft)
 			flags |= SDL_RENDERER_SOFTWARE;
-		else if (cv_vidwait.value)
+		else
+			flags |= SDL_RENDERER_ACCELERATED;
+
+		if (cv_vidwait.value)
 			flags |= SDL_RENDERER_PRESENTVSYNC;
+
+		SDL_SetHint(SDL_HINT_RENDER_BATCHING, "1");
 
 #ifdef _WIN32
 		SDL_SetHint(SDL_HINT_RENDER_DRIVER, "direct3d11");
