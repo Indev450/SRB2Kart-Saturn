@@ -17,7 +17,7 @@
 // Customisable sounds for Skins
 typedef enum
 {
-	/*
+	SKSSPIN,
 	SKSPUTPUT,
 	SKSPUDPUD,
 	SKSPLPAN1, // Ouchies
@@ -31,8 +31,7 @@ typedef enum
 	SKSPLVCT1, // Victories
 	SKSPLVCT2,
 	SKSPLVCT3,
-	SKSPLVCT4,*/
-	SKSSPIN,
+	SKSPLVCT4,
 	SKSTHOK,
 	SKSSPNDSH,
 	SKSZOOM,
@@ -56,7 +55,7 @@ typedef enum
 
 // free sfx for S_AddSoundFx()
 #define NUMSFXFREESLOTS 1600 // Matches SOC Editor.
-#define NUMSKINSFXSLOTS (MAXSKINS*(NUMSKINSOUNDS+14))
+#define NUMSKINSFXSLOTS (MAXSKINS*NUMSKINSOUNDS)
 
 //
 // SoundFX struct.
@@ -112,7 +111,7 @@ typedef enum
 	sfx_None,
 
 	// Skin Sounds
-	/*sfx_altdi1,
+	sfx_altdi1,
 	sfx_altdi2,
 	sfx_altdi3,
 	sfx_altdi4,
@@ -124,11 +123,10 @@ typedef enum
 	sfx_victr2,
 	sfx_victr3,
 	sfx_victr4,
+	sfx_gasp,
+	sfx_jump,
 	sfx_pudpud,
 	sfx_putput,
-	*/
-	sfx_jump,
-	sfx_gasp,
 	sfx_spin,
 	sfx_spndsh,
 	sfx_thok,
