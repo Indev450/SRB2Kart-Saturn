@@ -2131,7 +2131,6 @@ void G_ResetView(UINT8 viewnum, INT32 playernum, boolean onlyactive)
 			(*displayplayerp) = G_FindView(0, viewd, onlyactive, false);
 
 			P_ResetCamera(&players[(*displayplayerp)], camerap);
-			R_ResetViewInterpolation(viewd);
 		}
 	}
 
