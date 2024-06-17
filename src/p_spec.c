@@ -2371,7 +2371,11 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 					y = sides[line->sidenum[0]].rowoffset;
 					z = line->frontsector->ceilingheight;
 
-					P_SetOrigin(mo, mo->x + x, mo->y + y, mo->z + z);
+					P_UnsetThingPosition(mo);
+					mo->x += x;
+					mo->y += y;
+					mo->z += z;
+					P_SetThingPosition(mo);
 
 					if (mo->player)
 					{
@@ -2390,6 +2394,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 								camera[i].reset = true;
 								camera[i].subsector = R_PointInSubsector(camera[i].x, camera[i].y);
 								R_RelativeTeleportViewInterpolation(i, x, y, z, 0);
+								R_ResetViewInterpolation(i + 1); // reset view interp as well
 								break;
 							}
 						}
