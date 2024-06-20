@@ -78,15 +78,15 @@ extern patch_t *sboperiod;
 extern patch_t *facerankprefix[MAXSKINS]; // ranking
 extern patch_t *facewantprefix[MAXSKINS]; // wanted
 extern patch_t *facemmapprefix[MAXSKINS]; // minimap
-extern patch_t *localfacerankprefix[MAXLOCALSKINS]; // ranking
-extern patch_t *localfacewantprefix[MAXLOCALSKINS]; // wanted
-extern patch_t *localfacemmapprefix[MAXLOCALSKINS]; // minimap
-extern char *facerankprefix_name[MAXSKINS]; // ranking
+extern patch_t *localfacerankprefix[MAXSKINS]; // ranking
+extern patch_t *localfacewantprefix[MAXSKINS]; // wanted
+extern patch_t *localfacemmapprefix[MAXSKINS]; // minimap
+/*extern char *facerankprefix_name[MAXSKINS]; // ranking
 extern char *facewantprefix_name[MAXSKINS]; // wanted
 extern char *facemmapprefix_name[MAXSKINS]; // minimap
-extern char *localfacerankprefix_name[MAXLOCALSKINS]; // ranking
-extern char *localfacewantprefix_name[MAXLOCALSKINS]; // wanted
-extern char *localfacemmapprefix_name[MAXLOCALSKINS]; // minimap
+extern char *localfacerankprefix_name[MAXSKINS]; // ranking
+extern char *localfacewantprefix_name[MAXSKINS]; // wanted
+extern char *localfacemmapprefix_name[MAXSKINS]; // minimap*/
 extern patch_t *livesback;
 extern patch_t *ngradeletters[7];
 
