@@ -2936,14 +2936,14 @@ UINT8 skinstatscount[9][9] = {
 	{0, 0, 0, 0, 0, 0, 0, 0, 0}
 };
 UINT8 skinsorted[MAXSKINS];
-skin_t localskins[MAXSKINS];
-skin_t allskins[MAXSKINS*2];
+skin_t localskins[MAXLOCALSKINS];
+skin_t allskins[MAXSKINS+MAXLOCALSKINS];
 
 // FIXTHIS: don't work because it must be inistilised before the config load
 //#define SKINVALUES
 #ifdef SKINVALUES
 CV_PossibleValue_t skin_cons_t[MAXSKINS+1];
-CV_PossibleValue_t localskin_cons_t[MAXSKINS+1];
+CV_PossibleValue_t localskin_cons_t[MAXLOCALSKINS+1];
 #endif
 
 static void Sk_SetDefaultValue(skin_t *skin, boolean local)
@@ -3383,11 +3383,17 @@ void R_AddSkins(UINT16 wadnum, boolean local)
 		// advance by default
 		lastlump = lump + 1;
 
-		if (( (local) ? numlocalskins : numskins ) >= MAXSKINS)
+		if (numskins >= MAXSKINS)
 		{
 			CONS_Alert(CONS_WARNING, M_GetText("Unable to add skin, too many characters are loaded (%d maximum)\n"), MAXSKINS);
 			continue; // so we know how many skins couldn't be added
 		}
+		if (numlocalskins >= MAXLOCALSKINS)
+		{
+			CONS_Alert(CONS_WARNING, M_GetText("Unable to add localskin, too many localskins are loaded (%d maximum)\n"), MAXLOCALSKINS);
+			continue; // so we know how many skins couldn't be added
+		}
+
 		buf = W_CacheLumpNumPwad(wadnum, lump, PU_CACHE);
 		size = W_LumpLengthPwad(wadnum, lump);
 

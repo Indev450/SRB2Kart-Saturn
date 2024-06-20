@@ -220,8 +220,8 @@ extern UINT8 skinstatscount[9][9];
 extern UINT8 skinsorted[MAXSKINS];
 
 void sortSkinGrid(void);
-extern skin_t localskins[MAXSKINS];
-extern skin_t allskins[MAXSKINS*2];
+extern skin_t localskins[MAXLOCALSKINS];
+extern skin_t allskins[MAXSKINS+MAXLOCALSKINS];
 
 boolean SetPlayerSkin(INT32 playernum,const char *skinname);
 void SetPlayerSkinByNum(INT32 playernum,INT32 skinnum); // Tails 03-16-2002
