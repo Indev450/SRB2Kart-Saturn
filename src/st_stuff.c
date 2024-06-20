@@ -56,17 +56,17 @@ patch_t *facerankprefix[MAXSKINS]; // ranking
 patch_t *facewantprefix[MAXSKINS]; // wanted
 patch_t *facemmapprefix[MAXSKINS]; // minimap
 
-patch_t *localfacerankprefix[MAXLOCALSKINS]; // ranking
-patch_t *localfacewantprefix[MAXLOCALSKINS]; // wanted
-patch_t *localfacemmapprefix[MAXLOCALSKINS]; // minimap
+patch_t *localfacerankprefix[MAXSKINS]; // ranking
+patch_t *localfacewantprefix[MAXSKINS]; // wanted
+patch_t *localfacemmapprefix[MAXSKINS]; // minimap
 
-char *facerankprefix_name[MAXSKINS]; // ranking
+/*char *facerankprefix_name[MAXSKINS]; // ranking
 char *facewantprefix_name[MAXSKINS]; // wanted
 char *facemmapprefix_name[MAXSKINS]; // minimap
 
-char *localfacerankprefix_name[MAXLOCALSKINS]; // ranking
-char *localfacewantprefix_name[MAXLOCALSKINS]; // wanted
-char *localfacemmapprefix_name[MAXLOCALSKINS]; // minimap
+char *localfacerankprefix_name[MAXSKINS]; // ranking
+char *localfacewantprefix_name[MAXSKINS]; // wanted
+char *localfacemmapprefix_name[MAXSKINS]; // minimap*/
 
 // ------------------------------------------
 //             status bar overlay
@@ -395,9 +395,9 @@ void ST_LoadFaceGraphics(char *rankstr, char *wantstr, char *mmapstr, INT32 skin
 	facewantprefix[skinnum] = W_CachePatchName(wantstr, PU_HUDGFX);
 	facemmapprefix[skinnum] = W_CachePatchName(mmapstr, PU_HUDGFX);
 	
-	facerankprefix_name[skinnum] = rankstr;
+	/*facerankprefix_name[skinnum] = rankstr;
 	facewantprefix_name[skinnum] = wantstr;
-	facemmapprefix_name[skinnum] = mmapstr;
+	facemmapprefix_name[skinnum] = mmapstr;*/
 }
 
 void ST_LoadLocalFaceGraphics(char *rankstr, char *wantstr, char *mmapstr, INT32 skinnum)
@@ -406,9 +406,9 @@ void ST_LoadLocalFaceGraphics(char *rankstr, char *wantstr, char *mmapstr, INT32
 	localfacewantprefix[skinnum] = W_CachePatchName(wantstr, PU_HUDGFX);
 	localfacemmapprefix[skinnum] = W_CachePatchName(mmapstr, PU_HUDGFX);
 	
-	localfacerankprefix_name[skinnum] = rankstr;
+	/*localfacerankprefix_name[skinnum] = rankstr;
 	localfacewantprefix_name[skinnum] = wantstr;
-	localfacemmapprefix_name[skinnum] = mmapstr;
+	localfacemmapprefix_name[skinnum] = mmapstr;*/
 
 	//CONS_Printf("Added rank prefix %s\n", rankstr);
 	//CONS_Printf("Added want prefix %s\n", wantstr);
