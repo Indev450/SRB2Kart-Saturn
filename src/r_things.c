@@ -2995,6 +2995,9 @@ void R_InitSkins(void)
 	{
 		skin_cons_t[i].value = 0;
 		skin_cons_t[i].strvalue = NULL;
+	}
+	for (i = 0; i <= MAXLOCALSKINS; i++)
+	{
 		localskin_cons_t[i].value = 0;
 		localskin_cons_t[i].strvalue = NULL;
 	}
