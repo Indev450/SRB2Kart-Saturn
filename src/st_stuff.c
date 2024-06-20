@@ -56,17 +56,17 @@ patch_t *facerankprefix[MAXSKINS]; // ranking
 patch_t *facewantprefix[MAXSKINS]; // wanted
 patch_t *facemmapprefix[MAXSKINS]; // minimap
 
-patch_t *localfacerankprefix[MAXSKINS]; // ranking
-patch_t *localfacewantprefix[MAXSKINS]; // wanted
-patch_t *localfacemmapprefix[MAXSKINS]; // minimap
+patch_t *localfacerankprefix[MAXLOCALSKINS]; // ranking
+patch_t *localfacewantprefix[MAXLOCALSKINS]; // wanted
+patch_t *localfacemmapprefix[MAXLOCALSKINS]; // minimap
 
 /*char *facerankprefix_name[MAXSKINS]; // ranking
 char *facewantprefix_name[MAXSKINS]; // wanted
 char *facemmapprefix_name[MAXSKINS]; // minimap
 
-char *localfacerankprefix_name[MAXSKINS]; // ranking
-char *localfacewantprefix_name[MAXSKINS]; // wanted
-char *localfacemmapprefix_name[MAXSKINS]; // minimap*/
+char *localfacerankprefix_name[MAXLOCALSKINS]; // ranking
+char *localfacewantprefix_name[MAXLOCALSKINS]; // wanted
+char *localfacemmapprefix_name[MAXLOCALSKINS]; // minimap*/
 
 // ------------------------------------------
 //             status bar overlay
