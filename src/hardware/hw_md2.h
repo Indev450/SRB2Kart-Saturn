@@ -37,7 +37,7 @@ typedef struct
 
 extern md2_t md2_models[NUMSPRITES];
 extern md2_t md2_playermodels[MAXSKINS];
-extern md2_t md2_localplayermodels[MAXSKINS];
+extern md2_t md2_localplayermodels[MAXLOCALSKINS];
 
 void HWR_InitMD2(void);
 void HWR_DrawMD2(gr_vissprite_t *spr);

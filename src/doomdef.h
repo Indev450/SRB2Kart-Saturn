@@ -206,6 +206,7 @@ extern char  logfilename[1024];
 
 #define MAXPLAYERS 16
 #define MAXSKINS 255
+#define MAXLOCALSKINS 32
 #define PLAYERSMASK (MAXPLAYERS-1)
 #define MAXPLAYERNAME 21
 
