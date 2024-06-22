@@ -55,6 +55,7 @@ enum hook {
 	hook_PlayerCmd,		//SRB2KART
 	hook_IntermissionThinker, //SRB2KART
 	hook_VoteThinker, //SRB2KART
+	hook_ServerJoin, // SRB2KART - Saturn 32p
 
 	hook_MAX // last hook
 };
@@ -105,6 +106,8 @@ UINT8 LUAh_ShouldSquish(player_t *player, mobj_t *inflictor, mobj_t *source); //
 boolean LUAh_PlayerSpin(player_t *player, mobj_t *inflictor, mobj_t *source); // SRB2KART: Hook for K_SpinPlayer. Allows Lua to execute code and/or overwrite its behavior.
 boolean LUAh_PlayerExplode(player_t *player, mobj_t *inflictor, mobj_t *source); // SRB2KART: Hook for K_ExplodePlayer. Allows Lua to execute code and/or overwrite its behavior.
 boolean LUAh_PlayerSquish(player_t *player, mobj_t *inflictor, mobj_t *source); // SRB2KART: Hook for K_SquishPlayer. Allows Lua to execute code and/or overwrite its behavior.
+
+void LUAh_ServerJoin(void); // SRB2KART - Saturn 32p: called by client when joining a server, allows lua to load any sort of config file
 
 boolean LUAh_PlayerCmd(player_t *player, ticcmd_t *cmd);	// Allows to write to player cmd before the game does anything with them.
 
