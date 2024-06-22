@@ -68,6 +68,7 @@ const char *const hookNames[hook_MAX+1] = {
 	"PlayerCmd",
 	"IntermissionThinker",
 	"VoteThinker",
+	"ServerJoin",
 	NULL
 };
 
@@ -219,6 +220,7 @@ static int lib_addHook(lua_State *L)
 	case hook_PlayerSpin:
 	case hook_PlayerExplode:
 	case hook_PlayerSquish:
+	case hook_ServerJoin:
 	default:
 		lastp = &roothook;
 		break;
@@ -1868,4 +1870,35 @@ boolean LUAh_PlayerExplode(player_t *player, mobj_t *inflictor, mobj_t *source)
 		}
 	lua_settop(gL, 0);
 	return hooked;
+}
+
+void LUAh_ServerJoin(void)
+{
+	hook_p hookp;
+	int HOOKSINDEX;
+	if (!gL || !(hooksAvailable[hook_ServerJoin/8] & (1<<(hook_ServerJoin%8))))
+		return;
+
+	lua_settop(gL, 0);
+	lua_pushcfunction(gL, LUA_GetErrorMessage);
+
+	lua_getfield(gL, LUA_REGISTRYINDEX, "hooks");
+	HOOKSINDEX = lua_gettop(gL);
+	I_Assert(lua_istable(L, HOOKSINDEX));
+
+	// We can afford not to look for target->type because it will always be MT_PLAYER.
+
+	for (hookp = roothook; hookp; hookp = hookp->next)
+		if (hookp->type == hook_ServerJoin)
+		{
+			lua_rawgeti(gL, HOOKSINDEX, hookp->id);
+			if (lua_pcall(gL, 0, 0, 1)) {
+				if (!hookp->error || cv_debug & DBG_LUA)
+					CONS_Alert(CONS_WARNING,"%s\n",lua_tostring(gL, -1));
+				lua_pop(gL, 1);
+				hookp->error = true;
+				continue;
+			}
+		}
+	lua_settop(gL, 0);
 }
