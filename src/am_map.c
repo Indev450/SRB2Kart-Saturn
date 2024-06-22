@@ -1015,6 +1015,9 @@ static inline void AM_drawPlayers(void)
 	{
 		if (!playeringame[i] || players[i].spectator)
 			continue;
+		
+		if (!players[i].mo)
+			continue;
 
 		p = &players[i];
 		if (p->skincolor > 0)
