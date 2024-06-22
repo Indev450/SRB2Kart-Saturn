@@ -23,6 +23,7 @@
 #include "d_netfil.h" // fileneedednum
 #include "d_main.h"
 #include "g_game.h"
+#include "m_menu.h" // M_ClearMenus
 #include "hu_stuff.h"
 #include "keys.h"
 #include "g_input.h" // JOY1
@@ -3046,8 +3047,17 @@ static void Command_connect(void)
 
 	if (Playing() || demo.title)
 	{
-		CONS_Printf(M_GetText("You cannot connect while in a game. End this game first.\n"));
-		return;
+		M_ClearMenus(true);
+		if (demo.title)
+			G_CheckDemoStatus();
+
+		if (netgame)
+		{
+			D_QuitNetGame();
+			CL_Reset();
+		}
+
+		D_StartTitle();
 	}
 
 	// modified game check: no longer handled
