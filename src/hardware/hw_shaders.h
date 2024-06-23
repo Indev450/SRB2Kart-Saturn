@@ -39,7 +39,7 @@
 		"gl_FrontColor = gl_Color;\n" \
 		"gl_TexCoord[0].xy = gl_MultiTexCoord0.xy;\n" \
 		"gl_ClipVertex = gl_ModelViewMatrix * gl_Vertex;\n" \
-		"gl_Position.z -= 120.0 / gl_Position.z;\n" \
+		"gl_Position.z -= 160.0 / gl_Position.z;\n" \
 	"}\0"
 
 // ==================
