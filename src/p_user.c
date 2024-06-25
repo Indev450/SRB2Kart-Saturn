@@ -1195,9 +1195,6 @@ mobj_t *P_SpawnGhostMobj(mobj_t *mobj)
 {
 	mobj_t *ghost;
 
-	if (!mobj || P_MobjWasRemoved(mobj))
-		return NULL;
-
 	ghost = P_SpawnMobj(mobj->x, mobj->y, mobj->z, MT_GHOST);
 
 	P_SetScale(ghost, mobj->scale);
