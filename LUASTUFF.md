@@ -130,3 +130,8 @@ if rawget(_G, "S_StopSoundByNum") ~= nil then
     ... -- Can use it
 end
 ```
+
+## addHook("ServerJoin", function())
+
+ServerJoin hook called when client joins server (starting a listen server also calls it for host).
+Generally it was made to make loading custom config files less hacky, but can be used for anything else too.
