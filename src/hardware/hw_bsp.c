@@ -667,9 +667,15 @@ static boolean PointInSeg(polyvertex_t *a,polyvertex_t *v1,polyvertex_t *v2)
 	// v1 = origine
 	ax= v2->x-v1->x;
 	ay= v2->y-v1->y;
-	norm = (float)hypot(ax, ay);
-	ax /= norm;
-	ay /= norm;
+	norm = hypotf(ax, ay);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
+	if (norm != 0) // yes, this can be exactly 0
+#pragma GCC diagnostic pop
+	{
+		ax /= norm;
+		ay /= norm;
+	}
 	bx = a->x-v1->x;
 	by = a->y-v1->y;
 	//d = a.b
