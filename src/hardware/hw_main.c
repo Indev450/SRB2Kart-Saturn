@@ -108,14 +108,6 @@ consvar_t cv_grbatching = {"gr_batching", "On", 0, CV_OnOff, NULL, 0, NULL, NULL
 consvar_t cv_grframebuffer = {"gr_framebuffer", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, CV_grframebuffer_OnChange, 0, NULL, NULL, 0, 0, NULL};
 #endif
 
-consvar_t cv_grfofcut = {"gr_fofcut", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-
-consvar_t cv_fofzfightfix = {"fofzfightfix", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; 
-
-consvar_t cv_splitwallfix = {"splitwallfix", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-
-consvar_t cv_slopepegfix = {"slopepegfix", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; 
-
 static CV_PossibleValue_t grrenderdistance_cons_t[] = {
 	{0, "Max"}, {1, "1024"}, {2, "2048"}, {3, "4096"}, {4, "6144"}, {5, "8192"},
 	{6, "12288"}, {7, "16384"}, {0, NULL}};
@@ -1113,7 +1105,7 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 	// Lactozilla: If both heights of a side lay on the same position, then this wall is a triangle.
 	// To avoid division by zero, which would result in a NaN, we check if the vertical difference
 	// between the two vertices is not zero.
-	if (fpclassify(top - bot) == FP_ZERO && cv_splitwallfix.value)
+	if (fpclassify(top - bot) == FP_ZERO)
 		pegmul = 0.0;
 	else
 		pegmul = (pegb - pegt) / (top - bot);
@@ -1123,7 +1115,7 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 	endpegt = wallVerts[2].t;
 	endpegb = wallVerts[1].t;
 
-	if (fpclassify(endtop - endbot) == FP_ZERO && cv_splitwallfix.value)
+	if (fpclassify(endtop - endbot) == FP_ZERO)
 		endpegmul = 0.0;
 	else
 		endpegmul = (endpegb - endpegt) / (endtop - endbot);
@@ -1196,13 +1188,10 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 			endbheight = endrealbot;
 		}
 		
-		if (cv_splitwallfix.value)
-		{
-			if (endbheight > endtop)
-				endbot = endtop;
-		}
+		if (endbheight > endtop)
+			endbot = endtop;
 
-		if ((endbheight >= endtop && bheight >= top && !cv_splitwallfix.value) || (bheight >= top && cv_splitwallfix.value))
+		if (bheight >= top)
 			continue;
 
 		// Found a break
@@ -1212,15 +1201,7 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 		if (bot < realbot)
 			bot = realbot;
 
-		if (cv_splitwallfix.value)
-			endbot = min(max(endbheight, endrealbot), endtop);
-		else
-		{
-			endbot = endbheight;
-
-			if (endbot < endrealbot)
-				endbot = endrealbot;
-		}
+		endbot = min(max(endbheight, endrealbot), endtop);
 
 		Surf->PolyColor.s.alpha = alpha;
 
@@ -1877,111 +1858,45 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 			grTex = HWR_GetTexture(gr_midtexture, gr_linedef->flags & ML_TFERLINE);
 
-			if (cv_slopepegfix.value)
+			if (!!(gr_linedef->flags & ML_DONTPEGBOTTOM) ^ !!(gr_linedef->flags & ML_EFFECT3))
 			{
-				if (!!(gr_linedef->flags & ML_DONTPEGBOTTOM) ^ !!(gr_linedef->flags & ML_EFFECT3))
-				{
-					texturevpeg = midtexheight - h + polybottom;
-					texturevpegslope = midtexheight - hS + polybottomslope;
-				}
-				else
-				{
-					texturevpeg = polytop - h;
-					texturevpegslope = polytopslope - hS;
-				}
-
-				wallVerts[3].t = texturevpeg * grTex->scaleY;
-				wallVerts[0].t = (h - l + texturevpeg) * grTex->scaleY;
-				wallVerts[2].t = texturevpegslope * grTex->scaleY;
-				wallVerts[1].t = (hS - lS + texturevpegslope) * grTex->scaleY;
-				wallVerts[0].s = wallVerts[3].s = cliplow * grTex->scaleX;
-				wallVerts[2].s = wallVerts[1].s = cliphigh * grTex->scaleX;
-
-				// set top/bottom coords
-				// Take the texture peg into account, rather than changing the offsets past
-				// where the polygon might not be.
-				wallVerts[3].y = FIXED_TO_FLOAT(h);
-				wallVerts[0].y = FIXED_TO_FLOAT(l);
-				wallVerts[2].y = FIXED_TO_FLOAT(hS);
-				wallVerts[1].y = FIXED_TO_FLOAT(lS);
+				texturevpeg = midtexheight - h + polybottom;
+				texturevpegslope = midtexheight - hS + polybottomslope;
 			}
 			else
 			{
-				// PEGGING
-				if (!!(gr_linedef->flags & ML_DONTPEGBOTTOM) ^ !!(gr_linedef->flags & ML_EFFECT3))
-					texturevpeg = textureheight[gr_sidedef->midtexture]*repeats - h + polybottom;
-				else
-					texturevpeg = polytop - h;
-
-				wallVerts[3].t = wallVerts[2].t = texturevpeg * grTex->scaleY;
-				wallVerts[0].t = wallVerts[1].t = (h - l + texturevpeg) * grTex->scaleY;
-				wallVerts[0].s = wallVerts[3].s = cliplow * grTex->scaleX;
-				wallVerts[2].s = wallVerts[1].s = cliphigh * grTex->scaleX;
-				
-				// set top/bottom coords
-				// Take the texture peg into account, rather than changing the offsets past
-				// where the polygon might not be.
-				wallVerts[2].y = wallVerts[3].y = FIXED_TO_FLOAT(h);
-				wallVerts[0].y = wallVerts[1].y = FIXED_TO_FLOAT(l);			
-
-				// Correct to account for slopes
-				{
-					fixed_t midtextureslant;
-
-					if (gr_linedef->flags & ML_EFFECT2)
-						midtextureslant = 0;
-					else if (!!(gr_linedef->flags & ML_DONTPEGBOTTOM) ^ !!(gr_linedef->flags & ML_EFFECT3))
-						midtextureslant = worldlow < worldbottom
-								  ? worldbottomslope-worldbottom
-								  : worldlowslope-worldlow;
-					else
-						midtextureslant = worldtop < worldhigh
-								  ? worldtopslope-worldtop
-								  : worldhighslope-worldhigh;
-
-					polytop += midtextureslant;
-					polybottom += midtextureslant;
-
-					highcut += worldtop < worldhigh
-							 ? worldtopslope-worldtop
-							 : worldhighslope-worldhigh;
-					lowcut += worldlow < worldbottom
-							? worldbottomslope-worldbottom
-							: worldlowslope-worldlow;
-
-					// Texture stuff
-					h = min(highcut, polytop);
-					l = max(polybottom, lowcut);
-
-					{
-						// PEGGING
-						if (!!(gr_linedef->flags & ML_DONTPEGBOTTOM) ^ !!(gr_linedef->flags & ML_EFFECT3))
-							texturevpeg = textureheight[gr_sidedef->midtexture]*repeats - h + polybottom;
-						else
-							texturevpeg = polytop - h;
-						wallVerts[2].t = texturevpeg * grTex->scaleY;
-						wallVerts[1].t = (h - l + texturevpeg) * grTex->scaleY;
-					}
-
-					wallVerts[2].y = FIXED_TO_FLOAT(h);
-					wallVerts[1].y = FIXED_TO_FLOAT(l);
-				}
+				texturevpeg = polytop - h;
+				texturevpegslope = polytopslope - hS;
 			}
+
+			wallVerts[3].t = texturevpeg * grTex->scaleY;
+			wallVerts[0].t = (h - l + texturevpeg) * grTex->scaleY;
+			wallVerts[2].t = texturevpegslope * grTex->scaleY;
+			wallVerts[1].t = (hS - lS + texturevpegslope) * grTex->scaleY;
+			wallVerts[0].s = wallVerts[3].s = cliplow * grTex->scaleX;
+			wallVerts[2].s = wallVerts[1].s = cliphigh * grTex->scaleX;
+
+			// set top/bottom coords
+			// Take the texture peg into account, rather than changing the offsets past
+			// where the polygon might not be.
+			wallVerts[3].y = FIXED_TO_FLOAT(h);
+			wallVerts[0].y = FIXED_TO_FLOAT(l);
+			wallVerts[2].y = FIXED_TO_FLOAT(hS);
+			wallVerts[1].y = FIXED_TO_FLOAT(lS);
 
 			// TODO: Actually use the surface's flags so that I don't have to do this
 			FUINT blendmode = Surf.PolyFlags;
 
 			// Render midtextures on two-sided lines with a z-buffer offset.
 			// This will cause the midtexture appear on top, if a FOF overlaps with it.
-			if (cv_fofzfightfix.value)
-				blendmode |= PF_Decal;
+			blendmode |= PF_Decal;
 
 			if (!gl_drawing_stencil && gr_frontsector->numlights)
 			{
 				if (!(blendmode & PF_Masked))
-					HWR_SplitWall(gr_frontsector, wallVerts, gr_midtexture, gr_linedef->flags & ML_TFERLINE, &Surf, FF_TRANSLUCENT, NULL, cv_fofzfightfix.value ? PF_Decal : 0);
+					HWR_SplitWall(gr_frontsector, wallVerts, gr_midtexture, gr_linedef->flags & ML_TFERLINE, &Surf, FF_TRANSLUCENT, NULL, PF_Decal);
 				else
-					HWR_SplitWall(gr_frontsector, wallVerts, gr_midtexture, gr_linedef->flags & ML_TFERLINE, &Surf, FF_CUTLEVEL, NULL, cv_fofzfightfix.value ? PF_Decal : 0);
+					HWR_SplitWall(gr_frontsector, wallVerts, gr_midtexture, gr_linedef->flags & ML_TFERLINE, &Surf, FF_CUTLEVEL, NULL, PF_Decal);
 			}
 			else if (!gl_drawing_stencil && !(blendmode & PF_Masked))
 				HWR_AddTransparentWall(wallVerts, &Surf, gr_midtexture, gr_linedef->flags & ML_TFERLINE, blendmode, false, lightnum, colormap);
@@ -2091,20 +2006,11 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 		INT32 texnum;
 		line_t * newline = NULL; // Multi-Property FOF
 
-		if (cv_grfofcut.value)
-		{
-			lowcut = max(worldbottom, worldlow);
-			highcut = min(worldtop, worldhigh);
-			lowcutslope = max(worldbottomslope, worldlowslope);
-			highcutslope = min(worldtopslope, worldhighslope);
-		}
-		else
-		{
-			///TODO add slope support (fixing cutoffs, proper wall clipping) - maybe just disable highcut/lowcut if either sector or FOF has a slope
-			///     to allow fun plane intersecting in OGL? But then people would abuse that and make software look bad. :C
-			highcut = gr_frontsector->ceilingheight < gr_backsector->ceilingheight ? gr_frontsector->ceilingheight : gr_backsector->ceilingheight;
-			lowcut = gr_frontsector->floorheight > gr_backsector->floorheight ? gr_frontsector->floorheight : gr_backsector->floorheight;
-		}
+		lowcut = max(worldbottom, worldlow);
+		highcut = min(worldtop, worldhigh);
+		lowcutslope = max(worldbottomslope, worldlowslope);
+		highcutslope = min(worldtopslope, worldhighslope);
+
 
 		if (gr_backsector->ffloors)
 		{
@@ -2113,19 +2019,11 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 				if (!(rover->flags & FF_EXISTS) || !(rover->flags & FF_RENDERSIDES) || (rover->flags & FF_INVERTSIDES))
 					continue;
 
-				if (cv_grfofcut.value)
-				{
-					SLOPEPARAMS(*rover->t_slope, high1, highslope1, *rover->topheight)
-					SLOPEPARAMS(*rover->b_slope, low1,  lowslope1,  *rover->bottomheight)
+				SLOPEPARAMS(*rover->t_slope, high1, highslope1, *rover->topheight)
+				SLOPEPARAMS(*rover->b_slope, low1,  lowslope1,  *rover->bottomheight)
 
-					if ((high1 < lowcut && highslope1 < lowcutslope) || (low1 > highcut && lowslope1 > highcutslope))
-						continue;
-				}
-				else
-				{
-					if (*rover->topheight < lowcut || *rover->bottomheight > highcut)
-						continue;
-				}
+				if ((high1 < lowcut && highslope1 < lowcutslope) || (low1 > highcut && lowslope1 > highcutslope))
+					continue;
 
 				texnum = R_GetTextureNum(sides[rover->master->sidenum[0]].midtexture);
 
@@ -2141,26 +2039,16 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 				l  = P_GetFFloorBottomZAt(rover, v1x, v1y);
 				lS = P_GetFFloorBottomZAt(rover, v2x, v2y);
 
-				if (cv_grfofcut.value)
+				// Adjust the heights so the FOF does not overlap with top and bottom textures.
+				if (h >= highcut && hS >= highcutslope)
 				{
-					// Adjust the heights so the FOF does not overlap with top and bottom textures.
-					if (h >= highcut && hS >= highcutslope)
-					{
-						h = highcut;
-						hS = highcutslope;
-					}
-					if (l <= lowcut && lS <= lowcutslope)
-					{
-						l = lowcut;
-						lS = lowcutslope;
-					}
+					h = highcut;
+					hS = highcutslope;
 				}
-				else
+				if (l <= lowcut && lS <= lowcutslope)
 				{
-					if (!(*rover->t_slope) && !gr_frontsector->c_slope && !gr_backsector->c_slope && h > highcut)
-						h = hS = highcut;
-					if (!(*rover->b_slope) && !gr_frontsector->f_slope && !gr_backsector->f_slope && l < lowcut)
-						l = lS = lowcut;
+					l = lowcut;
+					lS = lowcutslope;
 				}
 
 				//Hurdler: HW code starts here
@@ -2278,19 +2166,11 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 				if (!(rover->flags & FF_EXISTS) || !(rover->flags & FF_RENDERSIDES) || !(rover->flags & FF_ALLSIDES))
 					continue;
 
-				if (cv_grfofcut.value)
-				{
-					SLOPEPARAMS(*rover->t_slope, high1, highslope1, *rover->topheight)
-					SLOPEPARAMS(*rover->b_slope, low1,  lowslope1,  *rover->bottomheight)
+				SLOPEPARAMS(*rover->t_slope, high1, highslope1, *rover->topheight)
+				SLOPEPARAMS(*rover->b_slope, low1,  lowslope1,  *rover->bottomheight)
 
-					if ((high1 < lowcut && highslope1 < lowcutslope) || (low1 > highcut && lowslope1 > highcutslope))
-						continue;
-				}
-				else
-				{
-					if (*rover->topheight < lowcut || *rover->bottomheight > highcut)
-						continue;
-				}
+				if ((high1 < lowcut && highslope1 < lowcutslope) || (low1 > highcut && lowslope1 > highcutslope))
+					continue;
 
 				texnum = R_GetTextureNum(sides[rover->master->sidenum[0]].midtexture);
 
@@ -2306,26 +2186,16 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 				l  = P_GetFFloorBottomZAt(rover, v1x, v1y);
 				lS = P_GetFFloorBottomZAt(rover, v2x, v2y);
 
-				if (cv_grfofcut.value)
+				// Adjust the heights so the FOF does not overlap with top and bottom textures.
+				if (h >= highcut && hS >= highcutslope)
 				{
-					// Adjust the heights so the FOF does not overlap with top and bottom textures.
-					if (h >= highcut && hS >= highcutslope)
-					{
-						h = highcut;
-						hS = highcutslope;
-					}
-					if (l <= lowcut && lS <= lowcutslope)
-					{
-						l = lowcut;
-						lS = lowcutslope;
-					}
+					h = highcut;
+					hS = highcutslope;
 				}
-				else
+				if (l <= lowcut && lS <= lowcutslope)
 				{
-					if (!(*rover->t_slope) && !gr_frontsector->c_slope && !gr_backsector->c_slope && h > highcut)
-						h = hS = highcut;
-					if (!(*rover->b_slope) && !gr_frontsector->f_slope && !gr_backsector->f_slope && l < lowcut)
-						l = lS = lowcut;
+					l = lowcut;
+					lS = lowcutslope;
 				}
 				
 				//Hurdler: HW code starts here
@@ -5967,10 +5837,6 @@ void HWR_AddCommands(void)
 	CV_RegisterVar(&cv_grsolvetjoin);
 
 	CV_RegisterVar(&cv_grbatching);
-	CV_RegisterVar(&cv_grfofcut);
-	CV_RegisterVar(&cv_fofzfightfix);
-	CV_RegisterVar(&cv_splitwallfix);
-	CV_RegisterVar(&cv_slopepegfix);
 
 	CV_RegisterVar(&cv_grrenderdistance);
 

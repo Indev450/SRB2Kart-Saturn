@@ -1473,11 +1473,6 @@ static menuitem_t OP_ExpOptionsMenu[] =
 #endif
 
 	{IT_STRING | IT_CVAR, 	NULL, "Palette Depth", 					&cv_grpalettedepth, 		80},
-
-	{IT_STRING | IT_CVAR, 	NULL, "Splitwall/Slope texture fix",	&cv_splitwallfix, 		 	87},
-	{IT_STRING | IT_CVAR, 	NULL, "Slope midtexture peg fix", 		&cv_slopepegfix, 		 	92},
-	{IT_STRING | IT_CVAR, 	NULL, "ZFighting fix for fofs", 		&cv_fofzfightfix, 		 	97},
-	{IT_STRING | IT_CVAR, 	NULL, "FOF wall cutoff for slopes", 	&cv_grfofcut, 		 		102},
 #endif	
 };
 
