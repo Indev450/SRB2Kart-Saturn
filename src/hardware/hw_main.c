@@ -54,6 +54,8 @@
 
 #define SOFTLIGHT(llevel) HWR_ShouldUsePaletteRendering() ? ((llevel) >> LIGHTSEGSHIFT) << LIGHTSEGSHIFT : (llevel)
 
+#define CLAMP(x, min_val, max_val) ((x) < (min_val) ? (min_val) : ((x) > (max_val) ? (max_val) : (x)))
+
 // ==========================================================================
 // the hardware driver object
 // ==========================================================================
@@ -558,12 +560,8 @@ UINT8 HWR_FogBlockAlpha(INT32 light, extracolormap_t *colormap) // Let's see if 
 	else
 	{
 		light = light - (255 - light);
-
 		// Don't go out of bounds
-		if (light < 0)
-			light = 0;
-		else if (light > 255)
-			light = 255;
+		light = CLAMP(light, 0, 255);
 
 		alpha = (realcolor.s.alpha*255)/25;
 
@@ -602,11 +600,7 @@ static FUINT HWR_CalcWallLight(FUINT lightnum, fixed_t v1x, fixed_t v1y, fixed_t
 		if (extralight != 0)
 		{
 			finallight += extralight;
-
-			if (finallight < 0)
-				finallight = 0;
-			if (finallight > 255)
-				finallight = 255;
+			finallight = CLAMP(finallight, 0 , 255);
 		}
 	}
 
@@ -646,11 +640,7 @@ static FUINT HWR_CalcSlopeLight(FUINT lightnum, angle_t dir, fixed_t delta)
 		if (extralight != 0)
 		{
 			finallight += extralight;
-
-			if (finallight < 0)
-				finallight = 0;
-			if (finallight > 255)
-				finallight = 255;
+			finallight = CLAMP(finallight, 0 , 255);
 		}
 	}
 
@@ -1135,27 +1125,15 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 		{
 			if (pfloor && (pfloor->flags & FF_FOG))
 			{
-				if (HWR_ShouldUsePaletteRendering())
-				{
-					lightnum = pfloor->master->frontsector->lightlevel;
-					colormap = pfloor->master->frontsector->extra_colormap;
-					lightnum = colormap ? lightnum : HWR_CalcWallLight(lightnum, v1x, v1y, v2x, v2y);
-				}else{
-					lightnum = HWR_CalcWallLight(pfloor->master->frontsector->lightlevel, v1x, v1y, v2x, v2y);
-					colormap = pfloor->master->frontsector->extra_colormap;
-				}
+				lightnum = pfloor->master->frontsector->lightlevel;
+				colormap = pfloor->master->frontsector->extra_colormap;
+				lightnum = colormap ? lightnum : HWR_CalcWallLight(lightnum, v1x, v1y, v2x, v2y);
 			}
 			else
 			{
-				if (HWR_ShouldUsePaletteRendering())
-				{
-					lightnum = *list[i].lightlevel;
-					colormap = list[i].extra_colormap;
-					lightnum = colormap ? lightnum : HWR_CalcWallLight(lightnum, v1x, v1y, v2x, v2y);
-				}else{
-					lightnum = HWR_CalcWallLight(*list[i].lightlevel, v1x, v1y, v2x, v2y);
-					colormap = list[i].extra_colormap;
-				}
+				lightnum = *list[i].lightlevel;
+				colormap = list[i].extra_colormap;
+				lightnum = colormap ? lightnum : HWR_CalcWallLight(lightnum, v1x, v1y, v2x, v2y);
 			}
 		}
 
@@ -1522,17 +1500,9 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 	cliplow = (float)texturehpeg;
 	cliphigh = (float)(texturehpeg + (gr_curline->flength*FRACUNIT));
 
-	if (HWR_ShouldUsePaletteRendering())
-	{
-		lightnum = gr_frontsector->lightlevel;
-		colormap = gr_frontsector->extra_colormap;
-		lightnum = colormap ? lightnum : HWR_CalcWallLight(lightnum, vs.x, vs.y, ve.x, ve.y);
-	}
-	else
-	{
-		lightnum = HWR_CalcWallLight(gr_frontsector->lightlevel, vs.x, vs.y, ve.x, ve.y);
-		colormap = gr_frontsector->extra_colormap;
-	}
+	lightnum = gr_frontsector->lightlevel;
+	colormap = gr_frontsector->extra_colormap;
+	lightnum = colormap ? lightnum : HWR_CalcWallLight(lightnum, vs.x, vs.y, ve.x, ve.y);
 
 	if (gr_linedef->flags & ML_TFERLINE)
 		noencore = true;
@@ -2253,18 +2223,10 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 					blendmode = PF_Fog|PF_NoTexture;
 
-					if (HWR_ShouldUsePaletteRendering())
-					{
-						lightnum = rover->master->frontsector->lightlevel;
-						colormap = rover->master->frontsector->extra_colormap;
-						lightnum = colormap ? lightnum : HWR_CalcWallLight(lightnum, vs.x, vs.y, ve.x, ve.y);
-					}
-					else
-					{
-						lightnum = HWR_CalcWallLight(rover->master->frontsector->lightlevel, vs.x, vs.y, ve.x, ve.y);
-						colormap = rover->master->frontsector->extra_colormap;
-					}
-					
+					lightnum = rover->master->frontsector->lightlevel;
+					colormap = rover->master->frontsector->extra_colormap;
+					lightnum = colormap ? lightnum : HWR_CalcWallLight(lightnum, vs.x, vs.y, ve.x, ve.y);
+
 					Surf.PolyColor.s.alpha = HWR_FogBlockAlpha(rover->master->frontsector->lightlevel, rover->master->frontsector->extra_colormap);
 
 					if (gr_frontsector->numlights)
@@ -2393,17 +2355,9 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 					blendmode = PF_Fog|PF_NoTexture;
 
-					if (HWR_ShouldUsePaletteRendering())
-					{
-						lightnum = rover->master->frontsector->lightlevel;
-						colormap = rover->master->frontsector->extra_colormap;
-						lightnum = colormap ? lightnum : HWR_CalcWallLight(lightnum, vs.x, vs.y, ve.x, ve.y);
-					}
-					else
-					{
-						lightnum = HWR_CalcWallLight(rover->master->frontsector->lightlevel, vs.x, vs.y, ve.x, ve.y);
-						colormap = rover->master->frontsector->extra_colormap;
-					}
+					lightnum = rover->master->frontsector->lightlevel;
+					colormap = rover->master->frontsector->extra_colormap;
+					lightnum = colormap ? lightnum : HWR_CalcWallLight(lightnum, vs.x, vs.y, ve.x, ve.y);
 
 					Surf.PolyColor.s.alpha = HWR_FogBlockAlpha(rover->master->frontsector->lightlevel, rover->master->frontsector->extra_colormap);
 
@@ -4568,10 +4522,7 @@ void HWR_AddTransparentFloor(lumpnum_t lumpnum, extrasubsector_t *xsub, boolean 
 	planeinfo->isceiling = isceiling;
 	planeinfo->fixedheight = fixedheight;
 
-	if (HWR_ShouldUsePaletteRendering())
-		planeinfo->lightlevel = (planecolormap && (planecolormap->fog & 1)) ? 255 : lightlevel;
-	else
-		planeinfo->lightlevel = lightlevel;
+	planeinfo->lightlevel = (planecolormap && (planecolormap->fog & 1)) ? 255 : lightlevel;
 	
 	planeinfo->lumpnum = lumpnum;
 	planeinfo->xsub = xsub;
@@ -4591,10 +4542,7 @@ void HWR_AddTransparentPolyobjectFloor(lumpnum_t lumpnum, polyobj_t *polysector,
 	polyplaneinfo->isceiling = isceiling;
 	polyplaneinfo->fixedheight = fixedheight;
 	
-	if (HWR_ShouldUsePaletteRendering())
-		polyplaneinfo->lightlevel = (planecolormap && (planecolormap->fog & 1)) ? 255 : lightlevel;
-	else
-		polyplaneinfo->lightlevel = lightlevel;
+	polyplaneinfo->lightlevel = (planecolormap && (planecolormap->fog & 1)) ? 255 : lightlevel;
 	
 	polyplaneinfo->lumpnum = lumpnum;
 	polyplaneinfo->polysector = polysector;
@@ -6307,4 +6255,7 @@ void HWR_DrawScreenFinalTexture(INT32 width, INT32 height)
 {
 	HWD.pfnDrawScreenFinalTexture(HWD_SCREENTEXTURE_GENERIC2, width, height);
 }
+
+#undef CLAMP
+
 #endif // HWRENDER
