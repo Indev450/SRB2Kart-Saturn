@@ -608,6 +608,7 @@ typedef void  	(APIENTRY *PFNglDeleteProgram)		(GLuint);
 typedef void 	(APIENTRY *PFNglAttachShader)		(GLuint, GLuint);
 typedef void 	(APIENTRY *PFNglLinkProgram)		(GLuint);
 typedef void 	(APIENTRY *PFNglGetProgramiv)		(GLuint, GLenum, GLint*);
+typedef void 	(APIENTRY *PFNglGetProgramInfoLog)	(GLuint, GLsizei, GLsizei*, GLchar*);
 typedef void 	(APIENTRY *PFNglUseProgram)			(GLuint);
 typedef void 	(APIENTRY *PFNglUniform1i)			(GLint, GLint);
 typedef void 	(APIENTRY *PFNglUniform1f)			(GLint, GLfloat);
@@ -630,6 +631,7 @@ static PFNglDeleteProgram pglDeleteProgram;
 static PFNglAttachShader pglAttachShader;
 static PFNglLinkProgram pglLinkProgram;
 static PFNglGetProgramiv pglGetProgramiv;
+static PFNglGetProgramInfoLog pglGetProgramInfoLog;
 static PFNglUseProgram pglUseProgram;
 static PFNglUniform1i pglUniform1i;
 static PFNglUniform1f pglUniform1f;
@@ -737,6 +739,7 @@ void SetupGLFunc4(void)
 	pglAttachShader = GetGLFunc("glAttachShader");
 	pglLinkProgram = GetGLFunc("glLinkProgram");
 	pglGetProgramiv = GetGLFunc("glGetProgramiv");
+	pglGetProgramInfoLog = GetGLFunc("glGetProgramInfoLog");
 	pglUseProgram = GetGLFunc("glUseProgram");
 	pglUniform1i = GetGLFunc("glUniform1i");
 	pglUniform1f = GetGLFunc("glUniform1f");
@@ -1854,6 +1857,7 @@ static boolean Shader_CompileProgram(gl_shader_t *shader, GLint i)
 	GLint result;
 	const GLchar *vert_shader = shader->vertex_shader;
 	const GLchar *frag_shader = shader->fragment_shader;
+	GLchar info_log[512];
 
 	if (shader->program)
 		pglDeleteProgram(shader->program);
@@ -1883,7 +1887,10 @@ static boolean Shader_CompileProgram(gl_shader_t *shader, GLint i)
 		pglGetShaderiv(gl_vertShader, GL_COMPILE_STATUS, &result);
 		if (result == GL_FALSE)
 		{
-			GL_MSG_Error("Error compiling vertex shader", gl_vertShader, i);
+            pglGetShaderInfoLog(gl_vertShader, 512, NULL, info_log);
+
+			GL_MSG_Error("Error compiling vertex shader: %s\n", info_log);
+
 			pglDeleteShader(gl_vertShader);
 			return false;
 		}
@@ -1910,7 +1917,9 @@ static boolean Shader_CompileProgram(gl_shader_t *shader, GLint i)
 		pglGetShaderiv(gl_fragShader, GL_COMPILE_STATUS, &result);
 		if (result == GL_FALSE)
 		{
-			GL_MSG_Error("Error compiling fragment shader", gl_fragShader, i);
+            pglGetShaderInfoLog(gl_fragShader, 512, NULL, info_log);
+
+			GL_MSG_Error("Error compiling fragment shader: %s\n", info_log);
 			pglDeleteShader(gl_vertShader);
 			pglDeleteShader(gl_fragShader);
 			return false;
@@ -1936,7 +1945,8 @@ static boolean Shader_CompileProgram(gl_shader_t *shader, GLint i)
 	// couldn't link?
 	if (result != GL_TRUE)
 	{
-		GL_MSG_Error("Shader_CompileProgram: Error linking shader program %s\n", HWR_GetShaderName(i));
+        pglGetProgramInfoLog(shader->program, 512, NULL, info_log);
+		GL_MSG_Error("Shader_CompileProgram: Error linking shader program %s: %s\n", HWR_GetShaderName(i), info_log);
 		pglDeleteProgram(shader->program);
 		return false;
 	}
