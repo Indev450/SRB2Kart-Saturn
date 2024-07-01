@@ -82,8 +82,13 @@ void P_MixUp(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z, angle_t angle,
 		// move chasecam at new player location
 		for (i = 0; i <= splitscreen; i++)
 		{
-			if (thing->player == &players[displayplayers[i]] && camera[i].chase)
+			if (thing->player != &players[displayplayers[i]])
+				continue;
+
+			if (camera[i].chase)
 				P_ResetCamera(thing->player, &camera[i]);
+
+			R_ResetViewInterpolation(i + 1);
 		}
 
 		// don't run in place after a teleport
@@ -153,14 +158,14 @@ boolean P_Teleport(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z, angle_t angle
 		// move chasecam at new player location
 		for (i = 0; i <= splitscreen; i++)
 		{
-			if (thing->player == &players[displayplayers[i]])
-			{
-				localangle[i] = angle;
-				if (camera[i].chase)
-					P_ResetCamera(thing->player, &camera[i]);
-				R_ResetViewInterpolation(i + 1);
-				break;
-			}
+			if (thing->player != &players[displayplayers[i]])
+				continue;
+
+			localangle[i] = angle;
+			if (camera[i].chase)
+				P_ResetCamera(thing->player, &camera[i]);
+
+			R_ResetViewInterpolation(i + 1);
 		}
 
 		// don't run in place after a teleport

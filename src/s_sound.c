@@ -1996,7 +1996,7 @@ void S_ChangeMusicEx(const char *mmusic, UINT16 mflags, boolean looping, UINT32 
 
 	strncpy(newmusic, mmusic, 6);
 
-	if(LUAh_MusicChange(music_name, newmusic, &mflags, &looping, &position, &prefadems, &fadeinms))
+	if (LUAh_MusicChange(music_name, newmusic, &mflags, &looping, &position, &prefadems, &fadeinms))
 		return;
 
  	// No Music (empty string)
