@@ -56,26 +56,22 @@
 	"float halfResolutionx = scr_resolution.x;\n" \
 	"float halfResolutiony = scr_resolution.y;\n" \
 	"if (scr_resolution.x > 1280.0) {\n" \
-	"    halfResolutionx = scr_resolution.x * 0.5;\n" \
+		"halfResolutionx = scr_resolution.x * 0.5;\n" \
 	"}\n" \
 	"if (scr_resolution.y > 720.0) {\n" \
-	"    halfResolutiony = scr_resolution.y * 0.5;\n" \
+		"halfResolutiony = scr_resolution.y * 0.5;\n" \
 	"}\n" \
 	"vec2 normalizedPosition = position * vec2(halfResolutionx / scr_resolution.x, halfResolutiony / scr_resolution.y);\n" \
-	"int x = int(mod(normalizedPosition.x, 8.0));\n" \
-	"int y = int(mod(normalizedPosition.y, 8.0));\n" \
-	"float bayerMatrix[8*8] = float[8*8](\n" \
-	"0.0, 32.0, 8.0, 40.0, 2.0, 34.0, 10.0, 42.0,\n" \
-	"48.0, 16.0, 56.0, 24.0, 50.0, 18.0, 58.0, 26.0,\n" \
-	"12.0, 44.0, 4.0, 36.0, 14.0, 46.0, 6.0, 38.0,\n" \
-	"60.0, 28.0, 52.0, 20.0, 62.0, 30.0, 54.0, 22.0,\n" \
-	"3.0, 35.0, 11.0, 43.0, 1.0, 33.0, 9.0, 41.0,\n" \
-	"51.0, 19.0, 59.0, 27.0, 49.0, 17.0, 57.0, 25.0,\n" \
-	"15.0, 47.0, 7.0, 39.0, 13.0, 45.0, 5.0, 37.0,\n" \
-	"63.0, 31.0, 55.0, 23.0, 61.0, 29.0, 53.0, 21.0\n" \
+	"int x = int(mod(normalizedPosition.x, 4.0));\n" \
+	"int y = int(mod(normalizedPosition.y, 4.0));\n" \
+	"float bayerMatrix[4*4] = float[4*4](\n" \
+		"0.0, 8.0, 2.0, 10.0,\n" \
+		"12.0, 4.0, 14.0, 6.0,\n" \
+		"3.0, 11.0, 1.0, 9.0,\n" \
+		"15.0, 7.0, 13.0, 5.0\n" \
 	");\n" \
-	"float threshold = bayerMatrix[y*8 + x] / 64.0;\n" \
-	"return baseValue + threshold - 0.5 / 64.0;\n" \
+	"float threshold = bayerMatrix[y*4 + x] / 16.0;\n" \
+	"return baseValue + threshold - 0.5 / 16.0;\n" \
 
 #define GLSL_DOOM_COLORMAP_NODITHER \
 	"return max(startmap * STARTMAP_FUDGE - scale * 0.5 * SCALE_FUDGE, cap);\n" \
