@@ -81,6 +81,8 @@ static void CV_grshaders_OnChange(void);
 static void CV_grpaletterendering_OnChange(void);
 static void CV_grpalettedepth_OnChange(void);
 
+static void CV_grlightdithering_OnChange(void);
+
 static CV_PossibleValue_t grfakecontrast_cons_t[] = {{0, "Off"}, {1, "Standard"}, {2, "Smooth"}, {0, NULL}};
 
 static CV_PossibleValue_t grfiltermode_cons_t[]= {{HWD_SET_TEXTUREFILTER_POINTSAMPLED, "Nearest"},
@@ -157,6 +159,8 @@ consvar_t cv_grpaletterendering = {"gr_paletteshader", "Off", CV_CALL|CV_SAVE, C
 static CV_PossibleValue_t glpalettedepth_cons_t[] = {{16, "16 bits"}, {24, "24 bits"}, {0, NULL}};
 consvar_t cv_grpalettedepth = {"gr_palettedepth", "16 bits", CV_SAVE|CV_CALL, glpalettedepth_cons_t, CV_grpalettedepth_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_lightdither = {"gr_lightdithering", "Off", CV_CALL|CV_SAVE, CV_OnOff, CV_grlightdithering_OnChange, 0, NULL, NULL, 0, 0, NULL};
+
 consvar_t cv_grflashpal = {"gr_flashpal", "On", CV_CALL|CV_SAVE, CV_OnOff, CV_grpaletterendering_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_grmdls = {"gr_mdls", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -214,6 +218,15 @@ static void CV_grpaletterendering_OnChange(void)
 	{
 		HWR_CompileShaders();
 		HWR_TogglePaletteRendering();
+	}
+}
+
+static void CV_grlightdithering_OnChange(void)
+{
+	ONLY_IF_GL_LOADED
+	if (gr_shadersavailable)
+	{
+		HWR_CompileShaders();
 	}
 }
 
@@ -5998,6 +6011,8 @@ void HWR_AddCommands(void)
 	CV_RegisterVar(&cv_grpaletterendering);
 	CV_RegisterVar(&cv_grpalettedepth);
 	CV_RegisterVar(&cv_grflashpal);
+
+	CV_RegisterVar(&cv_lightdither);
 
 #ifdef USE_FBO_OGL
 	CV_RegisterVar(&cv_grframebuffer);

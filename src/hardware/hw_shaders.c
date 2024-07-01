@@ -82,6 +82,7 @@ static shadertarget_t gl_shadertargets[NUMSHADERTARGETS];
 #define WHITESPACE_CHARS " \t"
 
 #define PALETTE_RENDERING_DEFINE "#define SRB2_PALETTE_RENDERING"
+#define LIGHT_DITHERING_DEFINE "#define SRB2_LIGHT_DITHER"
 
 // Initialize shader variables and the backend's shader system. Load the base shaders.
 // Returns false if shaders cannot be used.
@@ -282,6 +283,9 @@ static char *HWR_PreprocessShader(char *original)
 	if (cv_grpaletterendering.value)
 		ADD_TO_LEN(PALETTE_RENDERING_DEFINE)
 
+	if (cv_lightdither.value)
+		ADD_TO_LEN(LIGHT_DITHERING_DEFINE)
+
 #undef ADD_TO_LEN
 
 #define VERSION_PART "#version "
@@ -322,6 +326,9 @@ static char *HWR_PreprocessShader(char *original)
 	// Write the defines.
 	if (cv_grpaletterendering.value)
 		WRITE_DEFINE(PALETTE_RENDERING_DEFINE)
+
+	if (cv_lightdither.value)
+		WRITE_DEFINE(LIGHT_DITHERING_DEFINE)
 
 #undef WRITE_DEFINE
 
