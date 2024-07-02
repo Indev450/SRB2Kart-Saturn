@@ -70,7 +70,11 @@
 		"3.0, 11.0, 1.0, 9.0,\n" \
 		"15.0, 7.0, 13.0, 5.0\n" \
 	");\n" \
+	"#ifdef SRB2_PALETTE_RENDERING\n" \
+	"float threshold = bayerMatrix[y*4 + x] / 12.0;\n" \
+	"#else\n" \
 	"float threshold = bayerMatrix[y*4 + x] / 16.0;\n" \
+	"#endif\n" \
 	"return baseValue + threshold - 0.5 / 16.0;\n" \
 
 #define GLSL_DOOM_COLORMAP_NODITHER \
