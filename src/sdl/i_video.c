@@ -243,7 +243,7 @@ static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen)
 		if (fullscreen)
 		{
 			wasfullscreen = SDL_TRUE;
-			SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+			SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN);
 		}
 		else // windowed mode
 		{
@@ -268,7 +268,7 @@ static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen)
 		SDL_SetWindowSize(window, width, height);
 		if (fullscreen)
 		{
-			SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+			SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN);
 		}
 	}
 
@@ -1964,7 +1964,7 @@ static SDL_bool Impl_CreateWindow(SDL_bool fullscreen)
 		return SDL_FALSE;
 
 	if (fullscreen)
-		flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+		flags |= SDL_WINDOW_FULLSCREEN;
 
 	if (borderlesswindow)
 		flags |= SDL_WINDOW_BORDERLESS;
@@ -1992,7 +1992,7 @@ static SDL_bool Impl_CreateWindow(SDL_bool fullscreen)
 
 	// Create a window
 	window = SDL_CreateWindow("SRB2Kart "VERSIONSTRING, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-			realwidth, realheight, flags);
+			vid.width, vid.height, flags);
 
 	if (window == NULL)
 	{
