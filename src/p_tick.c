@@ -32,6 +32,9 @@
 // Object place
 #include "m_cheat.h"
 
+// Dynamic slopes
+#include "p_slopes.h"
+
 tic_t leveltime;
 
 //
@@ -676,6 +679,9 @@ void P_Ticker(boolean run)
 
 	if (run)
 	{
+		// Dynamic slopeness
+		P_RunDynamicSlopes();
+
 		PS_START_TIMING(ps_thinkertime);
 		P_RunThinkers();
 		PS_STOP_TIMING(ps_thinkertime);
@@ -891,6 +897,9 @@ void P_PreTicker(INT32 frames)
 
 				memcpy(&players[i].cmd, &temptic, sizeof(ticcmd_t));
 			}
+
+		// Dynamic slopeness
+		P_RunDynamicSlopes();
 
 		P_RunThinkers();
 
