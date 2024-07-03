@@ -9350,11 +9350,10 @@ static void K_drawDriftGauge(void)
 
 				if (driftcharge >= driftval*4) // rainbow sparks
 				{
+					int index = CLAMP((leveltime % 18) + 1, 0, 18 - 1);
 					cmap = R_GetTranslationColormap(TC_RAINBOW, 1 + leveltime % (MAXSKINCOLORS-1),GTC_CACHE);
 					for	(i = 0; i < 4; i++)
-					{
-						V_DrawFill(barx, bary+dup*1+dup*i, BAR_WIDTH, dup, (driftrainbow[(leveltime % 18) + 1] + i*2) | V_NOSCALESTART|drifttrans);
-					}
+						V_DrawFill(barx, bary+dup*1+dup*i, BAR_WIDTH, dup, (driftrainbow[index] + i*2) | V_NOSCALESTART|drifttrans);
 				}
 				else // none/blue/red
 				{
