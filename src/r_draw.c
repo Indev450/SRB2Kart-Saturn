@@ -143,7 +143,7 @@ UINT32 nflatxshift, nflatyshift, nflatshiftup, nflatmask;
 #define NUM_PALETTE_ENTRIES 256
 
 static UINT8** translationtablecache[TT_CACHE_SIZE] = {NULL};
-static UINT8** localtranslationtablecache[MAXSKINS] = {NULL};
+static UINT8** localtranslationtablecache[MAXLOCALSKINS] = {NULL};
 
 
 // See also the enum skincolors_t

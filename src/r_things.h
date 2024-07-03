@@ -149,7 +149,10 @@ typedef struct vissprite_s
 	fixed_t thingscale; // the object's scale
 	fixed_t sortscale; // sortscale only differs from scale for flat sprites
 	fixed_t scalestep; // only for flat sprites, 0 otherwise
+	fixed_t paperoffset, paperdistance; // for paper sprites, offset/dist relative to the angle
 	fixed_t xiscale; // negative if flipped
+
+	angle_t centerangle; // for paper sprites
 
 	fixed_t texturemid;
 	patch_t *patch;
@@ -172,11 +175,9 @@ typedef struct vissprite_s
 
 	spritecut_e cut;
 	UINT32 renderflags;
-	UINT8 rotateflags;
 
 	fixed_t spritexscale, spriteyscale;
 	fixed_t spritexoffset, spriteyoffset;
-
 
 	INT16 clipbot[MAXVIDWIDTH], cliptop[MAXVIDWIDTH];
 
@@ -219,8 +220,8 @@ extern UINT8 skinstatscount[9][9];
 extern UINT8 skinsorted[MAXSKINS];
 
 void sortSkinGrid(void);
-extern skin_t localskins[MAXSKINS];
-extern skin_t allskins[MAXSKINS*2];
+extern skin_t localskins[MAXLOCALSKINS];
+extern skin_t allskins[MAXSKINS+MAXLOCALSKINS];
 
 boolean SetPlayerSkin(INT32 playernum,const char *skinname);
 void SetPlayerSkinByNum(INT32 playernum,INT32 skinnum); // Tails 03-16-2002

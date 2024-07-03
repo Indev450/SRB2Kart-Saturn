@@ -648,16 +648,9 @@ typedef struct
 	INT16 height;
 	INT16 leftoffset;     // pixels to the left of origin
 	INT16 topoffset;      // pixels below the origin
-	INT32 columnofs[8];     // only [width] used
-	UINT8 *columns; // Software column data
+	INT32 columnofs[];     // only [width] used
 	// the [0] is &columnofs[width]
-	
-	void *hardware; // OpenGL patch, allocated whenever necessary
-	
-#ifdef ROTSPRITE
-	rotsprite_t *rotated; // Rotated patches
-#endif
-} patch_t;
+}ATTRPACK patch_t;
 
 #ifdef _MSC_VER
 #pragma warning(disable :  4200)

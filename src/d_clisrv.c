@@ -23,6 +23,7 @@
 #include "d_netfil.h" // fileneedednum
 #include "d_main.h"
 #include "g_game.h"
+#include "m_menu.h" // M_ClearMenus
 #include "hu_stuff.h"
 #include "keys.h"
 #include "g_input.h" // JOY1
@@ -1333,9 +1334,13 @@ static inline void CL_DrawConnectionStatus(void)
 			{
 				strncpy(tempname, filename, sizeof(tempname)-1);
 			}
-
+#ifdef HAVE_CURL
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-58-30, 0,
 				va(M_GetText("%s downloading"), ((cl_mode == CL_DOWNLOADHTTPFILES) ? "\x82""HTTP" : "\x85""Direct")));
+#else
+			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-58-30, 0,
+								 va(M_GetText("%s downloading"),("\x85""Direct")));
+#endif
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-58-22, V_YELLOWMAP,
 				va(M_GetText("\"%s\""), tempname));
 			V_DrawString(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-58, V_20TRANS|V_MONOSPACE,
@@ -2170,7 +2175,9 @@ static void M_ConfirmConnect(event_t *ev)
 
 static void AbortConnection(void)
 {
+#ifdef HAVE_CURL
 	CURLAbortFile();
+#endif
 	D_QuitNetGame();
 	CL_Reset();
 	D_StartTitle();
@@ -3040,8 +3047,17 @@ static void Command_connect(void)
 
 	if (Playing() || demo.title)
 	{
-		CONS_Printf(M_GetText("You cannot connect while in a game. End this game first.\n"));
-		return;
+		M_ClearMenus(true);
+		if (demo.title)
+			G_CheckDemoStatus();
+
+		if (netgame)
+		{
+			D_QuitNetGame();
+			CL_Reset();
+		}
+
+		D_StartTitle();
 	}
 
 	// modified game check: no longer handled

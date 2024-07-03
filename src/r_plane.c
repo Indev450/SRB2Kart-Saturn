@@ -295,7 +295,7 @@ void R_MapPlane(INT32 y, INT32 x1, INT32 x2)
 		ds_colormap = planezlight[pindex];
 	}
 	if (encoremap && !currentplane->noencore)
-		ds_colormap += (256*32);
+		ds_colormap += COLORMAP_REMAPOFFSET;
 
 	if (currentplane->extra_colormap)
 		ds_colormap = currentplane->extra_colormap->colormap + (ds_colormap - colormaps);
@@ -674,25 +674,26 @@ static void R_DrawSkyPlane(visplane_t *pl)
 	// Because of this hack, sky is not affected
 	//  by INVUL inverse mapping.
 	dc_colormap = colormaps;
+
 	if (encoremap)
-		dc_colormap += (256*32);
+		dc_colormap += COLORMAP_REMAPOFFSET;
+
 	dc_texturemid = skytexturemid;
-	dc_texheight = textureheight[skytexture]
-		>>FRACBITS;
+	dc_texheight = textureheight[skytexture] >>FRACBITS;
+
 	for (x = pl->minx; x <= pl->maxx; x++)
 	{
 		dc_yl = pl->top[x];
 		dc_yh = pl->bottom[x];
-		if (dc_yl <= dc_yh)
-		{
-			angle = (pl->viewangle + xtoviewangle[x])>>ANGLETOSKYSHIFT;
-			dc_iscale = FixedMul(skyscale, FINECOSINE(xtoviewangle[x]>>ANGLETOFINESHIFT));
-			dc_x = x;
-			dc_source =
-				R_GetColumn(texturetranslation[skytexture],
-					angle);
-			wallcolfunc();
-		}
+
+		if (!(dc_yl <= dc_yh))
+			continue;
+
+		angle = (pl->viewangle + xtoviewangle[x])>>ANGLETOSKYSHIFT;
+		dc_iscale = FixedMul(skyscale, FINECOSINE(xtoviewangle[x]>>ANGLETOFINESHIFT));
+		dc_x = x;
+		dc_source = R_GetColumn(texturetranslation[skytexture], angle);
+		wallcolfunc();
 	}
 }
 
@@ -839,18 +840,15 @@ void R_DrawSinglePlane(visplane_t *pl)
 		// Don't draw planes that shouldn't be drawn.
 		for (rover = pl->ffloor->target->ffloors; rover; rover = rover->next)
 		{
-			if ((pl->ffloor->flags & FF_CUTEXTRA) && (rover->flags & FF_EXTRA))
-			{
-				if (pl->ffloor->flags & FF_EXTRA)
-				{
-					// The plane is from an extra 3D floor... Check the flags so
-					// there are no undesired cuts.
-					if (((pl->ffloor->flags & (FF_FOG|FF_SWIMMABLE)) == (rover->flags & (FF_FOG|FF_SWIMMABLE)))
-						&& pl->height < *rover->topheight
-						&& pl->height > *rover->bottomheight)
-						return;
-				}
-			}
+			if (!((pl->ffloor->flags & FF_CUTEXTRA) && (rover->flags & FF_EXTRA)))
+				continue;
+
+			// The plane is from an extra 3D floor... Check the flags so
+			// there are no undesired cuts.
+			if (((pl->ffloor->flags & (FF_FOG|FF_SWIMMABLE)) == (rover->flags & (FF_FOG|FF_SWIMMABLE)))
+				&& pl->height < *rover->topheight
+				&& pl->height > *rover->bottomheight)
+				return;
 		}
 
 		if (pl->ffloor->flags & FF_TRANSLUCENT)

@@ -64,6 +64,9 @@ extern lighttable_t *zlight[LIGHTLEVELS][MAXLIGHTZ];
 // There a 0-31, i.e. 32 LUT in the COLORMAP lump.
 #define NUMCOLORMAPS 32
 
+#define COLORMAP_SIZE (256*LIGHTLEVELS)
+#define COLORMAP_REMAPOFFSET COLORMAP_SIZE
+
 // Utility functions.
 INT32 R_PointOnSide(fixed_t x, fixed_t y, const node_t *node);
 INT32 R_PointOnSegSide(fixed_t x, fixed_t y, const seg_t *line);

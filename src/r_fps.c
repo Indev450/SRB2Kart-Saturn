@@ -23,8 +23,6 @@
 #include "r_state.h"
 #include "z_zone.h"
 #include "console.h" // con_startup_loadprogress
-#include "i_time.h"
-
 #ifdef HWRENDER
 #include "hardware/hw_main.h" // for cv_grshearing
 #endif
@@ -82,7 +80,6 @@ static viewvars_t skyview_old[MAXSPLITSCREENPLAYERS];
 static viewvars_t skyview_new[MAXSPLITSCREENPLAYERS];
 
 static viewvars_t *oldview = &pview_old[0];
-static tic_t last_view_update;
 static int oldview_invalid[MAXSPLITSCREENPLAYERS] = {0, 0, 0, 0};
 viewvars_t *newview = &pview_new[0];
 
@@ -203,27 +200,21 @@ void R_UpdateViewInterpolation(void)
 
 		if (oldview_invalid[i]) oldview_invalid[i]--;
 	}
-
-	last_view_update = I_GetTime();
 }
 
 void R_ResetViewInterpolation(UINT8 p)
 {
-	// Wait an extra tic if the interpolation state hasn't
-	// updated yet.
-	int t = last_view_update == I_GetTime() ? 1 : 2;
-
 	if (p == 0)
 	{
 		UINT8 i;
 		for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 		{
-			oldview_invalid[i] = t;
+			oldview_invalid[i]++;
 		}
 	}
 	else
 	{
-		oldview_invalid[p - 1] = t;
+		oldview_invalid[p - 1]++;
 	}
 }
 
@@ -287,6 +278,11 @@ angle_t R_InterpolateAngle(angle_t from, angle_t to)
 	return (R_LerpAngle(from, to, rendertimefrac));
 }*/
 
+#define IFCHANGED(a, b)\
+if (mobj->a == mobj->b)\
+(out->a = mobj->b);\
+else
+
 void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 {
 	if (frac == FRACUNIT)
@@ -308,44 +304,28 @@ void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 		return;
 	}
 
-	if (mobj->x == mobj->old_x)
-		out->x = mobj->x;
-	else
+	IFCHANGED(x, old_x)
 		out->x = R_LerpFixed(mobj->old_x, mobj->x, frac);
 
-	if (mobj->y == mobj->old_y)
-		out->y = mobj->y;
-	else
+	IFCHANGED(y, old_y)
 		out->y = R_LerpFixed(mobj->old_y, mobj->y, frac);
 
-	if (mobj->z == mobj->old_z)
-		out->z = mobj->z;
-	else
+	IFCHANGED(z, old_z)
 		out->z = R_LerpFixed(mobj->old_z, mobj->z, frac);
 
-	if (mobj->spritexscale == mobj->old_spritexscale)
-		out->spritexscale = mobj->spritexscale;
-	else
+	IFCHANGED(spritexscale, old_spritexscale)
 		out->spritexscale = mobj->resetinterp ? mobj->spritexscale : R_LerpFixed(mobj->old_spritexscale, mobj->spritexscale, frac);
 
-	if (mobj->spriteyscale == mobj->old_spriteyscale)
-		out->spriteyscale = mobj->spriteyscale;
-	else
+	IFCHANGED(spriteyscale, old_spriteyscale)
 		out->spriteyscale = mobj->resetinterp ? mobj->spriteyscale : R_LerpFixed(mobj->old_spriteyscale, mobj->spriteyscale, frac);
 
-	if (mobj->spritexoffset == mobj->old_spritexoffset)
-		out->spritexoffset = mobj->spritexoffset;
-	else
+	IFCHANGED(spritexoffset, old_spritexoffset)
 		out->spritexoffset = mobj->resetinterp ? mobj->spritexoffset : R_LerpFixed(mobj->old_spritexoffset, mobj->spritexoffset, frac);
 
-	if (mobj->spriteyoffset == mobj->old_spriteyoffset)
-		out->spriteyoffset = mobj->spriteyoffset;
-	else
+	IFCHANGED(spriteyoffset, old_spriteyoffset)
 		out->spriteyoffset = mobj->resetinterp ? mobj->spriteyoffset : R_LerpFixed(mobj->old_spriteyoffset, mobj->spriteyoffset, frac);
 
-	if (mobj->scale == mobj->old_scale) // Tiny optimisation - scale is usually unchanging, so let's skip a lerp, two FixedMuls, and two FixedDivs
-		out->scale = mobj->scale;
-	else
+	IFCHANGED(scale, old_scale)
 		out->scale = mobj->resetinterp ? mobj->scale : R_LerpFixed(mobj->old_scale, mobj->scale, frac);
 
 	if (cv_mobjssector.value)
@@ -355,39 +335,27 @@ void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 
 	if (mobj->player)
 	{
-		if (mobj->angle == mobj->player->old_frameangle)
-			out->angle = mobj->player->frameangle;
-		else
+		IFCHANGED(angle, player->old_frameangle)
 			out->angle = mobj->resetinterp ? mobj->player->frameangle : R_LerpAngle(mobj->player->old_frameangle, mobj->player->frameangle, frac);
 	}
 	else
 	{
-		if (mobj->angle == mobj->old_angle)
-			out->angle = mobj->angle;
-		else
+		IFCHANGED(angle, old_angle)
 			out->angle = mobj->resetinterp ? mobj->angle : R_LerpAngle(mobj->old_angle, mobj->angle, frac);
 	}
 
 	// pitch roll stuff
-	if (mobj->pitch == mobj->old_pitch)
-		out->pitch = mobj->pitch;
-	else
+	IFCHANGED(pitch, old_pitch)
 		out->pitch = mobj->resetinterp ? mobj->pitch : R_LerpAngle(mobj->old_pitch, mobj->pitch, frac);
 
-	if (mobj->roll == mobj->old_roll)
-		out->roll = mobj->roll;
-	else
+	IFCHANGED(roll, old_roll)
 		out->roll = mobj->resetinterp ? mobj->roll : R_LerpAngle(mobj->old_roll, mobj->roll, frac);
 
 	// and the slope stuff
-	if (mobj->slopepitch == mobj->old_slopepitch)
-		out->slopepitch = mobj->slopepitch;
-	else
+	IFCHANGED(slopepitch, old_slopepitch)
 		out->slopepitch = mobj->resetinterp ? mobj->slopepitch : R_LerpAngle(mobj->old_slopepitch, mobj->slopepitch, frac);
 
-	if (mobj->sloperoll == mobj->old_sloperoll)
-		out->sloperoll = mobj->sloperoll;
-	else
+	IFCHANGED(sloperoll, old_sloperoll)
 		out->sloperoll = mobj->resetinterp ? mobj->sloperoll : R_LerpAngle(mobj->old_sloperoll, mobj->sloperoll, frac);
 }
 
@@ -422,11 +390,11 @@ void R_InterpolatePrecipMobjState(precipmobj_t *mobj, fixed_t frac, interpmobjst
 		else
 			out->subsector = mobj->subsector;
 
-		if (mobj->angle == mobj->old_angle)
-			out->angle = mobj->angle;
-		else
+		IFCHANGED(angle, old_angle)
 			out->angle = R_LerpAngle(mobj->old_angle, mobj->angle, frac);
 }
+
+#undef IFCHANGED
 
 static void AddInterpolator(levelinterpolator_t* interpolator)
 {

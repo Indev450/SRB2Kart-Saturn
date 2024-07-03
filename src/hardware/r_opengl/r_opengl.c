@@ -608,6 +608,7 @@ typedef void  	(APIENTRY *PFNglDeleteProgram)		(GLuint);
 typedef void 	(APIENTRY *PFNglAttachShader)		(GLuint, GLuint);
 typedef void 	(APIENTRY *PFNglLinkProgram)		(GLuint);
 typedef void 	(APIENTRY *PFNglGetProgramiv)		(GLuint, GLenum, GLint*);
+typedef void 	(APIENTRY *PFNglGetProgramInfoLog)	(GLuint, GLsizei, GLsizei*, GLchar*);
 typedef void 	(APIENTRY *PFNglUseProgram)			(GLuint);
 typedef void 	(APIENTRY *PFNglUniform1i)			(GLint, GLint);
 typedef void 	(APIENTRY *PFNglUniform1f)			(GLint, GLfloat);
@@ -630,6 +631,7 @@ static PFNglDeleteProgram pglDeleteProgram;
 static PFNglAttachShader pglAttachShader;
 static PFNglLinkProgram pglLinkProgram;
 static PFNglGetProgramiv pglGetProgramiv;
+static PFNglGetProgramInfoLog pglGetProgramInfoLog;
 static PFNglUseProgram pglUseProgram;
 static PFNglUniform1i pglUniform1i;
 static PFNglUniform1f pglUniform1f;
@@ -669,6 +671,8 @@ typedef enum
 
 	// misc.
 	gluniform_leveltime,
+
+	gluniform_scr_resolution,
 	
 	gluniform_max,
 } gluniform_t;
@@ -735,6 +739,7 @@ void SetupGLFunc4(void)
 	pglAttachShader = GetGLFunc("glAttachShader");
 	pglLinkProgram = GetGLFunc("glLinkProgram");
 	pglGetProgramiv = GetGLFunc("glGetProgramiv");
+	pglGetProgramInfoLog = GetGLFunc("glGetProgramInfoLog");
 	pglUseProgram = GetGLFunc("glUseProgram");
 	pglUniform1i = GetGLFunc("glUniform1i");
 	pglUniform1f = GetGLFunc("glUniform1f");
@@ -1836,6 +1841,8 @@ static void Shader_SetUniforms(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRGBAF
 
 		UNIFORM_1(shader->uniforms[gluniform_leveltime], ((float)shader_leveltime) / TICRATE, pglUniform1f);
 
+		UNIFORM_2(shader->uniforms[gluniform_scr_resolution], vid.width, vid.height, pglUniform2f);
+
 		#undef UNIFORM_1
 		#undef UNIFORM_2
 		#undef UNIFORM_3
@@ -1850,6 +1857,7 @@ static boolean Shader_CompileProgram(gl_shader_t *shader, GLint i)
 	GLint result;
 	const GLchar *vert_shader = shader->vertex_shader;
 	const GLchar *frag_shader = shader->fragment_shader;
+	GLchar info_log[512];
 
 	if (shader->program)
 		pglDeleteProgram(shader->program);
@@ -1879,7 +1887,10 @@ static boolean Shader_CompileProgram(gl_shader_t *shader, GLint i)
 		pglGetShaderiv(gl_vertShader, GL_COMPILE_STATUS, &result);
 		if (result == GL_FALSE)
 		{
-			GL_MSG_Error("Error compiling vertex shader", gl_vertShader, i);
+            pglGetShaderInfoLog(gl_vertShader, 512, NULL, info_log);
+
+			GL_MSG_Error("Error compiling vertex shader: %s\n", info_log);
+
 			pglDeleteShader(gl_vertShader);
 			return false;
 		}
@@ -1906,7 +1917,9 @@ static boolean Shader_CompileProgram(gl_shader_t *shader, GLint i)
 		pglGetShaderiv(gl_fragShader, GL_COMPILE_STATUS, &result);
 		if (result == GL_FALSE)
 		{
-			GL_MSG_Error("Error compiling fragment shader", gl_fragShader, i);
+            pglGetShaderInfoLog(gl_fragShader, 512, NULL, info_log);
+
+			GL_MSG_Error("Error compiling fragment shader: %s\n", info_log);
 			pglDeleteShader(gl_vertShader);
 			pglDeleteShader(gl_fragShader);
 			return false;
@@ -1932,7 +1945,8 @@ static boolean Shader_CompileProgram(gl_shader_t *shader, GLint i)
 	// couldn't link?
 	if (result != GL_TRUE)
 	{
-		GL_MSG_Error("Shader_CompileProgram: Error linking shader program %s\n", HWR_GetShaderName(i));
+        pglGetProgramInfoLog(shader->program, 512, NULL, info_log);
+		GL_MSG_Error("Shader_CompileProgram: Error linking shader program %s: %s\n", HWR_GetShaderName(i), info_log);
 		pglDeleteProgram(shader->program);
 		return false;
 	}
@@ -1952,6 +1966,8 @@ static boolean Shader_CompileProgram(gl_shader_t *shader, GLint i)
 	shader->uniforms[gluniform_palette_tex] = GETUNI("palette_tex");
 	shader->uniforms[gluniform_palette_lookup_tex] = GETUNI("palette_lookup_tex");
 	shader->uniforms[gluniform_lighttable_tex] = GETUNI("lighttable_tex");
+
+	shader->uniforms[gluniform_scr_resolution] = GETUNI("scr_resolution");
 
 	// misc.
 	shader->uniforms[gluniform_leveltime] = GETUNI("leveltime");
@@ -2960,7 +2976,7 @@ EXPORT void HWRAPI(SetTransform) (FTransform *stransform)
 	if (shearing)
 	{
 		float dy = FIXED_TO_FLOAT(AIMINGTODY((stransform->viewaiming)) * 2)* ((float)vid.width / vid.height) / ((float)BASEVIDWIDTH / BASEVIDHEIGHT); //screen_width/BASEVIDWIDTH;
-		if (stransform->flip)
+		if (stransform->flip || stransform->mirrorflip)
 			dy *= -1.0f;
 		pglTranslatef(0.0f, -dy/BASEVIDHEIGHT, 0.0f);
 	}

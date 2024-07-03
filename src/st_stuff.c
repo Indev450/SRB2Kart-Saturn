@@ -56,17 +56,17 @@ patch_t *facerankprefix[MAXSKINS]; // ranking
 patch_t *facewantprefix[MAXSKINS]; // wanted
 patch_t *facemmapprefix[MAXSKINS]; // minimap
 
-patch_t *localfacerankprefix[MAXSKINS]; // ranking
-patch_t *localfacewantprefix[MAXSKINS]; // wanted
-patch_t *localfacemmapprefix[MAXSKINS]; // minimap
+patch_t *localfacerankprefix[MAXLOCALSKINS]; // ranking
+patch_t *localfacewantprefix[MAXLOCALSKINS]; // wanted
+patch_t *localfacemmapprefix[MAXLOCALSKINS]; // minimap
 
-char *facerankprefix_name[MAXSKINS]; // ranking
+/*char *facerankprefix_name[MAXSKINS]; // ranking
 char *facewantprefix_name[MAXSKINS]; // wanted
 char *facemmapprefix_name[MAXSKINS]; // minimap
 
-char *localfacerankprefix_name[MAXSKINS]; // ranking
-char *localfacewantprefix_name[MAXSKINS]; // wanted
-char *localfacemmapprefix_name[MAXSKINS]; // minimap
+char *localfacerankprefix_name[MAXLOCALSKINS]; // ranking
+char *localfacewantprefix_name[MAXLOCALSKINS]; // wanted
+char *localfacemmapprefix_name[MAXLOCALSKINS]; // minimap*/
 
 // ------------------------------------------
 //             status bar overlay
@@ -193,7 +193,7 @@ hudinfo_t hudinfo[NUMHUDITEMS] =
 	{ 240, 160}, // HUD_LAP
 };
 
-static huddrawlist_h luahuddrawlist_game;
+static huddrawlist_h luahuddrawlist_game[MAXSPLITSCREENPLAYERS];
 
 // variable to stop mayonaka static from flickering
 consvar_t cv_lessflicker = {"lessflicker", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -395,9 +395,9 @@ void ST_LoadFaceGraphics(char *rankstr, char *wantstr, char *mmapstr, INT32 skin
 	facewantprefix[skinnum] = W_CachePatchName(wantstr, PU_HUDGFX);
 	facemmapprefix[skinnum] = W_CachePatchName(mmapstr, PU_HUDGFX);
 	
-	facerankprefix_name[skinnum] = rankstr;
+	/*facerankprefix_name[skinnum] = rankstr;
 	facewantprefix_name[skinnum] = wantstr;
-	facemmapprefix_name[skinnum] = mmapstr;
+	facemmapprefix_name[skinnum] = mmapstr;*/
 }
 
 void ST_LoadLocalFaceGraphics(char *rankstr, char *wantstr, char *mmapstr, INT32 skinnum)
@@ -406,9 +406,9 @@ void ST_LoadLocalFaceGraphics(char *rankstr, char *wantstr, char *mmapstr, INT32
 	localfacewantprefix[skinnum] = W_CachePatchName(wantstr, PU_HUDGFX);
 	localfacemmapprefix[skinnum] = W_CachePatchName(mmapstr, PU_HUDGFX);
 	
-	localfacerankprefix_name[skinnum] = rankstr;
+	/*localfacerankprefix_name[skinnum] = rankstr;
 	localfacewantprefix_name[skinnum] = wantstr;
-	localfacemmapprefix_name[skinnum] = mmapstr;
+	localfacemmapprefix_name[skinnum] = mmapstr;*/
 
 	//CONS_Printf("Added rank prefix %s\n", rankstr);
 	//CONS_Printf("Added want prefix %s\n", wantstr);
@@ -473,7 +473,8 @@ void ST_Init(void)
 
 	ST_LoadGraphics();
 
-	luahuddrawlist_game = LUA_HUD_CreateDrawList();
+	for (int i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+		luahuddrawlist_game[i] = LUA_HUD_CreateDrawList();
 }
 
 // change the status bar too, when pressing F12 while viewing a demo.
@@ -846,7 +847,7 @@ static void ST_overlayDrawer(void)
 	{
 		if (renderisnewtic)
 		{
-			LUAh_GameHUD(stplyr, luahuddrawlist_game);
+			LUAh_GameHUD(luahuddrawlist_game[stplyrnum]);
 		}
 	}
 
@@ -1024,7 +1025,8 @@ void ST_Drawer(void)
 	{
 		if (renderisnewtic)
 		{
-			LUA_HUD_ClearDrawList(luahuddrawlist_game);
+			for (i = 0; i <= splitscreen; i++)
+				LUA_HUD_ClearDrawList(luahuddrawlist_game[i]);
 		}
 
 		// No deadview!
@@ -1035,7 +1037,8 @@ void ST_Drawer(void)
 			ST_overlayDrawer();
 		}
 
-		LUA_HUD_DrawList(luahuddrawlist_game);
+		for (i = 0; i <= splitscreen; i++)
+			LUA_HUD_DrawList(luahuddrawlist_game[i]);
 
 		// draw Midnight Channel's overlay ontop
 		if (mapheaderinfo[gamemap-1]->typeoflevel & TOL_TV)	// Very specific Midnight Channel stuff.

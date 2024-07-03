@@ -3189,28 +3189,21 @@ ticcmd_t *I_BaseTiccmd4(void)
 	return &emptycmd4;
 }
 
+//
+// I_GetTime
+// returns time in 1/TICRATE second tics
+//
+
 static Uint64 timer_frequency;
 
 precise_t I_GetPreciseTime(void)
 {
-#if defined(_WIN32)
-	LARGE_INTEGER counter;
-	QueryPerformanceCounter(&counter);
-	return counter.QuadPart;
-#else
 	return SDL_GetPerformanceCounter();
-#endif
 }
 
 UINT64 I_GetPrecisePrecision(void)
 {
-#if defined(_WIN32)
-	LARGE_INTEGER frequency;
-	QueryPerformanceFrequency(&frequency);
-	return frequency.QuadPart;
-#else
 	return SDL_GetPerformanceFrequency();
-#endif
 }
 
 static UINT32 frame_rate;
@@ -3237,24 +3230,14 @@ static void I_InitFrameTime(const UINT64 now, const UINT32 cap)
 }
 
 double I_GetFrameTime(void)
-{	
-#if defined(_WIN32)
-	LARGE_INTEGER now;
-    QueryPerformanceCounter(&now);
-    const UINT64 nowValue = now.QuadPart;
-#else
+{
 	const UINT64 now = SDL_GetPerformanceCounter();
-#endif
 	const UINT32 cap = R_GetFramerateCap();
 
 	if (cap != frame_rate)
 	{
 		// Maybe do this in a OnChange function for cv_fpscap?
-#if defined(_WIN32)
-		I_InitFrameTime(nowValue, cap);
-#else
 		I_InitFrameTime(now, cap);
-#endif	
 	}
 
 	if (frame_rate == 0)
@@ -3264,17 +3247,10 @@ double I_GetFrameTime(void)
 	}
 	else
 	{
-#if defined(_WIN32)
-		elapsed_frames += (nowValue - frame_epoch) / frame_frequency;
-#else
 		elapsed_frames += (now - frame_epoch) / frame_frequency;
-#endif
 	}
-#if defined(_WIN32)
-		frame_epoch = nowValue; // moving epoch
-#else
-		frame_epoch = now; // moving epoch
-#endif
+
+	frame_epoch = now; // moving epoch
 	return elapsed_frames;
 }
 
@@ -3283,13 +3259,8 @@ double I_GetFrameTime(void)
 //
 void I_StartupTimer(void)
 {
-#if defined(_WIN32)
-	LARGE_INTEGER frequency;
-	QueryPerformanceFrequency(&frequency);
-	timer_frequency = frequency.QuadPart;
-#else
 	timer_frequency = SDL_GetPerformanceFrequency();
-#endif
+
 	I_InitFrameTime(0, R_GetFramerateCap());
 	elapsed_frames  = 0.0;
 }
@@ -3335,12 +3306,7 @@ void I_SleepDuration(precise_t duration)
 		// hard sleep function.
 		if (sleepvalue > 0 && (dest - cur) > delaygranularity)
 		{
-#if defined(_WIN32)
-			DWORD sleepDuration = (DWORD)min((INT64)(dest - cur), sleepvalue);
-			SleepEx(sleepDuration, TRUE);
-#else
 			I_Sleep(sleepvalue);
-#endif
 		}
 
 		// Otherwise, this is a spinloop.
@@ -4039,10 +4005,15 @@ static const char *locateWad(void)
 #endif
 #ifndef NOHOME
 	// find in $HOME
-	I_OutputMsg(",HOME");
+	I_OutputMsg(",HOME/" DEFAULTDIR);
 	if ((envstr = I_GetEnv("HOME")) != NULL)
 	{
-		WadPath = searchWad(envstr);
+		char *tmp = malloc(strlen(envstr) + sizeof(PATHSEP) + sizeof(DEFAULTDIR));
+		strcpy(tmp, envstr);
+		strcat(tmp, PATHSEP);
+		strcat(tmp, DEFAULTDIR);
+		WadPath = searchWad(tmp);
+		free(tmp);
 		if (WadPath)
 			return WadPath;
 	}

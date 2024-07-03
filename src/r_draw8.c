@@ -943,7 +943,7 @@ void R_DrawTiltedTranslucentWaterSpan_8(void)
 
 	// Lighting is simple. It's just linear interpolation from start to end
 	{
-		float planelightfloat = BASEVIDWIDTH*BASEVIDWIDTH/vid.width / (zeroheight - FIXED_TO_FLOAT(viewz)) / 21.0f;
+		float planelightfloat = PLANELIGHTFLOAT;
 		float lightstart, lightend;
 
 		lightend = (iz + ds_szp->x*width) * planelightfloat;
@@ -1696,7 +1696,7 @@ void R_DrawColumnShadowed_8(void)
 		{
 			dc_colormap = dc_lightlist[i].rcolormap;
 			if (encoremap)
-				dc_colormap += (256*32);
+				dc_colormap += COLORMAP_REMAPOFFSET;
 			if (solid && dc_yl < bheight)
 				dc_yl = bheight;
 			continue;
@@ -1714,7 +1714,7 @@ void R_DrawColumnShadowed_8(void)
 
 		dc_colormap = dc_lightlist[i].rcolormap;
 		if (encoremap)
-			dc_colormap += (256*32);
+			dc_colormap += COLORMAP_REMAPOFFSET;
 	}
 	dc_yh = realyh;
 	if (dc_yl <= realyh)

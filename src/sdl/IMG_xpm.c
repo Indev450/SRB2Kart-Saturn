@@ -1198,6 +1198,8 @@ SDL_Surface *IMG_ReadXPMFromArray(const char **xpm)
     return load_xpm(xpm, NULL);
 }
 
+#undef MAX
+
 #else  /* not LOAD_XPM */
 
 /* See if an image is contained in a data source */

@@ -3034,7 +3034,12 @@ boolean P_SetupLevel(boolean skipprecip)
 
 #ifdef HWRENDER // not win32 only 19990829 by Kin
 	if (rendermode == render_opengl)
+	{
+		HWR_FreeExtraSubsectors();
+
+		// stuff like HWR_CreatePlanePolygons is called there
 		HWR_LoadLevel();
+	}
 #endif
 
 	// oh god I hope this helps
@@ -3302,17 +3307,6 @@ boolean P_SetupLevel(boolean skipprecip)
 
 	return true;
 }
-
-#ifdef HWRENDER
-void HWR_LoadLevel(void)
-{
-	HWR_FreeMipmapCache();
-	HWR_CreatePlanePolygons((INT32)numnodes - 1);
-
-	if (HWR_ShouldUsePaletteRendering())
-		HWR_SetMapPalette();
-}
-#endif
 
 //
 // P_RunSOC

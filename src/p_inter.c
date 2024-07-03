@@ -1908,8 +1908,8 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 	mobj_t *mo;
 	int ms;
 
-	//if (inflictor && (inflictor->type == MT_SHELL || inflictor->type == MT_FIREBALL))
-	//	P_SetTarget(&target->tracer, inflictor);
+	if (!target || P_MobjWasRemoved(target))
+		return;
 
 	if (!useNightsSS && G_IsSpecialStage(gamemap) && target->player && sstimer > 6)
 		sstimer = 6; // Just let P_Ticker take care of the rest.
@@ -1955,7 +1955,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 			{
 				if (target->movedir != 0 && target->movedir < (UINT16)target->target->player->kartstuff[k_itemamount])
 				{
-					if (target->target->hnext)
+					if (target->target->hnext && !P_MobjWasRemoved(target->target->hnext))
 						K_KillBananaChain(target->target->hnext, inflictor, source);
 					target->target->player->kartstuff[k_itemamount] = 0;
 				}
