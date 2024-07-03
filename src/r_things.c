@@ -652,7 +652,7 @@ void R_DrawMaskedColumn(column_t *column)
 		if (dc_yh >= vid.height)
 			dc_yh = vid.height - 1;
 
-		if (dc_yl <= dc_yh && dc_yl < vid.height && dc_yh > 0)
+		if (dc_yl <= dc_yh && dc_yh > 0)
 		{
 			dc_source = (UINT8 *)column + 3;
 			dc_texturemid = basetexturemid - (topdelta<<FRACBITS);
@@ -664,7 +664,9 @@ void R_DrawMaskedColumn(column_t *column)
 	dc_texturemid = basetexturemid;
 }
 
-static void R_DrawFlippedMaskedColumn(column_t *column, INT32 texheight)
+INT32 lengthcol; // column->length : for flipped column function pointers and multi-patch on 2sided wall = texture->height
+
+static void R_DrawFlippedMaskedColumn(column_t *column)
 {
 	INT32 topscreen;
 	INT32 bottomscreen;
@@ -680,11 +682,10 @@ static void R_DrawFlippedMaskedColumn(column_t *column, INT32 texheight)
 		if (topdelta <= prevdelta)
 			topdelta += prevdelta;
 		prevdelta = topdelta;
-		topdelta = texheight-column->length-topdelta;
+		topdelta = lengthcol-column->length-topdelta;
 		topscreen = sprtopscreen + spryscale*topdelta;
 		bottomscreen = sprbotscreen == INT32_MAX ? topscreen + spryscale*column->length
 		                                      : sprbotscreen + spryscale*column->length;
-
 		dc_yl = (topscreen+FRACUNIT-1)>>FRACBITS;
 		dc_yh = (bottomscreen-1)>>FRACBITS;
 
@@ -705,7 +706,7 @@ static void R_DrawFlippedMaskedColumn(column_t *column, INT32 texheight)
 		if (dc_yh >= vid.height)
 			dc_yh = vid.height - 1;
 
-		if (dc_yl <= dc_yh && dc_yl < vid.height && dc_yh > 0)
+		if (dc_yl <= dc_yh && dc_yh > 0)
 		{
 			dc_source = ZZ_Alloc(column->length);
 			for (s = (UINT8 *)column+2+column->length, d = dc_source; d < dc_source+column->length; --s)
@@ -727,7 +728,9 @@ static void R_DrawFlippedMaskedColumn(column_t *column, INT32 texheight)
 static void R_DrawVisSprite(vissprite_t *vis)
 {
 	column_t *column;
+	void (*localcolfunc)(column_t *);
 	INT32 texturecolumn;
+	INT32 pwidth;
 	fixed_t frac;
 	patch_t *patch = vis->patch;
 	fixed_t this_scale = vis->thingscale;
@@ -871,11 +874,15 @@ static void R_DrawVisSprite(vissprite_t *vis)
 			vis->x2 -= temp;
 	}
 
+	localcolfunc = (vis->vflip) ? R_DrawFlippedMaskedColumn : R_DrawMaskedColumn;
+	lengthcol = patch->height;
+
 	// Split drawing loops for paper and non-paper to reduce conditional checks per sprite
 	if (vis->scalestep)
 	{
 		fixed_t horzscale = FixedMul(vis->spritexscale, this_scale);
 		fixed_t scalestep = FixedMul(vis->scalestep, vis->spriteyscale);
+		pwidth = SHORT(patch->width);
 
 		// Papersprite drawing loop
 		for (dc_x = vis->x1; dc_x <= vis->x2; dc_x++, spryscale += scalestep)
@@ -883,37 +890,31 @@ static void R_DrawVisSprite(vissprite_t *vis)
 			angle_t angle = ((vis->centerangle + xtoviewangle[dc_x]) >> ANGLETOFINESHIFT) & 0xFFF;
 			texturecolumn = (vis->paperoffset - FixedMul(FINETANGENT(angle), vis->paperdistance)) / horzscale;
 
-			if (texturecolumn < 0 || texturecolumn >= SHORT(patch->width))
+			if (texturecolumn < 0 || texturecolumn >= pwidth)
 				continue;
 
 			if (vis->xiscale < 0) // Flipped sprite
-				texturecolumn = SHORT(patch->width) - 1 - texturecolumn;
+				texturecolumn = pwidth - 1 - texturecolumn;
 
 			sprtopscreen = (centeryfrac - FixedMul(dc_texturemid, spryscale));
 			dc_iscale = (0xffffffffu / (unsigned)spryscale);
 
 			column = (column_t *)((UINT8 *)patch + LONG(patch->columnofs[texturecolumn]));
 
-			if (vis->vflip)
-				R_DrawFlippedMaskedColumn(column, patch->height);
-			else
-				R_DrawMaskedColumn(column);
+			localcolfunc (column);
 		}
 	}
 	else
 	{
+		pwidth = SHORT(patch->width);
+
 		// Non-paper drawing loop
 		for (dc_x = vis->x1; dc_x <= vis->x2; dc_x++, frac += vis->xiscale)
 		{	
-#define CLAMP(x, min_val, max_val) ((x) < (min_val) ? (min_val) : ((x) > (max_val) ? (max_val) : (x)))
-			texturecolumn = CLAMP(frac >> FRACBITS, 0, SHORT(patch->width) - 1);
-#undef CLAMP
+			texturecolumn = CLAMP(frac >> FRACBITS, 0, pwidth - 1);
 			column = (column_t *)((UINT8 *)patch + LONG(patch->columnofs[texturecolumn]));
 
-			if (vis->vflip)
-				R_DrawFlippedMaskedColumn(column, patch->height);
-			else
-				R_DrawMaskedColumn(column);
+			localcolfunc (column);
 		}
 	}
 
