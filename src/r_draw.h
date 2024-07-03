@@ -20,6 +20,12 @@
 // -------------------------------
 // COMMON STUFF FOR 8bpp AND 16bpp
 // -------------------------------
+extern UINT8 *ylookup[MAXVIDHEIGHT*4];
+extern UINT8 *ylookup1[MAXVIDHEIGHT*4];
+extern UINT8 *ylookup2[MAXVIDHEIGHT*4];
+extern UINT8 *ylookup3[MAXVIDHEIGHT*4];
+extern UINT8 *ylookup4[MAXVIDHEIGHT*4];
+extern INT32 columnofs[MAXVIDWIDTH*4];
 extern UINT8 *topleft;
 
 // -------------------------
@@ -29,6 +35,7 @@ extern UINT8 *topleft;
 extern lighttable_t *dc_colormap;
 extern INT32 dc_x, dc_yl, dc_yh;
 extern fixed_t dc_iscale, dc_texturemid;
+extern UINT8 dc_hires;
 
 extern UINT8 *dc_source; // first pixel in a column
 
@@ -58,8 +65,6 @@ extern UINT8 *ds_source; // start of a 64*64 tile image
 extern UINT8 *ds_transmap;
 
 extern INT32 ds_bgofs;
-
-extern INT32 *tiltlighting;
 
 typedef struct {
 	float x, y, z;

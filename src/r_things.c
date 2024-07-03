@@ -68,8 +68,8 @@ typedef struct
 static lighttable_t **spritelights;
 
 // constant arrays used for psprite clipping and initializing clipping
-INT16 *negonearray;
-INT16 *screenheightarray;
+INT16 negonearray[MAXVIDWIDTH];
+INT16 screenheightarray[MAXVIDWIDTH];
 
 spriteinfo_t spriteinfo[NUMSPRITES];
 
@@ -489,7 +489,14 @@ void R_InitSprites(void)
 #ifdef ROTSPRITE
 	INT32 angle;
 	float fa;
+#endif
 
+	for (i = 0; i < MAXVIDWIDTH; i++)
+	{
+		negonearray[i] = -1;
+	}
+
+#ifdef ROTSPRITE
 	for (angle = 1; angle < ROTANGLES; angle++)
 	{
 		fa = ANG2RAD(FixedAngle((ROTANGDIFF * angle)<<FRACBITS));
@@ -545,34 +552,6 @@ void R_ClearSprites(void)
 	visspritecount = numvisiblesprites = clippedvissprites = 0;
 }
 
-static INT16 *vissprite_clipbot[MAXVISSPRITES >> VISSPRITECHUNKBITS];
-static INT16 *vissprite_cliptop[MAXVISSPRITES >> VISSPRITECHUNKBITS];
-
-static void R_AllocVisSpriteChunkMemory(UINT32 chunk)
-{
-	vissprite_clipbot[chunk] = Z_Realloc(vissprite_clipbot[chunk], sizeof(INT16) * (VISSPRITESPERCHUNK * viewwidth), PU_STATIC, NULL);
-	vissprite_cliptop[chunk] = Z_Realloc(vissprite_cliptop[chunk], sizeof(INT16) * (VISSPRITESPERCHUNK * viewwidth), PU_STATIC, NULL);
-
-	for (unsigned i = 0; i < VISSPRITESPERCHUNK; i++)
-	{
-		vissprite_t *sprite = visspritechunks[chunk] + i;
-
-		sprite->clipbot = vissprite_clipbot[chunk] + (viewwidth * i);
-		sprite->cliptop = vissprite_cliptop[chunk] + (viewwidth * i);
-	}
-}
-
-void R_AllocVisSpriteMemory(void)
-{
-	unsigned numchunks = MAXVISSPRITES >> VISSPRITECHUNKBITS;
-
-	for (unsigned i = 0; i < numchunks; i++)
-	{
-		if (visspritechunks[i])
-			R_AllocVisSpriteChunkMemory(i);
-	}
-}
-
 //
 // R_NewVisSprite
 //
@@ -580,16 +559,13 @@ static vissprite_t overflowsprite;
 
 static vissprite_t *R_GetVisSprite(UINT32 num)
 {
-	UINT32 chunk = num >> VISSPRITECHUNKBITS;
+		UINT32 chunk = num >> VISSPRITECHUNKBITS;
 
-	// Allocate chunk if necessary
-	if (!visspritechunks[chunk])
-	{
-		Z_Malloc(sizeof(vissprite_t) * VISSPRITESPERCHUNK, PU_LEVEL, &visspritechunks[chunk]);
-		R_AllocVisSpriteChunkMemory(chunk);
-	}
+		// Allocate chunk if necessary
+		if (!visspritechunks[chunk])
+			Z_Malloc(sizeof(vissprite_t) * VISSPRITESPERCHUNK, PU_LEVEL, &visspritechunks[chunk]);
 
-	return visspritechunks[chunk] + (num & VISSPRITEINDEXMASK);
+		return visspritechunks[chunk] + (num & VISSPRITEINDEXMASK);
 }
 
 static vissprite_t *R_NewVisSprite(void)
@@ -656,7 +632,13 @@ void R_DrawMaskedColumn(column_t *column)
 		{
 			dc_source = (UINT8 *)column + 3;
 			dc_texturemid = basetexturemid - (topdelta<<FRACBITS);
-			colfunc();
+
+			// Drawn by R_DrawColumn.
+			// This stuff is a likely cause of the splitscreen water crash bug.
+			// FIXTHIS: Figure out what "something more proper" is and do it.
+			// quick fix... something more proper should be done!!!
+			if (ylookup[dc_yl])
+				colfunc();
 		}
 		column = (column_t *)((UINT8 *)column + column->length + 4);
 	}
@@ -987,9 +969,14 @@ static void R_DrawPrecipitationVisSprite(vissprite_t *vis)
 //
 static void R_SplitSprite(vissprite_t *sprite, mobj_t *thing)
 {
-	sector_t *sector = sprite->sector;
+	INT32 i, lightnum, lindex;
+	INT16 cutfrac;
+	sector_t *sector;
+	vissprite_t *newsprite;
 
-	for (INT32 i = 1; i < sector->numlights; i++)
+	sector = sprite->sector;
+
+	for (i = 1; i < sector->numlights; i++)
 	{
 		fixed_t testheight = sector->lightlist[i].height;
 
@@ -1004,7 +991,7 @@ static void R_SplitSprite(vissprite_t *sprite, mobj_t *thing)
 		if (testheight <= sprite->gz)
 			return;
 
-		INT16 cutfrac = (INT16)((centeryfrac - FixedMul(testheight - viewz, sprite->sortscale))>>FRACBITS);
+		cutfrac = (INT16)((centeryfrac - FixedMul(testheight - viewz, sprite->sortscale))>>FRACBITS);
 		if (cutfrac < 0)
 			continue;
 		if (cutfrac > viewheight)
@@ -1012,16 +999,7 @@ static void R_SplitSprite(vissprite_t *sprite, mobj_t *thing)
 
 		// Found a split! Make a new sprite, copy the old sprite to it, and
 		// adjust the heights.
-		vissprite_t *newsprite = R_NewVisSprite();
-
-		// Needs to keep the new sprite's clipping tables
-		INT16 *cliptop = newsprite->cliptop;
-		INT16 *clipbot = newsprite->clipbot;
-
-		M_Memcpy(newsprite, sprite, sizeof (vissprite_t));
-
-		newsprite->cliptop = cliptop;
-		newsprite->clipbot = clipbot;
+		newsprite = M_Memcpy(R_NewVisSprite(), sprite, sizeof (vissprite_t));
 
 		sprite->cut |= SC_BOTTOM;
 		sprite->gz = testheight;
@@ -1044,7 +1022,7 @@ static void R_SplitSprite(vissprite_t *sprite, mobj_t *thing)
 		newsprite->cut |= SC_TOP;
 		if (!(sector->lightlist[i].caster->flags & FF_NOSHADE))
 		{
-			INT32 lightnum = (*sector->lightlist[i].lightlevel >> LIGHTSEGSHIFT);
+			lightnum = (*sector->lightlist[i].lightlevel >> LIGHTSEGSHIFT);
 
 			if (lightnum < 0)
 				spritelights = scalelight[0];
@@ -1065,7 +1043,7 @@ static void R_SplitSprite(vissprite_t *sprite, mobj_t *thing)
 			if (!((thing->frame & (FF_FULLBRIGHT|FF_TRANSMASK) || thing->flags2 & MF2_SHADOW)
 				&& (!newsprite->extra_colormap || !(newsprite->extra_colormap->fog & 1))))
 			{
-				INT32 lindex = FixedMul(sprite->xscale, LIGHTRESOLUTIONFIX)>>(LIGHTSCALESHIFT);
+				lindex = FixedMul(sprite->xscale, LIGHTRESOLUTIONFIX)>>(LIGHTSCALESHIFT);
 
 				if (lindex >= MAXLIGHTSCALE)
 					lindex = MAXLIGHTSCALE-1;
