@@ -1119,8 +1119,8 @@ subsector_t *R_IsPointInSubsector(fixed_t x, fixed_t y)
 	subsector_t *ret;
 
 	// single subsector is a special case
-	if (numnodes == 0)
-		return subsectors;
+	//if (numnodes == 0)
+		//return subsectors;
 
 	nodenum = numnodes - 1;
 
