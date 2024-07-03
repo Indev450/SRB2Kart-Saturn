@@ -746,7 +746,7 @@ static struct {
 	0,
 
 	0,
-	NULL, NULL,
+	{}, {},
 
 	false
 };
