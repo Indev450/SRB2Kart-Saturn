@@ -160,7 +160,7 @@ static const udata_field_t player_fields[] = {
     // Same as player.name
 	{ "sliproll", 0, player_sliproll_getter, player_sliproll_noset },
     { "ping", 0, player_ping_getter, player_ping_noset }, // Hmm originally setter doesn't exist so data is written as unreachable custom field...
-    { NULL },
+    { NULL, 0, NULL, NULL },
 };
 #undef FIELD
 

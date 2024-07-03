@@ -47,7 +47,9 @@ int unsortedVertexArrayAllocSize = 65536;
 void HWR_StartBatching(void)
 {
     if (currently_batching)
+	{
         I_Error("Repeat call to HWR_StartBatching without HWR_RenderBatches");
+	}
 
     // init arrays if that has not been done yet
 	if (!finalVertexArray)
