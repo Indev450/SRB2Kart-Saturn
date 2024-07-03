@@ -40,13 +40,17 @@ void R_DrawColumn_8(void)
 #endif
 
 	// Framebuffer destination address.
+	// Use ylookup LUT to avoid multiply with ScreenWidth.
+	// Use columnofs LUT for subwindows?
+
 	dest = &topleft[dc_yl*vid.width + dc_x];
 
 	count++;
 
 	// Determine scaling, which is the only mapping to be done.
 	fracstep = dc_iscale;
-	frac = dc_texturemid + FixedMul((dc_yl << FRACBITS) - centeryfrac, fracstep);
+	frac = (dc_texturemid + FixedMul((dc_yl << FRACBITS) - centeryfrac, fracstep));
+
 
 	// Inner loop that does the actual texture mapping, e.g. a DDA-like scaling.
 	// This is as fast as it gets.

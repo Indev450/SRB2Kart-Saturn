@@ -1115,6 +1115,7 @@ boolean I_LoadSong(char *data, size_t len)
 				if (!gme_open_data(inflatedData, inflatedLen, &gme, SAMPLERATE))
 				{
 					Z_Free(inflatedData); // GME supposedly makes a copy for itself, so we don't need this lying around
+					inflateEnd(&stream);
 					return true;
 				}
 			}
