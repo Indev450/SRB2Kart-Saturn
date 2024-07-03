@@ -954,7 +954,6 @@ static void R_DrawPrecipitationVisSprite(vissprite_t *vis)
 	if (vis->x2 >= vid.width)
 		vis->x2 = vid.width-1;
 
-#define CLAMP(x, min_val, max_val) ((x) < (min_val) ? (min_val) : ((x) > (max_val) ? (max_val) : (x)))
 	for (dc_x = vis->x1; dc_x <= vis->x2; dc_x++, frac += vis->xiscale)
 	{
 		texturecolumn = CLAMP(frac >> FRACBITS, 0, SHORT(patch->width) - 1);
@@ -962,7 +961,6 @@ static void R_DrawPrecipitationVisSprite(vissprite_t *vis)
 
 		R_DrawMaskedColumn(column);
 	}
-#undef CLAMP
 
 	colfunc = basecolfunc;
 }
@@ -1048,8 +1046,9 @@ static void R_SplitSprite(vissprite_t *sprite, mobj_t *thing)
 			{
 				lindex = FixedMul(sprite->xscale, LIGHTRESOLUTIONFIX)>>(LIGHTSCALESHIFT);
 
-				if (lindex >= MAXLIGHTSCALE)
-					lindex = MAXLIGHTSCALE-1;
+				// Mitigate against negative xscale and arithmetic overflow
+				lindex = CLAMP(lindex, 0, MAXLIGHTSCALE - 1);
+
 				newsprite->colormap = spritelights[lindex];
 			}
 		}
@@ -1725,8 +1724,8 @@ static void R_ProjectSprite(mobj_t *thing)
 		// diminished light
 		lindex = FixedMul(xscale, LIGHTRESOLUTIONFIX)>>(LIGHTSCALESHIFT);
 
-		if (lindex >= MAXLIGHTSCALE)
-			lindex = MAXLIGHTSCALE-1;
+		// Mitigate against negative xscale and arithmetic overflow
+		lindex = CLAMP(lindex, 0, MAXLIGHTSCALE - 1);
 
 		vis->colormap = spritelights[lindex];
 	}
