@@ -1493,10 +1493,6 @@ static const char* OP_ExpTooltips[] =
 	"Allows the game to downsample from a higher resolution than your display in OpenGL renderer mode\nrequires a GPU with atleast OpenGL 3.0 support.",
 #endif
 	"Change the depth of the Palette in Palette rendering mod\n 16 bits is like software looks ingame\nwhile 24 bits is how software looks in screenshots.",
-	"Fixes issues that resulted in Textures sticking from the ground sometimes.\n This may be CPU heavy and result in worse performance in some cases.",
-	"Fixes issues that resulted in Textures not being properly skewed\n example: Fences on slopes that didnt show proper.\n This may be CPU heavy and result in worse performance in some cases.",
-	"Fixes issues that resulted in Textures on Floor over Floors\nZFighting heavily.",
-	"Toggle for FOF wall cutoff with slopes.",
 #endif
 };
 
@@ -1517,10 +1513,6 @@ enum
 	op_exp_fbo,
 #endif
 	op_exp_paldepth,
-	op_exp_spltwal,
-	op_exp_pegging,
-	op_exp_fofzfight,
-	op_exp_fofcut,
 #endif
 };
 
@@ -4527,10 +4519,6 @@ void M_Init(void)
 #ifdef USE_FBO_OGL
 		OP_ExpOptionsMenu[op_exp_fbo].status = IT_DISABLED;
 #endif
-		OP_ExpOptionsMenu[op_exp_spltwal].status = IT_DISABLED;
-		OP_ExpOptionsMenu[op_exp_pegging].status = IT_DISABLED;
-		OP_ExpOptionsMenu[op_exp_fofzfight].status = IT_DISABLED;
-		OP_ExpOptionsMenu[op_exp_fofcut].status = IT_DISABLED;
 	}
 
 	if (rendermode == render_opengl)
