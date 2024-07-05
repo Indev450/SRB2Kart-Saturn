@@ -2461,16 +2461,8 @@ static void HWR_AddLine(seg_t *line)
 	}
 
 	// OPTIMIZE: quickly reject orthogonal back sides.
-	if (cv_pointoangleexor64.value)
-	{
-		angle1 = R_PointToAngle64(v1x, v1y);
-		angle2 = R_PointToAngle64(v2x, v2y);
-	}
-	else
-	{
-		angle1 = R_PointToAngleEx(viewx, viewy, v1x, v1y);
-		angle2 = R_PointToAngleEx(viewx, viewy, v2x, v2y);
-	}
+	angle1 = R_PointToAngle64(v1x, v1y);
+	angle2 = R_PointToAngle64(v2x, v2y);
 
 	 // PrBoom: Back side, i.e. backface culling - read: endAngle >= startAngle!
 	if (angle2 - angle1 < ANGLE_180 || !gr_curline->linedef)
@@ -4582,7 +4574,7 @@ void HWR_DrawSprites(void)
 				HWR_DrawMD2(spr);
 		}
 		else
-			{
+		{
 			if (!cv_grmdls.value || md2_models[spr->mobj->sprite].notfound || md2_models[spr->mobj->sprite].scale < 0.0f)
 				HWR_DrawSprite(spr);
 			else
@@ -5553,6 +5545,7 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, playe
 	}
 	else
 		gr_portal = GRPORTAL_OFF;// there may be portals and they need to be drawn as regural walls
+
 	// draw normal things in current frame in current incremented stencil buffer area
 	HWR_SetStencilState(HWR_STENCIL_NORMAL, stencil_level);
 	if (!cv_portalonly.value || rootportal)
