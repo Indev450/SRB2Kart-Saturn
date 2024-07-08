@@ -157,6 +157,12 @@ NONX86=1
 # LINUX64 does not imply X86_64=1; could mean ARM64 or Itanium
 endif
 
+ifdef APPIMAGE
+appimage:=$(EXENAME).AppImage
+else
+appimage:=
+endif
+
 ifdef MINGW64
 MINGW=1
 NONX86=1
@@ -633,6 +639,18 @@ ifndef NOUPX
 	-$(UPX) $(UPX_OPTS) $(BIN)/$(EXENAME)
 endif
 endif
+
+ifdef APPIMAGE
+$(appimage) : $(EXENAME)
+	@echo Building AppImage...
+ifdef APPIMAGE_NOASSETS
+	$(.)../AppImage_build.sh --small $(BIN) $(EXENAME).AppImage .. appimagetool
+else
+	$(.)../AppImage_build.sh $(BIN) $(EXENAME).AppImage .. appimagetool
+endif
+	@echo AppImage build complete!, please look for $(EXENAME).AppImage in $(BIN)
+endif
+
 	@echo Build is done, please look for $(EXENAME) in $(BIN), \(checking for post steps\)
 
 reobjdump:
