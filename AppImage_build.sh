@@ -120,7 +120,8 @@ for arg in "$@"; do
 	fi
 done
 
-important "SRB2 AppImage Packager v1.0, by mazmazz and Golden."
+important "SRB2Kart AppImage Packager v1.0 modified for kart by NepDisk."
+important "Orignal for SRB2 my mazmazz and Golden."
 
 # Get root directory from the full path of this script.
 __ROOT_DIR="$3"
