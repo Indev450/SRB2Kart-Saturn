@@ -182,7 +182,7 @@ static void F_SkyScroll(INT32 scrollspeed)
 		y = 0;
 		while (x < w)
 		{
-			V_DrawFixedPatch(x, y, FRACUNIT*1.2, V_SNAPTOTOP|V_SNAPTOLEFT, pat, NULL);
+			V_DrawFixedPatch(x, y, FRACUNIT, V_SNAPTOTOP|V_SNAPTOLEFT, pat, NULL);
 			x += SHORT(pat->width)<<FRACBITS;
 		}
 
@@ -190,7 +190,7 @@ static void F_SkyScroll(INT32 scrollspeed)
 		y = (BASEVIDHEIGHT - SHORT(pat2->height))<<FRACBITS;
 		while (x < w)
 		{
-			V_DrawFixedPatch(x, y, FRACUNIT*1.2, V_SNAPTOBOTTOM|V_SNAPTOLEFT, pat2, NULL);
+			V_DrawFixedPatch(x, y, FRACUNIT, V_SNAPTOBOTTOM|V_SNAPTOLEFT, pat2, NULL);
 			x += SHORT(pat2->width)<<FRACBITS;
 		}
 	}
