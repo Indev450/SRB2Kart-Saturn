@@ -21,7 +21,6 @@
 
 extern consvar_t cv_fpscap;
 extern consvar_t cv_precipinterp;
-extern consvar_t cv_mobjssector;
 
 UINT32 R_GetFramerateCap(void);
 boolean R_UsingFrameInterpolation(void);
