@@ -155,7 +155,6 @@ extern consvar_t cv_grshaders;
 #ifdef USE_FBO_OGL
 extern consvar_t cv_grframebuffer;
 #endif
-extern consvar_t cv_grfofcut;
 extern consvar_t cv_splitwallfix;
 extern consvar_t cv_grshearing;
 extern consvar_t cv_grfov;
