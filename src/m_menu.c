@@ -1473,7 +1473,6 @@ static menuitem_t OP_ExpOptionsMenu[] =
 	{IT_STRING | IT_CVAR, 	NULL, "Palette Depth", 					&cv_grpalettedepth, 		80},
 
 	{IT_STRING | IT_CVAR, 	NULL, "Splitwall/Slope texture fix",	&cv_splitwallfix, 		 	87},
-	{IT_STRING | IT_CVAR, 	NULL, "Slope midtexture peg fix", 		&cv_slopepegfix, 		 	92},
 	{IT_STRING | IT_CVAR, 	NULL, "FOF wall cutoff for slopes", 	&cv_grfofcut, 		 		102},
 #endif	
 };
@@ -1495,7 +1494,6 @@ static const char* OP_ExpTooltips[] =
 #endif
 	"Change the depth of the Palette in Palette rendering mod\n 16 bits is like software looks ingame\nwhile 24 bits is how software looks in screenshots.",
 	"Fixes issues that resulted in Textures sticking from the ground sometimes.\n This may be CPU heavy and result in worse performance in some cases.",
-	"Fixes issues that resulted in Textures not being properly skewed\n example: Fences on slopes that didnt show proper.\n This may be CPU heavy and result in worse performance in some cases.",
 	"Toggle for FOF wall cutoff with slopes.",
 #endif
 };
@@ -1517,7 +1515,6 @@ enum
 #endif
 	op_exp_paldepth,
 	op_exp_spltwal,
-	op_exp_pegging,
 	op_exp_fofcut,
 #endif
 };
@@ -4522,7 +4519,6 @@ void M_Init(void)
 		OP_ExpOptionsMenu[op_exp_fbo].status = IT_DISABLED;
 #endif
 		OP_ExpOptionsMenu[op_exp_spltwal].status = IT_DISABLED;
-		OP_ExpOptionsMenu[op_exp_pegging].status = IT_DISABLED;
 		OP_ExpOptionsMenu[op_exp_fofcut].status = IT_DISABLED;
 	}
 
