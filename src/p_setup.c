@@ -379,27 +379,12 @@ UINT32 P_GetScoreForGrade(INT16 map, UINT8 mare, UINT8 grade)
 	return mapheaderinfo[map-1]->grades[mare].grade[grade-1];
 }
 
-/** Loads the vertexes for a level.
-  *
-  * \param lump VERTEXES lump number.
-  * \sa ML_VERTEXES
-  */
-
-FUNCINLINE static ATTRINLINE void P_LoadRawVertexes(UINT8 *data, size_t i)
+// Loads the vertexes for a level.
+FUNCINLINE static ATTRINLINE void P_LoadRawVertexes(UINT8 *data)
 {
-	mapvertex_t *ml;
-	vertex_t *li;
-
-	numvertexes = i / sizeof (mapvertex_t);
-
-	if (numvertexes <= 0)
-		I_Error("Level has no vertices"); // instead of crashing
-
-	// Allocate zone memory for buffer.
-	vertexes = Z_Calloc(numvertexes * sizeof (*vertexes), PU_LEVEL, NULL);
-
-	ml = (mapvertex_t *)data;
-	li = vertexes;
+	mapvertex_t *ml = (mapvertex_t *)data;
+	vertex_t *li = vertexes;
+	size_t i;
 
 	// Copy and convert vertex coordinates, internal representation as fixed.
 	for (i = 0; i < numvertexes; i++, li++, ml++)
@@ -407,13 +392,6 @@ FUNCINLINE static ATTRINLINE void P_LoadRawVertexes(UINT8 *data, size_t i)
 		li->x = SHORT(ml->x)<<FRACBITS;
 		li->y = SHORT(ml->y)<<FRACBITS;
 	}
-}
-
-static inline void P_LoadVertexes(lumpnum_t lumpnum)
-{
-	UINT8 *data = W_CacheLumpNum(lumpnum, PU_STATIC);
-	P_LoadRawVertexes(data, W_LumpLength(lumpnum));
-	Z_Free(data);
 }
 
 /** Computes the length of a seg in fracunits.
@@ -447,25 +425,16 @@ static inline float P_SegLengthFloat(seg_t *seg)
 }
 #endif
 
-/** Loads the SEGS resource from a level.
-  *
-  * \param lump Lump number of the SEGS resource.
-  * \sa ::ML_SEGS
-  */
-static void P_LoadRawSegs(UINT8 *data, size_t i)
+
+// Loads the SEGS resource from a level.
+static void P_LoadRawSegs(UINT8 *data)
 {
 	INT32 linedef, side;
-	mapseg_t *ml;
-	seg_t *li;
+	mapseg_t *ml = (mapseg_t*)data;
+	seg_t *li = segs;
 	line_t *ldef;
+	size_t i;
 
-	numsegs = i / sizeof (mapseg_t);
-	if (numsegs <= 0)
-		I_Error("Level has no segs"); // instead of crashing
-	segs = Z_Calloc(numsegs * sizeof (*segs), PU_LEVEL, NULL);
-
-	ml = (mapseg_t *)data;
-	li = segs;
 	for (i = 0; i < numsegs; i++, li++, ml++)
 	{
 		li->v1 = &vertexes[SHORT(ml->v1)];
@@ -486,7 +455,7 @@ static void P_LoadRawSegs(UINT8 *data, size_t i)
 		li->side = side = SHORT(ml->side);
 		li->sidedef = &sides[ldef->sidenum[side]];
 		li->frontsector = sides[ldef->sidenum[side]].sector;
-		if (ldef-> flags & ML_TWOSIDED)
+		if (ldef->flags & ML_TWOSIDED)
 			li->backsector = sides[ldef->sidenum[side^1]].sector;
 		else
 			li->backsector = 0;
@@ -496,30 +465,13 @@ static void P_LoadRawSegs(UINT8 *data, size_t i)
 	}
 }
 
-static void P_LoadSegs(lumpnum_t lumpnum)
+
+// Loads the SSECTORS resource from a level.
+FUNCINLINE static ATTRINLINE void P_LoadRawSubsectors(void *data)
 {
-	UINT8 *data = W_CacheLumpNum(lumpnum, PU_STATIC);
-	P_LoadRawSegs(data, W_LumpLength(lumpnum));
-	Z_Free(data);
-}
-
-
-/** Loads the SSECTORS resource from a level.
-  *
-  * \param lump Lump number of the SSECTORS resource.
-  * \sa ::ML_SSECTORS
-  */
-FUNCINLINE static ATTRINLINE void P_LoadRawSubsectors(void *data, size_t i)
-{
-	mapsubsector_t *ms;
-	subsector_t *ss;
-
-	numsubsectors = i / sizeof (mapsubsector_t);
-	if (numsubsectors <= 0)
-		I_Error("Level has no subsectors (did you forget to run it through a nodesbuilder?)");
-	ss = subsectors = Z_Calloc(numsubsectors * sizeof (*subsectors), PU_LEVEL, NULL);
-
-	ms = (mapsubsector_t *)data;
+	mapsubsector_t *ms = (mapsubsector_t*)data;
+	subsector_t *ss = subsectors;
+	size_t i;
 
 	for (i = 0; i < numsubsectors; i++, ss++, ms++)
 	{
@@ -531,13 +483,6 @@ FUNCINLINE static ATTRINLINE void P_LoadRawSubsectors(void *data, size_t i)
 #endif
 		ss->validcount = 0;
 	}
-}
-
-static void P_LoadSubsectors(lumpnum_t lumpnum)
-{
-	UINT8 *data = W_CacheLumpNum(lumpnum, PU_STATIC);
-	P_LoadRawSubsectors(data, W_LumpLength(lumpnum));
-	Z_Free(data);
 }
 
 //
@@ -672,20 +617,13 @@ INT32 P_CheckLevelFlat(const char *flatname)
 }
 
 // Sets up the ingame sectors structures.
-// Lumpnum is the lumpnum of a SECTORS lump.
-static void P_LoadRawSectors(UINT8 *data, size_t i)
+static void P_LoadRawSectors(UINT8 *data)
 {
-	mapsector_t *ms;
-	sector_t *ss;
+	mapsector_t *ms = (mapsector_t *)data;
+	sector_t *ss = sectors;
 	levelflat_t *foundflats;
 
-	// We count how many sectors we got.
-	numsectors = i / sizeof (mapsector_t);
-	if (numsectors <= 0)
-		I_Error("Level has no sectors");
-
-	// Allocate as much memory as we need into the global sectors table.
-	sectors = Z_Calloc(numsectors*sizeof (*sectors), PU_LEVEL, NULL);
+	size_t i;
 
 	// Allocate a big chunk of memory as big as our MAXLEVELFLATS limit.
 	//Fab : FIXME: allocate for whatever number of flats - 512 different flats per level should be plenty
@@ -696,8 +634,6 @@ static void P_LoadRawSectors(UINT8 *data, size_t i)
 	numlevelflats = 0;
 
 	// For each counted sector, copy the sector raw data from our cache pointer ms, to the global table pointer ss.
-	ms = (mapsector_t *)data;
-	ss = sectors;
 	for (i = 0; i < numsectors; i++, ss++, ms++)
 	{
 		ss->floorheight = SHORT(ms->floorheight)<<FRACBITS;
@@ -769,29 +705,15 @@ static void P_LoadRawSectors(UINT8 *data, size_t i)
 	P_SetupLevelFlatAnims();
 }
 
-static void P_LoadSectors(lumpnum_t lumpnum)
-{
-	UINT8 *data = W_CacheLumpNum(lumpnum, PU_STATIC);
-	P_LoadRawSectors(data, W_LumpLength(lumpnum));
-	Z_Free(data);
-}
-
 //
 // P_LoadNodes
 //
-static void P_LoadRawNodes(UINT8 *data, size_t i)
+static void P_LoadRawNodes(UINT8 *data)
 {
 	UINT8 j, k;
-	mapnode_t *mn;
-	node_t *no;
-
-	numnodes = i / sizeof (mapnode_t);
-	if (numnodes <= 0)
-		I_Error("Level has no nodes");
-	nodes = Z_Calloc(numnodes * sizeof (*nodes), PU_LEVEL, NULL);
-
-	mn = (mapnode_t *)data;
-	no = nodes;
+	mapnode_t *mn = (mapnode_t*)data;
+	node_t *no = nodes;
+	size_t i;
 
 	for (i = 0; i < numnodes; i++, no++, mn++)
 	{
@@ -808,12 +730,6 @@ static void P_LoadRawNodes(UINT8 *data, size_t i)
 	}
 }
 
-static void P_LoadNodes(lumpnum_t lumpnum)
-{
-	UINT8 *data = W_CacheLumpNum(lumpnum, PU_STATIC);
-	P_LoadRawNodes(data, W_LumpLength(lumpnum));
-	Z_Free(data);
-}
 
 //
 // P_ReloadRings
@@ -948,12 +864,10 @@ void P_ScanThings(INT16 mapnum, INT16 wadnum, INT16 lumpnum)
 // P_LoadThings
 //
 
-static void P_PrepareRawThings(UINT8 *data, size_t i)
+static void P_PrepareRawThings(UINT8 *data)
 {
 	mapthing_t *mt;
-
-	nummapthings = i / (5 * sizeof (INT16));
-	mapthings = Z_Calloc(nummapthings * sizeof (*mapthings), PU_LEVEL, NULL);
+	size_t i;
 
 	// Spawn axis points first so they are
 	// at the front of the list for fast searching.
@@ -981,13 +895,6 @@ static void P_PrepareRawThings(UINT8 *data, size_t i)
 				break;
 		}
 	}
-}
-
-static void P_PrepareThings(lumpnum_t lumpnum)
-{
-	UINT8 *data = W_CacheLumpNum(lumpnum, PU_STATIC);
-	P_PrepareRawThings(data, W_LumpLength(lumpnum));
-	Z_Free(data);
 }
 
 static void P_LoadThings(void)
@@ -1175,32 +1082,42 @@ void P_WriteThings(lumpnum_t lumpnum)
 	CONS_Printf(M_GetText("newthings%d.lmp saved.\n"), gamemap);
 }
 
-static void P_LoadRawLineDefs(UINT8 *data, size_t i)
+static void P_LoadRawLineDefs(UINT8 *data)
 {
-	maplinedef_t *mld;
-	line_t *ld;
-	vertex_t *v1, *v2;
+	maplinedef_t *mld = (maplinedef_t *)data;
+	line_t *ld = lines;
+	size_t i;
 
-	numlines = i / sizeof (maplinedef_t);
-	if (numlines <= 0)
-		I_Error("Level has no linedefs");
-	lines = Z_Calloc(numlines * sizeof (*lines), PU_LEVEL, NULL);
-
-	mld = (maplinedef_t *)data;
-	ld = lines;
 	for (i = 0; i < numlines; i++, mld++, ld++)
 	{
 		ld->flags = SHORT(mld->flags);
 		ld->special = SHORT(mld->special);
 		ld->tag = SHORT(mld->tag);
-		v1 = ld->v1 = &vertexes[SHORT(mld->v1)];
-		v2 = ld->v2 = &vertexes[SHORT(mld->v2)];
-		ld->dx = v2->x - v1->x;
-		ld->dy = v2->y - v1->y;
+		ld->v1 = &vertexes[SHORT(mld->v1)];
+		ld->v2 = &vertexes[SHORT(mld->v2)];
+
+		ld->sidenum[0] = SHORT(mld->sidenum[0]);
+		ld->sidenum[1] = SHORT(mld->sidenum[1]);
+	}
+}
+
+static void P_SetupLines(void)
+{
+	line_t *ld = lines;
+	size_t i;
+
+	for (i = 0; i < numlines; i++, ld++)
+	{
+		vertex_t *v1 = ld->v1;
+		vertex_t *v2 = ld->v2;
 
 #ifdef WALLSPLATS
 		ld->splats = NULL;
 #endif
+
+		ld->polyobj = NULL;
+		ld->dx = v2->x - v1->x;
+		ld->dy = v2->y - v1->y;
 
 		if (!ld->dx)
 			ld->slopetype = ST_VERTICAL;
@@ -1233,9 +1150,6 @@ static void P_LoadRawLineDefs(UINT8 *data, size_t i)
 			ld->bbox[BOXTOP] = v1->y;
 		}
 
-		ld->sidenum[0] = SHORT(mld->sidenum[0]);
-		ld->sidenum[1] = SHORT(mld->sidenum[1]);
-
 		{
 			// cph 2006/09/30 - fix sidedef errors right away.
 			// cph 2002/07/20 - these errors are fatal if not fixed, so apply them
@@ -1255,36 +1169,27 @@ static void P_LoadRawLineDefs(UINT8 *data, size_t i)
 		ld->validcount = 0;
 		ld->firsttag = ld->nexttag = -1;
 		ld->callcount = 0;
-		// killough 11/98: fix common wad errors (missing sidedefs):
 
+		// killough 11/98: fix common wad errors (missing sidedefs):
 		if (ld->sidenum[0] == 0xffff)
 		{
 			ld->sidenum[0] = 0;  // Substitute dummy sidedef for missing right side
 			// cph - print a warning about the bug
-			CONS_Debug(DBG_SETUP, "P_LoadRawLineDefs: linedef %s missing first sidedef\n", sizeu1(numlines-i-1));
+			CONS_Debug(DBG_SETUP, "Linedef %s missing first sidedef\n", sizeu1(numlines-i-1));
 		}
 
 		if ((ld->sidenum[1] == 0xffff) && (ld->flags & ML_TWOSIDED))
 		{
 			ld->flags &= ~ML_TWOSIDED;  // Clear 2s flag for missing left side
 			// cph - print a warning about the bug
-			CONS_Debug(DBG_SETUP, "P_LoadRawLineDefs: linedef %s has two-sided flag set, but no second sidedef\n", sizeu1(numlines-i-1));
+			CONS_Debug(DBG_SETUP, "Linedef %s has two-sided flag set, but no second sidedef\n", sizeu1(numlines-i-1));
 		}
 
 		if (ld->sidenum[0] != 0xffff && ld->special)
 			sides[ld->sidenum[0]].special = ld->special;
 		if (ld->sidenum[1] != 0xffff && ld->special)
 			sides[ld->sidenum[1]].special = ld->special;
-
-		ld->polyobj = NULL;
 	}
-}
-
-static void P_LoadLineDefs(lumpnum_t lumpnum)
-{
-	UINT8 *data = W_CacheLumpNum(lumpnum, PU_STATIC);
-	P_LoadRawLineDefs(data, W_LumpLength(lumpnum));
-	Z_Free(data);
 }
 
 static void P_LoadLineDefs2(void)
@@ -1383,21 +1288,6 @@ static void P_LoadLineDefs2(void)
 		sides = newsides;
 		numsides = numnewsides;
 	}
-}
-
-
-
-static inline void P_LoadRawSideDefs(size_t i)
-{
-	numsides = i / sizeof (mapsidedef_t);
-	if (numsides <= 0)
-		I_Error("Level has no sidedefs");
-	sides = Z_Calloc(numsides * sizeof (*sides), PU_LEVEL, NULL);
-}
-
-static inline void P_LoadSideDefs(lumpnum_t lumpnum)
-{
-	P_LoadRawSideDefs(W_LumpLength(lumpnum));
 }
 
 static void P_LoadRawSideDefs2(void *data)
@@ -1691,16 +1581,6 @@ static void P_LoadRawSideDefs2(void *data)
 	R_ClearTextureNumCache(true);
 }
 
-
-// Delay loading texture names until after loaded linedefs.
-static void P_LoadSideDefs2(lumpnum_t lumpnum)
-{
-	UINT8 *data = W_CacheLumpNum(lumpnum, PU_STATIC);
-	P_LoadRawSideDefs2(data);
-	Z_Free(data);
-}
-
-
 static boolean LineInBlock(fixed_t cx1, fixed_t cy1, fixed_t cx2, fixed_t cy2, fixed_t bx1, fixed_t by1)
 {
 	fixed_t bbox[4];
@@ -1981,70 +1861,12 @@ static void P_ReadBlockMapLump(INT16 *wadblockmaplump, size_t count)
 	}
 }
 
-//
-// P_LoadBlockMap
-//
-// Levels might not have a blockmap, so if one does not exist
-// this should return false.
-static boolean P_LoadBlockMap(lumpnum_t lumpnum)
-{
-	size_t count;
-	const char *lumpname = W_CheckNameForNum(lumpnum);
-
-	// Check if the lump exists, and if it's named "BLOCKMAP"
-	if (!lumpname || memcmp(lumpname, "BLOCKMAP", 8) != 0)
-	{
-		return false;
-	}
-
-	count = W_LumpLength(lumpnum);
-
-	if (!count || count >= 0x20000)
-		return false;
-
-	{
-		INT16 *wadblockmaplump = malloc(count); //INT16 *wadblockmaplump = W_CacheLumpNum (lump, PU_LEVEL);
-		if (!wadblockmaplump)
-			return false;
-		W_ReadLump(lumpnum, wadblockmaplump);
-		count /= 2;
-		P_ReadBlockMapLump(wadblockmaplump, count);
-		free(wadblockmaplump);
-	}
-
-	bmaporgx = blockmaplump[0]<<FRACBITS;
-	bmaporgy = blockmaplump[1]<<FRACBITS;
-	bmapwidth = blockmaplump[2];
-	bmapheight = blockmaplump[3];
-
-	// clear out mobj chains
-	count = sizeof (*blocklinks)* bmapwidth*bmapheight;
-	blocklinks = Z_Calloc(count, PU_LEVEL, NULL);
-	blockmap = blockmaplump+4;
-
-	// haleyjd 2/22/06: setup polyobject blockmap
-	count = sizeof(*polyblocklinks) * bmapwidth * bmapheight;
-	polyblocklinks = Z_Calloc(count, PU_LEVEL, NULL);
-
-	count = sizeof (*precipblocklinks)* bmapwidth*bmapheight;
-	precipblocklinks = Z_Calloc(count, PU_LEVEL, NULL);
-
-	return true;
-}
-
 // This needs to be a separate function
 // because making both the WAD and PK3 loading code use
 // the same functions is trickier than it looks for blockmap
 // -- Monster Iestyn 09/01/18
-static boolean P_LoadRawBlockMap(UINT8 *data, size_t count, const char *lumpname)
+static boolean P_LoadRawBlockMap(UINT8 *data, size_t count)
 {
-	// Check if the lump is named "BLOCKMAP"
-	if (!lumpname || memcmp(lumpname, "BLOCKMAP", 8) != 0)
-	{
-		CONS_Printf("No blockmap lump found for pk3!\n");
-		return false;
-	}
-
 	if (!count || count >= 0x20000)
 		return false;
 
@@ -2170,47 +1992,11 @@ static void P_GroupLines(void)
 	}
 }
 
-//
-// P_LoadReject
-//
-// Detect if the REJECT lump is valid,
-// if not, rejectmatrix will be NULL
-static void P_LoadReject(lumpnum_t lumpnum)
-{
-	size_t count;
-	const char *lumpname = W_CheckNameForNum(lumpnum);
-
-	// Check if the lump exists, and if it's named "REJECT"
-	if (!lumpname || memcmp(lumpname, "REJECT\0\0", 8) != 0)
-	{
-		rejectmatrix = NULL;
-		CONS_Debug(DBG_SETUP, "P_LoadReject: No valid REJECT lump found\n");
-		return;
-	}
-
-	count = W_LumpLength(lumpnum);
-
-	if (!count) // zero length, someone probably used ZDBSP
-	{
-		rejectmatrix = NULL;
-		CONS_Debug(DBG_SETUP, "P_LoadReject: REJECT lump has size 0, will not be loaded\n");
-	}
-	else
-		rejectmatrix = W_CacheLumpNum(lumpnum, PU_LEVEL);
-}
 
 // PK3 version
 // -- Monster Iestyn 09/01/18
-static void P_LoadRawReject(UINT8 *data, size_t count, const char *lumpname)
+static void P_LoadRawReject(UINT8 *data, size_t count)
 {
-	// Check if the lump is named "REJECT"
-	if (!lumpname || memcmp(lumpname, "REJECT\0\0", 8) != 0)
-	{
-		rejectmatrix = NULL;
-		CONS_Debug(DBG_SETUP, "P_LoadRawReject: No valid REJECT lump found\n");
-		return;
-	}
-
 	if (!count) // zero length, someone probably used ZDBSP
 	{
 		rejectmatrix = NULL;
@@ -2223,6 +2009,99 @@ static void P_LoadRawReject(UINT8 *data, size_t count, const char *lumpname)
 	}
 }
 
+static void P_LoadMapBSP(const virtres_t* virt)
+{
+	virtlump_t* virtssectors = vres_Find(virt, "SSECTORS");
+	virtlump_t* virtsegs     = vres_Find(virt, "SEGS");
+	virtlump_t* virtnodes    = vres_Find(virt, "NODES");
+
+	numsubsectors = virtssectors->size / sizeof(mapsubsector_t);
+	numnodes      = virtnodes->size    / sizeof(mapnode_t);
+	numsegs       = virtsegs->size     / sizeof(mapseg_t);
+
+	if (numsubsectors <= 0)
+		I_Error("Level has no subsectors (did you forget to run it through a nodesbuilder?)");
+	if (numnodes <= 0)
+		I_Error("Level has no nodes");
+	if (numsegs <= 0)
+		I_Error("Level has no segs");
+
+	subsectors = Z_Calloc(numsubsectors * sizeof(*subsectors), PU_LEVEL, NULL);
+	nodes      = Z_Calloc(numnodes * sizeof(*nodes), PU_LEVEL, NULL);
+	segs       = Z_Calloc(numsegs * sizeof(*segs), PU_LEVEL, NULL);
+
+	// Nodes
+	P_LoadRawSubsectors(virtssectors->data);
+	P_LoadRawNodes(virtnodes->data);
+	P_LoadRawSegs(virtsegs->data);
+}
+
+static void P_LoadMapLUT(const virtres_t* virt)
+{
+	virtlump_t* virtblockmap = vres_Find(virt, "BLOCKMAP");
+	virtlump_t* virtreject   = vres_Find(virt, "REJECT");
+
+	// Lookup tables
+	if (virtreject)
+		P_LoadRawReject(virtreject->data, virtreject->size);
+	else
+		rejectmatrix = NULL;
+
+	if (!(virtblockmap && P_LoadRawBlockMap(virtblockmap->data, virtblockmap->size)))
+		P_CreateBlockMap();
+}
+
+static void P_LoadMapData(const virtres_t* virt)
+{
+	virtlump_t* virtvertexes = NULL, * virtsectors = NULL, * virtsidedefs = NULL, * virtlinedefs = NULL, * virtthings = NULL;
+
+	// Count map data.
+	virtthings   = vres_Find(virt, "THINGS");
+	virtvertexes = vres_Find(virt, "VERTEXES");
+	virtsectors  = vres_Find(virt, "SECTORS");
+	virtsidedefs = vres_Find(virt, "SIDEDEFS");
+	virtlinedefs = vres_Find(virt, "LINEDEFS");
+
+	if (!virtthings)
+		I_Error("THINGS lump not found");
+	if (!virtvertexes)
+		I_Error("VERTEXES lump not found");
+	if (!virtsectors)
+		I_Error("SECTORS lump not found");
+	if (!virtsidedefs)
+		I_Error("SIDEDEFS lump not found");
+	if (!virtlinedefs)
+		I_Error("LINEDEFS lump not found");
+
+	// Traditional doom map format just assumes the number of elements from the lump sizes.
+	numvertexes  = virtvertexes->size / sizeof (mapvertex_t);
+	numsectors   = virtsectors->size  / sizeof (mapsector_t);
+	numsides     = virtsidedefs->size / sizeof (mapsidedef_t);
+	numlines     = virtlinedefs->size / sizeof (maplinedef_t);
+	nummapthings = virtthings->size   / (5 * sizeof (INT16));
+
+	if (numvertexes <= 0)
+		I_Error("Level has no vertices");
+	if (numsectors <= 0)
+		I_Error("Level has no sectors");
+	if (numsides <= 0)
+		I_Error("Level has no sidedefs");
+	if (numlines <= 0)
+		I_Error("Level has no linedefs");
+
+	vertexes  = Z_Calloc(numvertexes * sizeof (*vertexes), PU_LEVEL, NULL);
+	sectors   = Z_Calloc(numsectors * sizeof (*sectors), PU_LEVEL, NULL);
+	sides     = Z_Calloc(numsides * sizeof (*sides), PU_LEVEL, NULL);
+	lines     = Z_Calloc(numlines * sizeof (*lines), PU_LEVEL, NULL);
+	mapthings = Z_Calloc(nummapthings * sizeof (*mapthings), PU_LEVEL, NULL);
+
+	// Strict map data
+	P_LoadRawVertexes(virtvertexes->data);
+	P_LoadRawSectors(virtsectors->data);
+	P_LoadRawLineDefs(virtlinedefs->data);
+	P_SetupLines();
+	P_LoadRawSideDefs2(virtsidedefs->data);
+}
 
 /** Sets up a sky texture to use for the level.
   * The sky texture is used instead of F_SKY1.
@@ -2380,6 +2259,9 @@ void P_LoadThingsOnly(void)
 	mobj_t *mo;
 	thinker_t *think;
 
+	virtres_t* virt = vres_GetMap(lastloadedmaplumpnum);
+	virtlump_t* vth = vres_Find(virt, "THINGS");
+
 	for (think = thinkercap.next; think != &thinkercap; think = think->next)
 	{
 		if (think->function.acp1 != (actionf_p1)P_MobjThinker)
@@ -2393,17 +2275,10 @@ void P_LoadThingsOnly(void)
 
 	P_LevelInitStuff();
 
-	if (W_IsLumpWad(lastloadedmaplumpnum)) // welp it's a map wad in a pk3
-	{ // HACK: Open wad file rather quickly so we can use the things lump
-		UINT8 *wadData = W_CacheLumpNum(lastloadedmaplumpnum, PU_STATIC);
-		filelump_t *fileinfo = (filelump_t *)(wadData + ((wadinfo_t *)wadData)->infotableofs);
-		fileinfo += ML_THINGS; // we only need the THINGS lump
-		P_PrepareRawThings(wadData + fileinfo->filepos, fileinfo->size);
-		Z_Free(wadData); // we're done with this now
-	}
-	else // phew it's just a WAD
-		P_PrepareThings(lastloadedmaplumpnum + ML_THINGS);
+	P_PrepareRawThings(vth->data);
 	P_LoadThings();
+
+	vres_Free(virt);
 
 	P_SpawnSecretItems(true);
 }
@@ -2434,7 +2309,7 @@ static INT32 P_MakeBufferMD5(const char *buffer, size_t len, void *resblock)
 #endif
 }
 
-static void P_MakeMapMD5(lumpnum_t maplumpnum, void *dest)
+static void P_MakeMapMD5(virtres_t* virt, void *dest)
 {
 	unsigned char linemd5[16];
 	unsigned char sectormd5[16];
@@ -2445,20 +2320,15 @@ static void P_MakeMapMD5(lumpnum_t maplumpnum, void *dest)
 
 	// Create a hash for the current map
 	// get the actual lumps!
-	UINT8 *datalines   = W_CacheLumpNum(maplumpnum + ML_LINEDEFS, PU_CACHE);
-	UINT8 *datasectors = W_CacheLumpNum(maplumpnum + ML_SECTORS, PU_CACHE);
-	UINT8 *datathings  = W_CacheLumpNum(maplumpnum + ML_THINGS, PU_CACHE);
-	UINT8 *datasides   = W_CacheLumpNum(maplumpnum + ML_SIDEDEFS, PU_CACHE);
+	virtlump_t* virtlines   = vres_Find(virt, "LINEDEFS");
+	virtlump_t* virtsectors = vres_Find(virt, "SECTORS");
+	virtlump_t* virtmthings = vres_Find(virt, "THINGS");
+	virtlump_t* virtsides   = vres_Find(virt, "SIDEDEFS");
 
-	P_MakeBufferMD5((char*)datalines,   W_LumpLength(maplumpnum + ML_LINEDEFS), linemd5);
-	P_MakeBufferMD5((char*)datasectors, W_LumpLength(maplumpnum + ML_SECTORS),  sectormd5);
-	P_MakeBufferMD5((char*)datathings,  W_LumpLength(maplumpnum + ML_THINGS),   thingmd5);
-	P_MakeBufferMD5((char*)datasides,   W_LumpLength(maplumpnum + ML_SIDEDEFS), sidedefmd5);
-
-	Z_Free(datalines);
-	Z_Free(datasectors);
-	Z_Free(datathings);
-	Z_Free(datasides);
+	P_MakeBufferMD5((char*)virtlines->data,   virtlines->size, linemd5);
+	P_MakeBufferMD5((char*)virtsectors->data, virtsectors->size,  sectormd5);
+	P_MakeBufferMD5((char*)virtmthings->data, virtmthings->size,   thingmd5);
+	P_MakeBufferMD5((char*)virtsides->data,   virtsides->size, sidedefmd5);
 
 	for (i = 0; i < 16; i++)
 		resmd5[i] = (linemd5[i] + sectormd5[i] + thingmd5[i] + sidedefmd5[i]) & 0xFF;
@@ -2707,7 +2577,6 @@ boolean P_SetupLevel(boolean skipprecip)
 	INT32 loademblems = 1;
 	INT32 fromnetsave = 0;
 	midgamejoin = 0;
-	boolean loadedbm = false;
 	sector_t *ss;
 	boolean chase;
 
@@ -2924,98 +2793,33 @@ boolean P_SetupLevel(boolean skipprecip)
 	// SRB2 determines the sky texture to be used depending on the map header.
 	P_SetupLevelSky(mapheaderinfo[gamemap-1]->skynum, true);
 
-	P_MakeMapMD5(lastloadedmaplumpnum, &mapmd5);
+	numdmstarts = numredctfstarts = numbluectfstarts = 0;
 
-	// HACK ALERT: Cache the WAD, get the map data into the tables, free memory.
-	// As it is implemented right now, we're assuming an uncompressed WAD.
-	// (As in, a normal PWAD, not ZWAD or anything. The lump itself can be compressed.)
-	// We're not accounting for extra lumps and scrambled lump positions. Any additional data will cause an error.
-	if (W_IsLumpWad(lastloadedmaplumpnum))
+	// reset the player starts
+	for (i = 0; i < MAXPLAYERS; i++)
+		playerstarts[i] = NULL;
+	for (i = 0; i < 2; i++)
+		skyboxmo[i] = NULL;
+
+
+	P_MapStart();
+
+	if (lastloadedmaplumpnum)
 	{
-		// Remember that we're assuming that the WAD will have a specific set of lumps in a specific order.
-		UINT8 *wadData = W_CacheLumpNum(lastloadedmaplumpnum, PU_STATIC);
-		//filelump_t *fileinfo = wadData + ((wadinfo_t *)wadData)->infotableofs;
-		filelump_t *fileinfo = (filelump_t *)(wadData + ((wadinfo_t *)wadData)->infotableofs);
-		UINT32 numlumps = ((wadinfo_t *)wadData)->numlumps;
+		virtres_t* virt = vres_GetMap(lastloadedmaplumpnum);
 
-		if (numlumps < ML_REJECT) // at least 9 lumps should be in the wad for a map to be loaded
-		{
-			I_Error("Bad WAD file for map %s!\n", maplumpname);
-		}
-
-		if (numlumps > ML_BLOCKMAP) // enough room for a BLOCKMAP lump at least
-		{
-			loadedbm = P_LoadRawBlockMap(
-							wadData + (fileinfo + ML_BLOCKMAP)->filepos,
-							(fileinfo + ML_BLOCKMAP)->size,
-							(fileinfo + ML_BLOCKMAP)->name);
-		}
-		P_LoadRawVertexes(wadData + (fileinfo + ML_VERTEXES)->filepos, (fileinfo + ML_VERTEXES)->size);
-		P_LoadRawSectors(wadData + (fileinfo + ML_SECTORS)->filepos, (fileinfo + ML_SECTORS)->size);
-		P_LoadRawSideDefs((fileinfo + ML_SIDEDEFS)->size);
-		P_LoadRawLineDefs(wadData + (fileinfo + ML_LINEDEFS)->filepos, (fileinfo + ML_LINEDEFS)->size);
-		P_LoadRawSideDefs2(wadData + (fileinfo + ML_SIDEDEFS)->filepos);
-		P_LoadRawSubsectors(wadData + (fileinfo + ML_SSECTORS)->filepos, (fileinfo + ML_SSECTORS)->size);
-		P_LoadRawNodes(wadData + (fileinfo + ML_NODES)->filepos, (fileinfo + ML_NODES)->size);
-		P_LoadRawSegs(wadData + (fileinfo + ML_SEGS)->filepos, (fileinfo + ML_SEGS)->size);
-		if (numlumps > ML_REJECT) // enough room for a REJECT lump at least
-		{
-			P_LoadRawReject(
-					wadData + (fileinfo + ML_REJECT)->filepos,
-					(fileinfo + ML_REJECT)->size,
-					(fileinfo + ML_REJECT)->name);
-		}
-		else
-		{
-			rejectmatrix = NULL;
-		}
-
-		// Important: take care of the ordering of the next functions.
-		if (!loadedbm)
-			P_CreateBlockMap(); // Graue 02-29-2004
-		P_LoadLineDefs2();
-		P_GroupLines();
-		numdmstarts = numredctfstarts = numbluectfstarts = 0;
-
-		// reset the player starts
-		for (i = 0; i < MAXPLAYERS; i++)
-			playerstarts[i] = NULL;
-		for (i = 0; i < 2; i++)
-			skyboxmo[i] = NULL;
-		P_MapStart();
-
-		P_PrepareRawThings(wadData + (fileinfo + ML_THINGS)->filepos, (fileinfo + ML_THINGS)->size);
-		Z_Free(wadData);
-	}
-	else
-	{
-		// Important: take care of the ordering of the next functions.
-		loadedbm = P_LoadBlockMap(lastloadedmaplumpnum + ML_BLOCKMAP);
-		P_LoadVertexes(lastloadedmaplumpnum + ML_VERTEXES);
-		P_LoadSectors(lastloadedmaplumpnum + ML_SECTORS);
-		P_LoadSideDefs(lastloadedmaplumpnum + ML_SIDEDEFS);
-		P_LoadLineDefs(lastloadedmaplumpnum + ML_LINEDEFS);
-		P_LoadSideDefs2(lastloadedmaplumpnum + ML_SIDEDEFS);
-		P_LoadSubsectors(lastloadedmaplumpnum + ML_SSECTORS);
-		P_LoadNodes(lastloadedmaplumpnum + ML_NODES);
-		P_LoadSegs(lastloadedmaplumpnum + ML_SEGS);
-		P_LoadReject(lastloadedmaplumpnum + ML_REJECT);
-
-		// Important: take care of the ordering of the next functions.
-		if (!loadedbm)
-			P_CreateBlockMap(); // Graue 02-29-2004
+		P_LoadMapData(virt);
+		P_LoadMapBSP(virt);
+		P_LoadMapLUT(virt);
 
 		P_LoadLineDefs2();
 		P_GroupLines();
-		numdmstarts = numredctfstarts = numbluectfstarts = 0;
 
-		// reset the player starts
-		for (i = 0; i < MAXPLAYERS; i++)
-			playerstarts[i] = NULL;
-		for (i = 0; i < 2; i++)
-			skyboxmo[i] = NULL;
-		P_MapStart();
-		P_PrepareThings(lastloadedmaplumpnum + ML_THINGS);
+		P_PrepareRawThings(vres_Find(virt, "THINGS")->data);
+
+		P_MakeMapMD5(virt, &mapmd5);
+
+		vres_Free(virt);
 	}
 
 	P_ResetDynamicSlopes();
