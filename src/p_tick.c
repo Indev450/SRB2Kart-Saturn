@@ -18,6 +18,7 @@
 #include "z_zone.h"
 #include "s_sound.h"
 #include "st_stuff.h"
+#include "p_setup.h"
 #include "p_polyobj.h"
 #include "m_random.h"
 #include "lua_script.h"
@@ -680,7 +681,8 @@ void P_Ticker(boolean run)
 	if (run)
 	{
 		// Dynamic slopeness
-		P_RunDynamicSlopes();
+		if (midgamejoin) // only run here if we joined midgame to fix some desynchs
+			P_RunDynamicSlopes();
 
 		PS_START_TIMING(ps_thinkertime);
 		P_RunThinkers();
@@ -714,12 +716,6 @@ void P_Ticker(boolean run)
 	// as this is mostly used for HUD stuff, add the record attack specific hack to it as well!
 	if (!(modeattacking && !demo.playback) || leveltime >= starttime - TICRATE*4)
 		timeinmap++;
-
-	/*if (G_TagGametype())
-		P_DoTagStuff();
-
-	if (G_GametypeHasTeams())
-		P_DoCTFStuff();*/
 
 	if (run)
 	{
@@ -899,7 +895,8 @@ void P_PreTicker(INT32 frames)
 			}
 
 		// Dynamic slopeness
-		P_RunDynamicSlopes();
+		if (midgamejoin)
+			P_RunDynamicSlopes();
 
 		P_RunThinkers();
 
