@@ -2590,16 +2590,8 @@ static void HWR_AddLine(seg_t *line)
 	}
 
 	// OPTIMIZE: quickly reject orthogonal back sides.
-	if (cv_pointoangleexor64.value)
-	{
-		angle1 = R_PointToAngle64(v1x, v1y);
-		angle2 = R_PointToAngle64(v2x, v2y);
-	}
-	else
-	{
-		angle1 = R_PointToAngleEx(viewx, viewy, v1x, v1y);
-		angle2 = R_PointToAngleEx(viewx, viewy, v2x, v2y);
-	}
+	angle1 = R_PointToAngle64(v1x, v1y);
+	angle2 = R_PointToAngle64(v2x, v2y);
 
 	 // PrBoom: Back side, i.e. backface culling - read: endAngle >= startAngle!
 	if (angle2 - angle1 < ANGLE_180 || !gr_curline->linedef)
@@ -2795,16 +2787,8 @@ static boolean HWR_CheckBBox(const fixed_t *bspcoord)
 		if (mindist > current_bsp_culling_distance) return false;
 	}
 
-	if (cv_pointoangleexor64.value)
-	{
-		angle1 = R_PointToAngle64(px1, py1);
-		angle2 = R_PointToAngle64(px2, py2);
-	}
-	else
-	{
-		angle1 = R_PointToAngleEx(viewx, viewy, px1, py1);
-		angle2 = R_PointToAngleEx(viewx, viewy, px2, py2);
-	}
+	angle1 = R_PointToAngle64(px1, py1);
+	angle2 = R_PointToAngle64(px2, py2);
 
 	return gld_clipper_SafeCheckRange(angle2, angle1);
 }
@@ -5565,16 +5549,8 @@ static void HWR_PortalClipping(gl_portal_t *portal)
 
 	line_t *line = &lines[portal->clipline];
 
-	if (cv_pointoangleexor64.value)
-	{
-		angle1 = R_PointToAngle64(line->v1->x, line->v1->y);
-		angle2 = R_PointToAngle64(line->v2->x, line->v2->y);
-	}
-	else
-	{
-		angle1 = R_PointToAngleEx(viewx, viewy, line->v1->x, line->v1->y);
-		angle2 = R_PointToAngleEx(viewx, viewy, line->v2->x, line->v2->y);
-	}
+	angle1 = R_PointToAngle64(line->v1->x, line->v1->y);
+	angle2 = R_PointToAngle64(line->v2->x, line->v2->y);
 
 	// clip things that are not inside the portal window from our viewpoint
 	gld_clipper_SafeAddClipRange(angle2, angle1);
