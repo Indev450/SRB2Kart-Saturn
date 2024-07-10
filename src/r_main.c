@@ -1831,10 +1831,8 @@ void R_RegisterEngineStuff(void)
 	if (dedicated)
 		return;
 
-	//CV_RegisterVar(&cv_precipdensity);
 	CV_RegisterVar(&cv_translucency);
 	CV_RegisterVar(&cv_drawdist);
-	//CV_RegisterVar(&cv_drawdist_nights);
 	CV_RegisterVar(&cv_drawdist_precip);
 	CV_RegisterVar(&cv_lessprecip);
 	CV_RegisterVar(&cv_fov);
@@ -1907,5 +1905,4 @@ void R_RegisterEngineStuff(void)
 	// Frame interpolation/uncapped
 	CV_RegisterVar(&cv_fpscap);
 	CV_RegisterVar(&cv_precipinterp);
-	CV_RegisterVar(&cv_mobjssector);
 }
