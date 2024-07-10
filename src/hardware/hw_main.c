@@ -4227,7 +4227,7 @@ static inline void HWR_DrawPrecipitationSprite(gr_vissprite_t *spr)
 
 	if (HWR_UseShader())
 	{
-		shader = (spr->mobj->frame & FF_PAPERSPRITE) ? SHADER_SPRITE : SHADER_SPRITECLIPHACK;
+		shader = SHADER_SPRITECLIPHACK;
 		blend |= PF_ColorMapped;
 	}
 
