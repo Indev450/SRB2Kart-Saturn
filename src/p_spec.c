@@ -4980,6 +4980,10 @@ void P_UpdateSpecials(void)
 	// LEVEL TIMER
 	P_CheckTimeLimit();
 
+	// Dynamic slopeness
+	if (!midgamejoin) // run here when not joined midgame to prevent any potential issues that may arise
+		P_RunDynamicSlopes();
+
 	// POINT LIMIT
 	P_CheckPointLimit();
 

@@ -18,6 +18,8 @@
 #include "doomstat.h"
 #include "r_defs.h"
 
+extern SINT8 midgamejoin;
+
 // map md5, sent to players via PT_SERVERINFO
 extern unsigned char mapmd5[16];
 
