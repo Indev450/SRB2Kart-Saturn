@@ -134,7 +134,7 @@ void P_ClosestPointOnLine3D(fixed_t x, fixed_t y, fixed_t z, line_t *line, verte
 // P_PointOnLineSide
 // Returns 0 or 1
 //
-PUREFUNC INT32 P_PointOnLineSide(fixed_t x, fixed_t y, const line_t *line)
+FUNCINLINE ATTRINLINE PUREFUNC INT32 P_PointOnLineSide(fixed_t x, fixed_t y, const line_t *line)
 {
 	fixed_t dx, dy, left, right;
 
@@ -208,7 +208,7 @@ PUREFUNC INT32 P_BoxOnLineSide(fixed_t *tmbox, const line_t *ld)
 // P_PointOnDivlineSide
 // Returns 0 or 1.
 //
-static PUREFUNC INT32 P_PointOnDivlineSide(fixed_t x, fixed_t y, const divline_t *line)
+FUNCINLINE static ATTRINLINE PUREFUNC INT32 P_PointOnDivlineSide(fixed_t x, fixed_t y, const divline_t *line)
 {
 	fixed_t dx, dy, left, right;
 
@@ -235,7 +235,7 @@ static PUREFUNC INT32 P_PointOnDivlineSide(fixed_t x, fixed_t y, const divline_t
 //
 // P_MakeDivline
 //
-void P_MakeDivline(line_t *li, divline_t *dl)
+FUNCINLINE ATTRINLINE void P_MakeDivline(line_t *li, divline_t *dl)
 {
 	dl->x = li->v1->x;
 	dl->y = li->v1->y;
@@ -248,7 +248,7 @@ void P_MakeDivline(line_t *li, divline_t *dl)
 // Returns the fractional intercept point along the first divline.
 // This is only called by the addthings and addlines traversers.
 //
-fixed_t P_InterceptVector(divline_t *v2, divline_t *v1)
+FUNCINLINE ATTRINLINE fixed_t P_InterceptVector(divline_t *v2, divline_t *v1)
 {
 	fixed_t frac, num, den;
 
@@ -752,7 +752,7 @@ void P_UnsetThingPosition(mobj_t *thing)
 	}
 }
 
-void P_UnsetPrecipThingPosition(precipmobj_t *thing)
+FUNCINLINE ATTRINLINE void P_UnsetPrecipThingPosition(precipmobj_t *thing)
 {
 	precipmobj_t **bprev = thing->bprev;
 	precipmobj_t  *bnext = thing->bnext;
@@ -902,7 +902,7 @@ void P_SetUnderlayPosition(mobj_t *thing)
 	sector_list = NULL; // clear for next time
 }
 
-void P_SetPrecipitationThingPosition(precipmobj_t *thing)
+FUNCINLINE ATTRINLINE void P_SetPrecipitationThingPosition(precipmobj_t *thing)
 {
 	thing->subsector = R_PointInSubsector(thing->x, thing->y);
 
@@ -990,7 +990,7 @@ boolean P_BlockLinesIterator(INT32 x, INT32 y, boolean (*func)(line_t *))
 //
 // P_BlockThingsIterator
 //
-boolean P_BlockThingsIterator(INT32 x, INT32 y, boolean (*func)(mobj_t *))
+FUNCINLINE ATTRINLINE boolean P_BlockThingsIterator(INT32 x, INT32 y, boolean (*func)(mobj_t *))
 {
 	mobj_t *mobj, *bnext = NULL;
 
@@ -1029,7 +1029,7 @@ divline_t trace;
 static boolean earlyout;
 
 //SoM: 4/6/2000: Remove limit on intercepts.
-static void P_CheckIntercepts(void)
+FUNCINLINE static ATTRINLINE void P_CheckIntercepts(void)
 {
 	static size_t max_intercepts = 0;
 	size_t count = intercept_p - intercepts;
