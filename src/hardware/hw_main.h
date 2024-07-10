@@ -156,7 +156,6 @@ extern consvar_t cv_grshaders;
 extern consvar_t cv_grframebuffer;
 #endif
 extern consvar_t cv_grfofcut;
-extern consvar_t cv_fofzfightfix;
 extern consvar_t cv_splitwallfix;
 extern consvar_t cv_slopepegfix;
 extern consvar_t cv_grshearing;
