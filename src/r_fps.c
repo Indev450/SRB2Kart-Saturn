@@ -23,6 +23,7 @@
 #include "r_state.h"
 #include "z_zone.h"
 #include "console.h" // con_startup_loadprogress
+
 #ifdef HWRENDER
 #include "hardware/hw_main.h" // for cv_grshearing
 #endif
@@ -340,19 +341,29 @@ void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 			out->angle = mobj->resetinterp ? mobj->angle : R_LerpAngle(mobj->old_angle, mobj->angle, frac);
 	}
 
-	// pitch roll stuff
-	IFCHANGED(pitch, old_pitch)
-		out->pitch = mobj->resetinterp ? mobj->pitch : R_LerpAngle(mobj->old_pitch, mobj->pitch, frac);
+	if (cv_grmdls.value)
+	{
+		// pitch roll stuff
+		IFCHANGED(pitch, old_pitch)
+			out->pitch = mobj->resetinterp ? mobj->pitch : R_LerpAngle(mobj->old_pitch, mobj->pitch, frac);
 
-	IFCHANGED(roll, old_roll)
-		out->roll = mobj->resetinterp ? mobj->roll : R_LerpAngle(mobj->old_roll, mobj->roll, frac);
+		IFCHANGED(roll, old_roll)
+			out->roll = mobj->resetinterp ? mobj->roll : R_LerpAngle(mobj->old_roll, mobj->roll, frac);
 
-	// and the slope stuff
-	IFCHANGED(slopepitch, old_slopepitch)
-		out->slopepitch = mobj->resetinterp ? mobj->slopepitch : R_LerpAngle(mobj->old_slopepitch, mobj->slopepitch, frac);
+		// and the slope stuff
+		IFCHANGED(slopepitch, old_slopepitch)
+			out->slopepitch = mobj->resetinterp ? mobj->slopepitch : R_LerpAngle(mobj->old_slopepitch, mobj->slopepitch, frac);
 
-	IFCHANGED(sloperoll, old_sloperoll)
-		out->sloperoll = mobj->resetinterp ? mobj->sloperoll : R_LerpAngle(mobj->old_sloperoll, mobj->sloperoll, frac);
+		IFCHANGED(sloperoll, old_sloperoll)
+			out->sloperoll = mobj->resetinterp ? mobj->sloperoll : R_LerpAngle(mobj->old_sloperoll, mobj->sloperoll, frac);
+	}
+	else
+	{
+		out->pitch = mobj->pitch;
+		out->roll = mobj->roll;
+		out->slopepitch = mobj->slopepitch;
+		out->sloperoll = mobj->sloperoll;
+	}
 }
 
 void R_InterpolatePrecipMobjState(precipmobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
