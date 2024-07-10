@@ -384,8 +384,9 @@ void R_InterpolatePrecipMobjState(precipmobj_t *mobj, fixed_t frac, interpmobjst
 		//out->subsector = R_PointInSubsector(out->x, out->y); // i dont understand lol
 		out->subsector = mobj->subsector;
 
-		IFCHANGED(angle, old_angle)
-			out->angle = R_LerpAngle(mobj->old_angle, mobj->angle, frac);
+		//IFCHANGED(angle, old_angle)
+			//out->angle = R_LerpAngle(mobj->old_angle, mobj->angle, frac);
+		out->angle = mobj->angle;
 }
 
 #undef IFCHANGED
