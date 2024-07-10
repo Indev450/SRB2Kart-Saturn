@@ -278,7 +278,7 @@ angle_t R_InterpolateAngle(angle_t from, angle_t to)
 
 #define IFCHANGED(a, b)\
 if (mobj->a == mobj->b)\
-(out->a = mobj->b);\
+(out->a = mobj->a);\
 else
 
 void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
