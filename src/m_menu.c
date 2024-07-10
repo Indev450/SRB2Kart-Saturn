@@ -1510,7 +1510,6 @@ enum
 #endif
 	op_exp_paldepth,
 	op_exp_spltwal,
-	op_exp_fofcut,
 #endif
 };
 
