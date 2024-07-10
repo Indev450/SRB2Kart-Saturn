@@ -2820,8 +2820,6 @@ boolean P_SetupLevel(boolean skipprecip)
 
 	P_MapStart();
 
-	P_InitSlopes();
-
 	if (lastloadedmaplumpnum)
 		P_LoadMapFromFile();
 
