@@ -2549,7 +2549,7 @@ doaddline:
 	{
 		gr_backsector = R_FakeFlat(gr_backsector, &tempsec, NULL, NULL, true);
 
-		if ((gr_backsector->ceilingpic == skyflatnum && gr_frontsector->ceilingpic == skyflatnum) && (gr_backsector->floorpic == skyflatnum && gr_frontsector->floorpic == skyflatnum)) // everything's sky? let's save us a bit of time then
+		if (!portalclipline && (gr_backsector->ceilingpic == skyflatnum && gr_frontsector->ceilingpic == skyflatnum) && (gr_backsector->floorpic == skyflatnum && gr_frontsector->floorpic == skyflatnum)) // everything's sky? let's save us a bit of time then
 		{
 			if (!line->polyseg && !line->sidedef->midtexture
 				&& ((!gr_frontsector->ffloors && !gr_backsector->ffloors)
