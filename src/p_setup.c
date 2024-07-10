@@ -2631,10 +2631,6 @@ boolean P_SetupLevel(boolean skipprecip)
 
 	if (!dedicated)
 	{
-		// Salt: CV_ClearChangedFlags() messes with your settings :(
-		/*if (!cv_cam_speed.changed)
-			CV_Set(&cv_cam_speed, cv_cam_speed.defaultvalue);*/
-
 		if (!cv_chasecam.changed)
 			CV_SetValue(&cv_chasecam, chase);
 
@@ -2808,12 +2804,10 @@ boolean P_SetupLevel(boolean skipprecip)
 	for (i = 0; i < 2; i++)
 		skyboxmo[i] = NULL;
 
-
 	P_MapStart();
 
 	if (lastloadedmaplumpnum)
 		P_LoadMapFromFile();
-
 
 	P_ResetDynamicSlopes();
 
@@ -2880,8 +2874,6 @@ boolean P_SetupLevel(boolean skipprecip)
 
 	if (modeattacking == ATTACKING_RECORD && !demo.playback)
 		P_LoadRecordGhosts();
-	/*else if (modeattacking == ATTACKING_NIGHTS && !demo.playback)
-		P_LoadNightsGhosts();*/
 
 	if (G_TagGametype())
 	{
@@ -2982,19 +2974,6 @@ boolean P_SetupLevel(boolean skipprecip)
 			for (i = 0; i <= splitscreen; i++)
 				P_SetupCamera(displayplayers[i], &camera[i]);
 
-		// Salt: CV_ClearChangedFlags() messes with your settings :(
-		/*if (!cv_cam_height.changed)
-			CV_Set(&cv_cam_height, cv_cam_height.defaultvalue);
-
-		if (!cv_cam_dist.changed)
-			CV_Set(&cv_cam_dist, cv_cam_dist.defaultvalue);
-
-		if (!cv_cam2_height.changed)
-			CV_Set(&cv_cam2_height, cv_cam2_height.defaultvalue);
-
-		if (!cv_cam2_dist.changed)
-			CV_Set(&cv_cam2_dist, cv_cam2_dist.defaultvalue);*/
-
 		// Though, I don't think anyone would care about cam_rotate being reset back to the only value that makes sense :P
 		if (!cv_cam_rotate.changed)
 			CV_Set(&cv_cam_rotate, cv_cam_rotate.defaultvalue);
@@ -3008,41 +2987,8 @@ boolean P_SetupLevel(boolean skipprecip)
 		if (!cv_cam4_rotate.changed)
 			CV_Set(&cv_cam4_rotate, cv_cam4_rotate.defaultvalue);
 
-		/*if (!cv_analog.changed)
-			CV_SetValue(&cv_analog, 0);
-		if (!cv_analog2.changed)
-			CV_SetValue(&cv_analog2, 0);
-		if (!cv_analog3.changed)
-			CV_SetValue(&cv_analog3, 0);
-		if (!cv_analog4.changed)
-			CV_SetValue(&cv_analog4, 0);*/
-
-		// Shouldn't be necessary with render parity?
-		/*if (rendermode != render_none)
-			CV_Set(&cv_fov, cv_fov.defaultvalue);*/
-
 		displayplayers[0] = consoleplayer; // Start with your OWN view, please!
 	}
-
-	/*if (cv_useranalog.value)
-		CV_SetValue(&cv_analog, true);
-
-	if ((splitscreen && cv_useranalog2.value) || botingame)
-		CV_SetValue(&cv_analog2, true);
-
-	if (splitscreen > 1 && cv_useranalog3.value)
-		CV_SetValue(&cv_analog3, true);
-
-	if (splitscreen > 2 && cv_useranalog4.value)
-		CV_SetValue(&cv_analog4, true);
-
-	if (twodlevel)
-	{
-		CV_SetValue(&cv_analog4, false);
-		CV_SetValue(&cv_analog3, false);
-		CV_SetValue(&cv_analog2, false);
-		CV_SetValue(&cv_analog, false);
-	}*/
 
 	// clear special respawning que
 	iquehead = iquetail = 0;
