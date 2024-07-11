@@ -649,7 +649,7 @@ typedef struct
 	INT16 topoffset;      // pixels below the origin
 	INT32 columnofs[];     // only [width] used
 	// the [0] is &columnofs[width]
-}ATTRPACK patch_t;
+} patch_t;
 
 #ifdef _MSC_VER
 #pragma warning(disable :  4200)
