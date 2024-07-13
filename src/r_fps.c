@@ -341,6 +341,7 @@ void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 			out->angle = mobj->resetinterp ? mobj->angle : R_LerpAngle(mobj->old_angle, mobj->angle, frac);
 	}
 
+#ifdef HWRENDER
 	if (cv_grmdls.value)
 	{
 		// pitch roll stuff
@@ -358,6 +359,7 @@ void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 			out->sloperoll = mobj->resetinterp ? mobj->sloperoll : R_LerpAngle(mobj->old_sloperoll, mobj->sloperoll, frac);
 	}
 	else
+#endif
 	{
 		out->pitch = mobj->pitch;
 		out->roll = mobj->roll;
