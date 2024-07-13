@@ -2551,14 +2551,14 @@ doaddline:
 
 		if ((gr_backsector->ceilingpic == skyflatnum && gr_frontsector->ceilingpic == skyflatnum) && (gr_backsector->floorpic == skyflatnum && gr_frontsector->floorpic == skyflatnum)) // everything's sky? let's save us a bit of time then
 		{
-			if (!line->polyseg && !line->sidedef->midtexture
+			if (!line->polyseg &&
+				!line->sidedef->midtexture
 				&& ((!gr_frontsector->ffloors && !gr_backsector->ffloors)
 				|| gr_frontsector->tag == gr_backsector->tag))
 				return; // line is empty, don't even bother
 				// treat like wide open window instead
-
-			HWR_ProcessSeg(); // Doesn't need arguments because they're defined globally :D
-			return;
+				HWR_ProcessSeg(); // Doesn't need arguments because they're defined globally :D
+				return;
 		}
 
 		if (CheckClip(gr_frontsector, gr_backsector))
