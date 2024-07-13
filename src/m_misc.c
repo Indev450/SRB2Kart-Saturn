@@ -1938,7 +1938,7 @@ char *sizeu5(size_t num)
 	return sizeu5_buf;
 }
 
-void *M_Memcpy(void *dest, const void *src, size_t n)
+FUNCINLINE ATTRINLINE void *M_Memcpy(void *dest, const void *src, size_t n)
 {
 	return memcpy(dest, src, n);
 }
