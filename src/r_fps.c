@@ -598,6 +598,11 @@ void R_ClearLevelInterpolatorState(thinker_t *thinker)
 	}
 }
 
+#define IFCHANGED(a, b, c)\
+if (interp->a == interp->b)\
+	(interp->a = interp->c);\
+else
+
 void R_ApplyLevelInterpolators(fixed_t frac)
 {
 	size_t i, ii;
@@ -611,16 +616,12 @@ void R_ApplyLevelInterpolators(fixed_t frac)
 		case LVLINTERP_SectorPlane:
 			if (interp->sectorplane.ceiling)
 			{
-				if (interp->sectorplane.sector->ceilingheight == interp->sectorplane.oldheight)
-					interp->sectorplane.sector->ceilingheight = interp->sectorplane.bakheight;
-				else
+				IFCHANGED(sectorplane.sector->ceilingheight, sectorplane.oldheight, sectorplane.bakheight)
 					interp->sectorplane.sector->ceilingheight = R_LerpFixed(interp->sectorplane.oldheight, interp->sectorplane.bakheight, frac);
 			}
 			else
 			{
-				if (interp->sectorplane.sector->floorheight == interp->sectorplane.oldheight)
-					interp->sectorplane.sector->floorheight = interp->sectorplane.bakheight;
-				else
+				IFCHANGED(sectorplane.sector->floorheight, sectorplane.oldheight, sectorplane.bakheight)
 					interp->sectorplane.sector->floorheight = R_LerpFixed(interp->sectorplane.oldheight, interp->sectorplane.bakheight, frac);
 			}
 			interp->sectorplane.sector->moved = true;
@@ -628,63 +629,43 @@ void R_ApplyLevelInterpolators(fixed_t frac)
 		case LVLINTERP_SectorScroll:
 			if (interp->sectorscroll.ceiling)
 			{
-				if (interp->sectorscroll.sector->ceiling_xoffs == interp->sectorscroll.oldxoffs)
-					interp->sectorscroll.sector->ceiling_xoffs = interp->sectorscroll.bakxoffs;
-				else
+				IFCHANGED(sectorscroll.sector->ceiling_xoffs, sectorscroll.oldxoffs, sectorscroll.bakxoffs)
 					interp->sectorscroll.sector->ceiling_xoffs = R_LerpFixed(interp->sectorscroll.oldxoffs, interp->sectorscroll.bakxoffs, frac);
-				
-				if (interp->sectorscroll.sector->ceiling_yoffs == interp->sectorscroll.oldyoffs)
-					interp->sectorscroll.sector->ceiling_yoffs = interp->sectorscroll.bakyoffs;
-				else
+
+				IFCHANGED(sectorscroll.sector->ceiling_yoffs, sectorscroll.oldyoffs, sectorscroll.bakyoffs)
 					interp->sectorscroll.sector->ceiling_yoffs = R_LerpFixed(interp->sectorscroll.oldyoffs, interp->sectorscroll.bakyoffs, frac);
 			}
 			else
 			{
-				if (interp->sectorscroll.sector->floor_xoffs == interp->sectorscroll.oldxoffs)
-					interp->sectorscroll.sector->floor_xoffs = interp->sectorscroll.bakxoffs;
-				else
+				IFCHANGED(sectorscroll.sector->floor_xoffs, sectorscroll.oldxoffs, sectorscroll.bakxoffs)
 					interp->sectorscroll.sector->floor_xoffs = R_LerpFixed(interp->sectorscroll.oldxoffs, interp->sectorscroll.bakxoffs, frac);
-				
-				if (interp->sectorscroll.sector->floor_yoffs == interp->sectorscroll.oldyoffs)
-					interp->sectorscroll.sector->floor_yoffs = interp->sectorscroll.bakyoffs;
-				else
+
+				IFCHANGED(sectorscroll.sector->floor_yoffs, sectorscroll.oldyoffs, sectorscroll.bakyoffs)
 					interp->sectorscroll.sector->floor_yoffs = R_LerpFixed(interp->sectorscroll.oldyoffs, interp->sectorscroll.bakyoffs, frac);
 			}
 			break;
 		case LVLINTERP_SideScroll:
-			if (interp->sidescroll.side->textureoffset == interp->sidescroll.oldtextureoffset)
-				interp->sidescroll.side->textureoffset = interp->sidescroll.baktextureoffset;
-			else
+			IFCHANGED(sidescroll.side->textureoffset, sidescroll.oldtextureoffset, sidescroll.baktextureoffset)
 				interp->sidescroll.side->textureoffset = R_LerpFixed(interp->sidescroll.oldtextureoffset, interp->sidescroll.baktextureoffset, frac);
-			
-			if (interp->sidescroll.side->rowoffset == interp->sidescroll.oldrowoffset)
-				interp->sidescroll.side->rowoffset = interp->sidescroll.bakrowoffset;
-			else
+
+			IFCHANGED(sidescroll.side->rowoffset, sidescroll.oldrowoffset, sidescroll.bakrowoffset)
 				interp->sidescroll.side->rowoffset = R_LerpFixed(interp->sidescroll.oldrowoffset, interp->sidescroll.bakrowoffset, frac);
 			break;
 		case LVLINTERP_Polyobj:
 			for (ii = 0; ii < interp->polyobj.vertices_size; ii++)
 			{
-				if (interp->polyobj.polyobj->vertices[ii]->x == interp->polyobj.oldvertices[ii * 2    ])
-					interp->polyobj.polyobj->vertices[ii]->x = interp->polyobj.bakvertices[ii * 2    ];
-				else
+				IFCHANGED(polyobj.polyobj->vertices[ii]->x, polyobj.oldvertices[ii * 2    ], polyobj.bakvertices[ii * 2    ])
 					interp->polyobj.polyobj->vertices[ii]->x = R_LerpFixed(interp->polyobj.oldvertices[ii * 2    ], interp->polyobj.bakvertices[ii * 2    ], frac);
 
-				if (interp->polyobj.polyobj->vertices[ii]->y == interp->polyobj.oldvertices[ii * 2 + 1])
-					interp->polyobj.polyobj->vertices[ii]->y = interp->polyobj.bakvertices[ii * 2 + 1];
-				else
+				IFCHANGED(polyobj.polyobj->vertices[ii]->y, polyobj.oldvertices[ii * 2 + 1], polyobj.bakvertices[ii * 2 + 1])
 					interp->polyobj.polyobj->vertices[ii]->y = R_LerpFixed(interp->polyobj.oldvertices[ii * 2 + 1], interp->polyobj.bakvertices[ii * 2 + 1], frac);
 			}
-			if (interp->polyobj.polyobj->centerPt.x == interp->polyobj.oldcx)
-				interp->polyobj.polyobj->centerPt.x = interp->polyobj.bakcx;
-			else
+			IFCHANGED(polyobj.polyobj->centerPt.x, polyobj.oldcx, polyobj.bakcx)
 				interp->polyobj.polyobj->centerPt.x = R_LerpFixed(interp->polyobj.oldcx, interp->polyobj.bakcx, frac);
-			
-			if (interp->polyobj.polyobj->centerPt.y == interp->polyobj.oldcy)
-				interp->polyobj.polyobj->centerPt.y = interp->polyobj.bakcy;
-			else
+
+			IFCHANGED(polyobj.polyobj->centerPt.y, polyobj.oldcy, polyobj.bakcy)
 				interp->polyobj.polyobj->centerPt.y = R_LerpFixed(interp->polyobj.oldcy, interp->polyobj.bakcy, frac);
-			
+
 			break;
 		/*case LVLINTERP_DynSlope:
 			R_LerpVector3(&interp->dynslope.oldo, &interp->dynslope.bako, frac, &interp->dynslope.slope->o);
@@ -694,6 +675,8 @@ void R_ApplyLevelInterpolators(fixed_t frac)
 		}
 	}
 }
+
+#undef IFCHANGED
 
 void R_RestoreLevelInterpolators(void)
 {
