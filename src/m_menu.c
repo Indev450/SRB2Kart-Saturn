@@ -8190,7 +8190,6 @@ static void M_HandleSoundTest(INT32 choice)
 
 static musicdef_t *curplaying = NULL;
 static INT32 st_sel = 0;
-static tic_t st_time = 0;
 static tic_t st_musictime = 0;
 
 static void scrollMusicName(const char name[], size_t len, size_t maxlen, char result[])
@@ -8252,7 +8251,6 @@ static void M_MusicTest(INT32 choice)
 	}
 
 	curplaying = NULL;
-	st_time = 0;
 
 	st_sel = 0;
 
@@ -8263,30 +8261,17 @@ static void M_DrawMusicTest(void)
 {
 	INT32 x, y, i;
 
-	// let's handle the ticker first. ideally we'd tick this somewhere else, BUT...
-	if (curplaying)
-	{
-		{
-			fixed_t work;
-			work = st_time;
-
-			if (st_time >= (FRACUNIT << (FRACBITS - 2))) // prevent overflow jump - takes about 15 minutes of loop on the same song to reach
-					st_time = work;
-
-			st_time += renderdeltatics;
-		}
-	}
-
 	x = 90<<FRACBITS;
 	y = (BASEVIDHEIGHT-32)<<FRACBITS;
 
 	y = (BASEVIDWIDTH-(vid.width/vid.dupx))/2;
 
 	V_DrawFill(y-1, 20, vid.width/vid.dupx+1, 24, 239);
+
 	{
 		static fixed_t st_scroll = -FRACUNIT;
 		const char* titl;
-		
+
 		x = 16;
 		V_DrawString(x, 10, 0, "NOW PLAYING:");
 		if (curplaying)
@@ -8325,9 +8310,8 @@ static void M_DrawMusicTest(void)
 		{
 			if (!curplaying->usage[0])
 				V_DrawString(vid.dupx, vid.height - 10*vid.dupy, V_NOSCALESTART|V_ALLOWLOWERCASE, va("%.6s", curplaying->name));
-			else {
+			else
 				V_DrawSmallString(vid.dupx, vid.height - 5*vid.dupy, V_NOSCALESTART|V_ALLOWLOWERCASE, va("%.6s - %.255s\n", curplaying->name, curplaying->usage));
-			}
 			
 			if (cv_showmusicfilename.value)
 				V_DrawSmallString(0, 0, V_SNAPTOTOP|V_SNAPTOLEFT|V_ALLOWLOWERCASE, curplaying->filename);
@@ -8461,7 +8445,6 @@ static void M_HandleMusicTest(INT32 choice)
 				S_StopSounds();
 				S_StopMusic();
 				curplaying = NULL;
-				st_time = 0;
 				S_StartSound(NULL, sfx_skid);
 			}
 			break;
@@ -8475,7 +8458,6 @@ static void M_HandleMusicTest(INT32 choice)
 		case KEY_ENTER:
 			S_StopSounds();
 			S_StopMusic();
-			st_time = 0;
 			curplaying = soundtestdefs[st_sel];		
 			S_ChangeMusicInternal(curplaying->name, true);
 			break;
