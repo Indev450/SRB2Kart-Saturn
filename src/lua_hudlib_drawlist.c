@@ -326,7 +326,7 @@ static UINT64 GetItemId(void)
 		return 0;
 
 	// leave bits 0 and 1 free for the string mode
-	UINT64 id = ((uintptr_t)gL->savedpc << 32) | (hud_interpcounter << 10) | (hud_interptag << 2);
+	UINT64 id = ((UINT64)(uintptr_t)gL->savedpc << 32) | (hud_interpcounter << 10) | (hud_interptag << 2);
 
 	if (hud_interplatch)
 	{
