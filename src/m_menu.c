@@ -8190,8 +8190,53 @@ static void M_HandleSoundTest(INT32 choice)
 static musicdef_t *curplaying = NULL;
 static INT32 st_sel = 0;
 static tic_t st_time = 0;
-static size_t st_namescroll = 0;
-static size_t st_namescrollstate = 0;
+static tic_t st_musictime = 0;
+
+static void scrollMusicName(const char name[], size_t len, size_t maxlen, char result[])
+{
+	// How much should we scroll. Not sure why +1 is needed, but without it this function skips 2
+	// characters at once sometimes
+	const size_t amount = len - maxlen + 1;
+
+	// Note: anything above 17 will cause zero division
+	const size_t MAXSPEED = 6;
+	const size_t t = st_musictime / (35/min(amount, MAXSPEED));
+
+	const size_t state = (t / amount) % 4;
+
+	switch (state)
+	{
+		// Show beginning of the name
+		case 0:
+			memcpy(result, name, maxlen-1);
+		break;
+
+		// Scroll towards end of the name
+		case 1:
+		{
+			const size_t advance = t % amount;
+			memcpy(result, name+advance, maxlen-1);
+		}
+		break;
+
+		// Show end of the name
+		case 2:
+			memcpy(result, name+len+1-maxlen, maxlen-1);
+		break;
+
+		// Scroll towards start of the name
+		case 3:
+		{
+			const size_t advance = t % amount;
+			memcpy(result, name+len+1-maxlen-advance, maxlen-1);
+		}
+		break;
+	}
+
+	// Technically not necessary, since it gets set again after function call, but just in case
+	result[maxlen] = 0;
+}
+
 //static patch_t* st_radio[9];
 //static patch_t* st_launchpad[4];
 
@@ -8334,7 +8379,7 @@ static void M_DrawMusicTest(void)
 		x = 24;
 		y = 64;
 
-		if (renderisnewtic) ++st_namescroll;
+		if (renderisnewtic) st_musictime++;
 
 		while (t <= b)
 		{
@@ -8343,76 +8388,16 @@ static void M_DrawMusicTest(void)
 
 			{
 				const size_t MAXLENGTH = 34;
-				const tic_t SCROLLSPEED = TICRATE/5; // Number of tics for name being scrolled by 1 letter
-				size_t nameoffset = 0;
-				size_t namelength = strlen(soundtestdefs[t]->source);
-				if (soundtestdefs[t]->title[0])
-					namelength = strlen(soundtestdefs[t]->title);
+				const char *songname = soundtestdefs[t]->title[0] ? soundtestdefs[t]->title : soundtestdefs[t]->source;
+
+				size_t namelength = strlen(songname);
 
 				char buf[MAXLENGTH+1];
 
 				if (t == st_sel && namelength > MAXLENGTH)
-				{
-					switch (st_namescrollstate)
-					{
-						case 0:
-						{
-							// Scroll forward
-							nameoffset = (st_namescroll/SCROLLSPEED) % (namelength - MAXLENGTH + 1);
-
-							if (nameoffset == namelength - MAXLENGTH)
-							{
-								st_namescroll = 0;
-								st_namescrollstate++;
-							}
-						}
-						break;
-
-						case 1:
-						{
-							nameoffset = namelength - MAXLENGTH;
-
-							// Show name end for 1 second, then start scrolling back
-							if (st_namescroll == TICRATE)
-							{
-								st_namescroll = 0;
-								st_namescrollstate++;
-							}
-						}
-						break;
-
-						case 2:
-						{
-							// Scroll back
-							nameoffset = (namelength - MAXLENGTH - 1) - (st_namescroll/SCROLLSPEED) % (namelength - MAXLENGTH);
-
-							if (nameoffset == 0)
-							{
-								st_namescroll = 0;
-								st_namescrollstate++;
-							}
-						}
-						break;
-
-						case 3:
-						{
-							nameoffset = 0;
-
-							// Show name beginning for 1 second, then start scrolling forward again
-							if (st_namescroll == TICRATE)
-							{
-								st_namescroll = 0;
-								st_namescrollstate = 0;
-							}
-						}
-						break;
-					}
-				}
-
-				if (soundtestdefs[t]->title[0])
-					memcpy(buf, soundtestdefs[t]->title + nameoffset, MAXLENGTH);
+					scrollMusicName(songname, namelength, MAXLENGTH, buf);
 				else
-					memcpy(buf, soundtestdefs[t]->source + nameoffset, MAXLENGTH);
+					strncpy(buf, songname, MAXLENGTH);
 				buf[MAXLENGTH] = 0;
 
 				V_DrawString(x, y, (t == st_sel ? V_YELLOWMAP : 0)|V_ALLOWLOWERCASE|V_MONOSPACE, buf);
@@ -8439,8 +8424,7 @@ static void M_HandleMusicTest(INT32 choice)
 			{
 				S_StartSound(NULL, sfx_menu1);
 			}
-			st_namescroll = 0;
-			st_namescrollstate = 0;
+			st_musictime = 0;
 			break;
 		case KEY_UPARROW:
 			if (!st_sel--)
@@ -8448,8 +8432,7 @@ static void M_HandleMusicTest(INT32 choice)
 			{
 				S_StartSound(NULL, sfx_menu1);
 			}
-			st_namescroll = 0;
-			st_namescrollstate = 0;
+			st_musictime = 0;
 			break;
 		case KEY_PGDN:
 			if (st_sel < numsoundtestdefs-1)
@@ -8459,8 +8442,7 @@ static void M_HandleMusicTest(INT32 choice)
 					st_sel = numsoundtestdefs-1;
 				S_StartSound(NULL, sfx_menu1);
 			}
-			st_namescroll = 0;
-			st_namescrollstate = 0;
+			st_musictime = 0;
 			break;
 		case KEY_PGUP:
 			if (st_sel)
@@ -8470,8 +8452,7 @@ static void M_HandleMusicTest(INT32 choice)
 					st_sel = 0;
 				S_StartSound(NULL, sfx_menu1);
 			}
-			st_namescroll = 0;
-			st_namescrollstate = 0;
+			st_musictime = 0;
 			break;
 		case KEY_BACKSPACE:
 			if (curplaying)
@@ -8485,8 +8466,7 @@ static void M_HandleMusicTest(INT32 choice)
 			break;
 		case KEY_ESCAPE:
 			exitmenu = true;
-			st_namescroll = 0;
-			st_namescrollstate = 0;
+			st_musictime = 0;
 			break;
 
 		case KEY_RIGHTARROW:
