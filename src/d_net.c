@@ -1213,7 +1213,7 @@ boolean HGetPacket(void)
 		}
 		break;
 	}
-#endif // ndef NONET
+#endif // ifndef NONET
 
 	return true;
 }
