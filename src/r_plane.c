@@ -813,8 +813,7 @@ void R_DrawSinglePlane(visplane_t *pl)
 #endif
 	spanfunc = basespanfunc;
 
-	if (pl->polyobj && pl->polyobj->translucency != 0)
-	{
+	if (pl->polyobj && pl->polyobj->translucency != 0) {
 		spanfunc = R_DrawTranslucentSpan_8;
 
 		// Hacked up support for alpha value in software mode Tails 09-24-2002 (sidenote: ported to polys 10-15-2014, there was no time travel involved -Red)
@@ -834,8 +833,8 @@ void R_DrawSinglePlane(visplane_t *pl)
 		else
 			light = LIGHTLEVELS-1;
 
-	}
-	else if (pl->ffloor)
+	} else
+	if (pl->ffloor)
 	{
 		// Don't draw planes that shouldn't be drawn.
 		for (rover = pl->ffloor->target->ffloors; rover; rover = rover->next)
@@ -1099,9 +1098,9 @@ void R_DrawSinglePlane(visplane_t *pl)
 			spanfunc = R_DrawTiltedSpan_8;
 
 		planezlight = scalelight[light];
-	}
-	else
-		planezlight = zlight[light];
+	} else
+
+	planezlight = zlight[light];
 
 	// set the maximum value for unsigned
 	pl->top[pl->maxx+1] = 0xffff;
@@ -1210,9 +1209,9 @@ void R_PlaneBounds(visplane_t *plane)
 	for (i = plane->minx + 1; i <= plane->maxx; i++)
 	{
 		if (plane->top[i] < hi)
-			hi = plane->top[i];
+		hi = plane->top[i];
 		if (plane->bottom[i] > low)
-			low = plane->bottom[i];
+		low = plane->bottom[i];
 	}
 	plane->high = hi;
 	plane->low = low;
