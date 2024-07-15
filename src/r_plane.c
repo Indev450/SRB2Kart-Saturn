@@ -1102,7 +1102,7 @@ void R_DrawSinglePlane(visplane_t *pl)
 		else
 			spanfunc = R_DrawTiltedSpan_8;
 
-			planezlight = scalelight[light];
+		planezlight = scalelight[light];
 	}
 	else
 		planezlight = zlight[light];

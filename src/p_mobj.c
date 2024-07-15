@@ -8844,190 +8844,192 @@ void P_MobjThinker(mobj_t *mobj)
 			mobj_t *flagmo, *newmobj;
 
 			if (!LUAh_MobjFuse(mobj) && !P_MobjWasRemoved(mobj))
-			switch (mobj->type)
 			{
-				// gargoyle and snowman handled in P_PushableThinker, not here
-				case MT_THROWNGRENADE:
-				case MT_CYBRAKDEMON_NAPALM_BOMB_LARGE:
-					P_SetMobjState(mobj, mobj->info->deathstate);
-					break;
-				case MT_BLUEFLAG:
-				case MT_REDFLAG:
-					if (mobj->spawnpoint)
-					{
-						x = mobj->spawnpoint->x << FRACBITS;
-						y = mobj->spawnpoint->y << FRACBITS;
-						ss = R_PointInSubsector(x, y);
-						if (mobj->spawnpoint->options & MTF_OBJECTFLIP)
+				switch (mobj->type)
+				{
+					// gargoyle and snowman handled in P_PushableThinker, not here
+					case MT_THROWNGRENADE:
+					case MT_CYBRAKDEMON_NAPALM_BOMB_LARGE:
+						P_SetMobjState(mobj, mobj->info->deathstate);
+						break;
+					case MT_BLUEFLAG:
+					case MT_REDFLAG:
+						if (mobj->spawnpoint)
 						{
-							z = ss->sector->ceilingheight - mobjinfo[mobj->type].height;
-							if (mobj->spawnpoint->options >> ZSHIFT)
-								z -= (mobj->spawnpoint->options >> ZSHIFT) << FRACBITS;
+							x = mobj->spawnpoint->x << FRACBITS;
+							y = mobj->spawnpoint->y << FRACBITS;
+							ss = R_PointInSubsector(x, y);
+							if (mobj->spawnpoint->options & MTF_OBJECTFLIP)
+							{
+								z = ss->sector->ceilingheight - mobjinfo[mobj->type].height;
+								if (mobj->spawnpoint->options >> ZSHIFT)
+									z -= (mobj->spawnpoint->options >> ZSHIFT) << FRACBITS;
+							}
+							else
+							{
+								z = ss->sector->floorheight;
+								if (mobj->spawnpoint->options >> ZSHIFT)
+									z += (mobj->spawnpoint->options >> ZSHIFT) << FRACBITS;
+							}
+							flagmo = P_SpawnMobj(x, y, z, mobj->type);
+							flagmo->spawnpoint = mobj->spawnpoint;
+							if (mobj->spawnpoint->options & MTF_OBJECTFLIP)
+							{
+								flagmo->eflags |= MFE_VERTICALFLIP;
+								flagmo->flags2 |= MF2_OBJECTFLIP;
+							}
+
+							if (mobj->type == MT_REDFLAG)
+							{
+								if (!(mobj->flags2 & MF2_JUSTATTACKED))
+									CONS_Printf(M_GetText("The %c%s%c has returned to base.\n"), 0x85, M_GetText("Red flag"), 0x80);
+
+								// Assumedly in splitscreen players will be on opposing teams
+								if (players[consoleplayer].ctfteam == 1 || splitscreen)
+									S_StartSound(NULL, sfx_hoop1);
+								else if (players[consoleplayer].ctfteam == 2)
+									S_StartSound(NULL, sfx_hoop3);
+
+								redflag = flagmo;
+							}
+							else // MT_BLUEFLAG
+							{
+								if (!(mobj->flags2 & MF2_JUSTATTACKED))
+									CONS_Printf(M_GetText("The %c%s%c has returned to base.\n"), 0x84, M_GetText("Blue flag"), 0x80);
+
+								// Assumedly in splitscreen players will be on opposing teams
+								if (players[consoleplayer].ctfteam == 2 || splitscreen)
+									S_StartSound(NULL, sfx_hoop1);
+								else if (players[consoleplayer].ctfteam == 1)
+									S_StartSound(NULL, sfx_hoop3);
+
+								blueflag = flagmo;
+							}
 						}
-						else
+						P_RemoveMobj(mobj);
+						return;
+					case MT_YELLOWTV: // Ring shield box
+					case MT_BLUETV: // Force shield box
+					case MT_GREENTV: // Water shield box
+					case MT_BLACKTV: // Bomb shield box
+					case MT_WHITETV: // Jump shield box
+					case MT_SNEAKERTV: // Super Sneaker box
+					case MT_SUPERRINGBOX: // 10-Ring box
+					case MT_REDRINGBOX: // Red Team 10-Ring box
+					case MT_BLUERINGBOX: // Blue Team 10-Ring box
+					case MT_INV: // Invincibility box
+					case MT_MIXUPBOX: // Teleporter Mixup box
+					case MT_RECYCLETV: // Recycler box
+					case MT_SCORETVSMALL:
+					case MT_SCORETVLARGE:
+					case MT_PRUP: // 1up!
+					case MT_EGGMANBOX: // Eggman box
+					case MT_GRAVITYBOX: // Gravity box
+					case MT_QUESTIONBOX:
+						if ((mobj->flags2 & MF2_AMBUSH || mobj->flags2 & MF2_STRONGBOX) && mobj->type != MT_QUESTIONBOX)
 						{
-							z = ss->sector->floorheight;
-							if (mobj->spawnpoint->options >> ZSHIFT)
-								z += (mobj->spawnpoint->options >> ZSHIFT) << FRACBITS;
-						}
-						flagmo = P_SpawnMobj(x, y, z, mobj->type);
-						flagmo->spawnpoint = mobj->spawnpoint;
-						if (mobj->spawnpoint->options & MTF_OBJECTFLIP)
-						{
-							flagmo->eflags |= MFE_VERTICALFLIP;
-							flagmo->flags2 |= MF2_OBJECTFLIP;
-						}
+							mobjtype_t spawnchance[64];
+							INT32 numchoices = 0, i = 0;
 
-						if (mobj->type == MT_REDFLAG)
-						{
-							if (!(mobj->flags2 & MF2_JUSTATTACKED))
-								CONS_Printf(M_GetText("The %c%s%c has returned to base.\n"), 0x85, M_GetText("Red flag"), 0x80);
-
-							// Assumedly in splitscreen players will be on opposing teams
-							if (players[consoleplayer].ctfteam == 1 || splitscreen)
-								S_StartSound(NULL, sfx_hoop1);
-							else if (players[consoleplayer].ctfteam == 2)
-								S_StartSound(NULL, sfx_hoop3);
-
-							redflag = flagmo;
-						}
-						else // MT_BLUEFLAG
-						{
-							if (!(mobj->flags2 & MF2_JUSTATTACKED))
-								CONS_Printf(M_GetText("The %c%s%c has returned to base.\n"), 0x84, M_GetText("Blue flag"), 0x80);
-
-							// Assumedly in splitscreen players will be on opposing teams
-							if (players[consoleplayer].ctfteam == 2 || splitscreen)
-								S_StartSound(NULL, sfx_hoop1);
-							else if (players[consoleplayer].ctfteam == 1)
-								S_StartSound(NULL, sfx_hoop3);
-
-							blueflag = flagmo;
-						}
-					}
-					P_RemoveMobj(mobj);
-					return;
-				case MT_YELLOWTV: // Ring shield box
-				case MT_BLUETV: // Force shield box
-				case MT_GREENTV: // Water shield box
-				case MT_BLACKTV: // Bomb shield box
-				case MT_WHITETV: // Jump shield box
-				case MT_SNEAKERTV: // Super Sneaker box
-				case MT_SUPERRINGBOX: // 10-Ring box
-				case MT_REDRINGBOX: // Red Team 10-Ring box
-				case MT_BLUERINGBOX: // Blue Team 10-Ring box
-				case MT_INV: // Invincibility box
-				case MT_MIXUPBOX: // Teleporter Mixup box
-				case MT_RECYCLETV: // Recycler box
-				case MT_SCORETVSMALL:
-				case MT_SCORETVLARGE:
-				case MT_PRUP: // 1up!
-				case MT_EGGMANBOX: // Eggman box
-				case MT_GRAVITYBOX: // Gravity box
-				case MT_QUESTIONBOX:
-					if ((mobj->flags2 & MF2_AMBUSH || mobj->flags2 & MF2_STRONGBOX) && mobj->type != MT_QUESTIONBOX)
-					{
-						mobjtype_t spawnchance[64];
-						INT32 numchoices = 0, i = 0;
-
-// This define should make it a lot easier to organize and change monitor weights
+	// This define should make it a lot easier to organize and change monitor weights
 #define SETMONITORCHANCES(type, strongboxamt, weakboxamt) \
-for (i = ((mobj->flags2 & MF2_STRONGBOX) ? strongboxamt : weakboxamt); i; --i) spawnchance[numchoices++] = type
+	for (i = ((mobj->flags2 & MF2_STRONGBOX) ? strongboxamt : weakboxamt); i; --i) spawnchance[numchoices++] = type
 
-						//                Type            SRM WRM
-						SETMONITORCHANCES(MT_SNEAKERTV,     0, 10); // Super Sneakers
-						SETMONITORCHANCES(MT_INV,           2,  0); // Invincibility
-						SETMONITORCHANCES(MT_WHITETV,       3,  8); // Whirlwind Shield
-						SETMONITORCHANCES(MT_GREENTV,       3,  8); // Elemental Shield
-						SETMONITORCHANCES(MT_YELLOWTV,      2,  0); // Attraction Shield
-						SETMONITORCHANCES(MT_BLUETV,        3,  3); // Force Shield
-						SETMONITORCHANCES(MT_BLACKTV,       2,  0); // Armageddon Shield
-						SETMONITORCHANCES(MT_MIXUPBOX,      0,  1); // Teleporters
-						SETMONITORCHANCES(MT_RECYCLETV,     0,  1); // Recycler
-						SETMONITORCHANCES(MT_PRUP,          1,  1); // 1-Up
-						// ======================================
-						//                Total            16  32
+							//                Type            SRM WRM
+							SETMONITORCHANCES(MT_SNEAKERTV,     0, 10); // Super Sneakers
+							SETMONITORCHANCES(MT_INV,           2,  0); // Invincibility
+							SETMONITORCHANCES(MT_WHITETV,       3,  8); // Whirlwind Shield
+							SETMONITORCHANCES(MT_GREENTV,       3,  8); // Elemental Shield
+							SETMONITORCHANCES(MT_YELLOWTV,      2,  0); // Attraction Shield
+							SETMONITORCHANCES(MT_BLUETV,        3,  3); // Force Shield
+							SETMONITORCHANCES(MT_BLACKTV,       2,  0); // Armageddon Shield
+							SETMONITORCHANCES(MT_MIXUPBOX,      0,  1); // Teleporters
+							SETMONITORCHANCES(MT_RECYCLETV,     0,  1); // Recycler
+							SETMONITORCHANCES(MT_PRUP,          1,  1); // 1-Up
+							// ======================================
+							//                Total            16  32
 
 #undef SETMONITORCHANCES
 
-						i = P_RandomKey(numchoices); // Gotta love those random numbers!
-						newmobj = P_SpawnMobj(mobj->x, mobj->y, mobj->z, spawnchance[i]);
+							i = P_RandomKey(numchoices); // Gotta love those random numbers!
+							newmobj = P_SpawnMobj(mobj->x, mobj->y, mobj->z, spawnchance[i]);
 
-						// Transfer flags2 (strongbox, objectflip, ambush)
-						newmobj->flags2 = mobj->flags2;
-					}
-					else
-					{
-						newmobj = P_SpawnMobj(mobj->x, mobj->y, mobj->z, mobj->type);
-
-						// Transfer flags2 (strongbox, objectflip)
-						newmobj->flags2 = mobj->flags2;
-					}
-					P_RemoveMobj(mobj); // make sure they disappear
-					return;
-				case MT_RANDOMITEM:
-					if (G_BattleGametype())
-					{
-						if (mobj->threshold != 69)
-							break;
-					}
-					else
-					{
-						// Respawn from mapthing if you have one!
-						if (mobj->spawnpoint)
-						{
-							P_SpawnMapThing(mobj->spawnpoint);
-							newmobj = mobj->spawnpoint->mobj; // this is set to the new mobj in P_SpawnMapThing
+							// Transfer flags2 (strongbox, objectflip, ambush)
+							newmobj->flags2 = mobj->flags2;
 						}
 						else
+						{
 							newmobj = P_SpawnMobj(mobj->x, mobj->y, mobj->z, mobj->type);
 
-						// Transfer flags2 (strongbox, objectflip)
-						newmobj->flags2 = mobj->flags2 & ~MF2_DONTDRAW;
-					}
-					P_RemoveMobj(mobj); // make sure they disappear
-					return;
-				case MT_METALSONIC_BATTLE:
-					break; // don't remove
-				case MT_SPIKE:
-					P_SetMobjState(mobj, mobj->state->nextstate);
-					mobj->fuse = mobj->info->speed;
-					if (mobj->spawnpoint)
-						mobj->fuse += mobj->spawnpoint->angle;
-					break;
-				case MT_NIGHTSCORE:
-					P_RemoveMobj(mobj);
-					return;
-				case MT_PLAYER:
-					break; // don't remove
-				case MT_SMK_ICEBLOCK:
-					{
-						mobj_t *cur = mobj->hnext, *next;
-						UINT8 i;
-
-						for (i = 0; i < 5; i++)
-						{
-							mobj_t *debris = P_SpawnMobj(mobj->x, mobj->y, mobj->z, MT_SMK_ICEBLOCK_DEBRIS);
-							debris->angle = FixedAngle(P_RandomRange(0,360)<<FRACBITS);
-							P_InstaThrust(debris, debris->angle, P_RandomRange(3,18)*(FRACUNIT/4));
-							debris->momz = P_RandomRange(4,8)<<FRACBITS;
-							if (!i) // kinda hacky :V
-								S_StartSound(debris, sfx_s3k82);
+							// Transfer flags2 (strongbox, objectflip)
+							newmobj->flags2 = mobj->flags2;
 						}
-
-						while (cur && !P_MobjWasRemoved(cur))
+						P_RemoveMobj(mobj); // make sure they disappear
+						return;
+					case MT_RANDOMITEM:
+						if (G_BattleGametype())
 						{
-							next = cur->hnext;
-							P_RemoveMobj(cur);
-							cur = next;
+							if (mobj->threshold != 69)
+								break;
 						}
+						else
+						{
+							// Respawn from mapthing if you have one!
+							if (mobj->spawnpoint)
+							{
+								P_SpawnMapThing(mobj->spawnpoint);
+								newmobj = mobj->spawnpoint->mobj; // this is set to the new mobj in P_SpawnMapThing
+							}
+							else
+								newmobj = P_SpawnMobj(mobj->x, mobj->y, mobj->z, mobj->type);
 
+							// Transfer flags2 (strongbox, objectflip)
+							newmobj->flags2 = mobj->flags2 & ~MF2_DONTDRAW;
+						}
+						P_RemoveMobj(mobj); // make sure they disappear
+						return;
+					case MT_METALSONIC_BATTLE:
+						break; // don't remove
+					case MT_SPIKE:
+						P_SetMobjState(mobj, mobj->state->nextstate);
+						mobj->fuse = mobj->info->speed;
+						if (mobj->spawnpoint)
+							mobj->fuse += mobj->spawnpoint->angle;
+						break;
+					case MT_NIGHTSCORE:
 						P_RemoveMobj(mobj);
 						return;
-					}
-				default:
-					P_SetMobjState(mobj, mobj->info->xdeathstate); // will remove the mobj if S_NULL.
-					break;
+					case MT_PLAYER:
+						break; // don't remove
+					case MT_SMK_ICEBLOCK:
+						{
+							mobj_t *cur = mobj->hnext, *next;
+							UINT8 i;
+
+							for (i = 0; i < 5; i++)
+							{
+								mobj_t *debris = P_SpawnMobj(mobj->x, mobj->y, mobj->z, MT_SMK_ICEBLOCK_DEBRIS);
+								debris->angle = FixedAngle(P_RandomRange(0,360)<<FRACBITS);
+								P_InstaThrust(debris, debris->angle, P_RandomRange(3,18)*(FRACUNIT/4));
+								debris->momz = P_RandomRange(4,8)<<FRACBITS;
+								if (!i) // kinda hacky :V
+									S_StartSound(debris, sfx_s3k82);
+							}
+
+							while (cur && !P_MobjWasRemoved(cur))
+							{
+								next = cur->hnext;
+								P_RemoveMobj(cur);
+								cur = next;
+							}
+
+							P_RemoveMobj(mobj);
+							return;
+						}
+					default:
+						P_SetMobjState(mobj, mobj->info->xdeathstate); // will remove the mobj if S_NULL.
+						break;
+				}
 			}
 			if (P_MobjWasRemoved(mobj))
 				return;
