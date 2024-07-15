@@ -3759,8 +3759,10 @@ void P_ProcessSpecialSector(player_t *player, sector_t *sector, sector_t *rovers
 					continue;
 
 				mo2 = (mobj_t *)th;
+
 				if (mo2->type != MT_EGGTRAP)
 					continue;
+
 				P_KillMobj(mo2, NULL, player->mo);
 			}
 

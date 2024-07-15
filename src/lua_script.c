@@ -1595,6 +1595,7 @@ void LUA_Archive(void)
 		{
 			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 				continue;
+
 			// archive function will determine when to skip mobjs,
 			// and write mobjnum in otherwise.
 			ArchiveExtVars(th, "mobj");

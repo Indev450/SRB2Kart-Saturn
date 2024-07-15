@@ -2885,9 +2885,11 @@ static void P_NetUnArchiveThinkers(void)
 		{
 			if (currentthinker->function.acp1 != (actionf_p1)T_ExecutorDelay)
 				continue;
+
 			delay = (void *)currentthinker;
 			if (!(mobjnum = (UINT32)(size_t)delay->caller))
 				continue;
+
 			delay->caller = P_FindNewPosition(mobjnum);
 		}
 	}
