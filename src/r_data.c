@@ -1687,7 +1687,8 @@ void R_PrecacheLevel(void)
 
 	for (th = thinkercap.next; th != &thinkercap; th = th->next)
 		if (th->function.acp1 == (actionf_p1)P_MobjThinker)
-			spritepresent[((mobj_t *)th)->sprite] = 1;
+			if (th->function.acp1 != (actionf_p1)P_RemoveThinkerDelayed)
+				spritepresent[((mobj_t *)th)->sprite] = 1;
 
 	spritememory = 0;
 	for (i = 0; i < numsprites; i++)

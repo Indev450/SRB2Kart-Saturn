@@ -750,6 +750,8 @@ void P_ReloadRings(void)
 	{
 		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 			continue;
+		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+			continue;
 
 		mo = (mobj_t *)th;
 
@@ -2264,6 +2266,8 @@ void P_LoadThingsOnly(void)
 	for (think = thinkercap.next; think != &thinkercap; think = think->next)
 	{
 		if (think->function.acp1 != (actionf_p1)P_MobjThinker)
+			continue;
+		if (think->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 			continue;
 		P_RemoveMobj((mobj_t *)think);
 	}

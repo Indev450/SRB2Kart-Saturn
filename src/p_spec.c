@@ -3270,6 +3270,8 @@ void P_SetupSignExit(player_t *player)
 	{
 		if (think->function.acp1 != (actionf_p1)P_MobjThinker)
 			continue; // not a mobj thinker
+		if (think->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+			continue;
 
 		thing = (mobj_t *)think;
 		if (thing->type != MT_SIGN)
@@ -3319,6 +3321,8 @@ boolean P_IsFlagAtBase(mobjtype_t flag)
 	{
 		if (think->function.acp1 != (actionf_p1)P_MobjThinker)
 			continue; // not a mobj thinker
+		if (think->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+			continue;
 
 		mo = (mobj_t *)think;
 
@@ -3757,6 +3761,8 @@ void P_ProcessSpecialSector(player_t *player, sector_t *sector, sector_t *rovers
 			{
 				if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 					continue;
+				if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+					continue;
 
 				mo2 = (mobj_t *)th;
 
@@ -4101,6 +4107,8 @@ DoneSection2:
 				{
 					if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 						continue;
+					if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+						continue;
 
 					mo2 = (mobj_t *)th;
 
@@ -4179,6 +4187,8 @@ DoneSection2:
 				for (th = thinkercap.next; th != &thinkercap; th = th->next)
 				{
 					if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+						continue;
+					if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 						continue;
 
 					mo2 = (mobj_t *)th;
@@ -4402,6 +4412,8 @@ DoneSection2:
 				{
 					if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 						continue;
+					if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+						continue;
 
 					mo2 = (mobj_t *)th;
 
@@ -4440,6 +4452,8 @@ DoneSection2:
 				{
 					if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 						continue;
+					if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+						continue;
 
 					mo2 = (mobj_t *)th;
 
@@ -4466,6 +4480,8 @@ DoneSection2:
 				for (th = thinkercap.next; th != &thinkercap; th = th->next)
 				{
 					if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+						continue;
+					if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 						continue;
 
 					mo2 = (mobj_t *)th;

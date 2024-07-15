@@ -1516,28 +1516,29 @@ void Polyobj_InitLevel(void)
 	{
 		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 				continue;
+		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+			continue;
+
+		mobj_t *mo = (mobj_t *)th;
+
+		if (mo->info->doomednum == POLYOBJ_SPAWN_DOOMEDNUM ||
+			mo->info->doomednum == POLYOBJ_SPAWNCRUSH_DOOMEDNUM)
 		{
-			mobj_t *mo = (mobj_t *)th;
+			++numPolyObjects;
 
-			if (mo->info->doomednum == POLYOBJ_SPAWN_DOOMEDNUM ||
-				mo->info->doomednum == POLYOBJ_SPAWNCRUSH_DOOMEDNUM)
-			{
-				++numPolyObjects;
+			qitem = malloc(sizeof(mobjqitem_t));
+			memset(qitem, 0, sizeof(mobjqitem_t));
+			qitem->mo = mo;
+			M_QueueInsert(&(qitem->mqitem), &spawnqueue);
+		}
+		else if (mo->info->doomednum == POLYOBJ_ANCHOR_DOOMEDNUM)
+		{
+			++numAnchors;
 
-				qitem = malloc(sizeof(mobjqitem_t));
-				memset(qitem, 0, sizeof(mobjqitem_t));
-				qitem->mo = mo;
-				M_QueueInsert(&(qitem->mqitem), &spawnqueue);
-			}
-			else if (mo->info->doomednum == POLYOBJ_ANCHOR_DOOMEDNUM)
-			{
-				++numAnchors;
-
-				qitem = malloc(sizeof(mobjqitem_t));
-				memset(qitem, 0, sizeof(mobjqitem_t));
-				qitem->mo = mo;
-				M_QueueInsert(&(qitem->mqitem), &anchorqueue);
-			}
+			qitem = malloc(sizeof(mobjqitem_t));
+			memset(qitem, 0, sizeof(mobjqitem_t));
+			qitem->mo = mo;
+			M_QueueInsert(&(qitem->mqitem), &anchorqueue);
 		}
 	}
 
@@ -1571,39 +1572,6 @@ void Polyobj_InitLevel(void)
 		for (i = 0; i < numPolyObjects; ++i)
 			Polyobj_linkToBlockmap(&PolyObjects[i]);
 	}
-
-#if 0
-	// haleyjd 02/22/06: temporary debug
-	printf("DEBUG: numPolyObjects = %d\n", numPolyObjects);
-	for (i = 0; i < numPolyObjects; ++i)
-	{
-		INT32 j;
-		polyobj_t *po = &PolyObjects[i];
-
-		printf("polyobj %d:\n", i);
-		printf("id = %d, first = %d, next = %d\n", po->id, po->first, po->next);
-		printf("segCount = %d, numSegsAlloc = %d\n", po->segCount, po->numSegsAlloc);
-		for (j = 0; j < po->segCount; ++j)
-			printf("\tseg %d: %p\n", j, po->segs[j]);
-		printf("numVertices = %d, numVerticesAlloc = %d\n", po->numVertices, po->numVerticesAlloc);
-		for (j = 0; j < po->numVertices; ++j)
-		{
-			printf("\tvtx %d: (%d, %d) / orig: (%d, %d)\n",
-				j, po->vertices[j]->x>>FRACBITS, po->vertices[j]->y>>FRACBITS,
-				po->origVerts[j].x>>FRACBITS, po->origVerts[j].y>>FRACBITS);
-		}
-		printf("numLines = %d, numLinesAlloc = %d\n", po->numLines, po->numLinesAlloc);
-		for (j = 0; j < po->numLines; ++j)
-			printf("\tline %d: %p\n", j, po->lines[j]);
-		printf("spawnSpot = (%d, %d)\n", po->spawnSpot.x >> FRACBITS, po->spawnSpot.y >> FRACBITS);
-		printf("centerPt = (%d, %d)\n", po->centerPt.x >> FRACBITS, po->centerPt.y >> FRACBITS);
-		printf("attached = %d, linked = %d, validcount = %d, isBad = %d\n",
-			po->attached, po->linked, po->validcount, po->isBad);
-		printf("blockbox: [%d, %d, %d, %d]\n",
-			po->blockbox[BOXLEFT], po->blockbox[BOXRIGHT], po->blockbox[BOXBOTTOM],
-			po->blockbox[BOXTOP]);
-	}
-#endif
 
 	// done with mobj queues
 	M_QueueFree(&spawnqueue);
@@ -1821,6 +1789,8 @@ void T_PolyObjWaypoint(polywaypoint_t *th)
 	{
 		if (wp->function.acp1 != (actionf_p1)P_MobjThinker) // Not a mobj thinker
 			continue;
+		if (wp->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+			continue;
 
 		mo2 = (mobj_t *)wp;
 
@@ -1905,6 +1875,8 @@ void T_PolyObjWaypoint(polywaypoint_t *th)
 			{
 				if (wp->function.acp1 != (actionf_p1)P_MobjThinker) // Not a mobj thinker
 					continue;
+				if (wp->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+					continue;
 
 				mo2 = (mobj_t *)wp;
 
@@ -1944,6 +1916,8 @@ void T_PolyObjWaypoint(polywaypoint_t *th)
 				{
 					if (wp->function.acp1 != (actionf_p1)P_MobjThinker) // Not a mobj thinker
 						continue;
+					if (wp->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+						continue;
 
 					mo2 = (mobj_t *)wp;
 
@@ -1980,6 +1954,8 @@ void T_PolyObjWaypoint(polywaypoint_t *th)
 				for (wp = thinkercap.next; wp != &thinkercap; wp = wp->next)
 				{
 					if (wp->function.acp1 != (actionf_p1)P_MobjThinker) // Not a mobj thinker
+						continue;
+					if (wp->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 						continue;
 
 					mo2 = (mobj_t *)wp;
@@ -2500,6 +2476,8 @@ INT32 EV_DoPolyObjWaypoint(polywaypointdata_t *pwdata)
 	for (wp = thinkercap.next; wp != &thinkercap; wp = wp->next)
 	{
 		if (wp->function.acp1 != (actionf_p1)P_MobjThinker) // Not a mobj thinker
+			continue;
+		if (wp->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 			continue;
 
 		mo2 = (mobj_t *)wp;
