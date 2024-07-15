@@ -4114,11 +4114,21 @@ static void P_Boss3Thinker(mobj_t *mobj)
 				continue;
 
 			mo2 = (mobj_t *)th;
-			if (mo2->type == MT_BOSS3WAYPOINT && mo2->spawnpoint && mo2->spawnpoint->angle == mobj->threshold)
-			{
-				P_SetTarget(&mobj->target, mo2);
-				break;
-			}
+
+			if (!mo2)
+				continue;
+
+			if (mo2->type != MT_BOSS3WAYPOINT)
+				continue;
+
+			if (!mo2->spawnpoint)
+				continue;
+
+			if (mo2->spawnpoint->angle != mobj->threshold)
+				continue;
+
+			P_SetTarget(&mobj->target, mo2);
+			break;
 		}
 
 		if (!mobj->target) // Should NEVER happen
@@ -10005,28 +10015,19 @@ void P_RemoveMobj(mobj_t *mobj)
 	// killough 11/98:
 	//
 	// Remove any references to other mobjs.
-	P_SetTarget(&mobj->target, P_SetTarget(&mobj->tracer, NULL));
+	P_SetTarget(&mobj->target, NULL);
+	P_SetTarget(&mobj->tracer, NULL);
 
-	// repair hnext chain
-	{
-		mobj_t *cachenext = mobj->hnext;
+	if (mobj->hnext && !P_MobjWasRemoved(mobj->hnext))
+		P_SetTarget(&mobj->hnext->hprev, mobj->hprev);
+	if (mobj->hprev && !P_MobjWasRemoved(mobj->hprev))
+		P_SetTarget(&mobj->hprev->hnext, mobj->hnext);
 
-		if (mobj->hnext && !P_MobjWasRemoved(mobj->hnext))
-		{
-			P_SetTarget(&mobj->hnext->hprev, mobj->hprev);
-			P_SetTarget(&mobj->hnext, NULL);
-		}
-
-		if (mobj->hprev && !P_MobjWasRemoved(mobj->hprev))
-		{
-			P_SetTarget(&mobj->hprev->hnext, cachenext);
-			P_SetTarget(&mobj->hprev, NULL);
-		}
-	}
+	P_SetTarget(&mobj->hnext, P_SetTarget(&mobj->hprev, NULL));
 	
 	// clear the reference from the mapthing
 	if (mobj->spawnpoint)
-		mobj->spawnpoint->mobj = NULL;
+		P_SetTarget(&mobj->spawnpoint->mobj, NULL);
 
 	R_RemoveMobjInterpolator(mobj);
 
@@ -11777,11 +11778,12 @@ void P_SpawnHoopsAndRings(mapthing_t *mthing)
 			{
 				P_SetTarget(&mobj->hprev, nextmobj);
 				P_SetTarget(&mobj->hprev->hnext, mobj);
-				//mobj->hprev = nextmobj;
-				//mobj->hprev->hnext = mobj;
 			}
 			else
-				mobj->hprev = mobj->hnext = NULL;
+			{
+				P_SetTarget(&mobj->hprev, NULL);
+				P_SetTarget(&mobj->hnext, NULL);
+			}
 
 			nextmobj = mobj;
 		}
@@ -11807,11 +11809,9 @@ void P_SpawnHoopsAndRings(mapthing_t *mthing)
 			mobj->z -= mobj->height/2;
 
 			// Link all the collision sprites together.
-			mobj->hnext = NULL;
+			P_SetTarget(&mobj->hnext, NULL);
 			P_SetTarget(&mobj->hprev, nextmobj);
 			P_SetTarget(&mobj->hprev->hnext, mobj);
-			//mobj->hprev = nextmobj;
-			//mobj->hprev->hnext = mobj;
 
 			nextmobj = mobj;
 		}
@@ -11836,11 +11836,9 @@ void P_SpawnHoopsAndRings(mapthing_t *mthing)
 			mobj->z -= mobj->height/2;
 
 			// Link all the collision sprites together.
-			mobj->hnext = NULL;
+			P_SetTarget(&mobj->hnext, NULL);
 			P_SetTarget(&mobj->hprev, nextmobj);
 			P_SetTarget(&mobj->hprev->hnext, mobj);
-			//mobj->hprev = nextmobj;
-			//mobj->hprev->hnext = mobj;
 
 			nextmobj = mobj;
 		}
@@ -11923,11 +11921,12 @@ void P_SpawnHoopsAndRings(mapthing_t *mthing)
 			{
 				P_SetTarget(&mobj->hprev, nextmobj);
 				P_SetTarget(&mobj->hprev->hnext, mobj);
-				//mobj->hprev = nextmobj;
-				//mobj->hprev->hnext = mobj;
 			}
 			else
-				mobj->hprev = mobj->hnext = NULL;
+			{
+				P_SetTarget(&mobj->hprev, NULL);
+				P_SetTarget(&mobj->hnext, NULL);
+			}
 
 			nextmobj = mobj;
 		}
@@ -11964,11 +11963,9 @@ void P_SpawnHoopsAndRings(mapthing_t *mthing)
 				mobj->z -= mobj->height/2;
 
 				// Link all the collision sprites together.
-				mobj->hnext = NULL;
+				P_SetTarget(&mobj->hnext, NULL);
 				P_SetTarget(&mobj->hprev, nextmobj);
 				P_SetTarget(&mobj->hprev->hnext, mobj);
-				//mobj->hprev = nextmobj;
-				//mobj->hprev->hnext = mobj;
 
 				nextmobj = mobj;
 			}

@@ -1968,31 +1968,7 @@ void T_ThwompSector(levelspecthink_t *thwomp)
 	}
 	else // Not going anywhere, so look for players.
 	{
-		//thinker_t *th;
-		//mobj_t *mo;
-
 		thwomp->direction = -1;
-
-		/* // SRB2kart 170217 - Thwomps are automatic.
-		// scan the thinkers to find players!
-		if (!rover || (rover->flags & FF_EXISTS))
-		{
-			// scan the thinkers to find players!
-			for (th = thinkercap.next; th != &thinkercap; th = th->next)
-			{
-				if (th->function.acp1 != (actionf_p1)P_MobjThinker)
-					continue;
-
-				mo = (mobj_t *)th;
-				if (mo->type == MT_PLAYER && mo->health && mo->player && !mo->player->spectator
-				    && mo->z <= thwomp->sector->ceilingheight
-					&& P_AproxDistance(thwompx - mo->x, thwompy - mo->y) <= 96*FRACUNIT)
-				{
-					thwomp->direction = -1;
-					break;
-				}
-			}
-		}*/
 
 		thwomp->sector->ceilspeed = 0;
 		thwomp->sector->floorspeed = 0;
