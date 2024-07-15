@@ -1640,7 +1640,6 @@ void R_RenderPlayerView(player_t *player)
 	}
 	// Draw over the fourth screen so you don't have to stare at a HOM :V
 	else if (splitscreen == 2 && player == &players[displayplayers[2]])
-#if 1
 	{
 		// V_DrawPatchFill, but for the fourth screen only
 		patch_t *pat = W_CachePatchName("SRB2BACK", PU_CACHE);
@@ -1653,9 +1652,6 @@ void R_RenderPlayerView(player_t *player)
 				V_DrawScaledPatch(x, y, V_NOSCALESTART, pat);
 		}
 	}
-#else
-	V_DrawFill(viewwidth, viewheight, viewwidth, viewheight, 31|V_NOSCALESTART);
-#endif
 
 	// load previous saved value of skyVisible for the player
 	for (i = 0; i <= splitscreen; i++)
