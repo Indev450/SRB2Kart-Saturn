@@ -2610,7 +2610,17 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 					CONS_Debug(DBG_SETUP, "SOC Error: script lump %s not found/not valid.\n", newname);
 				}
 				else
-					COM_BufInsertText(W_CacheLumpNum(lumpnum, PU_CACHE));
+				{
+					// W_CacheLumpNum may not have null terminator, so we need to do this :blobcatgooglyholditsheadinitshands:
+					size_t len = W_LumpLength(lumpnum);
+					char *script = Z_Malloc(len+1, PU_STATIC, NULL);
+					memcpy(script, W_CacheLumpNum(lumpnum, PU_CACHE), len);
+					script[len] = 0;
+
+					COM_BufInsertText(script);
+
+					Z_Free(script);
+				}
 			}
 			break;
 
