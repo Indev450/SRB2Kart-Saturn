@@ -496,6 +496,7 @@ FUNCINLINE static ATTRINLINE void P_LoadRawSubsectors(void *data)
 
 size_t numlevelflats;
 levelflat_t *levelflats;
+levelflat_t *foundflats;
 
 //SoM: Other files want this info.
 size_t P_PrecacheLevelFlats(void)
@@ -621,17 +622,7 @@ static void P_LoadRawSectors(UINT8 *data)
 {
 	mapsector_t *ms = (mapsector_t *)data;
 	sector_t *ss = sectors;
-	levelflat_t *foundflats;
-
 	size_t i;
-
-	// Allocate a big chunk of memory as big as our MAXLEVELFLATS limit.
-	//Fab : FIXME: allocate for whatever number of flats - 512 different flats per level should be plenty
-	foundflats = calloc(MAXLEVELFLATS, sizeof (*foundflats));
-	if (foundflats == NULL)
-		I_Error("Ran out of memory while loading sectors\n");
-
-	numlevelflats = 0;
 
 	// For each counted sector, copy the sector raw data from our cache pointer ms, to the global table pointer ss.
 	for (i = 0; i < numsectors; i++, ss++, ms++)
@@ -693,16 +684,6 @@ static void P_LoadRawSectors(UINT8 *data)
 		ss->floorspeed = 0;
 		ss->ceilspeed = 0;
 	}
-
-	// set the sky flat num
-	skyflatnum = P_AddLevelFlat(SKYFLATNAME, foundflats);
-
-	// copy table for global usage
-	levelflats = M_Memcpy(Z_Calloc(numlevelflats * sizeof (*levelflats), PU_LEVEL, NULL), foundflats, numlevelflats * sizeof (levelflat_t));
-	free(foundflats);
-
-	// search for animated flats and set up
-	P_SetupLevelFlatAnims();
 }
 
 //
@@ -1491,7 +1472,7 @@ static void P_LoadRawSideDefs2(void *data)
 
 				// always process if back sidedef, because we need that - symbol
  				sd->text = Z_Malloc(7, PU_LEVEL, NULL);
-				if (i == 1 || msd->toptexture[0] != '-' || msd->toptexture[1] != '\0')
+				if (i == 1 || !(msd->toptexture[0] == '-' || msd->toptexture[1] == '\0'))
 				{
 					M_Memcpy(process,msd->toptexture,8);
 					process[8] = '\0';
@@ -1580,7 +1561,6 @@ static void P_LoadRawSideDefs2(void *data)
 				break;
 		}
 	}
-	R_ClearTextureNumCache(true);
 }
 
 static boolean LineInBlock(fixed_t cx1, fixed_t cy1, fixed_t cx2, fixed_t cy2, fixed_t bx1, fixed_t by1)
@@ -2097,12 +2077,33 @@ static void P_LoadMapData(const virtres_t* virt)
 	lines     = Z_Calloc(numlines * sizeof (*lines), PU_LEVEL, NULL);
 	mapthings = Z_Calloc(nummapthings * sizeof (*mapthings), PU_LEVEL, NULL);
 
+	// Allocate a big chunk of memory as big as our MAXLEVELFLATS limit.
+	//Fab : FIXME: allocate for whatever number of flats - 512 different flats per level should be plenty
+	foundflats = calloc(MAXLEVELFLATS, sizeof (*foundflats));
+	if (foundflats == NULL)
+		I_Error("Ran out of memory while loading sectors\n");
+
+	numlevelflats = 0;
+
 	// Strict map data
 	P_LoadRawVertexes(virtvertexes->data);
 	P_LoadRawSectors(virtsectors->data);
 	P_LoadRawLineDefs(virtlinedefs->data);
 	P_SetupLines();
 	P_LoadRawSideDefs2(virtsidedefs->data);
+	P_PrepareRawThings(virtthings->data);
+
+	R_ClearTextureNumCache(true);
+
+	// set the sky flat num
+	skyflatnum = P_AddLevelFlat(SKYFLATNAME, foundflats);
+
+	// copy table for global usage
+	levelflats = M_Memcpy(Z_Calloc(numlevelflats * sizeof (*levelflats), PU_LEVEL, NULL), foundflats, numlevelflats * sizeof (levelflat_t));
+	free(foundflats);
+
+	// search for animated flats and set up
+	P_SetupLevelFlatAnims();
 }
 
 /** Sets up a sky texture to use for the level.
@@ -2260,9 +2261,6 @@ void P_LoadThingsOnly(void)
 	// Search through all the thinkers.
 	thinker_t *think;
 
-	virtres_t* virt = vres_GetMap(lastloadedmaplumpnum);
-	virtlump_t* vth = vres_Find(virt, "THINGS");
-
 	for (think = thinkercap.next; think != &thinkercap; think = think->next)
 	{
 		if (think->function.acp1 != (actionf_p1)P_MobjThinker)
@@ -2274,10 +2272,7 @@ void P_LoadThingsOnly(void)
 
 	P_LevelInitStuff();
 
-	P_PrepareRawThings(vth->data);
 	P_LoadThings();
-
-	vres_Free(virt);
 
 	P_SpawnSecretItems(true);
 }
@@ -2345,8 +2340,6 @@ static void P_LoadMapFromFile(void)
 
 	P_LoadLineDefs2();
 	P_GroupLines();
-
-	P_PrepareRawThings(vres_Find(virt, "THINGS")->data);
 
 	P_MakeMapMD5(virt, &mapmd5);
 
@@ -2556,28 +2549,7 @@ static void P_SetupCamera(UINT8 pnum, camera_t *cam)
 
 static boolean P_CanSave(void)
 {
-#if 0
-	// Saving is completely ignored under these conditions:
-	if ((cursaveslot < 0) // Playing without saving
-		|| (modifiedgame && !savemoddata) // Game is modified
-		|| (netgame || multiplayer) // Not in single-player
-		|| (demo.playback || demo.recording || metalrecording) // Currently in demo
-		|| (players[consoleplayer].lives <= 0) // Completely dead
-		|| (modeattacking || ultimatemode || G_IsSpecialStage(gamemap))) // Specialized instances
-		return false;
-
-	if (mapheaderinfo[gamemap-1]->saveoverride == SAVE_ALWAYS)
-		return true; // Saving should ALWAYS happen!
-	else if (mapheaderinfo[gamemap-1]->saveoverride == SAVE_NEVER)
-		return false; // Saving should NEVER happen!
-
-	// Default condition: In a non-hidden map, at the beginning of a zone or on a completed save-file, and not on save reload.
-	return (!(mapheaderinfo[gamemap-1]->menuflags & LF2_HIDEINMENU)
-			&& (mapheaderinfo[gamemap-1]->actnum < 2 || gamecomplete)
-			&& (gamemap != lastmapsaved));
-#else
 	return false; // SRB2Kart: no SP, no saving.
-#endif
 }
 
 /** Loads a level from a lump or external wad.
