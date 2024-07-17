@@ -4391,6 +4391,11 @@ void G_InitNew(UINT8 pencoremode, const char *mapname, boolean resetplayer, bool
 			players[i].starpostx = players[i].starposty = players[i].starpostz = 0;
 			players[i].lives = 1; // SRB2Kart
 
+			// This should be cleared in P_SpawnPlayer but address sanitizer says "use-after-free"
+			// when reloading map sometimes
+			players[i].awayviewtics = 0;
+			players[i].awayviewmobj = NULL;
+
 			// The latter two should clear by themselves, but just in case
 			players[i].pflags &= ~(PF_TAGIT|PF_TAGGED|PF_FULLSTASIS);
 
