@@ -1638,7 +1638,9 @@ static menuitem_t OP_SoundAdvancedMenu[] =
 	{IT_HEADER, 			NULL, "Misc", 						NULL, 				105},
 
 	{IT_STRING | IT_CVAR, 	NULL, "Grow Music", 				&cv_growmusic, 		117},
-	{IT_STRING | IT_CVAR, 	NULL, "Invulnerability Music", 		&cv_supermusic, 	137},
+	{IT_STRING | IT_CVAR, 	NULL, "Invulnerability Music", 		&cv_supermusic, 	127},
+
+	{IT_STRING | IT_CVAR, 	NULL, "Audio Buffer Size", 			&cv_audbuffersize, 	147},
 };
 
 static const char* OP_SoundAdvancedTooltips[] =
@@ -1656,7 +1658,7 @@ static const char* OP_SoundAdvancedTooltips[] =
 	NULL,
 	"Should the Grow music be on or off?",
 	"Should the Invulnerability music be on or off?",
-
+	"Size of the Audio Buffer\nreducing it will result in less sound latency\nbut may cause issues such as crackling or distorted Sound.",
 };
 
 static menuitem_t OP_DataOptionsMenu[] =
