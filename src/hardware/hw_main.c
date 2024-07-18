@@ -3782,7 +3782,7 @@ static void HWR_SplitSprite(gr_vissprite_t *spr)
 	HWR_RotateSpritePolyToAim(spr, baseWallVerts, false);
 
 	// push it toward the camera to mitigate floor-clipping sprites
-	if (!(spr->mobj->frame & FF_PAPERSPRITE))
+	//if (!(spr->mobj->frame & FF_PAPERSPRITE) || ((spr->mobj->frame & FF_PAPERSPRITE) && spr->dispoffset))
 	{
 		float sprdist = sqrtf((spr->x1 - gr_viewx)*(spr->x1 - gr_viewx) + (spr->z1 - gr_viewy)*(spr->z1 - gr_viewy) + (spr->ty - gr_viewz)*(spr->ty - gr_viewz));
 		float distfact = ((2.0f*spr->dispoffset) + 20.0f) / sprdist;
@@ -4064,7 +4064,7 @@ static void HWR_DrawSprite(gr_vissprite_t *spr)
 	HWR_RotateSpritePolyToAim(spr, wallVerts, false);
 
 	// push it toward the camera to mitigate floor-clipping sprites
-	if (!(spr->mobj->frame & FF_PAPERSPRITE))
+	//if (!(spr->mobj->frame & FF_PAPERSPRITE) || ((spr->mobj->frame & FF_PAPERSPRITE) && spr->dispoffset))
 	{
 		float sprdist = sqrtf((spr->x1 - gr_viewx)*(spr->x1 - gr_viewx) + (spr->z1 - gr_viewy)*(spr->z1 - gr_viewy) + (spr->ty - gr_viewz)*(spr->ty - gr_viewz));
 		float distfact = ((2.0f*spr->dispoffset) + 20.0f) / sprdist;
