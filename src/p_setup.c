@@ -109,6 +109,8 @@ INT32 numstarposts;
 boolean levelloading;
 UINT8 levelfadecol;
 
+virtres_t *curmapvirt;
+
 // BLOCKMAP
 // Created from axis aligned bounding box
 // of the map, a rectangular array of
@@ -2337,20 +2339,26 @@ static void P_MakeMapMD5(virtres_t *virt, void *dest)
 
 static void P_LoadMapFromFile(void)
 {
-	virtres_t *virt = vres_GetMap(lastloadedmaplumpnum);
-
-	P_LoadMapData(virt);
-	P_LoadMapBSP(virt);
-	P_LoadMapLUT(virt);
+	P_LoadMapData(curmapvirt);
+	P_LoadMapBSP(curmapvirt);
+	P_LoadMapLUT(curmapvirt);
 
 	P_LoadLineDefs2();
 	P_GroupLines();
 
-	P_PrepareRawThings(vres_Find(virt, "THINGS")->data);
+	P_PrepareRawThings(vres_Find(curmapvirt, "THINGS")->data);
 
-	P_MakeMapMD5(virt, &mapmd5);
+	P_MakeMapMD5(curmapvirt, &mapmd5);
 
-	vres_Free(virt);
+	// We do the following silly
+	// construction because vres_Free
+	// no-sells deletions of pointers
+	// that are == curmapvirt.
+	{
+		virtres_t *temp = curmapvirt;
+		curmapvirt = NULL;
+		vres_Free(temp);
+	}
 }
 
 static void P_RunLevelScript(const char *scriptname)
@@ -2802,6 +2810,8 @@ boolean P_SetupLevel(boolean skipprecip)
 	lastloadedmaplumpnum = W_CheckNumForName(maplumpname);
 	if (lastloadedmaplumpnum == INT16_MAX)
 		I_Error("Map %s not found.\n", maplumpname);
+
+	curmapvirt = vres_GetMap(lastloadedmaplumpnum);
 
 	R_ReInitColormaps(mapheaderinfo[gamemap-1]->palette,
 		(encoremode ? W_CheckNumForName(va("%sE", maplumpname)) : LUMPERROR));

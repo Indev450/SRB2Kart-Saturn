@@ -286,7 +286,7 @@ mobj_t *P_SetTarget(mobj_t **mop, mobj_t *targ)
 {
 	if (*mop)              // If there was a target already, decrease its refcount
 		(*mop)->thinker.references--;
-if ((*mop = targ) != NULL) // Set new target and if non-NULL, increase its counter
+	if ((*mop = targ) != NULL) // Set new target and if non-NULL, increase its counter
 		targ->thinker.references++;
 	return targ;
 }
