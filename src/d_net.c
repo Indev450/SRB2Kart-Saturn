@@ -832,7 +832,9 @@ const char *packettypename[NUMPACKETTYPE] =
 	"TELLFILESNEEDED",
 	"MOREFILESNEEDED",
 
-	"PING"
+	"PING",
+
+	"ISSATURN"
 };
 
 const char *Net_GetPacketName(UINT8 packettype)
