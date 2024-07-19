@@ -8996,11 +8996,11 @@ static boolean K_GetScreenCoords(vector2_t *vec, player_t *player, mobj_t *targe
 		offset = FixedMul(FINETANGENT(((aimingangle+ANGLE_90)>>ANGLETOFINESHIFT) & 4095), xres);
 		// this isn't fovtan... what am i even doing anymore
 		if (splitscreen == 1)
-			offset = 17*offset/10;
-		// OpenGL with software perspective is miscentered on non-16:10 resolutions
+			offset = 17*offset/120;
 #ifdef HWRENDER
-		if (rendermode == render_opengl)
-			offset = FixedMul(offset, FixedDiv(104857, FixedDiv(xres, yres)));
+		// OpenGL with software perspective is miscentered on non-16:10 resolutions
+		//if (rendermode == render_opengl)
+			//offset = FixedMul(offset, FixedDiv(104857, FixedDiv(xres, yres)));
 #endif
 		// thanks fickle
 		offset = FixedDiv(offset, fovratio);
@@ -9023,12 +9023,14 @@ static boolean K_GetScreenCoords(vector2_t *vec, player_t *player, mobj_t *targe
 	int splitindex = stplyrnum;
 
 	// adjust coords for splitscreen
-	if (splitscreen == 1){ // 2P
+	if (splitscreen == 1) // 2P
+	{
 		y = y>>1;
 		if (splitindex)
 			y = y + yres;
 	}
-	if (splitscreen >= 2) { // 3P or 4P
+	if (splitscreen >= 2) // 3P or 4P
+	{
 		x = x>>1;
 		y = y>>1;
 		if (splitindex & 1)
