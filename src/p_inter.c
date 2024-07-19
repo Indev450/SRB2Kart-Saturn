@@ -1209,6 +1209,8 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 				{
 					if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 						continue;
+					if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+						continue;
 
 					mo2 = (mobj_t *)th;
 					if (mo2->type == MT_KOOPA)
@@ -2363,6 +2365,8 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 		for (th = thinkercap.next; th != &thinkercap; th = th->next)
 		{
 			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+				continue;
+			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 				continue;
 
 			mo = (mobj_t *)th;

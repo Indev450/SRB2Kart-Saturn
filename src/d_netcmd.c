@@ -5781,7 +5781,8 @@ static void Command_Archivetest_f(void)
 	i = 1;
 	for (th = thinkercap.next; th != &thinkercap; th = th->next)
 		if (th->function.acp1 == (actionf_p1)P_MobjThinker)
-			((mobj_t *)th)->mobjnum = i++;
+			if (th->function.acp1 != (actionf_p1)P_RemoveThinkerDelayed)
+				((mobj_t *)th)->mobjnum = i++;
 
 	// allocate buffer
 	buf = save_p = ZZ_Alloc(1024);
