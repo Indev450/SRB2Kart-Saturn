@@ -4997,11 +4997,6 @@ static void HandlePacketFromAwayNode(SINT8 node)
 				break;
 			/* FALLTHRU */
 
-		case PT_ISSATURN:
-			CONS_Printf("hi im on saturn\n");
-			client_is_saturn = true;
-			break;
-
 		default:
 			DEBFILE(va("unknown packet received (%d) from unknown host\n",netbuffer->packettype));
 			Net_CloseConnection(node);
@@ -5507,7 +5502,6 @@ static void HandlePacketFromPlayer(SINT8 node)
 			break;
 		case PT_ISSATURN:
 			CONS_Printf("hi im on saturn\n");
-			client_is_saturn = true;
 			break;
 		default:
 			DEBFILE(va("UNKNOWN PACKET TYPE RECEIVED %d from host %d\n",
