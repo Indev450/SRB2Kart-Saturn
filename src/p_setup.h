@@ -17,6 +17,7 @@
 #include "doomdata.h"
 #include "doomstat.h"
 #include "r_defs.h"
+#include "w_wad.h"
 
 extern SINT8 midgamejoin;
 
@@ -32,6 +33,7 @@ extern boolean levelloading;
 extern UINT8 levelfadecol;
 
 extern lumpnum_t lastloadedmaplumpnum; // for comparative savegame
+extern virtres_t *curmapvirt;
 //
 // MAP used flats lookup table
 //
