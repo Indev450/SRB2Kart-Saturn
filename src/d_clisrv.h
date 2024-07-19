@@ -98,6 +98,7 @@ typedef enum
 	PT_MOREFILESNEEDED, // Server, to client: "you need these (+ more on top of those)"
 
 	PT_PING,          // Packet sent to tell clients the other client's latency to server.
+	PT_ISSATURN,
 	NUMPACKETTYPE
 } packettype_t;
 
