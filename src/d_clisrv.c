@@ -4423,6 +4423,12 @@ static boolean SV_AddWaitingPlayers(void)
 	return newplayer;
 }
 
+static inline void SendSaturnInfo(INT32 node)
+{
+	netbuffer->packettype = PT_ISSATURN;
+	HSendPacket(node, false, 0, 0);
+}
+
 void CL_AddSplitscreenPlayer(void)
 {
 	if (cl_mode == CL_CONNECTED)
@@ -4672,8 +4678,7 @@ static void HandleConnect(SINT8 node)
 #ifdef JOININGAME
 		if (nodewaiting[node])
 		{
-			netbuffer->packettype = PT_ISSATURN;
-			HSendPacket(node, false, 0, 0);
+			SendSaturnInfo(node);
 			if (node && newnode)
 			{
 				SV_SendSaveGame(node); // send a complete game state
