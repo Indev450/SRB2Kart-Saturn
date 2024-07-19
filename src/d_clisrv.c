@@ -136,6 +136,8 @@ static boolean cl_packetmissed;
 // here it is for the secondary local player (splitscreen)
 static UINT8 mynode; // my address pointofview server
 
+boolean is_client_saturn[MAXNETNODES];
+
 static UINT8 localtextcmd[MAXTEXTCMD];
 static UINT8 localtextcmd2[MAXTEXTCMD]; // splitscreen
 static UINT8 localtextcmd3[MAXTEXTCMD]; // splitscreen == 2
@@ -3175,6 +3177,7 @@ void CL_RemovePlayer(INT32 playernum, INT32 reason)
 			SV_InitResynchVars(node);
 
 			nodeingame[node] = false;
+			is_client_saturn[node] = false;
 			Net_CloseConnection(node);
 			ResetNode(node);
 		}
@@ -3280,6 +3283,7 @@ void CL_Reset(void)
 	if (servernode > 0 && servernode < MAXNETNODES)
 	{
 		nodeingame[(UINT8)servernode] = false;
+		is_client_saturn[(UINT8)servernode] = false;
 		Net_CloseConnection(servernode);
 	}
 	D_CloseConnection(); // netgame = false
@@ -4086,6 +4090,7 @@ void D_ClientServerInit(void)
 static void ResetNode(INT32 node)
 {
 	nodeingame[node] = false;
+	is_client_saturn[node] = false;
 	nodetoplayer[node] = -1;
 	nodetoplayer2[node] = -1;
 	nodetoplayer3[node] = -1;
@@ -5342,6 +5347,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 			}
 			Net_CloseConnection(node);
 			nodeingame[node] = false;
+			is_client_saturn[node] = false;
 			break;
 // -------------------------------------------- CLIENT RECEIVE ----------
 		case PT_RESYNCHEND:
@@ -5507,6 +5513,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 			break;
 		case PT_ISSATURN:
 			CONS_Printf("hi im on saturn\n");
+			is_client_saturn[node] = true;
 			break;
 		default:
 			DEBFILE(va("UNKNOWN PACKET TYPE RECEIVED %d from host %d\n",
