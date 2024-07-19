@@ -417,8 +417,9 @@ consvar_t cv_songcredits = {"songcredits", "On", CV_SAVE, CV_OnOff, NULL, 0, NUL
 consvar_t cv_showfreeplay = { "showfreeplay", "Yes", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 // We can disable special tunes!
-consvar_t cv_growmusic  = {"growmusic",  "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_supermusic = {"supermusic", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+static CV_PossibleValue_t powermusic_cons_t[] = {{0, "Off"}, {1, "On"}, {2, "SFX"}, {0, NULL}};
+consvar_t cv_growmusic  = {"growmusic",  "On", CV_SAVE, powermusic_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_supermusic = {"supermusic", "On", CV_SAVE, powermusic_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 /*consvar_t cv_crosshair = {"crosshair", "Off", CV_SAVE, crosshair_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_crosshair2 = {"crosshair2", "Off", CV_SAVE, crosshair_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};

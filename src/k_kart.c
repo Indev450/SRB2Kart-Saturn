@@ -4915,23 +4915,14 @@ static void K_UpdateEngineSounds(player_t *player, ticcmd_t *cmd)
 static void K_UpdateInvincibilitySounds(player_t *player)
 {
 	INT32 sfxnum = sfx_None;
+	boolean localplayer = P_IsLocalPlayer(player);
 
-	if (player->mo->health > 0 && !P_IsLocalPlayer(player))
+	if (player->mo->health > 0)
 	{
-		if (cv_kartinvinsfx.value)
-		{
-			if (player->kartstuff[k_growshrinktimer] > 0) // Prioritize Grow
-				sfxnum = sfx_alarmg;
-			else if (player->kartstuff[k_invincibilitytimer] > 0)
-				sfxnum = sfx_alarmi;
-		}
-		else
-		{
-			if (player->kartstuff[k_growshrinktimer] > 0)
-				sfxnum = sfx_kgrow;
-			else if (player->kartstuff[k_invincibilitytimer] > 0)
-				sfxnum = sfx_kinvnc;
-		}
+		if (player->kartstuff[k_growshrinktimer] > 0 && (!localplayer || cv_growmusic.value == 2)) // Prioritize Grow
+			sfxnum = cv_kartinvinsfx.value ? sfx_alarmg : sfx_kgrow;
+		else if (player->kartstuff[k_invincibilitytimer] > 0 && (!localplayer || cv_supermusic.value == 2))
+			sfxnum = cv_kartinvinsfx.value ? sfx_alarmi : sfx_kinvnc;
 	}
 
 	if (sfxnum != sfx_None && !S_SoundPlaying(player->mo, sfxnum))
@@ -5993,7 +5984,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 							P_SetScale(overlay, player->mo->scale);
 						}
 						player->kartstuff[k_invincibilitytimer] = itemtime+(2*TICRATE); // 10 seconds
-						if (P_IsLocalPlayer(player) && cv_supermusic.value && cv_birdmusic.value)
+						if (P_IsLocalPlayer(player) && cv_supermusic.value == 1 && cv_birdmusic.value)
 							S_ChangeMusicSpecial("kinvnc");
 						else
 							S_StartSound(player->mo, (cv_kartinvinsfx.value ? sfx_alarmi : sfx_kinvnc));
@@ -6198,7 +6189,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 							if (cv_kartdebugshrink.value && !modeattacking && !player->bot)
 								player->mo->destscale = (6*player->mo->destscale)/8;
 							player->kartstuff[k_growshrinktimer] = itemtime+(4*TICRATE); // 12 seconds
-							if (P_IsLocalPlayer(player) && cv_growmusic.value && cv_birdmusic.value )
+							if (P_IsLocalPlayer(player) && cv_growmusic.value == 1 && cv_birdmusic.value )
 								S_ChangeMusicSpecial("kgrow");
 							else
 								S_StartSound(player->mo, (cv_kartinvinsfx.value ? sfx_alarmg : sfx_kgrow));
