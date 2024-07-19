@@ -7704,50 +7704,50 @@ static void K_initKartHUD(void)
 
 	if (splitscreen)	// Splitscreen
 	{
-		ITEM_X = 5 + cv_item_xoffset.value;
-		ITEM_Y = 3 + cv_item_yoffset.value;
+		ITEM_X = 5;
+		ITEM_Y = 3;
 
-		LAPS_Y = (BASEVIDHEIGHT/2)-24 + cv_laps_yoffset.value;
+		LAPS_Y = (BASEVIDHEIGHT/2)-24;
 
-		POSI_Y = (BASEVIDHEIGHT/2)- 2 + cv_posi_yoffset.value;
+		POSI_Y = (BASEVIDHEIGHT/2)- 2;
 
-		STCD_Y = BASEVIDHEIGHT/4 + cv_stcd_yoffset.value;
+		STCD_Y = BASEVIDHEIGHT/4;
 
-		MINI_Y = (BASEVIDHEIGHT/2) + cv_mini_yoffset.value;
+		MINI_Y = (BASEVIDHEIGHT/2);
 
 		if (splitscreen > 1)	// 3P/4P Small Splitscreen
 		{
 			// 1P (top left)
-			ITEM_X = -9 + cv_item_xoffset.value;
-			ITEM_Y = -8 + cv_item_yoffset.value;
+			ITEM_X = -9;
+			ITEM_Y = -8;
 
-			LAPS_X = 3 + cv_laps_xoffset.value;
-			LAPS_Y = (BASEVIDHEIGHT/2)-13 + cv_laps_yoffset.value;
+			LAPS_X = 3;
+			LAPS_Y = (BASEVIDHEIGHT/2)-13;
 
-			POSI_X = 24 + cv_posi_xoffset.value;
-			POSI_Y = (BASEVIDHEIGHT/2)- 16 + cv_posi_yoffset.value;
+			POSI_X = 24;
+			POSI_Y = (BASEVIDHEIGHT/2)- 16;
 
 			// 2P (top right)
-			ITEM2_X = BASEVIDWIDTH-39 + cv_item_xoffset.value;
-			ITEM2_Y = -8 + cv_item_yoffset.value;
+			ITEM2_X = BASEVIDWIDTH-39;
+			ITEM2_Y = -8;
 
-			LAPS2_X = BASEVIDWIDTH-3 + cv_laps_xoffset.value;
-			LAPS2_Y = (BASEVIDHEIGHT/2)-13 + cv_laps_yoffset.value;
+			LAPS2_X = BASEVIDWIDTH-3;
+			LAPS2_Y = (BASEVIDHEIGHT/2)-13;
 
-			POSI2_X = BASEVIDWIDTH -4 + cv_posi_xoffset.value;
-			POSI2_Y = (BASEVIDHEIGHT/2)- 16 + cv_posi_yoffset.value;
+			POSI2_X = BASEVIDWIDTH -4;
+			POSI2_Y = (BASEVIDHEIGHT/2)- 16;
 
 			// Reminder that 3P and 4P are just 1P and 2P splitscreen'd to the bottom.
 
-			STCD_X = BASEVIDWIDTH/4 + cv_stcd_xoffset.value;
+			STCD_X = BASEVIDWIDTH/4;
 
-			MINI_X = (3*BASEVIDWIDTH/4) + cv_mini_xoffset.value;
-			MINI_Y = (3*BASEVIDHEIGHT/4) + cv_mini_yoffset.value;
+			MINI_X = (3*BASEVIDWIDTH/4);
+			MINI_Y = (3*BASEVIDHEIGHT/4);
 
 			if (splitscreen > 2) // 4P-only
 			{
-				MINI_X = (BASEVIDWIDTH/2) + cv_mini_xoffset.value;
-				MINI_Y = (BASEVIDHEIGHT/2) + cv_mini_yoffset.value;
+				MINI_X = (BASEVIDWIDTH/2);
+				MINI_Y = (BASEVIDHEIGHT/2);
 			}
 		}
 	}
@@ -7963,8 +7963,17 @@ static void K_drawKartStats(void)
 		spdoffset = 0;
 	
 	// Customizations c:
-	x += 18 + cv_stat_xoffset.value;
-	y += cv_stat_yoffset.value + (G_BattleGametype() ? (stplyr->kartstuff[k_bumper] ? -5 : -8) : 0) + spdoffset;
+	if (!splitscreen)
+	{
+		x += 18 + cv_stat_xoffset.value;
+		y += cv_stat_yoffset.value + (G_BattleGametype() ? (stplyr->kartstuff[k_bumper] ? -5 : -8) : 0) + spdoffset;
+	}
+	else
+	{
+		x += 18;
+		y += (G_BattleGametype() ? (stplyr->kartstuff[k_bumper] ? -5 : -8) : 0) + spdoffset;
+	}
+
 	flags |= V_HUDTRANS;
 
 	skin_t *fakeskin;
