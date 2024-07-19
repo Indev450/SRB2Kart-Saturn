@@ -4426,7 +4426,7 @@ static boolean SV_AddWaitingPlayers(void)
 static inline void SendSaturnInfo(INT32 node)
 {
 	netbuffer->packettype = PT_ISSATURN;
-	HSendPacket(node, false, 0, 0);
+	HSendPacket(node, true, 0, 0);
 }
 
 void CL_AddSplitscreenPlayer(void)
