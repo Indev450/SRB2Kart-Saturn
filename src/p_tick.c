@@ -318,7 +318,7 @@ static inline void P_RunThinkers(void)
 	for (currentthinker = thinkercap.next; currentthinker != &thinkercap; currentthinker = currentthinker->next)
 	{
 #ifdef PARANOIA
-			I_Assert(currentthinker->function.acp1 != NULL)
+		I_Assert(currentthinker->function.acp1 != NULL)
 #endif
 			currentthinker->function.acp1(currentthinker);
 	}

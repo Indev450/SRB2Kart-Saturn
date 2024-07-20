@@ -65,5 +65,6 @@ void Net_ConnectionTimeout(INT32 node);
 void Net_AbortPacketType(UINT8 packettype);
 void Net_SendAcks(INT32 node);
 void Net_WaitAllAckReceived(UINT32 timeout);
+const char *Net_GetPacketName(UINT8 packettype);
 
 #endif

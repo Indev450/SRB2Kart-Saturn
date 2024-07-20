@@ -790,7 +790,7 @@ static void fprintfstringnewline(char *s, size_t len)
 }
 
 /// \warning Keep this up-to-date if you add/remove/rename packet types
-static const char *packettypename[NUMPACKETTYPE] =
+const char *packettypename[NUMPACKETTYPE] =
 {
 	"NOTHING",
 	"SERVERCFG",
@@ -832,14 +832,28 @@ static const char *packettypename[NUMPACKETTYPE] =
 	"TELLFILESNEEDED",
 	"MOREFILESNEEDED",
 
-	"PING"
+	"PING",
+
+	"ISSATURN",
+
+	"WILLRESENDGAMESTATE",
+	"CANRECEIVEGAMESTATE",
+	"RECEIVEDGAMESTATE"
 };
+
+const char *Net_GetPacketName(UINT8 packettype)
+{
+	if (packettype >= NUMPACKETTYPE)
+		return "UNKNOWN";
+
+	return packettypename[packettype];
+}
 
 static void DebugPrintpacket(const char *header)
 {
 	fprintf(debugfile, "%-12s (node %d,ack %d,ackret %d,size %d) type(%d) : %s\n",
 		header, doomcom->remotenode, netbuffer->ack, netbuffer->ackreturn, doomcom->datalength,
-		netbuffer->packettype, packettypename[netbuffer->packettype]);
+		netbuffer->packettype, Net_GetPacketName(netbuffer->packettype));
 
 	switch (netbuffer->packettype)
 	{

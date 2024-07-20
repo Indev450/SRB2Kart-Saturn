@@ -2138,7 +2138,7 @@ lumpnum_t lastloadedmaplumpnum; // for comparative savegame
 //
 // Some player initialization for map start.
 //
-static void P_LevelInitStuff(void)
+static void P_LevelInitStuff(boolean reloadinggamestate)
 {
 	INT32 i;
 
@@ -2173,7 +2173,10 @@ static void P_LevelInitStuff(void)
 	// circuit, race and competition stuff
 	circuitmap = false;
 	numstarposts = 0;
-	totalrings = timeinmap = 0;
+	totalrings = 0;
+
+	if (!reloadinggamestate)
+		timeinmap = 0;
 
 	// special stage
 	stagefailed = false;
@@ -2274,7 +2277,7 @@ void P_LoadThingsOnly(void)
 		P_RemoveMobj((mobj_t *)think);
 	}
 
-	P_LevelInitStuff();
+	P_LevelInitStuff(false);
 
 	P_PrepareRawThings(vth->data);
 	P_LoadThings();
@@ -2593,7 +2596,7 @@ static boolean P_CanSave(void)
   * \param skipprecip If true, don't spawn precipitation.
   * \todo Clean up, refactor, split up; get rid of the bloat.
   */
-boolean P_SetupLevel(boolean skipprecip)
+boolean P_SetupLevel(boolean skipprecip, boolean reloadinggamestate)
 {
 	// use gamemap to get map number.
 	// 99% of the things already did, so.
@@ -2631,7 +2634,7 @@ boolean P_SetupLevel(boolean skipprecip)
 	if (cv_runscripts.value && mapheaderinfo[gamemap-1]->scriptname[0] != '#')
 		P_RunLevelScript(mapheaderinfo[gamemap-1]->scriptname);
 
-	P_LevelInitStuff();
+	P_LevelInitStuff(reloadinggamestate);
 
 	for (i = 0; i <= splitscreen; i++)
 		postimgtype[i] = postimg_none;
@@ -2664,9 +2667,12 @@ boolean P_SetupLevel(boolean skipprecip)
 	// will be set by player think.
 	players[consoleplayer].viewz = 1;
 
+	// Cancel all d_main.c fadeouts (keep fade in though).
+	if (reloadinggamestate)
+		wipegamestate = gamestate; // Don't fade if reloading the gamestate
 	// Encore mode fade to pink to white
 	// This is handled BEFORE sounds are stopped.
-	if (encoremode && !prevencoremode && !demo.rewinding)
+	else if (encoremode && !prevencoremode && !demo.rewinding)
 	{
 		tic_t locstarttime, endtime, nowtime;
 
@@ -2725,13 +2731,14 @@ boolean P_SetupLevel(boolean skipprecip)
 
 	// As oddly named as this is, this handles music only.
 	// We should be fine starting it here.
-	S_Start();
+	if (!reloadinggamestate)
+		S_Start();
 
 	levelfadecol = (encoremode && !ranspecialwipe ? 122 : 120);
 
 	// Let's fade to white here
 	// But only if we didn't do the encore startup wipe
-	if (!ranspecialwipe && !demo.rewinding)
+	if (!ranspecialwipe && !demo.rewinding && !reloadinggamestate)
 	{
 		if(rendermode != render_none)
 		{
@@ -3020,7 +3027,7 @@ boolean P_SetupLevel(boolean skipprecip)
 	P_MapEnd();
 
 	// Remove the loading shit from the screen
-	if (rendermode != render_none)
+	if (rendermode != render_none && (!reloadinggamestate))
 		V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, levelfadecol);
 
 	if (precache || dedicated)
