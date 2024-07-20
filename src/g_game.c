@@ -1188,7 +1188,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	// why build a ticcmd if we're paused?
 	// Or, for that matter, if we're being reborn.
 	// Kart, don't build a ticcmd if someone is resynching or the server is stopped too so we don't fly off course in bad conditions
-	if (paused || P_AutoPause() || (gamestate == GS_LEVEL && player->playerstate == PST_REBORN) || hu_resynching)
+	if (paused || P_AutoPause() || (gamestate == GS_LEVEL && player->playerstate == PST_REBORN) || hu_resynching || hu_redownloadinggamestate)
 	{
 		cmd->angleturn = (INT16)(lang >> 16);
 		cmd->aiming = G_ClipAimingPitch(&laim);
@@ -1638,7 +1638,7 @@ void G_DoLoadLevel(boolean resetplayer)
 	}
 
 	// Setup the level.
-	if (!P_SetupLevel(false))
+	if (!P_SetupLevel(false,false))
 	{
 		// fail so reset game stuff
 		Command_ExitGame_f();
@@ -1660,6 +1660,8 @@ void G_DoLoadLevel(boolean resetplayer)
 #ifdef PARANOIA
 	Z_CheckHeap(-2);
 #endif
+
+	memset(localaiming, 0, sizeof(localaiming));
 
 	for (i = 0; i <= splitscreen; i++)
 	{

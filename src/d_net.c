@@ -834,7 +834,11 @@ const char *packettypename[NUMPACKETTYPE] =
 
 	"PING",
 
-	"ISSATURN"
+	"ISSATURN",
+
+	"WILLRESENDGAMESTATE",
+	"CANRECEIVEGAMESTATE",
+	"RECEIVEDGAMESTATE"
 };
 
 const char *Net_GetPacketName(UINT8 packettype)
