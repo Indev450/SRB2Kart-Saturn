@@ -17,6 +17,7 @@
 #include "g_game.h"
 #include "m_random.h"
 #include "p_local.h"
+#include "p_setup.h"
 #include "s_sound.h"
 #include "r_main.h"
 #include "st_stuff.h"
@@ -1132,7 +1133,9 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			break;
 		case MT_HOOPCOLLIDE:
 			// This produces a kind of 'domino effect' with the hoop's pieces.
-			for (; special->hprev != NULL; special = special->hprev); // Move to the first sprite in the hoop
+			if (!midgamejoin)
+				for (; special->hprev != NULL; special = special->hprev); // Move to the first sprite in the hoop
+
 			i = 0;
 			for (; special->type == MT_HOOP; special = special->hnext)
 			{
@@ -1208,6 +1211,8 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 				for (th = thinkercap.next; th != &thinkercap; th = th->next)
 				{
 					if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+						continue;
+					if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 						continue;
 
 					mo2 = (mobj_t *)th;
@@ -2363,6 +2368,8 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 		for (th = thinkercap.next; th != &thinkercap; th = th->next)
 		{
 			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+				continue;
+			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 				continue;
 
 			mo = (mobj_t *)th;

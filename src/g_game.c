@@ -417,8 +417,9 @@ consvar_t cv_songcredits = {"songcredits", "On", CV_SAVE, CV_OnOff, NULL, 0, NUL
 consvar_t cv_showfreeplay = { "showfreeplay", "Yes", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 // We can disable special tunes!
-consvar_t cv_growmusic  = {"growmusic",  "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_supermusic = {"supermusic", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+static CV_PossibleValue_t powermusic_cons_t[] = {{0, "Off"}, {1, "On"}, {2, "SFX"}, {0, NULL}};
+consvar_t cv_growmusic  = {"growmusic",  "On", CV_SAVE, powermusic_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_supermusic = {"supermusic", "On", CV_SAVE, powermusic_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 /*consvar_t cv_crosshair = {"crosshair", "Off", CV_SAVE, crosshair_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_crosshair2 = {"crosshair2", "Off", CV_SAVE, crosshair_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -3018,6 +3019,9 @@ void G_ChangePlayerReferences(mobj_t *oldmo, mobj_t *newmo)
 	for (th = thinkercap.next; th != &thinkercap; th = th->next)
 	{
 		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+			continue;
+
+		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 			continue;
 
 		mo2 = (mobj_t *)th;
@@ -5624,11 +5628,13 @@ void G_ConsGhostTic(INT32 playernum)
 				{
 					if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 						continue;
+					if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+						continue;
 					mobj = (mobj_t *)th;
 					if (mobj->type == (mobjtype_t)type && mobj->x == x && mobj->y == y && mobj->z == z)
 						break;
 				}
-				if (mobj && mobj->health != health) // Wasn't damaged?! This is desync! Fix it!
+				if ((th != &thinkercap && th->function.acp1 != (actionf_p1)P_MobjThinker) && mobj->health != health) // Wasn't damaged?! This is desync! Fix it!
 				{
 					if (demosynced)
 						CONS_Alert(CONS_WARNING, M_GetText("Demo playback has desynced!\n"));
@@ -8095,11 +8101,14 @@ void G_DoPlayMetal(void)
 		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 			continue;
 
+		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+			continue;
+
 		mo = (mobj_t *)th;
 		if (mo->type == MT_METALSONIC_RACE)
 			break;
 	}
-	if (!mo)
+	if (th == &thinkercap && th->function.acp1 == (actionf_p1)P_MobjThinker)
 	{
 		CONS_Alert(CONS_ERROR, M_GetText("Failed to find bot entity.\n"));
 		Z_Free(metalbuffer);

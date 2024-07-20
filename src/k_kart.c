@@ -4915,23 +4915,14 @@ static void K_UpdateEngineSounds(player_t *player, ticcmd_t *cmd)
 static void K_UpdateInvincibilitySounds(player_t *player)
 {
 	INT32 sfxnum = sfx_None;
+	boolean localplayer = P_IsLocalPlayer(player);
 
-	if (player->mo->health > 0 && !P_IsLocalPlayer(player))
+	if (player->mo->health > 0)
 	{
-		if (cv_kartinvinsfx.value)
-		{
-			if (player->kartstuff[k_growshrinktimer] > 0) // Prioritize Grow
-				sfxnum = sfx_alarmg;
-			else if (player->kartstuff[k_invincibilitytimer] > 0)
-				sfxnum = sfx_alarmi;
-		}
-		else
-		{
-			if (player->kartstuff[k_growshrinktimer] > 0)
-				sfxnum = sfx_kgrow;
-			else if (player->kartstuff[k_invincibilitytimer] > 0)
-				sfxnum = sfx_kinvnc;
-		}
+		if (player->kartstuff[k_growshrinktimer] > 0 && (!localplayer || cv_growmusic.value == 2)) // Prioritize Grow
+			sfxnum = cv_kartinvinsfx.value ? sfx_alarmg : sfx_kgrow;
+		else if (player->kartstuff[k_invincibilitytimer] > 0 && (!localplayer || cv_supermusic.value == 2))
+			sfxnum = cv_kartinvinsfx.value ? sfx_alarmi : sfx_kinvnc;
 	}
 
 	if (sfxnum != sfx_None && !S_SoundPlaying(player->mo, sfxnum))
@@ -5993,7 +5984,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 							P_SetScale(overlay, player->mo->scale);
 						}
 						player->kartstuff[k_invincibilitytimer] = itemtime+(2*TICRATE); // 10 seconds
-						if (P_IsLocalPlayer(player) && cv_supermusic.value && cv_birdmusic.value)
+						if (P_IsLocalPlayer(player) && cv_supermusic.value == 1 && cv_birdmusic.value)
 							S_ChangeMusicSpecial("kinvnc");
 						else
 							S_StartSound(player->mo, (cv_kartinvinsfx.value ? sfx_alarmi : sfx_kinvnc));
@@ -6198,7 +6189,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 							if (cv_kartdebugshrink.value && !modeattacking && !player->bot)
 								player->mo->destscale = (6*player->mo->destscale)/8;
 							player->kartstuff[k_growshrinktimer] = itemtime+(4*TICRATE); // 12 seconds
-							if (P_IsLocalPlayer(player) && cv_growmusic.value && cv_birdmusic.value )
+							if (P_IsLocalPlayer(player) && cv_growmusic.value == 1 && cv_birdmusic.value )
 								S_ChangeMusicSpecial("kgrow");
 							else
 								S_StartSound(player->mo, (cv_kartinvinsfx.value ? sfx_alarmg : sfx_kgrow));
@@ -7507,50 +7498,50 @@ static void K_initKartHUD(void)
 
 	if (splitscreen)	// Splitscreen
 	{
-		ITEM_X = 5 + cv_item_xoffset.value;
-		ITEM_Y = 3 + cv_item_yoffset.value;
+		ITEM_X = 5;
+		ITEM_Y = 3;
 
-		LAPS_Y = (BASEVIDHEIGHT/2)-24 + cv_laps_yoffset.value;
+		LAPS_Y = (BASEVIDHEIGHT/2)-24;
 
-		POSI_Y = (BASEVIDHEIGHT/2)- 2 + cv_posi_yoffset.value;
+		POSI_Y = (BASEVIDHEIGHT/2)- 2;
 
-		STCD_Y = BASEVIDHEIGHT/4 + cv_stcd_yoffset.value;
+		STCD_Y = BASEVIDHEIGHT/4;
 
-		MINI_Y = (BASEVIDHEIGHT/2) + cv_mini_yoffset.value;
+		MINI_Y = (BASEVIDHEIGHT/2);
 
 		if (splitscreen > 1)	// 3P/4P Small Splitscreen
 		{
 			// 1P (top left)
-			ITEM_X = -9 + cv_item_xoffset.value;
-			ITEM_Y = -8 + cv_item_yoffset.value;
+			ITEM_X = -9;
+			ITEM_Y = -8;
 
-			LAPS_X = 3 + cv_laps_xoffset.value;
-			LAPS_Y = (BASEVIDHEIGHT/2)-13 + cv_laps_yoffset.value;
+			LAPS_X = 3;
+			LAPS_Y = (BASEVIDHEIGHT/2)-13;
 
-			POSI_X = 24 + cv_posi_xoffset.value;
-			POSI_Y = (BASEVIDHEIGHT/2)- 16 + cv_posi_yoffset.value;
+			POSI_X = 24;
+			POSI_Y = (BASEVIDHEIGHT/2)- 16;
 
 			// 2P (top right)
-			ITEM2_X = BASEVIDWIDTH-39 + cv_item_xoffset.value;
-			ITEM2_Y = -8 + cv_item_yoffset.value;
+			ITEM2_X = BASEVIDWIDTH-39;
+			ITEM2_Y = -8;
 
-			LAPS2_X = BASEVIDWIDTH-3 + cv_laps_xoffset.value;
-			LAPS2_Y = (BASEVIDHEIGHT/2)-13 + cv_laps_yoffset.value;
+			LAPS2_X = BASEVIDWIDTH-3;
+			LAPS2_Y = (BASEVIDHEIGHT/2)-13;
 
-			POSI2_X = BASEVIDWIDTH -4 + cv_posi_xoffset.value;
-			POSI2_Y = (BASEVIDHEIGHT/2)- 16 + cv_posi_yoffset.value;
+			POSI2_X = BASEVIDWIDTH -4;
+			POSI2_Y = (BASEVIDHEIGHT/2)- 16;
 
 			// Reminder that 3P and 4P are just 1P and 2P splitscreen'd to the bottom.
 
-			STCD_X = BASEVIDWIDTH/4 + cv_stcd_xoffset.value;
+			STCD_X = BASEVIDWIDTH/4;
 
-			MINI_X = (3*BASEVIDWIDTH/4) + cv_mini_xoffset.value;
-			MINI_Y = (3*BASEVIDHEIGHT/4) + cv_mini_yoffset.value;
+			MINI_X = (3*BASEVIDWIDTH/4);
+			MINI_Y = (3*BASEVIDHEIGHT/4);
 
 			if (splitscreen > 2) // 4P-only
 			{
-				MINI_X = (BASEVIDWIDTH/2) + cv_mini_xoffset.value;
-				MINI_Y = (BASEVIDHEIGHT/2) + cv_mini_yoffset.value;
+				MINI_X = (BASEVIDWIDTH/2);
+				MINI_Y = (BASEVIDHEIGHT/2);
 			}
 		}
 	}
@@ -7766,8 +7757,17 @@ static void K_drawKartStats(void)
 		spdoffset = 0;
 	
 	// Customizations c:
-	x += 18 + cv_stat_xoffset.value;
-	y += cv_stat_yoffset.value + (G_BattleGametype() ? (stplyr->kartstuff[k_bumper] ? -5 : -8) : 0) + spdoffset;
+	if (!splitscreen)
+	{
+		x += 18 + cv_stat_xoffset.value;
+		y += cv_stat_yoffset.value + (G_BattleGametype() ? (stplyr->kartstuff[k_bumper] ? -5 : -8) : 0) + spdoffset;
+	}
+	else
+	{
+		x += 18;
+		y += (G_BattleGametype() ? (stplyr->kartstuff[k_bumper] ? -5 : -8) : 0) + spdoffset;
+	}
+
 	flags |= V_HUDTRANS;
 
 	skin_t *fakeskin;
@@ -8996,11 +8996,11 @@ static boolean K_GetScreenCoords(vector2_t *vec, player_t *player, mobj_t *targe
 		offset = FixedMul(FINETANGENT(((aimingangle+ANGLE_90)>>ANGLETOFINESHIFT) & 4095), xres);
 		// this isn't fovtan... what am i even doing anymore
 		if (splitscreen == 1)
-			offset = 17*offset/10;
-		// OpenGL with software perspective is miscentered on non-16:10 resolutions
+			offset = 17*offset/120;
 #ifdef HWRENDER
-		if (rendermode == render_opengl)
-			offset = FixedMul(offset, FixedDiv(104857, FixedDiv(xres, yres)));
+		// OpenGL with software perspective is miscentered on non-16:10 resolutions
+		//if (rendermode == render_opengl)
+			//offset = FixedMul(offset, FixedDiv(104857, FixedDiv(xres, yres)));
 #endif
 		// thanks fickle
 		offset = FixedDiv(offset, fovratio);
@@ -9023,12 +9023,14 @@ static boolean K_GetScreenCoords(vector2_t *vec, player_t *player, mobj_t *targe
 	int splitindex = stplyrnum;
 
 	// adjust coords for splitscreen
-	if (splitscreen == 1){ // 2P
+	if (splitscreen == 1) // 2P
+	{
 		y = y>>1;
 		if (splitindex)
 			y = y + yres;
 	}
-	if (splitscreen >= 2) { // 3P or 4P
+	if (splitscreen >= 2) // 3P or 4P
+	{
 		x = x>>1;
 		y = y>>1;
 		if (splitindex & 1)
