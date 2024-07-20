@@ -5646,6 +5646,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 			resendingsavegame[node] = false;
 			resynch_inprogress[node] = false;
 			resynch_local_inprogress = false;
+			SV_InitResynchVars(node);
 			savegameresendcooldown[node] = I_GetTime() + 5 * TICRATE;
 			break;
 		case PT_WILLRESENDGAMESTATE:
