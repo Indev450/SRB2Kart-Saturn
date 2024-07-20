@@ -4683,7 +4683,6 @@ static void HandleConnect(SINT8 node)
 #ifdef JOININGAME
 		if (nodewaiting[node])
 		{
-			SendSaturnInfo(node);
 			if (node && newnode)
 			{
 				SV_SendSaveGame(node); // send a complete game state
@@ -4942,6 +4941,8 @@ static void HandlePacketFromAwayNode(SINT8 node)
 				CONS_Printf(M_GetText("Join accepted, waiting for next level change...\n"));
 #endif
 			DEBFILE(va("Server accept join gametic=%u mynode=%d\n", gametic, mynode));
+
+			SendSaturnInfo(node);
 
 			memset(playeringame, 0, sizeof(playeringame));
 			for (j = 0; j < MAXPLAYERS; j++)
@@ -5512,7 +5513,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 				Got_Filetxpak();
 			break;
 		case PT_ISSATURN:
-			CONS_Printf("hi im on saturn\n");
+			//CONS_Printf("hi im on saturn\n");
 			is_client_saturn[node] = true;
 			break;
 		default:
