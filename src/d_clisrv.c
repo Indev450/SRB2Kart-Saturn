@@ -4195,8 +4195,8 @@ void SV_ResetServer(void)
 	{
 		ResetNode(i);
 
-		//if (!(resendingsavegame[i] && is_client_saturn[i]))// Make sure resynch status doesn't get carried over!
-			SV_InitResynchVars(i);
+		// Make sure resynch status doesn't get carried over!
+		SV_InitResynchVars(i);
 	}
 
 	for (i = 0; i < MAXPLAYERS; i++)
@@ -4736,8 +4736,7 @@ static void HandleConnect(SINT8 node)
 			///       What if the gamestate takes more than one second to get downloaded?
 			///       Or if a lagspike happdsfens?
 			// you get a free second before desynch checks. use it wisely.
-			//if (!(resendingsavegame[node] && is_client_saturn[node]))
-				SV_InitResynchVars(node);
+			SV_InitResynchVars(node);
 
 #ifdef VANILLAJOINNEXTROUND
 			if (cv_joinnextround.value && gameaction == ga_nothing)
@@ -5296,8 +5295,8 @@ static void HandlePacketFromPlayer(SINT8 node)
 			}
 
 			// Check player consistancy during the level
-			if ((realstart <= gametic && realstart > gametic - TICQUEUE+1 && gamestate == GS_LEVEL
-				&& consistancy[realstart%TICQUEUE] != SHORT(netbuffer->u.clientpak.consistancy)) || (/*is_client_saturn[node] &&*/ realstart <= gametic && realstart + TICQUEUE - 1 > gametic && gamestate == GS_LEVEL
+			if ((!can_receive_gamestate[node] && realstart <= gametic && realstart > gametic - TICQUEUE+1 && gamestate == GS_LEVEL
+				&& consistancy[realstart%TICQUEUE] != SHORT(netbuffer->u.clientpak.consistancy)) || (realstart <= gametic && realstart + TICQUEUE - 1 > gametic && gamestate == GS_LEVEL
 				&& consistancy[realstart%TICQUEUE] != SHORT(netbuffer->u.clientpak.consistancy)
 				&& !resendingsavegame[node] && savegameresendcooldown[node] <= I_GetTime()))
 			{
