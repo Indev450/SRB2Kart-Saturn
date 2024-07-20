@@ -127,6 +127,8 @@ static UINT8 player_joining = false;
 UINT8 hu_resynching = 0;
 UINT8 hu_redownloadinggamestate = 0;
 
+static boolean can_receive_gamestate[MAXNETNODES];
+
 // kart, true when a player is connecting or disconnecting so that the gameplay has stopped in its tracks
 UINT8 hu_stopped = 0;
 
@@ -1711,7 +1713,7 @@ static boolean SV_SendServerConfig(INT32 node)
 	netbuffer->u.servercfg.modifiedgame = (UINT8)modifiedgame;
 
 
-	if (!resendingsavegame[node])
+	if (!can_receive_gamestate[node])
 	{
 		// we fill these structs with FFs so that any players not in game get sent as 0xFFFF
 		// which is nice and easy for us to detect
@@ -1738,7 +1740,7 @@ static boolean SV_SendServerConfig(INT32 node)
 
 	memcpy(netbuffer->u.servercfg.server_context, server_context, 8);
 
-	if (!resendingsavegame[node])
+	if (!can_receive_gamestate[node])
 	{
 		op = p = netbuffer->u.servercfg.varlengthinputs;
 
@@ -1748,7 +1750,7 @@ static boolean SV_SendServerConfig(INT32 node)
 	{
 		size_t len;
 
-		if (resendingsavegame[node])
+		if (can_receive_gamestate[node])
 			len = sizeof (serverconfig_pak);
 		else
 			len = sizeof (serverconfig_pak) + (size_t)(p - op);
@@ -3213,6 +3215,7 @@ void CL_RemovePlayer(INT32 playernum, INT32 reason)
 
 			nodeingame[node] = false;
 			is_client_saturn[node] = false;
+			can_receive_gamestate[node] = false;
 			Net_CloseConnection(node);
 			ResetNode(node);
 		}
@@ -4170,6 +4173,7 @@ static void ResetNode(INT32 node)
 	playerpernode[node] = 0;
 	sendingsavegame[node] = false;
 	resendingsavegame[node] = false;
+	can_receive_gamestate[node] = false;
 	savegameresendcooldown[node] = 0;
 	bannednode[node].banid = SIZE_MAX;
 	bannednode[node].timeleft = NO_BAN_TIME;
@@ -5297,15 +5301,19 @@ static void HandlePacketFromPlayer(SINT8 node)
 				&& consistancy[realstart%TICQUEUE] != SHORT(netbuffer->u.clientpak.consistancy)
 				&& !resendingsavegame[node] && savegameresendcooldown[node] <= I_GetTime()))
 			{
-				//if (!is_client_saturn[node])
-					SV_RequireResynch(node);
-				//else
-				{
-					// Tell the client we are about to resend them the gamestate
-					netbuffer->packettype = PT_WILLRESENDGAMESTATE;
-					HSendPacket(node, true, 0, 0);
+				// we need to send this so the client can tell us if it can receive the savegame
+				netbuffer->packettype = PT_WILLRESENDGAMESTATE;
+				HSendPacket(node, true, 0, 0);
 
+				if (can_receive_gamestate[node])
+				{
 					resendingsavegame[node] = true;
+				}
+				else
+				{
+					CONS_Printf("resynch");
+					SV_RequireResynch(node);
+					resendingsavegame[node] = false;
 				}
 
 				if (cv_resynchattempts.value && resynch_score[node] <= (unsigned)cv_resynchattempts.value*250)
@@ -5471,6 +5479,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 			Net_CloseConnection(node);
 			nodeingame[node] = false;
 			is_client_saturn[node] = false;
+			can_receive_gamestate[node] = false;
 			break;
 // -------------------------------------------- CLIENT RECEIVE ----------
 		case PT_RESYNCHEND:
@@ -5639,14 +5648,12 @@ static void HandlePacketFromPlayer(SINT8 node)
 			is_client_saturn[node] = true;
 			break;
 		case PT_CANRECEIVEGAMESTATE:
+			can_receive_gamestate[node] = true;
 			PT_CanReceiveGamestate(node);
 			break;
 		case PT_RECEIVEDGAMESTATE:
 			sendingsavegame[node] = false;
 			resendingsavegame[node] = false;
-			resynch_inprogress[node] = false;
-			resynch_local_inprogress = false;
-			SV_InitResynchVars(node);
 			savegameresendcooldown[node] = I_GetTime() + 5 * TICRATE;
 			break;
 		case PT_WILLRESENDGAMESTATE:

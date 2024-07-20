@@ -98,10 +98,12 @@ typedef enum
 	PT_MOREFILESNEEDED, // Server, to client: "you need these (+ more on top of those)"
 
 	PT_PING,          // Packet sent to tell clients the other client's latency to server.
+
 	PT_ISSATURN,
 	PT_WILLRESENDGAMESTATE, // Hey Client, I am about to resend you the gamestate!
 	PT_CANRECEIVEGAMESTATE, // Okay Server, I'm ready to receive it, you can go ahead.
 	PT_RECEIVEDGAMESTATE,   // Thank you Server, I am ready to play again!
+
 	NUMPACKETTYPE
 } packettype_t;
 
