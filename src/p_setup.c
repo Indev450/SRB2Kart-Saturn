@@ -77,7 +77,6 @@
 #endif
 #ifdef HWRENDER
 #include "hardware/hw_main.h"
-#include "hardware/hw_light.h"
 #endif
 
 #include "p_slopes.h"

@@ -12,6 +12,7 @@
 /// \brief hardware renderer, using the standard HardWareRender driver DLL for SRB2
 
 #include <math.h>
+#include <stdlib.h> // qsort
 
 #include "../doomstat.h"
 
@@ -24,7 +25,6 @@
 #include "hw_batching.h"
 #include "hw_md2.h"
 #include "hw_clip.h"
-#include "hw_light.h"
 
 #include "../i_video.h" // for rendermode == render_glide
 #include "../v_video.h"
@@ -47,8 +47,6 @@
 #include "../m_cheat.h"
 #include "../m_argv.h" // parm functions for msaa
 #include "../p_slopes.h"
-
-#include <stdlib.h> // qsort
 
 #define ABS(x) ((x) < 0 ? -(x) : (x))
 
