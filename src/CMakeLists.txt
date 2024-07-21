@@ -465,7 +465,6 @@ if(${SRB2_CONFIG_HWRENDER})
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_cache.c
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_clip.c
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_draw.c
-		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_light.c
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_main.c
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_md2.c
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_md2load.c
@@ -483,7 +482,6 @@ if(${SRB2_CONFIG_HWRENDER})
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_dll.h
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_drv.h
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_glob.h
-		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_light.h
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_main.h
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_md2.h
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_md2load.h

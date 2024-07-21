@@ -77,7 +77,6 @@
 #endif
 #ifdef HWRENDER
 #include "hardware/hw_main.h"
-#include "hardware/hw_light.h"
 #endif
 
 #include "p_slopes.h"
@@ -2783,12 +2782,6 @@ boolean P_SetupLevel(boolean skipprecip, boolean reloadinggamestate)
 
 	// Clear pointers that would be left dangling by the purge
 	R_FlushTranslationColormapCache();
-
-#ifdef HWRENDER
-	// Free GPU textures before freeing patches.
-	if (rendermode == render_opengl && (vid.glstate == VID_GL_LIBRARY_LOADED))
-		HWR_FreeMipmapCache();
-#endif
 
 	Z_FreeTags(PU_LEVEL, PU_PURGELEVEL - 1);
 
