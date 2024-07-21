@@ -730,7 +730,7 @@ void D_SRB2Loop(void)
 			if (lastdraw || singletics || gametic > rendergametic)
 			{
 				rendergametic = gametic;
-				rendertimeout = entertic + TICRATE/(TICRATE/2);
+				rendertimeout = entertic + TICRATE/17.5;
 
 				doDisplay = true;
 			}
