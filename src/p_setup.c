@@ -2757,7 +2757,11 @@ boolean P_SetupLevel(boolean skipprecip, boolean reloadinggamestate)
 
 	// Reset the palette now all fades have been done
 	if (rendermode != render_none)
+	{
+		V_SetPalette(0);
+		V_SetPaletteLump("PLAYPAL"); // Reset the palette
 		V_SetPaletteLump(GetPalette()); // Set the level palette
+	}
 
 	// Print "SPEEDING OFF TO [ZONE] [ACT 1]..."
 	/*if (rendermode != render_none)
