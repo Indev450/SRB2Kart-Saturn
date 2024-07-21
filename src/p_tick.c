@@ -330,8 +330,8 @@ void P_RunChaseCameras(void)
 
 	if (!splitscreen)
 	{
-		if (camera[consoleplayer].chase)
-			P_MoveChaseCamera(&players[consoleplayer], &camera[consoleplayer], false);
+		if (camera[0].chase)
+			P_MoveChaseCamera(&players[displayplayers[0]], &camera[0], false);
 	}
 	else
 	{
