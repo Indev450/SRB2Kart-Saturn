@@ -25,6 +25,11 @@ static fixed_t P_ScaleFromMap(fixed_t n, fixed_t scale)
 	return FixedMul(n, FixedDiv(scale, mapobjectscale));
 }
 
+static boolean K_DirectorIsEnabled(void)
+{
+	return cv_director.value && (gamestate == GS_LEVEL && (!playeringame[consoleplayer] || players[consoleplayer].spectator || demo.playback));
+}
+
 void K_InitDirector(void)
 {
 	INT32 playernum;
@@ -215,6 +220,11 @@ static void K_DirectorForceSwitch(INT32 player, INT32 time)
 
 void K_DirectorFollowAttack(player_t *player, mobj_t *inflictor, mobj_t *source)
 {
+	if (!K_DirectorIsEnabled())
+	{
+		return;
+	}
+
 	if (!P_IsDisplayPlayer(player))
 	{
 		return;
@@ -287,7 +297,7 @@ void K_UpdateDirector(void)
 	INT32 *displayplayerp = &displayplayers[0];
 	INT32 targetposition;
 
-	if (!cv_director.value)
+	if (!K_DirectorIsEnabled())
 	{
 		return;
 	}
@@ -367,4 +377,14 @@ void K_UpdateDirector(void)
 
 		break;
 	}
+}
+
+void K_ToggleDirector(void)
+{
+	if (!K_DirectorIsEnabled())
+	{
+		directorinfo.cooldown = 0; // switch immediately
+	}
+
+	COM_ImmedExecute("add director 1");
 }
