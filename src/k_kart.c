@@ -31,6 +31,7 @@
 #include "z_zone.h"
 #include "m_misc.h"
 #include "m_cond.h"
+#include "k_director.h"
 #include "k_kart.h"
 #include "f_finale.h"
 #include "lua_hud.h"	// For Lua hud checks
@@ -2233,12 +2234,15 @@ void K_SpinPlayer(player_t *player, mobj_t *source, INT32 type, mobj_t *inflicto
 	// PS: Inflictor is unused for all purposes here and is actually only ever relevant to Lua. It may be nil too.
 	boolean force = false;	// Used to check if Lua ShouldSpin should get us damaged reguardless of flashtics or heck knows what.
 	UINT8 shouldForce = LUAh_ShouldSpin(player, inflictor, source);
+
 	if (P_MobjWasRemoved(player->mo))
 		return; // mobj was removed (in theory that shouldn't happen)
 	if (shouldForce == 1)
 		force = true;
 	else if (shouldForce == 2)
 		return;
+
+	K_DirectorFollowAttack(player, inflictor, source);
 
 	if (!trapitem && G_BattleGametype())
 	{
@@ -2489,6 +2493,8 @@ void K_ExplodePlayer(player_t *player, mobj_t *source, mobj_t *inflictor) // A b
 		force = true;
 	else if (shouldForce == 2)
 		return;
+
+	K_DirectorFollowAttack(player, inflictor, source);
 
 	if (G_BattleGametype())
 	{

@@ -82,6 +82,7 @@
 #include "p_slopes.h"
 
 // SRB2Kart
+#include "k_director.h" // K_InitDirector
 #include "k_kart.h"
 
 //
@@ -2955,6 +2956,8 @@ boolean P_SetupLevel(boolean skipprecip)
 		if (dedicated)
 			G_BeginRecording(); //this has to move here, since dedicated servers dont run got_mapcmd
 	}
+
+	K_InitDirector();
 
 	wantedcalcdelay = wantedfrequency*2;
 	indirectitemcooldown = 0;

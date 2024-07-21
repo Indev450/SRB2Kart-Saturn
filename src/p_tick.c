@@ -23,6 +23,7 @@
 #include "m_random.h"
 #include "lua_script.h"
 #include "lua_hook.h"
+#include "k_director.h"
 #include "k_kart.h"
 #include "i_system.h"
 #include "r_main.h"
@@ -588,6 +589,8 @@ void P_Ticker(boolean run)
 		LUAh_PostThinkFrame();
 		PS_STOP_TIMING(ps_lua_postthinkframe_time);
 	}
+
+	K_UpdateDirector();
 
 	// Always move the camera.
 	P_RunChaseCameras();
