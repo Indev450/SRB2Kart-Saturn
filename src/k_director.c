@@ -230,7 +230,7 @@ void K_DirectorFollowAttack(player_t *player, mobj_t *inflictor, mobj_t *source)
 	}
 }
 
-/*void K_DrawDirectorDebugger(void)
+void K_DrawDirectorDebugger(void)
 {
 	INT32 position;
 	INT32 leader;
@@ -261,10 +261,10 @@ void K_DirectorFollowAttack(player_t *player, mobj_t *inflictor, mobj_t *source)
 		V_DrawThinString(10, ytxt, V_70TRANS, va("%d", position));
 		V_DrawThinString(20, ytxt, V_70TRANS, va("%d", position + 1));
 
-		if (players[leader].positiondelay)
+		/*if (players[leader].positiondelay)
 		{
 			V_DrawThinString(40, ytxt, V_70TRANS, va("NG"));
-		}
+		}*/
 
 		V_DrawThinString(80, ytxt, V_70TRANS, va("%d", directorinfo.gap[position]));
 
@@ -280,7 +280,7 @@ void K_DirectorFollowAttack(player_t *player, mobj_t *inflictor, mobj_t *source)
 		V_DrawThinString(150, ytxt, V_70TRANS, va("%s", player_names[leader]));
 		V_DrawThinString(230, ytxt, V_70TRANS, va("%s", player_names[follower]));
 	}
-}*/
+}
 
 void K_UpdateDirector(void)
 {

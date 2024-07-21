@@ -554,15 +554,15 @@ consvar_t cv_perfstats = {"perfstats", "Off", CV_CALL, perfstats_cons_t, PS_Perf
 
 consvar_t cv_ps_thinkframe_page = {"ps_thinkframe_page", "1", CV_CALL, CV_Natural, PS_ThinkFrame_Page_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_director = {"director", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-
-
 static CV_PossibleValue_t ps_samplesize_cons_t[] = {
 	{1, "MIN"}, {1000, "MAX"}, {0, NULL}};
 consvar_t cv_ps_samplesize = {"ps_samplesize", "1", CV_CALL, ps_samplesize_cons_t, PS_SampleSize_OnChange, 0, NULL, NULL, 0, 0, NULL};
 static CV_PossibleValue_t ps_descriptor_cons_t[] = {
 	{1, "Average"}, {2, "SD"}, {3, "Minimum"}, {4, "Maximum"}, {0, NULL}};
 consvar_t cv_ps_descriptor = {"ps_descriptor", "Average", 0, ps_descriptor_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_director = {"director", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_kartdebugdirector = {"director", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_showtrackaddon = {"showtrackaddon", "Yes", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -983,7 +983,7 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_showviewpointtext);
 
 	CV_RegisterVar(&cv_director);
-
+	CV_RegisterVar(&cv_kartdebugdirector);
 
 	CV_RegisterVar(&cv_luaimmersion);
 	CV_RegisterVar(&cv_fakelocalskin);
