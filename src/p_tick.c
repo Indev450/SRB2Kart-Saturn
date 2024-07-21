@@ -590,8 +590,7 @@ void P_Ticker(boolean run)
 		PS_STOP_TIMING(ps_lua_postthinkframe_time);
 	}
 
-	if (gamestate == GS_LEVEL && (!playeringame[consoleplayer] || players[consoleplayer].spectator || demo.playback))
-		K_UpdateDirector();
+	K_UpdateDirector();
 
 	// Always move the camera.
 	P_RunChaseCameras();
