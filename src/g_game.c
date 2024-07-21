@@ -1937,6 +1937,11 @@ boolean G_Responder(event_t *ev)
 					COM_ImmedExecute("changeteam4 spectator");
 				}
 			}
+			if (ev->data1 == gamecontrol[gc_director][0]
+				|| ev->data1 == gamecontrol[gc_director][1])
+			{
+				COM_ImmedExecute("add director 1");
+			}
 
 			return true;
 

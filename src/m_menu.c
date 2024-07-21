@@ -1198,6 +1198,7 @@ static menuitem_t OP_AllControlsMenu[] =
 	{IT_CONTROL, NULL, "Look Up",               M_ChangeControl, gc_lookup     },
 	{IT_CONTROL, NULL, "Look Down",             M_ChangeControl, gc_lookdown   },
 	{IT_CONTROL, NULL, "Center View",           M_ChangeControl, gc_centerview },
+	{IT_CONTROL, NULL, "Toggle Director",       M_ChangeControl, gc_director   },
 	{IT_HEADER, NULL, "Custom Lua Actions", NULL, 0},
 	{IT_SPACE, NULL, NULL, NULL, 0},
 	{IT_CONTROL, NULL, "Custom Action 1",       M_ChangeControl, gc_custom1    },
