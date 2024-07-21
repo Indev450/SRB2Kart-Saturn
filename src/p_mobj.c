@@ -6073,7 +6073,8 @@ void P_MobjThinker(mobj_t *mobj)
 	mobj->flags2 &= ~MF2_PUSHED;
 	mobj->eflags &= ~(MFE_SPRUNG|MFE_JUSTBOUNCEDWALL);
 
-	tmfloorthing = tmhitthing = NULL;
+	P_SetTarget(&tmfloorthing, NULL);
+	P_SetTarget(&tmhitthing, NULL);
 
 	// 970 allows ANY mobj to trigger a linedef exec
 	if (mobj->subsector && GETSECSPECIAL(mobj->subsector->sector->special, 2) == 8)
@@ -10030,13 +10031,29 @@ void P_RemoveMobj(mobj_t *mobj)
 	P_SetTarget(&mobj->target, NULL);
 	P_SetTarget(&mobj->tracer, NULL);
 
+	// repair hnext chain
+	mobj_t *cachenext = mobj->hnext;
+
 	if (mobj->hnext && !P_MobjWasRemoved(mobj->hnext))
-		P_SetTarget(&mobj->hnext->hprev, mobj->hprev);
+	{
+		if (mobj->hnext->hprev == mobj)
+		{
+			P_SetTarget(&mobj->hnext->hprev, mobj->hprev);
+		}
+
+		P_SetTarget(&mobj->hnext, NULL);
+	}
+
 	if (mobj->hprev && !P_MobjWasRemoved(mobj->hprev))
-		P_SetTarget(&mobj->hprev->hnext, mobj->hnext);
+	{
+		if (mobj->hprev->hnext == mobj)
+		{
+			P_SetTarget(&mobj->hprev->hnext, cachenext);
+		}
 
-	P_SetTarget(&mobj->hnext, P_SetTarget(&mobj->hprev, NULL));
-
+		P_SetTarget(&mobj->hprev, NULL);
+	}
+	
 	// clear the reference from the mapthing
 	if (mobj->spawnpoint)
 		P_SetTarget(&mobj->spawnpoint->mobj, NULL);

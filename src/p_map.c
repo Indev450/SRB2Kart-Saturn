@@ -1548,13 +1548,13 @@ static boolean PIT_CheckThing(mobj_t *thing)
 			{
 				tmfloorz = tmceilingz = topz; // block while in air
 				tmceilingslope = NULL;
-				tmfloorthing = thing; // needed for side collision
+				P_SetTarget(&tmfloorthing, thing); // needed for side collision
 			}
 			else if (topz < tmceilingz && tmthing->z <= thing->z+thing->height)
 			{
 				tmceilingz = topz;
 				tmceilingslope = NULL;
-				tmfloorthing = thing; // thing we may stand on
+				P_SetTarget(&tmfloorthing, thing); // thing we may stand on
 			}
 		}
 		else
@@ -1585,13 +1585,13 @@ static boolean PIT_CheckThing(mobj_t *thing)
 			{
 				tmfloorz = tmceilingz = topz; // block while in air
 				tmfloorslope = NULL;
-				tmfloorthing = thing; // needed for side collision
+				P_SetTarget(&tmfloorthing, thing); // needed for side collision
 			}
 			else if (topz > tmfloorz && tmthing->z+tmthing->height >= thing->z)
 			{
 				tmfloorz = topz;
 				tmfloorslope = NULL;
-				tmfloorthing = thing; // thing we may stand on
+				P_SetTarget(&tmfloorthing, thing); // thing we may stand on
 			}
 		}
 	}
@@ -1991,8 +1991,8 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 	}
 
 	// tmfloorthing is set when tmfloorz comes from a thing's top
-	tmfloorthing = NULL;
-	tmhitthing = NULL;
+	P_SetTarget(&tmfloorthing, NULL);
+	P_SetTarget(&tmhitthing, NULL);
 
 	validcount++;
 
@@ -2489,8 +2489,10 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff)
 
 			if (tmceilingz - tmfloorz < thing->height)
 			{
-				if (tmfloorthing)
-					tmhitthing = tmfloorthing;
+				if (tmfloorthing != NULL)
+				{
+					P_SetTarget(&tmhitthing, tmfloorthing);
+				}
 				return false; // doesn't fit
 			}
 
