@@ -4067,6 +4067,9 @@ consvar_t cv_discordinvites = {"discordinvites", "Everyone", CV_SAVE|CV_CALL, di
 
 static CV_PossibleValue_t resynchattempts_cons_t[] = {{0, "MIN"}, {20, "MAX"}, {0, NULL}};
 consvar_t cv_resynchattempts = {"resynchattempts", "2", CV_SAVE, resynchattempts_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL	};
+
+static CV_PossibleValue_t resynchcooldown_cons_t[] = {{0, "MIN"}, {20, "MAX"}, {0, NULL}};
+consvar_t cv_resynchcooldown = {"gamestatecooldown", "5", CV_SAVE, resynchcooldown_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL	};
 consvar_t cv_blamecfail = {"blamecfail", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL	};
 
 // max file size to send to a player (in kilobytes)
@@ -5314,12 +5317,9 @@ static void HandlePacketFromPlayer(SINT8 node)
 				HSendPacket(node, true, 0, 0);
 
 				if (can_receive_gamestate[node])
-				{
 					resendingsavegame[node] = true;
-				}
 				else
 				{
-					CONS_Printf("resynch");
 					SV_RequireResynch(node);
 					resendingsavegame[node] = false;
 				}
@@ -5662,7 +5662,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 		case PT_RECEIVEDGAMESTATE:
 			sendingsavegame[node] = false;
 			resendingsavegame[node] = false;
-			savegameresendcooldown[node] = I_GetTime() + 5 * TICRATE;
+			savegameresendcooldown[node] = I_GetTime() + cv_resynchcooldown.value * TICRATE; // I_GetTime() + 5 * TICRATE;
 			break;
 		case PT_WILLRESENDGAMESTATE:
 			PT_WillResendGamestate();
