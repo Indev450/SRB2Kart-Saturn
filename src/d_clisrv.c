@@ -5307,8 +5307,8 @@ static void HandlePacketFromPlayer(SINT8 node)
 			}
 
 			// Check player consistancy during the level
-			if ((!can_receive_gamestate[node] && realstart <= gametic && realstart > gametic - TICQUEUE+1 && gamestate == GS_LEVEL
-				&& consistancy[realstart%TICQUEUE] != SHORT(netbuffer->u.clientpak.consistancy)) || (realstart <= gametic && realstart + TICQUEUE - 1 > gametic && gamestate == GS_LEVEL
+			if (((!can_receive_gamestate[node]) && realstart <= gametic && realstart > gametic - TICQUEUE+1 && gamestate == GS_LEVEL
+				&& consistancy[realstart%TICQUEUE] != SHORT(netbuffer->u.clientpak.consistancy)) || (can_receive_gamestate[node] && realstart <= gametic && realstart + TICQUEUE - 1 > gametic && gamestate == GS_LEVEL
 				&& consistancy[realstart%TICQUEUE] != SHORT(netbuffer->u.clientpak.consistancy)
 				&& !resendingsavegame[node] && savegameresendcooldown[node] <= I_GetTime()))
 			{
