@@ -98,10 +98,6 @@ static fixed_t K_GetDistanceToFinish(player_t player)
 		}
 	}
 
-	CONS_Printf("dist %d \n", dist);
-	CONS_Printf("last movecount %d \n", maxMoveCount);
-	CONS_Printf("last angle %d \n", maxAngle);
-
 	return dist;
 }
 
@@ -109,9 +105,6 @@ static fixed_t K_GetFinishGap(INT32 leader, INT32 follower)
 {
 	fixed_t dista = K_GetDistanceToFinish(players[follower]);
 	fixed_t distb = K_GetDistanceToFinish(players[leader]);
-
-	CONS_Printf("dista %d \n", dista);
-	CONS_Printf("distb %d \n", distb);
 
 	if (players[follower].kartstuff[k_position] < players[leader].kartstuff[k_position])
 	{
@@ -160,6 +153,12 @@ static void K_UpdateDirectorPositions(void)
 		{
 			directorinfo.boredom[position]--;
 		}
+	}
+
+	if (directorinfo.sortedplayers[0] == -1)
+	{
+		directorinfo.maxdist = -1;
+		return;
 	}
 
 	directorinfo.maxdist = P_ScaleFromMap(K_GetDistanceToFinish(players[directorinfo.sortedplayers[0]]), FRACUNIT);
