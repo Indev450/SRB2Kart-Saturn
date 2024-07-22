@@ -10,6 +10,7 @@
 /// \file  d_clisrv.c
 /// \brief SRB2 Network game communication and protocol, all OS independent parts.
 
+#include "doomdef.h"
 #include <time.h>
 #ifdef __GNUC__
 #include <unistd.h> //for unlink
@@ -128,6 +129,8 @@ UINT8 hu_resynching = 0;
 UINT8 hu_redownloadinggamestate = 0;
 
 static boolean can_receive_gamestate[MAXNETNODES];
+
+static UINT8 gamestate_resend_counter[MAXNETNODES];
 
 // kart, true when a player is connecting or disconnecting so that the gameplay has stopped in its tracks
 UINT8 hu_stopped = 0;
@@ -4068,6 +4071,11 @@ consvar_t cv_discordinvites = {"discordinvites", "Everyone", CV_SAVE|CV_CALL, di
 static CV_PossibleValue_t resynchattempts_cons_t[] = {{0, "MIN"}, {20, "MAX"}, {0, NULL}};
 consvar_t cv_resynchattempts = {"resynchattempts", "2", CV_SAVE, resynchattempts_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL	};
 
+
+static CV_PossibleValue_t gamestateattempts_cons_t[] = {{0, "MIN"}, {30, "MAX"}, {0, NULL}};
+consvar_t cv_gamestateattempts = {"gamestateresendattempts", "5", CV_SAVE, gamestateattempts_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL	};
+
+
 static CV_PossibleValue_t resynchcooldown_cons_t[] = {{0, "MIN"}, {20, "MAX"}, {0, NULL}};
 consvar_t cv_resynchcooldown = {"gamestatecooldown", "5", CV_SAVE, resynchcooldown_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL	};
 consvar_t cv_blamecfail = {"blamecfail", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL	};
@@ -5306,6 +5314,9 @@ static void HandlePacketFromPlayer(SINT8 node)
 				break;
 			}
 
+			if (gamestate_resend_counter[node] && (I_GetTime() % ((max(cv_resynchcooldown.value, 1) * TICRATE) *2) == 0))
+				gamestate_resend_counter[node] = 0;
+
 			// Check player consistancy during the level
 			if (((!can_receive_gamestate[node]) && realstart <= gametic && realstart > gametic - TICQUEUE+1 && gamestate == GS_LEVEL
 				&& consistancy[realstart%TICQUEUE] != SHORT(netbuffer->u.clientpak.consistancy)) || (can_receive_gamestate[node] && realstart <= gametic && realstart + TICQUEUE - 1 > gametic && gamestate == GS_LEVEL
@@ -5324,8 +5335,14 @@ static void HandlePacketFromPlayer(SINT8 node)
 					resendingsavegame[node] = false;
 				}
 
-				if (cv_resynchattempts.value && resynch_score[node] <= (unsigned)cv_resynchattempts.value*250)
+				if ((!can_receive_gamestate[node] && cv_resynchattempts.value && resynch_score[node] <= (unsigned)cv_resynchattempts.value*250) || (can_receive_gamestate[node] && (gamestate_resend_counter[node] < cv_gamestateattempts.value)))
 				{
+					if (can_receive_gamestate[node] && resendingsavegame[node])
+					{
+						gamestate_resend_counter[node]++;
+						DEBFILE(va("gamestate counter %d for player %d\n", gamestate_resend_counter[node], netconsole));
+					}
+
 					if (cv_blamecfail.value)
 						CONS_Printf(M_GetText("Synch failure for player %d (%s); expected %hd, got %hd\n"),
 							netconsole+1, player_names[netconsole],
