@@ -1911,8 +1911,9 @@ static menuitem_t OP_AdvServerOptionsMenu[] =
 
 	                         NULL, "Server Browser Address",		&cv_masterserver,		 10},
 #endif
-	{IT_STRING | IT_CVAR,    NULL, "Attempts to resynchronise",		&cv_resynchattempts,	 40},
-	{IT_STRING | IT_CVAR,    NULL, "Resend Gamestate Cooldown",		&cv_resynchcooldown,	 50},
+	{IT_STRING | IT_CVAR,    NULL, "Attempts to resynchronise",		&cv_resynchattempts,	 30},
+	{IT_STRING | IT_CVAR,    NULL, "Resend Gamestate Cooldown",		&cv_resynchcooldown,	 40},
+	{IT_STRING | IT_CVAR,    NULL, "Resend Gamestate Attempts",		&cv_gamestateattempts,	 50},
 	{IT_STRING | IT_CVAR,    NULL, "Delay limit (frames)",			&cv_maxping,			 60},
 	{IT_STRING | IT_CVAR,    NULL, "Delay timeout (s)",				&cv_pingtimeout,		 70},
 	{IT_STRING | IT_CVAR,    NULL, "Connection timeout (tics)",		&cv_nettimeout,			 80},
@@ -1933,6 +1934,7 @@ static const char* OP_AdvServerOptionsTooltips[] =
 	"Server used for master server.",
 	"Attempts to resynchronise player to server.",
 	"Cooldown in seconds before the Server attempts\nto resend the gamestate to a Saturn Client\nbetween resending attempts.",
+	"Attempts to resend the Gamestate to player\nThis increments a Counter everytime a gamestate resend occurs\nThis Counter decrements at double the time of the Cooldown\nonce the Counter reaches the threshold, the client gets kicked.",
 	"Maximum allowed delay.",
 	"Delay timeout in seconds.",
 	"Connection timeout in tics.",
