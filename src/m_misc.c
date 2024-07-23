@@ -572,7 +572,7 @@ void M_SaveConfig(const char *filename)
 	if (config != NULL)
 	{
 		fclose(config);
-		if (FIL_CopyFile(configfile, backupfile) != false)
+		if (FIL_CopyFile(configfile, backupfile) == false)
 		{
 			CONS_Alert(CONS_WARNING,"Failed to create a backup of the configuration file. Will not attempt to write to file\n");
 			return;
