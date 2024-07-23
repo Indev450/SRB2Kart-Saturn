@@ -788,6 +788,7 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_httpsource);
 #ifndef NONET
 	CV_RegisterVar(&cv_allownewplayer);
+	CV_RegisterVar(&cv_allownewsaturnplayer);
 	CV_RegisterVar(&cv_joinrefusemessage);
 	CV_RegisterVar(&cv_chatlogsize);
 #ifdef VANILLAJOINNEXTROUND

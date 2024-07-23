@@ -146,6 +146,7 @@ static UINT8 mynode; // my address pointofview server
 static boolean cl_redownloadinggamestate = false;
 
 boolean is_client_saturn[MAXNETNODES];
+#define ISSATURN 69
 
 static UINT8 localtextcmd[MAXTEXTCMD];
 static UINT8 localtextcmd2[MAXTEXTCMD]; // splitscreen
@@ -1441,6 +1442,7 @@ static boolean CL_SendJoin(void)
 	netbuffer->u.clientcfg.subversion = SUBVERSION;
 	strncpy(netbuffer->u.clientcfg.application, SRB2APPLICATION,
 			sizeof netbuffer->u.clientcfg.application);
+	netbuffer->u.clientcfg.issaturn = ISSATURN;
 
 	return HSendPacket(servernode, false, 0, sizeof (clientconfig_pak));
 }
@@ -4057,6 +4059,8 @@ consvar_t cv_joinrefusemessage = {"joinrefusemessage", "The server is not accept
 
 consvar_t cv_allownewplayer = {"allowjoin", "On", CV_SAVE|CV_CALL, CV_OnOff, Joinable_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_allownewsaturnplayer = {"allowsaturnjoin", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 #ifdef VANILLAJOINNEXTROUND
 consvar_t cv_joinnextround = {"joinnextround", "Off", CV_SAVE|CV_NETVAR, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; /// \todo not done
 #endif
@@ -4704,7 +4708,7 @@ static void HandleConnect(SINT8 node)
 	{
 		SV_SendRefuse(node, va(M_GetText("Different SRB2Kart versions cannot\nplay a netgame!\n(server version %d.%d)"), VERSION, SUBVERSION));
 	}
-	else if (!cv_allownewplayer.value && node)
+	else if ((!cv_allownewplayer.value && node && netbuffer->u.clientcfg.issaturn != ISSATURN) || (!cv_allownewsaturnplayer.value && node && netbuffer->u.clientcfg.issaturn == ISSATURN))
 	{
 		SV_SendRefuse(node, M_GetText(cv_joinrefusemessage.string));
 	}
