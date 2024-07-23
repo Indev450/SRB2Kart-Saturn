@@ -126,6 +126,7 @@ void R_Init(void);
 
 void R_CheckViewMorph(void);
 void R_ApplyViewMorph(void);
+angle_t R_ViewRollAngle(const player_t *player);
 
 // just sets setsizeneeded true
 extern boolean setsizeneeded;

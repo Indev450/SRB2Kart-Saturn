@@ -145,6 +145,11 @@ static void R_SetupFreelook(void)
 
 #undef AIMINGTODY
 
+void R_InterpolateViewRollAngle(fixed_t frac)
+{
+	viewroll = oldview->roll + R_LerpAngle(oldview->roll, newview->roll, frac);
+}
+
 void R_InterpolateView(fixed_t frac, boolean forceinvalid)
 {
 	viewvars_t* prevview = oldview;
@@ -176,12 +181,11 @@ void R_InterpolateView(fixed_t frac, boolean forceinvalid)
 
 	viewangle = R_LerpAngle(prevview->angle, newview->angle, frac);
 	aimingangle = R_LerpAngle(prevview->aim, newview->aim, frac);
+	viewroll = R_LerpAngle(prevview->roll, newview->roll, frac);
 
 	viewsin = FINESINE(viewangle>>ANGLETOFINESHIFT);
 	viewcos = FINECOSINE(viewangle>>ANGLETOFINESHIFT);
 
-	// this is gonna create some interesting visual errors for long distance teleports...
-	// might want to recalculate the view sector every frame instead...
 	viewplayer = newview->player;
 	viewsector = R_PointInSubsector(viewx, viewy)->sector;
 
