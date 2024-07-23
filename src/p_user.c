@@ -4246,6 +4246,12 @@ DoABarrelRoll (player_t *player)
 		return;
 	}
 
+	if (player->kartstuff[k_respawn])
+	{
+		player->tilt = 0;
+		return;
+	}
+
 	if (player->mo->standingslope)
 	{
 		slope = player->mo->standingslope->real_zangle;
