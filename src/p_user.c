@@ -4221,11 +4221,7 @@ Quaketilt (player_t *player)
 	INT32 delta = (INT32)( player->mo->angle - moma );
 	fixed_t speed;
 
-	boolean sliptiding =
-		(
-				player->kartstuff[k_aizdriftstrat] != 0 &&
-				player->kartstuff[k_drift]         == 0
-		);
+	boolean sliptiding = player->kartstuff[k_drift] ? 0 : player->kartstuff[k_aizdriftstrat];
 
 	if (delta == (INT32)ANGLE_180)/* FUCK YOU HAVE A HACK */
 	{
