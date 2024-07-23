@@ -263,7 +263,10 @@ static boolean D_Display(void)
 			SCR_Recalc(); // NOTE! setsizeneeded is set by SCR_Recalc()
 
 		if (rendermode == render_soft && !splitscreen)
+		{
+			R_InterpolateViewRollAngle(rendertimefrac);
 			R_CheckViewMorph();
+		}
 
 		// change the view size if needed
 		if (setsizeneeded)

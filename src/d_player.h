@@ -541,11 +541,6 @@ typedef struct player_s
 #ifdef HWRENDER
 	fixed_t fovadd; // adjust FOV for hw rendering
 #endif
-
-	struct {
-		angle_t aiming, awayviewaiming, frameangle;
-		angle_t viewrollangle;
-	} lerp;
 } player_t;
 
 #endif
