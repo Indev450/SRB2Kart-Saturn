@@ -1861,23 +1861,22 @@ static menuitem_t OP_ServerOptionsMenu[] =
 {
 #ifndef NONET
 	{IT_STRING | IT_CVAR | IT_CV_STRING,
-	                         NULL, "Server Name",					&cv_servername,			  10},
+	                         NULL, "Server Name",					&cv_servername,			 10},
 #endif
 
-	{IT_STRING | IT_CVAR,    NULL, "Intermission Timer",			&cv_inttime,			  40},
-	{IT_STRING | IT_CVAR,    NULL, "Map Progression",				&cv_advancemap,			  50},
-	{IT_STRING | IT_CVAR,    NULL, "Voting Timer",					&cv_votetime,			  60},
-	{IT_STRING | IT_CVAR,    NULL, "Voting Rule Changes",			&cv_kartvoterulechanges,  70},
+	{IT_STRING | IT_CVAR,    NULL, "Intermission Timer",			&cv_inttime,			 40},
+	{IT_STRING | IT_CVAR,    NULL, "Map Progression",				&cv_advancemap,			 50},
+	{IT_STRING | IT_CVAR,    NULL, "Voting Timer",					&cv_votetime,			 60},
+	{IT_STRING | IT_CVAR,    NULL, "Voting Rule Changes",			&cv_kartvoterulechanges, 70},
 
 #ifndef NONET
-	{IT_STRING | IT_CVAR,    NULL, "Max. Player Count",				&cv_maxplayers,			  90},
-	{IT_STRING | IT_CVAR,    NULL, "Allow Vanilla Players to Join",			&cv_allownewplayer,		 100},
-	{IT_STRING | IT_CVAR,    NULL, "Allow Saturn Players to Join",	&cv_allownewsaturnplayer,110},
-	{IT_STRING | IT_CVAR,    NULL, "Allow Addon Downloading",		&cv_downloading,		 120},
-	{IT_STRING | IT_CVAR,    NULL, "Pause Permission",				&cv_pause,				 130},
-	{IT_STRING | IT_CVAR,    NULL, "Mute All Chat",					&cv_mute,				 140},
+	{IT_STRING | IT_CVAR,    NULL, "Max. Player Count",				&cv_maxplayers,			 90},
+	{IT_STRING | IT_CVAR,    NULL, "Allow Players to Join",			&cv_allownewplayer,		100},
+	{IT_STRING | IT_CVAR,    NULL, "Allow Addon Downloading",		&cv_downloading,		110},
+	{IT_STRING | IT_CVAR,    NULL, "Pause Permission",				&cv_pause,				120},
+	{IT_STRING | IT_CVAR,    NULL, "Mute All Chat",					&cv_mute,				130},
 
-	{IT_SUBMENU|IT_STRING,   NULL, "Advanced Options...",			&OP_AdvServerOptionsDef, 160},
+	{IT_SUBMENU|IT_STRING,   NULL, "Advanced Options...",			&OP_AdvServerOptionsDef,150},
 #endif
 };
 
@@ -1892,8 +1891,7 @@ static const char* OP_ServerOptionsTooltips[] =
 	"How often should other gamemodes appear.",
 #ifndef NONET
 	"Max amount of players allowed in this server.",
-	"Allow Vanilla players to join this server.",
-	"Allow Saturn players to join this server.",
+	"Allow players to join this server.",
 	"Allow players to download addons.",
 	"Who has permission to pause the server?",
 	"Completely mute in game chat.",
