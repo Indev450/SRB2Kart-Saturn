@@ -3148,7 +3148,12 @@ static void P_SceneryCheckWater(mobj_t *mobj)
 static boolean P_CameraCheckHeat(camera_t *thiscam)
 {
 	sector_t *sector;
-	fixed_t halfheight = thiscam->z + (thiscam->height >> 1);
+	fixed_t halfheight;
+
+	if (!thiscam)
+		return false;
+
+	halfheight = thiscam->z + (thiscam->height >> 1);
 
 	// see if we are in water
 	sector = thiscam->subsector->sector;
@@ -3181,7 +3186,12 @@ static boolean P_CameraCheckHeat(camera_t *thiscam)
 static boolean P_CameraCheckWater(camera_t *thiscam)
 {
 	sector_t *sector;
-	fixed_t halfheight = thiscam->z + (thiscam->height >> 1);
+	fixed_t halfheight;
+
+	if (!thiscam)
+		return false;
+
+	halfheight = thiscam->z + (thiscam->height >> 1);
 
 	// see if we are in water
 	sector = thiscam->subsector->sector;
