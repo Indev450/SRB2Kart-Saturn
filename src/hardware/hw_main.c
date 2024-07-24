@@ -67,6 +67,8 @@ static boolean gr_palette_rendering_state = false;
 // Commands and console variables
 // ==========================================================================
 
+static void HWR_RollTransform(FTransform *tr, angle_t roll);
+
 #ifdef USE_FBO_OGL
 static void CV_grframebuffer_OnChange(void);
 #endif
@@ -204,6 +206,10 @@ static void CV_grshaders_OnChange(void)
 static void CV_grpaletterendering_OnChange(void)
 {
 	ONLY_IF_GL_LOADED
+
+	if (cv_grscreentextures.value != 2) // can't do palette rendering without screen textures
+		CV_Set(&cv_grpaletterendering, "Off");
+
 	if (gr_shadersavailable)
 	{
 		HWR_CompileShaders();
@@ -231,6 +237,12 @@ static void CV_grpalettedepth_OnChange(void)
 static void CV_grframebuffer_OnChange(void)
 {
 	ONLY_IF_GL_LOADED
+	if (cv_grscreentextures.value != 2)
+	{ // screen FBO needs screen textures
+#ifdef USE_FBO_OGL
+		CV_Set(&cv_grframebuffer, "Off");
+#endif
+	}
 	HWD.pfnSetSpecialState(HWD_SET_FRAMEBUFFER, cv_grframebuffer.value);
 	I_DownSample();
 	RefreshOGLSDLSurface();
@@ -5278,8 +5290,7 @@ void HWR_DrawSkyBackground(float fpov)
 	dometransform.scalez = 1;
 	dometransform.fovxangle = fpov; // Tails
 	dometransform.fovyangle = fpov; // Tails
-	dometransform.rollangle = atransform.rollangle;
-	dometransform.roll = atransform.roll;
+	HWR_RollTransform(&dometransform, viewroll);
 	dometransform.splitscreen = splitscreen;
 
 	HWR_GetTexture(texturetranslation[skytexture], false);
@@ -5374,12 +5385,7 @@ void HWR_SetTransform(float fpov, player_t *player)
 
 	atransform.fovxangle = fpov; // Tails
 	atransform.fovyangle = fpov; // Tails
-	if (player->viewrollangle != 0)
-	{
-		fixed_t rol = AngleFixed(player->viewrollangle);
-		atransform.rollangle = FIXED_TO_FLOAT(rol);
-		atransform.roll = true;
-	}
+	HWR_RollTransform(&atransform, viewroll);
 	atransform.splitscreen = splitscreen;
 
 	for (i = 0; i <= splitscreen; i++)
@@ -5712,6 +5718,16 @@ void HWR_RenderFrame(INT32 viewnumber, player_t *player, boolean skybox)
 // ==========================================================================
 // Render the player view.
 // ==========================================================================
+
+static void HWR_RollTransform(FTransform *tr, angle_t roll)
+{
+	if (roll != 0)
+	{
+		tr->rollangle = roll / (float)ANG1;
+		tr->roll = true;
+	}
+}
+
 void HWR_RenderPlayerView(INT32 viewnumber, player_t *player)
 {
 	const boolean skybox = (skyboxmo[0] && cv_skybox.value); // True if there's a skybox object and skyboxes are on
