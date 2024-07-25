@@ -1443,7 +1443,12 @@ static void UnArchiveExtVars(void *pointer)
 
 	if (field_count == 0)
 		return;
-	I_Assert(gL != NULL);
+
+	// Technically possible new, since server may have local lua scripts but no "public" ones, so
+	// field_count would be non zero (there is no way to tell local field from non-local, so
+	// everything gets archived)
+	if (!gL)
+		return;
 
 	TABLESINDEX = lua_gettop(gL);
 	lua_createtable(gL, 0, field_count); // pointer's ext vars subtable
