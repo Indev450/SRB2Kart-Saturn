@@ -103,11 +103,12 @@ static char *startupwadfiles[MAX_WADFILES];
 static char *startuppwads[MAX_WADFILES];
 
 // autoloading
-static char *autoloadwadfiles[MAX_WADFILES];
+char *autoloadwadfiles[MAX_WADFILES];
 char *autoloadwadfilespost[MAX_WADFILES];
 boolean autoloading;
 boolean autoloaded;
-boolean postautoloaded;
+boolean postautoloaded = false;
+boolean wasautoloaded = false;
 
 boolean devparm = false; // started game with -devparm
 
@@ -1105,6 +1106,32 @@ static void D_FindAddonsToAutoload(void)
 	fclose(autoloadconfigfile);
 }
 
+void D_AddAutoloadFiles(void)
+{
+	if (wasautoloaded && postautoloaded)
+		return;
+
+	if (!wasautoloaded && !modeattacking)
+	{
+		CONS_Printf("D_AutoloadFile(): Loading autoloaded addons...\n");
+		if (W_AddAutoloadedLocalFiles(autoloadwadfiles) == 0)
+			CONS_Printf("D_AutoloadFile(): Are you sure you put in valid files or what?\n");
+		D_CleanFile(autoloadwadfiles);
+
+		wasautoloaded = true;
+	}
+
+	if ((!postautoloaded) && netgame)
+	{
+		CONS_Printf("D_AutoloadFile(): Loading postloaded addons...\n");
+		if (W_AddAutoloadedLocalFiles(autoloadwadfilespost) == 0)
+			CONS_Printf("D_AutoloadFile(): Are you sure you put in valid files or what?\n");
+		D_CleanFile(autoloadwadfilespost);
+
+		postautoloaded = true;
+	}
+}
+
 void D_CleanFile(char **filearray)
 {
 	size_t pnumwadfiles;
@@ -1790,11 +1817,6 @@ void D_SRB2Main(void)
 
 	CONS_Printf("ST_Init(): Init status bar.\n");
 	ST_Init();
-
-	CONS_Printf("D_AutoloadFile(): Loading autoloaded addons...\n");
-	if (W_AddAutoloadedLocalFiles(autoloadwadfiles) == 0)
-		CONS_Printf("D_AutoloadFile(): Are you sure you put in valid files or what?\n");
-	D_CleanFile(autoloadwadfiles);
 
 	// Set up splitscreen players before joining!
 	if (!dedicated && (M_CheckParm("-splitscreen") && M_IsNextParm()))
