@@ -66,7 +66,7 @@ char sprnames[NUMSPRITES + 1][5] =
 	"CNDL","DOCH","DUCK","GTRE","CHES","CHIM","DRGN","LZMN","PGSS","ZTCH",
 	"MKMA","MKMP","RTCH","BOWL","BOWH","BRRL","BRRR","HRSE","TOAH","BFRT",
 	"OFRT","RFRT","PFRT","ASPK","HBST","HBSO","HBSF","WBLZ","WBLN","OPUL",
-	"TGEM","TCOI","FWRK","XMS4","XMS5","VIEW","WTRL","DSTR"
+	"TGEM","TCOI","FWRK","XMS4","XMS5","VIEW","WTRL",
 };
 
 // Doesn't work with g++, needs actionf_p1 (don't modify this comment)
@@ -3422,11 +3422,6 @@ state_t states[NUMSTATES] =
 	{SPR_WTRL, FF_TRANS50|FF_PAPERSPRITE|7, 2, {NULL}, 0, 0, S_INVISIBLE}, // S_WATERTRAILUNDERLAY3
 	{SPR_WTRL, FF_TRANS50|FF_PAPERSPRITE|8, 2, {NULL}, 0, 0, S_INVISIBLE}, // S_WATERTRAILUNDERLAY4
 	{SPR_WTRL, FF_TRANS50|FF_PAPERSPRITE|9, 2, {NULL}, 0, 0, S_INVISIBLE}, // S_WATERTRAILUNDERLAY5
-
-	{SPR_DSTR, 0,  3, {NULL}, 0, 0, S_DRIFTSTAR2}, // S_DRIFTSTAR1
-	{SPR_DSTR, 1,  3, {NULL}, 0, 0, S_DRIFTSTAR3}, // S_DRIFTSTAR2
-	{SPR_DSTR, FF_TRANS20|2,  3, {NULL}, 0, 0, S_DRIFTSTAR4}, // S_DRIFTSTAR3
-	{SPR_DSTR, FF_TRANS20|3,  3, {NULL}, 0, 0, S_NULL}, // S_DRIFTSTAR4
 };
 
 mobjinfo_t mobjinfo[NUMMOBJTYPES] =
@@ -20272,33 +20267,6 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] =
 		1,              // damage
 		sfx_None,       // activesound
 		MF_NOBLOCKMAP|MF_NOCLIP|MF_NOGRAVITY|MF_SCENERY|MF_DONTENCOREMAP, // flags
-		S_NULL          // raisestate
-	},
-
-	{           // MT_STARDUST
-		-1,             // doomednum
-		S_DRIFTSTAR1,   // spawnstate
-		1000,           // spawnhealth
-		S_NULL,         // seestate
-		sfx_None,       // seesound
-		8,              // reactiontime
-		sfx_None,       // attacksound
-		S_NULL,         // painstate
-		12,             // painchance
-		sfx_None,       // painsound
-		S_NULL,         // meleestate
-		S_NULL,         // missilestate
-		S_NULL,         // deathstate
-		S_NULL,         // xdeathstate
-		sfx_None,       // deathsound
-		8,              // speed
-		8*FRACUNIT,     // radius
-		15*FRACUNIT,    // height
-		0,              // display offset
-		100,            // mass
-		0,              // damage
-		sfx_None,       // activesound
-		MF_NOBLOCKMAP|MF_NOCLIPHEIGHT|MF_NOGRAVITY|MF_FLOAT|MF_SCENERY|MF_DONTENCOREMAP, // flags
 		S_NULL          // raisestate
 	},
 };
