@@ -1375,17 +1375,7 @@ void S_LoadMusicDefs(UINT16 wadnum)
 	// Find music def
 	while (stoken)
 	{
-		/*if ((stoken[0] == '/' && stoken[1] == '/')
-			|| (stoken[0] == '#')) // skip comments
-		{
-			stoken = strtok(NULL, "\r\n"); // skip end of line
-			if (def)
-				stoken = strtok(NULL, "\r\n= ");
-			else
-				stoken = strtok(NULL, "\r\n ");
-			line++;
-		}
-		else*/ if (!stricmp(stoken, "lump"))
+		if (!stricmp(stoken, "lump"))
 		{
 			value = strtok(NULL, "\r\n ");
 
@@ -1460,35 +1450,44 @@ skip_lump:
 				return;
 			}
 			
-			if (!stricmp(stoken, "usage")) {
+			if (!stricmp(stoken, "usage"))
+			{
 				STRBUFCPY(def->usage, value);
 				for (value = def->usage; *value; value++)
 					if (*value == '_') *value = ' '; // turn _ into spaces.
 				//CONS_Printf("S_LoadMusicDefs: Set usage to '%s'\n", def->usage);
-			} else if (!stricmp(stoken, "source")) {
+			}
+			else if (!stricmp(stoken, "source"))
+			{
 				STRBUFCPY(def->source, value);
 				for (value = def->source; *value; value++)
 					if (*value == '_') *value = ' '; // turn _ into spaces.
 				//CONS_Printf("S_LoadMusicDefs: Set source to '%s'\n", def->source);
-			} else if (!stricmp(stoken, "title")) {
+			}
+			else if (!stricmp(stoken, "title"))
+			{
 				def->use_info = true;
 				STRBUFCPY(def->title, value);
 				for (value = def->title; *value; value++)
 					if (*value == '_') *value = ' '; // turn _ into spaces.
 				//CONS_Printf("S_LoadMusicDefs: Set source to '%s'\n", def->source);
-			} else if (!stricmp(stoken, "alttitle")) {
+			}
+			else if (!stricmp(stoken, "alttitle"))
+			{
 				STRBUFCPY(def->alttitle, value);
 				for (value = def->alttitle; *value; value++)
 					if (*value == '_') *value = ' '; // turn _ into spaces.
 				//CONS_Printf("S_LoadMusicDefs: Set source to '%s'\n", def->source);
-			} else if (!stricmp(stoken, "authors")) {
+			}
+			else if (!stricmp(stoken, "authors"))
+			{
 				STRBUFCPY(def->authors, value);
 				for (value = def->authors; *value; value++)
 					if (*value == '_') *value = ' '; // turn _ into spaces.
 				//CONS_Printf("S_LoadMusicDefs: Set source to '%s'\n", def->source);
-			} else {
-				CONS_Alert(CONS_WARNING, "MUSICDEF: Invalid field '%s'. (file %s, line %d)\n", stoken, wadfiles[wadnum]->filename, line);
 			}
+			else
+				CONS_Alert(CONS_WARNING, "MUSICDEF: Invalid field '%s'. (file %s, line %d)\n", stoken, wadfiles[wadnum]->filename, line);
 
 skip_field:
 			stoken = strtok(NULL, "\r\n= ");
@@ -1559,17 +1558,7 @@ void S_LoadMTDefs(UINT16 wadnum)
 	// Find music def
 	while (stoken)
 	{
-		/*if ((stoken[0] == '/' && stoken[1] == '/')
-			|| (stoken[0] == '#')) // skip comments
-		{
-			stoken = strtok(NULL, "\r\n"); // skip end of line
-			if (def)
-				stoken = strtok(NULL, "\r\n= ");
-			else
-				stoken = strtok(NULL, "\r\n ");
-			line++;
-		}
-		else*/ if (!stricmp(stoken, "lump"))
+		if (!stricmp(stoken, "lump"))
 		{
 			value = strtok(NULL, "\r\n ");
 
@@ -1638,25 +1627,30 @@ skip_lump:
 				return;
 			}
 			
-			if (!stricmp(stoken, "title")) {
+			if (!stricmp(stoken, "title"))
+			{
 				def->use_info = true;
 				STRBUFCPY(def->title, value);
 				for (value = def->title; *value; value++)
 					if (*value == '_') *value = ' '; // turn _ into spaces.
 				//CONS_Printf("S_LoadMusicDefs: Set source to '%s'\n", def->source);
-			} else if (!stricmp(stoken, "alttitle")) {
+			}
+			else if (!stricmp(stoken, "alttitle"))
+			{
 				STRBUFCPY(def->alttitle, value);
 				for (value = def->alttitle; *value; value++)
 					if (*value == '_') *value = ' '; // turn _ into spaces.
 				//CONS_Printf("S_LoadMusicDefs: Set source to '%s'\n", def->source);
-			} else if (!stricmp(stoken, "authors")) {
+			}
+			else if (!stricmp(stoken, "authors"))
+			{
 				STRBUFCPY(def->authors, value);
 				for (value = def->authors; *value; value++)
 					if (*value == '_') *value = ' '; // turn _ into spaces.
 				//CONS_Printf("S_LoadMusicDefs: Set source to '%s'\n", def->source);
-			} else {
-				CONS_Alert(CONS_WARNING, "MUSCINFO: Invalid field '%s'. (file %s, line %d)\n", stoken, wadfiles[wadnum]->filename, line);
 			}
+			else
+				CONS_Alert(CONS_WARNING, "MUSCINFO: Invalid field '%s'. (file %s, line %d)\n", stoken, wadfiles[wadnum]->filename, line);
 
 skip_field:
 			stoken = strtok(NULL, "\r\n= ");
@@ -2363,9 +2357,8 @@ static void Command_ShowMusicCredit_f(void)
 
 	musicdef_t *def = S_FindMusicCredit(musname);
 
-	if (def) {
+	if (def)
 		CONS_Printf("%.6s - %.255s\n", musname, def->source);
-	}
 }
 
 static void GameSounds_OnChange(void)
@@ -2396,6 +2389,7 @@ static void SoundPrecache_OnChange(void)
 	else if (!S_PrecacheSound())
 	{
 		S_ClearSfx();
+
 		if (!sound_disabled)
 			S_InitSfxChannels(cv_soundvolume.value);
 	}
