@@ -62,9 +62,6 @@
 #include "md5.h"
 #include "lua_script.h"
 #include "st_stuff.h"
-#ifdef SCANTHINGS
-#include "p_setup.h" // P_ScanThings
-#endif
 #include "m_misc.h" // M_MapNumber
 #include "p_setup.h" // P_PartialAddFile mayb
 
@@ -117,7 +114,8 @@ void W_Shutdown(void)
 		if (wad->handle)
 			fclose(wad->handle);
 		Z_Free(wad->filename);
-		while (wad->numlumps--) {
+		while (wad->numlumps--)
+		{
 			Z_Free(wad->lumpinfo[wad->numlumps].longname);
 			Z_Free(wad->lumpinfo[wad->numlumps].fullname);
 		}
@@ -290,22 +288,6 @@ static inline void W_LoadDehackedLumps(UINT16 wadnum)
 				DEH_LoadDehackedLumpPwad(wadnum, lump);
 			}
 	}
-
-#ifdef SCANTHINGS
-	// Scan maps for emblems 'n shit
-	{
-		lumpinfo_t *lump_p = wadfiles[wadnum]->lumpinfo;
-		for (lump = 0; lump < wadfiles[wadnum]->numlumps; lump++, lump_p++)
-		{
-			const char *name = lump_p->name;
-			if (name[0] == 'M' && name[1] == 'A' && name[2] == 'P' && name[5]=='\0')
-			{
-				INT16 mapnum = (INT16)M_MapNumber(name[3], name[4]);
-				P_ScanThings(mapnum, wadnum, lump + ML_THINGS);
-			}
-		}
-	}
-#endif
 }
 
 /** Compute MD5 message digest for bytes read from STREAM of this filname.

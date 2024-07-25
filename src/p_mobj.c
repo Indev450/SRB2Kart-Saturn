@@ -4997,13 +4997,15 @@ static void P_Boss9Thinker(mobj_t *mobj)
 		else
 			mobj->momz = (mobj->watertop-mobj->z)/40; // Float to your desired position
 
-		if (mobj->movecount == 2) {
+		if (mobj->movecount == 2)
+		{
 			mobj_t *spawner;
 			fixed_t dist = 0;
 			angle = 0x06000000*leveltime;
 
 			// Alter your energy bubble's size/position
-			if (mobj->health > 3) {
+			if (mobj->health > 3)
+			{
 				mobj->tracer->destscale = FRACUNIT + (4*TICRATE - mobj->fuse)*(FRACUNIT/2)/TICRATE + FixedMul(FINECOSINE(angle>>ANGLETOFINESHIFT),FRACUNIT/2);
 				P_SetScale(mobj->tracer, mobj->tracer->destscale);
 				P_SetOrigin(mobj->tracer, mobj->x, mobj->y, mobj->z + mobj->height/2 - mobj->tracer->height/2);
@@ -5039,8 +5041,10 @@ static void P_Boss9Thinker(mobj_t *mobj)
 		}
 
 		// Pre-threshold reactiontime stuff for attack phases
-		if (mobj->reactiontime && mobj->movecount == 3) {
-			if (mobj->movedir == 0 || mobj->movedir == 2) { // Pausing between bounces in the pinball phase
+		if (mobj->reactiontime && mobj->movecount == 3)
+		{
+			if (mobj->movedir == 0 || mobj->movedir == 2) // Pausing between bounces in the pinball phase
+			{
 				if (mobj->target->player->powers[pw_tailsfly]) // Trying to escape, eh?
 					mobj->watertop = mobj->target->z + mobj->target->momz*6; // Readjust your aim. >:3
 				else
@@ -5054,13 +5058,16 @@ static void P_Boss9Thinker(mobj_t *mobj)
 		}
 
 		// threshold is used for attacks/maneuvers.
-		if (mobj->threshold) {
+		if (mobj->threshold)
+		{
 			fixed_t speed = 20*FRACUNIT + FixedMul(40*FRACUNIT, FixedDiv((mobj->info->spawnhealth - mobj->health)<<FRACBITS, mobj->info->spawnhealth<<FRACBITS));
 			int tries = 0;
 
 			// Firin' mah lazors
-			if (mobj->movecount == 3 && mobj->movedir == 1) {
-				if (!(mobj->threshold&1)) {
+			if (mobj->movecount == 3 && mobj->movedir == 1)
+			{
+				if (!(mobj->threshold&1))
+				{
 					mobj_t *missile;
 					if (mobj->info->seesound)
 						S_StartSound(mobj, mobj->info->seesound);
@@ -5072,18 +5079,21 @@ static void P_Boss9Thinker(mobj_t *mobj)
 
 					A_FaceTarget(mobj);
 					missile = P_SpawnMissile(mobj, mobj->target, mobj->info->speed);
-					if (mobj->extravalue1 == 2 || mobj->extravalue1 == 3) {
+					if (mobj->extravalue1 == 2 || mobj->extravalue1 == 3)
+					{
 						missile->destscale = FRACUNIT>>1;
 						P_SetScale(missile, missile->destscale);
 					}
 					missile->fuse = 3*TICRATE;
 					missile->z -= missile->height/2;
 
-					if (mobj->extravalue1 == 2) {
+					if (mobj->extravalue1 == 2)
+					{
 						int i;
 						mobj_t *spread;
 						missile->flags |= MF_MISSILE;
-						for (i = 0; i < 5; i++) {
+						for (i = 0; i < 5; i++)
+						{
 							if (i == 2)
 								continue;
 							spread = P_SpawnMobj(missile->x, missile->y, missile->z, missile->type);
@@ -5096,7 +5106,9 @@ static void P_Boss9Thinker(mobj_t *mobj)
 						}
 						missile->flags &= ~MF_MISSILE;
 					}
-				} else {
+				}
+				else
+				{
 					P_SetMobjState(mobj, mobj->state->nextstate);
 					if (mobj->extravalue1 == 3)
 						mobj->reactiontime = TICRATE/8;
@@ -5110,7 +5122,8 @@ static void P_Boss9Thinker(mobj_t *mobj)
 			P_SpawnGhostMobj(mobj);
 
 			// Pinball attack!
-			if (mobj->movecount == 3 && (mobj->movedir == 0 || mobj->movedir == 2)) {
+			if (mobj->movecount == 3 && (mobj->movedir == 0 || mobj->movedir == 2))
+			{
 				if ((statenum_t)(mobj->state-states) != mobj->info->seestate)
 					P_SetMobjState(mobj, mobj->info->seestate);
 				if (mobj->movedir == 0) // mobj health == 1
@@ -5119,16 +5132,22 @@ static void P_Boss9Thinker(mobj_t *mobj)
 					P_InstaThrust(mobj, mobj->angle, 22*FRACUNIT);
 				else // mobj health == 2
 					P_InstaThrust(mobj, mobj->angle, 30*FRACUNIT);
-				if (!P_TryMove(mobj, mobj->x+mobj->momx, mobj->y+mobj->momy, true)) { // Hit a wall? Find a direction to bounce
+
+				if (!P_TryMove(mobj, mobj->x+mobj->momx, mobj->y+mobj->momy, true)) // Hit a wall? Find a direction to bounce
+				{
 					mobj->threshold--;
-					if (mobj->threshold) {
+					if (mobj->threshold)
+					{
 						P_SetMobjState(mobj, mobj->state->nextstate);
 						if (mobj->info->mass)
 							S_StartSound(mobj, mobj->info->mass);
-						if (!(mobj->threshold%4)) { // We've decided to lock onto the player this bounce.
+						if (!(mobj->threshold%4)) // We've decided to lock onto the player this bounce.
+						{
 							mobj->angle = R_PointToAngle2(mobj->x, mobj->y, mobj->target->x + mobj->target->momx*4, mobj->target->y + mobj->target->momy*4);
 							mobj->reactiontime = TICRATE; // targetting time
-						} else { // No homing, just use P_BounceMove
+						}
+						else // No homing, just use P_BounceMove
+						{
 							P_BounceMove(mobj);
 							mobj->angle = R_PointToAngle2(0,0,mobj->momx,mobj->momy);
 							mobj->reactiontime = TICRATE/4; // just a pause before you bounce away
@@ -5142,7 +5161,8 @@ static void P_Boss9Thinker(mobj_t *mobj)
 			// Vector form dodge!
 			mobj->angle += mobj->movedir;
 			P_InstaThrust(mobj, mobj->angle, -speed);
-			while (!P_TryMove(mobj, mobj->x+mobj->momx, mobj->y+mobj->momy, true) && tries++ < 16) {
+			while (!P_TryMove(mobj, mobj->x+mobj->momx, mobj->y+mobj->momy, true) && tries++ < 16)
+			{
 				mobj->angle += mobj->movedir;
 				P_InstaThrust(mobj, mobj->angle, -speed);
 			}
@@ -5198,9 +5218,10 @@ static void P_Boss9Thinker(mobj_t *mobj)
 		if (mobj->flags2 & MF2_FRET)
 			return;
 
-		if (mobj->state == &states[mobj->info->raisestate])
-		{ // Charging energy
-			if (mobj->momx != 0 || mobj->momy != 0) { // Apply the air breaks
+		if (mobj->state == &states[mobj->info->raisestate]) // Charging energy
+		{
+			if (mobj->momx != 0 || mobj->momy != 0) // Apply the air breaks
+			{
 				if (abs(mobj->momx)+abs(mobj->momy) < FRACUNIT)
 					mobj->momx = mobj->momy = 0;
 				else
@@ -5225,7 +5246,8 @@ static void P_Boss9Thinker(mobj_t *mobj)
 					mobj->watertop = mobj->target->floorz + 256*FRACUNIT;
 				break;
 
-			case 1: {
+			case 1:
+			{
 				// Okay, we're up? Good, time to gather energy...
 				if (mobj->health > mobj->info->damage)
 				{ // No more bubble if we're broken (pinch phase)
@@ -5251,7 +5273,8 @@ static void P_Boss9Thinker(mobj_t *mobj)
 					P_SetTarget(&mobj->tracer, mobj->hnext);
 					P_RemoveMobj(removemobj);
 				}
-				if (mobj->health <= mobj->info->damage) {
+				if (mobj->health <= mobj->info->damage)
+				{
 					// Attack 1: Pinball dash!
 					if (mobj->health == 1)
 						mobj->movedir = 0;
@@ -5266,7 +5289,9 @@ static void P_Boss9Thinker(mobj_t *mobj)
 						mobj->threshold = 32; // bounce 32 times
 					mobj->watertop = mobj->target->floorz + 16*FRACUNIT;
 					P_LinedefExecute(LE_PINCHPHASE, mobj, NULL);
-				} else {
+				}
+				else
+				{
 					// Attack 2: Energy shot!
 					mobj->movedir = 1;
 
@@ -5279,7 +5304,8 @@ static void P_Boss9Thinker(mobj_t *mobj)
 					else
 						mobj->extravalue1 = 3;
 
-					switch(mobj->extravalue1) {
+					switch(mobj->extravalue1)
+					{
 					case 0: // shoot once
 					case 2: // spread-shot
 					default:
@@ -5343,7 +5369,8 @@ static void P_Boss9Thinker(mobj_t *mobj)
 				danger = false;
 			if (mobj->target->z+mobj->target->momz*2 > mobj->z+mobj->height)
 				danger = false;
-			if (danger) {
+			if (danger)
+			{
 				// An incoming attack is detected! What should we do?!
 				// Go into vector form!
 				mobj->movedir = ANGLE_11hh - FixedAngle(FixedMul(AngleFixed(ANGLE_11hh), FixedDiv((mobj->info->spawnhealth - mobj->health)<<FRACBITS, (mobj->info->spawnhealth-1)<<FRACBITS)));
@@ -5777,7 +5804,8 @@ static void P_AddOverlay(mobj_t *thing)
 
 	if (overlaycap == NULL)
 		P_SetTarget(&overlaycap, thing);
-	else {
+	else
+	{
 		mobj_t *mo;
 		for (mo = overlaycap; mo && mo->hnext; mo = mo->hnext)
 			;
@@ -5890,7 +5918,8 @@ static void P_AddShadow(mobj_t *thing)
 
 	if (shadowcap == NULL)
 		P_SetTarget(&shadowcap, thing);
-	else {
+	else
+	{
 		mobj_t *mo;
 		for (mo = shadowcap; mo && mo->hnext; mo = mo->hnext)
 			;

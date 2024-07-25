@@ -1157,7 +1157,7 @@ static void R_Subsector(size_t num)
 	{
 //		CONS_Debug(DBG_GAMELOGIC, "Adding normal line %d...(%d)\n", line->linedef-lines, leveltime);
 		if (!line->polyseg) // ignore segs that belong to polyobjects
-		R_AddLine(line);
+			R_AddLine(line);
 		line++;
 		curline = NULL; /* cph 2001/11/18 - must clear curline now we're done with it, so stuff doesn't try using it for other things */
 	}
@@ -1219,7 +1219,7 @@ void R_Prep3DFloors(sector_t *sector)
 			rover->lastlight = 0;
 			if (!(rover->flags & FF_EXISTS) || (rover->flags & FF_NOSHADE
 				&& !(rover->flags & FF_CUTLEVEL) && !(rover->flags & FF_CUTSPRITES)))
-			continue;
+				continue;
 
 			heighttest = *rover->t_slope ? P_GetZAt(*rover->t_slope, sector->soundorg.x, sector->soundorg.y) : *rover->topheight;
 
