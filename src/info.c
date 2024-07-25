@@ -66,7 +66,7 @@ char sprnames[NUMSPRITES + 1][5] =
 	"CNDL","DOCH","DUCK","GTRE","CHES","CHIM","DRGN","LZMN","PGSS","ZTCH",
 	"MKMA","MKMP","RTCH","BOWL","BOWH","BRRL","BRRR","HRSE","TOAH","BFRT",
 	"OFRT","RFRT","PFRT","ASPK","HBST","HBSO","HBSF","WBLZ","WBLN","OPUL",
-	"TGEM","TCOI","FWRK","XMS4","XMS5","VIEW","WTRL",
+	"TGEM","TCOI","FWRK","XMS4","XMS5","VIEW",
 };
 
 // Doesn't work with g++, needs actionf_p1 (don't modify this comment)
@@ -3410,18 +3410,6 @@ state_t states[NUMSTATES] =
 #ifdef SEENAMES
 	{SPR_NULL, 0, 1, {NULL}, 0, 0, S_NULL}, // S_NAMECHECK
 #endif
-
-	// Water Trail
-	{SPR_WTRL, FF_PAPERSPRITE  , 2, {NULL}, 0, 0, S_INVISIBLE}, // S_WATERTRAIL1
-	{SPR_WTRL, FF_PAPERSPRITE|1, 2, {NULL}, 0, 0, S_INVISIBLE}, // S_WATERTRAIL2
-	{SPR_WTRL, FF_PAPERSPRITE|2, 2, {NULL}, 0, 0, S_INVISIBLE}, // S_WATERTRAIL3
-	{SPR_WTRL, FF_PAPERSPRITE|3, 2, {NULL}, 0, 0, S_INVISIBLE}, // S_WATERTRAIL4
-	{SPR_WTRL, FF_PAPERSPRITE|4, 2, {NULL}, 0, 0, S_INVISIBLE}, // S_WATERTRAIL5
-	{SPR_WTRL, FF_TRANS50|FF_PAPERSPRITE|5,  2, {NULL}, 0, 0, S_INVISIBLE}, // S_WATERTRAILUNDERLAY1
-	{SPR_WTRL, FF_TRANS50|FF_PAPERSPRITE|6,  2, {NULL}, 0, 0, S_INVISIBLE}, // S_WATERTRAILUNDERLAY2
-	{SPR_WTRL, FF_TRANS50|FF_PAPERSPRITE|7, 2, {NULL}, 0, 0, S_INVISIBLE}, // S_WATERTRAILUNDERLAY3
-	{SPR_WTRL, FF_TRANS50|FF_PAPERSPRITE|8, 2, {NULL}, 0, 0, S_INVISIBLE}, // S_WATERTRAILUNDERLAY4
-	{SPR_WTRL, FF_TRANS50|FF_PAPERSPRITE|9, 2, {NULL}, 0, 0, S_INVISIBLE}, // S_WATERTRAILUNDERLAY5
 };
 
 mobjinfo_t mobjinfo[NUMMOBJTYPES] =
@@ -20215,60 +20203,6 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] =
 		S_NULL          // raisestate
 	},
 #endif
-
-	{           // MT_WATERTRAIL
-		-1,             // doomednum
-		S_WATERTRAIL1,  // spawnstate
-		1000,           // spawnhealth
-		S_NULL,         // seestate
-		sfx_None,       // seesound
-		8,              // reactiontime
-		sfx_None,       // attacksound
-		S_NULL,         // painstate
-		0,              // painchance
-		sfx_None,       // painsound
-		S_NULL,         // meleestate
-		S_NULL,         // missilestate
-		S_NULL,         // deathstate
-		S_NULL,         // xdeathstate
-		sfx_None,       // deathsound
-		0,              // speed
-		48*FRACUNIT,    // radius
-		32*FRACUNIT,    // height
-		1,              // display offset
-		100,            // mass
-		1,              // damage
-		sfx_None,       // activesound
-		MF_NOBLOCKMAP|MF_NOCLIP|MF_NOGRAVITY|MF_SCENERY|MF_DONTENCOREMAP, // flags
-		S_NULL          // raisestate
-	},
-
-	{           // MT_WATERTRAILUNDERLAY
-		-1,             // doomednum
-		S_WATERTRAILUNDERLAY1, // spawnstate
-		1000,           // spawnhealth
-		S_NULL,         // seestate
-		sfx_None,       // seesound
-		8,              // reactiontime
-		sfx_None,       // attacksound
-		S_NULL,         // painstate
-		0,              // painchance
-		sfx_None,       // painsound
-		S_NULL,         // meleestate
-		S_NULL,         // missilestate
-		S_NULL,         // deathstate
-		S_NULL,         // xdeathstate
-		sfx_None,       // deathsound
-		0,              // speed
-		48*FRACUNIT,    // radius
-		32*FRACUNIT,    // height
-		0,              // display offset
-		100,            // mass
-		1,              // damage
-		sfx_None,       // activesound
-		MF_NOBLOCKMAP|MF_NOCLIP|MF_NOGRAVITY|MF_SCENERY|MF_DONTENCOREMAP, // flags
-		S_NULL          // raisestate
-	},
 };
 
 

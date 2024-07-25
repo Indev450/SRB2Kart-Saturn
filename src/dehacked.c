@@ -6497,17 +6497,6 @@ static const char *const STATE_LIST[] = { // array length left dynamic for sanit
 #ifdef SEENAMES
 	"S_NAMECHECK",
 #endif
-
-	"S_WATERTRAIL1",
-	"S_WATERTRAIL2",
-	"S_WATERTRAIL3",
-	"S_WATERTRAIL4",
-	"S_WATERTRAIL5",
-	"S_WATERTRAILUNDERLAY1",
-	"S_WATERTRAILUNDERLAY2",
-	"S_WATERTRAILUNDERLAY3",
-	"S_WATERTRAILUNDERLAY4",
-	"S_WATERTRAILUNDERLAY5",
 };
 
 // RegEx to generate this from info.h: ^\tMT_([^,]+), --> \t"MT_\1",
@@ -7302,9 +7291,6 @@ static const char *const MOBJTYPE_LIST[] = {  // array length left dynamic for s
 #ifdef SEENAMES
 	"MT_NAMECHECK",
 #endif
-
-	"MT_WATERTRAIL",
-	"MT_WATERTRAILUNDERLAY",
 };
 
 static const char *const MOBJFLAG_LIST[] = {
