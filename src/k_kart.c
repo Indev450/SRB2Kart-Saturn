@@ -5860,7 +5860,7 @@ void K_SpawnWaterRunParticles(mobj_t *mobj)
 	statenum_t watertrailunderlay_minstate = LUA_EvalMathEx("S_WATERTRAILUNDERLAY1", NULL);
 	statenum_t watertrailunderlay_maxstate = LUA_EvalMathEx("S_WATERTRAILUNDERLAYLAST", NULL);
 
-	mobjtype_t watertrail = LUA_EvalMathEx("MT_WATERTRAILUNDERLAY", NULL);
+	mobjtype_t watertrail = LUA_EvalMathEx("MT_WATERTRAIL", NULL);
 
 	statenum_t watertrail_minstate = LUA_EvalMathEx("S_WATERTRAIL1", NULL);
 	statenum_t watertrail_maxstate = LUA_EvalMathEx("S_WATERTRAILLAST", NULL);
