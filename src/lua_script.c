@@ -364,7 +364,7 @@ void LUA_DumpFile(const char *filename)
 }
 #endif
 
-fixed_t LUA_EvalMath(const char *word)
+fixed_t LUA_EvalMathEx(const char *word, const char **error)
 {
 	char buf[1024], *b;
 	const char *p;
@@ -401,10 +401,21 @@ fixed_t LUA_EvalMath(const char *word)
 		p = lua_tostring(mL, -1);
 		while (*p++ != ':' && *p) ;
 		p += 3; // "1: "
-		CONS_Alert(CONS_WARNING, "%s\n", p);
+		if (error) *error = p;
 	}
 	else
 		res = lua_tointeger(mL, -1);
+
+	return res;
+}
+
+fixed_t LUA_EvalMath(const char *word)
+{
+	const char *error = NULL;
+	fixed_t res = LUA_EvalMathEx(word, &error);
+
+	if (error)
+		CONS_Alert(CONS_WARNING, "%s\n", error);
 
 	return res;
 }
