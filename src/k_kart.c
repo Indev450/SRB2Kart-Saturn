@@ -5848,6 +5848,27 @@ static mobj_t *K_SpawnOrMoveMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t typ
 
 void K_SpawnWaterRunParticles(mobj_t *mobj)
 {
+	mobjtype_t watertrailunderlay = LUA_EvalMathEx("MT_WATERTRAILUNDERLAY", NULL);
+
+	// Technically, we'd need only 1 check after we try get all necessary states, but fetching these
+	// constants is a bit costly (if they are missing. If they are not, lua_glib helps us ;3),
+	// so if this one is missing we quit early and if not we continue and check if we have
+	// everything we need later
+	if (!watertrailunderlay)
+		return;
+
+	statenum_t watertrailunderlay_minstate = LUA_EvalMathEx("S_WATERTRAILUNDERLAY1", NULL);
+	statenum_t watertrailunderlay_maxstate = LUA_EvalMathEx("S_WATERTRAILUNDERLAYLAST", NULL);
+
+	mobjtype_t watertrail = LUA_EvalMathEx("MT_WATERTRAILUNDERLAY", NULL);
+
+	statenum_t watertrail_minstate = LUA_EvalMathEx("S_WATERTRAIL1", NULL);
+	statenum_t watertrail_maxstate = LUA_EvalMathEx("S_WATERTRAILLAST", NULL);
+
+	if (!(watertrailunderlay_minstate && watertrailunderlay_maxstate && watertrail && watertrail_minstate && watertrail_maxstate) || // Check if we're missing something
+		 (watertrail_minstate > watertrail_maxstate && watertrailunderlay_minstate > watertrailunderlay_maxstate)) // Check if some of these were freeslot'd in wrong order
+		return;
+
 	fixed_t runSpeed = 14 * mobj->scale;
 	fixed_t curSpeed = INT32_MAX;
 	fixed_t topSpeed = INT32_MAX;
@@ -5902,7 +5923,7 @@ void K_SpawnWaterRunParticles(mobj_t *mobj)
 		{
 			trailScale = mapobjectscale; // Scaling is based off difference between runspeed and top speed
 		}
-		
+
 		trailScale = FixedMul(trailScale, 3*FRACUNIT/4);
 
 		if (trailScale > 0)
@@ -5910,9 +5931,13 @@ void K_SpawnWaterRunParticles(mobj_t *mobj)
 			//const angle_t forwardangle = K_MomentumAngle(mobj);
 			const angle_t forwardangle = R_PointToAngle2(0, 0, mobj->momx, mobj->momy);
 			const fixed_t playerVisualRadius = mobj->radius + (8 * mobj->scale);
-			const size_t numFrames = S_WATERTRAIL5 - S_WATERTRAIL1;
-			const statenum_t curOverlayFrame = S_WATERTRAIL1 + (leveltime % numFrames);
-			const statenum_t curUnderlayFrame = S_WATERTRAILUNDERLAY1 + (leveltime % numFrames);
+
+			// Those should be equal ideally but thats not guaranteed now
+			const size_t numOverlayFrames = watertrail_maxstate - watertrail_minstate;
+			const size_t numUnderlayFrames = watertrailunderlay_maxstate - watertrailunderlay_minstate;
+
+			const statenum_t curOverlayFrame = watertrail_minstate + (leveltime % numOverlayFrames);
+			const statenum_t curUnderlayFrame = watertrailunderlay_minstate + (leveltime % numUnderlayFrames);
 			fixed_t x1, x2, y1, y2;
 			mobj_t *water;
 
@@ -5929,7 +5954,7 @@ void K_SpawnWaterRunParticles(mobj_t *mobj)
 			// Left
 			// underlay
 			water = K_SpawnOrMoveMobj(x1, y1,
-				((mobj->eflags & MFE_VERTICALFLIP) ? mobj->waterbottom - FixedMul(mobjinfo[MT_WATERTRAILUNDERLAY].height, mobj->scale) : mobj->watertop), MT_WATERTRAILUNDERLAY,
+				((mobj->eflags & MFE_VERTICALFLIP) ? mobj->waterbottom - FixedMul(mobjinfo[watertrailunderlay].height, mobj->scale) : mobj->watertop), watertrailunderlay,
 				mobj, 0);
 			water->angle = forwardangle - ANGLE_180 - ANGLE_22h;
 			water->destscale = trailScale;
@@ -5942,7 +5967,7 @@ void K_SpawnWaterRunParticles(mobj_t *mobj)
 
 			// overlay
 			water = K_SpawnOrMoveMobj(x1, y1,
-				((mobj->eflags & MFE_VERTICALFLIP) ? mobj->waterbottom - FixedMul(mobjinfo[MT_WATERTRAIL].height, mobj->scale) : mobj->watertop), MT_WATERTRAIL,
+				((mobj->eflags & MFE_VERTICALFLIP) ? mobj->waterbottom - FixedMul(mobjinfo[watertrail].height, mobj->scale) : mobj->watertop), watertrail,
 				mobj, 1);
 			water->angle = forwardangle - ANGLE_180 - ANGLE_22h;
 			water->destscale = trailScale;
@@ -5956,7 +5981,7 @@ void K_SpawnWaterRunParticles(mobj_t *mobj)
 			// Right
 			// Underlay
 			water = K_SpawnOrMoveMobj(x2, y2,
-				((mobj->eflags & MFE_VERTICALFLIP) ? mobj->waterbottom - FixedMul(mobjinfo[MT_WATERTRAILUNDERLAY].height, mobj->scale) : mobj->watertop), MT_WATERTRAILUNDERLAY,
+				((mobj->eflags & MFE_VERTICALFLIP) ? mobj->waterbottom - FixedMul(mobjinfo[watertrailunderlay].height, mobj->scale) : mobj->watertop), watertrailunderlay,
 				mobj, 2);
 			water->angle = forwardangle - ANGLE_180 + ANGLE_22h;
 			water->destscale = trailScale;
@@ -5969,7 +5994,7 @@ void K_SpawnWaterRunParticles(mobj_t *mobj)
 
 			// Overlay
 			water = K_SpawnOrMoveMobj(x2, y2,
-				((mobj->eflags & MFE_VERTICALFLIP) ? mobj->waterbottom - FixedMul(mobjinfo[MT_WATERTRAIL].height, mobj->scale) : mobj->watertop), MT_WATERTRAIL,
+				((mobj->eflags & MFE_VERTICALFLIP) ? mobj->waterbottom - FixedMul(mobjinfo[watertrail].height, mobj->scale) : mobj->watertop), watertrail,
 				mobj, 3);
 			water->angle = forwardangle - ANGLE_180 + ANGLE_22h;
 			water->destscale = trailScale;
