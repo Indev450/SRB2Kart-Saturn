@@ -27,6 +27,11 @@
 
 struct directorinfo directorinfo;
 
+static boolean race_rules()
+{
+	return gametype = GT_RACE;
+}
+
 static fixed_t P_ScaleFromMap(fixed_t n, fixed_t scale)
 {
 	return FixedMul(n, FixedDiv(scale, mapobjectscale));
@@ -325,7 +330,9 @@ void K_UpdateDirector(void)
 	}
 
 	// if there's only one player left in the list, just switch to that player
-	if (directorinfo.sortedplayers[0] != -1 && directorinfo.sortedplayers[1] == -1)
+	if (directorinfo.sortedplayers[0] != -1 && (directorinfo.sortedplayers[1] == -1 ||
+		// TODO: Battle; I just threw this together quick. Focus on leader.
+		!race_rules()))
 	{
 		K_DirectorSwitch(directorinfo.sortedplayers[0], false);
 		return;
