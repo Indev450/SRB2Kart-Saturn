@@ -29,6 +29,7 @@
 #include "z_zone.h"
 #include "r_main.h" //Two extra includes.
 #include "r_sky.h"
+#include "st_stuff.h"
 #include "p_polyobj.h"
 #include "p_slopes.h"
 #include "hu_stuff.h"
@@ -3992,6 +3993,11 @@ DoneSection2:
 							bestlap = curlap;
 						curlap = 0;
 					}
+
+					// ONLY FOR HUD
+					player->laptime[LAP_LAST] = player->laptime[LAP_CUR];
+					player->laptime[LAP_CUR] = 0;
+					//
 
 					player->starposttime = player->realtime;
 					player->starpostnum = 0;
