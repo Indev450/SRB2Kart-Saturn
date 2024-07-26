@@ -16,6 +16,7 @@
 #include "m_random.h"
 #include "m_menu.h" // ffdhidshfuisduifigergho9igj89dgodhfih AAAAAAAAAA
 #include "p_local.h"
+#include "p_setup.h"
 #include "p_slopes.h"
 #include "r_defs.h"
 #include "r_draw.h"
@@ -37,6 +38,7 @@
 #include "lua_hud.h"	// For Lua hud checks
 #include "lua_hook.h"	// For MobjDamage and ShouldDamage
 #include "d_main.h"		// found_extra_kart
+
 
 #include "i_video.h"
 
@@ -8366,8 +8368,6 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 {
 	// TIME_X = BASEVIDWIDTH-124;	// 196
 	// TIME_Y = 6;					//   6
-		
-	tic_t worktime;
 
 	INT32 splitflags = 0;
 	if (!mode)
@@ -8392,63 +8392,54 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 
 	TX += 33;
 
-	worktime = drawtime/(60*TICRATE);
-
-	if (mode && !drawtime)
-		V_DrawKartString(TX, TY+3, splitflags, va("--'--\"--"));
-	else if (worktime < 100) // 99:99:99 only
+	if (drawtime == UINT32_MAX)
+		;
+	else if (mode && !drawtime)
 	{
+		// apostrophe location     _'__ __
+		V_DrawKartString(TX+24, TY+3, splitflags, va("'"));
+
+		// quotation mark location    _ __"__
+		V_DrawKartString(TX+60, TY+3, splitflags, va("\""));
+	}
+	else
+	{
+		tic_t worktime = drawtime/(60*TICRATE);
+
+		if (worktime >= 100)
+		{
+			worktime = 99;
+			drawtime = (100*(60*TICRATE))-1;
+		}
+
 		if ((cv_timelimit.value && G_BattleGametype()) && (!players[consoleplayer].exiting && (leveltime > (timelimitintics + starttime + TICRATE/2)) && cv_overtime.value)) // i hate this so much
 		{
 			V_DrawKartString(TX, TY+3, splitflags, va("OVERTIME"));
-				return;
+			return;
 		}
-		
-		// zero minute
-		if (worktime < 10)
-		{
-			V_DrawKartString(TX, TY+3, splitflags, va("0"));
-			// minutes time       0 __ __
-			V_DrawKartString(TX+12, TY+3, splitflags, va("%d", worktime));
-		}
-		// minutes time       0 __ __
-		else
-			V_DrawKartString(TX, TY+3, splitflags, va("%d", worktime));
+
+		// minutes time      00 __ __
+		V_DrawKartString(TX,    TY+3, splitflags, va("%d", worktime/10));
+		V_DrawKartString(TX+12, TY+3, splitflags, va("%d", worktime%10));
 
 		// apostrophe location     _'__ __
 		V_DrawKartString(TX+24, TY+3, splitflags, va("'"));
 
 		worktime = (drawtime/TICRATE % 60);
 
-		// zero second        _ 0_ __
-		if (worktime < 10)
-		{
-			V_DrawKartString(TX+36, TY+3, splitflags, va("0"));
-		// seconds time       _ _0 __
-			V_DrawKartString(TX+48, TY+3, splitflags, va("%d", worktime));
-		}
-		// zero second        _ 00 __
-		else
-			V_DrawKartString(TX+36, TY+3, splitflags, va("%d", worktime));
+		// seconds time       _ 00 __
+		V_DrawKartString(TX+36, TY+3, splitflags, va("%d", worktime/10));
+		V_DrawKartString(TX+48, TY+3, splitflags, va("%d", worktime%10));
 
 		// quotation mark location    _ __"__
 		V_DrawKartString(TX+60, TY+3, splitflags, va("\""));
 
 		worktime = G_TicsToCentiseconds(drawtime);
 
-		// zero tick          _ __ 0_
-		if (worktime < 10)
-		{
-			V_DrawKartString(TX+72, TY+3, splitflags, va("0"));
-		// tics               _ __ _0
-			V_DrawKartString(TX+84, TY+3, splitflags, va("%d", worktime));
-		}
-		// zero tick          _ __ 00
-		else
-			V_DrawKartString(TX+72, TY+3, splitflags, va("%d", worktime));
+		// tics               _ __ 00
+		V_DrawKartString(TX+72, TY+3, splitflags, va("%d", worktime/10));
+		V_DrawKartString(TX+84, TY+3, splitflags, va("%d", worktime%10));
 	}
-	else if ((drawtime/TICRATE) & 1)
-		V_DrawKartString(TX, TY+3, splitflags, va("99'59\"99"));
 
 	if (emblemmap && (modeattacking || (mode == 1)) && !demo.playback) // emblem time!
 	{
@@ -10747,9 +10738,26 @@ void K_drawKartHUD(void)
 	// If not splitscreen, draw...
 	if (!splitscreen && !demo.title)
 	{
+		tic_t realtime = stplyr->realtime;
+
+		if (stplyr->kartstuff[k_lapanimation]
+			&& !stplyr->exiting
+			&& stplyr->laptime[LAP_LAST] != 0
+			&& !midgamejoin)
+		{
+			if ((stplyr->kartstuff[k_lapanimation] / 5) & 1)
+			{
+				realtime = stplyr->laptime[LAP_LAST];
+			}
+			else
+			{
+				realtime = UINT32_MAX;
+			}
+		}
+
 		// Draw the timestamp
 		if (LUA_HudEnabled(hud_time))
-			K_drawKartTimestamp(stplyr->realtime, TIME_X, TIME_Y, gamemap, 0);
+			K_drawKartTimestamp(realtime, TIME_X, TIME_Y, gamemap, 0);
 
 		if (!modeattacking)
 		{
