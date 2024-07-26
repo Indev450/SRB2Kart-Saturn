@@ -1648,7 +1648,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 
 	// SRB2kart
 	// I wish I knew a better way to do this
-	if (target->target && target->target->player && target->target->player->mo)
+	if (!P_MobjWasRemoved(target->target) && target->target->player && !P_MobjWasRemoved(target->target->player->mo))
 	{
 		if (target->target->player->kartstuff[k_eggmanheld] && target->type == MT_EGGMANITEM_SHIELD)
 			target->target->player->kartstuff[k_eggmanheld] = 0;
@@ -1665,7 +1665,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 						K_KillBananaChain(target->target->hnext, inflictor, source);
 					target->target->player->kartstuff[k_itemamount] = 0;
 				}
-				else
+				else if (target->target->player->kartstuff[k_itemamount])
 					target->target->player->kartstuff[k_itemamount]--;
 			}
 			else if ((target->type == MT_ORBINAUT_SHIELD && target->target->player->kartstuff[k_itemtype] == KITEM_ORBINAUT) // orbit items

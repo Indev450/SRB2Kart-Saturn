@@ -4086,6 +4086,9 @@ void K_KillBananaChain(mobj_t *banana, mobj_t *inflictor, mobj_t *source)
 	mobj_t *cachenext;
 
 killnext:
+	if (P_MobjWasRemoved(banana))
+		return;
+
 	cachenext = banana->hnext;
 
 	if (banana->health)
@@ -4125,6 +4128,13 @@ void K_UpdateHnextList(player_t *player, boolean clean)
 			continue;
 
 		P_RemoveMobj(work);
+	}
+
+	if (player->mo->hnext == NULL || P_MobjWasRemoved(player->mo->hnext))
+	{
+		// Like below, try to clean up the pointer if it's NULL.
+		// Maybe this was a cause of the shrink/eggbox fails?
+		P_SetTarget(&player->mo->hnext, NULL);
 	}
 }
 
@@ -4373,10 +4383,8 @@ void K_RepairOrbitChain(mobj_t *orbit)
 	}
 
 	// Then recount to make sure item amount is correct
-	if (orbit->target && orbit->target->player)
+	if (orbit->target && orbit->target->player && !P_MobjWasRemoved(orbit->target))
 	{
-		player_t *player = orbit->target->player;
-
 		INT32 num = 0;
 
 		mobj_t *cur = orbit->target->hnext;
@@ -4386,14 +4394,14 @@ void K_RepairOrbitChain(mobj_t *orbit)
 		{
 			prev = cur;
 			cur = cur->hnext;
-			if (++num > player->kartstuff[k_itemamount])
+			if (++num > orbit->target->player->kartstuff[k_itemamount])
 				P_RemoveMobj(prev);
 			else
 				prev->movedir = num;
 		}
 
-		if (player->kartstuff[k_itemamount] != num)
-			player->kartstuff[k_itemamount] = num;
+		if (orbit->target && !P_MobjWasRemoved(orbit->target) && orbit->target->player->kartstuff[k_itemamount] != num)
+			orbit->target->player->kartstuff[k_itemamount] = num;
 	}
 }
 
@@ -4406,6 +4414,7 @@ static void K_MoveHeldObjects(player_t *player)
 	if (!player->mo->hnext)
 	{
 		player->kartstuff[k_bananadrag] = 0;
+
 		if (player->kartstuff[k_eggmanheld])
 			player->kartstuff[k_eggmanheld] = 0;
 		else if (player->kartstuff[k_itemheld])
@@ -4421,6 +4430,7 @@ static void K_MoveHeldObjects(player_t *player)
 		// we need this here too because this is done in afterthink - pointers are cleaned up at the START of each tic...
 		P_SetTarget(&player->mo->hnext, NULL);
 		player->kartstuff[k_bananadrag] = 0;
+
 		if (player->kartstuff[k_eggmanheld])
 			player->kartstuff[k_eggmanheld] = 0;
 		else if (player->kartstuff[k_itemheld])
