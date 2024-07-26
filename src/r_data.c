@@ -617,7 +617,7 @@ void R_LoadTextures(void)
 		i = R_DefineTextures(i, w);
 	}
 
-	R_FinishLoadingTextures(newtextures);
+	R_FinishLoadingTextures(i);
 }
 
 void R_LoadTexturesPwad(UINT16 wadnum)
@@ -628,7 +628,7 @@ void R_LoadTexturesPwad(UINT16 wadnum)
 		return;
 
 	R_AllocateTextures(newtextures);
-	R_DefineTextures(numtextures, wadnum);
+	newtextures = R_DefineTextures(numtextures, wadnum) - numtextures;
 	R_FinishLoadingTextures(newtextures);
 }
 
