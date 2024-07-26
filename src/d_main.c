@@ -1039,7 +1039,10 @@ static void D_FindAddonsToAutoload(void)
 
 	// If the file is found, run our shit
 	if (!autoloadconfigfile) // nope outta here
+	{
+		wasautoloaded = postautoloaded = true; // so D_AddAutoloadFiles can skip everything since nothings there to autoload
 		return;
+	}
 
 	while (fgets(wadsToAutoload, sizeof wadsToAutoload, autoloadconfigfile) != NULL)
 	{
