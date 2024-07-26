@@ -1939,15 +1939,6 @@ static void CL_LoadReceivedSavegame(boolean reloading)
 	demo.title = false;
 	automapactive = false;
 
-	if (!postautoloaded) 
-	{
-		CONS_Printf("D_AutoloadFile(): Loading autoloaded addons...\n");
-		if (W_AddAutoloadedLocalFiles(autoloadwadfilespost) == 0)
-			CONS_Printf("D_AutoloadFile(): Are you sure you put in valid files or what?\n");
-		D_CleanFile(autoloadwadfilespost);
-		postautoloaded = true;
-	}
-
 	// load a base level
 	if (P_LoadNetGame(reloading))
 	{
@@ -4407,6 +4398,8 @@ static void Got_AddPlayer(UINT8 **p, INT32 playernum)
 
 	if (server && multiplayer && motd[0] != '\0')
 		COM_BufAddText(va("sayto %d %s\n", newplayernum, motd));
+
+	D_AddAutoloadFiles();
 
 	LUAh_PlayerJoin(newplayernum);
 

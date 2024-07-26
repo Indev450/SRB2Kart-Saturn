@@ -43,12 +43,15 @@ extern boolean statdp; // stat display for extended player setup
 extern boolean nametaggfx; // Nametag stuffs
 extern boolean driftgaugegfx;
 
+void D_AddAutoloadFiles(void);
 
 extern boolean autoloading;
 extern boolean autoloaded;
 extern boolean postautoloaded;
+extern boolean wasautoloaded;
 
 extern char *autoloadwadfilespost[MAX_WADFILES];
+extern char *autoloadwadfiles[MAX_WADFILES];
 
 // the infinite loop of D_SRB2Loop() called from win_main for windows version
 void D_SRB2Loop(void) FUNCNORETURN;
