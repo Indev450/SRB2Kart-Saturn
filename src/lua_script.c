@@ -364,6 +364,17 @@ void LUA_DumpFile(const char *filename)
 }
 #endif
 
+static void createMathLibState(void)
+{
+	mL = lua_newstate(LUA_Alloc, NULL);
+	lua_atpanic(mL, LUA_Panic);
+
+	// open only enum lib
+	lua_pushcfunction(mL, LUA_EnumLib);
+	lua_pushboolean(mL, true);
+	lua_call(mL, 1, 0);
+}
+
 fixed_t LUA_EvalMathEx(const char *word, const char **error)
 {
 	char buf[1024], *b;
@@ -373,15 +384,7 @@ fixed_t LUA_EvalMathEx(const char *word, const char **error)
 	// make a new state so SOC can't interefere with scripts
 	// allocate state
 	if (mL == NULL)
-	{
-		mL = lua_newstate(LUA_Alloc, NULL);
-		lua_atpanic(mL, LUA_Panic);
-
-		// open only enum lib
-		lua_pushcfunction(mL, LUA_EnumLib);
-		lua_pushboolean(mL, true);
-		lua_call(mL, 1, 0);
-	}
+		createMathLibState();
 
 	// change ^ into ^^ for Lua.
 	strcpy(buf, "return ");
@@ -416,6 +419,40 @@ fixed_t LUA_EvalMath(const char *word)
 
 	if (error)
 		CONS_Alert(CONS_WARNING, "%s\n", error);
+
+	return res;
+}
+
+// A hack to prevent lua from crashing game if constant doesn't exist
+static int lua_get_constant(lua_State *L)
+{
+	lua_pushvalue(mL, LUA_GLOBALSINDEX);
+	lua_pushvalue(L, 1);
+	lua_gettable(L, -2);
+
+	return 1;
+}
+
+fixed_t LUA_GetConstant(const char *word)
+{
+	if (mL == NULL)
+		createMathLibState();
+
+	fixed_t res = 0;
+
+	lua_pushcfunction(mL, lua_get_constant);
+	lua_pushstring(mL, word);
+
+	if (lua_pcall(mL, 1, 1, 0) == 0)
+	{
+		if (lua_isnumber(mL, -1))
+			res = lua_tointeger(mL, -1);
+	}
+	else
+	{
+		// Pop error message
+		lua_pop(mL, 1);
+	}
 
 	return res;
 }
