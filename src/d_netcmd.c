@@ -827,8 +827,6 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_netdemosyncquality);
 	CV_RegisterVar(&cv_maxdemosize);
 	CV_RegisterVar(&cv_keyboardlayout);
-	
-	CV_RegisterVar(&cv_betainterscreen);
 }
 
 // =========================================================================
@@ -1163,6 +1161,8 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_lastserver);
 
 	CV_RegisterVar(&cv_showmusicfilename);
+
+	CV_RegisterVar(&cv_betainterscreen);
 
 	// ingame object placing
 	COM_AddCommand("objectplace", Command_ObjectPlace_f);
