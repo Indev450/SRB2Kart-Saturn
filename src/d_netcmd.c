@@ -299,6 +299,9 @@ consvar_t cv_usemouse2 = {"use_mouse2", "Off", CV_SAVE|CV_CALL,usemouse_cons_t, 
 //WTF
 consvar_t cv_mouseturn = {"mouseturn", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+// Lagless camera! Yay!
+consvar_t cv_laglesscam = {"laglesscamera", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 #if defined(HAVE_SDL) || defined(_WINDOWS) //joystick 1 and 2
 consvar_t cv_usejoystick = {"use_joystick", "1", CV_SAVE|CV_CALL, usejoystick_cons_t,
 	I_InitJoystick, 0, NULL, NULL, 0, 0, NULL};
@@ -1166,6 +1169,8 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_showmusicfilename);
 
 	CV_RegisterVar(&cv_betainterscreen);
+
+	CV_RegisterVar(&cv_laglesscam);
 
 	// ingame object placing
 	COM_AddCommand("objectplace", Command_ObjectPlace_f);
