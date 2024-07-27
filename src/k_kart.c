@@ -77,6 +77,7 @@ IMPL_HUD_OFFSET(stat); // Stats
 //extra hud things
 consvar_t cv_showstats = {"showstats", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_showinput = {"showinput", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_showlaptimes = {"showlaptimes", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 CV_PossibleValue_t speedo_cons_t[NUMSPEEDOSTUFF];
 consvar_t cv_newspeedometer = {"newspeedometer", "Default", CV_SAVE, speedo_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -727,6 +728,7 @@ void K_RegisterKartStuff(void)
 
 	CV_RegisterVar(&cv_showstats);
 	CV_RegisterVar(&cv_showinput);
+	CV_RegisterVar(&cv_showlaptimes);
 	CV_RegisterVar(&cv_newspeedometer);
 	
 	CV_RegisterVar(&cv_battlespeedo);
@@ -10740,7 +10742,8 @@ void K_drawKartHUD(void)
 	{
 		tic_t realtime = stplyr->realtime;
 
-		if (stplyr->kartstuff[k_lapanimation]
+		if (cv_showlaptimes.value
+			&& stplyr->kartstuff[k_lapanimation]
 			&& !stplyr->exiting
 			&& stplyr->laptime[LAP_LAST] != 0
 			&& !midgamejoin)
