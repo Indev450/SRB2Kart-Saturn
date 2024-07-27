@@ -3497,7 +3497,7 @@ void K_DriftDustHandling(mobj_t *spawner)
 		fixed_t spawny = P_RandomRange(-spawnrange, spawnrange)<<FRACBITS;
 		INT32 speedrange = 2;
 		mobj_t *dust;
-		mobjtype_t stardust = LUA_EvalMathEx("MT_STARDUST", NULL);
+		mobjtype_t stardust = LUA_GetConstant("MT_STARDUST");
 		boolean havestardust = true;
 		if (!stardust)
 		{
@@ -5860,7 +5860,7 @@ static mobj_t *K_SpawnOrMoveMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t typ
 
 void K_SpawnWaterRunParticles(mobj_t *mobj)
 {
-	mobjtype_t watertrailunderlay = LUA_EvalMathEx("MT_WATERTRAILUNDERLAY", NULL);
+	mobjtype_t watertrailunderlay = LUA_GetConstant("MT_WATERTRAILUNDERLAY");
 
 	// Technically, we'd need only 1 check after we try get all necessary states, but fetching these
 	// constants is a bit costly (if they are missing. If they are not, lua_glib helps us ;3),
@@ -5869,13 +5869,13 @@ void K_SpawnWaterRunParticles(mobj_t *mobj)
 	if (!watertrailunderlay)
 		return;
 
-	statenum_t watertrailunderlay_minstate = LUA_EvalMathEx("S_WATERTRAILUNDERLAY1", NULL);
-	statenum_t watertrailunderlay_maxstate = LUA_EvalMathEx("S_WATERTRAILUNDERLAYLAST", NULL);
+	statenum_t watertrailunderlay_minstate = LUA_GetConstant("S_WATERTRAILUNDERLAY1");
+	statenum_t watertrailunderlay_maxstate = LUA_GetConstant("S_WATERTRAILUNDERLAYLAST");
 
-	mobjtype_t watertrail = LUA_EvalMathEx("MT_WATERTRAIL", NULL);
+	mobjtype_t watertrail = LUA_GetConstant("MT_WATERTRAIL");
 
-	statenum_t watertrail_minstate = LUA_EvalMathEx("S_WATERTRAIL1", NULL);
-	statenum_t watertrail_maxstate = LUA_EvalMathEx("S_WATERTRAILLAST", NULL);
+	statenum_t watertrail_minstate = LUA_GetConstant("S_WATERTRAIL1");
+	statenum_t watertrail_maxstate = LUA_GetConstant("S_WATERTRAILLAST");
 
 	if (!(watertrailunderlay_minstate && watertrailunderlay_maxstate && watertrail && watertrail_minstate && watertrail_maxstate) || // Check if we're missing something
 		 (watertrail_minstate > watertrail_maxstate && watertrailunderlay_minstate > watertrailunderlay_maxstate)) // Check if some of these were freeslot'd in wrong order
