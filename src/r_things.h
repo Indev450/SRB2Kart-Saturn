@@ -25,7 +25,7 @@
 // number of sprite lumps for spritewidth,offset,topoffset lookup tables
 // Fab: this is a hack : should allocate the lookup tables per sprite
 #if defined(__x86_64__) || defined(__amd64__) || defined(__aarch64__) || defined(__arm64__) // only for 64bit (idk how else to proper check lmao)
-#define MAXVISSPRITES 6140
+#define MAXVISSPRITES 4096
 #else
 #define MAXVISSPRITES 2048 // added 2-2-98 was 128
 #endif
