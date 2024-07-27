@@ -209,6 +209,8 @@ extern consvar_t cv_showspecstuff;
 
 extern consvar_t cv_betainterscreen;
 
+extern consvar_t cv_laglesscam;
+
 typedef enum
 {
 	SKINMENUTYPE_SCROLL = 0,
