@@ -16,6 +16,7 @@
 #include "m_random.h"
 #include "m_menu.h" // ffdhidshfuisduifigergho9igj89dgodhfih AAAAAAAAAA
 #include "p_local.h"
+#include "p_setup.h"
 #include "p_slopes.h"
 #include "r_defs.h"
 #include "r_draw.h"
@@ -31,11 +32,13 @@
 #include "z_zone.h"
 #include "m_misc.h"
 #include "m_cond.h"
+#include "k_director.h"
 #include "k_kart.h"
 #include "f_finale.h"
 #include "lua_hud.h"	// For Lua hud checks
 #include "lua_hook.h"	// For MobjDamage and ShouldDamage
 #include "d_main.h"		// found_extra_kart
+
 
 #include "i_video.h"
 
@@ -74,6 +77,7 @@ IMPL_HUD_OFFSET(stat); // Stats
 //extra hud things
 consvar_t cv_showstats = {"showstats", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_showinput = {"showinput", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_showlaptimes = {"showlaptimes", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 CV_PossibleValue_t speedo_cons_t[NUMSPEEDOSTUFF];
 consvar_t cv_newspeedometer = {"newspeedometer", "Default", CV_SAVE, speedo_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -720,6 +724,7 @@ void K_RegisterKartStuff(void)
 
 	CV_RegisterVar(&cv_showstats);
 	CV_RegisterVar(&cv_showinput);
+	CV_RegisterVar(&cv_showlaptimes);
 	CV_RegisterVar(&cv_newspeedometer);
 	
 	CV_RegisterVar(&cv_battlespeedo);
@@ -2233,12 +2238,15 @@ void K_SpinPlayer(player_t *player, mobj_t *source, INT32 type, mobj_t *inflicto
 	// PS: Inflictor is unused for all purposes here and is actually only ever relevant to Lua. It may be nil too.
 	boolean force = false;	// Used to check if Lua ShouldSpin should get us damaged reguardless of flashtics or heck knows what.
 	UINT8 shouldForce = LUAh_ShouldSpin(player, inflictor, source);
+
 	if (P_MobjWasRemoved(player->mo))
 		return; // mobj was removed (in theory that shouldn't happen)
 	if (shouldForce == 1)
 		force = true;
 	else if (shouldForce == 2)
 		return;
+
+	K_DirectorFollowAttack(player, inflictor, source);
 
 	if (!trapitem && G_BattleGametype())
 	{
@@ -2489,6 +2497,8 @@ void K_ExplodePlayer(player_t *player, mobj_t *source, mobj_t *inflictor) // A b
 		force = true;
 	else if (shouldForce == 2)
 		return;
+
+	K_DirectorFollowAttack(player, inflictor, source);
 
 	if (G_BattleGametype())
 	{
@@ -8121,8 +8131,6 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 {
 	// TIME_X = BASEVIDWIDTH-124;	// 196
 	// TIME_Y = 6;					//   6
-		
-	tic_t worktime;
 
 	INT32 splitflags = 0;
 	if (!mode)
@@ -8147,63 +8155,54 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 
 	TX += 33;
 
-	worktime = drawtime/(60*TICRATE);
-
-	if (mode && !drawtime)
-		V_DrawKartString(TX, TY+3, splitflags, va("--'--\"--"));
-	else if (worktime < 100) // 99:99:99 only
+	if (drawtime == UINT32_MAX)
+		;
+	else if (mode && !drawtime)
 	{
+		// apostrophe location     _'__ __
+		V_DrawKartString(TX+24, TY+3, splitflags, va("'"));
+
+		// quotation mark location    _ __"__
+		V_DrawKartString(TX+60, TY+3, splitflags, va("\""));
+	}
+	else
+	{
+		tic_t worktime = drawtime/(60*TICRATE);
+
+		if (worktime >= 100)
+		{
+			worktime = 99;
+			drawtime = (100*(60*TICRATE))-1;
+		}
+
 		if ((cv_timelimit.value && G_BattleGametype()) && (!players[consoleplayer].exiting && (leveltime > (timelimitintics + starttime + TICRATE/2)) && cv_overtime.value)) // i hate this so much
 		{
 			V_DrawKartString(TX, TY+3, splitflags, va("OVERTIME"));
-				return;
+			return;
 		}
-		
-		// zero minute
-		if (worktime < 10)
-		{
-			V_DrawKartString(TX, TY+3, splitflags, va("0"));
-			// minutes time       0 __ __
-			V_DrawKartString(TX+12, TY+3, splitflags, va("%d", worktime));
-		}
-		// minutes time       0 __ __
-		else
-			V_DrawKartString(TX, TY+3, splitflags, va("%d", worktime));
+
+		// minutes time      00 __ __
+		V_DrawKartString(TX,    TY+3, splitflags, va("%d", worktime/10));
+		V_DrawKartString(TX+12, TY+3, splitflags, va("%d", worktime%10));
 
 		// apostrophe location     _'__ __
 		V_DrawKartString(TX+24, TY+3, splitflags, va("'"));
 
 		worktime = (drawtime/TICRATE % 60);
 
-		// zero second        _ 0_ __
-		if (worktime < 10)
-		{
-			V_DrawKartString(TX+36, TY+3, splitflags, va("0"));
-		// seconds time       _ _0 __
-			V_DrawKartString(TX+48, TY+3, splitflags, va("%d", worktime));
-		}
-		// zero second        _ 00 __
-		else
-			V_DrawKartString(TX+36, TY+3, splitflags, va("%d", worktime));
+		// seconds time       _ 00 __
+		V_DrawKartString(TX+36, TY+3, splitflags, va("%d", worktime/10));
+		V_DrawKartString(TX+48, TY+3, splitflags, va("%d", worktime%10));
 
 		// quotation mark location    _ __"__
 		V_DrawKartString(TX+60, TY+3, splitflags, va("\""));
 
 		worktime = G_TicsToCentiseconds(drawtime);
 
-		// zero tick          _ __ 0_
-		if (worktime < 10)
-		{
-			V_DrawKartString(TX+72, TY+3, splitflags, va("0"));
-		// tics               _ __ _0
-			V_DrawKartString(TX+84, TY+3, splitflags, va("%d", worktime));
-		}
-		// zero tick          _ __ 00
-		else
-			V_DrawKartString(TX+72, TY+3, splitflags, va("%d", worktime));
+		// tics               _ __ 00
+		V_DrawKartString(TX+72, TY+3, splitflags, va("%d", worktime/10));
+		V_DrawKartString(TX+84, TY+3, splitflags, va("%d", worktime%10));
 	}
-	else if ((drawtime/TICRATE) & 1)
-		V_DrawKartString(TX, TY+3, splitflags, va("99'59\"99"));
 
 	if (emblemmap && (modeattacking || (mode == 1)) && !demo.playback) // emblem time!
 	{
@@ -10502,9 +10501,27 @@ void K_drawKartHUD(void)
 	// If not splitscreen, draw...
 	if (!splitscreen && !demo.title)
 	{
+		tic_t realtime = stplyr->realtime;
+
+		if (cv_showlaptimes.value
+			&& stplyr->kartstuff[k_lapanimation]
+			&& !stplyr->exiting
+			&& stplyr->laptime[LAP_LAST] != 0
+			&& !midgamejoin)
+		{
+			if ((stplyr->kartstuff[k_lapanimation] / 5) & 1)
+			{
+				realtime = stplyr->laptime[LAP_LAST];
+			}
+			else
+			{
+				realtime = UINT32_MAX;
+			}
+		}
+
 		// Draw the timestamp
 		if (LUA_HudEnabled(hud_time))
-			K_drawKartTimestamp(stplyr->realtime, TIME_X, TIME_Y, gamemap, 0);
+			K_drawKartTimestamp(realtime, TIME_X, TIME_Y, gamemap, 0);
 
 		if (!modeattacking)
 		{

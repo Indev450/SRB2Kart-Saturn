@@ -140,18 +140,25 @@ ps_metric_t ps_numsprites = {0};
 ps_metric_t ps_numdrawnodes = {0};
 ps_metric_t ps_numpolyobjects = {0};
 
+#if defined(__x86_64__) || defined(__amd64__) || defined(__aarch64__) || defined(__arm64__) // only for 64bit (idk how else to proper check lmao)
+static CV_PossibleValue_t drawdist_cons_t[] = {
+	/*{256, "256"},*/	{512, "512"},	{768, "768"},
+	{1024, "1024"},	{1536, "1536"},	{2048, "2048"},
+	{3072, "3072"},	{4096, "4096"},	{6144, "6144"},
+	{8192, "8192"},	{12288, "12288"}, {20480, "20480"},
+	{24576, "24576"},{0, "Infinite"},	{0, NULL}};
+
+static CV_PossibleValue_t drawdist_precip_cons_t[] = {
+	{256, "256"}, {512, "512"}, {768, "768"},
+	{1024, "1024"}, {1536, "1536"}, {2048, "2048"},
+	{3072, "3072"}, {4096, "4096"}, {0, "None"}, {0, NULL}};
+#else
 static CV_PossibleValue_t drawdist_cons_t[] = {
 	/*{256, "256"},*/	{512, "512"},	{768, "768"},
 	{1024, "1024"},	{1536, "1536"},	{2048, "2048"},
 	{3072, "3072"},	{4096, "4096"},	{6144, "6144"},
 	{8192, "8192"},	{0, "Infinite"},	{0, NULL}};
 
-#if defined(__x86_64__) || defined(__amd64__) || defined(__aarch64__) || defined(__arm64__) // only for 64bit (idk how else to proper check lmao)
-static CV_PossibleValue_t drawdist_precip_cons_t[] = {
-	{256, "256"},	{512, "512"},	{768, "768"},
-	{1024, "1024"},	{1536, "1536"},	{2048, "2048"},
-	{3072, "3072"},	{4096, "4096"}, {0, "None"},	{0, NULL}};
-#else
 static CV_PossibleValue_t drawdist_precip_cons_t[] = {
 	{256, "256"},	{512, "512"},	{768, "768"},
 	{1024, "1024"},	{1536, "1536"},	{2048, "2048"},
@@ -159,10 +166,10 @@ static CV_PossibleValue_t drawdist_precip_cons_t[] = {
 #endif
 
 static CV_PossibleValue_t maxinterpdist_cons_t[] = {
-       /*{256, "256"},*/       {512, "512"},   {768, "768"},
+       /*{256, "256"},*/ {512, "512"}, {768, "768"},
        {1024, "1024"}, {1536, "1536"}, {2048, "2048"},
        {3072, "3072"}, {4096, "4096"}, {6144, "6144"},
-       {8192, "8192"}, {0, "Infinite"},        {0, NULL}};
+       {8192, "8192"}, {0, "Infinite"}, {0, NULL}};
 
 static CV_PossibleValue_t fov_cons_t[] = {{5*FRACUNIT, "MIN"}, {178*FRACUNIT, "MAX"}, {0, NULL}};
 
