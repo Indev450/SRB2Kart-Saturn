@@ -50,6 +50,7 @@
 #include "b_bot.h"
 #include "m_cond.h" // condition sets
 #include "md5.h" // demo checksums
+#include "k_director.h" // SRB2kart
 #include "k_kart.h" // SRB2kart
 #include "r_fps.h" // frame interpolation/uncapped
 
@@ -1934,6 +1935,11 @@ boolean G_Responder(event_t *ev)
 					spectatedelay4 = NEWTICRATE / 7;
 					COM_ImmedExecute("changeteam4 spectator");
 				}
+			}
+			if (ev->data1 == gamecontrol[gc_director][0]
+				|| ev->data1 == gamecontrol[gc_director][1])
+			{
+				K_ToggleDirector();
 			}
 
 			return true;
