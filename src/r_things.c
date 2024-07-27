@@ -1581,7 +1581,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	}
 
 	heightsec = thing->subsector->sector->heightsec;
-	if (viewplayer->mo && viewplayer->mo->subsector)
+	if (viewplayer && viewplayer->mo && viewplayer->mo->subsector)
 		phs = viewplayer->mo->subsector->sector->heightsec;
 	else
 		phs = -1;
@@ -2202,13 +2202,15 @@ static void R_CreateDrawNodes(void)
 			}
 		}
 		// Check for a polyobject plane, but only if this is a front line
-		if (ds->curline->polyseg && ds->curline->polyseg->visplane && !ds->curline->side) {
+		if (ds->curline->polyseg && ds->curline->polyseg->visplane && !ds->curline->side)
+		{
 			plane = ds->curline->polyseg->visplane;
 			R_PlaneBounds(plane);
 
 			if (plane->low < 0 || plane->high > vid.height || plane->high > plane->low)
 				;
-			else {
+			else
+			{
 				// Put it in!
 				entry = R_CreateDrawNode(&nodehead);
 				entry->plane = plane;
@@ -2231,6 +2233,7 @@ static void R_CreateDrawNodes(void)
 				{
 					if (!ds->ffloorplanes[p])
 						continue;
+
 					plane = ds->ffloorplanes[p];
 					R_PlaneBounds(plane);
 
@@ -2303,10 +2306,12 @@ static void R_CreateDrawNodes(void)
 					continue;
 
 				// Effective height may be different for each comparison in the case of slopes
-				if (r2->plane->slope) {
+				if (r2->plane->slope)
+				{
 					planeobjectz = P_GetZAt(r2->plane->slope, rover->gx, rover->gy);
 					planecameraz = P_GetZAt(r2->plane->slope, viewx, viewy);
-				} else
+				}
+				else
 					planeobjectz = planecameraz = r2->plane->height;
 
 				if (rover->mobjflags & MF_NOCLIPHEIGHT)
@@ -2365,16 +2370,20 @@ static void R_CreateDrawNodes(void)
 				if (scale <= rover->sortscale)
 					continue;
 
-				if (*r2->ffloor->t_slope) {
+				if (*r2->ffloor->t_slope)
+				{
 					topplaneobjectz = P_GetZAt(*r2->ffloor->t_slope, rover->gx, rover->gy);
 					topplanecameraz = P_GetZAt(*r2->ffloor->t_slope, viewx, viewy);
-				} else
+				}
+				else
 					topplaneobjectz = topplanecameraz = *r2->ffloor->topheight;
 
-				if (*r2->ffloor->b_slope) {
+				if (*r2->ffloor->b_slope)
+				{
 					botplaneobjectz = P_GetZAt(*r2->ffloor->b_slope, rover->gx, rover->gy);
 					botplanecameraz = P_GetZAt(*r2->ffloor->b_slope, viewx, viewy);
-				} else
+				}
+				else
 					botplaneobjectz = botplanecameraz = *r2->ffloor->bottomheight;
 
 				if ((topplanecameraz > viewz && botplanecameraz < viewz) ||

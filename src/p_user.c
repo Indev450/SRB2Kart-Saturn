@@ -3002,12 +3002,19 @@ static void P_DeathThink(player_t *player)
 				else
 					curlap++; // This is too complicated to sync to realtime, just sorta hope for the best :V
 			}
+
+			if (player->spectator)
+				player->laptime[LAP_CUR] = 0;
+			else
+				player->laptime[LAP_CUR]++; // This is too complicated to sync to realtime, just sorta hope for the best :V
 		}
 		else
 		{
 			player->realtime = 0;
 			if (player == &players[consoleplayer])
 				curlap = 0;
+
+			player->laptime[LAP_CUR] = 0;
 		}
 	}
 
@@ -4221,11 +4228,7 @@ Quaketilt (player_t *player)
 	INT32 delta = (INT32)( player->mo->angle - moma );
 	fixed_t speed;
 
-	boolean sliptiding =
-		(
-				player->kartstuff[k_aizdriftstrat] != 0 &&
-				player->kartstuff[k_drift]         == 0
-		);
+	boolean sliptiding = player->kartstuff[k_drift] ? 0 : player->kartstuff[k_aizdriftstrat];
 
 	if (delta == (INT32)ANGLE_180)/* FUCK YOU HAVE A HACK */
 	{
@@ -4253,6 +4256,7 @@ Quaketilt (player_t *player)
 		tilt = ANGLE_22h;
 		lowb = 10*FRACUNIT;
 	}
+	lowb = FixedMul(lowb, player->mo->scale);
 	moma = FixedMul(FixedDiv(delta, ANGLE_90), tilt);
 	speed = abs( player->mo->momx + player->mo->momy );
 	if (speed < lowb)
@@ -4268,6 +4272,19 @@ DoABarrelRoll (player_t *player)
 {
 	angle_t slope;
 	angle_t delta;
+
+	fixed_t smoothing;
+
+	if (player->exiting)
+	{
+		return;
+	}
+
+	if (player->kartstuff[k_respawn])
+	{
+		player->tilt = 0;
+		return;
+	}
 
 	if (player->mo->standingslope)
 	{
@@ -4293,26 +4310,16 @@ DoABarrelRoll (player_t *player)
 		slope -= Quaketilt(player);
 	}
 
-	delta = (INT32)( slope - player->tilt )/ cv_tiltsmoothing.value;
+	delta = slope - player->tilt;
+	smoothing = FixedDiv(AbsAngle(slope), ANGLE_45);
+
+	delta = FixedDiv(delta, cv_tiltsmoothing.value *
+	FixedDiv(FRACUNIT, FRACUNIT + smoothing));
 
 	if (delta)
 		player->tilt += delta;
 	else
-		player->tilt  = slope;
-
-	if (cv_tilting.value)
-	{
-		player->viewrollangle = player->tilt;
-
-		if (cv_actionmovie.value)
-		{
-			player->viewrollangle += quake.roll;
-		}
-	}
-	else
-	{
-		player->viewrollangle = 0;
-	}
+		player->tilt = slope;
 }
 
 //
@@ -4323,11 +4330,6 @@ void P_PlayerThink(player_t *player)
 {
 	ticcmd_t *cmd;
 	const size_t playeri = (size_t)(player - players);
-
-	player->lerp.aiming = player->aiming;
-	player->lerp.awayviewaiming = player->awayviewaiming;
-	player->lerp.frameangle = player->frameangle;
-	player->lerp.viewrollangle = player->viewrollangle;
 
 #ifdef PARANOIA
 	if (!player->mo)
@@ -4554,12 +4556,19 @@ void P_PlayerThink(player_t *player)
 				else
 					curlap++; // This is too complicated to sync to realtime, just sorta hope for the best :V
 			}
+
+			if (player->spectator)
+				player->laptime[LAP_CUR] = 0;
+			else
+				player->laptime[LAP_CUR]++; // This is too complicated to sync to realtime, just sorta hope for the best :V
 		}
 		else
 		{
 			player->realtime = 0;
 			if (player == &players[consoleplayer])
 				curlap = 0;
+
+			player->laptime[LAP_CUR] = 0;
 		}
 	}
 

@@ -2500,6 +2500,10 @@ void G_PlayerReborn(INT32 player)
 	boolean fade;
 	boolean playing;
 
+	tic_t laptime[LAP__MAX];
+
+	INT32 i;
+
 	score = players[player].score;
 	marescore = players[player].marescore;
 	lives = players[player].lives;
@@ -2540,6 +2544,21 @@ void G_PlayerReborn(INT32 player)
 	mare = players[player].mare;
 	bot = players[player].bot;
 	pity = players[player].pity;
+
+	if (leveltime <= starttime) // man i really hope this crap works kek but need to reset this somehow at mapstart
+	{
+		for (i = 0; i < LAP__MAX; i++)
+		{
+			laptime[i] = 0;
+		}
+	}
+	else
+	{
+		for (i = 0; i < LAP__MAX; i++)
+		{
+			laptime[i] = players[player].laptime[i];
+		}
+	}
 
 	// SRB2kart
 	if (leveltime <= starttime || spectator == true)
@@ -2631,6 +2650,11 @@ void G_PlayerReborn(INT32 player)
 	p->numboxes = numboxes;
 	p->laps = laps;
 	p->totalring = totalring;
+
+	for (i = 0; i < LAP__MAX; i++)
+	{
+		p->laptime[i] = laptime[i];
+	}
 
 	p->mare = mare;
 	if (bot)

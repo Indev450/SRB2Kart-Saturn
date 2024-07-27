@@ -1071,10 +1071,10 @@ static void R_Subsector(size_t num)
 			{
 				light = R_GetPlaneLight(frontsector, polysec->floorheight, viewz < polysec->floorheight);
 				ffloor[numffloors].plane = R_FindPlane(polysec->floorheight, polysec->floorpic,
-						polysec->lightlevel, polysec->floor_xoffs, polysec->floor_yoffs,
-						polysec->floorpic_angle-po->angle,
-						NULL, NULL, po
-					, NULL // will ffloors be slopable eventually?
+					(light == -1 ? frontsector->lightlevel : *frontsector->lightlist[light].lightlevel), polysec->floor_xoffs, polysec->floor_yoffs,
+					polysec->floorpic_angle-po->angle,
+					(light == -1 ? frontsector->extra_colormap : frontsector->lightlist[light].extra_colormap), NULL, po
+					,NULL // will ffloors be slopable eventually?
 					, R_NoEncore(polysec, false));
 
 				ffloor[numffloors].height = polysec->floorheight;
@@ -1094,12 +1094,11 @@ static void R_Subsector(size_t num)
 				&& polysec->ceilingheight <= ceilingcenterz
 				&& (viewz > polysec->ceilingheight))
 			{
-				light = R_GetPlaneLight(frontsector, polysec->ceilingheight, viewz < polysec->ceilingheight);
+				light = R_GetPlaneLight(frontsector, polysec->floorheight, viewz < polysec->floorheight);
 				ffloor[numffloors].plane = R_FindPlane(polysec->ceilingheight, polysec->ceilingpic,
-					polysec->lightlevel, polysec->ceiling_xoffs, polysec->ceiling_yoffs,
-					polysec->ceilingpic_angle-po->angle,
-					NULL, NULL, po
-					, NULL // will ffloors be slopable eventually?
+					(light == -1 ? frontsector->lightlevel : *frontsector->lightlist[light].lightlevel), polysec->ceiling_xoffs, polysec->ceiling_yoffs, polysec->ceilingpic_angle-po->angle,
+					(light == -1 ? frontsector->extra_colormap : frontsector->lightlist[light].extra_colormap), NULL, po
+					,NULL // will ffloors be slopable eventually?
 					, R_NoEncore(polysec, true));
 
 				ffloor[numffloors].polyobj = po;
@@ -1143,7 +1142,7 @@ static void R_Subsector(size_t num)
 	{
 //		CONS_Debug(DBG_GAMELOGIC, "Adding normal line %d...(%d)\n", line->linedef-lines, leveltime);
 		if (!line->polyseg) // ignore segs that belong to polyobjects
-		R_AddLine(line);
+			R_AddLine(line);
 		line++;
 		curline = NULL; /* cph 2001/11/18 - must clear curline now we're done with it, so stuff doesn't try using it for other things */
 	}
@@ -1205,7 +1204,7 @@ void R_Prep3DFloors(sector_t *sector)
 			rover->lastlight = 0;
 			if (!(rover->flags & FF_EXISTS) || (rover->flags & FF_NOSHADE
 				&& !(rover->flags & FF_CUTLEVEL) && !(rover->flags & FF_CUTSPRITES)))
-			continue;
+				continue;
 
 			heighttest = *rover->t_slope ? P_GetZAt(*rover->t_slope, sector->soundorg.x, sector->soundorg.y) : *rover->topheight;
 

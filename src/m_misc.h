@@ -54,6 +54,7 @@ boolean FIL_FileExists(const char *name);
 boolean FIL_WriteFileOK(char const *name);
 boolean FIL_ReadFileOK(char const *name);
 boolean FIL_FileOK(char const *name);
+boolean FIL_CopyFile(const char *src, const char *dst);
 
 void FIL_DefaultExtension (char *path, const char *extension);
 void FIL_ForceExtension(char *path, const char *extension);

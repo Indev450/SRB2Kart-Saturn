@@ -57,7 +57,7 @@ size_t framecount;
 size_t loopcount;
 
 fixed_t viewx, viewy, viewz;
-angle_t viewangle, aimingangle;
+angle_t viewangle, aimingangle, viewroll;
 UINT8 viewssnum;
 fixed_t viewcos, viewsin;
 boolean skyVisible;
@@ -140,18 +140,25 @@ ps_metric_t ps_numsprites = {0};
 ps_metric_t ps_numdrawnodes = {0};
 ps_metric_t ps_numpolyobjects = {0};
 
+#if defined(__x86_64__) || defined(__amd64__) || defined(__aarch64__) || defined(__arm64__) // only for 64bit (idk how else to proper check lmao)
+static CV_PossibleValue_t drawdist_cons_t[] = {
+	/*{256, "256"},*/	{512, "512"},	{768, "768"},
+	{1024, "1024"},	{1536, "1536"},	{2048, "2048"},
+	{3072, "3072"},	{4096, "4096"},	{6144, "6144"},
+	{8192, "8192"},	{12288, "12288"}, {20480, "20480"},
+	{24576, "24576"},{0, "Infinite"},	{0, NULL}};
+
+static CV_PossibleValue_t drawdist_precip_cons_t[] = {
+	{256, "256"}, {512, "512"}, {768, "768"},
+	{1024, "1024"}, {1536, "1536"}, {2048, "2048"},
+	{3072, "3072"}, {4096, "4096"}, {0, "None"}, {0, NULL}};
+#else
 static CV_PossibleValue_t drawdist_cons_t[] = {
 	/*{256, "256"},*/	{512, "512"},	{768, "768"},
 	{1024, "1024"},	{1536, "1536"},	{2048, "2048"},
 	{3072, "3072"},	{4096, "4096"},	{6144, "6144"},
 	{8192, "8192"},	{0, "Infinite"},	{0, NULL}};
 
-#if defined(__x86_64__) || defined(__amd64__) || defined(__aarch64__) || defined(__arm64__) // only for 64bit (idk how else to proper check lmao)
-static CV_PossibleValue_t drawdist_precip_cons_t[] = {
-	{256, "256"},	{512, "512"},	{768, "768"},
-	{1024, "1024"},	{1536, "1536"},	{2048, "2048"},
-	{3072, "3072"},	{4096, "4096"}, {0, "None"},	{0, NULL}};
-#else
 static CV_PossibleValue_t drawdist_precip_cons_t[] = {
 	{256, "256"},	{512, "512"},	{768, "768"},
 	{1024, "1024"},	{1536, "1536"},	{2048, "2048"},
@@ -159,10 +166,10 @@ static CV_PossibleValue_t drawdist_precip_cons_t[] = {
 #endif
 
 static CV_PossibleValue_t maxinterpdist_cons_t[] = {
-       /*{256, "256"},*/       {512, "512"},   {768, "768"},
+       /*{256, "256"},*/ {512, "512"}, {768, "768"},
        {1024, "1024"}, {1536, "1536"}, {2048, "2048"},
        {3072, "3072"}, {4096, "4096"}, {6144, "6144"},
-       {8192, "8192"}, {0, "Infinite"},        {0, NULL}};
+       {8192, "8192"}, {0, "Infinite"}, {0, NULL}};
 
 static CV_PossibleValue_t fov_cons_t[] = {{5*FRACUNIT, "MIN"}, {178*FRACUNIT, "MAX"}, {0, NULL}};
 
@@ -733,7 +740,7 @@ void R_CheckViewMorph(void)
 	INT32 end, vx, vy, pos, usedpos;
 	INT32 usedx, usedy, halfwidth = vid.width/2, halfheight = vid.height/2;
 
-	angle_t rollangle = players[displayplayers[0]].viewrollangle;
+	angle_t rollangle = viewroll;
 
 	rollangle >>= ANGLETOFINESHIFT;
 	rollangle = ((rollangle+2) & ~3) & FINEMASK; // Limit the distinct number of angles to reduce recalcs from angles changing a lot.
@@ -917,6 +924,45 @@ void R_ApplyViewMorph(void)
 			vid.width*vid.bpp, vid.height, vid.width*vid.bpp, vid.width);
 }
 
+static inline int intsign(int n) {
+	return n < 0 ? -1 : n > 0 ? 1 : 0;
+}
+
+angle_t R_ViewRollAngle(const player_t *player)
+{
+	angle_t roll = 0;
+
+	if (gamestate != GS_LEVEL)
+	{
+		// FIXME: The way this is implemented is totally
+		// incompatible with cameras that aren't directly
+		// tied to the player. (podium, titlemap,
+		// MT_ALTVIEWMAN in general)
+
+		// All of these player variables should affect their
+		// camera_t in P_MoveChaseCamera, and then this
+		// just returns that variable instead.
+		return 0;
+	}
+
+	roll = player->viewrollangle;
+
+	if (cv_tilting.value)
+	{
+		if (!player->spectator && !demo.freecam)
+			roll += player->tilt;
+
+		if (cv_actionmovie.value)
+		{
+			int xs = intsign(quake.x),
+			ys = intsign(quake.y),
+			zs = intsign(quake.z);
+			roll += (xs ^ ys ^ zs) * ANG1;
+		}
+	}
+
+	return roll;
+}
 
 //
 // R_SetViewSize
@@ -1188,6 +1234,7 @@ void R_SkyboxFrame(player_t *player)
 		}
 	}
 	newview->angle += viewmobj->angle;
+	newview->roll = R_ViewRollAngle(player);
 
 	newview->player = player;
 
@@ -1471,6 +1518,7 @@ void R_SetupFrame(player_t *player, boolean skybox)
 			}
 		}
 	}
+	newview->roll = R_ViewRollAngle(player);
 	newview->z += quake.z;
 
 	newview->player = player;
