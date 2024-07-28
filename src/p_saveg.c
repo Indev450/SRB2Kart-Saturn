@@ -2730,7 +2730,6 @@ static void P_NetUnArchiveThinkers(void)
 	}
 
 	// we don't want the removed mobjs to come back
-	iquetail = iquehead = 0;
 	P_InitThinkers();
 
 	// clear sector thinker pointers so they don't point to non-existant thinkers for all of eternity

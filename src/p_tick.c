@@ -195,6 +195,9 @@ void Command_CountMobjs_f(void)
 void P_InitThinkers(void)
 {
 	thinkercap.prev = thinkercap.next = &thinkercap;
+
+	iquehead = iquetail = 0;
+
 	waypointcap = NULL;
 }
 

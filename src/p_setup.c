@@ -3051,9 +3051,6 @@ boolean P_SetupLevel(boolean skipprecip, boolean reloadinggamestate)
 		displayplayers[0] = consoleplayer; // Start with your OWN view, please!
 	}
 
-	// clear special respawning que
-	iquehead = iquetail = 0;
-
 	P_MapEnd();
 
 	// Remove the loading shit from the screen
