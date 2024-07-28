@@ -1727,7 +1727,8 @@ static void P_CheckInvincibilityTimer(player_t *player)
 
 	player->mo->color = (UINT8)(1 + (leveltime % (MAXSKINCOLORS-1)));
 
-	G_SetPlayerGamepadIndicatorToPlayerColor((UINT8)(1 + (leveltime % (MAXSKINCOLORS-1))));
+	if (player == stplyr)
+		G_SetPlayerGamepadIndicatorToPlayerColor(player->mo->color);
 
 	// Resume normal music stuff.
 	if (player->powers[pw_invulnerability] == 1 || player->kartstuff[k_invincibilitytimer] == 1)
