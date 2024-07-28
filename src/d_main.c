@@ -37,6 +37,7 @@
 #include "d_net.h"
 #include "f_finale.h"
 #include "g_game.h"
+#include "g_input.h"
 #include "hu_stuff.h"
 #include "i_sound.h"
 #include "i_system.h"
@@ -1840,6 +1841,9 @@ void D_SRB2Main(void)
 
 	CONS_Printf("ST_Init(): Init status bar.\n");
 	ST_Init();
+
+	if (!dedicated)
+		G_SetPlayerGamepadIndicatorToPlayerColor(); // no idea where else to throw it lol
 
 	// Set up splitscreen players before joining!
 	if (!dedicated && (M_CheckParm("-splitscreen") && M_IsNextParm()))
