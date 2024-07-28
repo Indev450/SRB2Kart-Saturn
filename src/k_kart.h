@@ -11,6 +11,8 @@
 
 #define KART_FULLTURN 800
 
+void K_LoadExtraVFX(void);
+
 extern UINT8 colortranslations[MAXTRANSLATIONS][16];
 extern const char *KartColor_Names[MAXSKINCOLORS];
 extern const UINT8 KartColor_Opposite[MAXSKINCOLORS*2];

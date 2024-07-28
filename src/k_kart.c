@@ -44,6 +44,28 @@
 #include "hardware/hw_main.h"
 #endif
 
+// Not sure if thats best place for that
+static mobjtype_t stardust = 0;
+static mobjtype_t watertrailunderlay = 0, watertrail = 0;
+static statenum_t watertrailunderlay_minstate = 0, watertrailunderlay_maxstate = 0;
+static statenum_t watertrail_minstate = 0, watertrail_maxstate = 0;
+
+void K_LoadExtraVFX(void)
+{
+#define LOADVFX(var, name) if (!var) var = LUA_GetConstant(name);
+
+	LOADVFX(stardust, "MT_STARDUST");
+
+	LOADVFX(watertrail, "MT_WATERTRAIL");
+	LOADVFX(watertrailunderlay, "MT_WATERTRAILUNDERLAY");
+	LOADVFX(watertrail_minstate, "S_WATERTRAIL1");
+	LOADVFX(watertrail_maxstate, "S_WATERTRAILLAST");
+	LOADVFX(watertrailunderlay_minstate, "S_WATERTRAILUNDERLAY1");
+	LOADVFX(watertrailunderlay_maxstate, "S_WATERTRAILUNDERLAYLAST");
+
+#undef LOAD
+}
+
 // Hud offset cvars
 #define IMPL_HUD_OFFSET_X(name)\
 consvar_t cv_##name##_xoffset = {"hud_" #name "_xoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -3495,8 +3517,9 @@ void K_DriftDustHandling(mobj_t *spawner)
 		fixed_t spawny = P_RandomRange(-spawnrange, spawnrange)<<FRACBITS;
 		INT32 speedrange = 2;
 		mobj_t *dust;
-		mobjtype_t stardust = LUA_GetConstant("MT_STARDUST");
+
 		boolean havestardust = true;
+
 		if (!stardust)
 		{
 			stardust = MT_DRIFTDUST;
@@ -5848,25 +5871,8 @@ static mobj_t *K_SpawnOrMoveMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t typ
 
 void K_SpawnWaterRunParticles(mobj_t *mobj)
 {
-	mobjtype_t watertrailunderlay = LUA_GetConstant("MT_WATERTRAILUNDERLAY");
-
-	// Technically, we'd need only 1 check after we try get all necessary states, but fetching these
-	// constants is a bit costly (if they are missing. If they are not, lua_glib helps us ;3),
-	// so if this one is missing we quit early and if not we continue and check if we have
-	// everything we need later
-	if (!watertrailunderlay)
-		return;
-
-	statenum_t watertrailunderlay_minstate = LUA_GetConstant("S_WATERTRAILUNDERLAY1");
-	statenum_t watertrailunderlay_maxstate = LUA_GetConstant("S_WATERTRAILUNDERLAYLAST");
-
-	mobjtype_t watertrail = LUA_GetConstant("MT_WATERTRAIL");
-
-	statenum_t watertrail_minstate = LUA_GetConstant("S_WATERTRAIL1");
-	statenum_t watertrail_maxstate = LUA_GetConstant("S_WATERTRAILLAST");
-
 	if (!(watertrailunderlay_minstate && watertrailunderlay_maxstate && watertrail && watertrail_minstate && watertrail_maxstate) || // Check if we're missing something
-		 (watertrail_minstate > watertrail_maxstate && watertrailunderlay_minstate > watertrailunderlay_maxstate)) // Check if some of these were freeslot'd in wrong order
+		(watertrail_minstate > watertrail_maxstate && watertrailunderlay_minstate > watertrailunderlay_maxstate)) // Check if some of these were freeslot'd in wrong order
 		return;
 
 	fixed_t runSpeed = 14 * mobj->scale;
