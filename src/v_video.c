@@ -14,6 +14,7 @@
 ///        Functions to blit a block to the screen.
 
 #include "doomdef.h"
+#include "d_main.h"
 #include "r_local.h"
 #include "p_local.h"
 #include "v_video.h"
@@ -131,6 +132,9 @@ static boolean InitCube(void)
 	float desatur[3]; // grey
 	float globalgammamul, globalgammaoffs;
 	boolean doinggamma;
+
+	if (loaded_config == false)
+		return false;
 
 #define diffcons(cv) (cv.value != atoi(cv.defaultvalue))
 
@@ -568,6 +572,8 @@ void V_SetPaletteLump(const char *pal)
 
 static void CV_palette_OnChange(void)
 {
+	if (loaded_config == false)
+		return;
 	// reload palette
 	LoadMapPalette();
 	V_SetPalette(0);
