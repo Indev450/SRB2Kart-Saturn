@@ -5822,20 +5822,13 @@ static void P_AddOverlay(mobj_t *thing)
 // Keeps the hnext list from corrupting.
 static void P_RemoveOverlay(mobj_t *thing)
 {
-	mobj_t *mo;
-	if (overlaycap == thing)
+	mobj_t *mo, **p;
+	for (mo = *(p = &overlaycap); mo; mo = *(p = &mo->hnext))
 	{
-		P_SetTarget(&overlaycap, thing->hnext);
-		P_SetTarget(&thing->hnext, NULL);
-		return;
-	}
-
-	for (mo = overlaycap; mo; mo = mo->hnext)
-	{
-		if (mo->hnext != thing)
+		if (mo != thing)
 			continue;
 
-		P_SetTarget(&mo->hnext, thing->hnext);
+		P_SetTarget(p, thing->hnext);
 		P_SetTarget(&thing->hnext, NULL);
 		return;
 	}
@@ -5936,20 +5929,13 @@ static void P_AddShadow(mobj_t *thing)
 // Keeps the hnext list from corrupting.
 static void P_RemoveShadow(mobj_t *thing)
 {
-	mobj_t *mo;
-	if (shadowcap == thing)
+	mobj_t *mo, **p;
+	for (mo = *(p = &shadowcap); mo; mo = *(p = &mo->hnext))
 	{
-		P_SetTarget(&shadowcap, thing->hnext);
-		P_SetTarget(&thing->hnext, NULL);
-		return;
-	}
-
-	for (mo = shadowcap; mo; mo = mo->hnext)
-	{
-		if (mo->hnext != thing)
+		if (mo != thing)
 			continue;
 
-		P_SetTarget(&mo->hnext, thing->hnext);
+		P_SetTarget(p, thing->hnext);
 		P_SetTarget(&thing->hnext, NULL);
 		return;
 	}
@@ -6169,6 +6155,9 @@ void P_MobjThinker(mobj_t *mobj)
 			default:
 				break;
 			}
+
+		if (P_MobjWasRemoved(mobj))
+			return;
 	}
 
 	if (mobj->type == MT_GHOST && mobj->fuse > 0 // Not guaranteed to be MF_SCENERY or not MF_SCENERY!
