@@ -331,7 +331,7 @@ void SCR_SetDefaultMode(void)
 	// remember the default screen size
 	CV_SetValue(&cv_scr_width, vid.width);
 	CV_SetValue(&cv_scr_height, vid.height);
-	CV_SetValue(&cv_scr_depth, vid.bpp*8);
+	//CV_SetValue(&cv_scr_depth, vid.bpp*8);
 }
 
 // Change fullscreen on/off according to cv_fullscreen
