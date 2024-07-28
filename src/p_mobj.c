@@ -5823,6 +5823,13 @@ static void P_AddOverlay(mobj_t *thing)
 static void P_RemoveOverlay(mobj_t *thing)
 {
 	mobj_t *mo, **p;
+	if (overlaycap == thing)
+	{
+		P_SetTarget(&overlaycap, thing->hnext);
+		P_SetTarget(&thing->hnext, NULL);
+		return;
+	}
+
 	for (mo = *(p = &overlaycap); mo; mo = *(p = &mo->hnext))
 	{
 		if (mo != thing)
@@ -5930,6 +5937,13 @@ static void P_AddShadow(mobj_t *thing)
 static void P_RemoveShadow(mobj_t *thing)
 {
 	mobj_t *mo, **p;
+	if (shadowcap == thing)
+	{
+		P_SetTarget(&shadowcap, thing->hnext);
+		P_SetTarget(&thing->hnext, NULL);
+		return;
+	}
+
 	for (mo = *(p = &shadowcap); mo; mo = *(p = &mo->hnext))
 	{
 		if (mo != thing)
