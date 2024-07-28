@@ -11253,6 +11253,7 @@ static void M_HandleSetupMultiPlayer(INT32 choice)
 			{
 				S_StartSound(NULL,sfx_menu1); // Tails
 				setupm_fakecolor--;
+				G_SetPlayerGamepadIndicatorToPlayerColor(setupm_fakecolor);
 			}
 			break;
 
@@ -11308,6 +11309,7 @@ static void M_HandleSetupMultiPlayer(INT32 choice)
 			{
 				S_StartSound(NULL,sfx_menu1); // Tails
 				setupm_fakecolor++;
+				G_SetPlayerGamepadIndicatorToPlayerColor(setupm_fakecolor);
 			}
 			break;
 
@@ -11635,6 +11637,7 @@ static boolean M_QuitMultiPlayerMenu(void)
 	// you know what? always putting these in the buffer won't hurt anything.
 	COM_BufAddText (va("%s \"%s\"\n",setupm_cvskin->name,skins[setupm_fakeskin].name));
 	COM_BufAddText (va("%s %d\n",setupm_cvcolor->name,setupm_fakecolor));	
+
 	return true;
 }
 
