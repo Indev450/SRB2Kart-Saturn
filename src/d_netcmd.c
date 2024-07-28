@@ -6083,6 +6083,8 @@ static void Color_OnChange(void)
 		CV_StealthSetValue(&cv_playercolor,
 			players[consoleplayer].skincolor);
 	}
+
+	G_SetPlayerGamepadIndicatorToPlayerColor();
 }
 
 /** Sends a color change for the secondary splitscreen player, unless that

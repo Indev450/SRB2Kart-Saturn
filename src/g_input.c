@@ -14,10 +14,15 @@
 #include "doomdef.h"
 #include "doomstat.h"
 #include "g_input.h"
+#include "g_game.h"
 #include "keys.h"
 #include "hu_stuff.h" // need HUFONT start & end
 #include "d_net.h"
 #include "console.h"
+
+#include "i_video.h"
+#include "r_draw.h"
+#include "v_video.h"
 
 #define MAXMOUSESENSITIVITY 100 // sensitivity steps
 
@@ -816,6 +821,20 @@ static const char *gamecontrolname[num_gamecontrols] =
 };
 
 #define NUMKEYNAMES (sizeof (keynames)/sizeof (keyname_t))
+
+#include "k_kart.h"
+// ehhhhhh ill maybe add splitscreen support eventually lol
+void G_SetPlayerGamepadIndicatorToPlayerColor(void)
+{
+	UINT16 skincolor;
+	byteColor_t byte_color;
+
+	skincolor = cv_playercolor.value;
+
+	byte_color = V_GetColor(colortranslations[skincolor][8]).s;
+
+	I_SetGamepadIndicatorColor(1, byte_color.red, byte_color.green, byte_color.blue);
+}
 
 //
 // Detach any keys associated to the given game control
