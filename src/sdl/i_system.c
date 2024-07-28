@@ -3402,13 +3402,13 @@ INT32 I_StartupSystem(void)
 	SDL_version SDLlinked;
 	SDL_VERSION(&SDLcompiled)
 	SDL_GetVersion(&SDLlinked);
-#ifdef HAVE_THREADS
-	I_start_threads();
-	I_AddExitFunc(I_stop_threads);
-#endif
 	I_StartupConsole();
 #ifdef NEWSIGNALHANDLER
 	I_Fork();
+#endif
+#ifdef HAVE_THREADS
+	I_start_threads();
+	I_AddExitFunc(I_stop_threads);
 #endif
 	I_RegisterSignals();
 	I_OutputMsg("Compiled for SDL version: %d.%d.%d\n",
