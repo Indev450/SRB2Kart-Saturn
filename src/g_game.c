@@ -4621,14 +4621,8 @@ INT32 G_FindMap(const char *mapname, char **foundmapnamep,
 	for (i = 0, mapnum = 1; i < NUMMAPS; ++i, ++mapnum)
 		if (mapheaderinfo[i])
 	{
-		char *title = G_BuildMapTitle(mapnum);
-		if (!( realmapname = title ))
-		{
-			Z_Free(title);
+		if (!( realmapname = G_BuildMapTitle(mapnum) ))
 			continue;
-		}
-
-		Z_Free(title);
 
 		aprop = realmapname;
 
@@ -4700,9 +4694,7 @@ INT32 G_FindMap(const char *mapname, char **foundmapnamep,
 		}
 		if (newmapnum)
 		{
-			char *title = G_BuildMapTitle(newmapnum);
-			newmapname = title;
-			Z_Free(title);
+			newmapname = G_BuildMapTitle(newmapnum);
 		}
 	}
 
@@ -4792,11 +4784,7 @@ INT32 G_FindMapByNameOrCode(const char *mapname, char **realmapnamep)
 			return 0;
 
 		if (realmapnamep)
-		{
-			char *title = G_BuildMapTitle(newmapnum);
-			(*realmapnamep) = title;
-			Z_Free(title);
-		}
+			(*realmapnamep) = G_BuildMapTitle(newmapnum);
 	}
 
 	return newmapnum;

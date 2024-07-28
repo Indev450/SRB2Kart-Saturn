@@ -2735,16 +2735,12 @@ static void HU_DrawRankings(void)
 		//V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, "Record Attack");
 	//else
 		//V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, gametype_cons_t[gametype].strvalue);
-
-	char *maptitle = G_BuildMapTitle(gamemap);
 	
 	// draw the current map in the lower right if theres none just say its unknown
-	if (!maptitle)
+	if (!G_BuildMapTitle(gamemap))
 		V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, "UNKNOWN");
 	else
-		V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, maptitle);
-
-	Z_Free(maptitle);
+		V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, G_BuildMapTitle(gamemap));
 
 	if (G_GametypeHasTeams())
 	{
