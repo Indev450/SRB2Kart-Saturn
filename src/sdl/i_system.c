@@ -450,6 +450,7 @@ SDL_bool consolevent = SDL_FALSE;
 SDL_bool framebuffer = SDL_FALSE;
 
 UINT8 keyboard_started = false;
+boolean g_in_exiting_signal_handler = false;
 
 static void I_ReportSignal(int num, int coredumped)
 {
@@ -516,6 +517,8 @@ static void I_ReportSignal(int num, int coredumped)
 #ifndef NEWSIGNALHANDLER
 FUNCNORETURN static ATTRNORETURN void signal_handler(INT32 num)
 {
+	g_in_exiting_signal_handler = true;
+
 	D_QuitNetGame(); // Fix server freezes
 
 #ifdef HAVE_LIBBACKTRACE
