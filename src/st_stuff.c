@@ -456,7 +456,9 @@ void ST_Start(void)
 		ST_Stop();
 
 	ST_InitData();
-	st_stopped = false;
+
+	if (!dedicated)
+		st_stopped = false;
 }
 
 //
