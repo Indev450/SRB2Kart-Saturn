@@ -11349,6 +11349,7 @@ static void M_HandleSetupMultiPlayer(INT32 choice)
 				{
 					S_StartSound(NULL,sfx_menu1); // Tails
 					setupm_fakecolor = col;
+					G_SetPlayerGamepadIndicatorToPlayerColor(setupm_fakecolor);
 				}
 			}
 			break;
