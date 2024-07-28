@@ -20,6 +20,8 @@
 // make sure not to write back the config until it's been correctly loaded
 extern tic_t rendergametic;
 
+extern boolean loaded_config;
+
 extern char srb2home[256]; //Alam: My Home
 extern boolean usehome; //Alam: which path?
 extern const char *pandf; //Alam: how to path?
