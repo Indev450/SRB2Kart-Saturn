@@ -824,12 +824,15 @@ static const char *gamecontrolname[num_gamecontrols] =
 
 #include "k_kart.h"
 // ehhhhhh ill maybe add splitscreen support eventually lol
-void G_SetPlayerGamepadIndicatorToPlayerColor(void)
+void G_SetPlayerGamepadIndicatorToPlayerColor(UINT16 color)
 {
 	UINT16 skincolor;
 	byteColor_t byte_color;
 
-	skincolor = cv_playercolor.value;
+	if (color)
+		skincolor = color;
+	else
+		skincolor = cv_playercolor.value;
 
 	byte_color = V_GetColor(colortranslations[skincolor][8]).s;
 

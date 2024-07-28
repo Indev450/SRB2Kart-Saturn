@@ -1849,9 +1849,6 @@ void D_SRB2Main(void)
 	CONS_Printf("ST_Init(): Init status bar.\n");
 	ST_Init();
 
-	if (!dedicated)
-		G_SetPlayerGamepadIndicatorToPlayerColor(); // no idea where else to throw it lol
-
 	// Set up splitscreen players before joining!
 	if (!dedicated && (M_CheckParm("-splitscreen") && M_IsNextParm()))
 	{

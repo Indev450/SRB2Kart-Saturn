@@ -6064,6 +6064,8 @@ static void Command_SkinSearch(void)
   */
 static void Color_OnChange(void)
 {
+	G_SetPlayerGamepadIndicatorToPlayerColor(0); // i want this to always change so its here
+
 	if (!Playing())
 		return; // do whatever you want
 
@@ -6083,8 +6085,6 @@ static void Color_OnChange(void)
 		CV_StealthSetValue(&cv_playercolor,
 			players[consoleplayer].skincolor);
 	}
-
-	G_SetPlayerGamepadIndicatorToPlayerColor();
 }
 
 /** Sends a color change for the secondary splitscreen player, unless that
