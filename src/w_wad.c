@@ -1192,7 +1192,7 @@ lumpnum_t W_CheckNumForLongName(const char *name)
 // TODO: Make it search through cache first, maybe...?
 lumpnum_t W_CheckNumForMap(const char *name)
 {
-	UINT32 hash = quickncasehash(name, 8);
+	UINT32 hash = name ? quickncasehash(name, 8) : 0;
 	UINT16 lumpNum, end;
 	UINT32 i;
 	lumpinfo_t *p;
