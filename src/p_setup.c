@@ -3109,6 +3109,8 @@ boolean P_SetupLevel(boolean skipprecip, boolean reloadinggamestate)
 
 	G_AddMapToBuffer(gamemap-1);
 
+	K_LoadExtraVFX();
+
 	return true;
 }
 
