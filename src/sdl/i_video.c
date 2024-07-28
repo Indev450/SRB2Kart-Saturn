@@ -775,12 +775,15 @@ void I_DownSample(void)
 
 static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 {
+#define FOCUSUNION (mousefocus | (kbfocus << 1))
 	static SDL_bool firsttimeonmouse = SDL_TRUE;
 	static SDL_bool mousefocus = SDL_TRUE;
 	static SDL_bool kbfocus = SDL_TRUE;
 #ifdef USE_FBO_OGL
 	static SDL_bool windowmoved = SDL_FALSE;
 #endif
+
+	const unsigned int oldfocus = FOCUSUNION;
 
 	switch (evt.event)
 	{
@@ -805,6 +808,18 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 			windowmoved = SDL_TRUE;
             break;
 #endif
+	}
+
+#ifdef USE_FBO_OGL
+	if (windowmoved && rendermode == render_opengl)
+	{
+		I_DownSample();
+	}
+#endif
+
+	if (FOCUSUNION == oldfocus) // No state change
+	{
+		return;
 	}
 
 	if (mousefocus && kbfocus)
@@ -843,13 +858,7 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 			SDLdoUngrabMouse();
 		}
 	}
-
-#ifdef USE_FBO_OGL
-	if (windowmoved && rendermode == render_opengl)
-	{
-		I_DownSample();
-	}
-#endif
+#undef FOCUSUNION
 }
 
 static void Impl_HandleKeyboardEvent(SDL_KeyboardEvent evt, Uint32 type)
