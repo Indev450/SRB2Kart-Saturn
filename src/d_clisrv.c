@@ -3180,9 +3180,16 @@ void CL_ClearPlayer(INT32 playernum)
 	{
 		// Don't leave a NiGHTS ghost!
 		if ((players[playernum].pflags & PF_NIGHTSMODE) && players[playernum].mo->tracer)
+		{
 			P_RemoveMobj(players[playernum].mo->tracer);
+			P_SetTarget(&players[playernum].mo->tracer, NULL);
+		}
+
 		P_RemoveMobj(players[playernum].mo);
+		P_SetTarget(&players[playernum].mo, NULL);
 	}
+
+	// Wipe the struct.
 	memset(&players[playernum], 0, sizeof (player_t));
 }
 
