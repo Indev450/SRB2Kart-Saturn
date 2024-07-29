@@ -16,7 +16,6 @@
 #include "g_input.h"
 #include "g_game.h"
 #include "keys.h"
-#include "k_kart.h"
 #include "hu_stuff.h" // need HUFONT start & end
 #include "d_net.h"
 #include "console.h"
@@ -864,6 +863,8 @@ static const char *gamecontrolname[num_gamecontrols] =
 
 #define NUMKEYNAMES (sizeof (keynames)/sizeof (keyname_t))
 
+#include "k_kart.h"
+
 static INT32 G_GetDeviceForPlayer(INT32 player)
 {
 	switch (player)
@@ -911,8 +912,7 @@ static UINT16 G_GetSkinColor(INT32 player)
 	}
 }
 
-// ehhhhhh ill maybe add splitscreen support eventually lol
-void G_SetPlayerGamepadIndicatorToPlayerColor(INT32 player, UINT16 color)
+void G_SetPlayerGamepadIndicatorColor(INT32 player, UINT16 color)
 {
 	INT32 device;
 	UINT16 skincolor;

@@ -11255,7 +11255,7 @@ static void M_HandleSetupMultiPlayer(INT32 choice)
 			{
 				S_StartSound(NULL,sfx_menu1); // Tails
 				setupm_fakecolor--;
-				G_SetPlayerGamepadIndicatorToPlayerColor(setupm_playernum, setupm_fakecolor);
+				G_SetPlayerGamepadIndicatorColor(setupm_playernum, setupm_fakecolor);
 			}
 			break;
 
@@ -11311,7 +11311,7 @@ static void M_HandleSetupMultiPlayer(INT32 choice)
 			{
 				S_StartSound(NULL,sfx_menu1); // Tails
 				setupm_fakecolor++;
-				G_SetPlayerGamepadIndicatorToPlayerColor(setupm_playernum, setupm_fakecolor);
+				G_SetPlayerGamepadIndicatorColor(setupm_playernum, setupm_fakecolor);
 			}
 			break;
 
@@ -11351,7 +11351,7 @@ static void M_HandleSetupMultiPlayer(INT32 choice)
 				{
 					S_StartSound(NULL,sfx_menu1); // Tails
 					setupm_fakecolor = col;
-					G_SetPlayerGamepadIndicatorToPlayerColor(setupm_playernum, setupm_fakecolor);
+					G_SetPlayerGamepadIndicatorColor(setupm_playernum, setupm_fakecolor);
 				}
 			}
 			break;
