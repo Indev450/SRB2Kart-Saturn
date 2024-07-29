@@ -23,7 +23,7 @@
 #define TRANSFERTIME TICRATE		// how long to delay reaction shots?
 #define BREAKAWAYDIST 4000			// how *far* until players considered far apart?
 #define WALKBACKDIST 600			// how close should a trailing player be before we switch?
-#define PINCHDIST 30000				// how close should the leader be to be considered "end of race"?
+#define PINCHDIST 20000				// how close should the leader be to be considered "end of race"?
 
 struct directorinfo directorinfo;
 
