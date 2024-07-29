@@ -356,7 +356,8 @@ static inline void P_DeviceRumbleTick(void)
 			}
 		}
 
-		G_PlayerDeviceRumble(i, low, high, 0);
+		if (low && high != 0)
+			G_PlayerDeviceRumble(i, low, high, 57); // hack alert! i just dont want this think constantly resetting the rumble lol
 	}
 }
 
