@@ -826,25 +826,77 @@ static const char *gamecontrolname[num_gamecontrols] =
 
 #include "k_kart.h"
 
-static UINT16 G_GetSkinColor(void)
+static INT32 G_GetDeviceForPlayer(INT32 player)
 {
-	return ((gamestate == GS_LEVEL) ? players[displayplayers[0]].skincolor : cv_playercolor.value);
+	switch (player)
+	{
+		case 0:
+			return cv_usejoystick.value;
+			break;
+		case 1:
+			return cv_usejoystick2.value;
+			break;
+		case 2:
+			return cv_usejoystick3.value;
+			break;
+		case 3:
+			return cv_usejoystick4.value;
+			break;
+		default:
+			return 0;
+			break;
+	}
+}
+
+static UINT16 G_GetSkinColor(INT32 player)
+{
+	if (gamestate == GS_LEVEL)
+		return players[displayplayers[player]].skincolor;
+
+	switch (player)
+	{
+		case 0:
+			return cv_playercolor.value;
+			break;
+		case 1:
+			return cv_playercolor2.value;
+			break;
+		case 2:
+			return cv_playercolor3.value;
+			break;
+		case 3:
+			return cv_playercolor4.value;
+			break;
+		default:
+			return 0;
+			break;
+	}
 }
 
 // ehhhhhh ill maybe add splitscreen support eventually lol
-void G_SetPlayerGamepadIndicatorToPlayerColor(UINT16 color)
+void G_SetPlayerGamepadIndicatorToPlayerColor(INT32 player, UINT16 color)
 {
+	INT32 device;
 	UINT16 skincolor;
 	byteColor_t byte_color;
+
+	I_Assert(player >= 0 && player < MAXSPLITSCREENPLAYERS);
+
+	device = G_GetDeviceForPlayer(player);
+
+	if (device <= 0)
+	{
+		return;
+	}
 
 	if (color)
 		skincolor = color;
 	else
-		skincolor = G_GetSkinColor();
+		skincolor = G_GetSkinColor(player);
 
 	byte_color = V_GetColor(colortranslations[skincolor][8]).s;
 
-	I_SetGamepadIndicatorColor(1, byte_color.red, byte_color.green, byte_color.blue);
+	I_SetGamepadIndicatorColor(device, byte_color.red, byte_color.green, byte_color.blue);
 }
 
 void G_PlayerDeviceRumble(UINT16 low_strength, UINT16 high_strength)
