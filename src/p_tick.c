@@ -334,11 +334,9 @@ static inline void P_RunThinkers(void)
 
 static inline void P_DeviceRumbleTick(void)
 {
-	player_t *player;
-	UINT16 low = 0;
-	UINT16 high = 0;
+	UINT8 i;
 
-	if (cv_rumble.value == 0)
+	if (cv_rumble[0].value && cv_rumble[1].value && cv_rumble[2].value && cv_rumble[3].value == 0)
 	{
 		return;
 	}
@@ -346,29 +344,37 @@ static inline void P_DeviceRumbleTick(void)
 	if (paused)
 		return;
 
-	player = &players[displayplayers[0]];
-
-	if (!P_IsLocalPlayer(player))
-		return;
-
-	if (player->mo != NULL && !player->exiting)
+	for (i = 0; i <= splitscreen; i++)
 	{
-		if (player->kartstuff[k_spinouttimer])
-		{
-			low = high = 65536 / 4;
-		}
-		else if (player->kartstuff[k_sneakertimer] > (sneakertime-(TICRATE/2)))
-		{
-			low = high = 65536 / 8;
-		}
-		else if ((player->kartstuff[k_offroad])
-			&& P_IsObjectOnGround(player->mo) && player->speed != 0)
-		{
-			low = high = 65536 / 64;
-		}
-	}
+		player_t *player = &players[displayplayers[i]];
+		UINT16 low = 0;
+		UINT16 high = 0;
 
-	G_PlayerDeviceRumble(low, high);
+		if (!P_IsLocalPlayer(player))
+			continue;
+
+		if (!playeringame[i])
+			continue;
+
+		if (player->mo != NULL && !player->exiting)
+		{
+			if (player->kartstuff[k_spinouttimer])
+			{
+				low = high = 65536 / 4;
+			}
+			else if (player->kartstuff[k_sneakertimer] > (sneakertime-(TICRATE/2)))
+			{
+				low = high = 65536 / 8;
+			}
+			else if ((player->kartstuff[k_offroad])
+				&& P_IsObjectOnGround(player->mo) && player->speed != 0)
+			{
+				low = high = 65536 / 64;
+			}
+		}
+
+		G_PlayerDeviceRumble(i, low, high);
+	}
 }
 
 void P_RunChaseCameras(void)
