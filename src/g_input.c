@@ -38,6 +38,8 @@ consvar_t cv_mouseysens2 = {"mouseysens2", "20", CV_SAVE, mousesens_cons_t, NULL
 consvar_t cv_controlperkey = {"controlperkey", "One", CV_SAVE, onecontrolperkey_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_turnsmooth = {"turnsmoothing", "Slow", CV_SAVE, turnsmooth_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_rumble = {"gamepadrumble", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 INT32 mousex, mousey;
 INT32 mlooky; // like mousey but with a custom sensitivity for mlook
 
@@ -843,6 +845,16 @@ void G_SetPlayerGamepadIndicatorToPlayerColor(UINT16 color)
 	byte_color = V_GetColor(colortranslations[skincolor][8]).s;
 
 	I_SetGamepadIndicatorColor(1, byte_color.red, byte_color.green, byte_color.blue);
+}
+
+void G_PlayerDeviceRumble(UINT16 low_strength, UINT16 high_strength)
+{
+	if (cv_rumble.value == 0)
+	{
+		return;
+	}
+
+	I_GamepadRumble(1, low_strength, high_strength);
 }
 
 //
