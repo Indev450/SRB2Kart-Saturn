@@ -465,12 +465,6 @@ void P_Ticker(boolean run)
 			}
 #endif
 		}
-
-		// Apply rumble to local players
-		if (!demo.playback)
-		{
-			P_DeviceRumbleTick();
-		}
 		
 		ps_lua_mobjhooks.value.i = 0;
 		ps_checkposition_calls.value.i = 0;
@@ -504,6 +498,12 @@ void P_Ticker(boolean run)
 		for (i = 0; i < MAXPLAYERS; i++)
 			if (playeringame[i] && players[i].mo && !P_MobjWasRemoved(players[i].mo))
 				P_PlayerAfterThink(&players[i]);
+
+		// Apply rumble to local players
+		if (!demo.playback)
+		{
+			P_DeviceRumbleTick();
+		}
 
 		PS_START_TIMING(ps_lua_thinkframe_time);
 		LUAh_ThinkFrame();
