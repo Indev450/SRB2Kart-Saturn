@@ -286,6 +286,11 @@ void K_DrawDirectorDebugger(void)
 		V_DrawThinString(10, ytxt, V_70TRANS, va("%d", position));
 		V_DrawThinString(20, ytxt, V_70TRANS, va("%d", position + 1));
 
+		if (players[leader].kartstuff[k_positiondelay])
+		{
+			V_DrawThinString(40, ytxt, V_70TRANS, va("NG"));
+		}
+
 		V_DrawThinString(80, ytxt, V_70TRANS, va("%d", directorinfo.gap[position]));
 
 		if (directorinfo.boredom[position] >= BOREDOMTIME)
@@ -376,19 +381,19 @@ void K_UpdateDirector(void)
 		target = directorinfo.sortedplayers[targetposition];
 
 		// stop here since we're already viewing this player
-		if (displayplayers[0] == target)
+		if (*displayplayerp == target)
 		{
 			break;
 		}
 
 		// if we're certain the back half of the pair is actually in this position, try to switch
-		if (*displayplayerp != target)
+		if (!players[target].kartstuff[k_positiondelay])
 		{
 			K_DirectorSwitch(target, false);
 		}
 
 		// even if we're not certain, if we're certain we're watching the WRONG player, try to switch
-		if (players[*displayplayerp].kartstuff[k_position] != targetposition+1)
+		if (players[*displayplayerp].kartstuff[k_position] != targetposition+1 && !players[*displayplayerp].kartstuff[k_positiondelay])
 		{
 			K_DirectorSwitch(target, false);
 		}
