@@ -2150,6 +2150,8 @@ void G_ResetView(UINT8 viewnum, INT32 playernum, boolean onlyactive)
 
 	if (viewnum == 1 && demo.playback)
 		consoleplayer = displayplayers[0];
+
+	G_SetPlayerGamepadIndicatorToPlayerColor(0);
 }
 
 //
@@ -8537,6 +8539,9 @@ boolean G_DemoTitleResponder(event_t *ev)
 void G_SetGamestate(gamestate_t newstate)
 {
 	gamestate = newstate;
+
+	G_SetPlayerGamepadIndicatorToPlayerColor(0); // dumb hack but works
+
 #ifdef HAVE_DISCORDRPC
 	DRPC_UpdatePresence();
 #endif
