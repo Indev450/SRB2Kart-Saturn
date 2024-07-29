@@ -3051,7 +3051,7 @@ static int lib_gPlayerDeviceRumble(lua_State *L)
 	player_t *plr = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));    // retrieve player
 	UINT16 low_strength = (UINT16)luaL_checkinteger(L, 2); // low frequency rumble motor strenght
 	UINT16 high_strength = (UINT16)luaL_checkinteger(L, 3); // high frequency rumble motor strenght
-	UINT32 duration = (UINT32)luaL_optinteger(L, 4, 28); // duration of rumble in ms
+	UINT32 duration = (UINT32)luaL_optinteger(L, 4, 84); // duration of rumble in ms
 
 	for (int i = 0; i < MAXSPLITSCREENPLAYERS; ++i)
 	{
