@@ -375,6 +375,12 @@ void K_UpdateDirector(void)
 
 		target = directorinfo.sortedplayers[targetposition];
 
+		// stop here since we're already viewing this player
+		if (displayplayers[0] == target)
+		{
+			break;
+		}
+
 		// if we're certain the back half of the pair is actually in this position, try to switch
 		if (*displayplayerp != target)
 		{
