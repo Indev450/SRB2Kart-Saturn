@@ -25,7 +25,17 @@
 #define WALKBACKDIST 600			// how close should a trailing player be before we switch?
 #define PINCHDIST 20000				// how close should the leader be to be considered "end of race"?
 
-struct directorinfo directorinfo;
+struct directorinfo
+{
+	tic_t cooldown; // how long has it been since we last switched?
+	tic_t freeze;   // when nonzero, fixed switch pending, freeze logic!
+	INT32 attacker; // who to switch to when freeze delay elapses
+	INT32 maxdist;  // how far is the closest player from finishing?
+
+	INT32 sortedplayers[MAXPLAYERS]; // position-1 goes in, player index comes out.
+	INT32 gap[MAXPLAYERS];           // gap between a given position and their closest pursuer
+	INT32 boredom[MAXPLAYERS];       // how long has a given position had no credible attackers?
+} directorinfo;
 
 static boolean race_rules()
 {
@@ -164,7 +174,7 @@ static void K_UpdateDirectorPositions(void)
 
 		if (directorinfo.gap[position] >= BREAKAWAYDIST)
 		{
-			directorinfo.boredom[position] = min(BOREDOMTIME * 2, directorinfo.boredom[position] + 1);
+			directorinfo.boredom[position] = (INT32)(min(BOREDOMTIME * 2, directorinfo.boredom[position] + 1));
 		}
 		else if (directorinfo.boredom[position] > 0)
 		{
@@ -183,13 +193,6 @@ static void K_UpdateDirectorPositions(void)
 
 static boolean K_CanSwitchDirector(void)
 {
-	/*INT32 *displayplayerp = &displayplayers[0];
-
-	if (players[*displayplayerp].trickpanel > 0)
-	{
-		return false;
-	}*/
-
 	if (directorinfo.cooldown > 0)
 	{
 		return false;
@@ -283,11 +286,6 @@ void K_DrawDirectorDebugger(void)
 		V_DrawThinString(10, ytxt, V_70TRANS, va("%d", position));
 		V_DrawThinString(20, ytxt, V_70TRANS, va("%d", position + 1));
 
-		/*if (players[leader].positiondelay)
-		{
-			V_DrawThinString(40, ytxt, V_70TRANS, va("NG"));
-		}*/
-
 		V_DrawThinString(80, ytxt, V_70TRANS, va("%d", directorinfo.gap[position]));
 
 		if (directorinfo.boredom[position] >= BOREDOMTIME)
@@ -378,13 +376,13 @@ void K_UpdateDirector(void)
 		target = directorinfo.sortedplayers[targetposition];
 
 		// if we're certain the back half of the pair is actually in this position, try to switch
-		if (*displayplayerp != target /*&& !players[target].positiondelay*/)
+		if (*displayplayerp != target)
 		{
 			K_DirectorSwitch(target, false);
 		}
 
 		// even if we're not certain, if we're certain we're watching the WRONG player, try to switch
-		if (players[*displayplayerp].kartstuff[k_position] != targetposition+1 /*&& !players[target].positiondelay*/)
+		if (players[*displayplayerp].kartstuff[k_position] != targetposition+1)
 		{
 			K_DirectorSwitch(target, false);
 		}
