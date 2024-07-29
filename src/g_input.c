@@ -823,6 +823,12 @@ static const char *gamecontrolname[num_gamecontrols] =
 #define NUMKEYNAMES (sizeof (keynames)/sizeof (keyname_t))
 
 #include "k_kart.h"
+
+static UINT16 G_GetSkinColor(void)
+{
+	return ((gamestate == GS_LEVEL) ? players[displayplayers[0]].skincolor : cv_playercolor.value);
+}
+
 // ehhhhhh ill maybe add splitscreen support eventually lol
 void G_SetPlayerGamepadIndicatorToPlayerColor(UINT16 color)
 {
@@ -832,7 +838,7 @@ void G_SetPlayerGamepadIndicatorToPlayerColor(UINT16 color)
 	if (color)
 		skincolor = color;
 	else
-		skincolor = cv_playercolor.value;
+		skincolor = G_GetSkinColor();
 
 	byte_color = V_GetColor(colortranslations[skincolor][8]).s;
 
