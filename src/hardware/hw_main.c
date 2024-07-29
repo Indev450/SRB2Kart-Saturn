@@ -499,9 +499,6 @@ void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *col
 	tint_color.rgba = (colormap != NULL) ? (UINT32)colormap->rgba : GL_DEFAULTMIX;
 	fade_color.rgba = (colormap != NULL) ? (UINT32)colormap->fadergba : GL_DEFAULTFOG;
 
-	// Clamp the light level, since it can sometimes go out of the 0-255 range from animations
-	light_level = CLAMP(SOFTLIGHT(light_level), cv_secbright.value, 255);
-
 	// Crappy backup coloring if you can't do shaders
 	if (!HWR_UseShader())
 	{
@@ -538,6 +535,9 @@ void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *col
 		poly_color.s.green = (UINT8)green;
 		poly_color.s.blue = (UINT8)blue;
 	}
+
+	// Clamp the light level, since it can sometimes go out of the 0-255 range from animations
+	light_level = CLAMP(SOFTLIGHT(light_level), cv_secbright.value, 255);
 
 	// in palette rendering mode, this is not needed since it properly takes the changes to the palette itself
 	if (!HWR_ShouldUsePaletteRendering())
@@ -3161,7 +3161,7 @@ static void HWR_Subsector(size_t num)
 										   false,
 					                       *rover->bottomheight,
 					                       *gr_frontsector->lightlist[light].lightlevel,
-					                       rover->alpha, rover->master->frontsector, (rover->flags & FF_RIPPLE ? PF_Ripple : 0)|PF_Translucent,
+					                       CLAMP(rover->alpha, 0 ,255), rover->master->frontsector, (rover->flags & FF_RIPPLE ? PF_Ripple : 0)|PF_Translucent,
 					                       false, gr_frontsector->lightlist[light].extra_colormap);
 				}
 				else
@@ -3205,7 +3205,7 @@ static void HWR_Subsector(size_t num)
 											true,
 											*rover->topheight,
 											*gr_frontsector->lightlist[light].lightlevel,
-											rover->alpha, rover->master->frontsector, (rover->flags & FF_RIPPLE ? PF_Ripple : 0)|PF_Translucent,
+											CLAMP(rover->alpha, 0 ,255), rover->master->frontsector, (rover->flags & FF_RIPPLE ? PF_Ripple : 0)|PF_Translucent,
 											false, gr_frontsector->lightlist[light].extra_colormap);
 				}
 				else
@@ -3860,7 +3860,7 @@ static void HWR_SplitSprite(gr_vissprite_t *spr)
 			continue;
 
 		if (!(spr->mobj->frame & FF_FULLBRIGHT))
-			lightlevel = *list[i-1].lightlevel;
+			lightlevel = min(*list[i-1].lightlevel, 255);
 		colormap = list[i-1].extra_colormap;
 		break;
 	}
@@ -3874,7 +3874,7 @@ static void HWR_SplitSprite(gr_vissprite_t *spr)
 		if (!(list[i].flags & FF_NOSHADE) && (list[i].flags & FF_CUTSPRITES))
 		{
 			if (!(spr->mobj->frame & FF_FULLBRIGHT))
-				lightlevel = *list[i].lightlevel;
+				lightlevel = min(*list[i-1].lightlevel, 255);
 			colormap = list[i].extra_colormap;
 		}
 
@@ -4092,7 +4092,7 @@ static void HWR_DrawSprite(gr_vissprite_t *spr)
 	extracolormap_t *colormap = sector->extra_colormap;
 
 	if (!(spr->mobj->frame & FF_FULLBRIGHT))
-		lightlevel = sector->lightlevel;
+		lightlevel = min(sector->lightlevel, 255);
 
 	HWR_Lighting(&Surf, lightlevel, colormap);
 
@@ -4191,7 +4191,7 @@ static inline void HWR_DrawPrecipitationSprite(gr_vissprite_t *spr)
 		light = R_GetPlaneLight(sector, spr->mobj->z + spr->mobj->height, false); // Always use the light at the top instead of whatever I was doing before
 
 		if (!(spr->mobj->frame & FF_FULLBRIGHT))
-			lightlevel = *sector->lightlist[light].lightlevel;
+			lightlevel = min(*sector->lightlist[light].lightlevel, 255);
 
 		if (sector->lightlist[light].extra_colormap)
 			colormap = sector->lightlist[light].extra_colormap;
@@ -4199,7 +4199,7 @@ static inline void HWR_DrawPrecipitationSprite(gr_vissprite_t *spr)
 	else
 	{
 		if (!(spr->mobj->frame & FF_FULLBRIGHT))
-			lightlevel = sector->lightlevel;
+			lightlevel = min(sector->lightlevel, 255);
 
 		if (sector->extra_colormap)
 			colormap = sector->extra_colormap;
@@ -4393,7 +4393,7 @@ void HWR_AddTransparentFloor(lumpnum_t lumpnum, extrasubsector_t *xsub, boolean 
 	
 	planeinfo->lumpnum = lumpnum;
 	planeinfo->xsub = xsub;
-	planeinfo->alpha = CLAMP(alpha, 0, 255);
+	planeinfo->alpha = alpha;
 	planeinfo->FOFSector = FOFSector;
 	planeinfo->blend = blend;
 	planeinfo->fogplane = fogplane;
@@ -4413,7 +4413,7 @@ void HWR_AddTransparentPolyobjectFloor(lumpnum_t lumpnum, polyobj_t *polysector,
 	
 	polyplaneinfo->lumpnum = lumpnum;
 	polyplaneinfo->polysector = polysector;
-	polyplaneinfo->alpha = CLAMP(alpha, 0, 255);
+	polyplaneinfo->alpha = alpha;
 	polyplaneinfo->FOFSector = FOFSector;
 	polyplaneinfo->blend = blend;
 	polyplaneinfo->planecolormap = planecolormap;
