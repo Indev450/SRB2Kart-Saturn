@@ -21,7 +21,7 @@
 #define SWITCHTIME TICRATE * 5		// cooldown between unforced switches
 #define BOREDOMTIME 3 * TICRATE / 2 // how long until players considered far apart?
 #define TRANSFERTIME TICRATE		// how long to delay reaction shots?
-#define BREAKAWAYDIST 4000			// how *far* until players considered far apart?
+#define BREAKAWAYDIST 2000			// how *far* until players considered far apart?
 #define WALKBACKDIST 600			// how close should a trailing player be before we switch?
 #define PINCHDIST 20000				// how close should the leader be to be considered "end of race"?
 
