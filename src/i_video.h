@@ -139,6 +139,7 @@ UINT32 I_GetRefreshRate(void);
 
 boolean I_UseNativeKeyboard(void);
 
+void I_GamepadRumble(INT32 device_id, UINT16 low_strength, UINT16 high_strength);
 void I_SetGamepadIndicatorColor(INT32 device_id, UINT8 red, UINT8 green, UINT8 blue);
 
 #ifdef USE_FBO_OGL

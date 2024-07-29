@@ -1073,6 +1073,8 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_controlperkey);
 	CV_RegisterVar(&cv_turnsmooth);
 
+	CV_RegisterVar(&cv_rumble);
+
 	CV_RegisterVar(&cv_usemouse);
 	CV_RegisterVar(&cv_usemouse2);
 	CV_RegisterVar(&cv_invertmouse);

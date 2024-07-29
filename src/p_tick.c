@@ -315,6 +315,45 @@ static inline void P_RunThinkers(void)
 	}
 }
 
+static inline void P_DeviceRumbleTick(void)
+{
+	player_t *player;
+	UINT16 low = 0;
+	UINT16 high = 0;
+
+	if (cv_rumble.value == 0)
+	{
+		return;
+	}
+
+	if (paused)
+		return;
+
+	player = &players[displayplayers[0]];
+
+	if (!P_IsLocalPlayer(player))
+		return;
+
+	if (player->mo != NULL && !player->exiting)
+	{
+		if (player->kartstuff[k_spinouttimer])
+		{
+			low = high = 65536 / 4;
+		}
+		else if (player->kartstuff[k_sneakertimer] > (sneakertime-(TICRATE/2)))
+		{
+			low = high = 65536 / 8;
+		}
+		else if ((player->kartstuff[k_offroad])
+			&& P_IsObjectOnGround(player->mo) && player->speed != 0)
+		{
+			low = high = 65536 / 64;
+		}
+	}
+
+	G_PlayerDeviceRumble(low, high);
+}
+
 void P_RunChaseCameras(void)
 {
 	UINT8 i;
@@ -419,6 +458,12 @@ void P_Ticker(boolean run)
 #ifdef DEMO_COMPAT_100
 			}
 #endif
+		}
+
+		// Apply rumble to local players
+		if (!demo.playback)
+		{
+			P_DeviceRumbleTick();
 		}
 		
 		ps_lua_mobjhooks.value.i = 0;
