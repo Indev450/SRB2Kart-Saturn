@@ -230,7 +230,7 @@ INT32 I_NumJoys(void);
 */
 const char *I_GetJoyName(INT32 joyindex);
 
-void I_GamepadRumble(INT32 device_id, UINT16 low_strength, UINT16 high_strength);
+void I_GamepadRumble(INT32 device_id, UINT16 low_strength, UINT16 high_strength, UINT32 duration);
 void I_SetGamepadIndicatorColor(INT32 device_id, UINT8 red, UINT8 green, UINT8 blue);
 
 #ifndef NOMUMBLE
