@@ -336,28 +336,33 @@ static inline void P_DeviceRumbleTick(void)
 		if (!P_IsLocalPlayer(player))
 			continue;
 
-		if (!playeringame[i])
+		if (!playeringame[i] || player->spectator)
 			continue;
 
-		if (player->mo != NULL && !player->exiting)
+		if (player->exiting)
+			continue;
+
+		if (player->mo == NULL)
+			continue;
+
+		if (player->kartstuff[k_spinouttimer])
 		{
-			if (player->kartstuff[k_spinouttimer])
-			{
-				low = high = 65536 / 4;
-			}
-			else if (player->kartstuff[k_sneakertimer] > (sneakertime-(TICRATE/2)))
-			{
-				low = high = 65536 / 8;
-			}
-			else if ((player->kartstuff[k_offroad])
-				&& P_IsObjectOnGround(player->mo) && player->speed != 0)
-			{
-				low = high = 65536 / 64;
-			}
+			low = high = 65536 / 4;
+		}
+		else if (player->kartstuff[k_sneakertimer] > (sneakertime-(TICRATE/2)))
+		{
+			low = high = 65536 / 8;
+		}
+		else if ((player->kartstuff[k_offroad])
+			&& P_IsObjectOnGround(player->mo) && player->speed != 0)
+		{
+			low = high = 65536 / 64;
 		}
 
-		if (low && high != 0)
-			G_PlayerDeviceRumble(i, low, high, 57); // hack alert! i just dont want this think constantly resetting the rumble lol
+		 if (low == 0 && high == 0)
+			continue;
+
+		G_PlayerDeviceRumble(i, low, high, 57); // hack alert! i just dont want this think constantly resetting the rumble lol
 	}
 }
 
