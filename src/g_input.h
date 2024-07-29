@@ -133,7 +133,7 @@ extern INT32 gamecontrol4[num_gamecontrols][2];
 // check a gamecontrol being active or not
 
 void G_SetPlayerGamepadIndicatorColor(INT32 player, UINT16 color);
-void G_PlayerDeviceRumble(INT32 player, UINT16 low_strength, UINT16 high_strength);
+void G_PlayerDeviceRumble(INT32 player, UINT16 low_strength, UINT16 high_strength, UINT32 duration);
 
 // remaps the input event to a game control.
 void G_MapEventsToControls(event_t *ev);

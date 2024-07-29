@@ -373,7 +373,7 @@ static inline void P_DeviceRumbleTick(void)
 			}
 		}
 
-		G_PlayerDeviceRumble(i, low, high);
+		G_PlayerDeviceRumble(i, low, high, 0);
 	}
 }
 

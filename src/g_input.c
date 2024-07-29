@@ -948,10 +948,10 @@ static void G_ResetPlayerDeviceRumble(INT32 player)
 		return;
 	}
 
-	I_GamepadRumble(device_id, 0, 0);
+	I_GamepadRumble(device_id, 0, 0, 0);
 }
 
-void G_PlayerDeviceRumble(INT32 player, UINT16 low_strength, UINT16 high_strength)
+void G_PlayerDeviceRumble(INT32 player, UINT16 low_strength, UINT16 high_strength, UINT32 duration)
 {
 	INT32 device_id;
 
@@ -967,7 +967,7 @@ void G_PlayerDeviceRumble(INT32 player, UINT16 low_strength, UINT16 high_strengt
 		return;
 	}
 
-	I_GamepadRumble(device_id, low_strength, high_strength);
+	I_GamepadRumble(device_id, low_strength, high_strength, duration);
 }
 
 //

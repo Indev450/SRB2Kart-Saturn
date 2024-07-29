@@ -2670,7 +2670,7 @@ const char *I_GetJoyName(INT32 joyindex)
 	return joyname;
 }
 
-void I_GamepadRumble(INT32 device_id, UINT16 low_strength, UINT16 high_strength)
+void I_GamepadRumble(INT32 device_id, UINT16 low_strength, UINT16 high_strength, UINT32 duration)
 {
 #if !(SDL_VERSION_ATLEAST(2,0,14))
 	(void)device_id;
@@ -2685,7 +2685,7 @@ void I_GamepadRumble(INT32 device_id, UINT16 low_strength, UINT16 high_strength)
 		return;
 	}
 
-	SDL_GameControllerRumble(controller, low_strength, high_strength, 0);
+	SDL_GameControllerRumble(controller, low_strength, high_strength, duration);
 #endif
 }
 

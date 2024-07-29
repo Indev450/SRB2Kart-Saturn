@@ -3049,8 +3049,9 @@ static int lib_gPlayerDeviceRumble(lua_State *L)
 {
 	INT32 player = -1;
 	player_t *plr = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));    // retrieve player
-	UINT16 low_strength = (INT32)luaL_checkinteger(L, 2);
-	UINT16 high_strength = (INT32)luaL_checkinteger(L, 3);
+	UINT16 low_strength = (INT32)luaL_checkinteger(L, 2); // low frequency rumble motor strenght
+	UINT16 high_strength = (INT32)luaL_checkinteger(L, 3); // high frequency rumble motor strenght
+	UINT32 duration = (INT32)luaL_checkinteger(L, 4); // duration of rumble in ms
 
 	for (int i = 0; i < MAXSPLITSCREENPLAYERS; ++i)
 	{
@@ -3064,7 +3065,7 @@ static int lib_gPlayerDeviceRumble(lua_State *L)
 	// Not a local player
 	if (player == -1) return 0;
 
-	G_PlayerDeviceRumble(player, low_strength, high_strength);
+	G_PlayerDeviceRumble(player, low_strength, high_strength, duration);
 
 	return 0;
 }
