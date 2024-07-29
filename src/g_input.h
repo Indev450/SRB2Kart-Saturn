@@ -15,6 +15,7 @@
 #define __G_INPUT__
 
 #include "d_event.h"
+#include "doomstat.h"
 #include "keys.h"
 #include "command.h"
 
@@ -106,7 +107,7 @@ typedef enum
 extern consvar_t cv_mousesens, cv_mouseysens;
 extern consvar_t cv_mousesens2, cv_mouseysens2;
 extern consvar_t cv_controlperkey, cv_turnsmooth;
-extern consvar_t cv_rumble;
+extern consvar_t cv_rumble[MAXSPLITSCREENPLAYERS];
 
 extern INT32 mousex, mousey;
 extern INT32 mlooky; //mousey with mlookSensitivity
@@ -132,7 +133,7 @@ extern INT32 gamecontrol4[num_gamecontrols][2];
 // check a gamecontrol being active or not
 
 void G_SetPlayerGamepadIndicatorToPlayerColor(INT32 player, UINT16 color);
-void G_PlayerDeviceRumble(UINT16 low_strength, UINT16 high_strength);
+void G_PlayerDeviceRumble(INT32 player, UINT16 low_strength, UINT16 high_strength);
 
 // remaps the input event to a game control.
 void G_MapEventsToControls(event_t *ev);
