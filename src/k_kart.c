@@ -10906,6 +10906,9 @@ void K_drawKartHUD(void)
 	if (cv_kartdebugcheckpoint.value)
 		K_drawCheckpointDebugger();
 
+	if (cv_kartdebugdirector.value)
+		K_DrawDirectorDebugger();
+
 	if (cv_kartdebugnodes.value)
 	{
 		UINT8 p;
