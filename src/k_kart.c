@@ -617,10 +617,8 @@ UINT8 K_GetKartColorByName(const char *name)
 
 UINT8 K_GetHudColor(void)
 {
-	if (cv_colorizedhud.value){
-		if (cv_colorizedhudcolor.value) return cv_colorizedhudcolor.value;
-	}
-	if (stplyr && P_IsLocalPlayer(stplyr) && gamestate == GS_LEVEL) return stplyr->skincolor;
+	if (cv_colorizedhud.value && cv_colorizedhudcolor.value) return cv_colorizedhudcolor.value;
+
 	return ((stplyr && gamestate == GS_LEVEL) ? stplyr->skincolor : cv_playercolor.value);
 }
 
