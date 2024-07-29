@@ -341,9 +341,6 @@ static inline void P_DeviceRumbleTick(void)
 		return;
 	}
 
-	if (paused)
-		return;
-
 	for (i = 0; i <= splitscreen; i++)
 	{
 		player_t *player = &players[displayplayers[i]];
