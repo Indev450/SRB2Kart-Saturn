@@ -350,7 +350,7 @@ static inline void P_DeviceRumbleTick(void)
 		if (!P_IsLocalPlayer(player))
 			continue;
 
-		if (!playeringame[i] || player->spectator)
+		if (!playeringame[displayplayers[i]] || player->spectator)
 			continue;
 
 		if (player->exiting)
