@@ -372,6 +372,11 @@ static inline void P_DeviceRumbleTick(void)
 		{
 			low = high = 65536 / 64;
 		}
+		else if (player->kartstuff[k_brakedrift])
+		{
+			low = 0;
+			high = 65536 / 256;
+		}
 
 		 if (low == 0 && high == 0)
 			continue;
