@@ -68,8 +68,6 @@ void Command_Numthinkers_f(void)
 		CONS_Printf(M_GetText("numthinkers <#>: Count number of thinkers\n"));
 		CONS_Printf(
 			"\t1: P_MobjThinker\n"
-			/*"\t2: P_RainThinker\n"
-			"\t3: P_SnowThinker\n"*/
 			"\t2: P_NullPrecipThinker\n"
 			"\t3: T_Friction\n"
 			"\t4: T_Pusher\n"
@@ -85,14 +83,6 @@ void Command_Numthinkers_f(void)
 			action = (actionf_p1)P_MobjThinker;
 			CONS_Printf(M_GetText("Number of %s: "), "P_MobjThinker");
 			break;
-		/*case 2:
-			action = (actionf_p1)P_RainThinker;
-			CONS_Printf(M_GetText("Number of %s: "), "P_RainThinker");
-			break;
-		case 3:
-			action = (actionf_p1)P_SnowThinker;
-			CONS_Printf(M_GetText("Number of %s: "), "P_SnowThinker");
-			break;*/
 		case 2:
 			action = (actionf_p1)P_NullPrecipThinker;
 			CONS_Printf(M_GetText("Number of %s: "), "P_NullPrecipThinker");
@@ -235,7 +225,6 @@ static thinker_t *currentthinker;
 //
 void P_RemoveThinkerDelayed(thinker_t *thinker)
 {
-	thinker_t *next;
 #ifdef PARANOIA
 	if (thinker->next)
 		thinker->next = NULL;
@@ -245,14 +234,29 @@ void P_RemoveThinkerDelayed(thinker_t *thinker)
 	if (thinker->references)
 		return;
 
-	/* Remove from main thinker list */
-	next = thinker->next;
+	R_DestroyLevelInterpolators(thinker);
+
 	/* Note that currentthinker is guaranteed to point to us,
 	* and since we're freeing our memory, we had better change that. So
 	* point it to thinker->prev, so the iterator will correctly move on to
 	* thinker->prev->next = thinker->next */
-	(next->prev = currentthinker = thinker->prev)->next = next;
-	R_DestroyLevelInterpolators(thinker);
+	currentthinker = thinker->prev;
+	/* Remove from main thinker list */
+	P_UnlinkThinker(thinker);
+}
+
+//
+// P_UnlinkThinker()
+//
+// Actually removes thinker from the list and frees its memory.
+//
+void P_UnlinkThinker(thinker_t *thinker)
+{
+	thinker_t *next = thinker->next;
+
+	I_Assert(thinker->references == 0);
+
+	(next->prev = thinker->prev)->next = next;
 	Z_Free(thinker);
 }
 
