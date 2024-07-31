@@ -3631,6 +3631,7 @@ boolean P_PrecipThinker(precipmobj_t *mobj)
 		mobj->z = mobj->ceilingz;
 		mobj->momz = mobj->info->speed;
 		mobj->precipflags &= ~PCF_SPLASH;
+		R_ResetPrecipitationMobjInterpolationState(mobj);
 	}
 
 	if (mobj->tics != -1)
@@ -3671,6 +3672,7 @@ boolean P_PrecipThinker(precipmobj_t *mobj)
 		if ((mobj->info->deathstate == S_NULL) || (mobj->precipflags & PCF_PIT)) // no splashes on sky or bottomless pits
 		{
 			mobj->z = mobj->ceilingz;
+			R_ResetPrecipitationMobjInterpolationState(mobj);
 		}
 		else
 		{
@@ -3679,6 +3681,7 @@ boolean P_PrecipThinker(precipmobj_t *mobj)
 
 			mobj->z = mobj->floorz;
 			mobj->precipflags |= PCF_SPLASH;
+			R_ResetPrecipitationMobjInterpolationState(mobj);
 		}
 	}
 
