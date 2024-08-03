@@ -5658,6 +5658,7 @@ void G_ConsGhostTic(INT32 playernum)
 					mobj = (mobj_t *)th;
 					if (mobj->type == (mobjtype_t)type && mobj->x == x && mobj->y == y && mobj->z == z)
 						break;
+					mobj = NULL; // wasn't this one, keep searching.
 				}
 				if (mobj && mobj->health != health) // Wasn't damaged?! This is desync! Fix it!
 				{

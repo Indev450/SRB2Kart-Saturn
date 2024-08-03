@@ -909,9 +909,8 @@ static mapthing_t *OP_CreateNewMapThing(player_t *player, UINT16 type, boolean c
 
 			mo = (mobj_t *)th;
 			// get offset from mt, which points to old mapthings, then add new location
-			if (!mo->spawnpoint)
-				continue;
-			mo->spawnpoint = (mo->spawnpoint - mt) + mapthings;
+			if (mo->spawnpoint)
+				mo->spawnpoint = (mo->spawnpoint - mt) + mapthings;
 		}
 	}
 

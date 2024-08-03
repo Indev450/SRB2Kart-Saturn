@@ -1881,10 +1881,8 @@ mobj_t *P_FindNewPosition(UINT32 oldposition)
 			continue;
 
 		mobj = (mobj_t *)th;
-		if (mobj->mobjnum != oldposition)
-			continue;
-
-		return mobj;
+		if (mobj->mobjnum == oldposition)
+			return mobj;
 	}
 	CONS_Debug(DBG_GAMELOGIC, "mobj not found\n");
 	return NULL;
@@ -2883,14 +2881,12 @@ static void P_NetUnArchiveThinkers(void)
 		for (currentthinker = thinkercap.next; currentthinker != &thinkercap;
 			currentthinker = currentthinker->next)
 		{
-			if (currentthinker->function.acp1 != (actionf_p1)T_ExecutorDelay)
-				continue;
-
-			delay = (void *)currentthinker;
-			if (!(mobjnum = (UINT32)(size_t)delay->caller))
-				continue;
-
-			delay->caller = P_FindNewPosition(mobjnum);
+			if (currentthinker->function.acp1 == (actionf_p1)T_ExecutorDelay)
+			{
+				delay = (void *)currentthinker;
+				if ((mobjnum = (UINT32)(size_t)delay->caller))
+					delay->caller = P_FindNewPosition(mobjnum);
+			}
 		}
 	}
 }
