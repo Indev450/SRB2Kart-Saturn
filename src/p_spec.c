@@ -4581,12 +4581,12 @@ void P_UpdateSpecials(void)
 	// LEVEL TIMER
 	P_CheckTimeLimit();
 
+	// POINT LIMIT
+	P_CheckPointLimit();
+
 	// Dynamic slopeness
 	if (!midgamejoin) // run here when not joined midgame to prevent any potential issues that may arise
 		P_RunDynamicSlopes();
-
-	// POINT LIMIT
-	P_CheckPointLimit();
 
 	// ANIMATE TEXTURES
 	for (anim = anims; anim < lastanim; anim++)
