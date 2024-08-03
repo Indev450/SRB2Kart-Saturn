@@ -147,7 +147,7 @@ static void R_SetupFreelook(void)
 
 void R_InterpolateViewRollAngle(fixed_t frac)
 {
-	viewroll = oldview->roll + R_LerpAngle(oldview->roll, newview->roll, frac);
+	viewroll = R_LerpAngle(oldview->roll, newview->roll, frac);
 }
 
 void R_InterpolateView(fixed_t frac, boolean forceinvalid)
