@@ -1142,8 +1142,6 @@ void P_SpawnShieldOrb(player_t *player)
 	{
 		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 			continue;
-		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-			continue;
 
 		shieldobj = (mobj_t *)th;
 
@@ -1871,8 +1869,6 @@ void P_Telekinesis(player_t *player, fixed_t thrust, fixed_t range)
 	for (th = thinkercap.next; th != &thinkercap; th = th->next)
 	{
 		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
-			continue;
-		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 			continue;
 
 		mo2 = (mobj_t *)th;
@@ -2626,25 +2622,21 @@ static void P_DoZoomTube(player_t *player)
 		{
 			if (th->function.acp1 != (actionf_p1)P_MobjThinker) // Not a mobj thinker
 				continue;
-			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-				continue;
 
 			mo2 = (mobj_t *)th;
 
 			if (mo2->type != MT_TUBEWAYPOINT)
 				continue;
 
-			if (mo2->threshold != sequence)
-				continue;
-
-			if (reverse && mo2->health != player->mo->tracer->health - 1)
-				continue;
-
-			if (!reverse && mo2->health != player->mo->tracer->health + 1)
-				continue;
-
-			waypoint = mo2;
-			break;
+			if (mo2->threshold == sequence)
+			{
+				if ((reverse && mo2->health == player->mo->tracer->health - 1)
+					|| (!reverse && mo2->health == player->mo->tracer->health + 1))
+				{
+					waypoint = mo2;
+					break;
+				}
+			}
 		}
 
 		if (waypoint)
@@ -2723,8 +2715,6 @@ void P_NukeEnemies(mobj_t *inflictor, mobj_t *source, fixed_t radius)
 	{
 		if (think->function.acp1 != (actionf_p1)P_MobjThinker)
 			continue; // not a mobj thinker
-		if (think->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-			continue;
 
 		mo = (mobj_t *)think;
 
@@ -2805,8 +2795,6 @@ boolean P_LookForEnemies(player_t *player)
 	{
 		if (think->function.acp1 != (actionf_p1)P_MobjThinker)
 			continue; // not a mobj thinker
-		if (think->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-			continue;
 
 		mo = (mobj_t *)think;
 		if (!(mo->flags & (MF_ENEMY|MF_BOSS|MF_MONITOR|MF_SPRING)))
@@ -2931,8 +2919,6 @@ void P_FindEmerald(void)
 	for (th = thinkercap.next; th != &thinkercap; th = th->next)
 	{
 		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
-			continue;
-		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 			continue;
 
 		mo2 = (mobj_t *)th;
@@ -3979,7 +3965,6 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	{
 		P_MoveChaseCamera(player, thiscam, false);
 		R_ResetViewInterpolation(num + 1);
-		R_ResetViewInterpolation(num + 1);
 	}
 
 	return (x == thiscam->x && y == thiscam->y && z == thiscam->z && angle == thiscam->aiming);
@@ -4039,7 +4024,7 @@ boolean P_SpectatorJoinGame(player_t *player)
 		if (player->mo)
 		{
 			P_RemoveMobj(player->mo);
-			P_SetTarget(&player->mo, NULL);
+			player->mo = NULL;
 		}
 		player->spectator = false;
 		player->pflags &= ~PF_WANTSTOJOIN;
@@ -4655,8 +4640,6 @@ void P_PlayerThink(player_t *player)
 		for (th = thinkercap.next; th != &thinkercap; th = th->next)
 		{
 			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
-				continue;
-			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 				continue;
 
 			mo2 = (mobj_t *)th;

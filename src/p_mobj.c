@@ -3223,8 +3223,6 @@ void P_DestroyRobots(void)
 	{
 		if (think->function.acp1 != (actionf_p1)P_MobjThinker)
 			continue; // not a mobj thinker
-		if (think->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-			continue;
 
 		mo = (mobj_t *)think;
 		if (mo->health <= 0 || !(mo->flags & MF_ENEMY || mo->flags & MF_BOSS))
@@ -4033,8 +4031,6 @@ static void P_Boss3Thinker(mobj_t *mobj)
 			{
 				if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 					continue;
-				if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-					continue;
 
 				mo2 = (mobj_t *)th;
 				if (mo2->type == (mobjtype_t)mobj->info->mass && mo2->tracer == mobj)
@@ -4126,25 +4122,13 @@ static void P_Boss3Thinker(mobj_t *mobj)
 		{
 			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 				continue;
-			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-				continue;
 
 			mo2 = (mobj_t *)th;
-
-			if (!mo2)
-				continue;
-
-			if (mo2->type != MT_BOSS3WAYPOINT)
-				continue;
-
-			if (!mo2->spawnpoint)
-				continue;
-
-			if (mo2->spawnpoint->angle != mobj->threshold)
-				continue;
-
-			P_SetTarget(&mobj->target, mo2);
-			break;
+			if (mo2->type == MT_BOSS3WAYPOINT && mo2->spawnpoint && mo2->spawnpoint->angle == mobj->threshold)
+			{
+				P_SetTarget(&mobj->target, mo2);
+				break;
+			}
 		}
 
 		if (!mobj->target) // Should NEVER happen
@@ -4759,8 +4743,6 @@ static void P_Boss7Thinker(mobj_t *mobj)
 				{
 					if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 						continue;
-					if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-						continue;
 
 					mo2 = (mobj_t *)th;
 					if (mo2->type == MT_BOSS3WAYPOINT && mo2->spawnpoint)
@@ -4815,8 +4797,6 @@ static void P_Boss7Thinker(mobj_t *mobj)
 		for (th = thinkercap.next; th != &thinkercap; th = th->next)
 		{
 			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
-				continue;
-			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 				continue;
 
 			mo2 = (mobj_t *)th;
@@ -4940,8 +4920,6 @@ static void P_Boss9Thinker(mobj_t *mobj)
 		for (th = thinkercap.next; th != &thinkercap; th = th->next)
 		{
 			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
-				continue;
-			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 				continue;
 
 			mo2 = (mobj_t *)th;
@@ -5402,8 +5380,6 @@ mobj_t *P_GetClosestAxis(mobj_t *source)
 	for (th = thinkercap.next; th != &thinkercap; th = th->next)
 	{
 		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
-			continue;
-		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 			continue;
 
 		mo2 = (mobj_t *)th;
@@ -6112,8 +6088,7 @@ void P_MobjThinker(mobj_t *mobj)
 	mobj->flags2 &= ~MF2_PUSHED;
 	mobj->eflags &= ~(MFE_SPRUNG|MFE_JUSTBOUNCEDWALL);
 
-	P_SetTarget(&tmfloorthing, NULL);
-	P_SetTarget(&tmhitthing, NULL);
+	tmfloorthing = tmhitthing = NULL;
 
 	// 970 allows ANY mobj to trigger a linedef exec
 	if (mobj->subsector && GETSECSPECIAL(mobj->subsector->sector->special, 2) == 8)
@@ -10067,67 +10042,71 @@ void P_RemoveMobj(mobj_t *mobj)
 	// killough 11/98:
 	//
 	// Remove any references to other mobjs.
-	P_SetTarget(&mobj->target, NULL);
-	P_SetTarget(&mobj->tracer, NULL);
+	P_SetTarget(&mobj->target, P_SetTarget(&mobj->tracer, NULL));
 
 	// repair hnext chain
-	mobj_t *cachenext = mobj->hnext;
-
-	if (mobj->hnext && !P_MobjWasRemoved(mobj->hnext))
 	{
-		if (mobj->hnext->hprev == mobj)
+		mobj_t *cachenext = mobj->hnext;
+
+		if (mobj->hnext && !P_MobjWasRemoved(mobj->hnext))
 		{
 			P_SetTarget(&mobj->hnext->hprev, mobj->hprev);
+			P_SetTarget(&mobj->hnext, NULL);
 		}
 
-		P_SetTarget(&mobj->hnext, NULL);
-	}
-
-	if (mobj->hprev && !P_MobjWasRemoved(mobj->hprev))
-	{
-		if (mobj->hprev->hnext == mobj)
+		if (mobj->hprev && !P_MobjWasRemoved(mobj->hprev))
 		{
 			P_SetTarget(&mobj->hprev->hnext, cachenext);
+			P_SetTarget(&mobj->hprev, NULL);
 		}
-
-		P_SetTarget(&mobj->hprev, NULL);
 	}
 	
 	// clear the reference from the mapthing
 	if (mobj->spawnpoint)
-		P_SetTarget(&mobj->spawnpoint->mobj, NULL);
+		mobj->spawnpoint->mobj = NULL;
 
 	R_RemoveMobjInterpolator(mobj);
 
 	// free block
-	if (!mobj->thinker.next)
+	// DBG: set everything in mobj_t to 0xFF instead of leaving it. debug memory error.
+	if (mobj->flags & MF_NOTHINK && !mobj->thinker.next)
 	{ // Uh-oh, the mobj doesn't think, P_RemoveThinker would never go through!
-		INT32 prevreferences;
 		if (!mobj->thinker.references)
 		{
-			Z_Free(mobj); // No references? Can be removed immediately! :D
-			return;
-		}
-
-		prevreferences = mobj->thinker.references;
-		P_AddThinker((thinker_t *)mobj);
-		mobj->thinker.references = prevreferences;
-	}
-
-	P_RemoveThinker((thinker_t *)mobj);
-
-	// DBG: set everything in mobj_t to 0xFF instead of leaving it. debug memory error.
 #ifdef SCRAMBLE_REMOVED
-	// Invalidate mobj_t data to cause crashes if accessed!
-	memset((UINT8 *)mobj + sizeof(thinker_t), 0xff, sizeof(mobj_t) - sizeof(thinker_t));
+			// Invalidate mobj_t data to cause crashes if accessed!
+			memset(mobj, 0xff, sizeof(mobj_t));
 #endif
+			Z_Free(mobj); // No refrences? Can be removed immediately! :D
+		}
+		else
+		{ // Add thinker just to delay removing it until refrences are gone.
+			mobj->flags &= ~MF_NOTHINK;
+			P_AddThinker((thinker_t *)mobj);
+#ifdef SCRAMBLE_REMOVED
+			// Invalidate mobj_t data to cause crashes if accessed!
+			memset((UINT8 *)mobj + sizeof(thinker_t), 0xff, sizeof(mobj_t) - sizeof(thinker_t));
+#endif
+			P_RemoveThinker((thinker_t *)mobj);
+		}
+	}
+	else
+	{
+#ifdef SCRAMBLE_REMOVED
+		// Invalidate mobj_t data to cause crashes if accessed!
+		memset((UINT8 *)mobj + sizeof(thinker_t), 0xff, sizeof(mobj_t) - sizeof(thinker_t));
+#endif
+		P_RemoveThinker((thinker_t *)mobj);
+	}
 }
 
 // This does not need to be added to Lua.
 // To test it in Lua, check mobj.valid
 boolean P_MobjWasRemoved(mobj_t *mobj)
 {
-	return !(mobj && mobj->thinker.function.acp1 == (actionf_p1)P_MobjThinker);
+	if (mobj && mobj->thinker.function.acp1 == (actionf_p1)P_MobjThinker)
+		return false;
+	return true;
 }
 
 void P_RemovePrecipMobj(precipmobj_t *mobj)
@@ -10419,8 +10398,6 @@ void P_RespawnSpecials(void)
 
 			if (th->function.acp1 != (actionf_p1)P_MobjThinker)	// not a mobj
 				continue;
-			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-				continue;
 
 			box = (mobj_t *)th;
 
@@ -10620,9 +10597,7 @@ void P_SpawnPlayer(INT32 playernum)
 
 	mobj = P_SpawnMobj(0, 0, 0, MT_PLAYER);
 	I_Assert(mobj != NULL);
-
-	mobj->player = p;
-	P_SetTarget(&p->mo, mobj);
+	(mobj->player = p)->mo = mobj;
 
 	mobj->angle = 0;
 
@@ -11567,8 +11542,6 @@ ML_NOCLIMB : Direction not controllable
 		{
 			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 				continue;
-			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-				continue;
 
 			mo2 = (mobj_t *)th;
 
@@ -11839,12 +11812,11 @@ void P_SpawnHoopsAndRings(mapthing_t *mthing)
 			{
 				P_SetTarget(&mobj->hprev, nextmobj);
 				P_SetTarget(&mobj->hprev->hnext, mobj);
+				//mobj->hprev = nextmobj;
+				//mobj->hprev->hnext = mobj;
 			}
 			else
-			{
-				P_SetTarget(&mobj->hprev, NULL);
-				P_SetTarget(&mobj->hnext, NULL);
-			}
+				mobj->hprev = mobj->hnext = NULL;
 
 			nextmobj = mobj;
 		}
@@ -11870,9 +11842,11 @@ void P_SpawnHoopsAndRings(mapthing_t *mthing)
 			mobj->z -= mobj->height/2;
 
 			// Link all the collision sprites together.
-			P_SetTarget(&mobj->hnext, NULL);
+			mobj->hnext = NULL;
 			P_SetTarget(&mobj->hprev, nextmobj);
 			P_SetTarget(&mobj->hprev->hnext, mobj);
+			//mobj->hprev = nextmobj;
+			//mobj->hprev->hnext = mobj;
 
 			nextmobj = mobj;
 		}
@@ -11897,9 +11871,11 @@ void P_SpawnHoopsAndRings(mapthing_t *mthing)
 			mobj->z -= mobj->height/2;
 
 			// Link all the collision sprites together.
-			P_SetTarget(&mobj->hnext, NULL);
+			mobj->hnext = NULL;
 			P_SetTarget(&mobj->hprev, nextmobj);
 			P_SetTarget(&mobj->hprev->hnext, mobj);
+			//mobj->hprev = nextmobj;
+			//mobj->hprev->hnext = mobj;
 
 			nextmobj = mobj;
 		}
@@ -11982,12 +11958,11 @@ void P_SpawnHoopsAndRings(mapthing_t *mthing)
 			{
 				P_SetTarget(&mobj->hprev, nextmobj);
 				P_SetTarget(&mobj->hprev->hnext, mobj);
+				//mobj->hprev = nextmobj;
+				//mobj->hprev->hnext = mobj;
 			}
 			else
-			{
-				P_SetTarget(&mobj->hprev, NULL);
-				P_SetTarget(&mobj->hnext, NULL);
-			}
+				mobj->hprev = mobj->hnext = NULL;
 
 			nextmobj = mobj;
 		}
@@ -12024,9 +11999,11 @@ void P_SpawnHoopsAndRings(mapthing_t *mthing)
 				mobj->z -= mobj->height/2;
 
 				// Link all the collision sprites together.
-				P_SetTarget(&mobj->hnext, NULL);
+				mobj->hnext = NULL;
 				P_SetTarget(&mobj->hprev, nextmobj);
 				P_SetTarget(&mobj->hprev->hnext, mobj);
+				//mobj->hprev = nextmobj;
+				//mobj->hprev->hnext = mobj;
 
 				nextmobj = mobj;
 			}

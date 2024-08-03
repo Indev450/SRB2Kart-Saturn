@@ -10416,6 +10416,8 @@ static UINT8 setupm_skinypos;
 static INT32 setupm_skinselect;
 static boolean setupm_skinlockedselect;
 
+static UINT8 setupm_playernum; //brap
+
 #define SELECTEDSTATSCOUNT skinstatscount[setupm_skinxpos][setupm_skinypos]
 #define LASTSELECTEDSTAT skinstats[setupm_skinxpos][setupm_skinypos][skinstatscount[setupm_skinxpos][setupm_skinypos]]
 
@@ -11257,6 +11259,7 @@ static void M_HandleSetupMultiPlayer(INT32 choice)
 			{
 				S_StartSound(NULL,sfx_menu1); // Tails
 				setupm_fakecolor--;
+				G_SetPlayerGamepadIndicatorColor(setupm_playernum, setupm_fakecolor);
 			}
 			break;
 
@@ -11312,6 +11315,7 @@ static void M_HandleSetupMultiPlayer(INT32 choice)
 			{
 				S_StartSound(NULL,sfx_menu1); // Tails
 				setupm_fakecolor++;
+				G_SetPlayerGamepadIndicatorColor(setupm_playernum, setupm_fakecolor);
 			}
 			break;
 
@@ -11351,6 +11355,7 @@ static void M_HandleSetupMultiPlayer(INT32 choice)
 				{
 					S_StartSound(NULL,sfx_menu1); // Tails
 					setupm_fakecolor = col;
+					G_SetPlayerGamepadIndicatorColor(setupm_playernum, setupm_fakecolor);
 				}
 			}
 			break;
@@ -11484,6 +11489,8 @@ static void M_SetupMultiPlayer(INT32 choice)
 	setupm_skinypos = 0;
 	setupm_skinlockedselect = false;
 
+	setupm_playernum = 0;
+
 	// For whatever reason this doesn't work right if you just use ->value
 	setupm_fakeskin = R_SkinAvailable(setupm_cvskin->string);
 	if (setupm_fakeskin == -1)
@@ -11522,6 +11529,8 @@ static void M_SetupMultiPlayer2(INT32 choice)
 	setupm_skinxpos = 4;
 	setupm_skinypos = 0;
 	setupm_skinlockedselect = false;
+
+	setupm_playernum = 1;
 
 	// For whatever reason this doesn't work right if you just use ->value
 	setupm_fakeskin = R_SkinAvailable(setupm_cvskin->string);
@@ -11562,6 +11571,8 @@ static void M_SetupMultiPlayer3(INT32 choice)
 	setupm_skinypos = 0;
 	setupm_skinlockedselect = false;
 
+	setupm_playernum = 2;
+
 	// For whatever reason this doesn't work right if you just use ->value
 	setupm_fakeskin = R_SkinAvailable(setupm_cvskin->string);
 	if (setupm_fakeskin == -1)
@@ -11601,6 +11612,8 @@ static void M_SetupMultiPlayer4(INT32 choice)
 	setupm_skinypos = 0;
 	setupm_skinlockedselect = false;
 
+	setupm_playernum = 3;
+
 	// For whatever reason this doesn't work right if you just use ->value
 	setupm_fakeskin = R_SkinAvailable(setupm_cvskin->string);
 	if (setupm_fakeskin == -1)
@@ -11639,6 +11652,7 @@ static boolean M_QuitMultiPlayerMenu(void)
 	// you know what? always putting these in the buffer won't hurt anything.
 	COM_BufAddText (va("%s \"%s\"\n",setupm_cvskin->name,skins[setupm_fakeskin].name));
 	COM_BufAddText (va("%s %d\n",setupm_cvcolor->name,setupm_fakecolor));	
+
 	return true;
 }
 

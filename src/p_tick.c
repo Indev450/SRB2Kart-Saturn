@@ -155,8 +155,6 @@ void Command_CountMobjs_f(void)
 			{
 				if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 					continue;
-				if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-					continue;
 
 				if (((mobj_t *)th)->type == i)
 					count++;
@@ -176,8 +174,6 @@ void Command_CountMobjs_f(void)
 		for (th = thinkercap.next; th != &thinkercap; th = th->next)
 		{
 			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
-				continue;
-			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 				continue;
 
 			if (((mobj_t *)th)->type == i)
@@ -230,27 +226,23 @@ static thinker_t *currentthinker;
 // remove it, and set currentthinker to one node preceeding it, so
 // that the next step in P_RunThinkers() will get its successor.
 //
-void P_RemoveThinkerDelayed(thinker_t *thinker)
+void P_RemoveThinkerDelayed(void *pthinker)
 {
-	thinker_t *next;
-#ifdef PARANOIA
-	if (thinker->next)
-		thinker->next = NULL;
-	else if (thinker->references) // Usually gets cleared up in one frame; what's going on here, then?
-		CONS_Printf("Number of potentially faulty references: %d\n", thinker->references);
-#endif
-	if (thinker->references)
-		return;
-
-	/* Remove from main thinker list */
-	next = thinker->next;
-	/* Note that currentthinker is guaranteed to point to us,
-	* and since we're freeing our memory, we had better change that. So
-	* point it to thinker->prev, so the iterator will correctly move on to
-	* thinker->prev->next = thinker->next */
-	(next->prev = currentthinker = thinker->prev)->next = next;
-	R_DestroyLevelInterpolators(thinker);
-	Z_Free(thinker);
+	thinker_t *thinker = pthinker;
+	if (!thinker->references)
+	{
+		{
+			/* Remove from main thinker list */
+			thinker_t *next = thinker->next;
+			/* Note that currentthinker is guaranteed to point to us,
+			 * and since we're freeing our memory, we had better change that. So
+			 * point it to thinker->prev, so the iterator will correctly move on to
+			 * thinker->prev->next = thinker->next */
+			(next->prev = currentthinker = thinker->prev)->next = next;
+		}
+		R_DestroyLevelInterpolators(thinker);
+		Z_Free(thinker);
+	}
 }
 
 //
@@ -268,7 +260,7 @@ void P_RemoveThinkerDelayed(thinker_t *thinker)
 void P_RemoveThinker(thinker_t *thinker)
 {
 	LUA_InvalidateUserdata(thinker);
-	thinker->function.acp1 = (actionf_p1)P_RemoveThinkerDelayed;
+	thinker->function.acp1 = P_RemoveThinkerDelayed;
 }
 
 /*
@@ -287,7 +279,7 @@ mobj_t *P_SetTarget(mobj_t **mop, mobj_t *targ)
 {
 	if (*mop)              // If there was a target already, decrease its refcount
 		(*mop)->thinker.references--;
-	if ((*mop = targ) != NULL) // Set new target and if non-NULL, increase its counter
+if ((*mop = targ) != NULL) // Set new target and if non-NULL, increase its counter
 		targ->thinker.references++;
 	return targ;
 }
@@ -318,10 +310,61 @@ static inline void P_RunThinkers(void)
 {
 	for (currentthinker = thinkercap.next; currentthinker != &thinkercap; currentthinker = currentthinker->next)
 	{
-#ifdef PARANOIA
-		I_Assert(currentthinker->function.acp1 != NULL)
-#endif
+		if (currentthinker->function.acp1)
 			currentthinker->function.acp1(currentthinker);
+	}
+}
+
+static inline void P_DeviceRumbleTick(void)
+{
+	UINT8 i;
+
+	if (cv_rumble[0].value == 0 && cv_rumble[1].value == 0 && cv_rumble[2].value == 0 && cv_rumble[3].value == 0)
+	{
+		return;
+	}
+
+	for (i = 0; i <= splitscreen; i++)
+	{
+		player_t *player = &players[displayplayers[i]];
+		UINT16 low = 0;
+		UINT16 high = 0;
+
+		if (!P_IsLocalPlayer(player))
+			continue;
+
+		if (!playeringame[i] || player->spectator)
+			continue;
+
+		if (player->exiting)
+			continue;
+
+		if (player->mo == NULL)
+			continue;
+
+		if (player->kartstuff[k_spinouttimer])
+		{
+			low = high = 65536 / 4;
+		}
+		else if (player->kartstuff[k_sneakertimer] > (sneakertime-(TICRATE/2)))
+		{
+			low = high = 65536 / 8;
+		}
+		else if ((player->kartstuff[k_offroad])
+			&& P_IsObjectOnGround(player->mo) && player->speed != 0)
+		{
+			low = high = 65536 / 64;
+		}
+		else if (player->kartstuff[k_brakedrift])
+		{
+			low = 0;
+			high = 65536 / 256;
+		}
+
+		 if (low == 0 && high == 0)
+			continue;
+
+		G_PlayerDeviceRumble(i, low, high, 57); // hack alert! i just dont want this think constantly resetting the rumble lol
 	}
 }
 
@@ -464,6 +507,12 @@ void P_Ticker(boolean run)
 			if (playeringame[i] && players[i].mo && !P_MobjWasRemoved(players[i].mo))
 				P_PlayerAfterThink(&players[i]);
 
+		// Apply rumble to local players
+		if (!demo.playback)
+		{
+			P_DeviceRumbleTick();
+		}
+
 		PS_START_TIMING(ps_lua_thinkframe_time);
 		LUAh_ThinkFrame();
 		PS_STOP_TIMING(ps_lua_thinkframe_time);
@@ -598,7 +647,6 @@ void P_Ticker(boolean run)
 	if (run)
 	{
 		R_UpdateLevelInterpolators();
-		R_UpdateViewInterpolation();
 
 		// Hack: ensure newview is assigned every tic.
 		// Ensures view interpolation is T-1 to T in poor network conditions

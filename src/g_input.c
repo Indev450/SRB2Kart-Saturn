@@ -14,10 +14,16 @@
 #include "doomdef.h"
 #include "doomstat.h"
 #include "g_input.h"
+#include "g_game.h"
 #include "keys.h"
 #include "hu_stuff.h" // need HUFONT start & end
 #include "d_net.h"
 #include "console.h"
+
+#include "i_system.h"
+#include "i_video.h"
+#include "r_draw.h"
+#include "v_video.h"
 
 #define MAXMOUSESENSITIVITY 100 // sensitivity steps
 
@@ -32,6 +38,46 @@ consvar_t cv_mouseysens = {"mouseysens", "20", CV_SAVE, mousesens_cons_t, NULL, 
 consvar_t cv_mouseysens2 = {"mouseysens2", "20", CV_SAVE, mousesens_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_controlperkey = {"controlperkey", "One", CV_SAVE, onecontrolperkey_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_turnsmooth = {"turnsmoothing", "Slow", CV_SAVE, turnsmooth_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+static void G_ResetPlayerDeviceRumble(INT32 player);
+static void rumble_off_handle(void);
+static void rumble_off_handle2(void);
+static void rumble_off_handle3(void);
+static void rumble_off_handle4(void);
+
+consvar_t cv_rumble[MAXSPLITSCREENPLAYERS] = {
+	{"rumble", "Off", CV_SAVE, CV_OnOff, rumble_off_handle, 0, NULL, NULL, 0, 0, NULL},
+	{"rumble2", "Off", CV_SAVE, CV_OnOff, rumble_off_handle2, 0, NULL, NULL, 0, 0, NULL},
+	{"rumble3", "Off", CV_SAVE, CV_OnOff, rumble_off_handle3, 0, NULL, NULL, 0, 0, NULL},
+	{"rumble4", "Off", CV_SAVE, CV_OnOff, rumble_off_handle4, 0, NULL, NULL, 0, 0, NULL}
+};
+
+static void rumble_off_handle(void)
+{
+	if (cv_rumble[0].value == 0)
+		G_ResetPlayerDeviceRumble(0);
+}
+
+
+static void rumble_off_handle2(void)
+{
+	if (cv_rumble[1].value == 0)
+		G_ResetPlayerDeviceRumble(1);
+}
+
+
+static void rumble_off_handle3(void)
+{
+	if (cv_rumble[2].value == 0)
+		G_ResetPlayerDeviceRumble(2);
+}
+
+
+static void rumble_off_handle4(void)
+{
+	if (cv_rumble[3].value == 0)
+		G_ResetPlayerDeviceRumble(3);
+}
 
 INT32 mousex, mousey;
 INT32 mlooky; // like mousey but with a custom sensitivity for mlook
@@ -816,6 +862,113 @@ static const char *gamecontrolname[num_gamecontrols] =
 };
 
 #define NUMKEYNAMES (sizeof (keynames)/sizeof (keyname_t))
+
+#include "k_kart.h"
+
+static INT32 G_GetDeviceForPlayer(INT32 player)
+{
+	switch (player)
+	{
+		case 0:
+			return cv_usejoystick.value;
+			break;
+		case 1:
+			return cv_usejoystick2.value;
+			break;
+		case 2:
+			return cv_usejoystick3.value;
+			break;
+		case 3:
+			return cv_usejoystick4.value;
+			break;
+		default:
+			return 0;
+			break;
+	}
+}
+
+static UINT16 G_GetSkinColor(INT32 player)
+{
+	if (players[displayplayers[player]].skincolor && gamestate == GS_LEVEL)
+		return players[displayplayers[player]].skincolor;
+
+	switch (player)
+	{
+		case 0:
+			return cv_playercolor.value;
+			break;
+		case 1:
+			return cv_playercolor2.value;
+			break;
+		case 2:
+			return cv_playercolor3.value;
+			break;
+		case 3:
+			return cv_playercolor4.value;
+			break;
+		default:
+			return 0;
+			break;
+	}
+}
+
+void G_SetPlayerGamepadIndicatorColor(INT32 player, UINT16 color)
+{
+	INT32 device;
+	UINT16 skincolor;
+	byteColor_t byte_color;
+
+	I_Assert(player >= 0 && player < MAXSPLITSCREENPLAYERS);
+
+	device = G_GetDeviceForPlayer(player);
+
+	if (device <= 0)
+	{
+		return;
+	}
+
+	if (color)
+		skincolor = color;
+	else
+		skincolor = G_GetSkinColor(player);
+
+	byte_color = V_GetColor(colortranslations[skincolor][8]).s;
+
+	I_SetGamepadIndicatorColor(device, byte_color.red, byte_color.green, byte_color.blue);
+}
+
+static void G_ResetPlayerDeviceRumble(INT32 player)
+{
+	INT32 device_id;
+
+	device_id = G_GetDeviceForPlayer(player);
+
+	if (device_id < 1)
+	{
+		return;
+	}
+
+	I_GamepadRumble(device_id, 0, 0, 0);
+}
+
+void G_PlayerDeviceRumble(INT32 player, UINT16 low_strength, UINT16 high_strength, UINT32 duration)
+{
+	INT32 device_id;
+
+	if (cv_rumble[player].value == 0)
+	{
+		return;
+	}
+
+	device_id = G_GetDeviceForPlayer(player);
+
+	if (device_id < 1)
+	{
+		return;
+	}
+
+	I_GamepadRumble(device_id, low_strength, high_strength, duration);
+}
 
 //
 // Detach any keys associated to the given game control

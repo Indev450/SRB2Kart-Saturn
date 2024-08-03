@@ -617,10 +617,8 @@ UINT8 K_GetKartColorByName(const char *name)
 
 UINT8 K_GetHudColor(void)
 {
-	if (cv_colorizedhud.value){
-		if (cv_colorizedhudcolor.value) return cv_colorizedhudcolor.value;
-	}
-	if (stplyr && P_IsLocalPlayer(stplyr) && gamestate == GS_LEVEL) return stplyr->skincolor;
+	if (cv_colorizedhud.value && cv_colorizedhudcolor.value) return cv_colorizedhudcolor.value;
+
 	return ((stplyr && gamestate == GS_LEVEL) ? stplyr->skincolor : cv_playercolor.value);
 }
 
@@ -4138,13 +4136,6 @@ void K_UpdateHnextList(player_t *player, boolean clean)
 			continue;
 
 		P_RemoveMobj(work);
-	}
-
-	if (player->mo->hnext == NULL || P_MobjWasRemoved(player->mo->hnext))
-	{
-		// Like below, try to clean up the pointer if it's NULL.
-		// Maybe this was a cause of the shrink/eggbox fails?
-		P_SetTarget(&player->mo->hnext, NULL);
 	}
 }
 
@@ -10662,6 +10653,9 @@ void K_drawKartHUD(void)
 
 	if (cv_kartdebugcheckpoint.value)
 		K_drawCheckpointDebugger();
+
+	if (cv_kartdebugdirector.value)
+		K_DrawDirectorDebugger();
 
 	if (cv_kartdebugnodes.value)
 	{

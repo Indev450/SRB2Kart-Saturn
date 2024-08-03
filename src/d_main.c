@@ -37,6 +37,7 @@
 #include "d_net.h"
 #include "f_finale.h"
 #include "g_game.h"
+#include "g_input.h"
 #include "hu_stuff.h"
 #include "i_sound.h"
 #include "i_system.h"
@@ -149,6 +150,8 @@ event_t events[MAXEVENTS];
 INT32 eventhead, eventtail;
 
 boolean dedicated = false;
+
+boolean loaded_config = false;
 
 //
 // D_PostEvent
@@ -839,6 +842,8 @@ void D_SRB2Loop(void)
 		// Fully completed frame made.
 		finishprecise = I_GetPreciseTime();
 
+		// Use the time before sleep for frameskip calculations:
+		// post-sleep time is literally being intentionally wasted
 		deltasecs = (double)((INT64)(finishprecise - enterprecise)) / I_GetPrecisePrecision();
 		deltatics = deltasecs * NEWTICRATE;
 		
@@ -873,6 +878,8 @@ void D_SRB2Loop(void)
 		}
 		// Capture the time once more to get the real delta time.
 		finishprecise = I_GetPreciseTime();
+		deltasecs = (double)((INT64)(finishprecise - enterprecise)) / I_GetPrecisePrecision();
+		deltatics = deltasecs * NEWTICRATE;
 	}
 }
 
@@ -1748,6 +1755,8 @@ void D_SRB2Main(void)
 	wipegamestate = gamestate;
 
 	savedata.lives = 0; // flag this as not-used
+
+	loaded_config = true; // so pallettechange doesent get called 500 times at startup lol
 
 	//------------------------------------------------ COMMAND LINE PARAMS
 

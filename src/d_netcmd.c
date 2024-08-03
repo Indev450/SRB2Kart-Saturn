@@ -1076,6 +1076,11 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_controlperkey);
 	CV_RegisterVar(&cv_turnsmooth);
 
+	CV_RegisterVar(&cv_rumble[0]);
+	CV_RegisterVar(&cv_rumble[1]);
+	CV_RegisterVar(&cv_rumble[2]);
+	CV_RegisterVar(&cv_rumble[3]);
+
 	CV_RegisterVar(&cv_usemouse);
 	CV_RegisterVar(&cv_usemouse2);
 	CV_RegisterVar(&cv_invertmouse);
@@ -5795,8 +5800,7 @@ static void Command_Archivetest_f(void)
 	i = 1;
 	for (th = thinkercap.next; th != &thinkercap; th = th->next)
 		if (th->function.acp1 == (actionf_p1)P_MobjThinker)
-			if (th->function.acp1 != (actionf_p1)P_RemoveThinkerDelayed)
-				((mobj_t *)th)->mobjnum = i++;
+			((mobj_t *)th)->mobjnum = i++;
 
 	// allocate buffer
 	buf = save_p = ZZ_Alloc(1024);
@@ -6064,6 +6068,8 @@ static void Command_SkinSearch(void)
   */
 static void Color_OnChange(void)
 {
+	G_SetPlayerGamepadIndicatorColor(0, 0); // i want this to always change so its here
+
 	if (!Playing())
 		return; // do whatever you want
 
@@ -6083,6 +6089,8 @@ static void Color_OnChange(void)
 		CV_StealthSetValue(&cv_playercolor,
 			players[consoleplayer].skincolor);
 	}
+
+	G_SetPlayerGamepadIndicatorColor(0, 0); // update again
 }
 
 /** Sends a color change for the secondary splitscreen player, unless that
@@ -6105,6 +6113,8 @@ static void Color2_OnChange(void)
 		CV_StealthSetValue(&cv_playercolor2,
 			players[displayplayers[1]].skincolor);
 	}
+
+	G_SetPlayerGamepadIndicatorColor(1, 0);
 }
 
 static void Color3_OnChange(void)
@@ -6122,6 +6132,8 @@ static void Color3_OnChange(void)
 		CV_StealthSetValue(&cv_playercolor3,
 			players[displayplayers[2]].skincolor);
 	}
+
+	G_SetPlayerGamepadIndicatorColor(2, 0);
 }
 
 static void Color4_OnChange(void)
@@ -6139,6 +6151,8 @@ static void Color4_OnChange(void)
 		CV_StealthSetValue(&cv_playercolor4,
 			players[displayplayers[3]].skincolor);
 	}
+
+	G_SetPlayerGamepadIndicatorColor(3, 0);
 }
 
 /** Displays the result of the chat being muted or unmuted.

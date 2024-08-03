@@ -28,7 +28,7 @@ typedef struct gr_vissprite_s
 	float x1, x2;
 	float z1, z2;
 	float gz, gzt;
-	float tz, ty;
+	float tz;
 	float scale;
 	float spritexscale, spriteyscale;
 	float spritexoffset, spriteyoffset;

@@ -311,8 +311,6 @@ void S_RegisterSoundStuff(void)
 
 static void SetChannelsNum(void)
 {
-	INT32 i;
-
 	// Allocating the internal channels for mixing
 	// (the maximum number of sounds rendered
 	// simultaneously) within zone memory.
@@ -321,7 +319,6 @@ static void SetChannelsNum(void)
 
 	Z_Free(channels);
 	channels = NULL;
-
 
 	if (cv_numChannels.value == 999999999) //Alam_GBC: OH MY ROD!(ROD rimmiced with GOD!)
 		CV_StealthSet(&cv_numChannels,cv_numChannels.defaultvalue);
@@ -333,13 +330,10 @@ static void SetChannelsNum(void)
 		return;
 	}
 #endif
-	if (cv_numChannels.value)
-		channels = (channel_t *)Z_Malloc(cv_numChannels.value * sizeof (channel_t), PU_STATIC, NULL);
-	numofchannels = cv_numChannels.value;
 
-	// Free all channels for use
-	for (i = 0; i < numofchannels; i++)
-		channels[i].sfxinfo = 0;
+	if (cv_numChannels.value)
+		channels = (channel_t *)Z_Calloc(cv_numChannels.value * sizeof (channel_t), PU_STATIC, NULL);
+	numofchannels = (channels ? cv_numChannels.value : 0);
 }
 
 // Retrieve the lump number of sfx
@@ -1046,7 +1040,8 @@ boolean S_AdjustSoundParams(const mobj_t *listener, const mobj_t *source, INT32 
 
 	if (sfxinfo->pitch & SF_OUTSIDESOUND) // Rain special case
 	{
-		fixed_t x, y, yl, yh, xl, xh, newdist;
+		INT64 x, y, yl, yh, xl, xh;
+		fixed_t newdist;
 
 		if (R_PointInSubsector(listensource.x, listensource.y)->sector->ceilingpic == skyflatnum)
 			approx_dist = 0;

@@ -446,6 +446,7 @@ SDL_bool consolevent = SDL_FALSE;
 SDL_bool framebuffer = SDL_FALSE;
 
 UINT8 keyboard_started = false;
+boolean g_in_exiting_signal_handler = false;
 
 static void I_ReportSignal(int num, int coredumped)
 {
@@ -512,6 +513,8 @@ static void I_ReportSignal(int num, int coredumped)
 #ifndef NEWSIGNALHANDLER
 FUNCNORETURN static ATTRNORETURN void signal_handler(INT32 num)
 {
+	g_in_exiting_signal_handler = true;
+
 	D_QuitNetGame(); // Fix server freezes
 
 #ifdef HAVE_LIBBACKTRACE
@@ -2663,6 +2666,42 @@ const char *I_GetJoyName(INT32 joyindex)
 	return joyname;
 }
 
+void I_GamepadRumble(INT32 device_id, UINT16 low_strength, UINT16 high_strength, UINT32 duration)
+{
+#if !(SDL_VERSION_ATLEAST(2,0,14))
+	(void)device_id;
+	(void)left_strength;
+	(void)right_strength;
+#else
+	I_Assert(device_id > 0); // Gamepad devices are always ID 1 or higher
+
+	SDL_GameController *controller = SDL_GameControllerFromInstanceID(device_id - 1);
+	if (controller == NULL)
+	{
+		return;
+	}
+
+	SDL_GameControllerRumble(controller, low_strength, high_strength, duration);
+#endif
+}
+
+void I_SetGamepadIndicatorColor(INT32 device_id, UINT8 red, UINT8 green, UINT8 blue)
+{
+#if !(SDL_VERSION_ATLEAST(2,0,14))
+	(void)device_id;
+#else
+	I_Assert(device_id > 0); // Gamepad devices are always ID 1 or higher
+
+	SDL_GameController *controller = SDL_GameControllerFromInstanceID(device_id - 1);
+	if (controller == NULL)
+	{
+		return;
+	}
+
+	SDL_GameControllerSetLED(controller, red, green, blue);
+#endif
+}
+
 #ifndef NOMUMBLE
 #ifdef HAVE_MUMBLE
 // Best Mumble positional audio settings:
@@ -3402,13 +3441,13 @@ INT32 I_StartupSystem(void)
 	SDL_version SDLlinked;
 	SDL_VERSION(&SDLcompiled)
 	SDL_GetVersion(&SDLlinked);
-#ifdef HAVE_THREADS
-	I_start_threads();
-	I_AddExitFunc(I_stop_threads);
-#endif
 	I_StartupConsole();
 #ifdef NEWSIGNALHANDLER
 	I_Fork();
+#endif
+#ifdef HAVE_THREADS
+	I_start_threads();
+	I_AddExitFunc(I_stop_threads);
 #endif
 	I_RegisterSignals();
 	I_OutputMsg("Compiled for SDL version: %d.%d.%d\n",

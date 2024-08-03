@@ -440,11 +440,6 @@ angle_t R_PointToAngle2(fixed_t pviewx, fixed_t pviewy, fixed_t x, fixed_t y)
 		0;
 }
 
-fixed_t R_PointToDist2(fixed_t px2, fixed_t py2, fixed_t px1, fixed_t py1)
-{
-	return FixedHypot(px1 - px2, py1 - py2);
-}
-
 angle_t R_PlayerSliptideAngle(player_t *player)
 {
 	mobj_t *mo;
@@ -487,12 +482,6 @@ angle_t R_PlayerSliptideAngle(player_t *player)
 		ang = R_PointToAngle(mo->x, mo->y) - mo->angle;
 
 	return FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), mo->player->sliproll*(mo->player->sliptidemem));
-}
-
-// Little extra utility. Works in the same way as R_PointToAngle2
-fixed_t R_PointToDist(fixed_t x, fixed_t y)
-{
-	return R_PointToDist2(viewx, viewy, x, y);
 }
 
 INT32 R_GetHudUncap(void)

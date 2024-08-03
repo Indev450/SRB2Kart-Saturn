@@ -525,6 +525,8 @@ consvar_t cv_sliptideroll = {"sliptideroll", "Off", CV_SAVE, CV_OnOff, NULL, 0, 
 
 consvar_t cv_cechotoggle = {"show_cecho", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+static void G_FixCamera(UINT8 view);
+
 #if MAXPLAYERS > 16
 #error "please update player_name table using the new value for MAXPLAYERS"
 #endif
@@ -2085,7 +2087,6 @@ void G_ResetView(UINT8 viewnum, INT32 playernum, boolean onlyactive)
 	UINT8 viewd;
 
 	INT32    *displayplayerp;
-	camera_t *camerap;
 
 	INT32 olddisplayplayer;
 	INT32 playersviewable;
@@ -2124,34 +2125,21 @@ void G_ResetView(UINT8 viewnum, INT32 playernum, boolean onlyactive)
 	(*displayplayerp) = playernum;
 	if ((*displayplayerp) != olddisplayplayer)
 	{
-		camerap = &camera[viewnum-1];
-		P_ResetCamera(&players[(*displayplayerp)], camerap);
-
-		// Make sure the viewport doesn't interpolate at all into
-		// its new position -- just snap instantly into place.
-		R_ResetViewInterpolation(viewnum);
+		G_FixCamera(viewnum);
 	}
 
 	if (viewnum > splits)
 	{
 		for (viewd = splits+1; viewd < viewnum; ++viewd)
 		{
-			displayplayerp = (&displayplayers[viewd-1]);
-			camerap = &camera[viewd];
-
-			(*displayplayerp) = G_FindView(0, viewd, onlyactive, false);
-
-			P_ResetCamera(&players[(*displayplayerp)], camerap);
-
-
-			// Make sure the viewport doesn't interpolate at all into
-			// its new position -- just snap instantly into place.
-			R_ResetViewInterpolation(viewd);
+			G_FixCamera(viewd);
 		}
 	}
 
 	if (viewnum == 1 && demo.playback)
 		consoleplayer = displayplayers[0];
+
+	G_SetPlayerGamepadIndicatorColor(viewnum-1, 0);
 }
 
 //
@@ -2202,6 +2190,26 @@ void G_ResetViews(void)
 	{
 		G_AdjustView(viewd, 0, false);
 	}
+}
+
+//
+// G_FixCamera
+// Reset camera position, angle and interpolation on a view
+// after changing state.
+//
+static void G_FixCamera(UINT8 view)
+{
+	player_t *player = &players[displayplayers[view - 1]];
+
+	// The order of displayplayers can change, which would
+	// invalidate localangle.
+	localangle[view - 1] = player->cmd.angleturn;
+
+	P_ResetCamera(player, &camera[view - 1]);
+
+	// Make sure the viewport doesn't interpolate at all into
+	// its new position -- just snap instantly into place.
+	R_ResetViewInterpolation(view);
 }
 
 //
@@ -3053,9 +3061,6 @@ void G_ChangePlayerReferences(mobj_t *oldmo, mobj_t *newmo)
 		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 			continue;
 
-		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-			continue;
-
 		mo2 = (mobj_t *)th;
 
 		if (!(mo2->flags & MF_MISSILE))
@@ -3077,6 +3082,12 @@ void G_DoReborn(INT32 playernum)
 	player_t *player = &players[playernum];
 	boolean starpost = false;
 
+	/*if (modeattacking) // Not needed for SRB2Kart.
+	{
+		M_EndModeAttackRun();
+		return;
+	}*/
+
 	// Make sure objectplace is OFF when you first start the level!
 	OP_ResetObjectplace();
 
@@ -3090,13 +3101,74 @@ void G_DoReborn(INT32 playernum)
 			oldmo = player->mo;
 			// Don't leave your carcass stuck 10-billion feet in the ground!
 			P_RemoveMobj(player->mo);
-			P_SetTarget(&player->mo, NULL);
 		}
 
 		B_RespawnBot(playernum);
 		if (oldmo)
 			G_ChangePlayerReferences(oldmo, players[playernum].mo);
 	}
+	/*else if (countdowntimeup || (!multiplayer && !modeattacking))
+	{
+		// reload the level from scratch
+		if (countdowntimeup)
+		{
+			player->starpostangle = 0;
+			player->starposttime = 0;
+			player->starpostx = 0;
+			player->starposty = 0;
+			player->starpostz = 0;
+			player->starpostnum = 0;
+		}
+		if (!countdowntimeup && (mapheaderinfo[gamemap-1]->levelflags & LF_NORELOAD))
+		{
+			INT32 i;
+
+			player->playerstate = PST_REBORN;
+
+			P_LoadThingsOnly();
+
+			// Do a wipe
+			wipegamestate = -1;
+
+			if (player->starpostnum) // SRB2kart
+				starpost = true;
+
+			for (i = 0; i <= splitscreen; i++)
+			{
+				if (camera[i].chase)
+					P_ResetCamera(&players[displayplayers[i]], &camera[i]);
+			}
+
+			// clear cmd building stuff
+			memset(gamekeydown, 0, sizeof (gamekeydown));
+			for (i = 0;i < JOYAXISSET; i++)
+			{
+				joyxmove[i] = joyymove[i] = 0;
+				joy2xmove[i] = joy2ymove[i] = 0;
+				joy3xmove[i] = joy3ymove[i] = 0;
+				joy4xmove[i] = joy4ymove[i] = 0;
+			}
+			mousex = mousey = 0;
+			mouse2x = mouse2y = 0;
+
+			// clear hud messages remains (usually from game startup)
+			CON_ClearHUD();
+
+			// Starpost support
+			G_SpawnPlayer(playernum, starpost);
+
+			if (botingame)
+			{ // Bots respawn next to their master.
+				players[displayplayers[1]].playerstate = PST_REBORN;
+				G_SpawnPlayer(displayplayers[1], false);
+			}
+		}
+		else
+		{
+			LUAh_MapChange(gamemap);
+			G_DoLoadLevel(true);
+		}
+	}*/
 	else
 	{
 		// respawn at the start
@@ -3113,7 +3185,6 @@ void G_DoReborn(INT32 playernum)
 			oldmo = player->mo;
 			// Don't leave your carcass stuck 10-billion feet in the ground!
 			P_RemoveMobj(player->mo);
-			P_SetTarget(&player->mo, NULL);
 		}
 
 		G_SpawnPlayer(playernum, starpost);
@@ -5660,13 +5731,12 @@ void G_ConsGhostTic(INT32 playernum)
 				{
 					if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 						continue;
-					if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-						continue;
 					mobj = (mobj_t *)th;
 					if (mobj->type == (mobjtype_t)type && mobj->x == x && mobj->y == y && mobj->z == z)
 						break;
+					mobj = NULL; // wasn't this one, keep searching.
 				}
-				if ((th != &thinkercap && th->function.acp1 != (actionf_p1)P_MobjThinker) && mobj->health != health) // Wasn't damaged?! This is desync! Fix it!
+				if (mobj && mobj->health != health) // Wasn't damaged?! This is desync! Fix it!
 				{
 					if (demosynced)
 						CONS_Alert(CONS_WARNING, M_GetText("Demo playback has desynced!\n"));
@@ -8133,14 +8203,11 @@ void G_DoPlayMetal(void)
 		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 			continue;
 
-		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-			continue;
-
 		mo = (mobj_t *)th;
 		if (mo->type == MT_METALSONIC_RACE)
 			break;
 	}
-	if (th == &thinkercap && th->function.acp1 == (actionf_p1)P_MobjThinker)
+	if (!mo)
 	{
 		CONS_Alert(CONS_ERROR, M_GetText("Failed to find bot entity.\n"));
 		Z_Free(metalbuffer);
@@ -8479,7 +8546,12 @@ boolean G_DemoTitleResponder(event_t *ev)
 //
 void G_SetGamestate(gamestate_t newstate)
 {
+	SINT8 i;
 	gamestate = newstate;
+
+	for (i = 0; i <= splitscreen; i++)
+		G_SetPlayerGamepadIndicatorColor(i, 0); // dumb hack but works
+
 #ifdef HAVE_DISCORDRPC
 	DRPC_UpdatePresence();
 #endif

@@ -752,8 +752,6 @@ void P_ReloadRings(void)
 	{
 		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 			continue;
-		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-			continue;
 
 		mo = (mobj_t *)th;
 
@@ -2200,6 +2198,7 @@ static void P_LevelInitStuff(boolean reloadinggamestate)
 void P_LoadThingsOnly(void)
 {
 	// Search through all the thinkers.
+	mobj_t *mo;
 	thinker_t *think;
 
 	virtres_t* virt = vres_GetMap(lastloadedmaplumpnum);
@@ -2208,10 +2207,12 @@ void P_LoadThingsOnly(void)
 	for (think = thinkercap.next; think != &thinkercap; think = think->next)
 	{
 		if (think->function.acp1 != (actionf_p1)P_MobjThinker)
-			continue;
-		if (think->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-			continue;
-		P_RemoveMobj((mobj_t *)think);
+			continue; // not a mobj thinker
+
+		mo = (mobj_t *)think;
+
+		if (mo)
+			P_RemoveMobj(mo);
 	}
 
 	P_LevelInitStuff(false);

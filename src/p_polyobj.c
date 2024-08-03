@@ -1514,31 +1514,29 @@ void Polyobj_InitLevel(void)
 	// the mobj_t pointers on a queue for use below.
 	for (th = thinkercap.next; th != &thinkercap; th = th->next)
 	{
-		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
-				continue;
-		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-			continue;
-
-		mobj_t *mo = (mobj_t *)th;
-
-		if (mo->info->doomednum == POLYOBJ_SPAWN_DOOMEDNUM ||
-			mo->info->doomednum == POLYOBJ_SPAWNCRUSH_DOOMEDNUM)
+		if (th->function.acp1 == (actionf_p1)P_MobjThinker)
 		{
-			++numPolyObjects;
+			mobj_t *mo = (mobj_t *)th;
 
-			qitem = malloc(sizeof(mobjqitem_t));
-			memset(qitem, 0, sizeof(mobjqitem_t));
-			qitem->mo = mo;
-			M_QueueInsert(&(qitem->mqitem), &spawnqueue);
-		}
-		else if (mo->info->doomednum == POLYOBJ_ANCHOR_DOOMEDNUM)
-		{
-			++numAnchors;
+			if (mo->info->doomednum == POLYOBJ_SPAWN_DOOMEDNUM ||
+				mo->info->doomednum == POLYOBJ_SPAWNCRUSH_DOOMEDNUM)
+			{
+				++numPolyObjects;
 
-			qitem = malloc(sizeof(mobjqitem_t));
-			memset(qitem, 0, sizeof(mobjqitem_t));
-			qitem->mo = mo;
-			M_QueueInsert(&(qitem->mqitem), &anchorqueue);
+				qitem = malloc(sizeof(mobjqitem_t));
+				memset(qitem, 0, sizeof(mobjqitem_t));
+				qitem->mo = mo;
+				M_QueueInsert(&(qitem->mqitem), &spawnqueue);
+			}
+			else if (mo->info->doomednum == POLYOBJ_ANCHOR_DOOMEDNUM)
+			{
+				++numAnchors;
+
+				qitem = malloc(sizeof(mobjqitem_t));
+				memset(qitem, 0, sizeof(mobjqitem_t));
+				qitem->mo = mo;
+				M_QueueInsert(&(qitem->mqitem), &anchorqueue);
+			}
 		}
 	}
 
@@ -1572,6 +1570,39 @@ void Polyobj_InitLevel(void)
 		for (i = 0; i < numPolyObjects; ++i)
 			Polyobj_linkToBlockmap(&PolyObjects[i]);
 	}
+
+#if 0
+	// haleyjd 02/22/06: temporary debug
+	printf("DEBUG: numPolyObjects = %d\n", numPolyObjects);
+	for (i = 0; i < numPolyObjects; ++i)
+	{
+		INT32 j;
+		polyobj_t *po = &PolyObjects[i];
+
+		printf("polyobj %d:\n", i);
+		printf("id = %d, first = %d, next = %d\n", po->id, po->first, po->next);
+		printf("segCount = %d, numSegsAlloc = %d\n", po->segCount, po->numSegsAlloc);
+		for (j = 0; j < po->segCount; ++j)
+			printf("\tseg %d: %p\n", j, po->segs[j]);
+		printf("numVertices = %d, numVerticesAlloc = %d\n", po->numVertices, po->numVerticesAlloc);
+		for (j = 0; j < po->numVertices; ++j)
+		{
+			printf("\tvtx %d: (%d, %d) / orig: (%d, %d)\n",
+				j, po->vertices[j]->x>>FRACBITS, po->vertices[j]->y>>FRACBITS,
+				po->origVerts[j].x>>FRACBITS, po->origVerts[j].y>>FRACBITS);
+		}
+		printf("numLines = %d, numLinesAlloc = %d\n", po->numLines, po->numLinesAlloc);
+		for (j = 0; j < po->numLines; ++j)
+			printf("\tline %d: %p\n", j, po->lines[j]);
+		printf("spawnSpot = (%d, %d)\n", po->spawnSpot.x >> FRACBITS, po->spawnSpot.y >> FRACBITS);
+		printf("centerPt = (%d, %d)\n", po->centerPt.x >> FRACBITS, po->centerPt.y >> FRACBITS);
+		printf("attached = %d, linked = %d, validcount = %d, isBad = %d\n",
+			po->attached, po->linked, po->validcount, po->isBad);
+		printf("blockbox: [%d, %d, %d, %d]\n",
+			po->blockbox[BOXLEFT], po->blockbox[BOXRIGHT], po->blockbox[BOXBOTTOM],
+			po->blockbox[BOXTOP]);
+	}
+#endif
 
 	// done with mobj queues
 	M_QueueFree(&spawnqueue);
@@ -1789,22 +1820,17 @@ void T_PolyObjWaypoint(polywaypoint_t *th)
 	{
 		if (wp->function.acp1 != (actionf_p1)P_MobjThinker) // Not a mobj thinker
 			continue;
-		if (wp->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-			continue;
 
 		mo2 = (mobj_t *)wp;
 
 		if (mo2->type != MT_TUBEWAYPOINT)
 			continue;
 
-		if (mo2->threshold != th->sequence)
-			continue;
-
-		if (mo2->health != th->pointnum)
-			continue;
-
-		target = mo2;
-		break;
+		if (mo2->threshold == th->sequence && mo2->health == th->pointnum)
+		{
+			target = mo2;
+			break;
+		}
 	}
 
 	if (!target)
@@ -1875,31 +1901,29 @@ void T_PolyObjWaypoint(polywaypoint_t *th)
 			{
 				if (wp->function.acp1 != (actionf_p1)P_MobjThinker) // Not a mobj thinker
 					continue;
-				if (wp->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-					continue;
 
 				mo2 = (mobj_t *)wp;
 
 				if (mo2->type != MT_TUBEWAYPOINT)
 					continue;
 
-				if (mo2->threshold != th->sequence)
-					continue;
-
-				if (th->direction == -1)
+				if (mo2->threshold == th->sequence)
 				{
-					if (mo2->health == target->health - 1)
+					if (th->direction == -1)
 					{
-						waypoint = mo2;
-						break;
+						if (mo2->health == target->health - 1)
+						{
+							waypoint = mo2;
+							break;
+						}
 					}
-				}
-				else
-				{
-					if (mo2->health == target->health + 1)
+					else
 					{
-						waypoint = mo2;
-						break;
+						if (mo2->health == target->health + 1)
+						{
+							waypoint = mo2;
+							break;
+						}
 					}
 				}
 			}
@@ -1916,30 +1940,28 @@ void T_PolyObjWaypoint(polywaypoint_t *th)
 				{
 					if (wp->function.acp1 != (actionf_p1)P_MobjThinker) // Not a mobj thinker
 						continue;
-					if (wp->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-						continue;
 
 					mo2 = (mobj_t *)wp;
 
 					if (mo2->type != MT_TUBEWAYPOINT)
 						continue;
 
-					if (mo2->threshold != th->sequence)
-						continue;
-
-					if (th->direction == -1)
+					if (mo2->threshold == th->sequence)
 					{
-						if (waypoint == NULL)
-							waypoint = mo2;
-						else if (mo2->health > waypoint->health)
-							waypoint = mo2;
-					}
-					else
-					{
-						if (mo2->health == 0)
+						if (th->direction == -1)
 						{
-							waypoint = mo2;
-							break;
+							if (waypoint == NULL)
+								waypoint = mo2;
+							else if (mo2->health > waypoint->health)
+								waypoint = mo2;
+						}
+						else
+						{
+							if (mo2->health == 0)
+							{
+								waypoint = mo2;
+								break;
+							}
 						}
 					}
 				}
@@ -1955,31 +1977,29 @@ void T_PolyObjWaypoint(polywaypoint_t *th)
 				{
 					if (wp->function.acp1 != (actionf_p1)P_MobjThinker) // Not a mobj thinker
 						continue;
-					if (wp->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-						continue;
 
 					mo2 = (mobj_t *)wp;
 
 					if (mo2->type != MT_TUBEWAYPOINT)
 						continue;
 
-					if (mo2->threshold != th->sequence)
-						continue;
-
-					if (th->direction == -1)
+					if (mo2->threshold == th->sequence)
 					{
-						if (mo2->health == target->health - 1)
+						if (th->direction == -1)
 						{
-							waypoint = mo2;
-							break;
+							if (mo2->health == target->health - 1)
+							{
+								waypoint = mo2;
+								break;
+							}
 						}
-					}
-					else
-					{
-						if (mo2->health == target->health + 1)
+						else
 						{
-							waypoint = mo2;
-							break;
+							if (mo2->health == target->health + 1)
+							{
+								waypoint = mo2;
+								break;
+							}
 						}
 					}
 				}
@@ -2477,39 +2497,37 @@ INT32 EV_DoPolyObjWaypoint(polywaypointdata_t *pwdata)
 	{
 		if (wp->function.acp1 != (actionf_p1)P_MobjThinker) // Not a mobj thinker
 			continue;
-		if (wp->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-			continue;
 
 		mo2 = (mobj_t *)wp;
 
 		if (mo2->type != MT_TUBEWAYPOINT)
 			continue;
 
-		if (mo2->threshold != th->sequence)
-			continue;
-
-		if (th->direction == -1) // highest waypoint #
+		if (mo2->threshold == th->sequence)
 		{
-			if (mo2->health == 0)
-				last = mo2;
-			else
+			if (th->direction == -1) // highest waypoint #
 			{
-				if (first == NULL)
-					first = mo2;
-				else if (mo2->health > first->health)
-					first = mo2;
+				if (mo2->health == 0)
+					last = mo2;
+				else
+				{
+					if (first == NULL)
+						first = mo2;
+					else if (mo2->health > first->health)
+						first = mo2;
+				}
 			}
-		}
-		else // waypoint 0
-		{
-			if (mo2->health == 0)
-				first = mo2;
-			else
+			else // waypoint 0
 			{
-				if (last == NULL)
-					last = mo2;
-				else if (mo2->health > last->health)
-					last = mo2;
+				if (mo2->health == 0)
+					first = mo2;
+				else
+				{
+					if (last == NULL)
+						last = mo2;
+					else if (mo2->health > last->health)
+						last = mo2;
+				}
 			}
 		}
 	}
@@ -2546,6 +2564,36 @@ INT32 EV_DoPolyObjWaypoint(polywaypointdata_t *pwdata)
 
 	// Find the actual target movement waypoint
 	target = first;
+	/*for (wp = thinkercap.next; wp != &thinkercap; wp = wp->next)
+	{
+		if (wp->function.acp1 != (actionf_p1)P_MobjThinker) // Not a mobj thinker
+			continue;
+
+		mo2 = (mobj_t *)wp;
+
+		if (mo2->type != MT_TUBEWAYPOINT)
+			continue;
+
+		if (mo2->threshold == th->sequence)
+		{
+			if (th->direction == -1) // highest waypoint #
+			{
+				if (mo2->health == first->health - 1)
+				{
+					target = mo2;
+					break;
+				}
+			}
+			else // waypoint 0
+			{
+				if (mo2->health == first->health + 1)
+				{
+					target = mo2;
+					break;
+				}
+			}
+		}
+	}*/
 
 	if (!target)
 	{

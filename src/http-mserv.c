@@ -532,7 +532,9 @@ HMS_fetch_rules (char *buffer, size_t buffer_size)
 	if (! hms)
 		return NULL;
 
-	if (HMS_do(hms))
+	boolean ok = HMS_do(hms);
+
+	if (ok)
 	{
 		char *p = strstr(hms->buffer, "\n\n");
 
@@ -549,6 +551,9 @@ HMS_fetch_rules (char *buffer, size_t buffer_size)
 		buffer = NULL;
 
 	HMS_end(hms);
+
+	if (!ok)
+		return NULL;
 
 	return buffer;
 }
