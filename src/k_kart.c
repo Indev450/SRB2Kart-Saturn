@@ -7964,49 +7964,6 @@ static void K_drawKartStats(void)
 
 	if (!LUA_HudEnabled(hud_statdisplay))
 		return;
-
-	// I tried my best, but this is still mess :/
-	if (splitscreen)
-	{
-		if (splitscreen == 1)
-		{
-			// If we are in 2-player splitscreen, for player 1 we move hud to up and remove snapping
-			// to bottom
-			if (splitnum == 0)
-			{
-				y /= 2;
-				flags = V_SNAPTOLEFT;
-			}
-			else
-			{
-				// Can move it down a bit
-				y += 20;
-			}
-		}
-		else
-		{
-			// In 4-player splitscreen...
-			flags = 0;
-
-			// ...For players 2 and 4, which are at right side, we move x coordinate...
-			if (splitnum == 1 || splitnum == 3)
-				x += BASEVIDWIDTH/2;
-			// ...Else, for players on left side we can snap position to left...
-			else
-				flags |= V_SNAPTOLEFT;
-
-			// ...For players 1 and 2, which are at top side, we move y coordinate...
-			if (splitnum == 0 || splitnum == 1)
-				y /= 2;
-			// ...Else, for players on bottom side we can snap position to bottom
-			else
-			{
-				flags |= V_SNAPTOBOTTOM;
-				// Can move it down a bit
-				y += 20;
-			}
-		}
-	}
 	
 	//Internal offset for speedometer
 	if (cv_kartspeedometer.value)
@@ -8018,17 +7975,47 @@ static void K_drawKartStats(void)
 	}
 	else
 		spdoffset = 0;
-	
+
 	// Customizations c:
 	if (!splitscreen)
 	{
 		x += 18 + cv_stat_xoffset.value;
 		y += cv_stat_yoffset.value + (G_BattleGametype() ? (stplyr->kartstuff[k_bumper] ? -5 : -8) : 0) + spdoffset;
 	}
+	else if (splitscreen == 1)	// I tried my best, but this is still mess :/ < :Blobcatpats: c:
+	{
+		x -= 10;
+		y -= 40;
+		y += (G_BattleGametype() ? (stplyr->kartstuff[k_bumper] ? -5 : -8) : 0);
+
+		// If we are in 2-player splitscreen, for player 1 we move hud to up and remove snapping
+		// to bottom
+		if (splitnum == 0)
+		{
+			y /= 2;
+			flags = V_SNAPTOLEFT;
+		}
+		else
+		{
+			// Can move it down a bit
+			y += 45;
+		}
+	}
 	else
 	{
-		x += 18;
-		y += (G_BattleGametype() ? (stplyr->kartstuff[k_bumper] ? -5 : -8) : 0) + spdoffset;
+		if (splitnum == 0 || splitnum == 2) // If we are P1 or P3...
+		{
+			// ye i just align it to position number lol
+			x = POSI_X + 19;
+			y = POSI_Y - 6;
+			flags = V_SNAPTOLEFT|((splitnum == 2) ? V_SPLITSCREEN|V_SNAPTOBOTTOM : 0);	// flip P3 to the bottom.
+		}
+		else // else, that means we're P2 or P4.
+		{
+			x = POSI2_X - 75;
+			y = POSI2_Y - 6;
+			flags = V_SNAPTORIGHT|((splitnum == 3) ? V_SPLITSCREEN|V_SNAPTOBOTTOM : 0);	// flip P4 to the bottom
+		}
 	}
 
 	flags |= V_HUDTRANS;
