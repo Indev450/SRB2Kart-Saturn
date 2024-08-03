@@ -2635,8 +2635,6 @@ void A_BossDeath(mobj_t *mo)
 	{
 		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 			continue;
-		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-			continue;
 
 		mo2 = (mobj_t *)th;
 		if (mo2 != mo && (mo2->flags & MF_BOSS) && mo2->health > 0)
@@ -2694,8 +2692,6 @@ bossjustdie:
 		for (th = thinkercap.next; th != &thinkercap; th = th->next)
 		{
 			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
-				continue;
-			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 				continue;
 
 			mo2 = (mobj_t *)th;
@@ -5304,8 +5300,6 @@ void A_RingExplode(mobj_t *actor)
 	{
 		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 			continue;
-		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-			continue;
 
 		mo2 = (mobj_t *)th;
 
@@ -6874,23 +6868,13 @@ void A_Boss3Path(mobj_t *actor)
 		{
 			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 				continue;
-			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-				continue;
 
 			mo2 = (mobj_t *)th;
-
-			if (mo2->type != MT_BOSS3WAYPOINT)
-				continue;
-
-			if(!mo2->spawnpoint)
-				continue;
-
-			if (mo2->spawnpoint->angle != actor->threshold)
-				continue;
-
-
-			P_SetTarget(&actor->target, mo2);
-			break;
+			if (mo2->type == MT_BOSS3WAYPOINT && mo2->spawnpoint && mo2->spawnpoint->angle == actor->threshold)
+			{
+				P_SetTarget(&actor->target, mo2);
+				break;
+			}
 		}
 
 		if (!actor->target) // Should NEVER happen
@@ -7321,8 +7305,6 @@ void A_FindTarget(mobj_t *actor)
 	{
 		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 			continue;
-		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-			continue;
 
 		mo2 = (mobj_t *)th;
 
@@ -7386,8 +7368,6 @@ void A_FindTracer(mobj_t *actor)
 	for (th = thinkercap.next; th != &thinkercap; th = th->next)
 	{
 		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
-			continue;
-		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 			continue;
 
 		mo2 = (mobj_t *)th;
@@ -7930,8 +7910,6 @@ void A_RemoteAction(mobj_t *actor)
 		for (th = thinkercap.next; th != &thinkercap; th = th->next)
 		{
 			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
-				continue;
-			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 				continue;
 
 			mo2 = (mobj_t *)th;
@@ -8711,8 +8689,6 @@ void A_MementosTPParticles(mobj_t *actor)
 		{
 			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 				continue;
-			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-				continue;
 
 			mo2 = (mobj_t *)th;
 			if (mo2->type == MT_MEMENTOSTP && mo2 != actor)
@@ -8812,8 +8788,6 @@ void A_ReaperThinker(mobj_t *actor)
 		{
 			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 				continue;
-			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-				continue;
 
 			mo2 = (mobj_t *)th;
 
@@ -8870,6 +8844,7 @@ void A_ReaperThinker(mobj_t *actor)
 		// Waypoint behavior.
 		if (actor->target->type == MT_REAPERWAYPOINT)
 		{
+
 			if (R_PointToDist2(actor->x, actor->y, actor->target->x, actor->target->y) < 22<<FRACBITS)
 			{
 				P_SetTarget(&actor->target, NULL);	// remove target so we can default back to first waypoint if things go ham.
@@ -8878,8 +8853,6 @@ void A_ReaperThinker(mobj_t *actor)
 				for (th = thinkercap.next; th != &thinkercap; th = th->next)
 				{
 					if (th->function.acp1 != (actionf_p1)P_MobjThinker)
-						continue;
-					if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 						continue;
 
 					mo2 = (mobj_t *)th;
@@ -9055,8 +9028,6 @@ void A_SetObjectTypeState(mobj_t *actor)
 	for (th = thinkercap.next; th != &thinkercap; th = th->next)
 	{
 		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
-			continue;
-		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 			continue;
 
 		mo2 = (mobj_t *)th;
@@ -9679,8 +9650,6 @@ void A_CheckThingCount(mobj_t *actor)
 	for (th = thinkercap.next; th != &thinkercap; th = th->next)
 	{
 		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
-			continue;
-		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 			continue;
 
 		mo2 = (mobj_t *)th;
