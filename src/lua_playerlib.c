@@ -381,9 +381,7 @@ int player_viewrollangle_getter(lua_State *L)
 {
 	player_t *plr = GETPLAYER();
 
-	// cba to add splitscreen support for viewroll stuff soooo..
-	if (plr == &players[displayplayers[0]])
-		lua_pushangle(L, R_ViewRollAngle(plr));
+	lua_pushangle(L, R_ViewRollAngle(plr));
 
 	return 1;
 }
