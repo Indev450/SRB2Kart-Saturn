@@ -3072,6 +3072,12 @@ void G_DoReborn(INT32 playernum)
 	player_t *player = &players[playernum];
 	boolean starpost = false;
 
+	/*if (modeattacking) // Not needed for SRB2Kart.
+	{
+		M_EndModeAttackRun();
+		return;
+	}*/
+
 	// Make sure objectplace is OFF when you first start the level!
 	OP_ResetObjectplace();
 
@@ -3085,13 +3091,74 @@ void G_DoReborn(INT32 playernum)
 			oldmo = player->mo;
 			// Don't leave your carcass stuck 10-billion feet in the ground!
 			P_RemoveMobj(player->mo);
-			P_SetTarget(&player->mo, NULL);
 		}
 
 		B_RespawnBot(playernum);
 		if (oldmo)
 			G_ChangePlayerReferences(oldmo, players[playernum].mo);
 	}
+	/*else if (countdowntimeup || (!multiplayer && !modeattacking))
+	{
+		// reload the level from scratch
+		if (countdowntimeup)
+		{
+			player->starpostangle = 0;
+			player->starposttime = 0;
+			player->starpostx = 0;
+			player->starposty = 0;
+			player->starpostz = 0;
+			player->starpostnum = 0;
+		}
+		if (!countdowntimeup && (mapheaderinfo[gamemap-1]->levelflags & LF_NORELOAD))
+		{
+			INT32 i;
+
+			player->playerstate = PST_REBORN;
+
+			P_LoadThingsOnly();
+
+			// Do a wipe
+			wipegamestate = -1;
+
+			if (player->starpostnum) // SRB2kart
+				starpost = true;
+
+			for (i = 0; i <= splitscreen; i++)
+			{
+				if (camera[i].chase)
+					P_ResetCamera(&players[displayplayers[i]], &camera[i]);
+			}
+
+			// clear cmd building stuff
+			memset(gamekeydown, 0, sizeof (gamekeydown));
+			for (i = 0;i < JOYAXISSET; i++)
+			{
+				joyxmove[i] = joyymove[i] = 0;
+				joy2xmove[i] = joy2ymove[i] = 0;
+				joy3xmove[i] = joy3ymove[i] = 0;
+				joy4xmove[i] = joy4ymove[i] = 0;
+			}
+			mousex = mousey = 0;
+			mouse2x = mouse2y = 0;
+
+			// clear hud messages remains (usually from game startup)
+			CON_ClearHUD();
+
+			// Starpost support
+			G_SpawnPlayer(playernum, starpost);
+
+			if (botingame)
+			{ // Bots respawn next to their master.
+				players[displayplayers[1]].playerstate = PST_REBORN;
+				G_SpawnPlayer(displayplayers[1], false);
+			}
+		}
+		else
+		{
+			LUAh_MapChange(gamemap);
+			G_DoLoadLevel(true);
+		}
+	}*/
 	else
 	{
 		// respawn at the start
@@ -3108,7 +3175,6 @@ void G_DoReborn(INT32 playernum)
 			oldmo = player->mo;
 			// Don't leave your carcass stuck 10-billion feet in the ground!
 			P_RemoveMobj(player->mo);
-			P_SetTarget(&player->mo, NULL);
 		}
 
 		G_SpawnPlayer(playernum, starpost);

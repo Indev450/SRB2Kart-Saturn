@@ -10597,9 +10597,7 @@ void P_SpawnPlayer(INT32 playernum)
 
 	mobj = P_SpawnMobj(0, 0, 0, MT_PLAYER);
 	I_Assert(mobj != NULL);
-
-	mobj->player = p;
-	P_SetTarget(&p->mo, mobj);
+	(mobj->player = p)->mo = mobj;
 
 	mobj->angle = 0;
 

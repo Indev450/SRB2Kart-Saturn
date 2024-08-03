@@ -4025,7 +4025,7 @@ boolean P_SpectatorJoinGame(player_t *player)
 		if (player->mo)
 		{
 			P_RemoveMobj(player->mo);
-			P_SetTarget(&player->mo, NULL);
+			player->mo = NULL;
 		}
 		player->spectator = false;
 		player->pflags &= ~PF_WANTSTOJOIN;
