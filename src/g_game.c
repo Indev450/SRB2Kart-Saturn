@@ -2201,7 +2201,7 @@ static void G_FixCamera(UINT8 view)
 
 	// The order of displayplayers can change, which would
 	// invalidate localangle.
-	localangle[view - 1] = player->cmd.angleturn;
+	//localangle[view - 1] = player->cmd.angleturn;
 
 	P_ResetCamera(player, &camera[view - 1]);
 
