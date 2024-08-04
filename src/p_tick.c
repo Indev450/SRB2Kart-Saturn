@@ -372,18 +372,10 @@ void P_RunChaseCameras(void)
 {
 	UINT8 i;
 
-	if (!splitscreen)
+	for (i = 0; i <= splitscreen; i++)
 	{
-		if (camera[0].chase)
-			P_MoveChaseCamera(&players[displayplayers[0]], &camera[0], false);
-	}
-	else
-	{
-		for (i = 0; i <= splitscreen; i++)
-		{
-			if (camera[i].chase)
-				P_MoveChaseCamera(&players[displayplayers[i]], &camera[i], false);
-		}
+		if (camera[i].chase)
+			P_MoveChaseCamera(&players[displayplayers[i]], &camera[i], false);
 	}
 }
 
