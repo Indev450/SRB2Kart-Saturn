@@ -340,7 +340,7 @@ static inline void P_DeviceRumbleTick(void)
 {
 	UINT8 i;
 
-	if (cv_rumble[0].value == 0 && cv_rumble[1].value == 0 && cv_rumble[2].value == 0 && cv_rumble[3].value == 0)
+	if (I_NumJoys() == 0 || (cv_rumble[0].value == 0 && cv_rumble[1].value == 0 && cv_rumble[2].value == 0 && cv_rumble[3].value == 0))
 	{
 		return;
 	}
@@ -355,6 +355,9 @@ static inline void P_DeviceRumbleTick(void)
 			continue;
 
 		if (!playeringame[displayplayers[i]] || player->spectator)
+			continue;
+
+		if (G_GetDeviceForPlayer(i) == 0)
 			continue;
 
 		if (player->exiting)
