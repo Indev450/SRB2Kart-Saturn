@@ -6069,8 +6069,6 @@ static void Command_SkinSearch(void)
   */
 static void Color_OnChange(void)
 {
-	G_SetPlayerGamepadIndicatorColor(0, 0); // i want this to always change so its here
-
 	if (!Playing())
 		return; // do whatever you want
 
@@ -6090,8 +6088,6 @@ static void Color_OnChange(void)
 		CV_StealthSetValue(&cv_playercolor,
 			players[consoleplayer].skincolor);
 	}
-
-	G_SetPlayerGamepadIndicatorColor(0, 0); // update again
 }
 
 /** Sends a color change for the secondary splitscreen player, unless that
@@ -6114,8 +6110,6 @@ static void Color2_OnChange(void)
 		CV_StealthSetValue(&cv_playercolor2,
 			players[displayplayers[1]].skincolor);
 	}
-
-	G_SetPlayerGamepadIndicatorColor(1, 0);
 }
 
 static void Color3_OnChange(void)
@@ -6133,8 +6127,6 @@ static void Color3_OnChange(void)
 		CV_StealthSetValue(&cv_playercolor3,
 			players[displayplayers[2]].skincolor);
 	}
-
-	G_SetPlayerGamepadIndicatorColor(2, 0);
 }
 
 static void Color4_OnChange(void)
@@ -6152,8 +6144,6 @@ static void Color4_OnChange(void)
 		CV_StealthSetValue(&cv_playercolor4,
 			players[displayplayers[3]].skincolor);
 	}
-
-	G_SetPlayerGamepadIndicatorColor(3, 0);
 }
 
 /** Displays the result of the chat being muted or unmuted.

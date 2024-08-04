@@ -132,6 +132,8 @@ extern INT32 gamecontrol4[num_gamecontrols][2];
 // peace to my little coder fingers!
 // check a gamecontrol being active or not
 
+UINT16 G_GetSkinColor(INT32 player);
+INT32 G_GetDeviceForPlayer(INT32 player);
 void G_SetPlayerGamepadIndicatorColor(INT32 player, UINT16 color);
 void G_PlayerDeviceRumble(INT32 player, UINT16 low_strength, UINT16 high_strength, UINT32 duration);
 
