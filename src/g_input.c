@@ -865,7 +865,7 @@ static const char *gamecontrolname[num_gamecontrols] =
 
 #include "k_kart.h"
 
-static INT32 G_GetDeviceForPlayer(INT32 player)
+INT32 G_GetDeviceForPlayer(INT32 player)
 {
 	switch (player)
 	{
@@ -887,7 +887,7 @@ static INT32 G_GetDeviceForPlayer(INT32 player)
 	}
 }
 
-static UINT16 G_GetSkinColor(INT32 player)
+inline UINT16 G_GetSkinColor(INT32 player)
 {
 	if (players[displayplayers[player]].skincolor && gamestate == GS_LEVEL)
 		return players[displayplayers[player]].skincolor;

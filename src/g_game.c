@@ -2136,8 +2136,6 @@ void G_ResetView(UINT8 viewnum, INT32 playernum, boolean onlyactive)
 
 	if (viewnum == 1 && demo.playback)
 		consoleplayer = displayplayers[0];
-
-	G_SetPlayerGamepadIndicatorColor(viewnum-1, 0);
 }
 
 //
@@ -8544,11 +8542,7 @@ boolean G_DemoTitleResponder(event_t *ev)
 //
 void G_SetGamestate(gamestate_t newstate)
 {
-	SINT8 i;
 	gamestate = newstate;
-
-	for (i = 0; i <= splitscreen; i++)
-		G_SetPlayerGamepadIndicatorColor(i, 0); // dumb hack but works
 
 #ifdef HAVE_DISCORDRPC
 	DRPC_UpdatePresence();

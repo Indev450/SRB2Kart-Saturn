@@ -170,6 +170,31 @@ UINT8 ctrldown = 0; // 0x1 left, 0x2 right
 UINT8 altdown = 0; // 0x1 left, 0x2 right
 boolean capslock = 0;	// gee i wonder what this does.
 
+static inline void D_DeviceLEDTick(void)
+{
+	UINT8 i;
+	UINT16 color[MAXSPLITSCREENPLAYERS];
+	UINT16 curcolor[MAXSPLITSCREENPLAYERS];
+
+	// no gamepads connected
+	if (I_NumJoys() == 0)
+		return;
+
+	for (i = 0; i <= splitscreen; i++)
+	{
+		if (G_GetDeviceForPlayer(i) == 0)
+			continue;
+
+		color[i] = G_GetSkinColor(i);
+
+		if (curcolor[i] == color[i]) // dont update if same colour
+			continue;
+
+		G_SetPlayerGamepadIndicatorColor(i, color[i]);
+		curcolor[i] = color[i];
+	}
+}
+
 //
 // D_ProcessEvents
 // Send all the events of the given timestamp down the responder chain
@@ -838,6 +863,9 @@ void D_SRB2Loop(void)
 		}
 		else
 			menuInputDelayTimer = 0;
+
+		if (!dedicated && renderisnewtic) // idk does this need dedi check??
+			D_DeviceLEDTick();
 
 		// Fully completed frame made.
 		finishprecise = I_GetPreciseTime();
