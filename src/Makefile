@@ -285,7 +285,7 @@ else
 		 $(OBJDIR)/hw_md2load.o $(OBJDIR)/hw_md3load.o $(OBJDIR)/hw_model.o $(OBJDIR)/u_list.o $(OBJDIR)/hw_batching.o $(OBJDIR)/hw_shaders.o
 endif
 
-OPTS += -DCOMPVERSION
+OPTS += -DCOMPVERSION -fwrapv
 
 ifndef NONX86
 ifndef GCC29
