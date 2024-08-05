@@ -4772,6 +4772,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 	size_t lumpoff;
 	unsigned rot;
 	UINT8 flip;
+	boolean vflip;
 	boolean mirrored;
 	boolean hflip;
 
@@ -4795,6 +4796,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 	if (!thing)
 		return;
 
+	vflip = (thing->eflags & MFE_VERTICALFLIP);
 	mirrored = thing->mirrored;
 	hflip = (!(thing->frame & FF_HORIZONTALFLIP) != !mirrored);
 	papersprite = (thing->frame & FF_PAPERSPRITE);
@@ -4924,7 +4926,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 	}
 
 	if (thing->skin && ((skin_t *)( (thing->localskin) ? thing->localskin : thing->skin ))->flags & SF_HIRES)
-		this_scale = this_scale * FIXED_TO_FLOAT(((skin_t *)( (thing->localskin) ? thing->localskin : thing->skin ))->highresscale);
+		this_scale *= FIXED_TO_FLOAT(((skin_t *)( (thing->localskin) ? thing->localskin : thing->skin ))->highresscale);
 
 	spr_width = spritecachedinfo[lumpoff].width;
 	spr_height = spritecachedinfo[lumpoff].height;
@@ -5016,7 +5018,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 	x1 = tr_x + x1 * rightcos;
 	x2 = tr_x - x2 * rightcos;
 
-	if (thing->eflags & MFE_VERTICALFLIP)
+	if (vflip)
 	{
 		gz = FIXED_TO_FLOAT(interp.z + thing->height) - (FIXED_TO_FLOAT(spr_topoffset) * spriteyscale);
 		gzt = gz + (FIXED_TO_FLOAT(spr_height) * spriteyscale);
@@ -5076,7 +5078,6 @@ void HWR_ProjectSprite(mobj_t *thing)
 
 	vis->mobj = thing;
 
-
 	//Hurdler: 25/04/2000: now support colormap in hardware mode
 	if ((vis->mobj->flags & MF_BOSS) && (vis->mobj->flags2 & MF2_FRET) && (leveltime & 1)) // Bosses "flash"
 	{
@@ -5113,10 +5114,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 	//CONS_Debug(DBG_RENDER, "------------------\nH: sprite  : %d\nH: frame   : %x\nH: type    : %d\nH: sname   : %s\n\n",
 	//            thing->sprite, thing->frame, thing->type, sprnames[thing->sprite]);
 
-	if (thing->eflags & MFE_VERTICALFLIP)
-		vis->vflip = true;
-	else
-		vis->vflip = false;
+	vis->vflip = vflip;
 
 	vis->precip = false;
 }
