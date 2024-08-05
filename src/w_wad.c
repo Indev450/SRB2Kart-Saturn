@@ -1748,7 +1748,7 @@ void W_UnlockCachedPatch(void *patch)
 		HWR_UnlockCachedPatch((GLPatch_t*)patch);
 	else
 #endif
-		Z_Unlock(patch);
+	Z_ChangeTag(patch, PU_LEVEL);
 }
 
 void *W_CachePatchName(const char *name, INT32 tag)

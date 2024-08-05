@@ -379,7 +379,7 @@ static void HWR_GenerateTexture(INT32 texnum, GLMapTexture_t *grtex, boolean noe
 		                     blockwidth, blockheight,
 		                     texture, patch,
 		                     realpatch);
-		Z_Unlock(realpatch);
+		Z_ChangeTag(realpatch, PU_HWRCACHE_UNLOCKED);
 	}
 
 	//Hurdler: not efficient at all but I don't remember exactly how HWR_DrawPatchInCache works :(
