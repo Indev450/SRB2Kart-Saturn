@@ -2840,8 +2840,8 @@ boolean P_SetupLevel(boolean skipprecip, boolean reloadinggamestate)
 
 	// internal game map
 	maplumpname = G_BuildMapName(gamemap);
-	lastloadedmaplumpnum = W_CheckNumForName(maplumpname);
-	if (lastloadedmaplumpnum == INT16_MAX)
+	lastloadedmaplumpnum = W_CheckNumForMap(maplumpname);
+	if (lastloadedmaplumpnum == LUMPERROR)
 		I_Error("Map %s not found.\n", maplumpname);
 
 	curmapvirt = vres_GetMap(lastloadedmaplumpnum);

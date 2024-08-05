@@ -1216,8 +1216,14 @@ lumpnum_t W_CheckNumForMap(const char *name)
 			for (lumpNum = 0; lumpNum < wadfiles[i]->numlumps; lumpNum++)
 			{
 				p = wadfiles[i]->lumpinfo + lumpNum;
-				if (p->hash == hash && !strncmp(name, p->name, 8))
-					return (i<<16) + lumpNum;
+
+				if (p->hash != hash)
+					continue;
+
+				if (strncmp(name, p->name, 8))
+					continue;
+
+				return (i<<16) + lumpNum;
 			}
 		}
 		else if (wadfiles[i]->type == RET_PK3)
@@ -1231,8 +1237,19 @@ lumpnum_t W_CheckNumForMap(const char *name)
 			for (; lumpNum < end; lumpNum++)
 			{
 				p = wadfiles[i]->lumpinfo + lumpNum;
-				if (p->hash == hash && !strnicmp(name, p->name, 8))
-					return (i<<16) + lumpNum;
+
+				if (p->hash != hash)
+					continue;
+
+				if (strnicmp(name, p->name, 8))
+					continue;
+
+				const char *extension = strrchr(p->fullname, '.');
+
+				if (extension && stricmp(extension, ".wad"))
+					continue;
+
+				return (i<<16) + lumpNum;
 			}
 		}
 	}
