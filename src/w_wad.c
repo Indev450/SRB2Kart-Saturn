@@ -84,10 +84,11 @@ typedef struct
 
 // Must be a power of two
 #define LUMPNUMCACHESIZE 64
+#define LUMPNUMCACHENAME 32
 
 typedef struct lumpnum_cache_s
 {
-	char lumpname[32];
+	char lumpname[LUMPNUMCACHENAME];
 	lumpnum_t lumpnum;
 } lumpnum_cache_t;
 
@@ -1099,6 +1100,9 @@ lumpnum_t W_CheckNumForName(const char *name)
 	INT32 i;
 	lumpnum_t check = INT16_MAX;
 
+	if (name == NULL)
+		return LUMPERROR;
+
 	if (!*name) // some doofus gave us an empty string?
 		return LUMPERROR;
 
@@ -1122,12 +1126,15 @@ lumpnum_t W_CheckNumForName(const char *name)
 			break; //found it
 	}
 
-	if (check == INT16_MAX) return LUMPERROR;
+	if (check == INT16_MAX)
+	{
+		return LUMPERROR;
+	}
 	else
 	{
 		// Update the cache.
 		lumpnumcacheindex = (lumpnumcacheindex + 1) & (LUMPNUMCACHESIZE - 1);
-		memset(lumpnumcache[lumpnumcacheindex].lumpname, '\0', 32);
+		memset(lumpnumcache[lumpnumcacheindex].lumpname, '\0', LUMPNUMCACHENAME);
 		strncpy(lumpnumcache[lumpnumcacheindex].lumpname, name, 8);
 		lumpnumcache[lumpnumcacheindex].lumpnum = (i<<16)+check;
 
@@ -1145,6 +1152,9 @@ lumpnum_t W_CheckNumForLongName(const char *name)
 {
 	INT32 i;
 	lumpnum_t check = INT16_MAX;
+
+	if (name == NULL)
+		return LUMPERROR;
 
 	if (!*name) // some doofus gave us an empty string?
 		return LUMPERROR;
@@ -1171,15 +1181,18 @@ lumpnum_t W_CheckNumForLongName(const char *name)
 		}
 	}
 
-	if (check == INT16_MAX) return LUMPERROR;
+	if (check == INT16_MAX)
+	{
+		return LUMPERROR;
+	}
 	else
 	{
-		if (strlen(name) < 32)
+		if (strlen(name) < LUMPNUMCACHENAME)
 		{
 			// Update the cache.
 			lumpnumcacheindex = (lumpnumcacheindex + 1) & (LUMPNUMCACHESIZE - 1);
-			memset(lumpnumcache[lumpnumcacheindex].lumpname, '\0', 32);
-			strlcpy(lumpnumcache[lumpnumcacheindex].lumpname, name, 32);
+			memset(lumpnumcache[lumpnumcacheindex].lumpname, '\0', LUMPNUMCACHENAME);
+			strlcpy(lumpnumcache[lumpnumcacheindex].lumpname, name, LUMPNUMCACHENAME);
 			lumpnumcache[lumpnumcacheindex].lumpnum = (i << 16) + check;
 		}
 
