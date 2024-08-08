@@ -386,6 +386,7 @@ menu_t OP_DriftGaugeDef;
 menu_t MISC_ReplayHutDef;
 menu_t MISC_ReplayOptionsDef;
 static void M_HandleReplayHutList(INT32 choice);
+static void M_HutCheckReplays(size_t maxnum);
 static void M_DrawReplayHut(void);
 static void M_DrawReplayStartMenu(void);
 static boolean M_QuitReplayHut(void);
@@ -463,6 +464,9 @@ static void Dummystaff_OnChange(void);
 // ==========================================================================
 // CONSOLE VARIABLES AND THEIR POSSIBLE VALUES GO HERE.
 // ==========================================================================
+
+// How much replays are checked per frame when using search
+consvar_t cv_replaysearchrate = {"replaysearchrate", "50", CV_SAVE, CV_Natural, NULL, 0, NULL, NULL, 0, 0, NULL };
 
 consvar_t cv_showfocuslost = {"showfocuslost", "Yes", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL };
 
@@ -619,6 +623,7 @@ static menuitem_t MISC_ReplayOptionsMenu[] =
 	{IT_CVAR|IT_STRING, NULL, "Record Replays",      &cv_recordmultiplayerdemos, 0},
 	{IT_CVAR|IT_STRING, NULL, "Sync Check Interval", &cv_netdemosyncquality,     10},
 	{IT_CVAR|IT_STRING, NULL, "Max demo size (MiB)", &cv_maxdemosize,			 20},
+	{IT_CVAR|IT_STRING, NULL, "Replay Search Rate",  &cv_replaysearchrate,       30},
 };
 
 static tic_t playback_last_menu_interaction_leveltime = 0;
@@ -4430,6 +4435,9 @@ void M_Ticker(void)
 	else
 		playback_enterheld = 0;
 
+	if (currentMenu == &MISC_ReplayHutDef)
+		M_HutCheckReplays(cv_replaysearchrate.value);
+
 	interpTimerHackAllow = true;
 
 	//added : 30-01-98 : test mode for five seconds
@@ -6709,45 +6717,122 @@ static void M_HandleAddons(INT32 choice)
 }
 
 // ---- REPLAY HUT -----
-menudemo_t *demolist;
+menudemo_t *demolist; // Replays that that have been checked to match with query
+menudemo_t *demolist_all; // All replays
 
 #define MAXREPLAYQUERY 30
-char replayqueryinput[MAXREPLAYQUERY+1];
-size_t replayquerypos = 0;
-boolean replayqueryopen = false;
+char replayqueryinput[MAXREPLAYQUERY+1]; // The input typed
+size_t replayquerypos = 0; // Position in input window
+boolean replayqueryopen = false; // Is query window open?
+
+size_t replayqueryfound = 0; // Number of checked replay entries
+size_t replayquerycheck = 0; // Index of next replay entry to check in demolist_all
 
 #define DF_ENCORE       0x40
 static INT16 replayScrollTitle = 0;
 static SINT8 replayScrollDelay = TICRATE, replayScrollDir = 1;
 
+static void ResetReplayQuery(void)
+{
+	memset(replayqueryinput, 0, MAXREPLAYQUERY);
+	replayquerypos = 0;
+	replayqueryopen = false;
+
+	replayqueryfound = 0;
+	replayquerycheck = 0;
+}
+
+static void AddCheckedReplay(void)
+{
+	memcpy(&demolist[replayqueryfound], &demolist_all[replayquerycheck], sizeof(menudemo_t));
+	++replayqueryfound;
+	++replayquerycheck;
+}
+
+// Check up to maxnum replays if they match with query
+static void M_HutCheckReplays(size_t maxnum)
+{
+	// Already checked everything
+	if (replayquerycheck == sizedirmenu)
+		return;
+
+	// If we don't have any query, just copy all demos and consider them checked
+	if (replayquerypos == 0)
+	{
+		// Mark as done
+		replayqueryfound = replayquerycheck = sizedirmenu;
+
+		memcpy(demolist, demolist_all, sizeof(menudemo_t) * sizedirmenu);
+
+		return;
+	}
+
+	while (maxnum-- && replayquerycheck < sizedirmenu)
+	{
+		switch (demolist_all[replayquerycheck].type)
+		{
+			case MD_SUBDIR:
+				AddCheckedReplay(); // Just add subdirs
+				// Will also be decremented on next iteration. Basically, we just don't want to
+				// spend our number of tries on subdirs, since we don't check anything for them
+				++maxnum;
+				break;
+
+			case MD_NOTLOADED:
+				G_LoadDemoInfo(&demolist_all[replayquerycheck]);
+				++maxnum; // Gonna check this one next iteration, don't decrease our number of tries yet
+				break;
+
+			case MD_OUTDATED:
+			case MD_LOADED:
+				if (strcasestr(demolist_all[replayquerycheck].title, replayqueryinput) != NULL)
+					AddCheckedReplay(); // It matches, add it!
+				else
+					replayquerycheck++; // Doesn't match, moving on...
+
+				break;
+
+			// Don't show invalid replays
+			case MD_INVALID:
+				replayquerycheck++;
+		}
+	}
+}
+
 static void PrepReplayList(void)
 {
 	size_t i;
 
+	replayquerycheck = replayqueryfound = 0;
+
 	if (demolist)
 		Z_Free(demolist);
 
+	if (demolist_all)
+		Z_Free(demolist_all);
+
 	demolist = Z_Calloc(sizeof(menudemo_t) * sizedirmenu, PU_STATIC, NULL);
+	demolist_all = Z_Calloc(sizeof(menudemo_t) * sizedirmenu, PU_STATIC, NULL);
 
 	for (i = 0; i < sizedirmenu; i++)
 	{
 		if (dirmenu[i][DIR_TYPE] == EXT_UP)
 		{
-			demolist[i].type = MD_SUBDIR;
-			sprintf(demolist[i].title, "UP");
+			demolist_all[i].type = MD_SUBDIR;
+			sprintf(demolist_all[i].title, "UP");
 		}
 		else if (dirmenu[i][DIR_TYPE] == EXT_FOLDER)
 		{
-			demolist[i].type = MD_SUBDIR;
-			strncpy(demolist[i].title, dirmenu[i] + DIR_STRING, 64);
+			demolist_all[i].type = MD_SUBDIR;
+			strncpy(demolist_all[i].title, dirmenu[i] + DIR_STRING, 64);
 		}
 		else
 		{
-			demolist[i].type = MD_NOTLOADED;
+			demolist_all[i].type = MD_NOTLOADED;
 			// FIXME - do something with buffer sizes. menupath is 1024 chars but filepath is only
 			// 256. I'm not really sure what to do here but don't want to leave warnings...
-			snprintf(demolist[i].filepath, 255, "%.254s%s", menupath, dirmenu[i] + DIR_STRING);
-			sprintf(demolist[i].title, ".....");
+			snprintf(demolist_all[i].filepath, 255, "%.254s%s", menupath, dirmenu[i] + DIR_STRING);
+			sprintf(demolist_all[i].title, ".....");
 		}
 	}
 }
@@ -6762,11 +6847,7 @@ void M_ReplayHut(INT32 choice)
 		menupathindex[(menudepthleft = menudepth-1)] = strlen(menupath);
 	}
 
-	// Reset
-	replayhutquery = NULL;
-	memset(replayqueryinput, 0, 30);
-	replayquerypos = 0;
-	replayqueryopen = false;
+	ResetReplayQuery();
 
 	if (!preparefilemenu(false, true))
 	{
@@ -6812,9 +6893,6 @@ static boolean M_HandleReplayHutQuery(INT32 choice)
 			replayquerypos--;
 			replayqueryinput[replayquerypos] = 0;
 
-			if (!replayquerypos)
-				replayhutquery = NULL;
-
 			preparefilemenu(false, true);
 			dir_on[menudepthleft] = 0;
 			PrepReplayList();
@@ -6832,8 +6910,6 @@ static boolean M_HandleReplayHutQuery(INT32 choice)
 				replayqueryinput[replayquerypos] = choice;
 				replayqueryinput[replayquerypos+1] = 0;
 				++replayquerypos;
-
-				replayhutquery = replayqueryinput;
 
 				preparefilemenu(false, true);
 				dir_on[menudepthleft] = 0;
@@ -6868,7 +6944,7 @@ static void M_HandleReplayHutList(INT32 choice)
 		break;
 
 	case KEY_DOWNARROW:
-		if (dir_on[menudepthleft] < sizedirmenu-1)
+		if (dir_on[menudepthleft] < replayqueryfound-1)
 			dir_on[menudepthleft]++;
 		else
 			return;
@@ -6908,6 +6984,7 @@ static void M_HandleReplayHutList(INT32 choice)
 					{
 						S_StartSound(NULL, sfx_menu1);
 						dir_on[menudepthleft] = 1;
+						ResetReplayQuery();
 						PrepReplayList();
 					}
 				}
@@ -7127,7 +7204,7 @@ static void M_DrawReplayHut(void)
 	if (itemOn > replaylistitem)
 	{
 		itemOn = replaylistitem;
-		dir_on[menudepthleft] = sizedirmenu-1;
+		dir_on[menudepthleft] = replayqueryfound-1;
 		replayScrollTitle = 0; replayScrollDelay = TICRATE; replayScrollDir = 1;
 	}
 	else if (itemOn < replaylistitem)
@@ -7141,7 +7218,7 @@ static void M_DrawReplayHut(void)
 		INT32 maxy;
 		// Scroll menu items if needed
 		cursory = y + currentMenu->menuitems[replaylistitem].alphaKey + dir_on[menudepthleft]*10;
-		maxy = y + currentMenu->menuitems[replaylistitem].alphaKey + sizedirmenu*10;
+		maxy = y + currentMenu->menuitems[replaylistitem].alphaKey + replayqueryfound*10;
 
 		if (cursory > maxy - 20)
 			cursory = maxy - 20;
@@ -7175,7 +7252,7 @@ static void M_DrawReplayHut(void)
 
 	y += currentMenu->menuitems[replaylistitem].alphaKey;
 
-	for (i = 0; i < (INT16)sizedirmenu; i++)
+	for (i = 0; i < (INT16)replayqueryfound; i++)
 	{
 		INT32 localy = y+i*10;
 		INT32 localx = x;
@@ -7233,7 +7310,7 @@ static void M_DrawReplayHut(void)
 	}
 
 	// Draw scrollbar
-	y = sizedirmenu*10 + currentMenu->menuitems[replaylistitem].alphaKey + 30;
+	y = replayqueryfound*10 + currentMenu->menuitems[replaylistitem].alphaKey + 30;
 	if (y > SCALEDVIEWHEIGHT-80)
 	{
 		V_DrawFill(BASEVIDWIDTH-4, 75, 4, SCALEDVIEWHEIGHT-80, V_SNAPTOTOP|V_SNAPTORIGHT|239);
@@ -7262,6 +7339,9 @@ static void M_DrawReplayHut(void)
 		// draw text cursor for name
 		if (replayqueryopen && skullAnimCounter < 4) // blink cursor
 			V_DrawCharacter(16 + V_StringWidth(replayqueryinput, V_ALLOWLOWERCASE), 200 - 8, '_', false);
+
+		if (replayquerycheck < sizedirmenu)
+			V_DrawString(16, 200 - 24, V_ALLOWLOWERCASE, va("Searching %u/%u...", (unsigned)replayquerycheck, (unsigned)sizedirmenu));
 	}
 }
 
