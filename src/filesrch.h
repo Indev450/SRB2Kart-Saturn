@@ -33,6 +33,7 @@ filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *want
 extern char menupath[1024];
 extern size_t menupathindex[menudepth];
 extern size_t menudepthleft;
+extern char *replayhutquery;
 
 extern char menusearch[MAXSTRINGLENGTH+1];
 
