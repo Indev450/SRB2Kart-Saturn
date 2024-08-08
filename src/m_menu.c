@@ -4439,7 +4439,7 @@ void M_Ticker(void)
 	else
 		playback_enterheld = 0;
 
-	if (currentMenu == &MISC_ReplayHutDef)
+	if (demo.inreplayhut)
 		M_HutCheckReplays(cv_replaysearchrate.value);
 
 	interpTimerHackAllow = true;
