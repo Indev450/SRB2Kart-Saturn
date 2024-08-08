@@ -4744,6 +4744,12 @@ void M_DrawTextBox(INT32 x, INT32 y, INT32 width, INT32 boxlines)
 	V_DrawFill(x+5, y+5, width*8+6, boxlines*8+6, 239);
 }
 
+void M_DrawTextBoxFlags(INT32 x, INT32 y, INT32 width, INT32 boxlines, INT32 flags)
+{
+	// Solid color textbox.
+	V_DrawFill(x+5, y+5, width*8+6, boxlines*8+6, 239|flags);
+}
+
 // horizontally centered text
 static void M_CentreText(INT32 y, const char *string)
 {
@@ -6720,7 +6726,7 @@ static void M_HandleAddons(INT32 choice)
 menudemo_t *demolist; // Replays that that have been checked to match with query
 menudemo_t *demolist_all; // All replays
 
-#define MAXREPLAYQUERY 30
+#define MAXREPLAYQUERY 40
 char replayqueryinput[MAXREPLAYQUERY+1]; // The input typed
 size_t replayquerypos = 0; // Position in input window
 boolean replayqueryopen = false; // Is query window open?
@@ -7258,7 +7264,7 @@ static void M_DrawReplayHut(void)
 
 		if (localy < 65)
 			continue;
-		if (localy >= SCALEDVIEWHEIGHT)
+		if (localy >= SCALEDVIEWHEIGHT - 24)
 			break;
 
 		if (demolist[i].type == MD_NOTLOADED && !processed_one_this_frame)
@@ -7329,19 +7335,22 @@ static void M_DrawReplayHut(void)
 		DrawReplayHutReplayInfo();
 	}
 
+	x -= 40;
+
 	// Draw search query
+	M_DrawTextBoxFlags(x, 200 - 22, MAXREPLAYQUERY, 1, V_SNAPTOBOTTOM);
+
 	if (replayqueryopen || replayquerypos)
-	{
-		M_DrawTextBox(8, 200 - 16, MAXREPLAYQUERY, 1);
-		V_DrawString(16, 200 - 8, V_ALLOWLOWERCASE, replayqueryinput);
+		V_DrawString(x + 8, 200 - 14, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, replayqueryinput);
+	else
+		V_DrawString(x + 8, 200 - 14, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, "\x86Press '/' or 'f' to search replays");
 
-		// draw text cursor for name
-		if (replayqueryopen && skullAnimCounter < 4) // blink cursor
-			V_DrawCharacter(16 + V_StringWidth(replayqueryinput, V_ALLOWLOWERCASE), 200 - 8, '_', false);
+	// draw text cursor for name
+	if (replayqueryopen && skullAnimCounter < 4) // blink cursor
+		V_DrawCharacter(x + 8 + V_StringWidth(replayqueryinput, V_ALLOWLOWERCASE), 200 - 14, '_'|V_SNAPTOBOTTOM, false);
 
-		if (replayquerycheck < sizedirmenu)
-			V_DrawString(16, 200 - 24, V_ALLOWLOWERCASE, va("Searching %u/%u...", (unsigned)replayquerycheck, (unsigned)sizedirmenu));
-	}
+	if (replayquerycheck < sizedirmenu)
+		V_DrawString(x + 8, 200 - 30, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, va("Searching %u/%u...", (unsigned)replayquerycheck, (unsigned)sizedirmenu));
 }
 
 static void M_DrawReplayStartMenu(void)
