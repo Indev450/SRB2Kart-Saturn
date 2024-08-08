@@ -7156,6 +7156,58 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 	Z_Free(infobuffer);
 }
 
+void G_LoadDemoTitle(menudemo_t *pdemo)
+{
+	UINT8 infobuffer[96], *info_p;
+	UINT16 pdemoversion;
+	size_t count;
+
+	FILE *handle = fopen(pdemo->filepath, "rb");
+
+	if (!handle)
+	{
+		CONS_Alert(CONS_ERROR, M_GetText("Failed to read file '%s'.\n"), pdemo->filepath);
+		sprintf(pdemo->title, "INVALID REPLAY");
+		return;
+	}
+
+	count = fread(infobuffer, 1, 96, handle);
+	fclose(handle);
+	info_p = infobuffer;
+
+	// First check isn't too accurate technically, but well, valid replays should be larger than that anyway
+	if (count < 96 || memcmp(info_p, DEMOHEADER, 12))
+	{
+		CONS_Alert(CONS_ERROR, M_GetText("%s is not a SRB2Kart replay file.\n"), pdemo->filepath);
+		sprintf(pdemo->title, "INVALID REPLAY");
+		Z_Free(infobuffer);
+		return;
+	}
+
+	info_p += 12; // DEMOHEADER
+
+	READUINT8(info_p);
+	READUINT8(info_p);
+	pdemoversion = READUINT16(info_p);
+
+	switch(pdemoversion)
+	{
+	case DEMOVERSION: // latest always supported
+		// demo title
+		M_Memcpy(pdemo->title, info_p, 64);
+		break;
+#ifdef DEMO_COMPAT_100
+	case 0x0001:
+		sprintf(pdemo->title, "Legacy Replay");
+		break;
+#endif
+	// too old, cannot support.
+	default:
+		CONS_Alert(CONS_ERROR, M_GetText("%s is an incompatible replay format and cannot be played.\n"), pdemo->filepath);
+		sprintf(pdemo->title, "INVALID REPLAY");
+	}
+}
+
 //
 // G_PlayDemo
 //

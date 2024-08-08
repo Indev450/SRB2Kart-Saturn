@@ -466,7 +466,7 @@ static void Dummystaff_OnChange(void);
 // ==========================================================================
 
 // How much replays are checked per frame when using search
-consvar_t cv_replaysearchrate = {"replaysearchrate", "50", CV_SAVE, CV_Natural, NULL, 0, NULL, NULL, 0, 0, NULL };
+consvar_t cv_replaysearchrate = {"replaysearchrate", "1000", CV_SAVE, CV_Natural, NULL, 0, NULL, NULL, 0, 0, NULL };
 
 consvar_t cv_showfocuslost = {"showfocuslost", "Yes", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL };
 
@@ -6782,10 +6782,8 @@ static void M_HutCheckReplays(size_t maxnum)
 				break;
 
 			case MD_NOTLOADED:
-				G_LoadDemoInfo(&demolist_all[replayquerycheck]);
-				++maxnum; // Gonna check this one next iteration, don't decrease our number of tries yet
-				break;
-
+				G_LoadDemoTitle(&demolist_all[replayquerycheck]);
+				/* FALLTHRU */
 			case MD_OUTDATED:
 			case MD_LOADED:
 				if (strcasestr(demolist_all[replayquerycheck].title, replayqueryinput) != NULL)
