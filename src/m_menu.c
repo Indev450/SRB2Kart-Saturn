@@ -6714,6 +6714,11 @@ static void M_HandleAddons(INT32 choice)
 // ---- REPLAY HUT -----
 menudemo_t *demolist;
 
+#define MAXREPLAYQUERY 30
+char replayqueryinput[MAXREPLAYQUERY+1];
+size_t replayquerypos = 0;
+boolean replayqueryopen = false;
+
 #define DF_ENCORE       0x40
 static INT16 replayScrollTitle = 0;
 static SINT8 replayScrollDelay = TICRATE, replayScrollDir = 1;
@@ -6759,6 +6764,13 @@ void M_ReplayHut(INT32 choice)
 		snprintf(menupath, 1024, "%s"PATHSEP"replay"PATHSEP"online"PATHSEP, srb2home);
 		menupathindex[(menudepthleft = menudepth-1)] = strlen(menupath);
 	}
+
+	// Reset
+	replayhutquery = NULL;
+	memset(replayqueryinput, 0, 30);
+	replayquerypos = 0;
+	replayqueryopen = false;
+
 	if (!preparefilemenu(false, true))
 	{
 		M_StartMessage("No replays found.\n\n(Press a key)\n", NULL, MM_NOTHING);
@@ -6782,10 +6794,71 @@ void M_ReplayHut(INT32 choice)
 	S_ChangeMusicInternal("replst", true);
 }
 
-static void M_HandleReplayHutList(INT32 choice)
+static boolean M_HandleReplayHutQuery(INT32 choice)
 {
+	if (!replayqueryopen)
+		return false;
+
 	switch (choice)
 	{
+		case KEY_ENTER:
+		case KEY_ESCAPE:
+			replayqueryopen = false;
+			break;
+
+		case KEY_BACKSPACE:
+			if (replayquerypos == 0)
+				break;
+
+			S_StartSound(NULL,sfx_menu1);
+
+			replayquerypos--;
+			replayqueryinput[replayquerypos] = 0;
+
+			if (!replayquerypos)
+				replayhutquery = NULL;
+
+			preparefilemenu(false, true);
+			dir_on[menudepthleft] = 0;
+			PrepReplayList();
+
+			break;
+
+		default:
+			if (choice < 32 || choice > 127)
+				break;
+
+			if (replayquerypos < MAXREPLAYQUERY)
+			{
+				S_StartSound(NULL,sfx_menu1);
+
+				replayqueryinput[replayquerypos] = choice;
+				replayqueryinput[replayquerypos+1] = 0;
+				++replayquerypos;
+
+				replayhutquery = replayqueryinput;
+
+				preparefilemenu(false, true);
+				dir_on[menudepthleft] = 0;
+				PrepReplayList();
+			}
+	}
+
+	return true;
+}
+
+static void M_HandleReplayHutList(INT32 choice)
+{
+	if (M_HandleReplayHutQuery(choice))
+		return;
+
+	switch (choice)
+	{
+	case 'f':
+	case 'F':
+		replayqueryopen = true;
+		break;
+
 	case KEY_UPARROW:
 		if (dir_on[menudepthleft])
 			dir_on[menudepthleft]--;
@@ -7181,6 +7254,17 @@ static void M_DrawReplayHut(void)
 	if (itemOn == replaylistitem)
 	{
 		DrawReplayHutReplayInfo();
+	}
+
+	// Draw search query
+	if (replayqueryopen || replayquerypos)
+	{
+		M_DrawTextBox(8, 200 - 16, MAXREPLAYQUERY, 1);
+		V_DrawString(16, 200 - 8, V_ALLOWLOWERCASE, replayqueryinput);
+
+		// draw text cursor for name
+		if (replayqueryopen && skullAnimCounter < 4) // blink cursor
+			V_DrawCharacter(16 + V_StringWidth(replayqueryinput, V_ALLOWLOWERCASE), 200 - 8, '_', false);
 	}
 }
 

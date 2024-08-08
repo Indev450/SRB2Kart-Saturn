@@ -326,6 +326,7 @@ consvar_t cv_addons_search_type = {"addons_search_type", "Anywhere", CV_SAVE, ad
 char menupath[1024];
 size_t menupathindex[menudepth];
 size_t menudepthleft = menudepth;
+char *replayhutquery = NULL;
 
 char menusearch[MAXSTRINGLENGTH+1];
 
@@ -691,6 +692,8 @@ boolean preparefilemenu(boolean samedepth, boolean replayhut)
 				if (replayhut)
 				{
 					if (strcasecmp(".lmp", dent->d_name+len-5)) continue; // Not a replay
+					if (replayhutquery != NULL && strcasestr(dent->d_name, replayhutquery) == NULL)
+						continue;
 				}
 				else if (!cv_addons_showall.value)
 				{
@@ -765,6 +768,8 @@ boolean preparefilemenu(boolean samedepth, boolean replayhut)
 				if (replayhut)
 				{
 					if (strcasecmp(".lmp", dent->d_name+len-5)) continue; // Not a replay
+					if (replayhutquery != NULL && strcasestr(dent->d_name, replayhutquery) == NULL)
+						continue;
 					ext = EXT_TXT; // This isn't used anywhere but better safe than sorry for messing with this...
 				}
 				else
