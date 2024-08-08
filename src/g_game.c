@@ -7180,7 +7180,6 @@ void G_LoadDemoTitle(menudemo_t *pdemo)
 	{
 		CONS_Alert(CONS_ERROR, M_GetText("%s is not a SRB2Kart replay file.\n"), pdemo->filepath);
 		sprintf(pdemo->title, "INVALID REPLAY");
-		Z_Free(infobuffer);
 		return;
 	}
 
