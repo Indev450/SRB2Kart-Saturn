@@ -255,6 +255,7 @@ extern INT32 mapwads[NUMMAPS];
 
 extern description_t description[MAXSKINS];
 
+extern consvar_t cv_replaysearchrate;
 extern consvar_t cv_showfocuslost;
 extern consvar_t cv_newgametype, cv_nextmap, cv_chooseskin, cv_serversort;
 extern consvar_t cv_showallmaps;
