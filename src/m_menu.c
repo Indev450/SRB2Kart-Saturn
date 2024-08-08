@@ -6928,6 +6928,7 @@ static void M_HandleReplayHutList(INT32 choice)
 
 	switch (choice)
 	{
+	case '/':
 	case 'f':
 	case 'F':
 		replayqueryopen = true;
