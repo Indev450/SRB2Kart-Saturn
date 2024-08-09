@@ -889,6 +889,9 @@ INT32 G_GetDeviceForPlayer(INT32 player)
 
 inline UINT16 G_GetSkinColor(INT32 player)
 {
+	if (gamestate == GS_LEVEL && (players[displayplayers[player]].kartstuff[k_invincibilitytimer] || players[displayplayers[player]].kartstuff[k_growshrinktimer]))
+		return players[displayplayers[player]].mo->color;
+
 	if (players[displayplayers[player]].skincolor && gamestate == GS_LEVEL)
 		return players[displayplayers[player]].skincolor;
 
