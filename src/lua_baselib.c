@@ -3022,6 +3022,7 @@ static int lib_gSetPlayerGamepadIndicatorColor(lua_State *L)
 	// Not a local player
 	if (player == -1) return 0;
 
+	// pls update with color 0 when youre done with changing led stuff so it can get player color again
 	G_SetPlayerGamepadIndicatorColor(player, color);
 
 	return 0;

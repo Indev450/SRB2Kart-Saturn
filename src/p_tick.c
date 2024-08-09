@@ -319,7 +319,7 @@ static inline void P_DeviceRumbleTick(void)
 {
 	UINT8 i;
 
-	if (cv_rumble[0].value == 0 && cv_rumble[1].value == 0 && cv_rumble[2].value == 0 && cv_rumble[3].value == 0)
+	if (I_NumJoys() == 0 || (cv_rumble[0].value == 0 && cv_rumble[1].value == 0 && cv_rumble[2].value == 0 && cv_rumble[3].value == 0))
 	{
 		return;
 	}
@@ -334,6 +334,9 @@ static inline void P_DeviceRumbleTick(void)
 			continue;
 
 		if (!playeringame[i] || player->spectator)
+			continue;
+
+		if (G_GetDeviceForPlayer(i) == 0)
 			continue;
 
 		if (player->exiting)
@@ -372,18 +375,10 @@ void P_RunChaseCameras(void)
 {
 	UINT8 i;
 
-	if (!splitscreen)
+	for (i = 0; i <= splitscreen; i++)
 	{
-		if (camera[0].chase)
-			P_MoveChaseCamera(&players[displayplayers[0]], &camera[0], false);
-	}
-	else
-	{
-		for (i = 0; i <= splitscreen; i++)
-		{
-			if (camera[i].chase)
-				P_MoveChaseCamera(&players[displayplayers[i]], &camera[i], false);
-		}
+		if (camera[i].chase)
+			P_MoveChaseCamera(&players[displayplayers[i]], &camera[i], false);
 	}
 }
 

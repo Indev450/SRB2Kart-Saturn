@@ -37,7 +37,7 @@ struct directorinfo
 	INT32 boredom[MAXPLAYERS];       // how long has a given position had no credible attackers?
 } directorinfo;
 
-static boolean race_rules()
+static boolean race_rules(void)
 {
 	return gametype = GT_RACE;
 }
@@ -68,21 +68,6 @@ void K_InitDirector(void)
 		directorinfo.boredom[playernum] = 0;
 	}
 }
-
-/*static fixed_t K_GetFinishGap(INT32 leader, INT32 follower)
-{
-	fixed_t dista = players[follower].distancetofinish;
-	fixed_t distb = players[leader].distancetofinish;
-
-	if (players[follower].position < players[leader].position)
-	{
-		return distb - dista;
-	}
-	else
-	{
-		return dista - distb;
-	}
-}*/
 
 static fixed_t K_GetDistanceToFinish(player_t player)
 {

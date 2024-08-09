@@ -51,6 +51,9 @@ int player_localskin_setter(lua_State *L);
 int player_sliproll_getter(lua_State *L);
 int player_sliproll_noset(lua_State *L);
 
+int player_viewrollangle_getter(lua_State *L);
+int player_viewrollangle_noset(lua_State *L);
+
 #define FIELD(type, field_name, getter, setter) { #field_name, offsetof(type, field_name), getter, setter }
 static const udata_field_t player_fields[] = {
     // Player doesn't actually have field "name" so macro fails. Need to declare field manually.
@@ -159,6 +162,7 @@ static const udata_field_t player_fields[] = {
 #endif
     // Same as player.name
 	{ "sliproll", 0, player_sliproll_getter, player_sliproll_noset },
+	{ "viewrollangle", 0, player_viewrollangle_getter, player_viewrollangle_noset },
     { "ping", 0, player_ping_getter, player_ping_noset }, // Hmm originally setter doesn't exist so data is written as unreachable custom field...
     { NULL, 0, NULL, NULL },
 };
@@ -217,6 +221,7 @@ NOSET(bot)
 NOSET(splitscreenindex)
 NOSET(ping)
 NOSET(sliproll)
+NOSET(viewrollangle)
 
 #undef NOSET
 
@@ -368,6 +373,15 @@ int player_sliproll_getter(lua_State *L)
 	player_t *plr = GETPLAYER();
 
 	lua_pushangle(L, R_PlayerSliptideAngle(plr));
+
+	return 1;
+}
+
+int player_viewrollangle_getter(lua_State *L)
+{
+	player_t *plr = GETPLAYER();
+
+	lua_pushangle(L, R_ViewRollAngle(plr));
 
 	return 1;
 }
