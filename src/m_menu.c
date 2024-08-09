@@ -6727,7 +6727,25 @@ static void M_HandleAddons(INT32 choice)
 
 // ---- REPLAY HUT -----
 menudemo_t *demolist; // Replays that that have been checked to match with query
+
+// Locked behind Lock_search_state
 menudemo_t *demolist_all; // All replays
+boolean replaynamesloaded = false;
+
+#ifdef HAVE_THREADS
+I_mutex replayquerymutex;
+
+// g_in_exiting_signal_handler is an evil hack
+// to avoid infinite SIGABRT recursion in the signal handler
+// due to poisoned locks or mach-o kernel not supporting locks in signals
+// or something like that. idk
+#  define Lock_search_state()    if (!g_in_exiting_signal_handler) { I_lock_mutex(&replayquerymutex); }
+#  define Unlock_search_state()  if (!g_in_exiting_signal_handler) { I_unlock_mutex(replayquerymutex); }
+#else/*HAVE_THREADS*/
+#  define Lock_search_state()
+#  define Unlock_search_state()
+#endif/*HAVE_THREADS*/
+
 
 #define MAXREPLAYQUERY 40
 char replayqueryinput[MAXREPLAYQUERY+1]; // The input typed
@@ -6740,6 +6758,53 @@ size_t replayquerycheck = 0; // Index of next replay entry to check in demolist_
 #define DF_ENCORE       0x40
 static INT16 replayScrollTitle = 0;
 static SINT8 replayScrollDelay = TICRATE, replayScrollDir = 1;
+
+static void ReplayNamesLoadThread(void* userdata)
+{
+
+	Lock_search_state();
+
+	size_t demolist_all_size = sizedirmenu;
+	menudemo_t *demolist_all_local = (menudemo_t*)malloc(sizeof(menudemo_t)*sizedirmenu);
+	memcpy(demolist_all_local, demolist_all, sizeof(menudemo_t)*sizedirmenu);
+	char *replaydirpath = (char*)userdata;
+
+	Unlock_search_state();
+
+	for (size_t i = 0; i < demolist_all_size; ++i)
+	{
+		if (demolist_all_local[i].type != MD_SUBDIR)
+			G_LoadDemoTitle(&demolist_all_local[i]);
+	}
+
+	Lock_search_state();
+
+	if (strcmp(menupath, replaydirpath) == 0)
+	{
+		memcpy(demolist_all, demolist_all_local, sizeof(menudemo_t)*sizedirmenu);
+		replaynamesloaded = true;
+	}
+
+	Unlock_search_state();
+
+	// Was allocated before thread start, we need to free it
+	free(replaydirpath);
+}
+
+static void LoadReplayNames(void)
+{
+	char *replaydirpath = strdup(menupath);
+
+	Lock_search_state();
+	replaynamesloaded = false;
+	Unlock_search_state();
+
+#ifdef HAVE_THREADS
+	I_spawn_thread("replay-names-load", ReplayNamesLoadThread, replaydirpath);
+#else
+	ReplayNamesLoadThread(replaydirpath);
+#endif
+}
 
 static void ResetReplayQuery(void)
 {
@@ -6761,6 +6826,9 @@ static void AddCheckedReplay(void)
 // Check up to maxnum replays if they match with query
 static void M_HutCheckReplays(size_t maxnum)
 {
+	if (!replaynamesloaded)
+		return;
+
 	// Already checked everything
 	if (replayquerycheck == sizedirmenu)
 		return;
@@ -6788,11 +6856,9 @@ static void M_HutCheckReplays(size_t maxnum)
 				break;
 
 			case MD_NOTLOADED:
-				G_LoadDemoTitle(&demolist_all[replayquerycheck]);
-				/* FALLTHRU */
 			case MD_OUTDATED:
 			case MD_LOADED:
-				if (strcasestr(demolist_all[replayquerycheck].title, replayqueryinput) != NULL)
+				if (demolist_all[replayquerycheck].title[0] && strcasestr(demolist_all[replayquerycheck].title, replayqueryinput) != NULL)
 					AddCheckedReplay(); // It matches, add it!
 				else
 					replayquerycheck++; // Doesn't match, moving on...
@@ -6806,7 +6872,7 @@ static void M_HutCheckReplays(size_t maxnum)
 	}
 }
 
-static void PrepReplayList(void)
+static void PrepReplayList(boolean reset)
 {
 	size_t i;
 
@@ -6815,10 +6881,16 @@ static void PrepReplayList(void)
 	if (demolist)
 		Z_Free(demolist);
 
+	demolist = Z_Calloc(sizeof(menudemo_t) * sizedirmenu, PU_STATIC, NULL);
+
+	// If directory didn't change, keep demolist_all
+	if (!reset) return;
+
+	Lock_search_state();
+
 	if (demolist_all)
 		Z_Free(demolist_all);
 
-	demolist = Z_Calloc(sizeof(menudemo_t) * sizedirmenu, PU_STATIC, NULL);
 	demolist_all = Z_Calloc(sizeof(menudemo_t) * sizedirmenu, PU_STATIC, NULL);
 
 	for (i = 0; i < sizedirmenu; i++)
@@ -6842,6 +6914,10 @@ static void PrepReplayList(void)
 			sprintf(demolist_all[i].title, ".....");
 		}
 	}
+
+	Unlock_search_state();
+
+	LoadReplayNames();
 }
 
 void M_ReplayHut(INT32 choice)
@@ -6867,7 +6943,7 @@ void M_ReplayHut(INT32 choice)
 
 	replayScrollTitle = 0; replayScrollDelay = TICRATE; replayScrollDir = 1;
 
-	PrepReplayList();
+	PrepReplayList(true);
 
 	menuactive = true;
 	M_SetupNextMenu(&MISC_ReplayHutDef);
@@ -6902,7 +6978,7 @@ static boolean M_HandleReplayHutQuery(INT32 choice)
 
 			preparefilemenu(false, true);
 			dir_on[menudepthleft] = 0;
-			PrepReplayList();
+			PrepReplayList(false);
 
 			break;
 
@@ -6920,7 +6996,7 @@ static boolean M_HandleReplayHutQuery(INT32 choice)
 
 				preparefilemenu(false, true);
 				dir_on[menudepthleft] = 0;
-				PrepReplayList();
+				PrepReplayList(false);
 			}
 	}
 
@@ -6941,6 +7017,9 @@ static void M_HandleReplayHutList(INT32 choice)
 		break;
 
 	case KEY_UPARROW:
+		if (!replaynamesloaded)
+			return;
+
 		if (dir_on[menudepthleft])
 			dir_on[menudepthleft]--;
 		else
@@ -6952,6 +7031,9 @@ static void M_HandleReplayHutList(INT32 choice)
 		break;
 
 	case KEY_DOWNARROW:
+		if (!replaynamesloaded)
+			return;
+
 		if (dir_on[menudepthleft] < replayqueryfound-1)
 			dir_on[menudepthleft]++;
 		else
@@ -6967,6 +7049,9 @@ static void M_HandleReplayHutList(INT32 choice)
 		break;
 
 	case KEY_ENTER:
+		if (!replaynamesloaded)
+			return;
+
 		switch (dirmenu[dir_on[menudepthleft]][DIR_TYPE])
 		{
 			case EXT_FOLDER:
@@ -6993,7 +7078,7 @@ static void M_HandleReplayHutList(INT32 choice)
 						S_StartSound(NULL, sfx_menu1);
 						dir_on[menudepthleft] = 1;
 						ResetReplayQuery();
-						PrepReplayList();
+						PrepReplayList(true);
 					}
 				}
 				else
@@ -7011,7 +7096,7 @@ static void M_HandleReplayHutList(INT32 choice)
 					M_QuitReplayHut();
 					return;
 				}
-				PrepReplayList();
+				PrepReplayList(true);
 				break;
 			default:
 				// We can't just use M_SetupNextMenu because that'll run ReplayDef's quitroutine and boot us back to the title screen!
@@ -7260,6 +7345,12 @@ static void M_DrawReplayHut(void)
 
 	y += currentMenu->menuitems[replaylistitem].alphaKey;
 
+	if (!replaynamesloaded)
+	{
+		const char *msg = "Loading replays, please wait...";
+		V_DrawCenteredString(160, 100, V_ALLOWLOWERCASE, msg);
+	}
+
 	for (i = 0; i < (INT16)replayqueryfound; i++)
 	{
 		INT32 localy = y+i*10;
@@ -7352,7 +7443,7 @@ static void M_DrawReplayHut(void)
 	if (replayqueryopen && skullAnimCounter < 4) // blink cursor
 		V_DrawCharacter(x + 8 + V_StringWidth(replayqueryinput, V_ALLOWLOWERCASE), 200 - 14, '_'|V_SNAPTOBOTTOM, false);
 
-	if (replayquerycheck < sizedirmenu)
+	if (replaynamesloaded && replayquerycheck < sizedirmenu)
 		V_DrawString(x + 8, 200 - 30, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, va("Searching %u/%u...", (unsigned)replayquerycheck, (unsigned)sizedirmenu));
 }
 
