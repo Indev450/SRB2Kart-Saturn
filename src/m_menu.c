@@ -6758,7 +6758,6 @@ static SINT8 replayScrollDelay = TICRATE, replayScrollDir = 1;
 
 static void ReplayNamesLoadThread(void* userdata)
 {
-
 	Lock_search_state();
 
 	size_t demolist_all_size = sizedirmenu;
@@ -6786,6 +6785,7 @@ static void ReplayNamesLoadThread(void* userdata)
 
 	// Was allocated before thread start, we need to free it
 	free(replaydirpath);
+	free(demolist_all_local);
 }
 
 static void LoadReplayNames(void)
