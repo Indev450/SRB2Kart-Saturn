@@ -787,7 +787,7 @@ void I_DownSample(void)
 #if defined (__unix__)
 static void I_FixXwaylandNvidia(void) //dumbass crap, fix ur shit nvidia
 {
-	if (rendermode != render_opengl || !supportFBO)
+	if (!supportFBO)
 	{
 		downsample = false;
 		return;
