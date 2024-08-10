@@ -217,7 +217,9 @@ static SDL_bool Impl_CreateWindow(SDL_bool fullscreen);
 static void Impl_SetWindowIcon(void);
 
 #ifdef USE_FBO_OGL
+#if defined (__unix__)
 static void I_FixXwaylandNvidia(void);
+#endif
 boolean downsample = false;
 void RefreshOGLSDLSurface(void)
 {
@@ -278,7 +280,9 @@ static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen, SDL_bool 
 #ifdef HWRENDER
 	if (rendermode == render_opengl)
 	{
+#if defined (__unix__)
 		I_FixXwaylandNvidia();
+#endif
 		OglSdlSurface(vid.width, vid.height);
 	}
 #endif
@@ -753,7 +757,7 @@ static INT32 SDLJoyAxis(const Sint16 axis, evtype_t which)
 #ifdef USE_FBO_OGL
 void I_DownSample(void)
 {
-	if (!cv_grframebuffer.value || (rendermode != render_opengl) || (!supportFBO)) //no sense to do this crap if we cant benefit from it
+	if (!cv_grframebuffer.value || rendermode != render_opengl || !supportFBO) //no sense to do this crap if we cant benefit from it
 	{
 		downsample = false;
 		return;
@@ -776,9 +780,10 @@ void I_DownSample(void)
 			downsample = false; // couldnt get display info so turn the thing off
 }
 
+#if defined (__unix__)
 static void I_FixXwaylandNvidia(void) //dumbass crap, fix ur shit nvidia
 {
-	if (!cv_grframebuffer.value || (rendermode != render_opengl) || (!supportFBO)) //no sense to do this crap if we cant benefit from it
+	if (rendermode != render_opengl || !supportFBO)
 	{
 		downsample = false;
 		return;
@@ -790,6 +795,7 @@ static void I_FixXwaylandNvidia(void) //dumbass crap, fix ur shit nvidia
 	downsample = false;
 	RefreshOGLSDLSurface();
 }
+#endif
 #endif
 
 static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
