@@ -1310,7 +1310,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			}
 			else
 			{
-				P_PlayRinglossSound(toucher);
+				P_PlayRinglossSound(toucher, NULL);
 				if (toucher->health > 10)
 					toucher->health -= 10;
 				else
@@ -2206,7 +2206,7 @@ static inline boolean P_TagDamage(mobj_t *target, mobj_t *inflictor, mobj_t *sou
 	}
 	else if (target->health > 1) // Ring loss
 	{
-		P_PlayRinglossSound(target);
+		P_PlayRinglossSound(target, source);
 		P_PlayerRingBurst(player, player->mo->health - 1);
 	}
 
@@ -2351,7 +2351,7 @@ static void P_RingDamage(player_t *player, mobj_t *inflictor, mobj_t *source, IN
 	}
 
 	// Ring loss sound plays despite hitting spikes
-	P_PlayRinglossSound(player->mo); // Ringledingle!
+	P_PlayRinglossSound(player->mo, source); // Ringledingle!
 }
 
 /** Damages an object, which may or may not be a player.

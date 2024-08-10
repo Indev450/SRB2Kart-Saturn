@@ -3375,7 +3375,7 @@ void P_ProcessSpecialSector(player_t *player, sector_t *sector, sector_t *rovers
 			}
 			else if (player->mo->health > 1)
 			{
-				P_PlayRinglossSound(player->mo);
+				P_PlayRinglossSound(player->mo, NULL);
 				if (player->mo->health > 10)
 					player->mo->health -= 10;
 				else

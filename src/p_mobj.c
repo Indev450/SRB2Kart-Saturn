@@ -10639,6 +10639,8 @@ void P_SpawnPlayer(INT32 playernum)
 	//P_DoPityCheck(p);
 
 	p->grieftime = 0;
+	p->hitemtimer = 0;
+	p->hitemvictim = 255;
 
 	if (G_BattleGametype()) // SRB2kart
 	{

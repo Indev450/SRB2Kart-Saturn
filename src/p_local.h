@@ -215,7 +215,7 @@ boolean P_PlayerMoving(INT32 pnum);
 void P_Telekinesis(player_t *player, fixed_t thrust, fixed_t range);
 
 void P_PlayLivesJingle(player_t *player);
-void P_PlayRinglossSound(mobj_t *source);
+void P_PlayRinglossSound(mobj_t *source, mobj_t *damager);
 void P_PlayDeathSound(mobj_t *source);
 void P_PlayVictorySound(mobj_t *source);
 
