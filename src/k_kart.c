@@ -1977,10 +1977,8 @@ void K_PlayHitEmSound(mobj_t *source, mobj_t *victim)
 {
 	if (cv_kartvoices.value)
 	{
-		if (cv_karthitemdialog.value && victim && victim->player)
+		if (cv_karthitemdialog.value && source->player && victim && victim->player)
 		{
-			I_Assert(source->player != NULL);
-
 			source->player->hitemtimer = TICRATE/2;
 			source->player->hitemvictim = victim->player - players;
 
