@@ -95,7 +95,7 @@ void K_SpawnWaterRunParticles(mobj_t *mobj);
 void K_PlayAttackTaunt(mobj_t *source);
 void K_PlayBoostTaunt(mobj_t *source);
 void K_PlayOvertakeSound(mobj_t *source);
-void K_PlayHitEmSound(mobj_t *source);
+void K_PlayHitEmSound(mobj_t *source, mobj_t *victim);
 void K_PlayPowerGloatSound(mobj_t *source);
 
 const char *K_GetItemPatch(UINT8 item, boolean tiny);

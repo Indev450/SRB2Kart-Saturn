@@ -1277,6 +1277,7 @@ static int lib_pPlayRinglossSound(lua_State *L)
 {
 	mobj_t *source = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));
 	player_t *player = NULL;
+	mobj_t *damager = NULL;
 	NOHUD
 	if (!source)
 		return LUA_ErrInvalid(L, "mobj_t");
@@ -1286,8 +1287,15 @@ static int lib_pPlayRinglossSound(lua_State *L)
 		if (!player)
 			return LUA_ErrInvalid(L, "player_t");
 	}
+	if (!lua_isnoneornil(L, 3))
+	{
+		damager = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));
+
+		if (!damager)
+			return LUA_ErrInvalid(L, "mobj_t");
+	}
 	if (!player || P_IsLocalPlayer(player))
-		P_PlayRinglossSound(source);
+		P_PlayRinglossSound(source, damager);
 	return 0;
 }
 
@@ -2575,10 +2583,22 @@ static int lib_kOvertakeSound(lua_State *L)
 static int lib_kHitEmSound(lua_State *L)
 {
 	mobj_t *mobj = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));
+	mobj_t *victim = NULL;
+
+	if (!lua_isnoneornil(L, 2))
+	{
+		victim = *((mobj_t **)luaL_checkudata(L, 2, META_MOBJ));
+		if (!victim)
+			return LUA_ErrInvalid(L, "mobj_t");
+	}
+
 	NOHUD
 	if (!mobj->player)
 		return luaL_error(L, "K_PlayHitEmSound: mobj_t isn't a player object.");	//Nothing bad would happen if we let it run the func, but telling why it ain't doing anything is helpful.
-	K_PlayHitEmSound(mobj);
+	if (victim && !victim->player)
+		return luaL_error(L, "K_PlayHitEmSound: mobj_t isn't a player object.");	//Same as above
+
+	K_PlayHitEmSound(mobj, victim);
 	return 0;
 }
 

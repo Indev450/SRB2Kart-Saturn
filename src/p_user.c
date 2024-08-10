@@ -590,11 +590,29 @@ void P_PlayLivesJingle(player_t *player)
 	}
 }
 
-void P_PlayRinglossSound(mobj_t *source)
+void P_PlayRinglossSound(mobj_t *source, mobj_t *damager)
 {
 	sfxenum_t key = P_RandomKey(2);
 	if (cv_kartvoices.value)
-		S_StartSound(source, (mariomode) ? sfx_mario8 : sfx_khurt1 + key);
+	{
+		if (cv_karthitemdialog.value && source != damager && damager && damager->player && P_IsLocalPlayer(damager->player))
+		{
+			sfxenum_t sfx = sfx_khurt1 + key;
+
+			INT32 skinnum = -1;
+
+			// I HATE LOCALSKINS! I HATE LOCALSKINS! :AAAAAAAAAA:
+			if (source->player)
+				skinnum = source->player->skinlocal ? (source->player->localskin - 1) : source->player->skin;
+
+			if (skinnum >= 0)
+				sfx = (source->player->skinlocal ? localskins : skins)[skinnum].soundsid[SKSKPAN1 + key];
+
+			S_StartSound(NULL, sfx);
+		}
+		else
+			S_StartSound(source, (mariomode) ? sfx_mario8 : sfx_khurt1 + key);
+	}
 	else
 		S_StartSound(source, sfx_slip);
 }
