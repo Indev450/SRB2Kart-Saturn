@@ -1999,19 +1999,33 @@ void K_PlayOvertakeSound(mobj_t *source)
 	K_RegularVoiceTimers(source->player);
 }
 
+static boolean K_SetDelayedHitEm(player_t *player, player_t *victim)
+{
+	player_t *prevvictim = NULL;
+
+	if (player->hitemtimer)
+		prevvictim = &players[player->hitemvictim];
+
+	// We prioritize local players to hear "hit em" sfx
+	if (prevvictim && P_IsDisplayPlayer(prevvictim) && !P_IsDisplayPlayer(victim))
+		return false;
+
+	player->hitemtimer = TICRATE/2;
+	player->hitemvictim = victim - players;
+
+	return true;
+}
+
 void K_PlayHitEmSound(mobj_t *source, mobj_t *victim)
 {
 	if (cv_kartvoices.value)
 	{
-		if (cv_karthitemdialog.value && source->player && victim && victim->player)
-		{
-			source->player->hitemtimer = TICRATE/2;
-			source->player->hitemvictim = victim->player - players;
-
+		if (cv_karthitemdialog.value
+			&& source->player && victim && victim->player
+			&& K_SetDelayedHitEm(source->player, victim->player))
 			return; // Don't call K_RegularVoiceTimers yet, we didn't do any sound
-		}
-		else
-			S_StartSound(source, sfx_khitem);
+
+		S_StartSound(source, sfx_khitem);
 	}
 	else
 		S_StartSound(source, sfx_s1c9); // The only lost gameplay functionality with voices disabled
