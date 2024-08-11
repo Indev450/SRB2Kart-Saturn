@@ -402,8 +402,14 @@ fixed_t LUA_EvalMathEx(const char *word, const char **error)
 	if (luaL_dostring(mL, buf))
 	{
 		p = lua_tostring(mL, -1);
-		while (*p++ != ':' && *p) ;
-		p += 3; // "1: "
+
+		// If there is [string "..."]:1: text, skip it
+		if (strstr(p, ":") != NULL)
+		{
+			while (*p++ != ':' && *p);
+
+			p += 3; // "1: "
+		}
 		if (error) *error = p;
 	}
 	else
