@@ -399,8 +399,14 @@ fixed_t LUA_EvalMath(const char *word)
 	if (luaL_dostring(mL, buf))
 	{
 		p = lua_tostring(mL, -1);
-		while (*p++ != ':' && *p) ;
-		p += 3; // "1: "
+
+		// If there is [string "..."]:1: text, skip it
+		if (strstr(p, ":") != NULL)
+		{
+			while (*p++ != ':' && *p);
+
+			p += 3; // "1: "
+		}
 		CONS_Alert(CONS_WARNING, "%s\n", p);
 	}
 	else

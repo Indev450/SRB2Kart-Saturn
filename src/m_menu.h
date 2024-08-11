@@ -59,6 +59,9 @@ void M_SortServerList(void);
 // Draws a box with a texture inside as background for messages
 void M_DrawTextBox(INT32 x, INT32 y, INT32 width, INT32 boxlines);
 
+// Same but with extra flags applied
+void M_DrawTextBoxFlags(INT32 x, INT32 y, INT32 width, INT32 boxlines, INT32 flags);
+
 // Used in d_netcmd to restart time attack
 void M_ModeAttackRetry(INT32 choice);
 
@@ -255,6 +258,7 @@ extern INT32 mapwads[NUMMAPS];
 
 extern description_t description[MAXSKINS];
 
+extern consvar_t cv_replaysearchrate;
 extern consvar_t cv_showfocuslost;
 extern consvar_t cv_newgametype, cv_nextmap, cv_chooseskin, cv_serversort;
 extern consvar_t cv_showallmaps;
