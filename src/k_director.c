@@ -49,7 +49,7 @@ static fixed_t ScaleFromMap(fixed_t n, fixed_t scale)
 
 static boolean K_DirectorIsEnabled(void)
 {
-	return cv_director.value && (gamestate == GS_LEVEL && (!playeringame[consoleplayer] || players[consoleplayer].spectator || demo.playback));
+	return cv_director.value && (gamestate == GS_LEVEL && (!playeringame[consoleplayer] || players[consoleplayer].spectator || demo.playback)) && !splitscreen;
 }
 
 void K_InitDirector(void)
@@ -188,6 +188,11 @@ static boolean K_CanSwitchDirector(void)
 
 static void K_DirectorSwitch(INT32 player, boolean force)
 {
+	if (!K_DirectorIsEnabled())
+	{
+		return;
+	}
+
 	if (P_IsDisplayPlayer(&players[player]))
 	{
 		return;
