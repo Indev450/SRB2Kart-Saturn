@@ -5548,15 +5548,13 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, playe
 		HWD.pfnSetTransform(&atransform);
 
 		validcount++;
-		
-		if (cv_grbatching.value)
-			HWR_StartBatching();
-
-		HWR_AddPrecipitationSprites();
 
 		ps_numbspcalls.value.i = 0;
 		ps_numpolyobjects.value.i = 0;
 		PS_START_TIMING(ps_bsptime);
+
+		if (cv_grbatching.value)
+			HWR_StartBatching();
 
 		if (!rootportal && portallist.base && !skybox)// if portals have been drawn in the main view, then render skywalls differently
 			gr_collect_skywalls = true;
@@ -5567,10 +5565,14 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, playe
 
 		if (gr_portal != GRPORTAL_OFF) // if we already haven't hit the recursion limit or we already ended our portal shenanigans
 			gr_portal = GRPORTAL_INSIDE; // TURN IT OFF
+
 		// Recursively "render" the BSP tree.
 		HWR_RenderBSPNode((INT32)numnodes-1);
+
 		// woo we back
 		gr_portal = oldgl_portal_state;
+
+		HWR_AddPrecipitationSprites();
 
 		PS_STOP_TIMING(ps_bsptime);
 
