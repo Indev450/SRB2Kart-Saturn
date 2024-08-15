@@ -4772,8 +4772,6 @@ static void HandleConnect(SINT8 node)
 #ifdef JOININGAME
 		if (nodewaiting[node])
 		{
-			netbuffer->packettype = PT_ISSATURN;
-			HSendPacket(node, false, 0, 0);
 			if (node && newnode)
 			{
 				SV_SendSaveGame(node, false); // send a complete game state
