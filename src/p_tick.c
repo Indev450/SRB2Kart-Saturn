@@ -333,17 +333,20 @@ static inline void P_DeviceRumbleTick(void)
 		if (!P_IsLocalPlayer(player))
 			continue;
 
-		if (!playeringame[i] || player->spectator)
-			continue;
-
 		if (G_GetDeviceForPlayer(i) == 0)
 			continue;
 
-		if (player->exiting)
+		if (!playeringame[displayplayers[i]] || player->spectator)
 			continue;
 
 		if (player->mo == NULL)
 			continue;
+
+		if (player->exiting)
+		{
+			G_PlayerDeviceRumble(i, low, high, 0);
+			continue;
+		}
 
 		if (player->kartstuff[k_spinouttimer])
 		{
