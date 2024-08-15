@@ -1718,25 +1718,22 @@ static boolean SV_SendServerConfig(INT32 node)
 	netbuffer->u.servercfg.gametype = (UINT8)gametype;
 	netbuffer->u.servercfg.modifiedgame = (UINT8)modifiedgame;
 
-	if (!can_receive_gamestate[node])
+	// we fill these structs with FFs so that any players not in game get sent as 0xFFFF
+	// which is nice and easy for us to detect
+	memset(netbuffer->u.servercfg.playerskins, 0xFF, sizeof(netbuffer->u.servercfg.playerskins));
+	memset(netbuffer->u.servercfg.playercolor, 0xFF, sizeof(netbuffer->u.servercfg.playercolor));
+
+	memset(netbuffer->u.servercfg.adminplayers, -1, sizeof(netbuffer->u.servercfg.adminplayers));
+
+	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		// we fill these structs with FFs so that any players not in game get sent as 0xFFFF
-		// which is nice and easy for us to detect
-		memset(netbuffer->u.servercfg.playerskins, 0xFF, sizeof(netbuffer->u.servercfg.playerskins));
-		memset(netbuffer->u.servercfg.playercolor, 0xFF, sizeof(netbuffer->u.servercfg.playercolor));
+		netbuffer->u.servercfg.adminplayers[i] = (SINT8)adminplayers[i];
 
-		memset(netbuffer->u.servercfg.adminplayers, -1, sizeof(netbuffer->u.servercfg.adminplayers));
+		if (!playeringame[i])
+			continue;
 
-		for (i = 0; i < MAXPLAYERS; i++)
-		{
-			netbuffer->u.servercfg.adminplayers[i] = (SINT8)adminplayers[i];
-
-			if (!playeringame[i])
-				continue;
-
-			netbuffer->u.servercfg.playerskins[i] = (UINT8)players[i].skin;
-			netbuffer->u.servercfg.playercolor[i] = (UINT8)players[i].skincolor;
-		}
+		netbuffer->u.servercfg.playerskins[i] = (UINT8)players[i].skin;
+		netbuffer->u.servercfg.playercolor[i] = (UINT8)players[i].skincolor;
 	}
 
 	netbuffer->u.servercfg.maxplayer = (UINT8)(min((dedicated ? MAXPLAYERS-1 : MAXPLAYERS), cv_maxplayers.value));
@@ -1745,20 +1742,12 @@ static boolean SV_SendServerConfig(INT32 node)
 
 	memcpy(netbuffer->u.servercfg.server_context, server_context, 8);
 
-	if (!can_receive_gamestate[node])
-	{
-		op = p = netbuffer->u.servercfg.varlengthinputs;
+	op = p = netbuffer->u.servercfg.varlengthinputs;
 
-		CV_SavePlayerNames(&p);
-		CV_SaveNetVars(&p, false);
-	}
+	CV_SavePlayerNames(&p);
+	CV_SaveNetVars(&p, false);
 
-	size_t len;
-
-	if (can_receive_gamestate[node])
-		len = sizeof (serverconfig_pak);
-	else
-		len = sizeof (serverconfig_pak) + (size_t)(p - op);
+	size_t len = sizeof (serverconfig_pak) + (size_t)(p - op);
 
 #ifdef DEBUGFILE
 	if (debugfile)
@@ -4178,23 +4167,27 @@ static void ResetNode(INT32 node)
 	nodeingame[node] = false;
 	nodewaiting[node] = 0;
 
-	nettics[node] = gametic;
-	supposedtics[node] = gametic;
-
-	is_client_saturn[node] = false;
-
 	nodetoplayer[node] = -1;
 	nodetoplayer2[node] = -1;
 	nodetoplayer3[node] = -1;
 	nodetoplayer4[node] = -1;
 	playerpernode[node] = 0;
 
+	nettics[node] = gametic;
+	supposedtics[node] = gametic;
+
 	sendingsavegame[node] = false;
+
+	bannednode[node].banid = SIZE_MAX;
+	bannednode[node].timeleft = NO_BAN_TIME;
+
+	// SATURN
+	is_client_saturn[node] = false;
+
 	resendingsavegame[node] = false;
 	can_receive_gamestate[node] = false;
 	savegameresendcooldown[node] = 0;
-	bannednode[node].banid = SIZE_MAX;
-	bannednode[node].timeleft = NO_BAN_TIME;
+	//
 }
 
 void SV_ResetServer(void)
@@ -6664,18 +6657,14 @@ void NetUpdate(void)
 
 	if (client)
 	{
+		// If the client just finished redownloading the game state, load it
+		if (cl_redownloadinggamestate && fileneeded[0].status == FS_FOUND)
+			CL_ReloadReceivedSavegame();
+
 		if (!resynch_local_inprogress)
 			CL_SendClientCmd(); // Send tic cmd
+
 		hu_resynching = resynch_local_inprogress;
-
-		if (cl_redownloadinggamestate)
-		{
-			// If the client just finished redownloading the game state, load it
-			if (cl_redownloadinggamestate && fileneeded[0].status == FS_FOUND)
-				CL_ReloadReceivedSavegame();
-
-			CL_SendClientCmd(); // Send tic cmd
-		}
 		hu_redownloadinggamestate = cl_redownloadinggamestate;
 	}
 	else
