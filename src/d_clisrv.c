@@ -1718,7 +1718,6 @@ static boolean SV_SendServerConfig(INT32 node)
 	netbuffer->u.servercfg.gametype = (UINT8)gametype;
 	netbuffer->u.servercfg.modifiedgame = (UINT8)modifiedgame;
 
-
 	if (!can_receive_gamestate[node])
 	{
 		// we fill these structs with FFs so that any players not in game get sent as 0xFFFF
@@ -1753,24 +1752,23 @@ static boolean SV_SendServerConfig(INT32 node)
 		CV_SavePlayerNames(&p);
 		CV_SaveNetVars(&p, false);
 	}
-	{
-		size_t len;
 
-		if (can_receive_gamestate[node])
-			len = sizeof (serverconfig_pak);
-		else
-			len = sizeof (serverconfig_pak) + (size_t)(p - op);
+	size_t len;
+
+	if (can_receive_gamestate[node])
+		len = sizeof (serverconfig_pak);
+	else
+		len = sizeof (serverconfig_pak) + (size_t)(p - op);
 
 #ifdef DEBUGFILE
-		if (debugfile)
-		{
-			fprintf(debugfile, "ServerConfig Packet about to be sent, size of packet:%s to node:%d\n",
-				sizeu1(len), node);
-		}
+	if (debugfile)
+	{
+		fprintf(debugfile, "ServerConfig Packet about to be sent, size of packet:%s to node:%d\n",
+			sizeu1(len), node);
+	}
 #endif
 
-		waspacketsent = HSendPacket(node, true, 0, len);
-	}
+	waspacketsent = HSendPacket(node, true, 0, len);
 
 #ifdef DEBUGFILE
 	if (debugfile)
@@ -1967,8 +1965,11 @@ static void CL_LoadReceivedSavegame(boolean reloading)
 
 	// Tell the server we have received and reloaded the gamestate
 	// so they know they can resume the game
-	netbuffer->packettype = PT_RECEIVEDGAMESTATE;
-	HSendPacket(servernode, true, 0, 0);
+	if (reloading)
+	{
+		netbuffer->packettype = PT_RECEIVEDGAMESTATE;
+		HSendPacket(servernode, true, 0, 0);
+	}
 }
 
 static void CL_ReloadReceivedSavegame(void)
