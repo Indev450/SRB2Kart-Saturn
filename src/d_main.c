@@ -176,9 +176,10 @@ static inline void D_DeviceLEDTick(void)
 	UINT16 color[MAXSPLITSCREENPLAYERS];
 	UINT16 curcolor[MAXSPLITSCREENPLAYERS];
 
-	// no gamepads connected
-	if (I_NumJoys() == 0)
+	if (I_NumJoys() == 0 || (cv_gamepadled[0].value == 0 && cv_gamepadled[1].value == 0 && cv_gamepadled[2].value == 0 && cv_gamepadled[3].value == 0))
+	{
 		return;
+	}
 
 	for (i = 0; i <= splitscreen; i++)
 	{

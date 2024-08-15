@@ -52,6 +52,20 @@ consvar_t cv_rumble[MAXSPLITSCREENPLAYERS] = {
 	{"rumble4", "Off", CV_SAVE, CV_OnOff, rumble_off_handle4, 0, NULL, NULL, 0, 0, NULL}
 };
 
+consvar_t cv_gamepadled[MAXSPLITSCREENPLAYERS] = {
+	{"gamepadled", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"gamepadled2", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"gamepadled3", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"gamepadled4", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}
+};
+
+consvar_t cv_ledpowerup[MAXSPLITSCREENPLAYERS] = {
+	{"ledpowerup", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"ledpowerup2", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"ledpowerup3", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"ledpowerup4", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}
+};
+
 static void rumble_off_handle(void)
 {
 	if (cv_rumble[0].value == 0)
@@ -889,6 +903,9 @@ INT32 G_GetDeviceForPlayer(INT32 player)
 
 inline UINT16 G_GetSkinColor(INT32 player)
 {
+	if (gamestate == GS_LEVEL && cv_ledpowerup[player].value && (players[displayplayers[player]].kartstuff[k_invincibilitytimer] || players[displayplayers[player]].powers[pw_invulnerability] || players[displayplayers[player]].kartstuff[k_growshrinktimer]))
+		return players[displayplayers[player]].mo->color;
+
 	if (players[displayplayers[player]].skincolor && gamestate == GS_LEVEL)
 		return players[displayplayers[player]].skincolor;
 
@@ -919,6 +936,9 @@ void G_SetPlayerGamepadIndicatorColor(INT32 player, UINT16 color)
 	byteColor_t byte_color;
 
 	I_Assert(player >= 0 && player < MAXSPLITSCREENPLAYERS);
+
+	if (cv_gamepadled[player].value == 0)
+		return;
 
 	device = G_GetDeviceForPlayer(player);
 

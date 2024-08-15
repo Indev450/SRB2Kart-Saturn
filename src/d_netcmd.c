@@ -1079,6 +1079,16 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_rumble[2]);
 	CV_RegisterVar(&cv_rumble[3]);
 
+	CV_RegisterVar(&cv_gamepadled[0]);
+	CV_RegisterVar(&cv_gamepadled[1]);
+	CV_RegisterVar(&cv_gamepadled[2]);
+	CV_RegisterVar(&cv_gamepadled[3]);
+
+	CV_RegisterVar(&cv_ledpowerup[0]);
+	CV_RegisterVar(&cv_ledpowerup[1]);
+	CV_RegisterVar(&cv_ledpowerup[2]);
+	CV_RegisterVar(&cv_ledpowerup[3]);
+
 	CV_RegisterVar(&cv_usemouse);
 	CV_RegisterVar(&cv_usemouse2);
 	CV_RegisterVar(&cv_invertmouse);
