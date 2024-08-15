@@ -2132,6 +2132,7 @@ void G_ResetView(UINT8 viewnum, INT32 playernum, boolean onlyactive)
 	{
 		for (viewd = splits+1; viewd < viewnum; ++viewd)
 		{
+			displayplayers[viewd-1] = G_FindView(displayplayers[viewd-1], viewd, onlyactive, playernum < olddisplayplayer);
 			G_FixCamera(viewd);
 		}
 	}

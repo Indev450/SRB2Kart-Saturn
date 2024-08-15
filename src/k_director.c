@@ -37,19 +37,19 @@ struct directorinfo
 	INT32 boredom[MAXPLAYERS];       // how long has a given position had no credible attackers?
 } directorinfo;
 
-static boolean race_rules(void)
+static inline boolean race_rules(void)
 {
-	return gametype = GT_RACE;
+	return gametype == GT_RACE;
 }
 
-static fixed_t P_ScaleFromMap(fixed_t n, fixed_t scale)
+static fixed_t ScaleFromMap(fixed_t n, fixed_t scale)
 {
 	return FixedMul(n, FixedDiv(scale, mapobjectscale));
 }
 
 static boolean K_DirectorIsEnabled(void)
 {
-	return cv_director.value && (gamestate == GS_LEVEL && (!playeringame[consoleplayer] || players[consoleplayer].spectator || demo.playback));
+	return cv_director.value && !splitscreen && (gamestate == GS_LEVEL && (!playeringame[consoleplayer] || players[consoleplayer].spectator || demo.playback));
 }
 
 void K_InitDirector(void)
@@ -90,7 +90,7 @@ static fixed_t K_GetDistanceToFinish(player_t player)
 							break;
 		}
 	}
-	else
+	else // crappy optimization weeeee
 	{
 		for (mo = waypointcap; mo != NULL; mo = mo->tracer)
 		{
@@ -155,7 +155,7 @@ static void K_UpdateDirectorPositions(void)
 			continue;
 		}
 
-		directorinfo.gap[position] = P_ScaleFromMap(K_GetFinishGap(directorinfo.sortedplayers[position], directorinfo.sortedplayers[position + 1]), FRACUNIT);
+		directorinfo.gap[position] = ScaleFromMap(K_GetFinishGap(directorinfo.sortedplayers[position], directorinfo.sortedplayers[position + 1]), FRACUNIT);
 
 		if (directorinfo.gap[position] >= BREAKAWAYDIST)
 		{
@@ -173,7 +173,7 @@ static void K_UpdateDirectorPositions(void)
 		return;
 	}
 
-	directorinfo.maxdist = P_ScaleFromMap(K_GetDistanceToFinish(players[directorinfo.sortedplayers[0]]), FRACUNIT);
+	directorinfo.maxdist = ScaleFromMap(K_GetDistanceToFinish(players[directorinfo.sortedplayers[0]]), FRACUNIT);
 }
 
 static boolean K_CanSwitchDirector(void)
@@ -188,6 +188,11 @@ static boolean K_CanSwitchDirector(void)
 
 static void K_DirectorSwitch(INT32 player, boolean force)
 {
+	if (!K_DirectorIsEnabled())
+	{
+		return;
+	}
+
 	if (P_IsDisplayPlayer(&players[player]))
 	{
 		return;
