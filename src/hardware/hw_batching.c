@@ -424,38 +424,40 @@ void HWR_RenderBatches(void)
 		if (stopFlag) break;
 
 		// change state according to change bools and next vars, update current vars and reset bools
-		if (changeShader)
+		if (changeState)
 		{
-			HWD.pfnSetShader(nextShader);
-			currentShader = nextShader;
-			changeShader = false;
+			if (changeShader)
+			{
+				HWD.pfnSetShader(nextShader);
+				currentShader = nextShader;
+				changeShader = false;
 
-			ps_hw_numshaders.value.i++;
-		}
-		if (changeTexture)
-		{
-			// texture should be already ready for use from calls to SetTexture during batch collection
-		    HWD.pfnSetTexture(nextTexture);
-			currentTexture = nextTexture;
-			changeTexture = false;
+				ps_hw_numshaders.value.i++;
+			}
+			if (changeTexture)
+			{
+				// texture should be already ready for use from calls to SetTexture during batch collection
+				HWD.pfnSetTexture(nextTexture);
+				currentTexture = nextTexture;
+				changeTexture = false;
 
-			ps_hw_numtextures.value.i++;
-		}
-		if (changePolyFlags)
-		{
-			currentPolyFlags = nextPolyFlags;
-			changePolyFlags = false;
+				ps_hw_numtextures.value.i++;
+			}
+			if (changePolyFlags)
+			{
+				currentPolyFlags = nextPolyFlags;
+				changePolyFlags = false;
 
-			ps_hw_numpolyflags.value.i++;
-		}
-		if (changeSurfaceInfo)
-		{
-			currentSurfaceInfo = nextSurfaceInfo;
-			changeSurfaceInfo = false;
+				ps_hw_numpolyflags.value.i++;
+			}
+			if (changeSurfaceInfo)
+			{
+				currentSurfaceInfo = nextSurfaceInfo;
+				changeSurfaceInfo = false;
 
-			ps_hw_numcolors.value.i++;
+				ps_hw_numcolors.value.i++;
+			}
 		}
-		// and that should be it?
 	}
 	// reset the arrays (set sizes to 0)
 	polygonArraySize = 0;
