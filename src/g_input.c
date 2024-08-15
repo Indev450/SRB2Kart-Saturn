@@ -45,25 +45,31 @@ static void rumble_off_handle2(void);
 static void rumble_off_handle3(void);
 static void rumble_off_handle4(void);
 
+static void G_ResetPlayerGamepadIndicatorColor(INT32 player);
+static void led_off_handle(void);
+static void led_off_handle2(void);
+static void led_off_handle3(void);
+static void led_off_handle4(void);
+
 consvar_t cv_rumble[MAXSPLITSCREENPLAYERS] = {
-	{"rumble", "Off", CV_SAVE, CV_OnOff, rumble_off_handle, 0, NULL, NULL, 0, 0, NULL},
-	{"rumble2", "Off", CV_SAVE, CV_OnOff, rumble_off_handle2, 0, NULL, NULL, 0, 0, NULL},
-	{"rumble3", "Off", CV_SAVE, CV_OnOff, rumble_off_handle3, 0, NULL, NULL, 0, 0, NULL},
-	{"rumble4", "Off", CV_SAVE, CV_OnOff, rumble_off_handle4, 0, NULL, NULL, 0, 0, NULL}
+	{"rumble", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, rumble_off_handle, 0, NULL, NULL, 0, 0, NULL},
+	{"rumble2", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, rumble_off_handle2, 0, NULL, NULL, 0, 0, NULL},
+	{"rumble3", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, rumble_off_handle3, 0, NULL, NULL, 0, 0, NULL},
+	{"rumble4", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, rumble_off_handle4, 0, NULL, NULL, 0, 0, NULL}
 };
 
 consvar_t cv_gamepadled[MAXSPLITSCREENPLAYERS] = {
-	{"gamepadled", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
-	{"gamepadled2", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
-	{"gamepadled3", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
-	{"gamepadled4", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}
+	{"gamepadled", "On", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, led_off_handle, 0, NULL, NULL, 0, 0, NULL},
+	{"gamepadled2", "On", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, led_off_handle2, 0, NULL, NULL, 0, 0, NULL},
+	{"gamepadled3", "On", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, led_off_handle3, 0, NULL, NULL, 0, 0, NULL},
+	{"gamepadled4", "On", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, led_off_handle4, 0, NULL, NULL, 0, 0, NULL}
 };
 
 consvar_t cv_ledpowerup[MAXSPLITSCREENPLAYERS] = {
-	{"ledpowerup", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
-	{"ledpowerup2", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
-	{"ledpowerup3", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
-	{"ledpowerup4", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}
+	{"ledpowerup", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, led_off_handle, 0, NULL, NULL, 0, 0, NULL},
+	{"ledpowerup2", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, led_off_handle2, 0, NULL, NULL, 0, 0, NULL},
+	{"ledpowerup3", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, led_off_handle3, 0, NULL, NULL, 0, 0, NULL},
+	{"ledpowerup4", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, led_off_handle4, 0, NULL, NULL, 0, 0, NULL}
 };
 
 static void rumble_off_handle(void)
@@ -91,6 +97,29 @@ static void rumble_off_handle4(void)
 {
 	if (cv_rumble[3].value == 0)
 		G_ResetPlayerDeviceRumble(3);
+}
+
+static void led_off_handle(void)
+{
+	G_ResetPlayerGamepadIndicatorColor(0);
+}
+
+
+static void led_off_handle2(void)
+{
+	G_ResetPlayerGamepadIndicatorColor(1);
+}
+
+
+static void led_off_handle3(void)
+{
+	G_ResetPlayerGamepadIndicatorColor(2);
+}
+
+
+static void led_off_handle4(void)
+{
+	G_ResetPlayerGamepadIndicatorColor(3);
 }
 
 INT32 mousex, mousey;
@@ -955,6 +984,20 @@ void G_SetPlayerGamepadIndicatorColor(INT32 player, UINT16 color)
 	byte_color = V_GetColor(colortranslations[skincolor][8]).s;
 
 	I_SetGamepadIndicatorColor(device, byte_color.red, byte_color.green, byte_color.blue);
+}
+
+static void G_ResetPlayerGamepadIndicatorColor(INT32 player)
+{
+	if (cv_gamepadled[player].value == 0)
+	{
+		INT32 device = G_GetDeviceForPlayer(player);
+		if (device <= 0)
+			return;
+
+		I_SetGamepadIndicatorColor(device, 0, 0, 255);
+	}
+	else
+		G_SetPlayerGamepadIndicatorColor(player, 0);
 }
 
 static void G_ResetPlayerDeviceRumble(INT32 player)
