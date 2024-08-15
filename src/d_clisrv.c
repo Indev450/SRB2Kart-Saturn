@@ -4168,20 +4168,19 @@ void D_ClientServerInit(void)
 static void ResetNode(INT32 node)
 {
 	nodeingame[node] = false;
-
 	nodewaiting[node] = 0;
+
 	nettics[node] = gametic;
 	supposedtics[node] = gametic;
 
 	is_client_saturn[node] = false;
+
 	nodetoplayer[node] = -1;
 	nodetoplayer2[node] = -1;
 	nodetoplayer3[node] = -1;
 	nodetoplayer4[node] = -1;
-	nettics[node] = gametic;
-	supposedtics[node] = gametic;
-	nodewaiting[node] = 0;
 	playerpernode[node] = 0;
+
 	sendingsavegame[node] = false;
 	resendingsavegame[node] = false;
 	can_receive_gamestate[node] = false;
