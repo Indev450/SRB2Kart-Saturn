@@ -5341,6 +5341,7 @@ static void M_DrawGenericScrollMenu(void)
 				coolalphatimer--;
 		}
 	}
+#endif
 
 	if (currentMenu == &OP_ExpOptionsDef)
 	{
@@ -5351,7 +5352,7 @@ static void M_DrawGenericScrollMenu(void)
 				coolalphatimer--;
 		}
 	}
-#endif
+
 	
 	if (currentMenu == &OP_SaturnDef)
 	{
