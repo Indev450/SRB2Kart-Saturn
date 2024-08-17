@@ -27,11 +27,47 @@
 static pslope_t *slopelist = NULL;
 static UINT16 slopecount = 0;
 
+// Calculate light
+static void P_UpdateSlopeLightOffset(pslope_t *slope)
+{
+	const boolean ceiling = (slope->normal.z < 0);
+	const UINT8 contrast = 8;
+
+	fixed_t contrastFixed = ((fixed_t)contrast) * FRACUNIT;
+	fixed_t zMul = FRACUNIT;
+	angle_t slopeDir = ANGLE_MAX;
+	fixed_t extralight = 0;
+
+	if (slope->normal.z == 0)
+	{
+		slope->lightOffset = slope->hwLightOffset = 0;
+		return;
+	}
+
+	slopeDir = R_PointToAngle2(0, 0, abs(slope->normal.y), abs(slope->normal.x));
+	if (ceiling == true)
+	{
+		slopeDir ^= ANGLE_180;
+	}
+
+	zMul = min(FRACUNIT, abs(slope->zdelta)*3/2); // *3/2, to make 60 degree slopes match walls.
+	contrastFixed = FixedMul(contrastFixed, zMul);
+	extralight = -contrastFixed + FixedMul(FixedDiv(AngleFixed(slopeDir), ANGLE_90), (contrastFixed * 2));
+
+	// Between -2 and 2 for software, -8 and 8 for hardware
+	slope->lightOffset = FixedFloor((extralight / 8) + (FRACUNIT / 2)) / FRACUNIT;
+#ifdef HWRENDER
+	slope->hwLightOffset = FixedFloor(extralight + (FRACUNIT / 2)) / FRACUNIT;
+#endif
+}
+
 // Calculate line normal
 void P_CalculateSlopeNormal(pslope_t *slope) {
 	slope->normal.z = FINECOSINE(slope->zangle>>ANGLETOFINESHIFT);
 	slope->normal.x = -FixedMul(FINESINE(slope->zangle>>ANGLETOFINESHIFT), -slope->d.x);
 	slope->normal.y = -FixedMul(FINESINE(slope->zangle>>ANGLETOFINESHIFT), -slope->d.y);
+
+	P_UpdateSlopeLightOffset(slope);
 }
 
 // With a vertex slope that has its vertices set, configure relevant slope info
@@ -89,14 +125,19 @@ static void P_ReconfigureVertexSlope(pslope_t *slope)
 	slope->real_xydirection = R_PointToAngle2(0, 0, slope->d.x, slope->d.y)+ANGLE_180;
 	slope->real_zangle = InvAngle(R_PointToAngle2(0, 0, FRACUNIT, slope->zdelta));
 
-	if (slope->normal.x == 0 && slope->normal.y == 0) { // Set some defaults for a non-sloped "slope"
+	if (slope->normal.x == 0 && slope->normal.y == 0) // Set some defaults for a non-sloped "slope"
+	{
 		slope->zangle = slope->xydirection = 0;
 		slope->zdelta = slope->d.x = slope->d.y = 0;
-	} else {
+	}
+	else
+	{
 		slope->extent = extent;
 		slope->xydirection = slope->real_xydirection;
 		slope->zangle = slope->real_zangle;
 	}
+
+	P_UpdateSlopeLightOffset(slope);
 }
 
 // Recalculate dynamic slopes
@@ -369,7 +410,8 @@ void P_SpawnSlope_Line(int linenum)
 
 			P_CalculateSlopeNormal(fslope);
 		}
-		if(frontceil)
+
+		if (frontceil)
 		{
 			fixed_t highest, lowest;
 			size_t l;

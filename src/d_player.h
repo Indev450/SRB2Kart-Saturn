@@ -546,6 +546,9 @@ typedef struct player_s
 	tic_t grieftime;
 	UINT8 griefstrikes;
 
+	tic_t hitemtimer;
+	UINT8 hitemvictim;
+
 	UINT8 splitscreenindex;
 #ifdef HWRENDER
 	fixed_t fovadd; // adjust FOV for hw rendering

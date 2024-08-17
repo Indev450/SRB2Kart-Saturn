@@ -1597,20 +1597,7 @@ static menuitem_t OP_SoundOptionsMenu[] =
 
 	{IT_STRING|IT_CVAR,							NULL, "Chat Notifications",				&cv_chatnotifications,	 	75},
 	{IT_STRING|IT_CVAR,							NULL, "Character voices",				&cv_kartvoices,			 	85},
-	{IT_STRING|IT_CVAR,							NULL, "Powerup Warning",				&cv_kartinvinsfx,		 	95},
-	
-	{IT_KEYHANDLER|IT_STRING,					NULL, "Sound Test",						M_HandleSoundTest,			105},
-	{IT_STRING|IT_CALL,							NULL, "Music Test",						M_MusicTest,				115},
-
-	{IT_STRING|IT_CVAR,        					NULL, "Play Music While Unfocused", 	&cv_playmusicifunfocused, 	125},
-	{IT_STRING|IT_CVAR,        					NULL, "Play SFX While Unfocused", 		&cv_playsoundifunfocused, 	135},
-	{IT_STRING|IT_SUBMENU, 						NULL, "Advanced Settings...", 			&OP_SoundAdvancedDef, 		155}
-#else
-	{IT_STRING|IT_CVAR,							NULL, "Reverse L/R Channels",			&stereoreverse,			 	60},
-	{IT_STRING|IT_CVAR,							NULL, "Surround Sound",					&surround,			 	 	70},
-
-	{IT_STRING|IT_CVAR,							NULL, "Chat Notifications",				&cv_chatnotifications,	 	85},
-	{IT_STRING|IT_CVAR,							NULL, "Character voices",				&cv_kartvoices,			 	95},
+	{IT_STRING|IT_CVAR,							NULL, "Hit Em Delay",				    &cv_karthitemdialog,		95},
 	{IT_STRING|IT_CVAR,							NULL, "Powerup Warning",				&cv_kartinvinsfx,		 	105},
 	
 	{IT_KEYHANDLER|IT_STRING,					NULL, "Sound Test",						M_HandleSoundTest,			115},
@@ -1619,6 +1606,21 @@ static menuitem_t OP_SoundOptionsMenu[] =
 	{IT_STRING|IT_CVAR,        					NULL, "Play Music While Unfocused", 	&cv_playmusicifunfocused, 	135},
 	{IT_STRING|IT_CVAR,        					NULL, "Play SFX While Unfocused", 		&cv_playsoundifunfocused, 	145},
 	{IT_STRING|IT_SUBMENU, 						NULL, "Advanced Settings...", 			&OP_SoundAdvancedDef, 		165}
+#else
+	{IT_STRING|IT_CVAR,							NULL, "Reverse L/R Channels",			&stereoreverse,			 	60},
+	{IT_STRING|IT_CVAR,							NULL, "Surround Sound",					&surround,			 	 	70},
+
+	{IT_STRING|IT_CVAR,							NULL, "Chat Notifications",				&cv_chatnotifications,	 	85},
+	{IT_STRING|IT_CVAR,							NULL, "Character voices",				&cv_kartvoices,			 	95},
+	{IT_STRING|IT_CVAR,							NULL, "Hit Em Delay",				    &cv_karthitemdialog,		105},
+	{IT_STRING|IT_CVAR,							NULL, "Powerup Warning",				&cv_kartinvinsfx,		 	115},
+	
+	{IT_KEYHANDLER|IT_STRING,					NULL, "Sound Test",						M_HandleSoundTest,			125},
+	{IT_STRING|IT_CALL,							NULL, "Music Test",						M_MusicTest,				135},
+
+	{IT_STRING|IT_CVAR,        					NULL, "Play Music While Unfocused", 	&cv_playmusicifunfocused, 	145},
+	{IT_STRING|IT_CVAR,        					NULL, "Play SFX While Unfocused", 		&cv_playsoundifunfocused, 	155},
+	{IT_STRING|IT_SUBMENU, 						NULL, "Advanced Settings...", 			&OP_SoundAdvancedDef, 		175}
 #endif
 };
 
@@ -1636,6 +1638,7 @@ static const char* OP_SoundTooltips[] =
 	"Surround Sound.",
 	"Chat notification sound.",
 	"Frequency of character voice lines.",
+	"Play 'Hit Em' character line after other player's hurt line.",
 	"Should the powerup warning be a sound effect or music?",
 	"Testing sounds...",
 	"Testing music...",
@@ -6759,7 +6762,6 @@ I_mutex replayquerymutex;
 #define MAXREPLAYQUERY 40
 char replayqueryinput[MAXREPLAYQUERY+1]; // The input typed
 size_t replayquerypos = 0; // Position in input window
-boolean replayqueryopen = false; // Is query window open?
 
 size_t replayqueryfound = 0; // Number of checked replay entries
 size_t replayquerycheck = 0; // Index of next replay entry to check in demolist_all
@@ -6819,7 +6821,6 @@ static void ResetReplayQuery(void)
 {
 	memset(replayqueryinput, 0, MAXREPLAYQUERY);
 	replayquerypos = 0;
-	replayqueryopen = false;
 
 	replayqueryfound = 0;
 	replayquerycheck = 0;
@@ -6966,16 +6967,8 @@ void M_ReplayHut(INT32 choice)
 
 static boolean M_HandleReplayHutQuery(INT32 choice)
 {
-	if (!replayqueryopen)
-		return false;
-
 	switch (choice)
 	{
-		case KEY_ENTER:
-		case KEY_ESCAPE:
-			replayqueryopen = false;
-			break;
-
 		case KEY_BACKSPACE:
 			if (replayquerypos == 0)
 				break;
@@ -6989,7 +6982,7 @@ static boolean M_HandleReplayHutQuery(INT32 choice)
 			dir_on[menudepthleft] = 0;
 			PrepReplayList(false);
 
-			break;
+			return true;
 
 		default:
 			if (choice < 32 || choice > 127)
@@ -7007,9 +7000,11 @@ static boolean M_HandleReplayHutQuery(INT32 choice)
 				dir_on[menudepthleft] = 0;
 				PrepReplayList(false);
 			}
+
+			return true;
 	}
 
-	return true;
+	return false;
 }
 
 static void M_HandleReplayHutList(INT32 choice)
@@ -7019,12 +7014,6 @@ static void M_HandleReplayHutList(INT32 choice)
 
 	switch (choice)
 	{
-	case '/':
-	case 'f':
-	case 'F':
-		replayqueryopen = true;
-		break;
-
 	case KEY_UPARROW:
 		if (!replaynamesloaded)
 			return;
@@ -7443,13 +7432,13 @@ static void M_DrawReplayHut(void)
 	// Draw search query
 	M_DrawTextBoxFlags(x, 200 - 22, MAXREPLAYQUERY, 1, V_SNAPTOBOTTOM);
 
-	if (replayqueryopen || replayquerypos)
+	if (replayquerypos)
 		V_DrawString(x + 8, 200 - 14, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, replayqueryinput);
 	else
-		V_DrawString(x + 8, 200 - 14, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, "\x86Press '/' or 'f' to search replays");
+		V_DrawString(x + 8, 200 - 14, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, "\x86Type to search...");
 
 	// draw text cursor for name
-	if (replayqueryopen && skullAnimCounter < 4) // blink cursor
+	if (replayquerypos && skullAnimCounter < 4) // blink cursor
 		V_DrawCharacter(x + 8 + V_StringWidth(replayqueryinput, V_ALLOWLOWERCASE), 200 - 14, '_'|V_SNAPTOBOTTOM, false);
 
 	if (replaynamesloaded && replayquerycheck < sizedirmenu)
