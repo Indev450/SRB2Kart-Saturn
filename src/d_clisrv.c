@@ -146,8 +146,10 @@ static boolean cl_packetmissed;
 static UINT8 mynode; // my address pointofview server
 static boolean cl_redownloadinggamestate = false;
 
+#ifdef SATURNPAK
 boolean is_client_saturn[MAXNETNODES];
 #define ISSATURN 69
+#endif
 
 static UINT8 localtextcmd[MAXTEXTCMD];
 static UINT8 localtextcmd2[MAXTEXTCMD]; // splitscreen
@@ -1443,7 +1445,9 @@ static boolean CL_SendJoin(void)
 	netbuffer->u.clientcfg.subversion = SUBVERSION;
 	strncpy(netbuffer->u.clientcfg.application, SRB2APPLICATION,
 			sizeof netbuffer->u.clientcfg.application);
+#ifdef SATURNPAK
 	netbuffer->u.clientcfg.issaturn = ISSATURN;
+#endif
 
 	return HSendPacket(servernode, false, 0, sizeof (clientconfig_pak));
 }
@@ -3208,7 +3212,9 @@ void CL_RemovePlayer(INT32 playernum, INT32 reason)
 			SV_InitResynchVars(node); // If a resynch was in progress, well, it no longer needs to be.
 
 			nodeingame[node] = false;
+#ifdef SATURNPAK
 			is_client_saturn[node] = false;
+#endif
 			can_receive_gamestate[node] = false;
 			Net_CloseConnection(node);
 			ResetNode(node);
@@ -3315,7 +3321,9 @@ void CL_Reset(void)
 	if (servernode > 0 && servernode < MAXNETNODES)
 	{
 		nodeingame[(UINT8)servernode] = false;
+#ifdef SATURNPAK
 		is_client_saturn[(UINT8)servernode] = false;
+#endif
 		Net_CloseConnection(servernode);
 	}
 	D_CloseConnection(); // netgame = false
@@ -4048,7 +4056,9 @@ consvar_t cv_joinrefusemessage = {"joinrefusemessage", "The server is not accept
 
 consvar_t cv_allownewplayer = {"allowjoin", "On", CV_SAVE|CV_CALL, CV_OnOff, Joinable_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
+#ifdef SATURNPAK
 consvar_t cv_allownewsaturnplayer = {"allowsaturnjoin", "On", CV_SAVE|CV_HIDEN, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+#endif
 
 #ifdef VANILLAJOINNEXTROUND
 consvar_t cv_joinnextround = {"joinnextround", "Off", CV_SAVE|CV_NETVAR, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; /// \todo not done
@@ -4095,11 +4105,13 @@ static void Joinable_OnChange(void)
 	if (!server)
 		return;
 
+#ifdef SATURNPAK
 	// disabling joins should also disable saturn joins unless its called with CV_StealthSet and vice versa to make life a bit easier
 	if (!cv_allownewplayer.value)
 		CV_Set(&cv_allownewsaturnplayer, "Off");
 	else if (cv_allownewplayer.value)
 		CV_Set(&cv_allownewsaturnplayer, "On");
+#endif
 
 	maxplayer = (UINT8)(min((dedicated ? MAXPLAYERS-1 : MAXPLAYERS), cv_maxplayers.value));
 
@@ -4182,7 +4194,9 @@ static void ResetNode(INT32 node)
 	bannednode[node].timeleft = NO_BAN_TIME;
 
 	// SATURN
+#ifdef SATURNPAK
 	is_client_saturn[node] = false;
+#endif
 
 	resendingsavegame[node] = false;
 	can_receive_gamestate[node] = false;
@@ -4517,11 +4531,13 @@ static boolean SV_AddWaitingPlayers(void)
 	return newplayer;
 }
 
+#ifdef SATURNPAK
 static inline void SendSaturnInfo(INT32 node)
 {
 	netbuffer->packettype = PT_ISSATURN;
 	HSendPacket(node, true, 0, 0);
 }
+#endif
 
 void CL_AddSplitscreenPlayer(void)
 {
@@ -4708,7 +4724,11 @@ static void HandleConnect(SINT8 node)
 	{
 		SV_SendRefuse(node, va(M_GetText("Different SRB2Kart versions cannot\nplay a netgame!\n(server version %d.%d)"), VERSION, SUBVERSION));
 	}
+#ifdef SATURNPAK
 	else if ((!cv_allownewplayer.value && node && netbuffer->u.clientcfg.issaturn != ISSATURN) || (!cv_allownewsaturnplayer.value && node && netbuffer->u.clientcfg.issaturn == ISSATURN))
+#else
+	else if (!cv_allownewplayer.value && node)
+#endif
 	{
 		SV_SendRefuse(node, M_GetText(cv_joinrefusemessage.string));
 	}
@@ -5069,7 +5089,9 @@ static void HandlePacketFromAwayNode(SINT8 node)
 #endif
 			DEBFILE(va("Server accept join gametic=%u mynode=%d\n", gametic, mynode));
 
+#ifdef SATURNPAK
 			SendSaturnInfo(node);
+#endif
 
 			memset(playeringame, 0, sizeof(playeringame));
 			for (j = 0; j < MAXPLAYERS; j++)
@@ -5503,7 +5525,9 @@ static void HandlePacketFromPlayer(SINT8 node)
 			}
 			Net_CloseConnection(node);
 			nodeingame[node] = false;
+#ifdef SATURNPAK
 			is_client_saturn[node] = false;
+#endif
 			can_receive_gamestate[node] = false;
 			break;
 // -------------------------------------------- CLIENT RECEIVE ----------
@@ -5668,10 +5692,12 @@ static void HandlePacketFromPlayer(SINT8 node)
 			if (client)
 				Got_Filetxpak();
 			break;
+#ifdef SATURNPAK
 		case PT_ISSATURN:
 			//CONS_Printf("hi im on saturn\n");
 			is_client_saturn[node] = true;
 			break;
+#endif
 		case PT_CANRECEIVEGAMESTATE:
 			can_receive_gamestate[node] = true;
 			PT_CanReceiveGamestate(node);
