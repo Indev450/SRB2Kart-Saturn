@@ -583,20 +583,18 @@ UINT8 HWR_FogBlockAlpha(INT32 light, extracolormap_t *colormap) // Let's see if 
 	return surfcolor.s.alpha;
 }
 
-// Lightnum = current light
-// line = the seg to get the light offset from
-static FUINT HWR_CalcWallLight(seg_t *line, FUINT lightnum)
+static FUINT HWR_CalcWallLight(FUINT lightnum, seg_t *seg)
 {
 	INT16 finallight = lightnum;
 
-	if (cv_grfakecontrast.value != 0)
+	if (seg != NULL && cv_grfakecontrast.value != 0)
 	{
 		fixed_t extralight = 0;
 
 		if (cv_grfakecontrast.value == 2) // Smooth setting
-			extralight += line->hwLightOffset;
+			extralight += seg->hwLightOffset;
 		else
-			extralight += line->lightOffset * 8;
+			extralight += seg->lightOffset * 8;
 
 		if (extralight != 0)
 		{
@@ -1085,7 +1083,7 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 	fixed_t v2y = FloatToFixed(wallVerts[1].z);
 
 	const UINT8 alpha = Surf->PolyColor.s.alpha;
-	FUINT lightnum = HWR_CalcWallLight(gr_curline, sector->lightlevel);
+	FUINT lightnum = HWR_CalcWallLight(sector->lightlevel, gr_curline);
 	extracolormap_t *colormap = NULL;
 
 	realtop = top = wallVerts[3].y;
@@ -1124,13 +1122,13 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 			{
 				lightnum = pfloor->master->frontsector->lightlevel;
 				colormap = pfloor->master->frontsector->extra_colormap;
-				lightnum = colormap ? lightnum : HWR_CalcWallLight(gr_curline, lightnum);
+				lightnum = colormap ? lightnum : HWR_CalcWallLight(lightnum, gr_curline);
 			}
 			else
 			{
 				lightnum = *list[i].lightlevel;
 				colormap = list[i].extra_colormap;
-				lightnum = colormap ? lightnum : HWR_CalcWallLight(gr_curline, lightnum);
+				lightnum = colormap ? lightnum : HWR_CalcWallLight(lightnum, gr_curline);
 			}
 		}
 
@@ -1488,7 +1486,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 	lightnum = gr_frontsector->lightlevel;
 	colormap = gr_frontsector->extra_colormap;
-	lightnum = colormap ? lightnum : HWR_CalcWallLight(gr_curline, lightnum);
+	lightnum = colormap ? lightnum : HWR_CalcWallLight(lightnum, gr_curline);
 
 	if (gr_linedef->flags & ML_TFERLINE)
 		noencore = true;
@@ -2111,7 +2109,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 					lightnum = rover->master->frontsector->lightlevel;
 					colormap = rover->master->frontsector->extra_colormap;
-					lightnum = colormap ? lightnum : HWR_CalcWallLight(gr_curline, lightnum);
+					lightnum = colormap ? lightnum : HWR_CalcWallLight(lightnum, gr_curline);
 
 					Surf.PolyColor.s.alpha = HWR_FogBlockAlpha(rover->master->frontsector->lightlevel, rover->master->frontsector->extra_colormap);
 
@@ -2225,7 +2223,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 					lightnum = rover->master->frontsector->lightlevel;
 					colormap = rover->master->frontsector->extra_colormap;
-					lightnum = colormap ? lightnum : HWR_CalcWallLight(gr_curline, lightnum);
+					lightnum = colormap ? lightnum : HWR_CalcWallLight(lightnum, gr_curline);
 
 					Surf.PolyColor.s.alpha = HWR_FogBlockAlpha(rover->master->frontsector->lightlevel, rover->master->frontsector->extra_colormap);
 
