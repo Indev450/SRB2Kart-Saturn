@@ -52,7 +52,7 @@ static void P_UpdateSlopeLightOffset(pslope_t *slope)
 
 	zMul = min(FRACUNIT, abs(slope->zdelta)*3/2); // *3/2, to make 60 degree slopes match walls.
 	contrastFixed = FixedMul(contrastFixed, zMul);
-	extralight = -contrastFixed + FixedMul(FixedDiv(AngleFixed(slopeDir), 90*FRACUNIT), (contrastFixed * 2));
+	extralight = -contrastFixed + FixedMul(FixedDiv(AngleFixed(slopeDir), ANGLE_90), (contrastFixed * 2));
 
 	// Between -2 and 2 for software, -8 and 8 for hardware
 	slope->lightOffset = FixedFloor((extralight / 8) + (FRACUNIT / 2)) / FRACUNIT;

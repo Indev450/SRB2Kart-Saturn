@@ -529,12 +529,12 @@ static inline float P_SegLengthFloat(seg_t *seg)
 void P_UpdateSegLightOffset(seg_t *li)
 {
 	const UINT8 contrast = 8;
+	const fixed_t contrastFixed = ((fixed_t)contrast) * FRACUNIT;
+	fixed_t light = FRACUNIT;
 	fixed_t extralight = 0;
 
-	extralight = -((fixed_t)contrast*FRACUNIT) +
-		FixedDiv(AngleFixed(R_PointToAngle2(0, 0,
-		abs(li->v1->x - li->v2->x),
-		abs(li->v1->y - li->v2->y))), 90*FRACUNIT) * ((fixed_t)contrast * 2);
+	light = FixedDiv(R_PointToAngle2(0, 0, abs(li->v1->x - li->v2->x), abs(li->v1->y - li->v2->y)), ANGLE_90);
+	extralight = -contrastFixed + FixedMul(light, contrastFixed * 2);
 
 	// Between -2 and 2 for software, -8 and 8 for hardware
 	li->lightOffset = FixedFloor((extralight / contrast) + (FRACUNIT / 2)) / FRACUNIT;
