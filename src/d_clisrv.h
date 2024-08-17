@@ -99,7 +99,9 @@ typedef enum
 
 	PT_PING,          // Packet sent to tell clients the other client's latency to server.
 
+#ifdef SATURNPAK
 	PT_ISSATURN,
+#endif
 	PT_WILLRESENDGAMESTATE, // Hey Client, I am about to resend you the gamestate!
 	PT_CANRECEIVEGAMESTATE, // Okay Server, I'm ready to receive it, you can go ahead.
 	PT_RECEIVEDGAMESTATE,   // Thank you Server, I am ready to play again!
@@ -369,7 +371,9 @@ typedef struct
 	UINT8 subversion; // Contains build version
 	UINT8 localplayers;	// number of splitscreen players
 	UINT8 mode;
+#ifdef SATURNPAK
 	UINT8 issaturn;
+#endif
 } ATTRPACK clientconfig_pak;
 
 #define SV_SPEEDMASK 0x03		// used to send kartspeed
@@ -574,7 +578,11 @@ extern consvar_t
 #ifdef VANILLAJOINNEXTROUND
 	cv_joinnextround,
 #endif
-	cv_netticbuffer, cv_allownewplayer, cv_allownewsaturnplayer, cv_joinrefusemessage, cv_maxplayers, cv_resynchattempts, cv_resynchcooldown, cv_gamestateattempts, cv_blamecfail, cv_maxsend, cv_noticedownload, cv_downloadspeed;
+	cv_netticbuffer, cv_allownewplayer,
+#ifdef SATURNPAK
+	cv_allownewsaturnplayer,
+#endif
+	cv_joinrefusemessage, cv_maxplayers, cv_resynchattempts, cv_resynchcooldown, cv_gamestateattempts, cv_blamecfail, cv_maxsend, cv_noticedownload, cv_downloadspeed;
 
 extern consvar_t cv_connectawaittime;
 

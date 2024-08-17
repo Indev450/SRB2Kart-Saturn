@@ -834,7 +834,9 @@ const char *packettypename[NUMPACKETTYPE] =
 
 	"PING",
 
+#ifdef SATURNPAK
 	"ISSATURN",
+#endif
 
 	"WILLRESENDGAMESTATE",
 	"CANRECEIVEGAMESTATE",

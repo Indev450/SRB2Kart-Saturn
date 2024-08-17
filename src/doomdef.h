@@ -568,6 +568,10 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 // None of these that are disabled in the normal build are guaranteed to work perfectly
 // Compile them at your own risk!
 
+/// Server detection for if a connecting client is on Saturn.
+/// For stuff like extra synching, joinblock, etc.
+//#define SATURNPAK
+
 /// Undefine to use the new method of Gamma correction see colour cube in v_video.c
 #define BACKWARDSCOMPATCORRECTION
 
