@@ -166,9 +166,6 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 			maximumAnisotropy = 1;
 
 		granisotropicmode_cons_t[1].value = maximumAnisotropy;
-#ifdef USE_FBO_OGL
-		I_DownSample();
-#endif
 	}
 	first_init = true;
 

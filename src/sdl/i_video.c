@@ -277,6 +277,9 @@ static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen, SDL_bool 
 #ifdef HWRENDER
 	if (rendermode == render_opengl)
 	{
+#ifdef USE_FBO_OGL
+		I_DownSample();
+#endif
 		OglSdlSurface(vid.width, vid.height);
 	}
 #endif
@@ -751,7 +754,7 @@ static INT32 SDLJoyAxis(const Sint16 axis, evtype_t which)
 #ifdef USE_FBO_OGL
 void I_DownSample(void)
 {
-	if (!cv_grframebuffer.value || !(rendermode == render_opengl) || (!supportFBO)) //no sense to do this crap if we cant benefit from it
+	if (!cv_grframebuffer.value || !supportFBO) //no sense to do this crap if we cant benefit from it
 	{
 		downsample = false;
 		return;
@@ -760,18 +763,19 @@ void I_DownSample(void)
 	int currentDisplayIndex = SDL_GetWindowDisplayIndex(window);
 	SDL_DisplayMode curmode;
 
-	if (SDL_GetCurrentDisplayMode(currentDisplayIndex, &curmode) == 0)
+	if (SDL_GetCurrentDisplayMode(currentDisplayIndex, &curmode) != 0)
 	{
-		if ((vid.width > curmode.w) || (vid.height > curmode.h)) //check if current resolution is higher than current display resolution
-		{
-			downsample = true;
-			RefreshOGLSDLSurface();
-		}
-		else
-			downsample = false; // its not so no need to do crap
+		downsample = false; // couldnt get display info so turn the thing off
+		return;
+	}
+
+	if ((vid.width > curmode.w) || (vid.height > curmode.h)) //check if current resolution is higher than current display resolution
+	{
+		downsample = true;
+		RefreshOGLSDLSurface();
 	}
 	else
-			downsample = false; // couldnt get display info so turn the thing off
+		downsample = false; // its not so no need to do crap
 }
 #endif
 
@@ -1938,11 +1942,6 @@ INT32 VID_SetMode(INT32 modeNum)
 		vid.modenum = -1;
 	}
 	//Impl_SetWindowName("SRB2Kart "VERSIONSTRING);
-
-#ifdef USE_FBO_OGL
-	if (rendermode == render_opengl)
-		I_DownSample();
-#endif
 
 	SDLSetMode(vid.width, vid.height, USE_FULLSCREEN, (setmodeneeded ? SDL_TRUE : SDL_FALSE));
 	Impl_VideoSetupBuffer();
