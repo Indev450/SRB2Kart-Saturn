@@ -2504,6 +2504,7 @@ static void Impl_SetVsync(void)
 #if SDL_VERSION_ATLEAST(2, 0, 18)
 		SDL_RenderSetVSync(renderer, cv_vidwait.value ? 1 : 0);
 #endif
+	}
 #ifdef HWRENDER
 	if (!renderer && rendermode == render_opengl && sdlglcontext != NULL && SDL_GL_GetCurrentContext() == sdlglcontext)
 	{
