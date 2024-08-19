@@ -771,7 +771,10 @@ void GLFramebuffer_IsFuncAvailible(void)
 {
 	//this stuff needs atleast OGL 3.0
 	if (majorGL < 3)
+	{
 		supportFBO = false;
+		return;
+	}
 
 	if (isExtAvailable("GL_ARB_framebuffer_no_attachments",gl_extensions) && isExtAvailable("GL_ARB_framebuffer_object",gl_extensions) && isExtAvailable("GL_ARB_framebuffer_sRGB",gl_extensions))
 		supportFBO = true;
