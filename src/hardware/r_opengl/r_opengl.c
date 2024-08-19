@@ -120,8 +120,6 @@ GLfloat projMatrix[16];
 static GLint   viewport[4];
 
 #ifdef USE_FBO_OGL
-static boolean GLFramebuffer_IsFuncAvailible(void);
-
 GLuint FramebufferObject, FramebufferTexture, RenderbufferObject;
 GLboolean FrameBufferEnabled = GL_FALSE, RenderToFramebuffer = GL_FALSE;
 
@@ -752,7 +750,7 @@ void SetupGLFunc4(void)
 	pglGetUniformLocation = GetGLFunc("glGetUniformLocation");
 
 #ifdef USE_FBO_OGL
-	if (GLFramebuffer_IsFuncAvailible())
+	if (supportFBO)
 	{
 		pglGenFramebuffers = GetGLFunc("glGenFramebuffers");
 		pglBindFramebuffer = GetGLFunc("glBindFramebuffer");
@@ -769,17 +767,14 @@ void SetupGLFunc4(void)
 }
 
 #ifdef USE_FBO_OGL
-static boolean GLFramebuffer_IsFuncAvailible(void)
+void GLFramebuffer_IsFuncAvailible(void)
 {
 	//this stuff needs atleast OGL 3.0
 	if (majorGL < 3)
-		return false;
+		supportFBO = false;
 
-	return((isExtAvailable("GL_ARB_framebuffer_no_attachments",gl_extensions)) &&
-	(isExtAvailable("GL_ARB_framebuffer_object",gl_extensions)) &&
-	(isExtAvailable("GL_ARB_framebuffer_sRGB",gl_extensions)));
-
-	return false;
+	if (isExtAvailable("GL_ARB_framebuffer_no_attachments",gl_extensions) && isExtAvailable("GL_ARB_framebuffer_object",gl_extensions) && isExtAvailable("GL_ARB_framebuffer_sRGB",gl_extensions))
+		supportFBO = true;
 }
 #endif
 
@@ -1045,7 +1040,7 @@ EXPORT void HWRAPI(DeleteTexture) (GLMipmap_t *pTexInfo)
 #ifdef USE_FBO_OGL
 void GLFramebuffer_Generate(void)
 {
-	if (!GLFramebuffer_IsFuncAvailible())
+	if (!supportFBO)
 		return;
 
 	// Generate the framebuffer
@@ -1058,7 +1053,7 @@ void GLFramebuffer_Generate(void)
 
 void GLFramebuffer_Delete(void)
 {
-	if (!GLFramebuffer_IsFuncAvailible())
+	if (!supportFBO)
 		return;
 
 	// Unbind the framebuffer
@@ -1073,7 +1068,7 @@ void GLFramebuffer_Delete(void)
 
 void GLFramebuffer_GenerateAttachments(void)
 {
-	if (!GLFramebuffer_IsFuncAvailible())
+	if (!supportFBO)
 		return;
 
 	// Bind the framebuffer
@@ -1114,7 +1109,7 @@ void GLFramebuffer_GenerateAttachments(void)
 
 void GLFramebuffer_DeleteAttachments(void)
 {
-	if (!GLFramebuffer_IsFuncAvailible())
+	if (!supportFBO)
 		return;
 
 	// Unbind the framebuffer
@@ -1132,7 +1127,7 @@ void GLFramebuffer_DeleteAttachments(void)
 
 void GLFramebuffer_Enable(void)
 {
-	if (!GLFramebuffer_IsFuncAvailible())
+	if (!supportFBO)
 		return;
 
 	if (FramebufferObject == 0)
@@ -1146,7 +1141,7 @@ void GLFramebuffer_Enable(void)
 
 void GLFramebuffer_Disable(void)
 {
-	if (!GLFramebuffer_IsFuncAvailible())
+	if (!supportFBO)
 		return;
 
 	pglBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -2343,7 +2338,6 @@ EXPORT void HWRAPI(SetSpecialState) (hwdspecialstate_t IdState, INT32 Value)
 #ifdef USE_FBO_OGL
 		case HWD_SET_FRAMEBUFFER:
 			FrameBufferEnabled = Value ? GL_TRUE : GL_FALSE;
-			supportFBO = GLFramebuffer_IsFuncAvailible();
 
 			if (!supportFBO)
 			{
