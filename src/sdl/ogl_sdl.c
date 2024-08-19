@@ -157,6 +157,8 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 					"- GPU drivers are missing or broken. You may need to update your drivers.");
 		}
 
+		GLFramebuffer_IsFuncAvailible();
+
 		SetupGLInfo();
 
 		SetupGLFunc4();
