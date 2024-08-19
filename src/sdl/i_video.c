@@ -219,6 +219,7 @@ static void Impl_SetWindowIcon(void);
 #ifdef USE_FBO_OGL
 #if defined (__unix__)
 static void I_FixXwaylandNvidia(void);
+boolean xwaylandcrap = false;
 #endif
 boolean downsample = false;
 void RefreshOGLSDLSurface(void)
@@ -789,14 +790,14 @@ static void I_FixXwaylandNvidia(void) //dumbass crap, fix ur shit nvidia
 {
 	if (!supportFBO)
 	{
-		downsample = false;
+		xwaylandcrap = false;
 		return;
 	}
 
 	// enable fbo resize shit, update the ogl surface and turn crap back off lol
-	downsample = true;
+	xwaylandcrap = true;
 	RefreshOGLSDLSurface();
-	downsample = false;
+	xwaylandcrap = false;
 	RefreshOGLSDLSurface();
 }
 #endif

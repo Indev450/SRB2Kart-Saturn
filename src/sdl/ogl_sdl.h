@@ -20,6 +20,12 @@
 
 boolean OglSdlSurface(INT32 w, INT32 h);
 
+#if defined (__unix__)
+#ifdef USE_FBO_OGL
+extern boolean isnvidiagpu;
+#endif
+#endif
+
 void OglSdlFinishUpdate(boolean vidwait);
 
 extern SDL_Renderer *renderer;

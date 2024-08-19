@@ -68,6 +68,12 @@ PFNglGetIntegerv pglGetIntegerv;
 PFNglGetString pglGetString;
 #endif
 
+#if defined (__unix__)
+#ifdef USE_FBO_OGL
+boolean isnvidiagpu = false;
+#endif
+#endif
+
 /**	\brief SDL video display surface
 */
 INT32 oglflags = 0;
@@ -166,6 +172,13 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 			maximumAnisotropy = 1;
 
 		granisotropicmode_cons_t[1].value = maximumAnisotropy;
+
+#if defined (__unix__)
+#ifdef USE_FBO_OGL
+		if (strstr((const char*)gl_renderer, "NVIDIA"))
+			isnvidiagpu = true;
+#endif
+#endif
 	}
 	first_init = true;
 
@@ -199,7 +212,11 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 	RenderToFramebuffer = FrameBufferEnabled;
 	GLFramebuffer_Disable();
 
-	if (RenderToFramebuffer && downsample)
+	if ((RenderToFramebuffer && downsample)
+#if defined (__unix__)
+		|| (isnvidiagpu && xwaylandcrap)
+#endif
+	)
 		GLFramebuffer_Enable();
 #endif
 
@@ -245,7 +262,11 @@ void OglSdlFinishUpdate(boolean waitvbl)
 	HWR_DrawScreenFinalTexture(sdlw, sdlh);
 
 #ifdef USE_FBO_OGL
-	if (RenderToFramebuffer && downsample)
+	if ((RenderToFramebuffer && downsample)
+#if defined (__unix__)
+		|| (isnvidiagpu && xwaylandcrap)
+#endif
+	)
 		GLFramebuffer_Enable();
 #endif
 
