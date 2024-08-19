@@ -27,6 +27,7 @@ url="https://github.com/AppImage/AppImageKit/releases/download/continuous/appima
 # A whitelist of libraries to include into SRB2's AppImage if SRB2 is dynamically linked.
 # please don't add a newline at the end of this or i will cry :(
 libraryWhitelist="
+libbacktrace
 libnsl
 libSDL2
 libSDL2_mixer
@@ -141,9 +142,9 @@ if [[ "$__ROOT_DIR" == '.' || "$__ROOT_DIR" == '..' ]]; then
 fi
 
 # Set up defaults
-__PROGRAM_NAME="${PROGRAM_NAME:-"SRB2Kart Neptune"}"
+__PROGRAM_NAME="${PROGRAM_NAME:-"SRB2Kart Saturn"}"
 __PROGRAM_DESCRIPTION="${PROGRAM_DESCRIPTION:-"Modded version of SRB2kart with more features."}"
-__PROGRAM_FILENAME="${PROGRAM_FILENAME:-"srb2kart-neptune"}"
+__PROGRAM_FILENAME="${PROGRAM_FILENAME:-"lsdl2srb2kart"}"
 __PROGRAM_ASSETS="${PROGRAM_ASSETS:-"$__ROOT_DIR/assets/installer"}"
 
 __BUILD_DIR="${1:-"$__ROOT_DIR/bin"}"
