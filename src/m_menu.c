@@ -12455,7 +12455,7 @@ static void M_DrawControl(void)
 
 		if (currentMenu->menuitems[i].status == IT_CONTROL)
 		{
-			V_DrawString(x, y, ((i == itemOn) ? highlightflags : 0), currentMenu->menuitems[i].text);
+			V_DrawString(x, y, ((i == itemOn) ? highlightflags|V_ALLOWLOWERCASE : V_ALLOWLOWERCASE), currentMenu->menuitems[i].text);
 			keys[0] = setupcontrols[currentMenu->menuitems[i].alphaKey][0];
 			keys[1] = setupcontrols[currentMenu->menuitems[i].alphaKey][1];
 
@@ -12476,14 +12476,14 @@ static void M_DrawControl(void)
 					strcat (tmp, G_KeynumToString (keys[1]));
 
 			}
-			V_DrawRightAlignedString(BASEVIDWIDTH-currentMenu->x, y, highlightflags, tmp);
+			V_DrawRightAlignedString(BASEVIDWIDTH-currentMenu->x, y, highlightflags|V_ALLOWLOWERCASE, tmp);
 		}
 		/*else if (currentMenu->menuitems[i].status == IT_GRAYEDOUT2)
 			V_DrawString(x, y, V_TRANSLUCENT, currentMenu->menuitems[i].text);*/
 		else if ((currentMenu->menuitems[i].status == IT_HEADER) && (i != max-1))
-			V_DrawString(19, y+6, highlightflags, currentMenu->menuitems[i].text);
+			V_DrawString(19, y+6, highlightflags|V_ALLOWLOWERCASE, currentMenu->menuitems[i].text);
 		else if (currentMenu->menuitems[i].status & IT_STRING)
-			V_DrawString(x, y, ((i == itemOn) ? highlightflags : 0), currentMenu->menuitems[i].text);
+			V_DrawString(x, y, ((i == itemOn) ? highlightflags|V_ALLOWLOWERCASE : V_ALLOWLOWERCASE), currentMenu->menuitems[i].text);
 
 		y += SMALLLINEHEIGHT;
 	}
