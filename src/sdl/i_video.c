@@ -2508,7 +2508,13 @@ static void Impl_SetVsync(void)
 #ifdef HWRENDER
 	else if (rendermode == render_opengl && sdlglcontext != NULL && SDL_GL_GetCurrentContext() == sdlglcontext)
 	{
-		SDL_GL_SetSwapInterval(cv_vidwait.value ? 1 : 0);
+		if (cv_vidwait.value)
+		{
+			if (SDL_GL_SetSwapInterval(-1) != 0) // try async vsync
+				SDL_GL_SetSwapInterval(1); // normal vsync
+		}
+		else
+			SDL_GL_SetSwapInterval(0);
 	}
 #endif
 }
