@@ -775,8 +775,8 @@ static boolean GLFramebuffer_IsFuncAvailible(void)
 	if (majorGL < 3)
 		return false;
 
-	return((isExtAvailable("GL_ARB_framebuffer_no_attachments",gl_extensions)) && 
-	(isExtAvailable("GL_ARB_framebuffer_object",gl_extensions)) && 
+	return((isExtAvailable("GL_ARB_framebuffer_no_attachments",gl_extensions)) &&
+	(isExtAvailable("GL_ARB_framebuffer_object",gl_extensions)) &&
 	(isExtAvailable("GL_ARB_framebuffer_sRGB",gl_extensions)));
 
 	return false;
