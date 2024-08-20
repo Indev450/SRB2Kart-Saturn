@@ -705,6 +705,7 @@ static void Shader_SetUniforms(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRGBAF
 
 static GLRGBAFloat shader_defaultcolor = {1.0f, 1.0f, 1.0f, 1.0f};
 
+static boolean GLFramebuffer_IsFuncAvailible(void);
 
 void SetupGLFunc4(void)
 {
@@ -750,7 +751,7 @@ void SetupGLFunc4(void)
 	pglGetUniformLocation = GetGLFunc("glGetUniformLocation");
 
 #ifdef USE_FBO_OGL
-	if (supportFBO)
+	if (GLFramebuffer_IsFuncAvailible())
 	{
 		pglGenFramebuffers = GetGLFunc("glGenFramebuffers");
 		pglBindFramebuffer = GetGLFunc("glBindFramebuffer");
@@ -762,22 +763,22 @@ void SetupGLFunc4(void)
 		pglDeleteRenderbuffers = GetGLFunc("glDeleteRenderbuffers");
 		pglRenderbufferStorage = GetGLFunc("glRenderbufferStorage");
 		pglFramebufferRenderbuffer = GetGLFunc("glFramebufferRenderbuffer");
+
+		supportFBO = true;
 	}
 #endif
 }
 
 #ifdef USE_FBO_OGL
-void GLFramebuffer_IsFuncAvailible(void)
+static boolean GLFramebuffer_IsFuncAvailible(void)
 {
 	//this stuff needs atleast OGL 3.0
 	if (majorGL < 3)
-	{
-		supportFBO = false;
-		return;
-	}
+		return false;
 
-	if (isExtAvailable("GL_ARB_framebuffer_no_attachments",gl_extensions) && isExtAvailable("GL_ARB_framebuffer_object",gl_extensions) && isExtAvailable("GL_ARB_framebuffer_sRGB",gl_extensions))
-		supportFBO = true;
+	return (isExtAvailable("GL_ARB_framebuffer_no_attachments",gl_extensions) && isExtAvailable("GL_ARB_framebuffer_object",gl_extensions) && isExtAvailable("GL_ARB_framebuffer_sRGB",gl_extensions));
+
+	return false;
 }
 #endif
 
@@ -1128,7 +1129,7 @@ void GLFramebuffer_DeleteAttachments(void)
 	RenderbufferObject = 0;
 }
 
-void GLFramebuffer_Enable(void)
+inline void GLFramebuffer_Enable(void)
 {
 	if (!supportFBO)
 		return;
@@ -1142,7 +1143,7 @@ void GLFramebuffer_Enable(void)
 	pglBindRenderbuffer(GL_RENDERBUFFER, RenderbufferObject);
 }
 
-void GLFramebuffer_Disable(void)
+inline void GLFramebuffer_Disable(void)
 {
 	if (!supportFBO)
 		return;

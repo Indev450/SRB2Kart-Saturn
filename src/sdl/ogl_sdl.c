@@ -157,8 +157,6 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 					"- GPU drivers are missing or broken. You may need to update your drivers.");
 		}
 
-		GLFramebuffer_IsFuncAvailible();
-
 		SetupGLInfo();
 
 		SetupGLFunc4();
@@ -203,10 +201,10 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 	pglClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 
 #ifdef USE_FBO_OGL
-	RenderToFramebuffer = FrameBufferEnabled;
+	RenderToFramebuffer = (FrameBufferEnabled && supportFBO && downsample);
 	GLFramebuffer_Disable();
 
-	if ((RenderToFramebuffer && downsample)
+	if (RenderToFramebuffer
 #if defined (__unix__)
 		|| (isnvidiagpu && xwaylandcrap)
 #endif
@@ -242,7 +240,7 @@ void OglSdlFinishUpdate(boolean waitvbl)
 
 #ifdef USE_FBO_OGL
 	GLFramebuffer_Disable();
-	RenderToFramebuffer = FrameBufferEnabled;
+	RenderToFramebuffer = (FrameBufferEnabled && supportFBO && downsample);
 #endif
 	
 	HWR_DrawScreenFinalTexture(sdlw, sdlh);
