@@ -773,6 +773,7 @@ void I_DownSample(void)
 	if (SDL_GetCurrentDisplayMode(currentDisplayIndex, &curmode) != 0)
 	{
 		downsample = false; // couldnt get display info so turn the thing off
+		RefreshOGLSDLSurface();
 		return;
 	}
 
@@ -782,7 +783,10 @@ void I_DownSample(void)
 		RefreshOGLSDLSurface();
 	}
 	else
+	{
 		downsample = false; // its not so no need to do crap
+		RefreshOGLSDLSurface();
+	}
 }
 
 #if defined (__unix__)

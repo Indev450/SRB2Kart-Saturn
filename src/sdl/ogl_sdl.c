@@ -196,6 +196,7 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 	if (screen_width != w || screen_height != h)
 	{
 		FlushScreenTextures();
+
 #ifdef USE_FBO_OGL
 		GLFramebuffer_DeleteAttachments();
 #endif
@@ -209,15 +210,16 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 	pglClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 
 #ifdef USE_FBO_OGL
-	RenderToFramebuffer = (FrameBufferEnabled && supportFBO && downsample);
-	GLFramebuffer_Disable();
-
-	if (RenderToFramebuffer
+	RenderToFramebuffer = ((FrameBufferEnabled && supportFBO && downsample)
 #if defined (__unix__)
-		|| (isnvidiagpu && xwaylandcrap)
+	|| (isnvidiagpu && xwaylandcrap)
 #endif
-	)
+	);
+
+	if (RenderToFramebuffer)
 		GLFramebuffer_Enable();
+	else
+		GLFramebuffer_Disable();
 #endif
 
 	HWR_Startup();
@@ -255,18 +257,20 @@ void OglSdlFinishUpdate(boolean waitvbl)
 	HWR_MakeScreenFinalTexture();
 
 #ifdef USE_FBO_OGL
-	GLFramebuffer_Disable();
-	RenderToFramebuffer = (FrameBufferEnabled && supportFBO && downsample);
+	RenderToFramebuffer = ((FrameBufferEnabled && supportFBO && downsample)
+#if defined (__unix__)
+	|| (isnvidiagpu && xwaylandcrap)
+#endif
+	);
+
+	if (RenderToFramebuffer)
+		GLFramebuffer_Unbind();
 #endif
 	
 	HWR_DrawScreenFinalTexture(sdlw, sdlh);
 
 #ifdef USE_FBO_OGL
-	if ((RenderToFramebuffer && downsample)
-#if defined (__unix__)
-		|| (isnvidiagpu && xwaylandcrap)
-#endif
-	)
+	if (RenderToFramebuffer)
 		GLFramebuffer_Enable();
 #endif
 
