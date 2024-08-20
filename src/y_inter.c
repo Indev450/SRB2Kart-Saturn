@@ -728,14 +728,8 @@ void Y_Ticker(void)
 		return;
 	}
 
-	if (intertic < TICRATE || endtic != -1)
+	if (intertic < TICRATE || intertic & 1 || endtic != -1)
 	{
-		return;
-	}
-
-	if (data.match.rankingsmode && intertic & 1)
-	{
-		memset(data.match.jitter, 0, sizeof (data.match.jitter));
 		return;
 	}
 
