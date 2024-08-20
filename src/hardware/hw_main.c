@@ -26,6 +26,8 @@
 #include "hw_md2.h"
 #include "hw_clip.h"
 
+#include "r_opengl/r_opengl.h"
+
 #include "../i_video.h" // for rendermode == render_glide
 #include "../v_video.h"
 #include "../p_local.h"
@@ -5877,6 +5879,7 @@ void HWR_Shutdown(void)
 	HWR_FreeMipmapCache();
 	HWR_FreeTextureCache();
 	HWD.pfnFlushScreenTextures();
+	GLFramebuffer_Disable();
 }
 
 void HWR_RenderWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap)

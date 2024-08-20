@@ -1042,32 +1042,7 @@ EXPORT void HWRAPI(DeleteTexture) (GLMipmap_t *pTexInfo)
 }
 
 #ifdef USE_FBO_OGL
-void GLFramebuffer_Generate(void)
-{
-	if (!supportFBO)
-		return;
-
-	// Generate the framebuffer
-	if (FramebufferObject == 0)
-		pglGenFramebuffers(1, &FramebufferObject);
-
-	if (pglCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE)
-		GLFramebuffer_GenerateAttachments();
-}
-
-static void GLFramebuffer_Delete(void)
-{
-	if (!supportFBO)
-		return;
-
-	if (FramebufferObject)
-		pglDeleteFramebuffers(1, &FramebufferObject);
-
-	GLFramebuffer_DeleteAttachments();
-	FramebufferObject = 0;
-}
-
-void GLFramebuffer_GenerateAttachments(void)
+static void GLFramebuffer_GenerateAttachments(void)
 {
 	if (!supportFBO)
 		return;
@@ -1125,6 +1100,31 @@ void GLFramebuffer_DeleteAttachments(void)
 
 	FramebufferTexture = 0;
 	RenderbufferObject = 0;
+}
+
+static void GLFramebuffer_Generate(void)
+{
+	if (!supportFBO)
+		return;
+
+	// Generate the framebuffer
+	if (FramebufferObject == 0)
+		pglGenFramebuffers(1, &FramebufferObject);
+
+	if (pglCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE)
+		GLFramebuffer_GenerateAttachments();
+}
+
+static void GLFramebuffer_Delete(void)
+{
+	if (!supportFBO)
+		return;
+
+	if (FramebufferObject)
+		pglDeleteFramebuffers(1, &FramebufferObject);
+
+	GLFramebuffer_DeleteAttachments();
+	FramebufferObject = 0;
 }
 
 inline void GLFramebuffer_Unbind(void)
