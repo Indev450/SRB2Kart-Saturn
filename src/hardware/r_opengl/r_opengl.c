@@ -1055,13 +1055,10 @@ void GLFramebuffer_Generate(void)
 		GLFramebuffer_GenerateAttachments();
 }
 
-void GLFramebuffer_Delete(void)
+static void GLFramebuffer_Delete(void)
 {
 	if (!supportFBO)
 		return;
-
-	// Unbind the framebuffer
-	pglBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	if (FramebufferObject)
 		pglDeleteFramebuffers(1, &FramebufferObject);
@@ -1118,6 +1115,7 @@ void GLFramebuffer_DeleteAttachments(void)
 
 	// Unbind the framebuffer
 	pglBindFramebuffer(GL_FRAMEBUFFER, 0);
+	pglBindRenderbuffer(GL_RENDERBUFFER, 0);
 
 	if (FramebufferTexture)
 		pglDeleteTextures(1, &FramebufferTexture);
@@ -1127,6 +1125,15 @@ void GLFramebuffer_DeleteAttachments(void)
 
 	FramebufferTexture = 0;
 	RenderbufferObject = 0;
+}
+
+inline void GLFramebuffer_Unbind(void)
+{
+	if (!supportFBO)
+		return;
+
+	pglBindFramebuffer(GL_FRAMEBUFFER, 0);
+	pglBindRenderbuffer(GL_RENDERBUFFER, 0);
 }
 
 inline void GLFramebuffer_Enable(void)
@@ -1143,13 +1150,15 @@ inline void GLFramebuffer_Enable(void)
 	pglBindRenderbuffer(GL_RENDERBUFFER, RenderbufferObject);
 }
 
-inline void GLFramebuffer_Disable(void)
+void GLFramebuffer_Disable(void)
 {
 	if (!supportFBO)
 		return;
 
 	pglBindFramebuffer(GL_FRAMEBUFFER, 0);
 	pglBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+	GLFramebuffer_Delete();
 }
 #endif
 
