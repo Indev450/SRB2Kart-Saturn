@@ -705,7 +705,9 @@ static void Shader_SetUniforms(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRGBAF
 
 static GLRGBAFloat shader_defaultcolor = {1.0f, 1.0f, 1.0f, 1.0f};
 
+#ifdef USE_FBO_OGL
 static boolean GLFramebuffer_IsFuncAvailible(void);
+#endif
 
 void SetupGLFunc4(void)
 {

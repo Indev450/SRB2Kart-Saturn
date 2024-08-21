@@ -5852,7 +5852,9 @@ void HWR_Shutdown(void)
 	HWR_FreeMipmapCache();
 	HWR_FreeTextureCache();
 	HWD.pfnFlushScreenTextures();
+#ifdef USE_FBO_OGL
 	GLFramebuffer_Disable();
+#endif
 }
 
 void HWR_RenderWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap)
