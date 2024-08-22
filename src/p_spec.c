@@ -2483,7 +2483,6 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 		case 422: // Cut away to another view
 			{
 				mobj_t *altview;
-				INT32 i;
 
 				if (!mo || !mo->player) // only players have views
 					return;
@@ -2497,14 +2496,6 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 
 				P_SetTarget(&mo->player->awayviewmobj, altview);
 				mo->player->awayviewtics = P_AproxDistance(line->dx, line->dy)>>FRACBITS;
-
-				for (i = 0; i <= splitscreen; i++)
-				{
-					if (displayplayers[i] == (mo->player - players))
-					{
-						R_ResetViewInterpolation(i + 1);
-					}
-				}
 
 				if (line->flags & ML_NOCLIMB) // lets you specify a vertical angle
 				{
