@@ -3888,6 +3888,15 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	{
 		thiscam->momx = x - thiscam->x;
 		thiscam->momy = y - thiscam->y;
+
+		// when looking back, camera's momentum
+		// should inherit the momentum of the player
+		if (lookback && lookbackdelay[num])
+		{
+			thiscam->momx += mo->momx;
+			thiscam->momy += mo->momy;
+		}
+
 		thiscam->momz = FixedMul(z - thiscam->z, camspeed/2);
 	}
 
