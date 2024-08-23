@@ -1737,7 +1737,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 		}
 		target->player->playerstate = PST_DEAD;
 
-		if (cv_fading.value && cv_birdmusic.value && P_IsLocalPlayer(target->player))
+		if (cv_birdmusic.value && cv_fading.value && P_IsLocalPlayer(target->player))
 		{
 			if (netgame || multiplayer)
 				ms = cv_respawntime.value * 1000;
@@ -1748,7 +1748,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 			If the time spent with the music paused is less than half
 			a second, continue playing the song (just mute it).
 			*/
-			if (( ms - cv_respawnfademusicout.value ) < 500)
+			if ((ms - cv_respawnfademusicout.value) < 500)
 				S_FadeMusic(0, cv_respawnfademusicout.value);
 			else
 				S_FadeOutStopMusic(cv_respawnfademusicout.value);

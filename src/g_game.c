@@ -2705,8 +2705,7 @@ void G_PlayerReborn(INT32 player)
 	}
 
 	/* I'm putting this here because lol */
-
-	fade = (cv_fading.value && cv_birdmusic.value && P_IsLocalPlayer(p));
+	fade = (cv_birdmusic.value && cv_fading.value && P_IsLocalPlayer(p));
 
 	if (fade)
 	{
@@ -2716,7 +2715,7 @@ void G_PlayerReborn(INT32 player)
 		Fade it in with the same call to avoid
 		max volume for a few milliseconds (?).
 		*/
-		if (! playing)
+		if (!playing)
 			S_SetRestoreMusicFadeInCvar(&cv_respawnfademusicback);
 	}
 
