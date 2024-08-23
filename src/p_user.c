@@ -499,44 +499,12 @@ void P_GivePlayerLives(player_t *player, INT32 numlives)
 // Transform into Super Sonic!
 void P_DoSuperTransformation(player_t *player, boolean giverings)
 {
+	(void)player;
+	(void)giverings;
+
 	return; // SRB2kart - this is not a thing we need
-	player->powers[pw_super] = 1;
-	if (!(mapheaderinfo[gamemap-1]->levelflags & LF_NOSSMUSIC) && P_IsLocalPlayer(player))
-	{
-		S_StopMusic();
-		S_ChangeMusicInternal("supers", true);
-	}
-
-	S_StartSound(NULL, sfx_supert); //let all players hear it -mattw_cfi
-
-	// Transformation animation
-	//P_SetPlayerMobjState(player->mo, S_PLAY_SUPERTRANS1);
-
-	player->mo->momx = player->mo->momy = player->mo->momz = 0;
-
-	if (giverings)
-	{
-		player->mo->health = 51;
-		player->health = player->mo->health;
-	}
-
-	// Just in case.
-	if (!(mapheaderinfo[gamemap-1]->levelflags & LF_NOSSMUSIC))
-	{
-		player->powers[pw_extralife] = 0;
-		player->powers[pw_invulnerability] = 0;
-		player->powers[pw_sneakers] = 0;
-	}
-
-	if (gametype != GT_COOP)
-	{
-		HU_SetCEchoFlags(0);
-		HU_SetCEchoDuration(5);
-		HU_DoCEcho(va("%s\\is now super.\\\\\\\\", player_names[player-players]));
-	}
-
-	P_PlayerFlagBurst(player, false);
 }
+
 // Adds to the player's score
 void P_AddPlayerScore(player_t *player, UINT32 amount)
 {
