@@ -2437,7 +2437,6 @@ static menuitem_t OP_AdvancedBirdMenu[] =
 	{IT_STRING | IT_CVAR, NULL, "Fade Back In While Respawning", &cv_respawnfademusicback,   40},
 
 	{IT_STRING | IT_CVAR, NULL, "Resync Threshold",          &cv_music_resync_threshold,     60},
-	{IT_STRING | IT_CVAR, NULL, "Resync Special Music Only", &cv_music_resync_powerups_only, 70},
 };
 
 static const char* OP_AdvancedBirdTooltips[] =

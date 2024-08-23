@@ -109,8 +109,6 @@ static CV_PossibleValue_t music_resync_threshold_cons_t[] = {
 };
 consvar_t cv_music_resync_threshold = {"music_resync_threshold", "0", CV_SAVE|CV_CALL, music_resync_threshold_cons_t, I_UpdateSongLagThreshold, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_music_resync_powerups_only = {"music_resync_powerups_only", "No", CV_SAVE|CV_CALL, CV_YesNo, I_UpdateSongLagConditions, 0, NULL, NULL, 0, 0, NULL};
-
 consvar_t cv_invincmusicfade = {"invincmusicfade", "300", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_growmusicfade = {"growmusicfade", "500", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_respawnfademusicout = {"respawnfademusicout", "1000", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -289,7 +287,6 @@ void S_RegisterSoundStuff(void)
 	CV_RegisterVar(&cv_pausemusic);
 
 	CV_RegisterVar(&cv_music_resync_threshold);
-	CV_RegisterVar(&cv_music_resync_powerups_only);
 	
 	CV_RegisterVar(&cv_invincmusicfade);
 	CV_RegisterVar(&cv_growmusicfade);
@@ -1301,7 +1298,6 @@ static void      *music_data;
 static UINT16    music_flags;
 static boolean   music_looping;
 static consvar_t *music_refade_cv;
-static int       music_usage;
 
 static char      queue_name[7];
 static UINT16    queue_flags;
@@ -1921,7 +1917,6 @@ static void S_UnloadMusic(void)
 	music_looping = false;
 
 	music_refade_cv = 0;
-	music_usage = 0;
 }
 
 static boolean S_PlayMusic(boolean looping, UINT32 fadeinms)
@@ -1929,8 +1924,7 @@ static boolean S_PlayMusic(boolean looping, UINT32 fadeinms)
 	if (S_MusicDisabled())
 		return false;
 
-	if (cv_birdmusic.value)
-		I_UpdateSongLagConditions();
+	I_UpdateSongLagThreshold();
 
 	if ((!fadeinms && !I_PlaySong(looping)) ||
 		(fadeinms && !I_FadeInPlaySong(fadeinms, looping)))
@@ -2125,6 +2119,9 @@ void S_SetMusicVolume(INT32 digvolume, INT32 seqvolume)
 
 void S_SetRestoreMusicFadeInCvar (consvar_t *cv)
 {
+	if (!cv_birdmusic.value)
+		return;
+
 	music_refade_cv = cv;
 }
 
@@ -2134,17 +2131,6 @@ int S_GetRestoreMusicFadeIn (void)
 		return music_refade_cv->value;
 	else
 		return 0;
-}
-
-void S_SetMusicUsage (int type)
-{
-	music_usage = type;
-	I_UpdateSongLagConditions();
-}
-
-int S_MusicUsage (void)
-{
-	return music_usage;
 }
 
 /// ------------------------

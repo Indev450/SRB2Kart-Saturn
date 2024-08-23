@@ -593,6 +593,7 @@ void P_PlayLivesJingle(player_t *player)
 void P_PlayRinglossSound(mobj_t *source, mobj_t *damager)
 {
 	sfxenum_t key = P_RandomKey(2);
+
 	if (cv_kartvoices.value)
 	{
 		if (cv_karthitemdialog.value && source != damager && damager && damager->player && P_IsLocalPlayer(damager->player))
@@ -815,17 +816,13 @@ void P_RestoreMusic(player_t *player)
 		if (wantedmus == 2 && cv_growmusic.value == 1)
 		{
 			S_ChangeMusicInternal("kgrow", true);
-			
-			if (cv_birdmusic.value)
-				S_SetRestoreMusicFadeInCvar(&cv_growmusicfade);
+			S_SetRestoreMusicFadeInCvar(&cv_growmusicfade);
 		}
 		// Item - Invincibility
 		else if (wantedmus == 1 && cv_supermusic.value == 1)
 		{
 			S_ChangeMusicInternal("kinvnc", true);
-			
-			if (cv_birdmusic.value)
-				S_SetRestoreMusicFadeInCvar(&cv_invincmusicfade);
+			S_SetRestoreMusicFadeInCvar(&cv_invincmusicfade);
 		}
 		else
 		{
@@ -842,13 +839,12 @@ void P_RestoreMusic(player_t *player)
 				else
 					position = mapmusposition;
 
-				S_ChangeMusicEx(mapmusname, mapmusflags, true, position, 0,
-						S_GetRestoreMusicFadeIn());
+				S_ChangeMusicEx(mapmusname, mapmusflags, true, position, 0, S_GetRestoreMusicFadeIn());
 				S_ClearRestoreMusicFadeInCvar();
 			}
 			else
 				S_ChangeMusicEx(mapmusname, mapmusflags, true, mapmusposition, 0, 0);
-			
+
 			mapmusresume = 0;
 		}
 	}
