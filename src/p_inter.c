@@ -463,8 +463,8 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			}
 			else if (special->target->player->kartstuff[k_comebackmode] == 1 && P_CanPickupItem(player, 1))
 			{
-				mobj_t *poof = P_SpawnMobj(special->x, special->y, special->z, MT_EXPLODE);
-				S_StartSound(poof, special->info->seesound);
+				mobj_t *poof2 = P_SpawnMobj(special->x, special->y, special->z, MT_EXPLODE);
+				S_StartSound(poof2, special->info->seesound);
 
 				// Karma fireworks
 				for (i = 0; i < 5; i++)
@@ -490,10 +490,10 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			}
 			else if (special->target->player->kartstuff[k_comebackmode] == 2 && P_CanPickupItem(player, 2))
 			{
-				mobj_t *poof = P_SpawnMobj(special->x, special->y, special->z, MT_EXPLODE);
+				mobj_t *poof3 = P_SpawnMobj(special->x, special->y, special->z, MT_EXPLODE);
 				UINT8 ptadd = 1; // No WANTED bonus for tricking
 
-				S_StartSound(poof, special->info->seesound);
+				S_StartSound(poof3, special->info->seesound);
 
 				if (player->kartstuff[k_bumper] == 1) // If you have only one bumper left, and see if it's a 1v1
 				{
