@@ -4672,14 +4672,15 @@ static void HWR_AddPrecipitationSprites(void)
 {
 	//const fixed_t drawdist = cv_drawdist_precip.value * mapobjectscale;
 	fixed_t drawdist;
+	fixed_t precipscale = cv_mobjscaleprecip.value ? mapobjectscale : FRACUNIT;
 
 	INT32 xl, xh, yl, yh, bx, by;
 	precipmobj_t *th;
 	
 	if (current_bsp_culling_distance)
-		drawdist = min((fixed_t)current_bsp_culling_distance, (fixed_t)(cv_drawdist_precip.value) * mapobjectscale);
+		drawdist = min((fixed_t)current_bsp_culling_distance, (fixed_t)(cv_drawdist_precip.value) * precipscale);
 	else
-		drawdist = (fixed_t)(cv_drawdist_precip.value) * mapobjectscale;
+		drawdist = (fixed_t)(cv_drawdist_precip.value) * precipscale;
 
 	// No to infinite precipitation draw distance.
 	if (drawdist == 0)

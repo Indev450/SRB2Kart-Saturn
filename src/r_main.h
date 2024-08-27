@@ -118,7 +118,7 @@ extern consvar_t cv_flipcam, cv_flipcam2, cv_flipcam3, cv_flipcam4;
 extern consvar_t cv_shadow, cv_shadowoffs;
 extern consvar_t cv_ffloorclip, cv_spriteclip;
 extern consvar_t cv_translucency;
-extern consvar_t cv_drawdist, cv_drawdist_precip, cv_lessprecip;
+extern consvar_t cv_drawdist, cv_drawdist_precip, cv_lessprecip, cv_mobjscaleprecip;
 extern consvar_t cv_fov;
 extern consvar_t cv_skybox;
 extern consvar_t cv_tailspickup;

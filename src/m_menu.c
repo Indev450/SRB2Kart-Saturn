@@ -1479,17 +1479,18 @@ static menuitem_t OP_ExpOptionsMenu[] =
 	{IT_HEADER, NULL, "Advanced Options", NULL, 10},
 	{IT_STRING|IT_CVAR,		NULL, "Interpolation Distance",			&cv_grmaxinterpdist,		 20},
 	{IT_STRING | IT_CVAR, 	NULL, "Weather Interpolation", 			&cv_precipinterp, 		 	 30},
-	{IT_STRING | IT_CVAR, 	NULL, "Less Weather Effects", 			&cv_lessprecip, 		 	 35},
+	{IT_STRING | IT_CVAR, 	NULL, "Scale Weather with Mobjscale", 	&cv_mobjscaleprecip, 		 35},
+	{IT_STRING | IT_CVAR, 	NULL, "Less Weather Effects", 			&cv_lessprecip, 		 	 40},
 
-	{IT_STRING | IT_CVAR,	NULL, "Skyboxes",						&cv_skybox,				 	 45},
+	{IT_STRING | IT_CVAR,	NULL, "Skyboxes",						&cv_skybox,				 	 50},
 
 #ifdef HWRENDER	
-	{IT_STRING | IT_CVAR, 	NULL, "Screen Textures", 				&cv_grscreentextures, 		 55},
+	{IT_STRING | IT_CVAR, 	NULL, "Screen Textures", 				&cv_grscreentextures, 		 60},
 #ifdef USE_FBO_OGL
-	{IT_STRING | IT_CVAR, 	NULL, "FBO Downsampling support", 		&cv_grframebuffer, 			 60},
+	{IT_STRING | IT_CVAR, 	NULL, "FBO Downsampling support", 		&cv_grframebuffer, 			 65},
 #endif
 
-	{IT_STRING | IT_CVAR, 	NULL, "Palette Depth", 					&cv_grpalettedepth, 		70},
+	{IT_STRING | IT_CVAR, 	NULL, "Palette Depth", 					&cv_grpalettedepth, 		75},
 #endif	
 };
 
@@ -1498,6 +1499,7 @@ static const char* OP_ExpTooltips[] =
 	NULL,
 	"How far Mobj interpolation should take effect.",
 	"Should weather be interpolated? Weather should look about the\nsame but perform a bit better when disabled.",
+	"Should weather be scaled with Mapobjectscale?.",
 	"When weather is on this will cut the object amount used in half.",
 	"Toggle being able to see the sky.",
 #ifdef HWRENDER
@@ -1514,6 +1516,7 @@ enum
 	op_exp_header,
 	op_exp_interpdist,
 	op_exp_precipinter,
+	op_exp_precipmoscale,
 	op_exp_lessprecip,
 	op_exp_skybox,
 #ifdef HWRENDER

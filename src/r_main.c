@@ -210,6 +210,7 @@ consvar_t cv_translucency = {"translucency", "On", CV_SAVE, CV_OnOff, NULL, 0, N
 consvar_t cv_drawdist = {"drawdist", "Infinite", CV_SAVE, drawdist_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_drawdist_precip = {"drawdist_precip", "1024", CV_SAVE, drawdist_precip_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_lessprecip = {"lessweathereffects", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_mobjscaleprecip = {"scaleprecipmobjscale", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_grmaxinterpdist = {"gr_maxinterpdist", "Infinite", CV_SAVE, maxinterpdist_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -1885,6 +1886,7 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_drawdist);
 	CV_RegisterVar(&cv_drawdist_precip);
 	CV_RegisterVar(&cv_lessprecip);
+	CV_RegisterVar(&cv_mobjscaleprecip);
 	CV_RegisterVar(&cv_fov);
 
 	CV_RegisterVar(&cv_chasecam);
