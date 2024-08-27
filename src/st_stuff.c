@@ -709,7 +709,7 @@ static void ST_overlayDrawer(void)
 		}
 	}
 
-	if (!(netgame || multiplayer) || !hu_showscores)
+	if ((!(netgame || multiplayer) || !hu_showscores) && !forceshowhud)
 	{
 		if (renderisnewtic)
 		{
@@ -718,7 +718,7 @@ static void ST_overlayDrawer(void)
 	}
 
 	// draw level title Tails
-	if (*mapheaderinfo[gamemap-1]->lvlttl != '\0' && !(hu_showscores && (netgame || multiplayer) && !mapreset) && LUA_HudEnabled(hud_stagetitle))
+	if (*mapheaderinfo[gamemap-1]->lvlttl != '\0' && !(hu_showscores && (netgame || multiplayer) && !mapreset) && LUA_HudEnabled(hud_stagetitle) && !forceshowhud)
 		ST_drawLevelTitle();
 
 	if (!hu_showscores && netgame && !mapreset)
