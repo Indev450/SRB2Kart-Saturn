@@ -1802,6 +1802,8 @@ void P_SwitchWeather(INT32 weathernum)
 
 			if (swap == PRECIP_RAIN) // Snow To Rain
 			{
+				precipmobj->type = MT_RAIN; // proper set the type
+				precipmobj->info = &mobjinfo[MT_RAIN];
 				precipmobj->flags = mobjinfo[MT_RAIN].flags;
 				st = &states[mobjinfo[MT_RAIN].spawnstate];
 				precipmobj->state = st;
@@ -1810,14 +1812,14 @@ void P_SwitchWeather(INT32 weathernum)
 				precipmobj->frame = st->frame;
 				precipmobj->momz = mobjinfo[MT_RAIN].speed;
 
-				precipmobj->precipflags &= ~PCF_INVISIBLE;
-
-				//think->function.acp1 = (actionf_p1)P_RainThinker;
+				precipmobj->precipflags &= ~(PCF_INVISIBLE|PCF_SPLASH); // P_PrecipThinker will add this again if it needs to
 			}
 			else if (swap == PRECIP_SNOW) // Rain To Snow
 			{
 				INT32 z;
 
+				precipmobj->type = MT_SNOWFLAKE; // proper set the type
+				precipmobj->info = &mobjinfo[MT_SNOWFLAKE];
 				precipmobj->flags = mobjinfo[MT_SNOWFLAKE].flags;
 				z = M_RandomByte();
 
@@ -1835,14 +1837,10 @@ void P_SwitchWeather(INT32 weathernum)
 				precipmobj->frame = st->frame;
 				precipmobj->momz = mobjinfo[MT_SNOWFLAKE].speed;
 
-				precipmobj->precipflags &= ~(PCF_INVISIBLE);
-
-				//think->function.acp1 = (actionf_p1)P_SnowThinker;
+				precipmobj->precipflags &= ~(PCF_INVISIBLE|PCF_SPLASH); // P_PrecipThinker will add this again if it needs to
 			}
 			else if (swap == PRECIP_BLANK || swap == PRECIP_STORM_NORAIN) // Remove precip, but keep it around for reuse.
 			{
-				//think->function.acp1 = (actionf_p1)P_NullPrecipThinker;
-
 				precipmobj->precipflags |= PCF_INVISIBLE;
 			}
 		}
