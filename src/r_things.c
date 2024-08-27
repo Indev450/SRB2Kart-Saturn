@@ -2052,7 +2052,7 @@ void R_AddSprites(sector_t *sec, INT32 lightlevel)
 //
 void R_AddPrecipitationSprites(void)
 {
-	const fixed_t drawdist = (fixed_t)(cv_drawdist_precip.value) * mapobjectscale;
+	fixed_t drawdist = (fixed_t)(cv_drawdist_precip.value) * (cv_mobjscaleprecip.value ? mapobjectscale : FRACUNIT);
 
 	INT32 xl, xh, yl, yh, bx, by;
 	precipmobj_t *th, *next;
