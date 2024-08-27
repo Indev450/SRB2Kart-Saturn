@@ -361,6 +361,7 @@ static void M_DeleteProtocol(void);
 
 // Saturn
 menu_t OP_SaturnDef;
+menu_t OP_SaturnHudDef;
 menu_t OP_HudOffsetDef;
 menu_t OP_PlayerDistortDef;
 menu_t OP_SaturnCreditsDef;
@@ -460,6 +461,9 @@ static void Nextmap_OnChange(void);
 static void Newgametype_OnChange(void);
 static void Dummymenuplayer_OnChange(void);
 static void Dummystaff_OnChange(void);
+
+// crap to force hud to show when in saturns hud options
+boolean forceshowhud = false;
 
 // ==========================================================================
 // CONSOLE VARIABLES AND THEIR POSSIBLE VALUES GO HERE.
@@ -2044,37 +2048,19 @@ static menuitem_t OP_SaturnMenu[] =
 	{IT_STRING | IT_CVAR, NULL, "Serverqueue waittime", 				&cv_connectawaittime, 	 	 10},
 
 	{IT_STRING | IT_CVAR, NULL, "Skin Select Spinning Speed",		 	&cv_skinselectspin, 	 	 20},
-	{IT_STRING | IT_CVAR, NULL, "Input Display outside of RA",		 	&cv_showinput, 	 			 25},
-	{IT_STRING | IT_CVAR, NULL, "Speedometer Style",		 			&cv_newspeedometer, 	 	 30},
-	{IT_STRING | IT_CVAR, NULL, "Stat Display",		 					&cv_showstats, 	 			 35},
-	{IT_STRING | IT_CVAR, NULL, "Show Lap Times",		 				&cv_showlaptimes, 	 		 40},
-	{IT_STRING | IT_CVAR, NULL, "Higher Resolution Portraits",			&cv_highresportrait, 	 	 45},
-	{IT_STRING | IT_CVAR, NULL, "Colourized HUD",						&cv_colorizedhud,		 	 50},
-	{IT_STRING | IT_CVAR, NULL, "Colourized Itembox",					&cv_colorizeditembox,		 55},
-	{IT_STRING | IT_CVAR, NULL, "Colourized HUD Color",					&cv_colorizedhudcolor,		 60},
-	{IT_STRING | IT_CVAR, NULL, "Show Lap Emblem",		 				&cv_showlapemblem, 	 		 65},
-	{IT_STRING | IT_CVAR, NULL,	"Show Minimap Names",   				&cv_showminimapnames, 		 70},
-	{IT_STRING | IT_CVAR, NULL,	"Small Minimap Players",   				&cv_minihead, 				 75},
 
-	{IT_STRING | IT_CVAR, NULL,	"Lagless Camera",   					&cv_laglesscam, 			 85},
+	{IT_STRING | IT_CVAR, NULL,	"Lagless Camera",   					&cv_laglesscam, 			 30},
 
-	{IT_STRING | IT_CVAR, NULL, "Uncapped HUD", 						&cv_uncappedhud, 		     95},
+	{IT_STRING | IT_CVAR, NULL, "Show Localskin Menus", 				&cv_showlocalskinmenus, 	40},
+	{IT_STRING | IT_CVAR, NULL, "Uppercase Menu",						&cv_menucaps,   		    45},
 
-	{IT_STRING | IT_CVAR, NULL, "Show Cecho Messages", 					&cv_cechotoggle, 			100},
-	{IT_STRING | IT_CVAR, NULL, "Show Localskin Menus", 				&cv_showlocalskinmenus, 	105},
-	{IT_STRING | IT_CVAR, NULL, "Uppercase Menu",						&cv_menucaps,   		    110},
+	{IT_STRING | IT_CVAR, NULL, "Keyboard Layout",						&cv_keyboardlayout,   	   	55},
 
-	{IT_STRING | IT_CVAR, NULL, "Keyboard Layout",						&cv_keyboardlayout,   	   	120},
+	{IT_STRING | IT_CVAR, NULL, "Less Midnight Channel Flicker", 		&cv_lessflicker, 		   	65},
 
-	{IT_STRING | IT_CVAR, NULL, "Less Midnight Channel Flicker", 		&cv_lessflicker, 		   	130},
-
-	{IT_STRING | IT_SUBMENU, NULL, "Nametags...", 						&OP_NametagDef, 		   	140},
-	{IT_STRING | IT_SUBMENU, NULL, "Driftgauge...", 					&OP_DriftGaugeDef, 		   	145},
-
-	{IT_SUBMENU|IT_STRING,	NULL,	"Sprite Distortion...", 			&OP_PlayerDistortDef,	   	155},
-	{IT_SUBMENU|IT_STRING,	NULL,	"Hud Offsets...", 					&OP_HudOffsetDef,		   	160},
-
-	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Credits", 					&OP_SaturnCreditsDef,	   	170}, // uwu
+	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Hud...", 					&OP_SaturnHudDef,		   	75},
+	{IT_SUBMENU|IT_STRING,	NULL,	"Sprite Distortion...", 			&OP_PlayerDistortDef,	   	80},
+	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Credits", 					&OP_SaturnCreditsDef,	   	85}, // uwu
 };
 
 static const char* OP_SaturnTooltips[] =
@@ -2082,28 +2068,13 @@ static const char* OP_SaturnTooltips[] =
 	NULL,
 	"How long can the game wait before it kicks you out from the server\nconnecting screen.",
 	"How much speen do you want?",
-	"Displays the input display outside of Record Attack. Also adjusts the\nposition scale to match.",
-	"Change what style the speedometer is.",
-	"Enable the stat display.",
-	"Show Lap Time when doing a Lap on the Timer.",
-	"Enable the use of the higher resolution want icons instead of rank\nfor some places.",
-	"Enable colourized hud.",
-	"Enable the colourized itembox when colourized hud is enabled.",
-	"The color to use instead of the player color when\ncolourized hud is enabled.",
-	"Show the big 'LAP' text on a lap change.",
-	"Show player names on the minimap.",
-	"Minimize the player icons on the minimap.",
 	"Makes the Camera Lagless in netgames.",
-	"Uncaps the HUD framerate, making it appear smoother.",
-	"Show the big Cecho Messages.",
 	"Show Localskin Menus.",
 	"Force menu to only use uppercase.",
 	"Use your desired Keyboard Layout for Text Input\nthis is either the Default, Native or Azerty\nNative does not affect Gameplay only Text!",
 	"Disables the flicker effect on Midnight Channel.",
-	"Nametag Options.",
-	"Driftgauge Options.",
+	"Options for Saturn specific HUD things.",
 	"Options for sprite distortion effects.",
-	"Move position of HUD elements.",
 	"See the people who helped make this project possible!",
 };
 
@@ -2112,28 +2083,13 @@ enum
 	sm_header,
 	sm_waittime,
 	sm_skinselspeed,
-	sm_input,
-	sm_speedometer,
-	sm_statdisplay,
-	sm_laptime,
-	sm_highresport,
-	sm_colorhud,
-	sm_coloritem,
-	sm_colorhud_customcolor,
-	sm_lapemblem,
-	sm_mapnames,
-	sm_smallmap,
 	sm_laglesscam,
-	sm_uncappedhud,
-	sm_cechotogle,
 	sm_showlocalskin,
 	op_uppercase_menu,
 	sm_nativkey,
 	sm_pisschannel,
-	sm_nametagmen,
-	sm_driftgaugemen,
+	sm_hud,
 	sm_distortionmenu,
-	sm_hudoffsets,
 	sm_credits,
 };
 
@@ -2182,6 +2138,80 @@ enum
 	saltsound,
 	saltsquishy,
 };
+
+static menuitem_t OP_SaturnHudMenu[] =
+{
+	{IT_HEADER, NULL, "Saturn Hud Options", NULL, 0},
+
+	{IT_STRING | IT_CVAR, NULL, "Speedometer Style",		 			&cv_newspeedometer, 	 	 10},
+	{IT_STRING | IT_CVAR, NULL, "Input Display outside of RA",		 	&cv_showinput, 	 			 15},
+
+	{IT_STRING | IT_CVAR, NULL, "Show Lap Times",		 				&cv_showlaptimes, 	 		 20},
+
+	{IT_STRING | IT_CVAR, NULL, "Stat Display",		 					&cv_showstats, 	 			 25},
+
+	{IT_STRING | IT_CVAR, NULL, "Higher Resolution Portraits",			&cv_highresportrait, 	 	 30},
+
+	{IT_STRING | IT_CVAR, NULL, "Colourized HUD",						&cv_colorizedhud,		 	 35},
+	{IT_STRING | IT_CVAR, NULL, "Colourized Itembox",					&cv_colorizeditembox,		 40},
+	{IT_STRING | IT_CVAR, NULL, "Colourized HUD Color",					&cv_colorizedhudcolor,		 45},
+
+	{IT_STRING | IT_CVAR, NULL, "Show Lap Emblem",		 				&cv_showlapemblem, 	 		 55},
+	{IT_STRING | IT_CVAR, NULL, "Show Cecho Messages", 					&cv_cechotoggle, 			 60},
+
+	{IT_STRING | IT_CVAR, NULL,	"Show Names on Minimap",   				&cv_showminimapnames, 		 65},
+	{IT_STRING | IT_CVAR, NULL,	"Small Minimap Players",   				&cv_minihead, 				 70},
+
+	{IT_STRING | IT_CVAR, NULL, "Uncapped HUD", 						&cv_uncappedhud, 		     80},
+
+	{IT_STRING | IT_SUBMENU, NULL, "Nametags...", 						&OP_NametagDef, 		   	90},
+	{IT_STRING | IT_SUBMENU, NULL, "Driftgauge...", 					&OP_DriftGaugeDef, 		   	95},
+
+	{IT_SUBMENU|IT_STRING,	NULL,	"Hud Offsets...", 					&OP_HudOffsetDef,		   	105},
+};
+
+static const char* OP_SaturnHudTooltips[] =
+{
+	NULL,
+	"Change what style the speedometer is.",
+	"Displays the input display outside of Record Attack. Also adjusts the\nposition scale to match.",
+	"Enable the stat display.",
+	"Show Lap Time when doing a Lap on the Timer.",
+	"Enable the use of the higher resolution want icons instead of rank\nfor some places.",
+	"Enable colourized hud.",
+	"Enable the colourized itembox when colourized hud is enabled.",
+	"The color to use instead of the player color when\ncolourized hud is enabled.",
+	"Show the big 'LAP' text on a lap change.",
+	"Show the big Cecho Messages.",
+	"Show player names on the minimap.",
+	"Minimize the player icons on the minimap.",
+	"Uncaps the HUD framerate, making it appear smoother.",
+	"Nametag Options.",
+	"Driftgauge Options.",
+	"Move position of HUD elements.",
+};
+
+enum
+{
+	sh_header,
+	sh_speedometer,
+	sh_input,
+	sh_laptime,
+	sh_statdisplay,
+	sh_highresport,
+	sh_colorhud,
+	sh_coloritem,
+	sh_colorhud_customcolor,
+	sh_lapemblem,
+	sh_cechotogle,
+	sh_mapname,
+	sh_smallmap,
+	sh_uncappedhud,
+	sh_nametagmen,
+	sh_driftgaugemen,
+	sh_hudoffsets,
+};
+
 
 static menuitem_t OP_HudOffsetMenu[] =
 {
@@ -2952,13 +2982,15 @@ menu_t OP_EraseDataDef = DEFAULTMENUSTYLE("M_DATA", OP_EraseDataMenu, &OP_DataOp
 
 menu_t OP_SaturnDef = DEFAULTSCROLLSTYLE(NULL, OP_SaturnMenu, &OP_MainDef, 30, 30);
 menu_t OP_PlayerDistortDef = DEFAULTMENUSTYLE("M_VIDEO", OP_PlayerDistortMenu, &OP_SaturnDef, 30, 30);
-menu_t OP_HudOffsetDef = DEFAULTSCROLLSTYLE(NULL, OP_HudOffsetMenu, &OP_SaturnDef, 30, 30);
+menu_t OP_HudOffsetDef = DEFAULTSCROLLSTYLE(NULL, OP_HudOffsetMenu, &OP_SaturnHudDef, 30, 30);
+menu_t OP_SaturnHudDef = DEFAULTSCROLLSTYLE(NULL, OP_SaturnHudMenu, &OP_SaturnDef, 30, 30);
+
 menu_t OP_SaturnCreditsDef = DEFAULTMENUSTYLE(NULL, OP_SaturnCreditsMenu, &OP_SaturnDef, 30, 10);
 
 menu_t OP_BirdDef = DEFAULTMENUSTYLE(NULL, OP_BirdMenu, &OP_MainDef, 30, 30);
 
-menu_t OP_NametagDef = DEFAULTMENUSTYLE(NULL, OP_NametagMenu, &OP_SaturnDef, 30, 40);
-menu_t OP_DriftGaugeDef = DEFAULTMENUSTYLE(NULL, OP_DriftGaugeMenu, &OP_SaturnDef, 30, 60);
+menu_t OP_NametagDef = DEFAULTMENUSTYLE(NULL, OP_NametagMenu, &OP_SaturnHudDef, 30, 40);
+menu_t OP_DriftGaugeDef = DEFAULTMENUSTYLE(NULL, OP_DriftGaugeMenu, &OP_SaturnHudDef, 30, 40);
 
 menu_t OP_TiltDef = DEFAULTMENUSTYLE(NULL, OP_TiltMenu, &OP_BirdDef, 30, 60);
 menu_t OP_AdvancedBirdDef = DEFAULTMENUSTYLE(NULL, OP_AdvancedBirdMenu, &OP_BirdDef, 30, 60);
@@ -3283,7 +3315,7 @@ void Bird_menu_Onchange(void)
 }
 
 //menu code is nice
-void Saturn_menu_Onchange(void) 
+void SaturnHud_menu_Onchange(void)
 {
 	UINT16 status;
 
@@ -3292,8 +3324,8 @@ void Saturn_menu_Onchange(void)
 	else
 		status = IT_GRAYEDOUT;
 	
-	OP_SaturnMenu[sm_coloritem].status = status;
-	OP_SaturnMenu[sm_colorhud_customcolor].status = status;
+	OP_SaturnHudMenu[sh_coloritem].status = status;
+	OP_SaturnHudMenu[sh_colorhud_customcolor].status = status;
 }
 
 // ==========================================================================
@@ -4101,7 +4133,6 @@ boolean M_DemoResponder(event_t *ev)
 	return eatinput;
 }
 
-
 //
 // M_Drawer
 // Called after the view has been rendered,
@@ -4112,10 +4143,12 @@ void M_Drawer(void)
 	if (currentMenu == &MessageDef)
 		menuactive = true;
 
+	forceshowhud = gamestate == GS_LEVEL && menuactive && (currentMenu == &OP_SaturnHudDef || currentMenu == &OP_HudOffsetDef || currentMenu == &OP_NametagDef || currentMenu == &OP_DriftGaugeDef); // holy fuick
+
 	if (menuactive)
 	{
 		// now that's more readable with a faded background (yeah like Quake...)
-		if (!WipeInAction && currentMenu != &PlaybackMenuDef) // Replay playback has its own background
+		if (!WipeInAction && currentMenu != &PlaybackMenuDef && !forceshowhud) // Replay playback has its own background
 			V_DrawFadeScreen(0xFF00, 16);
 
 		if (currentMenu->drawroutine)
@@ -4560,7 +4593,7 @@ void M_Init(void)
 #endif
 
 	if (!xtra_speedo && !kartzspeedo && !achi_speedo) // why bother?
-		OP_SaturnMenu[sm_speedometer].status = IT_GRAYEDOUT;
+		OP_SaturnHudMenu[sh_speedometer].status = IT_GRAYEDOUT;
 	
 	//if (!xtra_speedo && kartzspeedo)
 		//OP_SaturnMenu[sm_speedometer].text = "Speedometer (No Small)";
@@ -4571,9 +4604,9 @@ void M_Init(void)
 
 	if (!clr_hud) // uhguauhauguuhee
 	{
-		OP_SaturnMenu[sm_colorhud].status = IT_GRAYEDOUT;
-		OP_SaturnMenu[sm_coloritem].status = IT_GRAYEDOUT;
-		OP_SaturnMenu[sm_colorhud_customcolor].status = IT_GRAYEDOUT;
+		OP_SaturnHudMenu[sh_colorhud].status = IT_GRAYEDOUT;
+		OP_SaturnHudMenu[sh_coloritem].status = IT_GRAYEDOUT;
+		OP_SaturnHudMenu[sh_colorhud_customcolor].status = IT_GRAYEDOUT;
 	}
 
 	if (!nametaggfx)
@@ -5357,6 +5390,16 @@ static void M_DrawGenericScrollMenu(void)
 		if (!(OP_SaturnTooltips[itemOn] == NULL)) 
 		{
 			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_SaturnTooltips[itemOn], coolalphatimer);
+			if (coolalphatimer > 0 && interpTimerHackAllow)
+				coolalphatimer--;
+		}
+	}
+
+	if (currentMenu == &OP_SaturnHudDef)
+	{
+		if (!(OP_SaturnHudTooltips[itemOn] == NULL))
+		{
+			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_SaturnHudTooltips[itemOn], coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
 				coolalphatimer--;
 		}
