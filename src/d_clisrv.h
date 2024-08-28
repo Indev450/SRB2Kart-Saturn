@@ -574,7 +574,7 @@ extern consvar_t cv_connectawaittime;
 extern consvar_t cv_discordinvites;
 
 // Used in d_net, the only dependence
-tic_t ExpandTics(INT32 low, tic_t basetic);
+//tic_t ExpandTics(INT32 low, tic_t basetic);
 void D_ClientServerInit(void);
 
 // Initialise the other field
