@@ -238,7 +238,7 @@ UINT16 software_MAXPACKETLENGTH;
   * \return The full tic value
   *
   */
-tic_t ExpandTics(INT32 low, tic_t basetic)
+static inline tic_t ExpandTics(INT32 low, tic_t basetic)
 {
 	INT32 delta;
 
