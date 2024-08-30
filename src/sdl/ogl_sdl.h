@@ -20,8 +20,8 @@
 
 boolean OglSdlSurface(INT32 w, INT32 h);
 
-#if defined (__unix__)
 #ifdef USE_FBO_OGL
+#if defined (__unix__)
 extern boolean isnvidiagpu;
 #endif
 #endif

@@ -68,8 +68,8 @@ PFNglGetIntegerv pglGetIntegerv;
 PFNglGetString pglGetString;
 #endif
 
-#if defined (__unix__)
 #ifdef USE_FBO_OGL
+#if defined (__unix__)
 boolean isnvidiagpu = false;
 #endif
 #endif
@@ -264,14 +264,20 @@ void OglSdlFinishUpdate(boolean waitvbl)
 	);
 
 	if (RenderToFramebuffer)
+	{
 		GLFramebuffer_Unbind();
+		fbo_shader = true;
+	}
 #endif
-	
+
 	HWR_DrawScreenFinalTexture(sdlw, sdlh);
 
 #ifdef USE_FBO_OGL
 	if (RenderToFramebuffer)
+	{
 		GLFramebuffer_Enable();
+		fbo_shader = false;
+	}
 #endif
 
 	SDL_GL_SwapWindow(window);
@@ -280,6 +286,7 @@ void OglSdlFinishUpdate(boolean waitvbl)
 
 	// Sryder:	We need to draw the final screen texture again into the other buffer in the original position so that
 	//			effects that want to take the old screen can do so after this
+
 	HWR_DrawScreenFinalTexture(realwidth, realheight);
 }
 

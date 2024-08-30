@@ -24,6 +24,7 @@
 #include <stdarg.h>
 #include <math.h>
 #include "../../r_local.h" // For rendertimefrac, used for the leveltime shader uniform
+#include "../../f_finale.h"
 #include "r_opengl.h"
 #include "r_vbo.h"
 #include "../hw_shaders.h"
@@ -124,6 +125,7 @@ GLuint FramebufferObject, FramebufferTexture, RenderbufferObject;
 GLboolean FrameBufferEnabled = GL_FALSE, RenderToFramebuffer = GL_FALSE;
 
 boolean supportFBO = false;
+boolean fbo_shader = false;
 #endif
 
 // Sryder:	NextTexAvail is broken for these because palette changes or changes to the texture filter or antialiasing
@@ -1123,6 +1125,8 @@ void GLFramebuffer_Disable(void)
 {
 	if (!supportFBO)
 		return;
+
+	fbo_shader = false;
 
 	pglBindFramebuffer(GL_FRAMEBUFFER, 0);
 	pglBindRenderbuffer(GL_RENDERBUFFER, 0);
@@ -3473,9 +3477,12 @@ EXPORT void HWRAPI(DrawScreenFinalTexture)(int tex, INT32 width, INT32 height)
 	SetBlend(PF_NoDepthTest);
 
 	pglBindTexture(GL_TEXTURE_2D, screenTextures[tex]);
-	
+
 	if (HWR_ShouldUsePaletteRendering())
 		pglUseProgram(gl_shaders[SHADER_PALETTE_POSTPROCESS].program); // palette postprocess shader
+
+	if (HWR_UseShader() && fbo_shader && !WipeInAction) // this looks awful with wipes
+		pglUseProgram(gl_shaders[SHADER_DOWNSAMPLE].program);
 
 	pglColor4ubv(white);
 
@@ -3483,7 +3490,7 @@ EXPORT void HWRAPI(DrawScreenFinalTexture)(int tex, INT32 width, INT32 height)
 	pglVertexPointer(3, GL_FLOAT, 0, off);
 
 	pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-	
+
 	if (HWR_ShouldUsePaletteRendering())
 		pglUseProgram(0);
 

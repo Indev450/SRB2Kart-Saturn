@@ -46,6 +46,25 @@
 		"gl_FragColor = texture2D(tex, gl_TexCoord[0].st) * poly_color;\n" \
 	"}\0"
 
+
+#define GLSL_DOWNSAMPLE_FRAGMENT_SHADER \
+	"uniform sampler2D tex;\n" \
+	"void main(void) {\n" \
+	"vec2 uv = gl_TexCoord[0].st;\n" \
+	"vec2 texel_size = 1.0 / textureSize(tex, 0);\n" \
+		"vec2 offset1 = vec2(texel_size.x * 0.5, texel_size.y * 0.5);\n" \
+		"vec2 offset2 = vec2(-texel_size.x * 0.5, texel_size.y * 0.5);\n" \
+		"vec2 offset3 = vec2(texel_size.x * 0.5, -texel_size.y * 0.5);\n" \
+		"vec2 offset4 = vec2(-texel_size.x * 0.5, -texel_size.y * 0.5);\n" \
+		"vec4 color1 = texture2D(tex, uv + offset1);\n" \
+		"vec4 color2 = texture2D(tex, uv + offset2);\n" \
+		"vec4 color3 = texture2D(tex, uv + offset3);\n" \
+		"vec4 color4 = texture2D(tex, uv + offset4);\n" \
+		"vec4 final_color = (color1 + color2 + color3 + color4) * 0.25;\n" \
+	"gl_FragColor = final_color;\n" \
+	"}\0"
+
+
 //
 // Software fragment shader
 //
