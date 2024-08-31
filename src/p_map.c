@@ -2245,6 +2245,9 @@ boolean P_TryCameraMove(fixed_t x, fixed_t y, camera_t *thiscam)
 
 	floatok = false;
 
+	if (dedicated) // this crashes so don't even try it
+		return false;
+
 	if (twodlevel)
 		itsatwodlevel = true;
 	else

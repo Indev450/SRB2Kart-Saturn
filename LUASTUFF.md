@@ -130,8 +130,24 @@ if rawget(_G, "S_StopSoundByNum") ~= nil then
     ... -- Can use it
 end
 ```
-
 ## addHook("ServerJoin", function())
 
 ServerJoin hook called when client joins server (starting a listen server also calls it for host).
 Generally it was made to make loading custom config files less hacky, but can be used for anything else too.
+
+## player.viewrollangle field
+
+Returns player's current view roll angle for the Screen Tilting feature, useful for HUD elements.
+
+## G_SetPlayerGamepadIndicatorColor(player, skincolor)
+
+Set a custom color for Supported Gamepads with RGB LED functionality.
+To be used with Displayplayers.
+Only takes Skincolors.
+Best to be used in a Loop to ensure the color wont get overwritten by the game.
+
+## G_PlayerDeviceRumble(player, low_strength, high_strength, -optional- duration)
+
+Add Gamepad Rumble support for things.
+To be used with Displayplayers.
+Duration is in milliseconds and is optional to set, default value is 84ms.

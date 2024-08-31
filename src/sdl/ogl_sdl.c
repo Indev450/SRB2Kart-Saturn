@@ -68,6 +68,12 @@ PFNglGetIntegerv pglGetIntegerv;
 PFNglGetString pglGetString;
 #endif
 
+#if defined (__unix__)
+#ifdef USE_FBO_OGL
+static boolean isnvidiagpu = false;
+#endif
+#endif
+
 /**	\brief SDL video display surface
 */
 INT32 oglflags = 0;
@@ -166,8 +172,12 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 			maximumAnisotropy = 1;
 
 		granisotropicmode_cons_t[1].value = maximumAnisotropy;
+
+#if defined (__unix__)
 #ifdef USE_FBO_OGL
-		I_DownSample();
+		if (strstr((const char*)gl_renderer, "NVIDIA"))
+			isnvidiagpu = true;
+#endif
 #endif
 	}
 	first_init = true;
@@ -178,6 +188,7 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 	if (screen_width != w || screen_height != h)
 	{
 		FlushScreenTextures();
+
 #ifdef USE_FBO_OGL
 		GLFramebuffer_DeleteAttachments();
 #endif
@@ -191,11 +202,16 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 	pglClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 
 #ifdef USE_FBO_OGL
-	RenderToFramebuffer = FrameBufferEnabled;
-	GLFramebuffer_Disable();
+	RenderToFramebuffer = ((FrameBufferEnabled && supportFBO && downsample)
+#if defined (__unix__)
+	|| (isnvidiagpu && xwaylandcrap)
+#endif
+	);
 
-	if (RenderToFramebuffer && downsample)
+	if (RenderToFramebuffer)
 		GLFramebuffer_Enable();
+	else
+		GLFramebuffer_Disable();
 #endif
 
 	HWR_Startup();
@@ -225,14 +241,20 @@ void OglSdlFinishUpdate(boolean waitvbl)
 	HWR_MakeScreenFinalTexture();
 
 #ifdef USE_FBO_OGL
-	GLFramebuffer_Disable();
-	RenderToFramebuffer = FrameBufferEnabled;
+	RenderToFramebuffer = ((FrameBufferEnabled && supportFBO && downsample)
+#if defined (__unix__)
+	|| (isnvidiagpu && xwaylandcrap)
+#endif
+	);
+
+	if (RenderToFramebuffer)
+		GLFramebuffer_Unbind();
 #endif
 	
 	HWR_DrawScreenFinalTexture(sdlw, sdlh);
 
 #ifdef USE_FBO_OGL
-	if (RenderToFramebuffer && downsample)
+	if (RenderToFramebuffer)
 		GLFramebuffer_Enable();
 #endif
 

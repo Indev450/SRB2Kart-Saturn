@@ -88,7 +88,7 @@ consvar_t cv_saltyhopsfx = {"hardcodehopsfx", "On", CV_SAVE, CV_OnOff, NULL, 0, 
 consvar_t cv_saltysquish = {"hardcodehopsquish", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 //Colourized HUD
-consvar_t cv_colorizedhud = {"colorizedhud", "Off", CV_SAVE|CV_CALL, CV_OnOff, Saturn_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_colorizedhud = {"colorizedhud", "Off", CV_SAVE|CV_CALL, CV_OnOff, SaturnHud_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_colorizeditembox = {"colorizeditembox", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static CV_PossibleValue_t HudColor_cons_t[MAXSKINCOLORS+1];
@@ -7637,7 +7637,7 @@ static void K_initKartHUD(void)
 		}
 	}
 
-	if (timeinmap > 113)
+	if (timeinmap > 113 || forceshowhud)
 		hudtrans = cv_translucenthud.value;
 	else if (timeinmap > 105)
 		hudtrans = ((((INT32)timeinmap) - 105)*cv_translucenthud.value)/(113-105);
@@ -8227,39 +8227,36 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 	{
 		tic_t worktime = drawtime/(60*TICRATE);
 
-		if (worktime >= 100)
-		{
-			worktime = 99;
-			drawtime = (100*(60*TICRATE))-1;
-		}
-
-		if ((cv_timelimit.value && G_BattleGametype()) && (!players[consoleplayer].exiting && (leveltime > (timelimitintics + starttime + TICRATE/2)) && cv_overtime.value)) // i hate this so much
+		if ((G_BattleGametype() && cv_timelimit.value) && (!players[consoleplayer].exiting && (leveltime > (timelimitintics + starttime + TICRATE/2)) && cv_overtime.value)) // i hate this so much
 		{
 			V_DrawKartString(TX, TY+3, splitflags, va("OVERTIME"));
-			return;
 		}
+		else if (worktime < 100)
+		{
+			// minutes time      00 __ __
+			V_DrawKartString(TX,    TY+3, splitflags, va("%d", worktime/10));
+			V_DrawKartString(TX+12, TY+3, splitflags, va("%d", worktime%10));
 
-		// minutes time      00 __ __
-		V_DrawKartString(TX,    TY+3, splitflags, va("%d", worktime/10));
-		V_DrawKartString(TX+12, TY+3, splitflags, va("%d", worktime%10));
+			// apostrophe location     _'__ __
+			V_DrawKartString(TX+24, TY+3, splitflags, va("'"));
 
-		// apostrophe location     _'__ __
-		V_DrawKartString(TX+24, TY+3, splitflags, va("'"));
+			worktime = (drawtime/TICRATE % 60);
 
-		worktime = (drawtime/TICRATE % 60);
+			// seconds time       _ 00 __
+			V_DrawKartString(TX+36, TY+3, splitflags, va("%d", worktime/10));
+			V_DrawKartString(TX+48, TY+3, splitflags, va("%d", worktime%10));
 
-		// seconds time       _ 00 __
-		V_DrawKartString(TX+36, TY+3, splitflags, va("%d", worktime/10));
-		V_DrawKartString(TX+48, TY+3, splitflags, va("%d", worktime%10));
+			// quotation mark location    _ __"__
+			V_DrawKartString(TX+60, TY+3, splitflags, va("\""));
 
-		// quotation mark location    _ __"__
-		V_DrawKartString(TX+60, TY+3, splitflags, va("\""));
+			worktime = G_TicsToCentiseconds(drawtime);
 
-		worktime = G_TicsToCentiseconds(drawtime);
-
-		// tics               _ __ 00
-		V_DrawKartString(TX+72, TY+3, splitflags, va("%d", worktime/10));
-		V_DrawKartString(TX+84, TY+3, splitflags, va("%d", worktime%10));
+			// tics               _ __ 00
+			V_DrawKartString(TX+72, TY+3, splitflags, va("%d", worktime/10));
+			V_DrawKartString(TX+84, TY+3, splitflags, va("%d", worktime%10));
+		}
+		else if ((drawtime/TICRATE) & 1)
+			V_DrawKartString(TX, TY+3, splitflags, va("99'59\"99"));
 	}
 
 	if (emblemmap && (modeattacking || (mode == 1)) && !demo.playback) // emblem time!
@@ -8927,6 +8924,14 @@ static void K_drawKartBumpersOrKarma(void)
 	fy = info.y;
 	fflags = info.flags;
 
+	if (cv_battlespeedo.value)
+	{
+		if ((cv_newspeedometer.value == 2 && xtra_speedo) || (cv_newspeedometer.value == 3 && achi_speedo) || (cv_newspeedometer.value == 5 && xtra_speedo3))
+			fy -= -10;
+		else
+			fy -= -14;
+	}
+
 	if (splitscreen > 1)
 	{
 		if (stplyr->kartstuff[k_bumper] <= 0)
@@ -9366,8 +9371,16 @@ static void K_drawDriftGauge(void)
 		0, 31, 47, 63, 79, 95, 111, 119, 127, 143, 159, 175, 183, 191, 199, 207, 223, 247
 	};
 
-	if (!stplyr->mo || !stplyr->kartstuff[k_drift] || (!splitscreen && !camera->chase))
+	if (!stplyr->mo || (!splitscreen && !camera->chase))
 		return;
+
+	if (forceshowhud)
+		goto skipcrap; // i will skip the drift early return and you cant stop me!
+
+	if (!stplyr->kartstuff[k_drift])
+		return;
+
+skipcrap:
 
 	if (!K_GetScreenCoords(&pos, stplyr, stplyr->mo, FixedMul(cv_driftgaugeofs.value, cv_driftgaugeofs.value > 0 ? stplyr->mo->scale : mapobjectscale), false))
 		return;
@@ -9746,7 +9759,9 @@ static void K_drawKartMinimap(void)
 	splitflags = info.flags;
 
 
-	if (timeinmap > 105)
+	if (forceshowhud)
+		minimaptrans = cv_kartminimap.value;
+	else if (timeinmap > 105)
 	{
 		minimaptrans = cv_kartminimap.value;
 		if (timeinmap <= 113)

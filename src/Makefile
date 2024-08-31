@@ -633,6 +633,17 @@ ifndef NOUPX
 	-$(UPX) $(UPX_OPTS) $(BIN)/$(EXENAME)
 endif
 endif
+
+ifdef APPIMAGE
+	@echo Building AppImage...
+ifdef APPIMAGE_NOASSETS
+	$(.)../AppImage_build.sh --small --quiet $(BIN)/
+else
+	$(.)../AppImage_build.sh -q $(BIN)/
+endif
+	@echo AppImage build complete, please look for $(EXENAME).AppImage in $(BIN)
+endif
+
 	@echo Build is done, please look for $(EXENAME) in $(BIN), \(checking for post steps\)
 
 reobjdump:

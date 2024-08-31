@@ -5698,6 +5698,12 @@ void Command_ExitGame_f(void)
 {
 	INT32 i;
 
+	if (dedicated)
+	{
+		CONS_Printf("This command cannot be used on dedicated server\n");
+		return;
+	}
+
 	D_QuitNetGame();
 	CL_Reset();
 	CV_ClearChangedFlags();

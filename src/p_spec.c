@@ -1773,16 +1773,18 @@ void P_SwitchWeather(INT32 weathernum)
 	if (purge)
 	{
 		thinker_t *think;
+		thinker_t *next;
 		precipmobj_t *precipmobj;
 
-		for (think = thinkercap.next; think != &thinkercap; think = think->next)
+		for (think = thinkercap.next; think != &thinkercap; think = next)
 		{
+			next = think->next;
+
 			if (think->function.acp1 != (actionf_p1)P_NullPrecipThinker)
 				continue; // not a precipmobj thinker
 
 			precipmobj = (precipmobj_t *)think;
-
-			P_RemovePrecipMobj(precipmobj);
+			P_FreePrecipMobj(precipmobj);
 		}
 	}
 	else if (swap && !((swap == PRECIP_BLANK && curWeather == PRECIP_STORM_NORAIN) || (swap == PRECIP_STORM_NORAIN && curWeather == PRECIP_BLANK))) // Rather than respawn all that crap, reuse it!
@@ -1795,10 +1797,13 @@ void P_SwitchWeather(INT32 weathernum)
 		{
 			if (think->function.acp1 != (actionf_p1)P_NullPrecipThinker)
 				continue; // not a precipmobj thinker
+
 			precipmobj = (precipmobj_t *)think;
 
 			if (swap == PRECIP_RAIN) // Snow To Rain
 			{
+				precipmobj->type = MT_RAIN; // proper set the type
+				precipmobj->info = &mobjinfo[MT_RAIN];
 				precipmobj->flags = mobjinfo[MT_RAIN].flags;
 				st = &states[mobjinfo[MT_RAIN].spawnstate];
 				precipmobj->state = st;
@@ -1807,15 +1812,14 @@ void P_SwitchWeather(INT32 weathernum)
 				precipmobj->frame = st->frame;
 				precipmobj->momz = mobjinfo[MT_RAIN].speed;
 
-				precipmobj->precipflags &= ~PCF_INVISIBLE;
-
-				precipmobj->precipflags |= PCF_RAIN;
-				//think->function.acp1 = (actionf_p1)P_RainThinker;
+				precipmobj->precipflags &= ~(PCF_INVISIBLE|PCF_SPLASH); // P_PrecipThinker will add this again if it needs to
 			}
 			else if (swap == PRECIP_SNOW) // Rain To Snow
 			{
 				INT32 z;
 
+				precipmobj->type = MT_SNOWFLAKE; // proper set the type
+				precipmobj->info = &mobjinfo[MT_SNOWFLAKE];
 				precipmobj->flags = mobjinfo[MT_SNOWFLAKE].flags;
 				z = M_RandomByte();
 
@@ -1833,14 +1837,10 @@ void P_SwitchWeather(INT32 weathernum)
 				precipmobj->frame = st->frame;
 				precipmobj->momz = mobjinfo[MT_SNOWFLAKE].speed;
 
-				precipmobj->precipflags &= ~(PCF_INVISIBLE|PCF_RAIN);
-
-				//think->function.acp1 = (actionf_p1)P_SnowThinker;
+				precipmobj->precipflags &= ~(PCF_INVISIBLE|PCF_SPLASH); // P_PrecipThinker will add this again if it needs to
 			}
 			else if (swap == PRECIP_BLANK || swap == PRECIP_STORM_NORAIN) // Remove precip, but keep it around for reuse.
 			{
-				//think->function.acp1 = (actionf_p1)P_NullPrecipThinker;
-
 				precipmobj->precipflags |= PCF_INVISIBLE;
 			}
 		}
@@ -2179,7 +2179,9 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 						mapmusflags |= MUSIC_FORCERESET;
 
 					mapmusposition = position;
-					mapmusresume = 0;
+
+					if (cv_birdmusic.value)
+						mapmusresume = 0;
 
 					S_ChangeMusicEx(mapmusname, mapmusflags, !(line->flags & ML_EFFECT4), position,
 						!(line->flags & ML_EFFECT2) ? prefadems : 0,
@@ -2483,7 +2485,6 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 		case 422: // Cut away to another view
 			{
 				mobj_t *altview;
-				INT32 i;
 
 				if (!mo || !mo->player) // only players have views
 					return;
@@ -2497,14 +2498,6 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 
 				P_SetTarget(&mo->player->awayviewmobj, altview);
 				mo->player->awayviewtics = P_AproxDistance(line->dx, line->dy)>>FRACBITS;
-
-				for (i = 0; i <= splitscreen; i++)
-				{
-					if (displayplayers[i] == (mo->player - players))
-					{
-						R_ResetViewInterpolation(i + 1);
-					}
-				}
 
 				if (line->flags & ML_NOCLIMB) // lets you specify a vertical angle
 				{

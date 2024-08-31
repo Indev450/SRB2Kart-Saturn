@@ -217,6 +217,10 @@ static SDL_bool Impl_CreateWindow(SDL_bool fullscreen);
 static void Impl_SetWindowIcon(void);
 
 #ifdef USE_FBO_OGL
+#if defined (__unix__)
+static void I_FixXwaylandNvidia(void);
+boolean xwaylandcrap = false;
+#endif
 boolean downsample = false;
 void RefreshOGLSDLSurface(void)
 {
@@ -225,7 +229,7 @@ void RefreshOGLSDLSurface(void)
 }
 #endif
 
-static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen)
+static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen, SDL_bool reposition)
 {
 	static SDL_bool wasfullscreen = SDL_FALSE;
 	Uint32 rmask;
@@ -254,16 +258,18 @@ static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen)
 			}
 			// Reposition window only in windowed mode
 			SDL_SetWindowSize(window, width, height);
-			SDL_SetWindowPosition(window,
-				SDL_WINDOWPOS_CENTERED_DISPLAY(SDL_GetWindowDisplayIndex(window)),
-				SDL_WINDOWPOS_CENTERED_DISPLAY(SDL_GetWindowDisplayIndex(window))
-			);
+			if (reposition)
+			{
+				SDL_SetWindowPosition(window,
+					SDL_WINDOWPOS_CENTERED_DISPLAY(SDL_GetWindowDisplayIndex(window)),
+					SDL_WINDOWPOS_CENTERED_DISPLAY(SDL_GetWindowDisplayIndex(window))
+				);
+			}
 		}
 	}
 	else
 	{
 		Impl_CreateWindow(fullscreen);
-		Impl_SetWindowIcon();
 		wasfullscreen = fullscreen;
 		SDL_SetWindowSize(window, width, height);
 		if (fullscreen)
@@ -275,6 +281,12 @@ static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen)
 #ifdef HWRENDER
 	if (rendermode == render_opengl)
 	{
+#ifdef USE_FBO_OGL
+#if defined (__unix__)
+		I_FixXwaylandNvidia();
+#endif
+		I_DownSample();
+#endif
 		OglSdlSurface(vid.width, vid.height);
 	}
 #endif
@@ -749,7 +761,7 @@ static INT32 SDLJoyAxis(const Sint16 axis, evtype_t which)
 #ifdef USE_FBO_OGL
 void I_DownSample(void)
 {
-	if (!cv_grframebuffer.value || !(rendermode == render_opengl) || (!supportFBO)) //no sense to do this crap if we cant benefit from it
+	if (!cv_grframebuffer.value || !supportFBO) //no sense to do this crap if we cant benefit from it
 	{
 		downsample = false;
 		return;
@@ -758,19 +770,41 @@ void I_DownSample(void)
 	int currentDisplayIndex = SDL_GetWindowDisplayIndex(window);
 	SDL_DisplayMode curmode;
 
-	if (SDL_GetCurrentDisplayMode(currentDisplayIndex, &curmode) == 0)
+	if (SDL_GetCurrentDisplayMode(currentDisplayIndex, &curmode) != 0)
 	{
-		if ((vid.width > curmode.w) || (vid.height > curmode.h)) //check if current resolution is higher than current display resolution
-		{
-			downsample = true;
-			RefreshOGLSDLSurface();
-		}
-		else
-			downsample = false; // its not so no need to do crap
+		downsample = false; // couldnt get display info so turn the thing off
+		RefreshOGLSDLSurface();
+		return;
+	}
+
+	if ((vid.width > curmode.w) || (vid.height > curmode.h)) //check if current resolution is higher than current display resolution
+	{
+		downsample = true;
+		RefreshOGLSDLSurface();
 	}
 	else
-			downsample = false; // couldnt get display info so turn the thing off
+	{
+		downsample = false; // its not so no need to do crap
+		RefreshOGLSDLSurface();
+	}
 }
+
+#if defined (__unix__)
+static void I_FixXwaylandNvidia(void) //dumbass crap, fix ur shit nvidia
+{
+	if (!supportFBO)
+	{
+		xwaylandcrap = false;
+		return;
+	}
+
+	// enable fbo resize shit, update the ogl surface and turn crap back off lol
+	xwaylandcrap = true;
+	RefreshOGLSDLSurface();
+	xwaylandcrap = false;
+	RefreshOGLSDLSurface();
+}
+#endif
 #endif
 
 static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
@@ -1937,12 +1971,7 @@ INT32 VID_SetMode(INT32 modeNum)
 	}
 	//Impl_SetWindowName("SRB2Kart "VERSIONSTRING);
 
-#ifdef USE_FBO_OGL
-	if (rendermode == render_opengl)
-		I_DownSample();
-#endif
-
-	SDLSetMode(vid.width, vid.height, USE_FULLSCREEN);
+	SDLSetMode(vid.width, vid.height, USE_FULLSCREEN, (setmodeneeded ? SDL_TRUE : SDL_FALSE));
 	Impl_VideoSetupBuffer();
 
 	if (rendermode == render_soft)
@@ -1958,6 +1987,63 @@ INT32 VID_SetMode(INT32 modeNum)
 	src_rect.h = vid.height;
 
 	refresh_rate = VID_GetRefreshRate();
+
+	return SDL_TRUE;
+}
+
+
+static SDL_bool Impl_CreateContext(void)
+{
+	// Renderer-specific stuff
+#ifdef HWRENDER
+	if ((rendermode == render_opengl)
+	&& (vid.glstate != VID_GL_LIBRARY_ERROR))
+	{
+		if (!sdlglcontext)
+			sdlglcontext = SDL_GL_CreateContext(window);
+		if (sdlglcontext == NULL)
+		{
+			SDL_DestroyWindow(window);
+			I_Error("Failed to create a GL context: %s\n", SDL_GetError());
+		}
+		SDL_GL_MakeCurrent(window, sdlglcontext);
+	}
+	else
+#endif
+	if (rendermode == render_soft)
+	{
+		int flags = 0; // Use this to set SDL_RENDERER_* flags now
+		if (usesdl2soft)
+			flags |= SDL_RENDERER_SOFTWARE;
+		else if (cv_vidwait.value)
+		{
+#if SDL_VERSION_ATLEAST(2, 0, 18)
+			// If SDL is new enough, we can turn off vsync later.
+			flags |= SDL_RENDERER_PRESENTVSYNC;
+#else
+			// However, if it isn't, we should just silently turn vid_wait off
+			// This is because the renderer will be created before the config
+			// is read and vid_wait is set from the user's preferences, and thus
+			// vid_wait will have no effect.
+			CV_StealthSetValue(&cv_vidwait, 0);
+#endif
+		}
+
+#ifdef _WIN32
+		SDL_SetHint(SDL_HINT_RENDER_DRIVER, "direct3d11");
+#else
+		SDL_SetHint(SDL_HINT_RENDER_DRIVER, "opengl");
+#endif
+
+		if (!renderer)
+			renderer = SDL_CreateRenderer(window, -1, flags);
+		if (renderer == NULL)
+		{
+			CONS_Printf(M_GetText("Couldn't create rendering context: %s\n"), SDL_GetError());
+			return SDL_FALSE;
+		}
+		SDL_RenderSetLogicalSize(renderer, BASEVIDWIDTH, BASEVIDHEIGHT);
+	}
 
 	return SDL_TRUE;
 }
@@ -2009,45 +2095,7 @@ static SDL_bool Impl_CreateWindow(SDL_bool fullscreen)
 		return SDL_FALSE;
 	}
 
-	// Renderer-specific stuff
-#ifdef HWRENDER
-	if ((rendermode == render_opengl)
-	&& (vid.glstate != VID_GL_LIBRARY_ERROR))
-	{
-		sdlglcontext = SDL_GL_CreateContext(window);
-		if (sdlglcontext == NULL)
-		{
-			SDL_DestroyWindow(window);
-			I_Error("Failed to create a GL context: %s\n", SDL_GetError());
-		}
-		SDL_GL_MakeCurrent(window, sdlglcontext);
-	}
-	else
-#endif
-	if (rendermode == render_soft)
-	{
-		flags = 0; // Use this to set SDL_RENDERER_* flags now
-		if (usesdl2soft)
-			flags |= SDL_RENDERER_SOFTWARE;
-		else if (cv_vidwait.value)
-			flags |= SDL_RENDERER_PRESENTVSYNC;
-
-#ifdef _WIN32
-		SDL_SetHint(SDL_HINT_RENDER_DRIVER, "direct3d11");
-#else
-		SDL_SetHint(SDL_HINT_RENDER_DRIVER, "opengl");
-#endif
-
-		renderer = SDL_CreateRenderer(window, -1, flags);
-		if (renderer == NULL)
-		{
-			CONS_Printf(M_GetText("Couldn't create rendering context: %s\n"), SDL_GetError());
-			return SDL_FALSE;
-		}
-		SDL_RenderSetLogicalSize(renderer, BASEVIDWIDTH, BASEVIDHEIGHT);
-	}
-
-	return SDL_TRUE;
+	return Impl_CreateContext();
 }
 
 /*
@@ -2459,6 +2507,12 @@ static void Impl_SetVsync(void)
 #if SDL_VERSION_ATLEAST(2,0,18)
 	if (renderer)
 		SDL_RenderSetVSync(renderer, cv_vidwait.value);
+#endif
+#ifdef HWRENDER
+	if (!renderer && rendermode == render_opengl && sdlglcontext != NULL && SDL_GL_GetCurrentContext() == sdlglcontext)
+	{
+		SDL_GL_SetSwapInterval(cv_vidwait.value ? 1 : 0);
+	}
 #endif
 }
 #endif

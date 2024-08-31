@@ -26,6 +26,8 @@
 #include "hw_md2.h"
 #include "hw_clip.h"
 
+#include "r_opengl/r_opengl.h"
+
 #include "../i_video.h" // for rendermode == render_glide
 #include "../v_video.h"
 #include "../p_local.h"
@@ -4241,7 +4243,7 @@ static void HWR_SortVisSprites(void)
 		gr_vsprorder[i] = HWR_GetVisSprite(i);
 	}
 
-	qs22j(gr_vsprorder, gr_visspritecount, sizeof(gr_vissprite_t*), CompareVisSprites);
+	qsort(gr_vsprorder, gr_visspritecount, sizeof(gr_vissprite_t*), CompareVisSprites);
 }
 
 // A drawnode is something that points to a 3D floor, 3D side, or masked
@@ -4682,14 +4684,15 @@ static void HWR_AddPrecipitationSprites(void)
 {
 	//const fixed_t drawdist = cv_drawdist_precip.value * mapobjectscale;
 	fixed_t drawdist;
+	fixed_t precipscale = cv_mobjscaleprecip.value ? mapobjectscale : FRACUNIT;
 
 	INT32 xl, xh, yl, yh, bx, by;
 	precipmobj_t *th;
 	
 	if (current_bsp_culling_distance)
-		drawdist = min(current_bsp_culling_distance, (fixed_t)(cv_drawdist_precip.value) * mapobjectscale);
+		drawdist = min((fixed_t)current_bsp_culling_distance, (fixed_t)(cv_drawdist_precip.value) * precipscale);
 	else
-		drawdist = (fixed_t)(cv_drawdist_precip.value) * mapobjectscale;
+		drawdist = (fixed_t)(cv_drawdist_precip.value) * precipscale;
 
 	// No to infinite precipitation draw distance.
 	if (drawdist == 0)
@@ -5110,6 +5113,12 @@ void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 	// uncapped/interpolation
 	interpmobjstate_t interp = {0};
 
+	// okay... this is a hack, but weather isn't networked, so it should be ok
+	if (!P_PrecipThinker(thing))
+	{
+		return;
+	}
+
 	// do interpolation
 	if (R_UsingFrameInterpolation() && !paused && (!cv_grmaxinterpdist.value || dist < cv_grmaxinterpdist.value))
 	{
@@ -5203,16 +5212,6 @@ void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 	vis->gz = vis->gzt - FIXED_TO_FLOAT(spritecachedinfo[lumpoff].height);
 
 	vis->precip = true;
-	
-	// okay... this is a hack, but weather isn't networked, so it should be ok
-	if (!(thing->precipflags & PCF_THUNK))
-	{
-		if (thing->precipflags & PCF_RAIN)
-			P_RainThinker(thing);
-		else
-			P_SnowThinker(thing);
-		thing->precipflags |= PCF_THUNK;
-	}
 }
 
 static boolean drewsky = false;
@@ -5877,6 +5876,9 @@ void HWR_Shutdown(void)
 	HWR_FreeMipmapCache();
 	HWR_FreeTextureCache();
 	HWD.pfnFlushScreenTextures();
+#ifdef USE_FBO_OGL
+	GLFramebuffer_Disable();
+#endif
 }
 
 void HWR_RenderWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap)

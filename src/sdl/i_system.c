@@ -2670,8 +2670,8 @@ void I_GamepadRumble(INT32 device_id, UINT16 low_strength, UINT16 high_strength,
 {
 #if !(SDL_VERSION_ATLEAST(2,0,14))
 	(void)device_id;
-	(void)left_strength;
-	(void)right_strength;
+	(void)low_strength;
+	(void)high_strength;
 #else
 	I_Assert(device_id > 0); // Gamepad devices are always ID 1 or higher
 

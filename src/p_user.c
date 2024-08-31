@@ -499,44 +499,12 @@ void P_GivePlayerLives(player_t *player, INT32 numlives)
 // Transform into Super Sonic!
 void P_DoSuperTransformation(player_t *player, boolean giverings)
 {
+	(void)player;
+	(void)giverings;
+
 	return; // SRB2kart - this is not a thing we need
-	player->powers[pw_super] = 1;
-	if (!(mapheaderinfo[gamemap-1]->levelflags & LF_NOSSMUSIC) && P_IsLocalPlayer(player))
-	{
-		S_StopMusic();
-		S_ChangeMusicInternal("supers", true);
-	}
-
-	S_StartSound(NULL, sfx_supert); //let all players hear it -mattw_cfi
-
-	// Transformation animation
-	//P_SetPlayerMobjState(player->mo, S_PLAY_SUPERTRANS1);
-
-	player->mo->momx = player->mo->momy = player->mo->momz = 0;
-
-	if (giverings)
-	{
-		player->mo->health = 51;
-		player->health = player->mo->health;
-	}
-
-	// Just in case.
-	if (!(mapheaderinfo[gamemap-1]->levelflags & LF_NOSSMUSIC))
-	{
-		player->powers[pw_extralife] = 0;
-		player->powers[pw_invulnerability] = 0;
-		player->powers[pw_sneakers] = 0;
-	}
-
-	if (gametype != GT_COOP)
-	{
-		HU_SetCEchoFlags(0);
-		HU_SetCEchoDuration(5);
-		HU_DoCEcho(va("%s\\is now super.\\\\\\\\", player_names[player-players]));
-	}
-
-	P_PlayerFlagBurst(player, false);
 }
+
 // Adds to the player's score
 void P_AddPlayerScore(player_t *player, UINT32 amount)
 {
@@ -593,6 +561,7 @@ void P_PlayLivesJingle(player_t *player)
 void P_PlayRinglossSound(mobj_t *source, mobj_t *damager)
 {
 	sfxenum_t key = P_RandomKey(2);
+
 	if (cv_kartvoices.value)
 	{
 		if (cv_karthitemdialog.value && source != damager && damager && damager->player && P_IsLocalPlayer(damager->player))
@@ -815,17 +784,13 @@ void P_RestoreMusic(player_t *player)
 		if (wantedmus == 2 && cv_growmusic.value == 1)
 		{
 			S_ChangeMusicInternal("kgrow", true);
-			
-			if (cv_birdmusic.value)
-				S_SetRestoreMusicFadeInCvar(&cv_growmusicfade);
+			S_SetRestoreMusicFadeInCvar(&cv_growmusicfade);
 		}
 		// Item - Invincibility
 		else if (wantedmus == 1 && cv_supermusic.value == 1)
 		{
 			S_ChangeMusicInternal("kinvnc", true);
-			
-			if (cv_birdmusic.value)
-				S_SetRestoreMusicFadeInCvar(&cv_invincmusicfade);
+			S_SetRestoreMusicFadeInCvar(&cv_invincmusicfade);
 		}
 		else
 		{
@@ -842,13 +807,12 @@ void P_RestoreMusic(player_t *player)
 				else
 					position = mapmusposition;
 
-				S_ChangeMusicEx(mapmusname, mapmusflags, true, position, 0,
-						S_GetRestoreMusicFadeIn());
+				S_ChangeMusicEx(mapmusname, mapmusflags, true, position, 0, S_GetRestoreMusicFadeIn());
 				S_ClearRestoreMusicFadeInCvar();
 			}
 			else
 				S_ChangeMusicEx(mapmusname, mapmusflags, true, mapmusposition, 0, 0);
-			
+
 			mapmusresume = 0;
 		}
 	}
@@ -3982,6 +3946,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	if (lookbackdown)
 	{
 		P_MoveChaseCamera(player, thiscam, false);
+		R_ResetViewInterpolation(num + 1);
 		R_ResetViewInterpolation(num + 1);
 	}
 
