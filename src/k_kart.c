@@ -8227,39 +8227,36 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 	{
 		tic_t worktime = drawtime/(60*TICRATE);
 
-		if (worktime >= 100)
-		{
-			worktime = 99;
-			drawtime = (100*(60*TICRATE))-1;
-		}
-
-		if ((cv_timelimit.value && G_BattleGametype()) && (!players[consoleplayer].exiting && (leveltime > (timelimitintics + starttime + TICRATE/2)) && cv_overtime.value)) // i hate this so much
+		if ((G_BattleGametype() && cv_timelimit.value) && (!players[consoleplayer].exiting && (leveltime > (timelimitintics + starttime + TICRATE/2)) && cv_overtime.value)) // i hate this so much
 		{
 			V_DrawKartString(TX, TY+3, splitflags, va("OVERTIME"));
-			return;
 		}
+		else if (worktime < 100)
+		{
+			// minutes time      00 __ __
+			V_DrawKartString(TX,    TY+3, splitflags, va("%d", worktime/10));
+			V_DrawKartString(TX+12, TY+3, splitflags, va("%d", worktime%10));
 
-		// minutes time      00 __ __
-		V_DrawKartString(TX,    TY+3, splitflags, va("%d", worktime/10));
-		V_DrawKartString(TX+12, TY+3, splitflags, va("%d", worktime%10));
+			// apostrophe location     _'__ __
+			V_DrawKartString(TX+24, TY+3, splitflags, va("'"));
 
-		// apostrophe location     _'__ __
-		V_DrawKartString(TX+24, TY+3, splitflags, va("'"));
+			worktime = (drawtime/TICRATE % 60);
 
-		worktime = (drawtime/TICRATE % 60);
+			// seconds time       _ 00 __
+			V_DrawKartString(TX+36, TY+3, splitflags, va("%d", worktime/10));
+			V_DrawKartString(TX+48, TY+3, splitflags, va("%d", worktime%10));
 
-		// seconds time       _ 00 __
-		V_DrawKartString(TX+36, TY+3, splitflags, va("%d", worktime/10));
-		V_DrawKartString(TX+48, TY+3, splitflags, va("%d", worktime%10));
+			// quotation mark location    _ __"__
+			V_DrawKartString(TX+60, TY+3, splitflags, va("\""));
 
-		// quotation mark location    _ __"__
-		V_DrawKartString(TX+60, TY+3, splitflags, va("\""));
+			worktime = G_TicsToCentiseconds(drawtime);
 
-		worktime = G_TicsToCentiseconds(drawtime);
-
-		// tics               _ __ 00
-		V_DrawKartString(TX+72, TY+3, splitflags, va("%d", worktime/10));
-		V_DrawKartString(TX+84, TY+3, splitflags, va("%d", worktime%10));
+			// tics               _ __ 00
+			V_DrawKartString(TX+72, TY+3, splitflags, va("%d", worktime/10));
+			V_DrawKartString(TX+84, TY+3, splitflags, va("%d", worktime%10));
+		}
+		else if ((drawtime/TICRATE) & 1)
+			V_DrawKartString(TX, TY+3, splitflags, va("99'59\"99"));
 	}
 
 	if (emblemmap && (modeattacking || (mode == 1)) && !demo.playback) // emblem time!
