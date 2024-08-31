@@ -3044,9 +3044,6 @@ static void CV_PlayerCam1_OnChange(void)
 	if (gamestate != GS_LEVEL)
 		return;
 
-	if (netgame)
-		return;
-
 	if (!playeringame[displayplayers[0]] || players[displayplayers[0]].spectator)
 		return;
 
@@ -3061,9 +3058,6 @@ static void CV_PlayerCam1_OnChange(void)
 static void CV_PlayerCam2_OnChange(void)
 {
 	if (gamestate != GS_LEVEL)
-		return;
-
-	if (netgame)
 		return;
 
 	if (!playeringame[displayplayers[1]] || players[displayplayers[1]].spectator)
@@ -3082,9 +3076,6 @@ static void CV_PlayerCam3_OnChange(void)
 	if (gamestate != GS_LEVEL)
 		return;
 
-	if (netgame)
-		return;
-
 	if (!playeringame[displayplayers[2]] || players[displayplayers[2]].spectator)
 		return;
 
@@ -3099,9 +3090,6 @@ static void CV_PlayerCam3_OnChange(void)
 static void CV_PlayerCam4_OnChange(void)
 {
 	if (gamestate != GS_LEVEL)
-		return;
-
-	if (netgame)
 		return;
 
 	if (!playeringame[displayplayers[3]] || players[displayplayers[3]].spectator)
