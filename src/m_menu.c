@@ -4220,6 +4220,25 @@ boolean M_DemoResponder(event_t *ev)
 	return eatinput;
 }
 
+// mhhm yes
+static boolean ShouldDrawMenuBG(void)
+{
+	if (WipeInAction) // dont ever draw stuff in wipes
+		return false;
+
+	if (currentMenu == &PlaybackMenuDef) // Replay playback has its own background
+		return false;
+
+	if (forceshowhud)
+		return false;
+
+	// camera options stuff, only do when in level
+	if (gamestate == GS_LEVEL && !paused && (currentMenu == &OP_CamOptionsDef || currentMenu == &OP_Player1CamOptionsDef || currentMenu == &OP_Player2CamOptionsDef || currentMenu == &OP_Player3CamOptionsDef || currentMenu == &OP_Player4CamOptionsDef))
+		return false;
+
+	return true;
+}
+
 //
 // M_Drawer
 // Called after the view has been rendered,
@@ -4230,12 +4249,12 @@ void M_Drawer(void)
 	if (currentMenu == &MessageDef)
 		menuactive = true;
 
-	forceshowhud = gamestate == GS_LEVEL && menuactive && (currentMenu == &OP_SaturnHudDef || currentMenu == &OP_HudOffsetDef || currentMenu == &OP_NametagDef || currentMenu == &OP_DriftGaugeDef); // holy fuick
+	forceshowhud = (gamestate == GS_LEVEL && menuactive && (currentMenu == &OP_SaturnHudDef || currentMenu == &OP_HudOffsetDef || currentMenu == &OP_NametagDef || currentMenu == &OP_DriftGaugeDef)); // holy fuick
 
 	if (menuactive)
 	{
 		// now that's more readable with a faded background (yeah like Quake...)
-		if (!WipeInAction && currentMenu != &PlaybackMenuDef && !forceshowhud) // Replay playback has its own background
+		if (ShouldDrawMenuBG())
 			V_DrawFadeScreen(0xFF00, 16);
 
 		if (currentMenu->drawroutine)
