@@ -3073,6 +3073,9 @@ consvar_t cv_tiltsmoothing = {"tiltsmoothing", "32", CV_SAVE, CV_Natural, NULL, 
 
 consvar_t cv_actionmovie = {"actionmovie", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+static CV_PossibleValue_t lookbackmom_cons_t[] = {{0, "Off"}, {1, "On"}, {2, "Extra Momentum"}, {0, NULL}};
+consvar_t cv_lookbackmom = {"cameralookbackmom", "Off", CV_SAVE, lookbackmom_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 fixed_t t_cam_dist = -42;
 fixed_t t_cam_height = -42;
 fixed_t t_cam_rotate = -42;
@@ -3891,10 +3894,11 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 
 		// when looking back, camera's momentum
 		// should inherit the momentum of the player
-		if (lookback && lookbackdelay[num])
+		// if value is 2, add extra
+		if (cv_lookbackmom.value && lookback && lookbackdelay[num])
 		{
-			thiscam->momx += mo->momx;
-			thiscam->momy += mo->momy;
+			thiscam->momx += cv_lookbackmom.value*mo->momx;
+			thiscam->momy += cv_lookbackmom.value*mo->momy;
 		}
 
 		thiscam->momz = FixedMul(z - thiscam->z, camspeed/2);
