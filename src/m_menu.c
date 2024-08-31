@@ -2144,36 +2144,39 @@ static menuitem_t OP_SaturnHudMenu[] =
 	{IT_HEADER, NULL, "Saturn Hud Options", NULL, 0},
 
 	{IT_STRING | IT_CVAR, NULL, "Speedometer Style",		 			&cv_newspeedometer, 	 	 10},
-	{IT_STRING | IT_CVAR, NULL, "Input Display outside of RA",		 	&cv_showinput, 	 			 15},
+	{IT_STRING | IT_CVAR, NULL, "Battle Speedometer",		 			&cv_battlespeedo, 	 	 	 15},
 
-	{IT_STRING | IT_CVAR, NULL, "Show Lap Times",		 				&cv_showlaptimes, 	 		 20},
+	{IT_STRING | IT_CVAR, NULL, "Input Display outside of RA",		 	&cv_showinput, 	 			 20},
 
-	{IT_STRING | IT_CVAR, NULL, "Stat Display",		 					&cv_showstats, 	 			 25},
+	{IT_STRING | IT_CVAR, NULL, "Show Lap Times",		 				&cv_showlaptimes, 	 		 25},
 
-	{IT_STRING | IT_CVAR, NULL, "Higher Resolution Portraits",			&cv_highresportrait, 	 	 30},
+	{IT_STRING | IT_CVAR, NULL, "Stat Display",		 					&cv_showstats, 	 			 30},
 
-	{IT_STRING | IT_CVAR, NULL, "Colourized HUD",						&cv_colorizedhud,		 	 35},
-	{IT_STRING | IT_CVAR, NULL, "Colourized Itembox",					&cv_colorizeditembox,		 40},
-	{IT_STRING | IT_CVAR, NULL, "Colourized HUD Color",					&cv_colorizedhudcolor,		 45},
+	{IT_STRING | IT_CVAR, NULL, "Higher Resolution Portraits",			&cv_highresportrait, 	 	 35},
 
-	{IT_STRING | IT_CVAR, NULL, "Show Lap Emblem",		 				&cv_showlapemblem, 	 		 55},
-	{IT_STRING | IT_CVAR, NULL, "Show Cecho Messages", 					&cv_cechotoggle, 			 60},
+	{IT_STRING | IT_CVAR, NULL, "Colourized HUD",						&cv_colorizedhud,		 	 40},
+	{IT_STRING | IT_CVAR, NULL, "Colourized Itembox",					&cv_colorizeditembox,		 45},
+	{IT_STRING | IT_CVAR, NULL, "Colourized HUD Color",					&cv_colorizedhudcolor,		 50},
 
-	{IT_STRING | IT_CVAR, NULL,	"Show Names on Minimap",   				&cv_showminimapnames, 		 65},
-	{IT_STRING | IT_CVAR, NULL,	"Small Minimap Players",   				&cv_minihead, 				 70},
+	{IT_STRING | IT_CVAR, NULL, "Show Lap Emblem",		 				&cv_showlapemblem, 	 		 60},
+	{IT_STRING | IT_CVAR, NULL, "Show Cecho Messages", 					&cv_cechotoggle, 			 65},
 
-	{IT_STRING | IT_CVAR, NULL, "Uncapped HUD", 						&cv_uncappedhud, 		     80},
+	{IT_STRING | IT_CVAR, NULL,	"Show Names on Minimap",   				&cv_showminimapnames, 		 70},
+	{IT_STRING | IT_CVAR, NULL,	"Small Minimap Players",   				&cv_minihead, 				 75},
 
-	{IT_STRING | IT_SUBMENU, NULL, "Nametags...", 						&OP_NametagDef, 		   	90},
-	{IT_STRING | IT_SUBMENU, NULL, "Driftgauge...", 					&OP_DriftGaugeDef, 		   	95},
+	{IT_STRING | IT_CVAR, NULL, "Uncapped HUD", 						&cv_uncappedhud, 		     85},
 
-	{IT_SUBMENU|IT_STRING,	NULL,	"Hud Offsets...", 					&OP_HudOffsetDef,		   	105},
+	{IT_STRING | IT_SUBMENU, NULL, "Nametags...", 						&OP_NametagDef, 		   	 95},
+	{IT_STRING | IT_SUBMENU, NULL, "Driftgauge...", 					&OP_DriftGaugeDef, 		   	100},
+
+	{IT_SUBMENU|IT_STRING,	NULL,	"Hud Offsets...", 					&OP_HudOffsetDef,		   	110},
 };
 
 static const char* OP_SaturnHudTooltips[] =
 {
 	NULL,
 	"Change what style the speedometer is.",
+	"Draw the Speedometer in Battle.",
 	"Displays the input display outside of Record Attack. Also adjusts the\nposition scale to match.",
 	"Enable the stat display.",
 	"Show Lap Time when doing a Lap on the Timer.",
@@ -2195,6 +2198,7 @@ enum
 {
 	sh_header,
 	sh_speedometer,
+	sh_battlespeedo,
 	sh_input,
 	sh_laptime,
 	sh_statdisplay,

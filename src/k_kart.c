@@ -8924,6 +8924,14 @@ static void K_drawKartBumpersOrKarma(void)
 	fy = info.y;
 	fflags = info.flags;
 
+	if (cv_battlespeedo.value)
+	{
+		if ((cv_newspeedometer.value == 2 && xtra_speedo) || (cv_newspeedometer.value == 3 && achi_speedo) || (cv_newspeedometer.value == 5 && xtra_speedo3))
+			fy -= -10;
+		else
+			fy -= -14;
+	}
+
 	if (splitscreen > 1)
 	{
 		if (stplyr->kartstuff[k_bumper] <= 0)
