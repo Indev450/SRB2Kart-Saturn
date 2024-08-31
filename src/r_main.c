@@ -1959,6 +1959,8 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_tiltsmoothing);
 	CV_RegisterVar(&cv_actionmovie);
 
+	CV_RegisterVar(&cv_lookbackmom);
+
 	CV_RegisterVar(&cv_driftsparkpulse);
 	CV_RegisterVar(&cv_gravstretch);
 	CV_RegisterVar(&cv_sloperoll);
