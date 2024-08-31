@@ -324,6 +324,10 @@ static void M_AssignJoystick(INT32 choice);
 static void M_ChangeControl(INT32 choice);
 static void M_ResetControls(INT32 choice);
 
+//camera options menu
+menu_t OP_CamOptionsDef;
+menu_t OP_Player1CamOptionsDef, OP_Player2CamOptionsDef, OP_Player3CamOptionsDef, OP_Player4CamOptionsDef;
+
 // Video & Sound
 menu_t OP_VideoOptionsDef, OP_VideoModeDef, OP_ExpOptionsDef, OP_ColorOptionsDef;
 #ifdef HWRENDER
@@ -1123,23 +1127,24 @@ static menuitem_t OP_MainMenu[] =
 {
 	{IT_SUBMENU|IT_STRING,		NULL, "Control Setup...",		&OP_ControlsDef,			  0},
 
-	{IT_SUBMENU|IT_STRING,		NULL, "Video Options...",		&OP_VideoOptionsDef,		 20},
-	{IT_SUBMENU|IT_STRING,		NULL, "Sound Options...",		&OP_SoundOptionsDef,		 30},
+	{IT_SUBMENU|IT_STRING,		NULL, "Video Options...",		&OP_VideoOptionsDef,		 15},
+	{IT_SUBMENU|IT_STRING,		NULL, "Sound Options...",		&OP_SoundOptionsDef,		 25},
 
-	{IT_SUBMENU|IT_STRING,		NULL, "HUD Options...",			&OP_HUDOptionsDef,			 50},
-	{IT_SUBMENU|IT_STRING,		NULL, "Gameplay Options...",	&OP_GameOptionsDef,			 60},
-	{IT_SUBMENU|IT_STRING,		NULL, "Server Options...",		&OP_ServerOptionsDef,		 70},
+	{IT_SUBMENU|IT_STRING,		NULL, "HUD Options...",			&OP_HUDOptionsDef,			 45},
+	{IT_SUBMENU|IT_STRING,		NULL, "Camera Options...",		&OP_CamOptionsDef,			 55},
+	{IT_SUBMENU|IT_STRING,		NULL, "Gameplay Options...",	&OP_GameOptionsDef,			 65},
+	{IT_SUBMENU|IT_STRING,		NULL, "Server Options...",		&OP_ServerOptionsDef,		 75},
 
-	{IT_SUBMENU|IT_STRING,		NULL, "Data Options...",		&OP_DataOptionsDef,			 90},
-	{IT_CALL|IT_STRING, 		NULL, "Custom Options...",	   	M_CustomCvarMenu,   		100},
+	{IT_SUBMENU|IT_STRING,		NULL, "Data Options...",		&OP_DataOptionsDef,			 95},
+	{IT_CALL|IT_STRING, 		NULL, "Custom Options...",	   	M_CustomCvarMenu,   		105},
 
-	{IT_CALL|IT_STRING,			NULL, "Tricks & Secrets (F1)",	M_Manual,					110},
-	{IT_CALL|IT_STRING,			NULL, "Play Credits",			M_Credits,					120},
+	{IT_CALL|IT_STRING,			NULL, "Tricks & Secrets (F1)",	M_Manual,					115},
+	{IT_CALL|IT_STRING,			NULL, "Play Credits",			M_Credits,					125},
 
-	{IT_SUBMENU|IT_STRING,		NULL, "Saturn Options...",		&OP_SaturnDef,				140},
+	{IT_SUBMENU|IT_STRING,		NULL, "Saturn Options...",		&OP_SaturnDef,				145},
 
-	{IT_SUBMENU|IT_STRING,		NULL, "Bird",	&OP_BirdDef,								150},
-	{IT_CALL|IT_STRING,			NULL, "Local Skin Options...",	M_LocalSkinMenu,			160},
+	{IT_SUBMENU|IT_STRING,		NULL, "Bird",					&OP_BirdDef,				155},
+	{IT_CALL|IT_STRING,			NULL, "Local Skin Options...",	M_LocalSkinMenu,			165},
 };
 
 static menuitem_t OP_ControlsMenu[] =
@@ -1366,17 +1371,16 @@ static menuitem_t OP_VideoOptionsMenu[] =
 
 	{IT_STRING | IT_CVAR,	NULL,					"Draw Distance",		&cv_drawdist,			  65},
 	{IT_STRING | IT_CVAR,	NULL,					"Weather Draw Distance",&cv_drawdist_precip,	  75},
-	{IT_STRING | IT_CVAR | IT_CV_BIGFLOAT,	NULL,	"Field of View",		&cv_fov,				  95},
 
-	{IT_STRING | IT_CVAR,	NULL,	"Show FPS",				&cv_ticrate,			 105},
-	{IT_STRING | IT_CVAR,	NULL,	"Vertical Sync",		&cv_vidwait,			 115},
-	{IT_STRING | IT_CVAR,   NULL,   "FPS Cap",              &cv_fpscap,              125},
-	{IT_STRING | IT_CVAR,   NULL,   "Drift spark pulse size",&cv_driftsparkpulse,    135},
-	{IT_STRING | IT_CVAR, 	NULL, 	"VHS effect", 			&cv_vhseffect, 		 	 145},
+	{IT_STRING | IT_CVAR,	NULL,	"Show FPS",				&cv_ticrate,			 95},
+	{IT_STRING | IT_CVAR,	NULL,	"Vertical Sync",		&cv_vidwait,			 105},
+	{IT_STRING | IT_CVAR,   NULL,   "FPS Cap",              &cv_fpscap,              115},
+	{IT_STRING | IT_CVAR,   NULL,   "Drift spark pulse size",&cv_driftsparkpulse,    125},
+	{IT_STRING | IT_CVAR, 	NULL, 	"VHS effect", 			&cv_vhseffect, 		 	 135},
 #ifdef HWRENDER
-	{IT_SUBMENU|IT_STRING,	NULL,	"OpenGL Options...",	&OP_OpenGLOptionsDef,	 155},
+	{IT_SUBMENU|IT_STRING,	NULL,	"OpenGL Options...",	&OP_OpenGLOptionsDef,	 145},
 #endif
-	{IT_SUBMENU|IT_STRING,  NULL,   "Advanced Options...", &OP_ExpOptionsDef,    165},
+	{IT_SUBMENU|IT_STRING,  NULL,   "Advanced Options...", &OP_ExpOptionsDef,    155},
 
 };
 
@@ -1391,7 +1395,6 @@ static const char* OP_VideoTooltips[] =
 	"Advanced color settings of the game.",
 	"How far away objects are drawn.",
 	"How far away weather is drawn.",
-	"Player field of view.",
 	"Show current game framerate and select the style.",
 	"Sync game framerate to refresh rate of monitor.",
 	"Set manual framerate cap.",
@@ -1415,7 +1418,6 @@ enum
 	op_video_color,
 	op_video_dd,
 	op_video_wdd,
-	op_video_fov,
 	op_video_fps,
 	op_video_vsync,
 	op_video_fpscap,
@@ -1783,7 +1785,7 @@ static menuitem_t OP_HUDOptionsMenu[] =
 	{IT_STRING | IT_CVAR | IT_CV_SLIDER,
 	                      NULL, "HUD Visibility",			&cv_translucenthud,		 20},				  
 
-	{IT_STRING | IT_SUBMENU, NULL, "Online HUD options...",&OP_ChatOptionsDef, 	 	 35},
+	{IT_STRING | IT_SUBMENU, NULL, "Online HUD options...", &OP_ChatOptionsDef, 	 	 35},
 	{IT_STRING | IT_CVAR, NULL, "Background Glass",			&cons_backcolor,		 45},
 
 	{IT_STRING | IT_CVAR | IT_CV_SLIDER,
@@ -1805,6 +1807,95 @@ static menuitem_t OP_HUDOptionsMenu[] =
 	{IT_STRING | IT_CVAR, NULL,	"2D character select",		&cv_skinselectmenu,		165},
 };
 
+static menuitem_t OP_CamOptionsMenu[] =
+{
+	{IT_HEADER, NULL, "Camera Options", NULL, 0},
+
+	{IT_STRING | IT_CVAR | IT_CV_BIGFLOAT,	NULL,	"Field of View",&cv_fov,				  	 30},
+
+	{IT_STRING | IT_CVAR, 		NULL, "Lagless Camera",   			&cv_laglesscam, 			 50},
+	{IT_STRING | IT_CVAR, 		NULL, "Camera Lookback Momentum",   &cv_lookbackmom, 			 60},
+
+	{IT_STRING | IT_SUBMENU,	NULL, "Player 1 Camera options...",	&OP_Player1CamOptionsDef,	 80},
+	{IT_STRING | IT_SUBMENU,	NULL, "Player 2 Camera options...",	&OP_Player2CamOptionsDef,	 90},
+	{IT_STRING | IT_SUBMENU,	NULL, "Player 3 Camera options...",	&OP_Player3CamOptionsDef,	 100},
+	{IT_STRING | IT_SUBMENU,	NULL, "Player 4 Camera options...",	&OP_Player4CamOptionsDef,	 110},
+};
+
+static const char* OP_CamOptionsTooltips[] =
+{
+	NULL,
+	"Player field of view.",
+	"Removes Camera Lag in netgames\nMay cause Camera stutters in poor net conditions.",
+	"Should looking back inherit the Players Momentum?\nEither inherit Player Momentum or double of it\nmay make looking back while boosting or going in high speed less jarring",
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+};
+
+static menuitem_t OP_Player1CamOptionsMenu[] =
+{
+	{IT_HEADER, NULL, "Player 1 Camera Options", NULL, 0},
+
+	{IT_STRING | IT_CVAR, NULL,						"Flipcam",   				&cv_flipcam,		30},
+	{IT_STRING | IT_CVAR | IT_CV_BIGFLOAT, NULL,	"Camera Distance",   		&cv_cam_dist,		40},
+	{IT_STRING | IT_CVAR | IT_CV_BIGFLOAT, NULL,	"Camera Height",   			&cv_cam_height,		50},
+	{IT_STRING | IT_CVAR, NULL,						"Camera Speed",   			&cv_cam_speed,		60},
+	{IT_STRING | IT_CVAR, NULL,						"Camera Rotation Speed",   	&cv_cam_rotspeed,	70},
+
+	{IT_STRING | IT_CVAR, NULL,						"Third Person Camera",   	&cv_chasecam,		85},
+};
+
+static menuitem_t OP_Player2CamOptionsMenu[] =
+{
+	{IT_HEADER, NULL, "Player 2 Camera Options", NULL, 0},
+
+	{IT_STRING | IT_CVAR, NULL,						"Flipcam",   				&cv_flipcam2,		30},
+	{IT_STRING | IT_CVAR | IT_CV_BIGFLOAT, NULL,	"Camera Distance",   		&cv_cam2_dist,		40},
+	{IT_STRING | IT_CVAR | IT_CV_BIGFLOAT, NULL,	"Camera Height",   			&cv_cam2_height,	50},
+	{IT_STRING | IT_CVAR, NULL,						"Camera Speed",   			&cv_cam2_speed,		60},
+	{IT_STRING | IT_CVAR, NULL,						"Camera Rotation Speed",   	&cv_cam2_rotspeed,	70},
+
+	{IT_STRING | IT_CVAR, NULL,						"Third Person Camera",   	&cv_chasecam2,		85},
+};
+
+static menuitem_t OP_Player3CamOptionsMenu[] =
+{
+	{IT_HEADER, NULL, "Player 3 Camera Options", NULL, 0},
+
+	{IT_STRING | IT_CVAR, NULL,						"Flipcam",   				&cv_flipcam3,		30},
+	{IT_STRING | IT_CVAR | IT_CV_BIGFLOAT, NULL,	"Camera Distance",   		&cv_cam3_dist,		40},
+	{IT_STRING | IT_CVAR | IT_CV_BIGFLOAT, NULL,	"Camera Height",   			&cv_cam3_height,	50},
+	{IT_STRING | IT_CVAR, NULL,						"Camera Speed",   			&cv_cam3_speed,		60},
+	{IT_STRING | IT_CVAR, NULL,						"Camera Rotation Speed",   	&cv_cam3_rotspeed,	70},
+
+	{IT_STRING | IT_CVAR, NULL,						"Third Person Camera",   	&cv_chasecam3,		85},
+};
+
+static menuitem_t OP_Player4CamOptionsMenu[] =
+{
+	{IT_HEADER, NULL, "Player 4 Camera Options", NULL, 0},
+
+	{IT_STRING | IT_CVAR, NULL,						"Flipcam",   				&cv_flipcam4,		30},
+	{IT_STRING | IT_CVAR | IT_CV_BIGFLOAT, NULL,	"Camera Distance",   		&cv_cam4_dist,		40},
+	{IT_STRING | IT_CVAR | IT_CV_BIGFLOAT, NULL,	"Camera Height",   			&cv_cam4_height,	50},
+	{IT_STRING | IT_CVAR, NULL,						"Camera Speed",   			&cv_cam4_speed,		60},
+	{IT_STRING | IT_CVAR, NULL,						"Camera Rotation Speed",   	&cv_cam4_rotspeed,	70},
+
+	{IT_STRING | IT_CVAR, NULL,						"Third Person Camera",   	&cv_chasecam4,		85},
+};
+
+static const char* OP_PlayerCamOptionsTooltips[] =
+{
+	NULL,
+	"Should the Camera flip on gravity flipped sections?.",
+	"Camera distance relative to the Player.",
+	"Height of the Camera",
+	"Speed of the Camera",
+	"Speed of the Camera rotation",
+	"Toggle between Third or First Person camera",
+};
 
 // Ok it's still called chatoptions but we'll put ping display in here to be clean
 static menuitem_t OP_ChatOptionsMenu[] =
@@ -2040,18 +2131,16 @@ static menuitem_t OP_SaturnMenu[] =
 
 	{IT_STRING | IT_CVAR, NULL, "Skin Select Spinning Speed",		 	&cv_skinselectspin, 	 	 20},
 
-	{IT_STRING | IT_CVAR, NULL,	"Lagless Camera",   					&cv_laglesscam, 			 30},
+	{IT_STRING | IT_CVAR, NULL, "Show Localskin Menus", 				&cv_showlocalskinmenus, 	 30},
+	{IT_STRING | IT_CVAR, NULL, "Uppercase Menu",						&cv_menucaps,   		     35},
 
-	{IT_STRING | IT_CVAR, NULL, "Show Localskin Menus", 				&cv_showlocalskinmenus, 	40},
-	{IT_STRING | IT_CVAR, NULL, "Uppercase Menu",						&cv_menucaps,   		    45},
+	{IT_STRING | IT_CVAR, NULL, "Keyboard Layout",						&cv_keyboardlayout,   	   	 45},
 
-	{IT_STRING | IT_CVAR, NULL, "Keyboard Layout",						&cv_keyboardlayout,   	   	55},
+	{IT_STRING | IT_CVAR, NULL, "Less Midnight Channel Flicker", 		&cv_lessflicker, 		   	 55},
 
-	{IT_STRING | IT_CVAR, NULL, "Less Midnight Channel Flicker", 		&cv_lessflicker, 		   	65},
-
-	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Hud...", 					&OP_SaturnHudDef,		   	75},
-	{IT_SUBMENU|IT_STRING,	NULL,	"Sprite Distortion...", 			&OP_PlayerDistortDef,	   	80},
-	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Credits", 					&OP_SaturnCreditsDef,	   	85}, // uwu
+	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Hud...", 					&OP_SaturnHudDef,		   	 65},
+	{IT_SUBMENU|IT_STRING,	NULL,	"Sprite Distortion...", 			&OP_PlayerDistortDef,	   	 70},
+	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Credits", 					&OP_SaturnCreditsDef,	   	 75}, // uwu
 };
 
 static const char* OP_SaturnTooltips[] =
@@ -2059,7 +2148,6 @@ static const char* OP_SaturnTooltips[] =
 	NULL,
 	"How long can the game wait before it kicks you out from the server\nconnecting screen.",
 	"How much speen do you want?",
-	"Makes the Camera Lagless in netgames.",
 	"Show Localskin Menus.",
 	"Force menu to only use uppercase.",
 	"Use your desired Keyboard Layout for Text Input\nthis is either the Default, Native or Azerty\nNative does not affect Gameplay only Text!",
@@ -2074,7 +2162,6 @@ enum
 	sm_header,
 	sm_waittime,
 	sm_skinselspeed,
-	sm_laglesscam,
 	sm_showlocalskin,
 	op_uppercase_menu,
 	sm_nativkey,
@@ -2933,6 +3020,11 @@ menu_t OP_HUDOptionsDef =
 	{NULL}
 };
 
+menu_t OP_CamOptionsDef = DEFAULTMENUSTYLE(NULL, OP_CamOptionsMenu, &OP_MainDef, 30, 30);
+menu_t OP_Player1CamOptionsDef = DEFAULTMENUSTYLE(NULL, OP_Player1CamOptionsMenu, &OP_CamOptionsDef, 30, 30);
+menu_t OP_Player2CamOptionsDef = DEFAULTMENUSTYLE(NULL, OP_Player2CamOptionsMenu, &OP_CamOptionsDef, 30, 30);
+menu_t OP_Player3CamOptionsDef = DEFAULTMENUSTYLE(NULL, OP_Player3CamOptionsMenu, &OP_CamOptionsDef, 30, 30);
+menu_t OP_Player4CamOptionsDef = DEFAULTMENUSTYLE(NULL, OP_Player4CamOptionsMenu, &OP_CamOptionsDef, 30, 30);
 
 menu_t OP_ChatOptionsDef = DEFAULTMENUSTYLE("M_HUD", OP_ChatOptionsMenu, &OP_HUDOptionsDef, 30, 30);
 
@@ -5224,6 +5316,26 @@ static void M_DrawGenericMenu(void)
 		if (!(OP_DriftGaugeTooltips[itemOn] == NULL))
 		{
 			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_DriftGaugeTooltips[itemOn], coolalphatimer);
+			if (coolalphatimer > 0 && interpTimerHackAllow)
+				coolalphatimer--;
+		}
+	}
+
+	if (currentMenu == &OP_CamOptionsDef)
+	{
+		if (!(OP_CamOptionsTooltips[itemOn] == NULL))
+		{
+			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_CamOptionsTooltips[itemOn], coolalphatimer);
+			if (coolalphatimer > 0 && interpTimerHackAllow)
+				coolalphatimer--;
+		}
+	}
+
+	if (currentMenu == &OP_Player1CamOptionsDef || currentMenu == &OP_Player2CamOptionsDef || currentMenu == &OP_Player3CamOptionsDef || currentMenu == &OP_Player4CamOptionsDef)
+	{
+		if (!(OP_PlayerCamOptionsTooltips[itemOn] == NULL))
+		{
+			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_PlayerCamOptionsTooltips[itemOn], coolalphatimer);
 			if (coolalphatimer > 0 && interpTimerHackAllow)
 				coolalphatimer--;
 		}
@@ -8020,11 +8132,11 @@ static void M_Options(INT32 choice)
 	(void)choice;
 
 	// if the player is not admin or server, disable gameplay & server options
-	OP_MainMenu[4].status = OP_MainMenu[5].status = (Playing() && !(server || IsPlayerAdmin(consoleplayer))) ? (IT_GRAYEDOUT) : (IT_STRING|IT_SUBMENU);
+	OP_MainMenu[5].status = OP_MainMenu[6].status = (Playing() && !(server || IsPlayerAdmin(consoleplayer))) ? (IT_GRAYEDOUT) : (IT_STRING|IT_SUBMENU);
 
-	OP_MainMenu[9].status = (Playing()) ? (IT_GRAYEDOUT) : (IT_STRING|IT_CALL); // Play credits
+	OP_MainMenu[10].status = (Playing()) ? (IT_GRAYEDOUT) : (IT_STRING|IT_CALL); // Play credits
 	
-	OP_MainMenu[12].status = (!cv_showlocalskinmenus.value) ? (IT_DISABLED) : (IT_CALL|IT_STRING);
+	OP_MainMenu[13].status = (!cv_showlocalskinmenus.value) ? (IT_DISABLED) : (IT_CALL|IT_STRING);
 
 #ifdef HAVE_DISCORDRPC
 	OP_DataOptionsMenu[4].status = (Playing()) ? (IT_GRAYEDOUT) : (IT_STRING|IT_SUBMENU); // Erase data
