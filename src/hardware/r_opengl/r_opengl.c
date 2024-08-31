@@ -31,6 +31,8 @@
 #include "../hw_main.h"
 #include "../hw_clip.h"
 
+#include "../../i_video.h"
+
 // Eeeeh not sure is this right way, but it works < sry :c < sry again it had to go :c
 
 extern fixed_t fovtan; // also extremely bad, I'm just too lazy!!!
@@ -673,6 +675,9 @@ typedef enum
 	gluniform_leveltime,
 
 	gluniform_scr_resolution,
+
+	// supersampling crap
+	gluniform_inv_supersamplefactor,
 	
 	gluniform_max,
 } gluniform_t;
@@ -1984,6 +1989,9 @@ static boolean Shader_CompileProgram(gl_shader_t *shader, GLint i)
 
 	shader->uniforms[gluniform_scr_resolution] = GETUNI("scr_resolution");
 
+	// supersampling crap
+	shader->uniforms[gluniform_inv_supersamplefactor] = GETUNI("inv_supersamplefactor");
+
 	// misc.
 	shader->uniforms[gluniform_leveltime] = GETUNI("leveltime");
 #undef GETUNI
@@ -1993,6 +2001,10 @@ static boolean Shader_CompileProgram(gl_shader_t *shader, GLint i)
 	if (uniform != -1) \
 		function (uniform, a);
 
+#define UNIFORM_2(uniform, a, b, function) \
+	if (uniform != -1) \
+		function (uniform, a, b);
+
 	pglUseProgram(shader->program);
 
 	// texture unit numbers for the samplers used for palette rendering
@@ -2000,9 +2012,13 @@ static boolean Shader_CompileProgram(gl_shader_t *shader, GLint i)
 	UNIFORM_1(shader->uniforms[gluniform_palette_lookup_tex], 1, pglUniform1i);
 	UNIFORM_1(shader->uniforms[gluniform_lighttable_tex], 2, pglUniform1i);
 
+	// supersampling crap
+	UNIFORM_2(shader->uniforms[gluniform_inv_supersamplefactor], InvSupersampleFactorX, InvSupersampleFactorY, pglUniform2f);
+
 	// restore gl shader state
 	pglUseProgram(gl_shaderstate.program);
 #undef UNIFORM_1
+#undef UNIFORM_2
 
 	return true;
 }

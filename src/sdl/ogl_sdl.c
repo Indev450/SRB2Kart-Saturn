@@ -220,6 +220,11 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 		GLFramebuffer_Enable();
 	else
 		GLFramebuffer_Disable();
+
+	if (RenderToFramebuffer && HWR_UseShader())
+	{
+		HWR_CompileShaders();
+	}
 #endif
 
 	HWR_Startup();

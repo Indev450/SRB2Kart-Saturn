@@ -48,6 +48,7 @@
 
 #define GLSL_DOWNSAMPLE_FRAGMENT_SHADER \
 	"uniform sampler2D tex;\n" \
+	"uniform vec2 inv_supersamplefactor;\n" \
 	"#ifdef SRB2_PALETTE_RENDERING\n" \
 	"uniform sampler3D palette_lookup_tex;\n" \
 	"uniform sampler1D palette_tex;\n" \
@@ -55,10 +56,10 @@
 	"void main(void) {\n" \
 		"vec2 uv = gl_TexCoord[0].st;\n" \
 		"vec2 texel_size = 1.0 / textureSize(tex, 0);\n" \
-		"vec2 offset1 = vec2(texel_size.x * 0.5, texel_size.y * 0.5);\n" \
-		"vec2 offset2 = vec2(-texel_size.x * 0.5, texel_size.y * 0.5);\n" \
-		"vec2 offset3 = vec2(texel_size.x * 0.5, -texel_size.y * 0.5);\n" \
-		"vec2 offset4 = vec2(-texel_size.x * 0.5, -texel_size.y * 0.5);\n" \
+		"vec2 offset1 = vec2(texel_size.x * inv_supersamplefactor.x, texel_size.y * inv_supersamplefactor.y);\n" \
+		"vec2 offset2 = vec2(-texel_size.x * inv_supersamplefactor.x, texel_size.y * inv_supersamplefactor.y);\n" \
+		"vec2 offset3 = vec2(texel_size.x * inv_supersamplefactor.x, -texel_size.y * inv_supersamplefactor.y);\n" \
+		"vec2 offset4 = vec2(-texel_size.x * inv_supersamplefactor.x, -texel_size.y * inv_supersamplefactor.y);\n" \
 		"vec4 color1 = texture2D(tex, uv + offset1);\n" \
 		"vec4 color2 = texture2D(tex, uv + offset2);\n" \
 		"vec4 color3 = texture2D(tex, uv + offset3);\n" \
@@ -127,6 +128,7 @@
 		GLSL_DOOM_COLORMAP_NODITHER \
 		"#endif\n" \
 	"}\n"
+
 // lighting cap adjustment:
 // first num (155.0), increase to make it start to go dark sooner
 // second num (0.26), increase to make it go dark faster

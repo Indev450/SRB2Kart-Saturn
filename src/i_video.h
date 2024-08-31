@@ -144,6 +144,9 @@ boolean I_UseNativeKeyboard(void);
 extern boolean xwaylandcrap;
 #endif
 
+extern float InvSupersampleFactorX;
+extern float InvSupersampleFactorY;
+
 void RefreshOGLSDLSurface(void);
 void I_DownSample(void);
 extern boolean downsample;

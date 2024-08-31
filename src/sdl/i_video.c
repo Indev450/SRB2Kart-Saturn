@@ -222,6 +222,10 @@ static void I_FixXwaylandNvidia(void);
 boolean xwaylandcrap = false;
 #endif
 boolean downsample = false;
+
+float InvSupersampleFactorX = 0.0;
+float InvSupersampleFactorY = 0.0;
+
 void RefreshOGLSDLSurface(void)
 {
 	if (rendermode == render_opengl)
@@ -780,6 +784,9 @@ void I_DownSample(void)
 	if ((vid.width > curmode.w) || (vid.height > curmode.h)) //check if current resolution is higher than current display resolution
 	{
 		downsample = true;
+
+		InvSupersampleFactorX = (float)(curmode.w) / vid.width;
+		InvSupersampleFactorY = (float)(curmode.h) / vid.height;
 		RefreshOGLSDLSurface();
 	}
 	else
@@ -809,7 +816,7 @@ static void I_FixXwaylandNvidia(void) //dumbass crap, fix ur shit nvidia
 
 static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 {
-#define FOCUSUNION (mousefocus | (kbfocus << 1))
+#define FOCUSUNION (mousefocus | (kbfocus << 1) | (windowmoved << 2))
 	static SDL_bool firsttimeonmouse = SDL_TRUE;
 	static SDL_bool mousefocus = SDL_TRUE;
 	static SDL_bool kbfocus = SDL_TRUE;
@@ -844,17 +851,17 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 #endif
 	}
 
+	if (FOCUSUNION == oldfocus) // No state change
+	{
+		return;
+	}
+
 #ifdef USE_FBO_OGL
 	if (windowmoved && rendermode == render_opengl)
 	{
 		I_DownSample();
 	}
 #endif
-
-	if (FOCUSUNION == oldfocus) // No state change
-	{
-		return;
-	}
 
 	if (mousefocus && kbfocus)
 	{
