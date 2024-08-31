@@ -3478,6 +3478,8 @@ EXPORT void HWRAPI(DrawScreenFinalTexture)(int tex, INT32 width, INT32 height)
 
 	pglBindTexture(GL_TEXTURE_2D, screenTextures[tex]);
 
+	// godawful but you can only ever run ONE shader per renderpass and since i dont want to draw an extra screen texture when you downsample from higher resolution (essentially killing performance)
+	// so i combined the palette postprocess with this crap
 	if (HWR_ShouldUsePaletteRendering() && (!(HWR_UseShader() && fbo_shader && !WipeInAction)))
 		pglUseProgram(gl_shaders[SHADER_PALETTE_POSTPROCESS].program); // palette postprocess shader
 	else if (HWR_UseShader() && fbo_shader && !WipeInAction) // this looks awful with wipes

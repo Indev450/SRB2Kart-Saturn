@@ -266,7 +266,7 @@ void OglSdlFinishUpdate(boolean waitvbl)
 	if (RenderToFramebuffer)
 	{
 		GLFramebuffer_Unbind();
-		fbo_shader = true;
+		fbo_shader = true; // only need to run this here to not cause brightness + performance issues, its a bool since im a lazy ass
 	}
 #endif
 
