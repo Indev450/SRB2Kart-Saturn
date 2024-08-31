@@ -9176,12 +9176,12 @@ static void K_drawKartBumpersOrKarma(void)
 	fy = info.y;
 	fflags = info.flags;
 
-	if (cv_battlespeedo.value)
+	if (cv_battlespeedo.value && !splitscreen)
 	{
 		if ((cv_newspeedometer.value == 2 && xtra_speedo) || (cv_newspeedometer.value == 3 && achi_speedo) || (cv_newspeedometer.value == 5 && xtra_speedo3))
-			fy -= -10;
+			fy += 5;
 		else
-			fy -= -14;
+			fy += 7;
 	}
 
 	if (splitscreen > 1)
