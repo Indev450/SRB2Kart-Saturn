@@ -1053,7 +1053,6 @@ static menuitem_t MP_MainMenu[] =
 };
 
 #ifndef NONET
-
 static menuitem_t MP_ServerMenu[] =
 {
 	{IT_STRING|IT_CVAR,                NULL, "Max. Player Count",     &cv_maxplayers,        10},
@@ -1069,7 +1068,6 @@ static menuitem_t MP_ServerMenu[] =
 
 	{IT_WHITESTRING|IT_CALL,           NULL, "Start",                 M_StartServer,        130},
 };
-
 #endif
 
 // Separated offline and normal servers.
@@ -1087,9 +1085,6 @@ static menuitem_t MP_PlayerSetupMenu[] =
 	{IT_KEYHANDLER | IT_STRING,   NULL, "Character", M_HandleSetupMultiPlayer,  16}, // Tails 01-18-2001
 	{IT_KEYHANDLER | IT_STRING,   NULL, "Color",     M_HandleSetupMultiPlayer, 152},
 };
-
-
-
 
 #ifndef NONET
 static menuitem_t MP_ConnectMenu[] =
@@ -1895,7 +1890,6 @@ static menuitem_t OP_ServerOptionsMenu[] =
 	{IT_STRING | IT_CVAR | IT_CV_STRING,
 	                         NULL, "Server Name",					&cv_servername,			 10},
 #endif
-
 	{IT_STRING | IT_CVAR,    NULL, "Intermission Timer",			&cv_inttime,			 40},
 	{IT_STRING | IT_CVAR,    NULL, "Map Progression",				&cv_advancemap,			 50},
 	{IT_STRING | IT_CVAR,    NULL, "Voting Timer",					&cv_votetime,			 60},
@@ -1935,13 +1929,10 @@ static const char* OP_ServerOptionsTooltips[] =
 static menuitem_t OP_AdvServerOptionsMenu[] =
 {
 #ifndef MASTERSERVER
-	{IT_GRAYEDOUT,
-
-	                         NULL, "Server Browser Address",		NULL,		 10},
+	{IT_GRAYEDOUT, 			 NULL, "Server Browser Address",		NULL,		 			 10},
 #else
 	{IT_STRING | IT_CVAR | IT_CV_STRING,
-
-	                         NULL, "Server Browser Address",		&cv_masterserver,		 10},
+							 NULL, "Server Browser Address",		&cv_masterserver,	 	 10},
 #endif
 	{IT_STRING | IT_CVAR,    NULL, "Attempts to resynchronise",		&cv_resynchattempts,	 40},
 	{IT_STRING | IT_CVAR,    NULL, "Delay limit (frames)",			&cv_maxping,			 50},
