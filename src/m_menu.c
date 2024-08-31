@@ -4233,7 +4233,7 @@ static boolean ShouldDrawMenuBG(void)
 		return false;
 
 	// camera options stuff, only do when in level
-	if (gamestate == GS_LEVEL && !paused && (currentMenu == &OP_CamOptionsDef || currentMenu == &OP_Player1CamOptionsDef || currentMenu == &OP_Player2CamOptionsDef || currentMenu == &OP_Player3CamOptionsDef || currentMenu == &OP_Player4CamOptionsDef))
+	if (gamestate == GS_LEVEL && (currentMenu == &OP_CamOptionsDef || currentMenu == &OP_Player1CamOptionsDef || currentMenu == &OP_Player2CamOptionsDef || currentMenu == &OP_Player3CamOptionsDef || currentMenu == &OP_Player4CamOptionsDef))
 		return false;
 
 	return true;

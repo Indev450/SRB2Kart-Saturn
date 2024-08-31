@@ -3026,29 +3026,105 @@ static CV_PossibleValue_t CV_CamSpeed[] = {{0, "MIN"}, {1*FRACUNIT, "MAX"}, {0, 
 static CV_PossibleValue_t rotation_cons_t[] = {{1, "MIN"}, {45, "MAX"}, {0, NULL}};
 static CV_PossibleValue_t CV_CamRotate[] = {{-720, "MIN"}, {720, "MAX"}, {0, NULL}};
 
-consvar_t cv_cam_dist = {"cam_dist", "160", CV_FLOAT|CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_cam_height = {"cam_height", "50", CV_FLOAT|CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
+static void CV_PlayerCam1_OnChange(void)
+{
+	if (gamestate != GS_LEVEL)
+		return;
+
+	if (netgame)
+		return;
+
+	if (!playeringame[displayplayers[0]] || players[displayplayers[0]].spectator)
+		return;
+
+	// dont do stuff when cam speeen at map start
+	if (leveltime < starttime - TICRATE*4)
+		return;
+
+	if (camera[displayplayers[0]].chase)
+		P_ResetCamera(&players[displayplayers[0]], &camera[0]);
+}
+
+static void CV_PlayerCam2_OnChange(void)
+{
+	if (gamestate != GS_LEVEL)
+		return;
+
+	if (netgame)
+		return;
+
+	if (!playeringame[displayplayers[1]] || players[displayplayers[1]].spectator)
+		return;
+
+	// dont do stuff when cam speeen at map start
+	if (leveltime < starttime - TICRATE*4)
+		return;
+
+	if (camera[displayplayers[1]].chase)
+		P_ResetCamera(&players[displayplayers[1]], &camera[1]);
+}
+
+static void CV_PlayerCam3_OnChange(void)
+{
+	if (gamestate != GS_LEVEL)
+		return;
+
+	if (netgame)
+		return;
+
+	if (!playeringame[displayplayers[2]] || players[displayplayers[2]].spectator)
+		return;
+
+	// dont do stuff when cam speeen at map start
+	if (leveltime < starttime - TICRATE*4)
+		return;
+
+	if (camera[displayplayers[2]].chase)
+		P_ResetCamera(&players[displayplayers[2]], &camera[2]);
+}
+
+static void CV_PlayerCam4_OnChange(void)
+{
+	if (gamestate != GS_LEVEL)
+		return;
+
+	if (netgame)
+		return;
+
+	if (!playeringame[displayplayers[3]] || players[displayplayers[3]].spectator)
+		return;
+
+	// dont do stuff when cam speeen at map start
+	if (leveltime < starttime - TICRATE*4)
+		return;
+
+	if (camera[displayplayers[3]].chase)
+		P_ResetCamera(&players[displayplayers[3]], &camera[3]);
+}
+
+consvar_t cv_cam_dist = {"cam_dist", "160", CV_FLOAT|CV_SAVE|CV_CALL|CV_NOINIT, NULL, CV_PlayerCam1_OnChange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_cam_height = {"cam_height", "50", CV_FLOAT|CV_SAVE|CV_CALL|CV_NOINIT, NULL, CV_PlayerCam1_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_cam_still = {"cam_still", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_cam_speed = {"cam_speed", "0.4", CV_FLOAT|CV_SAVE, CV_CamSpeed, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_cam_rotate = {"cam_rotate", "0", CV_CALL|CV_NOINIT, CV_CamRotate, CV_CamRotate_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_cam_rotspeed = {"cam_rotspeed", "10", CV_SAVE, rotation_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_cam2_dist = {"cam2_dist", "160", CV_FLOAT|CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_cam2_height = {"cam2_height", "50", CV_FLOAT|CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_cam2_dist = {"cam2_dist", "160", CV_FLOAT|CV_SAVE|CV_CALL|CV_NOINIT, NULL, CV_PlayerCam2_OnChange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_cam2_height = {"cam2_height", "50", CV_FLOAT|CV_SAVE|CV_CALL|CV_NOINIT, NULL, CV_PlayerCam2_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_cam2_still = {"cam2_still", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_cam2_speed = {"cam2_speed", "0.4", CV_FLOAT|CV_SAVE, CV_CamSpeed, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_cam2_rotate = {"cam2_rotate", "0", CV_CALL|CV_NOINIT, CV_CamRotate, CV_CamRotate2_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_cam2_rotspeed = {"cam2_rotspeed", "10", CV_SAVE, rotation_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_cam3_dist = {"cam3_dist", "160", CV_FLOAT|CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_cam3_height = {"cam3_height", "50", CV_FLOAT|CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_cam3_dist = {"cam3_dist", "160", CV_FLOAT|CV_SAVE|CV_CALL|CV_NOINIT, NULL, CV_PlayerCam3_OnChange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_cam3_height = {"cam3_height", "50", CV_FLOAT|CV_SAVE|CV_CALL|CV_NOINIT, NULL, CV_PlayerCam3_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_cam3_still = {"cam3_still", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_cam3_speed = {"cam3_speed", "0.4", CV_FLOAT|CV_SAVE, CV_CamSpeed, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_cam3_rotate = {"cam3_rotate", "0", CV_CALL|CV_NOINIT, CV_CamRotate, CV_CamRotate3_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_cam3_rotspeed = {"cam3_rotspeed", "10", CV_SAVE, rotation_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_cam4_dist = {"cam4_dist", "160", CV_FLOAT|CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_cam4_height = {"cam4_height", "50", CV_FLOAT|CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_cam4_dist = {"cam4_dist", "160", CV_FLOAT|CV_SAVE|CV_CALL|CV_NOINIT, NULL, CV_PlayerCam4_OnChange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_cam4_height = {"cam4_height", "50", CV_FLOAT|CV_SAVE|CV_CALL|CV_NOINIT, NULL, CV_PlayerCam4_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_cam4_still = {"cam4_still", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_cam4_speed = {"cam4_speed", "0.4", CV_FLOAT|CV_SAVE, CV_CamSpeed, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_cam4_rotate = {"cam4_rotate", "0", CV_CALL|CV_NOINIT, CV_CamRotate, CV_CamRotate4_OnChange, 0, NULL, NULL, 0, 0, NULL};
