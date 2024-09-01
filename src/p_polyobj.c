@@ -95,6 +95,8 @@ INT32 numPolyObjects;
 // Polyobject Blockmap -- initialized in P_LoadBlockMap
 polymaplink_t **polyblocklinks;
 
+static size_t *KnownPolySides;
+static size_t KnownPolySidesCount;
 
 //
 // Static Data
@@ -150,6 +152,36 @@ FUNCINLINE static ATTRINLINE void PolyObj_AddThinker(thinker_t *th)
 	th->next = thinkercap.next;
 	th->prev = &thinkercap;
 	thinkercap.next = th;
+}
+
+static void FreeSideLists(void)
+{
+	free(KnownPolySides);
+	KnownPolySides = NULL;
+	KnownPolySidesCount = 0;
+}
+
+//==========================================================================
+//
+// InitSideLists [RH]
+//
+// Group sides by vertex and collect side that are known to belong to a
+// polyobject so that they can be initialized fast.
+//==========================================================================
+static void InitSideLists(void)
+{
+	size_t i;
+	FreeSideLists();
+	KnownPolySides = malloc(numsegs * sizeof(KnownPolySides[0]));
+	for (i = 0; i < numsegs; i++)
+	{
+		if (segs[i].linedef &&
+			(segs[i].linedef->special == POLYOBJ_START_LINE ||
+			segs[i].linedef->special == POLYOBJ_EXPLICIT_LINE))
+		{
+			KnownPolySides[KnownPolySidesCount++] = i;
+		}
+	}
 }
 
 //
@@ -512,11 +544,12 @@ static void Polyobj_findExplicit(polyobj_t *po)
 	size_t numSegItems = 0;
 	size_t numSegItemsAlloc = 0;
 
-	size_t i;
+	size_t i, ii;
 
 	// first loop: save off all segs with polyobject's id number
-	for (i = 0; i < numsegs; ++i)
+	for (ii = 0; ii < KnownPolySidesCount; ii++)
 	{
+		i = KnownPolySides[ii];
 		INT32 polyID, parentID;
 
 		if (segs[i].linedef->special != POLYOBJ_EXPLICIT_LINE)
@@ -566,7 +599,7 @@ static void Polyobj_findExplicit(polyobj_t *po)
 //
 static void Polyobj_spawnPolyObj(INT32 num, mobj_t *spawnSpot, INT32 id)
 {
-	size_t i;
+	size_t i, ii;
 	polyobj_t *po = &PolyObjects[num];
 
 	// don't spawn a polyobject more than once
@@ -590,8 +623,9 @@ static void Polyobj_spawnPolyObj(INT32 num, mobj_t *spawnSpot, INT32 id)
 	// 1. Search segs for "line start" special with tag matching this
 	//    polyobject's id number. If found, iterate through segs which
 	//    share common vertices and record them into the polyobject.
-	for (i = 0; i < numsegs; ++i)
+	for (ii = 0; ii < KnownPolySidesCount; ii++)
 	{
+		i = KnownPolySides[ii];
 		seg_t *seg = &segs[i];
 		INT32 polyID, parentID;
 
@@ -1555,6 +1589,9 @@ void Polyobj_InitLevel(void)
 		for (i = 0; i < numPolyObjects; ++i)
 			PolyObjects[i].first = PolyObjects[i].next = numPolyObjects;
 
+		// [RH] Make this faster
+		InitSideLists();
+
 		// setup polyobjects
 		for (i = 0; i < numPolyObjects; ++i)
 		{
@@ -1562,6 +1599,9 @@ void Polyobj_InitLevel(void)
 
 			Polyobj_spawnPolyObj(i, qitem->mo, qitem->mo->spawnpoint->angle);
 		}
+
+		// [RH] Don't need the side lists anymore
+		FreeSideLists();
 
 		// move polyobjects to spawn points
 		for (i = 0; i < numAnchors; ++i)
