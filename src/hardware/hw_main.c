@@ -307,6 +307,7 @@ ps_metric_t ps_hw_batchsorttime = {0};
 ps_metric_t ps_hw_batchdrawtime = {0};
 
 static void HWR_AddPrecipitationSprites(void);
+static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing);
 
 // ==========================================================================
 // View position
@@ -5089,7 +5090,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 }
 
 // Precipitation projector for hardware mode
-void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
+static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 {
 	gr_vissprite_t *vis;
 	float tr_x, tr_y;
