@@ -5830,7 +5830,7 @@ static void P_AddOverlay(mobj_t *thing)
 // Keeps the hnext list from corrupting.
 static void P_RemoveOverlay(mobj_t *thing)
 {
-	mobj_t *mo, **p;
+	mobj_t *mo;
 	if (overlaycap == thing)
 	{
 		P_SetTarget(&overlaycap, thing->hnext);
@@ -5838,12 +5838,12 @@ static void P_RemoveOverlay(mobj_t *thing)
 		return;
 	}
 
-	for (mo = *(p = &overlaycap); mo; mo = *(p = &mo->hnext))
+	for (mo = overlaycap; mo; mo = mo->hnext)
 	{
-		if (mo != thing)
+		if (mo->hnext != thing)
 			continue;
 
-		P_SetTarget(p, thing->hnext);
+		P_SetTarget(&mo->hnext, thing->hnext);
 		P_SetTarget(&thing->hnext, NULL);
 		return;
 	}
@@ -5944,7 +5944,7 @@ static void P_AddShadow(mobj_t *thing)
 // Keeps the hnext list from corrupting.
 static void P_RemoveShadow(mobj_t *thing)
 {
-	mobj_t *mo, **p;
+	mobj_t *mo;
 	if (shadowcap == thing)
 	{
 		P_SetTarget(&shadowcap, thing->hnext);
@@ -5952,12 +5952,12 @@ static void P_RemoveShadow(mobj_t *thing)
 		return;
 	}
 
-	for (mo = *(p = &shadowcap); mo; mo = *(p = &mo->hnext))
+	for (mo = shadowcap; mo; mo = mo->hnext)
 	{
-		if (mo != thing)
+		if (mo->hnext != thing)
 			continue;
 
-		P_SetTarget(p, thing->hnext);
+		P_SetTarget(&mo->hnext, thing->hnext);
 		P_SetTarget(&thing->hnext, NULL);
 		return;
 	}
@@ -6129,8 +6129,7 @@ void P_MobjThinker(mobj_t *mobj)
 	mobj->flags2 &= ~MF2_PUSHED;
 	mobj->eflags &= ~(MFE_SPRUNG|MFE_JUSTBOUNCEDWALL);
 
-	P_SetTarget(&tmfloorthing, NULL);
-	P_SetTarget(&tmhitthing, NULL);
+	tmfloorthing = tmhitthing = NULL;
 
 	// 970 allows ANY mobj to trigger a linedef exec
 	if (mobj->subsector && GETSECSPECIAL(mobj->subsector->sector->special, 2) == 8)
@@ -6177,9 +6176,6 @@ void P_MobjThinker(mobj_t *mobj)
 			default:
 				break;
 			}
-
-		if (P_MobjWasRemoved(mobj))
-			return;
 	}
 
 	if (mobj->type == MT_GHOST && mobj->fuse > 0 // Not guaranteed to be MF_SCENERY or not MF_SCENERY!
@@ -10079,8 +10075,7 @@ void P_RemoveMobj(mobj_t *mobj)
 	// killough 11/98:
 	//
 	// Remove any references to other mobjs.
-	P_SetTarget(&mobj->target, NULL);
-	P_SetTarget(&mobj->tracer, NULL);
+	P_SetTarget(&mobj->target, P_SetTarget(&mobj->tracer, NULL));
 
 	// repair hnext chain
 	mobj_t *cachenext = mobj->hnext;
@@ -10107,7 +10102,7 @@ void P_RemoveMobj(mobj_t *mobj)
 	
 	// clear the reference from the mapthing
 	if (mobj->spawnpoint)
-		P_SetTarget(&mobj->spawnpoint->mobj, NULL);
+		mobj->spawnpoint->mobj = NULL;
 
 	R_RemoveMobjInterpolator(mobj);
 
@@ -10645,9 +10640,7 @@ void P_SpawnPlayer(INT32 playernum)
 
 	mobj = P_SpawnMobj(0, 0, 0, MT_PLAYER);
 	I_Assert(mobj != NULL);
-
-	mobj->player = p;
-	P_SetTarget(&p->mo, mobj);
+	(mobj->player = p)->mo = mobj;
 
 	mobj->angle = 0;
 
@@ -11871,10 +11864,7 @@ void P_SpawnHoopsAndRings(mapthing_t *mthing)
 				P_SetTarget(&mobj->hprev->hnext, mobj);
 			}
 			else
-			{
-				P_SetTarget(&mobj->hprev, NULL);
-				P_SetTarget(&mobj->hnext, NULL);
-			}
+				mobj->hprev = mobj->hnext = NULL;
 
 			nextmobj = mobj;
 		}
@@ -11900,7 +11890,7 @@ void P_SpawnHoopsAndRings(mapthing_t *mthing)
 			mobj->z -= mobj->height/2;
 
 			// Link all the collision sprites together.
-			P_SetTarget(&mobj->hnext, NULL);
+			mobj->hnext = NULL;
 			P_SetTarget(&mobj->hprev, nextmobj);
 			P_SetTarget(&mobj->hprev->hnext, mobj);
 
@@ -11927,7 +11917,7 @@ void P_SpawnHoopsAndRings(mapthing_t *mthing)
 			mobj->z -= mobj->height/2;
 
 			// Link all the collision sprites together.
-			P_SetTarget(&mobj->hnext, NULL);
+			mobj->hnext = NULL;
 			P_SetTarget(&mobj->hprev, nextmobj);
 			P_SetTarget(&mobj->hprev->hnext, mobj);
 
@@ -12014,10 +12004,7 @@ void P_SpawnHoopsAndRings(mapthing_t *mthing)
 				P_SetTarget(&mobj->hprev->hnext, mobj);
 			}
 			else
-			{
-				P_SetTarget(&mobj->hprev, NULL);
-				P_SetTarget(&mobj->hnext, NULL);
-			}
+				mobj->hprev = mobj->hnext = NULL;
 
 			nextmobj = mobj;
 		}
@@ -12054,7 +12041,7 @@ void P_SpawnHoopsAndRings(mapthing_t *mthing)
 				mobj->z -= mobj->height/2;
 
 				// Link all the collision sprites together.
-				P_SetTarget(&mobj->hnext, NULL);
+				mobj->hnext = NULL;
 				P_SetTarget(&mobj->hprev, nextmobj);
 				P_SetTarget(&mobj->hprev->hnext, mobj);
 

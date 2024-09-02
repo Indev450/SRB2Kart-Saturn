@@ -2470,7 +2470,6 @@ static void P_MovePlayer(player_t *player)
 			S_StartSound(player->mo, sfx_floush);
 	}
 
-
 	////////////////////////////
 	//SPINNING AND SPINDASHING//
 	////////////////////////////
@@ -4001,6 +4000,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	{
 		P_MoveChaseCamera(player, thiscam, false);
 		R_ResetViewInterpolation(num + 1);
+		R_ResetViewInterpolation(num + 1);
 	}
 
 	return (x == thiscam->x && y == thiscam->y && z == thiscam->z && angle == thiscam->aiming);
@@ -4031,7 +4031,7 @@ boolean P_SpectatorJoinGame(player_t *player)
 	// Pressing fire assigns you to a team that needs players if allowed.
 	// Partial code reproduction from p_tick.c autobalance code.
 	else if (G_GametypeHasTeams())
-	{		
+	{
 		INT32 changeto = 0;
 		INT32 z, numplayersred = 0, numplayersblue = 0;
 
@@ -4060,7 +4060,7 @@ boolean P_SpectatorJoinGame(player_t *player)
 		if (player->mo)
 		{
 			P_RemoveMobj(player->mo);
-			P_SetTarget(&player->mo, NULL);
+			player->mo = NULL;
 		}
 		player->spectator = false;
 		player->pflags &= ~PF_WANTSTOJOIN;
@@ -4084,11 +4084,11 @@ boolean P_SpectatorJoinGame(player_t *player)
 	}
 	// Joining in game from firing.
 	else
-	{		
+	{
 		if (player->mo)
 		{
 			P_RemoveMobj(player->mo);
-			P_SetTarget(&player->mo, NULL);
+			player->mo = NULL;
 		}
 		player->spectator = false;
 		player->pflags &= ~PF_WANTSTOJOIN;

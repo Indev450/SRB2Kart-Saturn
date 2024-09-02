@@ -2418,11 +2418,9 @@ void A_1upThinker(mobj_t *actor)
 	if (closestplayer == -1 || skins[players[closestplayer].skin].spritedef.numframes <= states[S_PLAY_BOX1].frame)
 	{ // Closest player not found (no players in game?? may be empty dedicated server!), or does not have correct sprite.
 		actor->frame = 0;
-		if (actor->tracer)
-		{
-			mobj_t *tracer = actor->tracer;
-			P_SetTarget(&actor->tracer, NULL);
-			P_RemoveMobj(tracer);
+		if (actor->tracer) {
+			P_RemoveMobj(actor->tracer);
+			P_SetTarget(&actor->target, NULL);
 		}
 		return;
 	}
@@ -3929,11 +3927,10 @@ void A_MineExplode(mobj_t *actor)
 	for (d = 0; d < 16; d++)
 		K_SpawnKartExplosion(actor->x, actor->y, actor->z, explodedist + 32*mapobjectscale, 32, type, d*(ANGLE_45/4), true, false, actor->target); // 32 <-> 64
 
-	skincolors_t color = SKINCOLOR_KETCHUP;
-	if (!P_MobjWasRemoved(actor->target) && actor->target->player)
-		color = actor->target->player->skincolor;
-
-	K_SpawnMineExplosion(actor, color);
+	if (actor->target && actor->target->player)
+		K_SpawnMineExplosion(actor, actor->target->player->skincolor);
+	else
+		K_SpawnMineExplosion(actor, SKINCOLOR_KETCHUP);
 
 	P_SpawnMobj(actor->x, actor->y, actor->z, MT_MINEEXPLOSIONSOUND);
 

@@ -679,7 +679,10 @@ static void R_DrawFlippedMaskedColumn(column_t *column)
 			for (s = (UINT8 *)column+2+column->length, d = dc_source; d < dc_source+column->length; --s)
 				*d++ = *s;
 			dc_texturemid = basetexturemid - (topdelta<<FRACBITS);
-			colfunc();
+
+			// Still drawn by R_DrawColumn.
+			if (ylookup[dc_yl])
+				colfunc();
 			Z_Free(dc_source);
 		}
 		column = (column_t *)((UINT8 *)column + column->length + 4);
@@ -897,7 +900,6 @@ static void R_DrawPrecipitationVisSprite(vissprite_t *vis)
 	INT32 texturecolumn;
 	fixed_t frac;
 	patch_t *patch;
-	fixed_t this_scale = vis->thingscale;
 	INT64 overflow_test;
 
 	//Fab : R_InitSprites now sets a wad lump number
@@ -921,7 +923,7 @@ static void R_DrawPrecipitationVisSprite(vissprite_t *vis)
 		dc_colormap += COLORMAP_REMAPOFFSET;
 
 	dc_iscale = FixedDiv(FRACUNIT, vis->scale);
-	dc_texturemid = FixedDiv(vis->texturemid, this_scale);
+	dc_texturemid = vis->texturemid;
 	dc_texheight = 0;
 
 	frac = vis->startfrac;
@@ -1741,8 +1743,7 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 	fixed_t iscale;
 
 	//SoM: 3/17/2000
-	fixed_t gz, gzt;
-	fixed_t this_scale;
+	fixed_t gz ,gzt;
 
 	INT32 dist = 1;
 
@@ -1768,8 +1769,6 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 		R_InterpolatePrecipMobjState(thing, FRACUNIT, &interp);
 	}
 
-	this_scale = interp.scale;
-
 	// transform the origin point
 	tr_x = interp.x - viewx;
 	tr_y = interp.y - viewy;
@@ -1780,7 +1779,7 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 	tz = gxt - gyt;
 
 	// thing is behind view plane?
-	if (tz < FixedMul(MINZ, this_scale))
+	if (tz < MINZ)
 		return;
 
 	gxt = -FixedMul(tr_x, viewsin);
@@ -1821,14 +1820,14 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 	lump = sprframe->lumpid[0];     //Fab: see note above
 
 	// calculate edges of the shape
-	tx -= FixedMul(spritecachedinfo[lump].offset, this_scale);
+	tx -= spritecachedinfo[lump].offset;
 	x1 = (centerxfrac + FixedMul (tx,xscale)) >>FRACBITS;
 
 	// off the right side?
 	if (x1 > viewwidth)
 		return;
 
-	tx += FixedMul(spritecachedinfo[lump].width, this_scale);
+	tx += spritecachedinfo[lump].width;
 	x2 = ((centerxfrac + FixedMul (tx,xscale)) >>FRACBITS) - 1;
 
 	// off the left side
@@ -1846,8 +1845,8 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 	}
 
 	//SoM: 3/17/2000: Disregard sprites that are out of view..
-	gzt = interp.z + FixedMul(spritecachedinfo[lump].topoffset, this_scale);
-	gz = gzt - FixedMul(spritecachedinfo[lump].height, this_scale);
+	gzt = interp.z + spritecachedinfo[lump].topoffset;
+	gz = gzt - spritecachedinfo[lump].height;
 
 	if (thing->subsector->sector->cullheight)
 	{
@@ -1857,9 +1856,7 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 
 	// store information in a vissprite
 	vis = R_NewVisSprite();
-	vis->scale = FixedMul(yscale, this_scale);
-	vis->sortscale = yscale; //<<detailshift;
-	vis->thingscale = interp.scale;
+	vis->scale = vis->sortscale = yscale; //<<detailshift;
 	vis->dispoffset = 0; // Monster Iestyn: 23/11/15
 	vis->gx = interp.x;
 	vis->gy = interp.y;
@@ -1892,7 +1889,7 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 	iscale = FixedDiv(FRACUNIT, xscale);
 
 	vis->startfrac = 0;
-	vis->xiscale = FixedDiv(iscale, this_scale);
+	vis->xiscale = iscale;
 
 	vis->thingscale = interp.scale;
 

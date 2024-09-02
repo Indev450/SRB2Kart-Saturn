@@ -729,9 +729,7 @@ void Y_Ticker(void)
 	}
 
 	if (intertic < TICRATE || intertic & 1 || endtic != -1)
-	{
 		return;
-	}
 
 	if (intertype == int_race || intertype == int_match)
 	{

@@ -2315,6 +2315,7 @@ static void P_LevelInitStuff(boolean reloadinggamestate)
 void P_LoadThingsOnly(void)
 {
 	// Search through all the thinkers.
+	mobj_t *mo;
 	thinker_t *think;
 
 	virtres_t* virt = vres_GetMap(lastloadedmaplumpnum);
@@ -2323,8 +2324,12 @@ void P_LoadThingsOnly(void)
 	for (think = thinkercap.next; think != &thinkercap; think = think->next)
 	{
 		if (think->function.acp1 != (actionf_p1)P_MobjThinker)
-			continue;
-		P_RemoveMobj((mobj_t *)think);
+			continue; // not a mobj thinker
+
+		mo = (mobj_t *)think;
+
+		if (mo)
+			P_RemoveMobj(mo);
 	}
 
 	P_LevelInitStuff(false);
@@ -3069,6 +3074,9 @@ boolean P_SetupLevel(boolean skipprecip, boolean reloadinggamestate)
 		displayplayers[0] = consoleplayer; // Start with your OWN view, please!
 	}
 
+	// clear special respawning que
+	iquehead = iquetail = 0;
+
 	P_MapEnd();
 
 	// Remove the loading shit from the screen
@@ -3121,6 +3129,7 @@ boolean P_SetupLevel(boolean skipprecip, boolean reloadinggamestate)
 
 	if (rendermode != render_none)
 	{
+		R_ResetViewInterpolation(0);
 		R_ResetViewInterpolation(0);
 		R_UpdateMobjInterpolators();
 	}

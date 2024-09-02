@@ -525,8 +525,6 @@ consvar_t cv_sliptideroll = {"sliptideroll", "Off", CV_SAVE, CV_OnOff, NULL, 0, 
 
 consvar_t cv_cechotoggle = {"show_cecho", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-static void G_FixCamera(UINT8 view);
-
 #if MAXPLAYERS > 16
 #error "please update player_name table using the new value for MAXPLAYERS"
 #endif
@@ -1470,6 +1468,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		lang += (cmd->angleturn<<16);
 
 	cmd->angleturn = (INT16)(lang >> 16);
+	cmd->latency = modeattacking ? 0 : (leveltime & 0xFF); // Send leveltime when this tic was generated to the server for control lag calculations
 
 	if (!hu_stopped)
 	{
@@ -1493,13 +1492,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 			-Making a Mario Kart 8 Deluxe tier baby mode that steers you away from walls and whatnot. You know what, do what you want!
 	*/
 	if (gamestate == GS_LEVEL)
-	{
 		LUAh_PlayerCmd(player, cmd);
-
-		// Send leveltime when this tic was generated to the server for control lag calculations.
-		// Only do this when in a level. Also do this after the hook, so that it can't overwrite this.
-		cmd->latency = modeattacking ? 0 : (leveltime & 0xFF);
-	}
 
 	//Reset away view if a command is given.
 	if ((cmd->forwardmove || cmd->sidemove || cmd->buttons)
@@ -2090,6 +2083,7 @@ void G_ResetView(UINT8 viewnum, INT32 playernum, boolean onlyactive)
 	UINT8 viewd;
 
 	INT32    *displayplayerp;
+	camera_t *camerap;
 
 	INT32 olddisplayplayer;
 	INT32 playersviewable;
@@ -2128,15 +2122,29 @@ void G_ResetView(UINT8 viewnum, INT32 playernum, boolean onlyactive)
 	(*displayplayerp) = playernum;
 	if ((*displayplayerp) != olddisplayplayer)
 	{
-		G_FixCamera(viewnum);
+		camerap = &camera[viewnum-1];
+		P_ResetCamera(&players[(*displayplayerp)], camerap);
+
+		// Make sure the viewport doesn't interpolate at all into
+		// its new position -- just snap instantly into place.
+		R_ResetViewInterpolation(viewnum);
 	}
 
 	if (viewnum > splits)
 	{
 		for (viewd = splits+1; viewd < viewnum; ++viewd)
 		{
-			displayplayers[viewd-1] = G_FindView(displayplayers[viewd-1], viewd, onlyactive, playernum < olddisplayplayer);
-			G_FixCamera(viewd);
+			displayplayerp = (&displayplayers[viewd-1]);
+			camerap = &camera[viewd];
+
+			(*displayplayerp) = G_FindView(0, viewd, onlyactive, false);
+
+			P_ResetCamera(&players[(*displayplayerp)], camerap);
+
+
+			// Make sure the viewport doesn't interpolate at all into
+			// its new position -- just snap instantly into place.
+			R_ResetViewInterpolation(viewd);
 		}
 	}
 
@@ -2192,26 +2200,6 @@ void G_ResetViews(void)
 	{
 		G_AdjustView(viewd, 0, false);
 	}
-}
-
-//
-// G_FixCamera
-// Reset camera position, angle and interpolation on a view
-// after changing state.
-//
-static void G_FixCamera(UINT8 view)
-{
-	player_t *player = &players[displayplayers[view - 1]];
-
-	// The order of displayplayers can change, which would
-	// invalidate localangle.
-	localangle[view - 1] = player->cmd.angleturn;
-
-	P_ResetCamera(player, &camera[view - 1]);
-
-	// Make sure the viewport doesn't interpolate at all into
-	// its new position -- just snap instantly into place.
-	R_ResetViewInterpolation(view);
 }
 
 //
@@ -3096,7 +3084,6 @@ void G_DoReborn(INT32 playernum)
 			oldmo = player->mo;
 			// Don't leave your carcass stuck 10-billion feet in the ground!
 			P_RemoveMobj(player->mo);
-			P_SetTarget(&player->mo, NULL);
 		}
 
 		B_RespawnBot(playernum);
@@ -3119,7 +3106,6 @@ void G_DoReborn(INT32 playernum)
 			oldmo = player->mo;
 			// Don't leave your carcass stuck 10-billion feet in the ground!
 			P_RemoveMobj(player->mo);
-			P_SetTarget(&player->mo, NULL);
 		}
 
 		G_SpawnPlayer(playernum, starpost);
@@ -5669,6 +5655,7 @@ void G_ConsGhostTic(INT32 playernum)
 					mobj = (mobj_t *)th;
 					if (mobj->type == (mobjtype_t)type && mobj->x == x && mobj->y == y && mobj->z == z)
 						break;
+					mobj = NULL; // wasn't this one, keep searching.
 				}
 				if (mobj && mobj->health != health) // Wasn't damaged?! This is desync! Fix it!
 				{

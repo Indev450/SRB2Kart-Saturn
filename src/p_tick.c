@@ -181,9 +181,6 @@ void Command_CountMobjs_f(void)
 void P_InitThinkers(void)
 {
 	thinkercap.prev = thinkercap.next = &thinkercap;
-
-	iquehead = iquetail = 0;
-
 	waypointcap = NULL;
 }
 
@@ -290,12 +287,8 @@ mobj_t *P_SetTarget(mobj_t **mop, mobj_t *targ)
 {
 	if (*mop)              // If there was a target already, decrease its refcount
 		(*mop)->thinker.references--;
-
-	if (targ != NULL) // Set new target and if non-NULL, increase its counter
+if ((*mop = targ) != NULL) // Set new target and if non-NULL, increase its counter
 		targ->thinker.references++;
-
-	*mop = targ;
-
 	return targ;
 }
 
@@ -662,6 +655,7 @@ void P_Ticker(boolean run)
 	if (run)
 	{
 		R_UpdateLevelInterpolators();
+		R_UpdateViewInterpolation();
 
 		// Hack: ensure newview is assigned every tic.
 		// Ensures view interpolation is T-1 to T in poor network conditions
