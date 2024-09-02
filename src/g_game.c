@@ -3062,9 +3062,6 @@ void G_ChangePlayerReferences(mobj_t *oldmo, mobj_t *newmo)
 		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 			continue;
 
-		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-			continue;
-
 		mo2 = (mobj_t *)th;
 
 		if (!(mo2->flags & MF_MISSILE))
@@ -5669,13 +5666,11 @@ void G_ConsGhostTic(INT32 playernum)
 				{
 					if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 						continue;
-					if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-						continue;
 					mobj = (mobj_t *)th;
 					if (mobj->type == (mobjtype_t)type && mobj->x == x && mobj->y == y && mobj->z == z)
 						break;
 				}
-				if ((th != &thinkercap && th->function.acp1 != (actionf_p1)P_MobjThinker) && mobj->health != health) // Wasn't damaged?! This is desync! Fix it!
+				if (mobj && mobj->health != health) // Wasn't damaged?! This is desync! Fix it!
 				{
 					if (demosynced)
 						CONS_Alert(CONS_WARNING, M_GetText("Demo playback has desynced!\n"));
@@ -8193,14 +8188,11 @@ void G_DoPlayMetal(void)
 		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 			continue;
 
-		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-			continue;
-
 		mo = (mobj_t *)th;
 		if (mo->type == MT_METALSONIC_RACE)
 			break;
 	}
-	if (th == &thinkercap && th->function.acp1 == (actionf_p1)P_MobjThinker)
+	if (!mo)
 	{
 		CONS_Alert(CONS_ERROR, M_GetText("Failed to find bot entity.\n"));
 		Z_Free(metalbuffer);

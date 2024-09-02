@@ -3227,8 +3227,6 @@ void P_DestroyRobots(void)
 	{
 		if (think->function.acp1 != (actionf_p1)P_MobjThinker)
 			continue; // not a mobj thinker
-		if (think->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-			continue;
 
 		mo = (mobj_t *)think;
 		if (mo->health <= 0 || !(mo->flags & MF_ENEMY || mo->flags & MF_BOSS))
@@ -4061,8 +4059,6 @@ static void P_Boss3Thinker(mobj_t *mobj)
 			{
 				if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 					continue;
-				if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-					continue;
 
 				mo2 = (mobj_t *)th;
 				if (mo2->type == (mobjtype_t)mobj->info->mass && mo2->tracer == mobj)
@@ -4153,8 +4149,6 @@ static void P_Boss3Thinker(mobj_t *mobj)
 		for (th = thinkercap.next; th != &thinkercap; th = th->next)
 		{
 			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
-				continue;
-			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 				continue;
 
 			mo2 = (mobj_t *)th;
@@ -4790,8 +4784,6 @@ static void P_Boss7Thinker(mobj_t *mobj)
 				{
 					if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 						continue;
-					if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-						continue;
 
 					mo2 = (mobj_t *)th;
 					if (mo2->type == MT_BOSS3WAYPOINT && mo2->spawnpoint)
@@ -4846,8 +4838,6 @@ static void P_Boss7Thinker(mobj_t *mobj)
 		for (th = thinkercap.next; th != &thinkercap; th = th->next)
 		{
 			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
-				continue;
-			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 				continue;
 
 			mo2 = (mobj_t *)th;
@@ -4971,8 +4961,6 @@ static void P_Boss9Thinker(mobj_t *mobj)
 		for (th = thinkercap.next; th != &thinkercap; th = th->next)
 		{
 			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
-				continue;
-			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 				continue;
 
 			mo2 = (mobj_t *)th;
@@ -5433,8 +5421,6 @@ mobj_t *P_GetClosestAxis(mobj_t *source)
 	for (th = thinkercap.next; th != &thinkercap; th = th->next)
 	{
 		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
-			continue;
-		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 			continue;
 
 		mo2 = (mobj_t *)th;
@@ -10125,6 +10111,11 @@ void P_RemoveMobj(mobj_t *mobj)
 
 	R_RemoveMobjInterpolator(mobj);
 
+#ifdef SCRAMBLE_REMOVED
+	// Invalidate mobj_t data to cause crashes if accessed!
+	memset((UINT8 *)mobj + sizeof(thinker_t), 0xff, sizeof(mobj_t) - sizeof(thinker_t));
+#endif
+
 	// free block
 	if (!mobj->thinker.next)
 	{ // Uh-oh, the mobj doesn't think, P_RemoveThinker would never go through!
@@ -10454,8 +10445,6 @@ void P_RespawnSpecials(void)
 			mobj_t *newmobj;
 
 			if (th->function.acp1 != (actionf_p1)P_MobjThinker)	// not a mobj
-				continue;
-			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 				continue;
 
 			box = (mobj_t *)th;
@@ -11609,8 +11598,6 @@ ML_NOCLIMB : Direction not controllable
 		for (th = thinkercap.next; th != &thinkercap; th = th->next)
 		{
 			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
-				continue;
-			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 				continue;
 
 			mo2 = (mobj_t *)th;

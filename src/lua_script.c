@@ -1655,9 +1655,6 @@ void LUA_Archive(void)
 			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 				continue;
 
-			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-				continue;
-
 			// archive function will determine when to skip mobjs,
 			// and write mobjnum in otherwise.
 			ArchiveExtVars(th, "mobj");
@@ -1693,8 +1690,6 @@ void LUA_UnArchive(void)
 		for (th = thinkercap.next; th != &thinkercap; th = th->next)
 		{
 			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
-				continue;
-			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 				continue;
 			if (((mobj_t *)th)->mobjnum != mobjnum) // find matching mobj
 				continue;
