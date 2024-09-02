@@ -1551,7 +1551,8 @@ void Polyobj_InitLevel(void)
 	// the mobj_t pointers on a queue for use below.
 	for (th = thinkercap.next; th != &thinkercap; th = th->next)
 	{
-		if (th->function.acp1 == (actionf_p1)P_MobjThinker)
+		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+				continue;
 		{
 			mobj_t *mo = (mobj_t *)th;
 
@@ -1854,7 +1855,7 @@ void T_PolyObjWaypoint(polywaypoint_t *th)
 #endif
 
 	// check for displacement due to override and reattach when possible
-	if (po->thinker == NULL)
+	if (!po->thinker)
 		po->thinker = &th->thinker;
 
 	// Find out target first.
@@ -1869,11 +1870,14 @@ void T_PolyObjWaypoint(polywaypoint_t *th)
 		if (mo2->type != MT_TUBEWAYPOINT)
 			continue;
 
-		if (mo2->threshold == th->sequence && mo2->health == th->pointnum)
-		{
-			target = mo2;
-			break;
-		}
+		if (mo2->threshold != th->sequence)
+			continue;
+
+		if (mo2->health != th->pointnum)
+			continue;
+
+		target = mo2;
+		break;
 	}
 
 	if (!target)
@@ -2607,36 +2611,6 @@ INT32 EV_DoPolyObjWaypoint(polywaypointdata_t *pwdata)
 
 	// Find the actual target movement waypoint
 	target = first;
-	/*for (wp = thinkercap.next; wp != &thinkercap; wp = wp->next)
-	{
-		if (wp->function.acp1 != (actionf_p1)P_MobjThinker) // Not a mobj thinker
-			continue;
-
-		mo2 = (mobj_t *)wp;
-
-		if (mo2->type != MT_TUBEWAYPOINT)
-			continue;
-
-		if (mo2->threshold == th->sequence)
-		{
-			if (th->direction == -1) // highest waypoint #
-			{
-				if (mo2->health == first->health - 1)
-				{
-					target = mo2;
-					break;
-				}
-			}
-			else // waypoint 0
-			{
-				if (mo2->health == first->health + 1)
-				{
-					target = mo2;
-					break;
-				}
-			}
-		}
-	}*/
 
 	if (!target)
 	{

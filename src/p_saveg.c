@@ -1856,7 +1856,7 @@ static void P_NetArchiveThinkers(void)
 			continue;
 		}
 #ifdef PARANOIA
-		else if (th->function.acv != P_RemoveThinkerDelayed) // wait garbage collection
+		else if (th->function.acp1 != P_RemoveThinkerDelayed) // wait garbage collection
 			I_Error("unknown thinker type %p", th->function.acp1);
 #endif
 	}
@@ -1881,8 +1881,10 @@ mobj_t *P_FindNewPosition(UINT32 oldposition)
 			continue;
 
 		mobj = (mobj_t *)th;
-		if (mobj->mobjnum == oldposition)
-			return mobj;
+		if (mobj->mobjnum != oldposition)
+			continue;
+
+		return mobj;
 	}
 	CONS_Debug(DBG_GAMELOGIC, "mobj not found\n");
 	return NULL;
@@ -2881,12 +2883,14 @@ static void P_NetUnArchiveThinkers(void)
 		for (currentthinker = thinkercap.next; currentthinker != &thinkercap;
 			currentthinker = currentthinker->next)
 		{
-			if (currentthinker->function.acp1 == (actionf_p1)T_ExecutorDelay)
-			{
-				delay = (void *)currentthinker;
-				if ((mobjnum = (UINT32)(size_t)delay->caller))
-					delay->caller = P_FindNewPosition(mobjnum);
-			}
+			if (currentthinker->function.acp1 != (actionf_p1)T_ExecutorDelay)
+				continue;
+
+			delay = (void *)currentthinker;
+			if (!(mobjnum = (UINT32)(size_t)delay->caller))
+				continue;
+
+			delay->caller = P_FindNewPosition(mobjnum);
 		}
 	}
 }
@@ -2995,11 +2999,10 @@ static inline void P_FinishMobjs(void)
 	for (currentthinker = thinkercap.next; currentthinker != &thinkercap;
 		currentthinker = currentthinker->next)
 	{
-		if (currentthinker->function.acp1 == (actionf_p1)P_MobjThinker)
-		{
-			mobj = (mobj_t *)currentthinker;
-			mobj->info = &mobjinfo[mobj->type];
-		}
+		if (currentthinker->function.acp1 != (actionf_p1)P_MobjThinker)
+			continue;
+		mobj = (mobj_t *)currentthinker;
+		mobj->info = &mobjinfo[mobj->type];
 	}
 }
 
@@ -3013,69 +3016,69 @@ static void P_RelinkPointers(void)
 	for (currentthinker = thinkercap.next; currentthinker != &thinkercap;
 		currentthinker = currentthinker->next)
 	{
-		if (currentthinker->function.acp1 == (actionf_p1)P_MobjThinker)
+		if (currentthinker->function.acp1 != (actionf_p1)P_MobjThinker)
+			continue;
+
+		mobj = (mobj_t *)currentthinker;
+
+		if (mobj->type == MT_HOOP || mobj->type == MT_HOOPCOLLIDE || mobj->type == MT_HOOPCENTER)
+			continue;
+
+		if (mobj->tracer)
 		{
-			mobj = (mobj_t *)currentthinker;
-
-			if (mobj->type == MT_HOOP || mobj->type == MT_HOOPCOLLIDE || mobj->type == MT_HOOPCENTER)
-				continue;
-
-			if (mobj->tracer)
-			{
-				temp = (UINT32)(size_t)mobj->tracer;
-				mobj->tracer = NULL;
-				if (!P_SetTarget(&mobj->tracer, P_FindNewPosition(temp)))
-					CONS_Debug(DBG_GAMELOGIC, "tracer not found on %d\n", mobj->type);
-			}
-			if (mobj->target)
-			{
-				temp = (UINT32)(size_t)mobj->target;
-				mobj->target = NULL;
-				if (!P_SetTarget(&mobj->target, P_FindNewPosition(temp)))
-					CONS_Debug(DBG_GAMELOGIC, "target not found on %d\n", mobj->type);
-			}
-			if (mobj->hnext)
-			{
-				temp = (UINT32)(size_t)mobj->hnext;
-				mobj->hnext = NULL;
-				if (!P_SetTarget(&mobj->hnext, P_FindNewPosition(temp)))
-					CONS_Debug(DBG_GAMELOGIC, "hnext not found on %d\n", mobj->type);
-			}
-			if (mobj->hprev)
-			{
-				temp = (UINT32)(size_t)mobj->hprev;
-				mobj->hprev = NULL;
-				if (!P_SetTarget(&mobj->hprev, P_FindNewPosition(temp)))
-					CONS_Debug(DBG_GAMELOGIC, "hprev not found on %d\n", mobj->type);
-			}
-			if (mobj->player && mobj->player->capsule)
-			{
-				temp = (UINT32)(size_t)mobj->player->capsule;
-				mobj->player->capsule = NULL;
-				if (!P_SetTarget(&mobj->player->capsule, P_FindNewPosition(temp)))
-					CONS_Debug(DBG_GAMELOGIC, "capsule not found on %d\n", mobj->type);
-			}
-			if (mobj->player && mobj->player->axis1)
-			{
-				temp = (UINT32)(size_t)mobj->player->axis1;
-				mobj->player->axis1 = NULL;
-				if (!P_SetTarget(&mobj->player->axis1, P_FindNewPosition(temp)))
-					CONS_Debug(DBG_GAMELOGIC, "axis1 not found on %d\n", mobj->type);
-			}
-			if (mobj->player && mobj->player->axis2)
-			{
-				temp = (UINT32)(size_t)mobj->player->axis2;
-				mobj->player->axis2 = NULL;
-				if (!P_SetTarget(&mobj->player->axis2, P_FindNewPosition(temp)))
-					CONS_Debug(DBG_GAMELOGIC, "axis2 not found on %d\n", mobj->type);
-			}
-			if (mobj->player && mobj->player->awayviewmobj)
-			{
-				temp = (UINT32)(size_t)mobj->player->awayviewmobj;
-				mobj->player->awayviewmobj = NULL;
-				if (!P_SetTarget(&mobj->player->awayviewmobj, P_FindNewPosition(temp)))
-					CONS_Debug(DBG_GAMELOGIC, "awayviewmobj not found on %d\n", mobj->type);
-			}
+			temp = (UINT32)(size_t)mobj->tracer;
+			mobj->tracer = NULL;
+			if (!P_SetTarget(&mobj->tracer, P_FindNewPosition(temp)))
+				CONS_Debug(DBG_GAMELOGIC, "tracer not found on %d\n", mobj->type);
+		}
+		if (mobj->target)
+		{
+			temp = (UINT32)(size_t)mobj->target;
+			mobj->target = NULL;
+			if (!P_SetTarget(&mobj->target, P_FindNewPosition(temp)))
+				CONS_Debug(DBG_GAMELOGIC, "target not found on %d\n", mobj->type);
+		}
+		if (mobj->hnext)
+		{
+			temp = (UINT32)(size_t)mobj->hnext;
+			mobj->hnext = NULL;
+			if (!P_SetTarget(&mobj->hnext, P_FindNewPosition(temp)))
+				CONS_Debug(DBG_GAMELOGIC, "hnext not found on %d\n", mobj->type);
+		}
+		if (mobj->hprev)
+		{
+			temp = (UINT32)(size_t)mobj->hprev;
+			mobj->hprev = NULL;
+			if (!P_SetTarget(&mobj->hprev, P_FindNewPosition(temp)))
+				CONS_Debug(DBG_GAMELOGIC, "hprev not found on %d\n", mobj->type);
+		}
+		if (mobj->player && mobj->player->capsule)
+		{
+			temp = (UINT32)(size_t)mobj->player->capsule;
+			mobj->player->capsule = NULL;
+			if (!P_SetTarget(&mobj->player->capsule, P_FindNewPosition(temp)))
+				CONS_Debug(DBG_GAMELOGIC, "capsule not found on %d\n", mobj->type);
+		}
+		if (mobj->player && mobj->player->axis1)
+		{
+			temp = (UINT32)(size_t)mobj->player->axis1;
+			mobj->player->axis1 = NULL;
+			if (!P_SetTarget(&mobj->player->axis1, P_FindNewPosition(temp)))
+				CONS_Debug(DBG_GAMELOGIC, "axis1 not found on %d\n", mobj->type);
+		}
+		if (mobj->player && mobj->player->axis2)
+		{
+			temp = (UINT32)(size_t)mobj->player->axis2;
+			mobj->player->axis2 = NULL;
+			if (!P_SetTarget(&mobj->player->axis2, P_FindNewPosition(temp)))
+				CONS_Debug(DBG_GAMELOGIC, "axis2 not found on %d\n", mobj->type);
+		}
+		if (mobj->player && mobj->player->awayviewmobj)
+		{
+			temp = (UINT32)(size_t)mobj->player->awayviewmobj;
+			mobj->player->awayviewmobj = NULL;
+			if (!P_SetTarget(&mobj->player->awayviewmobj, P_FindNewPosition(temp)))
+				CONS_Debug(DBG_GAMELOGIC, "awayviewmobj not found on %d\n", mobj->type);
 		}
 	}
 }
@@ -3451,13 +3454,12 @@ void P_SaveNetGame(void)
 	{
 		for (th = thinkercap.next; th != &thinkercap; th = th->next)
 		{
-			if (th->function.acp1 == (actionf_p1)P_MobjThinker)
-			{
-				mobj = (mobj_t *)th;
-				if (mobj->type == MT_HOOP || mobj->type == MT_HOOPCOLLIDE || mobj->type == MT_HOOPCENTER)
-					continue;
-				mobj->mobjnum = i++;
-			}
+			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+				continue;
+			mobj = (mobj_t *)th;
+			if (mobj->type == MT_HOOP || mobj->type == MT_HOOPCOLLIDE || mobj->type == MT_HOOPCENTER)
+				continue;
+			mobj->mobjnum = i++;
 		}
 	}
 

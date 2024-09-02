@@ -3034,7 +3034,7 @@ boolean P_IsFlagAtBase(mobjtype_t flag)
 {
 	thinker_t *think;
 	mobj_t *mo;
-	INT32 specialnum = 0;
+	INT32 specialnum = (flag == MT_REDFLAG) ? 3 : 4;
 
 	for (think = thinkercap.next; think != &thinkercap; think = think->next)
 	{
@@ -3045,11 +3045,6 @@ boolean P_IsFlagAtBase(mobjtype_t flag)
 
 		if (mo->type != flag)
 			continue;
-
-		if (mo->type == MT_REDFLAG)
-			specialnum = 3;
-		else if (mo->type == MT_BLUEFLAG)
-			specialnum = 4;
 
 		if (GETSECSPECIAL(mo->subsector->sector->special, 4) == specialnum)
 			return true;
@@ -3065,9 +3060,11 @@ boolean P_IsFlagAtBase(mobjtype_t flag)
 				if (GETSECSPECIAL(rover->master->frontsector->special, 4) != specialnum)
 					continue;
 
-				if (mo->z <= P_GetSpecialTopZ(mo, sectors + rover->secnum, mo->subsector->sector)
-					&& mo->z >= P_GetSpecialBottomZ(mo, sectors + rover->secnum, mo->subsector->sector))
-					return true;
+				if (!(mo->z <= P_GetSpecialTopZ(mo, sectors + rover->secnum, mo->subsector->sector)
+					&& mo->z >= P_GetSpecialBottomZ(mo, sectors + rover->secnum, mo->subsector->sector)))
+					continue;
+
+				return true;
 			}
 		}
 	}
@@ -3479,8 +3476,11 @@ void P_ProcessSpecialSector(player_t *player, sector_t *sector, sector_t *rovers
 					continue;
 
 				mo2 = (mobj_t *)th;
-				if (mo2->type == MT_EGGTRAP)
-					P_KillMobj(mo2, NULL, player->mo);
+
+				if (mo2->type != MT_EGGTRAP)
+					continue;
+
+				P_KillMobj(mo2, NULL, player->mo);
 			}
 
 			// clear the special so you can't push the button twice.

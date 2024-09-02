@@ -25,7 +25,6 @@
 
 #include "screen.h" // MAXVIDWIDTH, MAXVIDHEIGHT
 
-
 //
 // ClipWallSegment
 // Clips the given range of columns

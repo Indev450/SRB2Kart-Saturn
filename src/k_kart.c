@@ -8771,7 +8771,7 @@ static void K_drawKartLaps(void)
 			else
 				V_DrawMappedPatch(fx, fy, V_HUDTRANS|splitflags, kp_lapstickerclr, colormap);
 		}
-		
+
 		if (stplyr->exiting)
 			V_DrawKartString(fx+33, fy+3, V_HUDTRANS|splitflags, "FIN");
 		else
@@ -8786,7 +8786,7 @@ static void K_drawKartSpeedometer(void)
 		return;
 
 	fixed_t convSpeed = 0;
-	
+
 	//KartZ speedo
 	fixed_t fuspeed = 0;
 	INT32 spdpatch = 0;
