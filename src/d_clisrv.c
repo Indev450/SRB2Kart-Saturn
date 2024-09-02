@@ -6327,8 +6327,6 @@ boolean TryRunTics(tic_t realtics)
 
 	if (ticking)
 	{
-		boolean tickInterp = true;
-
 		// run the count * tics
 		while (neededtic > gametic)
 		{
@@ -6339,18 +6337,7 @@ boolean TryRunTics(tic_t realtics)
 			if (update_stats)
 				PS_START_TIMING(ps_tictime);
 
-			boolean run = (gametic % NEWTICRATERATIO) == 0;
-
-			if (run && tickInterp)
-			{
-				// Update old view state BEFORE ticking so resetting
-				// the old interpolation state from game logic works.
-				R_UpdateViewInterpolation();
-				tickInterp = false; // do not update again in sped-up tics
-			}
-
-			G_Ticker(run);
-
+			G_Ticker((gametic % NEWTICRATERATIO) == 0);
 			ExtraDataTicker();
 			gametic++;
 			consistancy[gametic%TICQUEUE] = Consistancy();

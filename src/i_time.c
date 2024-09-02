@@ -63,10 +63,9 @@ void I_UpdateTime(fixed_t timescale)
 	enterprecise = I_GetPreciseTime();
 	elapsedseconds = (double)(enterprecise - oldenterprecise) / I_GetPrecisePrecision();
 	tictimer += elapsedseconds;
-
-	while (tictimer >= (1.0 / ticratescaled))
+	while (tictimer > 1.0/ticratescaled)
 	{
-		entertic ++;
+		entertic += 1;
 		tictimer -= 1.0/ticratescaled;
 	}
 	realtics = entertic - oldentertics;
@@ -81,6 +80,3 @@ void I_UpdateTime(fixed_t timescale)
 		g_time.timefrac = FLOAT_TO_FIXED(fractional);
 	}
 }
-
-
-

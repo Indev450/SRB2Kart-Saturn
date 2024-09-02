@@ -795,7 +795,7 @@ EXPORT boolean HWRAPI(InitShaders) (void)
 {
 	if (!pglUseProgram)
 		return false;
-
+	
 	gl_fallback_shader.vertex_shader = Z_StrDup(GLSL_FALLBACK_VERTEX_SHADER);
 	gl_fallback_shader.fragment_shader = Z_StrDup(GLSL_FALLBACK_FRAGMENT_SHADER);
 
@@ -1016,6 +1016,39 @@ void SetStates(void)
 	pglScalef(1.0f, 1.0f, -1.0f);
 	pglGetFloatv(GL_MODELVIEW_MATRIX, modelMatrix); // added for new coronas' code (without depth buffer)
 }
+// -----------------+
+// DeleteTexture    : Deletes a texture from the GPU and frees its data
+// -----------------+
+EXPORT void HWRAPI(DeleteTexture) (GLMipmap_t *pTexInfo)
+{
+	FTextureInfo *head = TexCacheHead;
+
+	if (!pTexInfo)
+		return;
+	else if (pTexInfo->downloaded)
+		pglDeleteTextures(1, (GLuint *)&pTexInfo->downloaded);
+
+	while (head)
+	{
+		if (head->downloaded == pTexInfo->downloaded)
+		{
+			if (head->next)
+				head->next->prev = head->prev;
+			else // no next -> tail is being deleted -> update TexCacheTail
+				TexCacheTail = head->prev;
+			if (head->prev)
+				head->prev->next = head->next;
+			else // no prev -> head is being deleted -> update TexCacheHead
+				TexCacheHead = head->next;
+			free(head);
+			break;
+		}
+
+		head = head->next;
+	}
+
+	pTexInfo->downloaded = 0;
+}
 
 #ifdef USE_FBO_OGL
 static void GLFramebuffer_GenerateAttachments(void)
@@ -1139,40 +1172,6 @@ void GLFramebuffer_Disable(void)
 	GLFramebuffer_Delete();
 }
 #endif
-// -----------------+
-// DeleteTexture    : Deletes a texture from the GPU and frees its data
-// -----------------+
-EXPORT void HWRAPI(DeleteTexture) (GLMipmap_t *pTexInfo)
-{
-	FTextureInfo *head = TexCacheHead;
-
-	if (!pTexInfo)
-		return;
-	else if (pTexInfo->downloaded)
-		pglDeleteTextures(1, (GLuint *)&pTexInfo->downloaded);
-
-	while (head)
-	{
-		if (head->downloaded == pTexInfo->downloaded)
-		{
-			if (head->next)
-				head->next->prev = head->prev;
-			else // no next -> tail is being deleted -> update TexCacheTail
-				TexCacheTail = head->prev;
-			if (head->prev)
-				head->prev->next = head->next;
-			else // no prev -> head is being deleted -> update TexCacheHead
-				TexCacheHead = head->next;
-			free(head);
-			break;
-		}
-
-		head = head->next;
-	}
-
-	pTexInfo->downloaded = 0;
-}
-
 
 // -----------------+
 // Flush            : flush OpenGL textures
