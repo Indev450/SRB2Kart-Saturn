@@ -134,7 +134,7 @@ void HWR_DrawSkyBackground(float fpov);
 // hw_main.c: Sprites
 void HWR_AddSprites(sector_t *sec);
 void HWR_ProjectSprite(mobj_t *thing);
-void HWR_ProjectPrecipitationSprite(precipmobj_t *thing);
+//void HWR_ProjectPrecipitationSprite(precipmobj_t *thing);
 void HWR_DrawSprites(void);
 
 // hw_bsp.c
