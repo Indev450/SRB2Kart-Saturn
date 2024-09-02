@@ -366,9 +366,9 @@ gl_portallist_t *currentportallist;
 INT32 portalviewside;
 
 // Linked list for portals.
-gl_portal_t *portal_base_gl, *portal_cap_gl;
+/*gl_portal_t *portal_base_gl, *portal_cap_gl;
 
-/* For now, these aren't used.
+//For now, these aren't used.
 // maybe at some point these could be organized better
 static void HWR_Portal_InitList (void)
 {
