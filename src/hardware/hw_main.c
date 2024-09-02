@@ -5522,7 +5522,8 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, playe
 		// woo we back
 		gr_portal = oldgl_portal_state;
 
-		HWR_AddPrecipitationSprites();
+		if (allow_portals) // looks weird, but this is only true when its not skybox rendering skipping precip in skyboxes like software does
+			HWR_AddPrecipitationSprites();
 
 		PS_STOP_TIMING(ps_bsptime);
 
