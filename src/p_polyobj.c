@@ -1833,12 +1833,12 @@ void T_PolyObjMove(polymove_t *th)
 //
 void T_PolyObjWaypoint(polywaypoint_t *th)
 {
-	mobj_t *mo2;
 	mobj_t *target = NULL;
 	mobj_t *waypoint = NULL;
-	thinker_t *wp;
+	mobj_t *mo2;
 	fixed_t adjustx, adjusty, adjustz;
 	fixed_t momx, momy, momz, dist;
+	thinker_t *wp;
 	INT32 start;
 	polyobj_t *po = Polyobj_GetForNum(th->polyObjNum);
 	polyobj_t *oldpo = po;
@@ -1943,37 +1943,7 @@ void T_PolyObjWaypoint(polywaypoint_t *th)
 		{
 			CONS_Debug(DBG_POLYOBJ, "Looking for next waypoint...\n");
 
-			// Find next waypoint
-			for (wp = thinkercap.next; wp != &thinkercap; wp = wp->next)
-			{
-				if (wp->function.acp1 != (actionf_p1)P_MobjThinker) // Not a mobj thinker
-					continue;
-
-				mo2 = (mobj_t *)wp;
-
-				if (mo2->type != MT_TUBEWAYPOINT)
-					continue;
-
-				if (mo2->threshold == th->sequence)
-				{
-					if (th->direction == -1)
-					{
-						if (mo2->health == target->health - 1)
-						{
-							waypoint = mo2;
-							break;
-						}
-					}
-					else
-					{
-						if (mo2->health == target->health + 1)
-						{
-							waypoint = mo2;
-							break;
-						}
-					}
-				}
-			}
+			waypoint = (th->direction == -1) ? P_GetPreviousWaypoint(target, false) : P_GetNextWaypoint(target, false);
 
 			if (!waypoint && th->wrap) // If specified, wrap waypoints
 			{
@@ -1983,35 +1953,7 @@ void T_PolyObjWaypoint(polywaypoint_t *th)
 					th->stophere = true;
 				}
 
-				for (wp = thinkercap.next; wp != &thinkercap; wp = wp->next)
-				{
-					if (wp->function.acp1 != (actionf_p1)P_MobjThinker) // Not a mobj thinker
-						continue;
-
-					mo2 = (mobj_t *)wp;
-
-					if (mo2->type != MT_TUBEWAYPOINT)
-						continue;
-
-					if (mo2->threshold == th->sequence)
-					{
-						if (th->direction == -1)
-						{
-							if (waypoint == NULL)
-								waypoint = mo2;
-							else if (mo2->health > waypoint->health)
-								waypoint = mo2;
-						}
-						else
-						{
-							if (mo2->health == 0)
-							{
-								waypoint = mo2;
-								break;
-							}
-						}
-					}
-				}
+				waypoint = (th->direction == -1) ? P_GetLastWaypoint(th->sequence) : P_GetFirstWaypoint(th->sequence);
 			}
 			else if (!waypoint && th->comeback) // Come back to the start
 			{
@@ -2020,36 +1962,7 @@ void T_PolyObjWaypoint(polywaypoint_t *th)
 				if (!th->continuous)
 					th->comeback = false;
 
-				for (wp = thinkercap.next; wp != &thinkercap; wp = wp->next)
-				{
-					if (wp->function.acp1 != (actionf_p1)P_MobjThinker) // Not a mobj thinker
-						continue;
-
-					mo2 = (mobj_t *)wp;
-
-					if (mo2->type != MT_TUBEWAYPOINT)
-						continue;
-
-					if (mo2->threshold == th->sequence)
-					{
-						if (th->direction == -1)
-						{
-							if (mo2->health == target->health - 1)
-							{
-								waypoint = mo2;
-								break;
-							}
-						}
-						else
-						{
-							if (mo2->health == target->health + 1)
-							{
-								waypoint = mo2;
-								break;
-							}
-						}
-					}
-				}
+				waypoint = (th->direction == -1) ? P_GetPreviousWaypoint(target, false) : P_GetNextWaypoint(target, false);
 			}
 		}
 
@@ -2499,11 +2412,9 @@ INT32 EV_DoPolyObjWaypoint(polywaypointdata_t *pwdata)
 	polyobj_t *po;
 	polyobj_t *oldpo;
 	polywaypoint_t *th;
-	mobj_t *mo2;
 	mobj_t *first = NULL;
 	mobj_t *last = NULL;
 	mobj_t *target = NULL;
-	thinker_t *wp;
 	INT32 start;
 
 	if (!(po = Polyobj_GetForNum(pwdata->polyObjNum)))
@@ -2529,10 +2440,7 @@ INT32 EV_DoPolyObjWaypoint(polywaypointdata_t *pwdata)
 	th->polyObjNum = pwdata->polyObjNum;
 	th->speed = pwdata->speed;
 	th->sequence = pwdata->sequence; // Used to specify sequence #
-	if (pwdata->reverse)
-		th->direction = -1;
-	else
-		th->direction = 1;
+	th->direction = pwdata->reverse ? -1 : 1;
 
 	th->comeback = pwdata->comeback;
 	th->continuous = pwdata->continuous;
@@ -2540,44 +2448,8 @@ INT32 EV_DoPolyObjWaypoint(polywaypointdata_t *pwdata)
 	th->stophere = false;
 
 	// Find the first waypoint we need to use
-	for (wp = thinkercap.next; wp != &thinkercap; wp = wp->next)
-	{
-		if (wp->function.acp1 != (actionf_p1)P_MobjThinker) // Not a mobj thinker
-			continue;
-
-		mo2 = (mobj_t *)wp;
-
-		if (mo2->type != MT_TUBEWAYPOINT)
-			continue;
-
-		if (mo2->threshold == th->sequence)
-		{
-			if (th->direction == -1) // highest waypoint #
-			{
-				if (mo2->health == 0)
-					last = mo2;
-				else
-				{
-					if (first == NULL)
-						first = mo2;
-					else if (mo2->health > first->health)
-						first = mo2;
-				}
-			}
-			else // waypoint 0
-			{
-				if (mo2->health == 0)
-					first = mo2;
-				else
-				{
-					if (last == NULL)
-						last = mo2;
-					else if (mo2->health > last->health)
-						last = mo2;
-				}
-			}
-		}
-	}
+	first = (th->direction == -1) ? P_GetLastWaypoint(th->sequence) : P_GetFirstWaypoint(th->sequence);
+	last = (th->direction == -1) ? P_GetFirstWaypoint(th->sequence) : P_GetLastWaypoint(th->sequence);
 
 	if (!first)
 	{
