@@ -4928,7 +4928,7 @@ void P_PlayerAfterThink(player_t *player)
 
 #ifdef SECTORSPECIALSAFTERTHINK
 	if (player->onconveyor != 1 || !P_IsObjectOnGround(player->mo))
-	player->onconveyor = 0;
+		player->onconveyor = 0;
 	// check special sectors : damage & secrets
 
 	if (!player->spectator)
