@@ -1275,7 +1275,8 @@ static void HWR_DrawSkyWallList(void)
 	HWD.pfnUnSetShader();
 	for (i = 0; i < skyWallVertexArraySize; i++)
 	{
-		HWD.pfnDrawPolygon(&surf, skyWallVertexArray + i * 4, 4, PF_Occlude|PF_Invisible|PF_NoTexture);
+		//HWD.pfnDrawPolygon(&surf, skyWallVertexArray + i * 4, 4, PF_Occlude|PF_Invisible|PF_NoTexture);
+		HWR_ProcessPolygon(&surf, skyWallVertexArray + i * 4, 4, PF_Occlude|PF_Invisible|PF_NoTexture, SHADER_NONE, false);
 	}
 }
 
