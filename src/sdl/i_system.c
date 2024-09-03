@@ -3315,7 +3315,7 @@ void I_Sleep(UINT32 ms)
 
 void I_SleepDuration(precise_t duration)
 {
-	#if defined(__linux__) || defined(__FreeBSD__)
+#if defined(__linux__) || defined(__FreeBSD__)
 	UINT64 precision = I_GetPrecisePrecision();
 	struct timespec ts = {
 		.tv_sec = duration / precision,
@@ -3324,7 +3324,7 @@ void I_SleepDuration(precise_t duration)
 	int status;
 	do status = clock_nanosleep(CLOCK_MONOTONIC, 0, &ts, &ts);
 	while (status == EINTR);
-	#else
+#else
 	UINT64 precision = I_GetPrecisePrecision();
 	INT32 sleepvalue = cv_sleep.value;
 	UINT64 delaygranularity;
@@ -3356,7 +3356,7 @@ void I_SleepDuration(precise_t duration)
 
 		cur = I_GetPreciseTime();
 	}
-	#endif
+#endif
 }
 
 #ifdef NEWSIGNALHANDLER
