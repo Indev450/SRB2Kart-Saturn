@@ -55,18 +55,20 @@ void I_UpdateTime(fixed_t timescale)
 {
 	double ticratescaled;
 	double elapsedseconds;
+	double inverse_ticratescaled;
 	tic_t realtics;
 
 	// get real tics
 	ticratescaled = (double)TICRATE * FIXED_TO_FLOAT(timescale);
+	inverse_ticratescaled = 1.0 / ticratescaled;
 
 	enterprecise = I_GetPreciseTime();
 	elapsedseconds = (double)(enterprecise - oldenterprecise) / I_GetPrecisePrecision();
 	tictimer += elapsedseconds;
-	while (tictimer > 1.0/ticratescaled)
+	while (tictimer > inverse_ticratescaled)
 	{
 		entertic += 1;
-		tictimer -= 1.0/ticratescaled;
+		tictimer -= inverse_ticratescaled;
 	}
 	realtics = entertic - oldentertics;
 	oldentertics = entertic;
