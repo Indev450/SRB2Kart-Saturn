@@ -596,7 +596,7 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 //#define DUMPCONSISTENCY
 
 ///	See name of player in your crosshair
-#define SEENAMES
+//#define SEENAMES
 
 ///	Allow loading of savegames between different versions of the game.
 ///	\note	XMOD port.
