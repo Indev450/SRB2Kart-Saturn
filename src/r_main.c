@@ -1468,12 +1468,12 @@ void R_SetupFrame(player_t *player, boolean skybox)
 	else if (player->playerstate == PST_DEAD || player->exiting)
 		chasecam = true; // force chasecam on
 
-	if (chasecam && !thiscam->chase)
+	if (chasecam && (thiscam && !thiscam->chase))
 	{
 		P_ResetCamera(player, thiscam);
 		thiscam->chase = true;
 	}
-	else if (!chasecam)
+	else if (thiscam && !chasecam)
 		thiscam->chase = false;
 
 	newview->sky = !skybox;
@@ -1486,7 +1486,7 @@ void R_SetupFrame(player_t *player, boolean skybox)
 		newview->aim = player->awayviewaiming;
 		newview->angle = viewmobj->angle;
 	}
-	else if (!player->spectator && chasecam)
+	else if (!player->spectator && (thiscam && chasecam))
 	// use outside cam view
 	{
 		viewmobj = NULL;
@@ -1532,7 +1532,7 @@ void R_SetupFrame(player_t *player, boolean skybox)
 
 	newview->player = player;
 
-	if (chasecam && !player->awayviewtics && !player->spectator)
+	if ((thiscam && chasecam) && !player->awayviewtics && !player->spectator)
 	{
 		newview->x = thiscam->x;
 		newview->y = thiscam->y;
@@ -1551,7 +1551,7 @@ void R_SetupFrame(player_t *player, boolean skybox)
 		newview->x += quake.x;
 		newview->y += quake.y;
 
-		if (viewmobj->subsector && thiscam->subsector->sector)
+		if (!P_MobjWasRemoved(viewmobj) && viewmobj->subsector && thiscam && thiscam->subsector->sector)
 			newview->sector = viewmobj->subsector->sector;
 		else
 			newview->sector = R_PointInSubsector(newview->x, newview->y)->sector;
