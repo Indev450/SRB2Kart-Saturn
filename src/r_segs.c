@@ -1545,8 +1545,7 @@ static void R_RenderSegLoop (void)
 
 		if (maskedtexture || numthicksides)
 		{
-			// save texturecol
-			//  for backdrawing of masked mid texture
+			// save texturecol for backdrawing of masked mid texture
 			maskedtexturecol[rw_x] = (INT16)texturecolumn;
 
 			if (maskedtextureheight != NULL) {
@@ -1979,19 +1978,17 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			//SoM: 3/25/2000: This code fixes an automap bug that didn't check
 			// frontsector->ceiling and backsector->floor to see if a door was closed.
 			// Without the following code, sprites get displayed behind closed doors.
+			if (doorclosed || (worldhigh <= worldbottom && worldhighslope <= worldbottomslope))
 			{
-				if (doorclosed || (worldhigh <= worldbottom && worldhighslope <= worldbottomslope))
-				{
-					ds_p->sprbottomclip = negonearray;
-					ds_p->bsilheight = INT32_MAX;
-					ds_p->silhouette |= SIL_BOTTOM;
-				}
-				if (doorclosed || (worldlow >= worldtop && worldlowslope >= worldtopslope))
-				{                   // killough 1/17/98, 2/8/98
-					ds_p->sprtopclip = screenheightarray;
-					ds_p->tsilheight = INT32_MIN;
-					ds_p->silhouette |= SIL_TOP;
-				}
+				ds_p->sprbottomclip = negonearray;
+				ds_p->bsilheight = INT32_MAX;
+				ds_p->silhouette |= SIL_BOTTOM;
+			}
+			if (doorclosed || (worldlow >= worldtop && worldlowslope >= worldtopslope))
+			{                   // killough 1/17/98, 2/8/98
+				ds_p->sprtopclip = screenheightarray;
+				ds_p->tsilheight = INT32_MIN;
+				ds_p->silhouette |= SIL_TOP;
 			}
 		}
 
@@ -2092,9 +2089,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			}
 		}
 		// check BOTTOM TEXTURE
-		if (worldlow > worldbottom
-				|| worldlowslope > worldbottomslope
-			)     //seulement si VISIBLE!!!
+		if (worldlow > worldbottom || worldlowslope > worldbottomslope) // Only if VISIBLE!!!
 		{
 			// bottom texture
 			bottomtexture = R_GetTextureNum(sidedef->bottomtexture);
@@ -2856,7 +2851,8 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 	}
 	else
 #endif
-		R_RenderSegLoop();
+
+	R_RenderSegLoop();
 	colfunc = wallcolfunc;
 
 	if (portalline) // if curline is a portal, set portalrender for drawseg

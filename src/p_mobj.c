@@ -356,7 +356,7 @@ static boolean P_SetPrecipMobjState(precipmobj_t *mobj, statenum_t state)
 //
 // Special utility to return +1 or -1 depending on mobj's gravity
 //
-SINT8 P_MobjFlip(mobj_t *mobj)
+SINT8 P_MobjFlip(const mobj_t *mobj)
 {
 	if (mobj && mobj->eflags & MFE_VERTICALFLIP)
 		return -1;
@@ -616,7 +616,7 @@ fixed_t P_MobjFloorZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed_t
 		testy += y;
 
 		// If the highest point is in the sector, then we have it easy! Just get the Z at that point
-		if (((mobj->flags & MF_NOBLOCKMAP) && (mobj->flags & MF_NOCLIP)) ? R_IsPointInSector(boundsec ? boundsec : sector, testx, testy) : R_PointInSubsector(testx, testy)->sector == (boundsec ? boundsec : sector))
+		if (R_PointInSubsector(testx, testy)->sector == (boundsec ? boundsec : sector))
 			return P_GetZAt(slope, testx, testy);
 
 		// If boundsec is set, we're looking for specials. In that case, iterate over every line in this sector to find the TRUE highest/lowest point
@@ -692,7 +692,7 @@ fixed_t P_MobjCeilingZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed
 		testy += y;
 
 		// If the highest point is in the sector, then we have it easy! Just get the Z at that point
-		if (((mobj->flags & MF_NOBLOCKMAP) && (mobj->flags & MF_NOCLIP)) ? R_IsPointInSector(boundsec ? boundsec : sector, testx, testy) : R_PointInSubsector(testx, testy)->sector == (boundsec ? boundsec : sector))
+		if (R_PointInSubsector(testx, testy)->sector == (boundsec ? boundsec : sector))
 			return P_GetZAt(slope, testx, testy);
 
 		// If boundsec is set, we're looking for specials. In that case, iterate over every line in this sector to find the TRUE highest/lowest point
@@ -770,7 +770,7 @@ fixed_t P_CameraFloorZ(camera_t *mobj, sector_t *sector, sector_t *boundsec, fix
 		testy += y;
 
 		// If the highest point is in the sector, then we have it easy! Just get the Z at that point
-		if (R_IsPointInSector(boundsec ? boundsec : sector, testx, testy))
+		if (R_PointInSubsector(testx, testy)->sector == (boundsec ? boundsec : sector))
 			return P_GetZAt(slope, testx, testy);
 
 		// If boundsec is set, we're looking for specials. In that case, iterate over every line in this sector to find the TRUE highest/lowest point
@@ -847,7 +847,7 @@ fixed_t P_CameraCeilingZ(camera_t *mobj, sector_t *sector, sector_t *boundsec, f
 		testy += y;
 
 		// If the highest point is in the sector, then we have it easy! Just get the Z at that point
-		if (R_IsPointInSector(boundsec ? boundsec : sector, testx, testy))
+		if (R_PointInSubsector(testx, testy)->sector == (boundsec ? boundsec : sector))
 			return P_GetZAt(slope, testx, testy);
 
 		// If boundsec is set, we're looking for specials. In that case, iterate over every line in this sector to find the TRUE highest/lowest point
@@ -915,16 +915,18 @@ static void P_PlayerFlip(mobj_t *mo)
 
 		for (i = 0; i <= splitscreen; i++)
 		{
-			if (mo->player-players == displayplayers[i])
-			{
-				localaiming[i] = mo->player->aiming;
-				if (camera[i].chase) {
-					camera[i].aiming = InvAngle(camera[i].aiming);
-					camera[i].z = mo->z - camera[i].z + mo->z;
-					if (mo->eflags & MFE_VERTICALFLIP)
-						camera[i].z += FixedMul(20*FRACUNIT, mo->scale);
-				}
-			}
+			if (!(mo->player-players == displayplayers[i]))
+				continue;
+
+			localaiming[i] = mo->player->aiming;
+
+			if (!camera[i].chase)
+				continue;
+
+			camera[i].aiming = InvAngle(camera[i].aiming);
+			camera[i].z = mo->z - camera[i].z + mo->z;
+			if (mo->eflags & MFE_VERTICALFLIP)
+				camera[i].z += FixedMul(20*FRACUNIT, mo->scale);
 		}
 	}
 }
@@ -1234,67 +1236,67 @@ static void P_PushableCheckBustables(mobj_t *mo)
 		if (!node->m_sector)
 			break;
 
-		if (node->m_sector->ffloors)
+		if (!(node->m_sector->ffloors))
+			continue;
+
+		ffloor_t *rover;
+		fixed_t topheight, bottomheight;
+
+		for (rover = node->m_sector->ffloors; rover; rover = rover->next)
 		{
-			ffloor_t *rover;
-			fixed_t topheight, bottomheight;
+			if (!(rover->flags & FF_EXISTS)) continue;
 
-			for (rover = node->m_sector->ffloors; rover; rover = rover->next)
+			if (!(rover->flags & FF_BUSTUP)) continue;
+
+			// Needs ML_EFFECT4 flag for pushables to break it
+			if (!(rover->master->flags & ML_EFFECT4)) continue;
+
+			if (rover->master->frontsector->crumblestate)
+				continue;
+
+			topheight = P_GetFOFTopZ(mo, node->m_sector, rover, mo->x, mo->y, NULL);
+			bottomheight = P_GetFOFBottomZ(mo, node->m_sector, rover, mo->x, mo->y, NULL);
+			// Height checks
+			if (rover->flags & FF_SHATTERBOTTOM)
 			{
-				if (!(rover->flags & FF_EXISTS)) continue;
+				if (mo->z+mo->momz + mo->height < bottomheight)
+					continue;
 
-				if (!(rover->flags & FF_BUSTUP)) continue;
-
-				// Needs ML_EFFECT4 flag for pushables to break it
-				if (!(rover->master->flags & ML_EFFECT4)) continue;
-
-				if (!rover->master->frontsector->crumblestate)
-				{
-					topheight = P_GetFOFTopZ(mo, node->m_sector, rover, mo->x, mo->y, NULL);
-					bottomheight = P_GetFOFBottomZ(mo, node->m_sector, rover, mo->x, mo->y, NULL);
-					// Height checks
-					if (rover->flags & FF_SHATTERBOTTOM)
-					{
-						if (mo->z+mo->momz + mo->height < bottomheight)
-							continue;
-
-						if (mo->z+mo->height > bottomheight)
-							continue;
-					}
-					else if (rover->flags & FF_SPINBUST)
-					{
-						if (mo->z+mo->momz > topheight)
-							continue;
-
-						if (mo->z+mo->height < bottomheight)
-							continue;
-					}
-					else if (rover->flags & FF_SHATTER)
-					{
-						if (mo->z+mo->momz > topheight)
-							continue;
-
-						if (mo->z+mo->momz + mo->height < bottomheight)
-							continue;
-					}
-					else
-					{
-						if (mo->z >= topheight)
-							continue;
-
-						if (mo->z+mo->height < bottomheight)
-							continue;
-					}
-
-					EV_CrumbleChain(node->m_sector, rover);
-
-					// Run a linedef executor??
-					if (rover->master->flags & ML_EFFECT5)
-						P_LinedefExecute((INT16)(P_AproxDistance(rover->master->dx, rover->master->dy)>>FRACBITS), mo, node->m_sector);
-
-					goto bustupdone;
-				}
+				if (mo->z+mo->height > bottomheight)
+					continue;
 			}
+			else if (rover->flags & FF_SPINBUST)
+			{
+				if (mo->z+mo->momz > topheight)
+					continue;
+
+				if (mo->z+mo->height < bottomheight)
+					continue;
+			}
+			else if (rover->flags & FF_SHATTER)
+			{
+				if (mo->z+mo->momz > topheight)
+					continue;
+
+				if (mo->z+mo->momz + mo->height < bottomheight)
+					continue;
+			}
+			else
+			{
+				if (mo->z >= topheight)
+					continue;
+
+				if (mo->z+mo->height < bottomheight)
+					continue;
+			}
+
+			EV_CrumbleChain(node->m_sector, rover);
+
+			// Run a linedef executor??
+			if (rover->master->flags & ML_EFFECT5)
+				P_LinedefExecute((INT16)(P_AproxDistance(rover->master->dx, rover->master->dy)>>FRACBITS), mo, node->m_sector);
+
+			goto bustupdone;
 		}
 	}
 bustupdone:
@@ -2498,42 +2500,42 @@ static void P_PlayerZMovement(mobj_t *mo)
 							if (newsubsec->sector != sec)
 								continue;
 
-							if (newsubsec->polyList)
+							if (!newsubsec->polyList)
+								continue;
+
+							polyobj_t *po = newsubsec->polyList;
+							sector_t *polysec;
+
+							while(po)
 							{
-								polyobj_t *po = newsubsec->polyList;
-								sector_t *polysec;
-
-								while(po)
+								if (!P_MobjInsidePolyobj(po, mo) || !(po->flags & POF_SOLID))
 								{
-									if (!P_MobjInsidePolyobj(po, mo) || !(po->flags & POF_SOLID))
-									{
-										po = (polyobj_t *)(po->link.next);
-										continue;
-									}
-
-									// We're inside it! Yess...
-									polysec = po->lines[0]->backsector;
-
-									// Moving polyobjects should act like conveyors if the player lands on one. (I.E. none of the momentum cut thing below) -Red
-									if ((mo->z == polysec->ceilingheight || mo->z+mo->height == polysec->floorheight) && po->thinker)
-										stopmovecut = true;
-
-									if (!(po->flags & POF_LDEXEC))
-									{
-										po = (polyobj_t *)(po->link.next);
-										continue;
-									}
-
-									if (mo->z == polysec->ceilingheight)
-									{
-										// We're landing on a PO, so check for
-										// a linedef executor.
-										// Trigger tags are 32000 + the PO's ID number.
-										P_LinedefExecute((INT16)(32000 + po->id), mo, NULL);
-									}
-
 									po = (polyobj_t *)(po->link.next);
+									continue;
 								}
+
+								// We're inside it! Yess...
+								polysec = po->lines[0]->backsector;
+
+								// Moving polyobjects should act like conveyors if the player lands on one. (I.E. none of the momentum cut thing below) -Red
+								if ((mo->z == polysec->ceilingheight || mo->z+mo->height == polysec->floorheight) && po->thinker)
+									stopmovecut = true;
+
+								if (!(po->flags & POF_LDEXEC))
+								{
+									po = (polyobj_t *)(po->link.next);
+									continue;
+								}
+
+								if (mo->z == polysec->ceilingheight)
+								{
+									// We're landing on a PO, so check for
+									// a linedef executor.
+									// Trigger tags are 32000 + the PO's ID number.
+									P_LinedefExecute((INT16)(32000 + po->id), mo, NULL);
+								}
+
+								po = (polyobj_t *)(po->link.next);
 							}
 						}
 					}
@@ -3072,16 +3074,16 @@ void P_MobjCheckWater(mobj_t *mobj)
 					mobj->y + FixedMul((prandom[2]<<(FRACBITS-3)) * (prandom[0]&0x40 ? 1 : -1), mobj->scale),
 					mobj->z + FixedMul((prandom[3]<<(FRACBITS-2)), mobj->scale), bubbletype);
 
-				if (bubble)
-				{
-					if (P_MobjFlip(mobj)*mobj->momz < 0)
-						bubble->momz = mobj->momz >> 4;
-					else
-						bubble->momz = 0;
+				if (!bubble)
+					continue;
 
-					bubble->destscale = mobj->scale;
-					P_SetScale(bubble, mobj->scale);
-				}
+				if (P_MobjFlip(mobj)*mobj->momz < 0)
+					bubble->momz = mobj->momz >> 4;
+				else
+					bubble->momz = 0;
+
+				bubble->destscale = mobj->scale;
+				P_SetScale(bubble, mobj->scale);
 			}
 		}
 	}
@@ -3299,8 +3301,10 @@ boolean P_CameraThinker(player_t *player, camera_t *thiscam, boolean resetcalled
 	{
 		for (i = 0; i <= splitscreen; i++)
 		{
-			if (player == &players[displayplayers[i]])
-				postimgtype[i] = postimg;
+			if (!(player == &players[displayplayers[i]]))
+				continue;
+
+			postimgtype[i] = postimg;
 		}
 	}
 
@@ -3473,20 +3477,20 @@ static void P_PlayerMobjThinker(mobj_t *mobj)
 
 		for (node = mobj->touching_sectorlist; node; node = node->m_sectorlist_next)
 		{
-			if (node->m_sector->ffloors)
-			{
-				ffloor_t *rover;
-				// Get water boundaries first
-				for (rover = node->m_sector->ffloors; rover; rover = rover->next)
-				{
-					if (!(rover->flags & FF_EXISTS))
-						continue;
+			if (!node->m_sector->ffloors)
+				continue;
 
-					if (rover->flags & FF_SWIMMABLE) // Is there water?
-					{
-						thereiswater = true;
-						break;
-					}
+			ffloor_t *rover;
+			// Get water boundaries first
+			for (rover = node->m_sector->ffloors; rover; rover = rover->next)
+			{
+				if (!(rover->flags & FF_EXISTS))
+					continue;
+
+				if (rover->flags & FF_SWIMMABLE) // Is there water?
+				{
+					thereiswater = true;
+					break;
 				}
 			}
 		}
@@ -3494,21 +3498,21 @@ static void P_PlayerMobjThinker(mobj_t *mobj)
 		{
 			for (node = mobj->touching_sectorlist; node; node = node->m_sectorlist_next)
 			{
-				if (node->m_sector->ffloors)
-				{
-					ffloor_t *rover;
-					for (rover = node->m_sector->ffloors; rover; rover = rover->next)
-					{
-						if (!(rover->flags & FF_EXISTS) || !(rover->flags & FF_FLOATBOB))
-							continue;
+				if (!node->m_sector->ffloors)
+					continue;
 
-						if ((!(mobj->eflags & MFE_VERTICALFLIP) && abs(*rover->topheight-mobj->z) <= abs(mobj->momz)) // The player is landing on the cheese!
-						|| (mobj->eflags & MFE_VERTICALFLIP && abs(*rover->bottomheight-(mobj->z+mobj->height)) <= abs(mobj->momz)))
-						{
-							// Initiate a 'bouncy' elevator function
-							// which slowly diminishes.
-							EV_BounceSector(rover->master->frontsector, -mobj->momz, rover->master);
-						}
+				ffloor_t *rover;
+				for (rover = node->m_sector->ffloors; rover; rover = rover->next)
+				{
+					if (!(rover->flags & FF_EXISTS) || !(rover->flags & FF_FLOATBOB))
+						continue;
+
+					if ((!(mobj->eflags & MFE_VERTICALFLIP) && abs(*rover->topheight-mobj->z) <= abs(mobj->momz)) // The player is landing on the cheese!
+					|| (mobj->eflags & MFE_VERTICALFLIP && abs(*rover->bottomheight-(mobj->z+mobj->height)) <= abs(mobj->momz)))
+					{
+						// Initiate a 'bouncy' elevator function
+						// which slowly diminishes.
+						EV_BounceSector(rover->master->frontsector, -mobj->momz, rover->master);
 					}
 				}
 			}
@@ -3781,20 +3785,20 @@ boolean P_SupermanLook4Players(mobj_t *actor)
 
 	for (c = 0; c < MAXPLAYERS; c++)
 	{
-		if (playeringame[c])
-		{
-			if (players[c].health <= 0)
-				continue; // dead
+		if (!playeringame[c])
+			continue;
 
-			if (players[c].pflags & PF_INVIS)
-				continue; // ignore notarget
+		if (players[c].health <= 0)
+			continue; // dead
 
-			if (!players[c].mo || players[c].bot)
-				continue;
+		if (players[c].pflags & PF_INVIS)
+			continue; // ignore notarget
 
-			playersinthegame[stop] = &players[c];
-			stop++;
-		}
+		if (!players[c].mo || players[c].bot)
+			continue;
+
+		playersinthegame[stop] = &players[c];
+		stop++;
 	}
 
 	if (!stop)
@@ -4146,11 +4150,21 @@ static void P_Boss3Thinker(mobj_t *mobj)
 				continue;
 
 			mo2 = (mobj_t *)th;
-			if (mo2->type == MT_BOSS3WAYPOINT && mo2->spawnpoint && mo2->spawnpoint->angle == mobj->threshold)
-			{
-				P_SetTarget(&mobj->target, mo2);
-				break;
-			}
+
+			if (!mo2)
+				continue;
+
+			if (mo2->type != MT_BOSS3WAYPOINT)
+				continue;
+
+			if (!mo2->spawnpoint)
+				continue;
+
+			if (mo2->spawnpoint->angle != mobj->threshold)
+				continue;
+
+			P_SetTarget(&mobj->target, mo2);
+			break;
 		}
 
 		if (!mobj->target) // Should NEVER happen
@@ -4302,18 +4316,20 @@ static void P_Boss4DestroyCage(void)
 		{
 			rsec = &sectors[sector->attached[a]];
 			for (rover = rsec->ffloors; rover; rover = rover->next)
-				if (rover->flags & FF_EXISTS && rover->secnum == (size_t)snum)
+			{
+				if (!(rover->flags & FF_EXISTS && rover->secnum == (size_t)snum))
+					continue;
+
+				if (rover->flags & FF_RENDERALL) // checking for FF_RENDERANY.
+					EV_CrumbleChain(rsec, rover); // This FOF is visible to some extent? Crumble it.
+				else // Completely invisible FOF
 				{
-					if (rover->flags & FF_RENDERALL) // checking for FF_RENDERANY.
-						EV_CrumbleChain(rsec, rover); // This FOF is visible to some extent? Crumble it.
-					else // Completely invisible FOF
-					{
-						// no longer exists (can't collide with again)
-						rover->flags &= ~FF_EXISTS;
-						sector->moved = true;
-						rsec->moved = true;
-					}
+					// no longer exists (can't collide with again)
+					rover->flags &= ~FF_EXISTS;
+					sector->moved = true;
+					rsec->moved = true;
 				}
+			}
 		}
 	}
 }
@@ -4328,8 +4344,10 @@ static void P_Boss4PopSpikeballs(mobj_t *mobj)
 		next = base->tracer;
 		P_SetTarget(&base->tracer, NULL);
 		for (seg = base; seg; seg = seg->hnext)
+		{
 			if (seg->health)
 				P_KillMobj(seg, NULL, NULL);
+		}
 		base = next;
 	}
 }
@@ -5406,22 +5424,22 @@ mobj_t *P_GetClosestAxis(mobj_t *source)
 
 		mo2 = (mobj_t *)th;
 
-		if (mo2->type == MT_AXIS)
+		if (!(mo2->type == MT_AXIS))
+			continue;
+
+		if (closestaxis == NULL)
 		{
-			if (closestaxis == NULL)
+			closestaxis = mo2;
+			dist2 = R_PointToDist2(source->x, source->y, mo2->x, mo2->y)-mo2->radius;
+		}
+		else
+		{
+			dist1 = R_PointToDist2(source->x, source->y, mo2->x, mo2->y)-mo2->radius;
+
+			if (dist1 < dist2)
 			{
 				closestaxis = mo2;
-				dist2 = R_PointToDist2(source->x, source->y, mo2->x, mo2->y)-mo2->radius;
-			}
-			else
-			{
-				dist1 = R_PointToDist2(source->x, source->y, mo2->x, mo2->y)-mo2->radius;
-
-				if (dist1 < dist2)
-				{
-					closestaxis = mo2;
-					dist2 = dist1;
-				}
+				dist2 = dist1;
 			}
 		}
 	}
@@ -7218,16 +7236,18 @@ void P_MobjThinker(mobj_t *mobj)
 				INT32 i;
 				P_SetTarget(&mobj->target, NULL);
 				for (i = 0; i < MAXPLAYERS; i++)
-					if (playeringame[i] && players[i].mo
-					&& players[i].mare == mobj->threshold && players[i].health > 1)
-					{
-						fixed_t dist = P_AproxDistance(players[i].mo->x - mobj->x, players[i].mo->y - mobj->y);
-						if (dist < shortest)
-						{
-							P_SetTarget(&mobj->target, players[i].mo);
-							shortest = dist;
-						}
-					}
+				{
+					if (!(playeringame[i] && players[i].mo
+					&& players[i].mare == mobj->threshold && players[i].health > 1))
+						continue;
+
+					fixed_t dist = P_AproxDistance(players[i].mo->x - mobj->x, players[i].mo->y - mobj->y);
+					if (!(dist < shortest))
+						continue;
+
+					P_SetTarget(&mobj->target, players[i].mo);
+					shortest = dist;
+				}
 			}
 			break;
 		case MT_EGGMOBILE2_POGO:
@@ -9616,6 +9636,7 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 				{
 					if (!playeringame[i])
 						continue;
+
 					pnum[pcount] = i;
 					pcount++;
 				}
@@ -10056,20 +10077,18 @@ void P_RemoveMobj(mobj_t *mobj)
 	P_SetTarget(&mobj->target, P_SetTarget(&mobj->tracer, NULL));
 
 	// repair hnext chain
+	mobj_t *cachenext = mobj->hnext;
+
+	if (mobj->hnext && !P_MobjWasRemoved(mobj->hnext))
 	{
-		mobj_t *cachenext = mobj->hnext;
+		P_SetTarget(&mobj->hnext->hprev, mobj->hprev);
+		P_SetTarget(&mobj->hnext, NULL);
+	}
 
-		if (mobj->hnext && !P_MobjWasRemoved(mobj->hnext))
-		{
-			P_SetTarget(&mobj->hnext->hprev, mobj->hprev);
-			P_SetTarget(&mobj->hnext, NULL);
-		}
-
-		if (mobj->hprev && !P_MobjWasRemoved(mobj->hprev))
-		{
-			P_SetTarget(&mobj->hprev->hnext, cachenext);
-			P_SetTarget(&mobj->hprev, NULL);
-		}
+	if (mobj->hprev && !P_MobjWasRemoved(mobj->hprev))
+	{
+		P_SetTarget(&mobj->hprev->hnext, cachenext);
+		P_SetTarget(&mobj->hprev, NULL);
 	}
 	
 	// clear the reference from the mapthing
@@ -10113,11 +10132,9 @@ void P_RemoveMobj(mobj_t *mobj)
 
 // This does not need to be added to Lua.
 // To test it in Lua, check mobj.valid
-boolean P_MobjWasRemoved(mobj_t *mobj)
+FUNCINLINE ATTRINLINE boolean P_MobjWasRemoved(const mobj_t *mobj)
 {
-	if (mobj && mobj->thinker.function.acp1 == (actionf_p1)P_MobjThinker)
-		return false;
-	return true;
+    return !(mobj && mobj->thinker.function.acp1 == (actionf_p1)P_MobjThinker);
 }
 
 void P_FreePrecipMobj(precipmobj_t *mobj)
@@ -10357,15 +10374,16 @@ void P_PrecipitationEffects(void)
 		xl = players[displayplayers[0]].mo->x - 1024*FRACUNIT;
 		xh = players[displayplayers[0]].mo->x + 1024*FRACUNIT;
 		closedist = 2048*FRACUNIT;
+
 		for (y = yl; y >= yl && y <= yh; y += FRACUNIT*64)
 			for (x = xl; x >= xl && x <= xh; x += FRACUNIT*64)
 			{
-				if (R_PointInSubsector(x, y)->sector->ceilingpic == skyflatnum) // Found the outdoors!
-				{
-					newdist = S_CalculateSoundDistance(players[displayplayers[0]].mo->x, players[displayplayers[0]].mo->y, 0, x, y, 0);
-					if (newdist < closedist)
-						closedist = newdist;
-				}
+				if (!(R_PointInSubsector(x, y)->sector->ceilingpic == skyflatnum)) // Found the outdoors!
+					continue;
+
+				newdist = S_CalculateSoundDistance(players[displayplayers[0]].mo->x, players[displayplayers[0]].mo->y, 0, x, y, 0);
+				if (newdist < closedist)
+					closedist = newdist;
 			}
 
 		volume = 255 - (closedist>>(FRACBITS+2));
@@ -10751,11 +10769,11 @@ void P_AfterPlayerSpawn(INT32 playernum)
 
 	for (i = 0; i <= splitscreen; i++)
 	{
-		if (camera[i].chase)
-		{
-			if (displayplayers[i] == playernum)
-				P_ResetCamera(p, &camera[i]);
-		}
+		if (!camera[i].chase)
+			continue;
+
+		if (displayplayers[i] == playernum)
+			P_ResetCamera(p, &camera[i]);
 	}
 
 	if (CheckForReverseGravity)
@@ -11431,9 +11449,14 @@ ML_NOCLIMB : Direction not controllable
 		mobj->threshold = min(mthing->extrainfo, 7);
 		break;
 	case MT_TUBEWAYPOINT:
-		mobj->health = mthing->angle & 255;
-		mobj->threshold = mthing->angle >> 8;
+	{
+		UINT8 sequence = mthing->angle >> 8;
+		UINT8 id = mthing->angle & 255;
+		mobj->health = id;
+		mobj->threshold = sequence;
+		P_AddWaypoint(sequence, id, mobj);
 		break;
+	}
 	case MT_NIGHTSDRONE:
 		if (mthing->angle > 0)
 			mobj->health = mthing->angle;
@@ -11834,8 +11857,6 @@ void P_SpawnHoopsAndRings(mapthing_t *mthing)
 			{
 				P_SetTarget(&mobj->hprev, nextmobj);
 				P_SetTarget(&mobj->hprev->hnext, mobj);
-				//mobj->hprev = nextmobj;
-				//mobj->hprev->hnext = mobj;
 			}
 			else
 				mobj->hprev = mobj->hnext = NULL;
@@ -11867,8 +11888,6 @@ void P_SpawnHoopsAndRings(mapthing_t *mthing)
 			mobj->hnext = NULL;
 			P_SetTarget(&mobj->hprev, nextmobj);
 			P_SetTarget(&mobj->hprev->hnext, mobj);
-			//mobj->hprev = nextmobj;
-			//mobj->hprev->hnext = mobj;
 
 			nextmobj = mobj;
 		}
@@ -11896,8 +11915,6 @@ void P_SpawnHoopsAndRings(mapthing_t *mthing)
 			mobj->hnext = NULL;
 			P_SetTarget(&mobj->hprev, nextmobj);
 			P_SetTarget(&mobj->hprev->hnext, mobj);
-			//mobj->hprev = nextmobj;
-			//mobj->hprev->hnext = mobj;
 
 			nextmobj = mobj;
 		}
@@ -11980,8 +11997,6 @@ void P_SpawnHoopsAndRings(mapthing_t *mthing)
 			{
 				P_SetTarget(&mobj->hprev, nextmobj);
 				P_SetTarget(&mobj->hprev->hnext, mobj);
-				//mobj->hprev = nextmobj;
-				//mobj->hprev->hnext = mobj;
 			}
 			else
 				mobj->hprev = mobj->hnext = NULL;
@@ -12024,8 +12039,6 @@ void P_SpawnHoopsAndRings(mapthing_t *mthing)
 				mobj->hnext = NULL;
 				P_SetTarget(&mobj->hprev, nextmobj);
 				P_SetTarget(&mobj->hprev->hnext, mobj);
-				//mobj->hprev = nextmobj;
-				//mobj->hprev->hnext = mobj;
 
 				nextmobj = mobj;
 			}

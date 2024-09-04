@@ -227,15 +227,15 @@ void P_RemoveThinkerDelayed(thinker_t *thinker)
 	if (thinker->references)
 		return;
 
-	R_DestroyLevelInterpolators(thinker);
-
+	/* Remove from main thinker list */
+	thinker_t *next = thinker->next;
 	/* Note that currentthinker is guaranteed to point to us,
 	* and since we're freeing our memory, we had better change that. So
 	* point it to thinker->prev, so the iterator will correctly move on to
 	* thinker->prev->next = thinker->next */
-	currentthinker = thinker->prev;
-	/* Remove from main thinker list */
-	P_UnlinkThinker(thinker);
+	(next->prev = currentthinker = thinker->prev)->next = next;
+	R_DestroyLevelInterpolators(thinker);
+	Z_Free(thinker);
 }
 
 //

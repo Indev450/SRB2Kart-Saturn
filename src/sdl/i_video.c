@@ -844,17 +844,17 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 #endif
 	}
 
+	if (FOCUSUNION == oldfocus) // No state change
+	{
+		return;
+	}
+
 #ifdef USE_FBO_OGL
 	if (windowmoved && rendermode == render_opengl)
 	{
 		I_DownSample();
 	}
 #endif
-
-	if (FOCUSUNION == oldfocus) // No state change
-	{
-		return;
-	}
 
 	if (mousefocus && kbfocus)
 	{

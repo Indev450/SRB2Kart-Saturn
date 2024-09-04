@@ -307,6 +307,7 @@ ps_metric_t ps_hw_batchsorttime = {0};
 ps_metric_t ps_hw_batchdrawtime = {0};
 
 static void HWR_AddPrecipitationSprites(void);
+static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing);
 
 // ==========================================================================
 // View position
@@ -366,9 +367,9 @@ gl_portallist_t *currentportallist;
 INT32 portalviewside;
 
 // Linked list for portals.
-gl_portal_t *portal_base_gl, *portal_cap_gl;
+/*gl_portal_t *portal_base_gl, *portal_cap_gl;
 
-/* For now, these aren't used.
+//For now, these aren't used.
 // maybe at some point these could be organized better
 static void HWR_Portal_InitList (void)
 {
@@ -2654,7 +2655,7 @@ static boolean HWR_CheckBBox(const fixed_t *bspcoord)
 // Adds all segs in all polyobjects in the given subsector.
 // Modified for hardware rendering.
 //
-void HWR_AddPolyObjectSegs(void)
+static inline void HWR_AddPolyObjectSegs(void)
 {
 	size_t i, j;
 
@@ -3181,7 +3182,7 @@ static void HWR_Subsector(size_t num)
 				{
 					light = R_GetPlaneLight(gr_frontsector, centerHeight, viewz < topCullHeight  ? true : false);
 					HWR_AddTransparentFloor(levelflats[*rover->toppic].lumpnum,
-					                        &extrasubsectors[num],
+											&extrasubsectors[num],
 											true,
 											*rover->topheight,
 											*gr_frontsector->lightlist[light].lightlevel,
@@ -4111,7 +4112,7 @@ static inline void HWR_DrawPrecipitationSprite(gr_vissprite_t *spr)
 	FOutVector wallVerts[4];
 	GLPatch_t *gpatch; // sprite patch converted to hardware
 	FSurfaceInfo Surf;
-	
+
 	INT32 shader = SHADER_NONE;
 
 	if (!spr->mobj)
@@ -4195,10 +4196,10 @@ static inline void HWR_DrawPrecipitationSprite(gr_vissprite_t *spr)
 
 	if (HWR_UseShader())
 	{
-		shader = SHADER_SPRITE;	// sprite shader
+		shader = SHADER_SPRITE;
 		blend |= PF_ColorMapped;
 	}
-		
+
 	HWR_ProcessPolygon(&Surf, wallVerts, 4, blend|PF_Modulated, shader, false);
 }
 
@@ -4546,7 +4547,7 @@ void HWR_DrawSprites(void)
 				HWR_DrawMD2(spr);
 		}
 		else
-			{
+		{
 			if (!cv_grmdls.value || md2_models[spr->mobj->sprite].notfound || md2_models[spr->mobj->sprite].scale < 0.0f)
 				HWR_DrawSprite(spr);
 			else
@@ -4581,9 +4582,9 @@ void HWR_AddSprites(sector_t *sec)
 	{
 		// Use the smaller setting
 		if (cv_drawdist.value)
-			limit_dist = min(current_bsp_culling_distance, (fixed_t)(cv_drawdist.value) * mapobjectscale);
+			limit_dist = min((fixed_t)current_bsp_culling_distance, (fixed_t)(cv_drawdist.value) * mapobjectscale);
 		else
-			limit_dist = current_bsp_culling_distance;
+			limit_dist = (fixed_t)current_bsp_culling_distance;
 	}
 	else
 		limit_dist = (fixed_t)(cv_drawdist.value) * mapobjectscale;
@@ -4864,12 +4865,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 		flip = sprframe->flip; // Will only be 0x00 or 0xFF
 
 		if (papersprite && ang < ANGLE_180)
-		{
-			if (flip)
-				flip = 0;
-			else
-				flip = 255;
-		}
+			flip ^= 0xFFFF;
 	}
 	else
 	{
@@ -4886,12 +4882,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 		flip = sprframe->flip & (1<<rot);
 
 		if (papersprite && ang < ANGLE_180)
-		{
-			if (flip)
-				flip = 0;
-			else
-				flip = 1<<rot;
-		}
+			flip ^= (1<<rot);
 	}
 
 	if (thing->skin && ((skin_t *)( (thing->localskin) ? thing->localskin : thing->skin ))->flags & SF_HIRES)
@@ -5089,7 +5080,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 }
 
 // Precipitation projector for hardware mode
-void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
+static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 {
 	gr_vissprite_t *vis;
 	float tr_x, tr_y;
@@ -5107,9 +5098,6 @@ void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 	if (!thing)
 		return;
 
-	if (cv_grmaxinterpdist.value)
-		dist = R_QuickCamDist(thing->x, thing->y);
-
 	// uncapped/interpolation
 	interpmobjstate_t interp = {0};
 
@@ -5118,6 +5106,9 @@ void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 	{
 		return;
 	}
+
+	if (cv_grmaxinterpdist.value)
+		dist = R_QuickCamDist(thing->x, thing->y);
 
 	// do interpolation
 	if (R_UsingFrameInterpolation() && !paused && (!cv_grmaxinterpdist.value || dist < cv_grmaxinterpdist.value))
@@ -5262,7 +5253,7 @@ static inline void HWR_ClearView(void)
 	                 (INT32)(gr_viewwindowx + gr_viewwidth),
 	                 (INT32)(gr_viewwindowy + gr_viewheight),
 	                 ZCLIP_PLANE, FAR_ZCLIP_DEFAULT);
-	HWD.pfnClearBuffer(false, true, true, 0);
+	HWD.pfnClearBuffer(false, true, true, NULL);
 }
 
 
@@ -5450,7 +5441,7 @@ static void HWR_RenderPortal(gl_portal_t* portal, gl_portal_t* rootportal, const
 	// remove portal seg from stencil buffer
 	HWR_SetTransform(fpov, player);
 	HWR_ClearClipper();
-	
+
 	HWR_SetStencilState(HWR_STENCIL_REVERSE, stencil_level);
 	HWR_RenderPortalSeg(portal, GRPORTAL_STENCIL);
 
@@ -5497,6 +5488,7 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, playe
 	}
 	else
 		gr_portal = GRPORTAL_OFF;// there may be portals and they need to be drawn as regural walls
+
 	// draw normal things in current frame in current incremented stencil buffer area
 	HWR_SetStencilState(HWR_STENCIL_NORMAL, stencil_level);
 	if (!cv_portalonly.value || rootportal)
@@ -5542,7 +5534,8 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, playe
 		// woo we back
 		gr_portal = oldgl_portal_state;
 
-		HWR_AddPrecipitationSprites();
+		if (allow_portals) // looks weird, but this is only true when its not skybox rendering skipping precip in skyboxes like software does
+			HWR_AddPrecipitationSprites();
 
 		PS_STOP_TIMING(ps_bsptime);
 

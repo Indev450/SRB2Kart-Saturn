@@ -932,12 +932,15 @@ INT32 G_GetDeviceForPlayer(INT32 player)
 
 inline UINT16 G_GetSkinColor(INT32 player)
 {
-	if (gamestate == GS_LEVEL && cv_ledpowerup[player].value && (players[displayplayers[player]].kartstuff[k_invincibilitytimer] || players[displayplayers[player]].powers[pw_invulnerability] || players[displayplayers[player]].kartstuff[k_growshrinktimer]))
+	// make rgb rainbow vomit when invul or flash blue when grow
+	if (cv_ledpowerup[player].value && gamestate == GS_LEVEL && players[displayplayers[player]].mo && (players[displayplayers[player]].kartstuff[k_invincibilitytimer] || players[displayplayers[player]].powers[pw_invulnerability] || players[displayplayers[player]].kartstuff[k_growshrinktimer]))
 		return players[displayplayers[player]].mo->color;
 
-	if (players[displayplayers[player]].skincolor && gamestate == GS_LEVEL)
+	// take actual player skincolour when ingame
+	if (gamestate == GS_LEVEL && players[displayplayers[player]].skincolor)
 		return players[displayplayers[player]].skincolor;
 
+	// otherwise just fallback to whatever the cvar is
 	switch (player)
 	{
 		case 0:
@@ -976,11 +979,7 @@ void G_SetPlayerGamepadIndicatorColor(INT32 player, UINT16 color)
 		return;
 	}
 
-	if (color)
-		skincolor = color;
-	else
-		skincolor = G_GetSkinColor(player);
-
+	skincolor = color ? color : G_GetSkinColor(player);
 	byte_color = V_GetColor(colortranslations[skincolor][8]).s;
 
 	I_SetGamepadIndicatorColor(device, byte_color.red, byte_color.green, byte_color.blue);

@@ -131,12 +131,10 @@ void HWR_AddTransparentWall(FOutVector *wallVerts, FSurfaceInfo * pSurf, INT32 t
 void HWR_DrawSkyWall(FOutVector *wallVerts, FSurfaceInfo *Surf);
 void HWR_DrawSkyBackground(float fpov);
 
-void HWR_AddPolyObjectSegs(void);
-
 // hw_main.c: Sprites
 void HWR_AddSprites(sector_t *sec);
 void HWR_ProjectSprite(mobj_t *thing);
-void HWR_ProjectPrecipitationSprite(precipmobj_t *thing);
+//void HWR_ProjectPrecipitationSprite(precipmobj_t *thing);
 void HWR_DrawSprites(void);
 
 // hw_bsp.c

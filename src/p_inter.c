@@ -1646,7 +1646,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 
 	// SRB2kart
 	// I wish I knew a better way to do this
-	if (!P_MobjWasRemoved(target->target) && target->target->player && !P_MobjWasRemoved(target->target->player->mo))
+	if (target->target && target->target->player && target->target->player->mo)
 	{
 		if (target->target->player->kartstuff[k_eggmanheld] && target->type == MT_EGGMANITEM_SHIELD)
 			target->target->player->kartstuff[k_eggmanheld] = 0;
@@ -1659,7 +1659,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 			{
 				if (target->movedir != 0 && target->movedir < (UINT16)target->target->player->kartstuff[k_itemamount])
 				{
-					if (target->target->hnext && !P_MobjWasRemoved(target->target->hnext))
+					if (target->target->hnext)
 						K_KillBananaChain(target->target->hnext, inflictor, source);
 					target->target->player->kartstuff[k_itemamount] = 0;
 				}

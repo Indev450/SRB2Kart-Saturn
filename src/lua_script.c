@@ -1603,12 +1603,14 @@ void LUA_Archive(void)
 	if (gamestate == GS_LEVEL)
 	{
 		for (th = thinkercap.next; th != &thinkercap; th = th->next)
-			if (th->function.acp1 == (actionf_p1)P_MobjThinker)
-			{
-				// archive function will determine when to skip mobjs,
-				// and write mobjnum in otherwise.
-				ArchiveExtVars(th, "mobj");
-			}
+		{
+			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+				continue;
+
+			// archive function will determine when to skip mobjs,
+			// and write mobjnum in otherwise.
+			ArchiveExtVars(th, "mobj");
+		}
 	}
 	WRITEUINT32(save_p, UINT32_MAX); // end of mobjs marker, replaces mobjnum.
 
@@ -1636,11 +1638,15 @@ void LUA_UnArchive(void)
 	}
 
 	do {
-		mobjnum = READUINT32(save_p); // read a mobjnum
+		mobjnum = READUINT32(save_p); // read a mobjnum	
 		for (th = thinkercap.next; th != &thinkercap; th = th->next)
-			if (th->function.acp1 == (actionf_p1)P_MobjThinker
-			&& ((mobj_t *)th)->mobjnum == mobjnum) // find matching mobj
-				UnArchiveExtVars(th); // apply variables
+		{
+			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+				continue;
+			if (((mobj_t *)th)->mobjnum != mobjnum) // find matching mobj
+				continue;
+			UnArchiveExtVars(th); // apply variables
+		}
 	} while(mobjnum != UINT32_MAX); // repeat until end of mobjs marker.
 
 	LUAh_NetArchiveHook(NetUnArchive); // call the NetArchive hook in unarchive mode
