@@ -1688,7 +1688,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			lastopening = openings + pos;
 			
 			if (oldopenings == NULL)
-			return;
+				return;
 
 			// borrowed fix from *cough* zdoom *cough*
 			// [RH] We also need to adjust the openings pointers that
@@ -2692,7 +2692,6 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 						continue;
 					if (rover->norender == leveltime)
 						continue;
-
 
 					// Let the renderer know this sector is sloped.
 					if (*rover->b_slope || *rover->t_slope)

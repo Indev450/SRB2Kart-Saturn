@@ -5077,6 +5077,7 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 	float x1, x2;
 	float z1, z2;
 	float rightsin, rightcos;
+	float this_scale;
 	spritedef_t *sprdef;
 	spriteframe_t *sprframe;
 	size_t lumpoff;
@@ -5108,6 +5109,8 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 	{
 		R_InterpolatePrecipMobjState(thing, FRACUNIT, &interp);
 	}
+
+	this_scale = FIXED_TO_FLOAT(interp.scale);
 
 	// transform the origin point
 	tr_x = FIXED_TO_FLOAT(interp.x) - gr_viewx;
@@ -5161,6 +5164,9 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 		x2 = FIXED_TO_FLOAT(spritecachedinfo[lumpoff].width - spritecachedinfo[lumpoff].offset);
 	}
 
+	x1 *= this_scale;
+	x2 *= this_scale;
+
 	z1 = tr_y + x1 * rightsin;
 	z2 = tr_y - x2 * rightsin;
 	x1 = tr_x + x1 * rightcos;
@@ -5188,8 +5194,8 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 #endif
 
 	// set top/bottom coords
-	vis->gzt = FIXED_TO_FLOAT(interp.z + spritecachedinfo[lumpoff].topoffset);
-	vis->gz = vis->gzt - FIXED_TO_FLOAT(spritecachedinfo[lumpoff].height);
+	vis->gzt = FIXED_TO_FLOAT(interp.z) + (FIXED_TO_FLOAT(spritecachedinfo[lumpoff].topoffset) * this_scale);
+	vis->gz = vis->gzt - (FIXED_TO_FLOAT(spritecachedinfo[lumpoff].height) * this_scale);
 
 	vis->precip = true;
 }
