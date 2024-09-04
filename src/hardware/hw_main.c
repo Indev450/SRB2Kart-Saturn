@@ -5854,12 +5854,7 @@ void HWR_Startup(void)
 #endif
 
 		if (msaa)
-		{
-			if (a2c)
-				HWD.pfnSetSpecialState(HWD_SET_MSAA, 2);
-			else
-				HWD.pfnSetSpecialState(HWD_SET_MSAA, 1);
-		}
+			HWD.pfnSetSpecialState(HWD_SET_MSAA, a2c ? 2 : 1);
 	}
 	startupdone = true;
 }
@@ -5962,7 +5957,7 @@ void HWR_DoPostProcessor(player_t *player)
 		HWD.pfnDrawPolygon(&Surf, v, 4, PF_Modulated|PF_Translucent|PF_NoTexture|PF_NoDepthTest);
 	}
 
-	if (!cv_grscreentextures.value) // screen textures are needed for the rest of the effects
+	if (cv_grscreentextures.value != 2) // screen textures are needed for the rest of the effects
 		return;
 
 	// Capture the screen for intermission and screen waving
@@ -6010,7 +6005,7 @@ void HWR_DoPostProcessor(player_t *player)
 		HWD.pfnPostImgRedraw(v);
 
 		// Capture the screen again for screen waving on the intermission
-		if(gamestate != GS_INTERMISSION)
+		if (gamestate != GS_INTERMISSION)
 			HWD.pfnMakeScreenTexture(HWD_SCREENTEXTURE_GENERIC1);
 	}
 	// Flipping of the screen isn't done here anymore
