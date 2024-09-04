@@ -5674,17 +5674,16 @@ void HWR_RenderPlayerView(INT32 viewnumber, player_t *player)
 {
 	const boolean skybox = (skyboxmo[0] && cv_skybox.value); // True if there's a skybox object and skyboxes are on
 
+	FRGBAFloat ClearColor;
+
+	ClearColor.red = 0.0f;
+	ClearColor.green = 0.0f;
+	ClearColor.blue = 0.0f;
+	ClearColor.alpha = 1.0f;
+
 	// Clear the color buffer, stops HOMs. Also seems to fix the skybox issue on Intel GPUs.
 	if (viewnumber == 0) // Only do it if it's the first screen being rendered
-	{
-		FRGBAFloat ClearColor;
-
-		ClearColor.red = 0.0f;
-		ClearColor.green = 0.0f;
-		ClearColor.blue = 0.0f;
-		ClearColor.alpha = 1.0f;
 		HWD.pfnClearBuffer(true, false, false, &ClearColor);
-	}
 
 	if (cv_grshaders.value)
 		HWD.pfnSetShaderInfo(HWD_SHADERINFO_LEVELTIME, (INT32)leveltime); // The water surface shader needs the leveltime.
