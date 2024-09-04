@@ -499,47 +499,52 @@ static void HWR_TryToCompileShaderWithImplicitVersion(INT32 shader_index, INT32 
 	boolean vert_shader_version_exists = HWR_VersionDirectiveExists(vert_shader);
 	boolean frag_shader_version_exists = HWR_VersionDirectiveExists(frag_shader);
 
-	if(!vert_shader_version_exists) {
+	if (!vert_shader_version_exists)
 		CONS_Alert(CONS_WARNING, "HWR_LoadCustomShadersFromFile: vertex shader '%s' is missing a #version directive\n", HWR_GetShaderName(shaderxlat_id));
-	}
 
-	if(!frag_shader_version_exists) {
+	if (!frag_shader_version_exists)
 		CONS_Alert(CONS_WARNING, "HWR_LoadCustomShadersFromFile: fragment shader '%s' is missing a #version directive\n", HWR_GetShaderName(shaderxlat_id));
-	}
 
 	// try to compile as is
 	HWR_CompileShader(shader_index);
+
 	if (gl_shaders[shader_index].compiled)
 		return;
 
 	// try each version directive
-	for(UINT32 i = 0; i < sizeof(version_directives) / sizeof(version_directives[0]); ++i) {
+	for (UINT32 i = 0; i < sizeof(version_directives) / sizeof(version_directives[0]); ++i)
+	{
 		CONS_Alert(CONS_NOTICE, "HWR_TryToCompileShaderWithImplicitVersion: Trying %s\n", version_directives[i]);
 
-		if(!vert_shader_version_exists) {
+		if (!vert_shader_version_exists)
+		{
 			// first time reallocation would have to be made
 
-			if(i == 0) {
+			if (i == 0)
+			{
 				void* old = (void*)gl_shaders[shader_index].vertex;
 				vert_shader = gl_shaders[shader_index].vertex = HWR_PrependVersionDirective(vert_shader, i);
 				Z_Free(old);
-			} else {
-				HWR_ReplaceVersionInplace(vert_shader, i);
 			}
+			else
+				HWR_ReplaceVersionInplace(vert_shader, i);
 		}
 
-		if(!frag_shader_version_exists) {
-			if(i == 0) {
+		if (!frag_shader_version_exists)
+		{
+			if (i == 0)
+			{
 				void* old = (void*)gl_shaders[shader_index].fragment;
 				frag_shader = gl_shaders[shader_index].fragment = HWR_PrependVersionDirective(frag_shader, i);
 				Z_Free(old);
-			} else {
-				HWR_ReplaceVersionInplace(frag_shader, i);
 			}
+			else
+				HWR_ReplaceVersionInplace(frag_shader, i);
 		}
 
 		HWR_CompileShader(shader_index);
-		if (gl_shaders[shader_index].compiled) {
+		if (gl_shaders[shader_index].compiled)
+		{
 			CONS_Alert(CONS_NOTICE, "HWR_TryToCompileShaderWithImplicitVersion: Compiled with %s\n",
 					   version_directives[i]);
 			CONS_Alert(CONS_WARNING, "Implicit GLSL version is used. Correct behavior is not guaranteed\n");
@@ -704,17 +709,20 @@ skip_field:
 		{
 			int shader_index = i + NUMSHADERTARGETS; // index to gl_shaders
 			gl_shadertargets[i].custom_shader = shader_index;
+
 			// if only one stage (vertex/fragment) is defined, the other one
 			// is copied from the base shaders.
 			if (!gl_shaders[shader_index].fragment)
 				gl_shaders[shader_index].fragment = Z_StrDup(gl_shadersources[i].fragment);
+
 			if (!gl_shaders[shader_index].vertex)
 				gl_shaders[shader_index].vertex = Z_StrDup(gl_shadersources[i].vertex);
-			if(!HWR_CheckVersionDirectives(gl_shaders[shader_index].vertex, gl_shaders[shader_index].fragment)) {
+
+			if (!HWR_CheckVersionDirectives(gl_shaders[shader_index].vertex, gl_shaders[shader_index].fragment))
 				HWR_TryToCompileShaderWithImplicitVersion(shader_index, i);
-			} else {
+			else
 				HWR_CompileShader(shader_index);
-			}
+
 			if (!gl_shaders[shader_index].compiled)
 				CONS_Alert(CONS_ERROR, "HWR_LoadCustomShadersFromFile: A compilation error occured for the %s shader in file %s. See the console messages above for more information.\n", shaderxlat[i].type, wadfiles[wadnum]->filename);
 		}
