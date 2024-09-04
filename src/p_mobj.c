@@ -3633,7 +3633,7 @@ boolean P_PrecipThinker(precipmobj_t *mobj)
 			return false;
 
 		mobj->z = mobj->ceilingz;
-		mobj->momz = mobj->info->speed;
+		mobj->momz = cv_mobjscaleprecip.value ? FixedMul(mobj->info->speed, mapobjectscale) : mobj->info->speed;
 		mobj->precipflags &= ~PCF_SPLASH;
 		R_ResetPrecipitationMobjInterpolationState(mobj);
 	}
@@ -9975,7 +9975,7 @@ static precipmobj_t *P_SpawnPrecipMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype
 	mobj->ceilingz                   = P_GetSectorCeilingZAt(mobj->subsector->sector, x, y);
 
 	mobj->z = z;
-	mobj->momz = info->speed;
+	mobj->momz = cv_mobjscaleprecip.value ? FixedMul(info->speed, mapobjectscale) : info->speed;
 
 	mobj->thinker.function.acp1 = (actionf_p1)P_NullPrecipThinker;
 	P_AddThinker(&mobj->thinker);
