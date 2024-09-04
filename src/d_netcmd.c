@@ -2965,6 +2965,9 @@ static void Command_Map_f(void)
 		}
 	}
 
+	if (demo.recording && (modeattacking || demo.savemode != DSM_NOTSAVING))
+		G_SaveDemo();
+
 	fromlevelselect = false;
 	D_MapChange(newmapnum, newgametype, newencoremode, newresetplayers, 0, false, false);
 
