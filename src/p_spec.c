@@ -1810,7 +1810,7 @@ void P_SwitchWeather(INT32 weathernum)
 				precipmobj->tics = st->tics;
 				precipmobj->sprite = st->sprite;
 				precipmobj->frame = st->frame;
-				precipmobj->momz = mobjinfo[MT_RAIN].speed;
+				precipmobj->momz = cv_mobjscaleprecip.value ? FixedMul(mobjinfo[MT_RAIN].speed, mapobjectscale) : mobjinfo[MT_RAIN].speed;
 
 				precipmobj->precipflags &= ~(PCF_INVISIBLE|PCF_SPLASH); // P_PrecipThinker will add this again if it needs to
 			}
@@ -1835,7 +1835,7 @@ void P_SwitchWeather(INT32 weathernum)
 				precipmobj->tics = st->tics;
 				precipmobj->sprite = st->sprite;
 				precipmobj->frame = st->frame;
-				precipmobj->momz = mobjinfo[MT_SNOWFLAKE].speed;
+				precipmobj->momz = cv_mobjscaleprecip.value ? FixedMul(mobjinfo[MT_SNOWFLAKE].speed, mapobjectscale) : mobjinfo[MT_SNOWFLAKE].speed;
 
 				precipmobj->precipflags &= ~(PCF_INVISIBLE|PCF_SPLASH); // P_PrecipThinker will add this again if it needs to
 			}
