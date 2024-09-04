@@ -136,16 +136,21 @@ void P_ClosestPointOnLine3D(fixed_t x, fixed_t y, fixed_t z, line_t *line, verte
 //
 INT32 P_PointOnLineSide(fixed_t x, fixed_t y, const line_t *line)
 {
+	fixed_t dx, dy, left, right;
+
 	if (!line->dx)
 		return x <= line->v1->x ? line->dy > 0 : line->dy < 0;
 
 	if (!line->dy)
 		return y <= line->v1->y ? line->dx < 0 : line->dx > 0;
 
-	x -= line->v1->x;
-	y -= line->v1->y;
+	dx = (x - line->v1->x);
+	dy = (y - line->v1->y);
 
-	return FixedMul(y, line->dx>>FRACBITS) > FixedMul(line->dy>>FRACBITS, x);
+	left = FixedMul(line->dy>>FRACBITS, dx);
+	right = FixedMul(dy, line->dx>>FRACBITS);
+
+	return right < left ? 0 : 1;
 }
 
 //
@@ -205,19 +210,27 @@ INT32 P_BoxOnLineSide(fixed_t *tmbox, const line_t *ld)
 //
 static INT32 P_PointOnDivlineSide(fixed_t x, fixed_t y, divline_t *line)
 {
+	fixed_t dx, dy, left, right;
+
 	if (!line->dx)
 		return x <= line->x ? line->dy > 0 : line->dy < 0;
 
 	if (!line->dy)
 		return y <= line->y ? line->dx < 0 : line->dx > 0;
 
-	x -= line->x;
-	y -= line->y;
+	dx = (x - line->x);
+	dy = (y - line->y);
 
-	INT32 mask = ((line->dy ^ line->dx ^ x ^ y) & 0x80000000);
-	return (mask & ((line->dy ^ x) & 0x80000000)) |
-		(~mask & (FixedMul(y>>8, line->dx>>8) > FixedMul(line->dy>>8, x>>8)));
+	// try to quickly decide by looking at sign bits
+	if ((line->dy ^ line->dx ^ dx ^ dy) & 0x80000000)
+		return ((line->dy ^ dx) & 0x80000000) ? 1 : 0;
+
+	left = FixedMul(line->dy>>8, dx>>8);
+	right = FixedMul(dy>>8, line->dx>>8);
+
+	return right < left ? 0 : 1;
 }
+
 
 //
 // P_MakeDivline
