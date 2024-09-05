@@ -519,6 +519,9 @@ FUNCNORETURN static ATTRNORETURN void signal_handler(INT32 num)
 {
 	g_in_exiting_signal_handler = true;
 
+	if (demo.recording)
+		G_SaveDemo();
+
 	D_QuitNetGame(); // Fix server freezes
 
 #ifdef HAVE_LIBBACKTRACE
@@ -919,6 +922,8 @@ static void I_RegisterSignals (void)
 #ifdef NEWSIGNALHANDLER
 static void signal_handler_child(INT32 num)
 {
+	if (demo.recording)
+		G_SaveDemo();
 
 #ifdef HAVE_LIBBACKTRACE
 	write_backtrace(BT_CRASH_REASON_SIGNAL(num));
