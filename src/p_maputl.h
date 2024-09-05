@@ -47,8 +47,8 @@ void P_ClosestPointOnLine3D(fixed_t x, fixed_t y, fixed_t z, line_t *line, verte
 INT32 P_PointOnLineSide(fixed_t x, fixed_t y, const line_t *line);
 void P_MakeDivline(line_t *li, divline_t *dl);
 void P_CameraLineOpening(line_t *plinedef);
-fixed_t P_InterceptVector(const divline_t *v2, const divline_t *v1);
-INT32 P_BoxOnLineSide(const fixed_t *tmbox, const line_t *ld);
+fixed_t P_InterceptVector(divline_t *v2, divline_t *v1);
+INT32 P_BoxOnLineSide(fixed_t *tmbox, const line_t *ld);
 void P_UnsetPrecipThingPosition(precipmobj_t *thing);
 void P_SetPrecipitationThingPosition(precipmobj_t *thing);
 void P_CreatePrecipSecNodeList(precipmobj_t *thing, fixed_t x,fixed_t y);

@@ -153,38 +153,57 @@ FUNCINLINE ATTRINLINE PUREFUNC INT32 P_PointOnLineSide(fixed_t x, fixed_t y, con
 // Considers the line to be infinite
 // Returns side 0 or 1, -1 if box crosses the line.
 //
-INT32 PUREFUNC P_BoxOnLineSide(const fixed_t *tmbox, const line_t *ld)
+PUREFUNC INT32 P_BoxOnLineSide(fixed_t *tmbox, const line_t *ld)
 {
+	INT32 p1, p2;
+
 	switch (ld->slopetype)
 	{
-		INT32 p;
 		case ST_HORIZONTAL:
-			return
-			(tmbox[BOXBOTTOM] > ld->v1->y) == (p = tmbox[BOXTOP] > ld->v1->y) ?
-			p ^ (ld->dx < 0) : -1;
+			p1 = tmbox[BOXTOP] > ld->v1->y;
+			p2 = tmbox[BOXBOTTOM] > ld->v1->y;
+			if (ld->dx < 0)
+			{
+				p1 ^= 1;
+				p2 ^= 1;
+			}
+			break;
+
 		case ST_VERTICAL:
-			return
-			(tmbox[BOXLEFT] < ld->v1->x) == (p = tmbox[BOXRIGHT] < ld->v1->x) ?
-			p ^ (ld->dy < 0) : -1;
+			p1 = tmbox[BOXRIGHT] < ld->v1->x;
+			p2 = tmbox[BOXLEFT] < ld->v1->x;
+			if (ld->dy < 0)
+			{
+				p1 ^= 1;
+				p2 ^= 1;
+			}
+			break;
+
 		case ST_POSITIVE:
-			return
-			P_PointOnLineSide(tmbox[BOXRIGHT], tmbox[BOXBOTTOM], ld) ==
-			(p = P_PointOnLineSide(tmbox[BOXLEFT], tmbox[BOXTOP], ld)) ? p : -1;
+			p1 = P_PointOnLineSide(tmbox[BOXLEFT], tmbox[BOXTOP], ld);
+			p2 = P_PointOnLineSide(tmbox[BOXRIGHT], tmbox[BOXBOTTOM], ld);
+			break;
+
 		case ST_NEGATIVE:
-			return
-			(P_PointOnLineSide(tmbox[BOXLEFT], tmbox[BOXBOTTOM], ld)) ==
-			(p = P_PointOnLineSide(tmbox[BOXRIGHT], tmbox[BOXTOP], ld)) ? p : -1;
+			p1 = P_PointOnLineSide(tmbox[BOXRIGHT], tmbox[BOXTOP], ld);
+			p2 = P_PointOnLineSide(tmbox[BOXLEFT], tmbox[BOXBOTTOM], ld);
+			break;
+
 		default:
 			I_Error("P_BoxOnLineSide: unknown slopetype %d\n", ld->slopetype);
 			return -1;
 	}
+
+	if (p1 == p2)
+		return p1;
+	return -1;
 }
 
 //
 // P_PointOnDivlineSide
 // Returns 0 or 1.
 //
-FUNCINLINE static ATTRINLINE INT32 PUREFUNC P_PointOnDivlineSide(fixed_t x, fixed_t y, const divline_t *line)
+FUNCINLINE static ATTRINLINE PUREFUNC INT32 P_PointOnDivlineSide(fixed_t x, fixed_t y, const divline_t *line)
 {
 	if (!line->dx)
 		return x <= line->x ? line->dy > 0 : line->dy < 0;
@@ -216,16 +235,19 @@ FUNCINLINE ATTRINLINE void P_MakeDivline(line_t *li, divline_t *dl)
 // Returns the fractional intercept point along the first divline.
 // This is only called by the addthings and addlines traversers.
 //
-FUNCINLINE ATTRINLINE fixed_t PUREFUNC P_InterceptVector(const divline_t *v2, const divline_t *v1)
+FUNCINLINE ATTRINLINE fixed_t P_InterceptVector(divline_t *v2, divline_t *v1)
 {
-	fixed_t den;
+	fixed_t frac, num, den;
 
 	den = FixedMul(v1->dy>>8, v2->dx) - FixedMul(v1->dx>>8, v2->dy);
 
 	if (!den)
 		return 0;
 
-	return (FixedDiv(FixedMul((v1->x - v2->x)>>8, v1->dy) + FixedMul((v2->y - v1->y)>>8, v1->dx), den));
+	num = FixedMul((v1->x - v2->x)>>8, v1->dy) + FixedMul((v2->y - v1->y)>>8, v1->dx);
+	frac = FixedDiv(num, den);
+
+	return frac;
 }
 
 //
@@ -717,7 +739,7 @@ void P_UnsetThingPosition(mobj_t *thing)
 	}
 }
 
-void P_UnsetPrecipThingPosition(precipmobj_t *thing)
+FUNCINLINE ATTRINLINE void P_UnsetPrecipThingPosition(precipmobj_t *thing)
 {
 	precipmobj_t **bprev = thing->bprev;
 	precipmobj_t  *bnext = thing->bnext;
@@ -753,7 +775,9 @@ static void P_LinkToBlockMap(mobj_t *thing, mobj_t **bmap)
 		*link = thing;
 	}
 	else // thing is off the map
+	{
 		thing->bnext = NULL, thing->bprev = NULL;
+	}
 }
 
 //
@@ -865,7 +889,7 @@ void P_SetUnderlayPosition(mobj_t *thing)
 	sector_list = NULL; // clear for next time
 }
 
-void P_SetPrecipitationThingPosition(precipmobj_t *thing)
+FUNCINLINE ATTRINLINE void P_SetPrecipitationThingPosition(precipmobj_t *thing)
 {
 	thing->subsector = R_PointInSubsector(thing->x, thing->y);
 
@@ -953,7 +977,7 @@ boolean P_BlockLinesIterator(INT32 x, INT32 y, boolean (*func)(line_t *))
 //
 // P_BlockThingsIterator
 //
-boolean P_BlockThingsIterator(INT32 x, INT32 y, boolean (*func)(mobj_t *))
+FUNCINLINE ATTRINLINE boolean P_BlockThingsIterator(INT32 x, INT32 y, boolean (*func)(mobj_t *))
 {
 	mobj_t *mobj, *bnext = NULL;
 
