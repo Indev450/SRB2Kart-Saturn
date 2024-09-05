@@ -2967,7 +2967,8 @@ static void Command_Map_f(void)
 		}
 	}
 
-	if (demo.recording && demo.savemode != DSM_NOTSAVING && ((cv_demosamemap.value && newmapnum == gamemap) || newmapnum != gamemap))
+	// spend atleast 35 seconds in one map
+	if (demo.recording && demo.savemode != DSM_NOTSAVING && (timeinmap > 1463) && ((cv_demosamemap.value && newmapnum == gamemap) || newmapnum != gamemap))
 		G_SaveDemo();
 
 	fromlevelselect = false;
