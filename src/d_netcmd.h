@@ -38,10 +38,8 @@ extern consvar_t cv_skin4;
 extern consvar_t cv_splitplayers;
 
 #ifdef SEENAMES
-extern consvar_t cv_seenames;
+extern consvar_t cv_seenames, cv_allowseenames;
 #endif
-extern consvar_t cv_allowseenames;
-
 extern consvar_t cv_usemouse;
 //WTF
 extern consvar_t cv_mouseturn;
