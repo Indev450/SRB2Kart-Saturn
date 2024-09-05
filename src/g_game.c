@@ -346,6 +346,8 @@ consvar_t cv_netdemosyncquality = {"netdemo_syncquality", "1", CV_SAVE, netdemos
 static CV_PossibleValue_t maxdemosize_cons_t[] = {{10, "MIN"}, {100, "MAX"}, {0, NULL}};
 consvar_t cv_maxdemosize = {"maxdemosize", "10", CV_SAVE, maxdemosize_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_demosamemap = {"netdemo_savesamemap", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 static UINT8 *savebuffer;
 
 // Analog Control

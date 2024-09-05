@@ -833,6 +833,8 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_recordmultiplayerdemos);
 	CV_RegisterVar(&cv_netdemosyncquality);
 	CV_RegisterVar(&cv_maxdemosize);
+	CV_RegisterVar(&cv_demosamemap);
+
 	CV_RegisterVar(&cv_keyboardlayout);
 }
 
@@ -2968,7 +2970,7 @@ static void Command_Map_f(void)
 		}
 	}
 
-	if (demo.recording && (modeattacking || demo.savemode != DSM_NOTSAVING))
+	if (demo.recording && demo.savemode != DSM_NOTSAVING && ((cv_demosamemap.value && newmapnum == gamemap) || newmapnum != gamemap))
 		G_SaveDemo();
 
 	fromlevelselect = false;
