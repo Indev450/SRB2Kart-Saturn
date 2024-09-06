@@ -39,7 +39,7 @@ extern UINT8 *demo_p;
 // ======================================
 
 // demoplaying back and demo recording
-extern consvar_t cv_recordmultiplayerdemos, cv_netdemosyncquality, cv_maxdemosize, cv_demosamemap;
+extern consvar_t cv_recordmultiplayerdemos, cv_netdemosyncquality, cv_maxdemosize, cv_demochangemap;
 
 // Publicly-accessible demo vars
 struct demovars_s {
