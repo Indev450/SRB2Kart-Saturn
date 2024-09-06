@@ -2030,7 +2030,7 @@ static menuitem_t OP_AdvServerOptionsMenu[] =
 #ifdef SATURNSYNCH
 	{IT_STRING | IT_CVAR,    NULL, "Resend Gamestate Cooldown",		&cv_resynchcooldown,	 50},
 	{IT_STRING | IT_CVAR,    NULL, "Resend Gamestate Attempts",		&cv_gamestateattempts,	 60},
-#endif
+
 	{IT_STRING | IT_CVAR,    NULL, "Delay limit (frames)",			&cv_maxping,			 70},
 	{IT_STRING | IT_CVAR,    NULL, "Delay timeout (s)",				&cv_pingtimeout,		 80},
 	{IT_STRING | IT_CVAR,    NULL, "Connection timeout (tics)",		&cv_nettimeout,			 90},
@@ -2042,6 +2042,19 @@ static menuitem_t OP_AdvServerOptionsMenu[] =
 	{IT_STRING | IT_CVAR,    NULL, "Log join addresses",			&cv_showjoinaddress,	150},
 	{IT_STRING | IT_CVAR,    NULL, "Log resyncs",					&cv_blamecfail,			160},
 	{IT_STRING | IT_CVAR,    NULL, "Log file transfers",			&cv_noticedownload,		170},
+#else
+	{IT_STRING | IT_CVAR,    NULL, "Delay limit (frames)",			&cv_maxping,			 50},
+	{IT_STRING | IT_CVAR,    NULL, "Delay timeout (s)",				&cv_pingtimeout,		 60},
+	{IT_STRING | IT_CVAR,    NULL, "Connection timeout (tics)",		&cv_nettimeout,			 70},
+	{IT_STRING | IT_CVAR,    NULL, "Join timeout (tics)",			&cv_jointimeout,		 80},
+
+	{IT_STRING | IT_CVAR,    NULL, "Max. file transfer send (KB)",	&cv_maxsend,			100},
+	{IT_STRING | IT_CVAR,    NULL, "File transfer packet rate",		&cv_downloadspeed,		110},
+
+	{IT_STRING | IT_CVAR,    NULL, "Log join addresses",			&cv_showjoinaddress,	130},
+	{IT_STRING | IT_CVAR,    NULL, "Log resyncs",					&cv_blamecfail,			140},
+	{IT_STRING | IT_CVAR,    NULL, "Log file transfers",			&cv_noticedownload,		150},
+#endif
 };
 
 static const char* OP_AdvServerOptionsTooltips[] =
