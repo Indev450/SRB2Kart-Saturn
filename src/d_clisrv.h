@@ -99,13 +99,12 @@ typedef enum
 
 	PT_PING,          // Packet sent to tell clients the other client's latency to server.
 
-#ifdef SATURNPAK
-	PT_ISSATURN,
-#endif
 #ifdef SATURNSYNCH
 	PT_WILLRESENDGAMESTATE, // Hey Client, I am about to resend you the gamestate!
 	PT_CANRECEIVEGAMESTATE, // Okay Server, I'm ready to receive it, you can go ahead.
 	PT_RECEIVEDGAMESTATE,   // Thank you Server, I am ready to play again!
+
+	PT_ISSATURN,
 #endif
 
 	NUMPACKETTYPE
