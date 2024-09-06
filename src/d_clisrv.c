@@ -5761,7 +5761,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 #endif
 #ifdef SATURNPAK
 		case PT_ISSATURN:
-			//CONS_Printf("hi im on saturn&d\n", node);
+			//CONS_Printf("hi im on saturn%d\n", node);
 			is_client_saturn[node] = true;
 			break;
 #endif
