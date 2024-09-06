@@ -5759,12 +5759,6 @@ static void HandlePacketFromPlayer(SINT8 node)
 			if (client)
 				Got_Filetxpak();
 			break;
-#ifdef SATURNPAK
-		case PT_ISSATURN:
-			//CONS_Printf("hi im on saturn\n");
-			is_client_saturn[node] = true;
-			break;
-#endif
 #ifdef SATURNSYNCH
 		case PT_CANRECEIVEGAMESTATE:
 			can_receive_gamestate[node] = true;
@@ -5777,6 +5771,12 @@ static void HandlePacketFromPlayer(SINT8 node)
 			break;
 		case PT_WILLRESENDGAMESTATE:
 			PT_WillResendGamestate();
+			break;
+#endif
+#ifdef SATURNPAK
+		case PT_ISSATURN:
+			//CONS_Printf("hi im on saturn&d\n", node);
+			is_client_saturn[node] = true;
 			break;
 #endif
 		default:

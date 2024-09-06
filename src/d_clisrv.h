@@ -104,7 +104,8 @@ typedef enum
 	PT_CANRECEIVEGAMESTATE, // Okay Server, I'm ready to receive it, you can go ahead.
 	PT_RECEIVEDGAMESTATE,   // Thank you Server, I am ready to play again!
 
-	PT_ISSATURN,
+	// we will reserve this for now even if unused, so order wont get mangled
+	PT_ISSATURN, 			// Saturn specific identifier packet
 #endif
 
 	NUMPACKETTYPE

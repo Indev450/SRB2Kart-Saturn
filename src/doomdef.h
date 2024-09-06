@@ -585,13 +585,13 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 /// Still highly experimental
 //#define SATURNSYNCH
 
-/// Server detection for if a connecting client is on Saturn.
-/// For stuff like extra synching, etc.
-//#define SATURNPAK
-
 /// Detect if a client is on Saturn in the clientconfig.
 /// To seperately allow them to join or block joining from vanilla clients.
 //#define SATURNJOIN
+
+/// Server detection for if a connecting client is on Saturn.
+/// For stuff like extra synching, etc.
+//#define SATURNPAK
 //-- <(￣︶￣)> __
 
 /// Undefine to use the new method of Gamma correction see colour cube in v_video.c

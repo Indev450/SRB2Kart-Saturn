@@ -840,6 +840,7 @@ const char *packettypename[NUMPACKETTYPE] =
 	"CANRECEIVEGAMESTATE",
 	"RECEIVEDGAMESTATE",
 
+	// we will reserve this for now even if unused, so order wont get mangled
 	"ISSATURN"
 #endif
 };
