@@ -1881,7 +1881,7 @@ static void SV_SavedGame(void)
 		return;
 	}
 
-	P_SaveNetGame();
+	P_SaveNetGame(false);
 
 	length = save_p - savebuffer;
 	if (length > SAVEGAMESIZE)
@@ -6848,7 +6848,7 @@ rewind_t *CL_SaveRewindPoint(size_t demopos)
 		return NULL;
 
 	save_p = rewind->savebuffer;
-	P_SaveNetGame(true);
+	P_SaveNetGame(false);
 	rewind->leveltime = leveltime;
 	rewind->next = rewindhead;
 	rewind->demopos = demopos;
@@ -6872,7 +6872,7 @@ rewind_t *CL_RewindToTime(tic_t time)
 		return NULL;
 
 	save_p = rewindhead->savebuffer;
-	P_LoadNetGame(true);
+	P_LoadNetGame(false);
 	wipegamestate = gamestate; // No fading back in!
 	timeinmap = leveltime;
 
