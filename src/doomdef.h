@@ -569,6 +569,11 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 // Compile them at your own risk!
 
 //-- SATURN __
+/// Enable gamestate resynching between Saturn servers and clients
+/// Like SRB2 and RR does
+/// Still highly experimental
+//#define SATURNSYNCH
+
 /// Server detection for if a connecting client is on Saturn.
 /// For stuff like extra synching, etc.
 //#define SATURNPAK

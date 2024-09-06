@@ -93,8 +93,10 @@ UINT8 playernode[MAXPLAYERS];
 // The actual timeout will be longer depending on the savegame length
 tic_t jointimeout = (3*TICRATE);
 static boolean sendingsavegame[MAXNETNODES]; // Are we sending the savegame?
+#ifdef SATURNSYNCH
 static boolean resendingsavegame[MAXNETNODES]; // Are we resending the savegame?
 static tic_t savegameresendcooldown[MAXNETNODES]; // How long before we can resend again?
+#endif
 static tic_t freezetimeout[MAXNETNODES]; // Until when can this node freeze the server before getting a timeout?
 
 UINT16 pingmeasurecount = 1;
@@ -126,11 +128,12 @@ static UINT8 resynch_inprogress[MAXNETNODES];
 static UINT8 resynch_local_inprogress = false; // WE are desynched and getting packets to fix it.
 static UINT8 player_joining = false;
 UINT8 hu_resynching = 0;
+
+#ifdef SATURNSYNCH
 UINT8 hu_redownloadinggamestate = 0;
-
 static boolean can_receive_gamestate[MAXNETNODES];
-
 static UINT8 gamestate_resend_counter[MAXNETNODES];
+#endif
 
 // kart, true when a player is connecting or disconnecting so that the gameplay has stopped in its tracks
 UINT8 hu_stopped = 0;
@@ -143,14 +146,19 @@ static ticcmd_t localcmds4;
 static boolean cl_packetmissed;
 // here it is for the secondary local player (splitscreen)
 static UINT8 mynode; // my address pointofview server
+
+#ifdef SATURNSYNCH
 static boolean cl_redownloadinggamestate = false;
+#endif
 
 #ifdef SATURNPAK
 boolean is_client_saturn[MAXNETNODES];
 #endif
 
+#ifdef SATURNSYNCH
 #ifdef SATURNJOIN
 #define ISSATURN 69
+#endif
 #endif
 
 static UINT8 localtextcmd[MAXTEXTCMD];
@@ -188,7 +196,6 @@ typedef struct textcmdtic_s
 
 ticcmd_t netcmds[TICQUEUE][MAXPLAYERS];
 static textcmdtic_t *textcmds[TEXTCMD_HASH_SIZE] = {NULL};
-
 
 consvar_t cv_showjoinaddress = {"showjoinaddress", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -1898,7 +1905,6 @@ static void SV_SavedGame(void)
 #endif
 #define TMPSAVENAME "$$$.sav"
 
-
 static void CL_LoadReceivedSavegame(boolean reloading)
 {
 	UINT8 *savebuffer = NULL;
@@ -1958,6 +1964,7 @@ static void CL_LoadReceivedSavegame(boolean reloading)
 	consistancy[gametic%TICQUEUE] = Consistancy();
 	CON_ToggleOff();
 
+#ifdef SATURNSYNCH
 	// Tell the server we have received and reloaded the gamestate
 	// so they know they can resume the game
 	if (reloading)
@@ -1965,8 +1972,10 @@ static void CL_LoadReceivedSavegame(boolean reloading)
 		netbuffer->packettype = PT_RECEIVEDGAMESTATE;
 		HSendPacket(servernode, true, 0, 0);
 	}
+#endif
 }
 
+#ifdef SATURNSYNCH
 static void CL_ReloadReceivedSavegame(void)
 {
 	INT32 i;
@@ -1989,6 +1998,7 @@ static void CL_ReloadReceivedSavegame(void)
 
 	CONS_Printf(M_GetText("Game state reloaded\n"));
 }
+#endif
 #endif
 
 #ifndef NONET
@@ -3210,7 +3220,9 @@ void CL_RemovePlayer(INT32 playernum, INT32 reason)
 #ifdef SATURNPAK
 			is_client_saturn[node] = false;
 #endif
+#ifdef SATURNSYNCH
 			can_receive_gamestate[node] = false;
+#endif
 			Net_CloseConnection(node);
 			ResetNode(node);
 		}
@@ -4014,6 +4026,7 @@ static void Command_list_http_logins (void)
 }
 #endif/*HAVE_CURL*/
 
+#ifdef SATURNSYNCH
 static void Command_ResendGamestate(void)
 {
 	SINT8 playernum;
@@ -4041,6 +4054,7 @@ static void Command_ResendGamestate(void)
 		return;
 	}
 }
+#endif
 
 static CV_PossibleValue_t netticbuffer_cons_t[] = {{0, "MIN"}, {3, "MAX"}, {0, NULL}};
 consvar_t cv_netticbuffer = {"netticbuffer", "1", CV_SAVE, netticbuffer_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -4069,11 +4083,14 @@ consvar_t cv_discordinvites = {"discordinvites", "Everyone", CV_SAVE|CV_CALL, di
 static CV_PossibleValue_t resynchattempts_cons_t[] = {{0, "MIN"}, {20, "MAX"}, {0, NULL}};
 consvar_t cv_resynchattempts = {"resynchattempts", "2", CV_SAVE, resynchattempts_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+#ifdef SATURNSYNCH
 static CV_PossibleValue_t gamestateattempts_cons_t[] = {{0, "MIN"}, {30, "MAX"}, {0, NULL}};
 consvar_t cv_gamestateattempts = {"gamestateresendattempts", "10", CV_SAVE, gamestateattempts_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static CV_PossibleValue_t resynchcooldown_cons_t[] = {{0, "MIN"}, {20, "MAX"}, {0, NULL}};
 consvar_t cv_resynchcooldown = {"gamestatecooldown", "5", CV_SAVE, resynchcooldown_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL	};
+#endif
+
 consvar_t cv_blamecfail = {"blamecfail", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL	};
 
 // max file size to send to a player (in kilobytes)
@@ -4133,7 +4150,9 @@ void D_ClientServerInit(void)
 	COM_AddCommand("reloadbans", Command_ReloadBan);
 	COM_AddCommand("connect", Command_connect);
 	COM_AddCommand("nodes", Command_Nodes);
+#ifdef SATURNSYNCH
 	COM_AddCommand("resendgamestate", Command_ResendGamestate);
+#endif
 	COM_AddCommand("listplayers", Command_Listplayers);
 	COM_AddCommand("packetstat", Command_Packetstat);
 #ifdef HAVE_CURL
@@ -4193,9 +4212,11 @@ static void ResetNode(INT32 node)
 	is_client_saturn[node] = false;
 #endif
 
+#ifdef SATURNSYNCH
 	resendingsavegame[node] = false;
 	can_receive_gamestate[node] = false;
 	savegameresendcooldown[node] = 0;
+#endif
 	//
 }
 
@@ -4232,7 +4253,9 @@ void SV_ResetServer(void)
 
 	mynode = 0;
 	cl_packetmissed = false;
+#ifdef SATURNSYNCH
 	cl_redownloadinggamestate = false;
+#endif
 
 	if (dedicated)
 	{
@@ -4762,7 +4785,7 @@ static void HandleConnect(SINT8 node)
 
 			/// \note Wait what???
 			///       What if the gamestate takes more than one second to get downloaded?
-			///       Or if a lagspike happdsfens?
+			///       Or if a lagspike happens?
 			// you get a free second before desynch checks. use it wisely.
 			SV_InitResynchVars(node);
 
@@ -4862,7 +4885,7 @@ static void HandleServerInfo(SINT8 node)
 }
 #endif
 
-
+#ifdef SATURNSYNCH
 static void PT_WillResendGamestate(void)
 {
 	char tmpsave[264];
@@ -4885,7 +4908,6 @@ static void PT_WillResendGamestate(void)
 		I_Error("Can't delete %s\n", tmpsave);
 
 	CL_PrepareDownloadSaveGame(tmpsave);
-
 	cl_redownloadinggamestate = true;
 }
 
@@ -4899,6 +4921,7 @@ static void PT_CanReceiveGamestate(SINT8 node)
 	SV_SendSaveGame(node, true); // Resend a complete game state
 	resendingsavegame[node] = true;
 }
+#endif
 
 /** Handles a packet received from a node that isn't in game
   *
@@ -5328,6 +5351,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 				break;
 			}
 
+#ifdef SATURNSYNCH
 			if ((gamestate_resend_counter[node] != 0) && (I_GetTime() % ((max(cv_resynchcooldown.value, 1) * TICRATE) *2) == 0))
 				gamestate_resend_counter[node]--;
 
@@ -5383,6 +5407,43 @@ static void HandlePacketFromPlayer(SINT8 node)
 			else if (resynch_score[node])
 				--resynch_score[node];
 			break;
+#else
+			// Check player consistancy during the level
+			if (realstart <= gametic && realstart > gametic - TICQUEUE+1 && gamestate == GS_LEVEL
+				&& consistancy[realstart%TICQUEUE] != SHORT(netbuffer->u.clientpak.consistancy))
+			{
+					SV_RequireResynch(node);
+
+				if (cv_resynchattempts.value && resynch_score[node] <= (unsigned)cv_resynchattempts.value*250)
+				{
+					if (cv_blamecfail.value)
+						CONS_Printf(M_GetText("Synch failure for player %d (%s); expected %hd, got %hd\n"),
+							netconsole+1, player_names[netconsole],
+							consistancy[realstart%TICQUEUE],
+							SHORT(netbuffer->u.clientpak.consistancy));
+					DEBFILE(va("Restoring player %d (synch failure) [%update] %d!=%d\n",
+						netconsole, realstart, consistancy[realstart%TICQUEUE],
+						SHORT(netbuffer->u.clientpak.consistancy)));
+					break;
+				}
+				else
+				{
+					UINT8 buf[3];
+
+					buf[0] = (UINT8)netconsole;
+					buf[1] = KICK_MSG_CON_FAIL;
+					SendNetXCmd(XD_KICK, &buf, 2);
+					DEBFILE(va("player %d kicked (synch failure) [%u] %d!=%d\n",
+						netconsole, realstart, consistancy[realstart%TICQUEUE],
+						SHORT(netbuffer->u.clientpak.consistancy)));
+					break;
+				}
+			}
+			else if (resynch_score[node])
+				--resynch_score[node];
+			break;
+#endif
+
 		case PT_BASICKEEPALIVE:
 			if (client)
 				break;
@@ -5520,7 +5581,9 @@ static void HandlePacketFromPlayer(SINT8 node)
 #ifdef SATURNPAK
 			is_client_saturn[node] = false;
 #endif
+#ifdef SATURNSYNCH
 			can_receive_gamestate[node] = false;
+#endif
 			break;
 // -------------------------------------------- CLIENT RECEIVE ----------
 		case PT_RESYNCHEND:
@@ -5690,6 +5753,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 			is_client_saturn[node] = true;
 			break;
 #endif
+#ifdef SATURNSYNCH
 		case PT_CANRECEIVEGAMESTATE:
 			can_receive_gamestate[node] = true;
 			PT_CanReceiveGamestate(node);
@@ -5702,6 +5766,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 		case PT_WILLRESENDGAMESTATE:
 			PT_WillResendGamestate();
 			break;
+#endif
 		default:
 			DEBFILE(va("UNKNOWN PACKET TYPE RECEIVED %d from host %d\n",
 				netbuffer->packettype, node));
@@ -6661,15 +6726,18 @@ void NetUpdate(void)
 
 	if (client)
 	{
+#ifdef SATURNSYNCH
 		// If the client just finished redownloading the game state, load it
 		if (cl_redownloadinggamestate && fileneeded[0].status == FS_FOUND)
 			CL_ReloadReceivedSavegame();
-
+#endif
 		if (!resynch_local_inprogress)
 			CL_SendClientCmd(); // Send tic cmd
 
 		hu_resynching = resynch_local_inprogress;
+#ifdef SATURNSYNCH
 		hu_redownloadinggamestate = cl_redownloadinggamestate;
+#endif
 	}
 	else
 	{
@@ -6678,7 +6746,9 @@ void NetUpdate(void)
 			INT32 counts;
 
 			hu_resynching = false;
+#ifdef SATURNSYNCH
 			hu_redownloadinggamestate = false;
+#endif
 
 			firstticstosend = gametic;
 			for (i = 0; i < MAXNETNODES; i++)
