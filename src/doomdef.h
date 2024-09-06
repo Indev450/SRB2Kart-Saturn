@@ -579,20 +579,28 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 // None of these that are disabled in the normal build are guaranteed to work perfectly
 // Compile them at your own risk!
 
+#ifndef NONET
 //-- SATURN __
 /// Enable gamestate resynching between Saturn servers and clients
 /// Like SRB2 and RR does
 /// Still highly experimental
-//#define SATURNSYNCH
+#ifdef DOSATURNSYNCH
+#define SATURNSYNCH
 
 /// Detect if a client is on Saturn in the clientconfig.
 /// To seperately allow them to join or block joining from vanilla clients.
-//#define SATURNJOIN
+#ifdef DOSATURNJOIN
+#define SATURNJOIN
+#endif
+#endif
 
 /// Server detection for if a connecting client is on Saturn.
 /// For stuff like extra synching, etc.
+//#ifdef DOSATURNPAK
 //#define SATURNPAK
+//#endif
 //-- <(￣︶￣)> __
+#endif
 
 /// Undefine to use the new method of Gamma correction see colour cube in v_video.c
 #define BACKWARDSCOMPATCORRECTION
