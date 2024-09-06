@@ -400,9 +400,10 @@ FUNCINLINE ATTRINLINE PUREFUNC INT32 R_PointOnSegSide(fixed_t x, fixed_t y, cons
 	y -= ly;
 
 	// Try to quickly decide by looking at sign bits.
-	if ((ldy ^ ldx ^ x ^ y) < 0)
-		return (ldy ^ x) < 0;          // (left is negative)
-	return FixedMul(y, ldx>>FRACBITS) >= FixedMul(ldy>>FRACBITS, x);
+	// also use a mask to avoid branch prediction
+	INT32 mask = (ldy ^ ldx ^ x ^ y) >> 31;
+	return (mask & ((ldy ^ x) < 0)) |  // (left is negative)
+		(~mask & (FixedMul(y, ldx>>FRACBITS) >= FixedMul(ldy>>FRACBITS, x)));
 }
 
 //
