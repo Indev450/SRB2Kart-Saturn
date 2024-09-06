@@ -837,10 +837,11 @@ const char *packettypename[NUMPACKETTYPE] =
 #ifdef SATURNPAK
 	"ISSATURN",
 #endif
-
+#ifdef SATURNSYNCH
 	"WILLRESENDGAMESTATE",
 	"CANRECEIVEGAMESTATE",
 	"RECEIVEDGAMESTATE"
+#endif
 };
 
 const char *Net_GetPacketName(UINT8 packettype)

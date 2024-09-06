@@ -102,9 +102,11 @@ typedef enum
 #ifdef SATURNPAK
 	PT_ISSATURN,
 #endif
+#ifdef SATURNSYNCH
 	PT_WILLRESENDGAMESTATE, // Hey Client, I am about to resend you the gamestate!
 	PT_CANRECEIVEGAMESTATE, // Okay Server, I'm ready to receive it, you can go ahead.
 	PT_RECEIVEDGAMESTATE,   // Thank you Server, I am ready to play again!
+#endif
 
 	NUMPACKETTYPE
 } packettype_t;
@@ -582,7 +584,11 @@ extern consvar_t
 #ifdef SATURNJOIN
 	cv_allownewsaturnplayer,
 #endif
-	cv_joinrefusemessage, cv_maxplayers, cv_resynchattempts, cv_resynchcooldown, cv_gamestateattempts, cv_blamecfail, cv_maxsend, cv_noticedownload, cv_downloadspeed;
+	cv_joinrefusemessage, cv_maxplayers, cv_resynchattempts,
+#ifdef SATURNSYNCH
+	cv_resynchcooldown, cv_gamestateattempts,
+#endif
+	cv_blamecfail, cv_maxsend, cv_noticedownload, cv_downloadspeed;
 
 extern consvar_t cv_connectawaittime;
 
@@ -647,7 +653,9 @@ tic_t GetLag(INT32 node);
 UINT8 GetFreeXCmdSize(void);
 
 extern UINT8 hu_resynching;
+#ifdef SATURNSYNCH
 extern UINT8 hu_redownloadinggamestate;
+#endif
 extern UINT8 hu_stopped; // kart, true when the game is stopped for players due to a disconnecting or connecting player
 
 typedef struct rewind_s {
