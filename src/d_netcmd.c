@@ -835,6 +835,8 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_recordmultiplayerdemos);
 	CV_RegisterVar(&cv_netdemosyncquality);
 	CV_RegisterVar(&cv_maxdemosize);
+	CV_RegisterVar(&cv_demochangemap);
+
 	CV_RegisterVar(&cv_keyboardlayout);
 }
 
@@ -2969,6 +2971,10 @@ static void Command_Map_f(void)
 			return;
 		}
 	}
+
+	// spend atleast 35 seconds in one map
+	if (cv_demochangemap.value && demo.recording && demo.savemode != DSM_NOTSAVING && (timeinmap > 1463) && ((cv_demochangemap.value == 2 && newmapnum == gamemap) || newmapnum != gamemap))
+		G_SaveDemo();
 
 	fromlevelselect = false;
 	D_MapChange(newmapnum, newgametype, newencoremode, newresetplayers, 0, false, false);

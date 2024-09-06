@@ -5088,6 +5088,7 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 	float x1, x2;
 	float z1, z2;
 	float rightsin, rightcos;
+	float this_scale;
 	spritedef_t *sprdef;
 	spriteframe_t *sprframe;
 	size_t lumpoff;
@@ -5119,6 +5120,8 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 	{
 		R_InterpolatePrecipMobjState(thing, FRACUNIT, &interp);
 	}
+
+	this_scale = FIXED_TO_FLOAT(interp.scale);
 
 	// transform the origin point
 	tr_x = FIXED_TO_FLOAT(interp.x) - gr_viewx;
@@ -5172,6 +5175,9 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 		x2 = FIXED_TO_FLOAT(spritecachedinfo[lumpoff].width - spritecachedinfo[lumpoff].offset);
 	}
 
+	x1 *= this_scale;
+	x2 *= this_scale;
+
 	z1 = tr_y + x1 * rightsin;
 	z2 = tr_y - x2 * rightsin;
 	x1 = tr_x + x1 * rightcos;
@@ -5199,8 +5205,8 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 #endif
 
 	// set top/bottom coords
-	vis->gzt = FIXED_TO_FLOAT(interp.z + spritecachedinfo[lumpoff].topoffset);
-	vis->gz = vis->gzt - FIXED_TO_FLOAT(spritecachedinfo[lumpoff].height);
+	vis->gzt = FIXED_TO_FLOAT(interp.z) + (FIXED_TO_FLOAT(spritecachedinfo[lumpoff].topoffset) * this_scale);
+	vis->gz = vis->gzt - (FIXED_TO_FLOAT(spritecachedinfo[lumpoff].height) * this_scale);
 
 	vis->precip = true;
 }
@@ -5679,17 +5685,16 @@ void HWR_RenderPlayerView(INT32 viewnumber, player_t *player)
 {
 	const boolean skybox = (skyboxmo[0] && cv_skybox.value); // True if there's a skybox object and skyboxes are on
 
+	FRGBAFloat ClearColor;
+
+	ClearColor.red = 0.0f;
+	ClearColor.green = 0.0f;
+	ClearColor.blue = 0.0f;
+	ClearColor.alpha = 1.0f;
+
 	// Clear the color buffer, stops HOMs. Also seems to fix the skybox issue on Intel GPUs.
 	if (viewnumber == 0) // Only do it if it's the first screen being rendered
-	{
-		FRGBAFloat ClearColor;
-
-		ClearColor.red = 0.0f;
-		ClearColor.green = 0.0f;
-		ClearColor.blue = 0.0f;
-		ClearColor.alpha = 1.0f;
 		HWD.pfnClearBuffer(true, false, false, &ClearColor);
-	}
 
 	if (cv_grshaders.value)
 		HWD.pfnSetShaderInfo(HWD_SHADERINFO_LEVELTIME, (INT32)leveltime); // The water surface shader needs the leveltime.
@@ -5849,12 +5854,7 @@ void HWR_Startup(void)
 #endif
 
 		if (msaa)
-		{
-			if (a2c)
-				HWD.pfnSetSpecialState(HWD_SET_MSAA, 2);
-			else
-				HWD.pfnSetSpecialState(HWD_SET_MSAA, 1);
-		}
+			HWD.pfnSetSpecialState(HWD_SET_MSAA, a2c ? 2 : 1);
 	}
 	startupdone = true;
 }
@@ -5957,7 +5957,7 @@ void HWR_DoPostProcessor(player_t *player)
 		HWD.pfnDrawPolygon(&Surf, v, 4, PF_Modulated|PF_Translucent|PF_NoTexture|PF_NoDepthTest);
 	}
 
-	if (!cv_grscreentextures.value) // screen textures are needed for the rest of the effects
+	if (cv_grscreentextures.value != 2) // screen textures are needed for the rest of the effects
 		return;
 
 	// Capture the screen for intermission and screen waving
@@ -6005,7 +6005,7 @@ void HWR_DoPostProcessor(player_t *player)
 		HWD.pfnPostImgRedraw(v);
 
 		// Capture the screen again for screen waving on the intermission
-		if(gamestate != GS_INTERMISSION)
+		if (gamestate != GS_INTERMISSION)
 			HWD.pfnMakeScreenTexture(HWD_SCREENTEXTURE_GENERIC1);
 	}
 	// Flipping of the screen isn't done here anymore
