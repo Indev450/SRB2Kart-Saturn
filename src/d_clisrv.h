@@ -371,7 +371,7 @@ typedef struct
 	UINT8 subversion; // Contains build version
 	UINT8 localplayers;	// number of splitscreen players
 	UINT8 mode;
-#ifdef SATURNPAK
+#ifdef SATURNJOIN
 	UINT8 issaturn;
 #endif
 } ATTRPACK clientconfig_pak;
@@ -579,7 +579,7 @@ extern consvar_t
 	cv_joinnextround,
 #endif
 	cv_netticbuffer, cv_allownewplayer,
-#ifdef SATURNPAK
+#ifdef SATURNJOIN
 	cv_allownewsaturnplayer,
 #endif
 	cv_joinrefusemessage, cv_maxplayers, cv_resynchattempts, cv_resynchcooldown, cv_gamestateattempts, cv_blamecfail, cv_maxsend, cv_noticedownload, cv_downloadspeed;

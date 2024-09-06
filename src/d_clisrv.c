@@ -147,6 +147,9 @@ static boolean cl_redownloadinggamestate = false;
 
 #ifdef SATURNPAK
 boolean is_client_saturn[MAXNETNODES];
+#endif
+
+#ifdef SATURNJOIN
 #define ISSATURN 69
 #endif
 
@@ -1444,7 +1447,7 @@ static boolean CL_SendJoin(void)
 	netbuffer->u.clientcfg.subversion = SUBVERSION;
 	strncpy(netbuffer->u.clientcfg.application, SRB2APPLICATION,
 			sizeof netbuffer->u.clientcfg.application);
-#ifdef SATURNPAK
+#ifdef SATURNJOIN
 	netbuffer->u.clientcfg.issaturn = ISSATURN;
 #endif
 
@@ -4048,7 +4051,7 @@ consvar_t cv_joinrefusemessage = {"joinrefusemessage", "The server is not accept
 
 consvar_t cv_allownewplayer = {"allowjoin", "On", CV_SAVE|CV_CALL, CV_OnOff, Joinable_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
-#ifdef SATURNPAK
+#ifdef SATURNJOIN
 consvar_t cv_allownewsaturnplayer = {"allowsaturnjoin", "On", CV_SAVE|CV_HIDEN, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 #endif
 
@@ -4097,7 +4100,7 @@ static void Joinable_OnChange(void)
 	if (!server)
 		return;
 
-#ifdef SATURNPAK
+#ifdef SATURNJOIN
 	// disabling joins should also disable saturn joins unless its called with CV_StealthSet and vice versa to make life a bit easier
 	if (!cv_allownewplayer.value)
 		CV_Set(&cv_allownewsaturnplayer, "Off");
@@ -4716,7 +4719,7 @@ static void HandleConnect(SINT8 node)
 	{
 		SV_SendRefuse(node, va(M_GetText("Different SRB2Kart versions cannot\nplay a netgame!\n(server version %d.%d)"), VERSION, SUBVERSION));
 	}
-#ifdef SATURNPAK
+#ifdef SATURNJOIN
 	else if ((!cv_allownewplayer.value && node && netbuffer->u.clientcfg.issaturn != ISSATURN) || (!cv_allownewsaturnplayer.value && node && netbuffer->u.clientcfg.issaturn == ISSATURN))
 #else
 	else if (!cv_allownewplayer.value && node)
@@ -5088,7 +5091,6 @@ static void HandlePacketFromAwayNode(SINT8 node)
 #ifdef SATURNPAK
 			SendSaturnInfo(node);
 #endif
-
 			memset(playeringame, 0, sizeof(playeringame));
 			for (j = 0; j < MAXPLAYERS; j++)
 			{
@@ -6532,13 +6534,12 @@ void NetKeepAlive(void)
 	MasterClient_Ticker();
 #endif
 	
-	#ifdef HOLEPUNCH
+#ifdef HOLEPUNCH
 	if (netgame && serverrunning)
 	{
 		RenewHolePunch();
 	}
-	#endif
-
+#endif
 
 	if (client)
 	{
