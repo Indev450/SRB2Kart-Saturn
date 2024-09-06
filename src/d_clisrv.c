@@ -155,10 +155,8 @@ static boolean cl_redownloadinggamestate = false;
 boolean is_client_saturn[MAXNETNODES];
 #endif
 
-#ifdef SATURNSYNCH
 #ifdef SATURNJOIN
 #define ISSATURN 69
-#endif
 #endif
 
 static UINT8 localtextcmd[MAXTEXTCMD];
