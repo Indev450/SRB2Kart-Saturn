@@ -151,3 +151,15 @@ Best to be used in a Loop to ensure the color wont get overwritten by the game.
 Add Gamepad Rumble support for things.
 To be used with Displayplayers.
 Duration is in milliseconds and is optional to set, default value is 84ms.
+
+# Other changes
+
+## P_PlayRinglossSound(source, damager)
+
+Add optional `damager` argument (should be `mobj_t`), which causes hurt sound also play for damager
+if `karthitemdialog` option is enabled
+
+## K_PlayHitEmSound(mobj, victim)
+
+Add optional `victim` argument (should be a player's `mobj_t`), which causes "hit em" sound to be
+delayed and played for victim too if `karthitemdialog` option is enabled
