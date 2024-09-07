@@ -1283,67 +1283,6 @@ static void P_LoadLineDefs2(void)
 			break;
 		}
 	}
-
-	// Optimize sidedefs
-	if (M_CheckParm("-compress"))
-	{
-		side_t *newsides;
-		size_t numnewsides = 0;
-		size_t z;
-
-		for (i = 0; i < numsides; i++)
-		{
-			size_t j, k;
-			if (sides[i].sector == NULL)
-				continue;
-
-			for (k = numlines, ld = lines; k--; ld++)
-			{
-				if (ld->sidenum[0] == i)
-					ld->sidenum[0] = (UINT16)numnewsides;
-
-				if (ld->sidenum[1] == i)
-					ld->sidenum[1] = (UINT16)numnewsides;
-			}
-
-			for (j = i+1; j < numsides; j++)
-			{
-				if (sides[j].sector == NULL)
-					continue;
-
-				if (!memcmp(&sides[i], &sides[j], sizeof(side_t)))
-				{
-					// Find the linedefs that belong to this one
-					for (k = numlines, ld = lines; k--; ld++)
-					{
-						if (ld->sidenum[0] == j)
-							ld->sidenum[0] = (UINT16)numnewsides;
-
-						if (ld->sidenum[1] == j)
-							ld->sidenum[1] = (UINT16)numnewsides;
-					}
-					sides[j].sector = NULL; // Flag for deletion
-				}
-			}
-			numnewsides++;
-		}
-
-		// We're loading crap into this block anyhow, so no point in zeroing it out.
-		newsides = Z_Malloc(numnewsides * sizeof(*newsides), PU_LEVEL, NULL);
-
-		// Copy the sides to their new block of memory.
-		for (i = 0, z = 0; i < numsides; i++)
-		{
-			if (sides[i].sector != NULL)
-				M_Memcpy(&newsides[z++], &sides[i], sizeof(side_t));
-		}
-
-		CONS_Debug(DBG_SETUP, "Old sides is %s, new sides is %s\n", sizeu1(numsides), sizeu1(numnewsides));
-
-		Z_Free(sides);
-		sides = newsides;
-		numsides = numnewsides;
-	}
 }
 
 static void P_LoadRawSideDefs2(void *data)
