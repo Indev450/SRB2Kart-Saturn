@@ -2196,8 +2196,6 @@ static void P_LevelInitStuff(boolean reloadinggamestate)
 
 	leveltime = 0;
 
-	memset(localaiming, 0, sizeof(localaiming));
-
 	// map object scale
 	mapobjectscale = mapheaderinfo[gamemap-1]->mobj_scale;
 
@@ -2333,6 +2331,8 @@ void P_LoadThingsOnly(void)
 	}
 
 	P_LevelInitStuff(false);
+
+	memset(localaiming, 0, sizeof(localaiming));
 
 	P_PrepareRawThings(vth->data);
 	P_LoadThings();
@@ -2620,30 +2620,36 @@ static void P_SetupCamera(UINT8 pnum, camera_t *cam)
 	}
 }
 
+static void P_InitCamera(void)
+{
+	INT32 i;
+
+	if (!dedicated)
+	{
+		if (!demo.freecam)
+			for (i = 0; i <= splitscreen; i++)
+				P_SetupCamera(displayplayers[i], &camera[i]);
+
+		// Though, I don't think anyone would care about cam_rotate being reset back to the only value that makes sense :P
+		if (!cv_cam_rotate.changed)
+			CV_Set(&cv_cam_rotate, cv_cam_rotate.defaultvalue);
+
+		if (!cv_cam2_rotate.changed)
+			CV_Set(&cv_cam2_rotate, cv_cam2_rotate.defaultvalue);
+
+		if (!cv_cam3_rotate.changed)
+			CV_Set(&cv_cam3_rotate, cv_cam3_rotate.defaultvalue);
+
+		if (!cv_cam4_rotate.changed)
+			CV_Set(&cv_cam4_rotate, cv_cam4_rotate.defaultvalue);
+
+		displayplayers[0] = consoleplayer; // Start with your OWN view, please!
+	}
+}
+
 static boolean P_CanSave(void)
 {
-#if 0
-	// Saving is completely ignored under these conditions:
-	if ((cursaveslot < 0) // Playing without saving
-		|| (modifiedgame && !savemoddata) // Game is modified
-		|| (netgame || multiplayer) // Not in single-player
-		|| (demo.playback || demo.recording || metalrecording) // Currently in demo
-		|| (players[consoleplayer].lives <= 0) // Completely dead
-		|| (modeattacking || ultimatemode || G_IsSpecialStage(gamemap))) // Specialized instances
-		return false;
-
-	if (mapheaderinfo[gamemap-1]->saveoverride == SAVE_ALWAYS)
-		return true; // Saving should ALWAYS happen!
-	else if (mapheaderinfo[gamemap-1]->saveoverride == SAVE_NEVER)
-		return false; // Saving should NEVER happen!
-
-	// Default condition: In a non-hidden map, at the beginning of a zone or on a completed save-file, and not on save reload.
-	return (!(mapheaderinfo[gamemap-1]->menuflags & LF2_HIDEINMENU)
-			&& (mapheaderinfo[gamemap-1]->actnum < 2 || gamecomplete)
-			&& (gamemap != lastmapsaved));
-#else
 	return false; // SRB2Kart: no SP, no saving.
-#endif
 }
 
 /** Loads a level from a lump or external wad.
@@ -2795,7 +2801,7 @@ boolean P_SetupLevel(boolean skipprecip, boolean reloadinggamestate)
 	// But only if we didn't do the encore startup wipe
 	if (!ranspecialwipe && !demo.rewinding && !reloadinggamestate)
 	{
-		if(rendermode != render_none)
+		if (rendermode != render_none)
 		{
 			F_WipeStartScreen();
 			V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, levelfadecol);
@@ -3015,8 +3021,6 @@ boolean P_SetupLevel(boolean skipprecip, boolean reloadinggamestate)
 			G_BeginRecording(); //this has to move here, since dedicated servers dont run got_mapcmd
 	}
 
-	K_InitDirector();
-
 	wantedcalcdelay = wantedfrequency*2;
 	indirectitemcooldown = 0;
 	hyubgone = 0;
@@ -3052,26 +3056,11 @@ boolean P_SetupLevel(boolean skipprecip, boolean reloadinggamestate)
 	// landing point for netgames.
 	netgameskip:
 
-	if (!dedicated)
+	if (!reloadinggamestate)
 	{
-		if (!demo.freecam)
-			for (i = 0; i <= splitscreen; i++)
-				P_SetupCamera(displayplayers[i], &camera[i]);
-
-		// Though, I don't think anyone would care about cam_rotate being reset back to the only value that makes sense :P
-		if (!cv_cam_rotate.changed)
-			CV_Set(&cv_cam_rotate, cv_cam_rotate.defaultvalue);
-
-		if (!cv_cam2_rotate.changed)
-			CV_Set(&cv_cam2_rotate, cv_cam2_rotate.defaultvalue);
-
-		if (!cv_cam3_rotate.changed)
-			CV_Set(&cv_cam3_rotate, cv_cam3_rotate.defaultvalue);
-
-		if (!cv_cam4_rotate.changed)
-			CV_Set(&cv_cam4_rotate, cv_cam4_rotate.defaultvalue);
-
-		displayplayers[0] = consoleplayer; // Start with your OWN view, please!
+		P_InitCamera();
+		memset(localaiming, 0, sizeof(localaiming));
+		K_InitDirector();
 	}
 
 	// clear special respawning que
@@ -3080,7 +3069,7 @@ boolean P_SetupLevel(boolean skipprecip, boolean reloadinggamestate)
 	P_MapEnd();
 
 	// Remove the loading shit from the screen
-	if (rendermode != render_none && (!reloadinggamestate))
+	if (rendermode != render_none && !reloadinggamestate)
 		V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, levelfadecol);
 
 	if (precache || dedicated)
@@ -3127,7 +3116,7 @@ boolean P_SetupLevel(boolean skipprecip, boolean reloadinggamestate)
 		LUAh_MapLoad();
 	}
 
-	if (rendermode != render_none)
+	if (rendermode != render_none && !reloadinggamestate)
 	{
 		R_ResetViewInterpolation(0);
 		R_ResetViewInterpolation(0);
