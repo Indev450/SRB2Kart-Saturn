@@ -1994,6 +1994,11 @@ static void CL_ReloadReceivedSavegame(void)
 		neededtic = gametic;
 	maketic = neededtic;
 
+	for (i = 0; i <= splitscreen; i++)
+	{
+		localangle[i] = players[displayplayers[i]].mo->angle;
+	}
+
 	camera->subsector = R_PointInSubsector(camera->x, camera->y);
 
 	cl_redownloadinggamestate = false;
