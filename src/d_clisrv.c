@@ -1940,18 +1940,21 @@ static void CL_LoadReceivedSavegame(boolean reloading)
 	// load a base level
 	if (P_LoadNetGame(reloading))
 	{
-		CON_LogMessage(va(M_GetText("Map is now \"%s"), G_BuildMapName(gamemap)));
-		if (strlen(mapheaderinfo[gamemap-1]->lvlttl) > 0)
+		if (!reloading)
 		{
-			CON_LogMessage(va(": %s", mapheaderinfo[gamemap-1]->lvlttl));
-			if (strlen(mapheaderinfo[gamemap-1]->zonttl) > 0)
-				CON_LogMessage(va(" %s", mapheaderinfo[gamemap-1]->zonttl));
-			else if (!(mapheaderinfo[gamemap-1]->levelflags & LF_NOZONE))
-				CON_LogMessage(M_GetText(" Zone"));
-			if (strlen(mapheaderinfo[gamemap-1]->actnum) > 0)
-				CON_LogMessage(va(" %s", mapheaderinfo[gamemap-1]->actnum));
+			CON_LogMessage(va(M_GetText("Map is now \"%s"), G_BuildMapName(gamemap)));
+			if (strlen(mapheaderinfo[gamemap-1]->lvlttl) > 0)
+			{
+				CON_LogMessage(va(": %s", mapheaderinfo[gamemap-1]->lvlttl));
+				if (strlen(mapheaderinfo[gamemap-1]->zonttl) > 0)
+					CON_LogMessage(va(" %s", mapheaderinfo[gamemap-1]->zonttl));
+				else if (!(mapheaderinfo[gamemap-1]->levelflags & LF_NOZONE))
+					CON_LogMessage(M_GetText(" Zone"));
+				if (strlen(mapheaderinfo[gamemap-1]->actnum) > 0)
+					CON_LogMessage(va(" %s", mapheaderinfo[gamemap-1]->actnum));
+			}
+			CON_LogMessage("\"\n");
 		}
-		CON_LogMessage("\"\n");
 	}
 
 	// done
@@ -4468,7 +4471,6 @@ static void Got_RemovePlayer(UINT8 **p, INT32 playernum)
 	if (pnum == serverplayer)
 	{
 		CONS_Alert(CONS_WARNING, "Attempt to remove server player\n");
-
 		return;
 	}
 
