@@ -325,6 +325,9 @@ static float gr_viewludsin, gr_viewludcos;
 // Visual portals (attr. Hannu Hanhi)
 // ==========================================================================
 
+static boolean HWR_PortalCheckPointSide(fixed_t x, fixed_t y);
+static boolean HWR_PortalCheckBBox(const fixed_t *bspcoord);
+
 enum
 {
 	GRPORTAL_OFF,
@@ -363,25 +366,35 @@ typedef struct gl_portallist_s
 // new thing
 gl_portallist_t *currentportallist;
 
-INT32 portalviewside;
-
-// Linked list for portals.
-/*gl_portal_t *portal_base_gl, *portal_cap_gl;
-
-//For now, these aren't used.
-// maybe at some point these could be organized better
-static void HWR_Portal_InitList (void)
+// More precise version of R_PointToAngle2 using floats and atan2.
+static angle_t R_PointToAngle2Precise(fixed_t pviewx, fixed_t pviewy, fixed_t x, fixed_t y)
 {
-	portalrender = 0;
-	portal_base_gl = portal_cap_gl = NULL;
+	fixed_t dx = x - pviewx;
+	fixed_t dy = y - pviewy;
+	float radians;
+
+	if (!dx && !dy)
+		return 0;
+
+	// no need for correct scale with FIXED_TO_FLOAT here
+	// since we're just calculating the angle
+	radians = atan2(dy, dx);
+
+	return (angle_t)(radians / M_PI * ANGLE_180);
 }
 
-static void HWR_Portal_Remove(gl_portal_t* portal)
+// More precise version of R_PointToDist2 using floats and sqrt.
+static fixed_t R_PointToDist2Precise(fixed_t px2, fixed_t py2, fixed_t px1, fixed_t py1)
 {
-	portal_base_gl = portal->next;
-	Z_Free(portal);
+	// float-fixed conversions can be omitted here
+	// because they cancel each other out in this case
+
+	float dx = px1 - px2;
+	float dy = py1 - py2;
+	double result = sqrt(dx*dx + dy*dy);
+
+	return (fixed_t)result;
 }
-*/
 
 static void HWR_Portal_Add2Lines(const INT32 line1, const INT32 line2, seg_t *seg)
 {
@@ -419,19 +432,32 @@ static void HWR_Portal_Add2Lines(const INT32 line1, const INT32 line2, seg_t *se
 	// Offset the portal view by the linedef centers
 	start	= &lines[line1];
 	dest	= &lines[line2];
-	dangle	= R_PointToAngle2(0,0,dest->dx,dest->dy) - R_PointToAngle2(start->dx,start->dy,0,0);
+
+	// Most fixed-point calculations and trigonometric function tables are replaced by
+	// floats and cmath library calls in this part to improve the precision of the
+	// location and angle of the new viewpoint.
+	//
+	// This reduces artefacts on the edges of portals, showing thin lines/pixels
+	// of the underlying graphics. (for example the sky texture) It's not 100%
+	// perfectly aligned and artefact-free, but looks noticeably
+	// better than the original code. I'm not even sure if it's this
+	// code or the nodebuilder or hw_map or something else causing the remaining issues..
+
+	dangle = R_PointToAngle2Precise(0,0,dest->dx,dest->dy) - R_PointToAngle2Precise(start->dx,start->dy,0,0);
 
 	// looking glass center
-	start_c.x = (start->v1->x + start->v2->x) / 2;
-	start_c.y = (start->v1->y + start->v2->y) / 2;
+	start_c.x = start->v1->x/2 + start->v2->x/2;
+	start_c.y = start->v1->y/2 + start->v2->y/2;
 
 	// other side center
-	dest_c.x = (dest->v1->x + dest->v2->x) / 2;
-	dest_c.y = (dest->v1->y + dest->v2->y) / 2;
+	dest_c.x = dest->v1->x/2 + dest->v2->x/2;
+	dest_c.y = dest->v1->y/2 + dest->v2->y/2;
 
-	disttopoint = R_PointToDist2(start_c.x, start_c.y, viewx, viewy);
-	angtopoint = R_PointToAngle2(start_c.x, start_c.y, viewx, viewy);
+	disttopoint = R_PointToDist2Precise(start_c.x, start_c.y, viewx, viewy);
+	angtopoint = R_PointToAngle2Precise(start_c.x, start_c.y, viewx, viewy);
 	angtopoint += dangle;
+
+	float fang = ((float)angtopoint / 4294967296.0f) * 2.0f * M_PI;
 
 	if (dangle == 0)
 	{
@@ -440,8 +466,8 @@ static void HWR_Portal_Add2Lines(const INT32 line1, const INT32 line2, seg_t *se
 	}
 	else
 	{
-		portal->viewx = dest_c.x + FixedMul(FINECOSINE(angtopoint>>ANGLETOFINESHIFT), disttopoint);
-		portal->viewy = dest_c.y + FixedMul(FINESINE(angtopoint>>ANGLETOFINESHIFT), disttopoint);
+		portal->viewx = dest_c.x + (fixed_t)(cos(fang) * disttopoint);
+		portal->viewy = dest_c.y + (fixed_t)(sin(fang) * disttopoint);
 	}
 	portal->viewz = viewz + dest->frontsector->floorheight - start->frontsector->floorheight;
 	portal->viewangle = viewangle + dangle;
@@ -465,7 +491,6 @@ static void HWR_PortalFrame(gl_portal_t* portal)
 		portalclipline = &lines[portal->clipline];
 		portalcullsector = portalclipline->frontsector;
 		viewsector = portalclipline->frontsector;
-		portalviewside = P_PointOnLineSide(viewx, viewy, portalclipline);
 	}
 	else
 	{
@@ -2447,30 +2472,13 @@ static void HWR_AddLine(seg_t *line)
 
 	gr_backsector = line->backsector;
 
-	// do an extra culling check when rendering portals
-	// check if any line vertex is on the viewable side of the portal target line
-	// if not, the line can be culled.
-	if (portalclipline)// portalclipline should be NULL when we are not rendering portal contents
+	// do extra checks on the seg when rendering portals:
+	// don't render segs that are behind the portal destination line
+	if (portalclipline &&
+		!HWR_PortalCheckPointSide(line->v1->x, line->v1->y) &&
+		!HWR_PortalCheckPointSide(line->v2->x, line->v2->y))
 	{
-		vertex_t closest_point;
-		boolean pass = false;
-
-		// similar idea than in PortalCheckBBox, but checking the line vertices instead
-		// TODO could make the check more efficient and not check anything if pass==true from earlier or something
-		P_ClosestPointOnLine(line->v1->x, line->v1->y, portalclipline, &closest_point);
-		if (closest_point.x != line->v1->x || closest_point.y != line->v1->y)
-		{
-			if (P_PointOnLineSide(line->v1->x, line->v1->y, portalclipline) != portalviewside)
-				pass = true;
-		}
-		P_ClosestPointOnLine(line->v2->x, line->v2->y, portalclipline, &closest_point);
-		if (closest_point.x != line->v2->x || closest_point.y != line->v2->y)
-		{
-			if (P_PointOnLineSide(line->v2->x, line->v2->y, portalclipline) != portalviewside)
-				pass = true;
-		}
-		if (!pass)
-			return;
+		return;
 	}
 
 	if (gr_portal == GRPORTAL_STENCIL || gr_portal == GRPORTAL_DEPTH)
@@ -3257,7 +3265,6 @@ skip_stuff_for_portals:
 // if its zero (or very close?) then dont return true, instead continue to next side check
 // it helped with center pillars! but other parts still have issues, probably because some of bounding box is on correct side.
 
-
 // idea for further clipping improvement:
 // have a separate xyz coordinate for portal view side checking: one that is derived by moving the viewxyz forward
 // the new coords would be at the intersection of line_a and line_b, where
@@ -3270,40 +3277,36 @@ skip_stuff_for_portals:
 // use returned value as multiplier for the added values from p_thrust thing
 // P_InterceptVector needs divlines which need dx and dy, dx=x2-x1 dy=y2-y1
 
-static boolean HWR_PortalCheckBBox(const fixed_t *bspcoord)
+// returns true if the point is on the correct (viewable) side of the
+// portal destination line
+static boolean HWR_PortalCheckPointSide(fixed_t x, fixed_t y)
 {
-	vertex_t closest_point;
-	if (!portalclipline)
-		return true;
-	
-	// we are looking for a bounding box corner that is on the viewable side of the portal exit.
+	// we are checking if the point is on the viewable side of the portal exit.
 	// being exactly on the portal exit line is not enough to pass the test.
 	// P_PointOnLineSide could behave differently from this expectation on this case,
 	// so first check if the point is precisely on the line, and then if not, check the side.
 
-	P_ClosestPointOnLine(bspcoord[BOXLEFT], bspcoord[BOXTOP], portalclipline, &closest_point);
-	if (closest_point.x != bspcoord[BOXLEFT] || closest_point.y != bspcoord[BOXTOP])
+	vertex_t closest_point;
+	P_ClosestPointOnLine(x, y, portalclipline, &closest_point);
+	if (closest_point.x != x || closest_point.y != y)
 	{
-		if (P_PointOnLineSide(bspcoord[BOXLEFT], bspcoord[BOXTOP], portalclipline) != portalviewside)
+		if (P_PointOnLineSide(x, y, portalclipline) != 1)
 			return true;
 	}
-	P_ClosestPointOnLine(bspcoord[BOXLEFT], bspcoord[BOXBOTTOM], portalclipline, &closest_point);
-	if (closest_point.x != bspcoord[BOXLEFT] || closest_point.y != bspcoord[BOXBOTTOM])
+	return false;
+}
+
+static boolean HWR_PortalCheckBBox(const fixed_t *bspcoord)
+{
+	if (!portalclipline)
+		return true;
+
+	if (HWR_PortalCheckPointSide(bspcoord[BOXLEFT], bspcoord[BOXTOP]) ||
+		HWR_PortalCheckPointSide(bspcoord[BOXLEFT], bspcoord[BOXBOTTOM]) ||
+		HWR_PortalCheckPointSide(bspcoord[BOXRIGHT], bspcoord[BOXTOP]) ||
+		HWR_PortalCheckPointSide(bspcoord[BOXRIGHT], bspcoord[BOXBOTTOM]))
 	{
-		if (P_PointOnLineSide(bspcoord[BOXLEFT], bspcoord[BOXBOTTOM], portalclipline) != portalviewside)
-			return true;
-	}
-	P_ClosestPointOnLine(bspcoord[BOXRIGHT], bspcoord[BOXTOP], portalclipline, &closest_point);
-	if (closest_point.x != bspcoord[BOXRIGHT] || closest_point.y != bspcoord[BOXTOP])
-	{
-		if (P_PointOnLineSide(bspcoord[BOXRIGHT], bspcoord[BOXTOP], portalclipline) != portalviewside)
-			return true;
-	}
-	P_ClosestPointOnLine(bspcoord[BOXRIGHT], bspcoord[BOXBOTTOM], portalclipline, &closest_point);
-	if (closest_point.x != bspcoord[BOXRIGHT] || closest_point.y != bspcoord[BOXBOTTOM])
-	{
-		if (P_PointOnLineSide(bspcoord[BOXRIGHT], bspcoord[BOXBOTTOM], portalclipline) != portalviewside)
-			return true;
+		return true;
 	}
 
 	// we did not find any reason to pass the check, so return failure
@@ -3342,11 +3345,12 @@ static void HWR_RenderBSPNode(INT32 bspnum)
 	// PORTAL CULLING
 	if (portalclipline && portalcullsector)
 	{
-		sector_t *sect = subsectors[bspnum & ~NF_SUBSECTOR].sector;
-		if (sect != portalcullsector)
+		if (portalcullsector != subsectors[bspnum & ~NF_SUBSECTOR].sector)
 			return;
-		portalcullsector = NULL;
+		else
+			portalcullsector = NULL;
 	}
+
 	// e6y: support for extended nodes
 	HWR_Subsector(bspnum == -1 ? 0 : bspnum & ~NF_SUBSECTOR);
 }
@@ -5455,7 +5459,9 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, playe
 	portallist.base = portallist.cap = NULL;
 	const boolean skybox = (skyboxmo[0] && cv_skybox.value);
 
-	if (gr_maphasportals && allow_portals && cv_grportals.value && stencil_level < cv_maxportals.value)// if recursion limit is not reached
+	validcount++;
+
+	if (cv_grportals.value && gr_maphasportals && allow_portals && stencil_level < cv_maxportals.value) // if recursion limit is not reached
 	{
 		// search for portals in current frame
 		currentportallist = &portallist;
@@ -5466,8 +5472,6 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, playe
 			portalclipline = NULL;
 		else
 			HWR_PortalClipping(rootportal);
-
-		validcount++;
 
 		HWR_RenderBSPNode((INT32)numnodes-1);// no actual rendering happens
 
@@ -5504,8 +5508,6 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, playe
 		// Set transform.
 		HWD.pfnSetTransform(&atransform);
 
-		validcount++;
-
 		ps_numbspcalls.value.i = 0;
 		ps_numpolyobjects.value.i = 0;
 		PS_START_TIMING(ps_bsptime);
@@ -5513,7 +5515,7 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, playe
 		if (cv_grbatching.value)
 			HWR_StartBatching();
 
-		if (!rootportal && portallist.base && !skybox)// if portals have been drawn in the main view, then render skywalls differently
+		if (!rootportal && portallist.base && !skybox) // if portals have been drawn in the main view, then render skywalls differently
 			gr_collect_skywalls = true;
 
 		// HAYA: Save the old portal state, and turn portals off while normally rendering the BSP tree.
@@ -5564,6 +5566,7 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, playe
 		ps_hw_nodedrawtime.value.p = 0;
 		HWR_RenderDrawNodes();
 	}
+
 	// free memory from portal list allocated by calls to Add2Lines
 	gl_portal_temp = portallist.base;
 	while (gl_portal_temp)
