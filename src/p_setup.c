@@ -2910,7 +2910,7 @@ boolean P_SetupLevel(boolean skipprecip, boolean reloadinggamestate)
 	globalweather = mapheaderinfo[gamemap-1]->weather;
 
 	// set up world state
-	P_SpawnSpecials(fromnetsave);
+	P_SpawnSpecials(fromnetsave, reloadinggamestate);
 
 	if (loadprecip) //  ugly hack for P_NetUnArchiveMisc (and P_LoadNetGame)
 		P_SpawnPrecipitation();
