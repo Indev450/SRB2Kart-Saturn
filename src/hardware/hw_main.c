@@ -5459,8 +5459,6 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, playe
 	portallist.base = portallist.cap = NULL;
 	const boolean skybox = (skyboxmo[0] && cv_skybox.value);
 
-	validcount++;
-
 	if (cv_grportals.value && gr_maphasportals && allow_portals && stencil_level < cv_maxportals.value) // if recursion limit is not reached
 	{
 		// search for portals in current frame
@@ -5472,6 +5470,8 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, playe
 			portalclipline = NULL;
 		else
 			HWR_PortalClipping(rootportal);
+
+		validcount++;
 
 		HWR_RenderBSPNode((INT32)numnodes-1);// no actual rendering happens
 
@@ -5507,6 +5507,8 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, playe
 		
 		// Set transform.
 		HWD.pfnSetTransform(&atransform);
+
+		validcount++;
 
 		ps_numbspcalls.value.i = 0;
 		ps_numpolyobjects.value.i = 0;
