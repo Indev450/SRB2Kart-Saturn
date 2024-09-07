@@ -1996,7 +1996,7 @@ static void CL_ReloadReceivedSavegame(void)
 
 	for (i = 0; i <= splitscreen; i++)
 	{
-		localangle[i] = players[displayplayers[i]].mo->angle;
+		localangle[i] = players[displayplayers[i]].cmd.angleturn;
 	}
 
 	camera->subsector = R_PointInSubsector(camera->x, camera->y);
