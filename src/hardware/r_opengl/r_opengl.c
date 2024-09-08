@@ -651,6 +651,10 @@ static INT32 gl_allowshaders = 0;
 
 static INT32 gl_enable_screen_textures = 2;
 
+static GLint gl_portal_stencil_level = 0;
+
+static INT32 gl_portal_mode = HWD_PORTAL_NORMAL;
+
 // 13062019
 typedef enum
 {
@@ -991,6 +995,7 @@ void SetStates(void)
 
 	pglColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
+	pglEnable(GL_STENCIL_TEST);
 	pglEnable(GL_DEPTH_TEST);    // check the depth buffer
 	pglDepthMask(GL_TRUE);       // enable writing to depth buffer
 	pglClearDepth(1.0f);
@@ -2437,6 +2442,71 @@ EXPORT void HWRAPI(SetSpecialState) (hwdspecialstate_t IdState, INT32 Value)
 
 		case HWD_SET_SCREEN_TEXTURES:
 			gl_enable_screen_textures = Value;
+			break;
+
+		case HWD_SET_PORTAL_MODE:
+			gl_portal_mode = Value;
+			switch (Value)
+			{
+				case HWD_PORTAL_NORMAL:
+					// regular drawing, only to current level of stencil
+					pglEnable(GL_TEXTURE_2D);
+					pglEnable(GL_DEPTH_TEST);
+					pglEnable(GL_BLEND);
+					pglColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+					pglStencilFuncSeparate(GL_FRONT_AND_BACK, GL_EQUAL, gl_portal_stencil_level, 0xFF);
+					pglStencilOpSeparate(GL_FRONT_AND_BACK, GL_KEEP, GL_KEEP, GL_KEEP);
+					pglDepthMask(GL_TRUE);
+					break;
+				case HWD_PORTAL_STENCIL_SEGS:
+					// draw only to stencil, only to current level of stencil, incrementing when drawing
+					pglDisable(GL_TEXTURE_2D);
+					pglDisable(GL_DEPTH_TEST);
+					pglDisable(GL_BLEND);
+					pglColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+					pglStencilFuncSeparate(GL_FRONT_AND_BACK, GL_EQUAL, gl_portal_stencil_level, 0xFF);
+					pglStencilOpSeparate(GL_FRONT_AND_BACK, GL_KEEP, GL_INCR, GL_INCR);// dont think z-buffer is used at this point
+					pglDepthMask(GL_FALSE);
+					break;
+				case HWD_PORTAL_STENCIL_REVERSE_SEGS:
+					// draw only to stencil, only to current level of stencil, incrementing when drawing
+					pglDisable(GL_TEXTURE_2D);
+					pglDisable(GL_DEPTH_TEST);
+					pglDisable(GL_BLEND);
+					pglColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+					pglStencilFuncSeparate(GL_FRONT_AND_BACK, GL_EQUAL, gl_portal_stencil_level+1, 0xFF);
+					pglStencilOpSeparate(GL_FRONT_AND_BACK, GL_KEEP, GL_DECR, GL_DECR);// dont think z-buffer is used at this point
+					pglDepthMask(GL_FALSE);
+					break;
+				case HWD_PORTAL_DEPTH_SEGS:
+					// draw only to depth, only to current level of stencil
+					pglDisable(GL_TEXTURE_2D);
+					pglEnable(GL_DEPTH_TEST);
+					pglDisable(GL_BLEND);
+					pglColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+					pglStencilFuncSeparate(GL_FRONT_AND_BACK, GL_EQUAL, gl_portal_stencil_level, 0xFF);
+					pglStencilOpSeparate(GL_FRONT_AND_BACK, GL_KEEP, GL_KEEP, GL_KEEP);
+					pglDepthMask(GL_TRUE);
+					break;
+				case HWD_PORTAL_SKY_STENCIL_SEGS:
+					// draw only to stencil, only to current level of stencil, incrementing when drawing
+					// same as HWD_PORTAL_STENCIL_SEGS except depth testing is enabled
+					// this is used to mark all visible skywall pixels to the stencil buffer
+					pglDisable(GL_TEXTURE_2D);
+					pglEnable(GL_DEPTH_TEST);
+					pglDisable(GL_BLEND);
+					pglColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+					pglStencilFuncSeparate(GL_FRONT_AND_BACK, GL_EQUAL, gl_portal_stencil_level, 0xFF);
+					pglStencilOpSeparate(GL_FRONT_AND_BACK, GL_KEEP, GL_KEEP, GL_INCR);
+					pglDepthMask(GL_TRUE);// not sure about this and does it matter
+					break;
+				default:
+					I_Error("Bad value in HWD_SET_PORTAL_MODE");
+			}
+			break;
+
+		case HWD_SET_STENCIL_LEVEL:
+			gl_portal_stencil_level = Value;
 			break;
 
 		default:

@@ -114,8 +114,12 @@ static CV_PossibleValue_t grrenderdistance_cons_t[] = {
 consvar_t cv_grrenderdistance = {"gr_renderdistance", "Max", CV_SAVE, grrenderdistance_cons_t,
 							NULL, 0, NULL, NULL, 0, 0, NULL};
 
-
+consvar_t cv_grportals = {"gr_portals", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_nostencil = {"nostencil", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_portalline = {"portalline", "0", 0, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_portalonly = {"portalonly", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 CV_PossibleValue_t secbright_cons_t[] = {{0, "MIN"}, {255, "MAX"}, {0, NULL}};
+
 consvar_t cv_secbright = {"secbright", "0", CV_SAVE, secbright_cons_t,
 							NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -316,6 +320,185 @@ float gr_viewsin, gr_viewcos;
 
 static angle_t gr_aimingangle;
 static float gr_viewludsin, gr_viewludcos;
+
+// ==========================================================================
+// Visual portals (attr. Hannu Hanhi)
+// ==========================================================================
+
+static boolean HWR_PortalCheckPointSide(fixed_t x, fixed_t y);
+static boolean HWR_PortalCheckBBox(const fixed_t *bspcoord);
+
+enum
+{
+	GRPORTAL_OFF,
+	GRPORTAL_SEARCH,
+	GRPORTAL_STENCIL,
+	GRPORTAL_DEPTH,
+	GRPORTAL_INSIDE,
+};
+
+static int gr_portal = GRPORTAL_OFF;
+static boolean gl_drawing_stencil = false;
+typedef struct gl_portal_s
+{
+	struct gl_portal_s *next;
+
+	// Viewport.
+	fixed_t viewx;
+	fixed_t viewy;
+	fixed_t viewz;
+	angle_t viewangle;
+
+	UINT8 pass;			/**< Keeps track of the portal's recursion depth. */
+	INT32 startline;
+	INT32 clipline;		/**< Optional clipline for line-based portals. */
+	INT32 drawcount;	/**< For OpenGL. */
+
+	seg_t *seg;
+} gl_portal_t;
+
+typedef struct gl_portallist_s
+{
+	gl_portal_t *base;
+	gl_portal_t *cap;
+} gl_portallist_t;
+
+// new thing
+gl_portallist_t *currentportallist;
+
+// More precise version of R_PointToAngle2 using floats and atan2.
+static angle_t R_PointToAngle2Precise(fixed_t pviewx, fixed_t pviewy, fixed_t x, fixed_t y)
+{
+	fixed_t dx = x - pviewx;
+	fixed_t dy = y - pviewy;
+	float radians;
+
+	if (!dx && !dy)
+		return 0;
+
+	// no need for correct scale with FIXED_TO_FLOAT here
+	// since we're just calculating the angle
+	radians = atan2(dy, dx);
+
+	return (angle_t)(radians / M_PI * ANGLE_180);
+}
+
+// More precise version of R_PointToDist2 using floats and sqrt.
+static fixed_t R_PointToDist2Precise(fixed_t px2, fixed_t py2, fixed_t px1, fixed_t py1)
+{
+	// float-fixed conversions can be omitted here
+	// because they cancel each other out in this case
+
+	float dx = px1 - px2;
+	float dy = py1 - py2;
+	double result = sqrt(dx*dx + dy*dy);
+
+	return (fixed_t)result;
+}
+
+static void HWR_Portal_Add2Lines(const INT32 line1, const INT32 line2, seg_t *seg)
+{
+	line_t *start, *dest;
+
+	angle_t dangle;
+
+	fixed_t disttopoint;
+	angle_t angtopoint;
+
+	vertex_t dest_c, start_c;
+
+	gl_portal_t *portal;
+
+	portal = Z_Malloc(sizeof(gl_portal_t), PU_STATIC, NULL);
+
+	// Linked list.
+	if (!currentportallist->base)
+	{
+		currentportallist->base	= portal;
+		currentportallist->cap	= portal;
+	}
+	else
+	{
+		currentportallist->cap->next = portal;
+		currentportallist->cap = portal;
+	}
+	portal->next = NULL;
+
+	// Increase recursion level.
+	portal->pass = portalrender+1;
+
+	portal->seg = seg;
+
+	// Offset the portal view by the linedef centers
+	start	= &lines[line1];
+	dest	= &lines[line2];
+
+	// Most fixed-point calculations and trigonometric function tables are replaced by
+	// floats and cmath library calls in this part to improve the precision of the
+	// location and angle of the new viewpoint.
+	//
+	// This reduces artefacts on the edges of portals, showing thin lines/pixels
+	// of the underlying graphics. (for example the sky texture) It's not 100%
+	// perfectly aligned and artefact-free, but looks noticeably
+	// better than the original code. I'm not even sure if it's this
+	// code or the nodebuilder or hw_map or something else causing the remaining issues..
+
+	dangle = R_PointToAngle2Precise(0,0,dest->dx,dest->dy) - R_PointToAngle2Precise(start->dx,start->dy,0,0);
+
+	// looking glass center
+	start_c.x = start->v1->x/2 + start->v2->x/2;
+	start_c.y = start->v1->y/2 + start->v2->y/2;
+
+	// other side center
+	dest_c.x = dest->v1->x/2 + dest->v2->x/2;
+	dest_c.y = dest->v1->y/2 + dest->v2->y/2;
+
+	disttopoint = R_PointToDist2Precise(start_c.x, start_c.y, viewx, viewy);
+	angtopoint = R_PointToAngle2Precise(start_c.x, start_c.y, viewx, viewy);
+	angtopoint += dangle;
+
+	float fang = ((float)angtopoint / 4294967296.0f) * 2.0f * M_PI;
+
+	if (dangle == 0)
+	{
+		portal->viewx = viewx + dest_c.x - start_c.x;
+		portal->viewy = viewy + dest_c.y - start_c.y;
+	}
+	else
+	{
+		portal->viewx = dest_c.x + (fixed_t)(cos(fang) * disttopoint);
+		portal->viewy = dest_c.y + (fixed_t)(sin(fang) * disttopoint);
+	}
+	portal->viewz = viewz + dest->frontsector->floorheight - start->frontsector->floorheight;
+	portal->viewangle = viewangle + dangle;
+
+	portal->startline = line1;
+	portal->clipline = line2;
+}
+
+static void HWR_PortalFrame(gl_portal_t* portal)
+{
+	viewx = portal->viewx;
+	viewy = portal->viewy;
+	viewz = portal->viewz;
+
+	viewangle = portal->viewangle;
+	viewsin = FINESINE(viewangle>>ANGLETOFINESHIFT);
+	viewcos = FINECOSINE(viewangle>>ANGLETOFINESHIFT);
+
+	if (portal->clipline != -1)
+	{
+		portalclipline = &lines[portal->clipline];
+		portalcullsector = portalclipline->frontsector;
+		viewsector = portalclipline->frontsector;
+	}
+	else
+	{
+		portalclipline = NULL;
+		portalcullsector = NULL;
+		viewsector = R_PointInSubsector(viewx, viewy)->sector;
+	}
+}
 
 // ==========================================================================
 // Lighting
@@ -875,6 +1058,13 @@ void HWR_ProjectWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend
 		blendmode |= PF_ColorMapped;
 	}
 
+	// don't draw to color buffer when drawing to stencil
+	if (gl_drawing_stencil)
+	{
+		blendmode |= PF_Invisible|PF_NoAlphaTest; // TODO not sure if any others than PF_Invisible are needed??
+		blendmode &= ~PF_Masked;
+	}
+
 	HWR_ProcessPolygon(pSurf, wallVerts, 4, blendmode|PF_Modulated|PF_Occlude, shader, false);
 
 #ifdef WALLSPLATS
@@ -1063,6 +1253,58 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 		HWR_ProjectWall(wallVerts, Surf, PF_Masked|polyflags, lightnum, colormap);
 }
 
+// skywall list system for fixing portal issues by postponing skywall rendering (and using stencil buffer for them)
+// ideally this will be a temporary implementation.
+// a better and more efficient way to do this would be to sort skywalls to the end of the draw call list inside RenderBatches.
+// Additionally, to remove the need to draw the sky twice, drawing a plane at the far clip boundary to the stencil buffer after other
+// rendering will also allow stencil sky rendering to fill in any untouched pixels too.
+
+FOutVector* skyWallVertexArray = NULL;
+int skyWallVertexArraySize = 0;
+int skyWallVertexArrayAllocSize = 65536;// what a mouthful
+
+boolean gr_collect_skywalls = false;
+
+static void HWR_SkyWallList_Clear(void)
+{
+	skyWallVertexArraySize = 0;
+}
+
+static void HWR_SkyWallList_Add(FOutVector *wallVerts)
+{
+	if (!skyWallVertexArray)
+	{
+		// array has not been allocated yet. allocate it now
+		skyWallVertexArray = Z_Malloc(sizeof(FOutVector) * 4 * skyWallVertexArrayAllocSize, PU_STATIC, NULL);
+	}
+
+	if (skyWallVertexArraySize == skyWallVertexArrayAllocSize)
+	{
+		// allocated array got full, allocate more space
+		skyWallVertexArrayAllocSize *= 2;
+		skyWallVertexArray = Z_Realloc(skyWallVertexArray, sizeof(FOutVector) * 4 * skyWallVertexArrayAllocSize, PU_STATIC, NULL);
+	}
+
+	memcpy(skyWallVertexArray + skyWallVertexArraySize * 4, wallVerts, sizeof(FOutVector) * 4);
+	skyWallVertexArraySize++;
+}
+
+static void HWR_DrawSkyWallList(void)
+{
+	int i;
+	FSurfaceInfo surf;
+
+	surf.PolyColor.rgba = 0xFFFFFFFF;
+
+	HWR_SetCurrentTexture(NULL);
+	HWD.pfnUnSetShader();
+	for (i = 0; i < skyWallVertexArraySize; i++)
+	{
+		//HWD.pfnDrawPolygon(&surf, skyWallVertexArray + i * 4, 4, PF_Occlude|PF_Invisible|PF_NoTexture);
+		HWR_ProcessPolygon(&surf, skyWallVertexArray + i * 4, 4, PF_Occlude|PF_Invisible|PF_NoTexture, SHADER_NONE, false);
+	}
+}
+
 // HWR_DrawSkyWalls
 // Draw walls into the depth buffer so that anything behind is culled properly
 void HWR_DrawSkyWall(FOutVector *wallVerts, FSurfaceInfo *Surf)
@@ -1074,8 +1316,15 @@ void HWR_DrawSkyWall(FOutVector *wallVerts, FSurfaceInfo *Surf)
 	wallVerts[0].s = wallVerts[3].s = 0;
 	wallVerts[2].s = wallVerts[1].s = 0;
 
-	HWR_SetCurrentTexture(NULL);
-	HWR_ProjectWall(wallVerts, Surf, PF_Invisible|PF_NoTexture, 255, NULL);
+	if (gr_collect_skywalls)
+	{
+		HWR_SkyWallList_Add(wallVerts);
+	}
+	else
+	{
+		HWR_SetCurrentTexture(NULL);
+		HWR_ProjectWall(wallVerts, Surf, PF_Invisible|PF_NoTexture, 255, NULL);
+	}
 	// PF_Invisible so it's not drawn into the colour buffer
 	// PF_NoTexture for no texture
 	// PF_Occlude is set in HWR_ProjectWall to draw into the depth buffer
@@ -1409,9 +1658,9 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 			wallVerts[2].y = FIXED_TO_FLOAT(worldtopslope);
 			wallVerts[1].y = FIXED_TO_FLOAT(worldhighslope);
 
-			if (gr_frontsector->numlights)
+			if (!gl_drawing_stencil && gr_frontsector->numlights)
 				HWR_SplitWall(gr_frontsector, wallVerts, gr_toptexture, gr_linedef->flags & ML_TFERLINE, &Surf, FF_CUTLEVEL, NULL, 0);
-			else if (grTex->mipmap.flags & TF_TRANSPARENT)
+			else if (!gl_drawing_stencil && grTex->mipmap.flags & TF_TRANSPARENT)
 				HWR_AddTransparentWall(wallVerts, &Surf, gr_toptexture, gr_linedef->flags & ML_TFERLINE, PF_Environment, false, lightnum, colormap);
 			else
 				HWR_ProjectWall(wallVerts, &Surf, PF_Masked, lightnum, colormap);
@@ -1471,15 +1720,15 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 			wallVerts[2].y = FIXED_TO_FLOAT(worldlowslope);
 			wallVerts[1].y = FIXED_TO_FLOAT(worldbottomslope);
 
-			if (gr_frontsector->numlights)
+			if (!gl_drawing_stencil && gr_frontsector->numlights)
 				HWR_SplitWall(gr_frontsector, wallVerts, gr_bottomtexture, gr_linedef->flags & ML_TFERLINE, &Surf, FF_CUTLEVEL, NULL, 0);
-			else if (grTex->mipmap.flags & TF_TRANSPARENT)
+			else if (!gl_drawing_stencil && grTex->mipmap.flags & TF_TRANSPARENT)
 				HWR_AddTransparentWall(wallVerts, &Surf, gr_bottomtexture, gr_linedef->flags & ML_TFERLINE, PF_Environment, false, lightnum, colormap);
 			else
 				HWR_ProjectWall(wallVerts, &Surf, PF_Masked, lightnum, colormap);
 		}
 
-		if (gr_midtexture && HWR_BlendMidtextureSurface(&Surf))
+		if ((gr_midtexture && HWR_BlendMidtextureSurface(&Surf)) || gr_portal == GRPORTAL_STENCIL || gr_portal == GRPORTAL_DEPTH || gl_drawing_stencil)
 		{
 			sector_t *front, *back;
 			INT32 repeats;
@@ -1496,7 +1745,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 			if (gr_sidedef->repeatcnt)
 				repeats = 1 + gr_sidedef->repeatcnt;
-			else if (gr_linedef->flags & ML_EFFECT5)
+			else if (gr_linedef->flags & ML_EFFECT5 || gr_portal == GRPORTAL_STENCIL || gr_portal == GRPORTAL_DEPTH)
 			{
 				fixed_t high, low;
 
@@ -1640,9 +1889,9 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 			// This will cause the midtexture appear on top, if a FOF overlaps with it.
 			blendmode |= PF_Decal;
 
-			if (gr_frontsector->numlights)
+			if (!gl_drawing_stencil && gr_frontsector->numlights)
 				HWR_SplitWall(gr_frontsector, wallVerts, gr_midtexture, gr_linedef->flags & ML_TFERLINE, &Surf, (!(blendmode & PF_Masked)) ? FF_TRANSLUCENT : FF_CUTLEVEL, NULL, PF_Decal);
-			else if (!(blendmode & PF_Masked))
+			else if (!gl_drawing_stencil && !(blendmode & PF_Masked))
 				HWR_AddTransparentWall(wallVerts, &Surf, gr_midtexture, gr_linedef->flags & ML_TFERLINE, blendmode, false, lightnum, colormap);
 			else
 				HWR_ProjectWall(wallVerts, &Surf, blendmode, lightnum, colormap);
@@ -1740,7 +1989,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 	}
 
 	//Hurdler: 3d-floors test
-	if (gr_frontsector && gr_backsector && gr_frontsector->tag != gr_backsector->tag && (gr_backsector->ffloors || gr_frontsector->ffloors))
+	if (!gl_drawing_stencil && gr_frontsector && gr_backsector && gr_frontsector->tag != gr_backsector->tag && (gr_backsector->ffloors || gr_frontsector->ffloors))
 	{
 		ffloor_t * rover;
 		fixed_t    highcut = 0, lowcut = 0;
@@ -2083,13 +2332,45 @@ static boolean CheckClip(sector_t * afrontsector, sector_t * abacksector)
 		backc1 = backc2 = abacksector->ceilingheight;
 	}
 
+	// using this check with portals causes weird culling issues on ante-station
+	if (!portalclipline && (afrontsector == viewsector || abacksector == viewsector))
+	{
+		fixed_t viewf1, viewf2, viewc1, viewc2;
+		if (afrontsector == viewsector)
+		{
+			//if (printportals)
+			//	CONS_Printf("CheckClip frontsector is viewsector\n");
+			viewf1 = frontf1;
+			viewf2 = frontf2;
+			viewc1 = frontc1;
+			viewc2 = frontc2;
+		}
+		else
+		{
+			//if (printportals)
+			//	CONS_Printf("CheckClip backsector is viewsector\n");
+			viewf1 = backf1;
+			viewf2 = backf2;
+			viewc1 = backc1;
+			viewc2 = backc2;
+		}
+
+		// check if camera is outside the bounds of the floor and the ceiling (noclipping)
+		// either above the ceiling or below the floor
+		if ((viewz > viewc1 && viewz > viewc2) || (viewz < viewf1 && viewz < viewf2))
+			return false;
+	}
+
 	// now check for closed sectors!
 
 	// here we're talking about a CEILING lower than a floor. ...yeah we don't even need to bother.
 	if (backc1 <= frontf1 && backc2 <= frontf2)
 	{
 		checkforemptylines = false;
-		return true;
+		if (portalclipline)// during portal rendering view position may cause undesired culling and the above code has some wrong side effects
+			return false;
+		else
+			return true;
 	}
 
 	// here we're talking about floors higher than ceilings, don't even bother either.
@@ -2147,6 +2428,8 @@ static void HWR_AddLine(seg_t *line)
 
 	fixed_t v1x, v1y, v2x, v2y; // the seg's vertexes as fixed_t
 
+	boolean dont_draw = false;
+
 	if (line->polyseg && !(line->polyseg->flags & POF_RENDERSIDES))
 		return;
 
@@ -2189,6 +2472,43 @@ static void HWR_AddLine(seg_t *line)
 
 	gr_backsector = line->backsector;
 
+	// do extra checks on the seg when rendering portals:
+	// don't render segs that are behind the portal destination line
+	if (portalclipline &&
+		!HWR_PortalCheckPointSide(line->v1->x, line->v1->y) &&
+		!HWR_PortalCheckPointSide(line->v2->x, line->v2->y))
+	{
+		return;
+	}
+
+	if (gr_portal == GRPORTAL_STENCIL || gr_portal == GRPORTAL_DEPTH)
+	{
+		gr_backsector = line->backsector;
+		goto doaddline;
+	}
+
+	if (line->linedef->special == 40)
+	{
+		if (line->side == 0)
+		{
+			// Find the other side!
+			INT32 line2 = P_FindSpecialLineFromTag(40, line->linedef->tag, -1);
+			if (line->linedef == &lines[line2])
+				line2 = P_FindSpecialLineFromTag(40, line->linedef->tag, line2);
+			if (line2 >= 0) // found it!
+			{
+				if (gr_portal == GRPORTAL_SEARCH)
+					HWR_Portal_Add2Lines(line->linedef-lines, line2, line);
+				else if (gr_portal == GRPORTAL_INSIDE)
+					dont_draw = true;
+			}
+		}
+		else
+			return;// dont do anything with the other side i guess?
+	}
+
+doaddline:
+
 	if (!line->backsector)
 	{
 		gld_clipper_SafeAddClipRange(angle2, angle1);
@@ -2211,7 +2531,8 @@ static void HWR_AddLine(seg_t *line)
 			return;
     }
 
-	HWR_ProcessSeg(); // Doesn't need arguments because they're defined globally :D
+	if (gr_portal != GRPORTAL_SEARCH && !dont_draw)// no need to do this during the portal check
+		HWR_ProcessSeg(); // Doesn't need arguments because they're defined globally :D
 
 	return;
 }
@@ -2644,6 +2965,7 @@ static void HWR_Subsector(size_t num)
 	extracolormap_t *floorcolormap;
 	extracolormap_t *ceilingcolormap;
 	ffloor_t *rover;
+	boolean skipSprites = false;
 
 #ifdef PARANOIA //no risk while developing, enough debugging nights!
 	if (num >= addsubsector)
@@ -2674,6 +2996,12 @@ static void HWR_Subsector(size_t num)
 	//SoM: 4/7/2000: Test to make Boom water work in Hardware mode.
 	gr_frontsector = R_FakeFlat(gr_frontsector, &tempsec, &floorlightlevel,
 								&ceilinglightlevel, false);
+
+	if (gr_portal == GRPORTAL_SEARCH)
+	{
+		skipSprites = true;
+		goto skip_stuff_for_portals;// hopefully this goto is okay
+	}
 
 	floorcolormap = ceilingcolormap = gr_frontsector->extra_colormap;
 
@@ -2899,6 +3227,8 @@ static void HWR_Subsector(size_t num)
 		}
 	}
 
+skip_stuff_for_portals:
+
 // Hurder ici se passe les choses INT32�essantes!
 // on vient de tracer le sol et le plafond
 // on trace �pr�ent d'abord les sprites et ensuite les murs
@@ -2907,7 +3237,8 @@ static void HWR_Subsector(size_t num)
 	{
 		// draw sprites first, coz they are clipped to the solidsegs of
 		// subsectors more 'in front'
-		HWR_AddSprites(gr_frontsector);
+		if (!skipSprites)
+			HWR_AddSprites(gr_frontsector);
 
 		//Hurdler: at this point validcount must be the same, but is not because
 		//         gr_frontsector doesn't point anymore to sub->sector due to
@@ -2920,12 +3251,66 @@ static void HWR_Subsector(size_t num)
 		while (count--)
 		{
 				if (!line->polyseg) // ignore segs that belong to polyobjects
-					HWR_AddLine(line);
+				HWR_AddLine(line);
 				line++;
 		}
 	}
 
 	sub->validcount = validcount;
+}
+
+// idea for fixing fakery map: one portal pillar works, 2 pillars have left/right bug wall, 1 pillar has both sides bugged.
+// bounding box is probably right on the edge, maybe could check for this with P_ClosestPointOnLine
+// so: for each side check, if it passes then also check distance to line,
+// if its zero (or very close?) then dont return true, instead continue to next side check
+// it helped with center pillars! but other parts still have issues, probably because some of bounding box is on correct side.
+
+// idea for further clipping improvement:
+// have a separate xyz coordinate for portal view side checking: one that is derived by moving the viewxyz forward
+// the new coords would be at the intersection of line_a and line_b, where
+// line_a = line of view, pointing forward from the center of the camera
+// line_b = a line orthogonal to line_a, defined so that the nearest vertex of portalclipline lies within it
+// maybe if the seg to be drawn has these new coords on one side and the normal viewxyz on the other side then it can be culled?
+
+// looks like P_Thrust in p_user.c has code for moving point forward towards a direction
+// maybe P_InterceptVector could be used for intersect point
+// use returned value as multiplier for the added values from p_thrust thing
+// P_InterceptVector needs divlines which need dx and dy, dx=x2-x1 dy=y2-y1
+
+// returns true if the point is on the correct (viewable) side of the
+// portal destination line
+static boolean HWR_PortalCheckPointSide(fixed_t x, fixed_t y)
+{
+	// we are checking if the point is on the viewable side of the portal exit.
+	// being exactly on the portal exit line is not enough to pass the test.
+	// P_PointOnLineSide could behave differently from this expectation on this case,
+	// so first check if the point is precisely on the line, and then if not, check the side.
+
+	vertex_t closest_point;
+	P_ClosestPointOnLine(x, y, portalclipline, &closest_point);
+	if (closest_point.x != x || closest_point.y != y)
+	{
+		if (P_PointOnLineSide(x, y, portalclipline) != 1)
+			return true;
+	}
+	return false;
+}
+
+static boolean HWR_PortalCheckBBox(const fixed_t *bspcoord)
+{
+	if (!portalclipline)
+		return true;
+
+	if (HWR_PortalCheckPointSide(bspcoord[BOXLEFT], bspcoord[BOXTOP]) ||
+		HWR_PortalCheckPointSide(bspcoord[BOXLEFT], bspcoord[BOXBOTTOM]) ||
+		HWR_PortalCheckPointSide(bspcoord[BOXRIGHT], bspcoord[BOXTOP]) ||
+		HWR_PortalCheckPointSide(bspcoord[BOXRIGHT], bspcoord[BOXBOTTOM]))
+	{
+		return true;
+	}
+
+	// we did not find any reason to pass the check, so return failure
+	return false;
 }
 
 //
@@ -2947,13 +3332,23 @@ static void HWR_RenderBSPNode(INT32 bspnum)
 		side = R_PointOnSide(viewx, viewy, bsp);
 
 		// Recursively divide front space.
-		HWR_RenderBSPNode(bsp->children[side]);
+		if (HWR_PortalCheckBBox(bsp->bbox[side]))
+			HWR_RenderBSPNode(bsp->children[side]);
 
         // Possibly divide back space
-        if (!(HWR_CheckBBox(bsp->bbox[side^1])))
+        if (!(HWR_CheckBBox(bsp->bbox[side^1]) && HWR_PortalCheckBBox(bsp->bbox[side^1])))
             return;
 
 		bspnum = bsp->children[side^1];
+	}
+
+	// PORTAL CULLING
+	if (portalclipline && portalcullsector)
+	{
+		if (portalcullsector != subsectors[bspnum & ~NF_SUBSECTOR].sector)
+			return;
+		else
+			portalcullsector = NULL;
 	}
 
 	// e6y: support for extended nodes
@@ -4969,51 +5364,222 @@ void HWR_ClearClipper(void)
 #endif
 }
 
-// Renders the current viewpoint.
-static void HWR_RenderViewpoint(const float fpov, player_t *player, boolean inskybox)
+// Adds an entry to the clipper for portal rendering
+static void HWR_PortalClipping(gl_portal_t *portal)
 {
+	angle_t angle1, angle2;
+
+	line_t *line = &lines[portal->clipline];
+
+	angle1 = R_PointToAngle64(line->v1->x, line->v1->y);
+	angle2 = R_PointToAngle64(line->v2->x, line->v2->y);
+
+	// clip things that are not inside the portal window from our viewpoint
+	gld_clipper_SafeAddClipRange(angle2, angle1);
+}
+
+enum 
+{
+	HWR_STENCIL_NORMAL,
+	HWR_STENCIL_BEGIN,
+	HWR_STENCIL_REVERSE,
+	HWR_STENCIL_DEPTH,
+	HWR_STENCIL_SKY
+};
+
+// Changes the current stencil state.
+static void HWR_SetStencilState(int state, int level)
+{
+	if (!cv_nostencil.value && level > -1)
+		HWD.pfnSetSpecialState(HWD_SET_STENCIL_LEVEL, level);
+	HWD.pfnSetSpecialState(HWD_SET_PORTAL_MODE, state);
+}
+
+// Renders a portal segment.
+static void HWR_RenderPortalSeg(gl_portal_t* portal, int state)
+{
+	gl_drawing_stencil = true; // do not draw outside of the stencil buffer, idiot.
+	// set our portal state and prepare to render the seg
+	gr_portal = state;
+	gr_curline = portal->seg;
+	gr_frontsector = portal->seg->frontsector;
+	gr_backsector = portal->seg->backsector;
+	HWR_ProcessSeg();
+	gl_drawing_stencil = false;
+	// need to work around the r_opengl PF_Invisible bug with this call
+	// similarly as in the linkdraw hack in HWR_DrawSprites
+	HWD.pfnSetBlend(PF_Translucent|PF_Occlude|PF_Masked);
+}
+
+// Renders the current viewpoint, though takes portal arguments for recursive portals.
+static void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *player, int stencil_level, boolean allow_portals);
+
+// Renders a single portal from the current viewpoint.
+static void HWR_RenderPortal(gl_portal_t* portal, gl_portal_t* rootportal, const float fpov, player_t *player, int stencil_level)
+{
+	// draw portal seg to stencil buffer with increment
+	HWR_SetTransform(fpov, player);
+	HWR_ClearClipper();
+
+	HWR_SetStencilState(HWR_STENCIL_BEGIN, stencil_level);
+	HWR_RenderPortalSeg(portal, GRPORTAL_STENCIL);
+
+	// go to portal frame lmao
+	HWR_PortalFrame(portal);
+	// call HWR_RenderViewpoint
+	HWR_RenderViewpoint(portal, fpov, player, stencil_level + 1, true);
+	// return to current frame
+	if (rootportal)
+		HWR_PortalFrame(rootportal);
+	else // current frame is not a portal frame but the main view!
+	{
+		R_SetupFrame(player, false);
+		portalclipline = NULL;
+	}
+
+	// remove portal seg from stencil buffer
+	HWR_SetTransform(fpov, player);
+	HWR_ClearClipper();
+
+	HWR_SetStencilState(HWR_STENCIL_REVERSE, stencil_level);
+	HWR_RenderPortalSeg(portal, GRPORTAL_STENCIL);
+
+	// draw portal seg to depth buffer
+	HWR_ClearClipper();
+	HWR_SetStencilState(HWR_STENCIL_DEPTH, stencil_level);
+	HWR_RenderPortalSeg(portal, GRPORTAL_DEPTH);
+}
+
+// Renders the current viewpoint, though takes portal arguments for recursive portals.
+static void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *player, int stencil_level, boolean allow_portals)
+{
+	gl_portallist_t portallist;
+	gl_portal_t *portal;
+	gl_portal_t *gl_portal_temp;
+	portallist.base = portallist.cap = NULL;
 	const boolean skybox = (skyboxmo[0] && cv_skybox.value);
 
-	HWR_SetTransform(fpov, player);
+	if (cv_grportals.value && gr_maphasportals && allow_portals && stencil_level < cv_maxportals.value) // if recursion limit is not reached
+	{
+		// search for portals in current frame
+		currentportallist = &portallist;
+		gr_portal = GRPORTAL_SEARCH;
 
-	HWR_ClearClipper();
-	HWR_ClearSprites();
+		HWR_ClearClipper();
+		if (!rootportal)
+			portalclipline = NULL;
+		else
+			HWR_PortalClipping(rootportal);
 
-	// Set transform.
-	HWD.pfnSetTransform(&atransform);
+		validcount++;
 
-	validcount++;
+		HWR_RenderBSPNode((INT32)numnodes-1);// no actual rendering happens
 
-	ps_numbspcalls.value.i = 0;
-	ps_numpolyobjects.value.i = 0;
-	PS_START_TIMING(ps_bsptime);
+		// for each found portal:
+		// note: if necessary, could sort the portals here?
+		for (portal = portallist.base; portal; portal = portal->next)
+		{
+			if (cv_portalline.value && cv_portalline.value != portal->startline)
+				continue;
+			HWR_RenderPortal(portal, rootportal, fpov, player, stencil_level);
+		}
+		gr_portal = GRPORTAL_INSIDE;// when portal walls are encountered in following bsp traversal, nothing should be drawn
+	}
+	else
+		gr_portal = GRPORTAL_OFF;// there may be portals and they need to be drawn as regural walls
 
-	if (cv_grbatching.value)
-		HWR_StartBatching();
+	// draw normal things in current frame in current incremented stencil buffer area
+	HWR_SetStencilState(HWR_STENCIL_NORMAL, stencil_level);
+	if (!cv_portalonly.value || rootportal)
+	{	
+		HWR_SetTransform(fpov, player);
 
-	// Recursively "render" the BSP tree.
-	HWR_RenderBSPNode((INT32)numnodes-1);
+		HWR_ClearClipper();
+		HWR_ClearSprites();
 
-	if (inskybox) // looks weird, but this is only true when its not skybox rendering skipping precip in skyboxes like software does
-		HWR_AddPrecipitationSprites();
+		if (!rootportal)
+			portalclipline = NULL;
+		else
+		{
+			HWR_PortalFrame(rootportal);// for portalclipsector, it could have gone null from search
+			HWR_PortalClipping(rootportal);
+		}
+		
+		// Set transform.
+		HWD.pfnSetTransform(&atransform);
 
-	PS_STOP_TIMING(ps_bsptime);
+		validcount++;
 
-	if (cv_grbatching.value)
-		HWR_RenderBatches();
+		ps_numbspcalls.value.i = 0;
+		ps_numpolyobjects.value.i = 0;
+		PS_START_TIMING(ps_bsptime);
 
-	ps_numsprites.value.i = gr_visspritecount;
-	PS_START_TIMING(ps_hw_spritesorttime);
-	HWR_SortVisSprites();
-	PS_STOP_TIMING(ps_hw_spritesorttime);
-	PS_START_TIMING(ps_hw_spritedrawtime);
-	HWR_DrawSprites();
-	PS_STOP_TIMING(ps_hw_spritedrawtime);
+		if (cv_grbatching.value)
+			HWR_StartBatching();
 
-	ps_numdrawnodes.value.i = 0;
-	ps_hw_nodesorttime.value.p = 0;
-	ps_hw_nodedrawtime.value.p = 0;
-	HWR_RenderDrawNodes();
+		if (!rootportal && portallist.base && !skybox) // if portals have been drawn in the main view, then render skywalls differently
+			gr_collect_skywalls = true;
+
+		// HAYA: Save the old portal state, and turn portals off while normally rendering the BSP tree.
+		// This fixes specific effects not working, such as horizon lines.
+		int oldgl_portal_state = gr_portal;
+
+		if (gr_portal != GRPORTAL_OFF) // if we already haven't hit the recursion limit or we already ended our portal shenanigans
+			gr_portal = GRPORTAL_INSIDE; // TURN IT OFF
+
+		// Recursively "render" the BSP tree.
+		HWR_RenderBSPNode((INT32)numnodes-1);
+
+		// woo we back
+		gr_portal = oldgl_portal_state;
+
+		if (allow_portals) // looks weird, but this is only true when its not skybox rendering skipping precip in skyboxes like software does
+			HWR_AddPrecipitationSprites();
+
+		PS_STOP_TIMING(ps_bsptime);
+
+		if (cv_grbatching.value)
+			HWR_RenderBatches();
+
+		if (skyWallVertexArraySize)// if there are skywalls to draw using the alternate method
+		{
+			HWR_SetStencilState(HWR_STENCIL_SKY, -1);
+			HWR_DrawSkyWallList();
+			HWR_SkyWallList_Clear();
+			HWR_SetStencilState(HWR_STENCIL_NORMAL, 1);
+			drewsky = false;
+			HWR_DrawSkyBackground(fpov);
+			HWR_SetStencilState(HWR_STENCIL_NORMAL, 0);
+			HWD.pfnClearBuffer(false, false, true, 0);// clear skywall markings from the stencil buffer
+			HWR_SetTransform(fpov, player);// restore transform
+		}
+		gr_collect_skywalls = false;
+		
+		ps_numsprites.value.i = gr_visspritecount;
+		PS_START_TIMING(ps_hw_spritesorttime);
+		HWR_SortVisSprites();
+		PS_STOP_TIMING(ps_hw_spritesorttime);
+		PS_START_TIMING(ps_hw_spritedrawtime);
+		HWR_DrawSprites();
+		PS_STOP_TIMING(ps_hw_spritedrawtime);
+
+		ps_numdrawnodes.value.i = 0;
+		ps_hw_nodesorttime.value.p = 0;
+		ps_hw_nodedrawtime.value.p = 0;
+		HWR_RenderDrawNodes();
+	}
+
+	// free memory from portal list allocated by calls to Add2Lines
+	gl_portal_temp = portallist.base;
+	while (gl_portal_temp)
+	{
+		gl_portal_t *nextportal = gl_portal_temp->next;
+		Z_Free(gl_portal_temp);
+		gl_portal_temp = nextportal;
+	}
+
+	// TODO: batching at some point
+	// TODO: is it okay if stencil test is on all the time even when its not needed?
 }
 
 
@@ -5080,7 +5646,8 @@ void HWR_RenderFrame(INT32 viewnumber, player_t *player, boolean skybox)
 		current_bsp_culling_distance = bsp_culling_distances[cv_grrenderdistance.value - 1];
 	}
 
-	HWR_RenderViewpoint(fpov, player, !skybox);
+	portalclipline = NULL;
+	HWR_RenderViewpoint(NULL, fpov, player, 0, !skybox);
 
 	// Unset transform and shader
 	HWD.pfnSetTransform(NULL);
@@ -5231,6 +5798,11 @@ void HWR_AddCommands(void)
 	CV_RegisterVar(&cv_grshearing);
 
 	CV_RegisterVar(&cv_grshaders);
+
+	CV_RegisterVar(&cv_grportals);
+	CV_RegisterVar(&cv_nostencil);
+	CV_RegisterVar(&cv_portalline);
+	CV_RegisterVar(&cv_portalonly);
 
 	CV_RegisterVar(&cv_secbright);
 
