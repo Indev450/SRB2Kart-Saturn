@@ -115,11 +115,8 @@ consvar_t cv_grrenderdistance = {"gr_renderdistance", "Max", CV_SAVE, grrenderdi
 							NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_grportals = {"gr_portals", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_nostencil = {"nostencil", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_portalline = {"portalline", "0", 0, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_portalonly = {"portalonly", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-CV_PossibleValue_t secbright_cons_t[] = {{0, "MIN"}, {255, "MAX"}, {0, NULL}};
 
+CV_PossibleValue_t secbright_cons_t[] = {{0, "MIN"}, {255, "MAX"}, {0, NULL}};
 consvar_t cv_secbright = {"secbright", "0", CV_SAVE, secbright_cons_t,
 							NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -2332,45 +2329,13 @@ static boolean CheckClip(sector_t * afrontsector, sector_t * abacksector)
 		backc1 = backc2 = abacksector->ceilingheight;
 	}
 
-	// using this check with portals causes weird culling issues on ante-station
-	if (!portalclipline && (afrontsector == viewsector || abacksector == viewsector))
-	{
-		fixed_t viewf1, viewf2, viewc1, viewc2;
-		if (afrontsector == viewsector)
-		{
-			//if (printportals)
-			//	CONS_Printf("CheckClip frontsector is viewsector\n");
-			viewf1 = frontf1;
-			viewf2 = frontf2;
-			viewc1 = frontc1;
-			viewc2 = frontc2;
-		}
-		else
-		{
-			//if (printportals)
-			//	CONS_Printf("CheckClip backsector is viewsector\n");
-			viewf1 = backf1;
-			viewf2 = backf2;
-			viewc1 = backc1;
-			viewc2 = backc2;
-		}
-
-		// check if camera is outside the bounds of the floor and the ceiling (noclipping)
-		// either above the ceiling or below the floor
-		if ((viewz > viewc1 && viewz > viewc2) || (viewz < viewf1 && viewz < viewf2))
-			return false;
-	}
-
 	// now check for closed sectors!
 
 	// here we're talking about a CEILING lower than a floor. ...yeah we don't even need to bother.
 	if (backc1 <= frontf1 && backc2 <= frontf2)
 	{
 		checkforemptylines = false;
-		if (portalclipline)// during portal rendering view position may cause undesired culling and the above code has some wrong side effects
-			return false;
-		else
-			return true;
+		return true;
 	}
 
 	// here we're talking about floors higher than ceilings, don't even bother either.
@@ -5378,7 +5343,7 @@ static void HWR_PortalClipping(gl_portal_t *portal)
 	gld_clipper_SafeAddClipRange(angle2, angle1);
 }
 
-enum 
+enum
 {
 	HWR_STENCIL_NORMAL,
 	HWR_STENCIL_BEGIN,
@@ -5390,7 +5355,7 @@ enum
 // Changes the current stencil state.
 static void HWR_SetStencilState(int state, int level)
 {
-	if (!cv_nostencil.value && level > -1)
+	if (level > -1)
 		HWD.pfnSetSpecialState(HWD_SET_STENCIL_LEVEL, level);
 	HWD.pfnSetSpecialState(HWD_SET_PORTAL_MODE, state);
 }
@@ -5458,8 +5423,9 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, playe
 	gl_portal_t *gl_portal_temp;
 	portallist.base = portallist.cap = NULL;
 	const boolean skybox = (skyboxmo[0] && cv_skybox.value);
+	boolean useportals = gr_maphasportals && cv_grportals.value && allow_portals;
 
-	if (cv_grportals.value && gr_maphasportals && allow_portals && stencil_level < cv_maxportals.value) // if recursion limit is not reached
+	if (useportals && stencil_level < cv_maxportals.value) // if recursion limit is not reached
 	{
 		// search for portals in current frame
 		currentportallist = &portallist;
@@ -5479,8 +5445,6 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, playe
 		// note: if necessary, could sort the portals here?
 		for (portal = portallist.base; portal; portal = portal->next)
 		{
-			if (cv_portalline.value && cv_portalline.value != portal->startline)
-				continue;
 			HWR_RenderPortal(portal, rootportal, fpov, player, stencil_level);
 		}
 		gr_portal = GRPORTAL_INSIDE;// when portal walls are encountered in following bsp traversal, nothing should be drawn
@@ -5490,13 +5454,14 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, playe
 
 	// draw normal things in current frame in current incremented stencil buffer area
 	HWR_SetStencilState(HWR_STENCIL_NORMAL, stencil_level);
-	if (!cv_portalonly.value || rootportal)
-	{	
-		HWR_SetTransform(fpov, player);
 
-		HWR_ClearClipper();
-		HWR_ClearSprites();
+	HWR_SetTransform(fpov, player);
 
+	HWR_ClearSprites();
+	HWR_ClearClipper();
+
+	if (useportals)
+	{
 		if (!rootportal)
 			portalclipline = NULL;
 		else
@@ -5504,70 +5469,72 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, playe
 			HWR_PortalFrame(rootportal);// for portalclipsector, it could have gone null from search
 			HWR_PortalClipping(rootportal);
 		}
-		
-		// Set transform.
-		HWD.pfnSetTransform(&atransform);
-
-		validcount++;
-
-		ps_numbspcalls.value.i = 0;
-		ps_numpolyobjects.value.i = 0;
-		PS_START_TIMING(ps_bsptime);
-
-		if (cv_grbatching.value)
-			HWR_StartBatching();
-
-		if (!rootportal && portallist.base && !skybox) // if portals have been drawn in the main view, then render skywalls differently
-			gr_collect_skywalls = true;
-
-		// HAYA: Save the old portal state, and turn portals off while normally rendering the BSP tree.
-		// This fixes specific effects not working, such as horizon lines.
-		int oldgl_portal_state = gr_portal;
-
-		if (gr_portal != GRPORTAL_OFF) // if we already haven't hit the recursion limit or we already ended our portal shenanigans
-			gr_portal = GRPORTAL_INSIDE; // TURN IT OFF
-
-		// Recursively "render" the BSP tree.
-		HWR_RenderBSPNode((INT32)numnodes-1);
-
-		// woo we back
-		gr_portal = oldgl_portal_state;
-
-		if (allow_portals) // looks weird, but this is only true when its not skybox rendering skipping precip in skyboxes like software does
-			HWR_AddPrecipitationSprites();
-
-		PS_STOP_TIMING(ps_bsptime);
-
-		if (cv_grbatching.value)
-			HWR_RenderBatches();
-
-		if (skyWallVertexArraySize)// if there are skywalls to draw using the alternate method
-		{
-			HWR_SetStencilState(HWR_STENCIL_SKY, -1);
-			HWR_DrawSkyWallList();
-			HWR_SkyWallList_Clear();
-			HWR_SetStencilState(HWR_STENCIL_NORMAL, 1);
-			drewsky = false;
-			HWR_DrawSkyBackground(fpov);
-			HWR_SetStencilState(HWR_STENCIL_NORMAL, 0);
-			HWD.pfnClearBuffer(false, false, true, 0);// clear skywall markings from the stencil buffer
-			HWR_SetTransform(fpov, player);// restore transform
-		}
-		gr_collect_skywalls = false;
-		
-		ps_numsprites.value.i = gr_visspritecount;
-		PS_START_TIMING(ps_hw_spritesorttime);
-		HWR_SortVisSprites();
-		PS_STOP_TIMING(ps_hw_spritesorttime);
-		PS_START_TIMING(ps_hw_spritedrawtime);
-		HWR_DrawSprites();
-		PS_STOP_TIMING(ps_hw_spritedrawtime);
-
-		ps_numdrawnodes.value.i = 0;
-		ps_hw_nodesorttime.value.p = 0;
-		ps_hw_nodedrawtime.value.p = 0;
-		HWR_RenderDrawNodes();
 	}
+	else
+		portalclipline = NULL;
+		
+	// Set transform.
+	HWD.pfnSetTransform(&atransform);
+
+	validcount++;
+
+	ps_numbspcalls.value.i = 0;
+	ps_numpolyobjects.value.i = 0;
+	PS_START_TIMING(ps_bsptime);
+
+	if (cv_grbatching.value)
+		HWR_StartBatching();
+
+	if (useportals && !rootportal && portallist.base && !skybox) // if portals have been drawn in the main view, then render skywalls differently
+		gr_collect_skywalls = true;
+
+	// HAYA: Save the old portal state, and turn portals off while normally rendering the BSP tree.
+	// This fixes specific effects not working, such as horizon lines.
+	int oldgl_portal_state = gr_portal;
+
+	if (gr_portal != GRPORTAL_OFF) // if we already haven't hit the recursion limit or we already ended our portal shenanigans
+		gr_portal = GRPORTAL_INSIDE; // TURN IT OFF
+
+	// Recursively "render" the BSP tree.
+	HWR_RenderBSPNode((INT32)numnodes-1);
+
+	// woo we back
+	gr_portal = oldgl_portal_state;
+
+	if (allow_portals) // looks weird, but this is only true when its not skybox rendering skipping precip in skyboxes like software does
+		HWR_AddPrecipitationSprites();
+
+	PS_STOP_TIMING(ps_bsptime);
+
+	if (cv_grbatching.value)
+		HWR_RenderBatches();
+
+	if (skyWallVertexArraySize) // if there are skywalls to draw using the alternate method
+	{
+		HWR_SetStencilState(HWR_STENCIL_SKY, -1);
+		HWR_DrawSkyWallList();
+		HWR_SkyWallList_Clear();
+		HWR_SetStencilState(HWR_STENCIL_NORMAL, 1);
+		drewsky = false;
+		HWR_DrawSkyBackground(fpov);
+		HWR_SetStencilState(HWR_STENCIL_NORMAL, 0);
+		HWD.pfnClearBuffer(false, false, true, 0);// clear skywall markings from the stencil buffer
+		HWR_SetTransform(fpov, player);// restore transform
+	}
+	gr_collect_skywalls = false;
+		
+	ps_numsprites.value.i = gr_visspritecount;
+	PS_START_TIMING(ps_hw_spritesorttime);
+	HWR_SortVisSprites();
+	PS_STOP_TIMING(ps_hw_spritesorttime);
+	PS_START_TIMING(ps_hw_spritedrawtime);
+	HWR_DrawSprites();
+	PS_STOP_TIMING(ps_hw_spritedrawtime);
+
+	ps_numdrawnodes.value.i = 0;
+	ps_hw_nodesorttime.value.p = 0;
+	ps_hw_nodedrawtime.value.p = 0;
+	HWR_RenderDrawNodes();
 
 	// free memory from portal list allocated by calls to Add2Lines
 	gl_portal_temp = portallist.base;
@@ -5577,9 +5544,6 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, playe
 		Z_Free(gl_portal_temp);
 		gl_portal_temp = nextportal;
 	}
-
-	// TODO: batching at some point
-	// TODO: is it okay if stencil test is on all the time even when its not needed?
 }
 
 
@@ -5800,9 +5764,6 @@ void HWR_AddCommands(void)
 	CV_RegisterVar(&cv_grshaders);
 
 	CV_RegisterVar(&cv_grportals);
-	CV_RegisterVar(&cv_nostencil);
-	CV_RegisterVar(&cv_portalline);
-	CV_RegisterVar(&cv_portalonly);
 
 	CV_RegisterVar(&cv_secbright);
 
