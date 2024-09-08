@@ -595,7 +595,7 @@ FUNCINLINE static ATTRINLINE void P_LoadRawSubsectors(void *data)
 	{
 		ss->sector = NULL;
 		ss->numlines = SHORT(ms->numsegs);
-		ss->firstline = SHORT(ms->firstseg);
+		ss->firstline = (UINT16)SHORT(ms->firstseg);
 #ifdef FLOORSPLATS
 		ss->splats = NULL;
 #endif
