@@ -336,6 +336,10 @@ boolean precache = true; // if true, load all graphics at start
 
 INT16 prevmap, nextmap;
 
+// save if director is enabled
+// so demos can disable it by default and restore it after
+int directorstate = 0;
+
 static CV_PossibleValue_t recordmultiplayerdemos_cons_t[] = {{0, "Disabled"}, {1, "Manual Save"}, {2, "Auto Save"}, {0, NULL}};
 consvar_t cv_recordmultiplayerdemos = {"netdemo_record", "Manual Save", CV_SAVE, recordmultiplayerdemos_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -7723,6 +7727,9 @@ post_compat:
 		players[i].kartweight = kartweight[i];
 	}
 
+	directorstate = cv_director.value;
+	CV_SetValue(&cv_director, 0);
+
 	demo.deferstart = true;
 }
 #undef SKIPERRORS
@@ -8289,6 +8296,11 @@ void G_StopDemo(void)
 {
 	Z_Free(demobuffer);
 	demobuffer = NULL;
+	if (demo.playback)
+	{
+		CV_SetValue(&cv_director, directorstate);
+		directorstate = 0;
+	}
 	demo.playback = false;
 	if (demo.title)
 		modeattacking = false;
