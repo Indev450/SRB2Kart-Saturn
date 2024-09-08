@@ -2329,13 +2329,45 @@ static boolean CheckClip(sector_t * afrontsector, sector_t * abacksector)
 		backc1 = backc2 = abacksector->ceilingheight;
 	}
 
+	// using this check with portals causes weird culling issues on ante-station
+	if (!portalclipline && (afrontsector == viewsector || abacksector == viewsector))
+	{
+		fixed_t viewf1, viewf2, viewc1, viewc2;
+		if (afrontsector == viewsector)
+		{
+			//if (printportals)
+			//	CONS_Printf("CheckClip frontsector is viewsector\n");
+			viewf1 = frontf1;
+			viewf2 = frontf2;
+			viewc1 = frontc1;
+			viewc2 = frontc2;
+		}
+		else
+		{
+			//if (printportals)
+			//	CONS_Printf("CheckClip backsector is viewsector\n");
+			viewf1 = backf1;
+			viewf2 = backf2;
+			viewc1 = backc1;
+			viewc2 = backc2;
+		}
+
+		// check if camera is outside the bounds of the floor and the ceiling (noclipping)
+		// either above the ceiling or below the floor
+		if ((viewz > viewc1 && viewz > viewc2) || (viewz < viewf1 && viewz < viewf2))
+			return false;
+	}
+
 	// now check for closed sectors!
 
 	// here we're talking about a CEILING lower than a floor. ...yeah we don't even need to bother.
 	if (backc1 <= frontf1 && backc2 <= frontf2)
 	{
 		checkforemptylines = false;
-		return true;
+		if (portalclipline)// during portal rendering view position may cause undesired culling and the above code has some wrong side effects
+			return false;
+		else
+			return true;
 	}
 
 	// here we're talking about floors higher than ceilings, don't even bother either.
