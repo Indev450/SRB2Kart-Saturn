@@ -366,7 +366,7 @@ static inline void P_DeviceRumbleTick(void)
 		{
 			low = high = 65536 / 8;
 		}
-		else if ((player->kartstuff[k_offroad])
+		else if ((player->kartstuff[k_offroad] && !player->kartstuff[k_hyudorotimer])
 			&& P_IsObjectOnGround(player->mo) && player->speed != 0)
 		{
 			low = high = 65536 / 64;
