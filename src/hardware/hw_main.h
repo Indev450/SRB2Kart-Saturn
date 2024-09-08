@@ -139,7 +139,6 @@ void HWR_DrawSprites(void);
 
 // hw_bsp.c
 void HWR_CreatePlanePolygons(INT32 bspnum);
-extern boolean gr_maphasportals;
 
 // hw_cache.c
 void HWR_LoadTextures(size_t pnumtextures);
@@ -175,8 +174,6 @@ extern consvar_t cv_grpalettedepth;
 extern consvar_t cv_grflashpal;
 extern consvar_t cv_lightdither;
 extern consvar_t cv_grscreentextures;
-extern consvar_t cv_grportals;
-extern consvar_t cv_nostencil;
 extern consvar_t cv_secbright;
 
 extern CV_PossibleValue_t granisotropicmode_cons_t[];

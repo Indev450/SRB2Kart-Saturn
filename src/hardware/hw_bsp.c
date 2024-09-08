@@ -44,10 +44,6 @@ typedef struct
 	float dx, dy;
 } fdivline_t;
 
-// when loading the map, this is set to true if portals are found.
-// if no portals are found, the portal scanning phase can be skipped while rendering, saving a bit of time.
-boolean gr_maphasportals = false;
-
 // ==========================================================================
 //                                    FLOOR & CEILING CONVEX POLYS GENERATION
 // ==========================================================================
@@ -369,17 +365,6 @@ static poly_t *CutOutSubsecPoly(seg_t *lseg, INT32 count, poly_t *poly)
 	{
 		//x,y,dx,dy (like a divline)
 		line_t *line = lseg->linedef;
-		
-		// portal check
-		if (!gr_maphasportals && line->special == 40 && lseg->side == 0)
-		{
-			// Find the other side!
-			INT32 line2 = P_FindSpecialLineFromTag(40, line->tag, -1);
-			if (line == &lines[line2])
-				line2 = P_FindSpecialLineFromTag(40, line->tag, line2);
-			if (line2 >= 0) // found it!
-				gr_maphasportals = 1;
-		}
 		
 		p1.x = FIXED_TO_FLOAT(lseg->side ? line->v2->x : line->v1->x);
 		p1.y = FIXED_TO_FLOAT(lseg->side ? line->v2->y : line->v1->y);
@@ -903,9 +888,6 @@ void HWR_CreatePlanePolygons(INT32 bspnum)
 	CON_Drawer(); //let the user know what we are doing
 	I_FinishUpdate(); // page flip or blit buffer
 #endif
-
-	// reset the portal flag
-	gr_maphasportals = 0;
 
 	// find min/max boundaries of map
 	//CONS_Debug(DBG_RENDER, "Looking for boundaries of map...\n");
