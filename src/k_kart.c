@@ -10862,6 +10862,7 @@ void K_drawKartHUD(void)
 		if (demo.title) // Draw title logo instead in demo.titles
 		{
 			INT32 x = (BASEVIDWIDTH - 32)*FRACUNIT, y = 128*FRACUNIT, offs;
+			INT32 logoflags = V_SNAPTORIGHT|V_SNAPTOBOTTOM;
 
 			if (splitscreen == 3)
 			{
@@ -10880,8 +10881,8 @@ void K_drawKartHUD(void)
 				x += offs - frac;
 			}
 
-			V_DrawSciencePatch(x - (54*FRACUNIT), y, 0, W_CachePatchName("TTKBANNR", PU_CACHE), FRACUNIT/4);
-			V_DrawSciencePatch(x - (54*FRACUNIT), y + (25*FRACUNIT), 0, W_CachePatchName("TTKART", PU_CACHE), FRACUNIT/4);
+			V_DrawSciencePatch(x - (54*FRACUNIT), y, logoflags, W_CachePatchName("TTKBANNR", PU_CACHE), FRACUNIT/4);
+			V_DrawSciencePatch(x - (54*FRACUNIT), y + (25*FRACUNIT), logoflags, W_CachePatchName("TTKART", PU_CACHE), FRACUNIT/4);
 		}
 		else if (G_RaceGametype()) // Race-only elements
 		{
