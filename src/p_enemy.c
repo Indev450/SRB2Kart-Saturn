@@ -5310,7 +5310,8 @@ void A_RingExplode(mobj_t *actor)
 // var1 = object # to explode as debris
 // var2 = unused
 //
-void A_OldRingExplode(mobj_t *actor) {
+void A_OldRingExplode(mobj_t *actor)
+{
 	UINT8 i;
 	mobj_t *mo;
 	const fixed_t ns = FixedMul(20 * FRACUNIT, actor->scale);
@@ -5362,6 +5363,8 @@ void A_OldRingExplode(mobj_t *actor) {
 	{
 		if (actor->target->player->ctfteam == 2)
 			mo->color = skincolor_bluering;
+		else
+			mo->color = actor->target->color; //copy color
 	}
 
 	mo = P_SpawnMobj(actor->x, actor->y, actor->z, locvar1);
@@ -5375,6 +5378,8 @@ void A_OldRingExplode(mobj_t *actor) {
 	{
 		if (actor->target->player->ctfteam == 2)
 			mo->color = skincolor_bluering;
+		else
+			mo->color = actor->target->color; //copy color
 	}
 }
 
