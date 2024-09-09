@@ -459,7 +459,7 @@ typedef struct subsector_s
 {
 	sector_t *sector;
 	INT16 numlines;
-	UINT16 firstline;
+	UINT32 firstline;
 	struct polyobj_s *polyList; // haleyjd 02/19/06: list of polyobjects
 #if 1//#ifdef FLOORSPLATS
 	void *splats; // floorsplat_t list

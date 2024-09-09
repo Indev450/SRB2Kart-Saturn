@@ -28,6 +28,9 @@
 #include "m_menu.h"
 #include "m_cheat.h"
 #include "p_setup.h" // NiGHTS grading
+
+#include "i_time.h"
+
 #include "k_kart.h" // SRB2kart
 
 //random index
@@ -659,17 +662,23 @@ static void ST_overlayDrawer(void)
 
 	if (!hu_showscores) // hide the following if TAB is held
 	{
-		// Countdown timer for Race Mode
-		// ...moved to k_kart.c so we can take advantage of the LAPS_Y value
-
-		if ((demo.playback || !P_IsLocalPlayer(stplyr)) && !splitscreen)
+		if (cv_showdirectorhud.value && ((demo.playback && (!demo.title || !modeattacking)) || !P_IsLocalPlayer(stplyr)) && !splitscreen)
 		{
 			char directortext[20] = {0};
 
 			snprintf(directortext, 20, "Director: %s", cv_director.value ? "On" : "Off");
 
-			V_DrawString(1, BASEVIDHEIGHT-8-1, V_SNAPTOLEFT|V_SNAPTOBOTTOM|V_HUDTRANSHALF|V_ALLOWLOWERCASE, directortext);
+			if (directortoggletimer < 4*TICRATE)
+			{
+				V_DrawString(1, BASEVIDHEIGHT-8-1, V_SNAPTOLEFT|V_SNAPTOBOTTOM|V_HUDTRANSHALF|V_ALLOWLOWERCASE, directortext);
+				if (renderisnewtic)
+					directortoggletimer++;
+			}
+			else if (cv_translucenthud.value != 0)
+				V_DrawString(1, BASEVIDHEIGHT-8-1, V_SNAPTOLEFT|V_SNAPTOBOTTOM|V_80TRANS|V_ALLOWLOWERCASE, directortext); // idk if V_80TRANS is good?
 		}
+		else
+			directortoggletimer = 0;
 
 		if (cv_showviewpointtext.value)
 		{

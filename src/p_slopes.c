@@ -40,7 +40,6 @@ static void P_UpdateSlopeLightOffset(pslope_t *slope)
 
 	if (slope->normal.z == 0)
 	{
-
 		slope->lightOffset = 0;
 #ifdef HWRENDER
 		slope->hwLightOffset = 0;
@@ -66,7 +65,8 @@ static void P_UpdateSlopeLightOffset(pslope_t *slope)
 }
 
 // Calculate line normal
-void P_CalculateSlopeNormal(pslope_t *slope) {
+void P_CalculateSlopeNormal(pslope_t *slope)
+{
 	slope->normal.z = FINECOSINE(slope->zangle>>ANGLETOFINESHIFT);
 	slope->normal.x = -FixedMul(FINESINE(slope->zangle>>ANGLETOFINESHIFT), -slope->d.x);
 	slope->normal.y = -FixedMul(FINESINE(slope->zangle>>ANGLETOFINESHIFT), -slope->d.y);
@@ -145,7 +145,8 @@ static void P_ReconfigureVertexSlope(pslope_t *slope)
 }
 
 // Recalculate dynamic slopes
-void P_RunDynamicSlopes(void) {
+void P_RunDynamicSlopes(void)
+{
 	pslope_t *slope;
 
 	for (slope = slopelist; slope; slope = slope->next) {
@@ -329,7 +330,7 @@ void P_SpawnSlope_Line(int linenum)
 	origin.y = line->v1->y + (line->v2->y - line->v1->y)/2;
 
 	// For FOF slopes, make a special function to copy to the xy origin & direction relative to the position of the FOF on the map!
-	if(frontfloor || frontceil)
+	if (frontfloor || frontceil)
 	{
 		line->frontsector->hasslope = true; // Tell the software renderer that we're sloped
 
@@ -353,7 +354,7 @@ void P_SpawnSlope_Line(int linenum)
 
 		// TODO: We take origin and point 's xy values and translate them to the center of an FOF!
 
-		if(frontfloor)
+		if (frontfloor)
 		{
 			fixed_t highest, lowest;
 			size_t l;
@@ -462,7 +463,7 @@ void P_SpawnSlope_Line(int linenum)
 			P_CalculateSlopeNormal(cslope);
 		}
 	}
-	if(backfloor || backceil)
+	if (backfloor || backceil)
 	{
 		line->backsector->hasslope = true; // Tell the software renderer that we're sloped
 
@@ -485,7 +486,7 @@ void P_SpawnSlope_Line(int linenum)
 		direction.x = -direction.x;
 		direction.y = -direction.y;
 
-		if(backfloor)
+		if (backfloor)
 		{
 			fixed_t highest, lowest;
 			size_t l;
@@ -530,7 +531,7 @@ void P_SpawnSlope_Line(int linenum)
 
 			P_CalculateSlopeNormal(fslope);
 		}
-		if(backceil)
+		if (backceil)
 		{
 			fixed_t highest, lowest;
 			size_t l;
@@ -680,7 +681,8 @@ pslope_t *P_SlopeById(UINT16 id)
 }
 
 // Reset the dynamic slopes pointer, and read all of the fancy schmancy slopes
-void P_ResetDynamicSlopes(void) {
+void P_ResetDynamicSlopes(void)
+{
 	size_t i;
 
 	slopelist = NULL;

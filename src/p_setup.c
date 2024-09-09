@@ -584,7 +584,6 @@ static void P_LoadRawSegs(UINT8 *data)
 	}
 }
 
-
 // Loads the SSECTORS resource from a level.
 FUNCINLINE static ATTRINLINE void P_LoadRawSubsectors(void *data)
 {
@@ -596,7 +595,7 @@ FUNCINLINE static ATTRINLINE void P_LoadRawSubsectors(void *data)
 	{
 		ss->sector = NULL;
 		ss->numlines = SHORT(ms->numsegs);
-		ss->firstline = SHORT(ms->firstseg);
+		ss->firstline = (UINT16)SHORT(ms->firstseg);
 #ifdef FLOORSPLATS
 		ss->splats = NULL;
 #endif
@@ -846,73 +845,6 @@ static void P_LoadRawNodes(UINT8 *data)
 			for (k = 0; k < 4; k++)
 				no->bbox[j][k] = SHORT(mn->bbox[j][k])<<FRACBITS;
 		}
-	}
-}
-
-
-//
-// P_ReloadRings
-// Used by NiGHTS, clears all ring/wing/etc items and respawns them
-//
-void P_ReloadRings(void)
-{
-	mobj_t *mo;
-	thinker_t *th;
-	size_t i, numHoops = 0;
-	// Okay, if you have more than 4000 hoops in your map,
-	// you're insane.
-	mapthing_t *hoopsToRespawn[4096];
-	mapthing_t *mt = mapthings;
-
-	// scan the thinkers to find rings/wings/hoops to unset
-	for (th = thinkercap.next; th != &thinkercap; th = th->next)
-	{
-		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
-			continue;
-
-		mo = (mobj_t *)th;
-
-		if (mo->type == MT_HOOPCENTER)
-		{
-			// Hoops give me a headache
-			if (mo->threshold == 4242) // Dead hoop
-			{
-				hoopsToRespawn[numHoops++] = mo->spawnpoint;
-				P_RemoveMobj(mo);
-			}
-			continue;
-		}
-		if (!(mo->type == MT_RING || mo->type == MT_NIGHTSWING || mo->type == MT_COIN
-			|| mo->type == MT_BLUEBALL))
-			continue;
-
-		// Don't auto-disintegrate things being pulled to us
-		if (mo->flags2 & MF2_NIGHTSPULL)
-			continue;
-
-		P_RemoveMobj(mo);
-	}
-
-	// Reiterate through mapthings
-	for (i = 0; i < nummapthings; i++, mt++)
-	{
-		// Notice an omission? We handle hoops differently.
-		if (mt->type == 300 || mt->type == 308 || mt->type == 309
-		 || mt->type == 1706 || (mt->type >= 600 && mt->type <= 609)
-		 || mt->type == 1800)
-		{
-			mt->mobj = NULL;
-
-			// Z for objects Tails 05-26-2002
-			mt->z = (INT16)(R_PointInSubsector(mt->x << FRACBITS, mt->y << FRACBITS)
-				->sector->floorheight>>FRACBITS);
-
-			P_SpawnHoopsAndRings (mt);
-		}
-	}
-	for (i = 0; i < numHoops; i++)
-	{
-		P_SpawnHoopsAndRings(hoopsToRespawn[i]);
 	}
 }
 
@@ -1283,67 +1215,6 @@ static void P_LoadLineDefs2(void)
 			break;
 		}
 	}
-
-	// Optimize sidedefs
-	if (M_CheckParm("-compress"))
-	{
-		side_t *newsides;
-		size_t numnewsides = 0;
-		size_t z;
-
-		for (i = 0; i < numsides; i++)
-		{
-			size_t j, k;
-			if (sides[i].sector == NULL)
-				continue;
-
-			for (k = numlines, ld = lines; k--; ld++)
-			{
-				if (ld->sidenum[0] == i)
-					ld->sidenum[0] = (UINT16)numnewsides;
-
-				if (ld->sidenum[1] == i)
-					ld->sidenum[1] = (UINT16)numnewsides;
-			}
-
-			for (j = i+1; j < numsides; j++)
-			{
-				if (sides[j].sector == NULL)
-					continue;
-
-				if (!memcmp(&sides[i], &sides[j], sizeof(side_t)))
-				{
-					// Find the linedefs that belong to this one
-					for (k = numlines, ld = lines; k--; ld++)
-					{
-						if (ld->sidenum[0] == j)
-							ld->sidenum[0] = (UINT16)numnewsides;
-
-						if (ld->sidenum[1] == j)
-							ld->sidenum[1] = (UINT16)numnewsides;
-					}
-					sides[j].sector = NULL; // Flag for deletion
-				}
-			}
-			numnewsides++;
-		}
-
-		// We're loading crap into this block anyhow, so no point in zeroing it out.
-		newsides = Z_Malloc(numnewsides * sizeof(*newsides), PU_LEVEL, NULL);
-
-		// Copy the sides to their new block of memory.
-		for (i = 0, z = 0; i < numsides; i++)
-		{
-			if (sides[i].sector != NULL)
-				M_Memcpy(&newsides[z++], &sides[i], sizeof(side_t));
-		}
-
-		CONS_Debug(DBG_SETUP, "Old sides is %s, new sides is %s\n", sizeu1(numsides), sizeu1(numnewsides));
-
-		Z_Free(sides);
-		sides = newsides;
-		numsides = numnewsides;
-	}
 }
 
 static void P_LoadRawSideDefs2(void *data)
@@ -1703,8 +1574,8 @@ static void P_CreateBlockMap(void)
 {
 	register size_t i;
 	fixed_t minx = INT32_MAX, miny = INT32_MAX, maxx = INT32_MIN, maxy = INT32_MIN;
-	// First find limits of map
 
+	// First find limits of map
 	for (i = 0; i < numvertexes; i++)
 	{
 		if (vertexes[i].x>>FRACBITS < minx)
