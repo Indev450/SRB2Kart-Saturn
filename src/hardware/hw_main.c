@@ -3846,7 +3846,7 @@ static void HWR_SplitSprite(gr_vissprite_t *spr)
 		if (!(list[i].flags & FF_NOSHADE) && (list[i].flags & FF_CUTSPRITES))
 		{
 			if (!(spr->mobj->frame & FF_FULLBRIGHT))
-				lightlevel = min(*list[i-1].lightlevel, 255);
+				lightlevel = min(*list[i].lightlevel, 255);
 			colormap = list[i].extra_colormap;
 		}
 
