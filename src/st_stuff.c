@@ -668,10 +668,11 @@ static void ST_overlayDrawer(void)
 
 			snprintf(directortext, 20, "Director: %s", cv_director.value ? "On" : "Off");
 
-			if (directortoggletimer < (I_GetTime() + 40 * TICRATE) % I_GetTime())
+			if (directortoggletimer < 4*TICRATE)
 			{
 				V_DrawString(1, BASEVIDHEIGHT-8-1, V_SNAPTOLEFT|V_SNAPTOBOTTOM|V_HUDTRANSHALF|V_ALLOWLOWERCASE, directortext);
-				directortoggletimer++;
+				if (renderisnewtic)
+					directortoggletimer++;
 			}
 			else if (cv_translucenthud.value != 0)
 				V_DrawString(1, BASEVIDHEIGHT-8-1, V_SNAPTOLEFT|V_SNAPTOBOTTOM|V_80TRANS|V_ALLOWLOWERCASE, directortext); // idk if V_80TRANS is good?
