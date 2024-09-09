@@ -3055,11 +3055,7 @@ void A_ExtraLife(mobj_t *actor)
 		return;
 	}
 
-	// In shooter gametypes, give the player 100 rings instead of an extra life.
-	if (gametype != GT_COOP && gametype != GT_COMPETITION)
-		P_GivePlayerRings(player, 100);
-	else
-		P_GivePlayerLives(player, 1);
+	P_GivePlayerRings(player, 100);
 	P_PlayLivesJingle(player);
 }
 
@@ -3741,11 +3737,6 @@ void A_ThrownRing(mobj_t *actor)
 			if (player->mo == actor->target)
 				continue;
 
-			// Don't home in on teammates.
-			if (gametype == GT_CTF
-				&& actor->target->player->ctfteam == player->ctfteam)
-				continue;
-
 			if (actor->target->player->kartstuff[k_position] < player->kartstuff[k_position]) // SRB2kart - Jawz only go after people ahead of you
 				continue;
 
@@ -3804,11 +3795,6 @@ static inline boolean PIT_GrenadeRing(mobj_t *thing)
 
 	if (thing->player && (thing->player->kartstuff[k_hyudorotimer]
 		|| (G_BattleGametype() && thing->player && thing->player->kartstuff[k_bumper] <= 0 && thing->player->kartstuff[k_comebacktimer])))
-		return true;
-
-	if ((gametype == GT_CTF || gametype == GT_TEAMMATCH)
-		&& !cv_friendlyfire.value && grenade->target->player && thing->player
-		&& grenade->target->player->ctfteam == thing->player->ctfteam) // Don't blow up at your teammates, unless friendlyfire is on
 		return true;
 
 	// see if it went over / under
@@ -5358,10 +5344,10 @@ void A_OldRingExplode(mobj_t *actor) {
 
 		if (changecolor)
 		{
-			if (gametype != GT_CTF)
-				mo->color = actor->target->color; //copy color
-			else if (actor->target->player->ctfteam == 2)
+			if (actor->target->player->ctfteam == 2)
 				mo->color = skincolor_bluering;
+			else
+				mo->color = actor->target->color; //copy color
 		}
 	}
 
@@ -5374,9 +5360,7 @@ void A_OldRingExplode(mobj_t *actor) {
 
 	if (changecolor)
 	{
-		if (gametype != GT_CTF)
-			mo->color = actor->target->color; //copy color
-		else if (actor->target->player->ctfteam == 2)
+		if (actor->target->player->ctfteam == 2)
 			mo->color = skincolor_bluering;
 	}
 
@@ -5389,9 +5373,7 @@ void A_OldRingExplode(mobj_t *actor) {
 
 	if (changecolor)
 	{
-		if (gametype != GT_CTF)
-			mo->color = actor->target->color; //copy color
-		else if (actor->target->player->ctfteam == 2)
+		if (actor->target->player->ctfteam == 2)
 			mo->color = skincolor_bluering;
 	}
 }
@@ -5416,7 +5398,7 @@ void A_MixUp(mobj_t *actor)
 
 	// No mix-up monitors in hide and seek or time only race.
 	// The random factor is okay for other game modes, but in these, it is cripplingly unfair.
-	if (gametype == GT_HIDEANDSEEK || gametype == GT_RACE)
+	if (gametype == GT_RACE)
 		return;
 
 	numplayers = 0;

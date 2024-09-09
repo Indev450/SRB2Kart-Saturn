@@ -773,10 +773,7 @@ static void Command_Sayteam_f(void)
 		return;
 	}
 
-	if (G_GametypeHasTeams())	// revert to normal say if we don't have teams in this gametype.
-		DoSayCommand(-1, 1, 0);
-	else
-		DoSayCommand(0, 1, 0);
+	DoSayCommand(0, 1, 0);
 }
 
 /** Send a message to everyone, to be displayed by CECHO. Only
@@ -1474,7 +1471,7 @@ boolean HU_Responder(event_t *ev)
 		{
 			chat_on = true;
 			w_chat[0] = 0;
-			teamtalk = G_GametypeHasTeams();	// Don't teamtalk if we don't have teams.
+			teamtalk = false;
 			chat_scrollmedown = true;
 			typelines = 1;
 			return true;
@@ -2726,7 +2723,6 @@ static inline void HU_DrawSpectatorTicker(void)
 //
 static void HU_DrawRankings(void)
 {
-	patch_t *p;
 	playersort_t tab[MAXPLAYERS];
 	INT32 i, j, scorelines, hilicol, numplayersingame = 0;
 	boolean completed[MAXPLAYERS];
@@ -2752,25 +2748,6 @@ static void HU_DrawRankings(void)
 		V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, "UNKNOWN");
 	else
 		V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, G_BuildMapTitle(gamemap));
-
-	if (G_GametypeHasTeams())
-	{
-		if (gametype == GT_CTF)
-			p = bflagico;
-		else
-			p = bmatcico;
-
-		V_DrawSmallScaledPatch(128 - SHORT(p->width)/4, 4, 0, p);
-		V_DrawCenteredString(128, 16, 0, va("%u", bluescore));
-
-		if (gametype == GT_CTF)
-			p = rflagico;
-		else
-			p = rmatcico;
-
-		V_DrawSmallScaledPatch(192 - SHORT(p->width)/4, 4, 0, p);
-		V_DrawCenteredString(192, 16, 0, va("%u", redscore));
-	}
 
 	if (!G_RaceGametype())
 	{
@@ -2801,18 +2778,6 @@ static void HU_DrawRankings(void)
 			V_DrawCenteredString(256, 16, hilicol, va("%d", cv_pointlimit.value));
 		}
 	}
-	/*else if (gametype == GT_COOP)
-	{
-		INT32 totalscore = 0;
-		for (i = 0; i < MAXPLAYERS; i++)
-		{
-			if (playeringame[i])
-				totalscore += players[i].score;
-		}
-
-		V_DrawCenteredString(256, 8, 0, "TOTAL SCORE");
-		V_DrawCenteredString(256, 16, 0, va("%u", totalscore));
-	}*/
 	else
 	{
 		if (circuitmap)
@@ -2885,12 +2850,7 @@ static void HU_DrawRankings(void)
 #endif
 	}
 
-	/*if (G_GametypeHasTeams())
-		HU_DrawTeamTabRankings(tab, whiteplayer); //separate function for Spazzo's silly request -- gotta fix this up later
-	else if (scorelines > 10)*/
 	HU_DrawTabRankings(((scorelines > 8) ? 32 : 40), 33, tab, scorelines, whiteplayer, hilicol);
-	/*else
-		HU_DrawDualTabRankings(32, 32, tab, scorelines, whiteplayer);*/
 
 	// draw spectators in a ticker across the bottom
 	if (netgame && G_GametypeHasSpectators())

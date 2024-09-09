@@ -3374,9 +3374,6 @@ void P_ProcessSpecialSector(player_t *player, sector_t *sector, sector_t *rovers
 			}
 
 			P_DoPlayerPain(player, NULL, NULL); // this does basically everything that was here before
-
-			if (gametype == GT_CTF && player->gotflag & (GF_REDFLAG|GF_BLUEFLAG))
-				P_PlayerFlagBurst(player, false);
 			break;
 		case 12: // Wall Sector (Don't step-up/down)
 		case 13: // Ramp Sector (Increase step-up/down)
@@ -3396,7 +3393,7 @@ void P_ProcessSpecialSector(player_t *player, sector_t *sector, sector_t *rovers
 		case 3: // Linedef executor requires all players present // Trigger Linedef Exec (Floor Touch, All Players)
 			/// \todo check continues for proper splitscreen support?
 			for (i = 0; i < MAXPLAYERS; i++)
-				if (playeringame[i] && !players[i].bot && players[i].mo && (gametype != GT_COOP || players[i].lives > 0))
+				if (playeringame[i] && !players[i].bot && players[i].mo && players[i].lives > 0)
 				{
 					if (roversector)
 					{
@@ -3666,95 +3663,12 @@ DoneSection2:
 				sstimer = 6; // Just let P_Ticker take care of the rest.
 
 			// Exit (for FOF exits; others are handled in P_PlayerThink in p_user.c)
-			{
-				INT32 lineindex;
-
-				P_DoPlayerExit(player);
-
-				P_SetupSignExit(player);
-				// important: use sector->tag on next line instead of player->mo->subsector->tag
-				// this part is different from in P_PlayerThink, this is what was causing
-				// FOF custom exits not to work.
-				lineindex = P_FindSpecialLineFromTag(2, sector->tag, -1);
-
-				if (gametype == GT_COOP && lineindex != -1) // Custom exit!
-				{
-					// Special goodies with the block monsters flag depending on emeralds collected
-					if ((lines[lineindex].flags & ML_BLOCKMONSTERS) && ALL7EMERALDS(emeralds))
-						nextmapoverride = (INT16)(lines[lineindex].frontsector->ceilingheight>>FRACBITS);
-					else
-						nextmapoverride = (INT16)(lines[lineindex].frontsector->floorheight>>FRACBITS);
-
-					if (lines[lineindex].flags & ML_NOCLIMB)
-						skipstats = true;
-				}
-			}
+			P_DoPlayerExit(player);
+			P_SetupSignExit(player);
 			break;
 
 		case 3: // Red Team's Base
-			if (gametype == GT_CTF && P_IsObjectOnGround(player->mo))
-			{
-				if (player->ctfteam == 1 && (player->gotflag & GF_BLUEFLAG))
-				{
-					mobj_t *mo;
-
-					// Make sure the red team still has their own
-					// flag at their base so they can score.
-					if (!P_IsFlagAtBase(MT_REDFLAG))
-						break;
-
-					HU_SetCEchoFlags(0);
-					HU_SetCEchoDuration(5);
-					HU_DoCEcho(va(M_GetText("%s\\captured the blue flag.\\\\\\\\"), player_names[player-players]));
-
-					if (splitscreen || players[consoleplayer].ctfteam == 1)
-						S_StartSound(NULL, sfx_flgcap);
-					else if (players[consoleplayer].ctfteam == 2)
-						S_StartSound(NULL, sfx_lose);
-
-					mo = P_SpawnMobj(player->mo->x,player->mo->y,player->mo->z,MT_BLUEFLAG);
-					player->gotflag &= ~GF_BLUEFLAG;
-					mo->flags &= ~MF_SPECIAL;
-					mo->fuse = TICRATE;
-					mo->spawnpoint = bflagpoint;
-					mo->flags2 |= MF2_JUSTATTACKED;
-					redscore += 1;
-					P_AddPlayerScore(player, 5);
-				}
-			}
-			break;
-
 		case 4: // Blue Team's Base
-			if (gametype == GT_CTF && P_IsObjectOnGround(player->mo))
-			{
-				if (player->ctfteam == 2 && (player->gotflag & GF_REDFLAG))
-				{
-					mobj_t *mo;
-
-					// Make sure the blue team still has their own
-					// flag at their base so they can score.
-					if (!P_IsFlagAtBase(MT_BLUEFLAG))
-						break;
-
-					HU_SetCEchoFlags(0);
-					HU_SetCEchoDuration(5);
-					HU_DoCEcho(va(M_GetText("%s\\captured the red flag.\\\\\\\\"), player_names[player-players]));
-
-					if (splitscreen || players[consoleplayer].ctfteam == 2)
-						S_StartSound(NULL, sfx_flgcap);
-					else if (players[consoleplayer].ctfteam == 1)
-						S_StartSound(NULL, sfx_lose);
-
-					mo = P_SpawnMobj(player->mo->x,player->mo->y,player->mo->z,MT_REDFLAG);
-					player->gotflag &= ~GF_REDFLAG;
-					mo->flags &= ~MF_SPECIAL;
-					mo->fuse = TICRATE;
-					mo->spawnpoint = rflagpoint;
-					mo->flags2 |= MF2_JUSTATTACKED;
-					bluescore += 1;
-					P_AddPlayerScore(player, 5);
-				}
-			}
 			break;
 
 		case 5: // Fan sector
@@ -6052,8 +5966,7 @@ void P_SpawnSpecials(INT32 fromnetsave, boolean reloadinggamestate)
 			// Linedef executor triggers for CTF teams.
 			case 309:
 			case 311:
-				if (gametype != GT_CTF)
-					lines[i].special = 0;
+				lines[i].special = 0;
 				break;
 
 			// Each time executors

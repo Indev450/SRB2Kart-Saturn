@@ -1061,8 +1061,6 @@ static void SV_SendResynch(INT32 node)
 		netbuffer->packettype = PT_RESYNCHEND;
 
 		netbuffer->u.resynchend.randomseed = P_GetRandSeed();
-		if (gametype == GT_CTF)
-			resynch_write_ctf(&netbuffer->u.resynchend);
 		resynch_write_others(&netbuffer->u.resynchend);
 
 		HSendPacket(node, true, 0, (sizeof(resynchend_pak)));
@@ -1669,20 +1667,10 @@ static void SV_SendPlayerInfo(INT32 node)
 		//No, don't do that, you fuckface.
 		memset(netbuffer->u.playerinfo[i].address, 0, 4);
 
-		if (G_GametypeHasTeams())
-		{
-			if (!players[i].ctfteam)
-				netbuffer->u.playerinfo[i].team = 255;
-			else
-				netbuffer->u.playerinfo[i].team = (UINT8)players[i].ctfteam;
-		}
+		if (players[i].spectator)
+			netbuffer->u.playerinfo[i].team = 255;
 		else
-		{
-			if (players[i].spectator)
-				netbuffer->u.playerinfo[i].team = 255;
-			else
-				netbuffer->u.playerinfo[i].team = 0;
-		}
+			netbuffer->u.playerinfo[i].team = 0;
 
 		netbuffer->u.playerinfo[i].score = LONG(players[i].score);
 		netbuffer->u.playerinfo[i].timeinserver = SHORT((UINT16)(players[i].jointime / TICRATE));
@@ -3243,9 +3231,6 @@ void CL_RemovePlayer(INT32 playernum, INT32 reason)
 
 	if (K_IsPlayerWanted(&players[playernum]))
 		K_CalculateBattleWanted();
-
-	if (gametype == GT_CTF)
-		P_PlayerFlagBurst(&players[playernum], false); // Don't take the flag with you!
 
 	// If in a special stage, redistribute the player's rings across
 	// the remaining players.
@@ -5623,9 +5608,6 @@ static void HandlePacketFromPlayer(SINT8 node)
 			resynch_local_inprogress = false;
 
 			P_SetRandSeed(netbuffer->u.resynchend.randomseed);
-
-			if (gametype == GT_CTF)
-				resynch_read_ctf(&netbuffer->u.resynchend);
 			resynch_read_others(&netbuffer->u.resynchend);
 
 			break;

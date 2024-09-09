@@ -290,7 +290,6 @@ mobj_t *P_SPMAngle(mobj_t *source, mobjtype_t type, angle_t angle, UINT8 aimtype
 #ifdef SEENAMES
 #define P_SpawnNameFinder(s,t) P_SPMAngle(s,t,s->angle,true,0)
 #endif
-void P_ColorTeamMissile(mobj_t *missile, player_t *source);
 SINT8 P_MobjFlip(const mobj_t *mobj);
 fixed_t P_GetMobjGravity(mobj_t *mo);
 FUNCMATH boolean P_WeaponOrPanel(mobjtype_t type);
@@ -419,10 +418,8 @@ void P_PlayerWeaponAmmoBurst(player_t *player);
 void P_PlayerEmeraldBurst(player_t *player, boolean toss);
 
 void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck);
-void P_PlayerFlagBurst(player_t *player, boolean toss);
 void P_CheckTimeLimit(void);
 void P_CheckPointLimit(void);
-//void P_CheckSurvivors(void);
 boolean P_CheckRacers(void);
 
 boolean P_CanPickupItem(player_t *player, UINT8 weapon);

@@ -4876,10 +4876,6 @@ player_t *K_FindJawzTarget(mobj_t *actor, player_t *source)
 		if (player == source)
 			continue;
 
-		// Don't home in on teammates.
-		if (G_GametypeHasTeams() && source->ctfteam == player->ctfteam)
-			continue;
-
 		// Invisible, don't bother
 		if (player->kartstuff[k_hyudorotimer])
 			continue;

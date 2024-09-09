@@ -56,26 +56,6 @@ typedef struct
 
 typedef union
 {
-	/*struct
-	{
-		char passed1[21]; // KNUCKLES GOT    / CRAWLA HONCHO
-		char passed2[16]; // THROUGH THE ACT / PASSED THE ACT
-		INT32 passedx1;
-		INT32 passedx2;
-
-		y_bonus_t bonuses[4];
-		patch_t *bonuspatches[4];
-
-		SINT8 gotperfbonus; // Used for visitation flags.
-
-		UINT32 score, total; // fake score, total
-		UINT32 tics; // time
-
-		patch_t *ttlnum; // act number being displayed
-		patch_t *ptotal; // TOTAL
-		UINT8 gotlife; // Number of extra lives obtained
-	} coop;*/
-
 	struct
 	{
 		UINT8 *color[MAXPLAYERS]; // Winner's color #
@@ -884,9 +864,7 @@ void Y_StartIntermission(void)
 	}
 	else
 	{
-		if (cv_inttime.value == 0 && gametype == GT_COOP)
-			timer = 0;
-		else if (demo.playback) // Override inttime (which is pulled from the replay anyway
+		if (demo.playback) // Override inttime (which is pulled from the replay anyway
 			timer = 10*TICRATE;
 		else
 		{

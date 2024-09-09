@@ -2471,7 +2471,6 @@ static void P_SetupCamera(UINT8 pnum, camera_t *cam)
 		switch (gametype)
 		{
 		case GT_MATCH:
-		case GT_TAG:
 			thing = deathmatchstarts[0];
 			break;
 
@@ -2818,7 +2817,7 @@ boolean P_SetupLevel(boolean skipprecip, boolean reloadinggamestate)
 				players[i].mo = NULL;
 				G_DoReborn(i);
 			}
-			else // gametype is GT_COOP or GT_RACE
+			else // gametype is GT_RACE
 			{
 				players[i].mo = NULL;
 
@@ -2834,44 +2833,7 @@ boolean P_SetupLevel(boolean skipprecip, boolean reloadinggamestate)
 	if (modeattacking == ATTACKING_RECORD && !demo.playback)
 		P_LoadRecordGhosts();
 
-	if (G_TagGametype())
-	{
-		INT32 realnumplayers = 0;
-		INT32 playersactive[MAXPLAYERS];
-
-		//I just realized how problematic this code can be.
-		//D_NumPlayers() will not always cover the scope of the netgame.
-		//What if one player is node 0 and the other node 31?
-		//The solution? Make a temp array of all players that are currently playing and pick from them.
-		//Future todo? When a player leaves, shift all nodes down so D_NumPlayers() can be used as intended?
-		//Also, you'd never have to loop through all 32 players slots to find anything ever again.
-		for (i = 0; i < MAXPLAYERS; i++)
-		{
-			if (playeringame[i] && !players[i].spectator)
-			{
-				playersactive[realnumplayers] = i; //stores the player's node in the array.
-				realnumplayers++;
-			}
-		}
-
-		if (realnumplayers) //this should also fix the dedicated crash bug. You only pick a player if one exists to be picked.
-		{
-			i = P_RandomKey(realnumplayers);
-			players[playersactive[i]].pflags |= PF_TAGIT; //choose our initial tagger before map starts.
-
-			// Taken and modified from G_DoReborn()
-			// Remove the player so he can respawn elsewhere.
-			// first dissasociate the corpse
-			if (players[playersactive[i]].mo)
-				P_RemoveMobj(players[playersactive[i]].mo);
-
-			G_SpawnPlayer(playersactive[i], false); //respawn the lucky player in his dedicated spawn location.
-		}
-		else
-			CONS_Printf(M_GetText("No player currently available to become IT. Awaiting available players.\n"));
-
-	}
-	else if (G_RaceGametype() && server)
+	if (G_RaceGametype() && server)
 		CV_StealthSetValue(&cv_numlaps,
 			((netgame || multiplayer) && cv_basenumlaps.value
 				&& (!(mapheaderinfo[gamemap - 1]->levelflags & LF_SECTIONRACE)
