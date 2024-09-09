@@ -652,10 +652,7 @@ static void ST_overlayDrawer(void)
 
 	if (!hu_showscores) // hide the following if TAB is held
 	{
-		// Countdown timer for Race Mode
-		// ...moved to k_kart.c so we can take advantage of the LAPS_Y value
-
-		if ((demo.playback || !P_IsLocalPlayer(stplyr)) && !splitscreen)
+		if (((demo.playback && (!demo.title || !modeattacking)) || !P_IsLocalPlayer(stplyr)) && !splitscreen)
 		{
 			char directortext[20] = {0};
 
