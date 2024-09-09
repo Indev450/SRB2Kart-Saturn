@@ -1504,7 +1504,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 	// two sided line
 	if (gr_backsector)
 	{
-		INT32 gr_toptexture, gr_bottomtexture;
+		INT32 gr_toptexture = 0, gr_bottomtexture = 0;
 
 		SLOPEPARAMS(gr_backsector->c_slope, worldhigh, worldhighslope, gr_backsector->ceilingheight)
 		SLOPEPARAMS(gr_backsector->f_slope, worldlow,  worldlowslope,  gr_backsector->floorheight)
@@ -2475,10 +2475,7 @@ static void HWR_AddLine(seg_t *line)
 	}
 
 	if (gr_portal == GRPORTAL_STENCIL || gr_portal == GRPORTAL_DEPTH)
-	{
-		gr_backsector = line->backsector;
 		goto doaddline;
-	}
 
 	if (line->linedef->special == 40)
 	{
