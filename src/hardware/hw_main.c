@@ -235,12 +235,8 @@ static void CV_grpalettedepth_OnChange(void)
 static void CV_grframebuffer_OnChange(void)
 {
 	ONLY_IF_GL_LOADED
-	if (cv_grscreentextures.value != 2)
-	{ // screen FBO needs screen textures
-#ifdef USE_FBO_OGL
+	if (cv_grscreentextures.value != 2) // screen FBO needs screen textures
 		CV_Set(&cv_grframebuffer, "Off");
-#endif
-	}
 	HWD.pfnSetSpecialState(HWD_SET_FRAMEBUFFER, cv_grframebuffer.value);
 	I_DownSample();
 	RefreshOGLSDLSurface();
