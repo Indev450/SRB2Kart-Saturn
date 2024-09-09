@@ -28,6 +28,9 @@
 #include "m_menu.h"
 #include "m_cheat.h"
 #include "p_setup.h" // NiGHTS grading
+
+#include "i_time.h"
+
 #include "k_kart.h" // SRB2kart
 
 //random index
@@ -658,8 +661,16 @@ static void ST_overlayDrawer(void)
 
 			snprintf(directortext, 20, "Director: %s", cv_director.value ? "On" : "Off");
 
-			V_DrawString(1, BASEVIDHEIGHT-8-1, V_SNAPTOLEFT|V_SNAPTOBOTTOM|V_HUDTRANSHALF|V_ALLOWLOWERCASE, directortext);
+			if (directortoggletimer < (I_GetTime() + 40 * TICRATE) % I_GetTime())
+			{
+				V_DrawString(1, BASEVIDHEIGHT-8-1, V_SNAPTOLEFT|V_SNAPTOBOTTOM|V_HUDTRANSHALF|V_ALLOWLOWERCASE, directortext);
+				directortoggletimer++;
+			}
+			else if (cv_translucenthud.value != 0)
+				V_DrawString(1, BASEVIDHEIGHT-8-1, V_SNAPTOLEFT|V_SNAPTOBOTTOM|V_80TRANS|V_ALLOWLOWERCASE, directortext); // idk if V_80TRANS is good?
 		}
+		else
+			directortoggletimer = 0;
 
 		if (cv_showviewpointtext.value)
 		{

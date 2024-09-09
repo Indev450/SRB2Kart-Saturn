@@ -218,6 +218,8 @@ extern angle_t localangle[MAXSPLITSCREENPLAYERS];
 extern INT32 localaiming[MAXSPLITSCREENPLAYERS]; // should be an angle_t but signed
 extern boolean camspin[MAXSPLITSCREENPLAYERS]; // SRB2Kart
 
+extern tic_t directortoggletimer;
+
 //
 // GAME
 //
