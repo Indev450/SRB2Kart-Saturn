@@ -567,6 +567,7 @@ consvar_t cv_ps_descriptor = {"ps_descriptor", "Average", 0, ps_descriptor_cons_
 
 consvar_t cv_director = {"director", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_kartdebugdirector = {"debugdirector", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_showdirectorhud = {"showdirectorhud", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_showtrackaddon = {"showtrackaddon", "Yes", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -995,6 +996,7 @@ void D_RegisterClientCommands(void)
 
 	CV_RegisterVar(&cv_director);
 	CV_RegisterVar(&cv_kartdebugdirector);
+	CV_RegisterVar(&cv_showdirectorhud);
 
 	CV_RegisterVar(&cv_luaimmersion);
 	CV_RegisterVar(&cv_fakelocalskin);

@@ -2258,12 +2258,14 @@ static menuitem_t OP_SaturnHudMenu[] =
 	{IT_STRING | IT_CVAR, NULL,	"Show Names on Minimap",   				&cv_showminimapnames, 		 70},
 	{IT_STRING | IT_CVAR, NULL,	"Small Minimap Players",   				&cv_minihead, 				 75},
 
-	{IT_STRING | IT_CVAR, NULL, "Uncapped HUD", 						&cv_uncappedhud, 		     85},
+	{IT_STRING | IT_CVAR, NULL,	"Show Director Prompt",   				&cv_showdirectorhud, 		 80},
 
-	{IT_STRING | IT_SUBMENU, NULL, "Nametags...", 						&OP_NametagDef, 		   	 95},
-	{IT_STRING | IT_SUBMENU, NULL, "Driftgauge...", 					&OP_DriftGaugeDef, 		   	100},
+	{IT_STRING | IT_CVAR, NULL, "Uncapped HUD", 						&cv_uncappedhud, 		     90},
 
-	{IT_SUBMENU|IT_STRING,	NULL,	"Hud Offsets...", 					&OP_HudOffsetDef,		   	110},
+	{IT_STRING | IT_SUBMENU, NULL, "Nametags...", 						&OP_NametagDef, 		   	100},
+	{IT_STRING | IT_SUBMENU, NULL, "Driftgauge...", 					&OP_DriftGaugeDef, 		   	105},
+
+	{IT_SUBMENU|IT_STRING,	NULL,	"Hud Offsets...", 					&OP_HudOffsetDef,		   	115},
 };
 
 static const char* OP_SaturnHudTooltips[] =
@@ -2282,6 +2284,7 @@ static const char* OP_SaturnHudTooltips[] =
 	"Show the big Cecho Messages.",
 	"Show player names on the minimap.",
 	"Minimize the player icons on the minimap.",
+	"Show the Director Toggle prompt when spectating.",
 	"Uncaps the HUD framerate, making it appear smoother.",
 	"Nametag Options.",
 	"Driftgauge Options.",
@@ -2304,6 +2307,7 @@ enum
 	sh_cechotogle,
 	sh_mapname,
 	sh_smallmap,
+	sh_directorhud,
 	sh_uncappedhud,
 	sh_nametagmen,
 	sh_driftgaugemen,
