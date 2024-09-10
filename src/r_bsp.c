@@ -500,14 +500,9 @@ static void R_AddLine(seg_t *line)
 
 	doorclosed = 0;
 
-	if (backsector->ceilingpic == skyflatnum && frontsector->ceilingpic == skyflatnum && backsector->floorpic == skyflatnum && frontsector->floorpic == skyflatnum) // everything's sky? let's save us a bit of time then
+	if (backsector->ceilingpic == skyflatnum && frontsector->ceilingpic == skyflatnum
+		&& backsector->floorpic == skyflatnum && frontsector->floorpic == skyflatnum) // everything's sky? let's save us a bit of time then
 	{
-		if (!line->polyseg &&
-			!line->sidedef->midtexture
-			&& ((!frontsector->ffloors && !backsector->ffloors)
-			|| (frontsector->tag == backsector->tag)))
-			return; // line is empty, don't even bother
-
 		goto clippass; // treat like wide open window instead
 	}
 
