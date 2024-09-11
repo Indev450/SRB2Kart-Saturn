@@ -382,7 +382,8 @@ visplane_t *R_FindPlane(fixed_t height, INT32 picnum, INT32 lightlevel,
 	ffloor_t *pfloor
 			, polyobj_t *polyobj
 			, pslope_t *slope
-			, boolean noencore)
+			, boolean noencore
+			, boolean reverseLight, const sector_t *lighting_sector)
 {
 	visplane_t *check;
 	unsigned hash;
@@ -419,9 +420,16 @@ visplane_t *R_FindPlane(fixed_t height, INT32 picnum, INT32 lightlevel,
 		}
 	}
 
-	if (slope != NULL)
+	if (slope != NULL && P_ApplyLightOffset(lightlevel >> LIGHTSEGSHIFT, lighting_sector))
 	{
-		lightlevel += slope->lightOffset * 8;
+		if (reverseLight)
+		{
+			lightlevel -= slope->lightOffset * 8;
+		}
+		else
+		{
+			lightlevel += slope->lightOffset * 8;
+		}
 	}
 
 	// This appears to fix the Nimbus Ruins sky bug.

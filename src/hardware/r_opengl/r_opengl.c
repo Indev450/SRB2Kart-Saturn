@@ -665,6 +665,9 @@ typedef enum
 	gluniform_lighting,
 	gluniform_fade_start,
 	gluniform_fade_end,
+	gluniform_light_dir,
+	gluniform_light_contrast,
+	gluniform_light_backlight,
 	
 	// palette rendering
 	gluniform_palette_tex, // 1d texture containing a palette
@@ -705,6 +708,11 @@ static gl_shaderstate_t gl_shaderstate;
 
 // Shader info
 static float shader_leveltime = 0;
+static float shader_light_x = 0.0f;
+static float shader_light_y = 0.0f;
+static float shader_light_z = 0.0f;
+static INT32 shader_light_contrast = 0;
+static INT32 shader_light_backlight = 0;
 
 // Lactozilla: Shader functions
 static boolean Shader_CompileProgram(gl_shader_t *shader, GLint i);
@@ -860,6 +868,21 @@ EXPORT void HWRAPI(SetShaderInfo) (hwdshaderinfo_t info, INT32 value)
 	{
 		case HWD_SHADERINFO_LEVELTIME:
 			shader_leveltime = value;
+			break;
+		case HWD_SHADERINFO_LIGHT_X:
+			shader_light_x = FixedToFloat(value);
+			break;
+		case HWD_SHADERINFO_LIGHT_Y:
+			shader_light_y = FixedToFloat(value);
+			break;
+		case HWD_SHADERINFO_LIGHT_Z:
+			shader_light_z = FixedToFloat(value);
+			break;
+		case HWD_SHADERINFO_LIGHT_CONTRAST:
+			shader_light_contrast = value;
+			break;
+		case HWD_SHADERINFO_LIGHT_BACKLIGHT:
+			shader_light_backlight = value;
 			break;
 		default:
 			break;
@@ -1851,11 +1874,32 @@ static void Shader_SetUniforms(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRGBAF
 		UNIFORM_4(shader->uniforms[gluniform_tint_color], tint->red, tint->green, tint->blue, tint->alpha, pglUniform4f);
 		UNIFORM_4(shader->uniforms[gluniform_fade_color], fade->red, fade->green, fade->blue, fade->alpha, pglUniform4f);
 
+		boolean directional = false;
 		if (Surface != NULL)
 		{
 			UNIFORM_1(shader->uniforms[gluniform_lighting], (GLfloat)Surface->LightInfo.light_level, pglUniform1f);
 			UNIFORM_1(shader->uniforms[gluniform_fade_start], (GLfloat)Surface->LightInfo.fade_start, pglUniform1f);
 			UNIFORM_1(shader->uniforms[gluniform_fade_end], (GLfloat)Surface->LightInfo.fade_end, pglUniform1f);
+			directional = Surface->LightInfo.directional;
+		}
+		else
+		{
+			UNIFORM_1(shader->uniforms[gluniform_lighting], 255, pglUniform1f);
+			UNIFORM_1(shader->uniforms[gluniform_fade_start], 0, pglUniform1f);
+			UNIFORM_1(shader->uniforms[gluniform_fade_end], 31, pglUniform1f);
+		}
+
+		if (directional)
+		{
+			UNIFORM_3(shader->uniforms[gluniform_light_dir], shader_light_x, shader_light_y, shader_light_z, pglUniform3f);
+			UNIFORM_1(shader->uniforms[gluniform_light_contrast], shader_light_contrast, pglUniform1f);
+			UNIFORM_1(shader->uniforms[gluniform_light_backlight], shader_light_backlight, pglUniform1f);
+		}
+		else
+		{
+			UNIFORM_3(shader->uniforms[gluniform_light_dir], 0, 0, 0, pglUniform3f);
+			UNIFORM_1(shader->uniforms[gluniform_light_contrast], 0, pglUniform1f);
+			UNIFORM_1(shader->uniforms[gluniform_light_backlight], 0, pglUniform1f);
 		}
 
 		UNIFORM_1(shader->uniforms[gluniform_leveltime], ((float)shader_leveltime) / TICRATE, pglUniform1f);
@@ -1980,6 +2024,9 @@ static boolean Shader_CompileProgram(gl_shader_t *shader, GLint i)
 	shader->uniforms[gluniform_lighting] = GETUNI("lighting");
 	shader->uniforms[gluniform_fade_start] = GETUNI("fade_start");
 	shader->uniforms[gluniform_fade_end] = GETUNI("fade_end");
+	shader->uniforms[gluniform_light_dir] = GETUNI("light_dir");
+	shader->uniforms[gluniform_light_contrast] = GETUNI("light_contrast");
+	shader->uniforms[gluniform_light_backlight] = GETUNI("light_backlight");
 
 	// palette rendering
 	shader->uniforms[gluniform_palette_tex] = GETUNI("palette_tex");

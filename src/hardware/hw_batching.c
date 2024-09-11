@@ -180,6 +180,10 @@ static int comparePolygons(const void *p1, const void *p2)
 	diff = poly1->surf.LightInfo.fade_start - poly2->surf.LightInfo.fade_start;
 	if (diff != 0) return diff;
 	diff = poly1->surf.LightInfo.fade_end - poly2->surf.LightInfo.fade_end;
+
+	diff = poly1->surf.LightInfo.directional - poly2->surf.LightInfo.directional;
+	if (diff != 0) return diff;
+
 	return diff;
 }
 
@@ -228,7 +232,7 @@ void HWR_RenderBatches(void)
 
 	int currentShader;
 	int nextShader = 0;
-	GLMipmap_t *currentTexture;
+	GLMipmap_t *currentTexture = NULL;
 	GLMipmap_t *nextTexture = NULL;
 	FBITFIELD currentPolyFlags = 0;
 	FBITFIELD nextPolyFlags = 0;
@@ -243,6 +247,7 @@ void HWR_RenderBatches(void)
 	nextSurfaceInfo.LightInfo.fade_end = 0;
 	nextSurfaceInfo.LightInfo.fade_start = 0;
 	nextSurfaceInfo.LightInfo.light_level = 0;
+	nextSurfaceInfo.LightInfo.directional = false;
 
 	currently_batching = false;// no longer collecting batches
 	if (!polygonArraySize)
@@ -392,7 +397,8 @@ void HWR_RenderBatches(void)
 					currentSurfaceInfo.FadeColor.rgba != nextSurfaceInfo.FadeColor.rgba ||
 					currentSurfaceInfo.LightInfo.light_level != nextSurfaceInfo.LightInfo.light_level ||
 					currentSurfaceInfo.LightInfo.fade_start != nextSurfaceInfo.LightInfo.fade_start ||
-					currentSurfaceInfo.LightInfo.fade_end != nextSurfaceInfo.LightInfo.fade_end)
+					currentSurfaceInfo.LightInfo.fade_end != nextSurfaceInfo.LightInfo.fade_end ||
+					currentSurfaceInfo.LightInfo.directional != nextSurfaceInfo.LightInfo.directional)
 				{
 					changeState = true;
 					changeSurfaceInfo = true;

@@ -1012,6 +1012,27 @@ static void readlevelheader(MYFILE *f, INT32 num, INT32 wadnum)
 			}*/
 			else if (fastcmp(word, "MOBJSCALE"))
 				mapheaderinfo[num-1]->mobj_scale = get_number(word2);
+			else if (fastcmp(word, "LIGHTCONTRAST"))
+			{
+				mapheaderinfo[num-1]->light_contrast = (UINT8)i;
+			}
+			else if (fastcmp(word, "SPRITEBACKLIGHT"))
+			{
+				mapheaderinfo[num]->sprite_backlight = (SINT8)i;
+			}
+			else if (fastcmp(word, "LIGHTANGLE"))
+			{
+				if (fastcmp(word2, "EVEN"))
+				{
+					mapheaderinfo[num-1]->use_light_angle = false;
+					mapheaderinfo[num-1]->light_angle = 0;
+				}
+				else
+				{
+					mapheaderinfo[num-1]->use_light_angle = true;
+					mapheaderinfo[num-1]->light_angle = FixedAngle(FloatToFixed(atof(word2)));
+				}
+			}
 
 			// Individual triggers for level flags, for ease of use (and 2.0 compatibility)
 			else if (fastcmp(word, "SCRIPTISFILE"))
@@ -7862,6 +7883,7 @@ struct {
 	{"FF_FULLBRIGHT",FF_FULLBRIGHT},
 	{"FF_TRANSMASK",FF_TRANSMASK},
 	{"FF_TRANSSHIFT",FF_TRANSSHIFT},
+	{"FF_ABSOLUTELIGHTLEVEL",FF_ABSOLUTELIGHTLEVEL},
 	// new preshifted translucency (used in source)
 	{"FF_TRANS10",FF_TRANS10},
 	{"FF_TRANS20",FF_TRANS20},

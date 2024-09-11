@@ -56,6 +56,9 @@ extern fixed_t sprbotscreen;
 extern fixed_t windowtop;
 extern fixed_t windowbottom;
 
+INT32 R_ThingLightLevel(mobj_t *thing);
+fixed_t R_GetSpriteDirectionalLighting(angle_t angle);
+
 fixed_t R_GetShadowZ(mobj_t *thing, pslope_t **shadowslope);
 
 void R_DrawMaskedColumn(column_t *column);

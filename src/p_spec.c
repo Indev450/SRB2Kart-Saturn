@@ -5166,6 +5166,12 @@ void P_SpawnSpecials(INT32 fromnetsave, boolean reloadinggamestate)
 	// Set the default gravity. Custom gravity overrides this setting.
 	gravity = (FRACUNIT*8)/10;
 
+	// Set map lighting settings.
+	maplighting.contrast = mapheaderinfo[gamemap-1]->light_contrast;
+	maplighting.backlight = mapheaderinfo[gamemap-1]->sprite_backlight;
+	maplighting.directional = mapheaderinfo[gamemap-1]->use_light_angle;
+	maplighting.angle = mapheaderinfo[gamemap-1]->light_angle;
+
 	// Defaults in case levels don't have them set.
 	sstimer = 90*TICRATE + 6;
 	totalrings = 1;

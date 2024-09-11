@@ -30,13 +30,13 @@ static UINT16 slopecount = 0;
 // Calculate light
 static void P_UpdateSlopeLightOffset(pslope_t *slope)
 {
-	const boolean ceiling = (slope->normal.z < 0);
-	const UINT8 contrast = 8;
+	const UINT8 contrast = maplighting.contrast;
 
 	fixed_t contrastFixed = ((fixed_t)contrast) * FRACUNIT;
 	fixed_t zMul = FRACUNIT;
-	angle_t slopeDir = ANGLE_MAX;
+	fixed_t light = FRACUNIT;
 	fixed_t extralight = 0;
+
 
 	if (slope->normal.z == 0)
 	{
@@ -47,15 +47,47 @@ static void P_UpdateSlopeLightOffset(pslope_t *slope)
 		return;
 	}
 
-	slopeDir = R_PointToAngle2(0, 0, abs(slope->normal.y), abs(slope->normal.x));
-	if (ceiling == true)
+	if (maplighting.directional == true)
 	{
-		slopeDir ^= ANGLE_180;
+		fixed_t nX = -slope->normal.x;
+		fixed_t nY = -slope->normal.y;
+		fixed_t nLen = FixedHypot(nX, nY);
+
+		if (nLen == 0)
+		{
+			slope->lightOffset = 0;
+#ifdef HWRENDER
+			slope->hwLightOffset = 0;
+#endif
+			return;
+		}
+
+		nX = FixedDiv(nX, nLen);
+		nY = FixedDiv(nY, nLen);
+
+		/*
+		 * if (slope is ceiling)
+		 * {
+		 *	// There is no good way to calculate this condition here.
+		 *	// We reverse it in R_FindPlane now.
+		 *	nX = -nX;
+		 *	nY = -nY;
+	}
+	*/
+
+		light = FixedMul(nX, FINECOSINE(maplighting.angle >> ANGLETOFINESHIFT))
+		+ FixedMul(nY, FINESINE(maplighting.angle >> ANGLETOFINESHIFT));
+		light = (light + FRACUNIT) / 2;
+	}
+	else
+	{
+		light = FixedDiv(R_PointToAngle2(0, 0, abs(slope->d.x), abs(slope->d.y)), ANGLE_90);
 	}
 
 	zMul = min(FRACUNIT, abs(slope->zdelta)*3/2); // *3/2, to make 60 degree slopes match walls.
 	contrastFixed = FixedMul(contrastFixed, zMul);
-	extralight = -contrastFixed + FixedMul(FixedDiv(AngleFixed(slopeDir), ANGLE_90), (contrastFixed * 2));
+
+	extralight = -contrastFixed + FixedMul(light, contrastFixed * 2);
 
 	// Between -2 and 2 for software, -8 and 8 for hardware
 	slope->lightOffset = FixedFloor((extralight / 8) + (FRACUNIT / 2)) / FRACUNIT;

@@ -44,6 +44,8 @@ typedef struct gr_vissprite_s
 	INT32 dispoffset; // copy of info->dispoffset, affects ordering but not drawing
 } gr_vissprite_t;
 
+void HWR_ObjectLightLevelPost(gr_vissprite_t *spr, const sector_t *sector, INT32 *lightlevel, boolean model);
+
 // --------
 // hw_bsp.c
 // --------
