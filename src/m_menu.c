@@ -10480,7 +10480,7 @@ static void M_DrawServerMenu(void)
 {
 
 	M_DrawLevelSelectOnly(false, false);
-	#ifdef MASTERSERVER
+#ifdef MASTERSERVER
 	if (currentMenu == &MP_ServerDef && cv_advertise.value) // Remind players where they're hosting.
 	{
 		int mservflags = V_ALLOWLOWERCASE;
@@ -10490,7 +10490,7 @@ static void M_DrawServerMenu(void)
 			mservflags = mservflags|warningflags;
 		V_DrawCenteredThinString(BASEVIDWIDTH/2, BASEVIDHEIGHT-12, mservflags, va("Master Server: %s", cv_masterserver.string));
 	}
-	#endif
+#endif
 	M_DrawGenericMenu();
 
 }
@@ -10523,7 +10523,9 @@ static void M_StartServerMenu(INT32 choice)
 	levellistmode = LLM_CREATESERVER;
 	M_PrepareLevelSelect();
 	M_SetupNextMenu(&MP_ServerDef);
+#ifdef MASTERSERVER
 	Get_rules();
+#endif
 	M_PopupMasterServerRules();
 }
 
