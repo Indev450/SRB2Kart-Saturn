@@ -3638,28 +3638,31 @@ boolean M_Responder(event_t *ev)
 				break;
 		}
 
-		switch (ev->data1) // if you pressed it set those to true
+		if (menuactive)
 		{
-			case KEY_HAT1:
-				DPADUPSCROLL = true;
-				break;
-			case KEY_HAT1 + 1:
-				DPADDOWNSCROLL = true;
-				break;
-			case KEY_HAT1 + 2:
-				DPADLEFTSCROLL = true;
-				break;
-			case KEY_HAT1 + 3:
-				DPADRIGHTSCROLL = true;
-				break;
-		}
-
-		if (currentMenu == &MISC_ChangeLevelDef || currentMenu == &MP_OfflineServerDef || currentMenu == &MP_ServerDef)
-		{
-			if (ev->data1 == gamecontrol[gc_fire][0]
-				|| ev->data1 == gamecontrol[gc_fire][1])
+			switch (ev->data1) // if you pressed it set those to true
 			{
-				COM_ImmedExecute("add kartencore 1");
+				case KEY_HAT1:
+					DPADUPSCROLL = true;
+					break;
+				case KEY_HAT1 + 1:
+					DPADDOWNSCROLL = true;
+					break;
+				case KEY_HAT1 + 2:
+					DPADLEFTSCROLL = true;
+					break;
+				case KEY_HAT1 + 3:
+					DPADRIGHTSCROLL = true;
+					break;
+			}
+
+			if (currentMenu == &MISC_ChangeLevelDef || currentMenu == &MP_OfflineServerDef || currentMenu == &MP_ServerDef)
+			{
+				if (ev->data1 == gamecontrol[gc_fire][0]
+					|| ev->data1 == gamecontrol[gc_fire][1])
+				{
+					COM_ImmedExecute("add kartencore 1");
+				}
 			}
 		}
 	}
