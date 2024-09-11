@@ -3653,6 +3653,15 @@ boolean M_Responder(event_t *ev)
 				DPADRIGHTSCROLL = true;
 				break;
 		}
+
+		if (currentMenu == &MISC_ChangeLevelDef || currentMenu == &MP_OfflineServerDef || currentMenu == &MP_ServerDef)
+		{
+			if (ev->data1 == gamecontrol[gc_fire][0]
+				|| ev->data1 == gamecontrol[gc_fire][1])
+			{
+				COM_ImmedExecute("add kartencore 1");
+			}
+		}
 	}
 	else if (ev->type == ev_keyup)
 	{
@@ -10291,6 +10300,17 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 	lumpnum_t lumpnum;
 	patch_t *PictureOfLevel;
 	INT32 x, y, w, i, oldval, trans, dupadjust = ((vid.width/vid.dupx) - BASEVIDWIDTH)>>1;
+
+	char encoretoggle[32] = {0};
+	const char *item1 = gamecontrol[gc_fire][0] != 0 ? G_KeynumToString(gamecontrol[gc_fire][0]) : NULL;
+	const char *item2 = gamecontrol[gc_fire][1] != 0 ? G_KeynumToString(gamecontrol[gc_fire][1]) : NULL;
+
+	if (item1 != NULL && item2 != NULL)
+		snprintf(encoretoggle, 32, "%s/%s: Toggle Encore", item1, item2);
+	else
+		snprintf(encoretoggle, 32, "%s: Toggle Encore", item1 != NULL ? item1 : item2 != NULL ? item2 : "Item");
+
+	V_DrawThinString(1, BASEVIDHEIGHT-8-1, V_SNAPTOLEFT|V_SNAPTOBOTTOM|V_TRANSLUCENT|V_ALLOWLOWERCASE, encoretoggle);
 
 	//  A 160x100 image of the level as entry MAPxxP
 	if (cv_nextmap.value)
