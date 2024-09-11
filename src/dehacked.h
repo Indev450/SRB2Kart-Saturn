@@ -27,8 +27,6 @@ typedef enum
 	UNDO_DONE = 0,
 } undotype_f;
 
-#define DEH_WriteUndoline(a,b,c)
-
 void DEH_LoadDehackedLump(lumpnum_t lumpnum);
 void DEH_LoadDehackedLumpPwad(UINT16 wad, UINT16 lump);
 
