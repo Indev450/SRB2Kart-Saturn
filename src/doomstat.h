@@ -301,26 +301,14 @@ extern mapheader_t* mapheaderinfo[NUMMAPS];
 enum TypeOfLevel
 {
 	TOL_SP          = 0x01, ///< Single Player
-	TOL_COOP        = 0x02, ///< Cooperative
-	TOL_COMPETITION = 0x04, ///< Competition
 	TOL_RACE        = 0x08, ///< Race
 // Single Player default = 15
 
 	TOL_MATCH       = 0x10, ///< Match
-	TOL_TAG         = 0x20, ///< Tag
-// Match/Tag default = 48
-
-	TOL_CTF         = 0x40, ///< Capture the Flag
-// CTF default = 64
 
 	TOL_CUSTOM      = 0x80, ///< Custom (Lua-scripted, etc.)
 
-	TOL_2D     = 0x0100, ///< 2D
-	TOL_MARIO  = 0x0200, ///< Mario
-	TOL_NIGHTS = 0x0400, ///< NiGHTS
 	TOL_TV     = 0x0800, ///< Midnight Channel specific: draw TV like overlay on HUD
-	TOL_XMAS   = 0x1000 ///< Christmas NiGHTS
-	//TOL_KART   = 0x4000  ///< Kart 32768
 };
 
 // Gametypes

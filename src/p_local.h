@@ -57,9 +57,6 @@
 
 #define AIMINGTOSLOPE(aiming) FINESINE((aiming>>ANGLETOFINESHIFT) & FINEMASK)
 
-#define mariomode (maptol & TOL_MARIO)
-#define twodlevel (maptol & TOL_2D)
-
 //
 // P_TICK
 //

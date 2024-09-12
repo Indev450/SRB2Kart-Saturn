@@ -15,7 +15,6 @@
 #include "p_mobj.h"
 #include "g_game.h"
 #include "r_things.h"
-#include "b_bot.h"
 #include "z_zone.h"
 #include "m_perfstats.h"
 
@@ -142,19 +141,6 @@ static int lib_addHook(lua_State *L)
 			hook.s.mt = lua_tonumber(L, 2);
 		luaL_argcheck(L, hook.s.mt < NUMMOBJTYPES, 2, "invalid mobjtype_t");
 		break;
-	case hook_BotAI:
-		hook.s.skinname = NULL;
-		if (lua_isstring(L, 2))
-		{ // lowercase copy
-			const char *s = lua_tostring(L, 2);
-			char *p = hook.s.skinname = ZZ_Alloc(strlen(s)+1);
-			do {
-				*p = tolower(*s);
-				++p;
-			} while(*(++s));
-			*p = 0;
-		}
-		break;
 	case hook_LinedefExecute: // Linedef executor functions
 		{ // uppercase copy
 			const char *s = luaL_checkstring(L, 2);
@@ -172,6 +158,7 @@ static int lib_addHook(lua_State *L)
 	case hook_PlayerSpin:
 	case hook_PlayerExplode:
 	case hook_PlayerSquish:
+	case hook_BotAI:
 	default:
 		break;
 	}
@@ -1128,49 +1115,6 @@ boolean LUAh_MobjDeath(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 	return hooked;
 }
 
-// Hook for B_BuildTiccmd
-boolean LUAh_BotTiccmd(player_t *bot, ticcmd_t *cmd)
-{
-	hook_p hookp;
-	boolean hooked = false;
-	int HOOKSINDEX;
-	if (!gL || !(hooksAvailable[hook_BotTiccmd/8] & (1<<(hook_BotTiccmd%8))))
-		return false;
-
-	lua_settop(gL, 0);
-	lua_pushcfunction(gL, LUA_GetErrorMessage);
-
-	lua_getfield(gL, LUA_REGISTRYINDEX, "hooks");
-	HOOKSINDEX = lua_gettop(gL);
-	I_Assert(lua_istable(L, HOOKSINDEX));
-
-	for (hookp = roothook; hookp; hookp = hookp->next)
-		if (hookp->type == hook_BotTiccmd)
-		{
-			if (lua_gettop(gL) == 2)
-			{
-				LUA_PushUserdata(gL, bot, META_PLAYER);
-				LUA_PushUserdata(gL, cmd, META_TICCMD);
-			}
-			lua_rawgeti(gL, HOOKSINDEX, hookp->id);
-			lua_pushvalue(gL, -3);
-			lua_pushvalue(gL, -3);
-			if (lua_pcall(gL, 2, 1, 1)) {
-				if (!hookp->error || cv_debug & DBG_LUA)
-					CONS_Alert(CONS_WARNING,"%s\n",lua_tostring(gL, -1));
-				lua_pop(gL, 1);
-				hookp->error = true;
-				continue;
-			}
-			if (lua_toboolean(gL, -1))
-				hooked = true;
-			lua_pop(gL, 1);
-		}
-
-	lua_settop(gL, 0);
-	return hooked;
-}
-
 // Hook for G_BuildTicCmd
 boolean hook_cmd_running = false;
 boolean LUAh_PlayerCmd(player_t *player, ticcmd_t *cmd)
@@ -1213,72 +1157,6 @@ boolean LUAh_PlayerCmd(player_t *player, ticcmd_t *cmd)
 		}
 
 	hook_cmd_running = false;
-	lua_settop(gL, 0);
-	return hooked;
-}
-
-// Hook for B_BuildTailsTiccmd by skin name
-boolean LUAh_BotAI(mobj_t *sonic, mobj_t *tails, ticcmd_t *cmd)
-{
-	hook_p hookp;
-	boolean hooked = false;
-	int HOOKSINDEX;
-	if (!gL || !(hooksAvailable[hook_BotAI/8] & (1<<(hook_BotAI%8))))
-		return false;
-
-	lua_settop(gL, 0);
-	lua_pushcfunction(gL, LUA_GetErrorMessage);
-
-	lua_getfield(gL, LUA_REGISTRYINDEX, "hooks");
-	HOOKSINDEX = lua_gettop(gL);
-	I_Assert(lua_istable(L, HOOKSINDEX));
-
-	for (hookp = roothook; hookp; hookp = hookp->next)
-		if (hookp->type == hook_BotAI
-		&& (hookp->s.skinname == NULL || !strcmp(hookp->s.skinname, ((skin_t*)tails->skin)->name)))
-		{
-			if (lua_gettop(gL) == 2)
-			{
-				LUA_PushUserdata(gL, sonic, META_MOBJ);
-				LUA_PushUserdata(gL, tails, META_MOBJ);
-			}
-			lua_rawgeti(gL, HOOKSINDEX, hookp->id);
-			lua_pushvalue(gL, -3);
-			lua_pushvalue(gL, -3);
-			if (lua_pcall(gL, 2, 8, 1)) {
-				if (!hookp->error || cv_debug & DBG_LUA)
-					CONS_Alert(CONS_WARNING,"%s\n",lua_tostring(gL, -1));
-				lua_pop(gL, 1);
-				hookp->error = true;
-				continue;
-			}
-
-			// This turns forward, backward, left, right, jump, and spin into a proper ticcmd for tails.
-			if (lua_istable(gL, -8)) {
-				boolean forward=false, backward=false, left=false, right=false, strafeleft=false, straferight=false, jump=false, spin=false;
-#define CHECKFIELD(field) \
-				lua_getfield(gL, -8, #field);\
-				if (lua_toboolean(gL, -1))\
-					field = true;\
-				lua_pop(gL, 1);
-
-				CHECKFIELD(forward)
-				CHECKFIELD(backward)
-				CHECKFIELD(left)
-				CHECKFIELD(right)
-				CHECKFIELD(strafeleft)
-				CHECKFIELD(straferight)
-				CHECKFIELD(jump)
-				CHECKFIELD(spin)
-#undef CHECKFIELD
-				B_KeysToTiccmd(tails, cmd, forward, backward, left, right, strafeleft, straferight, jump, spin);
-			} else
-				B_KeysToTiccmd(tails, cmd, lua_toboolean(gL, -8), lua_toboolean(gL, -7), lua_toboolean(gL, -6), lua_toboolean(gL, -5), lua_toboolean(gL, -4), lua_toboolean(gL, -3), lua_toboolean(gL, -2), lua_toboolean(gL, -1));
-
-			lua_pop(gL, 8);
-			hooked = true;
-		}
-
 	lua_settop(gL, 0);
 	return hooked;
 }

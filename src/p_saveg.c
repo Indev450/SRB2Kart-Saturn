@@ -73,12 +73,6 @@ static inline void P_ArchivePlayer(void)
 	WRITEUINT32(save_p, player->score);
 	WRITEINT32(save_p, pllives);
 	WRITEINT32(save_p, player->continues);
-
-	if (botskin)
-	{
-		WRITEUINT8(save_p, botskin);
-		WRITEUINT8(save_p, botcolor);
-	}
 }
 
 //
@@ -92,16 +86,6 @@ static inline void P_UnArchivePlayer(void)
 	savedata.score = READINT32(save_p);
 	savedata.lives = READINT32(save_p);
 	savedata.continues = READINT32(save_p);
-
-	if (savedata.botcolor)
-	{
-		savedata.botskin = READUINT8(save_p);
-		if (savedata.botskin-1 >= numskins)
-			savedata.botskin = 0;
-		savedata.botcolor = READUINT8(save_p);
-	}
-	else
-		savedata.botskin = 0;
 }
 
 //
@@ -3206,7 +3190,7 @@ static inline void P_ArchiveMisc(void)
 
 	lastmapsaved = gamemap;
 
-	WRITEUINT16(save_p, (botskin ? (emeralds|(1<<10)) : emeralds)+357);
+	WRITEUINT16(save_p, emeralds+357);
 	WRITESTRINGN(save_p, timeattackfolder, sizeof(timeattackfolder));
 }
 

@@ -31,7 +31,6 @@
 #include "info.h"
 #include "i_video.h"
 #include "lua_hook.h"
-#include "b_bot.h"
 #include "p_slopes.h"
 
 #include "k_kart.h"
@@ -1181,7 +1180,7 @@ static void P_XYFriction(mobj_t *mo, fixed_t oldx, fixed_t oldy)
 		}
 		else if (abs(player->rmomx) < FixedMul(STOPSPEED, mo->scale)
 		    && abs(player->rmomy) < FixedMul(STOPSPEED, mo->scale)
-		    && (!(player->cmd.forwardmove && !(twodlevel || mo->flags2 & MF2_TWOD)) && !player->cmd.sidemove && !(player->pflags & PF_SPINNING))
+		    && (!player->cmd.forwardmove && !player->cmd.sidemove && !(player->pflags & PF_SPINNING))
 			&& !(player->mo->standingslope && (!(player->mo->standingslope->flags & SL_NOPHYSICS)) && (abs(player->mo->standingslope->zdelta) >= FRACUNIT/2))
 				)
 		{
@@ -1412,10 +1411,6 @@ void P_XYMovement(mobj_t *mo)
 		// blocked move
 		moved = false;
 
-		if (player) {
-			if (player->bot)
-				B_MoveBlocked(player);
-		}
 		//{ SRB2kart - Jawz
 		if (mo->type == MT_JAWZ || mo->type == MT_JAWZ_DUD)
 		{
@@ -2225,10 +2220,7 @@ static boolean P_ZMovement(mobj_t *mo)
 				|| mo->type == MT_CANNONBALLDECOR
 				|| mo->type == MT_FALLINGROCK)
 			{
-				if (maptol & TOL_NIGHTS)
-					mom.z = -FixedDiv(mom.z, 10*FRACUNIT);
-				else
-					mom.z = -FixedMul(mom.z, FixedDiv(17*FRACUNIT,20*FRACUNIT));
+				mom.z = -FixedMul(mom.z, FixedDiv(17*FRACUNIT,20*FRACUNIT));
 
 				if (mo->type == MT_BIGTUMBLEWEED || mo->type == MT_LITTLETUMBLEWEED)
 				{
@@ -2366,12 +2358,7 @@ static boolean P_ZMovement(mobj_t *mo)
 			else
 			// Flags bounce
 			if (mo->type == MT_REDFLAG || mo->type == MT_BLUEFLAG)
-			{
-				if (maptol & TOL_NIGHTS)
-					mo->momz = -FixedDiv(mo->momz, 10*FRACUNIT);
-				else
-					mo->momz = -FixedMul(mo->momz, FixedDiv(17*FRACUNIT,20*FRACUNIT));
-			}
+				mo->momz = -FixedMul(mo->momz, FixedDiv(17*FRACUNIT,20*FRACUNIT));
 			else
 				mo->momz = 0;
 		}
@@ -2673,10 +2660,6 @@ nightsdone:
 					}
 				} // Ugly ugly billions of braces! Argh!
 			}
-
-			// hit the ceiling
-			if (mariomode)
-				S_StartSound(mo, sfx_mario1);
 
 			if (!mo->player->climbing)
 				mo->momz = 0;
@@ -3245,7 +3228,6 @@ void P_DestroyRobots(void)
 // Process the mobj-ish required functions of the camera
 boolean P_CameraThinker(player_t *player, camera_t *thiscam, boolean resetcalled)
 {
-	boolean itsatwodlevel = false;
 	boolean flipcam = (player->pflags & PF_FLIPCAM && !(player->pflags & PF_NIGHTSMODE) && player->mo->eflags & MFE_VERTICALFLIP);
 	postimg_t postimg = postimg_none;
 	UINT8 i;
@@ -3253,21 +3235,6 @@ boolean P_CameraThinker(player_t *player, camera_t *thiscam, boolean resetcalled
 	// This can happen when joining
 	if (thiscam->subsector == NULL || thiscam->subsector->sector == NULL)
 		return true;
-
-	if (twodlevel)
-		itsatwodlevel = true;
-	else
-	{
-		for (i = 0; i <= splitscreen; i++)
-		{
-			if (thiscam == &camera[i] && players[displayplayers[i]].mo
-				&& (players[displayplayers[i]].mo->flags2 & MF2_TWOD))
-			{
-				itsatwodlevel = true;
-				break;
-			}
-		}
-	}
 
 	if (encoremode && !flipcam)
 		postimg = postimg_mirror;
@@ -3332,8 +3299,7 @@ boolean P_CameraThinker(player_t *player, camera_t *thiscam, boolean resetcalled
 		}
 	}
 
-	if (!itsatwodlevel)
-		P_CheckCameraPosition(thiscam->x, thiscam->y, thiscam);
+	P_CheckCameraPosition(thiscam->x, thiscam->y, thiscam);
 
 	thiscam->subsector = R_PointInSubsector(thiscam->x, thiscam->y);
 	thiscam->floorz = tmfloorz;
@@ -3345,7 +3311,7 @@ boolean P_CameraThinker(player_t *player, camera_t *thiscam, boolean resetcalled
 		thiscam->z += thiscam->momz + player->mo->pmomz;
 
 #ifndef NOCLIPCAM
-		if (!itsatwodlevel && !(player->pflags & PF_NOCLIP || leveltime < introtime))
+		if (!(player->pflags & PF_NOCLIP || leveltime < introtime))
 		{
 			// clip movement
 			if (thiscam->z <= thiscam->floorz) // hit the floor
@@ -3388,13 +3354,13 @@ boolean P_CameraThinker(player_t *player, camera_t *thiscam, boolean resetcalled
 #endif
 	}
 
-	if (itsatwodlevel
-	|| (thiscam->ceilingz - thiscam->z < thiscam->height
-		&& thiscam->ceilingz >= thiscam->z))
+	if (thiscam->ceilingz - thiscam->z < thiscam->height
+		&& thiscam->ceilingz >= thiscam->z)
 	{
 		thiscam->ceilingz = thiscam->z + thiscam->height;
 		thiscam->floorz = thiscam->z;
 	}
+
 	return false;
 }
 
@@ -3754,7 +3720,7 @@ boolean P_BossTargetPlayer(mobj_t *actor, boolean closest)
 		if (player->health <= 0)
 			continue; // dead
 
-		if (player->pflags & PF_INVIS || player->bot || player->spectator)
+		if (player->pflags & PF_INVIS || player->spectator)
 			continue; // ignore notarget
 
 		if (!player->mo || P_MobjWasRemoved(player->mo))
@@ -3796,7 +3762,7 @@ boolean P_SupermanLook4Players(mobj_t *actor)
 		if (players[c].pflags & PF_INVIS)
 			continue; // ignore notarget
 
-		if (!players[c].mo || players[c].bot)
+		if (!players[c].mo)
 			continue;
 
 		playersinthegame[stop] = &players[c];
@@ -4029,7 +3995,7 @@ static void P_Boss3Thinker(mobj_t *mobj)
 				if (!playeringame[i] || players[i].spectator)
 					continue;
 
-				if (!players[i].mo || players[i].bot)
+				if (!players[i].mo)
 					continue;
 
 				if (players[i].mo->health <= 0)
@@ -4104,7 +4070,7 @@ static void P_Boss3Thinker(mobj_t *mobj)
 			if (!playeringame[i] || players[i].spectator)
 				continue;
 
-			if (!players[i].mo || players[i].bot)
+			if (!players[i].mo)
 				continue;
 
 			if (players[i].mo->health <= 0)
@@ -10629,7 +10595,7 @@ void P_SpawnPlayer(INT32 playernum)
 	p->awayviewtics = 0;
 
 	// set the scale to the mobj's destscale so settings get correctly set.  if we don't, they sometimes don't.
-	if (cv_kartdebugshrink.value && !modeattacking && !p->bot)
+	if (cv_kartdebugshrink.value && !modeattacking)
 		mobj->destscale = 6*mobj->destscale/8;
 	P_SetScale(mobj, mobj->destscale);
 	P_FlashPal(p, 0, 0); // Resets
