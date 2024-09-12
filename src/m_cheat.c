@@ -945,6 +945,9 @@ boolean OP_FreezeObjectplace(void)
 	if (!objectplacing)
 		return false;
 
+	if ((maptol & TOL_NIGHTS) && (players[consoleplayer].pflags & PF_NIGHTSMODE))
+		return false;
+
 	return true;
 }
 

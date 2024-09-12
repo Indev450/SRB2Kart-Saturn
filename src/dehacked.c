@@ -661,14 +661,29 @@ static const struct {
 	{"SINGLEPLAYER",TOL_SP},
 	{"SINGLE",TOL_SP},
 
+	{"COOP",TOL_COOP},
+	{"CO-OP",TOL_COOP},
+
+	{"COMPETITION",TOL_COMPETITION},
 	{"RACE",TOL_RACE},
 
 	{"MATCH",TOL_MATCH},
 	{"BATTLE",TOL_MATCH}, // SRB2kart
+	{"TAG",TOL_TAG},
+	{"CTF",TOL_CTF},
 
 	{"CUSTOM",TOL_CUSTOM},
 
+	{"2D",TOL_2D},
+	{"MARIO",TOL_MARIO},
+	{"NIGHTS",TOL_NIGHTS},
 	{"TV",TOL_TV},
+
+	{"XMAS",TOL_XMAS},
+	{"CHRISTMAS",TOL_XMAS},
+	{"WINTER",TOL_XMAS},
+
+	//{"KART",TOL_KART}, // SRB2kart
 
 	{NULL, 0}
 };
@@ -7750,10 +7765,19 @@ struct {
 
 	// Type of levels
 	{"TOL_SP",TOL_SP},
+	{"TOL_COOP",TOL_COOP},
+	{"TOL_COMPETITION",TOL_COMPETITION},
 	{"TOL_RACE",TOL_RACE},
 	{"TOL_MATCH",TOL_MATCH},
+	{"TOL_TAG",TOL_TAG},
+	{"TOL_CTF",TOL_CTF},
 	{"TOL_CUSTOM",TOL_CUSTOM},
+	{"TOL_2D",TOL_2D},
+	{"TOL_MARIO",TOL_MARIO},
+	{"TOL_NIGHTS",TOL_NIGHTS},
 	{"TOL_TV",TOL_TV},
+	{"TOL_XMAS",TOL_XMAS},
+	//{"TOL_KART",TOL_KART},
 
 	// Level flags
 	{"LF_SCRIPTISFILE",LF_SCRIPTISFILE},
@@ -8523,13 +8547,13 @@ static int lua_enumlib_basic_fallback(lua_State* L)
 
 static int lua_enumlib_mariomode_get(lua_State *L)
 {
-	lua_pushboolean(L, false);
+	lua_pushboolean(L, mariomode != 0);
 	return 1;
 }
 
 static int lua_enumlib_twodlevel_get(lua_State *L)
 {
-	lua_pushboolean(L, false);
+	lua_pushboolean(L, twodlevel);
 	return 1;
 }
 

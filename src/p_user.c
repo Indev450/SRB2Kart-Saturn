@@ -41,6 +41,7 @@
 #include "st_stuff.h"
 #include "lua_script.h"
 #include "lua_hook.h"
+#include "b_bot.h"
 // Objectplace
 #include "m_cheat.h"
 // SRB2kart
@@ -75,7 +76,9 @@ void P_Thrust(mobj_t *mo, angle_t angle, fixed_t move)
 	angle >>= ANGLETOFINESHIFT;
 
 	mo->momx += FixedMul(move, FINECOSINE(angle));
-	mo->momy += FixedMul(move, FINESINE(angle));
+
+	if (!(twodlevel || (mo->flags2 & MF2_TWOD)))
+		mo->momy += FixedMul(move, FINESINE(angle));
 }
 
 
@@ -90,7 +93,9 @@ void P_InstaThrust(mobj_t *mo, angle_t angle, fixed_t move)
 	angle >>= ANGLETOFINESHIFT;
 
 	mo->momx = FixedMul(move, FINECOSINE(angle));
-	mo->momy = FixedMul(move,FINESINE(angle));
+
+	if (!(twodlevel || (mo->flags2 & MF2_TWOD)))
+		mo->momy = FixedMul(move,FINESINE(angle));
 }
 
 void P_InstaThrustEvenIn2D(mobj_t *mo, angle_t angle, fixed_t move)
@@ -422,6 +427,8 @@ void P_ResetPlayer(player_t *player)
 	player->powers[pw_tailsfly] = 0;
 	player->onconveyor = 0;
 	player->skidtime = 0;
+	/*if (player-players == consoleplayer && botingame)
+		CV_SetValue(&cv_analog2, true);*/
 }
 
 //
@@ -432,6 +439,9 @@ void P_ResetPlayer(player_t *player)
 //
 void P_GivePlayerRings(player_t *player, INT32 num_rings)
 {
+	if (player->bot)
+		player = &players[consoleplayer];
+
 	if (!player->mo)
 		return;
 
@@ -483,6 +493,9 @@ void P_AddPlayerScore(player_t *player, UINT32 amount)
 	if (!(G_BattleGametype()))
 		return;
 
+	if (player->bot)
+		player = &players[consoleplayer];
+
 	if (player->exiting) // srb2kart
 		return;
 
@@ -503,6 +516,8 @@ void P_PlayLivesJingle(player_t *player)
 
 	if (use1upSound)
 		S_StartSound(NULL, sfx_oneup);
+	else if (mariomode)
+		S_StartSound(NULL, sfx_marioa);
 	else
 	{
 		if (player)
@@ -534,7 +549,7 @@ void P_PlayRinglossSound(mobj_t *source, mobj_t *damager)
 			S_StartSound(NULL, sfx);
 		}
 		else
-			S_StartSound(source, sfx_khurt1 + key);
+			S_StartSound(source, (mariomode) ? sfx_mario8 : sfx_khurt1 + key);
 	}
 	else
 		S_StartSound(source, sfx_slip);
@@ -2213,6 +2228,11 @@ static void P_MovePlayer(player_t *player)
 		P_3dMovement(player);
 	}
 
+	if (maptol & TOL_2D)
+		runspd = FixedMul(runspd, 2*FRACUNIT/3);
+
+	//P_SkidStuff(player);
+
 	/////////////////////////
 	// MOVEMENT ANIMATIONS //
 	/////////////////////////
@@ -2646,6 +2666,10 @@ boolean P_LookForEnemies(player_t *player)
 			player->mo->z-mo->z) > FixedMul(RING_DIST, player->mo->scale))
 			continue; // out of range
 
+		if ((twodlevel || player->mo->flags2 & MF2_TWOD)
+		&& abs(player->mo->y-mo->y) > player->mo->radius)
+			continue; // not in your 2d plane
+
 		if (mo->type == MT_PLAYER) // Don't chase after other players!
 			continue;
 
@@ -2767,6 +2791,9 @@ static void P_DeathThink(player_t *player)
 	if (player->deadtimer < INT32_MAX)
 		player->deadtimer++;
 
+	if (player->bot) // don't allow bots to do any of the below, B_CheckRespawn does all they need for respawning already
+		goto notrealplayer;
+
 	if (player->pflags & PF_TIMEOVER)
 	{
 		player->kartstuff[k_timeovercam]++;
@@ -2819,6 +2846,8 @@ static void P_DeathThink(player_t *player)
 			player->laptime[LAP_CUR] = 0;
 		}
 	}
+
+notrealplayer:
 
 	if (!player->mo)
 		return;
@@ -3815,7 +3844,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	if (player->playerstate != PST_DEAD && !((player->pflags & PF_NIGHTSMODE) && player->exiting))
 		angle += (focusaiming < ANGLE_180 ? focusaiming/2 : InvAngle(InvAngle(focusaiming)/2)); // overcomplicated version of '((signed)focusaiming)/2;'
 
-	if (!camstill && !timeover) // Keep the view still...
+	if (twodlevel || (mo->flags2 & MF2_TWOD) || (!camstill && !timeover)) // Keep the view still...
 	{
 		G_ClipAimingPitch((INT32 *)&angle);
 
@@ -4165,6 +4194,20 @@ void P_PlayerThink(player_t *player)
 		player->playerstate = PST_DEAD;
 	}
 
+	if (player->bot)
+	{
+		if (player->playerstate == PST_LIVE || player->playerstate == PST_DEAD)
+		{
+			if (B_CheckRespawn(player))
+				player->playerstate = PST_REBORN;
+		}
+		if (player->playerstate == PST_REBORN)
+		{
+			LUAh_PlayerThink(player);
+			return;
+		}
+	}
+
 #ifdef SEENAMES
 	if (netgame && player == &players[displayplayers[0]] && !(leveltime % (TICRATE/5)) && !splitscreen)
 	{
@@ -4288,7 +4331,7 @@ void P_PlayerThink(player_t *player)
 
 				for (i = 0; i < MAXPLAYERS; i++)
 				{
-					if (!playeringame[i] || players[i].spectator)
+					if (!playeringame[i] || players[i].spectator || players[i].bot)
 						continue;
 					if (players[i].lives <= 0)
 						continue;
@@ -4445,6 +4488,37 @@ void P_PlayerThink(player_t *player)
 	{
 		player->pflags ^= PF_WANTSTOJOIN;
 		player->powers[pw_flashing] = TICRATE/2 + 1;
+	}
+
+	// Even if not NiGHTS, pull in nearby objects when walking around as John Q. Elliot.
+	if (!objectplacing && !((netgame || multiplayer) && player->spectator)
+	&& maptol & TOL_NIGHTS && (!(player->pflags & PF_NIGHTSMODE) || player->powers[pw_nights_helper]))
+	{
+		thinker_t *th;
+		mobj_t *mo2;
+		fixed_t x = player->mo->x;
+		fixed_t y = player->mo->y;
+		fixed_t z = player->mo->z;
+
+		for (th = thinkercap.next; th != &thinkercap; th = th->next)
+		{
+			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+				continue;
+
+			mo2 = (mobj_t *)th;
+
+			if (!(mo2->type == MT_NIGHTSWING || mo2->type == MT_RING || mo2->type == MT_COIN
+			   || mo2->type == MT_BLUEBALL))
+				continue;
+
+			if (P_AproxDistance(P_AproxDistance(mo2->x - x, mo2->y - y), mo2->z - z) > FixedMul(128*FRACUNIT, player->mo->scale))
+				continue;
+
+			// Yay! The thing's in reach! Pull it in!
+			mo2->flags |= MF_NOCLIP|MF_NOCLIPHEIGHT;
+			mo2->flags2 |= MF2_NIGHTSPULL;
+			P_SetTarget(&mo2->tracer, player->mo);
+		}
 	}
 
 	if (player->linktimer && !player->powers[pw_nights_linkfreeze])
@@ -4722,7 +4796,8 @@ void P_PlayerAfterThink(player_t *player)
 		else if (cmd->forwardmove < 0 && player->mo->tracer->target->lastlook > player->mo->tracer->target->movecount)
 			player->mo->tracer->target->lastlook -= 2;
 
-		if (!(player->mo->tracer->target->flags & MF_SLIDEME)) // Noclimb on chain parameters gives this
+		if (!(player->mo->tracer->target->flags & MF_SLIDEME) // Noclimb on chain parameters gives this
+		&& !(twodlevel || player->mo->flags2 & MF2_TWOD)) // why on earth would you want to turn them in 2D mode?
 		{
 			player->mo->tracer->target->health += cmd->sidemove;
 			player->mo->angle += cmd->sidemove<<ANGLETOFINESHIFT; // 2048 --> ANGLE_MAX

@@ -1672,7 +1672,7 @@ static void SendNameAndColor2(void)
 	char buf[MAXPLAYERNAME+2];
 	char *p;
 
-	if (splitscreen < 1)
+	if (splitscreen < 1 && !botingame)
 		return; // can happen if skin2/color2/name2 changed
 
 	if (displayplayers[1] != consoleplayer)
@@ -1700,7 +1700,16 @@ static void SendNameAndColor2(void)
 	if (!Playing())
 		return;
 
-	if (!netgame)
+	// If you're not in a netgame, merely update the skin, color, and name.
+	if (botingame)
+	{
+		players[secondplaya].skincolor = botcolor;
+		if (players[secondplaya].mo)
+			players[secondplaya].mo->color = players[secondplaya].skincolor;
+		SetPlayerSkinByNum(secondplaya, botskin-1);
+		return;
+	}
+	else if (!netgame)
 	{
 		INT32 foundskin;
 
@@ -1714,8 +1723,24 @@ static void SendNameAndColor2(void)
 
 		if ((foundskin = R_SkinAvailable(cv_skin2.string)) != -1)
 		{
+			//boolean notsame;
+
 			cv_skin2.value = foundskin;
+
+			//notsame = (cv_skin2.value != players[secondplaya].skin);
+
 			SetPlayerSkin(secondplaya, cv_skin2.string);
+
+			// SRB2Kart
+			/*if (notsame)
+			{
+				CV_StealthSetValue(&cv_playercolor2, skins[players[secondplaya].skin].prefcolor);
+
+				players[secondplaya].skincolor = (cv_playercolor2.value&0x3F) % MAXSKINCOLORS;
+
+				if (players[secondplaya].mo)
+					players[secondplaya].mo->color = players[secondplaya].skincolor;
+			}*/
 		}
 		else
 		{
@@ -1906,7 +1931,15 @@ static void SendNameAndColor4(void)
 		return;
 
 	// If you're not in a netgame, merely update the skin, color, and name.
-	if (!netgame)
+	if (botingame)
+	{
+		players[fourthplaya].skincolor = botcolor;
+		if (players[fourthplaya].mo)
+			players[fourthplaya].mo->color = players[fourthplaya].skincolor;
+		SetPlayerSkinByNum(fourthplaya, botskin-1);
+		return;
+	}
+	else if (!netgame)
 	{
 		INT32 foundskin;
 
@@ -1920,8 +1953,24 @@ static void SendNameAndColor4(void)
 
 		if ((foundskin = R_SkinAvailable(cv_skin4.string)) != -1)
 		{
+			//boolean notsame;
+
 			cv_skin4.value = foundskin;
+
+			//notsame = (cv_skin4.value != players[fourthplaya].skin);
+
 			SetPlayerSkin(fourthplaya, cv_skin4.string);
+
+			// SRB2Kart
+			/*if (notsame)
+			{
+				CV_StealthSetValue(&cv_playercolor4, skins[players[fourthplaya].skin].prefcolor);
+
+				players[fourthplaya].skincolor = (cv_playercolor4.value&0x3F) % MAXSKINCOLORS;
+
+				if (players[fourthplaya].mo)
+					players[fourthplaya].mo->color = players[fourthplaya].skincolor;
+			}*/
 		}
 		else
 		{
@@ -2116,7 +2165,7 @@ static void Got_WeaponPref(UINT8 **cp,INT32 playernum)
 void D_SendPlayerConfig(void)
 {
 	SendNameAndColor();
-	if (splitscreen)
+	if (splitscreen || botingame)
 		SendNameAndColor2();
 	if (splitscreen > 1)
 		SendNameAndColor3();
@@ -2509,6 +2558,29 @@ void D_MapChange(INT32 mapnum, INT32 newgametype, boolean pencoremode, boolean r
 				buf[0] &= ~(1<<1);
 			if (!Playing()) // you failed to start a server somehow, so cancel the map change
 				return;
+		}
+
+		// Kick bot from special stages
+		if (botskin)
+		{
+			if (G_IsSpecialStage(mapnum))
+			{
+				if (botingame)
+				{
+					//CL_RemoveSplitscreenPlayer();
+					botingame = false;
+					playeringame[1] = false;
+				}
+			}
+			else if (!botingame)
+			{
+				//CL_AddSplitscreenPlayer();
+				botingame = true;
+				displayplayers[1] = 1;
+				playeringame[1] = true;
+				players[1].bot = 1;
+				SendNameAndColor2();
+			}
 		}
 
 		chmappending++;
@@ -5094,6 +5166,8 @@ void Command_ExitGame_f(void)
 
 	splitscreen = 0;
 	SplitScreen_OnChange();
+	botingame = false;
+	botskin = 0;
 	cv_debug = 0;
 	emeralds = 0;
 

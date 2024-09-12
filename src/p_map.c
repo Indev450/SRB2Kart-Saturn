@@ -371,6 +371,11 @@ static boolean PIT_CheckThing(mobj_t *thing)
 	if (!(thing->flags & (MF_SOLID|MF_SPECIAL|MF_PAIN|MF_SHOOTABLE)) || (thing->flags & MF_NOCLIPTHING))
 		return true;
 
+	// Don't collide with your buddies while NiGHTS-flying.
+	if (tmthing->player && thing->player && (maptol & TOL_NIGHTS)
+		&& ((tmthing->player->pflags & PF_NIGHTSMODE) || (thing->player->pflags & PF_NIGHTSMODE)))
+		return true;
+
 	blockdist = thing->radius + tmthing->radius;
 
 	if (abs(thing->x - tmx) >= blockdist || abs(thing->y - tmy) >= blockdist)
@@ -2160,6 +2165,7 @@ boolean P_TryCameraMove(fixed_t x, fixed_t y, camera_t *thiscam)
 {
 	subsector_t *s = R_PointInSubsector(x, y);
 	boolean retval = true;
+	boolean itsatwodlevel = false;
 	UINT8 i;
 
 	floatok = false;
@@ -2167,7 +2173,22 @@ boolean P_TryCameraMove(fixed_t x, fixed_t y, camera_t *thiscam)
 	if (dedicated) // this crashes so don't even try it
 		return false;
 
-	if (players[displayplayers[0]].mo)
+	if (twodlevel)
+		itsatwodlevel = true;
+	else
+	{
+		for (i = 0; i <= splitscreen; i++)
+		{
+			if (thiscam == &camera[i] && players[displayplayers[i]].mo
+				&& (players[displayplayers[i]].mo->flags2 & MF2_TWOD))
+			{
+				itsatwodlevel = true;
+				break;
+			}
+		}
+	}
+
+	if (!itsatwodlevel && players[displayplayers[0]].mo)
 	{
 		fixed_t tryx = thiscam->x;
 		fixed_t tryy = thiscam->y;
@@ -3158,8 +3179,16 @@ stairstep:
 
 	P_HitSlideLine(bestslideline); // clip the moves
 
-	mo->momx = tmxmove;
-	mo->momy = tmymove;
+	if ((twodlevel || (mo->flags2 & MF2_TWOD)) && mo->player)
+	{
+		mo->momx = tmxmove;
+		tmymove = 0;
+	}
+	else
+	{
+		mo->momx = tmxmove;
+		mo->momy = tmymove;
+	}
 
 	do {
 		if (tmxmove > mo->radius) {

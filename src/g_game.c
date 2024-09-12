@@ -47,6 +47,7 @@
 #include "lua_script.h"	// LUA_ArchiveDemo and LUA_UnArchiveDemo
 #include "lua_hook.h"
 #include "lua_libs.h"	// gL (Lua state)
+#include "b_bot.h"
 #include "m_cond.h" // condition sets
 #include "md5.h" // demo checksums
 #include "k_director.h" // SRB2kart
@@ -60,6 +61,10 @@
 gameaction_t gameaction;
 gamestate_t gamestate = GS_NULL;
 UINT8 ultimatemode = false;
+
+boolean botingame;
+UINT8 botskin;
+UINT8 botcolor;
 
 JoyType_t Joystick;
 JoyType_t Joystick2;
@@ -354,6 +359,10 @@ consvar_t cv_demochangemap = {"netdemo_savemapchange", "Disabled", CV_SAVE, demo
 static UINT8 *savebuffer;
 
 // Analog Control
+static void UserAnalog_OnChange(void);
+static void UserAnalog2_OnChange(void);
+static void UserAnalog3_OnChange(void);
+static void UserAnalog4_OnChange(void);
 static void Analog_OnChange(void);
 static void Analog2_OnChange(void);
 static void Analog3_OnChange(void);
@@ -439,10 +448,10 @@ consvar_t cv_analog = {"analog", "Off", CV_CALL, CV_OnOff, Analog_OnChange, 0, N
 consvar_t cv_analog2 = {"analog2", "Off", CV_CALL, CV_OnOff, Analog2_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_analog3 = {"analog3", "Off", CV_CALL, CV_OnOff, Analog3_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_analog4 = {"analog4", "Off", CV_CALL, CV_OnOff, Analog4_OnChange, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_useranalog = {"useranalog", "Off", CV_SAVE|CV_CALL, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_useranalog2 = {"useranalog2", "Off", CV_SAVE|CV_CALL, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_useranalog3 = {"useranalog3", "Off", CV_SAVE|CV_CALL, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_useranalog4 = {"useranalog4", "Off", CV_SAVE|CV_CALL, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_useranalog = {"useranalog", "Off", CV_SAVE|CV_CALL, CV_OnOff, UserAnalog_OnChange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_useranalog2 = {"useranalog2", "Off", CV_SAVE|CV_CALL, CV_OnOff, UserAnalog2_OnChange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_useranalog3 = {"useranalog3", "Off", CV_SAVE|CV_CALL, CV_OnOff, UserAnalog3_OnChange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_useranalog4 = {"useranalog4", "Off", CV_SAVE|CV_CALL, CV_OnOff, UserAnalog4_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_turnaxis = {"joyaxis_turn", "Left X", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_moveaxis = {"joyaxis_move", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -588,6 +597,15 @@ void G_ClearRecords(void)
 		}
 	}
 }
+
+// For easy retrieval of records
+/*UINT32 G_GetBestScore(INT16 map)
+{
+	if (!mainrecords[map-1])
+		return 0;
+
+	return mainrecords[map-1]->score;
+}*/
 
 tic_t G_GetBestTime(INT16 map)
 {
@@ -1152,7 +1170,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		player = &players[displayplayers[ssplayer-1]];
 
 	if (ssplayer == 2)
-		thiscam = &camera[ssplayer-1];
+		thiscam = (player->bot == 2 ? &camera[0] : &camera[ssplayer-1]);
 	else
 		thiscam = &camera[ssplayer-1];
 	lang = localangle[ssplayer-1];
@@ -1497,18 +1515,77 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 
 }
 
+// User has designated that they want
+// analog ON, so tell the game to stop
+// fudging with it.
+static void UserAnalog_OnChange(void)
+{
+	/*if (cv_useranalog.value)
+		CV_SetValue(&cv_analog, 1);
+	else
+		CV_SetValue(&cv_analog, 0);*/
+}
+
+static void UserAnalog2_OnChange(void)
+{
+	if (botingame)
+		return;
+	/*if (cv_useranalog2.value)
+		CV_SetValue(&cv_analog2, 1);
+	else
+		CV_SetValue(&cv_analog2, 0);*/
+}
+
+static void UserAnalog3_OnChange(void)
+{
+	if (botingame)
+		return;
+	/*if (cv_useranalog3.value)
+		CV_SetValue(&cv_analog3, 1);
+	else
+		CV_SetValue(&cv_analog3, 0);*/
+}
+
+static void UserAnalog4_OnChange(void)
+{
+	if (botingame)
+		return;
+	/*if (cv_useranalog4.value)
+		CV_SetValue(&cv_analog4, 1);
+	else
+		CV_SetValue(&cv_analog4, 0);*/
+}
+
 static void Analog_OnChange(void)
 {
 	if (!cv_cam_dist.string)
 		return;
+
+	// cameras are not initialized at this point
+
+	/*
+	if (!cv_chasecam.value && cv_analog.value) {
+		CV_SetValue(&cv_analog, 0);
+		return;
+	}
+	*/
 
 	SendWeaponPref();
 }
 
 static void Analog2_OnChange(void)
 {
-	if (!splitscreen || !cv_cam2_dist.string)
+	if (!(splitscreen || botingame) || !cv_cam2_dist.string)
 		return;
+
+	// cameras are not initialized at this point
+
+	/*
+	if (!cv_chasecam2.value && cv_analog2.value) {
+		CV_SetValue(&cv_analog2, 0);
+		return;
+	}
+	*/
 
 	SendWeaponPref2();
 }
@@ -1518,6 +1595,15 @@ static void Analog3_OnChange(void)
 	if (splitscreen < 2 || !cv_cam3_dist.string)
 		return;
 
+	// cameras are not initialized at this point
+
+	/*
+	if (!cv_chasecam3.value && cv_analog3.value) {
+		CV_SetValue(&cv_analog3, 0);
+		return;
+	}
+	*/
+
 	SendWeaponPref3();
 }
 
@@ -1525,6 +1611,15 @@ static void Analog4_OnChange(void)
 {
 	if (splitscreen < 3 || !cv_cam4_dist.string)
 		return;
+
+	// cameras are not initialized at this point
+
+	/*
+	if (!cv_chasecam4.value && cv_analog4.value) {
+		CV_SetValue(&cv_analog4, 0);
+		return;
+	}
+	*/
 
 	SendWeaponPref4();
 }
@@ -1572,7 +1667,7 @@ void G_DoLoadLevel(boolean resetplayer)
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
-		if (i > 0 && splitscreen < i)
+		if (i > 0 && !(i == 1 && botingame) && splitscreen < i)
 			displayplayers[i] = consoleplayer;
 	}
 
@@ -2390,6 +2485,7 @@ void G_PlayerReborn(INT32 player)
 	tic_t jointime;
 	UINT8 splitscreenindex;
 	boolean spectator;
+	INT16 bot;
 	SINT8 pity;
 
 	// SRB2kart
@@ -2453,6 +2549,7 @@ void G_PlayerReborn(INT32 player)
 	starpostangle = players[player].starpostangle;
 
 	mare = players[player].mare;
+	bot = players[player].bot;
 	pity = players[player].pity;
 
 	if (leveltime <= starttime) // man i really hope this crap works kek but need to reset this somehow at mapstart
@@ -2567,6 +2664,8 @@ void G_PlayerReborn(INT32 player)
 	}
 
 	p->mare = mare;
+	if (bot)
+		p->bot = 1; // reset to AI-controlled
 	p->pity = pity;
 
 	// SRB2kart
@@ -2969,25 +3068,44 @@ void G_DoReborn(INT32 playernum)
 	// Make sure objectplace is OFF when you first start the level!
 	OP_ResetObjectplace();
 
-	// respawn at the start
-	mobj_t *oldmo = NULL;
+	if (player->bot && playernum != consoleplayer)
+	{ // Bots respawn next to their master.
+		mobj_t *oldmo = NULL;
 
-	if (player->spectator)
-		;
-	else if (player->starpostnum || ((mapheaderinfo[gamemap - 1]->levelflags & LF_SECTIONRACE) && player->laps)) // SRB2kart
-		starpost = true;
+		// first dissasociate the corpse
+		if (player->mo)
+		{
+			oldmo = player->mo;
+			// Don't leave your carcass stuck 10-billion feet in the ground!
+			P_RemoveMobj(player->mo);
+		}
 
-	// first dissasociate the corpse
-	if (player->mo)
-	{
-		oldmo = player->mo;
-		// Don't leave your carcass stuck 10-billion feet in the ground!
-		P_RemoveMobj(player->mo);
+		B_RespawnBot(playernum);
+		if (oldmo)
+			G_ChangePlayerReferences(oldmo, players[playernum].mo);
 	}
+	else
+	{
+		// respawn at the start
+		mobj_t *oldmo = NULL;
 
-	G_SpawnPlayer(playernum, starpost);
-	if (oldmo)
-		G_ChangePlayerReferences(oldmo, players[playernum].mo);
+		if (player->spectator)
+			;
+		else if (player->starpostnum || ((mapheaderinfo[gamemap - 1]->levelflags & LF_SECTIONRACE) && player->laps)) // SRB2kart
+			starpost = true;
+
+		// first dissasociate the corpse
+		if (player->mo)
+		{
+			oldmo = player->mo;
+			// Don't leave your carcass stuck 10-billion feet in the ground!
+			P_RemoveMobj(player->mo);
+		}
+
+		G_SpawnPlayer(playernum, starpost);
+		if (oldmo)
+			G_ChangePlayerReferences(oldmo, players[playernum].mo);
+	}
 }
 
 void G_AddPlayer(INT32 playernum)
@@ -4132,6 +4250,9 @@ void G_DeferedInitNew(boolean pencoremode, const char *mapname, INT32 pickedchar
 	if (savedata.lives > 0)
 	{
 		color = savedata.skincolor;
+		botskin = savedata.botskin;
+		botcolor = savedata.botcolor;
+		botingame = (botskin != 0);
 	}
 	else if (splitscreen != ssplayers)
 	{
@@ -7621,6 +7742,9 @@ void G_AddGhost(char *defdemoname)
 	case ATTACKING_RECORD: // 1
 		p += 8; // demo time, lap
 		break;
+	/*case ATTACKING_NIGHTS: // 2
+		p += 8; // demo time left, score
+		break;*/
 	default: // 3
 		break;
 	}

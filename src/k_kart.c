@@ -1813,7 +1813,7 @@ void K_RespawnChecker(player_t *player)
 		{
 			player->mo->scalespeed = mapobjectscale/TICRATE;
 			player->mo->destscale = (6*mapobjectscale)/8;
-			if (cv_kartdebugshrink.value && !modeattacking)
+			if (cv_kartdebugshrink.value && !modeattacking && !player->bot)
 				player->mo->destscale = (6*player->mo->destscale)/8;
 		}
 
@@ -2464,7 +2464,7 @@ static void K_RemoveGrowShrink(player_t *player)
 
 		player->mo->scalespeed = mapobjectscale/TICRATE;
 		player->mo->destscale = mapobjectscale;
-		if (cv_kartdebugshrink.value && !modeattacking)
+		if (cv_kartdebugshrink.value && !modeattacking && !player->bot)
 			player->mo->destscale = (6*player->mo->destscale)/8;
 	}
 
@@ -4178,7 +4178,7 @@ static void K_DoShrink(player_t *user)
 				{
 					players[i].mo->scalespeed = mapobjectscale/TICRATE;
 					players[i].mo->destscale = (6*mapobjectscale)/8;
-					if (cv_kartdebugshrink.value && !modeattacking)
+					if (cv_kartdebugshrink.value && !modeattacking && !players[i].bot)
 						players[i].mo->destscale = (6*players[i].mo->destscale)/8;
 					S_StartSound(players[i].mo, sfx_kc59);
 				}
@@ -6518,7 +6518,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 							K_PlayPowerGloatSound(player->mo);
 							player->mo->scalespeed = mapobjectscale/TICRATE;
 							player->mo->destscale = (3*mapobjectscale)/2;
-							if (cv_kartdebugshrink.value && !modeattacking)
+							if (cv_kartdebugshrink.value && !modeattacking && !player->bot)
 								player->mo->destscale = (6*player->mo->destscale)/8;
 							player->kartstuff[k_growshrinktimer] = itemtime+(4*TICRATE); // 12 seconds
 							if (P_IsLocalPlayer(player) && cv_growmusic.value == 1 && cv_birdmusic.value )
@@ -6820,7 +6820,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 	{
 		player->mo->scalespeed = mapobjectscale/12;
 		player->mo->destscale = mapobjectscale + (FixedMul(mapobjectscale, player->kartstuff[k_boostcharge]*131));
-		if (cv_kartdebugshrink.value && !modeattacking)
+		if (cv_kartdebugshrink.value && !modeattacking && !player->bot)
 			player->mo->destscale = (6*player->mo->destscale)/8;
 	}
 

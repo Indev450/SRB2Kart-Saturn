@@ -956,6 +956,8 @@ void D_StartTitle(void)
 
 	splitscreen = 0;
 	SplitScreen_OnChange();
+	botingame = false;
+	botskin = 0;
 	cv_debug = 0;
 	emeralds = 0;
 

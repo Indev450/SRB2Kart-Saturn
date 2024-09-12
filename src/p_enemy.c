@@ -459,7 +459,10 @@ boolean P_Move(mobj_t *actor, fixed_t speed)
 	I_Assert(movedir < NUMDIRS);
 
 	tryx = actor->x + FixedMul(speed*xspeed[movedir], actor->scale);
-	tryy = actor->y + FixedMul(speed*yspeed[movedir], actor->scale);
+	if (twodlevel || actor->flags2 & MF2_TWOD)
+		tryy = actor->y;
+	else
+		tryy = actor->y + FixedMul(speed*yspeed[movedir], actor->scale);
 
 	if (actor->type == MT_SKIM && !P_WaterInSector(actor, tryx, tryy)) // bail out if sector lacks water
 		return false;
@@ -533,6 +536,8 @@ void P_NewChaseDir(mobj_t *actor)
 	else
 		d[1] = DI_NODIR;
 
+	if (twodlevel || actor->flags2 & MF2_TWOD)
+		d[2] = DI_NODIR;
 	if (deltay < -FixedMul(10*FRACUNIT, actor->scale))
 		d[2] = DI_SOUTH;
 	else if (deltay > FixedMul(10*FRACUNIT, actor->scale))
@@ -2392,7 +2397,7 @@ void A_1upThinker(mobj_t *actor)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (!playeringame[i] || players[i].spectator)
+		if (!playeringame[i] || players[i].bot || players[i].spectator)
 			continue;
 
 		if (!players[i].mo)
@@ -2950,7 +2955,9 @@ void A_Invincibility(mobj_t *actor)
 	if (P_IsLocalPlayer(player) && !player->powers[pw_super])
 	{
 		S_StopMusic();
-		S_ChangeMusicInternal("invinc", false);
+		if (mariomode)
+			G_GhostAddColor((INT32) (player - players), GHC_INVINCIBLE);
+		S_ChangeMusicInternal((mariomode) ? "minvnc" : "invinc", false);
 	}
 }
 
@@ -4491,7 +4498,12 @@ void A_MouseThink(mobj_t *actor)
 		|| (actor->eflags & MFE_VERTICALFLIP && actor->z + actor->height == actor->ceilingz))
 		&& !actor->reactiontime)
 	{
-		if (P_RandomChance(FRACUNIT/2))
+		if (twodlevel || actor->flags2 & MF2_TWOD)
+		{
+			if (P_RandomChance(FRACUNIT/2))
+				actor->angle += ANGLE_180;
+		}
+		else if (P_RandomChance(FRACUNIT/2))
 			actor->angle += ANGLE_90;
 		else
 			actor->angle -= ANGLE_90;

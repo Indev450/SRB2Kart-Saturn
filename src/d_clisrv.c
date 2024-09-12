@@ -1337,6 +1337,8 @@ static boolean CL_SendJoin(void)
 
 	if (splitscreen)
 		localplayers += splitscreen;
+	else if (botingame)
+		localplayers++;
 
 	netbuffer->u.clientcfg.localplayers = localplayers;
 	netbuffer->u.clientcfg._255 = 255;
@@ -3045,6 +3047,8 @@ static void Command_connect(void)
 		splitscreen = cv_splitplayers.value-1;
 		SplitScreen_OnChange();
 	}
+	botingame = false;
+	botskin = 0;
 	CL_ConnectToServer();
 }
 
@@ -4288,6 +4292,8 @@ static void Got_AddPlayer(UINT8 **p, INT32 playernum)
 		{
 			displayplayers[splitscreenplayer] = newplayernum;
 			DEBFILE(va("spawning one of my sister number %d\n", splitscreenplayer));
+			if (splitscreenplayer == 1 && botingame)
+				players[newplayernum].bot = 1;
 		}
 		else
 		{
@@ -5934,7 +5940,7 @@ static void CL_SendClientCmd(void)
 		G_MoveTiccmd(&netbuffer->u.clientpak.cmd, &localcmds, 1);
 		netbuffer->u.clientpak.consistancy = SHORT(consistancy[gametic%TICQUEUE]);
 
-		if (splitscreen) // Send a special packet with 2 cmd for splitscreen
+		if (splitscreen || botingame) // Send a special packet with 2 cmd for splitscreen
 		{
 			netbuffer->packettype = (mis ? PT_CLIENT2MIS : PT_CLIENT2CMD);
 			packetsize = sizeof (client2cmd_pak);
@@ -6133,7 +6139,7 @@ static void Local_Maketic(INT32 realtics)
 	if (!dedicated) rendergametic = gametic;
 	// translate inputs (keyboard/mouse/joystick) into game controls
 	G_BuildTiccmd(&localcmds, realtics, 1);
-	if (splitscreen)
+	if (splitscreen || botingame)
 	{
 		G_BuildTiccmd(&localcmds2, realtics, 2);
 		if (splitscreen > 1)

@@ -165,6 +165,8 @@ void P_DoNightsScore(player_t *player)
 		return; // Don't do any fancy shit for failures.
 
 	dummymo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z+player->mo->height/2, MT_NIGHTSCORE);
+	if (player->bot)
+		player = &players[consoleplayer];
 
 	if (G_IsSpecialStage(gamemap)) // Global link count? Maybe not a good idea...
 	{
@@ -660,6 +662,9 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 
 			special->momx = special->momy = special->momz = 0;
 			P_GivePlayerRings(player, 1);
+
+			if ((maptol & TOL_NIGHTS) && special->type != MT_FLINGRING)
+				P_DoNightsScore(player);
 			break;
 
 		case MT_COIN:
@@ -669,6 +674,9 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 
 			special->momx = special->momy = 0;
 			P_GivePlayerRings(player, 1);
+
+			if ((maptol & TOL_NIGHTS) && special->type != MT_FLINGCOIN)
+				P_DoNightsScore(player);
 			break;
 		case MT_BLUEBALL:
 			if (!(P_CanPickupItem(player, 0)))
@@ -682,6 +690,9 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 				special->scalespeed = FixedDiv(FixedDiv(special->destscale, special->scale), states[special->info->deathstate].tics<<FRACBITS);
 			else
 				special->scalespeed = 4*FRACUNIT/5;
+
+			if (maptol & TOL_NIGHTS)
+				P_DoNightsScore(player);
 			break;
 		case MT_AUTOPICKUP:
 		case MT_BOUNCEPICKUP:
@@ -731,6 +742,8 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 // ***************************** //
 		// Special Stage Token
 		case MT_EMMY:
+			if (player->bot)
+				return;
 			tokenlist += special->health;
 
 			if (ALL7EMERALDS(emeralds)) // Got all 7
@@ -747,6 +760,9 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 
 		// Emerald Hunt
 		case MT_EMERHUNT:
+			if (player->bot)
+				return;
+
 			if (hunt1 == special)
 				hunt1 = NULL;
 			else if (hunt2 == special)
@@ -775,6 +791,9 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 		case MT_EMERALD5:
 		case MT_EMERALD6:
 		case MT_EMERALD7:
+			if (player->bot)
+				return;
+
 			if (special->threshold)
 				player->powers[pw_emeralds] |= special->info->speed;
 			else
@@ -802,7 +821,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 		// Secret emblem thingy
 		case MT_EMBLEM:
 			{
-				if (demo.playback)
+				if (demo.playback || player->bot)
 					return;
 				emblemlocations[special->health-1].collected = true;
 
@@ -815,12 +834,16 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 		// CTF Flags
 		case MT_REDFLAG:
 		case MT_BLUEFLAG:
+			if (player->bot)
+				return;
 			if (player->powers[pw_flashing] || player->tossdelay)
 				return;
 			if (!special->spawnpoint)
 				return;
 			if (special->fuse == 1)
 				return;
+//			if (special->momz > 0)
+//				return;
 			{
 				UINT8 flagteam = (special->type == MT_REDFLAG) ? 1 : 2;
 				const char *flagtext;
@@ -986,6 +1009,8 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 					if (playeringame[i] && players[i].pflags & PF_NIGHTSMODE)
 						players[i].drillmeter += TICRATE/2;
 			}
+			else if (player->bot)
+				players[consoleplayer].drillmeter += TICRATE/2;
 			else
 				player->drillmeter += TICRATE/2;
 
@@ -1019,6 +1044,9 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 				thinker_t  *th;
 				mobj_t *mo2;
 
+				if (player->bot)
+					return;
+
 				junk.tag = 649;
 				EV_DoElevator(&junk, bridgeFall, false);
 
@@ -1038,6 +1066,8 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			}
 			break;
 		case MT_FIREFLOWER:
+			if (player->bot)
+				return;
 			player->powers[pw_shield] |= SH_FIREFLOWER;
 			toucher->color = SKINCOLOR_WHITE;
 			G_GhostAddColor(player - players, GHC_FIREFLOWER);
@@ -1047,6 +1077,8 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 // Misc touchables //
 // *************** //
 		case MT_STARPOST:
+			if (player->bot)
+				return;
 			// SRB2kart - 150117
 			if (player->exiting) //STOP MESSING UP MY STATS FASDFASDF
 			{
@@ -1271,7 +1303,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			if (player->powers[pw_invulnerability] || player->powers[pw_flashing]
 			|| (player->powers[pw_super] && !(ALL7EMERALDS(player->powers[pw_emeralds]))))
 				return;
-			if (player->powers[pw_shield])  //If One-Hit Shield
+			if (player->powers[pw_shield] || player->bot)  //If One-Hit Shield
 			{
 				P_RemoveShield(player);
 				S_StartSound(toucher, sfx_shldls); // Ba-Dum! Shield loss.
@@ -1310,6 +1342,10 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			return; // SRB2kart - don't need bubbles mucking with the player
 			if ((player->powers[pw_shield] & SH_NOSTACK) == SH_ELEMENTAL)
 				return;
+			if (maptol & TOL_NIGHTS)
+				return;
+			if (mariomode)
+				return;
 			else if (toucher->eflags & MFE_VERTICALFLIP)
 			{
 				if (special->z+special->height < toucher->z + toucher->height / 3
@@ -1335,6 +1371,8 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			return;
 
 		default: // SOC or script pickup
+			if (player->bot)
+				return;
 			P_SetTarget(&special->target, toucher);
 			break;
 		}
@@ -1723,7 +1761,8 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 	// Drop stuff.
 	// This determines the kind of object spawned
 	// during the death frame of a thing.
-	if (target->flags & MF_ENEMY)
+	if (!mariomode // Don't show birds, etc. in Mario Mode Tails 12-23-2001
+	&& target->flags & MF_ENEMY)
 	{
 		if (cv_soniccd.value)
 			item = MT_SEED;
@@ -2272,7 +2311,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 			return false;
 
 		// Make sure that boxes cannot be popped by enemies, red rings, etc.
-		if (target->flags & MF_MONITOR && ((!source || !source->player) || (inflictor && !inflictor->player)))
+		if (target->flags & MF_MONITOR && ((!source || !source->player || source->player->bot) || (inflictor && !inflictor->player)))
 			return false;
 	}
 
@@ -2340,6 +2379,9 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 		if (!force)
 		{
 			if (player->exiting)
+				return false;
+
+			if (!(target->player->pflags & (PF_NIGHTSMODE|PF_NIGHTSFALL)) && (maptol & TOL_NIGHTS))
 				return false;
 		}
 
@@ -2588,7 +2630,9 @@ void P_PlayerRingBurst(player_t *player, INT32 num_rings)
 		{
 			ns = FixedMul(((i*FRACUNIT)/16)+2*FRACUNIT, mo->scale);
 			mo->momx = FixedMul(FINECOSINE(fa),ns);
-			mo->momy = FixedMul(FINESINE(fa),ns);
+
+			if (!(twodlevel || (player->mo->flags2 & MF2_TWOD)))
+				mo->momy = FixedMul(FINESINE(fa),ns);
 
 			P_SetObjectMomZ(mo, 8*FRACUNIT, false);
 			mo->fuse = 20*TICRATE; // Adjust fuse for NiGHTS
@@ -2610,7 +2654,9 @@ void P_PlayerRingBurst(player_t *player, INT32 num_rings)
 
 			ns = FixedMul(momxy, mo->scale);
 			mo->momx = FixedMul(FINECOSINE(fa),ns);
-			mo->momy = FixedMul(FINESINE(fa),ns);
+
+			if (!(twodlevel || (player->mo->flags2 & MF2_TWOD)))
+				mo->momy = FixedMul(FINESINE(fa),ns);
 
 			ns = momz;
 			P_SetObjectMomZ(mo, ns, false);
@@ -2715,7 +2761,9 @@ void P_PlayerWeaponPanelBurst(player_t *player)
 		// >16 ring type spillout
 		ns = FixedMul(3*FRACUNIT, mo->scale);
 		mo->momx = FixedMul(FINECOSINE(fa),ns);
-		mo->momy = FixedMul(FINESINE(fa),ns);
+
+		if (!(twodlevel || (player->mo->flags2 & MF2_TWOD)))
+			mo->momy = FixedMul(FINESINE(fa),ns);
 
 		P_SetObjectMomZ(mo, 4*FRACUNIT, false);
 
@@ -2797,7 +2845,9 @@ void P_PlayerWeaponAmmoBurst(player_t *player)
 		// Spill them!
 		ns = FixedMul(2*FRACUNIT, mo->scale);
 		mo->momx = FixedMul(FINECOSINE(fa), ns);
-		mo->momy = FixedMul(FINESINE(fa),ns);
+
+		if (!(twodlevel || (player->mo->flags2 & MF2_TWOD)))
+			mo->momy = FixedMul(FINESINE(fa),ns);
 
 		P_SetObjectMomZ(mo, 3*FRACUNIT, false);
 
@@ -2911,7 +2961,11 @@ void P_PlayerEmeraldBurst(player_t *player, boolean toss)
 			}
 
 			momx = FixedMul(FINECOSINE(fa), ns);
-			momy = FixedMul(FINESINE(fa),ns);
+
+			if (!(twodlevel || (player->mo->flags2 & MF2_TWOD)))
+				momy = FixedMul(FINESINE(fa),ns);
+			else
+				momy = 0;
 
 			mo = P_SpawnMobj(player->mo->x, player->mo->y, z, MT_FLINGEMERALD);
 			mo->health = 1;
