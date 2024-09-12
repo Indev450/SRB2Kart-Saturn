@@ -2855,11 +2855,14 @@ boolean R_ThingVisible (mobj_t *thing)
 	if (viewmobj && (thing == viewmobj))
 		return false;
 
-	if ((viewssnum == 0 && (thing->renderflags & MFE_DRAWONLYFORP1))
-		|| (viewssnum == 1 && (thing->renderflags & MFE_DRAWONLYFORP2))
-		|| (viewssnum == 2 && (thing->renderflags & MFE_DRAWONLYFORP2))
-		|| (viewssnum == 3 && (thing->renderflags & MFE_DRAWONLYFORP4)))
-		return true;
+	if (splitscreen)
+	{
+		if ((viewssnum == 0 && (thing->renderflags & MFE_DRAWONLYFORP1))
+			|| (viewssnum == 1 && (thing->renderflags & MFE_DRAWONLYFORP2))
+			|| (viewssnum == 2 && (thing->renderflags & MFE_DRAWONLYFORP2))
+			|| (viewssnum == 3 && (thing->renderflags & MFE_DRAWONLYFORP4)))
+			return true;
+	}
 
 	return true;
 }
@@ -3218,21 +3221,6 @@ void SetPlayerSkinByNum(INT32 playernum, INT32 skinnum)
 		// SRB2kart
 		player->kartspeed = skin->kartspeed;
 		player->kartweight = skin->kartweight;
-
-		/*if (!(cv_debug || devparm) && !(netgame || multiplayer || demo.playback || modeattacking))
-		{
-			if (playernum == consoleplayer)
-				CV_StealthSetValue(&cv_playercolor, skin->prefcolor);
-			else if (playernum == displayplayers[1])
-				CV_StealthSetValue(&cv_playercolor2, skin->prefcolor);
-			else if (playernum == displayplayers[2])
-				CV_StealthSetValue(&cv_playercolor3, skin->prefcolor);
-			else if (playernum == displayplayers[3])
-				CV_StealthSetValue(&cv_playercolor4, skin->prefcolor);
-			player->skincolor = skin->prefcolor;
-			if (player->mo)
-				player->mo->color = player->skincolor;
-		}*/
 
 		if (player->mo)
 			P_SetScale(player->mo, player->mo->scale);
