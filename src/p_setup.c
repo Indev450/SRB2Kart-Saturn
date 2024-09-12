@@ -322,10 +322,10 @@ static void P_ClearSingleMapHeaderInfo(INT16 i)
 	// SRB2Kart
 	//mapheaderinfo[num]->automap = false;
 	mapheaderinfo[num]->mobj_scale = FRACUNIT;
-	mapheaderinfo[num]->light_contrast = 8;
+	mapheaderinfo[num]->light_contrast = M_RandomRange(0, 64);
 	mapheaderinfo[num]->sprite_backlight = 0;
-	mapheaderinfo[num]->use_light_angle = false;
-	mapheaderinfo[num]->light_angle = 0;
+	mapheaderinfo[num]->use_light_angle = true;
+	mapheaderinfo[num]->light_angle = M_RandomRange(-255, 255);
 	// an even further impossibility, delfile custom opts support
 	mapheaderinfo[num]->customopts = NULL;
 	mapheaderinfo[num]->numCustomOptions = 0;
