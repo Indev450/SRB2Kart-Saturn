@@ -1176,7 +1176,7 @@ FUNCINLINE ATTRINLINE subsector_t *R_IsPointInSubsector(fixed_t x, fixed_t y)
 // R_SetupFrame
 //
 
-static mobj_t *viewmobj;
+mobj_t *viewmobj;
 
 void R_SkyboxFrame(player_t *player)
 {

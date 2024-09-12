@@ -20,6 +20,7 @@
 #include "z_zone.h"
 #include "m_misc.h"
 #include "i_video.h" // rendermode
+#include "r_main.h" // stplyr
 #include "r_fps.h"
 #include "r_things.h"
 #include "r_patch.h"
@@ -2001,10 +2002,7 @@ void R_AddSprites(sector_t *sec, INT32 lightlevel)
 {
 	mobj_t *thing;
 	INT32 lightnum;
-	fixed_t approx_dist, limit_dist;
-
-	INT32 splitflags;			// check if a mobj has spliscreen flags
-	boolean split_drawsprite;	// used for splitscreen flags
+	fixed_t limit_dist;
 
 	if (rendermode != render_soft)
 		return;
@@ -2035,88 +2033,16 @@ void R_AddSprites(sector_t *sec, INT32 lightlevel)
 
 	// Handle all things in sector.
 	// If a limit exists, handle things a tiny bit different.
-	if ((limit_dist = (fixed_t)(cv_drawdist.value) * mapobjectscale))
+	limit_dist = (fixed_t)(cv_drawdist.value) * mapobjectscale;
+	for (thing = sec->thinglist; thing; thing = thing->snext)
 	{
-		for (thing = sec->thinglist; thing; thing = thing->snext)
-		{
-			split_drawsprite = false;
+		if (!R_ThingWithinDist(thing, limit_dist))
+			continue;
 
-			if (thing->sprite == SPR_NULL || thing->flags2 & MF2_DONTDRAW)
-				continue;
+		if (!R_ThingVisible(thing))
+			continue;
 
-			splitflags = thing->eflags & (MFE_DRAWONLYFORP1|MFE_DRAWONLYFORP2|MFE_DRAWONLYFORP3|MFE_DRAWONLYFORP4);
-
-			if (splitscreen && splitflags)
-			{
-				if (thing->eflags & MFE_DRAWONLYFORP1)
-					if (viewssnum == 0)
-						split_drawsprite = true;
-
-				if (thing->eflags & MFE_DRAWONLYFORP2)
-					if (viewssnum == 1)
-						split_drawsprite = true;
-
-				if (thing->eflags & MFE_DRAWONLYFORP3 && splitscreen > 1)
-					if (viewssnum == 2)
-						split_drawsprite = true;
-
-				if (thing->eflags & MFE_DRAWONLYFORP4 && splitscreen > 2)
-					if (viewssnum == 3)
-						split_drawsprite = true;
-			}
-			else
-				split_drawsprite = true;
-
-			if (!split_drawsprite)
-				continue;
-
-			approx_dist = P_AproxDistance(viewx-thing->x, viewy-thing->y);
-
-			if (approx_dist > limit_dist)
-				continue;
-
-			R_ProjectSprite(thing);
-		}
-	}
-	else
-	{
-		// Draw everything in sector, no checks
-		for (thing = sec->thinglist; thing; thing = thing->snext)
-		{
-
-			split_drawsprite = false;
-
-			if (thing->sprite == SPR_NULL || thing->flags2 & MF2_DONTDRAW)
-				continue;
-
-			splitflags = thing->eflags & (MFE_DRAWONLYFORP1|MFE_DRAWONLYFORP2|MFE_DRAWONLYFORP3|MFE_DRAWONLYFORP4);
-
-			if (splitscreen && splitflags)
-			{
-				if (thing->eflags & MFE_DRAWONLYFORP1)
-					if (viewssnum == 0)
-						split_drawsprite = true;
-
-				if (thing->eflags & MFE_DRAWONLYFORP2)
-					if (viewssnum == 1)
-						split_drawsprite = true;
-
-				if (thing->eflags & MFE_DRAWONLYFORP3 && splitscreen > 1)
-					if (viewssnum == 2)
-						split_drawsprite = true;
-
-				if (thing->eflags & MFE_DRAWONLYFORP4 && splitscreen > 2)
-					if (viewssnum == 3)
-						split_drawsprite = true;
-			}
-			else
-				split_drawsprite = true;
-
-			if (!split_drawsprite)
-				continue;
-
-			R_ProjectSprite(thing);
-		}
+		R_ProjectSprite(thing);
 	}
 }
 
@@ -2918,6 +2844,36 @@ void R_ClipSprites(void)
 		if ((spr->cut & SC_NOTVISIBLE) == 0)
 			numvisiblesprites++;
 	}
+}
+
+/* Check if thing may be drawn from our current view. */
+boolean R_ThingVisible (mobj_t *thing)
+{
+	if (thing->sprite == SPR_NULL || thing->flags2 & MF2_DONTDRAW)
+		return false;
+
+	if (viewmobj && (thing == viewmobj))
+		return false;
+
+	if ((viewssnum == 0 && (thing->renderflags & MFE_DRAWONLYFORP1))
+		|| (viewssnum == 1 && (thing->renderflags & MFE_DRAWONLYFORP2))
+		|| (viewssnum == 2 && (thing->renderflags & MFE_DRAWONLYFORP2))
+		|| (viewssnum == 3 && (thing->renderflags & MFE_DRAWONLYFORP4)))
+		return true;
+
+	return true;
+}
+
+boolean R_ThingWithinDist (mobj_t *thing, fixed_t limit_dist)
+{
+	const fixed_t dist = P_AproxDistance(viewx-thing->x, viewy-thing->y);
+
+	if (limit_dist && dist > limit_dist)
+	{
+		return false;
+	}
+
+	return true;
 }
 
 //

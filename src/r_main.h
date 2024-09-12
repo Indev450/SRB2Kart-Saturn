@@ -38,6 +38,8 @@ extern fixed_t renderdeltatics;
 // The current render is a new logical tic
 extern boolean renderisnewtic;
 
+extern mobj_t *viewmobj;
+
 //
 // Lighting LUT.
 // Used for z-depth cuing per column/row,

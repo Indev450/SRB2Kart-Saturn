@@ -4582,10 +4582,7 @@ void HWR_DrawSprites(void)
 void HWR_AddSprites(sector_t *sec)
 {
 	mobj_t *thing;
-	fixed_t approx_dist, limit_dist;
-
-	INT32 splitflags;
-	boolean split_drawsprite;	// drawing with splitscreen flags
+	fixed_t limit_dist;
 
 	// BSP is traversed by subsector.
 	// A sector might have been split into several
@@ -4609,88 +4606,15 @@ void HWR_AddSprites(sector_t *sec)
 		limit_dist = (fixed_t)(cv_drawdist.value) * mapobjectscale;
 
 	// Handle all things in sector.
-	// If a limit exists, handle things a tiny bit different.
-	if (limit_dist == 0)
+	for (thing = sec->thinglist; thing; thing = thing->snext)
 	{
-		// Draw everything in sector, no checks
-		for (thing = sec->thinglist; thing; thing = thing->snext)
-		{
-			split_drawsprite = false;
+		if (!R_ThingWithinDist(thing, limit_dist))
+			continue;
 
-			if (thing->sprite == SPR_NULL || thing->flags2 & MF2_DONTDRAW)
-				continue;
+		if (!R_ThingVisible(thing))
+			continue;
 
-			splitflags = thing->eflags & (MFE_DRAWONLYFORP1|MFE_DRAWONLYFORP2|MFE_DRAWONLYFORP3|MFE_DRAWONLYFORP4);
-
-			if (splitscreen && splitflags)
-			{
-				if (thing->eflags & MFE_DRAWONLYFORP1)
-					if (viewssnum == 0)
-						split_drawsprite = true;
-
-				if (thing->eflags & MFE_DRAWONLYFORP2)
-					if (viewssnum == 1)
-						split_drawsprite = true;
-
-				if (thing->eflags & MFE_DRAWONLYFORP3 && splitscreen > 1)
-					if (viewssnum == 2)
-						split_drawsprite = true;
-
-				if (thing->eflags & MFE_DRAWONLYFORP4 && splitscreen > 2)
-					if (viewssnum == 3)
-						split_drawsprite = true;
-			}
-			else
-				split_drawsprite = true;
-
-			if (!split_drawsprite)
-				continue;
-
-			HWR_ProjectSprite(thing);
-		}
-	}
-	else
-	{
-		for (thing = sec->thinglist; thing; thing = thing->snext)
-		{
-			split_drawsprite = false;
-
-			if (thing->sprite == SPR_NULL || thing->flags2 & MF2_DONTDRAW)
-				continue;
-
-			splitflags = thing->eflags & (MFE_DRAWONLYFORP1|MFE_DRAWONLYFORP2|MFE_DRAWONLYFORP3|MFE_DRAWONLYFORP4);
-
-			if (splitscreen && splitflags)
-			{
-				if (thing->eflags & MFE_DRAWONLYFORP1)
-					if (viewssnum == 0)
-						split_drawsprite = true;
-
-				if (thing->eflags & MFE_DRAWONLYFORP2)
-					if (viewssnum == 1)
-						split_drawsprite = true;
-
-				if (thing->eflags & MFE_DRAWONLYFORP3 && splitscreen > 1)
-					if (viewssnum == 2)
-						split_drawsprite = true;
-
-				if (thing->eflags & MFE_DRAWONLYFORP4 && splitscreen > 2)
-					if (viewssnum == 3)
-						split_drawsprite = true;
-			}
-			else
-				split_drawsprite = true;
-
-			if (!split_drawsprite)
-				continue;
-
-			approx_dist = P_AproxDistance(viewx-thing->x, viewy-thing->y);
-
-			if (approx_dist > limit_dist)
-				continue;
-
-			HWR_ProjectSprite(thing);
-		}
+		HWR_ProjectSprite(thing);
 	}
 }
 

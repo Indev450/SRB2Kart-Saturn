@@ -259,7 +259,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec, INT32 *floorlightlevel,
 	else if (sec->heightsec != -1)
 	{
 		const sector_t *s = &sectors[sec->heightsec];
-		mobj_t *viewmobj = viewplayer->mo;
+		mobj_t *pviewmobj = viewplayer->mo;
 		INT32 heightsec;
 		boolean underwater;
 		UINT8 i;
@@ -273,8 +273,8 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec, INT32 *floorlightlevel,
 			break;
 		}
 
-		if (i > splitscreen && viewmobj)
-			heightsec = R_PointInSubsector(viewmobj->x, viewmobj->y)->sector->heightsec;
+		if (i > splitscreen && pviewmobj)
+			heightsec = R_PointInSubsector(pviewmobj->x, pviewmobj->y)->sector->heightsec;
 		else
 			return sec;
 
