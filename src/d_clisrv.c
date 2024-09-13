@@ -3960,7 +3960,7 @@ consvar_t cv_joinrefusemessage = {"joinrefusemessage", "The server is not accept
 consvar_t cv_allownewplayer = {"allowjoin", "On", CV_SAVE|CV_CALL, CV_OnOff, Joinable_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 #ifdef SATURNJOIN
-consvar_t cv_allownewsaturnplayer = {"allowsaturnjoin", "On", CV_SAVE|CV_HIDEN, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_allownewsaturnplayer = {"allowsaturnjoin", "On", CV_HIDEN, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 #endif
 
 #ifdef VANILLAJOINNEXTROUND
@@ -4013,10 +4013,7 @@ static void Joinable_OnChange(void)
 
 #ifdef SATURNJOIN
 	// disabling joins should also disable saturn joins unless its called with CV_StealthSet and vice versa to make life a bit easier
-	if (!cv_allownewplayer.value)
-		CV_Set(&cv_allownewsaturnplayer, "Off");
-	else if (cv_allownewplayer.value)
-		CV_Set(&cv_allownewsaturnplayer, "On");
+	CV_SetValue(&cv_allownewsaturnplayer, cv_allownewplayer.value);
 #endif
 
 	maxplayer = (UINT8)(min((dedicated ? MAXPLAYERS-1 : MAXPLAYERS), cv_maxplayers.value));
