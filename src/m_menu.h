@@ -403,4 +403,15 @@ void M_SlotCvarIntoModMenu(consvar_t* cvar, const char* category, const char* na
 	{NULL}\
 }
 
+#define DoToolTips(menu, tooltip)\
+if (currentMenu == &menu)\
+{\
+	if (!(tooltip[itemOn] == NULL))\
+	{\
+		M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, tooltip[itemOn], coolalphatimer);\
+		if (coolalphatimer > 0 && interpTimerHackAllow)\
+			coolalphatimer--;\
+	}\
+}
+
 #endif //__X_MENU__
