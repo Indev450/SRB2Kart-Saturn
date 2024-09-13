@@ -9,6 +9,7 @@
 /// \file  y_inter.c
 /// \brief Tally screens, or "Intermissions" as they were formally called in Doom
 
+#include "d_netcmd.h"
 #include "doomdef.h"
 #include "doomstat.h"
 #include "d_main.h"
@@ -385,7 +386,7 @@ void Y_IntermissionDrawer(void)
 	if (intertype == int_none || rendermode == render_none)
 		return;
 
-	if (cv_betainterscreen.value 
+	if (cv_betainterscreen.value == 1
 #ifdef HWRENDER	
 	|| (rendermode == render_opengl && cv_grscreentextures.value != 2) // use the neato kart bg for intermission on disabled screen textures
 #endif
@@ -429,7 +430,7 @@ void Y_IntermissionDrawer(void)
 	{
 #define NUMFORNEWCOLUMN 8
 		INT32 y = 41, gutter = ((data.match.numplayers > NUMFORNEWCOLUMN) ? 0 : (BASEVIDWIDTH/2));
-		INT32 dupadjust = (vid.width/vid.dupx), duptweak = (dupadjust - BASEVIDWIDTH)/2;
+		INT32 dupadjust = cv_betainterscreen.value ? 314 : (vid.width/vid.dupx), duptweak = cv_betainterscreen.value ? -3 : (dupadjust - BASEVIDWIDTH)/2;
 		const char *timeheader;
 
 		if (data.match.rankingsmode)

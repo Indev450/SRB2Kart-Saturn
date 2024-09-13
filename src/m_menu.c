@@ -2245,12 +2245,14 @@ static menuitem_t OP_SaturnHudMenu[] =
 
 	{IT_STRING | IT_CVAR, NULL,	"Show Director Prompt",   				&cv_showdirectorhud, 		 80},
 
-	{IT_STRING | IT_CVAR, NULL, "Uncapped HUD", 						&cv_uncappedhud, 		     90},
+	{IT_STRING | IT_CVAR, NULL, "Beta Intermissionscreen", 				&cv_betainterscreen, 		 90},
 
-	{IT_STRING | IT_SUBMENU, NULL, "Nametags...", 						&OP_NametagDef, 		   	100},
-	{IT_STRING | IT_SUBMENU, NULL, "Driftgauge...", 					&OP_DriftGaugeDef, 		   	105},
+	{IT_STRING | IT_CVAR, NULL, "Uncapped HUD", 						&cv_uncappedhud, 		    100},
 
-	{IT_SUBMENU|IT_STRING,	NULL,	"Hud Offsets...", 					&OP_HudOffsetDef,		   	115},
+	{IT_STRING | IT_SUBMENU, NULL, "Nametags...", 						&OP_NametagDef, 		   	110},
+	{IT_STRING | IT_SUBMENU, NULL, "Driftgauge...", 					&OP_DriftGaugeDef, 		   	115},
+
+	{IT_SUBMENU|IT_STRING,	NULL,	"Hud Offsets...", 					&OP_HudOffsetDef,		   	125},
 };
 
 static const char* OP_SaturnHudTooltips[] =
@@ -2270,6 +2272,7 @@ static const char* OP_SaturnHudTooltips[] =
 	"Show player names on the minimap.",
 	"Minimize the player icons on the minimap.",
 	"Show the Director Toggle prompt when spectating.",
+	"Make the Intermission screen look like in beta versions of Kart!\nEither with background or just the rest.",
 	"Uncaps the HUD framerate, making it appear smoother.",
 	"Nametag Options.",
 	"Driftgauge Options.",
@@ -2293,6 +2296,7 @@ enum
 	sh_mapname,
 	sh_smallmap,
 	sh_directorhud,
+	sh_betainter,
 	sh_uncappedhud,
 	sh_nametagmen,
 	sh_driftgaugemen,
