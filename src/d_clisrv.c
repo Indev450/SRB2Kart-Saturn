@@ -1758,7 +1758,7 @@ static boolean SV_SendServerConfig(INT32 node)
 	CV_SavePlayerNames(&p);
 	CV_SaveNetVars(&p, false);
 
-	size_t len = sizeof (serverconfig_pak) + (size_t)(p - op);
+	const size_t len = sizeof (serverconfig_pak) + (size_t)(p - op);
 
 #ifdef DEBUGFILE
 	if (debugfile)
