@@ -2002,14 +2002,13 @@ void R_AddSprites(sector_t *sec, INT32 lightlevel)
 {
 	mobj_t *thing;
 	INT32 lightnum;
-	fixed_t limit_dist;
 
 	if (rendermode != render_soft)
 		return;
 
 	// BSP is traversed by subsector.
 	// A sector might have been split into several
-	//  subsectors during BSP building.
+	// subsectors during BSP building.
 	// Thus we check whether its already added.
 	if (sec->validcount == validcount)
 		return;
@@ -2033,7 +2032,7 @@ void R_AddSprites(sector_t *sec, INT32 lightlevel)
 
 	// Handle all things in sector.
 	// If a limit exists, handle things a tiny bit different.
-	limit_dist = (fixed_t)(cv_drawdist.value) * mapobjectscale;
+	const fixed_t limit_dist = (fixed_t)(cv_drawdist.value) * mapobjectscale;
 	for (thing = sec->thinglist; thing; thing = thing->snext)
 	{
 		if (!R_ThingWithinDist(thing, limit_dist))
@@ -2869,11 +2868,13 @@ boolean R_ThingVisible (mobj_t *thing)
 
 boolean R_ThingWithinDist (mobj_t *thing, fixed_t limit_dist)
 {
-	const fixed_t dist = P_AproxDistance(viewx-thing->x, viewy-thing->y);
-
-	if (limit_dist && dist > limit_dist)
+	if (limit_dist)
 	{
-		return false;
+		const fixed_t dist = P_AproxDistance(viewx-thing->x, viewy-thing->y);
+		if (dist > limit_dist)
+		{
+			return false;
+		}
 	}
 
 	return true;
