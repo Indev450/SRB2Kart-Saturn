@@ -5200,185 +5200,26 @@ static void M_DrawGenericMenu(void)
 
 	// dumb hack
 	// tooltips
-	if (currentMenu == &OP_ControlsDef)
-	{
-		if (!(OP_ControlsTooltips[itemOn] == NULL))
-		{
-			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_ControlsTooltips[itemOn], coolalphatimer);
-			if (coolalphatimer > 0 && interpTimerHackAllow)
-				coolalphatimer--;
-		}
-	}
-
-	if (currentMenu == &OP_MouseOptionsDef)
-	{
-		if (!(OP_MouseTooltips[itemOn] == NULL))
-		{
-			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_MouseTooltips[itemOn], coolalphatimer);
-			if (coolalphatimer > 0 && interpTimerHackAllow)
-				coolalphatimer--;
-		}
-	}
-
-	if (currentMenu == &OP_VideoOptionsDef)
-	{
-		if (!(OP_VideoTooltips[itemOn] == NULL))
-		{
-			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_VideoTooltips[itemOn], coolalphatimer);
-			if (coolalphatimer > 0 && interpTimerHackAllow)
-				coolalphatimer--;
-		}
-	}
-
-	if (currentMenu == &OP_SoundOptionsDef)
-	{
-		if (!(OP_SoundTooltips[itemOn] == NULL))
-		{
-			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_SoundTooltips[itemOn], coolalphatimer);
-			if (coolalphatimer > 0 && interpTimerHackAllow)
-				coolalphatimer--;
-		}
-	}
-
-	if (currentMenu == &OP_SoundAdvancedDef)
-	{
-		if (!(OP_SoundAdvancedTooltips[itemOn] == NULL))
-		{
-			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_SoundAdvancedTooltips[itemOn], coolalphatimer);
-			if (coolalphatimer > 0 && interpTimerHackAllow)
-				coolalphatimer--;
-		}
-	}
-
-	if (currentMenu == &OP_ChatOptionsDef)
-	{
-		if (!(OP_ChatOptionsTooltips[itemOn] == NULL))
-		{
-			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_ChatOptionsTooltips[itemOn], coolalphatimer);
-			if (coolalphatimer > 0 && interpTimerHackAllow)
-				coolalphatimer--;
-		}
-	}
-	
-	if (currentMenu == &OP_GameOptionsDef)
-	{
-		if (!(OP_GameTooltips[itemOn] == NULL))
-		{
-			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_GameTooltips[itemOn], coolalphatimer);
-			if (coolalphatimer > 0 && interpTimerHackAllow)
-				coolalphatimer--;
-		}
-	}
-
-	if (currentMenu == &OP_ServerOptionsDef)
-	{
-		if (!(OP_ServerOptionsTooltips[itemOn] == NULL))
-		{
-			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_ServerOptionsTooltips[itemOn], coolalphatimer);
-			if (coolalphatimer > 0 && interpTimerHackAllow)
-				coolalphatimer--;
-		}
-	}
-
-	if (currentMenu == &OP_AdvServerOptionsDef)
-	{
-		if (!(OP_AdvServerOptionsTooltips[itemOn] == NULL))
-		{
-			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_AdvServerOptionsTooltips[itemOn], coolalphatimer);
-			if (coolalphatimer > 0 && interpTimerHackAllow)
-				coolalphatimer--;
-		}
-	}
-	
-	if (currentMenu == &OP_PlayerDistortDef)
-	{
-		if (!(OP_PlayerDistortTooltips[itemOn] == NULL))
-		{
-			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_PlayerDistortTooltips[itemOn], coolalphatimer);
-			if (coolalphatimer > 0 && interpTimerHackAllow)
-				coolalphatimer--;
-		}
-	}
-
-	if (currentMenu == &OP_SaturnCreditsDef) // C:
-	{
-		if (!(OP_CreditTooltips[itemOn] == NULL))
-		{
-			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_CreditTooltips[itemOn], coolalphatimer);
-			if (coolalphatimer > 0 && interpTimerHackAllow)
-				coolalphatimer--;
-		}
-	}
-
-	if (currentMenu == &OP_BirdDef)
-	{
-		if (!(OP_BirdTooltips[itemOn] == NULL))
-		{
-			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_BirdTooltips[itemOn], coolalphatimer);
-			if (coolalphatimer > 0 && interpTimerHackAllow)
-				coolalphatimer--;
-		}
-	}
-
-	if (currentMenu == &OP_TiltDef)
-	{
-		if (!(OP_TiltTooltips[itemOn] == NULL))
-		{
-			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_TiltTooltips[itemOn], coolalphatimer);
-			if (coolalphatimer > 0 && interpTimerHackAllow)
-				coolalphatimer--;
-		}
-	}
-
-	if (currentMenu == &OP_AdvancedBirdDef)
-	{
-		if (!(OP_AdvancedBirdTooltips[itemOn] == NULL))
-		{
-			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_AdvancedBirdTooltips[itemOn], coolalphatimer);
-			if (coolalphatimer > 0 && interpTimerHackAllow)
-				coolalphatimer--;
-		}
-	}
-	
-	if (currentMenu == &OP_NametagDef)
-	{
-		if (!(OP_NametagTooltips[itemOn] == NULL)) 
-		{
-			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_NametagTooltips[itemOn], coolalphatimer);
-			if (coolalphatimer > 0 && interpTimerHackAllow)
-				coolalphatimer--;
-		}
-	}
-	
-	if (currentMenu == &OP_DriftGaugeDef)
-	{
-		if (!(OP_DriftGaugeTooltips[itemOn] == NULL)) 
-		{
-			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_DriftGaugeTooltips[itemOn], coolalphatimer);
-			if (coolalphatimer > 0 && interpTimerHackAllow)
-				coolalphatimer--;
-		}
-	}
-
-	if (currentMenu == &OP_CamOptionsDef)
-	{
-		if (!(OP_CamOptionsTooltips[itemOn] == NULL))
-		{
-			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_CamOptionsTooltips[itemOn], coolalphatimer);
-			if (coolalphatimer > 0 && interpTimerHackAllow)
-				coolalphatimer--;
-		}
-	}
-
-	if (currentMenu == &OP_Player1CamOptionsDef || currentMenu == &OP_Player2CamOptionsDef || currentMenu == &OP_Player3CamOptionsDef || currentMenu == &OP_Player4CamOptionsDef)
-	{
-		if (!(OP_PlayerCamOptionsTooltips[itemOn] == NULL))
-		{
-			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_PlayerCamOptionsTooltips[itemOn], coolalphatimer);
-			if (coolalphatimer > 0 && interpTimerHackAllow)
-				coolalphatimer--;
-		}
-	}
+	// replaced with macro so it doesent look as terrible anymore lol
+	DoToolTips(OP_ControlsDef, OP_ControlsTooltips);
+	DoToolTips(OP_MouseOptionsDef, OP_MouseTooltips);
+	DoToolTips(OP_VideoOptionsDef, OP_VideoTooltips);
+	DoToolTips(OP_ExpOptionsDef, OP_ExpTooltips);
+	DoToolTips(OP_SoundOptionsDef, OP_SoundTooltips);
+	DoToolTips(OP_SoundAdvancedDef, OP_SoundAdvancedTooltips);
+	DoToolTips(OP_ChatOptionsDef, OP_ChatOptionsTooltips);
+	DoToolTips(OP_GameOptionsDef, OP_GameTooltips);
+	DoToolTips(OP_ServerOptionsDef, OP_ServerOptionsTooltips);
+	DoToolTips(OP_AdvServerOptionsDef, OP_AdvServerOptionsTooltips);
+	DoToolTips(OP_PlayerDistortDef, OP_PlayerDistortTooltips);
+	DoToolTips(OP_SaturnCreditsDef, OP_CreditTooltips); // C:
+	DoToolTips(OP_BirdDef, OP_BirdTooltips);
+	DoToolTips(OP_TiltDef, OP_TiltTooltips);
+	DoToolTips(OP_AdvancedBirdDef, OP_AdvancedBirdTooltips);
+	DoToolTips(OP_NametagDef, OP_NametagTooltips);
+	DoToolTips(OP_DriftGaugeDef, OP_DriftGaugeTooltips);
+	DoToolTips(OP_CamOptionsDef, OP_CamOptionsTooltips);
+	DoToolTips(OP_Player1CamOptionsDef || currentMenu == &OP_Player2CamOptionsDef || currentMenu == &OP_Player3CamOptionsDef || currentMenu == &OP_Player4CamOptionsDef, OP_PlayerCamOptionsTooltips); // god this one is still terrible lmao
 }
 
 static void M_DrawGenericBackgroundMenu(void)
@@ -5507,149 +5348,18 @@ static void M_DrawGenericScrollMenu(void)
 	V_DrawScaledPatch(currentMenu->x - 24, cursory, 0,
 		W_CachePatchName("M_CURSOR", PU_CACHE));
 
-#ifdef HWRENDER
 	// dumb hack
 	// tooltips
-	if (currentMenu == &OP_OpenGLOptionsDef)
-	{
-		if (!(OP_OpenGLTooltips[itemOn] == NULL)) 
-		{
-			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_OpenGLTooltips[itemOn], coolalphatimer);
-			if (coolalphatimer > 0 && interpTimerHackAllow)
-				coolalphatimer--;
-		}
-	}
+	// same macro here
+#ifdef HWRENDER
+	DoToolTips(OP_OpenGLOptionsDef, OP_OpenGLTooltips);
 #endif
-
-	if (currentMenu == &OP_ExpOptionsDef)
-	{
-		if (!(OP_ExpTooltips[itemOn] == NULL))
-		{
-			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_ExpTooltips[itemOn], coolalphatimer);
-			if (coolalphatimer > 0 && interpTimerHackAllow)
-				coolalphatimer--;
-		}
-	}
-
-	
-	if (currentMenu == &OP_SaturnDef)
-	{
-		if (!(OP_SaturnTooltips[itemOn] == NULL)) 
-		{
-			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_SaturnTooltips[itemOn], coolalphatimer);
-			if (coolalphatimer > 0 && interpTimerHackAllow)
-				coolalphatimer--;
-		}
-	}
-
-	if (currentMenu == &OP_SaturnHudDef)
-	{
-		if (!(OP_SaturnHudTooltips[itemOn] == NULL))
-		{
-			M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, OP_SaturnHudTooltips[itemOn], coolalphatimer);
-			if (coolalphatimer > 0 && interpTimerHackAllow)
-				coolalphatimer--;
-		}
-	}
+	DoToolTips(OP_SaturnDef, OP_SaturnTooltips);
+	DoToolTips(OP_SaturnHudDef, OP_SaturnHudTooltips);
 }
 
 static void M_DrawPauseMenu(void)
 {
-#if 0
-	if (!netgame && !multiplayer && (gamestate == GS_LEVEL || gamestate == GS_INTERMISSION || gamestate == GS_VOTING))
-	{
-		emblem_t *emblem_detail[3] = {NULL, NULL, NULL};
-		char emblem_text[3][20];
-		INT32 i;
-
-		M_DrawTextBox(27, 16, 32, 6);
-
-		// Draw any and all emblems at the top.
-		M_DrawMapEmblems(gamemap, 272, 28);
-
-		if (strlen(mapheaderinfo[gamemap-1]->zonttl) > 0)
-		{
-			if (strlen(mapheaderinfo[gamemap-1]->actnum) > 0)
-				V_DrawString(40, 28, highlightflags, va("%s %s %s", mapheaderinfo[gamemap-1]->lvlttl, mapheaderinfo[gamemap-1]->zonttl, mapheaderinfo[gamemap-1]->actnum));
-			else
-				V_DrawString(40, 28, highlightflags, va("%s %s", mapheaderinfo[gamemap-1]->lvlttl, mapheaderinfo[gamemap-1]->zonttl));
-		}
-		else
-		{
-			if (strlen(mapheaderinfo[gamemap-1]->actnum) > 0)
-				V_DrawString(40, 28, highlightflags, va("%s %s", mapheaderinfo[gamemap-1]->lvlttl, mapheaderinfo[gamemap-1]->actnum));
-			else
-				V_DrawString(40, 28, highlightflags, mapheaderinfo[gamemap-1]->lvlttl);
-		}
-
-		// Set up the detail boxes.
-		{
-			emblem_t *emblem = M_GetLevelEmblems(gamemap);
-			while (emblem)
-			{
-				INT32 emblemslot;
-				char targettext[9], currenttext[9];
-
-				switch (emblem->type)
-				{
-					case ET_TIME:
-						emblemslot = emblem->var; // dumb hack
-						snprintf(targettext, 9, "%i:%02i.%02i",
-							G_TicsToMinutes((tic_t)emblemslot, false),
-							G_TicsToSeconds((tic_t)emblemslot),
-							G_TicsToCentiseconds((tic_t)emblemslot));
-
-						emblemslot = (INT32)G_GetBestTime(gamemap); // dumb hack pt ii
-						if ((tic_t)emblemslot == UINT32_MAX)
-							snprintf(currenttext, 9, "-:--.--");
-						else
-							snprintf(currenttext, 9, "%i:%02i.%02i",
-								G_TicsToMinutes((tic_t)emblemslot, false),
-								G_TicsToSeconds((tic_t)emblemslot),
-								G_TicsToCentiseconds((tic_t)emblemslot));
-
-						targettext[8] = 0;
-						currenttext[8] = 0;
-
-						emblemslot = 1;
-						break;
-					default:
-						goto bademblem;
-				}
-				if (emblem_detail[emblemslot])
-					goto bademblem;
-
-				emblem_detail[emblemslot] = emblem;
-				snprintf(emblem_text[emblemslot], 20, "%8s /%8s", currenttext, targettext);
-				emblem_text[emblemslot][19] = 0;
-
-				bademblem:
-				emblem = M_GetLevelEmblems(-1);
-			}
-		}
-		for (i = 0; i < 3; ++i)
-		{
-			emblem_t *emblem = emblem_detail[i];
-			if (!emblem)
-				continue;
-
-			if (emblem->collected)
-				V_DrawSmallMappedPatch(40, 44 + (i*8), 0, W_CachePatchName(M_GetEmblemPatch(emblem), PU_CACHE),
-				                       R_GetTranslationColormap(TC_DEFAULT, M_GetEmblemColor(emblem), GTC_MENUCACHE));
-			else
-				V_DrawSmallScaledPatch(40, 44 + (i*8), 0, W_CachePatchName("NEEDIT", PU_CACHE));
-
-			switch (emblem->type)
-			{
-				case ET_TIME:
-					V_DrawString(56, 44 + (i*8), highlightflags, "TIME:");
-					break;
-			}
-			V_DrawRightAlignedString(284, 44 + (i*8), V_MONOSPACE, emblem_text[i]);
-		}
-	}
-#endif
-
 #ifdef HAVE_DISCORDRPC
 	// kind of hackily baked in here
 	if (currentMenu == &MPauseDef && discordRequestList != NULL)
