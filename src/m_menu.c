@@ -1493,8 +1493,6 @@ static menuitem_t OP_ExpOptionsMenu[] =
 	{IT_STRING | IT_CVAR, 	NULL, "FBO Downsampling support", 		&cv_grframebuffer, 			 110},
 #endif
 	{IT_STRING | IT_CVAR, 	NULL, "Palette Depth", 					&cv_grpalettedepth, 		 130},
-
-	{IT_STRING | IT_CVAR, 	NULL, "Splitwall/Slope texture fix",	&cv_splitwallfix, 		 	 150},
 #endif	
 };
 
@@ -1512,7 +1510,6 @@ static const char* OP_ExpTooltips[] =
 	"Allows the game to downsample from a higher resolution than your display\nin OpenGL renderer mode. Requires a GPU with atleast OpenGL 3.0 support.",
 #endif
 	"Change the depth of the Palette in Palette rendering mode\n 16 bits is like software looks ingame\nwhile 24 bits is how software looks in screenshots.",
-	"Fixes issues that resulted in Textures sticking from the ground sometimes.\n This may be CPU heavy and result in worse performance in some cases.",
 #endif
 };
 
