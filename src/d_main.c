@@ -535,7 +535,6 @@ static boolean D_Display(void)
 			if (rendermode == render_soft)
 			{
 				VID_BlitLinearScreen(screens[0], screens[1], vid.width*vid.bpp, vid.height, vid.width*vid.bpp, vid.rowbytes);
-				usebuffer = true;
 			}
 			lastdraw = false;
 		}
