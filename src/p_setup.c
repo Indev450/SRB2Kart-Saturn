@@ -325,7 +325,7 @@ static void P_ClearSingleMapHeaderInfo(INT16 i)
 	mapheaderinfo[num]->light_contrast = M_RandomRange(0, 64);
 	mapheaderinfo[num]->sprite_backlight = 0;
 	mapheaderinfo[num]->use_light_angle = true;
-	mapheaderinfo[num]->light_angle = M_RandomRange(-255, 255);
+	mapheaderinfo[num]->light_angle = M_RandomRange(-382, 382);
 	// an even further impossibility, delfile custom opts support
 	mapheaderinfo[num]->customopts = NULL;
 	mapheaderinfo[num]->numCustomOptions = 0;
