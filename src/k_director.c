@@ -73,8 +73,8 @@ static fixed_t K_GetDistanceToFinish(player_t player)
 {
 	mobj_t *mo;
 	fixed_t dist = 0;
-	int maxMoveCount = -1;
-	int maxAngle = -1;
+	INT16 maxMoveCount = -1;
+	INT16 maxAngle = -1;
 
 	if (!(mapheaderinfo[gamemap - 1]->levelflags & LF_SECTIONRACE))
 	{
@@ -87,7 +87,7 @@ static fixed_t K_GetDistanceToFinish(player_t player)
 												mo->y - player.mo->y),
 							mo->z - player.mo->z) / FRACUNIT;
 
-							break;
+			break;
 		}
 	}
 	else // crappy optimization weeeee

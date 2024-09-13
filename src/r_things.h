@@ -72,6 +72,9 @@ void R_InitSprites(void);
 void R_ClearSprites(void);
 void R_DrawMasked(void);
 
+boolean R_ThingVisible (mobj_t *thing);
+boolean R_ThingWithinDist (mobj_t *thing, fixed_t limit_dist);
+
 // -----------
 // SKINS STUFF
 // -----------
