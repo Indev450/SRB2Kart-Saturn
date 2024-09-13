@@ -1878,6 +1878,7 @@ static void CL_ReloadReceivedSavegame(void)
 		neededtic = gametic;
 	maketic = neededtic;
 
+	// set camera angle to somewhat match where your player is turning
 	for (i = 0; i <= splitscreen; i++)
 	{
 		localangle[i] = players[displayplayers[i]].cmd.angleturn<<16;
