@@ -4561,7 +4561,7 @@ void HWR_AddSprites(sector_t *sec)
 
 	// BSP is traversed by subsector.
 	// A sector might have been split into several
-	//  subsectors during BSP building.
+	// subsectors during BSP building.
 	// Thus we check whether its already added.
 	if (sec->validcount == validcount)
 		return;
