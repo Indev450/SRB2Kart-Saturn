@@ -6544,8 +6544,9 @@ static void M_HandleAddons(INT32 choice)
 						case EXT_KART:
 #endif
 						case EXT_PK3:
-							if (browselocalskins) {
-							if (DumbStartsWith("KC_", dirmenu[dir_on[menudepthleft]]+DIR_STRING) || DumbStartsWith("kc_", dirmenu[dir_on[menudepthleft]]+DIR_STRING)) {
+							if (browselocalskins)
+							{
+								if (DumbStartsWith("KC_", dirmenu[dir_on[menudepthleft]]+DIR_STRING) || DumbStartsWith("kc_", dirmenu[dir_on[menudepthleft]]+DIR_STRING)) {
 									M_StartMessage(va("%c%s\x80\nYou are loading a local skin.\nLocal skins will not be usable\nafter going back from\nthe title screen.\n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), dirmenu[dir_on[menudepthleft]]+DIR_STRING),NULL,MM_NOTHING);
 									COM_BufAddText(va("addskins \"%s%s\"", menupath, dirmenu[dir_on[menudepthleft]]+DIR_STRING));
 									errorshitspam = 0; // reset it so it can show the warning screen again lmao
@@ -8051,31 +8052,6 @@ static void M_DestroyRobots(INT32 choice)
 	M_StartMessage(M_GetText("Do you want to destroy all\nrobots in the current level?\n\n(Press 'Y' to confirm)\n"),M_DestroyRobotsResponse,MM_YESNO);
 }
 
-/*static void M_LevelSelectWarp(INT32 choice)
-{
-	boolean fromloadgame = (currentMenu == &SP_LevelSelectDef);
-
-	(void)choice;
-
-	if (W_CheckNumForName(G_BuildMapName(cv_nextmap.value)) == LUMPERROR)
-	{
-//		CONS_Alert(CONS_WARNING, "Internal game map '%s' not found\n", G_BuildMapName(cv_nextmap.value));
-		return;
-	}
-
-	startmap = (INT16)(cv_nextmap.value);
-
-	fromlevelselect = true;
-
-	if (fromloadgame)
-		G_LoadGame((UINT32)cursaveslot, startmap);
-	else
-	{
-		cursaveslot = -1;
-		M_SetupChoosePlayer(0);
-	}
-}*/
-
 // ========
 // SKY ROOM
 // ========
@@ -8417,9 +8393,6 @@ static void scrollMusicName(const char name[], size_t len, size_t maxlen, char r
 	// Technically not necessary, since it gets set again after function call, but just in case
 	result[maxlen] = 0;
 }
-
-//static patch_t* st_radio[9];
-//static patch_t* st_launchpad[4];
 
 static void M_MusicTest(INT32 choice)
 {
@@ -9010,51 +8983,6 @@ void M_DrawTimeAttackMenu(void)
 		V_DrawRightAlignedString(292, 80, highlightflags, "BEST TIME:");
 		K_drawKartTimestamp(time, 162, 86, cv_nextmap.value, 1);
 	}
-	/*{
-		char beststr[40];
-		emblem_t *em;
-
-		if (!mainrecords[cv_nextmap.value-1] || !mainrecords[cv_nextmap.value-1]->time)
-			sprintf(beststr, "(none)");
-		else
-			sprintf(beststr, "%i:%02i.%02i", G_TicsToMinutes(mainrecords[cv_nextmap.value-1]->time, true),
-			                                 G_TicsToSeconds(mainrecords[cv_nextmap.value-1]->time),
-			                                 G_TicsToCentiseconds(mainrecords[cv_nextmap.value-1]->time));
-
-		V_DrawString(64, y+48, highlightflags, "BEST TIME:");
-		V_DrawRightAlignedString(BASEVIDWIDTH - 64 - 24 - 8, y+48, V_ALLOWLOWERCASE, beststr);
-
-		if (!mainrecords[cv_nextmap.value-1] || !mainrecords[cv_nextmap.value-1]->lap)
-			sprintf(beststr, "(none)");
-		else
-			sprintf(beststr, "%i:%02i.%02i", G_TicsToMinutes(mainrecords[cv_nextmap.value-1]->lap, true),
-			                                 G_TicsToSeconds(mainrecords[cv_nextmap.value-1]->lap),
-			                                 G_TicsToCentiseconds(mainrecords[cv_nextmap.value-1]->lap));
-
-		V_DrawString(64, y+56, highlightflags, "BEST LAP:");
-		V_DrawRightAlignedString(BASEVIDWIDTH - 64 - 24 - 8, y+56, V_ALLOWLOWERCASE, beststr);
-
-		// Draw record emblems.
-		em = M_GetLevelEmblems(cv_nextmap.value);
-		while (em)
-		{
-			switch (em->type)
-			{
-				case ET_TIME: break;
-				default:
-					goto skipThisOne;
-			}
-
-			if (em->collected)
-				V_DrawMappedPatch(BASEVIDWIDTH - 64 - 24, y+48, 0, W_CachePatchName(M_GetEmblemPatch(em), PU_CACHE),
-				                       R_GetTranslationColormap(TC_DEFAULT, M_GetEmblemColor(em), GTC_MENUCACHE));
-			else
-				V_DrawScaledPatch(BASEVIDWIDTH - 64 - 24, y+48, 0, W_CachePatchName("NEEDIT", PU_CACHE));
-
-			skipThisOne:
-			em = M_GetLevelEmblems(-1);
-		}
-	}*/
 
 	// ALWAYS DRAW player name, level name, skin and color even when not on this menu!
 	if (currentMenu != &SP_TimeAttackDef)
@@ -10131,8 +10059,6 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 			rubyfloattime += FixedMul(ANGLE_MAX/NEWTICRATE, renderdeltatics);
 		}
 	}
-	/*V_DrawDiag(x, y, 12, 31);
-	V_DrawDiag(x, y, 10, G_GetGametypeColor(cv_newgametype.value));*/
 
 	y += i/4;
 	i = cv_nextmap.value - 1;
@@ -12173,22 +12099,13 @@ static void M_Setup1PControlsMenu(INT32 choice)
 
 	// Unhide P1-only controls
 	OP_AllControlsMenu[15].status = IT_CONTROL; // Chat
-	//OP_AllControlsMenu[16].status = IT_CONTROL; // Team-chat
 	OP_AllControlsMenu[16].status = IT_CONTROL; // Rankings
-	//OP_AllControlsMenu[17].status = IT_CONTROL; // Viewpoint
 	// 18 is Reset Camera, 19 is Toggle Chasecam
 	OP_AllControlsMenu[20].status = IT_CONTROL; // Pause
 	OP_AllControlsMenu[21].status = IT_CONTROL; // Screenshot
 	OP_AllControlsMenu[22].status = IT_CONTROL; // GIF
 	OP_AllControlsMenu[23].status = IT_CONTROL; // System Menu
 	OP_AllControlsMenu[24].status = IT_CONTROL; // Console
-	/*OP_AllControlsMenu[25].status = IT_HEADER; // Spectator Controls header
-	OP_AllControlsMenu[26].status = IT_SPACE; // Spectator Controls space
-	OP_AllControlsMenu[27].status = IT_CONTROL; // Spectate
-	OP_AllControlsMenu[28].status = IT_CONTROL; // Look Up
-	OP_AllControlsMenu[29].status = IT_CONTROL; // Look Down
-	OP_AllControlsMenu[30].status = IT_CONTROL; // Center View
-	*/
 
 	M_SetupNextMenu(&OP_AllControlsDef);
 }
@@ -12205,22 +12122,13 @@ static void M_Setup2PControlsMenu(INT32 choice)
 
 	// Hide P1-only controls
 	OP_AllControlsMenu[15].status = IT_GRAYEDOUT2; // Chat
-	//OP_AllControlsMenu[16].status = IT_GRAYEDOUT2; // Team-chat
 	OP_AllControlsMenu[16].status = IT_GRAYEDOUT2; // Rankings
-	//OP_AllControlsMenu[17].status = IT_GRAYEDOUT2; // Viewpoint
 	// 18 is Reset Camera, 19 is Toggle Chasecam
 	OP_AllControlsMenu[20].status = IT_GRAYEDOUT2; // Pause
 	OP_AllControlsMenu[21].status = IT_GRAYEDOUT2; // Screenshot
 	OP_AllControlsMenu[22].status = IT_GRAYEDOUT2; // GIF
 	OP_AllControlsMenu[23].status = IT_GRAYEDOUT2; // System Menu
 	OP_AllControlsMenu[24].status = IT_GRAYEDOUT2; // Console
-	/*OP_AllControlsMenu[25].status = IT_GRAYEDOUT2; // Spectator Controls header
-	OP_AllControlsMenu[26].status = IT_GRAYEDOUT2; // Spectator Controls space
-	OP_AllControlsMenu[27].status = IT_GRAYEDOUT2; // Spectate
-	OP_AllControlsMenu[28].status = IT_GRAYEDOUT2; // Look Up
-	OP_AllControlsMenu[29].status = IT_GRAYEDOUT2; // Look Down
-	OP_AllControlsMenu[30].status = IT_GRAYEDOUT2; // Center View
-	*/
 
 	M_SetupNextMenu(&OP_AllControlsDef);
 }
@@ -12237,22 +12145,13 @@ static void M_Setup3PControlsMenu(INT32 choice)
 
 	// Hide P1-only controls
 	OP_AllControlsMenu[15].status = IT_GRAYEDOUT2; // Chat
-	//OP_AllControlsMenu[16].status = IT_GRAYEDOUT2; // Team-chat
 	OP_AllControlsMenu[16].status = IT_GRAYEDOUT2; // Rankings
-	//OP_AllControlsMenu[17].status = IT_GRAYEDOUT2; // Viewpoint
 	// 18 is Reset Camera, 19 is Toggle Chasecam
 	OP_AllControlsMenu[20].status = IT_GRAYEDOUT2; // Pause
 	OP_AllControlsMenu[21].status = IT_GRAYEDOUT2; // Screenshot
 	OP_AllControlsMenu[22].status = IT_GRAYEDOUT2; // GIF
 	OP_AllControlsMenu[23].status = IT_GRAYEDOUT2; // System Menu
 	OP_AllControlsMenu[24].status = IT_GRAYEDOUT2; // Console
-	/*OP_AllControlsMenu[25].status = IT_GRAYEDOUT2; // Spectator Controls header
-	OP_AllControlsMenu[26].status = IT_GRAYEDOUT2; // Spectator Controls space
-	OP_AllControlsMenu[27].status = IT_GRAYEDOUT2; // Spectate
-	OP_AllControlsMenu[28].status = IT_GRAYEDOUT2; // Look Up
-	OP_AllControlsMenu[29].status = IT_GRAYEDOUT2; // Look Down
-	OP_AllControlsMenu[30].status = IT_GRAYEDOUT2; // Center View
-	*/
 
 	M_SetupNextMenu(&OP_AllControlsDef);
 }
@@ -12269,22 +12168,13 @@ static void M_Setup4PControlsMenu(INT32 choice)
 
 	// Hide P1-only controls
 	OP_AllControlsMenu[15].status = IT_GRAYEDOUT2; // Chat
-	//OP_AllControlsMenu[16].status = IT_GRAYEDOUT2; // Team-chat
 	OP_AllControlsMenu[16].status = IT_GRAYEDOUT2; // Rankings
-	//OP_AllControlsMenu[17].status = IT_GRAYEDOUT2; // Viewpoint
 	// 18 is Reset Camera, 19 is Toggle Chasecam
 	OP_AllControlsMenu[20].status = IT_GRAYEDOUT2; // Pause
 	OP_AllControlsMenu[21].status = IT_GRAYEDOUT2; // Screenshot
 	OP_AllControlsMenu[22].status = IT_GRAYEDOUT2; // GIF
 	OP_AllControlsMenu[23].status = IT_GRAYEDOUT2; // System Menu
 	OP_AllControlsMenu[24].status = IT_GRAYEDOUT2; // Console
-	/*OP_AllControlsMenu[25].status = IT_GRAYEDOUT2; // Spectator Controls header
-	OP_AllControlsMenu[26].status = IT_GRAYEDOUT2; // Spectator Controls space
-	OP_AllControlsMenu[27].status = IT_GRAYEDOUT2; // Spectate
-	OP_AllControlsMenu[28].status = IT_GRAYEDOUT2; // Look Up
-	OP_AllControlsMenu[29].status = IT_GRAYEDOUT2; // Look Down
-	OP_AllControlsMenu[30].status = IT_GRAYEDOUT2; // Center View
-	*/
 
 	M_SetupNextMenu(&OP_AllControlsDef);
 }
@@ -12301,11 +12191,6 @@ static void M_DrawControl(void)
 
 	x = currentMenu->x;
 	y = currentMenu->y;
-
-	/*i = itemOn - (controlheight/2);
-	if (i < 0)
-		i = 0;
-	*/
 
 	iter = (controlheight/2);
 	for (i = itemOn; ((iter || currentMenu->menuitems[i].status == IT_GRAYEDOUT2) && i > 0); i--)
@@ -12332,16 +12217,6 @@ static void M_DrawControl(void)
 				iter--;
 		}
 	}
-
-	/*max = i + controlheight;
-	if (max > currentMenu->numitems)
-	{
-		max = currentMenu->numitems;
-		if (max < controlheight)
-			i = 0;
-		else
-			i = max - controlheight;
-	}*/
 
 	// draw title (or big pic)
 	M_DrawMenuTitle();
