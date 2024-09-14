@@ -5142,6 +5142,47 @@ void K_KartPlayerHUDUpdate(player_t *player)
 		player->kartstuff[k_cardanimation] = 0;
 }
 
+static void K_SpawnNormalSpeedLines(player_t *player)
+{
+	boolean goodSpeed = (player->speed >= (3*K_GetKartSpeed(player, false))/4);
+
+	mobj_t *fast = P_SpawnMobj(player->mo->x + (P_RandomRange(-36,36) * player->mo->scale),
+							   player->mo->y + (P_RandomRange(-36,36) * player->mo->scale),
+							   player->mo->z + (player->mo->height/2) + (P_RandomRange(-20,20) * player->mo->scale),
+							   MT_FASTLINE);
+
+	fast->angle = R_PointToAngle2(0, 0, player->mo->momx, player->mo->momy);
+	fast->momx = 3*player->mo->momx/4;
+	fast->momy = 3*player->mo->momy/4;
+	fast->momz = 3*player->mo->momz/4;
+	P_SetTarget(&fast->target, player->mo); // easier lua access
+
+	if (goodSpeed)
+	{
+		fast->destscale = fast->destscale * 2;
+		P_SetScale(fast, 3*fast->scale/2);
+	}
+
+	K_MatchGenericExtraFlags(fast, player->mo);
+
+	if (player->kartstuff[k_eggmanexplode])
+	{
+		// Make it red when you have the eggman speed boost
+		fast->color = SKINCOLOR_RED;
+		fast->colorized = true;
+	}
+	else if (player->kartstuff[k_invincibilitytimer])
+	{
+		fast->color = player->mo->color;
+		fast->colorized = true;
+	}
+	else if (goodSpeed)
+	{
+		fast->color = (leveltime & 1) ? SKINCOLOR_LILAC : SKINCOLOR_JAWZ;
+		fast->colorized = true;
+	}
+}
+
 /**	\brief	Decreases various kart timers and powers per frame. Called in P_PlayerThink in p_user.c
 
 	\param	player	player object passed from P_PlayerThink
@@ -5161,18 +5202,9 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	K_GetKartBoostPower(player);
 
 	// Speed lines
-	if ((player->kartstuff[k_sneakertimer] || player->kartstuff[k_driftboost] || player->kartstuff[k_startboost]) && player->speed > 0)
+	if ((player->kartstuff[k_sneakertimer] || player->kartstuff[k_driftboost] || player->kartstuff[k_startboost] /*|| player->kartstuff[k_eggmanexplode]*/) && player->speed > 0) // gotta love the speedlines calling synched rng :chaosleep:
 	{
-		mobj_t *fast = P_SpawnMobj(player->mo->x + (P_RandomRange(-36,36) * player->mo->scale),
-			player->mo->y + (P_RandomRange(-36,36) * player->mo->scale),
-			player->mo->z + (player->mo->height/2) + (P_RandomRange(-20,20) * player->mo->scale),
-			MT_FASTLINE);
-		fast->angle = R_PointToAngle2(0, 0, player->mo->momx, player->mo->momy);
-		fast->momx = 3*player->mo->momx/4;
-		fast->momy = 3*player->mo->momy/4;
-		fast->momz = 3*player->mo->momz/4;
-		P_SetTarget(&fast->target, player->mo); // easier lua access
-		K_MatchGenericExtraFlags(fast, player->mo);
+		K_SpawnNormalSpeedLines(player);
 	}
 
 	if (player->playerstate == PST_DEAD || player->kartstuff[k_respawn] > 1) // Ensure these are set correctly here
