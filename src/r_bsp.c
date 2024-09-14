@@ -266,7 +266,10 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec, INT32 *floorlightlevel,
 
 		for (i = 0; i <= splitscreen; i++)
 		{
-			if (!(viewplayer == &players[displayplayers[i]] && camera[i].chase))
+			if (viewplayer != &players[displayplayers[i]])
+				continue;
+
+			if (!camera[i].chase)
 				continue;
 
 			heightsec = R_PointInSubsector(camera[i].x, camera[i].y)->sector->heightsec;
@@ -1182,13 +1185,13 @@ void R_Prep3DFloors(sector_t *sector)
 	count = 1;
 	for (rover = sector->ffloors; rover; rover = rover->next)
 	{
-		if (!((rover->flags & FF_EXISTS) && (!(rover->flags & FF_NOSHADE)
-			|| (rover->flags & FF_CUTLEVEL) || (rover->flags & FF_CUTSPRITES))))
-			continue;
-
-		count++;
-		if (rover->flags & FF_DOUBLESHADOW)
+		if ((rover->flags & FF_EXISTS) && (!(rover->flags & FF_NOSHADE)
+			|| (rover->flags & FF_CUTLEVEL) || (rover->flags & FF_CUTSPRITES)))
+		{
 			count++;
+			if (rover->flags & FF_DOUBLESHADOW)
+				count++;
+		}
 	}
 
 	if (count != sector->numlights)
