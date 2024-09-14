@@ -429,7 +429,7 @@ void R_LoadTextures(void)
 		}
 
 		// Add all the textures between TX_START and TX_END
-		if (!(texstart != INT16_MAX && texend != INT16_MAX))
+		if (texstart == INT16_MAX && texend == INT16_MAX)
 			continue;
 
 		// PK3s have subfolders, so we can't just make a simple sum

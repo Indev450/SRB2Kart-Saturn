@@ -1905,6 +1905,7 @@ mobj_t *P_FindNewPosition(UINT32 oldposition)
 			continue;
 
 		mobj = (mobj_t *)th;
+
 		if (mobj->mobjnum != oldposition)
 			continue;
 
@@ -2911,10 +2912,9 @@ static void P_NetUnArchiveThinkers(void)
 				continue;
 
 			delay = (void *)currentthinker;
-			if (!(mobjnum = (UINT32)(size_t)delay->caller))
-				continue;
 
-			delay->caller = P_FindNewPosition(mobjnum);
+			if ((mobjnum = (UINT32)(size_t)delay->caller))
+				delay->caller = P_FindNewPosition(mobjnum);
 		}
 	}
 }
@@ -3025,6 +3025,7 @@ static inline void P_FinishMobjs(void)
 	{
 		if (currentthinker->function.acp1 != (actionf_p1)P_MobjThinker)
 			continue;
+
 		mobj = (mobj_t *)currentthinker;
 		mobj->info = &mobjinfo[mobj->type];
 	}
@@ -3502,9 +3503,12 @@ void P_SaveNetGame(boolean resending)
 		{
 			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 				continue;
+
 			mobj = (mobj_t *)th;
+
 			if (mobj->type == MT_HOOP || mobj->type == MT_HOOPCOLLIDE || mobj->type == MT_HOOPCENTER)
 				continue;
+
 			mobj->mobjnum = i++;
 		}
 	}

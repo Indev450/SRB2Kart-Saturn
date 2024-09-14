@@ -915,7 +915,7 @@ static void P_PlayerFlip(mobj_t *mo)
 
 		for (i = 0; i <= splitscreen; i++)
 		{
-			if (!(mo->player-players == displayplayers[i]))
+			if (mo->player-players != displayplayers[i])
 				continue;
 
 			localaiming[i] = mo->player->aiming;
@@ -1236,7 +1236,7 @@ static void P_PushableCheckBustables(mobj_t *mo)
 		if (!node->m_sector)
 			break;
 
-		if (!(node->m_sector->ffloors))
+		if (!node->m_sector->ffloors)
 			continue;
 
 		ffloor_t *rover;
@@ -3301,7 +3301,7 @@ boolean P_CameraThinker(player_t *player, camera_t *thiscam, boolean resetcalled
 	{
 		for (i = 0; i <= splitscreen; i++)
 		{
-			if (!(player == &players[displayplayers[i]]))
+			if (player != &players[displayplayers[i]])
 				continue;
 
 			postimgtype[i] = postimg;
@@ -5424,7 +5424,7 @@ mobj_t *P_GetClosestAxis(mobj_t *source)
 
 		mo2 = (mobj_t *)th;
 
-		if (!(mo2->type == MT_AXIS))
+		if (mo2->type != MT_AXIS)
 			continue;
 
 		if (closestaxis == NULL)
@@ -7237,11 +7237,17 @@ void P_MobjThinker(mobj_t *mobj)
 				P_SetTarget(&mobj->target, NULL);
 				for (i = 0; i < MAXPLAYERS; i++)
 				{
-					if (!(playeringame[i] && players[i].mo
-					&& players[i].mare == mobj->threshold && players[i].health > 1))
+					if (!playeringame[i] || !players[i].mo)
 						continue;
 
+					if (players[i].mare != mobj->threshold)
+						continue;
+
+					if (!(players[i].health > 1))
+						 continue;
+
 					fixed_t dist = P_AproxDistance(players[i].mo->x - mobj->x, players[i].mo->y - mobj->y);
+
 					if (!(dist < shortest))
 						continue;
 
@@ -10378,7 +10384,7 @@ void P_PrecipitationEffects(void)
 		for (y = yl; y >= yl && y <= yh; y += FRACUNIT*64)
 			for (x = xl; x >= xl && x <= xh; x += FRACUNIT*64)
 			{
-				if (!(R_PointInSubsector(x, y)->sector->ceilingpic == skyflatnum)) // Found the outdoors!
+				if (R_PointInSubsector(x, y)->sector->ceilingpic != skyflatnum) // Found the outdoors!
 					continue;
 
 				newdist = S_CalculateSoundDistance(players[displayplayers[0]].mo->x, players[displayplayers[0]].mo->y, 0, x, y, 0);
@@ -10772,8 +10778,10 @@ void P_AfterPlayerSpawn(INT32 playernum)
 		if (!camera[i].chase)
 			continue;
 
-		if (displayplayers[i] == playernum)
-			P_ResetCamera(p, &camera[i]);
+		if (displayplayers[i] != playernum)
+			continue;
+
+		P_ResetCamera(p, &camera[i]);
 	}
 
 	if (CheckForReverseGravity)
