@@ -1655,8 +1655,9 @@ static void SendNameAndColor(void)
 	cv_skin.value = R_SkinAvailable(cv_skin.string);
 	if (cv_skin.value < 0)
 	{
-		CV_StealthSet(&cv_skin, DEFAULTSKIN);
-		cv_skin.value = 0;
+		INT32 skinnum = players[consoleplayer].skin;
+		CV_StealthSet(&cv_skin, skins[skinnum].name);
+		cv_skin.value = skinnum;
 	}
 
 	// Finally write out the complete packet and send it off.
@@ -1759,8 +1760,9 @@ static void SendNameAndColor2(void)
 	cv_skin2.value = R_SkinAvailable(cv_skin2.string);
 	if (cv_skin2.value < 0)
 	{
-		CV_StealthSet(&cv_skin2, DEFAULTSKIN);
-		cv_skin2.value = 0;
+		INT32 skinnum = players[displayplayers[1]].skin;
+		CV_StealthSet(&cv_skin2, skins[skinnum].name);
+		cv_skin2.value = skinnum;
 	}
 
 	// Finally write out the complete packet and send it off.
@@ -1870,8 +1872,9 @@ static void SendNameAndColor3(void)
 	cv_skin3.value = R_SkinAvailable(cv_skin3.string);
 	if (cv_skin3.value < 0)
 	{
-		CV_StealthSet(&cv_skin3, DEFAULTSKIN);
-		cv_skin3.value = 0;
+		INT32 skinnum = players[displayplayers[2]].skin;
+		CV_StealthSet(&cv_skin3, skins[skinnum].name);
+		cv_skin3.value = skinnum;
 	}
 
 	// Finally write out the complete packet and send it off.
@@ -1973,8 +1976,9 @@ static void SendNameAndColor4(void)
 	cv_skin4.value = R_SkinAvailable(cv_skin4.string);
 	if (cv_skin4.value < 0)
 	{
-		CV_StealthSet(&cv_skin4, DEFAULTSKIN);
-		cv_skin4.value = 0;
+		INT32 skinnum = players[displayplayers[3]].skin;
+		CV_StealthSet(&cv_skin4, skins[skinnum].name);
+		cv_skin4.value = skinnum;
 	}
 
 	// Finally write out the complete packet and send it off.
