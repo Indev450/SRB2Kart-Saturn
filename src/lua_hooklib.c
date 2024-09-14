@@ -1698,7 +1698,7 @@ UINT8 LUAh_ShouldExplode(player_t *player, mobj_t *inflictor, mobj_t *source)
 
 	for (hookp = roothook; hookp; hookp = hookp->next)
 	{
-		if (hookp->type == hook_ShouldExplode)
+		if (hookp->type != hook_ShouldExplode)
 			continue;
 
 		ps_lua_mobjhooks.value.i++;
