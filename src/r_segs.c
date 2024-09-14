@@ -1964,20 +1964,6 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 
 		if (viewsector != frontsector && viewsector != backsector)
 		{
-			if (worldhigh <= worldbottom && worldhighslope <= worldbottomslope)
-			{
-				ds_p->sprbottomclip = negonearray;
-				ds_p->bsilheight = INT32_MAX;
-				ds_p->silhouette |= SIL_BOTTOM;
-			}
-
-			if (worldlow >= worldtop && worldlowslope >= worldtopslope)
-			{
-				ds_p->sprtopclip = screenheightarray;
-				ds_p->tsilheight = INT32_MIN;
-				ds_p->silhouette |= SIL_TOP;
-			}
-
 			//SoM: 3/25/2000: This code fixes an automap bug that didn't check
 			// frontsector->ceiling and backsector->floor to see if a door was closed.
 			// Without the following code, sprites get displayed behind closed doors.
