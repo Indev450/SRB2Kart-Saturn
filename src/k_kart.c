@@ -5165,20 +5165,21 @@ static void K_SpawnNormalSpeedLines(player_t *player)
 
 	K_MatchGenericExtraFlags(fast, player->mo);
 
-	if (player->kartstuff[k_eggmanexplode])
+	// cant have nice shit cause of synched rng
+	/*if (player->kartstuff[k_eggmanexplode])
 	{
 		// Make it red when you have the eggman speed boost
 		fast->color = SKINCOLOR_RED;
 		fast->colorized = true;
 	}
-	else if (player->kartstuff[k_invincibilitytimer])
+	else */if (player->kartstuff[k_invincibilitytimer])
 	{
 		fast->color = player->mo->color;
 		fast->colorized = true;
 	}
 	else if (goodSpeed)
 	{
-		fast->color = (leveltime & 1) ? SKINCOLOR_LILAC : SKINCOLOR_JAWZ;
+		fast->color = (leveltime & 1) ? player->mo->color : SKINCOLOR_NONE;
 		fast->colorized = true;
 	}
 }
