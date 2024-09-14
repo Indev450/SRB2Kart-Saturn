@@ -173,10 +173,6 @@ static CV_PossibleValue_t maxportals_cons_t[] = {{0, "MIN"}, {12, "MAX"}, {0, NU
 static CV_PossibleValue_t homremoval_cons_t[] = {{0, "No"}, {1, "Yes"}, {2, "Flash"}, {0, NULL}};
 
 static void Fov_OnChange(void);
-static void ChaseCam_OnChange(void);
-static void ChaseCam2_OnChange(void);
-static void ChaseCam3_OnChange(void);
-static void ChaseCam4_OnChange(void);
 static void FlipCam_OnChange(void);
 static void FlipCam2_OnChange(void);
 static void FlipCam3_OnChange(void);
@@ -189,10 +185,10 @@ void SendWeaponPref4(void);
 static void Precipstuff_OnChange(void);
 
 consvar_t cv_tailspickup = {"tailspickup", "On", CV_NETVAR|CV_NOSHOWHELP, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_chasecam = {"chasecam", "On", CV_CALL, CV_OnOff, ChaseCam_OnChange, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_chasecam2 = {"chasecam2", "On", CV_CALL, CV_OnOff, ChaseCam2_OnChange, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_chasecam3 = {"chasecam3", "On", CV_CALL, CV_OnOff, ChaseCam3_OnChange, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_chasecam4 = {"chasecam4", "On", CV_CALL, CV_OnOff, ChaseCam4_OnChange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_chasecam = {"chasecam", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_chasecam2 = {"chasecam2", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_chasecam3 = {"chasecam3", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_chasecam4 = {"chasecam4", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_flipcam = {"flipcam", "No", CV_SAVE|CV_CALL|CV_NOINIT, CV_YesNo, FlipCam_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_flipcam2 = {"flipcam2", "No", CV_SAVE|CV_CALL|CV_NOINIT, CV_YesNo, FlipCam2_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_flipcam3 = {"flipcam3", "No", CV_SAVE|CV_CALL|CV_NOINIT, CV_YesNo, FlipCam3_OnChange, 0, NULL, NULL, 0, 0, NULL};
@@ -272,45 +268,7 @@ void SplitScreen_OnChange(void)
 }
 static void Fov_OnChange(void)
 {
-	// Shouldn't be needed with render parity?
-	//if ((netgame || multiplayer) && !cv_debug && cv_fov.value != 90*FRACUNIT)
-	//	CV_Set(&cv_fov, cv_fov.defaultvalue);
-
 	R_SetViewSize();
-}
-
-static void ChaseCam_OnChange(void)
-{
-	/*if (!cv_chasecam.value || !cv_useranalog.value)
-		CV_SetValue(&cv_analog, 0);
-	else
-		CV_SetValue(&cv_analog, 1);*/
-}
-
-static void ChaseCam2_OnChange(void)
-{
-	if (botingame)
-		return;
-	/*if (!cv_chasecam2.value || !cv_useranalog2.value)
-		CV_SetValue(&cv_analog2, 0);
-	else
-		CV_SetValue(&cv_analog2, 1);*/
-}
-
-static void ChaseCam3_OnChange(void)
-{
-	/*if (!cv_chasecam3.value || !cv_useranalog3.value)
-		CV_SetValue(&cv_analog3, 0);
-	else
-		CV_SetValue(&cv_analog3, 1);*/
-}
-
-static void ChaseCam4_OnChange(void)
-{
-	/*if (!cv_chasecam4.value || !cv_useranalog4.value)
-		CV_SetValue(&cv_analog4, 0);
-	else
-		CV_SetValue(&cv_analog4, 1);*/
 }
 
 static void FlipCam_OnChange(void)

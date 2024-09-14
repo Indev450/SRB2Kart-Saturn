@@ -1724,24 +1724,8 @@ static void SendNameAndColor2(void)
 
 		if ((foundskin = R_SkinAvailable(cv_skin2.string)) != -1)
 		{
-			//boolean notsame;
-
 			cv_skin2.value = foundskin;
-
-			//notsame = (cv_skin2.value != players[secondplaya].skin);
-
 			SetPlayerSkin(secondplaya, cv_skin2.string);
-
-			// SRB2Kart
-			/*if (notsame)
-			{
-				CV_StealthSetValue(&cv_playercolor2, skins[players[secondplaya].skin].prefcolor);
-
-				players[secondplaya].skincolor = (cv_playercolor2.value&0x3F) % MAXSKINCOLORS;
-
-				if (players[secondplaya].mo)
-					players[secondplaya].mo->color = players[secondplaya].skincolor;
-			}*/
 		}
 		else
 		{
@@ -1954,24 +1938,8 @@ static void SendNameAndColor4(void)
 
 		if ((foundskin = R_SkinAvailable(cv_skin4.string)) != -1)
 		{
-			//boolean notsame;
-
 			cv_skin4.value = foundskin;
-
-			//notsame = (cv_skin4.value != players[fourthplaya].skin);
-
 			SetPlayerSkin(fourthplaya, cv_skin4.string);
-
-			// SRB2Kart
-			/*if (notsame)
-			{
-				CV_StealthSetValue(&cv_playercolor4, skins[players[fourthplaya].skin].prefcolor);
-
-				players[fourthplaya].skincolor = (cv_playercolor4.value&0x3F) % MAXSKINCOLORS;
-
-				if (players[fourthplaya].mo)
-					players[fourthplaya].mo->color = players[fourthplaya].skincolor;
-			}*/
 		}
 		else
 		{

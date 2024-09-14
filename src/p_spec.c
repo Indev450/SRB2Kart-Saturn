@@ -2603,14 +2603,6 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 					mo->flags2 &= ~MF2_TWOD;
 				else
 					mo->flags2 |= MF2_TWOD;
-
-				// Copy effect to bot if necessary
-				// (Teleport them to you so they don't break it.)
-				if (bot && (bot->flags2 & MF2_TWOD) != (mo->flags2 & MF2_TWOD))
-				{
-					bot->flags2 = (bot->flags2 & ~MF2_TWOD) | (mo->flags2 & MF2_TWOD);
-					P_SetOrigin(bot, mo->x, mo->y, mo->z);
-				}
 			}
 			break;
 

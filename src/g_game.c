@@ -359,10 +359,6 @@ consvar_t cv_demochangemap = {"netdemo_savemapchange", "Disabled", CV_SAVE, demo
 static UINT8 *savebuffer;
 
 // Analog Control
-static void UserAnalog_OnChange(void);
-static void UserAnalog2_OnChange(void);
-static void UserAnalog3_OnChange(void);
-static void UserAnalog4_OnChange(void);
 static void Analog_OnChange(void);
 static void Analog2_OnChange(void);
 static void Analog3_OnChange(void);
@@ -448,10 +444,10 @@ consvar_t cv_analog = {"analog", "Off", CV_CALL, CV_OnOff, Analog_OnChange, 0, N
 consvar_t cv_analog2 = {"analog2", "Off", CV_CALL, CV_OnOff, Analog2_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_analog3 = {"analog3", "Off", CV_CALL, CV_OnOff, Analog3_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_analog4 = {"analog4", "Off", CV_CALL, CV_OnOff, Analog4_OnChange, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_useranalog = {"useranalog", "Off", CV_SAVE|CV_CALL, CV_OnOff, UserAnalog_OnChange, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_useranalog2 = {"useranalog2", "Off", CV_SAVE|CV_CALL, CV_OnOff, UserAnalog2_OnChange, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_useranalog3 = {"useranalog3", "Off", CV_SAVE|CV_CALL, CV_OnOff, UserAnalog3_OnChange, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_useranalog4 = {"useranalog4", "Off", CV_SAVE|CV_CALL, CV_OnOff, UserAnalog4_OnChange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_useranalog = {"useranalog", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_useranalog2 = {"useranalog2", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_useranalog3 = {"useranalog3", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_useranalog4 = {"useranalog4", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_turnaxis = {"joyaxis_turn", "Left X", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_moveaxis = {"joyaxis_move", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -597,15 +593,6 @@ void G_ClearRecords(void)
 		}
 	}
 }
-
-// For easy retrieval of records
-/*UINT32 G_GetBestScore(INT16 map)
-{
-	if (!mainrecords[map-1])
-		return 0;
-
-	return mainrecords[map-1]->score;
-}*/
 
 tic_t G_GetBestTime(INT16 map)
 {
@@ -1515,77 +1502,18 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 
 }
 
-// User has designated that they want
-// analog ON, so tell the game to stop
-// fudging with it.
-static void UserAnalog_OnChange(void)
-{
-	/*if (cv_useranalog.value)
-		CV_SetValue(&cv_analog, 1);
-	else
-		CV_SetValue(&cv_analog, 0);*/
-}
-
-static void UserAnalog2_OnChange(void)
-{
-	if (botingame)
-		return;
-	/*if (cv_useranalog2.value)
-		CV_SetValue(&cv_analog2, 1);
-	else
-		CV_SetValue(&cv_analog2, 0);*/
-}
-
-static void UserAnalog3_OnChange(void)
-{
-	if (botingame)
-		return;
-	/*if (cv_useranalog3.value)
-		CV_SetValue(&cv_analog3, 1);
-	else
-		CV_SetValue(&cv_analog3, 0);*/
-}
-
-static void UserAnalog4_OnChange(void)
-{
-	if (botingame)
-		return;
-	/*if (cv_useranalog4.value)
-		CV_SetValue(&cv_analog4, 1);
-	else
-		CV_SetValue(&cv_analog4, 0);*/
-}
-
 static void Analog_OnChange(void)
 {
 	if (!cv_cam_dist.string)
 		return;
-
-	// cameras are not initialized at this point
-
-	/*
-	if (!cv_chasecam.value && cv_analog.value) {
-		CV_SetValue(&cv_analog, 0);
-		return;
-	}
-	*/
 
 	SendWeaponPref();
 }
 
 static void Analog2_OnChange(void)
 {
-	if (!(splitscreen || botingame) || !cv_cam2_dist.string)
+	if (!splitscreen || !cv_cam2_dist.string)
 		return;
-
-	// cameras are not initialized at this point
-
-	/*
-	if (!cv_chasecam2.value && cv_analog2.value) {
-		CV_SetValue(&cv_analog2, 0);
-		return;
-	}
-	*/
 
 	SendWeaponPref2();
 }
@@ -1595,15 +1523,6 @@ static void Analog3_OnChange(void)
 	if (splitscreen < 2 || !cv_cam3_dist.string)
 		return;
 
-	// cameras are not initialized at this point
-
-	/*
-	if (!cv_chasecam3.value && cv_analog3.value) {
-		CV_SetValue(&cv_analog3, 0);
-		return;
-	}
-	*/
-
 	SendWeaponPref3();
 }
 
@@ -1611,15 +1530,6 @@ static void Analog4_OnChange(void)
 {
 	if (splitscreen < 3 || !cv_cam4_dist.string)
 		return;
-
-	// cameras are not initialized at this point
-
-	/*
-	if (!cv_chasecam4.value && cv_analog4.value) {
-		CV_SetValue(&cv_analog4, 0);
-		return;
-	}
-	*/
 
 	SendWeaponPref4();
 }
@@ -7742,9 +7652,6 @@ void G_AddGhost(char *defdemoname)
 	case ATTACKING_RECORD: // 1
 		p += 8; // demo time, lap
 		break;
-	/*case ATTACKING_NIGHTS: // 2
-		p += 8; // demo time left, score
-		break;*/
 	default: // 3
 		break;
 	}

@@ -662,9 +662,6 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 
 			special->momx = special->momy = special->momz = 0;
 			P_GivePlayerRings(player, 1);
-
-			if ((maptol & TOL_NIGHTS) && special->type != MT_FLINGRING)
-				P_DoNightsScore(player);
 			break;
 
 		case MT_COIN:
@@ -674,9 +671,6 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 
 			special->momx = special->momy = 0;
 			P_GivePlayerRings(player, 1);
-
-			if ((maptol & TOL_NIGHTS) && special->type != MT_FLINGCOIN)
-				P_DoNightsScore(player);
 			break;
 		case MT_BLUEBALL:
 			if (!(P_CanPickupItem(player, 0)))
@@ -690,9 +684,6 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 				special->scalespeed = FixedDiv(FixedDiv(special->destscale, special->scale), states[special->info->deathstate].tics<<FRACBITS);
 			else
 				special->scalespeed = 4*FRACUNIT/5;
-
-			if (maptol & TOL_NIGHTS)
-				P_DoNightsScore(player);
 			break;
 		case MT_AUTOPICKUP:
 		case MT_BOUNCEPICKUP:
@@ -842,8 +833,6 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 				return;
 			if (special->fuse == 1)
 				return;
-//			if (special->momz > 0)
-//				return;
 			{
 				UINT8 flagteam = (special->type == MT_REDFLAG) ? 1 : 2;
 				const char *flagtext;
@@ -1342,10 +1331,6 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			return; // SRB2kart - don't need bubbles mucking with the player
 			if ((player->powers[pw_shield] & SH_NOSTACK) == SH_ELEMENTAL)
 				return;
-			if (maptol & TOL_NIGHTS)
-				return;
-			if (mariomode)
-				return;
 			else if (toucher->eflags & MFE_VERTICALFLIP)
 			{
 				if (special->z+special->height < toucher->z + toucher->height / 3
@@ -1761,8 +1746,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 	// Drop stuff.
 	// This determines the kind of object spawned
 	// during the death frame of a thing.
-	if (!mariomode // Don't show birds, etc. in Mario Mode Tails 12-23-2001
-	&& target->flags & MF_ENEMY)
+	if (target->flags & MF_ENEMY)
 	{
 		if (cv_soniccd.value)
 			item = MT_SEED;
@@ -2380,9 +2364,6 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 		{
 			if (player->exiting)
 				return false;
-
-			if (!(target->player->pflags & (PF_NIGHTSMODE|PF_NIGHTSFALL)) && (maptol & TOL_NIGHTS))
-				return false;
 		}
 
 		if (player->pflags & PF_NIGHTSMODE) // NiGHTS damage handling
@@ -2630,9 +2611,7 @@ void P_PlayerRingBurst(player_t *player, INT32 num_rings)
 		{
 			ns = FixedMul(((i*FRACUNIT)/16)+2*FRACUNIT, mo->scale);
 			mo->momx = FixedMul(FINECOSINE(fa),ns);
-
-			if (!(twodlevel || (player->mo->flags2 & MF2_TWOD)))
-				mo->momy = FixedMul(FINESINE(fa),ns);
+			mo->momy = FixedMul(FINESINE(fa),ns);
 
 			P_SetObjectMomZ(mo, 8*FRACUNIT, false);
 			mo->fuse = 20*TICRATE; // Adjust fuse for NiGHTS
@@ -2654,9 +2633,7 @@ void P_PlayerRingBurst(player_t *player, INT32 num_rings)
 
 			ns = FixedMul(momxy, mo->scale);
 			mo->momx = FixedMul(FINECOSINE(fa),ns);
-
-			if (!(twodlevel || (player->mo->flags2 & MF2_TWOD)))
-				mo->momy = FixedMul(FINESINE(fa),ns);
+			mo->momy = FixedMul(FINESINE(fa),ns);
 
 			ns = momz;
 			P_SetObjectMomZ(mo, ns, false);
@@ -2761,9 +2738,7 @@ void P_PlayerWeaponPanelBurst(player_t *player)
 		// >16 ring type spillout
 		ns = FixedMul(3*FRACUNIT, mo->scale);
 		mo->momx = FixedMul(FINECOSINE(fa),ns);
-
-		if (!(twodlevel || (player->mo->flags2 & MF2_TWOD)))
-			mo->momy = FixedMul(FINESINE(fa),ns);
+		mo->momy = FixedMul(FINESINE(fa),ns);
 
 		P_SetObjectMomZ(mo, 4*FRACUNIT, false);
 
@@ -2845,9 +2820,7 @@ void P_PlayerWeaponAmmoBurst(player_t *player)
 		// Spill them!
 		ns = FixedMul(2*FRACUNIT, mo->scale);
 		mo->momx = FixedMul(FINECOSINE(fa), ns);
-
-		if (!(twodlevel || (player->mo->flags2 & MF2_TWOD)))
-			mo->momy = FixedMul(FINESINE(fa),ns);
+		mo->momy = FixedMul(FINESINE(fa),ns);
 
 		P_SetObjectMomZ(mo, 3*FRACUNIT, false);
 
@@ -2961,11 +2934,7 @@ void P_PlayerEmeraldBurst(player_t *player, boolean toss)
 			}
 
 			momx = FixedMul(FINECOSINE(fa), ns);
-
-			if (!(twodlevel || (player->mo->flags2 & MF2_TWOD)))
-				momy = FixedMul(FINESINE(fa),ns);
-			else
-				momy = 0;
+			momy = FixedMul(FINESINE(fa),ns);
 
 			mo = P_SpawnMobj(player->mo->x, player->mo->y, z, MT_FLINGEMERALD);
 			mo->health = 1;
