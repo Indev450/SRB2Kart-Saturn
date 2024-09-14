@@ -1981,6 +1981,13 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			}
 		}
 
+		if (frontsector->floorpic == skyflatnum
+			&& backsector->floorpic == skyflatnum)
+		{
+			// see double ceiling skies comment
+			// this is the same but for upside down thok barriers where the floor is sky and the ceiling is normal
+			markfloor = false;
+		}
 		if (worldlow != worldbottom
 			|| worldlowslope != worldbottomslope
 			|| backsector->f_slope != frontsector->f_slope
