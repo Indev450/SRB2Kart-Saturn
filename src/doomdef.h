@@ -128,11 +128,11 @@ extern char  logfilename[1024];
 #define VERSION    1 // Game version
 #define SUBVERSION 6 // more precise version number
 #ifndef USE_FBO_OGL
-#define VERSIONSTRING "Saturn v7 - Test "
-#define VERSIONSTRINGW L"Saturn v7 - Test"
+#define VERSIONSTRING "Saturn v7"
+#define VERSIONSTRINGW L"Saturn v7"
 #else
-#define VERSIONSTRING "Saturn v7 - Test - FBO "
-#define VERSIONSTRINGW L"Saturn v7 - Test - FBO"
+#define VERSIONSTRING "Saturn v7 - FBO "
+#define VERSIONSTRINGW L"Saturn v7 - FBO"
 #endif
 // Hey! If you change this, add 1 to the MODVERSION below! Otherwise we can't force updates!
 // And change CMakeLists.txt (not src/, but in root), for CMake users!
