@@ -128,11 +128,11 @@ extern char  logfilename[1024];
 #define VERSION    1 // Game version
 #define SUBVERSION 6 // more precise version number
 #ifndef USE_FBO_OGL
-#define VERSIONSTRING "Saturn v6.2 "
-#define VERSIONSTRINGW L"Saturn v6.2"
+#define VERSIONSTRING "Saturn v7"
+#define VERSIONSTRINGW L"Saturn v7"
 #else
-#define VERSIONSTRING "Saturn v6.2 - FBO "
-#define VERSIONSTRINGW L"Saturn v6.2 - FBO"
+#define VERSIONSTRING "Saturn v7 - FBO "
+#define VERSIONSTRINGW L"Saturn v7 - FBO"
 #endif
 // Hey! If you change this, add 1 to the MODVERSION below! Otherwise we can't force updates!
 // And change CMakeLists.txt (not src/, but in root), for CMake users!
@@ -211,6 +211,7 @@ extern char  logfilename[1024];
 
 #define MAXPLAYERS 16
 #define MAXSKINS 255
+#define MAXLOCALSKINS 32
 #define PLAYERSMASK (MAXPLAYERS-1)
 #define MAXPLAYERNAME 21
 
@@ -528,6 +529,10 @@ INT32 I_GetKey(void);
 #define max(x, y) (((x) > (y)) ? (x) : (y))
 #endif
 
+#ifndef CLAMP
+#define CLAMP(x, min_val, max_val) ((x) < (min_val) ? (min_val) : ((x) > (max_val) ? (max_val) : (x)))
+#endif
+
 #ifndef M_PIl
 #define M_PIl 3.1415926535897932384626433832795029L
 #endif
@@ -562,6 +567,29 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 // Disabled code and code under testing
 // None of these that are disabled in the normal build are guaranteed to work perfectly
 // Compile them at your own risk!
+
+#ifndef NONET
+//-- SATURN __
+/// Enable gamestate resynching between Saturn servers and clients
+/// Like SRB2 and RR does
+/// Still highly experimental
+#ifdef DOSATURNSYNCH
+#define SATURNSYNCH
+
+/// Detect if a client is on Saturn in the clientconfig.
+/// To seperately allow them to join or block joining from vanilla clients.
+#ifdef DOSATURNJOIN
+#define SATURNJOIN
+#endif
+#endif
+
+/// Server detection for if a connecting client is on Saturn.
+/// For stuff like extra synching, etc.
+//#ifdef DOSATURNPAK
+//#define SATURNPAK
+//#endif
+//-- <(￣︶￣)> __
+#endif
 
 /// Undefine to use the new method of Gamma correction see colour cube in v_video.c
 #define BACKWARDSCOMPATCORRECTION

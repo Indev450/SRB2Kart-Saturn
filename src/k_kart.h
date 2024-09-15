@@ -31,6 +31,7 @@ extern consvar_t cv_highresportrait;
 extern consvar_t cv_stat_xoffset;
 extern consvar_t cv_stat_yoffset;
 extern consvar_t cv_showstats;
+extern consvar_t cv_showlaptimes;
 extern consvar_t cv_battlespeedo;
 
 #define NUMSPEEDOSTUFF 6
@@ -91,7 +92,7 @@ void K_UpdateSpectateGrief(void);
 void K_PlayAttackTaunt(mobj_t *source);
 void K_PlayBoostTaunt(mobj_t *source);
 void K_PlayOvertakeSound(mobj_t *source);
-void K_PlayHitEmSound(mobj_t *source);
+void K_PlayHitEmSound(mobj_t *source, mobj_t *victim);
 void K_PlayPowerGloatSound(mobj_t *source);
 
 const char *K_GetItemPatch(UINT8 item, boolean tiny);

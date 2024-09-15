@@ -86,13 +86,19 @@ extern angle_t tantoangle[SLOPERANGE+1];
 
 // Utility function, called by R_PointToAngle.
 FUNCMATH unsigned SlopeDiv(unsigned num, unsigned den);
-// Only called by R_PointToAngleEx
+// Only called by R_PointToAngle64
 FUNCMATH UINT64 SlopeDivEx(unsigned int num, unsigned int den);
 
 // 360 - angle_t(ANGLE_45) = ANGLE_315
 FUNCMATH FUNCINLINE static ATTRINLINE angle_t InvAngle(angle_t a)
 {
 	return (ANGLE_MAX-a)+1;
+}
+
+// 315 = 45
+FUNCMATH FUNCINLINE static ATTRINLINE angle_t AbsAngle(angle_t a)
+{
+	return a & ANGLE_180 ? InvAngle(a) : a;
 }
 // angle_t to fixed_t f(ANGLE_45) = 45*FRACUNIT
 FUNCMATH fixed_t AngleFixed(angle_t af);

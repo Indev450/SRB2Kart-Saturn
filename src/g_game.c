@@ -50,6 +50,7 @@
 #include "b_bot.h"
 #include "m_cond.h" // condition sets
 #include "md5.h" // demo checksums
+#include "k_director.h" // SRB2kart
 #include "k_kart.h" // SRB2kart
 #include "r_fps.h" // frame interpolation/uncapped
 
@@ -335,6 +336,11 @@ boolean precache = true; // if true, load all graphics at start
 
 INT16 prevmap, nextmap;
 
+// save if director is enabled
+// so demos can disable it by default and restore it after
+static int directorstate = 0;
+tic_t directortoggletimer = 0;
+
 static CV_PossibleValue_t recordmultiplayerdemos_cons_t[] = {{0, "Disabled"}, {1, "Manual Save"}, {2, "Auto Save"}, {0, NULL}};
 consvar_t cv_recordmultiplayerdemos = {"netdemo_record", "Manual Save", CV_SAVE, recordmultiplayerdemos_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -344,6 +350,9 @@ consvar_t cv_netdemosyncquality = {"netdemo_syncquality", "1", CV_SAVE, netdemos
 // Units are MiB.
 static CV_PossibleValue_t maxdemosize_cons_t[] = {{10, "MIN"}, {100, "MAX"}, {0, NULL}};
 consvar_t cv_maxdemosize = {"maxdemosize", "10", CV_SAVE, maxdemosize_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+static CV_PossibleValue_t demochangemap_cons_t[] = {{0, "Disabled"}, {1, "Diff Map"}, {2, "Always"}, {0, NULL}};
+consvar_t cv_demochangemap = {"netdemo_savemapchange", "Disabled", CV_SAVE, demochangemap_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static UINT8 *savebuffer;
 
@@ -417,8 +426,9 @@ consvar_t cv_songcredits = {"songcredits", "On", CV_SAVE, CV_OnOff, NULL, 0, NUL
 consvar_t cv_showfreeplay = { "showfreeplay", "Yes", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 // We can disable special tunes!
-consvar_t cv_growmusic  = {"growmusic",  "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_supermusic = {"supermusic", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+static CV_PossibleValue_t powermusic_cons_t[] = {{0, "Off"}, {1, "On"}, {2, "SFX"}, {0, NULL}};
+consvar_t cv_growmusic  = {"growmusic",  "On", CV_SAVE, powermusic_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_supermusic = {"supermusic", "On", CV_SAVE, powermusic_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 /*consvar_t cv_crosshair = {"crosshair", "Off", CV_SAVE, crosshair_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_crosshair2 = {"crosshair2", "Off", CV_SAVE, crosshair_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -1187,7 +1197,11 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	// why build a ticcmd if we're paused?
 	// Or, for that matter, if we're being reborn.
 	// Kart, don't build a ticcmd if someone is resynching or the server is stopped too so we don't fly off course in bad conditions
-	if (paused || P_AutoPause() || (gamestate == GS_LEVEL && player->playerstate == PST_REBORN) || hu_resynching)
+	if (paused || P_AutoPause() || (gamestate == GS_LEVEL && player->playerstate == PST_REBORN) || hu_resynching
+#ifdef SATURNSYNCH
+		|| hu_redownloadinggamestate
+#endif
+		)
 	{
 		cmd->angleturn = (INT16)(lang >> 16);
 		cmd->aiming = G_ClipAimingPitch(&laim);
@@ -1637,7 +1651,7 @@ void G_DoLoadLevel(boolean resetplayer)
 	}
 
 	// Setup the level.
-	if (!P_SetupLevel(false))
+	if (!P_SetupLevel(false,false))
 	{
 		// fail so reset game stuff
 		Command_ExitGame_f();
@@ -1934,6 +1948,12 @@ boolean G_Responder(event_t *ev)
 					COM_ImmedExecute("changeteam4 spectator");
 				}
 			}
+			if (ev->data1 == gamecontrol[gc_director][0]
+				|| ev->data1 == gamecontrol[gc_director][1])
+			{
+				K_ToggleDirector();
+				directortoggletimer = 0;
+			}
 
 			return true;
 
@@ -2108,7 +2128,7 @@ void G_ResetView(UINT8 viewnum, INT32 playernum, boolean onlyactive)
 	olddisplayplayer = (*displayplayerp);
 
 	/* Check if anyone is available to view. */
-	if (( playernum = G_FindView(playernum, viewnum, onlyactive, playernum < olddisplayplayer) ) == -1)
+	if ((playernum = G_FindView(playernum, viewnum, onlyactive, playernum < olddisplayplayer)) == -1)
 		return;
 
 	/* Focus our target view first so that we don't take its player. */
@@ -2118,6 +2138,8 @@ void G_ResetView(UINT8 viewnum, INT32 playernum, boolean onlyactive)
 		camerap = &camera[viewnum-1];
 		P_ResetCamera(&players[(*displayplayerp)], camerap);
 
+		// Make sure the viewport doesn't interpolate at all into
+		// its new position -- just snap instantly into place.
 		R_ResetViewInterpolation(viewnum);
 	}
 
@@ -2131,6 +2153,11 @@ void G_ResetView(UINT8 viewnum, INT32 playernum, boolean onlyactive)
 			(*displayplayerp) = G_FindView(0, viewd, onlyactive, false);
 
 			P_ResetCamera(&players[(*displayplayerp)], camerap);
+
+
+			// Make sure the viewport doesn't interpolate at all into
+			// its new position -- just snap instantly into place.
+			R_ResetViewInterpolation(viewd);
 		}
 	}
 
@@ -2244,13 +2271,14 @@ void G_Ticker(boolean run)
 	buf = gametic % TICQUEUE;
 
 	if (!demo.playback)
-	// read/write demo and check turbo cheat
-	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		cmd = &players[i].cmd;
-
-		if (playeringame[i])
+		for (i = 0; i < MAXPLAYERS; i++) // read/write demo and check turbo cheat
 		{
+			cmd = &players[i].cmd;
+
+			if (!playeringame[i])
+				continue;
+
 			//@TODO all this throwdir stuff shouldn't be here! But it stays for now to maintain 1.0.4 compat...
 			// Remove for 1.1!
 
@@ -2485,6 +2513,10 @@ void G_PlayerReborn(INT32 player)
 	boolean fade;
 	boolean playing;
 
+	tic_t laptime[LAP__MAX];
+
+	INT32 i;
+
 	score = players[player].score;
 	marescore = players[player].marescore;
 	lives = players[player].lives;
@@ -2525,6 +2557,21 @@ void G_PlayerReborn(INT32 player)
 	mare = players[player].mare;
 	bot = players[player].bot;
 	pity = players[player].pity;
+
+	if (leveltime <= starttime) // man i really hope this crap works kek but need to reset this somehow at mapstart
+	{
+		for (i = 0; i < LAP__MAX; i++)
+		{
+			laptime[i] = 0;
+		}
+	}
+	else
+	{
+		for (i = 0; i < LAP__MAX; i++)
+		{
+			laptime[i] = players[player].laptime[i];
+		}
+	}
 
 	// SRB2kart
 	if (leveltime <= starttime || spectator == true)
@@ -2617,6 +2664,11 @@ void G_PlayerReborn(INT32 player)
 	p->laps = laps;
 	p->totalring = totalring;
 
+	for (i = 0; i < LAP__MAX; i++)
+	{
+		p->laptime[i] = laptime[i];
+	}
+
 	p->mare = mare;
 	if (bot)
 		p->bot = 1; // reset to AI-controlled
@@ -2666,8 +2718,7 @@ void G_PlayerReborn(INT32 player)
 	}
 
 	/* I'm putting this here because lol */
-
-	fade = (cv_fading.value && cv_birdmusic.value && P_IsLocalPlayer(p));
+	fade = (cv_birdmusic.value && cv_fading.value && P_IsLocalPlayer(p));
 
 	if (fade)
 	{
@@ -2677,7 +2728,7 @@ void G_PlayerReborn(INT32 player)
 		Fade it in with the same call to avoid
 		max volume for a few milliseconds (?).
 		*/
-		if (! playing)
+		if (!playing)
 			S_SetRestoreMusicFadeInCvar(&cv_respawnfademusicback);
 	}
 
@@ -3033,12 +3084,6 @@ void G_DoReborn(INT32 playernum)
 	player_t *player = &players[playernum];
 	boolean starpost = false;
 
-	/*if (modeattacking) // Not needed for SRB2Kart.
-	{
-		M_EndModeAttackRun();
-		return;
-	}*/
-
 	// Make sure objectplace is OFF when you first start the level!
 	OP_ResetObjectplace();
 
@@ -3058,68 +3103,6 @@ void G_DoReborn(INT32 playernum)
 		if (oldmo)
 			G_ChangePlayerReferences(oldmo, players[playernum].mo);
 	}
-	/*else if (countdowntimeup || (!multiplayer && !modeattacking))
-	{
-		// reload the level from scratch
-		if (countdowntimeup)
-		{
-			player->starpostangle = 0;
-			player->starposttime = 0;
-			player->starpostx = 0;
-			player->starposty = 0;
-			player->starpostz = 0;
-			player->starpostnum = 0;
-		}
-		if (!countdowntimeup && (mapheaderinfo[gamemap-1]->levelflags & LF_NORELOAD))
-		{
-			INT32 i;
-
-			player->playerstate = PST_REBORN;
-
-			P_LoadThingsOnly();
-
-			// Do a wipe
-			wipegamestate = -1;
-
-			if (player->starpostnum) // SRB2kart
-				starpost = true;
-
-			for (i = 0; i <= splitscreen; i++)
-			{
-				if (camera[i].chase)
-					P_ResetCamera(&players[displayplayers[i]], &camera[i]);
-			}
-
-			// clear cmd building stuff
-			memset(gamekeydown, 0, sizeof (gamekeydown));
-			for (i = 0;i < JOYAXISSET; i++)
-			{
-				joyxmove[i] = joyymove[i] = 0;
-				joy2xmove[i] = joy2ymove[i] = 0;
-				joy3xmove[i] = joy3ymove[i] = 0;
-				joy4xmove[i] = joy4ymove[i] = 0;
-			}
-			mousex = mousey = 0;
-			mouse2x = mouse2y = 0;
-
-			// clear hud messages remains (usually from game startup)
-			CON_ClearHUD();
-
-			// Starpost support
-			G_SpawnPlayer(playernum, starpost);
-
-			if (botingame)
-			{ // Bots respawn next to their master.
-				players[displayplayers[1]].playerstate = PST_REBORN;
-				G_SpawnPlayer(displayplayers[1], false);
-			}
-		}
-		else
-		{
-			LUAh_MapChange(gamemap);
-			G_DoLoadLevel(true);
-		}
-	}*/
 	else
 	{
 		// respawn at the start
@@ -4445,6 +4428,11 @@ void G_InitNew(UINT8 pencoremode, const char *mapname, boolean resetplayer, bool
 			players[i].starpostangle = players[i].starpostnum = players[i].starposttime = 0;
 			players[i].starpostx = players[i].starposty = players[i].starpostz = 0;
 			players[i].lives = 1; // SRB2Kart
+
+			// This should be cleared in P_SpawnPlayer but address sanitizer says "use-after-free"
+			// when reloading map sometimes
+			players[i].awayviewtics = 0;
+			players[i].awayviewmobj = NULL;
 
 			// The latter two should clear by themselves, but just in case
 			players[i].pflags &= ~(PF_TAGIT|PF_TAGGED|PF_FULLSTASIS);
@@ -7161,6 +7149,57 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 	Z_Free(infobuffer);
 }
 
+void G_LoadDemoTitle(menudemo_t *pdemo)
+{
+	UINT8 infobuffer[96], *info_p;
+	UINT16 pdemoversion;
+	size_t count;
+
+	FILE *handle = fopen(pdemo->filepath, "rb");
+
+	if (!handle)
+	{
+		CONS_Alert(CONS_ERROR, M_GetText("Failed to read file '%s'.\n"), pdemo->filepath);
+		sprintf(pdemo->title, "INVALID REPLAY");
+		return;
+	}
+
+	count = fread(infobuffer, 1, 96, handle);
+	fclose(handle);
+	info_p = infobuffer;
+
+	// First check isn't too accurate technically, but well, valid replays should be larger than that anyway
+	if (count < 96 || memcmp(info_p, DEMOHEADER, 12))
+	{
+		CONS_Alert(CONS_ERROR, M_GetText("%s is not a SRB2Kart replay file.\n"), pdemo->filepath);
+		sprintf(pdemo->title, "INVALID REPLAY");
+		return;
+	}
+
+	info_p += 12; // DEMOHEADER
+
+	READUINT8(info_p);
+	READUINT8(info_p);
+	pdemoversion = READUINT16(info_p);
+
+	switch(pdemoversion)
+	{
+	case DEMOVERSION: // latest always supported
+		// demo title
+		M_Memcpy(pdemo->title, info_p, 64);
+		break;
+#ifdef DEMO_COMPAT_100
+	case 0x0001:
+		sprintf(pdemo->title, "Legacy Replay");
+		break;
+#endif
+	// too old, cannot support.
+	default:
+		CONS_Alert(CONS_ERROR, M_GetText("%s is an incompatible replay format and cannot be played.\n"), pdemo->filepath);
+		sprintf(pdemo->title, "INVALID REPLAY");
+	}
+}
+
 //
 // G_PlayDemo
 //
@@ -7689,6 +7728,9 @@ post_compat:
 		players[i].kartspeed = kartspeed[i];
 		players[i].kartweight = kartweight[i];
 	}
+
+	directorstate = cv_director.value;
+	CV_SetValue(&cv_director, 0);
 
 	demo.deferstart = true;
 }
@@ -8256,6 +8298,11 @@ void G_StopDemo(void)
 {
 	Z_Free(demobuffer);
 	demobuffer = NULL;
+	if (demo.playback)
+	{
+		CV_SetValue(&cv_director, directorstate);
+		directorstate = 0;
+	}
 	demo.playback = false;
 	if (demo.title)
 		modeattacking = false;
@@ -8493,6 +8540,7 @@ boolean G_DemoTitleResponder(event_t *ev)
 void G_SetGamestate(gamestate_t newstate)
 {
 	gamestate = newstate;
+
 #ifdef HAVE_DISCORDRPC
 	DRPC_UpdatePresence();
 #endif

@@ -98,6 +98,16 @@ typedef enum
 	PT_MOREFILESNEEDED, // Server, to client: "you need these (+ more on top of those)"
 
 	PT_PING,          // Packet sent to tell clients the other client's latency to server.
+
+#ifdef SATURNSYNCH
+	PT_WILLRESENDGAMESTATE, // Hey Client, I am about to resend you the gamestate!
+	PT_CANRECEIVEGAMESTATE, // Okay Server, I'm ready to receive it, you can go ahead.
+	PT_RECEIVEDGAMESTATE,   // Thank you Server, I am ready to play again!
+
+	// we will reserve this for now even if unused, so order wont get mangled
+	PT_ISSATURN, 			// Saturn specific identifier packet
+#endif
+
 	NUMPACKETTYPE
 } packettype_t;
 
@@ -363,6 +373,9 @@ typedef struct
 	UINT8 subversion; // Contains build version
 	UINT8 localplayers;	// number of splitscreen players
 	UINT8 mode;
+#ifdef SATURNJOIN
+	UINT8 issaturn;
+#endif
 } ATTRPACK clientconfig_pak;
 
 #define SV_SPEEDMASK 0x03		// used to send kartspeed
@@ -567,14 +580,22 @@ extern consvar_t
 #ifdef VANILLAJOINNEXTROUND
 	cv_joinnextround,
 #endif
-	cv_netticbuffer, cv_allownewplayer, cv_joinrefusemessage, cv_maxplayers, cv_resynchattempts, cv_blamecfail, cv_maxsend, cv_noticedownload, cv_downloadspeed;
+	cv_netticbuffer, cv_allownewplayer,
+#ifdef SATURNJOIN
+	cv_allownewsaturnplayer,
+#endif
+	cv_joinrefusemessage, cv_maxplayers, cv_resynchattempts,
+#ifdef SATURNSYNCH
+	cv_resynchcooldown, cv_gamestateattempts,
+#endif
+	cv_blamecfail, cv_maxsend, cv_noticedownload, cv_downloadspeed;
 
 extern consvar_t cv_connectawaittime;
 
 extern consvar_t cv_discordinvites;
 
 // Used in d_net, the only dependence
-tic_t ExpandTics(INT32 low, tic_t basetic);
+//tic_t ExpandTics(INT32 low, tic_t basetic);
 void D_ClientServerInit(void);
 
 // Initialise the other field
@@ -632,6 +653,9 @@ tic_t GetLag(INT32 node);
 UINT8 GetFreeXCmdSize(void);
 
 extern UINT8 hu_resynching;
+#ifdef SATURNSYNCH
+extern UINT8 hu_redownloadinggamestate;
+#endif
 extern UINT8 hu_stopped; // kart, true when the game is stopped for players due to a disconnecting or connecting player
 
 typedef struct rewind_s {

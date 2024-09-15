@@ -43,15 +43,14 @@ void R_DrawColumn_8(void)
 	// Use ylookup LUT to avoid multiply with ScreenWidth.
 	// Use columnofs LUT for subwindows?
 
-	//dest = ylookup[dc_yl] + columnofs[dc_x];
 	dest = &topleft[dc_yl*vid.width + dc_x];
 
 	count++;
 
 	// Determine scaling, which is the only mapping to be done.
 	fracstep = dc_iscale;
-	//frac = dc_texturemid + (dc_yl - centery)*fracstep;
 	frac = (dc_texturemid + FixedMul((dc_yl << FRACBITS) - centeryfrac, fracstep))*(!dc_hires);
+
 
 	// Inner loop that does the actual texture mapping, e.g. a DDA-like scaling.
 	// This is as fast as it gets.
@@ -644,7 +643,7 @@ void R_CalcTiltedLighting(fixed_t start, fixed_t end)
 	}
 }
 
-#define PLANELIGHTFLOAT (BASEVIDWIDTH * BASEVIDWIDTH / vid.width / (zeroheight - FIXED_TO_FLOAT(viewz)) / 21.0f * FIXED_TO_FLOAT(fovtan))
+#define PLANELIGHTFLOAT ((float)BASEVIDWIDTH * BASEVIDWIDTH / vid.width / (zeroheight - FIXED_TO_FLOAT(viewz)) / 21.0f * FIXED_TO_FLOAT(fovtan))
 
 /**	\brief The R_DrawTiltedSpan_8 function
 	Draw slopes! Holy sheit!
@@ -943,7 +942,7 @@ void R_DrawTiltedTranslucentWaterSpan_8(void)
 
 	// Lighting is simple. It's just linear interpolation from start to end
 	{
-		float planelightfloat = BASEVIDWIDTH*BASEVIDWIDTH/vid.width / (zeroheight - FIXED_TO_FLOAT(viewz)) / 21.0f;
+		float planelightfloat = PLANELIGHTFLOAT;
 		float lightstart, lightend;
 
 		lightend = (iz + ds_szp->x*width) * planelightfloat;
@@ -1696,7 +1695,7 @@ void R_DrawColumnShadowed_8(void)
 		{
 			dc_colormap = dc_lightlist[i].rcolormap;
 			if (encoremap)
-				dc_colormap += (256*32);
+				dc_colormap += COLORMAP_REMAPOFFSET;
 			if (solid && dc_yl < bheight)
 				dc_yl = bheight;
 			continue;
@@ -1714,7 +1713,7 @@ void R_DrawColumnShadowed_8(void)
 
 		dc_colormap = dc_lightlist[i].rcolormap;
 		if (encoremap)
-			dc_colormap += (256*32);
+			dc_colormap += COLORMAP_REMAPOFFSET;
 	}
 	dc_yh = realyh;
 	if (dc_yl <= realyh)

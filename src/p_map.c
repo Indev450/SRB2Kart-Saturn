@@ -319,78 +319,6 @@ static void P_DoFanAndGasJet(mobj_t *spring, mobj_t *object)
 	}
 }
 
-#if 0
-static void P_DoTailsCarry(player_t *sonic, player_t *tails)
-{
-	INT32 p;
-	fixed_t zdist; // z distance between the two players' bottoms
-
-	if ((tails->pflags & PF_CARRIED) && tails->mo->tracer == sonic->mo)
-		return;
-	if ((sonic->pflags & PF_CARRIED) && sonic->mo->tracer == tails->mo)
-		return;
-	if (tails->bot == 1)
-		return;
-
-	if (sonic->pflags & PF_NIGHTSMODE)
-		return;
-
-	if (sonic->mo->tracer && sonic->mo->tracer->type == MT_TUBEWAYPOINT
-	&& !(sonic->pflags & PF_ROPEHANG))
-		return; // don't steal players from zoomtubes!
-
-	if ((sonic->mo->eflags & MFE_VERTICALFLIP) != (tails->mo->eflags & MFE_VERTICALFLIP))
-		return; // Both should be in same gravity
-
-	if (tails->mo->eflags & MFE_VERTICALFLIP)
-	{
-		if (tails->mo->ceilingz - (tails->mo->z + tails->mo->height) < sonic->mo->height-FixedMul(2*FRACUNIT, sonic->mo->scale))
-			return;
-	}
-	else if (tails->mo->z - tails->mo->floorz < sonic->mo->height-FixedMul(2*FRACUNIT, sonic->mo->scale))
-		return; // No room to pick up this guy!
-
-	// Search in case another player is already being carried by this fox.
-	for (p = 0; p < MAXPLAYERS; p++)
-		if (playeringame[p] && players[p].mo
-		&& players[p].pflags & PF_CARRIED && players[p].mo->tracer == tails->mo)
-			return;
-
-	if (tails->mo->eflags & MFE_VERTICALFLIP)
-		zdist = (sonic->mo->z + sonic->mo->height) - (tails->mo->z + tails->mo->height);
-	else
-		zdist = tails->mo->z - sonic->mo->z;
-
-	if (zdist <= sonic->mo->height + FixedMul(FRACUNIT, sonic->mo->scale)
-		&& zdist > sonic->mo->height*2/3
-		&& P_MobjFlip(tails->mo)*sonic->mo->momz <= 0)
-	{
-	// Why block opposing teams from tailsflying each other?
-		// Sneaking into the hands of a flying tails player in Race might be a viable strategy, who knows.
-		if (tails->spectator || sonic->spectator || G_RaceGametype()) // SRB2kart
-			sonic->pflags &= ~PF_CARRIED;
-		else
-		{
-			if (sonic-players == consoleplayer && botingame)
-				//CV_SetValue(&cv_analog2, false);
-			P_ResetPlayer(sonic);
-			P_SetTarget(&sonic->mo->tracer, tails->mo);
-			sonic->pflags |= PF_CARRIED;
-			S_StartSound(sonic->mo, sfx_s3k4a);
-			P_UnsetThingPosition(sonic->mo);
-			sonic->mo->x = tails->mo->x;
-			sonic->mo->y = tails->mo->y;
-			P_SetThingPosition(sonic->mo);
-		}
-	}
-	else {
-		if (sonic-players == consoleplayer && botingame)
-			//CV_SetValue(&cv_analog2, true);
-		sonic->pflags &= ~PF_CARRIED;
-	}
-}
-#endif
-
 //
 // PIT_CheckThing
 //
@@ -588,9 +516,6 @@ static boolean PIT_CheckThing(mobj_t *thing)
 	// check for skulls slamming into things
 	if (tmthing->flags2 & MF2_SKULLFLY)
 	{
-		/*if (tmthing->type == MT_EGGMOBILE) // Don't make Eggman stop!
-			return true; // Let him RUN YOU RIGHT OVER. >:3
-		else*/
 		{
 			// see if it went over / under
 			if (tmthing->z > thing->z + thing->height)
@@ -1676,7 +1601,7 @@ static boolean PIT_CheckLine(line_t *ld)
 	if (P_BoxOnLineSide(tmbbox, ld) != -1)
 		return true;
 
-if (tmthing->flags & MF_PAPERCOLLISION) // Caution! Turning whilst up against a wall will get you stuck. You probably shouldn't give the player this flag.
+	if (tmthing->flags & MF_PAPERCOLLISION) // Caution! Turning whilst up against a wall will get you stuck. You probably shouldn't give the player this flag.
 	{
 		fixed_t cosradius, sinradius;
 		cosradius = FixedMul(tmthing->radius, FINECOSINE(tmthing->angle>>ANGLETOFINESHIFT));
@@ -2245,6 +2170,9 @@ boolean P_TryCameraMove(fixed_t x, fixed_t y, camera_t *thiscam)
 
 	floatok = false;
 
+	if (dedicated) // this crashes so don't even try it
+		return false;
+
 	if (twodlevel)
 		itsatwodlevel = true;
 	else
@@ -2474,14 +2402,6 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff)
 				else if (P_PlayerTouchingSectorSpecial(thing->player, 1, 12)
 				|| GETSECSPECIAL(R_PointInSubsector(x, y)->sector->special, 1) == 12)
 					maxstep = 0;
-
-				// Don't 'step up' while springing,
-				// Only step up "if needed".
-				/* // SRB2kart - don't need
-				if (thing->state == &states[S_PLAY_SPRING]
-				&& P_MobjFlip(thing)*thing->momz > FixedMul(FRACUNIT, thing->scale))
-					maxstep = 0;
-				*/
 			}
 
 			if (thing->type == MT_SKIM)
@@ -4143,7 +4063,7 @@ static inline boolean PIT_GetSectors(line_t *ld)
 		tmbbox[BOXLEFT] >= ld->bbox[BOXRIGHT] ||
 		tmbbox[BOXTOP] <= ld->bbox[BOXBOTTOM] ||
 		tmbbox[BOXBOTTOM] >= ld->bbox[BOXTOP])
-	return true;
+		return true;
 
 	if (P_BoxOnLineSide(tmbbox, ld) != -1)
 		return true;
@@ -4178,7 +4098,7 @@ static inline boolean PIT_GetPrecipSectors(line_t *ld)
 		preciptmbbox[BOXLEFT] >= ld->bbox[BOXRIGHT] ||
 		preciptmbbox[BOXTOP] <= ld->bbox[BOXBOTTOM] ||
 		preciptmbbox[BOXBOTTOM] >= ld->bbox[BOXTOP])
-	return true;
+		return true;
 
 	if (P_BoxOnLineSide(preciptmbbox, ld) != -1)
 		return true;

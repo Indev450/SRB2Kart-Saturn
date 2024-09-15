@@ -20,6 +20,7 @@
 #include "m_random.h"
 #include "s_sound.h"
 #include "g_game.h"
+#include "g_input.h"
 #include "hu_stuff.h"	// HU_AddChatText
 #include "console.h"
 #include "k_kart.h" // SRB2Kart
@@ -1258,6 +1259,7 @@ static int lib_pPlayRinglossSound(lua_State *L)
 {
 	mobj_t *source = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));
 	player_t *player = NULL;
+	mobj_t *damager = NULL;
 	NOHUD
 	if (!source)
 		return LUA_ErrInvalid(L, "mobj_t");
@@ -1267,8 +1269,15 @@ static int lib_pPlayRinglossSound(lua_State *L)
 		if (!player)
 			return LUA_ErrInvalid(L, "player_t");
 	}
+	if (!lua_isnoneornil(L, 3))
+	{
+		damager = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));
+
+		if (!damager)
+			return LUA_ErrInvalid(L, "mobj_t");
+	}
 	if (!player || P_IsLocalPlayer(player))
-		P_PlayRinglossSound(source);
+		P_PlayRinglossSound(source, damager);
 	return 0;
 }
 
@@ -2556,10 +2565,22 @@ static int lib_kOvertakeSound(lua_State *L)
 static int lib_kHitEmSound(lua_State *L)
 {
 	mobj_t *mobj = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));
+	mobj_t *victim = NULL;
+
+	if (!lua_isnoneornil(L, 2))
+	{
+		victim = *((mobj_t **)luaL_checkudata(L, 2, META_MOBJ));
+		if (!victim)
+			return LUA_ErrInvalid(L, "mobj_t");
+	}
+
 	NOHUD
 	if (!mobj->player)
 		return luaL_error(L, "K_PlayHitEmSound: mobj_t isn't a player object.");	//Nothing bad would happen if we let it run the func, but telling why it ain't doing anything is helpful.
-	K_PlayHitEmSound(mobj);
+	if (victim && !victim->player)
+		return luaL_error(L, "K_PlayHitEmSound: mobj_t isn't a player object.");	//Same as above
+
+	K_PlayHitEmSound(mobj, victim);
 	return 0;
 }
 
@@ -3000,6 +3021,58 @@ static int lib_kSetHyuCountdown(lua_State *L)
 	return 0;
 }
 
+// G_INPUT
+////////////
+
+static int lib_gSetPlayerGamepadIndicatorColor(lua_State *L)
+{
+	INT32 player = -1;
+	player_t *plr = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));    // retrieve player
+	UINT16 color = (UINT16)luaL_checkinteger(L, 2); // skincolor
+
+	for (int i = 0; i < MAXSPLITSCREENPLAYERS; ++i)
+	{
+		if (plr - players == displayplayers[i])
+		{
+			player = i;
+			break;
+		}
+	}
+
+	// Not a local player
+	if (player == -1) return 0;
+
+	// pls update with color 0 when youre done with changing led stuff so it can get player color again
+	G_SetPlayerGamepadIndicatorColor(player, color);
+
+	return 0;
+}
+
+static int lib_gPlayerDeviceRumble(lua_State *L)
+{
+	INT32 player = -1;
+	player_t *plr = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));    // retrieve player
+	UINT16 low_strength = (UINT16)luaL_checkinteger(L, 2); // low frequency rumble motor strenght
+	UINT16 high_strength = (UINT16)luaL_checkinteger(L, 3); // high frequency rumble motor strenght
+	UINT32 duration = (UINT32)luaL_optinteger(L, 4, 84); // duration of rumble in ms
+
+	for (int i = 0; i < MAXSPLITSCREENPLAYERS; ++i)
+	{
+		if (plr - players == displayplayers[i])
+		{
+			player = i;
+			break;
+		}
+	}
+
+	// Not a local player
+	if (player == -1) return 0;
+
+	G_PlayerDeviceRumble(player, low_strength, high_strength, duration);
+
+	return 0;
+}
+
 static luaL_Reg lib[] = {
 	{"print", lib_print},
 	{"chatprint", lib_chatprint},
@@ -3246,6 +3319,10 @@ static luaL_Reg lib[] = {
 	{"K_SetExitCountdown",lib_kSetExitCountdown},
 	{"K_SetIndirectItemCooldown",lib_kSetIndirectItemCountdown},
 	{"K_SetHyudoroCooldown",lib_kSetHyuCountdown},
+
+	//g_input
+	{"G_SetPlayerGamepadIndicatorColor",lib_gSetPlayerGamepadIndicatorColor},
+	{"G_PlayerDeviceRumble",lib_gPlayerDeviceRumble},
 
 	{NULL, NULL}
 };

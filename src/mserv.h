@@ -82,6 +82,8 @@ extern I_mutex       ms_ServerList_mutex;
 void RegisterServer(void);
 void UnregisterServer(void);
 
+void Get_rules(void);
+
 void MasterClient_Ticker(void);
 
 msg_server_t *GetShortServersList(int id);
@@ -90,9 +92,11 @@ char *GetMODVersion(int id);
 #endif
 
 char *GetMasterServerRules(void);
+#endif
 
 void AddMServCommands(void);
 
+#ifdef MASTERSERVER
 /* HTTP */
 void HMS_set_api (char *api);
 int  HMS_register (void);

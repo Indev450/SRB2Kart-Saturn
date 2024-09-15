@@ -43,8 +43,12 @@
 #ifdef HAVE_THREADS
 I_mutex con_mutex;
 
-#  define Lock_state()    I_lock_mutex(&con_mutex)
-#  define Unlock_state() I_unlock_mutex(con_mutex)
+// g_in_exiting_signal_handler is an evil hack
+// to avoid infinite SIGABRT recursion in the signal handler
+// due to poisoned locks or mach-o kernel not supporting locks in signals
+// or something like that. idk
+#  define Lock_state()    if (!g_in_exiting_signal_handler) { I_lock_mutex(&con_mutex); }
+#  define Unlock_state()  if (!g_in_exiting_signal_handler) { I_unlock_mutex(con_mutex); }
 #else/*HAVE_THREADS*/
 #  define Lock_state()
 #  define Unlock_state()
@@ -846,9 +850,36 @@ static void CON_InputAddString(const char *c)
 	Unlock_state();
 }
 
+static void CON_InputDel(size_t start, size_t end)
+{
+	size_t len;
+
+	Lock_state();
+
+	len = (end - start);
+
+	if (end != input_len)
+		memmove(&inputlines[inputline][start], &inputlines[inputline][end], input_len-end);
+	memset(&inputlines[inputline][input_len - len], 0, len);
+
+	input_len -= len;
+
+	if (input_sel >= end)
+		input_sel -= len;
+	else if (input_sel > start)
+		input_sel = start;
+
+	if (input_cur >= end)
+		input_cur -= len;
+	else if (input_cur > start)
+		input_cur = start;
+
+	Unlock_state();
+}
+
 static void CON_InputDelSelection(void)
 {
-	size_t start, end, len;
+	size_t start, end;
 
 	Lock_state();
 
@@ -862,14 +893,52 @@ static void CON_InputDelSelection(void)
 		start = input_cur;
 		end = input_sel;
 	}
-	len = (end - start);
 
-	if (end != input_len)
-		memmove(&inputlines[inputline][start], &inputlines[inputline][end], input_len-end);
-	memset(&inputlines[inputline][input_len - len], 0, len);
+	CON_InputDel(start, end);
 
-	input_len -= len;
 	input_sel = input_cur = start;
+
+	Unlock_state();
+}
+
+static void CON_ToWordEnd(boolean move_sel)
+{
+	Lock_state();
+
+	// Skip spaces
+	while (input_cur < input_len && isspace(inputlines[inputline][input_cur]))
+		++input_cur;
+
+	// Skip word
+	while (input_cur < input_len && !isspace(inputlines[inputline][input_cur]))
+		++input_cur;
+
+	if (move_sel) input_sel = input_cur;
+
+	Unlock_state();
+}
+
+static void CON_ToWordBegin(boolean move_sel)
+{
+	Lock_state();
+
+	// Hack, always move back 1 character if possible so if we press ctrl-left at a word beginning
+	// we move to previous word
+	if (input_cur) --input_cur;
+
+	// Skip spaces
+	while (input_cur && isspace(inputlines[inputline][input_cur]))
+		--input_cur;
+
+	// Skip word
+	while (input_cur && !isspace(inputlines[inputline][input_cur]))
+		--input_cur;
+
+	// Unless we reached beginning of line, we're pointing at a space before word, so move cursor
+	// forward to fix that
+	if (input_cur) ++input_cur;
+
+	if (move_sel) input_sel = input_cur;
 
 	Unlock_state();
 }
@@ -1051,6 +1120,38 @@ boolean CON_Responder(event_t *ev)
 			completion[0] = 0;
 			return true;
 		}
+		else if (key == 'w' || key == 'W')
+		{
+			size_t word_start, word_end, i;
+			word_end = i = input_cur;
+
+			// Unless we're pointing at the beginning of line, decrement i so we only start
+			// removing symbols that come before the cursor
+			if (i) --i;
+
+			// We might be pointing to spaces, skip them first
+			while (i && isspace(inputlines[inputline][i]))
+				--i;
+
+			// Now skip the "word"
+			while (i && !isspace(inputlines[inputline][i]))
+				--i;
+
+			// Unless we reached beginning of line, i is pointing at first space that was found
+			// before word start, and we don't want to remove it
+			if (i) ++i;
+
+			word_start = i;
+
+			if (word_start != word_end)
+				CON_InputDel(word_start, word_end);
+
+			return true;
+		}
+		else if (key == KEY_RIGHTARROW)
+			CON_ToWordEnd(!shiftdown);
+		else if (key == KEY_LEFTARROW)
+			CON_ToWordBegin(!shiftdown);
 
 		// Select all
 		if (key == 'a' || key == 'A')

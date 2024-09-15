@@ -295,7 +295,7 @@ void R_MapPlane(INT32 y, INT32 x1, INT32 x2)
 		ds_colormap = planezlight[pindex];
 	}
 	if (encoremap && !currentplane->noencore)
-		ds_colormap += (256*32);
+		ds_colormap += COLORMAP_REMAPOFFSET;
 
 	if (currentplane->extra_colormap)
 		ds_colormap = currentplane->extra_colormap->colormap + (ds_colormap - colormaps);
@@ -332,10 +332,12 @@ void R_ClearPlanes(void)
 	numffloors = 0;
 
 	for (i = 0; i < MAXVISPLANES; i++)
-	for (*freehead = visplanes[i], visplanes[i] = NULL;
-		freehead && *freehead ;)
 	{
-		freehead = &(*freehead)->next;
+		for (*freehead = visplanes[i], visplanes[i] = NULL;
+			freehead && *freehead ;)
+		{
+			freehead = &(*freehead)->next;
+		}
 	}
 
 	lastopening = openings;
@@ -415,6 +417,11 @@ visplane_t *R_FindPlane(fixed_t height, INT32 picnum, INT32 lightlevel,
 			xoff -= polyobj->centerPt.x;
 			yoff += polyobj->centerPt.y;
 		}
+	}
+
+	if (slope != NULL)
+	{
+		lightlevel += slope->lightOffset * 8;
 	}
 
 	// This appears to fix the Nimbus Ruins sky bug.
@@ -526,8 +533,7 @@ visplane_t *R_CheckPlane(visplane_t *pl, INT32 start, INT32 stop)
 		}
 		else
 		{
-			unsigned hash =
-				visplane_hash(pl->picnum, pl->lightlevel, pl->height);
+			unsigned hash = visplane_hash(pl->picnum, pl->lightlevel, pl->height);
 			new_pl = new_visplane(hash);
 		}
 
@@ -674,25 +680,26 @@ static void R_DrawSkyPlane(visplane_t *pl)
 	// Because of this hack, sky is not affected
 	//  by INVUL inverse mapping.
 	dc_colormap = colormaps;
+
 	if (encoremap)
-		dc_colormap += (256*32);
+		dc_colormap += COLORMAP_REMAPOFFSET;
+
 	dc_texturemid = skytexturemid;
-	dc_texheight = textureheight[skytexture]
-		>>FRACBITS;
+	dc_texheight = textureheight[skytexture] >>FRACBITS;
+
 	for (x = pl->minx; x <= pl->maxx; x++)
 	{
 		dc_yl = pl->top[x];
 		dc_yh = pl->bottom[x];
-		if (dc_yl <= dc_yh)
-		{
-			angle = (pl->viewangle + xtoviewangle[x])>>ANGLETOSKYSHIFT;
-			dc_iscale = FixedMul(skyscale, FINECOSINE(xtoviewangle[x]>>ANGLETOFINESHIFT));
-			dc_x = x;
-			dc_source =
-				R_GetColumn(texturetranslation[skytexture],
-					angle);
-			wallcolfunc();
-		}
+
+		if (!(dc_yl <= dc_yh))
+			continue;
+
+		angle = (pl->viewangle + xtoviewangle[x])>>ANGLETOSKYSHIFT;
+		dc_iscale = FixedMul(skyscale, FINECOSINE(xtoviewangle[x]>>ANGLETOFINESHIFT));
+		dc_x = x;
+		dc_source = R_GetColumn(texturetranslation[skytexture], angle);
+		wallcolfunc();
 	}
 }
 
@@ -813,7 +820,8 @@ void R_DrawSinglePlane(visplane_t *pl)
 #endif
 	spanfunc = basespanfunc;
 
-	if (pl->polyobj && pl->polyobj->translucency != 0) {
+	if (pl->polyobj && pl->polyobj->translucency != 0)
+	{
 		spanfunc = R_DrawTranslucentSpan_8;
 
 		// Hacked up support for alpha value in software mode Tails 09-24-2002 (sidenote: ported to polys 10-15-2014, there was no time travel involved -Red)
@@ -833,112 +841,111 @@ void R_DrawSinglePlane(visplane_t *pl)
 		else
 			light = LIGHTLEVELS-1;
 
-	} else
-	if (pl->ffloor)
+	}
+	else
 	{
-		// Don't draw planes that shouldn't be drawn.
-		for (rover = pl->ffloor->target->ffloors; rover; rover = rover->next)
+		if (pl->ffloor)
 		{
-			if ((pl->ffloor->flags & FF_CUTEXTRA) && (rover->flags & FF_EXTRA))
+			// Don't draw planes that shouldn't be drawn.
+			for (rover = pl->ffloor->target->ffloors; rover; rover = rover->next)
 			{
-				if (pl->ffloor->flags & FF_EXTRA)
-				{
-					// The plane is from an extra 3D floor... Check the flags so
-					// there are no undesired cuts.
-					if (((pl->ffloor->flags & (FF_FOG|FF_SWIMMABLE)) == (rover->flags & (FF_FOG|FF_SWIMMABLE)))
-						&& pl->height < *rover->topheight
-						&& pl->height > *rover->bottomheight)
-						return;
-				}
+				if (!((pl->ffloor->flags & FF_CUTEXTRA) && (rover->flags & FF_EXTRA)))
+					continue;
+
+				// The plane is from an extra 3D floor... Check the flags so
+				// there are no undesired cuts.
+				if (((pl->ffloor->flags & (FF_FOG|FF_SWIMMABLE)) == (rover->flags & (FF_FOG|FF_SWIMMABLE)))
+					&& pl->height < *rover->topheight
+					&& pl->height > *rover->bottomheight)
+					return;
 			}
-		}
 
-		if (pl->ffloor->flags & FF_TRANSLUCENT)
-		{
-			spanfunc = R_DrawTranslucentSpan_8;
+			if (pl->ffloor->flags & FF_TRANSLUCENT)
+			{
+				spanfunc = R_DrawTranslucentSpan_8;
 
-			// Hacked up support for alpha value in software mode Tails 09-24-2002
-			if (pl->ffloor->alpha < 12)
-				return; // Don't even draw it
-			else if (pl->ffloor->alpha < 38)
-				ds_transmap = transtables + ((tr_trans90-1)<<FF_TRANSSHIFT);
-			else if (pl->ffloor->alpha < 64)
-				ds_transmap = transtables + ((tr_trans80-1)<<FF_TRANSSHIFT);
-			else if (pl->ffloor->alpha < 89)
-				ds_transmap = transtables + ((tr_trans70-1)<<FF_TRANSSHIFT);
-			else if (pl->ffloor->alpha < 115)
-				ds_transmap = transtables + ((tr_trans60-1)<<FF_TRANSSHIFT);
-			else if (pl->ffloor->alpha < 140)
-				ds_transmap = transtables + ((tr_trans50-1)<<FF_TRANSSHIFT);
-			else if (pl->ffloor->alpha < 166)
-				ds_transmap = transtables + ((tr_trans40-1)<<FF_TRANSSHIFT);
-			else if (pl->ffloor->alpha < 192)
-				ds_transmap = transtables + ((tr_trans30-1)<<FF_TRANSSHIFT);
-			else if (pl->ffloor->alpha < 217)
-				ds_transmap = transtables + ((tr_trans20-1)<<FF_TRANSSHIFT);
-			else if (pl->ffloor->alpha < 243)
-				ds_transmap = transtables + ((tr_trans10-1)<<FF_TRANSSHIFT);
-			else // Opaque, but allow transparent flat pixels
-				spanfunc = splatfunc;
+				// Hacked up support for alpha value in software mode Tails 09-24-2002
+				if (pl->ffloor->alpha < 12)
+					return; // Don't even draw it
+				else if (pl->ffloor->alpha < 38)
+					ds_transmap = transtables + ((tr_trans90-1)<<FF_TRANSSHIFT);
+				else if (pl->ffloor->alpha < 64)
+					ds_transmap = transtables + ((tr_trans80-1)<<FF_TRANSSHIFT);
+				else if (pl->ffloor->alpha < 89)
+					ds_transmap = transtables + ((tr_trans70-1)<<FF_TRANSSHIFT);
+				else if (pl->ffloor->alpha < 115)
+					ds_transmap = transtables + ((tr_trans60-1)<<FF_TRANSSHIFT);
+				else if (pl->ffloor->alpha < 140)
+					ds_transmap = transtables + ((tr_trans50-1)<<FF_TRANSSHIFT);
+				else if (pl->ffloor->alpha < 166)
+					ds_transmap = transtables + ((tr_trans40-1)<<FF_TRANSSHIFT);
+				else if (pl->ffloor->alpha < 192)
+					ds_transmap = transtables + ((tr_trans30-1)<<FF_TRANSSHIFT);
+				else if (pl->ffloor->alpha < 217)
+					ds_transmap = transtables + ((tr_trans20-1)<<FF_TRANSSHIFT);
+				else if (pl->ffloor->alpha < 243)
+					ds_transmap = transtables + ((tr_trans10-1)<<FF_TRANSSHIFT);
+				else // Opaque, but allow transparent flat pixels
+					spanfunc = splatfunc;
 
 #ifdef SHITPLANESPARENCY
-			if (spanfunc == splatfunc || (pl->extra_colormap && pl->extra_colormap->fog))
+				if (spanfunc == splatfunc || (pl->extra_colormap && pl->extra_colormap->fog))
 #else
-			if (!pl->extra_colormap || !(pl->extra_colormap->fog & 2))
+				if (!pl->extra_colormap || !(pl->extra_colormap->fog & 2))
 #endif
+					light = (pl->lightlevel >> LIGHTSEGSHIFT);
+				else
+					light = LIGHTLEVELS-1;
+			}
+			else if (pl->ffloor->flags & FF_FOG)
+			{
+				spanfunc = R_DrawFogSpan_8;
 				light = (pl->lightlevel >> LIGHTSEGSHIFT);
-			else
-				light = LIGHTLEVELS-1;
-		}
-		else if (pl->ffloor->flags & FF_FOG)
-		{
-			spanfunc = R_DrawFogSpan_8;
-			light = (pl->lightlevel >> LIGHTSEGSHIFT);
-		}
-		else light = (pl->lightlevel >> LIGHTSEGSHIFT);
+			}
+			else light = (pl->lightlevel >> LIGHTSEGSHIFT);
 
 #ifndef NOWATER
-		if (pl->ffloor->flags & FF_RIPPLE)
-		{
-			INT32 top, bottom;
-			UINT8 *scr;
-
-			planeripple.active = true;
-			
-			if (spanfunc == R_DrawTranslucentSpan_8)
+			if (pl->ffloor->flags & FF_RIPPLE)
 			{
-				spanfunc = R_DrawTranslucentWaterSpan_8;
+				INT32 top, bottom;
+				UINT8 *scr;
 
-				// Copy the current scene, ugh
-				top = pl->high-8;
-				bottom = pl->low+8;
+				planeripple.active = true;
 
-				if (top < 0)
-					top = 0;
-				if (bottom > vid.height)
-					bottom = vid.height;
+				if (spanfunc == R_DrawTranslucentSpan_8)
+				{
+					spanfunc = R_DrawTranslucentWaterSpan_8;
 
-				if (splitscreen > 2 && viewplayer == &players[displayplayers[3]]) // Only copy the part of the screen we need
-					scr = (screens[0] + (top+(viewheight))*vid.width + viewwidth);
-				else if ((splitscreen == 1 && viewplayer == &players[displayplayers[1]])
-					|| (splitscreen > 1 && viewplayer == &players[displayplayers[2]]))
-					scr = (screens[0] + (top+(viewheight))*vid.width);
-				else if (splitscreen > 1 && viewplayer == &players[displayplayers[1]])
-					scr = (screens[0] + ((top)*vid.width) + viewwidth);
-				else
-					scr = (screens[0] + ((top)*vid.width));
+					// Copy the current scene, ugh
+					top = pl->high-8;
+					bottom = pl->low+8;
 
-				VID_BlitLinearScreen(scr, screens[1]+((top)*vid.width),
-				                     vid.width, bottom-top,
-				                     vid.width, vid.width);
+					if (top < 0)
+						top = 0;
+					if (bottom > vid.height)
+						bottom = vid.height;
+
+					if (splitscreen > 2 && viewplayer == &players[displayplayers[3]]) // Only copy the part of the screen we need
+						scr = (screens[0] + (top+(viewheight))*vid.width + viewwidth);
+					else if ((splitscreen == 1 && viewplayer == &players[displayplayers[1]])
+						|| (splitscreen > 1 && viewplayer == &players[displayplayers[2]]))
+						scr = (screens[0] + (top+(viewheight))*vid.width);
+					else if (splitscreen > 1 && viewplayer == &players[displayplayers[1]])
+						scr = (screens[0] + ((top)*vid.width) + viewwidth);
+					else
+						scr = (screens[0] + ((top)*vid.width));
+
+					VID_BlitLinearScreen(scr, screens[1]+((top)*vid.width),
+										vid.width, bottom-top,
+										vid.width, vid.width);
+				}
 			}
-		}
 #endif
+		}
+		else light = (pl->lightlevel >> LIGHTSEGSHIFT);
 	}
-	else light = (pl->lightlevel >> LIGHTSEGSHIFT);
 
-	if (!pl->slope) // Don't mess with angle on slopes! We'll handle this ourselves later
-	if (viewangle != pl->viewangle+pl->plangle)
+	if (!pl->slope && viewangle != pl->viewangle+pl->plangle) // Don't mess with angle on slopes! We'll handle this ourselves later
 	{
 		memset(cachedheight, 0, sizeof (cachedheight));
 		angle = (pl->viewangle+pl->plangle-ANGLE_90)>>ANGLETOFINESHIFT;
@@ -1101,9 +1108,9 @@ void R_DrawSinglePlane(visplane_t *pl)
 			spanfunc = R_DrawTiltedSpan_8;
 
 		planezlight = scalelight[light];
-	} else
-
-	planezlight = zlight[light];
+	}
+	else
+		planezlight = zlight[light];
 
 	// set the maximum value for unsigned
 	pl->top[pl->maxx+1] = 0xffff;
@@ -1212,9 +1219,9 @@ void R_PlaneBounds(visplane_t *plane)
 	for (i = plane->minx + 1; i <= plane->maxx; i++)
 	{
 		if (plane->top[i] < hi)
-		hi = plane->top[i];
+			hi = plane->top[i];
 		if (plane->bottom[i] > low)
-		low = plane->bottom[i];
+			low = plane->bottom[i];
 	}
 	plane->high = hi;
 	plane->low = low;

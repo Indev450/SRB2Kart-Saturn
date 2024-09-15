@@ -37,6 +37,7 @@
 #include "d_net.h"
 #include "f_finale.h"
 #include "g_game.h"
+#include "g_input.h"
 #include "hu_stuff.h"
 #include "i_sound.h"
 #include "i_system.h"
@@ -103,11 +104,12 @@ static char *startupwadfiles[MAX_WADFILES];
 static char *startuppwads[MAX_WADFILES];
 
 // autoloading
-static char *autoloadwadfiles[MAX_WADFILES];
+char *autoloadwadfiles[MAX_WADFILES];
 char *autoloadwadfilespost[MAX_WADFILES];
 boolean autoloading;
 boolean autoloaded;
-boolean postautoloaded;
+boolean postautoloaded = false;
+boolean wasautoloaded = false;
 
 boolean devparm = false; // started game with -devparm
 
@@ -149,6 +151,8 @@ INT32 eventhead, eventtail;
 
 boolean dedicated = false;
 
+boolean loaded_config = false;
+
 //
 // D_PostEvent
 // Called by the I/O functions when input is detected
@@ -165,6 +169,32 @@ UINT8 shiftdown = 0; // 0x1 left, 0x2 right
 UINT8 ctrldown = 0; // 0x1 left, 0x2 right
 UINT8 altdown = 0; // 0x1 left, 0x2 right
 boolean capslock = 0;	// gee i wonder what this does.
+
+static inline void D_DeviceLEDTick(void)
+{
+	UINT8 i;
+	UINT16 color[MAXSPLITSCREENPLAYERS];
+	UINT16 curcolor[MAXSPLITSCREENPLAYERS];
+
+	if (I_NumJoys() == 0 || (cv_gamepadled[0].value == 0 && cv_gamepadled[1].value == 0 && cv_gamepadled[2].value == 0 && cv_gamepadled[3].value == 0))
+	{
+		return;
+	}
+
+	for (i = 0; i <= splitscreen; i++)
+	{
+		if (G_GetDeviceForPlayer(i) == 0)
+			continue;
+
+		color[i] = G_GetSkinColor(i);
+
+		if (curcolor[i] == color[i]) // dont update if same colour
+			continue;
+
+		G_SetPlayerGamepadIndicatorColor(i, color[i]);
+		curcolor[i] = color[i];
+	}
+}
 
 //
 // D_ProcessEvents
@@ -242,8 +272,9 @@ void D_ProcessEvents(void)
 // added comment : there is a wipe eatch change of the gamestate
 gamestate_t wipegamestate = GS_LEVEL;
 
-static void D_Display(void)
+static boolean D_Display(void)
 {
+	boolean ranwipe = false;
 	boolean forcerefresh = false;
 	static boolean wipe = false;
 	INT32 wipedefindex = 0;
@@ -252,7 +283,7 @@ static void D_Display(void)
 	if (!dedicated)
 	{
 		if (nodrawers)
-			return; // for comparative timing/profiling
+			return false; // for comparative timing/profiling
 
 		// check for change of screen size (video mode)
 		if (setmodeneeded && !wipe)
@@ -262,7 +293,10 @@ static void D_Display(void)
 			SCR_Recalc(); // NOTE! setsizeneeded is set by SCR_Recalc()
 
 		if (rendermode == render_soft && !splitscreen)
+		{
+			R_InterpolateViewRollAngle(rendertimefrac);
 			R_CheckViewMorph();
+		}
 
 		// change the view size if needed
 		if (setsizeneeded)
@@ -302,6 +336,7 @@ static void D_Display(void)
 				V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 31);
 				F_WipeEndScreen();
 				F_RunWipe(wipedefs[wipedefindex], gamestate != GS_TIMEATTACK);
+				ranwipe = true;
 			}
 
 			if (gamestate != GS_LEVEL && rendermode != render_none)
@@ -315,12 +350,13 @@ static void D_Display(void)
 		else //dedicated servers
 		{
 			F_RunWipe(wipedefs[wipedefindex], gamestate != GS_TIMEATTACK);
+			ranwipe = true;
 			wipegamestate = gamestate;
 		}
 	}
 
 	if (dedicated) //bail out after wipe logic
-		return;
+		return false;
 
 	// do buffered drawing
 	switch (gamestate)
@@ -427,7 +463,7 @@ static void D_Display(void)
 					viewssnum = i;
 
 #ifdef HWRENDER
-					if (rendermode != render_soft)
+					if (rendermode == render_opengl)
 						HWR_RenderPlayerView(i, &players[displayplayers[i]]);
 					else
 #endif
@@ -482,8 +518,10 @@ static void D_Display(void)
 
 				for (i = 0; i <= splitscreen; i++)
 				{
-					if (postimgtype[i])
-						V_DoPostProcessor(i, postimgtype[i], postimgparam[i]);
+					if (!postimgtype[i])
+						continue;
+
+					V_DoPostProcessor(i, postimgtype[i], postimgparam[i]);
 				}
 			}
 
@@ -497,7 +535,6 @@ static void D_Display(void)
 			if (rendermode == render_soft)
 			{
 				VID_BlitLinearScreen(screens[0], screens[1], vid.width*vid.bpp, vid.height, vid.width*vid.bpp, vid.rowbytes);
-				usebuffer = true;
 			}
 			lastdraw = false;
 		}
@@ -561,10 +598,9 @@ static void D_Display(void)
 		{
 			F_WipeEndScreen();
 			F_RunWipe(wipedefs[wipedefindex], gamestate != GS_TIMEATTACK);
+			ranwipe = true;
 		}
 	}
-
-	NetUpdate(); // send out any new accumulation
 
 	// It's safe to end the game now.
 	if (G_GetExitGameFlag())
@@ -610,6 +646,7 @@ static void D_Display(void)
 		PS_STOP_TIMING(ps_swaptime);
 	}
 
+	return ranwipe;
 }
 
 // =========================================================================
@@ -617,6 +654,7 @@ static void D_Display(void)
 // =========================================================================
 
 tic_t rendergametic;
+static int menuInputDelayTimer = 0;
 
 void D_SRB2Loop(void)
 {
@@ -626,6 +664,7 @@ void D_SRB2Loop(void)
 
 	boolean interp = false;
 	boolean doDisplay = false;
+	int frameskip = 0;
 
 	if (dedicated)
 		server = true;
@@ -670,6 +709,8 @@ void D_SRB2Loop(void)
 			capbudget = (precise_t) budget;
 		}
 
+		boolean ranwipe = false;
+
 		I_UpdateTime(cv_timescale.value);
 
 		if (lastwipetic)
@@ -702,9 +743,11 @@ void D_SRB2Loop(void)
 		HW3S_BeginFrameUpdate();
 #endif
 
+		renderisnewtic = (realtics > 0 || singletics);
+
 		refreshdirmenu = 0; // not sure where to put this, here as good as any?
 
-		if (realtics > 0 || singletics)
+		if (renderisnewtic)
 		{
 			// don't skip more than 10 frames at a time
 			// (fadein / fadeout cause massive frame skip!)
@@ -723,14 +766,20 @@ void D_SRB2Loop(void)
 			}
 			else if (rendertimeout < entertic) // in case the server hang or netsplit
 			{
+				// Lagless camera! Yay!
+				if (cv_laglesscam.value && gamestate == GS_LEVEL && netgame)
+				{
+					// Evaluate the chase cam once for every local realtic
+					// This might actually be better suited inside G_Ticker or TryRunTics
+					for (tic_t chasecamtics = 0; chasecamtics < realtics; chasecamtics++)
+					{
+						P_RunChaseCameras();
+					}
+					R_UpdateViewInterpolation();
+				}
+
 				doDisplay = true;
 			}
-
-			renderisnewtic = true;
-		}
-		else
-		{
-			renderisnewtic = false;
 		}
 
 		if (interp)
@@ -752,9 +801,9 @@ void D_SRB2Loop(void)
 			rendertimefrac = FRACUNIT;
 		}
 
-		if (interp || doDisplay)
+		if ((interp || doDisplay) && !frameskip)
 		{
-			D_Display();
+			ranwipe = D_Display();
 		}
 
 		// Only take screenshots after drawing.
@@ -779,8 +828,72 @@ void D_SRB2Loop(void)
 		}
 #endif
 
+		// this is absolutely awful and i hate it lmao
+		if (menuactive && (DPADUPSCROLL || DPADDOWNSCROLL || DPADLEFTSCROLL || DPADRIGHTSCROLL))
+		{
+			event_t myev;
+			myev.type = ev_keydown;
+
+			if (renderisnewtic)
+			{
+				menuInputDelayTimer++;
+
+				if (menuInputDelayTimer >= 19) // TICRATE * ( (k+2) (1 - [wz + h + j - q]^2 - [(gk + 2g + k + 1)(h + j) + h - z]^2 - [16(k + 1)^3(k + 2)(n + 1)^2 + 1 - f^2]^2 calculated by my butt
+				{
+					if (DPADUPSCROLL)
+					{
+						myev.data1 = KEY_UPARROW;
+						M_Responder(&myev);
+					}
+					else if (DPADDOWNSCROLL)
+					{
+						myev.data1 = KEY_DOWNARROW;
+						M_Responder(&myev);
+					}
+					else if (DPADLEFTSCROLL)
+					{
+						myev.data1 = KEY_LEFTARROW;
+						M_Responder(&myev);
+					}
+					else if (DPADRIGHTSCROLL)
+					{
+						myev.data1 = KEY_RIGHTARROW;
+						M_Responder(&myev);
+					}
+				}
+			}
+		}
+		else
+			menuInputDelayTimer = 0;
+
+		if (!dedicated && renderisnewtic) // idk does this need dedi check??
+			D_DeviceLEDTick();
+
 		// Fully completed frame made.
 		finishprecise = I_GetPreciseTime();
+
+		// Use the time before sleep for frameskip calculations:
+		// post-sleep time is literally being intentionally wasted
+		deltasecs = (double)((INT64)(finishprecise - enterprecise)) / I_GetPrecisePrecision();
+		deltatics = deltasecs * NEWTICRATE;
+
+		// If time spent this game loop exceeds a single tic,
+		// it's probably because of rendering.
+		//
+		// Skip rendering the next frame, up to a limit of 3
+		// frames before a frame is rendered no matter what.
+		//
+		// Wipes run an inner loop and artificially increase
+		// the measured time.
+		if (!ranwipe && frameskip < 3 && deltatics > 1.0)
+		{
+			frameskip++;
+		}
+		else
+		{
+			frameskip = 0;
+		}
+
 		if (!singletics)
 		{
 			INT64 elapsed = (INT64)(finishprecise - enterprecise);
@@ -906,7 +1019,7 @@ static INT32 D_DetectFileType(const char* filename)
 			return 5;
 		else if (!stricmp(&filename[strlen(filename) - 4], ".soc"))
 			return 6;
-		
+
 		else if (!stricmp(&filename[strlen(filename) - 4], ".cfg"))
 			return 7;
 		else if (!stricmp(&filename[strlen(filename) - 4], ".txt"))
@@ -930,12 +1043,12 @@ static void D_AutoloadFile(const char *file, char **filearray)
 	if (!newfile)
 		I_Error("No more free memory to AutoloadFile %s",file);
 
-	if (!fileType) 
+	if (!fileType)
 	{
 		CONS_Printf("D_AutoloadFile: File %s is unknown or invalid\n", file);
 		return;
 	}
-		
+
 	strcpy(newfile, file);
 
 	if (fileType <= 6)
@@ -975,7 +1088,10 @@ static void D_FindAddonsToAutoload(void)
 
 	// If the file is found, run our shit
 	if (!autoloadconfigfile) // nope outta here
+	{
+		wasautoloaded = postautoloaded = true; // so D_AddAutoloadFiles can skip everything since nothings there to autoload
 		return;
+	}
 
 	while (fgets(wadsToAutoload, sizeof wadsToAutoload, autoloadconfigfile) != NULL)
 	{
@@ -1040,6 +1156,32 @@ static void D_FindAddonsToAutoload(void)
 
 	// we dont want memory leaks around here do we?
 	fclose(autoloadconfigfile);
+}
+
+void D_AddAutoloadFiles(void)
+{
+	if (wasautoloaded && postautoloaded)
+		return;
+
+	if (!wasautoloaded && !modeattacking)
+	{
+		CONS_Printf("D_AutoloadFile(): Loading autoloaded addons...\n");
+		if (W_AddAutoloadedLocalFiles(autoloadwadfiles) == 0)
+			CONS_Printf("D_AutoloadFile(): Are you sure you put in valid files or what?\n");
+		D_CleanFile(autoloadwadfiles);
+
+		wasautoloaded = true;
+	}
+
+	if ((!postautoloaded) && netgame)
+	{
+		CONS_Printf("D_AutoloadFile(): Loading postloaded addons...\n");
+		if (W_AddAutoloadedLocalFiles(autoloadwadfilespost) == 0)
+			CONS_Printf("D_AutoloadFile(): Are you sure you put in valid files or what?\n");
+		D_CleanFile(autoloadwadfilespost);
+
+		postautoloaded = true;
+	}
 }
 
 void D_CleanFile(char **filearray)
@@ -1147,13 +1289,13 @@ static void IdentifyVersion(void)
 		D_AddFile(va(pandf,srb2waddir,"extra.kart"), startupwadfiles);
 		found_extra_kart = true;
 	}
-	
+
 	// completely optional 2: Back with a vengence
 	if (FIL_ReadFileOK(va(pandf,srb2waddir,"extra2.kart"))) {
 		D_AddFile(va(pandf,srb2waddir,"extra2.kart"), startupwadfiles);
 		found_extra2_kart = true;
 	}
-	
+
 	if (FIL_ReadFileOK(va(pandf,srb2waddir,"extra3.kart"))) {
 		D_AddFile(va(pandf,srb2waddir,"extra3.kart"), startupwadfiles);
 		found_extra3_kart = true;
@@ -1456,7 +1598,7 @@ void D_SRB2Main(void)
 	if (found_extra_kart || found_extra2_kart || found_extra3_kart) // found the funny, add it in!
 	{
 		// HAYA: These are seperated for a reason lmao
-		if (found_extra_kart) 
+		if (found_extra_kart)
 			mainwads++;
 		if (found_extra2_kart)
 			mainwads++;
@@ -1484,7 +1626,7 @@ void D_SRB2Main(void)
 			achi_speedo_clr = true;
 
 		// check for bigger lap count
-		if (W_CheckMultipleLumps("K_STLAPB", "K_STLA2B", NULL)) 
+		if (W_CheckMultipleLumps("K_STLAPB", "K_STLA2B", NULL))
 			big_lap = true;
 
 		// now check for colour hud stuff
@@ -1493,7 +1635,7 @@ void D_SRB2Main(void)
 			clr_hud = true;
 
 		// check for bigger lap count but color** its color bitch
-		if (W_CheckMultipleLumps("K_SCLAPB", "K_SCLA2B", NULL)) 
+		if (W_CheckMultipleLumps("K_SCLAPB", "K_SCLA2B", NULL))
 			big_lap_color = true;
 
 		// kartzspeedo
@@ -1508,16 +1650,16 @@ void D_SRB2Main(void)
 
 		// stat display for extended player setup
 		if (W_CheckMultipleLumps("K_STATNB", "K_STATN1", "K_STATN2", "K_STATN3", "K_STATN4", \
-			"K_STATN5", "K_STATN6", NULL)) 
+			"K_STATN5", "K_STATN6", NULL))
 			statdp = true;
 
 		// Nametag stuffs
-		if (W_CheckMultipleLumps("NTLINE", "NTLINEV", "NTSP", "NTWH", NULL)) 
+		if (W_CheckMultipleLumps("NTLINE", "NTLINEV", "NTSP", "NTWH", NULL))
 			nametaggfx = true;
 
-		if (W_CheckMultipleLumps("K_DGAU","K_DCAU","K_DGSU","K_DCSU", NULL)) 
+		if (W_CheckMultipleLumps("K_DGAU","K_DCAU","K_DGSU","K_DCSU", NULL))
 			driftgaugegfx = true;
-		
+
 		if (found_extra3_kart)
 		{
 			// 80x11 speedometer crap
@@ -1530,7 +1672,7 @@ void D_SRB2Main(void)
 			if (W_LumpExists("SC_SM3TC"))
 				xtra_speedo_clr3 = true;
 		}
-	}	
+	}
 
 #undef PUSHSPEEDO
 	memcpy(speedo_cons_t, speedo_cons_temp, sizeof(speedo_cons_t));
@@ -1644,6 +1786,8 @@ void D_SRB2Main(void)
 
 	savedata.lives = 0; // flag this as not-used
 
+	loaded_config = true; // so pallettechange doesent get called 500 times at startup lol
+
 	//------------------------------------------------ COMMAND LINE PARAMS
 
 	// this must be done after loading gamedata,
@@ -1727,11 +1871,6 @@ void D_SRB2Main(void)
 
 	CONS_Printf("ST_Init(): Init status bar.\n");
 	ST_Init();
-
-	CONS_Printf("D_AutoloadFile(): Loading autoloaded addons...\n");
-	if (W_AddAutoloadedLocalFiles(autoloadwadfiles) == 0)
-		CONS_Printf("D_AutoloadFile(): Are you sure you put in valid files or what?\n");
-	D_CleanFile(autoloadwadfiles);
 
 	// Set up splitscreen players before joining!
 	if (!dedicated && (M_CheckParm("-splitscreen") && M_IsNextParm()))
@@ -1937,7 +2076,7 @@ void D_SRB2Main(void)
 		pagename = "TITLESKY";
 		levelstarttic = gametic;
 		G_SetGamestate(GS_LEVEL);
-		if (!P_SetupLevel(false))
+		if (!P_SetupLevel(false, false))
 			I_Quit(); // fail so reset game stuff
 	}
 

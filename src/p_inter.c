@@ -17,6 +17,7 @@
 #include "g_game.h"
 #include "m_random.h"
 #include "p_local.h"
+#include "p_setup.h"
 #include "s_sound.h"
 #include "r_main.h"
 #include "st_stuff.h"
@@ -253,26 +254,21 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 
 	if (heightcheck)
 	{
-		/*if (special->type == MT_FLINGEMERALD) // little hack here...
-		{ // flingemerald sprites are low to the ground, so extend collision radius down some.
-			if (toucher->z > (special->z + special->height))
-				return;
-			if (special->z - special->height > (toucher->z + toucher->height))
-				return;
-		}
-		else*/
+		if (toucher->momz < 0)
 		{
-			if (toucher->momz < 0) {
-				if (toucher->z + toucher->momz > special->z + special->height)
-					return;
-			} else if (toucher->z > special->z + special->height)
-				return;
-			if (toucher->momz > 0) {
-				if (toucher->z + toucher->height + toucher->momz < special->z)
-					return;
-			} else if (toucher->z + toucher->height < special->z)
+			if (toucher->z + toucher->momz > special->z + special->height)
 				return;
 		}
+		else if (toucher->z > special->z + special->height)
+			return;
+
+		if (toucher->momz > 0)
+		{
+			if (toucher->z + toucher->height + toucher->momz < special->z)
+				return;
+		}
+		else if (toucher->z + toucher->height < special->z)
+			return;
 	}
 
 	if (special->health <= 0)
@@ -383,16 +379,8 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 				player->kartstuff[k_roulettetype] = 2;
 			}
 
-#if 0
-			// Eggbox snipe!
-			if (special->type == MT_EGGMANITEM && special->health > 1)
-				S_StartSound(toucher, sfx_bsnipe);
-#endif
-
-			{
-				mobj_t *poof = P_SpawnMobj(special->x, special->y, special->z, MT_EXPLODE);
-				S_StartSound(poof, special->info->deathsound);
-			}
+			mobj_t *poof = P_SpawnMobj(special->x, special->y, special->z, MT_EXPLODE);
+			S_StartSound(poof, special->info->deathsound);
 
 			if (special->target && special->target->player)
 			{
@@ -475,8 +463,8 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			}
 			else if (special->target->player->kartstuff[k_comebackmode] == 1 && P_CanPickupItem(player, 1))
 			{
-				mobj_t *poof = P_SpawnMobj(special->x, special->y, special->z, MT_EXPLODE);
-				S_StartSound(poof, special->info->seesound);
+				mobj_t *poof2 = P_SpawnMobj(special->x, special->y, special->z, MT_EXPLODE);
+				S_StartSound(poof2, special->info->seesound);
 
 				// Karma fireworks
 				for (i = 0; i < 5; i++)
@@ -502,10 +490,10 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			}
 			else if (special->target->player->kartstuff[k_comebackmode] == 2 && P_CanPickupItem(player, 2))
 			{
-				mobj_t *poof = P_SpawnMobj(special->x, special->y, special->z, MT_EXPLODE);
+				mobj_t *poof3 = P_SpawnMobj(special->x, special->y, special->z, MT_EXPLODE);
 				UINT8 ptadd = 1; // No WANTED bonus for tricking
 
-				S_StartSound(poof, special->info->seesound);
+				S_StartSound(poof3, special->info->seesound);
 
 				if (player->kartstuff[k_bumper] == 1) // If you have only one bumper left, and see if it's a 1v1
 				{
@@ -583,10 +571,6 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			else
 				K_SpinPlayer(player, special->target, 0, special, false);
 			return;
-		/*case MT_EERIEFOG:
-			special->frame &= ~FF_TRANS80;
-			special->frame |= FF_TRANS90;
-			return;*/
 		case MT_SMK_MOLE:
 			if (special->target && !P_MobjWasRemoved(special->target))
 				return;
@@ -935,12 +919,6 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 						player->flyangle = special->threshold;
 
 					player->speed = FixedMul(special->info->speed, special->scale);
-					// Potentially causes axis transfer failures.
-					// Also rarely worked properly anyway.
-					//P_UnsetThingPosition(player->mo);
-					//player->mo->x = special->x;
-					//player->mo->y = special->y;
-					//P_SetThingPosition(player->mo);
 					toucher->z = special->z+(special->height/4);
 				}
 				else // More like a spring
@@ -985,140 +963,6 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 				}
 			}
 			return;
-		/*case MT_NIGHTSSUPERLOOP:
-			if (player->bot || !(player->pflags & PF_NIGHTSMODE))
-				return;
-			if (!G_IsSpecialStage(gamemap))
-				player->powers[pw_nights_superloop] = (UINT16)special->info->speed;
-			else
-			{
-				for (i = 0; i < MAXPLAYERS; i++)
-					if (playeringame[i] && players[i].pflags & PF_NIGHTSMODE)
-						players[i].powers[pw_nights_superloop] = (UINT16)special->info->speed;
-				if (special->info->deathsound != sfx_None)
-					S_StartSound(NULL, special->info->deathsound);
-			}
-
-			// CECHO showing you what this item is
-			if (player == &players[displayplayers[0]] || G_IsSpecialStage(gamemap))
-			{
-				HU_SetCEchoFlags(V_AUTOFADEOUT);
-				HU_SetCEchoDuration(4);
-				HU_DoCEcho(M_GetText("\\\\\\\\\\\\\\\\Super Paraloop"));
-			}
-			break;
-		case MT_NIGHTSDRILLREFILL:
-			if (player->bot || !(player->pflags & PF_NIGHTSMODE))
-				return;
-			if (!G_IsSpecialStage(gamemap))
-				player->drillmeter = special->info->speed;
-			else
-			{
-				for (i = 0; i < MAXPLAYERS; i++)
-					if (playeringame[i] && players[i].pflags & PF_NIGHTSMODE)
-						players[i].drillmeter = special->info->speed;
-				if (special->info->deathsound != sfx_None)
-					S_StartSound(NULL, special->info->deathsound);
-			}
-
-			// CECHO showing you what this item is
-			if (player == &players[displayplayers[0]] || G_IsSpecialStage(gamemap))
-			{
-				HU_SetCEchoFlags(V_AUTOFADEOUT);
-				HU_SetCEchoDuration(4);
-				HU_DoCEcho(M_GetText("\\\\\\\\\\\\\\\\Drill Refill"));
-			}
-			break;
-		case MT_NIGHTSHELPER:
-			if (player->bot || !(player->pflags & PF_NIGHTSMODE))
-				return;
-			if (!G_IsSpecialStage(gamemap))
-			{
-				// A flicky orbits us now
-				mobj_t *flickyobj = P_SpawnMobj(toucher->x, toucher->y, toucher->z + toucher->info->height, MT_NIGHTOPIANHELPER);
-				P_SetTarget(&flickyobj->target, toucher);
-
-				player->powers[pw_nights_helper] = (UINT16)special->info->speed;
-			}
-			else
-			{
-				mobj_t *flickyobj;
-				for (i = 0; i < MAXPLAYERS; i++)
-					if (playeringame[i] && players[i].mo && players[i].pflags & PF_NIGHTSMODE) {
-						players[i].powers[pw_nights_helper] = (UINT16)special->info->speed;
-						flickyobj = P_SpawnMobj(players[i].mo->x, players[i].mo->y, players[i].mo->z + players[i].mo->info->height, MT_NIGHTOPIANHELPER);
-						P_SetTarget(&flickyobj->target, players[i].mo);
-					}
-				if (special->info->deathsound != sfx_None)
-					S_StartSound(NULL, special->info->deathsound);
-			}
-
-			// CECHO showing you what this item is
-			if (player == &players[displayplayers[0]] || G_IsSpecialStage(gamemap))
-			{
-				HU_SetCEchoFlags(V_AUTOFADEOUT);
-				HU_SetCEchoDuration(4);
-				HU_DoCEcho(M_GetText("\\\\\\\\\\\\\\\\Nightopian Helper"));
-			}
-			break;
-		case MT_NIGHTSEXTRATIME:
-			if (player->bot || !(player->pflags & PF_NIGHTSMODE))
-				return;
-			if (!G_IsSpecialStage(gamemap))
-			{
-				player->nightstime += special->info->speed;
-				player->startedtime += special->info->speed;
-				P_RestoreMusic(player);
-			}
-			else
-			{
-				for (i = 0; i < MAXPLAYERS; i++)
-					if (playeringame[i] && players[i].pflags & PF_NIGHTSMODE)
-					{
-						players[i].nightstime += special->info->speed;
-						players[i].startedtime += special->info->speed;
-						P_RestoreMusic(&players[i]);
-					}
-				if (special->info->deathsound != sfx_None)
-					S_StartSound(NULL, special->info->deathsound);
-			}
-
-			// CECHO showing you what this item is
-			if (player == &players[displayplayers[0]] || G_IsSpecialStage(gamemap))
-			{
-				HU_SetCEchoFlags(V_AUTOFADEOUT);
-				HU_SetCEchoDuration(4);
-				HU_DoCEcho(M_GetText("\\\\\\\\\\\\\\\\Extra Time"));
-			}
-			break;
-		case MT_NIGHTSLINKFREEZE:
-			if (player->bot || !(player->pflags & PF_NIGHTSMODE))
-				return;
-			if (!G_IsSpecialStage(gamemap))
-			{
-				player->powers[pw_nights_linkfreeze] = (UINT16)special->info->speed;
-				player->linktimer = 2*TICRATE;
-			}
-			else
-			{
-				for (i = 0; i < MAXPLAYERS; i++)
-					if (playeringame[i] && players[i].pflags & PF_NIGHTSMODE)
-					{
-						players[i].powers[pw_nights_linkfreeze] += (UINT16)special->info->speed;
-						players[i].linktimer = 2*TICRATE;
-					}
-				if (special->info->deathsound != sfx_None)
-					S_StartSound(NULL, special->info->deathsound);
-			}
-
-			// CECHO showing you what this item is
-			if (player == &players[displayplayers[0]] || G_IsSpecialStage(gamemap))
-			{
-				HU_SetCEchoFlags(V_AUTOFADEOUT);
-				HU_SetCEchoDuration(4);
-				HU_DoCEcho(M_GetText("\\\\\\\\\\\\\\\\Link Freeze"));
-			}
-			break;*/
 		case MT_NIGHTSWING:
 			if (G_IsSpecialStage(gamemap) && useNightsSS)
 			{ // Pseudo-ring.
@@ -1132,7 +976,9 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			break;
 		case MT_HOOPCOLLIDE:
 			// This produces a kind of 'domino effect' with the hoop's pieces.
-			for (; special->hprev != NULL; special = special->hprev); // Move to the first sprite in the hoop
+			if (!midgamejoin)
+				for (; special->hprev != NULL; special = special->hprev); // Move to the first sprite in the hoop
+
 			i = 0;
 			for (; special->type == MT_HOOP; special = special->hnext)
 			{
@@ -1464,7 +1310,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			}
 			else
 			{
-				P_PlayRinglossSound(toucher);
+				P_PlayRinglossSound(toucher, NULL);
 				if (toucher->health > 10)
 					toucher->health -= 10;
 				else
@@ -1509,23 +1355,6 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			else if (special->z < toucher->z + toucher->height / 3
 				|| special->z > toucher->z + (toucher->height*2/3))
 				return; // Only go in the mouth
-
-			/* // SRB2kart - Can't drown.
-			// Eaten by player!
-			if (player->powers[pw_underwater] && player->powers[pw_underwater] <= 12*TICRATE + 1)
-				P_RestoreMusic(player);
-
-			if (player->powers[pw_underwater] < underwatertics + 1)
-				player->powers[pw_underwater] = underwatertics + 1;
-			*/
-
-			/*
-			if (!player->climbing)
-			{
-				P_SetPlayerMobjState(toucher, S_PLAY_GASP);
-				P_ResetPlayer(player);
-			}
-			*/
 
 			toucher->momx = toucher->momy = toucher->momz = 0;
 			break;
@@ -1583,26 +1412,7 @@ void P_CheckTimeLimit(void)
 	if (gameaction == ga_completed)
 		return;
 
-	//Tagmode round end but only on the tic before the
-	//XD_EXITLEVEL packet is received by all players.
-	/*if (G_TagGametype())
-	{
-		if (leveltime == (timelimitintics + 1))
-		{
-			for (i = 0; i < MAXPLAYERS; i++)
-			{
-				if (!playeringame[i] || players[i].spectator
-				 || (players[i].pflags & PF_TAGGED) || (players[i].pflags & PF_TAGIT))
-					continue;
-
-				CONS_Printf(M_GetText("%s received double points for surviving the round.\n"), player_names[i]);
-				P_AddPlayerScore(&players[i], players[i].score);
-			}
-		}
-	}
-
-	//Optional tie-breaker for Match/CTF
-	else*/ if (cv_overtime.value)
+	if (cv_overtime.value)
 	{
 		INT32 playerarray[MAXPLAYERS];
 		INT32 tempplayer = 0;
@@ -1675,9 +1485,6 @@ void P_CheckTimeLimit(void)
 			return;
 		P_DoPlayerExit(&players[i]);
 	}
-
-	/*if (server)
-		SendNetXCmd(XD_EXITLEVEL, NULL, 0);*/
 }
 
 /** Checks if a player's score is over the pointlimit and the round should end.
@@ -1699,126 +1506,26 @@ void P_CheckPointLimit(void)
 	if (G_RaceGametype())
 		return;
 
-	// pointlimit is nonzero, check if it's been reached by this player
-	/*if (G_GametypeHasTeams())
+	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		// Just check both teams
-		if ((UINT32)cv_pointlimit.value <= redscore || (UINT32)cv_pointlimit.value <= bluescore)
-		{
-			if (server)
-				SendNetXCmd(XD_EXITLEVEL, NULL, 0);
-		}
-	}
-	else*/
-	{
-		for (i = 0; i < MAXPLAYERS; i++)
-		{
-			if (!playeringame[i] || players[i].spectator)
-				continue;
+		if (!playeringame[i] || players[i].spectator)
+			continue;
 
-			if ((UINT32)cv_pointlimit.value <= players[i].marescore)
+		if ((UINT32)cv_pointlimit.value <= players[i].marescore)
+		{
+			for (i = 0; i < MAXPLAYERS; i++) // AAAAA nested loop using the same iteration variable ;;
 			{
-				for (i = 0; i < MAXPLAYERS; i++) // AAAAA nested loop using the same iteration variable ;;
-				{
-					if (!playeringame[i] || players[i].spectator)
-						continue;
-					if (players[i].exiting)
-						return;
-					P_DoPlayerExit(&players[i]);
-				}
-
-				/*if (server)
-					SendNetXCmd(XD_EXITLEVEL, NULL, 0);*/
-				return; // good thing we're leaving the function immediately instead of letting the loop get mangled!
+				if (!playeringame[i] || players[i].spectator)
+					continue;
+				if (players[i].exiting)
+					return;
+				P_DoPlayerExit(&players[i]);
 			}
+
+			return; // good thing we're leaving the function immediately instead of letting the loop get mangled!
 		}
 	}
 }
-
-/*Checks for untagged remaining players in both tag derivitave modes.
- *If no untagged players remain, end the round.
- *Also serves as error checking if the only IT player leaves.*/
-/*void P_CheckSurvivors(void)
-{
-	INT32 i;
-	INT32 survivors = 0;
-	INT32 taggers = 0;
-	INT32 spectators = 0;
-	INT32 survivorarray[MAXPLAYERS];
-
-	if (!D_NumPlayers()) //no players in the game, no check performed.
-		return;
-
-	for (i=0; i < MAXPLAYERS; i++) //figure out counts of taggers, survivors and spectators.
-	{
-		if (playeringame[i])
-		{
-			if (players[i].spectator)
-				spectators++;
-			else if (players[i].pflags & PF_TAGIT)
-				taggers++;
-			else if (!(players[i].pflags & PF_TAGGED))
-			{
-				survivorarray[survivors] = i;
-				survivors++;
-			}
-		}
-	}
-
-	if (!taggers) //If there are no taggers, pick a survivor at random to be it.
-	{
-		// Exception for hide and seek. If a round has started and the IT player leaves, end the round.
-		if (gametype == GT_HIDEANDSEEK && (leveltime >= (hidetime * TICRATE)))
-		{
-			CONS_Printf(M_GetText("The IT player has left the game.\n"));
-			if (server)
-				SendNetXCmd(XD_EXITLEVEL, NULL, 0);
-
-			return;
-		}
-
-		if (survivors)
-		{
-			INT32 newtagger = survivorarray[P_RandomKey(survivors)];
-
-			CONS_Printf(M_GetText("%s is now IT!\n"), player_names[newtagger]); // Tell everyone who is it!
-			players[newtagger].pflags |= PF_TAGIT;
-
-			survivors--; //Get rid of the guy we just made IT.
-
-			//Yeah, we have an eligible tagger, but we may not have anybody for him to tag!
-			//If there is only one guy waiting on the game to fill or spectators to enter game, don't bother.
-			if (!survivors && (D_NumPlayers() - spectators) > 1)
-			{
-				CONS_Printf(M_GetText("All players have been tagged!\n"));
-				if (server)
-					SendNetXCmd(XD_EXITLEVEL, NULL, 0);
-			}
-
-			return;
-		}
-
-		//If we reach this point, no player can replace the one that was IT.
-		//Unless it is one player waiting on a game, end the round.
-		if ((D_NumPlayers() - spectators) > 1)
-		{
-			CONS_Printf(M_GetText("There are no players able to become IT.\n"));
-			if (server)
-				SendNetXCmd(XD_EXITLEVEL, NULL, 0);
-		}
-
-		return;
-	}
-
-	//If there are taggers, but no survivors, end the round.
-	//Except when the tagger is by himself and the rest of the game are spectators.
-	if (!survivors && (D_NumPlayers() - spectators) > 1)
-	{
-		CONS_Printf(M_GetText("All players have been tagged!\n"));
-		if (server)
-			SendNetXCmd(XD_EXITLEVEL, NULL, 0);
-	}
-}*/
 
 // Checks whether or not to end a race netgame.
 boolean P_CheckRacers(void)
@@ -1908,9 +1615,6 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 	mobj_t *mo;
 	int ms;
 
-	//if (inflictor && (inflictor->type == MT_SHELL || inflictor->type == MT_FIREBALL))
-	//	P_SetTarget(&target->tracer, inflictor);
-
 	if (!useNightsSS && G_IsSpecialStage(gamemap) && target->player && sstimer > 6)
 		sstimer = 6; // Just let P_Ticker take care of the rest.
 
@@ -1959,7 +1663,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 						K_KillBananaChain(target->target->hnext, inflictor, source);
 					target->target->player->kartstuff[k_itemamount] = 0;
 				}
-				else
+				else if (target->target->player->kartstuff[k_itemamount])
 					target->target->player->kartstuff[k_itemamount]--;
 			}
 			else if ((target->type == MT_ORBINAUT_SHIELD && target->target->player->kartstuff[k_itemtype] == KITEM_ORBINAUT) // orbit items
@@ -1991,14 +1695,6 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 	{
 		if (metalrecording) // Ack! Metal Sonic shouldn't die! Cut the tape, end recording!
 			G_StopMetalRecording();
-		/*if (gametype == GT_MATCH && cv_match_scoring.value == 0 // note, no team match suicide penalty
-			&& ((target == source) || (source == NULL && inflictor == NULL) || (source && !source->player)))
-		{ // Suicide penalty - Not in Kart
-			if (target->player->score >= 50)
-				target->player->score -= 50;
-			else
-				target->player->score = 0;
-		}*/
 
 		target->flags2 &= ~MF2_DONTDRAW;
 	}
@@ -2015,85 +1711,6 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 				target->fuse = cv_itemrespawntime.value*TICRATE + 2; // Random box generation
 			}
 		}
-
-		// Award Score Tails
-		/*{ // Enemies shouldn't award points in Kart
-			INT32 score = 0;
-
-			if (maptol & TOL_NIGHTS) // Enemies always worth 200, bosses don't do anything.
-			{
-				if ((target->flags & MF_ENEMY) && !(target->flags & (MF_MISSILE|MF_BOSS)))
-				{
-					score = 200;
-
-					if (source->player->bonustime)
-						score *= 2;
-
-					// Also, add to the link.
-					// I don't know if NiGHTS did this, but
-					// Sonic Time Attacked did and it seems like a good enough incentive
-					// to make people want to actually dash towards/paraloop enemies
-					if (++source->player->linkcount > source->player->maxlink)
-						source->player->maxlink = source->player->linkcount;
-					source->player->linktimer = 2*TICRATE;
-				}
-			}
-			else
-			{
-				if (target->flags & MF_BOSS)
-					score = 1000;
-				else if ((target->flags & MF_ENEMY) && !(target->flags & MF_MISSILE))
-				{
-					mobj_t *scoremobj;
-					UINT32 scorestate = mobjinfo[MT_SCORE].spawnstate;
-
-					scoremobj = P_SpawnMobj(target->x, target->y, target->z + (target->height / 2), MT_SCORE);
-
-					// On ground? No chain starts.
-					if (!source->player->powers[pw_invulnerability] && P_IsObjectOnGround(source))
-					{
-						source->player->scoreadd = 0;
-						score = 100;
-					}
-					// Mario Mode has Mario-like chain point values
-					else if (mariomode) switch (++source->player->scoreadd)
-					{
-						case 1: score = 100;  break;
-						case 2: score = 200;  scorestate += 1; break;
-						case 3: score = 400;  scorestate += 5; break;
-						case 4: score = 800;  scorestate += 6; break;
-						case 5: score = 1000; scorestate += 3; break;
-						case 6: score = 2000; scorestate += 7; break;
-						case 7: score = 4000; scorestate += 8; break;
-						case 8: score = 8000; scorestate += 9; break;
-						default: // 1up for a chain this long
-							if (modeattacking) // but 1ups don't exist in record attack!
-							{ // So we just go back to 10k points.
-								score = 10000; scorestate += 4; break;
-							}
-							P_GivePlayerLives(source->player, 1);
-							P_PlayLivesJingle(source->player);
-							scorestate += 10;
-							break;
-					}
-					// More Sonic-like point system
-					else switch (++source->player->scoreadd)
-					{
-						case 1:  score = 100;   break;
-						case 2:  score = 200;   scorestate += 1; break;
-						case 3:  score = 500;   scorestate += 2; break;
-						case 4: case 5: case 6: case 7: case 8: case 9:
-						case 10: case 11: case 12: case 13: case 14:
-						         score = 1000;  scorestate += 3; break;
-						default: score = 10000; scorestate += 4; break;
-					}
-
-					P_SetMobjState(scoremobj, scorestate);
-				}
-			}
-
-			P_AddPlayerScore(source->player, score);
-		}*/
 	}
 
 	// if a player avatar dies...
@@ -2120,7 +1737,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 		}
 		target->player->playerstate = PST_DEAD;
 
-		if (cv_fading.value && cv_birdmusic.value && P_IsLocalPlayer(target->player))
+		if (cv_birdmusic.value && cv_fading.value && P_IsLocalPlayer(target->player))
 		{
 			if (netgame || multiplayer)
 				ms = cv_respawntime.value * 1000;
@@ -2131,7 +1748,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 			If the time spent with the music paused is less than half
 			a second, continue playing the song (just mute it).
 			*/
-			if (( ms - cv_respawnfademusicout.value ) < 500)
+			if ((ms - cv_respawnfademusicout.value) < 500)
 				S_FadeMusic(0, cv_respawnfademusicout.value);
 			else
 				S_FadeOutStopMusic(cv_respawnfademusicout.value);
@@ -2157,42 +1774,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 		if (target->player == &players[displayplayers[3]])
 			localaiming[3] = 0;
 
-		//tag deaths handled differently in suicide cases. Don't count spectators!
-		/*if (G_TagGametype()
-		 && !(target->player->pflags & PF_TAGIT) && (!source || !source->player) && !(target->player->spectator))
-		{
-			// if you accidentally die before you run out of time to hide, ignore it.
-			// allow them to try again, rather than sitting the whole thing out.
-			if (leveltime >= hidetime * TICRATE)
-			{
-				if (gametype == GT_TAG)//suiciding in survivor makes you IT.
-				{
-					target->player->pflags |= PF_TAGIT;
-					CONS_Printf(M_GetText("%s is now IT!\n"), player_names[target->player-players]); // Tell everyone who is it!
-					P_CheckSurvivors();
-				}
-				else
-				{
-					if (!(target->player->pflags & PF_TAGGED))
-					{
-						//otherwise, increment the tagger's score.
-						//in hide and seek, suiciding players are counted as found.
-						INT32 w;
-
-						for (w=0; w < MAXPLAYERS; w++)
-						{
-							if (players[w].pflags & PF_TAGIT)
-								P_AddPlayerScore(&players[w], 1);
-						}
-
-						target->player->pflags |= PF_TAGGED;
-						CONS_Printf(M_GetText("%s was found!\n"), player_names[target->player-players]);
-						P_CheckSurvivors();
-					}
-				}
-			}
-		}
-		else*/ if (G_BattleGametype())
+		if (G_BattleGametype())
 			K_CheckBumpers();
 
 		target->player->kartstuff[k_pogospring] = 0;
@@ -2607,26 +2189,6 @@ static inline boolean P_TagDamage(mobj_t *target, mobj_t *inflictor, mobj_t *sou
 		return false;
 	}
 
-	// The tag occurs so long as you aren't shooting another tagger with friendlyfire on.
-	/*if (source->player->pflags & PF_TAGIT && !(player->pflags & PF_TAGIT))
-	{
-		P_AddPlayerScore(source->player, 1); //award points to tagger.
-
-		if (gametype == GT_TAG) //survivor
-		{
-			player->pflags |= PF_TAGIT; //in survivor, the player becomes IT and helps hunt down the survivors.
-			CONS_Printf(M_GetText("%s is now IT!\n"), player_names[player-players]); // Tell everyone who is it!
-		}
-		else
-		{
-			player->pflags |= PF_TAGGED; //in hide and seek, the player is tagged and stays stationary.
-			CONS_Printf(M_GetText("%s was found!\n"), player_names[player-players]); // Tell everyone who is it!
-		}
-
-		//checks if tagger has tagged all players, if so, end round early.
-		P_CheckSurvivors();
-	}*/
-
 	P_DoPlayerPain(player, source, inflictor);
 
 	// Check for a shield
@@ -2644,7 +2206,7 @@ static inline boolean P_TagDamage(mobj_t *target, mobj_t *inflictor, mobj_t *sou
 	}
 	else if (target->health > 1) // Ring loss
 	{
-		P_PlayRinglossSound(target);
+		P_PlayRinglossSound(target, source);
 		P_PlayerRingBurst(player, player->mo->health - 1);
 	}
 
@@ -2664,15 +2226,6 @@ static inline boolean P_TagDamage(mobj_t *target, mobj_t *inflictor, mobj_t *sou
 static inline boolean P_PlayerHitsPlayer(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage)
 {
 	player_t *player = target->player;
-
-	// You can't kill yourself, idiot... // Unless it's Mario kart. Which it is. In this mod. All the time.
-	//if (source == target)
-	//	return false;
-
-	// In COOP/RACE/CHAOS, you can't hurt other players unless cv_friendlyfire is on
-	// ...But in SRB2kart, you can!
-	//if (!cv_friendlyfire.value && (G_RaceGametype()))
-	//	return false;
 
 	// Tag handling
 	if (G_TagGametype())
@@ -2724,32 +2277,6 @@ static void P_KillPlayer(player_t *player, mobj_t *source, INT32 damage)
 	P_ResetPlayer(player);
 
 	P_SetPlayerMobjState(player->mo, player->mo->info->deathstate);
-
-	/*if (gametype == GT_CTF && (player->gotflag & (GF_REDFLAG|GF_BLUEFLAG)))
-	{
-		P_PlayerFlagBurst(player, false);
-		if (source && source->player)
-		{
-			// Award no points when players shoot each other when cv_friendlyfire is on.
-			if (!G_GametypeHasTeams() || !(source->player->ctfteam == player->ctfteam && source != player->mo))
-				P_AddPlayerScore(source->player, 1);
-		}
-	}
-	if (source && source->player && !player->powers[pw_super]) //don't score points against super players
-	{
-		// Award no points when players shoot each other when cv_friendlyfire is on.
-		if (!G_GametypeHasTeams() || !(source->player->ctfteam == player->ctfteam && source != player->mo))
-			P_AddPlayerScore(source->player, 1);
-	}
-
-	// If the player was super, tell them he/she ain't so super nomore.
-	if (gametype != GT_COOP && player->powers[pw_super])
-	{
-		S_StartSound(NULL, sfx_s3k66); //let all players hear it.
-		HU_SetCEchoFlags(0);
-		HU_SetCEchoDuration(5);
-		HU_DoCEcho(va("%s\\is no longer super.\\\\\\\\", player_names[player-players]));
-	}*/
 
 	if (player->pflags & PF_TIMEOVER)
 	{
@@ -2811,44 +2338,8 @@ void P_RemoveShield(player_t *player)
 		player->powers[pw_shield] = player->powers[pw_shield] & SH_STACK;
 }
 
-/*
-static void P_ShieldDamage(player_t *player, mobj_t *inflictor, mobj_t *source, INT32 damage) // SRB2kart - unused.
-{
-	// Must do pain first to set flashing -- P_RemoveShield can cause damage
-	P_DoPlayerPain(player, source, inflictor);
-
-	P_RemoveShield(player);
-
-	P_ForceFeed(player, 40, 10, TICRATE, 40 + min(damage, 100)*2);
-
-	if (source && (source->type == MT_SPIKE || (source->type == MT_NULL && source->threshold == 43))) // spikes
-		S_StartSound(player->mo, sfx_spkdth);
-	else
-		S_StartSound (player->mo, sfx_shldls); // Ba-Dum! Shield loss.
-
-	if (gametype == GT_CTF && (player->gotflag & (GF_REDFLAG|GF_BLUEFLAG)))
-	{
-		P_PlayerFlagBurst(player, false);
-		if (source && source->player)
-		{
-			// Award no points when players shoot each other when cv_friendlyfire is on.
-			if (!G_GametypeHasTeams() || !(source->player->ctfteam == player->ctfteam && source != player->mo))
-				P_AddPlayerScore(source->player, 25);
-		}
-	}
-	if (source && source->player && !player->powers[pw_super]) //don't score points against super players
-	{
-		// Award no points when players shoot each other when cv_friendlyfire is on.
-		if (!G_GametypeHasTeams() || !(source->player->ctfteam == player->ctfteam && source != player->mo))
-			P_AddPlayerScore(source->player, cv_match_scoring.value == 1 ? 25 : 50);
-	}
-}
-*/
-
 static void P_RingDamage(player_t *player, mobj_t *inflictor, mobj_t *source, INT32 damage)
 {
-	//const UINT8 scoremultiply = ((K_IsWantedPlayer(player) && !trapitem) : 2 ? 1);
-
 	if (!(inflictor && ((inflictor->flags & MF_MISSILE) || inflictor->player) && player->powers[pw_super] && ALL7EMERALDS(player->powers[pw_emeralds])))
 	{
 		P_DoPlayerPain(player, source, inflictor);
@@ -2859,26 +2350,8 @@ static void P_RingDamage(player_t *player, mobj_t *inflictor, mobj_t *source, IN
 			S_StartSound(player->mo, sfx_spkdth);
 	}
 
-	/*if (source && source->player && !player->powers[pw_super]) //don't score points against super players
-	{
-		// Award no points when players shoot each other when cv_friendlyfire is on.
-		if (!G_GametypeHasTeams() || !(source->player->ctfteam == player->ctfteam && source != player->mo))
-			P_AddPlayerScore(source->player, scoremultiply);
-	}
-
-	if (gametype == GT_CTF && (player->gotflag & (GF_REDFLAG|GF_BLUEFLAG)))
-	{
-		P_PlayerFlagBurst(player, false);
-		if (source && source->player)
-		{
-			// Award no points when players shoot each other when cv_friendlyfire is on.
-			if (!G_GametypeHasTeams() || !(source->player->ctfteam == player->ctfteam && source != player->mo))
-				P_AddPlayerScore(source->player, scoremultiply);
-		}
-	}*/
-
 	// Ring loss sound plays despite hitting spikes
-	P_PlayRinglossSound(player->mo); // Ringledingle!
+	P_PlayRinglossSound(player->mo, source); // Ringledingle!
 }
 
 /** Damages an object, which may or may not be a player.
@@ -3676,32 +3149,30 @@ void P_PlayerFlagBurst(player_t *player, boolean toss)
 	P_SetTarget(&flag->target, player->mo);
 
 	// Flag text
+	char plname[MAXPLAYERNAME+4];
+	const char *flagtext;
+	char flagcolor;
+
+	snprintf(plname, sizeof(plname), "%s%s%s",
+			 CTFTEAMCODE(player),
+			 player_names[player - players],
+			 CTFTEAMENDCODE(player));
+
+	if (type == MT_REDFLAG)
 	{
-		char plname[MAXPLAYERNAME+4];
-		const char *flagtext;
-		char flagcolor;
-
-		snprintf(plname, sizeof(plname), "%s%s%s",
-				 CTFTEAMCODE(player),
-				 player_names[player - players],
-				 CTFTEAMENDCODE(player));
-
-		if (type == MT_REDFLAG)
-		{
-			flagtext = M_GetText("Red flag");
-			flagcolor = '\x85';
-		}
-		else
-		{
-			flagtext = M_GetText("Blue flag");
-			flagcolor = '\x84';
-		}
-
-		if (toss)
-			CONS_Printf(M_GetText("%s tossed the %c%s%c.\n"), plname, flagcolor, flagtext, 0x80);
-		else
-			CONS_Printf(M_GetText("%s dropped the %c%s%c.\n"), plname, flagcolor, flagtext, 0x80);
+		flagtext = M_GetText("Red flag");
+		flagcolor = '\x85';
 	}
+	else
+	{
+		flagtext = M_GetText("Blue flag");
+		flagcolor = '\x84';
+	}
+
+	if (toss)
+		CONS_Printf(M_GetText("%s tossed the %c%s%c.\n"), plname, flagcolor, flagtext, 0x80);
+	else
+		CONS_Printf(M_GetText("%s dropped the %c%s%c.\n"), plname, flagcolor, flagtext, 0x80);
 
 	player->gotflag = 0;
 

@@ -25,6 +25,9 @@
 ///        allocator was fragmenting badly. Finally, this version is a bit
 ///        simpler (about half the lines of code).
 
+#include <stddef.h>
+#include <stdalign.h>
+
 #include "doomdef.h"
 #include "doomstat.h"
 #include "r_patch.h"
@@ -67,8 +70,9 @@ typedef struct memblock_s
 	struct memblock_s *next, *prev;
 } memblock_t;
 
-#define MEMORY(x) (void *)((uintptr_t)(x) + sizeof(memblock_t))
-#define MEMBLOCK(x) (memblock_t *)((uintptr_t)(x) - sizeof(memblock_t))
+#define ALIGNPAD (((sizeof (memblock_t) + (alignof (max_align_t) - 1)) & ~(alignof (max_align_t) - 1)) - sizeof (memblock_t))
+#define MEMORY(x) (void *)((uintptr_t)(x) + sizeof(memblock_t) + ALIGNPAD)
+#define MEMBLOCK(x) (memblock_t *)((uintptr_t)(x) - ALIGNPAD - sizeof(memblock_t))
 
 // both the head and tail of the zone memory block list
 static memblock_t head;
@@ -219,15 +223,16 @@ void *Z_MallocAlign(size_t size, INT32 tag, void *user, INT32 alignbits)
 {
 	memblock_t *block;
 	void *ptr;
-	(void)(alignbits); // no longer used, so silence warnings.
+
+	(void)(alignbits); // no longer used, so silence warnings. TODO we should figure out a solution for this
 
 #ifdef ZDEBUG2
 	CONS_Debug(DBG_MEMORY, "Z_Malloc %s:%d\n", file, line);
 #endif
 
-	block = xm(sizeof (memblock_t) + size);
+	block = xm(sizeof (memblock_t) + ALIGNPAD + size);
 	ptr = MEMORY(block);
-	I_Assert((intptr_t)ptr % sizeof (void *) == 0);
+	I_Assert((intptr_t)ptr % alignof (max_align_t) == 0);
 
 #ifdef HAVE_VALGRIND
 	Z_calloc = false;

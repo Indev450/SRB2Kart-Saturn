@@ -51,15 +51,53 @@
 //
 
 // Include GLSL_FLOOR_FUDGES or GLSL_WALL_FUDGES or define the fudges in shaders that use this macro.
+#define GLSL_DOOM_COLORMAP_DITHER \
+	"float baseValue = max(startmap * STARTMAP_FUDGE - scale * 0.5 * SCALE_FUDGE, cap);\n" \
+	"float endResolutionx = scr_resolution.x;\n" \
+	"float endResolutiony = scr_resolution.y;\n" \
+	"if (scr_resolution.x > 1280.0) {\n" \
+		"endResolutionx = scr_resolution.x * 0.5;\n" \
+	"}\n" \
+	"if (scr_resolution.y > 720.0) {\n" \
+		"endResolutiony = scr_resolution.y * 0.5;\n" \
+	"}\n" \
+	"float zFactor = clamp((z - 192.0) / (6144.0 - 192.0), 0.0, 1.0);\n" \
+	"int scaleFactor = int(mix(1.0, 8.0, zFactor));\n" \
+	"endResolutionx = endResolutionx * scaleFactor;\n" \
+	"endResolutiony = endResolutiony * scaleFactor;\n" \
+	"vec2 normalizedPosition = position * vec2(endResolutionx / scr_resolution.x, endResolutiony / scr_resolution.y);\n" \
+	"int x = int(mod(normalizedPosition.x, 4.0));\n" \
+	"int y = int(mod(normalizedPosition.y, 4.0));\n" \
+	"float bayerMatrix[4*4] = float[4*4](\n" \
+		"0.0, 8.0, 2.0, 10.0,\n" \
+		"12.0, 4.0, 14.0, 6.0,\n" \
+		"3.0, 11.0, 1.0, 9.0,\n" \
+		"15.0, 7.0, 13.0, 5.0\n" \
+	");\n" \
+	"#ifdef SRB2_PALETTE_RENDERING\n" \
+	"float threshold = (1.0 - pow(zFactor, 2.0)) * (bayerMatrix[y*4 + x] / 11.0);\n" \
+	"#else\n" \
+	"float threshold = (1.0 - pow(zFactor, 2.0)) * (bayerMatrix[y*4 + x] / 16.0);\n" \
+	"#endif\n" \
+	"return mix(baseValue + threshold - 0.5 / 16.0, baseValue, zFactor);\n"
+
+#define GLSL_DOOM_COLORMAP_NODITHER \
+	"return max(startmap * STARTMAP_FUDGE - scale * 0.5 * SCALE_FUDGE, cap);\n" \
+
 #define GLSL_DOOM_COLORMAP \
-	"float R_DoomColormap(float light, float z)\n" \
+	"uniform vec2 scr_resolution;\n" \
+	"float R_DoomColormap(float light, float z, vec2 position)\n" \
 	"{\n" \
 		"float lightnum = clamp(light / 17.0, 0.0, 15.0);\n" \
 		"float lightz = clamp(z / 16.0, 0.0, 127.0);\n" \
 		"float startmap = (15.0 - lightnum) * 4.0;\n" \
 		"float scale = 160.0 / (lightz + 1.0);\n" \
 		"float cap = (155.0 - light) * 0.26;\n" \
-		"return max(startmap * STARTMAP_FUDGE - scale * 0.5 * SCALE_FUDGE, cap);\n" \
+		"#ifdef SRB2_LIGHT_DITHER\n" \
+		GLSL_DOOM_COLORMAP_DITHER \
+		"#else\n" \
+		GLSL_DOOM_COLORMAP_NODITHER \
+		"#endif\n" \
 	"}\n"
 // lighting cap adjustment:
 // first num (155.0), increase to make it start to go dark sooner
@@ -69,7 +107,7 @@
 	"float R_DoomLightingEquation(float light)\n" \
 	"{\n" \
 		"float z = gl_FragCoord.z / gl_FragCoord.w;\n" \
-		"float colormap = floor(R_DoomColormap(light, z)) + 0.5;\n" \
+		"float colormap = floor(R_DoomColormap(light, z, gl_FragCoord.xy)) + 0.5;\n" \
 		"return clamp(colormap, 0.0, 31.0) / 32.0;\n" \
 	"}\n"
 
@@ -95,7 +133,7 @@
 #define GLSL_PALETTE_RENDERING \
 	"float tex_pal_idx = texture3D(palette_lookup_tex, vec3((texel * 63.0 + 0.5) / 64.0))[0] * 255.0;\n" \
 	"float z = gl_FragCoord.z / gl_FragCoord.w;\n" \
-	"float light_y = clamp(floor(R_DoomColormap(lighting, z)), 0.0, 31.0);\n" \
+	"float light_y = clamp(floor(R_DoomColormap(lighting, z, gl_FragCoord.xy)), 0.0, 31.0);\n" \
 	"vec2 lighttable_coord = vec2((tex_pal_idx + 0.5) / 256.0, (light_y + 0.5) / 32.0);\n" \
 	"vec4 final_color = texture2D(lighttable_tex, lighttable_coord);\n" \
 	"final_color.a = texel.a * poly_color.a;\n" \
@@ -133,13 +171,35 @@
 		"gl_FragColor = final_color;\n" \
 	"}\n" \
 	"#endif\0"
+	
+#define GLSL_SOFTWARE_FRAGMENT_SHADER_NOPAL \
+	"uniform sampler2D tex;\n" \
+	"uniform vec4 poly_color;\n" \
+	"uniform vec4 tint_color;\n" \
+	"uniform vec4 fade_color;\n" \
+	"uniform float lighting;\n" \
+	"uniform float fade_start;\n" \
+	"uniform float fade_end;\n" \
+	GLSL_DOOM_COLORMAP \
+	GLSL_DOOM_LIGHT_EQUATION \
+	"void main(void) {\n" \
+		"vec4 texel = texture2D(tex, gl_TexCoord[0].st);\n" \
+		"vec4 base_color = texel * poly_color;\n" \
+		"vec4 final_color = base_color;\n" \
+		GLSL_SOFTWARE_TINT_EQUATION \
+		GLSL_SOFTWARE_FADE_EQUATION \
+		"final_color.a = texel.a * poly_color.a;\n" \
+		"gl_FragColor = final_color;\n" \
+	"}\n" \
 
 // hand tuned adjustments for light level calculation
 #define GLSL_FLOOR_FUDGES \
+	"#version 120\n" \
 	"#define STARTMAP_FUDGE 1.06\n" \
 	"#define SCALE_FUDGE 1.15\n"
 
 #define GLSL_WALL_FUDGES \
+	"#version 120\n" \
 	"#define STARTMAP_FUDGE 1.05\n" \
 	"#define SCALE_FUDGE 2.2\n"
 
@@ -150,6 +210,10 @@
 #define GLSL_WALL_FRAGMENT_SHADER \
 	GLSL_WALL_FUDGES \
 	GLSL_SOFTWARE_FRAGMENT_SHADER
+	
+#define GLSL_SHADOW_FRAGMENT_SHADER \
+	GLSL_FLOOR_FUDGES \
+	GLSL_SOFTWARE_FRAGMENT_SHADER_NOPAL
 
 //
 // Water surface shader

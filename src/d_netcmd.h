@@ -128,6 +128,7 @@ extern consvar_t cv_kartvoterulechanges;
 extern consvar_t cv_kartgametypepreference;
 extern consvar_t cv_kartspeedometer;
 extern consvar_t cv_kartvoices;
+extern consvar_t cv_karthitemdialog;
 
 extern consvar_t cv_karteliminatelast;
 
@@ -201,9 +202,15 @@ extern consvar_t cv_ps_thinkframe_page;
 extern consvar_t cv_ps_samplesize;
 extern consvar_t cv_ps_descriptor;
 
+extern consvar_t cv_director, cv_kartdebugdirector, cv_showdirectorhud;
+
 extern consvar_t cv_showtrackaddon;
 
 extern consvar_t cv_showspecstuff;
+
+extern consvar_t cv_betainterscreen;
+
+extern consvar_t cv_laglesscam;
 
 typedef enum
 {

@@ -107,7 +107,7 @@ static inline void P_UnArchivePlayer(void)
 //
 // P_NetArchivePlayers
 //
-static void P_NetArchivePlayers(void)
+static void P_NetArchivePlayers(boolean resending)
 {
 	INT32 i, j;
 	UINT16 flags;
@@ -117,12 +117,18 @@ static void P_NetArchivePlayers(void)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
+		if (resending)
+			WRITESINT8(save_p, (SINT8)adminplayers[i]);
+
 		if (!playeringame[i])
 			continue;
 
 		flags = 0;
 
 		// no longer send ticcmds, player name, skin, or color
+
+		if (resending)
+			WRITESTRINGN(save_p, player_names[i], MAXPLAYERNAME);
 
 		WRITEANGLE(save_p, players[i].aiming);
 		WRITEANGLE(save_p, players[i].awayviewaiming);
@@ -147,6 +153,13 @@ static void P_NetArchivePlayers(void)
 
 		WRITEUINT16(save_p, players[i].flashpal);
 		WRITEUINT16(save_p, players[i].flashcount);
+
+		if (resending)
+		{
+			WRITEUINT8(save_p, players[i].skincolor);
+			WRITEINT32(save_p, players[i].skin);
+		}
+
 
 		WRITEUINT32(save_p, players[i].score);
 		WRITEFIXED(save_p, players[i].dashspeed);
@@ -285,7 +298,7 @@ static void P_NetArchivePlayers(void)
 //
 // P_NetUnArchivePlayers
 //
-static void P_NetUnArchivePlayers(void)
+static void P_NetUnArchivePlayers(boolean resending)
 {
 	INT32 i, j;
 	UINT16 flags;
@@ -295,6 +308,8 @@ static void P_NetUnArchivePlayers(void)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
+		if (resending)
+			adminplayers[i] = (INT32)READSINT8(save_p);
 		// Do NOT memset player struct to 0
 		// other areas may initialize data elsewhere
 		//memset(&players[i], 0, sizeof (player_t));
@@ -304,6 +319,9 @@ static void P_NetUnArchivePlayers(void)
 		// NOTE: sending tics should (hopefully) no longer be necessary
 		// sending player names, skin and color should not be necessary at all!
 		// (that data is handled in the server config now)
+
+		if (resending)
+			READSTRINGN(save_p, player_names[i], MAXPLAYERNAME);
 
 		players[i].aiming = READANGLE(save_p);
 		players[i].awayviewaiming = READANGLE(save_p);
@@ -328,6 +346,12 @@ static void P_NetUnArchivePlayers(void)
 
 		players[i].flashpal = READUINT16(save_p);
 		players[i].flashcount = READUINT16(save_p);
+
+		if (resending)
+		{
+			players[i].skincolor = READUINT8(save_p);
+			players[i].skin = READINT32(save_p);
+		}
 
 		players[i].score = READUINT32(save_p);
 		players[i].dashspeed = READFIXED(save_p); // dashing speed
@@ -499,34 +523,15 @@ static void P_NetArchiveWorld(void)
 	UINT8 *put;
 
 	// reload the map just to see difference
-	mapsector_t *ms;
-	mapsidedef_t *msd;
-	maplinedef_t *mld;
+	virtres_t* virt = vres_GetMap(lastloadedmaplumpnum);
+	mapsector_t  *ms  = (mapsector_t*) vres_Find(virt, "SECTORS")->data;
+	mapsidedef_t *msd = (mapsidedef_t*) vres_Find(virt, "SIDEDEFS")->data;
+	maplinedef_t *mld = (maplinedef_t*) vres_Find(virt, "LINEDEFS")->data;
 	const sector_t *ss = sectors;
 	UINT8 diff, diff2;
 
 	WRITEUINT32(save_p, ARCHIVEBLOCK_WORLD);
 	put = save_p;
-
-	if (W_IsLumpWad(lastloadedmaplumpnum)) // welp it's a map wad in a pk3
-	{ // HACK: Open wad file rather quickly so we can get the data from the relevant lumps
-		UINT8 *wadData = W_CacheLumpNum(lastloadedmaplumpnum, PU_STATIC);
-		filelump_t *fileinfo = (filelump_t *)(wadData + ((wadinfo_t *)wadData)->infotableofs);
-#define retrieve_mapdata(d, f)\
-		d = Z_Malloc((f)->size, PU_CACHE, NULL); \
-		M_Memcpy(d, wadData + (f)->filepos, (f)->size)
-		retrieve_mapdata(ms, fileinfo + ML_SECTORS);
-		retrieve_mapdata(mld, fileinfo + ML_LINEDEFS);
-		retrieve_mapdata(msd, fileinfo + ML_SIDEDEFS);
-#undef retrieve_mapdata
-		Z_Free(wadData); // we're done with this now
-	}
-	else // phew it's just a WAD
-	{
-			ms = W_CacheLumpNum(lastloadedmaplumpnum+ML_SECTORS, PU_CACHE);
-			mld = W_CacheLumpNum(lastloadedmaplumpnum+ML_LINEDEFS, PU_CACHE);
-			msd = W_CacheLumpNum(lastloadedmaplumpnum+ML_SIDEDEFS, PU_CACHE);
-	}
 
 	for (i = 0; i < numsectors; i++, ss++, ms++)
 	{
@@ -737,6 +742,7 @@ static void P_NetArchiveWorld(void)
 	WRITEUINT16(put, 0xffff);
 	R_ClearTextureNumCache(false);
 
+	vres_Free(virt);
 	save_p = put;
 }
 
@@ -1874,7 +1880,7 @@ static void P_NetArchiveThinkers(void)
 			continue;
 		}
 #ifdef PARANOIA
-		else if (th->function.acv != P_RemoveThinkerDelayed) // wait garbage collection
+		else if (th->function.acp1 != P_RemoveThinkerDelayed) // wait garbage collection
 			I_Error("unknown thinker type %p", th->function.acp1);
 #endif
 	}
@@ -1899,8 +1905,11 @@ mobj_t *P_FindNewPosition(UINT32 oldposition)
 			continue;
 
 		mobj = (mobj_t *)th;
-		if (mobj->mobjnum == oldposition)
-			return mobj;
+
+		if (mobj->mobjnum != oldposition)
+			continue;
+
+		return mobj;
 	}
 	CONS_Debug(DBG_GAMELOGIC, "mobj not found\n");
 	return NULL;
@@ -2899,12 +2908,13 @@ static void P_NetUnArchiveThinkers(void)
 		for (currentthinker = thinkercap.next; currentthinker != &thinkercap;
 			currentthinker = currentthinker->next)
 		{
-			if (currentthinker->function.acp1 == (actionf_p1)T_ExecutorDelay)
-			{
-				delay = (void *)currentthinker;
-				if ((mobjnum = (UINT32)(size_t)delay->caller))
-					delay->caller = P_FindNewPosition(mobjnum);
-			}
+			if (currentthinker->function.acp1 != (actionf_p1)T_ExecutorDelay)
+				continue;
+
+			delay = (void *)currentthinker;
+
+			if ((mobjnum = (UINT32)(size_t)delay->caller))
+				delay->caller = P_FindNewPosition(mobjnum);
 		}
 	}
 }
@@ -3013,11 +3023,11 @@ static inline void P_FinishMobjs(void)
 	for (currentthinker = thinkercap.next; currentthinker != &thinkercap;
 		currentthinker = currentthinker->next)
 	{
-		if (currentthinker->function.acp1 == (actionf_p1)P_MobjThinker)
-		{
-			mobj = (mobj_t *)currentthinker;
-			mobj->info = &mobjinfo[mobj->type];
-		}
+		if (currentthinker->function.acp1 != (actionf_p1)P_MobjThinker)
+			continue;
+
+		mobj = (mobj_t *)currentthinker;
+		mobj->info = &mobjinfo[mobj->type];
 	}
 }
 
@@ -3031,69 +3041,69 @@ static void P_RelinkPointers(void)
 	for (currentthinker = thinkercap.next; currentthinker != &thinkercap;
 		currentthinker = currentthinker->next)
 	{
-		if (currentthinker->function.acp1 == (actionf_p1)P_MobjThinker)
+		if (currentthinker->function.acp1 != (actionf_p1)P_MobjThinker)
+			continue;
+
+		mobj = (mobj_t *)currentthinker;
+
+		if (mobj->type == MT_HOOP || mobj->type == MT_HOOPCOLLIDE || mobj->type == MT_HOOPCENTER)
+			continue;
+
+		if (mobj->tracer)
 		{
-			mobj = (mobj_t *)currentthinker;
-
-			if (mobj->type == MT_HOOP || mobj->type == MT_HOOPCOLLIDE || mobj->type == MT_HOOPCENTER)
-				continue;
-
-			if (mobj->tracer)
-			{
-				temp = (UINT32)(size_t)mobj->tracer;
-				mobj->tracer = NULL;
-				if (!P_SetTarget(&mobj->tracer, P_FindNewPosition(temp)))
-					CONS_Debug(DBG_GAMELOGIC, "tracer not found on %d\n", mobj->type);
-			}
-			if (mobj->target)
-			{
-				temp = (UINT32)(size_t)mobj->target;
-				mobj->target = NULL;
-				if (!P_SetTarget(&mobj->target, P_FindNewPosition(temp)))
-					CONS_Debug(DBG_GAMELOGIC, "target not found on %d\n", mobj->type);
-			}
-			if (mobj->hnext)
-			{
-				temp = (UINT32)(size_t)mobj->hnext;
-				mobj->hnext = NULL;
-				if (!P_SetTarget(&mobj->hnext, P_FindNewPosition(temp)))
-					CONS_Debug(DBG_GAMELOGIC, "hnext not found on %d\n", mobj->type);
-			}
-			if (mobj->hprev)
-			{
-				temp = (UINT32)(size_t)mobj->hprev;
-				mobj->hprev = NULL;
-				if (!P_SetTarget(&mobj->hprev, P_FindNewPosition(temp)))
-					CONS_Debug(DBG_GAMELOGIC, "hprev not found on %d\n", mobj->type);
-			}
-			if (mobj->player && mobj->player->capsule)
-			{
-				temp = (UINT32)(size_t)mobj->player->capsule;
-				mobj->player->capsule = NULL;
-				if (!P_SetTarget(&mobj->player->capsule, P_FindNewPosition(temp)))
-					CONS_Debug(DBG_GAMELOGIC, "capsule not found on %d\n", mobj->type);
-			}
-			if (mobj->player && mobj->player->axis1)
-			{
-				temp = (UINT32)(size_t)mobj->player->axis1;
-				mobj->player->axis1 = NULL;
-				if (!P_SetTarget(&mobj->player->axis1, P_FindNewPosition(temp)))
-					CONS_Debug(DBG_GAMELOGIC, "axis1 not found on %d\n", mobj->type);
-			}
-			if (mobj->player && mobj->player->axis2)
-			{
-				temp = (UINT32)(size_t)mobj->player->axis2;
-				mobj->player->axis2 = NULL;
-				if (!P_SetTarget(&mobj->player->axis2, P_FindNewPosition(temp)))
-					CONS_Debug(DBG_GAMELOGIC, "axis2 not found on %d\n", mobj->type);
-			}
-			if (mobj->player && mobj->player->awayviewmobj)
-			{
-				temp = (UINT32)(size_t)mobj->player->awayviewmobj;
-				mobj->player->awayviewmobj = NULL;
-				if (!P_SetTarget(&mobj->player->awayviewmobj, P_FindNewPosition(temp)))
-					CONS_Debug(DBG_GAMELOGIC, "awayviewmobj not found on %d\n", mobj->type);
-			}
+			temp = (UINT32)(size_t)mobj->tracer;
+			mobj->tracer = NULL;
+			if (!P_SetTarget(&mobj->tracer, P_FindNewPosition(temp)))
+				CONS_Debug(DBG_GAMELOGIC, "tracer not found on %d\n", mobj->type);
+		}
+		if (mobj->target)
+		{
+			temp = (UINT32)(size_t)mobj->target;
+			mobj->target = NULL;
+			if (!P_SetTarget(&mobj->target, P_FindNewPosition(temp)))
+				CONS_Debug(DBG_GAMELOGIC, "target not found on %d\n", mobj->type);
+		}
+		if (mobj->hnext)
+		{
+			temp = (UINT32)(size_t)mobj->hnext;
+			mobj->hnext = NULL;
+			if (!P_SetTarget(&mobj->hnext, P_FindNewPosition(temp)))
+				CONS_Debug(DBG_GAMELOGIC, "hnext not found on %d\n", mobj->type);
+		}
+		if (mobj->hprev)
+		{
+			temp = (UINT32)(size_t)mobj->hprev;
+			mobj->hprev = NULL;
+			if (!P_SetTarget(&mobj->hprev, P_FindNewPosition(temp)))
+				CONS_Debug(DBG_GAMELOGIC, "hprev not found on %d\n", mobj->type);
+		}
+		if (mobj->player && mobj->player->capsule)
+		{
+			temp = (UINT32)(size_t)mobj->player->capsule;
+			mobj->player->capsule = NULL;
+			if (!P_SetTarget(&mobj->player->capsule, P_FindNewPosition(temp)))
+				CONS_Debug(DBG_GAMELOGIC, "capsule not found on %d\n", mobj->type);
+		}
+		if (mobj->player && mobj->player->axis1)
+		{
+			temp = (UINT32)(size_t)mobj->player->axis1;
+			mobj->player->axis1 = NULL;
+			if (!P_SetTarget(&mobj->player->axis1, P_FindNewPosition(temp)))
+				CONS_Debug(DBG_GAMELOGIC, "axis1 not found on %d\n", mobj->type);
+		}
+		if (mobj->player && mobj->player->axis2)
+		{
+			temp = (UINT32)(size_t)mobj->player->axis2;
+			mobj->player->axis2 = NULL;
+			if (!P_SetTarget(&mobj->player->axis2, P_FindNewPosition(temp)))
+				CONS_Debug(DBG_GAMELOGIC, "axis2 not found on %d\n", mobj->type);
+		}
+		if (mobj->player && mobj->player->awayviewmobj)
+		{
+			temp = (UINT32)(size_t)mobj->player->awayviewmobj;
+			mobj->player->awayviewmobj = NULL;
+			if (!P_SetTarget(&mobj->player->awayviewmobj, P_FindNewPosition(temp)))
+				CONS_Debug(DBG_GAMELOGIC, "awayviewmobj not found on %d\n", mobj->type);
 		}
 	}
 }
@@ -3242,18 +3252,24 @@ static inline void P_UnArchiveSPGame(INT16 mapoverride)
 	playeringame[consoleplayer] = true;
 }
 
-static void P_NetArchiveMisc(void)
+static void P_NetArchiveMisc(boolean resending)
 {
 	UINT32 pig = 0;
 	INT32 i;
 
 	WRITEUINT32(save_p, ARCHIVEBLOCK_MISC);
 
+	if (resending)
+		WRITEUINT32(save_p, gametic);
+
 	WRITEINT16(save_p, gamemap);
 	if (gamestate != GS_LEVEL)
 		WRITEINT16(save_p, GS_WAITINGPLAYERS); // nice hack to put people back into waitingplayers
 	else
 		WRITEINT16(save_p, gamestate);
+
+	if (resending)
+		WRITEINT16(save_p, gametype);
 
 	for (i = 0; i < MAXPLAYERS; i++)
 		pig |= (playeringame[i] != 0)<<i;
@@ -3337,13 +3353,17 @@ static void P_NetArchiveMisc(void)
 		WRITEUINT8(save_p, 0x2e);
 }
 
-FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(void)
+FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(boolean reloading)
 {
 	UINT32 pig;
 	INT32 i;
+	UINT8 *old_save_p;
 
 	if (READUINT32(save_p) != ARCHIVEBLOCK_MISC)
 		I_Error("Bad $$$.sav at archive block Misc");
+
+	if (reloading)
+		gametic = READUINT32(save_p);
 
 	gamemap = READINT16(save_p);
 
@@ -3354,9 +3374,13 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(void)
 
 	// tell the sound code to reset the music since we're skipping what
 	// normally sets this flag
-	mapmusflags |= MUSIC_RELOADRESET;
+	if (!reloading)
+		mapmusflags |= MUSIC_RELOADRESET;
 
 	G_SetGamestate(READINT16(save_p));
+
+	if (reloading)
+		gametype = READINT16(save_p);
 
 	pig = READUINT32(save_p);
 	for (i = 0; i < MAXPLAYERS; i++)
@@ -3371,8 +3395,16 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(void)
 
 	encoremode = (boolean)READUINT8(save_p);
 
-	if (!P_SetupLevel(true))
+	// FIXME: save_p should not be global!!!
+	old_save_p = save_p;
+
+	if (!P_SetupLevel(true, reloading))
+	{
+		CONS_Alert(CONS_ERROR, M_GetText("Can't load the level!\n"));
 		return false;
+	}
+
+	save_p = old_save_p;
 
 	// get the time
 	leveltime = READUINT32(save_p);
@@ -3455,31 +3487,33 @@ void P_SaveGame(void)
 	WRITEUINT8(save_p, 0x1d); // consistency marker
 }
 
-void P_SaveNetGame(void)
+void P_SaveNetGame(boolean resending)
 {
 	thinker_t *th;
 	mobj_t *mobj;
 	INT32 i = 1; // don't start from 0, it'd be confused with a blank pointer otherwise
 
 	CV_SaveNetVars(&save_p, false);
-	P_NetArchiveMisc();
+	P_NetArchiveMisc(resending);
 
 	// Assign the mobjnumber for pointer tracking
 	if (gamestate == GS_LEVEL)
 	{
 		for (th = thinkercap.next; th != &thinkercap; th = th->next)
 		{
-			if (th->function.acp1 == (actionf_p1)P_MobjThinker)
-			{
-				mobj = (mobj_t *)th;
-				if (mobj->type == MT_HOOP || mobj->type == MT_HOOPCOLLIDE || mobj->type == MT_HOOPCENTER)
-					continue;
-				mobj->mobjnum = i++;
-			}
+			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+				continue;
+
+			mobj = (mobj_t *)th;
+
+			if (mobj->type == MT_HOOP || mobj->type == MT_HOOPCOLLIDE || mobj->type == MT_HOOPCENTER)
+				continue;
+
+			mobj->mobjnum = i++;
 		}
 	}
 
-	P_NetArchivePlayers();
+	P_NetArchivePlayers(resending);
 	if (gamestate == GS_LEVEL)
 	{
 		P_NetArchiveWorld();
@@ -3514,12 +3548,12 @@ boolean P_LoadGame(INT16 mapoverride)
 	return true;
 }
 
-boolean P_LoadNetGame(void)
+boolean P_LoadNetGame(boolean resending)
 {
 	CV_LoadNetVars(&save_p);
-	if (!P_NetUnArchiveMisc())
+	if (!P_NetUnArchiveMisc(resending))
 		return false;
-	P_NetUnArchivePlayers();
+	P_NetUnArchivePlayers(resending);
 	if (gamestate == GS_LEVEL)
 	{
 		P_NetUnArchiveWorld();

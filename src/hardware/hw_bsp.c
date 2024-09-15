@@ -667,9 +667,15 @@ static boolean PointInSeg(polyvertex_t *a,polyvertex_t *v1,polyvertex_t *v2)
 	// v1 = origine
 	ax= v2->x-v1->x;
 	ay= v2->y-v1->y;
-	norm = (float)hypot(ax, ay);
-	ax /= norm;
-	ay /= norm;
+	norm = hypotf(ax, ay);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
+	if (norm != 0) // yes, this can be exactly 0
+#pragma GCC diagnostic pop
+	{
+		ax /= norm;
+		ay /= norm;
+	}
 	bx = a->x-v1->x;
 	by = a->y-v1->y;
 	//d = a.b
@@ -772,9 +778,11 @@ static INT32 SolveTProblem(void)
 	for (l = 0; l < addsubsector; l++)
 	{
 		p = extrasubsectors[l].planepoly;
-		if (p)
-			for (i = 0; i < p->numpts; i++)
-				SearchSegInBSP((INT32)numnodes-1, &p->pts[i], p);
+		if (!p)
+			continue;
+
+		for (i = 0; i < p->numpts; i++)
+			SearchSegInBSP((INT32)numnodes-1, &p->pts[i], p);
 	}
 	//CONS_Debug(DBG_RENDER, "numsplitpoly %d\n", numsplitpoly);
 	return numsplitpoly;
@@ -802,8 +810,10 @@ static void AdjustSegs(void)
 		count = subsectors[i].numlines;
 		lseg = &segs[subsectors[i].firstline];
 		p = extrasubsectors[i].planepoly;
-		//if (!p)
-			//continue;
+
+		if (!p)
+			continue;
+
 		for (; count--; lseg++)
 		{
 			float distv1,distv2,tmp;

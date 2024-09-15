@@ -833,7 +833,6 @@ void SV_FileSendTicker(void)
 
 	netbuffer->packettype = PT_FILEFRAGMENT;
 
-	// (((sendbytes-nowsentbyte)*TICRATE)/(I_GetTime()-starttime)<(UINT32)net_bandwidth)
 	while (packetsent-- && filestosend != 0)
 	{
 		for (i = currentnode, j = 0; j < MAXNETNODES;
@@ -1300,8 +1299,9 @@ void CURLPrepareFile(const char* url, int dfilenum)
 		curl_starttime = time(NULL);
 
 		curl_running = true;
-
+#ifdef HAVE_THREADS
 		I_spawn_thread("http-download", (I_thread_fn)CURLGetFile, NULL);
+#endif
 	}
 }
 

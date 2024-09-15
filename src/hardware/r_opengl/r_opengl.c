@@ -120,8 +120,6 @@ GLfloat projMatrix[16];
 static GLint   viewport[4];
 
 #ifdef USE_FBO_OGL
-static boolean GLFramebuffer_IsFuncAvailible(void);
-
 GLuint FramebufferObject, FramebufferTexture, RenderbufferObject;
 GLboolean FrameBufferEnabled = GL_FALSE, RenderToFramebuffer = GL_FALSE;
 
@@ -608,6 +606,7 @@ typedef void  	(APIENTRY *PFNglDeleteProgram)		(GLuint);
 typedef void 	(APIENTRY *PFNglAttachShader)		(GLuint, GLuint);
 typedef void 	(APIENTRY *PFNglLinkProgram)		(GLuint);
 typedef void 	(APIENTRY *PFNglGetProgramiv)		(GLuint, GLenum, GLint*);
+typedef void 	(APIENTRY *PFNglGetProgramInfoLog)	(GLuint, GLsizei, GLsizei*, GLchar*);
 typedef void 	(APIENTRY *PFNglUseProgram)			(GLuint);
 typedef void 	(APIENTRY *PFNglUniform1i)			(GLint, GLint);
 typedef void 	(APIENTRY *PFNglUniform1f)			(GLint, GLfloat);
@@ -630,6 +629,7 @@ static PFNglDeleteProgram pglDeleteProgram;
 static PFNglAttachShader pglAttachShader;
 static PFNglLinkProgram pglLinkProgram;
 static PFNglGetProgramiv pglGetProgramiv;
+static PFNglGetProgramInfoLog pglGetProgramInfoLog;
 static PFNglUseProgram pglUseProgram;
 static PFNglUniform1i pglUniform1i;
 static PFNglUniform1f pglUniform1f;
@@ -669,6 +669,8 @@ typedef enum
 
 	// misc.
 	gluniform_leveltime,
+
+	gluniform_scr_resolution,
 	
 	gluniform_max,
 } gluniform_t;
@@ -703,6 +705,9 @@ static void Shader_SetUniforms(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRGBAF
 
 static GLRGBAFloat shader_defaultcolor = {1.0f, 1.0f, 1.0f, 1.0f};
 
+#ifdef USE_FBO_OGL
+static boolean GLFramebuffer_IsFuncAvailible(void);
+#endif
 
 void SetupGLFunc4(void)
 {
@@ -735,6 +740,7 @@ void SetupGLFunc4(void)
 	pglAttachShader = GetGLFunc("glAttachShader");
 	pglLinkProgram = GetGLFunc("glLinkProgram");
 	pglGetProgramiv = GetGLFunc("glGetProgramiv");
+	pglGetProgramInfoLog = GetGLFunc("glGetProgramInfoLog");
 	pglUseProgram = GetGLFunc("glUseProgram");
 	pglUniform1i = GetGLFunc("glUniform1i");
 	pglUniform1f = GetGLFunc("glUniform1f");
@@ -759,6 +765,8 @@ void SetupGLFunc4(void)
 		pglDeleteRenderbuffers = GetGLFunc("glDeleteRenderbuffers");
 		pglRenderbufferStorage = GetGLFunc("glRenderbufferStorage");
 		pglFramebufferRenderbuffer = GetGLFunc("glFramebufferRenderbuffer");
+
+		supportFBO = true;
 	}
 #endif
 }
@@ -770,9 +778,7 @@ static boolean GLFramebuffer_IsFuncAvailible(void)
 	if (majorGL < 3)
 		return false;
 
-	return((isExtAvailable("GL_ARB_framebuffer_no_attachments",gl_extensions)) && 
-	(isExtAvailable("GL_ARB_framebuffer_object",gl_extensions)) && 
-	(isExtAvailable("GL_ARB_framebuffer_sRGB",gl_extensions)));
+	return (isExtAvailable("GL_ARB_framebuffer_no_attachments",gl_extensions) && isExtAvailable("GL_ARB_framebuffer_object",gl_extensions) && isExtAvailable("GL_ARB_framebuffer_sRGB",gl_extensions));
 
 	return false;
 }
@@ -846,7 +852,7 @@ EXPORT void HWRAPI(SetShaderInfo) (hwdshaderinfo_t info, INT32 value)
 	switch (info)
 	{
 		case HWD_SHADERINFO_LEVELTIME:
-			shader_leveltime = value;
+			shader_leveltime = (((float)(value-1)) + FIXED_TO_FLOAT(rendertimefrac)) / TICRATE;
 			break;
 		default:
 			break;
@@ -1038,37 +1044,9 @@ EXPORT void HWRAPI(DeleteTexture) (GLMipmap_t *pTexInfo)
 }
 
 #ifdef USE_FBO_OGL
-void GLFramebuffer_Generate(void)
+static void GLFramebuffer_GenerateAttachments(void)
 {
-	if (!GLFramebuffer_IsFuncAvailible())
-		return;
-
-	// Generate the framebuffer
-	if (FramebufferObject == 0)
-		pglGenFramebuffers(1, &FramebufferObject);
-
-	if (pglCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE)
-		GLFramebuffer_GenerateAttachments();
-}
-
-void GLFramebuffer_Delete(void)
-{
-	if (!GLFramebuffer_IsFuncAvailible())
-		return;
-
-	// Unbind the framebuffer
-	pglBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-	if (FramebufferObject)
-		pglDeleteFramebuffers(1, &FramebufferObject);
-
-	GLFramebuffer_DeleteAttachments();
-	FramebufferObject = 0;
-}
-
-void GLFramebuffer_GenerateAttachments(void)
-{
-	if (!GLFramebuffer_IsFuncAvailible())
+	if (!supportFBO)
 		return;
 
 	// Bind the framebuffer
@@ -1109,11 +1087,12 @@ void GLFramebuffer_GenerateAttachments(void)
 
 void GLFramebuffer_DeleteAttachments(void)
 {
-	if (!GLFramebuffer_IsFuncAvailible())
+	if (!supportFBO)
 		return;
 
 	// Unbind the framebuffer
 	pglBindFramebuffer(GL_FRAMEBUFFER, 0);
+	pglBindRenderbuffer(GL_RENDERBUFFER, 0);
 
 	if (FramebufferTexture)
 		pglDeleteTextures(1, &FramebufferTexture);
@@ -1125,9 +1104,43 @@ void GLFramebuffer_DeleteAttachments(void)
 	RenderbufferObject = 0;
 }
 
-void GLFramebuffer_Enable(void)
+static void GLFramebuffer_Generate(void)
 {
-	if (!GLFramebuffer_IsFuncAvailible())
+	if (!supportFBO)
+		return;
+
+	// Generate the framebuffer
+	if (FramebufferObject == 0)
+		pglGenFramebuffers(1, &FramebufferObject);
+
+	if (pglCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE)
+		GLFramebuffer_GenerateAttachments();
+}
+
+static void GLFramebuffer_Delete(void)
+{
+	if (!supportFBO)
+		return;
+
+	if (FramebufferObject)
+		pglDeleteFramebuffers(1, &FramebufferObject);
+
+	GLFramebuffer_DeleteAttachments();
+	FramebufferObject = 0;
+}
+
+inline void GLFramebuffer_Unbind(void)
+{
+	if (!supportFBO)
+		return;
+
+	pglBindFramebuffer(GL_FRAMEBUFFER, 0);
+	pglBindRenderbuffer(GL_RENDERBUFFER, 0);
+}
+
+inline void GLFramebuffer_Enable(void)
+{
+	if (!supportFBO)
 		return;
 
 	if (FramebufferObject == 0)
@@ -1141,11 +1154,13 @@ void GLFramebuffer_Enable(void)
 
 void GLFramebuffer_Disable(void)
 {
-	if (!GLFramebuffer_IsFuncAvailible())
+	if (!supportFBO)
 		return;
 
 	pglBindFramebuffer(GL_FRAMEBUFFER, 0);
 	pglBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+	GLFramebuffer_Delete();
 }
 #endif
 
@@ -1834,7 +1849,9 @@ static void Shader_SetUniforms(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRGBAF
 			UNIFORM_1(shader->uniforms[gluniform_fade_end], (GLfloat)Surface->LightInfo.fade_end, pglUniform1f);
 		}
 
-		UNIFORM_1(shader->uniforms[gluniform_leveltime], ((float)shader_leveltime) / TICRATE, pglUniform1f);
+		UNIFORM_1(shader->uniforms[gluniform_leveltime], shader_leveltime, pglUniform1f);
+
+		UNIFORM_2(shader->uniforms[gluniform_scr_resolution], vid.width, vid.height, pglUniform2f);
 
 		#undef UNIFORM_1
 		#undef UNIFORM_2
@@ -1850,6 +1867,7 @@ static boolean Shader_CompileProgram(gl_shader_t *shader, GLint i)
 	GLint result;
 	const GLchar *vert_shader = shader->vertex_shader;
 	const GLchar *frag_shader = shader->fragment_shader;
+	GLchar info_log[512];
 
 	if (shader->program)
 		pglDeleteProgram(shader->program);
@@ -1879,7 +1897,10 @@ static boolean Shader_CompileProgram(gl_shader_t *shader, GLint i)
 		pglGetShaderiv(gl_vertShader, GL_COMPILE_STATUS, &result);
 		if (result == GL_FALSE)
 		{
-			GL_MSG_Error("Error compiling vertex shader", gl_vertShader, i);
+            pglGetShaderInfoLog(gl_vertShader, 512, NULL, info_log);
+
+			GL_MSG_Error("Error compiling vertex shader: %s\n", info_log);
+
 			pglDeleteShader(gl_vertShader);
 			return false;
 		}
@@ -1906,7 +1927,9 @@ static boolean Shader_CompileProgram(gl_shader_t *shader, GLint i)
 		pglGetShaderiv(gl_fragShader, GL_COMPILE_STATUS, &result);
 		if (result == GL_FALSE)
 		{
-			GL_MSG_Error("Error compiling fragment shader", gl_fragShader, i);
+            pglGetShaderInfoLog(gl_fragShader, 512, NULL, info_log);
+
+			GL_MSG_Error("Error compiling fragment shader: %s\n", info_log);
 			pglDeleteShader(gl_vertShader);
 			pglDeleteShader(gl_fragShader);
 			return false;
@@ -1932,7 +1955,8 @@ static boolean Shader_CompileProgram(gl_shader_t *shader, GLint i)
 	// couldn't link?
 	if (result != GL_TRUE)
 	{
-		GL_MSG_Error("Shader_CompileProgram: Error linking shader program %s\n", HWR_GetShaderName(i));
+        pglGetProgramInfoLog(shader->program, 512, NULL, info_log);
+		GL_MSG_Error("Shader_CompileProgram: Error linking shader program %s: %s\n", HWR_GetShaderName(i), info_log);
 		pglDeleteProgram(shader->program);
 		return false;
 	}
@@ -1952,6 +1976,8 @@ static boolean Shader_CompileProgram(gl_shader_t *shader, GLint i)
 	shader->uniforms[gluniform_palette_tex] = GETUNI("palette_tex");
 	shader->uniforms[gluniform_palette_lookup_tex] = GETUNI("palette_lookup_tex");
 	shader->uniforms[gluniform_lighttable_tex] = GETUNI("lighttable_tex");
+
+	shader->uniforms[gluniform_scr_resolution] = GETUNI("scr_resolution");
 
 	// misc.
 	shader->uniforms[gluniform_leveltime] = GETUNI("leveltime");
@@ -2327,7 +2353,6 @@ EXPORT void HWRAPI(SetSpecialState) (hwdspecialstate_t IdState, INT32 Value)
 #ifdef USE_FBO_OGL
 		case HWD_SET_FRAMEBUFFER:
 			FrameBufferEnabled = Value ? GL_TRUE : GL_FALSE;
-			supportFBO = GLFramebuffer_IsFuncAvailible();
 
 			if (!supportFBO)
 			{
@@ -2927,6 +2952,8 @@ EXPORT void HWRAPI(SetTransform) (FTransform *stransform)
 		// mirroring from Kart
 		if (stransform->mirror)
 			pglScalef(-stransform->scalex, stransform->scaley, -stransform->scalez);
+		else if (stransform->mirrorflip)
+			pglScalef(-stransform->scalex, -stransform->scaley, -stransform->scalez);
 		else
 #endif
 		if (stransform->flip)
@@ -2958,7 +2985,7 @@ EXPORT void HWRAPI(SetTransform) (FTransform *stransform)
 	if (shearing)
 	{
 		float dy = FIXED_TO_FLOAT(AIMINGTODY((stransform->viewaiming)) * 2)* ((float)vid.width / vid.height) / ((float)BASEVIDWIDTH / BASEVIDHEIGHT); //screen_width/BASEVIDWIDTH;
-		if (stransform->flip)
+		if (stransform->flip || stransform->mirrorflip)
 			dy *= -1.0f;
 		pglTranslatef(0.0f, -dy/BASEVIDHEIGHT, 0.0f);
 	}

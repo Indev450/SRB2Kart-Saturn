@@ -14,7 +14,9 @@
 ///        Functions to blit a block to the screen.
 
 #include "doomdef.h"
+#include "d_main.h"
 #include "r_local.h"
+#include "p_local.h"
 #include "v_video.h"
 #include "hu_stuff.h"
 #include "r_draw.h"
@@ -130,6 +132,9 @@ static boolean InitCube(void)
 	float desatur[3]; // grey
 	float globalgammamul, globalgammaoffs;
 	boolean doinggamma;
+
+	if (loaded_config == false)
+		return false;
 
 #define diffcons(cv) (cv.value != atoi(cv.defaultvalue))
 
@@ -567,6 +572,8 @@ void V_SetPaletteLump(const char *pal)
 
 static void CV_palette_OnChange(void)
 {
+	if (loaded_config == false)
+		return;
 	// reload palette
 	LoadMapPalette();
 	V_SetPalette(0);
@@ -3135,7 +3142,7 @@ INT32 heatindex[MAXSPLITSCREENPLAYERS] = {0, 0, 0, 0};
 //
 // Perform a particular image postprocessing function.
 //
-#include "p_local.h"
+
 void V_DoPostProcessor(INT32 view, postimg_t type, INT32 param)
 {
 #if NUMSCREENS < 5
@@ -3203,8 +3210,8 @@ void V_DoPostProcessor(INT32 view, postimg_t type, INT32 param)
 				}
 			}
 
-/*
-Unoptimized version
+			/*
+			Unoptimized version
 			for (x = 0; x < vid.width*vid.bpp; x++)
 			{
 				newpix = (x + sine);
@@ -3313,6 +3320,19 @@ Unoptimized version
 			for (x = xoffset, x2 = xoffset+((viewwidth*vid.bpp)-1); x < xoffset+(viewwidth*vid.bpp); x++, x2--)
 				tmpscr[y*vid.width + x2] = srcscr[y*vid.width + x];
 		}
+
+		VID_BlitLinearScreen(tmpscr+vid.width*vid.bpp*yoffset+xoffset, screens[0]+vid.width*vid.bpp*yoffset+xoffset,
+				viewwidth*vid.bpp, viewheight, vid.width*vid.bpp, vid.width);
+	}
+	else if (type == postimg_mirrorflip) // Flip the screen upside-down and on the x axis
+	{
+		UINT8 *tmpscr = screens[4];
+		UINT8 *srcscr = screens[0];
+		INT32 y, x;
+
+		for (y = yoffset; y < yoffset + viewheight; y++)
+			for (x = xoffset; x < xoffset + viewwidth; x++)
+				tmpscr[((yoffset + viewheight - 1 - y) * vid.width) + xoffset + viewwidth - (x - xoffset) - 1] = srcscr[(y * vid.width) + x];
 
 		VID_BlitLinearScreen(tmpscr+vid.width*vid.bpp*yoffset+xoffset, screens[0]+vid.width*vid.bpp*yoffset+xoffset,
 				viewwidth*vid.bpp, viewheight, vid.width*vid.bpp, vid.width);

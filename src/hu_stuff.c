@@ -594,7 +594,10 @@ void HU_AddChatText(const char *text, boolean playsound)
 	if (OLDCHAT) // if we're using oldchat, print directly in console
 		CONS_Printf("%s\n", text);
 	else			// if we aren't, still save the message to log.txt
-		CON_LogMessage(va("%s\n", text));
+	{
+		CON_LogMessage(text);
+		CON_LogMessage("\n"); // Add newline. Don't use va for that, since `text` might be refering to va's buffer itself
+	}
 #else
 	(void)playsound;
 	CONS_Printf("%s\n", text);
@@ -1253,7 +1256,11 @@ void HU_Ticker(void)
 	if (cechotimer > 0) --cechotimer;
 	
 	// Animate the desynch dots
-	if (hu_resynching)
+	if (hu_resynching
+#ifdef SATURNSYNCH
+		|| hu_redownloadinggamestate
+#endif
+		)
 		resynch_ticker++;	//tic tic tic tic tic	
 
 	HU_TickSongCredits();
@@ -2418,7 +2425,11 @@ void HU_Drawer(void)
 		HU_DrawSongCredits();
 
 	// draw desynch text
-	if (hu_resynching)
+	if (hu_resynching
+#ifdef SATURNSYNCH
+		|| hu_redownloadinggamestate
+#endif
+		)
 	{
 		char resynch_text[14];
 		UINT32 i;

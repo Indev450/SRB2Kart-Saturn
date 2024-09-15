@@ -106,6 +106,8 @@ ifeq ($(OS),Windows_NT) # all windows are Windows_NT...
 
 else # if you on the *nix
 
+ NOUPX=1
+
  system:=$(shell uname -s)
 
  ifeq ($(system),Linux)
@@ -205,6 +207,18 @@ USE_FBO_OGL=1
 endif
 endif
 
+ifndef NONET
+ifndef NOSATURNSYNCH
+DOSATURNSYNCH=1
+ifndef NOSATURNJOIN
+DOSATURNJOIN=1
+endif
+#ifndef NOSATURNPAK
+#DOSATURNPAK=1
+#endif
+endif
+endif
+
 ifdef MINGW
 include win32/Makefile.cfg
 endif #ifdef MINGW
@@ -278,12 +292,12 @@ ifdef NOHW
 	OPTS+=-DNOHW
 else
 	OPTS+=-DHWRENDER
-	OBJS+=$(OBJDIR)/hw_bsp.o $(OBJDIR)/hw_draw.o $(OBJDIR)/hw_light.o \
+	OBJS+=$(OBJDIR)/hw_bsp.o $(OBJDIR)/hw_draw.o \
 		 $(OBJDIR)/hw_main.o $(OBJDIR)/hw_clip.o $(OBJDIR)/hw_md2.o $(OBJDIR)/hw_cache.o \
 		 $(OBJDIR)/hw_md2load.o $(OBJDIR)/hw_md3load.o $(OBJDIR)/hw_model.o $(OBJDIR)/u_list.o $(OBJDIR)/hw_batching.o $(OBJDIR)/hw_shaders.o
 endif
 
-OPTS += -DCOMPVERSION
+OPTS += -DCOMPVERSION -fwrapv
 
 ifndef NONX86
 ifndef GCC29
@@ -381,6 +395,18 @@ endif
 ifndef NOHW
 ifdef USE_FBO_OGL
 OPTS+=-DUSE_FBO_OGL
+endif
+endif
+
+ifndef NONET
+ifndef NOSATURNSYNCH
+OPTS+=-DDOSATURNSYNCH
+ifndef NOSATURNJOIN
+OPTS+=-DDOSATURNJOIN
+endif
+#ifndef NOSATURNPAK
+#OPTS+=-DDOSATURNPAK
+#endif
 endif
 endif
 
@@ -492,6 +518,7 @@ OBJS:=$(i_main_o) \
 		$(OBJDIR)/hu_stuff.o \
 		$(OBJDIR)/y_inter.o  \
 		$(OBJDIR)/st_stuff.o \
+		$(OBJDIR)/k_director.o   \
 		$(OBJDIR)/k_kart.o   \
 		$(OBJDIR)/m_aatree.o \
 		$(OBJDIR)/m_anigif.o \
@@ -630,6 +657,17 @@ ifndef NOUPX
 	-$(UPX) $(UPX_OPTS) $(BIN)/$(EXENAME)
 endif
 endif
+
+ifdef APPIMAGE
+	@echo Building AppImage...
+ifdef APPIMAGE_NOASSETS
+	$(.)../AppImage_build.sh --small --quiet $(BIN)/
+else
+	$(.)../AppImage_build.sh -q $(BIN)/
+endif
+	@echo AppImage build complete, please look for $(EXENAME).AppImage in $(BIN)
+endif
+
 	@echo Build is done, please look for $(EXENAME) in $(BIN), \(checking for post steps\)
 
 reobjdump:

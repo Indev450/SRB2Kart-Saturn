@@ -52,6 +52,70 @@ Returns the displayplayer's HUD color.
 
 Returns true if colorization is enabled, false otherwise.
 
+## v.interpolate(true)
+
+Enables HUD interpolation. Each call to a drawing function will have its coordinates interpolated
+by assigning an unique ID to every call.
+For example, three successive calls to `v.draw` will each have their own ID and interpolation offsets.
+Pass `true` to enable interpolation, `false` to disable.
+
+Alternatively, pass a number to enable interpolation with the specified tag.
+Tags allow HUD items drawn by the same call to a drawing function to be differentiated.
+Valid tags range from 0-255.
+For example, when iterating players, use a unique tag for each player to avoid artifacting:
+```lua
+for p in players.iterate do
+	-- enable interpolation, using player numbers as the tag
+	-- every draw will have different interp offsets per player
+	v.interpolate(#p)
+
+	-- doesn't matter for unconditional draws like this one...
+	v.draw(...)
+
+	-- but it does matter if there's a condition!
+	-- without tags, this patch would warp between players
+	-- whenever their `someVar` changes
+	if p.someVar then v.draw(...) end
+end
+
+-- don't want interpolation anymore? then disable it
+v.interpolate(false)
+```
+NOTE: The default tag for `true` is 0.
+
+## v.interpLatch(true)
+
+Enables interpolation offset latching. The next call to a drawing function will have its lerp offsets
+saved and reused for all following draw calls. Disable with `false` when done.
+Interpolation cannot easily "snap" between two points; latching can help overcome this by manually
+setting the lerp offsets.
+```lua
+v.interpolate(true)
+
+-- X coordinate for the HUD item
+-- every so often, this will wrap around to zero
+local x = (leveltime*4) % 256
+
+-- draw an interpolated patch, but... when X rolls back to zero,
+-- the patch will slide all the way across the screen!
+v.draw(x, 100, ...)
+
+-- this is where interpLatch comes into play
+-- enable latching, then draw an invisible patch,
+-- moving at the same speed as the visible patch
+-- the exact coordinates don't matter, it just has to move at the right speed
+v.interpLatch(true)
+v.draw(leveltime*4, 0, v.cachePatch("K_TRNULL"))
+
+-- now we can draw the patch again, and when X becomes zero,
+-- it'll snap right back without sliding across the screen
+v.draw(x, 150, ...)
+
+-- don't forget to turn off latching!
+v.interpLatch(false)
+```
+When using a custom string drawer, enable this mode to avoid interpolation artifacting when the string changes.
+
 ## mobj.spritexscale, mobj.spriteyscale, mobj.spritexoffset, mobj.spriteyoffset, mobj.rollangle, mobj.sloperoll, mobj.rollmodel fields
 
 Same fields as in SRB2 2.2
@@ -66,3 +130,36 @@ if rawget(_G, "S_StopSoundByNum") ~= nil then
     ... -- Can use it
 end
 ```
+## addHook("ServerJoin", function())
+
+ServerJoin hook called when client joins server (starting a listen server also calls it for host).
+Generally it was made to make loading custom config files less hacky, but can be used for anything else too.
+
+## player.viewrollangle field
+
+Returns player's current view roll angle for the Screen Tilting feature, useful for HUD elements.
+
+## G_SetPlayerGamepadIndicatorColor(player, skincolor)
+
+Set a custom color for Supported Gamepads with RGB LED functionality.
+To be used with Displayplayers.
+Only takes Skincolors.
+Best to be used in a Loop to ensure the color wont get overwritten by the game.
+
+## G_PlayerDeviceRumble(player, low_strength, high_strength, -optional- duration)
+
+Add Gamepad Rumble support for things.
+To be used with Displayplayers.
+Duration is in milliseconds and is optional to set, default value is 84ms.
+
+# Other changes
+
+## P_PlayRinglossSound(source, damager)
+
+Add optional `damager` argument (should be `mobj_t`), which causes hurt sound also play for damager
+if `karthitemdialog` option is enabled
+
+## K_PlayHitEmSound(mobj, victim)
+
+Add optional `victim` argument (should be a player's `mobj_t`), which causes "hit em" sound to be
+delayed and played for victim too if `karthitemdialog` option is enabled

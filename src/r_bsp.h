@@ -32,6 +32,7 @@ extern INT32 checkcoord[12][4];
 extern drawseg_t *drawsegs;
 extern drawseg_t *ds_p;
 extern INT32 doorclosed;
+extern boolean g_walloffscreen;
 
 // BSP?
 void R_ClearClipSegs(void);

@@ -22,211 +22,438 @@
 // dehacked.c now has lists for the more named enums! PLEASE keep them up to date!
 // For great modding!!
 
+/** Action pointer for reading actions from Dehacked lumps.
+  */
+typedef struct
+{
+	actionf_t action; ///< Function pointer corresponding to the actual action.
+	const char *name; ///< Name of the action in ALL CAPS.
+} actionpointer_t;
+
+/** Array mapping action names to action functions.
+  * Names must be in ALL CAPS for case insensitive comparisons.
+  */
+extern actionpointer_t actionpointers[];
+
+// IMPORTANT!
+// DO NOT FORGET TO SYNC THIS LIST WITH THE ACTIONPOINTERS ARRAY IN DEHACKED.C
+enum actionnum
+{
+	A_EXPLODE = 0,
+	A_PAIN,
+	A_FALL,
+	A_MONITORPOP,
+	A_LOOK,
+	A_CHASE,
+	A_FACESTABCHASE,
+	A_FACETARGET,
+	A_FACETRACER,
+	A_SCREAM,
+	A_BOSSDEATH,
+	A_CUSTOMPOWER,
+	A_GIVEWEAPON,
+	A_RINGSHIELD,
+	A_RINGBOX,
+	A_INVINCIBILITY,
+	A_SUPERSNEAKERS,
+	A_BUNNYHOP,
+	A_BUBBLESPAWN,
+	A_FANBUBBLESPAWN,
+	A_BUBBLERISE,
+	A_BUBBLECHECK,
+	A_AWARDSCORE,
+	A_EXTRALIFE,
+	A_BOMBSHIELD,
+	A_JUMPSHIELD,
+	A_WATERSHIELD,
+	A_FORCESHIELD,
+	A_PITYSHIELD,
+	A_GRAVITYBOX,
+	A_SCORERISE,
+	A_PARTICLESPAWN,
+	A_ATTRACTCHASE,
+	A_DROPMINE,
+	A_FISHJUMP,
+	A_THROWNRING,
+	A_GRENADERING, // SRB2kart
+	A_SETSOLIDSTEAM,
+	A_UNSETSOLIDSTEAM,
+	A_SIGNPLAYER,
+	A_OVERLAYTHINK,
+	A_JETCHASE,
+	A_JETBTHINK,
+	A_JETGTHINK,
+	A_JETGSHOOT,
+	A_SHOOTBULLET,
+	A_MINUSDIGGING,
+	A_MINUSPOPUP,
+	A_MINUSCHECK,
+	A_CHICKENCHECK,
+	A_MOUSETHINK,
+	A_DETONCHASE,
+	A_CAPECHASE,
+	A_ROTATESPIKEBALL,
+	A_SLINGAPPEAR,
+	A_MACEROTATE,
+	A_UNIDUSBALL,
+	A_ROCKSPAWN,
+	A_SETFUSE,
+	A_CRAWLACOMMANDERTHINK,
+	A_SMOKETRAILER,
+	A_RINGEXPLODE,
+	A_OLDRINGEXPLODE,
+	A_MIXUP,
+	A_RECYCLEPOWERS,
+	A_BOSS1CHASE,
+	A_FOCUSTARGET,
+	A_BOSS2CHASE,
+	A_BOSS2POGO,
+	A_BOSSZOOM,
+	A_BOSSSCREAM,
+	A_BOSS2TAKEDAMAGE,
+	A_BOSS7CHASE,
+	A_GOOPSPLAT,
+	A_BOSS2POGOSFX,
+	A_BOSS2POGOTARGET,
+	A_BOSSJETFUME,
+	A_EGGMANBOX,
+	A_TURRETFIRE,
+	A_SUPERTURRETFIRE,
+	A_TURRETSTOP,
+	A_JETJAWROAM,
+	A_JETJAWCHOMP,
+	A_POINTYTHINK,
+	A_CHECKBUDDY,
+	A_HOODTHINK,
+	A_ARROWCHECK,
+	A_SNAILERTHINK,
+	A_SHARPCHASE,
+	A_SHARPSPIN,
+	A_VULTUREVTOL,
+	A_VULTURECHECK,
+	A_SKIMCHASE,
+	A_1UPTHINKER,
+	A_SKULLATTACK,
+	A_LOBSHOT,
+	A_FIRESHOT,
+	A_SUPERFIRESHOT,
+	A_BOSSFIRESHOT,
+	A_BOSS7FIREMISSILES,
+	A_BOSS1LASER,
+	A_BOSS4REVERSE,
+	A_BOSS4SPEEDUP,
+	A_BOSS4RAISE,
+	A_SPARKFOLLOW,
+	A_BUZZFLY,
+	A_GUARDCHASE,
+	A_EGGSHIELD,
+	A_SETREACTIONTIME,
+	A_BOSS1SPIKEBALLS,
+	A_BOSS3TAKEDAMAGE,
+	A_BOSS3PATH,
+	A_LINEDEFEXECUTE,
+	A_PLAYSEESOUND,
+	A_PLAYATTACKSOUND,
+	A_PLAYACTIVESOUND,
+	A_SPAWNOBJECTABSOLUTE,
+	A_SPAWNOBJECTRELATIVE,
+	A_CHANGEANGLERELATIVE,
+	A_CHANGEANGLEABSOLUTE,
+	A_ROLLANGLE,
+	A_CHANGEROLLANGLERELATIVE,
+	A_CHANGEROLLANGLEABSOLUTE,
+	A_PLAYSOUND,
+	A_FINDTARGET,
+	A_FINDTRACER,
+	A_SETTICS,
+	A_SETRANDOMTICS,
+	A_CHANGECOLORRELATIVE,
+	A_CHANGECOLORABSOLUTE,
+	A_MOVERELATIVE,
+	A_MOVEABSOLUTE,
+	A_THRUST,
+	A_ZTHRUST,
+	A_SETTARGETSTARGET,
+	A_SETOBJECTFLAGS,
+	A_SETOBJECTFLAGS2,
+	A_RANDOMSTATE,
+	A_RANDOMSTATERANGE,
+	A_DUALACTION,
+	A_REMOTEACTION,
+	A_TOGGLEFLAMEJET,
+	A_ITEMPOP,       // SRB2kart
+	A_JAWZCHASE, // SRB2kart
+	A_JAWZEXPLODE, // SRB2kart
+	A_SPBCHASE, // SRB2kart
+	A_MINEEXPLODE, // SRB2kart
+	A_BALLHOGEXPLODE, // SRB2kart
+	A_LIGHTNINGFOLLOWPLAYER, //SRB2kart
+	A_FZBOOMFLASH, //SRB2kart
+	A_FZBOOMSMOKE, //SRB2kart
+	A_RANDOMSHADOWFRAME, //SRB2kart
+	A_ROAMINGSHADOWTHINKER, //SRB2kart
+	A_MAYONAKAARROW, //SRB2kart
+	A_REAPERTHINKER, //SRB2kart
+	A_MEMENTOSTPPARTICLES, //SRB2kart
+	A_FLAMEPARTICLE, // SRB2kart
+	A_ORBITNIGHTS,
+	A_GHOSTME,
+	A_SETOBJECTSTATE,
+	A_SETOBJECTTYPESTATE,
+	A_KNOCKBACK,
+	A_PUSHAWAY,
+	A_RINGDRAIN,
+	A_SPLITSHOT,
+	A_MISSILESPLIT,
+	A_MULTISHOT,
+	A_INSTALOOP,
+	A_CUSTOM3DROTATE,
+	A_SEARCHFORPLAYERS,
+	A_CHECKRANDOM,
+	A_CHECKTARGETRINGS,
+	A_CHECKRINGS,
+	A_CHECKTOTALRINGS,
+	A_CHECKHEALTH,
+	A_CHECKRANGE,
+	A_CHECKHEIGHT,
+	A_CHECKTRUERANGE,
+	A_CHECKTHINGCOUNT,
+	A_CHECKAMBUSH,
+	A_CHECKCUSTOMVALUE,
+	A_CHECKCUSVALMEMO,
+	A_SETCUSTOMVALUE,
+	A_USECUSVALMEMO,
+	A_RELAYCUSTOMVALUE,
+	A_CUSVALACTION,
+	A_FORCESTOP,
+	A_FORCEWIN,
+	A_SPIKERETRACT,
+	A_INFOSTATE,
+	A_REPEAT,
+	A_SETSCALE,
+	A_REMOTEDAMAGE,
+	A_HOMINGCHASE,
+	A_TRAPSHOT,
+	A_VILETARGET,
+	A_VILEATTACK,
+	A_VILEFIRE,
+	A_BRAKCHASE,
+	A_BRAKFIRESHOT,
+	A_BRAKLOBSHOT,
+	A_NAPALMSCATTER,
+	A_SPAWNFRESHCOPY,
+	NUMACTIONS
+};
+
+struct mobj_s;
+
 // IMPORTANT NOTE: If you add/remove from this list of action
 // functions, don't forget to update them in dehacked.c!
-void A_Explode();
-void A_Pain();
-void A_Fall();
-void A_MonitorPop();
-void A_Look();
-void A_Chase();
-void A_FaceStabChase();
-void A_FaceTarget();
-void A_FaceTracer();
-void A_Scream();
-void A_BossDeath();
-void A_CustomPower(); // Use this for a custom power
-void A_GiveWeapon(); // Gives the player weapon(s)
-void A_JumpShield(); // Obtained Jump Shield
-void A_RingShield(); // Obtained Ring Shield
-void A_RingBox(); // Obtained Ring Box Tails
-void A_Invincibility(); // Obtained Invincibility Box
-void A_SuperSneakers(); // Obtained Super Sneakers Box
-void A_BunnyHop(); // have bunny hop tails
-void A_BubbleSpawn(); // Randomly spawn bubbles
-void A_FanBubbleSpawn();
-void A_BubbleRise(); // Bubbles float to surface
-void A_BubbleCheck(); // Don't draw if not underwater
-void A_AwardScore();
-void A_ExtraLife(); // Extra Life
-void A_BombShield(); // Obtained Bomb Shield
-void A_WaterShield(); // Obtained Water Shield
-void A_ForceShield(); // Obtained Force Shield
-void A_PityShield(); // Obtained Pity Shield. We're... sorry.
-void A_GravityBox();
-void A_ScoreRise(); // Rise the score logo
-void A_ParticleSpawn();
-void A_AttractChase(); // Ring Chase
-void A_DropMine(); // Drop Mine from Skim or Jetty-Syn Bomber
-void A_FishJump(); // Fish Jump
-void A_ThrownRing(); // Sparkle trail for red ring
-void A_GrenadeRing(); // SRB2kart
-void A_SetSolidSteam();
-void A_UnsetSolidSteam();
-void A_SignPlayer();
-void A_OverlayThink();
-void A_JetChase();
-void A_JetbThink(); // Jetty-Syn Bomber Thinker
-void A_JetgThink(); // Jetty-Syn Gunner Thinker
-void A_JetgShoot(); // Jetty-Syn Shoot Function
-void A_ShootBullet(); // JetgShoot without reactiontime setting
-void A_MinusDigging();
-void A_MinusPopup();
-void A_MinusCheck();
-void A_ChickenCheck();
-void A_MouseThink(); // Mouse Thinker
-void A_DetonChase(); // Deton Chaser
-void A_CapeChase(); // Fake little Super Sonic cape
-void A_RotateSpikeBall(); // Spike ball rotation
-void A_SlingAppear();
-void A_MaceRotate();
-void A_UnidusBall();
-void A_RockSpawn();
-void A_SetFuse();
-void A_CrawlaCommanderThink(); // Crawla Commander
-void A_SmokeTrailer();
-void A_RingExplode();
-void A_OldRingExplode();
-void A_MixUp();
-void A_RecyclePowers();
-void A_BossScream();
-void A_Boss2TakeDamage();
-void A_GoopSplat();
-void A_Boss2PogoSFX();
-void A_Boss2PogoTarget();
-void A_EggmanBox();
-void A_TurretFire();
-void A_SuperTurretFire();
-void A_TurretStop();
-void A_JetJawRoam();
-void A_JetJawChomp();
-void A_PointyThink();
-void A_CheckBuddy();
-void A_HoodThink();
-void A_ArrowCheck();
-void A_SnailerThink();
-void A_SharpChase();
-void A_SharpSpin();
-void A_VultureVtol();
-void A_VultureCheck();
-void A_SkimChase();
-void A_SkullAttack();
-void A_LobShot();
-void A_FireShot();
-void A_SuperFireShot();
-void A_BossFireShot();
-void A_Boss7FireMissiles();
-void A_Boss1Laser();
-void A_FocusTarget();
-void A_Boss4Reverse();
-void A_Boss4SpeedUp();
-void A_Boss4Raise();
-void A_SparkFollow();
-void A_BuzzFly();
-void A_GuardChase();
-void A_EggShield();
-void A_SetReactionTime();
-void A_Boss1Spikeballs();
-void A_Boss3TakeDamage();
-void A_Boss3Path();
-void A_LinedefExecute();
-void A_PlaySeeSound();
-void A_PlayAttackSound();
-void A_PlayActiveSound();
-void A_1upThinker();
-void A_BossZoom(); //Unused
-void A_Boss1Chase();
-void A_Boss2Chase();
-void A_Boss2Pogo();
-void A_Boss7Chase();
-void A_BossJetFume();
-void A_SpawnObjectAbsolute();
-void A_SpawnObjectRelative();
-void A_ChangeAngleRelative();
-void A_ChangeAngleAbsolute();
-void A_RollAngle();
-void A_ChangeRollAngleRelative();
-void A_ChangeRollAngleAbsolute();
-void A_PlaySound();
-void A_FindTarget();
-void A_FindTracer();
-void A_SetTics();
-void A_SetRandomTics();
-void A_ChangeColorRelative();
-void A_ChangeColorAbsolute();
-void A_MoveRelative();
-void A_MoveAbsolute();
-void A_Thrust();
-void A_ZThrust();
-void A_SetTargetsTarget();
-void A_SetObjectFlags();
-void A_SetObjectFlags2();
-void A_RandomState();
-void A_RandomStateRange();
-void A_DualAction();
-void A_RemoteAction();
-void A_ToggleFlameJet();
-void A_ItemPop(); // SRB2kart
-void A_JawzChase(); // SRB2kart
-void A_JawzExplode(); // SRB2kart
-void A_SPBChase(); // SRB2kart
-void A_MineExplode(); // SRB2kart
-void A_BallhogExplode(); // SRB2kart
-void A_LightningFollowPlayer();	// SRB2kart: Lightning shield effect player chasing
-void A_FZBoomFlash(); // SRB2kart
-void A_FZBoomSmoke(); // SRB2kart
-void A_RandomShadowFrame();	//SRB2kart: Shadow spawner frame randomizer
-void A_RoamingShadowThinker();	// SRB2kart: Roaming Shadow moving + attacking players.
-void A_MayonakaArrow();	//SRB2kart: midnight channel arrow sign
-void A_ReaperThinker();	//SRB2kart: mementos reaper
-void A_MementosTPParticles();	//SRB2kart: mementos teleporter particles. Man that's a lot of actions for my shite.
-void A_FlameParticle(); // SRB2kart
-void A_OrbitNights();
-void A_GhostMe();
-void A_SetObjectState();
-void A_SetObjectTypeState();
-void A_KnockBack();
-void A_PushAway();
-void A_RingDrain();
-void A_SplitShot();
-void A_MissileSplit();
-void A_MultiShot();
-void A_InstaLoop();
-void A_Custom3DRotate();
-void A_SearchForPlayers();
-void A_CheckRandom();
-void A_CheckTargetRings();
-void A_CheckRings();
-void A_CheckTotalRings();
-void A_CheckHealth();
-void A_CheckRange();
-void A_CheckHeight();
-void A_CheckTrueRange();
-void A_CheckThingCount();
-void A_CheckAmbush();
-void A_CheckCustomValue();
-void A_CheckCusValMemo();
-void A_SetCustomValue();
-void A_UseCusValMemo();
-void A_RelayCustomValue();
-void A_CusValAction();
-void A_ForceStop();
-void A_ForceWin();
-void A_SpikeRetract();
-void A_InfoState();
-void A_Repeat();
-void A_SetScale();
-void A_RemoteDamage();
-void A_HomingChase();
-void A_TrapShot();
-void A_VileTarget();
-void A_VileAttack();
-void A_VileFire();
-void A_BrakChase();
-void A_BrakFireShot();
-void A_BrakLobShot();
-void A_NapalmScatter();
-void A_SpawnFreshCopy();
+void A_Explode(struct mobj_s *actor);
+void A_Pain(struct mobj_s *actor);
+void A_Fall(struct mobj_s *actor);
+void A_MonitorPop(struct mobj_s *actor);
+void A_Look(struct mobj_s *actor);
+void A_Chase(struct mobj_s *actor);
+void A_FaceStabChase(struct mobj_s *actor);
+void A_FaceTarget(struct mobj_s *actor);
+void A_FaceTracer(struct mobj_s *actor);
+void A_Scream(struct mobj_s *actor);
+void A_BossDeath(struct mobj_s *actor);
+void A_CustomPower(struct mobj_s *actor); // Use this for a custom power
+void A_GiveWeapon(struct mobj_s *actor); // Gives the player weapon(s)
+void A_JumpShield(struct mobj_s *actor); // Obtained Jump Shield
+void A_RingShield(struct mobj_s *actor); // Obtained Ring Shield
+void A_RingBox(struct mobj_s *actor); // Obtained Ring Box Tails
+void A_Invincibility(struct mobj_s *actor); // Obtained Invincibility Box
+void A_SuperSneakers(struct mobj_s *actor); // Obtained Super Sneakers Box
+void A_BunnyHop(struct mobj_s *actor); // have bunny hop tails
+void A_BubbleSpawn(struct mobj_s *actor); // Randomly spawn bubbles
+void A_FanBubbleSpawn(struct mobj_s *actor);
+void A_BubbleRise(struct mobj_s *actor); // Bubbles float to surface
+void A_BubbleCheck(struct mobj_s *actor); // Don't draw if not underwater
+void A_AwardScore(struct mobj_s *actor);
+void A_ExtraLife(struct mobj_s *actor); // Extra Life
+void A_BombShield(struct mobj_s *actor); // Obtained Bomb Shield
+void A_WaterShield(struct mobj_s *actor); // Obtained Water Shield
+void A_ForceShield(struct mobj_s *actor); // Obtained Force Shield
+void A_PityShield(struct mobj_s *actor); // Obtained Pity Shield. We're... sorry.
+void A_GravityBox(struct mobj_s *actor);
+void A_ScoreRise(struct mobj_s *actor); // Rise the score logo
+void A_ParticleSpawn(struct mobj_s *actor);
+void A_AttractChase(struct mobj_s *actor); // Ring Chase
+void A_DropMine(struct mobj_s *actor); // Drop Mine from Skim or Jetty-Syn Bomber
+void A_FishJump(struct mobj_s *actor); // Fish Jump
+void A_ThrownRing(struct mobj_s *actor); // Sparkle trail for red ring
+void A_GrenadeRing(struct mobj_s *actor); // SRB2kart
+void A_SetSolidSteam(struct mobj_s *actor);
+void A_UnsetSolidSteam(struct mobj_s *actor);
+void A_SignPlayer(struct mobj_s *actor);
+void A_OverlayThink(struct mobj_s *actor);
+void A_JetChase(struct mobj_s *actor);
+void A_JetbThink(struct mobj_s *actor); // Jetty-Syn Bomber Thinker
+void A_JetgThink(struct mobj_s *actor); // Jetty-Syn Gunner Thinker
+void A_JetgShoot(struct mobj_s *actor); // Jetty-Syn Shoot Function
+void A_ShootBullet(struct mobj_s *actor); // JetgShoot without reactiontime setting
+void A_MinusDigging(struct mobj_s *actor);
+void A_MinusPopup(struct mobj_s *actor);
+void A_MinusCheck(struct mobj_s *actor);
+void A_ChickenCheck(struct mobj_s *actor);
+void A_MouseThink(struct mobj_s *actor); // Mouse Thinker
+void A_DetonChase(struct mobj_s *actor); // Deton Chaser
+void A_CapeChase(struct mobj_s *actor); // Fake little Super Sonic cape
+void A_RotateSpikeBall(struct mobj_s *actor); // Spike ball rotation
+void A_SlingAppear(struct mobj_s *actor);
+void A_MaceRotate(struct mobj_s *actor);
+void A_UnidusBall(struct mobj_s *actor);
+void A_RockSpawn(struct mobj_s *actor);
+void A_SetFuse(struct mobj_s *actor);
+void A_CrawlaCommanderThink(struct mobj_s *actor); // Crawla Commander
+void A_SmokeTrailer(struct mobj_s *actor);
+void A_RingExplode(struct mobj_s *actor);
+void A_OldRingExplode(struct mobj_s *actor);
+void A_MixUp(struct mobj_s *actor);
+void A_RecyclePowers(struct mobj_s *actor);
+void A_BossScream(struct mobj_s *actor);
+void A_Boss2TakeDamage(struct mobj_s *actor);
+void A_GoopSplat(struct mobj_s *actor);
+void A_Boss2PogoSFX(struct mobj_s *actor);
+void A_Boss2PogoTarget(struct mobj_s *actor);
+void A_EggmanBox(struct mobj_s *actor);
+void A_TurretFire(struct mobj_s *actor);
+void A_SuperTurretFire(struct mobj_s *actor);
+void A_TurretStop(struct mobj_s *actor);
+void A_JetJawRoam(struct mobj_s *actor);
+void A_JetJawChomp(struct mobj_s *actor);
+void A_PointyThink(struct mobj_s *actor);
+void A_CheckBuddy(struct mobj_s *actor);
+void A_HoodThink(struct mobj_s *actor);
+void A_ArrowCheck(struct mobj_s *actor);
+void A_SnailerThink(struct mobj_s *actor);
+void A_SharpChase(struct mobj_s *actor);
+void A_SharpSpin(struct mobj_s *actor);
+void A_VultureVtol(struct mobj_s *actor);
+void A_VultureCheck(struct mobj_s *actor);
+void A_SkimChase(struct mobj_s *actor);
+void A_SkullAttack(struct mobj_s *actor);
+void A_LobShot(struct mobj_s *actor);
+void A_FireShot(struct mobj_s *actor);
+void A_SuperFireShot(struct mobj_s *actor);
+void A_BossFireShot(struct mobj_s *actor);
+void A_Boss7FireMissiles(struct mobj_s *actor);
+void A_Boss1Laser(struct mobj_s *actor);
+void A_FocusTarget(struct mobj_s *actor);
+void A_Boss4Reverse(struct mobj_s *actor);
+void A_Boss4SpeedUp(struct mobj_s *actor);
+void A_Boss4Raise(struct mobj_s *actor);
+void A_SparkFollow(struct mobj_s *actor);
+void A_BuzzFly(struct mobj_s *actor);
+void A_GuardChase(struct mobj_s *actor);
+void A_EggShield(struct mobj_s *actor);
+void A_SetReactionTime(struct mobj_s *actor);
+void A_Boss1Spikeballs(struct mobj_s *actor);
+void A_Boss3TakeDamage(struct mobj_s *actor);
+void A_Boss3Path(struct mobj_s *actor);
+void A_LinedefExecute(struct mobj_s *actor);
+void A_PlaySeeSound(struct mobj_s *actor);
+void A_PlayAttackSound(struct mobj_s *actor);
+void A_PlayActiveSound(struct mobj_s *actor);
+void A_1upThinker(struct mobj_s *actor);
+void A_BossZoom(struct mobj_s *actor); //Unused
+void A_Boss1Chase(struct mobj_s *actor);
+void A_Boss2Chase(struct mobj_s *actor);
+void A_Boss2Pogo(struct mobj_s *actor);
+void A_Boss7Chase(struct mobj_s *actor);
+void A_BossJetFume(struct mobj_s *actor);
+void A_SpawnObjectAbsolute(struct mobj_s *actor);
+void A_SpawnObjectRelative(struct mobj_s *actor);
+void A_ChangeAngleRelative(struct mobj_s *actor);
+void A_ChangeAngleAbsolute(struct mobj_s *actor);
+void A_RollAngle(struct mobj_s *actor);
+void A_ChangeRollAngleRelative(struct mobj_s *actor);
+void A_ChangeRollAngleAbsolute(struct mobj_s *actor);
+void A_PlaySound(struct mobj_s *actor);
+void A_FindTarget(struct mobj_s *actor);
+void A_FindTracer(struct mobj_s *actor);
+void A_SetTics(struct mobj_s *actor);
+void A_SetRandomTics(struct mobj_s *actor);
+void A_ChangeColorRelative(struct mobj_s *actor);
+void A_ChangeColorAbsolute(struct mobj_s *actor);
+void A_MoveRelative(struct mobj_s *actor);
+void A_MoveAbsolute(struct mobj_s *actor);
+void A_Thrust(struct mobj_s *actor);
+void A_ZThrust(struct mobj_s *actor);
+void A_SetTargetsTarget(struct mobj_s *actor);
+void A_SetObjectFlags(struct mobj_s *actor);
+void A_SetObjectFlags2(struct mobj_s *actor);
+void A_RandomState(struct mobj_s *actor);
+void A_RandomStateRange(struct mobj_s *actor);
+void A_DualAction(struct mobj_s *actor);
+void A_RemoteAction(struct mobj_s *actor);
+void A_ToggleFlameJet(struct mobj_s *actor);
+void A_ItemPop(struct mobj_s *actor); // SRB2kart
+void A_JawzChase(struct mobj_s *actor); // SRB2kart
+void A_JawzExplode(struct mobj_s *actor); // SRB2kart
+void A_SPBChase(struct mobj_s *actor); // SRB2kart
+void A_MineExplode(struct mobj_s *actor); // SRB2kart
+void A_BallhogExplode(struct mobj_s *actor); // SRB2kart
+void A_LightningFollowPlayer(struct mobj_s *actor);	// SRB2kart: Lightning shield effect player chasing
+void A_FZBoomFlash(struct mobj_s *actor); // SRB2kart
+void A_FZBoomSmoke(struct mobj_s *actor); // SRB2kart
+void A_RandomShadowFrame(struct mobj_s *actor);	//SRB2kart: Shadow spawner frame randomizer
+void A_RoamingShadowThinker(struct mobj_s *actor);	// SRB2kart: Roaming Shadow moving + attacking players.
+void A_MayonakaArrow(struct mobj_s *actor);	//SRB2kart: midnight channel arrow sign
+void A_ReaperThinker(struct mobj_s *actor);	//SRB2kart: mementos reaper
+void A_MementosTPParticles(struct mobj_s *actor);	//SRB2kart: mementos teleporter particles. Man that's a lot of actions for my shite.
+void A_FlameParticle(struct mobj_s *actor); // SRB2kart
+void A_OrbitNights(struct mobj_s *actor);
+void A_GhostMe(struct mobj_s *actor);
+void A_SetObjectState(struct mobj_s *actor);
+void A_SetObjectTypeState(struct mobj_s *actor);
+void A_KnockBack(struct mobj_s *actor);
+void A_PushAway(struct mobj_s *actor);
+void A_RingDrain(struct mobj_s *actor);
+void A_SplitShot(struct mobj_s *actor);
+void A_MissileSplit(struct mobj_s *actor);
+void A_MultiShot(struct mobj_s *actor);
+void A_InstaLoop(struct mobj_s *actor);
+void A_Custom3DRotate(struct mobj_s *actor);
+void A_SearchForPlayers(struct mobj_s *actor);
+void A_CheckRandom(struct mobj_s *actor);
+void A_CheckTargetRings(struct mobj_s *actor);
+void A_CheckRings(struct mobj_s *actor);
+void A_CheckTotalRings(struct mobj_s *actor);
+void A_CheckHealth(struct mobj_s *actor);
+void A_CheckRange(struct mobj_s *actor);
+void A_CheckHeight(struct mobj_s *actor);
+void A_CheckTrueRange(struct mobj_s *actor);
+void A_CheckThingCount(struct mobj_s *actor);
+void A_CheckAmbush(struct mobj_s *actor);
+void A_CheckCustomValue(struct mobj_s *actor);
+void A_CheckCusValMemo(struct mobj_s *actor);
+void A_SetCustomValue(struct mobj_s *actor);
+void A_UseCusValMemo(struct mobj_s *actor);
+void A_RelayCustomValue(struct mobj_s *actor);
+void A_CusValAction(struct mobj_s *actor);
+void A_ForceStop(struct mobj_s *actor);
+void A_ForceWin(struct mobj_s *actor);
+void A_SpikeRetract(struct mobj_s *actor);
+void A_InfoState(struct mobj_s *actor);
+void A_Repeat(struct mobj_s *actor);
+void A_SetScale(struct mobj_s *actor);
+void A_RemoteDamage(struct mobj_s *actor);
+void A_HomingChase(struct mobj_s *actor);
+void A_TrapShot(struct mobj_s *actor);
+void A_VileTarget(struct mobj_s *actor);
+void A_VileAttack(struct mobj_s *actor);
+void A_VileFire(struct mobj_s *actor);
+void A_BrakChase(struct mobj_s *actor);
+void A_BrakFireShot(struct mobj_s *actor);
+void A_BrakLobShot(struct mobj_s *actor);
+void A_NapalmScatter(struct mobj_s *actor);
+void A_SpawnFreshCopy(struct mobj_s *actor);
+
+extern boolean actionsoverridden[NUMACTIONS];
 
 // ratio of states to sprites to mobj types is roughly 6 : 1 : 1
 #define NUMMOBJFREESLOTS 1024

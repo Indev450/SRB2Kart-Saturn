@@ -152,6 +152,7 @@ static int noglobals(lua_State *L)
 {
 	const char *csname;
 	char *name;
+	enum actionnum actionnum;
 
 	lua_remove(L, 1); // we're not gonna be using _G
 	csname = lua_tostring(L, 1);
@@ -169,6 +170,10 @@ static int noglobals(lua_State *L)
 		lua_pushvalue(L, 2); // function
 		lua_rawset(L, -3); // rawset doesn't trigger this metatable again.
 		// otherwise we would've used setfield, obviously.
+
+		actionnum = LUA_GetActionNumByName(name);
+		if (actionnum < NUMACTIONS)
+			actionsoverridden[actionnum] = true;
 
 		Z_Free(name);
 		return 0;
@@ -394,8 +399,14 @@ fixed_t LUA_EvalMath(const char *word)
 	if (luaL_dostring(mL, buf))
 	{
 		p = lua_tostring(mL, -1);
-		while (*p++ != ':' && *p) ;
-		p += 3; // "1: "
+
+		// If there is [string "..."]:1: text, skip it
+		if (strstr(p, ":") != NULL)
+		{
+			while (*p++ != ':' && *p);
+
+			p += 3; // "1: "
+		}
 		CONS_Alert(CONS_WARNING, "%s\n", p);
 	}
 	else
@@ -659,7 +670,16 @@ static UINT8 ArchiveValue(int TABLESINDEX, int myindex)
 			lua_pop(gL, 1);
 		}
 		if (!found)
+		{
 			t++;
+
+			if (t == 0)
+			{
+				CONS_Alert(CONS_ERROR, "Too many tables to archive!\n");
+				WRITEUINT8(save_p, ARCH_NULL);
+				return 0;
+			}
+		}
 
 		WRITEUINT8(save_p, ARCH_TABLE);
 		WRITEUINT16(save_p, t);
@@ -1427,7 +1447,12 @@ static void UnArchiveExtVars(void *pointer)
 
 	if (field_count == 0)
 		return;
-	I_Assert(gL != NULL);
+
+	// Technically possible new, since server may have local lua scripts but no "public" ones, so
+	// field_count would be non zero (there is no way to tell local field from non-local, so
+	// everything gets archived)
+	if (!gL)
+		return;
 
 	TABLESINDEX = lua_gettop(gL);
 	lua_createtable(gL, 0, field_count); // pointer's ext vars subtable
@@ -1587,12 +1612,14 @@ void LUA_Archive(void)
 	if (gamestate == GS_LEVEL)
 	{
 		for (th = thinkercap.next; th != &thinkercap; th = th->next)
-			if (th->function.acp1 == (actionf_p1)P_MobjThinker)
-			{
-				// archive function will determine when to skip mobjs,
-				// and write mobjnum in otherwise.
-				ArchiveExtVars(th, "mobj");
-			}
+		{
+			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+				continue;
+
+			// archive function will determine when to skip mobjs,
+			// and write mobjnum in otherwise.
+			ArchiveExtVars(th, "mobj");
+		}
 	}
 	WRITEUINT32(save_p, UINT32_MAX); // end of mobjs marker, replaces mobjnum.
 
@@ -1620,11 +1647,15 @@ void LUA_UnArchive(void)
 	}
 
 	do {
-		mobjnum = READUINT32(save_p); // read a mobjnum
+		mobjnum = READUINT32(save_p); // read a mobjnum	
 		for (th = thinkercap.next; th != &thinkercap; th = th->next)
-			if (th->function.acp1 == (actionf_p1)P_MobjThinker
-			&& ((mobj_t *)th)->mobjnum == mobjnum) // find matching mobj
-				UnArchiveExtVars(th); // apply variables
+		{
+			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+				continue;
+			if (((mobj_t *)th)->mobjnum != mobjnum) // find matching mobj
+				continue;
+			UnArchiveExtVars(th); // apply variables
+		}
 	} while(mobjnum != UINT32_MAX); // repeat until end of mobjs marker.
 
 	LUAh_NetArchiveHook(NetUnArchive); // call the NetArchive hook in unarchive mode
@@ -1678,13 +1709,41 @@ void LUA_UnArchiveDemo(void)
 }
 
 // For mobj_t, player_t, etc. to take custom variables.
-int Lua_optoption(lua_State *L, int narg,
-	const char *def, const char *const lst[])
+int Lua_optoption(lua_State *L, int narg, int def, int list_ref)
 {
-	const char *name = (def) ? luaL_optstring(L, narg, def) :  luaL_checkstring(L, narg);
+	int result = -1;
+
+	if (lua_isnoneornil(L, narg))
+		return def;
+
+	I_Assert(lua_checkstack(L, 2));
+	luaL_checkstring(L, narg);
+
+	lua_rawgeti(L, LUA_REGISTRYINDEX, list_ref);
+	I_Assert(lua_istable(L, -1));
+	lua_pushvalue(L, narg);
+	lua_rawget(L, -2);
+
+	if (lua_isnumber(L, -1))
+		result = lua_tointeger(L, -1);
+
+	lua_pop(L, 2); // Pop result and fields table
+
+	return result;
+}
+
+
+int Lua_CreateFieldTable(lua_State *L, const char *const lst[])
+{
 	int i;
-	for (i=0; lst[i]; i++)
-		if (fastcmp(lst[i], name))
-			return i;
-	return -1;
+
+	lua_newtable(L);
+	for (i = 0; lst[i] != NULL; i++)
+	{
+		lua_pushstring(L, lst[i]);
+		lua_pushinteger(L, i);
+		lua_settable(L, -3);
+	}
+
+	return luaL_ref(L, LUA_REGISTRYINDEX);
 }

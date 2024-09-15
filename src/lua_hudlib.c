@@ -32,6 +32,12 @@
 #define HUDONLY if (!hud_running) return luaL_error(L, "HUD rendering code should not be called outside of rendering hooks!");
 
 boolean hud_running = false;
+
+boolean hud_interpolate = false;
+UINT8 hud_interptag = 0;
+UINT32 hud_interpcounter = 0;
+boolean hud_interpstring = false;
+boolean hud_interplatch = false;
 static UINT8 hud_enabled[(hud_MAX/8)+1];
 
 static UINT8 hudAvailable; // hud hooks field
@@ -99,6 +105,8 @@ static const char *const hudhook_opt[] = {
 	"intermission",
 	"vote",
 	NULL};
+
+static int patch_fields_ref = LUA_NOREF;
 
 // alignment types for v.drawString
 enum align {
@@ -223,6 +231,8 @@ static const char *const hud_drawinfo_options[] = {
 	"minimap",
 	NULL};
 
+static int camera_fields_ref = LUA_NOREF;
+
 static int lib_getHudInfo(lua_State *L)
 {
 	UINT32 i;
@@ -292,7 +302,7 @@ static int colormap_get(lua_State *L)
 static int patch_get(lua_State *L)
 {
 	patch_t *patch = *((patch_t **)luaL_checkudata(L, 1, META_PATCH));
-	enum patch field = luaL_checkoption(L, 2, NULL, patch_opt);
+	enum patch field = Lua_optoption(L, 2, -1, patch_fields_ref);
 
 	// patches are CURRENTLY always valid, expected to be cached with PU_STATIC
 	// this may change in the future, so patch.valid still exists
@@ -327,7 +337,7 @@ static int patch_set(lua_State *L)
 static int camera_get(lua_State *L)
 {
 	camera_t *cam = *((camera_t **)luaL_checkudata(L, 1, META_CAMERA));
-	enum cameraf field = luaL_checkoption(L, 2, NULL, camera_opt);
+	enum cameraf field = Lua_optoption(L, 2, -1, camera_fields_ref);
 
 	// cameras should always be valid unless I'm a nutter
 	I_Assert(cam != NULL);
@@ -1178,6 +1188,41 @@ static int libd_getDrawInfo(lua_State *L)
 	return 3;
 }
 
+static int libd_interpolate(lua_State *L)
+{
+	HUDONLY
+
+	// do type checking even if interpolation is disabled
+	boolean newinterpolate;
+	UINT8 newtag;
+
+	if (lua_isnumber(L, 1))
+	{
+		newinterpolate = true;
+		newtag = luaL_checkinteger(L, 1);
+	}
+	else
+	{
+		newinterpolate = luaL_checkboolean(L, 1);
+		newtag = 0;
+	}
+
+	if (!cv_uncappedhud.value)
+		return 0;
+
+	hud_interpolate = newinterpolate;
+	hud_interptag = newtag;
+
+	return 0;
+}
+
+static int libd_interpLatch(lua_State *L)
+{
+	HUDONLY
+	hud_interpstring = hud_interplatch = luaL_checkboolean(L, 1);
+	return 0;
+}
+
 static luaL_Reg lib_draw[] = {
 	{"patchExists", libd_patchExists},
 	{"cachePatch", libd_cachePatch},
@@ -1205,6 +1250,8 @@ static luaL_Reg lib_draw[] = {
 	{"getDrawInfo", libd_getDrawInfo},
 	{"getHudColor", libd_getHudColor},
 	{"useColorHud", libd_useColorHud},
+	{"interpolate", libd_interpolate},
+	{"interpLatch", libd_interpLatch},
 	{NULL, NULL}
 };
 
@@ -1396,10 +1443,14 @@ int LUA_HudLib(lua_State *L)
 		lua_setfield(L, -2, "__newindex");
 	lua_pop(L,1);
 
+	patch_fields_ref = Lua_CreateFieldTable(L, patch_opt);
+
 	luaL_newmetatable(L, META_CAMERA);
 		lua_pushcfunction(L, camera_get);
 		lua_setfield(L, -2, "__index");
 	lua_pop(L,1);
+
+	camera_fields_ref = Lua_CreateFieldTable(L, camera_opt);
 
 	luaL_register(L, "hud", lib_hud);
 	return 0;
@@ -1413,7 +1464,7 @@ boolean LUA_HudEnabled(enum hud option)
 }
 
 // Hook for HUD rendering
-void LUAh_GameHUD(player_t *stplayr, huddrawlist_h list)
+void LUAh_GameHUD(huddrawlist_h list)
 {
 	if (!gL || !(hudAvailable & (1<<hudhook_game)))
 		return;
@@ -1434,33 +1485,17 @@ void LUAh_GameHUD(player_t *stplayr, huddrawlist_h list)
 	lua_rawgeti(gL, -2, 1); // HUD[1] = lib_draw
 	I_Assert(lua_istable(gL, -1));
 	lua_remove(gL, -3); // pop HUD
-	LUA_PushUserdata(gL, stplayr, META_PLAYER);
+	LUA_PushUserdata(gL, stplyr, META_PLAYER);
+	LUA_PushUserdata(gL, &camera[stplyrnum], META_CAMERA);
+	camnum = stplyrnum + 1;
 
-	if (splitscreen > 2 && stplayr == &players[displayplayers[3]])
-	{
-		LUA_PushUserdata(gL, &camera[3], META_CAMERA);
-		camnum = 4;
-	}
-	else if (splitscreen > 1 && stplayr == &players[displayplayers[2]])
-	{
-		LUA_PushUserdata(gL, &camera[2], META_CAMERA);
-		camnum = 3;
-	}
-	else if (splitscreen && stplayr == &players[displayplayers[1]])
-	{
-		LUA_PushUserdata(gL, &camera[1], META_CAMERA);
-		camnum = 2;
-	}
-	else
-	{
-		LUA_PushUserdata(gL, &camera[0], META_CAMERA);
-		camnum = 1;
-	}
-
+	hud_interpcounter = 0;
 	lua_pushnil(gL);
 	while (lua_next(gL, -5) != 0) {
+		hud_interpolate = hud_interpstring = hud_interplatch = false;
+		hud_interpcounter++;
 		lua_pushvalue(gL, -5); // graphics library (HUD[1])
-		lua_pushvalue(gL, -5); // stplayr
+		lua_pushvalue(gL, -5); // stplyr
 		lua_pushvalue(gL, -5); // camera
 		LUA_Call(gL, 3, 0, 1);
 	}
@@ -1493,7 +1528,10 @@ void LUAh_ScoresHUD(huddrawlist_h list)
 	I_Assert(lua_istable(gL, -1));
 	lua_remove(gL, -3); // pop HUD
 	lua_pushnil(gL);
+	hud_interpcounter = 0;
 	while (lua_next(gL, -3) != 0) {
+		hud_interpolate = hud_interpstring = hud_interplatch = false;
+		hud_interpcounter++;
 		lua_pushvalue(gL, -3); // graphics library (HUD[1])
 		LUA_Call(gL, 1, 0, 1);
 	}
@@ -1526,7 +1564,10 @@ void LUAh_IntermissionHUD(huddrawlist_h list)
 	I_Assert(lua_istable(gL, -1));
 	lua_remove(gL, -3); // pop HUD
 	lua_pushnil(gL);
+	hud_interpcounter = 0;
 	while (lua_next(gL, -3) != 0) {
+		hud_interpolate = hud_interpstring = hud_interplatch = false;
+		hud_interpcounter++;
 		lua_pushvalue(gL, -3); // graphics library (HUD[1])
 		LUA_Call(gL, 1, 0, 1);
 	}
@@ -1559,7 +1600,10 @@ void LUAh_VoteHUD(huddrawlist_h list)
 	I_Assert(lua_istable(gL, -1));
 	lua_remove(gL, -3); // pop HUD
 	lua_pushnil(gL);
+	hud_interpcounter = 0;
 	while (lua_next(gL, -3) != 0) {
+		hud_interpolate = hud_interpstring = hud_interplatch = false;
+		hud_interpcounter++;
 		lua_pushvalue(gL, -3); // graphics library (HUD[1])
 		LUA_Call(gL, 1, 0, 1);
 	}

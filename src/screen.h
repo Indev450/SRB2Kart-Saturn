@@ -45,8 +45,8 @@
 #define BASEVIDHEIGHT 200 // resolution of the graphics.
 
 // max res for png capture; seperated it so both MAXVID values can be lower for software performance reasons; OpenGL does not care about those anyways
-#define MAXPNGWIDTH 3840
-#define MAXPNGHEIGHT 2160
+#define MAXPNGWIDTH 7680
+#define MAXPNGHEIGHT 4320
 
 // global video state
 typedef struct viddef_s

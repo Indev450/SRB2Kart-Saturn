@@ -17,6 +17,9 @@
 #include "doomdata.h"
 #include "doomstat.h"
 #include "r_defs.h"
+#include "w_wad.h"
+
+extern SINT8 midgamejoin;
 
 // map md5, sent to players via PT_SERVERINFO
 extern unsigned char mapmd5[16];
@@ -30,6 +33,7 @@ extern boolean levelloading;
 extern UINT8 levelfadecol;
 
 extern lumpnum_t lastloadedmaplumpnum; // for comparative savegame
+extern virtres_t *curmapvirt;
 //
 // MAP used flats lookup table
 //
@@ -55,11 +59,8 @@ extern size_t nummapthings;
 extern mapthing_t *mapthings;
 
 void P_SetupLevelSky(INT32 skynum, boolean global);
-#ifdef SCANTHINGS
-void P_ScanThings(INT16 mapnum, INT16 wadnum, INT16 lumpnum);
-#endif
 void P_LoadThingsOnly(void);
-boolean P_SetupLevel(boolean skipprecip);
+boolean P_SetupLevel(boolean skipprecip, boolean reloadinggamestate);
 #ifdef HWRENDER
 void HWR_LoadLevel(void);
 #endif
@@ -87,11 +88,11 @@ SINT8 P_PartialAddGetStage(void);
 
 boolean P_RunSOC(const char *socfilename);
 void P_WriteThings(lumpnum_t lump);
+void P_UpdateSegLightOffset(seg_t *li);
 size_t P_PrecacheLevelFlats(void);
 void P_AllocMapHeader(INT16 i);
 
 // Needed for NiGHTS
-void P_ReloadRings(void);
 void P_DeleteGrades(INT16 i);
 void P_AddGradesForMare(INT16 i, UINT8 mare, char *gtext);
 UINT8 P_GetGrade(UINT32 pscore, INT16 map, UINT8 mare);

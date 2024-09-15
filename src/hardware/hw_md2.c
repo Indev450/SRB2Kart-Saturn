@@ -26,7 +26,6 @@
 
 #ifdef HWRENDER
 #include "hw_drv.h"
-#include "hw_light.h"
 #include "hw_md2.h"
 #include "../d_main.h"
 #include "../r_bsp.h"
@@ -75,7 +74,7 @@
 
 md2_t md2_models[NUMSPRITES];
 md2_t md2_playermodels[MAXSKINS];
-md2_t md2_localplayermodels[MAXSKINS];
+md2_t md2_localplayermodels[MAXLOCALSKINS];
 
 
 /*
@@ -494,7 +493,9 @@ void HWR_InitMD2(void)
 		md2_playermodels[s].skin = -1;
 		md2_playermodels[s].notfound = true;
 		md2_playermodels[s].error = false;
-		
+	}
+	for (s = 0; s < MAXLOCALSKINS; s++)
+	{
 		md2_localplayermodels[s].scale = -1.0f;
 		md2_localplayermodels[s].model = NULL;
 		md2_localplayermodels[s].grpatch = NULL;

@@ -51,6 +51,9 @@ int player_localskin_setter(lua_State *L);
 int player_sliproll_getter(lua_State *L);
 int player_sliproll_noset(lua_State *L);
 
+int player_viewrollangle_getter(lua_State *L);
+int player_viewrollangle_noset(lua_State *L);
+
 #define FIELD(type, field_name, getter, setter) { #field_name, offsetof(type, field_name), getter, setter }
 static const udata_field_t player_fields[] = {
     // Player doesn't actually have field "name" so macro fails. Need to declare field manually.
@@ -159,8 +162,9 @@ static const udata_field_t player_fields[] = {
 #endif
     // Same as player.name
 	{ "sliproll", 0, player_sliproll_getter, player_sliproll_noset },
+	{ "viewrollangle", 0, player_viewrollangle_getter, player_viewrollangle_noset },
     { "ping", 0, player_ping_getter, player_ping_noset }, // Hmm originally setter doesn't exist so data is written as unreachable custom field...
-    { NULL },
+    { NULL, 0, NULL, NULL },
 };
 #undef FIELD
 
@@ -217,6 +221,7 @@ NOSET(bot)
 NOSET(splitscreenindex)
 NOSET(ping)
 NOSET(sliproll)
+NOSET(viewrollangle)
 
 #undef NOSET
 
@@ -368,6 +373,15 @@ int player_sliproll_getter(lua_State *L)
 	player_t *plr = GETPLAYER();
 
 	lua_pushangle(L, R_PlayerSliptideAngle(plr));
+
+	return 1;
+}
+
+int player_viewrollangle_getter(lua_State *L)
+{
+	player_t *plr = GETPLAYER();
+
+	lua_pushangle(L, R_ViewRollAngle(plr));
 
 	return 1;
 }
@@ -694,30 +708,65 @@ static int kartstuff_len(lua_State *L)
 }
 
 #define NOFIELD luaL_error(L, LUA_QL("ticcmd_t") " has no field named " LUA_QS, field)
+#define NOSET luaL_error(L, LUA_QL("ticcmd_t") " field " LUA_QS " should not be set directly.", field)
+
+enum ticcmd_e
+{
+	ticcmd_forwardmove,
+	ticcmd_sidemove,
+	ticcmd_angleturn,
+	ticcmd_aiming,
+	ticcmd_buttons,
+	ticcmd_driftturn,
+	ticcmd_latency,
+};
+
+static const char *const ticcmd_opt[] = {
+	"forwardmove",
+	"sidemove",
+	"angleturn",
+	"aiming",
+	"buttons",
+	"driftturn",
+	"latency",
+	NULL,
+};
+
+static int ticcmd_fields_ref = LUA_NOREF;
 
 static int ticcmd_get(lua_State *L)
 {
 	ticcmd_t *cmd = *((ticcmd_t **)luaL_checkudata(L, 1, META_TICCMD));
-	const char *field = luaL_checkstring(L, 2);
+	enum ticcmd_e field = Lua_optoption(L, 2, -1, ticcmd_fields_ref);
 	if (!cmd)
 		return LUA_ErrInvalid(L, "player_t");
 
-	if (fastcmp(field,"forwardmove"))
+	switch (field)
+	{
+	case ticcmd_forwardmove:
 		lua_pushinteger(L, cmd->forwardmove);
-	else if (fastcmp(field,"sidemove"))
+		break;
+	case ticcmd_sidemove:
 		lua_pushinteger(L, cmd->sidemove);
-	else if (fastcmp(field,"angleturn"))
+		break;
+	case ticcmd_angleturn:
 		lua_pushinteger(L, cmd->angleturn);
-	else if (fastcmp(field,"aiming"))
+		break;
+	case ticcmd_aiming:
 		lua_pushinteger(L, cmd->aiming);
-	else if (fastcmp(field,"buttons"))
+		break;
+	case ticcmd_buttons:
 		lua_pushinteger(L, cmd->buttons);
-	else if (fastcmp(field,"driftturn"))
+		break;
+	case ticcmd_driftturn:
 		lua_pushinteger(L, cmd->driftturn);
-	else if (fastcmp(field,"latency"))
+		break;
+	case ticcmd_latency:
 		lua_pushinteger(L, cmd->latency);
-	else
+		break;
+	default:
 		return NOFIELD;
+	}
 
 	return 1;
 }
@@ -725,32 +774,44 @@ static int ticcmd_get(lua_State *L)
 static int ticcmd_set(lua_State *L)
 {
 	ticcmd_t *cmd = *((ticcmd_t **)luaL_checkudata(L, 1, META_TICCMD));
-	const char *field = luaL_checkstring(L, 2);
+	enum ticcmd_e field = Lua_optoption(L, 2, -1, ticcmd_fields_ref);
 	if (!cmd)
 		return LUA_ErrInvalid(L, "ticcmd_t");
 
 	if (hud_running)
 		return luaL_error(L, "Do not alter player_t in HUD rendering code!");
 
-	if (fastcmp(field,"forwardmove"))
+	switch (field)
+	{
+	case ticcmd_forwardmove:
 		cmd->forwardmove = (SINT8)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"sidemove"))
+		break;
+	case ticcmd_sidemove:
 		cmd->sidemove = (SINT8)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"angleturn"))
+		break;
+	case ticcmd_angleturn:
 		cmd->angleturn = (INT16)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"aiming"))
+		break;
+	case ticcmd_aiming:
 		cmd->aiming = (INT16)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"buttons"))
+		break;
+	case ticcmd_buttons:
 		cmd->buttons = (UINT16)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"driftturn"))
+		break;
+	case ticcmd_driftturn:
 		cmd->driftturn = (INT16)luaL_checkinteger(L, 3);
-	else
+		break;
+	case ticcmd_latency:
+		return NOSET;
+	default:
 		return NOFIELD;
+	}
 
 	return 0;
 }
 
 #undef NOFIELD
+#undef NOSET
 
 int LUA_PlayerLib(lua_State *L)
 {
@@ -796,6 +857,8 @@ int LUA_PlayerLib(lua_State *L)
 		lua_pushcfunction(L, ticcmd_set);
 		lua_setfield(L, -2, "__newindex");
 	lua_pop(L,1);
+
+	ticcmd_fields_ref = Lua_CreateFieldTable(L, ticcmd_opt);
 
 	lua_newuserdata(L, 0);
 		lua_createtable(L, 0, 2);

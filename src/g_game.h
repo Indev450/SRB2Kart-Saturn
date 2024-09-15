@@ -39,7 +39,7 @@ extern UINT8 *demo_p;
 // ======================================
 
 // demoplaying back and demo recording
-extern consvar_t cv_recordmultiplayerdemos, cv_netdemosyncquality, cv_maxdemosize;
+extern consvar_t cv_recordmultiplayerdemos, cv_netdemosyncquality, cv_maxdemosize, cv_demochangemap;
 
 // Publicly-accessible demo vars
 struct demovars_s {
@@ -218,6 +218,8 @@ extern angle_t localangle[MAXSPLITSCREENPLAYERS];
 extern INT32 localaiming[MAXSPLITSCREENPLAYERS]; // should be an angle_t but signed
 extern boolean camspin[MAXSPLITSCREENPLAYERS]; // SRB2Kart
 
+extern tic_t directortoggletimer;
+
 //
 // GAME
 //
@@ -265,6 +267,7 @@ void G_DeferedInitNew(boolean pencoremode, const char *mapname, INT32 pickedchar
 void G_DoLoadLevel(boolean resetplayer);
 
 void G_LoadDemoInfo(menudemo_t *pdemo);
+void G_LoadDemoTitle(menudemo_t *pdemo); // For use in replay search feature
 void G_DeferedPlayDemo(const char *demo);
 
 // Can be called by the startup code or M_Responder, calls P_SetupLevel.

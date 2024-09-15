@@ -93,8 +93,6 @@ static UINT16 SAMPLERATE = 44100;
 /// ------------------------
 
 UINT8 sound_started = false;
-
-static UINT32 stutter_threshold_user;
 static UINT32 stutter_threshold;
 
 static Mix_Music *music;
@@ -626,9 +624,10 @@ static void count_music_bytes(int chan, void *stream, int len, void *udata)
 
 	if (!music || I_SongType() == MU_GME || I_SongType() == MU_MOD || I_SongType() == MU_MID)
 		return;
+
 	music_bytes += len;
 
-	if ((gamestate == GS_LEVEL) && (cv_birdmusic.value))
+	if (cv_birdmusic.value && gamestate == GS_LEVEL)
 		Countstutter(len);
 }
 
@@ -1042,20 +1041,12 @@ UINT32 I_GetSongPosition(void)
 		// 8M: 1 | 8S: 2 | 16M: 2 | 16S: 4
 }
 
-void
-I_UpdateSongLagThreshold (void)
+void I_UpdateSongLagThreshold (void)
 {
-	stutter_threshold_user = cv_music_resync_threshold.value/1000.0*(4*44100);
-	I_UpdateSongLagConditions();
-}
+	if (!cv_birdmusic.value)
+		return;
 
-void
-I_UpdateSongLagConditions (void)
-{
-	if (! cv_music_resync_powerups_only.value || S_MusicUsage() == MUS_SPECIAL)
-		stutter_threshold = stutter_threshold_user;
-	else
-		stutter_threshold = 0;
+	stutter_threshold = cv_music_resync_threshold.value/1000.0*(4*44100);
 }
 
 /// ------------------------
@@ -1115,6 +1106,7 @@ boolean I_LoadSong(char *data, size_t len)
 				if (!gme_open_data(inflatedData, inflatedLen, &gme, SAMPLERATE))
 				{
 					Z_Free(inflatedData); // GME supposedly makes a copy for itself, so we don't need this lying around
+					inflateEnd(&stream);
 					return true;
 				}
 			}

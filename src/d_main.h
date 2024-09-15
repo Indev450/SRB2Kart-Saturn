@@ -20,6 +20,8 @@
 // make sure not to write back the config until it's been correctly loaded
 extern tic_t rendergametic;
 
+extern boolean loaded_config;
+
 extern char srb2home[256]; //Alam: My Home
 extern boolean usehome; //Alam: which path?
 extern const char *pandf; //Alam: how to path?
@@ -43,12 +45,15 @@ extern boolean statdp; // stat display for extended player setup
 extern boolean nametaggfx; // Nametag stuffs
 extern boolean driftgaugegfx;
 
+void D_AddAutoloadFiles(void);
 
 extern boolean autoloading;
 extern boolean autoloaded;
 extern boolean postautoloaded;
+extern boolean wasautoloaded;
 
 extern char *autoloadwadfilespost[MAX_WADFILES];
+extern char *autoloadwadfiles[MAX_WADFILES];
 
 // the infinite loop of D_SRB2Loop() called from win_main for windows version
 void D_SRB2Loop(void) FUNCNORETURN;
