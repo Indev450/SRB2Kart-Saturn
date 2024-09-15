@@ -2867,7 +2867,8 @@ boolean P_SetupLevel(boolean skipprecip, boolean reloadinggamestate)
 				G_CopyTiccmd(&players[i].cmd, &netcmds[buf][i], 1);
 		}
 		P_PreTicker(2);
-		LUAh_MapLoad();
+		if (!reloadinggamestate)
+			LUAh_MapLoad();
 	}
 
 	if (rendermode != render_none && !reloadinggamestate)
