@@ -207,6 +207,18 @@ USE_FBO_OGL=1
 endif
 endif
 
+ifndef NONET
+ifndef NOSATURNSYNCH
+DOSATURNSYNCH=1
+ifndef NOSATURNJOIN
+DOSATURNJOIN=1
+endif
+#ifndef NOSATURNPAK
+#DOSATURNPAK=1
+#endif
+endif
+endif
+
 ifdef MINGW
 include win32/Makefile.cfg
 endif #ifdef MINGW
@@ -383,6 +395,18 @@ endif
 ifndef NOHW
 ifdef USE_FBO_OGL
 OPTS+=-DUSE_FBO_OGL
+endif
+endif
+
+ifndef NONET
+ifndef NOSATURNSYNCH
+OPTS+=-DDOSATURNSYNCH
+ifndef NOSATURNJOIN
+OPTS+=-DDOSATURNJOIN
+endif
+#ifndef NOSATURNPAK
+#OPTS+=-DDOSATURNPAK
+#endif
 endif
 endif
 

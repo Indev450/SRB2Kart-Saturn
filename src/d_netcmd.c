@@ -788,6 +788,10 @@ void D_RegisterServerCommands(void)
 	// d_clisrv
 	CV_RegisterVar(&cv_maxplayers);
 	CV_RegisterVar(&cv_resynchattempts);
+#ifdef SATURNSYNCH
+	CV_RegisterVar(&cv_gamestateattempts);
+	CV_RegisterVar(&cv_resynchcooldown);
+#endif
 	CV_RegisterVar(&cv_maxsend);
 	CV_RegisterVar(&cv_noticedownload);
 	CV_RegisterVar(&cv_downloadspeed);
@@ -795,6 +799,9 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_httpsource);
 #ifndef NONET
 	CV_RegisterVar(&cv_allownewplayer);
+#ifdef SATURNJOIN
+	CV_RegisterVar(&cv_allownewsaturnplayer);
+#endif
 	CV_RegisterVar(&cv_joinrefusemessage);
 	CV_RegisterVar(&cv_chatlogsize);
 #ifdef VANILLAJOINNEXTROUND

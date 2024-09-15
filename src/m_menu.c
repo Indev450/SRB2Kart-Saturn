@@ -2027,6 +2027,22 @@ static menuitem_t OP_AdvServerOptionsMenu[] =
 							 NULL, "Server Browser Address",		&cv_masterserver,	 	 10},
 #endif
 	{IT_STRING | IT_CVAR,    NULL, "Attempts to resynchronise",		&cv_resynchattempts,	 40},
+#ifdef SATURNSYNCH
+	{IT_STRING | IT_CVAR,    NULL, "Resend Gamestate Cooldown",		&cv_resynchcooldown,	 50},
+	{IT_STRING | IT_CVAR,    NULL, "Resend Gamestate Attempts",		&cv_gamestateattempts,	 60},
+
+	{IT_STRING | IT_CVAR,    NULL, "Delay limit (frames)",			&cv_maxping,			 70},
+	{IT_STRING | IT_CVAR,    NULL, "Delay timeout (s)",				&cv_pingtimeout,		 80},
+	{IT_STRING | IT_CVAR,    NULL, "Connection timeout (tics)",		&cv_nettimeout,			 90},
+	{IT_STRING | IT_CVAR,    NULL, "Join timeout (tics)",			&cv_jointimeout,		100},
+
+	{IT_STRING | IT_CVAR,    NULL, "Max. file transfer send (KB)",	&cv_maxsend,			120},
+	{IT_STRING | IT_CVAR,    NULL, "File transfer packet rate",		&cv_downloadspeed,		130},
+
+	{IT_STRING | IT_CVAR,    NULL, "Log join addresses",			&cv_showjoinaddress,	150},
+	{IT_STRING | IT_CVAR,    NULL, "Log resyncs",					&cv_blamecfail,			160},
+	{IT_STRING | IT_CVAR,    NULL, "Log file transfers",			&cv_noticedownload,		170},
+#else
 	{IT_STRING | IT_CVAR,    NULL, "Delay limit (frames)",			&cv_maxping,			 50},
 	{IT_STRING | IT_CVAR,    NULL, "Delay timeout (s)",				&cv_pingtimeout,		 60},
 	{IT_STRING | IT_CVAR,    NULL, "Connection timeout (tics)",		&cv_nettimeout,			 70},
@@ -2038,14 +2054,17 @@ static menuitem_t OP_AdvServerOptionsMenu[] =
 	{IT_STRING | IT_CVAR,    NULL, "Log join addresses",			&cv_showjoinaddress,	130},
 	{IT_STRING | IT_CVAR,    NULL, "Log resyncs",					&cv_blamecfail,			140},
 	{IT_STRING | IT_CVAR,    NULL, "Log file transfers",			&cv_noticedownload,		150},
-};
 #endif
+};
 
-#ifndef NONET
 static const char* OP_AdvServerOptionsTooltips[] =
 {	
 	"Server used for master server.",
 	"Attempts to resynchronise player to server.",
+#ifdef SATURNSYNCH
+	"Cooldown in seconds before the Server attempts\nto resend the gamestate to a Saturn Client\nbetween resending attempts.",
+	"Attempts to resend the Gamestate to player\nThis increments a Counter everytime a gamestate resend occurs\nThis Counter decrements at double the time of the Cooldown\nonce the Counter reaches the threshold, the client gets kicked.",
+#endif
 	"Maximum allowed delay.",
 	"Delay timeout in seconds.",
 	"Connection timeout in tics.",

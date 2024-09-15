@@ -833,6 +833,16 @@ const char *packettypename[NUMPACKETTYPE] =
 	"MOREFILESNEEDED",
 
 	"PING"
+#ifdef SATURNSYNCH
+	,
+
+	"WILLRESENDGAMESTATE",
+	"CANRECEIVEGAMESTATE",
+	"RECEIVEDGAMESTATE",
+
+	// we will reserve this for now even if unused, so order wont get mangled
+	"ISSATURN"
+#endif
 };
 
 const char *Net_GetPacketName(UINT8 packettype)
