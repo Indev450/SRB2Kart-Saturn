@@ -1144,7 +1144,7 @@ static menuitem_t OP_MainMenu[] =
 
 	{IT_SUBMENU|IT_STRING,		NULL, "Saturn Options...",		&OP_SaturnDef,				135},
 
-	{IT_SUBMENU|IT_STRING,		NULL, "Bird",					&OP_BirdDef,				145},
+	{IT_SUBMENU|IT_STRING,		NULL, "Bird...",					&OP_BirdDef,				145},
 	{IT_CALL|IT_STRING,			NULL, "Local Skin Options...",	M_LocalSkinMenu,			155},
 };
 
