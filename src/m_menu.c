@@ -1131,21 +1131,21 @@ static menuitem_t OP_MainMenu[] =
 	{IT_SUBMENU|IT_STRING,		NULL, "Video Options...",		&OP_VideoOptionsDef,		 15},
 	{IT_SUBMENU|IT_STRING,		NULL, "Sound Options...",		&OP_SoundOptionsDef,		 25},
 
-	{IT_SUBMENU|IT_STRING,		NULL, "HUD Options...",			&OP_HUDOptionsDef,			 45},
-	{IT_SUBMENU|IT_STRING,		NULL, "Camera Options...",		&OP_CamOptionsDef,			 55},
-	{IT_SUBMENU|IT_STRING,		NULL, "Gameplay Options...",	&OP_GameOptionsDef,			 65},
-	{IT_SUBMENU|IT_STRING,		NULL, "Server Options...",		&OP_ServerOptionsDef,		 75},
+	{IT_SUBMENU|IT_STRING,		NULL, "HUD Options...",			&OP_HUDOptionsDef,			 40},
+	{IT_SUBMENU|IT_STRING,		NULL, "Camera Options...",		&OP_CamOptionsDef,			 50},
+	{IT_SUBMENU|IT_STRING,		NULL, "Gameplay Options...",	&OP_GameOptionsDef,			 60},
+	{IT_SUBMENU|IT_STRING,		NULL, "Server Options...",		&OP_ServerOptionsDef,		 70},
 
-	{IT_SUBMENU|IT_STRING,		NULL, "Data Options...",		&OP_DataOptionsDef,			 95},
-	{IT_CALL|IT_STRING, 		NULL, "Custom Options...",	   	M_CustomCvarMenu,   		105},
+	{IT_SUBMENU|IT_STRING,		NULL, "Data Options...",		&OP_DataOptionsDef,			 85},
+	{IT_CALL|IT_STRING, 		NULL, "Custom Options...",	   	M_CustomCvarMenu,   		 95},
 
-	{IT_CALL|IT_STRING,			NULL, "Tricks & Secrets (F1)",	M_Manual,					115},
-	{IT_CALL|IT_STRING,			NULL, "Play Credits",			M_Credits,					125},
+	{IT_CALL|IT_STRING,			NULL, "Tricks & Secrets (F1)",	M_Manual,					105},
+	{IT_CALL|IT_STRING,			NULL, "Play Credits",			M_Credits,					115},
 
-	{IT_SUBMENU|IT_STRING,		NULL, "Saturn Options...",		&OP_SaturnDef,				145},
+	{IT_SUBMENU|IT_STRING,		NULL, "Saturn Options...",		&OP_SaturnDef,				135},
 
-	{IT_SUBMENU|IT_STRING,		NULL, "Bird",					&OP_BirdDef,				155},
-	{IT_CALL|IT_STRING,			NULL, "Local Skin Options...",	M_LocalSkinMenu,			165},
+	{IT_SUBMENU|IT_STRING,		NULL, "Bird",					&OP_BirdDef,				145},
+	{IT_CALL|IT_STRING,			NULL, "Local Skin Options...",	M_LocalSkinMenu,			155},
 };
 
 static menuitem_t OP_ControlsMenu[] =
