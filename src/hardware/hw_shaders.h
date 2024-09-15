@@ -72,6 +72,7 @@
 	"}\0"
 
 #define GLSL_DOWNSAMPLE_FRAGMENT_SHADER \
+	"#version 130\n" \
 	"uniform sampler2D tex;\n" \
 	"uniform vec2 inv_supersamplefactor;\n" \
 	"#ifdef SRB2_PALETTE_RENDERING\n" \
