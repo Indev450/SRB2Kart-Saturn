@@ -4667,15 +4667,16 @@ static void P_Boss7Thinker(mobj_t *mobj)
 			if (P_AproxDistance(players[i].mo->x - mobj->x, players[i].mo->y - mobj->y) > (mobj->radius + players[i].mo->radius))
 				continue;
 
-			if (!(players[i].mo->z > mobj->z + mobj->height - FRACUNIT && players[i].mo->z < mobj->z + mobj->height + 128*FRACUNIT)) // You can't be in the vicinity, either...
-				continue;
+			if (players[i].mo->z > mobj->z + mobj->height - FRACUNIT
+				&& players[i].mo->z < mobj->z + mobj->height + 128*FRACUNIT) // You can't be in the vicinity, either...
+			{
+				// Punch him!
+				P_DamageMobj(players[i].mo, mobj, mobj, 1);
+				mobj->state->nextstate = mobj->info->spawnstate;
 
-			// Punch him!
-			P_DamageMobj(players[i].mo, mobj, mobj, 1);
-			mobj->state->nextstate = mobj->info->spawnstate;
-
-			// Laugh
-			S_StartSound(0, sfx_bewar1 + P_RandomKey(4));
+				// Laugh
+				S_StartSound(0, sfx_bewar1 + P_RandomKey(4));
+			}
 		}
 	}
 	else if (mobj->state == &states[S_BLACKEGG_GOOP])
@@ -10059,21 +10060,13 @@ void P_RemoveMobj(mobj_t *mobj)
 
 	if (mobj->hnext && !P_MobjWasRemoved(mobj->hnext))
 	{
-		if (mobj->hnext->hprev == mobj)
-		{
-			P_SetTarget(&mobj->hnext->hprev, mobj->hprev);
-		}
-
+		P_SetTarget(&mobj->hnext->hprev, mobj->hprev);
 		P_SetTarget(&mobj->hnext, NULL);
 	}
 
 	if (mobj->hprev && !P_MobjWasRemoved(mobj->hprev))
 	{
-		if (mobj->hprev->hnext == mobj)
-		{
-			P_SetTarget(&mobj->hprev->hnext, cachenext);
-		}
-
+		P_SetTarget(&mobj->hprev->hnext, cachenext);
 		P_SetTarget(&mobj->hprev, NULL);
 	}
 	

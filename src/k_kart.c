@@ -4250,9 +4250,6 @@ void K_KillBananaChain(mobj_t *banana, mobj_t *inflictor, mobj_t *source)
 	mobj_t *cachenext;
 
 killnext:
-	if (P_MobjWasRemoved(banana))
-		return;
-
 	cachenext = banana->hnext;
 
 	if (banana->health)
@@ -4540,8 +4537,10 @@ void K_RepairOrbitChain(mobj_t *orbit)
 	}
 
 	// Then recount to make sure item amount is correct
-	if (orbit->target && orbit->target->player && !P_MobjWasRemoved(orbit->target))
+	if (orbit->target && orbit->target->player)
 	{
+		player_t *player = orbit->target->player;
+
 		INT32 num = 0;
 
 		mobj_t *cur = orbit->target->hnext;
@@ -4551,14 +4550,14 @@ void K_RepairOrbitChain(mobj_t *orbit)
 		{
 			prev = cur;
 			cur = cur->hnext;
-			if (++num > orbit->target->player->kartstuff[k_itemamount])
+			if (++num > player->kartstuff[k_itemamount])
 				P_RemoveMobj(prev);
 			else
 				prev->movedir = num;
 		}
 
-		if (orbit->target && !P_MobjWasRemoved(orbit->target) && orbit->target->player->kartstuff[k_itemamount] != num)
-			orbit->target->player->kartstuff[k_itemamount] = num;
+		if (player->kartstuff[k_itemamount] != num)
+			player->kartstuff[k_itemamount] = num;
 	}
 }
 
