@@ -1632,8 +1632,9 @@ static void CV_SetCVar(consvar_t *var, const char *value, boolean stealth)
 	if (var->flags & CV_NETVAR)
 	{
 		// send the value of the variable
-		UINT8 buf[128];
+		UINT8 buf[512];
 		UINT8 *p = buf;
+
 		if (!(server || (IsPlayerAdmin(consoleplayer))))
 		{
 			CONS_Printf(M_GetText("Only the server or admin can change: %s %s\n"), var->name, var->string);

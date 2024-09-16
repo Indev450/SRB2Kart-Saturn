@@ -3369,7 +3369,7 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(boolean reloading)
 
 	// gamemap changed; we assume that its map header is always valid,
 	// so make it so
-	if(!mapheaderinfo[gamemap-1])
+	if (!mapheaderinfo[gamemap-1])
 		P_AllocMapHeader(gamemap-1);
 
 	// tell the sound code to reset the music since we're skipping what
