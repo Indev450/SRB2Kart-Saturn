@@ -100,7 +100,6 @@ typedef struct fileused_s
 {
 	FILE *file;
 	UINT8 count;
-	UINT32 position;
 } fileused_t;
 
 static fileused_t transferFiles[UINT8_MAX + 1];
@@ -882,7 +881,7 @@ void SV_FileSendTicker(void)
 				if (filesize == -1)
 					I_Error("Error getting filesize of %s", f->id.filename);
 
-				f->size = transferFiles[f->fileid].position = (UINT32)filesize;
+				f->size = (UINT32)filesize;
 			}
 
 			transfer[i].position = 0;
@@ -891,11 +890,7 @@ void SV_FileSendTicker(void)
 
 		if (!ram)
 		{
-			// Seek to the right position if we aren't already there.
-			if (transferFiles[f->fileid].position != transfer[i].position)
-			{
-				fseek(transferFiles[f->fileid].file, transfer[i].position, SEEK_SET);
-			}
+			fseek(transferFiles[f->fileid].file, transfer[i].position, SEEK_SET);
 		}
 
 		// Build a packet containing a file fragment
@@ -915,8 +910,6 @@ void SV_FileSendTicker(void)
 		{
 			I_Error("SV_FileSendTicker: can't read %s byte on %s at %d because %s",
 				sizeu1(size), f->id.filename, transfer[i].position, M_FileError(transferFiles[f->fileid].file));
-
-			transferFiles[f->fileid].position = (UINT32)(transferFiles[f->fileid].position + size);
 		}
 
 		p->position = LONG(transfer[i].position);
