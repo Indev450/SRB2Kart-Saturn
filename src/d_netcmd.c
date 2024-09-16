@@ -5228,7 +5228,7 @@ static void Command_Togglemodified_f(void)
 
 static void Command_Archivetest_f(void)
 {
-	savebuffer_t save = {0};
+	savebuffer_t save;
 	UINT32 i, wrote;
 	thinker_t *th;
 	if (gamestate != GS_LEVEL)
@@ -5244,11 +5244,9 @@ static void Command_Archivetest_f(void)
 			((mobj_t *)th)->mobjnum = i++;
 
 	// allocate buffer
-	if (P_SaveBufferAlloc(&save, 1024) == false)
-	{
-		CONS_Printf("Unable to allocate buffer.\n");
-		return;
-	}
+	save.size = 1024;
+	save.buffer = save.p = ZZ_Alloc(save.size);
+	save.end = save.buffer + save.size;
 
 	// test archive
 	CONS_Printf("LUA_Archive...\n");
@@ -5269,7 +5267,7 @@ static void Command_Archivetest_f(void)
 		CONS_Printf("Savegame corrupted. (write %u, read %u)\n", wrote, (UINT32)(save.p - save.buffer));
 
 	// free buffer
-	P_SaveBufferFree(&save);
+	Z_Free(save.buffer);
 	CONS_Printf("Done. No crash.\n");
 }
 #endif

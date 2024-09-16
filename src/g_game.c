@@ -292,7 +292,7 @@ UINT32 timesBeatenWithEmeralds;
 
 //@TODO put these all in a struct for namespacing purposes?
 static char demoname[128];
-static savebuffer_t demobuf = {0};
+savebuffer_t demobuf;
 static UINT8 *demotime_p, *demoinfo_p;
 static UINT8 demoflags;
 static boolean demosynced = true; // console warning message
@@ -3697,10 +3697,11 @@ void G_LoadGameSettings(void)
 // Loads the main data file, which stores information such as emblems found, etc.
 void G_LoadGameData(void)
 {
+	size_t length;
 	INT32 i, j;
 	UINT8 modded = false;
 	UINT8 rtemp;
-	savebuffer_t save = {0};
+	savebuffer_t save;
 
 	//For records
 	tic_t rectime;
@@ -3722,8 +3723,11 @@ void G_LoadGameData(void)
 	if (M_CheckParm("-resetdata"))
 		return; // Don't load (essentially, reset).
 
-	if (P_SaveBufferFromFile(&save, va(pandf, srb2home, gamedatafilename)) == false) // Aw, no game data. Their loss!
+	length = FIL_ReadFile(va(pandf, srb2home, gamedatafilename), &save.buffer);
+	if (!length) // Aw, no game data. Their loss!
 		return;
+
+	save.p = save.buffer;
 
 	// Version check
 	if (READUINT32(save.p) != 0xFCAFE211)
@@ -3732,8 +3736,9 @@ void G_LoadGameData(void)
 		if (strcmp(srb2home,"."))
 			gdfolder = srb2home;
 
-		P_SaveBufferFree(&save);
-		I_Error("Game data is not for SRB2Kart.\nDelete %s(maybe in %s) and try again.", gamedatafilename, gdfolder);
+		Z_Free(save.buffer);
+		save.p = NULL;
+		I_Error("Game data is from another version of SRB2.\nDelete %s(maybe in %s) and try again.", gamedatafilename, gdfolder);
 	}
 
 	totalplaytime = READUINT32(save.p);
@@ -3800,7 +3805,8 @@ void G_LoadGameData(void)
 	}
 
 	// done
-	P_SaveBufferFree(&save);
+	Z_Free(save.buffer);
+	save.p = NULL;
 
 	// Silent update unlockables in case they're out of sync with conditions
 	M_SilentUpdateUnlockablesAndEmblems();
@@ -3814,7 +3820,8 @@ void G_LoadGameData(void)
 		if (strcmp(srb2home,"."))
 			gdfolder = srb2home;
 
-		P_SaveBufferFree(&save);
+		Z_Free(save.buffer);
+		save.p = NULL;
 
 		I_Error("Corrupt game data file.\nDelete %s(maybe in %s) and try again.", gamedatafilename, gdfolder);
 	}
@@ -3827,20 +3834,24 @@ void G_SaveGameData(boolean force)
 	size_t length;
 	INT32 i, j;
 	UINT8 btemp;
-	savebuffer_t save = {0};
+	savebuffer_t save;
 
 	if (!gamedataloaded)
 		return; // If never loaded (-nodata), don't save
 
-	if (P_SaveBufferAlloc(&save, length) == false)
+	save.size = length;
+	save.p = save.buffer = (UINT8 *)malloc(save.size);
+	if (!save.p)
 	{
 		CONS_Alert(CONS_ERROR, M_GetText("No more free memory for saving game data\n"));
 		return;
 	}
+	save.end = save.buffer + save.size;
 
 	if (majormods && !force)
 	{
-		P_SaveBufferFree(&save);
+		free(save.buffer);
+		save.p = save.buffer = NULL;
 		return;
 	}
 
@@ -3912,7 +3923,7 @@ void G_SaveGameData(boolean force)
 	length = save.p - save.buffer;
 
 	FIL_WriteFile(va(pandf, srb2home, gamedatafilename), save.buffer, length);
-	P_SaveBufferFree(&save);
+	free(save.buffer);
 }
 
 #define VERSIONSIZE 16
@@ -3928,7 +3939,8 @@ static void M_ForceLoadGameResponse(INT32 ch)
 	if (ch != 'y' && ch != KEY_ENTER)
 	{
 		//refused
-		P_SaveBufferFree(&save);
+		Z_Free(save.buffer);
+		save.p = save.buffer = NULL;
 		startonmapnum = 0;
 		M_SetupNextMenu(&SP_LoadDef);
 		return;
@@ -3942,7 +3954,8 @@ static void M_ForceLoadGameResponse(INT32 ch)
 		M_ClearMenus(true); // so ESC backs out to title
 		M_StartMessage(M_GetText("Savegame file corrupted\n\nPress ESC\n"), NULL, MM_NOTHING);
 		Command_ExitGame_f();
-		P_SaveBufferFree(&save);
+		Z_Free(save.buffer);
+		save.p = save.buffer = NULL;
 		startonmapnum = 0;
 
 		// no cheating!
@@ -3951,7 +3964,8 @@ static void M_ForceLoadGameResponse(INT32 ch)
 	}
 
 	// done
-	P_SaveBufferFree(&save);
+	Z_Free(save.buffer);
+	save.p = save.buffer = NULL;
 	startonmapnum = 0;
 
 	//set cursaveslot to -1 so nothing gets saved.
@@ -3976,9 +3990,10 @@ static void M_ForceLoadGameResponse(INT32 ch)
 //
 void G_LoadGame(UINT32 slot, INT16 mapoverride)
 {
+	size_t length;
 	char vcheck[VERSIONSIZE];
 	char savename[255];
-	savebuffer_t save = {0};
+	savebuffer_t save;
 
 	// memset savedata to all 0, fixes calling perfectly valid saves corrupt because of bots
 	memset(&savedata, 0, sizeof(savedata));
@@ -3990,11 +4005,16 @@ void G_LoadGame(UINT32 slot, INT16 mapoverride)
 
 	sprintf(savename, savegamename, slot);
 
-	if (P_SaveBufferFromFile(&save, savename) == false)
+	length = FIL_ReadFile(savename, &save.buffer);
+	if (!length)
 	{
 		CONS_Printf(M_GetText("Couldn't read file %s\n"), savename);
 		return;
 	}
+
+	save.p = save.buffer;
+	save.size = length;
+	save.end = save.buffer + save.size;
 
 	memset(vcheck, 0, sizeof (vcheck));
 	sprintf(vcheck, "version %d", VERSION);
@@ -4008,7 +4028,7 @@ void G_LoadGame(UINT32 slot, INT16 mapoverride)
 		M_ClearMenus(true); // so ESC backs out to title
 		M_StartMessage(M_GetText("Save game from different version\n\nPress ESC\n"), NULL, MM_NOTHING);
 		Command_ExitGame_f();
-		P_SaveBufferFree(&save);
+		Z_Free(save.buffer);
 
 		// no cheating!
 		memset(&savedata, 0, sizeof(savedata));
@@ -4026,7 +4046,8 @@ void G_LoadGame(UINT32 slot, INT16 mapoverride)
 		M_ClearMenus(true); // so ESC backs out to title
 		M_StartMessage(M_GetText("Savegame file corrupted\n\nPress ESC\n"), NULL, MM_NOTHING);
 		Command_ExitGame_f();
-		P_SaveBufferFree(&save);
+		Z_Free(save.buffer);
+		save.p = save.buffer = NULL;
 
 		// no cheating!
 		memset(&savedata, 0, sizeof(savedata));
@@ -4034,7 +4055,7 @@ void G_LoadGame(UINT32 slot, INT16 mapoverride)
 	}
 
 	// done
-	P_SaveBufferFree(&save);
+	Z_Free(save.buffer);
 
 	displayplayers[0] = consoleplayer;
 	multiplayer = false;
@@ -4057,7 +4078,7 @@ void G_SaveGame(UINT32 savegameslot)
 	boolean saved;
 	char savename[256] = "";
 	const char *backup;
-	savebuffer_t save = {0};
+	savebuffer_t save;
 
 	sprintf(savename, savegamename, savegameslot);
 	backup = va("%s",savename);
@@ -4071,11 +4092,14 @@ void G_SaveGame(UINT32 savegameslot)
 		char name[VERSIONSIZE];
 		size_t length;
 
-		if (P_SaveBufferAlloc(&save, SAVEGAMESIZE) == false)
+		save.size = SAVEGAMESIZE;
+		save.p = save.buffer = (UINT8 *)malloc(save.size);
+		if (!save.p)
 		{
 			CONS_Alert(CONS_ERROR, M_GetText("No more free memory for saving game data\n"));
 			return;
 		}
+		save.end = save.buffer + save.size;
 
 		memset(name, 0, sizeof (name));
 		sprintf(name, "version %d", VERSION);
@@ -4085,7 +4109,7 @@ void G_SaveGame(UINT32 savegameslot)
 
 		length = save.p - save.buffer;
 		saved = FIL_WriteFile(backup, save.buffer, length);
-		P_SaveBufferFree(&save);
+		free(save.buffer);
 	}
 
 	gameaction = ga_nothing;
@@ -6189,7 +6213,9 @@ void G_RecordDemo(const char *name)
 
 		maxsize = cv_maxdemosize.value*1024*1024;
 
-		P_SaveBufferAlloc(&demobuf, maxsize);
+		demobuf.size = maxsize;
+		demobuf.buffer = (UINT8 *)malloc(maxsize);
+		demobuf.end = demobuf.buffer + demobuf.size;
 
 		if (demobuf.buffer)
 			demo.recording = true;
@@ -6204,9 +6230,11 @@ void G_RecordMetal(void)
 	maxsize = cv_maxdemosize.value*1024*1024;
 	if (demobuf.buffer)
 		free(demobuf.buffer);
-	P_SaveBufferAlloc(&demobuf, maxsize);
+	demobuf.size = maxsize;
+	demobuf.buffer = (UINT8 *)malloc(maxsize);
 	demobuf.p = NULL;
 	metalrecording = false;
+	demobuf.end = demobuf.buffer + demobuf.size;
 
 	if (demobuf.buffer)
 		metalrecording = true;
@@ -7011,7 +7039,7 @@ void G_DoPlayDemo(char *defdemoname)
 		if (FIL_CheckExtension(defdemoname))
 		{
 			//FIL_DefaultExtension(defdemoname, ".lmp");
-			if (P_SaveBufferFromFile(&demobuf, defdemoname) == false)
+			if (!FIL_ReadFile(defdemoname, &demobuf.buffer))
 			{
 				snprintf(msg, 1024, M_GetText("Failed to read file '%s'.\n"), defdemoname);
 				CONS_Alert(CONS_ERROR, "%s", msg);
@@ -7019,20 +7047,20 @@ void G_DoPlayDemo(char *defdemoname)
 				M_StartMessage(msg, NULL, MM_NOTHING);
 				return;
 			}
+			demobuf.p = demobuf.buffer;
 		}
 		// load demo resource from WAD
-		else
+		else if ((l = W_CheckNumForName(defdemoname)) == LUMPERROR)
 		{
-			if ((l = W_CheckNumForName(defdemoname)) == LUMPERROR)
-			{
-				snprintf(msg, 1024, M_GetText("Failed to read lump '%s'.\n"), defdemoname);
-				CONS_Alert(CONS_ERROR, "%s", msg);
-				gameaction = ga_nothing;
-				M_StartMessage(msg, NULL, MM_NOTHING);
-				return;
-			}
-
-			P_SaveBufferFromLump(&demobuf, l);
+			snprintf(msg, 1024, M_GetText("Failed to read lump '%s'.\n"), defdemoname);
+			CONS_Alert(CONS_ERROR, "%s", msg);
+			gameaction = ga_nothing;
+			M_StartMessage(msg, NULL, MM_NOTHING);
+			return;
+		}
+		else // it's an internal demo
+		{
+			demobuf.buffer = demobuf.p = W_CacheLumpNum(l, PU_STATIC);
 #if defined(SKIPERRORS) && !defined(DEVELOP)
 			skiperrors = true; // SRB2Kart: Don't print warnings for staff ghosts, since they'll inevitably happen when we make bugfixes/changes...
 #endif
@@ -8037,7 +8065,8 @@ ATTRNORETURN void FUNCNORETURN G_StopMetalRecording(void)
 #endif
 		saved = FIL_WriteFile(va("%sMS.LMP", G_BuildMapName(gamemap)), demobuf.buffer, demobuf.p - demobuf.buffer); // finally output the file.
 	}
-	Z_Free(demobuf.buffer);
+	free(demobuf.buffer);
+	demobuf.buffer = NULL;
 	metalrecording = false;
 	if (saved)
 		I_Error("Saved to %sMS.LMP", G_BuildMapName(gamemap));
@@ -8226,7 +8255,8 @@ void G_SaveDemo(void)
 
 	if (FIL_WriteFile(va(pandf, srb2home, demoname), demobuf.buffer, demobuf.p - demobuf.buffer)) // finally output the file.
 		demo.savemode = DSM_SAVED;
-	Z_Free(demobuf.buffer);
+	free(demobuf.buffer);
+	demobuf.buffer = NULL;
 	demo.recording = false;
 
 	if (modeattacking != ATTACKING_RECORD)
