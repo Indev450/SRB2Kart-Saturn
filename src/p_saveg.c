@@ -106,7 +106,7 @@ static inline void P_UnArchivePlayer(savebuffer_t *save)
 //
 // P_NetArchivePlayers
 //
-static void P_NetArchivePlayers(savebuffer_t *save)
+static void P_NetArchivePlayers(savebuffer_t *save, boolean resending)
 {
 	INT32 i, j;
 	UINT16 flags;
@@ -116,7 +116,8 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		WRITESINT8(save->p, (SINT8)adminplayers[i]);
+		if (resending)
+			WRITESINT8(save->p, (SINT8)adminplayers[i]);
 
 		if (!playeringame[i])
 			continue;
@@ -125,7 +126,9 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 
 		// no longer send ticcmds
 
-		WRITESTRINGN(save->p, player_names[i], MAXPLAYERNAME);
+		if (resending)
+			WRITESTRINGN(save->p, player_names[i], MAXPLAYERNAME);
+
 		WRITEANGLE(save->p, players[i].aiming);
 		WRITEANGLE(save->p, players[i].awayviewaiming);
 		WRITEINT32(save->p, players[i].awayviewtics);
@@ -150,8 +153,12 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 		WRITEUINT16(save->p, players[i].flashpal);
 		WRITEUINT16(save->p, players[i].flashcount);
 
-		WRITEUINT8(save->p, players[i].skincolor);
-		WRITEINT32(save->p, players[i].skin);
+		if (resending)
+		{
+			WRITEUINT8(save->p, players[i].skincolor);
+			WRITEINT32(save->p, players[i].skin);
+		}
+
 		WRITEUINT32(save->p, players[i].score);
 		WRITEFIXED(save->p, players[i].dashspeed);
 		WRITEINT32(save->p, players[i].dashtime);
@@ -289,7 +296,7 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 //
 // P_NetUnArchivePlayers
 //
-static void P_NetUnArchivePlayers(savebuffer_t *save)
+static void P_NetUnArchivePlayers(savebuffer_t *save, boolean resending)
 {
 	INT32 i, j;
 	UINT16 flags;
@@ -299,7 +306,8 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		adminplayers[i] = (INT32)READSINT8(save->p);
+		if (resending)
+			adminplayers[i] = (INT32)READSINT8(save->p);
 
 		// Do NOT memset player struct to 0
 		// other areas may initialize data elsewhere
@@ -309,7 +317,9 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 
 		// NOTE: sending tics should (hopefully) no longer be necessary
 
-		READSTRINGN(save->p, player_names[i], MAXPLAYERNAME);
+		if (resending)
+			READSTRINGN(save->p, player_names[i], MAXPLAYERNAME);
+
 		players[i].aiming = READANGLE(save->p);
 		players[i].awayviewaiming = READANGLE(save->p);
 		players[i].awayviewtics = READINT32(save->p);
@@ -334,8 +344,12 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 		players[i].flashpal = READUINT16(save->p);
 		players[i].flashcount = READUINT16(save->p);
 
-		players[i].skincolor = READUINT8(save->p);
-		players[i].skin = READINT32(save->p);
+		if (resending)
+		{
+			players[i].skincolor = READUINT8(save->p);
+			players[i].skin = READINT32(save->p);
+		}
+
 		players[i].score = READUINT32(save->p);
 		players[i].dashspeed = READFIXED(save->p); // dashing speed
 		players[i].dashtime = READINT32(save->p); // dashing speed
@@ -457,34 +471,6 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 		{
 			players[i].lturn_max[j] = READINT16(save->p);
 			players[i].rturn_max[j] = READINT16(save->p);
-		}
-	}
-}
-
-static void P_NetArchiveWaypoints(savebuffer_t *save)
-{
-	INT32 i, j;
-
-	for (i = 0; i < NUMWAYPOINTSEQUENCES; i++)
-	{
-		WRITEUINT16(save->p, numwaypoints[i]);
-		for (j = 0; j < numwaypoints[i]; j++)
-			WRITEUINT32(save->p, waypoints[i][j] ? waypoints[i][j]->mobjnum : 0);
-	}
-}
-
-static void P_NetUnArchiveWaypoints(savebuffer_t *save)
-{
-	INT32 i, j;
-	UINT32 mobjnum;
-
-	for (i = 0; i < NUMWAYPOINTSEQUENCES; i++)
-	{
-		numwaypoints[i] = READUINT16(save->p);
-		for (j = 0; j < numwaypoints[i]; j++)
-		{
-			mobjnum = READUINT32(save->p);
-			waypoints[i][j] = (mobjnum == 0) ? NULL : P_FindNewPosition(mobjnum);
 		}
 	}
 }
@@ -1007,8 +993,6 @@ typedef enum
 	tc_noenemies,
 	tc_eachtime,
 	tc_disappear,
-	tc_dynslopeline,
-	tc_dynslopevert,
 	tc_polyrotate, // haleyjd 03/26/06: polyobjects
 	tc_polymove,
 	tc_polywaypoint,
@@ -1043,11 +1027,6 @@ static inline UINT32 SavePlayer(const player_t *player)
 	return 0xFFFFFFFF;
 }
 
-static UINT32 SaveSlope(const pslope_t *slope)
-{
-	if (slope) return (UINT32)(slope->id);
-	return 0xFFFFFFFF;
-}
 
 //
 // SaveMobjThinker
@@ -1091,7 +1070,7 @@ static void SaveMobjThinker(savebuffer_t *save, const thinker_t *th, const UINT8
 	diff2 = 0;
 
 	// not the default but the most probable
-	if (mobj->momx != 0 || mobj->momy != 0 || mobj->momz != 0 || mobj->pmomz !=0)
+	if (mobj->momx != 0 || mobj->momy != 0 || mobj->momz != 0)
 		diff |= MD_MOM;
 	if (mobj->radius != mobj->info->radius)
 		diff |= MD_RADIUS;
@@ -1219,7 +1198,6 @@ static void SaveMobjThinker(savebuffer_t *save, const thinker_t *th, const UINT8
 		WRITEFIXED(save->p, mobj->momx);
 		WRITEFIXED(save->p, mobj->momy);
 		WRITEFIXED(save->p, mobj->momz);
-		WRITEFIXED(save->p, mobj->pmomz);
 	}
 	if (diff & MD_RADIUS)
 		WRITEFIXED(save->p, mobj->radius);
@@ -1579,21 +1557,6 @@ static void SaveDisappearThinker(savebuffer_t *save, const thinker_t *th, const 
 	WRITEINT32(save->p, ht->exists);
 }
 
-/// Save a dynamic slope thinker.
-static inline void SaveDynamicSlopeThinker(savebuffer_t *save, const thinker_t *th, const UINT8 type)
-{
-	const dynplanethink_t* ht = (const void*)th;
-
-	WRITEUINT8(save->p, type);
-	WRITEUINT8(save->p, ht->type);
-	WRITEUINT32(save->p, SaveSlope(ht->slope));
-	WRITEUINT32(save->p, SaveLine(ht->sourceline));
-	WRITEFIXED(save->p, ht->extent);
-
-	WRITEMEM(save->p, ht->tags, sizeof(ht->tags));
-    WRITEMEM(save->p, ht->vex, sizeof(ht->vex));
-}
-
 //
 // SavePolyrotateThinker
 //
@@ -1647,7 +1610,6 @@ static void SavePolywaypointThinker(savebuffer_t *save, const thinker_t *th, UIN
 	WRITEFIXED(save->p, ht->diffx);
 	WRITEFIXED(save->p, ht->diffy);
 	WRITEFIXED(save->p, ht->diffz);
-	WRITEUINT32(save->p, SaveMobjnum(ht->target));
 }
 
 //
@@ -1703,19 +1665,6 @@ static void SavePolydisplaceThinker(savebuffer_t *save, const thinker_t *th, con
 	WRITEFIXED(save->p, ht->dy);
 	WRITEFIXED(save->p, ht->oldHeights);
 }
-
-/*
-//
-// SaveWhatThinker
-//
-// Saves a what_t thinker
-//
-static inline void SaveWhatThinker(savebuffer_t *save, const thinker_t *th, const UINT8 type)
-{
-	const what_t *ht = (const void *)th;
-	WRITEUINT8(save->p, type);
-}
-*/
 
 //
 // P_NetArchiveThinkers
@@ -1883,16 +1832,6 @@ static void P_NetArchiveThinkers(savebuffer_t *save)
 			SaveDisappearThinker(save, th, tc_disappear);
 			continue;
 		}
-		else if (th->function.acp1 == (actionf_p1)T_DynamicSlopeLine)
-		{
-			SaveDynamicSlopeThinker(save, th, tc_dynslopeline);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_DynamicSlopeVert)
-		{
-			SaveDynamicSlopeThinker(save, th, tc_dynslopevert);
-			continue;
-		}
 		else if (th->function.acp1 == (actionf_p1)T_PolyObjRotate)
 		{
 			SavePolyrotatetThinker(save, th, tc_polyrotate);
@@ -1954,6 +1893,7 @@ mobj_t *P_FindNewPosition(UINT32 oldposition)
 			continue;
 
 		mobj = (mobj_t *)th;
+
 		if (mobj->mobjnum == oldposition)
 			return mobj;
 	}
@@ -1984,19 +1924,6 @@ static inline player_t *LoadPlayer(UINT32 player)
 	if (player >= MAXPLAYERS) return NULL;
 	return &players[player];
 }
-
-static inline pslope_t *LoadSlope(UINT32 slopeid)
-{
-	pslope_t *p = slopelist;
-	if (slopeid > slopecount) return NULL;
-	do
-	{
-		if (p->id == slopeid)
-			return p;
-	} while ((p = p->next));
-	return NULL;
-}
-
 
 //
 // LoadMobjThinker
@@ -2084,7 +2011,6 @@ static void LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 		mobj->momx = READFIXED(save->p);
 		mobj->momy = READFIXED(save->p);
 		mobj->momz = READFIXED(save->p);
-		mobj->pmomz = READFIXED(save->p);
 	} // otherwise they're zero, and the memset took care of it
 
 	if (diff & MD_RADIUS)
@@ -2623,23 +2549,6 @@ static inline void LoadDisappearThinker(savebuffer_t *save, actionf_p1 thinker)
 	P_AddThinker(&ht->thinker);
 }
 
-/// Save a dynamic slope thinker.
-static inline void LoadDynamicSlopeThinker(savebuffer_t *save, actionf_p1 thinker)
-{
-	dynplanethink_t* ht = Z_Malloc(sizeof(*ht), PU_LEVSPEC, NULL);
-	ht->thinker.function.acp1 = thinker;
-
-	ht->type = READUINT8(save->p);
-	ht->slope = LoadSlope(READUINT32(save->p));
-	ht->sourceline = LoadLine(READUINT32(save->p));
-	ht->extent = READFIXED(save->p);
-	READMEM(save->p, ht->tags, sizeof(ht->tags));
-	READMEM(save->p, ht->vex, sizeof(ht->vex));
-
-	P_AddThinker(&ht->thinker);
-}
-
-
 //
 // LoadPolyrotateThinker
 //
@@ -2695,7 +2604,6 @@ static inline void LoadPolywaypointThinker(savebuffer_t *save, actionf_p1 thinke
 	ht->diffx = READFIXED(save->p);
 	ht->diffy = READFIXED(save->p);
 	ht->diffz = READFIXED(save->p);
-	ht->target = LoadMobj(READUINT32(save->p));
 	P_AddThinker(&ht->thinker);
 }
 
@@ -2933,14 +2841,6 @@ static void P_NetUnArchiveThinkers(savebuffer_t *save)
 				LoadDisappearThinker(save, (actionf_p1)T_Disappear);
 				break;
 
-			case tc_dynslopeline:
-				LoadDynamicSlopeThinker(save, (actionf_p1)T_DynamicSlopeLine);
-				break;
-
-			case tc_dynslopevert:
-				LoadDynamicSlopeThinker(save, (actionf_p1)T_DynamicSlopeVert);
-				break;
-
 			case tc_polyrotate:
 				LoadPolyrotatetThinker(save, (actionf_p1)T_PolyObjRotate);
 				break;
@@ -2991,27 +2891,17 @@ static void P_NetUnArchiveThinkers(savebuffer_t *save)
 	if (restoreNum)
 	{
 		executor_t *delay = NULL;
-		polywaypoint_t *polywp = NULL;
 		UINT32 mobjnum;
 		for (currentthinker = thinkercap.next; currentthinker != &thinkercap;
 			currentthinker = currentthinker->next)
 		{
-			if (currentthinker->function.acp1 == (actionf_p1)T_ExecutorDelay)
-			{
-				delay = (void *)currentthinker;
-				if ((mobjnum = (UINT32)(size_t)delay->caller))
-					delay->caller = P_FindNewPosition(mobjnum);
-			}
-		}
-		for (currentthinker = thinkercap.next; currentthinker != &thinkercap;
-			 currentthinker = currentthinker->next)
-		{
-			if (currentthinker->function.acp1 != (actionf_p1)T_PolyObjWaypoint)
+			if (currentthinker->function.acp1 != (actionf_p1)T_ExecutorDelay)
 				continue;
-			polywp = (void *)currentthinker;
-			if (!(mobjnum = (UINT32)(size_t)polywp->target))
-				continue;
-			polywp->target = P_FindNewPosition(mobjnum);
+
+			delay = (void *)currentthinker;
+
+			if ((mobjnum = (UINT32)(size_t)delay->caller))
+				delay->caller = P_FindNewPosition(mobjnum);
 		}
 	}
 }
@@ -3120,11 +3010,11 @@ static inline void P_FinishMobjs(void)
 	for (currentthinker = thinkercap.next; currentthinker != &thinkercap;
 		currentthinker = currentthinker->next)
 	{
-		if (currentthinker->function.acp1 == (actionf_p1)P_MobjThinker)
-		{
-			mobj = (mobj_t *)currentthinker;
-			mobj->info = &mobjinfo[mobj->type];
-		}
+		if (currentthinker->function.acp1 != (actionf_p1)P_MobjThinker)
+			continue;
+
+		mobj = (mobj_t *)currentthinker;
+		mobj->info = &mobjinfo[mobj->type];
 	}
 }
 
@@ -3138,69 +3028,69 @@ static void P_RelinkPointers(void)
 	for (currentthinker = thinkercap.next; currentthinker != &thinkercap;
 		currentthinker = currentthinker->next)
 	{
-		if (currentthinker->function.acp1 == (actionf_p1)P_MobjThinker)
+		if (currentthinker->function.acp1 != (actionf_p1)P_MobjThinker)
+			continue;
+
+		mobj = (mobj_t *)currentthinker;
+
+		if (mobj->type == MT_HOOP || mobj->type == MT_HOOPCOLLIDE || mobj->type == MT_HOOPCENTER)
+			continue;
+
+		if (mobj->tracer)
 		{
-			mobj = (mobj_t *)currentthinker;
-
-			if (mobj->type == MT_HOOP || mobj->type == MT_HOOPCOLLIDE || mobj->type == MT_HOOPCENTER)
-				continue;
-
-			if (mobj->tracer)
-			{
-				temp = (UINT32)(size_t)mobj->tracer;
-				mobj->tracer = NULL;
-				if (!P_SetTarget(&mobj->tracer, P_FindNewPosition(temp)))
-					CONS_Debug(DBG_GAMELOGIC, "tracer not found on %d\n", mobj->type);
-			}
-			if (mobj->target)
-			{
-				temp = (UINT32)(size_t)mobj->target;
-				mobj->target = NULL;
-				if (!P_SetTarget(&mobj->target, P_FindNewPosition(temp)))
-					CONS_Debug(DBG_GAMELOGIC, "target not found on %d\n", mobj->type);
-			}
-			if (mobj->hnext)
-			{
-				temp = (UINT32)(size_t)mobj->hnext;
-				mobj->hnext = NULL;
-				if (!P_SetTarget(&mobj->hnext, P_FindNewPosition(temp)))
-					CONS_Debug(DBG_GAMELOGIC, "hnext not found on %d\n", mobj->type);
-			}
-			if (mobj->hprev)
-			{
-				temp = (UINT32)(size_t)mobj->hprev;
-				mobj->hprev = NULL;
-				if (!P_SetTarget(&mobj->hprev, P_FindNewPosition(temp)))
-					CONS_Debug(DBG_GAMELOGIC, "hprev not found on %d\n", mobj->type);
-			}
-			if (mobj->player && mobj->player->capsule)
-			{
-				temp = (UINT32)(size_t)mobj->player->capsule;
-				mobj->player->capsule = NULL;
-				if (!P_SetTarget(&mobj->player->capsule, P_FindNewPosition(temp)))
-					CONS_Debug(DBG_GAMELOGIC, "capsule not found on %d\n", mobj->type);
-			}
-			if (mobj->player && mobj->player->axis1)
-			{
-				temp = (UINT32)(size_t)mobj->player->axis1;
-				mobj->player->axis1 = NULL;
-				if (!P_SetTarget(&mobj->player->axis1, P_FindNewPosition(temp)))
-					CONS_Debug(DBG_GAMELOGIC, "axis1 not found on %d\n", mobj->type);
-			}
-			if (mobj->player && mobj->player->axis2)
-			{
-				temp = (UINT32)(size_t)mobj->player->axis2;
-				mobj->player->axis2 = NULL;
-				if (!P_SetTarget(&mobj->player->axis2, P_FindNewPosition(temp)))
-					CONS_Debug(DBG_GAMELOGIC, "axis2 not found on %d\n", mobj->type);
-			}
-			if (mobj->player && mobj->player->awayviewmobj)
-			{
-				temp = (UINT32)(size_t)mobj->player->awayviewmobj;
-				mobj->player->awayviewmobj = NULL;
-				if (!P_SetTarget(&mobj->player->awayviewmobj, P_FindNewPosition(temp)))
-					CONS_Debug(DBG_GAMELOGIC, "awayviewmobj not found on %d\n", mobj->type);
-			}
+			temp = (UINT32)(size_t)mobj->tracer;
+			mobj->tracer = NULL;
+			if (!P_SetTarget(&mobj->tracer, P_FindNewPosition(temp)))
+				CONS_Debug(DBG_GAMELOGIC, "tracer not found on %d\n", mobj->type);
+		}
+		if (mobj->target)
+		{
+			temp = (UINT32)(size_t)mobj->target;
+			mobj->target = NULL;
+			if (!P_SetTarget(&mobj->target, P_FindNewPosition(temp)))
+				CONS_Debug(DBG_GAMELOGIC, "target not found on %d\n", mobj->type);
+		}
+		if (mobj->hnext)
+		{
+			temp = (UINT32)(size_t)mobj->hnext;
+			mobj->hnext = NULL;
+			if (!P_SetTarget(&mobj->hnext, P_FindNewPosition(temp)))
+				CONS_Debug(DBG_GAMELOGIC, "hnext not found on %d\n", mobj->type);
+		}
+		if (mobj->hprev)
+		{
+			temp = (UINT32)(size_t)mobj->hprev;
+			mobj->hprev = NULL;
+			if (!P_SetTarget(&mobj->hprev, P_FindNewPosition(temp)))
+				CONS_Debug(DBG_GAMELOGIC, "hprev not found on %d\n", mobj->type);
+		}
+		if (mobj->player && mobj->player->capsule)
+		{
+			temp = (UINT32)(size_t)mobj->player->capsule;
+			mobj->player->capsule = NULL;
+			if (!P_SetTarget(&mobj->player->capsule, P_FindNewPosition(temp)))
+				CONS_Debug(DBG_GAMELOGIC, "capsule not found on %d\n", mobj->type);
+		}
+		if (mobj->player && mobj->player->axis1)
+		{
+			temp = (UINT32)(size_t)mobj->player->axis1;
+			mobj->player->axis1 = NULL;
+			if (!P_SetTarget(&mobj->player->axis1, P_FindNewPosition(temp)))
+				CONS_Debug(DBG_GAMELOGIC, "axis1 not found on %d\n", mobj->type);
+		}
+		if (mobj->player && mobj->player->axis2)
+		{
+			temp = (UINT32)(size_t)mobj->player->axis2;
+			mobj->player->axis2 = NULL;
+			if (!P_SetTarget(&mobj->player->axis2, P_FindNewPosition(temp)))
+				CONS_Debug(DBG_GAMELOGIC, "axis2 not found on %d\n", mobj->type);
+		}
+		if (mobj->player && mobj->player->awayviewmobj)
+		{
+			temp = (UINT32)(size_t)mobj->player->awayviewmobj;
+			mobj->player->awayviewmobj = NULL;
+			if (!P_SetTarget(&mobj->player->awayviewmobj, P_FindNewPosition(temp)))
+				CONS_Debug(DBG_GAMELOGIC, "awayviewmobj not found on %d\n", mobj->type);
 		}
 	}
 }
@@ -3380,7 +3270,7 @@ static void P_NetArchiveMisc(savebuffer_t *save, boolean resending)
 	WRITEUINT32(save->p, totalrings);
 	WRITEINT16(save->p, lastmap);
 
-	for (i = 0; i < 12; i++)
+	for (i = 0; i < 4; i++)
 	{
 		WRITEINT16(save->p, votelevels[i][0]);
 		WRITEINT16(save->p, votelevels[i][1]);
@@ -3473,7 +3363,8 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, bool
 
 	G_SetGamestate(READINT16(save->p));
 
-	gametype = READINT16(save->p);
+	if (reloading)
+		gametype = READINT16(save->p);
 
 	pig = READUINT32(save->p);
 	for (i = 0; i < MAXPLAYERS; i++)
@@ -3499,7 +3390,7 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, bool
 	totalrings = READUINT32(save->p);
 	lastmap = READINT16(save->p);
 
-	for (i = 0; i < 12; i++)
+	for (i = 0; i < 4; i++)
 	{
 		votelevels[i][0] = READINT16(save->p);
 		votelevels[i][1] = READINT16(save->p);
@@ -3589,24 +3480,25 @@ void P_SaveNetGame(savebuffer_t *save, boolean resending)
 	{
 		for (th = thinkercap.next; th != &thinkercap; th = th->next)
 		{
-			if (th->function.acp1 == (actionf_p1)P_MobjThinker)
-			{
-				mobj = (mobj_t *)th;
-				if (mobj->type == MT_HOOP || mobj->type == MT_HOOPCOLLIDE || mobj->type == MT_HOOPCENTER)
-					continue;
-				mobj->mobjnum = i++;
-			}
+			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+				continue;
+
+			mobj = (mobj_t *)th;
+
+			if (mobj->type == MT_HOOP || mobj->type == MT_HOOPCOLLIDE || mobj->type == MT_HOOPCENTER)
+				continue;
+
+			mobj->mobjnum = i++;
 		}
 	}
 
-	P_NetArchivePlayers(save);
+	P_NetArchivePlayers(save, resending);
 	if (gamestate == GS_LEVEL)
 	{
 		P_NetArchiveWorld(save);
 		P_ArchivePolyObjects(save);
 		P_NetArchiveThinkers(save);
 		P_NetArchiveSpecials(save);
-		P_NetArchiveWaypoints(save);
 	}
 
 	LUA_Archive(&save->p, true);
@@ -3626,7 +3518,10 @@ boolean P_LoadGame(savebuffer_t *save, INT16 mapoverride)
 
 	// Savegame end marker
 	if (READUINT8(save->p) != 0x1d)
+	{
+		CONS_Alert(CONS_ERROR, M_GetText("Corrupt Luabanks! (Failed consistency check)\n"));
 		return false;
+	}
 
 	// Only do this after confirming savegame is ok
 	G_DeferedInitNew(false, G_BuildMapName(gamemap), savedata.skin, 0, true);
@@ -3642,7 +3537,7 @@ boolean P_LoadNetGame(savebuffer_t *save, boolean reloading)
 	if (!P_NetUnArchiveMisc(save, reloading))
 		return false;
 
-	P_NetUnArchivePlayers(save);
+	P_NetUnArchivePlayers(save, reloading);
 
 	if (gamestate == GS_LEVEL)
 	{
@@ -3650,12 +3545,11 @@ boolean P_LoadNetGame(savebuffer_t *save, boolean reloading)
 		P_UnArchivePolyObjects(save);
 		P_NetUnArchiveThinkers(save);
 		P_NetUnArchiveSpecials(save);
-		P_NetUnArchiveWaypoints(save);
 		P_RelinkPointers();
 		P_FinishMobjs();
 	}
 
-	LUA_UnArchive(&save->p, true);
+	LUA_UnArchive(&save->p);
 
 	// This is stupid and hacky, but maybe it'll work!
 	P_SetRandSeed(P_GetInitSeed());
