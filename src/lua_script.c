@@ -1173,7 +1173,7 @@ static UINT8 UnArchiveValueDemo(UINT8 **p, int TABLESINDEX, char field[1024])
 	return 0;
 }
 
-static void UnArchiveExtVars(UINT8 **p, void *pointer, boolean isdemo)
+static void UnArchiveExtVars(UINT8 **p, void *pointer, boolean network)
 {
 	int TABLESINDEX;
 	UINT16 field_count = READUINT16(*p);
@@ -1192,13 +1192,13 @@ static void UnArchiveExtVars(UINT8 **p, void *pointer, boolean isdemo)
 	TABLESINDEX = lua_gettop(gL);
 	lua_createtable(gL, 0, field_count); // pointer's ext vars subtable
 
-	if (isdemo)
+	if (network)
 	{
 		for (i = 0; i < field_count; i++)
 		{
 			READSTRING(*p, field);
-			if (UnArchiveValueDemo(p, TABLESINDEX, field) != 3)	// This will return 3 if we shouldn't set this field.
-				lua_setfield(gL, -2, field);
+			UnArchiveValue(p, TABLESINDEX);
+			lua_setfield(gL, -2, field);
 		}
 	}
 	else
@@ -1206,8 +1206,8 @@ static void UnArchiveExtVars(UINT8 **p, void *pointer, boolean isdemo)
 		for (i = 0; i < field_count; i++)
 		{
 			READSTRING(*p, field);
-			UnArchiveValue(p, TABLESINDEX);
-			lua_setfield(gL, -2, field);
+			if (UnArchiveValueDemo(p, TABLESINDEX, field) != 3)	// This will return 3 if we shouldn't set this field.
+				lua_setfield(gL, -2, field);
 		}
 	}
 
@@ -1229,7 +1229,7 @@ static int NetUnArchive(lua_State *L)
 	return n;
 }
 
-static void UnArchiveTables(UINT8 **p, boolean isdemo)
+static void UnArchiveTables(UINT8 **p, boolean network)
 {
 	int TABLESINDEX;
 	UINT16 i, n;
@@ -1240,7 +1240,30 @@ static void UnArchiveTables(UINT8 **p, boolean isdemo)
 	TABLESINDEX = lua_gettop(gL);
 
 	n = (UINT16)lua_objlen(gL, TABLESINDEX);
-	if (isdemo)
+
+	if (network)
+	{
+		for (i = 1; i <= n; i++)
+		{
+			lua_rawgeti(gL, TABLESINDEX, i);
+			while (true)
+			{
+				if (UnArchiveValue(p, TABLESINDEX) == 1) // read key
+					break;
+				if (UnArchiveValue(p, TABLESINDEX) == 2) // read value
+					n++;
+				if (lua_isnil(gL, -2)) // if key is nil (if a function etc was accidentally saved)
+				{
+					CONS_Alert(CONS_ERROR, "A nil key in table %d was found! (Invalid key type or corrupted save?)\n", i);
+					lua_pop(gL, 2); // pop key and value instead of setting them in the table, to prevent Lua panic errors
+				}
+				else
+					lua_rawset(gL, -3);
+			}
+			lua_pop(gL, 1);
+		}
+	}
+	else
 	{
 		for (i = 1; i <= n; i++)
 		{
@@ -1273,28 +1296,7 @@ static void UnArchiveTables(UINT8 **p, boolean isdemo)
 			lua_pop(gL, 1);
 		}
 	}
-	else
-	{
-		for (i = 1; i <= n; i++)
-		{
-			lua_rawgeti(gL, TABLESINDEX, i);
-			while (true)
-			{
-				if (UnArchiveValue(p, TABLESINDEX) == 1) // read key
-					break;
-				if (UnArchiveValue(p, TABLESINDEX) == 2) // read value
-					n++;
-				if (lua_isnil(gL, -2)) // if key is nil (if a function etc was accidentally saved)
-				{
-					CONS_Alert(CONS_ERROR, "A nil key in table %d was found! (Invalid key type or corrupted save?)\n", i);
-					lua_pop(gL, 2); // pop key and value instead of setting them in the table, to prevent Lua panic errors
-				}
-				else
-					lua_rawset(gL, -3);
-			}
-			lua_pop(gL, 1);
-		}
-	}
+
 }
 
 void LUA_Step(void)
@@ -1359,7 +1361,8 @@ void LUA_UnArchive(savebuffer_t *save, boolean network)
 	{
 		if (!playeringame[i] && i > 0)	// same here, this is to synch dediservs properly.
 			continue;
-		UnArchiveExtVars(&save->p, &players[i], !network);
+
+		UnArchiveExtVars(&save->p, &players[i], network);
 	}
 
 	if (network == true)
@@ -1367,15 +1370,19 @@ void LUA_UnArchive(savebuffer_t *save, boolean network)
 		do {
 			mobjnum = READUINT32(save->p); // read a mobjnum
 			for (th = thinkercap.next; th != &thinkercap; th = th->next)
-				if (th->function.acp1 == (actionf_p1)P_MobjThinker
-					&& ((mobj_t *)th)->mobjnum == mobjnum) // find matching mobj
-				UnArchiveExtVars(&save->p, th, !network); // apply variables
+			{
+				if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+					continue;
+
+				if (((mobj_t *)th)->mobjnum == mobjnum) // find matching mobj
+					UnArchiveExtVars(&save->p, th, network); // apply variables
+			}
 		} while(mobjnum != UINT32_MAX); // repeat until end of mobjs marker.
 
 		LUAh_NetArchiveHook(NetUnArchive, save); // call the NetArchive hook in unarchive mode
 	}
 
-	UnArchiveTables(&save->p, !network);
+	UnArchiveTables(&save->p, network);
 
 	if (gL)
 		lua_pop(gL, 1); // pop tables
