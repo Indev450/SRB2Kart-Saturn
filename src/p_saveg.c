@@ -67,7 +67,7 @@ static inline void P_ArchivePlayer(savebuffer_t *save)
 		pllives = 3; // has less than that.
 
 	WRITEUINT8(save->p, player->skincolor);
-	WRITEUINT16(save->p, player->skin);
+	WRITEUINT8(save->p, player->skin);
 
 	WRITEUINT32(save->p, player->score);
 	WRITEINT32(save->p, pllives);
@@ -75,7 +75,7 @@ static inline void P_ArchivePlayer(savebuffer_t *save)
 
 	if (botskin)
 	{
-		WRITEUINT16(save->p, botskin);
+		WRITEUINT8(save->p, botskin);
 		WRITEUINT8(save->p, botcolor);
 	}
 }
@@ -86,7 +86,7 @@ static inline void P_ArchivePlayer(savebuffer_t *save)
 static inline void P_UnArchivePlayer(savebuffer_t *save)
 {
 	savedata.skincolor = READUINT8(save->p);
-	savedata.skin = READUINT16(save->p);
+	savedata.skin = READUINT8(save->p);
 
 	savedata.score = READINT32(save->p);
 	savedata.lives = READINT32(save->p);
@@ -94,7 +94,7 @@ static inline void P_UnArchivePlayer(savebuffer_t *save)
 
 	if (savedata.botcolor)
 	{
-		savedata.botskin = READUINT16(save->p);
+		savedata.botskin = READUINT8(save->p);
 		if (savedata.botskin-1 >= numskins)
 			savedata.botskin = 0;
 		savedata.botcolor = READUINT8(save->p);
