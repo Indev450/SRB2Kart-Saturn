@@ -1762,8 +1762,6 @@ static void SV_SavedGame(void)
 	if (!save.p)
 	{
 		CONS_Alert(CONS_ERROR, M_GetText("No more free memory for savegame\n"));
-		free(save.buffer);
-		save.p = NULL;
 		return;
 	}
 
