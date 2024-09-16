@@ -5244,9 +5244,7 @@ static void Command_Archivetest_f(void)
 			((mobj_t *)th)->mobjnum = i++;
 
 	// allocate buffer
-	save.size = 1024;
-	save.buffer = save.p = ZZ_Alloc(save.size);
-	save.end = save.buffer + save.size;
+	save.buffer = save.p = ZZ_Alloc(1024);
 
 	// test archive
 	CONS_Printf("LUA_Archive...\n");

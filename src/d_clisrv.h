@@ -19,7 +19,6 @@
 #include "tables.h"
 #include "d_player.h"
 #include "mserv.h"
-#include "p_saveg.h" // NETSAVEGAMESIZE
 
 /*
 The 'packet version' is used to distinguish packet formats.
@@ -652,7 +651,7 @@ extern UINT8 hu_redownloadinggamestate;
 extern UINT8 hu_stopped; // kart, true when the game is stopped for players due to a disconnecting or connecting player
 
 typedef struct rewind_s {
-	UINT8 savebuffer[NETSAVEGAMESIZE];
+	UINT8 savebuffer[(768*1024)];
 	tic_t leveltime;
 	size_t demopos;
 
