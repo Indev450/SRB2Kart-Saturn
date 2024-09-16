@@ -33,8 +33,6 @@ extern INT32 player_name_changes[MAXPLAYERS];
 extern player_t players[MAXPLAYERS];
 extern boolean playeringame[MAXPLAYERS];
 
-extern savebuffer_t demobuf;
-
 // ======================================
 // DEMO playback/recording related stuff.
 // ======================================

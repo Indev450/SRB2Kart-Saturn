@@ -49,6 +49,13 @@ typedef struct
 	size_t size;
 } savebuffer_t;
 
+boolean P_SaveBufferZAlloc(savebuffer_t *save, size_t alloc_size, INT32 tag, void *user);
+#define P_SaveBufferAlloc(a,b) P_SaveBufferZAlloc(a, b, PU_STATIC, NULL)
+boolean P_SaveBufferFromExisting(savebuffer_t *save, UINT8 *existing_buffer, size_t existing_size);
+boolean P_SaveBufferFromLump(savebuffer_t *save, lumpnum_t lump);
+boolean P_SaveBufferFromFile(savebuffer_t *save, char const *name);
+void P_SaveBufferFree(savebuffer_t *save);
+
 // Persistent storage/archiving.
 // These are the load / save game routines.
 
