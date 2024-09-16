@@ -1259,7 +1259,7 @@ static void SaveMobjThinker(savebuffer_t *save, const thinker_t *th, const UINT8
 	if (diff2 & MD2_CVMEM)
 		WRITEINT32(save->p, mobj->cvmem);
 	if (diff2 & MD2_SKIN)
-		WRITEUINT16(save->p, (UINT16)((skin_t *)mobj->skin - skins));
+		WRITEUINT8(save->p, (UINT8)((skin_t *)mobj->skin - skins));
 	if (diff2 & MD2_COLOR)
 		WRITEUINT8(save->p, mobj->color);
 	if (diff2 & MD2_EXTVAL1)
@@ -1868,7 +1868,7 @@ static void P_NetArchiveThinkers(savebuffer_t *save)
 			continue;
 		}
 #ifdef PARANOIA
-		else if (th->function.acv != P_RemoveThinkerDelayed) // wait garbage collection
+		else if (th->function.acp1 != P_RemoveThinkerDelayed) // wait garbage collection
 			I_Error("unknown thinker type %p", th->function.acp1);
 #endif
 	}
@@ -2120,7 +2120,7 @@ static void LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 	if (diff2 & MD2_CVMEM)
 		mobj->cvmem = READINT32(save->p);
 	if (diff2 & MD2_SKIN)
-		mobj->skin = &skins[READUINT16(save->p)];
+		mobj->skin = &skins[READUINT8(save->p)];
 	if (diff2 & MD2_COLOR)
 		mobj->color = READUINT8(save->p);
 	if (diff2 & MD2_EXTVAL1)
@@ -2669,19 +2669,6 @@ static inline void LoadPolydisplaceThinker(savebuffer_t *save, actionf_p1 thinke
 	P_AddThinker(&ht->thinker);
 }
 
-/*
-//
-// LoadWhatThinker
-//
-// load a what_t thinker
-//
-static inline void LoadWhatThinker(savebuffer_t *save, actionf_p1 thinker)
-{
-	what_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
-	ht->thinker.function.acp1 = thinker;
-}
-*/
-
 //
 // P_NetUnArchiveThinkers
 //
@@ -2851,7 +2838,6 @@ static void P_NetUnArchiveThinkers(savebuffer_t *save)
 
 			case tc_polywaypoint:
 				LoadPolywaypointThinker(save, (actionf_p1)T_PolyObjWaypoint);
-				restoreNum = true;
 				break;
 
 			case tc_polyslidedoor:
@@ -3248,13 +3234,16 @@ static void P_NetArchiveMisc(savebuffer_t *save, boolean resending)
 
 	if (resending)
 		WRITEUINT32(save->p, gametic);
+
 	WRITEINT16(save->p, gamemap);
+
 	if (gamestate != GS_LEVEL)
 		WRITEINT16(save->p, GS_WAITINGPLAYERS); // nice hack to put people back into waitingplayers
 	else
 		WRITEINT16(save->p, gamestate);
 
-	WRITEINT16(save->p, gametype);
+	if (resending)
+		WRITEINT16(save->p, gametype);
 
 	for (i = 0; i < MAXPLAYERS; i++)
 		pig |= (playeringame[i] != 0)<<i;
