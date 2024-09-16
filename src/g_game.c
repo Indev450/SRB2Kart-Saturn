@@ -8385,7 +8385,10 @@ boolean G_CheckDemoStatus(void)
 
 	if (demo.recording && (modeattacking || demo.savemode != DSM_NOTSAVING))
 	{
-		G_SaveDemo();
+		if (demobuf.p)
+		{
+			G_SaveDemo();
+		}
 		return true;
 	}
 
