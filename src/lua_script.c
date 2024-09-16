@@ -996,7 +996,7 @@ static UINT8 UnArchiveValue(UINT8 **p, int TABLESINDEX)
 		lua_pushnil(gL);
 		break;
 	case ARCH_BOOLEAN:
-		lua_pushboolean(gL, READUINT8(save_p));
+		lua_pushboolean(gL, READUINT8(*p));
 		break;
 	case ARCH_SIGNED:
 		lua_pushinteger(gL, READFIXED(*p));
@@ -1139,7 +1139,6 @@ static UINT8 UnArchiveValueDemo(UINT8 **p, int TABLESINDEX, char field[1024])
 			CONS_Alert(CONS_WARNING,"Cannot read mobj_t stored in player variable \'%s\'. Desyncs may occur.\n", field);
 		else
 			CONS_Alert(CONS_WARNING,"Couldn't read mobj_t\n");
-
 		return 3;	// Don't set the field
 
 	case ARCH_PLAYER:
