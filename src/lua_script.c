@@ -40,8 +40,6 @@ static lua_State *mL = NULL;
 
 int hook_defrosting;
 
-static UINT8 **lua_save_p = NULL; // FIXME: Remove this horrible hack
-
 // List of internal libraries to load from SRB2
 static lua_CFunction liblist[] = {
 	LUA_EnumLib, // global metatable for enums
@@ -889,9 +887,10 @@ static void ArchiveExtVars(UINT8 **p, void *pointer, const char *ptype)
 static int NetArchive(lua_State *L)
 {
 	int TABLESINDEX = lua_upvalueindex(1);
+	savebuffer_t *save = lua_touserdata(L, lua_upvalueindex(2));
 	int i, n = lua_gettop(L);
 	for (i = 1; i <= n; i++)
-		ArchiveValue(lua_save_p, TABLESINDEX, i);
+		ArchiveValue(&save->p, TABLESINDEX, i);
 	return n;
 }
 
@@ -1126,7 +1125,7 @@ static UINT8 UnArchiveValueDemo(UINT8 **p, int TABLESINDEX, char field[1024])
 	return 0;
 }
 
-static void UnArchiveExtVars(UINT8 **p, void *pointer)
+static void UnArchiveExtVars(UINT8 **p, void *pointer, boolean isdemo)
 {
 	int TABLESINDEX;
 	UINT16 field_count = READUINT16(*p);
@@ -1145,40 +1144,23 @@ static void UnArchiveExtVars(UINT8 **p, void *pointer)
 	TABLESINDEX = lua_gettop(gL);
 	lua_createtable(gL, 0, field_count); // pointer's ext vars subtable
 
-	for (i = 0; i < field_count; i++)
+	if (isdemo)
 	{
-		READSTRING(*p, field);
-		UnArchiveValue(p, TABLESINDEX);
-		lua_setfield(gL, -2, field);
+		for (i = 0; i < field_count; i++)
+		{
+			READSTRING(*p, field);
+			if (UnArchiveValueDemo(p, TABLESINDEX, field) != 3)	// This will return 3 if we shouldn't set this field.
+				lua_setfield(gL, -2, field);
+		}
 	}
-
-	lua_getfield(gL, LUA_REGISTRYINDEX, LREG_EXTVARS);
-	I_Assert(lua_istable(gL, -1));
-	lua_pushlightuserdata(gL, pointer);
-	lua_pushvalue(gL, -3); // pointer's ext vars subtable
-	lua_rawset(gL, -3);
-	lua_pop(gL, 2); // pop LREG_EXTVARS and pointer's subtable
-}
-
-static void UnArchiveExtVarsDemo(UINT8 **p, void *pointer)
-{
-	int TABLESINDEX;
-	UINT16 field_count = READUINT16(*p);
-	UINT16 i;
-	char field[1024];
-
-	if (field_count == 0)
-		return;
-	I_Assert(gL != NULL);
-
-	TABLESINDEX = lua_gettop(gL);
-	lua_createtable(gL, 0, field_count); // pointer's ext vars subtable
-
-	for (i = 0; i < field_count; i++)
+	else
 	{
-		READSTRING(*p, field);
-		if (UnArchiveValueDemo(p, TABLESINDEX, field) != 3)	// This will return 3 if we shouldn't set this field.
+		for (i = 0; i < field_count; i++)
+		{
+			READSTRING(*p, field);
+			UnArchiveValue(p, TABLESINDEX);
 			lua_setfield(gL, -2, field);
+		}
 	}
 
 	lua_getfield(gL, LUA_REGISTRYINDEX, LREG_EXTVARS);
@@ -1192,13 +1174,14 @@ static void UnArchiveExtVarsDemo(UINT8 **p, void *pointer)
 static int NetUnArchive(lua_State *L)
 {
 	int TABLESINDEX = lua_upvalueindex(1);
+	savebuffer_t *save = lua_touserdata(L, lua_upvalueindex(2));
 	int i, n = lua_gettop(L);
 	for (i = 1; i <= n; i++)
-		UnArchiveValue(lua_save_p, TABLESINDEX);
+		UnArchiveValue(&save->p, TABLESINDEX);
 	return n;
 }
 
-static void UnArchiveTables(UINT8 **p)
+static void UnArchiveTables(UINT8 **p, boolean isdemo)
 {
 	int TABLESINDEX;
 	UINT16 i, n;
@@ -1209,67 +1192,60 @@ static void UnArchiveTables(UINT8 **p)
 	TABLESINDEX = lua_gettop(gL);
 
 	n = (UINT16)lua_objlen(gL, TABLESINDEX);
-	for (i = 1; i <= n; i++)
+	if (isdemo)
 	{
-		lua_rawgeti(gL, TABLESINDEX, i);
-		while (true)
+		for (i = 1; i <= n; i++)
 		{
-			if (UnArchiveValue(p, TABLESINDEX) == 1) // read key
-				break;
-			if (UnArchiveValue(p, TABLESINDEX) == 2) // read value
-				n++;
-			if (lua_isnil(gL, -2)) // if key is nil (if a function etc was accidentally saved)
+			lua_rawgeti(gL, TABLESINDEX, i);
+			while (true)
 			{
-				CONS_Alert(CONS_ERROR, "A nil key in table %d was found! (Invalid key type or corrupted save?)\n", i);
-				lua_pop(gL, 2); // pop key and value instead of setting them in the table, to prevent Lua panic errors
+				UINT8 ret;
+
+				ret = UnArchiveValueDemo(p, TABLESINDEX, NULL);
+				if (ret == 3)
+					lua_pushnil(gL);
+				else if (ret == 1) // read key
+					break;
+
+				ret = UnArchiveValueDemo(p, TABLESINDEX, NULL);
+
+				if (ret == 3)
+					lua_pushnil(gL);
+				else if (ret == 2) // read value
+					n++;
+
+				if (lua_isnil(gL, -2)) // if key is nil (if a function etc was accidentally saved)
+				{
+					CONS_Alert(CONS_ERROR, "A nil key in table %d was found! (Invalid key type or corrupted save?)\n", i);
+					lua_pop(gL, 2); // pop key and value instead of setting them in the table, to prevent Lua panic errors
+				}
+				else
+					lua_rawset(gL, -3);
 			}
-			else
-				lua_rawset(gL, -3);
+			lua_pop(gL, 1);
 		}
-		lua_pop(gL, 1);
 	}
-}
-
-static void UnArchiveTablesDemo(UINT8 **p)
-{
-	int TABLESINDEX;
-	UINT16 i, n;
-
-	if (!gL)
-		return;
-
-	TABLESINDEX = lua_gettop(gL);
-
-	n = (UINT16)lua_objlen(gL, TABLESINDEX);
-	for (i = 1; i <= n; i++)
+	else
 	{
-		lua_rawgeti(gL, TABLESINDEX, i);
-		while (true)
+		for (i = 1; i <= n; i++)
 		{
-			UINT8 ret;
-
-			ret = UnArchiveValueDemo(p, TABLESINDEX, NULL);
-			if (ret == 3)
-				lua_pushnil(gL);
-			else if (ret == 1) // read key
-				break;
-
-			ret = UnArchiveValueDemo(p, TABLESINDEX, NULL);
-
-			if (ret == 3)
-				lua_pushnil(gL);
-			else if (ret == 2) // read value
-				n++;
-
-			if (lua_isnil(gL, -2)) // if key is nil (if a function etc was accidentally saved)
+			lua_rawgeti(gL, TABLESINDEX, i);
+			while (true)
 			{
-				CONS_Alert(CONS_ERROR, "A nil key in table %d was found! (Invalid key type or corrupted save?)\n", i);
-				lua_pop(gL, 2); // pop key and value instead of setting them in the table, to prevent Lua panic errors
+				if (UnArchiveValue(p, TABLESINDEX) == 1) // read key
+					break;
+				if (UnArchiveValue(p, TABLESINDEX) == 2) // read value
+					n++;
+				if (lua_isnil(gL, -2)) // if key is nil (if a function etc was accidentally saved)
+				{
+					CONS_Alert(CONS_ERROR, "A nil key in table %d was found! (Invalid key type or corrupted save?)\n", i);
+					lua_pop(gL, 2); // pop key and value instead of setting them in the table, to prevent Lua panic errors
+				}
+				else
+					lua_rawset(gL, -3);
 			}
-			else
-				lua_rawset(gL, -3);
+			lua_pop(gL, 1);
 		}
-		lua_pop(gL, 1);
 	}
 }
 
@@ -1281,7 +1257,7 @@ void LUA_Step(void)
 	lua_gc(gL, LUA_GCSTEP, 1);
 }
 
-void LUA_Archive(UINT8 **p, boolean network)
+void LUA_Archive(savebuffer_t *save, boolean network)
 {
 	INT32 i;
 	thinker_t *th;
@@ -1294,7 +1270,7 @@ void LUA_Archive(UINT8 **p, boolean network)
 		if (!playeringame[i] && i > 0)	// NEVER skip player 0, this is for dedi servs.
 			continue;
 		// all players in game will be archived, even if they just add a 0.
-		ArchiveExtVars(p, &players[i], "player");
+		ArchiveExtVars(&save->p, &players[i], "player");
 	}
 
 	if (network == true)
@@ -1308,22 +1284,21 @@ void LUA_Archive(UINT8 **p, boolean network)
 
 				// archive function will determine when to skip mobjs,
 				// and write mobjnum in otherwise.
-				ArchiveExtVars(p, th, "mobj");
+				ArchiveExtVars(&save->p, &players[i], "player");
 			}
 		}
-		WRITEUINT32(*p, UINT32_MAX); // end of mobjs marker, replaces mobjnum.
+		WRITEUINT32(save->p, UINT32_MAX); // end of mobjs marker, replaces mobjnum.
 
-		lua_save_p = p;
-		LUAh_NetArchiveHook(NetArchive); // call the NetArchive hook in archive mode
+		LUAh_NetArchiveHook(NetArchive, save); // call the NetArchive hook in archive mode
 	}
 
-	ArchiveTables(p);
+	ArchiveTables(&save->p);
 
 	if (gL)
 		lua_pop(gL, 1); // pop tables
 }
 
-void LUA_UnArchive(UINT8 **p)
+void LUA_UnArchive(savebuffer_t *save, boolean network)
 {
 	UINT32 mobjnum;
 	INT32 i;
@@ -1336,47 +1311,23 @@ void LUA_UnArchive(UINT8 **p)
 	{
 		if (!playeringame[i] && i > 0)	// same here, this is to synch dediservs properly.
 			continue;
-		UnArchiveExtVars(p, &players[i]);
+		UnArchiveExtVars(&save->p, &players[i], !network);
 	}
 
-	do {
-		mobjnum = READUINT32(*p); // read a mobjnum
-		for (th = thinkercap.next; th != &thinkercap; th = th->next)
-		{
-			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
-				continue;
-
-			if (((mobj_t *)th)->mobjnum != mobjnum) // find matching mobj
-				continue;
-
-			UnArchiveExtVars(p, th); // apply variables
-		}
-	} while(mobjnum != UINT32_MAX); // repeat until end of mobjs marker.
-
-	lua_save_p = p;
-	LUAh_NetArchiveHook(NetUnArchive); // call the NetArchive hook in unarchive mode
-	UnArchiveTables(p);
-
-	if (gL)
-		lua_pop(gL, 1); // pop tables
-}
-
-// this time make sure we read from demo_p
-void LUA_UnArchiveDemo(UINT8 **p)
-{
-	INT32 i;
-
-	if (gL)
-		lua_newtable(gL); // tables to be read
-
-	for (i = 0; i < MAXPLAYERS; i++)
+	if (network == true)
 	{
-		if (!playeringame[i] && i > 0)	// same here, this is to synch dediservs properly.
-			continue;
-		UnArchiveExtVarsDemo(p, &players[i]);
+		do {
+			mobjnum = READUINT32(save->p); // read a mobjnum
+			for (th = thinkercap.next; th != &thinkercap; th = th->next)
+				if (th->function.acp1 == (actionf_p1)P_MobjThinker
+					&& ((mobj_t *)th)->mobjnum == mobjnum) // find matching mobj
+				UnArchiveExtVars(&save->p, th, !network); // apply variables
+		} while(mobjnum != UINT32_MAX); // repeat until end of mobjs marker.
+
+		LUAh_NetArchiveHook(NetUnArchive, save); // call the NetArchive hook in unarchive mode
 	}
 
-	UnArchiveTablesDemo(p);
+	UnArchiveTables(&save->p, !network);
 
 	if (gL)
 		lua_pop(gL, 1); // pop tables
