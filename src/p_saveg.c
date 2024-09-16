@@ -3549,7 +3549,7 @@ boolean P_LoadNetGame(savebuffer_t *save, boolean reloading)
 		P_FinishMobjs();
 	}
 
-	LUA_UnArchive(save);
+	LUA_UnArchive(save, true);
 
 	// This is stupid and hacky, but maybe it'll work!
 	P_SetRandSeed(P_GetInitSeed());
