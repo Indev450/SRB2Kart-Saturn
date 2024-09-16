@@ -5116,7 +5116,8 @@ void G_GhostAddHit(INT32 playernum, mobj_t *victim)
 
 void G_WriteAllGhostTics(void)
 {
-#define CHECKSPACE(num) if (demobuf.p+(num) > demoend) {G_CheckDemoStatus(); return; }
+	UINT8 *save_demo_p = demobuf.p;
+#define CHECKSPACE(num) if (demobuf.p+(num) > demoend) { demobuf.p = save_demo_p; G_CheckDemoStatus(); return; }
 
 	INT32 i, counter = leveltime;
 	for (i = 0; i < MAXPLAYERS; i++)
@@ -5152,7 +5153,8 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 	UINT8 sprite;
 	UINT8 frame;
 
-#define CHECKSPACE(num) if (demobuf.p+(num) > demoend) {G_CheckDemoStatus(); return; }
+	UINT8 *save_demo_p = demobuf.p;
+#define CHECKSPACE(num) if (demobuf.p+(num) > demoend) { demobuf.p = save_demo_p; G_CheckDemoStatus(); return; }
 
 	if (!demobuf.p)
 		return;
