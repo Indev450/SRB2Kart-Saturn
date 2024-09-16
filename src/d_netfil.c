@@ -839,8 +839,12 @@ void SV_FileSendTicker(void)
 
 				if (!transfer[i].currentfile)
 				{
-					I_Error("Can't open file %s: %s",
+					CONS_Alert(CONS_ERROR, "Can't open file %s: %s\n",
 						f->id.filename, strerror(errno));
+
+					SV_EndFileSend(i);
+					HSendPacket(i, true, 0, PT_SERVERREFUSE);
+					break;
 				}
 
 				fseek(transfer[i].currentfile, 0, SEEK_END);
