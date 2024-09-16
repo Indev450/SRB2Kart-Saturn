@@ -55,11 +55,11 @@ void LUA_InvalidateLevel(void);
 void LUA_InvalidateMapthings(void);
 void LUA_InvalidatePlayer(player_t *player);
 void LUA_Step(void);
-void LUA_Archive(void);
-void LUA_UnArchive(void);
+void LUA_Archive(UINT8 **p, boolean network);
+void LUA_UnArchive(UINT8 **p);
 
-void LUA_ArchiveDemo(void);
-void LUA_UnArchiveDemo(void);
+// keeping this around since demos are kinda ass
+void LUA_UnArchiveDemo(UINT8 **p);
 
 void Got_Luacmd(UINT8 **cp, INT32 playernum); // lua_consolelib.c
 void LUA_CVarChanged(const char *name); // lua_consolelib.c
