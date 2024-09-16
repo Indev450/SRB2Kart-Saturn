@@ -71,9 +71,6 @@ JoyType_t Joystick2;
 JoyType_t Joystick3;
 JoyType_t Joystick4;
 
-// 1024 bytes is plenty for a savegame
-#define SAVEGAMESIZE (1024)
-
 // SRB2kart
 char gamedatafilename[64] = "kartdata.dat";
 char timeattackfolder[64] = "kart";
@@ -295,7 +292,6 @@ UINT32 timesBeatenWithEmeralds;
 static char demoname[128];
 savebuffer_t demobuf;
 static UINT8 *demotime_p, *demoinfo_p;
-static UINT8 *demoend;
 static UINT8 demoflags;
 static boolean demosynced = true; // console warning message
 
@@ -4053,12 +4049,14 @@ void G_SaveGameData(boolean force)
 	if (!gamedataloaded)
 		return; // If never loaded (-nodata), don't save
 
-	save.p = save.buffer = (UINT8 *)malloc(GAMEDATASIZE);
+	save.size = length;
+	save.p = save.buffer = (UINT8 *)malloc(save.size);
 	if (!save.p)
 	{
 		CONS_Alert(CONS_ERROR, M_GetText("No more free memory for saving game data\n"));
 		return;
 	}
+	save.end = save.buffer + save.size;
 
 	if (majormods && !force)
 	{
@@ -4136,7 +4134,6 @@ void G_SaveGameData(boolean force)
 
 	FIL_WriteFile(va(pandf, srb2home, gamedatafilename), save.buffer, length);
 	free(save.buffer);
-	save.p = save.buffer = NULL;
 }
 
 #define VERSIONSIZE 16
@@ -4226,6 +4223,8 @@ void G_LoadGame(UINT32 slot, INT16 mapoverride)
 	}
 
 	save.p = save.buffer;
+	save.size = length;
+	save.end = save.buffer + save.size;
 
 	memset(vcheck, 0, sizeof (vcheck));
 	sprintf(vcheck, "version %d", VERSION);
@@ -4240,7 +4239,6 @@ void G_LoadGame(UINT32 slot, INT16 mapoverride)
 		M_StartMessage(M_GetText("Save game from different version\n\nPress ESC\n"), NULL, MM_NOTHING);
 		Command_ExitGame_f();
 		Z_Free(save.buffer);
-		save.p = save.buffer = NULL;
 
 		// no cheating!
 		memset(&savedata, 0, sizeof(savedata));
@@ -4251,9 +4249,6 @@ void G_LoadGame(UINT32 slot, INT16 mapoverride)
 
 	if (demo.playback) // reset game engine
 		G_StopDemo();
-
-//	paused = false;
-//	automapactive = false;
 
 	// dearchive all the modifications
 	if (!P_LoadGame(&save, mapoverride))
@@ -4271,7 +4266,6 @@ void G_LoadGame(UINT32 slot, INT16 mapoverride)
 
 	// done
 	Z_Free(save.buffer);
-	save.p = save.buffer = NULL;
 
 	displayplayers[0] = consoleplayer;
 	multiplayer = false;
@@ -4308,12 +4302,14 @@ void G_SaveGame(UINT32 savegameslot)
 		char name[VERSIONSIZE];
 		size_t length;
 
-		save.p = save.buffer = (UINT8 *)malloc(SAVEGAMESIZE);
+		save.size = SAVEGAMESIZE;
+		save.p = save.buffer = (UINT8 *)malloc(save.size);
 		if (!save.p)
 		{
 			CONS_Alert(CONS_ERROR, M_GetText("No more free memory for saving game data\n"));
 			return;
 		}
+		save.end = save.buffer + save.size;
 
 		memset(name, 0, sizeof (name));
 		sprintf(name, "version %d", VERSION);
@@ -4324,7 +4320,6 @@ void G_SaveGame(UINT32 savegameslot)
 		length = save.p - save.buffer;
 		saved = FIL_WriteFile(backup, save.buffer, length);
 		free(save.buffer);
-		save.p = save.buffer = NULL;
 	}
 
 	gameaction = ga_nothing;
@@ -4825,7 +4820,7 @@ INT32 G_FindMapByNameOrCode(const char *mapname, char **realmapnamep)
 #define ZT_AIMING  0x10
 #define ZT_DRIFT   0x20
 #define ZT_LATENCY 0x40
-#define DEMOMARKER 0x80 // demoend
+#define DEMOMARKER 0x80 // demobuf.end
 
 UINT8 demo_extradata[MAXPLAYERS];
 UINT8 demo_writerng; // 0=no, 1=yes, 2=yes but on a timeout
@@ -5253,7 +5248,7 @@ void G_WriteDemoTiccmd(ticcmd_t *cmd, INT32 playernum)
 
 	// attention here for the ticcmd size!
 	// latest demos with mouse aiming byte in ticcmd
-	if (!(demoflags & DF_GHOST) && ziptic_p > demoend - 9)
+	if (!(demoflags & DF_GHOST) && ziptic_p > demobuf.end - 9)
 	{
 		G_CheckDemoStatus(); // no more space
 		return;
@@ -5327,7 +5322,7 @@ void G_GhostAddHit(INT32 playernum, mobj_t *victim)
 void G_WriteAllGhostTics(void)
 {
 	UINT8 *save_demo_p = demobuf.p;
-#define CHECKSPACE(num) if (demobuf.p+(num) > demoend) { demobuf.p = save_demo_p; G_CheckDemoStatus(); return; }
+#define CHECKSPACE(num) if (demobuf.p+(num) > demobuf.end) { demobuf.p = save_demo_p; G_CheckDemoStatus(); return; }
 
 	INT32 i, counter = leveltime;
 	for (i = 0; i < MAXPLAYERS; i++)
@@ -5364,7 +5359,7 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 	UINT8 frame;
 
 	UINT8 *save_demo_p = demobuf.p;
-#define CHECKSPACE(num) if (demobuf.p+(num) > demoend) { demobuf.p = save_demo_p; G_CheckDemoStatus(); return; }
+#define CHECKSPACE(num) if (demobuf.p+(num) > demobuf.end) { demobuf.p = save_demo_p; G_CheckDemoStatus(); return; }
 
 	if (!demobuf.p)
 		return;
@@ -5550,7 +5545,7 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 
 	// attention here for the ticcmd size!
 	// latest demos with mouse aiming byte in ticcmd
-	if (demobuf.p >= demoend - (13 + 9))
+	if (demobuf.p >= demobuf.end - (13 + 9))
 	{
 		G_CheckDemoStatus(); // no more space
 		return;
@@ -6397,7 +6392,7 @@ void G_WriteMetalTic(mobj_t *metal)
 
 	// attention here for the ticcmd size!
 	// latest demos with mouse aiming byte in ticcmd
-	if (demobuf.p >= demoend - 32)
+	if (demobuf.p >= demobuf.end - 32)
 	{
 		G_StopMetalRecording(); // no more space
 		return;
@@ -6411,12 +6406,13 @@ void G_RecordDemo(const char *name)
 {
 	INT32 maxsize;
 
+	demobuf.size = 0;
 	demobuf.p = NULL;
 	demo.recording = false;
 	if (demobuf.buffer)
 		free(demobuf.buffer);
 	demobuf.buffer = NULL;
-	demoend = NULL;
+	demobuf.end = NULL;
 
 	if (cv_recordmultiplayerdemos.value)
 	{
@@ -6427,8 +6423,9 @@ void G_RecordDemo(const char *name)
 
 		maxsize = cv_maxdemosize.value*1024*1024;
 
-		demobuf.buffer = malloc(maxsize);
-		demoend = demobuf.buffer + maxsize;
+		demobuf.size = maxsize;
+		demobuf.buffer = (UINT8 *)malloc(maxsize);
+		demobuf.end = demobuf.buffer + demobuf.size;
 
 		if (demobuf.buffer)
 			demo.recording = true;
@@ -6443,10 +6440,11 @@ void G_RecordMetal(void)
 	maxsize = cv_maxdemosize.value*1024*1024;
 	if (demobuf.buffer)
 		free(demobuf.buffer);
+	demobuf.size = maxsize;
+	demobuf.buffer = (UINT8 *)malloc(maxsize);
 	demobuf.p = NULL;
 	metalrecording = false;
-	demobuf.buffer = malloc(maxsize);
-	demoend = demobuf.buffer + maxsize;
+	demobuf.end = demobuf.buffer + demobuf.size;
 
 	if (demobuf.buffer)
 		metalrecording = true;
