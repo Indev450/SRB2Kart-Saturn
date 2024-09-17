@@ -4437,10 +4437,9 @@ static void Got_AddPlayer(UINT8 **p, INT32 playernum)
 
 	D_AddAutoloadFiles();
 
-	if (!resendingsavegame[node])
-		LUAh_PlayerJoin(newplayernum);
+	LUAh_PlayerJoin(newplayernum);
 
-	if (newplayernum == consoleplayer && !resendingsavegame[node])
+	if (newplayernum == consoleplayer)
 		LUAh_ServerJoin();
 
 #ifdef HAVE_DISCORDRPC
