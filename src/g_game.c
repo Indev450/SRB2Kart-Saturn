@@ -357,10 +357,6 @@ consvar_t cv_demochangemap = {"netdemo_savemapchange", "Disabled", CV_SAVE, demo
 static UINT8 *savebuffer;
 
 // Analog Control
-static void UserAnalog_OnChange(void);
-static void UserAnalog2_OnChange(void);
-static void UserAnalog3_OnChange(void);
-static void UserAnalog4_OnChange(void);
 static void Analog_OnChange(void);
 static void Analog2_OnChange(void);
 static void Analog3_OnChange(void);
@@ -446,10 +442,10 @@ consvar_t cv_analog = {"analog", "Off", CV_CALL, CV_OnOff, Analog_OnChange, 0, N
 consvar_t cv_analog2 = {"analog2", "Off", CV_CALL, CV_OnOff, Analog2_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_analog3 = {"analog3", "Off", CV_CALL, CV_OnOff, Analog3_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_analog4 = {"analog4", "Off", CV_CALL, CV_OnOff, Analog4_OnChange, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_useranalog = {"useranalog", "Off", CV_SAVE|CV_CALL, CV_OnOff, UserAnalog_OnChange, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_useranalog2 = {"useranalog2", "Off", CV_SAVE|CV_CALL, CV_OnOff, UserAnalog2_OnChange, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_useranalog3 = {"useranalog3", "Off", CV_SAVE|CV_CALL, CV_OnOff, UserAnalog3_OnChange, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_useranalog4 = {"useranalog4", "Off", CV_SAVE|CV_CALL, CV_OnOff, UserAnalog4_OnChange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_useranalog = {"useranalog", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_useranalog2 = {"useranalog2", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_useranalog3 = {"useranalog3", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_useranalog4 = {"useranalog4", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_turnaxis = {"joyaxis_turn", "Left X", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_moveaxis = {"joyaxis_move", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -511,8 +507,8 @@ static CV_PossibleValue_t driftsparkpulse_t[] = {{0, "MIN"}, {FRACUNIT*3, "MAX"}
 consvar_t cv_driftsparkpulse = {"driftsparkpulse", "1.4", CV_FLOAT | CV_SAVE, driftsparkpulse_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static CV_PossibleValue_t stretchfactor_t[] = {
-	{0, "Off"}, {FRACUNIT/8, "0.125"}, {FRACUNIT/4, "0.250"}, 
-	{3*FRACUNIT/8, "0.375"}, {FRACUNIT/2, "0.500"}, {5*FRACUNIT/8, "0.625"}, 
+	{0, "Off"}, {FRACUNIT/8, "0.125"}, {FRACUNIT/4, "0.250"},
+	{3*FRACUNIT/8, "0.375"}, {FRACUNIT/2, "0.500"}, {5*FRACUNIT/8, "0.625"},
 	{3*FRACUNIT/4, "0.750"}, {7*FRACUNIT/8, "0.875"}, {FRACUNIT, "Max"}, {0, NULL}};
 consvar_t cv_gravstretch = {"gravstretch", "0", CV_SAVE, stretchfactor_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -595,15 +591,6 @@ void G_ClearRecords(void)
 		}
 	}
 }
-
-// For easy retrieval of records
-/*UINT32 G_GetBestScore(INT16 map)
-{
-	if (!mainrecords[map-1])
-		return 0;
-
-	return mainrecords[map-1]->score;
-}*/
 
 tic_t G_GetBestTime(INT16 map)
 {
@@ -980,7 +967,7 @@ static INT32 Joy3Axis(axis_input_e axissel)
 		}
 		if (flp) retaxis = -retaxis; //flip it around
 		return retaxis;
-		
+
 	}
 	else
 	{
@@ -1000,7 +987,7 @@ static INT32 Joy3Axis(axis_input_e axissel)
 		}
 		if (flp) retaxis = -retaxis; //flip it around
 		return retaxis;
-		
+
 	}
 }
 
@@ -1075,7 +1062,7 @@ static INT32 Joy4Axis(axis_input_e axissel)
 		}
 		if (flp) retaxis = -retaxis; //flip it around
 		return retaxis;
-		
+
 	}
 	else
 	{
@@ -1095,7 +1082,7 @@ static INT32 Joy4Axis(axis_input_e axissel)
 		}
 		if (flp) retaxis = -retaxis; //flip it around
 		return retaxis;
-		
+
 	}
 }
 
@@ -1509,60 +1496,10 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 
 }
 
-// User has designated that they want
-// analog ON, so tell the game to stop
-// fudging with it.
-static void UserAnalog_OnChange(void)
-{
-	/*if (cv_useranalog.value)
-		CV_SetValue(&cv_analog, 1);
-	else
-		CV_SetValue(&cv_analog, 0);*/
-}
-
-static void UserAnalog2_OnChange(void)
-{
-	if (botingame)
-		return;
-	/*if (cv_useranalog2.value)
-		CV_SetValue(&cv_analog2, 1);
-	else
-		CV_SetValue(&cv_analog2, 0);*/
-}
-
-static void UserAnalog3_OnChange(void)
-{
-	if (botingame)
-		return;
-	/*if (cv_useranalog3.value)
-		CV_SetValue(&cv_analog3, 1);
-	else
-		CV_SetValue(&cv_analog3, 0);*/
-}
-
-static void UserAnalog4_OnChange(void)
-{
-	if (botingame)
-		return;
-	/*if (cv_useranalog4.value)
-		CV_SetValue(&cv_analog4, 1);
-	else
-		CV_SetValue(&cv_analog4, 0);*/
-}
-
 static void Analog_OnChange(void)
 {
 	if (!cv_cam_dist.string)
 		return;
-
-	// cameras are not initialized at this point
-
-	/*
-	if (!cv_chasecam.value && cv_analog.value) {
-		CV_SetValue(&cv_analog, 0);
-		return;
-	}
-	*/
 
 	SendWeaponPref();
 }
@@ -1572,15 +1509,6 @@ static void Analog2_OnChange(void)
 	if (!(splitscreen || botingame) || !cv_cam2_dist.string)
 		return;
 
-	// cameras are not initialized at this point
-
-	/*
-	if (!cv_chasecam2.value && cv_analog2.value) {
-		CV_SetValue(&cv_analog2, 0);
-		return;
-	}
-	*/
-
 	SendWeaponPref2();
 }
 
@@ -1589,15 +1517,6 @@ static void Analog3_OnChange(void)
 	if (splitscreen < 2 || !cv_cam3_dist.string)
 		return;
 
-	// cameras are not initialized at this point
-
-	/*
-	if (!cv_chasecam3.value && cv_analog3.value) {
-		CV_SetValue(&cv_analog3, 0);
-		return;
-	}
-	*/
-
 	SendWeaponPref3();
 }
 
@@ -1605,15 +1524,6 @@ static void Analog4_OnChange(void)
 {
 	if (splitscreen < 3 || !cv_cam4_dist.string)
 		return;
-
-	// cameras are not initialized at this point
-
-	/*
-	if (!cv_chasecam4.value && cv_analog4.value) {
-		CV_SetValue(&cv_analog4, 0);
-		return;
-	}
-	*/
 
 	SendWeaponPref4();
 }
@@ -2150,7 +2060,6 @@ void G_ResetView(UINT8 viewnum, INT32 playernum, boolean onlyactive)
 
 			P_ResetCamera(&players[(*displayplayerp)], camerap);
 
-
 			// Make sure the viewport doesn't interpolate at all into
 			// its new position -- just snap instantly into place.
 			R_ResetViewInterpolation(viewd);
@@ -2235,13 +2144,6 @@ void G_Ticker(boolean run)
 		if (!(netgame || multiplayer) && G_GetRetryFlag())
 		{
 			G_ClearRetryFlag();
-
-			// Costs a life to retry ... unless the player in question is dead already.
-			/*if (G_GametypeUsesLives() && players[consoleplayer].playerstate == PST_LIVE)
-				players[consoleplayer].lives -= 1;
-
-			G_DoReborn(consoleplayer);*/
-
 			D_MapChange(gamemap, gametype, cv_kartencore.value, true, 1, false, false);
 		}
 
@@ -3163,13 +3065,6 @@ const char *Gametype_Names[NUMGAMETYPES] =
 {
 	"Race", // GT_RACE
 	"Battle" // GT_MATCH
-
-	/*"Co-op", // GT_COOP
-	"Competition", // GT_COMPETITION
-	"Team Match", // GT_TEAMMATCH
-	"Tag", // GT_TAG
-	"Hide and Seek", // GT_HIDEANDSEEK
-	"CTF" // GT_CTF*/
 };
 
 //
@@ -3231,12 +3126,7 @@ boolean G_GametypeHasTeams(void)
 //
 boolean G_GametypeHasSpectators(void)
 {
-	// SRB2Kart: We don't have any exceptions to not being able to spectate yet. Maybe when SP & bots roll around.
-#if 0
-	return (gametype != GT_COOP && gametype != GT_COMPETITION && gametype != GT_RACE);
-#else
 	return (netgame || (multiplayer && demo.playback)); //true
-#endif
 }
 
 //
@@ -4271,14 +4161,11 @@ void G_LoadGame(UINT32 slot, INT16 mapoverride)
 	Z_Free(savebuffer);
 	save_p = savebuffer = NULL;
 
-//	gameaction = ga_nothing;
-//	G_SetGamestate(GS_LEVEL);
 	displayplayers[0] = consoleplayer;
 	multiplayer = false;
 	splitscreen = 0;
 	SplitScreen_OnChange(); // not needed?
 
-//	G_DeferedInitNew(sk_medium, G_BuildMapName(1), 0, 0, 1);
 	if (setsizeneeded)
 		R_ExecuteSetViewSize();
 
@@ -7858,9 +7745,6 @@ void G_AddGhost(char *defdemoname)
 	case ATTACKING_RECORD: // 1
 		p += 8; // demo time, lap
 		break;
-	/*case ATTACKING_NIGHTS: // 2
-		p += 8; // demo time left, score
-		break;*/
 	default: // 3
 		break;
 	}
@@ -8536,7 +8420,6 @@ boolean G_DemoTitleResponder(event_t *ev)
 void G_SetGamestate(gamestate_t newstate)
 {
 	gamestate = newstate;
-
 #ifdef HAVE_DISCORDRPC
 	DRPC_UpdatePresence();
 #endif
@@ -8609,4 +8492,3 @@ INT32 G_TicsToMilliseconds(tic_t tics)
 {
 	return (INT32)((tics%TICRATE) * (1000.00f/TICRATE));
 }
-
