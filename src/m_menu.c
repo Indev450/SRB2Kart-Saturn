@@ -3327,8 +3327,6 @@ static void Newgametype_OnChange(void)
 			}
 
 			CV_SetValue(&cv_nextmap, M_FindFirstMap(value));
-			//CV_AddValue(&cv_nextmap, -1);
-			//CV_AddValue(&cv_nextmap, 1);
 		}
 	}
 }
@@ -4295,7 +4293,9 @@ void M_Drawer(void)
 	{
 		// now that's more readable with a faded background (yeah like Quake...)
 		if (ShouldDrawMenuBG())
+		{
 			V_DrawFadeScreen(0xFF00, 16);
+		}
 
 		if (currentMenu->drawroutine)
 		{
@@ -5608,27 +5608,13 @@ boolean M_CanShowLevelInList(INT32 mapnum, INT32 gt)
 	switch (levellistmode)
 	{
 		case LLM_CREATESERVER:
-			// Should the map be hidden?
-			//if (mapheaderinfo[mapnum]->menuflags & LF2_HIDEINMENU && mapnum+1 != gamemap)
-				//return false;
-			
 			// Should the map be hidden? <-- well imma wanna toggle it, its just annoying being unable to select hell maps in mapselect
 			if ((mapheaderinfo[mapnum]->menuflags & LF2_HIDEINMENU && mapnum+1 != gamemap) && (gt == GT_RACE && (mapheaderinfo[mapnum]->typeoflevel & TOL_RACE))) // map hell
-			{
-				if (cv_showallmaps.value)
-					return true;
-				else
-					return false;
-			}
+				return cv_showallmaps.value;
 
 			// same goes here, just show every map if i want to
 			if (M_MapLocked(mapnum+1)) // not unlocked
-			{
-				if (cv_showallmaps.value)
-					return true;
-				else
-					return false;
-			}
+				return cv_showallmaps.value;
 
 			if ((gt == GT_MATCH || gt == GT_TEAMMATCH) && (mapheaderinfo[mapnum]->typeoflevel & TOL_MATCH))
 				return true;
@@ -5638,18 +5624,7 @@ boolean M_CanShowLevelInList(INT32 mapnum, INT32 gt)
 
 			return false;
 
-		/*case LLM_LEVELSELECT:
-			if (mapheaderinfo[mapnum]->levelselect != maplistoption)
-				return false;
-
-			if (M_MapLocked(mapnum+1))
-				return false; // not unlocked
-
-			return true;*/
 		case LLM_RECORDATTACK:
-			/*if (!(mapheaderinfo[mapnum]->menuflags & LF2_RECORDATTACK))
-				return false;*/
-
 			if (!(mapheaderinfo[mapnum]->typeoflevel & TOL_RACE))
 				return false;
 
@@ -5661,12 +5636,6 @@ boolean M_CanShowLevelInList(INT32 mapnum, INT32 gt)
 
 			if (mapheaderinfo[mapnum]->menuflags & LF2_HIDEINMENU)
 				return false; // map hell
-
-			/*if (mapheaderinfo[mapnum]->menuflags & LF2_NOVISITNEEDED)
-				return true;
-
-			if (!mapvisited[mapnum])
-				return false;*/
 
 			return true;
 		default:
@@ -11753,7 +11722,7 @@ static void M_SetupMultiPlayer4(INT32 choice)
 
 	//change the y offsets of the menu depending on cvar settings
 	SKINSELECTMENUEDIT
-	
+
 	sortSkinGrid();
 
 	MP_PlayerSetupDef.prevMenu = currentMenu;
