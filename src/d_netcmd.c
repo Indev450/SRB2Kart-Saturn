@@ -1255,18 +1255,68 @@ void D_RegisterClientCommands(void)
  */
 static void Skin_FindRealNameSkin(consvar_t *cvar)
 {
-	// Not the best way to implements this but it will do.
+	INT32 matches[MAXSKINS] = {0}; // Skin numbers of matching skins
+	INT32 matches_pos[MAXSKINS] = {0}; // Index of matching substring
+	INT32 nummatches = 0;
 
-	int i;
+	INT32 i;
 	const char *value = cvar->string;
+
 	for (i = 0; i < numskins; i++)
 	{
-		if (strncmp(value, skins[i].realname, sizeof skins[i].realname) == 0)
-		{
-			// Change the cvar to be the value of the name.
-			CV_StealthSet(cvar, skins[i].name);
+		// Perfect match with some skin name, no need to find matching realname
+		if (strncmp(value, skins[i].name, sizeof skins[i].name) == 0)
 			return;
+
+		const char *match = strcasestr(skins[i].realname, value);
+		if (match != NULL)
+		{
+			matches[nummatches] = i;
+			matches_pos[nummatches] = match - skins[i].realname;
+			++nummatches;
 		}
+	}
+
+	if (nummatches == 1)
+	{
+		// Change the cvar to be the value of the name.
+		CV_StealthSet(cvar, skins[matches[0]].name);
+	}
+	else if (nummatches > 1)
+	{
+		size_t query_length = strlen(value);
+
+		char start[SKINNAMESIZE+1] = {0}; // Start of name, printed with normal color
+		char match[SKINNAMESIZE+1] = {0}; // Matching part of name, highlighted in red
+		const char *end = NULL; // End of the name, printed with normal color. Can be just a pointer into realname part
+
+		CONS_Printf("\x86Multiple matches found:\n");
+
+		for (i = 0; i < nummatches; ++i)
+		{
+			const char *realname = skins[matches[i]].realname;
+
+			if (matches_pos[i] == 0)
+				start[0] = 0;
+			else
+			{
+				memcpy(start, realname, matches_pos[i]);
+				start[matches_pos[i]] = 0;
+			}
+
+			memcpy(match, realname+matches_pos[i], query_length);
+			match[matches_pos[i] + query_length] = 0;
+
+			end = realname + matches_pos[i] + query_length;
+
+			CONS_Printf("%s\x85%s\x80%s (%s)\n", start, match, end, skins[matches[i]].name);
+		}
+
+		CONS_Printf("\x86Try be more specific\n");
+	}
+	else
+	{
+		CONS_Printf("\x86Skin not found\n");
 	}
 }
 
