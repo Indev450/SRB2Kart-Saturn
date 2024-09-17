@@ -1265,7 +1265,7 @@ static void Skin_FindRealNameSkin(consvar_t *cvar)
 	for (i = 0; i < numskins; i++)
 	{
 		// Perfect match with some skin name, no need to find matching realname
-		if (strncmp(value, skins[i].name, sizeof skins[i].name) == 0)
+		if (strncasecmp(value, skins[i].name, sizeof skins[i].name) == 0)
 			return;
 
 		const char *match = strcasestr(skins[i].realname, value);
