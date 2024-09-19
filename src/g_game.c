@@ -2456,21 +2456,6 @@ void G_PlayerReborn(INT32 player)
 	bot = players[player].bot;
 	pity = players[player].pity;
 
-	if (leveltime <= starttime) // man i really hope this crap works kek but need to reset this somehow at mapstart
-	{
-		for (i = 0; i < LAP__MAX; i++)
-		{
-			laptime[i] = 0;
-		}
-	}
-	else
-	{
-		for (i = 0; i < LAP__MAX; i++)
-		{
-			laptime[i] = players[player].laptime[i];
-		}
-	}
-
 	// SRB2kart
 	if (leveltime <= starttime || spectator == true)
 	{
@@ -2491,6 +2476,11 @@ void G_PlayerReborn(INT32 player)
 		starpostnum = 0;
 		respawnflip = 0;
 		starpostangle = 0;
+
+		for (i = 0; i < LAP__MAX; i++)
+		{
+			laptime[i] = 0;
+		}
 	}
 	else
 	{
@@ -2519,6 +2509,11 @@ void G_PlayerReborn(INT32 player)
 		bumper = players[player].kartstuff[k_bumper];
 		comebackpoints = players[player].kartstuff[k_comebackpoints];
 		wanted = players[player].kartstuff[k_wanted];
+
+		for (i = 0; i < LAP__MAX; i++)
+		{
+			laptime[i] = players[player].laptime[i];
+		}
 	}
 
 	spectatorreentry = players[player].spectatorreentry;
