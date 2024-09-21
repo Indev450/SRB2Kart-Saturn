@@ -2443,6 +2443,61 @@ static boolean P_CanSave(void)
 	return false; // SRB2Kart: no SP, no saving.
 }
 
+struct minimapinfo minimapinfo;
+static void P_InitMinimapInfo(void)
+{
+	INT32 lumpnum;
+	fixed_t a;
+	fixed_t b;
+	node_t *bsp = &nodes[numnodes-1];
+	lumpnum = W_CheckNumForName(va("%sR", G_BuildMapName(gamemap)));
+
+	if (lumpnum != -1)
+		minimapinfo.minimap_pic = W_CachePatchName(va("%sR", G_BuildMapName(gamemap)), PU_HUDGFX);
+
+	minimapinfo.mapthingcount = 0;
+	// TODO iterate over mapthings to look for possible user-defined bounds
+	minimapinfo.min_x = bsp->bbox[0][BOXLEFT];
+	minimapinfo.max_x = bsp->bbox[0][BOXRIGHT];
+	minimapinfo.min_y = bsp->bbox[0][BOXBOTTOM];
+	minimapinfo.max_y = bsp->bbox[0][BOXTOP];
+	if (bsp->bbox[1][BOXLEFT] < minimapinfo.min_x)
+		minimapinfo.min_x = bsp->bbox[1][BOXLEFT];
+	if (bsp->bbox[1][BOXRIGHT] > minimapinfo.max_x)
+		minimapinfo.max_x = bsp->bbox[1][BOXRIGHT];
+	if (bsp->bbox[1][BOXBOTTOM] < minimapinfo.min_y)
+		minimapinfo.min_y = bsp->bbox[1][BOXBOTTOM];
+	if (bsp->bbox[1][BOXTOP] > minimapinfo.max_y)
+		minimapinfo.max_y = bsp->bbox[1][BOXTOP];
+	// You might be wondering why these are being bitshift here
+	// it's because mapwidth and height would otherwise overflow for maps larger than half the size possible...
+	// map boundaries and sizes will ALWAYS be whole numbers thankfully
+	// later calculations take into consideration that these are actually not in terms of FRACUNIT though
+	minimapinfo.map_w = (minimapinfo.max_x >>= FRACBITS) - (minimapinfo.min_x >>= FRACBITS);
+	minimapinfo.map_h = (minimapinfo.max_y >>= FRACBITS) - (minimapinfo.min_y >>= FRACBITS);
+	minimapinfo.minimap_w = minimapinfo.minimap_h = 100;
+	a = FixedDiv(minimapinfo.minimap_w<<FRACBITS, minimapinfo.map_w<<4);
+	b = FixedDiv(minimapinfo.minimap_h<<FRACBITS, minimapinfo.map_h<<4);
+	if (a < b)
+	{
+		minimapinfo.minimap_h = FixedMul(a, minimapinfo.map_h)>>(FRACBITS-4);
+		minimapinfo.zoom = a;
+	}
+	else
+	{
+		if (a != b)
+		{
+			minimapinfo.minimap_w = FixedMul(b, minimapinfo.map_w)>>(FRACBITS-4);
+		}
+		minimapinfo.zoom = b;
+	}
+	minimapinfo.zoom >>= (FRACBITS-4);
+	minimapinfo.zoom -= (minimapinfo.zoom/20);
+	// These should always be small enough to be bitshift back right now
+	minimapinfo.offs_x = FixedMul((minimapinfo.min_x + minimapinfo.map_w/2) << FRACBITS, minimapinfo.zoom);
+	minimapinfo.offs_y = FixedMul((minimapinfo.min_y + minimapinfo.map_h/2) << FRACBITS, minimapinfo.zoom);
+}
+
 /** Loads a level from a lump or external wad.
   *
   * \param skipprecip If true, don't spawn precipitation.
@@ -2693,6 +2748,8 @@ boolean P_SetupLevel(boolean skipprecip, boolean reloadinggamestate)
 	P_LoadThings();
 
 	P_SpawnSecretItems(loademblems);
+
+	P_InitMinimapInfo();
 
 	for (numcoopstarts = 0; numcoopstarts < MAXPLAYERS; numcoopstarts++)
 		if (!playerstarts[numcoopstarts])

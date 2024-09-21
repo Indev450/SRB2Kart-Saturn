@@ -9910,7 +9910,7 @@ static void K_drawKartPlayerCheck(void)
 	}
 }
 
-static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags, patch_t *AutomapPic)
+static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 {
 	// amnum xpos & ypos are the icon's speed around the HUD.
 	// The number being divided by is for how fast it moves.
@@ -9925,58 +9925,17 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags, pat
 	fixed_t amnumxpos, amnumypos;
 	INT32 amxpos, amypos;
 
-	node_t *bsp = &nodes[numnodes-1];
-	fixed_t maxx, minx, maxy, miny;
-
-	fixed_t mapwidth, mapheight;
-	fixed_t xoffset, yoffset;
-	fixed_t xscale, yscale, zoom;
-
 	if (mo->skin)
-		skin = ((skin_t*)((mo->localskin) ? mo->localskin : mo->skin))-((skinlocal) ? localskins : skins);
+		skin = ((skin_t*)((mo->localskin) ? mo->localskin : mo->skin))-(skinlocal ? localskins : skins);
 
-	minx = bsp->bbox[0][BOXLEFT];
-	maxx = bsp->bbox[0][BOXRIGHT];
-	miny = bsp->bbox[0][BOXBOTTOM];
-	maxy = bsp->bbox[0][BOXTOP];
-
-	if (bsp->bbox[1][BOXLEFT] < minx)
-		minx = bsp->bbox[1][BOXLEFT];
-	if (bsp->bbox[1][BOXRIGHT] > maxx)
-		maxx = bsp->bbox[1][BOXRIGHT];
-	if (bsp->bbox[1][BOXBOTTOM] < miny)
-		miny = bsp->bbox[1][BOXBOTTOM];
-	if (bsp->bbox[1][BOXTOP] > maxy)
-		maxy = bsp->bbox[1][BOXTOP];
-
-	// You might be wondering why these are being bitshift here
-	// it's because mapwidth and height would otherwise overflow for maps larger than half the size possible...
-	// map boundaries and sizes will ALWAYS be whole numbers thankfully
-	// later calculations take into consideration that these are actually not in terms of FRACUNIT though
-	minx >>= FRACBITS;
-	maxx >>= FRACBITS;
-	miny >>= FRACBITS;
-	maxy >>= FRACBITS;
-
-	mapwidth = maxx - minx;
-	mapheight = maxy - miny;
-
-	// These should always be small enough to be bitshift back right now
-	xoffset = (minx + mapwidth/2)<<FRACBITS;
-	yoffset = (miny + mapheight/2)<<FRACBITS;
-
-	xscale = FixedDiv(AutomapPic->width, mapwidth);
-	yscale = FixedDiv(AutomapPic->height, mapheight);
-	zoom = FixedMul(min(xscale, yscale), FRACUNIT-FRACUNIT/20);
-
-	amnumxpos = (FixedMul(lerp(mo->old_x, mo->x), zoom) - FixedMul(xoffset, zoom));
-	amnumypos = -(FixedMul(lerp(mo->old_y, mo->y), zoom) - FixedMul(yoffset, zoom));
+	amnumxpos = (FixedMul(lerp(mo->old_x, mo->x), minimapinfo.zoom) - minimapinfo.offs_x);
+	amnumypos = -(FixedMul(lerp(mo->old_y, mo->y), minimapinfo.zoom) - minimapinfo.offs_y);
 
 	if (encoremode)
 		amnumxpos = -amnumxpos;
 
-	amxpos = amnumxpos + ((x + AutomapPic->width/2 - (((skinlocal) ? localfacemmapprefix : facemmapprefix)[skin]->width/2))<<FRACBITS);
-	amypos = amnumypos + ((y + AutomapPic->height/2 - (((skinlocal) ? localfacemmapprefix : facemmapprefix)[skin]->height/2))<<FRACBITS);
+	amxpos = amnumxpos + ((x + (SHORT(minimapinfo.minimap_pic->width)-SHORT((skinlocal ? localfacemmapprefix : facemmapprefix)[skin]->width))/2)<<FRACBITS);
+	amypos = amnumypos + ((y + (SHORT(minimapinfo.minimap_pic->height)-SHORT((skinlocal ? localfacemmapprefix : facemmapprefix)[skin]->height))/2)<<FRACBITS);
 
 	if (!mo->color) // 'default' color
 		V_DrawSciencePatch(amxpos, amypos, flags, ( (skinlocal) ? localfacemmapprefix : facemmapprefix )[skin], FRACUNIT);
@@ -10014,8 +9973,6 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags, pat
 
 static void K_drawKartMinimap(void)
 {
-	INT32 lumpnum;
-	patch_t *AutomapPic;
 	INT32 i = 0;
 	INT32 x, y;
 	INT32 minimaptrans, splitflags;
@@ -10030,17 +9987,15 @@ static void K_drawKartMinimap(void)
 	if (stplyr != &players[displayplayers[0]])
 		return;
 
-	lumpnum = W_CheckNumForName(va("%sR", G_BuildMapName(gamemap)));
-
-	if (lumpnum != -1)
-		AutomapPic = W_CachePatchName(va("%sR", G_BuildMapName(gamemap)), PU_HUDGFX);
-	else
+	if (minimapinfo.minimap_pic == NULL)
+	{
 		return; // no pic, just get outta here
+	}
 
 	drawinfo_t info;
 	K_getMinimapDrawinfo(&info);
-	x = info.x - (AutomapPic->width/2);
-	y = info.y - (AutomapPic->height/2);
+	x = info.x - (SHORT(minimapinfo.minimap_pic->width)/2);
+	y = info.y - (SHORT(minimapinfo.minimap_pic->height)/2);
 	splitflags = info.flags;
 
 
@@ -10061,9 +10016,9 @@ static void K_drawKartMinimap(void)
 	splitflags |= minimaptrans;
 
 	if (encoremode)
-		V_DrawScaledPatch(x+(AutomapPic->width), y, splitflags|V_FLIP, AutomapPic);
+		V_DrawScaledPatch(x+SHORT(minimapinfo.minimap_pic->width), y, minimaptrans|V_FLIP, minimapinfo.minimap_pic);
 	else
-		V_DrawScaledPatch(x, y, splitflags, AutomapPic);
+		V_DrawScaledPatch(x, y, splitflags, minimapinfo.minimap_pic);
 
 	if (!(splitscreen == 2))
 	{
@@ -10073,10 +10028,10 @@ static void K_drawKartMinimap(void)
 
 	// let offsets transfer to the heads, too!
 	if (encoremode)
-		x += SHORT(AutomapPic->leftoffset);
+		x += SHORT(minimapinfo.minimap_pic->leftoffset);
 	else
-		x -= SHORT(AutomapPic->leftoffset);
-	y -= SHORT(AutomapPic->topoffset);
+		x -= SHORT(minimapinfo.minimap_pic->leftoffset);
+	y -= SHORT(minimapinfo.minimap_pic->topoffset);
 
 	// initialize
 	for (i = 0; i < 4; i++)
@@ -10088,7 +10043,7 @@ static void K_drawKartMinimap(void)
 		demoghost *g = ghosts;
 		while (g)
 		{
-			K_drawKartMinimapHead(g->mo, x, y, splitflags, AutomapPic);
+			K_drawKartMinimapHead(g->mo, x, y, splitflags);
 			g = g->next;
 		}
 
@@ -10129,7 +10084,7 @@ static void K_drawKartMinimap(void)
 				continue;
 			}
 
-			K_drawKartMinimapHead(players[i].mo, x, y, splitflags, AutomapPic);
+			K_drawKartMinimapHead(players[i].mo, x, y, splitflags);
 		}
 	}
 
@@ -10141,7 +10096,7 @@ static void K_drawKartMinimap(void)
 	{
 		if (i == -1)
 			continue; // this doesn't interest us
-		K_drawKartMinimapHead(players[localplayers[i]].mo, x, y, splitflags, AutomapPic);
+		K_drawKartMinimapHead(players[localplayers[i]].mo, x, y, splitflags);
 	}
 }
 
