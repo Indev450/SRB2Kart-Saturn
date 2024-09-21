@@ -1027,12 +1027,29 @@ static void AM_drawWalls(UINT8 pass)
 		}
 		else
 		{
+			//dont think kart even supports those idk?
+			/*if (lines[i].flags & (ML_IMPASSABLE|ML_BLOCKPLAYERS))
+			{
+				if (pass & PASS_SOLID)
+					AM_drawMline(&l, TSWALLCOLORS); // Completely solid course boundary
+			}
+			else if ((lines[i].flags & ML_MIDSOLID)
+				&& sides[lines->sidenum[0]].midtexture)
+			{
+				if (pass & PASS_SOLID)
+					AM_drawMline(&l, TSWALLCOLORS); // solid midtexture, likely a course boundary
+			}*/
 			if ((backf1 != frontf1 && abs(backf1 - frontf1) > maxstep)
 				|| (backf2 != frontf2 && abs(backf2 - frontf2) > maxstep))
 			{
 				if (pass & PASS_SOLID)
 					AM_drawMline(&l, TSWALLCOLORS); // floor-wall, likely a course boundary
 			}
+			/*else if (lines[i].special == 2001) // guh its a sector effect in kart idk how to make it work tbh lol
+			{
+				if (pass & PASS_SOLID)
+					AM_drawMline(&l, TSFINISHLINE); // finish line
+			}*/
 			else if (backf1 != frontf1 || backf2 != frontf2)
 			{
 				if (pass & PASS_INTANGIBLE)
