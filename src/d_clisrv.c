@@ -1993,13 +1993,16 @@ static void CL_ReloadReceivedSavegame(void)
 		neededtic = gametic;
 	maketic = neededtic;
 
-	// set camera angle to somewhat match where your player is turning
+	// we dont have P_ForceLocalAngle so were setting it manually here
 	for (i = 0; i <= splitscreen; i++)
 	{
-		localangle[i] = players[displayplayers[i]].cmd.angleturn<<16;
+		localangle[i] = (angle_t)(players[displayplayers[i]].cmd.angleturn<<16);
 	}
 
-	camera->subsector = R_PointInSubsector(camera->x, camera->y);
+	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+	{
+		camera[i].subsector = R_PointInSubsector(camera[i].x, camera[i].y);
+	}
 
 	cl_redownloadinggamestate = false;
 
@@ -4437,10 +4440,9 @@ static void Got_AddPlayer(UINT8 **p, INT32 playernum)
 
 	D_AddAutoloadFiles();
 
-	if (!resendingsavegame[node])
-		LUAh_PlayerJoin(newplayernum);
+	LUAh_PlayerJoin(newplayernum);
 
-	if (newplayernum == consoleplayer && !resendingsavegame[node])
+	if (newplayernum == consoleplayer)
 		LUAh_ServerJoin();
 
 #ifdef HAVE_DISCORDRPC
