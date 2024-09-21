@@ -9935,8 +9935,6 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags, pat
 	if (mo->skin)
 		skin = ((skin_t*)((mo->localskin) ? mo->localskin : mo->skin))-((skinlocal) ? localskins : skins);
 
-	maxx = maxy = INT32_MAX;
-	minx = miny = INT32_MIN;
 	minx = bsp->bbox[0][BOXLEFT];
 	maxx = bsp->bbox[0][BOXRIGHT];
 	miny = bsp->bbox[0][BOXBOTTOM];
