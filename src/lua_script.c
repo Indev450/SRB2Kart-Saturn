@@ -1334,7 +1334,7 @@ void LUA_Archive(savebuffer_t *save, boolean network)
 
 				// archive function will determine when to skip mobjs,
 				// and write mobjnum in otherwise.
-				ArchiveExtVars(&save->p, &players[i], "mobj");
+				ArchiveExtVars(&save->p, th, "mobj");
 			}
 		}
 		WRITEUINT32(save->p, UINT32_MAX); // end of mobjs marker, replaces mobjnum.
