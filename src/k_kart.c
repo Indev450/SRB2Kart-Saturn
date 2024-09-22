@@ -9678,7 +9678,7 @@ skipcrap:
 		case 5:
 			if (driftgaugegfx)
 			{
-				if (cv_driftgaugestyle.value == 1 || cv_driftgaugestyle.value == 3 || cv_driftgaugestyle.value == 5)
+				if (cv_driftgaugestyle.value == 1 || cv_driftgaugestyle.value == 3 || (cv_driftgaugestyle.value == 5 && xtra_speedo3))
 				{
 					barx = basex - dup*23;
 					BAR_WIDTH = dup*47;
