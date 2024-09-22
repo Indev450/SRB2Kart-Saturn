@@ -1790,6 +1790,18 @@ static boolean SV_SendServerConfig(INT32 node)
 #ifdef JOININGAME
 #define SAVEGAMESIZE (768*1024)
 
+#ifdef SATURNSYNCH
+static boolean SV_ResendingSavegameToAnyone(void)
+{
+	INT32 i;
+
+	for (i = 0; i < MAXNETNODES; i++)
+		if (resendingsavegame[i])
+			return true;
+	return false;
+}
+#endif
+
 static void SV_SendSaveGame(INT32 node, boolean resending)
 {
 	size_t length, compressedlen;
@@ -5364,7 +5376,8 @@ static void HandlePacketFromPlayer(SINT8 node)
 			if (((!can_receive_gamestate[node]) && realstart <= gametic && realstart > gametic - TICQUEUE+1 && gamestate == GS_LEVEL
 				&& consistancy[realstart%TICQUEUE] != SHORT(netbuffer->u.clientpak.consistancy)) || (can_receive_gamestate[node] && realstart <= gametic && realstart + TICQUEUE - 1 > gametic && gamestate == GS_LEVEL
 				&& consistancy[realstart%TICQUEUE] != SHORT(netbuffer->u.clientpak.consistancy)
-				&& !resendingsavegame[node] && savegameresendcooldown[node] <= I_GetTime()))
+				&& !resendingsavegame[node] && savegameresendcooldown[node] <= I_GetTime()
+				&& !SV_ResendingSavegameToAnyone()))
 			{
 				// we need to send this so the client can tell us if it can receive the savegame
 				netbuffer->packettype = PT_WILLRESENDGAMESTATE;
