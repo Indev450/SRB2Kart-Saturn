@@ -1677,6 +1677,10 @@ void D_SRB2Main(void)
 #undef PUSHSPEEDO
 	memcpy(speedo_cons_t, speedo_cons_temp, sizeof(speedo_cons_t));
 
+	// Do it before P_InitMapData because PNG patch
+	// conversion sometimes needs the palette
+	V_ReloadPalette();
+
 	//
 	// search for maps
 	//

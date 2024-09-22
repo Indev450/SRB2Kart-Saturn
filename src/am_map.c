@@ -260,25 +260,15 @@ static inline void AM_restoreScaleAndLoc(void)
   */
 static void AM_findMinMaxBoundaries(void)
 {
-	size_t i;
-	fixed_t a;
-	fixed_t b;
+	fixed_t a, b;
 
-	min_x = min_y = +INT32_MAX;
-	max_x = max_y = -INT32_MAX;
+	min_x = minimapinfo.min_x << MAPBITS;
+	max_x = minimapinfo.max_x << MAPBITS;
+	min_y = minimapinfo.min_y << MAPBITS;
+	max_y = minimapinfo.max_y << MAPBITS;
 
-	for (i = 0; i < numvertexes; i++)
-	{
-		if (vertexes[i].x < min_x)
-			min_x = vertexes[i].x;
-		else if (vertexes[i].x > max_x)
-			max_x = vertexes[i].x;
-
-		if (vertexes[i].y < min_y)
-			min_y = vertexes[i].y;
-		else if (vertexes[i].y > max_y)
-			max_y = vertexes[i].y;
-	}
+	max_w = minimapinfo.map_w << MAPBITS;
+	max_h = minimapinfo.map_h << MAPBITS;
 
 	max_w = (max_x >>= FRACTOMAPBITS) - (min_x >>= FRACTOMAPBITS);
 	max_h = (max_y >>= FRACTOMAPBITS) - (min_y >>= FRACTOMAPBITS);

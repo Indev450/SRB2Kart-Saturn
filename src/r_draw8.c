@@ -94,12 +94,16 @@ void R_DrawColumn_8(void)
 				*dest = colormap[source[(frac>>FRACBITS) & heightmask]];
 				dest += vid.width;
 				frac += fracstep;
+
 				*dest = colormap[source[(frac>>FRACBITS) & heightmask]];
 				dest += vid.width;
 				frac += fracstep;
 			}
+
 			if (count & 1)
+			{
 				*dest = colormap[source[(frac>>FRACBITS) & heightmask]];
+			}
 		}
 	}
 }
@@ -162,7 +166,9 @@ void R_Draw2sMultiPatchColumn_8(void)
 				val = source[frac>>FRACBITS];
 
 				if (val != TRANSPARENTPIXEL)
+				{
 					*dest = colormap[val];
+				}
 
 				dest += vid.width;
 
@@ -182,20 +188,30 @@ void R_Draw2sMultiPatchColumn_8(void)
 			{
 				val = source[(frac>>FRACBITS) & heightmask];
 				if (val != TRANSPARENTPIXEL)
+				{
 					*dest = colormap[val];
+				}
+
 				dest += vid.width;
 				frac += fracstep;
+
 				val = source[(frac>>FRACBITS) & heightmask];
 				if (val != TRANSPARENTPIXEL)
+				{
 					*dest = colormap[val];
+				}
+
 				dest += vid.width;
 				frac += fracstep;
 			}
+
 			if (count & 1)
 			{
 				val = source[(frac>>FRACBITS) & heightmask];
 				if (val != TRANSPARENTPIXEL)
+				{
 					*dest = colormap[val];
+				}
 			}
 		}
 	}
@@ -259,7 +275,9 @@ void R_Draw2sMultiPatchTranslucentColumn_8(void)
 				val = source[frac>>FRACBITS];
 
 				if (val != TRANSPARENTPIXEL)
+				{
 					*dest = *(transmap + (colormap[val]<<8) + (*dest));
+				}
 
 				dest += vid.width;
 
@@ -279,20 +297,30 @@ void R_Draw2sMultiPatchTranslucentColumn_8(void)
 			{
 				val = source[(frac>>FRACBITS) & heightmask];
 				if (val != TRANSPARENTPIXEL)
+				{
 					*dest = *(transmap + (colormap[val]<<8) + (*dest));
+				}
+
 				dest += vid.width;
 				frac += fracstep;
+
 				val = source[(frac>>FRACBITS) & heightmask];
 				if (val != TRANSPARENTPIXEL)
+				{
 					*dest = *(transmap + (colormap[val]<<8) + (*dest));
+				}
+
 				dest += vid.width;
 				frac += fracstep;
 			}
+
 			if (count & 1)
 			{
 				val = source[(frac>>FRACBITS) & heightmask];
 				if (val != TRANSPARENTPIXEL)
+				{
 					*dest = *(transmap + (colormap[val]<<8) + (*dest));
+				}
 			}
 		}
 	}
@@ -394,6 +422,7 @@ void R_DrawTranslucentColumn_8(void)
 				// heightmask is the Tutti-Frutti fix
 				*dest = *(transmap + (colormap[source[frac>>FRACBITS]]<<8) + (*dest));
 				dest += vid.width;
+
 				if ((frac += fracstep) >= heightmask)
 					frac -= heightmask;
 			}
@@ -406,12 +435,16 @@ void R_DrawTranslucentColumn_8(void)
 				*dest = *(transmap + (colormap[source[(frac>>FRACBITS)&heightmask]]<<8) + (*dest));
 				dest += vid.width;
 				frac += fracstep;
+
 				*dest = *(transmap + (colormap[source[(frac>>FRACBITS)&heightmask]]<<8) + (*dest));
 				dest += vid.width;
 				frac += fracstep;
 			}
+
 			if (count & 1)
+			{
 				*dest = *(transmap + (colormap[source[(frac>>FRACBITS)&heightmask]]<<8) + (*dest));
+			}
 		}
 	}
 }
@@ -461,10 +494,9 @@ void R_DrawTranslatedTranslucentColumn_8(void)
 				// Re-map color indices from wall texture column
 				//  using a lighting/special effects LUT.
 				// heightmask is the Tutti-Frutti fix
-
 				*dest = *(dc_transmap + (dc_colormap[dc_translation[dc_source[frac>>FRACBITS]]]<<8) + (*dest));
-
 				dest += vid.width;
+
 				if ((frac += fracstep) >= heightmask)
 					frac -= heightmask;
 			}
@@ -477,12 +509,16 @@ void R_DrawTranslatedTranslucentColumn_8(void)
 				*dest = *(dc_transmap + (dc_colormap[dc_translation[dc_source[(frac>>FRACBITS)&heightmask]]]<<8) + (*dest));
 				dest += vid.width;
 				frac += fracstep;
+
 				*dest = *(dc_transmap + (dc_colormap[dc_translation[dc_source[(frac>>FRACBITS)&heightmask]]]<<8) + (*dest));
 				dest += vid.width;
 				frac += fracstep;
 			}
+
 			if (count & 1)
+			{
 				*dest = *(dc_transmap + (dc_colormap[dc_translation[dc_source[(frac>>FRACBITS)&heightmask]]]<<8) + (*dest));
+			}
 		}
 	}
 }
@@ -536,6 +572,12 @@ void R_DrawTranslatedColumn_8(void)
 // SPANS
 // ==========================================================================
 
+#define SPANSIZE 16
+#define INVSPAN 0.0625f
+
+// <Callum> 4194303 = (2048x2048)-1 (2048x2048 is maximum flat size)
+#define MAXFLATBYTES 4194303
+
 /**	\brief The R_DrawSpan_8 function
 	Draws the actual span.
 */
@@ -544,6 +586,7 @@ void R_DrawSpan_8 (void)
 	fixed_t xposition;
 	fixed_t yposition;
 	fixed_t xstep, ystep;
+	UINT32 bit;
 
 	UINT8 *source;
 	UINT8 *colormap;
@@ -551,6 +594,7 @@ void R_DrawSpan_8 (void)
 	const UINT8 *deststop = screens[0] + vid.rowbytes * vid.height;
 
 	size_t count = (ds_x2 - ds_x1 + 1);
+	size_t i;
 
 	xposition = ds_xfrac; yposition = ds_yfrac;
 	xstep = ds_xstep; ystep = ds_ystep;
@@ -577,44 +621,23 @@ void R_DrawSpan_8 (void)
 		// SoM: Why didn't I see this earlier? the spot variable is a waste now because we don't
 		// have the uber complicated math to calculate it now, so that was a memory write we didn't
 		// need!
-		dest[0] = colormap[source[(((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift)]];
-		xposition += xstep;
-		yposition += ystep;
+		for (i = 0; i < 8; i++)
+		{
+			bit = (((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift);
+			dest[i] = colormap[source[bit]];
 
-		dest[1] = colormap[source[(((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift)]];
-		xposition += xstep;
-		yposition += ystep;
-
-		dest[2] = colormap[source[(((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift)]];
-		xposition += xstep;
-		yposition += ystep;
-
-		dest[3] = colormap[source[(((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift)]];
-		xposition += xstep;
-		yposition += ystep;
-
-		dest[4] = colormap[source[(((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift)]];
-		xposition += xstep;
-		yposition += ystep;
-
-		dest[5] = colormap[source[(((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift)]];
-		xposition += xstep;
-		yposition += ystep;
-
-		dest[6] = colormap[source[(((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift)]];
-		xposition += xstep;
-		yposition += ystep;
-
-		dest[7] = colormap[source[(((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift)]];
-		xposition += xstep;
-		yposition += ystep;
+			xposition += xstep;
+			yposition += ystep;
+		}
 
 		dest += 8;
 		count -= 8;
 	}
 	while (count-- && dest <= deststop)
 	{
-		*dest++ = colormap[source[(((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift)]];
+		bit = (((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift);
+		*dest++ = colormap[source[bit]];
+
 		xposition += xstep;
 		yposition += ystep;
 	}
@@ -664,6 +687,7 @@ void R_DrawTiltedSpan_8(void)
 	double izstep, uzstep, vzstep;
 	double endz, endu, endv;
 	UINT32 stepu, stepv;
+	UINT32 bit;
 
 	iz = ds_szp->z + ds_szp->y*(centery-ds_y) + ds_szp->x*(ds_x1-centerx);
 
@@ -683,6 +707,7 @@ void R_DrawTiltedSpan_8(void)
 	vz = ds_svp->z + ds_svp->y*(centery-ds_y) + ds_svp->x*(ds_x1-centerx);
 
 	dest = ylookup[ds_y] + columnofs[ds_x1];
+
 	source = ds_source;
 	//colormap = ds_colormap;
 
@@ -695,18 +720,16 @@ void R_DrawTiltedSpan_8(void)
 		u = (INT64)(uz*z) + viewx;
 		v = (INT64)(vz*z) + viewy;
 
+		bit = ((v >> nflatyshift) & nflatmask) | (u >> nflatxshift);
 		colormap = planezlight[tiltlighting[ds_x1++]] + (ds_colormap - colormaps);
+		*dest = colormap[source[bit]];
 
-		*dest = colormap[source[((v >> nflatyshift) & nflatmask) | (u >> nflatxshift)]];
 		dest++;
 		iz += ds_szp->x;
 		uz += ds_sup->x;
 		vz += ds_svp->x;
 	} while (--width >= 0);
 #else
-#define SPANSIZE 16
-#define INVSPAN	0.0625f
-
 	startz = 1.f/iz;
 	startu = uz*startz;
 	startv = vz*startz;
@@ -733,8 +756,10 @@ void R_DrawTiltedSpan_8(void)
 
 		for (i = SPANSIZE-1; i >= 0; i--)
 		{
+			bit = ((v >> nflatyshift) & nflatmask) | (u >> nflatxshift);
 			colormap = planezlight[tiltlighting[ds_x1++]] + (ds_colormap - colormaps);
-			*dest = colormap[source[((v >> nflatyshift) & nflatmask) | (u >> nflatxshift)]];
+			*dest = colormap[source[bit]];
+
 			dest++;
 			u += stepu;
 			v += stepv;
@@ -749,8 +774,9 @@ void R_DrawTiltedSpan_8(void)
 		{
 			u = (INT64)(startu);
 			v = (INT64)(startv);
+			bit = ((v >> nflatyshift) & nflatmask) | (u >> nflatxshift);
 			colormap = planezlight[tiltlighting[ds_x1++]] + (ds_colormap - colormaps);
-			*dest = colormap[source[((v >> nflatyshift) & nflatmask) | (u >> nflatxshift)]];
+			*dest = colormap[source[bit]];
 		}
 		else
 		{
@@ -770,8 +796,10 @@ void R_DrawTiltedSpan_8(void)
 
 			for (; width != 0; width--)
 			{
+				bit = ((v >> nflatyshift) & nflatmask) | (u >> nflatxshift);
 				colormap = planezlight[tiltlighting[ds_x1++]] + (ds_colormap - colormaps);
-				*dest = colormap[source[((v >> nflatyshift) & nflatmask) | (u >> nflatxshift)]];
+				*dest = colormap[source[bit]];
+
 				dest++;
 				u += stepu;
 				v += stepv;
@@ -800,6 +828,7 @@ void R_DrawTiltedTranslucentSpan_8(void)
 	double izstep, uzstep, vzstep;
 	double endz, endu, endv;
 	UINT32 stepu, stepv;
+	UINT32 bit;
 
 	iz = ds_szp->z + ds_szp->y*(centery-ds_y) + ds_szp->x*(ds_x1-centerx);
 
@@ -819,6 +848,7 @@ void R_DrawTiltedTranslucentSpan_8(void)
 	vz = ds_svp->z + ds_svp->y*(centery-ds_y) + ds_svp->x*(ds_x1-centerx);
 
 	dest = ylookup[ds_y] + columnofs[ds_x1];
+
 	source = ds_source;
 	//colormap = ds_colormap;
 
@@ -831,17 +861,16 @@ void R_DrawTiltedTranslucentSpan_8(void)
 		u = (INT64)(uz*z) + viewx;
 		v = (INT64)(vz*z) + viewy;
 
+		bit = ((v >> nflatyshift) & nflatmask) | (u >> nflatxshift);
 		colormap = planezlight[tiltlighting[ds_x1++]] + (ds_colormap - colormaps);
-		*dest = *(ds_transmap + (colormap[source[((v >> nflatyshift) & nflatmask) | (u >> nflatxshift)]] << 8) + *dest);
+		*dest = *(ds_transmap + (colormap[source[bit]] << 8) + *dest);
+
 		dest++;
 		iz += ds_szp->x;
 		uz += ds_sup->x;
 		vz += ds_svp->x;
 	} while (--width >= 0);
 #else
-#define SPANSIZE 16
-#define INVSPAN	0.0625f
-
 	startz = 1.f/iz;
 	startu = uz*startz;
 	startv = vz*startz;
@@ -868,8 +897,10 @@ void R_DrawTiltedTranslucentSpan_8(void)
 
 		for (i = SPANSIZE-1; i >= 0; i--)
 		{
+			bit = ((v >> nflatyshift) & nflatmask) | (u >> nflatxshift);
 			colormap = planezlight[tiltlighting[ds_x1++]] + (ds_colormap - colormaps);
-			*dest = *(ds_transmap + (colormap[source[((v >> nflatyshift) & nflatmask) | (u >> nflatxshift)]] << 8) + *dest);
+			*dest = *(ds_transmap + (colormap[source[bit]] << 8) + *dest);
+
 			dest++;
 			u += stepu;
 			v += stepv;
@@ -884,8 +915,9 @@ void R_DrawTiltedTranslucentSpan_8(void)
 		{
 			u = (INT64)(startu);
 			v = (INT64)(startv);
+			bit = ((v >> nflatyshift) & nflatmask) | (u >> nflatxshift);
 			colormap = planezlight[tiltlighting[ds_x1++]] + (ds_colormap - colormaps);
-			*dest = *(ds_transmap + (colormap[source[((v >> nflatyshift) & nflatmask) | (u >> nflatxshift)]] << 8) + *dest);
+			*dest = *(ds_transmap + (colormap[source[bit]] << 8) + *dest);
 		}
 		else
 		{
@@ -905,8 +937,10 @@ void R_DrawTiltedTranslucentSpan_8(void)
 
 			for (; width != 0; width--)
 			{
+				bit = ((v >> nflatyshift) & nflatmask) | (u >> nflatxshift);
 				colormap = planezlight[tiltlighting[ds_x1++]] + (ds_colormap - colormaps);
-				*dest = *(ds_transmap + (colormap[source[((v >> nflatyshift) & nflatmask) | (u >> nflatxshift)]] << 8) + *dest);
+				*dest = *(ds_transmap + (colormap[source[bit]] << 8) + *dest);
+
 				dest++;
 				u += stepu;
 				v += stepv;
@@ -937,6 +971,7 @@ void R_DrawTiltedTranslucentWaterSpan_8(void)
 	double izstep, uzstep, vzstep;
 	double endz, endu, endv;
 	UINT32 stepu, stepv;
+	UINT32 bit;
 
 	iz = ds_szp->z + ds_szp->y*(centery-ds_y) + ds_szp->x*(ds_x1-centerx);
 
@@ -957,6 +992,7 @@ void R_DrawTiltedTranslucentWaterSpan_8(void)
 
 	dest = ylookup[ds_y] + columnofs[ds_x1];
 	dsrc = screens[1] + (ds_y+ds_bgofs)*vid.width + ds_x1;
+
 	source = ds_source;
 	//colormap = ds_colormap;
 
@@ -969,17 +1005,16 @@ void R_DrawTiltedTranslucentWaterSpan_8(void)
 		u = (INT64)(uz*z) + viewx;
 		v = (INT64)(vz*z) + viewy;
 
+		bit = ((v >> nflatyshift) & nflatmask) | (u >> nflatxshift);
 		colormap = planezlight[tiltlighting[ds_x1++]] + (ds_colormap - colormaps);
-		*dest = *(ds_transmap + (colormap[source[((v >> nflatyshift) & nflatmask) | (u >> nflatxshift)]] << 8) + *dsrc++);
+		*dest = *(ds_transmap + (colormap[source[bit]] << 8) + *dsrc++);
+
 		dest++;
 		iz += ds_szp->x;
 		uz += ds_sup->x;
 		vz += ds_svp->x;
 	} while (--width >= 0);
 #else
-#define SPANSIZE 16
-#define INVSPAN	0.0625f
-
 	startz = 1.f/iz;
 	startu = uz*startz;
 	startv = vz*startz;
@@ -1006,8 +1041,10 @@ void R_DrawTiltedTranslucentWaterSpan_8(void)
 
 		for (i = SPANSIZE-1; i >= 0; i--)
 		{
+			bit = ((v >> nflatyshift) & nflatmask) | (u >> nflatxshift);
 			colormap = planezlight[tiltlighting[ds_x1++]] + (ds_colormap - colormaps);
-			*dest = *(ds_transmap + (colormap[source[((v >> nflatyshift) & nflatmask) | (u >> nflatxshift)]] << 8) + *dsrc++);
+			*dest = *(ds_transmap + (colormap[source[bit]] << 8) + *dsrc++);
+
 			dest++;
 			u += stepu;
 			v += stepv;
@@ -1022,8 +1059,9 @@ void R_DrawTiltedTranslucentWaterSpan_8(void)
 		{
 			u = (INT64)(startu);
 			v = (INT64)(startv);
+			bit = ((v >> nflatyshift) & nflatmask) | (u >> nflatxshift);
 			colormap = planezlight[tiltlighting[ds_x1++]] + (ds_colormap - colormaps);
-			*dest = *(ds_transmap + (colormap[source[((v >> nflatyshift) & nflatmask) | (u >> nflatxshift)]] << 8) + *dsrc++);
+			*dest = *(ds_transmap + (colormap[source[bit]] << 8) + *dsrc++);
 		}
 		else
 		{
@@ -1043,8 +1081,10 @@ void R_DrawTiltedTranslucentWaterSpan_8(void)
 
 			for (; width != 0; width--)
 			{
+				bit = ((v >> nflatyshift) & nflatmask) | (u >> nflatxshift);
 				colormap = planezlight[tiltlighting[ds_x1++]] + (ds_colormap - colormaps);
-				*dest = *(ds_transmap + (colormap[source[((v >> nflatyshift) & nflatmask) | (u >> nflatxshift)]] << 8) + *dsrc++);
+				*dest = *(ds_transmap + (colormap[source[bit]] << 8) + *dsrc++);
+
 				dest++;
 				u += stepu;
 				v += stepv;
@@ -1073,6 +1113,7 @@ void R_DrawTiltedSplat_8(void)
 	double izstep, uzstep, vzstep;
 	double endz, endu, endv;
 	UINT32 stepu, stepv;
+	UINT32 bit;
 
 	iz = ds_szp->z + ds_szp->y*(centery-ds_y) + ds_szp->x*(ds_x1-centerx);
 
@@ -1092,6 +1133,7 @@ void R_DrawTiltedSplat_8(void)
 	vz = ds_svp->z + ds_svp->y*(centery-ds_y) + ds_svp->x*(ds_x1-centerx);
 
 	dest = ylookup[ds_y] + columnofs[ds_x1];
+
 	source = ds_source;
 	//colormap = ds_colormap;
 
@@ -1104,20 +1146,20 @@ void R_DrawTiltedSplat_8(void)
 		u = (INT64)(uz*z) + viewx;
 		v = (INT64)(vz*z) + viewy;
 
-		colormap = planezlight[tiltlighting[ds_x1++]] + (ds_colormap - colormaps);
+		bit = ((v >> nflatyshift) & nflatmask) | (u >> nflatxshift);
+		val = source[bit];
 
-		val = source[((v >> nflatyshift) & nflatmask) | (u >> nflatxshift)];
 		if (val != TRANSPARENTPIXEL)
+		{
+			colormap = planezlight[tiltlighting[ds_x1++]] + (ds_colormap - colormaps);
 			*dest = colormap[val];
+		}
 		dest++;
 		iz += ds_szp->x;
 		uz += ds_sup->x;
 		vz += ds_svp->x;
 	} while (--width >= 0);
 #else
-#define SPANSIZE 16
-#define INVSPAN	0.0625f
-
 	startz = 1.f/iz;
 	startu = uz*startz;
 	startv = vz*startz;
@@ -1144,10 +1186,13 @@ void R_DrawTiltedSplat_8(void)
 
 		for (i = SPANSIZE-1; i >= 0; i--)
 		{
-			colormap = planezlight[tiltlighting[ds_x1++]] + (ds_colormap - colormaps);
-			val = source[((v >> nflatyshift) & nflatmask) | (u >> nflatxshift)];
+			bit = ((v >> nflatyshift) & nflatmask) | (u >> nflatxshift);
+			val = source[bit];
 			if (val != TRANSPARENTPIXEL)
+			{
+				colormap = planezlight[tiltlighting[ds_x1++]] + (ds_colormap - colormaps);
 				*dest = colormap[val];
+			}
 			dest++;
 			u += stepu;
 			v += stepv;
@@ -1162,10 +1207,13 @@ void R_DrawTiltedSplat_8(void)
 		{
 			u = (INT64)(startu);
 			v = (INT64)(startv);
-			colormap = planezlight[tiltlighting[ds_x1++]] + (ds_colormap - colormaps);
-			val = source[((v >> nflatyshift) & nflatmask) | (u >> nflatxshift)];
+			bit = ((v >> nflatyshift) & nflatmask) | (u >> nflatxshift);
+			val = source[bit];
 			if (val != TRANSPARENTPIXEL)
+			{
+				colormap = planezlight[tiltlighting[ds_x1++]] + (ds_colormap - colormaps);
 				*dest = colormap[val];
+			}
 		}
 		else
 		{
@@ -1185,10 +1233,13 @@ void R_DrawTiltedSplat_8(void)
 
 			for (; width != 0; width--)
 			{
-				colormap = planezlight[tiltlighting[ds_x1++]] + (ds_colormap - colormaps);
-				val = source[((v >> nflatyshift) & nflatmask) | (u >> nflatxshift)];
+				bit = ((v >> nflatyshift) & nflatmask) | (u >> nflatxshift);
+				val = source[bit];
 				if (val != TRANSPARENTPIXEL)
+				{
+					colormap = planezlight[tiltlighting[ds_x1++]] + (ds_colormap - colormaps);
 					*dest = colormap[val];
+				}
 				dest++;
 				u += stepu;
 				v += stepv;
@@ -1206,12 +1257,14 @@ void R_DrawSplat_8 (void)
 	UINT32 xposition;
 	UINT32 yposition;
 	UINT32 xstep, ystep;
+	UINT32 bit;
 
 	UINT8 *source;
 	UINT8 *colormap;
 	UINT8 *dest;
 
 	size_t count;
+	size_t i;
 	UINT32 val;
 
 	// SoM: we only need 6 bits for the integer part (0 thru 63) so the rest
@@ -1236,80 +1289,29 @@ void R_DrawSplat_8 (void)
 		// need!
 		//
 		// <Callum> 4194303 = (2048x2048)-1 (2048x2048 is maximum flat size)
-		val = ((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift);
-		val &= 4194303;
-		val = source[val];
-		if (val != TRANSPARENTPIXEL)
-			dest[0] = colormap[val];
-		xposition += xstep;
-		yposition += ystep;
+		for (i = 0; i < 8; i++)
+		{
+			bit = (((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift);
+			bit &= MAXFLATBYTES;
+			val = source[bit];
+			if (val != TRANSPARENTPIXEL)
+				dest[i] = colormap[val];
 
-		val = ((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift);
-		val &= 4194303;
-		val = source[val];
-		if (val != TRANSPARENTPIXEL)
-			dest[1] = colormap[val];
-		xposition += xstep;
-		yposition += ystep;
-
-		val = ((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift);
-		val &= 4194303;
-		val = source[val];
-		if (val != TRANSPARENTPIXEL)
-			dest[2] = colormap[val];
-		xposition += xstep;
-		yposition += ystep;
-
-		val = ((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift);
-		val &= 4194303;
-		val = source[val];
-		if (val != TRANSPARENTPIXEL)
-			dest[3] = colormap[val];
-		xposition += xstep;
-		yposition += ystep;
-
-		val = ((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift);
-		val &= 4194303;
-		val = source[val];
-		if (val != TRANSPARENTPIXEL)
-			dest[4] = colormap[val];
-		xposition += xstep;
-		yposition += ystep;
-
-		val = ((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift);
-		val &= 4194303;
-		val = source[val];
-		if (val != TRANSPARENTPIXEL)
-			dest[5] = colormap[val];
-		xposition += xstep;
-		yposition += ystep;
-
-		val = ((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift);
-		val &= 4194303;
-		val = source[val];
-		if (val != TRANSPARENTPIXEL)
-			dest[6] = colormap[val];
-		xposition += xstep;
-		yposition += ystep;
-
-		val = ((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift);
-		val &= 4194303;
-		val = source[val];
-		if (val != TRANSPARENTPIXEL)
-			dest[7] = colormap[val];
-		xposition += xstep;
-		yposition += ystep;
+			xposition += xstep;
+			yposition += ystep;
+		}
 
 		dest += 8;
 		count -= 8;
 	}
 	while (count--)
 	{
-		val = ((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift);
-		val &= 4194303;
-		val = source[val];
+		bit = (((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift);
+		val = source[bit];
 		if (val != TRANSPARENTPIXEL)
+		{
 			*dest = colormap[val];
+		}
 
 		dest++;
 		xposition += xstep;
@@ -1325,12 +1327,14 @@ void R_DrawTranslucentSplat_8 (void)
 	UINT32 xposition;
 	UINT32 yposition;
 	UINT32 xstep, ystep;
+	UINT32 bit;
 
 	UINT8 *source;
 	UINT8 *colormap;
 	UINT8 *dest;
 
 	size_t count;
+	size_t i;
 	UINT8 val;
 
 	// SoM: we only need 6 bits for the integer part (0 thru 63) so the rest
@@ -1353,60 +1357,24 @@ void R_DrawTranslucentSplat_8 (void)
 		// SoM: Why didn't I see this earlier? the spot variable is a waste now because we don't
 		// have the uber complicated math to calculate it now, so that was a memory write we didn't
 		// need!
-		val = source[((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift)];
-		if (val != TRANSPARENTPIXEL)
-			dest[0] = *(ds_transmap + (colormap[val] << 8) + dest[0]);
-		xposition += xstep;
-		yposition += ystep;
+		for (i = 0; i < 8; i++)
+		{
+			bit = (((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift);
+			val = source[bit];
+			if (val != TRANSPARENTPIXEL)
+				dest[i] = *(ds_transmap + (colormap[val] << 8) + dest[i]);
 
-		val = source[((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift)];
-		if (val != TRANSPARENTPIXEL)
-			dest[1] = *(ds_transmap + (colormap[val] << 8) + dest[1]);
-		xposition += xstep;
-		yposition += ystep;
-
-		val = source[((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift)];
-		if (val != TRANSPARENTPIXEL)
-			dest[2] = *(ds_transmap + (colormap[val] << 8) + dest[2]);
-		xposition += xstep;
-		yposition += ystep;
-
-		val = source[((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift)];
-		if (val != TRANSPARENTPIXEL)
-			dest[3] = *(ds_transmap + (colormap[val] << 8) + dest[3]);
-		xposition += xstep;
-		yposition += ystep;
-
-		val = source[((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift)];
-		if (val != TRANSPARENTPIXEL)
-			dest[4] = *(ds_transmap + (colormap[val] << 8) + dest[4]);
-		xposition += xstep;
-		yposition += ystep;
-
-		val = source[((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift)];
-		if (val != TRANSPARENTPIXEL)
-			dest[5] = *(ds_transmap + (colormap[val] << 8) + dest[5]);
-		xposition += xstep;
-		yposition += ystep;
-
-		val = source[((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift)];
-		if (val != TRANSPARENTPIXEL)
-			dest[6] = *(ds_transmap + (colormap[val] << 8) + dest[6]);
-		xposition += xstep;
-		yposition += ystep;
-
-		val = source[((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift)];
-		if (val != TRANSPARENTPIXEL)
-			dest[7] = *(ds_transmap + (colormap[val] << 8) + dest[7]);
-		xposition += xstep;
-		yposition += ystep;
+			xposition += xstep;
+			yposition += ystep;
+		}
 
 		dest += 8;
 		count -= 8;
 	}
 	while (count--)
 	{
-		val = source[((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift)];
+		bit = (((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift);
+		val = source[bit];
 		if (val != TRANSPARENTPIXEL)
 			*dest = *(ds_transmap + (colormap[val] << 8) + *dest);
 
@@ -1424,6 +1392,7 @@ void R_DrawTranslucentSpan_8 (void)
 	fixed_t xposition;
 	fixed_t yposition;
 	fixed_t xstep, ystep;
+	UINT32 bit;
 
 	UINT8 *source;
 	UINT8 *colormap;
@@ -1431,7 +1400,7 @@ void R_DrawTranslucentSpan_8 (void)
 	const UINT8 *deststop = screens[0] + vid.rowbytes * vid.height;
 
 	size_t count = (ds_x2 - ds_x1 + 1);
-	UINT32 val;
+	size_t i;
 
 	xposition = ds_xfrac; yposition = ds_yfrac;
 	xstep = ds_xstep; ystep = ds_ystep;
@@ -1455,45 +1424,21 @@ void R_DrawTranslucentSpan_8 (void)
 		// SoM: Why didn't I see this earlier? the spot variable is a waste now because we don't
 		// have the uber complicated math to calculate it now, so that was a memory write we didn't
 		// need!
-		dest[0] = *(ds_transmap + (colormap[source[(((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift)]] << 8) + dest[0]);
-		xposition += xstep;
-		yposition += ystep;
-
-		dest[1] = *(ds_transmap + (colormap[source[(((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift)]] << 8) + dest[1]);
-		xposition += xstep;
-		yposition += ystep;
-
-		dest[2] = *(ds_transmap + (colormap[source[(((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift)]] << 8) + dest[2]);
-		xposition += xstep;
-		yposition += ystep;
-
-		dest[3] = *(ds_transmap + (colormap[source[(((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift)]] << 8) + dest[3]);
-		xposition += xstep;
-		yposition += ystep;
-
-		dest[4] = *(ds_transmap + (colormap[source[(((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift)]] << 8) + dest[4]);
-		xposition += xstep;
-		yposition += ystep;
-
-		dest[5] = *(ds_transmap + (colormap[source[(((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift)]] << 8) + dest[5]);
-		xposition += xstep;
-		yposition += ystep;
-
-		dest[6] = *(ds_transmap + (colormap[source[(((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift)]] << 8) + dest[6]);
-		xposition += xstep;
-		yposition += ystep;
-
-		dest[7] = *(ds_transmap + (colormap[source[(((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift)]] << 8) + dest[7]);
-		xposition += xstep;
-		yposition += ystep;
+		for (i = 0; i < 8; i++)
+		{
+			bit = (((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift);
+			dest[i] = *(ds_transmap + (colormap[source[bit]] << 8) + dest[i]);
+			xposition += xstep;
+			yposition += ystep;
+		}
 
 		dest += 8;
 		count -= 8;
 	}
 	while (count-- && dest <= deststop)
 	{
-		val = (((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift);
-		*dest = *(ds_transmap + (colormap[source[val]] << 8) + *dest);
+		bit = (((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift);
+		*dest = *(ds_transmap + (colormap[source[bit]] << 8) + *dest);
 		dest++;
 		xposition += xstep;
 		yposition += ystep;
@@ -1506,6 +1451,7 @@ void R_DrawTranslucentWaterSpan_8(void)
 	UINT32 xposition;
 	UINT32 yposition;
 	UINT32 xstep, ystep;
+	UINT32 bit;
 
 	UINT8 *source;
 	UINT8 *colormap;
@@ -1513,6 +1459,7 @@ void R_DrawTranslucentWaterSpan_8(void)
 	UINT8 *dsrc;
 
 	size_t count;
+	size_t i;
 
 	// SoM: we only need 6 bits for the integer part (0 thru 63) so the rest
 	// can be used for the fraction part. This allows calculation of the memory address in the
@@ -1535,44 +1482,22 @@ void R_DrawTranslucentWaterSpan_8(void)
 		// SoM: Why didn't I see this earlier? the spot variable is a waste now because we don't
 		// have the uber complicated math to calculate it now, so that was a memory write we didn't
 		// need!
-		dest[0] = colormap[*(ds_transmap + (source[((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift)] << 8) + *dsrc++)];
-		xposition += xstep;
-		yposition += ystep;
-
-		dest[1] = colormap[*(ds_transmap + (source[((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift)] << 8) + *dsrc++)];
-		xposition += xstep;
-		yposition += ystep;
-
-		dest[2] = colormap[*(ds_transmap + (source[((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift)] << 8) + *dsrc++)];
-		xposition += xstep;
-		yposition += ystep;
-
-		dest[3] = colormap[*(ds_transmap + (source[((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift)] << 8) + *dsrc++)];
-		xposition += xstep;
-		yposition += ystep;
-
-		dest[4] = colormap[*(ds_transmap + (source[((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift)] << 8) + *dsrc++)];
-		xposition += xstep;
-		yposition += ystep;
-
-		dest[5] = colormap[*(ds_transmap + (source[((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift)] << 8) + *dsrc++)];
-		xposition += xstep;
-		yposition += ystep;
-
-		dest[6] = colormap[*(ds_transmap + (source[((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift)] << 8) + *dsrc++)];
-		xposition += xstep;
-		yposition += ystep;
-
-		dest[7] = colormap[*(ds_transmap + (source[((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift)] << 8) + *dsrc++)];
-		xposition += xstep;
-		yposition += ystep;
+		for (i = 0; i < 8; i++)
+		{
+			bit = ((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift);
+			dest[i] = colormap[*(ds_transmap + (source[bit] << 8) + *dsrc++)];
+			xposition += xstep;
+			yposition += ystep;
+		}
 
 		dest += 8;
 		count -= 8;
 	}
 	while (count--)
 	{
-		*dest++ = colormap[*(ds_transmap + (source[((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift)] << 8) + *dsrc++)];
+		bit = ((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift);
+		*dest++ = colormap[*(ds_transmap + (source[bit] << 8) + *dsrc++)];
+
 		xposition += xstep;
 		yposition += ystep;
 	}
