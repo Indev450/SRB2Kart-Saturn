@@ -287,7 +287,7 @@ mobj_t *P_SetTarget(mobj_t **mop, mobj_t *targ)
 {
 	if (*mop)              // If there was a target already, decrease its refcount
 		(*mop)->thinker.references--;
-if ((*mop = targ) != NULL) // Set new target and if non-NULL, increase its counter
+	if ((*mop = targ) != NULL) // Set new target and if non-NULL, increase its counter
 		targ->thinker.references++;
 	return targ;
 }
@@ -318,8 +318,12 @@ static inline void P_RunThinkers(void)
 {
 	for (currentthinker = thinkercap.next; currentthinker != &thinkercap; currentthinker = currentthinker->next)
 	{
-		if (currentthinker->function.acp1)
-			currentthinker->function.acp1(currentthinker);
+		if (currentthinker->function.acp1 == (actionf_p1)P_NullPrecipThinker)
+			continue;
+#ifdef PARANOIA
+		I_Assert(currentthinker->function.acp1 != NULL)
+#endif
+		currentthinker->function.acp1(currentthinker);
 	}
 }
 
