@@ -573,7 +573,9 @@ static void PS_CountThinkers(void)
 	ps_removecount.value.i = 0;
 	for (thinker = thinkercap.next; thinker != &thinkercap; thinker = thinker->next)
 	{
-		ps_thinkercount.value.i++;
+		if (thinker->function.acp1 != (actionf_p1)P_NullPrecipThinker)
+			ps_thinkercount.value.i++;
+
 		if (thinker->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 			ps_removecount.value.i++;
 		else if (thinker->function.acp1 == (actionf_p1)P_MobjThinker)
