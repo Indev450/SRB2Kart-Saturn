@@ -8874,7 +8874,7 @@ static void K_drawKartSpeedometer(void)
 		{
 			UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
 			V_DrawStretchyFixedPatch((SPDM_X-1)<<FRACBITS, (SPDM_Y + 5)<<FRACBITS, FRACUNIT*0.765, FRACUNIT*0.55, (V_HUDTRANS|splitflags), (skp_smallstickerclr3), colormap);
-		}
+	}
 		else
 			V_DrawStretchyFixedPatch((SPDM_X-1)<<FRACBITS, (SPDM_Y + 5)<<FRACBITS, FRACUNIT*0.765, FRACUNIT*0.55, (V_HUDTRANS|splitflags), (skp_smallsticker3), NULL);
 
@@ -9401,10 +9401,9 @@ skipcrap:
 		case 1:
 		case 2:
 		case 3:
-		case 5:
 			if (driftgaugegfx)
 			{
-				if (cv_driftgaugestyle.value == 1 || cv_driftgaugestyle.value == 3 || cv_driftgaugestyle.value == 5)
+				if (cv_driftgaugestyle.value == 1 || cv_driftgaugestyle.value == 3)
 				{
 					barx = basex - dup*23;
 					BAR_WIDTH = dup*47;
@@ -9422,25 +9421,12 @@ skipcrap:
 				INT32 level = min(driftcharge / driftval, 2);
 				UINT8 *cmap;
 
-				if (cv_driftgaugestyle.value == 5 && xtra_speedo3) // why bother if we dont?
+				if (!K_UseColorHud())
+					V_DrawMappedPatch(cv_driftgaugestyle.value == 2 ? basex + dup*11 : basex, basey, V_NOSCALESTART|V_OFFSET|drifttrans, cv_driftgaugestyle.value == 2 ? driftgaugesmall : driftgauge, NULL);
+				else //Colourized hud
 				{
-					if (K_UseColorHud() && xtra_speedo_clr3) //Colourized hud
-					{
-						UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
-						V_DrawStretchyFixedPatch((basex-300)<<FRACBITS, (basey-20)<<FRACBITS, FRACUNIT*0.765, FRACUNIT*0.55, V_NOSCALESTART|V_OFFSET|drifttrans, skp_smallstickerclr3, colormap);
-					}
-					else
-						V_DrawStretchyFixedPatch((basex-300)<<FRACBITS, (basey-20)<<FRACBITS, FRACUNIT*0.765, FRACUNIT*0.55, V_NOSCALESTART|V_OFFSET|drifttrans, skp_smallsticker3, NULL);
-				}
-				else
-				{
-					if (!K_UseColorHud())
-						V_DrawMappedPatch(cv_driftgaugestyle.value == 2 ? basex + dup*11 : basex, basey, V_NOSCALESTART|V_OFFSET|drifttrans, cv_driftgaugestyle.value == 2 ? driftgaugesmall : driftgauge, NULL);
-					else //Colourized hud
-					{
-						UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
-						V_DrawMappedPatch(cv_driftgaugestyle.value == 2 ? basex + dup*11 : basex, basey, V_NOSCALESTART|V_OFFSET|drifttrans, cv_driftgaugestyle.value == 2 ? driftgaugesmallcolor : driftgaugecolor, colormap);
-					}
+					UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
+					V_DrawMappedPatch(cv_driftgaugestyle.value == 2 ? basex + dup*11 : basex, basey, V_NOSCALESTART|V_OFFSET|drifttrans, cv_driftgaugestyle.value == 2 ? driftgaugesmallcolor : driftgaugecolor, colormap);
 				}
 
 				if (driftcharge >= driftval*4) // rainbow sparks
