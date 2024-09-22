@@ -10205,9 +10205,8 @@ consvar_t cv_suddendeath = {"suddendeath", "Off", CV_NETVAR|CV_CHEAT|CV_NOSHOWHE
 
 void P_SpawnPrecipitation(void)
 {
-	INT32 i, j, k, mrand;
-	fixed_t basex, basey, x, y, z, height;
-	fixed_t precipscale = cv_mobjscaleprecip.value ? mapobjectscale : FRACUNIT;
+	INT32 i, mrand;
+	fixed_t basex, basey, j, x, y, z;
 	subsector_t *precipsector = NULL;
 	precipmobj_t *rainmo = NULL;
 
@@ -10220,9 +10219,10 @@ void P_SpawnPrecipitation(void)
 		basex = bmaporgx + (i % bmapwidth) * MAPBLOCKSIZE;
 		basey = bmaporgy + (i / bmapwidth) * MAPBLOCKSIZE;
 
-		for (j = 0; j < FRACUNIT; j += precipscale)
+		for (j = 0; j < FRACUNIT; j += cv_mobjscaleprecip.value ? mapobjectscale : FRACUNIT)
 		{
-			UINT16 numparticles = 0;
+			INT32 floorz;
+			INT32 ceilingz;
 
 			x = ((cv_lessprecip.value ? basex*1.5 : basex) + ((M_RandomKey(MAPBLOCKUNITS<<3)<<FRACBITS)>>3));
 			y = ((cv_lessprecip.value ? basey*1.5 : basey) + ((M_RandomKey(MAPBLOCKUNITS<<3)<<FRACBITS)>>3));
@@ -10237,50 +10237,37 @@ void P_SpawnPrecipitation(void)
 			// Not in a sector with visible sky?
 			if (precipsector->sector->ceilingpic != skyflatnum)
 				continue;
-
-			height = precipsector->sector->ceilingheight - precipsector->sector->floorheight;
-			height = FixedDiv(height, precipscale);
-
 			// Exists, but is too small for reasonable precipitation.
-			if (height < 64<<FRACBITS)
+			if (!(precipsector->sector->floorheight <= precipsector->sector->ceilingheight - (32<<FRACBITS)))
 				continue;
-
-			// Hack around a quirk of this entire system, where taller sectors look like they get less precipitation.
-			numparticles = 1 + (height / (MAPBLOCKUNITS<<4<<FRACBITS));
 
 			// Don't set z properly yet...
 			z = precipsector->sector->ceilingheight;
 
-			for (k = 0; k < numparticles; k++)
+			if (curWeather == PRECIP_SNOW)
 			{
-				INT32 floorz;
-				INT32 ceilingz;
+				rainmo = P_SpawnPrecipMobj(x, y, z, MT_SNOWFLAKE);
+				mrand = M_RandomByte();
+				if (mrand < 64)
+					P_SetPrecipMobjState(rainmo, S_SNOW3);
+				else if (mrand < 144)
+					P_SetPrecipMobjState(rainmo, S_SNOW2);
+			}
+			else // everything else.
+				rainmo = P_SpawnPrecipMobj(x, y, z, MT_RAIN);
 
-				if (curWeather == PRECIP_SNOW)
-				{
-					rainmo = P_SpawnPrecipMobj(x, y, z, MT_SNOWFLAKE);
-					mrand = M_RandomByte();
-					if (mrand < 64)
-						P_SetPrecipMobjState(rainmo, S_SNOW3);
-					else if (mrand < 144)
-						P_SetPrecipMobjState(rainmo, S_SNOW2);
-				}
-				else // everything else.
-					rainmo = P_SpawnPrecipMobj(x, y, z, MT_RAIN);
+			floorz = rainmo->floorz >> FRACBITS;
+			ceilingz = rainmo->ceilingz >> FRACBITS;
 
-				floorz = rainmo->floorz >> FRACBITS;
-				ceilingz = rainmo->ceilingz >> FRACBITS;
-
-				if (floorz < ceilingz)
-				{
-					// Randomly assign a height, now that floorz is set.
-					rainmo->z = M_RandomRange(floorz, ceilingz) << FRACBITS;
-				}
-				else
-				{
-					// ...except if the floor is above the ceiling.
-					rainmo->z = ceilingz << FRACBITS;
-				}
+			if (floorz < ceilingz)
+			{
+				// Randomly assign a height, now that floorz is set.
+				rainmo->z = M_RandomRange(floorz, ceilingz) << FRACBITS;
+			}
+			else
+			{
+				// ...except if the floor is above the ceiling.
+				rainmo->z = ceilingz << FRACBITS;
 			}
 		}
 	}
