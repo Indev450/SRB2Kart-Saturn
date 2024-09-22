@@ -535,7 +535,6 @@ FUNCINLINE static ATTRINLINE void P_LoadRawSubsectors(void *data)
 
 size_t numlevelflats;
 levelflat_t *levelflats;
-levelflat_t *foundflats;
 
 //SoM: Other files want this info.
 size_t P_PrecacheLevelFlats(void)
@@ -661,8 +660,17 @@ static void P_LoadRawSectors(UINT8 *data)
 {
 	mapsector_t *ms = (mapsector_t *)data;
 	sector_t *ss = sectors;
+	levelflat_t *foundflats;
 
 	size_t i;
+
+	// Allocate a big chunk of memory as big as our MAXLEVELFLATS limit.
+	//Fab : FIXME: allocate for whatever number of flats - 512 different flats per level should be plenty
+	foundflats = calloc(MAXLEVELFLATS, sizeof (*foundflats));
+	if (foundflats == NULL)
+		I_Error("Ran out of memory while loading sectors\n");
+
+	numlevelflats = 0;
 
 	// For each counted sector, copy the sector raw data from our cache pointer ms, to the global table pointer ss.
 	for (i = 0; i < numsectors; i++, ss++, ms++)
@@ -724,6 +732,16 @@ static void P_LoadRawSectors(UINT8 *data)
 		ss->floorspeed = 0;
 		ss->ceilspeed = 0;
 	}
+
+	// set the sky flat num
+	skyflatnum = P_AddLevelFlat(SKYFLATNAME, foundflats);
+
+	// copy table for global usage
+	levelflats = M_Memcpy(Z_Calloc(numlevelflats * sizeof (*levelflats), PU_LEVEL, NULL), foundflats, numlevelflats * sizeof (levelflat_t));
+	free(foundflats);
+
+	// search for animated flats and set up
+	P_SetupLevelFlatAnims();
 }
 
 //
@@ -1408,6 +1426,7 @@ static void P_LoadRawSideDefs2(void *data)
 				break;
 		}
 	}
+	R_ClearTextureNumCache(true);
 }
 
 static boolean LineInBlock(fixed_t cx1, fixed_t cy1, fixed_t cx2, fixed_t cy2, fixed_t bx1, fixed_t by1)
@@ -1924,32 +1943,12 @@ static void P_LoadMapData(const virtres_t* virt)
 	lines     = Z_Calloc(numlines * sizeof (*lines), PU_LEVEL, NULL);
 	mapthings = Z_Calloc(nummapthings * sizeof (*mapthings), PU_LEVEL, NULL);
 
-	// Allocate a big chunk of memory as big as our MAXLEVELFLATS limit.
-	//Fab : FIXME: allocate for whatever number of flats - 512 different flats per level should be plenty
-	foundflats = calloc(MAXLEVELFLATS, sizeof (*foundflats));
-	if (foundflats == NULL)
-		I_Error("Ran out of memory while loading sectors\n");
-	numlevelflats = 0;
-
 	// Strict map data
 	P_LoadRawVertexes(virtvertexes->data);
 	P_LoadRawSectors(virtsectors->data);
 	P_LoadRawLineDefs(virtlinedefs->data);
 	P_SetupLines();
 	P_LoadRawSideDefs2(virtsidedefs->data);
-	P_PrepareRawThings(virtthings->data);
-
-	R_ClearTextureNumCache(true);
-
-	// set the sky flat num
-	skyflatnum = P_AddLevelFlat(SKYFLATNAME, foundflats);
-
-	// copy table for global usage
-	levelflats = M_Memcpy(Z_Calloc(numlevelflats * sizeof (*levelflats), PU_LEVEL, NULL), foundflats, numlevelflats * sizeof (levelflat_t));
-	free(foundflats);
-
-	// search for animated flats and set up
-	P_SetupLevelFlatAnims();
 }
 
 /** Sets up a sky texture to use for the level.
@@ -2200,6 +2199,16 @@ static void P_LoadMapFromFile(void)
 	P_PrepareRawThings(vres_Find(curmapvirt, "THINGS")->data);
 
 	P_MakeMapMD5(curmapvirt, &mapmd5);
+
+	// We do the following silly
+	// construction because vres_Free
+	// no-sells deletions of pointers
+	// that are == curmapvirt.
+	{
+		virtres_t *temp = curmapvirt;
+		curmapvirt = NULL;
+		vres_Free(temp);
+	}
 }
 
 static void P_RunLevelScript(const char *scriptname)
@@ -2432,92 +2441,6 @@ static void P_InitCamera(void)
 static boolean P_CanSave(void)
 {
 	return false; // SRB2Kart: no SP, no saving.
-}
-
-static void P_InitGametype(void)
-{
-	INT32 i;
-
-	for (i = 0; i < MAXPLAYERS; i++)
-		if (playeringame[i])
-		{
-			players[i].pflags &= ~PF_NIGHTSMODE;
-
-			// Start players with pity shields if possible
-			players[i].pity = -1;
-
-			if (!G_RaceGametype())
-			{
-				players[i].mo = NULL;
-				G_DoReborn(i);
-			}
-			else // gametype is GT_RACE
-			{
-				players[i].mo = NULL;
-
-				if (players[i].starposttime)
-				{
-					G_SpawnPlayer(i, true);
-				}
-				else
-					G_SpawnPlayer(i, false);
-			}
-		}
-
-	if (modeattacking == ATTACKING_RECORD && !demo.playback)
-		P_LoadRecordGhosts();
-
-	if (G_RaceGametype() && server)
-		CV_StealthSetValue(&cv_numlaps,
-			((netgame || multiplayer) && cv_basenumlaps.value
-				&& (!(mapheaderinfo[gamemap - 1]->levelflags & LF_SECTIONRACE)
-					|| (mapheaderinfo[gamemap - 1]->numlaps > cv_basenumlaps.value)))
-			? cv_basenumlaps.value
-			: mapheaderinfo[gamemap - 1]->numlaps);
-
-	// Start recording replay in multiplayer with a temp filename
-	//Ensure dedis only record a replay if there is a player at the start of the map, otherwise we get invalid replays!
-	if (!demo.playback && multiplayer && D_NumPlayers()) {
-		static char buf[256];
-		sprintf(buf, "replay"PATHSEP"online"PATHSEP"%d-%s", (int) (time(NULL)), G_BuildMapName(gamemap));
-
-		I_mkdir(va("%s"PATHSEP"replay", srb2home), 0755);
-		I_mkdir(va("%s"PATHSEP"replay"PATHSEP"online", srb2home), 0755);
-		G_RecordDemo(buf);
-		if (dedicated)
-			G_BeginRecording(); //this has to move here, since dedicated servers dont run got_mapcmd
-	}
-
-	wantedcalcdelay = wantedfrequency*2;
-	indirectitemcooldown = 0;
-	hyubgone = 0;
-	mapreset = 0;
-	nospectategrief = 0;
-	thwompsactive = false;
-	spbplace = -1;
-
-	startedInFreePlay = false;
-	{
-		UINT8 nump = 0;
-		for (i = 0; i < MAXPLAYERS; i++)
-		{
-			if (!playeringame[i] || players[i].spectator)
-			{
-				continue;
-			}
-
-			nump++;
-			if (nump == 2)
-			{
-				break;
-			}
-		}
-
-		if (nump <= 1)
-		{
-			startedInFreePlay = true;
-		}
-	}
 }
 
 struct minimapinfo minimapinfo;
@@ -2855,19 +2778,94 @@ boolean P_SetupLevel(boolean skipprecip, boolean reloadinggamestate)
 	//  none of this needs to be done because it's not the beginning of the map when
 	//  a netgame save is being loaded, and could actively be harmful by messing with
 	//  the client's view of the data.)
-	if (!fromnetsave)
-		P_InitGametype();
+	if (fromnetsave)
+		goto netgameskip;
+	// ==========
 
-	// Now safe to free.
-	// We do the following silly
-	// construction because vres_Free
-	// no-sells deletions of pointers
-	// that are == curmapvirt.
-	{
-		virtres_t *temp = curmapvirt;
-		curmapvirt = NULL;
-		vres_Free(temp);
+	for (i = 0; i < MAXPLAYERS; i++)
+		if (playeringame[i])
+		{
+			players[i].pflags &= ~PF_NIGHTSMODE;
+
+			// Start players with pity shields if possible
+			players[i].pity = -1;
+
+			if (!G_RaceGametype())
+			{
+				players[i].mo = NULL;
+				G_DoReborn(i);
+			}
+			else // gametype is GT_COOP or GT_RACE
+			{
+				players[i].mo = NULL;
+
+				if (players[i].starposttime)
+				{
+					G_SpawnPlayer(i, true);
+				}
+				else
+					G_SpawnPlayer(i, false);
+			}
+		}
+
+	if (modeattacking == ATTACKING_RECORD && !demo.playback)
+		P_LoadRecordGhosts();
+
+	if (G_RaceGametype() && server)
+		CV_StealthSetValue(&cv_numlaps,
+			((netgame || multiplayer) && cv_basenumlaps.value
+				&& (!(mapheaderinfo[gamemap - 1]->levelflags & LF_SECTIONRACE)
+					|| (mapheaderinfo[gamemap - 1]->numlaps > cv_basenumlaps.value)))
+			? cv_basenumlaps.value
+			: mapheaderinfo[gamemap - 1]->numlaps);
+
+	// Start recording replay in multiplayer with a temp filename
+	//Ensure dedis only record a replay if there is a player at the start of the map, otherwise we get invalid replays!
+	if (!demo.playback && multiplayer && D_NumPlayers()) {
+		static char buf[256];
+		sprintf(buf, "replay"PATHSEP"online"PATHSEP"%d-%s", (int) (time(NULL)), G_BuildMapName(gamemap));
+
+		I_mkdir(va("%s"PATHSEP"replay", srb2home), 0755);
+		I_mkdir(va("%s"PATHSEP"replay"PATHSEP"online", srb2home), 0755);
+		G_RecordDemo(buf);
+		if (dedicated)
+			G_BeginRecording(); //this has to move here, since dedicated servers dont run got_mapcmd
 	}
+
+	wantedcalcdelay = wantedfrequency*2;
+	indirectitemcooldown = 0;
+	hyubgone = 0;
+	mapreset = 0;
+	nospectategrief = 0;
+	thwompsactive = false;
+	spbplace = -1;
+
+	startedInFreePlay = false;
+	{
+		UINT8 nump = 0;
+		for (i = 0; i < MAXPLAYERS; i++)
+		{
+			if (!playeringame[i] || players[i].spectator)
+			{
+				continue;
+			}
+
+			nump++;
+			if (nump == 2)
+			{
+				break;
+			}
+		}
+
+		if (nump <= 1)
+		{
+			startedInFreePlay = true;
+		}
+	}
+
+	// ===========
+	// landing point for netgames.
+	netgameskip:
 
 	if (!reloadinggamestate)
 	{
