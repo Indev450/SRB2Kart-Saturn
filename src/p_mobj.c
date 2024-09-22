@@ -10076,33 +10076,37 @@ void P_RemoveMobj(mobj_t *mobj)
 
 	R_RemoveMobjInterpolator(mobj);
 
-#ifdef SCRAMBLE_REMOVED
-	// Invalidate mobj_t data to cause crashes if accessed!
-	memset((UINT8 *)mobj + sizeof(thinker_t), 0xff, sizeof(mobj_t) - sizeof(thinker_t));
-#endif
-
 	// free block
-	if (!mobj->thinker.next)
+	// DBG: set everything in mobj_t to 0xFF instead of leaving it. debug memory error.
+	if (mobj->flags & MF_NOTHINK && !mobj->thinker.next)
 	{ // Uh-oh, the mobj doesn't think, P_RemoveThinker would never go through!
-		INT32 prevreferences;
 		if (!mobj->thinker.references)
 		{
-			Z_Free(mobj); // No references? Can be removed immediately! :D
-			return;
-		}
-
-		prevreferences = mobj->thinker.references;
-		P_AddThinker((thinker_t *)mobj);
-		mobj->thinker.references = prevreferences;
-	}
-
-	P_RemoveThinker((thinker_t *)mobj);
-
-	// DBG: set everything in mobj_t to 0xFF instead of leaving it. debug memory error.
 #ifdef SCRAMBLE_REMOVED
-	// Invalidate mobj_t data to cause crashes if accessed!
-	memset((UINT8 *)mobj + sizeof(thinker_t), 0xff, sizeof(mobj_t) - sizeof(thinker_t));
+			// Invalidate mobj_t data to cause crashes if accessed!
+			memset(mobj, 0xff, sizeof(mobj_t));
 #endif
+			Z_Free(mobj); // No refrences? Can be removed immediately! :D
+		}
+		else
+		{ // Add thinker just to delay removing it until refrences are gone.
+			mobj->flags &= ~MF_NOTHINK;
+			P_AddThinker((thinker_t *)mobj);
+#ifdef SCRAMBLE_REMOVED
+			// Invalidate mobj_t data to cause crashes if accessed!
+			memset((UINT8 *)mobj + sizeof(thinker_t), 0xff, sizeof(mobj_t) - sizeof(thinker_t));
+#endif
+			P_RemoveThinker((thinker_t *)mobj);
+		}
+	}
+	else
+	{
+#ifdef SCRAMBLE_REMOVED
+		// Invalidate mobj_t data to cause crashes if accessed!
+		memset((UINT8 *)mobj + sizeof(thinker_t), 0xff, sizeof(mobj_t) - sizeof(thinker_t));
+#endif
+		P_RemoveThinker((thinker_t *)mobj);
+	}
 }
 
 // This does not need to be added to Lua.
