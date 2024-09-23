@@ -2224,7 +2224,13 @@ void vres_Free(virtres_t* vres)
 	}
 
 	while (vres->numlumps--)
-		Z_Free(vres->vlumps[vres->numlumps].data);
+	{
+		if (vres->vlumps[vres->numlumps].data)
+		{
+			Z_Free(vres->vlumps[vres->numlumps].data);
+		}
+	}
+
 	Z_Free(vres->vlumps);
 	Z_Free(vres);
 }
