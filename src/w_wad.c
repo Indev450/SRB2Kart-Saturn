@@ -2224,7 +2224,6 @@ virtres_t* vres_GetMap(lumpnum_t lumpnum)
 			}
 		}
 		numlumps++;
-		++lumpnum; // Skip map marker
 
 		vlumps = (virtlump_t*)(Z_Malloc(sizeof(virtlump_t)*numlumps, PU_LEVEL, NULL));
 		for (i = 0; i < numlumps; i++, lumpnum++)
