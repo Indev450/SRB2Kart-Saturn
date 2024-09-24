@@ -47,11 +47,7 @@ typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 // May be incorrect for other platforms, but we don't currently have a way to
 // query the scheduler granularity. SDL will do what's needed to make this as
 // low as possible though.
-#if defined(_WIN32)
-#define MIN_SLEEP_DURATION_MS 1.6
-#else
 #define MIN_SLEEP_DURATION_MS 2.1
-#endif
 
 #include <stdio.h>
 #include <time.h>

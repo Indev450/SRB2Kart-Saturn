@@ -17,6 +17,7 @@
 #include "k_director.h"
 #include "d_netcmd.h"
 #include "p_local.h"
+#include "st_stuff.h"
 
 #define SWITCHTIME TICRATE * 5		// cooldown between unforced switches
 #define BOREDOMTIME 3 * TICRATE / 2 // how long until players considered far apart?
@@ -49,7 +50,7 @@ static fixed_t ScaleFromMap(fixed_t n, fixed_t scale)
 
 static boolean K_DirectorIsEnabled(void)
 {
-	return cv_director.value && !splitscreen && (gamestate == GS_LEVEL && (!playeringame[consoleplayer] || players[consoleplayer].spectator || (demo.playback && (!demo.title || !modeattacking))));
+	return cv_director.value && !splitscreen && (gamestate == GS_LEVEL && (((stplyr && !stplyr->spectator) && (!playeringame[consoleplayer] || players[consoleplayer].spectator)) || (demo.playback && !demo.freecam && (!demo.title || !modeattacking))));
 }
 
 void K_InitDirector(void)
@@ -394,10 +395,15 @@ void K_UpdateDirector(void)
 
 void K_ToggleDirector(void)
 {
+	if (!directortextactive)
+		return;
+
 	if (!K_DirectorIsEnabled())
 	{
 		directorinfo.cooldown = 0; // switch immediately
 	}
+
+	directortoggletimer = 0;
 
 	COM_ImmedExecute("add director 1");
 }

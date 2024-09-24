@@ -9370,6 +9370,9 @@ static void K_drawDriftGauge(void)
 		0, 31, 47, 63, 79, 95, 111, 119, 127, 143, 159, 175, 183, 191, 199, 207, 223, 247
 	};
 
+	if (demo.playback && demo.freecam)
+		return;
+
 	if (!stplyr->mo || (!splitscreen && !camera->chase))
 		return;
 

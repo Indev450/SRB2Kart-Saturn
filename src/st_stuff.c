@@ -155,6 +155,8 @@ static patch_t *envelope;
 player_t *stplyr;
 UINT8 stplyrnum;
 
+boolean directortextactive = false;
+
 // SRB2kart
 
 hudinfo_t hudinfo[NUMHUDITEMS] =
@@ -662,23 +664,30 @@ static void ST_overlayDrawer(void)
 
 	if (!hu_showscores) // hide the following if TAB is held
 	{
-		if (cv_showdirectorhud.value && ((demo.playback && (!demo.title || !modeattacking)) || !P_IsLocalPlayer(stplyr)) && !splitscreen)
+		if (cv_showdirectorhud.value && ((demo.playback && !demo.freecam && (!demo.title || !modeattacking)) || !P_IsLocalPlayer(stplyr)) && !splitscreen)
 		{
 			char directortext[20] = {0};
 
 			snprintf(directortext, 20, "Director: %s", cv_director.value ? "On" : "Off");
 
-			if (directortoggletimer < 4*TICRATE)
+			directortextactive = true;
+
+			if ((!demo.playback && directortoggletimer < 13*TICRATE) || (demo.playback && directortoggletimer < 4*TICRATE))
 			{
-				V_DrawString(1, BASEVIDHEIGHT-8-1, V_SNAPTOLEFT|V_SNAPTOBOTTOM|V_HUDTRANSHALF|V_ALLOWLOWERCASE, directortext);
 				if (renderisnewtic)
 					directortoggletimer++;
+
+				if (directortoggletimer < 4*TICRATE)
+					V_DrawString(1, BASEVIDHEIGHT-8-1, V_SNAPTOLEFT|V_SNAPTOBOTTOM|V_HUDTRANSHALF|V_ALLOWLOWERCASE, directortext);
+				else if (cv_translucenthud.value != 0)
+					V_DrawString(1, BASEVIDHEIGHT-8-1, V_SNAPTOLEFT|V_SNAPTOBOTTOM|V_80TRANS|V_ALLOWLOWERCASE, directortext); // idk if V_80TRANS is good?
 			}
-			else if (cv_translucenthud.value != 0)
-				V_DrawString(1, BASEVIDHEIGHT-8-1, V_SNAPTOLEFT|V_SNAPTOBOTTOM|V_80TRANS|V_ALLOWLOWERCASE, directortext); // idk if V_80TRANS is good?
 		}
 		else
+		{
 			directortoggletimer = 0;
+			directortextactive = false;
+		}
 
 		if (cv_showviewpointtext.value)
 		{
@@ -695,7 +704,7 @@ static void ST_overlayDrawer(void)
 					V_DrawCenteredString((BASEVIDWIDTH/2), BASEVIDHEIGHT-32, V_SNAPTOBOTTOM|V_HUDTRANS|V_ALLOWLOWERCASE, player_names[stplyr-players]);
 				}
 			}
-			else if (!demo.title)
+			else if (!demo.title && !demo.freecam)
 			{
 				if (!splitscreen)
 				{
