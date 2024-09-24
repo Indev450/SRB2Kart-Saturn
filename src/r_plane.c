@@ -910,34 +910,41 @@ void R_DrawSinglePlane(visplane_t *pl)
 				INT32 top, bottom;
 				UINT8 *scr;
 
-				planeripple.active = true;
-
-				if (spanfunc == R_DrawTranslucentSpan_8)
+				if (cv_ripplewater.value)
 				{
-					spanfunc = R_DrawTranslucentWaterSpan_8;
+					planeripple.active = true;
 
-					// Copy the current scene, ugh
-					top = pl->high-8;
-					bottom = pl->low+8;
+					if (spanfunc == R_DrawTranslucentSpan_8)
+					{
+						spanfunc = R_DrawTranslucentWaterSpan_8;
 
-					if (top < 0)
-						top = 0;
-					if (bottom > vid.height)
-						bottom = vid.height;
+						// Copy the current scene, ugh
+						top = pl->high-8;
+						bottom = pl->low+8;
 
-					if (splitscreen > 2 && viewplayer == &players[displayplayers[3]]) // Only copy the part of the screen we need
-						scr = (screens[0] + (top+(viewheight))*vid.width + viewwidth);
-					else if ((splitscreen == 1 && viewplayer == &players[displayplayers[1]])
-						|| (splitscreen > 1 && viewplayer == &players[displayplayers[2]]))
-						scr = (screens[0] + (top+(viewheight))*vid.width);
-					else if (splitscreen > 1 && viewplayer == &players[displayplayers[1]])
-						scr = (screens[0] + ((top)*vid.width) + viewwidth);
-					else
-						scr = (screens[0] + ((top)*vid.width));
+						if (top < 0)
+							top = 0;
+						if (bottom > vid.height)
+							bottom = vid.height;
 
-					VID_BlitLinearScreen(scr, screens[1]+((top)*vid.width),
-										vid.width, bottom-top,
-										vid.width, vid.width);
+						if (splitscreen > 2 && viewplayer == &players[displayplayers[3]]) // Only copy the part of the screen we need
+							scr = (screens[0] + (top+(viewheight))*vid.width + viewwidth);
+						else if ((splitscreen == 1 && viewplayer == &players[displayplayers[1]])
+							|| (splitscreen > 1 && viewplayer == &players[displayplayers[2]]))
+							scr = (screens[0] + (top+(viewheight))*vid.width);
+						else if (splitscreen > 1 && viewplayer == &players[displayplayers[1]])
+							scr = (screens[0] + ((top)*vid.width) + viewwidth);
+						else
+							scr = (screens[0] + ((top)*vid.width));
+
+						VID_BlitLinearScreen(scr, screens[1]+((top)*vid.width),
+											vid.width, bottom-top,
+											vid.width, vid.width);
+					}
+				}
+				else
+				{
+					planeripple.active = false;
 				}
 			}
 #endif

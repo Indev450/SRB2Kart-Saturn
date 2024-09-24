@@ -124,6 +124,7 @@ extern consvar_t cv_fov;
 extern consvar_t cv_skybox;
 extern consvar_t cv_tailspickup;
 extern consvar_t cv_grmaxinterpdist;
+extern consvar_t cv_ripplewater;
 
 // Called by startup code.
 void R_Init(void);
