@@ -213,6 +213,8 @@ consvar_t cv_mobjscaleprecip = {"scaleprecipmobjscale", "Off", CV_SAVE|CV_CALL|C
 
 consvar_t cv_grmaxinterpdist = {"gr_maxinterpdist", "Infinite", CV_SAVE, maxinterpdist_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_ripplewater = {"waterripples", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 // cap fov, fov too high tears software apart.
 consvar_t cv_fov = {"fov", "90", CV_FLOAT|CV_CALL|CV_SAVE, fov_cons_t, Fov_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
@@ -1888,6 +1890,8 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_maxportals);
 
 	CV_RegisterVar(&cv_grmaxinterpdist);
+
+	CV_RegisterVar(&cv_ripplewater);
 
 	// Default viewheight is changeable,
 	// initialized to standard viewheight
