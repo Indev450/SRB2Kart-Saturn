@@ -155,6 +155,8 @@ static patch_t *envelope;
 player_t *stplyr;
 UINT8 stplyrnum;
 
+boolean directortextactive = false;
+
 // SRB2kart
 
 hudinfo_t hudinfo[NUMHUDITEMS] =
@@ -668,6 +670,8 @@ static void ST_overlayDrawer(void)
 
 			snprintf(directortext, 20, "Director: %s", cv_director.value ? "On" : "Off");
 
+			directortextactive = true;
+
 			if ((!demo.playback && directortoggletimer < 13*TICRATE) || (demo.playback && directortoggletimer < 4*TICRATE))
 			{
 				if (renderisnewtic)
@@ -680,7 +684,10 @@ static void ST_overlayDrawer(void)
 			}
 		}
 		else
+		{
 			directortoggletimer = 0;
+			directortextactive = false;
+		}
 
 		if (cv_showviewpointtext.value)
 		{

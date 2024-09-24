@@ -1858,7 +1858,6 @@ boolean G_Responder(event_t *ev)
 				|| ev->data1 == gamecontrol[gc_director][1])
 			{
 				K_ToggleDirector();
-				directortoggletimer = 0;
 			}
 
 			return true;

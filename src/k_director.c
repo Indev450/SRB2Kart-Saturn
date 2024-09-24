@@ -395,10 +395,15 @@ void K_UpdateDirector(void)
 
 void K_ToggleDirector(void)
 {
+	if (!directortextactive)
+		return;
+
 	if (!K_DirectorIsEnabled())
 	{
 		directorinfo.cooldown = 0; // switch immediately
 	}
+
+	directortoggletimer = 0;
 
 	COM_ImmedExecute("add director 1");
 }
