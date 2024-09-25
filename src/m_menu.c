@@ -1485,7 +1485,8 @@ static menuitem_t OP_ExpOptionsMenu[] =
 	{IT_STRING | IT_CVAR, 	NULL, "Scale Weather with Mobjscale", 	&cv_mobjscaleprecip, 		 60},
 	{IT_STRING | IT_CVAR, 	NULL, "Less Weather Effects", 			&cv_lessprecip, 		 	 70},
 
-	{IT_STRING | IT_CVAR,	NULL, "Skyboxes",						&cv_skybox,				 	 80},
+	{IT_STRING | IT_CVAR,	NULL, "Check if interp shit changed",	&cv_checkifsame,			 80},
+	{IT_STRING | IT_CVAR,	NULL, "Auto frameskipping",				&cv_frameskipping,			 90},
 
 #ifdef HWRENDER	
 	{IT_STRING | IT_CVAR, 	NULL, "Screen Textures", 				&cv_grscreentextures, 		 100},
@@ -1505,7 +1506,8 @@ static const char* OP_ExpTooltips[] =
 	"Should weather be interpolated? Weather should look about the\nsame but perform a bit better when disabled.",
 	"Should weather be scaled with Mapobjectscale?.",
 	"When weather is on this will cut the object amount used in half.",
-	"Toggle being able to see the sky.",
+	"Should mobj interpolators check if their state changed\n before they attempt to interpolate?.",
+	"Should the game skip rendering when the gamelogic falls behind?.",
 #ifdef HWRENDER
 	"Should the game do Screen Textures? Provides a good boost to frames\nat the cost of some visual effects not working when disabled.",
 #ifdef USE_FBO_OGL
