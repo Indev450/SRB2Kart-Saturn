@@ -2045,7 +2045,7 @@ void G_ResetView(UINT8 viewnum, INT32 playernum, boolean onlyactive)
 
 		// Make sure the viewport doesn't interpolate at all into
 		// its new position -- just snap instantly into place.
-		R_ResetViewInterpolation(viewnum);
+		//R_ResetViewInterpolation(viewnum);
 	}
 
 	if (viewnum > splits)
@@ -2061,7 +2061,7 @@ void G_ResetView(UINT8 viewnum, INT32 playernum, boolean onlyactive)
 
 			// Make sure the viewport doesn't interpolate at all into
 			// its new position -- just snap instantly into place.
-			R_ResetViewInterpolation(viewd);
+			//R_ResetViewInterpolation(viewd);
 		}
 	}
 
