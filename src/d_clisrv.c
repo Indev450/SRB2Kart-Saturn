@@ -4128,6 +4128,7 @@ static void ResetNode(INT32 node)
 	resendingsavegame[node] = false;
 	can_receive_gamestate[node] = false;
 	savegameresendcooldown[node] = 0;
+	gamestate_resend_counter[node] = 0;
 #endif
 	//
 }
@@ -5313,6 +5314,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 					DEBFILE(va("player %d kicked (synch failure) [%u] %d!=%d\n",
 						netconsole, realstart, consistancy[realstart%TICQUEUE],
 						SHORT(netbuffer->u.clientpak.consistancy)));
+					gamestate_resend_counter[node] = 0
 					break;
 				}
 			}
