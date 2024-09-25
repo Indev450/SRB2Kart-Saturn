@@ -44,6 +44,9 @@ consvar_t cv_fpscap = {"fpscap", "Match refresh rate", CV_SAVE, fpscap_cons_t, N
 
 consvar_t cv_precipinterp = {"precipinterpolation", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_checkifsame = {"interpcheckifsame", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+
 UINT32 R_GetFramerateCap(void)
 {
 	if (rendermode == render_none)
@@ -92,15 +95,15 @@ static size_t levelinterpolators_size;
 
 static inline fixed_t R_LerpFixed(fixed_t from, fixed_t to, fixed_t frac)
 {
-	if (from == to)
-		return to;
+	if (cv_checkifsame.value)
+		return from == to ? to : from + FixedMul(frac, to - from);
 	return from + FixedMul(frac, to - from);
 }
 
 static inline angle_t R_LerpAngle(angle_t from, angle_t to, fixed_t frac)
 {
-	if (from == to)
-		return to;
+	if (cv_checkifsame.value)
+		return from == to ? to : from + FixedMul(frac, to - from);
 	return from + FixedMul(frac, to - from);
 }
 
