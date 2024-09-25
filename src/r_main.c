@@ -1901,4 +1901,5 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_fpscap);
 	CV_RegisterVar(&cv_precipinterp);
 	CV_RegisterVar(&cv_checkifsame);
+	CV_RegisterVar(&cv_frameskipping);
 }

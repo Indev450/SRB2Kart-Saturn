@@ -885,7 +885,7 @@ void D_SRB2Loop(void)
 		//
 		// Wipes run an inner loop and artificially increase
 		// the measured time.
-		if (!ranwipe && frameskip < 3 && deltatics > 1.0)
+		if (cv_frameskipping.value && !ranwipe && frameskip < 3 && deltatics > 1.0)
 		{
 			frameskip++;
 		}

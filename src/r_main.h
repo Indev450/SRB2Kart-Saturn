@@ -126,6 +126,7 @@ extern consvar_t cv_tailspickup;
 extern consvar_t cv_grmaxinterpdist;
 extern consvar_t cv_ripplewater;
 extern consvar_t cv_checkifsame;
+extern consvar_t cv_frameskipping;
 
 // Called by startup code.
 void R_Init(void);

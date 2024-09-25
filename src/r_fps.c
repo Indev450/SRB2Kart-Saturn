@@ -46,6 +46,9 @@ consvar_t cv_precipinterp = {"precipinterpolation", "On", CV_SAVE, CV_OnOff, NUL
 
 consvar_t cv_checkifsame = {"interpcheckifsame", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_frameskipping = {"autoframeskip", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+
 
 UINT32 R_GetFramerateCap(void)
 {
