@@ -6796,28 +6796,21 @@ void NetUpdate(void)
 				if (resynch_inprogress[i])
 				{
 					SV_SendResynch(i);
-					counts = -666;
 				}
 
-			// Do not make tics while resynching
-			if (counts != -666)
-			{
-				// See also PingUpdate
-				if (maketic + counts >= firstticstosend + TICQUEUE)
-					counts = firstticstosend+TICQUEUE-maketic-1;
+			// See also PingUpdate
+			if (maketic + counts >= firstticstosend + TICQUEUE)
+				counts = firstticstosend+TICQUEUE-maketic-1;
 
-				for (i = 0; i < counts; i++)
-					SV_Maketic(); // Create missed tics and increment maketic
+			for (i = 0; i < counts; i++)
+				SV_Maketic(); // Create missed tics and increment maketic
 
-				for (; tictoclear < firstticstosend; tictoclear++) // Clear only when acknowledged
-					D_Clearticcmd(tictoclear);                    // Clear the maketic the new tic
+			for (; tictoclear < firstticstosend; tictoclear++) // Clear only when acknowledged
+				D_Clearticcmd(tictoclear);                    // Clear the maketic the new tic
 
-				SV_SendTics();
+			SV_SendTics();
 
-				neededtic = maketic; // The server is a client too
-			}
-			else
-				hu_resynching = true;
+			neededtic = maketic; // The server is a client too
 		}
 	}
 	Net_AckTicker();
