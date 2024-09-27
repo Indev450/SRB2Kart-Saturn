@@ -1598,7 +1598,20 @@ static menuitem_t OP_SoundOptionsMenu[] =
 	//{IT_STRING|IT_CALL,			NULL, "Restart Audio System",	M_RestartAudio,			 50},
 #ifdef NO_MIDI
 	{IT_STRING|IT_CVAR,							NULL, "Reverse L/R Channels",			&stereoreverse,			 	50},
-	{IT_STRING|IT_CVAR,							NULL, "Surround Sound",					&surround,			 	 	60},
+
+	{IT_STRING|IT_CVAR,							NULL, "Chat Notifications",				&cv_chatnotifications,	 	65},
+	{IT_STRING|IT_CVAR,							NULL, "Character voices",				&cv_kartvoices,			 	75},
+	{IT_STRING|IT_CVAR,							NULL, "Hit Em Delay",				    &cv_karthitemdialog,		85},
+	{IT_STRING|IT_CVAR,							NULL, "Powerup Warning",				&cv_kartinvinsfx,		 	95},
+	
+	{IT_KEYHANDLER|IT_STRING,					NULL, "Sound Test",						M_HandleSoundTest,			105},
+	{IT_STRING|IT_CALL,							NULL, "Music Test",						M_MusicTest,				115},
+
+	{IT_STRING|IT_CVAR,        					NULL, "Play Music While Unfocused", 	&cv_playmusicifunfocused, 	125},
+	{IT_STRING|IT_CVAR,        					NULL, "Play SFX While Unfocused", 		&cv_playsoundifunfocused, 	135},
+	{IT_STRING|IT_SUBMENU, 						NULL, "Advanced Settings...", 			&OP_SoundAdvancedDef, 		145}
+#else
+	{IT_STRING|IT_CVAR,							NULL, "Reverse L/R Channels",			&stereoreverse,			 	60},
 
 	{IT_STRING|IT_CVAR,							NULL, "Chat Notifications",				&cv_chatnotifications,	 	75},
 	{IT_STRING|IT_CVAR,							NULL, "Character voices",				&cv_kartvoices,			 	85},
@@ -1611,21 +1624,6 @@ static menuitem_t OP_SoundOptionsMenu[] =
 	{IT_STRING|IT_CVAR,        					NULL, "Play Music While Unfocused", 	&cv_playmusicifunfocused, 	135},
 	{IT_STRING|IT_CVAR,        					NULL, "Play SFX While Unfocused", 		&cv_playsoundifunfocused, 	145},
 	{IT_STRING|IT_SUBMENU, 						NULL, "Advanced Settings...", 			&OP_SoundAdvancedDef, 		155}
-#else
-	{IT_STRING|IT_CVAR,							NULL, "Reverse L/R Channels",			&stereoreverse,			 	60},
-	{IT_STRING|IT_CVAR,							NULL, "Surround Sound",					&surround,			 	 	70},
-
-	{IT_STRING|IT_CVAR,							NULL, "Chat Notifications",				&cv_chatnotifications,	 	85},
-	{IT_STRING|IT_CVAR,							NULL, "Character voices",				&cv_kartvoices,			 	95},
-	{IT_STRING|IT_CVAR,							NULL, "Hit Em Delay",				    &cv_karthitemdialog,		105},
-	{IT_STRING|IT_CVAR,							NULL, "Powerup Warning",				&cv_kartinvinsfx,		 	115},
-	
-	{IT_KEYHANDLER|IT_STRING,					NULL, "Sound Test",						M_HandleSoundTest,			125},
-	{IT_STRING|IT_CALL,							NULL, "Music Test",						M_MusicTest,				135},
-
-	{IT_STRING|IT_CVAR,        					NULL, "Play Music While Unfocused", 	&cv_playmusicifunfocused, 	145},
-	{IT_STRING|IT_CVAR,        					NULL, "Play SFX While Unfocused", 		&cv_playsoundifunfocused, 	155},
-	{IT_STRING|IT_SUBMENU, 						NULL, "Advanced Settings...", 			&OP_SoundAdvancedDef, 		165}
 #endif
 };
 
@@ -1640,7 +1638,6 @@ static const char* OP_SoundTooltips[] =
 	"Volume of Midi Music.",
 #endif
 	"Reverse left and right channels of audio.",
-	"Surround Sound.",
 	"Chat notification sound.",
 	"Frequency of character voice lines.",
 	"Play 'Hit Em' character line after other player's hurt line.",

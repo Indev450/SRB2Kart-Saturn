@@ -85,7 +85,6 @@ consvar_t cv_midimusicvolume = {"midimusicvolume", "18", CV_SAVE, soundvolume_co
 // number of channels available
 consvar_t cv_numChannels = {"snd_channels", "64", CV_SAVE|CV_CALL, CV_Unsigned, SetChannelsNum, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t surround = {"surround", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 //consvar_t cv_resetmusic = {"resetmusic", "No", CV_SAVE|CV_NOSHOWHELP, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 // Sound system toggles, saved into the config
@@ -162,10 +161,6 @@ consvar_t cv_amigatype = {"amigatype", "0", CV_SAVE|CV_CALL|CV_NOINIT, amigatype
 
 #define S_PITCH_PERTURB 1
 #define S_STEREO_SWING (96*0x10000)
-
-#ifdef SURROUND
-#define SURROUND_SEP -128
-#endif
 
 // percent attenuation from front to back
 #define S_IFRACVOL 30
@@ -272,7 +267,6 @@ void S_RegisterSoundStuff(void)
 
 	CV_RegisterVar(&stereoreverse);
 	CV_RegisterVar(&precachesound);
-	CV_RegisterVar(&surround);
 	CV_RegisterVar(&cv_samplerate);
 	//CV_RegisterVar(&cv_resetmusic);
 	CV_RegisterVar(&cv_gamesounds);
@@ -616,11 +610,7 @@ void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
 		}
 
 		// Avoid channel reverse if surround
-		if (reverse
-#ifdef SURROUND
-			&& sep != SURROUND_SEP
-#endif
-			)
+		if (reverse)
 		{
 			sep = (~sep) & 255;
 		}
@@ -1102,18 +1092,10 @@ boolean S_AdjustSoundParams(const mobj_t *listener, const mobj_t *source, INT32 
 		if (reverse)
 			angle = InvAngle(angle);
 
-#ifdef SURROUND
-		// Produce a surround sound for angle from 105 till 255
-		if (surround.value == 1 && (angle > ANG105 && angle < ANG255 ))
-			*sep = SURROUND_SEP;
-		else
-#endif
-		{
-			angle >>= ANGLETOFINESHIFT;
+		angle >>= ANGLETOFINESHIFT;
 
-			// stereo separation
-			*sep = 128 - (FixedMul(S_STEREO_SWING, FINESINE(angle))>>FRACBITS);
-		}
+		// stereo separation
+		*sep = 128 - (FixedMul(S_STEREO_SWING, FINESINE(angle))>>FRACBITS);
 	}
 
 	// volume calculation
