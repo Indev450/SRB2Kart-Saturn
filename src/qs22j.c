@@ -18,11 +18,11 @@
 #include <stdint.h>
 #include "qs22j.h"
 
-#define INSORTTHRESH    5           // if n < this use insertion sort
-                                    // MUST be >= 2
-#define MIDTHRESH       20          // < this use middle as pivot
-#define MEDOF3THRESH    50          // < this use median-of-3 as pivot
-                                    // larger subfiles use med-of-3-medians
+#define INSORTTHRESH	5			// if n < this use insertion sort
+									// MUST be >= 2
+#define MIDTHRESH		20			// < this use middle as pivot
+#define MEDOF3THRESH	50			// < this use median-of-3 as pivot
+									// larger subfiles use med-of-3-medians
 
 #ifndef min
 #define min(a,b) (((a) < (b)) ? (a) : (b))
@@ -41,7 +41,7 @@ typedef void *pref_typ;
 #define SWAP(a, b) if (swap_type) swapf(a, b, size);\
 	else do {pref_typ t; ASWAP(*(pref_typ*)(a), *(pref_typ*)(b), t);} while (0)
 
-#define  COMP(a, b)  ((*compar)((void *)(a), (void *)(b)))
+#define COMP(a, b)  ((*compar)((void *)(a), (void *)(b)))
 
 static inline void swapbytes(void *a0, void *b0, size_t n)
 {
@@ -51,9 +51,9 @@ static inline void swapbytes(void *a0, void *b0, size_t n)
 
 static inline void swapdword(void *a0, void *b0, size_t n)
 {
+	(void)n;
 	DWORD *a = a0, *b = b0, t;
 	ASWAP(*a, *b, t);
-	(void)n;
 }
 
 static inline void swapdwords(void *a0, void *b0, size_t n)
@@ -64,9 +64,9 @@ static inline void swapdwords(void *a0, void *b0, size_t n)
 
 static inline void swapword(void *a0, void *b0, size_t n)
 {
+	(void)n;
 	WORD *a = a0, *b = b0, t;
 	ASWAP(*a, *b, t);
-	(void)n;
 }
 
 static inline void swapwords(void *a0, void *b0, size_t n)
