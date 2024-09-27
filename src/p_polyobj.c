@@ -28,6 +28,7 @@
 #include "r_main.h"
 #include "r_state.h"
 #include "r_defs.h"
+#include "qs22j.h"
 
 
 /*
@@ -580,7 +581,7 @@ static void Polyobj_findExplicit(polyobj_t *po)
 
 	// sort the array if necessary
 	if (numSegItems >= 2)
-		qsort(segitems, numSegItems, sizeof(segitem_t), Polyobj_segCompare);
+		qs22j(segitems, numSegItems, sizeof(segitem_t), Polyobj_segCompare);
 
 	// second loop: put the sorted segs into the polyobject
 	for (i = 0; i < numSegItems; ++i)
