@@ -1140,6 +1140,7 @@ mobj_t *P_SpawnGhostMobj(mobj_t *mobj)
 	ghost = P_SpawnMobj(mobj->x, mobj->y, mobj->z, MT_GHOST);
 
 	P_SetScale(ghost, mobj->scale);
+	ghost->scalespeed = mobj->scalespeed;
 	ghost->destscale = mobj->scale;
 
 	if (mobj->eflags & MFE_VERTICALFLIP)
@@ -1191,6 +1192,7 @@ mobj_t *P_SpawnGhostMobj(mobj_t *mobj)
 	ghost->old_roll = mobj->old_roll2;
 	ghost->old_sloperoll = mobj->old_sloperoll2;
 	ghost->old_slopepitch = mobj->old_slopepitch2;
+	ghost->old_scale = mobj->old_scale2;
 
 	return ghost;
 }
