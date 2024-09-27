@@ -217,7 +217,7 @@ static UINT8 *R_GenerateTexture(size_t texnum)
 	{
 		boolean holey = false;
 		patch = texture->patches;
-		realpatch = W_CacheLumpNumPwad(patch->wad, patch->lump, PU_CACHE);
+		realpatch = W_CacheLumpNumPwad(patch->wad, patch->lump, PU_LEVEL);
 
 		// Check the patch for holes.
 		if (texture->width > SHORT(realpatch->width) || texture->height > SHORT(realpatch->height))
@@ -247,8 +247,7 @@ static UINT8 *R_GenerateTexture(size_t texnum)
 		{
 			texture->holes = true;
 			blocksize = W_LumpLengthPwad(patch->wad, patch->lump);
-			block = Z_Calloc(blocksize, PU_STATIC, // will change tag at end of this function
-				&texturecache[texnum]);
+			block = Z_Calloc(blocksize, PU_LEVEL, &texturecache[texnum]);
 			M_Memcpy(block, realpatch, blocksize);
 			texturememory += blocksize;
 
@@ -268,7 +267,7 @@ static UINT8 *R_GenerateTexture(size_t texnum)
 	texture->holes = false;
 	blocksize = (texture->width * 4) + (texture->width * texture->height);
 	texturememory += blocksize;
-	block = Z_Malloc(blocksize+1, PU_STATIC, &texturecache[texnum]);
+	block = Z_Malloc(blocksize+1, PU_LEVEL, &texturecache[texnum]);
 
 	memset(block, 0xF7, blocksize+1); // Transparency hack
 
@@ -282,7 +281,7 @@ static UINT8 *R_GenerateTexture(size_t texnum)
 	// Composite the columns together.
 	for (i = 0, patch = texture->patches; i < texture->patchcount; i++, patch++)
 	{
-		realpatch = W_CacheLumpNumPwad(patch->wad, patch->lump, PU_CACHE);
+		realpatch = W_CacheLumpNumPwad(patch->wad, patch->lump, PU_LEVEL);
 		x1 = patch->originx;
 		x2 = x1 + SHORT(realpatch->width);
 
@@ -305,8 +304,6 @@ static UINT8 *R_GenerateTexture(size_t texnum)
 	}
 
 done:
-	// Now that the texture has been built in column cache, it is purgable from zone memory.
-	Z_ChangeTag(block, PU_CACHE);
 	return blocktex;
 }
 
@@ -356,7 +353,7 @@ UINT8 *R_GetColumn(fixed_t tex, INT32 col)
 //
 UINT8 *R_GetFlat(lumpnum_t flatlumpnum)
 {
-	return W_CacheLumpNum(flatlumpnum, PU_CACHE);
+	return W_CacheLumpNum(flatlumpnum, PU_LEVEL);
 }
 
 //
@@ -423,7 +420,7 @@ Rloadtextures (INT32 i, INT32 w)
 					continue; // If it is then SKIP IT
 			}
 
-			patchlump = W_CacheLumpNumPwad(wadnum, lumpnum, PU_CACHE);
+			patchlump = W_CacheLumpNumPwad(wadnum, lumpnum, PU_STATIC);
 
 			//CONS_Printf("\n\"%s\" is a single patch, dimensions %d x %d",W_CheckNameForNumPwad((UINT16)w,texstart+j),patchlump->width, patchlump->height);
 			texture = textures[i] = Z_Calloc(sizeof(texture_t) + sizeof(texpatch_t), PU_STATIC, NULL);
