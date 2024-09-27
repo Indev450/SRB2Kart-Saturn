@@ -70,24 +70,6 @@ player_t *viewplayer;
 // You can thank and/or curse JTE for these.
 UINT8 portalrender;
 sector_t *portalcullsector;
-typedef struct portal_pair
-{
-	INT32 line1;
-	INT32 line2;
-	UINT8 pass;
-	struct portal_pair *next;
-
-	fixed_t viewx;
-	fixed_t viewy;
-	fixed_t viewz;
-	angle_t viewangle;
-
-	INT32 start;
-	INT32 end;
-	INT16 *ceilingclip;
-	INT16 *floorclip;
-	fixed_t *frontscale;
-} portal_pair;
 portal_pair *portal_base, *portal_cap;
 line_t *portalclipline;
 INT32 portalclipstart, portalclipend;
@@ -1613,7 +1595,7 @@ void R_AddPortal(INT32 line1, INT32 line2, INT32 x1, INT32 x2)
 	portal->start = x1;
 	portal->end = x2;
 
-	portalline = true; // this tells R_StoreWallRange that curline is a portal seg
+	g_portal = portal; // this tells R_StoreWallRange that curline is a portal seg
 
 	portal->viewx = viewx;
 	portal->viewy = viewy;

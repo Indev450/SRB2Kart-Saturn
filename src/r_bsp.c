@@ -28,7 +28,7 @@ side_t *sidedef;
 line_t *linedef;
 sector_t *frontsector;
 sector_t *backsector;
-boolean portalline; // is curline a portal seg?
+portal_pair *g_portal; // is curline a portal seg?
 
 // very ugly realloc() of drawsegs at run-time, I upped it to 512
 // instead of 256.. and someone managed to send me a level with
@@ -417,7 +417,7 @@ static void R_AddLine(seg_t *line)
 	angle_t angle1, angle2, span, tspan;
 	static sector_t tempsec;
 
-	portalline = false;
+	g_portal = NULL;
 
 	if (line->polyseg && !(line->polyseg->flags & POF_RENDERSIDES))
 		return;
