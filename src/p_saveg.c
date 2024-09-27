@@ -3042,7 +3042,6 @@ static void P_RelinkPointers(void)
 {
 	thinker_t *currentthinker;
 	mobj_t *mobj;
-	UINT32 temp;
 
 	// use info field (value = oldposition) to relink mobjs
 	for (currentthinker = thinkercap.next; currentthinker != &thinkercap;
