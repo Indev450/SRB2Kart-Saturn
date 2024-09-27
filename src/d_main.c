@@ -865,7 +865,7 @@ void D_SRB2Loop(void)
 		else
 			menuInputDelayTimer = 0;
 
-		if (!dedicated && renderisnewtic) // idk does this need dedi check??
+		if (renderisnewtic) // idk does this need dedi check??
 			D_DeviceLEDTick();
 
 		// Fully completed frame made.
