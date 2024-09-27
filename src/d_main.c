@@ -820,8 +820,6 @@ void D_SRB2Loop(void)
 		HW3S_EndFrameUpdate();
 #endif
 
-		LUA_Step();
-
 #ifdef HAVE_DISCORDRPC
 		if (! dedicated)
 		{
