@@ -12,7 +12,6 @@
 /// \brief hardware renderer, using the standard HardWareRender driver DLL for SRB2
 
 #include <math.h>
-#include <stdlib.h> // qsort
 
 #include "../doomstat.h"
 #include "../doomdef.h"
@@ -4252,7 +4251,7 @@ static void HWR_SortVisSprites(void)
 		gr_vsprorder[i] = HWR_GetVisSprite(i);
 	}
 
-	qsort(gr_vsprorder, gr_visspritecount, sizeof(gr_vissprite_t*), CompareVisSprites);
+	qs22j(gr_vsprorder, gr_visspritecount, sizeof(gr_vissprite_t*), CompareVisSprites);
 }
 
 // A drawnode is something that points to a 3D floor, 3D side, or masked
