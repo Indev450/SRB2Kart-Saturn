@@ -3276,6 +3276,7 @@ void CL_Reset(void)
 	curl_running = false;
 	http_source[0] = '\0';
 #endif
+	G_ResetAllDeviceRumbles();
 
 	// D_StartTitle should get done now, but the calling function will handle it
 }
