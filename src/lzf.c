@@ -451,16 +451,8 @@ lzf_compress (const void *const in_data, size_t in_len,
 	* and fails to support both assumptions is windows 64 bit, we make a
 	* special workaround for it.
 	*/
-#if defined (_WIN32) && defined (_M_X64)
-	/* workaround for missing POSIX compliance */
-#if __GNUC__
-	unsigned long long off;
-#else
-	unsigned __int64 off;
-#endif
-#else
-	unsigned long off;
-#endif
+
+	size_t off;
 	unsigned int hval;
 	int lit;
 
@@ -498,7 +490,7 @@ lzf_compress (const void *const in_data, size_t in_len,
 		{
 			/* match found at *ref++ */
 			unsigned int len = 2;
-			unsigned int maxlen = in_end - ip - len;
+			size_t maxlen = in_end - ip - len;
 			maxlen = maxlen > LZF_MAX_REF ? LZF_MAX_REF : maxlen;
 
 			if (expect_false (op + 3 + 1 >= out_end)) /* first a faster conservative test */
