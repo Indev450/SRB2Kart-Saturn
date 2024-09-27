@@ -1002,7 +1002,7 @@ fixed_t P_GetPlayerSpinHeight(player_t *player)
 // Returns true if player is
 // on the local machine.
 //
-boolean P_IsLocalPlayer(player_t *player)
+boolean P_IsLocalPlayer(const player_t *player)
 {
 	UINT8 i;
 
@@ -1026,7 +1026,7 @@ boolean P_IsLocalPlayer(player_t *player)
 // Returns true if player is
 // currently being watched.
 //
-boolean P_IsDisplayPlayer(player_t *player)
+boolean P_IsDisplayPlayer(const player_t *player)
 {
 	UINT8 i;
 
