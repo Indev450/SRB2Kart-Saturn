@@ -1392,6 +1392,7 @@ void S_LoadMusicDefs(UINT16 wadnum)
 					def = Z_Calloc(sizeof (musicdef_t), PU_STATIC, NULL);
 					STRBUFCPY(def->name, value);
 					strlwr(def->name);
+					def->hash = quickncasehash (def->name, 6);
 					if (prev != NULL)
 						prev->next = def;
 					//CONS_Printf("S_LoadMusicDefs: Added song '%s'\n", def->name);
@@ -1649,19 +1650,20 @@ void S_InitMTDefs(void)
 //
 musicdef_t *S_FindMusicCredit(const char *musname)
 {
-	musicdef_t *def = musicdefstart;
+	UINT32 hash = quickncasehash (musname, 6);
+	musicdef_t *def;
 
 	if (!def) // No definitions
 		return NULL;
 
-	while (def)
+	for (def = musicdefstart; def; def = def->next)
 	{
-		if (!stricmp(def->name, musname))
-		{
-			return def;
-		}
-		else
-			def = def->next;
+		if (hash != def->hash)
+			continue;
+		if (stricmp(def->name, musname))
+			continue;
+
+		return def;
 	}
 
 	return NULL;
