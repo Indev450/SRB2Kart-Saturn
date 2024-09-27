@@ -346,11 +346,8 @@ boolean P_CheckSight(mobj_t *t1, mobj_t *t2)
 	los_t los;
 
 	// First check for trivial rejection.
-	if (!t1 || !t2)
+	if (P_MobjWasRemoved(t1) == true || P_MobjWasRemoved(t2) == true)
 		return false;
-
-	I_Assert(!P_MobjWasRemoved(t1));
-	I_Assert(!P_MobjWasRemoved(t2));
 
 	if (!t1->subsector || !t2->subsector
 	|| !t1->subsector->sector || !t2->subsector->sector)
