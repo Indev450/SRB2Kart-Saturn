@@ -1625,6 +1625,14 @@ static void R_ProjectSprite(mobj_t *thing)
 					? interp.angle + (ang >= ANGLE_180 ? -ANGLE_90 : ANGLE_90)
 					: R_PointToAngle(interp.x, interp.y));
 
+			// Krangle contrast in 3P/4P because scalelight
+			// scales differently depending on the screen
+			// width (which is halved in 3P/4P).
+			if (splitscreen > 1)
+			{
+				extralight *= 2;
+			}
+
 			// Less change in contrast in dark sectors
 			extralight = FixedMul(extralight, min(max(0, lightnum), LIGHTLEVELS - 1) * FRACUNIT / (LIGHTLEVELS - 1));
 
