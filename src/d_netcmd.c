@@ -3228,6 +3228,8 @@ static void Got_Pause(UINT8 **cp, INT32 playernum)
 		else
 			S_ResumeAudio();
 	}
+
+	G_ResetAllDeviceRumbles();
 }
 
 static void Command_ReplayMarker(void)

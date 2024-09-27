@@ -1600,6 +1600,8 @@ void G_DoLoadLevel(boolean resetplayer)
 
 	// clear hud messages remains (usually from game startup)
 	CON_ClearHUD();
+
+	G_ResetAllDeviceRumbles();
 }
 
 static INT32 pausedelay = 0;
@@ -3031,6 +3033,8 @@ void G_AddPlayer(INT32 playernum)
 
 void G_ExitLevel(void)
 {
+	G_ResetAllDeviceRumbles();
+
 	if (gamestate == GS_LEVEL)
 	{
 		gameaction = ga_completed;
