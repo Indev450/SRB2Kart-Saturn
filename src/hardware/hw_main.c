@@ -195,7 +195,7 @@ static void CV_grshaders_OnChange(void)
 {
 	ONLY_IF_GL_LOADED
 	HWR_SetShaderState();
-	if ((cv_grpaletterendering.value))
+	if (cv_grpaletterendering.value)
 	{
 		// can't do palette rendering without shaders, so update the state if needed
 		HWR_TogglePaletteRendering();
@@ -205,7 +205,6 @@ static void CV_grshaders_OnChange(void)
 static void CV_grpaletterendering_OnChange(void)
 {
 	ONLY_IF_GL_LOADED
-
 	if (cv_grscreentextures.value != 2) // can't do palette rendering without screen textures
 		CV_Set(&cv_grpaletterendering, "Off");
 
@@ -573,11 +572,7 @@ void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *col
 	Surface->LightInfo.light_level = light_level;
 	Surface->LightInfo.fade_start = (colormap != NULL) ? colormap->fadestart : 0;
 	Surface->LightInfo.fade_end = (colormap != NULL) ? colormap->fadeend : 31;
-	
-	if (HWR_ShouldUsePaletteRendering())
-		Surface->LightTableId = HWR_GetLightTableID(colormap);
-	else
-		Surface->LightTableId = 0;
+	Surface->LightTableId = HWR_ShouldUsePaletteRendering() ? HWR_GetLightTableID(colormap) : 0;
 }
 
 UINT8 HWR_FogBlockAlpha(INT32 light, extracolormap_t *colormap) // Let's see if this can work
@@ -3382,13 +3377,13 @@ static gr_vissprite_t gr_overflowsprite;
 
 static gr_vissprite_t *HWR_GetVisSprite(UINT32 num)
 {
-		UINT32 chunk = num >> VISSPRITECHUNKBITS;
+	UINT32 chunk = num >> VISSPRITECHUNKBITS;
 
-		// Allocate chunk if necessary
-		if (!gr_visspritechunks[chunk])
-			Z_Malloc(sizeof(gr_vissprite_t) * VISSPRITESPERCHUNK, PU_LEVEL, &gr_visspritechunks[chunk]);
+	// Allocate chunk if necessary
+	if (!gr_visspritechunks[chunk])
+		Z_Malloc(sizeof(gr_vissprite_t) * VISSPRITESPERCHUNK, PU_LEVEL, &gr_visspritechunks[chunk]);
 
-		return gr_visspritechunks[chunk] + (num & VISSPRITEINDEXMASK);
+	return gr_visspritechunks[chunk] + (num & VISSPRITEINDEXMASK);
 }
 
 static gr_vissprite_t *HWR_NewVisSprite(void)
@@ -3764,15 +3759,13 @@ static void HWR_SplitSprite(gr_vissprite_t *spr)
 	HWR_RotateSpritePolyToAim(spr, baseWallVerts, false);
 
 	// push it toward the camera to mitigate floor-clipping sprites
+	float sprdist = sqrtf((spr->x1 - gr_viewx)*(spr->x1 - gr_viewx) + (spr->z1 - gr_viewy)*(spr->z1 - gr_viewy) + (spr->gzt - gr_viewz)*(spr->gzt - gr_viewz));
+	float distfact = ((2.0f*spr->dispoffset) + 20.0f) / sprdist;
+	for (i = 0; i < 4; i++)
 	{
-		float sprdist = sqrtf((spr->x1 - gr_viewx)*(spr->x1 - gr_viewx) + (spr->z1 - gr_viewy)*(spr->z1 - gr_viewy) + (spr->gzt - gr_viewz)*(spr->gzt - gr_viewz));
-		float distfact = ((2.0f*spr->dispoffset) + 20.0f) / sprdist;
-		for (i = 0; i < 4; i++)
-		{
-			baseWallVerts[i].x += (gr_viewx - baseWallVerts[i].x)*distfact;
-			baseWallVerts[i].z += (gr_viewy - baseWallVerts[i].z)*distfact;
-			baseWallVerts[i].y += (gr_viewz - baseWallVerts[i].y)*distfact;
-		}
+		baseWallVerts[i].x += (gr_viewx - baseWallVerts[i].x)*distfact;
+		baseWallVerts[i].z += (gr_viewy - baseWallVerts[i].z)*distfact;
+		baseWallVerts[i].y += (gr_viewz - baseWallVerts[i].y)*distfact;
 	}
 
 	realtop = top = baseWallVerts[3].y;
@@ -3957,6 +3950,7 @@ static void HWR_DrawSprite(gr_vissprite_t *spr)
 	FOutVector wallVerts[4];
 	GLPatch_t *gpatch; // sprite patch converted to hardware
 	FSurfaceInfo Surf;
+	FBITFIELD blend = 0;
 	
 	INT32 shader = SHADER_NONE;
 
@@ -4039,16 +4033,14 @@ static void HWR_DrawSprite(gr_vissprite_t *spr)
 	HWR_RotateSpritePolyToAim(spr, wallVerts, false);
 
 	// push it toward the camera to mitigate floor-clipping sprites
+	float sprdist = sqrtf((spr->x1 - gr_viewx)*(spr->x1 - gr_viewx) + (spr->z1 - gr_viewy)*(spr->z1 - gr_viewy) + (spr->gzt - gr_viewz)*(spr->gzt - gr_viewz));
+	float distfact = ((2.0f*spr->dispoffset) + 20.0f) / sprdist;
+	size_t i;
+	for (i = 0; i < 4; i++)
 	{
-		float sprdist = sqrtf((spr->x1 - gr_viewx)*(spr->x1 - gr_viewx) + (spr->z1 - gr_viewy)*(spr->z1 - gr_viewy) + (spr->gzt - gr_viewz)*(spr->gzt - gr_viewz));
-		float distfact = ((2.0f*spr->dispoffset) + 20.0f) / sprdist;
-		size_t i;
-		for (i = 0; i < 4; i++)
-		{
-			wallVerts[i].x += (gr_viewx - wallVerts[i].x)*distfact;
-			wallVerts[i].z += (gr_viewy - wallVerts[i].z)*distfact;
-			wallVerts[i].y += (gr_viewz - wallVerts[i].y)*distfact;
-		}
+		wallVerts[i].x += (gr_viewx - wallVerts[i].x)*distfact;
+		wallVerts[i].z += (gr_viewy - wallVerts[i].z)*distfact;
+		wallVerts[i].y += (gr_viewz - wallVerts[i].y)*distfact;
 	}
 
 	// This needs to be AFTER the shadows so that the regular sprites aren't drawn completely black.
@@ -4065,38 +4057,35 @@ static void HWR_DrawSprite(gr_vissprite_t *spr)
 
 	HWR_Lighting(&Surf, lightlevel, colormap);
 
+	if (!cv_translucency.value) // translucency disabled
 	{
-		FBITFIELD blend = 0;
-		if (!cv_translucency.value) // translucency disabled
-		{
-			Surf.PolyColor.s.alpha = 0xFF;
-			blend = PF_Translucent|PF_Occlude;
-		}
-		else if (spr->mobj->flags2 & MF2_SHADOW)
-		{
-			Surf.PolyColor.s.alpha = 0x40;
-			blend = PF_Translucent;
-		}
-		else if (spr->mobj->frame & FF_TRANSMASK)
-			blend = HWR_TranstableToAlpha((spr->mobj->frame & FF_TRANSMASK)>>FF_TRANSSHIFT, &Surf);
-		else
-		{
-			// BP: i agree that is little better in environement but it don't
-			//     work properly under glide nor with fogcolor to ffffff :(
-			// Hurdler: PF_Environement would be cool, but we need to fix
-			//          the issue with the fog before
-			Surf.PolyColor.s.alpha = 0xFF;
-			blend = PF_Translucent|PF_Occlude;
-		}
-
-		if (HWR_UseShader())
-		{
-			shader = SHADER_SPRITE;
-			blend |= PF_ColorMapped;
-		}
-
-		HWR_ProcessPolygon(&Surf, wallVerts, 4, blend|PF_Modulated, shader, false);
+		Surf.PolyColor.s.alpha = 0xFF;
+		blend = PF_Translucent|PF_Occlude;
 	}
+	else if (spr->mobj->flags2 & MF2_SHADOW)
+	{
+		Surf.PolyColor.s.alpha = 0x40;
+		blend = PF_Translucent;
+	}
+	else if (spr->mobj->frame & FF_TRANSMASK)
+		blend = HWR_TranstableToAlpha((spr->mobj->frame & FF_TRANSMASK)>>FF_TRANSSHIFT, &Surf);
+	else
+	{
+		// BP: i agree that is little better in environement but it don't
+		//     work properly under glide nor with fogcolor to ffffff :(
+		// Hurdler: PF_Environement would be cool, but we need to fix
+		//          the issue with the fog before
+		Surf.PolyColor.s.alpha = 0xFF;
+		blend = PF_Translucent|PF_Occlude;
+	}
+
+	if (HWR_UseShader())
+	{
+		shader = SHADER_SPRITE;
+		blend |= PF_ColorMapped;
+	}
+
+	HWR_ProcessPolygon(&Surf, wallVerts, 4, blend|PF_Modulated, shader, false);
 }
 
 // Sprite drawer for precipitation
@@ -4467,8 +4456,9 @@ static void HWR_RenderDrawNodes(void)
 
 			if (!(plane->blend & PF_NoTexture))
 				HWR_GetFlat(plane->lumpnum,  R_NoEncore(plane->FOFSector, plane->isceiling));
+
 			HWR_RenderPlane(NULL, plane->xsub, plane->isceiling, plane->fixedheight, plane->blend, plane->lightlevel,
-				plane->lumpnum, plane->FOFSector, plane->alpha, plane->planecolormap);
+							plane->lumpnum, plane->FOFSector, plane->alpha, plane->planecolormap);
 		}
 		else if (drawnode->type == DRAWNODE_POLYOBJECT_PLANE)
 		{
@@ -4479,8 +4469,9 @@ static void HWR_RenderDrawNodes(void)
 
 			if (!(polyplane->blend & PF_NoTexture))
 				HWR_GetFlat(polyplane->lumpnum,  R_NoEncore(polyplane->FOFSector, polyplane->isceiling));
+
 			HWR_RenderPolyObjectPlane(polyplane->polysector, polyplane->isceiling, polyplane->fixedheight, polyplane->blend, polyplane->lightlevel,
-				polyplane->lumpnum, polyplane->FOFSector, polyplane->alpha, polyplane->planecolormap);
+									polyplane->lumpnum, polyplane->FOFSector, polyplane->alpha, polyplane->planecolormap);
 		}
 		else if (drawnode->type == DRAWNODE_WALL)
 		{
@@ -4488,8 +4479,9 @@ static void HWR_RenderDrawNodes(void)
 
 			if (!(wall->blend & PF_NoTexture))
 				HWR_GetTexture(wall->texnum, wall->noencore);
+
 			HWR_RenderWall(wall->wallVerts, &wall->Surf, wall->blend, wall->fogwall,
-				wall->lightlevel, wall->wallcolormap);
+						wall->lightlevel, wall->wallcolormap);
 		}
 	}
 		
@@ -4799,8 +4791,8 @@ void HWR_ProjectSprite(mobj_t *thing)
 			flip ^= (1<<rot);
 	}
 
-	if (thing->skin && ((skin_t *)( (thing->localskin) ? thing->localskin : thing->skin ))->flags & SF_HIRES)
-		this_scale *= FIXED_TO_FLOAT(((skin_t *)( (thing->localskin) ? thing->localskin : thing->skin ))->highresscale);
+	if (thing->skin && ((skin_t *)(thing->localskin ? thing->localskin : thing->skin))->flags & SF_HIRES)
+		this_scale *= FIXED_TO_FLOAT(((skin_t *)(thing->localskin ? thing->localskin : thing->skin))->highresscale);
 
 	spr_width = spritecachedinfo[lumpoff].width;
 	spr_height = spritecachedinfo[lumpoff].height;
@@ -4921,6 +4913,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 		FIXED_TO_FLOAT(interp.z) >= FIXED_TO_FLOAT(sectors[heightsec].floorheight) :
 		gzt < FIXED_TO_FLOAT(sectors[heightsec].floorheight))
 			return;
+
 		if (gr_viewz > FIXED_TO_FLOAT(sectors[phs].ceilingheight) ?
 		gzt < FIXED_TO_FLOAT(sectors[heightsec].ceilingheight) && gr_viewz >= FIXED_TO_FLOAT(sectors[heightsec].ceilingheight) :
 		FIXED_TO_FLOAT(interp.z) >= FIXED_TO_FLOAT(sectors[heightsec].ceilingheight))
@@ -5377,9 +5370,10 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, playe
 	gl_portallist_t portallist;
 	gl_portal_t *portal;
 	gl_portal_t *gl_portal_temp;
-	portallist.base = portallist.cap = NULL;
 	const boolean skybox = (skyboxmo[0] && cv_skybox.value);
-	boolean useportals = gr_maphasportals && cv_grportals.value && allow_portals;
+	const boolean useportals = cv_grportals.value && gr_maphasportals && allow_portals;
+
+	portallist.base = portallist.cap = NULL;
 
 	if (useportals && stencil_level < cv_maxportals.value) // if recursion limit is not reached
 	{
@@ -5388,6 +5382,7 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, playe
 		gr_portal = GRPORTAL_SEARCH;
 
 		HWR_ClearClipper();
+
 		if (!rootportal)
 			portalclipline = NULL;
 		else
@@ -5845,7 +5840,7 @@ void HWR_DoPostProcessor(player_t *player)
 
 	// Armageddon Blast Flash!
 	// Could this even be considered postprocessor?
-	if ((player->flashcount) && (!HWR_PalRenderFlashpal()))
+	if (!HWR_PalRenderFlashpal() && player->flashcount)
 	{
 		FOutVector      v[4];
 		FSurfaceInfo Surf;

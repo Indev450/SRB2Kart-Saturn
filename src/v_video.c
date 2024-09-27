@@ -1611,21 +1611,19 @@ void V_DrawFadeScreen(UINT16 color, UINT8 strength)
     }
 #endif
 
-    {
-        const UINT8 *fadetable =
-			(color > 0xFFF0) // Grab a specific colormap palette?
-			? R_GetTranslationColormap(color | 0xFFFF0000, strength, GTC_CACHE)
-			: ((color & 0xFF00) // Color is not palette index?
-			? ((UINT8 *)colormaps + strength*256) // Do COLORMAP fade.
-			: ((UINT8 *)transtables + ((9-strength)<<FF_TRANSSHIFT) + color*256)); // Else, do TRANSMAP** fade.
-        const UINT8 *deststop = screens[0] + vid.rowbytes * vid.height;
-        UINT8 *buf = screens[0];
+	const UINT8 *fadetable =
+		(color > 0xFFF0) // Grab a specific colormap palette?
+		? R_GetTranslationColormap(color | 0xFFFF0000, strength, GTC_CACHE)
+		: ((color & 0xFF00) // Color is not palette index?
+		? ((UINT8 *)colormaps + strength*256) // Do COLORMAP fade.
+		: ((UINT8 *)transtables + ((9-strength)<<FF_TRANSSHIFT) + color*256)); // Else, do TRANSMAP** fade.
+	const UINT8 *deststop = screens[0] + vid.rowbytes * vid.height;
+	UINT8 *buf = screens[0];
 
-        // heavily simplified -- we don't need to know x or y
-        // position when we're doing a full screen fade
-        for (; buf < deststop; ++buf)
-            *buf = fadetable[*buf];
-    }
+	// heavily simplified -- we don't need to know x or y
+	// position when we're doing a full screen fade
+	for (; buf < deststop; ++buf)
+		*buf = fadetable[*buf];
 }
 
 // Simple translucency with one color, over a set number of lines starting from the top.
