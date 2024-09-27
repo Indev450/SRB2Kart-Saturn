@@ -230,6 +230,7 @@ endif
 
 ifdef LINUX
 UNIXCOMMON=1
+NOOBJDUMP=1
 ifndef NOGME
 HAVE_LIBGME=1
 endif
