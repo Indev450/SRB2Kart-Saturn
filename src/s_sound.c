@@ -1333,39 +1333,36 @@ ReadMusicDefFields (UINT16 wadnum, int line, char *stoken, musicdef_t **defp)
 
 			textline = value;
 
+// turn _ into spaces.
+#define ADDDEF(field)\
+	STRBUFCPY(def->field, textline);\
+	for (textline = def->field; *textline; textline++)\
+		if (*textline == '_') *textline = ' ';
+
 			if (!stricmp(stoken, "usage"))
 			{
-				STRBUFCPY(def->usage, textline);
-				for (textline = def->usage; *textline; textline++)
-					if (*textline == '_') *textline = ' '; // turn _ into spaces.
+				ADDDEF(usage);
 			}
 			else if (!stricmp(stoken, "source"))
 			{
-				STRBUFCPY(def->source, textline);
-				for (textline = def->source; *textline; textline++)
-					if (*textline == '_') *textline = ' '; // turn _ into spaces.
+				ADDDEF(source);
 			}
 			else if (!stricmp(stoken, "title"))
 			{
 				def->use_info = true;
-				STRBUFCPY(def->title, textline);
-				for (textline = def->title; *textline; textline++)
-					if (*textline == '_') *textline = ' '; // turn _ into spaces.
+				ADDDEF(title);
 			}
 			else if (!stricmp(stoken, "alttitle"))
 			{
-				STRBUFCPY(def->alttitle, textline);
-				for (textline = def->alttitle; *textline; textline++)
-					if (*textline == '_') *textline = ' '; // turn _ into spaces.
+				ADDDEF(alttitle);
 			}
 			else if (!stricmp(stoken, "authors"))
 			{
-				STRBUFCPY(def->authors, textline);
-				for (textline = def->authors; *textline; textline++)
-					if (*textline == '_') *textline = ' '; // turn _ into spaces.
+				ADDDEF(authors);
 			}
 			else
 				CONS_Alert(CONS_WARNING, "MUSICDEF: Invalid field '%s'. (file %s, line %d)\n", stoken, wadfiles[wadnum]->filename, line);
+#undef ADDDEF
 		}
 	}
 
