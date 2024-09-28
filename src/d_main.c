@@ -1861,7 +1861,6 @@ void D_SRB2Main(void)
 	}
 
 	S_InitMusicDefs();
-	S_InitMTDefs();
 
 	CONS_Printf("ST_Init(): Init status bar.\n");
 	ST_Init();
