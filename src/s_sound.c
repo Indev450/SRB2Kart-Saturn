@@ -1653,9 +1653,6 @@ musicdef_t *S_FindMusicCredit(const char *musname)
 	UINT32 hash = quickncasehash (musname, 6);
 	musicdef_t *def;
 
-	if (!def) // No definitions
-		return NULL;
-
 	for (def = musicdefstart; def; def = def->next)
 	{
 		if (hash != def->hash)
