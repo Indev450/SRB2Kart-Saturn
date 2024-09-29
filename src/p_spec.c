@@ -5220,6 +5220,8 @@ void P_SpawnSpecials(INT32 fromnetsave, boolean reloadinggamestate)
 		curWeather = PRECIP_STORM_NORAIN;
 	else if (mapheaderinfo[gamemap-1]->weather == 6) // storm w/o lightning
 		curWeather = PRECIP_STORM_NOSTRIKES;
+	else if (mapheaderinfo[gamemap-1]->weather == 4) // blank
+		curWeather = PRECIP_BLANK;
 	else
 		curWeather = PRECIP_NONE;
 
