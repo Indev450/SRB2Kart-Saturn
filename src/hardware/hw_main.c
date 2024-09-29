@@ -4626,7 +4626,7 @@ static void HWR_AddPrecipitationSprites(void)
 		drawdist = (fixed_t)(cv_drawdist_precip.value) * precipscale;
 
 	// No to infinite precipitation draw distance.
-	if (drawdist == 0)
+	if (drawdist == 0 || curWeather == PRECIP_BLANK || curWeather == PRECIP_STORM_NORAIN)
 	{
 		return;
 	}
