@@ -10237,6 +10237,7 @@ void P_SpawnPrecipitation(void)
 			// Not in a sector with visible sky?
 			if (precipsector->sector->ceilingpic != skyflatnum)
 				continue;
+
 			// Exists, but is too small for reasonable precipitation.
 			if (!(precipsector->sector->floorheight <= precipsector->sector->ceilingheight - (32<<FRACBITS)))
 				continue;
@@ -10382,10 +10383,7 @@ void P_PrecipitationEffects(void)
 		volume = 255 - (closedist>>(FRACBITS+2));
 	}
 
-	if (volume < 0)
-		volume = 0;
-	else if (volume > 255)
-		volume = 255;
+	volume = CLAMP(volume, 0, 255);
 
 	if (sounds_rain && (!leveltime || leveltime % 80 == 1))
 		S_StartSoundAtVolume(players[displayplayers[0]].mo, sfx_rainin, volume);
