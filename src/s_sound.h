@@ -103,6 +103,8 @@ void S_ClearSfx(void);
 void S_Start(void);
 void M_Start(void);
 
+void S_KeepMusic(void);
+
 // Stops music and restarts it from same position. Used for instant applying changes to amiga filters.
 void S_RestartMusic(void);
 

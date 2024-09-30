@@ -1946,8 +1946,7 @@ boolean S_FadeOutStopMusic(UINT32 ms)
 	return I_FadeSong(0, ms, &S_StopMusic);
 }
 
-
-static boolean S_KeepMusic(const char *mapmusicname)
+/*static boolean S_KeepMusic(void)
 {
 	//if (!cv_keepmusic.value)
 	//return false;
@@ -1955,16 +1954,50 @@ static boolean S_KeepMusic(const char *mapmusicname)
 	// should i compare songs or maps?
 	static char oldmusname[7] = "";
 
-	if (strcmp(music_name, mapmusicname) != 0)
+	if (strcmp(music_name, mapmusname) != 0)
 		return false;
 
-	if (strcmp(oldmusname, mapmusicname) == 0)
+	if (strcmp(oldmusname, mapmusname) == 0)
 		return true;
 
-	strncpy(oldmusname, mapmusicname, 7);
+	strncpy(oldmusname, mapmusname, 7);
 	oldmusname[6] = '\0';
 
 	return false;
+}*/
+
+static INT16 oldmap = 0;
+static INT32 oldencore = 0;
+static boolean keepmusic = false;
+
+void S_KeepMusic(void)
+{
+	//if (!cv_keepmusic.value)
+	//return false;
+
+	//this one compares map and encoremode instead of the music itself
+	//makes tunes work and stuff
+
+	keepmusic = false;
+
+	//dont keep the intro "sound" lmao
+	if (strcmp(music_name, (encoremode ? "estart" : "kstart")) == 0)
+		return;
+
+	if (oldencore != cv_kartencore.value)
+	{
+		oldencore = cv_kartencore.value;
+		return;
+	}
+
+	// we on the same map? keep it
+	if (oldmap == gamemap)
+	{
+		keepmusic = true;
+		return;
+	}
+
+	oldmap = gamemap;
 }
 
 /// ------------------------
@@ -1987,7 +2020,7 @@ void S_Start(void)
 		mapmusresume = 0;
 	}
 
-	if (S_KeepMusic(mapmusname))
+	if (keepmusic)
 		return;
 
 	/*if (cv_skipintromusic.value)
@@ -2022,7 +2055,7 @@ void M_Start(void)
 		return;
 	}*/
 
-	if (S_KeepMusic(mapmusname))
+	if (keepmusic)
 		return;
 
 	// The GO! sound stops the level start ambience
