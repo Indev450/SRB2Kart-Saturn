@@ -4368,6 +4368,7 @@ void G_InitNew(UINT8 pencoremode, const char *mapname, boolean resetplayer, bool
 	else
 	{
 		LUAh_MapChange(gamemap);
+		S_KeepMusic();
 		G_DoLoadLevel(resetplayer);
 	}
 
