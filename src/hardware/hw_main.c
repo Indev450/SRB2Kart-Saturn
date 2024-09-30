@@ -4628,6 +4628,7 @@ static void HWR_AddPrecipitationSprites(void)
 	// No to infinite precipitation draw distance.
 	if (drawdist == 0 || curWeather == PRECIP_BLANK || curWeather == PRECIP_STORM_NORAIN)
 	{
+		CONS_Printf("weather = %d\n", curWeather);
 		return;
 	}
 
