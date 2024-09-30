@@ -2135,7 +2135,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 			if (keepmusic && (leveltime < (starttime + TICRATE))) //why check for starttime? cause encore music Zzz...
 				return;
 
-			if (ignoremusicchanges && (leveltime < (starttime + TICRATE) && !fromlapexec)) // keep lap music intanct tho
+			if (ignoremusicchanges && (leveltime > (starttime + TICRATE) && !fromlapexec)) // keep lap music intanct tho
 				return;
 
 			// console player only unless NOCLIMB is set
