@@ -31,6 +31,7 @@ set(SRB2_CORE_SOURCES
 	m_cond.c
 	m_fixed.c
 	m_menu.c
+	m_textinput.c
 	m_misc.c
 	m_perfstats.c
 	m_queue.c
@@ -99,6 +100,7 @@ set(SRB2_CORE_HEADERS
 	m_dllist.h
 	m_fixed.h
 	m_menu.h
+	m_textinput.h
 	m_misc.h
 	m_queue.h
 	m_perfstats.h
