@@ -2127,7 +2127,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 			break;
 
 		case 413: // Change music
-			//if (ignoremusicchanges)
+			//if (ignoremusicchanges && (leveltime < (starttime + (TICRATE/2)))) //why check for starttime? cause encore music Zzz...
 				//return;
 
 			// console player only unless NOCLIMB is set
