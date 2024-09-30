@@ -1946,6 +1946,28 @@ boolean S_FadeOutStopMusic(UINT32 ms)
 	return I_FadeSong(0, ms, &S_StopMusic);
 }
 
+
+static boolean S_KeepMusic(const char *mapmusicname)
+{
+	//if (!cv_keepmusic.value)
+	//return false;
+
+	// should i compare songs or maps?
+	// comparing songs makes this alot easier honestly
+	static char oldmusname[7] = "";
+
+	if (strcmp(music_name, mapmusicname) != 0)
+		return false;
+
+	if (strcmp(oldmusname, mapmusicname) == 0)
+		return true;
+
+	strncpy(oldmusname, mapmusicname, 7);
+	oldmusname[6] = '\0';
+
+	return false;
+}
+
 /// ------------------------
 /// Init & Others
 /// ------------------------
@@ -1966,6 +1988,16 @@ void S_Start(void)
 		mapmusresume = 0;
 	}
 
+	if (S_KeepMusic(mapmusname))
+		return;
+
+	/*if (cv_skipintromusic.value)
+	{
+		S_StopMusic();
+		S_ChangeMusicEx(mapmusname, mapmusflags, true, mapmusposition, 0, 0);
+		return;
+	}*/
+
 	S_StopMusic();
 
 	if (leveltime < (starttime + (TICRATE/2))) // SRB2Kart
@@ -1975,7 +2007,21 @@ void S_Start(void)
 
 void M_Start(void)
 {
-	if (leveltime > (starttime + (TICRATE/2)))
+	// need to be after race starts so "certain" maps don´t break Zzz...
+	//ignoremusicchanges = cv_ignoremusicchanges.value && (leveltime > (starttime + (TICRATE/2)));
+
+	//no need to constantly run this after race has started
+	//but let it run atleast half a tic after map music started to let shit update lmao
+	if (leveltime > (starttime + TICRATE))
+		return;
+
+	/*if (cv_skipintromusic.value && leveltime == (starttime + (TICRATE/2)))
+	{
+		S_ShowMusicCredit();
+		return;
+	}*/
+
+	if (S_KeepMusic(mapmusname))
 		return;
 
 	// The GO! sound stops the level start ambience
@@ -1989,6 +2035,7 @@ void M_Start(void)
 		S_ShowMusicCredit();
 	}
 }
+
 
 void S_RestartMusic(void)
 {
