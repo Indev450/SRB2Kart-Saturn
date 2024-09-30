@@ -2169,13 +2169,28 @@ void S_Start(void)
 		mapmusresume = 0;
 	}
 
-	//if (cv_resetmusic.value) // Starting ambience should always be restarted
-		S_StopMusic();
+	S_StopMusic();
 
 	if (leveltime < (starttime + (TICRATE/2))) // SRB2Kart
-		S_ChangeMusicEx((encoremode ? "estart" : "kstart"), 0, false, mapmusposition, 0, 0);
-	else
+		S_ChangeMusicInternal((encoremode ? "estart" : "kstart"), false); //S_StopMusic();
+	//S_ChangeMusicEx((encoremode ? "estart" : "kstart"), 0, false, mapmusposition, 0, 0);
+}
+
+void M_Start(void)
+{
+	if (leveltime > (starttime + (TICRATE/2)))
+		return;
+
+	// The GO! sound stops the level start ambience
+	if (leveltime == starttime)
+		S_StopMusic();
+
+	// Plays the music after the starting countdown.
+	if (leveltime == (starttime + (TICRATE/2)))
+	{
 		S_ChangeMusicEx(mapmusname, mapmusflags, true, mapmusposition, 0, 0);
+		S_ShowMusicCredit();
+	}
 }
 
 void S_RestartMusic(void)

@@ -101,6 +101,7 @@ void S_InitSfxChannels(INT32 sfxVolume);
 void S_StopSounds(void);
 void S_ClearSfx(void);
 void S_Start(void);
+void M_Start(void);
 
 // Stops music and restarts it from same position. Used for instant applying changes to amiga filters.
 void S_RestartMusic(void);

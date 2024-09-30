@@ -5361,11 +5361,8 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	K_UpdateInvincibilitySounds(player); // Also thanks, VAda!
 
 	// Plays the music after the starting countdown.
-	if (P_IsLocalPlayer(player) && leveltime == (starttime + (TICRATE/2)))
-	{
-		S_ChangeMusic(mapmusname, mapmusflags, true);
-		S_ShowMusicCredit();
-	}
+	if (P_IsLocalPlayer(player))
+		M_Start();
 }
 
 void K_KartPlayerAfterThink(player_t *player)
@@ -6553,10 +6550,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 		if ((leveltime == starttime-(3*TICRATE)) || (leveltime == starttime-(2*TICRATE)) || (leveltime == starttime-TICRATE))
 			S_StartSound(NULL, sfx_s3ka7);
 		if (leveltime == starttime)
-		{
 			S_StartSound(NULL, sfx_s3kad);
-			S_StopMusic(); // The GO! sound stops the level start ambience
-		}
 	}
 
 	// Start charging once you're given the opportunity.
