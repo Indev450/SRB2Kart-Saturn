@@ -117,6 +117,14 @@ consvar_t cv_resume = {"resume", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0
 consvar_t cv_fading = {"fading", "Off", CV_SAVE|CV_CALL, CV_OnOff, Bird_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_birdmusic = {"birdmusicstuff", "No", CV_SAVE|CV_CALL, CV_YesNo, Bird_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
 
+
+consvar_t cv_keepmusic = {"keepmusic", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_skipintromusic = {"skipintromusic", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_ignoremusicchanges = {"ignoremusicchanges", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+boolean ignoremusicchanges = false;
+boolean keepmusic = false;
+
 #ifdef HAVE_OPENMPT
 openmpt_module *openmpt_mhandle = NULL;
 
@@ -293,6 +301,10 @@ void S_RegisterSoundStuff(void)
 	CV_RegisterVar(&cv_resume);
 	CV_RegisterVar(&cv_fading);
 	CV_RegisterVar(&cv_birdmusic);
+
+	CV_RegisterVar(&cv_keepmusic);
+	CV_RegisterVar(&cv_skipintromusic);
+	CV_RegisterVar(&cv_ignoremusicchanges);
 
 	COM_AddCommand("tunes", Command_Tunes_f);
 	COM_AddCommand("restartaudio", Command_RestartAudio_f);
@@ -2170,36 +2182,21 @@ boolean S_FadeOutStopMusic(UINT32 ms)
 }*/
 
 static INT16 oldmap = 0;
-static INT32 oldencore = 0;
-static boolean keepmusic = false;
+static boolean oldencore = 0;
 
 void S_KeepMusic(void)
 {
-	//if (!cv_keepmusic.value)
-	//return false;
+	if (!cv_keepmusic.value)
+	{
+		keepmusic = false;
+		return;
+	}
 
 	//this one compares map and encoremode instead of the music itself
 	//makes tunes work and stuff
+	keepmusic = (strcmp(music_name, (encoremode ? "estart" : "kstart")) != 0 && oldmap == gamemap && oldencore == encoremode); // we on the same map and intro sound aint playin? keep it
 
-	keepmusic = false;
-
-	//dont keep the intro "sound" lmao
-	if (strcmp(music_name, (encoremode ? "estart" : "kstart")) == 0)
-		return;
-
-	if (oldencore != cv_kartencore.value)
-	{
-		oldencore = cv_kartencore.value;
-		return;
-	}
-
-	// we on the same map? keep it
-	if (oldmap == gamemap)
-	{
-		keepmusic = true;
-		return;
-	}
-
+	oldencore = encoremode;
 	oldmap = gamemap;
 }
 
@@ -2226,18 +2223,18 @@ void S_Start(void)
 	if (keepmusic)
 		return;
 
-	/*if (cv_skipintromusic.value)
+	if (cv_skipintromusic.value)
 	{
 		S_StopMusic();
 		S_ChangeMusicEx(mapmusname, mapmusflags, true, mapmusposition, 0, 0);
 		return;
-	}*/
+	}
 
 	// Starting ambience should always be restarted
 	// lug: but not when we keep the map music lol
 	S_StopMusic();
 
-	if (leveltime < (starttime + (TICRATE/2))) // SRB2Kart
+	if (leveltime < starttime) // SRB2Kart
 		S_ChangeMusicInternal((encoremode ? "estart" : "kstart"), false); //S_StopMusic();
 	//S_ChangeMusicEx((encoremode ? "estart" : "kstart"), 0, false, mapmusposition, 0, 0);
 }
@@ -2245,28 +2242,30 @@ void S_Start(void)
 void M_Start(void)
 {
 	// need to be after race starts so "certain" maps don´t break Zzz...
-	//ignoremusicchanges = cv_ignoremusicchanges.value && (leveltime > (starttime + (TICRATE/2)));
+	ignoremusicchanges = cv_ignoremusicchanges.value && (leveltime > (starttime + (TICRATE/2)));
 
 	//no need to constantly run this after race has started
 	//but let it run atleast half a tic after map music started to let shit update lmao
 	if (leveltime > (starttime + TICRATE))
 		return;
 
-	/*if (cv_skipintromusic.value && leveltime == (starttime + (TICRATE/2)))
-	{
-		S_ShowMusicCredit();
-		return;
-	}*/
-
 	if (keepmusic)
 		return;
+
+	if (cv_skipintromusic.value)
+	{
+		if (leveltime == (starttime + (TICRATE/2)))
+			S_ShowMusicCredit();
+		return;
+	}
 
 	// The GO! sound stops the level start ambience
 	if (leveltime == starttime)
 		S_StopMusic();
-
+	else if (leveltime < starttime) // SRB2Kart
+		S_ChangeMusicInternal((encoremode ? "estart" : "kstart"), false);
 	// Plays the music after the starting countdown.
-	if (leveltime == (starttime + (TICRATE/2)))
+	else if (leveltime == (starttime + (TICRATE/2)))
 	{
 		S_ChangeMusicEx(mapmusname, mapmusflags, true, mapmusposition, 0, 0);
 		S_ShowMusicCredit();
