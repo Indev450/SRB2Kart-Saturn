@@ -2118,12 +2118,12 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 						return;
 
 					if (bot)
-						P_Teleport(bot, dest->x, dest->y, dest->z, (line->flags & ML_NOCLIMB) ?  mo->angle : dest->angle, (line->flags & ML_BLOCKMONSTERS) == 0, (line->flags & ML_EFFECT4) == ML_EFFECT4);
+						P_Teleport(bot, dest->x, dest->y, dest->z, (line->flags & ML_NOCLIMB) ? mo->angle : dest->angle, (line->flags & ML_BLOCKMONSTERS) == 0, (line->flags & ML_EFFECT4) == ML_EFFECT4);
 					if (line->flags & ML_BLOCKMONSTERS)
-						P_Teleport(mo, dest->x, dest->y, dest->z, (line->flags & ML_NOCLIMB) ?  mo->angle : dest->angle, false, (line->flags & ML_EFFECT4) == ML_EFFECT4);
+						P_Teleport(mo, dest->x, dest->y, dest->z, (line->flags & ML_NOCLIMB) ? mo->angle : dest->angle, false, (line->flags & ML_EFFECT4) == ML_EFFECT4);
 					else
 					{
-						P_Teleport(mo, dest->x, dest->y, dest->z, (line->flags & ML_NOCLIMB) ?  mo->angle : dest->angle, true, (line->flags & ML_EFFECT4) == ML_EFFECT4);
+						P_Teleport(mo, dest->x, dest->y, dest->z, (line->flags & ML_NOCLIMB) ? mo->angle : dest->angle, true, (line->flags & ML_EFFECT4) == ML_EFFECT4);
 						// Play the 'bowrwoosh!' sound
 						S_StartSound(dest, sfx_mixup);
 					}
