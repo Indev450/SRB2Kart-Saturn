@@ -2639,7 +2639,7 @@ boolean P_SetupLevel(boolean skipprecip, boolean reloadinggamestate)
 	// As oddly named as this is, this handles music only.
 	// We should be fine starting it here.
 	if (!reloadinggamestate)
-		S_Start();
+		S_InitMapMusic();
 
 	levelfadecol = (encoremode && !ranspecialwipe ? 122 : 120);
 

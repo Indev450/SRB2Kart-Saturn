@@ -11,6 +11,7 @@
 /// \file  s_sound.c
 /// \brief System-independent sound and music routines
 
+#include "d_netcmd.h"
 #include "doomdef.h"
 #include "doomstat.h"
 #include "command.h"
@@ -124,6 +125,7 @@ consvar_t cv_ignoremusicchanges = {"ignoremusicchanges", "No", CV_SAVE, CV_YesNo
 
 boolean ignoremusicchanges = false;
 boolean keepmusic = false;
+static void S_CheckEventMus(const char *newmus);
 
 #ifdef HAVE_OPENMPT
 openmpt_module *openmpt_mhandle = NULL;
@@ -1770,6 +1772,8 @@ void S_ChangeMusicEx(const char *mmusic, UINT16 mflags, boolean looping, UINT32 
 
 	strncpy(newmusic, mmusic, 6);
 
+	S_CheckEventMus(newmusic);
+
 	if (LUAh_MusicChange(music_name, newmusic, &mflags, &looping, &position, &prefadems, &fadeinms))
 		return;
 
@@ -1958,6 +1962,10 @@ boolean S_FadeOutStopMusic(UINT32 ms)
 	return I_FadeSong(0, ms, &S_StopMusic);
 }
 
+/// ------------------------
+/// Init & Others
+/// ------------------------
+
 /*static boolean S_KeepMusic(void)
 {
 	//if (!cv_keepmusic.value)
@@ -1980,8 +1988,45 @@ boolean S_FadeOutStopMusic(UINT32 ms)
 
 static INT16 oldmap = 0;
 static boolean oldencore = 0;
+static boolean skipmusic = false;
 
-void S_KeepMusic(void)
+static const char *musicexception_list[16] = {
+	"vote", "voteea", "voteeb", "racent", "krwin",
+	"krok", "krlose", "krfail", "kbwin", "kbok",
+	"kblose", "kstart", "estart", "wait2j", "CHRSHP",
+	"CHRSHF"
+};
+
+//checks for any kind of event music like intermission, vote etc.
+//always runs when musicchange gets invoked
+static void S_CheckEventMus(const char *newmus)
+{
+	//if (leveltime > (starttime + (TICRATE/2)))
+		//return;
+
+	skipmusic = false;
+
+	if (!cv_keepmusic.value)
+	{
+		return;
+	}
+
+	//this one compares map and encoremode instead of the music itself
+	//makes tunes work and stuff
+	for (int i = 0; i < 16; i++)
+		if (strcmp(music_name, musicexception_list[i]) == 0 || strcmp(newmus, musicexception_list[i]) == 0)
+		{
+			skipmusic = true;
+			break;
+		}
+
+	//CONS_Printf("musname = %s\n", music_name);
+	//CONS_Printf("newmus = %s\n", newmus);
+	//CONS_Printf("newmus = %d\n", skipmusic);
+}
+
+//check if map and encoremode has changed
+void S_CheckMap(void)
 {
 	if (!cv_keepmusic.value)
 	{
@@ -1989,24 +2034,18 @@ void S_KeepMusic(void)
 		return;
 	}
 
-	//this one compares map and encoremode instead of the music itself
-	//makes tunes work and stuff
-	keepmusic = (strcmp(music_name, (encoremode ? "estart" : "kstart")) != 0 && oldmap == gamemap && oldencore == encoremode); // we on the same map and intro sound aint playin? keep it
+	keepmusic = (!skipmusic && oldmap == gamemap && oldencore == encoremode);
 
 	oldencore = encoremode;
 	oldmap = gamemap;
 }
-
-/// ------------------------
-/// Init & Others
-/// ------------------------
 
 //
 // Per level startup code.
 // Kills playing sounds at start of level,
 //  determines music if any, changes music.
 //
-void S_Start(void)
+void S_InitMapMusic(void)
 {
 	if (mapmusflags & MUSIC_RELOADRESET)
 	{
@@ -2036,7 +2075,7 @@ void S_Start(void)
 	//S_ChangeMusicEx((encoremode ? "estart" : "kstart"), 0, false, mapmusposition, 0, 0);
 }
 
-void M_Start(void)
+void S_StartMapMusic(void)
 {
 	// need to be after race starts so "certain" maps don´t break Zzz...
 	ignoremusicchanges = cv_ignoremusicchanges.value && (leveltime > (starttime + (TICRATE/2)));
@@ -2068,7 +2107,6 @@ void M_Start(void)
 		S_ShowMusicCredit();
 	}
 }
-
 
 void S_RestartMusic(void)
 {

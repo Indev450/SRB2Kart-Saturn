@@ -5468,9 +5468,9 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	// Handle invincibility sfx
 	K_UpdateInvincibilitySounds(player); // Also thanks, VAda!
 
-	// Plays the music after the starting countdown.
+	// Plays the music during and after the starting countdown.
 	if (P_IsLocalPlayer(player))
-		M_Start();
+		S_StartMapMusic();
 }
 
 void K_KartPlayerAfterThink(player_t *player)
