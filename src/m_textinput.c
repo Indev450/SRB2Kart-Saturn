@@ -58,6 +58,7 @@ static void M_TextInputAddString(textinput_t *input, const char *c)
 	memcpy(&input->buffer[input->cursor], c, csize);
 	input->length += csize;
 	input->select = (input->cursor += csize);
+	input->buffer[input->length] = 0;
 }
 
 static void M_TextInputAddChar(textinput_t *input, char c)
@@ -288,7 +289,7 @@ boolean M_TextInputHandle(textinput_t *input, INT32 key)
 		key = '/';
 
 	// same capslock code as hu_stuff.c's HU_responder. Check there for details.
-	key = CON_ShiftChar(key);
+	key = cv_keyboardlayout.value == 3 ? CON_ShitAndAltGrChar(key) : CON_ShiftChar(key);
 
 	// enter a char into the command prompt
 	if (key < 32 || key > 127)
