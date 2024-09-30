@@ -2127,6 +2127,9 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 			break;
 
 		case 413: // Change music
+			//if (ignoremusicchanges)
+				//return;
+
 			// console player only unless NOCLIMB is set
 			if ((line->flags & ML_NOCLIMB) || (mo && mo->player && P_IsLocalPlayer(mo->player)))
 			{
@@ -2208,6 +2211,10 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 		case 414: // Play SFX
 			{
 				INT32 sfxnum;
+
+				//dont play any funky sound intros that may interfere with the music
+				//if (cv_skipintromusic.value && (leveltime < (starttime + (TICRATE/2))))
+					//return;
 
 				sfxnum = sides[line->sidenum[0]].toptexture; //P_AproxDistance(line->dx, line->dy)>>FRACBITS;
 
