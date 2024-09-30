@@ -67,6 +67,13 @@ extern consvar_t cv_resume;
 extern consvar_t cv_fading;
 extern consvar_t cv_birdmusic;
 
+extern consvar_t cv_keepmusic;
+extern consvar_t cv_skipintromusic;
+extern consvar_t cv_ignoremusicchanges;
+
+extern boolean ignoremusicchanges;
+extern boolean keepmusic;
+
 extern consvar_t precachesound;
 
 typedef enum

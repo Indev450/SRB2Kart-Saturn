@@ -611,8 +611,8 @@ boolean P_EndingMusic(player_t *player)
 	INT32 bestlocalpos;
 	player_t *bestlocalplayer;
 
-	//if (!ignoremusicchanges)
-		//return false;
+	if (ignoremusicchanges)
+		return false;
 
 	if (!P_IsLocalPlayer(player)) // Only applies to a local player
 		return false;
