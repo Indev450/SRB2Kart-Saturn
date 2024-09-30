@@ -2156,7 +2156,6 @@ static boolean S_KeepMusic(const char *mapmusicname)
 	//return false;
 
 	// should i compare songs or maps?
-	// comparing songs makes this alot easier honestly
 	static char oldmusname[7] = "";
 
 	if (strcmp(music_name, mapmusicname) != 0)
@@ -2201,6 +2200,8 @@ void S_Start(void)
 		return;
 	}*/
 
+	// Starting ambience should always be restarted
+	// lug: but not when we keep the map music lol
 	S_StopMusic();
 
 	if (leveltime < (starttime + (TICRATE/2))) // SRB2Kart
