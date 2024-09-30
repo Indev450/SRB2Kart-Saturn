@@ -2262,16 +2262,12 @@ void S_InitMapMusic(void)
 	if (keepmusic)
 		return;
 
-	if (cv_skipintromusic.value)
-	{
-		S_StopMusic();
-		S_ChangeMusicEx(mapmusname, mapmusflags, true, mapmusposition, 0, 0);
-		return;
-	}
-
 	// Starting ambience should always be restarted
 	// lug: but not when we keep the map music lol
 	S_StopMusic();
+
+	if (cv_skipintromusic.value)
+		return;
 
 	if (leveltime < starttime) // SRB2Kart
 		S_ChangeMusicInternal((encoremode ? "estart" : "kstart"), false); //S_StopMusic();
@@ -2293,6 +2289,8 @@ void S_StartMapMusic(void)
 
 	if (cv_skipintromusic.value)
 	{
+		if (leveltime == 0)
+			S_ChangeMusicEx(mapmusname, mapmusflags, true, mapmusposition, 0, 0);
 		if (leveltime == (starttime + (TICRATE/2)))
 			S_ShowMusicCredit();
 		return;
