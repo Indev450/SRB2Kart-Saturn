@@ -123,7 +123,6 @@ consvar_t cv_keepmusic = {"keepmusic", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, N
 consvar_t cv_skipintromusic = {"skipintromusic", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_ignoremusicchanges = {"ignoremusicchanges", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-boolean ignoremusicchanges = false;
 boolean keepmusic = false;
 static void S_CheckEventMus(const char *newmus);
 
@@ -2001,9 +2000,6 @@ static const char *musicexception_list[16] = {
 //always runs when musicchange gets invoked
 static void S_CheckEventMus(const char *newmus)
 {
-	//if (leveltime > (starttime + (TICRATE/2)))
-		//return;
-
 	skipmusic = false;
 
 	if (!cv_keepmusic.value)
@@ -2011,8 +2007,7 @@ static void S_CheckEventMus(const char *newmus)
 		return;
 	}
 
-	//this one compares map and encoremode instead of the music itself
-	//makes tunes work and stuff
+
 	for (int i = 0; i < 16; i++)
 		if (strcmp(music_name, musicexception_list[i]) == 0 || strcmp(newmus, musicexception_list[i]) == 0)
 		{
@@ -2025,7 +2020,8 @@ static void S_CheckEventMus(const char *newmus)
 	//CONS_Printf("newmus = %d\n", skipmusic);
 }
 
-//check if map and encoremode has changed
+//this one compares map and encoremode instead of the music itself
+//makes tunes work and stuff
 void S_CheckMap(void)
 {
 	if (!cv_keepmusic.value)
@@ -2073,9 +2069,6 @@ void S_InitMapMusic(void)
 
 void S_StartMapMusic(void)
 {
-	// need to be after race starts so "certain" maps don´t break Zzz...
-	ignoremusicchanges = cv_ignoremusicchanges.value && (leveltime > (starttime + (TICRATE/2)));
-
 	//no need to constantly run this after race has started
 	//but let it run atleast half a tic after map music started to let shit update lmao
 	if (leveltime > (starttime + TICRATE))
@@ -2086,20 +2079,18 @@ void S_StartMapMusic(void)
 
 	if (cv_skipintromusic.value)
 	{
-		if (leveltime == 0)
+		if (leveltime == 0) // dumb but i dont need this to be spammed honestly
 			S_ChangeMusicEx(mapmusname, mapmusflags, true, mapmusposition, 0, 0);
 		if (leveltime == (starttime + (TICRATE/2)))
 			S_ShowMusicCredit();
 		return;
 	}
 
-	// The GO! sound stops the level start ambience
-	if (leveltime == starttime)
+	if (leveltime == starttime) // The GO! sound stops the level start ambience
 		S_StopMusic();
 	else if (leveltime < starttime) // SRB2Kart
-		S_ChangeMusicInternal((encoremode ? "estart" : "kstart"), false);
-	// Plays the music after the starting countdown.
-	else if (leveltime == (starttime + (TICRATE/2)))
+		S_ChangeMusicInternal((encoremode ? "estart" : "kstart"), false); // yes this will be spammed otherwise encore and some stuff WILL overwrite it
+	else if (leveltime == (starttime + (TICRATE/2))) // Plays the music after the starting countdown.
 	{
 		S_ChangeMusicEx(mapmusname, mapmusflags, true, mapmusposition, 0, 0);
 		S_ShowMusicCredit();
