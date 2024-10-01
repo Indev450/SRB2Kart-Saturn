@@ -2132,10 +2132,10 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 			break;
 
 		case 413: // Change music
-			if (keepmusic && (leveltime < (starttime + TICRATE))) //why check for starttime? cause encore music Zzz...
+			if (keepmusic && (leveltime <= MUSICSTARTTIME)) //why check for starttime? cause encore music Zzz...
 				return;
 
-			if (cv_ignoremusicchanges.value && (leveltime > (starttime + TICRATE) && !fromlapexec)) // keep lap music intanct tho
+			if (cv_ignoremusicchanges.value && (leveltime >= MUSICSTARTTIME) && !fromlapexec) // keep lap music intanct tho
 				return;
 
 			// console player only unless NOCLIMB is set
@@ -2221,7 +2221,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 				INT32 sfxnum;
 
 				//dont play any funky sound intros that may interfere with the music
-				if (cv_skipintromusic.value && (leveltime < (starttime + (TICRATE/2))))
+				if (cv_skipintromusic.value && (leveltime < MUSICSTARTTIME))
 					return;
 
 				sfxnum = sides[line->sidenum[0]].toptexture; //P_AproxDistance(line->dx, line->dy)>>FRACBITS;

@@ -2262,7 +2262,7 @@ void S_InitMapMusic(void)
 	if (cv_skipintromusic.value)
 		return;
 
-	if (leveltime < starttime) // SRB2Kart
+	if (leveltime < MUSICSTARTTIME) // SRB2Kart
 		S_ChangeMusicInternal((encoremode ? "estart" : "kstart"), false); //S_StopMusic();
 	//S_ChangeMusicEx((encoremode ? "estart" : "kstart"), 0, false, mapmusposition, 0, 0);
 }
@@ -2270,8 +2270,7 @@ void S_InitMapMusic(void)
 void S_StartMapMusic(void)
 {
 	//no need to constantly run this after race has started
-	//but let it run atleast half a tic after map music started to let shit update lmao
-	if (leveltime > (starttime + TICRATE))
+	if (leveltime > MUSICSTARTTIME)
 		return;
 
 	if (keepmusic)
@@ -2279,18 +2278,18 @@ void S_StartMapMusic(void)
 
 	if (cv_skipintromusic.value)
 	{
-		if (leveltime == 0) // dumb but i dont need this to be spammed honestly
+		if (leveltime < starttime) // dumb but i dont need this to be spammed honestly
 			S_ChangeMusicEx(mapmusname, mapmusflags, true, mapmusposition, 0, 0);
-		if (leveltime == (starttime + (TICRATE/2)))
+		if (leveltime == MUSICSTARTTIME)
 			S_ShowMusicCredit();
 		return;
 	}
 
-	if (leveltime == starttime) // The GO! sound stops the level start ambience
-		S_StopMusic();
-	else if (leveltime < starttime) // SRB2Kart
+	if (leveltime < starttime) // SRB2Kart
 		S_ChangeMusicInternal((encoremode ? "estart" : "kstart"), false); // yes this will be spammed otherwise encore and some stuff WILL overwrite it
-	else if (leveltime == (starttime + (TICRATE/2))) // Plays the music after the starting countdown.
+	else if (leveltime == starttime) // The GO! sound stops the level start ambience
+		S_StopMusic();
+	else if (leveltime == MUSICSTARTTIME) // Plays the music after the starting countdown.
 	{
 		S_ChangeMusicEx(mapmusname, mapmusflags, true, mapmusposition, 0, 0);
 		S_ShowMusicCredit();
