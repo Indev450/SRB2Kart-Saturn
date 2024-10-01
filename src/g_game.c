@@ -4621,6 +4621,8 @@ INT32 G_FindMapByNameOrCode(const char *mapname, char **realmapnamep)
 	{
 		if (mapname[0] == '*') // current map
 			return gamemap;
+		else if (mapname[0] == '?')
+			return G_RandMap(G_TOLFlag(gametype), prevmap, false, 0, false, NULL);
 		else if (mapname[0] == '+' && mapheaderinfo[gamemap-1]) // next map
 		{
 			newmapnum = mapheaderinfo[gamemap-1]->nextlevel;
