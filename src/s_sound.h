@@ -71,6 +71,7 @@ extern consvar_t cv_keepmusic;
 extern consvar_t cv_skipintromusic;
 extern consvar_t cv_ignoremusicchanges;
 extern boolean keepmusic;
+#define MUSICSTARTTIME (starttime + (TICRATE/2))
 
 extern consvar_t precachesound;
 
