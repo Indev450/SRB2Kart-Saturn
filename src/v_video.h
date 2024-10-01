@@ -246,6 +246,9 @@ INT32 V_SmallSubStringWidth(const char *string, INT32 length, INT32 option);
 INT32 V_ThinSubStringWidth(const char *string, INT32 length, INT32 option);
 #define V_ThinStringWidth(string, option) V_ThinSubStringWidth(string, -1, option)
 
+// Find maximum length for substring taken from current string to fit into given width
+INT32 V_SubStringLengthToFit(const char *string, INT32 width, INT32 option);
+
 char V_GetSkincolorChar(INT32 color);
 
 void V_DoPostProcessor(INT32 view, postimg_t type, INT32 param);

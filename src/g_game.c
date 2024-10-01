@@ -6368,8 +6368,18 @@ void G_BeginRecording(void)
 	// Full replay title
 	demo_p += 64;
 	{
+		char demotitlename[65];
 		char *title = G_BuildMapTitle(gamemap);
-		snprintf(demo.titlename, 64, "%s - %s", title, modeattacking ? "Time Attack" : connectedservername);
+
+		// Print to a separate temp buffer instead of demo.titlename, so we can use it in M_TextInputSetString
+		snprintf(demotitlename, 64, "%s - %s", title, modeattacking ? "Time Attack" : connectedservername);
+
+		// Init just in case it isn't initialized already
+		M_TextInputInit(&demo.titlenameinput, demo.titlename, sizeof(demo.titlename));
+
+		// This will indirectly assign to demo.titlename too
+		M_TextInputSetString(&demo.titlenameinput, demotitlename);
+
 		Z_Free(title);
 	}
 
@@ -8359,7 +8369,6 @@ void G_SaveDemo(void)
 
 boolean G_DemoTitleResponder(event_t *ev)
 {
-	size_t len;
 	INT32 ch;
 
 	if (ev->type != ev_keydown)
@@ -8380,28 +8389,7 @@ boolean G_DemoTitleResponder(event_t *ev)
 		return true;
 	}
 
-	if ((ch >= HU_FONTSTART && ch <= HU_FONTEND && hu_font[ch-HU_FONTSTART])
-	  || ch == ' ') // Allow spaces, of course
-	{
-		len = strlen(demo.titlename);
-		if (len < 64)
-		{
-			demo.titlename[len+1] = 0;
-			demo.titlename[len] = cv_keyboardlayout.value == 3 ? CON_ShitAndAltGrChar(ch) : CON_ShiftChar(ch);
-		}
-	}
-	else if (ch == KEY_BACKSPACE)
-	{
-		if (shiftdown)
-			memset(demo.titlename, 0, sizeof(demo.titlename));
-		else
-		{
-			len = strlen(demo.titlename);
-
-			if (len > 0)
-				demo.titlename[len-1] = 0;
-		}
-	}
+	M_TextInputHandle(&demo.titlenameinput, ch);
 
 	return true;
 }

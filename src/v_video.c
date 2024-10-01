@@ -2981,6 +2981,45 @@ INT32 V_ThinSubStringWidth(const char *string, INT32 length, INT32 option)
 	return w;
 }
 
+//
+// Find maximum length for substring taken from current string to fit into given width
+//
+INT32 V_SubStringLengthToFit(const char *string, INT32 width, INT32 option)
+{
+	INT32 c, w = 0;
+	INT32 spacewidth = 4, charwidth = 0;
+	INT32 i;
+
+	switch (option & V_SPACINGMASK)
+	{
+		case V_MONOSPACE:
+			spacewidth = 8;
+			/* FALLTHRU */
+		case V_OLDSPACING:
+			charwidth = 8;
+			break;
+		case V_6WIDTHSPACE:
+			spacewidth = 6;
+		default:
+			break;
+	}
+
+	for (i = 0; string[i] && w < width; i++)
+	{
+		c = string[i];
+		if ((UINT8)c >= 0x80 && (UINT8)c <= 0x8F) //color parsing! -Inuyasha 2.16.09
+			continue;
+
+		c = toupper(c) - HU_FONTSTART;
+		if (c < 0 || c >= HU_FONTSIZE || !hu_font[c])
+			w += spacewidth;
+		else
+			w += (charwidth ? charwidth : SHORT(hu_font[c]->width));
+	}
+
+	return max(i-1, 0);
+}
+
 char V_GetSkincolorChar(INT32 color)
 {
 	char cstart = 0x80;
