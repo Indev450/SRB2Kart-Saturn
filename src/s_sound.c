@@ -2003,12 +2003,10 @@ static void S_CheckEventMus(const char *newmus)
 	skipmusic = false;
 
 	if (!cv_keepmusic.value)
-	{
 		return;
-	}
 
 	for (int i = 0; i < 16; i++)
-		if (strcmp(music_name, musicexception_list[i]) == 0 || strcmp(newmus, musicexception_list[i]) == 0) // weird? sure! but were lucky enough newmus reflects whats being replaced
+		if (stricmp(music_name, musicexception_list[i]) == 0 || stricmp(newmus, musicexception_list[i]) == 0) // weird? sure! but were lucky enough newmus reflects whats being replaced
 		{
 			skipmusic = true;
 			break;
