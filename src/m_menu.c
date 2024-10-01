@@ -5151,10 +5151,12 @@ static void M_DrawGenericMenu(void)
 								break;
 							case IT_CV_STRING:
 								M_DrawTextBox(x, y + 4, MAXSTRINGLENGTH, 1);
-								V_DrawString(x + 8, y + 12, V_ALLOWLOWERCASE, menuinput.buffer);
-								if (skullAnimCounter < 4 && i == itemOn)
-									V_DrawCharacter(x + 8 + V_StringWidth(cv->string, 0), y + 12,
-										'_' | 0x80, false);
+
+								if (itemOn == i)
+									M_DrawTextInput(x + 8, y + 12, &menuinput, 0);
+								else
+									V_DrawString(x + 8, y + 12, V_ALLOWLOWERCASE, cv->string);
+
 								y += 16;
 								break;
 							default:
