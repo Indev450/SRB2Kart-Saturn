@@ -811,13 +811,17 @@ static void ST_DrawTextInput(INT32 x, INT32 y, textinput_t *input, INT32 flags)
 	char nametodraw[MAXSTRINGLENGTH*2+1] = {0};
 
 	size_t drawstart = 0;
+	size_t drawend = 0; // Only used for selection
 
 	INT32 skullx = x;
 
 	while (V_SubStringWidth(input->buffer+drawstart, input->cursor-drawstart, V_ALLOWLOWERCASE) > MAXINPUTWIDTH)
 		++drawstart;
 
-	memcpy(nametodraw, input->buffer+drawstart, V_SubStringLengthToFit(input->buffer+drawstart, MAXINPUTWIDTH+8, V_ALLOWLOWERCASE)+1);
+	size_t drawlength = V_SubStringLengthToFit(input->buffer+drawstart, MAXINPUTWIDTH+8, V_ALLOWLOWERCASE)+1;
+	drawend = drawstart + drawlength;
+
+	memcpy(nametodraw, input->buffer+drawstart, drawlength);
 
 	if (input->length)
 		skullx += V_SubStringWidth(nametodraw, input->cursor-drawstart, V_ALLOWLOWERCASE);
@@ -838,21 +842,21 @@ static void ST_DrawTextInput(INT32 x, INT32 y, textinput_t *input, INT32 flags)
 		INT32 width = 0;
 
 		// I couldn't figure out one formula so here's bunch of separate cases
-		if (start < drawstart && end > drawstart + MAXSTRINGLENGTH) // Selection covers whole visible portion of demo name
+		if (start < drawstart && end > drawend) // Selection covers whole visible portion of demo name
 		{
-			startx = 0;
-			width = V_StringWidth(nametodraw, V_ALLOWLOWERCASE);
+			startx = -2;
+			width = V_StringWidth(nametodraw, V_ALLOWLOWERCASE)+4;
 		}
 		else if (start < drawstart) // Only left side of selection is off visible part
 		{
-			startx = 0;
+			startx = -2;
 			size_t len = (end - start) - (drawstart - start);
-			width = V_SubStringWidth(nametodraw, len, V_ALLOWLOWERCASE);
+			width = V_SubStringWidth(nametodraw, len, V_ALLOWLOWERCASE)+2;
 		}
-		else if (end > drawstart + MAXSTRINGLENGTH) // Only right side of selection is off visible part
+		else if (end > drawend) // Only right side of selection is off visible part
 		{
 			startx = V_SubStringWidth(nametodraw, start-drawstart, V_ALLOWLOWERCASE);
-			width = V_StringWidth(nametodraw+(start-drawstart), V_ALLOWLOWERCASE);
+			width = V_StringWidth(nametodraw+(start-drawstart), V_ALLOWLOWERCASE)+2;
 		}
 		else // All selection is on visible part
 		{
