@@ -570,10 +570,8 @@ void DRPC_UpdatePresence(void)
 		else
 		{
 			// Map name on tool tip
-			char *title = G_BuildMapTitle(gamemap);
-			snprintf(mapname, 48, "Map: %s", title);
+			snprintf(mapname, 48, "Map: %s", maptitle);
 			discordPresence.largeImageText = mapname;
-			Z_Free(title);
 		}
 
 		if (gamestate == GS_LEVEL && Playing())
