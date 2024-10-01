@@ -3532,18 +3532,9 @@ static void M_ResetCvars(void)
 	}
 }
 
-static void M_NextOpt(void)
+// If current menu item is IT_CV_STRING, setup menuinput
+static void M_CheckStringItem(void)
 {
-	INT16 oldItemOn = itemOn; // prevent infinite loop
-
-	do
-	{
-		if (itemOn + 1 > currentMenu->numitems - 1)
-			itemOn = 0;
-		else
-			itemOn++;
-	} while (oldItemOn != itemOn && (currentMenu->menuitems[itemOn].status & IT_TYPE) == IT_SPACE);
-
 	if (itemOn < currentMenu->numitems && (currentMenu->menuitems[itemOn].status & IT_CVARTYPE) == IT_CV_STRING)
 	{
 		consvar_t *cv = (consvar_t *)currentMenu->menuitems[itemOn].itemaction;
@@ -3558,6 +3549,21 @@ static void M_NextOpt(void)
 	}
 }
 
+static void M_NextOpt(void)
+{
+	INT16 oldItemOn = itemOn; // prevent infinite loop
+
+	do
+	{
+		if (itemOn + 1 > currentMenu->numitems - 1)
+			itemOn = 0;
+		else
+			itemOn++;
+	} while (oldItemOn != itemOn && (currentMenu->menuitems[itemOn].status & IT_TYPE) == IT_SPACE);
+
+	M_CheckStringItem();
+}
+
 static void M_PrevOpt(void)
 {
 	INT16 oldItemOn = itemOn; // prevent infinite loop
@@ -3569,6 +3575,8 @@ static void M_PrevOpt(void)
 		else
 			itemOn--;
 	} while (oldItemOn != itemOn && (currentMenu->menuitems[itemOn].status & IT_TYPE) == IT_SPACE);
+
+	M_CheckStringItem();
 }
 
 // lock out further input in a tic when important buttons are pressed
@@ -4589,6 +4597,8 @@ void M_SetupNextMenu(menu_t *menudef)
 			}
 		}
 	}
+
+	M_CheckStringItem();
 }
 
 //
@@ -4930,11 +4940,16 @@ void M_DrawTextBoxFlags(INT32 x, INT32 y, INT32 width, INT32 boxlines, INT32 fla
 
 void M_DrawTextInput(INT32 x, INT32 y, textinput_t *input, INT32 flags)
 {
+	INT32 skullx = x;
+
 	V_DrawString(x, y, V_ALLOWLOWERCASE|flags, input->buffer);
 
 	// draw text cursor for name
-	if (input->length && skullAnimCounter < 4) // blink cursor
-		V_DrawCharacter(x+V_SubStringWidth(input->buffer, input->cursor, V_ALLOWLOWERCASE), y+3, '_'|flags, false);
+	if (input->length)
+		skullx = x+V_SubStringWidth(input->buffer, input->cursor, V_ALLOWLOWERCASE);
+
+	if (skullAnimCounter < 4) // blink cursor
+		V_DrawCharacter(skullx, y+3, '_'|flags, false);
 
 	// draw selection
 	if (input->select != input->cursor)
@@ -5340,10 +5355,12 @@ static void M_DrawGenericScrollMenu(void)
 								if (y + 12 > (currentMenu->y + 2*scrollareaheight))
 									break;
 								M_DrawTextBox(x, y + 4, MAXSTRINGLENGTH, 1);
-								V_DrawString(x + 8, y + 12, lowercase, cv->string);
-								if (skullAnimCounter < 4 && i == itemOn)
-									V_DrawCharacter(x + 8 + V_StringWidth(cv->string, 0), y + 12,
-										'_' | 0x80, false);
+
+								if (itemOn == i)
+									M_DrawTextInput(x + 8, y + 12, &menuinput, 0);
+								else
+									V_DrawString(x + 8, y + 12, lowercase, cv->string);
+
 								break;
 							default:
 								V_DrawRightAlignedString(BASEVIDWIDTH - x, y,
@@ -5479,10 +5496,12 @@ static void M_DrawCenteredMenu(void)
 								break;
 							case IT_CV_STRING:
 								M_DrawTextBox(x, y + 4, MAXSTRINGLENGTH, 1);
-								V_DrawString(x + 8, y + 12, V_ALLOWLOWERCASE, cv->string);
-								if (skullAnimCounter < 4 && i == itemOn)
-									V_DrawCharacter(x + 8 + V_StringWidth(cv->string, 0), y + 12,
-										'_' | 0x80, false);
+
+								if (itemOn == i)
+									M_DrawTextInput(x + 8, y + 12, &menuinput, 0);
+								else
+									V_DrawString(x + 8, y + 12, V_ALLOWLOWERCASE, cv->string);
+
 								y += 16;
 								break;
 							default:
@@ -12866,10 +12885,12 @@ static void M_DrawColorMenu(void)
 								if (y + 12 > (currentMenu->y + 2*scrollareaheight))
 									break;
 								M_DrawTextBox(x, y + 4, MAXSTRINGLENGTH, 1);
-								V_DrawString(x + 8, y + 12, V_ALLOWLOWERCASE, cv->string);
-								if (skullAnimCounter < 4 && i == itemOn)
-									V_DrawCharacter(x + 8 + V_StringWidth(cv->string, 0), y + 12,
-										'_' | 0x80, false);
+
+								if (itemOn == i)
+									M_DrawTextInput(x + 8, y + 12, &menuinput, 0);
+								else
+									V_DrawString(x + 8, y + 12, V_ALLOWLOWERCASE, cv->string);
+
 								y += 16;
 								break;
 							default:
