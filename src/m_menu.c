@@ -3522,8 +3522,6 @@ static void M_CheckStringItem(void)
 		M_TextInputInit(&menuinput, menu_text_input_buf, sizeof menu_text_input_buf);
 
 		M_TextInputSetString(&menuinput, cv->string);
-
-		CONS_Printf("Set input string to %s\n", cv->string);
 	}
 }
 
