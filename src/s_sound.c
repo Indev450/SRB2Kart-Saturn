@@ -1988,6 +1988,7 @@ boolean S_FadeOutStopMusic(UINT32 ms)
 static INT16 oldmap = 0;
 static boolean oldencore = 0;
 static boolean skipmusic = false;
+boolean skipintromus = false;
 
 static const char *musicexception_list[16] = {
 	"vote", "voteea", "voteeb", "racent", "krwin",
@@ -2040,6 +2041,8 @@ void S_CheckMap(void)
 //
 void S_InitMapMusic(void)
 {
+	skipintromus = cv_skipintromusic.value && stricmp(G_BuildMapTitle(gamemap), "Wandering Falls") != 0;
+
 	if (mapmusflags & MUSIC_RELOADRESET)
 	{
 		strncpy(mapmusname, mapheaderinfo[gamemap-1]->musname, 7);
@@ -2056,7 +2059,7 @@ void S_InitMapMusic(void)
 	// lug: but not when we keep the map music lol
 	S_StopMusic();
 
-	if (cv_skipintromusic.value)
+	if (skipintromus)
 		return;
 
 	if (leveltime < MUSICSTARTTIME) // SRB2Kart
@@ -2073,7 +2076,7 @@ void S_StartMapMusic(void)
 	if (keepmusic)
 		return;
 
-	if (cv_skipintromusic.value)
+	if (skipintromus)
 	{
 		if (leveltime < starttime) // dumb but i dont need this to be spammed honestly
 			S_ChangeMusicEx(mapmusname, mapmusflags, true, mapmusposition, 0, 0);
