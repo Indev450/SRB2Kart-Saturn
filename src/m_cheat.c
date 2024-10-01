@@ -1226,7 +1226,7 @@ void Command_Writethings_f(void)
 	REQUIRE_SINGLEPLAYER;
 	REQUIRE_OBJECTPLACE;
 
-	P_WriteThings(W_GetNumForName(G_BuildMapName(gamemap)) + ML_THINGS);
+	P_WriteThings(W_GetNumForName(globalmapname) + ML_THINGS);
 }
 
 void Command_ObjectPlace_f(void)

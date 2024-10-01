@@ -728,7 +728,7 @@ static void Y_UpdateRecordReplays(void)
 	if ((gpath = malloc(glen)) == NULL)
 		I_Error("Out of memory for replay filepath\n");
 
-	sprintf(gpath,"%s"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s", srb2home, timeattackfolder, G_BuildMapName(gamemap));
+	sprintf(gpath,"%s"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s", srb2home, timeattackfolder, globalmapname);
 	snprintf(lastdemo, 255, "%s-%s-last.lmp", gpath, cv_chooseskin.string);
 
 	if (FIL_FileExists(lastdemo))

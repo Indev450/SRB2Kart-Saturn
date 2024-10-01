@@ -1454,7 +1454,7 @@ static void SV_SendServerInfo(INT32 node, tic_t servertime)
 
 	CopyCaretColors(netbuffer->u.serverinfo.servername, cv_servername.string,
 		MAXSERVERNAME);
-	strncpy(netbuffer->u.serverinfo.mapname, G_BuildMapName(gamemap), 7);
+	strncpy(netbuffer->u.serverinfo.mapname, globalmapname, 7);
 
 	M_Memcpy(netbuffer->u.serverinfo.mapmd5, mapmd5, 16);
 
@@ -1839,7 +1839,7 @@ static void CL_LoadReceivedSavegame(boolean reloading)
 	{
 		if (!reloading)
 		{
-			CON_LogMessage(va(M_GetText("Map is now \"%s"), G_BuildMapName(gamemap)));
+			CON_LogMessage(va(M_GetText("Map is now \"%s"), globalmapname));
 			if (strlen(mapheaderinfo[gamemap-1]->lvlttl) > 0)
 			{
 				CON_LogMessage(va(": %s", mapheaderinfo[gamemap-1]->lvlttl));

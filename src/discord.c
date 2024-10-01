@@ -547,7 +547,7 @@ void DRPC_UpdatePresence(void)
 		if ((gamemap >= 1 && gamemap <= 60) // supported race maps
 			|| (gamemap >= 136 && gamemap <= 164)) // supported battle maps
 		{
-			snprintf(mapimg, 8, "%s", G_BuildMapName(gamemap));
+			snprintf(mapimg, 8, "%s", globalmapname);
 			strlwr(mapimg);
 			discordPresence.largeImageKey = mapimg; // Map image
 		}

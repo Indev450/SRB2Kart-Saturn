@@ -3186,6 +3186,8 @@ static inline void P_UnArchiveSPGame(savebuffer_t *save, INT16 mapoverride)
 	else
 		gamecomplete = false;
 
+	G_AllocMapTitles(gamemap);
+
 	// gamemap changed; we assume that its map header is always valid,
 	// so make it so
 	if(!mapheaderinfo[gamemap-1])
@@ -3329,6 +3331,8 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, bool
 		gametic = READUINT32(save->p);
 
 	gamemap = READINT16(save->p);
+
+	G_AllocMapTitles(gamemap);
 
 	// gamemap changed; we assume that its map header is always valid,
 	// so make it so
@@ -3503,7 +3507,7 @@ boolean P_LoadGame(savebuffer_t *save, INT16 mapoverride)
 	}
 
 	// Only do this after confirming savegame is ok
-	G_DeferedInitNew(false, G_BuildMapName(gamemap), savedata.skin, 0, true);
+	G_DeferedInitNew(false, globalmapname, savedata.skin, 0, true);
 	COM_BufAddText("dummyconsvar 1\n"); // G_DeferedInitNew doesn't do this
 
 	return true;

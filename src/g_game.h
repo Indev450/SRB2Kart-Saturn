@@ -337,6 +337,8 @@ void G_WriteMetalTic(mobj_t *metal);
 void G_SaveMetal(UINT8 **buffer);
 void G_LoadMetal(UINT8 **buffer);
 
+void G_AllocMapTitles(INT16 map);
+
 // Your naming conventions are stupid and useless.
 // There is no conflict here.
 typedef struct demoghost {
