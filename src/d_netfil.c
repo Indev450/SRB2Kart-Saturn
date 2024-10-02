@@ -863,12 +863,12 @@ void SV_FileSendTicker(void)
 
 					if (!transferFiles[f->fileid].file)
 					{
-					CONS_Alert(CONS_ERROR, "Can't open file %s: %s\n",
-						f->id.filename, strerror(errno));
+						CONS_Alert(CONS_ERROR, "Can't open file %s: %s\n",
+							f->id.filename, strerror(errno));
 
-					SV_EndFileSend(i);
-					HSendPacket(i, true, 0, PT_SERVERREFUSE);
-					break;
+						SV_EndFileSend(i);
+						HSendPacket(i, true, 0, PT_SERVERREFUSE);
+						break;
 					}
 				}
 
