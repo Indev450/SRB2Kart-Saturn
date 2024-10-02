@@ -398,9 +398,10 @@ void SCR_CalculateFPS(void)
 	fps_enter = fps_finish;
 
 #ifdef USE_FPS_SAMPLES
+	total_frame_time += frameElapsed;
+
 	if (cv_accuratefps.value)
 	{
-		total_frame_time += frameElapsed;
 		if (frame_index++ >= NUM_FPS_SAMPLES || total_frame_time >= MAX_FRAME_TIME)
 		{
 			averageFPS = 1.0 / (total_frame_time / frame_index);
@@ -410,8 +411,6 @@ void SCR_CalculateFPS(void)
 	}
 	else
 	{
-		total_frame_time += frameElapsed;
-
 		if (total_frame_time >= MAX_FRAME_TIME)
 		{
 			static int sampleIndex = 0;
