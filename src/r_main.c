@@ -949,6 +949,21 @@ void R_ExecuteSetViewSize(void)
 	// status bar overlay
 	st_overlay = cv_showhud.value;
 
+	// why did we calc all the software crap?
+#ifdef HWRENDER
+	if (rendermode == render_opengl)
+	{
+		fov = FixedAngle(cv_fov.value/2) + ANGLE_90;
+		fovtan = FixedMul(FINETANGENT(fov >> ANGLETOFINESHIFT), FRACUNIT);
+		if (splitscreen == 1) // Splitscreen FOV should be adjusted to maintain expected vertical view
+			fovtan = 17*fovtan/10;
+
+		HWR_SetViewSize();
+		am_recalc = true;
+		return;
+	}
+#endif
+
 	scaledviewwidth = vid.width;
 	viewheight = vid.height;
 
@@ -987,27 +1002,24 @@ void R_ExecuteSetViewSize(void)
 	R_SetSkyScale();
 
 	// planes
-	if (rendermode == render_soft)
+	// this is only used for planes rendering in software mode
+	j = viewheight*16;
+	for (i = 0; i < j; i++)
 	{
-		// this is only used for planes rendering in software mode
-		j = viewheight*16;
-		for (i = 0; i < j; i++)
-		{
-			dy = (i - viewheight*8)<<FRACBITS;
-			dy = FixedMul(abs(dy), fovtan);
-			yslopetab[i] = FixedDiv(centerx*FRACUNIT, dy);
-		}
-		
-		if (ds_su)
-			Z_Free(ds_su);
-		if (ds_sv)
-			Z_Free(ds_sv);
-		if (ds_sz)
-			Z_Free(ds_sz);
-
-		ds_su = ds_sv = ds_sz = NULL;
-		ds_sup = ds_svp = ds_szp = NULL;
+		dy = (i - viewheight*8)<<FRACBITS;
+		dy = FixedMul(abs(dy), fovtan);
+		yslopetab[i] = FixedDiv(centerx*FRACUNIT, dy);
 	}
+		
+	if (ds_su)
+		Z_Free(ds_su);
+	if (ds_sv)
+		Z_Free(ds_sv);
+	if (ds_sz)
+		Z_Free(ds_sz);
+
+	ds_su = ds_sv = ds_sz = NULL;
+	ds_sup = ds_svp = ds_szp = NULL;
 
 	memset(scalelight, 0xFF, sizeof(scalelight));
 
@@ -1028,12 +1040,6 @@ void R_ExecuteSetViewSize(void)
 			scalelight[i][j] = colormaps + level*256;
 		}
 	}
-
-	// continue to do the software setviewsize as long as we use the reference software view
-#ifdef HWRENDER
-	if (rendermode != render_soft)
-		HWR_SetViewSize();
-#endif
 
 	am_recalc = true;
 }
