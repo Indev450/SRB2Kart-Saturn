@@ -35,8 +35,6 @@
 
 // Eeeeh not sure is this right way, but it works < sry :c < sry again it had to go :c
 
-extern fixed_t fovtan; // also extremely bad, I'm just too lazy!!!
-
 #if defined (HWRENDER) && !defined (NOROPENGL)
 
 struct GLRGBAFloat
