@@ -93,7 +93,7 @@ INT32 viewangletox[FINEANGLES/2];
 // The xtoviewangleangle[] table maps a screen pixel
 // to the lowest viewangle that maps back to x ranges
 // from clipangle to -clipangle.
-angle_t xtoviewangle[MAXVIDWIDTH+1];
+angle_t xtoviewangle[(MAXVIDWIDTH+1)*2];
 
 lighttable_t *scalelight[LIGHTLEVELS][MAXLIGHTSCALE];
 lighttable_t *scalelightfixed[MAXLIGHTSCALE];
@@ -949,21 +949,6 @@ void R_ExecuteSetViewSize(void)
 	// status bar overlay
 	st_overlay = cv_showhud.value;
 
-	// why did we calc all the software crap?
-#ifdef HWRENDER
-	if (rendermode == render_opengl)
-	{
-		fov = FixedAngle(cv_fov.value/2) + ANGLE_90;
-		fovtan = FixedMul(FINETANGENT(fov >> ANGLETOFINESHIFT), FRACUNIT);
-		if (splitscreen == 1) // Splitscreen FOV should be adjusted to maintain expected vertical view
-			fovtan = 17*fovtan/10;
-
-		HWR_SetViewSize();
-		am_recalc = true;
-		return;
-	}
-#endif
-
 	scaledviewwidth = vid.width;
 	viewheight = vid.height;
 
@@ -993,6 +978,16 @@ void R_ExecuteSetViewSize(void)
 	R_InitViewBuffer(scaledviewwidth, viewheight);
 
 	R_InitTextureMapping();
+
+	// why did we calc all the software crap?
+#ifdef HWRENDER
+	if (rendermode == render_opengl)
+	{
+		HWR_SetViewSize();
+		am_recalc = true;
+		return;
+	}
+#endif
 
 	// thing clipping
 	for (i = 0; i < viewwidth; i++)
