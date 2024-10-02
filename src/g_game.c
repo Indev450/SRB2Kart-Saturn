@@ -6275,18 +6275,20 @@ void G_BeginRecording(void)
 	demobuf.p += 64;
 	{
 		char demotitlename[65];
-
+		char *title = G_BuildMapTitle(gamemap);
 		// Print to a separate temp buffer instead of demo.titlename, so we can use it in M_TextInputSetString
-		snprintf(demotitlename, 64, "%s - %s", maptitle, modeattacking ? "Time Attack" : connectedservername);
+		if (title)
+		{
+			snprintf(demotitlename, 64, "%s - %s", title, modeattacking ? "Time Attack" : connectedservername);
+			Z_Free(title);
+		}
 
 		// Init just in case it isn't initialized already
 		M_TextInputInit(&demo.titlenameinput, demo.titlename, sizeof(demo.titlename));
 
 		// This will indirectly assign to demo.titlename too
 		M_TextInputSetString(&demo.titlenameinput, demotitlename);
-		char *title = G_BuildMapTitle(gamemap);
-		snprintf(demo.titlename, 64, "%s - %s", title, modeattacking ? "Time Attack" : connectedservername);
-		Z_Free(title);
+
 	}
 
 	// demo checksum
