@@ -2315,7 +2315,7 @@ static void P_LoadRecordGhosts(void)
 	if (!gpath)
 		return;
 
-	sprintf(gpath,"%s"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s", srb2home, timeattackfolder, globalmapname);
+	sprintf(gpath,"%s"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s", srb2home, timeattackfolder, G_BuildMapName(gamemap));
 
 	// Best Time ghost
 	if (cv_ghost_besttime.value)
@@ -2365,9 +2365,9 @@ static void P_LoadRecordGhosts(void)
 	{
 		lumpnum_t l;
 		UINT8 j = 1;
-		while (j <= 99 && (l = W_CheckNumForName(va("%sS%02u", globalmapname, j))) != LUMPERROR)
+		while (j <= 99 && (l = W_CheckNumForName(va("%sS%02u",G_BuildMapName(gamemap),j))) != LUMPERROR)
 		{
-			G_AddGhost(va("%sS%02u", globalmapname, j));
+			G_AddGhost(va("%sS%02u",G_BuildMapName(gamemap),j));
 			j++;
 		}
 	}
@@ -2450,10 +2450,10 @@ static void P_InitMinimapInfo(void)
 	fixed_t a;
 	fixed_t b;
 	node_t *bsp = &nodes[numnodes-1];
-	lumpnum = W_CheckNumForName(va("%sR", globalmapname));
+	lumpnum = W_CheckNumForName(va("%sR", G_BuildMapName(gamemap)));
 
 	if (lumpnum != -1)
-		minimapinfo.minimap_pic = W_CachePatchName(va("%sR", globalmapname), PU_HUDGFX);
+		minimapinfo.minimap_pic = W_CachePatchName(va("%sR", G_BuildMapName(gamemap)), PU_HUDGFX);
 
 	minimapinfo.mapthingcount = 0;
 	// TODO iterate over mapthings to look for possible user-defined bounds
@@ -2714,7 +2714,7 @@ boolean P_SetupLevel(boolean skipprecip, boolean reloadinggamestate)
 	}
 
 	// internal game map
-	maplumpname = globalmapname;
+	maplumpname = G_BuildMapName(gamemap);
 	lastloadedmaplumpnum = W_CheckNumForName(maplumpname);
 	if (lastloadedmaplumpnum == INT16_MAX)
 		I_Error("Map %s not found.\n", maplumpname);
@@ -2823,7 +2823,7 @@ boolean P_SetupLevel(boolean skipprecip, boolean reloadinggamestate)
 	//Ensure dedis only record a replay if there is a player at the start of the map, otherwise we get invalid replays!
 	if (!demo.playback && multiplayer && D_NumPlayers()) {
 		static char buf[256];
-		sprintf(buf, "replay"PATHSEP"online"PATHSEP"%d-%s", (int) (time(NULL)), globalmapname);
+		sprintf(buf, "replay"PATHSEP"online"PATHSEP"%d-%s", (int) (time(NULL)), G_BuildMapName(gamemap));
 
 		I_mkdir(va("%s"PATHSEP"replay", srb2home), 0755);
 		I_mkdir(va("%s"PATHSEP"replay"PATHSEP"online", srb2home), 0755);

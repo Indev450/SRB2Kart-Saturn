@@ -351,7 +351,7 @@ static void write_backtrace(bt_crash_reason_t reason)
 	fprintf(out, "Compiled: %s %s, commit %s, branch %s\n", compdate, comptime, comprevision, compbranch);
 
 	if (gamestate == GS_LEVEL)
-		fprintf(out, "Game map: %s\n", globalmapname);
+		fprintf(out, "Game map: %s\n", G_BuildMapName(gamemap));
 
 	fprintf(out, "Time of crash: %s\n", asctime(timeinfo));
 

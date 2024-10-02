@@ -793,7 +793,7 @@ static void M_PNGText(png_structp png_ptr, png_infop png_info_ptr, PNG_CONST png
 	}
 
 	if (gamestate == GS_LEVEL)
-		snprintf(maptext, 8, "%s", globalmapname);
+		snprintf(maptext, 8, "%s", G_BuildMapName(gamemap));
 	else
 		snprintf(maptext, 8, "Unknown");
 
@@ -1616,11 +1616,11 @@ void M_MinimapGenerate(void)
 			return;
 		}
 
-		filepath = va("%s" PATHSEP "%s-MINIMAP-%d.png", srb2home, globalmapname, mul);
+		filepath = va("%s" PATHSEP "%s-MINIMAP-%d.png", srb2home, G_BuildMapName(gamemap), mul);
 	}
 	else
 	{
-		filepath = va("%s" PATHSEP "%s-MINIMAP.png", srb2home, globalmapname);
+		filepath = va("%s" PATHSEP "%s-MINIMAP.png", srb2home, G_BuildMapName(gamemap));
 	}
 
 	minigen = AM_MinimapGenerate(mul);

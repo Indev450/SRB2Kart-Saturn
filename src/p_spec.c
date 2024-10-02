@@ -2308,7 +2308,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 				lumpnum_t lumpnum;
 				char newname[9];
 
-				strcpy(newname, globalmapname);
+				strcpy(newname, G_BuildMapName(gamemap));
 				newname[0] = 'S';
 				newname[1] = 'C';
 				newname[2] = 'R';

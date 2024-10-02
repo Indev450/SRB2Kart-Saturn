@@ -92,7 +92,6 @@ UINT32 mapmusresume;
 
 INT16 gamemap = 1;
 char *maptitle = NULL;
-const char *globalmapname = NULL;
 INT16 maptol;
 UINT8 globalweather = 0;
 INT32 curWeather = PRECIP_NONE;
@@ -570,14 +569,6 @@ INT16 rw_maximums[NUM_WEAPONS] =
 	50,  // MAX_EXPLOSION
 	50   // MAX_RAIL
 };
-
-void G_AllocMapTitles(INT16 map)
-{
-	if (maptitle)
-		Z_Free(maptitle);
-	maptitle = G_BuildMapTitle(map);
-	globalmapname = G_BuildMapName(map);
-}
 
 // Allocation for time and nights data
 void G_AllocMainRecordData(INT16 i)
@@ -4258,7 +4249,9 @@ void G_InitNew(UINT8 pencoremode, const char *mapname, boolean resetplayer, bool
 
 	gamemap = (INT16)M_MapNumber(mapname[3], mapname[4]); // get xx out of MAPxx
 
-	G_AllocMapTitles(gamemap);
+	if (maptitle)
+		Z_Free(maptitle);
+	maptitle = G_BuildMapTitle(gamemap);
 
 	// gamemap changed; we assume that its map header is always valid,
 	// so make it so
@@ -4285,7 +4278,7 @@ void G_InitNew(UINT8 pencoremode, const char *mapname, boolean resetplayer, bool
 
 	if (netgame)
 	{
-		CON_LogMessage(va(M_GetText("Map is now \"%s"), globalmapname));
+		CON_LogMessage(va(M_GetText("Map is now \"%s"), G_BuildMapName(gamemap)));
 		if (maptitle)
 			CON_LogMessage(va(": %s", maptitle));
 		CON_LogMessage("\"\n");
@@ -7970,7 +7963,7 @@ void G_DoPlayMetal(void)
 	thinker_t *th;
 
 	// it's an internal demo
-	if ((l = W_CheckNumForName(va("%sMS", globalmapname))) == LUMPERROR)
+	if ((l = W_CheckNumForName(va("%sMS",G_BuildMapName(gamemap)))) == LUMPERROR)
 	{
 		CONS_Alert(CONS_WARNING, M_GetText("No bot recording for this map.\n"));
 		return;
@@ -8075,13 +8068,13 @@ ATTRNORETURN void FUNCNORETURN G_StopMetalRecording(void)
 		WRITEUINT8(demobuf.p, DEMOMARKER); // add the demo end marker
 		md5_buffer((char *)p+16, demobuf.p - (p+16), (void *)p); // make a checksum of everything after the checksum in the file.
 #endif
-		saved = FIL_WriteFile(va("%sMS.LMP", globalmapname), demobuf.buffer, demobuf.p - demobuf.buffer); // finally output the file.
+		saved = FIL_WriteFile(va("%sMS.LMP", G_BuildMapName(gamemap)), demobuf.buffer, demobuf.p - demobuf.buffer); // finally output the file.
 	}
 	free(demobuf.buffer);
 	demobuf.buffer = NULL;
 	metalrecording = false;
 	if (saved)
-		I_Error("Saved to %sMS.LMP", globalmapname);
+		I_Error("Saved to %sMS.LMP", G_BuildMapName(gamemap));
 	I_Error("Failed to save demo!");
 }
 
