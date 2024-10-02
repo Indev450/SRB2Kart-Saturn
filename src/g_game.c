@@ -91,7 +91,6 @@ UINT32 mapmusposition; // Position to jump to
 UINT32 mapmusresume;
 
 INT16 gamemap = 1;
-char *maptitle = {0};
 INT16 maptol;
 UINT8 globalweather = 0;
 INT32 curWeather = PRECIP_NONE;
@@ -4249,10 +4248,6 @@ void G_InitNew(UINT8 pencoremode, const char *mapname, boolean resetplayer, bool
 
 	gamemap = (INT16)M_MapNumber(mapname[3], mapname[4]); // get xx out of MAPxx
 
-	if (maptitle)
-		Z_Free(maptitle);
-	maptitle = G_BuildMapTitle(gamemap);
-
 	// gamemap changed; we assume that its map header is always valid,
 	// so make it so
 	if(!mapheaderinfo[gamemap-1])
@@ -4278,9 +4273,14 @@ void G_InitNew(UINT8 pencoremode, const char *mapname, boolean resetplayer, bool
 
 	if (netgame)
 	{
+		char *title = G_BuildMapTitle(gamemap);
+
 		CON_LogMessage(va(M_GetText("Map is now \"%s"), G_BuildMapName(gamemap)));
-		if (maptitle)
-			CON_LogMessage(va(": %s", maptitle));
+		if (title)
+		{
+			CON_LogMessage(va(": %s", title));
+			Z_Free(title);
+		}
 		CON_LogMessage("\"\n");
 	}
 }
@@ -4429,7 +4429,8 @@ INT32 G_FindMap(const char *mapname, char **foundmapnamep,
 					break;
 			}
 		}
-		else if (apromapnum == 0 || wanttable)
+		else
+		if (apromapnum == 0 || wanttable)
 		{
 			/* LEVEL 1--match keywords verbatim */
 			if (( aprop = strcasestr(realmapname, mapname) ))
@@ -6261,7 +6262,7 @@ void G_BeginRecording(void)
 		demoflags |= DF_ENCORE;
 
 	if (!modeattacking && gL)	// Ghosts don't read luavars, and you shouldn't ever need to save Lua in replays, you doof!
-								// SERIOUSLY THOUGH WHY WOULD YOU LOAD HOSTMOD AND RECORD A GHOST WITH IT !????
+						// SERIOUSLY THOUGH WHY WOULD YOU LOAD HOSTMOD AND RECORD A GHOST WITH IT !????
 		demoflags |= DF_LUAVARS;
 
 	// Setup header.
@@ -6283,6 +6284,9 @@ void G_BeginRecording(void)
 
 		// This will indirectly assign to demo.titlename too
 		M_TextInputSetString(&demo.titlenameinput, demotitlename);
+		char *title = G_BuildMapTitle(gamemap);
+		snprintf(demo.titlename, 64, "%s - %s", title, modeattacking ? "Time Attack" : connectedservername);
+		Z_Free(title);
 	}
 
 	// demo checksum

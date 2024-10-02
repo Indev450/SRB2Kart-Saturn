@@ -2630,10 +2630,10 @@ static void HU_DrawRankings(void)
 		//V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, gametype_cons_t[gametype].strvalue);
 	
 	// draw the current map in the lower right if theres none just say its unknown
-	if (!maptitle)
+	if (!G_BuildMapTitle(gamemap))
 		V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, "UNKNOWN");
 	else
-		V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, maptitle);
+		V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, G_BuildMapTitle(gamemap));
 
 	if (!G_RaceGametype())
 	{
