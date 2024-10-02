@@ -91,7 +91,7 @@ UINT32 mapmusposition; // Position to jump to
 UINT32 mapmusresume;
 
 INT16 gamemap = 1;
-char *maptitle = NULL;
+char *maptitle = {0};
 INT16 maptol;
 UINT8 globalweather = 0;
 INT32 curWeather = PRECIP_NONE;
