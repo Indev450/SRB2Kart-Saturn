@@ -2028,7 +2028,7 @@ void S_CheckMap(void)
 		return;
 	}
 
-	keepmusic = (!skipmusic && oldmap == gamemap && oldencore == encoremode);
+	keepmusic = (!skipmusic && gamestate == GS_LEVEL && oldmap == gamemap && oldencore == encoremode);
 
 	oldencore = encoremode;
 	oldmap = gamemap;
