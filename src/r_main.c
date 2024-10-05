@@ -1361,50 +1361,34 @@ void R_SetupFrame(player_t *player, boolean skybox)
 	camera_t *thiscam;
 	boolean chasecam = false;
 
+#define SETUPCAM(num, var, context)\
+	thiscam = &camera[num];\
+	chasecam = (var.value != 0);\
+	R_SetViewContext(context);\
+	if (thiscam->reset)\
+	{\
+		R_ResetViewInterpolation(num+1);\
+		thiscam->reset = false;\
+	}
+
 	if (splitscreen > 2 && player == &players[displayplayers[3]])
 	{
-		thiscam = &camera[3];
-		chasecam = (cv_chasecam4.value != 0);
-		R_SetViewContext(VIEWCONTEXT_PLAYER4);
-		if (thiscam->reset)
-		{
-			R_ResetViewInterpolation(4);
-			thiscam->reset = false;
-		}
+		SETUPCAM(3, cv_chasecam4, VIEWCONTEXT_PLAYER4)
 	}
 	else if (splitscreen > 1 && player == &players[displayplayers[2]])
 	{
-		thiscam = &camera[2];
-		chasecam = (cv_chasecam3.value != 0);
-		R_SetViewContext(VIEWCONTEXT_PLAYER3);
-		if (thiscam->reset)
-		{
-			R_ResetViewInterpolation(3);
-			thiscam->reset = false;
-		}
+		SETUPCAM(2, cv_chasecam3, VIEWCONTEXT_PLAYER3)
 	}
 	else if (splitscreen && player == &players[displayplayers[1]])
 	{
-		thiscam = &camera[1];
-		chasecam = (cv_chasecam2.value != 0);
-		R_SetViewContext(VIEWCONTEXT_PLAYER2);
-		if (thiscam->reset)
-		{
-			R_ResetViewInterpolation(2);
-			thiscam->reset = false;
-		}
+		SETUPCAM(1, cv_chasecam2, VIEWCONTEXT_PLAYER2)
 	}
 	else
 	{
-		thiscam = &camera[0];
-		chasecam = (cv_chasecam.value != 0);
-		R_SetViewContext(VIEWCONTEXT_PLAYER1);
-		if (thiscam->reset)
-		{
-			R_ResetViewInterpolation(1);
-			thiscam->reset = false;
-		}
+		SETUPCAM(0, cv_chasecam, VIEWCONTEXT_PLAYER1)
 	}
+
+#undef SETUPCAM
 
 	if (player->spectator) // no spectator chasecam
 		chasecam = false; // force chasecam off
@@ -1425,20 +1409,40 @@ void R_SetupFrame(player_t *player, boolean skybox)
 		// cut-away view stuff
 		viewmobj = player->awayviewmobj; // should be a MT_ALTVIEWMAN
 		I_Assert(viewmobj != NULL);
+
+		newview->x = viewmobj->x;
+		newview->y = viewmobj->y;
 		newview->z = viewmobj->z + 20*FRACUNIT;
 		newview->aim = player->awayviewaiming;
 		newview->angle = viewmobj->angle;
+
+		newview->x += quake.x;
+		newview->y += quake.y;
+
+		if (!P_MobjWasRemoved(viewmobj) && viewmobj->subsector && thiscam && thiscam->subsector->sector)
+			newview->sector = viewmobj->subsector->sector;
+		else
+			newview->sector = R_PointInSubsector(newview->x, newview->y)->sector;
 	}
-	else if (!player->spectator && (thiscam && chasecam))
-	// use outside cam view
+	else if (!player->spectator && (thiscam && chasecam)) // use outside cam view
 	{
 		viewmobj = NULL;
+
+		newview->x = thiscam->x;
+		newview->y = thiscam->y;
 		newview->z = thiscam->z + (thiscam->height>>1);
 		newview->aim = thiscam->aiming;
 		newview->angle = thiscam->angle;
+
+		newview->x += quake.x;
+		newview->y += quake.y;
+
+		if (thiscam->subsector && thiscam->subsector->sector)
+			newview->sector = thiscam->subsector->sector;
+		else
+			newview->sector = R_PointInSubsector(newview->x, newview->y)->sector;
 	}
-	else
-	// use the player's eyes view
+	else // use the player's eyes view
 	{
 		newview->z = player->viewz;
 
@@ -1470,38 +1474,11 @@ void R_SetupFrame(player_t *player, boolean skybox)
 			}
 		}
 	}
+
 	newview->roll = R_ViewRollAngle(player);
 	newview->z += quake.z;
 
 	newview->player = player;
-
-	if ((thiscam && chasecam) && !player->awayviewtics && !player->spectator)
-	{
-		newview->x = thiscam->x;
-		newview->y = thiscam->y;
-		newview->x += quake.x;
-		newview->y += quake.y;
-
-		if (thiscam->subsector && thiscam->subsector->sector)
-			newview->sector = thiscam->subsector->sector;
-		else
-			newview->sector = R_PointInSubsector(newview->x, newview->y)->sector;
-	}
-	else
-	{
-		newview->x = viewmobj->x;
-		newview->y = viewmobj->y;
-		newview->x += quake.x;
-		newview->y += quake.y;
-
-		if (!P_MobjWasRemoved(viewmobj) && viewmobj->subsector && thiscam && thiscam->subsector->sector)
-			newview->sector = viewmobj->subsector->sector;
-		else
-			newview->sector = R_PointInSubsector(newview->x, newview->y)->sector;
-	}
-
-	// newview->sin = FINESINE(viewangle>>ANGLETOFINESHIFT);
-	// newview->cos = FINECOSINE(viewangle>>ANGLETOFINESHIFT);
 
 	R_InterpolateView(R_UsingFrameInterpolation() ? rendertimefrac : FRACUNIT, false);
 }
