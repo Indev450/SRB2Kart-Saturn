@@ -404,10 +404,21 @@ void P_Ticker(boolean run)
 {
 	INT32 i;
 
-	//Increment jointime even if paused.
+	// Increment jointime and quittime even if paused
 	for (i = 0; i < MAXPLAYERS; i++)
+	{
 		if (playeringame[i])
-			++players[i].jointime;
+		{
+			players[i].jointime++;
+		}
+	}
+
+	if (run)
+	{
+		// Update old view state BEFORE ticking so resetting
+		// the old interpolation state from game logic works.
+		R_UpdateViewInterpolation();
+	}
 
 	if (objectplacing)
 	{
@@ -659,7 +670,6 @@ void P_Ticker(boolean run)
 	if (run)
 	{
 		R_UpdateLevelInterpolators();
-		R_UpdateViewInterpolation();
 
 		// Hack: ensure newview is assigned every tic.
 		// Ensures view interpolation is T-1 to T in poor network conditions
