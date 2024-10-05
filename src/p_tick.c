@@ -397,6 +397,36 @@ void P_RunChaseCameras(void)
 	}
 }
 
+static inline void P_RunQuakes(void)
+{
+	fixed_t ir;
+
+	if (quake.time <= 0)
+	{
+		quake.x = quake.y = quake.z = quake.roll = 0;
+		return;
+	}
+
+	ir = quake.intensity>>1;
+
+	/// \todo Calculate distance from epicenter if set and modulate the intensity accordingly based on radius.
+	quake.x = M_RandomRange(-ir,ir);
+	quake.y = M_RandomRange(-ir,ir);
+	quake.z = M_RandomRange(-ir,ir);
+
+	ir >>= 2;
+	ir = M_RandomRange(-ir,ir);
+
+	if (ir < 0)
+		ir = ANGLE_MAX - FixedAngle(-ir);
+	else
+		ir = FixedAngle(ir);
+
+	quake.roll = ir;
+
+	--quake.time;
+}
+
 //
 // P_Ticker
 //
@@ -600,24 +630,7 @@ void P_Ticker(boolean run)
 				K_CalculateBattleWanted();
 		}
 
-		if (quake.time)
-		{
-			fixed_t ir = quake.intensity>>1;
-			/// \todo Calculate distance from epicenter if set and modulate the intensity accordingly based on radius.
-			quake.x = M_RandomRange(-ir,ir);
-			quake.y = M_RandomRange(-ir,ir);
-			quake.z = M_RandomRange(-ir,ir);
-			ir >>= 2;
-			ir = M_RandomRange(-ir,ir);
-			if (ir < 0)
-				ir = ANGLE_MAX - FixedAngle(-ir);
-			else
-				ir = FixedAngle(ir);
-			quake.roll = ir;
-			--quake.time;
-		}
-		else
-			quake.x = quake.y = quake.z = quake.roll = 0;
+		P_RunQuakes();
 
 		if (metalplayback)
 			G_ReadMetalTic(metalplayback);
