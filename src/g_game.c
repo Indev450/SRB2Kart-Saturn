@@ -1992,6 +1992,23 @@ INT32 G_CountPlayersPotentiallyViewable(boolean active)
 }
 
 //
+// G_FixCamera
+// Reset camera position, angle and interpolation on a view
+// after changing state.
+//
+static void G_FixCamera(UINT8 view)
+{
+	player_t *player = &players[displayplayers[view - 1]];
+	// The order of displayplayers can change, which would
+	// invalidate localangle.
+	localangle[view - 1] = player->cmd.angleturn;
+	P_ResetCamera(player, &camera[view - 1]);
+	// Make sure the viewport doesn't interpolate at all into
+	// its new position -- just snap instantly into place.
+	R_ResetViewInterpolation(view);
+}
+
+//
 // G_ResetView
 // Correct a viewpoint to playernum or the next available, wraps forward.
 // Also promotes splitscreen up to available viewable players.
@@ -2003,7 +2020,6 @@ void G_ResetView(UINT8 viewnum, INT32 playernum, boolean onlyactive)
 	UINT8 viewd;
 
 	INT32    *displayplayerp;
-	camera_t *camerap;
 
 	INT32 olddisplayplayer;
 	INT32 playersviewable;
@@ -2042,28 +2058,14 @@ void G_ResetView(UINT8 viewnum, INT32 playernum, boolean onlyactive)
 	(*displayplayerp) = playernum;
 	if ((*displayplayerp) != olddisplayplayer)
 	{
-		camerap = &camera[viewnum-1];
-		P_ResetCamera(&players[(*displayplayerp)], camerap);
-
-		// Make sure the viewport doesn't interpolate at all into
-		// its new position -- just snap instantly into place.
-		R_ResetViewInterpolation(viewnum);
+		G_FixCamera(viewnum);
 	}
 
 	if (viewnum > splits)
 	{
 		for (viewd = splits+1; viewd < viewnum; ++viewd)
 		{
-			displayplayerp = (&displayplayers[viewd-1]);
-			camerap = &camera[viewd];
-
-			(*displayplayerp) = G_FindView(0, viewd, onlyactive, false);
-
-			P_ResetCamera(&players[(*displayplayerp)], camerap);
-
-			// Make sure the viewport doesn't interpolate at all into
-			// its new position -- just snap instantly into place.
-			R_ResetViewInterpolation(viewd);
+			G_FixCamera(viewd);
 		}
 	}
 
