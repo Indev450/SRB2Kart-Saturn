@@ -6284,18 +6284,20 @@ boolean TryRunTics(tic_t realtics)
 	}
 #endif
 
-	if (neededtic > gametic)
+	ticking = neededtic > gametic;
+
+	if (ticking)
 	{
-		hu_stopped = false;
+		if (realtics)
+			hu_stopped = false;
 	}
 
 	if (player_joining)
 	{
-		hu_stopped = true;
+		if (realtics)
+			hu_stopped = true;
 		return false;
 	}
-
-	ticking = neededtic > gametic;
 
 	if (ticking)
 	{
@@ -6327,7 +6329,8 @@ boolean TryRunTics(tic_t realtics)
 	}
 	else
 	{
-		hu_stopped = true;
+		if (realtics)
+			hu_stopped = true;
 	}
 
 	return ticking;
