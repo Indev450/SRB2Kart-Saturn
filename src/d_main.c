@@ -826,7 +826,7 @@ void D_SRB2Loop(void)
 				rendertimefrac = FRACUNIT;
 			}
 
-			rendertimefrac_unpaused = g_time.timefrac;
+			rendertimefrac_unpaused = (!hu_stopped) ? g_time.timefrac : FRACUNIT;
 		}
 		else
 		{
@@ -856,7 +856,7 @@ void D_SRB2Loop(void)
 		LUA_Step();
 
 #ifdef HAVE_DISCORDRPC
-		if (! dedicated)
+		if (!dedicated)
 		{
 			Discord_RunCallbacks();
 		}
