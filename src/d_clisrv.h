@@ -648,7 +648,7 @@ extern UINT8 hu_resynching;
 #ifdef SATURNSYNCH
 extern UINT8 hu_redownloadinggamestate;
 #endif
-extern UINT8 hu_stopped; // kart, true when the game is stopped for players due to a disconnecting or connecting player
+extern boolean hu_stopped; // kart, true when the game is stopped for players due to a disconnecting or connecting player
 
 typedef struct rewind_s {
 	UINT8 savebuffer[(768*1024)];
