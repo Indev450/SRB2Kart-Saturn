@@ -2485,6 +2485,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 		case 422: // Cut away to another view
 			{
 				mobj_t *altview;
+				INT32 i;
 
 				if (!mo || !mo->player) // only players have views
 					return;
@@ -2498,6 +2499,18 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 
 				P_SetTarget(&mo->player->awayviewmobj, altview);
 				mo->player->awayviewtics = P_AproxDistance(line->dx, line->dy)>>FRACBITS;
+
+				if (gamestate == GS_LEVEL)
+				{
+					for (i = 0; i <= splitscreen; i++)
+					{
+						if (displayplayers[i] == (mo->player - players))
+						{
+							R_ResetViewInterpolation(i + 1);
+							R_ResetViewInterpolation(i + 1);
+						}
+					}
+				}
 
 				if (line->flags & ML_NOCLIMB) // lets you specify a vertical angle
 				{
@@ -2836,17 +2849,19 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 
 		case 444: // Earthquake camera
 		{
-			quake.intensity = sides[line->sidenum[0]].textureoffset;
-			quake.radius = sides[line->sidenum[0]].rowoffset;
-			quake.time = P_AproxDistance(line->dx, line->dy)>>FRACBITS;
+			fixed_t intensity = sides[line->sidenum[0]].textureoffset;
+			fixed_t radius = sides[line->sidenum[0]].rowoffset;
+			tic_t time = P_AproxDistance(line->dx, line->dy)>>FRACBITS;
 
 			quake.epicenter = NULL; /// \todo
 
 			// reasonable defaults.
-			if (!quake.intensity)
-				quake.intensity = 8<<FRACBITS;
-			if (!quake.radius)
-				quake.radius = 512<<FRACBITS;
+			if (intensity <= 0)
+				intensity = 8<<FRACBITS;
+			if (radius <= 0)
+				radius = 512<<FRACBITS;
+
+			P_StartQuake(time, intensity, radius);
 			break;
 		}
 
@@ -7544,6 +7559,23 @@ static void P_SpawnPushers(void)
 					Add_Pusher(p_downwind, l->dx, l->dy, NULL, s, -1, l->flags & ML_NOCLIMB, l->flags & ML_EFFECT4);
 				break;
 		}
+}
+
+void P_StartQuake(tic_t time, fixed_t intensity, fixed_t radius)
+{
+	if (time <= 0 || intensity <= 0)
+	{
+		// Invalid parameters
+		return;
+	}
+
+	quake.time = time;
+	quake.intensity = FixedMul(intensity, mapobjectscale);
+
+	if (radius > 0)
+	{
+		quake.radius = FixedMul(radius, mapobjectscale);
+	}
 }
 
 static void P_SearchForDisableLinedefs(void)
