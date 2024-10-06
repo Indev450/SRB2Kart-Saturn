@@ -2079,6 +2079,9 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 					mo->y += y;
 					mo->z += z;
 					P_SetThingPosition(mo);
+					mo->old_x = mo->x;
+					mo->old_y = mo->y;
+					mo->old_z = mo->z;
 
 					if (mo->player)
 					{
