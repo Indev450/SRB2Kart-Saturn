@@ -328,7 +328,7 @@ enum
 	GRPORTAL_INSIDE,
 };
 
-static int gr_portal = GRPORTAL_OFF;
+static SINT8 gr_portal = GRPORTAL_OFF;
 static boolean gl_drawing_stencil = false;
 typedef struct gl_portal_s
 {
@@ -5335,7 +5335,7 @@ static void HWR_SetStencilState(int state, int level)
 }
 
 // Renders a portal segment.
-static void HWR_RenderPortalSeg(gl_portal_t* portal, int state)
+static void HWR_RenderPortalSeg(gl_portal_t* portal, SINT8 state)
 {
 	gl_drawing_stencil = true; // do not draw outside of the stencil buffer, idiot.
 	// set our portal state and prepare to render the seg
@@ -5466,7 +5466,7 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, playe
 
 	// HAYA: Save the old portal state, and turn portals off while normally rendering the BSP tree.
 	// This fixes specific effects not working, such as horizon lines.
-	int oldgl_portal_state = gr_portal;
+	SINT8 oldgl_portal_state = gr_portal;
 
 	if (gr_portal != GRPORTAL_OFF) // if we already haven't hit the recursion limit or we already ended our portal shenanigans
 		gr_portal = GRPORTAL_INSIDE; // TURN IT OFF
