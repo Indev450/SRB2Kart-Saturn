@@ -1999,12 +1999,18 @@ INT32 G_CountPlayersPotentiallyViewable(boolean active)
 static void G_FixCamera(UINT8 view)
 {
 	player_t *player = &players[displayplayers[view - 1]];
+
 	// The order of displayplayers can change, which would
 	// invalidate localangle.
 	localangle[view - 1] = player->cmd.angleturn;
+
 	P_ResetCamera(player, &camera[view - 1]);
+
 	// Make sure the viewport doesn't interpolate at all into
 	// its new position -- just snap instantly into place.
+
+	// Why does it need to be done twice?
+	R_ResetViewInterpolation(view);
 	R_ResetViewInterpolation(view);
 }
 
