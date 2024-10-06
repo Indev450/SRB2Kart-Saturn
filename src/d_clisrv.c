@@ -136,7 +136,7 @@ static UINT8 gamestate_resend_counter[MAXNETNODES];
 #endif
 
 // kart, true when a player is connecting or disconnecting so that the gameplay has stopped in its tracks
-UINT8 hu_stopped = 0;
+boolean hu_stopped = false;
 
 // Client specific
 static ticcmd_t localcmds;
