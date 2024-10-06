@@ -5267,7 +5267,10 @@ static void HandlePacketFromPlayer(SINT8 node)
 #ifdef SATURNSYNCH
 			// this decreases by one point at twice the cooldown time (ex cooldown of 2 seconds means, this counter decreases by one every 4 seconds), pretty much there to prevent a resynch loop
 			if ((gamestate_resend_counter[node] != 0) && (I_GetTime() % ((max(cv_resynchcooldown.value, 1) * TICRATE) *2) == 0))
+			{
 				gamestate_resend_counter[node]--;
+				DEBFILE(va("gamestate counter %d for node %d\n", gamestate_resend_counter[node], netconsole));
+			}
 
 			// Check player consistancy during the level
 			if (((!can_receive_gamestate[node]) && realstart <= gametic && realstart > gametic - TICQUEUE+1 && gamestate == GS_LEVEL
@@ -5309,7 +5312,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 					if (can_receive_gamestate[node] && resendingsavegame[node])
 					{
 						gamestate_resend_counter[node]++;
-						DEBFILE(va("gamestate counter %d for player %d\n", gamestate_resend_counter[node], netconsole));
+						DEBFILE(va("gamestate counter %d for node %d\n", gamestate_resend_counter[node], netconsole));
 					}
 
 					if (cv_blamecfail.value)
@@ -5333,6 +5336,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 						netconsole, realstart, consistancy[realstart%TICQUEUE],
 						SHORT(netbuffer->u.clientpak.consistancy)));
 					gamestate_resend_counter[node] = 0;
+					DEBFILE(va("gamestate counter %d for node %d\n", gamestate_resend_counter[node], netconsole));
 					break;
 				}
 			}
