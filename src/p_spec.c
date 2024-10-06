@@ -2514,6 +2514,9 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 				if (!altview)
 					return;
 
+				P_SetTarget(&mo->player->awayviewmobj, altview);
+				mo->player->awayviewtics = P_AproxDistance(line->dx, line->dy)>>FRACBITS;
+
 				if (gamestate == GS_LEVEL)
 				{
 					for (i = 0; i <= splitscreen; i++)
@@ -2524,9 +2527,6 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 						}
 					}
 				}
-
-				P_SetTarget(&mo->player->awayviewmobj, altview);
-				mo->player->awayviewtics = P_AproxDistance(line->dx, line->dy)>>FRACBITS;
 
 				if (line->flags & ML_NOCLIMB) // lets you specify a vertical angle
 				{
