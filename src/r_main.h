@@ -174,4 +174,6 @@ void R_RegisterEngineStuff(void);
 
 // return multiplier for HUD uncap
 INT32 R_GetHudUncap(void);
+// same as above but keeps interpolation during pause
+INT32 R_GetMenuUncap(void);
 #endif
