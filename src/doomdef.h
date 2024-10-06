@@ -596,9 +596,9 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 
 /// Server detection for if a connecting client is on Saturn.
 /// For stuff like extra synching, etc.
-//#ifdef DOSATURNPAK
-//#define SATURNPAK
-//#endif
+#ifdef DOSATURNPAK
+#define SATURNPAK
+#endif
 //-- <(￣︶￣)> __
 #endif
 
