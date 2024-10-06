@@ -5279,7 +5279,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 				&& !resendingsavegame[node] && savegameresendcooldown[node] <= I_GetTime()
 				&& !SV_ResendingSavegameToAnyone()))
 			{
-//#ifndef SATURNPAK
+//#ifndef SATURNPAK  // lug: keep this behaviour for v7.1 atleast
 				// we need to send this so the client can tell us if it can receive the savegame
 				netbuffer->packettype = PT_WILLRESENDGAMESTATE;
 				HSendPacket(node, true, 0, 0);
@@ -5307,7 +5307,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 				}
 #endif*/
 
-				if ((!can_receive_gamestate[node] && cv_resynchattempts.value && resynch_score[node] <= (unsigned)cv_resynchattempts.value*250) || (can_receive_gamestate[node] && (gamestate_resend_counter[node] < cv_gamestateattempts.value)))
+				if ((!can_receive_gamestate[node] && (cv_resynchattempts.value && resynch_score[node] <= (unsigned)cv_resynchattempts.value*250)) || (can_receive_gamestate[node] && (gamestate_resend_counter[node] < cv_gamestateattempts.value)))
 				{
 					if (can_receive_gamestate[node] && resendingsavegame[node])
 					{
@@ -5348,7 +5348,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 			if (realstart <= gametic && realstart > gametic - TICQUEUE+1 && gamestate == GS_LEVEL
 				&& consistancy[realstart%TICQUEUE] != SHORT(netbuffer->u.clientpak.consistancy))
 			{
-					SV_RequireResynch(node);
+				SV_RequireResynch(node);
 
 				if (cv_resynchattempts.value && resynch_score[node] <= (unsigned)cv_resynchattempts.value*250)
 				{
