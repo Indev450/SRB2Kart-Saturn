@@ -5394,6 +5394,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 				&& !resendingsavegame[node] && savegameresendcooldown[node] <= I_GetTime()
 				&& !SV_ResendingSavegameToAnyone()))
 			{
+#ifndef SATURNPAK
 				// we need to send this so the client can tell us if it can receive the savegame
 				netbuffer->packettype = PT_WILLRESENDGAMESTATE;
 				HSendPacket(node, true, 0, 0);
@@ -5405,6 +5406,21 @@ static void HandlePacketFromPlayer(SINT8 node)
 					SV_RequireResynch(node);
 					resendingsavegame[node] = false;
 				}
+#else
+				if (can_receive_gamestate[node])
+				{
+					// Tell the client we are about to resend them the gamestate
+					netbuffer->packettype = PT_WILLRESENDGAMESTATE;
+					HSendPacket(node, true, 0, 0);
+
+					resendingsavegame[node] = true;
+				}
+				else
+				{
+					SV_RequireResynch(node);
+					resendingsavegame[node] = false;
+				}
+#endif
 
 				if ((!can_receive_gamestate[node] && cv_resynchattempts.value && resynch_score[node] <= (unsigned)cv_resynchattempts.value*250) || (can_receive_gamestate[node] && (gamestate_resend_counter[node] < cv_gamestateattempts.value)))
 				{
@@ -5584,31 +5600,6 @@ static void HandlePacketFromPlayer(SINT8 node)
 				else
 					buf[1] = KICK_MSG_PLAYER_QUIT;
 				SendNetXCmd(XD_KICK, &buf, 2);
-				//nodetoplayer[node] = -1;
-
-				/*if (nodetoplayer2[node] != -1 && nodetoplayer2[node] >= 0
-					&& playeringame[(UINT8)nodetoplayer2[node]])
-				{
-					buf[0] = nodetoplayer2[node];
-					SendNetXCmd(XD_KICK, &buf, 2);
-					nodetoplayer2[node] = -1;
-				}
-
-				if (nodetoplayer3[node] != -1 && nodetoplayer3[node] >= 0
-					&& playeringame[(UINT8)nodetoplayer3[node]])
-				{
-					buf[0] = nodetoplayer3[node];
-					SendNetXCmd(XD_KICK, &buf, 2);
-					nodetoplayer3[node] = -1;
-				}
-
-				if (nodetoplayer4[node] != -1 && nodetoplayer4[node] >= 0
-					&& playeringame[(UINT8)nodetoplayer4[node]])
-				{
-					buf[0] = nodetoplayer4[node];
-					SendNetXCmd(XD_KICK, &buf, 2);
-					nodetoplayer4[node] = -1;
-				}*/
 			}
 			Net_CloseConnection(node);
 			nodeingame[node] = false;
@@ -5799,6 +5790,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 		case PT_ISSATURN:
 			//CONS_Printf("hi im on saturn%d\n", node);
 			is_client_saturn[node] = true;
+			can_receive_gamestate[node] = true;
 			break;
 #endif
 		default:
@@ -6634,7 +6626,7 @@ void NetKeepAlive(void)
 #ifdef MASTERSERVER
 	MasterClient_Ticker();
 #endif
-	
+
 #ifdef HOLEPUNCH
 	if (netgame && serverrunning)
 	{
@@ -6745,7 +6737,7 @@ void NetUpdate(void)
 		CL_SendClientCmd(); // send it
 
 	GetPackets(); // get packet from client or from server
-	
+
 	// client send the command after a receive of the server
 	// the server send before because in single player is beter
 
