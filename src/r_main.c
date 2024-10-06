@@ -459,6 +459,11 @@ INT32 R_GetHudUncap(void)
 	return cv_uncappedhud.value ? rendertimefrac & FRACMASK : 0;
 }
 
+INT32 R_GetMenuUncap(void)
+{
+	return cv_uncappedhud.value ? rendertimefrac_unpaused & FRACMASK : 0;
+}
+
 //
 // R_ScaleFromGlobalAngle
 // Returns the texture mapping scale for the current line (horizontal span)
