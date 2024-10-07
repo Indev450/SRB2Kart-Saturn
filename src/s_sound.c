@@ -121,7 +121,7 @@ consvar_t cv_birdmusic = {"birdmusicstuff", "No", CV_SAVE|CV_CALL, CV_YesNo, Bir
 
 consvar_t cv_keepmusic = {"keepmusic", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_skipintromusic = {"skipintromusic", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_ignoremusicchanges = {"ignoremusicchanges", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
+//consvar_t cv_ignoremusicchanges = {"ignoremusicchanges", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 boolean keepmusic = false;
 static void S_CheckEventMus(const char *newmus);
@@ -305,7 +305,7 @@ void S_RegisterSoundStuff(void)
 
 	CV_RegisterVar(&cv_keepmusic);
 	CV_RegisterVar(&cv_skipintromusic);
-	CV_RegisterVar(&cv_ignoremusicchanges);
+	//CV_RegisterVar(&cv_ignoremusicchanges);
 
 	COM_AddCommand("tunes", Command_Tunes_f);
 	COM_AddCommand("restartaudio", Command_RestartAudio_f);
