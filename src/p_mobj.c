@@ -10113,13 +10113,6 @@ void P_RemoveMobj(mobj_t *mobj)
 	}
 }
 
-// This does not need to be added to Lua.
-// To test it in Lua, check mobj.valid
-FUNCINLINE ATTRINLINE boolean P_MobjWasRemoved(const mobj_t *mobj)
-{
-    return !(mobj && mobj->thinker.function.acp1 == (actionf_p1)P_MobjThinker);
-}
-
 void P_FreePrecipMobj(precipmobj_t *mobj)
 {
 	// unlink from sector and block lists
