@@ -2189,7 +2189,7 @@ boolean S_FadeOutStopMusic(UINT32 ms)
 }*/
 
 static INT16 oldmap = 0;
-static boolean oldencore = 0;
+static boolean oldencore = false;
 static boolean skipmusic = false;
 boolean skipintromus = false;
 
