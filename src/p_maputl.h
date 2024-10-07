@@ -44,7 +44,30 @@ boolean P_PathTraverse(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2,
 #define P_AproxDistance(dx, dy) FixedHypot(dx, dy)
 void P_ClosestPointOnLine(fixed_t x, fixed_t y, line_t *line, vertex_t *result);
 void P_ClosestPointOnLine3D(fixed_t x, fixed_t y, fixed_t z, line_t *line, vertex_t *result);
-INT32 P_PointOnLineSide(fixed_t x, fixed_t y, const line_t *line);
+
+//
+// P_PointOnLineSide
+// Returns 0 or 1
+//
+FUNCINLINE static ATTRINLINE PUREFUNC INT32 P_PointOnLineSide(fixed_t x, fixed_t y, const line_t *line)
+{
+	fixed_t dx, dy, left, right;
+
+	if (!line->dx)
+		return x <= line->v1->x ? line->dy > 0 : line->dy < 0;
+
+	if (!line->dy)
+		return y <= line->v1->y ? line->dx < 0 : line->dx > 0;
+
+	dx = (x - line->v1->x);
+	dy = (y - line->v1->y);
+
+	left = FixedMul(line->dy>>FRACBITS, dx);
+	right = FixedMul(dy, line->dx>>FRACBITS);
+
+	return right < left ? 0 : 1;
+}
+
 void P_MakeDivline(line_t *li, divline_t *dl);
 void P_CameraLineOpening(line_t *plinedef);
 fixed_t P_InterceptVector(divline_t *v2, divline_t *v1);

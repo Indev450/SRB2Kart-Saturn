@@ -131,29 +131,6 @@ void P_ClosestPointOnLine3D(fixed_t x, fixed_t y, fixed_t z, line_t *line, verte
 }
 
 //
-// P_PointOnLineSide
-// Returns 0 or 1
-//
-FUNCINLINE ATTRINLINE PUREFUNC INT32 P_PointOnLineSide(fixed_t x, fixed_t y, const line_t *line)
-{
-	fixed_t dx, dy, left, right;
-
-	if (!line->dx)
-		return x <= line->v1->x ? line->dy > 0 : line->dy < 0;
-
-	if (!line->dy)
-		return y <= line->v1->y ? line->dx < 0 : line->dx > 0;
-
-	dx = (x - line->v1->x);
-	dy = (y - line->v1->y);
-
-	left = FixedMul(line->dy>>FRACBITS, dx);
-	right = FixedMul(dy, line->dx>>FRACBITS);
-
-	return right < left ? 0 : 1;
-}
-
-//
 // P_BoxOnLineSide
 // Considers the line to be infinite
 // Returns side 0 or 1, -1 if box crosses the line.
@@ -235,7 +212,7 @@ FUNCINLINE static ATTRINLINE PUREFUNC INT32 P_PointOnDivlineSide(fixed_t x, fixe
 //
 // P_MakeDivline
 //
-FUNCINLINE ATTRINLINE void P_MakeDivline(line_t *li, divline_t *dl)
+void P_MakeDivline(line_t *li, divline_t *dl)
 {
 	dl->x = li->v1->x;
 	dl->y = li->v1->y;
@@ -248,7 +225,7 @@ FUNCINLINE ATTRINLINE void P_MakeDivline(line_t *li, divline_t *dl)
 // Returns the fractional intercept point along the first divline.
 // This is only called by the addthings and addlines traversers.
 //
-FUNCINLINE ATTRINLINE fixed_t P_InterceptVector(divline_t *v2, divline_t *v1)
+fixed_t P_InterceptVector(divline_t *v2, divline_t *v1)
 {
 	fixed_t frac, num, den;
 
@@ -752,7 +729,7 @@ void P_UnsetThingPosition(mobj_t *thing)
 	}
 }
 
-FUNCINLINE ATTRINLINE void P_UnsetPrecipThingPosition(precipmobj_t *thing)
+void P_UnsetPrecipThingPosition(precipmobj_t *thing)
 {
 	precipmobj_t **bprev = thing->bprev;
 	precipmobj_t  *bnext = thing->bnext;
@@ -902,7 +879,7 @@ void P_SetUnderlayPosition(mobj_t *thing)
 	sector_list = NULL; // clear for next time
 }
 
-FUNCINLINE ATTRINLINE void P_SetPrecipitationThingPosition(precipmobj_t *thing)
+void P_SetPrecipitationThingPosition(precipmobj_t *thing)
 {
 	thing->subsector = R_PointInSubsector(thing->x, thing->y);
 
@@ -990,7 +967,7 @@ boolean P_BlockLinesIterator(INT32 x, INT32 y, boolean (*func)(line_t *))
 //
 // P_BlockThingsIterator
 //
-FUNCINLINE ATTRINLINE boolean P_BlockThingsIterator(INT32 x, INT32 y, boolean (*func)(mobj_t *))
+boolean P_BlockThingsIterator(INT32 x, INT32 y, boolean (*func)(mobj_t *))
 {
 	mobj_t *mobj, *bnext = NULL;
 
