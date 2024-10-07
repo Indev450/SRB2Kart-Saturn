@@ -136,7 +136,7 @@ static UINT8 gamestate_resend_counter[MAXNETNODES];
 #endif
 
 // kart, true when a player is connecting or disconnecting so that the gameplay has stopped in its tracks
-UINT8 hu_stopped = 0;
+boolean hu_stopped = false;
 
 // Client specific
 static ticcmd_t localcmds;
@@ -5383,6 +5383,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 			}
 
 #ifdef SATURNSYNCH
+			// this decreases by one point at twice the cooldown time (ex cooldown of 2 seconds means, this counter decreases by one every 4 seconds), pretty much there to prevent a resynch loop
 			if ((gamestate_resend_counter[node] != 0) && (I_GetTime() % ((max(cv_resynchcooldown.value, 1) * TICRATE) *2) == 0))
 				gamestate_resend_counter[node]--;
 

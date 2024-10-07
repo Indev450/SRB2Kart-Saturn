@@ -166,6 +166,7 @@ boolean P_Teleport(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z, angle_t angle
 				P_ResetCamera(thing->player, &camera[i]);
 
 			R_ResetViewInterpolation(i + 1);
+			break;
 		}
 
 		// don't run in place after a teleport
