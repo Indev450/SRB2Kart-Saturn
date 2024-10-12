@@ -110,7 +110,7 @@ void S_StopSounds(void);
 void S_ClearSfx(void);
 
 void S_InitMapMusic(void);
-void S_StartMapMusic(void);
+void S_StartMapMusic(boolean restore);
 
 void S_CheckMap(void);
 
