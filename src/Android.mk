@@ -28,6 +28,7 @@ LOCAL_SRC_FILES :=      am_map.c \
                         m_cheat.c \
                         m_fixed.c \
                         m_menu.c \
+						m_textinput.c \
                         m_misc.c \
                         m_queue.c \
                         m_random.c \
