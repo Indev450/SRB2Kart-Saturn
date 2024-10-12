@@ -30,6 +30,7 @@
 #include "g_game.h"
 #include "g_input.h"
 #include "m_argv.h"
+#include "m_textinput.h"
 
 // Data.
 #include "sounds.h"
@@ -159,6 +160,9 @@ boolean fromlevelselect = false;
 
 boolean menu_text_input = false;
 
+char menu_text_input_buf[MAXSTRINGLENGTH];
+static textinput_t menuinput;
+
 static INT32 coolalphatimer = 9;
 
 typedef enum
@@ -245,6 +249,7 @@ menu_t SR_MainDef, SR_UnlockChecklistDef;
 
 // Misc. Main Menu
 static void M_Options(INT32 choice);
+static void M_Multiplayer(INT32 choice);
 static void M_LocalSkinMenu(INT32 choice);
 static void M_LocalSkinChange(INT32 choice);
 static void M_Manual(INT32 choice);
@@ -591,7 +596,7 @@ static menuitem_t MainMenu[] =
 {
 	{IT_SUBMENU|IT_STRING, NULL, "Extras",      &SR_MainDef,        76},
 	{IT_CALL   |IT_STRING, NULL, "Time Attack", M_TimeAttack,       84},
-	{IT_SUBMENU|IT_STRING, NULL, "Multiplayer", &MP_MainDef,        92},
+	{IT_CALL   |IT_STRING, NULL, "Multiplayer", M_Multiplayer,      92},
 	{IT_CALL   |IT_STRING, NULL, "Options",     M_Options,          100},
 	{IT_CALL   |IT_STRING, NULL, "Addons",      M_Addons,           108},
 	{IT_CALL   |IT_STRING, NULL, "Quit  Game",  M_QuitSRB2,         116},
@@ -3500,46 +3505,15 @@ static void M_ChangeCvar(INT32 choice)
 static boolean M_ChangeStringCvar(INT32 choice)
 {
 	consvar_t *cv = (consvar_t *)currentMenu->menuitems[itemOn].itemaction;
-	char buf[MAXSTRINGLENGTH];
-	size_t len;
 
-	choice = M_ShiftChar(choice);
-
-	switch (choice)
+	if (M_TextInputHandle(&menuinput, choice))
 	{
-		case KEY_BACKSPACE:
-			len = strlen(cv->string);
-			if (len > 0)
-			{
-				S_StartSound(NULL,sfx_menu1); // Tails
-				M_Memcpy(buf, cv->string, len);
-				buf[len-1] = 0;
-				CV_Set(cv, buf);
-			}
-			return true;
-		case KEY_DEL:
-			if (cv->string[0])
-			{
-				S_StartSound(NULL,sfx_menu1); // Tails
-				CV_Set(cv, "");
-			}
-			return true;
-		default:
-			if ((cv_keyboardlayout.value != 3 && choice >= 32 && choice <= 127) || (cv_keyboardlayout.value == 3 && choice >= 32 && choice <= 141))
-			{
-				len = strlen(cv->string);
-				if (len < MAXSTRINGLENGTH - 1)
-				{
-					S_StartSound(NULL,sfx_menu1); // Tails
-					M_Memcpy(buf, cv->string, len);
-					buf[len++] = (char)choice;
-					buf[len] = 0;
-					CV_Set(cv, buf);
-				}
-				return true;
-			}
-			break;
+		S_StartSound(NULL,sfx_menu1); // Tails
+		CV_Set(cv, menuinput.buffer);
+
+		return true;
 	}
+
 	return false;
 }
 
@@ -3556,6 +3530,21 @@ static void M_ResetCvars(void)
 	}
 }
 
+// If current menu item is IT_CV_STRING, setup menuinput
+static void M_CheckStringItem(void)
+{
+	if (itemOn < currentMenu->numitems && (currentMenu->menuitems[itemOn].status & IT_CVARTYPE) == IT_CV_STRING)
+	{
+		consvar_t *cv = (consvar_t *)currentMenu->menuitems[itemOn].itemaction;
+
+		// Just in case
+		memset(menu_text_input_buf, 0, sizeof menu_text_input_buf);
+		M_TextInputInit(&menuinput, menu_text_input_buf, sizeof menu_text_input_buf);
+
+		M_TextInputSetString(&menuinput, cv->string);
+	}
+}
+
 static void M_NextOpt(void)
 {
 	INT16 oldItemOn = itemOn; // prevent infinite loop
@@ -3567,6 +3556,8 @@ static void M_NextOpt(void)
 		else
 			itemOn++;
 	} while (oldItemOn != itemOn && (currentMenu->menuitems[itemOn].status & IT_TYPE) == IT_SPACE);
+
+	M_CheckStringItem();
 }
 
 static void M_PrevOpt(void)
@@ -3580,6 +3571,8 @@ static void M_PrevOpt(void)
 		else
 			itemOn--;
 	} while (oldItemOn != itemOn && (currentMenu->menuitems[itemOn].status & IT_TYPE) == IT_SPACE);
+
+	M_CheckStringItem();
 }
 
 // lock out further input in a tic when important buttons are pressed
@@ -3940,7 +3933,6 @@ boolean M_Responder(event_t *ev)
 		if ((currentMenu->menuitems[itemOn].status & IT_CVARTYPE) == IT_CV_STRING)
 		{
 			menu_text_input = true;
-			ch = M_ShiftChar(ch);
 			if (M_ChangeStringCvar(ch))
 				return true;
 			else
@@ -4601,6 +4593,8 @@ void M_SetupNextMenu(menu_t *menudef)
 			}
 		}
 	}
+
+	M_CheckStringItem();
 }
 
 //
@@ -4940,6 +4934,33 @@ void M_DrawTextBoxFlags(INT32 x, INT32 y, INT32 width, INT32 boxlines, INT32 fla
 	V_DrawFill(x+5, y+5, width*8+6, boxlines*8+6, 239|flags);
 }
 
+void M_DrawTextInput(INT32 x, INT32 y, textinput_t *input, INT32 flags)
+{
+	INT32 skullx = x;
+
+	V_DrawString(x, y, V_ALLOWLOWERCASE|flags, input->buffer);
+
+	// draw text cursor for name
+	if (input->length)
+		skullx = x+V_SubStringWidth(input->buffer, input->cursor, V_ALLOWLOWERCASE);
+
+	if (skullAnimCounter < 4) // blink cursor
+		V_DrawCharacter(skullx, y+3, '_'|flags, false);
+
+	// draw selection
+	if (input->select != input->cursor)
+	{
+		size_t start = min(input->select, input->cursor);
+		size_t end =   max(input->select, input->cursor);
+
+		size_t len = end - start;
+
+		INT32 startx = V_SubStringWidth(input->buffer, start, V_ALLOWLOWERCASE);
+
+		V_DrawFill(x+startx, y, V_SubStringWidth(input->buffer+start, len, V_ALLOWLOWERCASE), 8, 103|V_TRANSLUCENT|flags);
+	}
+}
+
 // horizontally centered text
 static void M_CentreText(INT32 y, const char *string)
 {
@@ -5141,10 +5162,12 @@ static void M_DrawGenericMenu(void)
 								break;
 							case IT_CV_STRING:
 								M_DrawTextBox(x, y + 4, MAXSTRINGLENGTH, 1);
-								V_DrawString(x + 8, y + 12, V_ALLOWLOWERCASE, cv->string);
-								if (skullAnimCounter < 4 && i == itemOn)
-									V_DrawCharacter(x + 8 + V_StringWidth(cv->string, 0), y + 12,
-										'_' | 0x80, false);
+
+								if (itemOn == i)
+									M_DrawTextInput(x + 8, y + 12, &menuinput, 0);
+								else
+									V_DrawString(x + 8, y + 12, V_ALLOWLOWERCASE, cv->string);
+
 								y += 16;
 								break;
 							default:
@@ -5328,10 +5351,12 @@ static void M_DrawGenericScrollMenu(void)
 								if (y + 12 > (currentMenu->y + 2*scrollareaheight))
 									break;
 								M_DrawTextBox(x, y + 4, MAXSTRINGLENGTH, 1);
-								V_DrawString(x + 8, y + 12, lowercase, cv->string);
-								if (skullAnimCounter < 4 && i == itemOn)
-									V_DrawCharacter(x + 8 + V_StringWidth(cv->string, 0), y + 12,
-										'_' | 0x80, false);
+
+								if (itemOn == i)
+									M_DrawTextInput(x + 8, y + 12, &menuinput, 0);
+								else
+									V_DrawString(x + 8, y + 12, lowercase, cv->string);
+
 								break;
 							default:
 								V_DrawRightAlignedString(BASEVIDWIDTH - x, y,
@@ -5467,10 +5492,12 @@ static void M_DrawCenteredMenu(void)
 								break;
 							case IT_CV_STRING:
 								M_DrawTextBox(x, y + 4, MAXSTRINGLENGTH, 1);
-								V_DrawString(x + 8, y + 12, V_ALLOWLOWERCASE, cv->string);
-								if (skullAnimCounter < 4 && i == itemOn)
-									V_DrawCharacter(x + 8 + V_StringWidth(cv->string, 0), y + 12,
-										'_' | 0x80, false);
+
+								if (itemOn == i)
+									M_DrawTextInput(x + 8, y + 12, &menuinput, 0);
+								else
+									V_DrawString(x + 8, y + 12, V_ALLOWLOWERCASE, cv->string);
+
 								y += 16;
 								break;
 							default:
@@ -6646,11 +6673,11 @@ I_mutex replayquerymutex;
 
 
 #define MAXREPLAYQUERY 40
-char replayqueryinput[MAXREPLAYQUERY+1]; // The input typed
-size_t replayquerypos = 0; // Position in input window
+static char replayqueryinput_buffer[MAXREPLAYQUERY+1]; // The input typed
+static textinput_t replayqueryinput;
 
-size_t replayqueryfound = 0; // Number of checked replay entries
-size_t replayquerycheck = 0; // Index of next replay entry to check in demolist_all
+static size_t replayqueryfound = 0; // Number of checked replay entries
+static size_t replayquerycheck = 0; // Index of next replay entry to check in demolist_all
 
 #define DF_ENCORE       0x40
 static INT16 replayScrollTitle = 0;
@@ -6705,8 +6732,8 @@ static void LoadReplayNames(void)
 
 static void ResetReplayQuery(void)
 {
-	memset(replayqueryinput, 0, MAXREPLAYQUERY);
-	replayquerypos = 0;
+	memset(replayqueryinput_buffer, 0, MAXREPLAYQUERY);
+	M_TextInputInit(&replayqueryinput, replayqueryinput_buffer, MAXREPLAYQUERY);
 
 	replayqueryfound = 0;
 	replayquerycheck = 0;
@@ -6730,7 +6757,7 @@ static void M_HutCheckReplays(size_t maxnum)
 		return;
 
 	// If we don't have any query, just copy all demos and consider them checked
-	if (replayquerypos == 0)
+	if (replayqueryinput.length == 0)
 	{
 		// Mark as done
 		replayqueryfound = replayquerycheck = sizedirmenu;
@@ -6754,7 +6781,7 @@ static void M_HutCheckReplays(size_t maxnum)
 			case MD_NOTLOADED:
 			case MD_OUTDATED:
 			case MD_LOADED:
-				if (demolist_all[replayquerycheck].title[0] && strcasestr(demolist_all[replayquerycheck].title, replayqueryinput) != NULL)
+				if (demolist_all[replayquerycheck].title[0] && strcasestr(demolist_all[replayquerycheck].title, replayqueryinput.buffer) != NULL)
 					AddCheckedReplay(); // It matches, add it!
 				else
 					replayquerycheck++; // Doesn't match, moving on...
@@ -6853,41 +6880,23 @@ void M_ReplayHut(INT32 choice)
 
 static boolean M_HandleReplayHutQuery(INT32 choice)
 {
-	switch (choice)
+	// Yea gonna copy buffer and check if it changed, thats better than checking for specific keys i think
+	char tmp[MAXREPLAYQUERY+1];
+	memcpy(tmp, replayqueryinput_buffer, MAXREPLAYQUERY+1);
+
+	if (M_TextInputHandle(&replayqueryinput, choice))
 	{
-		case KEY_BACKSPACE:
-			if (replayquerypos == 0)
-				break;
+		S_StartSound(NULL,sfx_menu1);
 
-			S_StartSound(NULL,sfx_menu1);
-
-			replayquerypos--;
-			replayqueryinput[replayquerypos] = 0;
-
+		// Restart search only if we actually modified input and not just moved in it
+		if (memcmp(tmp, replayqueryinput_buffer, MAXREPLAYQUERY+1))
+		{
 			preparefilemenu(false, true);
 			dir_on[menudepthleft] = 0;
 			PrepReplayList(false);
+		}
 
-			return true;
-
-		default:
-			if (choice < 32 || choice > 127)
-				break;
-
-			if (replayquerypos < MAXREPLAYQUERY)
-			{
-				S_StartSound(NULL,sfx_menu1);
-
-				replayqueryinput[replayquerypos] = choice;
-				replayqueryinput[replayquerypos+1] = 0;
-				++replayquerypos;
-
-				preparefilemenu(false, true);
-				dir_on[menudepthleft] = 0;
-				PrepReplayList(false);
-			}
-
-			return true;
+		return true;
 	}
 
 	return false;
@@ -7318,14 +7327,10 @@ static void M_DrawReplayHut(void)
 	// Draw search query
 	M_DrawTextBoxFlags(x, 200 - 22, MAXREPLAYQUERY, 1, V_SNAPTOBOTTOM);
 
-	if (replayquerypos)
-		V_DrawString(x + 8, 200 - 14, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, replayqueryinput);
+	if (replayqueryinput.length)
+		M_DrawTextInput(x + 8, 200 - 14, &replayqueryinput, V_SNAPTOBOTTOM);
 	else
 		V_DrawString(x + 8, 200 - 14, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, "\x86Type to search...");
-
-	// draw text cursor for name
-	if (replayquerypos && skullAnimCounter < 4) // blink cursor
-		V_DrawCharacter(x + 8 + V_StringWidth(replayqueryinput, V_ALLOWLOWERCASE), 200 - 14, '_'|V_SNAPTOBOTTOM, false);
 
 	if (replaynamesloaded && replayquerycheck < sizedirmenu)
 		V_DrawString(x + 8, 200 - 30, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, va("Searching %u/%u...", (unsigned)replayquerycheck, (unsigned)sizedirmenu));
@@ -8904,9 +8909,11 @@ void M_DrawTimeAttackMenu(void)
 			if (currentMenu->menuitems[i].status & IT_CV_STRING)
 			{
 				M_DrawTextBox(x + 32, y - 8, MAXPLAYERNAME, 1);
-				V_DrawString(x + 40, y, V_ALLOWLOWERCASE, cv->string);
-				if (itemOn == i && skullAnimCounter < 4) // blink cursor
-					V_DrawCharacter(x + 40 + V_StringWidth(cv->string, V_ALLOWLOWERCASE), y, '_',false);
+
+				if (itemOn != i)
+					V_DrawString(x + 40, y, V_ALLOWLOWERCASE, cv->string);
+				else
+					M_DrawTextInput(x + 40, y, &menuinput, 0);
 			}
 			else
 			{
@@ -10183,7 +10190,19 @@ static void M_StartServerMenu(INT32 choice)
 // ==============
 
 static char setupm_ip[28];
+static textinput_t setupm_input_ip;
 #endif
+
+void M_Multiplayer(INT32 choice)
+{
+	(void)choice;
+#ifndef NONET
+	memset(setupm_ip, 0, 28);
+	M_TextInputInit(&setupm_input_ip, setupm_ip, 28);
+#endif
+	M_SetupNextMenu(&MP_MainDef);
+}
+
 static UINT8 setupm_pselect = 1;
 
 // Draw the funky Connect IP menu. Tails 11-19-2002
@@ -10217,12 +10236,10 @@ Update the maxplayers label...
 	V_DrawFill(x+5, y+4+5, /*16*8 + 6,*/ BASEVIDWIDTH - 2*(x+5), 8+6, 239);
 
 	// draw name string
-	V_DrawString(x+8,y+12, V_ALLOWLOWERCASE, setupm_ip);
-
-	// draw text cursor for name
-	if (itemOn == 9
-	    && skullAnimCounter < 4)   //blink cursor
-		V_DrawCharacter(x+8+V_StringWidth(setupm_ip, V_ALLOWLOWERCASE),y+12,'_',false);
+	if (itemOn != 9)
+		V_DrawString(x+8,y+12, V_ALLOWLOWERCASE, setupm_ip);
+	else
+		M_DrawTextInput(x+8, y+12, &setupm_input_ip, 0);
 #endif
 
 	// character bar, ripped off the color bar :V
@@ -10410,7 +10427,6 @@ static void M_ConnectLastServer(INT32 choice)
 // Tails 11-19-2002
 static void M_HandleConnectIP(INT32 choice)
 {
-	size_t l;
 	boolean exitmenu = false;  // exit to previous menu and send name change
 
 	switch (choice)
@@ -10435,41 +10451,21 @@ static void M_HandleConnectIP(INT32 choice)
 			exitmenu = true;
 			break;
 
+		case KEY_LEFTARROW:
+		case KEY_RIGHTARROW:
 		case KEY_BACKSPACE:
-			if ((l = strlen(setupm_ip)) != 0)
-			{
-				S_StartSound(NULL,sfx_menu1); // Tails
-				setupm_ip[l-1] = 0;
-			}
-			break;
-
 		case KEY_DEL:
-			if (setupm_ip[0])
-			{
+			if (M_TextInputHandle(&setupm_input_ip, choice))
 				S_StartSound(NULL,sfx_menu1); // Tails
-				setupm_ip[0] = 0;
-			}
 			break;
 
 		default:
-			l = strlen(setupm_ip);
-			if (l >= 28-1)
-				break;
-
 			// Rudimentary number and period enforcing - also allows letters so hostnames can be used instead
-			if ((choice >= '-' && choice <= ':') || (choice >= 'A' && choice <= 'Z') || (choice >= 'a' && choice <= 'z'))
+			if ((choice >= '-' && choice <= ':') || (choice >= 'A' && choice <= 'Z') || (choice >= 'a' && choice <= 'z')
+				|| (choice >= 199 && choice <= 211 && choice != 202 && choice != 206)) //numpad too!
 			{
-				S_StartSound(NULL,sfx_menu1); // Tails
-				setupm_ip[l] = (char)choice;
-				setupm_ip[l+1] = 0;
-			}
-			else if (choice >= 199 && choice <= 211 && choice != 202 && choice != 206) //numpad too!
-			{
-				char keypad_translation[] = {'7','8','9','-','4','5','6','+','1','2','3','0','.'};
-				choice = keypad_translation[choice - 199];
-				S_StartSound(NULL,sfx_menu1); // Tails
-				setupm_ip[l] = (char)choice;
-				setupm_ip[l+1] = 0;
+				if (M_TextInputHandle(&setupm_input_ip, choice))
+					S_StartSound(NULL,sfx_menu1); // Tails
 			}
 			break;
 	}
@@ -10494,14 +10490,15 @@ static state_t   *multi_state;
 
 // this is set before entering the MultiPlayer setup menu,
 // for either player 1 or 2
-static char       setupm_name[MAXPLAYERNAME+1];
-static player_t  *setupm_player;
-static consvar_t *setupm_cvskin;
-static consvar_t *setupm_cvcolor;
-static consvar_t *setupm_cvname;
-static UINT8      setupm_skinxpos;
-static INT32      setupm_fakeskin;
-static INT32      setupm_fakecolor;
+static char        setupm_name[MAXPLAYERNAME+1];
+static textinput_t setupm_input;
+static player_t   *setupm_player;
+static consvar_t  *setupm_cvskin;
+static consvar_t  *setupm_cvcolor;
+static consvar_t  *setupm_cvname;
+static UINT8       setupm_skinxpos;
+static INT32       setupm_fakeskin;
+static INT32       setupm_fakecolor;
 
 //variables used for other skin select menus
 static UINT8 setupm_skinypos;
@@ -10577,11 +10574,11 @@ static void M_DrawSetupMultiPlayerMenu(void)
 	}
 
 	M_DrawTextBox(mx + 32, my - 8 + nameboxaddy, MAXPLAYERNAME, 1);
-	V_DrawString(mx + 40, my + nameboxaddy, V_ALLOWLOWERCASE, setupm_name);
 
-	// draw text cursor for name
-	if (!itemOn && skullAnimCounter < 4) // blink cursor
-		V_DrawCharacter(mx + 40 + V_StringWidth(setupm_name, V_ALLOWLOWERCASE), my + nameboxaddy, '_', false);
+	if (itemOn != 0)
+		V_DrawString(mx + 40, my + nameboxaddy, V_ALLOWLOWERCASE, setupm_input.buffer);
+	else
+		M_DrawTextInput(mx + 40, my + nameboxaddy, &setupm_input, 0);
 
 	// draw skin string
 	st = V_StringWidth(skins[setupm_fakeskin].realname, 0);
@@ -11180,7 +11177,6 @@ static void M_DrawSetupMultiPlayerMenu(void)
 // Handle 1P/2P MP Setup
 static void M_HandleSetupMultiPlayer(INT32 choice)
 {
-	size_t   l;
 	boolean  exitmenu = false;  // exit to previous menu and send name change
 
 	if ((choice == gamecontrol[gc_fire][0] || choice == gamecontrol[gc_fire][1]) && itemOn == 2)
@@ -11302,7 +11298,12 @@ static void M_HandleSetupMultiPlayer(INT32 choice)
 			break;
 
 		case KEY_LEFTARROW:
-			if (cv_skinselectmenu.value == SKINMENUTYPE_2D && itemOn == 1)
+			if (itemOn == 0)
+			{
+				M_TextInputHandle(&setupm_input, choice);
+				S_StartSound(NULL,sfx_menu1); // Tails
+			}
+			else if (cv_skinselectmenu.value == SKINMENUTYPE_2D && itemOn == 1)
 			{
 				if (setupm_skinlockedselect)
 				{
@@ -11356,7 +11357,12 @@ static void M_HandleSetupMultiPlayer(INT32 choice)
 			break;
 
 		case KEY_RIGHTARROW:
-			if (cv_skinselectmenu.value == SKINMENUTYPE_2D && itemOn == 1)
+			if (itemOn == 0)
+			{
+				M_TextInputHandle(&setupm_input, choice);
+				S_StartSound(NULL,sfx_menu1); // Tails
+			}
+			else if (cv_skinselectmenu.value == SKINMENUTYPE_2D && itemOn == 1)
 			{
 				if (setupm_skinlockedselect)
 				{
@@ -11387,7 +11393,7 @@ static void M_HandleSetupMultiPlayer(INT32 choice)
 					}
 					else if (cv_skinselectmenu.value == SKINMENUTYPE_EXTENDED){
 						if (setupm_skinselect >= ((setupm_skinypos-1)+SKINGRIDHEIGHT)*8+24 && setupm_skinypos < (ROUNDSKINSUPTO8/8)-SKINGRIDHEIGHT+24)
-							setupm_skinypos++;							
+							setupm_skinypos++;
 					}
 				}
 				else
@@ -11425,11 +11431,8 @@ static void M_HandleSetupMultiPlayer(INT32 choice)
 				BREAKWHENLOCKED
 			if (itemOn == 0)
 			{
-				if ((l = strlen(setupm_name))!=0)
-				{
-					S_StartSound(NULL,sfx_menu1); // Tails
-					setupm_name[l-1] =0;
-				}
+				M_TextInputHandle(&setupm_input, choice);
+				S_StartSound(NULL,sfx_menu1); // Tails
 			}
 			else if ((cv_skinselectmenu.value == SKINMENUTYPE_GRID || cv_skinselectmenu.value == SKINMENUTYPE_EXTENDED) && itemOn == 1)
 			{
@@ -11454,10 +11457,10 @@ static void M_HandleSetupMultiPlayer(INT32 choice)
 		case KEY_DEL:
 			if (cv_skinselectmenu.value)
 				BREAKWHENLOCKED
-			if (itemOn == 0 && (l = strlen(setupm_name))!=0)
+			if (itemOn == 0)
 			{
+				M_TextInputHandle(&setupm_input, choice);
 				S_StartSound(NULL,sfx_menu1); // Tails
-				setupm_name[0] = 0;
 			}
 			break;
 
@@ -11494,17 +11497,10 @@ static void M_HandleSetupMultiPlayer(INT32 choice)
 			break;
 
 		default:
-			if (choice < 32 || choice > 127)
-				break;
 			if (itemOn == 0)
 			{
-				l = strlen(setupm_name);
-				if (l < MAXPLAYERNAME)
-				{
+				if (M_TextInputHandle(&setupm_input, choice))
 					S_StartSound(NULL,sfx_menu1); // Tails
-					setupm_name[l] =(char)choice;
-					setupm_name[l+1] =0;
-				}
 			}
 			break;
 		}
@@ -11569,7 +11565,9 @@ static void M_SetupMultiPlayer(INT32 choice)
 
 	multi_state = cv_skinselectspin.value == SKINSELECTSPIN_PAIN ? &states[S_KART_PAIN] : &states[mobjinfo[MT_PLAYER].seestate];
 	multi_tics = multi_state->tics*FRACUNIT;
-	strcpy(setupm_name, cv_playername.string);
+
+	M_TextInputInit(&setupm_input, setupm_name, sizeof(setupm_name));
+	M_TextInputSetString(&setupm_input, cv_playername.string);
 
 	// set for player 1
 	setupm_player = &players[consoleplayer];
@@ -11611,7 +11609,9 @@ static void M_SetupMultiPlayer2(INT32 choice)
 
 	multi_state = cv_skinselectspin.value == SKINSELECTSPIN_PAIN ? &states[S_KART_PAIN] : &states[mobjinfo[MT_PLAYER].seestate];
 	multi_tics = multi_state->tics*FRACUNIT;
-	strcpy (setupm_name, cv_playername2.string);
+
+	M_TextInputInit(&setupm_input, setupm_name, sizeof(setupm_name));
+	M_TextInputSetString(&setupm_input, cv_playername2.string);
 
 	// set for splitscreen secondary player
 	setupm_player = &players[displayplayers[1]];
@@ -11652,7 +11652,9 @@ static void M_SetupMultiPlayer3(INT32 choice)
 
 	multi_state = cv_skinselectspin.value == SKINSELECTSPIN_PAIN ? &states[S_KART_PAIN] : &states[mobjinfo[MT_PLAYER].seestate];
 	multi_tics = multi_state->tics;
-	strcpy(setupm_name, cv_playername3.string);
+
+	M_TextInputInit(&setupm_input, setupm_name, sizeof(setupm_name));
+	M_TextInputSetString(&setupm_input, cv_playername3.string);
 
 	// set for splitscreen third player
 	setupm_player = &players[displayplayers[2]];
@@ -11693,7 +11695,9 @@ static void M_SetupMultiPlayer4(INT32 choice)
 
 	multi_state = cv_skinselectspin.value == SKINSELECTSPIN_PAIN ? &states[S_KART_PAIN] : &states[mobjinfo[MT_PLAYER].seestate];
 	multi_tics = multi_state->tics;
-	strcpy(setupm_name, cv_playername4.string);
+
+	M_TextInputInit(&setupm_input, setupm_name, sizeof(setupm_name));
+	M_TextInputSetString(&setupm_input, cv_playername4.string);
 
 	// set for splitscreen fourth player
 	setupm_player = &players[displayplayers[3]];
@@ -12877,10 +12881,12 @@ static void M_DrawColorMenu(void)
 								if (y + 12 > (currentMenu->y + 2*scrollareaheight))
 									break;
 								M_DrawTextBox(x, y + 4, MAXSTRINGLENGTH, 1);
-								V_DrawString(x + 8, y + 12, V_ALLOWLOWERCASE, cv->string);
-								if (skullAnimCounter < 4 && i == itemOn)
-									V_DrawCharacter(x + 8 + V_StringWidth(cv->string, 0), y + 12,
-										'_' | 0x80, false);
+
+								if (itemOn == i)
+									M_DrawTextInput(x + 8, y + 12, &menuinput, 0);
+								else
+									V_DrawString(x + 8, y + 12, V_ALLOWLOWERCASE, cv->string);
+
 								y += 16;
 								break;
 							default:
