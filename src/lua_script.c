@@ -1069,6 +1069,9 @@ static UINT8 UnArchiveValue(UINT8 **p, int TABLESINDEX)
 		break;
 	case ARCH_TEND:
 		return 1;
+	default:
+		CONS_Alert(CONS_ERROR, "Unknown value type unarchived, save is corrupted!\n");
+		return 1;
 	}
 	return 0;
 }
@@ -1247,37 +1250,37 @@ static void UnArchiveTables(UINT8 **p, boolean network)
 
 	n = (UINT16)lua_objlen(gL, TABLESINDEX);
 
-	if (network)
+	for (i = 1; i <= n; i++)
 	{
-		for (i = 1; i <= n; i++)
+		lua_rawgeti(gL, TABLESINDEX, i);
+
+		if (!lua_istable(gL, -1))
 		{
-			lua_rawgeti(gL, TABLESINDEX, i);
-			while (true)
+			CONS_Alert(CONS_ERROR, "Value in tables list #%d is not a table! (corrupted save?)\n", i);
+			continue;
+		}
+
+		while (true)
+		{
+			UINT8 ret;
+
+			if (network)
 			{
 				if (UnArchiveValue(p, TABLESINDEX) == 1) // read key
 					break;
-				if (UnArchiveValue(p, TABLESINDEX) == 2) // read value
-					n++;
-				if (lua_isnil(gL, -2)) // if key is nil (if a function etc was accidentally saved)
-				{
-					CONS_Alert(CONS_ERROR, "A nil key in table %d was found! (Invalid key type or corrupted save?)\n", i);
-					lua_pop(gL, 2); // pop key and value instead of setting them in the table, to prevent Lua panic errors
-				}
-				else
-					lua_rawset(gL, -3);
-			}
-			lua_pop(gL, 1);
-		}
-	}
-	else
-	{
-		for (i = 1; i <= n; i++)
-		{
-			lua_rawgeti(gL, TABLESINDEX, i);
-			while (true)
-			{
-				UINT8 ret;
 
+				ret = UnArchiveValue(p, TABLESINDEX);
+				if (ret == 1)
+				{
+					CONS_Alert(CONS_ERROR, "Unexpected end of save reached (Corrupted save?)\n");
+					lua_pop(gL, 1); // Pop key
+					break;
+				}
+				else if (ret == 2) // read value
+					n++;
+			}
+			else
+			{
 				ret = UnArchiveValueDemo(p, TABLESINDEX, NULL);
 				if (ret == 3)
 					lua_pushnil(gL);
@@ -1285,24 +1288,23 @@ static void UnArchiveTables(UINT8 **p, boolean network)
 					break;
 
 				ret = UnArchiveValueDemo(p, TABLESINDEX, NULL);
-
 				if (ret == 3)
 					lua_pushnil(gL);
 				else if (ret == 2) // read value
 					n++;
-
-				if (lua_isnil(gL, -2)) // if key is nil (if a function etc was accidentally saved)
-				{
-					CONS_Alert(CONS_ERROR, "A nil key in table %d was found! (Invalid key type or corrupted save?)\n", i);
-					lua_pop(gL, 2); // pop key and value instead of setting them in the table, to prevent Lua panic errors
-				}
-				else
-					lua_rawset(gL, -3);
 			}
-			lua_pop(gL, 1);
-		}
-	}
 
+			if (lua_isnil(gL, -2)) // if key is nil (if a function etc was accidentally saved)
+			{
+				CONS_Alert(CONS_ERROR, "A nil key in table %d was found! (Invalid key type or corrupted save?)\n", i);
+				lua_pop(gL, 2); // pop key and value instead of setting them in the table, to prevent Lua panic errors
+			}
+			else
+				lua_rawset(gL, -3);
+		}
+
+		lua_pop(gL, 1);
+	}
 }
 
 void LUA_Archive(savebuffer_t *save, boolean network)
