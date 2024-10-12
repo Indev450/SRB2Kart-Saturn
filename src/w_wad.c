@@ -2169,8 +2169,16 @@ virtres_t* vres_GetMap(lumpnum_t lumpnum)
 			if (vsizecache[realentry] == 0)
 				continue;
 			vlumps[i].size = vsizecache[realentry];
+
+			const char *name = (fileinfo + realentry)->name;
+			if (strlen(name) == 5 && memcmp(name, "MAP", 3) == 0)
+			{
+				numlumps--; // We skip map marker, so 1 of entries becomes empty
+				continue; // This will skip i++ so we will write to same entry
+			}
+
 			// Play it safe with the name in this case.
-			memcpy(vlumps[i].name, (fileinfo + realentry)->name, 8);
+			memcpy(vlumps[i].name, name, 8);
 			vlumps[i].name[8] = '\0';
 			vlumps[i].data = (UINT8*)(
 				Z_Malloc(vlumps[i].size, PU_LEVEL, NULL) // This is memory inefficient, sorry about that.
@@ -2198,8 +2206,17 @@ virtres_t* vres_GetMap(lumpnum_t lumpnum)
 		vlumps = (virtlump_t*)(Z_Malloc(sizeof(virtlump_t)*numlumps, PU_LEVEL, NULL));
 		for (i = 0; i < numlumps; i++, lumpnum++)
 		{
+			// Check if it is map marker. It is not always first lump sadly, so we need to expect it anywhere
+			const char *name = W_CheckNameForNum(lumpnum);
+			if (strlen(name) == 5 && memcmp(name, "MAP", 3) == 0)
+			{
+				--i; // Decrement so on next iteration we write on same i, so we don't leave corrupted vlumps entry
+				numlumps--; // Just so we don't try to access the leftover vlumps entry
+				continue;
+			}
+
 			vlumps[i].size = W_LumpLength(lumpnum);
-			memcpy(vlumps[i].name, W_CheckNameForNum(lumpnum), 8);
+			memcpy(vlumps[i].name, name, 8);
 			vlumps[i].name[8] = '\0';
 			vlumps[i].data = (UINT8*)(W_CacheLumpNum(lumpnum, PU_LEVEL));
 		}
