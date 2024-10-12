@@ -704,7 +704,7 @@ void P_RestoreMusic(player_t *player)
 		return;
 
 	if (leveltime < MUSICSTARTTIME)
-		S_StartMapMusic();
+		S_StartMapMusic(true);
 	else // see also where time overs are handled - search for "lives = 2" in this file
 	{
 		INT32 wantedmus = 0; // 0 is level music, 1 is invincibility, 2 is grow

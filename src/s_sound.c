@@ -2073,18 +2073,18 @@ void S_InitMapMusic(void)
 	//S_ChangeMusicEx((encoremode ? "estart" : "kstart"), 0, false, mapmusposition, 0, 0);
 }
 
-void S_StartMapMusic(void)
+void S_StartMapMusic(boolean restore)
 {
 	//no need to constantly run this after race has started
 	if (leveltime > MUSICSTARTTIME)
 		return;
 
-	if (keepmusic)
+	if (keepmusic && !restore) // make sure this doesent kill the music when its called from P_RestoreMusic in some cases
 		return;
 
 	if (skipintromus)
 	{
-		if (leveltime < starttime) // dumb but i dont need this to be spammed honestly
+		if (leveltime < starttime)
 			S_ChangeMusicEx(mapmusname, mapmusflags, true, mapmusposition, 0, 0);
 		if (leveltime == MUSICSTARTTIME)
 			S_ShowMusicCredit();
