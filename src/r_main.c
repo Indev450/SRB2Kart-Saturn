@@ -1031,6 +1031,69 @@ void R_Init(void)
 
 mobj_t *viewmobj;
 
+static void
+R_SetupCommonFrame
+(		player_t * player,
+		subsector_t * subsector)
+{
+	newview->player = player;
+
+	newview->x += quake.x;
+	newview->y += quake.y;
+	newview->z += quake.z;
+
+	newview->roll = R_ViewRollAngle(player);
+
+	if (subsector)
+		newview->sector = subsector->sector;
+	else
+		newview->sector = R_PointInSubsector(newview->x, newview->y)->sector;
+
+	R_InterpolateView(R_UsingFrameInterpolation() ? (demo.playback && demo.freecam) ? rendertimefrac_unpaused : rendertimefrac : FRACUNIT, false);
+}
+
+static void R_SetupAimingFrame(player_t *player, camera_t *thiscam)
+{
+	UINT8 i;
+
+	if (player->awayviewtics)
+	{
+		newview->aim = player->awayviewaiming;
+		newview->angle = player->awayviewmobj->angle;
+	}
+	else if (thiscam->chase)
+	{
+		newview->aim = thiscam->aiming;
+		newview->angle = thiscam->angle;
+	}
+	else
+	{
+		newview->aim = player->aiming;
+		newview->angle = player->mo->angle;
+
+		if (!demo.playback && player->playerstate != PST_DEAD)
+		{
+			if (player == &players[consoleplayer])
+			{
+				newview->angle = localangle[0]; // WARNING: camera uses this
+				newview->aim = localaiming[0];
+			}
+			else if (splitscreen)
+			{
+				for (i = 1; i <= splitscreen; i++)
+				{
+					if (player == &players[displayplayers[i]])
+					{
+						newview->angle = localangle[i];
+						newview->aim = localaiming[i];
+						break;
+					}
+				}
+			}
+		}
+	}
+}
+
 void R_SkyboxFrame(player_t *player)
 {
 	camera_t *thiscam = &camera[0];
@@ -1063,45 +1126,9 @@ void R_SkyboxFrame(player_t *player)
 		I_Error("R_SkyboxFrame: viewmobj null (player %s)", sizeu1(playeri));
 	}
 #endif
-	if (player->awayviewtics)
-	{
-		newview->aim = player->awayviewaiming;
-		newview->angle = player->awayviewmobj->angle;
-	}
-	else if (thiscam->chase)
-	{
-		newview->aim = thiscam->aiming;
-		newview->angle = thiscam->angle;
-	}
-	else
-	{
-		newview->aim = player->aiming;
-		newview->angle = player->mo->angle;
-		if (!demo.playback && player->playerstate != PST_DEAD)
-		{
-			if (player == &players[consoleplayer])
-			{
-				newview->angle = localangle[0]; // WARNING: camera uses this
-				newview->aim = localaiming[0];
-			}
-			else if (splitscreen)
-			{
-				for (i = 1; i <= splitscreen; i++)
-				{
-					if (player == &players[displayplayers[i]])
-					{
-						newview->angle = localangle[i];
-						newview->aim = localaiming[i];
-						break;
-					}
-				}
-			}
-		}
-	}
-	newview->angle += viewmobj->angle;
-	newview->roll = R_ViewRollAngle(player);
+	R_SetupAimingFrame(player, thiscam);
 
-	newview->player = player;
+	newview->angle += viewmobj->angle;
 
 	newview->x = viewmobj->x;
 	newview->y = viewmobj->y;
@@ -1109,185 +1136,87 @@ void R_SkyboxFrame(player_t *player)
 	if (viewmobj->spawnpoint)
 		newview->z = ((fixed_t)viewmobj->spawnpoint->angle)<<FRACBITS;
 
-	newview->x += quake.x;
-	newview->y += quake.y;
-	newview->z += quake.z;
+#define SETUPSKYVIEW(viewmo, zscale)\
+	if (skyboxmo[1])\
+	{\
+		fixed_t x = 0, y = 0;\
+		if (mh->skybox_scalex > 0)\
+			x = (viewmo->x - skyboxmo[1]->x) / mh->skybox_scalex;\
+		else if (mh->skybox_scalex < 0)\
+			x = (viewmo->x - skyboxmo[1]->x) * -mh->skybox_scalex;\
+		if (mh->skybox_scaley > 0)\
+			y = (viewmo->y - skyboxmo[1]->y) / mh->skybox_scaley;\
+		else if (mh->skybox_scaley < 0)\
+			y = (viewmo->y - skyboxmo[1]->y) * -mh->skybox_scaley;\
+		if (viewmobj->angle == 0)\
+		{\
+			newview->x += x;\
+			newview->y += y;\
+		}\
+		else if (viewmobj->angle == ANGLE_90)\
+		{\
+			newview->x -= y;\
+			newview->y += x;\
+		}\
+		else if (viewmobj->angle == ANGLE_180)\
+		{\
+			newview->x -= x;\
+			newview->y -= y;\
+		}\
+		else if (viewmobj->angle == ANGLE_270)\
+		{\
+			newview->x += y;\
+			newview->y -= x;\
+		}\
+		else\
+		{\
+			angle_t ang = viewmobj->angle>>ANGLETOFINESHIFT;\
+			newview->x  += FixedMul(x,FINECOSINE(ang)) - FixedMul(y,  FINESINE(ang));\
+			newview->y += FixedMul(x,  FINESINE(ang)) + FixedMul(y,FINECOSINE(ang));\
+		}\
+	}\
+	if (mh->skybox_scalez > 0)\
+	newview->z += zscale / mh->skybox_scalez;\
+	else if (mh->skybox_scalez < 0)\
+		newview->z += zscale * -mh->skybox_scalez;
 
 	if (mapheaderinfo[gamemap-1])
 	{
 		mapheader_t *mh = mapheaderinfo[gamemap-1];
+
 		if (player->awayviewtics)
 		{
-			if (skyboxmo[1])
-			{
-				fixed_t x = 0, y = 0;
-				if (mh->skybox_scalex > 0)
-					x = (player->awayviewmobj->x - skyboxmo[1]->x) / mh->skybox_scalex;
-				else if (mh->skybox_scalex < 0)
-					x = (player->awayviewmobj->x - skyboxmo[1]->x) * -mh->skybox_scalex;
-
-				if (mh->skybox_scaley > 0)
-					y = (player->awayviewmobj->y - skyboxmo[1]->y) / mh->skybox_scaley;
-				else if (mh->skybox_scaley < 0)
-					y = (player->awayviewmobj->y - skyboxmo[1]->y) * -mh->skybox_scaley;
-
-				if (viewmobj->angle == 0)
-				{
-					newview->x  += x;
-					newview->y += y;
-				}
-				else if (viewmobj->angle == ANGLE_90)
-				{
-					newview->x  -= y;
-					newview->y += x;
-				}
-				else if (viewmobj->angle == ANGLE_180)
-				{
-					newview->x  -= x;
-					newview->y -= y;
-				}
-				else if (viewmobj->angle == ANGLE_270)
-				{
-					newview->x  += y;
-					newview->y -= x;
-				}
-				else
-				{
-					angle_t ang = viewmobj->angle>>ANGLETOFINESHIFT;
-					newview->x  += FixedMul(x,FINECOSINE(ang)) - FixedMul(y,  FINESINE(ang));
-					newview->y += FixedMul(x,  FINESINE(ang)) + FixedMul(y,FINECOSINE(ang));
-				}
-			}
-			if (mh->skybox_scalez > 0)
-				newview->z += (player->awayviewmobj->z + 20*FRACUNIT) / mh->skybox_scalez;
-			else if (mh->skybox_scalez < 0)
-				newview->z += (player->awayviewmobj->z + 20*FRACUNIT) * -mh->skybox_scalez;
+			SETUPSKYVIEW(player->awayviewmobj, (player->awayviewmobj->z + 20*FRACUNIT));
 		}
 		else if (thiscam->chase)
 		{
-			if (skyboxmo[1])
-			{
-				fixed_t x = 0, y = 0;
-				if (mh->skybox_scalex > 0)
-					x = (thiscam->x - skyboxmo[1]->x) / mh->skybox_scalex;
-				else if (mh->skybox_scalex < 0)
-					x = (thiscam->x - skyboxmo[1]->x) * -mh->skybox_scalex;
-
-				if (mh->skybox_scaley > 0)
-					y = (thiscam->y - skyboxmo[1]->y) / mh->skybox_scaley;
-				else if (mh->skybox_scaley < 0)
-					y = (thiscam->y - skyboxmo[1]->y) * -mh->skybox_scaley;
-
-				if (viewmobj->angle == 0)
-				{
-					newview->x += x;
-					newview->y += y;
-				}
-				else if (viewmobj->angle == ANGLE_90)
-				{
-					newview->x -= y;
-					newview->y += x;
-				}
-				else if (viewmobj->angle == ANGLE_180)
-				{
-					newview->x -= x;
-					newview->y -= y;
-				}
-				else if (viewmobj->angle == ANGLE_270)
-				{
-					newview->x += y;
-					newview->y -= x;
-				}
-				else
-				{
-					angle_t ang = viewmobj->angle>>ANGLETOFINESHIFT;
-					newview->x += FixedMul(x,FINECOSINE(ang)) - FixedMul(y,  FINESINE(ang));
-					newview->y += FixedMul(x,  FINESINE(ang)) + FixedMul(y,FINECOSINE(ang));
-				}
-			}
-			if (mh->skybox_scalez > 0)
-				newview->z += (thiscam->z + (thiscam->height>>1)) / mh->skybox_scalez;
-			else if (mh->skybox_scalez < 0)
-				newview->z += (thiscam->z + (thiscam->height>>1)) * -mh->skybox_scalez;
+			SETUPSKYVIEW(thiscam, (thiscam->z + (thiscam->height>>1)));
 		}
 		else
 		{
-			if (skyboxmo[1])
-			{
-				fixed_t x = 0, y = 0;
-				if (mh->skybox_scalex > 0)
-					x = (player->mo->x - skyboxmo[1]->x) / mh->skybox_scalex;
-				else if (mh->skybox_scalex < 0)
-					x = (player->mo->x - skyboxmo[1]->x) * -mh->skybox_scalex;
-				if (mh->skybox_scaley > 0)
-					y = (player->mo->y - skyboxmo[1]->y) / mh->skybox_scaley;
-				else if (mh->skybox_scaley < 0)
-					y = (player->mo->y - skyboxmo[1]->y) * -mh->skybox_scaley;
-
-				if (viewmobj->angle == 0)
-				{
-					newview->x += x;
-					newview->y += y;
-				}
-				else if (viewmobj->angle == ANGLE_90)
-				{
-					newview->x -= y;
-					newview->y += x;
-				}
-				else if (viewmobj->angle == ANGLE_180)
-				{
-					newview->x -= x;
-					newview->y -= y;
-				}
-				else if (viewmobj->angle == ANGLE_270)
-				{
-					newview->x += y;
-					newview->y -= x;
-				}
-				else
-				{
-					angle_t ang = viewmobj->angle>>ANGLETOFINESHIFT;
-					newview->x += FixedMul(x,FINECOSINE(ang)) - FixedMul(y,  FINESINE(ang));
-					newview->y += FixedMul(x,  FINESINE(ang)) + FixedMul(y,FINECOSINE(ang));
-				}
-			}
-			if (mh->skybox_scalez > 0)
-				newview->z += player->viewz / mh->skybox_scalez;
-			else if (mh->skybox_scalez < 0)
-				newview->z += player->viewz * -mh->skybox_scalez;
+			SETUPSKYVIEW(player->mo, player->viewz);
 		}
 	}
+#undef SETUPSKYVIEW
 
-	if (viewmobj->subsector)
-		newview->sector = viewmobj->subsector->sector;
-	else
-		newview->sector = R_PointInSubsector(newview->x, newview->y)->sector;
-
-	// newview->sin = FINESINE(viewangle>>ANGLETOFINESHIFT);
-	// newview->cos = FINECOSINE(viewangle>>ANGLETOFINESHIFT);
-
-	R_InterpolateView(R_UsingFrameInterpolation() ? (demo.playback && demo.freecam) ? rendertimefrac_unpaused : rendertimefrac : FRACUNIT, false);
+	R_SetupCommonFrame(player, viewmobj->subsector);
 }
 
-static void
-R_SetupCommonFrame
-(		player_t * player,
-		subsector_t * subsector)
+static inline UINT8 R_GetCamVar(UINT8 num)
 {
-	newview->player = player;
-
-	newview->x += quake.x;
-	newview->y += quake.y;
-	newview->z += quake.z;
-
-	newview->roll = R_ViewRollAngle(player);
-
-	if (subsector)
-		newview->sector = subsector->sector;
-	else
-		newview->sector = R_PointInSubsector(newview->x, newview->y)->sector;
-
-	R_InterpolateView(R_UsingFrameInterpolation() ? (demo.playback && demo.freecam) ? rendertimefrac_unpaused : rendertimefrac : FRACUNIT, false);
+	switch (num)
+	{
+		case 0:
+			return cv_chasecam.value;
+		case 1:
+			return cv_chasecam2.value;
+		case 2:
+			return cv_chasecam3.value;
+		case 3:
+			return cv_chasecam4.value;
+		default:
+			return cv_chasecam.value;
+	}
 }
 
 void R_SetupFrame(player_t *player, boolean skybox)
@@ -1295,33 +1224,21 @@ void R_SetupFrame(player_t *player, boolean skybox)
 	camera_t *thiscam;
 	boolean chasecam = false;
 
-#define SETUPCAM(num, var, context)\
-	thiscam = &camera[num];\
-	chasecam = (var.value != 0);\
-	R_SetViewContext(context);\
-	if (thiscam->reset)\
-	{\
-		R_ResetViewInterpolation(num+1);\
-		thiscam->reset = false;\
-	}
-
-	if (splitscreen > 2 && player == &players[displayplayers[3]])
+	for (UINT8 i = 0; i <= splitscreen; i++)
 	{
-		SETUPCAM(3, cv_chasecam4, VIEWCONTEXT_PLAYER4)
+		if (player == &players[displayplayers[i]])
+		{
+			thiscam = &camera[i];
+			chasecam = R_GetCamVar(i);
+			R_SetViewContext(VIEWCONTEXT_PLAYER1 + i);
+			if (thiscam->reset)
+			{
+				R_ResetViewInterpolation(i);
+				thiscam->reset = false;
+			}
+			break;
+		}
 	}
-	else if (splitscreen > 1 && player == &players[displayplayers[2]])
-	{
-		SETUPCAM(2, cv_chasecam3, VIEWCONTEXT_PLAYER3)
-	}
-	else if (splitscreen && player == &players[displayplayers[1]])
-	{
-		SETUPCAM(1, cv_chasecam2, VIEWCONTEXT_PLAYER2)
-	}
-	else
-	{
-		SETUPCAM(0, cv_chasecam, VIEWCONTEXT_PLAYER1)
-	}
-#undef SETUPCAM
 
 	if (player->spectator) // no spectator chasecam
 		chasecam = false; // force chasecam off
@@ -1338,6 +1255,8 @@ void R_SetupFrame(player_t *player, boolean skybox)
 
 	newview->sky = !skybox;
 
+	R_SetupAimingFrame(player, thiscam);
+
 	if (player->awayviewtics) // cut-away view stuff
 	{
 		viewmobj = player->awayviewmobj; // should be a MT_ALTVIEWMAN
@@ -1346,9 +1265,6 @@ void R_SetupFrame(player_t *player, boolean skybox)
 		newview->x = viewmobj->x;
 		newview->y = viewmobj->y;
 		newview->z = viewmobj->z + 20*FRACUNIT;
-
-		newview->aim = player->awayviewaiming;
-		newview->angle = viewmobj->angle;
 
 		R_SetupCommonFrame(player, viewmobj->subsector);
 	}
@@ -1360,9 +1276,6 @@ void R_SetupFrame(player_t *player, boolean skybox)
 		newview->y = thiscam->y;
 		newview->z = thiscam->z + (thiscam->height>>1);
 
-		newview->aim = thiscam->aiming;
-		newview->angle = thiscam->angle;
-
 		R_SetupCommonFrame(player, thiscam->subsector);
 	}
 	else // use the player's eyes view
@@ -1373,31 +1286,6 @@ void R_SetupFrame(player_t *player, boolean skybox)
 		newview->x = viewmobj->x;
 		newview->y = viewmobj->y;
 		newview->z = player->viewz;
-
-		newview->aim = player->aiming;
-		newview->angle = viewmobj->angle;
-
-		if (!demo.playback && player->playerstate != PST_DEAD)
-		{
-			if (player == &players[consoleplayer])
-			{
-				newview->angle = localangle[0]; // WARNING: camera uses this
-				newview->aim = localaiming[0];
-			}
-			else if (splitscreen)
-			{
-				UINT8 i;
-				for (i = 1; i <= splitscreen; i++)
-				{
-					if (player == &players[displayplayers[i]])
-					{
-						newview->angle = localangle[i];
-						newview->aim = localaiming[i];
-						break;
-					}
-				}
-			}
-		}
 
 		R_SetupCommonFrame(player, viewmobj->subsector);
 	}
