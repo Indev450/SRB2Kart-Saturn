@@ -93,6 +93,8 @@ static UINT16 SAMPLERATE = 44100;
 /// ------------------------
 
 UINT8 sound_started = false;
+
+static UINT32 stutter_threshold_user;
 static UINT32 stutter_threshold;
 
 static Mix_Music *music;
@@ -1046,7 +1048,7 @@ void I_UpdateSongLagThreshold (void)
 	if (!cv_birdmusic.value)
 		return;
 
-	stutter_threshold = cv_music_resync_threshold.value/1000.0*(4*44100);
+	stutter_threshold = cv_music_resync_powerups_only.value ? 0 : (cv_music_resync_threshold.value/1000.0*(4*44100));
 }
 
 /// ------------------------
