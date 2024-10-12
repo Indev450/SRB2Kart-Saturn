@@ -23,7 +23,7 @@
 #define BOREDOMTIME 3 * TICRATE / 2 // how long until players considered far apart?
 #define TRANSFERTIME TICRATE		// how long to delay reaction shots?
 #define BREAKAWAYDIST 2000			// how *far* until players considered far apart?
-#define WALKBACKDIST 600			// how close should a trailing player be before we switch?
+#define WALKBACKDIST 400			// how close should a trailing player be before we switch?
 #define PINCHDIST 20000				// how close should the leader be to be considered "end of race"?
 
 struct directorinfo
@@ -375,6 +375,12 @@ void K_UpdateDirector(void)
 		if (*displayplayerp == target)
 		{
 			break;
+		}
+
+		// if this is a splitscreen player, try next pair
+		if (P_IsDisplayPlayer(&players[target]))
+		{
+			continue;
 		}
 
 		// if we're certain the back half of the pair is actually in this position, try to switch

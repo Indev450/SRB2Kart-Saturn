@@ -164,8 +164,9 @@ void P_InitCameraCmd(void);
 boolean P_PlayerInPain(player_t *player);
 void P_DoPlayerPain(player_t *player, mobj_t *source, mobj_t *inflictor);
 void P_ResetPlayer(player_t *player);
-boolean P_IsLocalPlayer(player_t *player);
-boolean P_IsDisplayPlayer(player_t *player);
+boolean P_IsLocalPlayer(const player_t *player);
+boolean P_IsDisplayPlayer(const player_t *player);
+
 boolean P_SpectatorJoinGame(player_t *player);
 
 boolean P_IsObjectInGoop(mobj_t *mo);
@@ -248,7 +249,7 @@ void P_RecalcPrecipInSector(sector_t *sector);
 void P_PrecipitationEffects(void);
 
 void P_RemoveMobj(mobj_t *th);
-boolean P_MobjWasRemoved(const mobj_t *th);
+
 void P_RemoveSavegameMobj(mobj_t *th);
 boolean P_SetPlayerMobjState(mobj_t *mobj, statenum_t state);
 boolean P_SetMobjState(mobj_t *mobj, statenum_t state);
@@ -260,6 +261,12 @@ boolean P_RailThinker(mobj_t *mobj);
 void P_PushableThinker(mobj_t *mobj);
 void P_SceneryThinker(mobj_t *mobj);
 
+// This does not need to be added to Lua.
+// To test it in Lua, check mobj.valid
+FUNCINLINE static ATTRINLINE boolean P_MobjWasRemoved(const mobj_t *mobj)
+{
+	return !(mobj && mobj->thinker.function.acp1 == (actionf_p1)P_MobjThinker);
+}
 
 fixed_t P_MobjFloorZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed_t x, fixed_t y, line_t *line, boolean lowest, boolean perfect);
 fixed_t P_MobjCeilingZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed_t x, fixed_t y, line_t *line, boolean lowest, boolean perfect);

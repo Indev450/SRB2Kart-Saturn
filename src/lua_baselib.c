@@ -1553,8 +1553,9 @@ static int lib_pSetSkyboxMobj(lua_State *L)
 // Shhh, neither does P_StartQuake.
 static int lib_pStartQuake(lua_State *L)
 {
+	tic_t	q_time 		= (tic_t)luaL_checkinteger(L, 2);
 	fixed_t q_intensity = luaL_checkinteger(L, 1);
-	UINT16  q_time = (UINT16)luaL_checkinteger(L, 2);
+	fixed_t q_radius 	= luaL_optinteger(L, 4, 512<<FRACBITS);
 	static mappoint_t q_epicenter = {0,0,0};
 
 	NOHUD
@@ -1606,11 +1607,8 @@ static int lib_pStartQuake(lua_State *L)
 	}
 	else
 		quake.epicenter = NULL;
-	quake.radius = luaL_optinteger(L, 4, 512*FRACUNIT);
 
-	// These things are actually used in 2.1.
-	quake.intensity = q_intensity;
-	quake.time = q_time;
+	P_StartQuake(q_time, q_intensity, q_radius);
 	return 0;
 }
 

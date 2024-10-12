@@ -1597,6 +1597,8 @@ void G_DoLoadLevel(boolean resetplayer)
 
 	// clear hud messages remains (usually from game startup)
 	CON_ClearHUD();
+
+	G_ResetAllDeviceRumbles();
 }
 
 static INT32 pausedelay = 0;
@@ -1987,6 +1989,29 @@ INT32 G_CountPlayersPotentiallyViewable(boolean active)
 }
 
 //
+// G_FixCamera
+// Reset camera position, angle and interpolation on a view
+// after changing state.
+//
+static void G_FixCamera(UINT8 view)
+{
+	player_t *player = &players[displayplayers[view - 1]];
+
+	// The order of displayplayers can change, which would
+	// invalidate localangle.
+	localangle[view - 1] = player->cmd.angleturn;
+
+	P_ResetCamera(player, &camera[view - 1]);
+
+	// Make sure the viewport doesn't interpolate at all into
+	// its new position -- just snap instantly into place.
+
+	// Why does it need to be done twice?
+	R_ResetViewInterpolation(view);
+	R_ResetViewInterpolation(view);
+}
+
+//
 // G_ResetView
 // Correct a viewpoint to playernum or the next available, wraps forward.
 // Also promotes splitscreen up to available viewable players.
@@ -1998,7 +2023,6 @@ void G_ResetView(UINT8 viewnum, INT32 playernum, boolean onlyactive)
 	UINT8 viewd;
 
 	INT32    *displayplayerp;
-	camera_t *camerap;
 
 	INT32 olddisplayplayer;
 	INT32 playersviewable;
@@ -2035,30 +2059,20 @@ void G_ResetView(UINT8 viewnum, INT32 playernum, boolean onlyactive)
 
 	/* Focus our target view first so that we don't take its player. */
 	(*displayplayerp) = playernum;
-	if ((*displayplayerp) != olddisplayplayer)
-	{
-		camerap = &camera[viewnum-1];
-		P_ResetCamera(&players[(*displayplayerp)], camerap);
 
-		// Make sure the viewport doesn't interpolate at all into
-		// its new position -- just snap instantly into place.
-		R_ResetViewInterpolation(viewnum);
-	}
-
+	/* If a viewpoint changes, reset the camera to clear uninitialized memory. */
 	if (viewnum > splits)
 	{
-		for (viewd = splits+1; viewd < viewnum; ++viewd)
+		for (viewd = splits+1; viewd <= viewnum; ++viewd)
 		{
-			displayplayerp = (&displayplayers[viewd-1]);
-			camerap = &camera[viewd];
-
-			(*displayplayerp) = G_FindView(0, viewd, onlyactive, false);
-
-			P_ResetCamera(&players[(*displayplayerp)], camerap);
-
-			// Make sure the viewport doesn't interpolate at all into
-			// its new position -- just snap instantly into place.
-			R_ResetViewInterpolation(viewd);
+			G_FixCamera(viewd);
+		}
+	}
+	else
+	{
+		if ((*displayplayerp) != olddisplayplayer)
+		{
+			G_FixCamera(viewnum);
 		}
 	}
 
@@ -3028,6 +3042,8 @@ void G_AddPlayer(INT32 playernum)
 
 void G_ExitLevel(void)
 {
+	G_ResetAllDeviceRumbles();
+
 	if (gamestate == GS_LEVEL)
 	{
 		gameaction = ga_completed;
@@ -4616,6 +4632,8 @@ INT32 G_FindMapByNameOrCode(const char *mapname, char **realmapnamep)
 	{
 		if (mapname[0] == '*') // current map
 			return gamemap;
+		else if (mapname[0] == '?')
+			return G_RandMap(G_TOLFlag(gametype), prevmap, false, 0, false, NULL);
 		else if (mapname[0] == '+' && mapheaderinfo[gamemap-1]) // next map
 		{
 			newmapnum = mapheaderinfo[gamemap-1]->nextlevel;

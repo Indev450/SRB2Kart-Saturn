@@ -3004,11 +3004,17 @@ static inline void P_FinishMobjs(void)
 	}
 }
 
+static inline mobj_t *RelinkMobj(mobj_t **ptr)
+{
+	UINT32 temp = (UINT32)(size_t)*ptr;
+	*ptr = NULL;
+	return P_SetTarget(ptr, P_FindNewPosition(temp));
+}
+
 static void P_RelinkPointers(void)
 {
 	thinker_t *currentthinker;
 	mobj_t *mobj;
-	UINT32 temp;
 
 	// use info field (value = oldposition) to relink mobjs
 	for (currentthinker = thinkercap.next; currentthinker != &thinkercap;
@@ -3024,58 +3030,42 @@ static void P_RelinkPointers(void)
 
 		if (mobj->tracer)
 		{
-			temp = (UINT32)(size_t)mobj->tracer;
-			mobj->tracer = NULL;
-			if (!P_SetTarget(&mobj->tracer, P_FindNewPosition(temp)))
+			if (!RelinkMobj(&mobj->tracer))
 				CONS_Debug(DBG_GAMELOGIC, "tracer not found on %d\n", mobj->type);
 		}
 		if (mobj->target)
 		{
-			temp = (UINT32)(size_t)mobj->target;
-			mobj->target = NULL;
-			if (!P_SetTarget(&mobj->target, P_FindNewPosition(temp)))
+			if (!RelinkMobj(&mobj->target))
 				CONS_Debug(DBG_GAMELOGIC, "target not found on %d\n", mobj->type);
 		}
 		if (mobj->hnext)
 		{
-			temp = (UINT32)(size_t)mobj->hnext;
-			mobj->hnext = NULL;
-			if (!P_SetTarget(&mobj->hnext, P_FindNewPosition(temp)))
+			if (!RelinkMobj(&mobj->hnext))
 				CONS_Debug(DBG_GAMELOGIC, "hnext not found on %d\n", mobj->type);
 		}
 		if (mobj->hprev)
 		{
-			temp = (UINT32)(size_t)mobj->hprev;
-			mobj->hprev = NULL;
-			if (!P_SetTarget(&mobj->hprev, P_FindNewPosition(temp)))
+			if (!RelinkMobj(&mobj->hprev))
 				CONS_Debug(DBG_GAMELOGIC, "hprev not found on %d\n", mobj->type);
 		}
 		if (mobj->player && mobj->player->capsule)
 		{
-			temp = (UINT32)(size_t)mobj->player->capsule;
-			mobj->player->capsule = NULL;
-			if (!P_SetTarget(&mobj->player->capsule, P_FindNewPosition(temp)))
+			if (!RelinkMobj(&mobj->player->capsule))
 				CONS_Debug(DBG_GAMELOGIC, "capsule not found on %d\n", mobj->type);
 		}
 		if (mobj->player && mobj->player->axis1)
 		{
-			temp = (UINT32)(size_t)mobj->player->axis1;
-			mobj->player->axis1 = NULL;
-			if (!P_SetTarget(&mobj->player->axis1, P_FindNewPosition(temp)))
+			if (!RelinkMobj(&mobj->player->axis1))
 				CONS_Debug(DBG_GAMELOGIC, "axis1 not found on %d\n", mobj->type);
 		}
 		if (mobj->player && mobj->player->axis2)
 		{
-			temp = (UINT32)(size_t)mobj->player->axis2;
-			mobj->player->axis2 = NULL;
-			if (!P_SetTarget(&mobj->player->axis2, P_FindNewPosition(temp)))
+			if (!RelinkMobj(&mobj->player->axis2))
 				CONS_Debug(DBG_GAMELOGIC, "axis2 not found on %d\n", mobj->type);
 		}
 		if (mobj->player && mobj->player->awayviewmobj)
 		{
-			temp = (UINT32)(size_t)mobj->player->awayviewmobj;
-			mobj->player->awayviewmobj = NULL;
-			if (!P_SetTarget(&mobj->player->awayviewmobj, P_FindNewPosition(temp)))
+			if (!RelinkMobj(&mobj->player->awayviewmobj))
 				CONS_Debug(DBG_GAMELOGIC, "awayviewmobj not found on %d\n", mobj->type);
 		}
 	}

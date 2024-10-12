@@ -1,6 +1,6 @@
 // SONIC ROBO BLAST 2
 //-----------------------------------------------------------------------------
-// Copyright (C) 2000-2005 by Marc Alexander Lehmann <schmorp@schmorp.de>
+// Copyright (c) 2000-2010 Marc Alexander Lehmann <schmorp@schmorp.de>
 //
 // This program is free software distributed under the
 // terms of the GNU General Public License, version 2.
@@ -22,7 +22,7 @@
 **
 ***********************************************************************/
 
-#define LZF_VERSION 0x0105 /* 1.5 */
+#define LZF_VERSION 0x0106 /* 1.6 */
 
 /*
  * Compress in_len bytes stored at the memory block starting at

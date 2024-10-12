@@ -1987,11 +1987,6 @@ char *sizeu5(size_t num)
 	return sizeu5_buf;
 }
 
-FUNCINLINE ATTRINLINE void *M_Memcpy(void *dest, const void *src, size_t n)
-{
-	return memcpy(dest, src, n);
-}
-
 /** Return the appropriate message for a file error or end of file.
 */
 const char *M_FileError(FILE *fp)
