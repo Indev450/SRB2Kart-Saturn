@@ -136,7 +136,7 @@ static UINT8 gamestate_resend_counter[MAXNETNODES];
 #endif
 
 // kart, true when a player is connecting or disconnecting so that the gameplay has stopped in its tracks
-UINT8 hu_stopped = 0;
+boolean hu_stopped = false;
 
 // Client specific
 static ticcmd_t localcmds;
@@ -3394,6 +3394,7 @@ void CL_Reset(void)
 	curl_running = false;
 	http_source[0] = '\0';
 #endif
+	G_ResetAllDeviceRumbles();
 
 	// D_StartTitle should get done now, but the calling function will handle it
 }
@@ -5382,6 +5383,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 			}
 
 #ifdef SATURNSYNCH
+			// this decreases by one point at twice the cooldown time (ex cooldown of 2 seconds means, this counter decreases by one every 4 seconds), pretty much there to prevent a resynch loop
 			if ((gamestate_resend_counter[node] != 0) && (I_GetTime() % ((max(cv_resynchcooldown.value, 1) * TICRATE) *2) == 0))
 				gamestate_resend_counter[node]--;
 
@@ -6383,7 +6385,7 @@ boolean TryRunTics(tic_t realtics)
 
 	if (demo.playback)
 	{
-		neededtic = gametic + realtics * (gamestate == GS_LEVEL ? cv_playbackspeed.value : 1);
+		neededtic = gametic + realtics;
 		// start a game after a demo
 		maketic += realtics;
 		firstticstosend = maketic;

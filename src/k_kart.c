@@ -2686,8 +2686,7 @@ void K_ExplodePlayer(player_t *player, mobj_t *source, mobj_t *inflictor) // A b
 
 	if (P_IsLocalPlayer(player))
 	{
-		quake.intensity = 64*FRACUNIT;
-		quake.time = 5;
+		P_StartQuake(5, 64<<FRACBITS, 0);
 	}
 
 	player->kartstuff[k_instashield] = 15;
@@ -9731,7 +9730,7 @@ static void K_drawKartMinimap(void)
 	splitflags |= minimaptrans;
 
 	if (encoremode)
-		V_DrawScaledPatch(x+SHORT(minimapinfo.minimap_pic->width), y, minimaptrans|V_FLIP, minimapinfo.minimap_pic);
+		V_DrawScaledPatch(x+SHORT(minimapinfo.minimap_pic->width), y, splitflags|V_FLIP, minimapinfo.minimap_pic);
 	else
 		V_DrawScaledPatch(x, y, splitflags, minimapinfo.minimap_pic);
 

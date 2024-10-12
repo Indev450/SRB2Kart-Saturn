@@ -1013,6 +1013,21 @@ static void G_ResetPlayerDeviceRumble(INT32 player)
 	I_GamepadRumble(device_id, 0, 0, 0);
 }
 
+void G_ResetAllDeviceRumbles(void)
+{
+	int i;
+	int devices;
+
+	devices = I_NumJoys();
+
+	for (i = 0; i < devices; i++)
+	{
+		INT32 device_id = G_GetDeviceForPlayer(i);
+
+		I_GamepadRumble(device_id, 0, 0, 0);
+	}
+}
+
 void G_PlayerDeviceRumble(INT32 player, UINT16 low_strength, UINT16 high_strength, UINT32 duration)
 {
 	INT32 device_id;

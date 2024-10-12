@@ -237,11 +237,17 @@ void V_DrawCreditString(fixed_t x, fixed_t y, INT32 option, const char *string);
 INT32 V_CreditStringWidth(const char *string);
 
 // Find string width from hu_font chars
-INT32 V_StringWidth(const char *string, INT32 option);
+INT32 V_SubStringWidth(const char *string, INT32 length, INT32 option);
+#define V_StringWidth(string, option) V_SubStringWidth(string, -1, option)
 // Find string width from hu_font chars, 0.5x scale
-INT32 V_SmallStringWidth(const char *string, INT32 option);
+INT32 V_SmallSubStringWidth(const char *string, INT32 length, INT32 option);
+#define V_SmallStringWidth(string, option) V_SmallSubStringWidth(string, -1, option)
 // Find string width from tny_font chars
-INT32 V_ThinStringWidth(const char *string, INT32 option);
+INT32 V_ThinSubStringWidth(const char *string, INT32 length, INT32 option);
+#define V_ThinStringWidth(string, option) V_ThinSubStringWidth(string, -1, option)
+
+// Find maximum length for substring taken from current string to fit into given width
+INT32 V_SubStringLengthToFit(const char *string, INT32 width, INT32 option);
 
 char V_GetSkincolorChar(INT32 color);
 

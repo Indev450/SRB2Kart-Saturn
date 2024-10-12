@@ -85,7 +85,6 @@ consvar_t cv_midimusicvolume = {"midimusicvolume", "18", CV_SAVE, soundvolume_co
 // number of channels available
 consvar_t cv_numChannels = {"snd_channels", "64", CV_SAVE|CV_CALL, CV_Unsigned, SetChannelsNum, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t surround = {"surround", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 //consvar_t cv_resetmusic = {"resetmusic", "No", CV_SAVE|CV_NOSHOWHELP, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 // Sound system toggles, saved into the config
@@ -108,6 +107,7 @@ static CV_PossibleValue_t music_resync_threshold_cons_t[] = {
 	{0}
 };
 consvar_t cv_music_resync_threshold = {"music_resync_threshold", "0", CV_SAVE|CV_CALL, music_resync_threshold_cons_t, I_UpdateSongLagThreshold, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_music_resync_powerups_only = {"music_resync_powerups_only", "No", CV_SAVE|CV_CALL, CV_YesNo, I_UpdateSongLagThreshold, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_invincmusicfade = {"invincmusicfade", "300", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_growmusicfade = {"growmusicfade", "500", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -162,10 +162,6 @@ consvar_t cv_amigatype = {"amigatype", "0", CV_SAVE|CV_CALL|CV_NOINIT, amigatype
 
 #define S_PITCH_PERTURB 1
 #define S_STEREO_SWING (96*0x10000)
-
-#ifdef SURROUND
-#define SURROUND_SEP -128
-#endif
 
 // percent attenuation from front to back
 #define S_IFRACVOL 30
@@ -272,7 +268,6 @@ void S_RegisterSoundStuff(void)
 
 	CV_RegisterVar(&stereoreverse);
 	CV_RegisterVar(&precachesound);
-	CV_RegisterVar(&surround);
 	CV_RegisterVar(&cv_samplerate);
 	//CV_RegisterVar(&cv_resetmusic);
 	CV_RegisterVar(&cv_gamesounds);
@@ -281,13 +276,14 @@ void S_RegisterSoundStuff(void)
 	CV_RegisterVar(&cv_gamemidimusic);
 #endif
 
-	//bird music stuff
+	// bird music stuff
 	CV_RegisterVar(&cv_playmusicifunfocused);
 	CV_RegisterVar(&cv_playsoundifunfocused);
 	CV_RegisterVar(&cv_pausemusic);
 
 	CV_RegisterVar(&cv_music_resync_threshold);
-	
+	CV_RegisterVar(&cv_music_resync_powerups_only);
+
 	CV_RegisterVar(&cv_invincmusicfade);
 	CV_RegisterVar(&cv_growmusicfade);
 
@@ -299,6 +295,7 @@ void S_RegisterSoundStuff(void)
 	CV_RegisterVar(&cv_resume);
 	CV_RegisterVar(&cv_fading);
 	CV_RegisterVar(&cv_birdmusic);
+	// bird music stuff end
 
 	COM_AddCommand("tunes", Command_Tunes_f);
 	COM_AddCommand("restartaudio", Command_RestartAudio_f);
@@ -616,11 +613,7 @@ void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
 		}
 
 		// Avoid channel reverse if surround
-		if (reverse
-#ifdef SURROUND
-			&& sep != SURROUND_SEP
-#endif
-			)
+		if (reverse)
 		{
 			sep = (~sep) & 255;
 		}
@@ -1102,18 +1095,10 @@ boolean S_AdjustSoundParams(const mobj_t *listener, const mobj_t *source, INT32 
 		if (reverse)
 			angle = InvAngle(angle);
 
-#ifdef SURROUND
-		// Produce a surround sound for angle from 105 till 255
-		if (surround.value == 1 && (angle > ANG105 && angle < ANG255 ))
-			*sep = SURROUND_SEP;
-		else
-#endif
-		{
-			angle >>= ANGLETOFINESHIFT;
+		angle >>= ANGLETOFINESHIFT;
 
-			// stereo separation
-			*sep = 128 - (FixedMul(S_STEREO_SWING, FINESINE(angle))>>FRACBITS);
-		}
+		// stereo separation
+		*sep = 128 - (FixedMul(S_STEREO_SWING, FINESINE(angle))>>FRACBITS);
 	}
 
 	// volume calculation
@@ -1260,7 +1245,7 @@ void S_InitSfxChannels(INT32 sfxVolume)
 	if (S_PrecacheSound())
 	{
 		// Initialize external data (all sounds) at start, keep static.
-		CONS_Printf(M_GetText("Loading sounds... "));
+		CONS_Printf(M_GetText("Pre-caching sounds..."));
 
 			for (i = 1; i < sfx_freeslot0; i++)
 				if (S_sfx[i].name && !S_sfx[i].data)
@@ -1270,7 +1255,7 @@ void S_InitSfxChannels(INT32 sfxVolume)
 				if (S_sfx[i].priority && !S_sfx[i].data)
 					S_sfx[i].data = I_GetSfx(&S_sfx[i]);
 
-		CONS_Printf(M_GetText(" pre-cached all sound data\n"));
+		CONS_Printf(M_GetText("...pre-cached all sound data\n"));
 	}
 }
 
@@ -1786,9 +1771,7 @@ boolean S_MusicPaused(void)
 
 boolean S_MusicNotInFocus(void)
 {
-	return (
-			( window_notinfocus && ! cv_playmusicifunfocused.value )
-	);
+	return (window_notinfocus && !cv_playmusicifunfocused.value);
 }
 
 musictype_t S_MusicType(void)
@@ -1816,10 +1799,8 @@ boolean S_MusicInfo(char *mname, UINT16 *mflags, boolean *looping)
 
 boolean S_MusicExists(const char *mname, boolean checkMIDI, boolean checkDigi)
 {
-	return (
-		(checkDigi ? W_CheckNumForName(va("O_%s", mname)) != LUMPERROR : false)
-		|| (checkMIDI ? W_CheckNumForName(va("D_%s", mname)) != LUMPERROR : false)
-	);
+	return (checkDigi ? W_CheckNumForName(va("O_%s", mname)) != LUMPERROR : false)
+		|| (checkMIDI ? W_CheckNumForName(va("D_%s", mname)) != LUMPERROR : false);
 }
 
 /// ------------------------
@@ -2052,8 +2033,10 @@ void S_StopMusic(void)
 		|| demo.title) // SRB2Kart: Demos don't interrupt title screen music
 		return;
 
-	if ((cv_birdmusic.value) && (strcasecmp(music_name, mapmusname) == 0))
+	if (cv_birdmusic.value && (strcasecmp(music_name, mapmusname) == 0))
 		mapmusresume = I_GetSongPosition();
+	else
+		mapmusresume = 0;
 
 	if (I_SongPaused())
 		I_ResumeSong();
@@ -2126,10 +2109,7 @@ void S_SetMusicVolume(INT32 digvolume, INT32 seqvolume)
 
 void S_SetRestoreMusicFadeInCvar (consvar_t *cv)
 {
-	if (!cv_birdmusic.value)
-		return;
-
-	music_refade_cv = cv;
+	music_refade_cv = cv_birdmusic.value ? cv : 0;
 }
 
 int S_GetRestoreMusicFadeIn (void)
@@ -2388,7 +2368,7 @@ static void GameDigiMusic_OnChange(void)
 		digital_disabled = false;
 		I_StartupSound(); // will return early if initialised
 		I_InitMusic();
-		
+
 		if (Playing())
 			P_RestoreMusic(&players[consoleplayer]);
 		else
@@ -2425,14 +2405,12 @@ static void ModFilter_OnChange(void)
 {
 	if (openmpt_mhandle)
 		openmpt_module_set_render_param(openmpt_mhandle, OPENMPT_MODULE_RENDER_INTERPOLATIONFILTER_LENGTH, cv_modfilter.value);
-		
 }
 
 static void StereoSep_OnChange(void)
 {
 	if (openmpt_mhandle)
 		openmpt_module_set_render_param(openmpt_mhandle, OPENMPT_MODULE_RENDER_STEREOSEPARATION_PERCENT, cv_stereosep.value);
-		
 }
 
 static void AmigaFilter_OnChange(void)
