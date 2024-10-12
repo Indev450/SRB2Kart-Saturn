@@ -285,14 +285,14 @@ void S_RegisterSoundStuff(void)
 	CV_RegisterVar(&cv_gamemidimusic);
 #endif
 
-	//bird music stuff
+	// bird music stuff
 	CV_RegisterVar(&cv_playmusicifunfocused);
 	CV_RegisterVar(&cv_playsoundifunfocused);
 	CV_RegisterVar(&cv_pausemusic);
 
 	CV_RegisterVar(&cv_music_resync_threshold);
 	CV_RegisterVar(&cv_music_resync_powerups_only);
-	
+
 	CV_RegisterVar(&cv_invincmusicfade);
 	CV_RegisterVar(&cv_growmusicfade);
 
@@ -304,6 +304,7 @@ void S_RegisterSoundStuff(void)
 	CV_RegisterVar(&cv_resume);
 	CV_RegisterVar(&cv_fading);
 	CV_RegisterVar(&cv_birdmusic);
+	// bird music stuff end
 
 	CV_RegisterVar(&cv_keepmusic);
 	CV_RegisterVar(&cv_skipintromusic);
@@ -1198,7 +1199,7 @@ void S_InitSfxChannels(INT32 sfxVolume)
 	if (S_PrecacheSound())
 	{
 		// Initialize external data (all sounds) at start, keep static.
-		CONS_Printf(M_GetText("Loading sounds... "));
+		CONS_Printf(M_GetText("Pre-caching sounds..."));
 
 			for (i = 1; i < sfx_freeslot0; i++)
 				if (S_sfx[i].name && !S_sfx[i].data)
@@ -1208,7 +1209,7 @@ void S_InitSfxChannels(INT32 sfxVolume)
 				if (S_sfx[i].priority && !S_sfx[i].data)
 					S_sfx[i].data = I_GetSfx(&S_sfx[i]);
 
-		CONS_Printf(M_GetText(" pre-cached all sound data\n"));
+		CONS_Printf(M_GetText("...pre-cached all sound data\n"));
 	}
 }
 
@@ -1580,9 +1581,7 @@ boolean S_MusicPaused(void)
 
 boolean S_MusicNotInFocus(void)
 {
-	return (
-			( window_notinfocus && ! cv_playmusicifunfocused.value )
-	);
+	return (window_notinfocus && !cv_playmusicifunfocused.value);
 }
 
 musictype_t S_MusicType(void)
@@ -1610,10 +1609,8 @@ boolean S_MusicInfo(char *mname, UINT16 *mflags, boolean *looping)
 
 boolean S_MusicExists(const char *mname, boolean checkMIDI, boolean checkDigi)
 {
-	return (
-		(checkDigi ? W_CheckNumForName(va("O_%s", mname)) != LUMPERROR : false)
-		|| (checkMIDI ? W_CheckNumForName(va("D_%s", mname)) != LUMPERROR : false)
-	);
+	return (checkDigi ? W_CheckNumForName(va("O_%s", mname)) != LUMPERROR : false)
+		|| (checkMIDI ? W_CheckNumForName(va("D_%s", mname)) != LUMPERROR : false);
 }
 
 /// ------------------------
@@ -2297,7 +2294,7 @@ static void GameDigiMusic_OnChange(void)
 		digital_disabled = false;
 		I_StartupSound(); // will return early if initialised
 		I_InitMusic();
-		
+
 		if (Playing())
 			P_RestoreMusic(&players[consoleplayer]);
 		else
@@ -2334,14 +2331,12 @@ static void ModFilter_OnChange(void)
 {
 	if (openmpt_mhandle)
 		openmpt_module_set_render_param(openmpt_mhandle, OPENMPT_MODULE_RENDER_INTERPOLATIONFILTER_LENGTH, cv_modfilter.value);
-		
 }
 
 static void StereoSep_OnChange(void)
 {
 	if (openmpt_mhandle)
 		openmpt_module_set_render_param(openmpt_mhandle, OPENMPT_MODULE_RENDER_STEREOSEPARATION_PERCENT, cv_stereosep.value);
-		
 }
 
 static void AmigaFilter_OnChange(void)
