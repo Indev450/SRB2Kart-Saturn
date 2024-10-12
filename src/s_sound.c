@@ -2042,10 +2042,15 @@ void S_CheckMap(void)
 //
 void S_InitMapMusic(void)
 {
-	char *maptitle = G_BuildMapTitle(gamemap);
-	skipintromus = cv_skipintromusic.value && stricmp(maptitle, "Wandering Falls") != 0; // thanks diggle!
-	if (maptitle)
-		Z_Free(maptitle);
+	if (!cv_skipintromusic.value)
+		skipintromus = false;
+	else
+	{
+		char *maptitle = G_BuildMapTitle(gamemap);
+		skipintromus = cv_skipintromusic.value && stricmp(maptitle, "Wandering Falls") != 0; // thanks diggle!
+		if (maptitle)
+			Z_Free(maptitle);
+	}
 
 	if (mapmusflags & MUSIC_RELOADRESET)
 	{
