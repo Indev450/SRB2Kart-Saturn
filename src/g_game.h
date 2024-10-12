@@ -17,6 +17,7 @@
 #include "doomdef.h"
 #include "doomstat.h"
 #include "d_event.h"
+#include "m_textinput.h"
 
 extern char gamedatafilename[64];
 extern char timeattackfolder[64];
@@ -44,6 +45,7 @@ extern consvar_t cv_recordmultiplayerdemos, cv_netdemosyncquality, cv_maxdemosiz
 // Publicly-accessible demo vars
 struct demovars_s {
 	char titlename[65];
+	textinput_t titlenameinput;
 	boolean recording, playback, timing;
 	UINT16 version; // Current file format of the demo being played
 	boolean title; // Title Screen demo can be cancelled by any key

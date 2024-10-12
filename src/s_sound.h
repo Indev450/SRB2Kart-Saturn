@@ -32,7 +32,6 @@ extern consvar_t stereoreverse;
 extern consvar_t cv_soundvolume, cv_digmusicvolume;//, cv_midimusicvolume;
 extern consvar_t cv_numChannels;
 
-extern consvar_t surround;
 extern consvar_t cv_audbuffersize;
 //extern consvar_t cv_resetmusic;
 extern consvar_t cv_gamedigimusic;
@@ -55,6 +54,7 @@ extern consvar_t cv_amigatype;
 
 //bird music stuff
 extern consvar_t cv_music_resync_threshold;
+extern consvar_t cv_music_resync_powerups_only;
 
 extern consvar_t cv_invincmusicfade;
 extern consvar_t cv_growmusicfade;

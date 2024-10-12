@@ -2564,8 +2564,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 				P_PlayerRingBurst(player, 5);
 				if (P_IsLocalPlayer(player))
 				{
-					quake.intensity = 32*FRACUNIT;
-					quake.time = 5;
+					P_StartQuake(5, 32<<FRACBITS, 0);
 				}
 			}
 			else

@@ -614,7 +614,7 @@ void R_DrawMaskedColumn(column_t *column)
 		if (dc_yh >= vid.height)
 			dc_yh = vid.height - 1;
 
-		if (dc_yl <= dc_yh && dc_yh > 0)
+		if (dc_yl <= dc_yh && dc_yh > 0 && column->length != 0)
 		{
 			dc_source = (UINT8 *)column + 3;
 			dc_texturemid = basetexturemid - (topdelta<<FRACBITS);
@@ -674,7 +674,7 @@ static void R_DrawFlippedMaskedColumn(column_t *column)
 		if (dc_yh >= vid.height)
 			dc_yh = vid.height - 1;
 
-		if (dc_yl <= dc_yh && dc_yh > 0)
+		if (dc_yl <= dc_yh && dc_yh > 0 && column->length != 0)
 		{
 			dc_source = ZZ_Alloc(column->length);
 			for (s = (UINT8 *)column+2+column->length, d = dc_source; d < dc_source+column->length; --s)
@@ -1987,7 +1987,7 @@ void R_AddPrecipitationSprites(void)
 	precipmobj_t *th, *next;
 
 	// no, no infinite draw distance for precipitation. this option at zero is supposed to turn it off
-	if (drawdist == 0)
+	if (drawdist == 0 || curWeather == PRECIP_BLANK || curWeather == PRECIP_STORM_NORAIN)
 	{
 		return;
 	}

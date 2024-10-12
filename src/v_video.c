@@ -1611,21 +1611,19 @@ void V_DrawFadeScreen(UINT16 color, UINT8 strength)
     }
 #endif
 
-    {
-        const UINT8 *fadetable =
-			(color > 0xFFF0) // Grab a specific colormap palette?
-			? R_GetTranslationColormap(color | 0xFFFF0000, strength, GTC_CACHE)
-			: ((color & 0xFF00) // Color is not palette index?
-			? ((UINT8 *)colormaps + strength*256) // Do COLORMAP fade.
-			: ((UINT8 *)transtables + ((9-strength)<<FF_TRANSSHIFT) + color*256)); // Else, do TRANSMAP** fade.
-        const UINT8 *deststop = screens[0] + vid.rowbytes * vid.height;
-        UINT8 *buf = screens[0];
+	const UINT8 *fadetable =
+		(color > 0xFFF0) // Grab a specific colormap palette?
+		? R_GetTranslationColormap(color | 0xFFFF0000, strength, GTC_CACHE)
+		: ((color & 0xFF00) // Color is not palette index?
+		? ((UINT8 *)colormaps + strength*256) // Do COLORMAP fade.
+		: ((UINT8 *)transtables + ((9-strength)<<FF_TRANSSHIFT) + color*256)); // Else, do TRANSMAP** fade.
+	const UINT8 *deststop = screens[0] + vid.rowbytes * vid.height;
+	UINT8 *buf = screens[0];
 
-        // heavily simplified -- we don't need to know x or y
-        // position when we're doing a full screen fade
-        for (; buf < deststop; ++buf)
-            *buf = fadetable[*buf];
-    }
+	// heavily simplified -- we don't need to know x or y
+	// position when we're doing a full screen fade
+	for (; buf < deststop; ++buf)
+		*buf = fadetable[*buf];
 }
 
 // Simple translucency with one color, over a set number of lines starting from the top.
@@ -2845,11 +2843,14 @@ INT32 V_LevelNameHeight(const char *string)
 //
 // Find string width from hu_font chars
 //
-INT32 V_StringWidth(const char *string, INT32 option)
+INT32 V_SubStringWidth(const char *string, INT32 length, INT32 option)
 {
 	INT32 c, w = 0;
 	INT32 spacewidth = 4, charwidth = 0;
-	size_t i;
+	ssize_t i;
+
+	if (length < 0)
+		length = strlen(string);
 
 	switch (option & V_SPACINGMASK)
 	{
@@ -2865,7 +2866,7 @@ INT32 V_StringWidth(const char *string, INT32 option)
 			break;
 	}
 
-	for (i = 0; i < strlen(string); i++)
+	for (i = 0; string[i] && i < length; i++)
 	{
 		c = string[i];
 		if ((UINT8)c >= 0x80 && (UINT8)c <= 0x8F) //color parsing! -Inuyasha 2.16.09
@@ -2884,11 +2885,14 @@ INT32 V_StringWidth(const char *string, INT32 option)
 //
 // Find string width from hu_font chars, 0.5x scale
 //
-INT32 V_SmallStringWidth(const char *string, INT32 option)
+INT32 V_SmallSubStringWidth(const char *string, INT32 length, INT32 option)
 {
 	INT32 c, w = 0;
 	INT32 spacewidth = 2, charwidth = 0;
-	size_t i;
+	ssize_t i;
+
+	if (length < 0)
+		length = strlen(string);
 
 	switch (option & V_SPACINGMASK)
 	{
@@ -2904,7 +2908,7 @@ INT32 V_SmallStringWidth(const char *string, INT32 option)
 			break;
 	}
 
-	for (i = 0; i < strlen(string); i++)
+	for (i = 0; string[i] && i < length; i++)
 	{
 		c = string[i];
 		if ((UINT8)c >= 0x80 && (UINT8)c <= 0x8F) //color parsing! -Inuyasha 2.16.09
@@ -2923,12 +2927,15 @@ INT32 V_SmallStringWidth(const char *string, INT32 option)
 //
 // Find string width from tny_font chars
 //
-INT32 V_ThinStringWidth(const char *string, INT32 option)
+INT32 V_ThinSubStringWidth(const char *string, INT32 length, INT32 option)
 {
 	INT32 c, w = 0;
 	INT32 spacewidth = 2, charwidth = 0;
 	boolean lowercase = (option & V_ALLOWLOWERCASE);
-	size_t i;
+	ssize_t i;
+
+	if (length < 0)
+		length = strlen(string);
 
 	switch (option & V_SPACINGMASK)
 	{
@@ -2945,7 +2952,7 @@ INT32 V_ThinStringWidth(const char *string, INT32 option)
 			break;
 	}
 
-	for (i = 0; i < strlen(string); i++)
+	for (i = 0; string[i] && i < length; i++)
 	{
 		c = string[i];
 		if ((UINT8)c >= 0x80 && (UINT8)c <= 0x8F) //color parsing! -Inuyasha 2.16.09
@@ -2963,13 +2970,52 @@ INT32 V_ThinStringWidth(const char *string, INT32 option)
 		else
 		{
 			w += (charwidth ? charwidth
-				: ((option & V_6WIDTHSPACE && i < strlen(string)-1) ? max(1, SHORT(tny_font[c]->width)-1) // Reuse this flag for the alternate bunched-up spacing
+				: ((option & V_6WIDTHSPACE && i < length-1) ? max(1, SHORT(tny_font[c]->width)-1) // Reuse this flag for the alternate bunched-up spacing
 				: SHORT(tny_font[c]->width)));
 		}
 	}
 
 
 	return w;
+}
+
+//
+// Find maximum length for substring taken from current string to fit into given width
+//
+INT32 V_SubStringLengthToFit(const char *string, INT32 width, INT32 option)
+{
+	INT32 c, w = 0;
+	INT32 spacewidth = 4, charwidth = 0;
+	INT32 i;
+
+	switch (option & V_SPACINGMASK)
+	{
+		case V_MONOSPACE:
+			spacewidth = 8;
+			/* FALLTHRU */
+		case V_OLDSPACING:
+			charwidth = 8;
+			break;
+		case V_6WIDTHSPACE:
+			spacewidth = 6;
+		default:
+			break;
+	}
+
+	for (i = 0; string[i] && w < width; i++)
+	{
+		c = string[i];
+		if ((UINT8)c >= 0x80 && (UINT8)c <= 0x8F) //color parsing! -Inuyasha 2.16.09
+			continue;
+
+		c = toupper(c) - HU_FONTSTART;
+		if (c < 0 || c >= HU_FONTSIZE || !hu_font[c])
+			w += spacewidth;
+		else
+			w += (charwidth ? charwidth : SHORT(hu_font[c]->width));
+	}
+
+	return max(i-1, 0);
 }
 
 char V_GetSkincolorChar(INT32 color)

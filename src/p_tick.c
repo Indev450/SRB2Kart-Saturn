@@ -397,6 +397,36 @@ void P_RunChaseCameras(void)
 	}
 }
 
+static inline void P_RunQuakes(void)
+{
+	fixed_t ir;
+
+	if (quake.time <= 0)
+	{
+		quake.x = quake.y = quake.z = quake.roll = 0;
+		return;
+	}
+
+	ir = quake.intensity>>1;
+
+	/// \todo Calculate distance from epicenter if set and modulate the intensity accordingly based on radius.
+	quake.x = M_RandomRange(-ir,ir);
+	quake.y = M_RandomRange(-ir,ir);
+	quake.z = M_RandomRange(-ir,ir);
+
+	ir >>= 2;
+	ir = M_RandomRange(-ir,ir);
+
+	if (ir < 0)
+		ir = ANGLE_MAX - FixedAngle(-ir);
+	else
+		ir = FixedAngle(ir);
+
+	quake.roll = ir;
+
+	--quake.time;
+}
+
 //
 // P_Ticker
 //
@@ -429,6 +459,8 @@ void P_Ticker(boolean run)
 		if (demo.rewinding && leveltime > 0)
 		{
 			leveltime = (leveltime-1) & ~3;
+			if (timeinmap > 0)
+				timeinmap = (timeinmap-1) & ~3;
 			G_PreviewRewind(leveltime);
 		}
 		else if (demo.freecam && democam.cam)	// special case: allow freecam to MOVE during pause!
@@ -587,24 +619,7 @@ void P_Ticker(boolean run)
 				K_CalculateBattleWanted();
 		}
 
-		if (quake.time)
-		{
-			fixed_t ir = quake.intensity>>1;
-			/// \todo Calculate distance from epicenter if set and modulate the intensity accordingly based on radius.
-			quake.x = M_RandomRange(-ir,ir);
-			quake.y = M_RandomRange(-ir,ir);
-			quake.z = M_RandomRange(-ir,ir);
-			ir >>= 2;
-			ir = M_RandomRange(-ir,ir);
-			if (ir < 0)
-				ir = ANGLE_MAX - FixedAngle(-ir);
-			else
-				ir = FixedAngle(ir);
-			quake.roll = ir;
-			--quake.time;
-		}
-		else
-			quake.x = quake.y = quake.z = quake.roll = 0;
+		P_RunQuakes();
 
 		if (metalplayback)
 			G_ReadMetalTic(metalplayback);
@@ -668,8 +683,10 @@ void P_Ticker(boolean run)
 			{
 				player_t *player = &players[displayplayers[i]];
 				boolean isSkyVisibleForPlayer = skyVisiblePerPlayer[i];
+
 				if (!player->mo)
 					continue;
+
 				if (isSkyVisibleForPlayer && skyboxmo[0] && cv_skybox.value)
 				{
 					R_SkyboxFrame(player);
@@ -683,8 +700,6 @@ void P_Ticker(boolean run)
 
 	if (demo.playback)
 		G_StoreRewindInfo();
-
-//	Z_CheckMemCleanup();
 }
 
 // Abbreviated ticker for pre-loading, calls thinkers and assorted things

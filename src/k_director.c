@@ -17,12 +17,13 @@
 #include "k_director.h"
 #include "d_netcmd.h"
 #include "p_local.h"
+#include "st_stuff.h"
 
 #define SWITCHTIME TICRATE * 5		// cooldown between unforced switches
 #define BOREDOMTIME 3 * TICRATE / 2 // how long until players considered far apart?
 #define TRANSFERTIME TICRATE		// how long to delay reaction shots?
 #define BREAKAWAYDIST 2000			// how *far* until players considered far apart?
-#define WALKBACKDIST 600			// how close should a trailing player be before we switch?
+#define WALKBACKDIST 400			// how close should a trailing player be before we switch?
 #define PINCHDIST 20000				// how close should the leader be to be considered "end of race"?
 
 struct directorinfo
@@ -49,7 +50,7 @@ static fixed_t ScaleFromMap(fixed_t n, fixed_t scale)
 
 static boolean K_DirectorIsEnabled(void)
 {
-	return cv_director.value && !splitscreen && (gamestate == GS_LEVEL && (!playeringame[consoleplayer] || players[consoleplayer].spectator || (demo.playback && (!demo.title || !modeattacking))));
+	return cv_director.value && !splitscreen && (gamestate == GS_LEVEL && (((stplyr && !stplyr->spectator) && (!playeringame[consoleplayer] || players[consoleplayer].spectator)) || (demo.playback && !demo.freecam && (!demo.title || !modeattacking))));
 }
 
 void K_InitDirector(void)
@@ -376,6 +377,12 @@ void K_UpdateDirector(void)
 			break;
 		}
 
+		// if this is a splitscreen player, try next pair
+		if (P_IsDisplayPlayer(&players[target]))
+		{
+			continue;
+		}
+
 		// if we're certain the back half of the pair is actually in this position, try to switch
 		if (!players[target].kartstuff[k_positiondelay])
 		{
@@ -394,10 +401,15 @@ void K_UpdateDirector(void)
 
 void K_ToggleDirector(void)
 {
+	if (!directortextactive)
+		return;
+
 	if (!K_DirectorIsEnabled())
 	{
 		directorinfo.cooldown = 0; // switch immediately
 	}
+
+	directortoggletimer = 0;
 
 	COM_ImmedExecute("add director 1");
 }
