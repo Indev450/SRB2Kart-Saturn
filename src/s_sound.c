@@ -2036,8 +2036,10 @@ void S_StopMusic(void)
 		|| demo.title) // SRB2Kart: Demos don't interrupt title screen music
 		return;
 
-	if ((cv_birdmusic.value) && (strcasecmp(music_name, mapmusname) == 0))
+	if (cv_birdmusic.value && (strcasecmp(music_name, mapmusname) == 0))
 		mapmusresume = I_GetSongPosition();
+	else
+		mapmusresume = 0;
 
 	if (I_SongPaused())
 		I_ResumeSong();
@@ -2110,10 +2112,7 @@ void S_SetMusicVolume(INT32 digvolume, INT32 seqvolume)
 
 void S_SetRestoreMusicFadeInCvar (consvar_t *cv)
 {
-	if (!cv_birdmusic.value)
-		return;
-
-	music_refade_cv = cv;
+	music_refade_cv = cv_birdmusic.value ? cv : 0;
 }
 
 int S_GetRestoreMusicFadeIn (void)
