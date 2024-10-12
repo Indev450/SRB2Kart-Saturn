@@ -1197,7 +1197,13 @@ static void UnArchiveExtVars(UINT8 **p, void *pointer, boolean network)
 		for (i = 0; i < field_count; i++)
 		{
 			READSTRING(*p, field);
-			UnArchiveValue(p, TABLESINDEX);
+
+			if (UnArchiveValue(p, TABLESINDEX) == 1)
+			{
+				CONS_Alert(CONS_ERROR, "Unexpected end marker when reading ExtVars (field '%s')\n", field);
+				break;
+			}
+
 			lua_setfield(gL, -2, field);
 		}
 	}
