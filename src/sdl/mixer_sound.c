@@ -594,6 +594,9 @@ Countstutter (int len)
 {
 	UINT32 bytes;
 
+	if (!cv_birdmusic.value || gamestate != GS_LEVEL)
+		return;
+
 	if (hu_stopped)
 	{
 		music_stutter_bytes += len;
@@ -629,8 +632,7 @@ static void count_music_bytes(int chan, void *stream, int len, void *udata)
 
 	music_bytes += len;
 
-	if (cv_birdmusic.value && gamestate == GS_LEVEL)
-		Countstutter(len);
+	Countstutter(len);
 }
 
 static void music_loop(void)
@@ -1045,9 +1047,6 @@ UINT32 I_GetSongPosition(void)
 
 void I_UpdateSongLagThreshold (void)
 {
-	if (!cv_birdmusic.value)
-		return;
-
 	stutter_threshold = cv_music_resync_powerups_only.value ? 0 : (cv_music_resync_threshold.value/1000.0*(4*44100));
 }
 
