@@ -111,6 +111,7 @@ typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 #endif
 
 #if defined (__unix__) || (defined (UNIXCOMMON) && !defined (__APPLE__))
+#include <poll.h>
 #include <errno.h>
 #include <sys/wait.h>
 #define NEWSIGNALHANDLER
@@ -698,50 +699,60 @@ void I_GetConsoleEvents(void)
 	// we use this when sending back commands
 	event_t ev = {0,0,0,0};
 	char key = 0;
-	ssize_t d;
+	struct pollfd pfd =
+	{
+		.fd = STDIN_FILENO,
+		.events = POLLIN,
+		.revents = 0,
+	};
 
 	if (!consolevent)
 		return;
 
-	ev.type = ev_console;
-	ev.data1 = 0;
-	if (read(STDIN_FILENO, &key, 1) == -1 || !key)
-		return;
+	for (;;)
+	{
+		if (poll(&pfd, 1, 0) < 1 || !(pfd.revents & POLLIN))
+			return;
 
-	// we have something
-	// backspace?
-	// NOTE TTimo testing a lot of values .. seems it's the only way to get it to work everywhere
-	if ((key == tty_erase) || (key == 127) || (key == 8))
-	{
-		if (tty_con.cursor > 0)
+		ev.type = ev_console;
+		ev.data1 = 0;
+		if (read(STDIN_FILENO, &key, 1) == -1 || !key)
+			return;
+
+		// we have something
+		// backspace?
+		// NOTE TTimo testing a lot of values .. seems it's the only way to get it to work everywhere
+		if ((key == tty_erase) || (key == 127) || (key == 8))
 		{
-			tty_con.cursor--;
-			tty_con.buffer[tty_con.cursor] = '\0';
-			tty_Back();
+			if (tty_con.cursor > 0)
+			{
+				tty_con.cursor--;
+				tty_con.buffer[tty_con.cursor] = '\0';
+				tty_Back();
+			}
+			ev.data1 = KEY_BACKSPACE;
 		}
-		ev.data1 = KEY_BACKSPACE;
-	}
-	else if (key < ' ') // check if this is a control char
-	{
-		if (key == '\n')
+		else if (key < ' ') // check if this is a control char
 		{
-			tty_Clear();
-			tty_con.cursor = 0;
-			ev.data1 = KEY_ENTER;
+			if (key == '\n')
+			{
+				tty_Clear();
+				tty_con.cursor = 0;
+				ev.data1 = KEY_ENTER;
+			}
+			else continue;
 		}
-		else return;
+		else if (tty_con.cursor < sizeof(tty_con.buffer))
+		{
+			// push regular character
+			ev.data1 = tty_con.buffer[tty_con.cursor] = key;
+			tty_con.cursor++;
+			// print the current line (this is differential)
+			write(STDOUT_FILENO, &key, 1);
+		}
+		if (ev.data1) D_PostEvent(&ev);
+		//tty_FlushIn();
 	}
-	else if (tty_con.cursor < sizeof (tty_con.buffer))
-	{
-		// push regular character
-		ev.data1 = tty_con.buffer[tty_con.cursor] = key;
-		tty_con.cursor++;
-		// print the current line (this is differential)
-		d = write(STDOUT_FILENO, &key, 1);
-	}
-	if (ev.data1) D_PostEvent(&ev);
-	//tty_FlushIn();
-	(void)d;
 }
 
 #elif defined (_WIN32)
