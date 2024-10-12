@@ -295,10 +295,6 @@ boolean M_TextInputHandle(textinput_t *input, INT32 key)
 	if (key < 32 || key > 127)
 		return false;
 
-	// add key to cmd line here
-	if (key >= 'A' && key <= 'Z' && !(shiftdown ^ capslock)) //this is only really necessary for dedicated servers
-		key = key + 'a' - 'A';
-
 	if (input->select != input->cursor)
 		M_TextInputDelSelection(input);
 	M_TextInputAddChar(input, key);

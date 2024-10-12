@@ -898,7 +898,6 @@ boolean CON_Responder(event_t *ev)
 		// show all cvars/commands that match what we have inputted
 		if (key == KEY_TAB)
 		{
-
 			if (!completion[0])
 			{
 				if (!input.length || input.length >= 40 || strchr(input.buffer, ' '))
