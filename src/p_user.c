@@ -760,19 +760,13 @@ void P_RestoreMusic(player_t *player)
 			if (G_RaceGametype() && player->laps >= (UINT8)(cv_numlaps.value - 1))
 				S_SpeedMusic(1.2f);
 #endif
-			if (cv_birdmusic.value)
-			{
-				if (mapmusresume && cv_resume.value)
-					position = mapmusresume;
-				else
-					position = mapmusposition;
-
-				S_ChangeMusicEx(mapmusname, mapmusflags, true, position, 0, S_GetRestoreMusicFadeIn());
-				S_ClearRestoreMusicFadeInCvar();
-			}
+			if (mapmusresume && cv_resume.value) // mapmusresume will be 0 anyways when birdmusic stuff is disabled
+				position = mapmusresume;
 			else
-				S_ChangeMusicEx(mapmusname, mapmusflags, true, mapmusposition, 0, 0);
+				position = mapmusposition;
 
+			S_ChangeMusicEx(mapmusname, mapmusflags, true, position, 0, S_GetRestoreMusicFadeIn());
+			S_ClearRestoreMusicFadeInCvar();
 			mapmusresume = 0;
 		}
 	}

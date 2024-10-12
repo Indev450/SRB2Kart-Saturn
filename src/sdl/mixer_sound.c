@@ -1045,7 +1045,7 @@ UINT32 I_GetSongPosition(void)
 		// 8M: 1 | 8S: 2 | 16M: 2 | 16S: 4
 }
 
-void I_UpdateSongLagThreshold (void)
+void I_UpdateSongLagThreshold(void)
 {
 	stutter_threshold = cv_music_resync_powerups_only.value ? 0 : (cv_music_resync_threshold.value/1000.0*(4*44100));
 }
