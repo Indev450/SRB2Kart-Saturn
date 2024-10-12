@@ -94,7 +94,6 @@ static UINT16 SAMPLERATE = 44100;
 
 UINT8 sound_started = false;
 
-static UINT32 stutter_threshold_user;
 static UINT32 stutter_threshold;
 
 static Mix_Music *music;
