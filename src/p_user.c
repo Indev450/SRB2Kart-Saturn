@@ -3338,29 +3338,23 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 
 	if (!thiscam->chase && !resetcalled)
 	{
+		focusangle = mo->angle;
 		for (i = 0; i <= splitscreen; i++)
 		{
-			if (player == &players[displayplayers[i]])
+			if (player == (i == 0 ? &players[consoleplayer] : &players[displayplayers[i]]))
 			{
 				focusangle = localangle[i];
 				break;
 			}
-			else
-			{
-				focusangle = mo->angle;
-			}
 		}
 
+		camrotate = 0;
 		for (i = 0; i <= splitscreen; i++)
 		{
 			if (thiscam == &camera[i])
 			{
 				camrotate = cv_cam_rotate[i].value;
 				break;
-			}
-			else
-			{
-				camrotate = 0;
 			}
 		}
 
@@ -3390,19 +3384,17 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	}
 	else
 	{
-		for (i = 0; i <= splitscreen; i++)
+		focusangle = mo->angle;
+		focusaiming = player->aiming;
+	}
+
+	for (i = 0; i <= splitscreen; i++)
+	{
+		if (player == (i == 0 ? &players[consoleplayer] : &players[displayplayers[i]]))
 		{
-			if (player == &players[displayplayers[i]])
-			{
-				focusangle = localangle[i];
-				focusaiming = localaiming[i];
-				break;
-			}
-			else
-			{
-				focusangle = mo->angle;
-				focusaiming = player->aiming;
-			}
+			focusangle = localangle[i];
+			focusaiming = localaiming[i];
+			break;
 		}
 	}
 
