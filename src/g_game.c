@@ -357,10 +357,6 @@ consvar_t cv_demochangemap = {"netdemo_savemapchange", "Disabled", CV_SAVE, demo
 static UINT8 *savebuffer;
 
 // Analog Control
-static void Analog_OnChange(void);
-static void Analog2_OnChange(void);
-static void Analog3_OnChange(void);
-static void Analog4_OnChange(void);
 void SendWeaponPref(void);
 void SendWeaponPref2(void);
 void SendWeaponPref3(void);
@@ -438,14 +434,6 @@ consvar_t cv_chasefreelook = {"chasemlook", "Off", CV_SAVE, CV_OnOff, NULL, 0, N
 consvar_t cv_chasefreelook2 = {"chasemlook2", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_mousemove = {"mousemove", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_mousemove2 = {"mousemove2", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};*/
-consvar_t cv_analog = {"analog", "Off", CV_CALL, CV_OnOff, Analog_OnChange, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_analog2 = {"analog2", "Off", CV_CALL, CV_OnOff, Analog2_OnChange, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_analog3 = {"analog3", "Off", CV_CALL, CV_OnOff, Analog3_OnChange, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_analog4 = {"analog4", "Off", CV_CALL, CV_OnOff, Analog4_OnChange, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_useranalog = {"useranalog", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_useranalog2 = {"useranalog2", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_useranalog3 = {"useranalog3", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_useranalog4 = {"useranalog4", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_turnaxis = {"joyaxis_turn", "Left X", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_moveaxis = {"joyaxis_move", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -1494,38 +1482,6 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		&& displayplayers[0] != consoleplayer && ssplayer == 1)
 		displayplayers[0] = consoleplayer;
 
-}
-
-static void Analog_OnChange(void)
-{
-	if (!cv_cam_dist[0].string)
-		return;
-
-	SendWeaponPref();
-}
-
-static void Analog2_OnChange(void)
-{
-	if (!splitscreen || !cv_cam_dist[1].string)
-		return;
-
-	SendWeaponPref2();
-}
-
-static void Analog3_OnChange(void)
-{
-	if (splitscreen < 2 || !cv_cam_dist[2].string)
-		return;
-
-	SendWeaponPref3();
-}
-
-static void Analog4_OnChange(void)
-{
-	if (splitscreen < 3 || !cv_cam_dist[3].string)
-		return;
-
-	SendWeaponPref4();
 }
 
 //
