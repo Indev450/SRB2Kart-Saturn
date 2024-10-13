@@ -1172,7 +1172,7 @@ static void R_SetupAimingFrame(player_t *player, camera_t *thiscam)
 		{
 			for (UINT8 i = 0; i <= splitscreen; i++)
 			{
-				if (player == &players[displayplayers[i]])
+				if (player == (i == 0 ? &players[consoleplayer] : &players[displayplayers[i]]))
 				{
 					newview->angle = localangle[i];
 					newview->aim = localaiming[i];
@@ -1188,21 +1188,14 @@ void R_SkyboxFrame(player_t *player)
 	camera_t *thiscam = &camera[0];
 	UINT8 i;
 
-	if (splitscreen)
+	for (i = 0; i <= splitscreen; i++)
 	{
-		for (i = 0; i <= splitscreen; i++)
+		if (player == (i == 0 ? &players[consoleplayer] : &players[displayplayers[i]]))
 		{
-			if (player == &players[displayplayers[i]])
-			{
-				thiscam = &camera[i];
-				R_SetViewContext(VIEWCONTEXT_SKY1 + i);
-				break;
-			}
+			thiscam = &camera[i];
+			R_SetViewContext(VIEWCONTEXT_SKY1 + i);
+			break;
 		}
-	}
-	else
-	{
-		R_SetViewContext(VIEWCONTEXT_SKY1);
 	}
 
 	// cut-away view stuff
@@ -1298,7 +1291,7 @@ void R_SetupFrame(player_t *player, boolean skybox)
 
 	for (UINT8 i = 0; i <= splitscreen; i++)
 	{
-		if (player == &players[displayplayers[i]])
+		if (player == (i == 0 ? &players[consoleplayer] : &players[displayplayers[i]]))
 		{
 			thiscam = &camera[i];
 			chasecam = cv_chasecam[i].value;
