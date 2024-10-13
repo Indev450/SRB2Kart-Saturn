@@ -1147,8 +1147,6 @@ R_SetupCommonFrame
 
 static void R_SetupAimingFrame(player_t *player, camera_t *thiscam)
 {
-	UINT8 i;
-
 	if (player->awayviewtics)
 	{
 		newview->aim = player->awayviewaiming;
@@ -1166,21 +1164,13 @@ static void R_SetupAimingFrame(player_t *player, camera_t *thiscam)
 
 		if (!demo.playback && player->playerstate != PST_DEAD)
 		{
-			if (player == &players[consoleplayer])
+			for (UINT8 i = 0; i <= splitscreen; i++)
 			{
-				newview->angle = localangle[0]; // WARNING: camera uses this
-				newview->aim = localaiming[0];
-			}
-			else if (splitscreen)
-			{
-				for (i = 1; i <= splitscreen; i++)
+				if (player == &players[displayplayers[i]])
 				{
-					if (player == &players[displayplayers[i]])
-					{
-						newview->angle = localangle[i];
-						newview->aim = localaiming[i];
-						break;
-					}
+					newview->angle = localangle[i];
+					newview->aim = localaiming[i];
+					break;
 				}
 			}
 		}
