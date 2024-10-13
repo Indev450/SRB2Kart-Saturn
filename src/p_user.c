@@ -1249,7 +1249,7 @@ void P_DoPlayerExit(player_t *player)
 		player->exiting = raceexittime+2;
 		K_KartUpdatePosition(player);
 
-		if (cv_kartvoices.value)
+		if (!P_MobjWasRemoved(player->mo) && cv_kartvoices.value)
 		{
 			if (P_IsLocalPlayer(player))
 			{
