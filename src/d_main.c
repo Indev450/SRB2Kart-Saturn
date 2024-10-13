@@ -452,6 +452,8 @@ static boolean D_Display(void)
 			{
 				if (players[displayplayers[i]].mo || players[displayplayers[i]].playerstate == PST_DEAD)
 				{
+					viewssnum = i;
+
 					if (i == 0) // Initialize for P1
 					{
 						viewwindowy = 0;
@@ -460,8 +462,6 @@ static boolean D_Display(void)
 						topleft = screens[0] + viewwindowy*vid.width + viewwindowx;
 						objectsdrawn = 0;
 					}
-
-					viewssnum = i;
 
 #ifdef HWRENDER
 					if (rendermode == render_opengl)

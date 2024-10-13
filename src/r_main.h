@@ -247,9 +247,9 @@ void R_SetViewSize(void);
 // do it (sometimes explicitly called)
 void R_ExecuteSetViewSize(void);
 
-void R_SkyboxFrame(player_t *player);
+void R_SkyboxFrame(int s);
+void R_SetupFrame(int s, boolean skybox);
 
-void R_SetupFrame(player_t *player, boolean skybox);
 // Called by G_Drawer.
 void R_RenderPlayerView(player_t *player);
 

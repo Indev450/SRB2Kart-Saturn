@@ -5378,7 +5378,7 @@ static void HWR_RenderPortal(gl_portal_t* portal, gl_portal_t* rootportal, const
 		HWR_PortalFrame(rootportal);
 	else // current frame is not a portal frame but the main view!
 	{
-		R_SetupFrame(player, false);
+		R_SetupFrame(viewssnum, false);
 		portalclipline = NULL;
 	}
 
@@ -5656,12 +5656,12 @@ void HWR_RenderPlayerView(INT32 viewnumber, player_t *player)
 	drewsky = false;
 	if (skybox)
 	{
-		R_SkyboxFrame(player);
+		R_SkyboxFrame(viewssnum);
 		HWR_RenderFrame(viewnumber, player, true);
 	}
 	PS_STOP_TIMING(ps_skyboxtime);
 
-	R_SetupFrame(player, false); // This can stay false because it is only used to set viewsky in r_main.c, which isn't used here
+	R_SetupFrame(viewssnum, false); // This can stay false because it is only used to set viewsky in r_main.c, which isn't used here
 	framecount++; // for timedemo
 	HWR_RenderFrame(viewnumber, player, false);
 }

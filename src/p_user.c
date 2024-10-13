@@ -3305,6 +3305,23 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	if (thiscam->subsector == NULL || thiscam->subsector->sector == NULL)
 		return true;
 
+	if (thiscam == &camera[1]) // Camera 2
+	{
+		num = 1;
+	}
+	else if (thiscam == &camera[2]) // Camera 3
+	{
+		num = 2;
+	}
+	else if (thiscam == &camera[3]) // Camera 4
+	{
+		num = 3;
+	}
+	else // Camera 1
+	{
+		num = 0;
+	}
+
 	if (demo.freecam)
 	{
 		P_DemoCameraMovement(thiscam);
@@ -3329,34 +3346,14 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 		if (player->spectator) // force cam off for spectators
 			return true;
 
-		for (i = 0; i <= splitscreen; i++)
-		{
-			if (!cv_chasecam[i].value && thiscam == &camera[i])
-				return true;
-		}
+		if (!cv_chasecam[num].value && thiscam == &camera[num])
+			return true;
 	}
 
 	if (!thiscam->chase && !resetcalled)
 	{
-		focusangle = mo->angle;
-		for (i = 0; i <= splitscreen; i++)
-		{
-			if (player == (i == 0 ? &players[consoleplayer] : &players[displayplayers[i]]))
-			{
-				focusangle = localangle[i];
-				break;
-			}
-		}
-
-		camrotate = 0;
-		for (i = 0; i <= splitscreen; i++)
-		{
-			if (thiscam == &camera[i])
-			{
-				camrotate = cv_cam_rotate[i].value;
-				break;
-			}
-		}
+		focusangle = localangle[num];
+		camrotate = cv_cam_rotate[num].value;
 
 		if (leveltime < introtime) // Whoooshy camera!
 		{
@@ -3372,11 +3369,6 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	thiscam->radius = 20*mapobjectscale;
 	thiscam->height = 16*mapobjectscale;
 
-	// Don't run while respawning from a starpost
-	// Inu 4/8/13 Why not?!
-//	if (leveltime > 0 && timeinmap <= 0)
-//		return true;
-
 	if (demo.playback)
 	{
 		focusangle = mo->angle;
@@ -3384,37 +3376,19 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	}
 	else
 	{
-		focusangle = mo->angle;
-		focusaiming = player->aiming;
-	}
-
-	for (i = 0; i <= splitscreen; i++)
-	{
-		if (player == (i == 0 ? &players[consoleplayer] : &players[displayplayers[i]]))
-		{
-			focusangle = localangle[i];
-			focusaiming = localaiming[i];
-			break;
-		}
+		focusangle = localangle[num];
+		focusaiming = localaiming[num];
 	}
 
 	if (P_CameraThinker(player, thiscam, resetcalled))
 		return true;
 
-	for (i = 0; i <= splitscreen; i++)
-	{
-		if (thiscam == &camera[i])
-		{
-			num = i;
-			camspeed = cv_cam_speed[i].value;
-			camstill = cv_cam_still[i].value;
-			camrotate = cv_cam_rotate[i].value;
-			camdist = FixedMul(cv_cam_dist[i].value, mapobjectscale);
-			camheight = FixedMul(cv_cam_height[i].value, mapobjectscale);
-			lookback = camspin[i];
-			break;
-		}
-	}
+	camspeed = cv_cam_speed[num].value;
+	camstill = cv_cam_still[num].value;	// RR: seasaws lock the camera so that it isn't disorienting.
+	camrotate = cv_cam_rotate[num].value;
+	camdist = FixedMul(cv_cam_dist[num].value, mapobjectscale);
+	camheight = FixedMul(cv_cam_height[num].value, mapobjectscale);
+	lookback = camspin[i];
 
 	if (timeover)
 	{
@@ -3478,10 +3452,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	}
 
 	if (!resetcalled && (leveltime > starttime && timeover != 2)
-		&& ((thiscam == &camera[0] && t_cam_rotate[0] != -42)
-		|| (thiscam == &camera[1] && t_cam_rotate[1] != -42)
-		|| (thiscam == &camera[2] && t_cam_rotate[2] != -42)
-		|| (thiscam == &camera[3] && t_cam_rotate[3] != -42)))
+		&& (t_cam_rotate[num] != -42))
 	{
 		angle = FixedAngle(camrotate*FRACUNIT);
 		thiscam->angle = angle;

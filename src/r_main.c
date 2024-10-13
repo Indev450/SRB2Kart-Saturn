@@ -1090,20 +1090,12 @@ static void R_SetupAimingFrame(player_t *player, camera_t *thiscam)
 	}
 }
 
-void R_SkyboxFrame(player_t *player)
+void R_SkyboxFrame(int s)
 {
-	camera_t *thiscam = &camera[0];
-	UINT8 i;
+	player_t *player = &players[displayplayers[s]];
+	camera_t *thiscam = &camera[s];
 
-	for (i = 0; i <= splitscreen; i++)
-	{
-		if (player == (i == 0 ? &players[consoleplayer] : &players[displayplayers[i]]))
-		{
-			thiscam = &camera[i];
-			R_SetViewContext(VIEWCONTEXT_SKY1 + i);
-			break;
-		}
-	}
+	R_SetViewContext(VIEWCONTEXT_SKY1 + s);
 
 	// cut-away view stuff
 	newview->sky = true;
@@ -1191,25 +1183,17 @@ void R_SkyboxFrame(player_t *player)
 	R_SetupCommonFrame(player, viewmobj->subsector);
 }
 
-void R_SetupFrame(player_t *player, boolean skybox)
+void R_SetupFrame(int s, boolean skybox)
 {
-	camera_t *thiscam;
-	boolean chasecam = false;
+	player_t *player = &players[displayplayers[s]];
+	camera_t *thiscam = &camera[s];
+	boolean chasecam = (cv_chasecam[s].value != 0);
 
-	for (UINT8 i = 0; i <= splitscreen; i++)
+	R_SetViewContext(VIEWCONTEXT_PLAYER1 + s);
+	if (thiscam->reset)
 	{
-		if (player == (i == 0 ? &players[consoleplayer] : &players[displayplayers[i]]))
-		{
-			thiscam = &camera[i];
-			chasecam = cv_chasecam[i].value;
-			R_SetViewContext(VIEWCONTEXT_PLAYER1 + i);
-			if (thiscam->reset)
-			{
-				R_ResetViewInterpolation(i);
-				thiscam->reset = false;
-			}
-			break;
-		}
+		R_ResetViewInterpolation(s);
+		thiscam->reset = false;
 	}
 
 	if (player->spectator) // no spectator chasecam
@@ -1427,7 +1411,7 @@ void R_RenderPlayerView(player_t *player)
 	PS_START_TIMING(ps_skyboxtime);
 	if (skybox && skyVisible)
 	{
-		R_SkyboxFrame(player);
+		R_SkyboxFrame(viewssnum);
 
 		R_ClearClipSegs();
 		R_ClearDrawSegs();
@@ -1447,7 +1431,7 @@ void R_RenderPlayerView(player_t *player)
 	}
 	PS_STOP_TIMING(ps_skyboxtime);
 
-	R_SetupFrame(player, skybox);
+	R_SetupFrame(viewssnum, skybox);
 	skyVisible = false;
 	framecount++;
 	validcount++;
