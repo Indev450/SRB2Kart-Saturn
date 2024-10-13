@@ -1498,7 +1498,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 
 static void Analog_OnChange(void)
 {
-	if (!cv_cam_dist.string)
+	if (!cv_cam_dist[0].string)
 		return;
 
 	SendWeaponPref();
@@ -1506,7 +1506,7 @@ static void Analog_OnChange(void)
 
 static void Analog2_OnChange(void)
 {
-	if (!(splitscreen || botingame) || !cv_cam2_dist.string)
+	if (!splitscreen || !cv_cam_dist[1].string)
 		return;
 
 	SendWeaponPref2();
@@ -1514,7 +1514,7 @@ static void Analog2_OnChange(void)
 
 static void Analog3_OnChange(void)
 {
-	if (splitscreen < 2 || !cv_cam3_dist.string)
+	if (splitscreen < 2 || !cv_cam_dist[2].string)
 		return;
 
 	SendWeaponPref3();
@@ -1522,7 +1522,7 @@ static void Analog3_OnChange(void)
 
 static void Analog4_OnChange(void)
 {
-	if (splitscreen < 3 || !cv_cam4_dist.string)
+	if (splitscreen < 3 || !cv_cam_dist[3].string)
 		return;
 
 	SendWeaponPref4();
@@ -1790,7 +1790,7 @@ boolean G_Responder(event_t *ev)
 				if (!camtoggledelay)
 				{
 					camtoggledelay = NEWTICRATE / 7;
-					CV_SetValue(&cv_chasecam, cv_chasecam.value ? 0 : 1);
+					CV_SetValue(&cv_chasecam[0], cv_chasecam[0].value ? 0 : 1);
 				}
 			}
 			if (ev->data1 == gamecontrolbis[gc_camtoggle][0]
@@ -1799,7 +1799,7 @@ boolean G_Responder(event_t *ev)
 				if (!camtoggledelay2)
 				{
 					camtoggledelay2 = NEWTICRATE / 7;
-					CV_SetValue(&cv_chasecam2, cv_chasecam2.value ? 0 : 1);
+					CV_SetValue(&cv_chasecam[1], cv_chasecam[1].value ? 0 : 1);
 				}
 			}
 			if (ev->data1 == gamecontrol3[gc_camtoggle][0]
@@ -1808,7 +1808,7 @@ boolean G_Responder(event_t *ev)
 				if (!camtoggledelay3)
 				{
 					camtoggledelay3 = NEWTICRATE / 7;
-					CV_SetValue(&cv_chasecam3, cv_chasecam3.value ? 0 : 1);
+					CV_SetValue(&cv_chasecam[2], cv_chasecam[2].value ? 0 : 1);
 				}
 			}
 			if (ev->data1 == gamecontrol4[gc_camtoggle][0]
@@ -1817,7 +1817,7 @@ boolean G_Responder(event_t *ev)
 				if (!camtoggledelay4)
 				{
 					camtoggledelay4 = NEWTICRATE / 7;
-					CV_SetValue(&cv_chasecam4, cv_chasecam4.value ? 0 : 1);
+					CV_SetValue(&cv_chasecam[3], cv_chasecam[3].value ? 0 : 1);
 				}
 			}
 			if (ev->data1 == gamecontrol[gc_spectate][0]

@@ -168,14 +168,20 @@ void SendWeaponPref4(void);
 static void Precipstuff_OnChange(void);
 
 consvar_t cv_tailspickup = {"tailspickup", "On", CV_NETVAR|CV_NOSHOWHELP, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_chasecam = {"chasecam", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_chasecam2 = {"chasecam2", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_chasecam3 = {"chasecam3", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_chasecam4 = {"chasecam4", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_flipcam = {"flipcam", "No", CV_SAVE|CV_CALL|CV_NOINIT, CV_YesNo, FlipCam_OnChange, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_flipcam2 = {"flipcam2", "No", CV_SAVE|CV_CALL|CV_NOINIT, CV_YesNo, FlipCam2_OnChange, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_flipcam3 = {"flipcam3", "No", CV_SAVE|CV_CALL|CV_NOINIT, CV_YesNo, FlipCam3_OnChange, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_flipcam4 = {"flipcam4", "No", CV_SAVE|CV_CALL|CV_NOINIT, CV_YesNo, FlipCam4_OnChange, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_chasecam[MAXSPLITSCREENPLAYERS] = {
+	{"chasecam", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"chasecam2", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"chasecam3", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"chasecam4", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}
+};
+
+consvar_t cv_flipcam[MAXSPLITSCREENPLAYERS] = {
+	{"flipcam", "No", CV_SAVE|CV_CALL|CV_NOINIT, CV_YesNo, FlipCam_OnChange, 0, NULL, NULL, 0, 0, NULL},
+	{"flipcam2", "No", CV_SAVE|CV_CALL|CV_NOINIT, CV_YesNo, FlipCam2_OnChange, 0, NULL, NULL, 0, 0, NULL},
+	{"flipcam3", "No", CV_SAVE|CV_CALL|CV_NOINIT, CV_YesNo, FlipCam3_OnChange, 0, NULL, NULL, 0, 0, NULL},
+	{"flipcam4", "No", CV_SAVE|CV_CALL|CV_NOINIT, CV_YesNo, FlipCam4_OnChange, 0, NULL, NULL, 0, 0, NULL}
+};
 
 consvar_t cv_shadow = {"shadow", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_shadowoffs = {"offsetshadows", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -1285,23 +1291,6 @@ void R_SkyboxFrame(player_t *player)
 	R_SetupCommonFrame(player, viewmobj->subsector);
 }
 
-static inline UINT8 R_GetCamVar(UINT8 num)
-{
-	switch (num)
-	{
-		case 0:
-			return cv_chasecam.value;
-		case 1:
-			return cv_chasecam2.value;
-		case 2:
-			return cv_chasecam3.value;
-		case 3:
-			return cv_chasecam4.value;
-		default:
-			return cv_chasecam.value;
-	}
-}
-
 void R_SetupFrame(player_t *player, boolean skybox)
 {
 	camera_t *thiscam;
@@ -1312,7 +1301,7 @@ void R_SetupFrame(player_t *player, boolean skybox)
 		if (player == &players[displayplayers[i]])
 		{
 			thiscam = &camera[i];
-			chasecam = R_GetCamVar(i);
+			chasecam = cv_chasecam[i].value;
 			R_SetViewContext(VIEWCONTEXT_PLAYER1 + i);
 			if (thiscam->reset)
 			{
@@ -1665,10 +1654,10 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_soniccd);
 	CV_RegisterVar(&cv_allowmlook);
 	CV_RegisterVar(&cv_homremoval);
-	CV_RegisterVar(&cv_flipcam);
-	CV_RegisterVar(&cv_flipcam2);
-	CV_RegisterVar(&cv_flipcam3);
-	CV_RegisterVar(&cv_flipcam4);
+	CV_RegisterVar(&cv_flipcam[0]);
+	CV_RegisterVar(&cv_flipcam[1]);
+	CV_RegisterVar(&cv_flipcam[2]);
+	CV_RegisterVar(&cv_flipcam[3]);
 
 	// Enough for dedicated server
 	if (dedicated)
@@ -1681,43 +1670,45 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_mobjscaleprecip);
 	CV_RegisterVar(&cv_fov);
 
-	CV_RegisterVar(&cv_chasecam);
-	CV_RegisterVar(&cv_chasecam2);
-	CV_RegisterVar(&cv_chasecam3);
-	CV_RegisterVar(&cv_chasecam4);
+	CV_RegisterVar(&cv_chasecam[0]);
+	CV_RegisterVar(&cv_chasecam[1]);
+	CV_RegisterVar(&cv_chasecam[2]);
+	CV_RegisterVar(&cv_chasecam[3]);
 	CV_RegisterVar(&cv_shadow);
 	CV_RegisterVar(&cv_shadowoffs);
 	CV_RegisterVar(&cv_skybox);
 	CV_RegisterVar(&cv_ffloorclip);
 	CV_RegisterVar(&cv_spriteclip);
 
-	CV_RegisterVar(&cv_cam_dist);
-	CV_RegisterVar(&cv_cam_still);
-	CV_RegisterVar(&cv_cam_height);
-	CV_RegisterVar(&cv_cam_speed);
-	CV_RegisterVar(&cv_cam_rotate);
-	CV_RegisterVar(&cv_cam_rotspeed);
+	CV_RegisterVar(&cv_cam_dist[0]);
+	CV_RegisterVar(&cv_cam_dist[1]);
+	CV_RegisterVar(&cv_cam_dist[2]);
+	CV_RegisterVar(&cv_cam_dist[3]);
 
-	CV_RegisterVar(&cv_cam2_dist);
-	CV_RegisterVar(&cv_cam2_still);
-	CV_RegisterVar(&cv_cam2_height);
-	CV_RegisterVar(&cv_cam2_speed);
-	CV_RegisterVar(&cv_cam2_rotate);
-	CV_RegisterVar(&cv_cam2_rotspeed);
+	CV_RegisterVar(&cv_cam_still[0]);
+	CV_RegisterVar(&cv_cam_still[1]);
+	CV_RegisterVar(&cv_cam_still[2]);
+	CV_RegisterVar(&cv_cam_still[3]);
 
-	CV_RegisterVar(&cv_cam3_dist);
-	CV_RegisterVar(&cv_cam3_still);
-	CV_RegisterVar(&cv_cam3_height);
-	CV_RegisterVar(&cv_cam3_speed);
-	CV_RegisterVar(&cv_cam3_rotate);
-	CV_RegisterVar(&cv_cam3_rotspeed);
+	CV_RegisterVar(&cv_cam_height[0]);
+	CV_RegisterVar(&cv_cam_height[1]);
+	CV_RegisterVar(&cv_cam_height[2]);
+	CV_RegisterVar(&cv_cam_height[3]);
 
-	CV_RegisterVar(&cv_cam4_dist);
-	CV_RegisterVar(&cv_cam4_still);
-	CV_RegisterVar(&cv_cam4_height);
-	CV_RegisterVar(&cv_cam4_speed);
-	CV_RegisterVar(&cv_cam4_rotate);
-	CV_RegisterVar(&cv_cam4_rotspeed);
+	CV_RegisterVar(&cv_cam_speed[0]);
+	CV_RegisterVar(&cv_cam_speed[1]);
+	CV_RegisterVar(&cv_cam_speed[2]);
+	CV_RegisterVar(&cv_cam_speed[3]);
+
+	CV_RegisterVar(&cv_cam_rotate[0]);
+	CV_RegisterVar(&cv_cam_rotate[1]);
+	CV_RegisterVar(&cv_cam_rotate[2]);
+	CV_RegisterVar(&cv_cam_rotate[3]);
+
+	CV_RegisterVar(&cv_cam_rotspeed[0]);
+	CV_RegisterVar(&cv_cam_rotspeed[1]);
+	CV_RegisterVar(&cv_cam_rotspeed[2]);
+	CV_RegisterVar(&cv_cam_rotspeed[3]);
 
 	CV_RegisterVar(&cv_tilting);
 	CV_RegisterVar(&cv_quaketilt);
