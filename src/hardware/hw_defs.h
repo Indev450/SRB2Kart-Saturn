@@ -156,7 +156,7 @@ typedef struct
 	boolean     mirrorflip;      // Encore Mode with Flipcam
 #endif
 	boolean     shearing;        // 14042019
-	angle_t     viewaiming;      // 17052019
+	float       viewaiming;      // 17052019
 } FTransform;
 
 // Transformed vector, as passed to HWR API
