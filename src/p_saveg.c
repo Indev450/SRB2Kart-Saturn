@@ -1944,6 +1944,21 @@ FUNCINLINE static ATTRINLINE mobj_t *AllocMobj(void)
 	return mobj;
 }
 
+static mobjtype_t g_doomednum_to_mobjtype[UINT16_MAX];
+
+static void CalculateDoomednumToMobjtype(void)
+{
+	memset(g_doomednum_to_mobjtype, MT_NULL, sizeof(g_doomednum_to_mobjtype));
+
+	for (size_t i = MT_NULL+1; i < NUMMOBJTYPES; i++)
+	{
+		if (mobjinfo[i].doomednum > 0 && mobjinfo[i].doomednum <= UINT16_MAX)
+		{
+			g_doomednum_to_mobjtype[ mobjinfo[i].doomednum ] = i;
+		}
+	}
+}
+
 static void LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 {
 	thinker_t *next;
@@ -1993,18 +2008,23 @@ static void LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 		mobj->type = READUINT32(save->p);
 	else
 	{
-		for (i = 0; i < NUMMOBJTYPES; i++)
-			if (mobj->spawnpoint && mobj->spawnpoint->type == mobjinfo[i].doomednum)
-				break;
-		if (i == NUMMOBJTYPES)
+		mobjtype_t new_type = MT_NULL;
+		if (mobj->spawnpoint)
+		{
+			new_type = g_doomednum_to_mobjtype[mobj->spawnpoint->type];
+		}
+
+		if (new_type <= MT_NULL || new_type >= NUMMOBJTYPES)
 		{
 			if (mobj->spawnpoint)
-				CONS_Alert(CONS_ERROR, "Found mobj with unknown map thing type %d\n", mobj->spawnpoint->type);
+				CONS_Alert(CONS_ERROR, "Found mobj with unknown map thing doomednum %d\n", mobj->spawnpoint->type);
 			else
-				CONS_Alert(CONS_ERROR, "Found mobj with unknown map thing type NULL\n");
+				CONS_Alert(CONS_ERROR, "Found mobj with unknown map thing doomednum NULL\n");
+
 			I_Error("Savegame corrupted");
 		}
-		mobj->type = i;
+
+		mobj->type = new_type;
 	}
 
 	mobj->info = &mobjinfo[mobj->type];
@@ -2792,6 +2812,10 @@ static void P_NetUnArchiveThinkers(savebuffer_t *save)
 
 	if (READUINT32(save->p) != ARCHIVEBLOCK_THINKERS)
 		I_Error("Bad $$$.sav at archive block Thinkers");
+
+	// Pre-calculate this lookup, because it was wasting
+	// a shit ton of time loading mobj thinkers.
+	CalculateDoomednumToMobjtype();
 
 	// remove all the current thinkers
 	currentthinker = thinkercap.next;
