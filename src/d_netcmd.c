@@ -1130,16 +1130,6 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_joyscale3);
 	CV_RegisterVar(&cv_joyscale4);
 
-	// Analog Control
-	/*CV_RegisterVar(&cv_analog);
-	CV_RegisterVar(&cv_analog2);
-	CV_RegisterVar(&cv_analog3);
-	CV_RegisterVar(&cv_analog4);
-	CV_RegisterVar(&cv_useranalog);
-	CV_RegisterVar(&cv_useranalog2);
-	CV_RegisterVar(&cv_useranalog3);
-	CV_RegisterVar(&cv_useranalog4);*/
-
 	// s_sound.c
 	CV_RegisterVar(&cv_soundvolume);
 	CV_RegisterVar(&cv_digmusicvolume);
@@ -2137,8 +2127,6 @@ void SendWeaponPref(void)
 	buf[0] = 0;
 	if (cv_flipcam[0].value)
 		buf[0] |= 1;
-	if (cv_analog.value)
-		buf[0] |= 2;
 	SendNetXCmd(XD_WEAPONPREF, buf, 1);
 }
 
@@ -2149,8 +2137,6 @@ void SendWeaponPref2(void)
 	buf[0] = 0;
 	if (cv_flipcam[1].value)
 		buf[0] |= 1;
-	if (cv_analog2.value)
-		buf[0] |= 2;
 	SendNetXCmd2(XD_WEAPONPREF, buf, 1);
 }
 
@@ -2161,8 +2147,6 @@ void SendWeaponPref3(void)
 	buf[0] = 0;
 	if (cv_flipcam[2].value)
 		buf[0] |= 1;
-	if (cv_analog3.value)
-		buf[0] |= 2;
 	SendNetXCmd3(XD_WEAPONPREF, buf, 1);
 }
 
@@ -2173,8 +2157,6 @@ void SendWeaponPref4(void)
 	buf[0] = 0;
 	if (cv_flipcam[3].value)
 		buf[0] |= 1;
-	if (cv_analog4.value)
-		buf[0] |= 2;
 	SendNetXCmd4(XD_WEAPONPREF, buf, 1);
 }
 

@@ -118,9 +118,6 @@ void B_BuildTiccmd(player_t *player, ticcmd_t *cmd)
 		return;
 	}
 
-	// Bot AI isn't programmed in analog.
-	//CV_SetValue(&cv_analog2, false);
-
 	// Let Lua scripts build ticcmds
 	if (LUAh_BotTiccmd(player, cmd))
 		return;

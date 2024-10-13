@@ -3259,14 +3259,8 @@ void P_ResetCamera(player_t *player, camera_t *thiscam)
 	thiscam->z = z;
 	thiscam->reset = true;
 
-	if (!(thiscam == &camera[0] && (cv_cam_still[0].value || cv_analog.value))
-		&& !(thiscam == &camera[1] && (cv_cam_still[1].value || cv_analog2.value))
-		&& !(thiscam == &camera[2] && (cv_cam_still[2].value || cv_analog3.value))
-		&& !(thiscam == &camera[3] && (cv_cam_still[3].value || cv_analog4.value)))
-	{
-		thiscam->angle = player->mo->angle;
-		thiscam->aiming = 0;
-	}
+	thiscam->angle = player->mo->angle;
+	thiscam->aiming = 0;
 	thiscam->relativex = 0;
 
 	thiscam->subsector = R_PointInSubsector(thiscam->x,thiscam->y);
