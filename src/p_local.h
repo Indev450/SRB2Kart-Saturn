@@ -113,7 +113,7 @@ struct demofreecam_s {
 
 	camera_t *cam;	// this is useful when the game is paused, notably
 	mobj_t *soundmobj;	// mobj to play sound from, used in s_sound
-	
+
 	angle_t localangle;	// keeps track of the cam angle for cmds
 	angle_t localaiming;	// ditto with aiming
 	boolean turnheld;	// holding turn button for gradual turn speed
@@ -123,17 +123,12 @@ struct demofreecam_s {
 extern struct demofreecam_s democam;
 
 extern camera_t camera[MAXSPLITSCREENPLAYERS];
-extern consvar_t cv_cam_dist, cv_cam_still, cv_cam_height;
-extern consvar_t cv_cam_speed, cv_cam_rotate, cv_cam_rotspeed;
-
-extern consvar_t cv_cam2_dist, cv_cam2_still, cv_cam2_height;
-extern consvar_t cv_cam2_speed, cv_cam2_rotate, cv_cam2_rotspeed;
-
-extern consvar_t cv_cam3_dist, cv_cam3_still, cv_cam3_height;
-extern consvar_t cv_cam3_speed, cv_cam3_rotate, cv_cam3_rotspeed;
-
-extern consvar_t cv_cam4_dist, cv_cam4_still, cv_cam4_height;
-extern consvar_t cv_cam4_speed, cv_cam4_rotate, cv_cam4_rotspeed;
+extern consvar_t cv_cam_dist[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_cam_still[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_cam_height[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_cam_speed[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_cam_rotate[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_cam_rotspeed[MAXSPLITSCREENPLAYERS];
 
 extern consvar_t cv_tilting;
 extern consvar_t cv_quaketilt;
@@ -143,10 +138,7 @@ extern consvar_t cv_actionmovie;
 
 extern consvar_t cv_lookbackmom;
 
-extern fixed_t t_cam_dist, t_cam_height, t_cam_rotate;
-extern fixed_t t_cam2_dist, t_cam2_height, t_cam2_rotate;
-extern fixed_t t_cam3_dist, t_cam3_height, t_cam3_rotate;
-extern fixed_t t_cam4_dist, t_cam4_height, t_cam4_rotate;
+extern fixed_t t_cam_rotate[MAXSPLITSCREENPLAYERS];
 
 fixed_t P_GetPlayerHeight(player_t *player);
 fixed_t P_GetPlayerSpinHeight(player_t *player);

@@ -2422,17 +2422,11 @@ static void P_InitCamera(void)
 				P_SetupCamera(displayplayers[i], &camera[i]);
 
 		// Though, I don't think anyone would care about cam_rotate being reset back to the only value that makes sense :P
-		if (!cv_cam_rotate.changed)
-			CV_Set(&cv_cam_rotate, cv_cam_rotate.defaultvalue);
-
-		if (!cv_cam2_rotate.changed)
-			CV_Set(&cv_cam2_rotate, cv_cam2_rotate.defaultvalue);
-
-		if (!cv_cam3_rotate.changed)
-			CV_Set(&cv_cam3_rotate, cv_cam3_rotate.defaultvalue);
-
-		if (!cv_cam4_rotate.changed)
-			CV_Set(&cv_cam4_rotate, cv_cam4_rotate.defaultvalue);
+		for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+		{
+			if (!cv_cam_rotate[i].changed)
+				CV_Set(&cv_cam_rotate[i], cv_cam_rotate[i].defaultvalue);
+		}
 
 		displayplayers[0] = consoleplayer; // Start with your OWN view, please!
 	}
@@ -2556,18 +2550,11 @@ boolean P_SetupLevel(boolean skipprecip, boolean reloadinggamestate)
 
 	if (!dedicated)
 	{
-		if (!cv_chasecam.changed)
-			CV_SetValue(&cv_chasecam, chase);
-
-		// same for second player
-		if (!cv_chasecam2.changed)
-			CV_SetValue(&cv_chasecam2, chase);
-
-		if (!cv_chasecam3.changed)
-			CV_SetValue(&cv_chasecam3, chase);
-
-		if (!cv_chasecam4.changed)
-			CV_SetValue(&cv_chasecam4, chase);
+		for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+		{
+			if (!cv_chasecam[i].changed)
+				CV_SetValue(&cv_chasecam[i], chase);
+		}
 	}
 
 	// Initial height of PointOfView

@@ -2135,7 +2135,7 @@ void SendWeaponPref(void)
 	UINT8 buf[1];
 
 	buf[0] = 0;
-	if (cv_flipcam.value)
+	if (cv_flipcam[0].value)
 		buf[0] |= 1;
 	if (cv_analog.value)
 		buf[0] |= 2;
@@ -2147,7 +2147,7 @@ void SendWeaponPref2(void)
 	UINT8 buf[1];
 
 	buf[0] = 0;
-	if (cv_flipcam2.value)
+	if (cv_flipcam[1].value)
 		buf[0] |= 1;
 	if (cv_analog2.value)
 		buf[0] |= 2;
@@ -2159,7 +2159,7 @@ void SendWeaponPref3(void)
 	UINT8 buf[1];
 
 	buf[0] = 0;
-	if (cv_flipcam3.value)
+	if (cv_flipcam[2].value)
 		buf[0] |= 1;
 	if (cv_analog3.value)
 		buf[0] |= 2;
@@ -2171,7 +2171,7 @@ void SendWeaponPref4(void)
 	UINT8 buf[1];
 
 	buf[0] = 0;
-	if (cv_flipcam4.value)
+	if (cv_flipcam[3].value)
 		buf[0] |= 1;
 	if (cv_analog4.value)
 		buf[0] |= 2;
