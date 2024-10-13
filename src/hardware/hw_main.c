@@ -3460,13 +3460,13 @@ static void HWR_DrawSpriteShadow(gr_vissprite_t *spr, GLPatch_t *gpatch)
 
 		// Set direction
 		if (splitscreen && stplyr == &players[displayplayers[1]])
-			shadowdir = localangle[1] + FixedAngle(cv_cam2_rotate.value);
+			shadowdir = localangle[1] + FixedAngle(cv_cam_rotate[1].value);
 		else if (splitscreen > 1 && stplyr == &players[displayplayers[2]])
-			shadowdir = localangle[2] + FixedAngle(cv_cam3_rotate.value);
+			shadowdir = localangle[2] + FixedAngle(cv_cam_rotate[2].value);
 		else if (splitscreen > 2 && stplyr == &players[displayplayers[3]])
-			shadowdir = localangle[3] + FixedAngle(cv_cam4_rotate.value);
+			shadowdir = localangle[3] + FixedAngle(cv_cam_rotate[3].value);
 		else
-			shadowdir = localangle[0] + FixedAngle(cv_cam_rotate.value);
+			shadowdir = localangle[0] + FixedAngle(cv_cam_rotate[0].value);
 
 		// Find floorheight
 		floorheight = HWR_OpaqueFloorAtPos(
