@@ -3407,7 +3407,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 {
 	static boolean lookbackactive[MAXSPLITSCREENPLAYERS];
 	static UINT8 lookbackdelay[MAXSPLITSCREENPLAYERS];
-	UINT8 i, num;
+	UINT8 num;
 	angle_t angle = 0, focusangle = 0, focusaiming = 0;
 	fixed_t x, y, z, dist, viewpointx, viewpointy, camspeed, camdist, camheight, pviewheight;
 	fixed_t pan, xpan, ypan;
@@ -3514,7 +3514,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	camrotate = cv_cam_rotate[num].value;
 	camdist = FixedMul(cv_cam_dist[num].value, mapobjectscale);
 	camheight = FixedMul(cv_cam_height[num].value, mapobjectscale);
-	lookback = camspin[i];
+	lookback = camspin[num];
 
 	if (timeover)
 	{
@@ -3944,7 +3944,6 @@ boolean P_SpectatorJoinGame(player_t *player)
 	{
 		if (P_IsLocalPlayer(player))
 			CONS_Printf(M_GetText("Server does not allow team change.\n"));
-		//player->powers[pw_flashing] = TICRATE + 1; //to prevent message spam.
 	}
 	// Team changing in Team Match and CTF
 	// Pressing fire assigns you to a team that needs players if allowed.
@@ -4871,7 +4870,6 @@ void P_PlayerAfterThink(player_t *player)
 	if (player->pflags & PF_NIGHTSMODE)
 	{
 		player->powers[pw_gravityboots] = 0;
-		//player->mo->eflags &= ~MFE_VERTICALFLIP;
 	}
 
 	if (player->pflags & PF_SLIDING)
