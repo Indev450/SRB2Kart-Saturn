@@ -3407,7 +3407,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 {
 	static boolean lookbackactive[MAXSPLITSCREENPLAYERS];
 	static UINT8 lookbackdelay[MAXSPLITSCREENPLAYERS];
-	UINT8 num;
+	UINT8 num, plyrnum;
 	angle_t angle = 0, focusangle = 0, focusaiming = 0;
 	fixed_t x, y, z, dist, viewpointx, viewpointy, camspeed, camdist, camheight, pviewheight;
 	fixed_t pan, xpan, ypan;
@@ -3431,6 +3431,12 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	if (thiscam->subsector == NULL || thiscam->subsector->sector == NULL)
 		return true;
 
+	if (demo.freecam)
+	{
+		P_DemoCameraMovement(thiscam);
+		return true;
+	}
+
 	if (thiscam == &camera[1]) // Camera 2
 	{
 		num = 1;
@@ -3448,10 +3454,25 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 		num = 0;
 	}
 
-	if (demo.freecam)
+	if (player == &players[consoleplayer])
 	{
-		P_DemoCameraMovement(thiscam);
-		return true;
+		plyrnum = 0;
+	}
+	else if (player == &players[displayplayers[1]])
+	{
+		plyrnum = 1;
+	}
+	else if (player == &players[displayplayers[2]])
+	{
+		plyrnum = 2;
+	}
+	else if (player == &players[displayplayers[3]])
+	{
+		plyrnum = 3;
+	}
+	else
+	{
+		plyrnum = 255;
 	}
 
 	mo = player->mo;
@@ -3478,7 +3499,15 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 
 	if (!thiscam->chase && !resetcalled)
 	{
-		focusangle = localangle[num];
+		if (plyrnum != 255)
+		{
+			focusangle = localangle[plyrnum];
+		}
+		else
+		{
+			focusangle = mo->angle;
+		}
+
 		camrotate = cv_cam_rotate[num].value;
 
 		if (leveltime < introtime) // Whoooshy camera!
@@ -3500,10 +3529,15 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 		focusangle = mo->angle;
 		focusaiming = 0;
 	}
+	else if (plyrnum != 255)
+	{
+		focusangle = localangle[plyrnum];
+		focusaiming = localaiming[plyrnum];
+	}
 	else
 	{
-		focusangle = localangle[num];
-		focusaiming = localaiming[num];
+		focusangle = mo->angle;
+		focusaiming = player->aiming;
 	}
 
 	if (P_CameraThinker(player, thiscam, resetcalled))
