@@ -51,21 +51,16 @@ void P_ClosestPointOnLine3D(fixed_t x, fixed_t y, fixed_t z, line_t *line, verte
 //
 FUNCINLINE static ATTRINLINE PUREFUNC INT32 P_PointOnLineSide(fixed_t x, fixed_t y, const line_t *line)
 {
-	fixed_t dx, dy, left, right;
-
 	if (!line->dx)
 		return x <= line->v1->x ? line->dy > 0 : line->dy < 0;
 
 	if (!line->dy)
 		return y <= line->v1->y ? line->dx < 0 : line->dx > 0;
 
-	dx = (x - line->v1->x);
-	dy = (y - line->v1->y);
+	x -= line->v1->x;
+	y -= line->v1->y;
 
-	left = FixedMul(line->dy>>FRACBITS, dx);
-	right = FixedMul(dy, line->dx>>FRACBITS);
-
-	return right < left ? 0 : 1;
+	return FixedMul(y, line->dx>>FRACBITS) < FixedMul(line->dy>>FRACBITS, x) ? 0 : 1;
 }
 
 void P_MakeDivline(line_t *li, divline_t *dl);
