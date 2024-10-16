@@ -1533,15 +1533,18 @@ void R_RenderPlayerView(player_t *player)
 
 void R_RegisterEngineStuff(void)
 {
+	INT32 i;
+
 	CV_RegisterVar(&cv_gravity);
 	CV_RegisterVar(&cv_tailspickup);
 	CV_RegisterVar(&cv_soniccd);
 	CV_RegisterVar(&cv_allowmlook);
 	CV_RegisterVar(&cv_homremoval);
-	CV_RegisterVar(&cv_flipcam[0]);
-	CV_RegisterVar(&cv_flipcam[1]);
-	CV_RegisterVar(&cv_flipcam[2]);
-	CV_RegisterVar(&cv_flipcam[3]);
+
+	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+	{
+		CV_RegisterVar(&cv_flipcam[i]);
+	}
 
 	// Enough for dedicated server
 	if (dedicated)
@@ -1554,45 +1557,25 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_mobjscaleprecip);
 	CV_RegisterVar(&cv_fov);
 
-	CV_RegisterVar(&cv_chasecam[0]);
-	CV_RegisterVar(&cv_chasecam[1]);
-	CV_RegisterVar(&cv_chasecam[2]);
-	CV_RegisterVar(&cv_chasecam[3]);
+	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+	{
+		CV_RegisterVar(&cv_chasecam[i]);
+	}
 	CV_RegisterVar(&cv_shadow);
 	CV_RegisterVar(&cv_shadowoffs);
 	CV_RegisterVar(&cv_skybox);
 	CV_RegisterVar(&cv_ffloorclip);
 	CV_RegisterVar(&cv_spriteclip);
 
-	CV_RegisterVar(&cv_cam_dist[0]);
-	CV_RegisterVar(&cv_cam_dist[1]);
-	CV_RegisterVar(&cv_cam_dist[2]);
-	CV_RegisterVar(&cv_cam_dist[3]);
-
-	CV_RegisterVar(&cv_cam_still[0]);
-	CV_RegisterVar(&cv_cam_still[1]);
-	CV_RegisterVar(&cv_cam_still[2]);
-	CV_RegisterVar(&cv_cam_still[3]);
-
-	CV_RegisterVar(&cv_cam_height[0]);
-	CV_RegisterVar(&cv_cam_height[1]);
-	CV_RegisterVar(&cv_cam_height[2]);
-	CV_RegisterVar(&cv_cam_height[3]);
-
-	CV_RegisterVar(&cv_cam_speed[0]);
-	CV_RegisterVar(&cv_cam_speed[1]);
-	CV_RegisterVar(&cv_cam_speed[2]);
-	CV_RegisterVar(&cv_cam_speed[3]);
-
-	CV_RegisterVar(&cv_cam_rotate[0]);
-	CV_RegisterVar(&cv_cam_rotate[1]);
-	CV_RegisterVar(&cv_cam_rotate[2]);
-	CV_RegisterVar(&cv_cam_rotate[3]);
-
-	CV_RegisterVar(&cv_cam_rotspeed[0]);
-	CV_RegisterVar(&cv_cam_rotspeed[1]);
-	CV_RegisterVar(&cv_cam_rotspeed[2]);
-	CV_RegisterVar(&cv_cam_rotspeed[3]);
+	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+	{
+		CV_RegisterVar(&cv_cam_dist[i]);
+		CV_RegisterVar(&cv_cam_still[i]);
+		CV_RegisterVar(&cv_cam_height[i]);
+		CV_RegisterVar(&cv_cam_speed[i]);
+		CV_RegisterVar(&cv_cam_rotate[i]);
+		CV_RegisterVar(&cv_cam_rotspeed[i]);
+	}
 
 	CV_RegisterVar(&cv_tilting);
 	CV_RegisterVar(&cv_quaketilt);
