@@ -59,38 +59,24 @@ typedef struct SDLJoyInfo_s
 
 /**	\brief SDL info about controller 1
 */
-extern SDLJoyInfo_t JoyInfo;
+extern SDLJoyInfo_t JoyInfo[4]; //MAXSPLITSCREENPLAYERS
 
 /**	\brief joystick axis deadzone
 */
 #define SDL_JDEADZONE 153
 #undef SDL_JDEADZONE
 
-/**	\brief SDL inof about controller 2
-*/
-extern SDLJoyInfo_t JoyInfo2;
-
-/**	\brief SDL inof about controller 3
-*/
-extern SDLJoyInfo_t JoyInfo3;
-
-/**	\brief SDL inof about controller 4
-*/
-extern SDLJoyInfo_t JoyInfo4;
-
 void I_GetConsoleEvents(void);
 
 // So we can call this from i_video event loop
-void I_ShutdownJoystick(void);
-void I_ShutdownJoystick2(void);
-void I_ShutdownJoystick3(void);
-void I_ShutdownJoystick4(void);
+void I_ShutdownJoystick(UINT8 index);
 
 // Cheat to get the device index for a game controller handle
 INT32 I_GetJoystickDeviceIndex(SDL_GameController *dev);
 
 // Quick thing to make SDL_JOYDEVICEADDED events less of an abomination
-void I_UpdateJoystickDeviceIndices(INT32 player);
+void I_UpdateJoystickDeviceIndex(UINT8 player);
+void I_UpdateJoystickDeviceIndices(UINT8 excludePlayer);
 
 void I_GetConsoleEvents(void);
 

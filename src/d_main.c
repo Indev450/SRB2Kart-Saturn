@@ -15,6 +15,7 @@
 ///        plus functions to parse command line parameters, configure game
 ///        parameters, and call the startup functions.
 
+#include "d_netcmd.h"
 #if defined (__unix__) || defined (__APPLE__) || defined (UNIXCOMMON)
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -184,7 +185,7 @@ static inline void D_DeviceLEDTick(void)
 
 	for (i = 0; i <= splitscreen; i++)
 	{
-		if (G_GetDeviceForPlayer(i) == 0)
+		if (cv_usejoystick[i].value == 0)
 			continue;
 
 		color[i] = G_GetSkinColor(i);

@@ -121,10 +121,21 @@ extern consvar_t cv_pauseifunfocused;
 //extern consvar_t cv_crosshair, cv_crosshair2, cv_crosshair3, cv_crosshair4;
 extern consvar_t cv_invertmouse/*, cv_alwaysfreelook, cv_chasefreelook, cv_mousemove*/;
 extern consvar_t cv_invertmouse2/*, cv_alwaysfreelook2, cv_chasefreelook2, cv_mousemove2*/;
-extern consvar_t cv_turnaxis,cv_moveaxis,cv_brakeaxis,cv_aimaxis,cv_lookaxis,cv_fireaxis,cv_driftaxis,cv_lookbackaxis,cv_custom1axis,cv_custom2axis,cv_custom3axis,cv_xdeadzone,cv_ydeadzone;
-extern consvar_t cv_turnaxis2,cv_moveaxis2,cv_brakeaxis2,cv_aimaxis2,cv_lookaxis2,cv_fireaxis2,cv_driftaxis2,cv_lookbackaxis2,cv_custom1axis2,cv_custom2axis2,cv_custom3axis2,cv_xdeadzone2,cv_ydeadzone2;
-extern consvar_t cv_turnaxis3,cv_moveaxis3,cv_brakeaxis3,cv_aimaxis3,cv_lookaxis3,cv_fireaxis3,cv_driftaxis3,cv_lookbackaxis3,cv_custom1axis3,cv_custom2axis3,cv_custom3axis3,cv_xdeadzone3,cv_ydeadzone3;
-extern consvar_t cv_turnaxis4,cv_moveaxis4,cv_brakeaxis4,cv_aimaxis4,cv_lookaxis4,cv_fireaxis4,cv_driftaxis4,cv_lookbackaxis4,cv_custom1axis4,cv_custom2axis4,cv_custom3axis4,cv_xdeadzone4,cv_ydeadzone4;
+
+extern consvar_t cv_turnaxis[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_moveaxis[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_brakeaxis[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_aimaxis[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_lookaxis[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_lookbackaxis[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_fireaxis[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_driftaxis[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_custom1axis[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_custom2axis[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_custom3axis[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_xdeadzone[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_ydeadzone[MAXSPLITSCREENPLAYERS];
+
 extern consvar_t cv_ghost_besttime, cv_ghost_bestlap, cv_ghost_last, cv_ghost_guest, cv_ghost_staff;
 
 // Hud offsets

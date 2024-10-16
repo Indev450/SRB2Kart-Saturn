@@ -671,90 +671,37 @@ static INT32 SDLJoyAxis(const Sint16 axis, evtype_t which)
 {
 	// -32768 to 32767
 	INT32 raxis = axis/32;
+	UINT8 pid;
+
 	if (which == ev_joystick)
-	{
-		if (Joystick.bGamepadStyle)
-		{
-			// gamepad control type, on or off, live or die
-			if (raxis < -(JOYAXISRANGE/2))
-				raxis = -1;
-			else if (raxis > (JOYAXISRANGE/2))
-				raxis = 1;
-			else
-				raxis = 0;
-		}
-		else
-		{
-			raxis = JoyInfo.scale!=1?((raxis/JoyInfo.scale)*JoyInfo.scale):raxis;
-
-#ifdef SDL_JDEADZONE
-			if (-SDL_JDEADZONE <= raxis && raxis <= SDL_JDEADZONE)
-				raxis = 0;
-#endif
-		}
-	}
+		pid = 0;
 	else if (which == ev_joystick2)
-	{
-		if (Joystick2.bGamepadStyle)
-		{
-			// gamepad control type, on or off, live or die
-			if (raxis < -(JOYAXISRANGE/2))
-				raxis = -1;
-			else if (raxis > (JOYAXISRANGE/2))
-				raxis = 1;
-			else raxis = 0;
-		}
-		else
-		{
-			raxis = JoyInfo2.scale!=1?((raxis/JoyInfo2.scale)*JoyInfo2.scale):raxis;
-
-#ifdef SDL_JDEADZONE
-			if (-SDL_JDEADZONE <= raxis && raxis <= SDL_JDEADZONE)
-				raxis = 0;
-#endif
-		}
-	}
+		pid = 1;
 	else if (which == ev_joystick3)
-	{
-		if (Joystick3.bGamepadStyle)
-		{
-			// gamepad control type, on or off, live or die
-			if (raxis < -(JOYAXISRANGE/2))
-				raxis = -1;
-			else if (raxis > (JOYAXISRANGE/2))
-				raxis = 1;
-			else raxis = 0;
-		}
-		else
-		{
-			raxis = JoyInfo3.scale!=1?((raxis/JoyInfo3.scale)*JoyInfo3.scale):raxis;
-
-#ifdef SDL_JDEADZONE
-			if (-SDL_JDEADZONE <= raxis && raxis <= SDL_JDEADZONE)
-				raxis = 0;
-#endif
-		}
-	}
+		pid = 2;
 	else if (which == ev_joystick4)
+		pid = 3;
+	else
+		return 0;
+
+	if (Joystick[pid].bGamepadStyle)
 	{
-		if (Joystick4.bGamepadStyle)
-		{
-			// gamepad control type, on or off, live or die
-			if (raxis < -(JOYAXISRANGE/2))
-				raxis = -1;
-			else if (raxis > (JOYAXISRANGE/2))
-				raxis = 1;
-			else raxis = 0;
-		}
+		// gamepad control type, on or off, live or die
+		if (raxis < -(JOYAXISRANGE/2))
+			raxis = -1;
+		else if (raxis > (JOYAXISRANGE/2))
+			raxis = 1;
 		else
-		{
-			raxis = JoyInfo4.scale!=1?((raxis/JoyInfo4.scale)*JoyInfo4.scale):raxis;
+			raxis = 0;
+	}
+	else
+	{
+		raxis = JoyInfo[pid].scale!=1?((raxis/JoyInfo[pid].scale)*JoyInfo[pid].scale):raxis;
 
 #ifdef SDL_JDEADZONE
-			if (-SDL_JDEADZONE <= raxis && raxis <= SDL_JDEADZONE)
-				raxis = 0;
+		if (-SDL_JDEADZONE <= raxis && raxis <= SDL_JDEADZONE)
+			raxis = 0;
 #endif
-		}
 	}
 	return raxis;
 }
@@ -1041,12 +988,13 @@ static void Impl_HandleControllerAxisEvent(SDL_ControllerAxisEvent evt)
 	event_t event;
 	SDL_JoystickID joyid[4];
 	INT32 value;
+	UINT8 i;
 
 	// Determine the Joystick IDs for each current open joystick
-	joyid[0] = SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(JoyInfo.dev));
-	joyid[1] = SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(JoyInfo2.dev));
-	joyid[2] = SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(JoyInfo3.dev));
-	joyid[3] = SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(JoyInfo4.dev));
+	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+	{
+		joyid[i] = SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(JoyInfo[i].dev));
+	}
 
 	event.data1 = event.data2 = event.data3 = INT32_MAX;
 
@@ -1067,9 +1015,11 @@ static void Impl_HandleControllerAxisEvent(SDL_ControllerAxisEvent evt)
 		event.type = ev_joystick4;
 	}
 	else return;
+
 	//axis
 	if (evt.axis > JOYAXISSET*2)
 		return;
+
 	//vaule
 	value = SDLJoyAxis(evt.value, event.type);
 	switch (evt.axis)
@@ -1104,43 +1054,17 @@ static void Impl_HandleControllerAxisEvent(SDL_ControllerAxisEvent evt)
 	D_PostEvent(&event);
 }
 
-#if 0
-static void Impl_HandleJoystickHatEvent(SDL_JoyHatEvent evt)
-{
-	event_t event;
-	SDL_JoystickID joyid[2];
-
-	// Determine the Joystick IDs for each current open joystick
-	joyid[0] = SDL_JoystickInstanceID(JoyInfo.dev);
-	joyid[1] = SDL_JoystickInstanceID(JoyInfo2.dev);
-
-	if (evt.hat >= JOYHATS)
-		return; // ignore hats with too high an index
-
-	if (evt.which == joyid[0])
-	{
-		event.data1 = KEY_HAT1 + (evt.hat*4);
-	}
-	else if (evt.which == joyid[1])
-	{
-		event.data1 = KEY_2HAT1 + (evt.hat*4);
-	}
-	else return;
-
-	// NOTE: UNFINISHED
-}
-#endif
-
 static void Impl_HandleControllerButtonEvent(SDL_ControllerButtonEvent evt, Uint32 type)
 {
 	event_t event;
 	SDL_JoystickID joyid[4];
+	UINT8 i;
 
 	// Determine the Joystick IDs for each current open joystick
-	joyid[0] = SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(JoyInfo.dev));
-	joyid[1] = SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(JoyInfo2.dev));
-	joyid[2] = SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(JoyInfo3.dev));
-	joyid[3] = SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(JoyInfo4.dev));
+	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+	{
+		joyid[i] = SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(JoyInfo[i].dev));
+	}
 
 	if (evt.button == SDL_CONTROLLER_BUTTON_DPAD_UP
 		|| evt.button == SDL_CONTROLLER_BUTTON_DPAD_DOWN
@@ -1187,8 +1111,6 @@ static void Impl_HandleControllerButtonEvent(SDL_ControllerButtonEvent evt, Uint
 	if (event.type != ev_console) D_PostEvent(&event);
 }
 
-
-
 void I_GetEvent(void)
 {
 	SDL_Event evt;
@@ -1196,6 +1118,7 @@ void I_GetEvent(void)
 	// We only want the first motion event,
 	// otherwise we'll end up catching the warp back to center.
 	//int mouseMotionOnce = 0;
+	INT32 i;
 
 	if (!graphics_started)
 	{
@@ -1261,77 +1184,42 @@ void I_GetEvent(void)
 					//      * BUT: If that default index is being occupied, use ANOTHER cv_usejoystick's default value!
 					////////////////////////////////////////////////////////////
 
-					//////////////////////////////
-					// PLAYER 1
-					//////////////////////////////
-
-					if (newcontroller && (!JoyInfo.dev || !SDL_GameControllerGetAttached(JoyInfo.dev))
-						&& JoyInfo2.dev != newcontroller && JoyInfo3.dev != newcontroller && JoyInfo4.dev != newcontroller) // don't override a currently active device
+					for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 					{
-						cv_usejoystick.value = evt.cdevice.which + 1;
-						I_UpdateJoystickDeviceIndices(1);
-					}
+						if (newcontroller && (!JoyInfo[i].dev || !SDL_GameControllerGetAttached(JoyInfo[i].dev)))
+						{
+							UINT8 j;
 
-					//////////////////////////////
-					// PLAYER 2
-					//////////////////////////////
+							for (j = 0; j < MAXSPLITSCREENPLAYERS; j++)
+							{
+								if (i == j)
+									continue;
 
-					else if (newcontroller && (!JoyInfo2.dev || !SDL_GameControllerGetAttached(JoyInfo2.dev))
-						&& JoyInfo.dev != newcontroller && JoyInfo3.dev != newcontroller && JoyInfo4.dev != newcontroller) // don't override a currently active device
-					{
-						cv_usejoystick2.value = evt.cdevice.which + 1;
-						I_UpdateJoystickDeviceIndices(2);
-					}
+								if (JoyInfo[j].dev == newcontroller)
+									break;
+							}
 
-					//////////////////////////////
-					// PLAYER 3
-					//////////////////////////////
-
-					else if (newcontroller && (!JoyInfo3.dev || !SDL_GameControllerGetAttached(JoyInfo3.dev))
-						&& JoyInfo.dev != newcontroller && JoyInfo2.dev != newcontroller && JoyInfo4.dev != newcontroller) // don't override a currently active device
-					{
-						cv_usejoystick3.value = evt.cdevice.which + 1;
-						I_UpdateJoystickDeviceIndices(3);
-					}
-
-					//////////////////////////////
-					// PLAYER 4
-					//////////////////////////////
-
-					else if (newcontroller && (!JoyInfo4.dev || !SDL_GameControllerGetAttached(JoyInfo4.dev))
-						&& JoyInfo.dev != newcontroller && JoyInfo2.dev != newcontroller && JoyInfo3.dev != newcontroller) // don't override a currently active device
-					{
-						cv_usejoystick4.value = evt.cdevice.which + 1;
-						I_UpdateJoystickDeviceIndices(4);
+							if (j == MAXSPLITSCREENPLAYERS)
+							{
+								// ensures we aren't overriding a currently active device
+								cv_usejoystick[i].value = evt.jdevice.which + 1;
+								I_UpdateJoystickDeviceIndices(0);
+							}
+						}
 					}
 
 					////////////////////////////////////////////////////////////
 					// Was cv_usejoystick disabled in settings?
 					////////////////////////////////////////////////////////////
 
-					if (!strcmp(cv_usejoystick.string, "0") || !cv_usejoystick.value)
-						cv_usejoystick.value = 0;
-					else if (atoi(cv_usejoystick.string) <= I_NumJoys() // don't mess if we intentionally set higher than NumJoys
-						     && cv_usejoystick.value) // update the cvar ONLY if a device exists
-						CV_SetValue(&cv_usejoystick, cv_usejoystick.value);
-
-					if (!strcmp(cv_usejoystick2.string, "0") || !cv_usejoystick2.value)
-						cv_usejoystick2.value = 0;
-					else if (atoi(cv_usejoystick2.string) <= I_NumJoys() // don't mess if we intentionally set higher than NumJoys
-					         && cv_usejoystick2.value) // update the cvar ONLY if a device exists
-						CV_SetValue(&cv_usejoystick2, cv_usejoystick2.value);
-
-					if (!strcmp(cv_usejoystick3.string, "0") || !cv_usejoystick3.value)
-						cv_usejoystick3.value = 0;
-					else if (atoi(cv_usejoystick3.string) <= I_NumJoys() // don't mess if we intentionally set higher than NumJoys
-						&& cv_usejoystick3.value) // update the cvar ONLY if a device exists
-						CV_SetValue(&cv_usejoystick3, cv_usejoystick3.value);
-
-					if (!strcmp(cv_usejoystick4.string, "0") || !cv_usejoystick4.value)
-						cv_usejoystick4.value = 0;
-					else if (atoi(cv_usejoystick4.string) <= I_NumJoys() // don't mess if we intentionally set higher than NumJoys
-						&& cv_usejoystick4.value) // update the cvar ONLY if a device exists
-						CV_SetValue(&cv_usejoystick4, cv_usejoystick4.value);
+					for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+					{
+						if (!strcmp(cv_usejoystick[i].string, "0") || !cv_usejoystick[i].value)
+							cv_usejoystick[i].value = 0;
+						else if (atoi(cv_usejoystick[i].string) <= I_NumJoys() // don't mess if we intentionally set higher than NumJoys
+							&& cv_usejoystick[i].value) // update the cvar ONLY if a device exists
+						CV_SetValue(&cv_usejoystick[i], cv_usejoystick[i].value);
+					}
 
 					////////////////////////////////////////////////////////////
 					// Update all joysticks' init states
@@ -1340,23 +1228,25 @@ void I_GetEvent(void)
 					// if the device is already active, this should do nothing, effectively.
 					////////////////////////////////////////////////////////////
 
-					I_InitJoystick();
-					I_InitJoystick2();
-					I_InitJoystick3();
-					I_InitJoystick4();
+					for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+						I_InitJoystick(i);
 
 					////////////////////////////////////////////////////////////
 
-					CONS_Debug(DBG_GAMELOGIC, "Joystick1 device index: %d\n", JoyInfo.oldjoy);
-					CONS_Debug(DBG_GAMELOGIC, "Joystick2 device index: %d\n", JoyInfo2.oldjoy);
-					CONS_Debug(DBG_GAMELOGIC, "Joystick3 device index: %d\n", JoyInfo3.oldjoy);
-					CONS_Debug(DBG_GAMELOGIC, "Joystick4 device index: %d\n", JoyInfo4.oldjoy);
+					for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+						CONS_Debug(DBG_GAMELOGIC, "Joystick%d device index: %d\n", i+1, JoyInfo[i].oldjoy);
 
 					// update the menu
 					if (currentMenu == &OP_JoystickSetDef)
 						M_SetupJoystickMenu(0);
 
-					if (JoyInfo.dev != newcontroller && JoyInfo2.dev != newcontroller && JoyInfo3.dev != newcontroller && JoyInfo4.dev != newcontroller)
+					for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+					{
+						if (JoyInfo[i].dev == newcontroller)
+							break;
+					}
+
+					if (i == MAXSPLITSCREENPLAYERS)
 						SDL_GameControllerClose(newcontroller);
 				}
 				break;
@@ -1364,28 +1254,13 @@ void I_GetEvent(void)
 			////////////////////////////////////////////////////////////
 
 			case SDL_CONTROLLERDEVICEREMOVED:
-				if (JoyInfo.dev && !SDL_GameControllerGetAttached(JoyInfo.dev))
+				for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 				{
-					CONS_Debug(DBG_GAMELOGIC, "Joystick1 removed, device index: %d\n", JoyInfo.oldjoy);
-					I_ShutdownJoystick();
-				}
-
-				if (JoyInfo2.dev && !SDL_GameControllerGetAttached(JoyInfo2.dev))
-				{
-					CONS_Debug(DBG_GAMELOGIC, "Joystick2 removed, device index: %d\n", JoyInfo2.oldjoy);
-					I_ShutdownJoystick2();
-				}
-
-				if (JoyInfo3.dev && !SDL_GameControllerGetAttached(JoyInfo3.dev))
-				{
-					CONS_Debug(DBG_GAMELOGIC, "Joystick3 removed, device index: %d\n", JoyInfo3.oldjoy);
-					I_ShutdownJoystick3();
-				}
-
-				if (JoyInfo4.dev && !SDL_GameControllerGetAttached(JoyInfo4.dev))
-				{
-					CONS_Debug(DBG_GAMELOGIC, "Joystick4 removed, device index: %d\n", JoyInfo4.oldjoy);
-					I_ShutdownJoystick4();
+					if (JoyInfo[i].dev && !SDL_GameControllerGetAttached(JoyInfo[i].dev))
+					{
+						CONS_Debug(DBG_GAMELOGIC, "Joystick%d removed, device index: %d\n", i+1, JoyInfo[i].oldjoy);
+						I_ShutdownJoystick(i);
+					}
 				}
 
 				////////////////////////////////////////////////////////////
@@ -1394,124 +1269,32 @@ void I_GetEvent(void)
 				//   * BUT: If that default index is being occupied, use ANOTHER cv_usejoystick's default value!
 				////////////////////////////////////////////////////////////
 
-				if (JoyInfo.dev)
-					cv_usejoystick.value = JoyInfo.oldjoy = I_GetJoystickDeviceIndex(JoyInfo.dev) + 1;
-				else if (atoi(cv_usejoystick.string) != JoyInfo2.oldjoy
-					&& atoi(cv_usejoystick.string) != JoyInfo3.oldjoy
-					&& atoi(cv_usejoystick.string) != JoyInfo4.oldjoy)
-					cv_usejoystick.value = atoi(cv_usejoystick.string);
-				else if (atoi(cv_usejoystick2.string) != JoyInfo2.oldjoy
-					&& atoi(cv_usejoystick2.string) != JoyInfo3.oldjoy
-					&& atoi(cv_usejoystick2.string) != JoyInfo4.oldjoy)
-					cv_usejoystick.value = atoi(cv_usejoystick2.string);
-				else if (atoi(cv_usejoystick3.string) != JoyInfo2.oldjoy
-					&& atoi(cv_usejoystick3.string) != JoyInfo3.oldjoy
-					&& atoi(cv_usejoystick3.string) != JoyInfo4.oldjoy)
-					cv_usejoystick.value = atoi(cv_usejoystick3.string);
-				else if (atoi(cv_usejoystick4.string) != JoyInfo2.oldjoy
-					&& atoi(cv_usejoystick4.string) != JoyInfo3.oldjoy
-					&& atoi(cv_usejoystick4.string) != JoyInfo4.oldjoy)
-					cv_usejoystick.value = atoi(cv_usejoystick4.string);
-				else // we tried...
-					cv_usejoystick.value = 0;
-
-				if (JoyInfo2.dev)
-					cv_usejoystick2.value = JoyInfo2.oldjoy = I_GetJoystickDeviceIndex(JoyInfo2.dev) + 1;
-				else if (atoi(cv_usejoystick.string) != JoyInfo.oldjoy
-					&& atoi(cv_usejoystick.string) != JoyInfo3.oldjoy
-					&& atoi(cv_usejoystick.string) != JoyInfo4.oldjoy)
-					cv_usejoystick2.value = atoi(cv_usejoystick.string);
-				else if (atoi(cv_usejoystick2.string) != JoyInfo.oldjoy
-					&& atoi(cv_usejoystick2.string) != JoyInfo3.oldjoy
-					&& atoi(cv_usejoystick2.string) != JoyInfo4.oldjoy)
-					cv_usejoystick2.value = atoi(cv_usejoystick2.string);
-				else if (atoi(cv_usejoystick3.string) != JoyInfo.oldjoy
-					&& atoi(cv_usejoystick3.string) != JoyInfo3.oldjoy
-					&& atoi(cv_usejoystick3.string) != JoyInfo4.oldjoy)
-					cv_usejoystick2.value = atoi(cv_usejoystick3.string);
-				else if (atoi(cv_usejoystick4.string) != JoyInfo.oldjoy
-					&& atoi(cv_usejoystick4.string) != JoyInfo3.oldjoy
-					&& atoi(cv_usejoystick4.string) != JoyInfo4.oldjoy)
-					cv_usejoystick2.value = atoi(cv_usejoystick4.string);
-				else // we tried...
-					cv_usejoystick2.value = 0;
-
-				if (JoyInfo3.dev)
-					cv_usejoystick3.value = JoyInfo3.oldjoy = I_GetJoystickDeviceIndex(JoyInfo3.dev) + 1;
-				else if (atoi(cv_usejoystick.string) != JoyInfo.oldjoy
-					&& atoi(cv_usejoystick.string) != JoyInfo2.oldjoy
-					&& atoi(cv_usejoystick.string) != JoyInfo4.oldjoy)
-					cv_usejoystick3.value = atoi(cv_usejoystick.string);
-				else if (atoi(cv_usejoystick2.string) != JoyInfo.oldjoy
-					&& atoi(cv_usejoystick2.string) != JoyInfo2.oldjoy
-					&& atoi(cv_usejoystick2.string) != JoyInfo4.oldjoy)
-					cv_usejoystick3.value = atoi(cv_usejoystick2.string);
-				else if (atoi(cv_usejoystick3.string) != JoyInfo.oldjoy
-					&& atoi(cv_usejoystick3.string) != JoyInfo2.oldjoy
-					&& atoi(cv_usejoystick3.string) != JoyInfo4.oldjoy)
-					cv_usejoystick3.value = atoi(cv_usejoystick3.string);
-				else if (atoi(cv_usejoystick4.string) != JoyInfo.oldjoy
-					&& atoi(cv_usejoystick4.string) != JoyInfo2.oldjoy
-					&& atoi(cv_usejoystick4.string) != JoyInfo4.oldjoy)
-					cv_usejoystick3.value = atoi(cv_usejoystick4.string);
-				else // we tried...
-					cv_usejoystick3.value = 0;
-
-				if (JoyInfo4.dev)
-					cv_usejoystick4.value = JoyInfo4.oldjoy = I_GetJoystickDeviceIndex(JoyInfo4.dev) + 1;
-				else if (atoi(cv_usejoystick.string) != JoyInfo.oldjoy
-					&& atoi(cv_usejoystick.string) != JoyInfo2.oldjoy
-					&& atoi(cv_usejoystick.string) != JoyInfo3.oldjoy)
-					cv_usejoystick4.value = atoi(cv_usejoystick.string);
-				else if (atoi(cv_usejoystick2.string) != JoyInfo.oldjoy
-					&& atoi(cv_usejoystick2.string) != JoyInfo2.oldjoy
-					&& atoi(cv_usejoystick2.string) != JoyInfo3.oldjoy)
-					cv_usejoystick4.value = atoi(cv_usejoystick2.string);
-				else if (atoi(cv_usejoystick3.string) != JoyInfo.oldjoy
-					&& atoi(cv_usejoystick3.string) != JoyInfo2.oldjoy
-					&& atoi(cv_usejoystick3.string) != JoyInfo3.oldjoy)
-					cv_usejoystick4.value = atoi(cv_usejoystick3.string);
-				else if (atoi(cv_usejoystick4.string) != JoyInfo.oldjoy
-					&& atoi(cv_usejoystick4.string) != JoyInfo2.oldjoy
-					&& atoi(cv_usejoystick4.string) != JoyInfo3.oldjoy)
-					cv_usejoystick4.value = atoi(cv_usejoystick4.string);
-				else // we tried...
-					cv_usejoystick4.value = 0;
+				for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+				{
+					I_UpdateJoystickDeviceIndex(i);
+				}
 
 				////////////////////////////////////////////////////////////
 				// Was cv_usejoystick disabled in settings?
 				////////////////////////////////////////////////////////////
 
-				if (!strcmp(cv_usejoystick.string, "0"))
-					cv_usejoystick.value = 0;
-				else if (atoi(cv_usejoystick.string) <= I_NumJoys() // don't mess if we intentionally set higher than NumJoys
-						 && cv_usejoystick.value) // update the cvar ONLY if a device exists
-					CV_SetValue(&cv_usejoystick, cv_usejoystick.value);
-
-				if (!strcmp(cv_usejoystick2.string, "0"))
-					cv_usejoystick2.value = 0;
-				else if (atoi(cv_usejoystick2.string) <= I_NumJoys() // don't mess if we intentionally set higher than NumJoys
-						 && cv_usejoystick2.value) // update the cvar ONLY if a device exists
-					CV_SetValue(&cv_usejoystick2, cv_usejoystick2.value);
-
-				if (!strcmp(cv_usejoystick3.string, "0"))
-					cv_usejoystick3.value = 0;
-				else if (atoi(cv_usejoystick3.string) <= I_NumJoys() // don't mess if we intentionally set higher than NumJoys
-					&& cv_usejoystick3.value) // update the cvar ONLY if a device exists
-					CV_SetValue(&cv_usejoystick3, cv_usejoystick3.value);
-
-				if (!strcmp(cv_usejoystick4.string, "0"))
-					cv_usejoystick4.value = 0;
-				else if (atoi(cv_usejoystick4.string) <= I_NumJoys() // don't mess if we intentionally set higher than NumJoys
-					&& cv_usejoystick4.value) // update the cvar ONLY if a device exists
-					CV_SetValue(&cv_usejoystick4, cv_usejoystick4.value);
+				for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+				{
+					if (!strcmp(cv_usejoystick[i].string, "0"))
+					{
+						cv_usejoystick[i].value = 0;
+					}
+					else if (atoi(cv_usejoystick[i].string) <= I_NumJoys() // don't mess if we intentionally set higher than NumJoys
+						&& cv_usejoystick[i].value) // update the cvar ONLY if a device exists
+					{
+						CV_SetValue(&cv_usejoystick[i], cv_usejoystick[i].value);
+					}
+				}
 
 				////////////////////////////////////////////////////////////
 
-				CONS_Debug(DBG_GAMELOGIC, "Joystick1 device index: %d\n", JoyInfo.oldjoy);
-				CONS_Debug(DBG_GAMELOGIC, "Joystick2 device index: %d\n", JoyInfo2.oldjoy);
-				CONS_Debug(DBG_GAMELOGIC, "Joystick3 device index: %d\n", JoyInfo3.oldjoy);
-				CONS_Debug(DBG_GAMELOGIC, "Joystick4 device index: %d\n", JoyInfo4.oldjoy);
+				for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+					CONS_Debug(DBG_GAMELOGIC, "Joystick%d device index: %d\n", i+1, JoyInfo[i].oldjoy);
 
 				// update the menu
 				if (currentMenu == &OP_JoystickSetDef)
@@ -1573,16 +1356,15 @@ void I_StartupMouse(void)
 void I_OsPolling(void)
 {
 	SDL_Keymod mod;
+	INT32 i;
 
 	if (consolevent)
 		I_GetConsoleEvents();
 	if (SDL_WasInit(SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER) == (SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER))
 	{
 		SDL_GameControllerUpdate();
-		I_GetJoystickEvents();
-		I_GetJoystick2Events();
-		I_GetJoystick3Events();
-		I_GetJoystick4Events();
+		for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+			I_GetJoystickEvents(i);
 	}
 
 	I_GetMouseEvents();

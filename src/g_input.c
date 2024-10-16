@@ -908,28 +908,6 @@ static const char *gamecontrolname[num_gamecontrols] =
 
 #include "k_kart.h"
 
-INT32 G_GetDeviceForPlayer(INT32 player)
-{
-	switch (player)
-	{
-		case 0:
-			return cv_usejoystick.value;
-			break;
-		case 1:
-			return cv_usejoystick2.value;
-			break;
-		case 2:
-			return cv_usejoystick3.value;
-			break;
-		case 3:
-			return cv_usejoystick4.value;
-			break;
-		default:
-			return 0;
-			break;
-	}
-}
-
 inline UINT16 G_GetSkinColor(INT32 player)
 {
 	// make rgb rainbow vomit when invul or flash blue when grow
@@ -972,7 +950,7 @@ void G_SetPlayerGamepadIndicatorColor(INT32 player, UINT16 color)
 	if (cv_gamepadled[player].value == 0)
 		return;
 
-	device = G_GetDeviceForPlayer(player);
+	device = cv_usejoystick[player].value;
 
 	if (device <= 0)
 	{
@@ -989,7 +967,7 @@ static void G_ResetPlayerGamepadIndicatorColor(INT32 player)
 {
 	if (cv_gamepadled[player].value == 0)
 	{
-		INT32 device = G_GetDeviceForPlayer(player);
+		INT32 device = cv_usejoystick[player].value;
 		if (device <= 0)
 			return;
 
@@ -1003,7 +981,7 @@ static void G_ResetPlayerDeviceRumble(INT32 player)
 {
 	INT32 device_id;
 
-	device_id = G_GetDeviceForPlayer(player);
+	device_id = cv_usejoystick[player].value;
 
 	if (device_id < 1)
 	{
@@ -1022,7 +1000,7 @@ void G_ResetAllDeviceRumbles(void)
 
 	for (i = 0; i < devices; i++)
 	{
-		INT32 device_id = G_GetDeviceForPlayer(i);
+		INT32 device_id = cv_usejoystick[i].value;
 
 		I_GamepadRumble(device_id, 0, 0, 0);
 	}
@@ -1037,7 +1015,7 @@ void G_PlayerDeviceRumble(INT32 player, UINT16 low_strength, UINT16 high_strengt
 		return;
 	}
 
-	device_id = G_GetDeviceForPlayer(player);
+	device_id = cv_usejoystick[player].value;
 
 	if (device_id < 1)
 	{

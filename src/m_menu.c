@@ -1224,19 +1224,19 @@ static menuitem_t OP_AllControlsMenu[] =
 static menuitem_t OP_Joystick1Menu[] =
 {
 	{IT_STRING | IT_CALL,  NULL, "Select Gamepad..."  , M_Setup1PJoystickMenu, 10},
-	{IT_STRING | IT_CVAR,  NULL, "Aim Forward/Back"   , &cv_aimaxis          , 20},
-	{IT_STRING | IT_CVAR,  NULL, "Turn Left/Right"    , &cv_turnaxis         , 25},
-	{IT_STRING | IT_CVAR,  NULL, "Accelerate"         , &cv_moveaxis         , 30},
-	{IT_STRING | IT_CVAR,  NULL, "Brake"              , &cv_brakeaxis        , 35},
-	{IT_STRING | IT_CVAR,  NULL, "Drift"              , &cv_driftaxis        , 40},
-	{IT_STRING | IT_CVAR,  NULL, "Use Item"           , &cv_fireaxis         , 45},
-	{IT_STRING | IT_CVAR,  NULL, "Look Backward"      , &cv_lookbackaxis     , 50},
-	{IT_STRING | IT_CVAR,  NULL, "Spec. Look Up/Down" , &cv_lookaxis         , 55},
-	{IT_STRING | IT_CVAR,  NULL, "Custom Button 1"    , &cv_custom1axis      , 60},
-	{IT_STRING | IT_CVAR,  NULL, "Custom Button 2"    , &cv_custom2axis      , 65},
-	{IT_STRING | IT_CVAR,  NULL, "Custom Button 3"    , &cv_custom3axis      , 70},
-	{IT_STRING | IT_CVAR,  NULL, "X deadzone"         , &cv_xdeadzone        , 75},
-	{IT_STRING | IT_CVAR,  NULL, "Y deadzone"         , &cv_ydeadzone        , 80},
+	{IT_STRING | IT_CVAR,  NULL, "Aim Forward/Back"   , &cv_aimaxis[0]          , 20},
+	{IT_STRING | IT_CVAR,  NULL, "Turn Left/Right"    , &cv_turnaxis[0]         , 25},
+	{IT_STRING | IT_CVAR,  NULL, "Accelerate"         , &cv_moveaxis[0]         , 30},
+	{IT_STRING | IT_CVAR,  NULL, "Brake"              , &cv_brakeaxis[0]        , 35},
+	{IT_STRING | IT_CVAR,  NULL, "Drift"              , &cv_driftaxis[0]        , 40},
+	{IT_STRING | IT_CVAR,  NULL, "Use Item"           , &cv_fireaxis[0]         , 45},
+	{IT_STRING | IT_CVAR,  NULL, "Look Backward"      , &cv_lookbackaxis[0]     , 50},
+	{IT_STRING | IT_CVAR,  NULL, "Spec. Look Up/Down" , &cv_lookaxis[0]         , 55},
+	{IT_STRING | IT_CVAR,  NULL, "Custom Button 1"    , &cv_custom1axis[0]      , 60},
+	{IT_STRING | IT_CVAR,  NULL, "Custom Button 2"    , &cv_custom2axis[0]      , 65},
+	{IT_STRING | IT_CVAR,  NULL, "Custom Button 3"    , &cv_custom3axis[0]      , 70},
+	{IT_STRING | IT_CVAR,  NULL, "X deadzone"         , &cv_xdeadzone[0]        , 75},
+	{IT_STRING | IT_CVAR,  NULL, "Y deadzone"         , &cv_ydeadzone[0]        , 80},
 
 	{IT_STRING | IT_CVAR,  NULL, "Controller Rumble"  , &cv_rumble[0]        , 90},
 	{IT_STRING | IT_CVAR,  NULL, "Set LED to skin color"  , &cv_gamepadled[0]    , 95},
@@ -1246,19 +1246,19 @@ static menuitem_t OP_Joystick1Menu[] =
 static menuitem_t OP_Joystick2Menu[] =
 {
 	{IT_STRING | IT_CALL,  NULL, "Select Gamepad..."  , M_Setup2PJoystickMenu, 10},
-	{IT_STRING | IT_CVAR,  NULL, "Aim Forward/Back"   , &cv_aimaxis2         , 20},
-	{IT_STRING | IT_CVAR,  NULL, "Turn Left/Right"    , &cv_turnaxis2        , 25},
-	{IT_STRING | IT_CVAR,  NULL, "Accelerate"         , &cv_moveaxis2        , 30},
-	{IT_STRING | IT_CVAR,  NULL, "Brake"              , &cv_brakeaxis2       , 35},
-	{IT_STRING | IT_CVAR,  NULL, "Drift"              , &cv_driftaxis2       , 40},
-	{IT_STRING | IT_CVAR,  NULL, "Use Item"           , &cv_fireaxis2        , 45},
-	{IT_STRING | IT_CVAR,  NULL, "Look Backward"      , &cv_lookbackaxis2    , 50},
-	{IT_STRING | IT_CVAR,  NULL, "Spec. Look Up/Down" , &cv_lookaxis2        , 55},
-	{IT_STRING | IT_CVAR,  NULL, "Custom Button 1"    , &cv_custom1axis2     , 60},
-	{IT_STRING | IT_CVAR,  NULL, "Custom Button 2"    , &cv_custom2axis2     , 65},
-	{IT_STRING | IT_CVAR,  NULL, "Custom Button 3"    , &cv_custom3axis2     , 70},
-	{IT_STRING | IT_CVAR,  NULL, "X deadzone"         , &cv_xdeadzone2       , 75},
-	{IT_STRING | IT_CVAR,  NULL, "Y deadzone"         , &cv_ydeadzone2       , 80},
+	{IT_STRING | IT_CVAR,  NULL, "Aim Forward/Back"   , &cv_aimaxis[1]         , 20},
+	{IT_STRING | IT_CVAR,  NULL, "Turn Left/Right"    , &cv_turnaxis[1]        , 25},
+	{IT_STRING | IT_CVAR,  NULL, "Accelerate"         , &cv_moveaxis[1]        , 30},
+	{IT_STRING | IT_CVAR,  NULL, "Brake"              , &cv_brakeaxis[1]       , 35},
+	{IT_STRING | IT_CVAR,  NULL, "Drift"              , &cv_driftaxis[1]       , 40},
+	{IT_STRING | IT_CVAR,  NULL, "Use Item"           , &cv_fireaxis[1]        , 45},
+	{IT_STRING | IT_CVAR,  NULL, "Look Backward"      , &cv_lookbackaxis[1]    , 50},
+	{IT_STRING | IT_CVAR,  NULL, "Spec. Look Up/Down" , &cv_lookaxis[1]        , 55},
+	{IT_STRING | IT_CVAR,  NULL, "Custom Button 1"    , &cv_custom1axis[1]     , 60},
+	{IT_STRING | IT_CVAR,  NULL, "Custom Button 2"    , &cv_custom2axis[1]     , 65},
+	{IT_STRING | IT_CVAR,  NULL, "Custom Button 3"    , &cv_custom3axis[1]     , 70},
+	{IT_STRING | IT_CVAR,  NULL, "X deadzone"         , &cv_xdeadzone[1]       , 75},
+	{IT_STRING | IT_CVAR,  NULL, "Y deadzone"         , &cv_ydeadzone[1]       , 80},
 
 	{IT_STRING | IT_CVAR,  NULL, "Controller Rumble"  , &cv_rumble[1]        , 90},
 	{IT_STRING | IT_CVAR,  NULL, "Set LED to skin color"  , &cv_gamepadled[1]    , 95},
@@ -1268,19 +1268,19 @@ static menuitem_t OP_Joystick2Menu[] =
 static menuitem_t OP_Joystick3Menu[] =
 {
 	{IT_STRING | IT_CALL,  NULL, "Select Gamepad..."  , M_Setup3PJoystickMenu, 10},
-	{IT_STRING | IT_CVAR,  NULL, "Aim Forward/Back"   , &cv_aimaxis3         , 20},
-	{IT_STRING | IT_CVAR,  NULL, "Turn Left/Right"    , &cv_turnaxis3        , 25},
-	{IT_STRING | IT_CVAR,  NULL, "Accelerate"         , &cv_moveaxis3        , 30},
-	{IT_STRING | IT_CVAR,  NULL, "Brake"              , &cv_brakeaxis3       , 35},
-	{IT_STRING | IT_CVAR,  NULL, "Drift"              , &cv_driftaxis3       , 40},
-	{IT_STRING | IT_CVAR,  NULL, "Use Item"           , &cv_fireaxis3        , 45},
-	{IT_STRING | IT_CVAR,  NULL, "Look Backward"      , &cv_lookbackaxis3    , 50},
-	{IT_STRING | IT_CVAR,  NULL, "Spec. Look Up/Down" , &cv_lookaxis3        , 55},
-	{IT_STRING | IT_CVAR,  NULL, "Custom Button 1"    , &cv_custom1axis3     , 60},
-	{IT_STRING | IT_CVAR,  NULL, "Custom Button 2"    , &cv_custom2axis3     , 65},
-	{IT_STRING | IT_CVAR,  NULL, "Custom Button 3"    , &cv_custom3axis3     , 70},
-	{IT_STRING | IT_CVAR,  NULL, "X deadzone"         , &cv_xdeadzone3       , 75},
-	{IT_STRING | IT_CVAR,  NULL, "Y deadzone"         , &cv_ydeadzone3       , 80},
+	{IT_STRING | IT_CVAR,  NULL, "Aim Forward/Back"   , &cv_aimaxis[2]         , 20},
+	{IT_STRING | IT_CVAR,  NULL, "Turn Left/Right"    , &cv_turnaxis[2]        , 25},
+	{IT_STRING | IT_CVAR,  NULL, "Accelerate"         , &cv_moveaxis[2]        , 30},
+	{IT_STRING | IT_CVAR,  NULL, "Brake"              , &cv_brakeaxis[2]       , 35},
+	{IT_STRING | IT_CVAR,  NULL, "Drift"              , &cv_driftaxis[2]       , 40},
+	{IT_STRING | IT_CVAR,  NULL, "Use Item"           , &cv_fireaxis[2]        , 45},
+	{IT_STRING | IT_CVAR,  NULL, "Look Backward"      , &cv_lookbackaxis[2]    , 50},
+	{IT_STRING | IT_CVAR,  NULL, "Spec. Look Up/Down" , &cv_lookaxis[2]        , 55},
+	{IT_STRING | IT_CVAR,  NULL, "Custom Button 1"    , &cv_custom1axis[2]     , 60},
+	{IT_STRING | IT_CVAR,  NULL, "Custom Button 2"    , &cv_custom2axis[2]     , 65},
+	{IT_STRING | IT_CVAR,  NULL, "Custom Button 3"    , &cv_custom3axis[2]     , 70},
+	{IT_STRING | IT_CVAR,  NULL, "X deadzone"         , &cv_xdeadzone[2]       , 75},
+	{IT_STRING | IT_CVAR,  NULL, "Y deadzone"         , &cv_ydeadzone[2]       , 80},
 
 	{IT_STRING | IT_CVAR,  NULL, "Controller Rumble"  , &cv_rumble[2]        , 90},
 	{IT_STRING | IT_CVAR,  NULL, "Set LED to skin color"  , &cv_gamepadled[2]    , 95},
@@ -1290,19 +1290,19 @@ static menuitem_t OP_Joystick3Menu[] =
 static menuitem_t OP_Joystick4Menu[] =
 {
 	{IT_STRING | IT_CALL,  NULL, "Select Gamepad..."  , M_Setup4PJoystickMenu, 10},
-	{IT_STRING | IT_CVAR,  NULL, "Aim Forward/Back"   , &cv_aimaxis4         , 20},
-	{IT_STRING | IT_CVAR,  NULL, "Turn Left/Right"    , &cv_turnaxis4        , 25},
-	{IT_STRING | IT_CVAR,  NULL, "Accelerate"         , &cv_moveaxis4        , 30},
-	{IT_STRING | IT_CVAR,  NULL, "Brake"              , &cv_brakeaxis4       , 35},
-	{IT_STRING | IT_CVAR,  NULL, "Drift"              , &cv_driftaxis4       , 40},
-	{IT_STRING | IT_CVAR,  NULL, "Use Item"           , &cv_fireaxis4        , 45},
-	{IT_STRING | IT_CVAR,  NULL, "Look Backward"      , &cv_lookbackaxis4    , 50},
-	{IT_STRING | IT_CVAR,  NULL, "Spec. Look Up/Down" , &cv_lookaxis4        , 55},
-	{IT_STRING | IT_CVAR,  NULL, "Custom Button 1"    , &cv_custom1axis4     , 60},
-	{IT_STRING | IT_CVAR,  NULL, "Custom Button 2"    , &cv_custom2axis4     , 65},
-	{IT_STRING | IT_CVAR,  NULL, "Custom Button 3"    , &cv_custom3axis4     , 70},
-	{IT_STRING | IT_CVAR,  NULL, "X deadzone"         , &cv_xdeadzone4       , 75},
-	{IT_STRING | IT_CVAR,  NULL, "Y deadzone"         , &cv_ydeadzone4       , 80},
+	{IT_STRING | IT_CVAR,  NULL, "Aim Forward/Back"   , &cv_aimaxis[3]         , 20},
+	{IT_STRING | IT_CVAR,  NULL, "Turn Left/Right"    , &cv_turnaxis[3]        , 25},
+	{IT_STRING | IT_CVAR,  NULL, "Accelerate"         , &cv_moveaxis[3]        , 30},
+	{IT_STRING | IT_CVAR,  NULL, "Brake"              , &cv_brakeaxis[3]       , 35},
+	{IT_STRING | IT_CVAR,  NULL, "Drift"              , &cv_driftaxis[3]       , 40},
+	{IT_STRING | IT_CVAR,  NULL, "Use Item"           , &cv_fireaxis[3]        , 45},
+	{IT_STRING | IT_CVAR,  NULL, "Look Backward"      , &cv_lookbackaxis[3]    , 50},
+	{IT_STRING | IT_CVAR,  NULL, "Spec. Look Up/Down" , &cv_lookaxis[3]        , 55},
+	{IT_STRING | IT_CVAR,  NULL, "Custom Button 1"    , &cv_custom1axis[3]     , 60},
+	{IT_STRING | IT_CVAR,  NULL, "Custom Button 2"    , &cv_custom2axis[3]     , 65},
+	{IT_STRING | IT_CVAR,  NULL, "Custom Button 3"    , &cv_custom3axis[3]     , 70},
+	{IT_STRING | IT_CVAR,  NULL, "X deadzone"         , &cv_xdeadzone[3]       , 75},
+	{IT_STRING | IT_CVAR,  NULL, "Y deadzone"         , &cv_ydeadzone[3]       , 80},
 
 	{IT_STRING | IT_CVAR,  NULL, "Controller Rumble"  , &cv_rumble[3]        , 90},
 	{IT_STRING | IT_CVAR,  NULL, "Set LED to skin color"  , &cv_gamepadled[3]    , 95},
@@ -3690,14 +3690,14 @@ boolean M_Responder(event_t *ev)
 		tic_t thistime = I_GetTime();
 		if (ev->type == ev_joystick)
 		{
-			const INT32 jxdeadzone = ((JOYAXISRANGE-1) * max(cv_xdeadzone.value, FRACUNIT/2)) >> FRACBITS;
-			const INT32 jydeadzone = ((JOYAXISRANGE-1) * max(cv_ydeadzone.value, FRACUNIT/2)) >> FRACBITS;
-			INT32 accelaxis = abs(cv_moveaxis.value);
+			const INT32 jxdeadzone = ((JOYAXISRANGE-1) * max(cv_xdeadzone[0].value, FRACUNIT/2)) >> FRACBITS;
+			const INT32 jydeadzone = ((JOYAXISRANGE-1) * max(cv_ydeadzone[0].value, FRACUNIT/2)) >> FRACBITS;
+			INT32 accelaxis = abs(cv_moveaxis[0].value);
 			if (ev->data1 == 0)
 			{
 				if (ev->data3 != INT32_MAX)
 				{
-					if (Joystick.bGamepadStyle || abs(ev->data3) > jydeadzone)
+					if (Joystick[0].bGamepadStyle || abs(ev->data3) > jydeadzone)
 					{
 						if (joywaity < thistime
 							&& (pjoyy == 0 || (ev->data3 < 0) != (pjoyy < 0))) // no previous direction OR change direction
@@ -3713,7 +3713,7 @@ boolean M_Responder(event_t *ev)
 
 				if (ev->data2 != INT32_MAX && joywaitx < thistime)
 				{
-					if (Joystick.bGamepadStyle || abs(ev->data2) > jxdeadzone)
+					if (Joystick[0].bGamepadStyle || abs(ev->data2) > jxdeadzone)
 					{
 						if (joywaitx < thistime
 							&& (pjoyx == 0 || (ev->data2 < 0) != (pjoyx < 0))) // no previous direction OR change direction
@@ -3741,10 +3741,10 @@ boolean M_Responder(event_t *ev)
 					retaxis = xmode ? ev->data2 : ev->data3;
 					if (retaxis != INT32_MAX)
 					{
-						if (cv_moveaxis.value < 0)
+						if (cv_moveaxis[0].value < 0)
 							retaxis = -retaxis;
 
-						if (Joystick.bGamepadStyle || retaxis > jacceldeadzone)
+						if (Joystick[0].bGamepadStyle || retaxis > jacceldeadzone)
 						{
 							if (joywaitaccel < thistime && retaxis > pjoyaccel) // only on upwards event
 							{
@@ -11804,30 +11804,30 @@ static void M_DrawJoystick(void)
 		//M_DrawSaveLoadBorder(OP_JoystickSetDef.x, OP_JoystickSetDef.y+LINEHEIGHT*i);
 
 #ifdef JOYSTICK_HOTPLUG
-		if (atoi(cv_usejoystick4.string) > I_NumJoys())
-			compareval4 = atoi(cv_usejoystick4.string);
+		if (atoi(cv_usejoystick[3].string) > I_NumJoys())
+			compareval4 = atoi(cv_usejoystick[3].string);
 		else
-			compareval4 = cv_usejoystick4.value;
+			compareval4 = cv_usejoystick[3].value;
 
-		if (atoi(cv_usejoystick3.string) > I_NumJoys())
-			compareval3 = atoi(cv_usejoystick3.string);
+		if (atoi(cv_usejoystick[2].string) > I_NumJoys())
+			compareval3 = atoi(cv_usejoystick[2].string);
 		else
-			compareval3 = cv_usejoystick3.value;
+			compareval3 = cv_usejoystick[2].value;
 
-		if (atoi(cv_usejoystick2.string) > I_NumJoys())
-			compareval2 = atoi(cv_usejoystick2.string);
+		if (atoi(cv_usejoystick[1].string) > I_NumJoys())
+			compareval2 = atoi(cv_usejoystick[1].string);
 		else
-			compareval2 = cv_usejoystick2.value;
+			compareval2 = cv_usejoystick[1].value;
 
-		if (atoi(cv_usejoystick.string) > I_NumJoys())
-			compareval = atoi(cv_usejoystick.string);
+		if (atoi(cv_usejoystick[0].string) > I_NumJoys())
+			compareval = atoi(cv_usejoystick[0].string);
 		else
-			compareval = cv_usejoystick.value;
+			compareval = cv_usejoystick[0].value;
 #else
-		compareval4 = cv_usejoystick4.value;
-		compareval3 = cv_usejoystick3.value;
-		compareval2 = cv_usejoystick2.value;
-		compareval = cv_usejoystick.value;
+		compareval4 = cv_usejoystick[3].value;
+		compareval3 = cv_usejoystick[2].value;
+		compareval2 = cv_usejoystick[1].value;
+		compareval = cv_usejoystick[0].value;
 #endif
 
 		if ((setupcontrolplayer == 4 && (i == compareval4))
@@ -11865,14 +11865,14 @@ void M_SetupJoystickMenu(INT32 choice)
 		//
 		// Update cv_usejoystick.string here so that the user can
 		// properly change this value.
-		if (i == cv_usejoystick.value)
-			CV_SetValue(&cv_usejoystick, i);
-		if (i == cv_usejoystick2.value)
-			CV_SetValue(&cv_usejoystick2, i);
-		if (i == cv_usejoystick3.value)
-			CV_SetValue(&cv_usejoystick3, i);
-		if (i == cv_usejoystick4.value)
-			CV_SetValue(&cv_usejoystick4, i);
+		if (i == cv_usejoystick[0].value)
+			CV_SetValue(&cv_usejoystick[0], i);
+		if (i == cv_usejoystick[1].value)
+			CV_SetValue(&cv_usejoystick[1], i);
+		if (i == cv_usejoystick[2].value)
+			CV_SetValue(&cv_usejoystick[2], i);
+		if (i == cv_usejoystick[3].value)
+			CV_SetValue(&cv_usejoystick[3], i);
 #endif
 	}
 
@@ -11915,27 +11915,27 @@ static void M_AssignJoystick(INT32 choice)
 
 	if (setupcontrolplayer == 4)
 	{
-		oldchoice = oldstringchoice = atoi(cv_usejoystick4.string) > numjoys ? atoi(cv_usejoystick4.string) : cv_usejoystick4.value;
-		CV_SetValue(&cv_usejoystick4, choice);
+		oldchoice = oldstringchoice = atoi(cv_usejoystick[3].string) > numjoys ? atoi(cv_usejoystick[3].string) : cv_usejoystick[3].value;
+		CV_SetValue(&cv_usejoystick[3], choice);
 
 		// Just in case last-minute changes were made to cv_usejoystick.value,
 		// update the string too
 		// But don't do this if we're intentionally setting higher than numjoys
 		if (choice <= numjoys)
 		{
-			CV_SetValue(&cv_usejoystick4, cv_usejoystick4.value);
+			CV_SetValue(&cv_usejoystick[3], cv_usejoystick[3].value);
 
 			// reset this so the comparison is valid
 			if (oldchoice > numjoys)
-				oldchoice = cv_usejoystick4.value;
+				oldchoice = cv_usejoystick[3].value;
 
 			if (oldchoice != choice)
 			{
 				if (choice && oldstringchoice > numjoys) // if we did not select "None", we likely selected a used device
-					CV_SetValue(&cv_usejoystick4, (oldstringchoice > numjoys ? oldstringchoice : oldchoice));
+					CV_SetValue(&cv_usejoystick[3], (oldstringchoice > numjoys ? oldstringchoice : oldchoice));
 
 				if (oldstringchoice ==
-					(atoi(cv_usejoystick4.string) > numjoys ? atoi(cv_usejoystick4.string) : cv_usejoystick4.value))
+					(atoi(cv_usejoystick[3].string) > numjoys ? atoi(cv_usejoystick[3].string) : cv_usejoystick[3].value))
 					M_StartMessage("This joystick is used by another\n"
 								   "player. Reset the joystick\n"
 								   "for that player first.\n\n"
@@ -11945,27 +11945,27 @@ static void M_AssignJoystick(INT32 choice)
 	}
 	else if (setupcontrolplayer == 3)
 	{
-		oldchoice = oldstringchoice = atoi(cv_usejoystick3.string) > numjoys ? atoi(cv_usejoystick3.string) : cv_usejoystick3.value;
-		CV_SetValue(&cv_usejoystick3, choice);
+		oldchoice = oldstringchoice = atoi(cv_usejoystick[2].string) > numjoys ? atoi(cv_usejoystick[2].string) : cv_usejoystick[2].value;
+		CV_SetValue(&cv_usejoystick[2], choice);
 
 		// Just in case last-minute changes were made to cv_usejoystick.value,
 		// update the string too
 		// But don't do this if we're intentionally setting higher than numjoys
 		if (choice <= numjoys)
 		{
-			CV_SetValue(&cv_usejoystick3, cv_usejoystick3.value);
+			CV_SetValue(&cv_usejoystick[2], cv_usejoystick[2].value);
 
 			// reset this so the comparison is valid
 			if (oldchoice > numjoys)
-				oldchoice = cv_usejoystick3.value;
+				oldchoice = cv_usejoystick[2].value;
 
 			if (oldchoice != choice)
 			{
 				if (choice && oldstringchoice > numjoys) // if we did not select "None", we likely selected a used device
-					CV_SetValue(&cv_usejoystick3, (oldstringchoice > numjoys ? oldstringchoice : oldchoice));
+					CV_SetValue(&cv_usejoystick[2], (oldstringchoice > numjoys ? oldstringchoice : oldchoice));
 
 				if (oldstringchoice ==
-					(atoi(cv_usejoystick3.string) > numjoys ? atoi(cv_usejoystick3.string) : cv_usejoystick3.value))
+					(atoi(cv_usejoystick[2].string) > numjoys ? atoi(cv_usejoystick[2].string) : cv_usejoystick[2].value))
 					M_StartMessage("This joystick is used by another\n"
 								   "player. Reset the joystick\n"
 								   "for that player first.\n\n"
@@ -11975,27 +11975,27 @@ static void M_AssignJoystick(INT32 choice)
 	}
 	else if (setupcontrolplayer == 2)
 	{
-		oldchoice = oldstringchoice = atoi(cv_usejoystick2.string) > numjoys ? atoi(cv_usejoystick2.string) : cv_usejoystick2.value;
-		CV_SetValue(&cv_usejoystick2, choice);
+		oldchoice = oldstringchoice = atoi(cv_usejoystick[1].string) > numjoys ? atoi(cv_usejoystick[1].string) : cv_usejoystick[1].value;
+		CV_SetValue(&cv_usejoystick[1], choice);
 
 		// Just in case last-minute changes were made to cv_usejoystick.value,
 		// update the string too
 		// But don't do this if we're intentionally setting higher than numjoys
 		if (choice <= numjoys)
 		{
-			CV_SetValue(&cv_usejoystick2, cv_usejoystick2.value);
+			CV_SetValue(&cv_usejoystick[1], cv_usejoystick[1].value);
 
 			// reset this so the comparison is valid
 			if (oldchoice > numjoys)
-				oldchoice = cv_usejoystick2.value;
+				oldchoice = cv_usejoystick[1].value;
 
 			if (oldchoice != choice)
 			{
 				if (choice && oldstringchoice > numjoys) // if we did not select "None", we likely selected a used device
-					CV_SetValue(&cv_usejoystick2, (oldstringchoice > numjoys ? oldstringchoice : oldchoice));
+					CV_SetValue(&cv_usejoystick[1], (oldstringchoice > numjoys ? oldstringchoice : oldchoice));
 
 				if (oldstringchoice ==
-					(atoi(cv_usejoystick2.string) > numjoys ? atoi(cv_usejoystick2.string) : cv_usejoystick2.value))
+					(atoi(cv_usejoystick[1].string) > numjoys ? atoi(cv_usejoystick[1].string) : cv_usejoystick[1].value))
 					M_StartMessage("This joystick is used by another\n"
 					               "player. Reset the joystick\n"
 					               "for that player first.\n\n"
@@ -12005,27 +12005,27 @@ static void M_AssignJoystick(INT32 choice)
 	}
 	else if (setupcontrolplayer == 1)
 	{
-		oldchoice = oldstringchoice = atoi(cv_usejoystick.string) > numjoys ? atoi(cv_usejoystick.string) : cv_usejoystick.value;
-		CV_SetValue(&cv_usejoystick, choice);
+		oldchoice = oldstringchoice = atoi(cv_usejoystick[0].string) > numjoys ? atoi(cv_usejoystick[0].string) : cv_usejoystick[0].value;
+		CV_SetValue(&cv_usejoystick[0], choice);
 
 		// Just in case last-minute changes were made to cv_usejoystick.value,
 		// update the string too
 		// But don't do this if we're intentionally setting higher than numjoys
 		if (choice <= numjoys)
 		{
-			CV_SetValue(&cv_usejoystick, cv_usejoystick.value);
+			CV_SetValue(&cv_usejoystick[0], cv_usejoystick[0].value);
 
 			// reset this so the comparison is valid
 			if (oldchoice > numjoys)
-				oldchoice = cv_usejoystick.value;
+				oldchoice = cv_usejoystick[0].value;
 
 			if (oldchoice != choice)
 			{
 				if (choice && oldstringchoice > numjoys) // if we did not select "None", we likely selected a used device
-					CV_SetValue(&cv_usejoystick, (oldstringchoice > numjoys ? oldstringchoice : oldchoice));
+					CV_SetValue(&cv_usejoystick[0], (oldstringchoice > numjoys ? oldstringchoice : oldchoice));
 
 				if (oldstringchoice ==
-					(atoi(cv_usejoystick.string) > numjoys ? atoi(cv_usejoystick.string) : cv_usejoystick.value))
+					(atoi(cv_usejoystick[0].string) > numjoys ? atoi(cv_usejoystick[0].string) : cv_usejoystick[0].value))
 					M_StartMessage("This joystick is used by another\n"
 					               "player. Reset the joystick\n"
 					               "for that player first.\n\n"
@@ -12035,13 +12035,13 @@ static void M_AssignJoystick(INT32 choice)
 	}
 #else
 	if (setupcontrolplayer == 4)
-		CV_SetValue(&cv_usejoystick4, choice);
+		CV_SetValue(&cv_usejoystick[3], choice);
 	else if (setupcontrolplayer == 3)
-		CV_SetValue(&cv_usejoystick3, choice);
+		CV_SetValue(&cv_usejoystick[2], choice);
 	else if (setupcontrolplayer == 2)
-		CV_SetValue(&cv_usejoystick2, choice);
+		CV_SetValue(&cv_usejoystick[1], choice);
 	else if (setupcontrolplayer == 1)
-		CV_SetValue(&cv_usejoystick, choice);
+		CV_SetValue(&cv_usejoystick[0], choice);
 #endif
 }
 
@@ -12395,49 +12395,49 @@ static void M_ResetControlsResponse(INT32 ch)
 	switch (setupcontrolplayer)
 	{
 		case 4:
-			CV_StealthSet(&cv_usejoystick4, cv_usejoystick4.defaultvalue);
-			CV_StealthSet(&cv_turnaxis4, cv_turnaxis4.defaultvalue);
-			CV_StealthSet(&cv_moveaxis4, cv_moveaxis4.defaultvalue);
-			CV_StealthSet(&cv_brakeaxis4, cv_brakeaxis4.defaultvalue);
-			CV_StealthSet(&cv_aimaxis4, cv_aimaxis4.defaultvalue);
-			CV_StealthSet(&cv_lookaxis4, cv_lookaxis4.defaultvalue);
-			CV_StealthSet(&cv_fireaxis4, cv_fireaxis4.defaultvalue);
-			CV_StealthSet(&cv_driftaxis4, cv_driftaxis4.defaultvalue);
-			CV_StealthSet(&cv_lookbackaxis4, cv_lookbackaxis4.defaultvalue);
+			CV_StealthSet(&cv_usejoystick[3],	cv_usejoystick[3].defaultvalue);
+			CV_StealthSet(&cv_turnaxis[3],		cv_turnaxis[3].defaultvalue);
+			CV_StealthSet(&cv_moveaxis[3],		cv_moveaxis[3].defaultvalue);
+			CV_StealthSet(&cv_brakeaxis[3],		cv_brakeaxis[3].defaultvalue);
+			CV_StealthSet(&cv_aimaxis[3],		cv_aimaxis[3].defaultvalue);
+			CV_StealthSet(&cv_lookaxis[3],		cv_lookaxis[3].defaultvalue);
+			CV_StealthSet(&cv_fireaxis[3],		cv_fireaxis[3].defaultvalue);
+			CV_StealthSet(&cv_driftaxis[3],		cv_driftaxis[3].defaultvalue);
+			CV_StealthSet(&cv_lookbackaxis[3],	cv_lookbackaxis[3].defaultvalue);
 			break;
 		case 3:
-			CV_StealthSet(&cv_usejoystick3, cv_usejoystick3.defaultvalue);
-			CV_StealthSet(&cv_turnaxis3, cv_turnaxis3.defaultvalue);
-			CV_StealthSet(&cv_moveaxis3, cv_moveaxis3.defaultvalue);
-			CV_StealthSet(&cv_brakeaxis3, cv_brakeaxis3.defaultvalue);
-			CV_StealthSet(&cv_aimaxis3, cv_aimaxis3.defaultvalue);
-			CV_StealthSet(&cv_lookaxis3, cv_lookaxis3.defaultvalue);
-			CV_StealthSet(&cv_fireaxis3, cv_fireaxis3.defaultvalue);
-			CV_StealthSet(&cv_driftaxis3, cv_driftaxis3.defaultvalue);
-			CV_StealthSet(&cv_lookbackaxis3, cv_lookbackaxis3.defaultvalue);
+			CV_StealthSet(&cv_usejoystick[2],	cv_usejoystick[2].defaultvalue);
+			CV_StealthSet(&cv_turnaxis[2],		cv_turnaxis[2].defaultvalue);
+			CV_StealthSet(&cv_moveaxis[2],		cv_moveaxis[2].defaultvalue);
+			CV_StealthSet(&cv_brakeaxis[2],		cv_brakeaxis[2].defaultvalue);
+			CV_StealthSet(&cv_aimaxis[2],		cv_aimaxis[2].defaultvalue);
+			CV_StealthSet(&cv_lookaxis[2],		cv_lookaxis[2].defaultvalue);
+			CV_StealthSet(&cv_fireaxis[2],		cv_fireaxis[2].defaultvalue);
+			CV_StealthSet(&cv_driftaxis[2],		cv_driftaxis[2].defaultvalue);
+			CV_StealthSet(&cv_lookbackaxis[2],	cv_lookbackaxis[2].defaultvalue);
 			break;
 		case 2:
-			CV_StealthSet(&cv_usejoystick2, cv_usejoystick2.defaultvalue);
-			CV_StealthSet(&cv_turnaxis2, cv_turnaxis2.defaultvalue);
-			CV_StealthSet(&cv_moveaxis2, cv_moveaxis2.defaultvalue);
-			CV_StealthSet(&cv_brakeaxis2, cv_brakeaxis2.defaultvalue);
-			CV_StealthSet(&cv_aimaxis2, cv_aimaxis2.defaultvalue);
-			CV_StealthSet(&cv_lookaxis2, cv_lookaxis2.defaultvalue);
-			CV_StealthSet(&cv_fireaxis2, cv_fireaxis2.defaultvalue);
-			CV_StealthSet(&cv_driftaxis2, cv_driftaxis2.defaultvalue);
-			CV_StealthSet(&cv_lookbackaxis2, cv_lookbackaxis2.defaultvalue);
+			CV_StealthSet(&cv_usejoystick[1],	cv_usejoystick[1].defaultvalue);
+			CV_StealthSet(&cv_turnaxis[1],		cv_turnaxis[1].defaultvalue);
+			CV_StealthSet(&cv_moveaxis[1],		cv_moveaxis[1].defaultvalue);
+			CV_StealthSet(&cv_brakeaxis[1],		cv_brakeaxis[1].defaultvalue);
+			CV_StealthSet(&cv_aimaxis[1],		cv_aimaxis[1].defaultvalue);
+			CV_StealthSet(&cv_lookaxis[1],		cv_lookaxis[1].defaultvalue);
+			CV_StealthSet(&cv_fireaxis[1],		cv_fireaxis[1].defaultvalue);
+			CV_StealthSet(&cv_driftaxis[1],		cv_driftaxis[1].defaultvalue);
+			CV_StealthSet(&cv_lookbackaxis[1],	cv_lookbackaxis[1].defaultvalue);
 			break;
 		case 1:
 		default:
-			CV_StealthSet(&cv_usejoystick, cv_usejoystick.defaultvalue);
-			CV_StealthSet(&cv_turnaxis, cv_turnaxis.defaultvalue);
-			CV_StealthSet(&cv_moveaxis, cv_moveaxis.defaultvalue);
-			CV_StealthSet(&cv_brakeaxis, cv_brakeaxis.defaultvalue);
-			CV_StealthSet(&cv_aimaxis, cv_aimaxis.defaultvalue);
-			CV_StealthSet(&cv_lookaxis, cv_lookaxis.defaultvalue);
-			CV_StealthSet(&cv_fireaxis, cv_fireaxis.defaultvalue);
-			CV_StealthSet(&cv_driftaxis, cv_driftaxis.defaultvalue);
-			CV_StealthSet(&cv_lookbackaxis, cv_lookbackaxis.defaultvalue);
+			CV_StealthSet(&cv_usejoystick[0],	cv_usejoystick[0].defaultvalue);
+			CV_StealthSet(&cv_turnaxis[0],		cv_turnaxis[0].defaultvalue);
+			CV_StealthSet(&cv_moveaxis[0],		cv_moveaxis[0].defaultvalue);
+			CV_StealthSet(&cv_brakeaxis[0],		cv_brakeaxis[0].defaultvalue);
+			CV_StealthSet(&cv_aimaxis[0],		cv_aimaxis[0].defaultvalue);
+			CV_StealthSet(&cv_lookaxis[0],		cv_lookaxis[0].defaultvalue);
+			CV_StealthSet(&cv_fireaxis[0],		cv_fireaxis[0].defaultvalue);
+			CV_StealthSet(&cv_driftaxis[0],		cv_driftaxis[0].defaultvalue);
+			CV_StealthSet(&cv_lookbackaxis[0],	cv_lookbackaxis[0].defaultvalue);
 			break;
 	}
 
