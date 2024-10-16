@@ -316,13 +316,17 @@ consvar_t cv_usejoystick[MAXSPLITSCREENPLAYERS] = {
 consvar_t cv_joyport = {"joyport", "/dev/js0", CV_SAVE, joyport_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_joyport2 = {"joyport2", "/dev/js0", CV_SAVE, joyport_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}; //Alam: for later
 #endif
-consvar_t cv_joyscale = {"joyscale", "1", CV_SAVE|CV_CALL, NULL, I_JoyScale, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_joyscale2 = {"joyscale2", "1", CV_SAVE|CV_CALL, NULL, I_JoyScale2, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_joyscale3 = {"joyscale3", "1", CV_SAVE|CV_CALL, NULL, I_JoyScale3, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_joyscale4 = {"joyscale4", "1", CV_SAVE|CV_CALL, NULL, I_JoyScale4, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_joyscale[MAXSPLITSCREENPLAYERS] = {
+	{"joyscale", "1", CV_SAVE|CV_CALL, NULL, I_JoyScale, 0, NULL, NULL, 0, 0, NULL},
+	{"joyscale2", "1", CV_SAVE|CV_CALL, NULL, I_JoyScale2, 0, NULL, NULL, 0, 0, NULL},
+	{"joyscale3", "1", CV_SAVE|CV_CALL, NULL, I_JoyScale3, 0, NULL, NULL, 0, 0, NULL},
+	{"joyscale4", "1", CV_SAVE|CV_CALL, NULL, I_JoyScale4, 0, NULL, NULL, 0, 0, NULL}
+};
 #else
-consvar_t cv_joyscale = {"joyscale", "1", CV_SAVE|CV_HIDEN, NULL, NULL, 0, NULL, NULL, 0, 0, NULL}; //Alam: Dummy for save
-consvar_t cv_joyscale2 = {"joyscale2", "1", CV_SAVE|CV_HIDEN, NULL, NULL, 0, NULL, NULL, 0, 0, NULL}; //Alam: Dummy for save
+consvar_t cv_joyscale[2] = { //Alam: Dummy for save
+	{"joyscale", "1", CV_SAVE|CV_HIDEN, NULL, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyscale", "1", CV_SAVE|CV_HIDEN, NULL, NULL, 0, NULL, NULL, 0, 0, NULL}
+};
 #endif
 #if defined (__unix__) || defined (__APPLE__) || defined (UNIXCOMMON)
 consvar_t cv_mouse2port = {"mouse2port", "/dev/gpmdata", CV_SAVE, mouse2port_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -1078,10 +1082,11 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_joyport);
 	CV_RegisterVar(&cv_joyport2);
 #endif
-	CV_RegisterVar(&cv_joyscale);
-	CV_RegisterVar(&cv_joyscale2);
-	CV_RegisterVar(&cv_joyscale3);
-	CV_RegisterVar(&cv_joyscale4);
+
+	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+	{
+		CV_RegisterVar(&cv_joyscale[i]);
+	}
 
 	// s_sound.c
 	CV_RegisterVar(&cv_soundvolume);
