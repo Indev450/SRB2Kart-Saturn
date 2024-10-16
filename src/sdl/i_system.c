@@ -1055,26 +1055,26 @@ INT32 I_GetKey (void)
 //
 void I_JoyScale(void)
 {
-	Joystick[0].bGamepadStyle = cv_joyscale.value==0;
-	JoyInfo[0].scale = Joystick[0].bGamepadStyle?1:cv_joyscale.value;
+	Joystick[0].bGamepadStyle = cv_joyscale[0].value==0;
+	JoyInfo[0].scale = Joystick[0].bGamepadStyle?1:cv_joyscale[0].value;
 }
 
 void I_JoyScale2(void)
 {
-	Joystick[1].bGamepadStyle = cv_joyscale2.value==0;
-	JoyInfo[1].scale = Joystick[1].bGamepadStyle?1:cv_joyscale2.value;
+	Joystick[1].bGamepadStyle = cv_joyscale[1].value==0;
+	JoyInfo[1].scale = Joystick[1].bGamepadStyle?1:cv_joyscale[1].value;
 }
 
 void I_JoyScale3(void)
 {
-	Joystick[2].bGamepadStyle = cv_joyscale3.value==0;
-	JoyInfo[2].scale = Joystick[2].bGamepadStyle?1:cv_joyscale3.value;
+	Joystick[2].bGamepadStyle = cv_joyscale[2].value==0;
+	JoyInfo[2].scale = Joystick[2].bGamepadStyle?1:cv_joyscale[2].value;
 }
 
 void I_JoyScale4(void)
 {
-	Joystick[3].bGamepadStyle = cv_joyscale4.value==0;
-	JoyInfo[3].scale = Joystick[3].bGamepadStyle?1:cv_joyscale4.value;
+	Joystick[3].bGamepadStyle = cv_joyscale[3].value==0;
+	JoyInfo[3].scale = Joystick[3].bGamepadStyle?1:cv_joyscale[3].value;
 }
 
 // Cheat to get the device index for a joystick handle

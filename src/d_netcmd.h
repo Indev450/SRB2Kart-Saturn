@@ -48,10 +48,7 @@ extern consvar_t cv_usejoystick[4]; //MAXSPLITSCREENPLAYERS
 extern consvar_t cv_joyport;
 extern consvar_t cv_joyport2;
 #endif
-extern consvar_t cv_joyscale;
-extern consvar_t cv_joyscale2;
-extern consvar_t cv_joyscale3;
-extern consvar_t cv_joyscale4;
+extern consvar_t cv_joyscale[4]; //MAXSPLITSCREENPLAYERS
 
 // splitscreen with second mouse
 extern consvar_t cv_mouse2port;
