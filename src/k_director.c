@@ -38,6 +38,21 @@ struct directorinfo
 	INT32 boredom[MAXPLAYERS];       // how long has a given position had no credible attackers?
 } directorinfo;
 
+boolean K_DirectorIsPlayerAlone(void)
+{
+	UINT8 pingame = 0;
+
+	// Gotta check how many players are active at this moment.
+	for (UINT8 i = 0; i < MAXPLAYERS; i++)
+	{
+		if (!playeringame[i] || players[i].spectator)
+			continue;
+		pingame++;
+	}
+
+	return (pingame <= 1);
+}
+
 static inline boolean race_rules(void)
 {
 	return gametype == GT_RACE;
@@ -50,7 +65,7 @@ static fixed_t ScaleFromMap(fixed_t n, fixed_t scale)
 
 static boolean K_DirectorIsEnabled(void)
 {
-	return cv_director.value && !splitscreen && (gamestate == GS_LEVEL && (((stplyr && !stplyr->spectator) && (!playeringame[consoleplayer] || players[consoleplayer].spectator)) || (demo.playback && !demo.freecam && (!demo.title || !modeattacking))));
+	return cv_director.value && !splitscreen && (gamestate == GS_LEVEL && (((stplyr && !stplyr->spectator) && (!playeringame[consoleplayer] || players[consoleplayer].spectator)) || (demo.playback && !demo.freecam && (!demo.title || !modeattacking))) && !K_DirectorIsPlayerAlone());
 }
 
 void K_InitDirector(void)
