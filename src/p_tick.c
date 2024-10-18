@@ -224,6 +224,7 @@ void P_RemoveThinkerDelayed(thinker_t *thinker)
 	else if (thinker->references) // Usually gets cleared up in one frame; what's going on here, then?
 		CONS_Printf("Number of potentially faulty references: %d\n", thinker->references);
 #endif
+
 	if (thinker->references)
 		return;
 
