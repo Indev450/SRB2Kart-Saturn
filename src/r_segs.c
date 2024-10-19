@@ -660,13 +660,13 @@ static boolean R_IsFFloorTranslucent(visffloor_t *pfloor)
 // Renders all the thick sides in the given range.
 void R_RenderThickSideRange(drawseg_t *ds, INT32 x1, INT32 x2, ffloor_t *pfloor)
 {
-	size_t          pindex;
+	size_t          pindex = 0;
 	column_t *      col;
-	INT32             lightnum;
-	INT32            texnum;
+	INT32           lightnum;
+	INT32           texnum;
 	sector_t        tempsec;
-	INT32             templight;
-	INT32             i, p;
+	INT32           templight;
+	INT32           i, p;
 	fixed_t         bottombounds = viewheight << FRACBITS;
 	fixed_t         topbounds = (con_clipviewtop - 1) << FRACBITS;
 	fixed_t         offsetvalue = 0;
@@ -833,7 +833,7 @@ void R_RenderThickSideRange(drawseg_t *ds, INT32 x1, INT32 x2, ffloor_t *pfloor)
 
 			if (pfloor->flags & FF_FOG || rlight->flags & FF_FOG || (rlight->extra_colormap && rlight->extra_colormap->fog))
 				;
-			else if (P_ApplyLightOffset(lightnum, frontsector))
+			else if (P_ApplyLightOffset(rlight->lightnum, frontsector))
 				rlight->lightnum += curline->lightOffset;
 
 			p++;
@@ -1035,6 +1035,7 @@ void R_RenderThickSideRange(drawseg_t *ds, INT32 x1, INT32 x2, ffloor_t *pfloor)
 					// Check if the current light effects the colormap/lightlevel
 					rlight = &dc_lightlist[i];
 					lighteffect = !(dc_lightlist[i].flags & FF_NOSHADE);
+
 					if (lighteffect)
 					{
 						lightnum = rlight->lightnum;
@@ -1410,7 +1411,7 @@ static void R_RenderSegLoop (void)
 
 				if (dc_lightlist[i].extra_colormap)
 					;
-				else if (P_ApplyLightOffset(lightnum, frontsector))
+				else if (P_ApplyLightOffset(lightnum, curline->frontsector))
 					lightnum += curline->lightOffset;
 
 				if (lightnum < 0)
