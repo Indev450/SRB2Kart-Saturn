@@ -47,7 +47,11 @@ boolean K_DirectorIsPlayerAlone(void)
 	{
 		if (!playeringame[i] || players[i].spectator)
 			continue;
+
 		pingame++;
+
+		if (pingame >= 2) // we dont need to check further
+			break;
 	}
 
 	return (pingame <= 1);
