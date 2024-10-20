@@ -106,20 +106,8 @@ FUNCINLINE static ATTRINLINE PUREFUNC INT32 R_PointOnSegSide(fixed_t x, fixed_t 
     fixed_t ldx = line->v2->x - lx;
     fixed_t ldy = line->v2->y - ly;
 
-	if (!ldx)
-		return x <= lx ? ldy > 0 : ldy < 0;
-
-	if (!ldy)
-		return y <= ly ? ldx < 0 : ldx > 0;
-
-	x -= lx;
-	y -= ly;
-
-	// Try to quickly decide by looking at sign bits.
-	// also use a mask to avoid branch prediction
-	INT32 mask = (ldy ^ ldx ^ x ^ y) >> 31;
-	return (mask & ((ldy ^ x) < 0)) |  // (left is negative)
-	(~mask & (FixedMul(y, ldx>>FRACBITS) >= FixedMul(ldy>>FRACBITS, x)));
+	// heavily optimized version of R_PointOnSide, stolen from GZDoom.
+	return (INT64)(y - ly) * ldx + (INT64)(lx - x) * ldy > 0;
 }
 
 angle_t R_PointToAngle(fixed_t x, fixed_t y);
