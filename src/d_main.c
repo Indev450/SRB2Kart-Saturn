@@ -746,10 +746,10 @@ void D_SRB2Loop(void)
 
 		renderisnewtic = (realtics > 0 || singletics);
 
-		refreshdirmenu = 0; // not sure where to put this, here as good as any?
-
 		if (renderisnewtic)
 		{
+			refreshdirmenu = 0; // not sure where to put this, here as good as any?
+
 			// don't skip more than 10 frames at a time
 			// (fadein / fadeout cause massive frame skip!)
 			if (realtics > 8)
