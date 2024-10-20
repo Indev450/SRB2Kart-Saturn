@@ -3180,6 +3180,9 @@ void CL_RemovePlayer(INT32 playernum, INT32 reason)
 
 	LUAh_PlayerQuit(&players[playernum], reason); // Lua hook for player quitting
 
+	if (playernum == displayplayers[0] && !demo.playback)
+		displayplayers[0] = consoleplayer; // don't look through someone's view who isn't there
+
 	// Reset player data
 	CL_ClearPlayer(playernum);
 
@@ -3198,9 +3201,6 @@ void CL_RemovePlayer(INT32 playernum, INT32 reason)
 	{
 		RemoveAdminPlayer(playernum); // don't stay admin after you're gone
 	}
-
-	if (playernum == displayplayers[0] && !demo.playback)
-		displayplayers[0] = consoleplayer; // don't look through someone's view who isn't there
 
 	LUA_InvalidatePlayer(&players[playernum]);
 
