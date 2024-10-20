@@ -454,4 +454,6 @@ void P_CalcHeight(player_t *player);
 
 sector_t *P_ThingOnSpecial3DFloor(mobj_t *mo);
 
+void P_StartQuake(tic_t time, fixed_t intensity, fixed_t radius);
+
 #endif

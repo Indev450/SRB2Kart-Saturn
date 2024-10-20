@@ -75,6 +75,7 @@ line_t *portalclipline;
 INT32 portalclipstart, portalclipend;
 
 fixed_t rendertimefrac;
+fixed_t rendertimefrac_unpaused;
 fixed_t renderdeltatics;
 boolean renderisnewtic;
 
@@ -324,29 +325,6 @@ PUREFUNC INT32 R_PointOnSide(fixed_t x, fixed_t y, const node_t *restrict node)
 		(~mask & (FixedMul(y, node->dx>>FRACBITS) >= FixedMul(node->dy>>FRACBITS, x)));
 }
 
-// killough 5/2/98: reformatted
-PUREFUNC INT32 R_PointOnSegSide(fixed_t x, fixed_t y, const seg_t *line)
-{
-	fixed_t lx = line->v1->x;
-	fixed_t ly = line->v1->y;
-	fixed_t ldx = line->v2->x - lx;
-	fixed_t ldy = line->v2->y - ly;
-
-	if (!ldx)
-		return x <= lx ? ldy > 0 : ldy < 0;
-
-	if (!ldy)
-		return y <= ly ? ldx < 0 : ldx > 0;
-
-	x -= lx;
-	y -= ly;
-
-	// Try to quickly decide by looking at sign bits.
-	if ((ldy ^ ldx ^ x ^ y) < 0)
-		return (ldy ^ x) < 0;          // (left is negative)
-	return FixedMul(y, ldx>>FRACBITS) >= FixedMul(ldy>>FRACBITS, x);
-}
-
 //
 // R_PointToAngle
 // To get a global angle from cartesian coordinates,
@@ -456,6 +434,11 @@ angle_t R_PlayerSliptideAngle(player_t *player)
 INT32 R_GetHudUncap(void)
 {
 	return cv_uncappedhud.value ? rendertimefrac & FRACMASK : 0;
+}
+
+INT32 R_GetMenuUncap(void)
+{
+	return cv_uncappedhud.value ? rendertimefrac_unpaused & FRACMASK : 0;
 }
 
 //
@@ -979,6 +962,16 @@ void R_ExecuteSetViewSize(void)
 
 	R_InitTextureMapping();
 
+	// why did we calc all the software crap?
+#ifdef HWRENDER
+	if (rendermode == render_opengl)
+	{
+		HWR_SetViewSize();
+		am_recalc = true;
+		return;
+	}
+#endif
+
 	// thing clipping
 	for (i = 0; i < viewwidth; i++)
 		screenheightarray[i] = (INT16)viewheight;
@@ -987,27 +980,24 @@ void R_ExecuteSetViewSize(void)
 	R_SetSkyScale();
 
 	// planes
-	if (rendermode == render_soft)
+	// this is only used for planes rendering in software mode
+	j = viewheight*16;
+	for (i = 0; i < j; i++)
 	{
-		// this is only used for planes rendering in software mode
-		j = viewheight*16;
-		for (i = 0; i < j; i++)
-		{
-			dy = (i - viewheight*8)<<FRACBITS;
-			dy = FixedMul(abs(dy), fovtan);
-			yslopetab[i] = FixedDiv(centerx*FRACUNIT, dy);
-		}
-		
-		if (ds_su)
-			Z_Free(ds_su);
-		if (ds_sv)
-			Z_Free(ds_sv);
-		if (ds_sz)
-			Z_Free(ds_sz);
-
-		ds_su = ds_sv = ds_sz = NULL;
-		ds_sup = ds_svp = ds_szp = NULL;
+		dy = (i - viewheight*8)<<FRACBITS;
+		dy = FixedMul(abs(dy), fovtan);
+		yslopetab[i] = FixedDiv(centerx*FRACUNIT, dy);
 	}
+		
+	if (ds_su)
+		Z_Free(ds_su);
+	if (ds_sv)
+		Z_Free(ds_sv);
+	if (ds_sz)
+		Z_Free(ds_sz);
+
+	ds_su = ds_sv = ds_sz = NULL;
+	ds_sup = ds_svp = ds_szp = NULL;
 
 	memset(scalelight, 0xFF, sizeof(scalelight));
 
@@ -1028,12 +1018,6 @@ void R_ExecuteSetViewSize(void)
 			scalelight[i][j] = colormaps + level*256;
 		}
 	}
-
-	// continue to do the software setviewsize as long as we use the reference software view
-#ifdef HWRENDER
-	if (rendermode != render_soft)
-		HWR_SetViewSize();
-#endif
 
 	am_recalc = true;
 }
@@ -1349,10 +1333,7 @@ void R_SkyboxFrame(player_t *player)
 	else
 		newview->sector = R_PointInSubsector(newview->x, newview->y)->sector;
 
-	// newview->sin = FINESINE(viewangle>>ANGLETOFINESHIFT);
-	// newview->cos = FINECOSINE(viewangle>>ANGLETOFINESHIFT);
-
-	R_InterpolateView(R_UsingFrameInterpolation() ? rendertimefrac : FRACUNIT, false);
+	R_InterpolateView(R_UsingFrameInterpolation() ? (demo.playback && demo.freecam) ? rendertimefrac_unpaused : rendertimefrac : FRACUNIT, false);
 }
 
 void R_SetupFrame(player_t *player, boolean skybox)
@@ -1419,25 +1400,23 @@ void R_SetupFrame(player_t *player, boolean skybox)
 		thiscam->chase = false;
 
 	newview->sky = !skybox;
-	if (player->awayviewtics)
+
+	if (player->awayviewtics) // cut-away view stuff
 	{
-		// cut-away view stuff
 		viewmobj = player->awayviewmobj; // should be a MT_ALTVIEWMAN
 		I_Assert(viewmobj != NULL);
 		newview->z = viewmobj->z + 20*FRACUNIT;
 		newview->aim = player->awayviewaiming;
 		newview->angle = viewmobj->angle;
 	}
-	else if (!player->spectator && (thiscam && chasecam))
-	// use outside cam view
+	else if (!player->spectator && (thiscam && chasecam)) // use outside cam view
 	{
 		viewmobj = NULL;
 		newview->z = thiscam->z + (thiscam->height>>1);
 		newview->aim = thiscam->aiming;
 		newview->angle = thiscam->angle;
 	}
-	else
-	// use the player's eyes view
+	else // use the player's eyes view
 	{
 		newview->z = player->viewz;
 
@@ -1499,10 +1478,7 @@ void R_SetupFrame(player_t *player, boolean skybox)
 			newview->sector = R_PointInSubsector(newview->x, newview->y)->sector;
 	}
 
-	// newview->sin = FINESINE(viewangle>>ANGLETOFINESHIFT);
-	// newview->cos = FINECOSINE(viewangle>>ANGLETOFINESHIFT);
-
-	R_InterpolateView(R_UsingFrameInterpolation() ? rendertimefrac : FRACUNIT, false);
+	R_InterpolateView(R_UsingFrameInterpolation() ? (demo.playback && demo.freecam) ? rendertimefrac_unpaused : rendertimefrac : FRACUNIT, false);
 }
 
 #define ANGLED_PORTALS
@@ -1707,7 +1683,7 @@ void R_RenderPlayerView(player_t *player)
 	else
 	{
 		portalclipstart = 0;
-		portalclipend = viewwidth-1;
+		portalclipend = viewwidth;
 		R_ClearClipSegs();
 	}
 	R_ClearDrawSegs();

@@ -1992,6 +1992,29 @@ INT32 G_CountPlayersPotentiallyViewable(boolean active)
 }
 
 //
+// G_FixCamera
+// Reset camera position, angle and interpolation on a view
+// after changing state.
+//
+static void G_FixCamera(UINT8 view)
+{
+	player_t *player = &players[displayplayers[view - 1]];
+
+	// The order of displayplayers can change, which would
+	// invalidate localangle.
+	localangle[view - 1] = player->cmd.angleturn;
+
+	P_ResetCamera(player, &camera[view - 1]);
+
+	// Make sure the viewport doesn't interpolate at all into
+	// its new position -- just snap instantly into place.
+
+	// Why does it need to be done twice?
+	R_ResetViewInterpolation(view);
+	R_ResetViewInterpolation(view);
+}
+
+//
 // G_ResetView
 // Correct a viewpoint to playernum or the next available, wraps forward.
 // Also promotes splitscreen up to available viewable players.
@@ -2003,7 +2026,6 @@ void G_ResetView(UINT8 viewnum, INT32 playernum, boolean onlyactive)
 	UINT8 viewd;
 
 	INT32    *displayplayerp;
-	camera_t *camerap;
 
 	INT32 olddisplayplayer;
 	INT32 playersviewable;
@@ -2040,30 +2062,20 @@ void G_ResetView(UINT8 viewnum, INT32 playernum, boolean onlyactive)
 
 	/* Focus our target view first so that we don't take its player. */
 	(*displayplayerp) = playernum;
-	if ((*displayplayerp) != olddisplayplayer)
-	{
-		camerap = &camera[viewnum-1];
-		P_ResetCamera(&players[(*displayplayerp)], camerap);
 
-		// Make sure the viewport doesn't interpolate at all into
-		// its new position -- just snap instantly into place.
-		R_ResetViewInterpolation(viewnum);
-	}
-
+	/* If a viewpoint changes, reset the camera to clear uninitialized memory. */
 	if (viewnum > splits)
 	{
-		for (viewd = splits+1; viewd < viewnum; ++viewd)
+		for (viewd = splits+1; viewd <= viewnum; ++viewd)
 		{
-			displayplayerp = (&displayplayers[viewd-1]);
-			camerap = &camera[viewd];
-
-			(*displayplayerp) = G_FindView(0, viewd, onlyactive, false);
-
-			P_ResetCamera(&players[(*displayplayerp)], camerap);
-
-			// Make sure the viewport doesn't interpolate at all into
-			// its new position -- just snap instantly into place.
-			R_ResetViewInterpolation(viewd);
+			G_FixCamera(viewd);
+		}
+	}
+	else
+	{
+		if ((*displayplayerp) != olddisplayplayer)
+		{
+			G_FixCamera(viewnum);
 		}
 	}
 
@@ -4368,6 +4380,7 @@ void G_InitNew(UINT8 pencoremode, const char *mapname, boolean resetplayer, bool
 	else
 	{
 		LUAh_MapChange(gamemap);
+		S_CheckMap();
 		G_DoLoadLevel(resetplayer);
 	}
 
@@ -6374,8 +6387,18 @@ void G_BeginRecording(void)
 	// Full replay title
 	demo_p += 64;
 	{
+		char demotitlename[65];
 		char *title = G_BuildMapTitle(gamemap);
-		snprintf(demo.titlename, 64, "%s - %s", title, modeattacking ? "Time Attack" : connectedservername);
+
+		// Print to a separate temp buffer instead of demo.titlename, so we can use it in M_TextInputSetString
+		snprintf(demotitlename, 64, "%s - %s", title, modeattacking ? "Time Attack" : connectedservername);
+
+		// Init just in case it isn't initialized already
+		M_TextInputInit(&demo.titlenameinput, demo.titlename, sizeof(demo.titlename));
+
+		// This will indirectly assign to demo.titlename too
+		M_TextInputSetString(&demo.titlenameinput, demotitlename);
+
 		Z_Free(title);
 	}
 
@@ -8365,7 +8388,6 @@ void G_SaveDemo(void)
 
 boolean G_DemoTitleResponder(event_t *ev)
 {
-	size_t len;
 	INT32 ch;
 
 	if (ev->type != ev_keydown)
@@ -8386,28 +8408,7 @@ boolean G_DemoTitleResponder(event_t *ev)
 		return true;
 	}
 
-	if ((ch >= HU_FONTSTART && ch <= HU_FONTEND && hu_font[ch-HU_FONTSTART])
-	  || ch == ' ') // Allow spaces, of course
-	{
-		len = strlen(demo.titlename);
-		if (len < 64)
-		{
-			demo.titlename[len+1] = 0;
-			demo.titlename[len] = cv_keyboardlayout.value == 3 ? CON_ShitAndAltGrChar(ch) : CON_ShiftChar(ch);
-		}
-	}
-	else if (ch == KEY_BACKSPACE)
-	{
-		if (shiftdown)
-			memset(demo.titlename, 0, sizeof(demo.titlename));
-		else
-		{
-			len = strlen(demo.titlename);
-
-			if (len > 0)
-				demo.titlename[len-1] = 0;
-		}
-	}
+	M_TextInputHandle(&demo.titlenameinput, ch);
 
 	return true;
 }

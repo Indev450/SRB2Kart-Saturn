@@ -568,7 +568,7 @@ static boolean D_Display(void)
 		V_DrawScaledPatch(viewwindowx + (BASEVIDWIDTH - SHORT(patch->width))/2, py, V_SNAPTOTOP, patch);
 	}
 
-	if (demo.rewinding)
+	if (rendermode == render_soft && demo.rewinding)
 		V_DrawFadeScreen(TC_RAINBOW, (leveltime & 0x20) ? SKINCOLOR_PASTEL : SKINCOLOR_MOONSLAM);
 
 	// vid size change is now finished if it was on...
@@ -654,7 +654,7 @@ static boolean D_Display(void)
 // =========================================================================
 
 tic_t rendergametic;
-static int menuInputDelayTimer = 0;
+static SINT8 menuInputDelayTimer = 0;
 
 void D_SRB2Loop(void)
 {
@@ -792,9 +792,10 @@ void D_SRB2Loop(void)
 				event_t myev;
 				myev.type = ev_keydown;
 
-				menuInputDelayTimer++;
+				if (menuInputDelayTimer < 19)
+					menuInputDelayTimer++;
 
-				if (menuInputDelayTimer >= 19) // TICRATE * ( (k+2) (1 - [wz + h + j - q]^2 - [(gk + 2g + k + 1)(h + j) + h - z]^2 - [16(k + 1)^3(k + 2)(n + 1)^2 + 1 - f^2]^2 calculated by my butt
+				if (menuInputDelayTimer == 19) // TICRATE * ( (k+2) (1 - [wz + h + j - q]^2 - [(gk + 2g + k + 1)(h + j) + h - z]^2 - [16(k + 1)^3(k + 2)(n + 1)^2 + 1 - f^2]^2 calculated by my butt
 				{
 					if (DPADUPSCROLL)
 						DPADSCROLLINPUT(KEY_UPARROW)
@@ -825,11 +826,14 @@ void D_SRB2Loop(void)
 			{
 				rendertimefrac = FRACUNIT;
 			}
+
+			rendertimefrac_unpaused = g_time.timefrac;
 		}
 		else
 		{
 			renderdeltatics = realtics * FRACUNIT;
 			rendertimefrac = FRACUNIT;
+			rendertimefrac_unpaused = FRACUNIT;
 		}
 
 		if ((interp || doDisplay) && !frameskip)

@@ -309,9 +309,10 @@ FTransform atransform;
 // Float variants of viewx, viewy, viewz, etc.
 static float gr_viewx, gr_viewy, gr_viewz;
 float gr_viewsin, gr_viewcos;
+static float gr_viewludsin, gr_viewludcos;
 
 static angle_t gr_aimingangle;
-static float gr_viewludsin, gr_viewludcos;
+static void HWR_SetTransformAiming(FTransform *trans);
 
 // ==========================================================================
 // Visual portals (attr. Hannu Hanhi)
@@ -651,7 +652,7 @@ static FUINT HWR_CalcSlopeLight(FUINT lightnum, pslope_t *slope)
 
 // HWR_RenderPlane
 // Render a floor or ceiling convex polygon
-void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, boolean isceiling, fixed_t fixedheight, FBITFIELD PolyFlags, INT32 lightlevel, lumpnum_t lumpnum, sector_t *FOFsector, UINT8 alpha, extracolormap_t *planecolormap)
+static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, boolean isceiling, fixed_t fixedheight, FBITFIELD PolyFlags, INT32 lightlevel, lumpnum_t lumpnum, sector_t *FOFsector, UINT8 alpha, extracolormap_t *planecolormap)
 {
 	FSurfaceInfo Surf;
 	FOutVector *v3d;
@@ -5130,15 +5131,12 @@ void HWR_DrawSkyBackground(float fpov)
 
 	//04/01/2000: Hurdler: added for T&L
 	//                     It should replace all other gr_viewxxx when finished
-	if (!atransform.shearing)
-		dometransform.anglex = (float)(aimingangle>>ANGLETOFINESHIFT)*(360.0f/(float)FINEANGLES);
+	HWR_SetTransformAiming(&dometransform);
 	dometransform.angley = (float)((viewangle-ANGLE_270)>>ANGLETOFINESHIFT)*(360.0f/(float)FINEANGLES);
 
 	dometransform.flip = atransform.flip;
 	dometransform.mirror = atransform.mirror;
 	dometransform.mirrorflip = atransform.mirrorflip;
-	dometransform.shearing = atransform.shearing;
-	dometransform.viewaiming = atransform.viewaiming;
 
 	dometransform.scalex = 1;
 	dometransform.scaley = (float)vid.width/vid.height;
@@ -5199,6 +5197,25 @@ void HWR_SetViewSize(void)
 	HWD.pfnFlushScreenTextures();
 }
 
+// Set view aiming, for the sky dome, the skybox,
+// and the normal view, all with a single function.
+static void HWR_SetTransformAiming(FTransform *trans)
+{
+	if (cv_grshearing.value)
+	{
+		fixed_t fixedaiming = AIMINGTODY(aimingangle);
+		trans->viewaiming = FIXED_TO_FLOAT(fixedaiming);
+		trans->shearing = true;
+		gr_aimingangle = 0;
+	}
+	else
+	{
+		trans->shearing = false;
+		gr_aimingangle = aimingangle;
+	}
+	trans->anglex = (float)(gr_aimingangle>>ANGLETOFINESHIFT)*(360.0f/(float)FINEANGLES);
+}
+
 void HWR_SetTransform(float fpov, player_t *player)
 {
 	postimg_t *postprocessor = &postimgtype[0];
@@ -5221,22 +5238,11 @@ void HWR_SetTransform(float fpov, player_t *player)
 	atransform.scaley = (float)vid.width/vid.height;
 	atransform.scalez = 1;
 
-	// 14042019
-	gr_aimingangle = aimingangle;
-	atransform.shearing = false;
-	atransform.viewaiming = aimingangle;
-
-	if (cv_grshearing.value)
-	{
-		gr_aimingangle = 0;
-		atransform.shearing = true;
-	}
+	HWR_SetTransformAiming(&atransform);
+	atransform.angley = (float)(viewangle>>ANGLETOFINESHIFT)*(360.0f/(float)FINEANGLES);
 
 	gr_viewludsin = FIXED_TO_FLOAT(FINECOSINE(gr_aimingangle>>ANGLETOFINESHIFT));
 	gr_viewludcos = FIXED_TO_FLOAT(-FINESINE(gr_aimingangle>>ANGLETOFINESHIFT));
-
-	atransform.anglex = (float)(gr_aimingangle>>ANGLETOFINESHIFT)*(360.0f/(float)FINEANGLES);
-	atransform.angley = (float)(viewangle>>ANGLETOFINESHIFT)*(360.0f/(float)FINEANGLES);
 
 	atransform.fovxangle = fpov; // Tails
 	atransform.fovyangle = fpov; // Tails
