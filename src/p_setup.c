@@ -319,8 +319,6 @@ static void P_ClearSingleMapHeaderInfo(INT16 i)
 	mapheaderinfo[num]->saveoverride = SAVE_DEFAULT;
 	mapheaderinfo[num]->levelflags = 0;
 	mapheaderinfo[num]->menuflags = (mainwads ? 0 : LF2_EXISTSHACK); // see p_setup.c - prevents replacing maps in addons with easier versions
-	// TODO grades support for delfile (pfft yeah right)
-	P_DeleteGrades(num);
 	// SRB2Kart
 	//mapheaderinfo[num]->automap = false;
 	mapheaderinfo[num]->mobj_scale = FRACUNIT;
@@ -341,103 +339,6 @@ void P_AllocMapHeader(INT16 i)
 		mapheaderinfo[i]->grades = NULL;
 	}
 	P_ClearSingleMapHeaderInfo(i + 1);
-}
-
-/** NiGHTS Grades are a special structure,
-  * we initialize them here.
-  *
-  * \param i Index of header to allocate grades for
-  * \param mare The mare we're adding grades for
-  * \param grades the string from DeHackEd, we work with it ourselves
-  */
-void P_AddGradesForMare(INT16 i, UINT8 mare, char *gtext)
-{
-	INT32 g;
-	char *spos = gtext;
-
-	CONS_Debug(DBG_SETUP, "Map %d Mare %d: ", i+1, (UINT16)mare+1);
-
-	if (mapheaderinfo[i]->numGradedMares < mare+1)
-	{
-		mapheaderinfo[i]->numGradedMares = mare+1;
-		mapheaderinfo[i]->grades = Z_Realloc(mapheaderinfo[i]->grades, sizeof(nightsgrades_t) * mapheaderinfo[i]->numGradedMares, PU_STATIC, NULL);
-	}
-
-	for (g = 0; g < 6; ++g)
-	{
-		// Allow "partial" grading systems
-		if (spos != NULL)
-		{
-			mapheaderinfo[i]->grades[mare].grade[g] = atoi(spos);
-			CONS_Debug(DBG_SETUP, "%u ", atoi(spos));
-			// Grab next comma
-			spos = strchr(spos, ',');
-			if (spos)
-				++spos;
-		}
-		else
-		{
-			// Grade not reachable
-			mapheaderinfo[i]->grades[mare].grade[g] = UINT32_MAX;
-		}
-	}
-
-	CONS_Debug(DBG_SETUP, "\n");
-}
-
-/** And this removes the grades safely.
-  *
-  * \param i The header to remove grades from
-  */
-void P_DeleteGrades(INT16 i)
-{
-	if (mapheaderinfo[i]->grades)
-		Z_Free(mapheaderinfo[i]->grades);
-
-	mapheaderinfo[i]->grades = NULL;
-	mapheaderinfo[i]->numGradedMares = 0;
-}
-
-/** And this fetches the grades
-  *
-  * \param pscore The player's score.
-  * \param map The game map.
-  * \param mare The mare to test.
-  */
-UINT8 P_GetGrade(UINT32 pscore, INT16 map, UINT8 mare)
-{
-	INT32 i;
-
-	// Determining the grade
-	if (mapheaderinfo[map-1] && mapheaderinfo[map-1]->grades && mapheaderinfo[map-1]->numGradedMares >= mare + 1)
-	{
-		INT32 pgrade = 0;
-		for (i = 0; i < 6; ++i)
-		{
-			if (pscore >= mapheaderinfo[map-1]->grades[mare].grade[i])
-				++pgrade;
-		}
-		return (UINT8)pgrade;
-	}
-	return 0;
-}
-
-UINT8 P_HasGrades(INT16 map, UINT8 mare)
-{
-	// Determining the grade
-	// Mare 0 is treated as overall and is true if ANY grades exist
-	if (mapheaderinfo[map-1] && mapheaderinfo[map-1]->grades
-		&& (mare == 0 || mapheaderinfo[map-1]->numGradedMares >= mare))
-		return true;
-	return false;
-}
-
-UINT32 P_GetScoreForGrade(INT16 map, UINT8 mare, UINT8 grade)
-{
-	// Get the score for the grade... if it exists
-	if (grade == GRADE_F || grade > GRADE_S || !P_HasGrades(map, mare)) return 0;
-
-	return mapheaderinfo[map-1]->grades[mare].grade[grade-1];
 }
 
 // Loads the vertexes for a level.
@@ -2435,7 +2336,6 @@ static void P_SetupCamera(UINT8 pnum, camera_t *cam)
 		switch (gametype)
 		{
 		case GT_MATCH:
-		case GT_TAG:
 			thing = deathmatchstarts[0];
 			break;
 
@@ -2842,44 +2742,7 @@ boolean P_SetupLevel(boolean skipprecip, boolean reloadinggamestate)
 	if (modeattacking == ATTACKING_RECORD && !demo.playback)
 		P_LoadRecordGhosts();
 
-	if (G_TagGametype())
-	{
-		INT32 realnumplayers = 0;
-		INT32 playersactive[MAXPLAYERS];
-
-		//I just realized how problematic this code can be.
-		//D_NumPlayers() will not always cover the scope of the netgame.
-		//What if one player is node 0 and the other node 31?
-		//The solution? Make a temp array of all players that are currently playing and pick from them.
-		//Future todo? When a player leaves, shift all nodes down so D_NumPlayers() can be used as intended?
-		//Also, you'd never have to loop through all 32 players slots to find anything ever again.
-		for (i = 0; i < MAXPLAYERS; i++)
-		{
-			if (playeringame[i] && !players[i].spectator)
-			{
-				playersactive[realnumplayers] = i; //stores the player's node in the array.
-				realnumplayers++;
-			}
-		}
-
-		if (realnumplayers) //this should also fix the dedicated crash bug. You only pick a player if one exists to be picked.
-		{
-			i = P_RandomKey(realnumplayers);
-			players[playersactive[i]].pflags |= PF_TAGIT; //choose our initial tagger before map starts.
-
-			// Taken and modified from G_DoReborn()
-			// Remove the player so he can respawn elsewhere.
-			// first dissasociate the corpse
-			if (players[playersactive[i]].mo)
-				P_RemoveMobj(players[playersactive[i]].mo);
-
-			G_SpawnPlayer(playersactive[i], false); //respawn the lucky player in his dedicated spawn location.
-		}
-		else
-			CONS_Printf(M_GetText("No player currently available to become IT. Awaiting available players.\n"));
-
-	}
-	else if (G_RaceGametype() && server)
+	if (G_RaceGametype() && server)
 		CV_StealthSetValue(&cv_numlaps,
 			((netgame || multiplayer) && cv_basenumlaps.value
 				&& (!(mapheaderinfo[gamemap - 1]->levelflags & LF_SECTIONRACE)

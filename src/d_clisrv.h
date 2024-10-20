@@ -182,14 +182,6 @@ typedef struct
 {
 	UINT32 randomseed;
 
-	// CTF flag stuff
-	SINT8 flagplayer[2];
-	INT32 flagloose[2];
-	INT32 flagflags[2];
-	fixed_t flagx[2];
-	fixed_t flagy[2];
-	fixed_t flagz[2];
-
 	UINT32 ingame;  // Spectator bit for each player
 	INT32 ctfteam[MAXPLAYERS]; // Which team? (can't be 1 bit, since in regular Match there are no teams)
 

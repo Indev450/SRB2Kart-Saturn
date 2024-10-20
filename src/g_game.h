@@ -381,14 +381,11 @@ boolean G_DemoTitleResponder(event_t *ev);
 
 INT32 G_GetGametypeByName(const char *gametypestr);
 boolean G_IsSpecialStage(INT32 mapnum);
-boolean G_GametypeUsesLives(void);
-boolean G_GametypeHasTeams(void);
 boolean G_GametypeHasSpectators(void);
 boolean G_BattleGametype(void);
 UINT8 G_SometimesGetDifferentGametype(UINT8 prefgametype);
 UINT8 G_GetGametypeColor(INT16 gt);
 boolean G_RaceGametype(void);
-boolean G_TagGametype(void);
 void G_ExitLevel(void);
 void G_NextLevel(void);
 void G_Continue(void);

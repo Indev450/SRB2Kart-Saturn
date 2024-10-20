@@ -856,110 +856,6 @@ static void resynch_read_player(resynch_pak *rsp)
 	P_SetThingPosition(players[i].mo);
 }
 
-static inline void resynch_write_ctf(resynchend_pak *rst)
-{
-	mobj_t *mflag;
-	UINT8 i, j;
-
-	for (i = 0, mflag = redflag; i < 2; ++i, mflag = blueflag)
-	{
-		rst->flagx[i] = rst->flagy[i] = rst->flagz[i] = 0;
-		rst->flagloose[i] = rst->flagflags[i] = 0;
-		rst->flagplayer[i] = -1;
-
-		if (!mflag)
-		{
-			// Should be held by a player
-			for (j = 0; j < MAXPLAYERS; ++j)
-			{
-				// GF_REDFLAG is 1, GF_BLUEFLAG is 2
-				// redflag handling is i=0, blueflag is i=1
-				// so check for gotflag == (i+1)
-				if (!playeringame[j] || players[j].gotflag != (i+1))
-					continue;
-				rst->flagplayer[i] = (SINT8)j;
-				break;
-			}
-			if (j == MAXPLAYERS) // fine, no I_Error
-			{
-				CONS_Alert(CONS_ERROR, "One of the flags has gone completely missing...\n");
-				rst->flagplayer[i] = -2;
-			}
-			continue;
-		}
-
-		rst->flagx[i] = (fixed_t)LONG(mflag->x);
-		rst->flagy[i] = (fixed_t)LONG(mflag->y);
-		rst->flagz[i] = (fixed_t)LONG(mflag->z);
-		rst->flagflags[i] = LONG(mflag->flags2);
-		rst->flagloose[i] = LONG(mflag->fuse); // Dropped or not?
-	}
-}
-
-static inline void resynch_read_ctf(resynchend_pak *p)
-{
-	UINT8 i;
-
-	for (i = 0; i < MAXPLAYERS; ++i)
-		players[i].gotflag = 0;
-
-	// Red flag
-	if (p->flagplayer[0] == -2)
-		; // The server doesn't even know what happened to it...
-	else if (p->flagplayer[0] != -1) // Held by a player
-	{
-		if (!playeringame[p->flagplayer[0]])
-			 I_Error("Invalid red flag player %d who isn't in the game!", (INT32)p->flagplayer[0]);
-		players[p->flagplayer[0]].gotflag = GF_REDFLAG;
-		if (redflag)
-		{
-			P_RemoveMobj(redflag);
-			redflag = NULL;
-		}
-	}
-	else
-	{
-		if (!redflag)
-			redflag = P_SpawnMobj(0,0,0,MT_REDFLAG);
-
-		P_UnsetThingPosition(redflag);
-		redflag->x = (fixed_t)LONG(p->flagx[0]);
-		redflag->y = (fixed_t)LONG(p->flagy[0]);
-		redflag->z = (fixed_t)LONG(p->flagz[0]);
-		redflag->flags2 = LONG(p->flagflags[0]);
-		redflag->fuse = LONG(p->flagloose[0]);
-		P_SetThingPosition(redflag);
-	}
-
-	// Blue flag
-	if (p->flagplayer[1] == -2)
-		; // The server doesn't even know what happened to it...
-	else if (p->flagplayer[1] != -1) // Held by a player
-	{
-		if (!playeringame[p->flagplayer[1]])
-			 I_Error("Invalid blue flag player %d who isn't in the game!", (INT32)p->flagplayer[1]);
-		players[p->flagplayer[1]].gotflag = GF_BLUEFLAG;
-		if (blueflag)
-		{
-			P_RemoveMobj(blueflag);
-			blueflag = NULL;
-		}
-	}
-	else
-	{
-		if (!blueflag)
-			blueflag = P_SpawnMobj(0,0,0,MT_BLUEFLAG);
-
-		P_UnsetThingPosition(blueflag);
-		blueflag->x = (fixed_t)LONG(p->flagx[1]);
-		blueflag->y = (fixed_t)LONG(p->flagy[1]);
-		blueflag->z = (fixed_t)LONG(p->flagz[1]);
-		blueflag->flags2 = LONG(p->flagflags[1]);
-		blueflag->fuse = LONG(p->flagloose[1]);
-		P_SetThingPosition(blueflag);
-	}
-}
-
 static inline void resynch_write_others(resynchend_pak *rst)
 {
 	UINT8 i;
@@ -1060,8 +956,6 @@ static void SV_SendResynch(INT32 node)
 		netbuffer->packettype = PT_RESYNCHEND;
 
 		netbuffer->u.resynchend.randomseed = P_GetRandSeed();
-		if (gametype == GT_CTF)
-			resynch_write_ctf(&netbuffer->u.resynchend);
 		resynch_write_others(&netbuffer->u.resynchend);
 
 		HSendPacket(node, true, 0, (sizeof(resynchend_pak)));
@@ -1668,20 +1562,10 @@ static void SV_SendPlayerInfo(INT32 node)
 		//No, don't do that, you fuckface.
 		memset(netbuffer->u.playerinfo[i].address, 0, 4);
 
-		if (G_GametypeHasTeams())
-		{
-			if (!players[i].ctfteam)
-				netbuffer->u.playerinfo[i].team = 255;
-			else
-				netbuffer->u.playerinfo[i].team = (UINT8)players[i].ctfteam;
-		}
+		if (players[i].spectator)
+			netbuffer->u.playerinfo[i].team = 255;
 		else
-		{
-			if (players[i].spectator)
-				netbuffer->u.playerinfo[i].team = 255;
-			else
-				netbuffer->u.playerinfo[i].team = 0;
-		}
+			netbuffer->u.playerinfo[i].team = 0;
 
 		netbuffer->u.playerinfo[i].score = LONG(players[i].score);
 		netbuffer->u.playerinfo[i].timeinserver = SHORT((UINT16)(players[i].jointime / TICRATE));
@@ -3263,9 +3147,6 @@ void CL_RemovePlayer(INT32 playernum, INT32 reason)
 
 	if (K_IsPlayerWanted(&players[playernum]))
 		K_CalculateBattleWanted();
-
-	if (gametype == GT_CTF)
-		P_PlayerFlagBurst(&players[playernum], false); // Don't take the flag with you!
 
 	// If in a special stage, redistribute the player's rings across
 	// the remaining players.
@@ -5634,9 +5515,6 @@ static void HandlePacketFromPlayer(SINT8 node)
 			resynch_local_inprogress = false;
 
 			P_SetRandSeed(netbuffer->u.resynchend.randomseed);
-
-			if (gametype == GT_CTF)
-				resynch_read_ctf(&netbuffer->u.resynchend);
 			resynch_read_others(&netbuffer->u.resynchend);
 
 			break;

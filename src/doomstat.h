@@ -324,15 +324,6 @@ enum GameType // SRB2Kart
 	GT_RACE = 0, // also used in record attack
 	GT_MATCH, // battle, but renaming would be silly
 	NUMGAMETYPES,
-
-	// TODO: This is *horrid*. Remove this hack ASAP.
-	// the following have been left in on account of just not wanting to deal with removing all the checks for them
-	GT_COOP,
-	GT_COMPETITION,
-	GT_TEAMMATCH,
-	GT_TAG,
-	GT_HIDEANDSEEK,
-	GT_CTF
 };
 // If you alter this list, update dehacked.c, and Gametype_Names in g_game.c
 

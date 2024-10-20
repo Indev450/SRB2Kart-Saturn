@@ -3307,34 +3307,19 @@ static void Newgametype_OnChange(void)
 			P_AllocMapHeader((INT16)(cv_nextmap.value-1));
 
 		if ((cv_newgametype.value == GT_RACE && !(mapheaderinfo[cv_nextmap.value-1]->typeoflevel & TOL_RACE)) || // SRB2kart
-			((cv_newgametype.value == GT_MATCH || cv_newgametype.value == GT_TEAMMATCH) && !(mapheaderinfo[cv_nextmap.value-1]->typeoflevel & TOL_MATCH)))
+			(cv_newgametype.value == GT_MATCH && !(mapheaderinfo[cv_nextmap.value-1]->typeoflevel & TOL_MATCH)))
 		{
 			INT32 value = 0;
 
 			switch (cv_newgametype.value)
 			{
-				case GT_COOP:
-					value = TOL_RACE; // SRB2kart
-					break;
-				case GT_COMPETITION:
-					value = TOL_COMPETITION;
-					break;
 				case GT_RACE:
 					value = TOL_RACE;
 					break;
 				case GT_MATCH:
-				case GT_TEAMMATCH:
 					value = TOL_MATCH;
 					break;
-				case GT_TAG:
-				case GT_HIDEANDSEEK:
-					value = TOL_TAG;
-					break;
-				case GT_CTF:
-					value = TOL_CTF;
-					break;
 			}
-
 			CV_SetValue(&cv_nextmap, M_FindFirstMap(value));
 		}
 	}
@@ -4441,9 +4426,6 @@ void M_StartControlPanel(void)
 		{
 			MPauseMenu[mpause_switchmap].status = IT_STRING | IT_CALL;
 			MPauseMenu[mpause_addons].status = IT_STRING | IT_CALL;
-			
-			if (G_GametypeHasTeams())
-				MPauseMenu[mpause_scramble].status = IT_STRING | IT_SUBMENU;
 		}
 		
 		if (server || (!cv_showlocalskinmenus.value))
@@ -4464,16 +4446,7 @@ void M_StartControlPanel(void)
 
 			if (netgame)
 			{
-				if (G_GametypeHasTeams())
-				{
-					MPauseMenu[mpause_switchteam].status = IT_STRING | IT_SUBMENU;
-					MPauseMenu[mpause_switchteam].alphaKey += ((splitscreen+1) * 8);
-					MPauseMenu[mpause_localskin].alphaKey += 8;
-					MPauseMenu[mpause_options].alphaKey += 8;
-					MPauseMenu[mpause_title].alphaKey += 8;
-					MPauseMenu[mpause_quit].alphaKey += 8;
-				}
-				else if (G_GametypeHasSpectators())
+				if (G_GametypeHasSpectators())
 				{
 					MPauseMenu[mpause_switchspectate].status = IT_STRING | IT_SUBMENU;
 					MPauseMenu[mpause_switchspectate].alphaKey += ((splitscreen+1) * 8);
@@ -4507,9 +4480,7 @@ void M_StartControlPanel(void)
 		{
 			MPauseMenu[mpause_psetup].status = IT_STRING | IT_CALL;
 
-			if (G_GametypeHasTeams())
-				MPauseMenu[mpause_switchteam].status = IT_STRING | IT_SUBMENU;
-			else if (G_GametypeHasSpectators())
+			if (G_GametypeHasSpectators())
 			{
 				if (!players[consoleplayer].spectator)
 					MPauseMenu[mpause_spectate].status = IT_STRING | IT_CALL;
@@ -5647,7 +5618,7 @@ boolean M_CanShowLevelInList(INT32 mapnum, INT32 gt)
 			if (M_MapLocked(mapnum+1)) // not unlocked
 				return cv_showallmaps.value;
 
-			if ((gt == GT_MATCH || gt == GT_TEAMMATCH) && (mapheaderinfo[mapnum]->typeoflevel & TOL_MATCH))
+			if (gt == GT_MATCH && (mapheaderinfo[mapnum]->typeoflevel & TOL_MATCH))
 				return true;
 
 			if (gt == GT_RACE && (mapheaderinfo[mapnum]->typeoflevel & TOL_RACE))

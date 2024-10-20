@@ -775,10 +775,7 @@ static void Command_Sayteam_f(void)
 		return;
 	}
 
-	if (G_GametypeHasTeams())	// revert to normal say if we don't have teams in this gametype.
-		DoSayCommand(-1, 1, 0);
-	else
-		DoSayCommand(0, 1, 0);
+	DoSayCommand(0, 1, 0);
 }
 
 /** Send a message to everyone, to be displayed by CECHO. Only
@@ -1395,7 +1392,7 @@ boolean HU_Responder(event_t *ev)
 			chat_on = true;
 			w_chat_buf[0] = 0;
 			M_TextInputInit(&w_chat, w_chat_buf, sizeof w_chat_buf);
-			teamtalk = G_GametypeHasTeams();	// Don't teamtalk if we don't have teams.
+			teamtalk = false;
 			chat_scrollmedown = true;
 			typelines = 1;
 			return true;
@@ -2611,7 +2608,6 @@ static inline void HU_DrawSpectatorTicker(void)
 //
 static void HU_DrawRankings(void)
 {
-	patch_t *p;
 	playersort_t tab[MAXPLAYERS];
 	INT32 i, j, scorelines, hilicol, numplayersingame = 0;
 	boolean completed[MAXPLAYERS];
@@ -2640,25 +2636,6 @@ static void HU_DrawRankings(void)
 	{
 		V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, maptitle);
 		Z_Free(maptitle);
-	}
-
-	if (G_GametypeHasTeams())
-	{
-		if (gametype == GT_CTF)
-			p = bflagico;
-		else
-			p = bmatcico;
-
-		V_DrawSmallScaledPatch(128 - SHORT(p->width)/4, 4, 0, p);
-		V_DrawCenteredString(128, 16, 0, va("%u", bluescore));
-
-		if (gametype == GT_CTF)
-			p = rflagico;
-		else
-			p = rmatcico;
-
-		V_DrawSmallScaledPatch(192 - SHORT(p->width)/4, 4, 0, p);
-		V_DrawCenteredString(192, 16, 0, va("%u", redscore));
 	}
 
 	if (!G_RaceGametype())

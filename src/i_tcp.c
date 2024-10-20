@@ -823,7 +823,7 @@ static void SOCK_Send(void)
 	}
 }
 #undef ALLOWEDERROR
-#endif
+#endif //NONET
 
 #ifndef NONET
 static void SOCK_FreeNodenum(INT32 numnode)
