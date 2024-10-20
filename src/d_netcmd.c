@@ -303,14 +303,12 @@ consvar_t cv_mouseturn = {"mouseturn", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, 
 consvar_t cv_laglesscam = {"laglesscamera", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 #if defined(HAVE_SDL) || defined(_WINDOWS) //joystick 1 and 2
-consvar_t cv_usejoystick = {"use_joystick", "1", CV_SAVE|CV_CALL, usejoystick_cons_t,
-	I_InitJoystick, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_usejoystick2 = {"use_joystick2", "2", CV_SAVE|CV_CALL, usejoystick_cons_t,
-	I_InitJoystick2, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_usejoystick3 = {"use_joystick3", "3", CV_SAVE|CV_CALL, usejoystick_cons_t,
-	I_InitJoystick3, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_usejoystick4 = {"use_joystick4", "4", CV_SAVE|CV_CALL, usejoystick_cons_t,
-	I_InitJoystick4, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_usejoystick[MAXSPLITSCREENPLAYERS] = {
+	{"use_joystick", "1", CV_SAVE|CV_CALL, usejoystick_cons_t, I_InitJoystick1, 0, NULL, NULL, 0, 0, NULL},
+	{"use_joystick2", "2", CV_SAVE|CV_CALL, usejoystick_cons_t, I_InitJoystick2, 0, NULL, NULL, 0, 0, NULL},
+	{"use_joystick3", "3", CV_SAVE|CV_CALL, usejoystick_cons_t, I_InitJoystick3, 0, NULL, NULL, 0, 0, NULL},
+	{"use_joystick4", "4", CV_SAVE|CV_CALL, usejoystick_cons_t, I_InitJoystick4, 0, NULL, NULL, 0, 0, NULL}
+};
 #endif
 
 #if (defined (LJOYSTICK) || defined (HAVE_SDL))
@@ -318,13 +316,17 @@ consvar_t cv_usejoystick4 = {"use_joystick4", "4", CV_SAVE|CV_CALL, usejoystick_
 consvar_t cv_joyport = {"joyport", "/dev/js0", CV_SAVE, joyport_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_joyport2 = {"joyport2", "/dev/js0", CV_SAVE, joyport_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}; //Alam: for later
 #endif
-consvar_t cv_joyscale = {"joyscale", "1", CV_SAVE|CV_CALL, NULL, I_JoyScale, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_joyscale2 = {"joyscale2", "1", CV_SAVE|CV_CALL, NULL, I_JoyScale2, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_joyscale3 = {"joyscale3", "1", CV_SAVE|CV_CALL, NULL, I_JoyScale3, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_joyscale4 = {"joyscale4", "1", CV_SAVE|CV_CALL, NULL, I_JoyScale4, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_joyscale[MAXSPLITSCREENPLAYERS] = {
+	{"joyscale", "1", CV_SAVE|CV_CALL, NULL, I_JoyScale, 0, NULL, NULL, 0, 0, NULL},
+	{"joyscale2", "1", CV_SAVE|CV_CALL, NULL, I_JoyScale2, 0, NULL, NULL, 0, 0, NULL},
+	{"joyscale3", "1", CV_SAVE|CV_CALL, NULL, I_JoyScale3, 0, NULL, NULL, 0, 0, NULL},
+	{"joyscale4", "1", CV_SAVE|CV_CALL, NULL, I_JoyScale4, 0, NULL, NULL, 0, 0, NULL}
+};
 #else
-consvar_t cv_joyscale = {"joyscale", "1", CV_SAVE|CV_HIDEN, NULL, NULL, 0, NULL, NULL, 0, 0, NULL}; //Alam: Dummy for save
-consvar_t cv_joyscale2 = {"joyscale2", "1", CV_SAVE|CV_HIDEN, NULL, NULL, 0, NULL, NULL, 0, 0, NULL}; //Alam: Dummy for save
+consvar_t cv_joyscale[2] = { //Alam: Dummy for save
+	{"joyscale", "1", CV_SAVE|CV_HIDEN, NULL, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyscale", "1", CV_SAVE|CV_HIDEN, NULL, NULL, 0, NULL, NULL, 0, 0, NULL}
+};
 #endif
 #if defined (__unix__) || defined (__APPLE__) || defined (UNIXCOMMON)
 consvar_t cv_mouse2port = {"mouse2port", "/dev/gpmdata", CV_SAVE, mouse2port_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -1019,58 +1021,22 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_pauseifunfocused);
 
 	// g_input.c
-	CV_RegisterVar(&cv_turnaxis);
-	CV_RegisterVar(&cv_turnaxis2);
-	CV_RegisterVar(&cv_turnaxis3);
-	CV_RegisterVar(&cv_turnaxis4);
-	CV_RegisterVar(&cv_moveaxis);
-	CV_RegisterVar(&cv_moveaxis2);
-	CV_RegisterVar(&cv_moveaxis3);
-	CV_RegisterVar(&cv_moveaxis4);
-	CV_RegisterVar(&cv_brakeaxis);
-	CV_RegisterVar(&cv_brakeaxis2);
-	CV_RegisterVar(&cv_brakeaxis3);
-	CV_RegisterVar(&cv_brakeaxis4);
-	CV_RegisterVar(&cv_aimaxis);
-	CV_RegisterVar(&cv_aimaxis2);
-	CV_RegisterVar(&cv_aimaxis3);
-	CV_RegisterVar(&cv_aimaxis4);
-	CV_RegisterVar(&cv_lookaxis);
-	CV_RegisterVar(&cv_lookaxis2);
-	CV_RegisterVar(&cv_lookaxis3);
-	CV_RegisterVar(&cv_lookaxis4);
-	CV_RegisterVar(&cv_fireaxis);
-	CV_RegisterVar(&cv_fireaxis2);
-	CV_RegisterVar(&cv_fireaxis3);
-	CV_RegisterVar(&cv_fireaxis4);
-	CV_RegisterVar(&cv_driftaxis);
-	CV_RegisterVar(&cv_driftaxis2);
-	CV_RegisterVar(&cv_driftaxis3);
-	CV_RegisterVar(&cv_driftaxis4);
-	CV_RegisterVar(&cv_lookbackaxis);
-	CV_RegisterVar(&cv_lookbackaxis2);
-	CV_RegisterVar(&cv_lookbackaxis3);
-	CV_RegisterVar(&cv_lookbackaxis4);
-	CV_RegisterVar(&cv_custom1axis);
-	CV_RegisterVar(&cv_custom1axis2);
-	CV_RegisterVar(&cv_custom1axis3);
-	CV_RegisterVar(&cv_custom1axis4);
-	CV_RegisterVar(&cv_custom2axis);
-	CV_RegisterVar(&cv_custom2axis2);
-	CV_RegisterVar(&cv_custom2axis3);
-	CV_RegisterVar(&cv_custom2axis4);
-	CV_RegisterVar(&cv_custom3axis);
-	CV_RegisterVar(&cv_custom3axis2);
-	CV_RegisterVar(&cv_custom3axis3);
-	CV_RegisterVar(&cv_custom3axis4);
-	CV_RegisterVar(&cv_xdeadzone);
-	CV_RegisterVar(&cv_ydeadzone);
-	CV_RegisterVar(&cv_xdeadzone2);
-	CV_RegisterVar(&cv_ydeadzone2);
-	CV_RegisterVar(&cv_xdeadzone3);
-	CV_RegisterVar(&cv_ydeadzone3);
-	CV_RegisterVar(&cv_xdeadzone4);
-	CV_RegisterVar(&cv_ydeadzone4);
+	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+	{
+		CV_RegisterVar(&cv_turnaxis[i]);
+		CV_RegisterVar(&cv_moveaxis[i]);
+		CV_RegisterVar(&cv_brakeaxis[i]);
+		CV_RegisterVar(&cv_aimaxis[i]);
+		CV_RegisterVar(&cv_lookaxis[i]);
+		CV_RegisterVar(&cv_fireaxis[i]);
+		CV_RegisterVar(&cv_driftaxis[i]);
+		CV_RegisterVar(&cv_lookbackaxis[i]);
+		CV_RegisterVar(&cv_custom1axis[i]);
+		CV_RegisterVar(&cv_custom2axis[i]);
+		CV_RegisterVar(&cv_custom3axis[i]);
+		CV_RegisterVar(&cv_xdeadzone[i]);
+		CV_RegisterVar(&cv_ydeadzone[i]);
+	}
 
 	// filesrch.c
 	CV_RegisterVar(&cv_addons_option);
@@ -1107,18 +1073,19 @@ void D_RegisterClientCommands(void)
 	//CV_RegisterVar(&cv_mousemove);
 	//CV_RegisterVar(&cv_mousemove2);
 
-	CV_RegisterVar(&cv_usejoystick);
-	CV_RegisterVar(&cv_usejoystick2);
-	CV_RegisterVar(&cv_usejoystick3);
-	CV_RegisterVar(&cv_usejoystick4);
+	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+	{
+		CV_RegisterVar(&cv_usejoystick[i]);
+	}
 #ifdef LJOYSTICK
 	CV_RegisterVar(&cv_joyport);
 	CV_RegisterVar(&cv_joyport2);
 #endif
-	CV_RegisterVar(&cv_joyscale);
-	CV_RegisterVar(&cv_joyscale2);
-	CV_RegisterVar(&cv_joyscale3);
-	CV_RegisterVar(&cv_joyscale4);
+
+	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+	{
+		CV_RegisterVar(&cv_joyscale[i]);
+	}
 
 	// s_sound.c
 	CV_RegisterVar(&cv_soundvolume);

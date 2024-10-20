@@ -66,10 +66,7 @@ boolean botingame;
 UINT8 botskin;
 UINT8 botcolor;
 
-JoyType_t Joystick;
-JoyType_t Joystick2;
-JoyType_t Joystick3;
-JoyType_t Joystick4;
+JoyType_t Joystick[MAXSPLITSCREENPLAYERS];
 
 // 1024 bytes is plenty for a savegame
 #define SAVEGAMESIZE (1024)
@@ -362,25 +359,6 @@ void SendWeaponPref2(void);
 void SendWeaponPref3(void);
 void SendWeaponPref4(void);
 
-//static CV_PossibleValue_t crosshair_cons_t[] = {{0, "Off"}, {1, "Cross"}, {2, "Angle"}, {3, "Point"}, {0, NULL}};
-static CV_PossibleValue_t joyaxis_cons_t[] = {{0, "None"},
-{1, "Left X"}, {2, "Left Y"}, {-1, "Left X-"}, {-2, "Left Y-"},
-#if JOYAXISSET > 1
-{3, "Right X"}, {4, "Right Y"}, {-3, "Right X-"}, {-4, "Right Y-"},
-#endif
-#if JOYAXISSET > 2
-{5, "L Trigger"}, {6, "R Trigger"}, {-5, "L Trigger-"}, {-6, "R Trigger-"},
-#endif
-#if JOYAXISSET > 3
-{7, "U-Axis"}, {8, "V-Axis"}, {-7, "U-Axis-"}, {-8, "V-Axis-"},
-#endif
- {0, NULL}};
-#if JOYAXISSET > 4
-"More Axis Sets"
-#endif
-
-static CV_PossibleValue_t deadzone_cons_t[] = {{FRACUNIT/16, "MIN"}, {FRACUNIT, "MAX"}, {0, NULL}};
-
 // don't mind me putting these here, I was lazy to figure out where else I could put those without blowing up the compiler.
 
 // chat timer thingy
@@ -435,61 +413,115 @@ consvar_t cv_chasefreelook2 = {"chasemlook2", "Off", CV_SAVE, CV_OnOff, NULL, 0,
 consvar_t cv_mousemove = {"mousemove", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_mousemove2 = {"mousemove2", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};*/
 
-consvar_t cv_turnaxis = {"joyaxis_turn", "Left X", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_moveaxis = {"joyaxis_move", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_brakeaxis = {"joyaxis_brake", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_aimaxis = {"joyaxis_aim", "Left Y", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_lookaxis = {"joyaxis_look", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_fireaxis = {"joyaxis_fire", "L Trigger", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_driftaxis = {"joyaxis_drift", "R Trigger", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_lookbackaxis = {"joyaxis_lookback", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_custom1axis = {"joyaxis_custom1", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_custom2axis = {"joyaxis_custom2", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_custom3axis = {"joyaxis_custom3", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_xdeadzone = {"joy_xdeadzone", "0.3", CV_FLOAT|CV_SAVE, deadzone_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_ydeadzone = {"joy_ydeadzone", "0.5", CV_FLOAT|CV_SAVE, deadzone_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+//static CV_PossibleValue_t crosshair_cons_t[] = {{0, "Off"}, {1, "Cross"}, {2, "Angle"}, {3, "Point"}, {0, NULL}};
+static CV_PossibleValue_t joyaxis_cons_t[] = {{0, "None"},
+{1, "Left X"}, {2, "Left Y"}, {-1, "Left X-"}, {-2, "Left Y-"},
+#if JOYAXISSET > 1
+{3, "Right X"}, {4, "Right Y"}, {-3, "Right X-"}, {-4, "Right Y-"},
+#endif
+#if JOYAXISSET > 2
+{5, "L Trigger"}, {6, "R Trigger"}, {-5, "L Trigger-"}, {-6, "R Trigger-"},
+#endif
+#if JOYAXISSET > 3
+{7, "U-Axis"}, {8, "V-Axis"}, {-7, "U-Axis-"}, {-8, "V-Axis-"},
+#endif
+ {0, NULL}};
+#if JOYAXISSET > 4
+"More Axis Sets"
+#endif
 
-consvar_t cv_turnaxis2 = {"joyaxis2_turn", "Left X", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_moveaxis2 = {"joyaxis2_move", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_brakeaxis2 = {"joyaxis2_brake", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_aimaxis2 = {"joyaxis2_aim", "Left Y", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_lookaxis2 = {"joyaxis2_look", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_fireaxis2 = {"joyaxis2_fire", "L Trigger", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_driftaxis2 = {"joyaxis2_drift", "R Trigger", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_lookbackaxis2 = {"joyaxis2_lookback", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_custom1axis2 = {"joyaxis2_custom1", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_custom2axis2 = {"joyaxis2_custom2", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_custom3axis2 = {"joyaxis2_custom3", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_xdeadzone2 = {"joy2_xdeadzone", "0.3", CV_FLOAT|CV_SAVE, deadzone_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_ydeadzone2 = {"joy2_ydeadzone", "0.5", CV_FLOAT|CV_SAVE, deadzone_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+static CV_PossibleValue_t deadzone_cons_t[] = {{FRACUNIT/16, "MIN"}, {FRACUNIT, "MAX"}, {0, NULL}};
 
-consvar_t cv_turnaxis3 = {"joyaxis3_turn", "Left X", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_moveaxis3 = {"joyaxis3_move", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_brakeaxis3 = {"joyaxis3_brake", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_aimaxis3 = {"joyaxis3_aim", "Left Y", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_lookaxis3 = {"joyaxis3_look", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_fireaxis3 = {"joyaxis3_fire", "L Trigger", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_driftaxis3 = {"joyaxis3_drift", "R Trigger", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_lookbackaxis3 = {"joyaxis3_lookback", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_custom1axis3 = {"joyaxis3_custom1", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_custom2axis3 = {"joyaxis3_custom2", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_custom3axis3 = {"joyaxis3_custom3", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_xdeadzone3 = {"joy3_xdeadzone", "0.3", CV_FLOAT|CV_SAVE, deadzone_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_ydeadzone3 = {"joy3_ydeadzone", "0.5", CV_FLOAT|CV_SAVE, deadzone_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_turnaxis[MAXSPLITSCREENPLAYERS] = {
+	{"joyaxis_turn", "Left X", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyaxis2_turn", "Left X", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyaxis3_turn", "Left X", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyaxis4_turn", "Left X", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
+};
 
-consvar_t cv_turnaxis4 = {"joyaxis4_turn", "Left X", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_moveaxis4 = {"joyaxis4_move", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_brakeaxis4 = {"joyaxis4_brake", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_aimaxis4 = {"joyaxis4_aim", "Left Y", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_lookaxis4 = {"joyaxis4_look", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_fireaxis4 = {"joyaxis4_fire", "L Trigger", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_driftaxis4 = {"joyaxis4_drift", "R Trigger", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_lookbackaxis4 = {"joyaxis4_lookback", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_custom1axis4 = {"joyaxis4_custom1", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_custom2axis4 = {"joyaxis4_custom2", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_custom3axis4 = {"joyaxis4_custom3", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_xdeadzone4 = {"joy4_xdeadzone", "0.3", CV_FLOAT|CV_SAVE, deadzone_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_ydeadzone4 = {"joy4_ydeadzone", "0.5", CV_FLOAT|CV_SAVE, deadzone_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_moveaxis[MAXSPLITSCREENPLAYERS] = {
+	{"joyaxis_move", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyaxis2_move", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyaxis3_move", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyaxis4_move", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
+};
+
+consvar_t cv_brakeaxis[MAXSPLITSCREENPLAYERS] = {
+	{"joyaxis_brake", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyaxis2_brake", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyaxis3_brake", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyaxis4_brake", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
+};
+
+consvar_t cv_aimaxis[MAXSPLITSCREENPLAYERS] = {
+	{"joyaxis_aim", "Left Y", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyaxis2_aim", "Left Y", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyaxis3_aim", "Left Y", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyaxis4_aim", "Left Y", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
+};
+
+consvar_t cv_lookaxis[MAXSPLITSCREENPLAYERS] = {
+	 {"joyaxis_look", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	 {"joyaxis2_look", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	 {"joyaxis3_look", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	 {"joyaxis4_look", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
+};
+
+consvar_t cv_fireaxis[MAXSPLITSCREENPLAYERS] = {
+	{"joyaxis_fire", "L Trigger", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyaxis2_fire", "L Trigger", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyaxis3_fire", "L Trigger", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyaxis4_fire", "L Trigger", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
+};
+
+consvar_t cv_driftaxis[MAXSPLITSCREENPLAYERS] = {
+	{"joyaxis_drift", "R Trigger", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyaxis2_drift", "R Trigger", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyaxis3_drift", "R Trigger", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyaxis4_drift", "R Trigger", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
+};
+
+consvar_t cv_lookbackaxis[MAXSPLITSCREENPLAYERS] = {
+	{"joyaxis_lookback", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyaxis2_lookback", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyaxis3_lookback", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyaxis4_lookback", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
+};
+
+consvar_t cv_custom1axis[MAXSPLITSCREENPLAYERS] = {
+	{"joyaxis_custom1", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyaxis2_custom1", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyaxis3_custom1", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyaxis4_custom1", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
+};
+
+consvar_t cv_custom2axis[MAXSPLITSCREENPLAYERS] = {
+	{"joyaxis_custom2", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyaxis2_custom2", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyaxis3_custom2", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyaxis4_custom2", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
+};
+
+consvar_t cv_custom3axis[MAXSPLITSCREENPLAYERS] = {
+	{"joyaxis_custom3", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyaxis2_custom3", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyaxis3_custom3", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyaxis4_custom3", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
+};
+
+consvar_t cv_xdeadzone[MAXSPLITSCREENPLAYERS] = {
+	{"joy_xdeadzone", "0.3", CV_FLOAT|CV_SAVE, deadzone_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joy2_xdeadzone", "0.3", CV_FLOAT|CV_SAVE, deadzone_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joy3_xdeadzone", "0.3", CV_FLOAT|CV_SAVE, deadzone_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joy4_xdeadzone", "0.3", CV_FLOAT|CV_SAVE, deadzone_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
+};
+
+consvar_t cv_ydeadzone[MAXSPLITSCREENPLAYERS] = {
+	{"joy_ydeadzone", "0.5", CV_FLOAT|CV_SAVE, deadzone_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joy2_ydeadzone", "0.5", CV_FLOAT|CV_SAVE, deadzone_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joy3_ydeadzone", "0.5", CV_FLOAT|CV_SAVE, deadzone_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joy4_ydeadzone", "0.5", CV_FLOAT|CV_SAVE, deadzone_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
+};
 
 static CV_PossibleValue_t driftsparkpulse_t[] = {{0, "MIN"}, {FRACUNIT*3, "MAX"}, {0, NULL}};
 consvar_t cv_driftsparkpulse = {"driftsparkpulse", "1.4", CV_FLOAT | CV_SAVE, driftsparkpulse_t, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -696,7 +728,7 @@ INT16 G_SoftwareClipAimingPitch(INT32 *aiming)
 	return (INT16)((*aiming)>>16);
 }
 
-static INT32 Joy1Axis(axis_input_e axissel)
+INT32 JoyAxis(axis_input_e axissel, UINT8 player)
 {
 	INT32 retaxis;
 	INT32 axisval;
@@ -706,37 +738,37 @@ static INT32 Joy1Axis(axis_input_e axissel)
 	switch (axissel)
 	{
 		case AXISTURN:
-			axisval = cv_turnaxis.value;
+			axisval = cv_turnaxis[player-1].value;
 			break;
 		case AXISMOVE:
-			axisval = cv_moveaxis.value;
+			axisval = cv_moveaxis[player-1].value;
 			break;
 		case AXISBRAKE:
-			axisval = cv_brakeaxis.value;
+			axisval = cv_brakeaxis[player-1].value;
 			break;
 		case AXISAIM:
-			axisval = cv_aimaxis.value;
+			axisval = cv_aimaxis[player-1].value;
 			break;
 		case AXISLOOK:
-			axisval = cv_lookaxis.value;
+			axisval = cv_lookaxis[player-1].value;
 			break;
 		case AXISFIRE:
-			axisval = cv_fireaxis.value;
+			axisval = cv_fireaxis[player-1].value;
 			break;
 		case AXISDRIFT:
-			axisval = cv_driftaxis.value;
+			axisval = cv_driftaxis[player-1].value;
 			break;
 		case AXISLOOKBACK:
-			axisval = cv_lookbackaxis.value;
+			axisval = cv_lookbackaxis[player-1].value;
 			break;
 		case AXISCUSTOM1:
-			axisval = cv_custom1axis.value;
+			axisval = cv_custom1axis[player-1].value;
 			break;
 		case AXISCUSTOM2:
-			axisval = cv_custom2axis.value;
+			axisval = cv_custom2axis[player-1].value;
 			break;
 		case AXISCUSTOM3:
-			axisval = cv_custom3axis.value;
+			axisval = cv_custom3axis[player-1].value;
 			break;
 		default:
 			return 0;
@@ -759,9 +791,9 @@ static INT32 Joy1Axis(axis_input_e axissel)
 			retaxis = -JOYAXISRANGE;
 		if (retaxis > (+JOYAXISRANGE))
 			retaxis = +JOYAXISRANGE;
-		if (!Joystick.bGamepadStyle && axissel < AXISDEAD)
+		if (!Joystick[player-1].bGamepadStyle && axissel < AXISDEAD)
 		{
-			const INT32 jdeadzone = ((JOYAXISRANGE-1) * cv_xdeadzone.value) >> FRACBITS;
+			const INT32 jdeadzone = ((JOYAXISRANGE-1) * cv_xdeadzone[player-1].value) >> FRACBITS;
 			if (abs(retaxis) <= jdeadzone)
 				return 0;
 		}
@@ -778,299 +810,14 @@ static INT32 Joy1Axis(axis_input_e axissel)
 			retaxis = -JOYAXISRANGE;
 		if (retaxis > (+JOYAXISRANGE))
 			retaxis = +JOYAXISRANGE;
-		if (!Joystick.bGamepadStyle && axissel < AXISDEAD)
+		if (!Joystick[player-1].bGamepadStyle && axissel < AXISDEAD)
 		{
-			const INT32 jdeadzone = ((JOYAXISRANGE-1) * cv_ydeadzone.value) >> FRACBITS;
+			const INT32 jdeadzone = ((JOYAXISRANGE-1) * cv_ydeadzone[player-1].value) >> FRACBITS;
 			if (abs(retaxis) <= jdeadzone)
 				return 0;
 		}
 		if (flp) retaxis = -retaxis; //flip it around
 		return retaxis;
-	}
-}
-
-static INT32 Joy2Axis(axis_input_e axissel)
-{
-	INT32 retaxis;
-	INT32 axisval;
-	boolean flp = false;
-
-	//find what axis to get
-	switch (axissel)
-	{
-		case AXISTURN:
-			axisval = cv_turnaxis2.value;
-			break;
-		case AXISMOVE:
-			axisval = cv_moveaxis2.value;
-			break;
-		case AXISBRAKE:
-			axisval = cv_brakeaxis2.value;
-			break;
-		case AXISAIM:
-			axisval = cv_aimaxis2.value;
-			break;
-		case AXISLOOK:
-			axisval = cv_lookaxis2.value;
-			break;
-		case AXISFIRE:
-			axisval = cv_fireaxis2.value;
-			break;
-		case AXISDRIFT:
-			axisval = cv_driftaxis2.value;
-			break;
-		case AXISLOOKBACK:
-			axisval = cv_lookbackaxis2.value;
-			break;
-		case AXISCUSTOM1:
-			axisval = cv_custom1axis2.value;
-			break;
-		case AXISCUSTOM2:
-			axisval = cv_custom2axis2.value;
-			break;
-		case AXISCUSTOM3:
-			axisval = cv_custom3axis2.value;
-			break;
-		default:
-			return 0;
-	}
-
-	if (axisval < 0) //odd -axises
-	{
-		axisval = -axisval;
-		flp = true;
-	}
-	if (axisval > JOYAXISSET*2 || axisval == 0) //not there in array or None
-		return 0;
-
-	if (axisval%2)
-	{
-		axisval /= 2;
-		retaxis = joy2xmove[axisval];
-
-		if (retaxis < (-JOYAXISRANGE))
-			retaxis = -JOYAXISRANGE;
-		if (retaxis > (+JOYAXISRANGE))
-			retaxis = +JOYAXISRANGE;
-		if (!Joystick2.bGamepadStyle && axissel < AXISDEAD)
-		{
-			const INT32 jdeadzone = ((JOYAXISRANGE-1) * cv_xdeadzone2.value) >> FRACBITS;
-			if (-jdeadzone < retaxis && retaxis < jdeadzone)
-				return 0;
-		}
-		if (flp) retaxis = -retaxis; //flip it around
-		return retaxis;
-
-	}
-	else
-	{
-		axisval--;
-		axisval /= 2;
-		retaxis = joy2ymove[axisval];
-
-		if (retaxis < (-JOYAXISRANGE))
-			retaxis = -JOYAXISRANGE;
-		if (retaxis > (+JOYAXISRANGE))
-			retaxis = +JOYAXISRANGE;
-		if (!Joystick2.bGamepadStyle && axissel < AXISDEAD)
-		{
-			const INT32 jdeadzone = ((JOYAXISRANGE-1) * cv_ydeadzone2.value) >> FRACBITS;
-			if (-jdeadzone < retaxis && retaxis < jdeadzone)
-				return 0;
-		}
-		if (flp) retaxis = -retaxis; //flip it around
-		return retaxis;
-
-	}
-}
-
-static INT32 Joy3Axis(axis_input_e axissel)
-{
-	INT32 retaxis;
-	INT32 axisval;
-	boolean flp = false;
-
-	//find what axis to get
-	switch (axissel)
-	{
-		case AXISTURN:
-			axisval = cv_turnaxis3.value;
-			break;
-		case AXISMOVE:
-			axisval = cv_moveaxis3.value;
-			break;
-		case AXISBRAKE:
-			axisval = cv_brakeaxis3.value;
-			break;
-		case AXISAIM:
-			axisval = cv_aimaxis3.value;
-			break;
-		case AXISLOOK:
-			axisval = cv_lookaxis3.value;
-			break;
-		case AXISFIRE:
-			axisval = cv_fireaxis3.value;
-			break;
-		case AXISDRIFT:
-			axisval = cv_driftaxis3.value;
-			break;
-		case AXISLOOKBACK:
-			axisval = cv_lookbackaxis3.value;
-			break;
-		case AXISCUSTOM1:
-			axisval = cv_custom1axis3.value;
-			break;
-		case AXISCUSTOM2:
-			axisval = cv_custom2axis3.value;
-			break;
-		case AXISCUSTOM3:
-			axisval = cv_custom3axis3.value;
-			break;
-		default:
-			return 0;
-	}
-
-	if (axisval < 0) //odd -axises
-	{
-		axisval = -axisval;
-		flp = true;
-	}
-	if (axisval > JOYAXISSET*2 || axisval == 0) //not there in array or None
-		return 0;
-
-	if (axisval%2)
-	{
-		axisval /= 2;
-		retaxis = joy3xmove[axisval];
-
-		if (retaxis < (-JOYAXISRANGE))
-			retaxis = -JOYAXISRANGE;
-		if (retaxis > (+JOYAXISRANGE))
-			retaxis = +JOYAXISRANGE;
-		if (!Joystick3.bGamepadStyle && axissel < AXISDEAD)
-		{
-			const INT32 jdeadzone = ((JOYAXISRANGE-1) * cv_xdeadzone3.value) >> FRACBITS;
-			if (-jdeadzone < retaxis && retaxis < jdeadzone)
-				return 0;
-		}
-		if (flp) retaxis = -retaxis; //flip it around
-		return retaxis;
-
-	}
-	else
-	{
-		axisval--;
-		axisval /= 2;
-		retaxis = joy3ymove[axisval];
-
-		if (retaxis < (-JOYAXISRANGE))
-			retaxis = -JOYAXISRANGE;
-		if (retaxis > (+JOYAXISRANGE))
-			retaxis = +JOYAXISRANGE;
-		if (!Joystick3.bGamepadStyle && axissel < AXISDEAD)
-		{
-			const INT32 jdeadzone = ((JOYAXISRANGE-1) * cv_ydeadzone3.value) >> FRACBITS;
-			if (-jdeadzone < retaxis && retaxis < jdeadzone)
-				return 0;
-		}
-		if (flp) retaxis = -retaxis; //flip it around
-		return retaxis;
-
-	}
-}
-
-static INT32 Joy4Axis(axis_input_e axissel)
-{
-	INT32 retaxis;
-	INT32 axisval;
-	boolean flp = false;
-
-	//find what axis to get
-	switch (axissel)
-	{
-		case AXISTURN:
-			axisval = cv_turnaxis4.value;
-			break;
-		case AXISMOVE:
-			axisval = cv_moveaxis4.value;
-			break;
-		case AXISBRAKE:
-			axisval = cv_brakeaxis4.value;
-			break;
-		case AXISAIM:
-			axisval = cv_aimaxis4.value;
-			break;
-		case AXISLOOK:
-			axisval = cv_lookaxis4.value;
-			break;
-		case AXISFIRE:
-			axisval = cv_fireaxis4.value;
-			break;
-		case AXISDRIFT:
-			axisval = cv_driftaxis4.value;
-			break;
-		case AXISLOOKBACK:
-			axisval = cv_lookbackaxis4.value;
-			break;
-		case AXISCUSTOM1:
-			axisval = cv_custom1axis4.value;
-			break;
-		case AXISCUSTOM2:
-			axisval = cv_custom2axis4.value;
-			break;
-		case AXISCUSTOM3:
-			axisval = cv_custom3axis4.value;
-			break;
-		default:
-			return 0;
-	}
-
-	if (axisval < 0) //odd -axises
-	{
-		axisval = -axisval;
-		flp = true;
-	}
-	if (axisval > JOYAXISSET*2 || axisval == 0) //not there in array or None
-		return 0;
-
-	if (axisval%2)
-	{
-		axisval /= 2;
-		retaxis = joy4xmove[axisval];
-
-		if (retaxis < (-JOYAXISRANGE))
-			retaxis = -JOYAXISRANGE;
-		if (retaxis > (+JOYAXISRANGE))
-			retaxis = +JOYAXISRANGE;
-		if (!Joystick4.bGamepadStyle && axissel < AXISDEAD)
-		{
-			const INT32 jdeadzone = ((JOYAXISRANGE-1) * cv_xdeadzone4.value) >> FRACBITS;
-			if (-jdeadzone < retaxis && retaxis < jdeadzone)
-				return 0;
-		}
-		if (flp) retaxis = -retaxis; //flip it around
-		return retaxis;
-
-	}
-	else
-	{
-		axisval--;
-		axisval /= 2;
-		retaxis = joy4ymove[axisval];
-
-		if (retaxis < (-JOYAXISRANGE))
-			retaxis = -JOYAXISRANGE;
-		if (retaxis > (+JOYAXISRANGE))
-			retaxis = +JOYAXISRANGE;
-		if (!Joystick4.bGamepadStyle && axissel < AXISDEAD)
-		{
-			const INT32 jdeadzone = ((JOYAXISRANGE-1) * cv_ydeadzone4.value) >> FRACBITS;
-			if (-jdeadzone < retaxis && retaxis < jdeadzone)
-				return 0;
-		}
-		if (flp) retaxis = -retaxis; //flip it around
-		return retaxis;
-
 	}
 }
 
@@ -1086,21 +833,6 @@ boolean InputDown(INT32 gc, UINT8 p)
 			return PLAYER4INPUTDOWN(gc);
 		default:
 			return PLAYER1INPUTDOWN(gc);
-	}
-}
-
-INT32 JoyAxis(axis_input_e axissel, UINT8 p)
-{
-	switch (p)
-	{
-		case 2:
-			return Joy2Axis(axissel);
-		case 3:
-			return Joy3Axis(axissel);
-		case 4:
-			return Joy4Axis(axissel);
-		default:
-			return Joy1Axis(axissel);
 	}
 }
 
@@ -1122,11 +854,12 @@ static fixed_t angleturn[3] = {KART_FULLTURN/2, KART_FULLTURN, KART_FULLTURN/4};
 
 void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 {
+	const UINT8 forplayer = ssplayer-1;
 	INT32 laim, th, tspeed, forward, side, axis; //i
 	const INT32 speed = 1;
 	// these ones used for multiple conditions
-	boolean turnleft, turnright, mouseaiming, analogjoystickmove, gamepadjoystickmove;
-	boolean invertmouse, lookaxis, usejoystick, kbl, rd;
+	boolean turnleft, turnright, mouseaiming;
+	boolean invertmouse, usejoystick, kbl, rd;
 	player_t *player;
 	camera_t *thiscam;
 	angle_t lang;
@@ -1135,22 +868,26 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	static boolean keyboard_look[MAXSPLITSCREENPLAYERS]; // true if lookup/down using keyboard
 	static boolean resetdown[MAXSPLITSCREENPLAYERS]; // don't cam reset every frame
 
+	const boolean lookaxis = cv_lookaxis[forplayer].value;
+	const boolean analogjoystickmove = cv_usejoystick[forplayer].value && !Joystick[forplayer].bGamepadStyle;
+	const boolean gamepadjoystickmove = cv_usejoystick[forplayer].value && Joystick[forplayer].bGamepadStyle;
+
 	if (demo.playback) return;
 
 	if (ssplayer == 1)
 		player = &players[consoleplayer];
 	else
-		player = &players[displayplayers[ssplayer-1]];
+		player = &players[displayplayers[forplayer]];
 
 	if (ssplayer == 2)
-		thiscam = (player->bot == 2 ? &camera[0] : &camera[ssplayer-1]);
+		thiscam = (player->bot == 2 ? &camera[0] : &camera[forplayer]);
 	else
-		thiscam = &camera[ssplayer-1];
-	lang = localangle[ssplayer-1];
-	laim = localaiming[ssplayer-1];
-	th = turnheld[ssplayer-1];
-	kbl = keyboard_look[ssplayer-1];
-	rd = resetdown[ssplayer-1];
+		thiscam = &camera[forplayer];
+	lang = localangle[forplayer];
+	laim = localaiming[forplayer];
+	th = turnheld[forplayer];
+	kbl = keyboard_look[forplayer];
+	rd = resetdown[forplayer];
 
 	switch (ssplayer)
 	{
@@ -1184,31 +921,19 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		case 2:
 			mouseaiming = player->spectator; //(PLAYER2INPUTDOWN(gc_mouseaiming)) ^ cv_alwaysfreelook2.value;
 			invertmouse = cv_invertmouse2.value;
-			lookaxis = cv_lookaxis2.value;
-			analogjoystickmove = cv_usejoystick2.value && !Joystick2.bGamepadStyle;
-			gamepadjoystickmove = cv_usejoystick2.value && Joystick2.bGamepadStyle;
 			break;
 		case 3:
 			mouseaiming = false;
 			invertmouse = false;
-			lookaxis = cv_lookaxis3.value;
-			analogjoystickmove = cv_usejoystick3.value && !Joystick3.bGamepadStyle;
-			gamepadjoystickmove = cv_usejoystick3.value && Joystick3.bGamepadStyle;
 			break;
 		case 4:
 			mouseaiming = false;
 			invertmouse = false;
-			lookaxis = cv_lookaxis4.value;
-			analogjoystickmove = cv_usejoystick4.value && !Joystick4.bGamepadStyle;
-			gamepadjoystickmove = cv_usejoystick4.value && Joystick4.bGamepadStyle;
 			break;
 		case 1:
 		default:
 			mouseaiming = player->spectator; //(PLAYER1INPUTDOWN(gc_mouseaiming)) ^ cv_alwaysfreelook.value;
 			invertmouse = cv_invertmouse.value;
-			lookaxis = cv_lookaxis.value;
-			analogjoystickmove = cv_usejoystick.value && !Joystick.bGamepadStyle;
-			gamepadjoystickmove = cv_usejoystick.value && Joystick.bGamepadStyle;
 			break;
 	}
 
@@ -1455,13 +1180,13 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 
 	if (!hu_stopped)
 	{
-		localangle[ssplayer-1] = lang;
-		localaiming[ssplayer-1] = laim;
-		keyboard_look[ssplayer-1] = kbl;
-		turnheld[ssplayer-1] = th;
-		resetdown[ssplayer-1] = rd;
+		localangle[forplayer] = lang;
+		localaiming[forplayer] = laim;
+		keyboard_look[forplayer] = kbl;
+		turnheld[forplayer] = th;
+		resetdown[forplayer] = rd;
 		axis = JoyAxis(AXISLOOKBACK, ssplayer);
-		camspin[ssplayer-1] = (InputDown(gc_lookback, ssplayer) || (usejoystick && axis > 0));
+		camspin[forplayer] = (InputDown(gc_lookback, ssplayer) || (usejoystick && axis > 0));
 	}
 
 	/* 	Lua: Allow this hook to overwrite ticcmd.

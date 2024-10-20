@@ -345,7 +345,7 @@ static inline void P_DeviceRumbleTick(void)
 		if (!P_IsLocalPlayer(player))
 			continue;
 
-		if (G_GetDeviceForPlayer(i) == 0)
+		if (cv_usejoystick[i].value == 0)
 			continue;
 
 		if (!playeringame[displayplayers[i]] || player->spectator)
@@ -633,7 +633,7 @@ void P_Ticker(boolean run)
 			G_WriteAllGhostTics();
 
 			if (cv_recordmultiplayerdemos.value && (demo.savemode == DSM_NOTSAVING || demo.savemode == DSM_WILLAUTOSAVE))
-				if (demo.savebutton && demo.savebutton + 3*TICRATE < leveltime && (InputDown(gc_lookback, 1) || (cv_usejoystick.value && axis > 0)))
+				if (demo.savebutton && demo.savebutton + 3*TICRATE < leveltime && (InputDown(gc_lookback, 1) || (cv_usejoystick[0].value && axis > 0)))
 					demo.savemode = DSM_TITLEENTRY;
 
 			//if there are no players left at all, stop demo recording

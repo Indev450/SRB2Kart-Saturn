@@ -3177,7 +3177,7 @@ static ticcmd_t *P_CameraCmd(camera_t *cam)
 
 	mouseaiming = true;
 	invertmouse = cv_invertmouse.value;
-	lookaxis = cv_lookaxis.value;
+	lookaxis = cv_lookaxis[0].value;
 
 	usejoystick = true;
 	turnright = InputDown(gc_turnright, 1);
