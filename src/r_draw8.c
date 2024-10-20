@@ -28,6 +28,8 @@ void R_DrawColumn_8(void)
 	register UINT8 *dest;
 	register fixed_t frac;
 	fixed_t fracstep;
+	INT32 npow2min;
+	INT32 npow2max;
 
 	count = dc_yh - dc_yl;
 
@@ -51,13 +53,26 @@ void R_DrawColumn_8(void)
 	fracstep = dc_iscale;
 	frac = (dc_texturemid + FixedMul((dc_yl << FRACBITS) - centeryfrac, fracstep))*(!dc_hires);
 
-
 	// Inner loop that does the actual texture mapping, e.g. a DDA-like scaling.
 	// This is as fast as it gets.
 	{
 		register const UINT8 *source = dc_source;
 		register const lighttable_t *colormap = dc_colormap;
 		register INT32 heightmask = dc_texheight-1;
+
+		if (dc_sourcelength <= 0)
+		{
+			// Note: we need to unconditionally clamp in npow2 draw loop to avoid a CPU branch
+			// This is to just render it effectively the identity function.
+			npow2min = INT32_MIN;
+			npow2max = INT32_MAX;
+		}
+		else
+		{
+			npow2min = -1;
+			npow2max = dc_sourcelength;
+		}
+
 		if (dc_texheight & heightmask)   // not a power of 2 -- killough
 		{
 			heightmask++;
@@ -74,7 +89,10 @@ void R_DrawColumn_8(void)
 				// Re-map color indices from wall texture column
 				//  using a lighting/special effects LUT.
 				// heightmask is the Tutti-Frutti fix
-				*dest = colormap[source[frac>>FRACBITS]];
+
+				// -1 is the lower clamp bound because column posts have a "safe" byte before the real data
+				// and a few bytes after as well
+				*dest = colormap[source[CLAMP(frac>>FRACBITS, npow2min, npow2max)]];
 				dest += vid.width;
 
 				// Avoid overflow.
@@ -115,6 +133,8 @@ void R_Draw2sMultiPatchColumn_8(void)
 	register UINT8 *dest;
 	register fixed_t frac;
 	fixed_t fracstep;
+	INT32 npow2min;
+	INT32 npow2max;
 
 	count = dc_yh - dc_yl;
 
@@ -147,6 +167,20 @@ void R_Draw2sMultiPatchColumn_8(void)
 		register const lighttable_t *colormap = dc_colormap;
 		register INT32 heightmask = dc_texheight-1;
 		register UINT8 val;
+
+		if (dc_sourcelength <= 0)
+		{
+			// Note: we need to unconditionally clamp in npow2 draw loop to avoid a CPU branch
+			// This is to just render it effectively the identity function.
+			npow2min = INT32_MIN;
+			npow2max = INT32_MAX;
+		}
+		else
+		{
+			npow2min = -1;
+			npow2max = dc_sourcelength;
+		}
+
 		if (dc_texheight & heightmask)   // not a power of 2 -- killough
 		{
 			heightmask++;
@@ -163,7 +197,10 @@ void R_Draw2sMultiPatchColumn_8(void)
 				// Re-map color indices from wall texture column
 				//  using a lighting/special effects LUT.
 				// heightmask is the Tutti-Frutti fix
-				val = source[frac>>FRACBITS];
+
+				// -1 is the lower clamp bound because column posts have a "safe" byte before the real data
+				// and a few bytes after as well
+				val = source[CLAMP(frac>>FRACBITS, npow2min, npow2max)];
 
 				if (val != TRANSPARENTPIXEL)
 				{
@@ -223,6 +260,8 @@ void R_Draw2sMultiPatchTranslucentColumn_8(void)
 	register UINT8 *dest;
 	register fixed_t frac;
 	fixed_t fracstep;
+	INT32 npow2min;
+	INT32 npow2max;
 
 	count = dc_yh - dc_yl;
 
@@ -256,6 +295,20 @@ void R_Draw2sMultiPatchTranslucentColumn_8(void)
 		register const lighttable_t *colormap = dc_colormap;
 		register INT32 heightmask = dc_texheight-1;
 		register UINT8 val;
+
+		if (dc_sourcelength <= 0)
+		{
+			// Note: we need to unconditionally clamp in npow2 draw loop to avoid a CPU branch
+			// This is to just render it effectively the identity function.
+			npow2min = INT32_MIN;
+			npow2max = INT32_MAX;
+		}
+		else
+		{
+			npow2min = -1;
+			npow2max = dc_sourcelength;
+		}
+
 		if (dc_texheight & heightmask)   // not a power of 2 -- killough
 		{
 			heightmask++;
@@ -272,7 +325,10 @@ void R_Draw2sMultiPatchTranslucentColumn_8(void)
 				// Re-map color indices from wall texture column
 				//  using a lighting/special effects LUT.
 				// heightmask is the Tutti-Frutti fix
-				val = source[frac>>FRACBITS];
+
+				// -1 is the lower clamp bound because column posts have a "safe" byte before the real data
+				// and a few bytes after as well
+				val = source[CLAMP(frac>>FRACBITS, npow2min, npow2max)];
 
 				if (val != TRANSPARENTPIXEL)
 				{
@@ -376,6 +432,8 @@ void R_DrawTranslucentColumn_8(void)
 	register INT32 count;
 	register UINT8 *dest;
 	register fixed_t frac, fracstep;
+	INT32 npow2min;
+	INT32 npow2max;
 
 	count = dc_yh - dc_yl + 1;
 
@@ -403,6 +461,20 @@ void R_DrawTranslucentColumn_8(void)
 		register const UINT8 *transmap = dc_transmap;
 		register const lighttable_t *colormap = dc_colormap;
 		register INT32 heightmask = dc_texheight - 1;
+
+		if (dc_sourcelength <= 0)
+		{
+			// Note: we need to unconditionally clamp in npow2 draw loop to avoid a CPU branch
+			// This is to just render it effectively the identity function.
+			npow2min = INT32_MIN;
+			npow2max = INT32_MAX;
+		}
+		else
+		{
+			npow2min = -1;
+			npow2max = dc_sourcelength;
+		}
+
 		if (dc_texheight & heightmask)
 		{
 			heightmask++;
@@ -420,7 +492,11 @@ void R_DrawTranslucentColumn_8(void)
 				// Re-map color indices from wall texture column
 				// using a lighting/special effects LUT.
 				// heightmask is the Tutti-Frutti fix
-				*dest = *(transmap + (colormap[source[frac>>FRACBITS]]<<8) + (*dest));
+
+				// -1 is the lower clamp bound because column posts have a "safe" byte before the real data
+				// and a few bytes after as well
+				*dest = *(transmap + (colormap[source[CLAMP(frac>>FRACBITS, npow2min, npow2max)]]<<8) + (*dest));
+
 				dest += vid.width;
 
 				if ((frac += fracstep) >= heightmask)
@@ -458,6 +534,8 @@ void R_DrawTranslatedTranslucentColumn_8(void)
 	register INT32 count;
 	register UINT8 *dest;
 	register fixed_t frac, fracstep;
+	INT32 npow2min;
+	INT32 npow2max;
 
 	count = dc_yh - dc_yl + 1;
 
@@ -477,6 +555,20 @@ void R_DrawTranslatedTranslucentColumn_8(void)
 	// This is as fast as it gets.
 	{
 		register INT32 heightmask = dc_texheight - 1;
+
+		if (dc_sourcelength <= 0)
+		{
+			// Note: we need to unconditionally clamp in npow2 draw loop to avoid a CPU branch
+			// This is to just render it effectively the identity function.
+			npow2min = INT32_MIN;
+			npow2max = INT32_MAX;
+		}
+		else
+		{
+			npow2min = -1;
+			npow2max = dc_sourcelength;
+		}
+
 		if (dc_texheight & heightmask)
 		{
 			heightmask++;
@@ -494,7 +586,10 @@ void R_DrawTranslatedTranslucentColumn_8(void)
 				// Re-map color indices from wall texture column
 				//  using a lighting/special effects LUT.
 				// heightmask is the Tutti-Frutti fix
-				*dest = *(dc_transmap + (dc_colormap[dc_translation[dc_source[frac>>FRACBITS]]]<<8) + (*dest));
+
+				// -1 is the lower clamp bound because column posts have a "safe" byte before the real data
+				// and a few bytes after as well
+				*dest = *(dc_transmap + (dc_colormap[dc_translation[dc_source[CLAMP(frac>>FRACBITS, npow2min, npow2max)]]]<<8) + (*dest));
 				dest += vid.width;
 
 				if ((frac += fracstep) >= heightmask)
@@ -586,14 +681,14 @@ void R_DrawSpan_8 (void)
 	fixed_t xposition;
 	fixed_t yposition;
 	fixed_t xstep, ystep;
-	UINT32 bit;
+	register UINT32 bit;
 
 	UINT8 *source;
 	UINT8 *colormap;
-	UINT8 *dest;
+	register UINT8 *dest;
 	const UINT8 *deststop = screens[0] + vid.rowbytes * vid.height;
 
-	size_t count = (ds_x2 - ds_x1 + 1);
+	register size_t count = (ds_x2 - ds_x1 + 1);
 	size_t i;
 
 	xposition = ds_xfrac; yposition = ds_yfrac;
@@ -681,13 +776,13 @@ void R_DrawTiltedSpan_8(void)
 
 	UINT8 *source;
 	UINT8 *colormap;
-	UINT8 *dest;
+	register UINT8 *dest;
 
 	double startz, startu, startv;
 	double izstep, uzstep, vzstep;
 	double endz, endu, endv;
 	UINT32 stepu, stepv;
-	UINT32 bit;
+	register UINT32 bit;
 
 	iz = ds_szp->z + ds_szp->y*(centery-ds_y) + ds_szp->x*(ds_x1-centerx);
 
@@ -822,13 +917,13 @@ void R_DrawTiltedTranslucentSpan_8(void)
 
 	UINT8 *source;
 	UINT8 *colormap;
-	UINT8 *dest;
+	register UINT8 *dest;
 
 	double startz, startu, startv;
 	double izstep, uzstep, vzstep;
 	double endz, endu, endv;
 	UINT32 stepu, stepv;
-	UINT32 bit;
+	register UINT32 bit;
 
 	iz = ds_szp->z + ds_szp->y*(centery-ds_y) + ds_szp->x*(ds_x1-centerx);
 
@@ -964,14 +1059,14 @@ void R_DrawTiltedTranslucentWaterSpan_8(void)
 
 	UINT8 *source;
 	UINT8 *colormap;
-	UINT8 *dest;
+	register UINT8 *dest;
 	UINT8 *dsrc;
 
 	double startz, startu, startv;
 	double izstep, uzstep, vzstep;
 	double endz, endu, endv;
 	UINT32 stepu, stepv;
-	UINT32 bit;
+	register UINT32 bit;
 
 	iz = ds_szp->z + ds_szp->y*(centery-ds_y) + ds_szp->x*(ds_x1-centerx);
 
@@ -1105,7 +1200,7 @@ void R_DrawTiltedSplat_8(void)
 
 	UINT8 *source;
 	UINT8 *colormap;
-	UINT8 *dest;
+	register UINT8 *dest;
 
 	UINT8 val;
 
@@ -1113,7 +1208,7 @@ void R_DrawTiltedSplat_8(void)
 	double izstep, uzstep, vzstep;
 	double endz, endu, endv;
 	UINT32 stepu, stepv;
-	UINT32 bit;
+	register UINT32 bit;
 
 	iz = ds_szp->z + ds_szp->y*(centery-ds_y) + ds_szp->x*(ds_x1-centerx);
 
@@ -1257,13 +1352,13 @@ void R_DrawSplat_8 (void)
 	UINT32 xposition;
 	UINT32 yposition;
 	UINT32 xstep, ystep;
-	UINT32 bit;
+	register UINT32 bit;
 
 	UINT8 *source;
 	UINT8 *colormap;
-	UINT8 *dest;
+	register UINT8 *dest;
 
-	size_t count;
+	register size_t count;
 	size_t i;
 	UINT32 val;
 
@@ -1327,13 +1422,13 @@ void R_DrawTranslucentSplat_8 (void)
 	UINT32 xposition;
 	UINT32 yposition;
 	UINT32 xstep, ystep;
-	UINT32 bit;
+	register UINT32 bit;
 
 	UINT8 *source;
 	UINT8 *colormap;
-	UINT8 *dest;
+	register UINT8 *dest;
 
-	size_t count;
+	register size_t count;
 	size_t i;
 	UINT8 val;
 
@@ -1392,14 +1487,14 @@ void R_DrawTranslucentSpan_8 (void)
 	fixed_t xposition;
 	fixed_t yposition;
 	fixed_t xstep, ystep;
-	UINT32 bit;
+	register UINT32 bit;
 
 	UINT8 *source;
 	UINT8 *colormap;
-	UINT8 *dest;
+	register UINT8 *dest;
 	const UINT8 *deststop = screens[0] + vid.rowbytes * vid.height;
 
-	size_t count = (ds_x2 - ds_x1 + 1);
+	register size_t count = (ds_x2 - ds_x1 + 1);
 	size_t i;
 
 	xposition = ds_xfrac; yposition = ds_yfrac;
@@ -1451,14 +1546,14 @@ void R_DrawTranslucentWaterSpan_8(void)
 	UINT32 xposition;
 	UINT32 yposition;
 	UINT32 xstep, ystep;
-	UINT32 bit;
+	register UINT32 bit;
 
 	UINT8 *source;
 	UINT8 *colormap;
-	UINT8 *dest;
+	register UINT8 *dest;
 	UINT8 *dsrc;
 
-	size_t count;
+	register size_t count;
 	size_t i;
 
 	// SoM: we only need 6 bits for the integer part (0 thru 63) so the rest
@@ -1510,9 +1605,9 @@ void R_DrawTranslucentWaterSpan_8(void)
 void R_DrawFogSpan_8(void)
 {
 	UINT8 *colormap;
-	UINT8 *dest;
+	register UINT8 *dest;
 
-	size_t count;
+	register size_t count;
 
 	colormap = ds_colormap;
 	//dest = ylookup[ds_y] + columnofs[ds_x1];
@@ -1543,8 +1638,8 @@ void R_DrawFogSpan_8(void)
 */
 void R_DrawFogColumn_8(void)
 {
-	INT32 count;
-	UINT8 *dest;
+	register INT32 count;
+	register UINT8 *dest;
 
 	count = dc_yh - dc_yl;
 
@@ -1579,7 +1674,8 @@ void R_DrawFogColumn_8(void)
 */
 void R_DrawColumnShadowed_8(void)
 {
-	INT32 count, realyh, i, height, bheight = 0, solid = 0;
+	register INT32 count;
+	INT32 realyh, i, height, bheight = 0, solid = 0;
 
 	realyh = dc_yh;
 
