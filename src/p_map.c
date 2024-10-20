@@ -3823,11 +3823,8 @@ boolean P_CheckSector(sector_t *sector, boolean crunch)
  Lots of new Boom functions that work faster and add functionality.
 */
 
-static msecnode_t *headsecnode = NULL;
-
 void P_Initsecnode(void)
 {
-	headsecnode = NULL;
 }
 
 // P_GetSecnode() retrieves a node from the freelist. The calling routine
@@ -3835,24 +3832,14 @@ void P_Initsecnode(void)
 
 static msecnode_t *P_GetSecnode(void)
 {
-	msecnode_t *node;
-
-	if (headsecnode)
-	{
-		node = headsecnode;
-		headsecnode = headsecnode->m_thinglist_next;
-	}
-	else
-		node = Z_Calloc(sizeof (*node), PU_LEVEL, NULL);
-	return node;
+	return Z_LevelPoolCalloc(sizeof(msecnode_t));
 }
 
 // P_PutSecnode() returns a node to the freelist.
 
 static inline void P_PutSecnode(msecnode_t *node)
 {
-	node->m_thinglist_next = headsecnode;
-	headsecnode = node;
+	Z_LevelPoolFree(node, sizeof(msecnode_t));
 }
 
 // P_AddSecnode() searches the current list to see if this sector is
