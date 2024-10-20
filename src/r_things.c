@@ -1122,7 +1122,6 @@ static void R_ProjectSprite(mobj_t *thing)
 	fixed_t xscale, yscale, sortscale; //added : 02-02-98 : aaargll..if I were a math-guy!!!
 
 	INT32 x1, x2;
-	INT32 x1test = 0, x2test = 0;
 
 	spritedef_t *sprdef;
 	spriteframe_t *sprframe;
@@ -1525,11 +1524,6 @@ static void R_ProjectSprite(mobj_t *thing)
 		//x1 = (centerxfrac + FixedMul(tx,xscale))>>FRACBITS;
 		x1 = centerx + (FixedMul(tx,xscale) / FRACUNIT);
 
-		x1test = (centerxfrac + FixedMul(tx,xscale))>>FRACBITS;
-
-		if (x1test > viewwidth)
-			x1test = 0;
-
 		// off the right side?
 		if (x1 > viewwidth)
 			return;
@@ -1537,11 +1531,6 @@ static void R_ProjectSprite(mobj_t *thing)
 		tx += offset2;
 		//x2 = ((centerxfrac + FixedMul(tx,xscale))>>FRACBITS); x2--;
 		x2 = (centerx + (FixedMul(tx,xscale) / FRACUNIT)) - 1;
-
-		x2test = ((centerxfrac + FixedMul(tx,xscale))>>FRACBITS) - 1;
-
-		if (x2test < 0)
-			x2test = 0;
 
 		// off the left side
 		if (x2 < 0)
@@ -1553,12 +1542,6 @@ static void R_ProjectSprite(mobj_t *thing)
 	{
 		if (x2 < portalclipstart || x1 >= portalclipend)
 			return;
-
-		if (x2test < portalclipstart || x1test >= portalclipend)
-		{
-			x1test = 0;
-			x2test = 0;
-		}
 
 		if (P_PointOnLineSide(interp.x, interp.y, portalclipline) != 0)
 			return;
@@ -1653,9 +1636,6 @@ static void R_ProjectSprite(mobj_t *thing)
 	vis->x1 = x1 < portalclipstart ? portalclipstart : x1;
 	vis->x2 = x2 >= portalclipend ? portalclipend-1 : x2;
 
-	vis->x1test = x1test < portalclipstart ? portalclipstart : x1test;
-	vis->x2test = x2test >= portalclipend ? portalclipend-1 : x2test;
-
 	vis->sector = thing->subsector->sector;
 	vis->szt = (INT16)((centeryfrac - FixedMul(vis->gzt - viewz, sortscale))>>FRACBITS);
 	vis->sz = (INT16)((centeryfrac - FixedMul(vis->gz - viewz, sortscale))>>FRACBITS);
@@ -1681,7 +1661,6 @@ static void R_ProjectSprite(mobj_t *thing)
 	{
 		vis->startfrac = spr_width-1;
 		vis->xiscale = -iscale;
-		vis->xiscaletest = -vis->xiscaletest;
 	}
 	else
 	{
@@ -1689,13 +1668,10 @@ static void R_ProjectSprite(mobj_t *thing)
 		vis->xiscale = iscale;
 	}
 
-	vis->startfractest = vis->startfrac;
-
 	if (vis->x1 > x1)
 	{
 		vis->startfrac += FixedDiv(vis->xiscale, this_scale) * (vis->x1 - x1);
 		vis->scale += FixedMul(scalestep, spriteyscale) * (vis->x1 - x1);
-		vis->startfractest += FixedDiv(vis->xiscaletest, this_scale) * (vis->x1test - x1test);
 	}
 
 	//Fab: lumppat is the lump number of the patch to use, this is different
@@ -1904,9 +1880,6 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 
 	vis->x1 = x1 < portalclipstart ? portalclipstart : x1;
 	vis->x2 = x2 >= portalclipend ? portalclipend-1 : x2;
-
-	vis->x1test = 0;
-	vis->x2test = 0;
 
 	vis->xscale = xscale; //SoM: 4/17/2000
 	vis->sector = thing->subsector->sector;
