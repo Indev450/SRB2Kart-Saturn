@@ -1739,7 +1739,7 @@ static void SV_SendSaveGame(INT32 node, boolean resending)
 	else
 	{
 		// Compression failed to make it smaller; send original
-		free(compressedsave);
+		Z_Free(compressedsave);
 
 		// State that we're not compressed
 		buffertosend = save.buffer;
