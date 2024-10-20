@@ -213,9 +213,9 @@ DOSATURNSYNCH=1
 ifndef NOSATURNJOIN
 DOSATURNJOIN=1
 endif
-#ifndef NOSATURNPAK
-#DOSATURNPAK=1
-#endif
+ifndef NOSATURNPAK
+DOSATURNPAK=1
+endif
 endif
 endif
 
@@ -404,9 +404,9 @@ OPTS+=-DDOSATURNSYNCH
 ifndef NOSATURNJOIN
 OPTS+=-DDOSATURNJOIN
 endif
-#ifndef NOSATURNPAK
-#OPTS+=-DDOSATURNPAK
-#endif
+ifndef NOSATURNPAK
+OPTS+=-DDOSATURNPAK
+endif
 endif
 endif
 
@@ -529,6 +529,7 @@ OBJS:=$(i_main_o) \
 		$(OBJDIR)/m_fixed.o  \
 		$(OBJDIR)/m_menu.o   \
 		$(OBJDIR)/m_misc.o   \
+		$(OBJDIR)/m_textinput.o   \
 		$(OBJDIR)/m_perfstats.o \
 		$(OBJDIR)/m_random.o \
 		$(OBJDIR)/m_queue.o  \

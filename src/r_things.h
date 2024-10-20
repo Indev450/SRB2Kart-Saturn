@@ -55,6 +55,7 @@ extern fixed_t sprtopscreen;
 extern fixed_t sprbotscreen;
 extern fixed_t windowtop;
 extern fixed_t windowbottom;
+extern INT32 lengthcol;
 
 fixed_t R_GetShadowZ(mobj_t *thing, pslope_t **shadowslope);
 

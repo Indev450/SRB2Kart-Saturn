@@ -742,9 +742,8 @@ void P_RestoreMusic(player_t *player)
 	if (P_EndingMusic(player))
 		return;
 
-	// Event - Level Start
-	if (leveltime < (starttime + (TICRATE/2)))
-		S_ChangeMusicInternal((encoremode ? "estart" : "kstart"), false); //S_StopMusic();
+	if (leveltime < MUSICSTARTTIME)
+		S_StartMapMusic(true);
 	else // see also where time overs are handled - search for "lives = 2" in this file
 	{
 		INT32 wantedmus = 0; // 0 is level music, 1 is invincibility, 2 is grow
@@ -1250,7 +1249,7 @@ void P_DoPlayerExit(player_t *player)
 		player->exiting = raceexittime+2;
 		K_KartUpdatePosition(player);
 
-		if (cv_kartvoices.value)
+		if (!P_MobjWasRemoved(player->mo) && cv_kartvoices.value)
 		{
 			if (P_IsLocalPlayer(player))
 			{

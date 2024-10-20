@@ -325,29 +325,6 @@ PUREFUNC INT32 R_PointOnSide(fixed_t x, fixed_t y, const node_t *restrict node)
 		(~mask & (FixedMul(y, node->dx>>FRACBITS) >= FixedMul(node->dy>>FRACBITS, x)));
 }
 
-// killough 5/2/98: reformatted
-PUREFUNC INT32 R_PointOnSegSide(fixed_t x, fixed_t y, const seg_t *line)
-{
-	fixed_t lx = line->v1->x;
-	fixed_t ly = line->v1->y;
-	fixed_t ldx = line->v2->x - lx;
-	fixed_t ldy = line->v2->y - ly;
-
-	if (!ldx)
-		return x <= lx ? ldy > 0 : ldy < 0;
-
-	if (!ldy)
-		return y <= ly ? ldx < 0 : ldx > 0;
-
-	x -= lx;
-	y -= ly;
-
-	// Try to quickly decide by looking at sign bits.
-	if ((ldy ^ ldx ^ x ^ y) < 0)
-		return (ldy ^ x) < 0;          // (left is negative)
-	return FixedMul(y, ldx>>FRACBITS) >= FixedMul(ldy>>FRACBITS, x);
-}
-
 //
 // R_PointToAngle
 // To get a global angle from cartesian coordinates,
@@ -1356,31 +1333,7 @@ void R_SkyboxFrame(player_t *player)
 	else
 		newview->sector = R_PointInSubsector(newview->x, newview->y)->sector;
 
-	// newview->sin = FINESINE(viewangle>>ANGLETOFINESHIFT);
-	// newview->cos = FINECOSINE(viewangle>>ANGLETOFINESHIFT);
-
-	R_InterpolateView(R_UsingFrameInterpolation() ? demo.playback ? rendertimefrac_unpaused : rendertimefrac : FRACUNIT, false);
-}
-
-static void
-R_SetupCommonFrame
-(		player_t * player,
-		subsector_t * subsector)
-{
-	newview->player = player;
-
-	newview->x += quake.x;
-	newview->y += quake.y;
-	newview->z += quake.z;
-
-	newview->roll = R_ViewRollAngle(player);
-
-	if (subsector)
-		newview->sector = subsector->sector;
-	else
-		newview->sector = R_PointInSubsector(newview->x, newview->y)->sector;
-
-	R_InterpolateView(R_UsingFrameInterpolation() ? demo.playback ? rendertimefrac_unpaused : rendertimefrac : FRACUNIT, false);
+	R_InterpolateView(R_UsingFrameInterpolation() ? (demo.playback && demo.freecam) ? rendertimefrac_unpaused : rendertimefrac : FRACUNIT, false);
 }
 
 void R_SetupFrame(player_t *player, boolean skybox)
@@ -1388,33 +1341,50 @@ void R_SetupFrame(player_t *player, boolean skybox)
 	camera_t *thiscam;
 	boolean chasecam = false;
 
-#define SETUPCAM(num, var, context)\
-	thiscam = &camera[num];\
-	chasecam = (var.value != 0);\
-	R_SetViewContext(context);\
-	if (thiscam->reset)\
-	{\
-		R_ResetViewInterpolation(num+1);\
-		thiscam->reset = false;\
-	}
-
 	if (splitscreen > 2 && player == &players[displayplayers[3]])
 	{
-		SETUPCAM(3, cv_chasecam4, VIEWCONTEXT_PLAYER4)
+		thiscam = &camera[3];
+		chasecam = (cv_chasecam4.value != 0);
+		R_SetViewContext(VIEWCONTEXT_PLAYER4);
+		if (thiscam->reset)
+		{
+			R_ResetViewInterpolation(4);
+			thiscam->reset = false;
+		}
 	}
 	else if (splitscreen > 1 && player == &players[displayplayers[2]])
 	{
-		SETUPCAM(2, cv_chasecam3, VIEWCONTEXT_PLAYER3)
+		thiscam = &camera[2];
+		chasecam = (cv_chasecam3.value != 0);
+		R_SetViewContext(VIEWCONTEXT_PLAYER3);
+		if (thiscam->reset)
+		{
+			R_ResetViewInterpolation(3);
+			thiscam->reset = false;
+		}
 	}
 	else if (splitscreen && player == &players[displayplayers[1]])
 	{
-		SETUPCAM(1, cv_chasecam2, VIEWCONTEXT_PLAYER2)
+		thiscam = &camera[1];
+		chasecam = (cv_chasecam2.value != 0);
+		R_SetViewContext(VIEWCONTEXT_PLAYER2);
+		if (thiscam->reset)
+		{
+			R_ResetViewInterpolation(2);
+			thiscam->reset = false;
+		}
 	}
 	else
 	{
-		SETUPCAM(0, cv_chasecam, VIEWCONTEXT_PLAYER1)
+		thiscam = &camera[0];
+		chasecam = (cv_chasecam.value != 0);
+		R_SetViewContext(VIEWCONTEXT_PLAYER1);
+		if (thiscam->reset)
+		{
+			R_ResetViewInterpolation(1);
+			thiscam->reset = false;
+		}
 	}
-#undef SETUPCAM
 
 	if (player->spectator) // no spectator chasecam
 		chasecam = false; // force chasecam off
@@ -1435,37 +1405,23 @@ void R_SetupFrame(player_t *player, boolean skybox)
 	{
 		viewmobj = player->awayviewmobj; // should be a MT_ALTVIEWMAN
 		I_Assert(viewmobj != NULL);
-
-		newview->x = viewmobj->x;
-		newview->y = viewmobj->y;
 		newview->z = viewmobj->z + 20*FRACUNIT;
-
 		newview->aim = player->awayviewaiming;
 		newview->angle = viewmobj->angle;
-
-		R_SetupCommonFrame(player, viewmobj->subsector);
 	}
 	else if (!player->spectator && (thiscam && chasecam)) // use outside cam view
 	{
 		viewmobj = NULL;
-
-		newview->x = thiscam->x;
-		newview->y = thiscam->y;
 		newview->z = thiscam->z + (thiscam->height>>1);
-
 		newview->aim = thiscam->aiming;
 		newview->angle = thiscam->angle;
-
-		R_SetupCommonFrame(player, thiscam->subsector);
 	}
 	else // use the player's eyes view
 	{
+		newview->z = player->viewz;
+
 		viewmobj = player->mo;
 		I_Assert(viewmobj != NULL);
-
-		newview->x = viewmobj->x;
-		newview->y = viewmobj->y;
-		newview->z = player->viewz;
 
 		newview->aim = player->aiming;
 		newview->angle = viewmobj->angle;
@@ -1491,9 +1447,38 @@ void R_SetupFrame(player_t *player, boolean skybox)
 				}
 			}
 		}
-
-		R_SetupCommonFrame(player, viewmobj->subsector);
 	}
+	newview->roll = R_ViewRollAngle(player);
+	newview->z += quake.z;
+
+	newview->player = player;
+
+	if ((thiscam && chasecam) && !player->awayviewtics && !player->spectator)
+	{
+		newview->x = thiscam->x;
+		newview->y = thiscam->y;
+		newview->x += quake.x;
+		newview->y += quake.y;
+
+		if (thiscam->subsector && thiscam->subsector->sector)
+			newview->sector = thiscam->subsector->sector;
+		else
+			newview->sector = R_PointInSubsector(newview->x, newview->y)->sector;
+	}
+	else
+	{
+		newview->x = viewmobj->x;
+		newview->y = viewmobj->y;
+		newview->x += quake.x;
+		newview->y += quake.y;
+
+		if (!P_MobjWasRemoved(viewmobj) && viewmobj->subsector && thiscam && thiscam->subsector->sector)
+			newview->sector = viewmobj->subsector->sector;
+		else
+			newview->sector = R_PointInSubsector(newview->x, newview->y)->sector;
+	}
+
+	R_InterpolateView(R_UsingFrameInterpolation() ? (demo.playback && demo.freecam) ? rendertimefrac_unpaused : rendertimefrac : FRACUNIT, false);
 }
 
 #define ANGLED_PORTALS
@@ -1698,7 +1683,7 @@ void R_RenderPlayerView(player_t *player)
 	else
 	{
 		portalclipstart = 0;
-		portalclipend = viewwidth-1;
+		portalclipend = viewwidth;
 		R_ClearClipSegs();
 	}
 	R_ClearDrawSegs();
