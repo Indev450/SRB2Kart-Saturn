@@ -44,7 +44,7 @@ CV_PossibleValue_t Forceskin_cons_t[MAXSKINS+2];
 
 static void R_InitSkins(void);
 
-#define MINZ (FRACUNIT*4)
+#define MINZ (FRACUNIT*16)
 #define BASEYCENTER (BASEVIDHEIGHT/2)
 
 typedef struct
@@ -591,6 +591,9 @@ void R_DrawMaskedColumn(column_t *column)
 
 	basetexturemid = dc_texturemid;
 
+	if (!column || column == 0)
+		return;
+
 	for (; column->topdelta != 0xff ;)
 	{
 		// calculate unclipped screen coordinates
@@ -626,6 +629,7 @@ void R_DrawMaskedColumn(column_t *column)
 		if (dc_yl <= dc_yh && dc_yh > 0 && column->length != 0)
 		{
 			dc_source = (UINT8 *)column + 3;
+			dc_sourcelength = column->length;
 			dc_texturemid = basetexturemid - (topdelta<<FRACBITS);
 
 			// Drawn by R_DrawColumn.
@@ -690,6 +694,7 @@ static void R_DrawFlippedMaskedColumn(column_t *column)
 		if (dc_yl <= dc_yh && dc_yh > 0 && column->length != 0)
 		{
 			dc_source = ZZ_Alloc(column->length);
+			dc_sourcelength = column->length;
 			for (s = (UINT8 *)column+2+column->length, d = dc_source; d < dc_source+column->length; --s)
 				*d++ = *s;
 			dc_texturemid = basetexturemid - (topdelta<<FRACBITS);
@@ -807,7 +812,7 @@ static void R_DrawVisSprite(vissprite_t *vis)
 			dc_colormap += COLORMAP_REMAPOFFSET;
 
 	dc_texturemid = vis->texturemid;
-	dc_texheight = 0;
+	dc_texheight = SHORT(patch->height);
 
 	frac = vis->startfrac;
 	windowtop = windowbottom = sprbotscreen = INT32_MAX;
@@ -816,8 +821,10 @@ static void R_DrawVisSprite(vissprite_t *vis)
 		this_scale = FixedMul(this_scale, ((skin_t *)vis->mobj->localskin)->highresscale);
 	else if (vis->mobj->skin && ((skin_t *)vis->mobj->skin)->flags & SF_HIRES)
 		this_scale = FixedMul(this_scale, ((skin_t *)vis->mobj->skin)->highresscale);
+
 	if (this_scale <= 0)
 		this_scale = 1;
+
 	if (this_scale != FRACUNIT)
 	{
 		if (!vis->isScaled)
@@ -883,12 +890,10 @@ static void R_DrawVisSprite(vissprite_t *vis)
 	}
 	else
 	{
-		pwidth = SHORT(patch->width);
-
 		// Non-paper drawing loop
 		for (dc_x = vis->x1; dc_x <= vis->x2; dc_x++, frac += vis->xiscale)
-		{	
-			texturecolumn = CLAMP(frac >> FRACBITS, 0, pwidth - 1);
+		{
+			texturecolumn = CLAMP(frac >> FRACBITS, 0, SHORT(patch->width) - 1);
 			column = (column_t *)((UINT8 *)patch + LONG(patch->columnofs[texturecolumn]));
 
 			localcolfunc (column);
@@ -896,6 +901,8 @@ static void R_DrawVisSprite(vissprite_t *vis)
 	}
 
 	colfunc = basecolfunc;
+	dc_hires = 0;
+
 	vis->x1 = x1;
 	vis->x2 = x2;
 }
@@ -932,7 +939,7 @@ static void R_DrawPrecipitationVisSprite(vissprite_t *vis)
 
 	dc_iscale = FixedDiv(FRACUNIT, vis->scale);
 	dc_texturemid = FixedDiv(vis->texturemid, this_scale);
-	dc_texheight = 0;
+	dc_texheight = SHORT(patch->height);
 
 	frac = vis->startfrac;
 	spryscale = vis->scale;
@@ -947,7 +954,14 @@ static void R_DrawPrecipitationVisSprite(vissprite_t *vis)
 
 	for (dc_x = vis->x1; dc_x <= vis->x2; dc_x++, frac += vis->xiscale)
 	{
-		texturecolumn = CLAMP(frac >> FRACBITS, 0, SHORT(patch->width) - 1);
+		texturecolumn = frac>>FRACBITS;
+
+		if (texturecolumn < 0 || texturecolumn >= patch->width)
+		{
+			CONS_Debug(DBG_RENDER, "R_DrawPrecipitationSpriteRange: bad texturecolumn\n");
+			break;
+		}
+
 		column = (column_t *)((UINT8 *)patch + LONG(patch->columnofs[texturecolumn]));
 
 		R_DrawMaskedColumn(column);
@@ -1137,6 +1151,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	fixed_t xscale, yscale, sortscale; //added : 02-02-98 : aaargll..if I were a math-guy!!!
 
 	INT32 x1, x2;
+	INT32 x1test = 0, x2test = 0;
 
 	spritedef_t *sprdef;
 	spriteframe_t *sprframe;
@@ -1540,6 +1555,11 @@ static void R_ProjectSprite(mobj_t *thing)
 		//x1 = (centerxfrac + FixedMul(tx,xscale))>>FRACBITS;
 		x1 = centerx + (FixedMul(tx,xscale) / FRACUNIT);
 
+		x1test = (centerxfrac + FixedMul(tx,xscale))>>FRACBITS;
+
+		if (x1test > viewwidth)
+			x1test = 0;
+
 		// off the right side?
 		if (x1 > viewwidth)
 			return;
@@ -1547,6 +1567,11 @@ static void R_ProjectSprite(mobj_t *thing)
 		tx += offset2;
 		//x2 = ((centerxfrac + FixedMul(tx,xscale))>>FRACBITS); x2--;
 		x2 = (centerx + (FixedMul(tx,xscale) / FRACUNIT)) - 1;
+
+		x2test = ((centerxfrac + FixedMul(tx,xscale))>>FRACBITS) - 1;
+
+		if (x2test < 0)
+			x2test = 0;
 
 		// off the left side
 		if (x2 < 0)
@@ -1556,8 +1581,14 @@ static void R_ProjectSprite(mobj_t *thing)
 	// PORTAL SPRITE CLIPPING
 	if (portalrender && portalclipline)
 	{
-		if (x2 < portalclipstart || x1 > portalclipend)
+		if (x2 < portalclipstart || x1 >= portalclipend)
 			return;
+
+		if (x2test < portalclipstart || x1test >= portalclipend)
+		{
+			x1test = 0;
+			x2test = 0;
+		}
 
 		if (P_PointOnLineSide(interp.x, interp.y, portalclipline) != 0)
 			return;
@@ -1700,17 +1731,11 @@ static void R_ProjectSprite(mobj_t *thing)
 
 	vis->mobj = thing; // Easy access! Tails 06-07-2002
 
-	vis->x1 = x1 < 0 ? 0 : x1;
-	vis->x2 = x2 >= viewwidth ? viewwidth-1 : x2;
+	vis->x1 = x1 < portalclipstart ? portalclipstart : x1;
+	vis->x2 = x2 >= portalclipend ? portalclipend-1 : x2;
 
-	// PORTAL SEMI-CLIPPING
-	if (portalrender && portalclipline)
-	{
-		if (vis->x1 < portalclipstart)
-			vis->x1 = portalclipstart;
-		if (vis->x2 > portalclipend)
-			vis->x2 = portalclipend;
-	}
+	vis->x1test = x1test < portalclipstart ? portalclipstart : x1test;
+	vis->x2test = x2test >= portalclipend ? portalclipend-1 : x2test;
 
 	vis->sector = thing->subsector->sector;
 	vis->szt = (INT16)((centeryfrac - FixedMul(vis->gzt - viewz, sortscale))>>FRACBITS);
@@ -1737,6 +1762,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	{
 		vis->startfrac = spr_width-1;
 		vis->xiscale = -iscale;
+		vis->xiscaletest = -vis->xiscaletest;
 	}
 	else
 	{
@@ -1744,10 +1770,13 @@ static void R_ProjectSprite(mobj_t *thing)
 		vis->xiscale = iscale;
 	}
 
+	vis->startfractest = vis->startfrac;
+
 	if (vis->x1 > x1)
 	{
 		vis->startfrac += FixedDiv(vis->xiscale, this_scale) * (vis->x1 - x1);
 		vis->scale += FixedMul(scalestep, spriteyscale) * (vis->x1 - x1);
+		vis->startfractest += FixedDiv(vis->xiscaletest, this_scale) * (vis->x1test - x1test);
 	}
 
 	//Fab: lumppat is the lump number of the patch to use, this is different
@@ -1920,7 +1949,7 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 	// PORTAL SPRITE CLIPPING
 	if (portalrender && portalclipline)
 	{
-		if (x2 < portalclipstart || x1 > portalclipend)
+		if (x2 < portalclipstart || x1 >= portalclipend)
 			return;
 
 		if (P_PointOnLineSide(interp.x, interp.y, portalclipline) != 0)
@@ -1954,17 +1983,11 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 	vis->scalestep = 0;
 	vis->paperdistance = 0;
 
-	vis->x1 = x1 < 0 ? 0 : x1;
-	vis->x2 = x2 >= viewwidth ? viewwidth-1 : x2;
+	vis->x1 = x1 < portalclipstart ? portalclipstart : x1;
+	vis->x2 = x2 >= portalclipend ? portalclipend-1 : x2;
 
-	// PORTAL SEMI-CLIPPING
-	if (portalrender && portalclipline)
-	{
-		if (vis->x1 < portalclipstart)
-			vis->x1 = portalclipstart;
-		if (vis->x2 > portalclipend)
-			vis->x2 = portalclipend;
-	}
+	vis->x1test = 0;
+	vis->x2test = 0;
 
 	vis->xscale = xscale; //SoM: 4/17/2000
 	vis->sector = thing->subsector->sector;

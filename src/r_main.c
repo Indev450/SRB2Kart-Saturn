@@ -1449,7 +1449,7 @@ void R_RenderPlayerView(player_t *player)
 	else
 	{
 		portalclipstart = 0;
-		portalclipend = viewwidth-1;
+		portalclipend = viewwidth;
 		R_ClearClipSegs();
 	}
 	R_ClearDrawSegs();
