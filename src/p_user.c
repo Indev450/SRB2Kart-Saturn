@@ -742,9 +742,8 @@ void P_RestoreMusic(player_t *player)
 	if (P_EndingMusic(player))
 		return;
 
-	// Event - Level Start
-	if (leveltime < (starttime + (TICRATE/2)))
-		S_ChangeMusicInternal((encoremode ? "estart" : "kstart"), false); //S_StopMusic();
+	if (leveltime < MUSICSTARTTIME)
+		S_StartMapMusic(true);
 	else // see also where time overs are handled - search for "lives = 2" in this file
 	{
 		INT32 wantedmus = 0; // 0 is level music, 1 is invincibility, 2 is grow
@@ -800,19 +799,13 @@ void P_RestoreMusic(player_t *player)
 			if (G_RaceGametype() && player->laps >= (UINT8)(cv_numlaps.value - 1))
 				S_SpeedMusic(1.2f);
 #endif
-			if (cv_birdmusic.value)
-			{
-				if (mapmusresume && cv_resume.value)
-					position = mapmusresume;
-				else
-					position = mapmusposition;
-
-				S_ChangeMusicEx(mapmusname, mapmusflags, true, position, 0, S_GetRestoreMusicFadeIn());
-				S_ClearRestoreMusicFadeInCvar();
-			}
+			if (mapmusresume && cv_resume.value) // mapmusresume will be 0 anyways when birdmusic stuff is disabled
+				position = mapmusresume;
 			else
-				S_ChangeMusicEx(mapmusname, mapmusflags, true, mapmusposition, 0, 0);
+				position = mapmusposition;
 
+			S_ChangeMusicEx(mapmusname, mapmusflags, true, position, 0, S_GetRestoreMusicFadeIn());
+			S_ClearRestoreMusicFadeInCvar();
 			mapmusresume = 0;
 		}
 	}
@@ -1041,7 +1034,7 @@ fixed_t P_GetPlayerSpinHeight(player_t *player)
 // Returns true if player is
 // on the local machine.
 //
-boolean P_IsLocalPlayer(player_t *player)
+boolean P_IsLocalPlayer(const player_t *player)
 {
 	UINT8 i;
 
@@ -1065,7 +1058,7 @@ boolean P_IsLocalPlayer(player_t *player)
 // Returns true if player is
 // currently being watched.
 //
-boolean P_IsDisplayPlayer(player_t *player)
+boolean P_IsDisplayPlayer(const player_t *player)
 {
 	UINT8 i;
 
@@ -1179,6 +1172,7 @@ mobj_t *P_SpawnGhostMobj(mobj_t *mobj)
 	ghost = P_SpawnMobj(mobj->x, mobj->y, mobj->z, MT_GHOST);
 
 	P_SetScale(ghost, mobj->scale);
+	ghost->scalespeed = mobj->scalespeed;
 	ghost->destscale = mobj->scale;
 
 	if (mobj->eflags & MFE_VERTICALFLIP)
@@ -1230,6 +1224,7 @@ mobj_t *P_SpawnGhostMobj(mobj_t *mobj)
 	ghost->old_roll = mobj->old_roll2;
 	ghost->old_sloperoll = mobj->old_sloperoll2;
 	ghost->old_slopepitch = mobj->old_slopepitch2;
+	ghost->old_scale = mobj->old_scale2;
 
 	return ghost;
 }
@@ -1254,7 +1249,7 @@ void P_DoPlayerExit(player_t *player)
 		player->exiting = raceexittime+2;
 		K_KartUpdatePosition(player);
 
-		if (cv_kartvoices.value)
+		if (!P_MobjWasRemoved(player->mo) && cv_kartvoices.value)
 		{
 			if (P_IsLocalPlayer(player))
 			{

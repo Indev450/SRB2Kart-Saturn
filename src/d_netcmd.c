@@ -493,6 +493,8 @@ consvar_t cv_showlapemblem = {"showlapemblem", "On", CV_SAVE, CV_OnOff, NULL, 0,
 
 consvar_t cv_showviewpointtext = {"showviewpointtext", "On", CV_SAVE, CV_OnOff, 0, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_showdownloadprompt = {"showdownloadprompt", "On", CV_SAVE, CV_OnOff, 0, 0, NULL, NULL, 0, 0, NULL};
+
 // Intermission time Tails 04-19-2002
 static CV_PossibleValue_t inttime_cons_t[] = {{0, "MIN"}, {3600, "MAX"}, {0, NULL}};
 consvar_t cv_inttime = {"inttime", "20", CV_NETVAR, inttime_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -567,7 +569,7 @@ consvar_t cv_ps_descriptor = {"ps_descriptor", "Average", 0, ps_descriptor_cons_
 
 consvar_t cv_director = {"director", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_kartdebugdirector = {"debugdirector", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_showdirectorhud = {"showdirectorhud", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_showdirectorhud = {"showdirectorhud", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_showtrackaddon = {"showtrackaddon", "Yes", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -976,7 +978,6 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_audbuffersize); 
 
 	// m_menu.c
-	//CV_RegisterVar(&cv_compactscoreboard);
 	CV_RegisterVar(&cv_chatheight);
 	CV_RegisterVar(&cv_chatwidth);
 	CV_RegisterVar(&cv_chattime);
@@ -994,6 +995,7 @@ void D_RegisterClientCommands(void)
 
 	CV_RegisterVar(&cv_showtrackaddon);
 	CV_RegisterVar(&cv_showviewpointtext);
+	CV_RegisterVar(&cv_showdownloadprompt);
 
 	CV_RegisterVar(&cv_director);
 	CV_RegisterVar(&cv_kartdebugdirector);
@@ -1087,20 +1089,12 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_controlperkey);
 	CV_RegisterVar(&cv_turnsmooth);
 
-	CV_RegisterVar(&cv_rumble[0]);
-	CV_RegisterVar(&cv_rumble[1]);
-	CV_RegisterVar(&cv_rumble[2]);
-	CV_RegisterVar(&cv_rumble[3]);
-
-	CV_RegisterVar(&cv_gamepadled[0]);
-	CV_RegisterVar(&cv_gamepadled[1]);
-	CV_RegisterVar(&cv_gamepadled[2]);
-	CV_RegisterVar(&cv_gamepadled[3]);
-
-	CV_RegisterVar(&cv_ledpowerup[0]);
-	CV_RegisterVar(&cv_ledpowerup[1]);
-	CV_RegisterVar(&cv_ledpowerup[2]);
-	CV_RegisterVar(&cv_ledpowerup[3]);
+	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+	{
+		CV_RegisterVar(&cv_rumble[i]);
+		CV_RegisterVar(&cv_gamepadled[i]);
+		CV_RegisterVar(&cv_ledpowerup[i]);
+	}
 
 	CV_RegisterVar(&cv_usemouse);
 	CV_RegisterVar(&cv_usemouse2);
@@ -1204,26 +1198,16 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_speed);
 	CV_RegisterVar(&cv_opflags);
 	CV_RegisterVar(&cv_mapthingnum);
-	//CV_RegisterVar(&cv_grid);
-	//CV_RegisterVar(&cv_snapto);
 
 	// add cheat commands
 	COM_AddCommand("noclip", Command_CheatNoClip_f);
 	COM_AddCommand("god", Command_CheatGod_f);
 	COM_AddCommand("notarget", Command_CheatNoTarget_f);
-	/*COM_AddCommand("getallemeralds", Command_Getallemeralds_f);
-	COM_AddCommand("resetemeralds", Command_Resetemeralds_f);
-	COM_AddCommand("setrings", Command_Setrings_f);
-	COM_AddCommand("setlives", Command_Setlives_f);
-	COM_AddCommand("setcontinues", Command_Setcontinues_f);*/
 	COM_AddCommand("devmode", Command_Devmode_f);
 	COM_AddCommand("savecheckpoint", Command_Savecheckpoint_f);
 	COM_AddCommand("scale", Command_Scale_f);
 	COM_AddCommand("gravflip", Command_Gravflip_f);
 	COM_AddCommand("hurtme", Command_Hurtme_f);
-	/*COM_AddCommand("jumptoaxis", Command_JumpToAxis_f);
-	COM_AddCommand("charability", Command_Charability_f);
-	COM_AddCommand("charspeed", Command_Charspeed_f);*/
 	COM_AddCommand("teleport", Command_Teleport_f);
 	COM_AddCommand("rteleport", Command_RTeleport_f);
 	COM_AddCommand("skynum", Command_Skynum_f);
@@ -1255,18 +1239,68 @@ void D_RegisterClientCommands(void)
  */
 static void Skin_FindRealNameSkin(consvar_t *cvar)
 {
-	// Not the best way to implements this but it will do.
+	INT32 matches[MAXSKINS] = {0}; // Skin numbers of matching skins
+	INT32 matches_pos[MAXSKINS] = {0}; // Index of matching substring
+	INT32 nummatches = 0;
 
-	int i;
+	INT32 i;
 	const char *value = cvar->string;
+
 	for (i = 0; i < numskins; i++)
 	{
-		if (strncmp(value, skins[i].realname, sizeof skins[i].realname) == 0)
-		{
-			// Change the cvar to be the value of the name.
-			CV_StealthSet(cvar, skins[i].name);
+		// Perfect match with some skin name, no need to find matching realname
+		if (strncasecmp(value, skins[i].name, sizeof skins[i].name) == 0)
 			return;
+
+		const char *match = strcasestr(skins[i].realname, value);
+		if (match != NULL)
+		{
+			matches[nummatches] = i;
+			matches_pos[nummatches] = match - skins[i].realname;
+			++nummatches;
 		}
+	}
+
+	if (nummatches == 1)
+	{
+		// Change the cvar to be the value of the name.
+		CV_StealthSet(cvar, skins[matches[0]].name);
+	}
+	else if (nummatches > 1)
+	{
+		size_t query_length = strlen(value);
+
+		char start[SKINNAMESIZE+1] = {0}; // Start of name, printed with normal color
+		char match[SKINNAMESIZE+1] = {0}; // Matching part of name, highlighted in red
+		const char *end = NULL; // End of the name, printed with normal color. Can be just a pointer into realname part
+
+		CONS_Printf("\x86Multiple matches found:\n");
+
+		for (i = 0; i < nummatches; ++i)
+		{
+			const char *realname = skins[matches[i]].realname;
+
+			if (matches_pos[i] == 0)
+				start[0] = 0;
+			else
+			{
+				memcpy(start, realname, matches_pos[i]);
+				start[matches_pos[i]] = 0;
+			}
+
+			memcpy(match, realname+matches_pos[i], query_length);
+			match[matches_pos[i] + query_length] = 0;
+
+			end = realname + matches_pos[i] + query_length;
+
+			CONS_Printf("%s\x85%s\x80%s (%s)\n", start, match, end, skins[matches[i]].name);
+		}
+
+		CONS_Printf("\x86Try be more specific\n");
+	}
+	else
+	{
+		CONS_Printf("\x86Skin not found\n");
 	}
 }
 
@@ -3175,6 +3209,8 @@ static void Got_Pause(UINT8 **cp, INT32 playernum)
 		else
 			S_ResumeAudio();
 	}
+
+	G_ResetAllDeviceRumbles();
 }
 
 static void Command_ReplayMarker(void)
@@ -3192,7 +3228,10 @@ static void Command_ReplayMarker(void)
 		demo.savemode = DSM_WILLAUTOSAVE;
 		if (adjustedleveltime < 0)
 			adjustedleveltime = 0;
-		snprintf(demo.titlename, 64, "%s [%i:%02d/%.5s]", G_BuildMapTitle(gamemap), G_TicsToMinutes(adjustedleveltime, false), G_TicsToSeconds(adjustedleveltime), modeattacking ? "Record Attack" : connectedservername);
+		char *title = G_BuildMapTitle(gamemap);
+		snprintf(demo.titlename, 64, "%s [%i:%02d/%.5s]", title, G_TicsToMinutes(adjustedleveltime, false), G_TicsToSeconds(adjustedleveltime), modeattacking ? "Record Attack" : connectedservername);
+		if (title)
+			Z_Free(title);
 		CONS_Printf("Replay will be saved!\n");
 	}
 }

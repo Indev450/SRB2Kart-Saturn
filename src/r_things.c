@@ -609,12 +609,13 @@ void R_DrawMaskedColumn(column_t *column)
 			dc_yh = mfloorclip[dc_x]-1;
 		if (dc_yl <= mceilingclip[dc_x])
 			dc_yl = mceilingclip[dc_x]+1;
+
 		if (dc_yl < 0)
 			dc_yl = 0;
 		if (dc_yh >= vid.height)
 			dc_yh = vid.height - 1;
 
-		if (dc_yl <= dc_yh && dc_yh > 0)
+		if (dc_yl <= dc_yh && dc_yh > 0 && column->length != 0)
 		{
 			dc_source = (UINT8 *)column + 3;
 			dc_texturemid = basetexturemid - (topdelta<<FRACBITS);
@@ -625,6 +626,10 @@ void R_DrawMaskedColumn(column_t *column)
 			// quick fix... something more proper should be done!!!
 			if (ylookup[dc_yl])
 				colfunc();
+#ifdef PARANOIA
+			else
+				I_Error("R_DrawMaskedColumn: Invalid ylookup for dc_yl %d", dc->yl);
+#endif
 		}
 		column = (column_t *)((UINT8 *)column + column->length + 4);
 	}
@@ -674,7 +679,7 @@ static void R_DrawFlippedMaskedColumn(column_t *column)
 		if (dc_yh >= vid.height)
 			dc_yh = vid.height - 1;
 
-		if (dc_yl <= dc_yh && dc_yh > 0)
+		if (dc_yl <= dc_yh && dc_yh > 0 && column->length != 0)
 		{
 			dc_source = ZZ_Alloc(column->length);
 			for (s = (UINT8 *)column+2+column->length, d = dc_source; d < dc_source+column->length; --s)
@@ -837,22 +842,15 @@ static void R_DrawVisSprite(vissprite_t *vis)
 	if (vis->x2 >= vid.width)
 		vis->x2 = vid.width-1;
 
-	// Something is occasionally setting 1px-wide sprites whose frac is exactly the width of the sprite, causing crashes due to
-	// accessing invalid column info. Until the cause is found, let's try to correct those manually...
-	{
-		fixed_t temp = ((frac + vis->xiscale*(vis->x2-vis->x1))>>FRACBITS) - SHORT(patch->width);
-		if (temp > 0)
-			vis->x2 -= temp;
-	}
-
 	localcolfunc = (vis->vflip) ? R_DrawFlippedMaskedColumn : R_DrawMaskedColumn;
-	lengthcol = patch->height;
+	lengthcol = SHORT(patch->height);
 
 	// Split drawing loops for paper and non-paper to reduce conditional checks per sprite
 	if (vis->scalestep)
 	{
 		fixed_t horzscale = FixedMul(vis->spritexscale, this_scale);
 		fixed_t scalestep = FixedMul(vis->scalestep, vis->spriteyscale);
+
 		pwidth = SHORT(patch->width);
 
 		// Papersprite drawing loop
@@ -1987,7 +1985,7 @@ void R_AddPrecipitationSprites(void)
 	precipmobj_t *th, *next;
 
 	// no, no infinite draw distance for precipitation. this option at zero is supposed to turn it off
-	if (drawdist == 0)
+	if (drawdist == 0 || curWeather == PRECIP_BLANK || curWeather == PRECIP_STORM_NORAIN)
 	{
 		return;
 	}
@@ -2450,8 +2448,8 @@ static boolean R_CheckSpriteVisible(vissprite_t *spr, INT32 x1, INT32 x2)
 	INT16 sz = spr->sz;
 	INT16 szt = spr->szt;
 
-	fixed_t texturemid, yscale, scalestep = spr->scalestep;
-	INT32 height;
+	fixed_t texturemid = 0, yscale = 0, scalestep = spr->scalestep; // "= 0" pleases the compiler
+	INT32 height = 0;
 
 	if (scalestep)
 	{

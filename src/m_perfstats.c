@@ -10,6 +10,7 @@
 /// \brief Performance measurement tools.
 
 #include "m_perfstats.h"
+#include "p_mobj.h"
 #include "v_video.h"
 #include "i_video.h"
 #include "d_netcmd.h"
@@ -58,6 +59,7 @@ static ps_metric_t ps_regularcount = {0};
 static ps_metric_t ps_scenerycount = {0};
 static ps_metric_t ps_nothinkcount = {0};
 static ps_metric_t ps_otherthcount = {0};
+static ps_metric_t ps_precipcount = {0};
 static ps_metric_t ps_removecount = {0};
 
 ps_metric_t ps_checkposition_calls = {0};
@@ -171,6 +173,7 @@ perfstatrow_t thinkercount_rows[] = {
 	{"  regular", "  Regular:        ", &ps_regularcount, PS_LEVEL},
 	{"  scenery", "  Scenery:        ", &ps_scenerycount, PS_LEVEL},
 	{"  nothink", "  Nothink:        ", &ps_nothinkcount, PS_HIDE_ZERO|PS_LEVEL},
+	{" precip ", " Precipitation:  ", &ps_precipcount, PS_LEVEL},
 	{" other  ", " Other:          ", &ps_otherthcount, PS_LEVEL},
 	{" remove ", " Pending removal:", &ps_removecount, PS_LEVEL},
 	{0}
@@ -569,11 +572,14 @@ static void PS_CountThinkers(void)
 	ps_regularcount.value.i = 0;
 	ps_scenerycount.value.i = 0;
 	ps_nothinkcount.value.i = 0;
+	ps_precipcount.value.i = 0;
 	ps_otherthcount.value.i = 0;
 	ps_removecount.value.i = 0;
 	for (thinker = thinkercap.next; thinker != &thinkercap; thinker = thinker->next)
 	{
-		ps_thinkercount.value.i++;
+		if (thinker->function.acp1 != (actionf_p1)P_NullPrecipThinker)
+			ps_thinkercount.value.i++;
+
 		if (thinker->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 			ps_removecount.value.i++;
 		else if (thinker->function.acp1 == (actionf_p1)P_MobjThinker)
@@ -587,6 +593,8 @@ static void PS_CountThinkers(void)
 			else
 				ps_regularcount.value.i++;
 		}
+		else if (thinker->function.acp1 == (actionf_p1)P_NullPrecipThinker)
+			ps_precipcount.value.i++;
 		else
 			ps_otherthcount.value.i++;
 	}

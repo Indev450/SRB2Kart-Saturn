@@ -592,7 +592,8 @@ fixed_t P_MobjFloorZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed_t
 {
 	I_Assert(mobj != NULL);
 	I_Assert(sector != NULL);
-	if (sector->f_slope) {
+	if (sector->f_slope)
+	{
 		fixed_t testx, testy;
 		pslope_t *slope = sector->f_slope;
 
@@ -607,7 +608,8 @@ fixed_t P_MobjFloorZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed_t
 		else
 			testy = -mobj->radius;
 
-		if ((slope->zdelta > 0) ^ !!(lowest)) {
+		if ((slope->zdelta > 0) ^ !!(lowest))
+		{
 			testx = -testx;
 			testy = -testy;
 		}
@@ -620,22 +622,21 @@ fixed_t P_MobjFloorZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed_t
 			return P_GetZAt(slope, testx, testy);
 
 		// If boundsec is set, we're looking for specials. In that case, iterate over every line in this sector to find the TRUE highest/lowest point
-		if (perfect) {
+		if (perfect)
+		{
 			size_t i;
 			line_t *ld;
 			fixed_t bbox[4];
 			fixed_t finalheight;
 
-			if (lowest)
-				finalheight = INT32_MAX;
-			else
-				finalheight = INT32_MIN;
+			finalheight = lowest ? INT32_MAX : INT32_MIN;
 
 			bbox[BOXLEFT] = x-mobj->radius;
 			bbox[BOXRIGHT] = x+mobj->radius;
 			bbox[BOXTOP] = y+mobj->radius;
 			bbox[BOXBOTTOM] = y-mobj->radius;
-			for (i = 0; i < boundsec->linecount; i++) {
+			for (i = 0; i < boundsec->linecount; i++)
+			{
 				ld = boundsec->lines[i];
 
 				if (bbox[BOXRIGHT] <= ld->bbox[BOXLEFT] || bbox[BOXLEFT] >= ld->bbox[BOXRIGHT]
@@ -668,7 +669,8 @@ fixed_t P_MobjCeilingZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed
 {
 	I_Assert(mobj != NULL);
 	I_Assert(sector != NULL);
-	if (sector->c_slope) {
+	if (sector->c_slope)
+	{
 		fixed_t testx, testy;
 		pslope_t *slope = sector->c_slope;
 
@@ -683,7 +685,8 @@ fixed_t P_MobjCeilingZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed
 		else
 			testy = -mobj->radius;
 
-		if ((slope->zdelta > 0) ^ !!(lowest)) {
+		if ((slope->zdelta > 0) ^ !!(lowest))
+		{
 			testx = -testx;
 			testy = -testy;
 		}
@@ -696,22 +699,21 @@ fixed_t P_MobjCeilingZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed
 			return P_GetZAt(slope, testx, testy);
 
 		// If boundsec is set, we're looking for specials. In that case, iterate over every line in this sector to find the TRUE highest/lowest point
-		if (perfect) {
+		if (perfect)
+		{
 			size_t i;
 			line_t *ld;
 			fixed_t bbox[4];
 			fixed_t finalheight;
 
-			if (lowest)
-				finalheight = INT32_MAX;
-			else
-				finalheight = INT32_MIN;
+			finalheight = lowest ? INT32_MAX : INT32_MIN;
 
 			bbox[BOXLEFT] = x-mobj->radius;
 			bbox[BOXRIGHT] = x+mobj->radius;
 			bbox[BOXTOP] = y+mobj->radius;
 			bbox[BOXBOTTOM] = y-mobj->radius;
-			for (i = 0; i < boundsec->linecount; i++) {
+			for (i = 0; i < boundsec->linecount; i++)
+			{
 				ld = boundsec->lines[i];
 
 				if (bbox[BOXRIGHT] <= ld->bbox[BOXLEFT] || bbox[BOXLEFT] >= ld->bbox[BOXRIGHT]
@@ -746,7 +748,8 @@ fixed_t P_CameraFloorZ(camera_t *mobj, sector_t *sector, sector_t *boundsec, fix
 	I_Assert(mobj != NULL);
 	I_Assert(sector != NULL);
 
-	if (sector->f_slope) {
+	if (sector->f_slope)
+	{
 		fixed_t testx, testy;
 		pslope_t *slope = sector->f_slope;
 
@@ -761,7 +764,8 @@ fixed_t P_CameraFloorZ(camera_t *mobj, sector_t *sector, sector_t *boundsec, fix
 		else
 			testy = -mobj->radius;
 
-		if ((slope->zdelta > 0) ^ !!(lowest)) {
+		if ((slope->zdelta > 0) ^ !!(lowest))
+		{
 			testx = -testx;
 			testy = -testy;
 		}
@@ -774,22 +778,21 @@ fixed_t P_CameraFloorZ(camera_t *mobj, sector_t *sector, sector_t *boundsec, fix
 			return P_GetZAt(slope, testx, testy);
 
 		// If boundsec is set, we're looking for specials. In that case, iterate over every line in this sector to find the TRUE highest/lowest point
-		if (perfect) {
+		if (perfect)
+		{
 			size_t i;
 			line_t *ld;
 			fixed_t bbox[4];
 			fixed_t finalheight;
 
-			if (lowest)
-				finalheight = INT32_MAX;
-			else
-				finalheight = INT32_MIN;
+			finalheight = lowest ? INT32_MAX : INT32_MIN;
 
 			bbox[BOXLEFT] = x-mobj->radius;
 			bbox[BOXRIGHT] = x+mobj->radius;
 			bbox[BOXTOP] = y+mobj->radius;
 			bbox[BOXBOTTOM] = y-mobj->radius;
-			for (i = 0; i < boundsec->linecount; i++) {
+			for (i = 0; i < boundsec->linecount; i++)
+			{
 				ld = boundsec->lines[i];
 
 				if (bbox[BOXRIGHT] <= ld->bbox[BOXLEFT] || bbox[BOXLEFT] >= ld->bbox[BOXRIGHT]
@@ -823,7 +826,8 @@ fixed_t P_CameraCeilingZ(camera_t *mobj, sector_t *sector, sector_t *boundsec, f
 	I_Assert(mobj != NULL);
 	I_Assert(sector != NULL);
 
-	if (sector->c_slope) {
+	if (sector->c_slope)
+	{
 		fixed_t testx, testy;
 		pslope_t *slope = sector->c_slope;
 
@@ -838,7 +842,8 @@ fixed_t P_CameraCeilingZ(camera_t *mobj, sector_t *sector, sector_t *boundsec, f
 		else
 			testy = -mobj->radius;
 
-		if ((slope->zdelta > 0) ^ !!(lowest)) {
+		if ((slope->zdelta > 0) ^ !!(lowest))
+		{
 			testx = -testx;
 			testy = -testy;
 		}
@@ -851,22 +856,21 @@ fixed_t P_CameraCeilingZ(camera_t *mobj, sector_t *sector, sector_t *boundsec, f
 			return P_GetZAt(slope, testx, testy);
 
 		// If boundsec is set, we're looking for specials. In that case, iterate over every line in this sector to find the TRUE highest/lowest point
-		if (perfect) {
+		if (perfect)
+		{
 			size_t i;
 			line_t *ld;
 			fixed_t bbox[4];
 			fixed_t finalheight;
 
-			if (lowest)
-				finalheight = INT32_MAX;
-			else
-				finalheight = INT32_MIN;
+			finalheight = lowest ? INT32_MAX : INT32_MIN;
 
 			bbox[BOXLEFT] = x-mobj->radius;
 			bbox[BOXRIGHT] = x+mobj->radius;
 			bbox[BOXTOP] = y+mobj->radius;
 			bbox[BOXBOTTOM] = y-mobj->radius;
-			for (i = 0; i < boundsec->linecount; i++) {
+			for (i = 0; i < boundsec->linecount; i++)
+			{
 				ld = boundsec->lines[i];
 
 				if (bbox[BOXRIGHT] <= ld->bbox[BOXLEFT] || bbox[BOXLEFT] >= ld->bbox[BOXRIGHT]
@@ -6034,7 +6038,7 @@ void P_RollPitchMobj(mobj_t* mobj)
     if (cv_sloperolldist.value > 0)
         usedist = true;
 
-    if ((cv_spriteroll.value) && (cv_sloperoll.value == 2))
+    if (cv_spriteroll.value && cv_sloperoll.value == 2)
     {
         K_RollMobjBySlopes(mobj, usedist);
     }
@@ -6260,7 +6264,7 @@ void P_MobjThinker(mobj_t *mobj)
 					return;
 				}
 				
-				if (mobj->state == &states[S_SHADOW] && cv_sloperoll.value == 2)
+				if (cv_sloperoll.value == 2 && mobj->state == &states[S_SHADOW])
 				{
 					mobj->slopepitch = mobj->target->slopepitch;
 					mobj->sloperoll = mobj->target->sloperoll;
@@ -10136,13 +10140,6 @@ void P_RemoveMobj(mobj_t *mobj)
 	}
 }
 
-// This does not need to be added to Lua.
-// To test it in Lua, check mobj.valid
-FUNCINLINE ATTRINLINE boolean P_MobjWasRemoved(const mobj_t *mobj)
-{
-    return !(mobj && mobj->thinker.function.acp1 == (actionf_p1)P_MobjThinker);
-}
-
 void P_FreePrecipMobj(precipmobj_t *mobj)
 {
 	// unlink from sector and block lists
@@ -10205,9 +10202,8 @@ consvar_t cv_suddendeath = {"suddendeath", "Off", CV_NETVAR|CV_CHEAT|CV_NOSHOWHE
 
 void P_SpawnPrecipitation(void)
 {
-	INT32 i, j, k, mrand;
-	fixed_t basex, basey, x, y, z, height;
-	fixed_t precipscale = cv_mobjscaleprecip.value ? mapobjectscale : FRACUNIT;
+	INT32 i, mrand;
+	fixed_t basex, basey, j, x, y, z;
 	subsector_t *precipsector = NULL;
 	precipmobj_t *rainmo = NULL;
 
@@ -10220,9 +10216,10 @@ void P_SpawnPrecipitation(void)
 		basex = bmaporgx + (i % bmapwidth) * MAPBLOCKSIZE;
 		basey = bmaporgy + (i / bmapwidth) * MAPBLOCKSIZE;
 
-		for (j = 0; j < FRACUNIT; j += precipscale)
+		for (j = 0; j < FRACUNIT; j += cv_mobjscaleprecip.value ? mapobjectscale : FRACUNIT)
 		{
-			UINT16 numparticles = 0;
+			INT32 floorz;
+			INT32 ceilingz;
 
 			x = ((cv_lessprecip.value ? basex*1.5 : basex) + ((M_RandomKey(MAPBLOCKUNITS<<3)<<FRACBITS)>>3));
 			y = ((cv_lessprecip.value ? basey*1.5 : basey) + ((M_RandomKey(MAPBLOCKUNITS<<3)<<FRACBITS)>>3));
@@ -10238,49 +10235,37 @@ void P_SpawnPrecipitation(void)
 			if (precipsector->sector->ceilingpic != skyflatnum)
 				continue;
 
-			height = precipsector->sector->ceilingheight - precipsector->sector->floorheight;
-			height = FixedDiv(height, precipscale);
-
 			// Exists, but is too small for reasonable precipitation.
-			if (height < 64<<FRACBITS)
+			if (!(precipsector->sector->floorheight <= precipsector->sector->ceilingheight - (32<<FRACBITS)))
 				continue;
-
-			// Hack around a quirk of this entire system, where taller sectors look like they get less precipitation.
-			numparticles = 1 + (height / (MAPBLOCKUNITS<<4<<FRACBITS));
 
 			// Don't set z properly yet...
 			z = precipsector->sector->ceilingheight;
 
-			for (k = 0; k < numparticles; k++)
+			if (curWeather == PRECIP_SNOW)
 			{
-				INT32 floorz;
-				INT32 ceilingz;
+				rainmo = P_SpawnPrecipMobj(x, y, z, MT_SNOWFLAKE);
+				mrand = M_RandomByte();
+				if (mrand < 64)
+					P_SetPrecipMobjState(rainmo, S_SNOW3);
+				else if (mrand < 144)
+					P_SetPrecipMobjState(rainmo, S_SNOW2);
+			}
+			else // everything else.
+				rainmo = P_SpawnPrecipMobj(x, y, z, MT_RAIN);
 
-				if (curWeather == PRECIP_SNOW)
-				{
-					rainmo = P_SpawnPrecipMobj(x, y, z, MT_SNOWFLAKE);
-					mrand = M_RandomByte();
-					if (mrand < 64)
-						P_SetPrecipMobjState(rainmo, S_SNOW3);
-					else if (mrand < 144)
-						P_SetPrecipMobjState(rainmo, S_SNOW2);
-				}
-				else // everything else.
-					rainmo = P_SpawnPrecipMobj(x, y, z, MT_RAIN);
+			floorz = rainmo->floorz >> FRACBITS;
+			ceilingz = rainmo->ceilingz >> FRACBITS;
 
-				floorz = rainmo->floorz >> FRACBITS;
-				ceilingz = rainmo->ceilingz >> FRACBITS;
-
-				if (floorz < ceilingz)
-				{
-					// Randomly assign a height, now that floorz is set.
-					rainmo->z = M_RandomRange(floorz, ceilingz) << FRACBITS;
-				}
-				else
-				{
-					// ...except if the floor is above the ceiling.
-					rainmo->z = ceilingz << FRACBITS;
-				}
+			if (floorz < ceilingz)
+			{
+				// Randomly assign a height, now that floorz is set.
+				rainmo->z = M_RandomRange(floorz, ceilingz) << FRACBITS;
+			}
+			else
+			{
+				// ...except if the floor is above the ceiling.
+				rainmo->z = ceilingz << FRACBITS;
 			}
 		}
 	}
@@ -10395,10 +10380,7 @@ void P_PrecipitationEffects(void)
 		volume = 255 - (closedist>>(FRACBITS+2));
 	}
 
-	if (volume < 0)
-		volume = 0;
-	else if (volume > 255)
-		volume = 255;
+	volume = CLAMP(volume, 0, 255);
 
 	if (sounds_rain && (!leveltime || leveltime % 80 == 1))
 		S_StartSoundAtVolume(players[displayplayers[0]].mo, sfx_rainin, volume);

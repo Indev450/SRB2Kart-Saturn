@@ -127,13 +127,8 @@ extern char  logfilename[1024];
 #else
 #define VERSION    1 // Game version
 #define SUBVERSION 6 // more precise version number
-#ifndef USE_FBO_OGL
-#define VERSIONSTRING "Saturn v7"
-#define VERSIONSTRINGW L"Saturn v7"
-#else
-#define VERSIONSTRING "Saturn v7 - FBO "
-#define VERSIONSTRINGW L"Saturn v7 - FBO"
-#endif
+#define VERSIONSTRING "Saturn v7.1"
+#define VERSIONSTRINGW L"Saturn v7.1"
 // Hey! If you change this, add 1 to the MODVERSION below! Otherwise we can't force updates!
 // And change CMakeLists.txt (not src/, but in root), for CMake users!
 // AND appveyor.yml, for the build bots!
@@ -474,7 +469,12 @@ void M_StartupLocale(void);
 // M_GetText function that just returns the string.
 #define M_GetText(x) (x)
 #endif
-void *M_Memcpy(void* dest, const void* src, size_t n);
+
+FUNCINLINE static ATTRINLINE void *M_Memcpy(void *dest, const void *src, size_t n)
+{
+	return memcpy(dest, src, n);
+}
+
 char *va(const char *format, ...) FUNCPRINTF;
 char *M_GetToken(const char *inputString);
 char *sizeu1(size_t num);
@@ -585,9 +585,9 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 
 /// Server detection for if a connecting client is on Saturn.
 /// For stuff like extra synching, etc.
-//#ifdef DOSATURNPAK
-//#define SATURNPAK
-//#endif
+#ifdef DOSATURNPAK
+#define SATURNPAK
+#endif
 //-- <(￣︶￣)> __
 #endif
 

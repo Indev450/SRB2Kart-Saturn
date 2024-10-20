@@ -99,6 +99,8 @@ typedef struct
 	thinker_t **thinkers;
 } thinkerlist_t;
 
+//static boolean fromlapexec = false;
+
 static void P_SearchForDisableLinedefs(void);
 static void P_SpawnScrollers(void);
 static void P_SpawnFriction(void);
@@ -1340,6 +1342,7 @@ boolean P_RunTriggerLinedef(line_t *triggerline, mobj_t *actor, sector_t *caller
 	fixed_t dist = P_AproxDistance(triggerline->dx, triggerline->dy)>>FRACBITS;
 	size_t i, linecnt, sectori;
 	INT16 specialtype = triggerline->special;
+	//fromlapexec = false;
 
 	/////////////////////////////////////////////////
 	// Distance-checking/sector trigger conditions //
@@ -1461,6 +1464,8 @@ boolean P_RunTriggerLinedef(line_t *triggerline, mobj_t *actor, sector_t *caller
 				if (lap != (sides[triggerline->sidenum[0]].textureoffset >> FRACBITS))
 					return false;
 			}
+
+			//fromlapexec = true;
 		}
 		// If we were not triggered by a sector type especially for the purpose,
 		// a Linedef Executor linedef trigger is not handling sector triggers properly, return.
@@ -2113,12 +2118,12 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 						return;
 
 					if (bot)
-						P_Teleport(bot, dest->x, dest->y, dest->z, (line->flags & ML_NOCLIMB) ?  mo->angle : dest->angle, (line->flags & ML_BLOCKMONSTERS) == 0, (line->flags & ML_EFFECT4) == ML_EFFECT4);
+						P_Teleport(bot, dest->x, dest->y, dest->z, (line->flags & ML_NOCLIMB) ? mo->angle : dest->angle, (line->flags & ML_BLOCKMONSTERS) == 0, (line->flags & ML_EFFECT4) == ML_EFFECT4);
 					if (line->flags & ML_BLOCKMONSTERS)
-						P_Teleport(mo, dest->x, dest->y, dest->z, (line->flags & ML_NOCLIMB) ?  mo->angle : dest->angle, false, (line->flags & ML_EFFECT4) == ML_EFFECT4);
+						P_Teleport(mo, dest->x, dest->y, dest->z, (line->flags & ML_NOCLIMB) ? mo->angle : dest->angle, false, (line->flags & ML_EFFECT4) == ML_EFFECT4);
 					else
 					{
-						P_Teleport(mo, dest->x, dest->y, dest->z, (line->flags & ML_NOCLIMB) ?  mo->angle : dest->angle, true, (line->flags & ML_EFFECT4) == ML_EFFECT4);
+						P_Teleport(mo, dest->x, dest->y, dest->z, (line->flags & ML_NOCLIMB) ? mo->angle : dest->angle, true, (line->flags & ML_EFFECT4) == ML_EFFECT4);
 						// Play the 'bowrwoosh!' sound
 						S_StartSound(dest, sfx_mixup);
 					}
@@ -2127,6 +2132,12 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 			break;
 
 		case 413: // Change music
+			if (keepmusic && (leveltime <= MUSICSTARTTIME)) //why check for starttime? cause encore music Zzz...
+				return;
+
+			//if (cv_ignoremusicchanges.value && (leveltime >= MUSICSTARTTIME) && !fromlapexec) // keep lap music intanct tho
+				//return;
+
 			// console player only unless NOCLIMB is set
 			if ((line->flags & ML_NOCLIMB) || (mo && mo->player && P_IsLocalPlayer(mo->player)))
 			{
@@ -2179,9 +2190,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 						mapmusflags |= MUSIC_FORCERESET;
 
 					mapmusposition = position;
-
-					if (cv_birdmusic.value)
-						mapmusresume = 0;
+					mapmusresume = 0;
 
 					S_ChangeMusicEx(mapmusname, mapmusflags, !(line->flags & ML_EFFECT4), position,
 						!(line->flags & ML_EFFECT2) ? prefadems : 0,
@@ -2208,6 +2217,10 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 		case 414: // Play SFX
 			{
 				INT32 sfxnum;
+
+				//dont play any funky sound intros that may interfere with the music
+				if (skipintromus && (leveltime < MUSICSTARTTIME))
+					return;
 
 				sfxnum = sides[line->sidenum[0]].toptexture; //P_AproxDistance(line->dx, line->dy)>>FRACBITS;
 
@@ -2485,6 +2498,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 		case 422: // Cut away to another view
 			{
 				mobj_t *altview;
+				INT32 i;
 
 				if (!mo || !mo->player) // only players have views
 					return;
@@ -2498,6 +2512,18 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 
 				P_SetTarget(&mo->player->awayviewmobj, altview);
 				mo->player->awayviewtics = P_AproxDistance(line->dx, line->dy)>>FRACBITS;
+
+				if (gamestate == GS_LEVEL)
+				{
+					for (i = 0; i <= splitscreen; i++)
+					{
+						if (displayplayers[i] == (mo->player - players))
+						{
+							R_ResetViewInterpolation(i + 1);
+							R_ResetViewInterpolation(i + 1);
+						}
+					}
+				}
 
 				if (line->flags & ML_NOCLIMB) // lets you specify a vertical angle
 				{
@@ -2836,17 +2862,19 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 
 		case 444: // Earthquake camera
 		{
-			quake.intensity = sides[line->sidenum[0]].textureoffset;
-			quake.radius = sides[line->sidenum[0]].rowoffset;
-			quake.time = P_AproxDistance(line->dx, line->dy)>>FRACBITS;
+			fixed_t intensity = sides[line->sidenum[0]].textureoffset;
+			fixed_t radius = sides[line->sidenum[0]].rowoffset;
+			tic_t time = P_AproxDistance(line->dx, line->dy)>>FRACBITS;
 
 			quake.epicenter = NULL; /// \todo
 
 			// reasonable defaults.
-			if (!quake.intensity)
-				quake.intensity = 8<<FRACBITS;
-			if (!quake.radius)
-				quake.radius = 512<<FRACBITS;
+			if (intensity <= 0)
+				intensity = 8<<FRACBITS;
+			if (radius <= 0)
+				radius = 512<<FRACBITS;
+
+			P_StartQuake(time, intensity, radius);
 			break;
 		}
 
@@ -5308,6 +5336,8 @@ void P_SpawnSpecials(INT32 fromnetsave, boolean reloadinggamestate)
 		curWeather = PRECIP_STORM_NORAIN;
 	else if (mapheaderinfo[gamemap-1]->weather == 6) // storm w/o lightning
 		curWeather = PRECIP_STORM_NOSTRIKES;
+	else if (mapheaderinfo[gamemap-1]->weather == 4) // blank
+		curWeather = PRECIP_BLANK;
 	else
 		curWeather = PRECIP_NONE;
 
@@ -7542,6 +7572,23 @@ static void P_SpawnPushers(void)
 					Add_Pusher(p_downwind, l->dx, l->dy, NULL, s, -1, l->flags & ML_NOCLIMB, l->flags & ML_EFFECT4);
 				break;
 		}
+}
+
+void P_StartQuake(tic_t time, fixed_t intensity, fixed_t radius)
+{
+	if (time <= 0 || intensity <= 0)
+	{
+		// Invalid parameters
+		return;
+	}
+
+	quake.time = time;
+	quake.intensity = FixedMul(intensity, mapobjectscale);
+
+	if (radius > 0)
+	{
+		quake.radius = FixedMul(radius, mapobjectscale);
+	}
 }
 
 static void P_SearchForDisableLinedefs(void)

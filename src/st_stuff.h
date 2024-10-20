@@ -146,4 +146,6 @@ extern UINT16 objectsdrawn;
 extern consvar_t cv_lessflicker;
 extern consvar_t cv_stagetitle;
 
+extern boolean directortextactive;
+
 #endif

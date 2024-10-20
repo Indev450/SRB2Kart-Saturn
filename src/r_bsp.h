@@ -18,12 +18,14 @@
 #pragma interface
 #endif
 
+#include "r_main.h"
+
 extern seg_t *curline;
 extern side_t *sidedef;
 extern line_t *linedef;
 extern sector_t *frontsector;
 extern sector_t *backsector;
-extern boolean portalline; // is curline a portal seg?
+extern portal_pair *g_portal; // is curline a portal seg?
 
 // drawsegs are allocated on the fly... see r_segs.c
 

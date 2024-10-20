@@ -357,10 +357,6 @@ consvar_t cv_demochangemap = {"netdemo_savemapchange", "Disabled", CV_SAVE, demo
 static UINT8 *savebuffer;
 
 // Analog Control
-static void UserAnalog_OnChange(void);
-static void UserAnalog2_OnChange(void);
-static void UserAnalog3_OnChange(void);
-static void UserAnalog4_OnChange(void);
 static void Analog_OnChange(void);
 static void Analog2_OnChange(void);
 static void Analog3_OnChange(void);
@@ -446,10 +442,10 @@ consvar_t cv_analog = {"analog", "Off", CV_CALL, CV_OnOff, Analog_OnChange, 0, N
 consvar_t cv_analog2 = {"analog2", "Off", CV_CALL, CV_OnOff, Analog2_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_analog3 = {"analog3", "Off", CV_CALL, CV_OnOff, Analog3_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_analog4 = {"analog4", "Off", CV_CALL, CV_OnOff, Analog4_OnChange, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_useranalog = {"useranalog", "Off", CV_SAVE|CV_CALL, CV_OnOff, UserAnalog_OnChange, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_useranalog2 = {"useranalog2", "Off", CV_SAVE|CV_CALL, CV_OnOff, UserAnalog2_OnChange, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_useranalog3 = {"useranalog3", "Off", CV_SAVE|CV_CALL, CV_OnOff, UserAnalog3_OnChange, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_useranalog4 = {"useranalog4", "Off", CV_SAVE|CV_CALL, CV_OnOff, UserAnalog4_OnChange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_useranalog = {"useranalog", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_useranalog2 = {"useranalog2", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_useranalog3 = {"useranalog3", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_useranalog4 = {"useranalog4", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_turnaxis = {"joyaxis_turn", "Left X", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_moveaxis = {"joyaxis_move", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -511,8 +507,8 @@ static CV_PossibleValue_t driftsparkpulse_t[] = {{0, "MIN"}, {FRACUNIT*3, "MAX"}
 consvar_t cv_driftsparkpulse = {"driftsparkpulse", "1.4", CV_FLOAT | CV_SAVE, driftsparkpulse_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static CV_PossibleValue_t stretchfactor_t[] = {
-	{0, "Off"}, {FRACUNIT/8, "0.125"}, {FRACUNIT/4, "0.250"}, 
-	{3*FRACUNIT/8, "0.375"}, {FRACUNIT/2, "0.500"}, {5*FRACUNIT/8, "0.625"}, 
+	{0, "Off"}, {FRACUNIT/8, "0.125"}, {FRACUNIT/4, "0.250"},
+	{3*FRACUNIT/8, "0.375"}, {FRACUNIT/2, "0.500"}, {5*FRACUNIT/8, "0.625"},
 	{3*FRACUNIT/4, "0.750"}, {7*FRACUNIT/8, "0.875"}, {FRACUNIT, "Max"}, {0, NULL}};
 consvar_t cv_gravstretch = {"gravstretch", "0", CV_SAVE, stretchfactor_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -595,15 +591,6 @@ void G_ClearRecords(void)
 		}
 	}
 }
-
-// For easy retrieval of records
-/*UINT32 G_GetBestScore(INT16 map)
-{
-	if (!mainrecords[map-1])
-		return 0;
-
-	return mainrecords[map-1]->score;
-}*/
 
 tic_t G_GetBestTime(INT16 map)
 {
@@ -980,7 +967,7 @@ static INT32 Joy3Axis(axis_input_e axissel)
 		}
 		if (flp) retaxis = -retaxis; //flip it around
 		return retaxis;
-		
+
 	}
 	else
 	{
@@ -1000,7 +987,7 @@ static INT32 Joy3Axis(axis_input_e axissel)
 		}
 		if (flp) retaxis = -retaxis; //flip it around
 		return retaxis;
-		
+
 	}
 }
 
@@ -1075,7 +1062,7 @@ static INT32 Joy4Axis(axis_input_e axissel)
 		}
 		if (flp) retaxis = -retaxis; //flip it around
 		return retaxis;
-		
+
 	}
 	else
 	{
@@ -1095,7 +1082,7 @@ static INT32 Joy4Axis(axis_input_e axissel)
 		}
 		if (flp) retaxis = -retaxis; //flip it around
 		return retaxis;
-		
+
 	}
 }
 
@@ -1197,11 +1184,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	// why build a ticcmd if we're paused?
 	// Or, for that matter, if we're being reborn.
 	// Kart, don't build a ticcmd if someone is resynching or the server is stopped too so we don't fly off course in bad conditions
-	if (paused || P_AutoPause() || (gamestate == GS_LEVEL && player->playerstate == PST_REBORN) || hu_resynching
-#ifdef SATURNSYNCH
-		|| hu_redownloadinggamestate
-#endif
-		)
+	if (paused || P_AutoPause() || (gamestate == GS_LEVEL && player->playerstate == PST_REBORN) || hu_resynching)
 	{
 		cmd->angleturn = (INT16)(lang >> 16);
 		cmd->aiming = G_ClipAimingPitch(&laim);
@@ -1513,60 +1496,10 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 
 }
 
-// User has designated that they want
-// analog ON, so tell the game to stop
-// fudging with it.
-static void UserAnalog_OnChange(void)
-{
-	/*if (cv_useranalog.value)
-		CV_SetValue(&cv_analog, 1);
-	else
-		CV_SetValue(&cv_analog, 0);*/
-}
-
-static void UserAnalog2_OnChange(void)
-{
-	if (botingame)
-		return;
-	/*if (cv_useranalog2.value)
-		CV_SetValue(&cv_analog2, 1);
-	else
-		CV_SetValue(&cv_analog2, 0);*/
-}
-
-static void UserAnalog3_OnChange(void)
-{
-	if (botingame)
-		return;
-	/*if (cv_useranalog3.value)
-		CV_SetValue(&cv_analog3, 1);
-	else
-		CV_SetValue(&cv_analog3, 0);*/
-}
-
-static void UserAnalog4_OnChange(void)
-{
-	if (botingame)
-		return;
-	/*if (cv_useranalog4.value)
-		CV_SetValue(&cv_analog4, 1);
-	else
-		CV_SetValue(&cv_analog4, 0);*/
-}
-
 static void Analog_OnChange(void)
 {
 	if (!cv_cam_dist.string)
 		return;
-
-	// cameras are not initialized at this point
-
-	/*
-	if (!cv_chasecam.value && cv_analog.value) {
-		CV_SetValue(&cv_analog, 0);
-		return;
-	}
-	*/
 
 	SendWeaponPref();
 }
@@ -1576,15 +1509,6 @@ static void Analog2_OnChange(void)
 	if (!(splitscreen || botingame) || !cv_cam2_dist.string)
 		return;
 
-	// cameras are not initialized at this point
-
-	/*
-	if (!cv_chasecam2.value && cv_analog2.value) {
-		CV_SetValue(&cv_analog2, 0);
-		return;
-	}
-	*/
-
 	SendWeaponPref2();
 }
 
@@ -1593,15 +1517,6 @@ static void Analog3_OnChange(void)
 	if (splitscreen < 2 || !cv_cam3_dist.string)
 		return;
 
-	// cameras are not initialized at this point
-
-	/*
-	if (!cv_chasecam3.value && cv_analog3.value) {
-		CV_SetValue(&cv_analog3, 0);
-		return;
-	}
-	*/
-
 	SendWeaponPref3();
 }
 
@@ -1609,15 +1524,6 @@ static void Analog4_OnChange(void)
 {
 	if (splitscreen < 3 || !cv_cam4_dist.string)
 		return;
-
-	// cameras are not initialized at this point
-
-	/*
-	if (!cv_chasecam4.value && cv_analog4.value) {
-		CV_SetValue(&cv_analog4, 0);
-		return;
-	}
-	*/
 
 	SendWeaponPref4();
 }
@@ -1694,6 +1600,8 @@ void G_DoLoadLevel(boolean resetplayer)
 
 	// clear hud messages remains (usually from game startup)
 	CON_ClearHUD();
+
+	G_ResetAllDeviceRumbles();
 }
 
 static INT32 pausedelay = 0;
@@ -1952,7 +1860,6 @@ boolean G_Responder(event_t *ev)
 				|| ev->data1 == gamecontrol[gc_director][1])
 			{
 				K_ToggleDirector();
-				directortoggletimer = 0;
 			}
 
 			return true;
@@ -2085,6 +1992,29 @@ INT32 G_CountPlayersPotentiallyViewable(boolean active)
 }
 
 //
+// G_FixCamera
+// Reset camera position, angle and interpolation on a view
+// after changing state.
+//
+static void G_FixCamera(UINT8 view)
+{
+	player_t *player = &players[displayplayers[view - 1]];
+
+	// The order of displayplayers can change, which would
+	// invalidate localangle.
+	localangle[view - 1] = player->cmd.angleturn;
+
+	P_ResetCamera(player, &camera[view - 1]);
+
+	// Make sure the viewport doesn't interpolate at all into
+	// its new position -- just snap instantly into place.
+
+	// Why does it need to be done twice?
+	R_ResetViewInterpolation(view);
+	R_ResetViewInterpolation(view);
+}
+
+//
 // G_ResetView
 // Correct a viewpoint to playernum or the next available, wraps forward.
 // Also promotes splitscreen up to available viewable players.
@@ -2096,7 +2026,6 @@ void G_ResetView(UINT8 viewnum, INT32 playernum, boolean onlyactive)
 	UINT8 viewd;
 
 	INT32    *displayplayerp;
-	camera_t *camerap;
 
 	INT32 olddisplayplayer;
 	INT32 playersviewable;
@@ -2133,31 +2062,20 @@ void G_ResetView(UINT8 viewnum, INT32 playernum, boolean onlyactive)
 
 	/* Focus our target view first so that we don't take its player. */
 	(*displayplayerp) = playernum;
-	if ((*displayplayerp) != olddisplayplayer)
-	{
-		camerap = &camera[viewnum-1];
-		P_ResetCamera(&players[(*displayplayerp)], camerap);
 
-		// Make sure the viewport doesn't interpolate at all into
-		// its new position -- just snap instantly into place.
-		R_ResetViewInterpolation(viewnum);
-	}
-
+	/* If a viewpoint changes, reset the camera to clear uninitialized memory. */
 	if (viewnum > splits)
 	{
-		for (viewd = splits+1; viewd < viewnum; ++viewd)
+		for (viewd = splits+1; viewd <= viewnum; ++viewd)
 		{
-			displayplayerp = (&displayplayers[viewd-1]);
-			camerap = &camera[viewd];
-
-			(*displayplayerp) = G_FindView(0, viewd, onlyactive, false);
-
-			P_ResetCamera(&players[(*displayplayerp)], camerap);
-
-
-			// Make sure the viewport doesn't interpolate at all into
-			// its new position -- just snap instantly into place.
-			R_ResetViewInterpolation(viewd);
+			G_FixCamera(viewd);
+		}
+	}
+	else
+	{
+		if ((*displayplayerp) != olddisplayplayer)
+		{
+			G_FixCamera(viewnum);
 		}
 	}
 
@@ -2239,13 +2157,6 @@ void G_Ticker(boolean run)
 		if (!(netgame || multiplayer) && G_GetRetryFlag())
 		{
 			G_ClearRetryFlag();
-
-			// Costs a life to retry ... unless the player in question is dead already.
-			/*if (G_GametypeUsesLives() && players[consoleplayer].playerstate == PST_LIVE)
-				players[consoleplayer].lives -= 1;
-
-			G_DoReborn(consoleplayer);*/
-
 			D_MapChange(gamemap, gametype, cv_kartencore.value, true, 1, false, false);
 		}
 
@@ -2558,21 +2469,6 @@ void G_PlayerReborn(INT32 player)
 	bot = players[player].bot;
 	pity = players[player].pity;
 
-	if (leveltime <= starttime) // man i really hope this crap works kek but need to reset this somehow at mapstart
-	{
-		for (i = 0; i < LAP__MAX; i++)
-		{
-			laptime[i] = 0;
-		}
-	}
-	else
-	{
-		for (i = 0; i < LAP__MAX; i++)
-		{
-			laptime[i] = players[player].laptime[i];
-		}
-	}
-
 	// SRB2kart
 	if (leveltime <= starttime || spectator == true)
 	{
@@ -2593,6 +2489,11 @@ void G_PlayerReborn(INT32 player)
 		starpostnum = 0;
 		respawnflip = 0;
 		starpostangle = 0;
+
+		for (i = 0; i < LAP__MAX; i++)
+		{
+			laptime[i] = 0;
+		}
 	}
 	else
 	{
@@ -2621,6 +2522,11 @@ void G_PlayerReborn(INT32 player)
 		bumper = players[player].kartstuff[k_bumper];
 		comebackpoints = players[player].kartstuff[k_comebackpoints];
 		wanted = players[player].kartstuff[k_wanted];
+
+		for (i = 0; i < LAP__MAX; i++)
+		{
+			laptime[i] = players[player].laptime[i];
+		}
 	}
 
 	spectatorreentry = players[player].spectatorreentry;
@@ -3139,6 +3045,8 @@ void G_AddPlayer(INT32 playernum)
 
 void G_ExitLevel(void)
 {
+	G_ResetAllDeviceRumbles();
+
 	if (gamestate == GS_LEVEL)
 	{
 		gameaction = ga_completed;
@@ -3167,13 +3075,6 @@ const char *Gametype_Names[NUMGAMETYPES] =
 {
 	"Race", // GT_RACE
 	"Battle" // GT_MATCH
-
-	/*"Co-op", // GT_COOP
-	"Competition", // GT_COMPETITION
-	"Team Match", // GT_TEAMMATCH
-	"Tag", // GT_TAG
-	"Hide and Seek", // GT_HIDEANDSEEK
-	"CTF" // GT_CTF*/
 };
 
 //
@@ -3235,12 +3136,7 @@ boolean G_GametypeHasTeams(void)
 //
 boolean G_GametypeHasSpectators(void)
 {
-	// SRB2Kart: We don't have any exceptions to not being able to spectate yet. Maybe when SP & bots roll around.
-#if 0
-	return (gametype != GT_COOP && gametype != GT_COMPETITION && gametype != GT_RACE);
-#else
 	return (netgame || (multiplayer && demo.playback)); //true
-#endif
 }
 
 //
@@ -4275,14 +4171,11 @@ void G_LoadGame(UINT32 slot, INT16 mapoverride)
 	Z_Free(savebuffer);
 	save_p = savebuffer = NULL;
 
-//	gameaction = ga_nothing;
-//	G_SetGamestate(GS_LEVEL);
 	displayplayers[0] = consoleplayer;
 	multiplayer = false;
 	splitscreen = 0;
 	SplitScreen_OnChange(); // not needed?
 
-//	G_DeferedInitNew(sk_medium, G_BuildMapName(1), 0, 0, 1);
 	if (setsizeneeded)
 		R_ExecuteSetViewSize();
 
@@ -4487,6 +4380,7 @@ void G_InitNew(UINT8 pencoremode, const char *mapname, boolean resetplayer, bool
 	else
 	{
 		LUAh_MapChange(gamemap);
+		S_CheckMap();
 		G_DoLoadLevel(resetplayer);
 	}
 
@@ -4740,6 +4634,8 @@ INT32 G_FindMapByNameOrCode(const char *mapname, char **realmapnamep)
 	{
 		if (mapname[0] == '*') // current map
 			return gamemap;
+		else if (mapname[0] == '?')
+			return G_RandMap(G_TOLFlag(gametype), prevmap, false, 0, false, NULL);
 		else if (mapname[0] == '+' && mapheaderinfo[gamemap-1]) // next map
 		{
 			newmapnum = mapheaderinfo[gamemap-1]->nextlevel;
@@ -6491,8 +6387,18 @@ void G_BeginRecording(void)
 	// Full replay title
 	demo_p += 64;
 	{
+		char demotitlename[65];
 		char *title = G_BuildMapTitle(gamemap);
-		snprintf(demo.titlename, 64, "%s - %s", title, modeattacking ? "Time Attack" : connectedservername);
+
+		// Print to a separate temp buffer instead of demo.titlename, so we can use it in M_TextInputSetString
+		snprintf(demotitlename, 64, "%s - %s", title, modeattacking ? "Time Attack" : connectedservername);
+
+		// Init just in case it isn't initialized already
+		M_TextInputInit(&demo.titlenameinput, demo.titlename, sizeof(demo.titlename));
+
+		// This will indirectly assign to demo.titlename too
+		M_TextInputSetString(&demo.titlenameinput, demotitlename);
+
 		Z_Free(title);
 	}
 
@@ -7862,9 +7768,6 @@ void G_AddGhost(char *defdemoname)
 	case ATTACKING_RECORD: // 1
 		p += 8; // demo time, lap
 		break;
-	/*case ATTACKING_NIGHTS: // 2
-		p += 8; // demo time left, score
-		break;*/
 	default: // 3
 		break;
 	}
@@ -8485,7 +8388,6 @@ void G_SaveDemo(void)
 
 boolean G_DemoTitleResponder(event_t *ev)
 {
-	size_t len;
 	INT32 ch;
 
 	if (ev->type != ev_keydown)
@@ -8506,28 +8408,7 @@ boolean G_DemoTitleResponder(event_t *ev)
 		return true;
 	}
 
-	if ((ch >= HU_FONTSTART && ch <= HU_FONTEND && hu_font[ch-HU_FONTSTART])
-	  || ch == ' ') // Allow spaces, of course
-	{
-		len = strlen(demo.titlename);
-		if (len < 64)
-		{
-			demo.titlename[len+1] = 0;
-			demo.titlename[len] = cv_keyboardlayout.value == 3 ? CON_ShitAndAltGrChar(ch) : CON_ShiftChar(ch);
-		}
-	}
-	else if (ch == KEY_BACKSPACE)
-	{
-		if (shiftdown)
-			memset(demo.titlename, 0, sizeof(demo.titlename));
-		else
-		{
-			len = strlen(demo.titlename);
-
-			if (len > 0)
-				demo.titlename[len-1] = 0;
-		}
-	}
+	M_TextInputHandle(&demo.titlenameinput, ch);
 
 	return true;
 }
@@ -8540,7 +8421,6 @@ boolean G_DemoTitleResponder(event_t *ev)
 void G_SetGamestate(gamestate_t newstate)
 {
 	gamestate = newstate;
-
 #ifdef HAVE_DISCORDRPC
 	DRPC_UpdatePresence();
 #endif
@@ -8613,4 +8493,3 @@ INT32 G_TicsToMilliseconds(tic_t tics)
 {
 	return (INT32)((tics%TICRATE) * (1000.00f/TICRATE));
 }
-

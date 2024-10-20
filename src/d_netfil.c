@@ -65,10 +65,10 @@ static boolean SV_SendFile(INT32 node, const char *filename, UINT8 fileid);
 #ifdef HAVE_CURL
 size_t curlwrite_data(void *ptr, size_t size, size_t nmemb, FILE *stream);
 #if defined(CURL_AT_LEAST_VERSION) && CURL_AT_LEAST_VERSION(7, 35, 0)
-int curlprogress_callbackx(void *clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow);
+static int curlprogress_callbackx(void *clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow);
 #define XFERINFOFUNCTION
 #else
-int curlprogress_callback(void *clientp, double dltotal, double dlnow, double ultotal, double ulnow);
+static int curlprogress_callback(void *clientp, double dltotal, double dlnow, double ultotal, double ulnow);
 #endif
 #endif
 
@@ -1203,25 +1203,53 @@ size_t curlwrite_data(void *ptr, size_t size, size_t nmemb, FILE *stream)
 }
 
 #ifdef XFERINFOFUNCTION
-int curlprogress_callbackx(void *clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow)
+static int curlprogress_callbackx(void *clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow)
 {
+	time_t curtime;
+
 	(void)clientp;
 	(void)ultotal;
 	(void)ulnow; // Function prototype requires these but we won't use, so just discard
+
+	curtime = time(NULL);
+
 	curl_dlnow = dlnow;
 	curl_dltotal = dltotal;
-	getbytes = curl_dlnow / (time(NULL) - curl_starttime); // To-do: Make this more accurate???
+
+	if (curtime > curl_starttime)
+	{
+		getbytes = curl_dlnow / (curtime - curl_starttime); // To-do: Make this more accurate???
+	}
+	else
+	{
+		getbytes = 0;
+	}
+
 	return 0;
 }
 #else
-int curlprogress_callback(void *clientp, double dltotal, double dlnow, double ultotal, double ulnow)
+static int curlprogress_callback(void *clientp, double dltotal, double dlnow, double ultotal, double ulnow)
 {
+	time_t curtime;
+
 	(void)clientp;
 	(void)ultotal;
 	(void)ulnow; // Function prototype requires these but we won't use, so just discard
+
+	curtime = time(NULL);
+
 	curl_dlnow = dlnow;
 	curl_dltotal = dltotal;
-	getbytes = curl_dlnow / (time(NULL) - curl_starttime); // To-do: Make this more accurate???
+
+	if (curtime > curl_starttime)
+	{
+		getbytes = curl_dlnow / (curtime - curl_starttime); // To-do: Make this more accurate???
+	}
+	else
+	{
+		getbytes = 0;
+	}
+
 	return 0;
 }
 #endif

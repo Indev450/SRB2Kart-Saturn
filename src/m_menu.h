@@ -64,6 +64,10 @@ void M_DrawTextBox(INT32 x, INT32 y, INT32 width, INT32 boxlines);
 // Same but with extra flags applied
 void M_DrawTextBoxFlags(INT32 x, INT32 y, INT32 width, INT32 boxlines, INT32 flags);
 
+// Draw text input
+typedef struct textinput_s textinput_t;
+void M_DrawTextInput(INT32 x, INT32 y, textinput_t *input, INT32 flags);
+
 // Used in d_netcmd to restart time attack
 void M_ModeAttackRetry(INT32 choice);
 
