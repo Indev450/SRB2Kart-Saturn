@@ -1686,9 +1686,6 @@ static void G_FixCamera(UINT8 view)
 
 	// Make sure the viewport doesn't interpolate at all into
 	// its new position -- just snap instantly into place.
-
-	// Why does it need to be done twice?
-	R_ResetViewInterpolation(view);
 	R_ResetViewInterpolation(view);
 }
 

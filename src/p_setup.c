@@ -2999,7 +2999,6 @@ boolean P_SetupLevel(boolean skipprecip, boolean reloadinggamestate)
 	if (rendermode != render_none && !reloadinggamestate)
 	{
 		R_ResetViewInterpolation(0);
-		R_ResetViewInterpolation(0);
 		R_UpdateMobjInterpolators();
 	}
 

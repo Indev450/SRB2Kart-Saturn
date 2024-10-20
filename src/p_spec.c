@@ -2084,6 +2084,9 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 					mo->y += y;
 					mo->z += z;
 					P_SetThingPosition(mo);
+					mo->old_x = mo->x;
+					mo->old_y = mo->y;
+					mo->old_z = mo->z;
 
 					if (mo->player)
 					{
@@ -2102,7 +2105,6 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 								camera[i].reset = true;
 								camera[i].subsector = R_PointInSubsector(camera[i].x, camera[i].y);
 								R_RelativeTeleportViewInterpolation(i, x, y, z, 0);
-								R_ResetViewInterpolation(i + 1); // reset view interp as well
 								break;
 							}
 						}
@@ -2519,7 +2521,6 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 					{
 						if (displayplayers[i] == (mo->player - players))
 						{
-							R_ResetViewInterpolation(i + 1);
 							R_ResetViewInterpolation(i + 1);
 						}
 					}
