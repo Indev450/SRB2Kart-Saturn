@@ -148,8 +148,8 @@ extern ps_metric_t ps_numpolyobjects;
 
 extern consvar_t cv_showhud, cv_translucenthud, cv_uncappedhud;
 extern consvar_t cv_homremoval;
-extern consvar_t cv_chasecam, cv_chasecam2, cv_chasecam3, cv_chasecam4;
-extern consvar_t cv_flipcam, cv_flipcam2, cv_flipcam3, cv_flipcam4;
+extern consvar_t cv_chasecam[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_flipcam[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_shadow, cv_shadowoffs;
 extern consvar_t cv_ffloorclip, cv_spriteclip;
 extern consvar_t cv_translucency;
@@ -174,9 +174,9 @@ void R_SetViewSize(void);
 // do it (sometimes explicitly called)
 void R_ExecuteSetViewSize(void);
 
-void R_SkyboxFrame(player_t *player);
+void R_SkyboxFrame(int s);
+void R_SetupFrame(int s, boolean skybox);
 
-void R_SetupFrame(player_t *player, boolean skybox);
 // Called by G_Drawer.
 void R_RenderPlayerView(player_t *player);
 

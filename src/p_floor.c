@@ -2507,123 +2507,44 @@ void T_CameraScanner(elevator_t *elevator)
 {
 	// leveltime is compared to make multiple scanners in one map function correctly.
 	static tic_t lastleveltime = 32000; // any number other than 0 should do here
-	static boolean camerascanned, camerascanned2, camerascanned3, camerascanned4;
+	static boolean camerascanned[MAXSPLITSCREENPLAYERS];
+	static fixed_t t_cam_dist[MAXSPLITSCREENPLAYERS] = {-42, -42, -42, -42};
+	static fixed_t t_cam_height[MAXSPLITSCREENPLAYERS] = {-42, -42, -42, -42};
 
 	if (leveltime != lastleveltime) // Back on the first camera scanner
 	{
-		camerascanned = camerascanned2 = camerascanned3 = camerascanned4 = false;
+		memset(camerascanned, false, sizeof (camerascanned));
 		lastleveltime = leveltime;
 	}
 
-	if (players[displayplayers[0]].mo)
+	for (UINT8 i = 0; i <= splitscreen; i++)
 	{
-		if (players[displayplayers[0]].mo->subsector->sector == elevator->actionsector)
-		{
-			if (t_cam_dist == -42)
-				t_cam_dist = cv_cam_dist.value;
-			if (t_cam_height == -42)
-				t_cam_height = cv_cam_height.value;
-			if (t_cam_rotate == -42)
-				t_cam_rotate = cv_cam_rotate.value;
-			CV_SetValue(&cv_cam_height, FixedInt(elevator->sector->floorheight));
-			CV_SetValue(&cv_cam_dist, FixedInt(elevator->sector->ceilingheight));
-			CV_SetValue(&cv_cam_rotate, elevator->distance);
-			camerascanned = true;
-		}
-		else if (!camerascanned)
-		{
-			if (t_cam_height != -42 && cv_cam_height.value != t_cam_height)
-				CV_Set(&cv_cam_height, va("%f", (double)FIXED_TO_FLOAT(t_cam_height)));
-			if (t_cam_dist != -42 && cv_cam_dist.value != t_cam_dist)
-				CV_Set(&cv_cam_dist, va("%f", (double)FIXED_TO_FLOAT(t_cam_dist)));
-			if (t_cam_rotate != -42 && cv_cam_rotate.value != t_cam_rotate)
-				CV_Set(&cv_cam_rotate, va("%f", (double)t_cam_rotate));
+		if (!players[displayplayers[i]].mo || P_MobjWasRemoved(players[displayplayers[i]].mo))
+			continue;
 
-			t_cam_dist = t_cam_height = t_cam_rotate = -42;
-		}
-	}
-
-	if (splitscreen && players[displayplayers[1]].mo)
-	{
-		if (players[displayplayers[1]].mo->subsector->sector == elevator->actionsector)
+		if (players[displayplayers[i]].mo->subsector->sector == elevator->actionsector)
 		{
-			if (t_cam2_rotate == -42)
-				t_cam2_dist = cv_cam2_dist.value;
-			if (t_cam2_rotate == -42)
-				t_cam2_height = cv_cam2_height.value;
-			if (t_cam2_rotate == -42)
-				t_cam2_rotate = cv_cam2_rotate.value;
-			CV_SetValue(&cv_cam2_height, FixedInt(elevator->sector->floorheight));
-			CV_SetValue(&cv_cam2_dist, FixedInt(elevator->sector->ceilingheight));
-			CV_SetValue(&cv_cam2_rotate, elevator->distance);
-			camerascanned2 = true;
+			if (t_cam_dist[i] == -42)
+				t_cam_dist[i] = cv_cam_dist[i].value;
+			if (t_cam_height[i] == -42)
+				t_cam_height[i] = cv_cam_height[i].value;
+			if (t_cam_rotate[i] == -42)
+				t_cam_rotate[i] = cv_cam_rotate[i].value;
+			CV_SetValue(&cv_cam_height[i], FixedInt(elevator->sector->floorheight));
+			CV_SetValue(&cv_cam_dist[i], FixedInt(elevator->sector->ceilingheight));
+			CV_SetValue(&cv_cam_rotate[i], elevator->distance);
+			camerascanned[i] = true;
 		}
-		else if (!camerascanned2)
+		else if (!camerascanned[i])
 		{
-			if (t_cam2_height != -42 && cv_cam2_height.value != t_cam2_height)
-				CV_Set(&cv_cam2_height, va("%f", (double)FIXED_TO_FLOAT(t_cam2_height)));
-			if (t_cam2_dist != -42 && cv_cam2_dist.value != t_cam2_dist)
-				CV_Set(&cv_cam2_dist, va("%f", (double)FIXED_TO_FLOAT(t_cam2_dist)));
-			if (t_cam2_rotate != -42 && cv_cam2_rotate.value != t_cam2_rotate)
-				CV_Set(&cv_cam2_rotate, va("%f", (double)t_cam2_rotate));
+			if (t_cam_height[i] != -42 && cv_cam_height[i].value != t_cam_height[i])
+				CV_Set(&cv_cam_height[i], va("%f", (double)FIXED_TO_FLOAT(t_cam_height[i])));
+			if (t_cam_dist[i] != -42 && cv_cam_dist[i].value != t_cam_dist[i])
+				CV_Set(&cv_cam_dist[i], va("%f", (double)FIXED_TO_FLOAT(t_cam_dist[i])));
+			if (t_cam_rotate[i] != -42 && cv_cam_rotate[i].value != t_cam_rotate[i])
+				CV_Set(&cv_cam_rotate[i], va("%f", (double)t_cam_rotate[i]));
 
-			t_cam2_dist = t_cam2_height = t_cam2_rotate = -42;
-		}
-	}
-
-	if (splitscreen > 1 && players[displayplayers[2]].mo)
-	{
-		if (players[displayplayers[2]].mo->subsector->sector == elevator->actionsector)
-		{
-			if (t_cam3_rotate == -42)
-				t_cam3_dist = cv_cam3_dist.value;
-			if (t_cam3_rotate == -42)
-				t_cam3_height = cv_cam3_height.value;
-			if (t_cam3_rotate == -42)
-				t_cam3_rotate = cv_cam3_rotate.value;
-			CV_SetValue(&cv_cam3_height, FixedInt(elevator->sector->floorheight));
-			CV_SetValue(&cv_cam3_dist, FixedInt(elevator->sector->ceilingheight));
-			CV_SetValue(&cv_cam3_rotate, elevator->distance);
-			camerascanned3 = true;
-		}
-		else if (!camerascanned3)
-		{
-			if (t_cam3_height != -42 && cv_cam3_height.value != t_cam3_height)
-				CV_Set(&cv_cam3_height, va("%f", (double)FIXED_TO_FLOAT(t_cam3_height)));
-			if (t_cam3_dist != -42 && cv_cam3_dist.value != t_cam3_dist)
-				CV_Set(&cv_cam3_dist, va("%f", (double)FIXED_TO_FLOAT(t_cam3_dist)));
-			if (t_cam3_rotate != -42 && cv_cam3_rotate.value != t_cam3_rotate)
-				CV_Set(&cv_cam3_rotate, va("%f", (double)t_cam3_rotate));
-
-			t_cam3_dist = t_cam3_height = t_cam3_rotate = -42;
-		}
-	}
-
-	if (splitscreen > 2 && players[displayplayers[3]].mo)
-	{
-		if (players[displayplayers[3]].mo->subsector->sector == elevator->actionsector)
-		{
-			if (t_cam4_rotate == -42)
-				t_cam4_dist = cv_cam4_dist.value;
-			if (t_cam4_rotate == -42)
-				t_cam4_height = cv_cam4_height.value;
-			if (t_cam4_rotate == -42)
-				t_cam4_rotate = cv_cam4_rotate.value;
-			CV_SetValue(&cv_cam4_height, FixedInt(elevator->sector->floorheight));
-			CV_SetValue(&cv_cam4_dist, FixedInt(elevator->sector->ceilingheight));
-			CV_SetValue(&cv_cam4_rotate, elevator->distance);
-			camerascanned4 = true;
-		}
-		else if (!camerascanned4)
-		{
-			if (t_cam4_height != -42 && cv_cam4_height.value != t_cam4_height)
-				CV_Set(&cv_cam4_height, va("%f", (double)FIXED_TO_FLOAT(t_cam4_height)));
-			if (t_cam4_dist != -42 && cv_cam4_dist.value != t_cam4_dist)
-				CV_Set(&cv_cam4_dist, va("%f", (double)FIXED_TO_FLOAT(t_cam4_dist)));
-			if (t_cam4_rotate != -42 && cv_cam4_rotate.value != t_cam4_rotate)
-				CV_Set(&cv_cam4_rotate, va("%f", (double)t_cam4_rotate));
-
-			t_cam4_dist = t_cam4_height = t_cam4_rotate = -42;
+			t_cam_dist[i] = t_cam_height[i] = t_cam_rotate[i] = -42;
 		}
 	}
 }

@@ -689,9 +689,9 @@ void P_Ticker(boolean run)
 
 				if (isSkyVisibleForPlayer && skyboxmo[0] && cv_skybox.value)
 				{
-					R_SkyboxFrame(player);
+					R_SkyboxFrame(i);
 				}
-				R_SetupFrame(player, (skyboxmo[0] && cv_skybox.value));
+				R_SetupFrame(i, (skyboxmo[0] && cv_skybox.value));
 			}
 		}
 	}

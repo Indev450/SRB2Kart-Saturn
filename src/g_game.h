@@ -120,8 +120,6 @@ extern consvar_t cv_pauseifunfocused;
 //extern consvar_t cv_crosshair, cv_crosshair2, cv_crosshair3, cv_crosshair4;
 extern consvar_t cv_invertmouse/*, cv_alwaysfreelook, cv_chasefreelook, cv_mousemove*/;
 extern consvar_t cv_invertmouse2/*, cv_alwaysfreelook2, cv_chasefreelook2, cv_mousemove2*/;
-extern consvar_t cv_useranalog, cv_useranalog2, cv_useranalog3, cv_useranalog4;
-extern consvar_t cv_analog, cv_analog2, cv_analog3, cv_analog4;
 extern consvar_t cv_turnaxis,cv_moveaxis,cv_brakeaxis,cv_aimaxis,cv_lookaxis,cv_fireaxis,cv_driftaxis,cv_lookbackaxis,cv_custom1axis,cv_custom2axis,cv_custom3axis,cv_xdeadzone,cv_ydeadzone;
 extern consvar_t cv_turnaxis2,cv_moveaxis2,cv_brakeaxis2,cv_aimaxis2,cv_lookaxis2,cv_fireaxis2,cv_driftaxis2,cv_lookbackaxis2,cv_custom1axis2,cv_custom2axis2,cv_custom3axis2,cv_xdeadzone2,cv_ydeadzone2;
 extern consvar_t cv_turnaxis3,cv_moveaxis3,cv_brakeaxis3,cv_aimaxis3,cv_lookaxis3,cv_fireaxis3,cv_driftaxis3,cv_lookbackaxis3,cv_custom1axis3,cv_custom2axis3,cv_custom3axis3,cv_xdeadzone3,cv_ydeadzone3;
