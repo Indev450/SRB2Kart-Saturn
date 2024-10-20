@@ -1,8 +1,10 @@
-// SONIC ROBO BLAST 2
+// SONIC ROBO BLAST 2 KART
 //-----------------------------------------------------------------------------
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 1998-2000 by DooM Legacy Team.
-// Copyright (C) 1999-2018 by Sonic Team Junior.
+// Copyright (C) 2024 by Vivian "toastergrl" Grannell.
+// Copyright (C) 2024 by Kart Krew.
+// Copyright (C) 2020 by Sonic Team Junior.
+// Copyright (C) 2000 by DooM Legacy Team.
 //
 // This program is free software distributed under the
 // terms of the GNU General Public License, version 2.
@@ -26,11 +28,6 @@ typedef struct
 	fpoint_t a, b;
 } fline_t;
 
-// Used by ST StatusBar stuff.
-#define AM_MSGHEADER (('a'<<24)+('m'<<16))
-#define AM_MSGENTERED (AM_MSGHEADER | ('e'<<8))
-#define AM_MSGEXITED (AM_MSGHEADER | ('x'<<8))
-
 extern boolean am_recalc; // true if screen size changes
 extern boolean automapactive; // In AutoMap mode?
 
@@ -43,7 +40,19 @@ void AM_Ticker(void);
 // Called by main loop, instead of view drawer if automap is active.
 void AM_Drawer(void);
 
+// Enables the automap.
+void AM_Start(void);
+
 // Called to force the automap to quit if the level is completed while it is up.
 void AM_Stop(void);
+
+typedef struct
+{
+	INT32 w, h;
+	UINT8 *buf;
+} minigen_t;
+
+// Minimap generation
+minigen_t *AM_MinimapGenerate(INT32 mul);
 
 #endif
