@@ -55,6 +55,7 @@ extern fixed_t sprtopscreen;
 extern fixed_t sprbotscreen;
 extern fixed_t windowtop;
 extern fixed_t windowbottom;
+extern INT32 lengthcol;
 
 fixed_t R_GetShadowZ(mobj_t *thing, pslope_t **shadowslope);
 
@@ -142,6 +143,9 @@ typedef struct vissprite_s
 	mobj_t *mobj; // for easy access
 
 	INT32 x1, x2;
+	INT32 x1test, x2test;
+	fixed_t xiscaletest;
+	fixed_t startfractest;
 
 	fixed_t gx, gy; // for line side calculation
 	fixed_t gz, gzt; // global bottom/top for silhouette clipping

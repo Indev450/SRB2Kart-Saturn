@@ -28,6 +28,8 @@ void R_DrawColumn_8(void)
 	register UINT8 *dest;
 	register fixed_t frac;
 	fixed_t fracstep;
+	INT32 npow2min;
+	INT32 npow2max;
 
 	count = dc_yh - dc_yl;
 
@@ -51,13 +53,26 @@ void R_DrawColumn_8(void)
 	fracstep = dc_iscale;
 	frac = (dc_texturemid + FixedMul((dc_yl << FRACBITS) - centeryfrac, fracstep))*(!dc_hires);
 
-
 	// Inner loop that does the actual texture mapping, e.g. a DDA-like scaling.
 	// This is as fast as it gets.
 	{
 		register const UINT8 *source = dc_source;
 		register const lighttable_t *colormap = dc_colormap;
 		register INT32 heightmask = dc_texheight-1;
+
+		if (dc_sourcelength <= 0)
+		{
+			// Note: we need to unconditionally clamp in npow2 draw loop to avoid a CPU branch
+			// This is to just render it effectively the identity function.
+			npow2min = INT32_MIN;
+			npow2max = INT32_MAX;
+		}
+		else
+		{
+			npow2min = -1;
+			npow2max = dc_sourcelength;
+		}
+
 		if (dc_texheight & heightmask)   // not a power of 2 -- killough
 		{
 			heightmask++;
@@ -74,7 +89,10 @@ void R_DrawColumn_8(void)
 				// Re-map color indices from wall texture column
 				//  using a lighting/special effects LUT.
 				// heightmask is the Tutti-Frutti fix
-				*dest = colormap[source[frac>>FRACBITS]];
+
+				// -1 is the lower clamp bound because column posts have a "safe" byte before the real data
+				// and a few bytes after as well
+				*dest = colormap[source[CLAMP(frac>>FRACBITS, npow2min, npow2max)]];
 				dest += vid.width;
 
 				// Avoid overflow.
@@ -115,6 +133,8 @@ void R_Draw2sMultiPatchColumn_8(void)
 	register UINT8 *dest;
 	register fixed_t frac;
 	fixed_t fracstep;
+	INT32 npow2min;
+	INT32 npow2max;
 
 	count = dc_yh - dc_yl;
 
@@ -147,6 +167,20 @@ void R_Draw2sMultiPatchColumn_8(void)
 		register const lighttable_t *colormap = dc_colormap;
 		register INT32 heightmask = dc_texheight-1;
 		register UINT8 val;
+
+		if (dc_sourcelength <= 0)
+		{
+			// Note: we need to unconditionally clamp in npow2 draw loop to avoid a CPU branch
+			// This is to just render it effectively the identity function.
+			npow2min = INT32_MIN;
+			npow2max = INT32_MAX;
+		}
+		else
+		{
+			npow2min = -1;
+			npow2max = dc_sourcelength;
+		}
+
 		if (dc_texheight & heightmask)   // not a power of 2 -- killough
 		{
 			heightmask++;
@@ -163,7 +197,10 @@ void R_Draw2sMultiPatchColumn_8(void)
 				// Re-map color indices from wall texture column
 				//  using a lighting/special effects LUT.
 				// heightmask is the Tutti-Frutti fix
-				val = source[frac>>FRACBITS];
+
+				// -1 is the lower clamp bound because column posts have a "safe" byte before the real data
+				// and a few bytes after as well
+				val = source[CLAMP(frac>>FRACBITS, npow2min, npow2max)];
 
 				if (val != TRANSPARENTPIXEL)
 				{
@@ -223,6 +260,8 @@ void R_Draw2sMultiPatchTranslucentColumn_8(void)
 	register UINT8 *dest;
 	register fixed_t frac;
 	fixed_t fracstep;
+	INT32 npow2min;
+	INT32 npow2max;
 
 	count = dc_yh - dc_yl;
 
@@ -256,6 +295,20 @@ void R_Draw2sMultiPatchTranslucentColumn_8(void)
 		register const lighttable_t *colormap = dc_colormap;
 		register INT32 heightmask = dc_texheight-1;
 		register UINT8 val;
+
+		if (dc_sourcelength <= 0)
+		{
+			// Note: we need to unconditionally clamp in npow2 draw loop to avoid a CPU branch
+			// This is to just render it effectively the identity function.
+			npow2min = INT32_MIN;
+			npow2max = INT32_MAX;
+		}
+		else
+		{
+			npow2min = -1;
+			npow2max = dc_sourcelength;
+		}
+
 		if (dc_texheight & heightmask)   // not a power of 2 -- killough
 		{
 			heightmask++;
@@ -272,7 +325,10 @@ void R_Draw2sMultiPatchTranslucentColumn_8(void)
 				// Re-map color indices from wall texture column
 				//  using a lighting/special effects LUT.
 				// heightmask is the Tutti-Frutti fix
-				val = source[frac>>FRACBITS];
+
+				// -1 is the lower clamp bound because column posts have a "safe" byte before the real data
+				// and a few bytes after as well
+				val = source[CLAMP(frac>>FRACBITS, npow2min, npow2max)];
 
 				if (val != TRANSPARENTPIXEL)
 				{
@@ -376,6 +432,8 @@ void R_DrawTranslucentColumn_8(void)
 	register INT32 count;
 	register UINT8 *dest;
 	register fixed_t frac, fracstep;
+	INT32 npow2min;
+	INT32 npow2max;
 
 	count = dc_yh - dc_yl + 1;
 
@@ -403,6 +461,20 @@ void R_DrawTranslucentColumn_8(void)
 		register const UINT8 *transmap = dc_transmap;
 		register const lighttable_t *colormap = dc_colormap;
 		register INT32 heightmask = dc_texheight - 1;
+
+		if (dc_sourcelength <= 0)
+		{
+			// Note: we need to unconditionally clamp in npow2 draw loop to avoid a CPU branch
+			// This is to just render it effectively the identity function.
+			npow2min = INT32_MIN;
+			npow2max = INT32_MAX;
+		}
+		else
+		{
+			npow2min = -1;
+			npow2max = dc_sourcelength;
+		}
+
 		if (dc_texheight & heightmask)
 		{
 			heightmask++;
@@ -420,7 +492,11 @@ void R_DrawTranslucentColumn_8(void)
 				// Re-map color indices from wall texture column
 				// using a lighting/special effects LUT.
 				// heightmask is the Tutti-Frutti fix
-				*dest = *(transmap + (colormap[source[frac>>FRACBITS]]<<8) + (*dest));
+
+				// -1 is the lower clamp bound because column posts have a "safe" byte before the real data
+				// and a few bytes after as well
+				*dest = *(transmap + (colormap[source[CLAMP(frac>>FRACBITS, npow2min, npow2max)]]<<8) + (*dest));
+
 				dest += vid.width;
 
 				if ((frac += fracstep) >= heightmask)
@@ -458,6 +534,8 @@ void R_DrawTranslatedTranslucentColumn_8(void)
 	register INT32 count;
 	register UINT8 *dest;
 	register fixed_t frac, fracstep;
+	INT32 npow2min;
+	INT32 npow2max;
 
 	count = dc_yh - dc_yl + 1;
 
@@ -477,6 +555,20 @@ void R_DrawTranslatedTranslucentColumn_8(void)
 	// This is as fast as it gets.
 	{
 		register INT32 heightmask = dc_texheight - 1;
+
+		if (dc_sourcelength <= 0)
+		{
+			// Note: we need to unconditionally clamp in npow2 draw loop to avoid a CPU branch
+			// This is to just render it effectively the identity function.
+			npow2min = INT32_MIN;
+			npow2max = INT32_MAX;
+		}
+		else
+		{
+			npow2min = -1;
+			npow2max = dc_sourcelength;
+		}
+
 		if (dc_texheight & heightmask)
 		{
 			heightmask++;
@@ -494,7 +586,10 @@ void R_DrawTranslatedTranslucentColumn_8(void)
 				// Re-map color indices from wall texture column
 				//  using a lighting/special effects LUT.
 				// heightmask is the Tutti-Frutti fix
-				*dest = *(dc_transmap + (dc_colormap[dc_translation[dc_source[frac>>FRACBITS]]]<<8) + (*dest));
+
+				// -1 is the lower clamp bound because column posts have a "safe" byte before the real data
+				// and a few bytes after as well
+				*dest = *(dc_transmap + (dc_colormap[dc_translation[dc_source[CLAMP(frac>>FRACBITS, npow2min, npow2max)]]]<<8) + (*dest));
 				dest += vid.width;
 
 				if ((frac += fracstep) >= heightmask)
