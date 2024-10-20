@@ -203,6 +203,24 @@ static int lib_pRandomRange(lua_State *L)
 	return 1;
 }
 
+static int lib_mRandomRange(lua_State *L)
+{
+	INT32 a = (INT32)luaL_checkinteger(L, 1);
+	INT32 b = (INT32)luaL_checkinteger(L, 2);
+
+	NOHUD
+	if (b < a) {
+		INT32 c = a;
+		a = b;
+		b = c;
+	}
+	if ((b-a+1) > 65536)
+		LUA_UsageWarning(L, "M_RandomRange: range > 65536 is undefined behavior");
+	lua_pushinteger(L, M_RandomRange(a, b));
+	demo_writerng = 0;
+	return 1;
+}
+
 // Deprecated, macros, etc.
 static int lib_pRandom(lua_State *L)
 {
@@ -3074,6 +3092,8 @@ static luaL_Reg lib[] = {
 	{"P_Random",lib_pRandom}, // DEPRECATED
 	{"P_SignedRandom",lib_pSignedRandom}, // MACRO
 	{"P_RandomChance",lib_pRandomChance}, // MACRO
+
+	{"M_RandomRange",lib_mRandomRange},
 
 	// p_maputil
 	{"P_AproxDistance",lib_pAproxDistance},

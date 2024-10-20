@@ -174,5 +174,9 @@ char *I_ClipboardPaste(void)
 
 void I_RegisterSysCommands(void) {}
 
+size_t I_GetRandomBytes(char *destination, size_t amount)
+{
+	return 0;
+}
 #include "../sdl/dosstr.c"
 
