@@ -14,7 +14,7 @@ goto filwri
 set GIT=%2
 if "%GIT%"=="" set GIT=git
 for /f "usebackq" %%s in (`%GIT% rev-parse --abbrev-ref HEAD`) do @set BRA=%%s
-for /f "usebackq" %%s in (`%GIT% rev-parse HEAD`) do @set REV=%%s
+for /f "usebackq" %%s in (`%GIT% show --pretty=format:"%h %s" -s HEAD`) do @set REV=%%s
 set REV=%REV:~0,8%
 goto filwri
 
