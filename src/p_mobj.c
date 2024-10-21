@@ -3249,7 +3249,7 @@ boolean P_CameraThinker(player_t *player, camera_t *thiscam, boolean resetcalled
 {
 	boolean itsatwodlevel = false;
 	boolean flipcam = (player->pflags & PF_FLIPCAM && !(player->pflags & PF_NIGHTSMODE) && player->mo->eflags & MFE_VERTICALFLIP);
-	postimg_t postimg = postimg_none;
+	UINT16 postimgflags = 0;
 	UINT8 i;
 
 	// This can happen when joining
@@ -3271,64 +3271,66 @@ boolean P_CameraThinker(player_t *player, camera_t *thiscam, boolean resetcalled
 		}
 	}
 
-	if (encoremode && !flipcam)
-		postimg = postimg_mirror;
-	else if (!encoremode && flipcam)
-		postimg = postimg_flip;
-	else if (encoremode && flipcam)
-		postimg = postimg_mirrorflip;
-	else if (player->awayviewtics && player->awayviewmobj && !P_MobjWasRemoved(player->awayviewmobj)) // Camera must obviously exist
+	if (encoremode)
+		postimgflags |= POSTIMG_MIRROR;
+	if (flipcam)
+		postimgflags |= POSTIMG_FLIP;
+
+	if (player->awayviewtics && player->awayviewmobj && !P_MobjWasRemoved(player->awayviewmobj)) // Camera must obviously exist
 	{
 		camera_t dummycam;
+
 		dummycam.subsector = player->awayviewmobj->subsector;
 		dummycam.x = player->awayviewmobj->x;
 		dummycam.y = player->awayviewmobj->y;
 		dummycam.z = player->awayviewmobj->z;
 		//dummycam.height = 40*FRACUNIT; // alt view height is 20*FRACUNIT
 		dummycam.height = 0;			 // Why? Remote viewpoint cameras have no height.
+
 		// Are we in water?
 		if (P_CameraCheckWater(&dummycam))
-			postimg = postimg_water;
-		else if (P_CameraCheckHeat(&dummycam))
-			postimg = postimg_heat;
+			postimgflags |= POSTIMG_WATER;
+		if (P_CameraCheckHeat(&dummycam))
+			postimgflags |= POSTIMG_HEAT;
 	}
 	else
 	{
 		// Are we in water?
 		if (P_CameraCheckWater(thiscam))
-			postimg = postimg_water;
-		else if (P_CameraCheckHeat(thiscam))
-			postimg = postimg_heat;
+			postimgflags |= POSTIMG_WATER;
+		if (P_CameraCheckHeat(thiscam))
+			postimgflags |= POSTIMG_HEAT;
 	}
 
-	if (postimg != postimg_none)
+	for (i = 0; i <= splitscreen; i++)
 	{
-		for (i = 0; i <= splitscreen; i++)
-		{
-			if (player != &players[displayplayers[i]])
-				continue;
+		if (player != &players[displayplayers[i]])
+			continue;
 
-			postimgtype[i] = postimg;
-		}
+		players[displayplayers[i]].postimgflags = postimgflags;
 	}
 
 	if (thiscam->momx || thiscam->momy)
 	{
-		if (!P_TryCameraMove(thiscam->x + thiscam->momx, thiscam->y + thiscam->momy, thiscam))
-		{ // Never fails for 2D mode.
+		if (!P_TryCameraMove(thiscam->x + thiscam->momx, thiscam->y + thiscam->momy, thiscam)) // Never fails for 2D mode.
+		{
 			mobj_t dummy;
+
 			dummy.thinker.function.acp1 = (actionf_p1)P_MobjThinker;
 			dummy.subsector = thiscam->subsector;
 			dummy.x = thiscam->x;
 			dummy.y = thiscam->y;
 			dummy.z = thiscam->z;
 			dummy.height = thiscam->height;
+
 			if (player->pflags & PF_TIMEOVER)
 				player->kartstuff[k_timeovercam] = (2*TICRATE)+1;
+
 			if (!resetcalled && !(player->pflags & PF_NOCLIP || leveltime < introtime) && !P_CheckSight(&dummy, player->mo)) // TODO: "P_CheckCameraSight" instead.
 				P_ResetCamera(player, thiscam);
 			else
 				P_SlideCameraMove(thiscam);
+
 			if (resetcalled) // Okay this means the camera is fully reset.
 				return true;
 		}

@@ -4103,7 +4103,7 @@ boolean P_SpectatorJoinGame(player_t *player)
 	return false;
 }
 
-static void P_CalcPostImg(player_t *player)
+/*static void P_CalcPostImg(player_t *player)
 {
 	sector_t *sector = player->mo->subsector->sector;
 	postimg_t *type = NULL;
@@ -4206,7 +4206,7 @@ static void P_CalcPostImg(player_t *player)
 			*param = 5;
 	}
 #endif
-}
+}*/
 
 void P_DoTimeOver(player_t *player)
 {
@@ -4992,7 +4992,7 @@ void P_PlayerAfterThink(player_t *player)
 		if (!thiscam->chase) // bob view only if looking through the player's eyes
 		{
 			P_CalcHeight(player);
-			P_CalcPostImg(player);
+			//P_CalcPostImg(player);
 		}
 		else
 		{

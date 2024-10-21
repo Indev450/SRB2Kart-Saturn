@@ -5205,9 +5205,6 @@ static void HWR_SetTransformAiming(FTransform *trans)
 
 void HWR_SetTransform(float fpov, player_t *player)
 {
-	postimg_t *postprocessor = &postimgtype[0];
-	INT32 i;
-
 	gr_viewx = FIXED_TO_FLOAT(viewx);
 	gr_viewy = FIXED_TO_FLOAT(viewy);
 	gr_viewz = FIXED_TO_FLOAT(viewz);
@@ -5236,24 +5233,16 @@ void HWR_SetTransform(float fpov, player_t *player)
 	HWR_RollTransform(&atransform, viewroll);
 	atransform.splitscreen = splitscreen;
 
-	for (i = 0; i <= splitscreen; i++)
-	{
-		if (player != &players[displayplayers[i]])
-			continue;
-
-		postprocessor = &postimgtype[i];
-	}
-
 	atransform.flip = false;
-	if (*postprocessor == postimg_flip)
+	if ((player->postimgflags & POSTIMG_FLIP) && !(player->postimgflags & POSTIMG_MIRROR))
 		atransform.flip = true;
 
 	atransform.mirror = false;
-	if (*postprocessor == postimg_mirror)
+	if ((player->postimgflags & POSTIMG_MIRROR) && !(player->postimgflags & POSTIMG_FLIP))
 		atransform.mirror = true;
 
 	atransform.mirrorflip = false;
-	if (*postprocessor == postimg_mirrorflip)
+	if ((player->postimgflags & POSTIMG_FLIP) && (player->postimgflags & POSTIMG_MIRROR))
 		atransform.mirrorflip = true;
 
 	// Set transform.
@@ -5816,19 +5805,7 @@ INT32 HWR_GetTextureUsed(void)
 
 void HWR_DoPostProcessor(player_t *player)
 {
-	postimg_t *type = &postimgtype[0];
-	UINT8 i;
-
 	HWD.pfnUnSetShader();
-
-	for (i = splitscreen; i > 0; i--)
-	{
-		if (player != &players[displayplayers[i]])
-			continue;
-
-		type = &postimgtype[i];
-		break;
-	}
 
 	// Armageddon Blast Flash!
 	// Could this even be considered postprocessor?
@@ -5866,7 +5843,7 @@ void HWR_DoPostProcessor(player_t *player)
 		return;
 
 	// Drunken vision! WooOOooo~
-	if (*type == postimg_water || *type == postimg_heat)
+	if (player->postimgflags & POSTIMG_WATER || player->postimgflags & POSTIMG_HEAT)
 	{
 		// 10 by 10 grid. 2 coordinates (xy)
 		float v[SCREENVERTS][SCREENVERTS][2];
@@ -5878,7 +5855,7 @@ void HWR_DoPostProcessor(player_t *player)
 		INT32 FREQUENCY;
 
 		// Modifies the wave.
-		if (*type == postimg_water)
+		if (player->postimgflags & POSTIMG_WATER)
 		{
 			WAVELENGTH = 5;
 			AMPLITUDE = 20;

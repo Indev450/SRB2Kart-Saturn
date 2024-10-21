@@ -2587,9 +2587,6 @@ boolean P_SetupLevel(boolean skipprecip, boolean reloadinggamestate)
 
 	P_LevelInitStuff(reloadinggamestate);
 
-	for (i = 0; i <= splitscreen; i++)
-		postimgtype[i] = postimg_none;
-
 	if (mapheaderinfo[gamemap-1]->forcecharacter[0] != '\0'
 	&& atoi(mapheaderinfo[gamemap-1]->forcecharacter) != 255)
 		P_ForceCharacter(mapheaderinfo[gamemap-1]->forcecharacter);
