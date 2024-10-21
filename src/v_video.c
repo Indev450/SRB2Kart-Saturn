@@ -1112,7 +1112,7 @@ void V_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c)
 
 	if (x >= vid.width || y >= vid.height)
 		return; // off the screen
-	
+
 	if (x < 0)
 	{
 		w += x;
@@ -1126,7 +1126,7 @@ void V_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c)
 
 	if (w <= 0 || h <= 0)
 		return; // zero width/height wouldn't draw anything
-	
+
 	if (x + w > vid.width)
 		w = vid.width-x;
 	if (y + h > vid.height)
@@ -1149,7 +1149,7 @@ void V_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c)
 	}
 
 	c &= 255;
-	
+
 	if (alphalevel)
 	{
 		const UINT8 *fadetable = ((UINT8 *)transtables + ((alphalevel-1)<<FF_TRANSSHIFT) + (c*256));
@@ -2495,7 +2495,7 @@ void V_DrawThinStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *str
 		default:
 			break;
 	}
-	
+
 	charflags = (option & V_CHARCOLORMASK);
 	colormap = V_GetStringColormap(charflags);
 
@@ -3262,18 +3262,19 @@ void V_DoPostProcessor(INT32 view, player_t *player, INT32 param)
 			}
 
 			/*
-			 *			Unoptimized version
-			 *			for (x = 0; x < vid.width*vid.bpp; x++)
-			 *			{
-			 *				newpix = (x + sine);
-			 *
-			 *				if (newpix < 0)
-			 *					newpix = 0;
-			 *				else if (newpix >= vid.width)
-			 *					newpix = vid.width-1;
-			 *
-			 *				tmpscrwater[y*vid.width + x] = srcscr[y*vid.width+newpix]; // *(transme + (srcscr[y*vid.width+x]<<8) + srcscr[y*vid.width+newpix]);
-		}*/
+			 Unoptimized version
+			 for (x = 0; x < vid.width*vid.bpp; x++)
+			 {
+			 	newpix = (x + sine);
+
+			 	if (newpix < 0)
+			 		newpix = 0;
+			 	else if (newpix >= vid.width)
+			 		newpix = vid.width-1;
+
+			 	tmpscr[y*vid.width + x] = srcscr[y*vid.width+newpix]; // *(transme + (srcscr[y*vid.width+x]<<8) + srcscr[y*vid.width+newpix]);
+			 }*/
+
 			disStart += 22;//the offset into the displacement map, increment each game loop
 			disStart &= FINEMASK; //clip it to FINEMASK
 		}
@@ -3284,21 +3285,18 @@ void V_DoPostProcessor(INT32 view, player_t *player, INT32 param)
 	}
 
 	/*if (player->postimgflags & POSTIMG_MOTION) // Motion Blur!
-	 *	{
-	 *		INT32 x, y;
-	 *
-	 *		// TODO: Add a postimg_param so that we can pick the translucency level...
-	 *		UINT8 *transme = transtables + ((param-1)<<FF_TRANSSHIFT);
-	 *
-	 *		for (y = yoffset; y < yoffset+viewheight; y++)
-	 *		{
-	 *			for (x = xoffset; x < xoffset+viewwidth; x++)
-	 *			{
-	 *				tmpscr[y*vid.width + x]
-	 *					=     colormaps[*(transme     + (srcscr   [(y*vid.width)+x ] <<8) + (tmpscr[(y*vid.width)+x]))];
-}
-}
-}*/
+	 {
+		INT32 x, y;
+
+		// TODO: Add a postimg_param so that we can pick the translucency level...
+		UINT8 *transme = transtables + ((param-1)<<FF_TRANSSHIFT);
+
+		for (y = yoffset; y < yoffset+viewheight; y++)
+		{
+			for (x = xoffset; x < xoffset+viewwidth; x++)
+				tmpscr[y*vid.width + x] =     colormaps[*(transme     + (srcscr   [(y*vid.width)+x ] <<8) + (tmpscr[(y*vid.width)+x]))];
+		}
+	}*/
 
 	if (player->postimgflags & POSTIMG_HEAT) // Heat wave
 	{
