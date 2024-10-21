@@ -6030,17 +6030,12 @@ static void P_KoopaThinker(mobj_t *koopa)
 //
 void P_RollPitchMobj(mobj_t* mobj)
 {
-	boolean usedist = false;
-
 	if (P_MobjWasRemoved(mobj))
 		return;
 
-	if (cv_sloperolldist.value > 0)
-		usedist = true;
-
 	if (cv_spriteroll.value && cv_sloperoll.value == 2)
 	{
-		K_RollMobjBySlopes(mobj, usedist);
+		K_RollMobjBySlopes(mobj, cv_sloperolldist.value && !splitscreen);
 	}
 	else
 	{
