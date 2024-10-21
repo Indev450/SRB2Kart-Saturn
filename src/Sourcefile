@@ -46,7 +46,7 @@ tables.c
 v_video.c
 w_wad.c
 y_inter.c
-z_zone.c
+z_zone.cpp
 r_bsp.c
 r_data.c
 r_draw.c

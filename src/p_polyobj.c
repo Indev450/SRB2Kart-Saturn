@@ -155,7 +155,6 @@ FUNCINLINE static ATTRINLINE void PolyObj_AddThinker(thinker_t *th)
 	thinkercap.next = th;
 
 	th->references = 0;
-	th->cachable = false; // not initialising this made the mobjcache die thx!
 #ifdef PARANOIA
 	th->debug_mobjtype = MT_NULL;
 #endif
@@ -2358,7 +2357,9 @@ INT32 EV_DoPolyObjRotate(polyrotdata_t *prdata)
 		return 0;
 
 	// create a new thinker
-	th = Z_Malloc(sizeof(polyrotate_t), PU_LEVSPEC, NULL);
+	th = Z_LevelPoolMalloc(sizeof(polyrotate_t));
+	th->thinker.alloctype = TAT_LEVELPOOL;
+	th->thinker.size = sizeof(polyrotate_t);
 	th->thinker.function = (actionf_p1)T_PolyObjRotate;
 	PolyObj_AddThinker(&th->thinker);
 	po->thinker = &th->thinker;
@@ -2426,7 +2427,9 @@ INT32 EV_DoPolyObjMove(polymovedata_t *pmdata)
 		return 0;
 
 	// create a new thinker
-	th = Z_Malloc(sizeof(polymove_t), PU_LEVSPEC, NULL);
+	th = Z_LevelPoolMalloc(sizeof(polymove_t));
+	th->thinker.alloctype = TAT_LEVELPOOL;
+	th->thinker.size = sizeof(polymove_t);
 	th->thinker.function = (actionf_p1)T_PolyObjMove;
 	PolyObj_AddThinker(&th->thinker);
 	po->thinker = &th->thinker;
@@ -2492,7 +2495,9 @@ INT32 EV_DoPolyObjWaypoint(polywaypointdata_t *pwdata)
 		return 0;
 
 	// create a new thinker
-	th = Z_Malloc(sizeof(polywaypoint_t), PU_LEVSPEC, NULL);
+	th = Z_LevelPoolMalloc(sizeof(polywaypoint_t));
+	th->thinker.alloctype = TAT_LEVELPOOL;
+	th->thinker.size = sizeof(polywaypoint_t);
 	th->thinker.function = (actionf_p1)T_PolyObjWaypoint;
 	PolyObj_AddThinker(&th->thinker);
 	po->thinker = &th->thinker;
@@ -2628,7 +2633,9 @@ static void Polyobj_doSlideDoor(polyobj_t *po, polydoordata_t *doordata)
 	INT32 start;
 
 	// allocate and add a new slide door thinker
-	th = Z_Malloc(sizeof(polyslidedoor_t), PU_LEVSPEC, NULL);
+	th = Z_LevelPoolMalloc(sizeof(polyslidedoor_t));
+	th->thinker.alloctype = TAT_LEVELPOOL;
+	th->thinker.size = sizeof(polyslidedoor_t);
 	th->thinker.function = (actionf_p1)T_PolyDoorSlide;
 	PolyObj_AddThinker(&th->thinker);
 
@@ -2679,7 +2686,9 @@ static void Polyobj_doSwingDoor(polyobj_t *po, polydoordata_t *doordata)
 	INT32 start;
 
 	// allocate and add a new swing door thinker
-	th = Z_Malloc(sizeof(polyswingdoor_t), PU_LEVSPEC, NULL);
+	th = Z_LevelPoolMalloc(sizeof(polyswingdoor_t));
+	th->thinker.alloctype = TAT_LEVELPOOL;
+	th->thinker.size = sizeof(polyswingdoor_t);
 	th->thinker.function = (actionf_p1)T_PolyDoorSwing;
 	PolyObj_AddThinker(&th->thinker);
 
@@ -2764,7 +2773,9 @@ INT32 EV_DoPolyObjDisplace(polydisplacedata_t *prdata)
 		return 0;
 
 	// create a new thinker
-	th = Z_Malloc(sizeof(polydisplace_t), PU_LEVSPEC, NULL);
+	th = Z_LevelPoolMalloc(sizeof(polydisplace_t));
+	th->thinker.alloctype = TAT_LEVELPOOL;
+	th->thinker.size = sizeof(polydisplace_t);
 	th->thinker.function = (actionf_p1)T_PolyObjDisplace;
 	PolyObj_AddThinker(&th->thinker);
 	po->thinker = &th->thinker;
@@ -2868,7 +2879,9 @@ INT32 EV_DoPolyObjFlag(line_t *pfdata)
 	}
 
 	// create a new thinker
-	th = Z_Malloc(sizeof(polymove_t), PU_LEVSPEC, NULL);
+	th = Z_LevelPoolMalloc(sizeof(polymove_t));
+	th->thinker.alloctype = TAT_LEVELPOOL;
+	th->thinker.size = sizeof(polymove_t);
 	th->thinker.function = (actionf_p1)T_PolyObjFlag;
 	PolyObj_AddThinker(&th->thinker);
 	po->thinker = &th->thinker;
@@ -2900,6 +2913,5 @@ INT32 EV_DoPolyObjFlag(line_t *pfdata)
 	// action was successful
 	return 1;
 }
-
 
 // EOF

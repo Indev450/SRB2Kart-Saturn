@@ -15,6 +15,7 @@
 #include "dehacked.h" // MOBJTYPE_LIST
 #endif
 
+#include "d_think.h"
 #include "doomstat.h"
 #include "dehacked.h"
 #include "g_game.h"
@@ -207,8 +208,6 @@ void P_AddThinker(thinker_t *thinker)
 	thinkercap.prev = thinker;
 
 	thinker->references = 0;    // killough 11/98: init reference counter to 0
-
-	thinker->cachable = (thinker->function == (actionf_p1)P_MobjThinker);
 #ifdef PARANOIA
 	thinker->debug_mobjtype = MT_NULL;
 #endif
@@ -226,8 +225,6 @@ void P_AddPrecipThinker(thinker_t *thinker)
 	precipcap.prev = thinker;
 
 	thinker->references = 0;    // killough 11/98: init reference counter to 0
-
-	thinker->cachable = false;
 #ifdef PARANOIA
 	thinker->debug_mobjtype = MT_NULL;
 #endif
@@ -345,11 +342,9 @@ void P_UnlinkThinker(thinker_t *thinker)
 
 	(next->prev = thinker->prev)->next = next;
 
-	if (thinker->cachable == true)
+	if (thinker->alloctype == TAT_LEVELPOOL)
 	{
-		// put cachable thinkers in the mobj cache, so we can avoid allocations
-		((mobj_t *)thinker)->hnext = mobjcache;
-		mobjcache = (mobj_t *)thinker;
+		Z_LevelPoolFree(thinker, thinker->size);
 	}
 	else
 	{

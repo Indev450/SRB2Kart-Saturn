@@ -11,6 +11,7 @@
 /// \file  p_mobj.c
 /// \brief Moving object handling. Spawn functions
 
+#include "d_think.h"
 #include "doomdef.h"
 #include "g_game.h"
 #include "g_input.h"
@@ -47,7 +48,6 @@ actioncache_t actioncachehead;
 static mobj_t *overlaycap = NULL;
 static mobj_t *shadowcap = NULL;
 mobj_t *waypointcap = NULL;
-mobj_t *mobjcache = NULL;
 
 void P_InitCachedActions(void)
 {
@@ -9499,21 +9499,11 @@ void P_SceneryThinker(mobj_t *mobj)
 // GAME SPAWN FUNCTIONS
 //
 
-FUNCINLINE static ATTRINLINE mobj_t *P_AllocMobj(void)
+mobj_t *P_AllocateMobj(void)
 {
-	mobj_t *mobj;
-
-	if (mobjcache != NULL)
-	{
-		mobj = mobjcache;
-		mobjcache = mobjcache->hnext;
-		memset(mobj, 0, sizeof(*mobj));
-	}
-	else
-	{
-		mobj = Z_Calloc(sizeof (*mobj), PU_LEVEL, NULL);
-	}
-
+	mobj_t* mobj = (mobj_t*)Z_LevelPoolCalloc(sizeof(mobj_t));
+	mobj->thinker.alloctype = TAT_LEVELPOOL;
+	mobj->thinker.size = sizeof(mobj_t);
 	return mobj;
 }
 
@@ -9526,7 +9516,7 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 	state_t *st;
 	mobj_t *mobj;
 
-	mobj = P_AllocMobj();
+	mobj = P_AllocateMobj();
 
 	// this is officially a mobj, declared as soon as possible.
 	mobj->thinker.function = (actionf_p1)P_MobjThinker;
@@ -9977,7 +9967,7 @@ mobj_t *P_SpawnShadowMobj(mobj_t * caster)
 	state_t *st;
 	mobj_t *mobj;
 
-	mobj = P_AllocMobj();
+	mobj = P_AllocateMobj();
 
 	// this is officially a mobj, declared as soon as possible.
 	mobj->thinker.function = (actionf_p1)P_MobjThinker;
@@ -10091,7 +10081,9 @@ static precipmobj_t *P_SpawnPrecipMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype
 {
 	const mobjinfo_t *info = &mobjinfo[type];
 	state_t *st;
-	precipmobj_t *mobj = Z_Calloc(sizeof (*mobj), PU_LEVEL, NULL);
+	precipmobj_t *mobj = Z_LevelPoolCalloc(sizeof(precipmobj_t));
+	mobj->thinker.alloctype = TAT_LEVELPOOL;
+	mobj->thinker.size = sizeof(precipmobj_t);
 	fixed_t starting_floorz;
 
 	mobj->type = type;
@@ -10247,14 +10239,6 @@ void P_RemoveMobj(mobj_t *mobj)
 	// free block
 	if (mobj->flags & MF_NOTHINK && !mobj->thinker.next)
 	{ // Uh-oh, the mobj doesn't think, P_RemoveThinker would never go through!
-		if (!mobj->thinker.references)
-		{
-			// no references, dump it directly in the mobj cache
-			mobj->hnext = mobjcache;
-			mobjcache = mobj;
-			return;
-		}
-
 		// Add thinker just to delay removing it until refrences are gone.
 		mobj->flags &= ~MF_NOTHINK;
 		P_AddThinker((thinker_t *)mobj);

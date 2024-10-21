@@ -67,7 +67,6 @@
 // both the head and tail of the thinker list
 extern thinker_t thinkercap;
 extern thinker_t precipcap;
-extern mobj_t *mobjcache;
 
 void P_InitThinkers(void);
 void P_AddThinker(thinker_t *thinker);
@@ -262,6 +261,7 @@ extern consvar_t cv_gravity;
 
 void P_RespawnSpecials(void);
 
+mobj_t *P_AllocateMobj(void);
 mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type);
 
 mobj_t *P_SpawnShadowMobj(mobj_t * caster);

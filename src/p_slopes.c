@@ -10,6 +10,7 @@
 /// \file  p_slopes.c
 /// \brief ZDoom + Eternity Engine Slopes, ported and enhanced by Kalaron
 
+#include "d_think.h"
 #include "doomdef.h"
 #include "r_defs.h"
 #include "r_state.h"
