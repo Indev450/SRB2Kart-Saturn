@@ -261,6 +261,7 @@ typedef enum {
 	PCF_SPLASH    = 1<<4, // Splashed on the ground, return to the ceiling after the animation's over
 	PCF_THUNK     = 1<<5, // Ran the thinker this tic.
 } precipflag_t;
+
 // Map Object definition.
 typedef struct mobj_s
 {

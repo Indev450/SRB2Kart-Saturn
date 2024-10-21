@@ -1378,21 +1378,8 @@ static void R_ProjectSprite(mobj_t *thing)
 	if (spritexscale < 1 || spriteyscale < 1)
 		return;
 
-	if (thing->renderflags & RF_ABSOLUTEOFFSETS)
-	{
-		spr_offset = interp.spritexoffset;
-		spr_topoffset = interp.spriteyoffset;
-	}
-	else
-	{
-		SINT8 flipoffset = 1;
-
-		if ((thing->renderflags & RF_FLIPOFFSETS) && flip)
-			flipoffset = -1;
-
-		spr_offset += interp.spritexoffset * flipoffset;
-		spr_topoffset += interp.spriteyoffset * flipoffset;
-	}
+	spr_offset += interp.spritexoffset;
+	spr_topoffset += interp.spriteyoffset;
 
 	if (flip)
 		offset = spr_offset - spr_width;
@@ -2777,10 +2764,10 @@ boolean R_ThingVisible (mobj_t *thing)
 
 	if (splitscreen)
 	{
-		if ((viewssnum == 0 && (thing->renderflags & MFE_DRAWONLYFORP1))
-			|| (viewssnum == 1 && (thing->renderflags & MFE_DRAWONLYFORP2))
-			|| (viewssnum == 2 && (thing->renderflags & MFE_DRAWONLYFORP2))
-			|| (viewssnum == 3 && (thing->renderflags & MFE_DRAWONLYFORP4)))
+		if ((viewssnum == 0 && (thing->eflags & MFE_DRAWONLYFORP1))
+			|| (viewssnum == 1 && (thing->eflags & MFE_DRAWONLYFORP2))
+			|| (viewssnum == 2 && (thing->eflags & MFE_DRAWONLYFORP2))
+			|| (viewssnum == 3 && (thing->eflags & MFE_DRAWONLYFORP4)))
 			return true;
 	}
 
@@ -3287,7 +3274,7 @@ static int skinSortFunc(const void *a, const void *b) //tbh i have no clue what 
 void sortSkinGrid(void)
 {
 	//CONS_Printf("Sorting skin list (%d)...\n", cv_skinselectgridsort.value);
-  qs22j(skinsorted, numskins, sizeof(UINT8), skinSortFunc);
+	qs22j(skinsorted, numskins, sizeof(UINT8), skinSortFunc);
 }
 
 //

@@ -940,7 +940,7 @@ static int lib_setSfxInfo(lua_State *L)
 
 		if (lua_isnumber(L, 2))
 		{
-			int j = lua_tointeger(L, 2) - 1;
+			int j = lua_tointeger(L, 2);
 
 			// Read and Write enums were combined, need to do this switch now
 			switch (j)
