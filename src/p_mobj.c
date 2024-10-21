@@ -408,7 +408,7 @@ void P_ExplodeMissile(mobj_t *mo)
 		P_RadiusAttack(mo, mo, 96*FRACUNIT);
 
 		explodemo = P_SpawnMobj(mo->x, mo->y, mo->z, MT_EXPLODE);
-		if (!P_MobjWasRemoved(explodemo))
+		if (explodemo)
 		{
 			P_SetScale(explodemo, mo->scale);
 			explodemo->destscale = mo->destscale;
@@ -417,7 +417,7 @@ void P_ExplodeMissile(mobj_t *mo)
 			S_StartSound(explodemo, sfx_pop);
 		}
 		explodemo = P_SpawnMobj(mo->x, mo->y, mo->z, MT_EXPLODE);
-		if (!P_MobjWasRemoved(explodemo))
+		if (explodemo)
 		{
 			P_SetScale(explodemo, mo->scale);
 			explodemo->destscale = mo->destscale;
@@ -426,7 +426,7 @@ void P_ExplodeMissile(mobj_t *mo)
 			S_StartSound(explodemo, sfx_dmpain);
 		}
 		explodemo = P_SpawnMobj(mo->x, mo->y, mo->z, MT_EXPLODE);
-		if (!P_MobjWasRemoved(explodemo))
+		if (explodemo)
 		{
 			P_SetScale(explodemo, mo->scale);
 			explodemo->destscale = mo->destscale;
@@ -435,7 +435,7 @@ void P_ExplodeMissile(mobj_t *mo)
 			S_StartSound(explodemo, sfx_pop);
 		}
 		explodemo = P_SpawnMobj(mo->x, mo->y, mo->z, MT_EXPLODE);
-		if (!P_MobjWasRemoved(explodemo))
+		if (explodemo)
 		{
 			P_SetScale(explodemo, mo->scale);
 			explodemo->destscale = mo->destscale;
@@ -3410,7 +3410,7 @@ static void P_PlayerMobjThinker(mobj_t *mobj)
 	I_Assert(mobj != NULL);
 	I_Assert(mobj->player != NULL);
 	I_Assert(!P_MobjWasRemoved(mobj));
-	
+
 	if (P_MobjWasRemoved(mobj))
 		return;
 
@@ -6030,41 +6030,41 @@ static void P_KoopaThinker(mobj_t *koopa)
 //
 void P_RollPitchMobj(mobj_t* mobj)
 {
-    boolean usedist = false;
-	
+	boolean usedist = false;
+
 	if (P_MobjWasRemoved(mobj))
-        return;
+		return;
 
-    if (cv_sloperolldist.value > 0)
-        usedist = true;
+	if (cv_sloperolldist.value > 0)
+		usedist = true;
 
-    if (cv_spriteroll.value && cv_sloperoll.value == 2)
-    {
-        K_RollMobjBySlopes(mobj, usedist);
-    }
-    else
-    {
-        mobj->sloperoll = FixedAngle(0);
-        mobj->slopepitch = FixedAngle(0);
-    }
+	if (cv_spriteroll.value && cv_sloperoll.value == 2)
+	{
+		K_RollMobjBySlopes(mobj, usedist);
+	}
+	else
+	{
+		mobj->sloperoll = FixedAngle(0);
+		mobj->slopepitch = FixedAngle(0);
+	}
 }
 
 angle_t P_MobjPitchAndRoll(mobj_t *mobj)
 {
-    spritedef_t *sprdef;
-    spriteframe_t *sprframe;
-    angle_t ang = 0;
+	spritedef_t *sprdef;
+	spriteframe_t *sprframe;
+	angle_t ang = 0;
 	angle_t camang = 0;
 	angle_t return_angle = 0;
-	
+
 	if (!cv_spriteroll.value)
 		return 0;
 
-    if (P_MobjWasRemoved(mobj))
-        return 0;
+	if (P_MobjWasRemoved(mobj))
+		return 0;
 
-    size_t rot = mobj->frame & FF_FRAMEMASK;
-    boolean papersprite = (mobj->frame & FF_PAPERSPRITE);
+	size_t rot = mobj->frame & FF_FRAMEMASK;
+	boolean papersprite = (mobj->frame & FF_PAPERSPRITE);
 
 	if (mobj->skin && mobj->sprite == SPR_PLAY)
 	{
@@ -6095,12 +6095,12 @@ angle_t P_MobjPitchAndRoll(mobj_t *mobj)
 		camang = R_PointToAngle(mobj->x, mobj->y);
 	}
 
-	return_angle = FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), mobj->roll) 
+	return_angle = FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), mobj->roll)
 			        + FixedMul(FINESINE((ang) >> ANGLETOFINESHIFT), mobj->pitch);
 
 	if (cv_sloperoll.value)
 	{
-		return_angle += FixedMul(FINECOSINE((camang) >> ANGLETOFINESHIFT), mobj->sloperoll) 
+		return_angle += FixedMul(FINECOSINE((camang) >> ANGLETOFINESHIFT), mobj->sloperoll)
 						+ FixedMul(FINESINE((camang) >> ANGLETOFINESHIFT), mobj->slopepitch);
 	}
 
@@ -6263,7 +6263,7 @@ void P_MobjThinker(mobj_t *mobj)
 					P_RemoveMobj(mobj);
 					return;
 				}
-				
+
 				if (cv_sloperoll.value == 2 && mobj->state == &states[S_SHADOW])
 				{
 					mobj->slopepitch = mobj->target->slopepitch;
@@ -6916,9 +6916,6 @@ void P_MobjThinker(mobj_t *mobj)
 	// separate thinker
 	if (mobj->flags & MF_PUSHABLE || (mobj->info->flags & MF_PUSHABLE && mobj->fuse))
 	{
-		if (P_MobjWasRemoved(mobj))
-			return;
-
 		P_MobjCheckWater(mobj);
 		P_PushableThinker(mobj);
 
@@ -9434,11 +9431,11 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 		mobj->destscale = mapobjectscale;
 		mobj->scalespeed = mapobjectscale/12;
 	}
-	
+
 	// Sprite rendering
-	mobj->realxscale = mobj->realyscale = mobj->scale; 
+	mobj->realxscale = mobj->realyscale = mobj->scale;
 	mobj->spritexscale = mobj->realxscale;
-	mobj->spriteyscale = mobj->realyscale; 
+	mobj->spriteyscale = mobj->realyscale;
 	mobj->spritexoffset = mobj->spriteyoffset = 0;
 
 	// Funni slam sound when landing
@@ -9892,11 +9889,11 @@ mobj_t *P_SpawnShadowMobj(mobj_t * caster)
 		mobj->destscale = mapobjectscale;
 		mobj->scalespeed = mapobjectscale/12;
 	}
-	
+
 	// Sprite rendering
-	mobj->spritexscale = mobj->spriteyscale = mobj->scale; 
+	mobj->spritexscale = mobj->spriteyscale = mobj->scale;
 	mobj->spritexoffset = mobj->spriteyoffset = 0;
-	
+
 	// set subsector and/or block links
 	P_SetThingPosition(mobj);
 	I_Assert(mobj->subsector != NULL);
@@ -10100,7 +10097,7 @@ void P_RemoveMobj(mobj_t *mobj)
 		P_SetTarget(&mobj->hprev->hnext, cachenext);
 		P_SetTarget(&mobj->hprev, NULL);
 	}
-	
+
 	// clear the reference from the mapthing
 	if (mobj->spawnpoint)
 		mobj->spawnpoint->mobj = NULL;
