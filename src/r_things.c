@@ -2858,10 +2858,10 @@ boolean R_ThingVisible (mobj_t *thing)
 
 	if (splitscreen)
 	{
-		if ((viewssnum == 0 && (thing->renderflags & MFE_DRAWONLYFORP1))
-			|| (viewssnum == 1 && (thing->renderflags & MFE_DRAWONLYFORP2))
-			|| (viewssnum == 2 && (thing->renderflags & MFE_DRAWONLYFORP2))
-			|| (viewssnum == 3 && (thing->renderflags & MFE_DRAWONLYFORP4)))
+		if ((viewssnum == 0 && (thing->eflags & MFE_DRAWONLYFORP1))
+			|| (viewssnum == 1 && (thing->eflags & MFE_DRAWONLYFORP2))
+			|| (viewssnum == 2 && (thing->eflags & MFE_DRAWONLYFORP2))
+			|| (viewssnum == 3 && (thing->eflags & MFE_DRAWONLYFORP4)))
 			return true;
 	}
 
