@@ -2983,6 +2983,14 @@ static void Command_Map_f(void)
 	// G_TOLFlag handles both multiplayer gametype and ignores it for !multiplayer
 	else
 	{
+		if (!mapheaderinfo[newmapnum-1] || mapheaderinfo[newmapnum-1] == NULL)
+		{
+			CONS_Alert(CONS_WARNING, M_GetText("Invalid mapheaderinfo for Course %s (%s)\n"), realmapname, G_BuildMapName(newmapnum));
+			Z_Free(realmapname);
+			Z_Free(mapname);
+			return;
+		}
+
 		if (!(mapheaderinfo[newmapnum-1]->typeoflevel & G_TOLFlag(newgametype)))
 		{
 			CONS_Alert(CONS_WARNING, M_GetText("Course %s (%s) doesn't support %s mode!\n(Use -force to override)\n"), realmapname, G_BuildMapName(newmapnum),
