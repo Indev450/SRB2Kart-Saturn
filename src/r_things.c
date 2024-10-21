@@ -1378,21 +1378,8 @@ static void R_ProjectSprite(mobj_t *thing)
 	if (spritexscale < 1 || spriteyscale < 1)
 		return;
 
-	if (thing->renderflags & RF_ABSOLUTEOFFSETS)
-	{
-		spr_offset = interp.spritexoffset;
-		spr_topoffset = interp.spriteyoffset;
-	}
-	else
-	{
-		SINT8 flipoffset = 1;
-
-		if ((thing->renderflags & RF_FLIPOFFSETS) && flip)
-			flipoffset = -1;
-
-		spr_offset += interp.spritexoffset * flipoffset;
-		spr_topoffset += interp.spriteyoffset * flipoffset;
-	}
+	spr_offset += interp.spritexoffset;
+	spr_topoffset += interp.spriteyoffset;
 
 	if (flip)
 		offset = spr_offset - spr_width;
