@@ -118,7 +118,6 @@ boolean devparm = false; // started game with -devparm
 boolean singletics = false; // timedemo
 boolean lastdraw = false;
 
-postimg_t postimgtype[MAXSPLITSCREENPLAYERS];
 INT32 postimgparam[MAXSPLITSCREENPLAYERS];
 
 // These variables are only true if
@@ -515,15 +514,12 @@ static boolean D_Display(void)
 
 			if (rendermode == render_soft)
 			{
-					if (!splitscreen)
-						R_ApplyViewMorph();
+				if (!splitscreen)
+					R_ApplyViewMorph();
 
 				for (i = 0; i <= splitscreen; i++)
 				{
-					if (!postimgtype[i])
-						continue;
-
-					V_DoPostProcessor(i, postimgtype[i], postimgparam[i]);
+					V_DoPostProcessor(i, &players[displayplayers[i]], postimgparam[i]);
 				}
 			}
 

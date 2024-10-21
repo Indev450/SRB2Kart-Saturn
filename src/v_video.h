@@ -251,7 +251,9 @@ INT32 V_SubStringLengthToFit(const char *string, INT32 width, INT32 option);
 
 char V_GetSkincolorChar(INT32 color);
 
-void V_DoPostProcessor(INT32 view, postimg_t type, INT32 param);
+typedef struct player_s player_t;
+
+void V_DoPostProcessor(INT32 view, player_t *player, INT32 param);
 
 void V_DrawPatchFill(patch_t *pat);
 

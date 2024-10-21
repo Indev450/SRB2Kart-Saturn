@@ -481,9 +481,6 @@ void P_Ticker(boolean run)
 		return;
 	}
 
-	for (i = 0; i <= splitscreen; i++)
-		postimgtype[i] = postimg_none;
-
 	P_MapStart();
 
 	if (run)
@@ -718,9 +715,6 @@ void P_PreTicker(INT32 frames)
 {
 	INT32 i;
 	ticcmd_t temptic;
-
-	for (i = 0; i <= splitscreen; i++)
-		postimgtype[i] = postimg_none;
 
 	hook_defrosting = frames;
 
