@@ -106,8 +106,8 @@ FUNCINLINE static ATTRINLINE PUREFUNC INT32 R_PointOnSegSide(fixed_t x, fixed_t 
     fixed_t ldx = line->v2->x - lx;
     fixed_t ldy = line->v2->y - ly;
 
-	// heavily optimized version of R_PointOnSide, stolen from GZDoom.
-	return (INT64)(y - ly) * ldx + (INT64)(lx - x) * ldy > 0;
+	// use cross product to determine side quickly
+	return (INT64)(y - ly) * ldx - (INT64)(x - lx) * ldy > 0;
 }
 
 angle_t R_PointToAngle(fixed_t x, fixed_t y);
