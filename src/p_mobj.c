@@ -6003,7 +6003,7 @@ static void P_KoopaThinker(mobj_t *koopa)
 //
 void P_RollPitchMobj(mobj_t* mobj)
 {
-	if (P_MobjWasRemoved(mobj))
+	if (!mobj || P_MobjWasRemoved(mobj))
 		return;
 
 	if (cv_spriteroll.value && cv_sloperoll.value == 2)
@@ -6254,6 +6254,7 @@ void P_MobjThinker(mobj_t *mobj)
 					P_RemoveMobj(mobj);
 					return;
 				}
+
 				P_RollPitchMobj(mobj);
 				break;
 			case MT_SMOLDERING:

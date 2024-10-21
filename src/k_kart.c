@@ -3338,9 +3338,9 @@ void K_RollMobjBySlopes(mobj_t* mo, boolean usedistance)
 	I_Assert(mo->subsector->sector != NULL);
 
 	angle_t an;
-	boolean flip = mo->eflags & MFE_VERTICALFLIP;
-	fixed_t m_dist = usedistance ? R_PointToDist(mo->x, mo->y) : 0;
-	fixed_t rolldist = cv_sloperolldist.value * mapobjectscale;
+	const boolean flip = mo->eflags & MFE_VERTICALFLIP;
+	const fixed_t m_dist = usedistance ? R_PointToDist(mo->x, mo->y) : 0;
+	const fixed_t rolldist = cv_sloperolldist.value * mapobjectscale;
 
 	// lifted from hw_md2
 	if (mo->standingslope)
