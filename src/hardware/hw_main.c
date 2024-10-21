@@ -708,7 +708,7 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 	// no convex poly were generated for this subsector
 	if (!xsub->planepoly)
 		return;
-	
+
 	pv = xsub->planepoly->pts;
 	nrPlaneVerts = xsub->planepoly->numpts;
 
@@ -874,14 +874,14 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 		PolyFlags |= PF_Masked|PF_Modulated;
 
 	if (HWR_UseShader())
-	{	
+	{
 		if (PolyFlags & PF_Fog)
 			shader = SHADER_FOG;
 		else if (cv_ripplewater.value && (PolyFlags & PF_Ripple))
 			shader = SHADER_WATER;
 		else
 			shader = SHADER_FLOOR;
-		
+
 		PolyFlags |= PF_ColorMapped;
 	}
 
@@ -986,7 +986,7 @@ static void HWR_DrawSegsSplats(FSurfaceInfo * pSurf)
 	fixed_t i;
 	// seg bbox
 	fixed_t segbbox[4];
-	
+
 	INT32 shader = SHADER_NONE;
 
 	M_ClearBox(segbbox);
@@ -1041,7 +1041,7 @@ static void HWR_DrawSegsSplats(FSurfaceInfo * pSurf)
 
 		if (HWR_UseShader())
 			shader = SHADER_WALL;
-		
+
 		HWR_ProcessPolygon(&pSurf, wallVerts, 4, i|PF_Modulated|PF_Decal, shader, false);
 	}
 }
@@ -1074,7 +1074,7 @@ FBITFIELD HWR_TranstableToAlpha(INT32 transtablenum, FSurfaceInfo *pSurf)
 void HWR_ProjectWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blendmode, INT32 lightlevel, extracolormap_t *wallcolormap)
 {
 	INT32 shader = SHADER_NONE;
-	
+
 	HWR_Lighting(pSurf, lightlevel, wallcolormap, P_SectorUsesDirectionalLighting(gr_frontsector));
 
 	if (HWR_UseShader())
@@ -1149,7 +1149,7 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 	{
 		if (endtop < endrealbot && top < realbot)
 			return;
-		
+
 		lightlist_t *list = sector->lightlist;
 
 		if (!(list[i].flags & FF_NOSHADE))
@@ -1212,7 +1212,7 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 			bheight = realbot;
 			endbheight = endrealbot;
 		}
-		
+
 		if (endbheight > endtop)
 			endbot = endtop;
 
@@ -1529,7 +1529,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 		noencore = true;
 
 	Surf.PolyColor.s.alpha = 255;
-	
+
 	INT32 gr_midtexture = R_GetTextureNum(gr_sidedef->midtexture);
 	GLMapTexture_t *grTex = NULL;
 
@@ -2216,7 +2216,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 					l = lowcut;
 					lS = lowcutslope;
 				}
-				
+
 				//Hurdler: HW code starts here
 				//FIXME: check if peging is correct
 				// set top/bottom coords
@@ -2314,7 +2314,7 @@ static boolean CheckClip(sector_t * afrontsector, sector_t * abacksector)
 	if (afrontsector->f_slope || afrontsector->c_slope || abacksector->f_slope || abacksector->c_slope)
 	{
 		fixed_t v1x, v1y, v2x, v2y; // the seg's vertexes as fixed_t
-		
+
 		if (gr_curline->pv1)
 		{
 			v1x = FLOAT_TO_FIXED(((polyvertex_t *)gr_curline->pv1)->x);
@@ -2335,7 +2335,7 @@ static boolean CheckClip(sector_t * afrontsector, sector_t * abacksector)
 			v2x = gr_curline->v2->x;
 			v2y = gr_curline->v2->y;
 		}
-		
+
 #define SLOPEPARAMS(slope, end1, end2, normalheight) \
 		if (slope) { \
 			end1 = P_GetZAt(slope, v1x, v1y); \
@@ -2706,7 +2706,7 @@ void HWR_RenderPolyObjectPlane(polyobj_t *polysector, boolean isceiling, fixed_t
 
 	static FOutVector *planeVerts = NULL;
 	static UINT16 numAllocedPlaneVerts = 0;
-	
+
 	INT32 shader = SHADER_NONE;
 
 	nrPlaneVerts = polysector->numVertices;
@@ -2852,11 +2852,11 @@ void HWR_RenderPolyObjectPlane(polyobj_t *polysector, boolean isceiling, fixed_t
 		blendmode |= PF_Masked|PF_Modulated;
 
 	if (HWR_UseShader())
-	{		
+	{
 		shader = SHADER_FLOOR;
 		blendmode |= PF_ColorMapped;
 	}
-		
+
 	HWR_ProcessPolygon(&Surf, planeVerts, nrPlaneVerts, blendmode, shader, false);
 }
 
@@ -3118,7 +3118,7 @@ static void HWR_Subsector(size_t num)
 				continue;
 			if (sub->validcount == validcount)
 				continue;
-			
+
 			// rendering heights for bottom and top planes
 			// yes there were functions for this stuff, no idea why it wasnt used but bleh
 			bottomCullHeight = P_GetFFloorBottomZAt(rover, viewx, viewy);
@@ -3841,7 +3841,7 @@ static void HWR_SplitSprite(gr_vissprite_t *spr)
 	}
 
 	alpha = Surf.PolyColor.s.alpha;
-	
+
 	// Start with the lightlevel and colormap from the top of the sprite
 	lightlevel = *list[sector->numlights - 1].lightlevel;
 
@@ -3985,7 +3985,7 @@ static void HWR_DrawSprite(gr_vissprite_t *spr)
 	GLPatch_t *gpatch; // sprite patch converted to hardware
 	FSurfaceInfo Surf;
 	FBITFIELD blend = 0;
-	
+
 	INT32 shader = SHADER_NONE;
 
 	if (!spr->mobj)
@@ -4520,7 +4520,7 @@ static void HWR_RenderDrawNodes(void)
 						wall->lightlevel, wall->wallcolormap);
 		}
 	}
-		
+
 	PS_STOP_TIMING(ps_hw_nodedrawtime);
 
 	numdrawnodes = 0;
@@ -4631,7 +4631,7 @@ static void HWR_AddPrecipitationSprites(void)
 
 	INT32 xl, xh, yl, yh, bx, by;
 	precipmobj_t *th;
-	
+
 	if (current_bsp_culling_distance)
 		drawdist = min((fixed_t)current_bsp_culling_distance, (fixed_t)(cv_drawdist_precip.value) * precipscale);
 	else
@@ -4838,9 +4838,9 @@ void HWR_ProjectSprite(mobj_t *thing)
 #ifdef ROTSPRITE
 	if (cv_spriteroll.value)
 	{
-		rollangle = FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), interp.roll) 
+		rollangle = FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), interp.roll)
 			+ FixedMul(FINESINE((ang) >> ANGLETOFINESHIFT), interp.pitch)
-			+ FixedMul(FINECOSINE((camang) >> ANGLETOFINESHIFT), interp.sloperoll) 
+			+ FixedMul(FINECOSINE((camang) >> ANGLETOFINESHIFT), interp.sloperoll)
 			+ FixedMul(FINESINE((camang) >> ANGLETOFINESHIFT), interp.slopepitch)
 			+ thing->rollangle;
 
@@ -4864,7 +4864,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 				spr_offset = SHORT(rotsprite->leftoffset) << FRACBITS;
 				spr_topoffset = SHORT(rotsprite->topoffset) << FRACBITS;
 				spr_topoffset += FEETADJUST;
-				
+
 				// flip -> rotate, not rotate -> flip
 				flip = 0;
 			}
@@ -4888,7 +4888,7 @@ void HWR_ProjectSprite(mobj_t *thing)
 
 	spritexscale *= this_scale;
 	spriteyscale *= this_scale;
-	
+
 	flip = !flip != !hflip;
 
 	if (flip)
@@ -5451,7 +5451,7 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, playe
 	}
 	else
 		portalclipline = NULL;
-		
+
 	// Set transform.
 	HWD.pfnSetTransform(&atransform);
 
@@ -5501,7 +5501,7 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, playe
 		HWR_SetTransform(fpov, player);// restore transform
 	}
 	gr_collect_skywalls = false;
-		
+
 	ps_numsprites.value.i = gr_visspritecount;
 	PS_START_TIMING(ps_hw_spritesorttime);
 	HWR_SortVisSprites();
@@ -5780,7 +5780,7 @@ void HWR_Startup(void)
 	{
 		CONS_Printf("HWR_Startup()...\n");
 		textureformat = patchformat = GL_TEXFMT_RGBA;
-		
+
 		HWR_InitTextureCache();
 		HWR_InitMD2();
 
@@ -5819,7 +5819,7 @@ void HWR_RenderWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend,
 {
 	FBITFIELD blendmode = blend;
 	UINT8 alpha = pSurf->PolyColor.s.alpha; // retain the alpha
-	
+
 	INT32 shader = SHADER_NONE;
 
 	// Lighting is done here instead so that fog isn't drawn incorrectly on transparent walls after sorting
@@ -5839,10 +5839,10 @@ void HWR_RenderWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend,
 
 		blendmode |= PF_ColorMapped;
 	}
-	
+
 	if (fogwall)
 		blendmode |= PF_Fog;
-	
+
 	blendmode |= PF_Modulated;	// No PF_Occlude means overlapping (incorrect) transparency
 	HWR_ProcessPolygon(pSurf, wallVerts, 4, blendmode, shader, false);
 
