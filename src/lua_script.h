@@ -13,6 +13,10 @@
 #ifndef LUA_SCRIPT_H
 #define LUA_SCRIPT_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "m_fixed.h"
 #include "doomtype.h"
 #include "d_player.h"
@@ -105,5 +109,9 @@ void COM_Lua_f(void);
 		CONS_Alert(CONS_WARNING,"%s\n", warningmsg);\
 	}\
 }
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif/*LUA_SCRIPT_H*/

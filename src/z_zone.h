@@ -164,6 +164,13 @@ size_t Z_TagsUsage(INT32 lowtag, INT32 hightag);
 //
 char *Z_StrDup(const char *in);
 
+//
+// Specialty allocation functions
+//
+void *Z_LevelPoolMalloc(size_t size);
+void *Z_LevelPoolCalloc(size_t size);
+void Z_LevelPoolFree(void *p, size_t size);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

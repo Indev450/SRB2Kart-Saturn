@@ -2922,8 +2922,6 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 	R_ClearLevelSplats();
 #endif
 
-	mobjcache = NULL;
-
 	R_InitializeLevelInterpolators();
 
 	P_InitThinkers();
