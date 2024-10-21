@@ -522,7 +522,7 @@ void R_InitSprites(void)
 
 	// it can be is do before loading config for skin cvar possible value
 	R_InitSkins();
-	for (i = 0; i < numwadfiles; i++) 
+	for (i = 0; i < numwadfiles; i++)
 	{
 		R_AddSkins((UINT16)i, false);
 		R_LoadSpriteInfoLumps(i, wadfiles[i]->numlumps);
@@ -732,7 +732,7 @@ static void R_DrawVisSprite(vissprite_t *vis)
 		if (overflow_test < 0) overflow_test = -overflow_test;
 		if ((UINT64)overflow_test&0xFFFFFFFF80000000ULL) return; // ditto
 	}
-	
+
 	// TODO This check should not be necessary. But Papersprites near to the camera will sometimes create invalid values
 	// for the vissprite's startfrac. This happens because they are not depth culled like other sprites.
 	// Someone who is more familiar with papersprites pls check and try to fix <3
@@ -1166,7 +1166,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	angle_t pitchnroll = 0;
 	angle_t sliptiderollangle = 0;
 #endif
-	
+
 	INT32 dist = -1;
 
 	if (cv_grmaxinterpdist.value)
@@ -1268,7 +1268,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	{
 		ang = R_PointToAngle (interp.x, interp.y) - interp.angle;
 		camang = R_PointToAngle (interp.x, interp.y);
-		
+
 		if (mirrored)
 			ang = InvAngle(ang);
 	}
@@ -1298,7 +1298,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	}
 
 	I_Assert(lump < max_spritelumps);
-	
+
 	if (thing->localskin && ((skin_t *)thing->localskin)->flags & SF_HIRES)
 		this_scale = FixedMul(this_scale, ((skin_t *)thing->localskin)->highresscale);
 	else if (thing->skin && ((skin_t *)thing->skin)->flags & SF_HIRES)
@@ -1311,7 +1311,7 @@ static void R_ProjectSprite(mobj_t *thing)
 
 #ifdef ROTSPRITE
     pitchnroll = 0;  // set this to 0, non-paper sprites will affect this value
-	
+
 	if (cv_spriteroll.value)
 	{
 		if (papersprite)
@@ -1456,7 +1456,7 @@ static void R_ProjectSprite(mobj_t *thing)
 			tx2 += FixedDiv(tx-tx2, div);
 			tz2 = FixedMul(MINZ, this_scale);
 		}
-		
+
 		if ((tx2 / 4) < -(FixedMul(tz2, fovtan)) || (tx / 4) > FixedMul(tz, fovtan)) // too far off the side?
 			return;
 
@@ -1484,7 +1484,7 @@ static void R_ProjectSprite(mobj_t *thing)
 			return;
 
 		range++; // fencepost problem
-		
+
 		if (range > 32767)
 		{
 			// If the range happens to be too large for fixed_t,
@@ -1599,7 +1599,6 @@ static void R_ProjectSprite(mobj_t *thing)
 
 	// store information in a vissprite
 	vis = R_NewVisSprite();
-	vis->renderflags = thing->renderflags;
 	vis->heightsec = heightsec; //SoM: 3/17/2000
 	vis->mobjflags = thing->flags;
 	vis->scale = yscale; //<<detailshift;
@@ -2370,7 +2369,7 @@ static drawnode_t *R_CreateDrawNode(drawnode_t *link)
 	node->thickseg = NULL;
 	node->ffloor = NULL;
 	node->sprite = NULL;
-	
+
 	ps_numdrawnodes.value.i++;
 	return node;
 }
@@ -2647,7 +2646,7 @@ static void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2)
 		if (spr->cliptop[x] == -2)
 			spr->cliptop[x] = -1;
 	}
-	
+
 	// Check if it'll be visible
 	// Not done for floorsprites.
 	if (cv_spriteclip.value)
@@ -2722,7 +2721,7 @@ void R_ClipSprites(void)
 	for (; clippedvissprites < visspritecount; clippedvissprites++)
 	{
 		vissprite_t *spr = R_GetVisSprite(clippedvissprites);
-		
+
 		if (cv_spriteclip.value
 		&& (spr->szt > vid.height || spr->sz < 0))
 		{
@@ -2747,7 +2746,7 @@ void R_ClipSprites(void)
 		}
 
 		R_ClipVisSprite(spr, spr->x1, spr->x2);
-		
+
 		if ((spr->cut & SC_NOTVISIBLE) == 0)
 			numvisiblesprites++;
 	}
@@ -3558,7 +3557,7 @@ next_token:
 			Forceskin_cons_t[numskins+1].value = numskins;
 			Forceskin_cons_t[numskins+1].strvalue = skins[numskins].name;
 		}
-		
+
 		skin->localskin = local;
 
 		// so we dont have to guess
@@ -3585,7 +3584,7 @@ next_token:
 			CONS_Debug(DBG_SETUP, M_GetText("Incremented %d, %d to %d\n"), skin->kartspeed, skin->kartweight, skinstatscount[skin->kartspeed - 1][skin->kartweight - 1]);
 			skinsorted[numskins] = numskins;
 		}
-		
+
 		allskins[numallskins] = ( (local) ? localskins : skins )[( (local) ? numlocalskins : numskins )];
 
 		local ? numlocalskins++ : numskins++;
