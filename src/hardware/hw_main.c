@@ -4872,21 +4872,8 @@ void HWR_ProjectSprite(mobj_t *thing)
 	}
 #endif
 
-	if (thing->renderflags & RF_ABSOLUTEOFFSETS)
-	{
-		spr_offset = interp.spritexoffset;
-		spr_topoffset = interp.spriteyoffset;
-	}
-	else
-	{
-		SINT8 flipoffset = 1;
-
-		if ((thing->renderflags & RF_FLIPOFFSETS) && flip)
-			flipoffset = -1;
-
-		spr_offset += interp.spritexoffset * flipoffset;
-		spr_topoffset += interp.spriteyoffset * flipoffset;
-	}
+	spr_offset += interp.spritexoffset;
+	spr_topoffset += interp.spriteyoffset;
 
 	if (papersprite)
 	{

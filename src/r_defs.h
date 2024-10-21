@@ -687,16 +687,6 @@ typedef struct
 #pragma pack()
 #endif
 
-typedef enum // trimmed since its only real use here is for xscale/yscale
-{
-	RF_HORIZONTALFLIP   = 0x0001,   // Flip sprite horizontally
-	RF_VERTICALFLIP     = 0x0002,   // Flip sprite vertically
-	RF_ABSOLUTEOFFSETS  = 0x0004,   // Sprite uses the object's offsets absolutely, instead of relatively
-	RF_FLIPOFFSETS      = 0x0008,   // Relative object offsets are flipped with the sprite
-
-	FF_ABSOLUTELIGHTLEVEL = 0x00010000, //  mobj_t.lightlevel is absolute instead of relative
-} renderflags_t;
-
 typedef enum
 {
 	SRF_SINGLE      = 0,   // 0-angle for all rotations

@@ -1177,6 +1177,8 @@ static void R_ProjectSprite(mobj_t *thing)
 	boolean papersprite = (thing->frame & FF_PAPERSPRITE);
 	fixed_t paperoffset = 0, paperdistance = 0; angle_t centerangle = 0;
 
+	INT32 lightnum;
+
 	//SoM: 3/17/2000
 	fixed_t gz, gzt;
 	INT32 heightsec, phs;
@@ -1408,21 +1410,8 @@ static void R_ProjectSprite(mobj_t *thing)
 	if (spritexscale < 1 || spriteyscale < 1)
 		return;
 
-	if (thing->renderflags & RF_ABSOLUTEOFFSETS)
-	{
-		spr_offset = interp.spritexoffset;
-		spr_topoffset = interp.spriteyoffset;
-	}
-	else
-	{
-		SINT8 flipoffset = 1;
-
-		if ((thing->renderflags & RF_FLIPOFFSETS) && flip)
-			flipoffset = -1;
-
-		spr_offset += interp.spritexoffset * flipoffset;
-		spr_topoffset += interp.spriteyoffset * flipoffset;
-	}
+	spr_offset += interp.spritexoffset;
+	spr_topoffset += interp.spriteyoffset;
 
 	if (flip)
 		offset = spr_offset - spr_width;
@@ -1598,80 +1587,70 @@ static void R_ProjectSprite(mobj_t *thing)
 			return;
 	}
 
-	if (thing->renderflags & FF_ABSOLUTELIGHTLEVEL)
+	if (thing->subsector->sector->numlights)
 	{
-		const UINT8 n = R_ThingLightLevel(thing);
+		light = thing->subsector->sector->numlights - 1;
 
-		// n = uint8 aka 0 - 255, so the shift will always be 0 - LIGHTLEVELS - 1
-		lights_array = scalelight[n >> LIGHTSEGSHIFT];
+		for (lightnum = 1; lightnum < thing->subsector->sector->numlights; lightnum++) {
+			fixed_t h = thing->subsector->sector->lightlist[lightnum].slope ? P_GetZAt(thing->subsector->sector->lightlist[lightnum].slope, interp.x, interp.y)
+					: thing->subsector->sector->lightlist[lightnum].height;
+			if (h <= gzt)
+			{
+				light = lightnum - 1;
+				break;
+			}
+		}
+
+		lightnum = *thing->subsector->sector->lightlist[light].lightlevel;
 	}
 	else
 	{
-		INT32 lightnum;
-		if (thing->subsector->sector->numlights)
-		{
-			light = thing->subsector->sector->numlights - 1;
-
-			for (lightnum = 1; lightnum < thing->subsector->sector->numlights; lightnum++) {
-				fixed_t h = thing->subsector->sector->lightlist[lightnum].slope ? P_GetZAt(thing->subsector->sector->lightlist[lightnum].slope, interp.x, interp.y)
-							: thing->subsector->sector->lightlist[lightnum].height;
-				if (h <= gzt)
-				{
-					light = lightnum - 1;
-					break;
-				}
-			}
-
-			lightnum = *thing->subsector->sector->lightlist[light].lightlevel;
-		}
-		else
-		{
-			lightnum = thing->subsector->sector->lightlevel;
-		}
-
-		lightnum = (lightnum + R_ThingLightLevel(thing)) >> LIGHTSEGSHIFT;
-
-		if (maplighting.directional == true && P_SectorUsesDirectionalLighting(thing->subsector->sector))
-		{
-			fixed_t extralight = R_GetSpriteDirectionalLighting(papersprite
-					? interp.angle + (ang >= ANGLE_180 ? -ANGLE_90 : ANGLE_90)
-					: R_PointToAngle(interp.x, interp.y));
-
-			// Krangle contrast in 3P/4P because scalelight
-			// scales differently depending on the screen
-			// width (which is halved in 3P/4P).
-			if (splitscreen > 1)
-			{
-				extralight *= 2;
-			}
-
-			// Less change in contrast in dark sectors
-			extralight = FixedMul(extralight, min(max(0, lightnum), LIGHTLEVELS - 1) * FRACUNIT / (LIGHTLEVELS - 1));
-
-			if (papersprite)
-			{
-				// Papersprite contrast should match walls
-				lightnum += FixedFloor((extralight / 8) + (FRACUNIT / 2)) / FRACUNIT;
-			}
-			else
-			{
-				fixed_t n = FixedDiv(FixedMul(xscale, LIGHTRESOLUTIONFIX), ((MAXLIGHTSCALE-1) << LIGHTSCALESHIFT));
-
-				// Less change in contrast at further distances, to counteract DOOM diminished light
-				extralight = FixedMul(extralight, min(n, FRACUNIT));
-
-				// Contrast is stronger for normal sprites, stronger than wall lighting is at the same distance
-				lightnum += FixedFloor((extralight / 4) + (FRACUNIT / 2)) / FRACUNIT;
-			}
-		}
-
-		if (lightnum < 0)
-			lights_array = scalelight[0];
-		else if (lightnum >= LIGHTLEVELS)
-			lights_array = scalelight[LIGHTLEVELS-1];
-		else
-			lights_array = scalelight[lightnum];
+		lightnum = thing->subsector->sector->lightlevel;
 	}
+
+	lightnum = (lightnum + R_ThingLightLevel(thing)) >> LIGHTSEGSHIFT;
+
+	if (maplighting.directional == true && P_SectorUsesDirectionalLighting(thing->subsector->sector))
+	{
+		fixed_t extralight = R_GetSpriteDirectionalLighting(papersprite
+				? interp.angle + (ang >= ANGLE_180 ? -ANGLE_90 : ANGLE_90)
+				: R_PointToAngle(interp.x, interp.y));
+
+		// Krangle contrast in 3P/4P because scalelight
+		// scales differently depending on the screen
+		// width (which is halved in 3P/4P).
+		if (splitscreen > 1)
+		{
+			extralight *= 2;
+		}
+
+		// Less change in contrast in dark sectors
+		extralight = FixedMul(extralight, min(max(0, lightnum), LIGHTLEVELS - 1) * FRACUNIT / (LIGHTLEVELS - 1));
+
+		if (papersprite)
+		{
+			// Papersprite contrast should match walls
+			lightnum += FixedFloor((extralight / 8) + (FRACUNIT / 2)) / FRACUNIT;
+		}
+		else
+		{
+			fixed_t n = FixedDiv(FixedMul(xscale, LIGHTRESOLUTIONFIX), ((MAXLIGHTSCALE-1) << LIGHTSCALESHIFT));
+
+			// Less change in contrast at further distances, to counteract DOOM diminished light
+			extralight = FixedMul(extralight, min(n, FRACUNIT));
+
+			// Contrast is stronger for normal sprites, stronger than wall lighting is at the same distance
+			lightnum += FixedFloor((extralight / 4) + (FRACUNIT / 2)) / FRACUNIT;
+		}
+	}
+
+	if (lightnum < 0)
+		lights_array = scalelight[0];
+	else if (lightnum >= LIGHTLEVELS)
+		lights_array = scalelight[LIGHTLEVELS-1];
+	else
+		lights_array = scalelight[lightnum];
+
 
 	heightsec = thing->subsector->sector->heightsec;
 	if (viewplayer && viewplayer->mo && viewplayer->mo->subsector)
@@ -1803,7 +1782,7 @@ static void R_ProjectSprite(mobj_t *thing)
 
 	vis->isScaled = false;
 
-	if (thing->subsector->sector->numlights && !(thing->renderflags & FF_ABSOLUTELIGHTLEVEL))
+	if (thing->subsector->sector->numlights)
 		R_SplitSprite(vis, thing);
 
 	// Debug
