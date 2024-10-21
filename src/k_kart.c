@@ -5968,9 +5968,9 @@ static mobj_t *K_SpawnOrMoveMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t typ
 	else
 	{
 		if ((mobj->state - states) == S_INVISIBLE)
-            P_SetOrigin(mobj, x, y, z);
-        else
-            P_MoveOrigin(mobj, x, y, z);
+			P_SetOrigin(mobj, x, y, z);
+		else
+			P_MoveOrigin(mobj, x, y, z);
 	}
 
 	return mobj;
