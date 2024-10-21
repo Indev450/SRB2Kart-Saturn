@@ -3287,7 +3287,7 @@ static int skinSortFunc(const void *a, const void *b) //tbh i have no clue what 
 void sortSkinGrid(void)
 {
 	//CONS_Printf("Sorting skin list (%d)...\n", cv_skinselectgridsort.value);
-  qs22j(skinsorted, numskins, sizeof(UINT8), skinSortFunc);
+	qs22j(skinsorted, numskins, sizeof(UINT8), skinSortFunc);
 }
 
 //
