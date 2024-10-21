@@ -856,6 +856,13 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 	if (slope)
 		lightlevel = HWR_CalcSlopeLight(lightlevel, slope, gr_frontsector, (FOFsector != NULL));
 
+	const char *name = W_CheckNameForNum(lumpnum);
+
+	if (name && (strncmp(name, "BOST", 4) == 0 || strncmp(name, "PAZRCST", 7) == 0 || strncmp(name, "FSBOST", 6) == 0 || strncmp(name, "SWZ_BOO", 7) == 0 || strncmp(name, "VAPOR2", 6) == 0 || strncmp(name, "GDS", 3) == 0))
+	{
+		lightlevel = 255;
+	}
+
 	HWR_Lighting(&Surf, lightlevel, planecolormap, P_SectorUsesDirectionalLighting(gr_frontsector));
 
 	if (PolyFlags & (PF_Translucent|PF_Fog))
@@ -2961,13 +2968,6 @@ static boolean HWR_DoCulling(line_t *cullheight, line_t *viewcullheight, float v
 	return false;
 }
 
-#define BOOSTLIGHT(name)\
-UINT8 boostlight = 0;\
-if (name && (strncmp(name, "BOST", 4) == 0 || strncmp(name, "PAZRCST", 7) == 0 || strncmp(name, "FSBOST", 6) == 0 || strncmp(name, "SWZ_BOO", 7) == 0 || strncmp(name, "VAPOR2", 6) == 0 || strncmp(name, "GDS", 3) == 0))\
-{\
-	boostlight = 255;\
-}
-
 // -----------------+
 // HWR_Subsector    : Determine floor/ceiling planes.
 //                  : Add sprites of things in sector.
@@ -3081,14 +3081,11 @@ static void HWR_Subsector(size_t num)
 			if (sub->validcount != validcount)
 			{
 				HWR_GetFlat(levelflats[gr_frontsector->floorpic].lumpnum, R_NoEncore(gr_frontsector, false));
-
-				BOOSTLIGHT(levelflats[gr_frontsector->floorpic].name)
-
 				HWR_RenderPlane(sub, &extrasubsectors[num], false,
 					// Hack to make things continue to work around slopes.
 					locFloorHeight == cullFloorHeight ? locFloorHeight : gr_frontsector->floorheight,
 					// We now return you to your regularly scheduled rendering.
-					PF_Occlude, boostlight ? boostlight : floorlightlevel, levelflats[gr_frontsector->floorpic].lumpnum, NULL, 255, floorcolormap);
+					PF_Occlude, floorlightlevel, levelflats[gr_frontsector->floorpic].lumpnum, NULL, 255, floorcolormap);
 			}
 		}
 	}
@@ -3100,14 +3097,11 @@ static void HWR_Subsector(size_t num)
 			if (sub->validcount != validcount)
 			{
 				HWR_GetFlat(levelflats[gr_frontsector->ceilingpic].lumpnum, R_NoEncore(gr_frontsector, true));
-
-				BOOSTLIGHT(levelflats[gr_frontsector->ceilingpic].name)
-
 				HWR_RenderPlane(sub, &extrasubsectors[num], true,
 					// Hack to make things continue to work around slopes.
 					locCeilingHeight == cullCeilingHeight ? locCeilingHeight : gr_frontsector->ceilingheight,
 					// We now return you to your regularly scheduled rendering.
-					PF_Occlude, boostlight ? boostlight :  ceilinglightlevel, levelflats[gr_frontsector->ceilingpic].lumpnum,NULL, 255, ceilingcolormap);
+					PF_Occlude, ceilinglightlevel, levelflats[gr_frontsector->ceilingpic].lumpnum,NULL, 255, ceilingcolormap);
 			}
 		}
 	}
@@ -3163,13 +3157,11 @@ static void HWR_Subsector(size_t num)
 				{
 					light = R_GetPlaneLight(gr_frontsector, centerHeight, viewz < bottomCullHeight  ? true : false);
 
-					BOOSTLIGHT(levelflats[*rover->bottompic].name)
-
 					HWR_AddTransparentFloor(levelflats[*rover->bottompic].lumpnum,
 					                       &extrasubsectors[num],
 										   false,
 					                       *rover->bottomheight,
-					                       boostlight ? boostlight : *gr_frontsector->lightlist[light].lightlevel,
+					                       *gr_frontsector->lightlist[light].lightlevel,
 					                       CLAMP(rover->alpha, 0 ,255), rover->master->frontsector, (rover->flags & FF_RIPPLE ? PF_Ripple : 0)|PF_Translucent,
 					                       false, gr_frontsector->lightlist[light].extra_colormap);
 				}
@@ -3178,9 +3170,7 @@ static void HWR_Subsector(size_t num)
 					HWR_GetFlat(levelflats[*rover->bottompic].lumpnum, R_NoEncore(gr_frontsector, false));
 					light = R_GetPlaneLight(gr_frontsector, centerHeight, viewz < bottomCullHeight  ? true : false);
 
-					BOOSTLIGHT(levelflats[*rover->bottompic].name)
-
-					HWR_RenderPlane(sub, &extrasubsectors[num], false, *rover->bottomheight, (rover->flags & FF_RIPPLE ? PF_Ripple : 0)|PF_Occlude, boostlight ? boostlight : *gr_frontsector->lightlist[light].lightlevel, levelflats[*rover->bottompic].lumpnum,
+					HWR_RenderPlane(sub, &extrasubsectors[num], false, *rover->bottomheight, (rover->flags & FF_RIPPLE ? PF_Ripple : 0)|PF_Occlude, *gr_frontsector->lightlist[light].lightlevel, levelflats[*rover->bottompic].lumpnum,
 					                rover->master->frontsector, 255, gr_frontsector->lightlist[light].extra_colormap);
 				}
 			}
@@ -3213,13 +3203,11 @@ static void HWR_Subsector(size_t num)
 				{
 					light = R_GetPlaneLight(gr_frontsector, centerHeight, viewz < topCullHeight  ? true : false);
 
-					BOOSTLIGHT(levelflats[*rover->toppic].name)
-
 					HWR_AddTransparentFloor(levelflats[*rover->toppic].lumpnum,
 											&extrasubsectors[num],
 											true,
 											*rover->topheight,
-											boostlight ? boostlight : *gr_frontsector->lightlist[light].lightlevel,
+											*gr_frontsector->lightlist[light].lightlevel,
 											CLAMP(rover->alpha, 0 ,255), rover->master->frontsector, (rover->flags & FF_RIPPLE ? PF_Ripple : 0)|PF_Translucent,
 											false, gr_frontsector->lightlist[light].extra_colormap);
 				}
@@ -3228,9 +3216,7 @@ static void HWR_Subsector(size_t num)
 					HWR_GetFlat(levelflats[*rover->toppic].lumpnum, R_NoEncore(gr_frontsector, true));
 					light = R_GetPlaneLight(gr_frontsector, centerHeight, viewz < topCullHeight  ? true : false);
 
-					BOOSTLIGHT(levelflats[*rover->toppic].name)
-
-					HWR_RenderPlane(sub, &extrasubsectors[num], true, *rover->topheight, (rover->flags & FF_RIPPLE ? PF_Ripple : 0)|PF_Occlude, boostlight ? boostlight : *gr_frontsector->lightlist[light].lightlevel, levelflats[*rover->toppic].lumpnum,
+					HWR_RenderPlane(sub, &extrasubsectors[num], true, *rover->topheight, (rover->flags & FF_RIPPLE ? PF_Ripple : 0)|PF_Occlude, *gr_frontsector->lightlist[light].lightlevel, levelflats[*rover->toppic].lumpnum,
 									  rover->master->frontsector, 255, gr_frontsector->lightlist[light].extra_colormap);
 				}
 			}
