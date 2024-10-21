@@ -3411,7 +3411,7 @@ static void P_PlayerMobjThinker(mobj_t *mobj)
 	I_Assert(mobj->player != NULL);
 	I_Assert(!P_MobjWasRemoved(mobj));
 
-	if (P_MobjWasRemoved(mobj))
+	if (!mobj)
 		return;
 
 	P_MobjCheckWater(mobj);
@@ -11247,7 +11247,8 @@ void P_SpawnMapThing(mapthing_t *mthing)
 
 	mobj = P_SpawnMobj(x, y, z, i);
 
-	if (!mobj || P_MobjWasRemoved(mobj)) {
+	if (!mobj || P_MobjWasRemoved(mobj))
+	{
 		CONS_Alert(CONS_ERROR, "Failed to spawn map thing #%d at %d, %d. This will crash vanilla clients!\n", mthing->type, x>>FRACBITS, y>>FRACBITS);
 		return;
 	}
