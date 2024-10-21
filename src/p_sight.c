@@ -308,8 +308,8 @@ static boolean P_CrossBSPNode(INT32 bspnum, register los_t *los)
 	while (!(bspnum & NF_SUBSECTOR))
 	{
 		register node_t *bsp = nodes + bspnum;
-		INT32 side = R_PointOnSide(los->strace.x, los->strace.y, bsp);
-		INT32 side2 = R_PointOnSide(los->t2x, los->t2y, bsp);
+		INT32 side = R_PointOnSideRender(los->strace.x, los->strace.y, bsp);
+		INT32 side2 = R_PointOnSideRender(los->t2x, los->t2y, bsp);
 
 		if (side == side2)
 		{
