@@ -4116,8 +4116,7 @@ INT32 G_FindMap(const char *mapname, char **foundmapnamep,
 					break;
 			}
 		}
-		else
-		if (apromapnum == 0 || wanttable)
+		else if (apromapnum == 0 || wanttable)
 		{
 			/* LEVEL 1--match keywords verbatim */
 			if (( aprop = strcasestr(realmapname, mapname) ))
@@ -4208,7 +4207,7 @@ INT32 G_FindMapByNameOrCode(const char *mapname, char **realmapnamep)
 	{
 		if (mapname[0] == '*') // current map
 			return gamemap;
-		else if (mapname[0] == '?')
+		else if (mapname[0] == '?' && mapheaderinfo[gamemap-1])
 			return G_RandMap(G_TOLFlag(gametype), gamemap-1, false, 0, false, NULL);
 		else if (mapname[0] == '+' && mapheaderinfo[gamemap-1]) // next map
 		{
