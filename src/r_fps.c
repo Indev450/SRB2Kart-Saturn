@@ -314,13 +314,15 @@ void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 		return;
 	}
 
-	out->x = mobj->resetinterp && (mobj->type != MT_GHOST) ? mobj->x : R_LerpFixed(mobj->old_x, mobj->x, frac);
-	out->y = mobj->resetinterp && (mobj->type != MT_GHOST) ? mobj->y : R_LerpFixed(mobj->old_y, mobj->y, frac);
-	out->z = mobj->resetinterp && (mobj->type != MT_GHOST) ? mobj->z : R_LerpFixed(mobj->old_z, mobj->z, frac);
-	out->spritexscale = mobj->resetinterp ? mobj->spritexscale : R_LerpFixed(mobj->old_spritexscale, mobj->spritexscale, frac);
-	out->spriteyscale = mobj->resetinterp ? mobj->spriteyscale : R_LerpFixed(mobj->old_spriteyscale, mobj->spriteyscale, frac);
-	out->spritexoffset = mobj->resetinterp ? mobj->spritexoffset : R_LerpFixed(mobj->old_spritexoffset, mobj->spritexoffset, frac);
-	out->spriteyoffset = mobj->resetinterp ? mobj->spriteyoffset : R_LerpFixed(mobj->old_spriteyoffset, mobj->spriteyoffset, frac);
+	const boolean doreset = mobj->resetinterp && mobj->type != MT_GHOST && mobj->type != MT_PLAYERRETICULE;
+
+	out->x = doreset ? mobj->x : R_LerpFixed(mobj->old_x, mobj->x, frac);
+	out->y = doreset ? mobj->y : R_LerpFixed(mobj->old_y, mobj->y, frac);
+	out->z = doreset ? mobj->z : R_LerpFixed(mobj->old_z, mobj->z, frac);
+	out->spritexscale = doreset ? mobj->spritexscale : R_LerpFixed(mobj->old_spritexscale, mobj->spritexscale, frac);
+	out->spriteyscale = doreset ? mobj->spriteyscale : R_LerpFixed(mobj->old_spriteyscale, mobj->spriteyscale, frac);
+	out->spritexoffset = doreset ? mobj->spritexoffset : R_LerpFixed(mobj->old_spritexoffset, mobj->spritexoffset, frac);
+	out->spriteyoffset = doreset ? mobj->spriteyoffset : R_LerpFixed(mobj->old_spriteyoffset, mobj->spriteyoffset, frac);
 	out->scale = mobj->resetinterp ? mobj->scale : R_LerpFixed(mobj->old_scale, mobj->scale, frac);
 	//out->subsector = R_PointInSubsector(out->x, out->y); // why was this even done?
 	out->subsector = mobj->subsector;
@@ -787,19 +789,17 @@ void R_ResetMobjInterpolationState(mobj_t *mobj)
 	mobj->old_z2 = mobj->old_z;
 	mobj->old_angle2 = mobj->old_angle;
 	mobj->old_scale2 = mobj->old_scale;
-
-	// rotation humor
-	mobj->old_pitch2 = mobj->old_pitch;
-	mobj->old_roll2 = mobj->old_roll;
-	mobj->old_slopepitch2 = mobj->old_slopepitch;
-	mobj->old_sloperoll2 = mobj->old_sloperoll;
+	mobj->old_spritexscale2 = mobj->old_spritexscale;
+	mobj->old_spriteyscale2 = mobj->old_spriteyscale;
+	mobj->old_spritexoffset2 = mobj->old_spritexoffset;
+	mobj->old_spriteyoffset2 = mobj->old_spriteyoffset;
 
 	mobj->old_x = mobj->x;
 	mobj->old_y = mobj->y;
 	mobj->old_z = mobj->z;
 	mobj->old_angle = mobj->angle;
 
-	// rotation humor, again
+	// rotation humor
 
 	// pitch and roll first
 	mobj->old_pitch = mobj->pitch;
