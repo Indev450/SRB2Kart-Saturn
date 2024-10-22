@@ -1102,8 +1102,6 @@ static void D_FindAddonsToAutoload(void)
 				wadsToAutoload[i] = '\0';
 		}
 
-		CONS_Printf("file %s = %d\n", wadsToAutoload, W_CheckPostLoadList(wadsToAutoload));
-
 		if (W_CheckPostLoadList(wadsToAutoload))
 		{
 			CONS_Printf("forcing postload for file %s\n", wadsToAutoload);
