@@ -1068,8 +1068,7 @@ static void D_FindAddonsToAutoload(void)
 	const char *autoloadpath;
 	boolean postload;
 
-	INT32 i, len;
-	boolean hasprefix = false;
+	INT32 i;
 	char wadsToAutoload[256] = "";
 
 	// does it exist tho
@@ -1103,34 +1102,12 @@ static void D_FindAddonsToAutoload(void)
 				wadsToAutoload[i] = '\0';
 		}
 
-		len = strlen(wadsToAutoload);
-		hasprefix = false;
+		CONS_Printf("file %s = %d\n", wadsToAutoload, W_CheckPostLoadList(wadsToAutoload));
 
-		for (i = 0; i < len; ++i)
+		if (W_CheckPostLoadList(wadsToAutoload))
 		{
-			if (wadsToAutoload[i] == '_')
-			{
-				hasprefix = true;
-				break;
-			}
-		}
-
-		// Lets just hope no one adds bonuschars in autoload
-		if (hasprefix)
-		{
-			// We searching for c in prefix, which stands for "character" and doesn't work well with
-			// autoload atm, only fine for postload
-			for (i = 0; i < len; ++i)
-			{
-				if (wadsToAutoload[i] == '_') break; // Prefix end
-
-				if (wadsToAutoload[i] == 'c' || wadsToAutoload[i] == 'C')
-				{
-					CONS_Alert(CONS_WARNING, "forcing postload for %s as local skin\n", wadsToAutoload);
-					postload = true;
-					break; // Found it
-				}
-			}
+			CONS_Printf("forcing postload for file %s\n", wadsToAutoload);
+			postload = true;
 		}
 
 		// LOAD IT
