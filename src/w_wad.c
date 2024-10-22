@@ -2120,6 +2120,25 @@ int W_VerifyNMUSlumps(const char *filename)
 	return W_VerifyFile(filename, NMUSlist, false);
 }
 
+int W_CheckPostLoadList(const char *filename)
+{
+	static lumpchecklist_t postloadlist[] =
+	{
+		{"Lua/",		4},
+		{"SOC/",		4},
+		{"Skins/",		6},
+		{"S_SKIN",		6},
+		{"LUA_",		4},
+		{"SOC_", 		4},
+		{"MAINCFG",		7},
+		{"OBJCTCFG", 	8},
+		{"MAP",			3},
+
+		{NULL, 0},
+	};
+	return W_VerifyFile(filename, postloadlist, true);
+}
+
 /** \brief Generates a virtual resource used for level data loading.
  *
  * \param lumpnum_t reference

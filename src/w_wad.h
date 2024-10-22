@@ -226,4 +226,6 @@ void W_VerifyFileMD5(UINT16 wadfilenum, const char *matchmd5);
 
 int W_VerifyNMUSlumps(const char *filename);
 
+int W_CheckPostLoadList(const char *filename);
+
 #endif // __W_WAD__
