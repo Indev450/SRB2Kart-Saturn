@@ -1148,12 +1148,12 @@ static void D_FindAddonsToAutoload(void)
 	fclose(autoloadconfigfile);
 }
 
-void D_AddAutoloadFiles(void)
+static void D_AddAutoloadFiles(void)
 {
-	if (wasautoloaded && postautoloaded)
+	if (wasautoloaded)
 		return;
 
-	if (!wasautoloaded && !modeattacking)
+	if (!wasautoloaded)
 	{
 		CONS_Printf("D_AutoloadFile(): Loading autoloaded addons...\n");
 		if (W_AddAutoloadedLocalFiles(autoloadwadfiles) == 0)
@@ -1162,12 +1162,18 @@ void D_AddAutoloadFiles(void)
 
 		wasautoloaded = true;
 	}
+}
 
-	if ((!postautoloaded) && netgame)
+void D_AddPostloadFiles(void)
+{
+	if (postautoloaded)
+		return;
+
+	if (!postautoloaded && netgame)
 	{
-		CONS_Printf("D_AutoloadFile(): Loading postloaded addons...\n");
+		CONS_Printf("D_AddPostloadFiles(): Loading postloaded addons...\n");
 		if (W_AddAutoloadedLocalFiles(autoloadwadfilespost) == 0)
-			CONS_Printf("D_AutoloadFile(): Are you sure you put in valid files or what?\n");
+			CONS_Printf("D_AddPostloadFiles(): Are you sure you put in valid files or what?\n");
 		D_CleanFile(autoloadwadfilespost);
 
 		postautoloaded = true;
@@ -1868,6 +1874,8 @@ void D_SRB2Main(void)
 
 	CONS_Printf("ST_Init(): Init status bar.\n");
 	ST_Init();
+
+	D_AddAutoloadFiles();
 
 	// Set up splitscreen players before joining!
 	if (!dedicated && (M_CheckParm("-splitscreen") && M_IsNextParm()))
