@@ -106,8 +106,6 @@ consvar_t cv_grbatching = {"gr_batching", "On", 0, CV_OnOff, NULL, 0, NULL, NULL
 consvar_t cv_grframebuffer = {"gr_framebuffer", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, CV_grframebuffer_OnChange, 0, NULL, NULL, 0, 0, NULL};
 #endif
 
-consvar_t cv_splitwallfix = {"splitwallfix", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-
 static CV_PossibleValue_t grrenderdistance_cons_t[] = {
 	{0, "Max"}, {1, "1024"}, {2, "2048"}, {3, "4096"}, {4, "6144"}, {5, "8192"},
 	{6, "12288"}, {7, "16384"}, {0, NULL}};
@@ -1094,7 +1092,7 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 	// Lactozilla: If both heights of a side lay on the same position, then this wall is a triangle.
 	// To avoid division by zero, which would result in a NaN, we check if the vertical difference
 	// between the two vertices is not zero.
-	if (fpclassify(top - bot) == FP_ZERO && cv_splitwallfix.value)
+	if (fpclassify(top - bot) == FP_ZERO)
 		pegmul = 0.0;
 	else
 		pegmul = (pegb - pegt) / (top - bot);
@@ -1104,7 +1102,7 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 	endpegt = wallVerts[2].t;
 	endpegb = wallVerts[1].t;
 
-	if (fpclassify(endtop - endbot) == FP_ZERO && cv_splitwallfix.value)
+	if (fpclassify(endtop - endbot) == FP_ZERO)
 		endpegmul = 0.0;
 	else
 		endpegmul = (endpegb - endpegt) / (endtop - endbot);
@@ -1177,13 +1175,10 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 			endbheight = endrealbot;
 		}
 
-		if (cv_splitwallfix.value)
-		{
-			if (endbheight > endtop)
-				endbot = endtop;
-		}
+		if (endbheight > endtop)
+			endbot = endtop;
 
-		if ((endbheight >= endtop && bheight >= top && !cv_splitwallfix.value) || (bheight >= top && cv_splitwallfix.value))
+		if (bheight >= top)
 			continue;
 
 		// Found a break
@@ -1193,15 +1188,7 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 		if (bot < realbot)
 			bot = realbot;
 
-		if (cv_splitwallfix.value)
-			endbot = min(max(endbheight, endrealbot), endtop);
-		else
-		{
-			endbot = endbheight;
-
-			if (endbot < endrealbot)
-				endbot = endrealbot;
-		}
+		endbot = min(max(endbheight, endrealbot), endtop);
 
 		Surf->PolyColor.s.alpha = alpha;
 
@@ -5688,8 +5675,6 @@ void HWR_AddCommands(void)
 	CV_RegisterVar(&cv_grsolvetjoin);
 
 	CV_RegisterVar(&cv_grbatching);
-
-	CV_RegisterVar(&cv_splitwallfix);
 
 	CV_RegisterVar(&cv_grrenderdistance);
 
