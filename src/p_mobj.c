@@ -10300,7 +10300,7 @@ void P_PrecipitationEffects(void)
 			return;
 	}
 
-	boolean sounds_rain = (rainsfx && (!leveltime || leveltime % 80 == 1));
+	boolean sounds_rain = ((cv_drawdist_precip.value != 0) && rainsfx && (!leveltime || leveltime % 80 == 1));
 
 	// Currently thunderstorming with lightning, and we're sounding the thunder...
 	// and where there's thunder, there's gotta be lightning!
