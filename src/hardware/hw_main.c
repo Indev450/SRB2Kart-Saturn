@@ -1113,6 +1113,8 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 	float endpegt, endpegb, endpegmul;
 	float endheight = 0.0f, endbheight = 0.0f;
 
+	float diff;
+
 	fixed_t v1x = FloatToFixed(wallVerts[0].x);
 	fixed_t v1y = FloatToFixed(wallVerts[0].z);
 	fixed_t v2x = FloatToFixed(wallVerts[1].x);
@@ -1124,26 +1126,30 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 
 	realtop = top = wallVerts[3].y;
 	realbot = bot = wallVerts[0].y;
+	diff = top - bot;
+
 	pegt = wallVerts[3].t;
 	pegb = wallVerts[0].t;
 
 	// Lactozilla: If both heights of a side lay on the same position, then this wall is a triangle.
 	// To avoid division by zero, which would result in a NaN, we check if the vertical difference
 	// between the two vertices is not zero.
-	if (fpclassify(top - bot) == FP_ZERO)
+	if (fpclassify(diff) == FP_ZERO)
 		pegmul = 0.0;
 	else
-		pegmul = (pegb - pegt) / (top - bot);
+		pegmul = (pegb - pegt) / diff;
 
 	endrealtop = endtop = wallVerts[2].y;
 	endrealbot = endbot = wallVerts[1].y;
+	diff = endtop - endbot;
+
 	endpegt = wallVerts[2].t;
 	endpegb = wallVerts[1].t;
 
-	if (fpclassify(endtop - endbot) == FP_ZERO)
+	if (fpclassify(diff) == FP_ZERO)
 		endpegmul = 0.0;
 	else
-		endpegmul = (endpegb - endpegt) / (endtop - endbot);
+		endpegmul = (endpegb - endpegt) / diff;
 
 	for (INT32 i = 0; i < sector->numlights; i++)
 	{
