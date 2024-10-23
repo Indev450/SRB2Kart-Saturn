@@ -1464,10 +1464,10 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 	fixed_t h, l; // 3D sides and 2s middle textures
 	fixed_t hS, lS;
 
-	boolean noencore = false;
-
 	gr_sidedef = gr_curline->sidedef;
 	gr_linedef = gr_curline->linedef;
+
+	const boolean noencore = (gr_linedef->flags & ML_TFERLINE);
 
 	if (gr_curline->pv1)
 	{
@@ -1528,9 +1528,6 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 	FSurfaceInfo Surf;
 	Surf.PolyColor.s.alpha = 255;
-
-	if (gr_linedef->flags & ML_TFERLINE)
-		noencore = true;
 
 	INT32 gr_midtexture = R_GetTextureNum(gr_sidedef->midtexture);
 	GLMapTexture_t *grTex = NULL;
@@ -1647,7 +1644,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 			// This is so that it doesn't overflow and screw up the wall, it doesn't need to go higher than the texture's height anyway
 			texturevpeg %= textureheight[gr_toptexture];
 
-			grTex = HWR_GetTexture(gr_toptexture, gr_linedef->flags & ML_TFERLINE);
+			grTex = HWR_GetTexture(gr_toptexture, noencore);
 
 			wallVerts[3].t = wallVerts[2].t = texturevpeg * grTex->scaleY;
 			wallVerts[0].t = wallVerts[1].t = (texturevpeg + gr_frontsector->ceilingheight - gr_backsector->ceilingheight) * grTex->scaleY;
@@ -1684,9 +1681,9 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 			wallVerts[1].y = FIXED_TO_FLOAT(worldhighslope);
 
 			if (!gl_drawing_stencil && gr_frontsector->numlights)
-				HWR_SplitWall(gr_frontsector, wallVerts, gr_toptexture, gr_linedef->flags & ML_TFERLINE, &Surf, FF_CUTLEVEL, NULL, 0);
+				HWR_SplitWall(gr_frontsector, wallVerts, gr_toptexture, noencore, &Surf, FF_CUTLEVEL, NULL, 0);
 			else if (!gl_drawing_stencil && grTex->mipmap.flags & TF_TRANSPARENT)
-				HWR_AddTransparentWall(wallVerts, &Surf, gr_toptexture, gr_linedef->flags & ML_TFERLINE, PF_Environment, false, lightnum, colormap);
+				HWR_AddTransparentWall(wallVerts, &Surf, gr_toptexture, noencore, PF_Environment, false, lightnum, colormap);
 			else
 				HWR_ProjectWall(wallVerts, &Surf, PF_Masked, lightnum, colormap);
 		}
@@ -1707,7 +1704,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 			// This is so that it doesn't overflow and screw up the wall, it doesn't need to go higher than the texture's height anyway
 			texturevpeg %= textureheight[gr_bottomtexture];
 
-			grTex = HWR_GetTexture(gr_bottomtexture, gr_linedef->flags & ML_TFERLINE);
+			grTex = HWR_GetTexture(gr_bottomtexture, noencore);
 
 			wallVerts[3].t = wallVerts[2].t = texturevpeg * grTex->scaleY;
 			wallVerts[0].t = wallVerts[1].t = (texturevpeg + gr_backsector->floorheight - gr_frontsector->floorheight) * grTex->scaleY;
@@ -1743,9 +1740,9 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 			wallVerts[1].y = FIXED_TO_FLOAT(worldbottomslope);
 
 			if (!gl_drawing_stencil && gr_frontsector->numlights)
-				HWR_SplitWall(gr_frontsector, wallVerts, gr_bottomtexture, gr_linedef->flags & ML_TFERLINE, &Surf, FF_CUTLEVEL, NULL, 0);
+				HWR_SplitWall(gr_frontsector, wallVerts, gr_bottomtexture, noencore, &Surf, FF_CUTLEVEL, NULL, 0);
 			else if (!gl_drawing_stencil && grTex->mipmap.flags & TF_TRANSPARENT)
-				HWR_AddTransparentWall(wallVerts, &Surf, gr_bottomtexture, gr_linedef->flags & ML_TFERLINE, PF_Environment, false, lightnum, colormap);
+				HWR_AddTransparentWall(wallVerts, &Surf, gr_bottomtexture, noencore, PF_Environment, false, lightnum, colormap);
 			else
 				HWR_ProjectWall(wallVerts, &Surf, PF_Masked, lightnum, colormap);
 		}
@@ -1886,7 +1883,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 				texturevpegslope = polytopslope - hS;
 			}
 
-			grTex = HWR_GetTexture(gr_midtexture, gr_linedef->flags & ML_TFERLINE);
+			grTex = HWR_GetTexture(gr_midtexture, noencore);
 
 			// Left side
 			wallVerts[3].t = texturevpeg * grTex->scaleY;
@@ -1914,9 +1911,9 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 			blendmode |= PF_Decal;
 
 			if (!gl_drawing_stencil && gr_frontsector->numlights)
-				HWR_SplitWall(gr_frontsector, wallVerts, gr_midtexture, gr_linedef->flags & ML_TFERLINE, &Surf, (!(blendmode & PF_Masked)) ? FF_TRANSLUCENT : FF_CUTLEVEL, NULL, PF_Decal);
+				HWR_SplitWall(gr_frontsector, wallVerts, gr_midtexture, noencore, &Surf, (!(blendmode & PF_Masked)) ? FF_TRANSLUCENT : FF_CUTLEVEL, NULL, PF_Decal);
 			else if (!gl_drawing_stencil && !(blendmode & PF_Masked))
-				HWR_AddTransparentWall(wallVerts, &Surf, gr_midtexture, gr_linedef->flags & ML_TFERLINE, blendmode, false, lightnum, colormap);
+				HWR_AddTransparentWall(wallVerts, &Surf, gr_midtexture, noencore, blendmode, false, lightnum, colormap);
 			else
 				HWR_ProjectWall(wallVerts, &Surf, blendmode, lightnum, colormap);
 		}
@@ -1936,7 +1933,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 			else
 				texturevpeg = gr_sidedef->rowoffset; // top of texture at top
 
-			grTex = HWR_GetTexture(gr_midtexture, gr_linedef->flags & ML_TFERLINE);
+			grTex = HWR_GetTexture(gr_midtexture, noencore);
 
 			wallVerts[3].t = wallVerts[2].t = texturevpeg * grTex->scaleY;
 			wallVerts[0].t = wallVerts[1].t = (texturevpeg + gr_frontsector->ceilingheight - gr_frontsector->floorheight) * grTex->scaleY;
@@ -1969,11 +1966,11 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 			wallVerts[1].y = FIXED_TO_FLOAT(worldbottomslope);
 
 			if (gr_frontsector->numlights)
-				HWR_SplitWall(gr_frontsector, wallVerts, gr_midtexture, gr_linedef->flags & ML_TFERLINE, &Surf, FF_CUTLEVEL, NULL, 0);
+				HWR_SplitWall(gr_frontsector, wallVerts, gr_midtexture, noencore, &Surf, FF_CUTLEVEL, NULL, 0);
 			else  // I don't think that solid walls can use translucent linedef types...
 			{
 				if (grTex->mipmap.flags & TF_TRANSPARENT)
-					HWR_AddTransparentWall(wallVerts, &Surf, gr_midtexture, gr_linedef->flags & ML_TFERLINE, PF_Environment, false, lightnum, colormap);
+					HWR_AddTransparentWall(wallVerts, &Surf, gr_midtexture, noencore, PF_Environment, false, lightnum, colormap);
 				else
 					HWR_ProjectWall(wallVerts, &Surf, PF_Masked, lightnum, colormap);
 			}
@@ -2169,7 +2166,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 					else
 					{
 						if (blendmode != PF_Masked)
-							HWR_AddTransparentWall(wallVerts, &Surf, texnum, gr_linedef->flags & ML_TFERLINE, blendmode, false, lightnum, colormap);
+							HWR_AddTransparentWall(wallVerts, &Surf, texnum, noencore, blendmode, false, lightnum, colormap);
 						else
 							HWR_ProjectWall(wallVerts, &Surf, PF_Masked, lightnum, colormap);
 					}
