@@ -1094,7 +1094,8 @@ static void D_FindAddonsToAutoload(void)
 			|| (wadsToAutoload[0] == '#'))
 			continue;
 		// this marks it so that it loads after loading server addons
-		else if (fastncmp(wadsToAutoload, "postload ", 9)) {
+		else if (fastncmp(wadsToAutoload, "postload ", 9))
+		{
 			strremove(wadsToAutoload, "postload ");
 			postload = true;
 		}
@@ -1106,7 +1107,7 @@ static void D_FindAddonsToAutoload(void)
 				wadsToAutoload[i] = '\0';
 		}
 
-		if (W_CheckPostLoadList(wadsToAutoload))
+		if (!postload && W_CheckPostLoadList(wadsToAutoload))
 		{
 			CONS_Printf("forcing postload for file %s\n", wadsToAutoload);
 			postload = true;
@@ -1132,31 +1133,25 @@ static void D_AddAutoloadFiles(void)
 	if (wasautoloaded)
 		return;
 
-	if (!wasautoloaded)
-	{
-		CONS_Printf("D_AutoloadFile(): Loading autoloaded addons...\n");
-		if (W_AddAutoloadedLocalFiles(autoloadwadfiles) == 0)
-			CONS_Printf("D_AutoloadFile(): Are you sure you put in valid files or what?\n");
-		D_CleanFile(autoloadwadfiles);
+	CONS_Printf("D_AutoloadFile(): Loading autoloaded addons...\n");
+	if (W_AddAutoloadedLocalFiles(autoloadwadfiles) == 0)
+		CONS_Printf("D_AutoloadFile(): Are you sure you put in valid files or what?\n");
+	D_CleanFile(autoloadwadfiles);
 
-		wasautoloaded = true;
-	}
+	wasautoloaded = true;
 }
 
 void D_AddPostloadFiles(void)
 {
-	if (postautoloaded)
+	if (postautoloaded || !netgame)
 		return;
 
-	if (!postautoloaded && netgame)
-	{
-		CONS_Printf("D_AddPostloadFiles(): Loading postloaded addons...\n");
-		if (W_AddAutoloadedLocalFiles(autoloadwadfilespost) == 0)
-			CONS_Printf("D_AddPostloadFiles(): Are you sure you put in valid files or what?\n");
-		D_CleanFile(autoloadwadfilespost);
+	CONS_Printf("D_AddPostloadFiles(): Loading postloaded addons...\n");
+	if (W_AddAutoloadedLocalFiles(autoloadwadfilespost) == 0)
+		CONS_Printf("D_AddPostloadFiles(): Are you sure you put in valid files or what?\n");
+	D_CleanFile(autoloadwadfilespost);
 
-		postautoloaded = true;
-	}
+	postautoloaded = true;
 }
 
 void D_CleanFile(char **filearray)
