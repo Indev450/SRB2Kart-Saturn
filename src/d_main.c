@@ -101,7 +101,6 @@ UINT8 window_notinfocus = false;
 // DEMO LOOP
 //
 //static INT32 demosequence;
-static const char *pagename = "MAP1PIC";
 static char *startupwadfiles[MAX_WADFILES];
 static char *startuppwads[MAX_WADFILES];
 
@@ -2053,7 +2052,6 @@ void D_SRB2Main(void)
 
 	if (dedicated && server)
 	{
-		pagename = "TITLESKY";
 		levelstarttic = gametic;
 		G_SetGamestate(GS_LEVEL);
 		if (!P_SetupLevel(false, false))
