@@ -1892,12 +1892,13 @@ boolean P_CheckDeathPitCollide(mobj_t *mo)
 	I_Assert(mo != NULL);
 	I_Assert(!P_MobjWasRemoved(mo));
 
+	INT32 special = GETSECSPECIAL(mo->subsector->sector->special, 1);
+
 	if (((mo->z <= mo->subsector->sector->floorheight
 		&& !(mo->eflags & MFE_VERTICALFLIP) && (mo->subsector->sector->flags & SF_FLIPSPECIAL_FLOOR))
 	|| (mo->z + mo->height >= mo->subsector->sector->ceilingheight
 		&& (mo->eflags & MFE_VERTICALFLIP) && (mo->subsector->sector->flags & SF_FLIPSPECIAL_CEILING)))
-	&& (GETSECSPECIAL(mo->subsector->sector->special, 1) == 6
-	|| GETSECSPECIAL(mo->subsector->sector->special, 1) == 7))
+	&& (special == 6 || special == 7))
 		return true;
 
 	return false;
@@ -1908,16 +1909,14 @@ boolean P_CheckSolidLava(mobj_t *mo, ffloor_t *rover)
 	I_Assert(mo != NULL);
 	I_Assert(!P_MobjWasRemoved(mo));
 
-	{
-		fixed_t topheight =
-			*rover->t_slope ? P_GetZAt(*rover->t_slope, mo->x, mo->y) :
-			*rover->topheight;
+	fixed_t topheight =
+		*rover->t_slope ? P_GetZAt(*rover->t_slope, mo->x, mo->y) :
+		*rover->topheight;
 
-		if (rover->flags & FF_SWIMMABLE && GETSECSPECIAL(rover->master->frontsector->special, 1) == 3
-			&& !(rover->master->flags & ML_BLOCKMONSTERS)
-			&& ((rover->master->flags & ML_EFFECT3) || mo->z-mo->momz > topheight - FixedMul(16*FRACUNIT, mo->scale)))
-				return true;
-	}
+	if (rover->flags & FF_SWIMMABLE && GETSECSPECIAL(rover->master->frontsector->special, 1) == 3
+		&& !(rover->master->flags & ML_BLOCKMONSTERS)
+		&& ((rover->master->flags & ML_EFFECT3) || mo->z-mo->momz > topheight - FixedMul(16*FRACUNIT, mo->scale)))
+			return true;
 
 	return false;
 }
@@ -9202,7 +9201,6 @@ void P_PushableThinker(mobj_t *mobj)
 
 	if (GETSECSPECIAL(sec->special, 2) == 1 && mobj->z == sec->floorheight)
 		P_LinedefExecute(sec->tag, mobj, sec);
-//	else if (GETSECSPECIAL(sec->special, 2) == 8)
 	{
 		sector_t *sec2;
 
