@@ -1609,8 +1609,10 @@ EXPORT void HWRAPI(UpdateTexture) (GLMipmap_t *pTexInfo)
 		AllocTextureBuffer(pTexInfo);
 		ptex = tex = textureBuffer;
 
+#pragma omp simd
 		for (j = 0; j < h; j++)
 		{
+#pragma omp simd
 			for (i = 0; i < w; i++)
 			{
 				if ((*pImgData == HWR_PATCHES_CHROMAKEY_COLORINDEX) &&
@@ -1651,8 +1653,10 @@ EXPORT void HWRAPI(UpdateTexture) (GLMipmap_t *pTexInfo)
 		AllocTextureBuffer(pTexInfo);
 		ptex = tex = textureBuffer;
 
+#pragma omp simd
 		for (j = 0; j < h; j++)
 		{
+#pragma omp simd
 			for (i = 0; i < w; i++)
 			{
 				tex[w*j+i].s.red   = *pImgData;
@@ -1669,8 +1673,10 @@ EXPORT void HWRAPI(UpdateTexture) (GLMipmap_t *pTexInfo)
 		AllocTextureBuffer(pTexInfo);
 		ptex = tex = textureBuffer;
 
+#pragma omp simd
 		for (j = 0; j < h; j++)
 		{
+#pragma omp simd
 			for (i = 0; i < w; i++)
 			{
 				tex[w*j+i].s.red   = 255; // 255 because the fade mask is modulated with the screen texture, so alpha affects it while the colours don't
