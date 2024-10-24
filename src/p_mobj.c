@@ -2843,6 +2843,73 @@ static boolean P_SceneryZMovement(mobj_t *mo)
 	return true;
 }
 
+static void P_MobjCheckWaterVisual(mobj_t *mobj)
+{
+	fixed_t thingtop = mobj->z + mobj->height; // especially for players, infotable height does not neccessarily match actual height
+	sector_t *sector = mobj->subsector->sector;
+	ffloor_t *rover;
+
+	// Default if no water exists.
+	mobj->watertop = mobj->waterbottom = mobj->z - 1000*FRACUNIT;
+
+	// Reset water state.
+	mobj->eflags &= ~(MFE_UNDERWATER|MFE_TOUCHWATER|MFE_GOOWATER);
+
+	for (rover = sector->ffloors; rover; rover = rover->next)
+	{
+		fixed_t topheight, bottomheight;
+		if (!(rover->flags & FF_EXISTS) || !(rover->flags & FF_SWIMMABLE)
+			|| (((rover->flags & FF_BLOCKPLAYER) && mobj->player)
+			|| ((rover->flags & FF_BLOCKOTHERS) && !mobj->player)))
+			continue;
+
+		topheight = *rover->topheight;
+		bottomheight = *rover->bottomheight;
+
+		if (*rover->t_slope)
+			topheight = P_GetZAt(*rover->t_slope, mobj->x, mobj->y);
+
+		if (*rover->b_slope)
+			bottomheight = P_GetZAt(*rover->b_slope, mobj->x, mobj->y);
+
+		if (mobj->eflags & MFE_VERTICALFLIP)
+		{
+			if (topheight < (thingtop - FixedMul(mobj->info->height/2, mobj->scale))
+				|| bottomheight > thingtop)
+				continue;
+		}
+		else
+		{
+			if (topheight < mobj->z
+				|| bottomheight > (mobj->z + FixedMul(mobj->info->height/2, mobj->scale)))
+				continue;
+		}
+
+		// Set the watertop and waterbottom
+		mobj->watertop = topheight;
+		mobj->waterbottom = bottomheight;
+
+		// Just touching the water?
+		if (((mobj->eflags & MFE_VERTICALFLIP) && thingtop - FixedMul(mobj->info->height, mobj->scale) < bottomheight)
+			|| (!(mobj->eflags & MFE_VERTICALFLIP) && mobj->z + FixedMul(mobj->info->height, mobj->scale) > topheight))
+		{
+			mobj->eflags |= MFE_TOUCHWATER;
+			if (rover->flags & FF_GOOWATER && !(mobj->flags & MF_NOGRAVITY))
+				mobj->eflags |= MFE_GOOWATER;
+		}
+		// Actually in the water?
+		if (((mobj->eflags & MFE_VERTICALFLIP) && thingtop - FixedMul(mobj->info->height/2, mobj->scale) > bottomheight)
+			|| (!(mobj->eflags & MFE_VERTICALFLIP) && mobj->z + FixedMul(mobj->info->height/2, mobj->scale) < topheight))
+		{
+			mobj->eflags |= MFE_UNDERWATER;
+			if (rover->flags & FF_GOOWATER && !(mobj->flags & MF_NOGRAVITY))
+				mobj->eflags |= MFE_GOOWATER;
+		}
+	}
+
+	K_SpawnWaterRunParticles(mobj);
+}
+
 //
 // P_MobjCheckWater
 //
@@ -7665,6 +7732,8 @@ void P_MobjThinker(mobj_t *mobj)
 				if (leveltime % 6 == 0)
 					S_StartSound(mobj, mobj->info->activesound);
 			}
+
+			P_MobjCheckWaterVisual(mobj);
 			break;
 		}
 		case MT_JAWZ:
@@ -7725,6 +7794,7 @@ void P_MobjThinker(mobj_t *mobj)
 				&& GETSECSPECIAL(mobj->subsector->sector->special, 3) == 1))
 				K_DoPogoSpring(mobj, 0, 1);
 
+			P_MobjCheckWaterVisual(mobj);
 			break;
 		}
 		case MT_JAWZ_DUD:
@@ -7766,6 +7836,7 @@ void P_MobjThinker(mobj_t *mobj)
 			break;
 		}
 		case MT_BANANA:
+			P_MobjCheckWaterVisual(mobj);
 		case MT_EGGMANITEM:
 			mobj->friction = ORIG_FRICTION/4;
 			if (mobj->momx || mobj->momy)
@@ -7789,6 +7860,7 @@ void P_MobjThinker(mobj_t *mobj)
 			P_SpawnGhostMobj(mobj)->fuse = 3;
 			if (mobj->threshold > 0)
 				mobj->threshold--;
+			P_MobjCheckWaterVisual(mobj);
 			break;
 		case MT_SINK:
 			if (mobj->momx || mobj->momy)
