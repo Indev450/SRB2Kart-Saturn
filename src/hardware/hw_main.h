@@ -131,12 +131,6 @@ void HWR_AddTransparentWall(FOutVector *wallVerts, FSurfaceInfo * pSurf, INT32 t
 void HWR_DrawSkyWall(FOutVector *wallVerts, FSurfaceInfo *Surf);
 void HWR_DrawSkyBackground(float fpov);
 
-// hw_main.c: Sprites
-void HWR_AddSprites(sector_t *sec);
-void HWR_ProjectSprite(mobj_t *thing);
-//void HWR_ProjectPrecipitationSprite(precipmobj_t *thing);
-void HWR_DrawSprites(void);
-
 // hw_bsp.c
 void HWR_CreatePlanePolygons(INT32 bspnum);
 extern boolean gr_maphasportals;

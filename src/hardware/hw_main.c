@@ -4532,9 +4532,10 @@ static void HWR_RenderDrawNodes(void)
 // --------------------------------------------------------------------------
 //  Draw all vissprites
 // --------------------------------------------------------------------------
-void HWR_DrawSprites(void)
+static void HWR_DrawSprites(void)
 {
 	UINT32 i;
+
 	for (i = 0; i < gr_visspritecount; i++)
 	{
 		gr_vissprite_t *spr = gr_vsprorder[i];
@@ -4578,7 +4579,7 @@ void HWR_DrawSprites(void)
 // HWR_AddSprites
 // During BSP traversal, this adds sprites by sector.
 // --------------------------------------------------------------------------
-void HWR_AddSprites(sector_t *sec)
+static void HWR_AddSprites(sector_t *sec)
 {
 	mobj_t *thing;
 	fixed_t limit_dist;
@@ -4665,7 +4666,7 @@ static void HWR_AddPrecipitationSprites(void)
 //  Generates a vissprite for a thing if it might be visible.
 // --------------------------------------------------------------------------
 // BP why not use xtoviexangle/viewangletox like in bsp ?....
-void HWR_ProjectSprite(mobj_t *thing)
+static void HWR_ProjectSprite(mobj_t *thing)
 {
 	gr_vissprite_t *vis;
 	float tr_x, tr_y;
@@ -4702,11 +4703,11 @@ void HWR_ProjectSprite(mobj_t *thing)
 	angle_t sliptiderollangle = 0;
 #endif
 
-	// uncapped/interpolation
-	interpmobjstate_t interp = {0};
-
 	if (!thing)
 		return;
+
+	// uncapped/interpolation
+	interpmobjstate_t interp = {0};
 
 	vflip = (thing->eflags & MFE_VERTICALFLIP);
 	mirrored = thing->mirrored;
@@ -4812,9 +4813,9 @@ void HWR_ProjectSprite(mobj_t *thing)
 	else
 	{
 		// choose a different rotation based on player view
-		if ((ang < ANGLE_180) && (sprframe->rotate & SRF_RIGHT)) // See from right
+		if ((sprframe->rotate & SRF_RIGHT) && (ang < ANGLE_180)) // See from right
 			rot = 6; // F7 slot
-		else if ((ang >= ANGLE_180) && (sprframe->rotate & SRF_LEFT)) // See from left
+		else if ((sprframe->rotate & SRF_LEFT) && (ang >= ANGLE_180)) // See from left
 			rot = 2; // F3 slot
 		else // Normal behaviour
 			rot = (ang+ANGLE_202h)>>29;
@@ -4933,13 +4934,12 @@ void HWR_ProjectSprite(mobj_t *thing)
 	if (heightsec != -1 && phs != -1) // only clip things which are in special sectors
 	{
 		if (gr_viewz < FIXED_TO_FLOAT(sectors[phs].floorheight) ?
-		FIXED_TO_FLOAT(interp.z) >= FIXED_TO_FLOAT(sectors[heightsec].floorheight) :
-		gzt < FIXED_TO_FLOAT(sectors[heightsec].floorheight))
+			FIXED_TO_FLOAT(interp.z) >= FIXED_TO_FLOAT(sectors[heightsec].floorheight) :
+			gzt < FIXED_TO_FLOAT(sectors[heightsec].floorheight))
 			return;
-
 		if (gr_viewz > FIXED_TO_FLOAT(sectors[phs].ceilingheight) ?
-		gzt < FIXED_TO_FLOAT(sectors[heightsec].ceilingheight) && gr_viewz >= FIXED_TO_FLOAT(sectors[heightsec].ceilingheight) :
-		FIXED_TO_FLOAT(interp.z) >= FIXED_TO_FLOAT(sectors[heightsec].ceilingheight))
+			gzt < FIXED_TO_FLOAT(sectors[heightsec].ceilingheight) && gr_viewz >= FIXED_TO_FLOAT(sectors[heightsec].ceilingheight) :
+			FIXED_TO_FLOAT(interp.z) >= FIXED_TO_FLOAT(sectors[heightsec].ceilingheight))
 			return;
 	}
 
@@ -4949,7 +4949,9 @@ void HWR_ProjectSprite(mobj_t *thing)
 	vis->x2 = x2;
 	vis->z1 = z1;
 	vis->z2 = z2;
+
 	vis->tz = tz; // Keep tz for the simple sprite sorting that happens
+
 	vis->dispoffset = thing->info->dispoffset; // Monster Iestyn: 23/11/15: HARDWARE SUPPORT AT LAST
 	vis->flip = flip;
 
