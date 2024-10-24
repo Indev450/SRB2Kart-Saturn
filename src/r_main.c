@@ -1183,7 +1183,7 @@ void R_SkyboxFrame(int s)
 	R_SetupCommonFrame(player, viewmobj->subsector);
 }
 
-void R_SetupFrame(int s, boolean skybox)
+void R_SetupFrame(int s)
 {
 	player_t *player = &players[displayplayers[s]];
 	camera_t *thiscam = &camera[s];
@@ -1209,7 +1209,7 @@ void R_SetupFrame(int s, boolean skybox)
 	else if (thiscam && !chasecam)
 		thiscam->chase = false;
 
-	newview->sky = !skybox;
+	newview->sky = false;
 
 	R_SetupAimingFrame(player, thiscam);
 
@@ -1257,7 +1257,7 @@ static void R_PortalFrame(line_t *start, line_t *dest, portal_pair *portal)
 	angle_t dangle = R_PointToAngle2(0,0,dest->dx,dest->dy) - R_PointToAngle2(start->dx,start->dy,0,0);
 #endif
 
-	//R_SetupFrame(player, false);
+	//R_SetupFrame(player);
 	viewx = portal->viewx;
 	viewy = portal->viewy;
 	viewz = portal->viewz;
@@ -1431,7 +1431,7 @@ void R_RenderPlayerView(player_t *player)
 	}
 	PS_STOP_TIMING(ps_skyboxtime);
 
-	R_SetupFrame(viewssnum, skybox);
+	R_SetupFrame(viewssnum);
 	skyVisible = false;
 	framecount++;
 	validcount++;
