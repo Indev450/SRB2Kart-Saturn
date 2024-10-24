@@ -3788,6 +3788,8 @@ static void HWR_SplitSprite(gr_vissprite_t *spr)
 	// push it toward the camera to mitigate floor-clipping sprites
 	float sprdist = sqrtf((spr->x1 - gr_viewx)*(spr->x1 - gr_viewx) + (spr->z1 - gr_viewy)*(spr->z1 - gr_viewy) + (spr->gzt - gr_viewz)*(spr->gzt - gr_viewz));
 	float distfact = ((2.0f*spr->dispoffset) + 20.0f) / sprdist;
+
+#pragma omp simd
 	for (i = 0; i < 4; i++)
 	{
 		baseWallVerts[i].x += (gr_viewx - baseWallVerts[i].x)*distfact;
@@ -4066,8 +4068,9 @@ static void HWR_DrawSprite(gr_vissprite_t *spr)
 	// push it toward the camera to mitigate floor-clipping sprites
 	float sprdist = sqrtf((spr->x1 - gr_viewx)*(spr->x1 - gr_viewx) + (spr->z1 - gr_viewy)*(spr->z1 - gr_viewy) + (spr->gzt - gr_viewz)*(spr->gzt - gr_viewz));
 	float distfact = ((2.0f*spr->dispoffset) + 20.0f) / sprdist;
-	size_t i;
-	for (i = 0; i < 4; i++)
+
+#pragma omp simd
+	for (size_t i = 0; i < 4; i++)
 	{
 		wallVerts[i].x += (gr_viewx - wallVerts[i].x)*distfact;
 		wallVerts[i].z += (gr_viewy - wallVerts[i].z)*distfact;
