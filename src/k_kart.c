@@ -5989,7 +5989,7 @@ static inline angle_t K_MomentumAngle(const mobj_t *mo, const fixed_t threshold)
 }
 
 // Returns kart speed from a stat. Boost power and scale are NOT taken into account, no player or object is necessary.
-static fixed_t K_GetKartSpeedFromStat(UINT8 kartspeed)
+/*static fixed_t K_GetKartSpeedFromStat(UINT8 kartspeed)
 {
 	const fixed_t xspd = (3*FRACUNIT)/64;
 	fixed_t g_cc = (((13 + (3*gamespeed)) << FRACBITS) / 16) + xspd;
@@ -6000,7 +6000,7 @@ static fixed_t K_GetKartSpeedFromStat(UINT8 kartspeed)
 
 	finalspeed = FixedMul(k_speed<<14, g_cc);
 	return finalspeed;
-}
+}*/
 
 void K_SpawnWaterRunParticles(mobj_t *mobj)
 {
@@ -6038,7 +6038,8 @@ void K_SpawnWaterRunParticles(mobj_t *mobj)
 	}
 	else
 	{
-		topSpeed = FixedMul(mobj->scale, K_GetKartSpeedFromStat(5));
+		//topSpeed = FixedMul(mobj->scale, K_GetKartSpeedFromStat(5));
+		return;
 	}
 
 	curSpeed = P_AproxDistance(mobj->momx, mobj->momy);

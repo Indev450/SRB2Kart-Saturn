@@ -2843,7 +2843,7 @@ static boolean P_SceneryZMovement(mobj_t *mo)
 	return true;
 }
 
-static void P_MobjCheckWaterVisual(mobj_t *mobj)
+/*static void P_MobjCheckWaterVisual(mobj_t *mobj)
 {
 	fixed_t thingtop = mobj->z + mobj->height; // especially for players, infotable height does not neccessarily match actual height
 	sector_t *sector = mobj->subsector->sector;
@@ -2908,7 +2908,7 @@ static void P_MobjCheckWaterVisual(mobj_t *mobj)
 	}
 
 	K_SpawnWaterRunParticles(mobj);
-}
+}*/
 
 //
 // P_MobjCheckWater
@@ -2998,7 +2998,8 @@ void P_MobjCheckWater(mobj_t *mobj)
 		p->powers[pw_underwater] = 0;
 	}
 
-	K_SpawnWaterRunParticles(mobj);
+	if (p)
+		K_SpawnWaterRunParticles(mobj);
 
 	// The rest of this code only executes on a water state change.
 	if (waterwasnotset || !!(mobj->eflags & MFE_UNDERWATER) == wasinwater)
@@ -7733,7 +7734,7 @@ void P_MobjThinker(mobj_t *mobj)
 					S_StartSound(mobj, mobj->info->activesound);
 			}
 
-			P_MobjCheckWaterVisual(mobj);
+			//P_MobjCheckWaterVisual(mobj);
 			break;
 		}
 		case MT_JAWZ:
@@ -7794,7 +7795,7 @@ void P_MobjThinker(mobj_t *mobj)
 				&& GETSECSPECIAL(mobj->subsector->sector->special, 3) == 1))
 				K_DoPogoSpring(mobj, 0, 1);
 
-			P_MobjCheckWaterVisual(mobj);
+			//P_MobjCheckWaterVisual(mobj);
 			break;
 		}
 		case MT_JAWZ_DUD:
@@ -7836,7 +7837,7 @@ void P_MobjThinker(mobj_t *mobj)
 			break;
 		}
 		case MT_BANANA:
-			P_MobjCheckWaterVisual(mobj);
+			//P_MobjCheckWaterVisual(mobj);
 		case MT_EGGMANITEM:
 			mobj->friction = ORIG_FRICTION/4;
 			if (mobj->momx || mobj->momy)
@@ -7860,7 +7861,7 @@ void P_MobjThinker(mobj_t *mobj)
 			P_SpawnGhostMobj(mobj)->fuse = 3;
 			if (mobj->threshold > 0)
 				mobj->threshold--;
-			P_MobjCheckWaterVisual(mobj);
+			//P_MobjCheckWaterVisual(mobj);
 			break;
 		case MT_SINK:
 			if (mobj->momx || mobj->momy)
