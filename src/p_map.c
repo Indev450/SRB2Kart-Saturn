@@ -2374,10 +2374,12 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff)
 		{
 			//All things are affected by their scale.
 			fixed_t maxstep = FixedMul(MAXSTEPMOVE, mapobjectscale);
-			INT32 special = GETSECSPECIAL(R_PointInSubsector(x, y)->sector->special, 1);
+			INT32 special = 0;
 
 			if (thing->player)
 			{
+				 special = GETSECSPECIAL(R_PointInSubsector(x, y)->sector->special, 1);
+
 				// If using type Section1:13, double the maxstep.
 				if (P_PlayerTouchingSectorSpecial(thing->player, 1, 13)
 				|| special == 13)
