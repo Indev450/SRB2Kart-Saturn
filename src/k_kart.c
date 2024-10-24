@@ -5976,6 +5976,18 @@ static mobj_t *K_SpawnOrMoveMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t typ
 	return mobj;
 }
 
+static inline angle_t K_MomentumAngle(const mobj_t *mo, const fixed_t threshold)
+{
+	if (FixedHypot(mo->momx, mo->momy) > threshold)
+	{
+		return R_PointToAngle2(0, 0, mo->momx, mo->momy);
+	}
+	else
+	{
+		return mo->angle; // default to facing angle, rather than 0
+	}
+}
+
 void K_SpawnWaterRunParticles(mobj_t *mobj)
 {
 	if (!(watertrailunderlay_minstate && watertrailunderlay_maxstate && watertrail && watertrail_minstate && watertrail_maxstate) || // Check if we're missing something
@@ -6041,8 +6053,8 @@ void K_SpawnWaterRunParticles(mobj_t *mobj)
 
 		if (trailScale > 0)
 		{
-			//const angle_t forwardangle = K_MomentumAngle(mobj);
-			const angle_t forwardangle = R_PointToAngle2(0, 0, mobj->momx, mobj->momy);
+			const angle_t forwardangle = K_MomentumAngle(mobj, 6*mobj->scale);
+			//const angle_t forwardangle = R_PointToAngle2(0, 0, mobj->momx, mobj->momy);
 			const fixed_t playerVisualRadius = mobj->radius + (8 * mobj->scale);
 
 			// Those should be equal ideally but thats not guaranteed now
