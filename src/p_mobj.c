@@ -9987,10 +9987,13 @@ static precipmobj_t *P_SpawnPrecipMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype
 
 	if (mobj->floorz != starting_floorz)
 		mobj->precipflags |= PCF_FOF;
-	else if (GETSECSPECIAL(mobj->subsector->sector->special, 1) == 7
-	 || GETSECSPECIAL(mobj->subsector->sector->special, 1) == 6
-	 || mobj->subsector->sector->floorpic == skyflatnum)
-		mobj->precipflags |= PCF_PIT;
+	else
+	{
+		INT32 special = GETSECSPECIAL(mobj->subsector->sector->special, 1);
+
+		if (special == 7 || special == 6 || mobj->subsector->sector->floorpic == skyflatnum)
+			mobj->precipflags |= PCF_PIT;
+	}
 
 	R_ResetPrecipitationMobjInterpolationState(mobj);
 
@@ -10325,7 +10328,7 @@ void P_PrecipitationEffects(void)
 			return;
 	}
 
-	boolean sounds_rain = (rainsfx && (!leveltime || leveltime % 80 == 1));
+	boolean sounds_rain = ((cv_drawdist_precip.value != 0) && rainsfx && (!leveltime || leveltime % 80 == 1));
 
 	// Currently thunderstorming with lightning, and we're sounding the thunder...
 	// and where there's thunder, there's gotta be lightning!
