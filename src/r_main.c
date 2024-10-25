@@ -62,8 +62,6 @@ fixed_t viewx, viewy, viewz;
 angle_t viewangle, aimingangle, viewroll;
 UINT8 viewssnum;
 fixed_t viewcos, viewsin;
-boolean skyVisible;
-boolean skyVisiblePerPlayer[MAXSPLITSCREENPLAYERS]; // saved values of skyVisible for each splitscreen player
 sector_t *viewsector;
 player_t *viewplayer;
 
@@ -1322,10 +1320,6 @@ static void R_PortalFrame(portal_t *portal)
 
 void R_RenderPlayerView(player_t *player)
 {
-	portal_t *portal;
-	const boolean skybox = (skyboxmo[0] && cv_skybox.value);
-	UINT8 i;
-
 	// if this is display player 1
 	if (cv_homremoval.value && player == &players[displayplayers[0]])
 	{
@@ -1349,43 +1343,7 @@ void R_RenderPlayerView(player_t *player)
 		}
 	}
 
-	// load previous saved value of skyVisible for the player
-	for (i = 0; i <= splitscreen; i++)
-	{
-		if (player != &players[displayplayers[i]])
-			continue;
-
-		skyVisible = skyVisiblePerPlayer[i];
-		break;
-	}
-
-	Portal_InitList();
-	
-	PS_START_TIMING(ps_skyboxtime);
-	if (skybox && skyVisible)
-	{
-		R_SkyboxFrame(viewssnum);
-
-		R_ClearClipSegs();
-		R_ClearDrawSegs();
-		R_ClearPlanes();
-		R_ClearSprites();
-#ifdef FLOORSPLATS
-		R_ClearVisibleFloorSplats();
-#endif
-
-		R_RenderBSPNode((INT32)numnodes - 1);
-		R_ClipSprites();
-		R_DrawPlanes();
-#ifdef FLOORSPLATS
-		R_DrawVisibleFloorSplats();
-#endif
-		R_DrawMasked();
-	}
-	PS_STOP_TIMING(ps_skyboxtime);
-
 	R_SetupFrame(viewssnum);
-	skyVisible = false;
 	framecount++;
 	validcount++;
 
@@ -1411,6 +1369,8 @@ void R_RenderPlayerView(player_t *player)
 	R_ClearVisibleFloorSplats();
 #endif
 
+	Portal_InitList();
+
 	// The head node is the last node output.
 
 	ps_numbspcalls.value.i = ps_numpolyobjects.value.i = ps_numdrawnodes.value.i = 0;
@@ -1428,7 +1388,9 @@ void R_RenderPlayerView(player_t *player)
 	// Portal rendering. Hijacks the BSP traversal.
 	if (portal_base)
 	{
-		for(portal = portal_base; portal; portal = portal_base)
+		portal_t *portal;
+
+		for (portal = portal_base; portal; portal = portal_base)
 		{
 			portalrender = portal->pass; // Recursiveness depth.
 
@@ -1469,17 +1431,6 @@ void R_RenderPlayerView(player_t *player)
 	PS_START_TIMING(ps_sw_maskedtime);
 	R_DrawMasked();
 	PS_STOP_TIMING(ps_sw_maskedtime);
-
-	// save value to skyVisiblePerPlayer
-	// this is so that P1 can't affect whether P2 can see a skybox or not, or vice versa
-	for (i = 0; i <= splitscreen; i++)
-	{
-		if (player != &players[displayplayers[i]])
-			continue;
-
-		skyVisiblePerPlayer[i] = skyVisible;
-		break;
-	}
 }
 
 // =========================================================================

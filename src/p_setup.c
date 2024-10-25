@@ -2895,13 +2895,9 @@ boolean P_SetupLevel(boolean skipprecip, boolean reloadinggamestate)
 		savedata.lives = 0;
 	}
 
-	// assume the skybox is visible on level load.
-	skyVisible = true;
-	memset(skyVisiblePerPlayer, true, sizeof(skyVisiblePerPlayer));
-
 	if (loadprecip) // uglier hack
-	{ // to make a newly loaded level start on the second frame.
-		INT32 buf = gametic % TICQUEUE;
+	{
+		INT32 buf = gametic % TICQUEUE; // to make a newly loaded level start on the second frame.
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
 			if (playeringame[i])
