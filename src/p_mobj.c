@@ -9989,10 +9989,13 @@ static precipmobj_t *P_SpawnPrecipMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype
 
 	if (mobj->floorz != starting_floorz)
 		mobj->precipflags |= PCF_FOF;
-	else if (GETSECSPECIAL(mobj->subsector->sector->special, 1) == 7
-	 || GETSECSPECIAL(mobj->subsector->sector->special, 1) == 6
-	 || mobj->subsector->sector->floorpic == skyflatnum)
-		mobj->precipflags |= PCF_PIT;
+	else
+	{
+		INT32 special = GETSECSPECIAL(mobj->subsector->sector->special, 1);
+
+		if (special == 7 || special == 6 || mobj->subsector->sector->floorpic == skyflatnum)
+			mobj->precipflags |= PCF_PIT;
+	}
 
 	R_ResetPrecipitationMobjInterpolationState(mobj);
 
@@ -10286,7 +10289,7 @@ void P_PrecipitationEffects(void)
 	INT32 volume;
 	size_t i;
 
-	boolean sounds_rain = true;
+	boolean rainsfx = true;
 	boolean sounds_thunder = true;
 	boolean effects_lightning = true;
 	boolean lightningStrike = false;
@@ -10319,13 +10322,15 @@ void P_PrecipitationEffects(void)
 			effects_lightning = false;
 			break;
 		case PRECIP_STORM_NORAIN: // no rain, lightning and thunder allowed
-			sounds_rain = false;
+			rainsfx = false;
 		case PRECIP_STORM: // everything.
 			break;
 		default:
 			// Other weathers need not apply.
 			return;
 	}
+
+	boolean sounds_rain = ((cv_drawdist_precip.value != 0) && rainsfx && (!leveltime || leveltime % 80 == 1));
 
 	// Currently thunderstorming with lightning, and we're sounding the thunder...
 	// and where there's thunder, there's gotta be lightning!
@@ -10346,38 +10351,57 @@ void P_PrecipitationEffects(void)
 	if (sound_disabled)
 		return; // Sound off? D'aw, no fun.
 
+	if (!sounds_rain && !sounds_thunder)
+		return; // no need to calculate volume at ALL
+
 	if (players[displayplayers[0]].mo->subsector->sector->ceilingpic == skyflatnum)
 		volume = 255; // Sky above? We get it full blast.
 	else
 	{
 		/* GCC is optimizing away y >= yl, FUCK YOU */
-		volatile fixed_t x, y, yl, yh, xl, xh;
+		INT64 x, y, yl, yh, xl, xh;
 		fixed_t closedist, newdist;
 
 		// Essentially check in a 1024 unit radius of the player for an outdoor area.
-		yl = players[displayplayers[0]].mo->y - 1024*FRACUNIT;
-		yh = players[displayplayers[0]].mo->y + 1024*FRACUNIT;
-		xl = players[displayplayers[0]].mo->x - 1024*FRACUNIT;
-		xh = players[displayplayers[0]].mo->x + 1024*FRACUNIT;
-		closedist = 2048*FRACUNIT;
+#define RADIUSSTEP (64*FRACUNIT)
+#define SEARCHRADIUS (16*RADIUSSTEP)
+		yl = yh = players[displayplayers[0]].mo->y;
+		yl -= SEARCHRADIUS;
+		while (yl < INT32_MIN)
+			yl += RADIUSSTEP;
+		yh += SEARCHRADIUS;
+		while (yh > INT32_MAX)
+			yh -= RADIUSSTEP;
 
-		for (y = yl; y >= yl && y <= yh; y += FRACUNIT*64)
-			for (x = xl; x >= xl && x <= xh; x += FRACUNIT*64)
+		xl = xh = players[displayplayers[0]].mo->x;
+		xl -= SEARCHRADIUS;
+		while (xl < INT32_MIN)
+			xl += RADIUSSTEP;
+		xh += SEARCHRADIUS;
+		while (xh > INT32_MAX)
+			xh -= RADIUSSTEP;
+
+		closedist = SEARCHRADIUS*2;
+#undef SEARCHRADIUS
+		for (y = yl; y <= yh; y += RADIUSSTEP)
+			for (x = xl; x <= xh; x += RADIUSSTEP)
 			{
-				if (R_PointInSubsector(x, y)->sector->ceilingpic != skyflatnum) // Found the outdoors!
+				if (R_PointInSubsector((fixed_t)x, (fixed_t)y)->sector->ceilingpic != skyflatnum) // Found the outdoors!
 					continue;
 
-				newdist = S_CalculateSoundDistance(players[displayplayers[0]].mo->x, players[displayplayers[0]].mo->y, 0, x, y, 0);
+				newdist = S_CalculateSoundDistance(players[displayplayers[0]].mo->x, players[displayplayers[0]].mo->y, 0, (fixed_t)x, (fixed_t)y, 0);
+
 				if (newdist < closedist)
 					closedist = newdist;
 			}
 
 		volume = 255 - (closedist>>(FRACBITS+2));
 	}
+#undef RADIUSSTEP
 
 	volume = CLAMP(volume, 0, 255);
 
-	if (sounds_rain && (!leveltime || leveltime % 80 == 1))
+	if (sounds_rain)
 		S_StartSoundAtVolume(players[displayplayers[0]].mo, sfx_rainin, volume);
 
 	if (!sounds_thunder)
