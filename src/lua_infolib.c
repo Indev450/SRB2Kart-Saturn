@@ -111,6 +111,8 @@ static void A_Lua(mobj_t *actor)
 	lua_pushinteger(gL, var2);
 	LUA_Call(gL, 3, 0, 1);
 
+	lua_pop(gL, 1); // pop error handler
+
 	if (found)
 	{
 		--superstack;
