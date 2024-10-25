@@ -588,7 +588,7 @@ static fixed_t HighestOnLine(fixed_t radius, fixed_t x, fixed_t y, line_t *line,
 		);
 }
 
-#define NOCOLLISION (((mobj->flags & MF_NOBLOCKMAP) || (mobj->flags & MF_NOGRAVITY)) && (mobj->flags & MF_NOCLIP) && (mobj->flags & MF_NOCLIPHEIGHT))
+#define NOCOLLISION ((mobj->flags & MF_NOBLOCKMAP) && (mobj->flags & MF_NOCLIP) && (mobj->flags & MF_NOCLIPHEIGHT))
 
 fixed_t P_MobjFloorZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed_t x, fixed_t y, line_t *line, boolean lowest, boolean perfect)
 {
