@@ -1721,10 +1721,7 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 	tmbbox[BOXRIGHT] = x + tmthing->radius;
 	tmbbox[BOXLEFT] = x - tmthing->radius;
 
-	if (thing->x != x || thing->y != y)
-		newsubsec = R_PointInSubsector(x, y);
-	else
-		newsubsec = thing->subsector;
+	newsubsec = R_PointInSubsector(x, y);
 
 	ceilingline = blockingline = NULL;
 
