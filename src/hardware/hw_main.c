@@ -49,6 +49,7 @@
 #include "../m_cheat.h"
 #include "../m_argv.h" // parm functions for msaa
 #include "../p_slopes.h"
+#include "../r_portal.h"
 
 #define ABS(x) ((x) < 0 ? -(x) : (x))
 

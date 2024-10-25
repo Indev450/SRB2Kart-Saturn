@@ -32,6 +32,7 @@
 #include "dehacked.h" // get_number (for thok)
 #include "d_netfil.h" // blargh. for nameonly().
 #include "m_cheat.h" // objectplace
+#include "r_portal.h"
 #include "k_kart.h" // SRB2kart
 #include "p_local.h" // stplyr
 #ifdef HWRENDER

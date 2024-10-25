@@ -1292,8 +1292,8 @@ static void R_PortalFrame(portal_t *portal)
 	viewz = portal->viewz;
 
 	viewangle = portal->viewangle;
-	// newview->sin = FINESINE(newview->angle>>ANGLETOFINESHIFT);
-	// newview->cos = FINECOSINE(newview->angle>>ANGLETOFINESHIFT);
+	// viewsin = FINESINE(viewangle>>ANGLETOFINESHIFT);
+	// viewcos = FINECOSINE(viewangle>>ANGLETOFINESHIFT);
 
 	portalclipstart = portal->start;
 	portalclipend = portal->end;
@@ -1301,12 +1301,14 @@ static void R_PortalFrame(portal_t *portal)
 	if (portal->clipline != -1)
 	{
 		portalclipline = &lines[portal->clipline];
-		viewsector = portalcullsector = portalclipline->frontsector;
+		portalcullsector = portalclipline->frontsector;
+		viewsector = portalclipline->frontsector;
 	}
 	else
 	{
 		portalclipline = NULL;
-		viewsector = portalcullsector = R_PointInSubsector(viewx, viewy)->sector;
+		portalcullsector = NULL;
+		viewsector = R_PointInSubsector(viewx, viewy)->sector;
 	}
 }
 
@@ -1322,7 +1324,6 @@ static void R_PortalFrame(portal_t *portal)
 
 void R_RenderPlayerView(player_t *player)
 {
-	portal_t *portal;
 	const boolean skybox = (skyboxmo[0] && cv_skybox.value);
 	UINT8 i;
 
@@ -1428,9 +1429,13 @@ void R_RenderPlayerView(player_t *player)
 	// Portal rendering. Hijacks the BSP traversal.
 	if (portal_base)
 	{
-		for(portal = portal_base; portal; portal = portal_base)
+		portal_t *portal;
+
+		for (portal = portal_base; portal; portal = portal_base)
 		{
 			portalrender = portal->pass; // Recursiveness depth.
+
+			R_ClearFFloorClips();
 
 			// Apply the viewpoint stored for the portal.
 			R_PortalFrame(portal);
@@ -1453,8 +1458,6 @@ void R_RenderPlayerView(player_t *player)
 
 			validcount++;
 		}
-
-		portalcullsector = NULL; // Just in case...
 	}
 	PS_STOP_TIMING(ps_sw_portaltime);
 
