@@ -3351,6 +3351,7 @@ boolean P_CameraThinker(player_t *player, camera_t *thiscam, boolean resetcalled
 			continue;
 
 		players[displayplayers[i]].postimgflags = postimgflags;
+		break;
 	}
 
 	if (thiscam->momx || thiscam->momy)
