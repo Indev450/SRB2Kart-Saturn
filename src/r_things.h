@@ -16,6 +16,7 @@
 
 #include "sounds.h"
 #include "r_plane.h"
+#include "r_portal.h"
 #include "r_patch.h"
 
 // "Left" and "Right" character symbols for additional rotation functionality
@@ -60,7 +61,6 @@ extern INT32 lengthcol;
 fixed_t R_GetShadowZ(mobj_t *thing, pslope_t **shadowslope);
 
 void R_DrawMaskedColumn(column_t *column);
-void R_SortVisSprites(void);
 
 //faB: find sprites in wadfile, replace existing, add new ones
 //     (only sprites from namelist are added or replaced)
@@ -71,7 +71,19 @@ void R_AddSprites(sector_t *sec, INT32 lightlevel);
 void R_AddPrecipitationSprites(void);
 void R_InitSprites(void);
 void R_ClearSprites(void);
-void R_DrawMasked(void);
+
+/** Used to count the amount of masked elements
+ * per portal to later group them in separate
+ * drawnode lists.
+ */
+typedef struct
+{
+	size_t drawsegs[2];
+	size_t vissprites[2];
+	fixed_t viewx, viewy, viewz;			/**< View z stored at the time of the BSP traversal for the view/portal. Masked sorting/drawing needs it. */
+	sector_t* viewsector;
+} maskcount_t;
+void R_DrawMasked(maskcount_t* masks, INT32 nummasks);
 
 boolean R_ThingVisible (mobj_t *thing);
 boolean R_ThingWithinDist (mobj_t *thing, fixed_t limit_dist);
@@ -193,7 +205,7 @@ typedef struct vissprite_s
 
 extern UINT32 visspritecount, numvisiblesprites;
 
-void R_ClipSprites(void);
+void R_ClipSprites(drawseg_t* dsstart, portal_t* portal);
 
 UINT8 *R_GetSpriteTranslation(vissprite_t *vis);
 
