@@ -74,6 +74,12 @@ extern lighttable_t *zlight[LIGHTLEVELS][MAXLIGHTZ];
 // Utility functions.
 INT32 R_PointOnSide(fixed_t x, fixed_t y, const node_t *node);
 
+FUNCINLINE static ATTRINLINE PUREFUNC INT32 R_PointOnSideRender(fixed_t x, fixed_t y, const node_t *node)
+{
+	// use cross product to determine side quickly
+	return (INT64)(y - node->y) * node->dx - (INT64)(x - node->x) * node->dy > 0;
+}
+
 FUNCINLINE static ATTRINLINE PUREFUNC INT32 R_PointOnSegSide(fixed_t x, fixed_t y, const seg_t *line)
 {
     fixed_t lx = line->v1->x;
