@@ -41,7 +41,6 @@ void R_ClearClipSegs(void);
 void R_PortalClearClipSegs(INT32 start, INT32 end);
 void R_ClearDrawSegs(void);
 void R_RenderBSPNode(INT32 bspnum);
-void R_AddPortal(INT32 line1, INT32 line2, INT32 x1, INT32 x2);
 
 // determines when a given sector shouldn't abide by the encoremap's palette.
 // no longer a static since this is used for encore in hw_main.c as well now:
