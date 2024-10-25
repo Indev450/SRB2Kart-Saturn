@@ -68,6 +68,18 @@ void K_LoadExtraVFX(void)
 #undef LOAD
 }
 
+static inline angle_t K_MomentumAngle(const mobj_t *mo, const fixed_t threshold)
+{
+	if (FixedHypot(mo->momx, mo->momy) > threshold)
+	{
+		return R_PointToAngle2(0, 0, mo->momx, mo->momy);
+	}
+	else
+	{
+		return mo->angle; // default to facing angle, rather than 0
+	}
+}
+
 // Hud offset cvars
 #define IMPL_HUD_OFFSET_X(name)\
 consvar_t cv_##name##_xoffset = {"hud_" #name "_xoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -5138,7 +5150,7 @@ void K_KartPlayerHUDUpdate(player_t *player)
 		player->kartstuff[k_cardanimation] = 0;
 }
 
-static void K_SpawnNormalSpeedLines(player_t *player)
+static inline void K_SpawnNormalSpeedLines(player_t *player)
 {
 	boolean goodSpeed = (player->speed >= (3*K_GetKartSpeed(player, false))/4);
 
@@ -5147,7 +5159,8 @@ static void K_SpawnNormalSpeedLines(player_t *player)
 							   player->mo->z + (player->mo->height/2) + (P_RandomRange(-20,20) * player->mo->scale),
 							   MT_FASTLINE);
 
-	fast->angle = R_PointToAngle2(0, 0, player->mo->momx, player->mo->momy);
+	//fast->angle = R_PointToAngle2(0, 0, player->mo->momx, player->mo->momy);
+	fast->angle = K_MomentumAngle(player->mo, 6*player->mo->scale);
 	fast->momx = 3*player->mo->momx/4;
 	fast->momy = 3*player->mo->momy/4;
 	fast->momz = 3*player->mo->momz/4;
@@ -5162,13 +5175,13 @@ static void K_SpawnNormalSpeedLines(player_t *player)
 	K_MatchGenericExtraFlags(fast, player->mo);
 
 	// cant have nice shit cause of synched rng
-	/*if (player->kartstuff[k_eggmanexplode])
+	if (player->kartstuff[k_eggmanexplode])
 	{
 		// Make it red when you have the eggman speed boost
 		fast->color = SKINCOLOR_RED;
 		fast->colorized = true;
 	}
-	else */if (player->kartstuff[k_invincibilitytimer])
+	else if (player->kartstuff[k_invincibilitytimer])
 	{
 		fast->color = player->mo->color;
 		fast->colorized = true;
@@ -5974,18 +5987,6 @@ static mobj_t *K_SpawnOrMoveMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t typ
 	}
 
 	return mobj;
-}
-
-static inline angle_t K_MomentumAngle(const mobj_t *mo, const fixed_t threshold)
-{
-	if (FixedHypot(mo->momx, mo->momy) > threshold)
-	{
-		return R_PointToAngle2(0, 0, mo->momx, mo->momy);
-	}
-	else
-	{
-		return mo->angle; // default to facing angle, rather than 0
-	}
 }
 
 // Returns kart speed from a stat. Boost power and scale are NOT taken into account, no player or object is necessary.
