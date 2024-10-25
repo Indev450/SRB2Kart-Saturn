@@ -1290,8 +1290,8 @@ static void R_PortalFrame(portal_t *portal)
 	viewz = portal->viewz;
 
 	viewangle = portal->viewangle;
-	viewsin = FINESINE(viewangle>>ANGLETOFINESHIFT);
-	viewcos = FINECOSINE(viewangle>>ANGLETOFINESHIFT);
+	// newview->sin = FINESINE(newview->angle>>ANGLETOFINESHIFT);
+	// newview->cos = FINECOSINE(newview->angle>>ANGLETOFINESHIFT);
 
 	portalclipstart = portal->start;
 	portalclipend = portal->end;
@@ -1299,31 +1299,13 @@ static void R_PortalFrame(portal_t *portal)
 	if (portal->clipline != -1)
 	{
 		portalclipline = &lines[portal->clipline];
-		portalcullsector = portalclipline->frontsector;
-		viewsector = portalclipline->frontsector;
+		viewsector = portalcullsector = portalclipline->frontsector;
 	}
 	else
 	{
 		portalclipline = NULL;
-		portalcullsector = NULL;
-		viewsector = R_PointInSubsector(viewx, viewy)->sector;
+		viewsector = portalcullsector = R_PointInSubsector(viewx, viewy)->sector;
 	}
-}
-
-static void Mask_Pre (maskcount_t* m)
-{
-	m->drawsegs[0] = ds_p - drawsegs;
-	m->vissprites[0] = visspritecount;
-	m->viewx = viewx;
-	m->viewy = viewy;
-	m->viewz = viewz;
-	m->viewsector = viewsector;
-}
-
-static void Mask_Post (maskcount_t* m)
-{
-	m->drawsegs[1] = ds_p - drawsegs;
-	m->vissprites[1] = visspritecount;
 }
 
 // ================
@@ -1338,9 +1320,6 @@ static void Mask_Post (maskcount_t* m)
 
 void R_RenderPlayerView(player_t *player)
 {
-	INT32			nummasks	= 1;
-	maskcount_t*	masks		= malloc(sizeof(maskcount_t));
-
 	// if this is display player 1
 	if (cv_homremoval.value && player == &players[displayplayers[0]])
 	{
@@ -1393,25 +1372,17 @@ void R_RenderPlayerView(player_t *player)
 	Portal_InitList();
 
 	// The head node is the last node output.
-	Mask_Pre(&masks[nummasks - 1]);
-	curdrawsegs = ds_p;
+
 	ps_numbspcalls.value.i = ps_numpolyobjects.value.i = ps_numdrawnodes.value.i = 0;
 	PS_START_TIMING(ps_bsptime);
 	R_RenderBSPNode((INT32)numnodes - 1);
 	PS_STOP_TIMING(ps_bsptime);
-	Mask_Post(&masks[nummasks - 1]);
-
 	R_AddPrecipitationSprites();
-
 	PS_START_TIMING(ps_sw_spritecliptime);
-	R_ClipSprites(drawsegs, NULL);
+	R_ClipSprites();
 	PS_STOP_TIMING(ps_sw_spritecliptime);
 	
 	ps_numsprites.value.i = numvisiblesprites;
-
-	// Add skybox portals caused by sky visplanes.
-	if (skyboxmo[0] && cv_skybox.value)
-		Portal_AddSkyboxPortals();
 
 	PS_START_TIMING(ps_sw_portaltime);
 	// Portal rendering. Hijacks the BSP traversal.
@@ -1422,8 +1393,6 @@ void R_RenderPlayerView(player_t *player)
 		for (portal = portal_base; portal; portal = portal_base)
 		{
 			portalrender = portal->pass; // Recursiveness depth.
-
-			R_ClearFFloorClips();
 
 			// Apply the viewpoint stored for the portal.
 			R_PortalFrame(portal);
@@ -1437,26 +1406,17 @@ void R_RenderPlayerView(player_t *player)
 			// that were previously stored.
 			Portal_ClipApply(portal);
 
-			validcount++;
-
-			masks = realloc(masks, (++nummasks)*sizeof(maskcount_t));
-
-			Mask_Pre(&masks[nummasks - 1]);
-			curdrawsegs = ds_p;
-
-			portalskipprecipmobjs = portal->isskybox;
-
 			// Render the BSP from the new viewpoint, and clip
 			// any sprites with the new clipsegs and window.
 			R_RenderBSPNode((INT32)numnodes - 1);
-			Mask_Post(&masks[nummasks - 1]);
-
-			portalskipprecipmobjs = false;
-
-			R_ClipSprites(ds_p - (masks[nummasks - 1].drawsegs[1] - masks[nummasks - 1].drawsegs[0]), portal);
+			R_ClipSprites();
 
 			Portal_Remove(portal);
+
+			validcount++;
 		}
+
+		portalcullsector = NULL; // Just in case...
 	}
 	PS_STOP_TIMING(ps_sw_portaltime);
 
@@ -1469,10 +1429,8 @@ void R_RenderPlayerView(player_t *player)
 	// draw mid texture and sprite
 	// And now 3D floors/sides!
 	PS_START_TIMING(ps_sw_maskedtime);
-	R_DrawMasked(masks, nummasks);
+	R_DrawMasked();
 	PS_STOP_TIMING(ps_sw_maskedtime);
-
-	free(masks);
 }
 
 // =========================================================================
