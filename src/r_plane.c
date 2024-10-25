@@ -23,8 +23,6 @@
 #include "r_state.h"
 #include "r_splats.h" // faB(21jan):testing
 #include "r_sky.h"
-#include "r_portal.h"
-
 #include "v_video.h"
 #include "w_wad.h"
 #include "z_zone.h"
@@ -631,6 +629,12 @@ static void R_DrawSkyPlane(visplane_t *pl)
 	INT32 x;
 	INT32 angle;
 
+	if (!newview->sky)
+	{
+		skyVisible = true;
+		return;
+	}
+
 	wallcolfunc = walldrawerfunc;
 
 	// use correct aspect ratio scale
@@ -1192,32 +1196,4 @@ void R_PlaneBounds(visplane_t *plane)
 	}
 	plane->high = hi;
 	plane->low = low;
-}
-
-/** Creates portals for the currently existing sky visplanes.
- * The visplanes are also removed and cleared from the list.
- */
-void Portal_AddSkyboxPortals (void)
-{
-	visplane_t *pl;
-	INT32 i;
-	UINT16 count = 0;
-
-	for (i = 0; i < MAXVISPLANES; i++, pl++)
-	{
-		for (pl = visplanes[i]; pl; pl = pl->next)
-		{
-			if (pl->picnum == skyflatnum)
-			{
-				Portal_AddSkybox(pl);
-
-				pl->minx = 0;
-				pl->maxx = -1;
-
-				count++;
-			}
-		}
-	}
-
-	CONS_Debug(DBG_RENDER, "Skybox portals: %d\n", count);
 }

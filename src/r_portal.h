@@ -12,11 +12,9 @@
 /// \brief Software renderer portal struct, functions, linked list extern.
 
 #include "r_data.h"
-#include "r_plane.h" // visplanes
 
 
-/*
- * Portal structure for the software renderer.
+/** Portal structure.
  */
 typedef struct portal_s
 {
@@ -46,7 +44,6 @@ extern UINT8 portalrender;
 void Portal_InitList	(void);
 void Portal_Remove		(portal_t* portal);
 void Portal_Add2Lines	(const INT32 line1, const INT32 line2, const INT32 x1, const INT32 x2);
-void Portal_AddSkybox	(const visplane_t* plane);
 
-void Portal_ClipRange (portal_t* portal);
+void Portal_ClipStoreFromRange (portal_t* portal);
 void Portal_ClipApply (const portal_t* portal);
