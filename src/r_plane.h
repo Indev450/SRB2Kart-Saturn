@@ -18,6 +18,7 @@
 #include "r_data.h"
 #include "p_polyobj.h"
 
+//SoM: 3/23/2000: Use Boom visplane hashing.
 #define VISPLANEHASHBITS 9
 #define VISPLANEHASHMASK ((1<<VISPLANEHASHBITS)-1)
 // the last visplane list is outside of the hash table and is used for fof planes
@@ -56,6 +57,7 @@ typedef struct visplane_s
 	boolean noencore;
 } visplane_t;
 
+extern visplane_t *visplanes[MAXVISPLANES];
 extern visplane_t *floorplane;
 extern visplane_t *ceilingplane;
 
@@ -76,6 +78,7 @@ extern lighttable_t **planezlight;
 
 void R_InitPlanes(void);
 void R_ClearPlanes(void);
+void R_ClearFFloorClips (void);
 
 void R_MapPlane(INT32 y, INT32 x1, INT32 x2);
 void R_MakeSpans(INT32 x, INT32 t1, INT32 b1, INT32 t2, INT32 b2);
@@ -117,6 +120,4 @@ typedef struct planemgr_s
 
 extern visffloor_t ffloor[MAXFFLOORS];
 extern INT32 numffloors;
-
-void Portal_AddSkyboxPortals (void);
 #endif
