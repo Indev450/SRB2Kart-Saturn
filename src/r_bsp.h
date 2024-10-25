@@ -25,7 +25,8 @@ extern side_t *sidedef;
 extern line_t *linedef;
 extern sector_t *frontsector;
 extern sector_t *backsector;
-extern portal_pair *g_portal; // is curline a portal seg?
+typedef struct portal_s portal_t;
+extern portal_t *g_portal; // is curline a portal seg?
 
 // drawsegs are allocated on the fly... see r_segs.c
 

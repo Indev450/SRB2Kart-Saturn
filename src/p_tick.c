@@ -683,7 +683,7 @@ void P_Ticker(boolean run)
 				if (!player->mo)
 					continue;
 
-				const boolean skybox = (skyVisiblePerPlayer[i] && skyboxmo[0] && cv_skybox.value);
+				const boolean skybox = (skyboxmo[0] && cv_skybox.value);
 
 				if (skybox)
 				{
