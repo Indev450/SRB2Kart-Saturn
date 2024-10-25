@@ -3212,6 +3212,9 @@ void V_DoPostProcessor(INT32 view, player_t *player, INT32 param)
 	if (view < 0 || view > 3 || view > splitscreen)
 		return;
 
+	if (!player->postimgflags)
+		return;
+
 	if ((view == 1 && splitscreen == 1) || view >= 2)
 		yoffset = viewheight;
 	else
@@ -3224,9 +3227,6 @@ void V_DoPostProcessor(INT32 view, player_t *player, INT32 param)
 
 	UINT8 *tmpscr = screens[4];
 	UINT8 *srcscr = screens[0];
-
-	if (!player->postimgflags)
-		return;
 
 	if (player->postimgflags & POSTIMG_WATER)
 	{
