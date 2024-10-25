@@ -1336,7 +1336,7 @@ void R_SkyboxFrame(player_t *player)
 	R_InterpolateView(R_UsingFrameInterpolation() ? (demo.playback && demo.freecam) ? rendertimefrac_unpaused : rendertimefrac : FRACUNIT, false);
 }
 
-void R_SetupFrame(player_t *player, boolean skybox)
+void R_SetupFrame(player_t *player)
 {
 	camera_t *thiscam;
 	boolean chasecam = false;
@@ -1399,7 +1399,7 @@ void R_SetupFrame(player_t *player, boolean skybox)
 	else if (thiscam && !chasecam)
 		thiscam->chase = false;
 
-	newview->sky = !skybox;
+	newview->sky = false;
 
 	if (player->awayviewtics) // cut-away view stuff
 	{
@@ -1491,7 +1491,7 @@ static void R_PortalFrame(line_t *start, line_t *dest, portal_pair *portal)
 	angle_t dangle = R_PointToAngle2(0,0,dest->dx,dest->dy) - R_PointToAngle2(start->dx,start->dy,0,0);
 #endif
 
-	//R_SetupFrame(player, false);
+	//R_SetupFrame(player);
 	viewx = portal->viewx;
 	viewy = portal->viewy;
 	viewz = portal->viewz;
@@ -1665,7 +1665,7 @@ void R_RenderPlayerView(player_t *player)
 	}
 	PS_STOP_TIMING(ps_skyboxtime);
 
-	R_SetupFrame(player, skybox);
+	R_SetupFrame(player);
 	skyVisible = false;
 	framecount++;
 	validcount++;
