@@ -3079,10 +3079,10 @@ static void HWR_Subsector(size_t num)
 
 skip_stuff_for_portals:
 
-// Hurder ici se passe les choses INT32�essantes!
-// on vient de tracer le sol et le plafond
-// on trace �pr�ent d'abord les sprites et ensuite les murs
-// hurdler: faux: on ajoute seulement les sprites, le murs sont trac� d'abord
+	// Hurdler: here interesting things are happening!
+	// we have just drawn the floor and ceiling
+	// we now draw the sprites first and then the walls
+	// hurdler: false: we only add the sprites, the walls are drawn first
 	if (line)
 	{
 		// draw sprites first, coz they are clipped to the solidsegs of
@@ -3101,7 +3101,7 @@ skip_stuff_for_portals:
 		while (count--)
 		{
 				if (!line->polyseg) // ignore segs that belong to polyobjects
-				HWR_AddLine(line);
+					HWR_AddLine(line);
 				line++;
 		}
 	}
