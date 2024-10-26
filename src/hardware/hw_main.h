@@ -23,6 +23,7 @@
 #include "hw_glob.h"
 #include "hw_data.h"
 #include "hw_defs.h"
+#include "hw_portal.h"
 
 #include "../am_map.h"
 #include "../d_player.h"
@@ -44,6 +45,23 @@ extern boolean a2c;
 
 extern FTransform atransform;
 extern float gr_viewsin, gr_viewcos;
+
+extern boolean gl_drawing_stencil;
+
+extern seg_t *gr_curline;
+extern side_t *gr_sidedef;
+extern line_t *gr_linedef;
+extern sector_t *gr_frontsector;
+extern sector_t *gr_backsector;
+
+enum
+{
+    HWR_STENCIL_NORMAL,
+    HWR_STENCIL_BEGIN,
+    HWR_STENCIL_REVERSE,
+    HWR_STENCIL_DEPTH,
+    HWR_STENCIL_SKY
+};
 
 // Performance stats
 extern ps_metric_t ps_hw_nodesorttime;
@@ -87,6 +105,10 @@ void HWR_SetViewSize(void);
 void HWR_AddCommands(void);
 void HWR_SetTransform(float fpov, player_t *player);
 void HWR_ClearClipper(void);
+
+void HWR_SetStencilState(int state, int level);
+
+void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *player, int stencil_level, boolean allow_portals);
 
 boolean HWR_UseShader(void);
 boolean HWR_ShouldUsePaletteRendering(void);
