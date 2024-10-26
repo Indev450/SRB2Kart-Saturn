@@ -33,36 +33,6 @@ SINT8 gl_portal_state = GRPORTAL_OFF;
 gl_portallist_t portallist;
 gl_portallist_t *currentportallist;
 
-// More precise version of R_PointToAngle2 using floats and atan2.
-static angle_t R_PointToAngle2Precise(fixed_t pviewx, fixed_t pviewy, fixed_t x, fixed_t y)
-{
-	fixed_t dx = x - pviewx;
-	fixed_t dy = y - pviewy;
-	float radians;
-
-	if (!dx && !dy)
-		return 0;
-
-	// no need for correct scale with FIXED_TO_FLOAT here
-	// since we're just calculating the angle
-	radians = atan2(dy, dx);
-
-	return (angle_t)(radians / M_PI * ANGLE_180);
-}
-
-// More precise version of R_PointToDist2 using floats and sqrt.
-static fixed_t R_PointToDist2Precise(fixed_t px2, fixed_t py2, fixed_t px1, fixed_t py1)
-{
-	// float-fixed conversions can be omitted here
-	// because they cancel each other out in this case
-
-	float dx = px1 - px2;
-	float dy = py1 - py2;
-	double result = sqrt(dx*dx + dy*dy);
-
-	return (fixed_t)result;
-}
-
 // Adds an entry to the clipper for portal rendering
 void HWR_PortalClipping(gl_portal_t *portal)
 {
@@ -124,22 +94,12 @@ void HWR_Portal_Add2Lines(const INT32 line1, const INT32 line2, seg_t *seg)
 	line_t* start	= &lines[line1];
 	line_t* dest	= &lines[line2];
 
-	angle_t dangle = R_PointToAngle2Precise(0,0,dest->dx,dest->dy) - R_PointToAngle2Precise(start->dx,start->dy,0,0);
+	angle_t dangle = R_PointToAngle2(0, 0, dest->dx, dest->dy) - R_PointToAngle2(start->dx, start->dy, 0, 0);
 
 	fixed_t disttopoint;
 	angle_t angtopoint;
 
 	vertex_t dest_c, start_c;
-
-	// Most fixed-point calculations and trigonometric function tables are replaced by
-	// floats and cmath library calls in this part to improve the precision of the
-	// location and angle of the new viewpoint.
-	//
-	// This reduces artefacts on the edges of portals, showing thin lines/pixels
-	// of the underlying graphics. (for example the sky texture) It's not 100%
-	// perfectly aligned and artefact-free, but looks noticeably
-	// better than the original code. I'm not even sure if it's this
-	// code or the nodebuilder or hw_map or something else causing the remaining issues..
 
 	// looking glass center
 	start_c.x = start->v1->x/2 + start->v2->x/2;
@@ -149,22 +109,12 @@ void HWR_Portal_Add2Lines(const INT32 line1, const INT32 line2, seg_t *seg)
 	dest_c.x = dest->v1->x/2 + dest->v2->x/2;
 	dest_c.y = dest->v1->y/2 + dest->v2->y/2;
 
-	disttopoint = R_PointToDist2Precise(start_c.x, start_c.y, viewx, viewy);
-	angtopoint = R_PointToAngle2Precise(start_c.x, start_c.y, viewx, viewy);
+	disttopoint = R_PointToDist2(start_c.x, start_c.y, viewx, viewy);
+	angtopoint = R_PointToAngle2(start_c.x, start_c.y, viewx, viewy);
 	angtopoint += dangle;
 
-	float fang = ((float)angtopoint / 4294967296.0f) * 2.0f * M_PI;
-
-	if (dangle == 0)
-	{
-		portal->viewx = viewx + dest_c.x - start_c.x;
-		portal->viewy = viewy + dest_c.y - start_c.y;
-	}
-	else
-	{
-		portal->viewx = dest_c.x + (fixed_t)(cos(fang) * disttopoint);
-		portal->viewy = dest_c.y + (fixed_t)(sin(fang) * disttopoint);
-	}
+	portal->viewx = dest_c.x + FixedMul(FINECOSINE(angtopoint>>ANGLETOFINESHIFT), disttopoint);
+	portal->viewy = dest_c.y + FixedMul(FINESINE(angtopoint>>ANGLETOFINESHIFT), disttopoint);
 	portal->viewz = viewz + dest->frontsector->floorheight - start->frontsector->floorheight;
 	portal->viewangle = viewangle + dangle;
 
@@ -179,8 +129,8 @@ void HWR_PortalFrame(gl_portal_t* portal)
 	viewz = portal->viewz;
 
 	viewangle = portal->viewangle;
-	viewsin = FINESINE(viewangle>>ANGLETOFINESHIFT);
-	viewcos = FINECOSINE(viewangle>>ANGLETOFINESHIFT);
+	//viewsin = FINESINE(viewangle>>ANGLETOFINESHIFT);
+	//viewcos = FINECOSINE(viewangle>>ANGLETOFINESHIFT);
 
 	if (portal->clipline != -1)
 	{
