@@ -77,20 +77,9 @@ void HWR_PortalClipping(gl_portal_t *portal)
 	gld_clipper_SafeAddClipRange(angle2, angle1);
 }
 
-void HWR_Portal_Add2Lines(const INT32 line1, const INT32 line2, seg_t *seg)
+static gl_portal_t* Portal_Add (seg_t *seg)
 {
-	line_t *start, *dest;
-
-	angle_t dangle;
-
-	fixed_t disttopoint;
-	angle_t angtopoint;
-
-	vertex_t dest_c, start_c;
-
-	gl_portal_t *portal;
-
-	portal = Z_Malloc(sizeof(gl_portal_t), PU_STATIC, NULL);
+	gl_portal_t *portal = Z_Malloc(sizeof(gl_portal_t), PU_STATIC, NULL);
 
 	// Linked list.
 	if (!currentportallist->base)
@@ -110,9 +99,37 @@ void HWR_Portal_Add2Lines(const INT32 line1, const INT32 line2, seg_t *seg)
 
 	portal->seg = seg;
 
+	return portal;
+}
+
+void HWR_FreePortalList(gl_portallist_t freelist)
+{
+	portalclipline = NULL;
+
+	// free memory from portal list allocated by calls to Add2Lines
+	gl_portal_t *gl_portal_temp = freelist.base;
+	while (gl_portal_temp)
+	{
+		gl_portal_t *nextportal = gl_portal_temp->next;
+		Z_Free(gl_portal_temp);
+		gl_portal_temp = nextportal;
+	}
+}
+
+void HWR_Portal_Add2Lines(const INT32 line1, const INT32 line2, seg_t *seg)
+{
+	gl_portal_t *portal = Portal_Add(seg);
+
 	// Offset the portal view by the linedef centers
-	start	= &lines[line1];
-	dest	= &lines[line2];
+	line_t* start	= &lines[line1];
+	line_t* dest	= &lines[line2];
+
+	angle_t dangle = R_PointToAngle2Precise(0,0,dest->dx,dest->dy) - R_PointToAngle2Precise(start->dx,start->dy,0,0);
+
+	fixed_t disttopoint;
+	angle_t angtopoint;
+
+	vertex_t dest_c, start_c;
 
 	// Most fixed-point calculations and trigonometric function tables are replaced by
 	// floats and cmath library calls in this part to improve the precision of the
@@ -123,8 +140,6 @@ void HWR_Portal_Add2Lines(const INT32 line1, const INT32 line2, seg_t *seg)
 	// perfectly aligned and artefact-free, but looks noticeably
 	// better than the original code. I'm not even sure if it's this
 	// code or the nodebuilder or hw_map or something else causing the remaining issues..
-
-	dangle = R_PointToAngle2Precise(0,0,dest->dx,dest->dy) - R_PointToAngle2Precise(start->dx,start->dy,0,0);
 
 	// looking glass center
 	start_c.x = start->v1->x/2 + start->v2->x/2;
@@ -231,18 +246,6 @@ void HWR_RenderPortal(gl_portal_t* portal, gl_portal_t* rootportal, const float 
 	HWR_ClearClipper();
 	HWR_SetStencilState(HWR_STENCIL_DEPTH, stencil_level);
 	HWR_RenderPortalSeg(portal, GRPORTAL_DEPTH);
-}
-
-void HWR_FreePortalList(gl_portallist_t freelist)
-{
-	// free memory from portal list allocated by calls to Add2Lines
-	gl_portal_t *gl_portal_temp = freelist.base;
-	while (gl_portal_temp)
-	{
-		gl_portal_t *nextportal = gl_portal_temp->next;
-		Z_Free(gl_portal_temp);
-		gl_portal_temp = nextportal;
-	}
 }
 
 // idea for fixing fakery map: one portal pillar works, 2 pillars have left/right bug wall, 1 pillar has both sides bugged.

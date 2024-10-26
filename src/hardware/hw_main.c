@@ -5096,9 +5096,7 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *pl
 
 		HWR_ClearClipper();
 
-		if (!rootportal)
-			portalclipline = NULL;
-		else
+		if (rootportal)
 			HWR_PortalClipping(rootportal);
 
 		validcount++;
@@ -5124,18 +5122,11 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *pl
 	HWR_ClearSprites();
 	HWR_ClearClipper();
 
-	if (useportals)
+	if (useportals && rootportal)
 	{
-		if (!rootportal)
-			portalclipline = NULL;
-		else
-		{
-			HWR_PortalFrame(rootportal);// for portalclipsector, it could have gone null from search
-			HWR_PortalClipping(rootportal);
-		}
+		HWR_PortalFrame(rootportal);// for portalclipsector, it could have gone null from search
+		HWR_PortalClipping(rootportal);
 	}
-	else
-		portalclipline = NULL;
 
 	// Set transform.
 	HWD.pfnSetTransform(&atransform);
