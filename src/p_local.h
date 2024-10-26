@@ -286,7 +286,14 @@ mobj_t *P_SPMAngle(mobj_t *source, mobjtype_t type, angle_t angle, UINT8 aimtype
 #ifdef SEENAMES
 #define P_SpawnNameFinder(s,t) P_SPMAngle(s,t,s->angle,true,0)
 #endif
-SINT8 P_MobjFlip(const mobj_t *mobj);
+
+// P_MobjFlip
+// Special utility to return +1 or -1 depending on mobj's gravity
+FUNCINLINE static ATTRINLINE SINT8 P_MobjFlip(const mobj_t *mobj)
+{
+	return (mobj && mobj->eflags & MFE_VERTICALFLIP) ? -1 : 1;
+}
+
 fixed_t P_GetMobjGravity(mobj_t *mo);
 FUNCMATH boolean P_WeaponOrPanel(mobjtype_t type);
 

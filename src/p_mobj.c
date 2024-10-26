@@ -91,6 +91,7 @@ FUNCINLINE static ATTRINLINE void P_CycleStateAnimation(mobj_t *mobj)
 	// var2 determines delay between animation frames
 	if (!(mobj->frame & FF_ANIMATE) || --mobj->anim_duration != 0)
 		return;
+
 	mobj->anim_duration = (UINT16)mobj->state->var2;
 
 	// compare the current sprite frame to the one we started from
@@ -349,18 +350,6 @@ static boolean P_SetPrecipMobjState(precipmobj_t *mobj, statenum_t state)
 	mobj->anim_duration = (UINT16)st->var2; // only used if FF_ANIMATE is set
 
 	return true;
-}
-
-//
-// P_MobjFlip
-//
-// Special utility to return +1 or -1 depending on mobj's gravity
-//
-SINT8 P_MobjFlip(const mobj_t *mobj)
-{
-	if (mobj && mobj->eflags & MFE_VERTICALFLIP)
-		return -1;
-	return 1;
 }
 
 //
