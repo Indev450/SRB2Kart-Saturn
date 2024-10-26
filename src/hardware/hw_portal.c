@@ -47,7 +47,7 @@ void HWR_PortalClipping(gl_portal_t *portal)
 	gld_clipper_SafeAddClipRange(angle2, angle1);
 }
 
-static gl_portal_t* Portal_Add (seg_t *seg)
+static gl_portal_t* HWR_Portal_Add (seg_t *seg)
 {
 	gl_portal_t *portal = Z_Malloc(sizeof(gl_portal_t), PU_STATIC, NULL);
 
@@ -88,7 +88,7 @@ void HWR_FreePortalList(gl_portallist_t freelist)
 
 void HWR_Portal_Add2Lines(const INT32 line1, const INT32 line2, seg_t *seg)
 {
-	gl_portal_t *portal = Portal_Add(seg);
+	gl_portal_t *portal = HWR_Portal_Add(seg);
 
 	// Offset the portal view by the linedef centers
 	line_t* start	= &lines[line1];
