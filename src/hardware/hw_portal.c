@@ -28,7 +28,9 @@
 #include "hw_main.h"
 #include "hw_portal.h"
 
-SINT8 gr_portal = GRPORTAL_OFF;
+SINT8 gl_portal_state = GRPORTAL_OFF;
+
+gl_portallist_t portallist;
 gl_portallist_t *currentportallist;
 
 // More precise version of R_PointToAngle2 using floats and atan2.
@@ -184,7 +186,7 @@ void HWR_RenderPortalSeg(gl_portal_t* portal, SINT8 state)
 {
 	gl_drawing_stencil = true; // do not draw outside of the stencil buffer, idiot.
 	// set our portal state and prepare to render the seg
-	gr_portal = state;
+	HWR_SetPortalState(state);
 	gr_curline = portal->seg;
 	gr_frontsector = portal->seg->frontsector;
 	gr_backsector = portal->seg->backsector;
@@ -231,10 +233,10 @@ void HWR_RenderPortal(gl_portal_t* portal, gl_portal_t* rootportal, const float 
 	HWR_RenderPortalSeg(portal, GRPORTAL_DEPTH);
 }
 
-void HWR_FreePortalList(gl_portallist_t portallist)
+void HWR_FreePortalList(gl_portallist_t freelist)
 {
 	// free memory from portal list allocated by calls to Add2Lines
-	gl_portal_t *gl_portal_temp = portallist.base;
+	gl_portal_t *gl_portal_temp = freelist.base;
 	while (gl_portal_temp)
 	{
 		gl_portal_t *nextportal = gl_portal_temp->next;

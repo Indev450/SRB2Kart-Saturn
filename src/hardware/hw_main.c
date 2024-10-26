@@ -1574,7 +1574,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 				HWR_ProjectWall(wallVerts, &Surf, PF_Masked, lightnum, colormap);
 		}
 
-		if ((gr_midtexture && HWR_BlendMidtextureSurface(&Surf)) || gr_portal == GRPORTAL_STENCIL || gr_portal == GRPORTAL_DEPTH || gl_drawing_stencil)
+		if ((gr_midtexture && HWR_BlendMidtextureSurface(&Surf)) || gl_portal_state == GRPORTAL_STENCIL || gl_portal_state == GRPORTAL_DEPTH || gl_drawing_stencil)
 		{
 			sector_t *front, *back;
 			INT32 repeats;
@@ -1591,7 +1591,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 			if (gr_sidedef->repeatcnt)
 				repeats = 1 + gr_sidedef->repeatcnt;
-			else if (gr_linedef->flags & ML_EFFECT5 || gr_portal == GRPORTAL_STENCIL || gr_portal == GRPORTAL_DEPTH)
+			else if (gr_linedef->flags & ML_EFFECT5 || gl_portal_state == GRPORTAL_STENCIL || gl_portal_state == GRPORTAL_DEPTH)
 			{
 				fixed_t high, low;
 
@@ -2330,7 +2330,7 @@ static void HWR_AddLine(seg_t *line)
 		return;
 	}
 
-	if (gr_portal == GRPORTAL_STENCIL || gr_portal == GRPORTAL_DEPTH)
+	if (gl_portal_state == GRPORTAL_STENCIL || gl_portal_state == GRPORTAL_DEPTH)
 		goto doaddline;
 
 	if (line->linedef->special == 40)
@@ -2343,9 +2343,9 @@ static void HWR_AddLine(seg_t *line)
 				line2 = P_FindSpecialLineFromTag(40, line->linedef->tag, line2);
 			if (line2 >= 0) // found it!
 			{
-				if (gr_portal == GRPORTAL_SEARCH)
+				if (gl_portal_state == GRPORTAL_SEARCH)
 					HWR_Portal_Add2Lines(line->linedef-lines, line2, line);
-				else if (gr_portal == GRPORTAL_INSIDE)
+				else if (gl_portal_state == GRPORTAL_INSIDE)
 					dont_draw = true;
 			}
 		}
@@ -2377,7 +2377,7 @@ doaddline:
 			return;
     }
 
-	if (gr_portal != GRPORTAL_SEARCH && !dont_draw)// no need to do this during the portal check
+	if (gl_portal_state != GRPORTAL_SEARCH && !dont_draw)// no need to do this during the portal check
 		HWR_ProcessSeg(); // Doesn't need arguments because they're defined globally :D
 
 	return;
@@ -2843,7 +2843,7 @@ static void HWR_Subsector(size_t num)
 	gr_frontsector = R_FakeFlat(gr_frontsector, &tempsec, &floorlightlevel,
 								&ceilinglightlevel, false);
 
-	if (gr_portal == GRPORTAL_SEARCH)
+	if (gl_portal_state == GRPORTAL_SEARCH)
 	{
 		skipSprites = true;
 		goto skip_stuff_for_portals;// hopefully this goto is okay
@@ -5081,19 +5081,18 @@ void HWR_SetStencilState(int state, int level)
 // Renders the current viewpoint, though takes portal arguments for recursive portals.
 void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *player, int stencil_level, boolean allow_portals)
 {
-	gl_portallist_t portallist;
 	gl_portal_t *portal;
 
 	const boolean skybox = (skyboxmo[0] && cv_skybox.value);
 	const boolean useportals = cv_grportals.value && gr_maphasportals && allow_portals;
 
-	portallist.base = portallist.cap = NULL;
+	HWR_Portal_InitList();
 
 	if (useportals && stencil_level < cv_maxportals.value) // if recursion limit is not reached
 	{
 		// search for portals in current frame
 		currentportallist = &portallist;
-		gr_portal = GRPORTAL_SEARCH;
+		HWR_SetPortalState(GRPORTAL_SEARCH);
 
 		HWR_ClearClipper();
 
@@ -5112,10 +5111,10 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *pl
 		{
 			HWR_RenderPortal(portal, rootportal, fpov, player, stencil_level);
 		}
-		gr_portal = GRPORTAL_INSIDE;// when portal walls are encountered in following bsp traversal, nothing should be drawn
+		HWR_SetPortalState(GRPORTAL_INSIDE); // when portal walls are encountered in following bsp traversal, nothing should be drawn
 	}
 	else
-		gr_portal = GRPORTAL_OFF;// there may be portals and they need to be drawn as regural walls
+		HWR_SetPortalState(GRPORTAL_OFF); // there may be portals and they need to be drawn as regural walls
 
 	// draw normal things in current frame in current incremented stencil buffer area
 	HWR_SetStencilState(HWR_STENCIL_NORMAL, stencil_level);
@@ -5155,16 +5154,16 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *pl
 
 	// HAYA: Save the old portal state, and turn portals off while normally rendering the BSP tree.
 	// This fixes specific effects not working, such as horizon lines.
-	SINT8 oldgl_portal_state = gr_portal;
+	SINT8 oldgl_portal_state = gl_portal_state;
 
-	if (gr_portal != GRPORTAL_OFF) // if we already haven't hit the recursion limit or we already ended our portal shenanigans
-		gr_portal = GRPORTAL_INSIDE; // TURN IT OFF
+	if (gl_portal_state != GRPORTAL_OFF) // if we already haven't hit the recursion limit or we already ended our portal shenanigans
+		HWR_SetPortalState(GRPORTAL_INSIDE); // TURN IT OFF
 
 	// Recursively "render" the BSP tree.
 	HWR_RenderBSPNode((INT32)numnodes-1);
 
 	// woo we back
-	gr_portal = oldgl_portal_state;
+	HWR_SetPortalState(oldgl_portal_state);
 
 	if (allow_portals) // looks weird, but this is only true when its not skybox rendering skipping precip in skyboxes like software does
 		HWR_AddPrecipitationSprites();

@@ -8,8 +8,8 @@
 // terms of the GNU General Public License, version 2.
 // See the 'LICENSE' file for more details.
 //-----------------------------------------------------------------------------
-/// \file  r_portal.h
-/// \brief Software renderer portal struct, functions, linked list extern.
+/// \file  hw_portal.h
+/// \brief OpenGL renderer portal struct, functions, linked list extern.
 
 #ifndef __HW_PORTAL__
 #define __HW_PORTAL__
@@ -30,8 +30,6 @@ enum
 	GRPORTAL_DEPTH,
 	GRPORTAL_INSIDE,
 };
-
-extern SINT8 gr_portal;
 
 typedef struct gl_portal_s
 {
@@ -57,8 +55,21 @@ typedef struct gl_portallist_s
 	gl_portal_t *cap;
 } gl_portallist_t;
 
+extern SINT8 gl_portal_state;
+
 // new thing
+extern gl_portallist_t portallist;
 extern gl_portallist_t *currentportallist;
+
+static inline void HWR_Portal_InitList (void)
+{
+	portallist.base = portallist.cap = NULL;
+}
+
+static inline void HWR_SetPortalState (SINT8 state)
+{
+	gl_portal_state = state;
+}
 
 // Adds an entry to the clipper for portal rendering
 void HWR_PortalClipping(gl_portal_t *portal);
