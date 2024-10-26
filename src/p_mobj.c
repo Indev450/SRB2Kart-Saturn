@@ -3386,7 +3386,9 @@ boolean P_CameraThinker(player_t *player, camera_t *thiscam, boolean resetcalled
 		}
 	}
 
+#ifndef NOCLIPCAM
 	P_CheckCameraPosition(thiscam->x, thiscam->y, thiscam);
+#endif
 
 	thiscam->subsector = R_PointInSubsector(thiscam->x, thiscam->y);
 	thiscam->floorz = tmfloorz;
