@@ -74,7 +74,7 @@ static gl_portal_t* HWR_Portal_Add (seg_t *seg)
 
 void HWR_FreePortalList(gl_portallist_t freelist)
 {
-	portalclipline = NULL;
+	portalcullsector = NULL;
 
 	// free memory from portal list allocated by calls to Add2Lines
 	gl_portal_t *gl_portal_temp = freelist.base;
