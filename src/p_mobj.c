@@ -3301,18 +3301,12 @@ void P_DestroyRobots(void)
 	}
 }
 
-// P_CameraThinker
-//
-// Process the mobj-ish required functions of the camera
-boolean P_CameraThinker(player_t *player, camera_t *thiscam, boolean resetcalled)
+// the below is chasecam only, if you're curious. check out P_CalcPostImg in p_user.c for first person
+static void P_CalcChasePostImg(player_t *player, camera_t *thiscam)
 {
-	boolean flipcam = (player->pflags & PF_FLIPCAM && !(player->pflags & PF_NIGHTSMODE) && player->mo->eflags & MFE_VERTICALFLIP);
+	const boolean flipcam = (player->pflags & PF_FLIPCAM && !(player->pflags & PF_NIGHTSMODE) && player->mo->eflags & MFE_VERTICALFLIP);
 	UINT16 postimgflags = 0;
 	UINT8 i;
-
-	// This can happen when joining
-	if (thiscam->subsector == NULL || thiscam->subsector->sector == NULL)
-		return true;
 
 	if (encoremode)
 		postimgflags |= POSTIMG_MIRROR;
@@ -3353,6 +3347,18 @@ boolean P_CameraThinker(player_t *player, camera_t *thiscam, boolean resetcalled
 		players[displayplayers[i]].postimgflags = postimgflags;
 		break;
 	}
+}
+
+// P_CameraThinker
+//
+// Process the mobj-ish required functions of the camera
+boolean P_CameraThinker(player_t *player, camera_t *thiscam, boolean resetcalled)
+{
+	// This can happen when joining
+	if (thiscam->subsector == NULL || thiscam->subsector->sector == NULL)
+		return true;
+
+	P_CalcChasePostImg(player, thiscam);
 
 	if (thiscam->momx || thiscam->momy)
 	{
