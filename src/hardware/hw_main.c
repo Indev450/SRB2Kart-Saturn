@@ -5081,8 +5081,6 @@ void HWR_SetStencilState(int state, int level)
 // Renders the current viewpoint, though takes portal arguments for recursive portals.
 void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *player, int stencil_level, boolean allow_portals)
 {
-	gl_portal_t *portal;
-
 	const boolean skybox = (skyboxmo[0] && cv_skybox.value);
 	const boolean useportals = cv_grportals.value && gr_maphasportals && allow_portals;
 
@@ -5090,6 +5088,8 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *pl
 
 	if (useportals && stencil_level < cv_maxportals.value) // if recursion limit is not reached
 	{
+		gl_portal_t *portal;
+
 		// search for portals in current frame
 		currentportallist = &portallist;
 		HWR_SetPortalState(GRPORTAL_SEARCH);
