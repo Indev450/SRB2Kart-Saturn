@@ -5390,6 +5390,22 @@ static void HWR_TogglePaletteRendering(void)
 //added by Hurdler: console varibale that are saved
 void HWR_AddCommands(void)
 {
+	CV_RegisterVar(&cv_grscreentextures);
+
+#ifdef USE_FBO_OGL
+	CV_RegisterVar(&cv_grframebuffer);
+#endif
+
+	CV_RegisterVar(&cv_grmdls);
+	CV_RegisterVar(&cv_grfallbackplayermodel);
+
+	CV_RegisterVar(&cv_grspritebillboarding);
+	CV_RegisterVar(&cv_grfakecontrast);
+	CV_RegisterVar(&cv_grslopecontrast);
+	CV_RegisterVar(&cv_grshearing);
+	CV_RegisterVar(&cv_grshaders);
+	CV_RegisterVar(&cv_lightdither);
+
 	CV_RegisterVar(&cv_grfiltermode);
 	CV_RegisterVar(&cv_granisotropicmode);
 	CV_RegisterVar(&cv_grsolvetjoin);
@@ -5398,20 +5414,9 @@ void HWR_AddCommands(void)
 
 	CV_RegisterVar(&cv_grrenderdistance);
 
-	CV_RegisterVar(&cv_grfakecontrast);
-	CV_RegisterVar(&cv_grslopecontrast);
 	CV_RegisterVar(&cv_grhorizonlines);
 
 	CV_RegisterVar(&cv_grfovchange);
-
-	CV_RegisterVar(&cv_grmdls);
-	CV_RegisterVar(&cv_grfallbackplayermodel);
-
-	CV_RegisterVar(&cv_grspritebillboarding);
-
-	CV_RegisterVar(&cv_grshearing);
-
-	CV_RegisterVar(&cv_grshaders);
 
 	CV_RegisterVar(&cv_grportals);
 
@@ -5420,14 +5425,6 @@ void HWR_AddCommands(void)
 	CV_RegisterVar(&cv_grpaletterendering);
 	CV_RegisterVar(&cv_grpalettedepth);
 	CV_RegisterVar(&cv_grflashpal);
-
-	CV_RegisterVar(&cv_lightdither);
-
-#ifdef USE_FBO_OGL
-	CV_RegisterVar(&cv_grframebuffer);
-#endif
-
-	CV_RegisterVar(&cv_grscreentextures);
 }
 
 // --------------------------------------------------------------------------
