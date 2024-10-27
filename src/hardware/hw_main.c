@@ -685,7 +685,7 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 
 	const char *name = W_CheckNameForNum(lumpnum);
 
-	if (name && (strncmp(name, "BOST", 4) == 0 || strncmp(name, "PAZRCST", 7) == 0 || strncmp(name, "FSBOST", 6) == 0 || strncmp(name, "SWZ_BOO", 7) == 0 || strncmp(name, "VAPOR2", 6) == 0 || strncmp(name, "GDS", 3) == 0))
+	if (name && (strncmp(name, "BOST", 4) == 0 || strncmp(name, "PAZRCST", 7) == 0 || strncmp(name, "FSBOST", 6) == 0))
 	{
 		lightlevel = 255;
 	}
