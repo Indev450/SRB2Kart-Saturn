@@ -249,9 +249,9 @@ static void CV_screentextures_ONChange(void)
 	if (cv_grscreentextures.value != 2)
 	{
 #ifdef USE_FBO_OGL
-		CV_Set(&cv_grframebuffer, "Off");
+		CV_SetValue(&cv_grframebuffer, 0);
 #endif
-		CV_Set(&cv_grpaletterendering, "Off");
+		CV_SetValue(&cv_grpaletterendering, 0);
 	}
 	HWD.pfnSetSpecialState(HWD_SET_SCREEN_TEXTURES, cv_grscreentextures.value);
 }
@@ -271,7 +271,7 @@ static void CV_grpaletterendering_OnChange(void)
 {
 	ONLY_IF_GL_LOADED
 	if (cv_grscreentextures.value != 2) // can't do palette rendering without screen textures
-		CV_Set(&cv_grpaletterendering, "Off");
+		CV_SetValue(&cv_grpaletterendering, 0);
 
 	if (gr_shadersavailable)
 	{
@@ -301,7 +301,7 @@ static void CV_grframebuffer_OnChange(void)
 {
 	ONLY_IF_GL_LOADED
 	if (cv_grscreentextures.value != 2) // screen FBO needs screen textures
-		CV_Set(&cv_grframebuffer, "Off");
+		CV_SetValue(&cv_grframebuffer, 0);
 
 	HWD.pfnSetSpecialState(HWD_SET_FRAMEBUFFER, cv_grframebuffer.value);
 	I_DownSample();
