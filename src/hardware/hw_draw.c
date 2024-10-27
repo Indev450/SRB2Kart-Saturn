@@ -593,12 +593,12 @@ void HWR_FadeScreenMenuBack(UINT16 color, UINT8 strength)
     {
 		RGBA_t *palette = HWR_GetTexturePalette();
 		Surf.PolyColor.rgba = palette[color&0xFF].rgba;
-		
+
         if (HWR_ShouldUsePaletteRendering())
 			Surf.PolyColor.s.alpha = softwaretranstogl[strength];
 		else
 			Surf.PolyColor.s.alpha = (UINT8)(strength*25.5f);
-		
+
 		poly_flags |= PF_Translucent;
     }
 
@@ -776,9 +776,9 @@ void HWR_drawAMline(const fline_t *fl, INT32 color)
 	F2DCoord v1, v2;
 	RGBA_t color_rgba;
 	RGBA_t *palette = HWR_GetTexturePalette();
-	
+
 	color_rgba = palette[color&0xFF];
-	
+
 	v1.x = ((float)fl->a.x-(vid.width/2.0f))*(2.0f/vid.width);
 	v1.y = ((float)fl->a.y-(vid.height/2.0f))*(2.0f/vid.height);
 

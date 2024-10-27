@@ -25,7 +25,7 @@ static struct {
 	const char *vertex;
 	const char *fragment;
 } const gl_shadersources[] = {
-	
+
 	// Floor shader
 	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_FLOOR_FRAGMENT_SHADER},
 
@@ -52,7 +52,7 @@ static struct {
 
 	// Palette postprocess shader
 	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_PALETTE_POSTPROCESS_FRAGMENT_SHADER},
-	
+
 	// UI colormap fade shader
 	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_UI_COLORMAP_FADE_FRAGMENT_SHADER},
 
@@ -282,7 +282,7 @@ static char *HWR_PreprocessShader(char *original)
 
 	// Calculate length of modified shader.
 	new_len = original_len;
-	
+
 	if (cv_grpaletterendering.value)
 		ADD_TO_LEN(PALETTE_RENDERING_DEFINE)
 

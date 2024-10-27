@@ -169,7 +169,7 @@ static void HWR_DrawPatchInCache(GLMipmap_t *mipmap,
 
 	if (pwidth <= 0 || pheight <= 0)
 		return;
-	
+
 	palette = HWR_GetTexturePalette();
 
 	ncols = pwidth;
@@ -219,7 +219,7 @@ static void HWR_DrawTexturePatchInCache(GLMipmap_t *mipmap,
 
 	if (texture->width <= 0 || texture->height <= 0)
 		return;
-	
+
 	palette = HWR_GetTexturePalette();
 
 	x1 = patch->originx;
@@ -316,7 +316,7 @@ static void HWR_GenerateTexture(INT32 texnum, GLMapTexture_t *grtex, boolean noe
 
 	INT32 i;
 	boolean skyspecial = false; //poor hack for Legacy large skies..
-	
+
 	RGBA_t *palette;
 	palette = HWR_GetTexturePalette();
 
@@ -350,7 +350,7 @@ static void HWR_GenerateTexture(INT32 texnum, GLMapTexture_t *grtex, boolean noe
 	if (encoremap && !noencore)
 		grtex->mipmap.colormap += COLORMAP_REMAPOFFSET;
 #endif
-	
+
 	blockwidth = texture->width;
 	blockheight = texture->height;
 	blocksize = (blockwidth * blockheight);
@@ -426,7 +426,7 @@ void HWR_MakePatch (patch_t *patch, GLPatch_t *grPatch, GLMipmap_t *grMipmap, bo
 		grMipmap->flags = 0;
 		// setup the texture info
 		grMipmap->format = patchformat;
-		
+
 		//grPatch->max_s = grPatch->max_t = 1.0f;
 		grPatch->max_s = (float)grPatch->width / (float)grMipmap->width;
 		grPatch->max_t = (float)grPatch->height / (float)grMipmap->height;
@@ -645,7 +645,7 @@ static void HWR_CacheFlat(GLMipmap_t *grMipmap, lumpnum_t flatlumpnum)
 void HWR_GetFlat(lumpnum_t flatlumpnum, boolean noencoremap)
 {
 	GLMipmap_t *grmip;
-	
+
 	if (flatlumpnum == LUMPERROR)
 		return;
 
@@ -919,8 +919,8 @@ void HWR_SetPalette(RGBA_t *palette)
 			// the 16-bit version! For making comparison screenshots either use an external screenshot
 			// tool or set the palette depth to 24 bits.
 			RGBA_t crushed_palette[256];
-			int i;
-			for (i = 0; i < 256; i++)
+
+			for (int i = 0; i < 256; i++)
 			{
 				float fred = (float)(palette[i].s.red >> 3);
 				float fgreen = (float)(palette[i].s.green >> 2);
@@ -938,7 +938,7 @@ void HWR_SetPalette(RGBA_t *palette)
 		}
 
 		// this part is responsible for keeping track of the palette OUTSIDE of a level.
-		if ((!(gamestate == GS_LEVEL)) || (gamestate == GS_TITLESCREEN))
+		if (gamestate != GS_LEVEL || gamestate == GS_TITLESCREEN)
 			HWR_SetMapPalette();
 	}
 	else
@@ -990,11 +990,9 @@ void HWR_SetMapPalette(void)
 	RGBA_t *palette;
 	int i;
 
-	if ((!(gamestate == GS_LEVEL)) || (gamestate == GS_TITLESCREEN))
+	if (gamestate != GS_LEVEL || gamestate == GS_TITLESCREEN)
 	{
-		// outside of a level, pMasterPalette should have PLAYPAL ready for us
-		//palette = pMasterPalette; // we dont have this in kart so just use pLocalPalette as before
-
+		// outside of a level, pLocalPalette should have PLAYPAL ready for us
 		palette = pLocalPalette;
 	}
 	else
@@ -1004,8 +1002,10 @@ void HWR_SetMapPalette(void)
 		lumpnum_t lumpnum = W_GetNumForName(GetPalette());
 		size_t palsize = W_LumpLength(lumpnum);
 		UINT8 *RGB_data;
+
 		if (palsize < 768) // 256 * 3
 			I_Error("HWR_SetMapPalette: A programmer assumed palette lumps are at least 768 bytes long, but apparently this was a wrong assumption!\n");
+
 		RGB_data = W_CacheLumpNum(lumpnum, PU_CACHE);
 		// we got the RGB palette now, but we need it in RGBA format.
 		for (i = 0; i < 256; i++)
@@ -1052,7 +1052,6 @@ UINT32 HWR_CreateLightTable(UINT8 *lighttable)
 	Z_Free(hw_lighttable);
 	return id;
 }
-
 
 // get hwr lighttable id for colormap, create it if it doesn't already exist
 UINT32 HWR_GetLightTableID(extracolormap_t *colormap)
