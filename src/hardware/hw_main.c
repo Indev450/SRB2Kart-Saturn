@@ -52,13 +52,13 @@
 #include "../p_slopes.h"
 #include "../r_portal.h"
 
-#define ABS(x) ((x) < 0 ? -(x) : (x))
+// ==========================================================================
+// Globals
+// ==========================================================================
 
+#define ABS(x) ((x) < 0 ? -(x) : (x))
 #define SOFTLIGHT(llevel) HWR_ShouldUsePaletteRendering() ? ((llevel) >> LIGHTSEGSHIFT) << LIGHTSEGSHIFT : (llevel)
 
-// ==========================================================================
-// the hardware driver object
-// ==========================================================================
 struct hwdriver_s hwdriver;
 
 // false if shaders have not been initialized yet, or if shaders are not available
@@ -69,11 +69,76 @@ static boolean gr_palette_rendering_state = false;
 
 boolean gl_drawing_stencil = false;
 
+static INT32 current_bsp_culling_distance = 0;
+
+// base values set at SetViewSize
+static float gr_basecentery;
+static float gr_basecenterx;
+
+float gr_baseviewwindowy, gr_basewindowcentery;
+float gr_baseviewwindowx, gr_basewindowcenterx;
+float gr_viewwidth, gr_viewheight; // viewport clipping boundaries (screen coords)
+
+static float gr_centery, gr_centerx;
+static float gr_viewwindowy, gr_viewwindowx; // top left corner of view window
+static float gr_windowcentery, gr_windowcenterx; // center of view window, for projection
+
+FTransform atransform;
+
+// Float variants of viewx, viewy, viewz, etc.
+static float gr_viewx, gr_viewy, gr_viewz;
+float gr_viewsin, gr_viewcos;
+static float gr_viewludsin, gr_viewludcos;
+static angle_t gr_aimingangle;
+
+static float gr_pspritexscale, gr_pspriteyscale;
+
+seg_t *gr_curline;
+side_t *gr_sidedef;
+line_t *gr_linedef;
+sector_t *gr_frontsector;
+sector_t *gr_backsector;
+
+// Performance stats
+ps_metric_t ps_hw_nodesorttime = {0};
+ps_metric_t ps_hw_nodedrawtime = {0};
+ps_metric_t ps_hw_spritesorttime = {0};
+ps_metric_t ps_hw_spritedrawtime = {0};
+
+// Performance stats for batching
+ps_metric_t ps_hw_numpolys = {0};
+ps_metric_t ps_hw_numverts = {0};
+ps_metric_t ps_hw_numcalls = {0};
+ps_metric_t ps_hw_numshaders = {0};
+ps_metric_t ps_hw_numtextures = {0};
+ps_metric_t ps_hw_numpolyflags = {0};
+ps_metric_t ps_hw_numcolors = {0};
+ps_metric_t ps_hw_batchsorttime = {0};
+ps_metric_t ps_hw_batchdrawtime = {0};
+
+static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum, boolean noencore, FSurfaceInfo* Surf, INT32 cutflag, ffloor_t *pfloor, FBITFIELD polyflags);
+static void HWR_RenderWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap);
+
+static void HWR_AddTransparentFloor(lumpnum_t lumpnum, extrasubsector_t *xsub, boolean isceiling, fixed_t fixedheight, INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, boolean fogplane, extracolormap_t *planecolormap);
+static void HWR_AddTransparentWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, INT32 texnum, boolean noencore, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap);
+static void HWR_AddTransparentPolyobjectFloor(lumpnum_t lumpnum, polyobj_t *polysector, boolean isceiling, fixed_t fixedheight, INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, extracolormap_t *planecolormap);
+
+static void HWR_AddSprites(sector_t *sec);
+static void HWR_ProjectSprite(mobj_t *thing);
+static void HWR_AddPrecipitationSprites(void);
+static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing);
+
+static void HWR_SetTransformAiming(FTransform *trans);
+static void HWR_RollTransform(FTransform *tr, angle_t roll);
+
+static void HWR_DoPostProcessor(player_t *player);
+
+static void HWR_SetShaderState(void);
+static void HWR_TogglePaletteRendering(void);
+
 // ==========================================================================
 // Commands and console variables
 // ==========================================================================
-
-static void HWR_RollTransform(FTransform *tr, angle_t roll);
 
 #ifdef USE_FBO_OGL
 static void CV_grframebuffer_OnChange(void);
@@ -84,7 +149,6 @@ static void CV_screentextures_ONChange(void);
 static void CV_grshaders_OnChange(void);
 static void CV_grpaletterendering_OnChange(void);
 static void CV_grpalettedepth_OnChange(void);
-
 static void CV_grlightdithering_OnChange(void);
 
 static CV_PossibleValue_t grfakecontrast_cons_t[] = {{0, "Off"}, {1, "Standard"}, {2, "Smooth"}, {0, NULL}};
@@ -132,8 +196,6 @@ static float clipping_distances[] = {1024.0f, 2048.0f, 4096.0f, 6144.0f, 8192.0f
 static INT32 bsp_culling_distances[] = {(1024+512)*FRACUNIT, (2048+512)*FRACUNIT, (4096+512)*FRACUNIT,
 	(6144+512)*FRACUNIT, (8192+512)*FRACUNIT, (12288+512)*FRACUNIT, (16384+512)*FRACUNIT};
 
-static INT32 current_bsp_culling_distance = 0;
-
 // The current screen texture implementation is inefficient and disabling it can result in significant
 // performance gains on lower end hardware. The game is still quite playable without this functionality.
 // Features that break when disabling this:
@@ -166,6 +228,7 @@ consvar_t cv_grslopecontrast = {"gr_slopecontrast", "Off", CV_SAVE, CV_OnOff, NU
 
 consvar_t cv_grhorizonlines = {"gr_horizonlines", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+
 #define ONLY_IF_GL_LOADED if (vid.glstate != VID_GL_LIBRARY_LOADED) return;
 
 static void CV_filtermode_ONChange(void)
@@ -186,9 +249,9 @@ static void CV_screentextures_ONChange(void)
 	if (cv_grscreentextures.value != 2)
 	{
 #ifdef USE_FBO_OGL
-		CV_Set(&cv_grframebuffer, "Off");
+		CV_SetValue(&cv_grframebuffer, 0);
 #endif
-		CV_Set(&cv_grpaletterendering, "Off");
+		CV_SetValue(&cv_grpaletterendering, 0);
 	}
 	HWD.pfnSetSpecialState(HWD_SET_SCREEN_TEXTURES, cv_grscreentextures.value);
 }
@@ -208,7 +271,7 @@ static void CV_grpaletterendering_OnChange(void)
 {
 	ONLY_IF_GL_LOADED
 	if (cv_grscreentextures.value != 2) // can't do palette rendering without screen textures
-		CV_Set(&cv_grpaletterendering, "Off");
+		CV_SetValue(&cv_grpaletterendering, 0);
 
 	if (gr_shadersavailable)
 	{
@@ -238,90 +301,22 @@ static void CV_grframebuffer_OnChange(void)
 {
 	ONLY_IF_GL_LOADED
 	if (cv_grscreentextures.value != 2) // screen FBO needs screen textures
-		CV_Set(&cv_grframebuffer, "Off");
+		CV_SetValue(&cv_grframebuffer, 0);
+
 	HWD.pfnSetSpecialState(HWD_SET_FRAMEBUFFER, cv_grframebuffer.value);
 	I_DownSample();
 	RefreshOGLSDLSurface();
 }
 #endif
 
-//
-// Sets the shader state.
-//
-void HWR_SetShaderState(void)
-{
-	HWD.pfnSetSpecialState(HWD_SET_SHADERS, HWR_UseShader() ? 1 : 0);
-}
-
-// ==========================================================================
-// Globals
-// ==========================================================================
-
-// base values set at SetViewSize
-static float gr_basecentery;
-static float gr_basecenterx;
-
-float gr_baseviewwindowy, gr_basewindowcentery;
-float gr_baseviewwindowx, gr_basewindowcenterx;
-float gr_viewwidth, gr_viewheight; // viewport clipping boundaries (screen coords)
-
-static float gr_centerx;
-static float gr_viewwindowx;
-static float gr_windowcenterx; // center of view window, for projection
-
-static float gr_centery;
-static float gr_viewwindowy; // top left corner of view window
-static float gr_windowcentery;
-
-static float gr_pspritexscale, gr_pspriteyscale;
-
-seg_t *gr_curline;
-side_t *gr_sidedef;
-line_t *gr_linedef;
-sector_t *gr_frontsector;
-sector_t *gr_backsector;
-
-static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum, boolean noencore, FSurfaceInfo* Surf, INT32 cutflag, ffloor_t *pfloor, FBITFIELD polyflags);
-
-// Performance stats
-ps_metric_t ps_hw_nodesorttime = {0};
-ps_metric_t ps_hw_nodedrawtime = {0};
-ps_metric_t ps_hw_spritesorttime = {0};
-ps_metric_t ps_hw_spritedrawtime = {0};
-
-// Performance stats for batching
-ps_metric_t ps_hw_numpolys = {0};
-ps_metric_t ps_hw_numverts = {0};
-ps_metric_t ps_hw_numcalls = {0};
-ps_metric_t ps_hw_numshaders = {0};
-ps_metric_t ps_hw_numtextures = {0};
-ps_metric_t ps_hw_numpolyflags = {0};
-ps_metric_t ps_hw_numcolors = {0};
-ps_metric_t ps_hw_batchsorttime = {0};
-ps_metric_t ps_hw_batchdrawtime = {0};
-
-static void HWR_AddSprites(sector_t *sec);
-static void HWR_ProjectSprite(mobj_t *thing);
-static void HWR_AddPrecipitationSprites(void);
-static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing);
-
-// ==========================================================================
-// View position
-// ==========================================================================
-
-FTransform atransform;
-
-// Float variants of viewx, viewy, viewz, etc.
-static float gr_viewx, gr_viewy, gr_viewz;
-float gr_viewsin, gr_viewcos;
-static float gr_viewludsin, gr_viewludcos;
-
-static angle_t gr_aimingangle;
-static void HWR_SetTransformAiming(FTransform *trans);
-
 // ==========================================================================
 // Lighting
 // ==========================================================================
+
+static void HWR_SetShaderState(void)
+{
+	HWD.pfnSetSpecialState(HWD_SET_SHADERS, HWR_UseShader() ? 1 : 0);
+}
 
 boolean HWR_UseShader(void)
 {
@@ -443,7 +438,7 @@ void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *col
 	Surface->LightTableId = HWR_ShouldUsePaletteRendering() ? HWR_GetLightTableID(colormap) : 0;
 }
 
-UINT8 HWR_FogBlockAlpha(INT32 light, extracolormap_t *colormap) // Let's see if this can work
+static UINT8 HWR_FogBlockAlpha(INT32 light, extracolormap_t *colormap) // Let's see if this can work
 {
 	RGBA_t realcolor, surfcolor;
 	INT32 alpha;
@@ -898,7 +893,7 @@ FBITFIELD HWR_TranstableToAlpha(INT32 transtablenum, FSurfaceInfo *pSurf)
 //
 // HWR_ProjectWall
 //
-void HWR_ProjectWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blendmode, INT32 lightlevel, extracolormap_t *wallcolormap)
+static void HWR_ProjectWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blendmode, INT32 lightlevel, extracolormap_t *wallcolormap)
 {
 	INT32 shader = SHADER_NONE;
 
@@ -1165,7 +1160,7 @@ static void HWR_DrawSkyWallList(void)
 
 // HWR_DrawSkyWalls
 // Draw walls into the depth buffer so that anything behind is culled properly
-void HWR_DrawSkyWall(FOutVector *wallVerts, FSurfaceInfo *Surf)
+static void HWR_DrawSkyWall(FOutVector *wallVerts, FSurfaceInfo *Surf)
 {
 	//HWR_SetCurrentTexture(NULL);
 	// no texture
@@ -2187,8 +2182,6 @@ static boolean CheckClip(sector_t * afrontsector, sector_t * abacksector)
 		fixed_t viewf1, viewf2, viewc1, viewc2;
 		if (afrontsector == viewsector)
 		{
-			//if (printportals)
-			//	CONS_Printf("CheckClip frontsector is viewsector\n");
 			viewf1 = frontf1;
 			viewf2 = frontf2;
 			viewc1 = frontc1;
@@ -2196,8 +2189,6 @@ static boolean CheckClip(sector_t * afrontsector, sector_t * abacksector)
 		}
 		else
 		{
-			//if (printportals)
-			//	CONS_Printf("CheckClip backsector is viewsector\n");
 			viewf1 = backf1;
 			viewf2 = backf2;
 			viewc1 = backc1;
@@ -2339,8 +2330,10 @@ static void HWR_AddLine(seg_t *line)
 		{
 			// Find the other side!
 			INT32 line2 = P_FindSpecialLineFromTag(40, line->linedef->tag, -1);
+
 			if (line->linedef == &lines[line2])
 				line2 = P_FindSpecialLineFromTag(40, line->linedef->tag, line2);
+
 			if (line2 >= 0) // found it!
 			{
 				if (gl_portal_state == GRPORTAL_SEARCH)
@@ -2513,7 +2506,7 @@ static inline void HWR_AddPolyObjectSegs(void)
 	}
 }
 
-void HWR_RenderPolyObjectPlane(polyobj_t *polysector, boolean isceiling, fixed_t fixedheight, FBITFIELD blendmode, UINT8 lightlevel, lumpnum_t lumpnum, sector_t *FOFsector, UINT8 alpha, extracolormap_t *planecolormap)
+static void HWR_RenderPolyObjectPlane(polyobj_t *polysector, boolean isceiling, fixed_t fixedheight, FBITFIELD blendmode, UINT8 lightlevel, lumpnum_t lumpnum, sector_t *FOFsector, UINT8 alpha, extracolormap_t *planecolormap)
 {
 	float           height; //constant y for all points on the convex flat polygon
 	FOutVector      *v3d;
@@ -4135,7 +4128,7 @@ static void *HWR_CreateDrawNode(gr_drawnode_type_t type)
 	return NULL;
 }
 
-void HWR_AddTransparentWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, INT32 texnum, boolean noencore, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap)
+static void HWR_AddTransparentWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, INT32 texnum, boolean noencore, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap)
 {
 	wallinfo_t *wallinfo = HWR_CreateDrawNode(DRAWNODE_WALL);
 
@@ -4149,7 +4142,7 @@ void HWR_AddTransparentWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, INT32 te
 	wallinfo->wallcolormap = wallcolormap;
 }
 
-void HWR_AddTransparentFloor(lumpnum_t lumpnum, extrasubsector_t *xsub, boolean isceiling, fixed_t fixedheight, INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, boolean fogplane, extracolormap_t *planecolormap)
+static void HWR_AddTransparentFloor(lumpnum_t lumpnum, extrasubsector_t *xsub, boolean isceiling, fixed_t fixedheight, INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, boolean fogplane, extracolormap_t *planecolormap)
 {
 	planeinfo_t *planeinfo = HWR_CreateDrawNode(DRAWNODE_PLANE);
 
@@ -4167,7 +4160,7 @@ void HWR_AddTransparentFloor(lumpnum_t lumpnum, extrasubsector_t *xsub, boolean 
 
 // Adding this for now until I can create extrasubsector info for polyobjects
 // When that happens it'll just be done through HWR_AddTransparentFloor and HWR_RenderPlane
-void HWR_AddTransparentPolyobjectFloor(lumpnum_t lumpnum, polyobj_t *polysector, boolean isceiling, fixed_t fixedheight, INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, extracolormap_t *planecolormap)
+static void HWR_AddTransparentPolyobjectFloor(lumpnum_t lumpnum, polyobj_t *polysector, boolean isceiling, fixed_t fixedheight, INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, extracolormap_t *planecolormap)
 {
 	polyplaneinfo_t *polyplaneinfo = HWR_CreateDrawNode(DRAWNODE_POLYOBJECT_PLANE);
 
@@ -4918,7 +4911,7 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 
 static boolean drewsky = false;
 
-void HWR_DrawSkyBackground(float fpov)
+static void HWR_DrawSkyBackground(float fpov)
 {
 	FTransform dometransform;
 
@@ -5198,7 +5191,7 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *pl
 // ==========================================================================
 // Render the current frame.
 // ==========================================================================
-void HWR_RenderFrame(INT32 viewnumber, player_t *player, boolean skybox)
+static void HWR_RenderFrame(INT32 viewnumber, player_t *player, boolean skybox)
 {
 	const float fpov = FIXED_TO_FLOAT(cv_fov.value+player->fovadd);
 
@@ -5302,7 +5295,7 @@ void HWR_RenderPlayerView(INT32 viewnumber, player_t *player)
 	if (viewnumber == 0) // Only do it if it's the first screen being rendered
 		HWD.pfnClearBuffer(true, false, false, &ClearColor);
 
-	if (cv_grshaders.value)
+	if (HWR_UseShader())
 	{
 		HWD.pfnSetShaderInfo(HWD_SHADERINFO_LEVELTIME, (INT32)leveltime); // The water surface shader needs the leveltime.
 		const angle_t light_angle = maplighting.angle - viewangle + ANGLE_90; // I fucking hate OGL's coordinate system
@@ -5354,7 +5347,7 @@ void HWR_LoadLevel(void)
 // enable or disable palette rendering state depending on settings and availability
 // called when relevant settings change
 // shader recompilation is done in the cvar callback
-void HWR_TogglePaletteRendering(void)
+static void HWR_TogglePaletteRendering(void)
 {
 	// which state should we go to?
 	if (HWR_ShouldUsePaletteRendering())
@@ -5484,7 +5477,7 @@ void HWR_Shutdown(void)
 #endif
 }
 
-void HWR_RenderWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap)
+static void HWR_RenderWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap)
 {
 	FBITFIELD blendmode = blend;
 	UINT8 alpha = pSurf->PolyColor.s.alpha; // retain the alpha
@@ -5526,7 +5519,7 @@ INT32 HWR_GetTextureUsed(void)
 	return HWD.pfnGetTextureUsed();
 }
 
-void HWR_DoPostProcessor(player_t *player)
+static void HWR_DoPostProcessor(player_t *player)
 {
 	HWD.pfnUnSetShader();
 

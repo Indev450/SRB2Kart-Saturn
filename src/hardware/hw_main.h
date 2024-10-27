@@ -99,28 +99,25 @@ UINT8 *HWR_GetScreenshot(void);
 boolean HWR_Screenshot(const char *lbmname);
 
 // hw_main.c
-void HWR_RenderFrame(INT32 viewnumber, player_t *player, boolean skybox);
-void HWR_RenderPlayerView(INT32 viewnumber, player_t *player);
 void HWR_SetViewSize(void);
 void HWR_AddCommands(void);
+
+void HWR_RenderPlayerView(INT32 viewnumber, player_t *player);
+void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *player, int stencil_level, boolean allow_portals);
+
 void HWR_SetTransform(float fpov, player_t *player);
 void HWR_ClearClipper(void);
-
 void HWR_SetStencilState(int state, int level);
-
-void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *player, int stencil_level, boolean allow_portals);
 
 boolean HWR_UseShader(void);
 boolean HWR_ShouldUsePaletteRendering(void);
 boolean HWR_PalRenderFlashpal(void);
-void HWR_TogglePaletteRendering(void);
 
 // My original intention was to split hw_main.c
 // into files like hw_bsp.c, hw_sprites.c...
 
 // hw_main.c: Lighting and fog
 void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *colormap, const boolean directional);
-UINT8 HWR_FogBlockAlpha(INT32 light, extracolormap_t *colormap); // Let's see if this can work
 
 FBITFIELD HWR_TranstableToAlpha(INT32 transtablenum, FSurfaceInfo *pSurf);
 
@@ -128,7 +125,6 @@ FBITFIELD HWR_TranstableToAlpha(INT32 transtablenum, FSurfaceInfo *pSurf);
 INT32 HWR_GetTextureUsed(void);
 
 // hw_main.c: Post-rendering
-void HWR_DoPostProcessor(player_t *player);
 void HWR_StartScreenWipe(void);
 void HWR_EndScreenWipe(void);
 void HWR_DrawIntermissionBG(void);
@@ -137,21 +133,8 @@ void HWR_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT
 void HWR_MakeScreenFinalTexture(void);
 void HWR_DrawScreenFinalTexture(INT32 width, INT32 height);
 
-// hw_main.c: Planes
-//void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, boolean isceiling, fixed_t fixedheight, FBITFIELD PolyFlags, INT32 lightlevel, lumpnum_t lumpnum, sector_t *FOFsector, UINT8 alpha, extracolormap_t *planecolormap);
-void HWR_AddTransparentFloor(lumpnum_t lumpnum, extrasubsector_t *xsub, boolean isceiling, fixed_t fixedheight, INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, boolean fogplane, extracolormap_t *planecolormap);
-
-void HWR_RenderPolyObjectPlane(polyobj_t *polysector, boolean isceiling, fixed_t fixedheight, FBITFIELD blendmode, UINT8 lightlevel, lumpnum_t lumpnum, sector_t *FOFsector, UINT8 alpha, extracolormap_t *planecolormap);
-void HWR_AddTransparentPolyobjectFloor(lumpnum_t lumpnum, polyobj_t *polysector, boolean isceiling, fixed_t fixedheight, INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, extracolormap_t *planecolormap);
-
 // hw_main.c: Segs
 void HWR_ProcessSeg(void); // Sort of like GLWall::Process in GZDoom
-void HWR_RenderWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap);
-void HWR_ProjectWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blendmode, INT32 lightlevel, extracolormap_t *wallcolormap);
-void HWR_AddTransparentWall(FOutVector *wallVerts, FSurfaceInfo * pSurf, INT32 texnum, boolean noencore, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap);
-// moved HWR_SplitWall to hw_main.c
-void HWR_DrawSkyWall(FOutVector *wallVerts, FSurfaceInfo *Surf);
-void HWR_DrawSkyBackground(float fpov);
 
 // hw_bsp.c
 void HWR_CreatePlanePolygons(INT32 bspnum);
@@ -160,8 +143,6 @@ extern boolean gr_maphasportals;
 // hw_cache.c
 void HWR_LoadTextures(size_t pnumtextures);
 RGBA_t *HWR_GetTexturePalette(void);
-
-void HWR_SetShaderState(void);
 
 // Console variables
 extern consvar_t cv_grshaders;
