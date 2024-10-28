@@ -30,7 +30,6 @@
 
 SINT8 gl_portal_state = GLPORTAL_OFF;
 
-gl_portallist_t portallist;
 gl_portallist_t *currentportallist;
 
 // Adds an entry to the clipper for portal rendering

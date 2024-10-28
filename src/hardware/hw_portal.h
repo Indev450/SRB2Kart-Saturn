@@ -58,13 +58,7 @@ typedef struct gl_portallist_s
 extern SINT8 gl_portal_state;
 
 // new thing
-extern gl_portallist_t portallist;
 extern gl_portallist_t *currentportallist;
-
-static inline void HWR_Portal_InitList (void)
-{
-	portallist.base = portallist.cap = NULL;
-}
 
 static inline void HWR_SetPortalState (SINT8 state)
 {
