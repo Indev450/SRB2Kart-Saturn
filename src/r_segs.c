@@ -1857,21 +1857,19 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 	rw_toptextureslide = rw_midtextureslide = rw_bottomtextureslide = 0;
 	ceilingfrontslide = floorfrontslide = ceilingbackslide = floorbackslide = 0;
 
-	{
-		angle_t lineangle = R_PointToAngle2(curline->v1->x, curline->v1->y, curline->v2->x, curline->v2->y);
+	angle_t lineangle = R_PointToAngle2(curline->v1->x, curline->v1->y, curline->v2->x, curline->v2->y);
 
-		if (frontsector->f_slope)
-			floorfrontslide = FixedMul(frontsector->f_slope->zdelta, FINECOSINE((lineangle-frontsector->f_slope->xydirection)>>ANGLETOFINESHIFT));
+	if (frontsector->f_slope)
+		floorfrontslide = FixedMul(frontsector->f_slope->zdelta, FINECOSINE((lineangle-frontsector->f_slope->xydirection)>>ANGLETOFINESHIFT));
 
-		if (frontsector->c_slope)
-			ceilingfrontslide = FixedMul(frontsector->c_slope->zdelta, FINECOSINE((lineangle-frontsector->c_slope->xydirection)>>ANGLETOFINESHIFT));
+	if (frontsector->c_slope)
+		ceilingfrontslide = FixedMul(frontsector->c_slope->zdelta, FINECOSINE((lineangle-frontsector->c_slope->xydirection)>>ANGLETOFINESHIFT));
 
-		if (backsector && backsector->f_slope)
-			floorbackslide = FixedMul(backsector->f_slope->zdelta, FINECOSINE((lineangle-backsector->f_slope->xydirection)>>ANGLETOFINESHIFT));
+	if (backsector && backsector->f_slope)
+		floorbackslide = FixedMul(backsector->f_slope->zdelta, FINECOSINE((lineangle-backsector->f_slope->xydirection)>>ANGLETOFINESHIFT));
 
-		if (backsector && backsector->c_slope)
-			ceilingbackslide = FixedMul(backsector->c_slope->zdelta, FINECOSINE((lineangle-backsector->c_slope->xydirection)>>ANGLETOFINESHIFT));
-	}
+	if (backsector && backsector->c_slope)
+		ceilingbackslide = FixedMul(backsector->c_slope->zdelta, FINECOSINE((lineangle-backsector->c_slope->xydirection)>>ANGLETOFINESHIFT));
 
 	if (!backsector)
 	{
@@ -1940,9 +1938,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 		ds_p->sprtopclip = ds_p->sprbottomclip = NULL;
 		ds_p->silhouette = 0;
 
-		if (
-			worldbottomslope > worldlowslope ||
-			worldbottom > worldlow)
+		if (worldbottomslope > worldlowslope || worldbottom > worldlow)
 		{
 			ds_p->silhouette = SIL_BOTTOM;
 			if ((backsector->f_slope ? P_GetZAt(backsector->f_slope, viewx, viewy) : backsector->floorheight) > viewz)
@@ -1957,9 +1953,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			// ds_p->sprbottomclip = negonearray;
 		}
 
-		if (
-			worldtopslope < worldhighslope ||
-			worldtop < worldhigh)
+		if (worldtopslope < worldhighslope || worldtop < worldhigh)
 		{
 			ds_p->silhouette |= SIL_TOP;
 			if ((backsector->c_slope ? P_GetZAt(backsector->c_slope, viewx, viewy) : backsector->ceilingheight) < viewz)
@@ -1993,13 +1987,6 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			}
 		}
 
-		if (frontsector->floorpic == skyflatnum
-			&& backsector->floorpic == skyflatnum)
-		{
-			// see double ceiling skies comment
-			// this is the same but for upside down thok barriers where the floor is sky and the ceiling is normal
-			markfloor = false;
-		}
 		if (worldlow != worldbottom
 			|| worldlowslope != worldbottomslope
 			|| backsector->f_slope != frontsector->f_slope
@@ -2040,7 +2027,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 		    || frontsector->extra_colormap != backsector->extra_colormap
 		    || (frontsector->ffloors != backsector->ffloors && frontsector->tag != backsector->tag))
 		{
-				markceiling = true;
+			markceiling = true;
 		}
 		else
 		{
@@ -2056,9 +2043,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 		}
 
 		// check TOP TEXTURE
-		if (worldhigh < worldtop
-				|| worldhighslope < worldtopslope
-			)
+		if (worldhigh < worldtop || worldhighslope < worldtopslope)
 		{
 			fixed_t texheight;
 			// top texture
