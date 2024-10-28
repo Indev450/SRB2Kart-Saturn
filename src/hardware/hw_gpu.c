@@ -13,14 +13,6 @@
 
 #include "r_opengl/r_opengl.h"
 
-// ==========================================================================
-// the hardware driver object
-// ==========================================================================
-struct GPURenderingAPI *GPU = NULL;
 
-void GPUInterface_Load(struct GPURenderingAPI **api)
-{
-	*api = &GLInterfaceAPI;
-}
 
 #endif // HWRENDER

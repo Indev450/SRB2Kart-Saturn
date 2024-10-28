@@ -2132,9 +2132,7 @@ void I_StartupGraphics(void)
 #ifdef HWRENDER
 	if (rendermode == render_opengl)
 	{
-		GPUInterface_Load(&GPU);
-
-		vid.glstate = (VID_LoadGPUAPI() && GPU->Init()) ? VID_GL_LIBRARY_LOADED : VID_GL_LIBRARY_ERROR;
+		vid.glstate = (VID_LoadGPUAPI() && Init()) ? VID_GL_LIBRARY_LOADED : VID_GL_LIBRARY_ERROR;
 
 		if (vid.glstate == VID_GL_LIBRARY_ERROR)
 		{

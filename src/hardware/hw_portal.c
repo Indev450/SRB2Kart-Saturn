@@ -158,7 +158,7 @@ void HWR_RenderPortalSeg(gl_portal_t* portal, SINT8 state)
 	gl_drawing_stencil = false;
 	// need to work around the r_opengl PF_Invisible bug with this call
 	// similarly as in the linkdraw hack in HWR_DrawSprites
-	GPU->SetBlend(PF_Translucent|PF_Occlude|PF_Masked);
+	SetBlend(PF_Translucent|PF_Occlude|PF_Masked);
 }
 
 // Renders a single portal from the current viewpoint.

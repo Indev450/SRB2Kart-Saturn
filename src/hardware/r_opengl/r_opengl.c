@@ -797,7 +797,7 @@ static boolean GLFramebuffer_IsFuncAvailible(void)
 }
 #endif
 
-static boolean InitShaders (void)
+boolean InitShaders (void)
 {
 	if (!pglUseProgram)
 		return false;
@@ -814,7 +814,7 @@ static boolean InitShaders (void)
 	return true;
 }
 
-static void LoadShader (int slot, char *code, hwdshaderstage_t stage)
+void LoadShader (int slot, char *code, hwdshaderstage_t stage)
 {
 	gl_shader_t *shader;
 
@@ -839,7 +839,7 @@ static void LoadShader (int slot, char *code, hwdshaderstage_t stage)
 #undef LOADSHADER
 }
 
-static boolean CompileShader (int slot)
+boolean CompileShader (int slot)
 {
 	if (slot < 0 || slot >= HWR_MAXSHADERS)
 		I_Error("CompileShader: Invalid slot %d", slot);
@@ -860,7 +860,7 @@ static boolean CompileShader (int slot)
 // Those are given to the uniforms.
 //
 
-static void SetShaderInfo (hwdshaderinfo_t info, INT32 value)
+void SetShaderInfo (hwdshaderinfo_t info, INT32 value)
 {
 	switch (info)
 	{
@@ -887,11 +887,11 @@ static void SetShaderInfo (hwdshaderinfo_t info, INT32 value)
 	}
 }
 
-static void SetShader (int slot)
+void SetShader (int slot)
 {
 	if (slot == SHADER_NONE)
 	{
-		GPU->UnSetShader();
+		UnSetShader();
 		return;
 	}
 	if (gl_allowshaders)
@@ -918,7 +918,7 @@ static void SetShader (int slot)
 	gl_shadersenabled = false;
 }
 
-static void UnSetShader (void)
+void UnSetShader (void)
 {
 	if (gl_shadersenabled) // don't repeatedly call glUseProgram if not needed
 	{
@@ -1025,7 +1025,7 @@ void SetStates(void)
 
 	// this set CurrentPolyFlags to the actual configuration
 	CurrentPolyFlags = 0xffffffff;
-	GPU->SetBlend(0);
+	SetBlend(0);
 
 	tex_downloaded = 0;
 	SetNoTexture();
@@ -1040,7 +1040,7 @@ void SetStates(void)
 // -----------------+
 // DeleteTexture    : Deletes a texture from the GPU and frees its data
 // -----------------+
-static void DeleteTexture (GLMipmap_t *pTexInfo)
+void DeleteTexture (GLMipmap_t *pTexInfo)
 {
 	FTextureInfo *head = TexCacheHead;
 
@@ -1104,7 +1104,7 @@ static void GLFramebuffer_GenerateAttachments(void)
 		pglFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, RenderbufferObject);
 
 		// Clear the renderbuffer
-		GPU->ClearBuffer(true, true, true, NULL);
+		ClearBuffer(true, true, true, NULL);
 
 		pglBindRenderbuffer(GL_RENDERBUFFER, 0);
 	}
@@ -1261,7 +1261,7 @@ INT32 isExtAvailable(const char *extension, const GLubyte *start)
 // Init             : Initialise the OpenGL interface API
 // Returns          :
 // -----------------+
-static boolean Init (void)
+boolean Init (void)
 {
 	return SetupGLfunc();
 }
@@ -1270,7 +1270,7 @@ static boolean Init (void)
 // -----------------+
 // SetupGLInfo      : Retreive and store currently loaded OpenGL version
 // -----------------+
-static void SetupGLInfo (void)
+void SetupGLInfo (void)
 {
 	const GLubyte *versionGL = pglGetString(GL_VERSION);
 	CONS_Printf("Loaded OpenGL version %s\n", (const char*)versionGL);
@@ -1281,7 +1281,7 @@ static void SetupGLInfo (void)
 // -----------------+
 // ClearMipMapCache : Flush OpenGL textures from memory
 // -----------------+
-static void ClearMipMapCache (void)
+void ClearMipMapCache (void)
 {
 	Flush();
 }
@@ -1289,7 +1289,7 @@ static void ClearMipMapCache (void)
 // Writes screen texture tex into dst_data.
 // Pixel format is 24-bit RGB. Row order is top to bottom.
 // Dimensions are screen_width * screen_height.
-static void ReadScreenTexture (int tex, UINT16 *dst_data)
+void ReadScreenTexture (int tex, UINT16 *dst_data)
 {
 	INT32 i;
 	int dst_stride = screen_width * 3; // stride between rows of image data
@@ -1302,11 +1302,11 @@ static void ReadScreenTexture (int tex, UINT16 *dst_data)
 	// and draw generic2 back after reading the framebuffer.
 	// this hack is for some reason **much** faster than the simple solution of using glGetTexImage.
 	if (tex != HWD_SCREENTEXTURE_GENERIC2)
-		GPU->DrawScreenTexture(tex, NULL, 0);
+		DrawScreenTexture(tex, NULL, 0);
 	pglPixelStorei(GL_PACK_ALIGNMENT, 1);
 	pglReadPixels(0, 0, screen_width, screen_height, GL_RGB, GL_UNSIGNED_BYTE, dst_data);
 	if (tex != HWD_SCREENTEXTURE_GENERIC2)
-		GPU->DrawScreenTexture(HWD_SCREENTEXTURE_GENERIC2, NULL, 0);
+		DrawScreenTexture(HWD_SCREENTEXTURE_GENERIC2, NULL, 0);
 	// Flip image upside down.
 	// In other words, convert OpenGL's "bottom->top" row order into "top->bottom".
 	for(i = 0; i < screen_height/2; i++)
@@ -1323,7 +1323,7 @@ static void ReadScreenTexture (int tex, UINT16 *dst_data)
 // -----------------+
 // SetPalette       : Changes the current texture palette
 // -----------------+
-static void SetPalette (RGBA_t *palette)
+void SetPalette (RGBA_t *palette)
 {
 	INT32 i;
 
@@ -1340,7 +1340,7 @@ static void SetPalette (RGBA_t *palette)
 // -----------------+
 // GClipRect        : Defines the 2D hardware clipping window
 // -----------------+
-static void GClipRect (INT32 minx, INT32 miny, INT32 maxx, INT32 maxy, float nearclip, float farclip)
+void GClipRect (INT32 minx, INT32 miny, INT32 maxx, INT32 maxy, float nearclip, float farclip)
 {
 	//GL_DBG_Printf("GClipRect(%d, %d, %d, %d)\n", minx, miny, maxx, maxy);
 
@@ -1363,10 +1363,7 @@ static void GClipRect (INT32 minx, INT32 miny, INT32 maxx, INT32 maxy, float nea
 // -----------------+
 // ClearBuffer      : Clear the color/alpha/depth buffer(s)
 // -----------------+
-static void ClearBuffer (FBOOLEAN ColorMask,
-                                    FBOOLEAN DepthMask,
-									FBOOLEAN StencilMask,
-                                    FRGBAFloat * ClearColor)
+void ClearBuffer (FBOOLEAN ColorMask, FBOOLEAN DepthMask, FBOOLEAN StencilMask, FRGBAFloat * ClearColor)
 {
 	//GL_DBG_Printf("ClearBuffer(%d)\n", alpha);
 	GLbitfield ClearMask = 0;
@@ -1388,7 +1385,7 @@ static void ClearBuffer (FBOOLEAN ColorMask,
 		ClearMask |= GL_DEPTH_BUFFER_BIT;
 	}
 
-	GPU->SetBlend(DepthMask ? PF_Occlude | CurrentPolyFlags : CurrentPolyFlags&~PF_Occlude);
+	SetBlend(DepthMask ? PF_Occlude | CurrentPolyFlags : CurrentPolyFlags&~PF_Occlude);
 
 	if (StencilMask)
 		ClearMask |= GL_STENCIL_BUFFER_BIT;// looks like sometimes stencil buffer needs clearing? had a problem with random black screens
@@ -1401,9 +1398,7 @@ static void ClearBuffer (FBOOLEAN ColorMask,
 // -----------------+
 // HWRAPI Draw2DLine: Render a 2D line
 // -----------------+
-static void Draw2DLine (F2DCoord * v1,
-                                   F2DCoord * v2,
-                                   RGBA_t Color)
+void Draw2DLine (F2DCoord * v1, F2DCoord * v2, RGBA_t Color)
 {
 	//GL_DBG_Printf("DrawLine(): %f %f, %f %f\n", v1->x, v1->y, v2->x, v2->y);
 	GLfloat p[12];
@@ -1451,7 +1446,7 @@ static void Clamp2D(GLenum pname)
 // -----------------+
 // PF_Masked - we could use an ALPHA_TEST of GL_EQUAL, and alpha ref of 0,
 //             is it faster when pixels are discarded ?
-static void SetBlend (FBITFIELD PolyFlags)
+void SetBlend (FBITFIELD PolyFlags)
 {
 	FBITFIELD Xor;
 	Xor = CurrentPolyFlags^PolyFlags;
@@ -1598,7 +1593,7 @@ static void AllocTextureBuffer(GLMipmap_t *pTexInfo)
 // -----------------+
 // UpdateTexture    : Updates texture data.
 // -----------------+
-static void UpdateTexture (GLMipmap_t *pTexInfo)
+void UpdateTexture (GLMipmap_t *pTexInfo)
 {
 	// Upload a texture
 	GLuint num = pTexInfo->downloaded;
@@ -1809,7 +1804,7 @@ static void UpdateTexture (GLMipmap_t *pTexInfo)
 // -----------------+
 // SetTexture       : The mipmap becomes the current texture source
 // -----------------+
-static void SetTexture (GLMipmap_t *pTexInfo)
+void SetTexture (GLMipmap_t *pTexInfo)
 {
 	if (!pTexInfo)
 	{
@@ -1848,7 +1843,7 @@ static void SetTexture (GLMipmap_t *pTexInfo)
 	}
 }
 
-static void Shader_SetUniforms(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRGBAFloat *tint, GLRGBAFloat *fade)
+ void Shader_SetUniforms(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRGBAFloat *tint, GLRGBAFloat *fade)
 {
 	gl_shader_t *shader = gl_shaderstate.current;
 
@@ -1934,7 +1929,7 @@ static void Shader_SetUniforms(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRGBAF
 	}
 }
 
-static boolean Shader_CompileProgram(gl_shader_t *shader, GLint i)
+boolean Shader_CompileProgram(gl_shader_t *shader, GLint i)
 {
 	GLuint gl_vertShader = 0;
 	GLuint gl_fragShader = 0;
@@ -2145,7 +2140,7 @@ static void PreparePolygon(FSurfaceInfo *pSurf, FBITFIELD PolyFlags)
 // -----------------+
 // DrawPolygon      : Render a polygon, set the texture, set render mode
 // -----------------+
-static void DrawPolygon (FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags)
+void DrawPolygon (FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags)
 {
 	PreparePolygon(pSurf, PolyFlags);
 
@@ -2163,7 +2158,7 @@ static void DrawPolygon (FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumP
 		Clamp2D(GL_TEXTURE_WRAP_T);
 }
 
-static void DrawIndexedTriangles (FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags, unsigned int *IndexArray)
+void DrawIndexedTriangles (FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags, unsigned int *IndexArray)
 {
 	PreparePolygon(pSurf, PolyFlags);
 
@@ -2418,10 +2413,10 @@ static void RenderDome(INT32 skytexnum)
 	pglDisableClientState(GL_COLOR_ARRAY);
 }
 
-static void RenderSkyDome (INT32 tex, INT32 texture_width, INT32 texture_height, FTransform transform)
+void RenderSkyDome (INT32 tex, INT32 texture_width, INT32 texture_height, FTransform transform)
 {
 	SetBlend(PF_Translucent|PF_NoDepthTest|PF_Modulated);
-	GPU->SetTransform(&transform);
+	SetTransform(&transform);
 	texw = texture_width;
 	texh = texture_height;
 	RenderDome(tex);
@@ -2431,7 +2426,7 @@ static void RenderSkyDome (INT32 tex, INT32 texture_width, INT32 texture_height,
 // ==========================================================================
 //
 // ==========================================================================
-static void SetSpecialState (hwdspecialstate_t IdState, INT32 Value)
+void SetSpecialState (hwdspecialstate_t IdState, INT32 Value)
 {
 	switch (IdState)
 	{
@@ -2746,7 +2741,7 @@ static void CreateModelVBOTiny(mesh_t *mesh, tinyframe_t *frame)
 	pglBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-static void CreateModelVBOs (model_t *model)
+void CreateModelVBOs (model_t *model)
 {
 	int i;
 	for (i = 0; i < model->numMeshes; i++)
@@ -3013,7 +3008,7 @@ static void DrawModelEx(model_t *model, INT32 frameIndex, float duration, float 
 // -----------------+
 // HWRAPI DrawModel : Draw a model
 // -----------------+
-static void DrawModel (model_t *model, INT32 frameIndex, float duration, float tics, INT32 nextFrameIndex, FTransform *pos, float hscale, float vscale, UINT8 flipped, UINT8 hflipped, FSurfaceInfo *Surface)
+void DrawModel (model_t *model, INT32 frameIndex, float duration, float tics, INT32 nextFrameIndex, FTransform *pos, float hscale, float vscale, UINT8 flipped, UINT8 hflipped, FSurfaceInfo *Surface)
 {
 	DrawModelEx(model, frameIndex, duration, tics, nextFrameIndex, pos, hscale, vscale, flipped, hflipped, Surface);
 }
@@ -3021,7 +3016,7 @@ static void DrawModel (model_t *model, INT32 frameIndex, float duration, float t
 // -----------------+
 // SetTransform     :
 // -----------------+
-static void SetTransform (FTransform *stransform)
+void SetTransform (FTransform *stransform)
 {
 	static boolean special_splitscreen;
 	GLdouble used_fov;
@@ -3092,7 +3087,7 @@ static void SetTransform (FTransform *stransform)
 	pglGetFloatv(GL_MODELVIEW_MATRIX, modelMatrix); // added for new coronas' code (without depth buffer)
 }
 
-static INT32  GetTextureUsed (void)
+INT32  GetTextureUsed (void)
 {
 	FTextureInfo *tmp = TexCacheHead;
 	INT32 res = 0;
@@ -3117,7 +3112,7 @@ static INT32  GetTextureUsed (void)
 	return res;
 }
 
-static void PostImgRedraw (float points[SCREENVERTS][SCREENVERTS][2])
+void PostImgRedraw (float points[SCREENVERTS][SCREENVERTS][2])
 {
 	INT32 x, y;
 	float float_x, float_y, float_nextx, float_nexty;
@@ -3205,7 +3200,7 @@ static void PostImgRedraw (float points[SCREENVERTS][SCREENVERTS][2])
 
 // Sryder:	This needs to be called whenever the screen changes resolution in order to reset the screen textures to use
 //			a new size
-static void FlushScreenTextures (void)
+void FlushScreenTextures (void)
 {
 	int i;
 	pglDeleteTextures(NUMSCREENTEXTURES, screenTextures);
@@ -3213,7 +3208,7 @@ static void FlushScreenTextures (void)
 		screenTextures[i] = 0;
 }
 
-static void DrawScreenTexture(int tex, FSurfaceInfo *surf, FBITFIELD polyflags)
+void DrawScreenTexture(int tex, FSurfaceInfo *surf, FBITFIELD polyflags)
 {
 	float xfix, yfix;
 	INT32 texsize = 512;
@@ -3267,7 +3262,7 @@ static void DrawScreenTexture(int tex, FSurfaceInfo *surf, FBITFIELD polyflags)
 
 
 // Do screen fades!
-static void DoScreenWipe (int wipeStart, int wipeEnd)
+void DoScreenWipe (int wipeStart, int wipeEnd)
 {
 	INT32 texsize = 512;
 	float xfix, yfix;
@@ -3358,7 +3353,7 @@ static void DoScreenWipe (int wipeStart, int wipeEnd)
 	tex_downloaded = screenTextures[wipeEnd];
 }
 
-static void RenderVhsEffect (fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8 downdistort, UINT8 barsize)
+void RenderVhsEffect (fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8 downdistort, UINT8 barsize)
 {
 	INT32 texsize = 512;
 	float xfix, yfix;
@@ -3385,7 +3380,7 @@ static void RenderVhsEffect (fixed_t upbary, fixed_t downbary, UINT8 updistort, 
 	yfix = 1/((float)(texsize)/((float)((screen_height))));
 
 	// Slight fuzziness
-	GPU->MakeScreenTexture(HWD_SCREENTEXTURE_GENERIC1);
+	MakeScreenTexture(HWD_SCREENTEXTURE_GENERIC1);
 	SetBlend(PF_Modulated|PF_Translucent|PF_NoDepthTest);
 	//pglBindTexture(GL_TEXTURE_2D, screentexture);
 
@@ -3409,7 +3404,7 @@ static void RenderVhsEffect (fixed_t upbary, fixed_t downbary, UINT8 updistort, 
 	}
 
 	// Upward bar
-	GPU->MakeScreenTexture(HWD_SCREENTEXTURE_GENERIC1);
+	MakeScreenTexture(HWD_SCREENTEXTURE_GENERIC1);
 	//pglBindTexture(GL_TEXTURE_2D, screentexture);
 	color[0] = color[1] = color[2] = 190;
 	color[3] = 250;
@@ -3437,7 +3432,7 @@ static void RenderVhsEffect (fixed_t upbary, fixed_t downbary, UINT8 updistort, 
 	pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
 	// Downward bar
-	GPU->MakeScreenTexture(HWD_SCREENTEXTURE_GENERIC1);
+	MakeScreenTexture(HWD_SCREENTEXTURE_GENERIC1);
 	//pglBindTexture(GL_TEXTURE_2D, screentexture);
 
 	fix[0] = 0.0f;
@@ -3463,7 +3458,7 @@ static void RenderVhsEffect (fixed_t upbary, fixed_t downbary, UINT8 updistort, 
 }
 
 // Create a texture from the screen.
-static void MakeScreenTexture (int tex)
+void MakeScreenTexture (int tex)
 {
 	INT32 texsize = 512;
 	boolean firstTime = (screenTextures[tex] == 0);
@@ -3494,7 +3489,7 @@ static void MakeScreenTexture (int tex)
 	tex_downloaded = screenTextures[tex];
 }
 
-static void DrawScreenFinalTexture(int tex, INT32 width, INT32 height)
+void DrawScreenFinalTexture(int tex, INT32 width, INT32 height)
 {
 	float xfix, yfix;
 	float origaspect, newaspect;
@@ -3556,8 +3551,8 @@ static void DrawScreenFinalTexture(int tex, INT32 width, INT32 height)
 
 	clearColour.red = clearColour.green = clearColour.blue = 0;
 	clearColour.alpha = 1;
-	GPU->ClearBuffer(true, false, false, &clearColour);
-	GPU->SetBlend(PF_NoDepthTest);
+	ClearBuffer(true, false, false, &clearColour);
+	SetBlend(PF_NoDepthTest);
 
 	pglBindTexture(GL_TEXTURE_2D, screenTextures[tex]);
 
@@ -3581,7 +3576,7 @@ static void DrawScreenFinalTexture(int tex, INT32 width, INT32 height)
 	tex_downloaded = screenTextures[tex];
 }
 
-static void SetPaletteLookup(UINT8 *lut)
+void SetPaletteLookup(UINT8 *lut)
 {
 	GLenum internalFormat;
 	if (gl_version[0] == '1' || gl_version[0] == '2')
@@ -3608,7 +3603,7 @@ static void SetPaletteLookup(UINT8 *lut)
 	pglActiveTexture(GL_TEXTURE0);
 }
 
-static UINT32 CreateLightTable(RGBA_t *hw_lighttable)
+UINT32 CreateLightTable(RGBA_t *hw_lighttable)
 {
 	LTListItem *item = malloc(sizeof(LTListItem));
 	if (!LightTablesTail)
@@ -3634,7 +3629,7 @@ static UINT32 CreateLightTable(RGBA_t *hw_lighttable)
 }
 
 // Delete light table textures, ids given before become invalid and must not be used.
-static void ClearLightTables(void)
+void ClearLightTables(void)
 {
 	while (LightTablesHead)
 	{
@@ -3651,7 +3646,7 @@ static void ClearLightTables(void)
 }
 
 // This palette is used for the palette rendering postprocessing step.
-static void SetScreenPalette(RGBA_t *palette)
+void SetScreenPalette(RGBA_t *palette)
 {
 	if (memcmp(screenPalette, palette, sizeof(screenPalette)))
 	{
@@ -3666,58 +3661,5 @@ static void SetScreenPalette(RGBA_t *palette)
 		pglActiveTexture(GL_TEXTURE0);
 	}
 }
-
-struct GPURenderingAPI GLInterfaceAPI = {
-	Init,
-	NULL,
-	SetupGLInfo,
-
-	SetSpecialState,
-	SetTransform,
-	SetBlend,
-	SetPalette,
-	ClearBuffer,
-
-	DrawPolygon,
-	DrawIndexedTriangles,
-	Draw2DLine,
-	DrawModel,
-	RenderSkyDome,
-
-	SetTexture,
-	UpdateTexture,
-	DeleteTexture,
-
-	ClearMipMapCache,
-	GetTextureUsed,
-
-	CreateModelVBOs,
-
-	ReadScreenTexture,
-	GClipRect,
-
-	MakeScreenTexture,
-	FlushScreenTextures,
-
-	DrawScreenTexture,
-	DoScreenWipe,
-	RenderVhsEffect,
-	DrawScreenFinalTexture,
-
-	PostImgRedraw,
-
-	InitShaders,
-	LoadShader,
-	CompileShader,
-	SetShader,
-	UnSetShader,
-
-	SetShaderInfo,
-
-	SetPaletteLookup,
-	CreateLightTable,
-	ClearLightTables,
-	SetScreenPalette,
-};
 
 #endif //HWRENDER

@@ -76,7 +76,7 @@ void HWR_SetCurrentTexture(GLMipmap_t *texture)
     }
     else
     {
-        GPU->SetTexture(texture);
+        SetTexture(texture);
     }
 }
 
@@ -130,8 +130,8 @@ void HWR_ProcessPolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPt
 	}
 	else
 	{
-		GPU->SetShader((shader_target != SHADER_NONE) ? HWR_GetShaderFromTarget(shader_target) : shader_target);
-		GPU->DrawPolygon(pSurf, pOutVerts, iNumPts, PolyFlags);
+		SetShader((shader_target != SHADER_NONE) ? HWR_GetShaderFromTarget(shader_target) : shader_target);
+		DrawPolygon(pSurf, pOutVerts, iNumPts, PolyFlags);
 	}
 }
 
@@ -295,13 +295,13 @@ void HWR_RenderBatches(void)
 
 	if (cv_glshaders.value && gl_shadersavailable)
 	{
-		GPU->SetShader(currentShader);
+		SetShader(currentShader);
 	}
 
 	if (currentPolyFlags & PF_NoTexture)
 		currentTexture = NULL;
     else
-	    GPU->SetTexture(currentTexture);
+	    SetTexture(currentTexture);
 
 	while (1)// note: remember handling notexture polyflag as having texture number 0 (also in comparePolygons)
 	{
@@ -417,7 +417,7 @@ void HWR_RenderBatches(void)
 		if (changeState || stopFlag)
 		{
 			// execute draw call
-            GPU->DrawIndexedTriangles(&currentSurfaceInfo, finalVertexArray, finalIndexWritePos, currentPolyFlags, finalVertexIndexArray);
+            DrawIndexedTriangles(&currentSurfaceInfo, finalVertexArray, finalIndexWritePos, currentPolyFlags, finalVertexIndexArray);
 			// update stats
 			ps_hw_numcalls.value.i++;
 			ps_hw_numverts.value.i += finalIndexWritePos;
@@ -435,7 +435,7 @@ void HWR_RenderBatches(void)
 		{
 			if (changeShader)
 			{
-				GPU->SetShader(nextShader);
+				SetShader(nextShader);
 				currentShader = nextShader;
 				changeShader = false;
 
@@ -444,7 +444,7 @@ void HWR_RenderBatches(void)
 			if (changeTexture)
 			{
 				// texture should be already ready for use from calls to SetTexture during batch collection
-				GPU->SetTexture(nextTexture);
+				SetTexture(nextTexture);
 				currentTexture = nextTexture;
 				changeTexture = false;
 

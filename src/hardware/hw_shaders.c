@@ -93,7 +93,7 @@ boolean HWR_InitShaders(void)
 {
 	int i;
 
-	if (!GPU->InitShaders())
+	if (!InitShaders())
 		return false;
 
 	for (i = 0; i < NUMSHADERTARGETS; i++)
@@ -372,16 +372,16 @@ static void HWR_CompileShader(int index)
 	{
 		char *preprocessed = HWR_PreprocessShader(vertex_source);
 		if (!preprocessed) return;
-		GPU->LoadShader(index, preprocessed, HWD_SHADERSTAGE_VERTEX);
+		LoadShader(index, preprocessed, HWD_SHADERSTAGE_VERTEX);
 	}
 	if (fragment_source)
 	{
 		char *preprocessed = HWR_PreprocessShader(fragment_source);
 		if (!preprocessed) return;
-		GPU->LoadShader(index, preprocessed, HWD_SHADERSTAGE_FRAGMENT);
+		LoadShader(index, preprocessed, HWD_SHADERSTAGE_FRAGMENT);
 	}
 
-	gl_shaders[index].compiled = GPU->CompileShader(index);
+	gl_shaders[index].compiled = CompileShader(index);
 }
 
 // compile or recompile shaders

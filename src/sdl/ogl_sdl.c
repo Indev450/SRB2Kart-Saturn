@@ -159,7 +159,7 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 					"- GPU drivers are missing or broken. You may need to update your drivers.");
 		}
 
-		GPU->SetupGLInfo();
+		SetupGLInfo();
 
 		SetupGLFunc4();
 
@@ -196,7 +196,7 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 	// The screen textures need to be flushed if the width or height change so that they be remade for the correct size
 	if (screen_width != w || screen_height != h)
 	{
-		GPU->FlushScreenTextures();
+		FlushScreenTextures();
 
 #ifdef USE_FBO_OGL
 		GLFramebuffer_DeleteAttachments();
@@ -291,7 +291,7 @@ void OglSdlFinishUpdate(boolean waitvbl)
 
 	SDL_GL_SwapWindow(window);
 
-	GPU->GClipRect(0, 0, realwidth, realheight, NZCLIP_PLANE, FAR_ZCLIP_DEFAULT);
+	GClipRect(0, 0, realwidth, realheight, NZCLIP_PLANE, FAR_ZCLIP_DEFAULT);
 
 	// Sryder:	We need to draw the final screen texture again into the other buffer in the original position so that
 	//			effects that want to take the old screen can do so after this
