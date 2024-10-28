@@ -44,7 +44,7 @@
 
 #define  _CREATE_DLL_  // necessary for Unix AND Windows
 #include "../../doomdef.h"
-#include "../hw_drv.h"
+#include "../hw_gpu.h"
 #include "../../z_zone.h"
 
 // ==========================================================================
@@ -65,7 +65,8 @@ extern FILE             *gllogstream;
 //                                                                     PROTOS
 // ==========================================================================
 
-boolean LoadGL(void);
+FUNCPRINTF void GL_DBG_Printf(const char *format, ...);
+
 void *GetGLFunc(const char *proc);
 boolean SetupGLfunc(void);
 void SetupGLFunc4(void);
@@ -133,6 +134,8 @@ extern GLint			screen_height;
 extern GLbyte			screen_depth;
 extern GLint			maximumAnisotropy;
 extern boolean 			supportMipMap;
+
+extern struct GPURenderingAPI GLInterfaceAPI;
 
 /**	\brief OpenGL flags for video driver
 */

@@ -43,14 +43,6 @@
 
 #define  _CREATE_DLL_  // necessary for Unix AND Windows
 
-#ifdef HWRENDER
-#include "../hardware/hw_drv.h"
-#include "ogl_sdl.h"
-#ifdef STATIC_OPENGL
-#include "../hardware/r_opengl/r_opengl.h"
-#endif
-#endif
-
 #ifdef HW3SOUND
 #include "../hardware/hw3dsdrv.h"
 #endif
@@ -73,55 +65,7 @@
 void *hwSym(const char *funcName,void *handle)
 {
 	void *funcPointer = NULL;
-#ifdef HWRENDER
-	if (0 == strcmp("SetTexturePalette", funcName))
-		funcPointer = &OglSdlSetPalette;
-
-	GETFUNC(Init);
-	GETFUNC(SetupGLInfo);
-	GETFUNC(Draw2DLine);
-	GETFUNC(DrawPolygon);
-	GETFUNC(DrawIndexedTriangles);
-	GETFUNC(SetBlend);
-	GETFUNC(ClearBuffer);
-	GETFUNC(SetTexture);
-	GETFUNC(UpdateTexture);
-	GETFUNC(DeleteTexture);
-	GETFUNC(ReadScreenTexture);
-	GETFUNC(GClipRect);
-	GETFUNC(ClearMipMapCache);
-	GETFUNC(SetSpecialState);
-	GETFUNC(GetTextureUsed);
-	GETFUNC(DrawModel);
-	GETFUNC(CreateModelVBOs);
-	GETFUNC(SetTransform);
-	GETFUNC(PostImgRedraw);
-	GETFUNC(FlushScreenTextures);
-	GETFUNC(DoScreenWipe);
-	GETFUNC(DrawScreenTexture);
-	GETFUNC(MakeScreenTexture);
-	GETFUNC(RenderVhsEffect);
-	GETFUNC(DrawScreenFinalTexture);
-	
-	GETFUNC(RenderSkyDome);
-
-	GETFUNC(InitShaders);
-	GETFUNC(LoadShader);
-	GETFUNC(CompileShader);
-	GETFUNC(SetShader);
-	GETFUNC(UnSetShader);
-
-	GETFUNC(SetShaderInfo);
-	
-	GETFUNC(SetPaletteLookup);
-	GETFUNC(CreateLightTable);
-	GETFUNC(ClearLightTables);
-	GETFUNC(SetScreenPalette);
-
-#else //HWRENDER
-	if (0 == strcmp("FinishUpdate", funcName))
-		return funcPointer; //&FinishUpdate;
-#endif //!HWRENDER
+	if (0) ;
 #ifdef STATIC3DS
 	GETFUNC(Startup);
 	GETFUNC(AddSfx);

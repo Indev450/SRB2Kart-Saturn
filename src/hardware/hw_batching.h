@@ -15,7 +15,7 @@
 
 #include "hw_defs.h"
 #include "hw_data.h"
-#include "hw_drv.h"
+#include "hw_gpu.h"
 
 typedef struct
 {

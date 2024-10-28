@@ -27,12 +27,10 @@ extern boolean isnvidiagpu;
 #endif
 
 void OglSdlFinishUpdate(boolean vidwait);
+boolean VID_LoadGPUAPI(void);
 
 extern SDL_Renderer *renderer;
 extern SDL_GLContext sdlglcontext;
 extern Uint16      realwidth;
 extern Uint16      realheight;
 
-#ifdef _CREATE_DLL_
-EXPORT void HWRAPI( OglSdlSetPalette ) (RGBA_t *palette);
-#endif

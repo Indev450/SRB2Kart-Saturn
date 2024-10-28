@@ -38,6 +38,7 @@
 #ifdef HWRENDER
 #include "../hardware/r_opengl/r_opengl.h"
 #include "../hardware/hw_main.h"
+#include "../hardware/hw_gpu.h"
 #include "ogl_sdl.h"
 #include "../i_system.h"
 #include "hwsym_sdl.h"
@@ -84,7 +85,7 @@ void *GetGLFunc(const char *proc)
 	return SDL_GL_GetProcAddress(proc);
 }
 
-boolean LoadGL(void)
+boolean VID_LoadGPUAPI(void)
 {
 #ifndef STATIC_OPENGL
 	const char *OGLLibname = NULL;
@@ -101,7 +102,7 @@ boolean LoadGL(void)
 		return 0;
 	}
 #endif
-	return SetupGLfunc();
+	return true;
 }
 
 /**	\brief	The OglSdlSurface function
@@ -158,7 +159,7 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 					"- GPU drivers are missing or broken. You may need to update your drivers.");
 		}
 
-		SetupGLInfo();
+		GPU->SetupGLInfo();
 
 		SetupGLFunc4();
 
@@ -195,7 +196,7 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 	// The screen textures need to be flushed if the width or height change so that they be remade for the correct size
 	if (screen_width != w || screen_height != h)
 	{
-		FlushScreenTextures();
+		GPU->FlushScreenTextures();
 
 #ifdef USE_FBO_OGL
 		GLFramebuffer_DeleteAttachments();
@@ -290,26 +291,12 @@ void OglSdlFinishUpdate(boolean waitvbl)
 
 	SDL_GL_SwapWindow(window);
 
-	GClipRect(0, 0, realwidth, realheight, NZCLIP_PLANE, FAR_ZCLIP_DEFAULT);
+	GPU->GClipRect(0, 0, realwidth, realheight, NZCLIP_PLANE, FAR_ZCLIP_DEFAULT);
 
 	// Sryder:	We need to draw the final screen texture again into the other buffer in the original position so that
 	//			effects that want to take the old screen can do so after this
 
 	HWR_DrawScreenFinalTexture(realwidth, realheight);
-}
-
-EXPORT void HWRAPI(OglSdlSetPalette) (RGBA_t *palette)
-{
-	INT32 i;
-
-	for (i = 0; i < 256; i++)
-	{
-		myPaletteData[i].s.red   = palette[i].s.red;
-		myPaletteData[i].s.green = palette[i].s.green;
-		myPaletteData[i].s.blue  = palette[i].s.blue;
-		myPaletteData[i].s.alpha = palette[i].s.alpha;
-	}
-	Flush();
 }
 
 #endif //HWRENDER

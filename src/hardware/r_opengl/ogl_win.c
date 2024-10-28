@@ -526,7 +526,7 @@ EXPORT void HWRAPI(Shutdown) (void)
 // -----------------+
 // FinishUpdate     : Swap front and back buffers
 // -----------------+
-EXPORT void HWRAPI(FinishUpdate) (INT32 waitvbl)
+void FinishUpdate (INT32 waitvbl)
 {
 #ifdef USE_WGL_SWAP
 	static INT32 oldwaitvbl = 0;

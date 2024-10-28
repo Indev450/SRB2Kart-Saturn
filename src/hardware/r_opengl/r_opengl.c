@@ -797,7 +797,7 @@ static boolean GLFramebuffer_IsFuncAvailible(void)
 }
 #endif
 
-EXPORT boolean HWRAPI(InitShaders) (void)
+static boolean InitShaders (void)
 {
 	if (!pglUseProgram)
 		return false;
@@ -814,7 +814,7 @@ EXPORT boolean HWRAPI(InitShaders) (void)
 	return true;
 }
 
-EXPORT void HWRAPI(LoadShader) (int slot, char *code, hwdshaderstage_t stage)
+static void LoadShader (int slot, char *code, hwdshaderstage_t stage)
 {
 	gl_shader_t *shader;
 
@@ -839,7 +839,7 @@ EXPORT void HWRAPI(LoadShader) (int slot, char *code, hwdshaderstage_t stage)
 #undef LOADSHADER
 }
 
-EXPORT boolean HWRAPI(CompileShader) (int slot)
+static boolean CompileShader (int slot)
 {
 	if (slot < 0 || slot >= HWR_MAXSHADERS)
 		I_Error("CompileShader: Invalid slot %d", slot);
@@ -860,7 +860,7 @@ EXPORT boolean HWRAPI(CompileShader) (int slot)
 // Those are given to the uniforms.
 //
 
-EXPORT void HWRAPI(SetShaderInfo) (hwdshaderinfo_t info, INT32 value)
+static void SetShaderInfo (hwdshaderinfo_t info, INT32 value)
 {
 	switch (info)
 	{
@@ -887,11 +887,11 @@ EXPORT void HWRAPI(SetShaderInfo) (hwdshaderinfo_t info, INT32 value)
 	}
 }
 
-EXPORT void HWRAPI(SetShader) (int slot)
+static void SetShader (int slot)
 {
 	if (slot == SHADER_NONE)
 	{
-		UnSetShader();
+		GPU->UnSetShader();
 		return;
 	}
 	if (gl_allowshaders)
@@ -918,7 +918,7 @@ EXPORT void HWRAPI(SetShader) (int slot)
 	gl_shadersenabled = false;
 }
 
-EXPORT void HWRAPI(UnSetShader) (void)
+static void UnSetShader (void)
 {
 	if (gl_shadersenabled) // don't repeatedly call glUseProgram if not needed
 	{
@@ -1025,7 +1025,7 @@ void SetStates(void)
 
 	// this set CurrentPolyFlags to the actual configuration
 	CurrentPolyFlags = 0xffffffff;
-	SetBlend(0);
+	GPU->SetBlend(0);
 
 	tex_downloaded = 0;
 	SetNoTexture();
@@ -1040,7 +1040,7 @@ void SetStates(void)
 // -----------------+
 // DeleteTexture    : Deletes a texture from the GPU and frees its data
 // -----------------+
-EXPORT void HWRAPI(DeleteTexture) (GLMipmap_t *pTexInfo)
+static void DeleteTexture (GLMipmap_t *pTexInfo)
 {
 	FTextureInfo *head = TexCacheHead;
 
@@ -1104,7 +1104,7 @@ static void GLFramebuffer_GenerateAttachments(void)
 		pglFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, RenderbufferObject);
 
 		// Clear the renderbuffer
-		ClearBuffer(true, true, true, NULL);
+		GPU->ClearBuffer(true, true, true, NULL);
 
 		pglBindRenderbuffer(GL_RENDERBUFFER, 0);
 	}
@@ -1261,16 +1261,16 @@ INT32 isExtAvailable(const char *extension, const GLubyte *start)
 // Init             : Initialise the OpenGL interface API
 // Returns          :
 // -----------------+
-EXPORT boolean HWRAPI(Init) (void)
+static boolean Init (void)
 {
-	return LoadGL();
+	return SetupGLfunc();
 }
 
 
 // -----------------+
 // SetupGLInfo      : Retreive and store currently loaded OpenGL version
 // -----------------+
-EXPORT void HWRAPI(SetupGLInfo) (void)
+static void SetupGLInfo (void)
 {
 	const GLubyte *versionGL = pglGetString(GL_VERSION);
 	CONS_Printf("Loaded OpenGL version %s\n", (const char*)versionGL);
@@ -1281,7 +1281,7 @@ EXPORT void HWRAPI(SetupGLInfo) (void)
 // -----------------+
 // ClearMipMapCache : Flush OpenGL textures from memory
 // -----------------+
-EXPORT void HWRAPI(ClearMipMapCache) (void)
+static void ClearMipMapCache (void)
 {
 	Flush();
 }
@@ -1289,7 +1289,7 @@ EXPORT void HWRAPI(ClearMipMapCache) (void)
 // Writes screen texture tex into dst_data.
 // Pixel format is 24-bit RGB. Row order is top to bottom.
 // Dimensions are screen_width * screen_height.
-EXPORT void HWRAPI(ReadScreenTexture) (int tex, UINT16 *dst_data)
+static void ReadScreenTexture (int tex, UINT16 *dst_data)
 {
 	INT32 i;
 	int dst_stride = screen_width * 3; // stride between rows of image data
@@ -1302,11 +1302,11 @@ EXPORT void HWRAPI(ReadScreenTexture) (int tex, UINT16 *dst_data)
 	// and draw generic2 back after reading the framebuffer.
 	// this hack is for some reason **much** faster than the simple solution of using glGetTexImage.
 	if (tex != HWD_SCREENTEXTURE_GENERIC2)
-		DrawScreenTexture(tex, NULL, 0);
+		GPU->DrawScreenTexture(tex, NULL, 0);
 	pglPixelStorei(GL_PACK_ALIGNMENT, 1);
 	pglReadPixels(0, 0, screen_width, screen_height, GL_RGB, GL_UNSIGNED_BYTE, dst_data);
 	if (tex != HWD_SCREENTEXTURE_GENERIC2)
-		DrawScreenTexture(HWD_SCREENTEXTURE_GENERIC2, NULL, 0);
+		GPU->DrawScreenTexture(HWD_SCREENTEXTURE_GENERIC2, NULL, 0);
 	// Flip image upside down.
 	// In other words, convert OpenGL's "bottom->top" row order into "top->bottom".
 	for(i = 0; i < screen_height/2; i++)
@@ -1321,9 +1321,26 @@ EXPORT void HWRAPI(ReadScreenTexture) (int tex, UINT16 *dst_data)
 }
 
 // -----------------+
+// SetPalette       : Changes the current texture palette
+// -----------------+
+static void SetPalette (RGBA_t *palette)
+{
+	INT32 i;
+
+	for (i = 0; i < 256; i++)
+	{
+		myPaletteData[i].s.red   = palette[i].s.red;
+		myPaletteData[i].s.green = palette[i].s.green;
+		myPaletteData[i].s.blue  = palette[i].s.blue;
+		myPaletteData[i].s.alpha = palette[i].s.alpha;
+	}
+	Flush();
+}
+
+// -----------------+
 // GClipRect        : Defines the 2D hardware clipping window
 // -----------------+
-EXPORT void HWRAPI(GClipRect) (INT32 minx, INT32 miny, INT32 maxx, INT32 maxy, float nearclip, float farclip)
+static void GClipRect (INT32 minx, INT32 miny, INT32 maxx, INT32 maxy, float nearclip, float farclip)
 {
 	//GL_DBG_Printf("GClipRect(%d, %d, %d, %d)\n", minx, miny, maxx, maxy);
 
@@ -1346,7 +1363,7 @@ EXPORT void HWRAPI(GClipRect) (INT32 minx, INT32 miny, INT32 maxx, INT32 maxy, f
 // -----------------+
 // ClearBuffer      : Clear the color/alpha/depth buffer(s)
 // -----------------+
-EXPORT void HWRAPI(ClearBuffer) (FBOOLEAN ColorMask,
+static void ClearBuffer (FBOOLEAN ColorMask,
                                     FBOOLEAN DepthMask,
 									FBOOLEAN StencilMask,
                                     FRGBAFloat * ClearColor)
@@ -1371,7 +1388,7 @@ EXPORT void HWRAPI(ClearBuffer) (FBOOLEAN ColorMask,
 		ClearMask |= GL_DEPTH_BUFFER_BIT;
 	}
 
-	SetBlend(DepthMask ? PF_Occlude | CurrentPolyFlags : CurrentPolyFlags&~PF_Occlude);
+	GPU->SetBlend(DepthMask ? PF_Occlude | CurrentPolyFlags : CurrentPolyFlags&~PF_Occlude);
 
 	if (StencilMask)
 		ClearMask |= GL_STENCIL_BUFFER_BIT;// looks like sometimes stencil buffer needs clearing? had a problem with random black screens
@@ -1384,7 +1401,7 @@ EXPORT void HWRAPI(ClearBuffer) (FBOOLEAN ColorMask,
 // -----------------+
 // HWRAPI Draw2DLine: Render a 2D line
 // -----------------+
-EXPORT void HWRAPI(Draw2DLine) (F2DCoord * v1,
+static void Draw2DLine (F2DCoord * v1,
                                    F2DCoord * v2,
                                    RGBA_t Color)
 {
@@ -1434,7 +1451,7 @@ static void Clamp2D(GLenum pname)
 // -----------------+
 // PF_Masked - we could use an ALPHA_TEST of GL_EQUAL, and alpha ref of 0,
 //             is it faster when pixels are discarded ?
-EXPORT void HWRAPI(SetBlend) (FBITFIELD PolyFlags)
+static void SetBlend (FBITFIELD PolyFlags)
 {
 	FBITFIELD Xor;
 	Xor = CurrentPolyFlags^PolyFlags;
@@ -1581,7 +1598,7 @@ static void AllocTextureBuffer(GLMipmap_t *pTexInfo)
 // -----------------+
 // UpdateTexture    : Updates texture data.
 // -----------------+
-EXPORT void HWRAPI(UpdateTexture) (GLMipmap_t *pTexInfo)
+static void UpdateTexture (GLMipmap_t *pTexInfo)
 {
 	// Upload a texture
 	GLuint num = pTexInfo->downloaded;
@@ -1792,7 +1809,7 @@ EXPORT void HWRAPI(UpdateTexture) (GLMipmap_t *pTexInfo)
 // -----------------+
 // SetTexture       : The mipmap becomes the current texture source
 // -----------------+
-EXPORT void HWRAPI(SetTexture) (GLMipmap_t *pTexInfo)
+static void SetTexture (GLMipmap_t *pTexInfo)
 {
 	if (!pTexInfo)
 	{
@@ -2128,7 +2145,7 @@ static void PreparePolygon(FSurfaceInfo *pSurf, FBITFIELD PolyFlags)
 // -----------------+
 // DrawPolygon      : Render a polygon, set the texture, set render mode
 // -----------------+
-EXPORT void HWRAPI(DrawPolygon) (FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags)
+static void DrawPolygon (FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags)
 {
 	PreparePolygon(pSurf, PolyFlags);
 
@@ -2146,7 +2163,7 @@ EXPORT void HWRAPI(DrawPolygon) (FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUI
 		Clamp2D(GL_TEXTURE_WRAP_T);
 }
 
-EXPORT void HWRAPI(DrawIndexedTriangles) (FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags, unsigned int *IndexArray)
+static void DrawIndexedTriangles (FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags, unsigned int *IndexArray)
 {
 	PreparePolygon(pSurf, PolyFlags);
 
@@ -2401,10 +2418,10 @@ static void RenderDome(INT32 skytexnum)
 	pglDisableClientState(GL_COLOR_ARRAY);
 }
 
-EXPORT void HWRAPI(RenderSkyDome) (INT32 tex, INT32 texture_width, INT32 texture_height, FTransform transform)
+static void RenderSkyDome (INT32 tex, INT32 texture_width, INT32 texture_height, FTransform transform)
 {
 	SetBlend(PF_Translucent|PF_NoDepthTest|PF_Modulated);
-	SetTransform(&transform);
+	GPU->SetTransform(&transform);
 	texw = texture_width;
 	texh = texture_height;
 	RenderDome(tex);
@@ -2414,7 +2431,7 @@ EXPORT void HWRAPI(RenderSkyDome) (INT32 tex, INT32 texture_width, INT32 texture
 // ==========================================================================
 //
 // ==========================================================================
-EXPORT void HWRAPI(SetSpecialState) (hwdspecialstate_t IdState, INT32 Value)
+static void SetSpecialState (hwdspecialstate_t IdState, INT32 Value)
 {
 	switch (IdState)
 	{
@@ -2729,7 +2746,7 @@ static void CreateModelVBOTiny(mesh_t *mesh, tinyframe_t *frame)
 	pglBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-EXPORT void HWRAPI(CreateModelVBOs) (model_t *model)
+static void CreateModelVBOs (model_t *model)
 {
 	int i;
 	for (i = 0; i < model->numMeshes; i++)
@@ -2996,7 +3013,7 @@ static void DrawModelEx(model_t *model, INT32 frameIndex, float duration, float 
 // -----------------+
 // HWRAPI DrawModel : Draw a model
 // -----------------+
-EXPORT void HWRAPI(DrawModel) (model_t *model, INT32 frameIndex, float duration, float tics, INT32 nextFrameIndex, FTransform *pos, float hscale, float vscale, UINT8 flipped, UINT8 hflipped, FSurfaceInfo *Surface)
+static void DrawModel (model_t *model, INT32 frameIndex, float duration, float tics, INT32 nextFrameIndex, FTransform *pos, float hscale, float vscale, UINT8 flipped, UINT8 hflipped, FSurfaceInfo *Surface)
 {
 	DrawModelEx(model, frameIndex, duration, tics, nextFrameIndex, pos, hscale, vscale, flipped, hflipped, Surface);
 }
@@ -3004,7 +3021,7 @@ EXPORT void HWRAPI(DrawModel) (model_t *model, INT32 frameIndex, float duration,
 // -----------------+
 // SetTransform     :
 // -----------------+
-EXPORT void HWRAPI(SetTransform) (FTransform *stransform)
+static void SetTransform (FTransform *stransform)
 {
 	static boolean special_splitscreen;
 	GLdouble used_fov;
@@ -3075,7 +3092,7 @@ EXPORT void HWRAPI(SetTransform) (FTransform *stransform)
 	pglGetFloatv(GL_MODELVIEW_MATRIX, modelMatrix); // added for new coronas' code (without depth buffer)
 }
 
-EXPORT INT32  HWRAPI(GetTextureUsed) (void)
+static INT32  GetTextureUsed (void)
 {
 	FTextureInfo *tmp = TexCacheHead;
 	INT32 res = 0;
@@ -3100,7 +3117,7 @@ EXPORT INT32  HWRAPI(GetTextureUsed) (void)
 	return res;
 }
 
-EXPORT void HWRAPI(PostImgRedraw) (float points[SCREENVERTS][SCREENVERTS][2])
+static void PostImgRedraw (float points[SCREENVERTS][SCREENVERTS][2])
 {
 	INT32 x, y;
 	float float_x, float_y, float_nextx, float_nexty;
@@ -3188,7 +3205,7 @@ EXPORT void HWRAPI(PostImgRedraw) (float points[SCREENVERTS][SCREENVERTS][2])
 
 // Sryder:	This needs to be called whenever the screen changes resolution in order to reset the screen textures to use
 //			a new size
-EXPORT void HWRAPI(FlushScreenTextures) (void)
+static void FlushScreenTextures (void)
 {
 	int i;
 	pglDeleteTextures(NUMSCREENTEXTURES, screenTextures);
@@ -3196,7 +3213,7 @@ EXPORT void HWRAPI(FlushScreenTextures) (void)
 		screenTextures[i] = 0;
 }
 
-EXPORT void HWRAPI(DrawScreenTexture)(int tex, FSurfaceInfo *surf, FBITFIELD polyflags)
+static void DrawScreenTexture(int tex, FSurfaceInfo *surf, FBITFIELD polyflags)
 {
 	float xfix, yfix;
 	INT32 texsize = 512;
@@ -3250,7 +3267,7 @@ EXPORT void HWRAPI(DrawScreenTexture)(int tex, FSurfaceInfo *surf, FBITFIELD pol
 
 
 // Do screen fades!
-EXPORT void HWRAPI(DoScreenWipe)(int wipeStart, int wipeEnd)
+static void DoScreenWipe (int wipeStart, int wipeEnd)
 {
 	INT32 texsize = 512;
 	float xfix, yfix;
@@ -3341,7 +3358,7 @@ EXPORT void HWRAPI(DoScreenWipe)(int wipeStart, int wipeEnd)
 	tex_downloaded = screenTextures[wipeEnd];
 }
 
-EXPORT void HWRAPI(RenderVhsEffect) (fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8 downdistort, UINT8 barsize)
+static void RenderVhsEffect (fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8 downdistort, UINT8 barsize)
 {
 	INT32 texsize = 512;
 	float xfix, yfix;
@@ -3368,7 +3385,7 @@ EXPORT void HWRAPI(RenderVhsEffect) (fixed_t upbary, fixed_t downbary, UINT8 upd
 	yfix = 1/((float)(texsize)/((float)((screen_height))));
 
 	// Slight fuzziness
-	MakeScreenTexture(HWD_SCREENTEXTURE_GENERIC1);
+	GPU->MakeScreenTexture(HWD_SCREENTEXTURE_GENERIC1);
 	SetBlend(PF_Modulated|PF_Translucent|PF_NoDepthTest);
 	//pglBindTexture(GL_TEXTURE_2D, screentexture);
 
@@ -3392,7 +3409,7 @@ EXPORT void HWRAPI(RenderVhsEffect) (fixed_t upbary, fixed_t downbary, UINT8 upd
 	}
 
 	// Upward bar
-	MakeScreenTexture(HWD_SCREENTEXTURE_GENERIC1);
+	GPU->MakeScreenTexture(HWD_SCREENTEXTURE_GENERIC1);
 	//pglBindTexture(GL_TEXTURE_2D, screentexture);
 	color[0] = color[1] = color[2] = 190;
 	color[3] = 250;
@@ -3420,7 +3437,7 @@ EXPORT void HWRAPI(RenderVhsEffect) (fixed_t upbary, fixed_t downbary, UINT8 upd
 	pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
 	// Downward bar
-	MakeScreenTexture(HWD_SCREENTEXTURE_GENERIC1);
+	GPU->MakeScreenTexture(HWD_SCREENTEXTURE_GENERIC1);
 	//pglBindTexture(GL_TEXTURE_2D, screentexture);
 
 	fix[0] = 0.0f;
@@ -3446,7 +3463,7 @@ EXPORT void HWRAPI(RenderVhsEffect) (fixed_t upbary, fixed_t downbary, UINT8 upd
 }
 
 // Create a texture from the screen.
-EXPORT void HWRAPI(MakeScreenTexture) (int tex)
+static void MakeScreenTexture (int tex)
 {
 	INT32 texsize = 512;
 	boolean firstTime = (screenTextures[tex] == 0);
@@ -3477,7 +3494,7 @@ EXPORT void HWRAPI(MakeScreenTexture) (int tex)
 	tex_downloaded = screenTextures[tex];
 }
 
-EXPORT void HWRAPI(DrawScreenFinalTexture)(int tex, INT32 width, INT32 height)
+static void DrawScreenFinalTexture(int tex, INT32 width, INT32 height)
 {
 	float xfix, yfix;
 	float origaspect, newaspect;
@@ -3539,8 +3556,8 @@ EXPORT void HWRAPI(DrawScreenFinalTexture)(int tex, INT32 width, INT32 height)
 
 	clearColour.red = clearColour.green = clearColour.blue = 0;
 	clearColour.alpha = 1;
-	ClearBuffer(true, false, false, &clearColour);
-	SetBlend(PF_NoDepthTest);
+	GPU->ClearBuffer(true, false, false, &clearColour);
+	GPU->SetBlend(PF_NoDepthTest);
 
 	pglBindTexture(GL_TEXTURE_2D, screenTextures[tex]);
 
@@ -3564,7 +3581,7 @@ EXPORT void HWRAPI(DrawScreenFinalTexture)(int tex, INT32 width, INT32 height)
 	tex_downloaded = screenTextures[tex];
 }
 
-EXPORT void HWRAPI(SetPaletteLookup)(UINT8 *lut)
+static void SetPaletteLookup(UINT8 *lut)
 {
 	GLenum internalFormat;
 	if (gl_version[0] == '1' || gl_version[0] == '2')
@@ -3591,7 +3608,7 @@ EXPORT void HWRAPI(SetPaletteLookup)(UINT8 *lut)
 	pglActiveTexture(GL_TEXTURE0);
 }
 
-EXPORT UINT32 HWRAPI(CreateLightTable)(RGBA_t *hw_lighttable)
+static UINT32 CreateLightTable(RGBA_t *hw_lighttable)
 {
 	LTListItem *item = malloc(sizeof(LTListItem));
 	if (!LightTablesTail)
@@ -3617,7 +3634,7 @@ EXPORT UINT32 HWRAPI(CreateLightTable)(RGBA_t *hw_lighttable)
 }
 
 // Delete light table textures, ids given before become invalid and must not be used.
-EXPORT void HWRAPI(ClearLightTables)(void)
+static void ClearLightTables(void)
 {
 	while (LightTablesHead)
 	{
@@ -3634,7 +3651,7 @@ EXPORT void HWRAPI(ClearLightTables)(void)
 }
 
 // This palette is used for the palette rendering postprocessing step.
-EXPORT void HWRAPI(SetScreenPalette)(RGBA_t *palette)
+static void SetScreenPalette(RGBA_t *palette)
 {
 	if (memcmp(screenPalette, palette, sizeof(screenPalette)))
 	{
@@ -3649,5 +3666,58 @@ EXPORT void HWRAPI(SetScreenPalette)(RGBA_t *palette)
 		pglActiveTexture(GL_TEXTURE0);
 	}
 }
+
+struct GPURenderingAPI GLInterfaceAPI = {
+	Init,
+	NULL,
+	SetupGLInfo,
+
+	SetSpecialState,
+	SetTransform,
+	SetBlend,
+	SetPalette,
+	ClearBuffer,
+
+	DrawPolygon,
+	DrawIndexedTriangles,
+	Draw2DLine,
+	DrawModel,
+	RenderSkyDome,
+
+	SetTexture,
+	UpdateTexture,
+	DeleteTexture,
+
+	ClearMipMapCache,
+	GetTextureUsed,
+
+	CreateModelVBOs,
+
+	ReadScreenTexture,
+	GClipRect,
+
+	MakeScreenTexture,
+	FlushScreenTextures,
+
+	DrawScreenTexture,
+	DoScreenWipe,
+	RenderVhsEffect,
+	DrawScreenFinalTexture,
+
+	PostImgRedraw,
+
+	InitShaders,
+	LoadShader,
+	CompileShader,
+	SetShader,
+	UnSetShader,
+
+	SetShaderInfo,
+
+	SetPaletteLookup,
+	CreateLightTable,
+	ClearLightTables,
+	SetScreenPalette,
+};
 
 #endif //HWRENDER

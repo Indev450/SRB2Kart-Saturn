@@ -25,7 +25,7 @@
 #include "../doomstat.h"
 
 #ifdef HWRENDER
-#include "hw_drv.h"
+#include "hw_gpu.h"
 #include "hw_md2.h"
 #include "../d_main.h"
 #include "../r_bsp.h"
@@ -418,7 +418,7 @@ static void md2_loadTexture(md2_t *model)
 			}
 		}
 	}
-	HWD.pfnSetTexture(glpatch->mipmap);
+	GPU->SetTexture(glpatch->mipmap);
 	HWR_UnlockCachedPatch(glpatch);
 }
 
@@ -468,7 +468,7 @@ static void md2_loadBlendTexture(md2_t *model)
 		glpatch->mipmap->width = (UINT16)w;
 		glpatch->mipmap->height = (UINT16)h;
 	}
-	HWD.pfnSetTexture(glpatch->mipmap); // We do need to do this so that it can be cleared and knows to recreate it when necessary
+	GPU->SetTexture(glpatch->mipmap); // We do need to do this so that it can be cleared and knows to recreate it when necessary
 	HWR_UnlockCachedPatch(glpatch);
 
 	Z_Free(filename);
@@ -1049,7 +1049,7 @@ static void HWR_GetBlendedTexture(GLPatch_t *gpatch, GLPatch_t *blendgpatch, INT
 	if (colormap == colormaps || colormap == NULL)
 	{
 		// Don't do any blending
-		HWD.pfnSetTexture(gpatch->mipmap);
+		GPU->SetTexture(gpatch->mipmap);
 		return;
 	}
 
@@ -1062,7 +1062,7 @@ static void HWR_GetBlendedTexture(GLPatch_t *gpatch, GLPatch_t *blendgpatch, INT
 		{
 			if (glmip->downloaded && glmip->data)
 			{
-				HWD.pfnSetTexture(glmip); // found the colormap, set it to the correct texture
+				GPU->SetTexture(glmip); // found the colormap, set it to the correct texture
 				Z_ChangeTag(glmip->data, PU_HWRCACHE_UNLOCKED);
 				return;
 			}
@@ -1084,7 +1084,7 @@ static void HWR_GetBlendedTexture(GLPatch_t *gpatch, GLPatch_t *blendgpatch, INT
 
 	HWR_CreateBlendedTexture(gpatch, blendgpatch, newmip, skinnum, color);
 
-	HWD.pfnSetTexture(newmip);
+	GPU->SetTexture(newmip);
 	Z_ChangeTag(newmip->data, PU_HWRCACHE_UNLOCKED);
 }
 
@@ -1236,7 +1236,7 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 			if (md2->model)
 			{
 				md2_printModelInfo(md2->model);
-				HWD.pfnCreateModelVBOs(md2->model);
+				GPU->CreateModelVBOs(md2->model);
 			}
 			else
 			{
@@ -1291,7 +1291,7 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 			else
 			{
 				// This is safe, since we know the texture has been downloaded
-				HWD.pfnSetTexture(gpatch->mipmap);
+				GPU->SetTexture(gpatch->mipmap);
 			}
 		}
 		else
@@ -1467,7 +1467,7 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 		p.mirror = atransform.mirror; // from Kart
 #endif
 
-		HWD.pfnSetShader(SHADER_MODEL);	// model shader
+		GPU->SetShader(SHADER_MODEL);	// model shader
 		{
 			SINT8 flipfactor = flip ? -1 : 1;
 			
@@ -1484,7 +1484,7 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 			p.y += ox * gl_viewcos;
 			p.z += oy;
 
-			HWD.pfnDrawModel(md2->model, frame, durs, tics, nextFrame, &p, md2->scale * xs, md2->scale * ys, flip, hflip, &Surf);
+			GPU->DrawModel(md2->model, frame, durs, tics, nextFrame, &p, md2->scale * xs, md2->scale * ys, flip, hflip, &Surf);
 		}
 	}
 }
