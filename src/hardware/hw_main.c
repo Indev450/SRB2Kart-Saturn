@@ -5312,7 +5312,8 @@ void HWR_RenderPlayerView(INT32 viewnumber, player_t *player)
 
 	if (HWR_UseShader())
 	{
-		HWD.pfnSetShaderInfo(HWD_SHADERINFO_LEVELTIME, (INT32)leveltime); // The water surface shader needs the leveltime.
+		if (cv_ripplewater.value)
+			HWD.pfnSetShaderInfo(HWD_SHADERINFO_LEVELTIME, (INT32)leveltime); // The water surface shader needs the leveltime.
 		const angle_t light_angle = maplighting.angle - viewangle + ANGLE_90; // I fucking hate OGL's coordinate system
 		HWD.pfnSetShaderInfo(HWD_SHADERINFO_LIGHT_X, FINECOSINE(light_angle >> ANGLETOFINESHIFT));
 		HWD.pfnSetShaderInfo(HWD_SHADERINFO_LIGHT_Y, 0);
