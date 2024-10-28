@@ -1721,7 +1721,7 @@ void *W_CacheLumpName(const char *name, INT32 tag)
 #ifdef HWRENDER
 FUNCINLINE static ATTRINLINE void *W_CachePatchNumPwad(UINT16 wad, UINT16 lump, INT32 tag)
 {
-	GLPatch_t *grPatch;
+	GLPatch_t *glPatch;
 
 	if (rendermode == render_soft || rendermode == render_none)
 		return W_CacheLumpNumPwad(wad, lump, tag);
@@ -1729,29 +1729,29 @@ FUNCINLINE static ATTRINLINE void *W_CachePatchNumPwad(UINT16 wad, UINT16 lump, 
 	if (!TestValidLump(wad, lump))
 		return NULL;
 
-	grPatch = HWR_GetCachedGLPatchPwad(wad, lump);
+	glPatch = HWR_GetCachedGLPatchPwad(wad, lump);
 
-	if (grPatch->mipmap->data)
+	if (glPatch->mipmap->data)
 	{
 		if (tag == PU_CACHE)
 			tag = PU_HWRCACHE;
-		Z_ChangeTag(grPatch->mipmap->data, tag);
+		Z_ChangeTag(glPatch->mipmap->data, tag);
 	}
 	else
 	{
 		patch_t *ptr = NULL;
 
-		// Only load the patch if we haven't initialised the grPatch yet
-		if (grPatch->mipmap->width == 0)
-			ptr = W_CacheLumpNumPwad(grPatch->wadnum, grPatch->lumpnum, PU_STATIC);
+		// Only load the patch if we haven't initialised the glPatch yet
+		if (glPatch->mipmap->width == 0)
+			ptr = W_CacheLumpNumPwad(glPatch->wadnum, glPatch->lumpnum, PU_STATIC);
 
 		// Run HWR_MakePatch in all cases, to recalculate some things
-		HWR_MakePatch(ptr, grPatch, grPatch->mipmap, false);
+		HWR_MakePatch(ptr, glPatch, glPatch->mipmap, false);
 		Z_Free(ptr);
 	}
 
 	// return GLPatch_t, which can be casted to (patch_t) with valid patch header info
-	return (void *)grPatch;
+	return (void *)glPatch;
 }
 
 void *W_CachePatchNum(lumpnum_t lumpnum, INT32 tag)
