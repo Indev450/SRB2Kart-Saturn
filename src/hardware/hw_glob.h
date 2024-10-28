@@ -23,7 +23,7 @@
 
 // needed for sprite rendering
 // equivalent of the software renderer's vissprites
-typedef struct gr_vissprite_s
+typedef struct gl_vissprite_s
 {
 	float x1, x2;
 	float z1, z2;
@@ -41,9 +41,9 @@ typedef struct gr_vissprite_s
    //Hurdler: 25/04/2000: now support colormap in hardware mode
 	UINT8 *colormap;
 	INT32 dispoffset; // copy of info->dispoffset, affects ordering but not drawing
-} gr_vissprite_t;
+} gl_vissprite_t;
 
-void HWR_ObjectLightLevelPost(gr_vissprite_t *spr, const sector_t *sector, INT32 *lightlevel, boolean model);
+void HWR_ObjectLightLevelPost(gl_vissprite_t *spr, const sector_t *sector, INT32 *lightlevel, boolean model);
 
 // --------
 // hw_bsp.c
@@ -65,7 +65,7 @@ void HWR_GetFlat(lumpnum_t flatlumpnum, boolean noencoremap);
 GLMapTexture_t *HWR_GetTexture(INT32 tex, boolean noencore);
 void HWR_GetPatch(GLPatch_t *gpatch);
 void HWR_GetMappedPatch(GLPatch_t *gpatch, const UINT8 *colormap);
-void HWR_MakePatch(patch_t *patch, GLPatch_t *grPatch, GLMipmap_t *grMipmap, boolean makebitmap);
+void HWR_MakePatch(patch_t *patch, GLPatch_t *glPatch, GLMipmap_t *glMipmap, boolean makebitmap);
 void HWR_UnlockCachedPatch(GLPatch_t *gpatch);
 void HWR_SetPalette(RGBA_t *palette);
 

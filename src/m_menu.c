@@ -1484,7 +1484,7 @@ static menuitem_t OP_ColorOptionsMenu[] =
 static menuitem_t OP_ExpOptionsMenu[] =
 {
 	{IT_HEADER, NULL, "Advanced Video Options", NULL, 10},
-	{IT_STRING|IT_CVAR,		NULL, "Interpolation Distance",			&cv_grmaxinterpdist,		 30},
+	{IT_STRING|IT_CVAR,		NULL, "Interpolation Distance",			&cv_maxinterpdist,		 	 30},
 	{IT_STRING | IT_CVAR, 	NULL, "Weather Interpolation", 			&cv_precipinterp, 		 	 40},
 
 	{IT_STRING | IT_CVAR, 	NULL, "Scale Weather with Mobjscale", 	&cv_mobjscaleprecip, 		 60},
@@ -1493,11 +1493,11 @@ static menuitem_t OP_ExpOptionsMenu[] =
 	{IT_STRING | IT_CVAR,	NULL, "Skyboxes",						&cv_skybox,				 	 80},
 
 #ifdef HWRENDER	
-	{IT_STRING | IT_CVAR, 	NULL, "Screen Textures", 				&cv_grscreentextures, 		 100},
+	{IT_STRING | IT_CVAR, 	NULL, "Screen Textures", 				&cv_glscreentextures, 		 100},
 #ifdef USE_FBO_OGL
-	{IT_STRING | IT_CVAR, 	NULL, "FBO Downsampling support", 		&cv_grframebuffer, 			 110},
+	{IT_STRING | IT_CVAR, 	NULL, "FBO Downsampling support", 		&cv_glframebuffer, 			 110},
 #endif
-	{IT_STRING | IT_CVAR, 	NULL, "Palette Depth", 					&cv_grpalettedepth, 		 130},
+	{IT_STRING | IT_CVAR, 	NULL, "Palette Depth", 					&cv_glpalettedepth, 		 130},
 #endif	
 };
 
@@ -1527,7 +1527,7 @@ enum
 	op_exp_lessprecip,
 	op_exp_skybox,
 #ifdef HWRENDER
-	op_exp_grscrtx,
+	op_exp_glscrtx,
 #ifdef USE_FBO_OGL
 	op_exp_fbo,
 #endif
@@ -1539,24 +1539,24 @@ enum
 #ifdef HWRENDER
 static menuitem_t OP_OpenGLOptionsMenu[] =
 {
-	{IT_STRING | IT_CVAR,	NULL, "3D Models",					&cv_grmdls,					15},
-	{IT_STRING | IT_CVAR,	NULL, "Fallback Player 3D Model",	&cv_grfallbackplayermodel,	20},
-	{IT_STRING | IT_CVAR,	NULL, "Shaders",					&cv_grshaders,				25},
-	{IT_STRING | IT_CVAR,	NULL, "Palette Rendering",			&cv_grpaletterendering,		30},
-	{IT_STRING | IT_CVAR,   NULL, "Flashpals in Palette Renderer", &cv_grflashpal,			35},
+	{IT_STRING | IT_CVAR,	NULL, "3D Models",					&cv_glmdls,					15},
+	{IT_STRING | IT_CVAR,	NULL, "Fallback Player 3D Model",	&cv_glfallbackplayermodel,	20},
+	{IT_STRING | IT_CVAR,	NULL, "Shaders",					&cv_glshaders,				25},
+	{IT_STRING | IT_CVAR,	NULL, "Palette Rendering",			&cv_glpaletterendering,		30},
+	{IT_STRING | IT_CVAR,   NULL, "Flashpals in Palette Renderer", &cv_glflashpal,			35},
 	{IT_STRING | IT_CVAR, 	NULL, "Min Shader Brightness", 		&cv_secbright,				40},
 
 	{IT_STRING|IT_CVAR,		NULL, "Texture Quality",			&cv_scr_depth,				50},
-	{IT_STRING|IT_CVAR,		NULL, "Texture Filter",				&cv_grfiltermode,			55},
-	{IT_STRING|IT_CVAR,		NULL, "Anisotropic",				&cv_granisotropicmode,		60},
-	{IT_STRING|IT_CVAR,		NULL, "Visual Portals",		  		&cv_grportals,				65},
+	{IT_STRING|IT_CVAR,		NULL, "Texture Filter",				&cv_glfiltermode,			55},
+	{IT_STRING|IT_CVAR,		NULL, "Anisotropic",				&cv_glanisotropicmode,		60},
+	{IT_STRING|IT_CVAR,		NULL, "Visual Portals",		  		&cv_glportals,				65},
 
-	{IT_STRING|IT_CVAR,		NULL, "Wall Contrast Style",		&cv_grfakecontrast,			75},
-	{IT_STRING|IT_CVAR,		NULL, "Slope Contrast",				&cv_grslopecontrast,		80},
+	{IT_STRING|IT_CVAR,		NULL, "Wall Contrast Style",		&cv_glfakecontrast,			75},
+	{IT_STRING|IT_CVAR,		NULL, "Slope Contrast",				&cv_glslopecontrast,		80},
 	{IT_STRING | IT_CVAR, 	NULL, "Dithered Lightning", 		&cv_lightdither,			85},
-	{IT_STRING|IT_CVAR,		NULL, "Sprite Billboarding",		&cv_grspritebillboarding,	90},
-	{IT_STRING|IT_CVAR,		NULL, "Software Perspective",		&cv_grshearing,				95},
-	{IT_STRING|IT_CVAR,		NULL, "Rendering Distance",			&cv_grrenderdistance,		100},
+	{IT_STRING|IT_CVAR,		NULL, "Sprite Billboarding",		&cv_glspritebillboarding,	90},
+	{IT_STRING|IT_CVAR,		NULL, "Software Perspective",		&cv_glshearing,				95},
+	{IT_STRING|IT_CVAR,		NULL, "Rendering Distance",			&cv_glrenderdistance,		100},
 };
 
 static const char* OP_OpenGLTooltips[] =
@@ -4687,7 +4687,7 @@ void M_Init(void)
 	if (rendermode == render_soft)
 	{
 		OP_VideoOptionsMenu[op_video_ogl].status = IT_DISABLED;
-		OP_ExpOptionsMenu[op_exp_grscrtx].status = IT_DISABLED;
+		OP_ExpOptionsMenu[op_exp_glscrtx].status = IT_DISABLED;
 #ifdef USE_FBO_OGL
 		OP_ExpOptionsMenu[op_exp_fbo].status = IT_DISABLED;
 #endif

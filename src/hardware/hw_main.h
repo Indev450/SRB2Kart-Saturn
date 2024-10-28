@@ -36,23 +36,23 @@
 void HWR_Startup(void);
 void HWR_Shutdown(void);
 
-extern float gr_viewwidth, gr_viewheight, gr_baseviewwindowx, gr_baseviewwindowy;
+extern float gl_viewwidth, gl_viewheight, gl_baseviewwindowx, gl_baseviewwindowy;
 
-extern float gr_basewindowcenterx, gr_basewindowcentery;
+extern float gl_basewindowcenterx, gl_basewindowcentery;
 
 extern unsigned msaa;
 extern boolean a2c;
 
 extern FTransform atransform;
-extern float gr_viewsin, gr_viewcos;
+extern float gl_viewsin, gl_viewcos;
 
 extern boolean gl_drawing_stencil;
 
-extern seg_t *gr_curline;
-extern side_t *gr_sidedef;
-extern line_t *gr_linedef;
-extern sector_t *gr_frontsector;
-extern sector_t *gr_backsector;
+extern seg_t *gl_curline;
+extern side_t *gl_sidedef;
+extern line_t *gl_linedef;
+extern sector_t *gl_frontsector;
+extern sector_t *gl_backsector;
 
 enum
 {
@@ -80,7 +80,7 @@ extern ps_metric_t ps_hw_numcolors;
 extern ps_metric_t ps_hw_batchsorttime;
 extern ps_metric_t ps_hw_batchdrawtime;
 
-extern boolean gr_shadersavailable;
+extern boolean gl_shadersavailable;
 
 // hw_draw.c
 void HWR_DrawPatch(GLPatch_t *gpatch, INT32 x, INT32 y, INT32 option);
@@ -138,43 +138,43 @@ void HWR_ProcessSeg(void); // Sort of like GLWall::Process in GZDoom
 
 // hw_bsp.c
 void HWR_CreatePlanePolygons(INT32 bspnum);
-extern boolean gr_maphasportals;
+extern boolean gl_maphasportals;
 
 // hw_cache.c
 void HWR_LoadTextures(size_t pnumtextures);
 RGBA_t *HWR_GetTexturePalette(void);
 
 // Console variables
-extern consvar_t cv_grshaders;
+extern consvar_t cv_glshaders;
 #ifdef USE_FBO_OGL
-extern consvar_t cv_grframebuffer;
+extern consvar_t cv_glframebuffer;
 #endif
 extern consvar_t cv_splitwallfix;
-extern consvar_t cv_grshearing;
-extern consvar_t cv_grfov;
-extern consvar_t cv_grmdls;
-extern consvar_t cv_grfog;
-extern consvar_t cv_grfogdensity;
-extern consvar_t cv_grfiltermode;
-extern consvar_t cv_granisotropicmode;
-extern consvar_t cv_grcorrecttricks;
-extern consvar_t cv_grfovchange;
-extern consvar_t cv_grsolvetjoin;
-extern consvar_t cv_grspritebillboarding;
-extern consvar_t cv_grfakecontrast;
-extern consvar_t cv_grslopecontrast;
-extern consvar_t cv_grhorizonlines;
-extern consvar_t cv_grfallbackplayermodel;
-extern consvar_t cv_grbatching;
-extern consvar_t cv_grrenderdistance;
-extern consvar_t cv_grpaletterendering;
-extern consvar_t cv_grpalettedepth;
-extern consvar_t cv_grflashpal;
+extern consvar_t cv_glshearing;
+extern consvar_t cv_glfov;
+extern consvar_t cv_glmdls;
+extern consvar_t cv_glfog;
+extern consvar_t cv_glfogdensity;
+extern consvar_t cv_glfiltermode;
+extern consvar_t cv_glanisotropicmode;
+extern consvar_t cv_glcorrecttricks;
+extern consvar_t cv_glfovchange;
+extern consvar_t cv_glsolvetjoin;
+extern consvar_t cv_glspritebillboarding;
+extern consvar_t cv_glfakecontrast;
+extern consvar_t cv_glslopecontrast;
+extern consvar_t cv_glhorizonlines;
+extern consvar_t cv_glfallbackplayermodel;
+extern consvar_t cv_glbatching;
+extern consvar_t cv_glrenderdistance;
+extern consvar_t cv_glpaletterendering;
+extern consvar_t cv_glpalettedepth;
+extern consvar_t cv_glflashpal;
 extern consvar_t cv_lightdither;
-extern consvar_t cv_grscreentextures;
-extern consvar_t cv_grportals;
+extern consvar_t cv_glscreentextures;
+extern consvar_t cv_glportals;
 extern consvar_t cv_secbright;
 
-extern CV_PossibleValue_t granisotropicmode_cons_t[];
+extern CV_PossibleValue_t glanisotropicmode_cons_t[];
 
 #endif

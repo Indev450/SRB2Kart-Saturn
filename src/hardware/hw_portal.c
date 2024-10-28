@@ -28,7 +28,7 @@
 #include "hw_main.h"
 #include "hw_portal.h"
 
-SINT8 gl_portal_state = GRPORTAL_OFF;
+SINT8 gl_portal_state = GLPORTAL_OFF;
 
 gl_portallist_t portallist;
 gl_portallist_t *currentportallist;
@@ -152,9 +152,9 @@ void HWR_RenderPortalSeg(gl_portal_t* portal, SINT8 state)
 	gl_drawing_stencil = true; // do not draw outside of the stencil buffer, idiot.
 	// set our portal state and prepare to render the seg
 	HWR_SetPortalState(state);
-	gr_curline = portal->seg;
-	gr_frontsector = portal->seg->frontsector;
-	gr_backsector = portal->seg->backsector;
+	gl_curline = portal->seg;
+	gl_frontsector = portal->seg->frontsector;
+	gl_backsector = portal->seg->backsector;
 	HWR_ProcessSeg();
 	gl_drawing_stencil = false;
 	// need to work around the r_opengl PF_Invisible bug with this call
@@ -170,7 +170,7 @@ void HWR_RenderPortal(gl_portal_t* portal, gl_portal_t* rootportal, const float 
 	HWR_ClearClipper();
 
 	HWR_SetStencilState(HWR_STENCIL_BEGIN, stencil_level);
-	HWR_RenderPortalSeg(portal, GRPORTAL_STENCIL);
+	HWR_RenderPortalSeg(portal, GLPORTAL_STENCIL);
 
 	// go to portal frame lmao
 	HWR_PortalFrame(portal);
@@ -190,12 +190,12 @@ void HWR_RenderPortal(gl_portal_t* portal, gl_portal_t* rootportal, const float 
 	HWR_ClearClipper();
 
 	HWR_SetStencilState(HWR_STENCIL_REVERSE, stencil_level);
-	HWR_RenderPortalSeg(portal, GRPORTAL_STENCIL);
+	HWR_RenderPortalSeg(portal, GLPORTAL_STENCIL);
 
 	// draw portal seg to depth buffer
 	HWR_ClearClipper();
 	HWR_SetStencilState(HWR_STENCIL_DEPTH, stencil_level);
-	HWR_RenderPortalSeg(portal, GRPORTAL_DEPTH);
+	HWR_RenderPortalSeg(portal, GLPORTAL_DEPTH);
 }
 
 // idea for fixing fakery map: one portal pillar works, 2 pillars have left/right bug wall, 1 pillar has both sides bugged.

@@ -205,7 +205,7 @@ extern consvar_t cv_drawdist, cv_drawdist_precip, cv_lessprecip, cv_mobjscalepre
 extern consvar_t cv_fov;
 extern consvar_t cv_skybox;
 extern consvar_t cv_tailspickup;
-extern consvar_t cv_grmaxinterpdist;
+extern consvar_t cv_maxinterpdist;
 extern consvar_t cv_ripplewater;
 
 // Called by startup code.

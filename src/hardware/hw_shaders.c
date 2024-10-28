@@ -283,7 +283,7 @@ static char *HWR_PreprocessShader(char *original)
 	// Calculate length of modified shader.
 	new_len = original_len;
 
-	if (cv_grpaletterendering.value)
+	if (cv_glpaletterendering.value)
 		ADD_TO_LEN(PALETTE_RENDERING_DEFINE)
 
 	if (cv_lightdither.value)
@@ -327,7 +327,7 @@ static char *HWR_PreprocessShader(char *original)
 	}
 
 	// Write the defines.
-	if (cv_grpaletterendering.value)
+	if (cv_glpaletterendering.value)
 		WRITE_DEFINE(PALETTE_RENDERING_DEFINE)
 
 	if (cv_lightdither.value)
@@ -413,7 +413,7 @@ int HWR_GetShaderFromTarget(int shader_target)
 	// - custom shaders are enabled
 	// - custom shaders are allowed by the server
 	if (custom_shader != -1 && gl_shaders[custom_shader].compiled &&
-		cv_grshaders.value == 1)
+		cv_glshaders.value == 1)
 		return custom_shader;
 	else
 		return gl_shadertargets[shader_target].base_shader;
@@ -569,7 +569,7 @@ void HWR_LoadCustomShadersFromFile(UINT16 wadnum, boolean PK3)
 	int i;
 	boolean modified_shaders[NUMSHADERTARGETS] = {0};
 
-	if (!gr_shadersavailable)
+	if (!gl_shadersavailable)
 		return;
 
 	lump = HWR_FindShaderDefs(wadnum);

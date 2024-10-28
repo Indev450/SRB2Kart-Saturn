@@ -171,7 +171,7 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 		else
 			maximumAnisotropy = 1;
 
-		granisotropicmode_cons_t[1].value = maximumAnisotropy;
+		glanisotropicmode_cons_t[1].value = maximumAnisotropy;
 
 #if defined (__unix__)
 #ifdef USE_FBO_OGL

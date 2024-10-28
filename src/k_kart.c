@@ -9325,7 +9325,7 @@ static boolean K_GetScreenCoords(vector2_t *vec, player_t *player, mobj_t *targe
 
 #ifdef HWRENDER
 	// NOW we can get the angle differnce
-	if (rendermode == render_opengl && cv_grshearing.value == 0)
+	if (rendermode == render_opengl && cv_glshearing.value == 0)
 	{
 		angle_t yang = R_PointToAngle2(0, 0, dist, y); // not perspective
 		x = FixedMul(x, FINECOSINE((yang>>ANGLETOFINESHIFT) & FINEMASK)); // perspective
