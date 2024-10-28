@@ -29,28 +29,33 @@
 
 #include "r_opengl/r_opengl.h"
 
-#include "../i_video.h" // for rendermode == render_glide
-#include "../v_video.h"
+#include "../d_clisrv.h"
+#include "../g_game.h"
+#include "../m_argv.h"		// parm functions for msaa
+#include "../m_cheat.h"
+#include "../m_menu.h"		// ogl menu updating
+
+#include "../r_bsp.h"		// R_NoEncore
+#include "../r_data.h"
+#include "../r_fps.h"
+#include "../r_local.h"
+#include "../r_main.h"		// cv_fov
+#include "../r_patch.h"		// a mystery as to what this is for
+#include "../r_portal.h"
+#ifdef WALLSPLATS
+#include "../r_splats.h"
+#endif
+#include "../r_state.h"
+
+#include "../i_system.h"
+#include "../i_video.h"
 #include "../p_local.h"
 #include "../p_setup.h"
-#include "../r_fps.h"
-#include "../r_state.h"
-#include "../r_local.h"
-#include "../r_data.h"
-#include "../r_patch.h" // a mystery as to what this is for
-#include "../r_bsp.h"	// R_NoEncore
-#include "../r_main.h"	// cv_fov
-#include "../d_clisrv.h"
+#include "../p_slopes.h"
+#include "../st_stuff.h"
+#include "../v_video.h"
 #include "../w_wad.h"
 #include "../z_zone.h"
-#include "../r_splats.h"
-#include "../g_game.h"
-#include "../st_stuff.h"
-#include "../i_system.h"
-#include "../m_cheat.h"
-#include "../m_argv.h" // parm functions for msaa
-#include "../p_slopes.h"
-#include "../r_portal.h"
 
 // ==========================================================================
 // Globals
