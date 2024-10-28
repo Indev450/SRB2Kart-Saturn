@@ -163,8 +163,8 @@ extern consvar_t cv_glslopecontrast;
 
 extern consvar_t cv_glshaders;
 
-extern consvar_t cv_lightdither;
-extern consvar_t cv_secbright;
+extern consvar_t cv_gllightdither;
+extern consvar_t cv_glsecbright;
 
 extern consvar_t cv_glfiltermode;
 extern consvar_t cv_glanisotropicmode;

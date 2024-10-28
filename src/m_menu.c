@@ -1543,8 +1543,8 @@ static menuitem_t OP_OpenGLOptionsMenu[] =
 	{IT_STRING | IT_CVAR,	NULL, "Fallback Player 3D Model",	&cv_glfallbackplayermodel,	20},
 	{IT_STRING | IT_CVAR,	NULL, "Shaders",					&cv_glshaders,				25},
 	{IT_STRING | IT_CVAR,	NULL, "Palette Rendering",			&cv_glpaletterendering,		30},
-	{IT_STRING | IT_CVAR,   NULL, "Flashpals in Palette Renderer", &cv_glflashpal,			35},
-	{IT_STRING | IT_CVAR, 	NULL, "Min Shader Brightness", 		&cv_secbright,				40},
+	{IT_STRING | IT_CVAR,   NULL, "Palette Rendering Flashpals",&cv_glflashpal,				35},
+	{IT_STRING | IT_CVAR, 	NULL, "Min Shader Brightness", 		&cv_glsecbright,			40},
 
 	{IT_STRING|IT_CVAR,		NULL, "Texture Quality",			&cv_scr_depth,				50},
 	{IT_STRING|IT_CVAR,		NULL, "Texture Filter",				&cv_glfiltermode,			55},
@@ -1553,7 +1553,7 @@ static menuitem_t OP_OpenGLOptionsMenu[] =
 
 	{IT_STRING|IT_CVAR,		NULL, "Wall Contrast Style",		&cv_glfakecontrast,			75},
 	{IT_STRING|IT_CVAR,		NULL, "Slope Contrast",				&cv_glslopecontrast,		80},
-	{IT_STRING | IT_CVAR, 	NULL, "Dithered Lightning", 		&cv_lightdither,			85},
+	{IT_STRING | IT_CVAR, 	NULL, "Dithered Lightning", 		&cv_gllightdither,			85},
 	{IT_STRING|IT_CVAR,		NULL, "Sprite Billboarding",		&cv_glspritebillboarding,	90},
 	{IT_STRING|IT_CVAR,		NULL, "Software Perspective",		&cv_glshearing,				95},
 	{IT_STRING|IT_CVAR,		NULL, "Rendering Distance",			&cv_glrenderdistance,		100},
@@ -1573,7 +1573,7 @@ static const char* OP_OpenGLTooltips[] =
 	"Recreates an effect from software mode that is used on some maps.",
 	"The look of the wall contrast effect.",
 	"Wall contrast but for slopes.",
-	"Should OpenGL lightning be dithered?",
+	"Should shader lightning be dithered?",
 	"Should sprites always face the camera?",
 	"Recreates the look of software mode camera perspective.",
 	"How far the game world should be drawn.",
