@@ -145,33 +145,43 @@ void HWR_LoadTextures(size_t pnumtextures);
 RGBA_t *HWR_GetTexturePalette(void);
 
 // Console variables
-extern consvar_t cv_glshaders;
+extern CV_PossibleValue_t glanisotropicmode_cons_t[];
+
+extern consvar_t cv_glscreentextures;
 #ifdef USE_FBO_OGL
 extern consvar_t cv_glframebuffer;
 #endif
-extern consvar_t cv_glshearing;
-extern consvar_t cv_glfov;
+
 extern consvar_t cv_glmdls;
-extern consvar_t cv_glfog;
-extern consvar_t cv_glfiltermode;
-extern consvar_t cv_glanisotropicmode;
-extern consvar_t cv_glfovchange;
-extern consvar_t cv_glsolvetjoin;
+extern consvar_t cv_glfallbackplayermodel;
+
 extern consvar_t cv_glspritebillboarding;
+extern consvar_t cv_glshearing;
+
 extern consvar_t cv_glfakecontrast;
 extern consvar_t cv_glslopecontrast;
-extern consvar_t cv_glhorizonlines;
-extern consvar_t cv_glfallbackplayermodel;
+
+extern consvar_t cv_glshaders;
+
+extern consvar_t cv_lightdither;
+extern consvar_t cv_secbright;
+
+extern consvar_t cv_glfiltermode;
+extern consvar_t cv_glanisotropicmode;
+
+extern consvar_t cv_glsolvetjoin;
+
 extern consvar_t cv_glbatching;
+
 extern consvar_t cv_glrenderdistance;
+
+extern consvar_t cv_glhorizonlines;
+extern consvar_t cv_glportals;
+
+extern consvar_t cv_glfovchange;
+
 extern consvar_t cv_glpaletterendering;
 extern consvar_t cv_glpalettedepth;
 extern consvar_t cv_glflashpal;
-extern consvar_t cv_lightdither;
-extern consvar_t cv_glscreentextures;
-extern consvar_t cv_glportals;
-extern consvar_t cv_secbright;
-
-extern CV_PossibleValue_t glanisotropicmode_cons_t[];
 
 #endif

@@ -99,6 +99,13 @@ line_t *gl_linedef;
 sector_t *gl_frontsector;
 sector_t *gl_backsector;
 
+// values for the far clipping plane
+static float clipping_distances[] = {1024.0f, 2048.0f, 4096.0f, 6144.0f, 8192.0f, 12288.0f, 16384.0f};
+// values for bsp culling
+// slightly higher than the far clipping plane to compensate for impreciseness
+static INT32 bsp_culling_distances[] = {(1024+512)*FRACUNIT, (2048+512)*FRACUNIT, (4096+512)*FRACUNIT,
+	(6144+512)*FRACUNIT, (8192+512)*FRACUNIT, (12288+512)*FRACUNIT, (16384+512)*FRACUNIT};
+
 // Performance stats
 ps_metric_t ps_hw_nodesorttime = {0};
 ps_metric_t ps_hw_nodedrawtime = {0};
@@ -140,61 +147,17 @@ static void HWR_TogglePaletteRendering(void);
 // Commands and console variables
 // ==========================================================================
 
+// Onchanges
+static void CV_screentextures_OnChange(void);
 #ifdef USE_FBO_OGL
 static void CV_glframebuffer_OnChange(void);
 #endif
-static void CV_filtermode_ONChange(void);
-static void CV_anisotropic_ONChange(void);
-static void CV_screentextures_ONChange(void);
 static void CV_glshaders_OnChange(void);
+static void CV_gllightdithering_OnChange(void);
+static void CV_filtermode_OnChange(void);
+static void CV_anisotropic_OnChange(void);
 static void CV_glpaletterendering_OnChange(void);
 static void CV_glpalettedepth_OnChange(void);
-static void CV_gllightdithering_OnChange(void);
-
-static CV_PossibleValue_t glfakecontrast_cons_t[] = {{0, "Off"}, {1, "Standard"}, {2, "Smooth"}, {0, NULL}};
-
-static CV_PossibleValue_t glfiltermode_cons_t[]= {{HWD_SET_TEXTUREFILTER_POINTSAMPLED, "Nearest"},
-	{HWD_SET_TEXTUREFILTER_BILINEAR, "Bilinear"}, {HWD_SET_TEXTUREFILTER_TRILINEAR, "Trilinear"},
-	{HWD_SET_TEXTUREFILTER_MIXED1, "Linear_Nearest"},
-	{HWD_SET_TEXTUREFILTER_MIXED2, "Nearest_Linear"},
-	{HWD_SET_TEXTUREFILTER_MIXED3, "Nearest_Mipmap"},
-	{0, NULL}};
-CV_PossibleValue_t glanisotropicmode_cons_t[] = {{1, "MIN"}, {16, "MAX"}, {0, NULL}};
-
-consvar_t cv_glfiltermode = {"gr_filtermode", "Nearest", CV_CALL|CV_SAVE, glfiltermode_cons_t,
-                             CV_filtermode_ONChange, 0, NULL, NULL, 0, 0, NULL};
-
-consvar_t cv_glanisotropicmode = {"gr_anisotropicmode", "1", CV_CALL|CV_SAVE, glanisotropicmode_cons_t,
-                             CV_anisotropic_ONChange, 0, NULL, NULL, 0, 0, NULL};
-
-consvar_t cv_glsolvetjoin = {"gr_solvetjoin", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-
-consvar_t cv_glbatching = {"gr_batching", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-
-#ifdef USE_FBO_OGL
-consvar_t cv_glframebuffer = {"gr_framebuffer", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, CV_glframebuffer_OnChange, 0, NULL, NULL, 0, 0, NULL};
-#endif
-
-static CV_PossibleValue_t glrenderdistance_cons_t[] = {
-	{0, "Max"}, {1, "1024"}, {2, "2048"}, {3, "4096"}, {4, "6144"}, {5, "8192"},
-	{6, "12288"}, {7, "16384"}, {0, NULL}};
-consvar_t cv_glrenderdistance = {"gr_renderdistance", "Max", CV_SAVE, glrenderdistance_cons_t,
-							NULL, 0, NULL, NULL, 0, 0, NULL};
-
-consvar_t cv_glportals = {"gr_portals", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-
-CV_PossibleValue_t secbright_cons_t[] = {{0, "MIN"}, {255, "MAX"}, {0, NULL}};
-consvar_t cv_secbright = {"secbright", "0", CV_SAVE, secbright_cons_t,
-							NULL, 0, NULL, NULL, 0, 0, NULL};
-
-consvar_t cv_glfovchange = {"gr_fovchange", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-
-// values for the far clipping plane
-static float clipping_distances[] = {1024.0f, 2048.0f, 4096.0f, 6144.0f, 8192.0f, 12288.0f, 16384.0f};
-// values for bsp culling
-// slightly higher than the far clipping plane to compensate for impreciseness
-static INT32 bsp_culling_distances[] = {(1024+512)*FRACUNIT, (2048+512)*FRACUNIT, (4096+512)*FRACUNIT,
-	(6144+512)*FRACUNIT, (8192+512)*FRACUNIT, (12288+512)*FRACUNIT, (16384+512)*FRACUNIT};
 
 // The current screen texture implementation is inefficient and disabling it can result in significant
 // performance gains on lower end hardware. The game is still quite playable without this functionality.
@@ -203,47 +166,65 @@ static INT32 bsp_culling_distances[] = {(1024+512)*FRACUNIT, (2048+512)*FRACUNIT
 //  - intermission background
 //  - full screen scaling (use native resolution or windowed mode to avoid this)
 static CV_PossibleValue_t glscreentextures_cons_t[] = {{0, "Off"}, {1, "Wipes Only"}, {2, "All"}, {0, NULL}};
-consvar_t cv_glscreentextures = {"gr_screentextures", "All", CV_CALL|CV_SAVE, glscreentextures_cons_t,
-                                 CV_screentextures_ONChange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_glscreentextures = {"gr_screentextures", "All", CV_CALL|CV_SAVE, glscreentextures_cons_t, CV_screentextures_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
-static CV_PossibleValue_t glshaders_cons_t[] = {{0, "Off"}, {1, "On"}, {2, "Ignore custom shaders"}, {0, NULL}};
-consvar_t cv_glshaders = {"gr_shaders", "On", CV_CALL|CV_SAVE, glshaders_cons_t, CV_glshaders_OnChange, 0, NULL, NULL, 0, 0, NULL};
-
-consvar_t cv_glpaletterendering = {"gr_paletteshader", "Off", CV_CALL|CV_SAVE, CV_OnOff, CV_glpaletterendering_OnChange, 0, NULL, NULL, 0, 0, NULL};
-
-static CV_PossibleValue_t glpalettedepth_cons_t[] = {{16, "16 bits"}, {24, "24 bits"}, {0, NULL}};
-consvar_t cv_glpalettedepth = {"gr_palettedepth", "16 bits", CV_SAVE|CV_CALL, glpalettedepth_cons_t, CV_glpalettedepth_OnChange, 0, NULL, NULL, 0, 0, NULL};
-
-consvar_t cv_lightdither = {"gr_lightdithering", "Off", CV_CALL|CV_SAVE, CV_OnOff, CV_gllightdithering_OnChange, 0, NULL, NULL, 0, 0, NULL};
-
-consvar_t cv_glflashpal = {"gr_flashpal", "On", CV_CALL|CV_SAVE, CV_OnOff, CV_glpaletterendering_OnChange, 0, NULL, NULL, 0, 0, NULL};
+#ifdef USE_FBO_OGL
+consvar_t cv_glframebuffer = {"gr_framebuffer", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, CV_glframebuffer_OnChange, 0, NULL, NULL, 0, 0, NULL};
+#endif
 
 consvar_t cv_glmdls = {"gr_mdls", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_glfallbackplayermodel = {"gr_fallbackplayermodel", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_glshearing = {"gr_shearing", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_glspritebillboarding = {"gr_spritebillboarding", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_glshearing = {"gr_shearing", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+static CV_PossibleValue_t glfakecontrast_cons_t[] = {{0, "Off"}, {1, "Standard"}, {2, "Smooth"}, {0, NULL}};
 consvar_t cv_glfakecontrast = {"gr_fakecontrast", "Standard", CV_SAVE, glfakecontrast_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_glslopecontrast = {"gr_slopecontrast", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+static CV_PossibleValue_t glshaders_cons_t[] = {{0, "Off"}, {1, "On"}, {2, "Ignore custom shaders"}, {0, NULL}};
+consvar_t cv_glshaders = {"gr_shaders", "On", CV_CALL|CV_SAVE, glshaders_cons_t, CV_glshaders_OnChange, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_lightdither = {"gr_lightdithering", "Off", CV_CALL|CV_SAVE, CV_OnOff, CV_gllightdithering_OnChange, 0, NULL, NULL, 0, 0, NULL};
+
+CV_PossibleValue_t secbright_cons_t[] = {{0, "MIN"}, {255, "MAX"}, {0, NULL}};
+consvar_t cv_secbright = {"secbright", "0", CV_SAVE, secbright_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+static CV_PossibleValue_t glfiltermode_cons_t[]= {{HWD_SET_TEXTUREFILTER_POINTSAMPLED, "Nearest"},
+	{HWD_SET_TEXTUREFILTER_BILINEAR, "Bilinear"}, {HWD_SET_TEXTUREFILTER_TRILINEAR, "Trilinear"},
+	{HWD_SET_TEXTUREFILTER_MIXED1, "Linear_Nearest"},
+	{HWD_SET_TEXTUREFILTER_MIXED2, "Nearest_Linear"},
+	{HWD_SET_TEXTUREFILTER_MIXED3, "Nearest_Mipmap"},
+	{0, NULL}};
+consvar_t cv_glfiltermode = {"gr_filtermode", "Nearest", CV_CALL|CV_SAVE, glfiltermode_cons_t, CV_filtermode_OnChange, 0, NULL, NULL, 0, 0, NULL};
+
+CV_PossibleValue_t glanisotropicmode_cons_t[] = {{1, "MIN"}, {16, "MAX"}, {0, NULL}};
+consvar_t cv_glanisotropicmode = {"gr_anisotropicmode", "1", CV_CALL|CV_SAVE, glanisotropicmode_cons_t, CV_anisotropic_OnChange, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_glsolvetjoin = {"gr_solvetjoin", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_glbatching = {"gr_batching", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+static CV_PossibleValue_t glrenderdistance_cons_t[] = {
+	{0, "Max"}, {1, "1024"}, {2, "2048"}, {3, "4096"}, {4, "6144"}, {5, "8192"},
+	{6, "12288"}, {7, "16384"}, {0, NULL}};
+consvar_t cv_glrenderdistance = {"gr_renderdistance", "Max", CV_SAVE, glrenderdistance_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 consvar_t cv_glhorizonlines = {"gr_horizonlines", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_glportals = {"gr_portals", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_glfovchange = {"gr_fovchange", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_glpaletterendering = {"gr_paletteshader", "Off", CV_CALL|CV_SAVE, CV_OnOff, CV_glpaletterendering_OnChange, 0, NULL, NULL, 0, 0, NULL};
+static CV_PossibleValue_t glpalettedepth_cons_t[] = {{16, "16 bits"}, {24, "24 bits"}, {0, NULL}};
+consvar_t cv_glpalettedepth = {"gr_palettedepth", "16 bits", CV_SAVE|CV_CALL, glpalettedepth_cons_t, CV_glpalettedepth_OnChange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_glflashpal = {"gr_flashpal", "On", CV_CALL|CV_SAVE, CV_OnOff, CV_glpaletterendering_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 
 #define ONLY_IF_GL_LOADED if (vid.glstate != VID_GL_LIBRARY_LOADED) return;
 
-static void CV_filtermode_ONChange(void)
-{
-	ONLY_IF_GL_LOADED
-	HWD.pfnSetSpecialState(HWD_SET_TEXTUREFILTERMODE, cv_glfiltermode.value);
-}
-
-static void CV_anisotropic_ONChange(void)
-{
-	ONLY_IF_GL_LOADED
-	HWD.pfnSetSpecialState(HWD_SET_TEXTUREANISOTROPICMODE, cv_glanisotropicmode.value);
-}
-
-static void CV_screentextures_ONChange(void)
+static void CV_screentextures_OnChange(void)
 {
 	ONLY_IF_GL_LOADED
 	if (cv_glscreentextures.value != 2)
@@ -259,6 +240,19 @@ static void CV_screentextures_ONChange(void)
 	HWD.pfnSetSpecialState(HWD_SET_SCREEN_TEXTURES, cv_glscreentextures.value);
 }
 
+#ifdef USE_FBO_OGL
+static void CV_glframebuffer_OnChange(void)
+{
+	ONLY_IF_GL_LOADED
+	if (cv_glframebuffer.value != 0 && cv_glscreentextures.value != 2) // screen FBO needs screen textures
+		CV_SetValue(&cv_glframebuffer, 0);
+
+	HWD.pfnSetSpecialState(HWD_SET_FRAMEBUFFER, cv_glframebuffer.value);
+	I_DownSample();
+	RefreshOGLSDLSurface();
+}
+#endif
+
 static void CV_glshaders_OnChange(void)
 {
 	ONLY_IF_GL_LOADED
@@ -268,6 +262,27 @@ static void CV_glshaders_OnChange(void)
 		// can't do palette rendering without shaders, so update the state if needed
 		HWR_TogglePaletteRendering();
 	}
+}
+
+static void CV_gllightdithering_OnChange(void)
+{
+	ONLY_IF_GL_LOADED
+	if (gl_shadersavailable)
+	{
+		HWR_CompileShaders();
+	}
+}
+
+static void CV_filtermode_OnChange(void)
+{
+	ONLY_IF_GL_LOADED
+	HWD.pfnSetSpecialState(HWD_SET_TEXTUREFILTERMODE, cv_glfiltermode.value);
+}
+
+static void CV_anisotropic_OnChange(void)
+{
+	ONLY_IF_GL_LOADED
+	HWD.pfnSetSpecialState(HWD_SET_TEXTUREANISOTROPICMODE, cv_glanisotropicmode.value);
 }
 
 static void CV_glpaletterendering_OnChange(void)
@@ -283,15 +298,6 @@ static void CV_glpaletterendering_OnChange(void)
 	}
 }
 
-static void CV_gllightdithering_OnChange(void)
-{
-	ONLY_IF_GL_LOADED
-	if (gl_shadersavailable)
-	{
-		HWR_CompileShaders();
-	}
-}
-
 static void CV_glpalettedepth_OnChange(void)
 {
 	ONLY_IF_GL_LOADED
@@ -299,31 +305,18 @@ static void CV_glpalettedepth_OnChange(void)
 		HWR_SetPalette(pLocalPalette);
 }
 
-#ifdef USE_FBO_OGL
-static void CV_glframebuffer_OnChange(void)
-{
-	ONLY_IF_GL_LOADED
-	if (cv_glframebuffer.value != 0 && cv_glscreentextures.value != 2) // screen FBO needs screen textures
-		CV_SetValue(&cv_glframebuffer, 0);
-
-	HWD.pfnSetSpecialState(HWD_SET_FRAMEBUFFER, cv_glframebuffer.value);
-	I_DownSample();
-	RefreshOGLSDLSurface();
-}
-#endif
-
 // ==========================================================================
 // Lighting
 // ==========================================================================
 
-static void HWR_SetShaderState(void)
-{
-	HWD.pfnSetSpecialState(HWD_SET_SHADERS, HWR_UseShader() ? 1 : 0);
-}
-
 boolean HWR_UseShader(void)
 {
 	return (cv_glshaders.value && gl_shadersavailable);
+}
+
+static void HWR_SetShaderState(void)
+{
+	HWD.pfnSetSpecialState(HWD_SET_SHADERS, HWR_UseShader() ? 1 : 0);
 }
 
 boolean HWR_ShouldUsePaletteRendering(void)
@@ -5403,14 +5396,19 @@ void HWR_AddCommands(void)
 	CV_RegisterVar(&cv_glfallbackplayermodel);
 
 	CV_RegisterVar(&cv_glspritebillboarding);
+	CV_RegisterVar(&cv_glshearing);
+
 	CV_RegisterVar(&cv_glfakecontrast);
 	CV_RegisterVar(&cv_glslopecontrast);
-	CV_RegisterVar(&cv_glshearing);
+
 	CV_RegisterVar(&cv_glshaders);
+
 	CV_RegisterVar(&cv_lightdither);
+	CV_RegisterVar(&cv_secbright);
 
 	CV_RegisterVar(&cv_glfiltermode);
 	CV_RegisterVar(&cv_glanisotropicmode);
+
 	CV_RegisterVar(&cv_glsolvetjoin);
 
 	CV_RegisterVar(&cv_glbatching);
@@ -5418,12 +5416,9 @@ void HWR_AddCommands(void)
 	CV_RegisterVar(&cv_glrenderdistance);
 
 	CV_RegisterVar(&cv_glhorizonlines);
-
-	CV_RegisterVar(&cv_glfovchange);
-
 	CV_RegisterVar(&cv_glportals);
 
-	CV_RegisterVar(&cv_secbright);
+	CV_RegisterVar(&cv_glfovchange);
 
 	CV_RegisterVar(&cv_glpaletterendering);
 	CV_RegisterVar(&cv_glpalettedepth);
