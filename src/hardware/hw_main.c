@@ -248,10 +248,13 @@ static void CV_screentextures_ONChange(void)
 	ONLY_IF_GL_LOADED
 	if (cv_glscreentextures.value != 2)
 	{
+		if (cv_glpaletterendering.value != 0)
+			CV_SetValue(&cv_glpaletterendering, 0);
+
 #ifdef USE_FBO_OGL
-		CV_SetValue(&cv_glframebuffer, 0);
+		if (cv_glframebuffer.value != 0)
+			CV_SetValue(&cv_glframebuffer, 0);
 #endif
-		CV_SetValue(&cv_glpaletterendering, 0);
 	}
 	HWD.pfnSetSpecialState(HWD_SET_SCREEN_TEXTURES, cv_glscreentextures.value);
 }
@@ -270,7 +273,7 @@ static void CV_glshaders_OnChange(void)
 static void CV_glpaletterendering_OnChange(void)
 {
 	ONLY_IF_GL_LOADED
-	if (cv_glscreentextures.value != 2) // can't do palette rendering without screen textures
+	if (cv_glpaletterendering.value != 0 && cv_glscreentextures.value != 2) // can't do palette rendering without screen textures
 		CV_SetValue(&cv_glpaletterendering, 0);
 
 	if (gl_shadersavailable)
@@ -300,7 +303,7 @@ static void CV_glpalettedepth_OnChange(void)
 static void CV_glframebuffer_OnChange(void)
 {
 	ONLY_IF_GL_LOADED
-	if (cv_glscreentextures.value != 2) // screen FBO needs screen textures
+	if (cv_glframebuffer.value != 0 && cv_glscreentextures.value != 2) // screen FBO needs screen textures
 		CV_SetValue(&cv_glframebuffer, 0);
 
 	HWD.pfnSetSpecialState(HWD_SET_FRAMEBUFFER, cv_glframebuffer.value);
