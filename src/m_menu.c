@@ -4691,6 +4691,7 @@ void M_Init(void)
 #ifdef USE_FBO_OGL
 		OP_ExpOptionsMenu[op_exp_fbo].status = IT_DISABLED;
 #endif
+		OP_ExpOptionsMenu[op_exp_paldepth].status = IT_DISABLED;
 	}
 
 	if (rendermode == render_opengl)
@@ -4699,6 +4700,8 @@ void M_Init(void)
 		if (!supportFBO)
 			OP_ExpOptionsMenu[op_exp_fbo].status = IT_GRAYEDOUT;
 #endif
+		if (!gl_shadersavailable)
+			OP_OpenGLOptionsMenu[op_gl_shader].status = IT_GRAYEDOUT;
 	}
 #endif
 
