@@ -77,16 +77,9 @@ boolean gl_drawing_stencil = false;
 static INT32 current_bsp_culling_distance = 0;
 
 // base values set at SetViewSize
-static float gl_basecentery;
-static float gl_basecenterx;
-
-float gl_baseviewwindowy, gl_basewindowcentery;
-float gl_baseviewwindowx, gl_basewindowcenterx;
-float gl_viewwidth, gl_viewheight; // viewport clipping boundaries (screen coords)
-
-static float gl_centery, gl_centerx;
+float gl_baseviewwindowy, gl_baseviewwindowx;
 static float gl_viewwindowy, gl_viewwindowx; // top left corner of view window
-static float gl_windowcentery, gl_windowcenterx; // center of view window, for projection
+float gl_viewwidth, gl_viewheight; // viewport clipping boundaries (screen coords)
 
 FTransform atransform;
 
@@ -95,8 +88,6 @@ static float gl_viewx, gl_viewy, gl_viewz;
 float gl_viewsin, gl_viewcos;
 static float gl_viewludsin, gl_viewludcos;
 static angle_t gl_aimingangle;
-
-static float gl_pspritexscale, gl_pspriteyscale;
 
 seg_t *gl_curline;
 side_t *gl_sidedef;
@@ -4989,17 +4980,8 @@ void HWR_SetViewSize(void)
 	if (splitscreen > 1)
 		gl_viewwidth /= 2;
 
-	gl_basecenterx = gl_viewwidth / 2;
-	gl_basecentery = gl_viewheight / 2;
-
 	gl_baseviewwindowy = 0;
-	gl_basewindowcentery = (float)(gl_viewheight / 2);
-
 	gl_baseviewwindowx = 0;
-	gl_basewindowcenterx = (float)(gl_viewwidth / 2);
-
-	gl_pspritexscale = ((vid.width*gl_pspriteyscale*BASEVIDHEIGHT)/BASEVIDWIDTH)/vid.height;
-	gl_pspriteyscale = ((vid.height*gl_pspritexscale*BASEVIDWIDTH)/BASEVIDHEIGHT)/vid.width;
 
 	HWD.pfnFlushScreenTextures();
 }
@@ -5212,23 +5194,17 @@ static void HWR_RenderFrame(INT32 viewnumber, player_t *player, boolean skybox)
 	const float fpov = FIXED_TO_FLOAT(cv_fov.value+player->fovadd);
 
 	// set window position
-	gl_centerx = gl_basecenterx;
 	gl_viewwindowx = gl_baseviewwindowx;
-	gl_windowcenterx = gl_basewindowcenterx;
-	gl_centery = gl_basecentery;
 	gl_viewwindowy = gl_baseviewwindowy;
-	gl_windowcentery = gl_basewindowcentery;
 
 	if ((splitscreen == 1 && viewnumber == 1) || (splitscreen > 1 && viewnumber > 1))
 	{
 		gl_viewwindowy += gl_viewheight;
-		gl_windowcentery += gl_viewheight;
 	}
 
 	if (splitscreen > 1 && viewnumber & 1)
 	{
 		gl_viewwindowx += gl_viewwidth;
-		gl_windowcenterx += gl_viewwidth;
 	}
 
 	if (splitscreen == 2 && player == &players[displayplayers[2]])
@@ -5300,16 +5276,18 @@ void HWR_RenderPlayerView(INT32 viewnumber, player_t *player)
 {
 	const boolean skybox = (skyboxmo[0] && cv_skybox.value); // True if there's a skybox object and skyboxes are on
 
-	FRGBAFloat ClearColor;
-
-	ClearColor.red = 0.0f;
-	ClearColor.green = 0.0f;
-	ClearColor.blue = 0.0f;
-	ClearColor.alpha = 1.0f;
-
 	// Clear the color buffer, stops HOMs. Also seems to fix the skybox issue on Intel GPUs.
 	if (viewnumber == 0) // Only do it if it's the first screen being rendered
+	{
+		FRGBAFloat ClearColor;
+
+		ClearColor.red = 0.0f;
+		ClearColor.green = 0.0f;
+		ClearColor.blue = 0.0f;
+		ClearColor.alpha = 1.0f;
+
 		HWD.pfnClearBuffer(true, false, false, &ClearColor);
+	}
 
 	if (HWR_UseShader())
 	{
