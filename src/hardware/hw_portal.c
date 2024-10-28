@@ -181,7 +181,7 @@ void HWR_RenderPortal(gl_portal_t* portal, gl_portal_t* rootportal, const float 
 		HWR_PortalFrame(rootportal);
 	else // current frame is not a portal frame but the main view!
 	{
-		R_SetupFrame(viewssnum);
+		R_SetupFrame(viewssnum, false);
 		portalclipline = NULL;
 	}
 

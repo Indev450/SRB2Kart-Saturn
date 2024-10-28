@@ -1221,7 +1221,7 @@ void R_SkyboxFrame(int s)
 	R_SetupCommonFrame(player, viewmobj->subsector);
 }
 
-void R_SetupFrame(int s)
+void R_SetupFrame(int s, boolean skybox)
 {
 	player_t *player = &players[displayplayers[s]];
 	camera_t *thiscam = &camera[s];
@@ -1247,7 +1247,7 @@ void R_SetupFrame(int s)
 	else if (thiscam && !chasecam)
 		thiscam->chase = false;
 
-	newview->sky = false;
+	newview->sky = !skybox;
 
 	R_SetupAimingFrame(player, thiscam);
 
@@ -1385,7 +1385,7 @@ void R_RenderPlayerView(player_t *player)
 	}
 	PS_STOP_TIMING(ps_skyboxtime);
 
-	R_SetupFrame(viewssnum);
+	R_SetupFrame(viewssnum, skybox);
 	skyVisible = false;
 	framecount++;
 	validcount++;
