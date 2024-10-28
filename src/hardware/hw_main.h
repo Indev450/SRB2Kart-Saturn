@@ -149,15 +149,12 @@ extern consvar_t cv_glshaders;
 #ifdef USE_FBO_OGL
 extern consvar_t cv_glframebuffer;
 #endif
-extern consvar_t cv_splitwallfix;
 extern consvar_t cv_glshearing;
 extern consvar_t cv_glfov;
 extern consvar_t cv_glmdls;
 extern consvar_t cv_glfog;
-extern consvar_t cv_glfogdensity;
 extern consvar_t cv_glfiltermode;
 extern consvar_t cv_glanisotropicmode;
-extern consvar_t cv_glcorrecttricks;
 extern consvar_t cv_glfovchange;
 extern consvar_t cv_glsolvetjoin;
 extern consvar_t cv_glspritebillboarding;
