@@ -112,10 +112,11 @@ boolean LoadGL(void)
 
 	\return	if true, changed video mode
 */
+static boolean first_init = false;
+
 boolean OglSdlSurface(INT32 w, INT32 h)
 {
 	INT32 cbpp = cv_scr_depth.value < 16 ? 16 : cv_scr_depth.value;
-	static boolean first_init = false;
 	const char *gllogdir = NULL;
 
 	oglflags = 0;
@@ -180,7 +181,6 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 #endif
 #endif
 	}
-	first_init = true;
 
 	if (cv_vidwait.value)
 	{
@@ -227,8 +227,11 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 	}
 #endif
 
-	HWR_Startup();
+	if (!first_init)
+		HWR_Startup();
 	textureformatGL = cbpp > 16 ? GL_RGBA : GL_RGB5_A1;
+
+	first_init = true;
 
 	return true;
 }

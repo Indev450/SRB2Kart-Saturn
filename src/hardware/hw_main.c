@@ -263,7 +263,8 @@ static void CV_glframebuffer_OnChange(void)
 	if (cv_glframebuffer.value != 0 && cv_glscreentextures.value != 2) // screen FBO needs screen textures
 		CV_SetValue(&cv_glframebuffer, 0);
 
-	HWD.pfnSetSpecialState(HWD_SET_FRAMEBUFFER, cv_glframebuffer.value);
+	if (supportFBO)
+		HWD.pfnSetSpecialState(HWD_SET_FRAMEBUFFER, cv_glframebuffer.value);
 	I_DownSample();
 	RefreshOGLSDLSurface();
 	M_UpdateOGLMenu();
@@ -5468,7 +5469,8 @@ void HWR_Startup(void)
 		HWR_TogglePaletteRendering();
 
 #ifdef USE_FBO_OGL
-		HWD.pfnSetSpecialState(HWD_SET_FRAMEBUFFER, cv_glframebuffer.value);
+		if (supportFBO)
+			HWD.pfnSetSpecialState(HWD_SET_FRAMEBUFFER, cv_glframebuffer.value);
 #endif
 
 		if (msaa)
