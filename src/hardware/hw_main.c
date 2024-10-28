@@ -2792,6 +2792,29 @@ static boolean HWR_DoCulling(line_t *cullheight, line_t *viewcullheight, float v
 	return false;
 }
 
+static inline void HWR_PortalSubsector(seg_t *line, subsector_t *sub, INT16 count)
+{
+	if (line)
+	{
+		//Hurdler: at this point validcount must be the same, but is not because
+		//         gl_frontsector doesn't point anymore to sub->sector due to
+		//         the call gl_frontsector = R_FakeFlat(...)
+		//         if it's not done, the sprite is drawn more than once,
+		//         what looks really bad with translucency or dynamic light,
+		//         without talking about the overdraw of course.
+		sub->sector->validcount = validcount;/// \todo fix that in a better way
+
+		while (count--)
+		{
+				if (!line->polyseg) // ignore segs that belong to polyobjects
+					HWR_AddLine(line);
+				line++;
+		}
+	}
+
+	sub->validcount = validcount;
+}
+
 // -----------------+
 // HWR_Subsector    : Determine floor/ceiling planes.
 //                  : Add sprites of things in sector.
@@ -2811,7 +2834,6 @@ static void HWR_Subsector(size_t num)
 	extracolormap_t *floorcolormap;
 	extracolormap_t *ceilingcolormap;
 	ffloor_t *rover;
-	boolean skipSprites = false;
 
 #ifdef PARANOIA //no risk while developing, enough debugging nights!
 	if (num >= addsubsector)
@@ -2845,8 +2867,8 @@ static void HWR_Subsector(size_t num)
 
 	if (gl_portal_state == GLPORTAL_SEARCH)
 	{
-		skipSprites = true;
-		goto skip_stuff_for_portals;// hopefully this goto is okay
+		HWR_PortalSubsector(line, sub, count);
+		return;
 	}
 
 	floorcolormap = ceilingcolormap = gl_frontsector->extra_colormap;
@@ -3077,8 +3099,6 @@ static void HWR_Subsector(size_t num)
 		}
 	}
 
-skip_stuff_for_portals:
-
 	// Hurdler: here interesting things are happening!
 	// we have just drawn the floor and ceiling
 	// we now draw the sprites first and then the walls
@@ -3087,8 +3107,7 @@ skip_stuff_for_portals:
 	{
 		// draw sprites first, coz they are clipped to the solidsegs of
 		// subsectors more 'in front'
-		if (!skipSprites)
-			HWR_AddSprites(gl_frontsector);
+		HWR_AddSprites(gl_frontsector);
 
 		//Hurdler: at this point validcount must be the same, but is not because
 		//         gl_frontsector doesn't point anymore to sub->sector due to
