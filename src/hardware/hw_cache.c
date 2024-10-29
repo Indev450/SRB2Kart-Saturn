@@ -497,7 +497,7 @@ static void FreeMipmapColormap(INT32 patchnum, void *patch)
 		if (next->data)
 			Z_Free(next->data);
 		next->data = NULL;
-		DeleteTexture(next);
+		GL_DeleteTexture(next);
 
 		// Free the old colormap mipmap from memory.
 		free(next);
@@ -508,7 +508,7 @@ void HWR_FreeMipmapCache(void)
 {
 	INT32 i;
 	// free references to the textures
-	ClearMipMapCache();
+	GL_ClearMipMapCache();
 
 	// free all hardware-converted graphics cached in the heap
 	// our gool is only the textures since user of the texture is the texture cache
@@ -575,7 +575,7 @@ GLMapTexture_t *HWR_GetTexture(INT32 tex, boolean noencore)
 
 	// If hardware does not have the texture, then call pfnSetTexture to upload it
 	if (!gltex->mipmap.downloaded)
-		SetTexture(&gltex->mipmap);
+		GL_SetTexture(&gltex->mipmap);
 	HWR_SetCurrentTexture(&gltex->mipmap);
 
 	// The system-memory data can be purged now.
@@ -663,7 +663,7 @@ void HWR_GetFlat(lumpnum_t flatlumpnum, boolean noencoremap)
 
 	// If hardware does not have the texture, then call pfnSetTexture to upload it
 	if (!glmip->downloaded)
-		SetTexture(glmip);
+		GL_SetTexture(glmip);
 	HWR_SetCurrentTexture(glmip);
 
 	// The system-memory data can be purged now.
@@ -692,7 +692,7 @@ static void HWR_LoadMappedPatch(GLMipmap_t *glmip, GLPatch_t *gpatch)
 
 	// If hardware does not have the texture, then call pfnSetTexture to upload it
 	if (!glmip->downloaded)
-		SetTexture(glmip);
+		GL_SetTexture(glmip);
 	HWR_SetCurrentTexture(glmip);
 
 	// The system-memory data can be purged now.
@@ -722,7 +722,7 @@ void HWR_GetPatch(GLPatch_t *gpatch)
 
 	// If hardware does not have the texture, then call pfnSetTexture to upload it
 	if (!gpatch->mipmap->downloaded)
-		SetTexture(gpatch->mipmap);
+		GL_SetTexture(gpatch->mipmap);
 	HWR_SetCurrentTexture(gpatch->mipmap);
 
 	// The system-memory patch data can be purged now.
@@ -897,7 +897,7 @@ void HWR_GetFadeMask(lumpnum_t fademasklumpnum)
 	if (!glmip->downloaded && !glmip->data)
 		HWR_CacheFadeMask(glmip, fademasklumpnum);
 
-	SetTexture(glmip);
+	GL_SetTexture(glmip);
 
 	// The system-memory data can be purged now.
 	Z_ChangeTag(glmip->data, PU_HWRCACHE_UNLOCKED);
@@ -930,11 +930,11 @@ void HWR_SetPalette(RGBA_t *palette)
 				crushed_palette[i].s.blue = (UINT8)(fblue / 31.0f * 255.0f);
 				crushed_palette[i].s.alpha = 255;
 			}
-			SetScreenPalette(crushed_palette);
+			GL_SetScreenPalette(crushed_palette);
 		}
 		else
 		{
-			SetScreenPalette(palette);
+			GL_SetScreenPalette(palette);
 		}
 
 		// this part is responsible for keeping track of the palette OUTSIDE of a level.
@@ -944,7 +944,7 @@ void HWR_SetPalette(RGBA_t *palette)
 	else
 	{
 		// set the palette for the textures
-		SetPalette(palette);
+		GL_SetPalette(palette);
 		// reset mapPalette so next call to HWR_SetMapPalette will update everything correctly
 		memset(mapPalette, 0, sizeof(mapPalette));
 		// hardware driver will flush there own cache if cache is non paletized
@@ -977,7 +977,7 @@ static void HWR_SetPaletteLookup(RGBA_t *palette)
 		}
 	}
 #undef STEP_SIZE
-	SetPaletteLookup(lut);
+	GL_SetPaletteLookup(lut);
 	Z_Free(lut);
 }
 
@@ -1025,7 +1025,7 @@ void HWR_SetMapPalette(void)
 		// in palette rendering mode, this means that all rgba textures now have wrong colors
 		// and the lookup table is outdated
 		HWR_SetPaletteLookup(mapPalette);
-		SetPalette(mapPalette);
+		GL_SetPalette(mapPalette);
 
 		if (patchformat == GL_TEXFMT_RGBA || textureformat == GL_TEXFMT_RGBA)
 		{
@@ -1048,7 +1048,7 @@ UINT32 HWR_CreateLightTable(UINT8 *lighttable)
 	for (i = 0; i < 256 * 32; i++)
 		hw_lighttable[i] = palette[lighttable[i]];
 
-	id = CreateLightTable(hw_lighttable);
+	id = GL_CreateLightTable(hw_lighttable);
 	Z_Free(hw_lighttable);
 	return id;
 }
@@ -1084,7 +1084,7 @@ UINT32 HWR_GetLightTableID(extracolormap_t *colormap)
 void HWR_ClearLightTables(void)
 {
 	if (vid.glstate == VID_GL_LIBRARY_LOADED)
-		ClearLightTables();
+		GL_ClearLightTables();
 }
 
 #endif //HWRENDER

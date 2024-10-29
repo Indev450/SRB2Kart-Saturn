@@ -85,7 +85,7 @@ void *GetGLFunc(const char *proc)
 	return SDL_GL_GetProcAddress(proc);
 }
 
-boolean VID_LoadGPUAPI(void)
+boolean VID_LoadOGLAPI(void)
 {
 #ifndef STATIC_OPENGL
 	const char *OGLLibname = NULL;
@@ -168,7 +168,7 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 		else
 			supportMipMap = true;
 
-		if (isExtAvailable("GL_EXT_texture_filter_anisotropic", gl_extensions))
+		if (GL_isExtAvailable("GL_EXT_texture_filter_anisotropic", gl_extensions))
 			pglGetIntegerv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maximumAnisotropy);
 		else
 			maximumAnisotropy = 1;
@@ -196,18 +196,18 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 	// The screen textures need to be flushed if the width or height change so that they be remade for the correct size
 	if (screen_width != w || screen_height != h)
 	{
-		FlushScreenTextures();
+		GL_FlushScreenTextures();
 
 #ifdef USE_FBO_OGL
-		GLFramebuffer_DeleteAttachments();
+		GL_Framebuffer_DeleteAttachments();
 #endif
 	}
 
 	screen_width = (GLint)w;
 	screen_height = (GLint)h;
 
-	SetModelView(w, h);
-	SetStates();
+	GL_SetModelView(w, h);
+	GL_SetStates();
 	pglClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 
 #ifdef USE_FBO_OGL
@@ -218,9 +218,9 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 	);
 
 	if (RenderToFramebuffer)
-		GLFramebuffer_Enable();
+		GL_Framebuffer_Enable();
 	else
-		GLFramebuffer_Disable();
+		GL_Framebuffer_Disable();
 
 	if (RenderToFramebuffer && HWR_UseShader())
 	{
@@ -274,7 +274,7 @@ void OglSdlFinishUpdate(boolean waitvbl)
 
 	if (RenderToFramebuffer)
 	{
-		GLFramebuffer_Unbind();
+		GL_Framebuffer_Unbind();
 		fbo_shader = true; // only need to run this here to not cause brightness + performance issues, its a bool since im a lazy ass
 	}
 #endif
@@ -284,14 +284,14 @@ void OglSdlFinishUpdate(boolean waitvbl)
 #ifdef USE_FBO_OGL
 	if (RenderToFramebuffer)
 	{
-		GLFramebuffer_Enable();
+		GL_Framebuffer_Enable();
 		fbo_shader = false;
 	}
 #endif
 
 	SDL_GL_SwapWindow(window);
 
-	GClipRect(0, 0, realwidth, realheight, NZCLIP_PLANE, FAR_ZCLIP_DEFAULT);
+	GL_GClipRect(0, 0, realwidth, realheight, NZCLIP_PLANE, FAR_ZCLIP_DEFAULT);
 
 	// Sryder:	We need to draw the final screen texture again into the other buffer in the original position so that
 	//			effects that want to take the old screen can do so after this

@@ -27,7 +27,7 @@ extern boolean isnvidiagpu;
 #endif
 
 void OglSdlFinishUpdate(boolean vidwait);
-boolean VID_LoadGPUAPI(void);
+boolean VID_LoadOGLAPI(void);
 
 extern SDL_Renderer *renderer;
 extern SDL_GLContext sdlglcontext;

@@ -2003,27 +2003,27 @@ void I_StartupGraphics(void)
 	else if (M_CheckParm("-opengl"))
 		rendermode = render_opengl;
 
-    msaa = 0; boolean msaa_set = false;
-    a2c = false; boolean a2c_set = false;
+	msaa = 0; boolean msaa_set = false;
+	a2c = false; boolean a2c_set = false;
 
-    if (M_CheckParm("-msaa") && M_IsNextParm())
-    {
-        const char* str = M_GetNextParm();
-        if (sscanf(str, "%u", &msaa))
-        {
-            msaa_set = true;
-        }
-    }
+	if (M_CheckParm("-msaa") && M_IsNextParm())
+	{
+		const char* str = M_GetNextParm();
+		if (sscanf(str, "%u", &msaa))
+		{
+			msaa_set = true;
+		}
+	}
 
-    if (M_CheckParm("-a2c"))
-    {
-        a2c = true;
-        a2c_set = true;
-    }
-    else if (M_CheckParm("-noa2c"))
-    {
-        a2c_set = true;
-    }
+	if (M_CheckParm("-a2c"))
+	{
+		a2c = true;
+		a2c_set = true;
+	}
+	else if (M_CheckParm("-noa2c"))
+	{
+		a2c_set = true;
+	}
 
     {
 		char   line[16];
@@ -2033,52 +2033,52 @@ void I_StartupGraphics(void)
 		{
 			while (fgets(line, sizeof line, file) != NULL)
 			{
-                word = strtok(line, " \n");
+				word = strtok(line, " \n");
 
-                if (rendermode == render_none)
-                {
-                    if (strcasecmp(word, "software") == 0)
-                    {
-                        rendermode = render_soft;
-                    }
-                    else if (strcasecmp(word, "opengl") == 0)
-                    {
-                        rendermode = render_opengl;
-                    }
+				if (rendermode == render_none)
+				{
+					if (strcasecmp(word, "software") == 0)
+					{
+						rendermode = render_soft;
+					}
+					else if (strcasecmp(word, "opengl") == 0)
+					{
+						rendermode = render_opengl;
+					}
 
-                    if (rendermode != render_none)
-                    {
-                        CONS_Printf("Using last known renderer: %s\n", line);
-                    }
+					if (rendermode != render_none)
+					{
+						CONS_Printf("Using last known renderer: %s\n", line);
+					}
 			    }
 
-                if (!msaa_set)
-                {
-                    if (strcasecmp(word, "msaa") == 0)
-                    {
-                        const char *nextword = strtok(NULL, " \n");
+				if (!msaa_set)
+				{
+					if (strcasecmp(word, "msaa") == 0)
+					{
+						const char *nextword = strtok(NULL, " \n");
 
-                        if (!nextword || !sscanf(nextword, "%u", &msaa))
-                        {
-                            CONS_Alert(CONS_ERROR, "Malformed MSAA entry in renderer.txt\n");
-                        }
-                        else
-                        {
-                            CONS_Printf("Using last know MSAA value: %u\n", msaa);
-                        }
-                    }
-                }
+						if (!nextword || !sscanf(nextword, "%u", &msaa))
+						{
+							CONS_Alert(CONS_ERROR, "Malformed MSAA entry in renderer.txt\n");
+						}
+						else
+						{
+							CONS_Printf("Using last know MSAA value: %u\n", msaa);
+						}
+					}
+				}
 
-                if (!a2c_set)
-                {
-                    if (strcasecmp(word, "a2c") == 0)
-                    {
-                        a2c = true;
+				if (!a2c_set)
+				{
+					if (strcasecmp(word, "a2c") == 0)
+					{
+						a2c = true;
 
-                        CONS_Printf("Using a2c because it was specified to be used earlier\n");
-                    }
-                }
-            }
+						CONS_Printf("Using a2c because it was specified to be used earlier\n");
+					}
+				}
+			}
 
 			fclose(file);
 		}
@@ -2110,13 +2110,13 @@ void I_StartupGraphics(void)
 			}
 
 #ifdef HWRENDER
-            fprintf(file, "msaa %u\n", msaa);
+			fprintf(file, "msaa %u\n", msaa);
 
-            if (a2c)
-                fputs("a2c\n", file);
+			if (a2c)
+				fputs("a2c\n", file);
 #endif
 
-            fclose(file);
+			fclose(file);
 		}
 		else
 		{
@@ -2127,12 +2127,12 @@ void I_StartupGraphics(void)
 	usesdl2soft = M_CheckParm("-softblit");
 	borderlesswindow = M_CheckParm("-borderless");
 
-	//SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY>>1,SDL_DEFAULT_REPEAT_INTERVAL<<2);
 	VID_Command_ModeList_f();
+
 #ifdef HWRENDER
 	if (rendermode == render_opengl)
 	{
-		vid.glstate = (VID_LoadGPUAPI() && Init()) ? VID_GL_LIBRARY_LOADED : VID_GL_LIBRARY_ERROR;
+		vid.glstate = (VID_LoadOGLAPI() && GL_Init()) ? VID_GL_LIBRARY_LOADED : VID_GL_LIBRARY_ERROR;
 
 		if (vid.glstate == VID_GL_LIBRARY_ERROR)
 		{
