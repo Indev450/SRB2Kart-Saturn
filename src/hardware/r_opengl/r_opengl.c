@@ -1314,16 +1314,13 @@ void GL_ReadScreenTexture(int tex, UINT16 *dst_data)
 // -----------------+
 void GL_SetPalette(RGBA_t *palette)
 {
-	INT32 i;
-
-	for (i = 0; i < 256; i++)
+	size_t palsize = (sizeof(RGBA_t) * 256);
+	// on a palette change, you have to reload all of the textures
+	if (memcmp(&myPaletteData, palette, palsize))
 	{
-		myPaletteData[i].s.red   = palette[i].s.red;
-		myPaletteData[i].s.green = palette[i].s.green;
-		myPaletteData[i].s.blue  = palette[i].s.blue;
-		myPaletteData[i].s.alpha = palette[i].s.alpha;
+		memcpy(&myPaletteData, palette, palsize);
+		GL_Flush();
 	}
-	GL_Flush();
 }
 
 // -----------------+
