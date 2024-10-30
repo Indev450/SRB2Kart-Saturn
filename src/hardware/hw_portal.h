@@ -41,12 +41,8 @@ typedef struct gl_portal_s
 	fixed_t viewz;
 	angle_t viewangle;
 
-	UINT8 pass;			/**< Keeps track of the portal's recursion depth. */
-	INT32 startline;
-	INT32 clipline;		/**< Optional clipline for line-based portals. */
-	INT32 drawcount;	/**< For OpenGL. */
-
-	seg_t *seg;
+	seg_t *seg; 		// seg that is used for drawing to the stencil buffer
+	INT32 clipline;		// Optional clipline for line-based portals
 
 	// angles for the left and right edges of the portal
 	// relative to the viewpoint

@@ -55,9 +55,6 @@ static gl_portal_t* HWR_Portal_Add (seg_t *seg)
 	}
 	portal->next = NULL;
 
-	// Increase recursion level.
-	portal->pass = portalrender+1;
-
 	portal->seg = seg;
 
 	return portal;
@@ -112,7 +109,6 @@ void HWR_Portal_Add2Lines(const INT32 line1, const INT32 line2, seg_t *seg)
 	portal->angle1 = R_PointToAngle64(seg->v1->x, seg->v1->y) + dangle;
 	portal->angle2 = R_PointToAngle64(seg->v2->x, seg->v2->y) + dangle;
 
-	portal->startline = line1;
 	portal->clipline = line2;
 }
 
