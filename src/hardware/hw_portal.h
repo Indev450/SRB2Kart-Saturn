@@ -47,6 +47,11 @@ typedef struct gl_portal_s
 	INT32 drawcount;	/**< For OpenGL. */
 
 	seg_t *seg;
+
+	// angles for the left and right edges of the portal
+	// relative to the viewpoint
+	angle_t angle1;
+	angle_t angle2;
 } gl_portal_t;
 
 typedef struct gl_portallist_s
@@ -70,7 +75,6 @@ void HWR_PortalClipping(gl_portal_t *portal);
 
 void HWR_Portal_Add2Lines(const INT32 line1, const INT32 line2, seg_t *seg);
 void HWR_PortalFrame(gl_portal_t* portal);
-void HWR_RenderPortalSeg(gl_portal_t* portal, SINT8 state);
 void HWR_RenderPortal(gl_portal_t* portal, gl_portal_t* rootportal, const float fpov, player_t *player, int stencil_level);
 void HWR_FreePortalList(gl_portallist_t portallist);
 

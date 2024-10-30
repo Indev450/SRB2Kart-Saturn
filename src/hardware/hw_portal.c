@@ -32,18 +32,10 @@ SINT8 gl_portal_state = GLPORTAL_OFF;
 
 gl_portallist_t *currentportallist;
 
-// Adds an entry to the clipper for portal rendering
+// clip the area outside the portal destination window
 void HWR_PortalClipping(gl_portal_t *portal)
 {
-	angle_t angle1, angle2;
-
-	line_t *line = &lines[portal->clipline];
-
-	angle1 = R_PointToAngle64(line->v1->x, line->v1->y);
-	angle2 = R_PointToAngle64(line->v2->x, line->v2->y);
-
-	// clip things that are not inside the portal window from our viewpoint
-	gld_clipper_SafeAddClipRange(angle2, angle1);
+	gld_clipper_SafeAddClipRange(portal->angle1, portal->angle2);
 }
 
 static gl_portal_t* HWR_Portal_Add (seg_t *seg)
@@ -117,6 +109,9 @@ void HWR_Portal_Add2Lines(const INT32 line1, const INT32 line2, seg_t *seg)
 	portal->viewz = viewz + dest->frontsector->floorheight - start->frontsector->floorheight;
 	portal->viewangle = viewangle + dangle;
 
+	portal->angle1 = R_PointToAngle64(seg->v1->x, seg->v1->y) + dangle;
+	portal->angle2 = R_PointToAngle64(seg->v2->x, seg->v2->y) + dangle;
+
 	portal->startline = line1;
 	portal->clipline = line2;
 }
@@ -146,7 +141,7 @@ void HWR_PortalFrame(gl_portal_t* portal)
 }
 
 // Renders a portal segment.
-void HWR_RenderPortalSeg(gl_portal_t* portal, SINT8 state)
+static void HWR_RenderPortalSeg(gl_portal_t* portal, SINT8 state)
 {
 	gl_drawing_stencil = true; // do not draw outside of the stencil buffer, idiot.
 
@@ -200,24 +195,6 @@ void HWR_RenderPortal(gl_portal_t* portal, gl_portal_t* rootportal, const float 
 	HWR_SetStencilState(HWR_STENCIL_DEPTH, stencil_level);
 	HWR_RenderPortalSeg(portal, GLPORTAL_DEPTH);
 }
-
-// idea for fixing fakery map: one portal pillar works, 2 pillars have left/right bug wall, 1 pillar has both sides bugged.
-// bounding box is probably right on the edge, maybe could check for this with P_ClosestPointOnLine
-// so: for each side check, if it passes then also check distance to line,
-// if its zero (or very close?) then dont return true, instead continue to next side check
-// it helped with center pillars! but other parts still have issues, probably because some of bounding box is on correct side.
-
-// idea for further clipping improvement:
-// have a separate xyz coordinate for portal view side checking: one that is derived by moving the viewxyz forward
-// the new coords would be at the intersection of line_a and line_b, where
-// line_a = line of view, pointing forward from the center of the camera
-// line_b = a line orthogonal to line_a, defined so that the nearest vertex of portalclipline lies within it
-// maybe if the seg to be drawn has these new coords on one side and the normal viewxyz on the other side then it can be culled?
-
-// looks like P_Thrust in p_user.c has code for moving point forward towards a direction
-// maybe P_InterceptVector could be used for intersect point
-// use returned value as multiplier for the added values from p_thrust thing
-// P_InterceptVector needs divlines which need dx and dy, dx=x2-x1 dy=y2-y1
 
 // returns true if the point is on the correct (viewable) side of the
 // portal destination line
