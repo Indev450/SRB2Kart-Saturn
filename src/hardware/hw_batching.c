@@ -47,12 +47,12 @@ int unsortedVertexArrayAllocSize = 65536;
 // Call HWR_RenderBatches to render all the collected geometry.
 void HWR_StartBatching(void)
 {
-    if (currently_batching)
+	if (currently_batching)
 	{
-        I_Error("Repeat call to HWR_StartBatching without HWR_RenderBatches");
+		I_Error("Repeat call to HWR_StartBatching without HWR_RenderBatches");
 	}
 
-    // init arrays if that has not been done yet
+	// init arrays if that has not been done yet
 	if (!finalVertexArray)
 	{
 		finalVertexArray = malloc(finalVertexArrayAllocSize * sizeof(FOutVector));
@@ -62,7 +62,7 @@ void HWR_StartBatching(void)
 		unsortedVertexArray = malloc(unsortedVertexArrayAllocSize * sizeof(FOutVector));
 	}
 
-    currently_batching = true;
+	currently_batching = true;
 }
 
 // This replaces the direct calls to GL_SetTexture in cases where batching is available.
@@ -70,14 +70,14 @@ void HWR_StartBatching(void)
 // Doing this was easier than getting a texture pointer to HWR_ProcessPolygon.
 void HWR_SetCurrentTexture(GLMipmap_t *texture)
 {
-    if (currently_batching)
-    {
-        current_texture = texture;
-    }
-    else
-    {
-        GL_SetTexture(texture);
-    }
+	if (currently_batching)
+	{
+		current_texture = texture;
+	}
+	else
+	{
+		GL_SetTexture(texture);
+	}
 }
 
 // If batching is enabled, this function collects the polygon data and the chosen texture
@@ -85,7 +85,7 @@ void HWR_SetCurrentTexture(GLMipmap_t *texture)
 // render the polygon immediately.
 void HWR_ProcessPolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags, int shader_target, boolean horizonSpecial)
 {
-    if (currently_batching)
+	if (currently_batching)
 	{
 		if (!pSurf)
 			I_Error("Got a null FSurfaceInfo in batching");// nulls should not come in the stuff that batching currently applies to
@@ -225,7 +225,7 @@ static int comparePolygonsNoShaders(const void *p1, const void *p2)
 // the rendering backend to draw them.
 void HWR_RenderBatches(void)
 {
-    int finalVertexWritePos = 0;// position in finalVertexArray
+	int finalVertexWritePos = 0;// position in finalVertexArray
 	int finalIndexWritePos = 0;// position in finalVertexIndexArray
 
 	int polygonReadPos = 0;// position in polygonArraySorted
@@ -262,6 +262,7 @@ void HWR_RenderBatches(void)
 	ps_hw_numcalls.value.i = ps_hw_numverts.value.i = 0;
 	ps_hw_numshaders.value.i = ps_hw_numtextures.value.i
 		= ps_hw_numpolyflags.value.i = ps_hw_numcolors.value.i = 1;
+
 	// init polygonArraySorted
 	for (i = 0; i < polygonArraySize; i++)
 	{
@@ -300,8 +301,8 @@ void HWR_RenderBatches(void)
 
 	if (currentPolyFlags & PF_NoTexture)
 		currentTexture = NULL;
-    else
-	    GL_SetTexture(currentTexture);
+	else
+		GL_SetTexture(currentTexture);
 
 	while (1)// note: remember handling notexture polyflag as having texture number 0 (also in comparePolygons)
 	{
@@ -464,6 +465,7 @@ void HWR_RenderBatches(void)
 
 				ps_hw_numcolors.value.i++;
 			}
+			// and that should be it?
 		}
 	}
 	// reset the arrays (set sizes to 0)
@@ -472,6 +474,5 @@ void HWR_RenderBatches(void)
 
 	PS_STOP_TIMING(ps_hw_batchdrawtime);
 }
-
 
 #endif // HWRENDER
