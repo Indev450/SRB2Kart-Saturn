@@ -264,6 +264,7 @@ void HWR_RenderBatches(void)
 		= ps_hw_numpolyflags.value.i = ps_hw_numcolors.value.i = 1;
 
 	// init polygonArraySorted
+	#pragma omp simd
 	for (i = 0; i < polygonArraySize; i++)
 	{
 		polygonArraySorted[i] = &polygonArray[i];
