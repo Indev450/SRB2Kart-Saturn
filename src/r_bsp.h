@@ -25,7 +25,8 @@ extern side_t *sidedef;
 extern line_t *linedef;
 extern sector_t *frontsector;
 extern sector_t *backsector;
-extern portal_pair *g_portal; // is curline a portal seg?
+typedef struct portal_s portal_t;
+extern portal_t *g_portal; // is curline a portal seg?
 
 // drawsegs are allocated on the fly... see r_segs.c
 
@@ -41,7 +42,6 @@ void R_ClearClipSegs(void);
 void R_PortalClearClipSegs(INT32 start, INT32 end);
 void R_ClearDrawSegs(void);
 void R_RenderBSPNode(INT32 bspnum);
-void R_AddPortal(INT32 line1, INT32 line2, INT32 x1, INT32 x2);
 
 // determines when a given sector shouldn't abide by the encoremap's palette.
 // no longer a static since this is used for encore in hw_main.c as well now:

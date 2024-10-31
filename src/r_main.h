@@ -74,12 +74,6 @@ extern lighttable_t *zlight[LIGHTLEVELS][MAXLIGHTZ];
 // Utility functions.
 INT32 R_PointOnSide(fixed_t x, fixed_t y, const node_t *node);
 
-FUNCINLINE static ATTRINLINE PUREFUNC INT32 R_PointOnSideRender(fixed_t x, fixed_t y, const node_t *node)
-{
-	// use cross product to determine side quickly
-	return (INT64)(y - node->y) * node->dx - (INT64)(x - node->x) * node->dy > 0;
-}
-
 FUNCINLINE static ATTRINLINE PUREFUNC INT32 R_PointOnSegSide(fixed_t x, fixed_t y, const seg_t *line)
 {
     fixed_t lx = line->v1->x;
@@ -106,27 +100,6 @@ subsector_t *R_IsPointInSubsector(fixed_t x, fixed_t y);
 
 boolean R_DoCulling(line_t *cullheight, line_t *viewcullheight, fixed_t vz, fixed_t bottomh, fixed_t toph);
 void R_GetRenderBlockMapDimensions(fixed_t drawdist, INT32 *xl, INT32 *xh, INT32 *yl, INT32 *yh);
-
-
-typedef struct portal_pair
-{
-    INT32 line1;
-    INT32 line2;
-    UINT8 pass;
-    struct portal_pair *next;
-
-    fixed_t viewx;
-    fixed_t viewy;
-    fixed_t viewz;
-    angle_t viewangle;
-
-    INT32 start;
-    INT32 end;
-    INT16 *ceilingclip;
-    INT16 *floorclip;
-    fixed_t *frontscale;
-} portal_pair;
-
 
 // Performance stats
 extern precise_t ps_prevframetime;// time when previous frame was rendered
@@ -163,7 +136,7 @@ extern consvar_t cv_drawdist, cv_drawdist_precip, cv_lessprecip, cv_mobjscalepre
 extern consvar_t cv_fov;
 extern consvar_t cv_skybox;
 extern consvar_t cv_tailspickup;
-extern consvar_t cv_grmaxinterpdist;
+extern consvar_t cv_maxinterpdist;
 extern consvar_t cv_ripplewater;
 
 // Called by startup code.

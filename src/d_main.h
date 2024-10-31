@@ -45,12 +45,12 @@ extern boolean statdp; // stat display for extended player setup
 extern boolean nametaggfx; // Nametag stuffs
 extern boolean driftgaugegfx;
 
-void D_AddAutoloadFiles(void);
-
+// autoload stuff
 extern boolean autoloading;
 extern boolean autoloaded;
 extern boolean postautoloaded;
-extern boolean wasautoloaded;
+
+void D_AddPostloadFiles(void);
 
 extern char *autoloadwadfilespost[MAX_WADFILES];
 extern char *autoloadwadfiles[MAX_WADFILES];

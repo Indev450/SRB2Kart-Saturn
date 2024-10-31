@@ -121,8 +121,6 @@ typedef struct
 	poly_t *planepoly;  // the generated convex polygon
 } extrasubsector_t;
 
-//here lies gr_vissprite
-
 // Kart features
 #define USE_FTRANSFORM_ANGLEZ
 #define USE_FTRANSFORM_MIRROR

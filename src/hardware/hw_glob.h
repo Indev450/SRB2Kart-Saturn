@@ -23,7 +23,7 @@
 
 // needed for sprite rendering
 // equivalent of the software renderer's vissprites
-typedef struct gr_vissprite_s
+typedef struct gl_vissprite_s
 {
 	float x1, x2;
 	float z1, z2;
@@ -41,7 +41,7 @@ typedef struct gr_vissprite_s
    //Hurdler: 25/04/2000: now support colormap in hardware mode
 	UINT8 *colormap;
 	INT32 dispoffset; // copy of info->dispoffset, affects ordering but not drawing
-} gr_vissprite_t;
+} gl_vissprite_t;
 
 // --------
 // hw_bsp.c
@@ -63,7 +63,7 @@ void HWR_GetFlat(lumpnum_t flatlumpnum, boolean noencoremap);
 GLMapTexture_t *HWR_GetTexture(INT32 tex, boolean noencore);
 void HWR_GetPatch(GLPatch_t *gpatch);
 void HWR_GetMappedPatch(GLPatch_t *gpatch, const UINT8 *colormap);
-void HWR_MakePatch(patch_t *patch, GLPatch_t *grPatch, GLMipmap_t *grMipmap, boolean makebitmap);
+void HWR_MakePatch(patch_t *patch, GLPatch_t *glPatch, GLMipmap_t *glMipmap, boolean makebitmap);
 void HWR_UnlockCachedPatch(GLPatch_t *gpatch);
 void HWR_SetPalette(RGBA_t *palette);
 
@@ -80,14 +80,6 @@ void HWR_GetFadeMask(lumpnum_t fademasklumpnum);
 // --------
 extern INT32 patchformat;
 extern INT32 textureformat;
-
-// --------
-// hw_main.c  // originally hw_drawnodes.c from HWPortal branch
-// --------
-void HWR_AddTransparentWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, INT32 texnum, boolean noencore, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap);
-void HWR_AddTransparentFloor(lumpnum_t lumpnum, extrasubsector_t *xsub, boolean isceiling, fixed_t fixedheight, INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, boolean fogplane, extracolormap_t *planecolormap);
-void HWR_AddTransparentPolyobjectFloor(lumpnum_t lumpnum, polyobj_t *polysector, boolean isceiling, fixed_t fixedheight,
-                             INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, extracolormap_t *planecolormap);
 
 // --------
 // hw_shaders.c

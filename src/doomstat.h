@@ -112,7 +112,6 @@ extern UINT8 window_notinfocus; // are we in focus? (backend independant -- hand
 extern boolean nodrawers;
 extern boolean noblit;
 extern boolean lastdraw;
-extern postimg_t postimgtype[MAXSPLITSCREENPLAYERS];
 extern INT32 postimgparam[MAXSPLITSCREENPLAYERS];
 
 extern INT32 viewwindowx, viewwindowy;

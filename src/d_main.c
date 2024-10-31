@@ -117,7 +117,6 @@ boolean devparm = false; // started game with -devparm
 boolean singletics = false; // timedemo
 boolean lastdraw = false;
 
-postimg_t postimgtype[MAXSPLITSCREENPLAYERS];
 INT32 postimgparam[MAXSPLITSCREENPLAYERS];
 
 // These variables are only true if
@@ -514,15 +513,12 @@ static boolean D_Display(void)
 
 			if (rendermode == render_soft)
 			{
-					if (!splitscreen)
-						R_ApplyViewMorph();
+				if (!splitscreen)
+					R_ApplyViewMorph();
 
 				for (i = 0; i <= splitscreen; i++)
 				{
-					if (!postimgtype[i])
-						continue;
-
-					V_DoPostProcessor(i, postimgtype[i], postimgparam[i]);
+					V_DoPostProcessor(i, &players[displayplayers[i]], postimgparam[i]);
 				}
 			}
 
@@ -1073,8 +1069,7 @@ static void D_FindAddonsToAutoload(void)
 	const char *autoloadpath;
 	boolean postload;
 
-	INT32 i, len;
-	boolean hasprefix = false;
+	INT32 i;
 	char wadsToAutoload[256] = "";
 
 	// does it exist tho
@@ -1096,7 +1091,8 @@ static void D_FindAddonsToAutoload(void)
 			|| (wadsToAutoload[0] == '#'))
 			continue;
 		// this marks it so that it loads after loading server addons
-		else if (fastncmp(wadsToAutoload, "postload ", 9)) {
+		else if (fastncmp(wadsToAutoload, "postload ", 9))
+		{
 			strremove(wadsToAutoload, "postload ");
 			postload = true;
 		}
@@ -1108,34 +1104,10 @@ static void D_FindAddonsToAutoload(void)
 				wadsToAutoload[i] = '\0';
 		}
 
-		len = strlen(wadsToAutoload);
-		hasprefix = false;
-
-		for (i = 0; i < len; ++i)
+		if (!postload && W_CheckPostLoadList(wadsToAutoload))
 		{
-			if (wadsToAutoload[i] == '_')
-			{
-				hasprefix = true;
-				break;
-			}
-		}
-
-		// Lets just hope no one adds bonuschars in autoload
-		if (hasprefix)
-		{
-			// We searching for c in prefix, which stands for "character" and doesn't work well with
-			// autoload atm, only fine for postload
-			for (i = 0; i < len; ++i)
-			{
-				if (wadsToAutoload[i] == '_') break; // Prefix end
-
-				if (wadsToAutoload[i] == 'c' || wadsToAutoload[i] == 'C')
-				{
-					CONS_Alert(CONS_WARNING, "forcing postload for %s as local skin\n", wadsToAutoload);
-					postload = true;
-					break; // Found it
-				}
-			}
+			CONS_Printf("forcing postload for file %s\n", wadsToAutoload);
+			postload = true;
 		}
 
 		// LOAD IT
@@ -1153,30 +1125,30 @@ static void D_FindAddonsToAutoload(void)
 	fclose(autoloadconfigfile);
 }
 
-void D_AddAutoloadFiles(void)
+static void D_AddAutoloadFiles(void)
 {
-	if (wasautoloaded && postautoloaded)
+	if (wasautoloaded)
 		return;
 
-	if (!wasautoloaded && !modeattacking)
-	{
-		CONS_Printf("D_AutoloadFile(): Loading autoloaded addons...\n");
-		if (W_AddAutoloadedLocalFiles(autoloadwadfiles) == 0)
-			CONS_Printf("D_AutoloadFile(): Are you sure you put in valid files or what?\n");
-		D_CleanFile(autoloadwadfiles);
+	CONS_Printf("D_AutoloadFile(): Loading autoloaded addons...\n");
+	if (W_AddAutoloadedLocalFiles(autoloadwadfiles) == 0)
+		CONS_Printf("D_AutoloadFile(): Are you sure you put in valid files or what?\n");
+	D_CleanFile(autoloadwadfiles);
 
-		wasautoloaded = true;
-	}
+	wasautoloaded = true;
+}
 
-	if ((!postautoloaded) && netgame)
-	{
-		CONS_Printf("D_AutoloadFile(): Loading postloaded addons...\n");
-		if (W_AddAutoloadedLocalFiles(autoloadwadfilespost) == 0)
-			CONS_Printf("D_AutoloadFile(): Are you sure you put in valid files or what?\n");
-		D_CleanFile(autoloadwadfilespost);
+void D_AddPostloadFiles(void)
+{
+	if (postautoloaded || !netgame)
+		return;
 
-		postautoloaded = true;
-	}
+	CONS_Printf("D_AddPostloadFiles(): Loading postloaded addons...\n");
+	if (W_AddAutoloadedLocalFiles(autoloadwadfilespost) == 0)
+		CONS_Printf("D_AddPostloadFiles(): Are you sure you put in valid files or what?\n");
+	D_CleanFile(autoloadwadfilespost);
+
+	postautoloaded = true;
 }
 
 void D_CleanFile(char **filearray)
@@ -1873,6 +1845,8 @@ void D_SRB2Main(void)
 
 	CONS_Printf("ST_Init(): Init status bar.\n");
 	ST_Init();
+
+	D_AddAutoloadFiles();
 
 	// Set up splitscreen players before joining!
 	if (!dedicated && (M_CheckParm("-splitscreen") && M_IsNextParm()))

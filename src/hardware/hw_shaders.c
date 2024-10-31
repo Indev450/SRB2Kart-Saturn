@@ -25,7 +25,7 @@ static struct {
 	const char *vertex;
 	const char *fragment;
 } const gl_shadersources[] = {
-	
+
 	// Floor shader
 	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_FLOOR_FRAGMENT_SHADER},
 
@@ -52,7 +52,7 @@ static struct {
 
 	// Palette postprocess shader
 	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_PALETTE_POSTPROCESS_FRAGMENT_SHADER},
-	
+
 	// UI colormap fade shader
 	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_UI_COLORMAP_FADE_FRAGMENT_SHADER},
 
@@ -279,11 +279,11 @@ static char *HWR_PreprocessShader(char *original)
 
 	// Calculate length of modified shader.
 	new_len = original_len;
-	
-	if (cv_grpaletterendering.value)
+
+	if (cv_glpaletterendering.value)
 		ADD_TO_LEN(PALETTE_RENDERING_DEFINE)
 
-	if (cv_lightdither.value)
+	if (cv_gllightdither.value)
 		ADD_TO_LEN(LIGHT_DITHERING_DEFINE)
 
 #undef ADD_TO_LEN
@@ -324,10 +324,10 @@ static char *HWR_PreprocessShader(char *original)
 	}
 
 	// Write the defines.
-	if (cv_grpaletterendering.value)
+	if (cv_glpaletterendering.value)
 		WRITE_DEFINE(PALETTE_RENDERING_DEFINE)
 
-	if (cv_lightdither.value)
+	if (cv_gllightdither.value)
 		WRITE_DEFINE(LIGHT_DITHERING_DEFINE)
 
 #undef WRITE_DEFINE
@@ -410,7 +410,7 @@ int HWR_GetShaderFromTarget(int shader_target)
 	// - custom shaders are enabled
 	// - custom shaders are allowed by the server
 	if (custom_shader != -1 && gl_shaders[custom_shader].compiled &&
-		cv_grshaders.value == 1)
+		cv_glshaders.value == 1)
 		return custom_shader;
 	else
 		return gl_shadertargets[shader_target].base_shader;
@@ -565,7 +565,7 @@ void HWR_LoadCustomShadersFromFile(UINT16 wadnum, boolean PK3)
 	int i;
 	boolean modified_shaders[NUMSHADERTARGETS] = {0};
 
-	if (!gr_shadersavailable)
+	if (!gl_shadersavailable)
 		return;
 
 	lump = HWR_FindShaderDefs(wadnum);

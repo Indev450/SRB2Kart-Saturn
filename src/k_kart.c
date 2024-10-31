@@ -2779,15 +2779,8 @@ void K_SpawnKartExplosion(fixed_t x, fixed_t y, fixed_t z, fixed_t radius, INT32
 	TVector v;
 	TVector *res;
 	fixed_t finalx, finaly, finalz, dist;
-	//mobj_t hoopcenter;
 	angle_t degrees, fa, closestangle;
 	fixed_t mobjx, mobjy, mobjz;
-
-	//hoopcenter.x = x;
-	//hoopcenter.y = y;
-	//hoopcenter.z = z;
-
-	//hoopcenter.z = z - mobjinfo[type].height/2;
 
 	degrees = FINEANGLES/number;
 
@@ -3174,17 +3167,19 @@ static void K_SpawnAIZDust(player_t *player)
 
 static void K_StretchPlayerGravity(player_t *p)
 {
-    fixed_t mos = FRACUNIT;
-    fixed_t rzs = abs(p->mo->momz);
-    fixed_t zspd = abs(rzs/mos);
+	I_Assert(p != NULL);
+	I_Assert(p->mo != NULL);
+	I_Assert(!P_MobjWasRemoved(p->mo));
+
+	fixed_t mos = FRACUNIT;
+	fixed_t rzs = abs(p->mo->momz);
+	fixed_t zspd = abs(rzs/mos);
 	fixed_t stretchScaleFactor = 0;
 	fixed_t rzsDiv = 1;
 	fixed_t slamDiv = 1;
 
-    fixed_t dxs = p->mo->realxscale;
-    fixed_t dys = p->mo->realyscale;
-    //boolean gravSlamming = false;
-    //fixed_t impactFactor = 0;
+	fixed_t dxs = p->mo->realxscale;
+	fixed_t dys = p->mo->realyscale;
 	stretchScaleFactor = FixedDiv(FRACUNIT*60, cv_gravstretch.value);
 
 	if (stretchScaleFactor > 17476977)
@@ -3193,10 +3188,6 @@ static void K_StretchPlayerGravity(player_t *p)
 		rzsDiv = FixedDiv(rzs, stretchScaleFactor);
 
 	//CONS_Printf(M_GetText("div: %d, scale factor: %d, stretch value: %d\n"), rzsDiv, stretchScaleFactor, cv_gravstretch.value);
-
-    I_Assert(p != NULL);
-	I_Assert(p->mo != NULL);
-	I_Assert(!P_MobjWasRemoved(p->mo));
 
 	if (p->mo->slamsoundtimer)
 		p->mo->slamsoundtimer--;
@@ -3207,40 +3198,40 @@ static void K_StretchPlayerGravity(player_t *p)
 		p->mo->slamsoundtimer = TICRATE;
 	}
 
-    if (!P_IsObjectOnGround(p->mo))
-    {
-        if (zspd != 0)
-        {
-            if (((dxs-(rzsDiv))) > (dxs/5))
-            {
-                p->mo->spritexscale = ((dxs-(rzsDiv)));
-                p->mo->stretchslam = rzs;
-            }
-            else
-                p->mo->spritexscale = (dxs/5);
+	if (!P_IsObjectOnGround(p->mo))
+	{
+		if (zspd != 0)
+		{
+			if (((dxs-(rzsDiv))) > (dxs/5))
+			{
+				p->mo->spritexscale = ((dxs-(rzsDiv)));
+				p->mo->stretchslam = rzs;
+			}
+			else
+				p->mo->spritexscale = (dxs/5);
 
-            p->mo->spriteyscale = (dys+((rzsDiv*2)/3));
-        }
-        else
-        {
-            p->mo->spritexscale = (dxs);
-            p->mo->spriteyscale = (dys);
-        }
-    }
-    else
-    {
+			p->mo->spriteyscale = (dys+((rzsDiv*2)/3));
+		}
+		else
+		{
+			p->mo->spritexscale = (dxs);
+			p->mo->spriteyscale = (dys);
+		}
+	}
+	else
+	{
 		if (stretchScaleFactor > 17476977)
 			slamDiv = 0;
 		else
 			slamDiv = FixedDiv(p->mo->stretchslam, stretchScaleFactor);
 
-        p->mo->spritexscale = (dxs+(((slamDiv*2)/3)*2));
-        p->mo->spriteyscale = (dys-(slamDiv));
-        if (p->mo->stretchslam > 0)
-            p->mo->stretchslam -= (4*mos);
-        else
-            p->mo->stretchslam = 0;
-    }
+		p->mo->spritexscale = (dxs+(((slamDiv*2)/3)*2));
+		p->mo->spriteyscale = (dys-(slamDiv));
+		if (p->mo->stretchslam > 0)
+			p->mo->stretchslam -= (4*mos);
+		else
+			p->mo->stretchslam = 0;
+	}
 }
 
 static void K_QuiteSaltyHop(player_t *p)
@@ -9020,7 +9011,7 @@ static boolean K_GetScreenCoords(vector2_t *vec, player_t *player, mobj_t *targe
 
 #ifdef HWRENDER
 	// NOW we can get the angle differnce
-	if (rendermode == render_opengl && cv_grshearing.value == 0)
+	if (rendermode == render_opengl && cv_glshearing.value == 0)
 	{
 		angle_t yang = R_PointToAngle2(0, 0, dist, y); // not perspective
 		x = FixedMul(x, FINECOSINE((yang>>ANGLETOFINESHIFT) & FINEMASK)); // perspective

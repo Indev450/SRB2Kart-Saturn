@@ -112,10 +112,11 @@ boolean LoadGL(void)
 
 	\return	if true, changed video mode
 */
+static boolean first_init = false;
+
 boolean OglSdlSurface(INT32 w, INT32 h)
 {
 	INT32 cbpp = cv_scr_depth.value < 16 ? 16 : cv_scr_depth.value;
-	static boolean first_init = false;
 	const char *gllogdir = NULL;
 
 	oglflags = 0;
@@ -171,7 +172,7 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 		else
 			maximumAnisotropy = 1;
 
-		granisotropicmode_cons_t[1].value = maximumAnisotropy;
+		glanisotropicmode_cons_t[1].value = maximumAnisotropy;
 
 #if defined (__unix__)
 #ifdef USE_FBO_OGL
@@ -180,7 +181,6 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 #endif
 #endif
 	}
-	first_init = true;
 
 	SDL_GL_SetSwapInterval(cv_vidwait.value ? 1 : 0);
 
@@ -214,8 +214,11 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 		GLFramebuffer_Disable();
 #endif
 
-	HWR_Startup();
+	if (!first_init)
+		HWR_Startup();
 	textureformatGL = cbpp > 16 ? GL_RGBA : GL_RGB5_A1;
+
+	first_init = true;
 
 	return true;
 }

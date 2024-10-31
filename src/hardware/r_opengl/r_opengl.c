@@ -2357,7 +2357,7 @@ EXPORT void HWRAPI(SetSpecialState) (hwdspecialstate_t IdState, INT32 Value)
 			if (!supportFBO)
 			{
 				FrameBufferEnabled = GL_FALSE;
-				CV_Set(&cv_grframebuffer, "Off");
+				CV_Set(&cv_glframebuffer, "Off");
 			}
 			break;
 #endif
