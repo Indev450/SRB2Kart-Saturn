@@ -27,7 +27,7 @@ typedef struct
 	int shader;
 	// this tells batching that the plane belongs to a horizon line and must be drawn in correct order with the skywalls
 	boolean horizonSpecial;
-} PolygonArrayEntry;
+} DrawCallInfo;
 
 void HWR_StartBatching(void);
 void HWR_SetCurrentTexture(GLMipmap_t *texture);
