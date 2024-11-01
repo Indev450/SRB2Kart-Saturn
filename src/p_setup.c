@@ -2444,6 +2444,8 @@ static void P_InitMinimapInfo(void)
 	fixed_t a;
 	fixed_t b;
 	node_t *bsp = &nodes[numnodes-1];
+	minimapinfo.minimap_pic = NULL;
+
 	lumpnum = W_CheckNumForName(va("%sR", G_BuildMapName(gamemap)));
 
 	if (lumpnum != -1)
