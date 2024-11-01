@@ -69,7 +69,7 @@ static fixed_t ScaleFromMap(fixed_t n, fixed_t scale)
 
 static boolean K_DirectorIsEnabled(void)
 {
-	return cv_director.value && !splitscreen && (gamestate == GS_LEVEL && (((stplyr && !stplyr->spectator) && (!playeringame[consoleplayer] || players[consoleplayer].spectator)) || (demo.playback && !demo.freecam && (!demo.title || !modeattacking))) && !K_DirectorIsPlayerAlone());
+	return cv_director.value && !splitscreen && (gamestate == GS_LEVEL && (((!playeringame[consoleplayer] || players[consoleplayer].spectator)) || (demo.playback && !demo.freecam && (!demo.title || !modeattacking))) && !K_DirectorIsPlayerAlone());
 }
 
 void K_InitDirector(void)
