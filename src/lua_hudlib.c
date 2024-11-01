@@ -698,13 +698,13 @@ static int libd_drawOnMinimap(lua_State *L)
 		patchw = patchh = 0;	// patch is supposedly already centered, don't butt in.
 	}
 
+	amnumxpos = (FixedMul(x, minimapinfo.zoom) - minimapinfo.offs_x);
+	amnumypos = -(FixedMul(y, minimapinfo.zoom) - minimapinfo.offs_y);
+
 	if (encoremode)
 	{
 		amnumxpos = -amnumxpos;
 	}
-
-	amnumxpos = (FixedMul(x, minimapinfo.zoom) - minimapinfo.offs_x);
-	amnumypos = -(FixedMul(y, minimapinfo.zoom) - minimapinfo.offs_y);
 
 	amxpos = amnumxpos + ((mm_x + SHORT(AutomapPic->width) / 2)<<FRACBITS) - patchw;
 	amypos = amnumypos + ((mm_y + SHORT(AutomapPic->height) / 2)<<FRACBITS) - patchh;
