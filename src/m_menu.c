@@ -10013,9 +10013,9 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 		const char *item2 = gamecontrol[gc_fire][1] != 0 ? G_KeynumToString(gamecontrol[gc_fire][1]) : NULL;
 
 		if (item1 != NULL && item2 != NULL)
-			snprintf(encoretoggle, 32, "%s/%s: Toggle Encore", item1, item2);
+			snprintf(encoretoggle, 32, "%s/%s - Toggle Encore", item1, item2);
 		else
-			snprintf(encoretoggle, 32, "%s: Toggle Encore", item1 != NULL ? item1 : item2 != NULL ? item2 : "Item");
+			snprintf(encoretoggle, 32, "%s - Toggle Encore", item1 != NULL ? item1 : item2 != NULL ? item2 : "Item");
 
 		V_DrawThinString(1, BASEVIDHEIGHT-8-1, V_SNAPTOLEFT|V_SNAPTOBOTTOM|V_TRANSLUCENT|V_ALLOWLOWERCASE, encoretoggle);
 	}
