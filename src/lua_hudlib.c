@@ -591,26 +591,16 @@ static int libd_drawOnMinimap(lua_State *L)
 	UINT8 *colormap = NULL;	// do we want to colormap this patch?
 	boolean centered;	// the patch is centered and doesn't need readjusting on x/y coordinates.
 	huddrawlist_h list;
-
-	// variables used to replicate k_kart's mmap drawer:
-	INT32 lumpnum;
 	patch_t *AutomapPic;
-	INT32 mx, my;
-	INT32 splitflags, minimaptrans;
 
 	// base position of the minimap which also takes splits into account:
 	INT32 MM_X, MM_Y;
 
 	// variables used for actually drawing the icon:
+	INT32 splitflags, minimaptrans;
 	fixed_t amnumxpos, amnumypos;
-	INT32 amxpos, amypos;
-
-	node_t *bsp = &nodes[numnodes-1];
-	fixed_t maxx, minx, maxy, miny;
-
-	fixed_t mapwidth, mapheight;
-	fixed_t xoffset, yoffset;
-	fixed_t xscale, yscale, zoom;
+	fixed_t amxpos, amypos;
+	INT32 mm_x, mm_y;
 	fixed_t patchw, patchh;
 
 	HUDONLY	// only run this function in hud hooks
@@ -621,8 +611,6 @@ static int libd_drawOnMinimap(lua_State *L)
 	if (!lua_isnoneornil(L, 5))
 		colormap = *((UINT8 **)luaL_checkudata(L, 5, META_COLORMAP));
 	centered = lua_optboolean(L, 6);
-
-	// replicate exactly what source does for its minimap drawer; AKA hardcoded garbo.
 
 	// first, check what position the mmap is supposed to be in (pasted from k_kart.c):
 	MM_X = BASEVIDWIDTH - 50 + cv_mini_xoffset.value;		// 270
@@ -658,7 +646,6 @@ static int libd_drawOnMinimap(lua_State *L)
 	else
 		return 0;
 
-
 	minimaptrans = ((10-minimaptrans)<<FF_TRANSSHIFT);
 	splitflags |= minimaptrans;
 
@@ -679,78 +666,48 @@ static int libd_drawOnMinimap(lua_State *L)
 	if (stplyr != &players[displayplayers[0]])
 		return 0;
 
-	lumpnum = W_CheckNumForName(va("%sR", G_BuildMapName(gamemap)));
+	AutomapPic = minimapinfo.minimap_pic;
 
-	if (lumpnum != -1)
-		AutomapPic = W_CachePatchName(va("%sR", G_BuildMapName(gamemap)), PU_HUDGFX);
-	else
+	if (!AutomapPic)
+	{
 		return 0; // no pic, just get outta here
+	}
 
-	mx = MM_X - (AutomapPic->width/2);
-	my = MM_Y - (AutomapPic->height/2);
+	// Handle offsets and stuff.
+	mm_x = MM_X - (SHORT(AutomapPic->width)/2);
+	mm_y = MM_Y - (SHORT(AutomapPic->height)/2);
 
 	// let offsets transfer to the heads, too!
 	if (encoremode)
-		mx += SHORT(AutomapPic->leftoffset);
+	{
+		mm_x += SHORT(AutomapPic->leftoffset);
+	}
 	else
-		mx -= SHORT(AutomapPic->leftoffset);
-	my -= SHORT(AutomapPic->topoffset);
+	{
+		mm_x -= SHORT(AutomapPic->leftoffset);
+	}
 
-	// now that we have replicated this behavior, we can draw an icon from our supplied x, y coordinates by replicating k_kart.c's totally understandable uncommented code!!!
-
-	// get map boundaries using nodes
-	maxx = maxy = INT32_MAX;
-	minx = miny = INT32_MIN;
-	minx = bsp->bbox[0][BOXLEFT];
-	maxx = bsp->bbox[0][BOXRIGHT];
-	miny = bsp->bbox[0][BOXBOTTOM];
-	maxy = bsp->bbox[0][BOXTOP];
-
-	if (bsp->bbox[1][BOXLEFT] < minx)
-		minx = bsp->bbox[1][BOXLEFT];
-	if (bsp->bbox[1][BOXRIGHT] > maxx)
-		maxx = bsp->bbox[1][BOXRIGHT];
-	if (bsp->bbox[1][BOXBOTTOM] < miny)
-		miny = bsp->bbox[1][BOXBOTTOM];
-	if (bsp->bbox[1][BOXTOP] > maxy)
-		maxy = bsp->bbox[1][BOXTOP];
-
-	// You might be wondering why these are being bitshift here
-	// it's because mapwidth and height would otherwise overflow for maps larger than half the size possible...
-	// map boundaries and sizes will ALWAYS be whole numbers thankfully
-	// later calculations take into consideration that these are actually not in terms of FRACUNIT though
-	minx >>= FRACBITS;
-	maxx >>= FRACBITS;
-	miny >>= FRACBITS;
-	maxy >>= FRACBITS;
-
-	// these are our final map boundaries:
-	mapwidth = maxx - minx;
-	mapheight = maxy - miny;
-
-	// These should always be small enough to be bitshift back right now
-	xoffset = (minx + mapwidth/2)<<FRACBITS;
-	yoffset = (miny + mapheight/2)<<FRACBITS;
-
-	xscale = FixedDiv(AutomapPic->width, mapwidth);
-	yscale = FixedDiv(AutomapPic->height, mapheight);
-	zoom = FixedMul(min(xscale, yscale), FRACUNIT-FRACUNIT/20);
-
-	amnumxpos = (FixedMul(x, zoom) - FixedMul(xoffset, zoom));
-	amnumypos = -(FixedMul(y, zoom) - FixedMul(yoffset, zoom));
-
-	if (encoremode)
-		amnumxpos = -amnumxpos;
+	mm_y -= SHORT(AutomapPic->topoffset);
 
 	// scale patch coords
-	patchw = patch->width*scale /2;
-	patchh = patch->height*scale /2;
+	patchw = (SHORT(patch->width) * scale / 2);
+	patchh = (SHORT(patch->height) * scale / 2);
 
 	if (centered)
+	{
 		patchw = patchh = 0;	// patch is supposedly already centered, don't butt in.
+	}
 
-	amxpos = amnumxpos + ((mx + AutomapPic->width/2)<<FRACBITS) - patchw;
-	amypos = amnumypos + ((my + AutomapPic->height/2)<<FRACBITS) - patchh;
+	if (encoremode)
+	{
+		amnumxpos = -amnumxpos;
+	}
+
+	amnumxpos = (FixedMul(x, minimapinfo.zoom) - minimapinfo.offs_x);
+	amnumypos = -(FixedMul(y, minimapinfo.zoom) - minimapinfo.offs_y);
+
+	amxpos = amnumxpos + ((mm_x + SHORT(AutomapPic->width) / 2)<<FRACBITS) - patchw;
+	amypos = amnumypos + ((mm_y + SHORT(AutomapPic->height) / 2)<<FRACBITS) - patchh;
 
 	// and NOW we can FINALLY DRAW OUR GOD DAMN PATCH :V
 	lua_getfield(L, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
