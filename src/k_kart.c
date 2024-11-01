@@ -9917,7 +9917,7 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 	boolean skinlocal = mo->skinlocal;
 
 	fixed_t amnumxpos, amnumypos;
-	INT32 amxpos, amypos;
+	INT32 amxpos, amypos, wntdamxpos, wntdamypos;
 	fixed_t scale = FRACUNIT;
 
 	if (mo->skin)
@@ -9929,8 +9929,8 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 	if (encoremode)
 		amnumxpos = -amnumxpos;
 
-	amxpos = amnumxpos + ((x + (SHORT(minimapinfo.minimap_pic->width)-SHORT((skinlocal ? localfacemmapprefix : facemmapprefix)[skin]->width))/2)<<FRACBITS);
-	amypos = amnumypos + ((y + (SHORT(minimapinfo.minimap_pic->height)-SHORT((skinlocal ? localfacemmapprefix : facemmapprefix)[skin]->height))/2)<<FRACBITS);
+	amxpos = amnumxpos + ((x + (SHORT(minimapinfo.minimap_pic->width)-SHORT((skinlocal ? localfacemmapprefix : facemmapprefix)[skin]->width)) / 2)<<FRACBITS);
+	amypos = amnumypos + ((y + (SHORT(minimapinfo.minimap_pic->height)-SHORT((skinlocal ? localfacemmapprefix : facemmapprefix)[skin]->height)) / 2)<<FRACBITS);
 
 	if (cv_showminimapnames.value && mo->player && !(modeattacking || gamestate == GS_TIMEATTACK))
 	{
@@ -9938,15 +9938,19 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 		V_DrawCenteredSmallStringAtFixed(amxpos + (4*FRACUNIT), amypos - (3*FRACUNIT), V_ALLOWLOWERCASE|flags, player_name);
 	}
 
+	// thx wanted reticle for having weird offsets very cool
+	wntdamxpos = cv_minihead.value ? amxpos + (1<<FRACBITS) : amxpos - (4<<FRACBITS);
+	wntdamypos = cv_minihead.value ? amypos + (1<<FRACBITS) : amypos - (4<<FRACBITS);
+
 	if (cv_minihead.value)
 	{
-		amxpos += (SHORT((skinlocal ? localfacemmapprefix : facemmapprefix)[skin]->width)/4)<<FRACBITS;
-		amypos += (SHORT((skinlocal ? localfacemmapprefix : facemmapprefix)[skin]->height)/4)<<FRACBITS;
+		amxpos += (SHORT((skinlocal ? localfacemmapprefix : facemmapprefix)[skin]->width) / 4)<<FRACBITS;
+		amypos += (SHORT((skinlocal ? localfacemmapprefix : facemmapprefix)[skin]->height) / 4)<<FRACBITS;
 		scale /= 2;
 	}
 
 	if (!mo->color) // 'default' color
-		V_DrawSciencePatch(amxpos, amypos, flags, ( (skinlocal) ? localfacemmapprefix : facemmapprefix )[skin], scale);
+		V_DrawSciencePatch(amxpos, amypos, flags, ((skinlocal) ? localfacemmapprefix : facemmapprefix)[skin], scale);
 	else
 	{
 		UINT8 *colormap;
@@ -9961,7 +9965,7 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 			&& ((G_RaceGametype() && mo->player->kartstuff[k_position] == spbplace)
 			|| (G_BattleGametype() && K_IsPlayerWanted(mo->player))))
 		{
-			V_DrawFixedPatch(amxpos - (4<<FRACBITS), amypos - (4<<FRACBITS), scale, flags, kp_wantedreticle, NULL);
+			V_DrawFixedPatch(wntdamxpos, wntdamypos, scale, flags, kp_wantedreticle, NULL);
 		}
 	}
 }
