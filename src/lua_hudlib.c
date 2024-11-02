@@ -591,7 +591,7 @@ static int libd_drawOnMinimap(lua_State *L)
 	UINT8 *colormap = NULL;	// do we want to colormap this patch?
 	boolean centered;	// the patch is centered and doesn't need readjusting on x/y coordinates.
 	huddrawlist_h list;
-	patch_t *AutomapPic;
+	patch_t *AutomapPic = NULL;
 
 	// base position of the minimap which also takes splits into account:
 	INT32 MM_X, MM_Y;
