@@ -9612,7 +9612,8 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 	boolean skinlocal = mo->skinlocal;
 
 	fixed_t amnumxpos, amnumypos;
-	INT32 amxpos, amypos;
+	INT32 amxpos, amypos, wntdamxpos, wntdamypos;
+	fixed_t scale = FRACUNIT;
 
 	if (mo->skin)
 		skin = ((skin_t*)((mo->localskin) ? mo->localskin : mo->skin))-(skinlocal ? localskins : skins);
@@ -9623,11 +9624,28 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 	if (encoremode)
 		amnumxpos = -amnumxpos;
 
-	amxpos = amnumxpos + ((x + (SHORT(minimapinfo.minimap_pic->width)-SHORT((skinlocal ? localfacemmapprefix : facemmapprefix)[skin]->width))/2)<<FRACBITS);
-	amypos = amnumypos + ((y + (SHORT(minimapinfo.minimap_pic->height)-SHORT((skinlocal ? localfacemmapprefix : facemmapprefix)[skin]->height))/2)<<FRACBITS);
+	amxpos = amnumxpos + ((x + (SHORT(minimapinfo.minimap_pic->width)-SHORT((skinlocal ? localfacemmapprefix : facemmapprefix)[skin]->width)) / 2)<<FRACBITS);
+	amypos = amnumypos + ((y + (SHORT(minimapinfo.minimap_pic->height)-SHORT((skinlocal ? localfacemmapprefix : facemmapprefix)[skin]->height)) / 2)<<FRACBITS);
+
+	if (cv_showminimapnames.value && mo->player && !(modeattacking || gamestate == GS_TIMEATTACK))
+	{
+		const char *player_name = va("%c%s", (mo->color) ? V_GetSkincolorChar(mo->color) : 0, player_names[mo->player - players]);
+		V_DrawCenteredSmallStringAtFixed(amxpos + (4*FRACUNIT), amypos - (3*FRACUNIT), V_ALLOWLOWERCASE|flags, player_name);
+	}
+
+	// thx wanted reticle for having weird offsets very cool
+	wntdamxpos = cv_minihead.value ? amxpos + (1<<FRACBITS) : amxpos - (4<<FRACBITS);
+	wntdamypos = cv_minihead.value ? amypos + (1<<FRACBITS) : amypos - (4<<FRACBITS);
+
+	if (cv_minihead.value)
+	{
+		amxpos += (SHORT((skinlocal ? localfacemmapprefix : facemmapprefix)[skin]->width) / 4)<<FRACBITS;
+		amypos += (SHORT((skinlocal ? localfacemmapprefix : facemmapprefix)[skin]->height) / 4)<<FRACBITS;
+		scale /= 2;
+	}
 
 	if (!mo->color) // 'default' color
-		V_DrawSciencePatch(amxpos, amypos, flags, ( (skinlocal) ? localfacemmapprefix : facemmapprefix )[skin], FRACUNIT);
+		V_DrawSciencePatch(amxpos, amypos, flags, ((skinlocal) ? localfacemmapprefix : facemmapprefix)[skin], scale);
 	else
 	{
 		UINT8 *colormap;
@@ -9636,24 +9654,13 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 		else
 			colormap = R_GetLocalTranslationColormap(mo->skin, mo->localskin, mo->color, GTC_CACHE, skinlocal);
 
-		if (cv_minihead.value)
-			V_DrawFixedPatch(amxpos + (2*FRACUNIT), amypos + (2*FRACUNIT), FRACUNIT/2, flags, ((skinlocal) ? localfacemmapprefix : facemmapprefix)[skin], colormap);
-		else
-			V_DrawFixedPatch(amxpos, amypos, FRACUNIT, flags, ((skinlocal) ? localfacemmapprefix : facemmapprefix)[skin], colormap);
+		V_DrawFixedPatch(amxpos, amypos, scale, flags, ((skinlocal) ? localfacemmapprefix : facemmapprefix)[skin], colormap);
 
-		if (cv_showminimapnames.value && !(modeattacking || gamestate == GS_TIMEATTACK))
-		{
-			const char *player_name = va("%c%s", V_GetSkincolorChar(mo->color), player_names[mo->player - players]);
-			V_DrawCenteredSmallStringAtFixed(amxpos + (4*FRACUNIT), amypos - (3*FRACUNIT), V_ALLOWLOWERCASE|flags, player_name);
-		}
 		if (mo->player
 			&& ((G_RaceGametype() && mo->player->kartstuff[k_position] == spbplace)
 			|| (G_BattleGametype() && K_IsPlayerWanted(mo->player))))
 		{
-			if (cv_minihead.value)
-				V_DrawFixedPatch(amxpos, amypos, FRACUNIT/2, flags, kp_wantedreticle, NULL);
-			else
-				V_DrawFixedPatch(amxpos - (4<<FRACBITS), amypos - (4<<FRACBITS), FRACUNIT, flags, kp_wantedreticle, NULL);
+			V_DrawFixedPatch(wntdamxpos, wntdamypos, scale, flags, kp_wantedreticle, NULL);
 		}
 	}
 }
