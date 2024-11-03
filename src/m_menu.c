@@ -3458,7 +3458,9 @@ void SaturnHud_menu_Onchange(void)
 #ifdef HWRENDER
 void M_UpdateOGLMenu(void)
 {
+#ifdef USE_FBO_OGL
 	OP_ExpOptionsMenu[op_exp_fbo].status = (!supportFBO || cv_glscreentextures.value != 2) ? IT_GRAYEDOUT : IT_STRING | IT_CVAR;
+#endif
 	OP_ExpOptionsMenu[op_exp_paldepth].status = (!HWR_ShouldUsePaletteRendering()) ? IT_GRAYEDOUT : IT_STRING | IT_CVAR;
 
 	OP_OpenGLOptionsMenu[op_gl_falbckmdls].status = (!cv_glmdls.value) ? IT_GRAYEDOUT : IT_STRING | IT_CVAR;
