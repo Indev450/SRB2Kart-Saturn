@@ -1196,7 +1196,10 @@ inline void GL_Framebuffer_Enable(void)
 
 void GL_Framebuffer_Disable(void)
 {
-	if (!supportFBO)
+	if (!supportFBO || fboinit == false)
+		return;
+
+	if (FramebufferObject == 0 && RenderbufferObject == 0)
 		return;
 
 	fbo_shader = false;
