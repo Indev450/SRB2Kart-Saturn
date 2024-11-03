@@ -126,6 +126,7 @@ GLboolean FrameBufferEnabled = GL_FALSE, RenderToFramebuffer = GL_FALSE;
 
 boolean supportFBO = false;
 boolean fbo_shader = false;
+static boolean fboinit = false;
 #endif
 
 // Sryder:	NextTexAvail is broken for these because palette changes or changes to the texture filter or antialiasing
@@ -1078,7 +1079,7 @@ void GL_DeleteTexture(GLMipmap_t *pTexInfo)
 #ifdef USE_FBO_OGL
 static void GL_Framebuffer_GenerateAttachments(void)
 {
-	if (!supportFBO)
+	if (!supportFBO || !cv_glframebuffer.value)
 		return;
 
 	// Bind the framebuffer
@@ -1115,11 +1116,16 @@ static void GL_Framebuffer_GenerateAttachments(void)
 
 	// Unbind the framebuffer
 	pglBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	fboinit = true;
 }
 
 void GL_Framebuffer_DeleteAttachments(void)
 {
-	if (!supportFBO)
+	if (!supportFBO || fboinit == false)
+		return;
+
+	if (FramebufferObject == 0 && RenderbufferObject == 0 && FramebufferTexture == 0)
 		return;
 
 	// Unbind the framebuffer
@@ -1134,11 +1140,12 @@ void GL_Framebuffer_DeleteAttachments(void)
 
 	FramebufferTexture = 0;
 	RenderbufferObject = 0;
+	fboinit = false;
 }
 
 static void GL_Framebuffer_Generate(void)
 {
-	if (!supportFBO)
+	if (!supportFBO || !cv_glframebuffer.value)
 		return;
 
 	// Generate the framebuffer
@@ -1151,7 +1158,7 @@ static void GL_Framebuffer_Generate(void)
 
 static void GL_Framebuffer_Delete(void)
 {
-	if (!supportFBO)
+	if (!supportFBO || fboinit == false)
 		return;
 
 	if (FramebufferObject)
@@ -1163,7 +1170,10 @@ static void GL_Framebuffer_Delete(void)
 
 inline void GL_Framebuffer_Unbind(void)
 {
-	if (!supportFBO)
+	if (!supportFBO || fboinit == false)
+		return;
+
+	if (FramebufferObject == 0 && RenderbufferObject == 0)
 		return;
 
 	pglBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -1172,7 +1182,7 @@ inline void GL_Framebuffer_Unbind(void)
 
 inline void GL_Framebuffer_Enable(void)
 {
-	if (!supportFBO)
+	if (!supportFBO || !cv_glframebuffer.value)
 		return;
 
 	if (FramebufferObject == 0)
@@ -2415,7 +2425,7 @@ void GL_SetSpecialState(hwdspecialstate_t IdState, INT32 Value)
 			break;
 #ifdef USE_FBO_OGL
 		case HWD_SET_FRAMEBUFFER:
-			FrameBufferEnabled = Value ? GL_TRUE : GL_FALSE;
+			FrameBufferEnabled = (Value && supportFBO) ? GL_TRUE : GL_FALSE;
 
 			if (!supportFBO)
 			{
