@@ -26,6 +26,26 @@
 
 #include "tables.h"
 
+unsigned SlopeDiv(unsigned num, unsigned den)
+{
+	unsigned ans;
+	num <<= (FINE_FRACBITS-FRACBITS);
+	den <<= (FINE_FRACBITS-FRACBITS);
+	if (den < 512)
+		return SLOPERANGE;
+	ans = (num<<3) / (den>>8);
+	return ans <= SLOPERANGE ? ans : SLOPERANGE;
+}
+
+UINT64 SlopeDivEx(unsigned int num, unsigned int den)
+{
+	UINT64 ans;
+	if (den < 512)
+		return SLOPERANGE;
+	ans = ((UINT64)num<<3)/(den>>8);
+	return ans <= SLOPERANGE ? ans : SLOPERANGE;
+}
+
 fixed_t AngleFixed(angle_t af)
 {
 	angle_t wa = ANGLE_180;
@@ -156,11 +176,6 @@ fixed_t *finecosine = &finesine[FINEANGLES/4];
 
 #include "t_facon.c"
 
-INT32 AngleDeltaSigned(angle_t a1, angle_t a2)
-{
-	// Silly but easy way to do it through integer conversion.
-	return (INT32)(a1) - (INT32)(a2);
-}
 
 FUNCMATH angle_t FixedAcos(fixed_t x)
 {

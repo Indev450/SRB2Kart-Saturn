@@ -73,9 +73,6 @@ extern fixed_t finetangent[FINEANGLES/2];
 
 typedef UINT32 angle_t;
 
-// The table values in tables.c are calculated with this many fractional bits.
-#define FINE_FRACBITS 16
-
 // To get a global angle from Cartesian coordinates, the coordinates are
 // flipped until they are in the first octant of the coordinate system, then
 // the y (<=x) is scaled and divided by x to get a tangent (slope) value
@@ -88,26 +85,9 @@ typedef UINT32 angle_t;
 extern angle_t tantoangle[SLOPERANGE+1];
 
 // Utility function, called by R_PointToAngle.
-FUNCINLINE static ATTRINLINE unsigned SlopeDiv(unsigned num, unsigned den)
-{
-	unsigned ans;
-	num <<= (FINE_FRACBITS-FRACBITS);
-	den <<= (FINE_FRACBITS-FRACBITS);
-	if (den < 512)
-		return SLOPERANGE;
-	ans = (num<<3) / (den>>8);
-	return ans <= SLOPERANGE ? ans : SLOPERANGE;
-}
-
+FUNCMATH unsigned SlopeDiv(unsigned num, unsigned den);
 // Only called by R_PointToAngle64
-FUNCINLINE static ATTRINLINE UINT64 SlopeDivEx(unsigned int num, unsigned int den)
-{
-	UINT64 ans;
-	if (den < 512)
-		return SLOPERANGE;
-	ans = ((UINT64)num<<3)/(den>>8);
-	return ans <= SLOPERANGE ? ans : SLOPERANGE;
-}
+FUNCMATH UINT64 SlopeDivEx(unsigned int num, unsigned int den);
 
 // 360 - angle_t(ANGLE_45) = ANGLE_315
 FUNCMATH FUNCINLINE static ATTRINLINE angle_t InvAngle(angle_t a)
@@ -130,8 +110,6 @@ FUNCMATH angle_t FixedAngleC(fixed_t fa, fixed_t factor);
 /// The FixedAcos function
 FUNCMATH angle_t FixedAcos(fixed_t x);
 
-FUNCMATH INT32 AngleDeltaSigned(angle_t a1, angle_t a2);
-
 /// Fixed Point Vector functions
 angle_t FV2_AngleBetweenVectors(const vector2_t *Vector1, const vector2_t *Vector2);
 angle_t FV3_AngleBetweenVectors(const vector3_t *Vector1, const vector3_t *Vector2);
@@ -141,6 +119,9 @@ boolean FV3_IntersectedPolygon(const vector3_t *vPoly, const vector3_t *vLine, c
 void FV3_Rotate(vector3_t *rotVec, const vector3_t *axisVec, const angle_t angle);
 /// Fixed Point Matrix functions
 void FM_Rotate(matrix_t *dest, angle_t angle, fixed_t x, fixed_t y, fixed_t z);
+
+// The table values in tables.c are calculated with this many fractional bits.
+#define FINE_FRACBITS 16
 
 // These macros should be used in case FRACBITS < FINE_FRACBITS.
 #define FINESINE(n) (finesine[n]>>(FINE_FRACBITS-FRACBITS))
