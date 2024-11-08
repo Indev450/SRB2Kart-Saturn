@@ -47,6 +47,8 @@ static I_mutex        i_cond_pool_mutex;
 
 static SDL_atomic_t   i_threads_running = {1};
 
+static SDL_threadID   i_main_thread_id;
+
 static Link
 Insert_link (
 		Link * head,
@@ -197,6 +199,12 @@ I_thread_is_stopped (void)
 	return ( ! SDL_AtomicGet(&i_threads_running) );
 }
 
+int
+I_on_main_thread (void)
+{
+	return ( SDL_ThreadID() == i_main_thread_id );
+}
+
 void
 I_start_threads (void)
 {
@@ -211,6 +219,8 @@ I_start_threads (void)
 	)){
 		abort();
 	}
+	
+	i_main_thread_id = SDL_ThreadID();
 }
 
 void
@@ -283,6 +293,12 @@ I_lock_mutex (
 		I_mutex * anchor
 ){
 	SDL_mutex * mutex;
+	
+	if (! i_threads_running.value)
+		return;
+
+	if (anchor == NULL)
+		return;
 
 	mutex = Identity(
 			&i_mutex_pool,
@@ -299,6 +315,12 @@ void
 I_unlock_mutex (
 		I_mutex id
 ){
+	if (! i_threads_running.value)
+		return;
+
+	if (id == NULL)
+		return;
+	
 	if (SDL_UnlockMutex(id) == -1)
 		abort();
 }
@@ -309,6 +331,12 @@ I_hold_cond (
 		I_mutex   mutex_id
 ){
 	SDL_cond * cond;
+	
+	if (! i_threads_running.value)
+		return;
+
+	if (cond_anchor == NULL || mutex_id == NULL)
+		return;
 
 	cond = Identity(
 			&i_cond_pool,
@@ -326,6 +354,12 @@ I_wake_one_cond (
 		I_cond * anchor
 ){
 	SDL_cond * cond;
+	
+	if (! i_threads_running.value)
+		return;
+
+	if (anchor == NULL)
+		return;
 
 	cond = Identity(
 			&i_cond_pool,
@@ -343,6 +377,12 @@ I_wake_all_cond (
 		I_cond * anchor
 ){
 	SDL_cond * cond;
+	
+	if (! i_threads_running.value)
+		return;
+
+	if (anchor == NULL)
+		return;
 
 	cond = Identity(
 			&i_cond_pool,
