@@ -341,8 +341,8 @@ void P_AllocMapHeader(INT16 i)
 	{
 		mapheaderinfo[i] = Z_Malloc(sizeof(mapheader_t), PU_STATIC, NULL);
 		mapheaderinfo[i]->grades = NULL;
+		P_ClearSingleMapHeaderInfo(i + 1);
 	}
-	P_ClearSingleMapHeaderInfo(i + 1);
 }
 
 // Loads the vertexes for a level.
