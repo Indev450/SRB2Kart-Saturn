@@ -973,7 +973,7 @@ static void readlevelheader(MYFILE *f, INT32 num, INT32 wadnum)
 			}
 			else if (fastcmp(word, "SPRITEBACKLIGHT"))
 			{
-				mapheaderinfo[num]->sprite_backlight = (SINT8)i;
+				mapheaderinfo[num-1]->sprite_backlight = (SINT8)i;
 			}
 			else if (fastcmp(word, "LIGHTANGLE"))
 			{
