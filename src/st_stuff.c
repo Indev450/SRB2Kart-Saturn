@@ -15,6 +15,7 @@
 
 #include "doomdef.h"
 #include "g_game.h"
+#include "g_input.h"
 #include "r_local.h"
 #include "p_local.h"
 #include "f_finale.h"
@@ -773,10 +774,33 @@ static void ST_overlayDrawer(void)
 			}
 			else
 			{
-				V_DrawString(2, BASEVIDHEIGHT-40, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF|V_YELLOWMAP, M_GetText("- SPECTATING -"));
-				V_DrawString(2, BASEVIDHEIGHT-30, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, itemtxt);
-				V_DrawString(2, BASEVIDHEIGHT-20, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, M_GetText("Accelerate - Float"));
-				V_DrawString(2, BASEVIDHEIGHT-10, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, M_GetText("Brake - Sink"));
+				if (cv_showdirectorhud.value)
+				{
+					V_DrawString(2, BASEVIDHEIGHT-50, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF|V_YELLOWMAP, M_GetText("- SPECTATING -"));
+					V_DrawString(2, BASEVIDHEIGHT-40, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, itemtxt);
+					V_DrawString(2, BASEVIDHEIGHT-30, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, M_GetText("Accelerate - Float"));
+					V_DrawString(2, BASEVIDHEIGHT-20, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, M_GetText("Brake - Sink"));
+
+					char directortoggle[32] = {0};
+					const char *item1 = gamecontrol[gc_director][0] != 0 ? G_KeynumToString(gamecontrol[gc_director][0]) : NULL;
+					const char *item2 = gamecontrol[gc_director][1] != 0 ? G_KeynumToString(gamecontrol[gc_director][1]) : NULL;
+
+					if (item1 != NULL && item2 != NULL)
+						snprintf(directortoggle, 32, "%s/%s - Toggle Director", item1, item2);
+					else
+						snprintf(directortoggle, 32, "%s - Toggle Director", item1 != NULL ? item1 : item2 != NULL ? item2 : "Not Bound");
+
+					V_DrawString(2, BASEVIDHEIGHT-10, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, directortoggle);
+
+					directortextactive = true;
+				}
+				else
+				{
+					V_DrawString(2, BASEVIDHEIGHT-40, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF|V_YELLOWMAP, M_GetText("- SPECTATING -"));
+					V_DrawString(2, BASEVIDHEIGHT-30, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, itemtxt);
+					V_DrawString(2, BASEVIDHEIGHT-20, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, M_GetText("Accelerate - Float"));
+					V_DrawString(2, BASEVIDHEIGHT-10, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, M_GetText("Brake - Sink"));
+				}
 			}
 		}
 	}

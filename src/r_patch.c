@@ -775,11 +775,11 @@ static UINT16 GetPatchPixel(patch_t *patch, INT32 x, INT32 y, boolean flip)
 #ifdef HWRENDER
 static patch_t *R_CreateHardwarePatch(patch_t *patch)
 {
-	GLPatch_t *grPatch = Z_Calloc(sizeof(GLPatch_t), PU_HWRPATCHINFO, NULL);
-	grPatch->mipmap = Z_Calloc(sizeof(GLMipmap_t), PU_HWRPATCHINFO, NULL);
-	grPatch->rawpatch = patch;
-	HWR_MakePatch(patch, grPatch, grPatch->mipmap, false);
-    return (patch_t *)grPatch;
+	GLPatch_t *glPatch = Z_Calloc(sizeof(GLPatch_t), PU_HWRPATCHINFO, NULL);
+	glPatch->mipmap = Z_Calloc(sizeof(GLMipmap_t), PU_HWRPATCHINFO, NULL);
+	glPatch->rawpatch = patch;
+	HWR_MakePatch(patch, glPatch, glPatch->mipmap, false);
+    return (patch_t *)glPatch;
 }
 #endif
 

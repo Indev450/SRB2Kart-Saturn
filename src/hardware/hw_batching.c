@@ -46,12 +46,12 @@ int unsortedVertexArrayAllocSize = 65536;
 // Call HWR_RenderBatches to render all the collected geometry.
 void HWR_StartBatching(void)
 {
-    if (currently_batching)
+	if (currently_batching)
 	{
-        I_Error("Repeat call to HWR_StartBatching without HWR_RenderBatches");
+		I_Error("Repeat call to HWR_StartBatching without HWR_RenderBatches");
 	}
 
-    // init arrays if that has not been done yet
+	// init arrays if that has not been done yet
 	if (!finalVertexArray)
 	{
 		finalVertexArray = malloc(finalVertexArrayAllocSize * sizeof(FOutVector));
@@ -61,7 +61,7 @@ void HWR_StartBatching(void)
 		unsortedVertexArray = malloc(unsortedVertexArrayAllocSize * sizeof(FOutVector));
 	}
 
-    currently_batching = true;
+	currently_batching = true;
 }
 
 // This replaces the direct calls to pfnSetTexture in cases where batching is available.
@@ -69,14 +69,14 @@ void HWR_StartBatching(void)
 // Doing this was easier than getting a texture pointer to HWR_ProcessPolygon.
 void HWR_SetCurrentTexture(GLMipmap_t *texture)
 {
-    if (currently_batching)
-    {
-        current_texture = texture;
-    }
-    else
-    {
-        HWD.pfnSetTexture(texture);
-    }
+	if (currently_batching)
+	{
+		current_texture = texture;
+	}
+	else
+	{
+		HWD.pfnSetTexture(texture);
+	}
 }
 
 // If batching is enabled, this function collects the polygon data and the chosen texture
@@ -84,7 +84,7 @@ void HWR_SetCurrentTexture(GLMipmap_t *texture)
 // render the polygon immediately.
 void HWR_ProcessPolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags, int shader_target, boolean horizonSpecial)
 {
-    if (currently_batching)
+	if (currently_batching)
 	{
 		if (!pSurf)
 			I_Error("Got a null FSurfaceInfo in batching");// nulls should not come in the stuff that batching currently applies to
@@ -220,7 +220,7 @@ static int comparePolygonsNoShaders(const void *p1, const void *p2)
 // the rendering backend to draw them.
 void HWR_RenderBatches(void)
 {
-    int finalVertexWritePos = 0;// position in finalVertexArray
+	int finalVertexWritePos = 0;// position in finalVertexArray
 	int finalIndexWritePos = 0;// position in finalVertexIndexArray
 
 	int polygonReadPos = 0;// position in polygonArraySorted
@@ -236,7 +236,7 @@ void HWR_RenderBatches(void)
 
 	int i;
 
-    if (!currently_batching)
+	if (!currently_batching)
 		I_Error("HWR_RenderBatches called without starting batching");
 
 	nextSurfaceInfo.LightInfo.fade_end = 0;
@@ -256,6 +256,7 @@ void HWR_RenderBatches(void)
 	ps_hw_numcalls.value.i = ps_hw_numverts.value.i = 0;
 	ps_hw_numshaders.value.i = ps_hw_numtextures.value.i
 		= ps_hw_numpolyflags.value.i = ps_hw_numcolors.value.i = 1;
+
 	// init polygonArraySorted
 	for (i = 0; i < polygonArraySize; i++)
 	{
@@ -264,11 +265,12 @@ void HWR_RenderBatches(void)
 
 	// sort polygons
 	PS_START_TIMING(ps_hw_batchsorttime);
-	if (cv_grshaders.value && gr_shadersavailable)
+	if (cv_glshaders.value && gl_shadersavailable)
 		qs22j(polygonArraySorted, polygonArraySize, sizeof(PolygonArrayEntry *), comparePolygons);
 	else
 		qs22j(polygonArraySorted, polygonArraySize, sizeof(PolygonArrayEntry *), comparePolygonsNoShaders);
 	PS_STOP_TIMING(ps_hw_batchsorttime);
+
 	// sort order
 	// 1. shader
 	// 2. texture
@@ -287,14 +289,14 @@ void HWR_RenderBatches(void)
 
 	// set state for first batch
 
-	if (cv_grshaders.value && gr_shadersavailable)
+	if (cv_glshaders.value && gl_shadersavailable)
 	{
 		HWD.pfnSetShader(currentShader);
 	}
 
 	if (currentPolyFlags & PF_NoTexture)
 		currentTexture = NULL;
-    else
+	else
 	    HWD.pfnSetTexture(currentTexture);
 
 	while (1)// note: remember handling notexture polyflag as having texture number 0 (also in comparePolygons)
@@ -369,7 +371,7 @@ void HWR_RenderBatches(void)
 			nextSurfaceInfo = nextEntry->surf;
 			if (nextPolyFlags & PF_NoTexture)
 				nextTexture = 0;
-			if (currentShader != nextShader && cv_grshaders.value && gr_shadersavailable)
+			if (currentShader != nextShader && cv_glshaders.value && gl_shadersavailable)
 			{
 				changeState = true;
 				changeShader = true;
@@ -384,7 +386,7 @@ void HWR_RenderBatches(void)
 				changeState = true;
 				changePolyFlags = true;
 			}
-			if (cv_grshaders.value && gr_shadersavailable)
+			if (cv_glshaders.value && gl_shadersavailable)
 			{
 				if (currentSurfaceInfo.PolyColor.rgba != nextSurfaceInfo.PolyColor.rgba ||
 					currentSurfaceInfo.TintColor.rgba != nextSurfaceInfo.TintColor.rgba ||
@@ -457,6 +459,7 @@ void HWR_RenderBatches(void)
 
 				ps_hw_numcolors.value.i++;
 			}
+			// and that should be it?
 		}
 	}
 	// reset the arrays (set sizes to 0)
@@ -465,6 +468,5 @@ void HWR_RenderBatches(void)
 
 	PS_STOP_TIMING(ps_hw_batchdrawtime);
 }
-
 
 #endif // HWRENDER

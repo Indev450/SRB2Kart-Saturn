@@ -31,6 +31,7 @@
 #include "dehacked.h" // get_number (for thok)
 #include "d_netfil.h" // blargh. for nameonly().
 #include "m_cheat.h" // objectplace
+#include "r_portal.h"
 #include "k_kart.h" // SRB2kart
 #include "p_local.h" // stplyr
 #ifdef HWRENDER
@@ -522,7 +523,7 @@ void R_InitSprites(void)
 
 	// it can be is do before loading config for skin cvar possible value
 	R_InitSkins();
-	for (i = 0; i < numwadfiles; i++) 
+	for (i = 0; i < numwadfiles; i++)
 	{
 		R_AddSkins((UINT16)i, false);
 		R_LoadSpriteInfoLumps(i, wadfiles[i]->numlumps);
@@ -732,7 +733,7 @@ static void R_DrawVisSprite(vissprite_t *vis)
 		if (overflow_test < 0) overflow_test = -overflow_test;
 		if ((UINT64)overflow_test&0xFFFFFFFF80000000ULL) return; // ditto
 	}
-	
+
 	// TODO This check should not be necessary. But Papersprites near to the camera will sometimes create invalid values
 	// for the vissprite's startfrac. This happens because they are not depth culled like other sprites.
 	// Someone who is more familiar with papersprites pls check and try to fix <3
@@ -1166,17 +1167,17 @@ static void R_ProjectSprite(mobj_t *thing)
 	angle_t pitchnroll = 0;
 	angle_t sliptiderollangle = 0;
 #endif
-	
+
 	INT32 dist = -1;
 
-	if (cv_grmaxinterpdist.value)
+	if (cv_maxinterpdist.value)
 		dist = R_QuickCamDist(thing->x, thing->y);
 
 	// uncapped/interpolation
 	interpmobjstate_t interp = {0};
 
 	// do interpolation
-	if (R_UsingFrameInterpolation() && !paused && (!cv_grmaxinterpdist.value || dist < cv_grmaxinterpdist.value))
+	if (R_UsingFrameInterpolation() && !paused && (!cv_maxinterpdist.value || dist < cv_maxinterpdist.value))
 	{
 		R_InterpolateMobjState(oldthing, rendertimefrac, &interp);
 	}
@@ -1268,7 +1269,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	{
 		ang = R_PointToAngle (interp.x, interp.y) - interp.angle;
 		camang = R_PointToAngle (interp.x, interp.y);
-		
+
 		if (mirrored)
 			ang = InvAngle(ang);
 	}
@@ -1285,9 +1286,9 @@ static void R_ProjectSprite(mobj_t *thing)
 		// choose a different rotation based on player view
 		//ang = R_PointToAngle (interp.x, interp.y) - interpangle;
 
-		if ((ang < ANGLE_180) && (sprframe->rotate & SRF_RIGHT)) // See from right
+		if ((sprframe->rotate & SRF_RIGHT) && (ang < ANGLE_180)) // See from right
 			rot = 6; // F7 slot
-		else if ((ang >= ANGLE_180) && (sprframe->rotate & SRF_LEFT)) // See from left
+		else if ((sprframe->rotate & SRF_LEFT) && (ang >= ANGLE_180)) // See from left
 			rot = 2; // F3 slot
 		else // Normal behaviour
 			rot = (ang+ANGLE_202h)>>29;
@@ -1298,7 +1299,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	}
 
 	I_Assert(lump < max_spritelumps);
-	
+
 	if (thing->localskin && ((skin_t *)thing->localskin)->flags & SF_HIRES)
 		this_scale = FixedMul(this_scale, ((skin_t *)thing->localskin)->highresscale);
 	else if (thing->skin && ((skin_t *)thing->skin)->flags & SF_HIRES)
@@ -1311,7 +1312,7 @@ static void R_ProjectSprite(mobj_t *thing)
 
 #ifdef ROTSPRITE
     pitchnroll = 0;  // set this to 0, non-paper sprites will affect this value
-	
+
 	if (cv_spriteroll.value)
 	{
 		if (papersprite)
@@ -1357,10 +1358,10 @@ static void R_ProjectSprite(mobj_t *thing)
 
 			if (rotsprite != NULL)
 			{
-				spr_width = rotsprite->width << FRACBITS;
-				spr_height = rotsprite->height << FRACBITS;
-				spr_offset = rotsprite->leftoffset << FRACBITS;
-				spr_topoffset = rotsprite->topoffset << FRACBITS;
+				spr_width = SHORT(rotsprite->width) << FRACBITS;
+				spr_height = SHORT(rotsprite->height) << FRACBITS;
+				spr_offset = SHORT(rotsprite->leftoffset) << FRACBITS;
+				spr_topoffset = SHORT(rotsprite->topoffset) << FRACBITS;
 				spr_topoffset += FEETADJUST;
 
 				// flip -> rotate, not rotate -> flip
@@ -1378,21 +1379,8 @@ static void R_ProjectSprite(mobj_t *thing)
 	if (spritexscale < 1 || spriteyscale < 1)
 		return;
 
-	if (thing->renderflags & RF_ABSOLUTEOFFSETS)
-	{
-		spr_offset = interp.spritexoffset;
-		spr_topoffset = interp.spriteyoffset;
-	}
-	else
-	{
-		SINT8 flipoffset = 1;
-
-		if ((thing->renderflags & RF_FLIPOFFSETS) && flip)
-			flipoffset = -1;
-
-		spr_offset += interp.spritexoffset * flipoffset;
-		spr_topoffset += interp.spriteyoffset * flipoffset;
-	}
+	spr_offset += interp.spritexoffset;
+	spr_topoffset += interp.spriteyoffset;
 
 	if (flip)
 		offset = spr_offset - spr_width;
@@ -1469,7 +1457,7 @@ static void R_ProjectSprite(mobj_t *thing)
 			tx2 += FixedDiv(tx-tx2, div);
 			tz2 = FixedMul(MINZ, this_scale);
 		}
-		
+
 		if ((tx2 / 4) < -(FixedMul(tz2, fovtan)) || (tx / 4) > FixedMul(tz, fovtan)) // too far off the side?
 			return;
 
@@ -1497,7 +1485,7 @@ static void R_ProjectSprite(mobj_t *thing)
 			return;
 
 		range++; // fencepost problem
-		
+
 		if (range > 32767)
 		{
 			// If the range happens to be too large for fixed_t,
@@ -1612,7 +1600,6 @@ static void R_ProjectSprite(mobj_t *thing)
 
 	// store information in a vissprite
 	vis = R_NewVisSprite();
-	vis->renderflags = thing->renderflags;
 	vis->heightsec = heightsec; //SoM: 3/17/2000
 	vis->mobjflags = thing->flags;
 	vis->scale = yscale; //<<detailshift;
@@ -1752,7 +1739,7 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 
 	INT32 dist = 1;
 
-	if (cv_grmaxinterpdist.value)
+	if (cv_maxinterpdist.value)
 		dist = R_QuickCamDist(thing->x, thing->y);
 
 	// uncapped/interpolation
@@ -1765,7 +1752,7 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 	}
 
 	// do interpolation
-	if (R_UsingFrameInterpolation() && !paused && (!cv_grmaxinterpdist.value || dist < cv_grmaxinterpdist.value))
+	if (R_UsingFrameInterpolation() && !paused && (!cv_maxinterpdist.value || dist < cv_maxinterpdist.value))
 	{
 		R_InterpolatePrecipMobjState(thing, rendertimefrac, &interp);
 	}
@@ -2383,7 +2370,7 @@ static drawnode_t *R_CreateDrawNode(drawnode_t *link)
 	node->thickseg = NULL;
 	node->ffloor = NULL;
 	node->sprite = NULL;
-	
+
 	ps_numdrawnodes.value.i++;
 	return node;
 }
@@ -2660,7 +2647,7 @@ static void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2)
 		if (spr->cliptop[x] == -2)
 			spr->cliptop[x] = -1;
 	}
-	
+
 	// Check if it'll be visible
 	// Not done for floorsprites.
 	if (cv_spriteclip.value)
@@ -2735,7 +2722,7 @@ void R_ClipSprites(void)
 	for (; clippedvissprites < visspritecount; clippedvissprites++)
 	{
 		vissprite_t *spr = R_GetVisSprite(clippedvissprites);
-		
+
 		if (cv_spriteclip.value
 		&& (spr->szt > vid.height || spr->sz < 0))
 		{
@@ -2760,7 +2747,7 @@ void R_ClipSprites(void)
 		}
 
 		R_ClipVisSprite(spr, spr->x1, spr->x2);
-		
+
 		if ((spr->cut & SC_NOTVISIBLE) == 0)
 			numvisiblesprites++;
 	}
@@ -2777,10 +2764,10 @@ boolean R_ThingVisible (mobj_t *thing)
 
 	if (splitscreen)
 	{
-		if ((viewssnum == 0 && (thing->renderflags & MFE_DRAWONLYFORP1))
-			|| (viewssnum == 1 && (thing->renderflags & MFE_DRAWONLYFORP2))
-			|| (viewssnum == 2 && (thing->renderflags & MFE_DRAWONLYFORP2))
-			|| (viewssnum == 3 && (thing->renderflags & MFE_DRAWONLYFORP4)))
+		if ((viewssnum == 0 && (thing->eflags & MFE_DRAWONLYFORP1))
+			|| (viewssnum == 1 && (thing->eflags & MFE_DRAWONLYFORP2))
+			|| (viewssnum == 2 && (thing->eflags & MFE_DRAWONLYFORP2))
+			|| (viewssnum == 3 && (thing->eflags & MFE_DRAWONLYFORP4)))
 			return true;
 	}
 
@@ -3287,7 +3274,7 @@ static int skinSortFunc(const void *a, const void *b) //tbh i have no clue what 
 void sortSkinGrid(void)
 {
 	//CONS_Printf("Sorting skin list (%d)...\n", cv_skinselectgridsort.value);
-  qs22j(skinsorted, numskins, sizeof(UINT8), skinSortFunc);
+	qs22j(skinsorted, numskins, sizeof(UINT8), skinSortFunc);
 }
 
 //
@@ -3313,12 +3300,12 @@ void R_AddSkins(UINT16 wadnum, boolean local)
 		// advance by default
 		lastlump = lump + 1;
 
-		if (numskins >= MAXSKINS)
+		if (!local && numskins >= MAXSKINS)
 		{
 			CONS_Alert(CONS_WARNING, M_GetText("Unable to add skin, too many characters are loaded (%d maximum)\n"), MAXSKINS);
 			continue; // so we know how many skins couldn't be added
 		}
-		if (numlocalskins >= MAXLOCALSKINS)
+		if (local && numlocalskins >= MAXLOCALSKINS)
 		{
 			CONS_Alert(CONS_WARNING, M_GetText("Unable to add localskin, too many localskins are loaded (%d maximum)\n"), MAXLOCALSKINS);
 			continue; // so we know how many skins couldn't be added
@@ -3571,7 +3558,7 @@ next_token:
 			Forceskin_cons_t[numskins+1].value = numskins;
 			Forceskin_cons_t[numskins+1].strvalue = skins[numskins].name;
 		}
-		
+
 		skin->localskin = local;
 
 		// so we dont have to guess
@@ -3598,7 +3585,7 @@ next_token:
 			CONS_Debug(DBG_SETUP, M_GetText("Incremented %d, %d to %d\n"), skin->kartspeed, skin->kartweight, skinstatscount[skin->kartspeed - 1][skin->kartweight - 1]);
 			skinsorted[numskins] = numskins;
 		}
-		
+
 		allskins[numallskins] = ( (local) ? localskins : skins )[( (local) ? numlocalskins : numskins )];
 
 		local ? numlocalskins++ : numskins++;

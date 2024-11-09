@@ -121,8 +121,6 @@ typedef struct
 	poly_t *planepoly;  // the generated convex polygon
 } extrasubsector_t;
 
-//here lies gr_vissprite
-
 // Kart features
 #define USE_FTRANSFORM_ANGLEZ
 #define USE_FTRANSFORM_MIRROR
@@ -289,9 +287,6 @@ typedef struct FSurfaceInfo FSurfaceInfo;
 
 enum hwdsetspecialstate
 {
-#ifdef USE_FBO_OGL
-	HWD_SET_FRAMEBUFFER,
-#endif
 	HWD_SET_SHADERS,
 
 	HWD_SET_TEXTUREFILTERMODE,

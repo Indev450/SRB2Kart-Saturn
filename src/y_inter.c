@@ -388,7 +388,7 @@ void Y_IntermissionDrawer(void)
 
 	if (cv_betainterscreen.value == 1
 #ifdef HWRENDER	
-	|| (rendermode == render_opengl && cv_grscreentextures.value != 2) // use the neato kart bg for intermission on disabled screen textures
+	|| (rendermode == render_opengl && cv_glscreentextures.value != 2) // use the neato kart bg for intermission on disabled screen textures
 #endif
 	)
 		V_DrawPatchFill(bgtile); // use the neato kart bg for intermission on disabled screen textures

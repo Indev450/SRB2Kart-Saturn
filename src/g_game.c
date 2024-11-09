@@ -1480,7 +1480,12 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	//Reset away view if a command is given.
 	if ((cmd->forwardmove || cmd->sidemove || cmd->buttons)
 		&& displayplayers[0] != consoleplayer && ssplayer == 1)
+	{
 		displayplayers[0] = consoleplayer;
+		// i dont like this lmao
+		if (cv_director.value)
+			CV_SetValue(&cv_director, 0);
+	}
 
 }
 
@@ -4498,8 +4503,7 @@ INT32 G_FindMap(const char *mapname, char **foundmapnamep,
 					break;
 			}
 		}
-		else
-		if (apromapnum == 0 || wanttable)
+		else if (apromapnum == 0 || wanttable)
 		{
 			/* LEVEL 1--match keywords verbatim */
 			if (( aprop = strcasestr(realmapname, mapname) ))
@@ -4590,8 +4594,8 @@ INT32 G_FindMapByNameOrCode(const char *mapname, char **realmapnamep)
 	{
 		if (mapname[0] == '*') // current map
 			return gamemap;
-		else if (mapname[0] == '?')
-			return G_RandMap(G_TOLFlag(gametype), prevmap, false, 0, false, NULL);
+		else if (mapname[0] == '?' && mapheaderinfo[gamemap-1])
+			return G_RandMap(G_TOLFlag(gametype), gamemap-1, false, 0, false, NULL)+1;
 		else if (mapname[0] == '+' && mapheaderinfo[gamemap-1]) // next map
 		{
 			newmapnum = mapheaderinfo[gamemap-1]->nextlevel;

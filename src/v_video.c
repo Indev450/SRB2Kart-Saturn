@@ -1112,7 +1112,7 @@ void V_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c)
 
 	if (x >= vid.width || y >= vid.height)
 		return; // off the screen
-	
+
 	if (x < 0)
 	{
 		w += x;
@@ -1126,7 +1126,7 @@ void V_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c)
 
 	if (w <= 0 || h <= 0)
 		return; // zero width/height wouldn't draw anything
-	
+
 	if (x + w > vid.width)
 		w = vid.width-x;
 	if (y + h > vid.height)
@@ -1149,7 +1149,7 @@ void V_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c)
 	}
 
 	c &= 255;
-	
+
 	if (alphalevel)
 	{
 		const UINT8 *fadetable = ((UINT8 *)transtables + ((alphalevel-1)<<FF_TRANSSHIFT) + (c*256));
@@ -2495,7 +2495,7 @@ void V_DrawThinStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *str
 		default:
 			break;
 	}
-	
+
 	charflags = (option & V_CHARCOLORMASK);
 	colormap = V_GetStringColormap(charflags);
 
@@ -3189,7 +3189,7 @@ INT32 heatindex[MAXSPLITSCREENPLAYERS] = {0, 0, 0, 0};
 // Perform a particular image postprocessing function.
 //
 
-void V_DoPostProcessor(INT32 view, postimg_t type, INT32 param)
+void V_DoPostProcessor(INT32 view, player_t *player, INT32 param)
 {
 #if NUMSCREENS < 5
 	// do not enable image post processing for ARM, SH and MIPS CPUs
@@ -3197,6 +3197,7 @@ void V_DoPostProcessor(INT32 view, postimg_t type, INT32 param)
 	(void)type;
 	(void)param;
 #else
+	(void)param; // unused motion blur stuff
 	INT32 yoffset, xoffset;
 
 #ifdef HWRENDER
@@ -3205,6 +3206,9 @@ void V_DoPostProcessor(INT32 view, postimg_t type, INT32 param)
 #endif
 
 	if (view < 0 || view > 3 || view > splitscreen)
+		return;
+
+	if (!player->postimgflags)
 		return;
 
 	if ((view == 1 && splitscreen == 1) || view >= 2)
@@ -3217,10 +3221,11 @@ void V_DoPostProcessor(INT32 view, postimg_t type, INT32 param)
 	else
 		xoffset = 0;
 
-	if (type == postimg_water)
+	UINT8 *tmpscr = screens[4];
+	UINT8 *srcscr = screens[0];
+
+	if (player->postimgflags & POSTIMG_WATER)
 	{
-		UINT8 *tmpscr = screens[4];
-		UINT8 *srcscr = screens[0];
 		INT32 y;
 		// Set disStart to a range from 0 to FINEANGLE, incrementing by 128 per tic
 		angle_t disStart = (((leveltime-1)*128) + (rendertimefrac / (FRACUNIT/128))) & FINEMASK;
@@ -3257,29 +3262,30 @@ void V_DoPostProcessor(INT32 view, postimg_t type, INT32 param)
 			}
 
 			/*
-			Unoptimized version
-			for (x = 0; x < vid.width*vid.bpp; x++)
-			{
-				newpix = (x + sine);
+			 Unoptimized version
+			 for (x = 0; x < vid.width*vid.bpp; x++)
+			 {
+			 	newpix = (x + sine);
 
-				if (newpix < 0)
-					newpix = 0;
-				else if (newpix >= vid.width)
-					newpix = vid.width-1;
+			 	if (newpix < 0)
+			 		newpix = 0;
+			 	else if (newpix >= vid.width)
+			 		newpix = vid.width-1;
 
-				tmpscr[y*vid.width + x] = srcscr[y*vid.width+newpix]; // *(transme + (srcscr[y*vid.width+x]<<8) + srcscr[y*vid.width+newpix]);
-			}*/
+			 	tmpscr[y*vid.width + x] = srcscr[y*vid.width+newpix]; // *(transme + (srcscr[y*vid.width+x]<<8) + srcscr[y*vid.width+newpix]);
+			 }*/
+
 			disStart += 22;//the offset into the displacement map, increment each game loop
 			disStart &= FINEMASK; //clip it to FINEMASK
 		}
 
-		VID_BlitLinearScreen(tmpscr+vid.width*vid.bpp*yoffset+xoffset, screens[0]+vid.width*vid.bpp*yoffset+xoffset,
-				viewwidth*vid.bpp, viewheight, vid.width*vid.bpp, vid.width);
+		UINT8 *tmp = tmpscr;
+		tmpscr = srcscr;
+		srcscr = tmp;
 	}
-	else if (type == postimg_motion) // Motion Blur!
-	{
-		UINT8 *tmpscr = screens[4];
-		UINT8 *srcscr = screens[0];
+
+	/*if (player->postimgflags & POSTIMG_MOTION) // Motion Blur!
+	 {
 		INT32 x, y;
 
 		// TODO: Add a postimg_param so that we can pick the translucency level...
@@ -3288,30 +3294,12 @@ void V_DoPostProcessor(INT32 view, postimg_t type, INT32 param)
 		for (y = yoffset; y < yoffset+viewheight; y++)
 		{
 			for (x = xoffset; x < xoffset+viewwidth; x++)
-			{
-				tmpscr[y*vid.width + x]
-					=     colormaps[*(transme     + (srcscr   [(y*vid.width)+x ] <<8) + (tmpscr[(y*vid.width)+x]))];
-			}
+				tmpscr[y*vid.width + x] =     colormaps[*(transme     + (srcscr   [(y*vid.width)+x ] <<8) + (tmpscr[(y*vid.width)+x]))];
 		}
-		VID_BlitLinearScreen(tmpscr+vid.width*vid.bpp*yoffset+xoffset, screens[0]+vid.width*vid.bpp*yoffset+xoffset,
-				viewwidth*vid.bpp, viewheight, vid.width*vid.bpp, vid.width);
-	}
-	else if (type == postimg_flip) // Flip the screen upside-down
-	{
-		UINT8 *tmpscr = screens[4];
-		UINT8 *srcscr = screens[0];
-		INT32 y, y2;
+	}*/
 
-		for (y = yoffset, y2 = yoffset+viewheight - 1; y < yoffset+viewheight; y++, y2--)
-			M_Memcpy(&tmpscr[(y2*vid.width)+xoffset], &srcscr[(y*vid.width)+xoffset], viewwidth);
-
-		VID_BlitLinearScreen(tmpscr+vid.width*vid.bpp*yoffset+xoffset, screens[0]+vid.width*vid.bpp*yoffset+xoffset,
-				viewwidth*vid.bpp, viewheight, vid.width*vid.bpp, vid.width);
-	}
-	else if (type == postimg_heat) // Heat wave
+	if (player->postimgflags & POSTIMG_HEAT) // Heat wave
 	{
-		UINT8 *tmpscr = screens[4];
-		UINT8 *srcscr = screens[0];
 		INT32 y;
 
 		// Make sure table is built
@@ -3352,39 +3340,52 @@ void V_DoPostProcessor(INT32 view, postimg_t type, INT32 param)
 			heatindex[view] %= vid.height;
 		}
 
-		VID_BlitLinearScreen(tmpscr+vid.width*vid.bpp*yoffset+xoffset, screens[0]+vid.width*vid.bpp*yoffset+xoffset,
-				viewwidth*vid.bpp, viewheight, vid.width*vid.bpp, vid.width);
+		UINT8 *tmp = tmpscr;
+		tmpscr = srcscr;
+		srcscr = tmp;
 	}
-	else if (type == postimg_mirror) // Flip the screen on the x axis
+
+	if ((player->postimgflags & POSTIMG_FLIP) && !(player->postimgflags & POSTIMG_MIRROR)) // Flip the screen upside-down
 	{
-		UINT8 *tmpscr = screens[4];
-		UINT8 *srcscr = screens[0];
+		INT32 y, y2;
+
+		for (y = yoffset, y2 = yoffset+viewheight - 1; y < yoffset+viewheight; y++, y2--)
+			M_Memcpy(&tmpscr[(y2*vid.width)+xoffset], &srcscr[(y*vid.width)+xoffset], viewwidth);
+
+		UINT8 *tmp = tmpscr;
+		tmpscr = srcscr;
+		srcscr = tmp;
+	}
+	else if ((player->postimgflags & POSTIMG_MIRROR) && !(player->postimgflags & POSTIMG_FLIP)) // Flip the screen on the x axis
+	{
 		INT32 y, x, x2;
 
 		for (y = yoffset; y < yoffset+viewheight; y++)
-		{
 			for (x = xoffset, x2 = xoffset+((viewwidth*vid.bpp)-1); x < xoffset+(viewwidth*vid.bpp); x++, x2--)
 				tmpscr[y*vid.width + x2] = srcscr[y*vid.width + x];
-		}
 
-		VID_BlitLinearScreen(tmpscr+vid.width*vid.bpp*yoffset+xoffset, screens[0]+vid.width*vid.bpp*yoffset+xoffset,
-				viewwidth*vid.bpp, viewheight, vid.width*vid.bpp, vid.width);
+		UINT8 *tmp = tmpscr;
+		tmpscr = srcscr;
+		srcscr = tmp;
 	}
-	else if (type == postimg_mirrorflip) // Flip the screen upside-down and on the x axis
+	else if ((player->postimgflags & POSTIMG_MIRROR) && (player->postimgflags & POSTIMG_FLIP)) // Flip the screen upside-down and on the x axis
 	{
-		UINT8 *tmpscr = screens[4];
-		UINT8 *srcscr = screens[0];
 		INT32 y, x;
 
 		for (y = yoffset; y < yoffset + viewheight; y++)
 			for (x = xoffset; x < xoffset + viewwidth; x++)
 				tmpscr[((yoffset + viewheight - 1 - y) * vid.width) + xoffset + viewwidth - (x - xoffset) - 1] = srcscr[(y * vid.width) + x];
 
-		VID_BlitLinearScreen(tmpscr+vid.width*vid.bpp*yoffset+xoffset, screens[0]+vid.width*vid.bpp*yoffset+xoffset,
-				viewwidth*vid.bpp, viewheight, vid.width*vid.bpp, vid.width);
+		UINT8 *tmp = tmpscr;
+		tmpscr = srcscr;
+		srcscr = tmp;
 	}
+
+	VID_BlitLinearScreen(srcscr+vid.width*vid.bpp*yoffset+xoffset, tmpscr+vid.width*vid.bpp*yoffset+xoffset,
+						 viewwidth*vid.bpp, viewheight, vid.width*vid.bpp, vid.width);
 #endif
 }
+
 
 // Taken from my videos-in-SRB2 project
 // Generates a color look-up table

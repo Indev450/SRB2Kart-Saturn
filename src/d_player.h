@@ -413,6 +413,8 @@ typedef struct player_s
 	// See pflags_t, above.
 	pflags_t pflags;
 
+	UINT16 postimgflags;
+
 	// playing animation.
 	panim_t panim;
 

@@ -510,7 +510,7 @@ void P_UpdateSegLightOffset(seg_t *li)
 // Loads the SEGS resource from a level.
 static void P_LoadRawSegs(UINT8 *data)
 {
-	INT32 linedef, side;
+	INT32 rawlinedef, rawside;
 	mapseg_t *ml = (mapseg_t*)data;
 	seg_t *li = segs;
 	line_t *ldef;
@@ -530,14 +530,14 @@ static void P_LoadRawSegs(UINT8 *data)
 
 		li->angle = (SHORT(ml->angle))<<FRACBITS;
 		li->offset = (SHORT(ml->offset))<<FRACBITS;
-		linedef = SHORT(ml->linedef);
-		ldef = &lines[linedef];
+		rawlinedef = SHORT(ml->linedef);
+		ldef = &lines[rawlinedef];
 		li->linedef = ldef;
-		li->side = side = SHORT(ml->side);
-		li->sidedef = &sides[ldef->sidenum[side]];
-		li->frontsector = sides[ldef->sidenum[side]].sector;
+		li->side = rawside = SHORT(ml->side);
+		li->sidedef = &sides[ldef->sidenum[rawside]];
+		li->frontsector = sides[ldef->sidenum[rawside]].sector;
 		if (ldef->flags & ML_TWOSIDED)
-			li->backsector = sides[ldef->sidenum[side^1]].sector;
+			li->backsector = sides[ldef->sidenum[rawside^1]].sector;
 		else
 			li->backsector = 0;
 
@@ -2488,6 +2488,9 @@ static void P_InitMinimapInfo(void)
 	fixed_t a;
 	fixed_t b;
 	node_t *bsp = &nodes[numnodes-1];
+
+	minimapinfo.minimap_pic = NULL;
+
 	lumpnum = W_CheckNumForName(va("%sR", G_BuildMapName(gamemap)));
 
 	if (lumpnum != -1)
@@ -2499,6 +2502,7 @@ static void P_InitMinimapInfo(void)
 	minimapinfo.max_x = bsp->bbox[0][BOXRIGHT];
 	minimapinfo.min_y = bsp->bbox[0][BOXBOTTOM];
 	minimapinfo.max_y = bsp->bbox[0][BOXTOP];
+
 	if (bsp->bbox[1][BOXLEFT] < minimapinfo.min_x)
 		minimapinfo.min_x = bsp->bbox[1][BOXLEFT];
 	if (bsp->bbox[1][BOXRIGHT] > minimapinfo.max_x)
@@ -2507,15 +2511,19 @@ static void P_InitMinimapInfo(void)
 		minimapinfo.min_y = bsp->bbox[1][BOXBOTTOM];
 	if (bsp->bbox[1][BOXTOP] > minimapinfo.max_y)
 		minimapinfo.max_y = bsp->bbox[1][BOXTOP];
+
 	// You might be wondering why these are being bitshift here
 	// it's because mapwidth and height would otherwise overflow for maps larger than half the size possible...
 	// map boundaries and sizes will ALWAYS be whole numbers thankfully
 	// later calculations take into consideration that these are actually not in terms of FRACUNIT though
 	minimapinfo.map_w = (minimapinfo.max_x >>= FRACBITS) - (minimapinfo.min_x >>= FRACBITS);
 	minimapinfo.map_h = (minimapinfo.max_y >>= FRACBITS) - (minimapinfo.min_y >>= FRACBITS);
+
 	minimapinfo.minimap_w = minimapinfo.minimap_h = 100;
+
 	a = FixedDiv(minimapinfo.minimap_w<<FRACBITS, minimapinfo.map_w<<4);
 	b = FixedDiv(minimapinfo.minimap_h<<FRACBITS, minimapinfo.map_h<<4);
+
 	if (a < b)
 	{
 		minimapinfo.minimap_h = FixedMul(a, minimapinfo.map_h)>>(FRACBITS-4);
@@ -2529,8 +2537,10 @@ static void P_InitMinimapInfo(void)
 		}
 		minimapinfo.zoom = b;
 	}
+
 	minimapinfo.zoom >>= (FRACBITS-4);
 	minimapinfo.zoom -= (minimapinfo.zoom/20);
+
 	// These should always be small enough to be bitshift back right now
 	minimapinfo.offs_x = FixedMul((minimapinfo.min_x + minimapinfo.map_w/2) << FRACBITS, minimapinfo.zoom);
 	minimapinfo.offs_y = FixedMul((minimapinfo.min_y + minimapinfo.map_h/2) << FRACBITS, minimapinfo.zoom);
@@ -2580,9 +2590,6 @@ boolean P_SetupLevel(boolean skipprecip, boolean reloadinggamestate)
 		P_RunLevelScript(mapheaderinfo[gamemap-1]->scriptname);
 
 	P_LevelInitStuff(reloadinggamestate);
-
-	for (i = 0; i <= splitscreen; i++)
-		postimgtype[i] = postimg_none;
 
 	if (mapheaderinfo[gamemap-1]->forcecharacter[0] != '\0'
 	&& atoi(mapheaderinfo[gamemap-1]->forcecharacter) != 255)

@@ -4464,7 +4464,7 @@ static void Got_AddPlayer(UINT8 **p, INT32 playernum)
 	if (server && multiplayer && motd[0] != '\0')
 		COM_BufAddText(va("sayto %d %s\n", newplayernum, motd));
 
-	D_AddAutoloadFiles();
+	D_AddPostloadFiles();
 
 	LUAh_PlayerJoin(newplayernum);
 

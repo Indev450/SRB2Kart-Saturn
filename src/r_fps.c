@@ -129,7 +129,7 @@ static void R_SetupFreelook(void)
 	// (lmps, network and use F12...)
 	if (rendermode == render_soft
 #ifdef HWRENDER
-		|| cv_grshearing.value
+		|| cv_glshearing.value
 #endif
 	)
 	{
@@ -323,7 +323,7 @@ void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 		out->angle = mobj->resetinterp ? mobj->angle : R_LerpAngle(mobj->old_angle, mobj->angle, frac);
 
 #ifdef HWRENDER
-	if (cv_grmdls.value)
+	if (cv_glmdls.value)
 	{
 		// pitch roll stuff
 		out->pitch = mobj->resetinterp ? mobj->pitch : R_LerpAngle(mobj->old_pitch, mobj->pitch, frac);

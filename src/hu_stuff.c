@@ -2617,7 +2617,8 @@ static void HU_DrawRankings(void)
 	boolean completed[MAXPLAYERS];
 	UINT32 whiteplayer = MAXPLAYERS;
 
-	V_DrawFadeScreen(0xFF00, 16); // A little more readable, and prevents cheating the fades under other circumstances.
+	if (!automapactive)
+		V_DrawFadeScreen(0xFF00, 16); // A little more readable, and prevents cheating the fades under other circumstances.
 
 	if (cons_menuhighlight.value)
 		hilicol = cons_menuhighlight.value;

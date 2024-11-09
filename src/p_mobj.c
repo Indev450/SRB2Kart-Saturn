@@ -91,6 +91,7 @@ FUNCINLINE static ATTRINLINE void P_CycleStateAnimation(mobj_t *mobj)
 	// var2 determines delay between animation frames
 	if (!(mobj->frame & FF_ANIMATE) || --mobj->anim_duration != 0)
 		return;
+
 	mobj->anim_duration = (UINT16)mobj->state->var2;
 
 	// compare the current sprite frame to the one we started from
@@ -352,18 +353,6 @@ static boolean P_SetPrecipMobjState(precipmobj_t *mobj, statenum_t state)
 }
 
 //
-// P_MobjFlip
-//
-// Special utility to return +1 or -1 depending on mobj's gravity
-//
-SINT8 P_MobjFlip(const mobj_t *mobj)
-{
-	if (mobj && mobj->eflags & MFE_VERTICALFLIP)
-		return -1;
-	return 1;
-}
-
-//
 // P_WeaponOrPanel
 //
 // Returns true if weapon ring/panel; otherwise returns false
@@ -408,7 +397,7 @@ void P_ExplodeMissile(mobj_t *mo)
 		P_RadiusAttack(mo, mo, 96*FRACUNIT);
 
 		explodemo = P_SpawnMobj(mo->x, mo->y, mo->z, MT_EXPLODE);
-		if (!P_MobjWasRemoved(explodemo))
+		if (explodemo)
 		{
 			P_SetScale(explodemo, mo->scale);
 			explodemo->destscale = mo->destscale;
@@ -417,7 +406,7 @@ void P_ExplodeMissile(mobj_t *mo)
 			S_StartSound(explodemo, sfx_pop);
 		}
 		explodemo = P_SpawnMobj(mo->x, mo->y, mo->z, MT_EXPLODE);
-		if (!P_MobjWasRemoved(explodemo))
+		if (explodemo)
 		{
 			P_SetScale(explodemo, mo->scale);
 			explodemo->destscale = mo->destscale;
@@ -426,7 +415,7 @@ void P_ExplodeMissile(mobj_t *mo)
 			S_StartSound(explodemo, sfx_dmpain);
 		}
 		explodemo = P_SpawnMobj(mo->x, mo->y, mo->z, MT_EXPLODE);
-		if (!P_MobjWasRemoved(explodemo))
+		if (explodemo)
 		{
 			P_SetScale(explodemo, mo->scale);
 			explodemo->destscale = mo->destscale;
@@ -435,7 +424,7 @@ void P_ExplodeMissile(mobj_t *mo)
 			S_StartSound(explodemo, sfx_pop);
 		}
 		explodemo = P_SpawnMobj(mo->x, mo->y, mo->z, MT_EXPLODE);
-		if (!P_MobjWasRemoved(explodemo))
+		if (explodemo)
 		{
 			P_SetScale(explodemo, mo->scale);
 			explodemo->destscale = mo->destscale;
@@ -3242,100 +3231,92 @@ void P_DestroyRobots(void)
 	}
 }
 
-// P_CameraThinker
-//
-// Process the mobj-ish required functions of the camera
-boolean P_CameraThinker(player_t *player, camera_t *thiscam, boolean resetcalled)
+// the below is chasecam only, if you're curious. check out P_CalcPostImg in p_user.c for first person
+static void P_CalcChasePostImg(player_t *player, camera_t *thiscam)
 {
-	boolean itsatwodlevel = false;
-	boolean flipcam = (player->pflags & PF_FLIPCAM && !(player->pflags & PF_NIGHTSMODE) && player->mo->eflags & MFE_VERTICALFLIP);
-	postimg_t postimg = postimg_none;
+	const boolean flipcam = (player->pflags & PF_FLIPCAM && !(player->pflags & PF_NIGHTSMODE) && player->mo->eflags & MFE_VERTICALFLIP);
+	UINT16 postimgflags = 0;
 	UINT8 i;
 
-	// This can happen when joining
-	if (thiscam->subsector == NULL || thiscam->subsector->sector == NULL)
-		return true;
+	if (encoremode)
+		postimgflags |= POSTIMG_MIRROR;
+	if (flipcam)
+		postimgflags |= POSTIMG_FLIP;
 
-	if (twodlevel)
-		itsatwodlevel = true;
-	else
-	{
-		for (i = 0; i <= splitscreen; i++)
-		{
-			if (thiscam == &camera[i] && players[displayplayers[i]].mo
-				&& (players[displayplayers[i]].mo->flags2 & MF2_TWOD))
-			{
-				itsatwodlevel = true;
-				break;
-			}
-		}
-	}
-
-	if (encoremode && !flipcam)
-		postimg = postimg_mirror;
-	else if (!encoremode && flipcam)
-		postimg = postimg_flip;
-	else if (encoremode && flipcam)
-		postimg = postimg_mirrorflip;
-	else if (player->awayviewtics && player->awayviewmobj && !P_MobjWasRemoved(player->awayviewmobj)) // Camera must obviously exist
+	if (player->awayviewtics && player->awayviewmobj && !P_MobjWasRemoved(player->awayviewmobj)) // Camera must obviously exist
 	{
 		camera_t dummycam;
+
 		dummycam.subsector = player->awayviewmobj->subsector;
 		dummycam.x = player->awayviewmobj->x;
 		dummycam.y = player->awayviewmobj->y;
 		dummycam.z = player->awayviewmobj->z;
 		//dummycam.height = 40*FRACUNIT; // alt view height is 20*FRACUNIT
 		dummycam.height = 0;			 // Why? Remote viewpoint cameras have no height.
+
 		// Are we in water?
 		if (P_CameraCheckWater(&dummycam))
-			postimg = postimg_water;
-		else if (P_CameraCheckHeat(&dummycam))
-			postimg = postimg_heat;
+			postimgflags |= POSTIMG_WATER;
+		if (P_CameraCheckHeat(&dummycam))
+			postimgflags |= POSTIMG_HEAT;
 	}
 	else
 	{
 		// Are we in water?
 		if (P_CameraCheckWater(thiscam))
-			postimg = postimg_water;
-		else if (P_CameraCheckHeat(thiscam))
-			postimg = postimg_heat;
+			postimgflags |= POSTIMG_WATER;
+		if (P_CameraCheckHeat(thiscam))
+			postimgflags |= POSTIMG_HEAT;
 	}
 
-	if (postimg != postimg_none)
+	for (i = 0; i <= splitscreen; i++)
 	{
-		for (i = 0; i <= splitscreen; i++)
-		{
-			if (player != &players[displayplayers[i]])
-				continue;
+		if (player != &players[displayplayers[i]])
+			continue;
 
-			postimgtype[i] = postimg;
-		}
+		players[displayplayers[i]].postimgflags = postimgflags;
+		break;
 	}
+}
+
+// P_CameraThinker
+//
+// Process the mobj-ish required functions of the camera
+boolean P_CameraThinker(player_t *player, camera_t *thiscam, boolean resetcalled)
+{
+	// This can happen when joining
+	if (thiscam->subsector == NULL || thiscam->subsector->sector == NULL)
+		return true;
+
+	P_CalcChasePostImg(player, thiscam);
 
 	if (thiscam->momx || thiscam->momy)
 	{
-		if (!P_TryCameraMove(thiscam->x + thiscam->momx, thiscam->y + thiscam->momy, thiscam))
-		{ // Never fails for 2D mode.
+		if (!P_TryCameraMove(thiscam->x + thiscam->momx, thiscam->y + thiscam->momy, thiscam)) // Never fails for 2D mode.
+		{
 			mobj_t dummy;
+
 			dummy.thinker.function.acp1 = (actionf_p1)P_MobjThinker;
 			dummy.subsector = thiscam->subsector;
 			dummy.x = thiscam->x;
 			dummy.y = thiscam->y;
 			dummy.z = thiscam->z;
 			dummy.height = thiscam->height;
+
 			if (player->pflags & PF_TIMEOVER)
 				player->kartstuff[k_timeovercam] = (2*TICRATE)+1;
+
 			if (!resetcalled && !(player->pflags & PF_NOCLIP || leveltime < introtime) && !P_CheckSight(&dummy, player->mo)) // TODO: "P_CheckCameraSight" instead.
 				P_ResetCamera(player, thiscam);
 			else
 				P_SlideCameraMove(thiscam);
+
 			if (resetcalled) // Okay this means the camera is fully reset.
 				return true;
 		}
 	}
 
-	if (!itsatwodlevel)
-		P_CheckCameraPosition(thiscam->x, thiscam->y, thiscam);
+	P_CheckCameraPosition(thiscam->x, thiscam->y, thiscam);
 
 	thiscam->subsector = R_PointInSubsector(thiscam->x, thiscam->y);
 	thiscam->floorz = tmfloorz;
@@ -3347,7 +3328,7 @@ boolean P_CameraThinker(player_t *player, camera_t *thiscam, boolean resetcalled
 		thiscam->z += thiscam->momz + player->mo->pmomz;
 
 #ifndef NOCLIPCAM
-		if (!itsatwodlevel && !(player->pflags & PF_NOCLIP || leveltime < introtime))
+		if (!(player->pflags & PF_NOCLIP || leveltime < introtime))
 		{
 			// clip movement
 			if (thiscam->z <= thiscam->floorz) // hit the floor
@@ -3390,13 +3371,13 @@ boolean P_CameraThinker(player_t *player, camera_t *thiscam, boolean resetcalled
 #endif
 	}
 
-	if (itsatwodlevel
-	|| (thiscam->ceilingz - thiscam->z < thiscam->height
-		&& thiscam->ceilingz >= thiscam->z))
+	if (thiscam->ceilingz - thiscam->z < thiscam->height
+		&& thiscam->ceilingz >= thiscam->z)
 	{
 		thiscam->ceilingz = thiscam->z + thiscam->height;
 		thiscam->floorz = thiscam->z;
 	}
+
 	return false;
 }
 
@@ -3410,8 +3391,8 @@ static void P_PlayerMobjThinker(mobj_t *mobj)
 	I_Assert(mobj != NULL);
 	I_Assert(mobj->player != NULL);
 	I_Assert(!P_MobjWasRemoved(mobj));
-	
-	if (P_MobjWasRemoved(mobj))
+
+	if (!mobj)
 		return;
 
 	P_MobjCheckWater(mobj);
@@ -6030,41 +6011,36 @@ static void P_KoopaThinker(mobj_t *koopa)
 //
 void P_RollPitchMobj(mobj_t* mobj)
 {
-    boolean usedist = false;
-	
-	if (P_MobjWasRemoved(mobj))
-        return;
+	if (!mobj || P_MobjWasRemoved(mobj))
+		return;
 
-    if (cv_sloperolldist.value > 0)
-        usedist = true;
-
-    if (cv_spriteroll.value && cv_sloperoll.value == 2)
-    {
-        K_RollMobjBySlopes(mobj, usedist);
-    }
-    else
-    {
-        mobj->sloperoll = FixedAngle(0);
-        mobj->slopepitch = FixedAngle(0);
-    }
+	if (cv_spriteroll.value && cv_sloperoll.value == 2)
+	{
+		K_RollMobjBySlopes(mobj, cv_sloperolldist.value && !splitscreen);
+	}
+	else
+	{
+		mobj->sloperoll = FixedAngle(0);
+		mobj->slopepitch = FixedAngle(0);
+	}
 }
 
 angle_t P_MobjPitchAndRoll(mobj_t *mobj)
 {
-    spritedef_t *sprdef;
-    spriteframe_t *sprframe;
-    angle_t ang = 0;
+	spritedef_t *sprdef;
+	spriteframe_t *sprframe;
+	angle_t ang = 0;
 	angle_t camang = 0;
 	angle_t return_angle = 0;
-	
+
 	if (!cv_spriteroll.value)
 		return 0;
 
-    if (P_MobjWasRemoved(mobj))
-        return 0;
+	if (P_MobjWasRemoved(mobj))
+		return 0;
 
-    size_t rot = mobj->frame & FF_FRAMEMASK;
-    boolean papersprite = (mobj->frame & FF_PAPERSPRITE);
+	size_t rot = mobj->frame & FF_FRAMEMASK;
+	boolean papersprite = (mobj->frame & FF_PAPERSPRITE);
 
 	if (mobj->skin && mobj->sprite == SPR_PLAY)
 	{
@@ -6095,12 +6071,12 @@ angle_t P_MobjPitchAndRoll(mobj_t *mobj)
 		camang = R_PointToAngle(mobj->x, mobj->y);
 	}
 
-	return_angle = FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), mobj->roll) 
+	return_angle = FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), mobj->roll)
 			        + FixedMul(FINESINE((ang) >> ANGLETOFINESHIFT), mobj->pitch);
 
 	if (cv_sloperoll.value)
 	{
-		return_angle += FixedMul(FINECOSINE((camang) >> ANGLETOFINESHIFT), mobj->sloperoll) 
+		return_angle += FixedMul(FINECOSINE((camang) >> ANGLETOFINESHIFT), mobj->sloperoll)
 						+ FixedMul(FINESINE((camang) >> ANGLETOFINESHIFT), mobj->slopepitch);
 	}
 
@@ -6263,7 +6239,7 @@ void P_MobjThinker(mobj_t *mobj)
 					P_RemoveMobj(mobj);
 					return;
 				}
-				
+
 				if (cv_sloperoll.value == 2 && mobj->state == &states[S_SHADOW])
 				{
 					mobj->slopepitch = mobj->target->slopepitch;
@@ -6286,6 +6262,7 @@ void P_MobjThinker(mobj_t *mobj)
 					P_RemoveMobj(mobj);
 					return;
 				}
+
 				P_RollPitchMobj(mobj);
 				break;
 			case MT_SMOLDERING:
@@ -6916,7 +6893,7 @@ void P_MobjThinker(mobj_t *mobj)
 	// separate thinker
 	if (mobj->flags & MF_PUSHABLE || (mobj->info->flags & MF_PUSHABLE && mobj->fuse))
 	{
-		if (P_MobjWasRemoved(mobj))
+		if (!mobj)
 			return;
 
 		P_MobjCheckWater(mobj);
@@ -9434,11 +9411,11 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 		mobj->destscale = mapobjectscale;
 		mobj->scalespeed = mapobjectscale/12;
 	}
-	
+
 	// Sprite rendering
-	mobj->realxscale = mobj->realyscale = mobj->scale; 
+	mobj->realxscale = mobj->realyscale = mobj->scale;
 	mobj->spritexscale = mobj->realxscale;
-	mobj->spriteyscale = mobj->realyscale; 
+	mobj->spriteyscale = mobj->realyscale;
 	mobj->spritexoffset = mobj->spriteyoffset = 0;
 
 	// Funni slam sound when landing
@@ -9892,11 +9869,11 @@ mobj_t *P_SpawnShadowMobj(mobj_t * caster)
 		mobj->destscale = mapobjectscale;
 		mobj->scalespeed = mapobjectscale/12;
 	}
-	
+
 	// Sprite rendering
-	mobj->spritexscale = mobj->spriteyscale = mobj->scale; 
+	mobj->spritexscale = mobj->spriteyscale = mobj->scale;
 	mobj->spritexoffset = mobj->spriteyoffset = 0;
-	
+
 	// set subsector and/or block links
 	P_SetThingPosition(mobj);
 	I_Assert(mobj->subsector != NULL);
@@ -9994,10 +9971,13 @@ static precipmobj_t *P_SpawnPrecipMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype
 
 	if (mobj->floorz != starting_floorz)
 		mobj->precipflags |= PCF_FOF;
-	else if (GETSECSPECIAL(mobj->subsector->sector->special, 1) == 7
-	 || GETSECSPECIAL(mobj->subsector->sector->special, 1) == 6
-	 || mobj->subsector->sector->floorpic == skyflatnum)
-		mobj->precipflags |= PCF_PIT;
+	else
+	{
+		INT32 special = GETSECSPECIAL(mobj->subsector->sector->special, 1);
+
+		if (special == 7 || special == 6 || mobj->subsector->sector->floorpic == skyflatnum)
+			mobj->precipflags |= PCF_PIT;
+	}
 
 	R_ResetPrecipitationMobjInterpolationState(mobj);
 
@@ -10100,7 +10080,7 @@ void P_RemoveMobj(mobj_t *mobj)
 		P_SetTarget(&mobj->hprev->hnext, cachenext);
 		P_SetTarget(&mobj->hprev, NULL);
 	}
-	
+
 	// clear the reference from the mapthing
 	if (mobj->spawnpoint)
 		mobj->spawnpoint->mobj = NULL;
@@ -10291,7 +10271,7 @@ void P_PrecipitationEffects(void)
 	INT32 volume;
 	size_t i;
 
-	boolean sounds_rain = true;
+	boolean rainsfx = true;
 	boolean sounds_thunder = true;
 	boolean effects_lightning = true;
 	boolean lightningStrike = false;
@@ -10324,13 +10304,15 @@ void P_PrecipitationEffects(void)
 			effects_lightning = false;
 			break;
 		case PRECIP_STORM_NORAIN: // no rain, lightning and thunder allowed
-			sounds_rain = false;
+			rainsfx = false;
 		case PRECIP_STORM: // everything.
 			break;
 		default:
 			// Other weathers need not apply.
 			return;
 	}
+
+	boolean sounds_rain = ((cv_drawdist_precip.value != 0) && rainsfx && (!leveltime || leveltime % 80 == 1));
 
 	// Currently thunderstorming with lightning, and we're sounding the thunder...
 	// and where there's thunder, there's gotta be lightning!
@@ -10351,38 +10333,57 @@ void P_PrecipitationEffects(void)
 	if (sound_disabled)
 		return; // Sound off? D'aw, no fun.
 
+	if (!sounds_rain && !sounds_thunder)
+		return; // no need to calculate volume at ALL
+
 	if (players[displayplayers[0]].mo->subsector->sector->ceilingpic == skyflatnum)
 		volume = 255; // Sky above? We get it full blast.
 	else
 	{
 		/* GCC is optimizing away y >= yl, FUCK YOU */
-		volatile fixed_t x, y, yl, yh, xl, xh;
+		INT64 x, y, yl, yh, xl, xh;
 		fixed_t closedist, newdist;
 
 		// Essentially check in a 1024 unit radius of the player for an outdoor area.
-		yl = players[displayplayers[0]].mo->y - 1024*FRACUNIT;
-		yh = players[displayplayers[0]].mo->y + 1024*FRACUNIT;
-		xl = players[displayplayers[0]].mo->x - 1024*FRACUNIT;
-		xh = players[displayplayers[0]].mo->x + 1024*FRACUNIT;
-		closedist = 2048*FRACUNIT;
+#define RADIUSSTEP (64*FRACUNIT)
+#define SEARCHRADIUS (16*RADIUSSTEP)
+		yl = yh = players[displayplayers[0]].mo->y;
+		yl -= SEARCHRADIUS;
+		while (yl < INT32_MIN)
+			yl += RADIUSSTEP;
+		yh += SEARCHRADIUS;
+		while (yh > INT32_MAX)
+			yh -= RADIUSSTEP;
 
-		for (y = yl; y >= yl && y <= yh; y += FRACUNIT*64)
-			for (x = xl; x >= xl && x <= xh; x += FRACUNIT*64)
+		xl = xh = players[displayplayers[0]].mo->x;
+		xl -= SEARCHRADIUS;
+		while (xl < INT32_MIN)
+			xl += RADIUSSTEP;
+		xh += SEARCHRADIUS;
+		while (xh > INT32_MAX)
+			xh -= RADIUSSTEP;
+
+		closedist = SEARCHRADIUS*2;
+#undef SEARCHRADIUS
+		for (y = yl; y <= yh; y += RADIUSSTEP)
+			for (x = xl; x <= xh; x += RADIUSSTEP)
 			{
-				if (R_PointInSubsector(x, y)->sector->ceilingpic != skyflatnum) // Found the outdoors!
+				if (R_PointInSubsector((fixed_t)x, (fixed_t)y)->sector->ceilingpic != skyflatnum) // Found the outdoors!
 					continue;
 
-				newdist = S_CalculateSoundDistance(players[displayplayers[0]].mo->x, players[displayplayers[0]].mo->y, 0, x, y, 0);
+				newdist = S_CalculateSoundDistance(players[displayplayers[0]].mo->x, players[displayplayers[0]].mo->y, 0, (fixed_t)x, (fixed_t)y, 0);
+
 				if (newdist < closedist)
 					closedist = newdist;
 			}
 
 		volume = 255 - (closedist>>(FRACBITS+2));
 	}
+#undef RADIUSSTEP
 
 	volume = CLAMP(volume, 0, 255);
 
-	if (sounds_rain && (!leveltime || leveltime % 80 == 1))
+	if (sounds_rain)
 		S_StartSoundAtVolume(players[displayplayers[0]].mo, sfx_rainin, volume);
 
 	if (!sounds_thunder)
@@ -11250,7 +11251,8 @@ void P_SpawnMapThing(mapthing_t *mthing)
 
 	mobj = P_SpawnMobj(x, y, z, i);
 
-	if (!mobj || P_MobjWasRemoved(mobj)) {
+	if (!mobj || P_MobjWasRemoved(mobj))
+	{
 		CONS_Alert(CONS_ERROR, "Failed to spawn map thing #%d at %d, %d. This will crash vanilla clients!\n", mthing->type, x>>FRACBITS, y>>FRACBITS);
 		return;
 	}

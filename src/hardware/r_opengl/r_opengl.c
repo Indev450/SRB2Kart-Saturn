@@ -24,6 +24,7 @@
 #include <stdarg.h>
 #include <math.h>
 #include "../../r_local.h" // For rendertimefrac, used for the leveltime shader uniform
+#include "../../i_video.h" // for UseScreenFBO
 #include "r_opengl.h"
 #include "r_vbo.h"
 #include "../hw_shaders.h"
@@ -121,9 +122,9 @@ static GLint   viewport[4];
 
 #ifdef USE_FBO_OGL
 GLuint FramebufferObject, FramebufferTexture, RenderbufferObject;
-GLboolean FrameBufferEnabled = GL_FALSE, RenderToFramebuffer = GL_FALSE;
 
 boolean supportFBO = false;
+static boolean fboinit = false;
 #endif
 
 // Sryder:	NextTexAvail is broken for these because palette changes or changes to the texture filter or antialiasing
@@ -706,7 +707,15 @@ static void Shader_SetUniforms(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRGBAF
 static GLRGBAFloat shader_defaultcolor = {1.0f, 1.0f, 1.0f, 1.0f};
 
 #ifdef USE_FBO_OGL
-static boolean GLFramebuffer_IsFuncAvailible(void);
+static boolean GLFramebuffer_CheckExt(void)
+{
+	//this stuff needs atleast OGL 3.0
+	if (majorGL < 3)
+		return false;
+
+	// check if all needed gl extensions are available
+	return (isExtAvailable("GL_ARB_framebuffer_no_attachments", gl_extensions) && isExtAvailable("GL_ARB_framebuffer_object", gl_extensions) && isExtAvailable("GL_ARB_framebuffer_sRGB", gl_extensions));
+}
 #endif
 
 void SetupGLFunc4(void)
@@ -753,7 +762,7 @@ void SetupGLFunc4(void)
 	pglGetUniformLocation = GetGLFunc("glGetUniformLocation");
 
 #ifdef USE_FBO_OGL
-	if (GLFramebuffer_IsFuncAvailible())
+	if (GLFramebuffer_CheckExt())
 	{
 		pglGenFramebuffers = GetGLFunc("glGenFramebuffers");
 		pglBindFramebuffer = GetGLFunc("glBindFramebuffer");
@@ -766,23 +775,16 @@ void SetupGLFunc4(void)
 		pglRenderbufferStorage = GetGLFunc("glRenderbufferStorage");
 		pglFramebufferRenderbuffer = GetGLFunc("glFramebufferRenderbuffer");
 
+		// check if ALL functions are availible
+		if (pglGenFramebuffers && pglBindFramebuffer &&
+		pglDeleteFramebuffers && pglFramebufferTexture2D &&
+		pglCheckFramebufferStatus && pglGenRenderbuffers &&
+		pglBindRenderbuffer && pglDeleteRenderbuffers &&
+		pglRenderbufferStorage && pglFramebufferRenderbuffer)
 		supportFBO = true;
 	}
 #endif
 }
-
-#ifdef USE_FBO_OGL
-static boolean GLFramebuffer_IsFuncAvailible(void)
-{
-	//this stuff needs atleast OGL 3.0
-	if (majorGL < 3)
-		return false;
-
-	return (isExtAvailable("GL_ARB_framebuffer_no_attachments",gl_extensions) && isExtAvailable("GL_ARB_framebuffer_object",gl_extensions) && isExtAvailable("GL_ARB_framebuffer_sRGB",gl_extensions));
-
-	return false;
-}
-#endif
 
 EXPORT boolean HWRAPI(InitShaders) (void)
 {
@@ -951,7 +953,6 @@ static void GLPerspective(GLfloat fovy, GLfloat aspect)
 	pglMultMatrixf(&m[0][0]);
 }
 
-
 // -----------------+
 // SetModelView     :
 // -----------------+
@@ -1046,7 +1047,7 @@ EXPORT void HWRAPI(DeleteTexture) (GLMipmap_t *pTexInfo)
 #ifdef USE_FBO_OGL
 static void GLFramebuffer_GenerateAttachments(void)
 {
-	if (!supportFBO)
+	if (!supportFBO || !UseScreenFBO())
 		return;
 
 	// Bind the framebuffer
@@ -1083,11 +1084,16 @@ static void GLFramebuffer_GenerateAttachments(void)
 
 	// Unbind the framebuffer
 	pglBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	fboinit = true;
 }
 
 void GLFramebuffer_DeleteAttachments(void)
 {
-	if (!supportFBO)
+	if (!supportFBO || fboinit == false)
+		return;
+
+	if (FramebufferObject == 0 && RenderbufferObject == 0 && FramebufferTexture == 0)
 		return;
 
 	// Unbind the framebuffer
@@ -1102,11 +1108,12 @@ void GLFramebuffer_DeleteAttachments(void)
 
 	FramebufferTexture = 0;
 	RenderbufferObject = 0;
+	fboinit = false;
 }
 
 static void GLFramebuffer_Generate(void)
 {
-	if (!supportFBO)
+	if (!supportFBO || !UseScreenFBO())
 		return;
 
 	// Generate the framebuffer
@@ -1119,7 +1126,7 @@ static void GLFramebuffer_Generate(void)
 
 static void GLFramebuffer_Delete(void)
 {
-	if (!supportFBO)
+	if (!supportFBO || fboinit == false)
 		return;
 
 	if (FramebufferObject)
@@ -1131,7 +1138,10 @@ static void GLFramebuffer_Delete(void)
 
 inline void GLFramebuffer_Unbind(void)
 {
-	if (!supportFBO)
+	if (!supportFBO || fboinit == false)
+		return;
+
+	if (FramebufferObject == 0 && RenderbufferObject == 0)
 		return;
 
 	pglBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -1140,7 +1150,7 @@ inline void GLFramebuffer_Unbind(void)
 
 inline void GLFramebuffer_Enable(void)
 {
-	if (!supportFBO)
+	if (!supportFBO || !UseScreenFBO())
 		return;
 
 	if (FramebufferObject == 0)
@@ -1154,7 +1164,10 @@ inline void GLFramebuffer_Enable(void)
 
 void GLFramebuffer_Disable(void)
 {
-	if (!supportFBO)
+	if (!supportFBO || fboinit == false)
+		return;
+
+	if (FramebufferObject == 0 && RenderbufferObject == 0)
 		return;
 
 	pglBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -1170,8 +1183,6 @@ void GLFramebuffer_Disable(void)
 // -----------------+
 void Flush(void)
 {
-	//GL_DBG_Printf ("HWR_Flush()\n");
-
 	while (TexCacheHead)
 	{
 		FTextureInfo *pTexInfo = TexCacheHead;
@@ -1197,7 +1208,6 @@ void Flush(void)
 	textureBuffer = NULL;
 	textureBufferSize = 0;
 }
-
 
 // -----------------+
 // isExtAvailable   : Look if an OpenGL extension is available
@@ -1226,7 +1236,6 @@ INT32 isExtAvailable(const char *extension, const GLubyte *start)
 	return 0;
 }
 
-
 // -----------------+
 // Init             : Initialise the OpenGL interface API
 // Returns          :
@@ -1235,7 +1244,6 @@ EXPORT boolean HWRAPI(Init) (void)
 {
 	return LoadGL();
 }
-
 
 // -----------------+
 // SetupGLInfo      : Retreive and store currently loaded OpenGL version
@@ -1397,7 +1405,6 @@ static void Clamp2D(GLenum pname)
 	pglTexParameteri(GL_TEXTURE_2D, pname, GL_CLAMP_TO_EDGE);
 #endif
 }
-
 
 // -----------------+
 // SetBlend         : Set render mode
@@ -2247,12 +2254,6 @@ static void gld_BuildSky(int row_count, int col_count)
 	}
 }
 
-//-----------------------------------------------------------------------------
-//
-//
-//
-//-----------------------------------------------------------------------------
-
 static void RenderDome(INT32 skytexnum)
 {
 	int i, j;
@@ -2350,17 +2351,6 @@ EXPORT void HWRAPI(SetSpecialState) (hwdspecialstate_t IdState, INT32 Value)
 		case HWD_SET_SHADERS:
 			gl_allowshaders = Value;
 			break;
-#ifdef USE_FBO_OGL
-		case HWD_SET_FRAMEBUFFER:
-			FrameBufferEnabled = Value ? GL_TRUE : GL_FALSE;
-
-			if (!supportFBO)
-			{
-				FrameBufferEnabled = GL_FALSE;
-				CV_Set(&cv_grframebuffer, "Off");
-			}
-			break;
-#endif
 		case HWD_SET_TEXTUREFILTERMODE:
 			switch (Value)
 			{
