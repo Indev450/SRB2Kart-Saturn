@@ -46,7 +46,7 @@ typedef struct
 
 // when loading the map, this is set to true if portals are found.
 // if no portals are found, the portal scanning phase can be skipped while rendering, saving a bit of time.
-boolean gr_maphasportals = false;
+boolean gl_maphasportals = false;
 
 // ==========================================================================
 //                                    FLOOR & CEILING CONVEX POLYS GENERATION
@@ -371,14 +371,14 @@ static poly_t *CutOutSubsecPoly(seg_t *lseg, INT32 count, poly_t *poly)
 		line_t *line = lseg->linedef;
 		
 		// portal check
-		if (!gr_maphasportals && line->special == 40 && lseg->side == 0)
+		if (!gl_maphasportals && line->special == 40 && lseg->side == 0)
 		{
 			// Find the other side!
 			INT32 line2 = P_FindSpecialLineFromTag(40, line->tag, -1);
 			if (line == &lines[line2])
 				line2 = P_FindSpecialLineFromTag(40, line->tag, line2);
 			if (line2 >= 0) // found it!
-				gr_maphasportals = 1;
+				gl_maphasportals = 1;
 		}
 		
 		p1.x = FIXED_TO_FLOAT(lseg->side ? line->v2->x : line->v1->x);
@@ -768,7 +768,7 @@ static INT32 SolveTProblem(void)
 	INT32 i;
 	size_t l;
 
-	if (cv_grsolvetjoin.value == 0)
+	if (cv_glsolvetjoin.value == 0)
 		return 0;
 
 	CONS_Debug(DBG_RENDER, "Solving T-joins. This may take a while. Please wait...\n");
@@ -905,7 +905,7 @@ void HWR_CreatePlanePolygons(INT32 bspnum)
 #endif
 
 	// reset the portal flag
-	gr_maphasportals = 0;
+	gl_maphasportals = 0;
 
 	// find min/max boundaries of map
 	//CONS_Debug(DBG_RENDER, "Looking for boundaries of map...\n");
@@ -923,9 +923,9 @@ void HWR_CreatePlanePolygons(INT32 bspnum)
 		I_Error("couldn't malloc extrasubsectors totsubsectors %s\n", sizeu1(totsubsectors));
 
 	// allocate table for back to front drawing of subsectors
-	/*gr_drawsubsectors = (INT16 *)malloc(sizeof (*gr_drawsubsectors) * totsubsectors);
-	if (!gr_drawsubsectors)
-		I_Error("couldn't malloc gr_drawsubsectors\n");*/
+	/*gl_drawsubsectors = (INT16 *)malloc(sizeof (*gl_drawsubsectors) * totsubsectors);
+	if (!gl_drawsubsectors)
+		I_Error("couldn't malloc gl_drawsubsectors\n");*/
 
 	// number of the first new subsector that might be added
 	addsubsector = numsubsectors;

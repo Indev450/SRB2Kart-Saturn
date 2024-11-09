@@ -11,6 +11,7 @@
 /// \file  s_sound.c
 /// \brief System-independent sound and music routines
 
+#include "d_netcmd.h"
 #include "doomdef.h"
 #include "doomstat.h"
 #include "command.h"
@@ -107,6 +108,7 @@ static CV_PossibleValue_t music_resync_threshold_cons_t[] = {
 	{0}
 };
 consvar_t cv_music_resync_threshold = {"music_resync_threshold", "0", CV_SAVE|CV_CALL, music_resync_threshold_cons_t, I_UpdateSongLagThreshold, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_music_resync_powerups_only = {"music_resync_powerups_only", "No", CV_SAVE|CV_CALL, CV_YesNo, I_UpdateSongLagThreshold, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_invincmusicfade = {"invincmusicfade", "300", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_growmusicfade = {"growmusicfade", "500", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -116,6 +118,14 @@ consvar_t cv_resetspecialmusic = {"resetspecialmusic", "No", CV_SAVE, CV_YesNo, 
 consvar_t cv_resume = {"resume", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_fading = {"fading", "Off", CV_SAVE|CV_CALL, CV_OnOff, Bird_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_birdmusic = {"birdmusicstuff", "No", CV_SAVE|CV_CALL, CV_YesNo, Bird_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
+
+
+consvar_t cv_keepmusic = {"keepmusic", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_skipintromusic = {"skipintromusic", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
+//consvar_t cv_ignoremusicchanges = {"ignoremusicchanges", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+boolean keepmusic = false;
+static void S_CheckEventMus(const char *newmus);
 
 #ifdef HAVE_OPENMPT
 openmpt_module *openmpt_mhandle = NULL;
@@ -275,13 +285,14 @@ void S_RegisterSoundStuff(void)
 	CV_RegisterVar(&cv_gamemidimusic);
 #endif
 
-	//bird music stuff
+	// bird music stuff
 	CV_RegisterVar(&cv_playmusicifunfocused);
 	CV_RegisterVar(&cv_playsoundifunfocused);
 	CV_RegisterVar(&cv_pausemusic);
 
 	CV_RegisterVar(&cv_music_resync_threshold);
-	
+	CV_RegisterVar(&cv_music_resync_powerups_only);
+
 	CV_RegisterVar(&cv_invincmusicfade);
 	CV_RegisterVar(&cv_growmusicfade);
 
@@ -293,6 +304,11 @@ void S_RegisterSoundStuff(void)
 	CV_RegisterVar(&cv_resume);
 	CV_RegisterVar(&cv_fading);
 	CV_RegisterVar(&cv_birdmusic);
+	// bird music stuff end
+
+	CV_RegisterVar(&cv_keepmusic);
+	CV_RegisterVar(&cv_skipintromusic);
+	//CV_RegisterVar(&cv_ignoremusicchanges);
 
 	COM_AddCommand("tunes", Command_Tunes_f);
 	COM_AddCommand("restartaudio", Command_RestartAudio_f);
@@ -1242,7 +1258,7 @@ void S_InitSfxChannels(INT32 sfxVolume)
 	if (S_PrecacheSound())
 	{
 		// Initialize external data (all sounds) at start, keep static.
-		CONS_Printf(M_GetText("Loading sounds... "));
+		CONS_Printf(M_GetText("Pre-caching sounds..."));
 
 			for (i = 1; i < sfx_freeslot0; i++)
 				if (S_sfx[i].name && !S_sfx[i].data)
@@ -1252,7 +1268,7 @@ void S_InitSfxChannels(INT32 sfxVolume)
 				if (S_sfx[i].priority && !S_sfx[i].data)
 					S_sfx[i].data = I_GetSfx(&S_sfx[i]);
 
-		CONS_Printf(M_GetText(" pre-cached all sound data\n"));
+		CONS_Printf(M_GetText("...pre-cached all sound data\n"));
 	}
 }
 
@@ -1768,9 +1784,7 @@ boolean S_MusicPaused(void)
 
 boolean S_MusicNotInFocus(void)
 {
-	return (
-			( window_notinfocus && ! cv_playmusicifunfocused.value )
-	);
+	return (window_notinfocus && !cv_playmusicifunfocused.value);
 }
 
 musictype_t S_MusicType(void)
@@ -1798,10 +1812,8 @@ boolean S_MusicInfo(char *mname, UINT16 *mflags, boolean *looping)
 
 boolean S_MusicExists(const char *mname, boolean checkMIDI, boolean checkDigi)
 {
-	return (
-		(checkDigi ? W_CheckNumForName(va("O_%s", mname)) != LUMPERROR : false)
-		|| (checkMIDI ? W_CheckNumForName(va("D_%s", mname)) != LUMPERROR : false)
-	);
+	return (checkDigi ? W_CheckNumForName(va("O_%s", mname)) != LUMPERROR : false)
+		|| (checkMIDI ? W_CheckNumForName(va("D_%s", mname)) != LUMPERROR : false);
 }
 
 /// ------------------------
@@ -1961,6 +1973,8 @@ void S_ChangeMusicEx(const char *mmusic, UINT16 mflags, boolean looping, UINT32 
 
 	strncpy(newmusic, mmusic, 6);
 
+	S_CheckEventMus(newmusic);
+
 	if (LUAh_MusicChange(music_name, newmusic, &mflags, &looping, &position, &prefadems, &fadeinms))
 		return;
 
@@ -2034,8 +2048,10 @@ void S_StopMusic(void)
 		|| demo.title) // SRB2Kart: Demos don't interrupt title screen music
 		return;
 
-	if ((cv_birdmusic.value) && (strcasecmp(music_name, mapmusname) == 0))
+	if (cv_birdmusic.value && (strcasecmp(music_name, mapmusname) == 0))
 		mapmusresume = I_GetSongPosition();
+	else
+		mapmusresume = 0;
 
 	if (I_SongPaused())
 		I_ResumeSong();
@@ -2108,10 +2124,7 @@ void S_SetMusicVolume(INT32 digvolume, INT32 seqvolume)
 
 void S_SetRestoreMusicFadeInCvar (consvar_t *cv)
 {
-	if (!cv_birdmusic.value)
-		return;
-
-	music_refade_cv = cv;
+	music_refade_cv = cv_birdmusic.value ? cv : 0;
 }
 
 int S_GetRestoreMusicFadeIn (void)
@@ -2153,13 +2166,92 @@ boolean S_FadeOutStopMusic(UINT32 ms)
 /// Init & Others
 /// ------------------------
 
+/*static boolean S_KeepMusic(void)
+{
+	//if (!cv_keepmusic.value)
+	//return false;
+
+	// should i compare songs or maps?
+	static char oldmusname[7] = "";
+
+	if (strcmp(music_name, mapmusname) != 0)
+		return false;
+
+	if (strcmp(oldmusname, mapmusname) == 0)
+		return true;
+
+	strncpy(oldmusname, mapmusname, 7);
+	oldmusname[6] = '\0';
+
+	return false;
+}*/
+
+static INT16 oldmap = 0;
+static boolean oldencore = false;
+static boolean skipmusic = false;
+boolean skipintromus = false;
+
+static const char *musicexception_list[16] = {
+	"vote", "voteea", "voteeb", "racent", "krwin",
+	"krok", "krlose", "krfail", "kbwin", "kbok",
+	"kblose", "kstart", "estart", "wait2j", "CHRSHP",
+	"CHRSHF"
+};
+
+//checks for any kind of event music like intermission, vote etc.
+//always runs when musicchange gets invoked
+static void S_CheckEventMus(const char *newmus)
+{
+	skipmusic = false;
+
+	if (!cv_keepmusic.value)
+		return;
+
+	for (int i = 0; i < 16; i++)
+		if (stricmp(music_name, musicexception_list[i]) == 0 || stricmp(newmus, musicexception_list[i]) == 0) // weird? sure! but were lucky enough newmus reflects whats being replaced
+		{
+			skipmusic = true;
+			break;
+		}
+
+	//CONS_Printf("musname = %s\n", music_name);
+	//CONS_Printf("newmus = %s\n", newmus);
+	//CONS_Printf("newmus = %d\n", skipmusic);
+}
+
+//this one compares map and encoremode instead of the music itself
+//makes tunes work and stuff
+void S_CheckMap(void)
+{
+	if (!cv_keepmusic.value)
+	{
+		keepmusic = false;
+		return;
+	}
+
+	keepmusic = (!skipmusic && gamestate == GS_LEVEL && oldmap == gamemap && oldencore == encoremode);
+
+	oldencore = encoremode;
+	oldmap = gamemap;
+}
+
 //
 // Per level startup code.
 // Kills playing sounds at start of level,
 //  determines music if any, changes music.
 //
-void S_Start(void)
+void S_InitMapMusic(void)
 {
+	if (!cv_skipintromusic.value)
+		skipintromus = false;
+	else
+	{
+		char *maptitle = G_BuildMapTitle(gamemap);
+		skipintromus = cv_skipintromusic.value && stricmp(maptitle, "Wandering Falls") != 0; // thanks diggle!
+		if (maptitle)
+			Z_Free(maptitle);
+	}
+
 	if (mapmusflags & MUSIC_RELOADRESET)
 	{
 		strncpy(mapmusname, mapheaderinfo[gamemap-1]->musname, 7);
@@ -2169,13 +2261,48 @@ void S_Start(void)
 		mapmusresume = 0;
 	}
 
-	//if (cv_resetmusic.value) // Starting ambience should always be restarted
-		S_StopMusic();
+	if (keepmusic)
+		return;
 
-	if (leveltime < (starttime + (TICRATE/2))) // SRB2Kart
-		S_ChangeMusicEx((encoremode ? "estart" : "kstart"), 0, false, mapmusposition, 0, 0);
-	else
+	// Starting ambience should always be restarted
+	// lug: but not when we keep the map music lol
+	S_StopMusic();
+
+	if (skipintromus)
+		return;
+
+	if (leveltime < MUSICSTARTTIME) // SRB2Kart
+		S_ChangeMusicInternal((encoremode ? "estart" : "kstart"), false); //S_StopMusic();
+	//S_ChangeMusicEx((encoremode ? "estart" : "kstart"), 0, false, mapmusposition, 0, 0);
+}
+
+void S_StartMapMusic(boolean restore)
+{
+	//no need to constantly run this after race has started
+	if (leveltime > MUSICSTARTTIME)
+		return;
+
+	if (keepmusic && !restore) // make sure this doesent kill the music when its called from P_RestoreMusic in some cases
+		return;
+
+	if (skipintromus)
+	{
+		if (leveltime < starttime)
+			S_ChangeMusicEx(mapmusname, mapmusflags, true, mapmusposition, 0, 0);
+		if (leveltime == MUSICSTARTTIME)
+			S_ShowMusicCredit();
+		return;
+	}
+
+	if (leveltime < starttime) // SRB2Kart
+		S_ChangeMusicInternal((encoremode ? "estart" : "kstart"), false); // yes this will be spammed otherwise encore and some stuff WILL overwrite it
+	else if (leveltime == starttime) // The GO! sound stops the level start ambience
+		S_StopMusic();
+	else if (leveltime == MUSICSTARTTIME) // Plays the music after the starting countdown.
+	{
 		S_ChangeMusicEx(mapmusname, mapmusflags, true, mapmusposition, 0, 0);
+		S_ShowMusicCredit();
+	}
 }
 
 void S_RestartMusic(void)
@@ -2370,7 +2497,7 @@ static void GameDigiMusic_OnChange(void)
 		digital_disabled = false;
 		I_StartupSound(); // will return early if initialised
 		I_InitMusic();
-		
+
 		if (Playing())
 			P_RestoreMusic(&players[consoleplayer]);
 		else
@@ -2407,14 +2534,12 @@ static void ModFilter_OnChange(void)
 {
 	if (openmpt_mhandle)
 		openmpt_module_set_render_param(openmpt_mhandle, OPENMPT_MODULE_RENDER_INTERPOLATIONFILTER_LENGTH, cv_modfilter.value);
-		
 }
 
 static void StereoSep_OnChange(void)
 {
 	if (openmpt_mhandle)
 		openmpt_module_set_render_param(openmpt_mhandle, OPENMPT_MODULE_RENDER_STEREOSEPARATION_PERCENT, cv_stereosep.value);
-		
 }
 
 static void AmigaFilter_OnChange(void)

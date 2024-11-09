@@ -31,6 +31,7 @@ set(SRB2_CORE_SOURCES
 	m_cond.c
 	m_fixed.c
 	m_menu.c
+	m_textinput.c
 	m_misc.c
 	m_perfstats.c
 	m_queue.c
@@ -99,6 +100,7 @@ set(SRB2_CORE_HEADERS
 	m_dllist.h
 	m_fixed.h
 	m_menu.h
+	m_textinput.h
 	m_misc.h
 	m_queue.h
 	m_perfstats.h
@@ -132,6 +134,7 @@ set(SRB2_CORE_RENDER_SOURCES
 	r_sky.c
 	r_splats.c
 	r_things.c
+	r_portal.c
 
 	r_bsp.h
 	r_data.h
@@ -147,6 +150,7 @@ set(SRB2_CORE_RENDER_SOURCES
 	r_splats.h
 	r_state.h
 	r_things.h
+	r_portal.h
 )
 
 set(SRB2_CORE_GAME_SOURCES
@@ -468,6 +472,7 @@ if(${SRB2_CONFIG_HWRENDER})
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_clip.c
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_draw.c
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_main.c
+		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_portal.c
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_md2.c
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_md2load.c
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_md3load.c
@@ -485,6 +490,7 @@ if(${SRB2_CONFIG_HWRENDER})
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_drv.h
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_glob.h
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_main.h
+		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_portal.h
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_md2.h
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_md2load.h
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_md3load.h

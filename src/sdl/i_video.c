@@ -758,7 +758,7 @@ static INT32 SDLJoyAxis(const Sint16 axis, evtype_t which)
 #ifdef USE_FBO_OGL
 void I_DownSample(void)
 {
-	if (!cv_grframebuffer.value || !supportFBO) //no sense to do this crap if we cant benefit from it
+	if (!cv_glframebuffer.value || !supportFBO) //no sense to do this crap if we cant benefit from it
 	{
 		downsample = false;
 		return;
@@ -781,8 +781,11 @@ void I_DownSample(void)
 	}
 	else
 	{
-		downsample = false; // its not so no need to do crap
-		RefreshOGLSDLSurface();
+		if (downsample == true)
+		{
+			downsample = false; // its not so no need to do crap
+			RefreshOGLSDLSurface();
+		}
 	}
 }
 

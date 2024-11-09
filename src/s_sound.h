@@ -54,6 +54,7 @@ extern consvar_t cv_amigatype;
 
 //bird music stuff
 extern consvar_t cv_music_resync_threshold;
+extern consvar_t cv_music_resync_powerups_only;
 
 extern consvar_t cv_invincmusicfade;
 extern consvar_t cv_growmusicfade;
@@ -66,6 +67,13 @@ extern consvar_t cv_resetspecialmusic;
 extern consvar_t cv_resume;
 extern consvar_t cv_fading;
 extern consvar_t cv_birdmusic;
+
+extern consvar_t cv_keepmusic;
+extern consvar_t cv_skipintromusic;
+//extern consvar_t cv_ignoremusicchanges;
+extern boolean keepmusic;
+extern boolean skipintromus;
+#define MUSICSTARTTIME (starttime + (TICRATE/2))
 
 extern consvar_t precachesound;
 
@@ -100,7 +108,11 @@ void S_InitSfxChannels(INT32 sfxVolume);
 //
 void S_StopSounds(void);
 void S_ClearSfx(void);
-void S_Start(void);
+
+void S_InitMapMusic(void);
+void S_StartMapMusic(boolean restore);
+
+void S_CheckMap(void);
 
 // Stops music and restarts it from same position. Used for instant applying changes to amiga filters.
 void S_RestartMusic(void);

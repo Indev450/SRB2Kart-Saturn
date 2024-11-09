@@ -171,7 +171,7 @@
 		"gl_FragColor = final_color;\n" \
 	"}\n" \
 	"#endif\0"
-	
+
 #define GLSL_SOFTWARE_FRAGMENT_SHADER_NOPAL \
 	"uniform sampler2D tex;\n" \
 	"uniform vec4 poly_color;\n" \
@@ -210,7 +210,7 @@
 #define GLSL_WALL_FRAGMENT_SHADER \
 	GLSL_WALL_FUDGES \
 	GLSL_SOFTWARE_FRAGMENT_SHADER
-	
+
 #define GLSL_SHADOW_FRAGMENT_SHADER \
 	GLSL_FLOOR_FUDGES \
 	GLSL_SOFTWARE_FRAGMENT_SHADER_NOPAL

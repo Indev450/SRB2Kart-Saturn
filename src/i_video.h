@@ -146,6 +146,7 @@ extern boolean xwaylandcrap;
 
 void RefreshOGLSDLSurface(void);
 void I_DownSample(void);
+boolean UseScreenFBO(void);
 extern boolean downsample;
 #endif
 

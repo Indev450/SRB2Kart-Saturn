@@ -15,6 +15,7 @@
 
 #include "doomdef.h"
 #include "g_game.h"
+#include "g_input.h"
 #include "r_local.h"
 #include "p_local.h"
 #include "f_finale.h"
@@ -664,7 +665,7 @@ static void ST_overlayDrawer(void)
 
 	if (!hu_showscores) // hide the following if TAB is held
 	{
-		if (cv_showdirectorhud.value && ((demo.playback && !demo.freecam && (!demo.title || !modeattacking)) || !P_IsLocalPlayer(stplyr)) && !splitscreen)
+		if (cv_showdirectorhud.value && !splitscreen && ((demo.playback && !demo.freecam && (!demo.title || !modeattacking)) || !P_IsLocalPlayer(stplyr)) && !K_DirectorIsPlayerAlone())
 		{
 			char directortext[20] = {0};
 
@@ -773,10 +774,33 @@ static void ST_overlayDrawer(void)
 			}
 			else
 			{
-				V_DrawString(2, BASEVIDHEIGHT-40, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF|V_YELLOWMAP, M_GetText("- SPECTATING -"));
-				V_DrawString(2, BASEVIDHEIGHT-30, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, itemtxt);
-				V_DrawString(2, BASEVIDHEIGHT-20, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, M_GetText("Accelerate - Float"));
-				V_DrawString(2, BASEVIDHEIGHT-10, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, M_GetText("Brake - Sink"));
+				if (cv_showdirectorhud.value)
+				{
+					V_DrawString(2, BASEVIDHEIGHT-50, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF|V_YELLOWMAP, M_GetText("- SPECTATING -"));
+					V_DrawString(2, BASEVIDHEIGHT-40, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, itemtxt);
+					V_DrawString(2, BASEVIDHEIGHT-30, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, M_GetText("Accelerate - Float"));
+					V_DrawString(2, BASEVIDHEIGHT-20, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, M_GetText("Brake - Sink"));
+
+					char directortoggle[32] = {0};
+					const char *item1 = gamecontrol[gc_director][0] != 0 ? G_KeynumToString(gamecontrol[gc_director][0]) : NULL;
+					const char *item2 = gamecontrol[gc_director][1] != 0 ? G_KeynumToString(gamecontrol[gc_director][1]) : NULL;
+
+					if (item1 != NULL && item2 != NULL)
+						snprintf(directortoggle, 32, "%s/%s - Toggle Director", item1, item2);
+					else
+						snprintf(directortoggle, 32, "%s - Toggle Director", item1 != NULL ? item1 : item2 != NULL ? item2 : "Not Bound");
+
+					V_DrawString(2, BASEVIDHEIGHT-10, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, directortoggle);
+
+					directortextactive = true;
+				}
+				else
+				{
+					V_DrawString(2, BASEVIDHEIGHT-40, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF|V_YELLOWMAP, M_GetText("- SPECTATING -"));
+					V_DrawString(2, BASEVIDHEIGHT-30, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, itemtxt);
+					V_DrawString(2, BASEVIDHEIGHT-20, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, M_GetText("Accelerate - Float"));
+					V_DrawString(2, BASEVIDHEIGHT-10, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, M_GetText("Brake - Sink"));
+				}
 			}
 		}
 	}
@@ -808,25 +832,82 @@ static void ST_overlayDrawer(void)
 	}
 }
 
-void ST_DrawDemoTitleEntry(void)
+static void ST_DrawTextInput(INT32 x, INT32 y, textinput_t *input, INT32 flags)
 {
 	static UINT8 skullAnimCounter = 0;
-	char *nametodraw;
+	static const INT32 MAXINPUTWIDTH = (MAXSTRINGLENGTH-1)*8;
 
-	skullAnimCounter++;
+	if (renderisnewtic)
+		skullAnimCounter++;
 	skullAnimCounter %= 8;
 
-	nametodraw = demo.titlename;
-	while (V_StringWidth(nametodraw, 0) > MAXSTRINGLENGTH*8 - 8)
-		nametodraw++;
+	char nametodraw[MAXSTRINGLENGTH*2+1] = {0};
 
+	size_t drawstart = 0;
+	size_t drawend = 0; // Only used for selection
+
+	INT32 skullx = x;
+
+	while (V_SubStringWidth(input->buffer+drawstart, input->cursor-drawstart, V_ALLOWLOWERCASE) > MAXINPUTWIDTH)
+		++drawstart;
+
+	size_t drawlength = V_SubStringLengthToFit(input->buffer+drawstart, MAXINPUTWIDTH+8, V_ALLOWLOWERCASE)+1;
+	drawend = drawstart + drawlength;
+
+	memcpy(nametodraw, input->buffer+drawstart, drawlength);
+
+	if (input->length)
+		skullx += V_SubStringWidth(nametodraw, input->cursor-drawstart, V_ALLOWLOWERCASE);
+
+	V_DrawString(x, y, V_ALLOWLOWERCASE|flags, nametodraw);
+
+	// draw text cursor for name
+	if (skullAnimCounter < 4) // blink cursor
+		V_DrawCharacter(skullx, y+3, '_'|flags, false);
+
+	// draw selection
+	if (input->select != input->cursor)
+	{
+		size_t start = min(input->select, input->cursor);
+		size_t end =   max(input->select, input->cursor);
+
+		INT32 startx = 0;
+		INT32 width = 0;
+
+		// I couldn't figure out one formula so here's bunch of separate cases
+		if (start < drawstart && end > drawend) // Selection covers whole visible portion of demo name
+		{
+			startx = -2;
+			width = V_StringWidth(nametodraw, V_ALLOWLOWERCASE)+4;
+		}
+		else if (start < drawstart) // Only left side of selection is off visible part
+		{
+			startx = -2;
+			size_t len = (end - start) - (drawstart - start);
+			width = V_SubStringWidth(nametodraw, len, V_ALLOWLOWERCASE)+2;
+		}
+		else if (end > drawend) // Only right side of selection is off visible part
+		{
+			startx = V_SubStringWidth(nametodraw, start-drawstart, V_ALLOWLOWERCASE);
+			width = V_StringWidth(nametodraw+(start-drawstart), V_ALLOWLOWERCASE)+2;
+		}
+		else // All selection is on visible part
+		{
+			startx = V_SubStringWidth(nametodraw, start-drawstart, V_ALLOWLOWERCASE);
+			width = V_SubStringWidth(nametodraw+(start-drawstart), end-start, V_ALLOWLOWERCASE);
+		}
+
+		V_DrawFill(x+startx, y, width, 8, 103|V_TRANSLUCENT|flags);
+	}
+}
+
+void ST_DrawDemoTitleEntry(void)
+{
 #define x (BASEVIDWIDTH/2 - 139)
 #define y (BASEVIDHEIGHT/2)
 	M_DrawTextBox(x, y + 4, MAXSTRINGLENGTH, 1);
-	V_DrawString(x + 8, y + 12, V_ALLOWLOWERCASE, nametodraw);
-	if (skullAnimCounter < 4)
-		V_DrawCharacter(x + 8 + V_StringWidth(nametodraw, 0), y + 12,
-			'_' | 0x80, false);
+
+	ST_DrawTextInput(x + 8, y + 12, &demo.titlenameinput, 0);
 
 	M_DrawTextBox(x + 30, y - 24, 26, 1);
 	V_DrawString(x + 38, y - 16, V_ALLOWLOWERCASE, "Enter the name of the replay.");

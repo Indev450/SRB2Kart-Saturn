@@ -569,7 +569,7 @@ void HWR_FadeScreenMenuBack(UINT16 color, UINT8 strength)
 
     if (color & 0xFF00) // Do COLORMAP fade.
     {
-		if (HWR_ShouldUsePaletteRendering() && cv_grscreentextures.value)
+		if (HWR_ShouldUsePaletteRendering() && cv_glscreentextures.value)
 		{
 			const hwdscreentexture_t scr_tex = HWD_SCREENTEXTURE_GENERIC2;
 
@@ -593,12 +593,12 @@ void HWR_FadeScreenMenuBack(UINT16 color, UINT8 strength)
     {
 		RGBA_t *palette = HWR_GetTexturePalette();
 		Surf.PolyColor.rgba = palette[color&0xFF].rgba;
-		
+
         if (HWR_ShouldUsePaletteRendering())
 			Surf.PolyColor.s.alpha = softwaretranstogl[strength];
 		else
 			Surf.PolyColor.s.alpha = (UINT8)(strength*25.5f);
-		
+
 		poly_flags |= PF_Translucent;
     }
 
@@ -652,17 +652,17 @@ void HWR_DrawViewBorder(INT32 clearlines)
 	INT32 basewindowx, basewindowy;
 	GLPatch_t *patch;
 
-//    if (gr_viewwidth == vid.width)
+//    if (gl_viewwidth == vid.width)
 //        return;
 
 	if (!clearlines)
 		clearlines = BASEVIDHEIGHT; // refresh all
 
 	// calc view size based on original game resolution
-	baseviewwidth =  FixedInt(FixedDiv(FLOAT_TO_FIXED(gr_viewwidth), vid.fdupx)); //(cv_viewsize.value * BASEVIDWIDTH/10)&~7;
-	baseviewheight = FixedInt(FixedDiv(FLOAT_TO_FIXED(gr_viewheight), vid.fdupy));
-	top = FixedInt(FixedDiv(FLOAT_TO_FIXED(gr_baseviewwindowy), vid.fdupy));
-	side = FixedInt(FixedDiv(FLOAT_TO_FIXED(gr_baseviewwindowx), vid.fdupx));
+	baseviewwidth =  FixedInt(FixedDiv(FLOAT_TO_FIXED(gl_viewwidth), vid.fdupx)); //(cv_viewsize.value * BASEVIDWIDTH/10)&~7;
+	baseviewheight = FixedInt(FixedDiv(FLOAT_TO_FIXED(gl_viewheight), vid.fdupy));
+	top = FixedInt(FixedDiv(FLOAT_TO_FIXED(gl_baseviewwindowy), vid.fdupy));
+	side = FixedInt(FixedDiv(FLOAT_TO_FIXED(gl_baseviewwindowx), vid.fdupx));
 
 	// top
 	HWR_DrawFlatFill(0, 0,
@@ -776,9 +776,9 @@ void HWR_drawAMline(const fline_t *fl, INT32 color)
 	F2DCoord v1, v2;
 	RGBA_t color_rgba;
 	RGBA_t *palette = HWR_GetTexturePalette();
-	
+
 	color_rgba = palette[color&0xFF];
-	
+
 	v1.x = ((float)fl->a.x-(vid.width/2.0f))*(2.0f/vid.width);
 	v1.y = ((float)fl->a.y-(vid.height/2.0f))*(2.0f/vid.height);
 

@@ -32,6 +32,7 @@
 #include "i_threads.h"
 #include "d_main.h"
 #include "m_menu.h"
+#include "m_textinput.h"
 #include "filesrch.h"
 
 #ifdef HWRENDER
@@ -97,9 +98,7 @@ static char inputlines[32][CON_MAXPROMPTCHARS]; // hold last 32 prompt lines
 
 static INT32 inputline;    // current input line number
 static INT32 inputhist;    // line number of history input line to restore
-static size_t input_cur; // position of cursor in line
-static size_t input_sel; // position of selection marker (I.E.: anything between this and input_cur is "selected")
-static size_t input_len; // length of current line, used to bound cursor and such
+static textinput_t input;
 // notice: input does NOT include the "$" at the start of the line. - 11/3/16
 
 // protos.
@@ -458,7 +457,8 @@ static void CON_InputInit(void)
 	// prepare the first prompt line
 	memset(inputlines, 0, sizeof (inputlines));
 	inputline = 0;
-	input_cur = input_sel = input_len = 0;
+
+	M_TextInputInit(&input, inputlines[inputline], CON_MAXPROMPTCHARS);
 
 	Unlock_state();
 }
@@ -805,178 +805,6 @@ void CON_Ticker(void)
 //
 // ----
 //
-// Shortcuts for adding and deleting characters, strings, and sections
-// Necessary due to moving cursor
-//
-
-static void CON_InputClear(void)
-{
-	Lock_state();
-
-	memset(inputlines[inputline], 0, CON_MAXPROMPTCHARS);
-	input_cur = input_sel = input_len = 0;
-
-	Unlock_state();
-}
-
-static void CON_InputSetString(const char *c)
-{
-	Lock_state();
-
-	memset(inputlines[inputline], 0, CON_MAXPROMPTCHARS);
-	strcpy(inputlines[inputline], c);
-	input_cur = input_sel = input_len = strlen(c);
-
-	Unlock_state();
-}
-
-static void CON_InputAddString(const char *c)
-{
-	size_t csize = strlen(c);
-
-	Lock_state();
-
-	if (input_len + csize > CON_MAXPROMPTCHARS-1)
-	{
-		Unlock_state();
-		return;
-	}
-	if (input_cur != input_len)
-		memmove(&inputlines[inputline][input_cur+csize], &inputlines[inputline][input_cur], input_len-input_cur);
-	memcpy(&inputlines[inputline][input_cur], c, csize);
-	input_len += csize;
-	input_sel = (input_cur += csize);
-
-	Unlock_state();
-}
-
-static void CON_InputDel(size_t start, size_t end)
-{
-	size_t len;
-
-	Lock_state();
-
-	len = (end - start);
-
-	if (end != input_len)
-		memmove(&inputlines[inputline][start], &inputlines[inputline][end], input_len-end);
-	memset(&inputlines[inputline][input_len - len], 0, len);
-
-	input_len -= len;
-
-	if (input_sel >= end)
-		input_sel -= len;
-	else if (input_sel > start)
-		input_sel = start;
-
-	if (input_cur >= end)
-		input_cur -= len;
-	else if (input_cur > start)
-		input_cur = start;
-
-	Unlock_state();
-}
-
-static void CON_InputDelSelection(void)
-{
-	size_t start, end;
-
-	Lock_state();
-
-	if (input_cur > input_sel)
-	{
-		start = input_sel;
-		end = input_cur;
-	}
-	else
-	{
-		start = input_cur;
-		end = input_sel;
-	}
-
-	CON_InputDel(start, end);
-
-	input_sel = input_cur = start;
-
-	Unlock_state();
-}
-
-static void CON_ToWordEnd(boolean move_sel)
-{
-	Lock_state();
-
-	// Skip spaces
-	while (input_cur < input_len && isspace(inputlines[inputline][input_cur]))
-		++input_cur;
-
-	// Skip word
-	while (input_cur < input_len && !isspace(inputlines[inputline][input_cur]))
-		++input_cur;
-
-	if (move_sel) input_sel = input_cur;
-
-	Unlock_state();
-}
-
-static void CON_ToWordBegin(boolean move_sel)
-{
-	Lock_state();
-
-	// Hack, always move back 1 character if possible so if we press ctrl-left at a word beginning
-	// we move to previous word
-	if (input_cur) --input_cur;
-
-	// Skip spaces
-	while (input_cur && isspace(inputlines[inputline][input_cur]))
-		--input_cur;
-
-	// Skip word
-	while (input_cur && !isspace(inputlines[inputline][input_cur]))
-		--input_cur;
-
-	// Unless we reached beginning of line, we're pointing at a space before word, so move cursor
-	// forward to fix that
-	if (input_cur) ++input_cur;
-
-	if (move_sel) input_sel = input_cur;
-
-	Unlock_state();
-}
-
-static void CON_InputAddChar(char c)
-{
-	if (input_len >= CON_MAXPROMPTCHARS-1)
-		return;
-
-	Lock_state();
-
-	if (input_cur != input_len)
-		memmove(&inputlines[inputline][input_cur+1], &inputlines[inputline][input_cur], input_len-input_cur);
-	inputlines[inputline][input_cur++] = c;
-	inputlines[inputline][++input_len] = 0;
-	input_sel = input_cur;
-
-	Unlock_state();
-}
-
-static void CON_InputDelChar(void)
-{
-	if (!input_cur)
-		return;
-
-	Lock_state();
-
-	if (input_cur != input_len)
-		memmove(&inputlines[inputline][input_cur-1], &inputlines[inputline][input_cur], input_len-input_cur);
-	inputlines[inputline][--input_len] = 0;
-	input_sel = --input_cur;
-
-	Unlock_state();
-}
-
-//
-// ----
-//
 
 // Handles console key input
 //
@@ -1054,6 +882,10 @@ boolean CON_Responder(event_t *ev)
 		}
 	}
 
+	Lock_state();
+	M_TextInputHandle(&input, key);
+	Unlock_state();
+
 	// Always eat ctrl/shift/alt if console open, so the menu doesn't get ideas
 	if (key == KEY_LSHIFT || key == KEY_RSHIFT
 	 || key == KEY_LCTRL || key == KEY_RCTRL
@@ -1066,12 +898,11 @@ boolean CON_Responder(event_t *ev)
 		// show all cvars/commands that match what we have inputted
 		if (key == KEY_TAB)
 		{
-
 			if (!completion[0])
 			{
-				if (!input_len || input_len >= 40 || strchr(inputlines[inputline], ' '))
+				if (!input.length || input.length >= 40 || strchr(input.buffer, ' '))
 					return true;
-				strcpy(completion, inputlines[inputline]);
+				strcpy(completion, input.buffer);
 				comskips = varskips = 0;
 			}
 
@@ -1092,74 +923,9 @@ boolean CON_Responder(event_t *ev)
 			return true;
 		}
 
-		if (key == 'x' || key == 'X')
-		{
-			if (input_sel > input_cur)
-				I_ClipboardCopy(&inputlines[inputline][input_cur], input_sel-input_cur);
-			else
-				I_ClipboardCopy(&inputlines[inputline][input_sel], input_cur-input_sel);
-			CON_InputDelSelection();
+		// Those are already handled in M_TextInputHandle, but they do extra logic... Maybe textinput_t should have some sort of callbacks?
+		if (key == 'x' || key == 'X' || key == 'v' || key == 'V')
 			completion[0] = 0;
-			return true;
-		}
-		else if (key == 'c' || key == 'C')
-		{
-			if (input_sel > input_cur)
-				I_ClipboardCopy(&inputlines[inputline][input_cur], input_sel-input_cur);
-			else
-				I_ClipboardCopy(&inputlines[inputline][input_sel], input_cur-input_sel);
-			return true;
-		}
-		else if (key == 'v' || key == 'V')
-		{
-			const char *paste = I_ClipboardPaste();
-			if (input_sel != input_cur)
-				CON_InputDelSelection();
-			if (paste != NULL)
-				CON_InputAddString(paste);
-			completion[0] = 0;
-			return true;
-		}
-		else if (key == 'w' || key == 'W')
-		{
-			size_t word_start, word_end, i;
-			word_end = i = input_cur;
-
-			// Unless we're pointing at the beginning of line, decrement i so we only start
-			// removing symbols that come before the cursor
-			if (i) --i;
-
-			// We might be pointing to spaces, skip them first
-			while (i && isspace(inputlines[inputline][i]))
-				--i;
-
-			// Now skip the "word"
-			while (i && !isspace(inputlines[inputline][i]))
-				--i;
-
-			// Unless we reached beginning of line, i is pointing at first space that was found
-			// before word start, and we don't want to remove it
-			if (i) ++i;
-
-			word_start = i;
-
-			if (word_start != word_end)
-				CON_InputDel(word_start, word_end);
-
-			return true;
-		}
-		else if (key == KEY_RIGHTARROW)
-			CON_ToWordEnd(!shiftdown);
-		else if (key == KEY_LEFTARROW)
-			CON_ToWordBegin(!shiftdown);
-
-		// Select all
-		if (key == 'a' || key == 'A')
-		{
-			input_sel = 0;
-			input_cur = input_len;
-			return true;
-		}
 
 		// ...why shouldn't it eat the key? if it doesn't, it just means you
 		// can control Sonic from the console, which is silly
@@ -1174,9 +940,9 @@ boolean CON_Responder(event_t *ev)
 		// remember typing for several completions (a-la-4dos)
 		if (!completion[0])
 		{
-			if (!input_len || input_len >= 40 || strchr(inputlines[inputline], ' '))
+			if (!input.length || input.length >= 40 || strchr(input.buffer, ' '))
 				return true;
-			strcpy(completion, inputlines[inputline]);
+			strcpy(completion, input.buffer);
 			comskips = varskips = 0;
 		}
 		else
@@ -1207,7 +973,11 @@ boolean CON_Responder(event_t *ev)
 			cmd = CV_CompleteVar(completion, varskips);
 
 		if (cmd)
-			CON_InputSetString(va("%s ", cmd));
+		{
+			Lock_state();
+			M_TextInputSetString(&input, va("%s ", cmd));
+			Unlock_state();
+		}
 		else
 		{
 			if (comskips > 0)
@@ -1233,37 +1003,6 @@ boolean CON_Responder(event_t *ev)
 		return true;
 	}
 
-	if (key == KEY_LEFTARROW)
-	{
-		if (input_cur != 0)
-			--input_cur;
-		if (!shiftdown)
-			input_sel = input_cur;
-		return true;
-	}
-	else if (key == KEY_RIGHTARROW)
-	{
-		if (input_cur < input_len)
-			++input_cur;
-		if (!shiftdown)
-			input_sel = input_cur;
-		return true;
-	}
-	else if (key == KEY_HOME)
-	{
-		input_cur = 0;
-		if (!shiftdown)
-			input_sel = input_cur;
-		return true;
-	}
-	else if (key == KEY_END)
-	{
-		input_cur = input_len;
-		if (!shiftdown)
-			input_sel = input_cur;
-		return true;
-	}
-
 	// At this point we're messing with input
 	// Clear completion
 	completion[0] = 0;
@@ -1271,45 +1010,29 @@ boolean CON_Responder(event_t *ev)
 	// command enter
 	if (key == KEY_ENTER)
 	{
-		if (!input_len)
+		if (!input.length)
 			return true;
 
 		// push the command
-		COM_BufAddText(inputlines[inputline]);
+		COM_BufAddText(input.buffer);
 		COM_BufAddText("\n");
 
 		CONS_Printf("\x86""%c""\x80""%s\n", CON_PROMPTCHAR, inputlines[inputline]);
 
+		Lock_state();
+
 		// Only add command to history if it differs from previous one
-		if (strcmp(inputlines[inputline], inputlines[(inputline-1) & 31]))
+		if (strcmp(input.buffer, inputlines[(inputline-1) & 31]))
+		{
 			inputline = (inputline+1) & 31;
+			M_TextInputInit(&input, inputlines[inputline], CON_MAXPROMPTCHARS);
+		}
 
 		inputhist = inputline;
-		CON_InputClear();
+		M_TextInputClear(&input);
 
-		return true;
-	}
+		Unlock_state();
 
-	// backspace and delete command prompt
-	if (input_sel != input_cur)
-	{
-		if (key == KEY_BACKSPACE || key == KEY_DEL)
-		{
-			CON_InputDelSelection();
-			return true;
-		}
-	}
-	else if (key == KEY_BACKSPACE)
-	{
-		CON_InputDelChar();
-		return true;
-	}
-	else if (key == KEY_DEL)
-	{
-		if (input_cur == input_len)
-			return true;
-		++input_cur;
-		CON_InputDelChar();
 		return true;
 	}
 
@@ -1326,7 +1049,9 @@ boolean CON_Responder(event_t *ev)
 		if (inputhist == inputline)
 			inputhist = (inputline + 1) & 31;
 
-		CON_InputSetString(inputlines[inputhist]);
+		Lock_state();
+		M_TextInputSetString(&input, inputlines[inputhist]);
+		Unlock_state();
 		return true;
 	}
 
@@ -1340,40 +1065,15 @@ boolean CON_Responder(event_t *ev)
 		while (inputhist != inputline && !inputlines[inputhist][0]);
 
 		// back to currentline
+		Lock_state();
 		if (inputhist == inputline)
-			CON_InputClear();
+			M_TextInputClear(&input);
 		else
-			CON_InputSetString(inputlines[inputhist]);
+			M_TextInputSetString(&input, inputlines[inputhist]);
+		Unlock_state();
+
 		return true;
 	}
-
-	// allow people to use keypad in console (good for typing IP addresses) - Calum
-	if (key >= KEY_KEYPAD7 && key <= KEY_KPADDEL)
-	{
-		char keypad_translation[] = {'7','8','9','-',
-		                             '4','5','6','+',
-		                             '1','2','3',
-		                             '0','.'};
-
-		key = keypad_translation[key - KEY_KEYPAD7];
-	}
-	else if (key == KEY_KPADSLASH)
-		key = '/';
-
-	// same capslock code as hu_stuff.c's HU_responder. Check there for details.
-	key = CON_ShiftChar(key);
-
-	// enter a char into the command prompt
-	if (key < 32 || key > 127)
-		return true;
-
-	// add key to cmd line here
-	if (key >= 'A' && key <= 'Z' && !(shiftdown ^ capslock)) //this is only really necessary for dedicated servers
-		key = key + 'a' - 'A';
-
-	if (input_sel != input_cur)
-		CON_InputDelSelection();
-	CON_InputAddChar(key);
 
 	return true;
 }
@@ -1656,16 +1356,16 @@ static void CON_DrawInput(void)
 
 	clen = con_width-13;
 
-	if (input_len <= clen)
+	if (input.length <= clen)
 	{
 		c = 0;
-		clen = input_len;
+		clen = input.length;
 	}
 	else // input line scrolls left if it gets too long
 	{
 		clen -= 2; // There will always be some extra truncation -- but where is what we'll find out
 
-		if (input_cur <= clen/2)
+		if (input.cursor <= clen/2)
 		{
 			// Close enough to right edge to show all
 			c = 0;
@@ -1676,15 +1376,15 @@ static void CON_DrawInput(void)
 		{
 			// Cursor in the middle (or right side) of input
 			// Move over for the ellipsis
-			c = input_cur - (clen/2) + 2;
+			c = input.cursor - (clen/2) + 2;
 			x += charwidth*2;
 			lellip = 1;
 
-			if (c + clen >= input_len)
+			if (c + clen >= input.length)
 			{
 				// Cursor in the right side of input
 				// We were too far over, so move back
-				c = input_len - clen;
+				c = input.length - clen;
 			}
 			else
 			{
@@ -1698,7 +1398,7 @@ static void CON_DrawInput(void)
 	if (lellip)
 	{
 		x -= charwidth*3;
-		if (input_sel < c)
+		if (input.select < c)
 			V_DrawFill(x, y, charwidth*3, (10 * con_scalefactor), 107 | V_NOSCALESTART);
 		for (i = 0; i < 3; ++i, x += charwidth)
 			V_DrawCharacter(x, y, '.' | cv_constextsize.value | V_GRAYMAP | V_NOSCALESTART, !cv_allcaps.value);
@@ -1708,7 +1408,7 @@ static void CON_DrawInput(void)
 
 	for (cend = c + clen; c < cend; ++c, x += charwidth)
 	{
-		if ((input_sel > c && input_cur <= c) || (input_sel <= c && input_cur > c))
+		if ((input.select > c && input.cursor <= c) || (input.select <= c && input.cursor > c))
 		{
 			V_DrawFill(x, y, charwidth, (10 * con_scalefactor), 107 | V_NOSCALESTART);
 			V_DrawCharacter(x, y, p[c] | cv_constextsize.value | V_YELLOWMAP | V_NOSCALESTART, !cv_allcaps.value);
@@ -1716,14 +1416,14 @@ static void CON_DrawInput(void)
 		else
 			V_DrawCharacter(x, y, p[c] | cv_constextsize.value | V_NOSCALESTART, !cv_allcaps.value);
 
-		if (c == input_cur && con_tick >= 4)
+		if (c == input.cursor && con_tick >= 4)
 			V_DrawCharacter(x, y + (con_scalefactor*2), '_' | cv_constextsize.value | V_NOSCALESTART, !cv_allcaps.value);
 	}
-	if (cend == input_cur && con_tick >= 4)
+	if (cend == input.cursor && con_tick >= 4)
 		V_DrawCharacter(x, y + (con_scalefactor*2), '_' | cv_constextsize.value | V_NOSCALESTART, !cv_allcaps.value);
 	if (rellip)
 	{
-		if (input_sel > cend)
+		if (input.select > cend)
 			V_DrawFill(x, y, charwidth*3, (10 * con_scalefactor), 107 | V_NOSCALESTART);
 		for (i = 0; i < 3; ++i, x += charwidth)
 			V_DrawCharacter(x, y, '.' | cv_constextsize.value | V_GRAYMAP | V_NOSCALESTART, !cv_allcaps.value);

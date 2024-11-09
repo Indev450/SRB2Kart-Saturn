@@ -78,6 +78,7 @@ fixed_t dc_iscale, dc_texturemid;
 UINT8 dc_hires; // under MSVC boolean is a byte, while on other systems, it a bit,
                // soo lets make it a byte on all system for the ASM code
 UINT8 *dc_source;
+INT32 dc_sourcelength;
 
 // -----------------------
 // translucency stuff here

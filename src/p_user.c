@@ -742,9 +742,8 @@ void P_RestoreMusic(player_t *player)
 	if (P_EndingMusic(player))
 		return;
 
-	// Event - Level Start
-	if (leveltime < (starttime + (TICRATE/2)))
-		S_ChangeMusicInternal((encoremode ? "estart" : "kstart"), false); //S_StopMusic();
+	if (leveltime < MUSICSTARTTIME)
+		S_StartMapMusic(true);
 	else // see also where time overs are handled - search for "lives = 2" in this file
 	{
 		INT32 wantedmus = 0; // 0 is level music, 1 is invincibility, 2 is grow
@@ -800,19 +799,13 @@ void P_RestoreMusic(player_t *player)
 			if (G_RaceGametype() && player->laps >= (UINT8)(cv_numlaps.value - 1))
 				S_SpeedMusic(1.2f);
 #endif
-			if (cv_birdmusic.value)
-			{
-				if (mapmusresume && cv_resume.value)
-					position = mapmusresume;
-				else
-					position = mapmusposition;
-
-				S_ChangeMusicEx(mapmusname, mapmusflags, true, position, 0, S_GetRestoreMusicFadeIn());
-				S_ClearRestoreMusicFadeInCvar();
-			}
+			if (mapmusresume && cv_resume.value) // mapmusresume will be 0 anyways when birdmusic stuff is disabled
+				position = mapmusresume;
 			else
-				S_ChangeMusicEx(mapmusname, mapmusflags, true, mapmusposition, 0, 0);
+				position = mapmusposition;
 
+			S_ChangeMusicEx(mapmusname, mapmusflags, true, position, 0, S_GetRestoreMusicFadeIn());
+			S_ClearRestoreMusicFadeInCvar();
 			mapmusresume = 0;
 		}
 	}
@@ -1256,7 +1249,7 @@ void P_DoPlayerExit(player_t *player)
 		player->exiting = raceexittime+2;
 		K_KartUpdatePosition(player);
 
-		if (cv_kartvoices.value)
+		if (!P_MobjWasRemoved(player->mo) && cv_kartvoices.value)
 		{
 			if (P_IsLocalPlayer(player))
 			{
@@ -2505,7 +2498,7 @@ static void P_MovePlayer(player_t *player)
 	}
 
 #ifdef HWRENDER
-	if (rendermode != render_soft && rendermode != render_none && cv_grfovchange.value)
+	if (rendermode == render_opengl && cv_glfovchange.value)
 	{
 		fixed_t speed;
 		const fixed_t runnyspeed = 20*FRACUNIT;
@@ -4109,11 +4102,12 @@ boolean P_SpectatorJoinGame(player_t *player)
 	return false;
 }
 
+// the below is first person only, if you're curious. check out P_CalcChasePostImg in p_mobj.c for chasecam
 static void P_CalcPostImg(player_t *player)
 {
 	sector_t *sector = player->mo->subsector->sector;
-	postimg_t *type = NULL;
-	INT32 *param;
+	INT16 typeflag = 0;
+	//INT32 *param;
 	fixed_t pviewheight;
 	UINT8 i;
 
@@ -4128,20 +4122,19 @@ static void P_CalcPostImg(player_t *player)
 		pviewheight = player->awayviewmobj->z + 20*FRACUNIT;
 	}
 
-	for (i = 0; i <= splitscreen; i++)
+	/*for (i = 0; i <= splitscreen; i++)
 	{
 		if (player == &players[displayplayers[i]])
 		{
-			type = &postimgtype[i];
 			param = &postimgparam[i];
 			break;
 		}
-	}
+	}*/
 
 	// see if we are in heat (no, not THAT kind of heat...)
 
 	if (P_FindSpecialLineFromTag(13, sector->tag, -1) != -1)
-		*type = postimg_heat;
+		typeflag |= POSTIMG_HEAT;
 	else if (sector->ffloors)
 	{
 		ffloor_t *rover;
@@ -4160,7 +4153,7 @@ static void P_CalcPostImg(player_t *player)
 				continue;
 
 			if (P_FindSpecialLineFromTag(13, rover->master->frontsector->tag, -1) != -1)
-				*type = postimg_heat;
+				typeflag |= POSTIMG_HEAT;
 		}
 	}
 
@@ -4182,36 +4175,35 @@ static void P_CalcPostImg(player_t *player)
 			if (pviewheight >= topheight || pviewheight <= bottomheight)
 				continue;
 
-			*type = postimg_water;
+			typeflag |= POSTIMG_WATER;
 		}
 	}
 
-	if (!encoremode) // srb2kart
-	{
-		if (player->mo->eflags & MFE_VERTICALFLIP)
-			*type = postimg_flip;
-	}
-	else
-	{
-		if (player->mo->eflags & MFE_VERTICALFLIP)
-			*type = postimg_mirrorflip;
-		else
-			*type = postimg_mirror;
-	}
+	if (encoremode) // srb2kart
+		typeflag |= POSTIMG_MIRROR;
 
-#if 1
-	(void)param;
-#else
+	if (player->mo->eflags & MFE_VERTICALFLIP)
+		typeflag |= POSTIMG_FLIP;
+
 	// Motion blur
-	if (player->speed > (35<<FRACBITS))
+	// unused
+	/*if (player->speed > (35<<FRACBITS))
 	{
-		*type = postimg_motion;
+		typeflag |= POSTIMG_MOTION;
 		*param = (player->speed - 32)/4;
 
 		if (*param > 5)
 			*param = 5;
+	}*/
+
+	for (i = 0; i <= splitscreen; i++)
+	{
+		if (player != &players[displayplayers[i]])
+			continue;
+
+		players[displayplayers[i]].postimgflags = typeflag;
+		break;
 	}
-#endif
 }
 
 void P_DoTimeOver(player_t *player)

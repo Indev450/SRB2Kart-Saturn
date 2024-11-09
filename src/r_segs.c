@@ -15,6 +15,7 @@
 #include "r_local.h"
 #include "r_sky.h"
 
+#include "r_portal.h"
 #include "r_splats.h"
 
 #include "w_wad.h"
@@ -275,6 +276,7 @@ static void R_Render2sidedMultiPatchColumn(column_t *column)
 	if (dc_yl <= dc_yh && dc_yh < vid.height && dc_yh > 0)
 	{
 		dc_source = (UINT8 *)column + 3;
+		dc_sourcelength = 0;
 
 		if (colfunc == wallcolfunc)
 			twosmultipatchfunc();
@@ -1446,6 +1448,7 @@ static void R_RenderSegLoop (void)
 				dc_texturemid = rw_midtexturemid;
 				dc_source = R_GetColumn(midtexture,texturecolumn);
 				dc_texheight = textureheight[midtexture]>>FRACBITS;
+				dc_sourcelength = 0;
 				colfunc();
 
 				// dont draw anything more for this column, since
@@ -1493,6 +1496,7 @@ static void R_RenderSegLoop (void)
 						dc_texturemid = rw_toptexturemid;
 						dc_source = R_GetColumn(toptexture,texturecolumn);
 						dc_texheight = textureheight[toptexture]>>FRACBITS;
+						dc_sourcelength = 0;
 						colfunc();
 						ceilingclip[rw_x] = (INT16)mid;
 					}
@@ -1530,6 +1534,7 @@ static void R_RenderSegLoop (void)
 						dc_source = R_GetColumn(bottomtexture,
 							texturecolumn);
 						dc_texheight = textureheight[bottomtexture]>>FRACBITS;
+						dc_sourcelength = 0;
 						colfunc();
 						floorclip[rw_x] = (INT16)mid;
 					}
@@ -1603,6 +1608,12 @@ static INT64 R_CalcSegDist(seg_t* seg, INT64 x2, INT64 y2)
 		INT64 vdy = y2-(seg->v1->y);
 		return ((dy*vdx)-(dx*vdy))/(seg->length);
 	}
+}
+
+static inline INT32 get_flat_tex (INT32 texnum)
+{
+	texnum = R_GetTextureNum(texnum);
+	return textures[texnum]->holes ? 0 : texnum; // R_DrawWallColumn cannot render holey textures
 }
 
 //
@@ -1862,7 +1873,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 	{
 		fixed_t texheight;
 		// single sided line
-		midtexture = R_GetTextureNum(sidedef->midtexture);
+		midtexture = get_flat_tex(sidedef->midtexture);
 		texheight = textureheight[midtexture];
 		// a single sided line is terminal, so it must mark ends
 		markfloor = markceiling = true;
@@ -2045,15 +2056,15 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			{
 				// Special case... use offsets from 2nd side but only if it has a texture.
 				side_t *def = &sides[linedef->sidenum[1]];
-				toptexture = R_GetTextureNum(def->toptexture);
+				toptexture = get_flat_tex(def->toptexture);
 
 				if (!toptexture) //Second side has no texture, use the first side's instead.
-					toptexture = R_GetTextureNum(sidedef->toptexture);
+					toptexture = get_flat_tex(sidedef->toptexture);
 				texheight = textureheight[toptexture];
 			}
 			else
 			{
-				toptexture = R_GetTextureNum(sidedef->toptexture);
+				toptexture = get_flat_tex(sidedef->toptexture);
 				texheight = textureheight[toptexture];
 			}
 			if (!(linedef->flags & ML_EFFECT1)) { // Ignore slopes for lower/upper textures unless flag is checked
@@ -2078,7 +2089,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 		if (worldlow > worldbottom || worldlowslope > worldbottomslope) // Only if VISIBLE!!!
 		{
 			// bottom texture
-			bottomtexture = R_GetTextureNum(sidedef->bottomtexture);
+			bottomtexture = get_flat_tex(sidedef->bottomtexture);
 
 			if (!(linedef->flags & ML_EFFECT1)) { // Ignore slopes for lower/upper textures unless flag is checked
 				if (linedef->flags & ML_DONTPEGBOTTOM)

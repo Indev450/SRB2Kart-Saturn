@@ -249,7 +249,7 @@ void P_RecalcPrecipInSector(sector_t *sector);
 void P_PrecipitationEffects(void);
 
 void P_RemoveMobj(mobj_t *th);
-boolean P_MobjWasRemoved(const mobj_t *th);
+
 void P_RemoveSavegameMobj(mobj_t *th);
 boolean P_SetPlayerMobjState(mobj_t *mobj, statenum_t state);
 boolean P_SetMobjState(mobj_t *mobj, statenum_t state);
@@ -261,6 +261,12 @@ boolean P_RailThinker(mobj_t *mobj);
 void P_PushableThinker(mobj_t *mobj);
 void P_SceneryThinker(mobj_t *mobj);
 
+// This does not need to be added to Lua.
+// To test it in Lua, check mobj.valid
+FUNCINLINE static ATTRINLINE boolean P_MobjWasRemoved(const mobj_t *mobj)
+{
+	return !(mobj && mobj->thinker.function.acp1 == (actionf_p1)P_MobjThinker);
+}
 
 fixed_t P_MobjFloorZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed_t x, fixed_t y, line_t *line, boolean lowest, boolean perfect);
 fixed_t P_MobjCeilingZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed_t x, fixed_t y, line_t *line, boolean lowest, boolean perfect);
@@ -292,7 +298,14 @@ mobj_t *P_SPMAngle(mobj_t *source, mobjtype_t type, angle_t angle, UINT8 aimtype
 #define P_SpawnNameFinder(s,t) P_SPMAngle(s,t,s->angle,true,0)
 #endif
 void P_ColorTeamMissile(mobj_t *missile, player_t *source);
-SINT8 P_MobjFlip(const mobj_t *mobj);
+
+// P_MobjFlip
+// Special utility to return +1 or -1 depending on mobj's gravity
+FUNCINLINE static ATTRINLINE SINT8 P_MobjFlip(const mobj_t *mobj)
+{
+	return (mobj && mobj->eflags & MFE_VERTICALFLIP) ? -1 : 1;
+}
+
 fixed_t P_GetMobjGravity(mobj_t *mo);
 FUNCMATH boolean P_WeaponOrPanel(mobjtype_t type);
 

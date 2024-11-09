@@ -82,7 +82,8 @@ static void SCR_ChangeFullscreen (void);
 
 consvar_t cv_fullscreen = {"fullscreen", "Yes", CV_SAVE|CV_CALL, CV_YesNo, SCR_ChangeFullscreen, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_accuratefps = {"accuratefpscounter", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+static CV_PossibleValue_t accuratefps_cons_t[] = {{0, "Inaccurate"}, {1, "Accurate"}, {0, NULL}};
+consvar_t cv_accuratefps = {"fpssampling", "1", CV_SAVE, accuratefps_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 // =========================================================================
 //                           SCREEN VARIABLES
@@ -354,11 +355,7 @@ void SCR_ChangeFullscreen(void)
 
 boolean SCR_IsAspectCorrect(INT32 width, INT32 height)
 {
-	return
-	 (  width % BASEVIDWIDTH == 0
-	 && height % BASEVIDHEIGHT == 0
-	 && width / BASEVIDWIDTH == height / BASEVIDHEIGHT
-	 );
+	return (width % BASEVIDWIDTH == 0 && height % BASEVIDHEIGHT == 0 && width / BASEVIDWIDTH == height / BASEVIDHEIGHT);
 }
 
 double averageFPS = 0.0f;
@@ -411,7 +408,6 @@ void SCR_CalculateFPS(void)
 		if (total_frame_time >= MAX_FRAME_TIME)
 		{
 			static int sampleIndex = 0;
-			int i;
 
 			fps_samples[sampleIndex] = frameElapsed;
 
@@ -420,7 +416,7 @@ void SCR_CalculateFPS(void)
 				sampleIndex = 0;
 
 			averageFPS = 0.0;
-			for (i = 0; i < NUM_FPS_SAMPLES; i++)
+			for (int i = 0; i < NUM_FPS_SAMPLES; i++)
 			{
 				averageFPS += fps_samples[i];
 			}
@@ -458,7 +454,7 @@ void SCR_DisplayTicRate(void)
 		return;
 
 	// new kart counter
-	if ((cv_ticrate.value == 1) || (cv_ticrate.value == 2))
+	if (cv_ticrate.value == 1 || cv_ticrate.value == 2)
 	{
 		// draw "FPS"
 		if (cv_ticrate.value == 1)
@@ -492,7 +488,7 @@ void SCR_DisplayTicRate(void)
 		// draw our actual framerate
 		V_DrawPingNum(x, 190, fpsflags, fps, ticcntcolor);
 	}
-	else if ((cv_ticrate.value == 3)||(cv_ticrate.value == 4)) // kart v1.0/srb2 counter
+	else if (cv_ticrate.value == 3 || cv_ticrate.value == 4) // kart v1.0/srb2 counter
 	{
 		if (fps > (benchmark - 5))
 			ticcntcolor2 = V_GREENMAP;

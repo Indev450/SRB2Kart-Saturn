@@ -62,6 +62,7 @@ extern lighttable_t *ds_colormap;
 extern fixed_t ds_xfrac, ds_yfrac, ds_xstep, ds_ystep;
 extern INT32 ds_waterofs, ds_bgofs;
 extern UINT8 *ds_source; // start of a 64*64 tile image
+extern INT32 dc_sourcelength;
 extern UINT8 *ds_transmap;
 
 extern INT32 ds_bgofs;

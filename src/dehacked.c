@@ -9149,7 +9149,6 @@ int LUA_EnumLib(lua_State *L)
 	PUSHGETTER(globalweather, u8);
 	PUSHGETTER(levelskynum, i32);
 	PUSHGETTER(globallevelskynum, i32);
-	PUSHGETTER((*mapmusname), str);
 	PUSHGETTER(mapmusflags, u16);
 	PUSHGETTER(mapmusposition, u32);
 	PUSHGETTER(gravity, fxp);
@@ -9165,6 +9164,11 @@ int LUA_EnumLib(lua_State *L)
 	PUSHGETTER(mapobjectscale, fxp);
 	PUSHGETTER(racecountdown, u32);
 	PUSHGETTER(exitcountdown, u32);
+
+	lua_pushcfunction(L, lua_glib_new_getter);
+	lua_pushliteral(L, "mapmusname");
+	lua_glib_push_str_getter(L, mapmusname);
+	lua_call(L, 2, 0);
 
 	lua_pushcfunction(L, lua_glib_new_getter);
 	lua_pushliteral(L, "mariomode");
