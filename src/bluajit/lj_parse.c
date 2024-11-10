@@ -2966,7 +2966,7 @@ static int parse_stmt(LexState *ls)
   case TK_break:
     lj_lex_next(ls);
     #if BLUAJIT_MULTILEVEL_BREAK
-      int levels = ls->tokval.n;
+      int levels = numberVint(&ls->tokval);
       if (lex_opt(ls, TK_number))
         parse_break(ls, levels);
       else

@@ -2186,9 +2186,11 @@ static void rec_falsy_zero(jit_State *J, TRef tr, cTValue *tv, int op)
     IROp cond = tvistruecond(tv) ? IR_NE : IR_EQ;
     emitir(IRTG(cond, tref_isinteger(tr) ? IRT_INT : IRT_NUM),
            tr, tref_isinteger(tr) ? lj_ir_kint(J, 0) : lj_ir_knum_zero(J));
+#if 0 /* this does not work no matter what I try */
     if (op == BC_IST || op == BC_ISF)
       rec_comp_fixup(J, J->pc, cond & 1);
     else
+#endif
       J->needsnap = 1;
   }
 }
