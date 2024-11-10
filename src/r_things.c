@@ -3373,12 +3373,12 @@ void R_AddSkins(UINT16 wadnum, boolean local)
 		// advance by default
 		lastlump = lump + 1;
 
-		if (numskins >= MAXSKINS)
+		if (!local && numskins >= MAXSKINS)
 		{
 			CONS_Alert(CONS_WARNING, M_GetText("Unable to add skin, too many characters are loaded (%d maximum)\n"), MAXSKINS);
 			continue; // so we know how many skins couldn't be added
 		}
-		if (numlocalskins >= MAXLOCALSKINS)
+		if (local && numlocalskins >= MAXLOCALSKINS)
 		{
 			CONS_Alert(CONS_WARNING, M_GetText("Unable to add localskin, too many localskins are loaded (%d maximum)\n"), MAXLOCALSKINS);
 			continue; // so we know how many skins couldn't be added

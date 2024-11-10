@@ -35,6 +35,14 @@
 
 #include "doomstat.h"
 
+#ifndef NOBLUAJIT
+#include "d_main.h"
+#include "i_system.h"
+static void LuaJit_OnChange(void);
+static void print_jit_status(boolean verbose);
+consvar_t cv_luajit = {"luajit", "On", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, LuaJit_OnChange, 0, NULL, NULL, 0, 0, NULL};
+#endif
+
 lua_State *gL = NULL;
 
 // Mathlib global state
@@ -60,6 +68,21 @@ static lua_CFunction liblist[] = {
 	LUA_HudLib, // HUD stuff
 	NULL
 };
+
+#ifndef NOBLUAJIT
+static void LuaJit_OnChange(void)
+{
+	if (!gL)
+		LUA_ClearState();
+	lua_getfield(gL, LUA_REGISTRYINDEX, "_LOADED");
+	lua_getfield(gL, -1, "jit");
+	lua_remove(gL, -2);
+	lua_getfield(gL, -1, cv_luajit.value ? "on" : "off");
+	lua_remove(gL, -2);
+	lua_call(gL, 0, 0);
+	print_jit_status(false);
+}
+#endif
 
 // Lua asks for memory using this.
 static void *LUA_Alloc(void *ud, void *ptr, size_t osize, size_t nsize)
@@ -185,6 +208,168 @@ static int noglobals(lua_State *L)
 	return luaL_error(L, "Implicit global " LUA_QS " prevented. Create a local variable instead.", csname);
 }
 
+#ifndef NOBLUAJIT
+// print all the ISA extensions because it looks cool!
+// absolutely not stolen from luajit.c
+static void print_jit_status(boolean verbose)
+{
+	int n;
+	const char *s;
+	lua_getfield(gL, LUA_REGISTRYINDEX, "_LOADED");
+	lua_getfield(gL, -1, "jit");  /* Get jit.* module table. */
+	lua_remove(gL, -2);
+	lua_getfield(gL, -1, "status");
+	lua_remove(gL, -2);
+	n = lua_gettop(gL);
+	lua_call(gL, 0, LUA_MULTRET);
+	CONS_Printf(lua_toboolean(gL, n) ? "JIT: ON" : "JIT: OFF");
+	if (verbose)
+		for (n++; (s = lua_tostring(gL, n)); n++)
+			CONS_Printf(" %s", s);
+	CONS_Printf("\n");
+	lua_settop(gL, 0);  /* clear stack */
+}
+
+// IO library modifications below. this is all hardcoded in blua/liolib.c
+// hope you're ready for some coping... er... copy and pasting
+
+#define FILELIMIT 1024*1024 // Size limit for reading/writing files
+
+static const char *whitelist[] = { // Allow scripters to write files of these types to SRB2's folder
+	".txt",
+	".sav2",
+	".cfg",
+	".png",
+	".bmp"
+};
+
+static int StartsWith(const char *a, const char *b) // this is wolfs being lazy yet again
+{
+	if(strncmp(a, b, strlen(b)) == 0) return 1;
+	return 0;
+};
+
+static int namechecker (lua_State *L) {
+	const char *filename = luaL_checkstring(L, 1);
+	int pass = 0;
+	size_t i;
+	int length = strlen(filename);
+	char *splitter, *forward, *backward;
+	char *destFilename;
+
+	for (i = 0; i < (sizeof (whitelist) / sizeof(const char *)); i++)
+	{
+		if (!stricmp(&filename[length - strlen(whitelist[i])], whitelist[i]))
+		{
+			pass = 1;
+			break;
+		}
+	}
+	if (strstr(filename, "..") || strchr(filename, ':') || StartsWith(filename, "\\")
+		|| StartsWith(filename, "/") || !pass)
+	{
+		return luaL_error(L,"access denied to %s", filename);
+	}
+
+	destFilename = va("%s"PATHSEP"luafiles"PATHSEP"%s", srb2home, filename);
+
+	// Make directories as needed
+	splitter = destFilename;
+
+	forward = strchr(splitter, '/');
+	backward = strchr(splitter, '\\');
+	while ((splitter = (forward && backward) ? min(forward, backward) : (forward ?: backward)))
+	{
+		*splitter = 0;
+		I_mkdir(destFilename, 0755);
+		*splitter = '/';
+		splitter++;
+
+		forward = strchr(splitter, '/');
+		backward = strchr(splitter, '\\');
+	}
+
+	// replace the filename string
+	lua_pushstring(L, destFilename);
+	lua_replace(L, 1);
+	// now call the real io.open
+	lua_pushvalue(L, lua_upvalueindex(1));
+	lua_insert(L, 1);
+	lua_call(L, lua_gettop(L)-1, LUA_MULTRET);
+	return lua_gettop(L);
+}
+
+static int sizechecker (lua_State *L) {
+	boolean error = true;
+
+	FILE *fp = *(FILE **)luaL_checkudata(L, 1, LUA_FILEHANDLE);
+	if (fp == NULL) goto call;
+
+	int top = lua_gettop(L);
+	size_t size = ftell(fp);
+	for (int i = 2; i <= top; i++) {
+		size_t len;
+		const char *p = lua_tolstring(L, i, &len);
+		if (!p) goto call;
+		if ((size += len) > FILELIMIT) {
+			// oops! too many bytes!
+			lua_settop(L, i-1);
+			goto call;
+		}
+	}
+
+	error = false; // you're good
+
+call:
+	lua_pushvalue(L, lua_upvalueindex(1));
+	lua_insert(L, 1);
+	lua_call(L, lua_gettop(L)-1, LUA_MULTRET);
+
+	if (error)
+		return luaL_error(L,"write limit bypassed in file. Changes have been discarded.");
+	return lua_gettop(L);
+}
+
+static void jit_library(lua_State *L) {
+#define REPLACE(name, func) \
+	lua_pushliteral(L, name); \
+	lua_rawget(L, -2); \
+	lua_pushcclosure(L, &func, 1); \
+	lua_pushliteral(L, name); \
+	lua_pushvalue(L, -2); \
+	lua_rawset(L, -4); \
+	lua_pop(L, 1);
+
+#define DELETE(name) \
+	lua_pushliteral(L, name); \
+	lua_pushnil(L); \
+	lua_rawset(L, -3); \
+
+	// replace io.open, delete io.popen
+	lua_getglobal(L, "io");
+	REPLACE("open", namechecker)
+	DELETE("popen")
+	lua_pop(L, 1);
+
+	// replace file:write
+	luaL_getmetatable(L, LUA_FILEHANDLE);
+	REPLACE("write", sizechecker)
+	lua_pop(L, 1);
+
+	// delete various base library functions
+	lua_pushvalue(L, LUA_GLOBALSINDEX);
+	DELETE("dofile")
+	DELETE("loadfile")
+	DELETE("load")
+	DELETE("loadstring")
+	lua_pop(L, 1);
+
+#undef REPLACE
+#undef DELETE
+}
+
+#endif // ifndef NOBLUAJIT
+
 // Clear and create a new Lua state, laddo!
 // There's SCRIPTIN to be had!
 void LUA_ClearState(void)
@@ -227,6 +412,11 @@ void LUA_ClearState(void)
 
 	// lua state is ready!
 	gL = L;
+
+#ifndef NOBLUAJIT
+	print_jit_status(true);
+	jit_library(L);
+#endif
 }
 
 #ifdef _DEBUG
@@ -397,6 +587,9 @@ fixed_t LUA_EvalMathEx(const char *word, const char **error)
 		if (*p == '^')
 			*b++ = '^';
 	}
+	// length of word is zero!?
+	if (p == word)
+		return 0;
 	*b = '\0';
 
 	// eval string.

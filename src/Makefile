@@ -262,6 +262,10 @@ endif
 
 MSGFMT?=msgfmt
 
+ifndef NOBLUAJIT
+	include bluajit/Makefile.cfg
+endif
+
 ifndef ECHO
 	REMOVE:=@$(REMOVE)
 	CC:=@$(CC)
@@ -430,7 +434,9 @@ CFLAGS+=-DHAVE_DISCORDRPC -DUSE_STUN
 OBJS+=$(OBJDIR)/discord.o $(OBJDIR)/stun.o
 endif
 
+ifdef NOBLUAJIT
 	include blua/Makefile.cfg
+endif
 
 ifdef NOMD5
 	OPTS+=-DNOMD5
@@ -628,6 +634,9 @@ endif
 clean:
 	$(REMOVE) *~ *.flc
 	$(REMOVE) $(OBJDIR)/*.o
+ifndef NOBLUAJIT
+	$(REMOVE) $(OBJDIR)/buildvm* $(OBJDIR)/minilua* $(OBJDIR)/lj_vm*
+endif
 
 ifdef MINGW
 	$(REMOVE) $(OBJDIR)/*.res
@@ -779,7 +788,21 @@ ifndef NOHW
 	$(CC) $(CFLAGS) -MM hardware/*.c >> $(OBJDIR)/depend.ped
 endif
 
+ifdef NOBLUAJIT
 	$(CC) $(CFLAGS) -MM blua/*.c >> $(OBJDIR)/depend.ped
+else
+	@for file in $(ALL_HDRGEN); do \
+	  test -f $$file || touch $$file; \
+	  done
+	@$(HOST_CC) $(HOST_ACFLAGS) -MM bluajit/*.c bluajit/host/*.c | \
+	  sed -e "s| [^ ]*/dasm_\S*\.h||g" \
+	      -e "s| lj_target_\S*\.h| lj_target_*.h|g" \
+	      -e "s| lj_emit_\S*\.h| lj_emit_*.h|g" \
+	      -e "s| lj_asm_\S*\.h| lj_asm_*.h|g" >>$(OBJDIR)/depend.ped
+	@for file in $(ALL_HDRGEN); do \
+	  test -s $$file || $(HOST_RM) $$file; \
+	  done
+endif
 
 	@sed -e 's,\(.*\)\.o: ,$(subst /,\/,$(OBJDIR))\/&,g' < $(OBJDIR)/depend.ped > $(OBJDIR)/depend.dep
 	$(REMOVE) $(OBJDIR)/depend.ped
@@ -811,8 +834,12 @@ endif
 $(OBJDIR)/%.o: hardware/%.c
 	$(CC) $(CFLAGS) $(WFLAGS) -c $< -o $@
 
+ifdef NOBLUAJIT
 $(OBJDIR)/%.o: blua/%.c
 	$(CC) $(CFLAGS) $(LUA_CFLAGS) $(WFLAGS) -c $< -o $@
+else
+include bluajit/Makefile.cfg2
+endif
 
 $(OBJDIR)/%.o: %.s
 	$(CC) $(OPTS) -x assembler-with-cpp -c $< -o $@

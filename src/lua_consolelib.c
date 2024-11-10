@@ -328,13 +328,13 @@ static int lib_cvRegisterVar(lua_State *L)
 
 	const char* category = NULL;
 	const char* menu_name = NULL;
+	boolean hasfunc = false;
 
 	luaL_checktype(L, 1, LUA_TTABLE);
 	lua_settop(L, 1); // Clear out all other possible arguments, leaving only the first one.
 	NOHUD
-	cvar = lua_newuserdata(L, sizeof(consvar_t));
-	luaL_getmetatable(L, META_CVAR);
-	lua_setmetatable(L, -2);
+	cvar = ZZ_Calloc(sizeof(consvar_t));
+	LUA_PushUserdata(L, cvar, META_CVAR);
 
 #define FIELDERROR(f, e) luaL_error(L, "bad value for " LUA_QL(f) " in table passed to " LUA_QL("CV_RegisterVar") " (%s)", e);
 #define TYPEERROR(f, t) FIELDERROR(f, va("%s expected, got %s", lua_typename(L, t), luaL_typename(L, -1)))
@@ -408,27 +408,36 @@ static int lib_cvRegisterVar(lua_State *L)
 				cvpv[i].value = 0;
 				cvpv[i].strvalue = NULL;
 				cvar->PossibleValue = cvpv;
+				// MIN and MAX are expected to be at hardcoded indices apparently
+				// so, sigh, here goes...
+				#define SWAP(from, to) \
+					INT32 val = cvpv[from].value; \
+					const char *strval = cvpv[from].strvalue; \
+					cvpv[from].value = cvpv[to].value; \
+					cvpv[from].strvalue = cvpv[to].strvalue; \
+					cvpv[to].value = val; \
+					cvpv[to].strvalue = strval;
+				for (int j = 0; j < i; j++) {
+					if (!strcmp(cvpv[j].strvalue, "MIN") && j != 0) {
+						SWAP(j, 0)
+					} else if (!strcmp(cvpv[j].strvalue, "MAX") && j != 1) {
+						SWAP(j, 1)
+					}
+				}
 			} else
 				FIELDERROR("PossibleValue", va("%s or CV_PossibleValue_t expected, got %s", lua_typename(L, LUA_TTABLE), luaL_typename(L, -1)))
 		} else if (i == 5 || (k && fasticmp(k, "func"))) {
 			if (!lua_isfunction(L, 4))
 				TYPEERROR("func", LUA_TFUNCTION)
-			lua_getfield(L, LUA_REGISTRYINDEX, "CV_OnChange");
-			I_Assert(lua_istable(L, 5));
-			lua_pushvalue(L, 4);
-			lua_setfield(L, 5, cvar->name);
-			lua_pop(L, 1);
-			cvar->func = Lua_OnChange;
+			lua_setfield(L, LUA_REGISTRYINDEX, "CVFUNC");
+			hasfunc = true;
+			continue;
 		}
-		else if (((i == 5 && !(cvar->flags & CV_CALL))
-				|| (cvar->flags & CV_CALL && i == 6)) 
-				|| (k && fasticmp(k, "category")))
+		else if (i == 6 || (k && fasticmp(k, "category")))
 		{
 			category = lua_isnoneornil(L, 4) ? NULL : lua_tostring(L, 4);
 		}
-		else if (((i == 6 && !(cvar->flags & CV_CALL))
-			|| (cvar->flags & CV_CALL && i == 7))
-			|| (k && fasticmp(k, "menuname")))
+		else if (i == 7 || (k && fasticmp(k, "menuname")))
 		{
 			menu_name = lua_isnoneornil(L, 4) ? NULL : lua_tostring(L, 4);
 		}
@@ -438,6 +447,15 @@ static int lib_cvRegisterVar(lua_State *L)
 #undef TYPEERROR
 
 	// stack: cvar table, cvar userdata
+	if (hasfunc) {
+		lua_getfield(L, LUA_REGISTRYINDEX, "CV_OnChange");
+		I_Assert(lua_istable(L, 3));
+		lua_getfield(L, LUA_REGISTRYINDEX, "CVFUNC");
+		lua_setfield(L, 3, cvar->name);
+		lua_pop(L, 1);
+		cvar->func = Lua_OnChange;
+	}
+
 	lua_getfield(L, LUA_REGISTRYINDEX, "CV_Vars");
 	I_Assert(lua_istable(L, 3));
 
@@ -488,15 +506,7 @@ static int lib_cvFindVar(lua_State *L)
 	consvar_t *cv;
 	if (( cv = CV_FindVar(luaL_checkstring(L,1)) ))
 	{
-		lua_settop(L,1);/* We only want one argument in the stack. */
-		lua_pushlightuserdata(L, cv);/* Now the second value on stack. */
-		luaL_getmetatable(L, META_CVAR);
-		/*
-		The metatable is the last value on the stack, so this
-		applies it to the second value, which is the cvar.
-		*/
-		lua_setmetatable(L,2);
-		lua_pushvalue(L,2);
+		LUA_PushUserdata(L, cv, META_CVAR);
 		return 1;
 	}
 	else
@@ -509,7 +519,7 @@ static int CVarSetFunction
 		void (*Set)(consvar_t *, const char *),
 		void (*SetValue)(consvar_t *, INT32)
 ){
-	consvar_t *cvar = (consvar_t *)luaL_checkudata(L, 1, META_CVAR);
+	consvar_t *cvar = *((consvar_t **)luaL_checkudata(L, 1, META_CVAR));
 
 	switch (lua_type(L, 2))
 	{
@@ -538,7 +548,7 @@ static int lib_cvStealthSet(lua_State *L)
 
 static int lib_cvAddValue(lua_State *L)
 {
-	consvar_t *cvar = (consvar_t *)luaL_checkudata(L, 1, META_CVAR);
+	consvar_t *cvar = *((consvar_t **)luaL_checkudata(L, 1, META_CVAR));
 	CV_AddValue(cvar, (INT32)luaL_checknumber(L, 2));
 	return 0;
 }
@@ -613,7 +623,7 @@ static int cvar_fields_ref = LUA_NOREF;
 
 static int cvar_get(lua_State *L)
 {
-	consvar_t *cvar = (consvar_t *)luaL_checkudata(L, 1, META_CVAR);
+	consvar_t *cvar = *((consvar_t **)luaL_checkudata(L, 1, META_CVAR));
 	enum cvar_e field = Lua_optoption(L, 2, -1, cvar_fields_ref);
 
 	switch (field)

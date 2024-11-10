@@ -241,7 +241,7 @@ void HWR_RenderBatches(void)
 
 	int i;
 
-    if (!currently_batching)
+	if (!currently_batching)
 		I_Error("HWR_RenderBatches called without starting batching");
 
 	nextSurfaceInfo.LightInfo.fade_end = 0;
@@ -277,6 +277,7 @@ void HWR_RenderBatches(void)
 	else
 		qs22j(polygonArraySorted, polygonArraySize, sizeof(PolygonArrayEntry *), comparePolygonsNoShaders);
 	PS_STOP_TIMING(ps_hw_batchsorttime);
+
 	// sort order
 	// 1. shader
 	// 2. texture

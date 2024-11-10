@@ -12,7 +12,11 @@
 
 #include "lua_hudlib_drawlist.h"
 #include "lua_hud.h"
+#ifdef NOBLUAJIT
 #include "blua/lstate.h" // shhhhhh
+#else
+#include "lua_script.h"
+#endif
 #include "lua_libs.h"
 
 #include <string.h>
@@ -325,8 +329,16 @@ static UINT64 GetItemId(void)
 	if (!hud_interpolate)
 		return 0;
 
+#ifdef NOBLUAJIT
+	UINT64 id = (uintptr_t)gL->savedpc;
+#else
+	// he who controls the JIT controls the API
+	const void *p = lua_getpc(gL, 1);
+	I_Assert(p != NULL);
+	UINT64 id = (uintptr_t)p;
+#endif
 	// leave bits 0 and 1 free for the string mode
-	UINT64 id = ((UINT64)(uintptr_t)gL->savedpc << 32) | (hud_interpcounter << 10) | (hud_interptag << 2);
+	id = (id << 32) | (hud_interpcounter << 10) | (hud_interptag << 2);
 
 	if (hud_interplatch)
 	{
