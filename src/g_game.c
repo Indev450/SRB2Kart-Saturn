@@ -358,6 +358,8 @@ void SendWeaponPref2(void);
 void SendWeaponPref3(void);
 void SendWeaponPref4(void);
 
+static void G_FixCamera(UINT8 view);
+
 // don't mind me putting these here, I was lazy to figure out where else I could put those without blowing up the compiler.
 
 // chat timer thingy
@@ -1205,7 +1207,8 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	if ((cmd->forwardmove || cmd->sidemove || cmd->buttons)
 		&& displayplayers[0] != consoleplayer && ssplayer == 1)
 	{
-		G_ResetView(1, consoleplayer, false);
+		displayplayers[0] = consoleplayer;
+		G_FixCamera(1);
 		// i dont like this lmao
 		if (cv_director.value)
 			CV_SetValue(&cv_director, 0);
