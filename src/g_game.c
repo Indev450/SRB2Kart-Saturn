@@ -1702,6 +1702,8 @@ void G_ResetView(UINT8 viewnum, INT32 playernum, boolean onlyactive)
 	UINT8 splits;
 	UINT8 viewd;
 
+	INT32 playernumd;
+
 	INT32    *displayplayerp;
 
 	INT32 olddisplayplayer;
@@ -1730,30 +1732,21 @@ void G_ResetView(UINT8 viewnum, INT32 playernum, boolean onlyactive)
 		R_ExecuteSetViewSize();
 	}
 
-	displayplayerp = (&displayplayers[viewnum-1]);
-	olddisplayplayer = (*displayplayerp);
-
-	/* Check if anyone is available to view. */
-	if ((playernum = G_FindView(playernum, viewnum, onlyactive, playernum < olddisplayplayer)) == -1)
-		return;
-
-	/* Focus our target view first so that we don't take its player. */
-	(*displayplayerp) = playernum;
-
-	/* If a viewpoint changes, reset the camera to clear uninitialized memory. */
-	if (viewnum > splits)
+	for (viewd = min(splits+1, viewnum); viewd <= viewnum; ++viewd)
 	{
-		for (viewd = splits+1; viewd <= viewnum; ++viewd)
-		{
-			G_FixCamera(viewd);
-		}
-	}
-	else
-	{
-		if ((*displayplayerp) != olddisplayplayer)
-		{
-			G_FixCamera(viewnum);
-		}
+		playernumd = (viewd == viewnum) ? playernum : displayplayers[viewd-1];
+		displayplayerp = (&displayplayers[viewd-1]);
+		olddisplayplayer = (*displayplayerp);
+
+		/* Check if anyone is available to view. */
+		if ((playernumd = G_FindView(playernumd, viewd, onlyactive, playernumd < olddisplayplayer)) == -1)
+			continue;
+
+		/* Focus our target view first so that we don't take its player. */
+		(*displayplayerp) = playernumd;
+
+		/* If a viewpoint changes, reset the camera to clear uninitialized memory. */
+		G_FixCamera(viewd);
 	}
 
 	if (viewnum == 1 && demo.playback)
