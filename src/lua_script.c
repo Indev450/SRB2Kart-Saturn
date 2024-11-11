@@ -340,7 +340,7 @@ static void jit_library(lua_State *L) {
 	lua_rawset(L, -4); \
 	lua_pop(L, 1);
 
-#define DELETE(name) \
+#define DELEET(name) \
 	lua_pushliteral(L, name); \
 	lua_pushnil(L); \
 	lua_rawset(L, -3); \
@@ -348,7 +348,7 @@ static void jit_library(lua_State *L) {
 	// replace io.open, delete io.popen
 	lua_getglobal(L, "io");
 	REPLACE("open", namechecker)
-	DELETE("popen")
+	DELEET("popen")
 	lua_pop(L, 1);
 
 	// replace file:write
@@ -358,14 +358,14 @@ static void jit_library(lua_State *L) {
 
 	// delete various base library functions
 	lua_pushvalue(L, LUA_GLOBALSINDEX);
-	DELETE("dofile")
-	DELETE("loadfile")
-	DELETE("load")
-	DELETE("loadstring")
+	DELEET("dofile")
+	DELEET("loadfile")
+	DELEET("load")
+	DELEET("loadstring")
 	lua_pop(L, 1);
 
 #undef REPLACE
-#undef DELETE
+#undef DELEET
 }
 
 #endif // ifndef NOBLUAJIT
