@@ -224,12 +224,12 @@ void R_ResetViewInterpolation(UINT8 p)
 		UINT8 i;
 		for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 		{
-			oldview_invalid[i] = t;
+			oldview_invalid[i] += t;
 		}
 	}
 	else
 	{
-		oldview_invalid[p - 1] = t;
+		oldview_invalid[p - 1] += t;
 	}
 }
 
