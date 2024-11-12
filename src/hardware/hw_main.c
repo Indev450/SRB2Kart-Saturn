@@ -329,7 +329,7 @@ static void HWR_SetShaderState(void)
 
 boolean HWR_ShouldUsePaletteRendering(void)
 {
-	return (cv_glpaletterendering.value && HWR_UseShader());
+	return (cv_glpaletterendering.value && (pLocalPalette != NULL) && HWR_UseShader());
 }
 
 boolean HWR_PalRenderFlashpal(void)
