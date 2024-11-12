@@ -366,6 +366,8 @@ void SendWeaponPref2(void);
 void SendWeaponPref3(void);
 void SendWeaponPref4(void);
 
+static void G_FixCamera(UINT8 view);
+
 //static CV_PossibleValue_t crosshair_cons_t[] = {{0, "Off"}, {1, "Cross"}, {2, "Angle"}, {3, "Point"}, {0, NULL}};
 static CV_PossibleValue_t joyaxis_cons_t[] = {{0, "None"},
 {1, "Left X"}, {2, "Left Y"}, {-1, "Left X-"}, {-2, "Left Y-"},
@@ -1494,6 +1496,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		&& displayplayers[0] != consoleplayer && ssplayer == 1)
 	{
 		displayplayers[0] = consoleplayer;
+		G_FixCamera(1);
 		// i dont like this lmao
 		if (cv_director.value)
 			CV_SetValue(&cv_director, 0);
@@ -2007,7 +2010,7 @@ static void G_FixCamera(UINT8 view)
 
 	// The order of displayplayers can change, which would
 	// invalidate localangle.
-	localangle[view - 1] = player->cmd.angleturn;
+	localangle[view - 1] = player->mo->angle; // Players *always* have mobjs, right?
 
 	P_ResetCamera(player, &camera[view - 1]);
 
