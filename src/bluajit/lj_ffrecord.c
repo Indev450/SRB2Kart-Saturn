@@ -172,7 +172,9 @@ static void LJ_FASTCALL recff_nyi(jit_State *J, RecordFFData *rd)
 	    op == BC_RETM || op == BC_TSETM)) {
 	switch (J->fn->c.ffid) {
 	case FF_error:
+#if !LJ_SRB2LIB
 	case FF_debug_sethook:
+#endif
 	case FF_jit_flush:
 	  break;  /* Don't stitch across special builtins. */
 	default:
@@ -570,6 +572,8 @@ static void LJ_FASTCALL recff_next(jit_State *J, RecordFFData *rd)
 
 /* -- Math library fast functions ----------------------------------------- */
 
+#if !LJ_SRB2LIB
+
 static void LJ_FASTCALL recff_math_abs(jit_State *J, RecordFFData *rd)
 {
   TRef tr = lj_ir_tonum(J, J->base[0]);
@@ -701,7 +705,11 @@ static void LJ_FASTCALL recff_math_random(jit_State *J, RecordFFData *rd)
   UNUSED(rd);
 }
 
+#endif
+
 /* -- Bit library fast functions ------------------------------------------ */
+
+#if !LJ_SRB2LIB
 
 /* Record bit.tobit. */
 static void LJ_FASTCALL recff_bit_tobit(jit_State *J, RecordFFData *rd)
@@ -775,6 +783,8 @@ static void LJ_FASTCALL recff_bit_tohex(jit_State *J, RecordFFData *rd)
   recff_nyiu(J, rd);  /* Don't bother working around this NYI. */
 #endif
 }
+
+#endif
 
 /* -- String library fast functions --------------------------------------- */
 
@@ -1553,6 +1563,8 @@ static void LJ_FASTCALL recff_io_flush(jit_State *J, RecordFFData *rd)
 
 /* -- Debug library fast functions ---------------------------------------- */
 
+#if !LJ_SRB2LIB
+
 static void LJ_FASTCALL recff_debug_getmetatable(jit_State *J, RecordFFData *rd)
 {
   GCtab *mt;
@@ -1572,6 +1584,8 @@ static void LJ_FASTCALL recff_debug_getmetatable(jit_State *J, RecordFFData *rd)
   emitir(IRTG(mt ? IR_NE : IR_EQ, IRT_TAB), mtref, lj_ir_knull(J, IRT_TAB));
   J->base[0] = mt ? mtref : TREF_NIL;
 }
+
+#endif
 
 /* -- Record calls to fast functions -------------------------------------- */
 

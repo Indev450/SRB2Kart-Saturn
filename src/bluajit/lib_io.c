@@ -60,6 +60,7 @@ static IOFileUD *io_tofile(lua_State *L)
   return iof;
 }
 
+#if !LJ_SRB2LIB || (LJ_SRB2LIB && LJ_SRB2IO)
 static IOFileUD *io_stdfile(lua_State *L, ptrdiff_t id)
 {
   IOFileUD *iof = IOSTDF_IOF(L, id);
@@ -67,6 +68,7 @@ static IOFileUD *io_stdfile(lua_State *L, ptrdiff_t id)
     lj_err_caller(L, LJ_ERR_IOSTDCL);
   return iof;
 }
+#endif
 
 static IOFileUD *io_file_new(lua_State *L)
 {
@@ -80,6 +82,7 @@ static IOFileUD *io_file_new(lua_State *L)
   return iof;
 }
 
+#if !LJ_SRB2LIB || (LJ_SRB2LIB && LJ_SRB2IO)
 static IOFileUD *io_file_open(lua_State *L, const char *mode)
 {
   const char *fname = strdata(lj_lib_checkstr(L, 1));
@@ -89,6 +92,7 @@ static IOFileUD *io_file_open(lua_State *L, const char *mode)
     luaL_argerror(L, 1, lj_strfmt_pushf(L, "%s: %s", fname, strerror(errno)));
   return iof;
 }
+#endif
 
 static int io_file_close(lua_State *L, IOFileUD *iof)
 {
@@ -416,6 +420,7 @@ LJLIB_CF(io_open)
   return iof->fp != NULL ? 1 : luaL_fileresult(L, 0, fname);
 }
 
+#if !LJ_SRB2LIB
 LJLIB_CF(io_popen)
 {
 #if LJ_TARGET_POSIX || (LJ_TARGET_WINDOWS && !LJ_TARGET_XBOXONE && !LJ_TARGET_UWP)
@@ -435,6 +440,7 @@ LJLIB_CF(io_popen)
   return luaL_error(L, LUA_QL("popen") " not supported");
 #endif
 }
+#endif
 
 LJLIB_CF(io_tmpfile)
 {
@@ -452,6 +458,7 @@ LJLIB_CF(io_close)
   return lj_cf_io_method_close(L);
 }
 
+#if !LJ_SRB2LIB || (LJ_SRB2LIB && LJ_SRB2IO)
 LJLIB_CF(io_read)
 {
   return io_file_read(L, io_stdfile(L, GCROOT_IO_INPUT), 0);
@@ -507,6 +514,7 @@ LJLIB_CF(io_lines)
   }
   return io_file_lines(L);
 }
+#endif
 
 LJLIB_CF(io_type)
 {

@@ -17,14 +17,24 @@
 
 static const luaL_Reg lj_lib_load[] = {
   { "",			luaopen_base },
+#if !LJ_SRB2LIB
   { LUA_LOADLIBNAME,	luaopen_package },
+#endif
   { LUA_TABLIBNAME,	luaopen_table },
   { LUA_IOLIBNAME,	luaopen_io },
+#if !LJ_SRB2LIB || (LJ_SRB2LIB && LJ_SRB2OS)
   { LUA_OSLIBNAME,	luaopen_os },
+#endif
   { LUA_STRLIBNAME,	luaopen_string },
+#if !LJ_SRB2LIB
   { LUA_MATHLIBNAME,	luaopen_math },
+#endif
+#if !LJ_SRB2LIB || (LJ_SRB2LIB && LJ_SRB2DEBUG)
   { LUA_DBLIBNAME,	luaopen_debug },
+#endif
+#if !LJ_SRB2LIB
   { LUA_BITLIBNAME,	luaopen_bit },
+#endif
   { LUA_JITLIBNAME,	luaopen_jit },
   { NULL,		NULL }
 };

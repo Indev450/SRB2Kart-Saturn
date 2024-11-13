@@ -79,7 +79,11 @@ typedef uint16_t HotCount;
 #define HOTCOUNT_CALL		1
 
 /* This solves a circular dependency problem -- bump as needed. Sigh. */
+#if LJ_SRB2LIB
+#define GG_NUM_ASMFF	22
+#else
 #define GG_NUM_ASMFF	57
+#endif
 
 #define GG_LEN_DDISP	(BC__MAX + GG_NUM_ASMFF)
 #define GG_LEN_SDISP	BC_FUNCF

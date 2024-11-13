@@ -549,8 +549,10 @@
 #define LJ_DUALNUM		0
 #endif
 
-#if LUAJIT_INTONLY
+#if defined(LUAJIT_INTONLY)
 #define LJ_INTONLY		1
+#else
+#define LJ_INTONLY		0
 #endif
 
 #if LJ_TARGET_IOS || LJ_TARGET_CONSOLE
@@ -594,6 +596,30 @@
 #define LJ_HASBUFFER		0
 #else
 #define LJ_HASBUFFER		1
+#endif
+
+#if defined(LUAJIT_SRB2LIB)
+#define LJ_SRB2LIB		1
+#else
+#define LJ_SRB2LIB		0
+#endif
+
+#if defined(LUAJIT_SRB2LIB_OS)
+#define LJ_SRB2OS		1
+#else
+#define LJ_SRB2OS		0
+#endif
+
+#if defined(LUAJIT_SRB2LIB_DEBUG)
+#define LJ_SRB2DEBUG		1
+#else
+#define LJ_SRB2DEBUG		0
+#endif
+
+#if defined(LUAJIT_SRB2LIB_IO)
+#define LJ_SRB2IO		1
+#else
+#define LJ_SRB2IO		0
 #endif
 
 #if defined(LUAJIT_DISABLE_PROFILE)

@@ -357,6 +357,7 @@ LJLIB_ASM_(xpcall)		LJLIB_REC(.)
 
 /* -- Base library: load Lua code ----------------------------------------- */
 
+#if !LJ_SRB2LIB
 static int load_aux(lua_State *L, int status, int envarg)
 {
   if (status == LUA_OK) {
@@ -453,6 +454,7 @@ LJLIB_CF(dofile)
   lua_call(L, 0, LUA_MULTRET);
   return (int)(L->top - L->base) - 1;
 }
+#endif
 
 /* -- Base library: GC control -------------------------------------------- */
 

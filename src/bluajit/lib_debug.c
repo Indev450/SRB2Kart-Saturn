@@ -23,6 +23,7 @@
 
 #define LJLIB_MODULE_debug
 
+#if !LJ_SRB2LIB
 LJLIB_CF(debug_getregistry)
 {
   copyTV(L, L->top++, registry(L));
@@ -64,6 +65,7 @@ LJLIB_CF(debug_setfenv)
     lj_err_caller(L, LJ_ERR_SETFENV);
   return 1;
 }
+#endif
 
 /* ------------------------------------------------------------------------ */
 
@@ -184,6 +186,7 @@ LJLIB_CF(debug_getlocal)
   }
 }
 
+#if !LJ_SRB2LIB
 LJLIB_CF(debug_setlocal)
 {
   int arg;
@@ -197,6 +200,7 @@ LJLIB_CF(debug_setlocal)
   lua_pushstring(L, lua_setlocal(L1, &ar, lj_lib_checkint(L, arg+2)));
   return 1;
 }
+#endif
 
 static int debug_getupvalue(lua_State *L, int get)
 {
@@ -219,6 +223,7 @@ LJLIB_CF(debug_getupvalue)
   return debug_getupvalue(L, 1);
 }
 
+#if !LJ_SRB2LIB
 LJLIB_CF(debug_setupvalue)
 {
   lj_lib_checkany(L, 3);
@@ -279,6 +284,7 @@ LJLIB_CF(debug_setuservalue)
   lua_setfenv(L, 1);
   return 1;
 }
+#endif
 #endif
 
 /* ------------------------------------------------------------------------ */
@@ -359,6 +365,7 @@ LJLIB_CF(debug_gethook)
 
 /* ------------------------------------------------------------------------ */
 
+#if !LJ_SRB2LIB
 LJLIB_CF(debug_debug)
 {
   for (;;) {
@@ -376,6 +383,7 @@ LJLIB_CF(debug_debug)
     lua_settop(L, 0);  /* remove eventual returns */
   }
 }
+#endif
 
 /* ------------------------------------------------------------------------ */
 

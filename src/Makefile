@@ -635,7 +635,7 @@ clean:
 	$(REMOVE) *~ *.flc
 	$(REMOVE) $(OBJDIR)/*.o
 ifndef NOBLUAJIT
-	$(REMOVE) $(OBJDIR)/buildvm* $(OBJDIR)/minilua* $(OBJDIR)/lj_vm*
+	$(REMOVE) $(OBJDIR)/buildvm* $(OBJDIR)/minilua* $(OBJDIR)/lj_vm* $(ALL_HDRGEN)
 endif
 
 ifdef MINGW

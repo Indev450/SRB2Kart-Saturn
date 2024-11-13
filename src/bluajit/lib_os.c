@@ -37,6 +37,7 @@
 
 #define LJLIB_MODULE_os
 
+#if !LJ_SRB2LIB
 LJLIB_CF(os_execute)
 {
 #if LJ_NO_SYSTEM
@@ -121,6 +122,7 @@ LJLIB_CF(os_exit)
   exit(status);
   return 0;  /* Unreachable. */
 }
+#endif
 
 LJLIB_CF(os_clock)
 {
@@ -260,6 +262,7 @@ LJLIB_CF(os_difftime)
 
 /* ------------------------------------------------------------------------ */
 
+#if !LJ_SRB2LIB
 LJLIB_CF(os_setlocale)
 {
 #if LJ_TARGET_PSVITA
@@ -279,6 +282,7 @@ LJLIB_CF(os_setlocale)
 #endif
   return 1;
 }
+#endif
 
 /* ------------------------------------------------------------------------ */
 

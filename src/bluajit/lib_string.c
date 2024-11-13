@@ -113,6 +113,7 @@ LJLIB_ASM_(string_upper)  LJLIB_REC(string_op IRCALL_lj_buf_putstr_upper)
 
 /* ------------------------------------------------------------------------ */
 
+#if !LJ_SRB2LIB
 static int writer_buf(lua_State *L, const void *p, size_t size, void *sb)
 {
   lj_buf_putmem((SBuf *)sb, p, (MSize)size);
@@ -146,6 +147,7 @@ LJLIB_CF(string_dump)
   lj_gc_check(L);
   return 1;
 }
+#endif
 
 /* ------------------------------------------------------------------------ */
 
@@ -684,6 +686,10 @@ LUALIB_API int luaopen_string(lua_State *L)
   mt->nomm = (uint8_t)(~(1u<<MM_index));
 #if LJ_HASBUFFER
   lj_lib_prereg(L, LUA_STRLIBNAME ".buffer", luaopen_string_buffer, tabV(L->top-1));
+#endif
+#if LJ_SRB2LIB
+  lua_getfield(L, -1, "gmatch");
+  lua_setfield(L, -2, "gfind"); /* Ugh, can we get rid of this already? */
 #endif
   return 1;
 }

@@ -394,6 +394,10 @@ void emit_lib(BuildCtx *ctx)
 	  ok = LJ_HASFFI;
 	else if (!strcmp(buf, "#if LJ_HASBUFFER"))
 	  ok = LJ_HASBUFFER;
+	else if (!strcmp(buf, "#if !LJ_SRB2LIB"))
+	  ok = !LJ_SRB2LIB;
+	else if (!strcmp(buf, "#if !LJ_SRB2LIB || (LJ_SRB2LIB && LJ_SRB2IO)"))
+	  ok = !LJ_SRB2LIB || (LJ_SRB2LIB && LJ_SRB2IO); /* whacky! */
 	if (!ok) {
 	  int lvl = 1;
 	  while (fgets(buf, sizeof(buf), fp) != NULL) {
