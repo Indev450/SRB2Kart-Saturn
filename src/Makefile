@@ -435,6 +435,7 @@ OBJS+=$(OBJDIR)/discord.o $(OBJDIR)/stun.o
 endif
 
 ifdef NOBLUAJIT
+	OPTS+=-DNOBLUAJIT
 	include blua/Makefile.cfg
 endif
 
