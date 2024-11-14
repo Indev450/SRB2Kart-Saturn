@@ -228,6 +228,8 @@ TValue *lj_meta_arith(lua_State *L, TValue *ra, cTValue *rb, cTValue *rc,
   if ((b = str2num(rb, &tempb)) != NULL &&
       (c = str2num(rc, &tempc)) != NULL) {  /* Try coercion first. */
 #if LJ_INTONLY
+    if ((mm == MM_div || mm == MM_mod) && !intV(c))
+      lj_err_msg(L, mm == MM_div ? LJ_ERR_DIVZERO : LJ_ERR_MODZERO);
     setintV(ra, lj_vm_foldarith_int(intV(b), intV(c), (int)mm-MM_add));
 #else
     setnumV(ra, lj_vm_foldarith(numV(b), numV(c), (int)mm-MM_add));

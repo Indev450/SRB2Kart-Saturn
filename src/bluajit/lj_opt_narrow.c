@@ -555,6 +555,7 @@ TRef lj_opt_narrow_arith(jit_State *J, TRef rb, TRef rc,
   if (!tref_isnum(rb)) rb = emitir(IRTN(IR_CONV), rb, IRCONV_NUM_INT);
   if (!tref_isnum(rc)) rc = emitir(IRTN(IR_CONV), rc, IRCONV_NUM_INT);
 #if LJ_INTONLY
+  if (op == IR_DIV) emitir(IRTG(IR_NE, IRT_NUM), rc, lj_ir_knum_zero(J));
   return emitir(IRTI(IR_CONV), emitir(IRTN(op), rb, rc), IRCONV_INT_NUM);
 #else
   return emitir(IRTN(op), rb, rc);

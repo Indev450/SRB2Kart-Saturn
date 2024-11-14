@@ -37,6 +37,10 @@ ERRDEF(OPBIT,	"perform bitwise operation on")
 ERRDEF(NOINT,	"number has no integer representation")
 ERRDEF(OPCAT,	"concatenate")
 ERRDEF(OPLEN,	"get length of")
+#if LJ_INTONLY
+ERRDEF(DIVZERO,	"division by zero")
+ERRDEF(MODZERO,	"modulo by zero")
+#endif
 
 /* Type checks. */
 ERRDEF(BADSELF,	"calling " LUA_QS " on bad self (%s)")

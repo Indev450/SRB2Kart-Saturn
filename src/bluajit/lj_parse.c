@@ -78,6 +78,7 @@ typedef struct ExpDesc {
 
 #define expr_numtv(e)		check_exp(expr_isnumk((e)), &(e)->u.nval)
 #define expr_numberV(e)		numberVnum(expr_numtv((e)))
+#define expr_intV(e)		intV(expr_numtv((e)))
 
 /* Initialize expression. */
 static LJ_AINLINE void expr_init(ExpDesc *e, ExpKind k, uint32_t info)
@@ -799,14 +800,16 @@ static void bcemit_branch_f(FuncState *fs, ExpDesc *e)
 /* Try constant-folding of arithmetic operators. */
 static int foldarith(BinOpr opr, ExpDesc *e1, ExpDesc *e2)
 {
-  TValue o;
-  lua_Number n;
   if (!expr_isnumk_nojump(e1) || !expr_isnumk_nojump(e2)) return 0;
 #if LJ_INTONLY
-  n = lj_vm_foldarith_int(expr_numberV(e1), expr_numberV(e2), (int)opr-OPR_ADD);
+  /* Don't fold division by zero. */
+  if ((opr == OPR_DIV || opr == OPR_MOD) && !expr_intV(e2)) return 0;
+  setintV(&e1->u.nval,
+          lj_vm_foldarith_int(expr_intV(e1), expr_intV(e2), (int)opr-OPR_ADD));
 #else
+  lua_Number n;
+  TValue o;
   n = lj_vm_foldarith(expr_numberV(e1), expr_numberV(e2), (int)opr-OPR_ADD);
-#endif
   setnumV(&o, n);
   if (tvisnan(&o) || tvismzero(&o)) return 0;  /* Avoid NaN and -0 as consts. */
   if (LJ_DUALNUM) {
@@ -817,6 +820,7 @@ static int foldarith(BinOpr opr, ExpDesc *e1, ExpDesc *e2)
     }
   }
   setnumV(&e1->u.nval, n);
+#endif
   return 1;
 }
 

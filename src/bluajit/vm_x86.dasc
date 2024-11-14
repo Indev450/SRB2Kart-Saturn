@@ -4026,52 +4026,35 @@ static void build_ins(BuildCtx *ctx, BCOp op, int defop)
     ||case 0:
     |   checkint RB, ->vmeta_arith_vn
     |   cmp dword [KBASE+RC*8+4], LJ_TISNUM; jne ->vmeta_arith_vn
+    |   cmp dword [KBASE+RC*8], 0; jz ->vmeta_arith_vn
     |   mov RA, [KBASE+RC*8]
     |   mov RC, [BASE+RB*8]
-    |   mov RB, RA
-    |  // Caveat: BASE is edx.
-    |   mov RA, BASE
-    |   cdq; idiv RB
-    |.if mod
-    |   mov RB, BASE
-    |.else
-    |   mov RB, RC
-    |.endif
     ||  break;
     ||case 1:
     |   checkint RB, ->vmeta_arith_nv
+    |   cmp dword [BASE+RB*8], 0; jz ->vmeta_arith_nv
     |   cmp dword [KBASE+RC*8+4], LJ_TISNUM; jne ->vmeta_arith_nv
     |   mov RC, [KBASE+RC*8]
-    |   mov RB, [BASE+RB*8]
-    |   mov RA, BASE
-    |   cdq; idiv RB
-    |.if mod
-    |   mov RC, BASE
-    |.endif
+    |   mov RA, [BASE+RB*8]
     ||  break;
     ||default:
     |   checkint RB, ->vmeta_arith_vv
     |   checkint RC, ->vmeta_arith_vv
+    |   cmp dword [BASE+RC*8], 0; jz ->vmeta_arith_vv
     |   mov RA, [BASE+RC*8]
     |   mov RC, [BASE+RB*8]
-    |   mov RB, RA
-    |   mov RA, BASE
-    |   cdq; idiv RB
-    |.if mod
-    |   mov RB, BASE
-    |.else
-    |   mov RB, RC
-    |.endif
     ||  break;
     ||}
-    |  mov BASE, RA
+    |  // Caveat: BASE is edx.
+    |  mov RB, BASE
+    |  cdq; idiv RA
+    |.if mod
+    |  mov RC, BASE
+    |.endif
+    |  mov BASE, RB
     |  movzx RA, PC_RA
     |  mov dword [BASE+RA*8+4], LJ_TISNUM
-    ||if (vk == 1) {
-    |   mov dword [BASE+RA*8], RC
-    ||} else {
-    |   mov dword [BASE+RA*8], RB
-    ||}
+    |  mov dword [BASE+RA*8], RC
     |  ins_next
     |.endmacro
     |

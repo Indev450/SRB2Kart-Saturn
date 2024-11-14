@@ -3428,52 +3428,37 @@ static void build_ins(BuildCtx *ctx, BCOp op, int defop)
     ||case 0:
     |   mov TMPR, [KBASE+RC*8]
     |   mov RC, [BASE+RB*8]
-    |   mov RB, TMPR
+    |   checkint TMPR, ->vmeta_arith_vno
     |   checkint RC, ->vmeta_arith_vno
-    |   checkint RB, ->vmeta_arith_vno
-    |  // Caveat: BASE is rdx.
-    |   mov TMPR, BASE
-    |   cdq; idiv RBd
-    |.if mod
-    |   mov RBd, edx
-    |.else
-    |   mov RBd, RCd
-    |.endif
+    |   test TMPRd, TMPRd
+    |   jz ->vmeta_arith_vno
     ||  break;
     ||case 1:
-    |   mov RB, [BASE+RB*8]
+    |   mov TMPR, [BASE+RB*8]
     |   mov RC, [KBASE+RC*8]
-    |   checkint RB, ->vmeta_arith_nvo
+    |   checkint TMPR, ->vmeta_arith_nvo
     |   checkint RC, ->vmeta_arith_nvo
-    |   mov TMPR, BASE
-    |   cdq; idiv RBd
-    |.if mod
-    |   mov RCd, edx
-    |.endif
+    |   test TMPRd, TMPRd
+    |   jz ->vmeta_arith_nvo
     ||  break;
     ||default:
     |   mov TMPR, [BASE+RC*8]
     |   mov RC, [BASE+RB*8]
-    |   mov RB, TMPR
-    |   checkint RB, ->vmeta_arith_vvo
+    |   checkint TMPR, ->vmeta_arith_vvo
     |   checkint RC, ->vmeta_arith_vvo
-    |   mov TMPR, BASE
-    |   cdq; idiv RBd
-    |.if mod
-    |   mov RBd, edx
-    |.else
-    |   mov RBd, RCd
-    |.endif
+    |   test TMPRd, TMPRd
+    |   jz ->vmeta_arith_vvo
     ||  break;
     ||}
-    |   mov BASE, TMPR
-    ||if (vk == 1) {
-    |   setint RC
-    |   mov [BASE+RA*8], RC
-    ||} else {
-    |   setint RB
-    |   mov [BASE+RA*8], RB
-    ||}
+    |  // Caveat: BASE is rdx.
+    |  mov RB, BASE
+    |  cdq; idiv TMPRd
+    |.if mod
+    |  mov RCd, edx
+    |.endif
+    |  mov BASE, RB
+    |  setint RC
+    |  mov [BASE+RA*8], RC
     |  ins_next
     |.endmacro
     |
