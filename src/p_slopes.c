@@ -364,11 +364,11 @@ void P_SpawnSlope_Line(int linenum)
 			// In P_SpawnSlopeLine the origin is the centerpoint of the sourcelinedef
 
 			fslope = line->frontsector->f_slope =
-            P_MakeSlope(&point, &direction, dz, flags);
+			P_MakeSlope(&point, &direction, dz, flags);
 
-            // Set up some shit
-            fslope->extent = extent;
-            fslope->refpos = 1;
+			// Set up some shit
+			fslope->extent = extent;
+			fslope->refpos = 1;
 
 			// Now remember that f_slope IS a vector
 			// fslope->o = origin      3D point 1 of the vector
@@ -425,11 +425,11 @@ void P_SpawnSlope_Line(int linenum)
 			dz = FixedDiv(origin.z - point.z, extent);
 
 			cslope = line->frontsector->c_slope =
-            P_MakeSlope(&point, &direction, dz, flags);
+			P_MakeSlope(&point, &direction, dz, flags);
 
-            // Set up some shit
-            cslope->extent = extent;
-            cslope->refpos = 2;
+			// Set up some shit
+			cslope->extent = extent;
+			cslope->refpos = 2;
 
 			// Sync the linedata of the line that started this slope
 			// TODO: Anything special for control sector based slopes later?
@@ -494,11 +494,11 @@ void P_SpawnSlope_Line(int linenum)
 			dz = FixedDiv(origin.z - point.z, extent);
 
 			fslope = line->backsector->f_slope =
-            P_MakeSlope(&point, &direction, dz, flags);
+			P_MakeSlope(&point, &direction, dz, flags);
 
-            // Set up some shit
-            fslope->extent = extent;
-            fslope->refpos = 3;
+			// Set up some shit
+			fslope->extent = extent;
+			fslope->refpos = 3;
 
 			// Sync the linedata of the line that started this slope
 			// TODO: Anything special for control sector based slopes later?
@@ -531,6 +531,7 @@ void P_SpawnSlope_Line(int linenum)
 
 			P_CalculateSlopeNormal(fslope);
 		}
+
 		if (backceil)
 		{
 			fixed_t highest, lowest;
@@ -540,11 +541,11 @@ void P_SpawnSlope_Line(int linenum)
 			dz = FixedDiv(origin.z - point.z, extent);
 
 			cslope = line->backsector->c_slope =
-            P_MakeSlope(&point, &direction, dz, flags);
+			P_MakeSlope(&point, &direction, dz, flags);
 
-            // Set up some shit
-            cslope->extent = extent;
-            cslope->refpos = 4;
+			// Set up some shit
+			cslope->extent = extent;
+			cslope->refpos = 4;
 
 			// Sync the linedata of the line that started this slope
 			// TODO: Anything special for control sector based slopes later?
@@ -604,7 +605,8 @@ static pslope_t *P_NewVertexSlope(INT16 tag1, INT16 tag2, INT16 tag3, UINT8 flag
 	memset(ret->vertices, 0, 3*sizeof(mapthing_t));
 
 	// And... look for the vertices in question.
-	for (i = 0; i < nummapthings; i++, mt++) {
+	for (i = 0; i < nummapthings; i++, mt++)
+	{
 		if (mt->type != 750) // Haha, I'm hijacking the old Chaos Spawn thingtype for something!
 			continue;
 
@@ -617,7 +619,8 @@ static pslope_t *P_NewVertexSlope(INT16 tag1, INT16 tag2, INT16 tag3, UINT8 flag
 	}
 
 	// Now set heights for each vertex, because they haven't been set yet
-	for (i = 0; i < 3; i++) {
+	for (i = 0; i < 3; i++)
+	{
 		mt = ret->vertices[i];
 		if (!mt) // If a vertex wasn't found, it's game over. There's nothing you can do to recover (except maybe try and kill the slope instead - TODO?)
 			I_Error("P_NewVertexSlope: Slope vertex %s (for linedef tag %d) not found!", sizeu1(i), tag1);
@@ -649,23 +652,23 @@ static pslope_t *P_NewVertexSlope(INT16 tag1, INT16 tag2, INT16 tag3, UINT8 flag
 //
 void P_CopySectorSlope(line_t *line)
 {
-   sector_t *fsec = line->frontsector;
-   int i, special = line->special;
+	sector_t *fsec = line->frontsector;
+	int i, special = line->special;
 
-   // Check for copy linedefs
-   for(i = -1; (i = P_FindSectorFromLineTag(line, i)) >= 0;)
-   {
-      sector_t *srcsec = sectors + i;
+	// Check for copy linedefs
+	for(i = -1; (i = P_FindSectorFromLineTag(line, i)) >= 0;)
+	{
+		sector_t *srcsec = sectors + i;
 
-      if((special - 719) & 1 && !fsec->f_slope && srcsec->f_slope)
-         fsec->f_slope = srcsec->f_slope; //P_CopySlope(srcsec->f_slope);
-      if((special - 719) & 2 && !fsec->c_slope && srcsec->c_slope)
-         fsec->c_slope = srcsec->c_slope; //P_CopySlope(srcsec->c_slope);
-   }
+		if((special - 719) & 1 && !fsec->f_slope && srcsec->f_slope)
+			fsec->f_slope = srcsec->f_slope; //P_CopySlope(srcsec->f_slope);
+		if((special - 719) & 2 && !fsec->c_slope && srcsec->c_slope)
+			fsec->c_slope = srcsec->c_slope; //P_CopySlope(srcsec->c_slope);
+	}
 
-   fsec->hasslope = true;
+	fsec->hasslope = true;
 
-   line->special = 0; // Linedef was use to set slopes, it finished its job, so now make it a normal linedef
+	line->special = 0; // Linedef was use to set slopes, it finished its job, so now make it a normal linedef
 }
 
 //
@@ -789,49 +792,6 @@ void P_ResetDynamicSlopes(void)
 //
 // Various utilities related to slopes
 //
-
-//
-// P_GetZAt
-//
-// Returns the height of the sloped plane at (x, y) as a fixed_t
-//
-fixed_t P_GetZAt(pslope_t *slope, fixed_t x, fixed_t y)
-{
-   fixed_t dist = FixedMul(x - slope->o.x, slope->d.x) +
-                  FixedMul(y - slope->o.y, slope->d.y);
-
-   return slope->o.z + FixedMul(dist, slope->zdelta);
-}
-
-// Returns the height of the sector floor at (x, y)
-fixed_t P_GetSectorFloorZAt(const sector_t *sector, fixed_t x, fixed_t y)
-{
-	return sector->f_slope ? P_GetZAt(sector->f_slope, x, y) : sector->floorheight;
-}
-
-// Returns the height of the sector ceiling at (x, y)
-fixed_t P_GetSectorCeilingZAt(const sector_t *sector, fixed_t x, fixed_t y)
-{
-	return sector->c_slope ? P_GetZAt(sector->c_slope, x, y) : sector->ceilingheight;
-}
-
-// Returns the height of the FOF top at (x, y)
-fixed_t P_GetFFloorTopZAt(const ffloor_t *ffloor, fixed_t x, fixed_t y)
-{
-	return *ffloor->t_slope ? P_GetZAt(*ffloor->t_slope, x, y) : *ffloor->topheight;
-}
-
-// Returns the height of the FOF bottom  at (x, y)
-fixed_t P_GetFFloorBottomZAt(const ffloor_t *ffloor, fixed_t x, fixed_t y)
-{
-	return *ffloor->b_slope ? P_GetZAt(*ffloor->b_slope, x, y) : *ffloor->bottomheight;
-}
-
-// Returns the height of the light list at (x, y)
-fixed_t P_GetLightZAt(const lightlist_t *light, fixed_t x, fixed_t y)
-{
-	return light->slope ? P_GetZAt(light->slope, x, y) : light->height;
-}
 
 //
 // P_QuantizeMomentumToSlope
