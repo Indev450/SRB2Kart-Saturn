@@ -6499,6 +6499,14 @@ void NetUpdate(void)
 	if (realtics <= 0) // nothing new to update
 		return;
 
+	if (realtics > 5)
+	{
+		if (server)
+			realtics = 1;
+		else
+			realtics = 5;
+	}
+
 #ifdef DEDICATEDIDLETIME
 	if (server && dedicated && gamestate == GS_LEVEL)
 	{
@@ -6546,14 +6554,6 @@ void NetUpdate(void)
 		}
 	}
 #endif
-
-	if (realtics > 5)
-	{
-		if (server)
-			realtics = 1;
-		else
-			realtics = 5;
-	}
 
 	gametime = nowtime;
 
@@ -6652,6 +6652,9 @@ void NetUpdate(void)
 	}
 	Net_AckTicker();
 	HandleNodeTimeouts();
+
+	nowtime /= NEWTICRATERATIO;
+
 	if (nowtime > resptime)
 	{
 		resptime = nowtime;
