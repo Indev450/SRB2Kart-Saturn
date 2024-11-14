@@ -1660,7 +1660,7 @@ static void SendNameAndColor(void)
 	WRITESTRINGN(p, cv_playername.zstring, MAXPLAYERNAME);
 	WRITEUINT8(p, (UINT8)cv_playercolor.value);
 	WRITEUINT8(p, (UINT8)cv_skin.value);
-	SendNetXCmd(XD_NAMEANDCOLOR, buf, p - buf);
+	SendNetXCmdForPlayer(0, XD_NAMEANDCOLOR, buf, p - buf);
 }
 
 // splitscreen
@@ -1765,7 +1765,7 @@ static void SendNameAndColor2(void)
 	WRITESTRINGN(p, cv_playername2.zstring, MAXPLAYERNAME);
 	WRITEUINT8(p, (UINT8)cv_playercolor2.value);
 	WRITEUINT8(p, (UINT8)cv_skin2.value);
-	SendNetXCmd2(XD_NAMEANDCOLOR, buf, p - buf);
+	SendNetXCmdForPlayer(1, XD_NAMEANDCOLOR, buf, p - buf);
 }
 
 static void SendNameAndColor3(void)
@@ -1877,7 +1877,7 @@ static void SendNameAndColor3(void)
 	WRITESTRINGN(p, cv_playername3.zstring, MAXPLAYERNAME);
 	WRITEUINT8(p, (UINT8)cv_playercolor3.value);
 	WRITEUINT8(p, (UINT8)cv_skin3.value);
-	SendNetXCmd3(XD_NAMEANDCOLOR, buf, p - buf);
+	SendNetXCmdForPlayer(2, XD_NAMEANDCOLOR, buf, p - buf);
 }
 
 static void SendNameAndColor4(void)
@@ -1981,7 +1981,7 @@ static void SendNameAndColor4(void)
 	WRITESTRINGN(p, cv_playername4.zstring, MAXPLAYERNAME);
 	WRITEUINT8(p, (UINT8)cv_playercolor4.value);
 	WRITEUINT8(p, (UINT8)cv_skin4.value);
-	SendNetXCmd4(XD_NAMEANDCOLOR, buf, p - buf);
+	SendNetXCmdForPlayer(3, XD_NAMEANDCOLOR, buf, p - buf);
 }
 
 static void Got_NameAndColor(UINT8 **cp, INT32 playernum)
@@ -2079,7 +2079,7 @@ void SendWeaponPref(void)
 	buf[0] = 0;
 	if (cv_flipcam[0].value)
 		buf[0] |= 1;
-	SendNetXCmd(XD_WEAPONPREF, buf, 1);
+	SendNetXCmdForPlayer(0, XD_WEAPONPREF, buf, 1);
 }
 
 void SendWeaponPref2(void)
@@ -2089,7 +2089,7 @@ void SendWeaponPref2(void)
 	buf[0] = 0;
 	if (cv_flipcam[1].value)
 		buf[0] |= 1;
-	SendNetXCmd2(XD_WEAPONPREF, buf, 1);
+	SendNetXCmdForPlayer(1, XD_WEAPONPREF, buf, 1);
 }
 
 void SendWeaponPref3(void)
@@ -2099,7 +2099,7 @@ void SendWeaponPref3(void)
 	buf[0] = 0;
 	if (cv_flipcam[2].value)
 		buf[0] |= 1;
-	SendNetXCmd3(XD_WEAPONPREF, buf, 1);
+	SendNetXCmdForPlayer(2, XD_WEAPONPREF, buf, 1);
 }
 
 void SendWeaponPref4(void)
@@ -2109,7 +2109,7 @@ void SendWeaponPref4(void)
 	buf[0] = 0;
 	if (cv_flipcam[3].value)
 		buf[0] |= 1;
-	SendNetXCmd4(XD_WEAPONPREF, buf, 1);
+	SendNetXCmdForPlayer(3, XD_WEAPONPREF, buf, 1);
 }
 
 static void Got_WeaponPref(UINT8 **cp,INT32 playernum)
@@ -3297,7 +3297,7 @@ static void Command_Teamchange_f(void)
 	}
 
 	usvalue = SHORT(NetPacket.value.l|NetPacket.value.b);
-	SendNetXCmd(XD_TEAMCHANGE, &usvalue, sizeof(usvalue));
+	SendNetXCmdForPlayer(0, XD_TEAMCHANGE, &usvalue, sizeof(usvalue));
 }
 
 static void Command_Teamchange2_f(void)
@@ -3364,7 +3364,7 @@ static void Command_Teamchange2_f(void)
 	}
 
 	usvalue = SHORT(NetPacket.value.l|NetPacket.value.b);
-	SendNetXCmd2(XD_TEAMCHANGE, &usvalue, sizeof(usvalue));
+	SendNetXCmdForPlayer(1, XD_TEAMCHANGE, &usvalue, sizeof(usvalue));
 }
 
 static void Command_Teamchange3_f(void)
@@ -3431,7 +3431,7 @@ static void Command_Teamchange3_f(void)
 	}
 
 	usvalue = SHORT(NetPacket.value.l|NetPacket.value.b);
-	SendNetXCmd3(XD_TEAMCHANGE, &usvalue, sizeof(usvalue));
+	SendNetXCmdForPlayer(2, XD_TEAMCHANGE, &usvalue, sizeof(usvalue));
 }
 
 static void Command_Teamchange4_f(void)
@@ -3498,7 +3498,7 @@ static void Command_Teamchange4_f(void)
 	}
 
 	usvalue = SHORT(NetPacket.value.l|NetPacket.value.b);
-	SendNetXCmd4(XD_TEAMCHANGE, &usvalue, sizeof(usvalue));
+	SendNetXCmdForPlayer(3, XD_TEAMCHANGE, &usvalue, sizeof(usvalue));
 }
 
 static void Command_ServerTeamChange_f(void)
