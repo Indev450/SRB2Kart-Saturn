@@ -598,6 +598,12 @@
 #define LJ_HASBUFFER		1
 #endif
 
+#if defined(LUAJIT_DISABLE_BYTECODE)
+#define LJ_HASBC		0
+#else
+#define LJ_HASBC		1
+#endif
+
 #if defined(LUAJIT_SRB2LIB)
 #define LJ_SRB2LIB		1
 #else

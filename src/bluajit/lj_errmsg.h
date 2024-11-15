@@ -155,6 +155,9 @@ ERRDEF(XPSEUDO,	"pseudo-variable out of range or not in assignment")
 /* Bytecode reader errors. */
 ERRDEF(BCFMT,	"cannot load incompatible bytecode")
 ERRDEF(BCBAD,	"cannot load malformed bytecode")
+#if !LJ_HASBC
+ERRDEF(BCDIS,	"bytecode loading is permanently disabled")
+#endif
 
 #if LJ_HASFFI
 /* FFI errors. */
