@@ -3124,45 +3124,87 @@ static void HWR_Subsector(size_t num)
 }
 
 //
+// RenderBSPNode
 // Renders all subsectors below a given node,
 //  traversing subtree recursively.
 // Just call with BSP root.
 
+#define MAX_BSP_DEPTH 112
+
 static void HWR_RenderBSPNode(INT32 bspnum)
 {
-	ps_numbspcalls.value.i++;
+	node_t *bsp;
+	INT32 stack_bsp[MAX_BSP_DEPTH];
+	INT32 stack_side[MAX_BSP_DEPTH];
+	int sp = 0;
 
-	while (!(bspnum & NF_SUBSECTOR))  // Found a subsector?
+	while (true)
 	{
-		const node_t *bsp = &nodes[bspnum];
+		ps_numbspcalls.value.i++;
 
-		// Decide which side the view point is on.
-		const INT32 side = R_PointOnSideRender(viewx, viewy, bsp);
+		// Front sides.
+		while ((short)bspnum >= 0)
+		{
+			if (sp == MAX_BSP_DEPTH)
+				break;
 
-		// Recursively divide front space.
-		if (HWR_PortalCheckBBox(bsp->bbox[side]))
-			HWR_RenderBSPNode(bsp->children[side]);
+			bsp = &nodes[bspnum];
 
-		// Possibly divide back space
-		if (!(HWR_CheckBBox(bsp->bbox[side^1]) && HWR_PortalCheckBBox(bsp->bbox[side^1])))
+			const INT32 side = R_PointOnSideRender(viewx, viewy, bsp);
+
+			stack_bsp[sp] = bspnum;
+			stack_side[sp] = side ^ 1;
+
+			sp++;
+
+			bspnum = bsp->children[side];
+		}
+
+		if (portalclipline && portalcullsector)
+		{
+			// skip all subsectors encountered before the portal
+			// destination's front sector
+			if (portalcullsector != subsectors[bspnum & ~NF_SUBSECTOR].sector)
+				goto skipsubsector;
+			else
+				portalcullsector = NULL;
+		}
+
+		HWR_Subsector(bspnum == -1 ? 0 : bspnum & ~NF_SUBSECTOR);
+
+skipsubsector:
+		if (sp == 0)
+		{
+			// back at root node and not visible. All done!
 			return;
+		}
 
-		bspnum = bsp->children[side^1];
+		// Back sides.
+
+		sp--;
+
+		bsp = &nodes[stack_bsp[sp]];
+
+		// Possibly divide back space.
+		// Walk back up the tree until we find
+		// a node that has a visible backspace.
+		while (!(HWR_CheckBBox(bsp->bbox[stack_side[sp]]) && HWR_PortalCheckBBox(bsp->bbox[stack_side[sp]])))
+		{
+			if (sp == 0)
+			{
+				// back at root node and not visible. All done!
+				return;
+			}
+
+			// Back side next.
+
+			sp--;
+
+			bsp = &nodes[stack_bsp[sp]];
+		}
+
+		bspnum = bsp->children[stack_side[sp]];
 	}
-
-	// PORTAL CULLING
-	if (portalclipline && portalcullsector)
-	{
-		// skip all subsectors encountered before the portal
-		// destination's front sector
-		if (portalcullsector != subsectors[bspnum & ~NF_SUBSECTOR].sector)
-			return;
-		else
-			portalcullsector = NULL;
-	}
-
-	// e6y: support for extended nodes
-	HWR_Subsector(bspnum == -1 ? 0 : bspnum & ~NF_SUBSECTOR);
 }
 
 // ==========================================================================
