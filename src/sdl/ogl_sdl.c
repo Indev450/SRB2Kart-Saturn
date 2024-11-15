@@ -68,10 +68,19 @@ PFNglGetIntegerv pglGetIntegerv;
 PFNglGetString pglGetString;
 #endif
 
-#if defined (__unix__)
 #ifdef USE_FBO_OGL
+#if defined (__unix__)
 static boolean isnvidiagpu = false;
 #endif
+
+boolean UseScreenFBO(void)
+{
+	return ((supportFBO && cv_glframebuffer.value && downsample)
+#if defined (__unix__)
+	|| (supportFBO && isnvidiagpu && xwaylandcrap)
+#endif
+	);
+}
 #endif
 
 /**	\brief SDL video display surface
@@ -202,13 +211,14 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 	pglClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 
 #ifdef USE_FBO_OGL
-	RenderToFramebuffer = ((FrameBufferEnabled && supportFBO && downsample)
-#if defined (__unix__)
-	|| (isnvidiagpu && xwaylandcrap)
-#endif
-	);
 
-	if (RenderToFramebuffer)
+	if (!supportFBO)
+	{
+		if (cv_glframebuffer.value)
+			CV_SetValue(&cv_glframebuffer, 0);
+	}
+
+	if (UseScreenFBO())
 		GLFramebuffer_Enable();
 	else
 		GLFramebuffer_Disable();
@@ -244,20 +254,14 @@ void OglSdlFinishUpdate(boolean waitvbl)
 	HWR_MakeScreenFinalTexture();
 
 #ifdef USE_FBO_OGL
-	RenderToFramebuffer = ((FrameBufferEnabled && supportFBO && downsample)
-#if defined (__unix__)
-	|| (isnvidiagpu && xwaylandcrap)
-#endif
-	);
-
-	if (RenderToFramebuffer)
+	if (UseScreenFBO())
 		GLFramebuffer_Unbind();
 #endif
 	
 	HWR_DrawScreenFinalTexture(sdlw, sdlh);
 
 #ifdef USE_FBO_OGL
-	if (RenderToFramebuffer)
+	if (UseScreenFBO())
 		GLFramebuffer_Enable();
 #endif
 

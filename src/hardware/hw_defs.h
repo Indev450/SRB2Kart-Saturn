@@ -287,9 +287,6 @@ typedef struct FSurfaceInfo FSurfaceInfo;
 
 enum hwdsetspecialstate
 {
-#ifdef USE_FBO_OGL
-	HWD_SET_FRAMEBUFFER,
-#endif
 	HWD_SET_SHADERS,
 
 	HWD_SET_TEXTUREFILTERMODE,

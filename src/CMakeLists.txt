@@ -134,6 +134,7 @@ set(SRB2_CORE_RENDER_SOURCES
 	r_sky.c
 	r_splats.c
 	r_things.c
+	r_portal.c
 
 	r_bsp.h
 	r_data.h
@@ -149,6 +150,7 @@ set(SRB2_CORE_RENDER_SOURCES
 	r_splats.h
 	r_state.h
 	r_things.h
+	r_portal.h
 )
 
 set(SRB2_CORE_GAME_SOURCES
@@ -488,7 +490,7 @@ if(${SRB2_CONFIG_HWRENDER})
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_drv.h
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_glob.h
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_main.h
-		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_portal.c
+		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_portal.h
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_md2.h
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_md2load.h
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_md3load.h

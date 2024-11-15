@@ -779,7 +779,7 @@ static void ST_overlayDrawer(void)
 					if (item1 != NULL && item2 != NULL)
 						snprintf(directortoggle, 32, "%s/%s - Toggle Director", item1, item2);
 					else
-						snprintf(directortoggle, 32, "%s - Toggle Director", item1 != NULL ? item1 : item2 != NULL ? item2 : "Not Bound - Toggle Director");
+						snprintf(directortoggle, 32, "%s - Toggle Director", item1 != NULL ? item1 : item2 != NULL ? item2 : "Not Bound");
 
 					V_DrawString(2, BASEVIDHEIGHT-10, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, directortoggle);
 

@@ -250,11 +250,9 @@ static void CV_screentextures_OnChange(void)
 static void CV_glframebuffer_OnChange(void)
 {
 	ONLY_IF_GL_LOADED
-	if (cv_glframebuffer.value != 0 && cv_glscreentextures.value != 2) // screen FBO needs screen textures
+	if ((cv_glframebuffer.value != 0 && cv_glscreentextures.value != 2) || (!supportFBO && cv_glframebuffer.value != 0)) // screen FBO needs screen textures
 		CV_SetValue(&cv_glframebuffer, 0);
 
-	if (supportFBO)
-		HWD.pfnSetSpecialState(HWD_SET_FRAMEBUFFER, cv_glframebuffer.value);
 	I_DownSample();
 	RefreshOGLSDLSurface();
 	M_UpdateOGLMenu();
@@ -331,7 +329,7 @@ static void HWR_SetShaderState(void)
 
 boolean HWR_ShouldUsePaletteRendering(void)
 {
-	return (cv_glpaletterendering.value && HWR_UseShader());
+	return (cv_glpaletterendering.value && (pLocalPalette != NULL) && HWR_UseShader());
 }
 
 boolean HWR_PalRenderFlashpal(void)
@@ -5410,11 +5408,6 @@ void HWR_Startup(void)
 		HWR_LoadAllCustomShaders();
 
 		HWR_TogglePaletteRendering();
-
-#ifdef USE_FBO_OGL
-		if (supportFBO)
-			HWD.pfnSetSpecialState(HWD_SET_FRAMEBUFFER, cv_glframebuffer.value);
-#endif
 
 		if (msaa)
 			HWD.pfnSetSpecialState(HWD_SET_MSAA, a2c ? 2 : 1);
