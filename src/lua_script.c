@@ -229,131 +229,7 @@ static void print_jit_status(boolean verbose)
 	CONS_Printf("\n");
 	lua_settop(gL, 0);  /* clear stack */
 }
-
-// IO library modifications below. this is all hardcoded in blua/liolib.c
-// hope you're ready for some coping... er... copy and pasting
-
-#define FILELIMIT 1024*1024 // Size limit for reading/writing files
-
-static const char *whitelist[] = { // Allow scripters to write files of these types to SRB2's folder
-	".txt",
-	".sav2",
-	".cfg",
-	".png",
-	".bmp"
-};
-
-static int StartsWith(const char *a, const char *b) // this is wolfs being lazy yet again
-{
-	if(strncmp(a, b, strlen(b)) == 0) return 1;
-	return 0;
-};
-
-static int namechecker (lua_State *L) {
-	const char *filename = luaL_checkstring(L, 1);
-	int pass = 0;
-	size_t i;
-	int length = strlen(filename);
-	char *splitter, *forward, *backward;
-	char *destFilename;
-
-	for (i = 0; i < (sizeof (whitelist) / sizeof(const char *)); i++)
-	{
-		if (!stricmp(&filename[length - strlen(whitelist[i])], whitelist[i]))
-		{
-			pass = 1;
-			break;
-		}
-	}
-	if (strstr(filename, "..") || strchr(filename, ':') || StartsWith(filename, "\\")
-		|| StartsWith(filename, "/") || !pass)
-	{
-		return luaL_error(L,"access denied to %s", filename);
-	}
-
-	destFilename = va("%s"PATHSEP"luafiles"PATHSEP"%s", srb2home, filename);
-
-	// Make directories as needed
-	splitter = destFilename;
-
-	forward = strchr(splitter, '/');
-	backward = strchr(splitter, '\\');
-	while ((splitter = (forward && backward) ? min(forward, backward) : (forward ?: backward)))
-	{
-		*splitter = 0;
-		I_mkdir(destFilename, 0755);
-		*splitter = '/';
-		splitter++;
-
-		forward = strchr(splitter, '/');
-		backward = strchr(splitter, '\\');
-	}
-
-	// replace the filename string
-	lua_pushstring(L, destFilename);
-	lua_replace(L, 1);
-	// now call the real io.open
-	lua_pushvalue(L, lua_upvalueindex(1));
-	lua_insert(L, 1);
-	lua_call(L, lua_gettop(L)-1, LUA_MULTRET);
-	return lua_gettop(L);
-}
-
-static int sizechecker (lua_State *L) {
-	boolean error = true;
-
-	FILE *fp = *(FILE **)luaL_checkudata(L, 1, LUA_FILEHANDLE);
-	if (fp == NULL) goto call;
-
-	int top = lua_gettop(L);
-	size_t size = ftell(fp);
-	for (int i = 2; i <= top; i++) {
-		size_t len;
-		const char *p = lua_tolstring(L, i, &len);
-		if (!p) goto call;
-		if ((size += len) > FILELIMIT) {
-			// oops! too many bytes!
-			lua_settop(L, i-1);
-			goto call;
-		}
-	}
-
-	error = false; // you're good
-
-call:
-	lua_pushvalue(L, lua_upvalueindex(1));
-	lua_insert(L, 1);
-	lua_call(L, lua_gettop(L)-1, LUA_MULTRET);
-
-	if (error)
-		return luaL_error(L,"write limit bypassed in file. Changes have been discarded.");
-	return lua_gettop(L);
-}
-
-static void jit_library(lua_State *L) {
-#define REPLACE(name, func) \
-	lua_pushliteral(L, name); \
-	lua_rawget(L, -2); \
-	lua_pushcclosure(L, &func, 1); \
-	lua_pushliteral(L, name); \
-	lua_pushvalue(L, -2); \
-	lua_rawset(L, -4); \
-	lua_pop(L, 1);
-
-	// replace io.open
-	lua_getglobal(L, "io");
-	REPLACE("open", namechecker)
-	lua_pop(L, 1);
-
-	// replace file:write
-	luaL_getmetatable(L, LUA_FILEHANDLE);
-	REPLACE("write", sizechecker)
-	lua_pop(L, 1);
-
-#undef REPLACE
-}
-
-#endif // ifndef NOBLUAJIT
+#endif
 
 // Clear and create a new Lua state, laddo!
 // There's SCRIPTIN to be had!
@@ -400,7 +276,6 @@ void LUA_ClearState(void)
 
 #ifndef NOBLUAJIT
 	print_jit_status(true);
-	jit_library(L);
 #endif
 }
 
