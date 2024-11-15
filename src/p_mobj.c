@@ -10568,7 +10568,8 @@ void P_SpawnPlayer(INT32 playernum)
 	}
 
 	// spawn as spectator determination
-	if (multiplayer && demo.playback); // Don't mess with spectator values since the demo setup handles them already.
+	if (multiplayer && demo.playback)
+		; // Don't mess with spectator values since the demo setup handles them already.
 	else if (!G_GametypeHasSpectators())
 		p->spectator = false;
 	else if (netgame && p->jointime <= 1 && pcount)
@@ -10635,15 +10636,8 @@ void P_SpawnPlayer(INT32 playernum)
 	// (usefulness: when body mobj is detached from player (who respawns),
 	// the dead body mobj retains the skin through the 'spritedef' override).
 	mobj->skin = &skins[p->skin];
-	if (p->localskin > 0)
-	{
-		if (p->skinlocal)
-			mobj->localskin = &localskins[p->localskin - 1];
-		else
-			mobj->localskin = &     skins[p->localskin - 1];
-	}
-	else
-		mobj->localskin = 0;
+
+	mobj->localskin = ((p->localskin > 0) ? (p->skinlocal ? &localskins[p->localskin - 1] : &skins[p->localskin - 1]) : 0);
 	mobj->skinlocal = p->skinlocal;
 
 	mobj->health = p->health;
