@@ -217,7 +217,7 @@ void R_ResetViewInterpolation(UINT8 p)
 {
 	// Wait an extra tic if the interpolation state hasn't
 	// updated yet.
-	int t = last_view_update == I_GetTime() ? 1 : 2;
+	int t = ((last_view_update == I_GetTime()) ? 1 : 2);
 
 	if (p == 0)
 	{
