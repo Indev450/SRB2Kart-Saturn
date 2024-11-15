@@ -3094,13 +3094,11 @@ static void HWR_Subsector(size_t num)
 
 static void HWR_RenderBSPNode(INT32 bspnum)
 {
-	const node_t *bsp;
-	INT32 side;
 	ps_numbspcalls.value.i++;
 
 	while (!(bspnum & NF_SUBSECTOR))  // Found a subsector?
 	{
-		bsp = &nodes[bspnum];
+		const node_t *bsp = &nodes[bspnum];
 
 		// Decide which side the view point is on.
 		side = R_PointOnSide(viewx, viewy, bsp);
