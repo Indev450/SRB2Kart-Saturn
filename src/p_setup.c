@@ -460,7 +460,11 @@ FUNCINLINE static ATTRINLINE void P_LoadRawVertexes(UINT8 *data)
   * \param seg Seg to compute length for.
   * \return Length in fracunits.
   */
+#if defined (WALLSPLATS) || defined (FLOORSPLATS)
 fixed_t P_SegLength(seg_t *seg)
+#else
+static inline fixed_t P_SegLength(seg_t *seg)
+#endif
 {
 	INT64 dx = (seg->v2->x - seg->v1->x)>>1;
 	INT64 dy = (seg->v2->y - seg->v1->y)>>1;

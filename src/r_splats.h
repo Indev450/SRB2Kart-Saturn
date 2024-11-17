@@ -59,9 +59,6 @@ typedef struct floorsplat_s
 	struct floorsplat_s *nextvis;
 } floorsplat_t;
 
-// p_setup.c
-fixed_t P_SegLength(seg_t *seg);
-
 // call at P_SetupLevel()
 void R_ClearLevelSplats(void);
 
