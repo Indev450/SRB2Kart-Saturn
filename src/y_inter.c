@@ -463,14 +463,12 @@ void Y_IntermissionDrawer(void)
 
 		for (i = 0; i < data.match.numplayers; i++)
 		{
-			boolean dojitter = data.match.jitter[data.match.num[i]];
-			data.match.jitter[data.match.num[i]] = 0;
-
 			if (data.match.num[i] != MAXPLAYERS && playeringame[data.match.num[i]] && !players[data.match.num[i]].spectator)
 			{
 				char strtime[MAXPLAYERNAME+1];
 
-				if (dojitter)
+				// Apply the jitter offset (later reversed)
+				if (data.match.jitter[data.match.num[i]] > 0)
 					y--;
 
 				V_DrawCenteredString(x+6, y, 0, va("%d", data.match.pos[i]));
@@ -559,7 +557,7 @@ void Y_IntermissionDrawer(void)
 					}
 				}
 
-				if (dojitter)
+				if (data.match.jitter[data.match.num[i]] > 0)
 					y++;
 			}
 			else
@@ -666,8 +664,16 @@ void Y_Ticker(void)
 		return;
 	}
 
-	if (intertic < TICRATE || intertic & 1 || endtic != -1)
+	if (intertic < TICRATE || endtic != -1)
+	{
 		return;
+	}
+
+	if (data.match.rankingsmode && intertic & 1)
+	{
+		memset(data.match.jitter, 0, sizeof (data.match.jitter));
+		return;
+	}
 
 	if (intertype == int_race || intertype == int_match)
 	{
