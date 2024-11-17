@@ -4275,13 +4275,19 @@ void SV_ResetServer(void)
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		LUA_InvalidatePlayer(&players[i]);
-		playeringame[i] = false;
-		playernode[i] = UINT8_MAX;
 		sprintf(player_names[i], "Player %d", i + 1);
-		adminplayers[i] = -1; // Populate the entire adminplayers array with -1.
 	}
 
+	memset(playeringame, false, sizeof playeringame);
+	memset(playernode, UINT8_MAX, sizeof playernode);
+
+	ClearAdminPlayers(); // Populate the entire adminplayers array with -1.
+
 	memset(player_name_changes, 0, sizeof player_name_changes);
+
+	pingmeasurecount = 1;
+	memset(realpingtable, 0, sizeof realpingtable);
+	memset(playerpingtable, 0, sizeof playerpingtable);
 
 	mynode = 0;
 	cl_packetmissed = false;
@@ -4551,7 +4557,9 @@ static boolean SV_AddWaitingPlayers(void)
 			buf[0] = (UINT8)node;
 			buf[1] = newplayernum;
 			if (playerpernode[node] < 1)
+			{
 				nodetoplayer[node] = newplayernum;
+			}
 			else if (playerpernode[node] < 2)
 			{
 				nodetoplayer2[node] = newplayernum;
