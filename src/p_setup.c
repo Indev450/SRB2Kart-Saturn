@@ -322,13 +322,17 @@ static void P_ClearSingleMapHeaderInfo(INT16 i)
 	// SRB2Kart
 	//mapheaderinfo[num]->automap = false;
 	mapheaderinfo[num]->mobj_scale = FRACUNIT;
-	mapheaderinfo[num]->light_contrast = M_RandomRange(0, 58);
-	mapheaderinfo[num]->sprite_backlight = 0;
-	mapheaderinfo[num]->use_light_angle = true;
-	mapheaderinfo[num]->light_angle = M_RandomRange(-382, 382);
 	// an even further impossibility, delfile custom opts support
 	mapheaderinfo[num]->customopts = NULL;
 	mapheaderinfo[num]->numCustomOptions = 0;
+}
+
+static void P_ClearDirectionalLightMapHeaderInfo(INT16 i) // lol dont always reset this on every map load
+{
+	mapheaderinfo[i]->light_contrast = M_RandomRange(0, 58);
+	mapheaderinfo[i]->sprite_backlight = 0;
+	mapheaderinfo[i]->use_light_angle = true;
+	mapheaderinfo[i]->light_angle = M_RandomRange(-382, 382);
 }
 
 /** Allocates a new map-header structure.
@@ -341,8 +345,9 @@ void P_AllocMapHeader(INT16 i)
 	{
 		mapheaderinfo[i] = Z_Malloc(sizeof(mapheader_t), PU_STATIC, NULL);
 		mapheaderinfo[i]->grades = NULL;
-		P_ClearSingleMapHeaderInfo(i + 1);
+		P_ClearDirectionalLightMapHeaderInfo(i);
 	}
+	P_ClearSingleMapHeaderInfo(i + 1);
 }
 
 // Loads the vertexes for a level.
