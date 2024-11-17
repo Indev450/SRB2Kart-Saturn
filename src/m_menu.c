@@ -7069,11 +7069,11 @@ static void DrawReplayHutReplayInfo(void)
 	switch (demolist[dir_on[menudepthleft]].type)
 	{
 	case MD_NOTLOADED:
-		V_DrawCenteredString(160, 40, V_SNAPTOTOP, "Loading replay information...");
+		V_DrawCenteredString(160, 40, V_SNAPTOTOP|MENUCAPS, "Loading replay information...");
 		break;
 
 	case MD_INVALID:
-		V_DrawCenteredString(160, 40, V_SNAPTOTOP|warningflags, "This replay cannot be played.");
+		V_DrawCenteredString(160, 40, V_SNAPTOTOP|warningflags|MENUCAPS, "This replay cannot be played.");
 		break;
 
 	case MD_SUBDIR:
@@ -7115,7 +7115,7 @@ static void DrawReplayHutReplayInfo(void)
 		if (mapheaderinfo[demolist[dir_on[menudepthleft]].map-1])
 		{
 			char *title = G_BuildMapTitle(demolist[dir_on[menudepthleft]].map);
-			V_DrawString(x, y, V_SNAPTOTOP, title);
+			V_DrawString(x, y, V_SNAPTOTOP|MENUCAPS, title);
 			Z_Free(title);
 		}
 		else
@@ -7132,26 +7132,24 @@ static void DrawReplayHutReplayInfo(void)
 		{
 			// No standings were loaded!
 			V_DrawString(x, y+39, V_SNAPTOTOP|V_ALLOWLOWERCASE|V_TRANSLUCENT, "No standings available.");
-
-
 			break;
 		}
 
-		V_DrawThinString(x, y+29, V_SNAPTOTOP|highlightflags, "WINNER");
+		V_DrawThinString(x, y+29, V_SNAPTOTOP|highlightflags|MENUCAPS, "Winner");
 		V_DrawString(x+38, y+30, V_SNAPTOTOP|V_ALLOWLOWERCASE, demolist[dir_on[menudepthleft]].standings[0].name);
 
 		if (demolist[dir_on[menudepthleft]].gametype == GT_RACE)
 		{
-			V_DrawThinString(x, y+39, V_SNAPTOTOP|highlightflags, "TIME");
+			V_DrawThinString(x, y+39, V_SNAPTOTOP|highlightflags|MENUCAPS, "Time");
 		}
 		else
 		{
-			V_DrawThinString(x, y+39, V_SNAPTOTOP|highlightflags, "SCORE");
+			V_DrawThinString(x, y+39, V_SNAPTOTOP|highlightflags|MENUCAPS, "Score");
 		}
 
 		if (demolist[dir_on[menudepthleft]].standings[0].timeorscore == (UINT32_MAX-1))
 		{
-			V_DrawThinString(x+32, y+40-1, V_SNAPTOTOP, "NO CONTEST");
+			V_DrawThinString(x+32, y+40-1, V_SNAPTOTOP|MENUCAPS, "No Contest");
 		}
 		else if (demolist[dir_on[menudepthleft]].gametype == GT_RACE)
 		{
@@ -8921,7 +8919,7 @@ void M_DrawTimeAttackMenu(void)
 		if (i == itemOn)
 			cursory = y;
 
-		V_DrawString(x, y, (dispstatus == IT_WHITESTRING) ? highlightflags : 0 , currentMenu->menuitems[i].text);
+		V_DrawString(x, y, ((dispstatus == IT_WHITESTRING) ? highlightflags : 0)|MENUCAPS, currentMenu->menuitems[i].text);
 
 		// Cvar specific handling
 		if ((currentMenu->menuitems[i].status & IT_TYPE) == IT_CVAR)
@@ -8946,7 +8944,7 @@ void M_DrawTimeAttackMenu(void)
 					soffset = 0;
 
 				// Should see nothing but strings
-				V_DrawString(BASEVIDWIDTH - x - soffset - strw, y, highlightflags, str);
+				V_DrawString(BASEVIDWIDTH - x - soffset - strw, y, highlightflags|MENUCAPS, str);
 
 				if (i == itemOn)
 				{
@@ -8976,7 +8974,7 @@ void M_DrawTimeAttackMenu(void)
 
 	// DRAW THE SKULL CURSOR
 	V_DrawScaledPatch(x - 24, cursory, 0, W_CachePatchName("M_CURSOR", PU_CACHE));
-	V_DrawString(x, cursory, highlightflags, currentMenu->menuitems[itemOn].text);
+	V_DrawString(x, cursory, highlightflags|MENUCAPS, currentMenu->menuitems[itemOn].text);
 
 	// Level record list
 	if (cv_nextmap.value)
@@ -8991,10 +8989,10 @@ void M_DrawTimeAttackMenu(void)
 
 		V_DrawFill((BASEVIDWIDTH - dupadjust)>>1, 78, dupadjust, 36, 239);
 
-		V_DrawRightAlignedString(149, 80, highlightflags, "BEST LAP:");
+		V_DrawRightAlignedString(149, 80, highlightflags|MENUCAPS, "Best Lap:");
 		K_drawKartTimestamp(lap, 19, 86, 0, 2);
 
-		V_DrawRightAlignedString(292, 80, highlightflags, "BEST TIME:");
+		V_DrawRightAlignedString(292, 80, highlightflags|MENUCAPS, "Best Time:");
 		K_drawKartTimestamp(time, 162, 86, cv_nextmap.value, 1);
 	}
 
@@ -9006,7 +9004,7 @@ void M_DrawTimeAttackMenu(void)
 		for (i = 0; i < 4; ++i)
 		{
 			y = currentMenu->y+SP_TimeAttackMenu[i].alphaKey;
-			V_DrawString(x, y, V_TRANSLUCENT, SP_TimeAttackMenu[i].text);
+			V_DrawString(x, y, V_TRANSLUCENT|MENUCAPS, SP_TimeAttackMenu[i].text);
 			ncv = (consvar_t *)SP_TimeAttackMenu[i].itemaction;
 			if (SP_TimeAttackMenu[i].status & IT_CV_STRING)
 			{
@@ -9023,7 +9021,7 @@ void M_DrawTimeAttackMenu(void)
 					soffset = 0;
 
 				// Should see nothing but strings
-				V_DrawString(BASEVIDWIDTH - x - soffset - strw, y, highlightflags|V_TRANSLUCENT, str);
+				V_DrawString(BASEVIDWIDTH - x - soffset - strw, y, highlightflags|V_TRANSLUCENT|MENUCAPS, str);
 			}
 		}
 	}
@@ -10053,10 +10051,10 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 		len = strlen(addonname);
 #define charsonside 14
 		if (len > charlimit)
-			V_DrawThinString(x+w+5, y+i-8, V_TRANSLUCENT, va("%.*s...%s", charsonside, addonname, addonname+((len-charlimit) + charsonside))); // variable reuse...
+			V_DrawThinString(x+w+5, y+i-8, V_TRANSLUCENT|MENUCAPS, va("%.*s...%s", charsonside, addonname, addonname+((len-charlimit) + charsonside))); // variable reuse...
 #undef charsonside
 		else
-			V_DrawThinString(x+w+5, y+i-8, V_TRANSLUCENT, addonname); // variable reuse...
+			V_DrawThinString(x+w+5, y+i-8, V_TRANSLUCENT|MENUCAPS, addonname); // variable reuse...
 	}
 
 	if (!cv_kartencore.value || gamestate == GS_TIMEATTACK || cv_newgametype.value != GT_RACE)
