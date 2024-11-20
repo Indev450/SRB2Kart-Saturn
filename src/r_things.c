@@ -1238,7 +1238,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	tx = -(gyt + gxt);
 
 	// too far off the side?
-	if (!papersprite && abs(tx) > tz<<2) // papersprite clipping is handled later
+	if (!papersprite && abs(tx) > (INT64)tz<<2) // papersprite clipping is handled later
 		return;
 
 	// aspect ratio stuff
