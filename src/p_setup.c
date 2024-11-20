@@ -1508,15 +1508,22 @@ static void P_CreateBlockMap(void)
 	// First find limits of map
 	for (i = 0; i < numvertexes; i++)
 	{
-		if (vertexes[i].x>>FRACBITS < minx)
-			minx = vertexes[i].x>>FRACBITS;
-		else if (vertexes[i].x>>FRACBITS > maxx)
-			maxx = vertexes[i].x>>FRACBITS;
-		if (vertexes[i].y>>FRACBITS < miny)
-			miny = vertexes[i].y>>FRACBITS;
-		else if (vertexes[i].y>>FRACBITS > maxy)
-			maxy = vertexes[i].y>>FRACBITS;
+		fixed_t t;
+
+		if ((t = vertexes[i].x) < minx)
+			minx = t;
+		else if (t > maxx)
+			maxx = t;
+		if ((t = vertexes[i].y) < miny)
+			miny = t;
+		else if (t > maxy)
+			maxy = t;
 	}
+
+	minx >>= FRACBITS;
+	maxx >>= FRACBITS;
+	miny >>= FRACBITS;
+	maxy >>= FRACBITS;
 
 	// Save blockmap parameters
 	bmaporgx = minx << FRACBITS;
