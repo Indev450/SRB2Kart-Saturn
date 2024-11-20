@@ -3455,6 +3455,53 @@ static void HWR_RotateSpritePolyToAim(gl_vissprite_t *spr, FOutVector *wallVerts
 	}
 }
 
+static void HWR_ApplyDispoffset(gl_vissprite_t *spr, FOutVector *wallVerts, const boolean papersprite)
+{
+	// dont push papersprites near the cam
+	if (papersprite && !spr->dispoffset)
+	{
+		HWR_RotateSpritePolyToAim(spr, wallVerts, false);
+		return;
+	}
+
+	// yes shadows need this crap applied since they dont work well enough with just the shader
+	if ((HWR_UseShader() && spr->mobj->type == MT_SHADOW) || !HWR_UseShader())
+	{
+		if (!papersprite) // dont push papersprites near the cam
+		{
+			// Let dispoffset work first since this adjust each vertex
+			HWR_RotateSpritePolyToAim(spr, wallVerts, false);
+
+			float sprdist = sqrtf((spr->x1 - gl_viewx)*(spr->x1 - gl_viewx) + (spr->z1 - gl_viewy)*(spr->z1 - gl_viewy) + (spr->gzt - gl_viewz)*(spr->gzt - gl_viewz));
+			float distfact = ((2.0f*spr->dispoffset) + 20.0f) / sprdist;
+
+			for (size_t i = 0; i < 4; i++)
+			{
+				wallVerts[i].x += (gl_viewx - wallVerts[i].x)*distfact;
+				wallVerts[i].z += (gl_viewy - wallVerts[i].z)*distfact;
+				wallVerts[i].y += (gl_viewz - wallVerts[i].y)*distfact;
+			}
+		}
+		else // unless they have a dispoffset
+		{
+			if (spr->dispoffset)
+			{
+				// if it has a dispoffset, push it a little towards the camera
+				float co = -gl_viewcos*(0.05f*spr->dispoffset);
+				float si = -gl_viewsin*(0.05f*spr->dispoffset);
+				wallVerts[0].z = wallVerts[3].z = wallVerts[0].z+si;
+				wallVerts[1].z = wallVerts[2].z = wallVerts[1].z+si;
+				wallVerts[0].x = wallVerts[3].x = wallVerts[0].x+co;
+				wallVerts[1].x = wallVerts[2].x = wallVerts[1].x+co;
+			}
+
+			// Let dispoffset work first since this adjust each vertex
+			HWR_RotateSpritePolyToAim(spr, wallVerts, false);
+		}
+
+	}
+}
+
 static void HWR_SplitSprite(gl_vissprite_t *spr)
 {
 	FOutVector wallVerts[4];
@@ -3539,14 +3586,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr)
 	HWR_RotateSpritePolyToAim(spr, baseWallVerts, false);
 
 	// push it toward the camera to mitigate floor-clipping sprites
-	float sprdist = sqrtf((spr->x1 - gl_viewx)*(spr->x1 - gl_viewx) + (spr->z1 - gl_viewy)*(spr->z1 - gl_viewy) + (spr->gzt - gl_viewz)*(spr->gzt - gl_viewz));
-	float distfact = ((2.0f*spr->dispoffset) + 20.0f) / sprdist;
-	for (i = 0; i < 4; i++)
-	{
-		baseWallVerts[i].x += (gl_viewx - baseWallVerts[i].x)*distfact;
-		baseWallVerts[i].z += (gl_viewy - baseWallVerts[i].z)*distfact;
-		baseWallVerts[i].y += (gl_viewz - baseWallVerts[i].y)*distfact;
-	}
+	HWR_ApplyDispoffset(spr, baseWallVerts, papersprite);
 
 	realtop = top = baseWallVerts[3].y;
 	realbot = bot = baseWallVerts[0].y;
@@ -3586,7 +3626,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr)
 
 	if (HWR_UseShader())
 	{
-		shader = SHADER_SPRITE;
+		shader = (papersprite || spr->mobj->type == MT_SHADOW) ? SHADER_SPRITE : SHADER_SPRITECLIPHACK;
 		blend |= PF_ColorMapped;
 	}
 
@@ -3813,15 +3853,7 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 	HWR_RotateSpritePolyToAim(spr, wallVerts, false);
 
 	// push it toward the camera to mitigate floor-clipping sprites
-	float sprdist = sqrtf((spr->x1 - gl_viewx)*(spr->x1 - gl_viewx) + (spr->z1 - gl_viewy)*(spr->z1 - gl_viewy) + (spr->gzt - gl_viewz)*(spr->gzt - gl_viewz));
-	float distfact = ((2.0f*spr->dispoffset) + 20.0f) / sprdist;
-	size_t i;
-	for (i = 0; i < 4; i++)
-	{
-		wallVerts[i].x += (gl_viewx - wallVerts[i].x)*distfact;
-		wallVerts[i].z += (gl_viewy - wallVerts[i].z)*distfact;
-		wallVerts[i].y += (gl_viewz - wallVerts[i].y)*distfact;
-	}
+	HWR_ApplyDispoffset(spr, wallVerts, papersprite);
 
 	// This needs to be AFTER the shadows so that the regular sprites aren't drawn completely black.
 	// sprite lighting by modulating the RGB components
@@ -3861,7 +3893,7 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 
 	if (HWR_UseShader())
 	{
-		shader = SHADER_SPRITE;
+		shader = (papersprite || spr->mobj->type == MT_SHADOW) ? SHADER_SPRITE : SHADER_SPRITECLIPHACK;
 		blend |= PF_ColorMapped;
 	}
 
