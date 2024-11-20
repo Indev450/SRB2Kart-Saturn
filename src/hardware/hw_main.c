@@ -3458,30 +3458,26 @@ static void HWR_RotateSpritePolyToAim(gl_vissprite_t *spr, FOutVector *wallVerts
 static inline void HWR_ApplyDispoffset(gl_vissprite_t *spr, FOutVector *wallVerts, const boolean papersprite)
 {
 	// dont push papersprites near the cam unless they have a dispoffset
-	if (papersprite && spr->dispoffset)
+	if (papersprite || HWR_UseShader())
 	{
-		float co = -gl_viewcos*(0.05f*spr->dispoffset);
-		float si = -gl_viewsin*(0.05f*spr->dispoffset);
-		wallVerts[0].z = wallVerts[3].z = wallVerts[0].z+si;
-		wallVerts[1].z = wallVerts[2].z = wallVerts[1].z+si;
-		wallVerts[0].x = wallVerts[3].x = wallVerts[0].x+co;
-		wallVerts[1].x = wallVerts[2].x = wallVerts[1].x+co;
+		// if it has a dispoffset, push it a little towards the camera
+		if (spr->dispoffset)
+		{
+			float co = -gl_viewcos*(0.05f*spr->dispoffset);
+			float si = -gl_viewsin*(0.05f*spr->dispoffset);
+			wallVerts[0].z = wallVerts[3].z = wallVerts[0].z+si;
+			wallVerts[1].z = wallVerts[2].z = wallVerts[1].z+si;
+			wallVerts[0].x = wallVerts[3].x = wallVerts[0].x+co;
+			wallVerts[1].x = wallVerts[2].x = wallVerts[1].x+co;
+		}
 
 		HWR_RotateSpritePolyToAim(spr, wallVerts, false);
 		return;
 	}
 
-	// Let dispoffset work first since this adjust each vertex
-	HWR_RotateSpritePolyToAim(spr, wallVerts, false);
-
-	// we do a shader based approach so can just ignore stuff
-	if (HWR_UseShader() || papersprite)
-		return;
-
 	float sprdist = sqrtf((spr->x1 - gl_viewx)*(spr->x1 - gl_viewx) + (spr->z1 - gl_viewy)*(spr->z1 - gl_viewy) + (spr->gzt - gl_viewz)*(spr->gzt - gl_viewz));
 	float distfact = ((2.0f*spr->dispoffset) + 20.0f) / sprdist;
 
-	#pragma omp simd
 	for (size_t i = 0; i < 4; i++)
 	{
 		wallVerts[i].x += (gl_viewx - wallVerts[i].x)*distfact;
