@@ -3388,9 +3388,9 @@ static void HWR_DrawSpriteShadow(gl_vissprite_t *spr, GLPatch_t *gpatch)
 }
 
 // This is expecting a pointer to an array containing 4 wallVerts for a sprite
-static void HWR_RotateSpritePolyToAim(gl_vissprite_t *spr, FOutVector *wallVerts, const boolean precip)
+static void HWR_RotateSpritePolyToAim(gl_vissprite_t *spr, FOutVector *wallVerts, const boolean precip, const boolean papersprite)
 {
-	if (cv_glspritebillboarding.value && spr && spr->mobj && !(spr->mobj->frame & FF_PAPERSPRITE) && wallVerts)
+	if (cv_glspritebillboarding.value && spr && spr->mobj && !papersprite && wallVerts)
 	{
 		// uncapped/interpolation
 		interpmobjstate_t interp = {0};
@@ -3471,9 +3471,11 @@ static inline void HWR_ApplyDispoffset(gl_vissprite_t *spr, FOutVector *wallVert
 			wallVerts[1].x = wallVerts[2].x = wallVerts[1].x+co;
 		}
 
-		HWR_RotateSpritePolyToAim(spr, wallVerts, false);
+		HWR_RotateSpritePolyToAim(spr, wallVerts, false, papersprite);
 		return;
 	}
+
+	HWR_RotateSpritePolyToAim(spr, wallVerts, false, papersprite);
 
 	float sprdist = sqrtf((spr->x1 - gl_viewx)*(spr->x1 - gl_viewx) + (spr->z1 - gl_viewy)*(spr->z1 - gl_viewy) + (spr->gzt - gl_viewz)*(spr->gzt - gl_viewz));
 	float distfact = ((2.0f*spr->dispoffset) + 20.0f) / sprdist;
