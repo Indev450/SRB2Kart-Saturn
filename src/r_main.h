@@ -102,9 +102,20 @@ fixed_t R_ScaleFromGlobalAngle(angle_t visangle);
 subsector_t *R_PointInSubsector(fixed_t x, fixed_t y);
 subsector_t *R_IsPointInSubsector(fixed_t x, fixed_t y);
 
+// uses R_PointOnSideFast
+// SHOULD NOT BE USED FOR ANYTHING GAMEPLAY RELATED!!
+FUNCINLINE static ATTRINLINE subsector_t *R_PointInSubsectorFast(fixed_t x, fixed_t y)
+{
+	size_t nodenum = numnodes-1;
+
+	while (!(nodenum & NF_SUBSECTOR))
+		nodenum = nodes[nodenum].children[R_PointOnSideFast(x, y, nodes+nodenum)];
+
+	return &subsectors[nodenum & ~NF_SUBSECTOR];
+}
+
 #define R_PointToDist(x, y) R_PointToDist2(viewx, viewy, x, y)
 #define R_PointToDist2(px2, py2, px1, py1) FixedHypot((px1) - (px2), (py1) - (py2))
-
 
 boolean R_DoCulling(line_t *cullheight, line_t *viewcullheight, fixed_t vz, fixed_t bottomh, fixed_t toph);
 void R_GetRenderBlockMapDimensions(fixed_t drawdist, INT32 *xl, INT32 *xh, INT32 *yl, INT32 *yh);

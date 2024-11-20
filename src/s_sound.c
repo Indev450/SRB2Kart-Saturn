@@ -1046,7 +1046,7 @@ boolean S_AdjustSoundParams(const mobj_t *listener, const mobj_t *source, INT32 
 		INT64 x, y, yl, yh, xl, xh;
 		fixed_t newdist;
 
-		if (R_PointInSubsector(listensource.x, listensource.y)->sector->ceilingpic == skyflatnum)
+		if (R_PointInSubsectorFast(listensource.x, listensource.y)->sector->ceilingpic == skyflatnum)
 			approx_dist = 0;
 		else
 		{
@@ -1059,7 +1059,7 @@ boolean S_AdjustSoundParams(const mobj_t *listener, const mobj_t *source, INT32 
 			for (y = yl; y <= yh; y += FRACUNIT*64)
 				for (x = xl; x <= xh; x += FRACUNIT*64)
 				{
-					if (R_PointInSubsector(x, y)->sector->ceilingpic == skyflatnum)
+					if (R_PointInSubsectorFast(x, y)->sector->ceilingpic == skyflatnum)
 					{
 						// Found the outdoors!
 						newdist = S_CalculateSoundDistance(listensource.x, listensource.y, 0, x, y, 0);

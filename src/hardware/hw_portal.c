@@ -132,7 +132,7 @@ void HWR_PortalFrame(gl_portal_t* portal)
 	{
 		portalclipline = NULL;
 		portalcullsector = NULL;
-		viewsector = R_PointInSubsector(viewx, viewy)->sector;
+		viewsector = R_PointInSubsectorFast(viewx, viewy)->sector;
 	}
 }
 
