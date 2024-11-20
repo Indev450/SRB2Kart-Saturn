@@ -1076,7 +1076,8 @@ subsector_t *R_IsPointInSubsector(fixed_t x, fixed_t y)
 	while (!(nodenum & NF_SUBSECTOR))
 	{
 		node = &nodes[nodenum];
-		side = R_PointOnSide(x, y, node);
+		//side = R_PointOnSide(x, y, node);
+		side = R_PointOnSideFast(x, y, node); // this is fine since R_IsPointInSubsector is only used for precip spawn unless you disable noclipcam lol
 		nodenum = node->children[side];
 	}
 
