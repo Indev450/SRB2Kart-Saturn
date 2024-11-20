@@ -3466,69 +3466,71 @@ static void HWR_DrawSpriteShadow(gl_vissprite_t *spr, GLPatch_t *gpatch)
 // This is expecting a pointer to an array containing 4 wallVerts for a sprite
 static void HWR_RotateSpritePolyToAim(gl_vissprite_t *spr, FOutVector *wallVerts, const boolean precip, const boolean papersprite)
 {
-	if (cv_glspritebillboarding.value && spr && spr->mobj && !papersprite && wallVerts)
+	if (!cv_glspritebillboarding.value || !spr || !spr->mobj || papersprite || !wallVerts)
 	{
-		// uncapped/interpolation
-		interpmobjstate_t interp = {0};
-		float basey, lowy;
-		INT32 dist = -1;
-
-		if (cv_maxinterpdist.value)
-			dist = R_QuickCamDist(spr->mobj->x, spr->mobj->y);
-
-		// do interpolation
-		if (R_UsingFrameInterpolation() && !paused && (!cv_maxinterpdist.value || dist < cv_maxinterpdist.value))
-		{
-			if (precip)
-			{
-				R_InterpolatePrecipMobjState((precipmobj_t *)spr->mobj, rendertimefrac, &interp);
-			}
-			else
-			{
-				R_InterpolateMobjState(spr->mobj, rendertimefrac, &interp);
-			}
-		}
-		else
-		{
-			if (precip)
-			{
-				R_InterpolatePrecipMobjState((precipmobj_t *)spr->mobj, FRACUNIT, &interp);
-			}
-			else
-			{
-				R_InterpolateMobjState(spr->mobj, FRACUNIT, &interp);
-			}
-		}
-
-		if (!precip && P_MobjFlip(spr->mobj) == -1) // precip doesn't have eflags so they can't flip
-		{
-			basey = FIXED_TO_FLOAT(interp.z + spr->mobj->height);
-		}
-		else
-		{
-			basey = FIXED_TO_FLOAT(interp.z);
-		}
-		lowy = wallVerts[0].y;
-
-		// Rotate sprites to fully billboard with the camera
-		// X, Y, AND Z need to be manipulated for the polys to rotate around the
-		// origin, because of how the origin setting works I believe that should
-		// be mobj->z or mobj->z + mobj->height
-		wallVerts[2].y = wallVerts[3].y = (spr->gzt - basey) * gl_viewludsin + basey;
-		wallVerts[0].y = wallVerts[1].y = (lowy - basey) * gl_viewludsin + basey;
-		// translate back to be around 0 before translating back
-		wallVerts[3].x += ((spr->gzt - basey) * gl_viewludcos) * gl_viewcos;
-		wallVerts[2].x += ((spr->gzt - basey) * gl_viewludcos) * gl_viewcos;
-
-		wallVerts[0].x += ((lowy - basey) * gl_viewludcos) * gl_viewcos;
-		wallVerts[1].x += ((lowy - basey) * gl_viewludcos) * gl_viewcos;
-
-		wallVerts[3].z += ((spr->gzt - basey) * gl_viewludcos) * gl_viewsin;
-		wallVerts[2].z += ((spr->gzt - basey) * gl_viewludcos) * gl_viewsin;
-
-		wallVerts[0].z += ((lowy - basey) * gl_viewludcos) * gl_viewsin;
-		wallVerts[1].z += ((lowy - basey) * gl_viewludcos) * gl_viewsin;
+		return;
 	}
+
+	// uncapped/interpolation
+	interpmobjstate_t interp = {0};
+	float basey, lowy;
+	INT32 dist = -1;
+
+	if (cv_maxinterpdist.value)
+		dist = R_QuickCamDist(spr->mobj->x, spr->mobj->y);
+
+	// do interpolation
+	if (R_UsingFrameInterpolation() && !paused && (!cv_maxinterpdist.value || dist < cv_maxinterpdist.value))
+	{
+		if (precip)
+		{
+			R_InterpolatePrecipMobjState((precipmobj_t *)spr->mobj, rendertimefrac, &interp);
+		}
+		else
+		{
+			R_InterpolateMobjState(spr->mobj, rendertimefrac, &interp);
+		}
+	}
+	else
+	{
+		if (precip)
+		{
+			R_InterpolatePrecipMobjState((precipmobj_t *)spr->mobj, FRACUNIT, &interp);
+		}
+		else
+		{
+			R_InterpolateMobjState(spr->mobj, FRACUNIT, &interp);
+		}
+	}
+
+	if (!precip && P_MobjFlip(spr->mobj) == -1) // precip doesn't have eflags so they can't flip
+	{
+		basey = FIXED_TO_FLOAT(interp.z + spr->mobj->height);
+	}
+	else
+	{
+		basey = FIXED_TO_FLOAT(interp.z);
+	}
+	lowy = wallVerts[0].y;
+
+	// Rotate sprites to fully billboard with the camera
+	// X, Y, AND Z need to be manipulated for the polys to rotate around the
+	// origin, because of how the origin setting works I believe that should
+	// be mobj->z or mobj->z + mobj->height
+	wallVerts[2].y = wallVerts[3].y = (spr->gzt - basey) * gl_viewludsin + basey;
+	wallVerts[0].y = wallVerts[1].y = (lowy - basey) * gl_viewludsin + basey;
+	// translate back to be around 0 before translating back
+	wallVerts[3].x += ((spr->gzt - basey) * gl_viewludcos) * gl_viewcos;
+	wallVerts[2].x += ((spr->gzt - basey) * gl_viewludcos) * gl_viewcos;
+
+	wallVerts[0].x += ((lowy - basey) * gl_viewludcos) * gl_viewcos;
+	wallVerts[1].x += ((lowy - basey) * gl_viewludcos) * gl_viewcos;
+
+	wallVerts[3].z += ((spr->gzt - basey) * gl_viewludcos) * gl_viewsin;
+	wallVerts[2].z += ((spr->gzt - basey) * gl_viewludcos) * gl_viewsin;
+
+	wallVerts[0].z += ((lowy - basey) * gl_viewludcos) * gl_viewsin;
+	wallVerts[1].z += ((lowy - basey) * gl_viewludcos) * gl_viewsin;
 }
 
 static inline void HWR_ApplyDispoffset(gl_vissprite_t *spr, FOutVector *wallVerts, const boolean papersprite)
@@ -3998,7 +4000,6 @@ static inline void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 	wallVerts[0].z = wallVerts[3].z = spr->z1;
 	wallVerts[1].z = wallVerts[2].z = spr->z2;
 
-	// Let dispoffset work first since this adjust each vertex
 	HWR_RotateSpritePolyToAim(spr, wallVerts, true, false);
 
 	wallVerts[0].s = wallVerts[3].s = 0;
