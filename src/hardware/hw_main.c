@@ -3253,7 +3253,7 @@ static gl_vissprite_t *HWR_NewVisSprite(void)
 // Finds a floor through which light does not pass.
 /*static fixed_t HWR_OpaqueFloorAtPos(fixed_t x, fixed_t y, fixed_t z, fixed_t height)
 {
-	const sector_t *sec = R_PointInSubsector(x, y)->sector;
+	const sector_t *sec = R_PointInSubsectorFast(x, y)->sector;
 	fixed_t floorz = sec->floorheight;
 
 	if (sec->ffloors)

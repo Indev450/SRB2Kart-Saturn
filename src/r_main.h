@@ -182,6 +182,18 @@ FUNCINLINE static ATTRINLINE subsector_t *R_PointInSubsector(fixed_t x, fixed_t 
 	return &subsectors[nodenum & ~NF_SUBSECTOR];
 }
 
+// uses R_PointOnSideFast
+// SHOULD NOT BE USED FOR ANYTHING GAMEPLAY RELATED!!
+FUNCINLINE static ATTRINLINE subsector_t *R_PointInSubsectorFast(fixed_t x, fixed_t y)
+{
+	size_t nodenum = numnodes-1;
+
+	while (!(nodenum & NF_SUBSECTOR))
+		nodenum = nodes[nodenum].children[R_PointOnSideFast(x, y, nodes+nodenum)];
+
+	return &subsectors[nodenum & ~NF_SUBSECTOR];
+}
+
 //
 // R_IsPointInSubsector, same as above but returns 0 if not in subsector
 //
