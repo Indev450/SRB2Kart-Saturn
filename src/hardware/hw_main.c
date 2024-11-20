@@ -3295,8 +3295,6 @@ static void HWR_DrawSpriteShadow(gl_vissprite_t *spr, GLPatch_t *gpatch)
 	fixed_t slopez;
 	float offset = 0;
 
-	INT32 shader = SHADER_NONE;
-
 	// technically this_scale gets multiplied and added to sprite y/x scale, but this thing needs it for some crap so ill just throw it in here again
 	const boolean hires = (spr->mobj && spr->mobj->skin && ((skin_t *)( (spr->mobj->localskin) ? spr->mobj->localskin : spr->mobj->skin ))->flags & SF_HIRES);
 	if (spr->mobj)
@@ -3452,14 +3450,7 @@ static void HWR_DrawSpriteShadow(gl_vissprite_t *spr, GLPatch_t *gpatch)
 	if (sSurf.PolyColor.s.alpha > floorheight/4)
 	{
 		sSurf.PolyColor.s.alpha = (UINT8)(sSurf.PolyColor.s.alpha - floorheight/4);
-
-		if (HWR_UseShader())
-		{
-			shader = SHADER_SHADOW;
-			blendmode |= PF_ColorMapped;
-		}
-
-		HWR_ProcessPolygon(&sSurf, swallVerts, 4, blendmode|PF_Translucent|PF_Modulated, shader, false);
+		HWR_ProcessPolygon(&sSurf, swallVerts, 4, blendmode|PF_Translucent|PF_Modulated, SHADER_NONE, false);
 	}
 }*/
 
