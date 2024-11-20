@@ -3455,7 +3455,7 @@ static void HWR_RotateSpritePolyToAim(gl_vissprite_t *spr, FOutVector *wallVerts
 	}
 }
 
-static void HWR_ApplyDispoffset(gl_vissprite_t *spr, FOutVector *wallVerts, const boolean papersprite)
+static inline void HWR_ApplyDispoffset(gl_vissprite_t *spr, FOutVector *wallVerts, const boolean papersprite, const boolean shadow)
 {
 	// dont push papersprites near the cam
 	if (papersprite && !spr->dispoffset)
@@ -3465,7 +3465,7 @@ static void HWR_ApplyDispoffset(gl_vissprite_t *spr, FOutVector *wallVerts, cons
 	}
 
 	// yes shadows need this crap applied since they dont work well enough with just the shader
-	if ((HWR_UseShader() && spr->mobj->type == MT_SHADOW) || !HWR_UseShader())
+	if ((HWR_UseShader() && shadow) || !HWR_UseShader())
 	{
 		if (!papersprite) // dont push papersprites near the cam
 		{
@@ -3502,7 +3502,7 @@ static void HWR_ApplyDispoffset(gl_vissprite_t *spr, FOutVector *wallVerts, cons
 	}
 }
 
-static void HWR_SplitSprite(gl_vissprite_t *spr)
+static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite, const boolean shadow)
 {
 	FOutVector wallVerts[4];
 	FOutVector baseWallVerts[4]; // This is what the verts should end up as
@@ -3586,7 +3586,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr)
 	HWR_RotateSpritePolyToAim(spr, baseWallVerts, false);
 
 	// push it toward the camera to mitigate floor-clipping sprites
-	HWR_ApplyDispoffset(spr, baseWallVerts, papersprite);
+	HWR_ApplyDispoffset(spr, baseWallVerts, papersprite, shadow);
 
 	realtop = top = baseWallVerts[3].y;
 	realbot = bot = baseWallVerts[0].y;
@@ -3626,7 +3626,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr)
 
 	if (HWR_UseShader())
 	{
-		shader = (papersprite || spr->mobj->type == MT_SHADOW) ? SHADER_SPRITE : SHADER_SPRITECLIPHACK;
+		shader = (papersprite || shadow) ? SHADER_SPRITE : SHADER_SPRITECLIPHACK;
 		blend |= PF_ColorMapped;
 	}
 
@@ -3704,7 +3704,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr)
 		wallVerts[1].y = endbot;
 
 		// The x and y only need to be adjusted in the case that it's not a papersprite
-		if (cv_glspritebillboarding.value && spr->mobj && !(spr->mobj->frame & FF_PAPERSPRITE))
+		if (cv_glspritebillboarding.value && spr->mobj && !papersprite)
 		{
 			// Get the x and z of the vertices so billboarding draws correctly
 			realheight = realbot - realtop;
@@ -3780,9 +3780,12 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 	if (!spr->mobj->subsector)
 		return;
 
+	const boolean papersprite = (spr->mobj->frame & FF_PAPERSPRITE);
+	const boolean shadow = (spr->mobj->type == MT_SHADOW);
+
 	if (spr->mobj->subsector->sector->numlights)
 	{
-		HWR_SplitSprite(spr);
+		HWR_SplitSprite(spr, papersprite, shadow);
 		return;
 	}
 
@@ -3853,7 +3856,7 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 	HWR_RotateSpritePolyToAim(spr, wallVerts, false);
 
 	// push it toward the camera to mitigate floor-clipping sprites
-	HWR_ApplyDispoffset(spr, wallVerts, papersprite);
+	HWR_ApplyDispoffset(spr, wallVerts, papersprite, shadow);
 
 	// This needs to be AFTER the shadows so that the regular sprites aren't drawn completely black.
 	// sprite lighting by modulating the RGB components
@@ -3893,7 +3896,7 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 
 	if (HWR_UseShader())
 	{
-		shader = (papersprite || spr->mobj->type == MT_SHADOW) ? SHADER_SPRITE : SHADER_SPRITECLIPHACK;
+		shader = (papersprite || shadow) ? SHADER_SPRITE : SHADER_SPRITECLIPHACK;
 		blend |= PF_ColorMapped;
 	}
 
