@@ -3566,9 +3566,6 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 		baseWallVerts[0].t = baseWallVerts[1].t = gpatch->max_t;
 	}
 
-	// Let dispoffset work first since this adjust each vertex
-	HWR_RotateSpritePolyToAim(spr, baseWallVerts, false);
-
 	// push it toward the camera to mitigate floor-clipping sprites
 	HWR_ApplyDispoffset(spr, baseWallVerts, papersprite);
 
@@ -3833,10 +3830,6 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 		////////////////////
 		HWR_DrawSpriteShadow(spr, gpatch);
 	}
-
-	// Let dispoffset work first since this adjust each vertex
-	// ...nah
-	HWR_RotateSpritePolyToAim(spr, wallVerts, false);
 
 	// push it toward the camera to mitigate floor-clipping sprites
 	HWR_ApplyDispoffset(spr, wallVerts, papersprite);
