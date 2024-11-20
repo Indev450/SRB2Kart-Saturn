@@ -3150,7 +3150,7 @@ static void HWR_RenderBSPNode(INT32 bspnum)
 
 			bsp = &nodes[bspnum];
 
-			const INT32 side = R_PointOnSideRender(viewx, viewy, bsp);
+			const INT32 side = R_PointOnSideFast(viewx, viewy, bsp);
 
 			stack_bsp[sp] = bspnum;
 			stack_side[sp] = side ^ 1;
