@@ -3917,7 +3917,7 @@ static inline void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 	wallVerts[1].z = wallVerts[2].z = spr->z2;
 
 	// Let dispoffset work first since this adjust each vertex
-	HWR_RotateSpritePolyToAim(spr, wallVerts, true);
+	HWR_RotateSpritePolyToAim(spr, wallVerts, true, false);
 
 	wallVerts[0].s = wallVerts[3].s = 0;
 	wallVerts[2].s = wallVerts[1].s = gpatch->max_s;
