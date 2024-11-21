@@ -965,17 +965,6 @@ int LUA_HookMusicChange(const char *oldname, struct MusicChange *param)
 	return hook.status;
 }
 
-int LUA_HookKey(INT32 keycode, int hooktype)
-{
-	Hook_State hook;
-	if (prepare_hook(&hook, 0, hooktype))
-	{
-		lua_pushinteger(gL, keycode);
-		call_hooks(&hook, 1, 0, res_true);
-	}
-	return hook.status;
-}
-
 static int kartdamage_hook
 (
 		player_t *player,
@@ -996,37 +985,48 @@ static int kartdamage_hook
 }
 
 // Hook for K_SpinPlayer. Determines if yes or no we should get damaged reguardless of circumstances.
-UINT8 LUAh_ShouldSpin(player_t *player, mobj_t *inflictor, mobj_t *source)
+int LUA_HookShouldSpin(player_t *player, mobj_t *inflictor, mobj_t *source)
 {
 	return kartdamage_hook(player, inflictor, source, HOOK(ShouldSpin), res_force);
 }
 
 // Hook for K_ExplodePlayer. Determines if yes or no we should get damaged reguardless of circumstances.
-UINT8 LUAh_ShouldExplode(player_t *player, mobj_t *inflictor, mobj_t *source)
+int LUA_HookShouldExplode(player_t *player, mobj_t *inflictor, mobj_t *source)
 {
 	return kartdamage_hook(player, inflictor, source, HOOK(ShouldExplode), res_force);
 }
 
 // Hook for K_SquishPlayer. Determines if yes or no we should get damaged reguardless of circumstances.
-UINT8 LUAh_ShouldSquish(player_t *player, mobj_t *inflictor, mobj_t *source)
+int LUA_HookShouldSquish(player_t *player, mobj_t *inflictor, mobj_t *source)
 {
 	return kartdamage_hook(player, inflictor, source, HOOK(ShouldSquish), res_force);
 }
 
 // Hook for K_SpinPlayer. This is used when the player has actually been spun out, but before anything has actually been done. This allows Lua to overwrite the behavior or to just perform actions.
-boolean LUAh_PlayerSpin(player_t *player, mobj_t *inflictor, mobj_t *source)
+boolean LUA_HookPlayerSpin(player_t *player, mobj_t *inflictor, mobj_t *source)
 {
 	return kartdamage_hook(player, inflictor, source, HOOK(PlayerSpin), res_true);
 }
 
 // Hook for K_SquishPlayer. This is used when the player has actually been spun out, but before anything has actually been done. This allows Lua to overwrite the behavior or to just perform actions.
-boolean LUAh_PlayerSquish(player_t *player, mobj_t *inflictor, mobj_t *source)
+boolean LUA_HookPlayerSquish(player_t *player, mobj_t *inflictor, mobj_t *source)
 {
 	return kartdamage_hook(player, inflictor, source, HOOK(PlayerSquish), res_true);
 }
 
 // Hook for K_ExplodePlayer. This is used when the player has actually been spun out, but before anything has actually been done. This allows Lua to overwrite the behavior or to just perform actions.
-boolean LUAh_PlayerExplode(player_t *player, mobj_t *inflictor, mobj_t *source)
+boolean LUA_HookPlayerExplode(player_t *player, mobj_t *inflictor, mobj_t *source)
 {
 	return kartdamage_hook(player, inflictor, source, HOOK(PlayerExplode), res_true);
+}
+
+int LUA_HookKey(INT32 keycode, int hooktype)
+{
+	Hook_State hook;
+	if (prepare_hook(&hook, 0, hooktype))
+	{
+		lua_pushinteger(gL, keycode);
+		call_hooks(&hook, 1, 0, res_true);
+	}
+	return hook.status;
 }
