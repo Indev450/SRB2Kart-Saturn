@@ -4302,8 +4302,8 @@ static void Got_AddPlayer(UINT8 **p, INT32 playernum)
 
 	LUA_HookInt(newplayernum, HOOK(PlayerJoin));
 
-	//if (newplayernum == consoleplayer)
-		//LUA_ServerJoin();
+	if (newplayernum == consoleplayer)
+		LUA_HookInt(newplayernum, HOOK(ServerJoin));
 
 #ifdef HAVE_DISCORDRPC
 	DRPC_UpdatePresence();
