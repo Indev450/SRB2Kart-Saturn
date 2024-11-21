@@ -529,7 +529,7 @@ void P_Ticker(boolean run)
 		ps_checkposition_calls.value.i = 0;
 
 		PS_START_TIMING(ps_lua_prethinkframe_time);
-		LUA_HOOK(PreThinkFrame);
+		LUA_HookPreThinkFrame();
 		PS_STOP_TIMING(ps_lua_prethinkframe_time);
 
 		PS_START_TIMING(ps_playerthink_time);
@@ -669,7 +669,7 @@ void P_Ticker(boolean run)
 				D_MapChange(gamemap, gametype, encoremode, true, 0, false, false);
 
 		PS_START_TIMING(ps_lua_postthinkframe_time);
-		LUA_HOOK(PostThinkFrame);
+		LUA_HookPostThinkFrame();
 		PS_STOP_TIMING(ps_lua_postthinkframe_time);
 	}
 
