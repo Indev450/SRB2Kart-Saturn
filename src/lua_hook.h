@@ -12,6 +12,7 @@
 
 #include "r_defs.h"
 #include "d_player.h"
+#include "s_sound.h"
 
 /*
  * Do you know what an 'X Macro' is? Such a macro is called over each element of
