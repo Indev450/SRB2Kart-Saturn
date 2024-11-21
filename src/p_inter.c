@@ -284,7 +284,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 	if (special->flags & MF_BOSS && special->flags2 & MF2_FRET)
 		return;
 
-	if (LUAh_TouchSpecial(special, toucher) || P_MobjWasRemoved(special))
+	if (LUA_HookTouchSpecial(special, toucher) || P_MobjWasRemoved(special))
 		return;
 
 	if (special->flags & MF_BOSS)
@@ -1641,7 +1641,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 	target->flags2 &= ~(MF2_SKULLFLY|MF2_NIGHTSPULL);
 	target->health = 0; // This makes it easy to check if something's dead elsewhere.
 
-	if (LUAh_MobjDeath(target, inflictor, source) || P_MobjWasRemoved(target))
+	if (LUA_HookMobjDeath(target, inflictor, source) || P_MobjWasRemoved(target))
 		return;
 
 	// SRB2kart
@@ -2397,7 +2397,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 	// Everything above here can't be forced.
 	if (!metalrecording)
 	{
-		UINT8 shouldForce = LUAh_ShouldDamage(target, inflictor, source, damage);
+		UINT8 shouldForce = LUA_HookShouldDamage(target, inflictor, source, damage);
 		if (P_MobjWasRemoved(target))
 			return (shouldForce == 1); // mobj was removed
 		if (shouldForce == 1)
@@ -2438,7 +2438,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 		if (!force && target->fuse) // Invincible
 			return false;
 
-		if (LUAh_MobjDamage(target, inflictor, source, damage) || P_MobjWasRemoved(target))
+		if (LUA_HookMobjDamage(target, inflictor, source, damage) || P_MobjWasRemoved(target))
 			return true;
 
 		if (target->health > 1)
@@ -2464,7 +2464,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 		if (!force && target->flags2 & MF2_FRET) // Currently flashing from being hit
 			return false;
 
-		if (LUAh_MobjDamage(target, inflictor, source, damage) || P_MobjWasRemoved(target))
+		if (LUA_HookMobjDamage(target, inflictor, source, damage) || P_MobjWasRemoved(target))
 			return true;
 
 		if (target->health > 1)
@@ -2472,7 +2472,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 	}
 	else if (target->flags & MF_ENEMY)
 	{
-		if (LUAh_MobjDamage(target, inflictor, source, damage) || P_MobjWasRemoved(target))
+		if (LUA_HookMobjDamage(target, inflictor, source, damage) || P_MobjWasRemoved(target))
 			return true;
 	}
 
@@ -2501,14 +2501,14 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 					return false; // Don't run eachother over in special stages and team games and such
 			}
 
-			if (LUAh_MobjDamage(target, inflictor, source, damage))
+			if (LUA_HookMobjDamage(target, inflictor, source, damage))
 				return true;
 
 			P_NiGHTSDamage(target, source); // -5s :(
 			return true;
 		}
 
-		if (LUAh_MobjDamage(target, inflictor, source, damage))
+		if (LUA_HookMobjDamage(target, inflictor, source, damage))
 			return true;
 
 		if (!force && inflictor && (inflictor->flags & MF_FIRE))

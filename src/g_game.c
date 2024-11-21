@@ -1489,7 +1489,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 			-Making a Mario Kart 8 Deluxe tier baby mode that steers you away from walls and whatnot. You know what, do what you want!
 	*/
 	if (gamestate == GS_LEVEL)
-		LUAh_PlayerCmd(player, cmd);
+		LUA_HookTiccmd(player, cmd, HOOK(PlayerCmd));
 
 	//Reset away view if a command is given.
 	if ((cmd->forwardmove || cmd->sidemove || cmd->buttons)
@@ -2727,7 +2727,7 @@ void G_SpawnPlayer(INT32 playernum, boolean starpost)
 	if (starpost) //Don't even bother with looking for a place to spawn.
 	{
 		P_MovePlayerToStarpost(playernum);
-		LUAh_PlayerSpawn(&players[playernum]); // Lua hook for player spawning :)
+		LUA_HookPlayer(&players[playernum], HOOK(PlayerSpawn)); // Lua hook for player spawning :)
 		return;
 	}
 
@@ -2783,7 +2783,7 @@ void G_SpawnPlayer(INT32 playernum, boolean starpost)
 	}
 	P_MovePlayerToSpawn(playernum, spawnpoint);
 
-	LUAh_PlayerSpawn(&players[playernum]); // Lua hook for player spawning :)
+	LUA_HookPlayer(&players[playernum], HOOK(PlayerSpawn)); // Lua hook for player spawning :)
 }
 
 mapthing_t *G_FindCTFStart(INT32 playernum)
@@ -4384,7 +4384,7 @@ void G_InitNew(UINT8 pencoremode, const char *mapname, boolean resetplayer, bool
 		F_StartCustomCutscene(mapheaderinfo[gamemap-1]->precutscenenum-1, true, resetplayer);
 	else
 	{
-		LUAh_MapChange(gamemap);
+		LUA_HookInt(gamemap, HOOK(MapChange));
 		S_CheckMap();
 		G_DoLoadLevel(resetplayer);
 	}
@@ -7505,7 +7505,7 @@ void G_DoPlayDemo(char *defdemoname)
 	// didn't start recording right away.
 	demo.deferstart = false;
 
-	//LUAh_MapChange(gamemap);
+	//LUA_HookInt(gamemap, HOOK(MapChange));
 
 	displayplayers[0] = consoleplayer = 0;
 	memset(playeringame,0,sizeof(playeringame));

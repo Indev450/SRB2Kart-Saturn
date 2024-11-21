@@ -3297,7 +3297,7 @@ void CL_RemovePlayer(INT32 playernum, INT32 reason)
 		}
 	}
 
-	LUAh_PlayerQuit(&players[playernum], reason); // Lua hook for player quitting
+	LUA_HookPlayerQuit(&players[playernum], reason); // Lua hook for player quitting
 
 	// Reset player data
 	CL_ClearPlayer(playernum);
@@ -4472,10 +4472,10 @@ static void Got_AddPlayer(UINT8 **p, INT32 playernum)
 
 	D_AddPostloadFiles();
 
-	LUAh_PlayerJoin(newplayernum);
+	LUA_HookInt(newplayernum, HOOK(PlayerJoin));
 
-	if (newplayernum == consoleplayer)
-		LUAh_ServerJoin();
+	//if (newplayernum == consoleplayer)
+		//LUA_ServerJoin();
 
 #ifdef HAVE_DISCORDRPC
 	DRPC_UpdatePresence();

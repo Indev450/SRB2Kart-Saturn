@@ -228,6 +228,16 @@ UINT32 S_GetMusicPosition(void);
 // Music Playback
 //
 
+/* this is for the sake of the hook */
+struct MusicChange {
+	char    * newname;
+	UINT16  * mflags;
+	boolean * looping;
+	UINT32  * position;
+	UINT32  * prefadems;
+	UINT32  * fadeinms;
+};
+
 // Start music track, arbitrary, given its name, and set whether looping
 // note: music flags 12 bits for tracknum (gme, other formats with more than one track)
 //       13-15 aren't used yet

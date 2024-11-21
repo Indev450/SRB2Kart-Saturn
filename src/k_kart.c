@@ -497,10 +497,9 @@ UINT8 colortranslations[MAXTRANSLATIONS][16] = {
 */
 void K_RainbowColormap(UINT8 *dest_colormap, UINT8 skincolor)
 {
-	INT32 i;
+	INT32 i, j;
 	RGBA_t color;
 	UINT8 brightness;
-	INT32 j;
 	UINT8 colorbrightnesses[16];
 	UINT16 brightdif;
 	INT32 temp;
@@ -523,6 +522,7 @@ void K_RainbowColormap(UINT8 *dest_colormap, UINT8 skincolor)
 		color = V_GetColor(i);
 		SETBRIGHTNESS(brightness, color.s.red, color.s.green, color.s.blue);
 		brightdif = 256;
+
 		for (j = 0; j < 16; j++)
 		{
 			temp = abs((INT16)brightness - (INT16)colorbrightnesses[j]);
