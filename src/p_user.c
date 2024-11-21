@@ -3982,6 +3982,8 @@ void P_DoTimeOver(player_t *player)
 
 	player->pflags |= PF_TIMEOVER;
 
+	demo.savebutton = leveltime;
+
 	if (P_IsLocalPlayer(player) && !demo.playback)
 		legitimateexit = true; // SRB2kart: losing a race is still seeing it through to the end :p
 
