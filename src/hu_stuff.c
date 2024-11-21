@@ -2274,7 +2274,7 @@ void HU_Drawer(void)
 			if (renderisnewtic)
 			{
 				LUA_HUD_ClearDrawList(luahuddrawlist_scores);
-				LUAh_ScoresHUD(luahuddrawlist_scores);
+				LUA_HUDHOOK(scores, luahuddrawlist_scores);
 			}
 
 			LUA_HUD_DrawList(luahuddrawlist_scores);
