@@ -725,7 +725,7 @@ static void ST_overlayDrawer(void)
 	{
 		if (renderisnewtic)
 		{
-			LUAh_GameHUD(luahuddrawlist_game[stplyrnum]);
+			LUA_HUDHOOK(game, luahuddrawlist_game[stplyrnum]);
 		}
 	}
 

@@ -13,6 +13,7 @@
 #include "r_defs.h"
 #include "d_player.h"
 #include "s_sound.h"
+#include "lua_hudlib_drawlist.h"
 
 /*
  * Do you know what an 'X Macro' is? Such a macro is called over each element of
@@ -22,52 +23,58 @@
  */
 
 #define MOBJ_HOOK_LIST(X) \
-X (MobjSpawn),/* P_SpawnMobj */\
-X (MobjCollide),/* PIT_CheckThing */\
-X (MobjMoveCollide),/* tritto */\
-X (TouchSpecial),/* P_TouchSpecialThing */\
-X (MobjFuse),/* when mobj->fuse runs out */\
-X (MobjThinker),/* P_MobjThinker, P_SceneryThinker */\
-X (BossThinker),/* P_GenericBossThinker */\
-X (ShouldDamage),/* P_DamageMobj (Should mobj take damage?) */\
-X (MobjDamage),/* P_DamageMobj (Mobj actually takes damage!) */\
-X (MobjDeath),/* P_KillMobj */\
-X (BossDeath),/* A_BossDeath */\
-X (MobjRemoved),/* P_RemoveMobj */\
-X (HurtMsg),/* imhurttin */\
+	X (MobjSpawn),/* P_SpawnMobj */\
+	X (MobjCollide),/* PIT_CheckThing */\
+	X (MobjMoveCollide),/* tritto */\
+	X (TouchSpecial),/* P_TouchSpecialThing */\
+	X (MobjFuse),/* when mobj->fuse runs out */\
+	X (MobjThinker),/* P_MobjThinker, P_SceneryThinker */\
+	X (BossThinker),/* P_GenericBossThinker */\
+	X (ShouldDamage),/* P_DamageMobj (Should mobj take damage?) */\
+	X (MobjDamage),/* P_DamageMobj (Mobj actually takes damage!) */\
+	X (MobjDeath),/* P_KillMobj */\
+	X (BossDeath),/* A_BossDeath */\
+	X (MobjRemoved),/* P_RemoveMobj */\
+	X (HurtMsg),/* imhurttin */\
 
 #define HOOK_LIST(X) \
-X (NetVars),/* add to archive table (netsave) */\
-X (MapChange),/* (before map load) */\
-X (MapLoad),\
-X (PlayerJoin),/* Got_AddPlayer */\
-X (PreThinkFrame)/* frame (before mobj and player thinkers) */,\
-X (ThinkFrame),/* frame (after mobj and player thinkers) */\
-X (PostThinkFrame),/* frame (at end of tick, ie after overlays, precipitation, specials) */\
-X (JumpSpecial),/* P_DoJumpStuff (Any-jumping) */\
-X (AbilitySpecial),/* P_DoJumpStuff (Double-jumping) */\
-X (SpinSpecial),/* P_DoSpinAbility (Spin button effect) */\
-X (JumpSpinSpecial),/* P_DoJumpStuff (Spin button effect (mid-air)) */\
-X (BotTiccmd),/* B_BuildTiccmd */\
-X (PlayerMsg),/* chat messages */\
-X (PlayerSpawn),/* G_SpawnPlayer */\
-X (PlayerQuit),\
-X (PlayerThink),/* P_PlayerThink */\
-X (MusicChange),\
-X (ShouldSpin),/*SRB2KART*/\
-X (ShouldExplode),/*SRB2KART*/\
-X (ShouldSquish),/*SRB2KART*/\
-X (PlayerSpin),/*SRB2KART*/\
-X (PlayerExplode),/*SRB2KART*/\
-X (PlayerSquish),/*SRB2KART*/\
-X (PlayerCmd),/* building the player's ticcmd struct (Ported from SRB2Kart) */\
-X (IntermissionThinker),/* Y_Ticker */\
-X (VoteThinker),/*SRB2KART*/\
-X (ServerJoin),/* SRB2KART - Saturn 32p*/\
+	X (NetVars),/* add to archive table (netsave) */\
+	X (MapChange),/* (before map load) */\
+	X (MapLoad),\
+	X (PlayerJoin),/* Got_AddPlayer */\
+	X (PreThinkFrame)/* frame (before mobj and player thinkers) */,\
+	X (ThinkFrame),/* frame (after mobj and player thinkers) */\
+	X (PostThinkFrame),/* frame (at end of tick, ie after overlays, precipitation, specials) */\
+	X (JumpSpecial),/* P_DoJumpStuff (Any-jumping) */\
+	X (AbilitySpecial),/* P_DoJumpStuff (Double-jumping) */\
+	X (SpinSpecial),/* P_DoSpinAbility (Spin button effect) */\
+	X (JumpSpinSpecial),/* P_DoJumpStuff (Spin button effect (mid-air)) */\
+	X (BotTiccmd),/* B_BuildTiccmd */\
+	X (PlayerMsg),/* chat messages */\
+	X (PlayerSpawn),/* G_SpawnPlayer */\
+	X (PlayerQuit),\
+	X (PlayerThink),/* P_PlayerThink */\
+	X (MusicChange),\
+	X (ShouldSpin),/*SRB2KART*/\
+	X (ShouldExplode),/*SRB2KART*/\
+	X (ShouldSquish),/*SRB2KART*/\
+	X (PlayerSpin),/*SRB2KART*/\
+	X (PlayerExplode),/*SRB2KART*/\
+	X (PlayerSquish),/*SRB2KART*/\
+	X (PlayerCmd),/* building the player's ticcmd struct (Ported from SRB2Kart) */\
+	X (IntermissionThinker),/* Y_Ticker */\
+	X (VoteThinker),/*SRB2KART*/\
+	X (ServerJoin),/* SRB2KART - Saturn 32p*/\
 
 #define STRING_HOOK_LIST(X) \
-X (BotAI),/* B_BuildTailsTiccmd by skin name */\
-X (LinedefExecute),\
+	X (BotAI),/* B_BuildTailsTiccmd by skin name */\
+	X (LinedefExecute),\
+
+#define HUD_HOOK_LIST(X) \
+	X (game),\
+	X (scores),/* emblems/multiplayer list */\
+	X (intermission),\
+	X (vote),\
 
 /*
  * I chose to access the hook enums through a macro as well. This could provide
@@ -79,25 +86,27 @@ X (LinedefExecute),\
 
 #define   MOBJ_HOOK(name)   mobjhook_ ## name
 #define        HOOK(name)       hook_ ## name
+#define    HUD_HOOK(name)    hudhook_ ## name
 #define STRING_HOOK(name) stringhook_ ## name
-
 
 #define ENUM(X) enum { X ## _LIST (X)  X(MAX) }
 
 ENUM   (MOBJ_HOOK);
 ENUM        (HOOK);
+ENUM    (HUD_HOOK);
 ENUM (STRING_HOOK);
 
 #undef ENUM
 
 /* dead simple, LUA_HOOK(GameQuit) */
 #define LUA_HOOK(type) LUA_HookVoid(HOOK(type))
-
+#define LUA_HUDHOOK(type,drawlist) LUA_HookHUD(HUD_HOOK(type),(drawlist))
 
 extern boolean hook_cmd_running;	// This is used by PlayerCmd and lua_playerlib to prevent anything from being wirtten to player while we run PlayerCmd.
 extern int hook_defrosting;
 
 void LUA_HookVoid(int hook);
+void LUA_HookHUD(int hook, huddrawlist_h drawlist);
 
 int  LUA_HookMobj(mobj_t *, int hook);
 int  LUA_Hook2Mobj(mobj_t *, mobj_t *, int hook);
