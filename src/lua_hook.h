@@ -107,7 +107,9 @@ void LUA_HookInt(INT32 integer, int hook);
 int  LUA_HookPlayer(player_t *, int hook);
 int  LUA_HookTiccmd(player_t *, ticcmd_t *, int hook);
 
+void LUA_HookPreThinkFrame(void);
 void LUA_HookThinkFrame(void);
+void LUA_HookPostThinkFrame(void);
 int  LUA_HookTouchSpecial(mobj_t *special, mobj_t *toucher);
 int  LUA_HookShouldDamage(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage);
 int  LUA_HookMobjDamage(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage);
