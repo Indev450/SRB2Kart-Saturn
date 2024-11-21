@@ -123,5 +123,3 @@ int LUA_HookShouldSquish(player_t *player, mobj_t *inflictor, mobj_t *source); /
 boolean LUA_HookPlayerSpin(player_t *player, mobj_t *inflictor, mobj_t *source); // SRB2KART: Hook for K_SpinPlayer. Allows Lua to execute code and/or overwrite its behavior.
 boolean LUA_HookPlayerExplode(player_t *player, mobj_t *inflictor, mobj_t *source); // SRB2KART: Hook for K_ExplodePlayer. Allows Lua to execute code and/or overwrite its behavior.
 boolean LUA_HookPlayerSquish(player_t *player, mobj_t *inflictor, mobj_t *source); // SRB2KART: Hook for K_SquishPlayer. Allows Lua to execute code and/or overwrite its behavior.
-
-int  LUA_HookKey(INT32 keycode, int hooktype); // Hooks for key events

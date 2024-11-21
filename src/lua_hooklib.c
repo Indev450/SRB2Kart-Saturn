@@ -1019,14 +1019,3 @@ boolean LUA_HookPlayerExplode(player_t *player, mobj_t *inflictor, mobj_t *sourc
 {
 	return kartdamage_hook(player, inflictor, source, HOOK(PlayerExplode), res_true);
 }
-
-int LUA_HookKey(INT32 keycode, int hooktype)
-{
-	Hook_State hook;
-	if (prepare_hook(&hook, 0, hooktype))
-	{
-		lua_pushinteger(gL, keycode);
-		call_hooks(&hook, 1, 0, res_true);
-	}
-	return hook.status;
-}
