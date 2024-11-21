@@ -259,6 +259,7 @@ struct Hook_State {
 	void       * userdata;
 	int          hook_type;
 	mobjtype_t   mobj_type;/* >0 if mobj hook */
+	boolean      force_mobj;// allows mobj_type equal 0
 	const char * string;/* used to fetch table, ran first if set */
 	int          top;/* index of last argument passed to hook */
 	int          id;/* id to fetch ref */
@@ -324,6 +325,8 @@ static boolean prepare_hook
 		int default_status,
 		int hook_type
 ){
+	hook->force_mobj = false;
+
 	return init_hook_type(hook, default_status,
 			hook_type, 0, NULL,
 			hookIds[hook_type].numHooks);
@@ -339,6 +342,8 @@ static boolean prepare_mobj_hook
 	const mobjtype_t mobj_type =
 		primary_mobj ? primary_mobj->type : NUMMOBJTYPES;
 
+	hook->force_mobj = true;
+
 	return init_hook_type(hook, default_status,
 			hook_type, mobj_type, NULL,
 			mobj_hook_available(hook_type, mobj_type));
@@ -351,6 +356,8 @@ static boolean prepare_string_hook
 		int          hook_type,
 		const char * string
 ){
+	hook->force_mobj = false;
+
 	if (init_hook_type(hook, default_status,
 				hook_type, 0, string,
 				stringHooks[hook_type].ref))
@@ -491,7 +498,7 @@ static int call_hooks
 	{
 		calls += call_string_hooks(hook);
 	}
-	else if (hook->mobj_type > 0)
+	else if (hook->force_mobj)
 	{
 		/* call generic mobj hooks first */
 		calls += call_mobj_type_hooks(hook, MT_NULL);
@@ -876,6 +883,7 @@ void LUA_HookNetArchive(lua_CFunction archFunc)
 {
 	const hook_t * map = &hookIds[HOOK(NetVars)];
 	Hook_State hook;
+	hook.force_mobj = false;
 	/* this is a remarkable case where the stack isn't reset */
 	if (map->numHooks > 0)
 	{
