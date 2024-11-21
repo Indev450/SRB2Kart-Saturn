@@ -4687,6 +4687,14 @@ static void HWR_ProjectSprite(mobj_t *thing)
 			else
 				rollsum = rollangle;
 
+			// this is kinda dumb lkmao, but try to mitigate shadows being weirdly offset on slopes
+			if (thing->type == MT_SHADOW)
+			{
+				sprinfo->available = true; // < lmao
+				sprinfo->pivot[(thing->frame & FF_FRAMEMASK)].x = spr_offset>>FRACBITS;
+				sprinfo->pivot[(thing->frame & FF_FRAMEMASK)].y = -8; // noones gonna replace shadow sprite anyways, right? that random value ftw, otherwise this clips into the ground Zzz...
+			}
+
 			rollangle = R_GetRollAngle(rollsum);
 			rotsprite = Patch_GetRotatedSprite(sprframe, (thing->frame & FF_FRAMEMASK), rot, flip, false, sprinfo, rollangle);
 
