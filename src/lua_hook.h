@@ -52,10 +52,7 @@ X (BotTiccmd),/* B_BuildTiccmd */\
 X (PlayerMsg),/* chat messages */\
 X (PlayerSpawn),/* G_SpawnPlayer */\
 X (PlayerQuit),\
-X (IntermissionThinker),/* Y_Ticker */\
 X (PlayerThink),/* P_PlayerThink */\
-X (GameQuit),\
-X (PlayerCmd),/* building the player's ticcmd struct (Ported from SRB2Kart) */\
 X (MusicChange),\
 X (ShouldSpin),/*SRB2KART*/\
 X (ShouldExplode),/*SRB2KART*/\
@@ -63,6 +60,8 @@ X (ShouldSquish),/*SRB2KART*/\
 X (PlayerSpin),/*SRB2KART*/\
 X (PlayerExplode),/*SRB2KART*/\
 X (PlayerSquish),/*SRB2KART*/\
+X (PlayerCmd),/* building the player's ticcmd struct (Ported from SRB2Kart) */\
+X (IntermissionThinker),/* Y_Ticker */\
 X (VoteThinker),/*SRB2KART*/\
 X (ServerJoin),/* SRB2KART - Saturn 32p*/\
 
