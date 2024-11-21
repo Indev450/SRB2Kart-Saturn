@@ -507,11 +507,11 @@ static void res_true(Hook_State *hook)
 		hook->status = true;
 }
 
-static void res_false(Hook_State *hook)
+/*static void res_false(Hook_State *hook)
 {
 	if (!lua_isnil(gL, -1) && !lua_toboolean(gL, -1))
 		hook->status = false;
-}
+}*/
 
 static void res_force(Hook_State *hook)
 {
