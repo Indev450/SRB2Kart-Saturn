@@ -568,8 +568,7 @@ void LUA_HookInt(INT32 number, int hook_type)
 	}
 }
 
-//void LUA_HookBool(boolean value, int hook_type)
-void LUA_HookBool(int hook_type)
+/*void LUA_HookBool(boolean value, int hook_type)
 {
 	Hook_State hook;
 	if (prepare_hook(&hook, 0, hook_type))
@@ -577,7 +576,7 @@ void LUA_HookBool(int hook_type)
 		//lua_pushboolean(gL, value);
 		call_hooks(&hook, 1, 0, res_none);
 	}
-}
+}*/
 
 int LUA_HookPlayer(player_t *player, int hook_type)
 {
