@@ -977,332 +977,57 @@ int LUA_HookKey(INT32 keycode, int hooktype)
 	return hook.status;
 }
 
+static int kartdamage_hook
+(
+		player_t *player,
+		mobj_t   *inflictor,
+		mobj_t   *source,
+		int       hook_type,
+		Hook_Callback results_handler
+){
+	Hook_State hook;
+	if (prepare_hook(&hook, 0, hook_type))
+	{
+		LUA_PushUserdata(gL, player, META_PLAYER);
+		LUA_PushUserdata(gL, inflictor, META_MOBJ);
+		LUA_PushUserdata(gL, source, META_MOBJ);
+		call_hooks(&hook, 3, 1, results_handler);
+	}
+	return hook.status;
+}
 
-//// SNED HELP PLS
-
-
+// Hook for K_SpinPlayer. Determines if yes or no we should get damaged reguardless of circumstances.
 UINT8 LUAh_ShouldSpin(player_t *player, mobj_t *inflictor, mobj_t *source)
 {
-	/*
-	hook_p hookp;
-	UINT8 shouldDamage = 0; // 0 = default, 1 = force yes, 2 = force no.
-	int HOOKSINDEX;
-	if (!gL || !(hooksAvailable[hook_ShouldSpin/8] & (1<<(hook_ShouldSpin%8))))
-		return 0;
-
-	lua_settop(gL, 0);
-	lua_pushcfunction(gL, LUA_GetErrorMessage);
-
-	lua_getfield(gL, LUA_REGISTRYINDEX, "hooks");
-	HOOKSINDEX = lua_gettop(gL);
-	I_Assert(lua_istable(L, HOOKSINDEX));
-
-	// We can afford not to check for mobj type because it will always be MT_PLAYER in this case.
-
-	for (hookp = roothook; hookp; hookp = hookp->next)
-	{
-		if (hookp->type != hook_ShouldSpin)
-			continue;
-
-		ps_lua_mobjhooks.value.i++;
-		if (lua_gettop(gL) == 2)
-		{
-			LUA_PushUserdata(gL, player, META_PLAYER);
-			LUA_PushUserdata(gL, inflictor, META_MOBJ);
-			LUA_PushUserdata(gL, source, META_MOBJ);
-		}
-		lua_rawgeti(gL, HOOKSINDEX, hookp->id);
-		lua_pushvalue(gL, -4);
-		lua_pushvalue(gL, -4);
-		lua_pushvalue(gL, -4);
-		if (lua_pcall(gL, 3, 1, 1)) {
-			if (!hookp->error || cv_debug & DBG_LUA)
-				CONS_Alert(CONS_WARNING,"%s\n",lua_tostring(gL, -1));
-			lua_pop(gL, 1);
-			hookp->error = true;
-			continue;
-		}
-		if (!lua_isnil(gL, -1))
-		{
-			if (lua_toboolean(gL, -1))
-				shouldDamage = 1; // Force yes
-			else
-				shouldDamage = 2; // Force no
-		}
-		lua_pop(gL, 1);
-	}
-
-	lua_settop(gL, 0);
-	return shouldDamage;
-	*/
+	return kartdamage_hook(player, inflictor, source, HOOK(ShouldSpin), res_force);
 }
 
 // Hook for K_ExplodePlayer. Determines if yes or no we should get damaged reguardless of circumstances.
 UINT8 LUAh_ShouldExplode(player_t *player, mobj_t *inflictor, mobj_t *source)
 {
-	/*
-	hook_p hookp;
-	UINT8 shouldDamage = 0; // 0 = default, 1 = force yes, 2 = force no.
-	int HOOKSINDEX;
-	if (!gL || !(hooksAvailable[hook_ShouldExplode/8] & (1<<(hook_ShouldExplode%8))))
-		return 0;
-
-	lua_settop(gL, 0);
-	lua_pushcfunction(gL, LUA_GetErrorMessage);
-
-	lua_getfield(gL, LUA_REGISTRYINDEX, "hooks");
-	HOOKSINDEX = lua_gettop(gL);
-	I_Assert(lua_istable(L, HOOKSINDEX));
-
-	// We can afford not to check for mobj type because it will always be MT_PLAYER in this case.
-
-	for (hookp = roothook; hookp; hookp = hookp->next)
-	{
-		if (hookp->type != hook_ShouldExplode)
-			continue;
-
-		ps_lua_mobjhooks.value.i++;
-		if (lua_gettop(gL) == 2)
-		{
-			LUA_PushUserdata(gL, player, META_PLAYER);
-			LUA_PushUserdata(gL, inflictor, META_MOBJ);
-			LUA_PushUserdata(gL, source, META_MOBJ);
-		}
-		lua_rawgeti(gL, HOOKSINDEX, hookp->id);
-		lua_pushvalue(gL, -4);
-		lua_pushvalue(gL, -4);
-		lua_pushvalue(gL, -4);
-		if (lua_pcall(gL, 3, 1, 1)) {
-			if (!hookp->error || cv_debug & DBG_LUA)
-				CONS_Alert(CONS_WARNING,"%s\n",lua_tostring(gL, -1));
-			lua_pop(gL, 1);
-			hookp->error = true;
-			continue;
-		}
-		if (!lua_isnil(gL, -1))
-		{
-			if (lua_toboolean(gL, -1))
-				shouldDamage = 1; // Force yes
-			else
-				shouldDamage = 2; // Force no
-		}
-		lua_pop(gL, 1);
-	}
-
-	lua_settop(gL, 0);
-	return shouldDamage;
-	*/
+	return kartdamage_hook(player, inflictor, source, HOOK(ShouldExplode), res_force);
 }
 
 // Hook for K_SquishPlayer. Determines if yes or no we should get damaged reguardless of circumstances.
 UINT8 LUAh_ShouldSquish(player_t *player, mobj_t *inflictor, mobj_t *source)
 {
-	/*
-	hook_p hookp;
-	UINT8 shouldDamage = 0; // 0 = default, 1 = force yes, 2 = force no.
-	int HOOKSINDEX;
-	if (!gL || !(hooksAvailable[hook_ShouldSquish/8] & (1<<(hook_ShouldSquish%8))))
-		return 0;
-
-	lua_settop(gL, 0);
-	lua_pushcfunction(gL, LUA_GetErrorMessage);
-
-	lua_getfield(gL, LUA_REGISTRYINDEX, "hooks");
-	HOOKSINDEX = lua_gettop(gL);
-	I_Assert(lua_istable(L, HOOKSINDEX));
-
-	// We can afford not to check for mobj type because it will always be MT_PLAYER in this case.
-
-	for (hookp = roothook; hookp; hookp = hookp->next)
-	{
-		if (hookp->type != hook_ShouldSquish)
-			continue;
-
-		ps_lua_mobjhooks.value.i++;
-		if (lua_gettop(gL) == 2)
-		{
-			LUA_PushUserdata(gL, player, META_PLAYER);
-			LUA_PushUserdata(gL, inflictor, META_MOBJ);
-			LUA_PushUserdata(gL, source, META_MOBJ);
-		}
-		lua_rawgeti(gL, HOOKSINDEX, hookp->id);
-		lua_pushvalue(gL, -4);
-		lua_pushvalue(gL, -4);
-		lua_pushvalue(gL, -4);
-		if (lua_pcall(gL, 3, 1, 1)) {
-			if (!hookp->error || cv_debug & DBG_LUA)
-				CONS_Alert(CONS_WARNING,"%s\n",lua_tostring(gL, -1));
-			lua_pop(gL, 1);
-			hookp->error = true;
-			continue;
-		}
-		if (!lua_isnil(gL, -1))
-		{
-			if (lua_toboolean(gL, -1))
-				shouldDamage = 1; // Force yes
-			else
-				shouldDamage = 2; // Force no
-		}
-		lua_pop(gL, 1);
-	}
-
-	lua_settop(gL, 0);
-	return shouldDamage;
-	*/
+	return kartdamage_hook(player, inflictor, source, HOOK(ShouldSquish), res_force);
 }
 
 // Hook for K_SpinPlayer. This is used when the player has actually been spun out, but before anything has actually been done. This allows Lua to overwrite the behavior or to just perform actions.
 boolean LUAh_PlayerSpin(player_t *player, mobj_t *inflictor, mobj_t *source)
 {
-	/*
-	hook_p hookp;
-	boolean hooked = false;
-	int HOOKSINDEX;
-	if (!gL || !(hooksAvailable[hook_PlayerSpin/8] & (1<<(hook_PlayerSpin%8))))
-		return 0;
-
-	lua_settop(gL, 0);
-	lua_pushcfunction(gL, LUA_GetErrorMessage);
-
-	lua_getfield(gL, LUA_REGISTRYINDEX, "hooks");
-	HOOKSINDEX = lua_gettop(gL);
-	I_Assert(lua_istable(L, HOOKSINDEX));
-
-	// We can afford not to look for target->type because it will always be MT_PLAYER.
-
-	for (hookp = roothook; hookp; hookp = hookp->next)
-	{
-		if (hookp->type != hook_PlayerSpin)
-			continue;
-
-		ps_lua_mobjhooks.value.i++;
-		if (lua_gettop(gL) == 2)
-		{
-			LUA_PushUserdata(gL, player, META_PLAYER);
-			LUA_PushUserdata(gL, inflictor, META_MOBJ);
-			LUA_PushUserdata(gL, source, META_MOBJ);
-		}
-		lua_rawgeti(gL, HOOKSINDEX, hookp->id);
-		lua_pushvalue(gL, -4);
-		lua_pushvalue(gL, -4);
-		lua_pushvalue(gL, -4);
-		if (lua_pcall(gL, 3, 1, 1)) {
-			if (!hookp->error || cv_debug & DBG_LUA)
-				CONS_Alert(CONS_WARNING,"%s\n",lua_tostring(gL, -1));
-			lua_pop(gL, 1);
-			hookp->error = true;
-			continue;
-		}
-		if (lua_toboolean(gL, -1))
-			hooked = true;
-		lua_pop(gL, 1);
-	}
-
-	lua_settop(gL, 0);
-	return hooked;
-	*/
+	return kartdamage_hook(player, inflictor, source, HOOK(PlayerSpin), res_true);
 }
 
 // Hook for K_SquishPlayer. This is used when the player has actually been spun out, but before anything has actually been done. This allows Lua to overwrite the behavior or to just perform actions.
 boolean LUAh_PlayerSquish(player_t *player, mobj_t *inflictor, mobj_t *source)
 {
-	/*
-	hook_p hookp;
-	boolean hooked = false;
-	int HOOKSINDEX;
-	if (!gL || !(hooksAvailable[hook_PlayerSquish/8] & (1<<(hook_PlayerSquish%8))))
-		return 0;
-
-	lua_settop(gL, 0);
-	lua_pushcfunction(gL, LUA_GetErrorMessage);
-
-	lua_getfield(gL, LUA_REGISTRYINDEX, "hooks");
-	HOOKSINDEX = lua_gettop(gL);
-	I_Assert(lua_istable(L, HOOKSINDEX));
-
-	// We can afford not to look for target->type because it will always be MT_PLAYER.
-
-	for (hookp = roothook; hookp; hookp = hookp->next)
-	{
-		if (hookp->type != hook_PlayerSquish)
-			continue;
-
-		ps_lua_mobjhooks.value.i++;
-		if (lua_gettop(gL) == 2)
-		{
-			LUA_PushUserdata(gL, player, META_PLAYER);
-			LUA_PushUserdata(gL, inflictor, META_MOBJ);
-			LUA_PushUserdata(gL, source, META_MOBJ);
-		}
-		lua_rawgeti(gL, HOOKSINDEX, hookp->id);
-		lua_pushvalue(gL, -4);
-		lua_pushvalue(gL, -4);
-		lua_pushvalue(gL, -4);
-		if (lua_pcall(gL, 3, 1, 1)) {
-			if (!hookp->error || cv_debug & DBG_LUA)
-				CONS_Alert(CONS_WARNING,"%s\n",lua_tostring(gL, -1));
-			lua_pop(gL, 1);
-			hookp->error = true;
-			continue;
-		}
-		if (lua_toboolean(gL, -1))
-			hooked = true;
-		lua_pop(gL, 1);
-	}
-
-	lua_settop(gL, 0);
-	return hooked;
-	*/
+	return kartdamage_hook(player, inflictor, source, HOOK(PlayerSquish), res_true);
 }
 
 // Hook for K_ExplodePlayer. This is used when the player has actually been spun out, but before anything has actually been done. This allows Lua to overwrite the behavior or to just perform actions.
 boolean LUAh_PlayerExplode(player_t *player, mobj_t *inflictor, mobj_t *source)
 {
-	/*
-	hook_p hookp;
-	boolean hooked = false;
-	int HOOKSINDEX;
-	if (!gL || !(hooksAvailable[hook_PlayerExplode/8] & (1<<(hook_PlayerExplode%8))))
-		return 0;
-
-	lua_settop(gL, 0);
-	lua_pushcfunction(gL, LUA_GetErrorMessage);
-
-	lua_getfield(gL, LUA_REGISTRYINDEX, "hooks");
-	HOOKSINDEX = lua_gettop(gL);
-	I_Assert(lua_istable(L, HOOKSINDEX));
-
-	// We can afford not to look for target->type because it will always be MT_PLAYER.
-
-	for (hookp = roothook; hookp; hookp = hookp->next)
-	{
-		if (hookp->type != hook_PlayerExplode)
-			continue;
-
-		ps_lua_mobjhooks.value.i++;
-		if (lua_gettop(gL) == 2)
-		{
-			LUA_PushUserdata(gL, player, META_PLAYER);
-			LUA_PushUserdata(gL, inflictor, META_MOBJ);
-			LUA_PushUserdata(gL, source, META_MOBJ);
-		}
-		lua_rawgeti(gL, HOOKSINDEX, hookp->id);
-		lua_pushvalue(gL, -4);
-		lua_pushvalue(gL, -4);
-		lua_pushvalue(gL, -4);
-		if (lua_pcall(gL, 3, 1, 1)) {
-			if (!hookp->error || cv_debug & DBG_LUA)
-				CONS_Alert(CONS_WARNING,"%s\n",lua_tostring(gL, -1));
-			lua_pop(gL, 1);
-			hookp->error = true;
-			continue;
-		}
-		if (lua_toboolean(gL, -1))
-			hooked = true;
-		lua_pop(gL, 1);
-	}
-
-	lua_settop(gL, 0);
-	return hooked;
-	*/
+	return kartdamage_hook(player, inflictor, source, HOOK(PlayerExplode), res_true);
 }
