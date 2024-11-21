@@ -2961,7 +2961,7 @@ static void Got_Mapcmd(UINT8 **cp, INT32 playernum)
 		SetPlayerSkinByNum(0, cv_chooseskin.value-1);
 
 	//mapnumber = M_MapNumber(mapname[3], mapname[4]);
-	//LUAh_MapChange(mapnumber);
+	//LUA_HookInt(mapnumber, HOOK(MapChange));
 
 	demo.savemode = (cv_recordmultiplayerdemos.value == 2) ? DSM_WILLAUTOSAVE : DSM_NOTSAVING;
 	demo.savebutton = 0;

@@ -14,6 +14,7 @@
 
 #include "byteptr.h"
 #include "dehacked.h"
+#include "doomdef.h"
 #include "i_video.h"
 #include "r_data.h"
 #include "r_draw.h"

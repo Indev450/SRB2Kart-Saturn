@@ -36,7 +36,7 @@ static inline void B_BuildTailsTiccmd(mobj_t *sonic, mobj_t *tails, ticcmd_t *cm
 		return;
 
 	// Lua can handle it!
-	if (LUAh_BotAI(sonic, tails, cmd))
+	if (LUA_HookBotAI(sonic, tails, cmd))
 		return;
 
 	if (tails->player->pflags & (PF_MACESPIN|PF_ITEMHANG))
@@ -119,7 +119,7 @@ void B_BuildTiccmd(player_t *player, ticcmd_t *cmd)
 	}
 
 	// Let Lua scripts build ticcmds
-	if (LUAh_BotTiccmd(player, cmd))
+	if (LUA_HookTiccmd(player, cmd, HOOK(BotTiccmd)))
 		return;
 
 	// We don't have any main character AI, sorry. D:

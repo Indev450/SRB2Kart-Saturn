@@ -2653,7 +2653,7 @@ void A_BossDeath(mobj_t *mo)
 	}
 
 bossjustdie:
-	if (LUAh_BossDeath(mo))
+	if (LUA_HookMobj(mo, MOBJ_HOOK(BossDeath)))
 		return;
 	else if (P_MobjWasRemoved(mo))
 		return;
