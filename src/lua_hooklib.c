@@ -69,7 +69,7 @@ static boolean mobj_hook_available(int hook_type, mobjtype_t mobj_type)
 	return
 		(
 			mobjHookIds [MT_NULL] [hook_type].numHooks > 0 ||
-			mobjHookIds[mobj_type][hook_type].numHooks > 0
+			(mobj_type < NUMMOBJTYPES && mobjHookIds[mobj_type][hook_type].numHooks > 0)
 		);
 }
 
@@ -336,8 +336,11 @@ static boolean prepare_mobj_hook
 		Hook_State * hook,
 		int          default_status,
 		int          hook_type,
-		mobjtype_t   mobj_type
+		mobj_t     * primary_mobj
 ){
+	const mobjtype_t mobj_type =
+		primary_mobj ? primary_mobj->type : NUMMOBJTYPES;
+
 	return init_hook_type(hook, default_status,
 			hook_type, mobj_type, NULL,
 			mobj_hook_available(hook_type, mobj_type));
@@ -494,7 +497,9 @@ static int call_hooks
 	{
 		/* call generic mobj hooks first */
 		calls += call_mobj_type_hooks(hook, MT_NULL);
-		calls += call_mobj_type_hooks(hook, hook->mobj_type);
+
+		if (hook->mobj_type < NUMMOBJTYPES)
+			calls += call_mobj_type_hooks(hook, hook->mobj_type);
 
 		ps_lua_mobjhooks.value.i += calls;
 	}
@@ -542,7 +547,7 @@ static void res_force(Hook_State *hook)
 int LUA_HookMobj(mobj_t *mobj, int hook_type)
 {
 	Hook_State hook;
-	if (prepare_mobj_hook(&hook, false, hook_type, mobj->type))
+	if (prepare_mobj_hook(&hook, false, hook_type, mobj))
 	{
 		LUA_PushUserdata(gL, mobj, META_MOBJ);
 		call_hooks(&hook, 1, res_true);
@@ -553,7 +558,7 @@ int LUA_HookMobj(mobj_t *mobj, int hook_type)
 int LUA_Hook2Mobj(mobj_t *t1, mobj_t *t2, int hook_type)
 {
 	Hook_State hook;
-	if (prepare_mobj_hook(&hook, 0, hook_type, t1->type))
+	if (prepare_mobj_hook(&hook, 0, hook_type, t1))
 	{
 		LUA_PushUserdata(gL, t1, META_MOBJ);
 		LUA_PushUserdata(gL, t2, META_MOBJ);
@@ -669,7 +674,7 @@ void LUA_HookThinkFrame(void)
 int LUA_HookTouchSpecial(mobj_t *special, mobj_t *toucher)
 {
 	Hook_State hook;
-	if (prepare_mobj_hook(&hook, false, MOBJ_HOOK(TouchSpecial), special->type))
+	if (prepare_mobj_hook(&hook, false, MOBJ_HOOK(TouchSpecial), special))
 	{
 		LUA_PushUserdata(gL, special, META_MOBJ);
 		LUA_PushUserdata(gL, toucher, META_MOBJ);
@@ -688,7 +693,7 @@ static int damage_hook
 		Hook_Callback results_handler
 ){
 	Hook_State hook;
-	if (prepare_mobj_hook(&hook, 0, hook_type, target->type))
+	if (prepare_mobj_hook(&hook, 0, hook_type, target))
 	{
 		LUA_PushUserdata(gL, target, META_MOBJ);
 		LUA_PushUserdata(gL, inflictor, META_MOBJ);
@@ -839,7 +844,7 @@ int LUA_HookPlayerMsg(int source, int target, int flags, char *msg, int mute)
 int LUA_HookHurtMsg(player_t *player, mobj_t *inflictor, mobj_t *source)
 {
 	Hook_State hook;
-	if (prepare_hook(&hook, false, HOOK(HurtMsg)))
+	if (prepare_mobj_hook(&hook, false, MOBJ_HOOK(HurtMsg), inflictor))
 	{
 		LUA_PushUserdata(gL, player, META_PLAYER);
 		LUA_PushUserdata(gL, inflictor, META_MOBJ);

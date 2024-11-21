@@ -34,6 +34,7 @@ X (MobjDamage),/* P_DamageMobj (Mobj actually takes damage!) */\
 X (MobjDeath),/* P_KillMobj */\
 X (BossDeath),/* A_BossDeath */\
 X (MobjRemoved),/* P_RemoveMobj */\
+X (HurtMsg),/* imhurttin */\
 
 #define HOOK_LIST(X) \
 X (NetVars),/* add to archive table (netsave) */\
@@ -49,7 +50,6 @@ X (SpinSpecial),/* P_DoSpinAbility (Spin button effect) */\
 X (JumpSpinSpecial),/* P_DoJumpStuff (Spin button effect (mid-air)) */\
 X (BotTiccmd),/* B_BuildTiccmd */\
 X (PlayerMsg),/* chat messages */\
-X (HurtMsg),/* imhurttin */\
 X (PlayerSpawn),/* G_SpawnPlayer */\
 X (PlayerQuit),\
 X (IntermissionThinker),/* Y_Ticker */\
