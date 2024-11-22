@@ -677,6 +677,7 @@ void LUA_HookHUD(int hook_type, huddrawlist_h list)
 		hud_interpolate = hud_interpstring = hud_interplatch = false;
 		init_hook_call(&hook, 1, res_hud);
 		call_mapped(&hook, map);
+		lua_settop(gL, 0); // destroy le stack!! >:3
 		hud_running = false;
 
 		lua_pushnil(gL);
