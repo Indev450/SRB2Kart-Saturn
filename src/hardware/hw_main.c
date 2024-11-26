@@ -3527,7 +3527,7 @@ static void HWR_RotateSpritePolyToAim(gl_vissprite_t *spr, FOutVector *wallVerts
 static inline void HWR_ApplyDispoffset(gl_vissprite_t *spr, FOutVector *wallVerts, const boolean papersprite)
 {
 	// dont push papersprites near the cam unless they have a dispoffset
-	if (papersprite || HWR_UseShader())
+	if (papersprite)
 	{
 		// if it has a dispoffset, push it a little towards the camera
 		if (spr->dispoffset)
@@ -3678,7 +3678,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 
 	if (HWR_UseShader())
 	{
-		shader = (papersprite ? SHADER_SPRITE : SHADER_SPRITECLIPHACK);
+		shader = SHADER_SPRITE;
 		blend |= PF_ColorMapped;
 	}
 
@@ -3949,7 +3949,7 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 
 	if (HWR_UseShader())
 	{
-		shader = (papersprite ? SHADER_SPRITE : SHADER_SPRITECLIPHACK);
+		shader = SHADER_SPRITE;
 		blend |= PF_ColorMapped;
 	}
 
