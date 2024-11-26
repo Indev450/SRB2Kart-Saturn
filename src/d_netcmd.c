@@ -2515,9 +2515,9 @@ static void Command_Playdemo_f(void)
 		return;
 	}
 
-	if (netgame)
+	if (gamestate == GS_LEVEL)
 	{
-		CONS_Printf(M_GetText("You can't play a demo while in a netgame.\n"));
+		CONS_Printf(M_GetText("You can't play a demo while in a game.\n"));
 		return;
 	}
 
@@ -2554,9 +2554,9 @@ static void Command_Timedemo_f(void)
 		return;
 	}
 
-	if (netgame)
+	if (gamestate == GS_LEVEL)
 	{
-		CONS_Printf(M_GetText("You can't play a demo while in a netgame.\n"));
+		CONS_Printf(M_GetText("You can't time a demo while in a game.\n"));
 		return;
 	}
 
