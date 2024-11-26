@@ -3218,8 +3218,6 @@ static void HWR_DrawSpriteShadow(gl_vissprite_t *spr, GLPatch_t *gpatch)
 	pslope_t *floorslope;
 	fixed_t slopez;
 	float offset = 0;
-	
-	INT32 shader = SHADER_NONE;
 
 	// technically this_scale gets multiplied and added to sprite y/x scale, but this thing needs it for some crap so ill just throw it in here again
 	const boolean hires = (spr->mobj && spr->mobj->skin && ((skin_t *)( (spr->mobj->localskin) ? spr->mobj->localskin : spr->mobj->skin ))->flags & SF_HIRES);
@@ -3376,14 +3374,7 @@ static void HWR_DrawSpriteShadow(gl_vissprite_t *spr, GLPatch_t *gpatch)
 	if (sSurf.PolyColor.s.alpha > floorheight/4)
 	{
 		sSurf.PolyColor.s.alpha = (UINT8)(sSurf.PolyColor.s.alpha - floorheight/4);
-
-		if (HWR_UseShader())
-		{
-			shader = SHADER_SHADOW;
-			blendmode |= PF_ColorMapped;
-		}
-
-		HWR_ProcessPolygon(&sSurf, swallVerts, 4, blendmode|PF_Translucent|PF_Modulated, shader, false);
+		HWR_ProcessPolygon(&sSurf, swallVerts, 4, blendmode|PF_Translucent|PF_Modulated, SHADER_NONE, false);
 	}
 }
 
@@ -4612,6 +4603,14 @@ static void HWR_ProjectSprite(mobj_t *thing)
 			}
 			else
 				rollsum = rollangle;
+
+			// this is kinda dumb lkmao, but try to mitigate shadows being weirdly offset on slopes
+			if (thing->type == MT_SHADOW)
+			{
+				sprinfo->available = true; // < lmao
+				sprinfo->pivot[(thing->frame & FF_FRAMEMASK)].x = spr_offset>>FRACBITS;
+				sprinfo->pivot[(thing->frame & FF_FRAMEMASK)].y = -8; // noones gonna replace shadow sprite anyways, right? that random value ftw, otherwise this clips into the ground Zzz...
+			}
 
 			rollangle = R_GetRollAngle(rollsum);
 			rotsprite = Patch_GetRotatedSprite(sprframe, (thing->frame & FF_FRAMEMASK), rot, flip, false, sprinfo, rollangle);
