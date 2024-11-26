@@ -283,7 +283,8 @@ void OglSdlFinishUpdate(boolean waitvbl)
 	}
 #endif
 
-	HWR_DrawScreenFinalTexture(sdlw, sdlh);
+	//HWR_DrawScreenFinalTexture(sdlw, sdlh);
+	GL_DrawScreenFinalTexture(HWD_SCREENTEXTURE_GENERIC2, sdlw, sdlh);
 
 #ifdef USE_FBO_OGL
 	if (UseScreenFBO())
@@ -300,7 +301,8 @@ void OglSdlFinishUpdate(boolean waitvbl)
 	// Sryder:	We need to draw the final screen texture again into the other buffer in the original position so that
 	//			effects that want to take the old screen can do so after this
 
-	HWR_DrawScreenFinalTexture(realwidth, realheight);
+	//HWR_DrawScreenFinalTexture(realwidth, realheight);
+	//GL_DrawScreenFinalTexture(HWD_SCREENTEXTURE_GENERIC2, realwidth, realheight);
 }
 
 #endif //HWRENDER
