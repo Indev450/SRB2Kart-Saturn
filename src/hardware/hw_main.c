@@ -487,7 +487,7 @@ static FUINT HWR_CalcSlopeLight(FUINT lightnum, pslope_t *slope, const sector_t 
 {
 	INT16 finallight = lightnum;
 
-	if (slope != NULL && P_ApplyLightOffsetFine(lightnum, sector) && cv_glfakecontrast.value != 0 && cv_glslopecontrast.value != 0)
+	if (slope != NULL && sector != NULL && P_ApplyLightOffsetFine(lightnum, sector) && cv_glfakecontrast.value != 0 && cv_glslopecontrast.value != 0)
 	{
 		if (cv_glfakecontrast.value == 2) // Smooth setting
 			finallight += (fof ? -slope->hwLightOffset : slope->hwLightOffset);
