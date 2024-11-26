@@ -3379,9 +3379,9 @@ static void HWR_DrawSpriteShadow(gl_vissprite_t *spr, GLPatch_t *gpatch)
 }
 
 // This is expecting a pointer to an array containing 4 wallVerts for a sprite
-static void HWR_RotateSpritePolyToAim(gl_vissprite_t *spr, FOutVector *wallVerts, const boolean precip, const boolean papersprite)
+static void HWR_RotateSpritePolyToAim(gl_vissprite_t *spr, FOutVector *wallVerts, const boolean precip)
 {
-	if (!cv_glspritebillboarding.value || !spr || !spr->mobj || papersprite || !wallVerts)
+	if (!cv_glspritebillboarding.value || !spr || !spr->mobj || !wallVerts)
 	{
 		return;
 	}
@@ -3464,11 +3464,10 @@ static inline void HWR_ApplyDispoffset(gl_vissprite_t *spr, FOutVector *wallVert
 			wallVerts[1].x = wallVerts[2].x = wallVerts[1].x+co;
 		}
 
-		HWR_RotateSpritePolyToAim(spr, wallVerts, false, papersprite);
 		return;
 	}
 
-	HWR_RotateSpritePolyToAim(spr, wallVerts, false, papersprite);
+	HWR_RotateSpritePolyToAim(spr, wallVerts, false);
 
 	float sprdist = sqrtf((spr->x1 - gl_viewx)*(spr->x1 - gl_viewx) + (spr->z1 - gl_viewy)*(spr->z1 - gl_viewy) + (spr->gzt - gl_viewz)*(spr->gzt - gl_viewz));
 	float distfact = ((2.0f*spr->dispoffset) + 20.0f) / sprdist;
@@ -3909,7 +3908,7 @@ static inline void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 	wallVerts[0].z = wallVerts[3].z = spr->z1;
 	wallVerts[1].z = wallVerts[2].z = spr->z2;
 
-	HWR_RotateSpritePolyToAim(spr, wallVerts, true, false);
+	HWR_RotateSpritePolyToAim(spr, wallVerts, true);
 
 	wallVerts[0].s = wallVerts[3].s = 0;
 	wallVerts[2].s = wallVerts[1].s = gpatch->max_s;
