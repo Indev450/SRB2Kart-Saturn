@@ -2708,6 +2708,8 @@ boolean P_SetupLevel(boolean skipprecip, boolean reloadinggamestate)
 	R_ClearLevelSplats();
 #endif
 
+	mobjcache = NULL;
+
 	R_InitializeLevelInterpolators();
 
 	P_InitThinkers();

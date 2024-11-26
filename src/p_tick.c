@@ -196,6 +196,8 @@ void P_AddThinker(thinker_t *thinker)
 	thinkercap.prev = thinker;
 
 	thinker->references = 0;    // killough 11/98: init reference counter to 0
+
+	thinker->cachable = (thinker->function.acp1 == (actionf_p1)P_MobjThinker);
 }
 
 //
@@ -225,16 +227,17 @@ void P_RemoveThinkerDelayed(thinker_t *thinker)
 		CONS_Printf("Number of potentially faulty references: %d\n", thinker->references);
 #endif
 
-	if (thinker->references)
+	if (thinker->references != 0)
 		return;
 
 	R_DestroyLevelInterpolators(thinker);
 
 	/* Note that currentthinker is guaranteed to point to us,
-	* and since we're freeing our memory, we had better change that. So
-	* point it to thinker->prev, so the iterator will correctly move on to
-	* thinker->prev->next = thinker->next */
+	 * and since we're freeing our memory, we had better change that. So
+	 * point it to thinker->prev, so the iterator will correctly move on to
+	 * thinker->prev->next = thinker->next */
 	currentthinker = thinker->prev;
+
 	/* Remove from main thinker list */
 	P_UnlinkThinker(thinker);
 }
@@ -251,8 +254,19 @@ void P_UnlinkThinker(thinker_t *thinker)
 	I_Assert(thinker->references == 0);
 
 	(next->prev = thinker->prev)->next = next;
-	Z_Free(thinker);
+
+	if (thinker->cachable == true)
+	{
+		// put cachable thinkers in the mobj cache, so we can avoid allocations
+		((mobj_t *)thinker)->hnext = mobjcache;
+		mobjcache = (mobj_t *)thinker;
+	}
+	else
+	{
+		Z_Free(thinker);
+	}
 }
+
 
 //
 // P_RemoveThinker
