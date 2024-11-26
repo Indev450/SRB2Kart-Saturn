@@ -928,7 +928,6 @@ static void HWR_ProjectWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIEL
 //
 // SoM: split up and light walls according to the lightlist.
 // This may also include leaving out parts of the wall that can't be seen
-#define PALLIGHT(lightnum, colormap, sector) (HWR_ShouldUsePaletteRendering() && colormap) ? lightnum : HWR_CalcWallLight(lightnum, sector)
 static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum, boolean noencore, FSurfaceInfo* Surf, INT32 cutflag, ffloor_t *pfloor, FBITFIELD polyflags)
 {
 	float realtop, realbot, top, bot;
@@ -947,7 +946,7 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 	fixed_t v2y = FloatToFixed(wallVerts[1].z);
 
 	const UINT8 alpha = Surf->PolyColor.s.alpha;
-	FUINT lightnum = sector->lightlevel;
+	FUINT lightnum = HWR_CalcWallLight(sector->lightlevel, gl_curline);
 	extracolormap_t *colormap = NULL;
 
 	realtop = top = wallVerts[3].y;
@@ -990,11 +989,13 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 			{
 				lightnum = pfloor->master->frontsector->lightlevel;
 				colormap = pfloor->master->frontsector->extra_colormap;
+				lightnum = (HWR_ShouldUsePaletteRendering() && colormap) ? lightnum : HWR_CalcWallLight(lightnum, gl_curline);
 			}
 			else
 			{
 				lightnum = *list[i].lightlevel;
 				colormap = list[i].extra_colormap;
+				lightnum = (HWR_ShouldUsePaletteRendering() && colormap) ? lightnum : HWR_CalcWallLight(lightnum, gl_curline);
 			}
 		}
 
@@ -1072,11 +1073,11 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 		wallVerts[1].y = endbot;
 
 		if (cutflag & FF_FOG)
-			HWR_AddTransparentWall(wallVerts, Surf, texnum, noencore, PF_Fog|PF_NoTexture|polyflags, true, PALLIGHT(lightnum, colormap, gl_curline), colormap);
+			HWR_AddTransparentWall(wallVerts, Surf, texnum, noencore, PF_Fog|PF_NoTexture|polyflags, true, lightnum, colormap);
 		else if (cutflag & FF_TRANSLUCENT)
-			HWR_AddTransparentWall(wallVerts, Surf, texnum, noencore, PF_Translucent|polyflags, false, PALLIGHT(lightnum, colormap, gl_curline), colormap);
+			HWR_AddTransparentWall(wallVerts, Surf, texnum, noencore, PF_Translucent|polyflags, false, lightnum, colormap);
 		else
-			HWR_ProjectWall(wallVerts, Surf, PF_Masked|polyflags, PALLIGHT(lightnum, colormap, gl_curline), colormap);
+			HWR_ProjectWall(wallVerts, Surf, PF_Masked|polyflags, lightnum, colormap);
 
 		top = bot;
 		endtop = endbot;
@@ -1101,13 +1102,12 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 	wallVerts[1].y = endbot;
 
 	if (cutflag & FF_FOG)
-		HWR_AddTransparentWall(wallVerts, Surf, texnum, noencore, PF_Fog|PF_NoTexture|polyflags, true, PALLIGHT(lightnum, colormap, gl_curline), colormap);
+		HWR_AddTransparentWall(wallVerts, Surf, texnum, noencore, PF_Fog|PF_NoTexture|polyflags, true, lightnum, colormap);
 	else if (cutflag & FF_TRANSLUCENT)
-		HWR_AddTransparentWall(wallVerts, Surf, texnum, noencore, PF_Translucent|polyflags, false, PALLIGHT(lightnum, colormap, gl_curline), colormap);
+		HWR_AddTransparentWall(wallVerts, Surf, texnum, noencore, PF_Translucent|polyflags, false, lightnum, colormap);
 	else
-		HWR_ProjectWall(wallVerts, Surf, PF_Masked|polyflags, PALLIGHT(lightnum, colormap, gl_curline), colormap);
+		HWR_ProjectWall(wallVerts, Surf, PF_Masked|polyflags, lightnum, colormap);
 }
-#undef PALLIGHT
 
 // skywall list system for fixing portal issues by postponing skywall rendering (and using stencil buffer for them)
 // ideally this will be a temporary implementation.
@@ -1968,10 +1968,12 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 					Surf.PolyColor.s.alpha = HWR_FogBlockAlpha(lightnum, colormap);
 
+					lightnum = (HWR_ShouldUsePaletteRendering() && colormap) ? lightnum : HWR_CalcWallLight(lightnum, gl_curline);
+
 					if (gl_frontsector->numlights)
 						HWR_SplitWall(gl_frontsector, wallVerts, 0, false, &Surf, rover->flags, rover, 0);
 					else
-						HWR_AddTransparentWall(wallVerts, &Surf, 0, false, blendmode, true, (HWR_ShouldUsePaletteRendering() && colormap) ? lightnum : HWR_CalcWallLight(lightnum, gl_curline), colormap);
+						HWR_AddTransparentWall(wallVerts, &Surf, 0, false, blendmode, true, lightnum, colormap);
 				}
 				else
 				{
@@ -2081,10 +2083,12 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 					Surf.PolyColor.s.alpha = HWR_FogBlockAlpha(lightnum, colormap);
 
+					lightnum = (HWR_ShouldUsePaletteRendering() && colormap) ? lightnum : HWR_CalcWallLight(lightnum, gl_curline);
+
 					if (gl_backsector->numlights)
 						HWR_SplitWall(gl_backsector, wallVerts, 0, false, &Surf, rover->flags, rover, 0);
 					else
-						HWR_AddTransparentWall(wallVerts, &Surf, 0, false, blendmode, true, (HWR_ShouldUsePaletteRendering() && colormap) ? lightnum : HWR_CalcWallLight(lightnum, gl_curline), colormap);
+						HWR_AddTransparentWall(wallVerts, &Surf, 0, false, blendmode, true, lightnum, colormap);
 				}
 				else
 				{
