@@ -438,7 +438,7 @@ boolean P_SectorUsesDirectionalLighting(const sector_t *sector)
 	if (sector != NULL)
 	{
 		// automatically turned on
-		if (sector->ceilingpic == skyflatnum)
+		if (sector->ceilingpic == skyflatnum || sector->floorpic == skyflatnum)
 		{
 			// sky is visible
 			return true;
