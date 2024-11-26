@@ -255,6 +255,9 @@ void P_UnlinkThinker(thinker_t *thinker)
 
 	(next->prev = thinker->prev)->next = next;
 
+	if (thinker->cachable != true && thinker->cachable != false)
+		CONS_Alert(CONS_ERROR, "P_UnlinkThinker: weird value for cachable = %d\n", thinker->cachable);
+
 	if (thinker->cachable == true)
 	{
 		// put cachable thinkers in the mobj cache, so we can avoid allocations
@@ -266,7 +269,6 @@ void P_UnlinkThinker(thinker_t *thinker)
 		Z_Free(thinker);
 	}
 }
-
 
 //
 // P_RemoveThinker
