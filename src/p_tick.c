@@ -196,6 +196,8 @@ void P_AddThinker(thinker_t *thinker)
 	thinkercap.prev = thinker;
 
 	thinker->references = 0;    // killough 11/98: init reference counter to 0
+
+	thinker->cachable = (thinker->function.acp1 == (actionf_p1)P_MobjThinker);
 }
 
 //
@@ -235,7 +237,17 @@ void P_RemoveThinkerDelayed(thinker_t *thinker)
 	* thinker->prev->next = thinker->next */
 	(next->prev = currentthinker = thinker->prev)->next = next;
 	R_DestroyLevelInterpolators(thinker);
-	Z_Free(thinker);
+
+	if (thinker->cachable == true)
+	{
+		// put cachable thinkers in the mobj cache, so we can avoid allocations
+		((mobj_t *)thinker)->hnext = mobjcache;
+		mobjcache = (mobj_t *)thinker;
+	}
+	else
+	{
+		Z_Free(thinker);
+	}
 }
 
 //
@@ -250,8 +262,19 @@ void P_UnlinkThinker(thinker_t *thinker)
 	I_Assert(thinker->references == 0);
 
 	(next->prev = thinker->prev)->next = next;
-	Z_Free(thinker);
+
+	if (thinker->cachable == true)
+	{
+		// put cachable thinkers in the mobj cache, so we can avoid allocations
+		((mobj_t *)thinker)->hnext = mobjcache;
+		mobjcache = (mobj_t *)thinker;
+	}
+	else
+	{
+		Z_Free(thinker);
+	}
 }
+
 
 //
 // P_RemoveThinker
