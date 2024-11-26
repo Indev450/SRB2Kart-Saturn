@@ -3693,8 +3693,6 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 	if (spr->mobj->frame & FF_FULLBRIGHT)
 		lightlevel = 255;
 
-	HWR_ObjectLightLevelPost(spr, sector, &lightlevel, false);
-
 	for (i = 1; i < sector->numlights; i++)
 	{
 		fixed_t h = P_GetLightZAt(&sector->lightlist[i], spr->mobj->x, spr->mobj->y);
@@ -3703,10 +3701,11 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 
 		if (!(spr->mobj->frame & FF_FULLBRIGHT))
 			lightlevel = min(*list[i-1].lightlevel, 255);
-		HWR_ObjectLightLevelPost(spr, sector, &lightlevel, false);
 		colormap = list[i-1].extra_colormap;
 		break;
 	}
+
+	HWR_ObjectLightLevelPost(spr, sector, &lightlevel, false);
 
 	for (i = 0; i < sector->numlights; i++)
 	{
