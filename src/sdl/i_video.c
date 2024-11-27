@@ -706,10 +706,35 @@ static INT32 SDLJoyAxis(const Sint16 axis, evtype_t which)
 	return raxis;
 }
 
+boolean I_CheckNativeRes(void)
+{
+	static int oldwidth = 0, oldheight = 0;
+	static boolean resstate = false;
+	int currentDisplayIndex = 0;
+	SDL_DisplayMode curmode;
+
+	if (oldwidth == vid.width && oldheight == vid.height)
+	{
+		return resstate;
+	}
+
+	currentDisplayIndex = SDL_GetWindowDisplayIndex(window);
+
+	if (SDL_GetCurrentDisplayMode(currentDisplayIndex, &curmode) != 0)
+	{
+		return resstate;
+	}
+
+	resstate = ((vid.width == curmode.w) && (vid.height == curmode.h));
+	oldwidth = vid.width;
+	oldheight = vid.height;
+	return resstate;
+}
+
 #ifdef USE_FBO_OGL
 void I_DownSample(void)
 {
-	if (!cv_glframebuffer.value || !supportFBO) //no sense to do this crap if we cant benefit from it
+	if (!cv_glframebuffer.value || !supportFBO || I_CheckNativeRes()) //no sense to do this crap if we cant benefit from it
 	{
 		downsample = false;
 		return;
