@@ -56,7 +56,7 @@ void GL_FlushScreenTextures (void);
 void GL_DrawScreenTexture(int tex, FSurfaceInfo *surf, FBITFIELD polyflags);
 void GL_DoScreenWipe (int wipeStart, int wipeEnd);
 void GL_RenderVhsEffect (fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8 downdistort, UINT8 barsize);
-void GL_DrawScreenFinalTexture (int tex, INT32 width, INT32 height);
+void GL_DrawScreenFinalTexture (int tex, INT32 width, INT32 height, boolean useshader);
 
 void GL_PostImgRedraw (float points[SCREENVERTS][SCREENVERTS][2]);
 
