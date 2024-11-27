@@ -3396,7 +3396,7 @@ EXPORT void HWRAPI(MakeScreenTexture) (int tex)
 	tex_downloaded = screenTextures[tex];
 }
 
-EXPORT void HWRAPI(DrawScreenFinalTexture)(int tex, INT32 width, INT32 height)
+EXPORT void HWRAPI(DrawScreenFinalTexture)(int tex, INT32 width, INT32 height, boolean useshader)
 {
 	float xfix, yfix;
 	float origaspect, newaspect;
@@ -3463,7 +3463,7 @@ EXPORT void HWRAPI(DrawScreenFinalTexture)(int tex, INT32 width, INT32 height)
 
 	pglBindTexture(GL_TEXTURE_2D, screenTextures[tex]);
 	
-	if (HWR_ShouldUsePaletteRendering())
+	if (useshader)
 		pglUseProgram(gl_shaders[SHADER_PALETTE_POSTPROCESS].program); // palette postprocess shader
 
 	pglColor4ubv(white);
@@ -3473,7 +3473,7 @@ EXPORT void HWRAPI(DrawScreenFinalTexture)(int tex, INT32 width, INT32 height)
 
 	pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 	
-	if (HWR_ShouldUsePaletteRendering())
+	if (useshader)
 		pglUseProgram(0);
 
 	tex_downloaded = screenTextures[tex];

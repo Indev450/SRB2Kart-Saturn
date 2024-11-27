@@ -258,7 +258,7 @@ void OglSdlFinishUpdate(boolean waitvbl)
 		GLFramebuffer_Unbind();
 #endif
 	
-	HWR_DrawScreenFinalTexture(sdlw, sdlh);
+	HWR_DrawScreenFinalTexture(sdlw, sdlh, HWR_ShouldUsePaletteRendering());
 
 #ifdef USE_FBO_OGL
 	if (UseScreenFBO())
@@ -276,7 +276,7 @@ void OglSdlFinishUpdate(boolean waitvbl)
 	&& (!UseScreenFBO())
 #endif
 	)
-		HWR_DrawScreenFinalTexture(realwidth, realheight);
+		HWR_DrawScreenFinalTexture(realwidth, realheight, false);
 }
 
 EXPORT void HWRAPI(OglSdlSetPalette) (RGBA_t *palette)

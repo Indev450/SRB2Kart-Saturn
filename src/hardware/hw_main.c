@@ -5626,9 +5626,9 @@ void HWR_MakeScreenFinalTexture(void)
 	HWD.pfnMakeScreenTexture(HWD_SCREENTEXTURE_GENERIC2);
 }
 
-void HWR_DrawScreenFinalTexture(INT32 width, INT32 height)
+void HWR_DrawScreenFinalTexture(INT32 width, INT32 height, boolean useshader)
 {
-	HWD.pfnDrawScreenFinalTexture(HWD_SCREENTEXTURE_GENERIC2, width, height);
+	HWD.pfnDrawScreenFinalTexture(HWD_SCREENTEXTURE_GENERIC2, width, height, useshader);
 }
 
 #endif // HWRENDER
