@@ -3328,6 +3328,7 @@ void GL_DoScreenWipe(int wipeStart, int wipeEnd)
 void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8 downdistort, UINT8 barsize)
 {
 	INT32 texsize = 512;
+	int tex = HWD_SCREENTEXTURE_VHS;
 	float xfix, yfix;
 	float fix[8];
 	GLubyte color[4] = {255, 255, 255, 255};
@@ -3352,9 +3353,9 @@ void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8
 	yfix = 1/((float)(texsize)/((float)((screen_height))));
 
 	// Slight fuzziness
-	GL_MakeScreenTexture(HWD_SCREENTEXTURE_GENERIC1);
+	GL_MakeScreenTexture(tex);
 	GL_SetBlend(PF_Modulated|PF_Translucent|PF_NoDepthTest);
-	//pglBindTexture(GL_TEXTURE_2D, screentexture);
+	pglBindTexture(GL_TEXTURE_2D, screenTextures[tex]);
 
 	for (i = 0; i < 1; i += 2.f/vid.height)
 	{
@@ -3376,8 +3377,9 @@ void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8
 	}
 
 	// Upward bar
-	GL_MakeScreenTexture(HWD_SCREENTEXTURE_GENERIC1);
-	//pglBindTexture(GL_TEXTURE_2D, screentexture);
+	GL_MakeScreenTexture(tex);
+	pglBindTexture(GL_TEXTURE_2D, screenTextures[tex]);
+
 	color[0] = color[1] = color[2] = 190;
 	color[3] = 250;
 	pglColor4ubv(color);
@@ -3404,8 +3406,8 @@ void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8
 	pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
 	// Downward bar
-	GL_MakeScreenTexture(HWD_SCREENTEXTURE_GENERIC1);
-	//pglBindTexture(GL_TEXTURE_2D, screentexture);
+	GL_MakeScreenTexture(tex);
+	pglBindTexture(GL_TEXTURE_2D, screenTextures[tex]);
 
 	fix[0] = 0.0f;
 	fix[6] = xfix;
