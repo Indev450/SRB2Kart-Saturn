@@ -1303,7 +1303,7 @@ void GL_ReadScreenTexture(int tex, UINT16 *dst_data)
 	// if some other screen texture is needed, draw it to the framebuffer
 	// and draw generic2 back after reading the framebuffer.
 	// this hack is for some reason **much** faster than the simple solution of using glGetTexImage.
-	//if (tex != HWD_SCREENTEXTURE_GENERIC2)
+	if (tex != HWD_SCREENTEXTURE_GENERIC2)
 		GL_DrawScreenTexture(tex, NULL, 0);
 	pglPixelStorei(GL_PACK_ALIGNMENT, 1);
 	pglReadPixels(0, 0, screen_width, screen_height, GL_RGB, GL_UNSIGNED_BYTE, dst_data);
