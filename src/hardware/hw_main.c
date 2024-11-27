@@ -5718,9 +5718,9 @@ void HWR_MakeScreenFinalTexture(void)
 	GL_MakeScreenTexture(HWD_SCREENTEXTURE_GENERIC2);
 }
 
-void HWR_DrawScreenFinalTexture(INT32 width, INT32 height)
+void HWR_DrawScreenFinalTexture(INT32 width, INT32 height, boolean useshader)
 {
-	GL_DrawScreenFinalTexture(HWD_SCREENTEXTURE_GENERIC2, width, height);
+	GL_DrawScreenFinalTexture(HWD_SCREENTEXTURE_GENERIC2, width, height, useshader);
 }
 
 #endif // HWRENDER

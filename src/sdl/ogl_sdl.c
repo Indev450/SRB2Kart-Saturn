@@ -284,7 +284,7 @@ void OglSdlFinishUpdate(boolean waitvbl)
 #endif
 
 	//HWR_DrawScreenFinalTexture(sdlw, sdlh);
-	GL_DrawScreenFinalTexture(HWD_SCREENTEXTURE_GENERIC2, sdlw, sdlh);
+	GL_DrawScreenFinalTexture(HWD_SCREENTEXTURE_GENERIC2, sdlw, sdlh, true);
 
 #ifdef USE_FBO_OGL
 	if (UseScreenFBO())
@@ -305,7 +305,7 @@ void OglSdlFinishUpdate(boolean waitvbl)
 	&& (!UseScreenFBO())
 #endif
 	)
-		HWR_DrawScreenFinalTexture(realwidth, realheight);
+		HWR_DrawScreenFinalTexture(realwidth, realheight, false);
 
 	//HWR_DrawScreenFinalTexture(realwidth, realheight);
 	//GL_DrawScreenFinalTexture(HWD_SCREENTEXTURE_GENERIC2, realwidth, realheight);

@@ -3463,7 +3463,7 @@ void GL_MakeScreenTexture(int tex)
 	tex_downloaded = screenTextures[tex];
 }
 
-void GL_DrawScreenFinalTexture(int tex, INT32 width, INT32 height)
+void GL_DrawScreenFinalTexture(int tex, INT32 width, INT32 height, boolean useshader)
 {
 	float xfix, yfix;
 	float origaspect, newaspect;
@@ -3530,12 +3530,15 @@ void GL_DrawScreenFinalTexture(int tex, INT32 width, INT32 height)
 
 	pglBindTexture(GL_TEXTURE_2D, screenTextures[tex]);
 
-	// godawful but you can only ever run ONE shader per renderpass and since i dont want to draw an extra screen texture when you downsample from higher resolution (essentially killing performance)
-	// so i combined the palette postprocess with this crap
-	if (HWR_ShouldUsePaletteRendering() && (!(HWR_UseShader() && fbo_shader && !WipeInAction)))
-		pglUseProgram(gl_shaders[SHADER_PALETTE_POSTPROCESS].program); // palette postprocess shader
-	else if (HWR_UseShader() && fbo_shader && !WipeInAction) // this looks awful with wipes
-		pglUseProgram(gl_shaders[SHADER_DOWNSAMPLE].program);
+	if (useshader)
+	{
+		// godawful but you can only ever run ONE shader per renderpass and since i dont want to draw an extra screen texture when you downsample from higher resolution (essentially killing performance)
+		// so i combined the palette postprocess with this crap
+		if (HWR_ShouldUsePaletteRendering() && (!(HWR_UseShader() && fbo_shader && !WipeInAction)))
+			pglUseProgram(gl_shaders[SHADER_PALETTE_POSTPROCESS].program); // palette postprocess shader
+		else if (HWR_UseShader() && fbo_shader && !WipeInAction) // this looks awful with wipes
+			pglUseProgram(gl_shaders[SHADER_DOWNSAMPLE].program);
+	}
 
 	pglColor4ubv(white);
 
@@ -3543,9 +3546,12 @@ void GL_DrawScreenFinalTexture(int tex, INT32 width, INT32 height)
 	pglVertexPointer(3, GL_FLOAT, 0, off);
 
 	pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-
-	if (HWR_ShouldUsePaletteRendering() || (HWR_UseShader() && fbo_shader && !WipeInAction))
-		pglUseProgram(0);
+	
+	if (useshader)
+	{
+		if (HWR_ShouldUsePaletteRendering() || (HWR_UseShader() && fbo_shader && !WipeInAction))
+			pglUseProgram(0);
+	}
 
 	tex_downloaded = screenTextures[tex];
 }
