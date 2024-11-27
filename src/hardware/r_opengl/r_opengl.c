@@ -3185,8 +3185,7 @@ void GL_PostImgRedraw(float points[SCREENVERTS][SCREENVERTS][2])
 void GL_FlushScreenTextures(void)
 {
 	pglDeleteTextures(NUMSCREENTEXTURES, screenTextures);
-	for (int i = 0; i < NUMSCREENTEXTURES; i++)
-		screenTextures[i] = 0;
+	memset(screenTextures, 0 , sizeof(screenTextures));
 }
 
 void GL_DrawScreenTexture(int tex, FSurfaceInfo *surf, FBITFIELD polyflags)
