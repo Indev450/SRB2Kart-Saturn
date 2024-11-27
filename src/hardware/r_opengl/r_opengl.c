@@ -3109,10 +3109,8 @@ EXPORT void HWRAPI(PostImgRedraw) (float points[SCREENVERTS][SCREENVERTS][2])
 //			a new size
 EXPORT void HWRAPI(FlushScreenTextures) (void)
 {
-	int i;
 	pglDeleteTextures(NUMSCREENTEXTURES, screenTextures);
-	for (i = 0; i < NUMSCREENTEXTURES; i++)
-		screenTextures[i] = 0;
+	memset(screenTextures, 0 , sizeof(screenTextures));
 }
 
 EXPORT void HWRAPI(DrawScreenTexture)(int tex, FSurfaceInfo *surf, FBITFIELD polyflags)
