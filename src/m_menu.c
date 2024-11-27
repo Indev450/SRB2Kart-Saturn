@@ -6371,16 +6371,14 @@ static void M_DrawAddons(void)
 	y = BASEVIDHEIGHT - currentMenu->y + 1;
 
 	M_DrawTextBox(x - (21 + 5), y, MAXSTRINGLENGTH, 1);
-	if (menusearch[0])
-		V_DrawString(x - 18, y + 8, V_ALLOWLOWERCASE, menusearch+1);
+
+	if (menusearch.length)
+		M_DrawTextInput(x - 18, y + 8, &menusearch, 0);
 	else
 		V_DrawString(x - 18, y + 8, V_ALLOWLOWERCASE|V_TRANSLUCENT, "Type to search...");
-	if (skullAnimCounter < 4)
-		V_DrawCharacter(x - 18 + V_StringWidth(menusearch+1, 0), y + 8,
-			'_' | 0x80, false);
 
 	x -= (21 + 5 + 16);
-	V_DrawSmallScaledPatch(x, y + 4, (menusearch[0] ? 0 : V_TRANSLUCENT), addonsp[NUM_EXT+3]);
+	V_DrawSmallScaledPatch(x, y + 4, (menusearch.length ? 0 : V_TRANSLUCENT), addonsp[NUM_EXT+3]);
 
 	x = BASEVIDWIDTH - x - 16;
 	V_DrawSmallScaledPatch(x, y + 4, ((!majormods) ? 0 : V_TRANSLUCENT), addonsp[NUM_EXT+4]);
@@ -6456,43 +6454,6 @@ static void M_AddonAutoLoad(INT32 ch)
 	fclose(autoloadconfigfile);
 }
 
-#define len menusearch[0]
-static boolean M_ChangeStringAddons(INT32 choice)
-{
-	choice = M_ShiftChar(choice);
-
-	switch (choice)
-	{
-		case KEY_DEL:
-			if (len)
-			{
-				len = menusearch[1] = 0;
-				return true;
-			}
-			break;
-		case KEY_BACKSPACE:
-			if (len)
-			{
-				menusearch[1+--len] = 0;
-				return true;
-			}
-			break;
-		default:
-			if (choice >= 32 && choice <= 127)
-			{
-				if (len < MAXSTRINGLENGTH - 1)
-				{
-					menusearch[1+len++] = (char)choice;
-					menusearch[1+len] = 0;
-					return true;
-				}
-			}
-			break;
-	}
-	return false;
-}
-#undef len
-
 // i hate myself
 static boolean DumbStartsWith(const char *pre, const char *str)
 {
@@ -6505,8 +6466,10 @@ static void M_HandleAddons(INT32 choice)
 {
 	boolean exitmenu = false; // exit to previous menu
 
-	if (M_ChangeStringAddons(choice))
+	if (M_TextInputHandle(&menusearch, choice))
 	{
+		S_StartSound(NULL,sfx_menu1);
+
 		char *tempname = NULL;
 		if (dirmenu && dirmenu[dir_on[menudepthleft]])
 			tempname = Z_StrDup(dirmenu[dir_on[menudepthleft]]+DIR_STRING); // don't need to I_Error if can't make - not important, just QoL
