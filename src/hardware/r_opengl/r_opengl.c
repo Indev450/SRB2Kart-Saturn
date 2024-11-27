@@ -3261,6 +3261,7 @@ EXPORT void HWRAPI(DoScreenWipe)(int wipeStart, int wipeEnd)
 EXPORT void HWRAPI(RenderVhsEffect) (fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8 downdistort, UINT8 barsize)
 {
 	INT32 texsize = 512;
+	int tex = HWD_SCREENTEXTURE_VHS;
 	float xfix, yfix;
 	float fix[8];
 	GLubyte color[4] = {255, 255, 255, 255};
@@ -3285,9 +3286,9 @@ EXPORT void HWRAPI(RenderVhsEffect) (fixed_t upbary, fixed_t downbary, UINT8 upd
 	yfix = 1/((float)(texsize)/((float)((screen_height))));
 
 	// Slight fuzziness
-	MakeScreenTexture(HWD_SCREENTEXTURE_GENERIC1);
+	MakeScreenTexture(tex);
 	SetBlend(PF_Modulated|PF_Translucent|PF_NoDepthTest);
-	//pglBindTexture(GL_TEXTURE_2D, screentexture);
+	pglBindTexture(GL_TEXTURE_2D, screenTextures[tex]);
 
 	for (i = 0; i < 1; i += 2.f/vid.height)
 	{
@@ -3309,8 +3310,9 @@ EXPORT void HWRAPI(RenderVhsEffect) (fixed_t upbary, fixed_t downbary, UINT8 upd
 	}
 
 	// Upward bar
-	MakeScreenTexture(HWD_SCREENTEXTURE_GENERIC1);
-	//pglBindTexture(GL_TEXTURE_2D, screentexture);
+	MakeScreenTexture(tex);
+	pglBindTexture(GL_TEXTURE_2D, screenTextures[tex]);
+
 	color[0] = color[1] = color[2] = 190;
 	color[3] = 250;
 	pglColor4ubv(color);
@@ -3337,8 +3339,8 @@ EXPORT void HWRAPI(RenderVhsEffect) (fixed_t upbary, fixed_t downbary, UINT8 upd
 	pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
 	// Downward bar
-	MakeScreenTexture(HWD_SCREENTEXTURE_GENERIC1);
-	//pglBindTexture(GL_TEXTURE_2D, screentexture);
+	MakeScreenTexture(tex);
+	pglBindTexture(GL_TEXTURE_2D, screenTextures[tex]);
 
 	fix[0] = 0.0f;
 	fix[6] = xfix;
