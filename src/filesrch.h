@@ -7,6 +7,7 @@
 #include "doomdef.h"
 #include "d_netfil.h"
 #include "m_menu.h" // MAXSTRINGLENGTH
+#include "m_textinput.h"
 
 typedef struct
 {
@@ -47,7 +48,8 @@ extern char menupath[1024];
 extern size_t menupathindex[menudepth];
 extern size_t menudepthleft;
 
-extern char menusearch[MAXSTRINGLENGTH+1];
+extern char menusearchbuf[MAXSTRINGLENGTH+1];
+extern textinput_t menusearch;
 
 extern char **dirmenu;
 extern size_t sizedirmenu;

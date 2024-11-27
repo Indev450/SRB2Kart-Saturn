@@ -328,7 +328,8 @@ char menupath[1024];
 size_t menupathindex[menudepth];
 size_t menudepthleft = menudepth;
 
-char menusearch[MAXSTRINGLENGTH+1];
+char menusearchbuf[MAXSTRINGLENGTH+1];
+textinput_t menusearch;
 
 char **dirmenu, **coredirmenu; // core only local for this file
 size_t sizedirmenu, sizecoredirmenu; // ditto
@@ -565,7 +566,7 @@ static boolean filemenucmp(char *haystack, char *needle)
 		strupr(localhaystack);
 	if (cv_addons_search_type.value)
 		return (strstr(localhaystack, needle) != 0);
-	return (!strncmp(localhaystack, needle, menusearch[0]));
+	return (!strncmp(localhaystack, needle, menusearch.length));
 }
 
 void closefilemenu(boolean validsize)
@@ -631,7 +632,7 @@ void searchfilemenu(char *tempname)
 
 	first = (((UINT8)(coredirmenu[0][DIR_TYPE]) == EXT_UP) ? 1 : 0); // skip UP...
 
-	if (!menusearch[0])
+	if (!menusearch.length)
 	{
 		if (dirmenu)
 			Z_Free(dirmenu);
@@ -658,7 +659,7 @@ void searchfilemenu(char *tempname)
 		return;
 	}
 
-	strcpy(localmenusearch, menusearch+1);
+	strcpy(localmenusearch, menusearch.buffer);
 	if (!cv_addons_search_case.value)
 		strupr(localmenusearch);
 
@@ -720,7 +721,7 @@ boolean preparefilemenu(boolean samedepth, boolean replayhut)
 			tempname = Z_StrDup(dirmenu[dir_on[menudepthleft]]+DIR_STRING); // don't need to I_Error if can't make - not important, just QoL
 	}
 	else
-		menusearch[0] = menusearch[1] = 0; // clear search
+		M_TextInputInit(&menusearch, menusearchbuf, MAXSTRINGLENGTH+1);
 
 	if (!(dirhandle = opendir(menupath))) // get directory
 	{
