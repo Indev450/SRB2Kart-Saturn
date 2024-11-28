@@ -1796,7 +1796,7 @@ static boolean SV_ResendingSavegameToAnyone(void)
 	INT32 i;
 
 	for (i = 0; i < MAXNETNODES; i++)
-		if (resendingsavegame[i])
+		if (nodeingame[i] && resendingsavegame[i])
 			return true;
 	return false;
 }
