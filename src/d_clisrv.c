@@ -3249,13 +3249,7 @@ void CL_RemovePlayer(INT32 playernum, INT32 reason)
 		{
 			SV_InitResynchVars(node); // If a resynch was in progress, well, it no longer needs to be.
 
-			nodeingame[node] = false;
-#ifdef SATURNPAK
-			is_client_saturn[node] = false;
-#endif
-#ifdef SATURNSYNCH
-			can_receive_gamestate[node] = false;
-#endif
+			nodeingame[node] = false;  // do we even need this?
 			Net_CloseConnection(node);
 			ResetNode(node);
 		}
@@ -3361,9 +3355,6 @@ void CL_Reset(void)
 	if (servernode > 0 && servernode < MAXNETNODES)
 	{
 		nodeingame[(UINT8)servernode] = false;
-#ifdef SATURNPAK
-		is_client_saturn[(UINT8)servernode] = false;
-#endif
 		Net_CloseConnection(servernode);
 	}
 	D_CloseConnection(); // netgame = false
