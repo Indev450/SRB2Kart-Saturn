@@ -140,6 +140,8 @@ void M_TextInputClear(textinput_t *input)
 	input->cursor = 0;
 	input->select = 0;
 	input->length = 0;
+
+	input->buffer[0] = 0;
 }
 
 void M_TextInputSetString(textinput_t *input, const char *c)

@@ -2173,11 +2173,6 @@ static void LoadMobjThinker(actionf_p1 thinker)
 	mobj->realyscale = FRACUNIT;
 	mobj->stretchslam = 0;
 
-	mobj->stretchslam = 0;
-	mobj->slamsoundtimer = 0;
-
-	mobj->mirrored = 0;
-
 	// Timer for slam sound effect
 	mobj->slamsoundtimer = 0;
 

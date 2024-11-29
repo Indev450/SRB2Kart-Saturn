@@ -258,7 +258,7 @@ void OglSdlFinishUpdate(boolean waitvbl)
 		GLFramebuffer_Unbind();
 #endif
 	
-	HWR_DrawScreenFinalTexture(sdlw, sdlh);
+	HWR_DrawScreenFinalTexture(sdlw, sdlh, HWR_ShouldUsePaletteRendering());
 
 #ifdef USE_FBO_OGL
 	if (UseScreenFBO())
@@ -271,7 +271,12 @@ void OglSdlFinishUpdate(boolean waitvbl)
 
 	// Sryder:	We need to draw the final screen texture again into the other buffer in the original position so that
 	//			effects that want to take the old screen can do so after this
-	HWR_DrawScreenFinalTexture(realwidth, realheight);
+	if ((!I_CheckNativeRes())  // well we dont need it on native res it seems
+#ifdef USE_FBO_OGL
+	&& (!UseScreenFBO())
+#endif
+	)
+		HWR_DrawScreenFinalTexture(realwidth, realheight, false);
 }
 
 EXPORT void HWRAPI(OglSdlSetPalette) (RGBA_t *palette)
