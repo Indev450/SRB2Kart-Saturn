@@ -296,7 +296,7 @@ static void P_NetArchivePlayers(savebuffer_t *save, boolean resending)
 //
 // P_NetUnArchivePlayers
 //
-static void P_NetUnArchivePlayers(savebuffer_t *save, boolean resending)
+static void P_NetUnArchivePlayers(savebuffer_t *save, boolean reloading)
 {
 	INT32 i, j;
 	UINT16 flags;
@@ -306,7 +306,7 @@ static void P_NetUnArchivePlayers(savebuffer_t *save, boolean resending)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (resending)
+		if (reloading)
 			adminplayers[i] = (INT32)READSINT8(save->p);
 
 		// Do NOT memset player struct to 0
@@ -317,7 +317,7 @@ static void P_NetUnArchivePlayers(savebuffer_t *save, boolean resending)
 
 		// NOTE: sending tics should (hopefully) no longer be necessary
 
-		if (resending)
+		if (reloading)
 			READSTRINGN(save->p, player_names[i], MAXPLAYERNAME);
 
 		players[i].aiming = READANGLE(save->p);
@@ -344,7 +344,7 @@ static void P_NetUnArchivePlayers(savebuffer_t *save, boolean resending)
 		players[i].flashpal = READUINT16(save->p);
 		players[i].flashcount = READUINT16(save->p);
 
-		if (resending)
+		if (reloading)
 		{
 			players[i].skincolor = READUINT8(save->p);
 			players[i].skin = READINT32(save->p);
