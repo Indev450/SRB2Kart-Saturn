@@ -3071,7 +3071,7 @@ void CL_RemovePlayer(INT32 playernum, INT32 reason)
 
 	demo_extradata[playernum] |= DXD_PLAYSTATE;
 
-	if (server && !demo.playback)
+	if (server && !demo.playback && playernode[playernum] != UINT8_MAX)
 	{
 		INT32 node = playernode[playernum];
 		//playerpernode[node] = 0; // It'd be better to remove them all at once, but ghosting happened, so continue to let CL_RemovePlayer do it one-by-one
@@ -3527,16 +3527,13 @@ static void Command_Kick(void)
 		if (pn == -1 || pn == 0)
 			return;
 
-		if (server)
+		// Special case if we are trying to kick a player who is downloading the game state:
+		// trigger a timeout instead of kicking them, because a kick would only
+		// take effect after they have finished downloading
+		if (server && playernode[pn] != UINT8_MAX && sendingsavegame[playernode[pn]])
 		{
-			// Special case if we are trying to kick a player who is downloading the game state:
-			// trigger a timeout instead of kicking them, because a kick would only
-			// take effect after they have finished downloading
-			if (sendingsavegame[playernode[pn]])
-			{
-				Net_ConnectionTimeout(playernode[pn]);
-				return;
-			}
+			Net_ConnectionTimeout(playernode[pn]);
+			return;
 		}
 
 		WRITESINT8(p, pn);
@@ -3592,7 +3589,7 @@ static void Got_KickCmd(UINT8 **p, INT32 playernum)
 
 	// Is playernum authorized to make this kick?
 	if (playernum != serverplayer && !IsPlayerAdmin(playernum)
-		/*&& !(playerpernode[playernode[playernum]] == 2
+		/*&& !(playernode[playernum] != UINT8_MAX && playerpernode[playernode[playernum]] == 2
 		//&& nodetoplayer2[playernode[playernum]] == pnum)*/)
 	{
 		// We received a kick command from someone who isn't the
@@ -6136,29 +6133,31 @@ static void SV_Maketic(void)
 	INT32 j;
 
 	for (j = 0; j < MAXNETNODES; j++)
-		if (playerpernode[j])
-		{
-			INT32 player = nodetoplayer[j];
-			if ((netcmds[maketic%TICQUEUE][player].angleturn & TICCMD_RECEIVED) == 0)
-			{ // we didn't receive this tic
-				INT32 i;
+	{
+		if (!playerpernode[j])
+			continue;
 
-				DEBFILE(va("MISS tic%4d for node %d\n", maketic, j));
+		INT32 player = nodetoplayer[j];
+		if ((netcmds[maketic%TICQUEUE][player].angleturn & TICCMD_RECEIVED) == 0)
+		{ // we didn't receive this tic
+			INT32 i;
+
+			DEBFILE(va("MISS tic%4d for node %d\n", maketic, j));
 #if defined(PARANOIA) && 0
-				CONS_Debug(DBG_NETPLAY, "Client Misstic %d\n", maketic);
+			CONS_Debug(DBG_NETPLAY, "Client Misstic %d\n", maketic);
 #endif
-				// copy the old tic
-				for (i = 0; i < playerpernode[j]; i++)
-				{
-					if (i == 0) player = nodetoplayer[j];
-					else if (i == 1) player = nodetoplayer2[j];
-					else if (i == 2) player = nodetoplayer3[j];
-					else if (i == 3) player = nodetoplayer4[j];
-					netcmds[maketic%TICQUEUE][player] = netcmds[(maketic-1)%TICQUEUE][player];
-					netcmds[maketic%TICQUEUE][player].angleturn &= ~TICCMD_RECEIVED;
-				}
+			// copy the old tic
+			for (i = 0; i < playerpernode[j]; i++)
+			{
+				if (i == 0) player = nodetoplayer[j];
+				else if (i == 1) player = nodetoplayer2[j];
+				else if (i == 2) player = nodetoplayer3[j];
+				else if (i == 3) player = nodetoplayer4[j];
+				netcmds[maketic%TICQUEUE][player] = netcmds[(maketic-1)%TICQUEUE][player];
+				netcmds[maketic%TICQUEUE][player].angleturn &= ~TICCMD_RECEIVED;
 			}
 		}
+	}
 
 	// all tic are now proceed make the next
 	maketic++;
@@ -6391,7 +6390,7 @@ static void UpdatePingTable(void)
 			PingUpdate();
 		// update node latency values so we can take an average later.
 		for (i = 0; i < MAXPLAYERS; i++)
-			if (playeringame[i])
+			if (playeringame[i] && playernode[i] != UINT8_MAX)
 				realpingtable[i] += GetLag(playernode[i]);
 		pingmeasurecount++;
 	}
