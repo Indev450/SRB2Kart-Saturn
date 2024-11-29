@@ -344,7 +344,7 @@ static inline void P_RunThinkers(void)
 	}
 }
 
-static inline void P_DeviceRumbleTick(void)
+static void P_DeviceRumbleTick(void)
 {
 	UINT8 i;
 
@@ -414,7 +414,7 @@ void P_RunChaseCameras(void)
 	}
 }
 
-static inline void P_RunQuakes(void)
+static void P_RunQuakes(void)
 {
 	fixed_t ir;
 
@@ -451,7 +451,7 @@ void P_Ticker(boolean run)
 {
 	INT32 i;
 
-	// Increment jointime and quittime even if paused
+	// Increment jointime even if paused
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		if (playeringame[i])
