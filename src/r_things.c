@@ -1171,7 +1171,9 @@ static void R_ProjectSprite(mobj_t *thing)
 	vissprite_t *vis;
 
 	angle_t ang = 0; // gcc 4.6 and lower fix
+#ifdef ROTSPRITE
 	angle_t camang = 0;
+#endif
 	fixed_t iscale;
 	fixed_t scalestep; // toast '16
 	fixed_t offset, offset2;
@@ -1195,7 +1197,6 @@ static void R_ProjectSprite(mobj_t *thing)
 #ifdef ROTSPRITE
 	patch_t *rotsprite = NULL;
 	INT32 rollangle = 0;
-	angle_t rollsum = 0;
 	angle_t pitchnroll = 0;
 	angle_t sliptiderollangle = 0;
 #endif
@@ -1251,7 +1252,12 @@ static void R_ProjectSprite(mobj_t *thing)
 		I_Error("R_ProjectSprite: invalid sprite number %d ", thing->sprite);
 #endif
 
-	rot = thing->frame&FF_FRAMEMASK;
+	rot = (thing->frame & FF_FRAMEMASK);
+
+#ifdef ROTSPRITE
+	// determine here if sprite should rotate for optimization
+	const boolean shouldrotate = (cv_spriteroll.value && (interp.roll || interp.pitch || interp.sloperoll || interp.slopepitch || thing->rollangle));
+#endif
 
 	//Fab : 02-08-98: 'skin' override spritedef currently used for skin
 	if ((thing->skin || thing->localskin) && thing->sprite == SPR_PLAY)
@@ -1282,7 +1288,7 @@ static void R_ProjectSprite(mobj_t *thing)
 #ifdef ROTSPRITE
 		sprinfo = &spriteinfo[thing->sprite];
 #endif
-		rot = thing->frame&FF_FRAMEMASK;
+		rot = (thing->frame & FF_FRAMEMASK);
 		if (!thing->skin)
 		{
 			thing->state->sprite = thing->sprite;
@@ -1297,10 +1303,18 @@ static void R_ProjectSprite(mobj_t *thing)
 		I_Error("R_ProjectSprite: sprframes NULL for sprite %d\n", thing->sprite);
 #endif
 
-	if (sprframe->rotate != SRF_SINGLE || papersprite || (cv_sloperoll.value == 2 && cv_spriteroll.value))
+	if (sprframe->rotate != SRF_SINGLE || papersprite ||
+#ifdef ROTSPRITE
+		(shouldrotate)
+#endif
+	)
 	{
 		ang = R_PointToAngle (interp.x, interp.y) - interp.angle;
-		camang = R_PointToAngle (interp.x, interp.y);
+
+#ifdef ROTSPRITE
+		if (shouldrotate)
+			camang = R_PointToAngle (interp.x, interp.y);
+#endif
 
 		if (mirrored)
 			ang = InvAngle(ang);
@@ -1343,9 +1357,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	spr_topoffset = spritecachedinfo[lump].topoffset;
 
 #ifdef ROTSPRITE
-    pitchnroll = 0;  // set this to 0, non-paper sprites will affect this value
-
-	if (cv_spriteroll.value)
+	if (shouldrotate)
 	{
 		if (papersprite)
 		{
@@ -1363,29 +1375,29 @@ static void R_ProjectSprite(mobj_t *thing)
 		{
 			// this is very messy, but it on-the-fly calculates rotations for all the
 			// pitch and roll variables
-			pitchnroll = FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), interp.roll) +
-						 FixedMul(FINESINE((ang) >> ANGLETOFINESHIFT), interp.pitch) +
-						 FixedMul(FINECOSINE((camang) >> ANGLETOFINESHIFT), interp.sloperoll) +
-						 FixedMul(FINESINE((camang) >> ANGLETOFINESHIFT), interp.slopepitch);
-
+			pitchnroll = R_RotationAngle(ang, camang, &interp);
 			rollangle = thing->rollangle;
 		}
 
 		if (rollangle || pitchnroll || (thing->player && thing->player->sliproll))
 		{
-			rollsum = pitchnroll;
-
-			if (thing->player)
+			if (thing->player && cv_sliptideroll.value)
 			{
-				sliptiderollangle =
-					cv_sliptideroll.value ? thing->player->sliproll * (thing->player->sliptidemem) : 0;
-				rollsum += thing->rollangle +
-						   FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), sliptiderollangle);
+				sliptiderollangle = thing->player->sliproll * (thing->player->sliptidemem);
+				pitchnroll += rollangle + FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), sliptiderollangle);
 			}
 			else
-				rollsum += thing->rollangle;
+				pitchnroll += rollangle;
 
-			rollangle = R_GetRollAngle(rollsum);
+			// this is kinda dumb lkmao, but try to mitigate shadows being weirdly offset on slopes
+			if (thing->type == MT_SHADOW)
+			{
+				sprinfo->available = true; // < lmao
+				sprinfo->pivot[(thing->frame & FF_FRAMEMASK)].x = spr_offset>>FRACBITS;
+				sprinfo->pivot[(thing->frame & FF_FRAMEMASK)].y = -12; // noones gonna replace shadow sprite anyways, right?
+			}
+
+			rollangle = R_GetRollAngle(pitchnroll);
 			rotsprite = Patch_GetRotatedSprite(sprframe, (thing->frame & FF_FRAMEMASK), rot, flip, false, sprinfo, rollangle);
 
 			if (rotsprite != NULL)
