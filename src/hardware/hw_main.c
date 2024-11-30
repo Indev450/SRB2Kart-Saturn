@@ -4947,7 +4947,7 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 		return;
 #endif
 
-	sprframe = &sprdef->spriteframes[ thing->frame & FF_FRAMEMASK];
+	sprframe = &sprdef->spriteframes[thing->frame & FF_FRAMEMASK];
 
 	// use single rotation for all views
 	lumpoff = sprframe->lumpid[0];
