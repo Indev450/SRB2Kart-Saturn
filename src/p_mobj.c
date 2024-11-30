@@ -6014,15 +6014,17 @@ void P_RollPitchMobj(mobj_t* mobj)
 	if (!mobj || P_MobjWasRemoved(mobj))
 		return;
 
-	if (cv_spriteroll.value && cv_sloperoll.value == 2)
-	{
-		K_RollMobjBySlopes(mobj, cv_sloperolldist.value && !splitscreen);
-	}
-	else
+	I_Assert(mo->subsector != NULL);
+	I_Assert(mo->subsector->sector != NULL);
+
+	if (cv_sloperoll.value != 2)
 	{
 		mobj->sloperoll = FixedAngle(0);
 		mobj->slopepitch = FixedAngle(0);
+		return;
 	}
+
+	K_RollMobjBySlopes(mobj, cv_sloperolldist.value && !splitscreen);
 }
 
 angle_t P_MobjPitchAndRoll(mobj_t *mobj)
@@ -6033,7 +6035,7 @@ angle_t P_MobjPitchAndRoll(mobj_t *mobj)
 	angle_t camang = 0;
 	angle_t return_angle = 0;
 
-	if (!cv_spriteroll.value)
+	if (!cv_sloperoll.value)
 		return 0;
 
 	if (P_MobjWasRemoved(mobj))
