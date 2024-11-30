@@ -333,7 +333,7 @@ void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 		out->angle = mobj->resetinterp ? mobj->angle : R_LerpAngle(mobj->old_angle, mobj->angle, frac);
 
 #ifdef HWRENDER
-	if (cv_glmdls.value)
+	if (rendermode == render_opengl && cv_glmdls.value)
 	{
 		// pitch roll stuff
 		out->pitch = mobj->resetinterp ? mobj->pitch : R_LerpAngle(mobj->old_pitch, mobj->pitch, frac);
