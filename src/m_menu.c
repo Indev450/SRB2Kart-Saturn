@@ -2224,22 +2224,20 @@ static menuitem_t OP_PlayerDistortMenu[] =
 {
 	{IT_HEADER, NULL, "Sprite Distortion", NULL, 0},
 
-	{IT_STRING | IT_CVAR, 	NULL, 	"Sprite Rotation",       	  	  &cv_spriteroll, 	    15},
-	{IT_STRING | IT_CVAR, 	NULL, 	"Sprite Slope Rotation",       	  &cv_sloperoll, 	    30},
-	{IT_STRING | IT_CVAR, 	NULL, 	"Slope Rotation Distance",        &cv_sloperolldist,    45},
-	{IT_STRING | IT_CVAR, 	NULL, 	"Rotate Players when Sliptiding", &cv_sliptideroll, 	60},
-	{IT_STRING | IT_CVAR,	NULL,	"Rotate Sparks and Boost Trails", &cv_sparkroll,        75},
-	{IT_STRING | IT_CVAR,	NULL,	"Player Stretch Factor",	      &cv_gravstretch,      90},
-	{IT_STRING | IT_CVAR,	NULL,	"Squish Sound Effect",	      	  &cv_slamsound,        105},
-	{IT_STRING | IT_CVAR, 	NULL, 	"Saltyhop", 					  &cv_saltyhop, 		120},
-	{IT_STRING | IT_CVAR,	NULL,	"Saltyhop Sound Effect",	      &cv_saltyhopsfx,      135},
-	{IT_STRING | IT_CVAR,	NULL,	"Saltyhop Squish",	      	  	  &cv_saltysquish,      150},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Sprite Slope Rotation",       	  &cv_sloperoll, 	    15},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Slope Rotation Distance",        &cv_sloperolldist,    30},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Rotate Players when Sliptiding", &cv_sliptideroll, 	45},
+	{IT_STRING | IT_CVAR,	NULL,	"Rotate Sparks and Boost Trails", &cv_sparkroll,        60},
+	{IT_STRING | IT_CVAR,	NULL,	"Player Stretch Factor",	      &cv_gravstretch,      75},
+	{IT_STRING | IT_CVAR,	NULL,	"Squish Sound Effect",	      	  &cv_slamsound,        90},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Saltyhop", 					  &cv_saltyhop, 		105},
+	{IT_STRING | IT_CVAR,	NULL,	"Saltyhop Sound Effect",	      &cv_saltyhopsfx,      120},
+	{IT_STRING | IT_CVAR,	NULL,	"Saltyhop Squish",	      	  	  &cv_saltysquish,      135},
 };
 
 static const char* OP_PlayerDistortTooltips[] =
 {
 	NULL,
-	"Sprite rotation features.",
 	"Sprite rotation on slopes. Can either be just players or all objects.",
 	"Distance object rotation should be visable.",
 	"Player rotation when sliptiding.",
@@ -2254,7 +2252,6 @@ static const char* OP_PlayerDistortTooltips[] =
 enum
 {
 	spriteheader,
-	spriterotate,
 	sloperotate,
 	slrotatedist,
 	sliptide,
@@ -3382,7 +3379,7 @@ void Addons_option_Onchange(void)
 
 void PDistort_menu_Onchange(void)
 {
-	if (!cv_spriteroll.value)
+	if (!cv_sloperoll.value)
 	{
 		OP_PlayerDistortMenu[sloperotate].status = IT_GRAYEDOUT;
 		OP_PlayerDistortMenu[sliptide].status = IT_GRAYEDOUT;
@@ -3393,15 +3390,10 @@ void PDistort_menu_Onchange(void)
 		OP_PlayerDistortMenu[sliptide].status = IT_STRING | IT_CVAR;
 	}
 
-	if ((cv_sloperoll.value) && (cv_spriteroll.value)) //enable/disable sloperotate distance
+	if (cv_sloperoll.value) //enable/disable sloperotate distance
 		OP_PlayerDistortMenu[slrotatedist].status = IT_STRING | IT_CVAR;
 	else
 		OP_PlayerDistortMenu[slrotatedist].status = IT_GRAYEDOUT;
-
-	if ((cv_sloperoll.value == 2) && (cv_spriteroll.value)) //enable/disable sparkroll depending on which setting
-		OP_PlayerDistortMenu[sparkrotate].status = IT_STRING | IT_CVAR;
-	else
-		OP_PlayerDistortMenu[sparkrotate].status = IT_GRAYEDOUT;
 }
 
 void Bird_menu_Onchange(void)
