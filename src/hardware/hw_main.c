@@ -4509,7 +4509,8 @@ static void HWR_ProjectSprite(mobj_t *thing)
 
 #ifdef ROTSPRITE
 	// determine here if sprite should rotate for optimization
-	const boolean shouldrotate = (cv_spriteroll.value && (interp.roll || interp.pitch || interp.sloperoll || interp.slopepitch || thing->rollangle));
+	const boolean sliprollrotate = (cv_spriteroll.value && cv_sliptideroll.value && (thing->player && thing->player->sliproll));
+	const boolean shouldrotate = (cv_spriteroll.value && (interp.roll || interp.pitch || interp.sloperoll || interp.slopepitch || thing->rollangle || sliprollrotate));
 #endif
 
 	//Fab : 02-08-98: 'skin' override spritedef currently used for skin
@@ -4614,9 +4615,9 @@ static void HWR_ProjectSprite(mobj_t *thing)
 			rollangle = thing->rollangle;
 		}
 
-		if (rollangle || pitchnroll || (thing->player && thing->player->sliproll))
+		if (rollangle || pitchnroll || sliprollrotate)
 		{
-			if (thing->player && cv_sliptideroll.value)
+			if (sliprollrotate)
 			{
 				sliptiderollangle = thing->player->sliproll * (thing->player->sliptidemem);
 				pitchnroll += rollangle + FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), sliptiderollangle);
