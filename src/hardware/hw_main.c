@@ -4437,7 +4437,10 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	boolean mirrored;
 	boolean hflip;
 
-	angle_t ang, camang;
+	angle_t ang = 0;
+#ifdef ROTSPRITE
+	angle_t camang = 0;
+#endif
 	boolean papersprite;
 	INT32 heightsec, phs;
 	INT32 dist = -1;
@@ -4447,7 +4450,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 #ifdef ROTSPRITE
 	patch_t *rotsprite = NULL;
 	INT32 rollangle = 0;
-	angle_t rollsum = 0;
+	angle_t pitchnroll = 0;
 	angle_t sliptiderollangle = 0;
 #endif
 
@@ -4502,7 +4505,12 @@ static void HWR_ProjectSprite(mobj_t *thing)
 		I_Error("HWR_ProjectSprite: invalid sprite number %i ", thing->sprite);
 #endif
 
-	rot = thing->frame&FF_FRAMEMASK;
+	rot = (thing->frame & FF_FRAMEMASK);
+
+#ifdef ROTSPRITE
+	// determine here if sprite should rotate for optimization
+	const boolean shouldrotate = (cv_spriteroll.value && (interp.roll || interp.pitch || interp.sloperoll || interp.slopepitch || thing->rollangle));
+#endif
 
 	//Fab : 02-08-98: 'skin' override spritedef currently used for skin
 	if ((thing->skin || thing->localskin) && thing->sprite == SPR_PLAY)
@@ -4530,7 +4538,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 #ifdef ROTSPRITE
 		sprinfo = &spriteinfo[thing->sprite];
 #endif
-		rot = thing->frame&FF_FRAMEMASK;
+		rot = (thing->frame & FF_FRAMEMASK);
 		thing->state->sprite = thing->sprite;
 		thing->state->frame = thing->frame;
 	}
@@ -4543,7 +4551,13 @@ static void HWR_ProjectSprite(mobj_t *thing)
 #endif
 
 	ang = R_PointToAngle (interp.x, interp.y) - interp.angle;
-	camang = R_PointToAngle (interp.x, interp.y);
+
+#ifdef ROTSPRITE
+	if (shouldrotate)
+	{
+		camang = R_PointToAngle (interp.x, interp.y);
+	}
+#endif
 
 	if (mirrored)
 		ang = InvAngle(ang);
@@ -4585,33 +4599,40 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	spr_topoffset = spritecachedinfo[lumpoff].topoffset;
 
 #ifdef ROTSPRITE
-	if (cv_spriteroll.value)
+	if (shouldrotate)
 	{
-		rollangle = FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), interp.roll)
-			+ FixedMul(FINESINE((ang) >> ANGLETOFINESHIFT), interp.pitch)
-			+ FixedMul(FINECOSINE((camang) >> ANGLETOFINESHIFT), interp.sloperoll)
-			+ FixedMul(FINESINE((camang) >> ANGLETOFINESHIFT), interp.slopepitch)
-			+ thing->rollangle;
-
-		if ((rollangle)||(thing->player && thing->player->sliproll))
+		if (papersprite)
 		{
-			if (thing->player)
+			// a positive rollangle should should pitch papersprites upwards relative to their facing angle
+			rollangle = InvAngle(thing->rollangle);
+		}
+		else
+		{
+			// this is very messy, but it on-the-fly calculates rotations for all the
+			// pitch and roll variables
+			pitchnroll = R_RotationAngle(ang, camang, &interp);
+			rollangle = thing->rollangle;
+		}
+
+		if (rollangle || pitchnroll || (thing->player && thing->player->sliproll))
+		{
+			if (thing->player && cv_sliptideroll.value)
 			{
-				sliptiderollangle = cv_sliptideroll.value ? thing->player->sliproll*(thing->player->sliptidemem) : 0;
-				rollsum = rollangle+FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), sliptiderollangle);
+				sliptiderollangle = thing->player->sliproll * (thing->player->sliptidemem);
+				pitchnroll += rollangle + FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), sliptiderollangle);
 			}
 			else
-				rollsum = rollangle;
+				pitchnroll += rollangle;
 
 			// this is kinda dumb lkmao, but try to mitigate shadows being weirdly offset on slopes
 			if (thing->type == MT_SHADOW)
 			{
 				sprinfo->available = true; // < lmao
 				sprinfo->pivot[(thing->frame & FF_FRAMEMASK)].x = spr_offset>>FRACBITS;
-				sprinfo->pivot[(thing->frame & FF_FRAMEMASK)].y = -8; // noones gonna replace shadow sprite anyways, right? that random value ftw, otherwise this clips into the ground Zzz...
+				sprinfo->pivot[(thing->frame & FF_FRAMEMASK)].y = -8; // noones gonna replace shadow sprite anyways, right? this random value works, cant get any better otherwise this clips into the ground Zzz...
 			}
 
-			rollangle = R_GetRollAngle(rollsum);
+			rollangle = R_GetRollAngle(pitchnroll);
 			rotsprite = Patch_GetRotatedSprite(sprframe, (thing->frame & FF_FRAMEMASK), rot, flip, false, sprinfo, rollangle);
 
 			if (rotsprite != NULL)
@@ -4718,7 +4739,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	vis->spriteyoffset = FIXED_TO_FLOAT(spr_topoffset);
 
 #ifdef ROTSPRITE
-	if ((rotsprite) && (cv_spriteroll.value))
+	if (rotsprite && cv_spriteroll.value)
 		vis->gpatch = (GLPatch_t *)rotsprite;
 	else
 #endif
