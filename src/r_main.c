@@ -383,17 +383,19 @@ angle_t R_PointToAngle2(fixed_t pviewx, fixed_t pviewy, fixed_t x, fixed_t y)
 angle_t R_PlayerSliptideAngle(player_t *player)
 {
 	mobj_t *mo;
-    spritedef_t *sprdef;
-    spriteframe_t *sprframe;
-    angle_t ang = 0;
+	spritedef_t *sprdef;
+	spriteframe_t *sprframe;
+	angle_t ang = 0;
 
-    if (!cv_sliptideroll.value || !player || P_MobjWasRemoved(player->mo))
-        return 0;
+	if (!cv_sloperoll.value || !cv_sliptideroll.value || !player || P_MobjWasRemoved(player->mo))
+		return 0;
 
-    mo = player->mo;
+	mo = player->mo;
 
-    size_t rot = mo->frame & FF_FRAMEMASK;
-    boolean papersprite = (mo->frame & FF_PAPERSPRITE);
+	if (mo->player->sliproll == 0 && mo->player->sliptidemem == 0)
+		return 0;
+
+	size_t rot = (mo->frame & FF_FRAMEMASK);
 
 	if (mo->skin && mo->sprite == SPR_PLAY)
 	{
@@ -410,7 +412,7 @@ angle_t R_PlayerSliptideAngle(player_t *player)
 	if (rot >= sprdef->numframes)
 	{
 		sprdef = &sprites[states[S_UNKNOWN].sprite];
-		rot = states[S_UNKNOWN].frame&FF_FRAMEMASK;
+		rot = (states[S_UNKNOWN].frame & FF_FRAMEMASK);
 	}
 
 	sprframe = &sprdef->spriteframes[rot];
@@ -418,10 +420,10 @@ angle_t R_PlayerSliptideAngle(player_t *player)
 	// No sprite frame? I guess it is possible
 	if (!sprframe) return 0;
 
-	if (sprframe->rotate != SRF_SINGLE || papersprite)
+	if (sprframe->rotate != SRF_SINGLE || (mo->frame & FF_PAPERSPRITE))
 		ang = R_PointToAngle(mo->x, mo->y) - mo->angle;
 
-	return FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), mo->player->sliproll*(mo->player->sliptidemem));
+	return FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), mo->player->sliproll * mo->player->sliptidemem);
 }
 
 INT32 R_GetHudUncap(void)
