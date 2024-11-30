@@ -680,7 +680,7 @@ spritemd2found:
 #define SETBRIGHTNESS(brightness,r,g,b) \
 	brightness = (UINT8)(((1063*(UINT32)(r))/5000) + ((3576*(UINT32)(g))/5000) + ((361*(UINT32)(b))/5000))
 
-static void HWR_CreateBlendedTexture(GLPatch_t *gpatch, GLPatch_t *blendgpatch, GLMipmap_t *glmip, INT32 skinnum, skincolors_t color)
+static void HWR_CreateBlendedTexture(GLPatch_t *gpatch, GLPatch_t *blendgpatch, GLMipmap_t *glMipmap, INT32 skinnum, skincolors_t color)
 {
 	UINT16 w = gpatch->width, h = gpatch->height;
 	UINT32 size = w*h;
@@ -696,24 +696,24 @@ static void HWR_CreateBlendedTexture(GLPatch_t *gpatch, GLPatch_t *blendgpatch, 
 	memset(translation, 0, sizeof(translation));
 	memset(cutoff, 0, sizeof(cutoff));
 
-	if (glmip->width == 0)
+	if (glMipmap->width == 0)
 	{
-		glmip->width = gpatch->width;
-		glmip->height = gpatch->height;
+		glMipmap->width = gpatch->width;
+		glMipmap->height = gpatch->height;
 
 		// no wrap around, no chroma key
-		glmip->flags = 0;
+		glMipmap->flags = 0;
 		// setup the texture info
-		glmip->format = GL_TEXFMT_RGBA;
+		glMipmap->format = GL_TEXFMT_RGBA;
 	}
 
-	if (glmip->data)
+	if (glMipmap->data)
 	{
-		Z_Free(glmip->data);
-		glmip->data = NULL;
+		Z_Free(glMipmap->data);
+		glMipmap->data = NULL;
 	}
 
-	cur = Z_Malloc(size*4, PU_HWRCACHE, &glmip->data);
+	cur = Z_Malloc(size*4, PU_HWRCACHE, &glMipmap->data);
 	memset(cur, 0x00, size*4);
 
 	image = gpatch->mipmap->data;
@@ -1044,7 +1044,7 @@ skippixel:
 static void HWR_GetBlendedTexture(GLPatch_t *gpatch, GLPatch_t *blendgpatch, INT32 skinnum, const UINT8 *colormap, skincolors_t color)
 {
 	// mostly copied from HWR_GetMappedPatch, hence the similarities and comment
-	GLMipmap_t *glmip, *newmip;
+	GLMipmap_t *glMipmap, *newMipmap;
 
 	if (colormap == colormaps || colormap == NULL)
 	{
@@ -1053,19 +1053,20 @@ static void HWR_GetBlendedTexture(GLPatch_t *gpatch, GLPatch_t *blendgpatch, INT
 		return;
 	}
 
-	// search for the mimmap
+	// search for the Mipmap
 	// skip the first (no colormap translated)
-	for (glmip = gpatch->mipmap; glmip->nextcolormap; )
+	for (glMipmap = gpatch->mipmap; glMipmap->nextcolormap; )
 	{
-		glmip = glmip->nextcolormap;
-		if (glmip->colormap == colormap)
+		glMipmap = glMipmap->nextcolormap;
+
+		if (glMipmap->colormap != colormap)
+			continue;
+
+		if (glMipmap->downloaded && glMipmap->data)
 		{
-			if (glmip->downloaded && glmip->data)
-			{
-				HWD.pfnSetTexture(glmip); // found the colormap, set it to the correct texture
-				Z_ChangeTag(glmip->data, PU_HWRCACHE_UNLOCKED);
-				return;
-			}
+			HWD.pfnSetTexture(glMipmap); // found the colormap, set it to the correct texture
+			Z_ChangeTag(glMipmap->data, PU_HWRCACHE_UNLOCKED);
+			return;
 		}
 	}
 
@@ -1076,18 +1077,17 @@ static void HWR_GetBlendedTexture(GLPatch_t *gpatch, GLPatch_t *blendgpatch, INT
 	//              (it have a liste of mipmap)
 	//    this malloc is cleared in HWR_FreeTextureCache
 	//    (...) unfortunately z_malloc fragment alot the memory :(so malloc is better
-	newmip = calloc(1, sizeof (*newmip));
-	if (newmip == NULL)
+	newMipmap = calloc(1, sizeof (*newMipmap));
+	if (newMipmap == NULL)
 		I_Error("%s: Out of memory", "HWR_GetMappedPatch");
-	glmip->nextcolormap = newmip;
-	newmip->colormap = colormap;
+	glMipmap->nextcolormap = newMipmap;
+	newMipmap->colormap = colormap;
 
-	HWR_CreateBlendedTexture(gpatch, blendgpatch, newmip, skinnum, color);
+	HWR_CreateBlendedTexture(gpatch, blendgpatch, newMipmap, skinnum, color);
 
-	HWD.pfnSetTexture(newmip);
-	Z_ChangeTag(newmip->data, PU_HWRCACHE_UNLOCKED);
+	HWD.pfnSetTexture(newMipmap);
+	Z_ChangeTag(newMipmap->data, PU_HWRCACHE_UNLOCKED);
 }
-
 
 // -----------------+
 // HWR_DrawMD2      : Draw MD2
