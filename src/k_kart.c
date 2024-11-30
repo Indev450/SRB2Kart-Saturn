@@ -3082,7 +3082,7 @@ static void K_SpawnDriftSparks(player_t *player)
 		//spark->momz = player->mo->momz/2;
 
 		// rotate the sparks based on pitch and roll; it just looks neat
-		if (cv_sparkroll.value == 1)
+		if (cv_sparkroll.value)
 		{
 			spark->slopepitch = player->mo->slopepitch;
 			spark->sloperoll = player->mo->sloperoll;
@@ -3296,20 +3296,16 @@ static void K_QuiteSaltyHop(player_t *p)
 }
 
 #define SLOPEROLL_DIV 3
-
 void K_RollMobjBySlopes(mobj_t* mo, boolean usedistance)
 {
-	I_Assert(mo->subsector != NULL);
-	I_Assert(mo->subsector->sector != NULL);
-
-	angle_t an;
-	const boolean flip = mo->eflags & MFE_VERTICALFLIP;
-	const fixed_t m_dist = usedistance ? R_PointToDist(mo->x, mo->y) : 0;
-	const fixed_t rolldist = cv_sloperolldist.value * mapobjectscale;
-
 	// lifted from hw_md2
 	if (mo->standingslope)
 	{
+		angle_t an;
+		const boolean flip = (mo->eflags & MFE_VERTICALFLIP);
+		const fixed_t m_dist = usedistance ? R_PointToDist(mo->x, mo->y) : 0;
+		const fixed_t rolldist = cv_sloperolldist.value * mapobjectscale;
+
 		fixed_t tempz = mo->standingslope->normal.z;
 		fixed_t tempy = mo->standingslope->normal.y;
 		fixed_t tempx = mo->standingslope->normal.x;
@@ -3318,7 +3314,7 @@ void K_RollMobjBySlopes(mobj_t* mo, boolean usedistance)
 		// admittedly this is a very hacky way to do the pitch and roll easing
 
 		// pitch
-		if ((!usedistance) || (m_dist <= (rolldist)))
+		if (!usedistance || (m_dist <= (rolldist)))
 		{
 			an = (INT32)((angle_t)tempangle - mo->pitch_sprite) / SLOPEROLL_DIV;
 
@@ -3401,7 +3397,7 @@ void K_SpawnBoostTrail(player_t *player)
 		flame->momx = 8;
 
 		// since you have to be on the ground for sneaker trails, this should be fine(?)
-		if (cv_sparkroll.value == 1)
+		if (cv_sparkroll.value)
 		{
 			flame->slopepitch = player->mo->slopepitch;
 			flame->sloperoll = player->mo->sloperoll;

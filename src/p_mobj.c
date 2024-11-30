@@ -6041,8 +6041,11 @@ angle_t P_MobjPitchAndRoll(mobj_t *mobj)
 	if (P_MobjWasRemoved(mobj))
 		return 0;
 
-	size_t rot = mobj->frame & FF_FRAMEMASK;
-	boolean papersprite = (mobj->frame & FF_PAPERSPRITE);
+	// if mobj doesent have any of those, no need to do the rest
+	if (mobj->roll == 0 && mobj->pitch == 0 && mobj->sloperoll == 0 && mobj->slopepitch == 0)
+		return 0;
+
+	size_t rot = (mobj->frame & FF_FRAMEMASK);
 
 	if (mobj->skin && mobj->sprite == SPR_PLAY)
 	{
@@ -6059,7 +6062,7 @@ angle_t P_MobjPitchAndRoll(mobj_t *mobj)
 	if (rot >= sprdef->numframes)
 	{
 		sprdef = &sprites[states[S_UNKNOWN].sprite];
-		rot = states[S_UNKNOWN].frame&FF_FRAMEMASK;
+		rot = (states[S_UNKNOWN].frame & FF_FRAMEMASK);
 	}
 
 	sprframe = &sprdef->spriteframes[rot];
@@ -6067,20 +6070,16 @@ angle_t P_MobjPitchAndRoll(mobj_t *mobj)
 	// No sprite frame? I guess it is possible
 	if (!sprframe) return 0;
 
-	if (sprframe->rotate != SRF_SINGLE || papersprite)
+	if (sprframe->rotate != SRF_SINGLE || (mobj->frame & FF_PAPERSPRITE))
 	{
 		ang = R_PointToAngle(mobj->x, mobj->y) - mobj->angle;
 		camang = R_PointToAngle(mobj->x, mobj->y);
 	}
 
 	return_angle = FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), mobj->roll)
-			        + FixedMul(FINESINE((ang) >> ANGLETOFINESHIFT), mobj->pitch);
-
-	if (cv_sloperoll.value)
-	{
-		return_angle += FixedMul(FINECOSINE((camang) >> ANGLETOFINESHIFT), mobj->sloperoll)
-						+ FixedMul(FINESINE((camang) >> ANGLETOFINESHIFT), mobj->slopepitch);
-	}
+			        + FixedMul(FINESINE((ang) >> ANGLETOFINESHIFT), mobj->pitch)
+					+ FixedMul(FINECOSINE((camang) >> ANGLETOFINESHIFT), mobj->sloperoll)
+					+ FixedMul(FINESINE((camang) >> ANGLETOFINESHIFT), mobj->slopepitch);
 
 	return return_angle;
 }
