@@ -4551,14 +4551,13 @@ static void HWR_ProjectSprite(mobj_t *thing)
 		I_Error("sprframes NULL for sprite %d\n", thing->sprite);
 #endif
 
-	ang = R_PointToAngle (interp.x, interp.y) - interp.angle;
+	ang = R_PointToAngle(interp.x, interp.y);
 
 #ifdef ROTSPRITE
-	if (shouldrotate)
-	{
-		camang = R_PointToAngle (interp.x, interp.y);
-	}
+	camang = ang;
 #endif
+
+	ang -= interp.angle;
 
 	if (mirrored)
 		ang = InvAngle(ang);

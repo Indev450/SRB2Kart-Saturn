@@ -1278,12 +1278,11 @@ static void R_ProjectSprite(mobj_t *thing)
 #endif
 	)
 	{
-		ang = R_PointToAngle (interp.x, interp.y) - interp.angle;
-
+		ang = R_PointToAngle(interp.x, interp.y);
 #ifdef ROTSPRITE
-		if (shouldrotate)
-			camang = R_PointToAngle (interp.x, interp.y);
+		camang = ang;
 #endif
+		ang -= interp.angle;
 
 		if (mirrored)
 			ang = InvAngle(ang);
