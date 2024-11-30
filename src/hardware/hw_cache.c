@@ -751,7 +751,7 @@ void HWR_GetMappedPatch(GLPatch_t *glPatch, const UINT8 *colormap)
 	{
 		glMipmap = glMipmap->nextcolormap;
 
-		if (!glMipmap->colormap)
+		if (glMipmap->colormap != colormap)
 			continue;
 
 		HWR_LoadMappedPatch(glMipmap, glPatch);

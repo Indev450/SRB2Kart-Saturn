@@ -1059,14 +1059,14 @@ static void HWR_GetBlendedTexture(GLPatch_t *gpatch, GLPatch_t *blendgpatch, INT
 	{
 		glMipmap = glMipmap->nextcolormap;
 
-		if (glMipmap->colormap)
+		if (glMipmap->colormap != colormap)
+			continue;
+
+		if (glMipmap->downloaded && glMipmap->data)
 		{
-			if (glMipmap->downloaded && glMipmap->data)
-			{
-				GL_SetTexture(glMipmap); // found the colormap, set it to the correct texture
-				Z_ChangeTag(glMipmap->data, PU_HWRCACHE_UNLOCKED);
-				return;
-			}
+			GL_SetTexture(glMipmap); // found the colormap, set it to the correct texture
+			Z_ChangeTag(glMipmap->data, PU_HWRCACHE_UNLOCKED);
+			return;
 		}
 	}
 
