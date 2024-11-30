@@ -3357,6 +3357,12 @@ static void K_QuiteSaltyHop(player_t *p)
 #define SLOPEROLL_DIV 3
 void K_RollMobjBySlopes(mobj_t* mo, boolean usedistance)
 {
+	if (P_MobjWasRemoved(mo))
+		return;
+
+	I_Assert(mo->subsector != NULL);
+	I_Assert(mo->subsector->sector != NULL);
+
 	// lifted from hw_md2
 	if (mo->standingslope)
 	{
@@ -6762,7 +6768,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 
 	K_KartDrift(player, onground);
 
-	if ((!player->kartstuff[k_aizdriftstrat])||(!P_IsObjectOnGround(player->mo))||(player->kartstuff[k_drift]))
+	if ((!player->kartstuff[k_aizdriftstrat]) || (!P_IsObjectOnGround(player->mo)) || (player->kartstuff[k_drift]))
 	{
 		if (player->sliproll && (player->sliproll > 0))
 			player->sliproll -= (4*ANG1);
@@ -6776,17 +6782,15 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 		player->mo->spriteyscale = player->mo->realyscale;
 	}
 
-	if (cv_spriteroll.value && cv_sloperoll.value)
+	if (cv_sloperoll.value && !player->mo->salty_jump) // seeing a character rotate mid-hop looks really janky
 	{
-		if ((!player->mo->salty_jump)) // seeing a character rotate mid-hop looks really janky
-			K_RollMobjBySlopes(player->mo, (cv_sloperolldist.value && !splitscreen));
+		K_RollMobjBySlopes(player->mo, (cv_sloperolldist.value && !splitscreen));
 	}
 	else
 	{
 		player->mo->sloperoll = FixedAngle(0);
 		player->mo->slopepitch = FixedAngle(0);
 	}
-
 
 	// Quick Turning
 	// You can't turn your kart when you're not moving.

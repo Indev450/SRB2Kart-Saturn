@@ -6073,11 +6073,8 @@ static void P_KoopaThinker(mobj_t *koopa)
 //
 void P_RollPitchMobj(mobj_t* mobj)
 {
-	if (!mobj || P_MobjWasRemoved(mobj))
+	if (P_MobjWasRemoved(mobj))
 		return;
-
-	I_Assert(mo->subsector != NULL);
-	I_Assert(mo->subsector->sector != NULL);
 
 	if (cv_sloperoll.value != 2)
 	{
