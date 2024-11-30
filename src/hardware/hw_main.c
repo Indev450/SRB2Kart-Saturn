@@ -4732,7 +4732,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	vis->spriteyoffset = FIXED_TO_FLOAT(spr_topoffset);
 
 #ifdef ROTSPRITE
-	if (rotsprite && cv_spriteroll.value)
+	if (rotsprite != NULL)
 		vis->gpatch = (GLPatch_t *)rotsprite;
 	else
 #endif
