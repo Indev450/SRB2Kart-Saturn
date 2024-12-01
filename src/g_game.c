@@ -1692,6 +1692,7 @@ static void G_FixCamera(UINT8 view)
 	localangle[view - 1] = (angle_t)(player->cmd.angleturn << 16);
 
 	P_ResetCamera(player, &camera[view - 1]);
+
 	// Make sure the viewport doesn't interpolate at all into
 	// its new position -- just snap instantly into place.
 	R_ResetViewInterpolation(view);
@@ -1710,7 +1711,7 @@ void G_ResetView(UINT8 viewnum, INT32 playernum, boolean onlyactive)
 
 	INT32 playernumd;
 
-	INT32    *displayplayerp;
+	INT32 *displayplayerp;
 
 	INT32 olddisplayplayer;
 	INT32 playersviewable;
