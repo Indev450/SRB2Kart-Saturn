@@ -2008,7 +2008,7 @@ static void CL_ReloadReceivedSavegame(void)
 	// we dont have P_ForceLocalAngle so were setting it manually here
 	for (i = 0; i <= splitscreen; i++)
 	{
-		localangle[i] = (angle_t)(players[displayplayers[i]].cmd.angleturn<<16);
+		localangle[i] = (angle_t)(players[displayplayers[i]].cmd.angleturn << 16);
 	}
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)

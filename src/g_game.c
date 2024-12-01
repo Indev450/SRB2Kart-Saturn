@@ -2009,10 +2009,7 @@ static void G_FixCamera(UINT8 view)
 
 	// The order of displayplayers can change, which would
 	// invalidate localangle.
-	if (player->mo)
-		localangle[view - 1] = player->mo->angle; // Players *always* have mobjs, right? // nope it seems
-	else
-		localangle[view - 1] = player->cmd.angleturn;
+	localangle[view - 1] = (angle_t)(player->cmd.angleturn << 16);
 
 	P_ResetCamera(player, &camera[view - 1]);
 
