@@ -11778,11 +11778,7 @@ void P_SpawnHoopsAndRings(mapthing_t *mthing)
 		z = mthing->options << FRACBITS;
 
 		hoopcenter = P_SpawnMobj(x, y, z, MT_HOOPCENTER);
-
 		hoopcenter->spawnpoint = mthing;
-
-		// Screw these damn hoops, I need this thinker.
-		//hoopcenter->flags |= MF_NOTHINK;
 
 		z +=
 			sec->f_slope ? P_GetZAt(sec->f_slope, x, y) :
@@ -11829,10 +11825,8 @@ void P_SpawnHoopsAndRings(mapthing_t *mthing)
 
 			mobj = P_SpawnMobj(finalx, finaly, finalz, MT_HOOP);
 
-			//if (maptol & TOL_XMAS)
-				//P_SetMobjState(mobj, mobj->info->seestate + (i & 1));
-
 			mobj->z -= mobj->height/2;
+
 			P_SetTarget(&mobj->target, hoopcenter); // Link the sprite to the center.
 			mobj->fuse = 0;
 
@@ -11968,9 +11962,6 @@ void P_SpawnHoopsAndRings(mapthing_t *mthing)
 			finalz = z + v[2];
 
 			mobj = P_SpawnMobj(finalx, finaly, finalz, MT_HOOP);
-
-			//if (maptol & TOL_XMAS)
-				//P_SetMobjState(mobj, mobj->info->seestate + (i & 1));
 
 			mobj->z -= mobj->height/2;
 			P_SetTarget(&mobj->target, hoopcenter); // Link the sprite to the center.

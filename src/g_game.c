@@ -2029,7 +2029,7 @@ void G_ResetView(UINT8 viewnum, INT32 playernum, boolean onlyactive)
 	UINT8 splits;
 	UINT8 viewd;
 
-	INT32    *displayplayerp;
+	INT32 *displayplayerp;
 
 	INT32 olddisplayplayer;
 	INT32 playersviewable;
