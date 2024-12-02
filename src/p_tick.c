@@ -345,7 +345,7 @@ static void P_DeviceRumbleTick(void)
 		if (!P_IsLocalPlayer(player))
 			continue;
 
-		if (G_GetDeviceForPlayer(i) == 0)
+		if (cv_usejoystick[i].value == 0)
 			continue;
 
 		if (!playeringame[displayplayers[i]] || player->spectator)
@@ -641,7 +641,7 @@ void P_Ticker(boolean run)
 			G_WriteAllGhostTics();
 
 			if (cv_recordmultiplayerdemos.value && (demo.savemode == DSM_NOTSAVING || demo.savemode == DSM_WILLAUTOSAVE))
-				if (demo.savebutton && demo.savebutton + 3*TICRATE < leveltime && (InputDown(gc_lookback, 1) || (cv_usejoystick.value && axis > 0)))
+				if (demo.savebutton && demo.savebutton + 3*TICRATE < leveltime && (InputDown(gc_lookback, 1) || (cv_usejoystick[0].value && axis > 0)))
 					demo.savemode = DSM_TITLEENTRY;
 
 			//if there are no players left at all, stop demo recording
@@ -689,16 +689,18 @@ void P_Ticker(boolean run)
 			for (i = 0; i <= splitscreen; i++)
 			{
 				player_t *player = &players[displayplayers[i]];
-				boolean isSkyVisibleForPlayer = skyVisiblePerPlayer[i];
 
 				if (!player->mo)
 					continue;
 
-				if (isSkyVisibleForPlayer && skyboxmo[0] && cv_skybox.value)
+				const boolean skybox = (skyboxmo[0] && cv_skybox.value);
+				boolean isSkyVisibleForPlayer = skyVisiblePerPlayer[i];
+
+				if (isSkyVisibleForPlayer && skybox)
 				{
-					R_SkyboxFrame(player);
+					R_SkyboxFrame(i);
 				}
-				R_SetupFrame(player, (skyboxmo[0] && cv_skybox.value));
+				R_SetupFrame(i, skybox);
 			}
 		}
 	}

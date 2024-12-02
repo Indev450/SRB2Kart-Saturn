@@ -652,58 +652,6 @@ void S_StartSound(const void *origin, sfxenum_t sfx_id)
 	if (S_SoundDisabled())
 		return;
 
-	if (mariomode) // Sounds change in Mario mode!
-	{
-		switch (sfx_id)
-		{
-//			case sfx_altow1:
-//			case sfx_altow2:
-//			case sfx_altow3:
-//			case sfx_altow4:
-//				sfx_id = sfx_mario8;
-//				break;
-			case sfx_thok:
-				sfx_id = sfx_mario7;
-				break;
-			case sfx_pop:
-				sfx_id = sfx_mario5;
-				break;
-			case sfx_jump:
-				sfx_id = sfx_mario6;
-				break;
-			case sfx_shield:
-				sfx_id = sfx_mario3;
-				break;
-			case sfx_itemup:
-				sfx_id = sfx_mario4;
-				break;
-//			case sfx_tink:
-//				sfx_id = sfx_mario1;
-//				break;
-//			case sfx_cgot:
-//				sfx_id = sfx_mario9;
-//				break;
-//			case sfx_lose:
-//				sfx_id = sfx_mario2;
-//				break;
-			default:
-				break;
-		}
-	}
-	if (maptol & TOL_XMAS) // Some sounds change for xmas
-	{
-		switch (sfx_id)
-		{
-		case sfx_ideya:
-		case sfx_nbmper:
-		case sfx_ncitem:
-		case sfx_ngdone:
-			++sfx_id;
-		default:
-			break;
-		}
-	}
-
 	// the volume is handled 8 bits
 #ifdef HW3SOUND
 	if (hws_mode != HWS_DEFAULT_MODE)
@@ -950,7 +898,6 @@ void S_ClearSfx(void)
 
 static void S_StopChannel(INT32 cnum)
 {
-	INT32 i;
 	channel_t *c = &channels[cnum];
 
 	if (c->sfxinfo)
@@ -958,12 +905,6 @@ static void S_StopChannel(INT32 cnum)
 		// stop the sound playing
 		if (I_SoundIsPlaying(c->handle))
 			I_StopSound(c->handle);
-
-		// check to see
-		//  if other channels are playing the sound
-		for (i = 0; i < numofchannels; i++)
-			if (cnum != i && c->sfxinfo == channels[i].sfxinfo)
-				break;
 
 		// degrade usefulness of sound data
 		c->sfxinfo->usefulness--;

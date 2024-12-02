@@ -3225,7 +3225,7 @@ static void HWR_DrawSpriteShadow(gl_vissprite_t *spr, GLPatch_t *gpatch)
 		this_scale = FIXED_TO_FLOAT(spr->mobj->scale);
 	if (hires)
 		this_scale = this_scale * FIXED_TO_FLOAT(((skin_t *)( (spr->mobj->localskin) ? spr->mobj->localskin : spr->mobj->skin ))->highresscale);
-	
+
 	R_GetShadowZ(spr->mobj, &floorslope);
 
 	mobjfloor = HWR_OpaqueFloorAtPos(
@@ -3238,13 +3238,13 @@ static void HWR_DrawSpriteShadow(gl_vissprite_t *spr, GLPatch_t *gpatch)
 
 		// Set direction
 		if (splitscreen && stplyr == &players[displayplayers[1]])
-			shadowdir = localangle[1] + FixedAngle(cv_cam2_rotate.value);
+			shadowdir = localangle[1] + FixedAngle(cv_cam_rotate[1].value);
 		else if (splitscreen > 1 && stplyr == &players[displayplayers[2]])
-			shadowdir = localangle[2] + FixedAngle(cv_cam3_rotate.value);
+			shadowdir = localangle[2] + FixedAngle(cv_cam_rotate[2].value);
 		else if (splitscreen > 2 && stplyr == &players[displayplayers[3]])
-			shadowdir = localangle[3] + FixedAngle(cv_cam4_rotate.value);
+			shadowdir = localangle[3] + FixedAngle(cv_cam_rotate[3].value);
 		else
-			shadowdir = localangle[0] + FixedAngle(cv_cam_rotate.value);
+			shadowdir = localangle[0] + FixedAngle(cv_cam_rotate[0].value);
 
 		// Find floorheight
 		floorheight = HWR_OpaqueFloorAtPos(
@@ -3321,7 +3321,7 @@ static void HWR_DrawSpriteShadow(gl_vissprite_t *spr, GLPatch_t *gpatch)
 		swallVerts[0].z = spr->z1 + offset * gl_viewsin;
 		swallVerts[1].z = spr->z2 + offset * gl_viewsin;
 	}
-	
+
 	if (floorslope)
 	{
 		for (int i = 0; i < 4; i++)
@@ -3988,6 +3988,7 @@ static int CompareVisSprites(const void *p1, const void *p2)
 	// make transparent sprites last
 	// "boolean to int"
 
+	// check for precip first, because then sprX->mobj is actually a precipmobj_t and does not have flags2 or tracer
 	int transparency1 = (!spr1->precip && (spr1->mobj->flags2 & MF2_SHADOW)) || (spr1->mobj->frame & FF_TRANSMASK);
 	int transparency2 = (!spr2->precip && (spr2->mobj->flags2 & MF2_SHADOW)) || (spr2->mobj->frame & FF_TRANSMASK);
 
@@ -5298,12 +5299,12 @@ void HWR_RenderPlayerView(INT32 viewnumber, player_t *player)
 	drewsky = false;
 	if (skybox)
 	{
-		R_SkyboxFrame(player);
+		R_SkyboxFrame(viewssnum);
 		HWR_RenderFrame(viewnumber, player, true);
 	}
 	PS_STOP_TIMING(ps_skyboxtime);
 
-	R_SetupFrame(player, false); // This can stay false because it is only used to set viewsky in r_main.c, which isn't used here
+	R_SetupFrame(viewssnum, false); // This can stay false because it is only used to set viewsky in r_main.c, which isn't used here
 	framecount++; // for timedemo
 	HWR_RenderFrame(viewnumber, player, false);
 }

@@ -1174,7 +1174,7 @@ static void P_XYFriction(mobj_t *mo, fixed_t oldx, fixed_t oldy)
 		}
 		else if (abs(player->rmomx) < FixedMul(STOPSPEED, mo->scale)
 		    && abs(player->rmomy) < FixedMul(STOPSPEED, mo->scale)
-		    && (!(player->cmd.forwardmove && !(twodlevel || mo->flags2 & MF2_TWOD)) && !player->cmd.sidemove && !(player->pflags & PF_SPINNING))
+		    && (!player->cmd.forwardmove && !player->cmd.sidemove && !(player->pflags & PF_SPINNING))
 			&& !(player->mo->standingslope && (!(player->mo->standingslope->flags & SL_NOPHYSICS)) && (abs(player->mo->standingslope->zdelta) >= FRACUNIT/2))
 				)
 		{
@@ -1881,12 +1881,13 @@ boolean P_CheckDeathPitCollide(mobj_t *mo)
 	I_Assert(mo != NULL);
 	I_Assert(!P_MobjWasRemoved(mo));
 
+	INT32 special = GETSECSPECIAL(mo->subsector->sector->special, 1);
+
 	if (((mo->z <= mo->subsector->sector->floorheight
 		&& !(mo->eflags & MFE_VERTICALFLIP) && (mo->subsector->sector->flags & SF_FLIPSPECIAL_FLOOR))
 	|| (mo->z + mo->height >= mo->subsector->sector->ceilingheight
 		&& (mo->eflags & MFE_VERTICALFLIP) && (mo->subsector->sector->flags & SF_FLIPSPECIAL_CEILING)))
-	&& (GETSECSPECIAL(mo->subsector->sector->special, 1) == 6
-	|| GETSECSPECIAL(mo->subsector->sector->special, 1) == 7))
+	&& (special == 6 || special == 7))
 		return true;
 
 	return false;
@@ -1897,16 +1898,14 @@ boolean P_CheckSolidLava(mobj_t *mo, ffloor_t *rover)
 	I_Assert(mo != NULL);
 	I_Assert(!P_MobjWasRemoved(mo));
 
-	{
-		fixed_t topheight =
-			*rover->t_slope ? P_GetZAt(*rover->t_slope, mo->x, mo->y) :
-			*rover->topheight;
+	fixed_t topheight =
+		*rover->t_slope ? P_GetZAt(*rover->t_slope, mo->x, mo->y) :
+		*rover->topheight;
 
-		if (rover->flags & FF_SWIMMABLE && GETSECSPECIAL(rover->master->frontsector->special, 1) == 3
-			&& !(rover->master->flags & ML_BLOCKMONSTERS)
-			&& ((rover->master->flags & ML_EFFECT3) || mo->z-mo->momz > topheight - FixedMul(16*FRACUNIT, mo->scale)))
-				return true;
-	}
+	if (rover->flags & FF_SWIMMABLE && GETSECSPECIAL(rover->master->frontsector->special, 1) == 3
+		&& !(rover->master->flags & ML_BLOCKMONSTERS)
+		&& ((rover->master->flags & ML_EFFECT3) || mo->z-mo->momz > topheight - FixedMul(16*FRACUNIT, mo->scale)))
+			return true;
 
 	return false;
 }
@@ -2218,10 +2217,7 @@ static boolean P_ZMovement(mobj_t *mo)
 				|| mo->type == MT_CANNONBALLDECOR
 				|| mo->type == MT_FALLINGROCK)
 			{
-				if (maptol & TOL_NIGHTS)
-					mom.z = -FixedDiv(mom.z, 10*FRACUNIT);
-				else
-					mom.z = -FixedMul(mom.z, FixedDiv(17*FRACUNIT,20*FRACUNIT));
+				mom.z = -FixedMul(mom.z, FixedDiv(17*FRACUNIT,20*FRACUNIT));
 
 				if (mo->type == MT_BIGTUMBLEWEED || mo->type == MT_LITTLETUMBLEWEED)
 				{
@@ -2359,12 +2355,7 @@ static boolean P_ZMovement(mobj_t *mo)
 			else
 			// Flags bounce
 			if (mo->type == MT_REDFLAG || mo->type == MT_BLUEFLAG)
-			{
-				if (maptol & TOL_NIGHTS)
-					mo->momz = -FixedDiv(mo->momz, 10*FRACUNIT);
-				else
-					mo->momz = -FixedMul(mo->momz, FixedDiv(17*FRACUNIT,20*FRACUNIT));
-			}
+				mo->momz = -FixedMul(mo->momz, FixedDiv(17*FRACUNIT,20*FRACUNIT));
 			else
 				mo->momz = 0;
 		}
@@ -2666,10 +2657,6 @@ nightsdone:
 					}
 				} // Ugly ugly billions of braces! Argh!
 			}
-
-			// hit the ceiling
-			if (mariomode)
-				S_StartSound(mo, sfx_mario1);
 
 			if (!mo->player->climbing)
 				mo->momz = 0;
@@ -3316,7 +3303,9 @@ boolean P_CameraThinker(player_t *player, camera_t *thiscam, boolean resetcalled
 		}
 	}
 
+#ifndef NOCLIPCAM
 	P_CheckCameraPosition(thiscam->x, thiscam->y, thiscam);
+#endif
 
 	thiscam->subsector = R_PointInSubsector(thiscam->x, thiscam->y);
 	thiscam->floorz = tmfloorz;
@@ -9209,7 +9198,6 @@ void P_PushableThinker(mobj_t *mobj)
 
 	if (GETSECSPECIAL(sec->special, 2) == 1 && mobj->z == sec->floorheight)
 		P_LinedefExecute(sec->tag, mobj, sec);
-//	else if (GETSECSPECIAL(sec->special, 2) == 8)
 	{
 		sector_t *sec2;
 
@@ -10500,11 +10488,8 @@ void P_RespawnSpecials(void)
 		}
 
 		//CTF rings should continue to respawn as normal rings outside of CTF.
-		if (gametype != GT_CTF)
-		{
-			if (i == MT_REDTEAMRING || i == MT_BLUETEAMRING)
-				i = MT_RING;
-		}
+		if (i == MT_REDTEAMRING || i == MT_BLUETEAMRING)
+			i = MT_RING;
 
 		if (mthing->options & MTF_OBJECTFLIP)
 		{
@@ -10577,48 +10562,7 @@ void P_SpawnPlayer(INT32 playernum)
 	}
 	else if (multiplayer && !netgame)
 	{
-		// If you're in a team game and you don't have a team assigned yet...
-		if (G_GametypeHasTeams() && p->ctfteam == 0)
-		{
-			changeteam_union NetPacket;
-			UINT16 usvalue;
-			NetPacket.value.l = NetPacket.value.b = 0;
-
-			// Spawn as a spectator,
-			// yes even in splitscreen mode
-			p->spectator = true;
-			p->spectatorreentry = 0; //(cv_spectatorreentry.value * TICRATE);
-
-			if (playernum&1) p->skincolor = skincolor_redteam;
-			else             p->skincolor = skincolor_blueteam;
-
-			// but immediately send a team change packet.
-			NetPacket.packet.playernum = playernum;
-			NetPacket.packet.verification = true;
-			NetPacket.packet.newteam = !(playernum&1) + 1;
-
-			usvalue = SHORT(NetPacket.value.l|NetPacket.value.b);
-			SendNetXCmd(XD_TEAMCHANGE, &usvalue, sizeof(usvalue));
-		}
-		else // Otherwise, never spectator.
-			p->spectator = false;
-	}
-
-	if (G_GametypeHasTeams())
-	{
-		// Fix stupid non spectator spectators.
-		if (!p->spectator && !p->ctfteam)
-		{
-			p->spectator = true;
-			p->spectatorreentry = 0; //(cv_spectatorreentry.value * TICRATE);
-		}
-
-		// Fix team colors.
-		// This code isn't being done right somewhere else. Oh well.
-		if (p->ctfteam == 1)
-			p->skincolor = skincolor_redteam;
-		else if (p->ctfteam == 2)
-			p->skincolor = skincolor_blueteam;
+		p->spectator = false;
 	}
 
 	mobj = P_SpawnMobj(0, 0, 0, MT_PLAYER);
@@ -11019,36 +10963,14 @@ void P_SpawnMapThing(mapthing_t *mthing)
 			return;
 
 	if (i >= MT_EMERALD1 && i <= MT_EMERALD7) // Pickupable Emeralds
-	{
-		if (gametype != GT_COOP) // Don't place emeralds in non-coop modes
-			return;
-
-		if (metalrecording)
-			return; // Metal Sonic isn't for collecting emeralds.
-
-		if (emeralds & mobjinfo[i].speed) // You already have this emerald!
-			return;
-	}
+		return;
 
 	if (!G_BattleGametype() || !cv_specialrings.value)
 		if (P_WeaponOrPanel(i))
 			return; // Don't place weapons/panels in non-ringslinger modes
 
 	if (i == MT_EMERHUNT)
-	{
-		// Emerald Hunt is Coop only.
-		if (gametype != GT_COOP)
-			return;
-
-		ss = R_PointInSubsector(mthing->x << FRACBITS, mthing->y << FRACBITS);
-		mthing->z = (INT16)(((
-								ss->sector->f_slope ? P_GetZAt(ss->sector->f_slope, mthing->x << FRACBITS, mthing->y << FRACBITS) :
-								ss->sector->floorheight)>>FRACBITS) + (mthing->options >> ZSHIFT));
-
-		if (numhuntemeralds < MAXHUNTEMERALDS)
-			huntemeralds[numhuntemeralds++] = mthing;
 		return;
-	}
 
 	if (i == MT_EMERALDSPAWN)
 	{
@@ -11065,56 +10987,28 @@ void P_SpawnMapThing(mapthing_t *mthing)
 		if ((mobjinfo[i].flags & MF_ENEMY) || (mobjinfo[i].flags & MF_BOSS))
 			return;
 
-	// Set powerup boxes to user settings for competition.
-	if (gametype == GT_COMPETITION)
-	{
-		if ((mobjinfo[i].flags & MF_MONITOR) && cv_competitionboxes.value) // not Normal
-		{
-			if (cv_competitionboxes.value == 1) // Random
-				i = MT_QUESTIONBOX;
-			else if (cv_competitionboxes.value == 2) // Teleports
-				i = MT_MIXUPBOX;
-			else if (cv_competitionboxes.value == 3) // None
-				return; // Don't spawn!
-		}
-	}
-
 	// Set powerup boxes to user settings for other netplay modes
-	else if (gametype != GT_COOP)
+	if ((mobjinfo[i].flags & MF_MONITOR) && cv_matchboxes.value) // not Normal
 	{
-		if ((mobjinfo[i].flags & MF_MONITOR) && cv_matchboxes.value) // not Normal
-		{
-			if (cv_matchboxes.value == 1) // Random
-				i = MT_QUESTIONBOX;
-			else if (cv_matchboxes.value == 3) // Don't spawn
-				return;
-			else // cv_matchboxes.value == 2, Non-Random
-			{
-				if (i == MT_QUESTIONBOX)
-					return; // don't spawn in Non-Random
-
-				mthing->options &= ~(MTF_AMBUSH|MTF_OBJECTSPECIAL); // no random respawning!
-			}
-		}
-	}
-
-	if (gametype != GT_CTF) // CTF specific things
-	{
-		if (i == MT_BLUETEAMRING || i == MT_REDTEAMRING)
-			i = MT_RING;
-		else if (i == MT_BLUERINGBOX || i == MT_REDRINGBOX)
-			i = MT_SUPERRINGBOX;
-		else if (i == MT_BLUEFLAG || i == MT_REDFLAG)
-			return; // No flags in non-CTF modes!
-	}
-	else
-	{
-		if ((i == MT_BLUEFLAG && blueflag) || (i == MT_REDFLAG && redflag))
-		{
-			CONS_Alert(CONS_ERROR, M_GetText("Only one flag per team allowed in CTF!\n"));
+		if (cv_matchboxes.value == 1) // Random
+			i = MT_QUESTIONBOX;
+		else if (cv_matchboxes.value == 3) // Don't spawn
 			return;
+		else // cv_matchboxes.value == 2, Non-Random
+		{
+			if (i == MT_QUESTIONBOX)
+				return; // don't spawn in Non-Random
+
+			mthing->options &= ~(MTF_AMBUSH|MTF_OBJECTSPECIAL); // no random respawning!
 		}
 	}
+
+	if (i == MT_BLUETEAMRING || i == MT_REDTEAMRING)
+		i = MT_RING;
+	else if (i == MT_BLUERINGBOX || i == MT_REDRINGBOX)
+		i = MT_SUPERRINGBOX;
+	else if (i == MT_BLUEFLAG || i == MT_REDFLAG)
+		return; // No flags in non-CTF modes!
 
 	if (!G_RaceGametype() && (i == MT_SIGN || i == MT_STARPOST))
 		return; // Don't spawn exit signs or starposts in wrong game modes
@@ -11145,7 +11039,7 @@ void P_SpawnMapThing(mapthing_t *mthing)
 			return; // No rings in Ultimate mode (except special stages)
 	}
 
-	if (i == MT_EMMY && (gametype != GT_COOP || ultimatemode || tokenbits == 30 || tokenlist & (1 << tokenbits++)))
+	if (i == MT_EMMY && (ultimatemode || tokenbits == 30 || tokenlist & (1 << tokenbits++)))
 		return; // you already got this token, or there are too many, or the gametype's not right
 
 	// Objectplace landing point
@@ -12318,25 +12212,6 @@ mobj_t *P_SpawnMissile(mobj_t *source, mobj_t *dest, mobjtype_t type)
 	else
 		dist = 1;
 	return dist ? th : NULL;
-}
-
-//
-// P_ColorTeamMissile
-// Colors a player's ring based on their team
-//
-void P_ColorTeamMissile(mobj_t *missile, player_t *source)
-{
-	if (G_GametypeHasTeams())
-	{
-		if (source->ctfteam == 2)
-			missile->color = skincolor_bluering;
-		else if (source->ctfteam == 1)
-			missile->color = skincolor_redring;
-	}
-	/*
-	else
-		missile->color = player->mo->color; //copy color
-	*/
 }
 
 //

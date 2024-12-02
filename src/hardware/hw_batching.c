@@ -227,7 +227,7 @@ void HWR_RenderBatches(void)
 
 	int currentShader;
 	int nextShader = 0;
-	GLMipmap_t *currentTexture;
+	GLMipmap_t *currentTexture = NULL;
 	GLMipmap_t *nextTexture = NULL;
 	FBITFIELD currentPolyFlags = 0;
 	FBITFIELD nextPolyFlags = 0;
