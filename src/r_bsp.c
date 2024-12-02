@@ -627,7 +627,21 @@ static boolean R_CheckBBox(const fixed_t *bspcoord)
 	cliprange_t *start;
 
 	// Find the corners of the box that define the edges from current viewpoint.
-	if ((boxpos = (viewx <= bspcoord[BOXLEFT] ? 0 : viewx < bspcoord[BOXRIGHT] ? 1 : 2) + (viewy >= bspcoord[BOXTOP] ? 0 : viewy > bspcoord[BOXBOTTOM] ? 4 : 8)) == 5)
+	if (viewx <= bspcoord[BOXLEFT])
+		boxpos = 0;
+	else if (viewx < bspcoord[BOXRIGHT])
+		boxpos = 1;
+	else
+		boxpos = 2;
+
+	if (viewy >= bspcoord[BOXTOP])
+		boxpos |= 0;
+	else if (viewy > bspcoord[BOXBOTTOM])
+		boxpos |= 1<<2;
+	else
+		boxpos |= 2<<2;
+
+	if (boxpos == 5)
 		return true;
 
 	check = checkcoord[boxpos];
@@ -656,7 +670,8 @@ static boolean R_CheckBBox(const fixed_t *bspcoord)
 	sx2 = viewangletox[angle2];
 
 	// Does not cross a pixel.
-	if (sx1 >= sx2) return false;
+	if (sx1 >= sx2)
+		return false;
 
 	start = solidsegs;
 	while (start->last < sx2)
@@ -1320,7 +1335,8 @@ void R_RenderBSPNode(INT32 bspnum)
 		bsp = &nodes[bspnum];
 
 		// Decide which side the view point is on.
-		side = R_PointOnSide(viewx, viewy, bsp);
+		side = R_PointOnSideFast(viewx, viewy, bsp);
+
 		// Recursively divide front space.
 		R_RenderBSPNode(bsp->children[side]);
 

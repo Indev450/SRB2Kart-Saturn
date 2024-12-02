@@ -74,6 +74,14 @@ extern lighttable_t *zlight[LIGHTLEVELS][MAXLIGHTZ];
 // Utility functions.
 INT32 R_PointOnSide(fixed_t x, fixed_t y, const node_t *node);
 
+// This is not as accurate
+// SHOULD NOT BE USED FOR ANYTHING GAMEPLAY RELATED!!
+FUNCINLINE static ATTRINLINE PUREFUNC INT32 R_PointOnSideFast(fixed_t x, fixed_t y, const node_t *node)
+{
+	// use cross product to determine side quickly
+	return ((INT64)y - node->y) * node->dx - ((INT64)x - node->x) * node->dy > 0;
+}
+
 FUNCINLINE static ATTRINLINE PUREFUNC INT32 R_PointOnSegSide(fixed_t x, fixed_t y, const seg_t *line)
 {
     fixed_t lx = line->v1->x;
@@ -82,7 +90,7 @@ FUNCINLINE static ATTRINLINE PUREFUNC INT32 R_PointOnSegSide(fixed_t x, fixed_t 
     fixed_t ldy = line->v2->y - ly;
 
 	// use cross product to determine side quickly
-	return (INT64)(y - ly) * ldx - (INT64)(x - lx) * ldy > 0;
+	return ((INT64)y - ly) * ldx - ((INT64)x - lx) * ldy > 0;
 }
 
 angle_t R_PointToAngle(fixed_t x, fixed_t y);
@@ -94,9 +102,20 @@ fixed_t R_ScaleFromGlobalAngle(angle_t visangle);
 subsector_t *R_PointInSubsector(fixed_t x, fixed_t y);
 subsector_t *R_IsPointInSubsector(fixed_t x, fixed_t y);
 
+// uses R_PointOnSideFast
+// SHOULD NOT BE USED FOR ANYTHING GAMEPLAY RELATED!!
+FUNCINLINE static ATTRINLINE subsector_t *R_PointInSubsectorFast(fixed_t x, fixed_t y)
+{
+	size_t nodenum = numnodes-1;
+
+	while (!(nodenum & NF_SUBSECTOR))
+		nodenum = nodes[nodenum].children[R_PointOnSideFast(x, y, nodes+nodenum)];
+
+	return &subsectors[nodenum & ~NF_SUBSECTOR];
+}
+
 #define R_PointToDist(x, y) R_PointToDist2(viewx, viewy, x, y)
 #define R_PointToDist2(px2, py2, px1, py1) FixedHypot((px1) - (px2), (py1) - (py2))
-
 
 boolean R_DoCulling(line_t *cullheight, line_t *viewcullheight, fixed_t vz, fixed_t bottomh, fixed_t toph);
 void R_GetRenderBlockMapDimensions(fixed_t drawdist, INT32 *xl, INT32 *xh, INT32 *yl, INT32 *yh);
@@ -127,8 +146,8 @@ extern ps_metric_t ps_numpolyobjects;
 
 extern consvar_t cv_showhud, cv_translucenthud, cv_uncappedhud;
 extern consvar_t cv_homremoval;
-extern consvar_t cv_chasecam, cv_chasecam2, cv_chasecam3, cv_chasecam4;
-extern consvar_t cv_flipcam, cv_flipcam2, cv_flipcam3, cv_flipcam4;
+extern consvar_t cv_chasecam[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_flipcam[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_shadow, cv_shadowoffs;
 extern consvar_t cv_ffloorclip, cv_spriteclip;
 extern consvar_t cv_translucency;
@@ -153,9 +172,9 @@ void R_SetViewSize(void);
 // do it (sometimes explicitly called)
 void R_ExecuteSetViewSize(void);
 
-void R_SkyboxFrame(player_t *player);
+void R_SkyboxFrame(int s);
+void R_SetupFrame(int s, boolean skybox);
 
-void R_SetupFrame(player_t *player, boolean skybox);
 // Called by G_Drawer.
 void R_RenderPlayerView(player_t *player);
 

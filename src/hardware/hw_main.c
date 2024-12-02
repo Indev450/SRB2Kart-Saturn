@@ -3103,7 +3103,7 @@ static void HWR_RenderBSPNode(INT32 bspnum)
 		bsp = &nodes[bspnum];
 
 		// Decide which side the view point is on.
-		side = R_PointOnSide(viewx, viewy, bsp);
+		side = R_PointOnSideFast(viewx, viewy, bsp);
 
 		// Recursively divide front space.
 		if (HWR_PortalCheckBBox(bsp->bbox[side]))
@@ -3177,7 +3177,7 @@ static gl_vissprite_t *HWR_NewVisSprite(void)
 // Finds a floor through which light does not pass.
 static fixed_t HWR_OpaqueFloorAtPos(fixed_t x, fixed_t y, fixed_t z, fixed_t height)
 {
-	const sector_t *sec = R_PointInSubsector(x, y)->sector;
+	const sector_t *sec = R_PointInSubsectorFast(x, y)->sector;
 	fixed_t floorz = sec->floorheight;
 
 	if (sec->ffloors)
@@ -3225,7 +3225,7 @@ static void HWR_DrawSpriteShadow(gl_vissprite_t *spr, GLPatch_t *gpatch)
 		this_scale = FIXED_TO_FLOAT(spr->mobj->scale);
 	if (hires)
 		this_scale = this_scale * FIXED_TO_FLOAT(((skin_t *)( (spr->mobj->localskin) ? spr->mobj->localskin : spr->mobj->skin ))->highresscale);
-	
+
 	R_GetShadowZ(spr->mobj, &floorslope);
 
 	mobjfloor = HWR_OpaqueFloorAtPos(
@@ -3238,13 +3238,13 @@ static void HWR_DrawSpriteShadow(gl_vissprite_t *spr, GLPatch_t *gpatch)
 
 		// Set direction
 		if (splitscreen && stplyr == &players[displayplayers[1]])
-			shadowdir = localangle[1] + FixedAngle(cv_cam2_rotate.value);
+			shadowdir = localangle[1] + FixedAngle(cv_cam_rotate[1].value);
 		else if (splitscreen > 1 && stplyr == &players[displayplayers[2]])
-			shadowdir = localangle[2] + FixedAngle(cv_cam3_rotate.value);
+			shadowdir = localangle[2] + FixedAngle(cv_cam_rotate[2].value);
 		else if (splitscreen > 2 && stplyr == &players[displayplayers[3]])
-			shadowdir = localangle[3] + FixedAngle(cv_cam4_rotate.value);
+			shadowdir = localangle[3] + FixedAngle(cv_cam_rotate[3].value);
 		else
-			shadowdir = localangle[0] + FixedAngle(cv_cam_rotate.value);
+			shadowdir = localangle[0] + FixedAngle(cv_cam_rotate[0].value);
 
 		// Find floorheight
 		floorheight = HWR_OpaqueFloorAtPos(
@@ -3321,7 +3321,7 @@ static void HWR_DrawSpriteShadow(gl_vissprite_t *spr, GLPatch_t *gpatch)
 		swallVerts[0].z = spr->z1 + offset * gl_viewsin;
 		swallVerts[1].z = spr->z2 + offset * gl_viewsin;
 	}
-	
+
 	if (floorslope)
 	{
 		for (int i = 0; i < 4; i++)
@@ -3988,6 +3988,7 @@ static int CompareVisSprites(const void *p1, const void *p2)
 	// make transparent sprites last
 	// "boolean to int"
 
+	// check for precip first, because then sprX->mobj is actually a precipmobj_t and does not have flags2 or tracer
 	int transparency1 = (!spr1->precip && (spr1->mobj->flags2 & MF2_SHADOW)) || (spr1->mobj->frame & FF_TRANSMASK);
 	int transparency2 = (!spr2->precip && (spr2->mobj->flags2 & MF2_SHADOW)) || (spr2->mobj->frame & FF_TRANSMASK);
 
@@ -4437,7 +4438,10 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	boolean mirrored;
 	boolean hflip;
 
-	angle_t ang, camang;
+	angle_t ang = 0;
+#ifdef ROTSPRITE
+	angle_t camang = 0;
+#endif
 	boolean papersprite;
 	INT32 heightsec, phs;
 	INT32 dist = -1;
@@ -4447,7 +4451,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 #ifdef ROTSPRITE
 	patch_t *rotsprite = NULL;
 	INT32 rollangle = 0;
-	angle_t rollsum = 0;
+	angle_t pitchnroll = 0;
 	angle_t sliptiderollangle = 0;
 #endif
 
@@ -4502,7 +4506,13 @@ static void HWR_ProjectSprite(mobj_t *thing)
 		I_Error("HWR_ProjectSprite: invalid sprite number %i ", thing->sprite);
 #endif
 
-	rot = thing->frame&FF_FRAMEMASK;
+	rot = (thing->frame & FF_FRAMEMASK);
+
+#ifdef ROTSPRITE
+	// determine here if sprite should rotate for optimization
+	const boolean sliprollrotate = (cv_sloperoll.value && cv_sliptideroll.value && (thing->player && thing->player->sliproll));
+	const boolean shouldrotate = (cv_sloperoll.value && (interp.roll || interp.pitch || interp.sloperoll || interp.slopepitch || thing->rollangle || sliprollrotate));
+#endif
 
 	//Fab : 02-08-98: 'skin' override spritedef currently used for skin
 	if ((thing->skin || thing->localskin) && thing->sprite == SPR_PLAY)
@@ -4530,7 +4540,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 #ifdef ROTSPRITE
 		sprinfo = &spriteinfo[thing->sprite];
 #endif
-		rot = thing->frame&FF_FRAMEMASK;
+		rot = (thing->frame & FF_FRAMEMASK);
 		thing->state->sprite = thing->sprite;
 		thing->state->frame = thing->frame;
 	}
@@ -4542,8 +4552,13 @@ static void HWR_ProjectSprite(mobj_t *thing)
 		I_Error("sprframes NULL for sprite %d\n", thing->sprite);
 #endif
 
-	ang = R_PointToAngle (interp.x, interp.y) - interp.angle;
-	camang = R_PointToAngle (interp.x, interp.y);
+	ang = R_PointToAngle(interp.x, interp.y);
+
+#ifdef ROTSPRITE
+	camang = ang;
+#endif
+
+	ang -= interp.angle;
 
 	if (mirrored)
 		ang = InvAngle(ang);
@@ -4585,33 +4600,32 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	spr_topoffset = spritecachedinfo[lumpoff].topoffset;
 
 #ifdef ROTSPRITE
-	if (cv_spriteroll.value)
+	if (shouldrotate)
 	{
-		rollangle = FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), interp.roll)
-			+ FixedMul(FINESINE((ang) >> ANGLETOFINESHIFT), interp.pitch)
-			+ FixedMul(FINECOSINE((camang) >> ANGLETOFINESHIFT), interp.sloperoll)
-			+ FixedMul(FINESINE((camang) >> ANGLETOFINESHIFT), interp.slopepitch)
-			+ thing->rollangle;
-
-		if ((rollangle)||(thing->player && thing->player->sliproll))
+		if (papersprite)
 		{
-			if (thing->player)
+			// a positive rollangle should should pitch papersprites upwards relative to their facing angle
+			rollangle = InvAngle(thing->rollangle);
+		}
+		else
+		{
+			// this is very messy, but it on-the-fly calculates rotations for all the
+			// pitch and roll variables
+			pitchnroll = R_RotationAngle(ang, camang, &interp);
+			rollangle = thing->rollangle;
+		}
+
+		if (rollangle || pitchnroll || sliprollrotate)
+		{
+			if (sliprollrotate)
 			{
-				sliptiderollangle = cv_sliptideroll.value ? thing->player->sliproll*(thing->player->sliptidemem) : 0;
-				rollsum = rollangle+FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), sliptiderollangle);
+				sliptiderollangle = thing->player->sliproll * (thing->player->sliptidemem);
+				pitchnroll += rollangle + FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), sliptiderollangle);
 			}
 			else
-				rollsum = rollangle;
+				pitchnroll += rollangle;
 
-			// this is kinda dumb lkmao, but try to mitigate shadows being weirdly offset on slopes
-			if (thing->type == MT_SHADOW)
-			{
-				sprinfo->available = true; // < lmao
-				sprinfo->pivot[(thing->frame & FF_FRAMEMASK)].x = spr_offset>>FRACBITS;
-				sprinfo->pivot[(thing->frame & FF_FRAMEMASK)].y = -8; // noones gonna replace shadow sprite anyways, right? that random value ftw, otherwise this clips into the ground Zzz...
-			}
-
-			rollangle = R_GetRollAngle(rollsum);
+			rollangle = R_GetRollAngle(pitchnroll);
 			rotsprite = Patch_GetRotatedSprite(sprframe, (thing->frame & FF_FRAMEMASK), rot, flip, false, sprinfo, rollangle);
 
 			if (rotsprite != NULL)
@@ -4718,7 +4732,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	vis->spriteyoffset = FIXED_TO_FLOAT(spr_topoffset);
 
 #ifdef ROTSPRITE
-	if ((rotsprite) && (cv_spriteroll.value))
+	if (rotsprite != NULL)
 		vis->gpatch = (GLPatch_t *)rotsprite;
 	else
 #endif
@@ -4844,7 +4858,7 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 		return;
 #endif
 
-	sprframe = &sprdef->spriteframes[ thing->frame & FF_FRAMEMASK];
+	sprframe = &sprdef->spriteframes[thing->frame & FF_FRAMEMASK];
 
 	// use single rotation for all views
 	lumpoff = sprframe->lumpid[0];
@@ -5285,12 +5299,12 @@ void HWR_RenderPlayerView(INT32 viewnumber, player_t *player)
 	drewsky = false;
 	if (skybox)
 	{
-		R_SkyboxFrame(player);
+		R_SkyboxFrame(viewssnum);
 		HWR_RenderFrame(viewnumber, player, true);
 	}
 	PS_STOP_TIMING(ps_skyboxtime);
 
-	R_SetupFrame(player, false); // This can stay false because it is only used to set viewsky in r_main.c, which isn't used here
+	R_SetupFrame(viewssnum, false); // This can stay false because it is only used to set viewsky in r_main.c, which isn't used here
 	framecount++; // for timedemo
 	HWR_RenderFrame(viewnumber, player, false);
 }

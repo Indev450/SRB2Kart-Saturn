@@ -50,6 +50,7 @@
 #include "s_sound.h" // sfx_syfail
 #include "m_perfstats.h"
 #include "d_main.h"
+#include "r_fps.h"
 
 #ifdef CLIENT_LOADINGSCREEN
 // cl loading screen
@@ -139,10 +140,7 @@ static UINT8 gamestate_resend_counter[MAXNETNODES];
 boolean hu_stopped = false;
 
 // Client specific
-static ticcmd_t localcmds;
-static ticcmd_t localcmds2;
-static ticcmd_t localcmds3;
-static ticcmd_t localcmds4;
+static ticcmd_t localcmds[MAXSPLITSCREENPLAYERS];
 static boolean cl_packetmissed;
 // here it is for the secondary local player (splitscreen)
 static UINT8 mynode; // my address pointofview server
@@ -159,10 +157,7 @@ boolean is_client_saturn[MAXNETNODES];
 #define ISSATURN 69
 #endif
 
-static UINT8 localtextcmd[MAXTEXTCMD];
-static UINT8 localtextcmd2[MAXTEXTCMD]; // splitscreen
-static UINT8 localtextcmd3[MAXTEXTCMD]; // splitscreen == 2
-static UINT8 localtextcmd4[MAXTEXTCMD]; // splitscreen == 3
+static UINT8 localtextcmd[MAXSPLITSCREENPLAYERS][MAXTEXTCMD];
 static tic_t neededtic;
 SINT8 servernode = 0; // the number of the server node
 char connectedservername[MAXSERVERNAME+1];
@@ -276,77 +271,30 @@ void RegisterNetXCmd(netxcmd_t id, void (*cmd_f)(UINT8 **p, INT32 playernum))
 	listnetxcmd[id] = cmd_f;
 }
 
-void SendNetXCmd(netxcmd_t id, const void *param, size_t nparam)
+void SendNetXCmdForPlayer(UINT8 playerid, netxcmd_t id, const void *param, size_t nparam)
 {
-	if (localtextcmd[0]+2+nparam > MAXTEXTCMD)
+	if ((localtextcmd[playerid])[0]+2+nparam > MAXTEXTCMD)
 	{
-		// for future reference: if (cv_debug) != debug disabled.
-		CONS_Alert(CONS_ERROR, M_GetText("NetXCmd buffer full, cannot add netcmd %d! (size: %d, needed: %s)\n"), id, localtextcmd[0], sizeu1(nparam));
+		// for future reference: if (cht_debug) != debug disabled.
+		CONS_Alert(CONS_ERROR, M_GetText("NetXCmd buffer full, cannot add netcmd %d! (size: %d, needed: %s)\n"), id, localtextcmd[playerid][0], sizeu1(nparam));
 		return;
 	}
-	localtextcmd[0]++;
-	localtextcmd[localtextcmd[0]] = (UINT8)id;
+
+	localtextcmd[playerid][0]++;
+	localtextcmd[playerid][localtextcmd[playerid][0]] = (UINT8)id;
+
 	if (param && nparam)
 	{
-		M_Memcpy(&localtextcmd[localtextcmd[0]+1], param, nparam);
-		localtextcmd[0] = (UINT8)(localtextcmd[0] + (UINT8)nparam);
+		M_Memcpy(&localtextcmd[playerid][localtextcmd[playerid][0] + 1], param, nparam);
+		localtextcmd[playerid][0] = (UINT8)(localtextcmd[playerid][0] + (UINT8)nparam);
 	}
 }
 
-// splitscreen player
-void SendNetXCmd2(netxcmd_t id, const void *param, size_t nparam)
-{
-	if (localtextcmd2[0]+2+nparam > MAXTEXTCMD)
-	{
-		I_Error("No more place in the buffer for netcmd %d\n",id);
-		return;
-	}
-	localtextcmd2[0]++;
-	localtextcmd2[localtextcmd2[0]] = (UINT8)id;
-	if (param && nparam)
-	{
-		M_Memcpy(&localtextcmd2[localtextcmd2[0]+1], param, nparam);
-		localtextcmd2[0] = (UINT8)(localtextcmd2[0] + (UINT8)nparam);
-	}
-}
-
-void SendNetXCmd3(netxcmd_t id, const void *param, size_t nparam)
-{
-	if (localtextcmd3[0]+2+nparam > MAXTEXTCMD)
-	{
-		I_Error("No more place in the buffer for netcmd %d\n",id);
-		return;
-	}
-	localtextcmd3[0]++;
-	localtextcmd3[localtextcmd3[0]] = (UINT8)id;
-	if (param && nparam)
-	{
-		M_Memcpy(&localtextcmd3[localtextcmd3[0]+1], param, nparam);
-		localtextcmd3[0] = (UINT8)(localtextcmd3[0] + (UINT8)nparam);
-	}
-}
-
-void SendNetXCmd4(netxcmd_t id, const void *param, size_t nparam)
-{
-	if (localtextcmd4[0]+2+nparam > MAXTEXTCMD)
-	{
-		I_Error("No more place in the buffer for netcmd %d\n",id);
-		return;
-	}
-	localtextcmd4[0]++;
-	localtextcmd4[localtextcmd4[0]] = (UINT8)id;
-	if (param && nparam)
-	{
-		M_Memcpy(&localtextcmd4[localtextcmd4[0]+1], param, nparam);
-		localtextcmd4[0] = (UINT8)(localtextcmd4[0] + (UINT8)nparam);
-	}
-}
-
-UINT8 GetFreeXCmdSize(void)
+/*UINT8 GetFreeXCmdSize(UINT8 playerid)
 {
 	// -1 for the size and another -1 for the ID.
-	return (UINT8)(localtextcmd[0] - 2);
-}
+	return (UINT8)(localtextcmd[playerid][0] - 2);
+}*/
 
 // Frees all textcmd memory for the specified tic
 static void D_FreeTextcmd(tic_t tic)
@@ -510,10 +458,8 @@ void D_ResetTiccmds(void)
 {
 	INT32 i;
 
-	memset(&localcmds, 0, sizeof(ticcmd_t));
-	memset(&localcmds2, 0, sizeof(ticcmd_t));
-	memset(&localcmds3, 0, sizeof(ticcmd_t));
-	memset(&localcmds4, 0, sizeof(ticcmd_t));
+	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+		memset(&localcmds[i], 0, sizeof(ticcmd_t));
 
 	// Reset the net command list
 	for (i = 0; i < TEXTCMD_HASH_SIZE; i++)
@@ -856,110 +802,6 @@ static void resynch_read_player(resynch_pak *rsp)
 	P_SetThingPosition(players[i].mo);
 }
 
-static inline void resynch_write_ctf(resynchend_pak *rst)
-{
-	mobj_t *mflag;
-	UINT8 i, j;
-
-	for (i = 0, mflag = redflag; i < 2; ++i, mflag = blueflag)
-	{
-		rst->flagx[i] = rst->flagy[i] = rst->flagz[i] = 0;
-		rst->flagloose[i] = rst->flagflags[i] = 0;
-		rst->flagplayer[i] = -1;
-
-		if (!mflag)
-		{
-			// Should be held by a player
-			for (j = 0; j < MAXPLAYERS; ++j)
-			{
-				// GF_REDFLAG is 1, GF_BLUEFLAG is 2
-				// redflag handling is i=0, blueflag is i=1
-				// so check for gotflag == (i+1)
-				if (!playeringame[j] || players[j].gotflag != (i+1))
-					continue;
-				rst->flagplayer[i] = (SINT8)j;
-				break;
-			}
-			if (j == MAXPLAYERS) // fine, no I_Error
-			{
-				CONS_Alert(CONS_ERROR, "One of the flags has gone completely missing...\n");
-				rst->flagplayer[i] = -2;
-			}
-			continue;
-		}
-
-		rst->flagx[i] = (fixed_t)LONG(mflag->x);
-		rst->flagy[i] = (fixed_t)LONG(mflag->y);
-		rst->flagz[i] = (fixed_t)LONG(mflag->z);
-		rst->flagflags[i] = LONG(mflag->flags2);
-		rst->flagloose[i] = LONG(mflag->fuse); // Dropped or not?
-	}
-}
-
-static inline void resynch_read_ctf(resynchend_pak *p)
-{
-	UINT8 i;
-
-	for (i = 0; i < MAXPLAYERS; ++i)
-		players[i].gotflag = 0;
-
-	// Red flag
-	if (p->flagplayer[0] == -2)
-		; // The server doesn't even know what happened to it...
-	else if (p->flagplayer[0] != -1) // Held by a player
-	{
-		if (!playeringame[p->flagplayer[0]])
-			 I_Error("Invalid red flag player %d who isn't in the game!", (INT32)p->flagplayer[0]);
-		players[p->flagplayer[0]].gotflag = GF_REDFLAG;
-		if (redflag)
-		{
-			P_RemoveMobj(redflag);
-			redflag = NULL;
-		}
-	}
-	else
-	{
-		if (!redflag)
-			redflag = P_SpawnMobj(0,0,0,MT_REDFLAG);
-
-		P_UnsetThingPosition(redflag);
-		redflag->x = (fixed_t)LONG(p->flagx[0]);
-		redflag->y = (fixed_t)LONG(p->flagy[0]);
-		redflag->z = (fixed_t)LONG(p->flagz[0]);
-		redflag->flags2 = LONG(p->flagflags[0]);
-		redflag->fuse = LONG(p->flagloose[0]);
-		P_SetThingPosition(redflag);
-	}
-
-	// Blue flag
-	if (p->flagplayer[1] == -2)
-		; // The server doesn't even know what happened to it...
-	else if (p->flagplayer[1] != -1) // Held by a player
-	{
-		if (!playeringame[p->flagplayer[1]])
-			 I_Error("Invalid blue flag player %d who isn't in the game!", (INT32)p->flagplayer[1]);
-		players[p->flagplayer[1]].gotflag = GF_BLUEFLAG;
-		if (blueflag)
-		{
-			P_RemoveMobj(blueflag);
-			blueflag = NULL;
-		}
-	}
-	else
-	{
-		if (!blueflag)
-			blueflag = P_SpawnMobj(0,0,0,MT_BLUEFLAG);
-
-		P_UnsetThingPosition(blueflag);
-		blueflag->x = (fixed_t)LONG(p->flagx[1]);
-		blueflag->y = (fixed_t)LONG(p->flagy[1]);
-		blueflag->z = (fixed_t)LONG(p->flagz[1]);
-		blueflag->flags2 = LONG(p->flagflags[1]);
-		blueflag->fuse = LONG(p->flagloose[1]);
-		P_SetThingPosition(blueflag);
-	}
-}
-
 static inline void resynch_write_others(resynchend_pak *rst)
 {
 	UINT8 i;
@@ -1060,8 +902,6 @@ static void SV_SendResynch(INT32 node)
 		netbuffer->packettype = PT_RESYNCHEND;
 
 		netbuffer->u.resynchend.randomseed = P_GetRandSeed();
-		if (gametype == GT_CTF)
-			resynch_write_ctf(&netbuffer->u.resynchend);
 		resynch_write_others(&netbuffer->u.resynchend);
 
 		HSendPacket(node, true, 0, (sizeof(resynchend_pak)));
@@ -1668,20 +1508,10 @@ static void SV_SendPlayerInfo(INT32 node)
 		//No, don't do that, you fuckface.
 		memset(netbuffer->u.playerinfo[i].address, 0, 4);
 
-		if (G_GametypeHasTeams())
-		{
-			if (!players[i].ctfteam)
-				netbuffer->u.playerinfo[i].team = 255;
-			else
-				netbuffer->u.playerinfo[i].team = (UINT8)players[i].ctfteam;
-		}
+		if (players[i].spectator)
+			netbuffer->u.playerinfo[i].team = 255;
 		else
-		{
-			if (players[i].spectator)
-				netbuffer->u.playerinfo[i].team = 255;
-			else
-				netbuffer->u.playerinfo[i].team = 0;
-		}
+			netbuffer->u.playerinfo[i].team = 0;
 
 		netbuffer->u.playerinfo[i].score = LONG(players[i].score);
 		netbuffer->u.playerinfo[i].timeinserver = SHORT((UINT16)(players[i].jointime / TICRATE));
@@ -2008,12 +1838,12 @@ static void CL_ReloadReceivedSavegame(void)
 	// we dont have P_ForceLocalAngle so were setting it manually here
 	for (i = 0; i <= splitscreen; i++)
 	{
-		localangle[i] = (angle_t)(players[displayplayers[i]].cmd.angleturn<<16);
+		localangle[i] = (angle_t)(players[displayplayers[i]].cmd.angleturn << 16);
 	}
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
-		camera[i].subsector = R_PointInSubsector(camera[i].x, camera[i].y);
+		camera[i].subsector = R_PointInSubsectorFast(camera[i].x, camera[i].y);
 	}
 
 	cl_redownloadinggamestate = false;
@@ -3258,9 +3088,6 @@ void CL_RemovePlayer(INT32 playernum, INT32 reason)
 	if (K_IsPlayerWanted(&players[playernum]))
 		K_CalculateBattleWanted();
 
-	if (gametype == GT_CTF)
-		P_PlayerFlagBurst(&players[playernum], false); // Don't take the flag with you!
-
 	// If in a special stage, redistribute the player's rings across
 	// the remaining players.
 	if (G_IsSpecialStage(gamemap))
@@ -3293,6 +3120,9 @@ void CL_RemovePlayer(INT32 playernum, INT32 reason)
 
 	LUAh_PlayerQuit(&players[playernum], reason); // Lua hook for player quitting
 
+	if (playernum == displayplayers[0] && !demo.playback)
+		displayplayers[0] = consoleplayer; // don't look through someone's view who isn't there
+
 	// Reset player data
 	CL_ClearPlayer(playernum);
 
@@ -3311,9 +3141,6 @@ void CL_RemovePlayer(INT32 playernum, INT32 reason)
 	{
 		RemoveAdminPlayer(playernum); // don't stay admin after you're gone
 	}
-
-	if (playernum == displayplayers[0] && !demo.playback)
-		displayplayers[0] = consoleplayer; // don't look through someone's view who isn't there
 
 	LUA_InvalidatePlayer(&players[playernum]);
 
@@ -4266,16 +4093,16 @@ void SV_ResetServer(void)
 		sprintf(player_names[i], "Player %d", i + 1);
 	}
 
+	memset(player_name_changes, 0, sizeof player_name_changes);
+
 	memset(playeringame, false, sizeof playeringame);
 	memset(playernode, UINT8_MAX, sizeof playernode);
-
-	ClearAdminPlayers(); // Populate the entire adminplayers array with -1.
-
-	memset(player_name_changes, 0, sizeof player_name_changes);
 
 	pingmeasurecount = 1;
 	memset(realpingtable, 0, sizeof realpingtable);
 	memset(playerpingtable, 0, sizeof playerpingtable);
+
+	ClearAdminPlayers();
 
 	mynode = 0;
 	cl_packetmissed = false;
@@ -4645,10 +4472,8 @@ void SV_StopServer(void)
 		Y_EndVote();
 	gamestate = wipegamestate = GS_NULL;
 
-	localtextcmd[0] = 0;
-	localtextcmd2[0] = 0;
-	localtextcmd3[0] = 0;
-	localtextcmd4[0] = 0;
+	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+		localtextcmd[i][0] = 0;
 
 	for (i = firstticstosend; i < firstticstosend + TICQUEUE; i++)
 		D_Clearticcmd(i);
@@ -5448,8 +5273,6 @@ static void HandlePacketFromPlayer(SINT8 node)
 					DEBFILE(va("player %d kicked (synch failure) [%u] %d!=%d\n",
 						netconsole, realstart, consistancy[realstart%TICQUEUE],
 						SHORT(netbuffer->u.clientpak.consistancy)));
-					gamestate_resend_counter[node] = 0;
-					DEBFILE(va("gamestate counter %d for node %d\n", gamestate_resend_counter[node], netconsole));
 					break;
 				}
 			}
@@ -5623,9 +5446,6 @@ static void HandlePacketFromPlayer(SINT8 node)
 			resynch_local_inprogress = false;
 
 			P_SetRandSeed(netbuffer->u.resynchend.randomseed);
-
-			if (gametype == GT_CTF)
-				resynch_read_ctf(&netbuffer->u.resynchend);
 			resynch_read_others(&netbuffer->u.resynchend);
 
 			break;
@@ -6063,26 +5883,26 @@ static void CL_SendClientCmd(void)
 	else if (gamestate != GS_NULL)
 	{
 		packetsize = sizeof (clientcmd_pak);
-		G_MoveTiccmd(&netbuffer->u.clientpak.cmd, &localcmds, 1);
+		G_MoveTiccmd(&netbuffer->u.clientpak.cmd, &localcmds[0], 1);
 		netbuffer->u.clientpak.consistancy = SHORT(consistancy[gametic%TICQUEUE]);
 
 		if (splitscreen || botingame) // Send a special packet with 2 cmd for splitscreen
 		{
 			netbuffer->packettype = (mis ? PT_CLIENT2MIS : PT_CLIENT2CMD);
 			packetsize = sizeof (client2cmd_pak);
-			G_MoveTiccmd(&netbuffer->u.client2pak.cmd2, &localcmds2, 1);
+			G_MoveTiccmd(&netbuffer->u.client2pak.cmd2, &localcmds[1], 1);
 
 			if (splitscreen > 1)
 			{
 				netbuffer->packettype = (mis ? PT_CLIENT3MIS : PT_CLIENT3CMD);
 				packetsize = sizeof (client3cmd_pak);
-				G_MoveTiccmd(&netbuffer->u.client3pak.cmd3, &localcmds3, 1);
+				G_MoveTiccmd(&netbuffer->u.client3pak.cmd3, &localcmds[2], 1);
 
 				if (splitscreen > 2)
 				{
 					netbuffer->packettype = (mis ? PT_CLIENT4MIS : PT_CLIENT4CMD);
 					packetsize = sizeof (client4cmd_pak);
-					G_MoveTiccmd(&netbuffer->u.client4pak.cmd4, &localcmds4, 1);
+					G_MoveTiccmd(&netbuffer->u.client4pak.cmd4, &localcmds[3], 1);
 				}
 			}
 		}
@@ -6092,44 +5912,33 @@ static void CL_SendClientCmd(void)
 
 	if (cl_mode == CL_CONNECTED || dedicated)
 	{
+		UINT8 i;
 		// Send extra data if needed
-		if (localtextcmd[0])
+		for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 		{
-			netbuffer->packettype = PT_TEXTCMD;
-			M_Memcpy(netbuffer->u.textcmd,localtextcmd, localtextcmd[0]+1);
-			// All extra data have been sent
-			if (HSendPacket(servernode, true, 0, localtextcmd[0]+1)) // Send can fail...
-				localtextcmd[0] = 0;
-		}
+			if (localtextcmd[i][0])
+			{
+				switch (i)
+				{
+					case 3:
+						netbuffer->packettype = PT_TEXTCMD4;
+						break;
+					case 2:
+						netbuffer->packettype = PT_TEXTCMD3;
+						break;
+					case 1:
+						netbuffer->packettype = PT_TEXTCMD2;
+						break;
+					default:
+						netbuffer->packettype = PT_TEXTCMD;
+						break;
+				}
 
-		// Send extra data if needed for player 2 (splitscreen == 1)
-		if (localtextcmd2[0])
-		{
-			netbuffer->packettype = PT_TEXTCMD2;
-			M_Memcpy(netbuffer->u.textcmd, localtextcmd2, localtextcmd2[0]+1);
-			// All extra data have been sent
-			if (HSendPacket(servernode, true, 0, localtextcmd2[0]+1)) // Send can fail...
-				localtextcmd2[0] = 0;
-		}
-
-		// Send extra data if needed for player 3 (splitscreen == 2)
-		if (localtextcmd3[0])
-		{
-			netbuffer->packettype = PT_TEXTCMD3;
-			M_Memcpy(netbuffer->u.textcmd, localtextcmd3, localtextcmd3[0]+1);
-			// All extra data have been sent
-			if (HSendPacket(servernode, true, 0, localtextcmd3[0]+1)) // Send can fail...
-				localtextcmd3[0] = 0;
-		}
-
-		// Send extra data if needed for player 4 (splitscreen == 3)
-		if (localtextcmd4[0])
-		{
-			netbuffer->packettype = PT_TEXTCMD4;
-			M_Memcpy(netbuffer->u.textcmd, localtextcmd4, localtextcmd4[0]+1);
-			// All extra data have been sent
-			if (HSendPacket(servernode, true, 0, localtextcmd4[0]+1)) // Send can fail...
-				localtextcmd4[0] = 0;
+				M_Memcpy(netbuffer->u.textcmd, localtextcmd[i], localtextcmd[i][0]+1);
+				// All extra data have been sent
+				if (HSendPacket(servernode, true, 0, localtextcmd[i][0]+1)) // Send can fail...
+					localtextcmd[i][0] = 0;
+			}
 		}
 	}
 }
@@ -6149,106 +5958,108 @@ static void SV_SendTics(void)
 	// for each node create a packet with x tics and send it
 	// x is computed using supposedtics[n], max packet size and maketic
 	for (n = 1; n < MAXNETNODES; n++)
-		if (nodeingame[n])
+	{
+		if (!nodeingame[n])
+			continue;
+
+		// assert supposedtics[n]>=nettics[n]
+		realfirsttic = supposedtics[n];
+		lasttictosend = maketic;
+
+		if (lasttictosend - nettics[n] >= BACKUPTICS)
+			lasttictosend = nettics[n] + BACKUPTICS-1;
+
+		if (realfirsttic >= lasttictosend)
 		{
-			// assert supposedtics[n]>=nettics[n]
-			realfirsttic = supposedtics[n];
-			lasttictosend = maketic;
-
-			if (lasttictosend - nettics[n] >= BACKUPTICS)
-				lasttictosend = nettics[n] + BACKUPTICS-1;
-
-			if (realfirsttic >= lasttictosend)
-			{
-				// well we have sent all tics we will so use extrabandwidth
-				// to resent packet that are supposed lost (this is necessary since lost
-				// packet detection work when we have received packet with firsttic > neededtic
-				// (getpacket servertics case)
-				DEBFILE(va("Nothing to send node %u mak=%u sup=%u net=%u \n",
-					n, lasttictosend, supposedtics[n], nettics[n]));
-				realfirsttic = nettics[n];
-				if (realfirsttic >= lasttictosend || (I_GetTime() + n)&3)
-					// all tic are ok
-					continue;
-				DEBFILE(va("Sent %d anyway\n", realfirsttic));
-			}
-			if (realfirsttic < firstticstosend)
-				realfirsttic = firstticstosend;
-
-			// compute the length of the packet and cut it if too large
-			packsize = BASESERVERTICSSIZE;
-			for (i = realfirsttic; i < lasttictosend; i++)
-			{
-				packsize += sizeof (ticcmd_t) * doomcom->numslots;
-				packsize += TotalTextCmdPerTic(i);
-
-				if (packsize > software_MAXPACKETLENGTH)
-				{
-					DEBFILE(va("packet too large (%s) at tic %d (should be from %d to %d)\n",
-						sizeu1(packsize), i, realfirsttic, lasttictosend));
-					lasttictosend = i;
-
-					// too bad: too much player have send extradata and there is too
-					//          much data in one tic.
-					// To avoid it put the data on the next tic. (see getpacket
-					// textcmd case) but when numplayer changes the computation can be different
-					if (lasttictosend == realfirsttic)
-					{
-						if (packsize > MAXPACKETLENGTH)
-							I_Error("Too many players: can't send %s data for %d players to node %d\n"
-							        "Well sorry nobody is perfect....\n",
-							        sizeu1(packsize), doomcom->numslots, n);
-						else
-						{
-							lasttictosend++; // send it anyway!
-							DEBFILE("sending it anyway\n");
-						}
-					}
-					break;
-				}
-			}
-
-			// Send the tics
-			netbuffer->packettype = PT_SERVERTICS;
-			netbuffer->u.serverpak.starttic = (UINT8)realfirsttic;
-			netbuffer->u.serverpak.numtics = (UINT8)(lasttictosend - realfirsttic);
-			netbuffer->u.serverpak.numslots = (UINT8)SHORT(doomcom->numslots);
-			bufpos = (UINT8 *)&netbuffer->u.serverpak.cmds;
-
-			for (i = realfirsttic; i < lasttictosend; i++)
-			{
-				bufpos = G_DcpyTiccmd(bufpos, netcmds[i%TICQUEUE], doomcom->numslots * sizeof (ticcmd_t));
-			}
-
-			// add textcmds
-			for (i = realfirsttic; i < lasttictosend; i++)
-			{
-				ntextcmd = bufpos++;
-				*ntextcmd = 0;
-				for (j = 0; j < MAXPLAYERS; j++)
-				{
-					UINT8 *textcmd = D_GetExistingTextcmd(i, j);
-					INT32 size = textcmd ? textcmd[0] : 0;
-
-					if ((!j || playeringame[j]) && size)
-					{
-						(*ntextcmd)++;
-						WRITEUINT8(bufpos, j);
-						M_Memcpy(bufpos, textcmd, size + 1);
-						bufpos += size + 1;
-					}
-				}
-			}
-			packsize = bufpos - (UINT8 *)&(netbuffer->u);
-
-			HSendPacket(n, false, 0, packsize);
-			// when tic are too large, only one tic is sent so don't go backward!
-			if (lasttictosend-doomcom->extratics > realfirsttic)
-				supposedtics[n] = lasttictosend-doomcom->extratics;
-			else
-				supposedtics[n] = lasttictosend;
-			if (supposedtics[n] < nettics[n]) supposedtics[n] = nettics[n];
+			// well we have sent all tics we will so use extrabandwidth
+			// to resent packet that are supposed lost (this is necessary since lost
+			// packet detection work when we have received packet with firsttic > neededtic
+			// (getpacket servertics case)
+			DEBFILE(va("Nothing to send node %u mak=%u sup=%u net=%u \n",
+				n, lasttictosend, supposedtics[n], nettics[n]));
+			realfirsttic = nettics[n];
+			if (realfirsttic >= lasttictosend || (I_GetTime() + n)&3)
+				// all tic are ok
+				continue;
+			DEBFILE(va("Sent %d anyway\n", realfirsttic));
 		}
+		if (realfirsttic < firstticstosend)
+			realfirsttic = firstticstosend;
+
+		// compute the length of the packet and cut it if too large
+		packsize = BASESERVERTICSSIZE;
+		for (i = realfirsttic; i < lasttictosend; i++)
+		{
+			packsize += sizeof (ticcmd_t) * doomcom->numslots;
+			packsize += TotalTextCmdPerTic(i);
+
+			if (packsize > software_MAXPACKETLENGTH)
+			{
+				DEBFILE(va("packet too large (%s) at tic %d (should be from %d to %d)\n",
+					sizeu1(packsize), i, realfirsttic, lasttictosend));
+				lasttictosend = i;
+
+				// too bad: too much player have send extradata and there is too
+				//          much data in one tic.
+				// To avoid it put the data on the next tic. (see getpacket
+				// textcmd case) but when numplayer changes the computation can be different
+				if (lasttictosend == realfirsttic)
+				{
+					if (packsize > MAXPACKETLENGTH)
+						I_Error("Too many players: can't send %s data for %d players to node %d\n"
+								"Well sorry nobody is perfect....\n",
+								sizeu1(packsize), doomcom->numslots, n);
+					else
+					{
+						lasttictosend++; // send it anyway!
+						DEBFILE("sending it anyway\n");
+					}
+				}
+				break;
+			}
+		}
+
+		// Send the tics
+		netbuffer->packettype = PT_SERVERTICS;
+		netbuffer->u.serverpak.starttic = (UINT8)realfirsttic;
+		netbuffer->u.serverpak.numtics = (UINT8)(lasttictosend - realfirsttic);
+		netbuffer->u.serverpak.numslots = (UINT8)SHORT(doomcom->numslots);
+		bufpos = (UINT8 *)&netbuffer->u.serverpak.cmds;
+
+		for (i = realfirsttic; i < lasttictosend; i++)
+		{
+			bufpos = G_DcpyTiccmd(bufpos, netcmds[i%TICQUEUE], doomcom->numslots * sizeof (ticcmd_t));
+		}
+
+		// add textcmds
+		for (i = realfirsttic; i < lasttictosend; i++)
+		{
+			ntextcmd = bufpos++;
+			*ntextcmd = 0;
+			for (j = 0; j < MAXPLAYERS; j++)
+			{
+				UINT8 *textcmd = D_GetExistingTextcmd(i, j);
+				INT32 size = textcmd ? textcmd[0] : 0;
+
+				if ((!j || playeringame[j]) && size)
+				{
+					(*ntextcmd)++;
+					WRITEUINT8(bufpos, j);
+					M_Memcpy(bufpos, textcmd, size + 1);
+					bufpos += size + 1;
+				}
+			}
+		}
+		packsize = bufpos - (UINT8 *)&(netbuffer->u);
+
+		HSendPacket(n, false, 0, packsize);
+		// when tic are too large, only one tic is sent so don't go backward!
+		if (lasttictosend-doomcom->extratics > realfirsttic)
+			supposedtics[n] = lasttictosend-doomcom->extratics;
+		else
+			supposedtics[n] = lasttictosend;
+		if (supposedtics[n] < nettics[n]) supposedtics[n] = nettics[n];
+	}
 	// node 0 is me!
 	supposedtics[0] = maketic;
 }
@@ -6256,27 +6067,27 @@ static void SV_SendTics(void)
 //
 // TryRunTics
 //
+static inline void CreateNewLocalCMD(UINT8 p, INT32 realtics)
+{
+	G_BuildTiccmd(&localcmds[p], realtics, p+1);
+	localcmds[p].angleturn |= TICCMD_RECEIVED;
+}
+
 static void Local_Maketic(INT32 realtics)
 {
+	INT32 i;
+
 	I_OsPolling(); // I_Getevent
 	D_ProcessEvents(); // menu responder, cons responder,
 	                   // game responder calls HU_Responder, AM_Responder, F_Responder,
 	                   // and G_MapEventsToControls
 	if (!dedicated) rendergametic = gametic;
 	// translate inputs (keyboard/mouse/joystick) into game controls
-	G_BuildTiccmd(&localcmds, realtics, 1);
-	if (splitscreen || botingame)
-	{
-		G_BuildTiccmd(&localcmds2, realtics, 2);
-		if (splitscreen > 1)
-		{
-			G_BuildTiccmd(&localcmds3, realtics, 3);
-			if (splitscreen > 2)
-				G_BuildTiccmd(&localcmds4, realtics, 4);
-		}
-	}
 
-	localcmds.angleturn |= TICCMD_RECEIVED;
+	for (i = 0; i <= splitscreen; i++)
+	{
+		CreateNewLocalCMD(i, realtics);
+	}
 }
 
 void SV_SpawnPlayer(INT32 playernum, INT32 x, INT32 y, angle_t angle)
@@ -6666,6 +6477,14 @@ void NetUpdate(void)
 	if (realtics <= 0) // nothing new to update
 		return;
 
+	if (realtics > 5)
+	{
+		if (server)
+			realtics = 1;
+		else
+			realtics = 5;
+	}
+
 #ifdef DEDICATEDIDLETIME
 	if (server && dedicated && gamestate == GS_LEVEL)
 	{
@@ -6713,14 +6532,6 @@ void NetUpdate(void)
 		}
 	}
 #endif
-
-	if (realtics > 5)
-	{
-		if (server)
-			realtics = 1;
-		else
-			realtics = 5;
-	}
 
 	gametime = nowtime;
 
@@ -6814,6 +6625,9 @@ void NetUpdate(void)
 	}
 	Net_AckTicker();
 	HandleNodeTimeouts();
+
+	nowtime /= NEWTICRATERATIO;
+
 	if (nowtime > resptime)
 	{
 		resptime = nowtime;

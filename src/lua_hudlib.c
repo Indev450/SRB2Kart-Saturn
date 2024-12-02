@@ -503,7 +503,7 @@ static int libd_getSpritePatch(lua_State *L)
 		angle = (angle & 7); // modulus angle by 8
 
 	// rotsprite?????
-	if (lua_isnumber(L, 4) && (cv_spriteroll.value))
+	if (lua_isnumber(L, 4) && cv_sloperoll.value)
 	{
 		angle_t rollangle = luaL_checkangle(L, 4);
 		INT32 rot = R_GetRollAngle(rollangle);
