@@ -140,13 +140,17 @@ void HWR_PortalFrame(gl_portal_t* portal)
 static void HWR_RenderPortalSeg(gl_portal_t* portal, SINT8 state)
 {
 	gl_drawing_stencil = true; // do not draw outside of the stencil buffer, idiot.
+
 	// set our portal state and prepare to render the seg
 	HWR_SetPortalState(state);
+
 	gl_curline = portal->seg;
 	gl_frontsector = portal->seg->frontsector;
 	gl_backsector = portal->seg->backsector;
+
 	HWR_ProcessSeg();
 	gl_drawing_stencil = false;
+
 	// need to work around the r_opengl PF_Invisible bug with this call
 	// similarly as in the linkdraw hack in HWR_DrawSprites
 	HWD.pfnSetBlend(PF_Translucent|PF_Occlude|PF_Masked);
@@ -171,7 +175,7 @@ void HWR_RenderPortal(gl_portal_t* portal, gl_portal_t* rootportal, const float 
 		HWR_PortalFrame(rootportal);
 	else // current frame is not a portal frame but the main view!
 	{
-		R_SetupFrame(player, false);
+		R_SetupFrame(viewssnum, false);
 		portalclipline = NULL;
 	}
 

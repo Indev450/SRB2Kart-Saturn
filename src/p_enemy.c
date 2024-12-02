@@ -165,9 +165,6 @@ void A_SpawnObjectAbsolute(mobj_t *actor);
 void A_SpawnObjectRelative(mobj_t *actor);
 void A_ChangeAngleRelative(mobj_t *actor);
 void A_ChangeAngleAbsolute(mobj_t *actor);
-void A_RollAngle(mobj_t *actor);
-void A_ChangeRollAngleRelative(mobj_t *actor);
-void A_ChangeRollAngleAbsolute(mobj_t *actor);
 void A_PlaySound(mobj_t *actor);
 void A_FindTarget(mobj_t *actor);
 void A_FindTracer(mobj_t *actor);
@@ -459,10 +456,7 @@ boolean P_Move(mobj_t *actor, fixed_t speed)
 	I_Assert(movedir < NUMDIRS);
 
 	tryx = actor->x + FixedMul(speed*xspeed[movedir], actor->scale);
-	if (twodlevel || actor->flags2 & MF2_TWOD)
-		tryy = actor->y;
-	else
-		tryy = actor->y + FixedMul(speed*yspeed[movedir], actor->scale);
+	tryy = actor->y + FixedMul(speed*yspeed[movedir], actor->scale);
 
 	if (actor->type == MT_SKIM && !P_WaterInSector(actor, tryx, tryy)) // bail out if sector lacks water
 		return false;
@@ -536,8 +530,6 @@ void P_NewChaseDir(mobj_t *actor)
 	else
 		d[1] = DI_NODIR;
 
-	if (twodlevel || actor->flags2 & MF2_TWOD)
-		d[2] = DI_NODIR;
 	if (deltay < -FixedMul(10*FRACUNIT, actor->scale))
 		d[2] = DI_SOUTH;
 	else if (deltay > FixedMul(10*FRACUNIT, actor->scale))
@@ -2955,9 +2947,7 @@ void A_Invincibility(mobj_t *actor)
 	if (P_IsLocalPlayer(player) && !player->powers[pw_super])
 	{
 		S_StopMusic();
-		if (mariomode)
-			G_GhostAddColor((INT32) (player - players), GHC_INVINCIBLE);
-		S_ChangeMusicInternal((mariomode) ? "minvnc" : "invinc", false);
+		S_ChangeMusicInternal("invinc", false);
 	}
 }
 
@@ -3055,11 +3045,7 @@ void A_ExtraLife(mobj_t *actor)
 		return;
 	}
 
-	// In shooter gametypes, give the player 100 rings instead of an extra life.
-	if (gametype != GT_COOP && gametype != GT_COMPETITION)
-		P_GivePlayerRings(player, 100);
-	else
-		P_GivePlayerLives(player, 1);
+	P_GivePlayerRings(player, 100);
 	P_PlayLivesJingle(player);
 }
 
@@ -3741,11 +3727,6 @@ void A_ThrownRing(mobj_t *actor)
 			if (player->mo == actor->target)
 				continue;
 
-			// Don't home in on teammates.
-			if (gametype == GT_CTF
-				&& actor->target->player->ctfteam == player->ctfteam)
-				continue;
-
 			if (actor->target->player->kartstuff[k_position] < player->kartstuff[k_position]) // SRB2kart - Jawz only go after people ahead of you
 				continue;
 
@@ -3804,11 +3785,6 @@ static inline boolean PIT_GrenadeRing(mobj_t *thing)
 
 	if (thing->player && (thing->player->kartstuff[k_hyudorotimer]
 		|| (G_BattleGametype() && thing->player && thing->player->kartstuff[k_bumper] <= 0 && thing->player->kartstuff[k_comebacktimer])))
-		return true;
-
-	if ((gametype == GT_CTF || gametype == GT_TEAMMATCH)
-		&& !cv_friendlyfire.value && grenade->target->player && thing->player
-		&& grenade->target->player->ctfteam == thing->player->ctfteam) // Don't blow up at your teammates, unless friendlyfire is on
 		return true;
 
 	// see if it went over / under
@@ -4512,12 +4488,7 @@ void A_MouseThink(mobj_t *actor)
 		|| (actor->eflags & MFE_VERTICALFLIP && actor->z + actor->height == actor->ceilingz))
 		&& !actor->reactiontime)
 	{
-		if (twodlevel || actor->flags2 & MF2_TWOD)
-		{
-			if (P_RandomChance(FRACUNIT/2))
-				actor->angle += ANGLE_180;
-		}
-		else if (P_RandomChance(FRACUNIT/2))
+		if (P_RandomChance(FRACUNIT/2))
 			actor->angle += ANGLE_90;
 		else
 			actor->angle -= ANGLE_90;
@@ -5324,7 +5295,8 @@ void A_RingExplode(mobj_t *actor)
 // var1 = object # to explode as debris
 // var2 = unused
 //
-void A_OldRingExplode(mobj_t *actor) {
+void A_OldRingExplode(mobj_t *actor)
+{
 	UINT8 i;
 	mobj_t *mo;
 	const fixed_t ns = FixedMul(20 * FRACUNIT, actor->scale);
@@ -5358,10 +5330,10 @@ void A_OldRingExplode(mobj_t *actor) {
 
 		if (changecolor)
 		{
-			if (gametype != GT_CTF)
-				mo->color = actor->target->color; //copy color
-			else if (actor->target->player->ctfteam == 2)
+			if (actor->target->player->ctfteam == 2)
 				mo->color = skincolor_bluering;
+			else
+				mo->color = actor->target->color; //copy color
 		}
 	}
 
@@ -5374,10 +5346,10 @@ void A_OldRingExplode(mobj_t *actor) {
 
 	if (changecolor)
 	{
-		if (gametype != GT_CTF)
-			mo->color = actor->target->color; //copy color
-		else if (actor->target->player->ctfteam == 2)
+		if (actor->target->player->ctfteam == 2)
 			mo->color = skincolor_bluering;
+		else
+			mo->color = actor->target->color; //copy color
 	}
 
 	mo = P_SpawnMobj(actor->x, actor->y, actor->z, locvar1);
@@ -5389,10 +5361,10 @@ void A_OldRingExplode(mobj_t *actor) {
 
 	if (changecolor)
 	{
-		if (gametype != GT_CTF)
-			mo->color = actor->target->color; //copy color
-		else if (actor->target->player->ctfteam == 2)
+		if (actor->target->player->ctfteam == 2)
 			mo->color = skincolor_bluering;
+		else
+			mo->color = actor->target->color; //copy color
 	}
 }
 
@@ -5416,7 +5388,7 @@ void A_MixUp(mobj_t *actor)
 
 	// No mix-up monitors in hide and seek or time only race.
 	// The random factor is okay for other game modes, but in these, it is cripplingly unfair.
-	if (gametype == GT_HIDEANDSEEK || gametype == GT_RACE)
+	if (gametype == GT_RACE)
 		return;
 
 	numplayers = 0;
@@ -7181,80 +7153,6 @@ void A_ChangeAngleAbsolute(mobj_t *actor)
 #endif
 
 	actor->angle = FixedAngle(P_RandomRange(amin, amax));
-}
-
-// Function: A_RollAngle
-//
-// Description: Changes the roll angle.
-//
-// var1 = angle
-// var2 = relative? (default)
-//
-void A_RollAngle(mobj_t *actor)
-{
-	INT32 locvar1 = var1;
-	INT32 locvar2 = var2;
-	const angle_t angle = FixedAngle(locvar1*FRACUNIT);
-
-	if (LUA_CallAction(A_ROLLANGLE, actor))
-		return;
-
-	// relative (default)
-	if (!locvar2)
-		actor->rollangle += angle;
-	// absolute
-	else
-		actor->rollangle = angle;
-}
-
-// Function: A_ChangeRollAngleRelative
-//
-// Description: Changes the roll angle to a random relative value between the min and max. Set min and max to the same value to eliminate randomness
-//
-// var1 = min
-// var2 = max
-//
-void A_ChangeRollAngleRelative(mobj_t *actor)
-{
-	INT32 locvar1 = var1;
-	INT32 locvar2 = var2;
-	const fixed_t amin = locvar1*FRACUNIT;
-	const fixed_t amax = locvar2*FRACUNIT;
-
-	if (LUA_CallAction(A_CHANGEROLLANGLERELATIVE, actor))
-		return;
-
-#ifdef PARANOIA
-	if (amin > amax)
-		I_Error("A_ChangeRollAngleRelative: var1 is greater than var2");
-#endif
-
-	actor->rollangle += FixedAngle(P_RandomRange(amin, amax));
-}
-
-// Function: A_ChangeRollAngleAbsolute
-//
-// Description: Changes the roll angle to a random absolute value between the min and max. Set min and max to the same value to eliminate randomness
-//
-// var1 = min
-// var2 = max
-//
-void A_ChangeRollAngleAbsolute(mobj_t *actor)
-{
-	INT32 locvar1 = var1;
-	INT32 locvar2 = var2;
-	const fixed_t amin = locvar1*FRACUNIT;
-	const fixed_t amax = locvar2*FRACUNIT;
-
-	if (LUA_CallAction(A_CHANGEROLLANGLEABSOLUTE, actor))
-		return;
-
-#ifdef PARANOIA
-	if (amin > amax)
-		I_Error("A_ChangeRollAngleAbsolute: var1 is greater than var2");
-#endif
-
-	actor->rollangle = FixedAngle(P_RandomRange(amin, amax));
 }
 
 // Function: A_PlaySound

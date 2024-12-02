@@ -18,6 +18,7 @@
 #include "i_video.h"
 #include "r_data.h"
 #include "r_draw.h"
+#include "r_fps.h"
 #include "r_patch.h"
 #include "r_things.h"
 #include "z_zone.h"
@@ -802,6 +803,14 @@ INT32 R_GetRollAngle(angle_t rollangle)
 	ra /= ROTANGDIFF;
 	ra %= ROTANGLES;
 	return ra;
+}
+
+angle_t R_RotationAngle(angle_t ang, angle_t camang, interpmobjstate_t *interp)
+{
+	return FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), interp->roll) +
+	FixedMul(FINESINE((ang) >> ANGLETOFINESHIFT), interp->pitch) +
+	FixedMul(FINECOSINE((camang) >> ANGLETOFINESHIFT), interp->sloperoll) +
+	FixedMul(FINESINE((camang) >> ANGLETOFINESHIFT), interp->slopepitch);
 }
 
 patch_t *Patch_GetRotatedSprite(spriteframe_t *sprite, size_t frame, size_t spriteangle, boolean flip, boolean adjustfeet, void *info, INT32 rotationangle)

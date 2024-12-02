@@ -455,14 +455,7 @@ static int lib_pSpawnAlteredDirectionMissile(lua_State *L)
 
 static int lib_pColorTeamMissile(lua_State *L)
 {
-	mobj_t *missile = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));
-	player_t *source = *((player_t **)luaL_checkudata(L, 2, META_PLAYER));
-	NOHUD
-	if (!missile)
-		return LUA_ErrInvalid(L, "mobj_t");
-	if (!source)
-		return LUA_ErrInvalid(L, "player_t");
-	P_ColorTeamMissile(missile, source);
+	(void)L;
 	return 0;
 }
 
@@ -1246,12 +1239,7 @@ static int lib_pPlayerEmeraldBurst(lua_State *L)
 
 static int lib_pPlayerFlagBurst(lua_State *L)
 {
-	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
-	boolean toss = lua_optboolean(L, 2);
-	NOHUD
-	if (!player)
-		return LUA_ErrInvalid(L, "player_t");
-	P_PlayerFlagBurst(player, toss);
+	(void)L;
 	return 0;
 }
 
@@ -1817,7 +1805,7 @@ static int lib_sStartSoundAtVolume(lua_State *L)
 			return LUA_ErrInvalid(L, "player_t");
 	}
 	if (!player || P_IsLocalPlayer(player))
-	S_StartSoundAtVolume(origin, sound_id, volume);
+		S_StartSoundAtVolume(origin, sound_id, volume);
 	return 0;
 }
 
@@ -1919,7 +1907,7 @@ static int lib_sChangeMusic(lua_State *L)
 		music_flags = (UINT16)((music_num & 0x7FFF0000) >> 16);
 	else
 #endif
-	music_flags = (UINT16)luaL_optinteger(L, 4, 0);
+		music_flags = (UINT16)luaL_optinteger(L, 4, 0);
 
 	position = (UINT32)luaL_optinteger(L, 5, 0);
 	prefadems = (UINT32)luaL_optinteger(L, 6, 0);
@@ -2446,14 +2434,14 @@ static int lib_gIsSpecialStage(lua_State *L)
 static int lib_gGametypeUsesLives(lua_State *L)
 {
 	//HUDSAFE
-	lua_pushboolean(L, G_GametypeUsesLives());
+	lua_pushboolean(L, false);
 	return 1;
 }
 
 static int lib_gGametypeHasTeams(lua_State *L)
 {
 	//HUDSAFE
-	lua_pushboolean(L, G_GametypeHasTeams());
+	lua_pushboolean(L, false);
 	return 1;
 }
 
@@ -2481,7 +2469,7 @@ static int lib_gRaceGametype(lua_State *L)
 static int lib_gTagGametype(lua_State *L)
 {
 	//HUDSAFE
-	lua_pushboolean(L, G_TagGametype());
+	lua_pushboolean(L, false);
 	return 1;
 }
 
@@ -3154,7 +3142,6 @@ static luaL_Reg lib[] = {
 	{"P_LookForEnemies",lib_pLookForEnemies},
 	{"P_NukeEnemies",lib_pNukeEnemies},
 	{"P_HomingAttack",lib_pHomingAttack},
-	//{"P_SuperReady",lib_pSuperReady},
 	{"P_Telekinesis",lib_pTelekinesis},
 
 	// p_map

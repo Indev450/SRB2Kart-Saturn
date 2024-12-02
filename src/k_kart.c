@@ -2060,6 +2060,38 @@ void K_MomentumToFacing(player_t *player)
 	player->mo->momy = FixedMul(player->mo->momy - player->cmomy, player->mo->friction) + player->cmomy;
 }
 
+static inline fixed_t K_GetProjectileSpeed(void)
+{
+	switch (gamespeed)
+	{
+		case 0:
+			return 68*mapobjectscale; // Avg Speed is 34
+			break;
+		case 2:
+			return 96*mapobjectscale; // Avg Speed is 48
+			break;
+		default:
+			return 82*mapobjectscale; // Avg Speed is 41
+			break;
+	}
+}
+
+static inline fixed_t K_GetSneakerBoostSpeed(void)
+{
+	switch (gamespeed)
+	{
+		case 0:
+			return 53740+768;
+			break;
+		case 2:
+			return 17294+768;
+			break;
+		default:
+			return 32768;
+			break;
+	}
+}
+
 // sets k_boostpower, k_speedboost, and k_accelboost to whatever we need it to be
 static void K_GetKartBoostPower(player_t *player)
 {
@@ -2093,18 +2125,7 @@ static void K_GetKartBoostPower(player_t *player)
 
 	if (player->kartstuff[k_sneakertimer]) // Sneaker
 	{
-		switch (gamespeed)
-		{
-			case 0:
-				speedboost = max(speedboost, 53740+768);
-				break;
-			case 2:
-				speedboost = max(speedboost, 17294+768);
-				break;
-			default:
-				speedboost = max(speedboost, 32768);
-				break;
-		}
+		speedboost = max(speedboost, K_GetSneakerBoostSpeed());
 		accelboost = max(accelboost, 8*FRACUNIT); // + 800%
 	}
 
@@ -3082,7 +3103,7 @@ static void K_SpawnDriftSparks(player_t *player)
 		//spark->momz = player->mo->momz/2;
 
 		// rotate the sparks based on pitch and roll; it just looks neat
-		if (cv_sparkroll.value == 1)
+		if (cv_sparkroll.value)
 		{
 			spark->slopepitch = player->mo->slopepitch;
 			spark->sloperoll = player->mo->sloperoll;
@@ -3296,20 +3317,22 @@ static void K_QuiteSaltyHop(player_t *p)
 }
 
 #define SLOPEROLL_DIV 3
-
 void K_RollMobjBySlopes(mobj_t* mo, boolean usedistance)
 {
+	if (P_MobjWasRemoved(mo))
+		return;
+
 	I_Assert(mo->subsector != NULL);
 	I_Assert(mo->subsector->sector != NULL);
-
-	angle_t an;
-	const boolean flip = mo->eflags & MFE_VERTICALFLIP;
-	const fixed_t m_dist = usedistance ? R_PointToDist(mo->x, mo->y) : 0;
-	const fixed_t rolldist = cv_sloperolldist.value * mapobjectscale;
 
 	// lifted from hw_md2
 	if (mo->standingslope)
 	{
+		angle_t an;
+		const boolean flip = (mo->eflags & MFE_VERTICALFLIP);
+		const fixed_t m_dist = usedistance ? R_PointToDist(mo->x, mo->y) : 0;
+		const fixed_t rolldist = cv_sloperolldist.value * mapobjectscale;
+
 		fixed_t tempz = mo->standingslope->normal.z;
 		fixed_t tempy = mo->standingslope->normal.y;
 		fixed_t tempx = mo->standingslope->normal.x;
@@ -3318,7 +3341,7 @@ void K_RollMobjBySlopes(mobj_t* mo, boolean usedistance)
 		// admittedly this is a very hacky way to do the pitch and roll easing
 
 		// pitch
-		if ((!usedistance) || (m_dist <= (rolldist)))
+		if (!usedistance || (m_dist <= (rolldist)))
 		{
 			an = (INT32)((angle_t)tempangle - mo->pitch_sprite) / SLOPEROLL_DIV;
 
@@ -3401,7 +3424,7 @@ void K_SpawnBoostTrail(player_t *player)
 		flame->momx = 8;
 
 		// since you have to be on the ground for sneaker trails, this should be fine(?)
-		if (cv_sparkroll.value == 1)
+		if (cv_sparkroll.value)
 		{
 			flame->slopepitch = player->mo->slopepitch;
 			flame->sloperoll = player->mo->sloperoll;
@@ -3593,18 +3616,7 @@ static mobj_t *K_ThrowKartItem(player_t *player, boolean missile, mobjtype_t map
 	}
 	else
 	{
-		switch (gamespeed)
-		{
-			case 0:
-				PROJSPEED = 68*mapobjectscale; // Avg Speed is 34
-				break;
-			case 2:
-				PROJSPEED = 96*mapobjectscale; // Avg Speed is 48
-				break;
-			default:
-				PROJSPEED = 82*mapobjectscale; // Avg Speed is 41
-				break;
-		}
+		PROJSPEED = K_GetProjectileSpeed();
 	}
 
 	if (altthrow)
@@ -3832,18 +3844,7 @@ void K_PuntMine(mobj_t *thismine, mobj_t *punter)
 	if (!mine || P_MobjWasRemoved(mine))
 		return;
 
-	switch (gamespeed)
-	{
-		case 0:
-			spd = 68*mapobjectscale; // Avg Speed is 34
-			break;
-		case 2:
-			spd = 96*mapobjectscale; // Avg Speed is 48
-			break;
-		default:
-			spd = 82*mapobjectscale; // Avg Speed is 41
-			break;
-	}
+	spd = K_GetProjectileSpeed();
 
 	mine->flags |= MF_NOCLIPTHING;
 
@@ -3990,20 +3991,7 @@ static void K_DoHyudoroSteal(player_t *player)
 
 void K_DoSneaker(player_t *player, INT32 type)
 {
-	fixed_t intendedboost;
-
-	switch (gamespeed)
-	{
-		case 0:
-			intendedboost = 53740+768;
-			break;
-		case 2:
-			intendedboost = 17294+768;
-			break;
-		default:
-			intendedboost = 32768;
-			break;
-	}
+	const fixed_t intendedboost = K_GetSneakerBoostSpeed();
 
 	if (!player->kartstuff[k_floorboost] || player->kartstuff[k_floorboost] == 3)
 	{
@@ -4782,10 +4770,6 @@ player_t *K_FindJawzTarget(mobj_t *actor, player_t *source)
 
 		// Don't target yourself, stupid.
 		if (player == source)
-			continue;
-
-		// Don't home in on teammates.
-		if (G_GametypeHasTeams() && source->ctfteam == player->ctfteam)
 			continue;
 
 		// Invisible, don't bother
@@ -6479,7 +6463,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 
 	K_KartDrift(player, onground);
 
-	if ((!player->kartstuff[k_aizdriftstrat])||(!P_IsObjectOnGround(player->mo))||(player->kartstuff[k_drift]))
+	if ((!player->kartstuff[k_aizdriftstrat]) || (!P_IsObjectOnGround(player->mo)) || (player->kartstuff[k_drift]))
 	{
 		if (player->sliproll && (player->sliproll > 0))
 			player->sliproll -= (4*ANG1);
@@ -6493,17 +6477,15 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 		player->mo->spriteyscale = player->mo->realyscale;
 	}
 
-	if (cv_spriteroll.value && cv_sloperoll.value)
+	if (cv_sloperoll.value && !player->mo->salty_jump) // seeing a character rotate mid-hop looks really janky
 	{
-		if ((!player->mo->salty_jump)) // seeing a character rotate mid-hop looks really janky
-			K_RollMobjBySlopes(player->mo, (cv_sloperolldist.value && !splitscreen));
+		K_RollMobjBySlopes(player->mo, (cv_sloperolldist.value && !splitscreen));
 	}
 	else
 	{
 		player->mo->sloperoll = FixedAngle(0);
 		player->mo->slopepitch = FixedAngle(0);
 	}
-
 
 	// Quick Turning
 	// You can't turn your kart when you're not moving.
@@ -8852,7 +8834,7 @@ static void K_drawKartSpeedometer(void)
 		{
 			UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
 			V_DrawStretchyFixedPatch((SPDM_X-1)<<FRACBITS, (SPDM_Y + 5)<<FRACBITS, FRACUNIT*0.765, FRACUNIT*0.55, (V_HUDTRANS|splitflags), (skp_smallstickerclr3), colormap);
-	}
+		}
 		else
 			V_DrawStretchyFixedPatch((SPDM_X-1)<<FRACBITS, (SPDM_Y + 5)<<FRACBITS, FRACUNIT*0.765, FRACUNIT*0.55, (V_HUDTRANS|splitflags), (skp_smallsticker3), NULL);
 
