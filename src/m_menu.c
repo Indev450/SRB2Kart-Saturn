@@ -6152,8 +6152,6 @@ static void M_AddonsClearName(INT32 choice)
 	M_StopMessage(choice);
 }
 
-int errorshitspam = 0; // prevent the warning screen from crapping itself when errors get spammed lmao
-
 // returns whether to do message draw
 static boolean M_AddonsRefresh(void)
 {
@@ -6173,6 +6171,7 @@ static boolean M_AddonsRefresh(void)
 	if ((refreshdirmenu & REFRESHDIR_ADDFILE) || (majormods && !prevmajormods))
 	{
 		char *message = NULL;
+		boolean majormodtext = false;
 
 		if (refreshdirmenu & REFRESHDIR_NOTLOADED)
 		{
@@ -6182,20 +6181,19 @@ static boolean M_AddonsRefresh(void)
 			else
 				message = va("%c%s\x80\nA file was not loaded.\nCheck the console log for more information.\n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), refreshdirname);
 		}
-		else if ((refreshdirmenu & (REFRESHDIR_WARNING | REFRESHDIR_ERROR)) && !errorshitspam)
+		else if (refreshdirmenu & (REFRESHDIR_WARNING | REFRESHDIR_ERROR))
 		{
 			S_StartSound(NULL, sfx_s224);
 			message = va("%c%s\x80\nA file was loaded with %s.\nCheck the console log for more information.\n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), refreshdirname, ((refreshdirmenu & REFRESHDIR_ERROR) ? "errors" : "warnings"));
-			errorshitspam = 1; // you already said that shit
 		}
 		else if (majormods && !prevmajormods)
 		{
 			S_StartSound(NULL, sfx_s221);
 			message = va("%c%s\x80\nYou've loaded a gameplay-modifying addon.\n\nRecord Attack has been disabled, but you\ncan still play alone in local Multiplayer.\n\nIf you wish to play Record Attack mode, restart the game to disable loaded addons.\n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), refreshdirname);
-			prevmajormods = majormods;
+			majormodtext = prevmajormods = majormods;
 		}
 
-		if (message)
+		if (message && (refreshdirmenu || majormodtext)) // special case for gameplay modify text
 		{
 			M_StartMessage(message,M_AddonsClearName,MM_EVENTHANDLER);
 			return true;
@@ -6538,7 +6536,6 @@ static void M_HandleAddons(INT32 choice)
 								if (DumbStartsWith("KC_", dirmenu[dir_on[menudepthleft]]+DIR_STRING) || DumbStartsWith("kc_", dirmenu[dir_on[menudepthleft]]+DIR_STRING)) {
 									M_StartMessage(va("%c%s\x80\nYou are loading a local skin.\nLocal skins will not be usable\nafter going back from\nthe title screen.\n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), dirmenu[dir_on[menudepthleft]]+DIR_STRING),NULL,MM_NOTHING);
 									COM_BufAddText(va("addskins \"%s%s\"", menupath, dirmenu[dir_on[menudepthleft]]+DIR_STRING));
-									errorshitspam = 0; // reset it so it can show the warning screen again lmao
 								}
 								else
 									S_StartSound(NULL, sfx_s26d);
@@ -6546,7 +6543,6 @@ static void M_HandleAddons(INT32 choice)
 							else
 							{
 								COM_BufAddText(va("addfile \"%s%s\"", menupath, dirmenu[dir_on[menudepthleft]]+DIR_STRING));
-								errorshitspam = 0; // reset it so it can show the warning screen again lmao
 							}
 							break;
 						default:
