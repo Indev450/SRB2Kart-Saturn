@@ -3103,7 +3103,7 @@ static void HWR_RenderBSPNode(INT32 bspnum)
 		bsp = &nodes[bspnum];
 
 		// Decide which side the view point is on.
-		side = R_PointOnSide(viewx, viewy, bsp);
+		side = R_PointOnSideFast(viewx, viewy, bsp);
 
 		// Recursively divide front space.
 		if (HWR_PortalCheckBBox(bsp->bbox[side]))
@@ -3177,7 +3177,7 @@ static gl_vissprite_t *HWR_NewVisSprite(void)
 // Finds a floor through which light does not pass.
 static fixed_t HWR_OpaqueFloorAtPos(fixed_t x, fixed_t y, fixed_t z, fixed_t height)
 {
-	const sector_t *sec = R_PointInSubsector(x, y)->sector;
+	const sector_t *sec = R_PointInSubsectorFast(x, y)->sector;
 	fixed_t floorz = sec->floorheight;
 
 	if (sec->ffloors)

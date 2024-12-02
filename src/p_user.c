@@ -3228,7 +3228,7 @@ void P_DemoCameraMovement(camera_t *cam)
 	democam.soundmobj = awayviewmobj_hack;
 
 	// update subsector to avoid crashes;
-	cam->subsector = R_PointInSubsector(cam->x, cam->y);
+	cam->subsector = R_PointInSubsectorFast(cam->x, cam->y);
 }
 
 void P_ResetCamera(player_t *player, camera_t *thiscam)
@@ -3263,7 +3263,7 @@ void P_ResetCamera(player_t *player, camera_t *thiscam)
 	thiscam->aiming = 0;
 	thiscam->relativex = 0;
 
-	thiscam->subsector = R_PointInSubsector(thiscam->x,thiscam->y);
+	thiscam->subsector = R_PointInSubsectorFast(thiscam->x,thiscam->y);
 
 	thiscam->radius = 20*FRACUNIT;
 	thiscam->height = 16*FRACUNIT;
