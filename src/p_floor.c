@@ -2927,7 +2927,8 @@ void EV_CrumbleChain(sector_t *sec, ffloor_t *rover)
 	if (special >= 8)
 		type = MT_ROCKCRUMBLE1+(special-7);
 
-	sec->soundorg.z = (rover->master->frontsector->floorheight + rover->master->frontsector->ceilingheight)/2;
+	// soundorg z height never gets set normally, so MEH.
+	sec->soundorg.z = sec->floorheight;
 	S_StartSound(&sec->soundorg, sfx_crumbl);
 
 	// Find the outermost vertexes in the subsector
