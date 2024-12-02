@@ -528,7 +528,7 @@ void P_Ticker(boolean run)
 		ps_checkposition_calls.value.i = 0;
 
 		PS_START_TIMING(ps_lua_prethinkframe_time);
-		LUAh_PreThinkFrame();
+		LUA_HookPreThinkFrame();
 		PS_STOP_TIMING(ps_lua_prethinkframe_time);
 
 		PS_START_TIMING(ps_playerthink_time);
@@ -564,7 +564,7 @@ void P_Ticker(boolean run)
 		}
 
 		PS_START_TIMING(ps_lua_thinkframe_time);
-		LUAh_ThinkFrame();
+		LUA_HookThinkFrame();
 		PS_STOP_TIMING(ps_lua_thinkframe_time);
 	}
 
@@ -668,7 +668,7 @@ void P_Ticker(boolean run)
 				D_MapChange(gamemap, gametype, encoremode, true, 0, false, false);
 
 		PS_START_TIMING(ps_lua_postthinkframe_time);
-		LUAh_PostThinkFrame();
+		LUA_HookPostThinkFrame();
 		PS_STOP_TIMING(ps_lua_postthinkframe_time);
 	}
 
@@ -725,7 +725,7 @@ void P_PreTicker(INT32 frames)
 
 		R_UpdateMobjInterpolators();
 
-		LUAh_PreThinkFrame();
+		LUA_HOOK(PreThinkFrame);
 
 		for (i = 0; i < MAXPLAYERS; i++)
 			if (playeringame[i] && players[i].mo && !P_MobjWasRemoved(players[i].mo))
@@ -754,7 +754,7 @@ void P_PreTicker(INT32 frames)
 			if (playeringame[i] && players[i].mo && !P_MobjWasRemoved(players[i].mo))
 				P_PlayerAfterThink(&players[i]);
 
-		LUAh_ThinkFrame();
+		LUA_HookThinkFrame();
 
 		P_RunOverlays();
 		P_RunShadows();
@@ -762,7 +762,7 @@ void P_PreTicker(INT32 frames)
 		P_UpdateSpecials();
 		P_RespawnSpecials();
 
-		LUAh_PostThinkFrame();
+		LUA_HOOK(PostThinkFrame);
 
 		R_UpdateLevelInterpolators();
 		R_UpdateViewInterpolation();

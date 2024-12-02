@@ -2333,7 +2333,7 @@ void K_SpinPlayer(player_t *player, mobj_t *source, INT32 type, mobj_t *inflicto
 	UINT8 scoremultiply = 1;
 	// PS: Inflictor is unused for all purposes here and is actually only ever relevant to Lua. It may be nil too.
 	boolean force = false;	// Used to check if Lua ShouldSpin should get us damaged reguardless of flashtics or heck knows what.
-	UINT8 shouldForce = LUAh_ShouldSpin(player, inflictor, source);
+	UINT8 shouldForce = LUA_HookShouldSpin(player, inflictor, source);
 
 	if (P_MobjWasRemoved(player->mo))
 		return; // mobj was removed (in theory that shouldn't happen)
@@ -2366,7 +2366,7 @@ void K_SpinPlayer(player_t *player, mobj_t *source, INT32 type, mobj_t *inflicto
 		}
 	}
 
-	if (LUAh_PlayerSpin(player, inflictor, source))	// Let Lua do its thing or overwrite if it wants to. Make sure to let any possible instashield happen because we didn't get "damaged" in this case.
+	if (LUA_HookPlayerSpin(player, inflictor, source))	// Let Lua do its thing or overwrite if it wants to. Make sure to let any possible instashield happen because we didn't get "damaged" in this case.
 		return;
 
 	if (source && source != player->mo && source->player)
@@ -2474,7 +2474,7 @@ void K_SquishPlayer(player_t *player, mobj_t *source, mobj_t *inflictor)
 	UINT8 scoremultiply = 1;
 	// PS: Inflictor is unused for all purposes here and is actually only ever relevant to Lua. It may be nil too.
 	boolean force = false;	// Used to check if Lua ShouldSquish should get us damaged reguardless of flashtics or heck knows what.
-	UINT8 shouldForce = LUAh_ShouldSquish(player, inflictor, source);
+	UINT8 shouldForce = LUA_HookShouldSquish(player, inflictor, source);
 	if (P_MobjWasRemoved(player->mo))
 		return; // mobj was removed (in theory that shouldn't happen)
 	if (shouldForce == 1)
@@ -2504,7 +2504,7 @@ void K_SquishPlayer(player_t *player, mobj_t *source, mobj_t *inflictor)
 		}
 	}
 
-	if (LUAh_PlayerSquish(player, inflictor, source))	// Let Lua do its thing or overwrite if it wants to. Make sure to let any possible instashield happen because we didn't get "damaged" in this case.
+	if (LUA_HookPlayerSquish(player, inflictor, source))	// Let Lua do its thing or overwrite if it wants to. Make sure to let any possible instashield happen because we didn't get "damaged" in this case.
 		return;
 
 	player->kartstuff[k_sneakertimer] = 0;
@@ -2585,7 +2585,7 @@ void K_ExplodePlayer(player_t *player, mobj_t *source, mobj_t *inflictor) // A b
 	fixed_t upgoer;
 	UINT8 scoremultiply = 1;
 	boolean force = false;	// Used to check if Lua ShouldExplode should get us damaged reguardless of flashtics or heck knows what.
-	UINT8 shouldForce = LUAh_ShouldExplode(player, inflictor, source);
+	UINT8 shouldForce = LUA_HookShouldExplode(player, inflictor, source);
 
 	if (P_MobjWasRemoved(player->mo))
 		return; // mobj was removed (in theory that shouldn't happen)
@@ -2618,7 +2618,7 @@ void K_ExplodePlayer(player_t *player, mobj_t *source, mobj_t *inflictor) // A b
 		}
 	}
 
-	if (LUAh_PlayerExplode(player, inflictor, source))	// Same thing. Also make sure to let Instashield happen blah blah
+	if (LUA_HookPlayerExplode(player, inflictor, source))	// Same thing. Also make sure to let Instashield happen blah blah
 		return;
 
 	if (source && source != player->mo && source->player)

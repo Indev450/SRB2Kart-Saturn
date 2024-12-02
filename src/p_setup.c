@@ -63,7 +63,7 @@
 
 #include "md5.h" // map MD5
 
-// for LUAh_MapLoad
+// for MapLoad hook
 #include "lua_script.h"
 #include "lua_hook.h"
 
@@ -2874,7 +2874,7 @@ boolean P_SetupLevel(boolean skipprecip, boolean reloadinggamestate)
 		}
 		P_PreTicker(2);
 		if (!reloadinggamestate)
-			LUAh_MapLoad();
+			LUA_HookInt(gamemap, HOOK(MapLoad));
 	}
 
 	if (rendermode != render_none && !reloadinggamestate)
