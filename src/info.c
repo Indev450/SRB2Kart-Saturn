@@ -66,7 +66,7 @@ char sprnames[NUMSPRITES + 1][5] =
 	"CNDL","DOCH","DUCK","GTRE","CHES","CHIM","DRGN","LZMN","PGSS","ZTCH",
 	"MKMA","MKMP","RTCH","BOWL","BOWH","BRRL","BRRR","HRSE","TOAH","BFRT",
 	"OFRT","RFRT","PFRT","ASPK","HBST","HBSO","HBSF","WBLZ","WBLN","OPUL",
-	"TGEM","TCOI","FWRK","XMS4","XMS5","VIEW"
+	"TGEM","TCOI","FWRK","XMS4","XMS5","VIEW",
 };
 
 // Doesn't work with g++, needs actionf_p1 (don't modify this comment)

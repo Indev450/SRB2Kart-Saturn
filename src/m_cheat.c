@@ -945,9 +945,6 @@ boolean OP_FreezeObjectplace(void)
 	if (!objectplacing)
 		return false;
 
-	if ((maptol & TOL_NIGHTS) && (players[consoleplayer].pflags & PF_NIGHTSMODE))
-		return false;
-
 	return true;
 }
 
@@ -1091,7 +1088,7 @@ void OP_ObjectplaceMovement(player_t *player)
 {
 	ticcmd_t *cmd = &player->cmd;
 
-	if (!player->climbing && (netgame || !cv_analog.value || (player->pflags & PF_SPINNING)))
+	if (!player->climbing && (netgame || (player->pflags & PF_SPINNING)))
 		player->mo->angle = (cmd->angleturn<<16 /* not FRACBITS */);
 
 	ticruned++;

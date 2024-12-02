@@ -340,6 +340,7 @@ enum hwdscreentexture
 	HWD_SCREENTEXTURE_WIPE_END,   // destination image for the wipe/fade effect
 	HWD_SCREENTEXTURE_GENERIC1,   // underwater/heat effect, intermission background
 	HWD_SCREENTEXTURE_GENERIC2,   // palette-based colormap fade, final screen texture
+	HWD_SCREENTEXTURE_VHS,
 	NUMSCREENTEXTURES,            // (generic3 is unused if palette rendering is disabled)
 };
 typedef enum hwdscreentexture hwdscreentexture_t;
