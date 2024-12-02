@@ -4147,8 +4147,7 @@ void P_PlayerThink(player_t *player)
 	{
 		seenplayer = NULL;
 
-		if (cv_seenames.value && cv_allowseenames.value &&
-			!(G_TagGametype() && (player->pflags & PF_TAGIT)))
+		if (cv_seenames.value && cv_allowseenames.value)
 		{
 			mobj_t *mo = P_SpawnNameFinder(player->mo, MT_NAMECHECK);
 

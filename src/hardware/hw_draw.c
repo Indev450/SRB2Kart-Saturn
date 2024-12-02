@@ -588,9 +588,9 @@ void HWR_FadeScreenMenuBack(UINT16 color, UINT8 strength)
 			Surf.PolyColor.s.alpha = (strength*8);
 			poly_flags |= PF_Translucent;
 		}
-    }
-    else // Do TRANSMAP** fade.
-    {
+	}
+	else // Do TRANSMAP** fade.
+	{
 		RGBA_t *palette = HWR_GetTexturePalette();
 		Surf.PolyColor.rgba = palette[color&0xFF].rgba;
 
@@ -600,7 +600,7 @@ void HWR_FadeScreenMenuBack(UINT16 color, UINT8 strength)
 			Surf.PolyColor.s.alpha = (UINT8)(strength*25.5f);
 
 		poly_flags |= PF_Translucent;
-    }
+	}
 
     HWD.pfnDrawPolygon(&Surf, v, 4, poly_flags);
 }
