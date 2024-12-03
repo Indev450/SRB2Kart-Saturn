@@ -2882,9 +2882,14 @@ static void Command_Map_f(void)
 		}
 	}
 
-	// spend atleast 35 seconds in one map
-	if (cv_demochangemap.value && demo.recording && demo.savemode != DSM_NOTSAVING && (timeinmap > 1463) && ((cv_demochangemap.value == 2 && newmapnum == gamemap) || newmapnum != gamemap))
-		G_SaveDemo();
+	if (cv_demochangemap.value && demo.recording)
+	{
+		// spend atleast 35 seconds in one map
+		if (demo.savemode != DSM_NOTSAVING && (timeinmap > 1463) && ((cv_demochangemap.value == 2 && newmapnum == gamemap) || newmapnum != gamemap))
+			G_SaveDemo();
+		else
+			G_ResetDemoRecording();
+	}
 
 	fromlevelselect = false;
 	D_MapChange(newmapnum, newgametype, newencoremode, newresetplayers, 0, false, false);
