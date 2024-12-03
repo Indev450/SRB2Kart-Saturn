@@ -7827,16 +7827,16 @@ boolean G_CheckDemoStatus(void)
 		return true;
 	}
 
-	if (demo.recording && (modeattacking || demo.savemode != DSM_NOTSAVING))
+	if (!demo.recording)
+		return false;
+
+	if (modeattacking || demo.savemode != DSM_NOTSAVING)
 	{
-		if (demobuf.p)
-		{
-			G_SaveDemo();
-		}
+		G_SaveDemo();
 		return true;
 	}
-	else if (demo.recording)
-		G_ResetDemoRecording();
+
+	G_ResetDemoRecording();
 
 	return false;
 }
