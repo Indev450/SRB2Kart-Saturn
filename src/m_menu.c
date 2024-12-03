@@ -7312,7 +7312,7 @@ static void M_DrawReplayHut(void)
 
 static void M_DrawReplayStartMenu(void)
 {
-	const char *warning;
+	const char *warning = "";
 	UINT8 i;
 
 	M_DrawGenericBackgroundMenu();
@@ -7415,7 +7415,8 @@ static void M_DrawReplayStartMenu(void)
 		return;
 	}
 
-	V_DrawSmallString(4, BASEVIDHEIGHT-14, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_ALLOWLOWERCASE, warning);
+	if (warning)
+		V_DrawSmallString(4, BASEVIDHEIGHT-14, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_ALLOWLOWERCASE, warning);
 }
 
 static boolean M_QuitReplayHut(void)
