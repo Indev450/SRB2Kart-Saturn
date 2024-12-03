@@ -4986,7 +4986,7 @@ static void M_CentreText(INT32 y, const char *string)
 	INT32 x;
 	//added : 02-02-98 : centre on 320, because V_DrawString centers on vid.width...
 	x = (BASEVIDWIDTH - V_StringWidth(string, V_OLDSPACING))>>1;
-	V_DrawString(x,y,V_OLDSPACING,string);
+	V_DrawString(x,y,V_OLDSPACING|MENUCAPS,string);
 }
 
 //
@@ -5931,12 +5931,12 @@ static void M_DrawImageDef(void)
 	{
 		INT32 x = BASEVIDWIDTH>>1, y = (BASEVIDHEIGHT>>1) - 4;
 		x += (itemOn ? 1 : -1)*((BASEVIDWIDTH>>2) + 10);
-		V_DrawCenteredString(x, y-10, highlightflags, "USE ARROW KEYS");
+		V_DrawCenteredString(x, y-10, highlightflags|MENUCAPS, "Use arrow keys");
 		V_DrawCharacter(x - 10 - (skullAnimCounter/5), y,
 			'\x1C' | highlightflags, false); // left arrow
 		V_DrawCharacter(x + 2 + (skullAnimCounter/5), y,
 			'\x1D' | highlightflags, false); // right arrow
-		V_DrawCenteredString(x, y+10, highlightflags, "TO LEAF THROUGH");
+		V_DrawCenteredString(x, y+10, highlightflags|MENUCAPS, "to leaf through");
 	}
 }
 
@@ -8110,7 +8110,7 @@ static void M_DrawChecklist(void)
 		++line;
 		secretname = M_CreateSecretMenuOption(unlockables[i].name);
 
-		V_DrawString(8, (line*8), V_RETURN8|(unlockables[i].unlocked ? recommendedflags : warningflags), (secret ? secretname : unlockables[i].name));
+		V_DrawString(8, (line*8), V_RETURN8|MENUCAPS|(unlockables[i].unlocked ? recommendedflags : warningflags), (secret ? secretname : unlockables[i].name));
 
 		if (conditionSets[unlockables[i].conditionset - 1].numconditions)
 		{
@@ -8668,8 +8668,8 @@ static void M_DrawStatsMaps(int location)
 		}
 		else if (dotopname)
 		{
-			V_DrawString(20,  y, highlightflags, "LEVEL NAME");
-			V_DrawString(256, y, highlightflags, "MEDALS");
+			V_DrawString(20,  y, highlightflags|MENUCAPS, "Level name");
+			V_DrawString(256, y, highlightflags|MENUCAPS, "Medals");
 			y += 8;
 			dotopname = false;
 		}
@@ -8678,11 +8678,11 @@ static void M_DrawStatsMaps(int location)
 		M_DrawMapEmblems(mnum+1, 295, y);
 
 		if (mapheaderinfo[mnum]->levelflags & LF_NOZONE)
-			V_DrawString(20, y, 0, va("%s %s",
+			V_DrawString(20, y, MENUCAPS, va("%s %s",
 				mapheaderinfo[mnum]->lvlttl,
 				mapheaderinfo[mnum]->actnum));
 		else
-			V_DrawString(20, y, 0, va("%s %s %s",
+			V_DrawString(20, y, MENUCAPS, va("%s %s %s",
 				mapheaderinfo[mnum]->lvlttl,
 				(mapheaderinfo[mnum]->zonttl[0] ? mapheaderinfo[mnum]->zonttl : "Zone"),
 				mapheaderinfo[mnum]->actnum));
@@ -8694,8 +8694,8 @@ static void M_DrawStatsMaps(int location)
 	}
 	if (dotopname && !location)
 	{
-		V_DrawString(20,  y, highlightflags, "LEVEL NAME");
-		V_DrawString(256, y, highlightflags, "MEDALS");
+		V_DrawString(20,  y, highlightflags|MENUCAPS, "Level name");
+		V_DrawString(256, y, highlightflags|MENUCAPS, "Medals");
 		y += 8;
 	}
 	else if (location)
@@ -8706,7 +8706,7 @@ static void M_DrawStatsMaps(int location)
 	{
 		if (i == -1)
 		{
-			V_DrawString(20, y, highlightflags, "EXTRA MEDALS");
+			V_DrawString(20, y, highlightflags|MENUCAPS, "Extra medals");
 			if (location)
 			{
 				y += 8;
@@ -8729,7 +8729,7 @@ static void M_DrawStatsMaps(int location)
 			else
 				V_DrawSmallScaledPatch(295, y, 0, W_CachePatchName("NEEDIT", PU_CACHE));
 
-			V_DrawString(20, y, 0, va("%s", exemblem->description));
+			V_DrawString(20, y, MENUCAPS, va("%s", exemblem->description));
 		}
 
 		y += 8;
@@ -8754,13 +8754,13 @@ static void M_DrawLevelStats(void)
 
 	M_DrawMenuTitle();
 
-	V_DrawString(20, 24, highlightflags, "Total Play Time:");
-	V_DrawCenteredString(BASEVIDWIDTH/2, 32, 0, va("%i hours, %i minutes, %i seconds",
+	V_DrawString(20, 24, highlightflags|MENUCAPS, "Total Play Time:");
+	V_DrawCenteredString(BASEVIDWIDTH/2, 32, MENUCAPS, va("%i hours, %i minutes, %i seconds",
 	                         G_TicsToHours(totalplaytime),
 	                         G_TicsToMinutes(totalplaytime, false),
 	                         G_TicsToSeconds(totalplaytime)));
-	V_DrawString(20, 42, highlightflags, "Total Matches:");
-	V_DrawRightAlignedString(BASEVIDWIDTH-16, 42, 0, va("%i played", matchesplayed));
+	V_DrawString(20, 42, highlightflags|MENUCAPS, "Total Matches:");
+	V_DrawRightAlignedString(BASEVIDWIDTH-16, 42, MENUCAPS, va("%i played", matchesplayed));
 
 	for (i = 0; i < NUMMAPS; i++)
 	{
@@ -8776,17 +8776,17 @@ static void M_DrawLevelStats(void)
 		besttime += mainrecords[i]->time;
 	}
 
-	V_DrawString(20, 62, highlightflags, "Combined time records:");
+	V_DrawString(20, 62, highlightflags|MENUCAPS, "Combined time records:");
 
 	sprintf(beststr, "%i:%02i:%02i.%02i", G_TicsToHours(besttime), G_TicsToMinutes(besttime, false), G_TicsToSeconds(besttime), G_TicsToCentiseconds(besttime));
 	V_DrawRightAlignedString(BASEVIDWIDTH-16, 62, (mapsunfinished ? warningflags : 0), beststr);
 
 	if (mapsunfinished)
-		V_DrawRightAlignedString(BASEVIDWIDTH-16, 70, warningflags, va("(%d unfinished)", mapsunfinished));
+		V_DrawRightAlignedString(BASEVIDWIDTH-16, 70, warningflags|MENUCAPS, va("(%d unfinished)", mapsunfinished));
 	else
-		V_DrawRightAlignedString(BASEVIDWIDTH-16, 70, recommendedflags, "(complete)");
+		V_DrawRightAlignedString(BASEVIDWIDTH-16, 70, recommendedflags|MENUCAPS, "(complete)");
 
-	V_DrawString(32, 70, 0, va("x %d/%d", M_CountEmblems(), numemblems+numextraemblems));
+	V_DrawString(32, 70, MENUCAPS, va("x %d/%d", M_CountEmblems(), numemblems+numextraemblems));
 	V_DrawSmallScaledPatch(20, 70, 0, W_CachePatchName("GOTITA", PU_STATIC));
 
 	M_DrawStatsMaps(statsLocation);
@@ -12714,17 +12714,17 @@ static void M_DrawVideoMode(void)
 	M_DrawMenuTitle();
 
 	V_DrawCenteredString(BASEVIDWIDTH/2, OP_VideoModeDef.y,
-		highlightflags, "Choose mode, reselect to change default");
+		highlightflags|MENUCAPS, "Choose mode, reselect to change default");
 
 	row = 41;
 	col = OP_VideoModeDef.y + 14;
 	for (i = 0; i < vidm_nummodes; i++)
 	{
 		if (i == vidm_selected)
-			V_DrawString(row, col, highlightflags, modedescs[i].desc);
+			V_DrawString(row, col, highlightflags|MENUCAPS, modedescs[i].desc);
 		// Show multiples of 320x200 as green.
 		else
-			V_DrawString(row, col, (modedescs[i].goodratio) ? recommendedflags : 0, modedescs[i].desc);
+			V_DrawString(row, col, ((modedescs[i].goodratio) ? recommendedflags : 0)|MENUCAPS, modedescs[i].desc);
 
 		col += 8;
 		if ((i % vidm_column_size) == (vidm_column_size-1))
@@ -12762,11 +12762,11 @@ static void M_DrawVideoMode(void)
 				cv_scr_width.value, cv_scr_height.value));
 
 		V_DrawCenteredString(BASEVIDWIDTH/2, OP_VideoModeDef.y + 138,
-			recommendedflags, "Marked modes are recommended.");
+			recommendedflags|MENUCAPS, "Marked modes are recommended.");
 		V_DrawCenteredString(BASEVIDWIDTH/2, OP_VideoModeDef.y + 146,
-			highlightflags, "Other modes may have visual errors.");
+			highlightflags|MENUCAPS, "Other modes may have visual errors.");
 		V_DrawCenteredString(BASEVIDWIDTH/2, OP_VideoModeDef.y + 158,
-			highlightflags, "Larger modes may have performance issues.");
+			highlightflags|MENUCAPS, "Larger modes may have performance issues.");
 	}
 
 	// Draw the cursor for the VidMode menu
@@ -12834,9 +12834,9 @@ static void M_DrawColorMenu(void)
 			case IT_STRING:
 			case IT_WHITESTRING:
 				if (i != itemOn && (currentMenu->menuitems[i].status & IT_DISPLAY)==IT_STRING)
-					V_DrawString(x, y, 0, currentMenu->menuitems[i].text);
+					V_DrawString(x, y, MENUCAPS, currentMenu->menuitems[i].text);
 				else
-					V_DrawString(x, y, V_YELLOWMAP, currentMenu->menuitems[i].text);
+					V_DrawString(x, y, V_YELLOWMAP|MENUCAPS, currentMenu->menuitems[i].text);
 
 				// Cvar specific handling
 				switch (currentMenu->menuitems[i].status & IT_TYPE)
@@ -12871,13 +12871,13 @@ static void M_DrawColorMenu(void)
 					}
 					break;
 			case IT_TRANSTEXT:
-				V_DrawString(x, y, V_TRANSLUCENT, currentMenu->menuitems[i].text);
+				V_DrawString(x, y, V_TRANSLUCENT|MENUCAPS, currentMenu->menuitems[i].text);
 				break;
 			case IT_QUESTIONMARKS:
-				V_DrawString(x, y, V_TRANSLUCENT|V_OLDSPACING, M_CreateSecretMenuOption(currentMenu->menuitems[i].text));
+				V_DrawString(x, y, V_TRANSLUCENT|V_OLDSPACING|MENUCAPS, M_CreateSecretMenuOption(currentMenu->menuitems[i].text));
 				break;
 			case IT_HEADERTEXT:
-				V_DrawString(x-16, y, V_YELLOWMAP, currentMenu->menuitems[i].text);
+				V_DrawString(x-16, y, V_YELLOWMAP|MENUCAPS, currentMenu->menuitems[i].text);
 				//V_DrawFill(19, y, 281, 9, currentMenu->menuitems[i+1].alphaKey);
 				//V_DrawFill(300, y, 1, 9, 26);
 				//M_DrawLevelPlatterHeader(y - (lsheadingheight - 12), currentMenu->menuitems[i].text, false);
