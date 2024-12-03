@@ -2880,8 +2880,8 @@ static void Command_Map_f(void)
 
 	if (cv_demochangemap.value && demo.recording)
 	{
-		// spend atleast 35 seconds in one map
-		if (demo.savemode != DSM_NOTSAVING && (timeinmap > 1463) && ((cv_demochangemap.value == 2 && newmapnum == gamemap) || newmapnum != gamemap))
+		// spend atleast 40 seconds in one map
+		if (demo.savemode != DSM_NOTSAVING && (timeinmap > (TICRATE * 40)) && ((cv_demochangemap.value == 2 && newmapnum == gamemap) || newmapnum != gamemap))
 			G_SaveDemo();
 		else
 			G_ResetDemoRecording();
