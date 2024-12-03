@@ -82,6 +82,8 @@ static void G_DoContinued(void);
 static void G_DoWorldDone(void);
 static void G_DoStartVote(void);
 
+static void G_ResetDemoPlayback(char *pdemoname);
+
 char   mapmusname[7]; // Music name
 UINT16 mapmusflags; // Track and reset bit
 UINT32 mapmusposition; // Position to jump to
@@ -3214,6 +3216,8 @@ void G_AfterIntermission(void)
 	}
 	else if (demo.recording && (modeattacking || demo.savemode != DSM_NOTSAVING))
 		G_SaveDemo();
+	else if (demo.recording)
+		G_ResetDemoRecording();
 
 	if (modeattacking) // End the run.
 	{
@@ -3361,6 +3365,8 @@ void G_EndGame(void)
 {
 	if (demo.recording && (modeattacking || demo.savemode != DSM_NOTSAVING))
 		G_SaveDemo();
+	else if (demo.recording)
+		G_ResetDemoRecording();
 
 	// 1100 or competitive multiplayer, so go back to title screen.
 	D_StartTitle();
@@ -5887,10 +5893,7 @@ void G_RecordDemo(const char *name)
 	INT32 maxsize;
 
 	demo_p = NULL;
-	demo.recording = false;
-	if (demobuffer)
-		free(demobuffer);
-	demobuffer = NULL;
+	G_ResetDemoRecording();
 	demoend = NULL;
 
 	if (cv_recordmultiplayerdemos.value)
@@ -5902,7 +5905,7 @@ void G_RecordDemo(const char *name)
 
 		maxsize = cv_maxdemosize.value*1024*1024;
 
-		demobuffer = malloc(maxsize);
+		demobuffer = Z_Malloc(maxsize, PU_STATIC, NULL);
 		demoend = demobuffer + maxsize;
 
 		if (demobuffer)
@@ -5917,10 +5920,10 @@ void G_RecordMetal(void)
 	INT32 maxsize;
 	maxsize = cv_maxdemosize.value*1024*1024;
 	if (demobuffer)
-		free(demobuffer);
+		Z_Free(demobuffer);
 	demo_p = NULL;
 	metalrecording = false;
-	demobuffer = malloc(maxsize);
+	demobuffer = Z_Malloc(maxsize, PU_STATIC, NULL);
 	demoend = demobuffer + maxsize;
 
 	if (demobuffer)
@@ -6772,11 +6775,7 @@ void G_DoPlayDemo(char *defdemoname)
 		snprintf(msg, 1024, M_GetText("%s is not a SRB2Kart replay file.\n"), pdemoname);
 		CONS_Alert(CONS_ERROR, "%s", msg);
 		M_StartMessage(msg, NULL, MM_NOTHING);
-		Z_Free(pdemoname);
-		Z_Free(demobuffer);
-		demobuffer = NULL;
-		demo.playback = false;
-		demo.title = false;
+		G_ResetDemoPlayback(pdemoname);
 		return;
 	}
 	demo_p += 12; // DEMOHEADER
@@ -6801,11 +6800,7 @@ void G_DoPlayDemo(char *defdemoname)
 		snprintf(msg, 1024, M_GetText("%s is an incompatible replay format and cannot be played.\n"), pdemoname);
 		CONS_Alert(CONS_ERROR, "%s", msg);
 		M_StartMessage(msg, NULL, MM_NOTHING);
-		Z_Free(pdemoname);
-		Z_Free(demobuffer);
-		demobuffer = NULL;
-		demo.playback = false;
-		demo.title = false;
+		G_ResetDemoPlayback(pdemoname);
 		return;
 	}
 	demo_p += 16; // demo checksum
@@ -6814,11 +6809,7 @@ void G_DoPlayDemo(char *defdemoname)
 		snprintf(msg, 1024, M_GetText("%s is the wrong type of recording and cannot be played.\n"), pdemoname);
 		CONS_Alert(CONS_ERROR, "%s", msg);
 		M_StartMessage(msg, NULL, MM_NOTHING);
-		Z_Free(pdemoname);
-		Z_Free(demobuffer);
-		demobuffer = NULL;
-		demo.playback = false;
-		demo.title = false;
+		G_ResetDemoPlayback(pdemoname);
 		return;
 	}
 	demo_p += 4; // "PLAY"
@@ -6834,11 +6825,7 @@ void G_DoPlayDemo(char *defdemoname)
 			snprintf(msg, 1024, M_GetText("%s is an alpha multiplayer replay and cannot be played.\n"), pdemoname);
 			CONS_Alert(CONS_ERROR, "%s", msg);
 			M_StartMessage(msg, NULL, MM_NOTHING);
-			Z_Free(pdemoname);
-			Z_Free(demobuffer);
-			demobuffer = NULL;
-			demo.playback = false;
-			demo.title = false;
+			G_ResetDemoPlayback(pdemoname);
 			return;
 		}
 	}
@@ -6895,11 +6882,7 @@ void G_DoPlayDemo(char *defdemoname)
 			CONS_Alert(CONS_ERROR, "%s", msg);
 			if (!CON_Ready()) // In the console they'll just see the notice there! No point pulling them out.
 				M_StartMessage(msg, NULL, MM_NOTHING);
-			Z_Free(pdemoname);
-			Z_Free(demobuffer);
-			demobuffer = NULL;
-			demo.playback = false;
-			demo.title = false;
+			G_ResetDemoPlayback(pdemoname);
 			return;
 		}
 	}
@@ -6962,11 +6945,7 @@ void G_DoPlayDemo(char *defdemoname)
 			snprintf(msg, 1024, M_GetText("%s features a character that is not currently loaded.\n"), pdemoname);
 			CONS_Alert(CONS_ERROR, "%s", msg);
 			M_StartMessage(msg, NULL, MM_NOTHING);
-			Z_Free(pdemoname);
-			Z_Free(demobuffer);
-			demobuffer = NULL;
-			demo.playback = false;
-			demo.title = false;
+			G_ResetDemoPlayback(pdemoname);
 			return;
 		}
 
@@ -6976,11 +6955,7 @@ void G_DoPlayDemo(char *defdemoname)
 			snprintf(msg, 1024, M_GetText("%s features a course that is not currently loaded.\n"), pdemoname);
 			CONS_Alert(CONS_ERROR, "%s", msg);
 			M_StartMessage(msg, NULL, MM_NOTHING);
-			Z_Free(pdemoname);
-			Z_Free(demobuffer);
-			demobuffer = NULL;
-			demo.playback = false;
-			demo.title = false;
+			G_ResetDemoPlayback(pdemoname);
 			return;
 		}
 
@@ -7001,11 +6976,7 @@ void G_DoPlayDemo(char *defdemoname)
 			snprintf(msg, 1024, M_GetText("%s contains no data to be played.\n"), pdemoname);
 			CONS_Alert(CONS_ERROR, "%s", msg);
 			M_StartMessage(msg, NULL, MM_NOTHING);
-			Z_Free(pdemoname);
-			Z_Free(demobuffer);
-			demobuffer = NULL;
-			demo.playback = false;
-			demo.title = false;
+			G_ResetDemoPlayback(pdemoname);
 			return;
 		}
 
@@ -7045,11 +7016,7 @@ void G_DoPlayDemo(char *defdemoname)
 		snprintf(msg, 1024, M_GetText("%s contains no data to be played.\n"), pdemoname);
 		CONS_Alert(CONS_ERROR, "%s", msg);
 		M_StartMessage(msg, NULL, MM_NOTHING);
-		Z_Free(pdemoname);
-		Z_Free(demobuffer);
-		demobuffer = NULL;
-		demo.playback = false;
-		demo.title = false;
+		G_ResetDemoPlayback(pdemoname);
 		return;
 	}
 
@@ -7100,11 +7067,7 @@ void G_DoPlayDemo(char *defdemoname)
 				snprintf(msg, 1024, M_GetText("%s is a Record Attack replay with spectators, and is thus invalid.\n"), pdemoname);
 				CONS_Alert(CONS_ERROR, "%s", msg);
 				M_StartMessage(msg, NULL, MM_NOTHING);
-				Z_Free(pdemoname);
-				Z_Free(demobuffer);
-				demobuffer = NULL;
-				demo.playback = false;
-				demo.title = false;
+				G_ResetDemoPlayback(pdemoname);
 				return;
 			}
 		}
@@ -7115,11 +7078,7 @@ void G_DoPlayDemo(char *defdemoname)
 			snprintf(msg, 1024, M_GetText("%s is a Record Attack replay with multiple players, and is thus invalid.\n"), pdemoname);
 			CONS_Alert(CONS_ERROR, "%s", msg);
 			M_StartMessage(msg, NULL, MM_NOTHING);
-			Z_Free(pdemoname);
-			Z_Free(demobuffer);
-			demobuffer = NULL;
-			demo.playback = false;
-			demo.title = false;
+			G_ResetDemoPlayback(pdemoname);
 			return;
 		}
 
@@ -7762,7 +7721,7 @@ ATTRNORETURN void FUNCNORETURN G_StopMetalRecording(void)
 #endif
 		saved = FIL_WriteFile(va("%sMS.LMP", G_BuildMapName(gamemap)), demobuffer, demo_p - demobuffer); // finally output the file.
 	}
-	free(demobuffer);
+	Z_Free(demobuffer);
 	demobuffer = NULL;
 	metalrecording = false;
 	if (saved)
@@ -7872,13 +7831,41 @@ boolean G_CheckDemoStatus(void)
 		G_SaveDemo();
 		return true;
 	}
-	demo.recording = false;
+	else if (demo.recording)
+		G_ResetDemoRecording();
 
 	return false;
 }
 
+void G_ResetDemoRecording(void)
+{
+	if (demobuffer)
+		Z_Free(demobuffer);
+	demobuffer = NULL;
+	demo.recording = false;
+}
+
+static void G_ResetDemoPlayback(char *pdemoname)
+{
+	if (pdemoname)
+		Z_Free(pdemoname);
+	if (demobuffer)
+		Z_Free(demobuffer);
+	demobuffer = NULL;
+	demo.playback = false;
+	demo.title = false;
+}
+
 void G_SaveDemo(void)
 {
+	if (!demo_p)
+	{
+		CONS_Alert(CONS_ERROR, "Failed to save Demo. No Demo pointer exists!\n");
+		// reset the demo buffer
+		G_ResetDemoRecording();
+		return;
+	}
+
 	UINT8 *p = demobuffer+16; // after version
 	UINT32 length;
 #ifdef NOMD5
@@ -7948,9 +7935,8 @@ void G_SaveDemo(void)
 
 	if (FIL_WriteFile(va(pandf, srb2home, demoname), demobuffer, demo_p - demobuffer)) // finally output the file.
 		demo.savemode = DSM_SAVED;
-	free(demobuffer);
-	demobuffer = NULL;
-	demo.recording = false;
+
+	G_ResetDemoRecording();
 
 	if (modeattacking != ATTACKING_RECORD)
 	{

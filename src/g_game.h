@@ -364,6 +364,7 @@ extern demoghost *ghosts;
 #define DFILE_ERROR_CANNOTLOAD           0x04 // Files are missing and cannot be loaded.
 #define DFILE_ERROR_EXTRAFILES           0x05 // Extra files outside of the replay's file list are loaded.
 
+void G_ResetDemoRecording(void);
 void G_DoPlayDemo(char *defdemoname);
 void G_TimeDemo(const char *name);
 void G_AddGhost(char *defdemoname);
