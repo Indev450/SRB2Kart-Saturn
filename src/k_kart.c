@@ -5662,7 +5662,6 @@ static void K_KartDrift(player_t *player, boolean onground)
 		}
 	}
 
-
 	// Stop drifting
 	if (player->kartstuff[k_spinouttimer] > 0 || player->speed < minspeed)
 	{
@@ -5671,7 +5670,6 @@ static void K_KartDrift(player_t *player, boolean onground)
 
 		if (!player->sliproll)
 		{
-			player->sliptidemem = 0;
 			player->sliproll = 0;
 		}
 
@@ -5694,8 +5692,6 @@ static void K_KartDrift(player_t *player, boolean onground)
 
 		if (player->sliproll < (32*ANG1))
 			player->sliproll += (4*ANG1);
-
-		player->sliptidemem = player->kartstuff[k_aizdriftstrat];
 	}
 
 	if (player->kartstuff[k_drift]

@@ -398,7 +398,7 @@ angle_t R_PlayerSliptideAngle(player_t *player)
 
 	mo = player->mo;
 
-	if (mo->player->sliproll == 0 && mo->player->sliptidemem == 0)
+	if (mo->player->sliproll == 0 || mo->player->kartstuff[k_aizdriftstrat] == 0)
 		return 0;
 
 	size_t rot = (mo->frame & FF_FRAMEMASK);
@@ -429,7 +429,7 @@ angle_t R_PlayerSliptideAngle(player_t *player)
 	if (sprframe->rotate != SRF_SINGLE || (mo->frame & FF_PAPERSPRITE))
 		ang = R_PointToAngle(mo->x, mo->y) - mo->angle;
 
-	return FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), mo->player->sliproll * mo->player->sliptidemem);
+	return FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), mo->player->sliproll * mo->player->kartstuff[k_aizdriftstrat]);
 }
 
 INT32 R_GetHudUncap(void)

@@ -1352,7 +1352,7 @@ static void R_ProjectSprite(mobj_t *thing)
 		{
 			if (sliprollrotate)
 			{
-				sliptiderollangle = thing->player->sliproll * (thing->player->sliptidemem);
+				sliptiderollangle = thing->player->sliproll * thing->player->kartstuff[k_aizdriftstrat];
 				pitchnroll += rollangle + FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), sliptiderollangle);
 			}
 			else
