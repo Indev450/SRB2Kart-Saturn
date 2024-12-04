@@ -4515,15 +4515,11 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	size_t lumpoff;
 	unsigned rot;
 	UINT8 flip;
-	boolean vflip;
-	boolean mirrored;
-	boolean hflip;
 
 	angle_t ang = 0;
 #ifdef ROTSPRITE
 	angle_t camang = 0;
 #endif
-	boolean papersprite;
 	INT32 heightsec, phs;
 	INT32 dist = -1;
 
@@ -4542,10 +4538,10 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	// uncapped/interpolation
 	interpmobjstate_t interp = {0};
 
-	vflip = (thing->eflags & MFE_VERTICALFLIP);
-	mirrored = thing->mirrored;
-	hflip = (!(thing->frame & FF_HORIZONTALFLIP) != !mirrored);
-	papersprite = (thing->frame & FF_PAPERSPRITE);
+	const boolean mirrored = thing->mirrored;
+	const boolean vflip = (thing->eflags & MFE_VERTICALFLIP);
+	const boolean hflip = (!(thing->frame & FF_HORIZONTALFLIP) != !mirrored);
+	const boolean papersprite = (thing->frame & FF_PAPERSPRITE);
 
 	if (cv_maxinterpdist.value)
 		dist = R_QuickCamDist(thing->x, thing->y);
