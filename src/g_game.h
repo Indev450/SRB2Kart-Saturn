@@ -275,7 +275,6 @@ void G_SpawnPlayer(INT32 playernum, boolean starpost);
 // A normal game starts at map 1, but a warp test can start elsewhere
 void G_DeferedInitNew(boolean pencoremode, const char *mapname, INT32 pickedchar,
 	UINT8 ssplayers, boolean FLS);
-void G_DoLoadLevel(boolean resetplayer);
 
 void G_LoadDemoInfo(menudemo_t *pdemo);
 void G_LoadDemoTitle(menudemo_t *pdemo); // For use in replay search feature

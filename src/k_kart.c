@@ -5459,7 +5459,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 
 	// Plays the music during and after the starting countdown.
 	if (P_IsLocalPlayer(player))
-		S_StartMapMusic(false);
+		S_StartMapMusic();
 }
 
 void K_KartPlayerAfterThink(player_t *player)

@@ -963,6 +963,9 @@ void D_StartTitle(void)
 	//demosequence = -1;
 	gametype = GT_RACE; // SRB2kart
 	paused = false;
+
+	S_ResetKeepAndSpecialMus(); // just in case
+
 	F_StartTitleScreen();
 
 	// Reset the palette -- SRB2Kart: actually never mind let's do this in the middle of every fade

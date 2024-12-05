@@ -2004,6 +2004,11 @@ static const char *musicexception_list[17] = {
 	"CHRSHF", "CHRSHP" // no clue what those are tbh
 };
 
+void S_ResetKeepAndSpecialMus(void)
+{
+	keepmusic = skipintromus = false;
+}
+
 //checks for any kind of event music like intermission, vote etc.
 //always runs when musicchange gets invoked
 static void S_CheckEventMus(const char *newmus)
@@ -2020,9 +2025,9 @@ static void S_CheckEventMus(const char *newmus)
 			break;
 		}
 
-	//CONS_Printf("musname = %s\n", music_name);
+	//CONS_Printf("music_name = %s\n", music_name);
 	//CONS_Printf("newmus = %s\n", newmus);
-	//CONS_Printf("newmus = %d\n", skipmusic);
+	//CONS_Printf("skipmusic = %d\n", skipmusic);
 }
 
 //this one compares map and encoremode instead of the music itself
@@ -2036,6 +2041,8 @@ void S_CheckMap(void)
 	}
 
 	keepmusic = (!skipmusic && gamestate == GS_LEVEL && oldmap == gamemap && oldencore == encoremode);
+
+	//CONS_Printf("keepmusic = %s\n", keepmusic);
 
 	oldencore = encoremode;
 	oldmap = gamemap;
@@ -2083,13 +2090,13 @@ void S_InitMapMusic(void)
 	//S_ChangeMusicEx((encoremode ? "estart" : "kstart"), 0, false, mapmusposition, 0, 0);
 }
 
-void S_StartMapMusic(boolean restore)
+void S_StartMapMusic(void)
 {
 	//no need to constantly run this after race has started
 	if (leveltime > MUSICSTARTTIME)
 		return;
 
-	if (keepmusic && !restore) // make sure this doesent kill the music when its called from P_RestoreMusic in some cases
+	if (keepmusic)
 		return;
 
 	if (skipintromus)
@@ -2123,6 +2130,8 @@ void S_RestartMusic(void)
 #else
 	S_SetMusicVolume(cv_digmusicvolume.value, cv_midimusicvolume.value);
 #endif
+
+	S_ResetKeepAndSpecialMus();
 
 	if (Playing()) // Gotta make sure the player is in a level
 		P_RestoreMusic(&players[consoleplayer]);
@@ -2228,6 +2237,8 @@ static void Command_RestartAudio_f(void)
 
 	S_StartSound(NULL, sfx_strpst);
 
+	S_ResetKeepAndSpecialMus();
+
 	if (Playing()) // Gotta make sure the player is in a level
 		P_RestoreMusic(&players[consoleplayer]);
 	else
@@ -2304,6 +2315,8 @@ static void GameDigiMusic_OnChange(void)
 		digital_disabled = false;
 		I_StartupSound(); // will return early if initialised
 		I_InitMusic();
+
+		S_ResetKeepAndSpecialMus();
 
 		if (Playing())
 			P_RestoreMusic(&players[consoleplayer]);
@@ -2390,6 +2403,9 @@ static void GameMIDIMusic_OnChange(void)
 	{
 		midi_disabled = false;
 		I_InitMusic();
+
+		S_ResetKeepAndSpecialMus();
+
 		if (Playing())
 			P_RestoreMusic(&players[consoleplayer]);
 		else
