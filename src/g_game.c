@@ -1215,15 +1215,18 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		if (cv_director.value)
 			CV_SetValue(&cv_director, 0);
 	}
-
 }
 
 //
 // G_DoLoadLevel
 //
-void G_DoLoadLevel(boolean resetplayer)
+static void G_DoLoadLevel(boolean resetplayer)
 {
 	INT32 i;
+
+	// Saturn Music Feature stuffs
+	S_ResetKeepAndSpecialMus();
+	S_CheckMap();
 
 	// Make sure objectplace is OFF when you first start the level!
 	OP_ResetObjectplace();
@@ -3962,7 +3965,6 @@ void G_InitNew(UINT8 pencoremode, const char *mapname, boolean resetplayer, bool
 	else
 	{
 		LUA_HookInt(gamemap, HOOK(MapChange));
-		S_CheckMap();
 		G_DoLoadLevel(resetplayer);
 	}
 
