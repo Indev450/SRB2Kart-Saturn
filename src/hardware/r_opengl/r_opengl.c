@@ -932,23 +932,19 @@ static void GLPerspective(GLfloat fovy, GLfloat aspect)
 		{ 0.0f, 0.0f, 1.0f,-1.0f},
 		{ 0.0f, 0.0f, 0.0f, 0.0f},
 	};
-	const GLfloat zNear = NEAR_CLIPPING_PLANE;
-	const GLfloat zFar = FAR_CLIPPING_PLANE;
-	const GLfloat radians = (GLfloat)(fovy / 2.0f * M_PIl / 180.0f);
-	const GLfloat sine = (GLfloat)sin(radians);
-	const GLfloat deltaZ = zFar - zNear;
-	GLfloat cotangent;
 
-	if ((fabsf((float)deltaZ) < 1.0E-36f) || fpclassify(sine) == FP_ZERO || fpclassify(aspect) == FP_ZERO)
+	const GLfloat focallength = (GLfloat)(1.0f / (GLfloat)tan(fovy * (GLfloat)M_PIl / 360.0f));
+	const GLfloat deltaZ = FAR_CLIPPING_PLANE - NEAR_CLIPPING_PLANE;
+
+	if ((fabsf((float)deltaZ) < 1.0E-36f) || fpclassify(aspect) == FP_ZERO)
 	{
 		return;
 	}
-	cotangent = cosf(radians) / sine;
 
-	m[0][0] = cotangent / aspect;
-	m[1][1] = cotangent;
-	m[2][2] = -(zFar + zNear) / deltaZ;
-	m[3][2] = -2.0f * zNear * zFar / deltaZ;
+	m[0][0] = focallength / aspect;
+	m[1][1] = focallength;
+	m[2][2] = -(FAR_CLIPPING_PLANE + NEAR_CLIPPING_PLANE) / deltaZ;
+	m[3][2] = -2.0f * NEAR_CLIPPING_PLANE * FAR_CLIPPING_PLANE / deltaZ;
 
 	pglMultMatrixf(&m[0][0]);
 }
