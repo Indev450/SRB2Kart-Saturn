@@ -1992,8 +1992,6 @@ boolean S_FadeOutStopMusic(UINT32 ms)
 	return false;
 }*/
 
-static INT16 oldmap = 0;
-static boolean oldencore = false;
 static boolean skipmusic = false;
 boolean skipintromus = false;
 
@@ -2034,6 +2032,9 @@ static void S_CheckEventMus(const char *newmus)
 //makes tunes work and stuff
 void S_CheckMap(void)
 {
+	static INT16 oldmap = 0;
+	static boolean oldencore = false;
+
 	if (!cv_keepmusic.value)
 	{
 		keepmusic = false;
