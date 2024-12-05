@@ -3049,7 +3049,7 @@ void GL_SetTransform(FTransform *stransform)
 
 	if (special_splitscreen)
 	{
-		used_fov = (float)(atan(tan(used_fov*M_PI/360)*0.8)*360/M_PI);
+		used_fov = (float)(atan(tan(used_fov * M_PIl / 360) * 0.8) * 360 / M_PIl);
 		GL_Perspective((GLfloat)used_fov, 2*ASPECT_RATIO);
 	}
 	else
