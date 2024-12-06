@@ -473,9 +473,9 @@ else
 
 	# build a normal optimised version
 	WINDRESFLAGS = -DNDEBUG
-	CFLAGS+=-Ofast  -fmerge-all-constants -flto=12 -fopenmp
-	CPPFLAGS+=-Ofast  -fmerge-all-constants -flto=12 -fopenmp
-	LDFLAGS+= -flto=12 -fopenmp
+	CFLAGS+=-Ofast -flto=12
+	CPPFLAGS+=-Ofast -flto=12
+	LDFLAGS+=-Ofast -flto=12
 endif
 	CFLAGS+=-g $(OPTS) $(ARCHOPTS) $(WINDRESFLAGS)
 
