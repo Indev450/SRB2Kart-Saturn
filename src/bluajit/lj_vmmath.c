@@ -78,7 +78,7 @@ int32_t lj_vm_foldarith_int(int32_t x, int32_t y, int op)
   case IR_MOD - IR_ADD: return x%y; break;
   case IR_POW - IR_ADD: return pow(x, y); break;
   case IR_NEG - IR_ADD: return -x; break;
-  case IR_ABS - IR_ADD: return fabs(x); break;
+  case IR_ABS - IR_ADD: return abs(x); break;
 #if LJ_HASJIT
   case IR_LDEXP - IR_ADD: return ldexp(x, (int)y); break;
   case IR_MIN - IR_ADD: return x < y ? x : y; break;
