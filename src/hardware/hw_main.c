@@ -681,11 +681,14 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 	if (slope)
 		lightlevel = HWR_CalcSlopeLight(lightlevel, slope, gl_frontsector, (FOFsector != NULL));
 
-	const char *name = W_CheckNameForNum(lumpnum);
-
-	if (name && (strncmp(name, "BOST", 4) == 0 || strncmp(name, "PAZRCST", 7) == 0 || strncmp(name, "FSBOST", 6) == 0))
+	if (subsector && (lumpnum != LUMPERROR))
 	{
-		lightlevel = 255;
+		const char *name = W_CheckNameForNum(lumpnum);
+
+		if (name && (((memcmp(name, "BOST", 4) == 0) && (GETSECSPECIAL(subsector->sector->special, 4) == 6)) || memcmp(name, "PAZRCST", 7) == 0 || memcmp(name, "FSBOST", 6) == 0))
+		{
+			lightlevel = 255;
+		}
 	}
 
 	HWR_Lighting(&Surf, lightlevel, planecolormap, P_SectorUsesDirectionalLighting(gl_frontsector));
