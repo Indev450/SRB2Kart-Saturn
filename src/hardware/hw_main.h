@@ -105,6 +105,9 @@ void HWR_AddCommands(void);
 void HWR_RenderPlayerView(INT32 viewnumber, player_t *player);
 void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *player, int stencil_level, boolean allow_portals);
 
+void HWR_ClearSkyDome(void);
+void HWR_BuildSkyDome(void);
+
 void HWR_SetTransform(float fpov, player_t *player);
 void HWR_ClearClipper(void);
 void HWR_SetStencilState(int state, int level);

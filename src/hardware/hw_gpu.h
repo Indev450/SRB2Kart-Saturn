@@ -34,7 +34,7 @@ void GL_DrawIndexedTriangles (FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT 
 void GL_Draw2DLine (F2DCoord *v1, F2DCoord *v2, RGBA_t Color);
 void GL_DrawModelEx(model_t *model, INT32 frameIndex, float duration, float tics, INT32 nextFrameIndex, FTransform *pos, float hscale, float vscale, UINT8 flipped, UINT8 hflipped, FSurfaceInfo *Surface);
 #define GL_DrawModel(model, frameIndex, duration, tics, nextFrameIndex, pos, hscale, vscale, flipped, hflipped, Surface) GL_DrawModelEx(model, frameIndex, duration, tics, nextFrameIndex, pos, hscale, vscale, flipped, hflipped, Surface)
-void GL_RenderSkyDome (INT32 tex, INT32 texture_width, INT32 texture_height, FTransform transform);
+void GL_RenderSkyDome (gl_sky_t *sky);
 
 void GL_SetTexture (GLMipmap_t *pTexInfo);
 void GL_UpdateTexture (GLMipmap_t *pTexInfo);
