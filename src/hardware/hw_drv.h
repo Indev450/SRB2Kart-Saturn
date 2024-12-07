@@ -54,7 +54,7 @@ EXPORT void HWRAPI(CreateModelVBOs) (model_t *model);
 EXPORT void HWRAPI(SetTransform) (FTransform *stransform);
 EXPORT INT32 HWRAPI(GetTextureUsed) (void);
 
-EXPORT void HWRAPI(RenderSkyDome) (INT32 tex, INT32 texture_width, INT32 texture_height, FTransform transform);
+EXPORT void HWRAPI(RenderSkyDome) (gl_sky_t *sky);
 
 EXPORT void HWRAPI(FlushScreenTextures) (void);
 EXPORT void HWRAPI(DoScreenWipe) (int wipeStart, int wipeEnd);
