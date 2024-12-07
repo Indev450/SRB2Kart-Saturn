@@ -132,14 +132,14 @@ typedef struct
 {
 	FLOAT       x,y,z;           // position
 #ifdef USE_FTRANSFORM_ANGLEZ
-	FLOAT       anglex,angley,anglez;   // aimingangle / viewangle
-	FLOAT       anglex2,anglez2;        // secondaries
+	FLOAT       anglex, angley, anglez;   // aimingangle / viewangle
+	FLOAT       anglex2, anglez2;        // secondaries
 #else
-	FLOAT       anglex,angley;   // aimingangle / viewangle
+	FLOAT       anglex, angley;   // aimingangle / viewangle
 	FLOAT       anglex2;         // secondaries
 #endif
-	FLOAT       scalex,scaley,scalez;
-	FLOAT       spritexscale,spriteyscale;
+	FLOAT       scalex, scaley, scalez;
+	FLOAT       spritexscale, spriteyscale;
 	FLOAT       fovxangle, fovyangle;
 	UINT8       splitscreen;
 	boolean     flip;            // screenflip
