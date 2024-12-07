@@ -5065,7 +5065,7 @@ void HWR_BuildSkyDome(void)
 
 static boolean drewsky = false;
 
-static void HWR_DrawSkyBackground(float fpov)
+static void HWR_DrawSkyBackground(void)
 {
 	FTransform dometransform;
 
@@ -5074,24 +5074,16 @@ static void HWR_DrawSkyBackground(float fpov)
 
 	HWD.pfnSetBlend(PF_Translucent|PF_NoDepthTest|PF_Modulated);
 
-	memset(&dometransform, 0x00, sizeof(FTransform));
+	memcpy(&dometransform, &atransform, sizeof(FTransform));
+
+	dometransform.x      = 0.0;
+	dometransform.y      = 0.0;
+	dometransform.z      = 0.0;
 
 	//04/01/2000: Hurdler: added for T&L
 	//                     It should replace all other gl_viewxxx when finished
 	HWR_SetTransformAiming(&dometransform);
 	dometransform.angley = (float)((viewangle-ANGLE_270)>>ANGLETOFINESHIFT)*(360.0f/(float)FINEANGLES);
-
-	dometransform.flip = atransform.flip;
-	dometransform.mirror = atransform.mirror;
-	dometransform.mirrorflip = atransform.mirrorflip;
-
-	dometransform.scalex = 1;
-	dometransform.scaley = (float)vid.width/vid.height;
-	dometransform.scalez = 1;
-	dometransform.fovxangle = fpov; // Tails
-	dometransform.fovyangle = fpov; // Tails
-	HWR_RollTransform(&dometransform, viewroll);
-	dometransform.splitscreen = splitscreen;
 
 	HWR_GetTexture(texturetranslation[skytexture], false);
 
@@ -5106,7 +5098,6 @@ static void HWR_DrawSkyBackground(float fpov)
 	HWD.pfnSetTransform(&dometransform);
 	HWD.pfnRenderSkyDome(&gl_sky);
 }
-
 
 // -----------------+
 // HWR_ClearView : clear the viewwindow, with maximum z value. also clears stencil buffer.
@@ -5321,7 +5312,7 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *pl
 		HWR_SkyWallList_Clear();
 		HWR_SetStencilState(HWR_STENCIL_NORMAL, 1);
 		drewsky = false;
-		HWR_DrawSkyBackground(fpov);
+		HWR_DrawSkyBackground();
 		HWR_SetStencilState(HWR_STENCIL_NORMAL, 0);
 		HWD.pfnClearBuffer(false, false, true, 0);// clear skywall markings from the stencil buffer
 		HWR_SetTransform(fpov, player);// restore transform
@@ -5386,7 +5377,7 @@ static void HWR_RenderFrame(INT32 viewnumber, player_t *player, boolean skybox)
 	ST_doPaletteStuff();
 
 	// Draw the sky background.
-	HWR_DrawSkyBackground(fpov);
+	HWR_DrawSkyBackground();
 	if (skybox)
 		drewsky = true;
 
