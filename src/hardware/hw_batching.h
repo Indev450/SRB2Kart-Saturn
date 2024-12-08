@@ -17,6 +17,8 @@
 #include "hw_data.h"
 #include "hw_gpu.h"
 
+extern boolean currently_batching;
+
 typedef struct
 {
 	FSurfaceInfo surf;// surf also has its own polyflags for some reason, but it seems unused
