@@ -23,19 +23,24 @@
 
 #include <stdarg.h>
 #include <math.h>
-#include "../../r_local.h" // For rendertimefrac, used for the leveltime shader uniform
-#include "../../i_video.h" // for UseScreenFBO
-#include "r_opengl.h"
-#include "r_vbo.h"
-#include "../hw_shaders.h"
-#include "../hw_main.h"
-#include "../hw_clip.h"
 
 // Eeeeh not sure is this right way, but it works < sry :c < sry again it had to go :c
 
-extern fixed_t fovtan; // also extremely bad, I'm just too lazy!!!
-
 #if defined (HWRENDER) && !defined (NOROPENGL)
+
+#include "r_opengl.h"
+#include "r_vbo.h"
+
+#include "../hw_batching.h"
+#include "../hw_clip.h"
+#include "../hw_main.h"
+#include "../hw_shaders.h"
+
+#include "../../f_finale.h"
+#include "../../r_local.h" // For rendertimefrac, used for the leveltime shader uniform
+#include "../../i_video.h"
+
+extern fixed_t fovtan; // also extremely bad, I'm just too lazy!!!
 
 struct GLRGBAFloat
 {
