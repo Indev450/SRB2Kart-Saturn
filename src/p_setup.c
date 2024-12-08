@@ -329,10 +329,10 @@ static void P_ClearSingleMapHeaderInfo(INT16 i)
 
 static void P_ClearDirectionalLightMapHeaderInfo(INT16 i) // lol dont always reset this on every map load
 {
-	mapheaderinfo[i]->light_contrast = M_RandomRange(0, 58);
+	mapheaderinfo[i]->light_contrast = cv_randomdirlight.value ? M_RandomRange(0, 58) : 8;
 	mapheaderinfo[i]->sprite_backlight = 0;
-	mapheaderinfo[i]->use_light_angle = true;
-	mapheaderinfo[i]->light_angle = M_RandomRange(-382, 382);
+	mapheaderinfo[i]->use_light_angle = cv_randomdirlight.value ? true : false;
+	mapheaderinfo[i]->light_angle = cv_randomdirlight.value ? M_RandomRange(-382, 382) : 0;
 }
 
 /** Allocates a new map-header structure.
