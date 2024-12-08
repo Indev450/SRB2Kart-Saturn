@@ -94,6 +94,9 @@ fixed_t P_SegLength(seg_t *seg);
 #endif
 
 void P_UpdateSegLightOffset(seg_t *li);
+boolean P_ApplyLightOffset(UINT8 baselightnum, const sector_t *sector);
+boolean P_ApplyLightOffsetFine(UINT8 baselightlevel, const sector_t *sector);
+boolean P_SectorUsesDirectionalLighting(const sector_t *sector);
 size_t P_PrecacheLevelFlats(void);
 void P_AllocMapHeader(INT16 i);
 

@@ -87,7 +87,8 @@ visplane_t *R_FindPlane(fixed_t height, INT32 picnum, INT32 lightlevel, fixed_t 
 	extracolormap_t *planecolormap, ffloor_t *ffloor
 	, polyobj_t *polyobj
 	, pslope_t *slope
-	, boolean noencore);
+	, boolean noencore
+	, boolean reverseLight, const sector_t *lighting_sector);
 visplane_t *R_CheckPlane(visplane_t *pl, INT32 start, INT32 stop);
 void R_ExpandPlane(visplane_t *pl, INT32 start, INT32 stop);
 void R_PlaneBounds(visplane_t *plane);

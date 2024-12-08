@@ -327,6 +327,14 @@ static void P_ClearSingleMapHeaderInfo(INT16 i)
 	mapheaderinfo[num]->numCustomOptions = 0;
 }
 
+static void P_ClearDirectionalLightMapHeaderInfo(INT16 i) // lol dont always reset this on every map load
+{
+	mapheaderinfo[i]->light_contrast = M_RandomRange(0, 58);
+	mapheaderinfo[i]->sprite_backlight = 0;
+	mapheaderinfo[i]->use_light_angle = true;
+	mapheaderinfo[i]->light_angle = M_RandomRange(-382, 382);
+}
+
 /** Allocates a new map-header structure.
   *
   * \param i Index of header to allocate.
@@ -337,6 +345,7 @@ void P_AllocMapHeader(INT16 i)
 	{
 		mapheaderinfo[i] = Z_Malloc(sizeof(mapheader_t), PU_STATIC, NULL);
 		mapheaderinfo[i]->grades = NULL;
+		P_ClearDirectionalLightMapHeaderInfo(i);
 	}
 	P_ClearSingleMapHeaderInfo(i + 1);
 }
@@ -397,19 +406,71 @@ static inline float P_SegLengthFloat(seg_t *seg)
   */
 void P_UpdateSegLightOffset(seg_t *li)
 {
-	const UINT8 contrast = 8;
+	const UINT8 contrast = maplighting.contrast;
 	const fixed_t contrastFixed = ((fixed_t)contrast) * FRACUNIT;
 	fixed_t light = FRACUNIT;
 	fixed_t extralight = 0;
 
-	light = FixedDiv(R_PointToAngle2(0, 0, abs(li->v1->x - li->v2->x), abs(li->v1->y - li->v2->y)), ANGLE_90);
+	if (maplighting.directional == true)
+	{
+		angle_t liAngle = R_PointToAngle2(0, 0, (li->v1->x - li->v2->x), (li->v1->y - li->v2->y)) - ANGLE_90;
+
+		light = FixedMul(FINECOSINE(liAngle >> ANGLETOFINESHIFT), FINECOSINE(maplighting.angle >> ANGLETOFINESHIFT))
+		+ FixedMul(FINESINE(liAngle >> ANGLETOFINESHIFT), FINESINE(maplighting.angle >> ANGLETOFINESHIFT));
+		light = (light + FRACUNIT) / 2;
+	}
+	else
+	{
+		light = FixedDiv(R_PointToAngle2(0, 0, abs(li->v1->x - li->v2->x), abs(li->v1->y - li->v2->y)), ANGLE_90);
+	}
+
 	extralight = -contrastFixed + FixedMul(light, contrastFixed * 2);
 
 	// Between -2 and 2 for software, -8 and 8 for hardware
-	li->lightOffset = FixedFloor((extralight / contrast) + (FRACUNIT / 2)) / FRACUNIT;
+	li->lightOffset = FixedFloor((extralight / 8) + (FRACUNIT / 2)) / FRACUNIT;
 #ifdef HWRENDER
 	li->hwLightOffset = FixedFloor(extralight + (FRACUNIT / 2)) / FRACUNIT;
 #endif
+}
+
+boolean P_SectorUsesDirectionalLighting(const sector_t *sector)
+{
+	if (sector != NULL)
+	{
+		// automatically turned on
+		if (sector->ceilingpic == skyflatnum || sector->floorpic == skyflatnum)
+		{
+			// sky is visible
+			return true;
+		}
+	}
+
+	// default is off, for indoors
+	return false;
+}
+
+boolean P_ApplyLightOffset(UINT8 baselightnum, const sector_t *sector)
+{
+	if (!P_SectorUsesDirectionalLighting(sector))
+	{
+		return false;
+	}
+
+	// Don't apply light offsets at full bright or full dark.
+	// Is in steps of light num .
+	return (baselightnum < LIGHTLEVELS-1 && baselightnum > 0);
+}
+
+boolean P_ApplyLightOffsetFine(UINT8 baselightlevel, const sector_t *sector)
+{
+	if (!P_SectorUsesDirectionalLighting(sector))
+	{
+		return false;
+	}
+
+	// Don't apply light offsets at full bright or full dark.
+	// Uses exact light levels for more smoothness.
+	return (baselightlevel < 255 && baselightlevel > 0);
 }
 
 // Loads the SEGS resource from a level.

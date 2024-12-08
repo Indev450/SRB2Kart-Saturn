@@ -15,6 +15,8 @@
 #include "hw_main.h"
 #include "../i_system.h"
 
+#include "../doomdef.h"
+
 #include "../qs22j.h"
 
 // The texture for the next polygon given to HWR_ProcessPolygon.
@@ -178,6 +180,10 @@ static int comparePolygons(const void *p1, const void *p2)
 	diff = poly1->surf.LightInfo.fade_start - poly2->surf.LightInfo.fade_start;
 	if (diff != 0) return diff;
 	diff = poly1->surf.LightInfo.fade_end - poly2->surf.LightInfo.fade_end;
+	if (diff != 0) return diff;
+
+	diff = poly1->surf.LightInfo.directional - poly2->surf.LightInfo.directional;
+
 	return diff;
 }
 
@@ -241,6 +247,7 @@ void HWR_RenderBatches(void)
 	nextSurfaceInfo.LightInfo.fade_end = 0;
 	nextSurfaceInfo.LightInfo.fade_start = 0;
 	nextSurfaceInfo.LightInfo.light_level = 0;
+	nextSurfaceInfo.LightInfo.directional = false;
 
 	currently_batching = false;// no longer collecting batches
 	if (!polygonArraySize)
@@ -392,7 +399,8 @@ void HWR_RenderBatches(void)
 					currentSurfaceInfo.FadeColor.rgba != nextSurfaceInfo.FadeColor.rgba ||
 					currentSurfaceInfo.LightInfo.light_level != nextSurfaceInfo.LightInfo.light_level ||
 					currentSurfaceInfo.LightInfo.fade_start != nextSurfaceInfo.LightInfo.fade_start ||
-					currentSurfaceInfo.LightInfo.fade_end != nextSurfaceInfo.LightInfo.fade_end)
+					currentSurfaceInfo.LightInfo.fade_end != nextSurfaceInfo.LightInfo.fade_end ||
+					currentSurfaceInfo.LightInfo.directional != nextSurfaceInfo.LightInfo.directional)
 				{
 					changeState = true;
 					changeSurfaceInfo = true;

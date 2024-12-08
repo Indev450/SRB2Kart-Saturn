@@ -120,7 +120,7 @@ boolean HWR_PalRenderFlashpal(void);
 // into files like hw_bsp.c, hw_sprites.c...
 
 // hw_main.c: Lighting and fog
-void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *colormap);
+void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *colormap, const boolean directional);
 
 FBITFIELD HWR_TranstableToAlpha(INT32 transtablenum, FSurfaceInfo *pSurf);
 
