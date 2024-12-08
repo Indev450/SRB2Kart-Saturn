@@ -444,6 +444,9 @@ fixed_t LUA_EvalMath(const char *word)
 		if (*p == '^')
 			*b++ = '^';
 	}
+	// length of word is zero!?
+	if (p == word)
+		return 0;
 	*b = '\0';
 
 	// eval string.
