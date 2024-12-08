@@ -15,6 +15,7 @@
 #define __R_PATCH__
 
 #include "r_defs.h"
+#include "r_fps.h"
 #include "doomdef.h"
 
 // Structs
@@ -53,6 +54,8 @@ void R_ParseSPRTINFOLump(UINT16 wadNum, UINT16 lumpNum);
 // Sprite rotation
 #ifdef ROTSPRITE
 INT32 R_GetRollAngle(angle_t rollangle);
+angle_t R_RotationAngle(angle_t ang, angle_t camang, interpmobjstate_t *interp);
+
 patch_t *Patch_GetRotatedSprite(
 	spriteframe_t *sprite,
 	size_t frame, size_t spriteangle,

@@ -1,7 +1,7 @@
 // SONIC ROBO BLAST 2
 //-----------------------------------------------------------------------------
 // Copyright (C) 1998-2000 by DooM Legacy Team.
-// Copyright (C) 1999-2018 by Sonic Team Junior.
+// Copyright (C) 1999-2024 by Sonic Team Junior.
 //
 // This program is free software distributed under the
 // terms of the GNU General Public License, version 2.
@@ -10,6 +10,9 @@
 /// \file  byteptr.h
 /// \brief Macros to read/write from/to a UINT8 *,
 ///        used for packet creation and such
+
+#ifndef __BYTEPTR_H__
+#define __BYTEPTR_H__
 
 #if defined (__alpha__) || defined (__arm__) || defined (__mips__) || defined (__ia64__) || defined (__clang__)
 #define DEALIGNED
@@ -150,7 +153,7 @@ FUNCINLINE static ATTRINLINE UINT32 readulong(void *ptr)
 
 #undef DEALIGNED
 
-#define WRITESTRINGN(p, s, n) ({                            \
+#define WRITESTRINGN(p, s, n) do {                          \
 	size_t tmp_i;                                           \
                                                             \
 	for (tmp_i = 0; tmp_i < n && s[tmp_i] != '\0'; tmp_i++) \
@@ -158,70 +161,72 @@ FUNCINLINE static ATTRINLINE UINT32 readulong(void *ptr)
                                                             \
 	if (tmp_i < n)                                          \
 		WRITECHAR(p, '\0');                                 \
-})
+} while (0)
 
-#define WRITESTRINGL(p, s, n) ({                                \
+#define WRITESTRINGL(p, s, n) do {                              \
 	size_t tmp_i;                                               \
                                                                 \
 	for (tmp_i = 0; tmp_i < n - 1 && s[tmp_i] != '\0'; tmp_i++) \
 		WRITECHAR(p, s[tmp_i]);                                 \
                                                                 \
 	WRITECHAR(p, '\0');                                         \
-})
+} while (0)
 
-#define WRITESTRING(p, s) ({                   \
+#define WRITESTRING(p, s) do {                 \
 	size_t tmp_i;                              \
                                                \
 	for (tmp_i = 0; s[tmp_i] != '\0'; tmp_i++) \
 		WRITECHAR(p, s[tmp_i]);                \
                                                \
 	WRITECHAR(p, '\0');                        \
-})
+} while (0)
 
-#define WRITEMEM(p, s, n) ({ \
-	memcpy(p, s, n);         \
-	p += n;                  \
-})
+#define WRITEMEM(p, s, n) do { \
+	memcpy(p, s, n);           \
+	p += n;                    \
+} while (0)
 
 #define SKIPSTRING(p) while (READCHAR(p) != '\0')
 
-#define SKIPSTRINGN(p, n) ({                 \
+#define SKIPSTRINGN(p, n) do {               \
 	size_t tmp_i = 0;                        \
                                              \
 	while (tmp_i < n && READCHAR(p) != '\0') \
 		tmp_i++;                             \
-})
+} while (0)
 
 #define SKIPSTRINGL(p, n) SKIPSTRINGN(p, n)
 
-#define READSTRINGN(p, s, n) ({                           \
+#define READSTRINGN(p, s, n) do {                         \
 	size_t tmp_i = 0;                                     \
                                                           \
 	while (tmp_i < n && (s[tmp_i] = READCHAR(p)) != '\0') \
 		tmp_i++;                                          \
                                                           \
 	s[tmp_i] = '\0';                                      \
-})
+} while (0)
 
-#define READSTRINGL(p, s, n) ({                               \
+#define READSTRINGL(p, s, n) do {                             \
 	size_t tmp_i = 0;                                         \
                                                               \
 	while (tmp_i < n - 1 && (s[tmp_i] = READCHAR(p)) != '\0') \
 		tmp_i++;                                              \
                                                               \
 	s[tmp_i] = '\0';                                          \
-})
+} while (0)
 
-#define READSTRING(p, s) ({                  \
+#define READSTRING(p, s) do {                \
 	size_t tmp_i = 0;                        \
                                              \
 	while ((s[tmp_i] = READCHAR(p)) != '\0') \
 		tmp_i++;                             \
                                              \
 	s[tmp_i] = '\0';                         \
-})
+} while (0)
 
-#define READMEM(p, s, n) ({ \
-	memcpy(s, p, n);        \
-	p += n;                 \
-})
+#define READMEM(p, s, n) do { \
+	memcpy(s, p, n);          \
+	p += n;                   \
+} while (0)
+
+#endif // __BYTEPTR_H__

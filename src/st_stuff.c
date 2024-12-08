@@ -15,6 +15,7 @@
 
 #include "doomdef.h"
 #include "g_game.h"
+#include "g_input.h"
 #include "r_local.h"
 #include "p_local.h"
 #include "f_finale.h"
@@ -218,13 +219,6 @@ boolean ST_SameTeam(player_t *a, player_t *b)
 	// Spectator chat.
 	if (a->spectator && b->spectator)
 		return true;
-
-	// Team chat.
-	if (G_GametypeHasTeams())
-		return a->ctfteam == b->ctfteam;
-
-	if (G_TagGametype())
-		return ((a->pflags & PF_TAGIT) == (b->pflags & PF_TAGIT));
 
 	return false;
 }
@@ -731,7 +725,7 @@ static void ST_overlayDrawer(void)
 	{
 		if (renderisnewtic)
 		{
-			LUAh_GameHUD(luahuddrawlist_game[stplyrnum]);
+			LUA_HUDHOOK(game, luahuddrawlist_game[stplyrnum]);
 		}
 	}
 
@@ -749,8 +743,6 @@ static void ST_overlayDrawer(void)
 				itemtxt = M_GetText("Item - . . .");
 			else if (stplyr->pflags & PF_WANTSTOJOIN)
 				itemtxt = M_GetText("Item - Cancel Join");
-			else if (G_GametypeHasTeams())
-				itemtxt = M_GetText("Item - Join Team");
 
 			if (cv_ingamecap.value)
 			{
@@ -773,10 +765,33 @@ static void ST_overlayDrawer(void)
 			}
 			else
 			{
-				V_DrawString(2, BASEVIDHEIGHT-40, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF|V_YELLOWMAP, M_GetText("- SPECTATING -"));
-				V_DrawString(2, BASEVIDHEIGHT-30, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, itemtxt);
-				V_DrawString(2, BASEVIDHEIGHT-20, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, M_GetText("Accelerate - Float"));
-				V_DrawString(2, BASEVIDHEIGHT-10, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, M_GetText("Brake - Sink"));
+				if (cv_showdirectorhud.value)
+				{
+					V_DrawString(2, BASEVIDHEIGHT-50, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF|V_YELLOWMAP, M_GetText("- SPECTATING -"));
+					V_DrawString(2, BASEVIDHEIGHT-40, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, itemtxt);
+					V_DrawString(2, BASEVIDHEIGHT-30, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, M_GetText("Accelerate - Float"));
+					V_DrawString(2, BASEVIDHEIGHT-20, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, M_GetText("Brake - Sink"));
+
+					char directortoggle[32] = {0};
+					const char *item1 = gamecontrol[gc_director][0] != 0 ? G_KeynumToString(gamecontrol[gc_director][0]) : NULL;
+					const char *item2 = gamecontrol[gc_director][1] != 0 ? G_KeynumToString(gamecontrol[gc_director][1]) : NULL;
+
+					if (item1 != NULL && item2 != NULL)
+						snprintf(directortoggle, 32, "%s/%s - Toggle Director", item1, item2);
+					else
+						snprintf(directortoggle, 32, "%s - Toggle Director", item1 != NULL ? item1 : item2 != NULL ? item2 : "Not Bound");
+
+					V_DrawString(2, BASEVIDHEIGHT-10, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, directortoggle);
+
+					directortextactive = true;
+				}
+				else
+				{
+					V_DrawString(2, BASEVIDHEIGHT-40, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF|V_YELLOWMAP, M_GetText("- SPECTATING -"));
+					V_DrawString(2, BASEVIDHEIGHT-30, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, itemtxt);
+					V_DrawString(2, BASEVIDHEIGHT-20, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, M_GetText("Accelerate - Float"));
+					V_DrawString(2, BASEVIDHEIGHT-10, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, M_GetText("Brake - Sink"));
+				}
 			}
 		}
 	}
@@ -937,17 +952,13 @@ void ST_Drawer(void)
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT/2 + 15, V_HUDTRANSHALF, player_names[seenplayer-players]);
 		else if (cv_seenames.value == 2)
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT/2 + 15, V_HUDTRANSHALF,
-			va("%s%s", G_GametypeHasTeams() ? ((seenplayer->ctfteam == 1) ? "\x85" : "\x84") : "", player_names[seenplayer-players]));
+			va("%s%s", "", player_names[seenplayer-players]));
 		else //if (cv_seenames.value == 3)
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT/2 + 15, V_HUDTRANSHALF,
-			va("%s%s", !G_BattleGametype() || (G_GametypeHasTeams() && players[consoleplayer].ctfteam == seenplayer->ctfteam)
+			va("%s%s", !G_BattleGametype()
 			 ? "\x83" : "\x85", player_names[seenplayer-players]));
 	}
 #endif
-
-	// Doom's status bar only updated if necessary.
-	// However, ours updates every frame regardless, so the "refresh" param was removed
-	//(void)refresh;
 
 	// force a set of the palette by using doPaletteStuff()
 	if (vid.recalc)

@@ -57,26 +57,6 @@ typedef struct
 
 typedef union
 {
-	/*struct
-	{
-		char passed1[21]; // KNUCKLES GOT    / CRAWLA HONCHO
-		char passed2[16]; // THROUGH THE ACT / PASSED THE ACT
-		INT32 passedx1;
-		INT32 passedx2;
-
-		y_bonus_t bonuses[4];
-		patch_t *bonuspatches[4];
-
-		SINT8 gotperfbonus; // Used for visitation flags.
-
-		UINT32 score, total; // fake score, total
-		UINT32 tics; // time
-
-		patch_t *ttlnum; // act number being displayed
-		patch_t *ptotal; // TOTAL
-		UINT8 gotlife; // Number of extra lives obtained
-	} coop;*/
-
 	struct
 	{
 		UINT8 *color[MAXPLAYERS]; // Winner's color #
@@ -463,14 +443,12 @@ void Y_IntermissionDrawer(void)
 
 		for (i = 0; i < data.match.numplayers; i++)
 		{
-			boolean dojitter = data.match.jitter[data.match.num[i]];
-			data.match.jitter[data.match.num[i]] = 0;
-
 			if (data.match.num[i] != MAXPLAYERS && playeringame[data.match.num[i]] && !players[data.match.num[i]].spectator)
 			{
 				char strtime[MAXPLAYERNAME+1];
 
-				if (dojitter)
+				// Apply the jitter offset (later reversed)
+				if (data.match.jitter[data.match.num[i]] > 0)
 					y--;
 
 				V_DrawCenteredString(x+6, y, 0, va("%d", data.match.pos[i]));
@@ -559,7 +537,7 @@ void Y_IntermissionDrawer(void)
 					}
 				}
 
-				if (dojitter)
+				if (data.match.jitter[data.match.num[i]] > 0)
 					y++;
 			}
 			else
@@ -614,7 +592,7 @@ void Y_IntermissionDrawer(void)
 	if (renderisnewtic)
 	{
 		LUA_HUD_ClearDrawList(luahuddrawlist_intermission);
-		LUAh_IntermissionHUD(luahuddrawlist_intermission);
+		LUA_HUDHOOK(intermission, luahuddrawlist_intermission);
 	}
 	LUA_HUD_DrawList(luahuddrawlist_intermission);
 }
@@ -633,18 +611,20 @@ void Y_Ticker(void)
 	{
 		INT32 axis = JoyAxis(AXISLOOKBACK, 1);
 
-		if (demo.savemode == DSM_NOTSAVING && (InputDown(gc_lookback, 1) || (cv_usejoystick.value && axis > 0)))
+		if (demo.savemode == DSM_NOTSAVING && (InputDown(gc_lookback, 1) || (cv_usejoystick[0].value && axis > 0)))
 			demo.savemode = DSM_TITLEENTRY;
 
 		if (demo.savemode == DSM_WILLSAVE || demo.savemode == DSM_WILLAUTOSAVE)
 			G_SaveDemo();
+		else
+			G_ResetDemoRecording();
 	}
 
 	// Check for pause or menu up in single player
 	if (paused || P_AutoPause())
 		return;
 
-	LUAh_IntermissionThinker();
+	LUA_HookVoid(HOOK(IntermissionThinker));
 
 	intertic++;
 
@@ -666,8 +646,16 @@ void Y_Ticker(void)
 		return;
 	}
 
-	if (intertic < TICRATE || intertic & 1 || endtic != -1)
+	if (intertic < TICRATE || endtic != -1)
+	{
 		return;
+	}
+
+	if (data.match.rankingsmode && intertic & 1)
+	{
+		memset(data.match.jitter, 0, sizeof (data.match.jitter));
+		return;
+	}
 
 	if (intertype == int_race || intertype == int_match)
 	{
@@ -822,9 +810,7 @@ void Y_StartIntermission(void)
 	}
 	else
 	{
-		if (cv_inttime.value == 0 && gametype == GT_COOP)
-			timer = 0;
-		else if (demo.playback) // Override inttime (which is pulled from the replay anyway
+		if (demo.playback) // Override inttime (which is pulled from the replay anyway
 			timer = 10*TICRATE;
 		else
 		{
@@ -1227,7 +1213,7 @@ void Y_VoteDrawer(void)
 	if (renderisnewtic)
 	{
 		LUA_HUD_ClearDrawList(luahuddrawlist_vote);
-		LUAh_VoteHUD(luahuddrawlist_vote);
+		LUA_HUDHOOK(vote, luahuddrawlist_vote);
 	}
 	LUA_HUD_DrawList(luahuddrawlist_vote);
 }
@@ -1274,7 +1260,7 @@ void Y_VoteTicker(void)
 	if (paused || P_AutoPause() || !voteclient.loaded)
 		return;
 
-	LUAh_VoteThinker();
+	LUA_HOOK(VoteThinker);
 
 	votetic++;
 

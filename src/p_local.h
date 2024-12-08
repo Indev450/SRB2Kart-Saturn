@@ -57,15 +57,13 @@
 
 #define AIMINGTOSLOPE(aiming) FINESINE((aiming>>ANGLETOFINESHIFT) & FINEMASK)
 
-#define mariomode (maptol & TOL_MARIO)
-#define twodlevel (maptol & TOL_2D)
-
 //
 // P_TICK
 //
 
 // both the head and tail of the thinker list
 extern thinker_t thinkercap;
+extern mobj_t *mobjcache;
 
 void P_InitThinkers(void);
 void P_AddThinker(thinker_t *thinker);
@@ -116,7 +114,7 @@ struct demofreecam_s {
 
 	camera_t *cam;	// this is useful when the game is paused, notably
 	mobj_t *soundmobj;	// mobj to play sound from, used in s_sound
-	
+
 	angle_t localangle;	// keeps track of the cam angle for cmds
 	angle_t localaiming;	// ditto with aiming
 	boolean turnheld;	// holding turn button for gradual turn speed
@@ -126,17 +124,12 @@ struct demofreecam_s {
 extern struct demofreecam_s democam;
 
 extern camera_t camera[MAXSPLITSCREENPLAYERS];
-extern consvar_t cv_cam_dist, cv_cam_still, cv_cam_height;
-extern consvar_t cv_cam_speed, cv_cam_rotate, cv_cam_rotspeed;
-
-extern consvar_t cv_cam2_dist, cv_cam2_still, cv_cam2_height;
-extern consvar_t cv_cam2_speed, cv_cam2_rotate, cv_cam2_rotspeed;
-
-extern consvar_t cv_cam3_dist, cv_cam3_still, cv_cam3_height;
-extern consvar_t cv_cam3_speed, cv_cam3_rotate, cv_cam3_rotspeed;
-
-extern consvar_t cv_cam4_dist, cv_cam4_still, cv_cam4_height;
-extern consvar_t cv_cam4_speed, cv_cam4_rotate, cv_cam4_rotspeed;
+extern consvar_t cv_cam_dist[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_cam_still[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_cam_height[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_cam_speed[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_cam_rotate[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_cam_rotspeed[MAXSPLITSCREENPLAYERS];
 
 extern consvar_t cv_tilting;
 extern consvar_t cv_quaketilt;
@@ -146,10 +139,7 @@ extern consvar_t cv_actionmovie;
 
 extern consvar_t cv_lookbackmom;
 
-extern fixed_t t_cam_dist, t_cam_height, t_cam_rotate;
-extern fixed_t t_cam2_dist, t_cam2_height, t_cam2_rotate;
-extern fixed_t t_cam3_dist, t_cam3_height, t_cam3_rotate;
-extern fixed_t t_cam4_dist, t_cam4_height, t_cam4_rotate;
+extern fixed_t t_cam_rotate[MAXSPLITSCREENPLAYERS];
 
 fixed_t P_GetPlayerHeight(player_t *player);
 fixed_t P_GetPlayerSpinHeight(player_t *player);
@@ -265,7 +255,7 @@ void P_SceneryThinker(mobj_t *mobj);
 // To test it in Lua, check mobj.valid
 FUNCINLINE static ATTRINLINE boolean P_MobjWasRemoved(const mobj_t *mobj)
 {
-	return !(mobj && mobj->thinker.function.acp1 == (actionf_p1)P_MobjThinker);
+	return (!mobj || mobj->thinker.function.acp1 != (actionf_p1)P_MobjThinker);
 }
 
 fixed_t P_MobjFloorZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed_t x, fixed_t y, line_t *line, boolean lowest, boolean perfect);
@@ -297,7 +287,6 @@ mobj_t *P_SPMAngle(mobj_t *source, mobjtype_t type, angle_t angle, UINT8 aimtype
 #ifdef SEENAMES
 #define P_SpawnNameFinder(s,t) P_SPMAngle(s,t,s->angle,true,0)
 #endif
-void P_ColorTeamMissile(mobj_t *missile, player_t *source);
 
 // P_MobjFlip
 // Special utility to return +1 or -1 depending on mobj's gravity
@@ -445,10 +434,8 @@ void P_PlayerWeaponAmmoBurst(player_t *player);
 void P_PlayerEmeraldBurst(player_t *player, boolean toss);
 
 void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck);
-void P_PlayerFlagBurst(player_t *player, boolean toss);
 void P_CheckTimeLimit(void);
 void P_CheckPointLimit(void);
-//void P_CheckSurvivors(void);
 boolean P_CheckRacers(void);
 
 boolean P_CanPickupItem(player_t *player, UINT8 weapon);

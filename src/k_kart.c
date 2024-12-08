@@ -497,10 +497,9 @@ UINT8 colortranslations[MAXTRANSLATIONS][16] = {
 */
 void K_RainbowColormap(UINT8 *dest_colormap, UINT8 skincolor)
 {
-	INT32 i;
+	INT32 i, j;
 	RGBA_t color;
 	UINT8 brightness;
-	INT32 j;
 	UINT8 colorbrightnesses[16];
 	UINT16 brightdif;
 	INT32 temp;
@@ -523,6 +522,7 @@ void K_RainbowColormap(UINT8 *dest_colormap, UINT8 skincolor)
 		color = V_GetColor(i);
 		SETBRIGHTNESS(brightness, color.s.red, color.s.green, color.s.blue);
 		brightdif = 256;
+
 		for (j = 0; j < 16; j++)
 		{
 			temp = abs((INT16)brightness - (INT16)colorbrightnesses[j]);
@@ -2060,6 +2060,38 @@ void K_MomentumToFacing(player_t *player)
 	player->mo->momy = FixedMul(player->mo->momy - player->cmomy, player->mo->friction) + player->cmomy;
 }
 
+static inline fixed_t K_GetProjectileSpeed(void)
+{
+	switch (gamespeed)
+	{
+		case 0:
+			return 68*mapobjectscale; // Avg Speed is 34
+			break;
+		case 2:
+			return 96*mapobjectscale; // Avg Speed is 48
+			break;
+		default:
+			return 82*mapobjectscale; // Avg Speed is 41
+			break;
+	}
+}
+
+static inline fixed_t K_GetSneakerBoostSpeed(void)
+{
+	switch (gamespeed)
+	{
+		case 0:
+			return 53740+768;
+			break;
+		case 2:
+			return 17294+768;
+			break;
+		default:
+			return 32768;
+			break;
+	}
+}
+
 // sets k_boostpower, k_speedboost, and k_accelboost to whatever we need it to be
 static void K_GetKartBoostPower(player_t *player)
 {
@@ -2093,18 +2125,7 @@ static void K_GetKartBoostPower(player_t *player)
 
 	if (player->kartstuff[k_sneakertimer]) // Sneaker
 	{
-		switch (gamespeed)
-		{
-			case 0:
-				speedboost = max(speedboost, 53740+768);
-				break;
-			case 2:
-				speedboost = max(speedboost, 17294+768);
-				break;
-			default:
-				speedboost = max(speedboost, 32768);
-				break;
-		}
+		speedboost = max(speedboost, K_GetSneakerBoostSpeed());
 		accelboost = max(accelboost, 8*FRACUNIT); // + 800%
 	}
 
@@ -2312,7 +2333,7 @@ void K_SpinPlayer(player_t *player, mobj_t *source, INT32 type, mobj_t *inflicto
 	UINT8 scoremultiply = 1;
 	// PS: Inflictor is unused for all purposes here and is actually only ever relevant to Lua. It may be nil too.
 	boolean force = false;	// Used to check if Lua ShouldSpin should get us damaged reguardless of flashtics or heck knows what.
-	UINT8 shouldForce = LUAh_ShouldSpin(player, inflictor, source);
+	UINT8 shouldForce = LUA_HookShouldSpin(player, inflictor, source);
 
 	if (P_MobjWasRemoved(player->mo))
 		return; // mobj was removed (in theory that shouldn't happen)
@@ -2345,7 +2366,7 @@ void K_SpinPlayer(player_t *player, mobj_t *source, INT32 type, mobj_t *inflicto
 		}
 	}
 
-	if (LUAh_PlayerSpin(player, inflictor, source))	// Let Lua do its thing or overwrite if it wants to. Make sure to let any possible instashield happen because we didn't get "damaged" in this case.
+	if (LUA_HookPlayerSpin(player, inflictor, source))	// Let Lua do its thing or overwrite if it wants to. Make sure to let any possible instashield happen because we didn't get "damaged" in this case.
 		return;
 
 	if (source && source != player->mo && source->player)
@@ -2453,7 +2474,7 @@ void K_SquishPlayer(player_t *player, mobj_t *source, mobj_t *inflictor)
 	UINT8 scoremultiply = 1;
 	// PS: Inflictor is unused for all purposes here and is actually only ever relevant to Lua. It may be nil too.
 	boolean force = false;	// Used to check if Lua ShouldSquish should get us damaged reguardless of flashtics or heck knows what.
-	UINT8 shouldForce = LUAh_ShouldSquish(player, inflictor, source);
+	UINT8 shouldForce = LUA_HookShouldSquish(player, inflictor, source);
 	if (P_MobjWasRemoved(player->mo))
 		return; // mobj was removed (in theory that shouldn't happen)
 	if (shouldForce == 1)
@@ -2483,7 +2504,7 @@ void K_SquishPlayer(player_t *player, mobj_t *source, mobj_t *inflictor)
 		}
 	}
 
-	if (LUAh_PlayerSquish(player, inflictor, source))	// Let Lua do its thing or overwrite if it wants to. Make sure to let any possible instashield happen because we didn't get "damaged" in this case.
+	if (LUA_HookPlayerSquish(player, inflictor, source))	// Let Lua do its thing or overwrite if it wants to. Make sure to let any possible instashield happen because we didn't get "damaged" in this case.
 		return;
 
 	player->kartstuff[k_sneakertimer] = 0;
@@ -2564,7 +2585,7 @@ void K_ExplodePlayer(player_t *player, mobj_t *source, mobj_t *inflictor) // A b
 	fixed_t upgoer;
 	UINT8 scoremultiply = 1;
 	boolean force = false;	// Used to check if Lua ShouldExplode should get us damaged reguardless of flashtics or heck knows what.
-	UINT8 shouldForce = LUAh_ShouldExplode(player, inflictor, source);
+	UINT8 shouldForce = LUA_HookShouldExplode(player, inflictor, source);
 
 	if (P_MobjWasRemoved(player->mo))
 		return; // mobj was removed (in theory that shouldn't happen)
@@ -2597,7 +2618,7 @@ void K_ExplodePlayer(player_t *player, mobj_t *source, mobj_t *inflictor) // A b
 		}
 	}
 
-	if (LUAh_PlayerExplode(player, inflictor, source))	// Same thing. Also make sure to let Instashield happen blah blah
+	if (LUA_HookPlayerExplode(player, inflictor, source))	// Same thing. Also make sure to let Instashield happen blah blah
 		return;
 
 	if (source && source != player->mo && source->player)
@@ -3082,7 +3103,7 @@ static void K_SpawnDriftSparks(player_t *player)
 		//spark->momz = player->mo->momz/2;
 
 		// rotate the sparks based on pitch and roll; it just looks neat
-		if (cv_sparkroll.value == 1)
+		if (cv_sparkroll.value)
 		{
 			spark->slopepitch = player->mo->slopepitch;
 			spark->sloperoll = player->mo->sloperoll;
@@ -3296,20 +3317,22 @@ static void K_QuiteSaltyHop(player_t *p)
 }
 
 #define SLOPEROLL_DIV 3
-
 void K_RollMobjBySlopes(mobj_t* mo, boolean usedistance)
 {
+	if (P_MobjWasRemoved(mo))
+		return;
+
 	I_Assert(mo->subsector != NULL);
 	I_Assert(mo->subsector->sector != NULL);
-
-	angle_t an;
-	const boolean flip = mo->eflags & MFE_VERTICALFLIP;
-	const fixed_t m_dist = usedistance ? R_PointToDist(mo->x, mo->y) : 0;
-	const fixed_t rolldist = cv_sloperolldist.value * mapobjectscale;
 
 	// lifted from hw_md2
 	if (mo->standingslope)
 	{
+		angle_t an;
+		const boolean flip = (mo->eflags & MFE_VERTICALFLIP);
+		const fixed_t m_dist = usedistance ? R_PointToDist(mo->x, mo->y) : 0;
+		const fixed_t rolldist = cv_sloperolldist.value * mapobjectscale;
+
 		fixed_t tempz = mo->standingslope->normal.z;
 		fixed_t tempy = mo->standingslope->normal.y;
 		fixed_t tempx = mo->standingslope->normal.x;
@@ -3318,7 +3341,7 @@ void K_RollMobjBySlopes(mobj_t* mo, boolean usedistance)
 		// admittedly this is a very hacky way to do the pitch and roll easing
 
 		// pitch
-		if ((!usedistance) || (m_dist <= (rolldist)))
+		if (!usedistance || (m_dist <= (rolldist)))
 		{
 			an = (INT32)((angle_t)tempangle - mo->pitch_sprite) / SLOPEROLL_DIV;
 
@@ -3401,7 +3424,7 @@ void K_SpawnBoostTrail(player_t *player)
 		flame->momx = 8;
 
 		// since you have to be on the ground for sneaker trails, this should be fine(?)
-		if (cv_sparkroll.value == 1)
+		if (cv_sparkroll.value)
 		{
 			flame->slopepitch = player->mo->slopepitch;
 			flame->sloperoll = player->mo->sloperoll;
@@ -3593,18 +3616,7 @@ static mobj_t *K_ThrowKartItem(player_t *player, boolean missile, mobjtype_t map
 	}
 	else
 	{
-		switch (gamespeed)
-		{
-			case 0:
-				PROJSPEED = 68*mapobjectscale; // Avg Speed is 34
-				break;
-			case 2:
-				PROJSPEED = 96*mapobjectscale; // Avg Speed is 48
-				break;
-			default:
-				PROJSPEED = 82*mapobjectscale; // Avg Speed is 41
-				break;
-		}
+		PROJSPEED = K_GetProjectileSpeed();
 	}
 
 	if (altthrow)
@@ -3832,18 +3844,7 @@ void K_PuntMine(mobj_t *thismine, mobj_t *punter)
 	if (!mine || P_MobjWasRemoved(mine))
 		return;
 
-	switch (gamespeed)
-	{
-		case 0:
-			spd = 68*mapobjectscale; // Avg Speed is 34
-			break;
-		case 2:
-			spd = 96*mapobjectscale; // Avg Speed is 48
-			break;
-		default:
-			spd = 82*mapobjectscale; // Avg Speed is 41
-			break;
-	}
+	spd = K_GetProjectileSpeed();
 
 	mine->flags |= MF_NOCLIPTHING;
 
@@ -3990,20 +3991,7 @@ static void K_DoHyudoroSteal(player_t *player)
 
 void K_DoSneaker(player_t *player, INT32 type)
 {
-	fixed_t intendedboost;
-
-	switch (gamespeed)
-	{
-		case 0:
-			intendedboost = 53740+768;
-			break;
-		case 2:
-			intendedboost = 17294+768;
-			break;
-		default:
-			intendedboost = 32768;
-			break;
-	}
+	const fixed_t intendedboost = K_GetSneakerBoostSpeed();
 
 	if (!player->kartstuff[k_floorboost] || player->kartstuff[k_floorboost] == 3)
 	{
@@ -4784,10 +4772,6 @@ player_t *K_FindJawzTarget(mobj_t *actor, player_t *source)
 		if (player == source)
 			continue;
 
-		// Don't home in on teammates.
-		if (G_GametypeHasTeams() && source->ctfteam == player->ctfteam)
-			continue;
-
 		// Invisible, don't bother
 		if (player->kartstuff[k_hyudorotimer])
 			continue;
@@ -5350,7 +5334,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 
 	// Plays the music during and after the starting countdown.
 	if (P_IsLocalPlayer(player))
-		S_StartMapMusic(false);
+		S_StartMapMusic();
 }
 
 void K_KartPlayerAfterThink(player_t *player)
@@ -5678,7 +5662,6 @@ static void K_KartDrift(player_t *player, boolean onground)
 		}
 	}
 
-
 	// Stop drifting
 	if (player->kartstuff[k_spinouttimer] > 0 || player->speed < minspeed)
 	{
@@ -5687,7 +5670,6 @@ static void K_KartDrift(player_t *player, boolean onground)
 
 		if (!player->sliproll)
 		{
-			player->sliptidemem = 0;
 			player->sliproll = 0;
 		}
 
@@ -5710,8 +5692,6 @@ static void K_KartDrift(player_t *player, boolean onground)
 
 		if (player->sliproll < (32*ANG1))
 			player->sliproll += (4*ANG1);
-
-		player->sliptidemem = player->kartstuff[k_aizdriftstrat];
 	}
 
 	if (player->kartstuff[k_drift]
@@ -6479,7 +6459,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 
 	K_KartDrift(player, onground);
 
-	if ((!player->kartstuff[k_aizdriftstrat])||(!P_IsObjectOnGround(player->mo))||(player->kartstuff[k_drift]))
+	if ((!player->kartstuff[k_aizdriftstrat]) || (!P_IsObjectOnGround(player->mo)) || (player->kartstuff[k_drift]))
 	{
 		if (player->sliproll && (player->sliproll > 0))
 			player->sliproll -= (4*ANG1);
@@ -6493,17 +6473,15 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 		player->mo->spriteyscale = player->mo->realyscale;
 	}
 
-	if (cv_spriteroll.value && cv_sloperoll.value)
+	if (cv_sloperoll.value && !player->mo->salty_jump) // seeing a character rotate mid-hop looks really janky
 	{
-		if ((!player->mo->salty_jump)) // seeing a character rotate mid-hop looks really janky
-			K_RollMobjBySlopes(player->mo, (cv_sloperolldist.value && !splitscreen));
+		K_RollMobjBySlopes(player->mo, (cv_sloperolldist.value && !splitscreen));
 	}
 	else
 	{
 		player->mo->sloperoll = FixedAngle(0);
 		player->mo->slopepitch = FixedAngle(0);
 	}
-
 
 	// Quick Turning
 	// You can't turn your kart when you're not moving.
@@ -8852,7 +8830,7 @@ static void K_drawKartSpeedometer(void)
 		{
 			UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
 			V_DrawStretchyFixedPatch((SPDM_X-1)<<FRACBITS, (SPDM_Y + 5)<<FRACBITS, FRACUNIT*0.765, FRACUNIT*0.55, (V_HUDTRANS|splitflags), (skp_smallstickerclr3), colormap);
-	}
+		}
 		else
 			V_DrawStretchyFixedPatch((SPDM_X-1)<<FRACBITS, (SPDM_Y + 5)<<FRACBITS, FRACUNIT*0.765, FRACUNIT*0.55, (V_HUDTRANS|splitflags), (skp_smallsticker3), NULL);
 
@@ -9616,7 +9594,8 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 	boolean skinlocal = mo->skinlocal;
 
 	fixed_t amnumxpos, amnumypos;
-	INT32 amxpos, amypos;
+	INT32 amxpos, amypos, wntdamxpos, wntdamypos;
+	fixed_t scale = FRACUNIT;
 
 	if (mo->skin)
 		skin = ((skin_t*)(mo->localskin ? mo->localskin : mo->skin))-(skinlocal ? localskins : skins);
@@ -9627,11 +9606,28 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 	if (encoremode)
 		amnumxpos = -amnumxpos;
 
-	amxpos = amnumxpos + ((x + (SHORT(minimapinfo.minimap_pic->width)-SHORT((skinlocal ? localfacemmapprefix : facemmapprefix)[skin]->width))/2)<<FRACBITS);
-	amypos = amnumypos + ((y + (SHORT(minimapinfo.minimap_pic->height)-SHORT((skinlocal ? localfacemmapprefix : facemmapprefix)[skin]->height))/2)<<FRACBITS);
+	amxpos = amnumxpos + ((x + (SHORT(minimapinfo.minimap_pic->width)-SHORT((skinlocal ? localfacemmapprefix : facemmapprefix)[skin]->width)) / 2)<<FRACBITS);
+	amypos = amnumypos + ((y + (SHORT(minimapinfo.minimap_pic->height)-SHORT((skinlocal ? localfacemmapprefix : facemmapprefix)[skin]->height)) / 2)<<FRACBITS);
+
+	if (cv_showminimapnames.value && mo->player && !(modeattacking || gamestate == GS_TIMEATTACK))
+	{
+		const char *player_name = va("%c%s", (mo->color) ? V_GetSkincolorChar(mo->color) : 0, player_names[mo->player - players]);
+		V_DrawCenteredSmallStringAtFixed(amxpos + (4*FRACUNIT), amypos - (3*FRACUNIT), V_ALLOWLOWERCASE|flags, player_name);
+	}
+
+	// thx wanted reticle for having weird offsets very cool
+	wntdamxpos = cv_minihead.value ? amxpos + (1<<FRACBITS) : amxpos - (4<<FRACBITS);
+	wntdamypos = cv_minihead.value ? amypos + (1<<FRACBITS) : amypos - (4<<FRACBITS);
+
+	if (cv_minihead.value)
+	{
+		amxpos += (SHORT((skinlocal ? localfacemmapprefix : facemmapprefix)[skin]->width) / 4)<<FRACBITS;
+		amypos += (SHORT((skinlocal ? localfacemmapprefix : facemmapprefix)[skin]->height) / 4)<<FRACBITS;
+		scale /= 2;
+	}
 
 	if (!mo->color) // 'default' color
-		V_DrawSciencePatch(amxpos, amypos, flags, ( (skinlocal) ? localfacemmapprefix : facemmapprefix )[skin], FRACUNIT);
+		V_DrawSciencePatch(amxpos, amypos, flags, ((skinlocal) ? localfacemmapprefix : facemmapprefix)[skin], scale);
 	else
 	{
 		UINT8 *colormap;
@@ -9640,24 +9636,13 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 		else
 			colormap = R_GetLocalTranslationColormap(mo->skin, mo->localskin, mo->color, GTC_CACHE, skinlocal);
 
-		if (cv_minihead.value)
-			V_DrawFixedPatch(amxpos + (2*FRACUNIT), amypos + (2*FRACUNIT), FRACUNIT/2, flags, ((skinlocal) ? localfacemmapprefix : facemmapprefix)[skin], colormap);
-		else
-			V_DrawFixedPatch(amxpos, amypos, FRACUNIT, flags, ((skinlocal) ? localfacemmapprefix : facemmapprefix)[skin], colormap);
+		V_DrawFixedPatch(amxpos, amypos, scale, flags, ((skinlocal) ? localfacemmapprefix : facemmapprefix)[skin], colormap);
 
-		if (cv_showminimapnames.value && !(modeattacking || gamestate == GS_TIMEATTACK))
-		{
-			const char *player_name = va("%c%s", V_GetSkincolorChar(mo->color), player_names[mo->player - players]);
-			V_DrawCenteredSmallStringAtFixed(amxpos + (4*FRACUNIT), amypos - (3*FRACUNIT), V_ALLOWLOWERCASE|flags, player_name);
-		}
 		if (mo->player
 			&& ((G_RaceGametype() && mo->player->kartstuff[k_position] == spbplace)
 			|| (G_BattleGametype() && K_IsPlayerWanted(mo->player))))
 		{
-			if (cv_minihead.value)
-				V_DrawFixedPatch(amxpos, amypos, FRACUNIT/2, flags, kp_wantedreticle, NULL);
-			else
-				V_DrawFixedPatch(amxpos - (4<<FRACBITS), amypos - (4<<FRACBITS), FRACUNIT, flags, kp_wantedreticle, NULL);
+			V_DrawFixedPatch(wntdamxpos, wntdamypos, scale, flags, kp_wantedreticle, NULL);
 		}
 	}
 }

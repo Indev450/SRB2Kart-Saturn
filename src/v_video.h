@@ -182,6 +182,9 @@ void V_DrawFadeScreen(UINT16 color, UINT8 strength);
 
 void V_DrawFadeConsBack(INT32 plines);
 
+// allow menu text to be displayed in lowercase
+#define MENUCAPS (!cv_menucaps.value ? V_ALLOWLOWERCASE : 0)
+
 // draw a single character
 void V_DrawCharacter(INT32 x, INT32 y, INT32 c, boolean lowercaseallowed);
 // draw a single character, but for the chat

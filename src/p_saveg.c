@@ -298,7 +298,7 @@ static void P_NetArchivePlayers(boolean resending)
 //
 // P_NetUnArchivePlayers
 //
-static void P_NetUnArchivePlayers(boolean resending)
+static void P_NetUnArchivePlayers(boolean reloading)
 {
 	INT32 i, j;
 	UINT16 flags;
@@ -308,8 +308,9 @@ static void P_NetUnArchivePlayers(boolean resending)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (resending)
+		if (reloading)
 			adminplayers[i] = (INT32)READSINT8(save_p);
+
 		// Do NOT memset player struct to 0
 		// other areas may initialize data elsewhere
 		//memset(&players[i], 0, sizeof (player_t));
@@ -320,7 +321,7 @@ static void P_NetUnArchivePlayers(boolean resending)
 		// sending player names, skin and color should not be necessary at all!
 		// (that data is handled in the server config now)
 
-		if (resending)
+		if (reloading)
 			READSTRINGN(save_p, player_names[i], MAXPLAYERNAME);
 
 		players[i].aiming = READANGLE(save_p);
@@ -347,7 +348,7 @@ static void P_NetUnArchivePlayers(boolean resending)
 		players[i].flashpal = READUINT16(save_p);
 		players[i].flashcount = READUINT16(save_p);
 
-		if (resending)
+		if (reloading)
 		{
 			players[i].skincolor = READUINT8(save_p);
 			players[i].skin = READINT32(save_p);
@@ -2172,11 +2173,6 @@ static void LoadMobjThinker(actionf_p1 thinker)
 	mobj->realxscale = FRACUNIT;
 	mobj->realyscale = FRACUNIT;
 	mobj->stretchslam = 0;
-
-	mobj->stretchslam = 0;
-	mobj->slamsoundtimer = 0;
-
-	mobj->mirrored = 0;
 
 	// Timer for slam sound effect
 	mobj->slamsoundtimer = 0;

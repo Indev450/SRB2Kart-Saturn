@@ -14,9 +14,11 @@
 
 #include "byteptr.h"
 #include "dehacked.h"
+#include "doomdef.h"
 #include "i_video.h"
 #include "r_data.h"
 #include "r_draw.h"
+#include "r_fps.h"
 #include "r_patch.h"
 #include "r_things.h"
 #include "z_zone.h"
@@ -803,6 +805,14 @@ INT32 R_GetRollAngle(angle_t rollangle)
 	return ra;
 }
 
+angle_t R_RotationAngle(angle_t ang, angle_t camang, interpmobjstate_t *interp)
+{
+	return FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), interp->roll) +
+	FixedMul(FINESINE((ang) >> ANGLETOFINESHIFT), interp->pitch) +
+	FixedMul(FINECOSINE((camang) >> ANGLETOFINESHIFT), interp->sloperoll) +
+	FixedMul(FINESINE((camang) >> ANGLETOFINESHIFT), interp->slopepitch);
+}
+
 patch_t *Patch_GetRotatedSprite(spriteframe_t *sprite, size_t frame, size_t spriteangle, boolean flip, boolean adjustfeet, void *info, INT32 rotationangle)
 {
 	rotsprite_t *rotsprite;
@@ -842,8 +852,8 @@ patch_t *Patch_GetRotatedSprite(spriteframe_t *sprite, size_t frame, size_t spri
 		}
 		else
 		{
-			xpivot = patch->leftoffset;
-			ypivot = patch->height / 2;
+			xpivot = SHORT(patch->leftoffset);
+			ypivot = SHORT(patch->height) / 2;
 		}
 
 		RotatedPatch_DoRotation(rotsprite, patch, rotationangle, xpivot, ypivot, flip);
@@ -902,9 +912,9 @@ void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle
 	size_t size;
 	INT32 bflip = (flip != 0x00);
 
-	INT32 width = patch->width;
-	INT32 height = patch->height;
-	INT32 leftoffset = patch->leftoffset;
+	INT32 width = SHORT(patch->width);
+	INT32 height = SHORT(patch->height);
+	INT32 leftoffset = SHORT(patch->leftoffset);
 	INT32 newwidth, newheight;
 
 	fixed_t ca = rollcosang[angle];
@@ -975,7 +985,7 @@ void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle
 	}
 
 	ox = (newwidth / 2) + (leftoffset - xpivot);
-	oy = (newheight / 2) + (patch->topoffset - ypivot);
+	oy = (newheight / 2) + (SHORT(patch->topoffset) - ypivot);
 	width = (maxx - minx);
 	height = (maxy - miny);
 

@@ -36,7 +36,7 @@ static inline void B_BuildTailsTiccmd(mobj_t *sonic, mobj_t *tails, ticcmd_t *cm
 		return;
 
 	// Lua can handle it!
-	if (LUAh_BotAI(sonic, tails, cmd))
+	if (LUA_HookBotAI(sonic, tails, cmd))
 		return;
 
 	if (tails->player->pflags & (PF_MACESPIN|PF_ITEMHANG))
@@ -118,11 +118,8 @@ void B_BuildTiccmd(player_t *player, ticcmd_t *cmd)
 		return;
 	}
 
-	// Bot AI isn't programmed in analog.
-	//CV_SetValue(&cv_analog2, false);
-
 	// Let Lua scripts build ticcmds
-	if (LUAh_BotTiccmd(player, cmd))
+	if (LUA_HookTiccmd(player, cmd, HOOK(BotTiccmd)))
 		return;
 
 	// We don't have any main character AI, sorry. D:
@@ -135,55 +132,20 @@ void B_BuildTiccmd(player_t *player, ticcmd_t *cmd)
 
 void B_KeysToTiccmd(mobj_t *mo, ticcmd_t *cmd, boolean forward, boolean backward, boolean left, boolean right, boolean strafeleft, boolean straferight, boolean jump, boolean spin)
 {
-	// Turn the virtual keypresses into ticcmd_t.
-	if (twodlevel || mo->flags2 & MF2_TWOD) {
-		if (players[consoleplayer].climbing
-		|| mo->player->pflags & PF_GLIDING) {
-			// Don't mess with bot inputs during these unhandled movement conditions.
-			// The normal AI doesn't use abilities, so custom AI should be sending us exactly what it wants anyway.
-			if (forward)
-				cmd->forwardmove += MAXPLMOVE<<FRACBITS>>16;
-			if (backward)
-				cmd->forwardmove -= MAXPLMOVE<<FRACBITS>>16;
-			if (left || strafeleft)
-				cmd->sidemove -= MAXPLMOVE<<FRACBITS>>16;
-			if (right || straferight)
-				cmd->sidemove += MAXPLMOVE<<FRACBITS>>16;
-		} else {
-			// In standard 2D mode, interpret "forward" as "the way you're facing" and everything else as "the way you're not facing"
-			if (left || right)
-				backward = true;
-			left = right = false;
-			if (forward) {
-				if (mo->angle < ANGLE_90 || mo->angle > ANGLE_270)
-					right = true;
-				else
-					left = true;
-			} else if (backward) {
-				if (mo->angle < ANGLE_90 || mo->angle > ANGLE_270)
-					left = true;
-				else
-					right = true;
-			}
-			if (left || strafeleft)
-				cmd->sidemove -= MAXPLMOVE<<FRACBITS>>16;
-			if (right || straferight)
-				cmd->sidemove += MAXPLMOVE<<FRACBITS>>16;
-		}
-	} else {
-		if (forward)
-			cmd->forwardmove += MAXPLMOVE<<FRACBITS>>16;
-		if (backward)
-			cmd->forwardmove -= MAXPLMOVE<<FRACBITS>>16;
-		if (left)
-			cmd->angleturn += 1280;
-		if (right)
-			cmd->angleturn -= 1280;
-		if (strafeleft)
-			cmd->sidemove -= MAXPLMOVE<<FRACBITS>>16;
-		if (straferight)
-			cmd->sidemove += MAXPLMOVE<<FRACBITS>>16;
-	}
+	(void)mo;
+
+	if (forward)
+		cmd->forwardmove += MAXPLMOVE<<FRACBITS>>16;
+	if (backward)
+		cmd->forwardmove -= MAXPLMOVE<<FRACBITS>>16;
+	if (left)
+		cmd->angleturn += 1280;
+	if (right)
+		cmd->angleturn -= 1280;
+	if (strafeleft)
+		cmd->sidemove -= MAXPLMOVE<<FRACBITS>>16;
+	if (straferight)
+		cmd->sidemove += MAXPLMOVE<<FRACBITS>>16;
 	if (jump)
 		cmd->buttons |= BT_DRIFT;
 	if (spin)

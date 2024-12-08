@@ -965,7 +965,8 @@ static void R_DrawPrecipitationVisSprite(vissprite_t *vis)
 
 //
 // R_SplitSprite
-// runs through a sector's lightlist and
+// runs through a sector's lightlist and splits the sprite according to the heights
+//
 static void R_SplitSprite(vissprite_t *sprite, mobj_t *thing)
 {
 	INT32 i, lightnum, lindex;
@@ -1142,7 +1143,9 @@ static void R_ProjectSprite(mobj_t *thing)
 	vissprite_t *vis;
 
 	angle_t ang = 0; // gcc 4.6 and lower fix
+#ifdef ROTSPRITE
 	angle_t camang = 0;
+#endif
 	fixed_t iscale;
 	fixed_t scalestep; // toast '16
 	fixed_t offset, offset2;
@@ -1163,7 +1166,6 @@ static void R_ProjectSprite(mobj_t *thing)
 #ifdef ROTSPRITE
 	patch_t *rotsprite = NULL;
 	INT32 rollangle = 0;
-	angle_t rollsum = 0;
 	angle_t pitchnroll = 0;
 	angle_t sliptiderollangle = 0;
 #endif
@@ -1206,7 +1208,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	tx = -(gyt + gxt);
 
 	// too far off the side?
-	if (!papersprite && abs(tx) > tz<<2) // papersprite clipping is handled later
+	if (!papersprite && abs(tx) > (INT64)tz<<2) // papersprite clipping is handled later
 		return;
 
 	// aspect ratio stuff
@@ -1219,7 +1221,13 @@ static void R_ProjectSprite(mobj_t *thing)
 		I_Error("R_ProjectSprite: invalid sprite number %d ", thing->sprite);
 #endif
 
-	rot = thing->frame&FF_FRAMEMASK;
+	rot = (thing->frame & FF_FRAMEMASK);
+
+#ifdef ROTSPRITE
+	// determine here if sprite should rotate for optimization
+	const boolean sliprollrotate = (cv_sloperoll.value && cv_sliptideroll.value && (thing->player && thing->player->sliproll));
+	const boolean shouldrotate = (cv_sloperoll.value && (interp.roll || interp.pitch || interp.sloperoll || interp.slopepitch || thing->rollangle || sliprollrotate));
+#endif
 
 	//Fab : 02-08-98: 'skin' override spritedef currently used for skin
 	if ((thing->skin || thing->localskin) && thing->sprite == SPR_PLAY)
@@ -1250,7 +1258,7 @@ static void R_ProjectSprite(mobj_t *thing)
 #ifdef ROTSPRITE
 		sprinfo = &spriteinfo[thing->sprite];
 #endif
-		rot = thing->frame&FF_FRAMEMASK;
+		rot = (thing->frame & FF_FRAMEMASK);
 		if (!thing->skin)
 		{
 			thing->state->sprite = thing->sprite;
@@ -1265,10 +1273,17 @@ static void R_ProjectSprite(mobj_t *thing)
 		I_Error("R_ProjectSprite: sprframes NULL for sprite %d\n", thing->sprite);
 #endif
 
-	if (sprframe->rotate != SRF_SINGLE || papersprite || (cv_sloperoll.value == 2 && cv_spriteroll.value))
+	if (sprframe->rotate != SRF_SINGLE || papersprite ||
+#ifdef ROTSPRITE
+		(shouldrotate)
+#endif
+	)
 	{
-		ang = R_PointToAngle (interp.x, interp.y) - interp.angle;
-		camang = R_PointToAngle (interp.x, interp.y);
+		ang = R_PointToAngle(interp.x, interp.y);
+#ifdef ROTSPRITE
+		camang = ang;
+#endif
+		ang -= interp.angle;
 
 		if (mirrored)
 			ang = InvAngle(ang);
@@ -1311,9 +1326,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	spr_topoffset = spritecachedinfo[lump].topoffset;
 
 #ifdef ROTSPRITE
-    pitchnroll = 0;  // set this to 0, non-paper sprites will affect this value
-
-	if (cv_spriteroll.value)
+	if (shouldrotate)
 	{
 		if (papersprite)
 		{
@@ -1331,29 +1344,21 @@ static void R_ProjectSprite(mobj_t *thing)
 		{
 			// this is very messy, but it on-the-fly calculates rotations for all the
 			// pitch and roll variables
-			pitchnroll = FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), interp.roll) +
-						 FixedMul(FINESINE((ang) >> ANGLETOFINESHIFT), interp.pitch) +
-						 FixedMul(FINECOSINE((camang) >> ANGLETOFINESHIFT), interp.sloperoll) +
-						 FixedMul(FINESINE((camang) >> ANGLETOFINESHIFT), interp.slopepitch);
-
+			pitchnroll = R_RotationAngle(ang, camang, &interp);
 			rollangle = thing->rollangle;
 		}
 
-		if (rollangle || pitchnroll || (thing->player && thing->player->sliproll))
+		if (rollangle || pitchnroll || sliprollrotate)
 		{
-			rollsum = pitchnroll;
-
-			if (thing->player)
+			if (sliprollrotate)
 			{
-				sliptiderollangle =
-					cv_sliptideroll.value ? thing->player->sliproll * (thing->player->sliptidemem) : 0;
-				rollsum += thing->rollangle +
-						   FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), sliptiderollangle);
+				sliptiderollangle = thing->player->sliproll * thing->player->kartstuff[k_aizdriftstrat];
+				pitchnroll += rollangle + FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), sliptiderollangle);
 			}
 			else
-				rollsum += thing->rollangle;
+				pitchnroll += rollangle;
 
-			rollangle = R_GetRollAngle(rollsum);
+			rollangle = R_GetRollAngle(pitchnroll);
 			rotsprite = Patch_GetRotatedSprite(sprframe, (thing->frame & FF_FRAMEMASK), rot, flip, false, sprinfo, rollangle);
 
 			if (rotsprite != NULL)
@@ -1664,7 +1669,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	//Fab: lumppat is the lump number of the patch to use, this is different
 	//     than lumpid for sprites-in-pwad : the graphics are patched
 #ifdef ROTSPRITE
-	if ((rotsprite != NULL) && (cv_spriteroll.value))
+	if (rotsprite != NULL)
 		vis->patch = rotsprite;
 	else
 #endif
@@ -3300,12 +3305,12 @@ void R_AddSkins(UINT16 wadnum, boolean local)
 		// advance by default
 		lastlump = lump + 1;
 
-		if (numskins >= MAXSKINS)
+		if (!local && numskins >= MAXSKINS)
 		{
 			CONS_Alert(CONS_WARNING, M_GetText("Unable to add skin, too many characters are loaded (%d maximum)\n"), MAXSKINS);
 			continue; // so we know how many skins couldn't be added
 		}
-		if (numlocalskins >= MAXLOCALSKINS)
+		if (local && numlocalskins >= MAXLOCALSKINS)
 		{
 			CONS_Alert(CONS_WARNING, M_GetText("Unable to add localskin, too many localskins are loaded (%d maximum)\n"), MAXLOCALSKINS);
 			continue; // so we know how many skins couldn't be added

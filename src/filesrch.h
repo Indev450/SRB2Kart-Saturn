@@ -7,6 +7,7 @@
 #include "doomdef.h"
 #include "d_netfil.h"
 #include "m_menu.h" // MAXSTRINGLENGTH
+#include "m_textinput.h"
 
 extern consvar_t cv_addons_option, cv_addons_folder, cv_addons_md5, cv_addons_showall, cv_addons_search_case, cv_addons_search_type;
 
@@ -34,7 +35,8 @@ extern char menupath[1024];
 extern size_t menupathindex[menudepth];
 extern size_t menudepthleft;
 
-extern char menusearch[MAXSTRINGLENGTH+1];
+extern char menusearchbuf[MAXSTRINGLENGTH+1];
+extern textinput_t menusearch;
 
 extern char **dirmenu;
 extern size_t sizedirmenu;

@@ -371,11 +371,6 @@ static boolean PIT_CheckThing(mobj_t *thing)
 	if (!(thing->flags & (MF_SOLID|MF_SPECIAL|MF_PAIN|MF_SHOOTABLE)) || (thing->flags & MF_NOCLIPTHING))
 		return true;
 
-	// Don't collide with your buddies while NiGHTS-flying.
-	if (tmthing->player && thing->player && (maptol & TOL_NIGHTS)
-		&& ((tmthing->player->pflags & PF_NIGHTSMODE) || (thing->player->pflags & PF_NIGHTSMODE)))
-		return true;
-
 	blockdist = thing->radius + tmthing->radius;
 
 	if (abs(thing->x - tmx) >= blockdist || abs(thing->y - tmy) >= blockdist)
@@ -449,7 +444,7 @@ static boolean PIT_CheckThing(mobj_t *thing)
 	}
 
 	{
-		UINT8 shouldCollide = LUAh_MobjCollide(thing, tmthing); // checks hook for thing's type
+		UINT8 shouldCollide = LUA_Hook2Mobj(thing, tmthing, MOBJ_HOOK(MobjCollide)); // checks hook for thing's type
 		if (P_MobjWasRemoved(tmthing) || P_MobjWasRemoved(thing))
 			return true; // one of them was removed???
 		if (shouldCollide == 1)
@@ -458,7 +453,7 @@ static boolean PIT_CheckThing(mobj_t *thing)
 			return true; // force no collide
 	}
 	{
-		UINT8 shouldCollide = LUAh_MobjMoveCollide(tmthing, thing); // checks hook for tmthing's type
+		UINT8 shouldCollide = LUA_Hook2Mobj(tmthing, thing, MOBJ_HOOK(MobjMoveCollide)); // checks hook for tmthing's type
 		if (P_MobjWasRemoved(tmthing) || P_MobjWasRemoved(thing))
 			return true; // one of them was removed???
 		if (shouldCollide == 1)
@@ -1727,6 +1722,7 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 	tmbbox[BOXLEFT] = x - tmthing->radius;
 
 	newsubsec = R_PointInSubsector(x, y);
+
 	ceilingline = blockingline = NULL;
 
 	// The base floor / ceiling is from the subsector
@@ -2165,7 +2161,6 @@ boolean P_TryCameraMove(fixed_t x, fixed_t y, camera_t *thiscam)
 {
 	subsector_t *s = R_PointInSubsector(x, y);
 	boolean retval = true;
-	boolean itsatwodlevel = false;
 	UINT8 i;
 
 	floatok = false;
@@ -2173,22 +2168,7 @@ boolean P_TryCameraMove(fixed_t x, fixed_t y, camera_t *thiscam)
 	if (dedicated) // this crashes so don't even try it
 		return false;
 
-	if (twodlevel)
-		itsatwodlevel = true;
-	else
-	{
-		for (i = 0; i <= splitscreen; i++)
-		{
-			if (thiscam == &camera[i] && players[displayplayers[i]].mo
-				&& (players[displayplayers[i]].mo->flags2 & MF2_TWOD))
-			{
-				itsatwodlevel = true;
-				break;
-			}
-		}
-	}
-
-	if (!itsatwodlevel && players[displayplayers[0]].mo)
+	if (players[displayplayers[0]].mo)
 	{
 		fixed_t tryx = thiscam->x;
 		fixed_t tryy = thiscam->y;
@@ -2391,16 +2371,19 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff)
 		{
 			//All things are affected by their scale.
 			fixed_t maxstep = FixedMul(MAXSTEPMOVE, mapobjectscale);
+			INT32 special = 0;
 
 			if (thing->player)
 			{
+				 special = GETSECSPECIAL(R_PointInSubsector(x, y)->sector->special, 1);
+
 				// If using type Section1:13, double the maxstep.
 				if (P_PlayerTouchingSectorSpecial(thing->player, 1, 13)
-				|| GETSECSPECIAL(R_PointInSubsector(x, y)->sector->special, 1) == 13)
+				|| special == 13)
 					maxstep <<= 1;
 				// If using type Section1:12, no maxstep. For ledges you don't want the player to climb! (see: Egg Zeppelin & SMK port walls)
 				else if (P_PlayerTouchingSectorSpecial(thing->player, 1, 12)
-				|| GETSECSPECIAL(R_PointInSubsector(x, y)->sector->special, 1) == 12)
+				|| special == 12)
 					maxstep = 0;
 			}
 
@@ -2446,7 +2429,7 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff)
 			else if (maxstep > 0 && !(
 				thing->player && (
 				P_PlayerTouchingSectorSpecial(thing->player, 1, 14)
-				|| GETSECSPECIAL(R_PointInSubsector(x, y)->sector->special, 1) == 14)
+				|| special == 14)
 				)) // Step down
 			{
 				// If the floor difference is MAXSTEPMOVE or less, and the sector isn't Section1:14, ALWAYS
@@ -3179,16 +3162,8 @@ stairstep:
 
 	P_HitSlideLine(bestslideline); // clip the moves
 
-	if ((twodlevel || (mo->flags2 & MF2_TWOD)) && mo->player)
-	{
-		mo->momx = tmxmove;
-		tmymove = 0;
-	}
-	else
-	{
-		mo->momx = tmxmove;
-		mo->momy = tmymove;
-	}
+	mo->momx = tmxmove;
+	mo->momy = tmymove;
 
 	do {
 		if (tmxmove > mo->radius) {

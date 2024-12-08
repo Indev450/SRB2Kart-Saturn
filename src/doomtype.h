@@ -365,6 +365,30 @@ typedef UINT32 tic_t;
 #define UINT2RGBA(a) (UINT32)((a&0xff)<<24)|((a&0xff00)<<8)|((a&0xff0000)>>8)|(((UINT32)a&0xff000000)>>24)
 #endif
 
+#define TOSTR(x) #x
+
+typedef UINT8 bitarray_t;
+
+#define BIT_ARRAY_SIZE(n) (((n) + 7) >> 3)
+
+static inline int
+in_bit_array (const bitarray_t * const array, const int value)
+{
+	return (array[value >> 3] & (1<<(value & 7)));
+}
+
+static inline void
+set_bit_array (bitarray_t * const array, const int value)
+{
+	array[value >> 3] |= (1<<(value & 7));
+}
+
+static inline void
+unset_bit_array (bitarray_t * const array, const int value)
+{
+	array[value >> 3] &= ~(1<<(value & 7));
+}
+
 typedef UINT64 precise_t;
 
 #endif //__DOOMTYPE__
