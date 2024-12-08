@@ -176,7 +176,6 @@ extern consvar_t cv_saltysquish;
 extern consvar_t cv_driftsparkpulse;
 extern consvar_t cv_gravstretch;
 extern consvar_t cv_sloperoll;
-extern consvar_t cv_spriteroll;
 extern consvar_t cv_sliptideroll;
 extern consvar_t cv_slamsound;
 extern consvar_t cv_sloperolldist;
@@ -276,7 +275,6 @@ void G_SpawnPlayer(INT32 playernum, boolean starpost);
 // A normal game starts at map 1, but a warp test can start elsewhere
 void G_DeferedInitNew(boolean pencoremode, const char *mapname, INT32 pickedchar,
 	UINT8 ssplayers, boolean FLS);
-void G_DoLoadLevel(boolean resetplayer);
 
 void G_LoadDemoInfo(menudemo_t *pdemo);
 void G_LoadDemoTitle(menudemo_t *pdemo); // For use in replay search feature
@@ -366,6 +364,7 @@ extern demoghost *ghosts;
 #define DFILE_ERROR_CANNOTLOAD           0x04 // Files are missing and cannot be loaded.
 #define DFILE_ERROR_EXTRAFILES           0x05 // Extra files outside of the replay's file list are loaded.
 
+void G_ResetDemoRecording(void);
 void G_DoPlayDemo(char *defdemoname);
 void G_TimeDemo(const char *name);
 void G_AddGhost(char *defdemoname);

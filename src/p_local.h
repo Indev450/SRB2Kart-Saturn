@@ -63,6 +63,7 @@
 
 // both the head and tail of the thinker list
 extern thinker_t thinkercap;
+extern mobj_t *mobjcache;
 
 void P_InitThinkers(void);
 void P_AddThinker(thinker_t *thinker);
@@ -254,7 +255,7 @@ void P_SceneryThinker(mobj_t *mobj);
 // To test it in Lua, check mobj.valid
 FUNCINLINE static ATTRINLINE boolean P_MobjWasRemoved(const mobj_t *mobj)
 {
-	return !(mobj && mobj->thinker.function.acp1 == (actionf_p1)P_MobjThinker);
+	return (!mobj || mobj->thinker.function.acp1 != (actionf_p1)P_MobjThinker);
 }
 
 fixed_t P_MobjFloorZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed_t x, fixed_t y, line_t *line, boolean lowest, boolean perfect);
@@ -363,7 +364,11 @@ boolean P_MoveOrigin(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z);
 void P_SlideMove(mobj_t *mo, boolean forceslide);
 void P_BouncePlayerMove(mobj_t *mo);
 void P_BounceMove(mobj_t *mo);
-boolean P_CheckSight(mobj_t *t1, mobj_t *t2);
+
+#define P_CheckSight(t1, t2) P_CheckSight2(t1, t2, false)
+#define P_CheckSightFast(t1, t2) P_CheckSight2(t1, t2, true)
+boolean P_CheckSight2(mobj_t *t1, mobj_t *t2, boolean fast);
+
 void P_CheckHoopPosition(mobj_t *hoopthing, fixed_t x, fixed_t y, fixed_t z, fixed_t radius);
 
 boolean P_CheckSector(sector_t *sector, boolean crunch);

@@ -592,7 +592,7 @@ void Y_IntermissionDrawer(void)
 	if (renderisnewtic)
 	{
 		LUA_HUD_ClearDrawList(luahuddrawlist_intermission);
-		LUAh_IntermissionHUD(luahuddrawlist_intermission);
+		LUA_HUDHOOK(intermission, luahuddrawlist_intermission);
 	}
 	LUA_HUD_DrawList(luahuddrawlist_intermission);
 }
@@ -616,13 +616,15 @@ void Y_Ticker(void)
 
 		if (demo.savemode == DSM_WILLSAVE || demo.savemode == DSM_WILLAUTOSAVE)
 			G_SaveDemo();
+		else
+			G_ResetDemoRecording();
 	}
 
 	// Check for pause or menu up in single player
 	if (paused || P_AutoPause())
 		return;
 
-	LUAh_IntermissionThinker();
+	LUA_HookVoid(HOOK(IntermissionThinker));
 
 	intertic++;
 
@@ -1211,7 +1213,7 @@ void Y_VoteDrawer(void)
 	if (renderisnewtic)
 	{
 		LUA_HUD_ClearDrawList(luahuddrawlist_vote);
-		LUAh_VoteHUD(luahuddrawlist_vote);
+		LUA_HUDHOOK(vote, luahuddrawlist_vote);
 	}
 	LUA_HUD_DrawList(luahuddrawlist_vote);
 }
@@ -1258,7 +1260,7 @@ void Y_VoteTicker(void)
 	if (paused || P_AutoPause() || !voteclient.loaded)
 		return;
 
-	LUAh_VoteThinker();
+	LUA_HOOK(VoteThinker);
 
 	votetic++;
 

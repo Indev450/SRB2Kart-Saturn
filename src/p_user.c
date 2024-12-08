@@ -704,7 +704,7 @@ void P_RestoreMusic(player_t *player)
 		return;
 
 	if (leveltime < MUSICSTARTTIME)
-		S_StartMapMusic(true);
+		S_StartMapMusic();
 	else // see also where time overs are handled - search for "lives = 2" in this file
 	{
 		INT32 wantedmus = 0; // 0 is level music, 1 is invincibility, 2 is grow
@@ -3228,7 +3228,7 @@ void P_DemoCameraMovement(camera_t *cam)
 	democam.soundmobj = awayviewmobj_hack;
 
 	// update subsector to avoid crashes;
-	cam->subsector = R_PointInSubsector(cam->x, cam->y);
+	cam->subsector = R_PointInSubsectorFast(cam->x, cam->y);
 }
 
 void P_ResetCamera(player_t *player, camera_t *thiscam)
@@ -3263,7 +3263,7 @@ void P_ResetCamera(player_t *player, camera_t *thiscam)
 	thiscam->aiming = 0;
 	thiscam->relativex = 0;
 
-	thiscam->subsector = R_PointInSubsector(thiscam->x,thiscam->y);
+	thiscam->subsector = R_PointInSubsectorFast(thiscam->x,thiscam->y);
 
 	thiscam->radius = 20*FRACUNIT;
 	thiscam->height = 16*FRACUNIT;
@@ -3982,6 +3982,8 @@ void P_DoTimeOver(player_t *player)
 
 	player->pflags |= PF_TIMEOVER;
 
+	demo.savebutton = leveltime;
+
 	if (P_IsLocalPlayer(player) && !demo.playback)
 		legitimateexit = true; // SRB2kart: losing a race is still seeing it through to the end :p
 
@@ -4135,7 +4137,7 @@ void P_PlayerThink(player_t *player)
 		}
 		if (player->playerstate == PST_REBORN)
 		{
-			LUAh_PlayerThink(player);
+			LUA_HookPlayer(player, HOOK(PlayerThink));
 			return;
 		}
 	}
@@ -4241,7 +4243,7 @@ void P_PlayerThink(player_t *player)
 
 				if (player->playerstate == PST_DEAD)
 				{
-					LUAh_PlayerThink(player);
+					LUA_HookPlayer(player, HOOK(PlayerThink));
 					return;
 				}
 			}
@@ -4307,7 +4309,7 @@ void P_PlayerThink(player_t *player)
 		else
 			player->mo->flags2 &= ~MF2_SHADOW;
 		P_DeathThink(player);
-		LUAh_PlayerThink(player);
+		LUA_HookPlayer(player, HOOK(PlayerThink));
 		return;
 	}
 
@@ -4446,7 +4448,7 @@ void P_PlayerThink(player_t *player)
 
 	if (!player->mo)
 	{
-		LUAh_PlayerThink(player);
+		LUA_HookPlayer(player, HOOK(PlayerThink));
 		return; // P_MovePlayer removed player->mo.
 	}
 
@@ -4623,7 +4625,7 @@ void P_PlayerThink(player_t *player)
 	if (rendermode != render_none)
 		DoABarrelRoll(player);
 
-	LUAh_PlayerThink(player);
+	LUA_HookPlayer(player, HOOK(PlayerThink));
 }
 
 //

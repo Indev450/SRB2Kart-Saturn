@@ -33,16 +33,18 @@ typedef enum GLTextureFormat_e
 	GL_TEXFMT_ALPHA_INTENSITY_88  = 0x22,
 } GLTextureFormat_t;
 
-// data holds the address of the graphics data cached in heap memory
-//                NULL if the texture is not in Doom heap cache.
+// Texture information (misleadingly named "mipmap" all over the code.)
+// The *data pointer holds the address of the graphics data cached in heap memory.
+// NULL if the texture is not in SRB2's heap cache.
 struct GLMipmap_s
 {
+	// for UpdateTexture
 	GLTextureFormat_t 		format;
 	void              		*data;
 
 	UINT32          		flags;
 	UINT16 					width, height;
-	UINT32 					downloaded;		// tex_downloaded
+	UINT32					downloaded; // The GPU has this texture.
 
 	struct	GLMipmap_s 		*nextcolormap;
 	const 	UINT8 			*colormap;
@@ -50,12 +52,12 @@ struct GLMipmap_s
 typedef struct GLMipmap_s GLMipmap_t;
 
 //
-// Doom texture info, as cached for hardware rendering
+// Level textures, as cached for hardware rendering.
 //
 struct GLMapTexture_s
 {
 	GLMipmap_t		mipmap;
-	float			scaleX;             //used for scaling textures on walls
+	float			scaleX; //used for scaling textures on walls
 	float			scaleY;
 };
 typedef struct GLMapTexture_s GLMapTexture_t;

@@ -12,105 +12,129 @@
 
 #include "r_defs.h"
 #include "d_player.h"
+#include "s_sound.h"
+#include "lua_hudlib_drawlist.h"
 
-enum hook {
-	hook_NetVars=0,
-	hook_MapChange,
-	hook_MapLoad,
-	hook_PlayerJoin,
-	hook_PreThinkFrame,
-	hook_ThinkFrame,
-	hook_PostThinkFrame,
-	hook_MobjSpawn,
-	hook_MobjCollide,
-	hook_MobjMoveCollide,
-	hook_TouchSpecial,
-	hook_MobjFuse,
-	hook_MobjThinker,
-	hook_BossThinker,
-	hook_ShouldDamage,
-	hook_MobjDamage,
-	hook_MobjDeath,
-	hook_BossDeath,
-	hook_MobjRemoved,
-	hook_JumpSpecial,
-	hook_AbilitySpecial,
-	hook_SpinSpecial,
-	hook_JumpSpinSpecial,
-	hook_BotTiccmd,
-	hook_BotAI,
-	hook_LinedefExecute,
-	hook_PlayerMsg,
-	hook_HurtMsg,
-	hook_PlayerSpawn,
-	hook_PlayerQuit,
-	hook_PlayerThink,
-	hook_MusicChange,
-	hook_ShouldSpin,	//SRB2KART
-	hook_ShouldExplode,	//SRB2KART
-	hook_ShouldSquish,	//SRB2KART
-	hook_PlayerSpin,	//SRB2KART
-	hook_PlayerExplode,	//SRB2KART
-	hook_PlayerSquish,	//SRB2KART
-	hook_PlayerCmd,		//SRB2KART
-	hook_IntermissionThinker, //SRB2KART
-	hook_VoteThinker, //SRB2KART
-	hook_ServerJoin, // SRB2KART - Saturn 32p
+/*
+ * Do you know what an 'X Macro' is? Such a macro is called over each element of
+ * a list and expands the input. I use it for the hook lists because both an enum
+ * and array of hook names need to be kept in order. The X Macro handles this
+ * automatically.
+ */
 
-	hook_MAX // last hook
-};
-extern const char *const hookNames[];
+#define MOBJ_HOOK_LIST(X) \
+	X (MobjSpawn),/* P_SpawnMobj */\
+	X (MobjCollide),/* PIT_CheckThing */\
+	X (MobjMoveCollide),/* tritto */\
+	X (TouchSpecial),/* P_TouchSpecialThing */\
+	X (MobjFuse),/* when mobj->fuse runs out */\
+	X (MobjThinker),/* P_MobjThinker, P_SceneryThinker */\
+	X (BossThinker),/* P_GenericBossThinker */\
+	X (ShouldDamage),/* P_DamageMobj (Should mobj take damage?) */\
+	X (MobjDamage),/* P_DamageMobj (Mobj actually takes damage!) */\
+	X (MobjDeath),/* P_KillMobj */\
+	X (BossDeath),/* A_BossDeath */\
+	X (MobjRemoved),/* P_RemoveMobj */\
+	X (HurtMsg),/* imhurttin */\
+
+#define HOOK_LIST(X) \
+	X (NetVars),/* add to archive table (netsave) */\
+	X (MapChange),/* (before map load) */\
+	X (MapLoad),\
+	X (PlayerJoin),/* Got_AddPlayer */\
+	X (PreThinkFrame)/* frame (before mobj and player thinkers) */,\
+	X (ThinkFrame),/* frame (after mobj and player thinkers) */\
+	X (PostThinkFrame),/* frame (at end of tick, ie after overlays, precipitation, specials) */\
+	X (JumpSpecial),/* P_DoJumpStuff (Any-jumping) */\
+	X (AbilitySpecial),/* P_DoJumpStuff (Double-jumping) */\
+	X (SpinSpecial),/* P_DoSpinAbility (Spin button effect) */\
+	X (JumpSpinSpecial),/* P_DoJumpStuff (Spin button effect (mid-air)) */\
+	X (BotTiccmd),/* B_BuildTiccmd */\
+	X (PlayerMsg),/* chat messages */\
+	X (PlayerSpawn),/* G_SpawnPlayer */\
+	X (PlayerQuit),\
+	X (PlayerThink),/* P_PlayerThink */\
+	X (MusicChange),\
+	X (ShouldSpin),/*SRB2KART*/\
+	X (ShouldExplode),/*SRB2KART*/\
+	X (ShouldSquish),/*SRB2KART*/\
+	X (PlayerSpin),/*SRB2KART*/\
+	X (PlayerExplode),/*SRB2KART*/\
+	X (PlayerSquish),/*SRB2KART*/\
+	X (PlayerCmd),/* building the player's ticcmd struct (Ported from SRB2Kart) */\
+	X (IntermissionThinker),/* Y_Ticker */\
+	X (VoteThinker),/*SRB2KART*/\
+	X (ServerJoin),/* SRB2KART - Saturn 32p*/\
+
+#define STRING_HOOK_LIST(X) \
+	X (BotAI),/* B_BuildTailsTiccmd by skin name */\
+	X (LinedefExecute),\
+
+#define HUD_HOOK_LIST(X) \
+	X (game),\
+	X (scores),/* emblems/multiplayer list */\
+	X (intermission),\
+	X (vote),\
+
+/*
+ * I chose to access the hook enums through a macro as well. This could provide
+ * a hint to lookup the macro's definition instead of the enum's definition.
+ * (Since each enumeration is not defined in the source code, but by the list
+ * macros above, it is not greppable.) The name passed to the macro can also be
+ * grepped and found in the lists above.
+ */
+
+#define   MOBJ_HOOK(name)   mobjhook_ ## name
+#define        HOOK(name)       hook_ ## name
+#define    HUD_HOOK(name)    hudhook_ ## name
+#define STRING_HOOK(name) stringhook_ ## name
+
+#define ENUM(X) enum { X ## _LIST (X)  X(MAX) }
+
+ENUM   (MOBJ_HOOK);
+ENUM        (HOOK);
+ENUM    (HUD_HOOK);
+ENUM (STRING_HOOK);
+
+#undef ENUM
+
+/* dead simple, LUA_HOOK(GameQuit) */
+#define LUA_HOOK(type) LUA_HookVoid(HOOK(type))
+#define LUA_HUDHOOK(type,drawlist) LUA_HookHUD(HUD_HOOK(type),(drawlist))
 
 extern boolean hook_cmd_running;	// This is used by PlayerCmd and lua_playerlib to prevent anything from being wirtten to player while we run PlayerCmd.
 extern int hook_defrosting;
 
-void LUAh_MapChange(INT16 mapnumber); // Hook for map change (before load)
-void LUAh_MapLoad(void); // Hook for map load
-void LUAh_PlayerJoin(int playernum); // Hook for Got_AddPlayer
-void LUAh_PreThinkFrame(void); // Hook for frame (before mobj and player thinkers)
-void LUAh_ThinkFrame(void); // Hook for frame (after mobj and player thinkers)
-void LUAh_PostThinkFrame(void); // Hook for frame (at end of tick, ie after overlays, precipitation, specials)
-boolean LUAh_MobjHook(mobj_t *mo, enum hook which);
-boolean LUAh_PlayerHook(player_t *plr, enum hook which);
-#define LUAh_MobjSpawn(mo) LUAh_MobjHook(mo, hook_MobjSpawn) // Hook for P_SpawnMobj by mobj type
-UINT8 LUAh_MobjCollideHook(mobj_t *thing1, mobj_t *thing2, enum hook which);
-#define LUAh_MobjCollide(thing1, thing2) LUAh_MobjCollideHook(thing1, thing2, hook_MobjCollide) // Hook for PIT_CheckThing by (thing) mobj type
-#define LUAh_MobjMoveCollide(thing1, thing2) LUAh_MobjCollideHook(thing1, thing2, hook_MobjMoveCollide) // Hook for PIT_CheckThing by (tmthing) mobj type
-boolean LUAh_TouchSpecial(mobj_t *special, mobj_t *toucher); // Hook for P_TouchSpecialThing by mobj type
-#define LUAh_MobjFuse(mo) LUAh_MobjHook(mo, hook_MobjFuse) // Hook for mobj->fuse == 0 by mobj type
-boolean LUAh_MobjThinker(mobj_t *mo); // Hook for P_MobjThinker or P_SceneryThinker by mobj type
-#define LUAh_BossThinker(mo) LUAh_MobjHook(mo, hook_BossThinker) // Hook for P_GenericBossThinker by mobj type
-UINT8 LUAh_ShouldDamage(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage); // Hook for P_DamageMobj by mobj type (Should mobj take damage?)
-boolean LUAh_MobjDamage(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage); // Hook for P_DamageMobj by mobj type (Mobj actually takes damage!)
-boolean LUAh_MobjDeath(mobj_t *target, mobj_t *inflictor, mobj_t *source); // Hook for P_KillMobj by mobj type
-#define LUAh_BossDeath(mo) LUAh_MobjHook(mo, hook_BossDeath) // Hook for A_BossDeath by mobj type
-#define LUAh_MobjRemoved(mo) LUAh_MobjHook(mo, hook_MobjRemoved) // Hook for P_RemoveMobj by mobj type
-#define LUAh_JumpSpecial(player) LUAh_PlayerHook(player, hook_JumpSpecial) // Hook for P_DoJumpStuff (Any-jumping)
-#define LUAh_AbilitySpecial(player) LUAh_PlayerHook(player, hook_AbilitySpecial) // Hook for P_DoJumpStuff (Double-jumping)
-#define LUAh_SpinSpecial(player) LUAh_PlayerHook(player, hook_SpinSpecial) // Hook for P_DoSpinDash (Spin button effect)
-#define LUAh_JumpSpinSpecial(player) LUAh_PlayerHook(player, hook_JumpSpinSpecial) // Hook for P_DoJumpStuff (Spin button effect (mid-air))
-boolean LUAh_BotTiccmd(player_t *bot, ticcmd_t *cmd); // Hook for B_BuildTiccmd
-boolean LUAh_BotAI(mobj_t *sonic, mobj_t *tails, ticcmd_t *cmd); // Hook for B_BuildTailsTiccmd by skin name
-boolean LUAh_LinedefExecute(line_t *line, mobj_t *mo, sector_t *sector); // Hook for linedef executors
-boolean LUAh_PlayerMsg(int source, int target, int flags, char *msg, int mute); // Hook for chat messages
-boolean LUAh_HurtMsg(player_t *player, mobj_t *inflictor, mobj_t *source); // Hook for hurt messages
-#define LUAh_PlayerSpawn(player) LUAh_PlayerHook(player, hook_PlayerSpawn) // Hook for G_SpawnPlayer
-void LUAh_PlayerQuit(player_t *plr, int reason); // Hook for player quitting
-boolean LUAh_MusicChange(const char *oldname, char *newname, UINT16 *mflags, boolean *looping,
-	UINT32 *position, UINT32 *prefadems, UINT32 *fadeinms); // Hook for music changes
+void LUA_HookVoid(int hook);
+void LUA_HookHUD(int hook, huddrawlist_h drawlist);
 
-UINT8 LUAh_ShouldSpin(player_t *player, mobj_t *inflictor, mobj_t *source); // SRB2KART: Should player be spun out?
-UINT8 LUAh_ShouldExplode(player_t *player, mobj_t *inflictor, mobj_t *source); // SRB2KART: Should player be exploded?
-UINT8 LUAh_ShouldSquish(player_t *player, mobj_t *inflictor, mobj_t *source); // SRB2KART: Should player be squished?
+int  LUA_HookMobj(mobj_t *, int hook);
+int  LUA_Hook2Mobj(mobj_t *, mobj_t *, int hook);
+void LUA_HookInt(INT32 integer, int hook);
+//void LUA_HookBool(boolean value, int hook);
+int  LUA_HookPlayer(player_t *, int hook);
+int  LUA_HookTiccmd(player_t *, ticcmd_t *, int hook);
 
-boolean LUAh_PlayerSpin(player_t *player, mobj_t *inflictor, mobj_t *source); // SRB2KART: Hook for K_SpinPlayer. Allows Lua to execute code and/or overwrite its behavior.
-boolean LUAh_PlayerExplode(player_t *player, mobj_t *inflictor, mobj_t *source); // SRB2KART: Hook for K_ExplodePlayer. Allows Lua to execute code and/or overwrite its behavior.
-boolean LUAh_PlayerSquish(player_t *player, mobj_t *inflictor, mobj_t *source); // SRB2KART: Hook for K_SquishPlayer. Allows Lua to execute code and/or overwrite its behavior.
+void LUA_HookPreThinkFrame(void);
+void LUA_HookThinkFrame(void);
+void LUA_HookPostThinkFrame(void);
+int  LUA_HookTouchSpecial(mobj_t *special, mobj_t *toucher);
+int  LUA_HookShouldDamage(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage);
+int  LUA_HookMobjDamage(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage);
+int  LUA_HookMobjDeath(mobj_t *target, mobj_t *inflictor, mobj_t *source);
+int  LUA_HookBotAI(mobj_t *sonic, mobj_t *tails, ticcmd_t *cmd);
+void LUA_HookLinedefExecute(line_t *, mobj_t *, sector_t *);
+int  LUA_HookPlayerMsg(int source, int target, int flags, char *msg, int mute);
+int  LUA_HookHurtMsg(player_t *, mobj_t *inflictor, mobj_t *source);
+int  LUA_HookPlayerCanDamage(player_t *, mobj_t *);
+void LUA_HookPlayerQuit(player_t *, int);
+int  LUA_HookPlayerCmd(player_t *, ticcmd_t *);
+int  LUA_HookMusicChange(const char *oldname, struct MusicChange *);
 
-void LUAh_ServerJoin(void); // SRB2KART - Saturn 32p: called by client when joining a server, allows lua to load any sort of config file
+int LUA_HookShouldSpin(player_t *player, mobj_t *inflictor, mobj_t *source); // SRB2KART: Should player be spun out?
+int LUA_HookShouldExplode(player_t *player, mobj_t *inflictor, mobj_t *source); // SRB2KART: Should player be exploded?
+int LUA_HookShouldSquish(player_t *player, mobj_t *inflictor, mobj_t *source); // SRB2KART: Should player be squished?
 
-boolean LUAh_PlayerCmd(player_t *player, ticcmd_t *cmd);	// Allows to write to player cmd before the game does anything with them.
-
-void LUAh_IntermissionThinker(void); // Hook for Y_Ticker
-void LUAh_VoteThinker(void);	// Hook for Y_VoteTicker
-#define LUAh_PlayerThink(player) LUAh_PlayerHook(player, hook_PlayerThink) // Hook for P_PlayerThink
+boolean LUA_HookPlayerSpin(player_t *player, mobj_t *inflictor, mobj_t *source); // SRB2KART: Hook for K_SpinPlayer. Allows Lua to execute code and/or overwrite its behavior.
+boolean LUA_HookPlayerExplode(player_t *player, mobj_t *inflictor, mobj_t *source); // SRB2KART: Hook for K_ExplodePlayer. Allows Lua to execute code and/or overwrite its behavior.
+boolean LUA_HookPlayerSquish(player_t *player, mobj_t *inflictor, mobj_t *source); // SRB2KART: Hook for K_SquishPlayer. Allows Lua to execute code and/or overwrite its behavior.

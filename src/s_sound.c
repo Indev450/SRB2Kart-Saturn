@@ -987,7 +987,7 @@ boolean S_AdjustSoundParams(const mobj_t *listener, const mobj_t *source, INT32 
 		INT64 x, y, yl, yh, xl, xh;
 		fixed_t newdist;
 
-		if (R_PointInSubsector(listensource.x, listensource.y)->sector->ceilingpic == skyflatnum)
+		if (R_PointInSubsectorFast(listensource.x, listensource.y)->sector->ceilingpic == skyflatnum)
 			approx_dist = 0;
 		else
 		{
@@ -1000,7 +1000,7 @@ boolean S_AdjustSoundParams(const mobj_t *listener, const mobj_t *source, INT32 
 			for (y = yl; y <= yh; y += FRACUNIT*64)
 				for (x = xl; x <= xh; x += FRACUNIT*64)
 				{
-					if (R_PointInSubsector(x, y)->sector->ceilingpic == skyflatnum)
+					if (R_PointInSubsectorFast(x, y)->sector->ceilingpic == skyflatnum)
 					{
 						// Found the outdoors!
 						newdist = S_CalculateSoundDistance(listensource.x, listensource.y, 0, x, y, 0);
@@ -1763,6 +1763,15 @@ void S_ChangeMusicEx(const char *mmusic, UINT16 mflags, boolean looping, UINT32 
 {
 	char newmusic[7] = {0};
 
+	struct MusicChange hook_param = {
+		newmusic,
+		&mflags,
+		&looping,
+		&position,
+		&prefadems,
+		&fadeinms
+	};
+
 	if (S_MusicDisabled()
 		|| demo.rewinding // Don't mess with music while rewinding!
 		|| demo.title) // SRB2Kart: Demos don't interrupt title screen music
@@ -1772,7 +1781,7 @@ void S_ChangeMusicEx(const char *mmusic, UINT16 mflags, boolean looping, UINT32 
 
 	S_CheckEventMus(newmusic);
 
-	if (LUAh_MusicChange(music_name, newmusic, &mflags, &looping, &position, &prefadems, &fadeinms))
+	if (LUA_HookMusicChange(music_name, &hook_param))
 		return;
 
  	// No Music (empty string)
@@ -1983,17 +1992,20 @@ boolean S_FadeOutStopMusic(UINT32 ms)
 	return false;
 }*/
 
-static INT16 oldmap = 0;
-static boolean oldencore = false;
 static boolean skipmusic = false;
 boolean skipintromus = false;
 
-static const char *musicexception_list[16] = {
+static const char *musicexception_list[17] = {
 	"vote", "voteea", "voteeb", "racent", "krwin",
 	"krok", "krlose", "krfail", "kbwin", "kbok",
-	"kblose", "kstart", "estart", "wait2j", "CHRSHP",
-	"CHRSHF"
+	"kblose", "kstart", "estart", "wait2j", "titles",
+	"CHRSHF", "CHRSHP" // no clue what those are tbh
 };
+
+void S_ResetKeepAndSpecialMus(void)
+{
+	keepmusic = skipintromus = false;
+}
 
 //checks for any kind of event music like intermission, vote etc.
 //always runs when musicchange gets invoked
@@ -2004,22 +2016,25 @@ static void S_CheckEventMus(const char *newmus)
 	if (!cv_keepmusic.value)
 		return;
 
-	for (int i = 0; i < 16; i++)
+	for (int i = 0; i < 17; i++)
 		if (stricmp(music_name, musicexception_list[i]) == 0 || stricmp(newmus, musicexception_list[i]) == 0) // weird? sure! but were lucky enough newmus reflects whats being replaced
 		{
 			skipmusic = true;
 			break;
 		}
 
-	//CONS_Printf("musname = %s\n", music_name);
+	//CONS_Printf("music_name = %s\n", music_name);
 	//CONS_Printf("newmus = %s\n", newmus);
-	//CONS_Printf("newmus = %d\n", skipmusic);
+	//CONS_Printf("skipmusic = %d\n", skipmusic);
 }
 
 //this one compares map and encoremode instead of the music itself
 //makes tunes work and stuff
 void S_CheckMap(void)
 {
+	static INT16 oldmap = 0;
+	static boolean oldencore = false;
+
 	if (!cv_keepmusic.value)
 	{
 		keepmusic = false;
@@ -2027,6 +2042,8 @@ void S_CheckMap(void)
 	}
 
 	keepmusic = (!skipmusic && gamestate == GS_LEVEL && oldmap == gamemap && oldencore == encoremode);
+
+	//CONS_Printf("keepmusic = %s\n", keepmusic);
 
 	oldencore = encoremode;
 	oldmap = gamemap;
@@ -2039,15 +2056,7 @@ void S_CheckMap(void)
 //
 void S_InitMapMusic(void)
 {
-	if (!cv_skipintromusic.value)
-		skipintromus = false;
-	else
-	{
-		char *maptitle = G_BuildMapTitle(gamemap);
-		skipintromus = cv_skipintromusic.value && stricmp(maptitle, "Wandering Falls") != 0; // thanks diggle!
-		if (maptitle)
-			Z_Free(maptitle);
-	}
+	skipintromus = false;
 
 	if (mapmusflags & MUSIC_RELOADRESET)
 	{
@@ -2065,6 +2074,15 @@ void S_InitMapMusic(void)
 	// lug: but not when we keep the map music lol
 	S_StopMusic();
 
+	if (cv_skipintromusic.value)
+	{
+		char *maptitle = G_BuildMapTitle(gamemap);
+		// for some reason, occasionally the title screen music doesent seem to be reset in time, so skipping the intro may make it just continue playing it instead, weird..
+		skipintromus = (stricmp(music_name, "titles") != 0) && (maptitle && (stricmp(maptitle, "Wandering Falls") != 0)); // thanks diggle!
+		if (maptitle)
+			Z_Free(maptitle);
+	}
+
 	if (skipintromus)
 		return;
 
@@ -2073,13 +2091,13 @@ void S_InitMapMusic(void)
 	//S_ChangeMusicEx((encoremode ? "estart" : "kstart"), 0, false, mapmusposition, 0, 0);
 }
 
-void S_StartMapMusic(boolean restore)
+void S_StartMapMusic(void)
 {
 	//no need to constantly run this after race has started
 	if (leveltime > MUSICSTARTTIME)
 		return;
 
-	if (keepmusic && !restore) // make sure this doesent kill the music when its called from P_RestoreMusic in some cases
+	if (keepmusic)
 		return;
 
 	if (skipintromus)
@@ -2113,6 +2131,8 @@ void S_RestartMusic(void)
 #else
 	S_SetMusicVolume(cv_digmusicvolume.value, cv_midimusicvolume.value);
 #endif
+
+	S_ResetKeepAndSpecialMus();
 
 	if (Playing()) // Gotta make sure the player is in a level
 		P_RestoreMusic(&players[consoleplayer]);
@@ -2218,6 +2238,8 @@ static void Command_RestartAudio_f(void)
 
 	S_StartSound(NULL, sfx_strpst);
 
+	S_ResetKeepAndSpecialMus();
+
 	if (Playing()) // Gotta make sure the player is in a level
 		P_RestoreMusic(&players[consoleplayer]);
 	else
@@ -2294,6 +2316,8 @@ static void GameDigiMusic_OnChange(void)
 		digital_disabled = false;
 		I_StartupSound(); // will return early if initialised
 		I_InitMusic();
+
+		S_ResetKeepAndSpecialMus();
 
 		if (Playing())
 			P_RestoreMusic(&players[consoleplayer]);
@@ -2380,6 +2404,9 @@ static void GameMIDIMusic_OnChange(void)
 	{
 		midi_disabled = false;
 		I_InitMusic();
+
+		S_ResetKeepAndSpecialMus();
+
 		if (Playing())
 			P_RestoreMusic(&players[consoleplayer]);
 		else

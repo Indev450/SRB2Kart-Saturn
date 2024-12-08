@@ -54,13 +54,13 @@ EXPORT void HWRAPI(CreateModelVBOs) (model_t *model);
 EXPORT void HWRAPI(SetTransform) (FTransform *stransform);
 EXPORT INT32 HWRAPI(GetTextureUsed) (void);
 
-EXPORT void HWRAPI(RenderSkyDome) (INT32 tex, INT32 texture_width, INT32 texture_height, FTransform transform);
+EXPORT void HWRAPI(RenderSkyDome) (gl_sky_t *sky);
 
 EXPORT void HWRAPI(FlushScreenTextures) (void);
 EXPORT void HWRAPI(DoScreenWipe) (int wipeStart, int wipeEnd);
 EXPORT void HWRAPI(DrawScreenTexture) (int tex, FSurfaceInfo *surf, FBITFIELD polyflags);
 EXPORT void HWRAPI(MakeScreenTexture) (int tex);
-EXPORT void HWRAPI(DrawScreenFinalTexture) (int tex, INT32 width, INT32 height);
+EXPORT void HWRAPI(DrawScreenFinalTexture) (int tex, INT32 width, INT32 height, boolean useshader);
 
 EXPORT void HWRAPI(RenderVhsEffect) (fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8 downdistort, UINT8 barsize);
 

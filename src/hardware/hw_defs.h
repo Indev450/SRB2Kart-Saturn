@@ -132,14 +132,14 @@ typedef struct
 {
 	FLOAT       x,y,z;           // position
 #ifdef USE_FTRANSFORM_ANGLEZ
-	FLOAT       anglex,angley,anglez;   // aimingangle / viewangle
-	FLOAT       anglex2,anglez2;        // secondaries
+	FLOAT       anglex, angley, anglez;   // aimingangle / viewangle
+	FLOAT       anglex2, anglez2;        // secondaries
 #else
-	FLOAT       anglex,angley;   // aimingangle / viewangle
+	FLOAT       anglex, angley;   // aimingangle / viewangle
 	FLOAT       anglex2;         // secondaries
 #endif
-	FLOAT       scalex,scaley,scalez;
-	FLOAT       spritexscale,spriteyscale;
+	FLOAT       scalex, scaley, scalez;
+	FLOAT       spritexscale, spriteyscale;
 	FLOAT       fovxangle, fovyangle;
 	UINT8       splitscreen;
 	boolean     flip;            // screenflip
@@ -164,6 +164,41 @@ typedef struct
 	FLOAT       s,t;
 } FOutVector;
 
+typedef struct vbo_vertex_s
+{
+	float x, y, z;
+	float u, v;
+	unsigned char r, g, b, a;
+} gl_skyvertex_t;
+
+typedef enum gl_skyloopmode_e
+{
+	HWD_SKYLOOP_FAN,
+	HWD_SKYLOOP_STRIP
+} gl_skyloopmode_t;
+
+typedef struct
+{
+	gl_skyloopmode_t mode;
+	int vertexcount;
+	int vertexindex;
+	boolean use_texture;
+} gl_skyloopdef_t;
+
+typedef struct
+{
+	unsigned int vbo;
+	int rows, columns;
+	int loopcount;
+
+	int detail, vertex_count;
+	int texture, width, height;
+	boolean rebuild; // VBO needs to be rebuilt
+
+	gl_skyloopdef_t *loops;
+	gl_skyvertex_t *data;
+} gl_sky_t;
+
 // Shader targets used to render specific types of geometry.
 // A shader target is resolved to an actual shader with HWR_GetShaderFromTarget.
 // The shader returned may be a base shader or a custom shader.
@@ -171,7 +206,6 @@ enum
 {
 	SHADER_NONE = -1,
 	SHADER_FLOOR = 0,
-	SHADER_SHADOW,
 	SHADER_WALL,
 	SHADER_SPRITE,
 	SHADER_MODEL,
@@ -201,7 +235,6 @@ enum hwdshaderstage
 };
 
 typedef enum hwdshaderstage hwdshaderstage_t;
-
 
 // ==========================================================================
 //                                                               RENDER MODES
@@ -341,6 +374,7 @@ enum hwdscreentexture
 	HWD_SCREENTEXTURE_WIPE_END,   // destination image for the wipe/fade effect
 	HWD_SCREENTEXTURE_GENERIC1,   // underwater/heat effect, intermission background
 	HWD_SCREENTEXTURE_GENERIC2,   // palette-based colormap fade, final screen texture
+	HWD_SCREENTEXTURE_VHS,
 	NUMSCREENTEXTURES,            // (generic3 is unused if palette rendering is disabled)
 };
 typedef enum hwdscreentexture hwdscreentexture_t;

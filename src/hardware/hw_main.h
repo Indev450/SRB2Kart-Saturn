@@ -105,6 +105,9 @@ void HWR_AddCommands(void);
 void HWR_RenderPlayerView(INT32 viewnumber, player_t *player);
 void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *player, int stencil_level, boolean allow_portals);
 
+void HWR_ClearSkyDome(void);
+void HWR_BuildSkyDome(void);
+
 void HWR_SetTransform(float fpov, player_t *player);
 void HWR_ClearClipper(void);
 void HWR_SetStencilState(int state, int level);
@@ -131,7 +134,7 @@ void HWR_DrawIntermissionBG(void);
 void HWR_DoWipe(UINT8 wipenum, UINT8 scrnnum);
 void HWR_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8 downdistort, UINT8 barsize);
 void HWR_MakeScreenFinalTexture(void);
-void HWR_DrawScreenFinalTexture(INT32 width, INT32 height);
+void HWR_DrawScreenFinalTexture(INT32 width, INT32 height, boolean useshader);
 
 // hw_main.c: Segs
 void HWR_ProcessSeg(void); // Sort of like GLWall::Process in GZDoom

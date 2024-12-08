@@ -63,7 +63,7 @@
 
 #include "md5.h" // map MD5
 
-// for LUAh_MapLoad
+// for MapLoad hook
 #include "lua_script.h"
 #include "lua_hook.h"
 
@@ -361,7 +361,11 @@ FUNCINLINE static ATTRINLINE void P_LoadRawVertexes(UINT8 *data)
   * \param seg Seg to compute length for.
   * \return Length in fracunits.
   */
+#if defined (WALLSPLATS) || defined (FLOORSPLATS)
 fixed_t P_SegLength(seg_t *seg)
+#else
+static inline fixed_t P_SegLength(seg_t *seg)
+#endif
 {
 	INT64 dx = (seg->v2->x - seg->v1->x)>>1;
 	INT64 dy = (seg->v2->y - seg->v1->y)>>1;
@@ -1443,15 +1447,22 @@ static void P_CreateBlockMap(void)
 	// First find limits of map
 	for (i = 0; i < numvertexes; i++)
 	{
-		if (vertexes[i].x>>FRACBITS < minx)
-			minx = vertexes[i].x>>FRACBITS;
-		else if (vertexes[i].x>>FRACBITS > maxx)
-			maxx = vertexes[i].x>>FRACBITS;
-		if (vertexes[i].y>>FRACBITS < miny)
-			miny = vertexes[i].y>>FRACBITS;
-		else if (vertexes[i].y>>FRACBITS > maxy)
-			maxy = vertexes[i].y>>FRACBITS;
+		fixed_t t;
+
+		if ((t = vertexes[i].x) < minx)
+			minx = t;
+		else if (t > maxx)
+			maxx = t;
+		if ((t = vertexes[i].y) < miny)
+			miny = t;
+		else if (t > maxy)
+			maxy = t;
 	}
+
+	minx >>= FRACBITS;
+	maxx >>= FRACBITS;
+	miny >>= FRACBITS;
+	maxy >>= FRACBITS;
 
 	// Save blockmap parameters
 	bmaporgx = minx << FRACBITS;
@@ -2327,7 +2338,7 @@ static void P_SetupCamera(UINT8 pnum, camera_t *cam)
 		cam->y = players[pnum].mo->y;
 		cam->z = players[pnum].mo->z;
 		cam->angle = players[pnum].mo->angle;
-		cam->subsector = R_PointInSubsector(cam->x, cam->y); // make sure camera has a subsector set -- Monster Iestyn (12/11/18)
+		cam->subsector = R_PointInSubsectorFast(cam->x, cam->y); // make sure camera has a subsector set -- Monster Iestyn (12/11/18)
 	}
 	else
 	{
@@ -2351,7 +2362,7 @@ static void P_SetupCamera(UINT8 pnum, camera_t *cam)
 		cam->y = thing->y;
 		cam->z = thing->z;
 		cam->angle = FixedAngle((fixed_t)thing->angle << FRACBITS);
-		cam->subsector = R_PointInSubsector(cam->x, cam->y); // make sure camera has a subsector set -- Monster Iestyn (12/11/18)
+		cam->subsector = R_PointInSubsectorFast(cam->x, cam->y); // make sure camera has a subsector set -- Monster Iestyn (12/11/18)
 	}
 }
 
@@ -2636,6 +2647,8 @@ boolean P_SetupLevel(boolean skipprecip, boolean reloadinggamestate)
 	R_ClearLevelSplats();
 #endif
 
+	mobjcache = NULL;
+
 	R_InitializeLevelInterpolators();
 
 	P_InitThinkers();
@@ -2863,7 +2876,7 @@ boolean P_SetupLevel(boolean skipprecip, boolean reloadinggamestate)
 		}
 		P_PreTicker(2);
 		if (!reloadinggamestate)
-			LUAh_MapLoad();
+			LUA_HookInt(gamemap, HOOK(MapLoad));
 	}
 
 	if (rendermode != render_none && !reloadinggamestate)

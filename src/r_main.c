@@ -299,32 +299,6 @@ static void Precipstuff_OnChange(void)
 }
 
 //
-// R_PointOnSide
-// Traverse BSP (sub) tree,
-// check point against partition plane.
-// Returns side 0 (front) or 1 (back).
-//
-// killough 5/2/98: reformatted
-//
-PUREFUNC INT32 R_PointOnSide(fixed_t x, fixed_t y, const node_t *restrict node)
-{
-	if (!node->dx)
-		return x <= node->x ? node->dy > 0 : node->dy < 0;
-
-	if (!node->dy)
-		return y <= node->y ? node->dx < 0 : node->dx > 0;
-
-	x -= node->x;
-	y -= node->y;
-
-	// Try to quickly decide by looking at sign bits.	
-	// also use a mask to avoid branch prediction
-	INT32 mask = (node->dy ^ node->dx ^ x ^ y) >> 31;
-	return (mask & ((node->dy ^ x) < 0)) |  // (left is negative)
-		(~mask & (FixedMul(y, node->dx>>FRACBITS) >= FixedMul(node->dy>>FRACBITS, x)));
-}
-
-//
 // R_PointToAngle
 // To get a global angle from cartesian coordinates,
 //  the coordinates are flipped until they are in
@@ -389,17 +363,19 @@ angle_t R_PointToAngle2(fixed_t pviewx, fixed_t pviewy, fixed_t x, fixed_t y)
 angle_t R_PlayerSliptideAngle(player_t *player)
 {
 	mobj_t *mo;
-    spritedef_t *sprdef;
-    spriteframe_t *sprframe;
-    angle_t ang = 0;
+	spritedef_t *sprdef;
+	spriteframe_t *sprframe;
+	angle_t ang = 0;
 
-    if (!cv_sliptideroll.value || !player || P_MobjWasRemoved(player->mo))
-        return 0;
+	if (!cv_sloperoll.value || !cv_sliptideroll.value || !player || P_MobjWasRemoved(player->mo))
+		return 0;
 
-    mo = player->mo;
+	mo = player->mo;
 
-    size_t rot = mo->frame & FF_FRAMEMASK;
-    boolean papersprite = (mo->frame & FF_PAPERSPRITE);
+	if (mo->player->sliproll == 0 || mo->player->kartstuff[k_aizdriftstrat] == 0)
+		return 0;
+
+	size_t rot = (mo->frame & FF_FRAMEMASK);
 
 	if (mo->skin && mo->sprite == SPR_PLAY)
 	{
@@ -416,7 +392,7 @@ angle_t R_PlayerSliptideAngle(player_t *player)
 	if (rot >= sprdef->numframes)
 	{
 		sprdef = &sprites[states[S_UNKNOWN].sprite];
-		rot = states[S_UNKNOWN].frame&FF_FRAMEMASK;
+		rot = (states[S_UNKNOWN].frame & FF_FRAMEMASK);
 	}
 
 	sprframe = &sprdef->spriteframes[rot];
@@ -424,10 +400,10 @@ angle_t R_PlayerSliptideAngle(player_t *player)
 	// No sprite frame? I guess it is possible
 	if (!sprframe) return 0;
 
-	if (sprframe->rotate != SRF_SINGLE || papersprite)
+	if (sprframe->rotate != SRF_SINGLE || (mo->frame & FF_PAPERSPRITE))
 		ang = R_PointToAngle(mo->x, mo->y) - mo->angle;
 
-	return FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), mo->player->sliproll*(mo->player->sliptidemem));
+	return FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), mo->player->sliproll * mo->player->kartstuff[k_aizdriftstrat]);
 }
 
 INT32 R_GetHudUncap(void)
@@ -1051,19 +1027,6 @@ void R_Init(void)
 }
 
 //
-// R_PointInSubsector
-//
-subsector_t *R_PointInSubsector(fixed_t x, fixed_t y)
-{
-	size_t nodenum = numnodes-1;
-
-	while (!(nodenum & NF_SUBSECTOR))
-		nodenum = nodes[nodenum].children[R_PointOnSide(x, y, nodes+nodenum)];
-
-	return &subsectors[nodenum & ~NF_SUBSECTOR];
-}
-
-//
 // R_IsPointInSubsector, same as above but returns 0 if not in subsector
 //
 subsector_t *R_IsPointInSubsector(fixed_t x, fixed_t y)
@@ -1073,16 +1036,13 @@ subsector_t *R_IsPointInSubsector(fixed_t x, fixed_t y)
 	size_t nodenum;
 	subsector_t *ret;
 
-	// single subsector is a special case
-	//if (numnodes == 0)
-		//return subsectors;
-
 	nodenum = numnodes - 1;
 
 	while (!(nodenum & NF_SUBSECTOR))
 	{
 		node = &nodes[nodenum];
-		side = R_PointOnSide(x, y, node);
+		//side = R_PointOnSide(x, y, node);
+		side = R_PointOnSideFast(x, y, node); // this is fine since R_IsPointInSubsector is only used for precip spawn unless you disable noclipcam lol
 		nodenum = node->children[side];
 	}
 
@@ -1570,7 +1530,6 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_driftsparkpulse);
 	CV_RegisterVar(&cv_gravstretch);
 	CV_RegisterVar(&cv_sloperoll);
-	CV_RegisterVar(&cv_spriteroll);
 	CV_RegisterVar(&cv_sliptideroll);
 	CV_RegisterVar(&cv_sloperolldist);
 	CV_RegisterVar(&cv_sparkroll);

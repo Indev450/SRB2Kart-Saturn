@@ -1357,9 +1357,7 @@ static void rendezvous(int size)
 
 	if (tic == refreshtic)
 	{
-		#ifdef HOLEPUNCH
 		holepunchpacket->magic = hole_punch_magic;
-		#endif
 		sendto(mysockets[0], doomcom->data, size, 0, &rzv.any, sizeof rzv.ip4);
 	}
 

@@ -1312,7 +1312,8 @@ void LUA_Archive(savebuffer_t *save, boolean network)
 		LUAh_NetArchiveHook(NetArchive, save); // call the NetArchive hook in archive mode
 	}
 
-	ArchiveTables(&save->p);
+	LUA_HookNetArchive(NetArchive); // call the NetArchive hook in archive mode
+	ArchiveTables();
 
 	if (gL)
 		lua_pop(gL, 1); // pop tables
@@ -1335,7 +1336,34 @@ void LUA_UnArchive(savebuffer_t *save, boolean network)
 		UnArchiveExtVars(&save->p, &players[i], network);
 	}
 
-	if (network == true)
+	do {
+		mobjnum = READUINT32(save_p); // read a mobjnum	
+		for (th = thinkercap.next; th != &thinkercap; th = th->next)
+		{
+			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+				continue;
+			if (((mobj_t *)th)->mobjnum != mobjnum) // find matching mobj
+				continue;
+			UnArchiveExtVars(th); // apply variables
+		}
+	} while(mobjnum != UINT32_MAX); // repeat until end of mobjs marker.
+
+	LUA_HookNetArchive(NetUnArchive); // call the NetArchive hook in unarchive mode
+	UnArchiveTables();
+
+	if (gL)
+		lua_pop(gL, 1); // pop tables
+}
+
+// simplified versions of LUA_Archive for demos
+void LUA_ArchiveDemo(void)
+{
+	INT32 i;
+
+	if (gL)
+		lua_newtable(gL); // tables to be archived.
+
+	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		do {
 			mobjnum = READUINT32(save->p); // read a mobjnum

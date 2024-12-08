@@ -72,7 +72,40 @@ extern lighttable_t *zlight[LIGHTLEVELS][MAXLIGHTZ];
 #define COLORMAP_REMAPOFFSET COLORMAP_SIZE
 
 // Utility functions.
-INT32 R_PointOnSide(fixed_t x, fixed_t y, const node_t *node);
+
+//
+// R_PointOnSide
+// Traverse BSP (sub) tree,
+// check point against partition plane.
+// Returns side 0 (front) or 1 (back).
+//
+// killough 5/2/98: reformatted
+//
+FUNCINLINE static ATTRINLINE PUREFUNC INT32 R_PointOnSide(fixed_t x, fixed_t y, const node_t *restrict node)
+{
+	if (!node->dx)
+		return x <= node->x ? node->dy > 0 : node->dy < 0;
+
+	if (!node->dy)
+		return y <= node->y ? node->dx < 0 : node->dx > 0;
+
+	x -= node->x;
+	y -= node->y;
+
+	// Try to quickly decide by looking at sign bits.
+	// also use a mask to avoid branch prediction
+	INT32 mask = (node->dy ^ node->dx ^ x ^ y) >> 31;
+	return (mask & ((node->dy ^ x) < 0)) |  // (left is negative)
+	(~mask & (FixedMul(y, node->dx>>FRACBITS) >= FixedMul(node->dy>>FRACBITS, x)));
+}
+
+// This is not as accurate
+// SHOULD NOT BE USED FOR ANYTHING GAMEPLAY RELATED!!
+FUNCINLINE static ATTRINLINE PUREFUNC INT32 R_PointOnSideFast(fixed_t x, fixed_t y, const node_t *node)
+{
+	// use cross product to determine side quickly
+	return ((INT64)y - node->y) * node->dx - ((INT64)x - node->x) * node->dy > 0;
+}
 
 FUNCINLINE static ATTRINLINE PUREFUNC INT32 R_PointOnSegSide(fixed_t x, fixed_t y, const seg_t *line)
 {
@@ -82,7 +115,7 @@ FUNCINLINE static ATTRINLINE PUREFUNC INT32 R_PointOnSegSide(fixed_t x, fixed_t 
     fixed_t ldy = line->v2->y - ly;
 
 	// use cross product to determine side quickly
-	return (INT64)(y - ly) * ldx - (INT64)(x - lx) * ldy > 0;
+	return ((INT64)y - ly) * ldx - ((INT64)x - lx) * ldy > 0;
 }
 
 angle_t R_PointToAngle(fixed_t x, fixed_t y);
@@ -91,12 +124,36 @@ angle_t R_PointToAngle2(fixed_t px2, fixed_t py2, fixed_t px1, fixed_t py1);
 angle_t R_PlayerSliptideAngle(player_t *player);
 
 fixed_t R_ScaleFromGlobalAngle(angle_t visangle);
-subsector_t *R_PointInSubsector(fixed_t x, fixed_t y);
+
 subsector_t *R_IsPointInSubsector(fixed_t x, fixed_t y);
+
+//
+// R_PointInSubsector
+//
+FUNCINLINE static ATTRINLINE subsector_t *R_PointInSubsector(fixed_t x, fixed_t y)
+{
+	size_t nodenum = numnodes-1;
+
+	while (!(nodenum & NF_SUBSECTOR))
+		nodenum = nodes[nodenum].children[R_PointOnSide(x, y, nodes+nodenum)];
+
+	return &subsectors[nodenum & ~NF_SUBSECTOR];
+}
+
+// uses R_PointOnSideFast
+// SHOULD NOT BE USED FOR ANYTHING GAMEPLAY RELATED!!
+FUNCINLINE static ATTRINLINE subsector_t *R_PointInSubsectorFast(fixed_t x, fixed_t y)
+{
+	size_t nodenum = numnodes-1;
+
+	while (!(nodenum & NF_SUBSECTOR))
+		nodenum = nodes[nodenum].children[R_PointOnSideFast(x, y, nodes+nodenum)];
+
+	return &subsectors[nodenum & ~NF_SUBSECTOR];
+}
 
 #define R_PointToDist(x, y) R_PointToDist2(viewx, viewy, x, y)
 #define R_PointToDist2(px2, py2, px1, py1) FixedHypot((px1) - (px2), (py1) - (py2))
-
 
 boolean R_DoCulling(line_t *cullheight, line_t *viewcullheight, fixed_t vz, fixed_t bottomh, fixed_t toph);
 void R_GetRenderBlockMapDimensions(fixed_t drawdist, INT32 *xl, INT32 *xh, INT32 *yl, INT32 *yh);

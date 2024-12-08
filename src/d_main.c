@@ -539,6 +539,8 @@ static boolean D_Display(void)
 		PS_START_TIMING(ps_uitime);
 		ST_Drawer();
 		HU_Drawer();
+
+		NetUpdate(); // TEST: run this EVERY frame
 	}
 	else
 	{
@@ -854,7 +856,7 @@ void D_SRB2Loop(void)
 		LUA_Step();
 
 #ifdef HAVE_DISCORDRPC
-		if (! dedicated)
+		if (!dedicated)
 		{
 			Discord_RunCallbacks();
 		}
@@ -963,6 +965,9 @@ void D_StartTitle(void)
 	//demosequence = -1;
 	gametype = GT_RACE; // SRB2kart
 	paused = false;
+
+	S_ResetKeepAndSpecialMus(); // just in case
+
 	F_StartTitleScreen();
 
 	// Reset the palette -- SRB2Kart: actually never mind let's do this in the middle of every fade

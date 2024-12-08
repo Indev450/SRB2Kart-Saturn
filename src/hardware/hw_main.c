@@ -3106,11 +3106,8 @@ static void HWR_RenderBSPNode(INT32 bspnum)
 	{
 		ps_numbspcalls.value.i++;
 
-		// Front sides.
-		while ((short)bspnum >= 0)
-		{
-			if (sp == MAX_BSP_DEPTH)
-				break;
+		// Decide which side the view point is on.
+		side = R_PointOnSideFast(viewx, viewy, bsp);
 
 			bsp = &nodes[bspnum];
 
@@ -3217,7 +3214,7 @@ static gl_vissprite_t *HWR_NewVisSprite(void)
 // Finds a floor through which light does not pass.
 static fixed_t HWR_OpaqueFloorAtPos(fixed_t x, fixed_t y, fixed_t z, fixed_t height)
 {
-	const sector_t *sec = R_PointInSubsector(x, y)->sector;
+	const sector_t *sec = R_PointInSubsectorFast(x, y)->sector;
 	fixed_t floorz = sec->floorheight;
 
 	if (sec->ffloors)
@@ -3258,8 +3255,6 @@ static void HWR_DrawSpriteShadow(gl_vissprite_t *spr, GLPatch_t *gpatch)
 	pslope_t *floorslope;
 	fixed_t slopez;
 	float offset = 0;
-	
-	INT32 shader = SHADER_NONE;
 
 	// technically this_scale gets multiplied and added to sprite y/x scale, but this thing needs it for some crap so ill just throw it in here again
 	const boolean hires = (spr->mobj && spr->mobj->skin && ((skin_t *)( (spr->mobj->localskin) ? spr->mobj->localskin : spr->mobj->skin ))->flags & SF_HIRES);
@@ -3267,7 +3262,7 @@ static void HWR_DrawSpriteShadow(gl_vissprite_t *spr, GLPatch_t *gpatch)
 		this_scale = FIXED_TO_FLOAT(spr->mobj->scale);
 	if (hires)
 		this_scale = this_scale * FIXED_TO_FLOAT(((skin_t *)( (spr->mobj->localskin) ? spr->mobj->localskin : spr->mobj->skin ))->highresscale);
-	
+
 	R_GetShadowZ(spr->mobj, &floorslope);
 
 	mobjfloor = HWR_OpaqueFloorAtPos(
@@ -3363,7 +3358,7 @@ static void HWR_DrawSpriteShadow(gl_vissprite_t *spr, GLPatch_t *gpatch)
 		swallVerts[0].z = spr->z1 + offset * gl_viewsin;
 		swallVerts[1].z = spr->z2 + offset * gl_viewsin;
 	}
-	
+
 	if (floorslope)
 	{
 		for (int i = 0; i < 4; i++)
@@ -3416,86 +3411,113 @@ static void HWR_DrawSpriteShadow(gl_vissprite_t *spr, GLPatch_t *gpatch)
 	if (sSurf.PolyColor.s.alpha > floorheight/4)
 	{
 		sSurf.PolyColor.s.alpha = (UINT8)(sSurf.PolyColor.s.alpha - floorheight/4);
-
-		if (HWR_UseShader())
-		{
-			shader = SHADER_SHADOW;
-			blendmode |= PF_ColorMapped;
-		}
-
-		HWR_ProcessPolygon(&sSurf, swallVerts, 4, blendmode|PF_Translucent|PF_Modulated, shader, false);
+		HWR_ProcessPolygon(&sSurf, swallVerts, 4, blendmode|PF_Translucent|PF_Modulated, SHADER_NONE, false);
 	}
 }
 
 // This is expecting a pointer to an array containing 4 wallVerts for a sprite
 static void HWR_RotateSpritePolyToAim(gl_vissprite_t *spr, FOutVector *wallVerts, const boolean precip)
 {
-	if (cv_glspritebillboarding.value && spr && spr->mobj && !(spr->mobj->frame & FF_PAPERSPRITE) && wallVerts)
+	if (!cv_glspritebillboarding.value || !spr || !spr->mobj || !wallVerts)
 	{
-		// uncapped/interpolation
-		interpmobjstate_t interp = {0};
-		float basey, lowy;
-		INT32 dist = -1;
+		return;
+	}
 
-		if (cv_maxinterpdist.value)
-			dist = R_QuickCamDist(spr->mobj->x, spr->mobj->y);
+	// uncapped/interpolation
+	interpmobjstate_t interp = {0};
+	float basey, lowy;
+	INT32 dist = -1;
 
-		// do interpolation
-		if (R_UsingFrameInterpolation() && !paused && (!cv_maxinterpdist.value || dist < cv_maxinterpdist.value))
+	if (cv_maxinterpdist.value)
+		dist = R_QuickCamDist(spr->mobj->x, spr->mobj->y);
+
+	// do interpolation
+	if (R_UsingFrameInterpolation() && !paused && (!cv_maxinterpdist.value || dist < cv_maxinterpdist.value))
+	{
+		if (precip)
 		{
-			if (precip)
-			{
-				R_InterpolatePrecipMobjState((precipmobj_t *)spr->mobj, rendertimefrac, &interp);
-			}
-			else
-			{
-				R_InterpolateMobjState(spr->mobj, rendertimefrac, &interp);
-			}
+			R_InterpolatePrecipMobjState((precipmobj_t *)spr->mobj, rendertimefrac, &interp);
 		}
 		else
 		{
-			if (precip)
-			{
-				R_InterpolatePrecipMobjState((precipmobj_t *)spr->mobj, FRACUNIT, &interp);
-			}
-			else
-			{
-				R_InterpolateMobjState(spr->mobj, FRACUNIT, &interp);
-			}
+			R_InterpolateMobjState(spr->mobj, rendertimefrac, &interp);
 		}
-
-		if (!precip && P_MobjFlip(spr->mobj) == -1) // precip doesn't have eflags so they can't flip
+	}
+	else
+	{
+		if (precip)
 		{
-			basey = FIXED_TO_FLOAT(interp.z + spr->mobj->height);
+			R_InterpolatePrecipMobjState((precipmobj_t *)spr->mobj, FRACUNIT, &interp);
 		}
 		else
 		{
-			basey = FIXED_TO_FLOAT(interp.z);
+			R_InterpolateMobjState(spr->mobj, FRACUNIT, &interp);
 		}
-		lowy = wallVerts[0].y;
+	}
 
-		// Rotate sprites to fully billboard with the camera
-		// X, Y, AND Z need to be manipulated for the polys to rotate around the
-		// origin, because of how the origin setting works I believe that should
-		// be mobj->z or mobj->z + mobj->height
-		wallVerts[2].y = wallVerts[3].y = (spr->gzt - basey) * gl_viewludsin + basey;
-		wallVerts[0].y = wallVerts[1].y = (lowy - basey) * gl_viewludsin + basey;
-		// translate back to be around 0 before translating back
-		wallVerts[3].x += ((spr->gzt - basey) * gl_viewludcos) * gl_viewcos;
-		wallVerts[2].x += ((spr->gzt - basey) * gl_viewludcos) * gl_viewcos;
+	if (!precip && P_MobjFlip(spr->mobj) == -1) // precip doesn't have eflags so they can't flip
+	{
+		basey = FIXED_TO_FLOAT(interp.z + spr->mobj->height);
+	}
+	else
+	{
+		basey = FIXED_TO_FLOAT(interp.z);
+	}
+	lowy = wallVerts[0].y;
 
-		wallVerts[0].x += ((lowy - basey) * gl_viewludcos) * gl_viewcos;
-		wallVerts[1].x += ((lowy - basey) * gl_viewludcos) * gl_viewcos;
+	// Rotate sprites to fully billboard with the camera
+	// X, Y, AND Z need to be manipulated for the polys to rotate around the
+	// origin, because of how the origin setting works I believe that should
+	// be mobj->z or mobj->z + mobj->height
+	wallVerts[2].y = wallVerts[3].y = (spr->gzt - basey) * gl_viewludsin + basey;
+	wallVerts[0].y = wallVerts[1].y = (lowy - basey) * gl_viewludsin + basey;
+	// translate back to be around 0 before translating back
+	wallVerts[3].x += ((spr->gzt - basey) * gl_viewludcos) * gl_viewcos;
+	wallVerts[2].x += ((spr->gzt - basey) * gl_viewludcos) * gl_viewcos;
 
-		wallVerts[3].z += ((spr->gzt - basey) * gl_viewludcos) * gl_viewsin;
-		wallVerts[2].z += ((spr->gzt - basey) * gl_viewludcos) * gl_viewsin;
+	wallVerts[0].x += ((lowy - basey) * gl_viewludcos) * gl_viewcos;
+	wallVerts[1].x += ((lowy - basey) * gl_viewludcos) * gl_viewcos;
 
-		wallVerts[0].z += ((lowy - basey) * gl_viewludcos) * gl_viewsin;
-		wallVerts[1].z += ((lowy - basey) * gl_viewludcos) * gl_viewsin;
+	wallVerts[3].z += ((spr->gzt - basey) * gl_viewludcos) * gl_viewsin;
+	wallVerts[2].z += ((spr->gzt - basey) * gl_viewludcos) * gl_viewsin;
+
+	wallVerts[0].z += ((lowy - basey) * gl_viewludcos) * gl_viewsin;
+	wallVerts[1].z += ((lowy - basey) * gl_viewludcos) * gl_viewsin;
+}
+
+static inline void HWR_ApplyDispoffset(gl_vissprite_t *spr, FOutVector *wallVerts, const boolean papersprite)
+{
+	// dont push papersprites near the cam unless they have a dispoffset
+	if (papersprite)
+	{
+		// if it has a dispoffset, push it a little towards the camera
+		if (spr->dispoffset)
+		{
+			float co = -gl_viewcos*(0.05f*spr->dispoffset);
+			float si = -gl_viewsin*(0.05f*spr->dispoffset);
+			wallVerts[0].z = wallVerts[3].z = wallVerts[0].z+si;
+			wallVerts[1].z = wallVerts[2].z = wallVerts[1].z+si;
+			wallVerts[0].x = wallVerts[3].x = wallVerts[0].x+co;
+			wallVerts[1].x = wallVerts[2].x = wallVerts[1].x+co;
+		}
+
+		return;
+	}
+
+	HWR_RotateSpritePolyToAim(spr, wallVerts, false);
+
+	float sprdist = sqrtf((spr->x1 - gl_viewx)*(spr->x1 - gl_viewx) + (spr->z1 - gl_viewy)*(spr->z1 - gl_viewy) + (spr->gzt - gl_viewz)*(spr->gzt - gl_viewz));
+	float distfact = ((2.0f*spr->dispoffset) + 20.0f) / sprdist;
+
+	for (size_t i = 0; i < 4; i++)
+	{
+		wallVerts[i].x += (gl_viewx - wallVerts[i].x)*distfact;
+		wallVerts[i].z += (gl_viewy - wallVerts[i].z)*distfact;
+		wallVerts[i].y += (gl_viewz - wallVerts[i].y)*distfact;
 	}
 }
 
-static void HWR_SplitSprite(gl_vissprite_t *spr)
+static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 {
 	FOutVector wallVerts[4];
 	FOutVector baseWallVerts[4]; // This is what the verts should end up as
@@ -3577,25 +3599,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr)
 	}
 
 	// push it toward the camera to mitigate floor-clipping sprites
-	if (papersprite)
-	{
-		// if it has a dispoffset, push it a little towards the camera
-		if (spr->dispoffset) {
-			float co = -gl_viewcos*(0.05f*spr->dispoffset);
-			float si = -gl_viewsin*(0.05f*spr->dispoffset);
-			baseWallVerts[0].z = baseWallVerts[3].z = baseWallVerts[0].z+si;
-			baseWallVerts[1].z = baseWallVerts[2].z = baseWallVerts[1].z+si;
-			baseWallVerts[0].x = baseWallVerts[3].x = baseWallVerts[0].x+co;
-			baseWallVerts[1].x = baseWallVerts[2].x = baseWallVerts[1].x+co;
-		}
-
-		// Let dispoffset work first since this adjust each vertex
-		HWR_RotateSpritePolyToAim(spr, baseWallVerts, false);
-	}
-	else
-	{
-		// Let dispoffset work first since this adjust each vertex
-		HWR_RotateSpritePolyToAim(spr, baseWallVerts, false);
+	HWR_ApplyDispoffset(spr, baseWallVerts, papersprite);
 
 		float sprdist = sqrtf((spr->x1 - gl_viewx)*(spr->x1 - gl_viewx) + (spr->z1 - gl_viewy)*(spr->z1 - gl_viewy) + (spr->gzt - gl_viewz)*(spr->gzt - gl_viewz));
 		float distfact = ((2.0f*spr->dispoffset) + 20.0f) / sprdist;
@@ -3724,7 +3728,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr)
 		wallVerts[1].y = endbot;
 
 		// The x and y only need to be adjusted in the case that it's not a papersprite
-		if (cv_glspritebillboarding.value && spr->mobj && !(spr->mobj->frame & FF_PAPERSPRITE))
+		if (cv_glspritebillboarding.value && spr->mobj && !papersprite)
 		{
 			// Get the x and z of the vertices so billboarding draws correctly
 			realheight = realbot - realtop;
@@ -3800,9 +3804,11 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 	if (!spr->mobj->subsector)
 		return;
 
+	const boolean papersprite = (spr->mobj->frame & FF_PAPERSPRITE);
+
 	if (spr->mobj->subsector->sector->numlights)
 	{
-		HWR_SplitSprite(spr);
+		HWR_SplitSprite(spr, papersprite);
 		return;
 	}
 
@@ -3871,26 +3877,7 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 	}
 
 	// push it toward the camera to mitigate floor-clipping sprites
-	if (papersprite) // but not for papersprites
-	{
-		// if it has a dispoffset, push it a little towards the camera
-		if (spr->dispoffset) {
-			float co = -gl_viewcos*(0.05f*spr->dispoffset);
-			float si = -gl_viewsin*(0.05f*spr->dispoffset);
-			wallVerts[0].z = wallVerts[3].z = wallVerts[0].z+si;
-			wallVerts[1].z = wallVerts[2].z = wallVerts[1].z+si;
-			wallVerts[0].x = wallVerts[3].x = wallVerts[0].x+co;
-			wallVerts[1].x = wallVerts[2].x = wallVerts[1].x+co;
-		}
-
-		// Let dispoffset work first since this adjust each vertex
-		HWR_RotateSpritePolyToAim(spr, wallVerts, false);
-	}
-	else
-	{
-		// Let dispoffset work first since this adjust each vertex
-		// ...nah
-		HWR_RotateSpritePolyToAim(spr, wallVerts, false);
+	HWR_ApplyDispoffset(spr, wallVerts, papersprite);
 
 		float sprdist = sqrtf((spr->x1 - gl_viewx)*(spr->x1 - gl_viewx) + (spr->z1 - gl_viewy)*(spr->z1 - gl_viewy) + (spr->gzt - gl_viewz)*(spr->gzt - gl_viewz));
 		float distfact = ((2.0f*spr->dispoffset) + 20.0f) / sprdist;
@@ -3983,7 +3970,6 @@ static inline void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 	wallVerts[0].z = wallVerts[3].z = spr->z1;
 	wallVerts[1].z = wallVerts[2].z = spr->z2;
 
-	// Let dispoffset work first since this adjust each vertex
 	HWR_RotateSpritePolyToAim(spr, wallVerts, true);
 
 	wallVerts[0].s = wallVerts[3].s = 0;
@@ -4510,12 +4496,11 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	size_t lumpoff;
 	unsigned rot;
 	UINT8 flip;
-	boolean vflip;
-	boolean mirrored;
-	boolean hflip;
 
-	angle_t ang, camang;
-	boolean papersprite;
+	angle_t ang = 0;
+#ifdef ROTSPRITE
+	angle_t camang = 0;
+#endif
 	INT32 heightsec, phs;
 	INT32 dist = -1;
 
@@ -4524,7 +4509,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 #ifdef ROTSPRITE
 	patch_t *rotsprite = NULL;
 	INT32 rollangle = 0;
-	angle_t rollsum = 0;
+	angle_t pitchnroll = 0;
 	angle_t sliptiderollangle = 0;
 #endif
 
@@ -4534,10 +4519,10 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	// uncapped/interpolation
 	interpmobjstate_t interp = {0};
 
-	vflip = (thing->eflags & MFE_VERTICALFLIP);
-	mirrored = thing->mirrored;
-	hflip = (!(thing->frame & FF_HORIZONTALFLIP) != !mirrored);
-	papersprite = (thing->frame & FF_PAPERSPRITE);
+	const boolean mirrored = thing->mirrored;
+	const boolean vflip = (thing->eflags & MFE_VERTICALFLIP);
+	const boolean hflip = (!(thing->frame & FF_HORIZONTALFLIP) != !mirrored);
+	const boolean papersprite = (thing->frame & FF_PAPERSPRITE);
 
 	if (cv_maxinterpdist.value)
 		dist = R_QuickCamDist(thing->x, thing->y);
@@ -4579,7 +4564,13 @@ static void HWR_ProjectSprite(mobj_t *thing)
 		I_Error("HWR_ProjectSprite: invalid sprite number %i ", thing->sprite);
 #endif
 
-	rot = thing->frame&FF_FRAMEMASK;
+	rot = (thing->frame & FF_FRAMEMASK);
+
+#ifdef ROTSPRITE
+	// determine here if sprite should rotate for optimization
+	const boolean sliprollrotate = (cv_sloperoll.value && cv_sliptideroll.value && (thing->player && thing->player->sliproll));
+	const boolean shouldrotate = (cv_sloperoll.value && (interp.roll || interp.pitch || interp.sloperoll || interp.slopepitch || thing->rollangle || sliprollrotate));
+#endif
 
 	//Fab : 02-08-98: 'skin' override spritedef currently used for skin
 	if ((thing->skin || thing->localskin) && thing->sprite == SPR_PLAY)
@@ -4607,7 +4598,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 #ifdef ROTSPRITE
 		sprinfo = &spriteinfo[thing->sprite];
 #endif
-		rot = thing->frame&FF_FRAMEMASK;
+		rot = (thing->frame & FF_FRAMEMASK);
 		thing->state->sprite = thing->sprite;
 		thing->state->frame = thing->frame;
 	}
@@ -4619,11 +4610,23 @@ static void HWR_ProjectSprite(mobj_t *thing)
 		I_Error("sprframes NULL for sprite %d\n", thing->sprite);
 #endif
 
-	ang = R_PointToAngle (interp.x, interp.y) - interp.angle;
-	camang = R_PointToAngle (interp.x, interp.y);
+	if (sprframe->rotate != SRF_SINGLE || papersprite ||
+#ifdef ROTSPRITE
+		(shouldrotate)
+#endif
+	)
+	{
+		ang = R_PointToAngle(interp.x, interp.y);
 
-	if (mirrored)
-		ang = InvAngle(ang);
+#ifdef ROTSPRITE
+		camang = ang;
+#endif
+
+		ang -= interp.angle;
+
+		if (mirrored)
+			ang = InvAngle(ang);
+	}
 
 	if (sprframe->rotate == SRF_SINGLE)
 	{
@@ -4662,25 +4665,32 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	spr_topoffset = spritecachedinfo[lumpoff].topoffset;
 
 #ifdef ROTSPRITE
-	if (cv_spriteroll.value)
+	if (shouldrotate)
 	{
-		rollangle = FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), interp.roll)
-			+ FixedMul(FINESINE((ang) >> ANGLETOFINESHIFT), interp.pitch)
-			+ FixedMul(FINECOSINE((camang) >> ANGLETOFINESHIFT), interp.sloperoll)
-			+ FixedMul(FINESINE((camang) >> ANGLETOFINESHIFT), interp.slopepitch)
-			+ thing->rollangle;
-
-		if ((rollangle)||(thing->player && thing->player->sliproll))
+		if (papersprite)
 		{
-			if (thing->player)
+			// a positive rollangle should should pitch papersprites upwards relative to their facing angle
+			rollangle = InvAngle(thing->rollangle);
+		}
+		else
+		{
+			// this is very messy, but it on-the-fly calculates rotations for all the
+			// pitch and roll variables
+			pitchnroll = R_RotationAngle(ang, camang, &interp);
+			rollangle = thing->rollangle;
+		}
+
+		if (rollangle || pitchnroll || sliprollrotate)
+		{
+			if (sliprollrotate)
 			{
-				sliptiderollangle = cv_sliptideroll.value ? thing->player->sliproll*(thing->player->sliptidemem) : 0;
-				rollsum = rollangle+FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), sliptiderollangle);
+				sliptiderollangle = thing->player->sliproll * thing->player->kartstuff[k_aizdriftstrat];
+				pitchnroll += rollangle + FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), sliptiderollangle);
 			}
 			else
-				rollsum = rollangle;
+				pitchnroll += rollangle;
 
-			rollangle = R_GetRollAngle(rollsum);
+			rollangle = R_GetRollAngle(pitchnroll);
 			rotsprite = Patch_GetRotatedSprite(sprframe, (thing->frame & FF_FRAMEMASK), rot, flip, false, sprinfo, rollangle);
 
 			if (rotsprite != NULL)
@@ -4787,7 +4797,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	vis->spriteyoffset = FIXED_TO_FLOAT(spr_topoffset);
 
 #ifdef ROTSPRITE
-	if ((rotsprite) && (cv_spriteroll.value))
+	if (rotsprite != NULL)
 		vis->gpatch = (GLPatch_t *)rotsprite;
 	else
 #endif
@@ -4913,7 +4923,7 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 		return;
 #endif
 
-	sprframe = &sprdef->spriteframes[ thing->frame & FF_FRAMEMASK];
+	sprframe = &sprdef->spriteframes[thing->frame & FF_FRAMEMASK];
 
 	// use single rotation for all views
 	lumpoff = sprframe->lumpid[0];
@@ -4968,40 +4978,188 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 	vis->precip = true;
 }
 
+
+// ==========================================================================
+// Sky dome rendering, ported from PrBoom+
+// ==========================================================================
+
+static gl_sky_t gl_sky;
+
+static void HWR_SkyDomeVertex(gl_sky_t *sky, gl_skyvertex_t *vbo, int r, int c, signed char yflip, float delta, boolean foglayer)
+{
+	const float radians = (float)(M_PIl / 180.0f);
+	const float scale = 10000.0f;
+	const float maxSideAngle = 60.0f;
+
+	float topAngle = (c / (float)sky->columns * 360.0f);
+	float sideAngle = (maxSideAngle * (sky->rows - r) / sky->rows);
+	float height = (float)(sin(sideAngle * radians));
+	float realRadius = (float)(scale * cos(sideAngle * radians));
+	float x = (float)(realRadius * cos(topAngle * radians));
+	float y = (!yflip) ? scale * height : -scale * height;
+	float z = (float)(realRadius * sin(topAngle * radians));
+	float timesRepeat = (4 * (256.0f / sky->width));
+	if (fpclassify(timesRepeat) == FP_ZERO)
+		timesRepeat = 1.0f;
+
+	if (!foglayer)
+	{
+		vbo->r = 255;
+		vbo->g = 255;
+		vbo->b = 255;
+		vbo->a = (r == 0 ? 0 : 255);
+
+		// And the texture coordinates.
+		vbo->u = (-timesRepeat * c / (float)sky->columns);
+		if (!yflip)	// Flipped Y is for the lower hemisphere.
+			vbo->v = (r / (float)sky->rows) + 0.5f;
+		else
+			vbo->v = 1.0f + ((sky->rows - r) / (float)sky->rows) + 0.5f;
+	}
+
+	if (r != 4)
+		y += 300.0f;
+
+	// And finally the vertex.
+	vbo->x = x;
+	vbo->y = y + delta;
+	vbo->z = z;
+}
+
+// Clears the sky dome.
+void HWR_ClearSkyDome(void)
+{
+	gl_sky_t *sky = &gl_sky;
+
+	if (sky->loops)
+		free(sky->loops);
+	if (sky->data)
+		free(sky->data);
+
+	sky->loops = NULL;
+	sky->data = NULL;
+
+	sky->vbo = 0;
+	sky->rows = sky->columns = 0;
+	sky->loopcount = 0;
+
+	sky->detail = 0;
+	sky->texture = -1;
+	sky->width = sky->height = 0;
+
+	sky->rebuild = true;
+}
+
+void HWR_BuildSkyDome(void)
+{
+	int c, r;
+	signed char yflip;
+	int row_count = 4;
+	int col_count = 4;
+	float delta;
+
+	gl_sky_t *sky = &gl_sky;
+	gl_skyvertex_t *vertex_p;
+	texture_t *texture = textures[texturetranslation[skytexture]];
+
+	sky->detail = 16;
+	col_count *= sky->detail;
+
+	if ((sky->columns != col_count) || (sky->rows != row_count))
+		HWR_ClearSkyDome();
+
+	sky->columns = col_count;
+	sky->rows = row_count;
+	sky->vertex_count = 2 * sky->rows * (sky->columns * 2 + 2) + sky->columns * 2;
+
+	if (!sky->loops)
+		sky->loops = malloc((sky->rows * 2 + 2) * sizeof(sky->loops[0]));
+
+	// create vertex array
+	if (!sky->data)
+		sky->data = malloc(sky->vertex_count * sizeof(sky->data[0]));
+
+	sky->texture = texturetranslation[skytexture];
+	sky->width = texture->width;
+	sky->height = texture->height;
+
+	vertex_p = &sky->data[0];
+	sky->loopcount = 0;
+
+	for (yflip = 0; yflip < 2; yflip++)
+	{
+		sky->loops[sky->loopcount].mode = HWD_SKYLOOP_FAN;
+		sky->loops[sky->loopcount].vertexindex = vertex_p - &sky->data[0];
+		sky->loops[sky->loopcount].vertexcount = col_count;
+		sky->loops[sky->loopcount].use_texture = false;
+		sky->loopcount++;
+
+		delta = 0.0f;
+
+		for (c = 0; c < col_count; c++)
+		{
+			HWR_SkyDomeVertex(sky, vertex_p, 1, c, yflip, 0.0f, true);
+			vertex_p->r = 255;
+			vertex_p->g = 255;
+			vertex_p->b = 255;
+			vertex_p->a = 255;
+			vertex_p++;
+		}
+
+		delta = (yflip ? 5.0f : -5.0f) / 128.0f;
+
+		for (r = 0; r < row_count; r++)
+		{
+			sky->loops[sky->loopcount].mode = HWD_SKYLOOP_STRIP;
+			sky->loops[sky->loopcount].vertexindex = vertex_p - &sky->data[0];
+			sky->loops[sky->loopcount].vertexcount = 2 * col_count + 2;
+			sky->loops[sky->loopcount].use_texture = true;
+			sky->loopcount++;
+
+			for (c = 0; c <= col_count; c++)
+			{
+				HWR_SkyDomeVertex(sky, vertex_p++, r + (yflip ? 1 : 0), (c ? c : 0), yflip, delta, false);
+				HWR_SkyDomeVertex(sky, vertex_p++, r + (yflip ? 0 : 1), (c ? c : 0), yflip, delta, false);
+			}
+		}
+	}
+}
+
 static boolean drewsky = false;
 
-static void HWR_DrawSkyBackground(float fpov)
+static void HWR_DrawSkyBackground(void)
 {
 	FTransform dometransform;
 
 	if (drewsky)
 		return;
 
-	memset(&dometransform, 0x00, sizeof(FTransform));
+	HWD.pfnSetBlend(PF_Translucent|PF_NoDepthTest|PF_Modulated);
+
+	memcpy(&dometransform, &atransform, sizeof(FTransform));
+
+	dometransform.x      = 0.0;
+	dometransform.y      = 0.0;
+	dometransform.z      = 0.0;
 
 	//04/01/2000: Hurdler: added for T&L
 	//                     It should replace all other gl_viewxxx when finished
 	HWR_SetTransformAiming(&dometransform);
 	dometransform.angley = (float)((viewangle-ANGLE_270)>>ANGLETOFINESHIFT)*(360.0f/(float)FINEANGLES);
 
-	dometransform.flip = atransform.flip;
-	dometransform.mirror = atransform.mirror;
-	dometransform.mirrorflip = atransform.mirrorflip;
-
-	dometransform.scalex = 1;
-	dometransform.scaley = (float)vid.width/vid.height;
-	dometransform.scalez = 1;
-	dometransform.fovxangle = fpov; // Tails
-	dometransform.fovyangle = fpov; // Tails
-	HWR_RollTransform(&dometransform, viewroll);
-	dometransform.splitscreen = splitscreen;
-
 	HWR_GetTexture(texturetranslation[skytexture], false);
-	if (HWR_UseShader())
-		HWD.pfnSetShader(HWR_GetShaderFromTarget(SHADER_SKY));// sky shader
-	HWD.pfnRenderSkyDome(skytexture, textures[skytexture]->width, textures[skytexture]->height, dometransform);
-}
 
+	if (gl_sky.texture != texturetranslation[skytexture])
+	{
+		HWR_ClearSkyDome();
+		HWR_BuildSkyDome();
+	}
+
+	if (HWR_UseShader())
+		HWD.pfnSetShader(HWR_GetShaderFromTarget(SHADER_SKY));
+	HWD.pfnSetTransform(&dometransform);
+	HWD.pfnRenderSkyDome(&gl_sky);
+}
 
 // -----------------+
 // HWR_ClearView : clear the viewwindow, with maximum z value. also clears stencil buffer.
@@ -5216,7 +5374,7 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *pl
 		HWR_SkyWallList_Clear();
 		HWR_SetStencilState(HWR_STENCIL_NORMAL, 1);
 		drewsky = false;
-		HWR_DrawSkyBackground(fpov);
+		HWR_DrawSkyBackground();
 		HWR_SetStencilState(HWR_STENCIL_NORMAL, 0);
 		HWD.pfnClearBuffer(false, false, true, 0);// clear skywall markings from the stencil buffer
 		HWR_SetTransform(fpov, player);// restore transform
@@ -5281,7 +5439,7 @@ static void HWR_RenderFrame(INT32 viewnumber, player_t *player, boolean skybox)
 	ST_doPaletteStuff();
 
 	// Draw the sky background.
-	HWR_DrawSkyBackground(fpov);
+	HWR_DrawSkyBackground();
 	if (skybox)
 		drewsky = true;
 
@@ -5378,6 +5536,10 @@ void HWR_LoadLevel(void)
 	HWR_FreeMipmapCache();
 
 	HWR_CreatePlanePolygons((INT32)numnodes - 1);
+
+	// Build the sky dome
+	HWR_ClearSkyDome();
+	HWR_BuildSkyDome();
 
 	if (HWR_ShouldUsePaletteRendering())
 		HWR_SetMapPalette();
@@ -5695,9 +5857,9 @@ void HWR_MakeScreenFinalTexture(void)
 	HWD.pfnMakeScreenTexture(HWD_SCREENTEXTURE_GENERIC2);
 }
 
-void HWR_DrawScreenFinalTexture(INT32 width, INT32 height)
+void HWR_DrawScreenFinalTexture(INT32 width, INT32 height, boolean useshader)
 {
-	HWD.pfnDrawScreenFinalTexture(HWD_SCREENTEXTURE_GENERIC2, width, height);
+	HWD.pfnDrawScreenFinalTexture(HWD_SCREENTEXTURE_GENERIC2, width, height, useshader);
 }
 
 #endif // HWRENDER

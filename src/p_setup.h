@@ -88,6 +88,11 @@ SINT8 P_PartialAddGetStage(void);
 
 boolean P_RunSOC(const char *socfilename);
 void P_WriteThings(lumpnum_t lump);
+
+#if defined (WALLSPLATS) || defined (FLOORSPLATS)
+fixed_t P_SegLength(seg_t *seg);
+#endif
+
 void P_UpdateSegLightOffset(seg_t *li);
 size_t P_PrecacheLevelFlats(void);
 void P_AllocMapHeader(INT16 i);
