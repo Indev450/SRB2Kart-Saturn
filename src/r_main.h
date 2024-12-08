@@ -72,7 +72,32 @@ extern lighttable_t *zlight[LIGHTLEVELS][MAXLIGHTZ];
 #define COLORMAP_REMAPOFFSET COLORMAP_SIZE
 
 // Utility functions.
-INT32 R_PointOnSide(fixed_t x, fixed_t y, const node_t *node);
+
+//
+// R_PointOnSide
+// Traverse BSP (sub) tree,
+// check point against partition plane.
+// Returns side 0 (front) or 1 (back).
+//
+// killough 5/2/98: reformatted
+//
+FUNCINLINE static ATTRINLINE PUREFUNC INT32 R_PointOnSide(fixed_t x, fixed_t y, const node_t *restrict node)
+{
+	if (!node->dx)
+		return x <= node->x ? node->dy > 0 : node->dy < 0;
+
+	if (!node->dy)
+		return y <= node->y ? node->dx < 0 : node->dx > 0;
+
+	x -= node->x;
+	y -= node->y;
+
+	// Try to quickly decide by looking at sign bits.
+	// also use a mask to avoid branch prediction
+	INT32 mask = (node->dy ^ node->dx ^ x ^ y) >> 31;
+	return (mask & ((node->dy ^ x) < 0)) |  // (left is negative)
+	(~mask & (FixedMul(y, node->dx>>FRACBITS) >= FixedMul(node->dy>>FRACBITS, x)));
+}
 
 // This is not as accurate
 // SHOULD NOT BE USED FOR ANYTHING GAMEPLAY RELATED!!
@@ -99,8 +124,21 @@ angle_t R_PointToAngle2(fixed_t px2, fixed_t py2, fixed_t px1, fixed_t py1);
 angle_t R_PlayerSliptideAngle(player_t *player);
 
 fixed_t R_ScaleFromGlobalAngle(angle_t visangle);
-subsector_t *R_PointInSubsector(fixed_t x, fixed_t y);
+
 subsector_t *R_IsPointInSubsector(fixed_t x, fixed_t y);
+
+//
+// R_PointInSubsector
+//
+FUNCINLINE static ATTRINLINE subsector_t *R_PointInSubsector(fixed_t x, fixed_t y)
+{
+	size_t nodenum = numnodes-1;
+
+	while (!(nodenum & NF_SUBSECTOR))
+		nodenum = nodes[nodenum].children[R_PointOnSide(x, y, nodes+nodenum)];
+
+	return &subsectors[nodenum & ~NF_SUBSECTOR];
+}
 
 // uses R_PointOnSideFast
 // SHOULD NOT BE USED FOR ANYTHING GAMEPLAY RELATED!!
