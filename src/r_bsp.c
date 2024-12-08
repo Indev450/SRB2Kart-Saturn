@@ -1316,78 +1316,39 @@ INT32 R_GetPlaneLight(sector_t *sector, fixed_t planeheight, boolean underside)
 // Renders all subsectors below a given node,
 //  traversing subtree recursively.
 // Just call with BSP root.
-
-#define MAX_BSP_DEPTH 112
+//
+// killough 5/2/98: reformatted, removed tail recursion
 
 void R_RenderBSPNode(INT32 bspnum)
 {
-	node_t *bsp;
-	INT32 stack_bsp[MAX_BSP_DEPTH];
-	INT32 stack_side[MAX_BSP_DEPTH];
-	int sp = 0;
+	const node_t *bsp;
+	INT32 side;
 
-	while (true)
+	ps_numbspcalls.value.i++;
+
+	while (!(bspnum & NF_SUBSECTOR))  // Found a subsector?
 	{
-		// Front sides.
-		while ((short)bspnum >= 0)
-		{
-			if (sp == MAX_BSP_DEPTH)
-				break;
+		bsp = &nodes[bspnum];
 
-			bsp = &nodes[bspnum];
-
-			// Decide which side the view point is on.
-			const INT32 side = R_PointOnSideFast(viewx, viewy, bsp);
-
-			stack_bsp[sp] = bspnum;
-			stack_side[sp] = side ^ 1;
-
-			sp++;
-
-			bspnum = bsp->children[side];
-		}
-
-		// PORTAL CULLING
-		if (portalcullsector)
-		{
-			if (subsectors[bspnum & ~NF_SUBSECTOR].sector != portalcullsector)
-				goto skipsubsector;
-			portalcullsector = NULL;
-		}
-
-		R_Subsector(bspnum == -1 ? 0 : bspnum & ~NF_SUBSECTOR);
-
-skipsubsector:
-		if (sp == 0)
-		{
-			// back at root node and not visible. All done!
-			return;
-		}
-
-		// Back sides.
-
-		sp--;
-
-		bsp = &nodes[stack_bsp[sp]];
+		// Decide which side the view point is on.
+		side = R_PointOnSideFast(viewx, viewy, bsp);
+		// Recursively divide front space.
+		R_RenderBSPNode(bsp->children[side]);
 
 		// Possibly divide back space.
-		// Walk back up the tree until we find
-		// a node that has a visible backspace.
-		while (!R_CheckBBox(bsp->bbox[stack_side[sp]]))
-		{
-			if (sp == 0)
-			{
-				// back at root node and not visible. All done!
-				return;
-			}
+		if (!R_CheckBBox(bsp->bbox[side^1]))
+			return;
 
-			// Back side next.
-
-			sp--;
-
-			bsp = &nodes[stack_bsp[sp]];
-		}
-
-		bspnum = bsp->children[stack_side[sp]];
+		bspnum = bsp->children[side^1];
 	}
+
+	// PORTAL CULLING
+	if (portalcullsector)
+	{
+		if (subsectors[bspnum & ~NF_SUBSECTOR].sector != portalcullsector)
+			return;
+		portalcullsector = NULL;
+	}
+
+	R_Subsector(bspnum == -1 ? 0 : bspnum & ~NF_SUBSECTOR);
 }
