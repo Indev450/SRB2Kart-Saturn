@@ -299,17 +299,14 @@ static boolean P_CrossSubsector(size_t num, register los_t *los)
 //  if strace crosses the given node successfully.
 //
 // killough 4/20/98: rewritten to remove tail recursion, clean up, and optimize
-// cph - Made to use R_PointOnSide instead of P_DivlineSide, since the latter
-//  could return 2 which was ambigous, and the former is
-//  better optimised; also removes two casts :-)
-
-static boolean P_CrossBSPNode(INT32 bspnum, register los_t *los)
+static boolean P_CrossBSPNode(INT32 bspnum, register los_t *los, boolean fast)
 {
 	while (!(bspnum & NF_SUBSECTOR))
 	{
 		register node_t *bsp = nodes + bspnum;
-		INT32 side = R_PointOnSide(los->strace.x, los->strace.y, bsp);
-		INT32 side2 = R_PointOnSide(los->t2x, los->t2y, bsp);
+
+		INT32 side = fast ? R_PointOnSideFast(los->strace.x, los->strace.y, bsp) : (P_DivlineSide(los->strace.x,los->strace.y,(divline_t *)bsp) & 1);
+		INT32 side2 = fast ? R_PointOnSideFast(los->t2x, los->t2y, bsp) : P_DivlineSide(los->t2x, los->t2y, (divline_t *) bsp);
 
 		if (side == side2)
 		{
@@ -319,13 +316,13 @@ static boolean P_CrossBSPNode(INT32 bspnum, register los_t *los)
 		else
 		{
 			// the partition plane is crossed here
-			if (!P_CrossBSPNode(bsp->children[side], los))
+			if (!P_CrossBSPNode(bsp->children[side], los, fast))
 			{
-				return false;  // cross the starting side
+				return false; // cross the starting side
 			}
 			else
 			{
-				bspnum = bsp->children[side ^ 1];  // cross the ending side
+				bspnum = bsp->children[side ^ 1]; // cross the ending side
 			}
 		}
 	}
@@ -339,15 +336,18 @@ static boolean P_CrossBSPNode(INT32 bspnum, register los_t *los)
 // Returns true if a straight line between t1 and t2 is unobstructed.
 // Uses REJECT.
 //
-boolean P_CheckSight(mobj_t *t1, mobj_t *t2)
+boolean P_CheckSight2(mobj_t *t1, mobj_t *t2, boolean fast)
 {
 	const sector_t *s1, *s2;
 	size_t pnum;
 	los_t los;
 
 	// First check for trivial rejection.
-	if (P_MobjWasRemoved(t1) == true || P_MobjWasRemoved(t2) == true)
+	if (!t1 || !t2)
 		return false;
+
+	I_Assert(!P_MobjWasRemoved(t1));
+	I_Assert(!P_MobjWasRemoved(t2));
 
 	if (!t1->subsector || !t2->subsector
 	|| !t1->subsector->sector || !t2->subsector->sector)
@@ -453,5 +453,5 @@ boolean P_CheckSight(mobj_t *t1, mobj_t *t2)
 	}
 
 	// the head node is the last node output
-	return P_CrossBSPNode((INT32)numnodes - 1, &los);
+	return (P_CrossBSPNode((INT32)numnodes - 1, &los, fast));
 }
