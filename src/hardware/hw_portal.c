@@ -23,7 +23,7 @@
 #include "../z_zone.h"
 
 #include "hw_clip.h"
-#include "hw_gpu.h"
+#include "hw_gl.h"
 #include "hw_defs.h"
 #include "hw_main.h"
 #include "hw_portal.h"

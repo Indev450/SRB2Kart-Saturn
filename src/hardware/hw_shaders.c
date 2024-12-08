@@ -13,7 +13,7 @@
 
 #include "hw_main.h"
 #include "hw_glob.h"
-#include "hw_gpu.h"
+#include "hw_gl.h"
 #include "hw_shaders.h"
 #include "../z_zone.h"
 

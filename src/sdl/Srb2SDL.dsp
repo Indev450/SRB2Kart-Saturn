@@ -572,7 +572,7 @@ SOURCE=..\hardware\hw_draw.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\hardware\hw_gpu.h
+SOURCE=..\hardware\hw_gl.h
 # End Source File
 # Begin Source File
 

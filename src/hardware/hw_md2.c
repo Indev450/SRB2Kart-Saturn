@@ -25,7 +25,8 @@
 #include "../doomstat.h"
 
 #ifdef HWRENDER
-#include "hw_gpu.h"
+
+#include "hw_gl.h"
 #include "hw_md2.h"
 #include "../d_main.h"
 #include "../r_bsp.h"
@@ -44,8 +45,8 @@
 
 #include "hw_main.h"
 #include "../v_video.h"
-#ifdef HAVE_PNG
 
+#ifdef HAVE_PNG
 #ifndef _MSC_VER
 #ifndef _LARGEFILE64_SOURCE
 #define _LARGEFILE64_SOURCE
