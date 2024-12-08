@@ -261,8 +261,7 @@ void OglSdlFinishUpdate(boolean waitvbl)
 	}
 #endif
 
-	//HWR_DrawScreenFinalTexture(sdlw, sdlh);
-	GL_DrawScreenFinalTexture(HWD_SCREENTEXTURE_GENERIC2, sdlw, sdlh, true);
+	GL_DrawScreenFinalTexture(HWD_SCREENTEXTURE_GENERIC2, sdlw, sdlh, HWR_ShouldUsePaletteRendering());
 
 #ifdef USE_FBO_OGL
 	if (UseScreenFBO())
