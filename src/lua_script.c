@@ -35,6 +35,14 @@
 
 #include "doomstat.h"
 
+#ifndef NOBLUAJIT
+#include "d_main.h"
+#include "i_system.h"
+static void LuaJit_OnChange(void);
+static void print_jit_status(boolean verbose);
+consvar_t cv_luajit = {"luajit", "On", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, LuaJit_OnChange, 0, NULL, NULL, 0, 0, NULL};
+#endif
+
 lua_State *gL = NULL;
 
 // Mathlib global state
@@ -60,6 +68,21 @@ static lua_CFunction liblist[] = {
 	LUA_HudLib, // HUD stuff
 	NULL
 };
+
+#ifndef NOBLUAJIT
+static void LuaJit_OnChange(void)
+{
+	if (!gL)
+		LUA_ClearState();
+	lua_getfield(gL, LUA_REGISTRYINDEX, "_LOADED");
+	lua_getfield(gL, -1, "jit");
+	lua_remove(gL, -2);
+	lua_getfield(gL, -1, cv_luajit.value ? "on" : "off");
+	lua_remove(gL, -2);
+	lua_call(gL, 0, 0);
+	print_jit_status(false);
+}
+#endif
 
 // Lua asks for memory using this.
 static void *LUA_Alloc(void *ud, void *ptr, size_t osize, size_t nsize)
@@ -185,6 +208,29 @@ static int noglobals(lua_State *L)
 	return luaL_error(L, "Implicit global " LUA_QS " prevented. Create a local variable instead.", csname);
 }
 
+#ifndef NOBLUAJIT
+// print all the ISA extensions because it looks cool!
+// absolutely not stolen from luajit.c
+static void print_jit_status(boolean verbose)
+{
+	int n;
+	const char *s;
+	lua_getfield(gL, LUA_REGISTRYINDEX, "_LOADED");
+	lua_getfield(gL, -1, "jit");  /* Get jit.* module table. */
+	lua_remove(gL, -2);
+	lua_getfield(gL, -1, "status");
+	lua_remove(gL, -2);
+	n = lua_gettop(gL);
+	lua_call(gL, 0, LUA_MULTRET);
+	CONS_Printf(lua_toboolean(gL, n) ? "JIT: ON" : "JIT: OFF");
+	if (verbose)
+		for (n++; (s = lua_tostring(gL, n)); n++)
+			CONS_Printf(" %s", s);
+	CONS_Printf("\n");
+	lua_settop(gL, 0);  /* clear stack */
+}
+#endif
+
 // Clear and create a new Lua state, laddo!
 // There's SCRIPTIN to be had!
 void LUA_ClearState(void)
@@ -227,6 +273,10 @@ void LUA_ClearState(void)
 
 	// lua state is ready!
 	gL = L;
+
+#ifndef NOBLUAJIT
+	print_jit_status(true);
+#endif
 }
 
 #ifdef _DEBUG
@@ -394,6 +444,9 @@ fixed_t LUA_EvalMath(const char *word)
 		if (*p == '^')
 			*b++ = '^';
 	}
+	// length of word is zero!?
+	if (p == word)
+		return 0;
 	*b = '\0';
 
 	// eval string.

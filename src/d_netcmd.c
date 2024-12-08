@@ -846,6 +846,10 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_demochangemap);
 
 	CV_RegisterVar(&cv_keyboardlayout);
+
+#ifndef NOBLUAJIT
+	CV_RegisterVar(&cv_luajit);
+#endif
 }
 
 // =========================================================================

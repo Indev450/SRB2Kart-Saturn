@@ -15,9 +15,19 @@
 #include "d_player.h"
 #include "p_saveg.h"
 
+#ifdef NOBLUAJIT
 #include "blua/lua.h"
 #include "blua/lualib.h"
 #include "blua/lauxlib.h"
+#else
+#include "command.h"
+#include "bluajit/lua.h"
+#include "bluajit/lualib.h"
+#include "bluajit/lauxlib.h"
+#define abs_index(L, i)		((i) > 0 || (i) <= LUA_REGISTRYINDEX ? (i) : \
+					lua_gettop(L) + (i) + 1)
+extern consvar_t cv_luajit;
+#endif
 
 #define lua_optboolean(L, i) (!lua_isnoneornil(L, i) && lua_toboolean(L, i))
 #define lua_opttrueboolean(L, i) (lua_isnoneornil(L, i) || lua_toboolean(L, i))
