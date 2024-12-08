@@ -131,8 +131,6 @@ extern GLbyte			screen_depth;
 extern GLint			maximumAnisotropy;
 extern boolean 			supportMipMap;
 
-extern struct GPURenderingAPI GLInterfaceAPI;
-
 /**	\brief OpenGL flags for video driver
 */
 extern INT32            oglflags;
