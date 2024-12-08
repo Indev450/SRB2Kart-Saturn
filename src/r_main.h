@@ -125,8 +125,49 @@ angle_t R_PlayerSliptideAngle(player_t *player);
 
 fixed_t R_ScaleFromGlobalAngle(angle_t visangle);
 
-boolean R_IsPointInSector(sector_t *sector, fixed_t x, fixed_t y);
-subsector_t *R_IsPointInSubsector(fixed_t x, fixed_t y);
+//
+// R_IsPointInSector
+//
+FUNCINLINE static ATTRINLINE boolean R_IsPointInSector(sector_t *sector, fixed_t x, fixed_t y)
+{
+	size_t i;
+	size_t passes = 0;
+
+	for (i = 0; i < sector->linecount; i++)
+	{
+		line_t *line = sector->lines[i];
+		vertex_t *v1, *v2;
+
+		if (line->frontsector == line->backsector)
+			continue;
+
+		v1 = line->v1;
+		v2 = line->v2;
+
+		// make sure v1 is below v2
+		if (v1->y > v2->y)
+		{
+			vertex_t *tmp = v1;
+			v1 = v2;
+			v2 = tmp;
+		}
+		else if (v1->y == v2->y) // horizontal line, we can't match this
+			continue;
+
+		if (v1->y < y && y <= v2->y)
+		{
+			// if the y axis in inside the line, find the point where we intersect on the x axis...
+			fixed_t vx = v1->x + (INT64)(v2->x - v1->x) * (y - v1->y) / (v2->y - v1->y);
+
+			// ...and if that point is to the left of the point, count it as inside.
+			if (vx < x)
+				passes++;
+		}
+	}
+
+	// and odd number of passes means we're inside the polygon.
+	return passes % 2;
+}
 
 //
 // R_PointInSubsector
@@ -151,6 +192,34 @@ FUNCINLINE static ATTRINLINE subsector_t *R_PointInSubsectorFast(fixed_t x, fixe
 		nodenum = nodes[nodenum].children[R_PointOnSideFast(x, y, nodes+nodenum)];
 
 	return &subsectors[nodenum & ~NF_SUBSECTOR];
+}
+
+//
+// R_IsPointInSubsector, same as above but returns 0 if not in subsector
+//
+FUNCINLINE static ATTRINLINE subsector_t *R_IsPointInSubsector(fixed_t x, fixed_t y)
+{
+	node_t *node;
+	INT32 side, i;
+	size_t nodenum;
+	subsector_t *ret;
+
+	nodenum = numnodes - 1;
+
+	while (!(nodenum & NF_SUBSECTOR))
+	{
+		node = &nodes[nodenum];
+		//side = R_PointOnSide(x, y, node);
+		side = R_PointOnSideFast(x, y, node); // this is fine since R_IsPointInSubsector is only used for precip spawn unless you disable noclipcam lol
+		nodenum = node->children[side];
+	}
+
+	ret = &subsectors[nodenum & ~NF_SUBSECTOR];
+	for (i = 0; i < ret->numlines; i++)
+		if (P_PointOnLineSide(x, y, segs[ret->firstline + i].linedef) != segs[ret->firstline + i].side)
+			return 0;
+
+	return ret;
 }
 
 #define R_PointToDist(x, y) R_PointToDist2(viewx, viewy, x, y)

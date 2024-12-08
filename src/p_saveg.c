@@ -296,7 +296,7 @@ static void P_NetArchivePlayers(savebuffer_t *save, boolean resending)
 //
 // P_NetUnArchivePlayers
 //
-static void P_NetUnArchivePlayers(boolean reloading)
+static void P_NetUnArchivePlayers(savebuffer_t *save, boolean reloading)
 {
 	INT32 i, j;
 	UINT16 flags;
@@ -307,7 +307,7 @@ static void P_NetUnArchivePlayers(boolean reloading)
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		if (reloading)
-			adminplayers[i] = (INT32)READSINT8(save_p);
+			adminplayers[i] = (INT32)READSINT8(save->p);
 
 		// Do NOT memset player struct to 0
 		// other areas may initialize data elsewhere
@@ -318,7 +318,7 @@ static void P_NetUnArchivePlayers(boolean reloading)
 		// NOTE: sending tics should (hopefully) no longer be necessary
 
 		if (reloading)
-			READSTRINGN(save_p, player_names[i], MAXPLAYERNAME);
+			READSTRINGN(save->p, player_names[i], MAXPLAYERNAME);
 
 		players[i].aiming = READANGLE(save->p);
 		players[i].awayviewaiming = READANGLE(save->p);

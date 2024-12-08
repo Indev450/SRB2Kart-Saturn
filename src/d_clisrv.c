@@ -3123,9 +3123,6 @@ void CL_RemovePlayer(INT32 playernum, INT32 reason)
 	if (playernum == displayplayers[0] && !demo.playback)
 		displayplayers[0] = consoleplayer; // don't look through someone's view who isn't there
 
-	if (playernum == displayplayers[0] && !demo.playback)
-		displayplayers[0] = consoleplayer; // don't look through someone's view who isn't there
-
 	// Reset player data
 	CL_ClearPlayer(playernum);
 

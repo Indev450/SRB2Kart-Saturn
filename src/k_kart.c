@@ -9598,7 +9598,7 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 	fixed_t scale = FRACUNIT;
 
 	if (mo->skin)
-		skin = ((skin_t*)((mo->localskin) ? mo->localskin : mo->skin))-(skinlocal ? localskins : skins);
+		skin = ((skin_t*)(mo->localskin ? mo->localskin : mo->skin))-(skinlocal ? localskins : skins);
 
 	amnumxpos = (FixedMul(lerp(mo->old_x, mo->x), minimapinfo.zoom) - minimapinfo.offs_x);
 	amnumypos = -(FixedMul(lerp(mo->old_y, mo->y), minimapinfo.zoom) - minimapinfo.offs_y);

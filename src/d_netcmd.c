@@ -3926,7 +3926,9 @@ void SetAdminPlayer(INT32 playernum)
 
 void ClearAdminPlayers(void)
 {
-	memset(adminplayers, -1, sizeof(adminplayers));
+	INT32 i;
+	for (i = 0; i < MAXPLAYERS; i++)
+		adminplayers[i] = -1;
 }
 
 void RemoveAdminPlayer(INT32 playernum)

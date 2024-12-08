@@ -1689,11 +1689,13 @@ INT32 G_CountPlayersPotentiallyViewable(boolean active)
 static void G_FixCamera(UINT8 view)
 {
 	player_t *player = &players[displayplayers[view - 1]];
+
 	// The order of displayplayers can change, which would
 	// invalidate localangle.
 	localangle[view - 1] = (angle_t)(player->cmd.angleturn << 16);
 
 	P_ResetCamera(player, &camera[view - 1]);
+
 	// Make sure the viewport doesn't interpolate at all into
 	// its new position -- just snap instantly into place.
 	R_ResetViewInterpolation(view);
@@ -5891,7 +5893,7 @@ void G_RecordDemo(const char *name)
 {
 	INT32 maxsize;
 
-	demo_p = NULL;
+	demobuf.p = NULL;
 	G_ResetDemoRecording();
 	demoend = NULL;
 
@@ -5904,8 +5906,8 @@ void G_RecordDemo(const char *name)
 
 		maxsize = cv_maxdemosize.value*1024*1024;
 
-		demobuffer = Z_Malloc(maxsize, PU_STATIC, NULL);
-		demoend = demobuffer + maxsize;
+		demobuf.buffer = Z_Malloc(maxsize, PU_STATIC, NULL);
+		demoend = demobuf.buffer + maxsize;
 
 		if (demobuf.buffer)
 			demo.recording = true;
@@ -5918,12 +5920,12 @@ void G_RecordMetal(void)
 {
 	INT32 maxsize;
 	maxsize = cv_maxdemosize.value*1024*1024;
-	if (demobuffer)
-		Z_Free(demobuffer);
-	demo_p = NULL;
+	if (demobuf.buffer)
+		Z_Free(demobuf.buffer);
+	demobuf.p = NULL;
 	metalrecording = false;
-	demobuffer = Z_Malloc(maxsize, PU_STATIC, NULL);
-	demoend = demobuffer + maxsize;
+	demobuf.buffer = Z_Malloc(maxsize, PU_STATIC, NULL);
+	demoend = demobuf.buffer + maxsize;
 
 	if (demobuf.buffer)
 		metalrecording = true;
@@ -5966,12 +5968,9 @@ void G_BeginRecording(void)
 	{
 		char demotitlename[65];
 		char *title = G_BuildMapTitle(gamemap);
+
 		// Print to a separate temp buffer instead of demo.titlename, so we can use it in M_TextInputSetString
-		if (title)
-		{
-			snprintf(demotitlename, 64, "%s - %s", title, modeattacking ? "Time Attack" : connectedservername);
-			Z_Free(title);
-		}
+		snprintf(demotitlename, 64, "%s - %s", title, modeattacking ? "Time Attack" : connectedservername);
 
 		// Init just in case it isn't initialized already
 		M_TextInputInit(&demo.titlenameinput, demo.titlename, sizeof(demo.titlename));
@@ -5979,6 +5978,7 @@ void G_BeginRecording(void)
 		// This will indirectly assign to demo.titlename too
 		M_TextInputSetString(&demo.titlenameinput, demotitlename);
 
+		Z_Free(title);
 	}
 
 	// demo checksum
@@ -7722,8 +7722,8 @@ ATTRNORETURN void FUNCNORETURN G_StopMetalRecording(void)
 #endif
 		saved = FIL_WriteFile(va("%sMS.LMP", G_BuildMapName(gamemap)), demobuf.buffer, demobuf.p - demobuf.buffer); // finally output the file.
 	}
-	Z_Free(demobuffer);
-	demobuffer = NULL;
+	Z_Free(demobuf.buffer);
+	demobuf.buffer = NULL;
 	metalrecording = false;
 	if (saved)
 		I_Error("Saved to %sMS.LMP", G_BuildMapName(gamemap));
@@ -7832,10 +7832,7 @@ boolean G_CheckDemoStatus(void)
 
 	if (modeattacking || demo.savemode != DSM_NOTSAVING)
 	{
-		if (demobuf.p)
-		{
-			G_SaveDemo();
-		}
+		G_SaveDemo();
 		return true;
 	}
 
@@ -7846,9 +7843,9 @@ boolean G_CheckDemoStatus(void)
 
 void G_ResetDemoRecording(void)
 {
-	if (demobuffer)
-		Z_Free(demobuffer);
-	demobuffer = NULL;
+	if (demobuf.buffer)
+		Z_Free(demobuf.buffer);
+	demobuf.buffer = NULL;
 	demo.recording = false;
 }
 
@@ -7856,16 +7853,16 @@ static void G_ResetDemoPlayback(char *pdemoname)
 {
 	if (pdemoname)
 		Z_Free(pdemoname);
-	if (demobuffer)
-		Z_Free(demobuffer);
-	demobuffer = NULL;
+	if (demobuf.buffer)
+		Z_Free(demobuf.buffer);
+	demobuf.buffer = NULL;
 	demo.playback = false;
 	demo.title = false;
 }
 
 void G_SaveDemo(void)
 {
-	if (!demo_p)
+	if (!demobuf.p)
 	{
 		CONS_Alert(CONS_ERROR, "Failed to save Demo. No Demo pointer exists!\n");
 		// reset the demo buffer
@@ -7873,7 +7870,7 @@ void G_SaveDemo(void)
 		return;
 	}
 
-	UINT8 *p = demobuffer+16; // after version
+	UINT8 *p = demobuf.buffer+16; // after version
 	UINT32 length;
 #ifdef NOMD5
 	UINT8 i;

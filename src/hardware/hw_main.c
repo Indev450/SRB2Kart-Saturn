@@ -3088,84 +3088,47 @@ static void HWR_Subsector(size_t num)
 }
 
 //
-// RenderBSPNode
 // Renders all subsectors below a given node,
 //  traversing subtree recursively.
 // Just call with BSP root.
 
-#define MAX_BSP_DEPTH 112
-
 static void HWR_RenderBSPNode(INT32 bspnum)
 {
-	node_t *bsp;
-	INT32 stack_bsp[MAX_BSP_DEPTH];
-	INT32 stack_side[MAX_BSP_DEPTH];
-	int sp = 0;
+	const node_t *bsp;
+	INT32 side;
+	ps_numbspcalls.value.i++;
 
-	while (true)
+	while (!(bspnum & NF_SUBSECTOR))  // Found a subsector?
 	{
-		ps_numbspcalls.value.i++;
+		bsp = &nodes[bspnum];
 
 		// Decide which side the view point is on.
 		side = R_PointOnSideFast(viewx, viewy, bsp);
 
-			bsp = &nodes[bspnum];
+		// Recursively divide front space.
+		if (HWR_PortalCheckBBox(bsp->bbox[side]))
+			HWR_RenderBSPNode(bsp->children[side]);
 
-			const INT32 side = R_PointOnSide(viewx, viewy, bsp);
-
-			stack_bsp[sp] = bspnum;
-			stack_side[sp] = side ^ 1;
-
-			sp++;
-
-			bspnum = bsp->children[side];
-		}
-
-		if (portalclipline && portalcullsector)
-		{
-			// skip all subsectors encountered before the portal
-			// destination's front sector
-			if (portalcullsector != subsectors[bspnum & ~NF_SUBSECTOR].sector)
-				goto skipsubsector;
-			else
-				portalcullsector = NULL;
-		}
-
-		HWR_Subsector(bspnum == -1 ? 0 : bspnum & ~NF_SUBSECTOR);
-
-skipsubsector:
-		if (sp == 0)
-		{
-			// back at root node and not visible. All done!
+		// Possibly divide back space
+		if (!(HWR_CheckBBox(bsp->bbox[side^1]) && HWR_PortalCheckBBox(bsp->bbox[side^1])))
 			return;
-		}
 
-		// Back sides.
-
-		sp--;
-
-		bsp = &nodes[stack_bsp[sp]];
-
-		// Possibly divide back space.
-		// Walk back up the tree until we find
-		// a node that has a visible backspace.
-		while (!(HWR_CheckBBox(bsp->bbox[stack_side[sp]]) && HWR_PortalCheckBBox(bsp->bbox[stack_side[sp]])))
-		{
-			if (sp == 0)
-			{
-				// back at root node and not visible. All done!
-				return;
-			}
-
-			// Back side next.
-
-			sp--;
-
-			bsp = &nodes[stack_bsp[sp]];
-		}
-
-		bspnum = bsp->children[stack_side[sp]];
+		bspnum = bsp->children[side^1];
 	}
+
+	// PORTAL CULLING
+	if (portalclipline && portalcullsector)
+	{
+		// skip all subsectors encountered before the portal
+		// destination's front sector
+		if (portalcullsector != subsectors[bspnum & ~NF_SUBSECTOR].sector)
+			return;
+		else
+			portalcullsector = NULL;
+	}
+
+	// e6y: support for extended nodes
+	HWR_Subsector(bspnum == -1 ? 0 : bspnum & ~NF_SUBSECTOR);
 }
 
 // ==========================================================================
@@ -3541,7 +3504,6 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 	fixed_t temp;
 	fixed_t v1x, v1y, v2x, v2y;
 	INT32 shader = SHADER_NONE;
-	const boolean papersprite = (spr->mobj->frame & FF_PAPERSPRITE);
 
 	gpatch = spr->gpatch; //W_CachePatchNum(spr->patchlumpnum, PU_CACHE);
 
@@ -3600,17 +3562,6 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 
 	// push it toward the camera to mitigate floor-clipping sprites
 	HWR_ApplyDispoffset(spr, baseWallVerts, papersprite);
-
-		float sprdist = sqrtf((spr->x1 - gl_viewx)*(spr->x1 - gl_viewx) + (spr->z1 - gl_viewy)*(spr->z1 - gl_viewy) + (spr->gzt - gl_viewz)*(spr->gzt - gl_viewz));
-		float distfact = ((2.0f*spr->dispoffset) + 20.0f) / sprdist;
-
-		for (i = 0; i < 4; i++)
-		{
-			baseWallVerts[i].x += (gl_viewx - baseWallVerts[i].x)*distfact;
-			baseWallVerts[i].z += (gl_viewy - baseWallVerts[i].z)*distfact;
-			baseWallVerts[i].y += (gl_viewz - baseWallVerts[i].y)*distfact;
-		}
-	}
 
 	realtop = top = baseWallVerts[3].y;
 	realbot = bot = baseWallVerts[0].y;
@@ -3812,8 +3763,6 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 		return;
 	}
 
-	const boolean papersprite = (spr->mobj->frame & FF_PAPERSPRITE);
-
 	// cache sprite graphics
 	//12/12/99: Hurdler:
 	//          OK, I don't change anything for MD2 support because I want to be
@@ -3878,17 +3827,6 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 
 	// push it toward the camera to mitigate floor-clipping sprites
 	HWR_ApplyDispoffset(spr, wallVerts, papersprite);
-
-		float sprdist = sqrtf((spr->x1 - gl_viewx)*(spr->x1 - gl_viewx) + (spr->z1 - gl_viewy)*(spr->z1 - gl_viewy) + (spr->gzt - gl_viewz)*(spr->gzt - gl_viewz));
-		float distfact = ((2.0f*spr->dispoffset) + 20.0f) / sprdist;
-
-		for (size_t i = 0; i < 4; i++)
-		{
-			wallVerts[i].x += (gl_viewx - wallVerts[i].x)*distfact;
-			wallVerts[i].z += (gl_viewy - wallVerts[i].z)*distfact;
-			wallVerts[i].y += (gl_viewz - wallVerts[i].y)*distfact;
-		}
-	}
 
 	// This needs to be AFTER the shadows so that the regular sprites aren't drawn completely black.
 	// sprite lighting by modulating the RGB components
