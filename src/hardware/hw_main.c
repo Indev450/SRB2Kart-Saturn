@@ -5438,10 +5438,9 @@ void HWR_RenderPlayerView(INT32 viewnumber, player_t *player)
 		GL_ClearBuffer(true, false, false, &ClearColor);
 	}
 
-	if (HWR_UseShader())
+	if (HWR_UseShader() && cv_ripplewater.value)
 	{
-		if (cv_ripplewater.value)
-			GL_SetShaderInfo(HWD_SHADERINFO_LEVELTIME, (INT32)leveltime); // The water surface shader needs the leveltime.
+		GL_SetShaderInfo(HWD_SHADERINFO_LEVELTIME, (INT32)leveltime); // The water surface shader needs the leveltime.
 	}
 
 	if (viewnumber > 3)
