@@ -281,10 +281,8 @@ void OglSdlFinishUpdate(boolean waitvbl)
 	&& (!UseScreenFBO())
 #endif
 	)
-		HWR_DrawScreenFinalTexture(realwidth, realheight, false);
-
-	//HWR_DrawScreenFinalTexture(realwidth, realheight);
-	//GL_DrawScreenFinalTexture(HWD_SCREENTEXTURE_GENERIC2, realwidth, realheight);
+		//HWR_DrawScreenFinalTexture(realwidth, realheight, false);
+		GL_DrawScreenFinalTexture(HWD_SCREENTEXTURE_GENERIC2, realwidth, realheight, false);
 }
 
 #endif //HWRENDER
