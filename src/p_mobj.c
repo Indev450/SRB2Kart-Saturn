@@ -3294,7 +3294,7 @@ boolean P_CameraThinker(player_t *player, camera_t *thiscam, boolean resetcalled
 			if (player->pflags & PF_TIMEOVER)
 				player->kartstuff[k_timeovercam] = (2*TICRATE)+1;
 
-			if (!resetcalled && !(player->pflags & PF_NOCLIP || leveltime < introtime) && !P_CheckSight(&dummy, player->mo)) // TODO: "P_CheckCameraSight" instead.
+			if (!resetcalled && !(player->pflags & PF_NOCLIP || leveltime < introtime) && !P_CheckSightFast(&dummy, player->mo)) // TODO: "P_CheckCameraSight" instead.
 				P_ResetCamera(player, thiscam);
 			else
 				P_SlideCameraMove(thiscam);

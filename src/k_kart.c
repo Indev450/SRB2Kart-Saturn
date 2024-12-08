@@ -9118,7 +9118,7 @@ static void K_drawNameTags(void)
 		distance = R_PointToDist(players[i].mo->x, players[i].mo->y);
 		if (distance > maxdistance)
 			continue;
-		if (!P_CheckSight(stplyr->mo, players[i].mo))
+		if (!P_CheckSightFast(stplyr->mo, players[i].mo))
 			continue;
 
 		switch (cv_nametagtrans.value)
