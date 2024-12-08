@@ -578,6 +578,8 @@ static fixed_t HighestOnLine(fixed_t radius, fixed_t x, fixed_t y, line_t *line,
 		);
 }
 
+#define NOCOLLISION ((mobj->flags & MF_NOBLOCKMAP) || (mobj->flags & MF_NOCLIPTHING))
+
 fixed_t P_MobjFloorZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed_t x, fixed_t y, line_t *line, boolean lowest, boolean perfect)
 {
 	I_Assert(mobj != NULL);
@@ -608,7 +610,7 @@ fixed_t P_MobjFloorZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed_t
 		testy += y;
 
 		// If the highest point is in the sector, then we have it easy! Just get the Z at that point
-		if (R_PointInSubsector(testx, testy)->sector == (boundsec ? boundsec : sector))
+		if (((mobj->flags & MF_NOBLOCKMAP) && (mobj->flags & MF_NOCLIP)) ? R_IsPointInSector(boundsec ? boundsec : sector, testx, testy) : R_PointInSubsector(testx, testy)->sector == (boundsec ? boundsec : sector))
 			return P_GetZAt(slope, testx, testy);
 
 		// If boundsec is set, we're looking for specials. In that case, iterate over every line in this sector to find the TRUE highest/lowest point
@@ -685,7 +687,7 @@ fixed_t P_MobjCeilingZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed
 		testy += y;
 
 		// If the highest point is in the sector, then we have it easy! Just get the Z at that point
-		if (R_PointInSubsector(testx, testy)->sector == (boundsec ? boundsec : sector))
+		if (((mobj->flags & MF_NOBLOCKMAP) && (mobj->flags & MF_NOCLIP)) ? R_IsPointInSector(boundsec ? boundsec : sector, testx, testy) : R_PointInSubsector(testx, testy)->sector == (boundsec ? boundsec : sector))
 			return P_GetZAt(slope, testx, testy);
 
 		// If boundsec is set, we're looking for specials. In that case, iterate over every line in this sector to find the TRUE highest/lowest point
@@ -764,7 +766,7 @@ fixed_t P_CameraFloorZ(camera_t *mobj, sector_t *sector, sector_t *boundsec, fix
 		testy += y;
 
 		// If the highest point is in the sector, then we have it easy! Just get the Z at that point
-		if (R_PointInSubsector(testx, testy)->sector == (boundsec ? boundsec : sector))
+		if (R_IsPointInSector(boundsec ? boundsec : sector, testx, testy))
 			return P_GetZAt(slope, testx, testy);
 
 		// If boundsec is set, we're looking for specials. In that case, iterate over every line in this sector to find the TRUE highest/lowest point
@@ -842,7 +844,7 @@ fixed_t P_CameraCeilingZ(camera_t *mobj, sector_t *sector, sector_t *boundsec, f
 		testy += y;
 
 		// If the highest point is in the sector, then we have it easy! Just get the Z at that point
-		if (R_PointInSubsector(testx, testy)->sector == (boundsec ? boundsec : sector))
+		if (R_IsPointInSector(boundsec ? boundsec : sector, testx, testy))
 			return P_GetZAt(slope, testx, testy);
 
 		// If boundsec is set, we're looking for specials. In that case, iterate over every line in this sector to find the TRUE highest/lowest point
