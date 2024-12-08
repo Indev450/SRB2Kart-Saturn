@@ -1121,7 +1121,7 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 	{
 		sector_t *sector = spr->mobj->subsector->sector;
 		extracolormap_t *colormap = sector->extra_colormap;
-		UINT8 lightlevel = 255;
+		INT32 lightlevel = 255;
 
 		if (sector->numlights)
 		{
@@ -1144,7 +1144,9 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 				colormap = sector->extra_colormap;
 		}
 
-		HWR_Lighting(&Surf, lightlevel, colormap);
+		HWR_ObjectLightLevelPost(spr, sector, &lightlevel, true);
+
+		HWR_Lighting(&Surf, lightlevel, colormap, P_SectorUsesDirectionalLighting(sector) && !(spr->mobj->frame & FF_FULLBRIGHT));
 	}
 	else
 	{

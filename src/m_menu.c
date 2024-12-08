@@ -1373,20 +1373,22 @@ static menuitem_t OP_VideoOptionsMenu[] =
 	{IT_STRING | IT_CVAR | IT_CV_SLIDER,
 	                        NULL, 	"Saturation",      		&cv_globalsaturation ,    40},
 
-	{IT_SUBMENU|IT_STRING, NULL, "Advanced Color Settings...", &OP_ColorOptionsDef,   50},
+	{IT_SUBMENU|IT_STRING, NULL, "Advanced Color Settings...", &OP_ColorOptionsDef,   45},
 
-	{IT_STRING | IT_CVAR,	NULL,					"Draw Distance",		&cv_drawdist,			  65},
-	{IT_STRING | IT_CVAR,	NULL,					"Weather Draw Distance",&cv_drawdist_precip,	  75},
+	{IT_STRING | IT_CVAR,  NULL, "Randomized Directional Light",&cv_randomdirlight,	  60},
 
-	{IT_STRING | IT_CVAR,	NULL,	"Show FPS",				&cv_ticrate,			 95},
-	{IT_STRING | IT_CVAR,	NULL,	"Vertical Sync",		&cv_vidwait,			 105},
-	{IT_STRING | IT_CVAR,   NULL,   "FPS Cap",              &cv_fpscap,              115},
-	{IT_STRING | IT_CVAR,   NULL,   "Drift spark pulse size",&cv_driftsparkpulse,    125},
-	{IT_STRING | IT_CVAR, 	NULL, 	"VHS effect", 			&cv_vhseffect, 		 	 135},
+	{IT_STRING | IT_CVAR,	NULL,	"Draw Distance",		&cv_drawdist,			  75},
+	{IT_STRING | IT_CVAR,	NULL,	"Weather Draw Distance",&cv_drawdist_precip,	  85},
+
+	{IT_STRING | IT_CVAR,	NULL,	"Show FPS",				&cv_ticrate,			 105},
+	{IT_STRING | IT_CVAR,	NULL,	"Vertical Sync",		&cv_vidwait,			 115},
+	{IT_STRING | IT_CVAR,   NULL,   "FPS Cap",              &cv_fpscap,              125},
+	{IT_STRING | IT_CVAR,   NULL,   "Drift spark pulse size",&cv_driftsparkpulse,    135},
+	{IT_STRING | IT_CVAR, 	NULL, 	"VHS effect", 			&cv_vhseffect, 		 	 145},
 #ifdef HWRENDER
-	{IT_SUBMENU|IT_STRING,	NULL,	"OpenGL Options...",	&OP_OpenGLOptionsDef,	 145},
+	{IT_SUBMENU|IT_STRING,	NULL,	"OpenGL Options...",	&OP_OpenGLOptionsDef,	 155},
 #endif
-	{IT_SUBMENU|IT_STRING,  NULL,   "Advanced Video Options...", &OP_ExpOptionsDef,    155},
+	{IT_SUBMENU|IT_STRING,  NULL,   "Advanced Video Options...", &OP_ExpOptionsDef,    165},
 
 };
 
@@ -1399,6 +1401,7 @@ static const char* OP_VideoTooltips[] =
 	"Gamma (brightness) of the game.",
 	"Saturation of the game.",
 	"Advanced color settings of the game.",
+	"Should the directional lightning be randomized each map?\nTakes effect on next map load.",
 	"How far away objects are drawn.",
 	"How far away weather is drawn.",
 	"Show current game framerate and select the style.",
@@ -1422,6 +1425,7 @@ enum
 	op_video_gamma,
 	op_video_sat,
 	op_video_color,
+	op_video_dirlight,
 	op_video_dd,
 	op_video_wdd,
 	op_video_fps,
