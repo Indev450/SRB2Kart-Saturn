@@ -205,6 +205,8 @@ consvar_t cv_homremoval = {"homremoval", "Yes", CV_SAVE, homremoval_cons_t, NULL
 
 consvar_t cv_maxportals = {"maxportals", "2", CV_SAVE, maxportals_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_randomdirlight = {"randomdirectionallight", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 void SplitScreen_OnChange(void)
 {
 	UINT8 i;
@@ -1578,6 +1580,8 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_uncappedhud);
 
 	CV_RegisterVar(&cv_maxportals);
+
+	CV_RegisterVar(&cv_randomdirlight);
 
 	CV_RegisterVar(&cv_maxinterpdist);
 

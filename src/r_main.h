@@ -158,6 +158,8 @@ extern consvar_t cv_tailspickup;
 extern consvar_t cv_maxinterpdist;
 extern consvar_t cv_ripplewater;
 
+extern consvar_t cv_randomdirlight;
+
 // Called by startup code.
 void R_Init(void);
 
