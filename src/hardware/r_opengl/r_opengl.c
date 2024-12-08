@@ -714,8 +714,8 @@ static INT32 shader_light_contrast = 0;
 static INT32 shader_light_backlight = 0;
 
 // Lactozilla: Shader functions
-static boolean GL_Shader_CompileProgram(gl_shader_t *shader, GLint i);
-static void GL_Shader_SetUniforms(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRGBAFloat *tint, GLRGBAFloat *fade);
+static boolean Shader_CompileProgram(gl_shader_t *shader, GLint i);
+static void Shader_SetUniforms(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRGBAFloat *tint, GLRGBAFloat *fade);
 
 static GLRGBAFloat shader_defaultcolor = {1.0f, 1.0f, 1.0f, 1.0f};
 
@@ -862,7 +862,7 @@ EXPORT boolean HWRAPI(CompileShader) (int slot)
 // Those are given to the uniforms.
 //
 
-void GL_SetShaderInfo(hwdshaderinfo_t info, INT32 value)
+EXPORT void HWRAPI(SetShaderInfo) (hwdshaderinfo_t info, INT32 value)
 {
 	switch (info)
 	{
@@ -889,11 +889,11 @@ void GL_SetShaderInfo(hwdshaderinfo_t info, INT32 value)
 	}
 }
 
-void GL_SetShader(int slot)
+EXPORT void HWRAPI(SetShader) (int slot)
 {
 	if (slot == SHADER_NONE)
 	{
-		GL_UnSetShader();
+		UnSetShader();
 		return;
 	}
 	if (gl_allowshaders)
@@ -2034,9 +2034,6 @@ static boolean Shader_CompileProgram(gl_shader_t *shader, GLint i)
 	shader->uniforms[gluniform_lighttable_tex] = GETUNI("lighttable_tex");
 
 	shader->uniforms[gluniform_scr_resolution] = GETUNI("scr_resolution");
-
-	// supersampling crap
-	shader->uniforms[gluniform_inv_supersamplefactor] = GETUNI("inv_supersamplefactor");
 
 	// misc.
 	shader->uniforms[gluniform_leveltime] = GETUNI("leveltime");
