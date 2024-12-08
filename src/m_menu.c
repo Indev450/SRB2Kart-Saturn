@@ -1373,9 +1373,9 @@ static menuitem_t OP_VideoOptionsMenu[] =
 	{IT_STRING | IT_CVAR | IT_CV_SLIDER,
 	                        NULL, 	"Saturation",      		&cv_globalsaturation ,    40},
 
-	{IT_STRING | IT_CVAR,  NULL, "Randomized Directional Light",&cv_randomdirlight,	  50},
+	{IT_SUBMENU|IT_STRING, NULL, "Advanced Color Settings...", &OP_ColorOptionsDef,   45},
 
-	{IT_SUBMENU|IT_STRING, NULL, "Advanced Color Settings...", &OP_ColorOptionsDef,   60},
+	{IT_STRING | IT_CVAR,  NULL, "Randomized Directional Light",&cv_randomdirlight,	  60},
 
 	{IT_STRING | IT_CVAR,	NULL,	"Draw Distance",		&cv_drawdist,			  75},
 	{IT_STRING | IT_CVAR,	NULL,	"Weather Draw Distance",&cv_drawdist_precip,	  85},
@@ -1400,8 +1400,8 @@ static const char* OP_VideoTooltips[] =
 #endif
 	"Gamma (brightness) of the game.",
 	"Saturation of the game.",
-	"Should the directional lightning be randomized each map?",
 	"Advanced color settings of the game.",
+	"Should the directional lightning be randomized each map?\nTakes effect on next map load.",
 	"How far away objects are drawn.",
 	"How far away weather is drawn.",
 	"Show current game framerate and select the style.",
@@ -1424,8 +1424,8 @@ enum
 #endif
 	op_video_gamma,
 	op_video_sat,
-	op_video_dirlight,
 	op_video_color,
+	op_video_dirlight,
 	op_video_dd,
 	op_video_wdd,
 	op_video_fps,
