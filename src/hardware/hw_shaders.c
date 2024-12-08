@@ -13,7 +13,7 @@
 
 #include "hw_main.h"
 #include "hw_glob.h"
-#include "hw_drv.h"
+#include "hw_gpu.h"
 #include "hw_shaders.h"
 #include "../z_zone.h"
 
@@ -87,7 +87,7 @@ boolean HWR_InitShaders(void)
 {
 	int i;
 
-	if (!HWD.pfnInitShaders())
+	if (!GL_InitShaders())
 		return false;
 
 	for (i = 0; i < NUMSHADERTARGETS; i++)
@@ -366,16 +366,16 @@ static void HWR_CompileShader(int index)
 	{
 		char *preprocessed = HWR_PreprocessShader(vertex_source);
 		if (!preprocessed) return;
-		HWD.pfnLoadShader(index, preprocessed, HWD_SHADERSTAGE_VERTEX);
+		GL_LoadShader(index, preprocessed, HWD_SHADERSTAGE_VERTEX);
 	}
 	if (fragment_source)
 	{
 		char *preprocessed = HWR_PreprocessShader(fragment_source);
 		if (!preprocessed) return;
-		HWD.pfnLoadShader(index, preprocessed, HWD_SHADERSTAGE_FRAGMENT);
+		GL_LoadShader(index, preprocessed, HWD_SHADERSTAGE_FRAGMENT);
 	}
 
-	gl_shaders[index].compiled = HWD.pfnCompileShader(index);
+	gl_shaders[index].compiled = GL_CompileShader(index);
 }
 
 // compile or recompile shaders

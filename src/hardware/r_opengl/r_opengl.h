@@ -44,7 +44,7 @@
 
 #define  _CREATE_DLL_  // necessary for Unix AND Windows
 #include "../../doomdef.h"
-#include "../hw_drv.h"
+#include "../hw_gpu.h"
 #include "../../z_zone.h"
 
 // ==========================================================================
@@ -65,14 +65,15 @@ extern FILE             *gllogstream;
 //                                                                     PROTOS
 // ==========================================================================
 
-boolean LoadGL(void);
+FUNCPRINTF void GL_DBG_Printf(const char *format, ...);
+
 void *GetGLFunc(const char *proc);
 boolean SetupGLfunc(void);
 void SetupGLFunc4(void);
-void Flush(void);
-INT32 isExtAvailable(const char *extension, const GLubyte *start);
-void SetModelView(GLint w, GLint h);
-void SetStates(void);
+void GL_Flush(void);
+INT32 GL_isExtAvailable(const char *extension, const GLubyte *start);
+void GL_SetModelView(GLint w, GLint h);
+void GL_SetStates(void);
 
 #ifndef GL_EXT_texture_filter_anisotropic
 #define GL_TEXTURE_MAX_ANISOTROPY_EXT     0x84FE
@@ -101,11 +102,11 @@ extern PFNglGetString pglGetString;
 #endif
 
 #ifdef USE_FBO_OGL
-void GLFramebuffer_DeleteAttachments(void);
+void GL_Framebuffer_DeleteAttachments(void);
 
-void GLFramebuffer_Unbind(void);
-void GLFramebuffer_Enable(void);
-void GLFramebuffer_Disable(void);
+void GL_Framebuffer_Unbind(void);
+void GL_Framebuffer_Enable(void);
+void GL_Framebuffer_Disable(void);
 
 extern GLuint FramebufferObject, FramebufferTexture, RenderbufferObject;
 extern GLboolean FrameBufferEnabled, RenderToFramebuffer;
@@ -128,6 +129,8 @@ extern GLint			screen_height;
 extern GLbyte			screen_depth;
 extern GLint			maximumAnisotropy;
 extern boolean 			supportMipMap;
+
+extern struct GPURenderingAPI GLInterfaceAPI;
 
 /**	\brief OpenGL flags for video driver
 */

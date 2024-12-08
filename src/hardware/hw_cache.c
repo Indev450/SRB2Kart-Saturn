@@ -16,7 +16,7 @@
 #ifdef HWRENDER
 #include "hw_main.h"
 #include "hw_glob.h"
-#include "hw_drv.h"
+#include "hw_gpu.h"
 #include "hw_batching.h"
 
 #include "../doomstat.h"    //gamemode
@@ -494,7 +494,7 @@ static void FreeMipmapColormap(INT32 patchnum, void *patch)
 		if (next->data)
 			Z_Free(next->data);
 		next->data = NULL;
-		HWD.pfnDeleteTexture(next);
+		GL_DeleteTexture(next);
 
 		// Free the old colormap mipmap from memory.
 		free(next);
@@ -505,7 +505,7 @@ void HWR_FreeMipmapCache(void)
 {
 	INT32 i;
 	// free references to the textures
-	HWD.pfnClearMipMapCache();
+	GL_ClearMipMapCache();
 
 	// free all hardware-converted graphics cached in the heap
 	// our gool is only the textures since user of the texture is the texture cache
@@ -572,7 +572,7 @@ GLMapTexture_t *HWR_GetTexture(INT32 tex, boolean noencore)
 
 	// If hardware does not have the texture, then call pfnSetTexture to upload it
 	if (!gltex->mipmap.downloaded)
-		HWD.pfnSetTexture(&gltex->mipmap);
+		GL_SetTexture(&gltex->mipmap);
 	HWR_SetCurrentTexture(&gltex->mipmap);
 
 	// The system-memory data can be purged now.
@@ -660,7 +660,7 @@ void HWR_GetFlat(lumpnum_t flatlumpnum, boolean noencoremap)
 
 	// If hardware does not have the texture, then call pfnSetTexture to upload it
 	if (!glMipmap->downloaded)
-		HWD.pfnSetTexture(glMipmap);
+		GL_SetTexture(glMipmap);
 	HWR_SetCurrentTexture(glMipmap);
 
 	// The system-memory data can be purged now.
@@ -689,7 +689,7 @@ static void HWR_LoadMappedPatch(GLMipmap_t *glMipmap, GLPatch_t *glPatch)
 
 	// If hardware does not have the texture, then call pfnSetTexture to upload it
 	if (!glMipmap->downloaded)
-		HWD.pfnSetTexture(glMipmap);
+		GL_SetTexture(glMipmap);
 	HWR_SetCurrentTexture(glMipmap);
 
 	// The system-memory data can be purged now.
@@ -719,7 +719,7 @@ void HWR_GetPatch(GLPatch_t *glPatch)
 
 	// If hardware does not have the texture, then call pfnSetTexture to upload it
 	if (!glPatch->mipmap->downloaded)
-		HWD.pfnSetTexture(glPatch->mipmap);
+		GL_SetTexture(glPatch->mipmap);
 	HWR_SetCurrentTexture(glPatch->mipmap);
 
 	// The system-memory patch data can be purged now.
@@ -894,7 +894,7 @@ void HWR_GetFadeMask(lumpnum_t fademasklumpnum)
 	if (!glMipmap->downloaded && !glMipmap->data)
 		HWR_CacheFadeMask(glMipmap, fademasklumpnum);
 
-	HWD.pfnSetTexture(glMipmap);
+	GL_SetTexture(glMipmap);
 
 	// The system-memory data can be purged now.
 	Z_ChangeTag(glMipmap->data, PU_HWRCACHE_UNLOCKED);
@@ -927,11 +927,11 @@ void HWR_SetPalette(RGBA_t *palette)
 				crushed_palette[i].s.blue = (UINT8)(fblue / 31.0f * 255.0f);
 				crushed_palette[i].s.alpha = 255;
 			}
-			HWD.pfnSetScreenPalette(crushed_palette);
+			GL_SetScreenPalette(crushed_palette);
 		}
 		else
 		{
-			HWD.pfnSetScreenPalette(palette);
+			GL_SetScreenPalette(palette);
 		}
 
 		// this part is responsible for keeping track of the palette OUTSIDE of a level.
@@ -941,7 +941,7 @@ void HWR_SetPalette(RGBA_t *palette)
 	else
 	{
 		// set the palette for the textures
-		HWD.pfnSetTexturePalette(palette);
+		GL_SetPalette(palette);
 		// reset mapPalette so next call to HWR_SetMapPalette will update everything correctly
 		memset(mapPalette, 0, sizeof(mapPalette));
 		// hardware driver will flush there own cache if cache is non paletized
@@ -974,7 +974,7 @@ static void HWR_SetPaletteLookup(RGBA_t *palette)
 		}
 	}
 #undef STEP_SIZE
-	HWD.pfnSetPaletteLookup(lut);
+	GL_SetPaletteLookup(lut);
 	Z_Free(lut);
 }
 
@@ -1022,7 +1022,7 @@ void HWR_SetMapPalette(void)
 		// in palette rendering mode, this means that all rgba textures now have wrong colors
 		// and the lookup table is outdated
 		HWR_SetPaletteLookup(mapPalette);
-		HWD.pfnSetTexturePalette(mapPalette);
+		GL_SetPalette(mapPalette);
 
 		if (patchformat == GL_TEXFMT_RGBA || textureformat == GL_TEXFMT_RGBA)
 		{
@@ -1045,7 +1045,7 @@ UINT32 HWR_CreateLightTable(UINT8 *lighttable)
 	for (i = 0; i < 256 * 32; i++)
 		hw_lighttable[i] = palette[lighttable[i]];
 
-	id = HWD.pfnCreateLightTable(hw_lighttable);
+	id = GL_CreateLightTable(hw_lighttable);
 	Z_Free(hw_lighttable);
 	return id;
 }
@@ -1081,7 +1081,7 @@ UINT32 HWR_GetLightTableID(extracolormap_t *colormap)
 void HWR_ClearLightTables(void)
 {
 	if (vid.glstate == VID_GL_LIBRARY_LOADED)
-		HWD.pfnClearLightTables();
+		GL_ClearLightTables();
 }
 
 #endif //HWRENDER

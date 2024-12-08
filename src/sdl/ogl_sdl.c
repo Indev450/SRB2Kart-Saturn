@@ -38,6 +38,7 @@
 #ifdef HWRENDER
 #include "../hardware/r_opengl/r_opengl.h"
 #include "../hardware/hw_main.h"
+#include "../hardware/hw_gpu.h"
 #include "ogl_sdl.h"
 #include "../i_system.h"
 #include "hwsym_sdl.h"
@@ -93,7 +94,7 @@ void *GetGLFunc(const char *proc)
 	return SDL_GL_GetProcAddress(proc);
 }
 
-boolean LoadGL(void)
+boolean VID_LoadOGLAPI(void)
 {
 #ifndef STATIC_OPENGL
 	const char *OGLLibname = NULL;
@@ -110,7 +111,7 @@ boolean LoadGL(void)
 		return 0;
 	}
 #endif
-	return SetupGLfunc();
+	return true;
 }
 
 /**	\brief	The OglSdlSurface function
@@ -176,7 +177,7 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 		else
 			supportMipMap = true;
 
-		if (isExtAvailable("GL_EXT_texture_filter_anisotropic", gl_extensions))
+		if (GL_isExtAvailable("GL_EXT_texture_filter_anisotropic", gl_extensions))
 			pglGetIntegerv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maximumAnisotropy);
 		else
 			maximumAnisotropy = 1;
@@ -196,18 +197,18 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 	// The screen textures need to be flushed if the width or height change so that they be remade for the correct size
 	if (screen_width != w || screen_height != h)
 	{
-		FlushScreenTextures();
+		GL_FlushScreenTextures();
 
 #ifdef USE_FBO_OGL
-		GLFramebuffer_DeleteAttachments();
+		GL_Framebuffer_DeleteAttachments();
 #endif
 	}
 
 	screen_width = (GLint)w;
 	screen_height = (GLint)h;
 
-	SetModelView(w, h);
-	SetStates();
+	GL_SetModelView(w, h);
+	GL_SetStates();
 	pglClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 
 #ifdef USE_FBO_OGL
@@ -219,9 +220,9 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 	}
 
 	if (UseScreenFBO())
-		GLFramebuffer_Enable();
+		GL_Framebuffer_Enable();
 	else
-		GLFramebuffer_Disable();
+		GL_Framebuffer_Disable();
 #endif
 
 	if (!first_init)
@@ -255,19 +256,24 @@ void OglSdlFinishUpdate(boolean waitvbl)
 
 #ifdef USE_FBO_OGL
 	if (UseScreenFBO())
-		GLFramebuffer_Unbind();
+	{
+		GL_Framebuffer_Unbind();
+	}
 #endif
-	
-	HWR_DrawScreenFinalTexture(sdlw, sdlh, HWR_ShouldUsePaletteRendering());
+
+	//HWR_DrawScreenFinalTexture(sdlw, sdlh);
+	GL_DrawScreenFinalTexture(HWD_SCREENTEXTURE_GENERIC2, sdlw, sdlh, true);
 
 #ifdef USE_FBO_OGL
 	if (UseScreenFBO())
-		GLFramebuffer_Enable();
+	{
+		GL_Framebuffer_Enable();
+	}
 #endif
 
 	SDL_GL_SwapWindow(window);
 
-	GClipRect(0, 0, realwidth, realheight, NZCLIP_PLANE, FAR_ZCLIP_DEFAULT);
+	GL_GClipRect(0, 0, realwidth, realheight, NZCLIP_PLANE, FAR_ZCLIP_DEFAULT);
 
 	// Sryder:	We need to draw the final screen texture again into the other buffer in the original position so that
 	//			effects that want to take the old screen can do so after this
@@ -277,20 +283,9 @@ void OglSdlFinishUpdate(boolean waitvbl)
 #endif
 	)
 		HWR_DrawScreenFinalTexture(realwidth, realheight, false);
-}
 
-EXPORT void HWRAPI(OglSdlSetPalette) (RGBA_t *palette)
-{
-	INT32 i;
-
-	for (i = 0; i < 256; i++)
-	{
-		myPaletteData[i].s.red   = palette[i].s.red;
-		myPaletteData[i].s.green = palette[i].s.green;
-		myPaletteData[i].s.blue  = palette[i].s.blue;
-		myPaletteData[i].s.alpha = palette[i].s.alpha;
-	}
-	Flush();
+	//HWR_DrawScreenFinalTexture(realwidth, realheight);
+	//GL_DrawScreenFinalTexture(HWD_SCREENTEXTURE_GENERIC2, realwidth, realheight);
 }
 
 #endif //HWRENDER
