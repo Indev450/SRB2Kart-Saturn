@@ -2970,10 +2970,11 @@ static int parse_stmt(LexState *ls)
   case TK_break:
     lj_lex_next(ls);
     #if BLUAJIT_MULTILEVEL_BREAK
-      int levels = numberVint(&ls->tokval);
-      if (lex_opt(ls, TK_number))
-        parse_break(ls, levels);
-      else
+      if (ls->tok == TK_number) {
+	   int levels = numberVint(&ls->tokval);
+	   lj_lex_next(ls);
+	   parse_break(ls, levels);
+	} else
     #endif
     parse_break(ls, 1);
     return !LJ_52;  /* Must be last in Lua 5.1. */
