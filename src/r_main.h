@@ -125,6 +125,7 @@ angle_t R_PlayerSliptideAngle(player_t *player);
 
 fixed_t R_ScaleFromGlobalAngle(angle_t visangle);
 
+boolean R_IsPointInSector(sector_t *sector, fixed_t x, fixed_t y);
 subsector_t *R_IsPointInSubsector(fixed_t x, fixed_t y);
 
 //
