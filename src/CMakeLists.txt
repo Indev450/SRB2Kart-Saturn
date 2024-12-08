@@ -487,7 +487,7 @@ if(${SRB2_CONFIG_HWRENDER})
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_data.h
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_defs.h
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_dll.h
-		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_drv.h
+		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_gl.h
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_glob.h
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_main.h
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_portal.h

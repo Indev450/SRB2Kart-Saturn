@@ -15,7 +15,9 @@
 
 #include "hw_defs.h"
 #include "hw_data.h"
-#include "hw_drv.h"
+#include "hw_gl.h"
+
+extern boolean currently_batching;
 
 typedef struct
 {

@@ -99,6 +99,7 @@
 		GLSL_DOOM_COLORMAP_NODITHER \
 		"#endif\n" \
 	"}\n"
+
 // lighting cap adjustment:
 // first num (155.0), increase to make it start to go dark sooner
 // second num (0.26), increase to make it go dark faster

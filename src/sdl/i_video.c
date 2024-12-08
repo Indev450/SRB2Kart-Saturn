@@ -74,15 +74,17 @@
 #include "../i_video.h"
 #include "../console.h"
 #include "../command.h"
-#include "sdlmain.h"
 #include "../i_system.h"
 #include "../hu_stuff.h" // for chat_on
+
+#include "sdlmain.h"
+
 #ifdef HWRENDER
 #include "../hardware/hw_main.h"
-#include "../hardware/hw_drv.h"
+#include "../hardware/hw_gl.h"
 #include "../hardware/r_opengl/r_opengl.h" //for supportFBO
-// For dynamic referencing of HW rendering functions
-#include "hwsym_sdl.h"
+
+#include "hwsym_sdl.h" // For dynamic referencing of HW rendering functions
 #include "ogl_sdl.h"
 #endif
 
@@ -2153,50 +2155,8 @@ void I_StartupGraphics(void)
 #ifdef HWRENDER
 	if (rendermode == render_opengl)
 	{
-		HWD.pfnInit             = hwSym("Init",NULL);
-		HWD.pfnSetupGLInfo      = hwSym("SetupGLInfo",NULL);
-		HWD.pfnFinishUpdate     = NULL;
-		HWD.pfnDraw2DLine       = hwSym("Draw2DLine",NULL);
-		HWD.pfnDrawPolygon      = hwSym("DrawPolygon",NULL);
-		HWD.pfnDrawIndexedTriangles = hwSym("DrawIndexedTriangles",NULL);
-		HWD.pfnSetBlend         = hwSym("SetBlend",NULL);
-		HWD.pfnClearBuffer      = hwSym("ClearBuffer",NULL);
-		HWD.pfnSetTexture       = hwSym("SetTexture",NULL);
-		HWD.pfnUpdateTexture    = hwSym("UpdateTexture",NULL);
-		HWD.pfnDeleteTexture    = hwSym("DeleteTexture",NULL);
-		HWD.pfnReadScreenTexture= hwSym("ReadScreenTexture",NULL);
-		HWD.pfnGClipRect        = hwSym("GClipRect",NULL);
-		HWD.pfnClearMipMapCache = hwSym("ClearMipMapCache",NULL);
-		HWD.pfnSetSpecialState  = hwSym("SetSpecialState",NULL);
-		HWD.pfnSetTexturePalette= hwSym("SetTexturePalette",NULL);
-		HWD.pfnGetTextureUsed   = hwSym("GetTextureUsed",NULL);
-		HWD.pfnDrawModel        = hwSym("DrawModel",NULL);
-		HWD.pfnCreateModelVBOs  = hwSym("CreateModelVBOs",NULL);
-		HWD.pfnSetTransform     = hwSym("SetTransform",NULL);
-		HWD.pfnPostImgRedraw    = hwSym("PostImgRedraw",NULL);
-		HWD.pfnFlushScreenTextures=hwSym("FlushScreenTextures",NULL);
-		HWD.pfnDoScreenWipe     = hwSym("DoScreenWipe",NULL);
-		HWD.pfnDrawScreenTexture= hwSym("DrawScreenTexture",NULL);
-		HWD.pfnMakeScreenTexture= hwSym("MakeScreenTexture",NULL);
-		HWD.pfnRenderVhsEffect  = hwSym("RenderVhsEffect",NULL);
-		HWD.pfnDrawScreenFinalTexture=hwSym("DrawScreenFinalTexture",NULL);
+		vid.glstate = (VID_LoadOGLAPI() && GL_Init()) ? VID_GL_LIBRARY_LOADED : VID_GL_LIBRARY_ERROR;
 
-		HWD.pfnRenderSkyDome = hwSym("RenderSkyDome",NULL);
-
-		HWD.pfnInitShaders      = hwSym("InitShaders",NULL);
-		HWD.pfnLoadShader       = hwSym("LoadShader",NULL);
-		HWD.pfnCompileShader    = hwSym("CompileShader",NULL);
-		HWD.pfnSetShader 		= hwSym("SetShader",NULL);
-		HWD.pfnUnSetShader 		= hwSym("UnSetShader",NULL);
-
-		HWD.pfnSetShaderInfo    = hwSym("SetShaderInfo",NULL);
-
-		HWD.pfnSetPaletteLookup = hwSym("SetPaletteLookup",NULL);
-		HWD.pfnCreateLightTable = hwSym("CreateLightTable",NULL);
-		HWD.pfnClearLightTables = hwSym("ClearLightTables",NULL);
-		HWD.pfnSetScreenPalette = hwSym("SetScreenPalette",NULL);
-
-		vid.glstate = HWD.pfnInit() ? VID_GL_LIBRARY_LOADED : VID_GL_LIBRARY_ERROR; // let load the OpenGL library
 		if (vid.glstate == VID_GL_LIBRARY_ERROR)
 		{
 			rendermode = render_soft;
