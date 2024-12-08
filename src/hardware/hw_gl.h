@@ -1,16 +1,17 @@
-// SONIC ROBO BLAST 2
+// SONIC ROBO BLAST 2 Kart
 //-----------------------------------------------------------------------------
 // Copyright (C) 2020 by Jaime "Lactozilla" Passos.
+// Copyright (C) 2020 by Sonic Team Junior.
 //
 // This program is free software distributed under the
 // terms of the GNU General Public License, version 2.
 // See the 'LICENSE' file for more details.
 //-----------------------------------------------------------------------------
-/// \file hw_gpu.h
-/// \brief GPU low-level interface API
+/// \file hw_gl.h
+/// \brief OpenGL low-level interface API
 
-#ifndef __HWR_GPU_H__
-#define __HWR_GPU_H__
+#ifndef __HWR_GL_H__
+#define __HWR_GL_H__
 
 #include "../screen.h"
 
@@ -76,4 +77,4 @@ UINT32 GL_CreateLightTable(RGBA_t *hw_lighttable);
 void GL_ClearLightTables(void);
 void GL_SetScreenPalette(RGBA_t *palette);
 
-#endif // __HWR_GPU_H__
+#endif // __HWR_GL_H__

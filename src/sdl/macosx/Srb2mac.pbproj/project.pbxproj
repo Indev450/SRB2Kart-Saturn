@@ -1060,8 +1060,8 @@
 		8417773A085A106C000C01D8 = {
 			fileEncoding = 30;
 			isa = PBXFileReference;
-			name = hw_gpu.h;
-			path = ../../hardware/hw_gpu.h;
+			name = hw_gl.h;
+			path = ../../hardware/hw_gl.h;
 			refType = 2;
 		};
 		8417773C085A106C000C01D8 = {

@@ -74,15 +74,17 @@
 #include "../i_video.h"
 #include "../console.h"
 #include "../command.h"
-#include "sdlmain.h"
 #include "../i_system.h"
 #include "../hu_stuff.h" // for chat_on
+
+#include "sdlmain.h"
+
 #ifdef HWRENDER
 #include "../hardware/hw_main.h"
-#include "../hardware/hw_gpu.h"
+#include "../hardware/hw_gl.h"
 #include "../hardware/r_opengl/r_opengl.h" //for supportFBO
-// For dynamic referencing of HW rendering functions
-#include "hwsym_sdl.h"
+
+#include "hwsym_sdl.h" // For dynamic referencing of HW rendering functions
 #include "ogl_sdl.h"
 #endif
 

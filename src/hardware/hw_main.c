@@ -16,12 +16,11 @@
 #include "../doomstat.h"
 #include "../doomdef.h"
 
-#include "../qs22j.h"
-
 #ifdef HWRENDER
+
 #include "hw_main.h"
 #include "hw_glob.h"
-#include "hw_gpu.h"
+#include "hw_gl.h"
 #include "hw_batching.h"
 #include "hw_md2.h"
 #include "hw_clip.h"
@@ -56,6 +55,8 @@
 #include "../v_video.h"
 #include "../w_wad.h"
 #include "../z_zone.h"
+
+#include "../qs22j.h" // fast qsort
 
 // ==========================================================================
 // Globals

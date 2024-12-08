@@ -18,9 +18,10 @@
 #include "../doomdef.h"
 
 #ifdef HWRENDER
+
 #include "hw_main.h"
 #include "hw_glob.h"
-#include "hw_gpu.h"
+#include "hw_gl.h"
 
 #include "../m_misc.h" //FIL_WriteFile()
 #include "../r_draw.h" //viewborderlump
