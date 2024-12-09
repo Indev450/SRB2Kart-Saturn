@@ -1373,7 +1373,7 @@ static menuitem_t OP_VideoOptionsMenu[] =
 	{IT_STRING | IT_CVAR | IT_CV_SLIDER,
 	                        NULL, 	"Saturation",      		&cv_globalsaturation ,    40},
 
-	{IT_SUBMENU|IT_STRING, NULL, "Advanced Color Settings...", &OP_ColorOptionsDef,   45},
+	{IT_SUBMENU|IT_STRING, NULL, "Advanced Color Settings...", &OP_ColorOptionsDef,   50},
 
 	{IT_STRING | IT_CVAR,  NULL, "Randomized Directional Light",&cv_randomdirlight,	  60},
 
