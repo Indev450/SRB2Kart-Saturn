@@ -301,7 +301,7 @@ void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 		out->y = mobj->y;
 		out->z = mobj->z;
 		out->scale = mobj->scale;
-		out->subsector = mobj->subsector;
+		//out->subsector = mobj->subsector;
 		out->angle = mobj->player ? mobj->player->frameangle : mobj->angle;
 		out->pitch = mobj->pitch;
 		out->roll = mobj->roll;
@@ -324,8 +324,7 @@ void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 	out->spritexoffset = doreset ? mobj->spritexoffset : R_LerpFixed(mobj->old_spritexoffset, mobj->spritexoffset, frac);
 	out->spriteyoffset = doreset ? mobj->spriteyoffset : R_LerpFixed(mobj->old_spriteyoffset, mobj->spriteyoffset, frac);
 	out->scale = mobj->resetinterp ? mobj->scale : R_LerpFixed(mobj->old_scale, mobj->scale, frac);
-	//out->subsector = R_PointInSubsector(out->x, out->y); // why was this even done?
-	out->subsector = mobj->subsector;
+	//out->subsector = R_PointInSubsector(out->x, out->y); // this is unused
 
 	if (mobj->player)
 		out->angle = mobj->resetinterp ? mobj->player->frameangle : R_LerpAngle(mobj->player->old_frameangle, mobj->player->frameangle, frac);
@@ -361,7 +360,7 @@ void R_InterpolatePrecipMobjState(precipmobj_t *mobj, fixed_t frac, interpmobjst
 		out->y = mobj->y;
 		out->z = mobj->z;
 		out->scale = cv_mobjscaleprecip.value ? mapobjectscale : FRACUNIT;
-		out->subsector = mobj->subsector;
+		//out->subsector = mobj->subsector;
 		out->angle = mobj->angle;
 		out->spritexscale = mobj->spritexscale;
 		out->spriteyscale = mobj->spriteyscale;
@@ -378,9 +377,8 @@ void R_InterpolatePrecipMobjState(precipmobj_t *mobj, fixed_t frac, interpmobjst
 		out->spriteyscale = mobj->spriteyscale;
 		out->spritexoffset = mobj->spritexoffset;
 		out->spriteyoffset = mobj->spriteyoffset;
+		//out->subsector = R_PointInSubsector(out->x, out->y); // this is unused
 
-		//out->subsector = R_PointInSubsector(out->x, out->y); // i dont understand lol
-		out->subsector = mobj->subsector;
 		out->angle = R_LerpAngle(mobj->old_angle, mobj->angle, frac);
 }
 
