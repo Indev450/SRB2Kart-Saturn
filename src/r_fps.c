@@ -103,16 +103,12 @@ static inline angle_t R_LerpAngleView(angle_t from, angle_t to, fixed_t frac)
 
 static inline fixed_t R_LerpFixed(fixed_t from, fixed_t to, fixed_t frac)
 {
-	if (from == to)
-		return to;
-	return from + FixedMul(frac, to - from);
+	return ((from == to) ? to : from + FixedMul(frac, to - from));
 }
 
 static inline angle_t R_LerpAngle(angle_t from, angle_t to, fixed_t frac)
 {
-	if (from == to)
-		return to;
-	return from + FixedMul(frac, to - from);
+	return ((from == to) ? to : from + FixedMul(frac, to - from));
 }
 
 /*static vector2_t *R_LerpVector2(const vector2_t *from, const vector2_t *to, fixed_t frac, vector2_t *out)
