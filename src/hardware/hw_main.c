@@ -943,7 +943,7 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 
 	for (INT32 i = 0; i < sector->numlights; i++)
 	{
-		if (endtop < endrealbot && top < realbot)
+		if ((endtop < endrealbot) && (top < realbot))
 			return;
 
 		lightlist_t *list = sector->lightlist;
@@ -1009,12 +1009,12 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 			endbheight = endrealbot;
 		}
 
-		if (endbheight >= endtop && bheight >= top)
+		if ((endbheight >= endtop) && (bheight >= top))
 			continue;
 
 		// Found a break
 		// The heights are clamped to ensure the polygon doesn't cross itself.
-		bot = CLAMP(bheight,realbot , top);
+		bot = CLAMP(bheight, realbot, top);
 		endbot = CLAMP(endbheight, endrealbot, endtop);
 
 		Surf->PolyColor.s.alpha = alpha;
@@ -1043,7 +1043,7 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 
 	bot = realbot;
 	endbot = endrealbot;
-	if (endtop <= endrealbot && top <= realbot)
+	if ((endtop <= endrealbot) && (top <= realbot))
 		return;
 
 	Surf->PolyColor.s.alpha = alpha;
@@ -3621,7 +3621,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 
 	for (i = 0; i < sector->numlights; i++)
 	{
-		if (endtop < endrealbot && top < realbot)
+		if ((endtop < endrealbot) && (top < realbot))
 			return;
 
 		// even if we aren't changing colormap or lightlevel, we still need to continue drawing down the sprite
@@ -3645,18 +3645,13 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 			endbheight = endrealbot;
 		}
 
-		if (endbheight >= endtop && bheight >= top)
+		if ((endbheight >= endtop) && (bheight >= top))
 			continue;
 
-		bot = bheight;
-
-		if (bot < realbot)
-			bot = realbot;
-
-		endbot = endbheight;
-
-		if (endbot < endrealbot)
-			endbot = endrealbot;
+		// Found a break
+		// The heights are clamped to ensure the polygon doesn't cross itself.
+		bot = CLAMP(bheight, realbot, top);
+		endbot = CLAMP(endbheight, endrealbot, endtop);
 
 		wallVerts[3].t = towtop + ((realtop - top) * towmult);
 		wallVerts[2].t = towtop + ((endrealtop - endtop) * towmult);
@@ -3704,7 +3699,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 	bot = realbot;
 	endbot = endrealbot;
 
-	if (endtop <= endrealbot && top <= realbot)
+	if ((endtop <= endrealbot) && (top <= realbot))
 		return;
 
 	// If we're ever down here, somehow the above loop hasn't draw all the light levels of sprite
