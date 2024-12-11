@@ -1417,139 +1417,148 @@ static void Clamp2D(GLenum pname)
 //             is it faster when pixels are discarded ?
 void GL_SetBlend(FBITFIELD PolyFlags)
 {
-	FBITFIELD Xor;
-	Xor = CurrentPolyFlags^PolyFlags;
-	if (Xor & (PF_Blending|PF_RemoveYWrap|PF_ForceWrapX|PF_ForceWrapY|PF_Occlude|PF_NoTexture|PF_Modulated|PF_NoDepthTest|PF_Decal|PF_Invisible|PF_NoAlphaTest))
+	const FBITFIELD Xor = (CurrentPolyFlags ^ PolyFlags);
+
+	if (!(Xor & (PF_Blending|PF_RemoveYWrap|PF_ForceWrapX|PF_ForceWrapY|PF_Occlude|PF_NoTexture|PF_Modulated|PF_NoDepthTest|PF_Decal|PF_Invisible|PF_NoAlphaTest)))
 	{
-		if (Xor&(PF_Blending)) // if blending mode must be changed
-		{
-			switch (PolyFlags & PF_Blending) {
-				case PF_Translucent & PF_Blending:
-					pglBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // alpha = level of transparency
-					pglAlphaFunc(GL_NOTEQUAL, 0.0f);
-					break;
-				case PF_Masked & PF_Blending:
-					// Hurdler: does that mean lighting is only made by alpha src?
-					// it sounds ok, but not for polygonsmooth
-					pglBlendFunc(GL_SRC_ALPHA, GL_ZERO);                // 0 alpha = holes in texture
-					pglAlphaFunc(GL_GREATER, 0.5f);
-					break;
-				case PF_Additive & PF_Blending:
-					pglBlendFunc(GL_SRC_ALPHA, GL_ONE);                 // src * alpha + dest
-					pglAlphaFunc(GL_NOTEQUAL, 0.0f);
-					break;
-				case PF_Environment & PF_Blending:
-					pglBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-					pglAlphaFunc(GL_NOTEQUAL, 0.0f);
-					break;
-				case PF_Substractive & PF_Blending:
-					// good for shadow
-					// not really but what else ?
-					pglBlendFunc(GL_ZERO, GL_ONE_MINUS_SRC_COLOR);
-					pglAlphaFunc(GL_NOTEQUAL, 0.0f);
-					break;
-				case PF_Fog & PF_Fog:
-					// Sryder: Fog
-					// multiplies input colour by input alpha, and destination colour by input colour, then adds them
-					pglBlendFunc(GL_SRC_ALPHA, GL_SRC_COLOR);
-					pglAlphaFunc(GL_ALWAYS, 0.0f); // Don't discard zero alpha fragments
-					break;
-				default : // must be 0, otherwise it's an error
-					// No blending
-					pglBlendFunc(GL_ONE, GL_ZERO);   // the same as no blending
-					pglAlphaFunc(GL_GREATER, 0.5f);
-					break;
-			}
-		}
-		if (Xor & PF_NoAlphaTest)
-		{
-			if (PolyFlags & PF_NoAlphaTest)
-				pglDisable(GL_ALPHA_TEST);
-			else
-				pglEnable(GL_ALPHA_TEST);      // discard 0 alpha pixels (holes in texture)
-		}
+		CurrentPolyFlags = PolyFlags;
+		return;
+	}
 
-		if (Xor & PF_Decal)
+	if (Xor & PF_Blending) // if blending mode must be changed
+	{
+		switch (PolyFlags & PF_Blending)
 		{
-			if (PolyFlags & PF_Decal)
-				pglEnable(GL_POLYGON_OFFSET_FILL);
-			else
-				pglDisable(GL_POLYGON_OFFSET_FILL);
+			case (PF_Translucent & PF_Blending):
+				pglBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // alpha = level of transparency
+				pglAlphaFunc(GL_NOTEQUAL, 0.0f);
+				break;
+			case (PF_Masked & PF_Blending):
+				// Hurdler: does that mean lighting is only made by alpha src?
+				// it sounds ok, but not for polygonsmooth
+				pglBlendFunc(GL_SRC_ALPHA, GL_ZERO);                // 0 alpha = holes in texture
+				pglAlphaFunc(GL_GREATER, 0.5f);
+				break;
+			case (PF_Additive & PF_Blending):
+				pglBlendFunc(GL_SRC_ALPHA, GL_ONE);                 // src * alpha + dest
+				pglAlphaFunc(GL_NOTEQUAL, 0.0f);
+				break;
+			case (PF_Environment & PF_Blending):
+				pglBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+				pglAlphaFunc(GL_NOTEQUAL, 0.0f);
+				break;
+			case (PF_Substractive & PF_Blending):
+				// good for shadow
+				// not really but what else ?
+				pglBlendFunc(GL_ZERO, GL_ONE_MINUS_SRC_COLOR);
+				pglAlphaFunc(GL_NOTEQUAL, 0.0f);
+				break;
+			case (PF_Fog & PF_Fog):
+				// Sryder: Fog
+				// multiplies input colour by input alpha, and destination colour by input colour, then adds them
+				pglBlendFunc(GL_SRC_ALPHA, GL_SRC_COLOR);
+				pglAlphaFunc(GL_ALWAYS, 0.0f); // Don't discard zero alpha fragments
+				break;
+			default : // must be 0, otherwise it's an error
+				// No blending
+				pglBlendFunc(GL_ONE, GL_ZERO);   // the same as no blending
+				pglAlphaFunc(GL_GREATER, 0.5f);
+				break;
 		}
-		if (Xor&PF_NoDepthTest)
-		{
-			if (PolyFlags & PF_NoDepthTest)
-				pglDepthFunc(GL_ALWAYS); //pglDisable(GL_DEPTH_TEST);
-			else
-				pglDepthFunc(GL_LEQUAL); //pglEnable(GL_DEPTH_TEST);
-		}
+	}
 
-		if (Xor&PF_RemoveYWrap)
-		{
-			if (PolyFlags & PF_RemoveYWrap)
-				Clamp2D(GL_TEXTURE_WRAP_T);
-		}
+	if (Xor & PF_NoAlphaTest)
+	{
+		if (PolyFlags & PF_NoAlphaTest)
+			pglDisable(GL_ALPHA_TEST);
+		else
+			pglEnable(GL_ALPHA_TEST);      // discard 0 alpha pixels (holes in texture)
+	}
 
-		if (Xor&PF_ForceWrapX)
-		{
-			if (PolyFlags & PF_ForceWrapX)
-				pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		}
+	if (Xor & PF_Decal)
+	{
+		if (PolyFlags & PF_Decal)
+			pglEnable(GL_POLYGON_OFFSET_FILL);
+		else
+			pglDisable(GL_POLYGON_OFFSET_FILL);
+	}
+	if (Xor & PF_NoDepthTest)
+	{
+		if (PolyFlags & PF_NoDepthTest)
+			pglDepthFunc(GL_ALWAYS); //pglDisable(GL_DEPTH_TEST);
+		else
+			pglDepthFunc(GL_LEQUAL); //pglEnable(GL_DEPTH_TEST);
+	}
 
-		if (Xor&PF_ForceWrapY)
-		{
-			if (PolyFlags & PF_ForceWrapY)
-				pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-		}
+	if (Xor & PF_RemoveYWrap)
+	{
+		if (PolyFlags & PF_RemoveYWrap)
+			Clamp2D(GL_TEXTURE_WRAP_T);
+	}
 
-		if (Xor&PF_Modulated)
-		{
+	if (Xor & PF_ForceWrapX)
+	{
+		if (PolyFlags & PF_ForceWrapX)
+			pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	}
+
+	if (Xor & PF_ForceWrapY)
+	{
+		if (PolyFlags & PF_ForceWrapY)
+			pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	}
+
+	if (Xor & PF_Modulated)
+	{
 #if defined (__unix__) || defined (UNIXCOMMON)
-			if (oglflags & GLF_NOTEXENV)
-			{
-				if (!(PolyFlags & PF_Modulated))
-					pglColor4ubv(white);
-			}
-			else
+		if (oglflags & GLF_NOTEXENV)
+		{
+			if (!(PolyFlags & PF_Modulated))
+				pglColor4ubv(white);
+		}
+		else
 #endif
 
-			// mix texture colour with Surface->PolyColor
-			if (PolyFlags & PF_Modulated)
-				pglTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-			// colour from texture is unchanged before blending
-			else
-				pglTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-		}
-
-		if (Xor & PF_Occlude) // depth test but (no) depth write
-		{
-			if (PolyFlags&PF_Occlude)
-				pglDepthMask(1);
-			else
-				pglDepthMask(0);
-		}
-		////Hurdler: not used if we don't define POLYSKY
-		if (Xor & PF_Invisible)
-		{
-			if (PolyFlags&PF_Invisible)
-				pglBlendFunc(GL_ZERO, GL_ONE);         // transparent blending
-			else
-			{   // big hack: (TODO: manage that better)
-				// we test only for PF_Masked because PF_Invisible is only used
-				// (for now) with it (yeah, that's crappy, sorry)
-				if ((PolyFlags&PF_Blending)==PF_Masked)
-					pglBlendFunc(GL_SRC_ALPHA, GL_ZERO);
-			}
-		}
-		if (PolyFlags & PF_NoTexture)
-			GL_SetNoTexture();
+		// mix texture colour with Surface->PolyColor
+		if (PolyFlags & PF_Modulated)
+			pglTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+		// colour from texture is unchanged before blending
+		else
+			pglTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 	}
+
+	if (Xor & PF_Occlude) // depth test but (no) depth write
+	{
+		if (PolyFlags & PF_Occlude)
+			pglDepthMask(1);
+		else
+			pglDepthMask(0);
+	}
+
+	////Hurdler: not used if we don't define POLYSKY
+	if (Xor & PF_Invisible)
+	{
+		if (PolyFlags&PF_Invisible)
+			pglBlendFunc(GL_ZERO, GL_ONE);         // transparent blending
+		else
+		{   // big hack: (TODO: manage that better)
+			// we test only for PF_Masked because PF_Invisible is only used
+			// (for now) with it (yeah, that's crappy, sorry)
+			if ((PolyFlags & PF_Blending) == PF_Masked)
+				pglBlendFunc(GL_SRC_ALPHA, GL_ZERO);
+		}
+	}
+
+	if (PolyFlags & PF_NoTexture)
+		GL_SetNoTexture();
+
 	CurrentPolyFlags = PolyFlags;
 }
 
 static void GL_AllocTextureBuffer(GLMipmap_t *pTexInfo)
 {
 	size_t size = pTexInfo->width * pTexInfo->height;
+
 	if (size > textureBufferSize)
 	{
 		textureBuffer = realloc(textureBuffer, size * sizeof(RGBA_t));
@@ -2865,10 +2874,9 @@ void GL_PostImgRedraw(float points[SCREENVERTS][SCREENVERTS][2])
 	pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
 	pglEnableClientState(GL_TEXTURE_COORD_ARRAY);
-
-	for (x = 0; x < SCREENVERTS-1;x ++)
+	for(x = 0; x < SCREENVERTS-1;x ++)
 	{
-		for (y = 0; y < SCREENVERTS-1; y++)
+		for(y = 0; y < SCREENVERTS-1; y++)
 		{
 			float stCoords[8];
 			float vertCoords[12];
