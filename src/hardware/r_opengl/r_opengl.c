@@ -1598,6 +1598,7 @@ void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 
 	INT32 w = pTexInfo->width, h = pTexInfo->height;
 	INT32 i, j;
+	INT32 idx;
 
 	const GLubyte *pImgData = (const GLubyte *)pTexInfo->data;
 	const GLvoid *ptex = NULL;
@@ -1626,12 +1627,10 @@ void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 
 			const int chromakeyed = (pTexInfo->flags & TF_CHROMAKEYED);
 
-			for (j = 0; j < h; j++)
+			for (idx = 0, j = 0; j < h; j++)
 			{
-				for (i = 0; i < w; i++)
+				for (i = 0; i < w; i++, idx++)
 				{
-					int idx = (w*j+i);
-
 					if ((*pImgData == HWR_PATCHES_CHROMAKEY_COLORINDEX) && chromakeyed)
 					{
 						tex[idx].s.red   = 0;
@@ -1666,12 +1665,10 @@ void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 			ptex = tex = textureBuffer;
 			texformat = GL_LUMINANCE_ALPHA;
 
-			for (j = 0; j < h; j++)
+			for (idx = 0, j = 0; j < h; j++)
 			{
-				for (i = 0; i < w; i++)
+				for (i = 0; i < w; i++, idx++)
 				{
-					int idx = (w*j+i);
-
 					tex[idx].s.red   = *pImgData;
 					tex[idx].s.green = *pImgData;
 					tex[idx].s.blue  = *pImgData;
@@ -1686,12 +1683,10 @@ void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 			ptex = tex = textureBuffer;
 			texformat = GL_ALPHA;
 
-			for (j = 0; j < h; j++)
+			for (idx = 0, j = 0; j < h; j++)
 			{
-				for (i = 0; i < w; i++)
+				for (i = 0; i < w; i++, idx++)
 				{
-					int idx = (w*j+i);
-
 					tex[idx].s.red   = 255; // 255 because the fade mask is modulated with the screen texture, so alpha affects it while the colours don't
 					tex[idx].s.green = 255;
 					tex[idx].s.blue  = 255;
