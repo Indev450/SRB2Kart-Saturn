@@ -1324,10 +1324,7 @@ void GL_SetPalette(RGBA_t *palette)
 
 	for (i = 0; i < 256; i++)
 	{
-		myPaletteData[i].s.red   = palette[i].s.red;
-		myPaletteData[i].s.green = palette[i].s.green;
-		myPaletteData[i].s.blue  = palette[i].s.blue;
-		myPaletteData[i].s.alpha = palette[i].s.alpha;
+		myPaletteData[i].s = palette[i].s;
 	}
 
 	GL_Flush();
