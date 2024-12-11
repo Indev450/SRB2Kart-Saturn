@@ -166,7 +166,7 @@ FUNCINLINE static ATTRINLINE boolean R_IsPointInSector(sector_t *sector, fixed_t
 	}
 
 	// and odd number of passes means we're inside the polygon.
-	return passes % 2;
+	return (boolean)(passes % 2);
 }
 
 //
