@@ -584,6 +584,7 @@ fixed_t P_MobjFloorZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed_t
 {
 	I_Assert(mobj != NULL);
 	I_Assert(sector != NULL);
+
 	if (sector->f_slope)
 	{
 		fixed_t testx, testy;
@@ -653,7 +654,8 @@ fixed_t P_MobjFloorZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed_t
 			return P_GetZAt(slope, x, y);
 
 		return HighestOnLine(mobj->radius, x, y, line, slope, lowest);
-	} else // Well, that makes it easy. Just get the floor height
+	}
+	else // Well, that makes it easy. Just get the floor height
 		return sector->floorheight;
 }
 
@@ -661,6 +663,7 @@ fixed_t P_MobjCeilingZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed
 {
 	I_Assert(mobj != NULL);
 	I_Assert(sector != NULL);
+
 	if (sector->c_slope)
 	{
 		fixed_t testx, testy;
@@ -730,7 +733,8 @@ fixed_t P_MobjCeilingZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed
 			return P_GetZAt(slope, x, y);
 
 		return HighestOnLine(mobj->radius, x, y, line, slope, lowest);
-	} else // Well, that makes it easy. Just get the ceiling height
+	}
+	else // Well, that makes it easy. Just get the ceiling height
 		return sector->ceilingheight;
 }
 
@@ -809,7 +813,8 @@ fixed_t P_CameraFloorZ(camera_t *mobj, sector_t *sector, sector_t *boundsec, fix
 			return P_GetZAt(slope, x, y);
 
 		return HighestOnLine(mobj->radius, x, y, line, slope, lowest);
-	} else // Well, that makes it easy. Just get the floor height
+	}
+	else // Well, that makes it easy. Just get the floor height
 		return sector->floorheight;
 }
 
@@ -887,7 +892,8 @@ fixed_t P_CameraCeilingZ(camera_t *mobj, sector_t *sector, sector_t *boundsec, f
 			return P_GetZAt(slope, x, y);
 
 		return HighestOnLine(mobj->radius, x, y, line, slope, lowest);
-	} else // Well, that makes it easy. Just get the ceiling height
+	}
+	else // Well, that makes it easy. Just get the ceiling height
 		return sector->ceilingheight;
 }
 static void P_PlayerFlip(mobj_t *mo)
