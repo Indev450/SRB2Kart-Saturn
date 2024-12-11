@@ -1045,7 +1045,10 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 			endbheight = endrealbot;
 		}
 
-		if ((endbheight >= endtop) && (bheight >= top))
+		if (endbheight >= endtop)
+			continue;
+
+		if (bheight >= top)
 			continue;
 
 		// Found a break
@@ -3684,7 +3687,10 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 			endbheight = endrealbot;
 		}
 
-		if ((endbheight >= endtop) && (bheight >= top))
+		if (endbheight >= endtop)
+			continue;
+
+		if (bheight >= top)
 			continue;
 
 		// Found a break
