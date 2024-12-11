@@ -615,6 +615,7 @@ Countstutter (int len)
 			}
 			else
 				bytes = ( music_bytes - music_stutter_bytes );
+
 			I_SetSongPosition((int)( bytes/4/44100.0*1000 ));
 		}
 	}
