@@ -10284,19 +10284,26 @@ void P_SpawnPrecipitation(void)
 	if (dedicated || !cv_drawdist_precip.value || curWeather == PRECIP_NONE) // SRB2Kart
 		return;
 
+	fixed_t density = (cv_mobjscaleprecip.value ? mapobjectscale : FRACUNIT);
+
+	if (cv_lessprecip.value)
+		density *= 2; // just spawn half the precip
+
 	// Use the blockmap to narrow down our placing patterns
 	for (i = 0; i < bmapwidth*bmapheight; ++i)
 	{
 		basex = bmaporgx + (i % bmapwidth) * MAPBLOCKSIZE;
 		basey = bmaporgy + (i / bmapwidth) * MAPBLOCKSIZE;
 
-		for (j = 0; j < FRACUNIT; j += cv_mobjscaleprecip.value ? mapobjectscale : FRACUNIT)
+		// If mobjscale < FRACUNIT, each blockmap cell covers
+		// more area so spawn more precipitation in that area.
+		for (j = 0; j < FRACUNIT; j += density)
 		{
 			INT32 floorz;
 			INT32 ceilingz;
 
-			x = ((cv_lessprecip.value ? basex*1.5 : basex) + ((M_RandomKey(MAPBLOCKUNITS<<3)<<FRACBITS)>>3));
-			y = ((cv_lessprecip.value ? basey*1.5 : basey) + ((M_RandomKey(MAPBLOCKUNITS<<3)<<FRACBITS)>>3));
+			x = basex + ((M_RandomKey(MAPBLOCKUNITS << 3) << FRACBITS) >> 3);
+			y = basey + ((M_RandomKey(MAPBLOCKUNITS << 3) << FRACBITS) >> 3);
 
 			precipsector = R_IsPointInSubsector(x, y);
 
