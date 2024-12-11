@@ -1562,7 +1562,7 @@ static void GL_AllocTextureBuffer(GLMipmap_t *pTexInfo)
 // -----------------+
 // UpdateTexture    : Updates texture data.
 // -----------------+
-void GL_UpdateTexture(GLMipmap_t *pTexInfo)
+static void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 {
 	// Upload a texture
 	GLuint num = pTexInfo->downloaded;
@@ -2865,9 +2865,10 @@ void GL_PostImgRedraw(float points[SCREENVERTS][SCREENVERTS][2])
 	pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
 	pglEnableClientState(GL_TEXTURE_COORD_ARRAY);
-	for(x = 0; x < SCREENVERTS-1;x ++)
+
+	for (x = 0; x < SCREENVERTS-1;x ++)
 	{
-		for(y = 0; y < SCREENVERTS-1; y++)
+		for (y = 0; y < SCREENVERTS-1; y++)
 		{
 			float stCoords[8];
 			float vertCoords[12];
