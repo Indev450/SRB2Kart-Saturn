@@ -1807,27 +1807,23 @@ void P_SwitchWeather(INT32 weathernum)
 
 			precipmobj = (precipmobj_t *)think;
 
+			mobjtype_t type = 0;
+			INT32 z = 0;
+
+			if (swap == PRECIP_BLANK || swap == PRECIP_STORM_NORAIN) // Remove precip, but keep it around for reuse.
+			{
+				precipmobj->precipflags |= PCF_INVISIBLE;
+				continue;
+			}
+
 			if (swap == PRECIP_RAIN) // Snow To Rain
 			{
-				precipmobj->type = MT_RAIN; // proper set the type
-				precipmobj->info = &mobjinfo[MT_RAIN];
-				precipmobj->flags = mobjinfo[MT_RAIN].flags;
-				st = &states[mobjinfo[MT_RAIN].spawnstate];
-				precipmobj->state = st;
-				precipmobj->tics = st->tics;
-				precipmobj->sprite = st->sprite;
-				precipmobj->frame = st->frame;
-				precipmobj->momz = cv_mobjscaleprecip.value ? FixedMul(mobjinfo[MT_RAIN].speed, mapobjectscale) : mobjinfo[MT_RAIN].speed;
-
-				precipmobj->precipflags &= ~(PCF_INVISIBLE|PCF_SPLASH); // P_PrecipThinker will add this again if it needs to
+				type = MT_RAIN;
 			}
 			else if (swap == PRECIP_SNOW) // Rain To Snow
 			{
-				INT32 z;
+				type = MT_SNOWFLAKE;
 
-				precipmobj->type = MT_SNOWFLAKE; // proper set the type
-				precipmobj->info = &mobjinfo[MT_SNOWFLAKE];
-				precipmobj->flags = mobjinfo[MT_SNOWFLAKE].flags;
 				z = M_RandomByte();
 
 				if (z < 64)
@@ -1836,92 +1832,69 @@ void P_SwitchWeather(INT32 weathernum)
 					z = 1;
 				else
 					z = 0;
-
-				st = &states[mobjinfo[MT_SNOWFLAKE].spawnstate+z];
-				precipmobj->state = st;
-				precipmobj->tics = st->tics;
-				precipmobj->sprite = st->sprite;
-				precipmobj->frame = st->frame;
-				precipmobj->momz = cv_mobjscaleprecip.value ? FixedMul(mobjinfo[MT_SNOWFLAKE].speed, mapobjectscale) : mobjinfo[MT_SNOWFLAKE].speed;
-
-				precipmobj->precipflags &= ~(PCF_INVISIBLE|PCF_SPLASH); // P_PrecipThinker will add this again if it needs to
 			}
-			else if (swap == PRECIP_BLANK || swap == PRECIP_STORM_NORAIN) // Remove precip, but keep it around for reuse.
-			{
-				precipmobj->precipflags |= PCF_INVISIBLE;
-			}
+
+			precipmobj->type = type; // proper set the type
+			precipmobj->info = &mobjinfo[type];
+			precipmobj->flags = mobjinfo[type].flags;
+
+			st = &states[mobjinfo[type].spawnstate+z];
+
+			precipmobj->state = st;
+			precipmobj->tics = st->tics;
+			precipmobj->sprite = st->sprite;
+			precipmobj->frame = st->frame;
+			precipmobj->momz = (cv_mobjscaleprecip.value ? FixedMul(mobjinfo[type].speed, mapobjectscale) : mobjinfo[type].speed);
+
+			precipmobj->precipflags &= ~(PCF_INVISIBLE|PCF_SPLASH); // P_PrecipThinker will add this again if it needs to
 		}
 	}
+
+	boolean dontspawn = false;
 
 	switch (weathernum)
 	{
 		case PRECIP_SNOW: // snow
 			curWeather = PRECIP_SNOW;
-
-			if (!swap)
-				P_SpawnPrecipitation();
-
 			break;
 		case PRECIP_RAIN: // rain
 		{
-			boolean dontspawn = false;
-
 			if (curWeather == PRECIP_RAIN || curWeather == PRECIP_STORM || curWeather == PRECIP_STORM_NOSTRIKES)
 				dontspawn = true;
 
 			curWeather = PRECIP_RAIN;
-
-			if (!dontspawn && !swap)
-				P_SpawnPrecipitation();
-
 			break;
 		}
 		case PRECIP_STORM: // storm
 		{
-			boolean dontspawn = false;
-
 			if (curWeather == PRECIP_RAIN || curWeather == PRECIP_STORM || curWeather == PRECIP_STORM_NOSTRIKES)
 				dontspawn = true;
 
 			curWeather = PRECIP_STORM;
-
-			if (!dontspawn && !swap)
-				P_SpawnPrecipitation();
-
 			break;
 		}
 		case PRECIP_STORM_NOSTRIKES: // storm w/o lightning
 		{
-			boolean dontspawn = false;
-
 			if (curWeather == PRECIP_RAIN || curWeather == PRECIP_STORM || curWeather == PRECIP_STORM_NOSTRIKES)
 				dontspawn = true;
 
 			curWeather = PRECIP_STORM_NOSTRIKES;
-
-			if (!dontspawn && !swap)
-				P_SpawnPrecipitation();
-
 			break;
 		}
 		case PRECIP_STORM_NORAIN: // storm w/o rain
 			curWeather = PRECIP_STORM_NORAIN;
-
-			if (!swap)
-				P_SpawnPrecipitation();
-
 			break;
 		case PRECIP_BLANK:
 			curWeather = PRECIP_BLANK;
-
-			if (!swap)
-				P_SpawnPrecipitation();
-
 			break;
 		default:
+			dontspawn = true;
 			curWeather = PRECIP_NONE;
 			break;
 	}
+
+	if (!dontspawn && !swap)
+		P_SpawnPrecipitation();
 }
 
 /** Gets an object.
