@@ -1615,6 +1615,8 @@ void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 
 	//GL_DBG_Printf("UpdateTexture %d %x\n", (INT32)num, pImgData);
 
+	texformat = textureformatGL;
+
 	switch (pTexInfo->format)
 	{
 		case GL_TEXFMT_P_8:
@@ -1622,35 +1624,36 @@ void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 			GL_AllocTextureBuffer(pTexInfo);
 			ptex = tex = textureBuffer;
 
+			const int chromakeyed = (pTexInfo->flags & TF_CHROMAKEYED);
+
 			for (j = 0; j < h; j++)
 			{
 				for (i = 0; i < w; i++)
 				{
-					if ((*pImgData == HWR_PATCHES_CHROMAKEY_COLORINDEX) &&
-						(pTexInfo->flags & TF_CHROMAKEYED))
+					int idx = (w*j+i);
+
+					if ((*pImgData == HWR_PATCHES_CHROMAKEY_COLORINDEX) && chromakeyed)
 					{
-						tex[w*j+i].s.red   = 0;
-						tex[w*j+i].s.green = 0;
-						tex[w*j+i].s.blue  = 0;
-						tex[w*j+i].s.alpha = 0;
+						tex[idx].s.red   = 0;
+						tex[idx].s.green = 0;
+						tex[idx].s.blue  = 0;
+						tex[idx].s.alpha = 0;
 						pTexInfo->flags |= TF_TRANSPARENT; // there is a hole in it
 					}
 					else
 					{
-						tex[w*j+i].s.red   = myPaletteData[*pImgData].s.red;
-						tex[w*j+i].s.green = myPaletteData[*pImgData].s.green;
-						tex[w*j+i].s.blue  = myPaletteData[*pImgData].s.blue;
-						tex[w*j+i].s.alpha = myPaletteData[*pImgData].s.alpha;
+						tex[idx].s = myPaletteData[*pImgData].s;
 					}
 
 					pImgData++;
 
-					if (pTexInfo->format == GL_TEXFMT_AP_88)
-					{
-						if (!(pTexInfo->flags & TF_CHROMAKEYED))
-							tex[w*j+i].s.alpha = *pImgData;
-						pImgData++;
-					}
+					if (pTexInfo->format != GL_TEXFMT_AP_88)
+						continue;
+					if (chromakeyed)
+						continue;
+
+					tex[idx].s.alpha = *pImgData;
+					pImgData++;
 				}
 			}
 			break;
@@ -1661,16 +1664,19 @@ void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 		case GL_TEXFMT_ALPHA_INTENSITY_88:
 			GL_AllocTextureBuffer(pTexInfo);
 			ptex = tex = textureBuffer;
+			texformat = GL_LUMINANCE_ALPHA;
 
 			for (j = 0; j < h; j++)
 			{
 				for (i = 0; i < w; i++)
 				{
-					tex[w*j+i].s.red   = *pImgData;
-					tex[w*j+i].s.green = *pImgData;
-					tex[w*j+i].s.blue  = *pImgData;
+					int idx = (w*j+i);
+
+					tex[idx].s.red   = *pImgData;
+					tex[idx].s.green = *pImgData;
+					tex[idx].s.blue  = *pImgData;
 					pImgData++;
-					tex[w*j+i].s.alpha = *pImgData;
+					tex[idx].s.alpha = *pImgData;
 					pImgData++;
 				}
 			}
@@ -1678,15 +1684,18 @@ void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 		case GL_TEXFMT_ALPHA_8: // Used for fade masks
 			GL_AllocTextureBuffer(pTexInfo);
 			ptex = tex = textureBuffer;
+			texformat = GL_ALPHA;
 
 			for (j = 0; j < h; j++)
 			{
 				for (i = 0; i < w; i++)
 				{
-					tex[w*j+i].s.red   = 255; // 255 because the fade mask is modulated with the screen texture, so alpha affects it while the colours don't
-					tex[w*j+i].s.green = 255;
-					tex[w*j+i].s.blue  = 255;
-					tex[w*j+i].s.alpha = *pImgData;
+					int idx = (w*j+i);
+
+					tex[idx].s.red   = 255; // 255 because the fade mask is modulated with the screen texture, so alpha affects it while the colours don't
+					tex[idx].s.green = 255;
+					tex[idx].s.blue  = 255;
+					tex[idx].s.alpha = *pImgData;
 					pImgData++;
 				}
 			}
@@ -1699,8 +1708,10 @@ void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 	pglBindTexture(GL_TEXTURE_2D, num);
 	tex_downloaded = num;
 
+	const int transparent = (pTexInfo->flags & TF_TRANSPARENT);
+
 	// disable texture filtering on any texture that has holes so there's no dumb borders or blending issues
-	if (pTexInfo->flags & TF_TRANSPARENT)
+	if (transparent)
 	{
 		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -1711,27 +1722,18 @@ void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter);
 	}
 
-	switch (pTexInfo->format)
-	{
-		case GL_TEXFMT_ALPHA_INTENSITY_88:
-			texformat = GL_LUMINANCE_ALPHA;
-			break;
-		case GL_TEXFMT_ALPHA_8:
-			texformat = GL_ALPHA;
-			break;
-		default:
-			texformat = textureformatGL;
-			break;
-	}
-
-	if (MipMap)
+	if (MipMap && !transparent) // No mipmaps on transparent stuff
 	{
 		pglTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
-		pglTexImage2D(GL_TEXTURE_2D, 0, texformat, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
+
+		if (update)
+			pglTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
+		else
+			pglTexImage2D(GL_TEXTURE_2D, 0, texformat, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
 
 		// Control the mipmap level of detail
-		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_LOD, 0); // the lower the number, the higher the detail
-		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, (pTexInfo->flags & TF_TRANSPARENT) ? 0 : 4); // No mipmaps on transparent stuff
+		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_LOD, 0);
+		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, 4);
 	}
 	else
 	{
@@ -2227,6 +2229,7 @@ void GL_SetSpecialState(hwdspecialstate_t IdState, INT32 Value)
 			gl_allowshaders = Value;
 			break;
 		case HWD_SET_TEXTUREFILTERMODE:
+
 			switch (Value)
 			{
 				case HWD_SET_TEXTUREFILTER_TRILINEAR:
@@ -2258,9 +2261,10 @@ void GL_SetSpecialState(hwdspecialstate_t IdState, INT32 Value)
 					MipMap = GL_TRUE;
 					break;
 				default:
-					mag_filter = GL_LINEAR;
 					min_filter = GL_NEAREST;
+					mag_filter = GL_LINEAR;
 			}
+
 			if (!supportMipMap)
 			{
 				MipMap = GL_FALSE;
