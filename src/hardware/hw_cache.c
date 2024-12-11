@@ -172,13 +172,13 @@ static void HWR_DrawPatchInCache(GLMipmap_t *mipmap,
 
 	palette = HWR_GetTexturePalette();
 
-	ncols = pwidth;
+	ncols = (pwidth * pblockwidth) / pwidth;
 
 	// source advance
 	xfrac = 0;
-	xfracstep = FRACUNIT;
-	yfracstep = FRACUNIT;
-	scale_y   = FRACUNIT;
+	xfracstep = (pwidth        << FRACBITS) / pblockwidth;
+	yfracstep = (pheight       << FRACBITS) / pblockheight;
+	scale_y   = (pblockheight  << FRACBITS) / pheight;
 
 	bpp = format2bpp(mipmap->format);
 
@@ -418,19 +418,14 @@ void HWR_MakePatch (patch_t *patch, GLPatch_t *glPatch, GLMipmap_t *glMipmap, bo
 		glPatch->leftoffset = SHORT(patch->leftoffset);
 		glPatch->topoffset = SHORT(patch->topoffset);
 
-		glMipmap->width = glMipmap->height = 1;
-		while (glMipmap->width < glPatch->width) glMipmap->width <<= 1;
-		while (glMipmap->height < glPatch->height) glMipmap->height <<= 1;
+		glMipmap->width = (UINT16)SHORT(patch->width);
+		glMipmap->height = (UINT16)SHORT(patch->height);
 
 		// no wrap around, no chroma key
 		glMipmap->flags = 0;
 
 		// setup the texture info
 		glMipmap->format = patchformat;
-
-		//glPatch->max_s = glPatch->max_t = 1.0f;
-		glPatch->max_s = (float)glPatch->width / (float)glMipmap->width;
-		glPatch->max_t = (float)glPatch->height / (float)glMipmap->height;
 	}
 
 	Z_Free(glMipmap->data);
@@ -441,10 +436,12 @@ void HWR_MakePatch (patch_t *patch, GLPatch_t *glPatch, GLMipmap_t *glMipmap, bo
 		MakeBlock(glMipmap);
 
 		HWR_DrawPatchInCache(glMipmap,
-			glMipmap->width, glMipmap->height,
+			glPatch->width, glPatch->height,
 			glPatch->width, glPatch->height,
 			patch);
 	}
+
+	glPatch->max_s = glPatch->max_t = 1.0f;
 }
 
 // =================================================
