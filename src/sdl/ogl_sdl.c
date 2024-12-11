@@ -44,6 +44,7 @@
 #include "hwsym_sdl.h"
 #include "../m_argv.h"
 #include "../i_video.h"
+#include "../f_finale.h"
 
 #ifdef DEBUG_TO_FILE
 #include <stdarg.h>
@@ -304,6 +305,7 @@ void OglSdlFinishUpdate(boolean waitvbl)
 #ifdef USE_FBO_OGL
 	&& (!UseScreenFBO())
 #endif
+	|| WipeInAction
 	)
 		HWR_DrawScreenFinalTexture(realwidth, realheight, false);
 
