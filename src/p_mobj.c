@@ -10057,7 +10057,7 @@ static precipmobj_t *P_SpawnPrecipMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype
 	mobj->momz = cv_mobjscaleprecip.value ? FixedMul(info->speed, mapobjectscale) : info->speed;
 
 	mobj->thinker.function.acp1 = (actionf_p1)P_NullPrecipThinker;
-	P_AddThinker(&mobj->thinker);
+	P_AddPrecipThinker(&mobj->thinker);
 
 	CalculatePrecipFloor(mobj);
 

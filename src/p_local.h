@@ -63,10 +63,12 @@
 
 // both the head and tail of the thinker list
 extern thinker_t thinkercap;
+extern thinker_t precipcap;
 extern mobj_t *mobjcache;
 
 void P_InitThinkers(void);
 void P_AddThinker(thinker_t *thinker);
+void P_AddPrecipThinker(thinker_t *thinker);
 void P_RemoveThinker(thinker_t *thinker);
 void P_UnlinkThinker(thinker_t *thinker);
 

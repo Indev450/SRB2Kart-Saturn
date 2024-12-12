@@ -1680,8 +1680,7 @@ static void P_NetArchiveThinkers(savebuffer_t *save)
 	// save off the current thinkers
 	for (th = thinkercap.next; th != &thinkercap; th = th->next)
 	{
-		if (!(th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed
-		 || th->function.acp1 == (actionf_p1)P_NullPrecipThinker))
+		if (th->function.acp1 != (actionf_p1)P_RemoveThinkerDelayed)
 			numsaved++;
 
 		if (th->function.acp1 == (actionf_p1)P_MobjThinker)
@@ -1689,9 +1688,6 @@ static void P_NetArchiveThinkers(savebuffer_t *save)
 			SaveMobjThinker(save, th, tc_mobj);
 			continue;
 		}
-#ifdef PARANOIA
-		else if (th->function.acp1 == (actionf_p1)P_NullPrecipThinker);
-#endif
 		else if (th->function.acp1 == (actionf_p1)T_MoveCeiling)
 		{
 			SaveCeilingThinker(save, th, tc_ceiling);
@@ -2685,7 +2681,22 @@ static void P_NetUnArchiveThinkers(savebuffer_t *save)
 	{
 		next = currentthinker->next;
 
-		if (currentthinker->function.acp1 == (actionf_p1)P_MobjThinker || currentthinker->function.acp1 == (actionf_p1)P_NullPrecipThinker)
+		if (currentthinker->function.acp1 == (actionf_p1)P_MobjThinker)
+			P_RemoveSavegameMobj((mobj_t *)currentthinker); // item isn't saved, don't remove it
+		else
+		{
+			(next->prev = currentthinker->prev)->next = next;
+			R_DestroyLevelInterpolators(currentthinker);
+			Z_Free(currentthinker);
+		}
+	}
+
+	currentthinker = precipcap.next;
+	for (currentthinker = precipcap.next; currentthinker != &precipcap; currentthinker = next)
+	{
+		next = currentthinker->next;
+
+		if (currentthinker->function.acp1 == (actionf_p1)P_NullPrecipThinker)
 			P_RemoveSavegameMobj((mobj_t *)currentthinker); // item isn't saved, don't remove it
 		else
 		{

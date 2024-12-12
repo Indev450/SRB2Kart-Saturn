@@ -310,7 +310,7 @@ static void Precipstuff_OnChange(void)
 	thinker_t *next;
 	precipmobj_t *precipmobj;
 
-	for (think = thinkercap.next; think != &thinkercap; think = next)
+	for (think = precipcap.next; think != &precipcap; think = next)
 	{
 		next = think->next;
 
