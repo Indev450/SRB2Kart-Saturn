@@ -5702,7 +5702,25 @@ static void COM_HWR_glinfo(void)
 	CONS_Printf("%u GL extensions present.\n", gl_num_extensions);
 	if (list_extensions)
 	{
-		CONS_Printf("%s\n", gl_extensions);
+		// We need this strtok loop because we cannot write the extensions list directly
+		// to the output buffer, because it will overflow the output buffer of CONS_Printf
+		// if the GPU is super new and supports a bajillion extensions - xyzzy
+
+		char *copy = strdup((const char*)gl_extensions);
+		char *ext = strtok(copy, " ");
+
+		if (copy == NULL)
+		{
+			CONS_Printf("Ran out of memory listing extensions?!?!");
+			return;
+		}
+
+		do
+		{
+			CONS_Printf(" - %s\n", ext);
+		} while ((ext = strtok(NULL, " ")) != NULL);
+
+		free(copy);
 	}
 	else
 	{
