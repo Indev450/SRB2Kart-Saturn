@@ -1613,7 +1613,7 @@ static void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 				{
 					int idx = (w*j+i);
 
-					if ((*pImgData == HWR_PATCHES_CHROMAKEY_COLORINDEX) && chromakeyed)
+					if (chromakeyed && (*pImgData == HWR_PATCHES_CHROMAKEY_COLORINDEX))
 					{
 						tex[idx].s.red   = 0;
 						tex[idx].s.green = 0;
