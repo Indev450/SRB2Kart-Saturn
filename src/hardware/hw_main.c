@@ -5654,6 +5654,8 @@ void HWR_Startup(void)
 
 		if (msaa)
 			GL_SetSpecialState(HWD_SET_MSAA, a2c ? 2 : 1);
+
+		HWR_RegisterCommands();
 	}
 	startupdone = true;
 }
