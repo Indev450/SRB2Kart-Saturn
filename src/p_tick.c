@@ -286,8 +286,8 @@ void P_UnlinkThinker(thinker_t *thinker)
 
 	(next->prev = thinker->prev)->next = next;
 
-	if (thinker->cachable != true && thinker->cachable != false)
-		CONS_Alert(CONS_ERROR, "P_UnlinkThinker: weird value for cachable = %d\n", thinker->cachable);
+	//if (thinker->cachable != true && thinker->cachable != false)
+		//CONS_Alert(CONS_ERROR, "P_UnlinkThinker: weird value for cachable = %d\n", thinker->cachable);
 
 	if (thinker->cachable == true)
 	{
