@@ -577,8 +577,7 @@ static void PS_CountThinkers(void)
 	ps_removecount.value.i = 0;
 	for (thinker = thinkercap.next; thinker != &thinkercap; thinker = thinker->next)
 	{
-		if (thinker->function.acp1 != (actionf_p1)P_NullPrecipThinker)
-			ps_thinkercount.value.i++;
+		ps_thinkercount.value.i++;
 
 		if (thinker->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 			ps_removecount.value.i++;
@@ -593,11 +592,18 @@ static void PS_CountThinkers(void)
 			else
 				ps_regularcount.value.i++;
 		}
-		else if (thinker->function.acp1 == (actionf_p1)P_NullPrecipThinker)
-			ps_precipcount.value.i++;
 		else
 			ps_otherthcount.value.i++;
 	}
+
+	for (thinker = precipcap.next; thinker != &precipcap; thinker = thinker->next)
+	{
+		if (thinker->function.acp1 != (actionf_p1)P_NullPrecipThinker)
+			continue; // not a precipmobj thinker
+
+		ps_precipcount.value.i++;
+	}
+
 	/*for (i = 0; i < NUM_THINKERLISTS; i++)
 	{
 		for (thinker = thlist[i].next; thinker != &thlist[i]; thinker = thinker->next)
