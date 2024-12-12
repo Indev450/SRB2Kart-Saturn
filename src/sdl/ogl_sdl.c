@@ -151,6 +151,8 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 		gl_version = pglGetString(GL_VERSION);
 		gl_renderer = pglGetString(GL_RENDERER);
 		gl_extensions = pglGetString(GL_EXTENSIONS);
+		pglGetIntegerv(GL_NUM_EXTENSIONS, (GLint*)&gl_num_extensions);
+		gl_vendor = pglGetString(GL_VENDOR);
 
 		GL_DBG_Printf("OpenGL %s\n", gl_version);
 		GL_DBG_Printf("GPU: %s\n", gl_renderer);
