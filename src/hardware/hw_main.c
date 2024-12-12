@@ -141,6 +141,8 @@ static void HWR_TogglePaletteRendering(void);
 // ==========================================================================
 // Commands and console variables
 // ==========================================================================
+static void HWR_RegisterCommands(void);
+static void COM_HWR_glinfo(void);
 
 //
 // Onchanges
@@ -5654,6 +5656,56 @@ void HWR_Startup(void)
 			GL_SetSpecialState(HWD_SET_MSAA, a2c ? 2 : 1);
 	}
 	startupdone = true;
+}
+
+/**
+ * Register renderer commands.
+ */
+static void HWR_RegisterCommands(void)
+{
+	COM_AddCommand("gr_glinfo", COM_HWR_glinfo);
+}
+
+static void COM_HWR_glinfo(void)
+{
+	if (vid.glstate != VID_GL_LIBRARY_LOADED)
+	{
+		CONS_Printf("Currently not using the OpenGL renderer.\n");
+		return;
+	}
+
+	int list_extensions = 0;
+	size_t argc = COM_Argc();
+	const char *argv;
+	for (size_t i = 1; i < argc; i++)
+	{
+		argv = COM_Argv(i);
+
+		if (strcmp(argv, "--list-extensions") == 0 || strcmp(argv, "-l") == 0)
+		{
+			list_extensions = 1;
+		}
+		else
+		{
+			CONS_Printf("Unrecognized argument: %s\n", argv);
+			return;
+		}
+		
+	}
+
+	CONS_Printf("\x88OpenGL %s\x80\n", gl_version);
+	CONS_Printf("Renderer: %s\n", gl_renderer);
+	CONS_Printf("Vendor: %s\n", gl_vendor);
+
+	CONS_Printf("%u GL extensions present.\n", gl_num_extensions);
+	if (list_extensions)
+	{
+		CONS_Printf("%s\n", gl_extensions);
+	}
+	else
+	{
+		CONS_Printf("Use --list-extensions to view the list of extensions.\n");
+	}
 }
 
 // --------------------------------------------------------------------------
