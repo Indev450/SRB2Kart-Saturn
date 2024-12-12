@@ -66,7 +66,6 @@ PFNGLXSWAPINTERVALPROC glXSwapIntervalSGIEXT = NULL;
 PFNglClear pglClear;
 PFNglGetIntegerv pglGetIntegerv;
 PFNglGetString pglGetString;
-PFNglGetStringi pglGetStringi;
 #endif
 
 #ifdef USE_FBO_OGL
@@ -149,25 +148,13 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 			
 		gl_version = pglGetString(GL_VERSION);
 		gl_renderer = pglGetString(GL_RENDERER);
+		gl_extensions = pglGetString(GL_EXTENSIONS);
 		pglGetIntegerv(GL_NUM_EXTENSIONS, (GLint*)&gl_num_extensions);
-
-		if (gl_extensions != NULL)
-			free(gl_extensions);
-
-		gl_extensions = calloc(gl_num_extensions, sizeof(GLubyte*));
-
-		for (GLuint i = 0; i < gl_num_extensions; ++i)
-			gl_extensions[i] = pglGetStringi(GL_EXTENSIONS, i);
-
 		gl_vendor = pglGetString(GL_VENDOR);
 
 		GL_DBG_Printf("OpenGL %s\n", gl_version);
 		GL_DBG_Printf("GPU: %s\n", gl_renderer);
-
-		GL_DBG_Printf("Extensions:");
-		for (GLuint i = 0; i < gl_num_extensions; ++i)
-			GL_DBG_Printf(" %s", gl_extensions[i]);
-		GL_DBG_Printf("\n");
+		GL_DBG_Printf("Extensions: %s\n", gl_extensions);
 
 		if (strcmp((const char*)gl_renderer, "GDI Generic") == 0 &&
 			strcmp((const char*)gl_version, "1.1.0") == 0)
@@ -191,7 +178,7 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 		else
 			supportMipMap = true;
 
-		if (isExtAvailable("GL_EXT_texture_filter_anisotropic"))
+		if (isExtAvailable("GL_EXT_texture_filter_anisotropic", gl_extensions))
 			pglGetIntegerv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maximumAnisotropy);
 		else
 			maximumAnisotropy = 1;

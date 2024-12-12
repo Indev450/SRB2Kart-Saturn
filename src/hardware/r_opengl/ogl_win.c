@@ -55,7 +55,6 @@ PFNWGLEXTSWAPCONTROLPROC wglSwapIntervalEXT = NULL;
 PFNglClear pglClear;
 PFNglGetIntegerv pglGetIntegerv;
 PFNglGetString pglGetString;
-PFNglGetStringi pglGetStringi;
 
 #define MAX_VIDEO_MODES   32
 static  vmode_t     video_modes[MAX_VIDEO_MODES];
@@ -324,16 +323,7 @@ static INT32 WINAPI SetRes(viddef_t *lvid, vmode_t *pcurrentmode)
 		}
 	}
 
-	pglGetIntegerv(GL_NUM_EXTENSIONS, (GLint*)&gl_num_extensions);
-
-	if (gl_extensions != NULL)
-		free(gl_extensions);
-
-	gl_extensions = calloc(gl_num_extensions, sizeof(GLubyte*));
-
-	for (GLuint i = 0; i < gl_num_extensions; ++i)
-		gl_extensions[i] = pglGetStringi(GL_EXTENSIONS, i);
-
+	gl_extensions = pglGetString(GL_EXTENSIONS);
 	// Get info and extensions.
 	//BP: why don't we make it earlier ?
 	//Hurdler: we cannot do that before intialising gl context
@@ -341,11 +331,7 @@ static INT32 WINAPI SetRes(viddef_t *lvid, vmode_t *pcurrentmode)
 	DBG_Printf("Vendor     : %s\n", pglGetString(GL_VENDOR));
 	DBG_Printf("Renderer   : %s\n", renderer);
 	DBG_Printf("Version    : %s\n", pglGetString(GL_VERSION));
-	DBG_Printf("Extensions :");
-
-	for (GLuint i = 0; i < gl_num_extensions; ++i)
-		DBG_Printf(" %s", gl_extensions[i]);
-	DBG_Printf("\n");
+	DBG_Printf("Extensions : %s\n", gl_extensions);
 
 	// BP: disable advenced feature that don't work on somes hardware
 	// Hurdler: Now works on G400 with bios 1.6 and certified drivers 6.04
@@ -353,13 +339,13 @@ static INT32 WINAPI SetRes(viddef_t *lvid, vmode_t *pcurrentmode)
 	DBG_Printf("oglflags   : 0x%X\n", oglflags);
 
 #ifdef USE_WGL_SWAP
-	if (isExtAvailable("WGL_EXT_swap_control"))
+	if (isExtAvailable("WGL_EXT_swap_control",gl_extensions))
 		wglSwapIntervalEXT = GetGLFunc("wglSwapIntervalEXT");
 	else
 		wglSwapIntervalEXT = NULL;
 #endif
 
-	if (isExtAvailable("GL_EXT_texture_filter_anisotropic"))
+	if (isExtAvailable("GL_EXT_texture_filter_anisotropic",gl_extensions))
 		pglGetIntegerv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maximumAnisotropy);
 	else
 		maximumAnisotropy = 0;

@@ -113,10 +113,10 @@ static GLint anisotropic_filter = 0;
 boolean supportMipMap = false;
 static FTransform  md2_transform;
 
-const GLubyte  *gl_version = NULL;
-const GLubyte  *gl_renderer = NULL;
-const GLubyte **gl_extensions = NULL;
-const GLubyte  *gl_vendor = NULL;
+const GLubyte *gl_version = NULL;
+const GLubyte *gl_renderer = NULL;
+const GLubyte *gl_extensions = NULL;
+const GLubyte *gl_vendor = NULL;
 GLuint gl_num_extensions;
 
 // Loaded OpenGL version
@@ -544,7 +544,6 @@ boolean SetupGLfunc(void)
 	GETOPENGLFUNC(pglGetFloatv, glGetFloatv)
 	GETOPENGLFUNC(pglGetIntegerv, glGetIntegerv)
 	GETOPENGLFUNC(pglGetString, glGetString)
-	GETOPENGLFUNC(pglGetStringi, glGetStringi)
 
 	GETOPENGLFUNC(pglClearDepth, glClearDepth)
 	GETOPENGLFUNC(pglDepthFunc, glDepthFunc)
@@ -722,7 +721,7 @@ static boolean GLFramebuffer_CheckExt(void)
 		return false;
 
 	// check if all needed gl extensions are available
-	return (isExtAvailable("GL_ARB_framebuffer_no_attachments") && isExtAvailable("GL_ARB_framebuffer_object") && isExtAvailable("GL_ARB_framebuffer_sRGB"));
+	return (isExtAvailable("GL_ARB_framebuffer_no_attachments", gl_extensions) && isExtAvailable("GL_ARB_framebuffer_object", gl_extensions) && isExtAvailable("GL_ARB_framebuffer_sRGB", gl_extensions));
 }
 #endif
 
@@ -1218,16 +1217,26 @@ void Flush(void)
 // isExtAvailable   : Look if an OpenGL extension is available
 // Returns          : true if extension available
 // -----------------+
-INT32 isExtAvailable(const char *extension)
+INT32 isExtAvailable(const char *extension, const GLubyte *start)
 {
-	// Shouldn't really happen
-	if (gl_extensions == NULL)
+	GLubyte         *where, *terminator;
+
+	if (!extension || !start) return 0;
+	where = (GLubyte *) strchr(extension, ' ');
+	if (where || *extension == '\0')
 		return 0;
 
-	for (GLuint i = 0; i < gl_num_extensions; ++i)
-		if (strcmp((const char*)gl_extensions[i], extension) == 0)
-			return 1;
-
+	for (;;)
+	{
+		where = (GLubyte *) strstr((const char *) start, extension);
+		if (!where)
+			break;
+		terminator = where + strlen(extension);
+		if (where == start || *(where - 1) == ' ')
+			if (*terminator == ' ' || *terminator == '\0')
+				return 1;
+		start = terminator;
+	}
 	return 0;
 }
 

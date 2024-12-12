@@ -70,7 +70,7 @@ void *GetGLFunc(const char *proc);
 boolean SetupGLfunc(void);
 void SetupGLFunc4(void);
 void Flush(void);
-INT32 isExtAvailable(const char *extension);
+INT32 isExtAvailable(const char *extension, const GLubyte *start);
 void SetModelView(GLint w, GLint h);
 void SetStates(void);
 
@@ -90,7 +90,6 @@ extern PFNWGLEXTGETSWAPINTERVALPROC wglGetSwapIntervalEXT;
 #define pglClear glClear
 #define pglGetIntegerv glGetIntegerv
 #define pglGetString glGetString
-#define pglGetStringi glGetStringi
 #else
 /* 1.0 Miscellaneous functions */
 typedef void (APIENTRY * PFNglClear) (GLbitfield mask);
@@ -99,8 +98,6 @@ typedef void (APIENTRY * PFNglGetIntegerv) (GLenum pname, GLint *params);
 extern PFNglGetIntegerv pglGetIntegerv;
 typedef const GLubyte* (APIENTRY  * PFNglGetString) (GLenum name);
 extern PFNglGetString pglGetString;
-typedef const GLubyte* (APIENTRY  * PFNglGetStringi) (GLenum name, GLuint index);
-extern PFNglGetStringi pglGetStringi;
 #endif
 
 #ifdef USE_FBO_OGL
@@ -121,7 +118,7 @@ extern boolean supportFBO;
 
 extern const GLubyte	*gl_version;
 extern const GLubyte	*gl_renderer;
-extern const GLubyte   **gl_extensions;
+extern const GLubyte	*gl_extensions;
 extern const GLubyte    *gl_vendor;
 extern GLuint     gl_num_extensions;
 

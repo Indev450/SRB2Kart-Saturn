@@ -5623,6 +5623,7 @@ static void COM_HWR_glinfo(void)
 			CONS_Printf("Unrecognized argument: %s\n", argv);
 			return;
 		}
+		
 	}
 
 	CONS_Printf("\x88OpenGL %s\x80\n", gl_version);
@@ -5632,9 +5633,7 @@ static void COM_HWR_glinfo(void)
 	CONS_Printf("%u GL extensions present.\n", gl_num_extensions);
 	if (list_extensions)
 	{
-		for (GLuint i = 0; i < gl_num_extensions; ++i)
-			CONS_Printf("%s ", gl_extensions[i]);
-		CONS_Printf("\n");
+		CONS_Printf("%s\n", gl_extensions);
 	}
 	else
 	{
