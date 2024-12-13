@@ -2192,6 +2192,8 @@ boolean P_CheckCameraPosition(fixed_t x, fixed_t y, camera_t *thiscam)
 	BMBOUNDFIX(xl, xh, yl, yh);
 
 	// Check polyobjects and see if tmfloorz/tmceilingz need to be altered
+	// do we really have to iterate through the complete blockmap for polyobjects if there are no polyobjects on the map?
+	if (numPolyObjects)
 	{
 		validcount++;
 
