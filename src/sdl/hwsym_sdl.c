@@ -43,10 +43,6 @@
 
 #define  _CREATE_DLL_  // necessary for Unix AND Windows
 
-#ifdef HW3SOUND
-#include "../hardware/hw3dsdrv.h"
-#endif
-
 #define GETFUNC(func) \
 	else if (0 == strcmp(#func, funcName)) \
 		funcPointer = &func \
@@ -66,35 +62,16 @@ void *hwSym(const char *funcName,void *handle)
 {
 	void *funcPointer = NULL;
 	if (0) ;
-#ifdef STATIC3DS
-	GETFUNC(Startup);
-	GETFUNC(AddSfx);
-	GETFUNC(AddSource);
-	GETFUNC(StartSource);
-	GETFUNC(StopSource);
-	GETFUNC(GetHW3DSVersion);
-	GETFUNC(BeginFrameUpdate);
-	GETFUNC(EndFrameUpdate);
-	GETFUNC(IsPlaying);
-	GETFUNC(UpdateListener);
-	GETFUNC(UpdateSourceParms);
-	GETFUNC(SetGlobalSfxVolume);
-	GETFUNC(SetCone);
-	GETFUNC(Update3DSource);
-	GETFUNC(ReloadSource);
-	GETFUNC(KillSource);
-	GETFUNC(Shutdown);
-	GETFUNC(GetHW3DSTitle);
-#endif
 #ifdef NOLOADSO
 	else
 		funcPointer = handle;
 #else
 	else if (handle)
-		funcPointer = SDL_LoadFunction(handle,funcName);
+		funcPointer = SDL_LoadFunction(handle, funcName);
 #endif
 	if (!funcPointer)
 		I_OutputMsg("hwSym for %s: %s\n", funcName, SDL_GetError());
+
 	return funcPointer;
 }
 
@@ -103,8 +80,6 @@ void *hwSym(const char *funcName,void *handle)
 	\param	hwfile	Open a handle to the SO
 
 	\return	Handle to SO
-
-
 */
 
 void *hwOpen(const char *hwfile)
@@ -125,8 +100,6 @@ void *hwOpen(const char *hwfile)
 	\param	handle	Close the handle of the SO
 
 	\return	void
-
-
 */
 
 void hwClose(void *handle)

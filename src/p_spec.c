@@ -40,10 +40,6 @@
 #include "k_kart.h" // SRB2kart
 #include "console.h" // CON_LogMessage
 
-#ifdef HW3SOUND
-#include "hardware/hw3sound.h"
-#endif
-
 // Not sure if this is necessary, but it was in w_wad.c, so I'm putting it here too -Shadow Hog
 #include <errno.h>
 

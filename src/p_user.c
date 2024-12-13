@@ -50,10 +50,6 @@
 #include "console.h" // CON_LogMessage
 #include "m_menu.h"
 
-#ifdef HW3SOUND
-#include "hardware/hw3sound.h"
-#endif
-
 #ifdef HWRENDER
 #include "hardware/hw_main.h"
 #endif
