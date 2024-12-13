@@ -1754,7 +1754,7 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 
 		for (rover = newsubsec->sector->ffloors; rover; rover = rover->next)
 		{
-			fixed_t topheight, bottomheight;
+			fixed_t topheight, bottomheight, midheight;
 
 			if (!(rover->flags & FF_EXISTS))
 				continue;
@@ -1819,10 +1819,10 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 				continue;
 			}
 
-			delta1 = thing->z - (bottomheight
-				+ ((topheight - bottomheight)/2));
-			delta2 = thingtop - (bottomheight
-				+ ((topheight - bottomheight)/2));
+			midheight = (bottomheight + ((topheight - bottomheight)/2));
+
+			delta1 = thing->z - midheight;
+			delta2 = thingtop - midheight;
 
 			if (topheight > tmfloorz && abs(delta1) < abs(delta2)
 				&& !(rover->flags & FF_REVERSEPLATFORM))
