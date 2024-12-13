@@ -1853,10 +1853,13 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 	BMBOUNDFIX(xl, xh, yl, yh);
 
 	// Check polyobjects and see if tmfloorz/tmceilingz need to be altered
+	// do we really have to iterate through the complete blockmap for polyobjects if there are no polyobjects on the map?
+	if (numPolyObjects)
 	{
 		validcount++;
 
 		for (by = yl; by <= yh; by++)
+		{
 			for (bx = xl; bx <= xh; bx++)
 			{
 				INT32 offset;
@@ -1907,12 +1910,14 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 						delta1 = thing->z - (polybottom + ((polytop - polybottom)/2));
 						delta2 = thingtop - (polybottom + ((polytop - polybottom)/2));
 
-						if (polytop > tmfloorz && abs(delta1) < abs(delta2)) {
+						if (polytop > tmfloorz && abs(delta1) < abs(delta2))
+						{
 							tmfloorz = tmdropoffz = polytop;
 							tmfloorslope = NULL;
 						}
 
-						if (polybottom < tmceilingz && abs(delta1) >= abs(delta2)) {
+						if (polybottom < tmceilingz && abs(delta1) >= abs(delta2))
+						{
 							tmceilingz = tmdrpoffceilz = polybottom;
 							tmceilingslope = NULL;
 						}
@@ -1920,6 +1925,7 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 					plink = (polymaplink_t *)(plink->link.next);
 				}
 			}
+		}
 	}
 
 	// tmfloorthing is set when tmfloorz comes from a thing's top
@@ -2027,33 +2033,38 @@ static boolean P_CheckPositionShadow(mobj_t *thing, fixed_t x, fixed_t y)
 	// Check polyobjects and see if groundz needs to be altered
 	// This isn't very precise, but the precise method was far too slow.
 	// (Polies are just naturally pretty flickery anyway :P)
-	polyobj_t *po = newsubsec->polyList;
-	fixed_t z;
 
-	while (po)
+	// do we really have to iterate through the complete blockmap for polyobjects if there are no polyobjects on the map?
+	if (numPolyObjects)
 	{
-		if (!(po->flags & POF_RENDERPLANES) || !P_MobjInsidePolyobj(po, tmthing))
+		polyobj_t *po = newsubsec->polyList;
+		fixed_t z;
+
+		while (po)
 		{
+			if (!(po->flags & POF_RENDERPLANES) || !P_MobjInsidePolyobj(po, tmthing))
+			{
+				po = (polyobj_t *)(po->link.next);
+				continue;
+			}
+
+			// We're inside it! Yess...
+			z = po->lines[0]->backsector->floorheight;
+			if (z < halfHeight && z > tmfloorz)
+			{
+				tmfloorz = z;
+				tmfloorslope = NULL;
+			}
+
+			z = po->lines[0]->backsector->ceilingheight;
+			if (z > halfHeight && z < tmfloorz)
+			{
+				tmceilingz = z;
+				tmceilingslope = NULL;
+			}
+
 			po = (polyobj_t *)(po->link.next);
-			continue;
 		}
-
-		// We're inside it! Yess...
-		z = po->lines[0]->backsector->floorheight;
-		if (z < halfHeight && z > tmfloorz)
-		{
-			tmfloorz = z;
-			tmfloorslope = NULL;
-		}
-
-		z = po->lines[0]->backsector->ceilingheight;
-		if (z > halfHeight && z < tmfloorz)
-		{
-			tmceilingz = z;
-			tmceilingslope = NULL;
-		}
-
-		po = (polyobj_t *)(po->link.next);
 	}
 
 	return true;
