@@ -1665,6 +1665,8 @@ static boolean PIT_CheckLine(line_t *ld)
 //                         MOVEMENT CLIPPING
 // =========================================================================
 
+static boolean P_CheckPositionShadow(mobj_t *thing, fixed_t x, fixed_t y);
+
 //
 // P_CheckPosition
 // This is purely informative, nothing is modified
@@ -1709,6 +1711,12 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 	if (P_MobjWasRemoved(thing))
 		I_Error("Previously-removed Thing of type %u crashes P_CheckPosition!", thing->type);
 #endif
+
+	// crappy optimization lmao hope this works out
+	if (thing->type == MT_SHADOW)
+	{
+		return P_CheckPositionShadow(thing, x, y);
+	}
 
 	P_SetTarget(&tmthing, thing);
 	tmflags = thing->flags;
@@ -1947,6 +1955,108 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 				blockval = false;
 
 	return blockval;
+}
+
+// P_CheckPosition but its actually R_GetShadowZ from SRB2
+// this checks for less and keeps everything simpler
+// since i dont want VISUAL shadows crapping by checking for a crapton of stuff
+static boolean P_CheckPositionShadow(mobj_t *thing, fixed_t x, fixed_t y)
+{
+	subsector_t *newsubsec;
+
+	P_SetTarget(&tmthing, thing);
+	tmflags = thing->flags;
+
+	tmx = x;
+	tmy = y;
+
+	tmbbox[BOXTOP] = y + tmthing->radius;
+	tmbbox[BOXBOTTOM] = y - tmthing->radius;
+	tmbbox[BOXRIGHT] = x + tmthing->radius;
+	tmbbox[BOXLEFT] = x - tmthing->radius;
+
+	if (thing->x != x || thing->y != y || thing->subsector == NULL)
+		newsubsec = R_PointInSubsector(x, y);
+	else
+		newsubsec = thing->subsector;
+
+	ceilingline = blockingline = NULL;
+
+	// The base floor / ceiling is from the subsector
+	// that contains the point.
+	// Any contacted lines the step closer together
+	// will adjust them.
+	tmfloorz = tmdropoffz = P_GetFloorZ(thing, newsubsec->sector, x, y, NULL); //newsubsec->sector->floorheight;
+	tmceilingz = P_GetCeilingZ(thing, newsubsec->sector, x, y, NULL); //newsubsec->sector->ceilingheight;
+	tmfloorslope = newsubsec->sector->f_slope;
+	tmceilingslope = newsubsec->sector->c_slope;
+
+	const fixed_t halfHeight = (thing->z + (thing->height >> 1));
+
+	// Check list of fake floors and see if tmfloorz/tmceilingz need to be altered.
+	if (newsubsec->sector->ffloors)
+	{
+		ffloor_t *rover;
+
+		for (rover = newsubsec->sector->ffloors; rover; rover = rover->next)
+		{
+			fixed_t topheight, bottomheight;
+
+			if (!(rover->flags & FF_EXISTS) || !(rover->flags & FF_RENDERPLANES) || (rover->alpha < 90 && !(rover->flags & FF_SWIMMABLE)))
+				continue;
+
+			topheight = P_GetFOFTopZ(thing, newsubsec->sector, rover, x, y, NULL);
+			bottomheight = P_GetFOFBottomZ(thing, newsubsec->sector, rover, x, y, NULL);
+
+			if (topheight < halfHeight && topheight > tmfloorz)
+			{
+				tmfloorz = tmdropoffz = topheight;
+				tmfloorslope = *rover->t_slope;
+			}
+			if (bottomheight > halfHeight && bottomheight < tmfloorz)
+			{
+				tmceilingz = tmdrpoffceilz = bottomheight;
+				tmceilingslope = *rover->b_slope;
+			}
+		}
+	}
+
+	tmfloorthing = NULL;
+	tmhitthing = NULL;
+
+	// Check polyobjects and see if groundz needs to be altered
+	// This isn't very precise, but the precise method was far too slow.
+	// (Polies are just naturally pretty flickery anyway :P)
+	polyobj_t *po = newsubsec->polyList;
+	fixed_t z;
+
+	while (po)
+	{
+		if (!(po->flags & POF_RENDERPLANES) || !P_MobjInsidePolyobj(po, tmthing))
+		{
+			po = (polyobj_t *)(po->link.next);
+			continue;
+		}
+
+		// We're inside it! Yess...
+		z = po->lines[0]->backsector->floorheight;
+		if (z < halfHeight && z > tmfloorz)
+		{
+			tmfloorz = z;
+			tmfloorslope = NULL;
+		}
+
+		z = po->lines[0]->backsector->ceilingheight;
+		if (z > halfHeight && z < tmfloorz)
+		{
+			tmceilingz = z;
+			tmceilingslope = NULL;
+		}
+
+		po = (polyobj_t *)(po->link.next);
+	}
+
+	return true;
 }
 
 static const fixed_t hoopblockdist = 16*FRACUNIT + 8*FRACUNIT;
