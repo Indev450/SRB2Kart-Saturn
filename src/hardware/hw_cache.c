@@ -54,10 +54,10 @@ static INT32 format2bpp(GLTextureFormat_t format)
 // It is now split from it for my sanity! (and the sanity of others)
 // -- Monster Iestyn (13/02/19)
 static void HWR_DrawColumnInCache(const column_t *patchcol, UINT8 *block, GLMipmap_t *mipmap,
-								INT32 pblockheight, INT32 blockmodulo,
-								fixed_t yfracstep, fixed_t scale_y,
-								texpatch_t *originPatch, INT32 patchheight,
-								INT32 bpp, RGBA_t *palette)
+								  INT32 pblockheight, INT32 blockmodulo,
+								  fixed_t yfracstep, fixed_t scale_y,
+								  texpatch_t *originPatch, INT32 patchheight,
+								  INT32 bpp, RGBA_t *palette)
 {
 	fixed_t yfrac, position, count;
 	UINT8 *dest;
@@ -72,9 +72,6 @@ static void HWR_DrawColumnInCache(const column_t *patchcol, UINT8 *block, GLMipm
 	UINT16 texelu16;
 
 	(void)patchheight; // This parameter is unused
-
-	if (!mipmap || mipmap == NULL)
-		return;
 
 	if (originPatch) // originPatch can be NULL here, unlike in the software version
 		originy = originPatch->originy;
@@ -111,10 +108,10 @@ static void HWR_DrawColumnInCache(const column_t *patchcol, UINT8 *block, GLMipm
 			count--;
 
 			texel = source[yfrac>>FRACBITS];
-			alpha = 0xff;
+			alpha = 0xFF;
 
-			//Hurdler: not perfect, but better than holes
-			if (texel == HWR_PATCHES_CHROMAKEY_COLORINDEX && (mipmap->flags & TF_CHROMAKEYED))
+			// Make pixel transparent if chroma keyed
+			if ((mipmap->flags & TF_CHROMAKEYED) && (texel == HWR_PATCHES_CHROMAKEY_COLORINDEX))
 				alpha = 0x00;
 
 			//Hurdler: 25/04/2000: now support colormap in hardware mode
@@ -126,7 +123,8 @@ static void HWR_DrawColumnInCache(const column_t *patchcol, UINT8 *block, GLMipm
 			// Alam: SRB2 uses Mingw, HUGS
 			switch (bpp)
 			{
-				case 2 : texelu16 = (UINT16)((alpha<<8) | texel);
+				case 2 : // uhhhhhhhh..........
+						 texelu16 = (UINT16)((alpha<<8) | texel);
 						 memcpy(dest, &texelu16, sizeof(UINT16));
 						 break;
 				case 3 : colortemp = palette[texel];
@@ -144,6 +142,7 @@ static void HWR_DrawColumnInCache(const column_t *patchcol, UINT8 *block, GLMipm
 			dest += blockmodulo;
 			yfrac += yfracstep;
 		}
+
 		patchcol = (const column_t *)((const UINT8 *)patchcol + patchcol->length + 4);
 	}
 }
@@ -185,6 +184,7 @@ static void HWR_DrawPatchInCache(GLMipmap_t *mipmap,
 	if (bpp < 1 || bpp > 4)
 		I_Error("HWR_DrawPatchInCache: no drawer defined for this bpp (%d)\n",bpp);
 
+	// NOTE: should this actually be pblockwidth*bpp?
 	blockmodulo = pblockwidth*bpp;
 
 	// Draw each column to the block cache
@@ -263,6 +263,7 @@ static void HWR_DrawTexturePatchInCache(GLMipmap_t *mipmap,
 	if (bpp < 1 || bpp > 4)
 		I_Error("HWR_DrawTexturePatchInCache: no drawer defined for this bpp (%d)\n",bpp);
 
+	// NOTE: should this actually be pblockwidth*bpp?
 	blockmodulo = pblockwidth*bpp;
 
 	// Draw each column to the block cache
@@ -336,8 +337,8 @@ static void HWR_GenerateTexture(INT32 texnum, GLMapTexture_t *gltex, boolean noe
 	else
 		gltex->mipmap.flags = TF_CHROMAKEYED | TF_WRAPXY;
 
-	gltex->mipmap.width = SHORT(texture->width);
-	gltex->mipmap.height = SHORT(texture->height);
+	gltex->mipmap.width = (UINT16)(texture->width);
+	gltex->mipmap.height = (UINT16)(texture->height);
 
 	if (skyspecial)
 		gltex->mipmap.format = GL_TEXFMT_RGBA; // that skyspecial code below assumes this format ...
@@ -362,14 +363,17 @@ static void HWR_GenerateTexture(INT32 texnum, GLMapTexture_t *gltex, boolean noe
 		RGBA_t col;
 
 		col = palette[HWR_CHROMAKEY_EQUIVALENTCOLORINDEX];
+
 		for (j = 0; j < blockheight; j++)
 		{
 			for (i = 0; i < blockwidth; i++)
 			{
-				block[4*(j*blockwidth+i)+0] = col.s.red;
-				block[4*(j*blockwidth+i)+1] = col.s.green;
-				block[4*(j*blockwidth+i)+2] = col.s.blue;
-				block[4*(j*blockwidth+i)+3] = 0xff;
+				int idx = (j*blockwidth+i);
+
+				block[4*idx+0] = col.s.red;
+				block[4*idx+1] = col.s.green;
+				block[4*idx+2] = col.s.blue;
+				block[4*idx+3] = 0xff;
 			}
 		}
 	}
@@ -378,15 +382,12 @@ static void HWR_GenerateTexture(INT32 texnum, GLMapTexture_t *gltex, boolean noe
 	for (i = 0, patch = texture->patches; i < texture->patchcount; i++, patch++)
 	{
 		realpatch = W_CacheLumpNumPwad(patch->wad, patch->lump, PU_CACHE);
-		HWR_DrawTexturePatchInCache(&gltex->mipmap,
-		                     blockwidth, blockheight,
-		                     texture, patch,
-		                     realpatch);
+		HWR_DrawTexturePatchInCache(&gltex->mipmap, blockwidth, blockheight, texture, patch, realpatch);
 		Z_ChangeTag(realpatch, PU_HWRCACHE_UNLOCKED);
 	}
 
 	//Hurdler: not efficient at all but I don't remember exactly how HWR_DrawPatchInCache works :(
-	if (format2bpp(gltex->mipmap.format)==4)
+	if (format2bpp(gltex->mipmap.format) == 4)
 	{
 		for (i = 3; i < blocksize*4; i += 4) // blocksize*4 because blocksize doesn't include the bpp
 		{
@@ -437,6 +438,7 @@ void HWR_MakePatch (patch_t *patch, GLPatch_t *glPatch, GLMipmap_t *glMipmap, bo
 	if (makebitmap)
 	{
 		MakeBlock(glMipmap);
+
 		HWR_DrawPatchInCache(glMipmap,
 			glMipmap->width, glMipmap->height,
 			glPatch->width, glPatch->height,
