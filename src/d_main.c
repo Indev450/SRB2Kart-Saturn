@@ -85,10 +85,6 @@
 #include "hardware/hw_main.h" // 3D View Rendering
 #endif
 
-#ifdef HW3SOUND
-#include "hardware/hw3sound.h"
-#endif
-
 #ifdef HAVE_DISCORDRPC
 #include "discord.h"
 #endif
@@ -737,10 +733,6 @@ void D_SRB2Loop(void)
 		interp = R_UsingFrameInterpolation() && !dedicated;
 		doDisplay = false;
 
-#ifdef HW3SOUND
-		HW3S_BeginFrameUpdate();
-#endif
-
 		renderisnewtic = (realtics > 0 || singletics);
 
 		if (renderisnewtic)
@@ -848,9 +840,6 @@ void D_SRB2Loop(void)
 		// consoleplayer -> displayplayers (hear sounds from viewpoint)
 		S_UpdateSounds(); // move positional sounds
 
-#ifdef HW3SOUND
-		HW3S_EndFrameUpdate();
-#endif
 
 		LUA_Step();
 

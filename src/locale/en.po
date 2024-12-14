@@ -1910,15 +1910,6 @@ msgstr ""
 msgid "    Not found: %s\n"
 msgstr ""
 
-#: hardware/s_ds3d/s_ds3d.c:617 p_tick.c:168 sdl/i_sound.c:1347
-#: win32/win_snd.c:1073 win32/win_snd.c:1431
-msgid "Done\n"
-msgstr ""
-
-#: hardware/s_ds3d/s_ds3d.c:617 win32/win_snd.c:1073
-msgid "Failed\n"
-msgstr ""
-
 #: hu_stuff.c:375
 msgid "The chat is muted. You can't say anything at the moment.\n"
 msgstr ""
@@ -3174,21 +3165,6 @@ msgstr ""
 msgid "I_ShutdownMusic: "
 msgstr ""
 
-#: sdl/i_sound.c:1494
-msgid " disabled loading FMOD\n"
-msgstr ""
-
-#: sdl/i_sound.c:1513
-msgid " failed to load FMOD\n"
-msgstr ""
-
-#: sdl/i_sound.c:1522 win32/win_snd.c:1237
-#, c-format
-msgid ""
-"Wrong FMOD DLL version.\n"
-"You should be using FMOD %s\n"
-msgstr ""
-
 #: sdl/i_sound.c:1611
 msgid "I_InitMusic:"
 msgstr ""
@@ -3801,12 +3777,6 @@ msgstr ""
 #: win32/win_snd.c:1193
 #, c-format
 msgid "%d mixer devices available\n"
-msgstr ""
-
-#: win32/win_snd.c:1227
-msgid ""
-" failed to load FMOD\n"
-" no DigiMusic support\n"
 msgstr ""
 
 #: win32/win_snd.c:1289

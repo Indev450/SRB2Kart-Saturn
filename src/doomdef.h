@@ -21,7 +21,6 @@
 #define SOUND_DUMMY   0
 #define SOUND_SDL     1
 #define SOUND_MIXER   2
-#define SOUND_FMOD    3
 
 #ifndef SOUND
 #ifdef HAVE_SDL
@@ -29,9 +28,6 @@
 // Use Mixer interface?
 #ifdef HAVE_MIXER
     #define SOUND SOUND_MIXER
-    #ifdef HW3SOUND
-    #undef HW3SOUND
-    #endif
 #endif
 
 // Use generic SDL interface.
@@ -40,18 +36,8 @@
 #endif
 
 #else // No SDL.
-
-// Use FMOD?
-#ifdef HAVE_FMOD
-    #define SOUND SOUND_FMOD
-    #ifdef HW3SOUND
-    #undef HW3SOUND
-    #endif
-#else
-    // No more interfaces. :(
-    #define SOUND SOUND_DUMMY
-#endif
-
+// No more interfaces. :(
+#define SOUND SOUND_DUMMY
 #endif
 #endif
 
