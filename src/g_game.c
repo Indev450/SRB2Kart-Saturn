@@ -1191,16 +1191,6 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		camspin[forplayer] = (InputDown(gc_lookback, ssplayer) || (usejoystick && axis > 0));
 	}
 
-	if (chat_on || CON_Ready())
-	{
-		cmd->buttons |= TICCMD_TYPING;
-
-		if (hu_keystrokes)
-		{
-			cmd->buttons |= TICCMD_KEYSTROKE;
-		}
-	}
-
 	/* 	Lua: Allow this hook to overwrite ticcmd.
 		We check if we're actually in a level because for some reason this Hook would run in menus and on the titlescreen otherwise.
 		Be aware that within this hook, nothing but this player's cmd can be edited (otherwise we'd run in some pretty bad synching problems since this is clientsided, or something)
@@ -1342,10 +1332,7 @@ boolean G_Responder(event_t *ev)
 	if (gamestate == GS_LEVEL)
 	{
 		if (HU_Responder(ev))
-		{
-			hu_keystrokes = true;
 			return true; // chat ate the event
-		}
 		if (AM_Responder(ev))
 			return true; // automap ate it
 		// map the event (key/mouse/joy) to a gamecontrol
@@ -1362,10 +1349,7 @@ boolean G_Responder(event_t *ev)
 	else if (gamestate == GS_CUTSCENE)
 	{
 		if (HU_Responder(ev))
-		{
-			hu_keystrokes = true;
 			return true; // chat ate the event
-		}
 
 		if (F_CutsceneResponder(ev))
 		{
@@ -1377,10 +1361,7 @@ boolean G_Responder(event_t *ev)
 	else if (gamestate == GS_CREDITS)
 	{
 		if (HU_Responder(ev))
-		{
-			hu_keystrokes = true;
 			return true; // chat ate the event
-		}
 
 		if (F_CreditResponder(ev))
 		{
@@ -1400,10 +1381,7 @@ boolean G_Responder(event_t *ev)
 
 	else if (gamestate == GS_INTERMISSION || gamestate == GS_VOTING || gamestate == GS_WAITINGPLAYERS)
 		if (HU_Responder(ev))
-		{
-			hu_keystrokes = true;
 			return true; // chat ate the event
-		}
 
 	// allow spy mode changes even during the demo
 	if (gamestate == GS_LEVEL && ev->type == ev_keydown

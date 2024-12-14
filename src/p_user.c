@@ -4614,37 +4614,6 @@ void P_PlayerThink(player_t *player)
 			player->mo->tracer->flags2 &= ~MF2_DONTDRAW;
 	}*/
 
-	if (cmd->buttons & TICCMD_TYPING)
-	{
-		if (cmd->buttons & TICCMD_KEYSTROKE)
-		{
-			player->typing_timer = 15;
-		}
-		else if (player->typing_timer > 0)
-		{
-			player->typing_timer--;
-		}
-
-		if (player->typing_timer + player->typing_duration > 0)
-		{
-			/* lag a little bit so we always get more than just a singular dot */
-			if (player->typing_timer == 0 &&
-					(player->typing_duration < 16 || player->typing_duration > 39))
-			{
-				player->typing_duration = 0;
-			}
-			else
-			{
-				player->typing_duration++;
-			}
-		}
-	}
-	else
-	{
-		player->typing_timer = 0;
-		player->typing_duration = 0;
-	}
-
 	player->pflags &= ~PF_SLIDING;
 
 	K_KartPlayerThink(player, cmd); // SRB2kart

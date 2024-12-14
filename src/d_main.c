@@ -253,10 +253,7 @@ void D_ProcessEvents(void)
 #endif
 
 		if (eaten)
-		{
-			hu_keystrokes = true;
 			continue; // ate the event
-		}
 
 		G_Responder(ev);
 	}

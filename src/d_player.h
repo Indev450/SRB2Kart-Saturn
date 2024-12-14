@@ -551,10 +551,6 @@ typedef struct player_s
 	UINT8 hitemvictim;
 
 	UINT8 splitscreenindex;
-
-	UINT8 typing_timer : 4; // Counts down while keystrokes are not emitted
-	UINT8 typing_duration : 6; // How long since resumed timer
-
 #ifdef HWRENDER
 	fixed_t fovadd; // adjust FOV for hw rendering
 #endif

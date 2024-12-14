@@ -85,9 +85,6 @@ void HU_AddChatText(const char *text, boolean playsound);
 // set true when entering a chat message
 extern boolean chat_on;
 
-// keystrokes in the console or chat window
-extern boolean hu_keystrokes;
-
 extern patch_t *hu_font[HU_FONTSIZE], *kart_font[KART_FONTSIZE], *tny_font[HU_FONTSIZE];	// SRB2kart
 extern patch_t *tallnum[10];
 extern patch_t *pingnum[10];

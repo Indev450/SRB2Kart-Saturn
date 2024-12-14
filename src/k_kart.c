@@ -7327,9 +7327,6 @@ static patch_t *kp_sadface[2];
 
 static patch_t *kp_check[6];
 
-static patch_t *kp_talk;
-static patch_t *kp_typdot;
-
 static patch_t *kp_eggnum[4];
 
 static patch_t *kp_fpview[3];
@@ -7641,10 +7638,6 @@ void K_LoadKartHUDGraphics(void)
 		buffer[7] = '1'+i;
 		kp_check[i] = (patch_t *) W_CachePatchName(buffer, PU_HUDGFX);
 	}
-
-	// Typing indicator
-	kp_talk = W_CachePatchName("K_TALK", PU_HUDGFX);
-	kp_typdot = W_CachePatchName("K_TYPDOT", PU_HUDGFX);
 
 	// Eggman warning numbers
 	sprintf(buffer, "K_EGGNx");
@@ -9385,112 +9378,6 @@ static boolean K_GetScreenCoords(vector2_t *vec, player_t *player, mobj_t *targe
 	return true;
 }
 
-static boolean K_DrawTypingDot(fixed_t x, fixed_t y, UINT8 duration, player_t *p, INT32 typeflags)
-{
-	if (p->typing_duration > duration)
-	{
-		V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, FRACUNIT, typeflags, kp_typdot, NULL);
-		return true;
-	}
-	else
-	{
-		return false;
-	}
-}
-
-static boolean K_DrawTypingNotifier(fixed_t x, fixed_t y, player_t *p, INT32 typeflags)
-{
-	if (p->cmd.buttons & TICCMD_TYPING)
-	{
-		V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, FRACUNIT, typeflags, kp_talk, NULL);
-
-		y += 4*FRACUNIT;
-
-		/* spacing closer with the last two looks a better most of the time */
-		(void)
-		(
-			K_DrawTypingDot(x + 3*FRACUNIT,              y, 15, p, typeflags) &&
-			K_DrawTypingDot(x + 6*FRACUNIT - FRACUNIT/3, y, 31, p, typeflags) &&
-			K_DrawTypingDot(x + 9*FRACUNIT - FRACUNIT/3, y, 47, p, typeflags)
-		);
-
-		return true;
-	}
-	else
-	{
-		return false;
-	}
-}
-
-static void K_DrawTypingStuff(void)
-{
-	UINT8 i;
-	vector2_t pos = {0};
-	fixed_t typex,typey;
-	int dup = 0;
-	int vflags = 0;
-	int flipped = 0;
-	INT32 hudtransflag = V_LocalTransFlag();
-	boolean flipcam;
-
-	// True if currently viewed player is flipped and has flipcam on
-	flipcam = (stplyr->pflags & PF_FLIPCAM) && (stplyr->mo->eflags & MFE_VERTICALFLIP);
-
-	for (i = 0; i < MAXPLAYERS; i++)
-	{
-		fixed_t distance = 0;
-		fixed_t maxdistance = (10*cv_nametagdist.value)* mapobjectscale;
-		flipped = 0;
-		fixed_t z;
-
-		if (i > PLAYERSMASK)
-			continue;
-		if (!players[i].mo || P_MobjWasRemoved(players[i].mo) || players[i].spectator || !playeringame[i])
-			continue;
-		//if (i == displayplayers[stplyrnum])
-			//continue;
-		if (players[i].kartstuff[k_hyudorotimer]) // player is invisible
-			continue;
-		distance = R_PointToDist(players[i].mo->x, players[i].mo->y);
-		if (distance > maxdistance)
-			continue;
-		if (!P_CheckSightFast(stplyr->mo, players[i].mo))
-			continue;
-
-		dup = vid.dupy;
-
-		// If flipcam is on, other player is flipped relative to us when we have different
-		// verticalflip flag value. Otherwise, they are simply flipped when verticalflip flag says
-		// so
-		if (flipcam)
-			flipped = (players[i].mo->eflags & MFE_VERTICALFLIP) != (stplyr->mo->eflags & MFE_VERTICALFLIP);
-		else
-			flipped = players[i].mo->eflags & MFE_VERTICALFLIP;
-
-		z = players[i].mo->height;
-
-		//Saltyhop hehe
-		if (cv_saltyhop.value)
-			z += lerp(players[i].mo->old_spriteyoffset, players[i].mo->spriteyoffset);
-
-		if (!K_GetScreenCoords(&pos, stplyr, players[i].mo, z, false))
-			continue;
-
-		typex = pos.x>>FRACBITS;
-		typey = pos.y>>FRACBITS;
-
-		vflags = hudtransflag | V_NOSCALESTART | V_SPLITSCREEN;
-
-		if (flipped)
-			typey += dup*5;
-		else // small offset
-			typey -= dup*16;
-
-		//Name
-		K_DrawTypingNotifier(typex, typey, &players[i], vflags);
-	}
-}
-
 //Slighty fixed by Alug and further rewritten by NepDisk
 //Decided to port and highly modify sunflower version for the main nametag drawing with additions by NepDisk. My previous one was broken anyway due to the changed screencoords and noscalestart
 static void K_drawNameTags(void)
@@ -10922,8 +10809,6 @@ void K_drawKartHUD(void)
 		if (LUA_HudEnabled(hud_nametags))
 			K_drawNameTags();
 	}
-
-	K_DrawTypingStuff();
 
 	// If not splitscreen, draw...
 	if (!splitscreen && !demo.title)
