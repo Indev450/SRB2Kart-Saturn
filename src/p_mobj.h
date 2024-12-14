@@ -448,6 +448,7 @@ typedef struct precipmobj_s
 	fixed_t old_spritexscale, old_spriteyscale;
 	fixed_t old_spritexscale2, old_spriteyscale2;
 	fixed_t old_spritexoffset, old_spriteyoffset;
+	fixed_t old_spritexoffset2, old_spriteyoffset2;
 
 	fixed_t realxscale, realyscale; // funn-E streeetch
 
