@@ -340,21 +340,22 @@ boolean HWR_PalRenderFlashpal(void)
 	return (HWR_ShouldUsePaletteRendering() && cv_glflashpal.value);
 }
 
-void HWR_ObjectLightLevelPost(gl_vissprite_t *spr, const sector_t *sector, INT32 *lightlevel, boolean model)
+void HWR_ObjectLightLevelPost(gl_vissprite_t *spr, const sector_t *sector, INT32 *lightlevel, boolean model, const boolean papersprite)
 {
-	const boolean papersprite = (spr->mobj->frame & FF_PAPERSPRITE);
-
 	*lightlevel += R_ThingLightLevel(spr->mobj);
 
 	if (maplighting.directional == true && P_SectorUsesDirectionalLighting(sector))
 	{
 		if (model == false) // this is implemented by shader
 		{
-			fixed_t extralight = R_GetSpriteDirectionalLighting(
+			fixed_t extralight = R_GetSpriteDirectionalLighting(R_PointToAngle(spr->mobj->x, spr->mobj->y));
+
+			// this seems to be wrong???
+			/*fixed_t extralight = R_GetSpriteDirectionalLighting(
 				papersprite
 				? R_PointToAngle(spr->mobj->x, spr->mobj->y) + (spr->flip ? -ANGLE_90 : ANGLE_90)
 				: R_PointToAngle(spr->mobj->x, spr->mobj->y) // fixme
-			);
+			);*/
 
 			// Less change in contrast in dark sectors
 			extralight = FixedMul(extralight, min(max(0, *lightlevel), 255) * FRACUNIT / 255);
@@ -3661,7 +3662,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 		break;
 	}
 
-	HWR_ObjectLightLevelPost(spr, sector, &lightlevel, false);
+	HWR_ObjectLightLevelPost(spr, sector, &lightlevel, false, papersprite);
 
 	for (i = 0; i < sector->numlights; i++)
 	{
@@ -3673,7 +3674,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 		{
 			if (!(spr->mobj->frame & FF_FULLBRIGHT))
 				lightlevel = min(*list[i].lightlevel, 255);
-			HWR_ObjectLightLevelPost(spr, sector, &lightlevel, false);
+			HWR_ObjectLightLevelPost(spr, sector, &lightlevel, false, papersprite);
 			colormap = list[i].extra_colormap;
 		}
 
@@ -3873,7 +3874,7 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 	if (!(spr->mobj->frame & FF_FULLBRIGHT))
 		lightlevel = min(sector->lightlevel, 255);
 
-	HWR_ObjectLightLevelPost(spr, sector, &lightlevel, false);
+	HWR_ObjectLightLevelPost(spr, sector, &lightlevel, false, papersprite);
 
 	HWR_Lighting(&Surf, lightlevel, colormap, P_SectorUsesDirectionalLighting(sector) && !(spr->mobj->frame & FF_FULLBRIGHT));
 
