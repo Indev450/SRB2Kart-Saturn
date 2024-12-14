@@ -9249,28 +9249,21 @@ static void K_drawKartBumpersOrKarma(void)
 static boolean K_GetScreenCoords(vector2_t *vec, player_t *player, mobj_t *target, fixed_t hofs, boolean dontclip)
 {
 	fixed_t distfact;
-	fixed_t dist;
-	fixed_t xres;
-	fixed_t yres;
-	fixed_t fov;
-	fixed_t fovratio;
 	fixed_t offset;
-	boolean srcflip;
-	boolean targflip;
 	fixed_t y;
 	fixed_t x;
 
 	// this should never happen but its also kart so ¯\_(ツ)_/¯
-	if (!player || !target)
+	if (!player || P_MobjWasRemoved(target))
 		return false;
 
-	xres = vid.width<<(FRACBITS-1);
-	yres = vid.height<<(FRACBITS-1);
-	fov = FixedDiv(xres, FINETANGENT(((FixedAngle(cv_fov.value/2)+ANGLE_90)>>ANGLETOFINESHIFT) & 4095));
+	const fixed_t xres = vid.width<<(FRACBITS-1);
+	const fixed_t yres = vid.height<<(FRACBITS-1);
+	const fixed_t fov = FixedDiv(xres, FINETANGENT(((FixedAngle(cv_fov.value/2)+ANGLE_90)>>ANGLETOFINESHIFT) & 4095));
 
-	fixed_t targx = lerp(target->old_x, target->x);
-	fixed_t targy = lerp(target->old_y, target->y);
-	fixed_t targz = lerp(target->old_z, target->z);
+	const fixed_t targx = lerp(target->old_x, target->x);
+	const fixed_t targy = lerp(target->old_y, target->y);
+	const fixed_t targz = lerp(target->old_z, target->z);
 
 	// X coordinate
 	// get difference between camangle and angle towards target
@@ -9285,8 +9278,8 @@ static boolean K_GetScreenCoords(vector2_t *vec, player_t *player, mobj_t *targe
 		return false;
 
 	// flipping
-	targflip = target->eflags & MFE_VERTICALFLIP;
-	srcflip = player->pflags & PF_FLIPCAM && player->mo->eflags & MFE_VERTICALFLIP;
+	const boolean targflip = target->eflags & MFE_VERTICALFLIP;
+	const boolean srcflip = player->pflags & PF_FLIPCAM && player->mo->eflags & MFE_VERTICALFLIP;
 
 	// Y coordinate
 	// getting the angle difference here is a bit more involved...
@@ -9296,7 +9289,7 @@ static boolean K_GetScreenCoords(vector2_t *vec, player_t *player, mobj_t *targe
 		y = y - (targflip ? -hofs : hofs);
 
 	// then get the distance between camera and target
-	dist = R_PointToDist(targx, targy);
+	const fixed_t dist = R_PointToDist(targx, targy);
 
 #ifdef HWRENDER
 	// NOW we can get the angle differnce
@@ -9318,7 +9311,7 @@ static boolean K_GetScreenCoords(vector2_t *vec, player_t *player, mobj_t *targe
 	else
 #endif
 	{
-		fovratio = FixedDiv(90*FRACUNIT, 180*FRACUNIT - FixedMul(cv_fov.value, 4*FRACUNIT/3)-FRACUNIT*-30);
+		const fixed_t fovratio = FixedDiv(90*FRACUNIT, 180*FRACUNIT - FixedMul(cv_fov.value, 4*FRACUNIT/3)-FRACUNIT*-30);
 
 		y = FixedDiv(y, FixedMul(dist, distfact));
 		if (srcflip)
@@ -9388,33 +9381,27 @@ static void K_drawNameTags(void)
 	fixed_t tagwidth;
 	fixed_t tagwidthsmall;
 	fixed_t namex,namey;
-	int dup = 0;
-	int tagcolor = 0;
-	int vflags = 0;
-	int flipped = 0;
 	int tagsdisplayed = 0;
 	char *tag;
 	patch_t *icon;
-	INT32 hudtransflag = V_LocalTransFlag();
-	boolean flipcam;
+	const INT32 hudtransflag = V_LocalTransFlag();
 
-	if (!stplyr->mo || (stplyr->spectator && !cv_shownametagspectator.value) || (stplyr->exiting && !cv_shownametagfinish.value))
+	if (P_MobjWasRemoved(stplyr->mo) || (stplyr->spectator && !cv_shownametagspectator.value) || (stplyr->exiting && !cv_shownametagfinish.value))
 		return;
 
 	// True if currently viewed player is flipped and has flipcam on
-	flipcam = (stplyr->pflags & PF_FLIPCAM) && (stplyr->mo->eflags & MFE_VERTICALFLIP);
+	const boolean flipcam = ((stplyr->pflags & PF_FLIPCAM) && (stplyr->mo->eflags & MFE_VERTICALFLIP));
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		UINT8 *cm;
 		fixed_t distance = 0;
-		fixed_t maxdistance = (10*cv_nametagdist.value)* mapobjectscale;
-		flipped = 0;
+		const fixed_t maxdistance = ((10*cv_nametagdist.value)* mapobjectscale);
+		boolean flipped = 0;
 		fixed_t z;
 
 		if (i > PLAYERSMASK)
 			continue;
-		if (!players[i].mo || P_MobjWasRemoved(players[i].mo) || players[i].spectator || !playeringame[i])
+		if (P_MobjWasRemoved(players[i].mo) || players[i].spectator || !playeringame[i])
 			continue;
 		if (i == displayplayers[stplyrnum] && !cv_showownnametag.value && !(leveltime < 130))
 			continue;
@@ -9422,7 +9409,8 @@ static void K_drawNameTags(void)
 			continue;
 		if (players[i].kartstuff[k_hyudorotimer]) // player is invisible
 			continue;
-		distance = R_PointToDist(players[i].mo->x, players[i].mo->y);
+		if (maxdistance)
+			distance = R_PointToDist(players[i].mo->x, players[i].mo->y);
 		if (distance > maxdistance)
 			continue;
 		if (!P_CheckSightFast(stplyr->mo, players[i].mo))
@@ -9463,7 +9451,7 @@ static void K_drawNameTags(void)
 				break;
 		}
 
-		dup = vid.dupx;
+		const INT32 dup = vid.dupx;
 
 		// If flipcam is on, other player is flipped relative to us when we have different
 		// verticalflip flag value. Otherwise, they are simply flipped when verticalflip flag says
@@ -9493,9 +9481,9 @@ static void K_drawNameTags(void)
 		tag = va("%s%s ", HU_SkinColorToConsoleColor(players[i].mo->color),player_names[i]);
 		icon = R_GetSkinFaceMini(players[i].mo->player);
 
-		cm = R_GetTranslationColormap(players[i].skin, players[i].mo->color, GTC_CACHE);
-		tagcolor = colortranslations[players[i].mo->color][7];
-		vflags = trans | V_NOSCALESTART;
+		const UINT8 *cm = R_GetTranslationColormap(players[i].skin, players[i].mo->color, GTC_CACHE);
+		const INT32 tagcolor = colortranslations[players[i].mo->color][7];
+		const INT32 vflags = trans | V_NOSCALESTART;
 		tagwidth = cv_smallnametags.value ? dup*V_SmallStringWidth(player_names[i], V_ALLOWLOWERCASE) : dup*V_ThinStringWidth(player_names[i], V_ALLOWLOWERCASE);
 		tagwidthsmall = cv_smallnametags.value ? V_SmallStringWidth(player_names[i], V_ALLOWLOWERCASE) : V_ThinStringWidth(player_names[i], V_ALLOWLOWERCASE);
 
@@ -9608,13 +9596,10 @@ static void K_drawNameTags(void)
 // Based on Driftgauge refactor by GenericHeroGuy ported from lua and expanded by NepDisk
 static void K_drawDriftGauge(void)
 {
-	INT32 driftval = K_GetKartDriftSparkValue(stplyr);
-	INT32 driftcharge = min(driftval*4, stplyr->kartstuff[k_driftcharge]);
 	vector2_t pos = {0};
-	fixed_t basex,basey;
-	INT32 drifttrans = 0;
-	INT32 hudtransflag = V_LocalTransFlag();
-	int dup = vid.dupx;
+	fixed_t basex, basey;
+	const INT32 hudtransflag = V_LocalTransFlag();
+	const int dup = vid.dupx;
 	int i;
 
 	UINT8 driftcolors[3][4] = {
@@ -9636,7 +9621,7 @@ static void K_drawDriftGauge(void)
 	if (demo.playback && demo.freecam)
 		return;
 
-	if (!stplyr->mo || (!splitscreen && !camera->chase))
+	if (P_MobjWasRemoved(stplyr->mo) || (!splitscreen && !camera->chase))
 		return;
 
 	if (forceshowhud)
@@ -9650,6 +9635,9 @@ skipcrap:
 	if (!K_GetScreenCoords(&pos, stplyr, stplyr->mo, FixedMul(cv_driftgaugeofs.value, cv_driftgaugeofs.value > 0 ? stplyr->mo->scale : mapobjectscale), false))
 		return;
 
+	const INT32 driftval = K_GetKartDriftSparkValue(stplyr);
+	const INT32 driftcharge = min(driftval*4, stplyr->kartstuff[k_driftcharge]);
+
 	basex = pos.x>>FRACBITS;
 	basey = pos.y>>FRACBITS;
 
@@ -9657,10 +9645,7 @@ skipcrap:
 	fixed_t bary;
 	INT32 BAR_WIDTH;
 
-	if (cv_driftgaugetrans.value)
-		drifttrans = hudtransflag;
-	else
-		drifttrans = 0;
+	const INT32 drifttrans = ((cv_driftgaugetrans.value) ? hudtransflag : 0);
 
 	switch (cv_driftgaugestyle.value)
 	{
@@ -9668,8 +9653,10 @@ skipcrap:
 		case 2:
 		case 3:
 		case 5:
-			if (driftgaugegfx)
 			{
+				if (!driftgaugegfx)
+					break;
+
 				if (cv_driftgaugestyle.value == 1 || cv_driftgaugestyle.value == 3 || (cv_driftgaugestyle.value == 5 && xtra_speedo3))
 				{
 					barx = basex - dup*23;
@@ -9683,10 +9670,10 @@ skipcrap:
 
 				bary = basey - dup*2;
 
-				INT32 limit = driftval * (driftcharge >= driftval*2 ? 2 : 1);
-				INT32 width = ((driftcharge - (driftcharge >= driftval ? limit : 0)) * BAR_WIDTH) / limit;
-				INT32 level = min(driftcharge / driftval, 2);
 				UINT8 *cmap;
+				const INT32 limit = driftval * (driftcharge >= driftval*2 ? 2 : 1);
+				const INT32 width = ((driftcharge - (driftcharge >= driftval ? limit : 0)) * BAR_WIDTH) / limit;
+				const INT32 level = min(driftcharge / driftval, 2);
 
 				if (cv_driftgaugestyle.value == 5 && xtra_speedo3) // why bother if we dont?
 				{
@@ -9718,7 +9705,7 @@ skipcrap:
 				else // none/blue/red
 				{
 					cmap =  R_GetTranslationColormap(TC_RAINBOW, driftskins[level],GTC_CACHE);
-					for	(i = 0; i < 4; i++)
+					for (i = 0; i < 4; i++)
 					{
 						if (driftcharge >= driftval)
 							V_DrawFill(barx, bary+dup*1+dup*i, BAR_WIDTH, dup, driftcolors[level-1][i] | V_NOSCALESTART|drifttrans);
@@ -9738,7 +9725,7 @@ skipcrap:
 		case 4:
 			{
 				UINT8 *cmap;
-				INT32 level = min(driftcharge / driftval, 2);
+				const INT32 level = min(driftcharge / driftval, 2);
 				if (driftcharge >= driftval*4)
 					cmap = R_GetTranslationColormap(TC_RAINBOW, 1 + leveltime % (MAXSKINCOLORS-1),GTC_CACHE);
 				else
