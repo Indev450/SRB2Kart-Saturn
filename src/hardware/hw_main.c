@@ -4598,18 +4598,10 @@ static void HWR_ProjectSprite(mobj_t *thing)
 #ifdef ROTSPRITE
 	if (shouldrotate)
 	{
-		if (papersprite)
-		{
-			// a positive rollangle should should pitch papersprites upwards relative to their facing angle
-			rollangle = InvAngle(thing->rollangle);
-		}
-		else
-		{
-			// this is very messy, but it on-the-fly calculates rotations for all the
-			// pitch and roll variables
-			pitchnroll = R_RotationAngle(ang, camang, &interp);
-			rollangle = thing->rollangle;
-		}
+		// this is very messy, but it on-the-fly calculates rotations for all the
+		// pitch and roll variables
+		pitchnroll = R_RotationAngle(ang, camang, &interp);
+		rollangle = thing->rollangle;
 
 		if (rollangle || pitchnroll || sliprollrotate)
 		{
