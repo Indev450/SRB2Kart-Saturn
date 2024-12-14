@@ -364,7 +364,11 @@ boolean P_MoveOrigin(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z);
 void P_SlideMove(mobj_t *mo, boolean forceslide);
 void P_BouncePlayerMove(mobj_t *mo);
 void P_BounceMove(mobj_t *mo);
-boolean P_CheckSight(mobj_t *t1, mobj_t *t2);
+
+#define P_CheckSight(t1, t2) P_CheckSight2(t1, t2, false)
+#define P_CheckSightFast(t1, t2) P_CheckSight2(t1, t2, true)
+boolean P_CheckSight2(mobj_t *t1, mobj_t *t2, boolean fast);
+
 void P_CheckHoopPosition(mobj_t *hoopthing, fixed_t x, fixed_t y, fixed_t z, fixed_t radius);
 
 boolean P_CheckSector(sector_t *sector, boolean crunch);

@@ -720,12 +720,12 @@ void P_Ticker(boolean run)
 					continue;
 
 				const boolean skybox = (skyboxmo[0] && cv_skybox.value);
-				boolean isSkyVisibleForPlayer = skyVisiblePerPlayer[i];
 
-				if (isSkyVisibleForPlayer && skybox)
+				if (skyVisiblePerPlayer[i] && skybox)
 				{
 					R_SkyboxFrame(i);
 				}
+
 				R_SetupFrame(i, skybox);
 			}
 		}

@@ -59,7 +59,7 @@ typedef struct {
 	fixed_t x;
 	fixed_t y;
 	fixed_t z;
-	subsector_t *subsector;
+	//subsector_t *subsector;
 	angle_t angle;
 	fixed_t scale;
 	fixed_t spritexscale;
