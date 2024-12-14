@@ -341,44 +341,43 @@ boolean HWR_PalRenderFlashpal(void)
 
 void HWR_ObjectLightLevelPost(gl_vissprite_t *spr, const sector_t *sector, INT32 *lightlevel, boolean model, const boolean papersprite)
 {
-	*lightlevel += R_ThingLightLevel(spr->mobj);
+	(void)papersprite;
 
-	if (maplighting.directional == true && P_SectorUsesDirectionalLighting(sector))
+	if (maplighting.directional == false || !P_SectorUsesDirectionalLighting(sector) || model == true)
+		return;
+
+	fixed_t extralight = R_GetSpriteDirectionalLighting(R_PointToAngle(spr->mobj->x, spr->mobj->y));
+
+	// this seems to be wrong???
+	/*fixed_t extralight = R_GetSpriteDirectionalLighting(
+		papersprite
+		? R_PointToAngle(spr->mobj->x, spr->mobj->y) + (spr->flip ? -ANGLE_90 : ANGLE_90)
+		: R_PointToAngle(spr->mobj->x, spr->mobj->y) // fixme
+	);*/
+
+	// Less change in contrast in dark sectors
+	extralight = FixedMul(extralight, min(max(0, *lightlevel), 255) * FRACUNIT / 255);
+
+	// NO NO BAD! WHY!?
+	/*if (papersprite)
 	{
-		if (model == false) // this is implemented by shader
-		{
-			fixed_t extralight = R_GetSpriteDirectionalLighting(R_PointToAngle(spr->mobj->x, spr->mobj->y));
-
-			// this seems to be wrong???
-			/*fixed_t extralight = R_GetSpriteDirectionalLighting(
-				papersprite
-				? R_PointToAngle(spr->mobj->x, spr->mobj->y) + (spr->flip ? -ANGLE_90 : ANGLE_90)
-				: R_PointToAngle(spr->mobj->x, spr->mobj->y) // fixme
-			);*/
-
-			// Less change in contrast in dark sectors
-			extralight = FixedMul(extralight, min(max(0, *lightlevel), 255) * FRACUNIT / 255);
-
-			if (papersprite)
-			{
-				// Papersprite contrast should match walls
-				*lightlevel += FixedFloor(extralight + (FRACUNIT / 2)) / FRACUNIT;
-			}
-			else
-			{
-				// simple OGL approximation
-				fixed_t tr = R_PointToDist(spr->mobj->x, spr->mobj->y);
-				fixed_t xscale = FixedDiv((vid.width / 2) << FRACBITS, tr);
-
-				// Less change in contrast at further distances, to counteract DOOM diminished light
-				fixed_t n = FixedDiv(FixedMul(xscale, LIGHTRESOLUTIONFIX), ((MAXLIGHTSCALE-1) << LIGHTSCALESHIFT));
-				extralight = FixedMul(extralight, min(n, FRACUNIT));
-
-				// Contrast is stronger for normal sprites, stronger than wall lighting is at the same distance
-				*lightlevel += FixedFloor((extralight * 2) + (FRACUNIT / 2)) / FRACUNIT;
-			}
-		}
+		// Papersprite contrast should match walls
+		*lightlevel += FixedFloor(extralight + (FRACUNIT / 2)) / FRACUNIT;
 	}
+	else*/
+	{
+		// simple OGL approximation
+		fixed_t tr = R_PointToDist(spr->mobj->x, spr->mobj->y);
+		fixed_t xscale = FixedDiv((vid.width / 2) << FRACBITS, tr);
+
+		// Less change in contrast at further distances, to counteract DOOM diminished light
+		fixed_t n = FixedDiv(FixedMul(xscale, LIGHTRESOLUTIONFIX), ((MAXLIGHTSCALE-1) << LIGHTSCALESHIFT));
+		extralight = FixedMul(extralight, min(n, FRACUNIT));
+
+		// Contrast is stronger for normal sprites, stronger than wall lighting is at the same distance
+		*lightlevel += FixedFloor((extralight * 2) + (FRACUNIT / 2)) / FRACUNIT;
+	}
+
 }
 
 void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *colormap, const boolean directional)
