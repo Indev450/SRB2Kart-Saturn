@@ -6039,10 +6039,12 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 							P_SetScale(overlay, player->mo->scale);
 						}
 						player->kartstuff[k_invincibilitytimer] = itemtime+(2*TICRATE); // 10 seconds
+
 						if (P_IsLocalPlayer(player) && cv_supermusic.value == 1 && cv_birdmusic.value)
 							S_ChangeMusicSpecial("kinvnc");
 						else
 							S_StartSound(player->mo, (cv_kartinvinsfx.value ? sfx_alarmi : sfx_kinvnc));
+
 						P_RestoreMusic(player);
 						K_PlayPowerGloatSound(player->mo);
 						player->kartstuff[k_itemamount]--;
@@ -9118,7 +9120,7 @@ static void K_drawNameTags(void)
 		distance = R_PointToDist(players[i].mo->x, players[i].mo->y);
 		if (distance > maxdistance)
 			continue;
-		if (!P_CheckSight(stplyr->mo, players[i].mo))
+		if (!P_CheckSightFast(stplyr->mo, players[i].mo))
 			continue;
 
 		switch (cv_nametagtrans.value)

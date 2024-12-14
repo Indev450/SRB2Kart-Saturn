@@ -116,6 +116,8 @@ static FTransform  md2_transform;
 const GLubyte *gl_version = NULL;
 const GLubyte *gl_renderer = NULL;
 const GLubyte *gl_extensions = NULL;
+const GLubyte *gl_vendor = NULL;
+GLuint gl_num_extensions;
 
 // Loaded OpenGL version
 int majorGL = 0, minorGL = 0;

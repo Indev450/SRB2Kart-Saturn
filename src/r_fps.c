@@ -91,19 +91,24 @@ static levelinterpolator_t **levelinterpolators;
 static size_t levelinterpolators_len;
 static size_t levelinterpolators_size;
 
+static inline fixed_t R_LerpFixedView(fixed_t from, fixed_t to, fixed_t frac)
+{
+	return from + FixedMul(frac, to - from);
+}
+
+static inline angle_t R_LerpAngleView(angle_t from, angle_t to, fixed_t frac)
+{
+	return from + FixedMul(frac, to - from);
+}
 
 static inline fixed_t R_LerpFixed(fixed_t from, fixed_t to, fixed_t frac)
 {
-	if (from == to)
-		return to;
-	return from + FixedMul(frac, to - from);
+	return ((from == to) ? to : (from + FixedMul(frac, to - from)));
 }
 
 static inline angle_t R_LerpAngle(angle_t from, angle_t to, fixed_t frac)
 {
-	if (from == to)
-		return to;
-	return from + FixedMul(frac, to - from);
+	return ((from == to) ? to : (from + FixedMul(frac, to - from)));
 }
 
 /*static vector2_t *R_LerpVector2(const vector2_t *from, const vector2_t *to, fixed_t frac, vector2_t *out)
@@ -153,7 +158,7 @@ static void R_SetupFreelook(void)
 
 void R_InterpolateViewRollAngle(fixed_t frac)
 {
-	viewroll = R_LerpAngle(oldview->roll, newview->roll, frac);
+	viewroll = R_LerpAngleView(oldview->roll, newview->roll, frac);
 }
 
 void R_InterpolateView(fixed_t frac, boolean forceinvalid)
@@ -181,13 +186,13 @@ void R_InterpolateView(fixed_t frac, boolean forceinvalid)
 		prevview = newview;
 	}
 
-	viewx = R_LerpFixed(prevview->x, newview->x, frac);
-	viewy = R_LerpFixed(prevview->y, newview->y, frac);
-	viewz = R_LerpFixed(prevview->z, newview->z, frac);
+	viewx = R_LerpFixedView(prevview->x, newview->x, frac);
+	viewy = R_LerpFixedView(prevview->y, newview->y, frac);
+	viewz = R_LerpFixedView(prevview->z, newview->z, frac);
 
-	viewangle = R_LerpAngle(prevview->angle, newview->angle, frac);
-	aimingangle = R_LerpAngle(prevview->aim, newview->aim, frac);
-	viewroll = R_LerpAngle(prevview->roll, newview->roll, frac);
+	viewangle = R_LerpAngleView(prevview->angle, newview->angle, frac);
+	aimingangle = R_LerpAngleView(prevview->aim, newview->aim, frac);
+	viewroll = R_LerpAngleView(prevview->roll, newview->roll, frac);
 
 	viewsin = FINESINE(viewangle>>ANGLETOFINESHIFT);
 	viewcos = FINECOSINE(viewangle>>ANGLETOFINESHIFT);
@@ -301,7 +306,7 @@ void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 		out->y = mobj->y;
 		out->z = mobj->z;
 		out->scale = mobj->scale;
-		out->subsector = mobj->subsector;
+		//out->subsector = mobj->subsector;
 		out->angle = mobj->player ? mobj->player->frameangle : mobj->angle;
 		out->pitch = mobj->pitch;
 		out->roll = mobj->roll;
@@ -322,8 +327,7 @@ void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 	out->spritexoffset = mobj->resetinterp ? mobj->spritexoffset : R_LerpFixed(mobj->old_spritexoffset, mobj->spritexoffset, frac);
 	out->spriteyoffset = mobj->resetinterp ? mobj->spriteyoffset : R_LerpFixed(mobj->old_spriteyoffset, mobj->spriteyoffset, frac);
 	out->scale = mobj->resetinterp ? mobj->scale : R_LerpFixed(mobj->old_scale, mobj->scale, frac);
-	//out->subsector = R_PointInSubsector(out->x, out->y); // why was this even done?
-	out->subsector = mobj->subsector;
+	//out->subsector = R_PointInSubsector(out->x, out->y); // this is unused
 
 	if (mobj->player)
 		out->angle = mobj->resetinterp ? mobj->player->frameangle : R_LerpAngle(mobj->player->old_frameangle, mobj->player->frameangle, frac);
@@ -359,7 +363,7 @@ void R_InterpolatePrecipMobjState(precipmobj_t *mobj, fixed_t frac, interpmobjst
 		out->y = mobj->y;
 		out->z = mobj->z;
 		out->scale = cv_mobjscaleprecip.value ? mapobjectscale : FRACUNIT;
-		out->subsector = mobj->subsector;
+		//out->subsector = mobj->subsector;
 		out->angle = mobj->angle;
 		out->spritexscale = mobj->spritexscale;
 		out->spriteyscale = mobj->spriteyscale;
@@ -376,9 +380,8 @@ void R_InterpolatePrecipMobjState(precipmobj_t *mobj, fixed_t frac, interpmobjst
 		out->spriteyscale = mobj->spriteyscale;
 		out->spritexoffset = mobj->spritexoffset;
 		out->spriteyoffset = mobj->spriteyoffset;
+		//out->subsector = R_PointInSubsector(out->x, out->y); // this is unused
 
-		//out->subsector = R_PointInSubsector(out->x, out->y); // i dont understand lol
-		out->subsector = mobj->subsector;
 		out->angle = R_LerpAngle(mobj->old_angle, mobj->angle, frac);
 }
 

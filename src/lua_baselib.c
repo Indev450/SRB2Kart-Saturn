@@ -1102,6 +1102,18 @@ static int lib_pCheckSight(lua_State *L)
 	return 1;
 }
 
+// DONT USE THIS FOR ANYTHING GAMEPLAY, THIS WILL DESYNCH!
+static int lib_pCheckSightFast(lua_State *L)
+{
+	mobj_t *t1 = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));
+	mobj_t *t2 = *((mobj_t **)luaL_checkudata(L, 2, META_MOBJ));
+	//HUDSAFE?
+	if (!t1 || !t2)
+		return LUA_ErrInvalid(L, "mobj_t");
+	lua_pushboolean(L, P_CheckSightFast(t1, t2));
+	return 1;
+}
+
 static int lib_pCheckHoopPosition(lua_State *L)
 {
 	mobj_t *hoopthing = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));
@@ -3154,6 +3166,7 @@ static luaL_Reg lib[] = {
 	{"P_SlideMove",lib_pSlideMove},
 	{"P_BounceMove",lib_pBounceMove},
 	{"P_CheckSight", lib_pCheckSight},
+	{"P_CheckSightFast", lib_pCheckSightFast},
 	{"P_CheckHoopPosition",lib_pCheckHoopPosition},
 	{"P_RadiusAttack",lib_pRadiusAttack},
 	{"P_FloorzAtPos",lib_pFloorzAtPos},

@@ -1236,7 +1236,7 @@ void CONS_Printf(const char *fmt, ...)
 		txt = malloc(8192);
 
 	va_start(argptr, fmt);
-	vsprintf(txt, fmt, argptr);
+	vsnprintf(txt, 8192, fmt, argptr);
 	va_end(argptr);
 
 	// echo console prints to log file

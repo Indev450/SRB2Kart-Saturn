@@ -142,6 +142,8 @@ static void HWR_TogglePaletteRendering(void);
 // ==========================================================================
 // Commands and console variables
 // ==========================================================================
+static void HWR_RegisterCommands(void);
+static void COM_HWR_glinfo(void);
 
 //
 // Onchanges
@@ -542,7 +544,6 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 	if (!xsub->planepoly)
 		return;
 
-	pv = xsub->planepoly->pts;
 	nrPlaneVerts = xsub->planepoly->numpts;
 
 	if (nrPlaneVerts < 3)   //not even a triangle ?
@@ -611,6 +612,8 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 			flatflag = 63;
 			break;
 	}
+
+	pv = xsub->planepoly->pts;
 
 	// reference point for flat texture coord for each vertex around the polygon
 	flatxref = (float)(((fixed_t)pv->x & (~flatflag)) / fflatsize);
@@ -979,7 +982,7 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 
 	for (INT32 i = 0; i < sector->numlights; i++)
 	{
-		if (endtop < endrealbot && top < realbot)
+		if ((endtop < endrealbot) && (top < realbot))
 			return;
 
 		lightlist_t *list = sector->lightlist;
@@ -1045,20 +1048,16 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 			endbheight = endrealbot;
 		}
 
-		if (endbheight > endtop)
-			endbot = endtop;
+		if (endbheight >= endtop)
+			continue;
 
 		if (bheight >= top)
 			continue;
 
 		// Found a break
 		// The heights are clamped to ensure the polygon doesn't cross itself.
-		bot = bheight;
-
-		if (bot < realbot)
-			bot = realbot;
-
-		endbot = min(max(endbheight, endrealbot), endtop);
+		bot = CLAMP(bheight, realbot, top);
+		endbot = CLAMP(endbheight, endrealbot, endtop);
 
 		Surf->PolyColor.s.alpha = alpha;
 
@@ -1086,7 +1085,7 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 
 	bot = realbot;
 	endbot = endrealbot;
-	if (endtop <= endrealbot && top <= realbot)
+	if ((endtop <= endrealbot) && (top <= realbot))
 		return;
 
 	Surf->PolyColor.s.alpha = alpha;
@@ -1187,7 +1186,7 @@ static void HWR_DrawSkyWall(FOutVector *wallVerts, FSurfaceInfo *Surf)
 }
 
 // Returns true if the midtexture is visible, and false if... it isn't...
-static boolean HWR_BlendMidtextureSurface(FSurfaceInfo *pSurf)
+static inline boolean HWR_BlendMidtextureSurface(FSurfaceInfo *pSurf)
 {
 	FUINT blendmode = PF_Masked;
 
@@ -1225,23 +1224,16 @@ static boolean HWR_BlendMidtextureSurface(FSurfaceInfo *pSurf)
 			case 908:
 				blendmode = HWR_TranstableToAlpha(tr_trans90, pSurf);
 				break;
-			//  Translucent
+			// Translucent linedef types
 			case 102:
-			case 121:
-			case 123:
-			case 124:
-			case 125:
-			case 141:
-			case 142:
-			case 144:
-			case 145:
+			case 121 ... 125:
+			case 141 ... 145:
 			case 174:
 			case 175:
 			case 192:
 			case 195:
 			case 221:
-			case 253:
-			case 256:
+			case 253 ... 256:
 				blendmode = PF_Translucent;
 				break;
 			default:
@@ -1253,9 +1245,10 @@ static boolean HWR_BlendMidtextureSurface(FSurfaceInfo *pSurf)
 	{
 		// Polyobject translucency is shared between all of its lines
 		if (gl_curline->polyseg->translucency >= NUMTRANSMAPS) // wall not drawn
+		{
+			pSurf->PolyColor.s.alpha = 0x00; // This shouldn't draw anything regardless of blendmode
 			return false;
-			//Surf.PolyColor.s.alpha = 0x00; // This shouldn't draw anything regardless of blendmode
-			//blendmode = PF_Masked;
+		}
 		else
 			blendmode = HWR_TranstableToAlpha(gl_curline->polyseg->translucency, pSurf);
 	}
@@ -1352,7 +1345,9 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 	lightnum = (HWR_ShouldUsePaletteRendering() && colormap) ? lightnum : HWR_CalcWallLight(lightnum, gl_curline);
 
 	FSurfaceInfo Surf;
-	Surf.PolyColor.s.alpha = 255;
+
+	if (gl_frontsector)
+		Surf.PolyColor.s.alpha = 255;
 
 	INT32 gl_midtexture = R_GetTextureNum(gl_sidedef->midtexture);
 	GLMapTexture_t *glTex = NULL;
@@ -1748,6 +1743,8 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 		// Single sided line... Deal only with the middletexture (if one exists)
 		if (gl_midtexture && gl_linedef->special != HORIZONSPECIAL) // Ignore horizon line for OGL
 		{
+			glTex = HWR_GetTexture(gl_midtexture, noencore);
+
 			fixed_t     texturevpeg;
 
 			// PEGGING
@@ -1757,8 +1754,6 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 				texturevpeg = worldbottom + textureheight[gl_sidedef->midtexture] - worldtop + gl_sidedef->rowoffset;
 			else
 				texturevpeg = gl_sidedef->rowoffset; // top of texture at top
-
-			glTex = HWR_GetTexture(gl_midtexture, noencore);
 
 			wallVerts[3].t = wallVerts[2].t = texturevpeg * glTex->scaleY;
 			wallVerts[0].t = wallVerts[1].t = (texturevpeg + gl_frontsector->ceilingheight - gl_frontsector->floorheight) * glTex->scaleY;
@@ -3670,7 +3665,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 
 	for (i = 0; i < sector->numlights; i++)
 	{
-		if (endtop < endrealbot && top < realbot)
+		if ((endtop < endrealbot) && (top < realbot))
 			return;
 
 		// even if we aren't changing colormap or lightlevel, we still need to continue drawing down the sprite
@@ -3695,18 +3690,16 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 			endbheight = endrealbot;
 		}
 
-		if (endbheight >= endtop && bheight >= top)
+		if (endbheight >= endtop)
 			continue;
 
-		bot = bheight;
+		if (bheight >= top)
+			continue;
 
-		if (bot < realbot)
-			bot = realbot;
-
-		endbot = endbheight;
-
-		if (endbot < endrealbot)
-			endbot = endrealbot;
+		// Found a break
+		// The heights are clamped to ensure the polygon doesn't cross itself.
+		bot = CLAMP(bheight, realbot, top);
+		endbot = CLAMP(endbheight, endrealbot, endtop);
 
 		wallVerts[3].t = towtop + ((realtop - top) * towmult);
 		wallVerts[2].t = towtop + ((endrealtop - endtop) * towmult);
@@ -3754,7 +3747,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 	bot = realbot;
 	endbot = endrealbot;
 
-	if (endtop <= endrealbot && top <= realbot)
+	if ((endtop <= endrealbot) && (top <= realbot))
 		return;
 
 	// If we're ever down here, somehow the above loop hasn't draw all the light levels of sprite
@@ -5644,8 +5637,78 @@ void HWR_Startup(void)
 
 		if (msaa)
 			HWD.pfnSetSpecialState(HWD_SET_MSAA, a2c ? 2 : 1);
+
+		HWR_RegisterCommands();
 	}
 	startupdone = true;
+}
+
+/**
+ * Register renderer commands.
+ */
+static void HWR_RegisterCommands(void)
+{
+	COM_AddCommand("gr_glinfo", COM_HWR_glinfo);
+}
+
+static void COM_HWR_glinfo(void)
+{
+	if (vid.glstate != VID_GL_LIBRARY_LOADED)
+	{
+		CONS_Printf("Currently not using the OpenGL renderer.\n");
+		return;
+	}
+
+	int list_extensions = 0;
+	size_t argc = COM_Argc();
+	const char *argv;
+	for (size_t i = 1; i < argc; i++)
+	{
+		argv = COM_Argv(i);
+
+		if (strcmp(argv, "--list-extensions") == 0 || strcmp(argv, "-l") == 0)
+		{
+			list_extensions = 1;
+		}
+		else
+		{
+			CONS_Printf("Unrecognized argument: %s\n", argv);
+			return;
+		}
+		
+	}
+
+	CONS_Printf("\x88OpenGL %s\x80\n", gl_version);
+	CONS_Printf("Renderer: %s\n", gl_renderer);
+	CONS_Printf("Vendor: %s\n", gl_vendor);
+
+	CONS_Printf("%u GL extensions present.\n", gl_num_extensions);
+	if (list_extensions)
+	{
+		// We need this strtok loop because we cannot write the extensions list directly
+		// to the output buffer, because it will overflow the output buffer of CONS_Printf
+		// if the GPU is super new and supports a bajillion extensions - xyzzy
+
+		char *copy = strdup((const char*)gl_extensions);
+		char *ext = strtok(copy, " ");
+
+		if (copy == NULL)
+		{
+			CONS_Printf("Ran out of memory listing extensions?!?!");
+			return;
+		}
+
+		do
+		{
+			CONS_Printf(" - %s\n", ext);
+		} while ((ext = strtok(NULL, " ")) != NULL);
+
+		free(copy);
+	}
+	else
+	{
+		CONS_Printf("Use --list-extensions to view the list of extensions.\n");
+	}
 }
 
 // --------------------------------------------------------------------------
