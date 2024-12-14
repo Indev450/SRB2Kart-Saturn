@@ -35,6 +35,9 @@ typedef enum
 
 	// free: 1<<7 to 1<<12
 
+	TICCMD_TYPING 	= 1<<9,	/* chat window or console open */
+	TICCMD_KEYSTROKE = 1<<10,/* chat character input */
+
 	// Lua garbage
 	BT_CUSTOM1		= 1<<13,
 	BT_CUSTOM2		= 1<<14,
