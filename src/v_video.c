@@ -138,7 +138,11 @@ static boolean InitCube(void)
 
 #define diffcons(cv) (cv.value != atoi(cv.defaultvalue))
 
+#ifdef BACKWARDSCOMPATCORRECTION
+	doinggamma = (cv_globalgamma.value <= 0); //dont mess up gamma when raising brightness pls
+#else
 	doinggamma = diffcons(cv_globalgamma);
+#endif
 
 #define gammascale 8
 	globalgammamul = (cv_globalgamma.value ? ((255 - (gammascale*abs(cv_globalgamma.value)))/255.0) : 1.0);
@@ -439,31 +443,10 @@ static void LoadPalette(const char *lumpname)
 
 		// lerp of colour cubing! if you want, make it smoother yourself
 		if (Cubeapply)
+		
 			V_CubeApply(&pLocalPalette[i].s.red, &pLocalPalette[i].s.green, &pLocalPalette[i].s.blue);
 	}
 }
-
-#ifdef BACKWARDSCOMPATCORRECTION
-static boolean V_ShouldCube(void)
-{
-#define diffcons(cv) (cv.value != atoi(cv.defaultvalue))
-	return (diffcons(cv_globalsaturation)
-		|| diffcons(cv_rhue)
-		|| diffcons(cv_yhue)
-		|| diffcons(cv_ghue)
-		|| diffcons(cv_chue)
-		|| diffcons(cv_bhue)
-		|| diffcons(cv_mhue)
-		|| diffcons(cv_rgamma)
-		|| diffcons(cv_ygamma)
-		|| diffcons(cv_ggamma)
-		|| diffcons(cv_cgamma)
-		|| diffcons(cv_bgamma)
-		|| diffcons(cv_mgamma)
-		|| (cv_globalgamma.value <= 0));
-#undef diffcons
-}
-#endif
 
 void V_CubeApply(UINT8 *red, UINT8 *green, UINT8 *blue)
 {
@@ -471,11 +454,7 @@ void V_CubeApply(UINT8 *red, UINT8 *green, UINT8 *blue)
 	float linear;
 	UINT8 q;
 
-	if (!Cubeapply
-#ifdef BACKWARDSCOMPATCORRECTION
-	|| !V_ShouldCube()
-#endif
-	)
+	if (!Cubeapply)
 		return;
 
 	linear = (*red/255.0);
