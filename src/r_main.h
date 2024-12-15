@@ -72,16 +72,7 @@ extern lighttable_t *zlight[LIGHTLEVELS][MAXLIGHTZ];
 #define COLORMAP_REMAPOFFSET COLORMAP_SIZE
 
 // Utility functions.
-
-//
-// R_PointOnSide
-// Traverse BSP (sub) tree,
-// check point against partition plane.
-// Returns side 0 (front) or 1 (back).
-//
-// killough 5/2/98: reformatted
-//
-FUNCINLINE static ATTRINLINE PUREFUNC INT32 R_PointOnSide(fixed_t x, fixed_t y, const node_t *restrict node)
+FUNCINLINE static ATTRINLINE PUREFUNC INT32 R_CompatiblePointOnSide(fixed_t x, fixed_t y, const node_t *restrict node)
 {
 	if (!node->dx)
 		return x <= node->x ? node->dy > 0 : node->dy < 0;
@@ -96,7 +87,14 @@ FUNCINLINE static ATTRINLINE PUREFUNC INT32 R_PointOnSide(fixed_t x, fixed_t y, 
 	// also use a mask to avoid branch prediction
 	INT32 mask = (node->dy ^ node->dx ^ x ^ y) >> 31;
 	return (mask & ((node->dy ^ x) < 0)) |  // (left is negative)
-	(~mask & (FixedMul(y, node->dx>>FRACBITS) >= FixedMul(node->dy>>FRACBITS, x)));
+		(~mask & (FixedMul(y, node->dx>>FRACBITS) >= FixedMul(node->dy>>FRACBITS, x)));
+}
+
+FUNCINLINE static ATTRINLINE PUREFUNC INT32 R_PointOnSide(fixed_t x, fixed_t y, node_t *node)
+{
+	// use cross product to determine side quickly
+	INT64 v = (((INT64)y - node->y) * node->dx - ((INT64)x - node->x) * node->dy);
+	return ((v == 0) ? R_CompatiblePointOnSide(x, y, node) : (v > 0)); // if we're on the line, use the old algorithm
 }
 
 // This is not as accurate
