@@ -494,7 +494,7 @@ void DRPC_UpdatePresence(void)
 
 	if (!drpc_init) DRPC_Init();
 
-	char detailstr[48+1];
+	char detailstr[256+1];
 
 	char mapimg[8+1];
 	char mapname[5+21+21+2+1];
@@ -589,7 +589,7 @@ void DRPC_UpdatePresence(void)
 		{
 			DRPC_UpdateGameModes();
 
-			snprintf(detailstr, 48, "%s%s%s", 
+			snprintf(detailstr, 256, "%s%s%s",
 				(strlen(gamemodes) != 0) ? gamemodes : "",
 				(gametype == GT_RACE) ? va(" | %s", kartspeed_cons_t[gamespeed].strvalue) : "",
 				(encoremode == true) ? " | Encore" : ""
