@@ -10,11 +10,13 @@
 /// \file  discord.h
 /// \brief Discord Rich Presence handling
 
-#ifdef HAVE_DISCORDRPC
+//#ifdef HAVE_DISCORDRPC
 
 #include <time.h>
 
+#include "i_time.h"
 #include "i_system.h"
+#include "r_main.h"
 #include "d_clisrv.h"
 #include "d_netcmd.h"
 #include "i_net.h"
@@ -428,6 +430,56 @@ static void DRPC_EmptyRequests(void)
 	}
 }
 
+static char gamemodes[256] = "";
+
+static void append_to_string(char *buffer, const char *mod_name)
+{
+	if (strlen(buffer) > 0) {
+		strcat(buffer, " -");
+	}
+	strcat(buffer, mod_name);
+}
+
+static void DRPC_UpdateGameModes(void)
+{
+	consvar_t *weathermodactive;
+	consvar_t *friendmodactive;
+	consvar_t *eliminationactive;
+	consvar_t *driftnitroactive;
+
+	consvar_t *slipstreamactive;
+	consvar_t *booststackactive;
+	consvar_t *airbrakeactive;
+
+	if (renderisnewtic && (I_GetTime() % TICRATE*20) == 0)
+	{
+		weathermodactive = CV_FindVar("weathermod");
+		friendmodactive = CV_FindVar("fr_enabled");
+		eliminationactive = CV_FindVar("elimination");
+		driftnitroactive = CV_FindVar("driftnitro");
+
+		slipstreamactive = CV_FindVar("slipstream_enabled");
+		booststackactive = CV_FindVar("booststack");
+		airbrakeactive = CV_FindVar("wa_airbrake");
+
+		const boolean techactive = ((!driftnitroactive->value) && slipstreamactive->value && booststackactive->value && airbrakeactive->value); //this combination is only active with tech lel
+
+		if (weathermodactive->value)
+			append_to_string(gamemodes, "Weathermod");
+
+		if (friendmodactive->value)
+			append_to_string(gamemodes, "Friendmod");
+
+		if (eliminationactive->value)
+			append_to_string(gamemodes, "Elimination");
+
+		if (driftnitroactive->value)
+			append_to_string(gamemodes, "DriftNitro");
+		else if (techactive)
+			append_to_string(gamemodes, "Tech");
+	}
+}
+
 /*--------------------------------------------------
 	void DRPC_UpdatePresence(void)
 
@@ -532,8 +584,10 @@ void DRPC_UpdatePresence(void)
 			discordPresence.details = "Time Attack";
 		else
 		{
+			DRPC_UpdateGameModes();
+
 			snprintf(detailstr, 48, "%s%s%s",
-				gametype_cons_t[gametype].strvalue,
+					 (strlen(gamemodes) > 0) ? gamemodes : gametype_cons_t[gametype].strvalue,
 				(gametype == GT_RACE) ? va(" | %s", kartspeed_cons_t[gamespeed].strvalue) : "",
 				(encoremode == true) ? " | Encore" : ""
 			);
@@ -682,4 +736,4 @@ void DRPC_UpdatePresence(void)
 	Discord_UpdatePresence(&discordPresence);
 }
 
-#endif // HAVE_DISCORDRPC
+//#endif // HAVE_DISCORDRPC
