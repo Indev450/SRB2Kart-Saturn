@@ -1117,6 +1117,7 @@ void R_SkyboxFrame(int s)
 {
 	player_t *player = &players[displayplayers[s]];
 	camera_t *thiscam = &camera[s];
+	subsector_t * subsector = NULL;
 
 	R_SetViewContext(VIEWCONTEXT_SKY1 + s);
 
@@ -1124,7 +1125,7 @@ void R_SkyboxFrame(int s)
 	newview->sky = true;
 	viewmobj = skyboxmo[0];
 #ifdef PARANOIA
-	if (!viewmobj)
+	if (P_MobjWasRemoved(viewmobj))
 	{
 		const size_t playeri = (size_t)(player - players);
 		I_Error("R_SkyboxFrame: viewmobj null (player %s)", sizeu1(playeri));
@@ -1203,7 +1204,10 @@ void R_SkyboxFrame(int s)
 	}
 #undef SETUPSKYVIEW
 
-	R_SetupCommonFrame(player, viewmobj->subsector);
+	if (!P_MobjWasRemoved(viewmobj))
+		subsector = viewmobj->subsector;
+
+	R_SetupCommonFrame(player, subsector);
 }
 
 void R_SetupFrame(int s, boolean skybox)
@@ -1211,6 +1215,7 @@ void R_SetupFrame(int s, boolean skybox)
 	player_t *player = &players[displayplayers[s]];
 	camera_t *thiscam = &camera[s];
 	boolean chasecam = (cv_chasecam[s].value != 0);
+	subsector_t * subsector = NULL;
 
 	R_SetViewContext(VIEWCONTEXT_PLAYER1 + s);
 	if (thiscam->reset)
@@ -1245,7 +1250,10 @@ void R_SetupFrame(int s, boolean skybox)
 		newview->y = viewmobj->y;
 		newview->z = viewmobj->z + 20*FRACUNIT;
 
-		R_SetupCommonFrame(player, viewmobj->subsector);
+		if (!P_MobjWasRemoved(viewmobj))
+			subsector = viewmobj->subsector;
+
+		R_SetupCommonFrame(player, subsector);
 	}
 	else if (!player->spectator && (thiscam && chasecam)) // use outside cam view
 	{
@@ -1266,7 +1274,10 @@ void R_SetupFrame(int s, boolean skybox)
 		newview->y = viewmobj->y;
 		newview->z = player->viewz;
 
-		R_SetupCommonFrame(player, viewmobj->subsector);
+		if (!P_MobjWasRemoved(viewmobj))
+			subsector = viewmobj->subsector;
+
+		R_SetupCommonFrame(player, subsector);
 	}
 }
 
