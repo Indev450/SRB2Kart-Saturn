@@ -434,50 +434,53 @@ static char gamemodes[256] = "";
 
 static void append_to_string(char *buffer, const char *mod_name)
 {
-	if (strlen(buffer) > 0) {
-		strcat(buffer, " -");
-	}
+	if (strlen(buffer) > 0)
+		strcat(buffer, " - ");
+
 	strcat(buffer, mod_name);
 }
 
 static void DRPC_UpdateGameModes(void)
 {
-	consvar_t *weathermodactive;
-	consvar_t *friendmodactive;
-	consvar_t *eliminationactive;
-	consvar_t *driftnitroactive;
+	consvar_t *weathermodactive = NULL;
+	consvar_t *friendmodactive = NULL;
+	consvar_t *eliminationactive = NULL;
+	consvar_t *driftnitroactive = NULL;
 
-	consvar_t *slipstreamactive;
-	consvar_t *booststackactive;
-	consvar_t *airbrakeactive;
+	consvar_t *slipstreamactive = NULL;
+	consvar_t *booststackactive = NULL;
+	consvar_t *airbrakeactive = NULL;
 
-	if (renderisnewtic && (I_GetTime() % TICRATE*20) == 0)
-	{
-		weathermodactive = CV_FindVar("weathermod");
-		friendmodactive = CV_FindVar("fr_enabled");
-		eliminationactive = CV_FindVar("elimination");
-		driftnitroactive = CV_FindVar("driftnitro");
+	gamemodes[0] = '\0';
+		
+	weathermodactive = CV_FindVar("weathermod");
+	friendmodactive = CV_FindVar("fr_enabled");
+	eliminationactive = CV_FindVar("elimination");
+	driftnitroactive = CV_FindVar("driftnitro");
 
-		slipstreamactive = CV_FindVar("slipstream_enabled");
-		booststackactive = CV_FindVar("booststack");
-		airbrakeactive = CV_FindVar("wa_airbrake");
+	slipstreamactive = CV_FindVar("slipstream_enabled");
+	booststackactive = CV_FindVar("booststack");
+	airbrakeactive = CV_FindVar("wa_airbrake");
 
-		const boolean techactive = ((!driftnitroactive->value) && slipstreamactive->value && booststackactive->value && airbrakeactive->value); //this combination is only active with tech lel
+	const boolean techactive = ((driftnitroactive && !driftnitroactive->value) && (slipstreamactive && slipstreamactive->value) && (booststackactive && booststackactive->value) && (airbrakeactive && airbrakeactive->value)); //this combination is only active with tech lel
 
-		if (weathermodactive->value)
-			append_to_string(gamemodes, "Weathermod");
+	append_to_string(gamemodes, gametype_cons_t[gametype].strvalue);
 
-		if (friendmodactive->value)
-			append_to_string(gamemodes, "Friendmod");
+	if (driftnitroactive && driftnitroactive->value)
+		append_to_string(gamemodes, "DriftNitro");
+	else if (techactive)
+		append_to_string(gamemodes, "Tech");
+	
+	if (weathermodactive && weathermodactive->value)
+		append_to_string(gamemodes, "Weathermod");
 
-		if (eliminationactive->value)
-			append_to_string(gamemodes, "Elimination");
+	if (friendmodactive && friendmodactive->value)
+		append_to_string(gamemodes, "Friendmod");
+		
+	if (eliminationactive && eliminationactive->value)
+		append_to_string(gamemodes, "Elimination");
 
-		if (driftnitroactive->value)
-			append_to_string(gamemodes, "DriftNitro");
-		else if (techactive)
-			append_to_string(gamemodes, "Tech");
-	}
+	//CONS_Printf("%s\n", gamemodes);
 }
 
 /*--------------------------------------------------
@@ -586,8 +589,8 @@ void DRPC_UpdatePresence(void)
 		{
 			DRPC_UpdateGameModes();
 
-			snprintf(detailstr, 48, "%s%s%s",
-					 (strlen(gamemodes) > 0) ? gamemodes : gametype_cons_t[gametype].strvalue,
+			snprintf(detailstr, 48, "%s%s%s", 
+				(strlen(gamemodes) != 0) ? gamemodes : "",
 				(gametype == GT_RACE) ? va(" | %s", kartspeed_cons_t[gamespeed].strvalue) : "",
 				(encoremode == true) ? " | Encore" : ""
 			);
