@@ -195,7 +195,7 @@ struct textcmdbuf_s
 	UINT8 cmd[MAXTEXTCMD];
 };
 
-static textcmdbuf_t *textcmdbuf[MAXSPLITSCREENPLAYERS];
+static textcmdbuf_t *textcmdbuf[MAXSPLITSCREENPLAYERS] = {NULL};
 
 ticcmd_t netcmds[TICQUEUE][MAXPLAYERS];
 static textcmdtic_t *textcmds[TEXTCMD_HASH_SIZE] = {NULL};
