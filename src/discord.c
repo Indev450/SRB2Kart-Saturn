@@ -14,6 +14,7 @@
 
 #include <time.h>
 
+#include "doomstat.h"
 #include "i_time.h"
 #include "i_system.h"
 #include "r_main.h"
@@ -442,29 +443,24 @@ static void append_to_string(char *buffer, const char *mod_name)
 
 static void DRPC_UpdateGameModes(void)
 {
-	consvar_t *weathermodactive = NULL;
-	consvar_t *friendmodactive = NULL;
-	consvar_t *eliminationactive = NULL;
-	consvar_t *driftnitroactive = NULL;
+	const consvar_t *weathermodactive = CV_FindVar("weathermod");
+	const consvar_t *friendmodactive = CV_FindVar("fr_enabled");
+	const consvar_t *eliminationactive = CV_FindVar("elimination");
+	const consvar_t *driftnitroactive = CV_FindVar("driftnitro");
 
-	consvar_t *slipstreamactive = NULL;
-	consvar_t *booststackactive = NULL;
-	consvar_t *airbrakeactive = NULL;
+	const consvar_t *slipstreamactive = CV_FindVar("slipstream_enabled");
+	const consvar_t *booststackactive = CV_FindVar("booststack");
+	const consvar_t *airbrakeactive = CV_FindVar("wa_airbrake");
 
 	gamemodes[0] = '\0';
-		
-	weathermodactive = CV_FindVar("weathermod");
-	friendmodactive = CV_FindVar("fr_enabled");
-	eliminationactive = CV_FindVar("elimination");
-	driftnitroactive = CV_FindVar("driftnitro");
-
-	slipstreamactive = CV_FindVar("slipstream_enabled");
-	booststackactive = CV_FindVar("booststack");
-	airbrakeactive = CV_FindVar("wa_airbrake");
-
-	const boolean techactive = ((driftnitroactive && !driftnitroactive->value) && (slipstreamactive && slipstreamactive->value) && (booststackactive && booststackactive->value) && (airbrakeactive && airbrakeactive->value)); //this combination is only active with tech lel
 
 	append_to_string(gamemodes, gametype_cons_t[gametype].strvalue);
+
+	// battle is battle, dont think anything can even be activated with it
+	if (G_BattleGametype())
+		return;
+
+	const boolean techactive = ((driftnitroactive && !driftnitroactive->value) && (slipstreamactive && slipstreamactive->value) && (booststackactive && booststackactive->value) && (airbrakeactive && airbrakeactive->value)); //this combination is only active with tech lel
 
 	if (driftnitroactive && driftnitroactive->value)
 		append_to_string(gamemodes, "DriftNitro");
