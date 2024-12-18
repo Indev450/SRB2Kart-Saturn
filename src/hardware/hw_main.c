@@ -4891,20 +4891,22 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 
 static gl_sky_t gl_sky;
 
+#define DEG2RADGL(a) ((a * M_PIl) / 180.0f)
+
 static void HWR_SkyDomeVertex(gl_sky_t *sky, gl_skyvertex_t *vbo, int r, int c, signed char yflip, float delta, boolean foglayer)
 {
-	const float radians = (float)(M_PIl / 180.0f);
-	const float scale = 10000.0f;
-	const float maxSideAngle = 60.0f;
+	static const float scale = 10000.0f;
+	static const float maxSideAngle = DEG2RADGL(60.0f);
 
-	float topAngle = (c / (float)sky->columns * 360.0f);
-	float sideAngle = (maxSideAngle * (sky->rows - r) / sky->rows);
-	float height = (float)(sin(sideAngle * radians));
-	float realRadius = (float)(scale * cos(sideAngle * radians));
-	float x = (float)(realRadius * cos(topAngle * radians));
+	float topAngle = DEG2RADGL(c / (float)sky->columns * 360.0f);
+	float sideAngle = (maxSideAngle * (float)(sky->rows - r) / (float)sky->rows);
+	float height = (float)(sin(sideAngle));
+	float realRadius = (scale * (float)cos(sideAngle));
+	float x = (realRadius * (float)cos(topAngle));
 	float y = (!yflip) ? scale * height : -scale * height;
-	float z = (float)(realRadius * sin(topAngle * radians));
+	float z = (realRadius * (float)sin(topAngle));
 	float timesRepeat = (4 * (256.0f / sky->width));
+
 	if (fpclassify(timesRepeat) == FP_ZERO)
 		timesRepeat = 1.0f;
 
