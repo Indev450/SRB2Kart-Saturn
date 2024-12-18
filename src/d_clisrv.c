@@ -298,6 +298,12 @@ void SendNetXCmdForPlayer(UINT8 playerid, netxcmd_t id, const void *param, size_
 	{
 		textcmdbuf_t *buf = textcmdbuf[playerid];
 
+		if (2+nparam > MAXTEXTCMD)
+		{
+			CONS_Alert(CONS_ERROR, M_GetText("packet too large to fit NetXCmd, cannot add netcmd %d! (size: %s, max: %d)\n"), id, sizeu1(2+nparam), MAXTEXTCMD);
+			return;
+		}
+
 		// for future reference: if (cv_debug) != debug disabled.
 		CONS_Alert(CONS_NOTICE, M_GetText("NetXCmd buffer full, delaying netcmd %d... (size: %d, needed: %s)\n"), id, localtextcmd[playerid][0], sizeu1(nparam));
 		if (buf == NULL)
@@ -314,14 +320,14 @@ void SendNetXCmdForPlayer(UINT8 playerid, netxcmd_t id, const void *param, size_
 
 		if (buf->cmd[0]+2+nparam > MAXTEXTCMD)
 		{
-			WriteNetXCmd(buf->cmd, id, param, nparam);
-		}
-		else
-		{
 			buf->next = Z_Malloc(sizeof(textcmdbuf_t), PU_STATIC, NULL);
 			buf->next->cmd[0] = 0;
 			buf->next->next = NULL;
 			WriteNetXCmd(buf->next->cmd, id, param, nparam);
+		}
+		else
+		{
+			WriteNetXCmd(buf->cmd, id, param, nparam);
 		}
 		return;
 	}
