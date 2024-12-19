@@ -27,6 +27,8 @@
 // Extended map support.
 #include <ctype.h>
 
+#include "am_map.h"
+
 #include "doomdef.h"
 #include "g_game.h"
 #include "m_misc.h"
