@@ -223,13 +223,6 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 	pglClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 
 #ifdef USE_FBO_OGL
-
-	if (!supportFBO)
-	{
-		if (cv_glframebuffer.value)
-			CV_SetValue(&cv_glframebuffer, 0);
-	}
-
 	if (UseScreenFBO())
 		GL_Framebuffer_Enable();
 	else
