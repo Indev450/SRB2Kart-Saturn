@@ -282,18 +282,17 @@ void OglSdlFinishUpdate(boolean waitvbl)
 	if (UseScreenFBO())
 	{
 		GL_Framebuffer_Unbind();
-		fbo_shader = true; // only need to run this here to not cause brightness + performance issues, its a bool since im a lazy ass
+		fbo_shader = HWR_UseShader() && !WipeInAction; // this looks awful with wipes
 	}
 #endif
 
 	//HWR_DrawScreenFinalTexture(sdlw, sdlh);
-	GL_DrawScreenFinalTexture(HWD_SCREENTEXTURE_GENERIC2, sdlw, sdlh, true);
+	GL_DrawScreenFinalTexture(HWD_SCREENTEXTURE_GENERIC2, sdlw, sdlh, (HWR_ShouldUsePaletteRendering() || fbo_shader));
 
 #ifdef USE_FBO_OGL
 	if (UseScreenFBO())
 	{
 		GL_Framebuffer_Enable();
-		fbo_shader = false;
 	}
 #endif
 

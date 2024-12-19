@@ -3343,12 +3343,12 @@ void GL_DrawScreenFinalTexture(int tex, INT32 width, INT32 height, boolean usesh
 
 	if (useshader)
 	{
-		// godawful but you can only ever run ONE shader per renderpass and since i dont want to draw an extra screen texture when you downsample from higher resolution (essentially killing performance)
+		// godawful but you can only ever run ONE shader per renderpass and since i dont want to draw an extra screen texture when you downsample from higher resolution
 		// so i combined the palette postprocess with this crap
-		if (HWR_ShouldUsePaletteRendering() && (!(HWR_UseShader() && fbo_shader && !WipeInAction)))
-			pglUseProgram(gl_shaders[SHADER_PALETTE_POSTPROCESS].program); // palette postprocess shader
-		else if (HWR_UseShader() && fbo_shader && !WipeInAction) // this looks awful with wipes
+		if (fbo_shader)
 			pglUseProgram(gl_shaders[SHADER_DOWNSAMPLE].program);
+		else
+			pglUseProgram(gl_shaders[SHADER_PALETTE_POSTPROCESS].program); // palette postprocess shader
 	}
 
 	pglColor4ubv(white);
@@ -3359,10 +3359,7 @@ void GL_DrawScreenFinalTexture(int tex, INT32 width, INT32 height, boolean usesh
 	pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 	
 	if (useshader)
-	{
-		if (HWR_ShouldUsePaletteRendering() || (HWR_UseShader() && fbo_shader && !WipeInAction))
-			pglUseProgram(0);
-	}
+		pglUseProgram(0);
 
 	tex_downloaded = screenTextures[tex];
 }
