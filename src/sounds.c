@@ -14,7 +14,7 @@
 #include "doomtype.h"
 #include "i_sound.h"
 #include "sounds.h"
-#include "s_sound.h" //for soundprecaching
+#include "s_sound.h" // for soundprecaching
 #include "m_argv.h"
 #include "r_defs.h"
 #include "r_things.h"
