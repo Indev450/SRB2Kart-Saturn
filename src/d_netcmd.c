@@ -16,6 +16,7 @@
 
 #include "console.h"
 #include "command.h"
+#include "dehacked.h"
 #include "i_time.h"
 #include "i_system.h"
 #include "g_game.h"
@@ -141,6 +142,8 @@ static void Command_Addfile(void);
 static void Command_Addskins(void);
 static void Command_GLocalSkin(void);
 static void Command_ListWADS_f(void);
+static void Command_ListDoomednums_f(void);
+static void Command_ListUnusedSprites_f(void);
 static void Command_RunSOC(void);
 static void Command_Pause(void);
 static void Command_Respawn(void);
@@ -705,6 +708,8 @@ void D_RegisterServerCommands(void)
 	COM_AddCommand("addskins", Command_Addskins);
 	COM_AddCommand("localskin", Command_GLocalSkin);
 	COM_AddCommand("listwad", Command_ListWADS_f);
+	COM_AddCommand("listmapthings", Command_ListDoomednums_f);
+	COM_AddCommand("listunusedsprites", Command_ListUnusedSprites_f);
 
 	COM_AddCommand("runsoc", Command_RunSOC);
 	COM_AddCommand("pause", Command_Pause);
@@ -4605,6 +4610,151 @@ static void Command_ListWADS_f(void)
 			CONS_Printf("\x82 * %.2d\x80: %s\n", i, tempname);
 		else
 			CONS_Printf("   %.2d: %s\n", i, tempname);
+	}
+}
+
+#define MAXDOOMEDNUM 4095
+
+static void Command_ListDoomednums_f(void)
+{
+	INT16 i, j, k = 0, l = 0;
+	INT32 argc = COM_Argc();
+	INT16 table[MAXDOOMEDNUM];
+
+	switch (argc)
+	{
+		case 1:
+			l = MAXDOOMEDNUM;
+			break;
+		case 3:
+			l = atoi(COM_Argv(2));
+			if (l < 1 || l > MAXDOOMEDNUM)
+			{
+				CONS_Printf("arg 2: doomednum \x82""%d \x85out of range (1-4095)\n", k);
+				return;
+			}
+			//FALLTHRU
+		case 2:
+			k = atoi(COM_Argv(1));
+			if (k < 1 || k > MAXDOOMEDNUM)
+			{
+				CONS_Printf("arg 1: doomednum \x82""%d \x85out of range (1-4095)\n", k);
+				return;
+			}
+			if (!l)
+				l = k;
+			else if (l < k) // silently and helpfully swap.
+			{
+				j = k;
+				k = l;
+				l = j;
+			}
+			break;
+		default:
+			CONS_Printf("listmapthings: \x86too many arguments!\n");
+			return;
+	}
+
+	// see P_SpawnNonMobjMapThing
+	memset(table, 0, sizeof(table));
+	for (i = 1; i <= MAXPLAYERS; i++)
+		table[i-1] = MT_PLAYER; // playerstarts
+	table[33-1] = table[34-1] = table[35-1] = MT_PLAYER; // battle/team starts
+	table[750-1] = table[777-1] = table[778-1] = MT_UNKNOWN; // slopes
+	for (i = 600; i <= 609; i++)
+		table[i-1] = MT_RING; // placement patterns
+	table[1705-1] = table[1713-1] = MT_HOOP; // types of hoop
+
+	CONS_Printf("\x82""Checking for double defines...\n");
+	for (i = 1; i < MT_FIRSTFREESLOT+NUMMOBJFREESLOTS; i++)
+	{
+		j = mobjinfo[i].doomednum;
+		if (j < (k ? k : 1) || j > (l ? l : MAXDOOMEDNUM))
+			continue;
+		if (table[j-1])
+		{
+			CONS_Printf("	doomednum \x82""%d""\x80 is \x85""double-defined\x80 by ", j);
+			if (i < MT_FIRSTFREESLOT)
+			{
+				CONS_Printf("\x87""hardcode %s <-- MAJOR ERROR\n", MOBJTYPE_LIST[i]);
+				continue;
+			}
+			CONS_Printf("\x81""freeslot MT_""%s\n", FREE_MOBJS[i-MT_FIRSTFREESLOT]);
+			continue;
+		}
+		table[j-1] = i;
+	}
+	CONS_Printf("\x82Printing doomednum usage...\n");
+	if (!k)
+	{
+		i = 35; // skip MT_PLAYER spam
+		CONS_Printf("	doomednums \x82""1-35""\x80 are used by ""\x87""hardcode MT_PLAYER\n");
+	}
+	else
+		i = k-1;
+
+	for (; i < l; i++)
+	{
+		if (!table[i])
+		{
+			if (k)
+			{
+				CONS_Printf("	doomednum \x82""%d""\x80 is \x83""free!", i+1);
+				if (i < 99) // above the humble crawla? how dare you
+					CONS_Printf(" (Don't freeslot this low...)");
+				CONS_Printf("\n");
+			}
+			continue;
+		}
+		CONS_Printf("	doomednum \x82""%d""\x80 is used by ", i+1);
+		if (table[i] < MT_FIRSTFREESLOT)
+		{
+			CONS_Printf("\x87""hardcode %s\n", MOBJTYPE_LIST[table[i]]);
+			continue;
+		}
+		CONS_Printf("\x81""freeslot MT_""%s\n", FREE_MOBJS[table[i]-MT_FIRSTFREESLOT]);
+	}
+}
+
+#undef MAXDOOMEDNUM
+
+void Command_ListUnusedSprites_f(void)
+{
+	size_t i, j;
+
+	CONS_Printf("\x82Printing sprite non-usage...\n");
+
+	for (i = 0; i < NUMSPRITES; i++)
+	{
+		if (sprites[i].numframes)
+		{
+			// We're only showing unused sprites...
+			continue;
+		}
+
+		if (i < SPR_FIRSTFREESLOT)
+		{
+			CONS_Printf("	\x87""hardcode SPR_""%.4s\n", sprnames[i]);
+			continue;
+		}
+
+		if (used_spr[(i-SPR_FIRSTFREESLOT)/8] == 0xFF)
+		{
+			for (j = 0; j < 8; j++)
+			{
+				CONS_Printf("	\x81""freeslot SPR_""%.4s\n", sprnames[i+j]);
+			}
+
+			i += j;
+		}
+
+		if (used_spr[(i-SPR_FIRSTFREESLOT)/8] & (1<<(i%8)))
+		{
+			CONS_Printf("	\x81""freeslot SPR_""%.4s\n", sprnames[i]);
+			continue;
+		}
+
+		break;
 	}
 }
 
