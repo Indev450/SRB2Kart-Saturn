@@ -32,7 +32,7 @@ extern const char *const PLAYERFLAG_LIST[];
 extern const char *const ML_LIST[]; // Linedef flags
 extern const char *COLOR_ENUMS[];
 extern const char *const POWERS_LIST[];
-extern const char *KARTSTUFF_LIST[];
+extern const char *const KARTSTUFF_LIST[];
 extern const char *const HUDITEMS_LIST[];
 
 void DEH_LoadDehackedLump(lumpnum_t lumpnum);
