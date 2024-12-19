@@ -297,16 +297,13 @@ void OglSdlFinishUpdate(boolean waitvbl)
 
 	// Sryder:	We need to draw the final screen texture again into the other buffer in the original position so that
 	//			effects that want to take the old screen can do so after this
-	if ((!I_CheckNativeRes())  // well we dont need it on native res it seems
+	// well we dont need it on native res it seems
 #ifdef USE_FBO_OGL
-	&& (!UseScreenFBO())
+	if (!I_CheckNativeRes() && !usefbo)
+#else
+	if (!I_CheckNativeRes())
 #endif
-	|| WipeInAction
-	)
-		HWR_DrawScreenFinalTexture(realwidth, realheight, false);
-
-	//HWR_DrawScreenFinalTexture(realwidth, realheight);
-	//GL_DrawScreenFinalTexture(HWD_SCREENTEXTURE_GENERIC2, realwidth, realheight);
+		GL_DrawScreenFinalTexture(HWD_SCREENTEXTURE_GENERIC2, realwidth, realheight, false);
 }
 
 #endif //HWRENDER
