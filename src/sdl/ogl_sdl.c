@@ -260,6 +260,9 @@ void OglSdlFinishUpdate(boolean waitvbl)
 {
 	static boolean oldwaitvbl = false;
 	int sdlw, sdlh;
+
+	const boolean usefbo = UseScreenFBO();
+
 	if (oldwaitvbl != waitvbl)
 	{
 		if (waitvbl)
@@ -279,18 +282,17 @@ void OglSdlFinishUpdate(boolean waitvbl)
 	HWR_MakeScreenFinalTexture();
 
 #ifdef USE_FBO_OGL
-	if (UseScreenFBO())
+	if (usefbo)
 	{
 		GL_Framebuffer_Unbind();
-		fbo_shader = HWR_UseShader() && !WipeInAction; // this looks awful with wipes
+		fbo_shader = (HWR_UseShader() && !WipeInAction); // this looks awful with wipes
 	}
 #endif
 
-	//HWR_DrawScreenFinalTexture(sdlw, sdlh);
 	GL_DrawScreenFinalTexture(HWD_SCREENTEXTURE_GENERIC2, sdlw, sdlh, (HWR_ShouldUsePaletteRendering() || fbo_shader));
 
 #ifdef USE_FBO_OGL
-	if (UseScreenFBO())
+	if (usefbo)
 	{
 		GL_Framebuffer_Enable();
 	}
