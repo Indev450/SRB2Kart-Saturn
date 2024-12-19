@@ -709,6 +709,11 @@ boolean I_CheckNativeRes(void)
 	int currentDisplayIndex = 0;
 	SDL_DisplayMode curmode;
 
+	if (cv_glscreentextures.value == 0)
+	{
+		return false;
+	}
+
 	if (oldwidth == vid.width && oldheight == vid.height)
 	{
 		return resstate;
