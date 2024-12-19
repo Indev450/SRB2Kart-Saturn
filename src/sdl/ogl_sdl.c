@@ -245,6 +245,9 @@ void OglSdlFinishUpdate(boolean waitvbl)
 {
 	static boolean oldwaitvbl = false;
 	int sdlw, sdlh;
+
+	const boolean usefbo = UseScreenFBO();
+
 	if (oldwaitvbl != waitvbl)
 	{
 		SDL_GL_SetSwapInterval(waitvbl ? 1 : 0);
@@ -256,15 +259,19 @@ void OglSdlFinishUpdate(boolean waitvbl)
 	HWR_MakeScreenFinalTexture();
 
 #ifdef USE_FBO_OGL
-	if (UseScreenFBO())
+	if (usefbo)
+	{
 		GLFramebuffer_Unbind();
+	}
 #endif
 	
 	HWR_DrawScreenFinalTexture(sdlw, sdlh, HWR_ShouldUsePaletteRendering());
 
 #ifdef USE_FBO_OGL
-	if (UseScreenFBO())
+	if (usefbo)
+	{
 		GLFramebuffer_Enable();
+	}
 #endif
 
 	SDL_GL_SwapWindow(window);
