@@ -729,12 +729,13 @@ boolean I_CheckNativeRes(void)
 
 	if (SDL_GetCurrentDisplayMode(currentDisplayIndex, &curmode) != 0)
 	{
-		return resstate;
+		return false;
 	}
 
 	resstate = ((vid.width == curmode.w) && (vid.height == curmode.h));
 	oldwidth = vid.width;
 	oldheight = vid.height;
+
 	return resstate;
 }
 
