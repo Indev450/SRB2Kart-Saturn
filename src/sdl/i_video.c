@@ -790,7 +790,11 @@ static void I_FixXwaylandNvidia(void) //dumbass crap, fix ur shit nvidia
 
 static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 {
+#ifdef USE_FBO_OGL
 #define FOCUSUNION (mousefocus | (kbfocus << 1) | (windowmoved << 2))
+#else
+#define FOCUSUNION (mousefocus | (kbfocus << 1))
+#endif
 	static SDL_bool firsttimeonmouse = SDL_TRUE;
 	static SDL_bool mousefocus = SDL_TRUE;
 	static SDL_bool kbfocus = SDL_TRUE;
