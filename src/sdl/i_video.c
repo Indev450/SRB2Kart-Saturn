@@ -704,9 +704,9 @@ static INT32 SDLJoyAxis(const Sint16 axis, evtype_t which)
 
 boolean I_CheckNativeRes(void)
 {
-	static int oldwidth = 0, oldheight = 0;
+	static INT32 oldwidth = 0, oldheight = 0;
 	static boolean resstate = false;
-	int currentDisplayIndex = 0;
+	int currentDisplayIndex = -1;
 	SDL_DisplayMode curmode;
 
 	if (cv_glscreentextures.value == 0)
@@ -720,6 +720,12 @@ boolean I_CheckNativeRes(void)
 	}
 
 	currentDisplayIndex = SDL_GetWindowDisplayIndex(window);
+
+	// No valid index
+	if (currentDisplayIndex < 0)
+	{
+		return false;
+	}
 
 	if (SDL_GetCurrentDisplayMode(currentDisplayIndex, &curmode) != 0)
 	{
@@ -736,14 +742,23 @@ boolean I_CheckNativeRes(void)
 #ifdef USE_FBO_OGL
 void I_DownSample(void)
 {
+	int currentDisplayIndex = -1;
+	SDL_DisplayMode curmode;
+
 	if (!cv_glframebuffer.value || !supportFBO || I_CheckNativeRes()) //no sense to do this crap if we cant benefit from it
 	{
 		downsample = false;
 		return;
 	}
 
-	int currentDisplayIndex = SDL_GetWindowDisplayIndex(window);
-	SDL_DisplayMode curmode;
+	currentDisplayIndex = SDL_GetWindowDisplayIndex(window);
+
+	// No valid index
+	if (currentDisplayIndex < 0)
+	{
+		downsample = false;
+		return;
+	}
 
 	if (SDL_GetCurrentDisplayMode(currentDisplayIndex, &curmode) != 0)
 	{
