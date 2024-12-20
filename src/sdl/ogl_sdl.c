@@ -255,7 +255,9 @@ void OglSdlFinishUpdate(boolean waitvbl)
 	static boolean oldwaitvbl = false;
 	int sdlw, sdlh;
 
+#ifdef USE_FBO_OGL
 	const boolean usefbo = UseScreenFBO();
+#endif
 
 	if (oldwaitvbl != waitvbl)
 	{
