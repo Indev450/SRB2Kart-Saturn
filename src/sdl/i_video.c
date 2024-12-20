@@ -131,7 +131,6 @@ static void Impl_SetVsync(void);
 static INT32 desktopwidth = 0, desktopheight = 0;
 
 static void I_CheckDesktopRes(void);
-static void I_ResetFBOSurface(void);
 
 // synchronize page flipping with screen refresh
 consvar_t cv_vidwait = {"vid_wait", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, Impl_SetVsync, 0, NULL, NULL, 0, 0, NULL};
@@ -747,7 +746,7 @@ void I_DownSample(void)
 	if (I_CheckNativeRes() && (downsample == true))
 	{
 		downsample = false;
-		I_ResetFBOSurface();
+		RefreshOGLSDLSurface();
 		return;
 	}
 
@@ -764,16 +763,9 @@ void I_DownSample(void)
 
 	if (needrefresh)
 	{
-		I_ResetFBOSurface();
+		RefreshOGLSDLSurface();
 		needrefresh = false;
 	}
-}
-
-static void I_ResetFBOSurface(void)
-{
-	InvSupersampleFactorX = (float)(desktopwidth) / vid.width;
-	InvSupersampleFactorY = (float)(desktopheight) / vid.height;
-	RefreshOGLSDLSurface();
 }
 #endif
 
