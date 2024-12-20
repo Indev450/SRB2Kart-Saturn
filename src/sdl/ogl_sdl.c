@@ -280,9 +280,9 @@ void OglSdlFinishUpdate(boolean waitvbl)
 	//			effects that want to take the old screen can do so after this
 	// well we dont need it on native res it seems
 #ifdef USE_FBO_OGL
-	if (!I_CheckNativeRes() && !usefbo)
+	if (!I_CheckNativeRes() && !usefbo || WipeInAction)
 #else
-	if (!I_CheckNativeRes())
+	if (!I_CheckNativeRes() || WipeInAction)
 #endif
 		GL_DrawScreenFinalTexture(HWD_SCREENTEXTURE_GENERIC2, realwidth, realheight, false);
 
