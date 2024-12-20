@@ -763,7 +763,10 @@ void I_DownSample(void)
 	}
 
 	if (needrefresh)
+	{
 		I_ResetFBOSurface();
+		needrefresh = false;
+	}
 }
 
 static void I_ResetFBOSurface(void)
