@@ -130,6 +130,11 @@ consvar_t cv_keyboardlayout = {"keyboardlayout", "Default US", CV_SAVE|CV_CALL, 
 
 static void Impl_SetVsync(void);
 
+static INT32 desktopwidth = 0, desktopheight = 0;
+
+static void I_CheckDesktopRes(void);
+static void I_ResetFBOSurface(void);
+
 // synchronize page flipping with screen refresh
 consvar_t cv_vidwait = {"vid_wait", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, Impl_SetVsync, 0, NULL, NULL, 0, 0, NULL};
 static consvar_t cv_stretch = {"stretch", "Off", CV_SAVE|CV_NOSHOWHELP, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -280,6 +285,7 @@ static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen)
 #ifdef HWRENDER
 	if (rendermode == render_opengl)
 	{
+		I_CheckDesktopRes();
 #ifdef USE_FBO_OGL
 		I_DownSample();
 #endif
@@ -701,21 +707,14 @@ static INT32 SDLJoyAxis(const Sint16 axis, evtype_t which)
 	return raxis;
 }
 
-boolean I_CheckNativeRes(void)
+static void I_CheckDesktopRes(void)
 {
-	static INT32 oldwidth = 0, oldheight = 0;
-	static boolean resstate = false;
 	int currentDisplayIndex = -1;
 	SDL_DisplayMode curmode;
 
-	if (cv_glscreentextures.value == 0)
+	if (desktopwidth == vid.width && desktopheight == vid.height)
 	{
-		return false;
-	}
-
-	if (oldwidth == vid.width && oldheight == vid.height)
-	{
-		return resstate;
+		return;
 	}
 
 	currentDisplayIndex = SDL_GetWindowDisplayIndex(window);
@@ -723,75 +722,68 @@ boolean I_CheckNativeRes(void)
 	// No valid index
 	if (currentDisplayIndex < 0)
 	{
-		return false;
+		return;
 	}
 
 	if (SDL_GetCurrentDisplayMode(currentDisplayIndex, &curmode) != 0)
 	{
-		return false;
+		return;
 	}
 
-	resstate = ((vid.width == curmode.w) && (vid.height == curmode.h));
-	oldwidth = vid.width;
-	oldheight = vid.height;
+	desktopwidth = curmode.w;
+	desktopheight = curmode.h;
+}
 
-	return resstate;
+boolean I_CheckNativeRes(void)
+{
+	return (vid.width == desktopwidth && vid.height == desktopheight);
 }
 
 #ifdef USE_FBO_OGL
 void I_DownSample(void)
 {
-	int currentDisplayIndex = -1;
-	SDL_DisplayMode curmode;
+	boolean needrefresh = false;
 
-	if (!cv_glframebuffer.value || !supportFBO || I_CheckNativeRes()) //no sense to do this crap if we cant benefit from it
+	if (!cv_glframebuffer.value || !supportFBO || (cv_glscreentextures.value == 0)) // no sense to do this crap if we cant benefit from it
 	{
 		downsample = false;
 		return;
 	}
 
-	currentDisplayIndex = SDL_GetWindowDisplayIndex(window);
-
-	// No valid index
-	if (currentDisplayIndex < 0)
+	if (I_CheckNativeRes() && (downsample == true))
 	{
 		downsample = false;
+		I_ResetFBOSurface();
 		return;
 	}
 
-	if (SDL_GetCurrentDisplayMode(currentDisplayIndex, &curmode) != 0)
-	{
-		downsample = false; // couldnt get display info so turn the thing off
-		RefreshOGLSDLSurface();
-		return;
-	}
-
-	if ((vid.width > curmode.w) || (vid.height > curmode.h)) //check if current resolution is higher than current display resolution
+	if ((vid.width > desktopwidth) || (vid.height > desktopheight)) //check if current resolution is higher than current display resolution
 	{
 		downsample = true;
-
-		InvSupersampleFactorX = (float)(curmode.w) / vid.width;
-		InvSupersampleFactorY = (float)(curmode.h) / vid.height;
-		RefreshOGLSDLSurface();
+		needrefresh = true;
 	}
-	else
+	else if (downsample == true)
 	{
-		if (downsample == true)
-		{
-			downsample = false; // its not so no need to do crap
-			RefreshOGLSDLSurface();
-		}
+		downsample = false;
+		needrefresh = true;
 	}
+
+	if (needrefresh)
+		I_ResetFBOSurface();
+}
+
+static void I_ResetFBOSurface(void)
+{
+	InvSupersampleFactorX = (float)(desktopwidth) / vid.width;
+	InvSupersampleFactorY = (float)(desktopheight) / vid.height;
+	RefreshOGLSDLSurface();
 }
 #endif
 
 static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 {
-#ifdef USE_FBO_OGL
 #define FOCUSUNION (mousefocus | (kbfocus << 1) | (windowmoved << 2))
-#else
-#define FOCUSUNION (mousefocus | (kbfocus << 1))
-#endif
+
 	static SDL_bool firsttimeonmouse = SDL_TRUE;
 	static SDL_bool mousefocus = SDL_TRUE;
 	static SDL_bool kbfocus = SDL_TRUE;
@@ -831,12 +823,13 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 		return;
 	}
 
-#ifdef USE_FBO_OGL
 	if (windowmoved && rendermode == render_opengl)
 	{
+		I_CheckDesktopRes();
+#ifdef USE_FBO_OGL
 		I_DownSample();
-	}
 #endif
+	}
 
 	if (mousefocus && kbfocus)
 	{
