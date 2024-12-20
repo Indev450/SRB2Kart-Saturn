@@ -281,6 +281,8 @@ void OglSdlFinishUpdate(boolean waitvbl)
 		GL_Framebuffer_Unbind();
 		fbo_shader = (HWR_UseShader() && !WipeInAction); // this looks awful with wipes
 	}
+	else
+		fbo_shader = false;
 #endif
 
 	GL_DrawScreenFinalTexture(HWD_SCREENTEXTURE_GENERIC2, sdlw, sdlh, (HWR_ShouldUsePaletteRendering() || fbo_shader));
