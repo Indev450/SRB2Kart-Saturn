@@ -710,6 +710,9 @@ static void I_CheckDesktopRes(void)
 		return;
 	}
 
+	desktopwidth = 0;
+	desktopheight = 0;
+
 	currentDisplayIndex = SDL_GetWindowDisplayIndex(window);
 
 	// No valid index
