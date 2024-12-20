@@ -781,9 +781,7 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 	static SDL_bool firsttimeonmouse = SDL_TRUE;
 	static SDL_bool mousefocus = SDL_TRUE;
 	static SDL_bool kbfocus = SDL_TRUE;
-#ifdef USE_FBO_OGL
 	static SDL_bool windowmoved = SDL_FALSE;
-#endif
 
 	const unsigned int oldfocus = FOCUSUNION;
 
@@ -805,11 +803,9 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 			break;
 		case SDL_WINDOWEVENT_MAXIMIZED:
 			break;
-#ifdef USE_FBO_OGL
 		case SDL_WINDOWEVENT_MOVED:
 			windowmoved = SDL_TRUE;
             break;
-#endif
 	}
 
 	if (FOCUSUNION == oldfocus) // No state change
