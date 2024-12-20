@@ -71,15 +71,16 @@ PFNglGetString pglGetString;
 #endif
 
 #ifdef USE_FBO_OGL
+
 #if defined (__unix__)
-boolean isnvidiagpu = false;
+static boolean xwaylandcrap = false;
 #endif
 
 boolean UseScreenFBO(void)
 {
 	return ((supportFBO && cv_glframebuffer.value && downsample)
 #if defined (__unix__)
-	|| (supportFBO && isnvidiagpu && xwaylandcrap)
+	|| (supportFBO && xwaylandcrap)
 #endif
 	);
 }
@@ -189,8 +190,8 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 
 #if defined (__unix__)
 #ifdef USE_FBO_OGL
-		if (strstr((const char*)gl_renderer, "NVIDIA"))
-			isnvidiagpu = true;
+		if (supportFBO && strstr((const char*)gl_renderer, "NVIDIA"))
+			xwaylandcrap = true;
 #endif
 #endif
 	}
@@ -304,6 +305,12 @@ void OglSdlFinishUpdate(boolean waitvbl)
 	if (!I_CheckNativeRes())
 #endif
 		GL_DrawScreenFinalTexture(HWD_SCREENTEXTURE_GENERIC2, realwidth, realheight, false);
+
+#if defined (__unix__)
+#ifdef USE_FBO_OGL
+		xwaylandcrap = false;
+#endif
+#endif
 }
 
 #endif //HWRENDER

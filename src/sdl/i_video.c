@@ -219,10 +219,6 @@ static SDL_bool Impl_CreateWindow(SDL_bool fullscreen);
 static void Impl_SetWindowIcon(void);
 
 #ifdef USE_FBO_OGL
-#if defined (__unix__)
-static void I_FixXwaylandNvidia(void);
-boolean xwaylandcrap = false;
-#endif
 boolean downsample = false;
 
 float InvSupersampleFactorX = 0.0;
@@ -285,9 +281,6 @@ static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen)
 	if (rendermode == render_opengl)
 	{
 #ifdef USE_FBO_OGL
-#if defined (__unix__)
-		I_FixXwaylandNvidia();
-#endif
 		I_DownSample();
 #endif
 		OglSdlSurface(vid.width, vid.height);
@@ -790,23 +783,6 @@ void I_DownSample(void)
 		}
 	}
 }
-
-#if defined (__unix__)
-static void I_FixXwaylandNvidia(void) //dumbass crap, fix ur shit nvidia
-{
-	if (!supportFBO)
-	{
-		xwaylandcrap = false;
-		return;
-	}
-
-	// enable fbo resize shit, update the ogl surface and turn crap back off lol
-	xwaylandcrap = true;
-	RefreshOGLSDLSurface();
-	xwaylandcrap = false;
-	RefreshOGLSDLSurface();
-}
-#endif
 #endif
 
 static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
