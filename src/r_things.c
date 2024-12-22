@@ -1178,6 +1178,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	//SoM: 3/17/2000
 	fixed_t gz, gzt;
 	INT32 heightsec, phs;
+	INT32 dist = -1;
 	INT32 light = 0;
 	lighttable_t **lights_array = spritelights;
 	fixed_t this_scale;
@@ -1194,7 +1195,8 @@ static void R_ProjectSprite(mobj_t *thing)
 	angle_t sliptiderollangle = 0;
 #endif
 
-	INT32 dist = -1;
+	if (P_MobjWasRemoved(thing) || thing->subsector == NULL)
+		return;
 
 	if (cv_maxinterpdist.value)
 		dist = R_QuickCamDist(thing->x, thing->y);
