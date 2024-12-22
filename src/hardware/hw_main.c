@@ -695,27 +695,42 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 
 	if (subsector && (lumpnum != LUMPERROR))
 	{
-		ffloor_t *rover;
 		const char *name = W_CheckNameForNum(lumpnum);
 
-		if (name && (((memcmp(name, "BOST", 4) == 0) && (GETSECSPECIAL(subsector->sector->special, 4) == 6)) || memcmp(name, "PAZRCST", 7) == 0 || memcmp(name, "FSBOST", 6) == 0))
+		if (name)
 		{
-			lightlevel = 255;
-		}
-
-		if (subsector->sector->ffloors)
-		{
-			for (rover = subsector->sector->ffloors; rover; rover = rover->next)
+			// fayt sneakerpads lel
+			if (memcmp(name, "PAZRCST", 7) == 0 || memcmp(name, "FSBOST", 6) == 0)
 			{
-				if (!rover->master->frontsector->special)
-					continue;
+				lightlevel = 255;
+			}
 
-				if (!(rover->flags & FF_EXISTS) || !(rover->flags & FF_RENDERPLANES) || (rover->flags & FF_FOG) || (rover->flags & FF_RIPPLE))
-					continue;
-
-				if (name && ((memcmp(name, "BOST", 4) == 0) && (GETSECSPECIAL(rover->master->frontsector->special, 4) == 6)))
-				{
+			// kart sneakerpad
+			if (memcmp(name, "BOST", 4) == 0)
+			{
+				if (GETSECSPECIAL(subsector->sector->special, 4) == 6)
 					lightlevel = 255;
+
+				if (subsector->sector->ffloors)
+				{
+					ffloor_t *rover;
+
+					for (rover = subsector->sector->ffloors; rover; rover = rover->next)
+					{
+						if (!rover->master->frontsector)
+							continue;
+
+						if (!rover->master->frontsector->special)
+							continue;
+
+						if (!(rover->flags & FF_EXISTS) || !(rover->flags & FF_RENDERPLANES) || (rover->flags & FF_FOG) || (rover->flags & FF_RIPPLE))
+							continue;
+
+						if (GETSECSPECIAL(rover->master->frontsector->special, 4) == 6)
+						{
+							lightlevel = 255;
+						}
+					}
 				}
 			}
 		}
