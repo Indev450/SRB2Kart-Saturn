@@ -2158,6 +2158,9 @@ static void LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 	// Timer for slam sound effect
 	mobj->slamsoundtimer = 0;
 
+	// extra mobjlightlevel
+	mobj->lightlevel = 0;
+
 	//}
 
 	if (diff & MD_REDFLAG)

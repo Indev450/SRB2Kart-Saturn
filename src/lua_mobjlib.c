@@ -97,6 +97,7 @@ static const udata_field_t mobj_fields[] = {
     FIELD(mobj_t, spritexoffset,       udatalib_getter_fixed,      udatalib_setter_fixed),
     FIELD(mobj_t, spriteyoffset,       udatalib_getter_fixed,      udatalib_setter_fixed),
     FIELD(mobj_t, touching_sectorlist, mobj_touching_sectorlist_unimplemented, mobj_touching_sectorlist_unimplemented),
+    FIELD(mobj_t, lightlevel,          udatalib_getter_int16,      udatalib_setter_int16),
     FIELD(mobj_t, subsector,           udatalib_getter_subsector,  mobj_nosetpos_subsector),
     FIELD(mobj_t, floorz,              udatalib_getter_fixed,      mobj_nosetpos_floorz),
     FIELD(mobj_t, ceilingz,            udatalib_getter_fixed,      mobj_nosetpos_ceilingz),
