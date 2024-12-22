@@ -5135,7 +5135,7 @@ void K_KartPlayerHUDUpdate(player_t *player)
 
 static inline void K_SpawnNormalSpeedLines(player_t *player)
 {
-	boolean goodSpeed = (player->speed >= (3*K_GetKartSpeed(player, false))/4);
+	const boolean goodSpeed = (player->speed >= (3*K_GetKartSpeed(player, false))/4);
 
 	mobj_t *fast = P_SpawnMobj(player->mo->x + (P_RandomRange(-36,36) * player->mo->scale),
 							   player->mo->y + (P_RandomRange(-36,36) * player->mo->scale),
@@ -5171,7 +5171,19 @@ static inline void K_SpawnNormalSpeedLines(player_t *player)
 	}
 	else if (goodSpeed)
 	{
-		fast->color = (leveltime & 1) ? player->mo->color : SKINCOLOR_NONE;
+		UINT8 driftcolor = SKINCOLOR_NONE;
+
+		if (player->kartstuff[k_driftboost])
+		{
+			if (player->kartstuff[k_driftboost] <= 20)
+				driftcolor = SKINCOLOR_SAPPHIRE;
+			else if (player->kartstuff[k_driftboost] <= 50)
+				driftcolor = SKINCOLOR_RASPBERRY;
+			else if (player->kartstuff[k_driftboost] <= 125)
+				driftcolor = (UINT8)(1 + (leveltime % (MAXSKINCOLORS-1)));
+		}
+
+		fast->color = (leveltime & 1) ? player->mo->color : driftcolor;
 		fast->colorized = true;
 	}
 }
