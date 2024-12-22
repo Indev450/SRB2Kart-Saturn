@@ -306,7 +306,6 @@ void P_UnlinkThinker(thinker_t *thinker)
 	}
 }
 
-
 //
 // P_RemoveThinker
 //

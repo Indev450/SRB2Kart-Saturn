@@ -1054,7 +1054,7 @@ static void HWR_GetBlendedTexture(GLPatch_t *gpatch, GLPatch_t *blendgpatch, INT
 		return;
 	}
 
-	// search for the mimmap
+	// search for the Mipmap
 	// skip the first (no colormap translated)
 	for (glMipmap = gpatch->mipmap; glMipmap->nextcolormap; )
 	{
@@ -1089,7 +1089,6 @@ static void HWR_GetBlendedTexture(GLPatch_t *gpatch, GLPatch_t *blendgpatch, INT
 	GL_SetTexture(newMipmap);
 	Z_ChangeTag(newMipmap->data, PU_HWRCACHE_UNLOCKED);
 }
-
 
 // -----------------+
 // HWR_DrawMD2      : Draw MD2
@@ -1144,7 +1143,7 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 				colormap = sector->extra_colormap;
 		}
 
-		HWR_ObjectLightLevelPost(spr, sector, &lightlevel, true);
+		HWR_ObjectLightLevelPost(spr, sector, &lightlevel, true, false);
 
 		HWR_Lighting(&Surf, lightlevel, colormap, P_SectorUsesDirectionalLighting(sector) && !(spr->mobj->frame & FF_FULLBRIGHT));
 	}

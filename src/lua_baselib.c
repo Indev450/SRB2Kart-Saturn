@@ -1961,7 +1961,7 @@ static int lib_sStartSoundAtVolume(lua_State *L)
 			return LUA_ErrInvalid(L, "player_t");
 	}
 	if (!player || P_IsLocalPlayer(player))
-	S_StartSoundAtVolume(origin, sound_id, volume);
+		S_StartSoundAtVolume(origin, sound_id, volume);
 	return 0;
 }
 
@@ -2063,7 +2063,7 @@ static int lib_sChangeMusic(lua_State *L)
 		music_flags = (UINT16)((music_num & 0x7FFF0000) >> 16);
 	else
 #endif
-	music_flags = (UINT16)luaL_optinteger(L, 4, 0);
+		music_flags = (UINT16)luaL_optinteger(L, 4, 0);
 
 	position = (UINT32)luaL_optinteger(L, 5, 0);
 	prefadems = (UINT32)luaL_optinteger(L, 6, 0);
