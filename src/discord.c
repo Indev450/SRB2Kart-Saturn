@@ -10,7 +10,7 @@
 /// \file  discord.h
 /// \brief Discord Rich Presence handling
 
-//#ifdef HAVE_DISCORDRPC
+#ifdef HAVE_DISCORDRPC
 
 #include <time.h>
 
@@ -735,4 +735,4 @@ void DRPC_UpdatePresence(void)
 	Discord_UpdatePresence(&discordPresence);
 }
 
-//#endif // HAVE_DISCORDRPC
+#endif // HAVE_DISCORDRPC

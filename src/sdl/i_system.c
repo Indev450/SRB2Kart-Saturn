@@ -48,6 +48,12 @@ typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 #undef SystemFunction036
 #endif
 
+// A little more than the minimum sleep duration on Windows.
+// May be incorrect for other platforms, but we don't currently have a way to
+// query the scheduler granularity. SDL will do what's needed to make this as
+// low as possible though.
+#define MIN_SLEEP_DURATION_MS 2.1
+
 #include <stdio.h>
 #include <time.h>
 #include <stdlib.h>
@@ -196,16 +202,6 @@ static char returnWadPath[256];
 // Mumble context string
 #include "../d_clisrv.h"
 #include "../byteptr.h"
-#endif
-
-// A little more than the minimum sleep duration on Windows.
-// May be incorrect for other platforms, but we don't currently have a way to
-// query the scheduler granularity. SDL will do what's needed to make this as
-// low as possible though.
-#if defined(_WIN32)
-#define MIN_SLEEP_DURATION_MS 1.6
-#else
-#define MIN_SLEEP_DURATION_MS 2.1
 #endif
 
 #ifdef HAVE_LIBBACKTRACE

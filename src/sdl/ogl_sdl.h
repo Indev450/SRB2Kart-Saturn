@@ -20,12 +20,6 @@
 
 boolean OglSdlSurface(INT32 w, INT32 h);
 
-#ifdef USE_FBO_OGL
-#if defined (__unix__)
-extern boolean isnvidiagpu;
-#endif
-#endif
-
 void OglSdlFinishUpdate(boolean vidwait);
 boolean VID_LoadOGLAPI(void);
 

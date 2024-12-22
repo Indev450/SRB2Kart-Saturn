@@ -87,7 +87,6 @@ ifeq ($(OS),Windows_NT) # all windows are Windows_NT...
  MINGW=1
  SDL=1
  WINDOWSHELL=1
- HAVE_DISCORDRPC=1
  NOUPX=1
 
 else # if you on the *nix
@@ -140,7 +139,6 @@ endif
 ifdef LINUX64
 LINUX=1
 NONX86=1
-HAVE_DISCORDRPC=1
 # LINUX64 does not imply X86_64=1; could mean ARM64 or Itanium
 endif
 
