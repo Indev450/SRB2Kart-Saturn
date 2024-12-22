@@ -1116,8 +1116,6 @@ fixed_t R_GetShadowZ(mobj_t *thing, pslope_t **shadowslope)
 //
 static void R_ProjectSprite(mobj_t *thing)
 {
-	mobj_t *oldthing = thing;
-
 	fixed_t tr_x, tr_y;
 	fixed_t gxt, gyt;
 	fixed_t tx, tz;
@@ -1169,6 +1167,8 @@ static void R_ProjectSprite(mobj_t *thing)
 
 	if (P_MobjWasRemoved(thing) || thing->subsector == NULL)
 		return;
+
+	mobj_t *oldthing = thing;
 
 	const boolean mirrored = thing->mirrored;
 	const boolean vflip = (thing->eflags & MFE_VERTICALFLIP);
