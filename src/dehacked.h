@@ -14,6 +14,26 @@
 #define __DEHACKED_H__
 
 #include "m_fixed.h" // for get_number
+#include "info.h"
+
+// Free slot names
+// The crazy word-reading stuff uses these.
+extern char *FREE_STATES[NUMSTATEFREESLOTS];
+extern char *FREE_MOBJS[NUMMOBJFREESLOTS];
+extern UINT8 used_spr[(NUMSPRITEFREESLOTS / 8) + 1]; // Bitwise flag for sprite freeslot in use! I would use ceil() here if I could, but it only saves 1 byte of memory anyway.
+
+extern const char *const STATE_LIST[];
+extern const char *const MOBJTYPE_LIST[];
+extern const char *const MOBJFLAG_LIST[];
+extern const char *const MOBJFLAG2_LIST[]; // \tMF2_(\S+).*// (.+) --> \t"\1", // \2
+extern const char *const MOBJEFLAG_LIST[];
+extern const char *const MAPTHINGFLAG_LIST[4];
+extern const char *const PLAYERFLAG_LIST[];
+extern const char *const ML_LIST[]; // Linedef flags
+extern const char *COLOR_ENUMS[];
+extern const char *const POWERS_LIST[];
+extern const char *const KARTSTUFF_LIST[];
+extern const char *const HUDITEMS_LIST[];
 
 void DEH_LoadDehackedLump(lumpnum_t lumpnum);
 void DEH_LoadDehackedLumpPwad(UINT16 wad, UINT16 lump);
