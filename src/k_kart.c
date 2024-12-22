@@ -52,6 +52,8 @@ static mobjtype_t watertrailunderlay = 0, watertrail = 0;
 static statenum_t watertrailunderlay_minstate = 0, watertrailunderlay_maxstate = 0;
 static statenum_t watertrail_minstate = 0, watertrail_maxstate = 0;
 
+static boolean haswatertrail = false;
+
 void K_LoadExtraVFX(void)
 {
 #define LOADVFX(var, name) if (!var) var = LUA_GetConstant(name);
@@ -65,7 +67,13 @@ void K_LoadExtraVFX(void)
 	LOADVFX(watertrailunderlay_minstate, "S_WATERTRAILUNDERLAY1");
 	LOADVFX(watertrailunderlay_maxstate, "S_WATERTRAILUNDERLAYLAST");
 
-#undef LOAD
+#undef LOADVFX
+
+	if (!haswatertrail)
+	{
+		haswatertrail = ((watertrail && watertrailunderlay_minstate && watertrailunderlay_maxstate && watertrail_minstate && watertrail_maxstate) && // Check if we're missing something
+		(watertrail_maxstate > watertrail_minstate && watertrailunderlay_maxstate > watertrailunderlay_minstate)); // Check if some of these were freeslot'd in wrong order
+	}
 }
 
 static inline angle_t K_MomentumAngle(const mobj_t *mo, const fixed_t threshold)
@@ -3624,9 +3632,8 @@ void K_DriftDustHandling(mobj_t *spawner)
 		fixed_t spawnx = P_RandomRange(-spawnrange, spawnrange)<<FRACBITS;
 		fixed_t spawny = P_RandomRange(-spawnrange, spawnrange)<<FRACBITS;
 		INT32 speedrange = 2;
-		mobj_t *dust;
 
-		dust = P_SpawnMobj(spawner->x + spawnx, spawner->y + spawny, spawner->z, ((spawner->player && stardust) ? stardust : MT_DRIFTDUST)); // only sparkle for players otherwise throw normal dust
+		mobj_t *dust = P_SpawnMobj(spawner->x + spawnx, spawner->y + spawny, spawner->z, ((spawner->player && stardust) ? stardust : MT_DRIFTDUST)); // only sparkle for players otherwise throw normal dust
 		dust->momx = FixedMul(spawner->momx + (P_RandomRange(-speedrange, speedrange)<<FRACBITS), 3*(spawner->scale)/4);
 		dust->momy = FixedMul(spawner->momy + (P_RandomRange(-speedrange, speedrange)<<FRACBITS), 3*(spawner->scale)/4);
 		dust->momz = P_MobjFlip(spawner) * (P_RandomRange(1, 4) * (spawner->scale));
@@ -5961,7 +5968,8 @@ void K_KartUpdatePosition(player_t *player)
 	player->kartstuff[k_position] = position;
 }
 
-static mobj_t *K_SpawnOrMoveMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type, mobj_t *source, int id) {
+static mobj_t *K_SpawnOrMoveMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type, mobj_t *source, int id)
+{
 	mobj_t *mobj = source->watertrail[id];
 
 	if (!mobj || P_MobjWasRemoved(mobj))
@@ -5997,8 +6005,7 @@ static mobj_t *K_SpawnOrMoveMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t typ
 
 void K_SpawnWaterRunParticles(mobj_t *mobj)
 {
-	if (!(watertrailunderlay_minstate && watertrailunderlay_maxstate && watertrail && watertrail_minstate && watertrail_maxstate) || // Check if we're missing something
-		(watertrail_minstate > watertrail_maxstate && watertrailunderlay_minstate > watertrailunderlay_maxstate)) // Check if some of these were freeslot'd in wrong order
+	if (!haswatertrail)
 		return;
 
 	fixed_t runSpeed = 14 * mobj->scale;
