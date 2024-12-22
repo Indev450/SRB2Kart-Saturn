@@ -3626,15 +3626,7 @@ void K_DriftDustHandling(mobj_t *spawner)
 		INT32 speedrange = 2;
 		mobj_t *dust;
 
-		boolean havestardust = true;
-
-		if (!stardust)
-		{
-			stardust = MT_DRIFTDUST;
-			havestardust = false;
-		}
-
-		dust = P_SpawnMobj(spawner->x + spawnx, spawner->y + spawny, spawner->z, (spawner->player ? stardust : MT_DRIFTDUST)); // only sparkle for players otherwise throw normal dust
+		dust = P_SpawnMobj(spawner->x + spawnx, spawner->y + spawny, spawner->z, ((spawner->player && stardust) ? stardust : MT_DRIFTDUST)); // only sparkle for players otherwise throw normal dust
 		dust->momx = FixedMul(spawner->momx + (P_RandomRange(-speedrange, speedrange)<<FRACBITS), 3*(spawner->scale)/4);
 		dust->momy = FixedMul(spawner->momy + (P_RandomRange(-speedrange, speedrange)<<FRACBITS), 3*(spawner->scale)/4);
 		dust->momz = P_MobjFlip(spawner) * (P_RandomRange(1, 4) * (spawner->scale));
@@ -3647,7 +3639,7 @@ void K_DriftDustHandling(mobj_t *spawner)
 
 		K_MatchGenericExtraFlags(dust, spawner);
 
-		if (havestardust && dust->type == stardust)
+		if (stardust && dust->type == stardust)
 		{
 			if (!P_MobjWasRemoved(spawner) && spawner->player && spawner->player->mo)
 			{
