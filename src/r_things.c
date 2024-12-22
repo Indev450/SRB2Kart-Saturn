@@ -1949,6 +1949,7 @@ void R_AddSprites(sector_t *sec, INT32 lightlevel)
 	// Handle all things in sector.
 	// If a limit exists, handle things a tiny bit different.
 	const fixed_t limit_dist = (fixed_t)(cv_drawdist.value) * mapobjectscale;
+
 	for (thing = sec->thinglist; thing; thing = thing->snext)
 	{
 		if (!R_ThingWithinDist(thing, limit_dist))
@@ -1968,7 +1969,8 @@ void R_AddSprites(sector_t *sec, INT32 lightlevel)
 //
 void R_AddPrecipitationSprites(void)
 {
-	fixed_t drawdist = (fixed_t)(cv_drawdist_precip.value) * (cv_mobjscaleprecip.value ? mapobjectscale : FRACUNIT);
+	fixed_t precipscale = (cv_mobjscaleprecip.value ? mapobjectscale : FRACUNIT);
+	fixed_t drawdist = ((fixed_t)(cv_drawdist_precip.value) * precipscale);
 
 	INT32 xl, xh, yl, yh, bx, by;
 	precipmobj_t *th, *next;
