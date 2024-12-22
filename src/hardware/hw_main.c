@@ -4392,9 +4392,9 @@ static void HWR_AddSprites(sector_t *sec)
 // --------------------------------------------------------------------------
 static void HWR_AddPrecipitationSprites(void)
 {
-	//const fixed_t drawdist = cv_drawdist_precip.value * mapobjectscale;
 	fixed_t drawdist;
-	fixed_t precipscale = cv_mobjscaleprecip.value ? mapobjectscale : FRACUNIT;
+	fixed_t precipscale = (cv_mobjscaleprecip.value ? mapobjectscale : FRACUNIT);
+	//const fixed_t drawdist = cv_drawdist_precip.value * mapobjectscale;
 
 	INT32 xl, xh, yl, yh, bx, by;
 	precipmobj_t *th;
@@ -4402,7 +4402,7 @@ static void HWR_AddPrecipitationSprites(void)
 	if (current_bsp_culling_distance)
 		drawdist = min((fixed_t)current_bsp_culling_distance, (fixed_t)(cv_drawdist_precip.value) * precipscale);
 	else
-		drawdist = (fixed_t)(cv_drawdist_precip.value) * precipscale;
+		drawdist = ((fixed_t)(cv_drawdist_precip.value) * precipscale);
 
 	// No to infinite precipitation draw distance.
 	if (drawdist == 0 || curWeather == PRECIP_BLANK || curWeather == PRECIP_STORM_NORAIN)
@@ -4468,7 +4468,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	angle_t sliptiderollangle = 0;
 #endif
 
-	if (!thing)
+	if (P_MobjWasRemoved(thing) || thing->subsector == NULL)
 		return;
 
 	// uncapped/interpolation

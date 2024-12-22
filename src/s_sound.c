@@ -609,6 +609,43 @@ void S_StartSound(const void *origin, sfxenum_t sfx_id)
 	if (S_SoundDisabled())
 		return;
 
+	if (mariomode) // Sounds change in Mario mode!
+	{
+		switch (sfx_id)
+		{
+			case sfx_thok:
+				sfx_id = sfx_mario7;
+				break;
+			case sfx_pop:
+				sfx_id = sfx_mario5;
+				break;
+			case sfx_jump:
+				sfx_id = sfx_mario6;
+				break;
+			case sfx_shield:
+				sfx_id = sfx_mario3;
+				break;
+			case sfx_itemup:
+				sfx_id = sfx_mario4;
+				break;
+			default:
+				break;
+		}
+	}
+	if (maptol & TOL_XMAS) // Some sounds change for xmas
+	{
+		switch (sfx_id)
+		{
+		case sfx_ideya:
+		case sfx_nbmper:
+		case sfx_ncitem:
+		case sfx_ngdone:
+			++sfx_id;
+		default:
+			break;
+		}
+	}
+
 	// the volume is handled 8 bits
 	S_StartSoundAtVolume(origin, sfx_id, 255);
 }

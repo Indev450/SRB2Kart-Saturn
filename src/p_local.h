@@ -57,6 +57,9 @@
 
 #define AIMINGTOSLOPE(aiming) FINESINE((aiming>>ANGLETOFINESHIFT) & FINEMASK)
 
+#define mariomode (maptol & TOL_MARIO)
+#define twodlevel (maptol & TOL_2D)
+
 //
 // P_TICK
 //
@@ -289,6 +292,7 @@ mobj_t *P_SPMAngle(mobj_t *source, mobjtype_t type, angle_t angle, UINT8 aimtype
 #ifdef SEENAMES
 #define P_SpawnNameFinder(s,t) P_SPMAngle(s,t,s->angle,true,0)
 #endif
+void P_ColorTeamMissile(mobj_t *missile, player_t *source);
 
 // P_MobjFlip
 // Special utility to return +1 or -1 depending on mobj's gravity
@@ -440,6 +444,7 @@ void P_PlayerWeaponAmmoBurst(player_t *player);
 void P_PlayerEmeraldBurst(player_t *player, boolean toss);
 
 void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck);
+void P_PlayerFlagBurst(player_t *player, boolean toss);
 void P_CheckTimeLimit(void);
 void P_CheckPointLimit(void);
 boolean P_CheckRacers(void);

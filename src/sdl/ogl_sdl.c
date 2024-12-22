@@ -280,7 +280,7 @@ void OglSdlFinishUpdate(boolean waitvbl)
 	//			effects that want to take the old screen can do so after this
 	// well we dont need it on native res it seems
 #ifdef USE_FBO_OGL
-	if (!I_CheckNativeRes() && !usefbo || WipeInAction)
+	if ((!I_CheckNativeRes() && !usefbo) || WipeInAction)
 #else
 	if (!I_CheckNativeRes() || WipeInAction)
 #endif
