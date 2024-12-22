@@ -3809,7 +3809,7 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 
 	INT32 shader = SHADER_NONE;
 
-	if (!spr->mobj)
+	if (P_MobjWasRemoved(spr->mobj))
 		return;
 
 	if (!spr->mobj->subsector)
