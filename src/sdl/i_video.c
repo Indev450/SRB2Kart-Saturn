@@ -128,6 +128,10 @@ consvar_t cv_keyboardlayout = {"keyboardlayout", "Default US", CV_SAVE|CV_CALL, 
 
 static void Impl_SetVsync(void);
 
+static INT32 desktopwidth = 0, desktopheight = 0;
+
+static void I_CheckDesktopRes(void);
+
 // synchronize page flipping with screen refresh
 consvar_t cv_vidwait = {"vid_wait", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, Impl_SetVsync, 0, NULL, NULL, 0, 0, NULL};
 static consvar_t cv_stretch = {"stretch", "Off", CV_SAVE|CV_NOSHOWHELP, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -217,10 +221,6 @@ static SDL_bool Impl_CreateWindow(SDL_bool fullscreen);
 static void Impl_SetWindowIcon(void);
 
 #ifdef USE_FBO_OGL
-#if defined (__unix__)
-static void I_FixXwaylandNvidia(void);
-boolean xwaylandcrap = false;
-#endif
 boolean downsample = false;
 void RefreshOGLSDLSurface(void)
 {
@@ -278,10 +278,8 @@ static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen)
 #ifdef HWRENDER
 	if (rendermode == render_opengl)
 	{
+		I_CheckDesktopRes();
 #ifdef USE_FBO_OGL
-#if defined (__unix__)
-		I_FixXwaylandNvidia();
-#endif
 		I_DownSample();
 #endif
 		OglSdlSurface(vid.width, vid.height);
@@ -702,92 +700,86 @@ static INT32 SDLJoyAxis(const Sint16 axis, evtype_t which)
 	return raxis;
 }
 
-boolean I_CheckNativeRes(void)
+static void I_CheckDesktopRes(void)
 {
-	static int oldwidth = 0, oldheight = 0;
-	static boolean resstate = false;
-	int currentDisplayIndex = 0;
+	int currentDisplayIndex = -1;
 	SDL_DisplayMode curmode;
 
-	if (oldwidth == vid.width && oldheight == vid.height)
+	if (desktopwidth == vid.width && desktopheight == vid.height)
 	{
-		return resstate;
+		return;
 	}
+
+	desktopwidth = 0;
+	desktopheight = 0;
 
 	currentDisplayIndex = SDL_GetWindowDisplayIndex(window);
 
-	if (SDL_GetCurrentDisplayMode(currentDisplayIndex, &curmode) != 0)
+	// No valid index
+	if (currentDisplayIndex < 0)
 	{
-		return resstate;
+		return;
 	}
 
-	resstate = ((vid.width == curmode.w) && (vid.height == curmode.h));
-	oldwidth = vid.width;
-	oldheight = vid.height;
-	return resstate;
+	if (SDL_GetCurrentDisplayMode(currentDisplayIndex, &curmode) != 0)
+	{
+		return;
+	}
+
+	desktopwidth = curmode.w;
+	desktopheight = curmode.h;
+}
+
+boolean I_CheckNativeRes(void)
+{
+	return (vid.width == desktopwidth && vid.height == desktopheight);
 }
 
 #ifdef USE_FBO_OGL
 void I_DownSample(void)
 {
-	if (!cv_glframebuffer.value || !supportFBO || I_CheckNativeRes()) //no sense to do this crap if we cant benefit from it
+	boolean needrefresh = false;
+
+	if (!cv_glframebuffer.value || !supportFBO || (cv_glscreentextures.value == 0)) // no sense to do this crap if we cant benefit from it
 	{
 		downsample = false;
 		return;
 	}
 
-	int currentDisplayIndex = SDL_GetWindowDisplayIndex(window);
-	SDL_DisplayMode curmode;
-
-	if (SDL_GetCurrentDisplayMode(currentDisplayIndex, &curmode) != 0)
+	if (I_CheckNativeRes() && (downsample == true))
 	{
-		downsample = false; // couldnt get display info so turn the thing off
+		downsample = false;
 		RefreshOGLSDLSurface();
 		return;
 	}
 
-	if ((vid.width > curmode.w) || (vid.height > curmode.h)) //check if current resolution is higher than current display resolution
+	if ((vid.width > desktopwidth) || (vid.height > desktopheight)) //check if current resolution is higher than current display resolution
 	{
 		downsample = true;
+		needrefresh = true;
+	}
+	else if (downsample == true)
+	{
+		downsample = false;
+		needrefresh = true;
+	}
+
+	if (needrefresh)
+	{
 		RefreshOGLSDLSurface();
-	}
-	else
-	{
-		if (downsample == true)
-		{
-			downsample = false; // its not so no need to do crap
-			RefreshOGLSDLSurface();
-		}
+		needrefresh = false;
 	}
 }
-
-#if defined (__unix__)
-static void I_FixXwaylandNvidia(void) //dumbass crap, fix ur shit nvidia
-{
-	if (!supportFBO)
-	{
-		xwaylandcrap = false;
-		return;
-	}
-
-	// enable fbo resize shit, update the ogl surface and turn crap back off lol
-	xwaylandcrap = true;
-	RefreshOGLSDLSurface();
-	xwaylandcrap = false;
-	RefreshOGLSDLSurface();
-}
-#endif
 #endif
 
 static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 {
 #define FOCUSUNION (mousefocus | (kbfocus << 1) | (windowmoved << 2))
+
 	static SDL_bool firsttimeonmouse = SDL_TRUE;
 	static SDL_bool mousefocus = SDL_TRUE;
 	static SDL_bool kbfocus = SDL_TRUE;
-#ifdef USE_FBO_OGL
 	static SDL_bool windowmoved = SDL_FALSE;
-#endif
 
 	const unsigned int oldfocus = FOCUSUNION;
 
@@ -809,11 +801,9 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 			break;
 		case SDL_WINDOWEVENT_MAXIMIZED:
 			break;
-#ifdef USE_FBO_OGL
 		case SDL_WINDOWEVENT_MOVED:
 			windowmoved = SDL_TRUE;
             break;
-#endif
 	}
 
 	if (FOCUSUNION == oldfocus) // No state change
@@ -821,12 +811,13 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 		return;
 	}
 
-#ifdef USE_FBO_OGL
 	if (windowmoved && rendermode == render_opengl)
 	{
+		I_CheckDesktopRes();
+#ifdef USE_FBO_OGL
 		I_DownSample();
-	}
 #endif
+	}
 
 	if (mousefocus && kbfocus)
 	{

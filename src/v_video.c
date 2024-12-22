@@ -138,7 +138,11 @@ static boolean InitCube(void)
 
 #define diffcons(cv) (cv.value != atoi(cv.defaultvalue))
 
+#ifdef BACKWARDSCOMPATCORRECTION
+	doinggamma = (cv_globalgamma.value < 0); //dont mess up gamma when raising brightness pls
+#else
 	doinggamma = diffcons(cv_globalgamma);
+#endif
 
 #define gammascale 8
 	globalgammamul = (cv_globalgamma.value ? ((255 - (gammascale*abs(cv_globalgamma.value)))/255.0) : 1.0);
@@ -438,32 +442,13 @@ static void LoadPalette(const char *lumpname)
 		pLocalPalette[i].s.alpha = 0xFF;
 
 		// lerp of colour cubing! if you want, make it smoother yourself
-		if (Cubeapply)
-			V_CubeApply(&pLocalPalette[i].s.red, &pLocalPalette[i].s.green, &pLocalPalette[i].s.blue);
+
+		if (!Cubeapply)
+			continue;
+
+		V_CubeApply(&pLocalPalette[i].s.red, &pLocalPalette[i].s.green, &pLocalPalette[i].s.blue);
 	}
 }
-
-#ifdef BACKWARDSCOMPATCORRECTION
-static boolean V_ShouldCube(void)
-{
-#define diffcons(cv) (cv.value != atoi(cv.defaultvalue))
-	return (diffcons(cv_globalsaturation)
-		|| diffcons(cv_rhue)
-		|| diffcons(cv_yhue)
-		|| diffcons(cv_ghue)
-		|| diffcons(cv_chue)
-		|| diffcons(cv_bhue)
-		|| diffcons(cv_mhue)
-		|| diffcons(cv_rgamma)
-		|| diffcons(cv_ygamma)
-		|| diffcons(cv_ggamma)
-		|| diffcons(cv_cgamma)
-		|| diffcons(cv_bgamma)
-		|| diffcons(cv_mgamma)
-		|| (cv_globalgamma.value <= 0));
-#undef diffcons
-}
-#endif
 
 void V_CubeApply(UINT8 *red, UINT8 *green, UINT8 *blue)
 {
@@ -471,11 +456,7 @@ void V_CubeApply(UINT8 *red, UINT8 *green, UINT8 *blue)
 	float linear;
 	UINT8 q;
 
-	if (!Cubeapply
-#ifdef BACKWARDSCOMPATCORRECTION
-	|| !V_ShouldCube()
-#endif
-	)
+	if (!Cubeapply)
 		return;
 
 	linear = (*red/255.0);
@@ -1170,32 +1151,37 @@ void V_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c)
 // This is now a function since it's otherwise repeated 2 times and honestly looks retarded:
 static UINT32 V_GetHWConsBackColor(void)
 {
-	UINT32 hwcolor;
+	UINT8 r, g, b;
+
 	switch (cons_backcolor.value)
 	{
-		case 0:		hwcolor = 0xffffff00;	break; 	// White
-		case 1:		hwcolor = 0x80808000;	break; 	// Gray
-		case 2:		hwcolor = 0xdeb88700;	break;	// Sepia
-		case 3:		hwcolor = 0x40201000;	break; 	// Brown
-		case 4:		hwcolor = 0xfa807200;	break; 	// Pink
-		case 5:		hwcolor = 0xff69b400;	break; 	// Raspberry
-		case 6:		hwcolor = 0xff000000;	break; 	// Red
-		case 7:		hwcolor = 0xffd68300;	break;	// Creamsicle
-		case 8:		hwcolor = 0xff800000;	break; 	// Orange
-		case 9:		hwcolor = 0xdaa52000;	break; 	// Gold
-		case 10:	hwcolor = 0x80800000;	break; 	// Yellow
-		case 11:	hwcolor = 0x00ff0000;	break; 	// Emerald
-		case 12:	hwcolor = 0x00800000;	break; 	// Green
-		case 13:	hwcolor = 0x4080ff00;	break; 	// Cyan
-		case 14:	hwcolor = 0x4682b400;	break; 	// Steel
-		case 15:	hwcolor = 0x1e90ff00;	break;	// Periwinkle
-		case 16:	hwcolor = 0x0000ff00;	break; 	// Blue
-		case 17:	hwcolor = 0xff00ff00;	break; 	// Purple
-		case 18:	hwcolor = 0xee82ee00;	break; 	// Lavender
+		case 0:		r = 0xff; g = 0xff; b = 0xff;	break; 	// White
+		case 1:		r = 0x80; g = 0x80; b = 0x80;	break; 	// Black
+		case 2:		r = 0xde; g = 0xb8; b = 0x87;	break;	// Sepia
+		case 3:		r = 0x40; g = 0x20; b = 0x10;	break; 	// Brown
+		case 4:		r = 0xfa; g = 0x80; b = 0x72;	break; 	// Pink
+		case 5:		r = 0xff; g = 0x69; b = 0xb4;	break; 	// Raspberry
+		case 6:		r = 0xff; g = 0x00; b = 0x00;	break; 	// Red
+		case 7:		r = 0xff; g = 0xd6; b = 0x83;	break;	// Creamsicle
+		case 8:		r = 0xff; g = 0x80; b = 0x00;	break; 	// Orange
+		case 9:		r = 0xda; g = 0xa5; b = 0x20;	break; 	// Gold
+		case 10:	r = 0x80; g = 0x80; b = 0x00;	break; 	// Yellow
+		case 11:	r = 0x00; g = 0xff; b = 0x00;	break; 	// Emerald
+		case 12:	r = 0x00; g = 0x80; b = 0x00;	break; 	// Green
+		case 13:	r = 0x40; g = 0x80; b = 0xff;	break; 	// Cyan
+		case 14:	r = 0x46; g = 0x82; b = 0xb4;	break; 	// Steel
+		case 15:	r = 0x1e; g = 0x90; b = 0xff;	break;	// Periwinkle
+		case 16:	r = 0x00; g = 0x00; b = 0xff;	break; 	// Blue
+		case 17:	r = 0xff; g = 0x00; b = 0xff;	break; 	// Purple
+		case 18:	r = 0xee; g = 0x82; b = 0xee;	break; 	// Lavender
 		// Default green
-		default:	hwcolor = 0x00800000;	break;
+		default:	r = 0x00; g = 0x80; b = 0x00;	break;
 	}
-	return hwcolor;
+
+	if (!HWR_ShouldUsePaletteRendering())
+		V_CubeApply(&r, &g, &b);
+
+	return (r << 24) | (g << 16) | (b << 8);
 }
 #endif
 
