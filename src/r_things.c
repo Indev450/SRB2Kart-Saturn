@@ -1744,6 +1744,9 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 
 	INT32 dist = 1;
 
+	if (!thing || thing->subsector == NULL)
+		return;
+
 	if (cv_maxinterpdist.value)
 		dist = R_QuickCamDist(thing->x, thing->y);
 
