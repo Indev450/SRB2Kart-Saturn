@@ -16,6 +16,7 @@
 
 #include "console.h"
 #include "command.h"
+#include "dehacked.h"
 #include "i_time.h"
 #include "i_system.h"
 #include "g_game.h"
@@ -141,6 +142,8 @@ static void Command_Addfile(void);
 static void Command_Addskins(void);
 static void Command_GLocalSkin(void);
 static void Command_ListWADS_f(void);
+static void Command_ListDoomednums_f(void);
+static void Command_ListUnusedSprites_f(void);
 static void Command_RunSOC(void);
 static void Command_Pause(void);
 static void Command_Respawn(void);
@@ -705,6 +708,8 @@ void D_RegisterServerCommands(void)
 	COM_AddCommand("addskins", Command_Addskins);
 	COM_AddCommand("localskin", Command_GLocalSkin);
 	COM_AddCommand("listwad", Command_ListWADS_f);
+	COM_AddCommand("listmapthings", Command_ListDoomednums_f);
+	COM_AddCommand("listunusedsprites", Command_ListUnusedSprites_f);
 
 	COM_AddCommand("runsoc", Command_RunSOC);
 	COM_AddCommand("pause", Command_Pause);
@@ -1521,9 +1526,23 @@ UINT8 CanChangeSkin(INT32 playernum)
 	// Server has skin change restrictions.
 	if (cv_restrictskinchange.value)
 	{
+		if (gametype == GT_COOP)
+			return true;
+
 		// Can change skin during initial countdown.
 		if (leveltime < starttime)
 			return true;
+
+		if (G_TagGametype())
+		{
+			// Can change skin during hidetime.
+			if (leveltime < hidetime * TICRATE)
+				return true;
+
+			// IT players can always change skins to persue players hiding in character only locations.
+			if (players[playernum].pflags & PF_TAGIT)
+				return true;
+		}
 
 		if (players[playernum].spectator || players[playernum].playerstate == PST_DEAD || players[playernum].playerstate == PST_REBORN)
 			return true;
@@ -1569,6 +1588,15 @@ static void SendNameAndColor(void)
 	char *p;
 
 	p = buf;
+
+	// normal player colors
+	if (G_GametypeHasTeams())
+	{
+		if (players[consoleplayer].ctfteam == 1 && cv_playercolor.value != skincolor_redteam)
+			CV_StealthSetValue(&cv_playercolor, skincolor_redteam);
+		else if (players[consoleplayer].ctfteam == 2 && cv_playercolor.value != skincolor_blueteam)
+			CV_StealthSetValue(&cv_playercolor, skincolor_blueteam);
+	}
 
 	// never allow the color "none"
 	if (!cv_playercolor.value)
@@ -1679,6 +1707,15 @@ static void SendNameAndColor2(void)
 
 	p = buf;
 
+	// normal player colors
+	if (G_GametypeHasTeams())
+	{
+		if (players[secondplaya].ctfteam == 1 && cv_playercolor2.value != skincolor_redteam)
+			CV_StealthSetValue(&cv_playercolor2, skincolor_redteam);
+		else if (players[secondplaya].ctfteam == 2 && cv_playercolor2.value != skincolor_blueteam)
+			CV_StealthSetValue(&cv_playercolor2, skincolor_blueteam);
+	}
+
 	// never allow the color "none"
 	if (!cv_playercolor2.value)
 	{
@@ -1782,6 +1819,15 @@ static void SendNameAndColor3(void)
 		return;
 
 	p = buf;
+
+	// normal player colors
+	if (G_GametypeHasTeams())
+	{
+		if (players[thirdplaya].ctfteam == 1 && cv_playercolor3.value != skincolor_redteam)
+			CV_StealthSetValue(&cv_playercolor3, skincolor_redteam);
+		else if (players[thirdplaya].ctfteam == 2 && cv_playercolor3.value != skincolor_blueteam)
+			CV_StealthSetValue(&cv_playercolor3, skincolor_blueteam);
+	}
 
 	// never allow the color "none"
 	if (!cv_playercolor3.value)
@@ -1894,6 +1940,15 @@ static void SendNameAndColor4(void)
 		return;
 
 	p = buf;
+
+	// normal player colors
+	if (G_GametypeHasTeams())
+	{
+		if (players[fourthplaya].ctfteam == 1 && cv_playercolor4.value != skincolor_redteam)
+			CV_StealthSetValue(&cv_playercolor4, skincolor_redteam);
+		else if (players[fourthplaya].ctfteam == 2 && cv_playercolor4.value != skincolor_blueteam)
+			CV_StealthSetValue(&cv_playercolor4, skincolor_blueteam);
+	}
 
 	// never allow the color "none"
 	if (!cv_playercolor4.value)
@@ -2027,6 +2082,15 @@ static void Got_NameAndColor(UINT8 **cp, INT32 playernum)
 		&& p != &players[displayplayers[2]] && p != &players[displayplayers[3]]))
 	{
 		boolean kick = false;
+
+		// team colors
+		if (G_GametypeHasTeams())
+		{
+			if (p->ctfteam == 1 && p->skincolor != skincolor_redteam)
+				kick = true;
+			else if (p->ctfteam == 2 && p->skincolor != skincolor_blueteam)
+				kick = true;
+		}
 
 		// don't allow color "none"
 		if (!p->skincolor)
@@ -3259,14 +3323,27 @@ static void Command_Teamchange_f(void)
 
 	if (COM_Argc() <= 1)
 	{
-		if (G_GametypeHasSpectators())
+		if (G_GametypeHasTeams())
+			CONS_Printf(M_GetText("changeteam <team>: switch to a new team (%s)\n"), "red, blue or spectator");
+		else if (G_GametypeHasSpectators())
 			CONS_Printf(M_GetText("changeteam <team>: switch to a new team (%s)\n"), "spectator or playing");
 		else
 			CONS_Alert(CONS_NOTICE, M_GetText("This command cannot be used in this gametype.\n"));
 		return;
 	}
 
-	if (G_GametypeHasSpectators())
+	if (G_GametypeHasTeams())
+	{
+		if (!strcasecmp(COM_Argv(1), "red") || !strcasecmp(COM_Argv(1), "1"))
+			NetPacket.packet.newteam = 1;
+		else if (!strcasecmp(COM_Argv(1), "blue") || !strcasecmp(COM_Argv(1), "2"))
+			NetPacket.packet.newteam = 2;
+		else if (!strcasecmp(COM_Argv(1), "spectator") || !strcasecmp(COM_Argv(1), "0"))
+			NetPacket.packet.newteam = 0;
+		else
+			error = true;
+	}
+	else if (G_GametypeHasSpectators())
 	{
 		if (!strcasecmp(COM_Argv(1), "spectator") || !strcasecmp(COM_Argv(1), "0"))
 			NetPacket.packet.newteam = 0;
@@ -3283,13 +3360,17 @@ static void Command_Teamchange_f(void)
 
 	if (error)
 	{
-		if (G_GametypeHasSpectators())
+		if (G_GametypeHasTeams())
+			CONS_Printf(M_GetText("changeteam <team>: switch to a new team (%s)\n"), "red, blue or spectator");
+		else if (G_GametypeHasSpectators())
 			CONS_Printf(M_GetText("changeteam <team>: switch to a new team (%s)\n"), "spectator or playing");
 		return;
 	}
 
 	if (players[consoleplayer].spectator)
 		error = !(NetPacket.packet.newteam || (players[consoleplayer].pflags & PF_WANTSTOJOIN)); // :lancer:
+	else if (G_GametypeHasTeams())
+		error = (NetPacket.packet.newteam == (unsigned)players[consoleplayer].ctfteam);
 	else if (G_GametypeHasSpectators() && !players[consoleplayer].spectator)
 		error = (NetPacket.packet.newteam == 3);
 #ifdef PARANOIA
@@ -3309,6 +3390,13 @@ static void Command_Teamchange_f(void)
 		return;
 	}
 
+	//additional check for hide and seek. Don't allow change of status after hidetime ends.
+	if (gametype == GT_HIDEANDSEEK && leveltime >= (hidetime * TICRATE))
+	{
+		CONS_Alert(CONS_NOTICE, M_GetText("Hiding time expired; no Hide and Seek status changes allowed!\n"));
+		return;
+	}
+
 	usvalue = SHORT(NetPacket.value.l|NetPacket.value.b);
 	SendNetXCmdForPlayer(0, XD_TEAMCHANGE, &usvalue, sizeof(usvalue));
 }
@@ -3325,14 +3413,27 @@ static void Command_Teamchange2_f(void)
 
 	if (COM_Argc() <= 1)
 	{
-		if (G_GametypeHasSpectators())
+		if (G_GametypeHasTeams())
+			CONS_Printf(M_GetText("changeteam2 <team>: switch to a new team (%s)\n"), "red, blue or spectator");
+		else if (G_GametypeHasSpectators())
 			CONS_Printf(M_GetText("changeteam2 <team>: switch to a new team (%s)\n"), "spectator or playing");
 		else
 			CONS_Alert(CONS_NOTICE, M_GetText("This command cannot be used in this gametype.\n"));
 		return;
 	}
 
-	if (G_GametypeHasSpectators())
+	if (G_GametypeHasTeams())
+	{
+		if (!strcasecmp(COM_Argv(1), "red") || !strcasecmp(COM_Argv(1), "1"))
+			NetPacket.packet.newteam = 1;
+		else if (!strcasecmp(COM_Argv(1), "blue") || !strcasecmp(COM_Argv(1), "2"))
+			NetPacket.packet.newteam = 2;
+		else if (!strcasecmp(COM_Argv(1), "spectator") || !strcasecmp(COM_Argv(1), "0"))
+			NetPacket.packet.newteam = 0;
+		else
+			error = true;
+	}
+	else if (G_GametypeHasSpectators())
 	{
 		if (!strcasecmp(COM_Argv(1), "spectator") || !strcasecmp(COM_Argv(1), "0"))
 			NetPacket.packet.newteam = 0;
@@ -3350,13 +3451,17 @@ static void Command_Teamchange2_f(void)
 
 	if (error)
 	{
-		if (G_GametypeHasSpectators())
+		if (G_GametypeHasTeams())
+			CONS_Printf(M_GetText("changeteam2 <team>: switch to a new team (%s)\n"), "red, blue or spectator");
+		else if (G_GametypeHasSpectators())
 			CONS_Printf(M_GetText("changeteam2 <team>: switch to a new team (%s)\n"), "spectator or playing");
 		return;
 	}
 
 	if (players[displayplayers[1]].spectator)
 		error = !(NetPacket.packet.newteam || (players[displayplayers[1]].pflags & PF_WANTSTOJOIN));
+	else if (G_GametypeHasTeams())
+		error = (NetPacket.packet.newteam == (unsigned)players[displayplayers[1]].ctfteam);
 	else if (G_GametypeHasSpectators() && !players[displayplayers[1]].spectator)
 		error = (NetPacket.packet.newteam == 3);
 #ifdef PARANOIA
@@ -3376,6 +3481,13 @@ static void Command_Teamchange2_f(void)
 		return;
 	}
 
+	//additional check for hide and seek. Don't allow change of status after hidetime ends.
+	if (gametype == GT_HIDEANDSEEK && leveltime >= (hidetime * TICRATE))
+	{
+		CONS_Alert(CONS_NOTICE, M_GetText("Hiding time expired; no Hide and Seek status changes allowed!\n"));
+		return;
+	}
+
 	usvalue = SHORT(NetPacket.value.l|NetPacket.value.b);
 	SendNetXCmdForPlayer(1, XD_TEAMCHANGE, &usvalue, sizeof(usvalue));
 }
@@ -3392,14 +3504,27 @@ static void Command_Teamchange3_f(void)
 
 	if (COM_Argc() <= 1)
 	{
-		if (G_GametypeHasSpectators())
+		if (G_GametypeHasTeams())
+			CONS_Printf(M_GetText("changeteam3 <team>: switch to a new team (%s)\n"), "red, blue or spectator");
+		else if (G_GametypeHasSpectators())
 			CONS_Printf(M_GetText("changeteam3 <team>: switch to a new team (%s)\n"), "spectator or playing");
 		else
 			CONS_Alert(CONS_NOTICE, M_GetText("This command cannot be used in this gametype.\n"));
 		return;
 	}
 
-	if (G_GametypeHasSpectators())
+	if (G_GametypeHasTeams())
+	{
+		if (!strcasecmp(COM_Argv(1), "red") || !strcasecmp(COM_Argv(1), "1"))
+			NetPacket.packet.newteam = 1;
+		else if (!strcasecmp(COM_Argv(1), "blue") || !strcasecmp(COM_Argv(1), "2"))
+			NetPacket.packet.newteam = 2;
+		else if (!strcasecmp(COM_Argv(1), "spectator") || !strcasecmp(COM_Argv(1), "0"))
+			NetPacket.packet.newteam = 0;
+		else
+			error = true;
+	}
+	else if (G_GametypeHasSpectators())
 	{
 		if (!strcasecmp(COM_Argv(1), "spectator") || !strcasecmp(COM_Argv(1), "0"))
 			NetPacket.packet.newteam = 0;
@@ -3417,13 +3542,17 @@ static void Command_Teamchange3_f(void)
 
 	if (error)
 	{
-		if (G_GametypeHasSpectators())
+		if (G_GametypeHasTeams())
+			CONS_Printf(M_GetText("changeteam3 <team>: switch to a new team (%s)\n"), "red, blue or spectator");
+		else if (G_GametypeHasSpectators())
 			CONS_Printf(M_GetText("changeteam3 <team>: switch to a new team (%s)\n"), "spectator or playing");
 		return;
 	}
 
 	if (players[displayplayers[2]].spectator)
 		error = !(NetPacket.packet.newteam || (players[displayplayers[2]].pflags & PF_WANTSTOJOIN));
+	else if (G_GametypeHasTeams())
+		error = (NetPacket.packet.newteam == (unsigned)players[displayplayers[2]].ctfteam);
 	else if (G_GametypeHasSpectators() && !players[displayplayers[2]].spectator)
 		error = (NetPacket.packet.newteam == 3);
 #ifdef PARANOIA
@@ -3443,6 +3572,13 @@ static void Command_Teamchange3_f(void)
 		return;
 	}
 
+	//additional check for hide and seek. Don't allow change of status after hidetime ends.
+	if (gametype == GT_HIDEANDSEEK && leveltime >= (hidetime * TICRATE))
+	{
+		CONS_Alert(CONS_NOTICE, M_GetText("Hiding time expired; no Hide and Seek status changes allowed!\n"));
+		return;
+	}
+
 	usvalue = SHORT(NetPacket.value.l|NetPacket.value.b);
 	SendNetXCmdForPlayer(2, XD_TEAMCHANGE, &usvalue, sizeof(usvalue));
 }
@@ -3459,14 +3595,27 @@ static void Command_Teamchange4_f(void)
 
 	if (COM_Argc() <= 1)
 	{
-		if (G_GametypeHasSpectators())
+		if (G_GametypeHasTeams())
+			CONS_Printf(M_GetText("changeteam4 <team>: switch to a new team (%s)\n"), "red, blue or spectator");
+		else if (G_GametypeHasSpectators())
 			CONS_Printf(M_GetText("changeteam4 <team>: switch to a new team (%s)\n"), "spectator or playing");
 		else
 			CONS_Alert(CONS_NOTICE, M_GetText("This command cannot be used in this gametype.\n"));
 		return;
 	}
 
-	if (G_GametypeHasSpectators())
+	if (G_GametypeHasTeams())
+	{
+		if (!strcasecmp(COM_Argv(1), "red") || !strcasecmp(COM_Argv(1), "1"))
+			NetPacket.packet.newteam = 1;
+		else if (!strcasecmp(COM_Argv(1), "blue") || !strcasecmp(COM_Argv(1), "2"))
+			NetPacket.packet.newteam = 2;
+		else if (!strcasecmp(COM_Argv(1), "spectator") || !strcasecmp(COM_Argv(1), "0"))
+			NetPacket.packet.newteam = 0;
+		else
+			error = true;
+	}
+	else if (G_GametypeHasSpectators())
 	{
 		if (!strcasecmp(COM_Argv(1), "spectator") || !strcasecmp(COM_Argv(1), "0"))
 			NetPacket.packet.newteam = 0;
@@ -3484,13 +3633,17 @@ static void Command_Teamchange4_f(void)
 
 	if (error)
 	{
-		if (G_GametypeHasSpectators())
+		if (G_GametypeHasTeams())
+			CONS_Printf(M_GetText("changeteam4 <team>: switch to a new team (%s)\n"), "red, blue or spectator");
+		else if (G_GametypeHasSpectators())
 			CONS_Printf(M_GetText("changeteam4 <team>: switch to a new team (%s)\n"), "spectator or playing");
 		return;
 	}
 
 	if (players[displayplayers[3]].spectator)
 		error = !(NetPacket.packet.newteam || (players[displayplayers[3]].pflags & PF_WANTSTOJOIN));
+	else if (G_GametypeHasTeams())
+		error = (NetPacket.packet.newteam == (unsigned)players[displayplayers[3]].ctfteam);
 	else if (G_GametypeHasSpectators() && !players[displayplayers[3]].spectator)
 		error = (NetPacket.packet.newteam == 3);
 #ifdef PARANOIA
@@ -3507,6 +3660,13 @@ static void Command_Teamchange4_f(void)
 	if (!cv_allowteamchange.value && NetPacket.packet.newteam) // allow swapping to spectator even in locked teams.
 	{
 		CONS_Alert(CONS_NOTICE, M_GetText("The server is not allowing team changes at the moment.\n"));
+		return;
+	}
+
+	//additional check for hide and seek. Don't allow change of status after hidetime ends.
+	if (gametype == GT_HIDEANDSEEK && leveltime >= (hidetime * TICRATE))
+	{
+		CONS_Alert(CONS_NOTICE, M_GetText("Hiding time expired; no Hide and Seek status changes allowed!\n"));
 		return;
 	}
 
@@ -3532,14 +3692,42 @@ static void Command_ServerTeamChange_f(void)
 
 	if (COM_Argc() < 3)
 	{
-		if (G_GametypeHasSpectators())
+		if (G_TagGametype())
+			CONS_Printf(M_GetText("serverchangeteam <playernum> <team>: switch player to a new team (%s)\n"), "it, notit, playing, or spectator");
+		else if (G_GametypeHasTeams())
+			CONS_Printf(M_GetText("serverchangeteam <playernum> <team>: switch player to a new team (%s)\n"), "red, blue or spectator");
+		else if (G_GametypeHasSpectators())
 			CONS_Printf(M_GetText("serverchangeteam <playernum> <team>: switch player to a new team (%s)\n"), "spectator or playing");
 		else
 			CONS_Alert(CONS_NOTICE, M_GetText("This command cannot be used in this gametype.\n"));
 		return;
 	}
 
-	if (G_GametypeHasSpectators())
+	if (G_TagGametype())
+	{
+		if (!strcasecmp(COM_Argv(2), "it") || !strcasecmp(COM_Argv(2), "1"))
+			NetPacket.packet.newteam = 1;
+		else if (!strcasecmp(COM_Argv(2), "notit") || !strcasecmp(COM_Argv(2), "2"))
+			NetPacket.packet.newteam = 2;
+		else if (!strcasecmp(COM_Argv(2), "playing") || !strcasecmp(COM_Argv(2), "3"))
+			NetPacket.packet.newteam = 3;
+		else if (!strcasecmp(COM_Argv(2), "spectator") || !strcasecmp(COM_Argv(2), "0"))
+			NetPacket.packet.newteam = 0;
+		else
+			error = true;
+	}
+	else if (G_GametypeHasTeams())
+	{
+		if (!strcasecmp(COM_Argv(2), "red") || !strcasecmp(COM_Argv(2), "1"))
+			NetPacket.packet.newteam = 1;
+		else if (!strcasecmp(COM_Argv(2), "blue") || !strcasecmp(COM_Argv(2), "2"))
+			NetPacket.packet.newteam = 2;
+		else if (!strcasecmp(COM_Argv(2), "spectator") || !strcasecmp(COM_Argv(2), "0"))
+			NetPacket.packet.newteam = 0;
+		else
+			error = true;
+	}
+	else if (G_GametypeHasSpectators())
 	{
 		if (!strcasecmp(COM_Argv(2), "spectator") || !strcasecmp(COM_Argv(2), "0"))
 			NetPacket.packet.newteam = 0;
@@ -3556,7 +3744,11 @@ static void Command_ServerTeamChange_f(void)
 
 	if (error)
 	{
-		if (G_GametypeHasSpectators())
+		if (G_TagGametype())
+			CONS_Printf(M_GetText("serverchangeteam <playernum> <team>: switch player to a new team (%s)\n"), "it, notit, playing, or spectator");
+		else if (G_GametypeHasTeams())
+			CONS_Printf(M_GetText("serverchangeteam <playernum> <team>: switch player to a new team (%s)\n"), "red, blue or spectator");
+		else if (G_GametypeHasSpectators())
 			CONS_Printf(M_GetText("serverchangeteam <playernum> <team>: switch player to a new team (%s)\n"), "spectator or playing");
 		return;
 	}
@@ -3569,7 +3761,21 @@ static void Command_ServerTeamChange_f(void)
 		return;
 	}
 
-	if (G_GametypeHasSpectators())
+	if (G_TagGametype())
+	{
+		if (( (players[NetPacket.packet.playernum].pflags & PF_TAGIT) && NetPacket.packet.newteam == 1) ||
+			(!(players[NetPacket.packet.playernum].pflags & PF_TAGIT) && NetPacket.packet.newteam == 2) ||
+			( players[NetPacket.packet.playernum].spectator && !NetPacket.packet.newteam) ||
+			(!players[NetPacket.packet.playernum].spectator && NetPacket.packet.newteam == 3))
+			error = true;
+	}
+	else if (G_GametypeHasTeams())
+	{
+		if (NetPacket.packet.newteam == (unsigned)players[NetPacket.packet.playernum].ctfteam ||
+			(players[NetPacket.packet.playernum].spectator && !NetPacket.packet.newteam))
+			error = true;
+	}
+	else if (G_GametypeHasSpectators())
 	{
 		if ((players[NetPacket.packet.playernum].spectator && !NetPacket.packet.newteam) ||
 			(!players[NetPacket.packet.playernum].spectator && NetPacket.packet.newteam == 3))
@@ -3586,6 +3792,13 @@ static void Command_ServerTeamChange_f(void)
 		return;
 	}
 
+	//additional check for hide and seek. Don't allow change of status after hidetime ends.
+	if (gametype == GT_HIDEANDSEEK && leveltime >= (hidetime * TICRATE))
+	{
+		CONS_Alert(CONS_NOTICE, M_GetText("Hiding time expired; no Hide and Seek status changes allowed!\n"));
+		return;
+	}
+
 	NetPacket.packet.verification = true; // This signals that it's a server change
 
 	usvalue = SHORT(NetPacket.value.l|NetPacket.value.b);
@@ -3599,7 +3812,7 @@ static void Got_Teamchange(UINT8 **cp, INT32 playernum)
 	boolean error = false, wasspectator = false;
 	NetPacket.value.l = NetPacket.value.b = READINT16(*cp);
 
-	if (!G_GametypeHasSpectators()) //Make sure you're in the right gametype.
+	if (!G_GametypeHasTeams() && !G_GametypeHasSpectators()) //Make sure you're in the right gametype.
 	{
 		// this should never happen unless the client is hacked/buggy
 		CONS_Alert(CONS_WARNING, M_GetText("Illegal team change received from player %s\n"), player_names[playernum]);
@@ -3634,6 +3847,18 @@ static void Got_Teamchange(UINT8 **cp, INT32 playernum)
 	// Prevent multiple changes in one go.
 	if (players[playernum].spectator && !(players[playernum].pflags & PF_WANTSTOJOIN) && !NetPacket.packet.newteam)
 		return;
+	else if (G_TagGametype())
+	{
+		if (((players[playernum].pflags & PF_TAGIT) && NetPacket.packet.newteam == 1) ||
+			(!(players[playernum].pflags & PF_TAGIT) && NetPacket.packet.newteam == 2) ||
+			(!players[playernum].spectator && NetPacket.packet.newteam == 3))
+			return;
+	}
+	else if (G_GametypeHasTeams())
+	{
+		if (NetPacket.packet.newteam && (NetPacket.packet.newteam == (unsigned)players[playernum].ctfteam))
+			return;
+	}
 	else if (G_GametypeHasSpectators())
 	{
 		if (!players[playernum].spectator && NetPacket.packet.newteam == 3)
@@ -3656,16 +3881,45 @@ static void Got_Teamchange(UINT8 **cp, INT32 playernum)
 		return;
 	}
 
+	//Make sure that the right team number is sent. Keep in mind that normal clients cannot change to certain teams in certain gametypes.
+	switch (gametype)
+	{
+	case GT_HIDEANDSEEK:
+		//no status changes after hidetime
+		if (leveltime >= (hidetime * TICRATE))
+		{
+			error = true;
+			break;
+		}
+		/* FALLTHRU */
+	case GT_TAG:
+		switch (NetPacket.packet.newteam)
+		{
+		case 0:
+			break;
+		case 1: case 2:
+			if (!NetPacket.packet.verification)
+				error = true; //Only admin can change player's IT status' in tag.
+			break;
+		case 3: //Join game via console.
+			if (!NetPacket.packet.verification && !cv_allowteamchange.value)
+				error = true;
+			break;
+		}
+
+		break;
+	default:
 #ifdef PARANOIA
-	if (!G_GametypeHasSpectators())
-		I_Error("Invalid gametype after initial checks!");
+		if (!G_GametypeHasTeams() && !G_GametypeHasSpectators())
+			I_Error("Invalid gametype after initial checks!");
 #endif
 
-	//Make sure that the right team number is sent. Keep in mind that normal clients cannot change to certain teams in certain gametypes.
-	if (!cv_allowteamchange.value)
-	{
-		if (!NetPacket.packet.verification && NetPacket.packet.newteam)
-			error = true; //Only admin can change status, unless changing to spectator.
+		if (!cv_allowteamchange.value)
+		{
+			if (!NetPacket.packet.verification && NetPacket.packet.newteam)
+				error = true; //Only admin can change status, unless changing to spectator.
+		}
+		break; //Otherwise, you don't need special permissions.
 	}
 
 	if (server && ((NetPacket.packet.newteam < 0 || NetPacket.packet.newteam > 3) || error))
@@ -3694,7 +3948,50 @@ static void Got_Teamchange(UINT8 **cp, INT32 playernum)
 
 	//Now that we've done our error checking and killed the player
 	//if necessary, put the player on the correct team/status.
-	if (G_GametypeHasSpectators())
+	if (G_TagGametype())
+	{
+		if (!NetPacket.packet.newteam)
+		{
+			players[playernum].spectator = true;
+			players[playernum].pflags &= ~PF_TAGIT;
+			players[playernum].pflags &= ~PF_TAGGED;
+		}
+		else if (NetPacket.packet.newteam != 3) // .newteam == 1 or 2.
+		{
+			players[playernum].pflags |= PF_WANTSTOJOIN; //players[playernum].spectator = false;
+			players[playernum].pflags &= ~PF_TAGGED;//Just in case.
+
+			if (NetPacket.packet.newteam == 1) //Make the player IT.
+				players[playernum].pflags |= PF_TAGIT;
+			else
+				players[playernum].pflags &= ~PF_TAGIT;
+		}
+		else // Just join the game.
+		{
+			players[playernum].pflags |= PF_WANTSTOJOIN; //players[playernum].spectator = false;
+
+			//If joining after hidetime in normal tag, default to being IT.
+			if (gametype == GT_TAG && (leveltime > (hidetime * TICRATE)))
+			{
+				NetPacket.packet.newteam = 1; //minor hack, causes the "is it" message to be printed later.
+				players[playernum].pflags |= PF_TAGIT; //make the player IT.
+			}
+		}
+	}
+	else if (G_GametypeHasTeams())
+	{
+		if (!NetPacket.packet.newteam)
+		{
+			players[playernum].ctfteam = 0;
+			players[playernum].spectator = true;
+		}
+		else
+		{
+			players[playernum].ctfteam = NetPacket.packet.newteam;
+			players[playernum].pflags |= PF_WANTSTOJOIN; //players[playernum].spectator = false;
+		}
+	}
+	else if (G_GametypeHasSpectators())
 	{
 		if (!NetPacket.packet.newteam)
 			players[playernum].spectator = true;
@@ -3718,11 +4015,17 @@ static void Got_Teamchange(UINT8 **cp, INT32 playernum)
 	}
 	else if (NetPacket.packet.newteam == 1)
 	{
-		CONS_Printf(M_GetText("%s switched to the %c%s%c.\n"), player_names[playernum], '\x85', M_GetText("Red Team"), '\x80');
+		if (G_TagGametype())
+			CONS_Printf(M_GetText("%s is now IT!\n"), player_names[playernum]);
+		else
+			CONS_Printf(M_GetText("%s switched to the %c%s%c.\n"), player_names[playernum], '\x85', M_GetText("Red Team"), '\x80');
 	}
 	else if (NetPacket.packet.newteam == 2)
 	{
-		CONS_Printf(M_GetText("%s switched to the %c%s%c.\n"), player_names[playernum], '\x84', M_GetText("Blue Team"), '\x80');
+		if (G_TagGametype())
+			CONS_Printf(M_GetText("%s is no longer IT!\n"), player_names[playernum]);
+		else
+			CONS_Printf(M_GetText("%s switched to the %c%s%c.\n"), player_names[playernum], '\x84', M_GetText("Blue Team"), '\x80');
 	}
 	else if (NetPacket.packet.newteam == 0 && !wasspectator)
 		HU_AddChatText(va("\x82*%s became a spectator.", player_names[playernum]), false); // "entered the game" text was moved to P_SpectatorJoinGame
@@ -3730,6 +4033,21 @@ static void Got_Teamchange(UINT8 **cp, INT32 playernum)
 	//reset view if you are changed, or viewing someone who was changed.
 	if (playernum == consoleplayer || displayplayers[0] == playernum)
 		displayplayers[0] = consoleplayer;
+
+	if (G_GametypeHasTeams())
+	{
+		if (NetPacket.packet.newteam)
+		{
+			if (playernum == consoleplayer) //CTF and Team Match colors.
+				CV_SetValue(&cv_playercolor, NetPacket.packet.newteam + 5);
+			else if (playernum == displayplayers[1])
+				CV_SetValue(&cv_playercolor2, NetPacket.packet.newteam + 5);
+			else if (playernum == displayplayers[2])
+				CV_SetValue(&cv_playercolor3, NetPacket.packet.newteam + 5);
+			else if (playernum == displayplayers[3])
+				CV_SetValue(&cv_playercolor4, NetPacket.packet.newteam + 5);
+		}
+	}
 
 	if (gamestate != GS_LEVEL)
 		return;
@@ -4604,6 +4922,151 @@ static void Command_ListWADS_f(void)
 	}
 }
 
+#define MAXDOOMEDNUM 4095
+
+static void Command_ListDoomednums_f(void)
+{
+	INT16 i, j, k = 0, l = 0;
+	INT32 argc = COM_Argc();
+	INT16 table[MAXDOOMEDNUM];
+
+	switch (argc)
+	{
+		case 1:
+			l = MAXDOOMEDNUM;
+			break;
+		case 3:
+			l = atoi(COM_Argv(2));
+			if (l < 1 || l > MAXDOOMEDNUM)
+			{
+				CONS_Printf("arg 2: doomednum \x82""%d \x85out of range (1-4095)\n", k);
+				return;
+			}
+			//FALLTHRU
+		case 2:
+			k = atoi(COM_Argv(1));
+			if (k < 1 || k > MAXDOOMEDNUM)
+			{
+				CONS_Printf("arg 1: doomednum \x82""%d \x85out of range (1-4095)\n", k);
+				return;
+			}
+			if (!l)
+				l = k;
+			else if (l < k) // silently and helpfully swap.
+			{
+				j = k;
+				k = l;
+				l = j;
+			}
+			break;
+		default:
+			CONS_Printf("listmapthings: \x86too many arguments!\n");
+			return;
+	}
+
+	// see P_SpawnNonMobjMapThing
+	memset(table, 0, sizeof(table));
+	for (i = 1; i <= MAXPLAYERS; i++)
+		table[i-1] = MT_PLAYER; // playerstarts
+	table[33-1] = table[34-1] = table[35-1] = MT_PLAYER; // battle/team starts
+	table[750-1] = table[777-1] = table[778-1] = MT_UNKNOWN; // slopes
+	for (i = 600; i <= 609; i++)
+		table[i-1] = MT_RING; // placement patterns
+	table[1705-1] = table[1713-1] = MT_HOOP; // types of hoop
+
+	CONS_Printf("\x82""Checking for double defines...\n");
+	for (i = 1; i < MT_FIRSTFREESLOT+NUMMOBJFREESLOTS; i++)
+	{
+		j = mobjinfo[i].doomednum;
+		if (j < (k ? k : 1) || j > (l ? l : MAXDOOMEDNUM))
+			continue;
+		if (table[j-1])
+		{
+			CONS_Printf("	doomednum \x82""%d""\x80 is \x85""double-defined\x80 by ", j);
+			if (i < MT_FIRSTFREESLOT)
+			{
+				CONS_Printf("\x87""hardcode %s <-- MAJOR ERROR\n", MOBJTYPE_LIST[i]);
+				continue;
+			}
+			CONS_Printf("\x81""freeslot MT_""%s\n", FREE_MOBJS[i-MT_FIRSTFREESLOT]);
+			continue;
+		}
+		table[j-1] = i;
+	}
+	CONS_Printf("\x82Printing doomednum usage...\n");
+	if (!k)
+	{
+		i = 35; // skip MT_PLAYER spam
+		CONS_Printf("	doomednums \x82""1-35""\x80 are used by ""\x87""hardcode MT_PLAYER\n");
+	}
+	else
+		i = k-1;
+
+	for (; i < l; i++)
+	{
+		if (!table[i])
+		{
+			if (k)
+			{
+				CONS_Printf("	doomednum \x82""%d""\x80 is \x83""free!", i+1);
+				if (i < 99) // above the humble crawla? how dare you
+					CONS_Printf(" (Don't freeslot this low...)");
+				CONS_Printf("\n");
+			}
+			continue;
+		}
+		CONS_Printf("	doomednum \x82""%d""\x80 is used by ", i+1);
+		if (table[i] < MT_FIRSTFREESLOT)
+		{
+			CONS_Printf("\x87""hardcode %s\n", MOBJTYPE_LIST[table[i]]);
+			continue;
+		}
+		CONS_Printf("\x81""freeslot MT_""%s\n", FREE_MOBJS[table[i]-MT_FIRSTFREESLOT]);
+	}
+}
+
+#undef MAXDOOMEDNUM
+
+void Command_ListUnusedSprites_f(void)
+{
+	size_t i, j;
+
+	CONS_Printf("\x82Printing sprite non-usage...\n");
+
+	for (i = 0; i < NUMSPRITES; i++)
+	{
+		if (sprites[i].numframes)
+		{
+			// We're only showing unused sprites...
+			continue;
+		}
+
+		if (i < SPR_FIRSTFREESLOT)
+		{
+			CONS_Printf("	\x87""hardcode SPR_""%.4s\n", sprnames[i]);
+			continue;
+		}
+
+		if (used_spr[(i-SPR_FIRSTFREESLOT)/8] == 0xFF)
+		{
+			for (j = 0; j < 8; j++)
+			{
+				CONS_Printf("	\x81""freeslot SPR_""%.4s\n", sprnames[i+j]);
+			}
+
+			i += j;
+		}
+
+		if (used_spr[(i-SPR_FIRSTFREESLOT)/8] & (1<<(i%8)))
+		{
+			CONS_Printf("	\x81""freeslot SPR_""%.4s\n", sprnames[i]);
+			continue;
+		}
+
+		break;
+	}
+}
+
 // =========================================================================
 //                            MISC. COMMANDS
 // =========================================================================
@@ -4750,7 +5213,7 @@ static void PointLimit_OnChange(void)
 	if (cv_pointlimit.value)
 	{
 		CONS_Printf(M_GetText("Levels will end after %s scores %d point%s.\n"),
-			M_GetText("someone"),
+			G_GametypeHasTeams() ? M_GetText("a team") : M_GetText("someone"),
 			cv_pointlimit.value,
 			cv_pointlimit.value > 1 ? "s" : "");
 	}
@@ -4805,7 +5268,11 @@ static void TimeLimit_OnChange(void)
 	if (cv_timelimit.value != 0)
 	{
 		CONS_Printf(M_GetText("Levels will end after %d minute%s.\n"),cv_timelimit.value,cv_timelimit.value == 1 ? "" : "s"); // Graue 11-17-2003
-		timelimitintics = cv_timelimit.value * 60 * TICRATE;;
+		timelimitintics = cv_timelimit.value * 60 * TICRATE;
+
+		//add hidetime for tag too!
+		if (G_TagGametype())
+			timelimitintics += hidetime * TICRATE;
 
 		// Note the deliberate absence of any code preventing
 		//   pointlimit and timelimit from being set simultaneously.
@@ -4844,19 +5311,46 @@ void D_GameTypeChanged(INT32 lastgametype)
 	// There will always be a server, and this only needs to be done once.
 	if (server && (multiplayer || netgame))
 	{
-		if (!cv_itemrespawn.changed)
+		if (gametype == GT_COMPETITION || gametype == GT_COOP)
+			CV_SetValue(&cv_itemrespawn, 0);
+		else if (!cv_itemrespawn.changed)
 			CV_SetValue(&cv_itemrespawn, 1);
 
-		if (gametype == GT_MATCH)
+		switch (gametype)
 		{
-			if (!cv_timelimit.changed && !cv_pointlimit.changed) // user hasn't changed limits
-			{
-				// default settings for match: no timelimit, no pointlimit
-				CV_SetValue(&cv_pointlimit, 0);
-				CV_SetValue(&cv_timelimit,  0);
-			}
-			if (!cv_itemrespawntime.changed)
-				CV_Set(&cv_itemrespawntime, cv_itemrespawntime.defaultvalue); // respawn normally
+			case GT_MATCH:
+			case GT_TEAMMATCH:
+				if (!cv_timelimit.changed && !cv_pointlimit.changed) // user hasn't changed limits
+				{
+					// default settings for match: no timelimit, no pointlimit
+					CV_SetValue(&cv_pointlimit, 0);
+					CV_SetValue(&cv_timelimit,  0);
+				}
+				if (!cv_itemrespawntime.changed)
+					CV_Set(&cv_itemrespawntime, cv_itemrespawntime.defaultvalue); // respawn normally
+				break;
+			case GT_TAG:
+			case GT_HIDEANDSEEK:
+				if (!cv_timelimit.changed && !cv_pointlimit.changed) // user hasn't changed limits
+				{
+					// default settings for tag: 5 mins, no pointlimit
+					// Note that tag mode also uses an alternate timing mechanism in tandem with timelimit.
+					CV_SetValue(&cv_timelimit, 5);
+					CV_SetValue(&cv_pointlimit, 0);
+				}
+				if (!cv_itemrespawntime.changed)
+					CV_Set(&cv_itemrespawntime, cv_itemrespawntime.defaultvalue); // respawn normally
+				break;
+			case GT_CTF:
+				if (!cv_timelimit.changed && !cv_pointlimit.changed) // user hasn't changed limits
+				{
+					// default settings for CTF: no timelimit, pointlimit 5
+					CV_SetValue(&cv_timelimit, 0);
+					CV_SetValue(&cv_pointlimit, 5);
+				}
+				if (!cv_itemrespawntime.changed)
+					CV_Set(&cv_itemrespawntime, cv_itemrespawntime.defaultvalue); // respawn normally
+				break;
 		}
 	}
 	else if (!multiplayer && !netgame)
@@ -4873,6 +5367,29 @@ void D_GameTypeChanged(INT32 lastgametype)
 				CV_SetValue(&cv_timelimit, 0);
 			if (cv_pointlimit.value)
 				CV_SetValue(&cv_pointlimit, 0);
+		}
+		else if ((cv_pointlimit.changed || cv_timelimit.changed) && cv_pointlimit.value)
+		{
+			if (lastgametype != GT_CTF && gametype == GT_CTF)
+				CV_SetValue(&cv_pointlimit, cv_pointlimit.value / 500);
+			else if (lastgametype == GT_CTF && gametype != GT_CTF)
+				CV_SetValue(&cv_pointlimit, cv_pointlimit.value * 500);
+		}
+	}
+
+	// don't retain teams in other modes or between changes from ctf to team match.
+	// also, stop any and all forms of team scrambling that might otherwise take place.
+	if (G_GametypeHasTeams())
+	{
+		INT32 i;
+		for (i = 0; i < MAXPLAYERS; i++)
+			if (playeringame[i])
+				players[i].ctfteam = 0;
+
+		if (server || (IsPlayerAdmin(consoleplayer)))
+		{
+			CV_StealthSetValue(&cv_teamscramble, 0);
+			teamscramble = 0;
 		}
 	}
 }
@@ -4937,6 +5454,14 @@ static void AutoBalance_OnChange(void)
 
 static void TeamScramble_OnChange(void)
 {
+	INT16 i = 0, j = 0, playercount = 0;
+	boolean repick = true;
+	INT32 blue = 0, red = 0;
+	INT32 maxcomposition = 0;
+	INT16 newteam = 0;
+	INT32 retries = 0;
+	boolean success = false;
+
 	// Don't trigger outside level or intermission!
 	if (!(gamestate == GS_LEVEL || gamestate == GS_INTERMISSION || gamestate == GS_VOTING))
 		return;
@@ -4944,17 +5469,152 @@ static void TeamScramble_OnChange(void)
 	if (!cv_teamscramble.value)
 		teamscramble = 0;
 
-	if (server || IsPlayerAdmin(consoleplayer))
+	if (!G_GametypeHasTeams() && (server || IsPlayerAdmin(consoleplayer)))
 	{
 		CONS_Alert(CONS_NOTICE, M_GetText("This command cannot be used in this gametype.\n"));
 		CV_StealthSetValue(&cv_teamscramble, 0);
 		return;
 	}
+
+	// If a team scramble is already in progress, do not allow another one to be started!
+	if (teamscramble)
+		return;
+
+retryscramble:
+
+	// Clear related global variables. These will get used again in p_tick.c/y_inter.c as the teams are scrambled.
+	memset(&scrambleplayers, 0, sizeof(scrambleplayers));
+	memset(&scrambleteams, 0, sizeof(scrambleplayers));
+	scrambletotal = scramblecount = 0;
+	blue = red = maxcomposition = newteam = playercount = 0;
+	repick = true;
+
+	// Put each player's node in the array.
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		if (playeringame[i] && !players[i].spectator)
+		{
+			scrambleplayers[playercount] = i;
+			playercount++;
+		}
+	}
+
+	if (playercount < 2)
+	{
+		CV_StealthSetValue(&cv_teamscramble, 0);
+		return; // Don't scramble one or zero players.
+	}
+
+	// Randomly place players on teams.
+	if (cv_teamscramble.value == 1)
+	{
+		maxcomposition = playercount / 2;
+
+		// Now randomly assign players to teams.
+		// If the teams get out of hand, assign the rest to the other team.
+		for (i = 0; i < playercount; i++)
+		{
+			if (repick)
+				newteam = (INT16)((M_RandomByte() % 2) + 1);
+
+			// One team has the most players they can get, assign the rest to the other team.
+			if (red == maxcomposition || blue == maxcomposition)
+			{
+				if (red == maxcomposition)
+					newteam = 2;
+				else if (blue == maxcomposition)
+					newteam = 1;
+
+				repick = false;
+			}
+
+			scrambleteams[i] = newteam;
+
+			if (newteam == 1)
+				red++;
+			else
+				blue++;
+		}
+	}
+	else if (cv_teamscramble.value == 2) // Same as before, except split teams based on current score.
+	{
+		// Now, sort the array based on points scored.
+		for (i = 1; i < playercount; i++)
+		{
+			for (j = i; j < playercount; j++)
+			{
+				INT16 tempplayer = 0;
+
+				if ((players[scrambleplayers[i-1]].score > players[scrambleplayers[j]].score))
+				{
+					tempplayer = scrambleplayers[i-1];
+					scrambleplayers[i-1] = scrambleplayers[j];
+					scrambleplayers[j] = tempplayer;
+				}
+			}
+		}
+
+		// Now assign players to teams based on score. Scramble in pairs.
+		// If there is an odd number, one team will end up with the unlucky slob who has no points. =(
+		for (i = 0; i < playercount; i++)
+		{
+			if (repick)
+			{
+				newteam = (INT16)((M_RandomByte() % 2) + 1);
+				repick = false;
+			}
+			else
+			{
+				// We will only randomly pick the team for the first guy.
+				// Otherwise, just alternate back and forth, distributing players.
+				if (newteam == 1)
+					newteam = 2;
+				else
+					newteam = 1;
+			}
+
+			scrambleteams[i] = newteam;
+		}
+	}
+
+	// Check to see if our random selection actually
+	// changed anybody. If not, we run through and try again.
+	for (i = 0; i < playercount; i++)
+	{
+		if (players[scrambleplayers[i]].ctfteam != scrambleteams[i])
+			success = true;
+	}
+
+	if (!success && retries < 5)
+	{
+		retries++;
+		goto retryscramble; //try again
+	}
+
+	// Display a witty message, but only during scrambles specifically triggered by an admin.
+	if (cv_teamscramble.value)
+	{
+		scrambletotal = playercount;
+		teamscramble = (INT16)cv_teamscramble.value;
+
+		if (!(gamestate == GS_INTERMISSION && cv_scrambleonchange.value))
+			CONS_Printf(M_GetText("Teams will be scrambled next round.\n"));
+	}
 }
 
 static void Hidetime_OnChange(void)
 {
+	if (Playing() && G_TagGametype() && leveltime >= (hidetime * TICRATE))
+	{
+		// Don't allow hidetime changes after it expires.
+		CV_StealthSetValue(&cv_hidetime, hidetime);
+		return;
+	}
 	hidetime = cv_hidetime.value;
+
+	//uh oh, gotta change timelimitintics now too
+	if (G_TagGametype())
+		timelimitintics = (cv_timelimit.value * 60 * TICRATE) + (hidetime * TICRATE);
 }
 
 static void Command_Showmap_f(void)
@@ -4996,7 +5656,7 @@ static void Command_Mapmd5_f(void)
 
 static void Command_ExitLevel_f(void)
 {
-	if (!(netgame || multiplayer) && !cv_debug)
+	if (!(netgame || (multiplayer && gametype != GT_COOP)) && !cv_debug)
 		CONS_Printf(M_GetText("This only works in a netgame.\n"));
 	else if (!(server || (IsPlayerAdmin(consoleplayer))))
 		CONS_Printf(M_GetText("Only the server or a remote admin can use this.\n"));
