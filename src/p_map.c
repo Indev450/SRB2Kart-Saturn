@@ -3324,6 +3324,7 @@ void P_BouncePlayerMove(mobj_t *mo)
 		else
 			fx->eflags &= ~MFE_VERTICALFLIP;
 		fx->scale = mo->scale;
+		fx->lightlevel = 255;
 
 		S_StartSound(mo, sfx_s3k49);
 	}

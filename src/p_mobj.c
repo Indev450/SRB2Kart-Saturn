@@ -1449,6 +1449,7 @@ void P_XYMovement(mobj_t *mo)
 				else
 					fx->eflags &= ~MFE_VERTICALFLIP;
 				fx->scale = mo->scale;
+				fx->lightlevel = 255;
 			}
 
 			if (mo->type == MT_ORBINAUT) // Orbinaut speed decreasing
