@@ -1222,12 +1222,13 @@ ReadMusicDefFields (UINT16 wadnum, int line, char *stoken, musicdef_t **defp)
 	if (!stricmp(stoken, "lump"))
 	{
 		value = strtok(NULL, " ");
+
 		if (!value)
 		{
 			CONS_Alert(CONS_WARNING,
 					"MUSICDEF: Field '%s' is missing name. (file %s, line %d)\n",
 					stoken, wadfiles[wadnum]->filename, line);
-			return false;
+			goto skip_lump;
 		}
 		else
 		{
@@ -1248,6 +1249,10 @@ ReadMusicDefFields (UINT16 wadnum, int line, char *stoken, musicdef_t **defp)
 
 			(*defp) = def;
 		}
+
+skip_lump:
+			stoken = strtok(NULL, " ");
+			line++;
 	}
 	else
 	{
@@ -1264,7 +1269,7 @@ ReadMusicDefFields (UINT16 wadnum, int line, char *stoken, musicdef_t **defp)
 			CONS_Alert(CONS_WARNING,
 					"MUSICDEF: Field '%s' is missing value. (file %s, line %d)\n",
 					stoken, wadfiles[wadnum]->filename, line);
-			return false;
+			goto skip_field;
 		}
 		else
 		{
@@ -1316,6 +1321,10 @@ ReadMusicDefFields (UINT16 wadnum, int line, char *stoken, musicdef_t **defp)
 			else
 				CONS_Alert(CONS_WARNING, "MUSICDEF: Invalid field '%s'. (file %s, line %d)\n", stoken, wadfiles[wadnum]->filename, line);
 #undef ADDDEF
+
+skip_field:
+			stoken = strtok(NULL, "= ");
+			line++;
 		}
 	}
 
