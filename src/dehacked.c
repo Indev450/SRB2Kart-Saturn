@@ -14,7 +14,6 @@
 #include "d_main.h" // for srb2home
 #include "g_game.h"
 #include "sounds.h"
-#include "info.h"
 #include "d_think.h"
 #include "m_argv.h"
 #include "z_zone.h"
@@ -33,12 +32,12 @@
 #include "r_sky.h"
 #include "r_draw.h" // translation colormap consts (for lua)
 #include "fastcmp.h"
-#include "lua_script.h"
-#include "lua_glib.h"
-#include "lua_hook.h"
+
 #include "d_clisrv.h"
 #include "v_video.h" // video flags (for lua)
 
+#include "lua_glib.h"
+#include "lua_hook.h"
 #include "lua_script.h"
 #include "lua_libs.h"
 
@@ -48,13 +47,14 @@
 
 // Free slot names
 // The crazy word-reading stuff uses these.
-static char *FREE_STATES[NUMSTATEFREESLOTS];
-static char *FREE_MOBJS[NUMMOBJFREESLOTS];
-static UINT8 used_spr[(NUMSPRITEFREESLOTS / 8) + 1]; // Bitwise flag for sprite freeslot in use! I would use ceil() here if I could, but it only saves 1 byte of memory anyway.
+char *FREE_STATES[NUMSTATEFREESLOTS];
+char *FREE_MOBJS[NUMMOBJFREESLOTS];
+UINT8 used_spr[(NUMSPRITEFREESLOTS / 8) + 1]; // Bitwise flag for sprite freeslot in use! I would use ceil() here if I could, but it only saves 1 byte of memory anyway.
+
 #define initfreeslots() {\
-memset(FREE_STATES,0,sizeof(char *) * NUMSTATEFREESLOTS);\
-memset(FREE_MOBJS,0,sizeof(char *) * NUMMOBJFREESLOTS);\
-memset(used_spr,0,sizeof(UINT8) * ((NUMSPRITEFREESLOTS / 8) + 1));\
+	memset(FREE_STATES,0,sizeof(char *) * NUMSTATEFREESLOTS);\
+	memset(FREE_MOBJS,0,sizeof(char *) * NUMMOBJFREESLOTS);\
+	memset(used_spr,0,sizeof(UINT8) * ((NUMSPRITEFREESLOTS / 8) + 1));\
 }
 
 // Crazy word-reading stuff
@@ -257,6 +257,8 @@ static void clear_levels(void)
 		// Custom map header info
 		// (no need to set num to 0, we're freeing the entire header shortly)
 		Z_Free(mapheaderinfo[i]->customopts);
+
+		P_DeleteGrades(i);
 		Z_Free(mapheaderinfo[i]);
 		mapheaderinfo[i] = NULL;
 	}
@@ -800,8 +802,22 @@ static void readlevelheader(MYFILE *f, INT32 num, INT32 wadnum)
 			// Now go to uppercase
 			strupr(word2);
 
+			// NiGHTS grades
+			if (fastncmp(word, "GRADES", 6))
+			{
+				UINT8 mare = (UINT8)atoi(word + 6);
+
+				if (mare <= 0 || mare > 8)
+				{
+					deh_warning("Level header %d: unknown word '%s'", num, word);
+					continue;
+				}
+
+				P_AddGradesForMare((INT16)(num-1), mare-1, word2);
+			}
+
 			// Strings that can be truncated
-			if (fastcmp(word, "SCRIPTNAME"))
+			else if (fastcmp(word, "SCRIPTNAME"))
 			{
 				deh_strlcpy(mapheaderinfo[num-1]->scriptname, word2,
 					sizeof(mapheaderinfo[num-1]->scriptname), va("Level header %d: scriptname", num));
@@ -3152,7 +3168,7 @@ void DEH_LoadDehackedLump(lumpnum_t lumpnum)
 // RegEx to generate this from info.h: ^\tS_([^,]+), --> \t"S_\1",
 // I am leaving the prefixes solely for clarity to programmers,
 // because sadly no one remembers this place while searching for full state names.
-static const char *const STATE_LIST[] = { // array length left dynamic for sanity testing later.
+const char *const STATE_LIST[] = { // array length left dynamic for sanity testing later.
 	"S_NULL",
 	"S_UNKNOWN",
 	"S_INVISIBLE", // state for invisible sprite
@@ -6366,7 +6382,7 @@ static const char *const STATE_LIST[] = { // array length left dynamic for sanit
 // RegEx to generate this from info.h: ^\tMT_([^,]+), --> \t"MT_\1",
 // I am leaving the prefixes solely for clarity to programmers,
 // because sadly no one remembers this place while searching for full state names.
-static const char *const MOBJTYPE_LIST[] = {  // array length left dynamic for sanity testing later.
+const char *const MOBJTYPE_LIST[] = {  // array length left dynamic for sanity testing later.
 	"MT_NULL",
 	"MT_UNKNOWN",
 
@@ -7157,7 +7173,7 @@ static const char *const MOBJTYPE_LIST[] = {  // array length left dynamic for s
 #endif
 };
 
-static const char *const MOBJFLAG_LIST[] = {
+const char *const MOBJFLAG_LIST[] = {
 	"SPECIAL",
 	"SOLID",
 	"SHOOTABLE",
@@ -7193,7 +7209,7 @@ static const char *const MOBJFLAG_LIST[] = {
 };
 
 // \tMF2_(\S+).*// (.+) --> \t"\1", // \2
-static const char *const MOBJFLAG2_LIST[] = {
+const char *const MOBJFLAG2_LIST[] = {
 	"AXIS",			// It's a NiGHTS axis! (For faster checking)
 	"TWOD",			// Moves like it's in a 2D level
 	"DONTRESPAWN",	// Don't respawn this object!
@@ -7226,7 +7242,7 @@ static const char *const MOBJFLAG2_LIST[] = {
 	NULL
 };
 
-static const char *const MOBJEFLAG_LIST[] = {
+const char *const MOBJEFLAG_LIST[] = {
 	"ONGROUND", // The mobj stands on solid floor (not on another mobj or in air)
 	"JUSTHITFLOOR", // The mobj just hit the floor while falling, this is cleared on next frame
 	"TOUCHWATER", // The mobj stands in a sector with water, and touches the surface
@@ -7244,14 +7260,14 @@ static const char *const MOBJEFLAG_LIST[] = {
 	NULL
 };
 
-static const char *const MAPTHINGFLAG_LIST[4] = {
+const char *const MAPTHINGFLAG_LIST[4] = {
 	NULL,
 	"OBJECTFLIP", // Reverse gravity flag for objects.
 	"OBJECTSPECIAL", // Special flag used with certain objects.
 	"AMBUSH" // Deaf monsters/do not react to sound.
 };
 
-static const char *const PLAYERFLAG_LIST[] = {
+const char *const PLAYERFLAG_LIST[] = {
 	// Flip camera angle with gravity flip prefrence.
 	"FLIPCAM",
 
@@ -7323,7 +7339,7 @@ static const char *const PLAYERFLAG_LIST[] = {
 };
 
 // Linedef flags
-static const char *const ML_LIST[16] = {
+const char *const ML_LIST[16] = {
 	"IMPASSIBLE",
 	"BLOCKMONSTERS",
 	"TWOSIDED",
@@ -7344,7 +7360,7 @@ static const char *const ML_LIST[16] = {
 
 // This DOES differ from r_draw's Color_Names, unfortunately.
 // Also includes Super colors
-static const char *COLOR_ENUMS[] = { // Rejigged for Kart.
+const char *COLOR_ENUMS[] = { // Rejigged for Kart.
 	"NONE",			// SKINCOLOR_NONE
 	"WHITE",		// SKINCOLOR_WHITE
 	"SILVER",		// SKINCOLOR_SILVER
@@ -7512,7 +7528,7 @@ static const char *COLOR_ENUMS[] = { // Rejigged for Kart.
 	"CSUPER5"		// SKINCOLOR_CSUPER5,
 };
 
-static const char *const POWERS_LIST[] = {
+const char *const POWERS_LIST[] = {
 	"INVULNERABILITY",
 	"SNEAKERS",
 	"FLASHING",
@@ -7547,7 +7563,7 @@ static const char *const POWERS_LIST[] = {
 	"INGOOP" // In goop
 };
 
-static const char *const KARTSTUFF_LIST[] = {
+const char *const KARTSTUFF_LIST[] = {
 	"POSITION",
 	"OLDPOSITION",
 	"POSITIONDELAY",
@@ -7634,7 +7650,7 @@ static const char *const KARTSTUFF_LIST[] = {
 	"GROWCANCEL"
 };
 
-static const char *const HUDITEMS_LIST[] = {
+const char *const HUDITEMS_LIST[] = {
 	"LIVESNAME",
 	"LIVESPIC",
 	"LIVESNUM",
@@ -8543,13 +8559,13 @@ static int lua_enumlib_basic_fallback(lua_State* L)
 
 static int lua_enumlib_mariomode_get(lua_State *L)
 {
-	lua_pushboolean(L, false);
+	lua_pushboolean(L, mariomode != 0);
 	return 1;
 }
 
 static int lua_enumlib_twodlevel_get(lua_State *L)
 {
-	lua_pushboolean(L, false);
+	lua_pushboolean(L, twodlevel);
 	return 1;
 }
 

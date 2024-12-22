@@ -3411,9 +3411,9 @@ static void HWR_DrawSpriteShadow(gl_vissprite_t *spr, GLPatch_t *gpatch)
 }
 
 // This is expecting a pointer to an array containing 4 wallVerts for a sprite
-static void HWR_RotateSpritePolyToAim(gl_vissprite_t *spr, FOutVector *wallVerts, const boolean precip)
+static void HWR_RotateSpritePolyToAim(gl_vissprite_t *spr, FOutVector *wallVerts, const boolean precip, const boolean papersprite)
 {
-	if (!cv_glspritebillboarding.value || !spr || !spr->mobj || !wallVerts)
+	if (!cv_glspritebillboarding.value || !spr || !spr->mobj || !wallVerts || papersprite)
 	{
 		return;
 	}
@@ -3482,24 +3482,7 @@ static void HWR_RotateSpritePolyToAim(gl_vissprite_t *spr, FOutVector *wallVerts
 
 static inline void HWR_ApplyDispoffset(gl_vissprite_t *spr, FOutVector *wallVerts, const boolean papersprite)
 {
-	// dont push papersprites near the cam unless they have a dispoffset
-	if (papersprite)
-	{
-		// if it has a dispoffset, push it a little towards the camera
-		if (spr->dispoffset)
-		{
-			float co = -gl_viewcos*(0.05f*spr->dispoffset);
-			float si = -gl_viewsin*(0.05f*spr->dispoffset);
-			wallVerts[0].z = wallVerts[3].z = wallVerts[0].z+si;
-			wallVerts[1].z = wallVerts[2].z = wallVerts[1].z+si;
-			wallVerts[0].x = wallVerts[3].x = wallVerts[0].x+co;
-			wallVerts[1].x = wallVerts[2].x = wallVerts[1].x+co;
-		}
-
-		return;
-	}
-
-	HWR_RotateSpritePolyToAim(spr, wallVerts, false);
+	HWR_RotateSpritePolyToAim(spr, wallVerts, false, papersprite);
 
 	float sprdist = sqrtf((spr->x1 - gl_viewx)*(spr->x1 - gl_viewx) + (spr->z1 - gl_viewy)*(spr->z1 - gl_viewy) + (spr->gzt - gl_viewz)*(spr->gzt - gl_viewz));
 	float distfact = ((2.0f*spr->dispoffset) + 20.0f) / sprdist;
@@ -3943,7 +3926,7 @@ static inline void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 	wallVerts[0].z = wallVerts[3].z = spr->z1;
 	wallVerts[1].z = wallVerts[2].z = spr->z2;
 
-	HWR_RotateSpritePolyToAim(spr, wallVerts, true);
+	HWR_RotateSpritePolyToAim(spr, wallVerts, true, false);
 
 	wallVerts[0].s = wallVerts[3].s = 0;
 	wallVerts[2].s = wallVerts[1].s = gpatch->max_s;
@@ -4410,9 +4393,9 @@ static void HWR_AddSprites(sector_t *sec)
 // --------------------------------------------------------------------------
 static void HWR_AddPrecipitationSprites(void)
 {
-	//const fixed_t drawdist = cv_drawdist_precip.value * mapobjectscale;
 	fixed_t drawdist;
-	fixed_t precipscale = cv_mobjscaleprecip.value ? mapobjectscale : FRACUNIT;
+	fixed_t precipscale = (cv_mobjscaleprecip.value ? mapobjectscale : FRACUNIT);
+	//const fixed_t drawdist = cv_drawdist_precip.value * mapobjectscale;
 
 	INT32 xl, xh, yl, yh, bx, by;
 	precipmobj_t *th;
@@ -4420,7 +4403,7 @@ static void HWR_AddPrecipitationSprites(void)
 	if (current_bsp_culling_distance)
 		drawdist = min((fixed_t)current_bsp_culling_distance, (fixed_t)(cv_drawdist_precip.value) * precipscale);
 	else
-		drawdist = (fixed_t)(cv_drawdist_precip.value) * precipscale;
+		drawdist = ((fixed_t)(cv_drawdist_precip.value) * precipscale);
 
 	// No to infinite precipitation draw distance.
 	if (drawdist == 0 || curWeather == PRECIP_BLANK || curWeather == PRECIP_STORM_NORAIN)
@@ -4486,7 +4469,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	angle_t sliptiderollangle = 0;
 #endif
 
-	if (!thing)
+	if (P_MobjWasRemoved(thing) || thing->subsector == NULL)
 		return;
 
 	// uncapped/interpolation
@@ -4640,18 +4623,10 @@ static void HWR_ProjectSprite(mobj_t *thing)
 #ifdef ROTSPRITE
 	if (shouldrotate)
 	{
-		if (papersprite)
-		{
-			// a positive rollangle should should pitch papersprites upwards relative to their facing angle
-			rollangle = InvAngle(thing->rollangle);
-		}
-		else
-		{
-			// this is very messy, but it on-the-fly calculates rotations for all the
-			// pitch and roll variables
-			pitchnroll = R_RotationAngle(ang, camang, &interp);
-			rollangle = thing->rollangle;
-		}
+		// this is very messy, but it on-the-fly calculates rotations for all the
+		// pitch and roll variables
+		pitchnroll = R_RotationAngle(ang, camang, &interp);
+		rollangle = thing->rollangle;
 
 		if (rollangle || pitchnroll || sliprollrotate)
 		{
@@ -4958,20 +4933,22 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 
 static gl_sky_t gl_sky;
 
+#define DEG2RADGL(a) ((a * M_PIl) / 180.0f)
+
 static void HWR_SkyDomeVertex(gl_sky_t *sky, gl_skyvertex_t *vbo, int r, int c, signed char yflip, float delta, boolean foglayer)
 {
-	const float radians = (float)(M_PIl / 180.0f);
-	const float scale = 10000.0f;
-	const float maxSideAngle = 60.0f;
+	static const float scale = 10000.0f;
+	static const float maxSideAngle = DEG2RADGL(60.0f);
 
-	float topAngle = (c / (float)sky->columns * 360.0f);
-	float sideAngle = (maxSideAngle * (sky->rows - r) / sky->rows);
-	float height = (float)(sin(sideAngle * radians));
-	float realRadius = (float)(scale * cos(sideAngle * radians));
-	float x = (float)(realRadius * cos(topAngle * radians));
+	float topAngle = DEG2RADGL(c / (float)sky->columns * 360.0f);
+	float sideAngle = (maxSideAngle * (float)(sky->rows - r) / (float)sky->rows);
+	float height = (float)(sin(sideAngle));
+	float realRadius = (scale * (float)cos(sideAngle));
+	float x = (realRadius * (float)cos(topAngle));
 	float y = (!yflip) ? scale * height : -scale * height;
-	float z = (float)(realRadius * sin(topAngle * radians));
+	float z = (realRadius * (float)sin(topAngle));
 	float timesRepeat = (4 * (256.0f / sky->width));
+
 	if (fpclassify(timesRepeat) == FP_ZERO)
 		timesRepeat = 1.0f;
 

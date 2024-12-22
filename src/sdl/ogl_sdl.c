@@ -69,15 +69,16 @@ PFNglGetString pglGetString;
 #endif
 
 #ifdef USE_FBO_OGL
+
 #if defined (__unix__)
-static boolean isnvidiagpu = false;
+static boolean xwaylandcrap = false;
 #endif
 
 boolean UseScreenFBO(void)
 {
 	return ((supportFBO && cv_glframebuffer.value && downsample)
 #if defined (__unix__)
-	|| (supportFBO && isnvidiagpu && xwaylandcrap)
+	|| (supportFBO && xwaylandcrap)
 #endif
 	);
 }
@@ -187,8 +188,8 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 
 #if defined (__unix__)
 #ifdef USE_FBO_OGL
-		if (strstr((const char*)gl_renderer, "NVIDIA"))
-			isnvidiagpu = true;
+		if (supportFBO && strstr((const char*)gl_renderer, "NVIDIA"))
+			xwaylandcrap = true;
 #endif
 #endif
 	}
@@ -213,13 +214,6 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 	pglClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 
 #ifdef USE_FBO_OGL
-
-	if (!supportFBO)
-	{
-		if (cv_glframebuffer.value)
-			CV_SetValue(&cv_glframebuffer, 0);
-	}
-
 	if (UseScreenFBO())
 		GLFramebuffer_Enable();
 	else
@@ -245,6 +239,11 @@ void OglSdlFinishUpdate(boolean waitvbl)
 {
 	static boolean oldwaitvbl = false;
 	int sdlw, sdlh;
+
+#ifdef USE_FBO_OGL
+	const boolean usefbo = UseScreenFBO();
+#endif
+
 	if (oldwaitvbl != waitvbl)
 	{
 		SDL_GL_SetSwapInterval(waitvbl ? 1 : 0);
@@ -256,15 +255,19 @@ void OglSdlFinishUpdate(boolean waitvbl)
 	HWR_MakeScreenFinalTexture();
 
 #ifdef USE_FBO_OGL
-	if (UseScreenFBO())
+	if (usefbo)
+	{
 		GLFramebuffer_Unbind();
+	}
 #endif
 	
 	HWR_DrawScreenFinalTexture(sdlw, sdlh, HWR_ShouldUsePaletteRendering());
 
 #ifdef USE_FBO_OGL
-	if (UseScreenFBO())
+	if (usefbo)
+	{
 		GLFramebuffer_Enable();
+	}
 #endif
 
 	SDL_GL_SwapWindow(window);
@@ -273,12 +276,19 @@ void OglSdlFinishUpdate(boolean waitvbl)
 
 	// Sryder:	We need to draw the final screen texture again into the other buffer in the original position so that
 	//			effects that want to take the old screen can do so after this
-	if ((!I_CheckNativeRes())  // well we dont need it on native res it seems
+	// well we dont need it on native res it seems
 #ifdef USE_FBO_OGL
-	&& (!UseScreenFBO())
+	if ((!I_CheckNativeRes() && !usefbo) || WipeInAction)
+#else
+	if (!I_CheckNativeRes() || WipeInAction)
 #endif
-	)
 		HWR_DrawScreenFinalTexture(realwidth, realheight, false);
+
+#if defined (__unix__)
+#ifdef USE_FBO_OGL
+		xwaylandcrap = false;
+#endif
+#endif
 }
 
 EXPORT void HWRAPI(OglSdlSetPalette) (RGBA_t *palette)

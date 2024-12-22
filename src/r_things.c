@@ -1137,8 +1137,6 @@ fixed_t R_GetSpriteDirectionalLighting(angle_t angle)
 //
 static void R_ProjectSprite(mobj_t *thing)
 {
-	mobj_t *oldthing = thing;
-
 	fixed_t tr_x, tr_y;
 	fixed_t gxt, gyt;
 	fixed_t tx, tz;
@@ -1156,9 +1154,6 @@ static void R_ProjectSprite(mobj_t *thing)
 	size_t rot;
 	UINT8 flip;
 
-	boolean mirrored = thing->mirrored;
-	boolean hflip = (!(thing->frame & FF_HORIZONTALFLIP) != !mirrored);
-
 	INT32 lindex;
 
 	vissprite_t *vis;
@@ -1170,7 +1165,6 @@ static void R_ProjectSprite(mobj_t *thing)
 	fixed_t iscale;
 	fixed_t scalestep; // toast '16
 	fixed_t offset, offset2;
-	boolean papersprite = (thing->frame & FF_PAPERSPRITE);
 	fixed_t paperoffset = 0, paperdistance = 0; angle_t centerangle = 0;
 
 	INT32 lightnum;
@@ -1178,6 +1172,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	//SoM: 3/17/2000
 	fixed_t gz, gzt;
 	INT32 heightsec, phs;
+	INT32 dist = -1;
 	INT32 light = 0;
 	lighttable_t **lights_array = spritelights;
 	fixed_t this_scale;
@@ -1194,7 +1189,15 @@ static void R_ProjectSprite(mobj_t *thing)
 	angle_t sliptiderollangle = 0;
 #endif
 
-	INT32 dist = -1;
+	if (P_MobjWasRemoved(thing) || thing->subsector == NULL)
+		return;
+
+	mobj_t *oldthing = thing;
+
+	const boolean mirrored = thing->mirrored;
+	const boolean vflip = (thing->eflags & MFE_VERTICALFLIP);
+	const boolean hflip = (!(thing->frame & FF_HORIZONTALFLIP) != !mirrored);
+	const boolean papersprite = (thing->frame & FF_PAPERSPRITE);
 
 	if (cv_maxinterpdist.value)
 		dist = R_QuickCamDist(thing->x, thing->y);
@@ -1565,7 +1568,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	}
 
 	//SoM: 3/17/2000: Disregard sprites that are out of view..
-	if (thing->eflags & MFE_VERTICALFLIP)
+	if (vflip)
 	{
 		// When vertical flipped, draw sprites from the top down, at least as far as offsets are concerned.
 		// sprite height - sprite topoffset is the proper inverse of the vertical offset, of course.
@@ -1772,10 +1775,7 @@ static void R_ProjectSprite(mobj_t *thing)
 
 	vis->precip = false;
 
-	if (thing->eflags & MFE_VERTICALFLIP)
-		vis->vflip = true;
-	else
-		vis->vflip = false;
+	vis->vflip = vflip;
 
 	vis->isScaled = false;
 
@@ -1808,6 +1808,9 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 	fixed_t this_scale;
 
 	INT32 dist = 1;
+
+	if (!thing || thing->subsector == NULL)
+		return;
 
 	if (cv_maxinterpdist.value)
 		dist = R_QuickCamDist(thing->x, thing->y);
@@ -2011,6 +2014,7 @@ void R_AddSprites(sector_t *sec, INT32 lightlevel)
 	// Handle all things in sector.
 	// If a limit exists, handle things a tiny bit different.
 	const fixed_t limit_dist = (fixed_t)(cv_drawdist.value) * mapobjectscale;
+
 	for (thing = sec->thinglist; thing; thing = thing->snext)
 	{
 		if (!R_ThingWithinDist(thing, limit_dist))
@@ -2030,7 +2034,8 @@ void R_AddSprites(sector_t *sec, INT32 lightlevel)
 //
 void R_AddPrecipitationSprites(void)
 {
-	fixed_t drawdist = (fixed_t)(cv_drawdist_precip.value) * (cv_mobjscaleprecip.value ? mapobjectscale : FRACUNIT);
+	fixed_t precipscale = (cv_mobjscaleprecip.value ? mapobjectscale : FRACUNIT);
+	fixed_t drawdist = ((fixed_t)(cv_drawdist_precip.value) * precipscale);
 
 	INT32 xl, xh, yl, yh, bx, by;
 	precipmobj_t *th, *next;
@@ -2829,7 +2834,7 @@ boolean R_ThingVisible (mobj_t *thing)
 	if (thing->sprite == SPR_NULL || thing->flags2 & MF2_DONTDRAW)
 		return false;
 
-	if (viewmobj && (thing == viewmobj))
+	if (!P_MobjWasRemoved(viewmobj) && (thing == viewmobj))
 		return false;
 
 	if (splitscreen)
