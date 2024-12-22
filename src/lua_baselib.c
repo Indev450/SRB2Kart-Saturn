@@ -587,7 +587,14 @@ static int lib_pSpawnAlteredDirectionMissile(lua_State *L)
 
 static int lib_pColorTeamMissile(lua_State *L)
 {
-	(void)L;
+	mobj_t *missile = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));
+	player_t *source = *((player_t **)luaL_checkudata(L, 2, META_PLAYER));
+	NOHUD
+	if (!missile)
+		return LUA_ErrInvalid(L, "mobj_t");
+	if (!source)
+		return LUA_ErrInvalid(L, "player_t");
+	P_ColorTeamMissile(missile, source);
 	return 0;
 }
 
@@ -1383,7 +1390,12 @@ static int lib_pPlayerEmeraldBurst(lua_State *L)
 
 static int lib_pPlayerFlagBurst(lua_State *L)
 {
-	(void)L;
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	boolean toss = lua_optboolean(L, 2);
+	NOHUD
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	P_PlayerFlagBurst(player, toss);
 	return 0;
 }
 
@@ -2578,14 +2590,14 @@ static int lib_gIsSpecialStage(lua_State *L)
 static int lib_gGametypeUsesLives(lua_State *L)
 {
 	//HUDSAFE
-	lua_pushboolean(L, false);
+	lua_pushboolean(L, G_GametypeUsesLives());
 	return 1;
 }
 
 static int lib_gGametypeHasTeams(lua_State *L)
 {
 	//HUDSAFE
-	lua_pushboolean(L, false);
+	lua_pushboolean(L, G_GametypeHasTeams());
 	return 1;
 }
 
@@ -2613,7 +2625,7 @@ static int lib_gRaceGametype(lua_State *L)
 static int lib_gTagGametype(lua_State *L)
 {
 	//HUDSAFE
-	lua_pushboolean(L, false);
+	lua_pushboolean(L, G_TagGametype());
 	return 1;
 }
 

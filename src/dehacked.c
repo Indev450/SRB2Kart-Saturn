@@ -257,6 +257,8 @@ static void clear_levels(void)
 		// Custom map header info
 		// (no need to set num to 0, we're freeing the entire header shortly)
 		Z_Free(mapheaderinfo[i]->customopts);
+
+		P_DeleteGrades(i);
 		Z_Free(mapheaderinfo[i]);
 		mapheaderinfo[i] = NULL;
 	}
@@ -800,8 +802,22 @@ static void readlevelheader(MYFILE *f, INT32 num, INT32 wadnum)
 			// Now go to uppercase
 			strupr(word2);
 
+			// NiGHTS grades
+			if (fastncmp(word, "GRADES", 6))
+			{
+				UINT8 mare = (UINT8)atoi(word + 6);
+
+				if (mare <= 0 || mare > 8)
+				{
+					deh_warning("Level header %d: unknown word '%s'", num, word);
+					continue;
+				}
+
+				P_AddGradesForMare((INT16)(num-1), mare-1, word2);
+			}
+
 			// Strings that can be truncated
-			if (fastcmp(word, "SCRIPTNAME"))
+			else if (fastcmp(word, "SCRIPTNAME"))
 			{
 				deh_strlcpy(mapheaderinfo[num-1]->scriptname, word2,
 					sizeof(mapheaderinfo[num-1]->scriptname), va("Level header %d: scriptname", num));
@@ -8543,13 +8559,13 @@ static int lua_enumlib_basic_fallback(lua_State* L)
 
 static int lua_enumlib_mariomode_get(lua_State *L)
 {
-	lua_pushboolean(L, false);
+	lua_pushboolean(L, mariomode != 0);
 	return 1;
 }
 
 static int lua_enumlib_twodlevel_get(lua_State *L)
 {
-	lua_pushboolean(L, false);
+	lua_pushboolean(L, twodlevel);
 	return 1;
 }
 
