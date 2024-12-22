@@ -3184,6 +3184,8 @@ static void K_SpawnDriftSparks(player_t *player)
 				P_SetMobjState(spark, S_DRIFTSPARK_A1);
 		}
 
+		spark->lightlevel = 255;
+
 		K_MatchGenericExtraFlags(spark, player->mo);
 	}
 }
@@ -3504,6 +3506,8 @@ void K_SpawnSparkleTrail(mobj_t *mo)
 		sparkle->destscale = mo->destscale;
 		P_SetScale(sparkle, mo->scale);
 		sparkle->color = mo->color;
+
+		sparkle->lightlevel = 255;
 	}
 
 	P_SetMobjState(sparkle, S_KARTINVULN_LARGE1);
@@ -3662,6 +3666,8 @@ void K_DriftDustHandling(mobj_t *spawner)
 			}
 			else
 				dust->color = SKINCOLOR_SILVER; // fallback
+
+			dust->lightlevel = 255;
 		}
 		else
 			dust->color = 0; // dont recolour MT_DRIFTDUST
@@ -5186,6 +5192,8 @@ static inline void K_SpawnNormalSpeedLines(player_t *player)
 		fast->color = (leveltime & 1) ? player->mo->color : driftcolor;
 		fast->colorized = true;
 	}
+
+	fast->lightlevel = 255;
 }
 
 /**	\brief	Decreases various kart timers and powers per frame. Called in P_PlayerThink in p_user.c
