@@ -4427,7 +4427,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	angle_t sliptiderollangle = 0;
 #endif
 
-	if (!thing)
+	if (P_MobjWasRemoved(thing) || thing->subsector == NULL)
 		return;
 
 	// uncapped/interpolation
