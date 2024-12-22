@@ -14,13 +14,13 @@
 #include <math.h>
 
 #include "../doomstat.h"
-
-#include "../qs22j.h"
+#include "../doomdef.h"
 
 #ifdef HWRENDER
+
 #include "hw_main.h"
 #include "hw_glob.h"
-#include "hw_drv.h"
+#include "hw_gl.h"
 #include "hw_batching.h"
 #include "hw_md2.h"
 #include "hw_clip.h"
@@ -56,14 +56,14 @@
 #include "../w_wad.h"
 #include "../z_zone.h"
 
+#include "../qs22j.h" // fast qsort
+
 // ==========================================================================
 // Globals
 // ==========================================================================
 
 #define ABS(x) ((x) < 0 ? -(x) : (x))
 #define SOFTLIGHT(llevel) HWR_ShouldUsePaletteRendering() ? ((llevel) >> LIGHTSEGSHIFT) << LIGHTSEGSHIFT : (llevel)
-
-struct hwdriver_s hwdriver;
 
 // false if shaders have not been initialized yet, or if shaders are not available
 boolean gl_shadersavailable = false;
@@ -244,7 +244,7 @@ static void CV_screentextures_OnChange(void)
 			CV_SetValue(&cv_glframebuffer, 0);
 #endif
 	}
-	HWD.pfnSetSpecialState(HWD_SET_SCREEN_TEXTURES, cv_glscreentextures.value);
+	GL_SetSpecialState(HWD_SET_SCREEN_TEXTURES, cv_glscreentextures.value);
 	M_UpdateOGLMenu();
 }
 
@@ -285,13 +285,13 @@ static void CV_gllightdithering_OnChange(void)
 static void CV_filtermode_OnChange(void)
 {
 	ONLY_IF_GL_LOADED
-	HWD.pfnSetSpecialState(HWD_SET_TEXTUREFILTERMODE, cv_glfiltermode.value);
+	GL_SetSpecialState(HWD_SET_TEXTUREFILTERMODE, cv_glfiltermode.value);
 }
 
 static void CV_anisotropic_OnChange(void)
 {
 	ONLY_IF_GL_LOADED
-	HWD.pfnSetSpecialState(HWD_SET_TEXTUREANISOTROPICMODE, cv_glanisotropicmode.value);
+	GL_SetSpecialState(HWD_SET_TEXTUREANISOTROPICMODE, cv_glanisotropicmode.value);
 }
 
 static void CV_glpaletterendering_OnChange(void)
@@ -326,7 +326,7 @@ boolean HWR_UseShader(void)
 
 static void HWR_SetShaderState(void)
 {
-	HWD.pfnSetSpecialState(HWD_SET_SHADERS, HWR_UseShader() ? 1 : 0);
+	GL_SetSpecialState(HWD_SET_SHADERS, HWR_UseShader() ? 1 : 0);
 }
 
 boolean HWR_ShouldUsePaletteRendering(void)
@@ -1116,10 +1116,10 @@ static void HWR_DrawSkyWallList(void)
 	surf.PolyColor.rgba = 0xFFFFFFFF;
 
 	HWR_SetCurrentTexture(NULL);
-	HWD.pfnUnSetShader();
+	GL_UnSetShader();
 	for (i = 0; i < skyWallVertexArraySize; i++)
 	{
-		HWD.pfnDrawPolygon(&surf, skyWallVertexArray + i * 4, 4, PF_Occlude|PF_Invisible|PF_NoTexture);
+		GL_DrawPolygon(&surf, skyWallVertexArray + i * 4, 4, PF_Occlude|PF_Invisible|PF_NoTexture);
 	}
 }
 
@@ -4202,7 +4202,7 @@ static void HWR_RenderDrawNodes(void)
 	PS_START_TIMING(ps_hw_nodedrawtime);
 
 	// Okay! Let's draw it all! Woo!
-	HWD.pfnSetTransform(&atransform);
+	GL_SetTransform(&atransform);
 
 	for (i = 0; i < numdrawnodes; i++)
 	{
@@ -5042,7 +5042,7 @@ static void HWR_DrawSkyBackground(void)
 	if (drewsky)
 		return;
 
-	HWD.pfnSetBlend(PF_Translucent|PF_NoDepthTest|PF_Modulated);
+	GL_SetBlend(PF_Translucent|PF_NoDepthTest|PF_Modulated);
 
 	memcpy(&dometransform, &atransform, sizeof(FTransform));
 
@@ -5064,9 +5064,9 @@ static void HWR_DrawSkyBackground(void)
 	}
 
 	if (HWR_UseShader())
-		HWD.pfnSetShader(HWR_GetShaderFromTarget(SHADER_SKY));
-	HWD.pfnSetTransform(&dometransform);
-	HWD.pfnRenderSkyDome(&gl_sky);
+		GL_SetShader(HWR_GetShaderFromTarget(SHADER_SKY));
+	GL_SetTransform(&dometransform);
+	GL_RenderSkyDome(&gl_sky);
 }
 
 // -----------------+
@@ -5074,12 +5074,12 @@ static void HWR_DrawSkyBackground(void)
 // -----------------+
 static inline void HWR_ClearView(void)
 {
-	HWD.pfnGClipRect((INT32)gl_viewwindowx,
-	                 (INT32)gl_viewwindowy,
-	                 (INT32)(gl_viewwindowx + gl_viewwidth),
-	                 (INT32)(gl_viewwindowy + gl_viewheight),
-	                 ZCLIP_PLANE, FAR_ZCLIP_DEFAULT);
-	HWD.pfnClearBuffer(false, true, true, NULL);
+	GL_GClipRect((INT32)gl_viewwindowx,
+				(INT32)gl_viewwindowy,
+				(INT32)(gl_viewwindowx + gl_viewwidth),
+				(INT32)(gl_viewwindowy + gl_viewheight),
+						ZCLIP_PLANE, FAR_ZCLIP_DEFAULT);
+	GL_ClearBuffer(false, true, true, NULL);
 }
 
 
@@ -5101,7 +5101,7 @@ void HWR_SetViewSize(void)
 	gl_baseviewwindowy = 0;
 	gl_baseviewwindowx = 0;
 
-	HWD.pfnFlushScreenTextures();
+	GL_FlushScreenTextures();
 }
 
 // Set view aiming, for the sky dome, the skybox,
@@ -5166,7 +5166,7 @@ void HWR_SetTransform(float fpov, player_t *player)
 		atransform.mirrorflip = true;
 
 	// Set transform.
-	HWD.pfnSetTransform(&atransform);
+	GL_SetTransform(&atransform);
 }
 
 void HWR_ClearClipper(void)
@@ -5183,8 +5183,8 @@ void HWR_ClearClipper(void)
 void HWR_SetStencilState(int state, int level)
 {
 	if (level > -1)
-		HWD.pfnSetSpecialState(HWD_SET_STENCIL_LEVEL, level);
-	HWD.pfnSetSpecialState(HWD_SET_PORTAL_MODE, state);
+		GL_SetSpecialState(HWD_SET_STENCIL_LEVEL, level);
+	GL_SetSpecialState(HWD_SET_PORTAL_MODE, state);
 }
 
 // Renders the current viewpoint, though takes portal arguments for recursive portals.
@@ -5240,7 +5240,7 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *pl
 	}
 
 	// Set transform.
-	HWD.pfnSetTransform(&atransform);
+	GL_SetTransform(&atransform);
 
 	validcount++;
 
@@ -5284,7 +5284,7 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *pl
 		drewsky = false;
 		HWR_DrawSkyBackground();
 		HWR_SetStencilState(HWR_STENCIL_NORMAL, 0);
-		HWD.pfnClearBuffer(false, false, true, 0);// clear skywall markings from the stencil buffer
+		GL_ClearBuffer(false, false, true, 0);// clear skywall markings from the stencil buffer
 		HWR_SetTransform(fpov, player);// restore transform
 	}
 	gl_collect_skywalls = false;
@@ -5355,11 +5355,11 @@ static void HWR_RenderFrame(INT32 viewnumber, player_t *player, boolean skybox)
 
 	if (!skybox && cv_glrenderdistance.value)
 	{
-		HWD.pfnGClipRect((INT32)gl_viewwindowx,
-	                 (INT32)gl_viewwindowy,
-	                 (INT32)(gl_viewwindowx + gl_viewwidth),
-	                 (INT32)(gl_viewwindowy + gl_viewheight),
-	                 ZCLIP_PLANE, clipping_distances[cv_glrenderdistance.value - 1]);
+		GL_GClipRect((INT32)gl_viewwindowx,
+					(INT32)gl_viewwindowy,
+					(INT32)(gl_viewwindowx + gl_viewwidth),
+					(INT32)(gl_viewwindowy + gl_viewheight),
+					ZCLIP_PLANE, clipping_distances[cv_glrenderdistance.value - 1]);
 		current_bsp_culling_distance = bsp_culling_distances[cv_glrenderdistance.value - 1];
 	}
 
@@ -5367,8 +5367,8 @@ static void HWR_RenderFrame(INT32 viewnumber, player_t *player, boolean skybox)
 	HWR_RenderViewpoint(NULL, fpov, player, 0, !skybox);
 
 	// Unset transform and shader
-	HWD.pfnSetTransform(NULL);
-	HWD.pfnUnSetShader();
+	GL_SetTransform(NULL);
+	GL_UnSetShader();
 
 	// Run post processor effects
 	if (!skybox)
@@ -5376,7 +5376,7 @@ static void HWR_RenderFrame(INT32 viewnumber, player_t *player, boolean skybox)
 
 	// added by Hurdler for correct splitscreen
 	// moved here by hurdler so it works with the new near clipping plane
-	HWD.pfnGClipRect(0, 0, vid.width, vid.height, NZCLIP_PLANE, FAR_ZCLIP_DEFAULT);
+	GL_GClipRect(0, 0, vid.width, vid.height, NZCLIP_PLANE, FAR_ZCLIP_DEFAULT);
 }
 
 // ==========================================================================
@@ -5406,11 +5406,13 @@ void HWR_RenderPlayerView(INT32 viewnumber, player_t *player)
 		ClearColor.blue = 0.0f;
 		ClearColor.alpha = 1.0f;
 
-		HWD.pfnClearBuffer(true, false, false, &ClearColor);
+		GL_ClearBuffer(true, false, false, &ClearColor);
 	}
 
 	if (HWR_UseShader() && cv_ripplewater.value)
-		HWD.pfnSetShaderInfo(HWD_SHADERINFO_LEVELTIME, (INT32)leveltime); // The water surface shader needs the leveltime.
+	{
+		GL_SetShaderInfo(HWD_SHADERINFO_LEVELTIME, (INT32)leveltime); // The water surface shader needs the leveltime.
+	}
 
 	if (viewnumber > 3)
 		return;
@@ -5477,7 +5479,7 @@ static void HWR_TogglePaletteRendering(void)
 			// If the r_opengl "texture palette" stays the same during this switch, these textures
 			// will not be cleared out. However they are still out of date since the
 			// composite texture blending method has changed. Therefore they need to be cleared.
-			HWD.pfnClearMipMapCache();
+			GL_ClearMipMapCache();
 		}
 	}
 	else
@@ -5491,7 +5493,7 @@ static void HWR_TogglePaletteRendering(void)
 			// If the r_opengl "texture palette" stays the same during this switch, these textures
 			// will not be cleared out. However they are still out of date since the
 			// composite texture blending method has changed. Therefore they need to be cleared.
-			HWD.pfnClearMipMapCache();
+			GL_ClearMipMapCache();
 		}
 	}
 }
@@ -5562,7 +5564,7 @@ void HWR_Startup(void)
 
 		if (msaa)
 			HWD.pfnSetSpecialState(HWD_SET_MSAA, a2c ? 2 : 1);
-
+    
 		HWR_RegisterCommands();
 	}
 	startupdone = true;
@@ -5645,9 +5647,9 @@ void HWR_Shutdown(void)
 	HWR_FreeExtraSubsectors();
 	HWR_FreeMipmapCache();
 	HWR_FreeTextureCache();
-	HWD.pfnFlushScreenTextures();
+	GL_FlushScreenTextures();
 #ifdef USE_FBO_OGL
-	GLFramebuffer_Disable();
+	GL_Framebuffer_Disable();
 #endif
 }
 
@@ -5690,12 +5692,12 @@ static void HWR_RenderWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD
 
 INT32 HWR_GetTextureUsed(void)
 {
-	return HWD.pfnGetTextureUsed();
+	return GL_GetTextureUsed();
 }
 
 static void HWR_DoPostProcessor(player_t *player)
 {
-	HWD.pfnUnSetShader();
+	GL_UnSetShader();
 
 	// Armageddon Blast Flash!
 	// Could this even be considered postprocessor?
@@ -5719,7 +5721,7 @@ static void HWR_DoPostProcessor(player_t *player)
 
 		Surf.PolyColor.s.alpha = 0xc0; // match software mode
 
-		HWD.pfnDrawPolygon(&Surf, v, 4, PF_Modulated|PF_Translucent|PF_NoTexture|PF_NoDepthTest);
+		GL_DrawPolygon(&Surf, v, 4, PF_Modulated|PF_Translucent|PF_NoTexture|PF_NoDepthTest);
 	}
 
 	if (cv_glscreentextures.value != 2) // screen textures are needed for the rest of the effects
@@ -5727,7 +5729,7 @@ static void HWR_DoPostProcessor(player_t *player)
 
 	// Capture the screen for intermission and screen waving
 	if (gamestate != GS_INTERMISSION)
-		HWD.pfnMakeScreenTexture(HWD_SCREENTEXTURE_GENERIC1);
+		GL_MakeScreenTexture(HWD_SCREENTEXTURE_GENERIC1);
 
 	if (splitscreen) // Not supported in splitscreen - someone want to add support?
 		return;
@@ -5767,28 +5769,28 @@ static void HWR_DoPostProcessor(player_t *player)
 				v[x][y][1] = (y/((float)(SCREENVERTS-1.0f)/9.0f))-4.5f;
 			}
 		}
-		HWD.pfnPostImgRedraw(v);
+		GL_PostImgRedraw(v);
 
 		// Capture the screen again for screen waving on the intermission
 		if (gamestate != GS_INTERMISSION)
-			HWD.pfnMakeScreenTexture(HWD_SCREENTEXTURE_GENERIC1);
+			GL_MakeScreenTexture(HWD_SCREENTEXTURE_GENERIC1);
 	}
 	// Flipping of the screen isn't done here anymore
 }
 
 void HWR_StartScreenWipe(void)
 {
-	HWD.pfnMakeScreenTexture(HWD_SCREENTEXTURE_WIPE_START);
+	GL_MakeScreenTexture(HWD_SCREENTEXTURE_WIPE_START);
 }
 
 void HWR_EndScreenWipe(void)
 {
-	HWD.pfnMakeScreenTexture(HWD_SCREENTEXTURE_WIPE_END);
+	GL_MakeScreenTexture(HWD_SCREENTEXTURE_WIPE_END);
 }
 
 void HWR_DrawIntermissionBG(void)
 {
-	HWD.pfnDrawScreenTexture(HWD_SCREENTEXTURE_GENERIC1, NULL, 0);
+	GL_DrawScreenTexture(HWD_SCREENTEXTURE_GENERIC1, NULL, 0);
 }
 
 void HWR_DoWipe(UINT8 wipenum, UINT8 scrnnum)
@@ -5822,22 +5824,22 @@ void HWR_DoWipe(UINT8 wipenum, UINT8 scrnnum)
 	}
 
 	HWR_GetFadeMask(lumpnum);
-	HWD.pfnDoScreenWipe(HWD_SCREENTEXTURE_WIPE_START, HWD_SCREENTEXTURE_WIPE_END);
+	GL_DoScreenWipe(HWD_SCREENTEXTURE_WIPE_START, HWD_SCREENTEXTURE_WIPE_END);
 }
 
 void HWR_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8 downdistort, UINT8 barsize)
 {
-	HWD.pfnRenderVhsEffect(upbary, downbary, updistort, downdistort, barsize);
+	GL_RenderVhsEffect(upbary, downbary, updistort, downdistort, barsize);
 }
 
 void HWR_MakeScreenFinalTexture(void)
 {
-	HWD.pfnMakeScreenTexture(HWD_SCREENTEXTURE_GENERIC2);
+	GL_MakeScreenTexture(HWD_SCREENTEXTURE_GENERIC2);
 }
 
 void HWR_DrawScreenFinalTexture(INT32 width, INT32 height, boolean useshader)
 {
-	HWD.pfnDrawScreenFinalTexture(HWD_SCREENTEXTURE_GENERIC2, width, height, useshader);
+	GL_DrawScreenFinalTexture(HWD_SCREENTEXTURE_GENERIC2, width, height, useshader);
 }
 
 #endif // HWRENDER

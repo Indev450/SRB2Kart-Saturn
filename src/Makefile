@@ -738,7 +738,7 @@ else
 ifdef SDL
 ifdef MINGW
 $(OBJDIR)/r_opengl.o: hardware/r_opengl/r_opengl.c hardware/r_opengl/r_opengl.h \
- doomdef.h doomtype.h g_state.h m_swap.h hardware/hw_drv.h screen.h \
+ doomdef.h doomtype.h g_state.h m_swap.h hardware/hw_gl.h screen.h \
  command.h hardware/hw_data.h hardware/hw_defs.h hardware/hw_md2.h \
  hardware/hw_glob.h hardware/hw_main.h hardware/hw_clip.h hardware/hw_portal.h\
  hardware/hw_md2load.h hardware/hw_md3load.h hardware/hw_model.h hardware/u_list.h \
@@ -747,7 +747,7 @@ $(OBJDIR)/r_opengl.o: hardware/r_opengl/r_opengl.c hardware/r_opengl/r_opengl.h 
 	$(CC) $(CFLAGS) $(WFLAGS) -c $< -o $@
 else
 $(OBJDIR)/r_opengl.o: hardware/r_opengl/r_opengl.c hardware/r_opengl/r_opengl.h \
- doomdef.h doomtype.h g_state.h m_swap.h hardware/hw_drv.h screen.h \
+ doomdef.h doomtype.h g_state.h m_swap.h hardware/hw_gl.h screen.h \
  command.h hardware/hw_data.h hardware/hw_defs.h hardware/hw_md2.h \
  hardware/hw_glob.h hardware/hw_main.h hardware/hw_clip.h hardware/hw_portal.h \
  hardware/hw_md2load.h hardware/hw_md3load.h hardware/hw_model.h hardware/u_list.h \
