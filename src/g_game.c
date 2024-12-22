@@ -2336,6 +2336,9 @@ void G_PlayerReborn(INT32 player)
 	if (leveltime > (starttime + (TICRATE/2)) && !p->spectator)
 		p->kartstuff[k_respawn] = 48; // Respawn effect
 
+	if (gametype == GT_COOP)
+		P_FindEmerald(); // scan for emeralds to hunt for
+
 	// Reset Nights score and max link to 0 on death
 	p->maxlink = 0;
 
@@ -2406,9 +2409,19 @@ void G_SpawnPlayer(INT32 playernum, boolean starpost)
 		return;
 	}
 
+	// -- CTF --
+	// Order: CTF->DM->Coop
+	if (gametype == GT_CTF && players[playernum].ctfteam)
+	{
+		if (!(spawnpoint = G_FindCTFStart(playernum)) // find a CTF start
+		&& !(spawnpoint = G_FindMatchStart(playernum))) // find a DM start
+			spawnpoint = G_FindRaceStart(playernum); // fallback
+	}
+
 	// -- DM/Tag/CTF-spectator/etc --
 	// Order: DM->CTF->Coop
-	if (gametype == GT_MATCH && !(players[playernum].pflags & PF_TAGIT))
+	else if (gametype == GT_MATCH || gametype == GT_TEAMMATCH || gametype == GT_CTF
+	 || ((gametype == GT_TAG || gametype == GT_HIDEANDSEEK) && !(players[playernum].pflags & PF_TAGIT)))
 	{
 		if (!(spawnpoint = G_FindMatchStart(playernum)) // find a DM start
 		&& !(spawnpoint = G_FindCTFStart(playernum))) // find a CTF start
@@ -2722,6 +2735,14 @@ void G_ExitLevel(void)
 		gameaction = ga_completed;
 		lastdraw = true;
 
+		// If you want your teams scrambled on map change, start the process now.
+		// The teams will scramble at the start of the next round.
+		if (cv_scrambleonchange.value && G_GametypeHasTeams())
+		{
+			if (server)
+				CV_SetValue(&cv_teamscramble, cv_scrambleonchange.value);
+		}
+
 		if (netgame || multiplayer)
 			CON_LogMessage(M_GetText("The round has ended.\n"));
 
@@ -2765,6 +2786,29 @@ boolean G_IsSpecialStage(INT32 mapnum)
 {
 	(void)mapnum;
 	return false;
+}
+
+//
+// G_GametypeUsesLives
+//
+// Returns true if the current gametype uses
+// the lives system.  False otherwise.
+//
+boolean G_GametypeUsesLives(void)
+{
+	// SRB2kart NEEDS no lives
+	return false;
+}
+
+//
+// G_GametypeHasTeams
+//
+// Returns true if the current gametype uses
+// Red/Blue teams.  False otherwise.
+//
+boolean G_GametypeHasTeams(void)
+{
+	return (gametype == GT_TEAMMATCH || gametype == GT_CTF);
 }
 
 //
@@ -2884,6 +2928,16 @@ boolean G_RaceGametype(void)
 	return (gametype == GT_RACE);
 }
 
+//
+// G_TagGametype
+//
+// For Jazz's Tag/HnS modes that have a lot of special cases...
+// SRB2Kart: do we actually want to add Kart tag later? :V
+//
+boolean G_TagGametype(void)
+{
+	return (gametype == GT_TAG || gametype == GT_HIDEANDSEEK);
+}
 
 /** Get the typeoflevel flag needed to indicate support of a gametype.
   * In single-player, this always returns TOL_SP.
@@ -2894,8 +2948,14 @@ boolean G_RaceGametype(void)
 INT16 G_TOLFlag(INT32 pgametype)
 {
 	if (!multiplayer)                 return TOL_SP;
+	if (pgametype == GT_COOP)         return TOL_RACE; // SRB2kart
+	if (pgametype == GT_COMPETITION)  return TOL_COMPETITION;
 	if (pgametype == GT_RACE)         return TOL_RACE;
 	if (pgametype == GT_MATCH)        return TOL_MATCH;
+	if (pgametype == GT_TEAMMATCH)    return TOL_MATCH;
+	if (pgametype == GT_TAG)          return TOL_TAG;
+	if (pgametype == GT_HIDEANDSEEK)  return TOL_TAG;
+	if (pgametype == GT_CTF)          return TOL_CTF;
 
 	CONS_Alert(CONS_ERROR, M_GetText("Unknown gametype! %d\n"), pgametype);
 	return INT16_MAX;
@@ -3174,15 +3234,42 @@ static void G_DoCompleted(void)
 	if (nextmap >= 1100-1 && nextmap <= 1102-1 && G_RaceGametype())
 		nextmap = (INT16)(spstage_start-1);
 
+	if (gametype == GT_COOP && token)
+	{
+		token--;
+		gottoken = true;
+
+		if (!(emeralds & EMERALD1))
+			nextmap = (INT16)(sstage_start - 1); // Special Stage 1
+		else if (!(emeralds & EMERALD2))
+			nextmap = (INT16)(sstage_start); // Special Stage 2
+		else if (!(emeralds & EMERALD3))
+			nextmap = (INT16)(sstage_start + 1); // Special Stage 3
+		else if (!(emeralds & EMERALD4))
+			nextmap = (INT16)(sstage_start + 2); // Special Stage 4
+		else if (!(emeralds & EMERALD5))
+			nextmap = (INT16)(sstage_start + 3); // Special Stage 5
+		else if (!(emeralds & EMERALD6))
+			nextmap = (INT16)(sstage_start + 4); // Special Stage 6
+		else if (!(emeralds & EMERALD7))
+			nextmap = (INT16)(sstage_start + 5); // Special Stage 7
+		else
+			gottoken = false;
+	}
+
 	if (G_IsSpecialStage(gamemap) && !gottoken)
 		nextmap = lastmap; // Exiting from a special stage? Go back to the game. Tails 08-11-2001
 
 	automapactive = false;
 
-	if (cv_advancemap.value == 0) // Stay on same map.
-		nextmap = prevmap;
-	else if (cv_advancemap.value == 2) // Go to random map.
-		nextmap = G_RandMap(G_TOLFlag(gametype), prevmap, false, 0, false, NULL);
+	if (gametype != GT_COOP)
+	{
+		if (cv_advancemap.value == 0) // Stay on same map.
+			nextmap = prevmap;
+		else if (cv_advancemap.value == 2) // Go to random map.
+			nextmap = G_RandMap(G_TOLFlag(gametype), prevmap, false, 0, false, NULL);
+	}
+
 
 	// We are committed to this map now.
 	// We may as well allocate its header if it doesn't exist
@@ -3370,6 +3457,21 @@ void G_EndGame(void)
 		G_SaveDemo();
 	else if (demo.recording)
 		G_ResetDemoRecording();
+
+	// Only do evaluation and credits in coop games.
+	if (gametype == GT_COOP)
+	{
+		if (nextmap == 1102-1) // end game with credits
+		{
+			F_StartCredits();
+			return;
+		}
+		if (nextmap == 1101-1) // end game with evaluation
+		{
+			F_StartGameEvaluation();
+			return;
+		}
+	}
 
 	// 1100 or competitive multiplayer, so go back to title screen.
 	D_StartTitle();

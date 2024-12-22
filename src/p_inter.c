@@ -662,6 +662,9 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 
 			special->momx = special->momy = special->momz = 0;
 			P_GivePlayerRings(player, 1);
+
+			if ((maptol & TOL_NIGHTS) && special->type != MT_FLINGRING)
+				P_DoNightsScore(player);
 			break;
 
 		case MT_COIN:
@@ -671,6 +674,9 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 
 			special->momx = special->momy = 0;
 			P_GivePlayerRings(player, 1);
+
+			if ((maptol & TOL_NIGHTS) && special->type != MT_FLINGCOIN)
+				P_DoNightsScore(player);
 			break;
 		case MT_BLUEBALL:
 			if (!(P_CanPickupItem(player, 0)))
@@ -684,6 +690,9 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 				special->scalespeed = FixedDiv(FixedDiv(special->destscale, special->scale), states[special->info->deathstate].tics<<FRACBITS);
 			else
 				special->scalespeed = 4*FRACUNIT/5;
+
+			if (maptol & TOL_NIGHTS)
+				P_DoNightsScore(player);
 			break;
 		case MT_AUTOPICKUP:
 		case MT_BOUNCEPICKUP:
@@ -833,6 +842,8 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 				return;
 			if (special->fuse == 1)
 				return;
+//			if (special->momz > 0)
+//				return;
 			{
 				UINT8 flagteam = (special->type == MT_REDFLAG) ? 1 : 2;
 				const char *flagtext;
@@ -1330,6 +1341,10 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			return; // SRB2kart - don't need bubbles mucking with the player
 			if ((player->powers[pw_shield] & SH_NOSTACK) == SH_ELEMENTAL)
 				return;
+			if (maptol & TOL_NIGHTS)
+				return;
+			if (mariomode)
+				return;
 			else if (toucher->eflags & MFE_VERTICALFLIP)
 			{
 				if (special->z+special->height < toucher->z + toucher->height / 3
@@ -1418,36 +1433,46 @@ void P_CheckTimeLimit(void)
 			if (gamestate == GS_LEVEL && (leveltime == (timelimitintics + TICRATE)))
 				S_StartSound(NULL, sfx_strpst);
 
-			//Store the nodes of participating players in an array.
-			for (i = 0; i < MAXPLAYERS; i++)
+			// Normal Match
+			if (!G_GametypeHasTeams())
 			{
-				if (playeringame[i] && !players[i].spectator)
+				//Store the nodes of participating players in an array.
+				for (i = 0; i < MAXPLAYERS; i++)
 				{
-					playerarray[playercount] = i;
-					playercount++;
-				}
-			}
-
-			if (playercount > MAXPLAYERS)
-				playercount = MAXPLAYERS;
-
-			//Sort 'em.
-			for (i = 1; i < playercount; i++)
-			{
-				for (k = i; k < playercount; k++)
-				{
-					if (players[playerarray[i-1]].marescore < players[playerarray[k]].marescore)
+					if (playeringame[i] && !players[i].spectator)
 					{
-						tempplayer = playerarray[i-1];
-						playerarray[i-1] = playerarray[k];
-						playerarray[k] = tempplayer;
+						playerarray[playercount] = i;
+						playercount++;
 					}
 				}
-			}
 
-			//End the round if the top players aren't tied.
-			if (players[playerarray[0]].marescore == players[playerarray[1]].marescore)
-				return;
+				if (playercount > MAXPLAYERS)
+					playercount = MAXPLAYERS;
+
+				//Sort 'em.
+				for (i = 1; i < playercount; i++)
+				{
+					for (k = i; k < playercount; k++)
+					{
+						if (players[playerarray[i-1]].marescore < players[playerarray[k]].marescore)
+						{
+							tempplayer = playerarray[i-1];
+							playerarray[i-1] = playerarray[k];
+							playerarray[k] = tempplayer;
+						}
+					}
+				}
+
+				//End the round if the top players aren't tied.
+				if (players[playerarray[0]].marescore == players[playerarray[1]].marescore)
+					return;
+			}
+			else
+			{
+				//In team match and CTF, determining a tie is much simpler. =P
+				if (redscore == bluescore)
+					return;
+			}
 		}
 	}
 
@@ -1694,6 +1719,21 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 		P_UnsetThingPosition(target);
 		target->flags |= MF_NOBLOCKMAP|MF_NOCLIPHEIGHT;
 		P_SetThingPosition(target);
+
+		if (!target->player->bot && !G_IsSpecialStage(gamemap)
+		 && G_GametypeUsesLives())
+		{
+			target->player->lives -= 1; // Lose a life Tails 03-11-2000
+
+			if (target->player->lives <= 0) // Tails 03-14-2000
+			{
+				if (P_IsLocalPlayer(target->player)/* && target->player == &players[consoleplayer] */)
+				{
+					S_StopMusic(); // Stop the Music! Tails 03-14-2000
+					S_ChangeMusicInternal("gmover", false); // Yousa dead now, Okieday? Tails 03-14-2000
+				}
+			}
+		}
 		target->player->playerstate = PST_DEAD;
 
 		if (cv_birdmusic.value && cv_fading.value && P_IsLocalPlayer(target->player))
@@ -1745,7 +1785,8 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 	// Drop stuff.
 	// This determines the kind of object spawned
 	// during the death frame of a thing.
-	if (target->flags & MF_ENEMY)
+	if (!mariomode // Don't show birds, etc. in Mario Mode Tails 12-23-2001
+	&& target->flags & MF_ENEMY)
 	{
 		if (cv_soniccd.value)
 			item = MT_SEED;
@@ -2118,9 +2159,90 @@ static inline void P_NiGHTSDamage(mobj_t *target, mobj_t *source)
 	}
 }
 
-static inline boolean P_PlayerHitsPlayer(mobj_t *target, mobj_t *source)
+static inline boolean P_TagDamage(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage)
 {
 	player_t *player = target->player;
+	(void)damage; //unused parm
+
+	// If flashing or invulnerable, ignore the tag,
+	if (player->powers[pw_flashing] || player->powers[pw_invulnerability])
+		return false;
+
+	// Ignore IT players shooting each other, unless friendlyfire is on.
+	if ((player->pflags & PF_TAGIT && !(cv_friendlyfire.value &&
+		source && source->player && source->player->pflags & PF_TAGIT)))
+		return false;
+
+	// Don't allow any damage before the round starts.
+	if (leveltime <= hidetime * TICRATE)
+		return false;
+
+	// Don't allow players on the same team to hurt one another,
+	// unless cv_friendlyfire is on.
+	if (!cv_friendlyfire.value && (player->pflags & PF_TAGIT) == (source->player->pflags & PF_TAGIT))
+	{
+		if (!(inflictor->flags & MF_FIRE))
+			P_GivePlayerRings(player, 1);
+		if (inflictor->flags2 & MF2_BOUNCERING)
+			inflictor->fuse = 0; // bounce ring disappears at -1 not 0
+		return false;
+	}
+
+	P_DoPlayerPain(player, source, inflictor);
+
+	// Check for a shield
+	if (player->powers[pw_shield])
+	{
+		P_RemoveShield(player);
+		S_StartSound(target, sfx_shldls);
+		return true;
+	}
+
+	if (target->health <= 1) // Death
+	{
+		P_PlayDeathSound(target);
+		P_PlayVictorySound(source); // Killer laughs at you! LAUGHS! BWAHAHAHHAHAA!!
+	}
+	else if (target->health > 1) // Ring loss
+	{
+		P_PlayRinglossSound(target, source);
+		P_PlayerRingBurst(player, player->mo->health - 1);
+	}
+
+	if (inflictor && ((inflictor->flags & MF_MISSILE) || inflictor->player) && player->powers[pw_super] && ALL7EMERALDS(player->powers[pw_emeralds]))
+	{
+		player->health -= 10;
+		if (player->health < 2)
+			player->health = 2;
+		target->health = player->health;
+	}
+	else
+		player->health = target->health = 1;
+
+	return true;
+}
+
+static inline boolean P_PlayerHitsPlayer(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage)
+{
+	player_t *player = target->player;
+
+	// Tag handling
+	if (G_TagGametype())
+		return P_TagDamage(target, inflictor, source, damage);
+	else if (G_GametypeHasTeams()) // CTF + Team Match
+	{
+		// Don't allow players on the same team to hurt one another,
+		// unless cv_friendlyfire is on.
+		if (!cv_friendlyfire.value && target->player->ctfteam == source->player->ctfteam)
+		{
+			if (!(inflictor->flags & MF_FIRE))
+				P_GivePlayerRings(target->player, 1);
+			if (inflictor->flags2 & MF2_BOUNCERING)
+				inflictor->fuse = 0; // bounce ring disappears at -1 not 0
+
+			return false;
+		}
+	}
 
 	// Add pity.
 	if (!player->powers[pw_flashing] && !player->powers[pw_invulnerability] && !player->powers[pw_super]
@@ -2361,6 +2483,9 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 		{
 			if (player->exiting)
 				return false;
+
+			if (!(target->player->pflags & (PF_NIGHTSMODE|PF_NIGHTSFALL)) && (maptol & TOL_NIGHTS))
+				return false;
 		}
 
 		if (player->pflags & PF_NIGHTSMODE) // NiGHTS damage handling
@@ -2369,6 +2494,10 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 			{
 				if (source == target)
 					return false; // Don't hit yourself with your own paraloop, baka
+				if (source && source->player && !cv_friendlyfire.value
+				&& (gametype == GT_COOP
+				|| (G_GametypeHasTeams() && target->player->ctfteam == source->player->ctfteam)))
+					return false; // Don't run eachother over in special stages and team games and such
 			}
 
 			if (LUA_HookMobjDamage(target, inflictor, source, damage))
@@ -2401,7 +2530,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 		// Player hits another player
 		if (!force && source && source->player)
 		{
-			if (!P_PlayerHitsPlayer(target, source))
+			if (!P_PlayerHitsPlayer(target, inflictor, source, damage))
 				return false;
 		}
 
@@ -2455,6 +2584,9 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 				if (player->health < 2)
 					player->health = 2;
 			}
+
+			if (gametype == GT_CTF && (player->gotflag & (GF_REDFLAG|GF_BLUEFLAG)))
+				P_PlayerFlagBurst(player, false);
 		}
 		else
 		{
@@ -2606,7 +2738,9 @@ void P_PlayerRingBurst(player_t *player, INT32 num_rings)
 		{
 			ns = FixedMul(((i*FRACUNIT)/16)+2*FRACUNIT, mo->scale);
 			mo->momx = FixedMul(FINECOSINE(fa),ns);
-			mo->momy = FixedMul(FINESINE(fa),ns);
+
+			if (!(twodlevel || (player->mo->flags2 & MF2_TWOD)))
+				mo->momy = FixedMul(FINESINE(fa),ns);
 
 			P_SetObjectMomZ(mo, 8*FRACUNIT, false);
 			mo->fuse = 20*TICRATE; // Adjust fuse for NiGHTS
@@ -2628,7 +2762,9 @@ void P_PlayerRingBurst(player_t *player, INT32 num_rings)
 
 			ns = FixedMul(momxy, mo->scale);
 			mo->momx = FixedMul(FINECOSINE(fa),ns);
-			mo->momy = FixedMul(FINESINE(fa),ns);
+
+			if (!(twodlevel || (player->mo->flags2 & MF2_TWOD)))
+				mo->momy = FixedMul(FINESINE(fa),ns);
 
 			ns = momz;
 			P_SetObjectMomZ(mo, ns, false);
@@ -2733,7 +2869,9 @@ void P_PlayerWeaponPanelBurst(player_t *player)
 		// >16 ring type spillout
 		ns = FixedMul(3*FRACUNIT, mo->scale);
 		mo->momx = FixedMul(FINECOSINE(fa),ns);
-		mo->momy = FixedMul(FINESINE(fa),ns);
+
+		if (!(twodlevel || (player->mo->flags2 & MF2_TWOD)))
+			mo->momy = FixedMul(FINESINE(fa),ns);
 
 		P_SetObjectMomZ(mo, 4*FRACUNIT, false);
 
@@ -2815,7 +2953,9 @@ void P_PlayerWeaponAmmoBurst(player_t *player)
 		// Spill them!
 		ns = FixedMul(2*FRACUNIT, mo->scale);
 		mo->momx = FixedMul(FINECOSINE(fa), ns);
-		mo->momy = FixedMul(FINESINE(fa),ns);
+
+		if (!(twodlevel || (player->mo->flags2 & MF2_TWOD)))
+			mo->momy = FixedMul(FINESINE(fa),ns);
 
 		P_SetObjectMomZ(mo, 3*FRACUNIT, false);
 
@@ -2929,7 +3069,11 @@ void P_PlayerEmeraldBurst(player_t *player, boolean toss)
 			}
 
 			momx = FixedMul(FINECOSINE(fa), ns);
-			momy = FixedMul(FINESINE(fa),ns);
+
+			if (!(twodlevel || (player->mo->flags2 & MF2_TWOD)))
+				momy = FixedMul(FINESINE(fa),ns);
+			else
+				momy = 0;
 
 			mo = P_SpawnMobj(player->mo->x, player->mo->y, z, MT_FLINGEMERALD);
 			mo->health = 1;
@@ -2952,4 +3096,89 @@ void P_PlayerEmeraldBurst(player_t *player, boolean toss)
 				player->tossdelay = 2*TICRATE;
 		}
 	}
+}
+
+/** Makes an injured or dead player lose possession of the flag.
+  *
+  * \param player The player with the flag, about to lose it.
+  * \sa P_PlayerRingBurst
+  */
+void P_PlayerFlagBurst(player_t *player, boolean toss)
+{
+	mobj_t *flag;
+	mobjtype_t type;
+
+	if (!(player->gotflag & (GF_REDFLAG|GF_BLUEFLAG)))
+		return;
+
+	if (player->gotflag & GF_REDFLAG)
+		type = MT_REDFLAG;
+	else
+		type = MT_BLUEFLAG;
+
+	flag = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, type);
+
+	if (player->mo->eflags & MFE_VERTICALFLIP)
+		flag->z += player->mo->height - flag->height;
+
+	if (toss)
+		P_InstaThrust(flag, player->mo->angle, FixedMul(6*FRACUNIT, player->mo->scale));
+	else
+	{
+		angle_t fa = P_RandomByte()*FINEANGLES/256;
+		flag->momx = FixedMul(FINECOSINE(fa), FixedMul(6*FRACUNIT, player->mo->scale));
+		if (!(twodlevel || (player->mo->flags2 & MF2_TWOD)))
+			flag->momy = FixedMul(FINESINE(fa), FixedMul(6*FRACUNIT, player->mo->scale));
+	}
+
+	flag->momz = FixedMul(8*FRACUNIT, player->mo->scale);
+	if (player->mo->eflags & MFE_VERTICALFLIP)
+		flag->momz = -flag->momz;
+
+	if (type == MT_REDFLAG)
+		flag->spawnpoint = rflagpoint;
+	else
+		flag->spawnpoint = bflagpoint;
+
+	flag->fuse = cv_flagtime.value * TICRATE;
+	P_SetTarget(&flag->target, player->mo);
+
+	// Flag text
+	char plname[MAXPLAYERNAME+4];
+	const char *flagtext;
+	char flagcolor;
+
+	snprintf(plname, sizeof(plname), "%s%s%s",
+			 CTFTEAMCODE(player),
+			 player_names[player - players],
+			 CTFTEAMENDCODE(player));
+
+	if (type == MT_REDFLAG)
+	{
+		flagtext = M_GetText("Red flag");
+		flagcolor = '\x85';
+	}
+	else
+	{
+		flagtext = M_GetText("Blue flag");
+		flagcolor = '\x84';
+	}
+
+	if (toss)
+		CONS_Printf(M_GetText("%s tossed the %c%s%c.\n"), plname, flagcolor, flagtext, 0x80);
+	else
+		CONS_Printf(M_GetText("%s dropped the %c%s%c.\n"), plname, flagcolor, flagtext, 0x80);
+
+	player->gotflag = 0;
+
+	// Pointers set for displaying time value and for consistency restoration.
+	if (type == MT_REDFLAG)
+		redflag = flag;
+	else
+		blueflag = flag;
+
+	if (toss)
+		player->tossdelay = 2*TICRATE;
+
+	return;
 }
