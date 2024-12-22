@@ -109,6 +109,13 @@ static drawseg_xrange_item_t *drawsegs_xrange;
 static size_t drawsegs_xrange_size = 0;
 static INT32 drawsegs_xrange_count = 0;
 
+INT32 R_ThingLightLevel(mobj_t* thing)
+{
+	INT32 lightlevel = thing->lightlevel;
+
+	return lightlevel;
+}
+
 // ==========================================================================
 //
 // Sprite loading routines: support sprites in pwad, dehacked sprite renaming,
@@ -1609,7 +1616,7 @@ static void R_ProjectSprite(mobj_t *thing)
 		lightnum = thing->subsector->sector->lightlevel;
 	}
 
-	lightnum = (lightnum) >> LIGHTSEGSHIFT;
+	lightnum = (lightnum + R_ThingLightLevel(thing)) >> LIGHTSEGSHIFT;
 
 	if (maplighting.directional == true && P_SectorUsesDirectionalLighting(thing->subsector->sector))
 	{
