@@ -1890,13 +1890,13 @@ boolean P_CheckDeathPitCollide(mobj_t *mo)
 	I_Assert(mo != NULL);
 	I_Assert(!P_MobjWasRemoved(mo));
 
-	INT32 special = GETSECSPECIAL(mo->subsector->sector->special, 1);
+	const INT32 secspecial = GETSECSPECIAL(mo->subsector->sector->special, 1);
 
 	if (((mo->z <= mo->subsector->sector->floorheight
 		&& !(mo->eflags & MFE_VERTICALFLIP) && (mo->subsector->sector->flags & SF_FLIPSPECIAL_FLOOR))
 	|| (mo->z + mo->height >= mo->subsector->sector->ceilingheight
 		&& (mo->eflags & MFE_VERTICALFLIP) && (mo->subsector->sector->flags & SF_FLIPSPECIAL_CEILING)))
-	&& (special == 6 || special == 7))
+	&& (secspecial == 6 || secspecial == 7))
 		return true;
 
 	return false;

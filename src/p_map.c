@@ -2403,19 +2403,17 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff)
 		{
 			//All things are affected by their scale.
 			fixed_t maxstep = FixedMul(MAXSTEPMOVE, mapobjectscale);
-			INT32 special = 0;
+			const INT32 secspecial = (thing->player) ? GETSECSPECIAL(R_PointInSubsector(x, y)->sector->special, 1) : 0;
 
 			if (thing->player)
 			{
-				 special = GETSECSPECIAL(R_PointInSubsector(x, y)->sector->special, 1);
-
 				// If using type Section1:13, double the maxstep.
 				if (P_PlayerTouchingSectorSpecial(thing->player, 1, 13)
-				|| special == 13)
+				|| secspecial == 13)
 					maxstep <<= 1;
 				// If using type Section1:12, no maxstep. For ledges you don't want the player to climb! (see: Egg Zeppelin & SMK port walls)
 				else if (P_PlayerTouchingSectorSpecial(thing->player, 1, 12)
-				|| special == 12)
+				|| secspecial == 12)
 					maxstep = 0;
 			}
 
@@ -2461,7 +2459,7 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff)
 			else if (maxstep > 0 && !(
 				thing->player && (
 				P_PlayerTouchingSectorSpecial(thing->player, 1, 14)
-				|| special == 14)
+				|| secspecial == 14)
 				)) // Step down
 			{
 				// If the floor difference is MAXSTEPMOVE or less, and the sector isn't Section1:14, ALWAYS
