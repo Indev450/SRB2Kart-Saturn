@@ -3379,8 +3379,15 @@ void P_ResetCamera(player_t *player, camera_t *thiscam)
 	thiscam->z = z;
 	thiscam->reset = true;
 
-	thiscam->angle = player->mo->angle;
-	thiscam->aiming = 0;
+	if (!(thiscam == &camera[0] && (cv_cam_still[0].value))
+		&& !(thiscam == &camera[1] && (cv_cam_still[1].value))
+		&& !(thiscam == &camera[2] && (cv_cam_still[2].value))
+		&& !(thiscam == &camera[3] && (cv_cam_still[3].value)))
+	{
+		thiscam->angle = player->mo->angle;
+		thiscam->aiming = 0;
+	}
+
 	thiscam->relativex = 0;
 
 	thiscam->subsector = R_PointInSubsectorFast(thiscam->x,thiscam->y);
@@ -3496,7 +3503,10 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 			focusangle = mo->angle;
 		}
 
-		camrotate = cv_cam_rotate[num].value;
+		if (thiscam == &camera[num])
+			camrotate = cv_cam_rotate[num].value;
+		else
+			camrotate = 0;
 
 		if (leveltime < introtime) // Whoooshy camera!
 		{
@@ -3600,7 +3610,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	}
 
 	if (!resetcalled && (leveltime > starttime && timeover != 2)
-		&& (t_cam_rotate[num] != -42))
+		&& (thiscam == &camera[num] && t_cam_rotate[num] != -42))
 	{
 		angle = FixedAngle(camrotate*FRACUNIT);
 		thiscam->angle = angle;
