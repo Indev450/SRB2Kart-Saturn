@@ -2119,11 +2119,11 @@ void T_EachTimeThinker(levelspecthink_t *eachtime)
 		sec = &sectors[secnum];
 
 		FOFsector = false;
-		INT32 special = GETSECSPECIAL(sec->special, 2);
+		const INT32 secspecial = GETSECSPECIAL(sec->special, 2);
 
-		if (special == 3 || special == 5)
+		if (secspecial == 3 || secspecial == 5)
 			floortouch = true;
-		else if (special >= 1 && special <= 8)
+		else if (secspecial >= 1 && secspecial <= 8)
 			floortouch = false;
 		else
 			continue;
@@ -2255,7 +2255,7 @@ void T_EachTimeThinker(levelspecthink_t *eachtime)
 					continue;
 
 				if (!(players[i].mo->subsector->sector == sec
-					|| P_PlayerTouchingSectorSpecial(&players[i], 2, special) == sec))
+					|| P_PlayerTouchingSectorSpecial(&players[i], 2, secspecial) == sec))
 					continue;
 
 				if (floortouch == true && P_IsObjectOnRealGround(players[i].mo, sec))
@@ -2299,9 +2299,9 @@ void T_EachTimeThinker(levelspecthink_t *eachtime)
 
 	while ((affectPlayer = P_HavePlayersEnteredArea(playersArea, oldPlayersArea, inAndOut)) != -1)
 	{
-		INT32 special = GETSECSPECIAL(sec->special, 2);
+		const INT32 secspecial = GETSECSPECIAL(sec->special, 2);
 
-		if (special == 2 || special == 3)
+		if (secspecial == 2 || secspecial == 3)
 		{
 			for (i = 0; i < MAXPLAYERS; i++)
 			{
@@ -2920,12 +2920,12 @@ void EV_CrumbleChain(sector_t *sec, ffloor_t *rover)
 	fixed_t a, b, c;
 	mobjtype_t type = MT_ROCKCRUMBLE1;
 	const fixed_t spacing = 48*mapobjectscale;
-	INT32 special = GETSECSPECIAL(rover->master->frontsector->special, 3);
+	const INT32 secspecial = GETSECSPECIAL(rover->master->frontsector->special, 3);
 
 	// If the control sector has a special
 	// of Section3:7-15, use the custom debris.
-	if (special >= 8)
-		type = MT_ROCKCRUMBLE1+(special-7);
+	if (secspecial >= 8)
+		type = MT_ROCKCRUMBLE1+(secspecial-7);
 
 	// soundorg z height never gets set normally, so MEH.
 	sec->soundorg.z = sec->floorheight;
