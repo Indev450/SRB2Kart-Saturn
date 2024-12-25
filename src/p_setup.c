@@ -2834,7 +2834,7 @@ boolean P_SetupLevel(boolean skipprecip, boolean reloadinggamestate)
 	curmapvirt = vres_GetMap(lastloadedmaplumpnum);
 
 	R_ReInitColormaps(mapheaderinfo[gamemap-1]->palette,
-		(encoremode ? W_CheckNumForName(va("%sE", maplumpname)) : LUMPERROR));
+		W_CheckNumForName(va("%s%c", maplumpname, (encoremode ? 'E' : 'T'))));
 	CON_SetupBackColormap();
 
 	// SRB2 determines the sky texture to be used depending on the map header.
