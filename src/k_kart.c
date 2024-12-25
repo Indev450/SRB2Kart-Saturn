@@ -9675,7 +9675,9 @@ skipcrap:
 				if (!driftgaugegfx)
 					break;
 
-				if (cv_driftgaugestyle.value == 1 || cv_driftgaugestyle.value == 3 || (cv_driftgaugestyle.value == 5 && xtra_speedo3))
+				const boolean usescaledpatch = (cv_driftgaugestyle.value == 5 && xtra_speedo3);
+
+				if (cv_driftgaugestyle.value == 1 || cv_driftgaugestyle.value == 3 || usescaledpatch)
 				{
 					barx = basex - dup*23;
 					BAR_WIDTH = dup*47;
@@ -9693,15 +9695,15 @@ skipcrap:
 				const INT32 width = ((driftcharge - (driftcharge >= driftval ? limit : 0)) * BAR_WIDTH) / limit;
 				const INT32 level = min(driftcharge / driftval, 2);
 
-				if (cv_driftgaugestyle.value == 5 && xtra_speedo3) // why bother if we dont?
+				if (usescaledpatch) // i hate hud code i hate hud code i hate hud code i hate hud code i hate hud code.....
 				{
 					if (K_UseColorHud() && xtra_speedo_clr3) // Colourized hud
 					{
 						UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
-						V_DrawStretchyFixedPatch((basex-300)<<FRACBITS, (basey-20)<<FRACBITS, FRACUNIT*0.765, FRACUNIT*0.55, V_NOSCALESTART|V_OFFSET|drifttrans, skp_smallstickerclr3, colormap);
+						V_DrawStretchyFixedPatch((basex - dup*30)<<FRACBITS, ((basey<<FRACBITS) - FixedMul(dup<<FRACBITS, 9*FRACUNIT/4)), FRACUNIT*0.765, FRACUNIT*0.55, V_NOSCALESTART|V_OFFSET|drifttrans, skp_smallstickerclr3, colormap);
 					}
 					else
-						V_DrawStretchyFixedPatch((basex-300)<<FRACBITS, (basey-20)<<FRACBITS, FRACUNIT*0.765, FRACUNIT*0.55, V_NOSCALESTART|V_OFFSET|drifttrans, skp_smallsticker3, NULL);
+						V_DrawStretchyFixedPatch((basex - dup*30)<<FRACBITS, ((basey<<FRACBITS) - FixedMul(dup<<FRACBITS, 9*FRACUNIT/4)), FRACUNIT*0.765, FRACUNIT*0.55, V_NOSCALESTART|V_OFFSET|drifttrans, skp_smallsticker3, NULL);
 				}
 				else
 				{
