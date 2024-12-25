@@ -2551,16 +2551,16 @@ static void HWR_RenderPolyObjectPlane(polyobj_t *polysector, boolean isceiling, 
 {
 	float           height; //constant y for all points on the convex flat polygon
 	FOutVector      *v3d;
-	INT32             i;
+	INT32           i;
 	float           flatxref,flatyref;
-	float fflatsize;
-	INT32 flatflag;
-	size_t len;
-	float scrollx = 0.0f, scrolly = 0.0f;
-	angle_t angle = 0;
+	float           fflatsize;
+	INT32           flatflag;
+	size_t          len;
+	float           scrollx = 0.0f, scrolly = 0.0f;
+	angle_t         angle = 0;
 	FSurfaceInfo    Surf;
-	fixed_t tempxsow, tempytow;
-	size_t nrPlaneVerts;
+	fixed_t         tempxsow, tempytow;
+	size_t          nrPlaneVerts;
 
 	static FOutVector *planeVerts = NULL;
 	static UINT16 numAllocedPlaneVerts = 0;
@@ -2568,8 +2568,6 @@ static void HWR_RenderPolyObjectPlane(polyobj_t *polysector, boolean isceiling, 
 	INT32 shader = SHADER_NONE;
 
 	nrPlaneVerts = polysector->numVertices;
-
-	height = FIXED_TO_FLOAT(fixedheight);
 
 	if (nrPlaneVerts < 3)   //not even a triangle ?
 		return;
@@ -2587,6 +2585,8 @@ static void HWR_RenderPolyObjectPlane(polyobj_t *polysector, boolean isceiling, 
 		Z_Free(planeVerts);
 		Z_Malloc(numAllocedPlaneVerts * sizeof (FOutVector), PU_LEVEL, &planeVerts);
 	}
+
+	height = FIXED_TO_FLOAT(fixedheight);
 
 	len = W_LumpLength(lumpnum);
 
@@ -2785,7 +2785,6 @@ static void HWR_AddPolyObjectPlanes(void)
 	}
 }
 
-
 //
 // HWR_DoCulling
 // Hardware version of R_DoCulling
@@ -2798,6 +2797,7 @@ static boolean HWR_DoCulling(line_t *cullheight, line_t *viewcullheight, float v
 		return false;
 
 	cullplane = FIXED_TO_FLOAT(cullheight->frontsector->floorheight);
+
 	if (cullheight->flags & ML_NOCLIMB) // Group culling
 	{
 		if (!viewcullheight)
@@ -3509,6 +3509,7 @@ static void HWR_RotateSpritePolyToAim(gl_vissprite_t *spr, FOutVector *wallVerts
 	// be mobj->z or mobj->z + mobj->height
 	wallVerts[2].y = wallVerts[3].y = (spr->gzt - basey) * gl_viewludsin + basey;
 	wallVerts[0].y = wallVerts[1].y = (lowy - basey) * gl_viewludsin + basey;
+
 	// translate back to be around 0 before translating back
 	wallVerts[3].x += ((spr->gzt - basey) * gl_viewludcos) * gl_viewcos;
 	wallVerts[2].x += ((spr->gzt - basey) * gl_viewludcos) * gl_viewcos;
@@ -3895,13 +3896,14 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 	sector_t *sector = spr->mobj->subsector->sector;
 	INT32 lightlevel = 255;
 	extracolormap_t *colormap = sector->extra_colormap;
+	const boolean fullbright = (spr->mobj->frame & FF_FULLBRIGHT);
 
-	if (!(spr->mobj->frame & FF_FULLBRIGHT))
+	if (!fullbright)
 		lightlevel = min(sector->lightlevel, 255);
 
 	HWR_ObjectLightLevelPost(spr, sector, &lightlevel, false, papersprite);
 
-	HWR_Lighting(&Surf, lightlevel, colormap, P_SectorUsesDirectionalLighting(sector) && !(spr->mobj->frame & FF_FULLBRIGHT));
+	HWR_Lighting(&Surf, lightlevel, colormap, P_SectorUsesDirectionalLighting(sector) && !fullbright);
 
 	if (!cv_translucency.value) // translucency disabled
 	{
@@ -4359,6 +4361,7 @@ static void HWR_DrawSprites(void)
 		if (spr->mobj && spr->mobj->skin && spr->mobj->sprite == SPR_PLAY)
 		{
 			md2_t *md2;
+
 			if (spr->mobj->localskin)
 			{
 				if (spr->mobj->skinlocal)
@@ -4436,12 +4439,19 @@ static void HWR_AddSprites(sector_t *sec)
 // --------------------------------------------------------------------------
 static void HWR_AddPrecipitationSprites(void)
 {
-	fixed_t drawdist;
-	fixed_t precipscale = (cv_mobjscaleprecip.value ? mapobjectscale : FRACUNIT);
-	//const fixed_t drawdist = cv_drawdist_precip.value * mapobjectscale;
-
 	INT32 xl, xh, yl, yh, bx, by;
 	precipmobj_t *th;
+
+	fixed_t drawdist;
+
+	// save a little time on invisible weather
+	if (curWeather == PRECIP_BLANK || curWeather == PRECIP_STORM_NORAIN)
+	{
+		return;
+	}
+
+	const fixed_t precipscale = (cv_mobjscaleprecip.value ? mapobjectscale : FRACUNIT);
+	//const fixed_t drawdist = cv_drawdist_precip.value * mapobjectscale;
 
 	if (current_bsp_culling_distance)
 		drawdist = min((fixed_t)current_bsp_culling_distance, (fixed_t)(cv_drawdist_precip.value) * precipscale);
@@ -4449,7 +4459,7 @@ static void HWR_AddPrecipitationSprites(void)
 		drawdist = ((fixed_t)(cv_drawdist_precip.value) * precipscale);
 
 	// No to infinite precipitation draw distance.
-	if (drawdist == 0 || curWeather == PRECIP_BLANK || curWeather == PRECIP_STORM_NORAIN)
+	if (drawdist == 0)
 	{
 		return;
 	}
@@ -4518,11 +4528,6 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	// uncapped/interpolation
 	interpmobjstate_t interp = {0};
 
-	const boolean mirrored = thing->mirrored;
-	const boolean vflip = (thing->eflags & MFE_VERTICALFLIP);
-	const boolean hflip = (!(thing->frame & FF_HORIZONTALFLIP) != !mirrored);
-	const boolean papersprite = (thing->frame & FF_PAPERSPRITE);
-
 	if (cv_maxinterpdist.value)
 		dist = R_QuickCamDist(thing->x, thing->y);
 
@@ -4537,6 +4542,11 @@ static void HWR_ProjectSprite(mobj_t *thing)
 
 	if (interp.spritexscale < 1 || interp.spriteyscale < 1)
 		return;
+
+	const boolean mirrored = thing->mirrored;
+	const boolean vflip = (thing->eflags & MFE_VERTICALFLIP);
+	const boolean hflip = (!(thing->frame & FF_HORIZONTALFLIP) != !mirrored);
+	const boolean papersprite = (thing->frame & FF_PAPERSPRITE);
 
 	this_scale = FIXED_TO_FLOAT(interp.scale);
 	spritexscale = FIXED_TO_FLOAT(interp.spritexscale);
@@ -5313,6 +5323,7 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *pl
 		{
 			HWR_RenderPortal(portal, rootportal, fpov, player, stencil_level);
 		}
+
 		HWR_SetPortalState(GLPORTAL_INSIDE); // when portal walls are encountered in following bsp traversal, nothing should be drawn
 	}
 	else
