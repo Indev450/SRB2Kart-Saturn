@@ -7431,7 +7431,8 @@ void K_LoadKartHUDGraphics(void)
 		skp_speedpatchesachi[4] = W_CachePatchName("SP_APERC", PU_HUDGFX);
 	}
 
-	if (big_lap){
+	if (big_lap)
+	{
 		kp_lapstickerbig = 		W_CachePatchName("K_STLAPB", PU_HUDGFX);
 		kp_lapstickerbig2 = 	W_CachePatchName("K_STLA2B", PU_HUDGFX);
 	}
@@ -7496,14 +7497,14 @@ void K_LoadKartHUDGraphics(void)
 	// Nametags
 	if (nametaggfx)
 	{
-
 		nametagpic = W_CachePatchName("NTLINE", PU_HUDGFX);
 		nametagline = W_CachePatchName("NTLINEV", PU_HUDGFX);
 		nametagspeed = W_CachePatchName("NTSP", PU_HUDGFX);
 		nametagweight = W_CachePatchName("NTWH", PU_HUDGFX);
 	}
 
-	if (driftgaugegfx){
+	if (driftgaugegfx)
+	{
 		driftgauge =  W_CachePatchName("K_DGAU", PU_HUDGFX);
 		driftgaugecolor =  W_CachePatchName("K_DCAU", PU_HUDGFX);
 		driftgaugesmall =  W_CachePatchName("K_DGSU", PU_HUDGFX);
@@ -8489,13 +8490,13 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 		}
 	}
 
-	if (!K_UseColorHud())
-		V_DrawScaledPatch(TX, TY, splitflags, ((mode == 2) ? kp_lapstickerwide : kp_timestickerwide));
-	else //Colourized hud
+	if (K_UseColorHud()) // Colourized hud
 	{
 		UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
 		V_DrawMappedPatch(TX, TY, splitflags, ((mode == 2) ? kp_lapstickerwideclr : kp_timestickerwideclr), colormap);
 	}
+	else
+		V_DrawScaledPatch(TX, TY, splitflags, ((mode == 2) ? kp_lapstickerwide : kp_timestickerwide));
 
 	TX += 33;
 
@@ -8998,12 +8999,9 @@ void HU_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, I
 	}
 }
 
-static boolean K_BigLapSticker(void)
+static boolean K_BigLap(void)
 {
-	if (K_UseColorHud())
-		return ((cv_numlaps.value > 9) && (big_lap_color) && (cv_biglaps.value) && (!stplyr->exiting));
-	else
-		return ((cv_numlaps.value > 9) && (big_lap) && (cv_biglaps.value) && (!stplyr->exiting));
+	return (cv_biglaps.value && (cv_numlaps.value > 9) && (K_UseColorHud() ? big_lap_color : big_lap) && (!stplyr->exiting));
 }
 
 static void K_drawKartLaps(void)
@@ -9042,20 +9040,16 @@ static void K_drawKartLaps(void)
 	}
 	else
 	{
-		if (!K_UseColorHud())
-		{
-			if (K_BigLapSticker())
-				V_DrawScaledPatch(fx, fy, V_HUDTRANS|splitflags, ((stplyr->laps + 1 > 9) ? kp_lapstickerbig2 : kp_lapstickerbig));
-			else
-				V_DrawScaledPatch(fx, fy, V_HUDTRANS|splitflags, kp_lapsticker);
-		}
-		else //Colourized hud
+		if (K_UseColorHud()) // Colourized hud
 		{
 			UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
-			if (K_BigLapSticker())
-				V_DrawMappedPatch(fx, fy, V_HUDTRANS|splitflags, ((stplyr->laps + 1 > 9) ? kp_lapstickerbig2clr : kp_lapstickerbigclr), colormap);
-			else
-				V_DrawMappedPatch(fx, fy, V_HUDTRANS|splitflags, kp_lapstickerclr, colormap);
+			patch_t *biglapclr = (K_BigLap() ? ((stplyr->laps + 1 > 9) ? kp_lapstickerbig2clr : kp_lapstickerbigclr) : kp_lapstickerclr);
+			V_DrawMappedPatch(fx, fy, V_HUDTRANS|splitflags, biglapclr, colormap);
+		}
+		else
+		{
+			patch_t *biglap = (K_BigLap() ? ((stplyr->laps + 1 > 9) ? kp_lapstickerbig2 : kp_lapstickerbig) : kp_lapsticker);
+			V_DrawScaledPatch(fx, fy, V_HUDTRANS|splitflags, biglap);
 		}
 
 		if (stplyr->exiting)
@@ -9701,7 +9695,7 @@ skipcrap:
 
 				if (cv_driftgaugestyle.value == 5 && xtra_speedo3) // why bother if we dont?
 				{
-					if (K_UseColorHud() && xtra_speedo_clr3) //Colourized hud
+					if (K_UseColorHud() && xtra_speedo_clr3) // Colourized hud
 					{
 						UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
 						V_DrawStretchyFixedPatch((basex-300)<<FRACBITS, (basey-20)<<FRACBITS, FRACUNIT*0.765, FRACUNIT*0.55, V_NOSCALESTART|V_OFFSET|drifttrans, skp_smallstickerclr3, colormap);
@@ -9711,13 +9705,14 @@ skipcrap:
 				}
 				else
 				{
-					if (!K_UseColorHud())
-						V_DrawMappedPatch(cv_driftgaugestyle.value == 2 ? basex + dup*11 : basex, basey, V_NOSCALESTART|V_OFFSET|drifttrans, cv_driftgaugestyle.value == 2 ? driftgaugesmall : driftgauge, NULL);
-					else //Colourized hud
+					if (K_UseColorHud()) // Colourized hud
 					{
 						UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
 						V_DrawMappedPatch(cv_driftgaugestyle.value == 2 ? basex + dup*11 : basex, basey, V_NOSCALESTART|V_OFFSET|drifttrans, cv_driftgaugestyle.value == 2 ? driftgaugesmallcolor : driftgaugecolor, colormap);
 					}
+					else
+						V_DrawMappedPatch(cv_driftgaugestyle.value == 2 ? basex + dup*11 : basex, basey, V_NOSCALESTART|V_OFFSET|drifttrans, cv_driftgaugestyle.value == 2 ? driftgaugesmall : driftgauge, NULL);
+
 				}
 
 				if (driftcharge >= driftval*4) // rainbow sparks
@@ -10269,13 +10264,14 @@ static void K_drawBattleFullscreen(void)
 			V_DrawString(x-txoff, ty, 0, va("%d", stplyr->kartstuff[k_comebacktimer]/TICRATE));
 		else
 		{
-			if (!K_UseColorHud())
-				V_DrawFixedPatch(x<<FRACBITS, ty<<FRACBITS, scale, 0, kp_timeoutsticker, NULL);
-			else //Colourized hud
+			if (K_UseColorHud()) // Colourized hud
 			{
 				UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
 				V_DrawFixedPatch(x<<FRACBITS, ty<<FRACBITS, scale, 0, kp_timeoutstickerclr, colormap);
 			}
+			else
+				V_DrawFixedPatch(x<<FRACBITS, ty<<FRACBITS, scale, 0, kp_timeoutsticker, NULL);
+
 
 			V_DrawKartString(x-txoff, ty, 0, va("%d", stplyr->kartstuff[k_comebacktimer]/TICRATE));
 		}
