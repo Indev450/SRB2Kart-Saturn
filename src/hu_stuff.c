@@ -2626,20 +2626,25 @@ static void HU_DrawRankings(void)
 	else
 		hilicol = ((gametype == GT_RACE) ? V_SKYMAP : V_REDMAP);
 
-	// draw the current gametype in the lower right
-	//if (modeattacking)
-		//V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, "Record Attack");
-	//else
-		//V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, gametype_cons_t[gametype].strvalue);
-	
-	// draw the current map in the lower right if theres none just say its unknown
-	char *maptitle = G_BuildMapTitle(gamemap);
-	if (!maptitle)
-		V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, "UNKNOWN");
+	if (!demo.playback)
+	{
+		// draw the current map in the lower right
+		char *maptitle = G_BuildMapTitle(gamemap);
+
+		if (maptitle)
+		{
+			V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, maptitle);
+			Z_Free(maptitle);
+		}
+		else
+		{
+			V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, "UNKNOWN");
+		}
+	}
 	else
 	{
-		V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, maptitle);
-		Z_Free(maptitle);
+		// draw the current gametype in the lower right
+		V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, (modeattacking)? "Record Attack" : gametype_cons_t[gametype].strvalue);
 	}
 
 	if (G_GametypeHasTeams())
