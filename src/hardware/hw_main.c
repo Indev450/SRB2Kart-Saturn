@@ -698,15 +698,11 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 
 		if (name)
 		{
-			// fayt sneakerpads lel
-			if ((memcmp(name, "PAZRCST", 7) == 0) || (memcmp(name, "FSBOST", 6) == 0))
-			{
-				lightlevel = 255;
-			}
-			else if (memcmp(name, "BOST", 4) == 0) // kart sneakerpad
+			// kart sneakerpad
+			if (memcmp(name, "BOST", 4) == 0)
 			{
 				if (GETSECSPECIAL(subsector->sector->special, 4) == 6)
-						lightlevel = 255;
+					lightlevel = 255;
 
 				// check the fof sector aswell
 				if (FOFsector != NULL)
@@ -714,6 +710,10 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 					if (GETSECSPECIAL(FOFsector->special, 4) == 6)
 						lightlevel = 255;
 				}
+			}
+			else if ((memcmp(name, "PAZRCST", 7) == 0) || (memcmp(name, "FSBOST", 6) == 0)) // fayt sneakerpads lel
+			{
+				lightlevel = 255;
 			}
 		}
 	}
