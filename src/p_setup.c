@@ -696,7 +696,7 @@ INT32 P_AddLevelFlat(const char *flatname, levelflat_t *levelflat)
 		}
 		if (!havefaytpad && memcmp(levelflat->name, "FSBOST", 6) == 0)
 		{
-			havefaytpad= true;
+			havefaytpad = true;
 		}
 
 #ifndef ZDEBUG
