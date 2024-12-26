@@ -692,44 +692,27 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 	if (slope)
 		lightlevel = HWR_CalcSlopeLight(lightlevel, slope, gl_frontsector, (FOFsector != NULL));
 
-	if (subsector && (lumpnum != LUMPERROR))
+	if ((lightlevel != 255) && subsector && subsector->sector && (lumpnum != LUMPERROR))
 	{
 		const char *name = W_CheckNameForNum(lumpnum);
 
 		if (name)
 		{
 			// fayt sneakerpads lel
-			if (memcmp(name, "PAZRCST", 7) == 0 || memcmp(name, "FSBOST", 6) == 0)
+			if ((memcmp(name, "PAZRCST", 7) == 0) || (memcmp(name, "FSBOST", 6) == 0))
 			{
 				lightlevel = 255;
 			}
-
-			// kart sneakerpad
-			if (memcmp(name, "BOST", 4) == 0)
+			else if (memcmp(name, "BOST", 4) == 0) // kart sneakerpad
 			{
 				if (GETSECSPECIAL(subsector->sector->special, 4) == 6)
-					lightlevel = 255;
+						lightlevel = 255;
 
-				if (subsector->sector->ffloors)
+				// check the fof sector aswell
+				if (FOFsector != NULL)
 				{
-					ffloor_t *rover;
-
-					for (rover = subsector->sector->ffloors; rover; rover = rover->next)
-					{
-						if (!rover->master->frontsector)
-							continue;
-
-						if (!rover->master->frontsector->special)
-							continue;
-
-						if (!(rover->flags & FF_EXISTS) || !(rover->flags & FF_RENDERPLANES) || (rover->flags & FF_FOG) || (rover->flags & FF_RIPPLE))
-							continue;
-
-						if (GETSECSPECIAL(rover->master->frontsector->special, 4) == 6)
-						{
-							lightlevel = 255;
-						}
-					}
+					if (GETSECSPECIAL(FOFsector->special, 4) == 6)
+						lightlevel = 255;
 				}
 			}
 		}
