@@ -380,10 +380,11 @@ static void Y_PlayerStandingsDrawer(y_data_t *standings, INT32 x, INT32 hilicol)
 
 	V_DrawRightAlignedString(x+(BASEVIDWIDTH/2)+152, 24, hilicol, timeheader);
 
+	boolean (*_isHighlightedPlayer)(const player_t *) = (demo.playback ? P_IsDisplayPlayer : P_IsLocalPlayer);
+
 	for (i = 0; i < standings->numplayers; i++)
 	{
 		const UINT8 pnum = standings->num[i];
-		const boolean whiteplayer = (pnum == ((!splitscreen) ? (demo.playback ? displayplayers[0] : consoleplayer) : MAXPLAYERS));
 
 		if (pnum == MAXPLAYERS)
 			;
@@ -392,6 +393,9 @@ static void Y_PlayerStandingsDrawer(y_data_t *standings, INT32 x, INT32 hilicol)
 		else
 		{
 			char strtime[MAXPLAYERNAME+1];
+
+			const boolean whiteplayer = _isHighlightedPlayer(&players[pnum]);
+			const INT32 philicol = (whiteplayer ? V_SkinColorToHighlightcolor(players[pnum].skincolor) : 0);
 
 			// Apply the jitter offset (later reversed)
 			if (standings->jitter[pnum] > 0)
@@ -431,9 +435,9 @@ static void Y_PlayerStandingsDrawer(y_data_t *standings, INT32 x, INT32 hilicol)
 			STRBUFCPY(strtime, standings->name[i]);
 
 			if (standings->numplayers > NUMFORNEWCOLUMN)
-				V_DrawThinString(x+36, y-1, (whiteplayer ? hilicol : 0)|V_ALLOWLOWERCASE|V_6WIDTHSPACE, strtime);
+				V_DrawThinString(x+36, y-1, philicol|V_ALLOWLOWERCASE|V_6WIDTHSPACE, strtime);
 			else
-				V_DrawString(x+36, y, (whiteplayer ? hilicol : 0)|V_ALLOWLOWERCASE, strtime);
+				V_DrawString(x+36, y, philicol|V_ALLOWLOWERCASE, strtime);
 
 			if (standings->rankingsmode)
 			{
