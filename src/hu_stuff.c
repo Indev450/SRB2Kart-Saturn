@@ -2644,7 +2644,7 @@ static void HU_DrawRankings(void)
 	else
 	{
 		// draw the current gametype in the lower right
-		V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, (modeattacking)? "Record Attack" : gametype_cons_t[gametype].strvalue);
+		V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, (modeattacking) ? "Record Attack" : gametype_cons_t[gametype].strvalue);
 	}
 
 	if (G_GametypeHasTeams())
