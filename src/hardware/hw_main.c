@@ -5574,8 +5574,8 @@ void HWR_Startup(void)
 		HWR_TogglePaletteRendering();
 
 		if (msaa)
-			HWD.pfnSetSpecialState(HWD_SET_MSAA, a2c ? 2 : 1);
-    
+			GL_SetSpecialState(HWD_SET_MSAA, a2c ? 2 : 1);
+
 		HWR_RegisterCommands();
 	}
 	startupdone = true;
