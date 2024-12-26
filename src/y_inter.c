@@ -345,10 +345,7 @@ static void Y_PlayerStandingsDrawer(y_data_t *standings, INT32 x, INT32 hilicol)
 		return;
 	}
 
-	INT32 i, whiteplayer = MAXPLAYERS;
-
-	if (!splitscreen)
-		whiteplayer = (demo.playback ? displayplayers[0] : consoleplayer);
+	INT32 i;
 
 #define NUMFORNEWCOLUMN 8
 	INT32 y = 41, gutter = ((standings->numplayers > NUMFORNEWCOLUMN) ? 0 : (BASEVIDWIDTH/2));
@@ -386,6 +383,7 @@ static void Y_PlayerStandingsDrawer(y_data_t *standings, INT32 x, INT32 hilicol)
 	for (i = 0; i < standings->numplayers; i++)
 	{
 		const UINT8 pnum = standings->num[i];
+		const boolean whiteplayer = (pnum == ((!splitscreen) ? (demo.playback ? displayplayers[0] : consoleplayer) : MAXPLAYERS));
 
 		if (pnum == MAXPLAYERS)
 			;
@@ -424,7 +422,7 @@ static void Y_PlayerStandingsDrawer(y_data_t *standings, INT32 x, INT32 hilicol)
 				}
 			}
 
-			if (pnum == whiteplayer)
+			if (whiteplayer)
 			{
 				UINT8 cursorframe = (intertic / 4) % 8;
 				V_DrawScaledPatch(x+16, y-4, 0, W_CachePatchName(va("K_CHILI%d", cursorframe+1), PU_CACHE));
@@ -433,9 +431,9 @@ static void Y_PlayerStandingsDrawer(y_data_t *standings, INT32 x, INT32 hilicol)
 			STRBUFCPY(strtime, standings->name[i]);
 
 			if (standings->numplayers > NUMFORNEWCOLUMN)
-				V_DrawThinString(x+36, y-1, ((pnum == whiteplayer) ? hilicol : 0)|V_ALLOWLOWERCASE|V_6WIDTHSPACE, strtime);
+				V_DrawThinString(x+36, y-1, (whiteplayer ? hilicol : 0)|V_ALLOWLOWERCASE|V_6WIDTHSPACE, strtime);
 			else
-				V_DrawString(x+36, y, ((pnum == whiteplayer) ? hilicol : 0)|V_ALLOWLOWERCASE, strtime);
+				V_DrawString(x+36, y, (whiteplayer ? hilicol : 0)|V_ALLOWLOWERCASE, strtime);
 
 			if (standings->rankingsmode)
 			{
