@@ -686,6 +686,19 @@ INT32 P_AddLevelFlat(const char *flatname, levelflat_t *levelflat)
 		// store the flat lump number
 		levelflat->lumpnum = R_GetFlatNumForName(flatname);
 
+		if (!havesnakerpad && memcmp(levelflat->name, "BOST", 4) == 0)
+		{
+			havesnakerpad = true;
+		}
+		if (!havepazrcst && memcmp(levelflat->name, "PAZRCST", 7) == 0)
+		{
+			havepazrcst = true;
+		}
+		if (!havefaytpad && memcmp(levelflat->name, "FSBOST", 6) == 0)
+		{
+			havefaytpad= true;
+		}
+
 #ifndef ZDEBUG
 		CONS_Debug(DBG_SETUP, "flat #%03d: %s\n", atoi(sizeu1(numlevelflats)), levelflat->name);
 #endif
@@ -779,6 +792,10 @@ static void P_LoadRawSectors(UINT8 *data)
 		I_Error("Ran out of memory while loading sectors\n");
 
 	numlevelflats = 0;
+
+	havesnakerpad = false;
+	havepazrcst = false;
+	havefaytpad = false;
 
 	// For each counted sector, copy the sector raw data from our cache pointer ms, to the global table pointer ss.
 	for (i = 0; i < numsectors; i++, ss++, ms++)

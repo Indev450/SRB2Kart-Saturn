@@ -118,6 +118,11 @@ ps_metric_t ps_hw_numcolors = {0};
 ps_metric_t ps_hw_batchsorttime = {0};
 ps_metric_t ps_hw_batchdrawtime = {0};
 
+// terrible optimization
+boolean havesnakerpad = false;
+boolean havepazrcst = false;
+boolean havefaytpad = false;
+
 static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum, boolean noencore, FSurfaceInfo* Surf, INT32 cutflag, ffloor_t *pfloor, FBITFIELD polyflags);
 static void HWR_RenderWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap);
 
@@ -692,28 +697,31 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 	if (slope)
 		lightlevel = HWR_CalcSlopeLight(lightlevel, slope, gl_frontsector, (FOFsector != NULL));
 
-	if ((lightlevel != 255) && subsector && subsector->sector && (lumpnum != LUMPERROR))
+	if (havesnakerpad || havepazrcst || havefaytpad)
 	{
-		const char *name = W_CheckNameForNum(lumpnum);
-
-		if (name)
+		if ((lightlevel != 255) && subsector && subsector->sector && (lumpnum != LUMPERROR))
 		{
-			// kart sneakerpad
-			if (memcmp(name, "BOST", 4) == 0)
-			{
-				if (GETSECSPECIAL(subsector->sector->special, 4) == 6)
-					lightlevel = 255;
+			const char *name = W_CheckNameForNum(lumpnum);
 
-				// check the fof sector aswell
-				if (FOFsector != NULL)
-				{
-					if (GETSECSPECIAL(FOFsector->special, 4) == 6)
-						lightlevel = 255;
-				}
-			}
-			else if ((memcmp(name, "PAZRCST", 7) == 0) || (memcmp(name, "FSBOST", 6) == 0)) // fayt sneakerpads lel
+			if (name)
 			{
-				lightlevel = 255;
+				// kart sneakerpad
+				if (havesnakerpad && memcmp(name, "BOST", 4) == 0)
+				{
+					if (GETSECSPECIAL(subsector->sector->special, 4) == 6)
+						lightlevel = 255;
+
+					// check the fof sector aswell
+					if (FOFsector != NULL)
+					{
+						if (GETSECSPECIAL(FOFsector->special, 4) == 6)
+							lightlevel = 255;
+					}
+				}
+				else if ((havepazrcst && (memcmp(name, "PAZRCST", 7) == 0)) || (havefaytpad && (memcmp(name, "FSBOST", 6) == 0))) // fayt sneakerpads lel
+				{
+					lightlevel = 255;
+				}
 			}
 		}
 	}
