@@ -338,7 +338,7 @@ static void Y_AnimatedVoteScreenCheck(void)
 //
 // Handles drawing the center-of-screen player standings.
 //
-void Y_PlayerStandingsDrawer(y_data_t *standings, INT32 x, INT32 hilicol)
+static void Y_PlayerStandingsDrawer(y_data_t *standings, INT32 x, INT32 hilicol)
 {
 	if (standings->numplayers == 0)
 	{
@@ -385,12 +385,18 @@ void Y_PlayerStandingsDrawer(y_data_t *standings, INT32 x, INT32 hilicol)
 
 	for (i = 0; i < standings->numplayers; i++)
 	{
-		if (standings->num[i] != MAXPLAYERS && playeringame[standings->num[i]] && !players[standings->num[i]].spectator)
+		const UINT8 pnum = standings->num[i];
+
+		if (pnum == MAXPLAYERS)
+			;
+		else if (!playeringame[pnum] || players[pnum].spectator == true)
+			standings->num[i] = MAXPLAYERS; // this should be the only field setting in this function
+		else
 		{
 			char strtime[MAXPLAYERNAME+1];
 
 			// Apply the jitter offset (later reversed)
-			if (standings->jitter[standings->num[i]] > 0)
+			if (standings->jitter[pnum] > 0)
 				y--;
 
 			V_DrawCenteredString(x+6, y, 0, va("%d", standings->pos[i]));
@@ -398,10 +404,11 @@ void Y_PlayerStandingsDrawer(y_data_t *standings, INT32 x, INT32 hilicol)
 			if (standings->color[i] != SKINCOLOR_NONE)
 			{
 				UINT8 *colormap = R_GetTranslationColormap(*standings->character[i], *standings->color[i], GTC_CACHE);
+
 				// i fucking hate this i fucking hate this i hate this so much
-				if (!players[standings->num[i]].skinlocal)
+				if (!players[pnum].skinlocal)
 				{
-					int skinIndex = players[standings->num[i]].localskin ? players[standings->num[i]].localskin - 1 : *standings->character[i];
+					int skinIndex = (players[pnum].localskin ? (players[pnum].localskin - 1) : *standings->character[i]);
 
 					if (cv_highresportrait.value)
 						V_DrawSmallMappedPatch(x + 16, y - 4, 0, facewantprefix[skinIndex], colormap);
@@ -411,13 +418,13 @@ void Y_PlayerStandingsDrawer(y_data_t *standings, INT32 x, INT32 hilicol)
 				else
 				{
 					if (cv_highresportrait.value)
-						V_DrawSmallMappedPatch(x + 16, y - 4, 0, localfacewantprefix[players[standings->num[i]].localskin - 1], colormap);
+						V_DrawSmallMappedPatch(x + 16, y - 4, 0, localfacewantprefix[players[pnum].localskin - 1], colormap);
 					else
-						V_DrawMappedPatch(x + 16, y - 4, 0, localfacerankprefix[players[standings->num[i]].localskin - 1], colormap);
+						V_DrawMappedPatch(x + 16, y - 4, 0, localfacerankprefix[players[pnum].localskin - 1], colormap);
 				}
 			}
 
-			if (standings->num[i] == whiteplayer)
+			if (pnum == whiteplayer)
 			{
 				UINT8 cursorframe = (intertic / 4) % 8;
 				V_DrawScaledPatch(x+16, y-4, 0, W_CachePatchName(va("K_CHILI%d", cursorframe+1), PU_CACHE));
@@ -426,18 +433,18 @@ void Y_PlayerStandingsDrawer(y_data_t *standings, INT32 x, INT32 hilicol)
 			STRBUFCPY(strtime, standings->name[i]);
 
 			if (standings->numplayers > NUMFORNEWCOLUMN)
-				V_DrawThinString(x+36, y-1, ((standings->num[i] == whiteplayer) ? hilicol : 0)|V_ALLOWLOWERCASE|V_6WIDTHSPACE, strtime);
+				V_DrawThinString(x+36, y-1, ((pnum == whiteplayer) ? hilicol : 0)|V_ALLOWLOWERCASE|V_6WIDTHSPACE, strtime);
 			else
-				V_DrawString(x+36, y, ((standings->num[i] == whiteplayer) ? hilicol : 0)|V_ALLOWLOWERCASE, strtime);
+				V_DrawString(x+36, y, ((pnum == whiteplayer) ? hilicol : 0)|V_ALLOWLOWERCASE, strtime);
 
 			if (standings->rankingsmode)
 			{
-				if (standings->increase[standings->num[i]] != UINT8_MAX)
+				if (standings->increase[pnum] != UINT8_MAX)
 				{
-					if (standings->increase[standings->num[i]] > 9)
-						snprintf(strtime, sizeof strtime, "(+%02d)", standings->increase[standings->num[i]]);
+					if (standings->increase[pnum] > 9)
+						snprintf(strtime, sizeof strtime, "(+%02d)", standings->increase[pnum]);
 					else
-						snprintf(strtime, sizeof strtime, "(+  %d)", standings->increase[standings->num[i]]);
+						snprintf(strtime, sizeof strtime, "(+  %d)", standings->increase[pnum]);
 
 					if (standings->numplayers > NUMFORNEWCOLUMN)
 						V_DrawRightAlignedThinString(x+135+gutter, y-1, V_6WIDTHSPACE, strtime);
@@ -479,12 +486,9 @@ void Y_PlayerStandingsDrawer(y_data_t *standings, INT32 x, INT32 hilicol)
 				}
 			}
 
-			// Apply the jitter offset (later reversed)
-			if (standings->jitter[standings->num[i]] > 0)
+			if (standings->jitter[pnum] > 0)
 				y++;
 		}
-		else
-			standings->num[i] = MAXPLAYERS; // this should be the only field setting in this function
 
 		y += 18;
 
@@ -521,7 +525,7 @@ void Y_IntermissionDrawer(void)
 		if (rendermode == render_soft)
 			VID_BlitLinearScreen(screens[1], screens[0], vid.width*vid.bpp, vid.height, vid.width*vid.bpp, vid.rowbytes);
 #ifdef HWRENDER
-		else if(rendermode == render_opengl)
+		else if (rendermode == render_opengl)
 			HWR_DrawIntermissionBG();
 #endif
 	}
@@ -560,8 +564,7 @@ void Y_IntermissionDrawer(void)
 		else
 			string = va("%s starts in %d", cv_advancemap.string, tickdown);
 
-		V_DrawCenteredString(BASEVIDWIDTH/2, 188, hilicol,
-			string);
+		V_DrawCenteredString(BASEVIDWIDTH/2, 188, hilicol, string);
 	}
 
 	if ((demo.recording || demo.savemode == DSM_SAVED) && !demo.playback)
