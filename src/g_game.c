@@ -1554,6 +1554,11 @@ boolean G_Responder(event_t *ev)
 			{
 				K_ToggleDirector();
 			}
+			if (ev->data1 == gamecontrol[gc_freecam][0]
+				|| ev->data1 == gamecontrol[gc_freecam][1])
+			{
+				P_ToggleDemoCamera();
+			}
 
 			return true;
 
