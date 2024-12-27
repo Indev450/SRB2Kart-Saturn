@@ -3172,7 +3172,7 @@ INT32 V_SkinColorToHighlightcolor(skincolors_t color)
 		case SKINCOLOR_WHITE:
 		case SKINCOLOR_SILVER:
 		case SKINCOLOR_SLATE:
-			return 0; // White
+			return V_STEELMAP;
 		case SKINCOLOR_GREY:
 		case SKINCOLOR_NICKEL:
 		case SKINCOLOR_BLACK:
