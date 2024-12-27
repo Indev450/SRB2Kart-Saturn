@@ -5167,11 +5167,11 @@ static inline void K_SpawnNormalSpeedLines(player_t *player)
 	//fast->momz = 3*player->mo->momz/4;
 	P_SetTarget(&fast->target, player->mo); // easier lua access
 
-	if (goodSpeed)
+	/*if (goodSpeed)
 	{
 		fast->destscale = fast->destscale * 2;
 		P_SetScale(fast, 3*fast->scale/2);
-	}
+	}*/
 
 	K_MatchGenericExtraFlags(fast, player->mo);
 
