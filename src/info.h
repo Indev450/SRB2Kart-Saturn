@@ -239,6 +239,7 @@ enum actionnum
 	A_BRAKLOBSHOT,
 	A_NAPALMSCATTER,
 	A_SPAWNFRESHCOPY,
+	A_INVINCSPARKLEROTATE,
 	NUMACTIONS
 };
 
@@ -449,6 +450,7 @@ void A_BrakFireShot(struct mobj_s *actor);
 void A_BrakLobShot(struct mobj_s *actor);
 void A_NapalmScatter(struct mobj_s *actor);
 void A_SpawnFreshCopy(struct mobj_s *actor);
+void A_InvincSparkleRotate(struct mobj_s *actor);
 
 extern boolean actionsoverridden[NUMACTIONS];
 

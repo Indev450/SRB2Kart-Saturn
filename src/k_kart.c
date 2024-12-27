@@ -3521,11 +3521,21 @@ void K_SpawnSparkleTrail(mobj_t *mo)
 		fixed_t newz = mo->z + mo->momz + (P_RandomRange(0, mo->height>>FRACBITS)<<FRACBITS);
 
 		sparkle = P_SpawnMobj(newx, newy, newz, MT_SPARKLETRAIL);
-		K_FlipFromObject(sparkle, mo);
 
+		sparkle->angle = R_PointToAngle2(mo->x, mo->y, sparkle->x, sparkle->y);
+
+		sparkle->movefactor = R_PointToDist2(mo->x, mo->y, sparkle->x, sparkle->y);	// Save the distance we spawned away from the player.
+
+		sparkle->extravalue1 = (sparkle->z - mo->z);			// Keep track of our Z position relative to the player's, I suppose.
+		sparkle->extravalue2 = M_RandomRange(0, 1) ? 1 : -1;	// Rotation direction?
+		sparkle->cvmem = M_RandomRange(-25, 25)*mo->scale;		// Vertical "angle"
+
+		K_FlipFromObject(sparkle, mo);
 		P_SetTarget(&sparkle->target, mo);
+
 		sparkle->destscale = mo->destscale;
 		P_SetScale(sparkle, mo->scale);
+
 		sparkle->color = mo->color;
 
 		sparkle->lightlevel = M_RandomRange(20, 255);
