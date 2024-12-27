@@ -3095,6 +3095,29 @@ static mobj_t *K_SpawnKartMissile(mobj_t *source, mobjtype_t type, angle_t an, I
 	return NULL;
 }
 
+static UINT16 K_DriftSparkColor(player_t *player, INT32 charge)
+{
+	UINT16 color = SKINCOLOR_NONE;
+
+	if (charge >= K_GetKartDriftSparkValue(player)*4)
+	{
+		color = (UINT8)(1 + (leveltime % (MAXSKINCOLORS-1)));
+	}
+	else if (charge >= K_GetKartDriftSparkValue(player)*2)
+	{
+		if (charge <= (K_GetKartDriftSparkValue(player)*2)+(24*3))
+			color = SKINCOLOR_RASPBERRY; // transition
+		else
+			color = SKINCOLOR_KETCHUP;
+	}
+	else
+	{
+		color = SKINCOLOR_SAPPHIRE;
+	}
+
+	return color;
+}
+
 #define DRIFTSPARKGROWTICS 8
 
 static void K_SpawnDriftSparks(player_t *player)
@@ -3156,21 +3179,7 @@ static void K_SpawnDriftSparks(player_t *player)
 			spark->sloperoll = player->mo->sloperoll;
 		}
 
-		if (player->kartstuff[k_driftcharge] >= K_GetKartDriftSparkValue(player)*4)
-		{
-			spark->color = (UINT8)(1 + (leveltime % (MAXSKINCOLORS-1)));
-		}
-		else if (player->kartstuff[k_driftcharge] >= K_GetKartDriftSparkValue(player)*2)
-		{
-			if (player->kartstuff[k_driftcharge] <= (K_GetKartDriftSparkValue(player)*2)+(24*3))
-				spark->color = SKINCOLOR_RASPBERRY; // transition
-			else
-				spark->color = SKINCOLOR_KETCHUP;
-		}
-		else
-		{
-			spark->color = SKINCOLOR_SAPPHIRE;
-		}
+		spark->color = K_DriftSparkColor(player, player->kartstuff[k_driftcharge]);
 
 		if ((player->kartstuff[k_drift] > 0 && player->cmd.driftturn > 0) // Inward drifts
 			|| (player->kartstuff[k_drift] < 0 && player->cmd.driftturn < 0))
@@ -3648,21 +3657,9 @@ void K_DriftDustHandling(mobj_t *spawner)
 
 		if (stardust && dust->type == stardust)
 		{
-			if (!P_MobjWasRemoved(spawner) && spawner->player && spawner->player->mo)
+			if (!P_MobjWasRemoved(spawner->player->mo) && spawner->player->kartstuff[k_driftcharge])
 			{
-				if (spawner->player->kartstuff[k_driftcharge] >= K_GetKartDriftSparkValue(spawner->player)*4)
-					dust->color = (UINT8)(1 + (leveltime % (MAXSKINCOLORS-1)));
-				else if (spawner->player->kartstuff[k_driftcharge] >= K_GetKartDriftSparkValue(spawner->player)*2)
-				{
-						if (spawner->player->kartstuff[k_driftcharge] <= (K_GetKartDriftSparkValue(spawner->player)*2)+(24*3))
-							dust->color = SKINCOLOR_RASPBERRY; // transition
-						else
-							dust->color = SKINCOLOR_KETCHUP;
-				}
-				else if (spawner->player->kartstuff[k_driftcharge] >= K_GetKartDriftSparkValue(spawner->player))
-					dust->color = SKINCOLOR_SAPPHIRE;
-				else
-					dust->color = SKINCOLOR_SILVER;
+				dust->color = K_DriftSparkColor(spawner->player, spawner->player->kartstuff[k_driftcharge]);
 			}
 			else
 				dust->color = SKINCOLOR_SILVER; // fallback
