@@ -1213,6 +1213,8 @@ static menuitem_t OP_AllControlsMenu[] =
 	{IT_CONTROL, NULL, "Look Up",               M_ChangeControl, gc_lookup     },
 	{IT_CONTROL, NULL, "Look Down",             M_ChangeControl, gc_lookdown   },
 	{IT_CONTROL, NULL, "Center View",           M_ChangeControl, gc_centerview },
+	{IT_CONTROL, NULL, "Float",                 M_ChangeControl, gc_camfloat   },
+	{IT_CONTROL, NULL, "Sink",                  M_ChangeControl, gc_camsink    },
 	{IT_CONTROL, NULL, "Change Viewpoint",      M_ChangeControl, gc_viewpoint  },
 	{IT_CONTROL, NULL, "Reset Camera",          M_ChangeControl, gc_camreset   },
 	//{IT_CONTROL, NULL, "Toggle First-Person", M_ChangeControl, gc_camtoggle  },

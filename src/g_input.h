@@ -101,6 +101,8 @@ typedef enum
 	gc_custom3, // Lua scriptable
 	gc_director,
 	gc_freecam, // Toggle for freecam while ingame
+	gc_camfloat, // alternative button for raising cam
+	gc_camsink, // alternative button for sinking
 	num_gamecontrols
 } gamecontrols_e;
 

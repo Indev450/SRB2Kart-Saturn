@@ -3337,12 +3337,12 @@ void P_DemoCameraMovement(camera_t *cam)
 	// camera movement:
 	if (!democam.button_a_held)
 	{
-		if (cmd->buttons & BT_ACCELERATE)
+		if (cmd->buttons & BT_ACCELERATE || PLAYER1INPUTDOWN(gc_camfloat))
 		{
 			cam->z += 32*mapobjectscale;
 			moving = true;
 		}
-		else if (cmd->buttons & BT_BRAKE)
+		else if (cmd->buttons & BT_BRAKE || PLAYER1INPUTDOWN(gc_camsink))
 		{
 			cam->z -= 32*mapobjectscale;
 			moving = true;
