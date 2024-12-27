@@ -1224,9 +1224,14 @@ void R_SetupFrame(int s, boolean skybox)
 		thiscam->reset = false;
 	}
 
-	if (player->spectator) // no spectator chasecam
-		chasecam = false; // force chasecam off
-	else if (player->playerstate == PST_DEAD || player->exiting)
+	if (player->spectator)
+	{
+		// Free flying spectator uses demo freecam. This
+		// requires chasecam to be enabled.
+		chasecam = true;
+	}
+
+	if (player->playerstate == PST_DEAD || player->exiting)
 		chasecam = true; // force chasecam on
 
 	if (chasecam && (thiscam && !thiscam->chase))
@@ -1255,7 +1260,7 @@ void R_SetupFrame(int s, boolean skybox)
 
 		R_SetupCommonFrame(player, subsector);
 	}
-	else if (!player->spectator && (thiscam && chasecam)) // use outside cam view
+	else if (thiscam && chasecam) // use outside cam view
 	{
 		viewmobj = NULL;
 
