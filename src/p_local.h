@@ -315,6 +315,8 @@ void P_FlashPal(player_t *pl, UINT16 type, UINT16 duration);
 #define PAL_RECYCLE  3
 #define PAL_NUKE     4
 
+fixed_t P_GetMobjZMovement(mobj_t *mo);
+
 //
 // P_ENEMY
 //

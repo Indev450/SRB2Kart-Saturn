@@ -1753,6 +1753,7 @@ static void K_SpawnDashDustRelease(player_t *player)
 
 		dust->momx = 3*player->mo->momx/5;
 		dust->momy = 3*player->mo->momy/5;
+		dust->momz = 3*P_GetMobjZMovement(player->mo)/5;
 		//dust->momz = 3*player->mo->momz/5;
 
 		K_MatchGenericExtraFlags(dust, player->mo);
@@ -3170,6 +3171,7 @@ static void K_SpawnDriftSparks(player_t *player)
 
 		spark->momx = player->mo->momx/2;
 		spark->momy = player->mo->momy/2;
+		spark->momz = P_GetMobjZMovement(player->mo)/2;
 		//spark->momz = player->mo->momz/2;
 
 		// rotate the sparks based on pitch and roll; it just looks neat
@@ -3238,6 +3240,7 @@ static void K_SpawnAIZDust(player_t *player)
 
 		spark->momx = (6*player->mo->momx)/5;
 		spark->momy = (6*player->mo->momy)/5;
+		spark->momz = P_GetMobjZMovement(player->mo);
 		//spark->momz = player->mo->momz/2;
 
 		K_MatchGenericExtraFlags(spark, player->mo);
@@ -3563,7 +3566,8 @@ void K_SpawnWipeoutTrail(mobj_t *mo, boolean translucent)
 	{
 		dust->momx = mo->momx/2;
 		dust->momy = mo->momy/2;
-		dust->momz = mo->momz/2;
+		dust->momz = P_GetMobjZMovement(mo)/2;
+		//dust->momz = mo->momz/2;
 	}
 
 	if (translucent)
@@ -5149,7 +5153,8 @@ static inline void K_SpawnNormalSpeedLines(player_t *player)
 	fast->angle = K_MomentumAngle(player->mo, 6*player->mo->scale);
 	fast->momx = 3*player->mo->momx/4;
 	fast->momy = 3*player->mo->momy/4;
-	fast->momz = 3*player->mo->momz/4;
+	fast->momz = 3*P_GetMobjZMovement(player->mo)/4;
+	//fast->momz = 3*player->mo->momz/4;
 	P_SetTarget(&fast->target, player->mo); // easier lua access
 
 	if (goodSpeed)
