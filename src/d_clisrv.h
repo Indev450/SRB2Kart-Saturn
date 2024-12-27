@@ -645,7 +645,9 @@ extern char motd[254], server_context[8];
 extern UINT8 playernode[MAXPLAYERS];
 
 INT32 D_NumPlayers(void);
+
 void D_ResetTiccmds(void);
+ticcmd_t *D_LocalTiccmd(UINT8 ss);
 
 tic_t GetLag(INT32 node);
 //UINT8 GetFreeXCmdSize(UINT8 playerid);

@@ -1052,6 +1052,15 @@ boolean P_IsDisplayPlayer(const player_t *player)
 {
 	UINT8 i;
 
+	// Freecam still techically has a player in
+	// displayplayers. But since the camera is detached, it
+	// would be weird if sounds were heard from that player's
+	// perspective.
+	if (demo.freecam)
+	{
+		return false;
+	}
+
 	for (i = 0; i <= splitscreen; i++) // DON'T skip P1
 	{
 		if (player == &players[displayplayers[i]])
@@ -3125,16 +3134,9 @@ static fixed_t forwardmove[2] = {25<<FRACBITS>>16, 50<<FRACBITS>>16};
 static fixed_t sidemove[2] = {2<<FRACBITS>>16, 4<<FRACBITS>>16};
 static fixed_t angleturn[3] = {KART_FULLTURN/2, KART_FULLTURN, KART_FULLTURN/4}; // + slow turn
 
-static ticcmd_t cameracmd;
-
 struct demofreecam_s democam;
 
 // called by m_menu to reinit cam input every time it's toggled
-void P_InitCameraCmd(void)
-{
-	memset(&cameracmd, 0, sizeof(ticcmd_t));	// initialize cmd
-}
-
 static ticcmd_t *P_CameraCmd(camera_t *cam)
 {
 	INT32 laim, th, tspeed, forward, side, axis; //i
@@ -3146,12 +3148,12 @@ static ticcmd_t *P_CameraCmd(camera_t *cam)
 	INT32 player_invert;
 	INT32 screen_invert;
 
-	ticcmd_t *cmd = &cameracmd;
+	ticcmd_t *cmd =  D_LocalTiccmd(0);
 
 	(void)cam;
 
-	if (!demo.playback)
-		return cmd;	// empty cmd, no.
+	//if (!demo.playback)
+		//return cmd;	// empty cmd, no.
 
 	lang = democam.localangle;
 	laim = democam.localaiming;
@@ -3291,17 +3293,40 @@ static ticcmd_t *P_CameraCmd(camera_t *cam)
 	return cmd;
 }
 
+void P_ToggleDemoCamera(void)
+{
+	if (!demo.freecam)	// toggle on
+	{
+		demo.freecam = true;
+		democam.button_a_held = 2;
+		camera[0].reset_aiming = true;
+		democam.cam = &camera[0];	// this is rather useful
+	}
+	else	// toggle off
+	{
+		demo.freecam = false;
+		// reset democam vars:
+		democam.cam = NULL;
+		democam.turnheld = false;
+		democam.keyboardlook = false;	// reset only these. localangle / aiming gets set before the cam does anything anyway
+	}
+}
+
+#define intsign(n) \
+	((n) < 0 ? -1 : (n) > 0 ? 1 : 0)
+
 void P_DemoCameraMovement(camera_t *cam)
 {
 	ticcmd_t *cmd;
 	angle_t thrustangle;
-	mobj_t *awayviewmobj_hack;
 	player_t *lastp;
 
 	// update democam stuff with what we got here:
 	democam.cam = cam;
 	democam.localangle = cam->angle;
 	democam.localaiming = cam->aiming;
+
+	boolean moving = false;
 
 	// first off we need to get button input
 	cmd = P_CameraCmd(cam);
@@ -3310,11 +3335,24 @@ void P_DemoCameraMovement(camera_t *cam)
 	cam->angle = cmd->angleturn<<16;
 
 	// camera movement:
+	if (!democam.button_a_held)
+	{
+		if (cmd->buttons & BT_ACCELERATE)
+		{
+			cam->z += 32*mapobjectscale;
+			moving = true;
+		}
+		else if (cmd->buttons & BT_BRAKE)
+		{
+			cam->z -= 32*mapobjectscale;
+			moving = true;
+		}
+	}
 
-	if (cmd->buttons & BT_ACCELERATE)
-		cam->z += 32*mapobjectscale;
-	else if (cmd->buttons & BT_BRAKE)
-		cam->z -= 32*mapobjectscale;
+	if (!(cmd->buttons & (BT_ACCELERATE | BT_DRIFT)) && democam.button_a_held)
+	{
+		democam.button_a_held--;
+	}
 
 	// if you hold item, you will lock on to displayplayer. (The last player you were ""f12-ing"")
 	if (cmd->buttons & BT_ATTACK)
@@ -3322,34 +3360,63 @@ void P_DemoCameraMovement(camera_t *cam)
 		lastp = &players[displayplayers[0]];	// Fun fact, I was trying displayplayers[0]->mo as if it was Lua like an absolute idiot.
 		cam->angle = R_PointToAngle2(cam->x, cam->y, lastp->mo->x, lastp->mo->y);
 		cam->aiming = R_PointToAngle2(0, cam->z, R_PointToDist2(cam->x, cam->y, lastp->mo->x, lastp->mo->y), lastp->mo->z + lastp->mo->scale*128*P_MobjFlip(lastp->mo));	// This is still unholy. Aim a bit above their heads.
+
+		cam->reset_aiming = false;
 	}
+
+	if (cmd->forwardmove != 0)
+	{
+		moving = true;
+	}
+
+	// After switching to democam, the vertical angle of
+	// chasecam is inherited. This is intentional because it
+	// creates a smooth transition. However, moving
+	// forward/back will have a slope. So, as long as democam
+	// controls haven't been used to alter the vertical angle,
+	// slowly reset it to flat.
+	if ((cam->reset_aiming && moving) || ((cmd->buttons & BT_DRIFT) && !democam.button_a_held))
+	{
+		INT32 aiming = cam->aiming;
+		INT32 smooth = FixedMul(ANGLE_11hh / 4, FCOS(cam->aiming));
+
+		if (abs(smooth) < abs(aiming))
+		{
+			cam->aiming -= smooth * intsign(aiming);
+		}
+		else
+		{
+			cam->aiming = 0;
+			cam->reset_aiming = false; // completely smoothed out
+		}
+	}
+
+	G_ClipAimingPitch((INT32 *)&cam->aiming);
 
 	cam->momx = cam->momy = cam->momz = 0;
 	if (cmd->forwardmove != 0)
 	{
-
 		thrustangle = cam->angle >> ANGLETOFINESHIFT;
 
 		cam->x += FixedMul(cmd->forwardmove*mapobjectscale, FINECOSINE(thrustangle));
 		cam->y += FixedMul(cmd->forwardmove*mapobjectscale, FINESINE(thrustangle));
-		cam->z += FixedMul(cmd->forwardmove*mapobjectscale, AIMINGTOSLOPE(cam->aiming));
+
+		if (!cam->reset_aiming)
+		{
+			cam->z += FixedMul(cmd->forwardmove*mapobjectscale, AIMINGTOSLOPE(cam->aiming));
+		}
+
 		// momentums are useless here, directly add to the coordinates
 
 		// this.......... doesn't actually check for floors and walls and whatnot but the function to do that is a pure mess so fuck that.
 		// besides freecam going inside walls sounds pretty cool on paper.
 	}
 
-	// awayviewmobj hack; this is to prevent us from hearing sounds from the player's perspective
-
-	awayviewmobj_hack = P_SpawnMobj(cam->x, cam->y, cam->z, MT_THOK);
-	awayviewmobj_hack->tics = 2;
-	awayviewmobj_hack->flags2 |= MF2_DONTDRAW;
-
-	democam.soundmobj = awayviewmobj_hack;
-
 	// update subsector to avoid crashes;
 	cam->subsector = R_PointInSubsectorFast(cam->x, cam->y);
 }
+
+#undef intsign
 
 void P_ResetCamera(player_t *player, camera_t *thiscam)
 {
@@ -3395,6 +3462,9 @@ void P_ResetCamera(player_t *player, camera_t *thiscam)
 	thiscam->radius = 20*FRACUNIT;
 	thiscam->height = 16*FRACUNIT;
 
+	thiscam->reset_aiming = true;
+
+
 	while (!P_MoveChaseCamera(player,thiscam,true) && ++tries < 2*TICRATE);
 }
 
@@ -3416,8 +3486,6 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	subsector_t *newsubsec;
 #endif
 
-	democam.soundmobj = NULL;	// reset this each frame, we don't want the game crashing for stupid reasons now do we
-
 	// We probably shouldn't move the camera if there is no player or player mobj somehow
 	if (!player || !player->mo)
 		return true;
@@ -3426,11 +3494,15 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	if (thiscam->subsector == NULL || thiscam->subsector->sector == NULL)
 		return true;
 
-	if (demo.freecam)
+	if (demo.freecam || player->spectator)
 	{
 		P_DemoCameraMovement(thiscam);
 		return true;
 	}
+
+	if (paused || P_AutoPause())
+		return true;
+
 
 	if (thiscam == &camera[1]) // Camera 2
 	{

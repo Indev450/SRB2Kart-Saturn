@@ -10842,6 +10842,15 @@ void P_SpawnPlayer(INT32 playernum)
 			P_SetScale(karmahitbox, mobj->scale);
 		}
 	}
+
+	// TODO: handle splitscreen
+	// Spectators can switch to freecam. This should be
+	// disabled when they enter the race, or when the level
+	// changes.
+	if (playernum == consoleplayer && !demo.playback)
+	{
+		demo.freecam = false;
+	}
 }
 
 void P_AfterPlayerSpawn(INT32 playernum)
@@ -10884,15 +10893,18 @@ void P_AfterPlayerSpawn(INT32 playernum)
 
 	SV_SpawnPlayer(playernum, mobj->x, mobj->y, mobj->angle);
 
-	for (i = 0; i <= splitscreen; i++)
+	if (p->spectator == false)
 	{
-		if (!camera[i].chase)
-			continue;
+		for (i = 0; i <= splitscreen; i++)
+		{
+			if (!camera[i].chase)
+				continue;
 
-		if (displayplayers[i] != playernum)
-			continue;
+			if (displayplayers[i] != playernum)
+				continue;
 
-		P_ResetCamera(p, &camera[i]);
+			P_ResetCamera(p, &camera[i]);
+		}
 	}
 
 	if (CheckForReverseGravity)
