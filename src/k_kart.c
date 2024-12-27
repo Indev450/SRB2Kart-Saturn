@@ -3240,7 +3240,7 @@ static void K_SpawnAIZDust(player_t *player)
 
 		spark->momx = (6*player->mo->momx)/5;
 		spark->momy = (6*player->mo->momy)/5;
-		spark->momz = P_GetMobjZMovement(player->mo);
+		spark->momz = P_GetMobjZMovement(player->mo)/2;
 		//spark->momz = player->mo->momz/2;
 
 		K_MatchGenericExtraFlags(spark, player->mo);
