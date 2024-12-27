@@ -2576,6 +2576,7 @@ static void P_InitMinimapInfo(void)
 	INT32 lumpnum;
 	fixed_t a;
 	fixed_t b;
+
 	node_t *bsp = &nodes[numnodes-1];
 
 	minimapinfo.minimap_pic = NULL;
@@ -3289,7 +3290,8 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, boolean local)
 
 // Only exists to make sure there's no way to overwrite partadd_stage externally
 // unless you really push yourself.
-SINT8 P_PartialAddGetStage(void) {
+SINT8 P_PartialAddGetStage(void)
+{
 	return partadd_stage;
 }
 

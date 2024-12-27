@@ -9991,7 +9991,7 @@ static void K_drawKartMinimap(void)
 	INT32 i = 0;
 	INT32 x, y;
 	INT32 minimaptrans, splitflags;
-	SINT8 localplayers[4];
+	SINT8 localplayers[MAXSPLITSCREENPLAYERS];
 	SINT8 numlocalplayers = 0;
 
 	// Draw the HUD only when playing in a level.
@@ -10012,7 +10012,6 @@ static void K_drawKartMinimap(void)
 	x = info.x - (SHORT(minimapinfo.minimap_pic->width)/2);
 	y = info.y - (SHORT(minimapinfo.minimap_pic->height)/2);
 	splitflags = info.flags;
-
 
 	if (forceshowhud)
 		minimaptrans = cv_kartminimap.value;
@@ -10049,7 +10048,7 @@ static void K_drawKartMinimap(void)
 	y -= SHORT(minimapinfo.minimap_pic->topoffset);
 
 	// initialize
-	for (i = 0; i < 4; i++)
+	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 		localplayers[i] = -1;
 
 	// Player's tiny icons on the Automap. (drawn opposite direction so player 1 is drawn last in splitscreen)
@@ -10065,8 +10064,7 @@ static void K_drawKartMinimap(void)
 		if (!stplyr->mo || stplyr->spectator) // do we need the latter..?
 			return;
 
-		localplayers[numlocalplayers] = stplyr-players;
-		numlocalplayers++;
+		localplayers[numlocalplayers++] = stplyr-players;
 	}
 	else
 	{
@@ -10074,29 +10072,27 @@ static void K_drawKartMinimap(void)
 		{
 			if (!playeringame[i])
 				continue;
+
 			if (!players[i].mo || players[i].spectator)
 				continue;
-
-			if (i != displayplayers[0] || splitscreen)
-			{
-				if (G_BattleGametype() && players[i].kartstuff[k_bumper] <= 0)
-					continue;
-
-				if (players[i].kartstuff[k_hyudorotimer] > 0)
-				{
-					if (!((players[i].kartstuff[k_hyudorotimer] < 1*TICRATE/2
-						|| players[i].kartstuff[k_hyudorotimer] > hyudorotime-(1*TICRATE/2))
-						&& !(leveltime & 1)))
-						continue;
-				}
-			}
 
 			if (P_IsDisplayPlayer(&players[i]))
 			{
 				// Draw display players on top of everything else
-				localplayers[numlocalplayers] = i;
-				numlocalplayers++;
+				localplayers[numlocalplayers++] = i;
 				continue;
+			}
+
+			// Now we know it's not a display player, handle non-local player exceptions.
+			if (G_BattleGametype() && players[i].kartstuff[k_bumper] <= 0)
+				continue;
+
+			if (players[i].kartstuff[k_hyudorotimer] > 0)
+			{
+				if (!((players[i].kartstuff[k_hyudorotimer] < 1*TICRATE/2
+					|| players[i].kartstuff[k_hyudorotimer] > hyudorotime-(1*TICRATE/2))
+					&& !(leveltime & 1)))
+					continue;
 			}
 
 			K_drawKartMinimapHead(players[i].mo, x, y, splitflags);
@@ -10109,8 +10105,12 @@ static void K_drawKartMinimap(void)
 
 	for (i = 0; i < numlocalplayers; i++)
 	{
-		if (i == -1)
+		if (localplayers[i] == -1)
 			continue; // this doesn't interest us
+
+		if ((players[i].kartstuff[k_hyudorotimer] > 0) && (leveltime & 1))
+			continue;
+
 		K_drawKartMinimapHead(players[localplayers[i]].mo, x, y, splitflags);
 	}
 }
