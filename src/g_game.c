@@ -1547,10 +1547,22 @@ boolean G_Responder(event_t *ev)
 					COM_ImmedExecute("changeteam4 spectator");
 				}
 			}
-			if (ev->data1 == gamecontrol[gc_director][0]
-				|| ev->data1 == gamecontrol[gc_director][1])
+
+			if (ev->data1 == gamecontrol[gc_director][0] || ev->data1 == gamecontrol[gc_director][1])
 			{
-				K_ToggleDirector();
+				K_ToggleDirector(0);
+			}
+			else if (ev->data1 == gamecontrolbis[gc_director][0] || ev->data1 == gamecontrolbis[gc_director][1])
+			{
+				K_ToggleDirector(1);
+			}
+			else if (ev->data1 == gamecontrol3[gc_director][0] || ev->data1 == gamecontrol3[gc_director][1])
+			{
+				K_ToggleDirector(2);
+			}
+			else if (ev->data1 == gamecontrol4[gc_director][0] || ev->data1 == gamecontrol4[gc_director][1])
+			{
+				K_ToggleDirector(3);
 			}
 
 			if (ev->data1 == gamecontrol[gc_freecam][0] || ev->data1 == gamecontrol[gc_freecam][1])

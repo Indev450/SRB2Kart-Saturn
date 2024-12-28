@@ -11,7 +11,7 @@
 /// \brief SRB2kart automatic spectator camera.
 
 void K_InitDirector(void);
-void K_UpdateDirector(void);
+void K_UpdateDirector(UINT8 viewnum);
 void K_DrawDirectorDebugger(void);
 void K_DirectorFollowAttack(player_t *player, mobj_t *inflictor, mobj_t *source);
-void K_ToggleDirector(void);
+void K_ToggleDirector(UINT8 viewnum);
