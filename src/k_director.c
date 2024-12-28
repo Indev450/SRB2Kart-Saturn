@@ -72,15 +72,16 @@ static fixed_t ScaleFromMap(fixed_t n, fixed_t scale)
 	return FixedMul(n, FixedDiv(scale, mapobjectscale));
 }
 
-static boolean K_DirectorIsAvailable(UINT8 viewnum)
+boolean K_DirectorIsAvailable(UINT8 viewnum)
 {
-	return ((gamestate == GS_LEVEL) && (viewnum <= splitscreen) && (!playeringame[displayplayers[viewnum]] || players[displayplayers[viewnum]].spectator));
+	if ((demo.playback && demo.title) || modeattacking)
+		return false;
+	return ((gamestate == GS_LEVEL) && (viewnum <= splitscreen) && (!playeringame[displayplayers[viewnum]] || players[displayplayers[viewnum]].spectator) && !camera[viewnum].freecam);
 }
 
 static boolean K_DirectorIsEnabled(const UINT8 viewnum)
 {
-	//return cv_director.value && !splitscreen && (gamestate == GS_LEVEL && (((!playeringame[consoleplayer] || players[consoleplayer].spectator)) || (demo.playback && !camera[0].freecam && (!demo.title || !modeattacking))) && !K_DirectorIsPlayerAlone());
-	return (cv_director[viewnum].value && (K_DirectorIsAvailable(viewnum) || (demo.playback && (!demo.title || !modeattacking) && !camera[viewnum].freecam)) && !K_DirectorIsPlayerAlone());
+	return (cv_director[viewnum].value && K_DirectorIsAvailable(viewnum) && !K_DirectorIsPlayerAlone());
 }
 
 void K_InitDirector(void)

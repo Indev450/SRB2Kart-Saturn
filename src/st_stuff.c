@@ -667,7 +667,7 @@ static void ST_overlayDrawer(void)
 
 	if (!hu_showscores) // hide the following if TAB is held
 	{
-		if (cv_showdirectorhud.value && !splitscreen && ((demo.playback && !camera[viewnum].freecam && (!demo.title || !modeattacking)) || !P_IsLocalPlayer(stplyr)) && !K_DirectorIsPlayerAlone())
+		if (cv_showdirectorhud.value && !splitscreen && !P_IsLocalPlayer(stplyr) && K_DirectorIsAvailable(0) && !K_DirectorIsPlayerAlone())
 		{
 			char directortext[20] = {0};
 
