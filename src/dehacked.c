@@ -8564,6 +8564,16 @@ static int lua_enumlib_mariomode_get(lua_State *L)
 	return 1;
 }
 
+static int lua_enumlib_replayfreecam_get(lua_State *L)
+{
+	if (dedicated) // huh?
+		lua_pushboolean(L, false);
+	else
+		lua_pushboolean(L, camera[R_GetViewNumber()].freecam);
+
+	return 1;
+}
+
 static int lua_enumlib_twodlevel_get(lua_State *L)
 {
 	lua_pushboolean(L, twodlevel);
@@ -9239,10 +9249,10 @@ int LUA_EnumLib(lua_State *L)
 	lua_glib_push_bool_getter(L, &demo.playback);
 	lua_call(L, 2, 0);
 
-	/*lua_pushcfunction(L, lua_glib_new_getter);
+	lua_pushcfunction(L, lua_glib_new_getter);
 	lua_pushliteral(L, "replayfreecam");
-	lua_glib_push_bool_getter(L, &demo.freecam);
-	lua_call(L, 2, 0);*/
+	lua_pushcfunction(L, lua_enumlib_replayfreecam_get);
+	lua_call(L, 2, 0);
 
 	if (!mathlib)
 	{
