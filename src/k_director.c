@@ -31,7 +31,6 @@
 
 struct directorinfo
 {
-	boolean active;
 	tic_t cooldown; // how long has it been since we last switched?
 	tic_t freeze;   // when nonzero, fixed switch pending, freeze logic!
 	INT32 attacker; // who to switch to when freeze delay elapses
@@ -76,7 +75,7 @@ static fixed_t ScaleFromMap(fixed_t n, fixed_t scale)
 static boolean K_DirectorIsEnabled(const UINT8 viewnum)
 {
 	//return cv_director.value && !splitscreen && (gamestate == GS_LEVEL && (((!playeringame[consoleplayer] || players[consoleplayer].spectator)) || (demo.playback && !camera[0].freecam && (!demo.title || !modeattacking))) && !K_DirectorIsPlayerAlone());
-	return directorinfosplit[viewnum].active;
+	return (cv_director[viewnum].value && (gamestate == GS_LEVEL && (((!playeringame[displayplayers[viewnum]] || players[displayplayers[viewnum]].spectator)) || (demo.playback && !camera[viewnum].freecam && (!demo.title || !modeattacking))) && !K_DirectorIsPlayerAlone()));
 }
 
 void K_InitDirector(void)
@@ -89,7 +88,6 @@ void K_InitDirector(void)
 		directorinfosplit[i].freeze = 0;
 		directorinfosplit[i].attacker = 0;
 		directorinfosplit[i].maxdist = 0;
-		directorinfosplit[i].active = 0;
 
 		for (playernum = 0; playernum < MAXPLAYERS; playernum++)
 		{
@@ -254,6 +252,7 @@ static void K_DirectorForceSwitch(INT32 player, INT32 time, const UINT8 viewnum)
 	directorinfosplit[viewnum].freeze = time;
 }
 
+// HACK: this is awful but idk any other way to pass the viewnum to this
 static UINT8 curview = 0;
 
 void K_DirectorFollowAttack(player_t *player, mobj_t *inflictor, mobj_t *source)
@@ -262,11 +261,6 @@ void K_DirectorFollowAttack(player_t *player, mobj_t *inflictor, mobj_t *source)
 		return;
 
 	if (!K_DirectorIsEnabled(curview))
-	{
-		return;
-	}
-
-	if (!P_IsDisplayPlayer(player))
 	{
 		return;
 	}
@@ -441,6 +435,9 @@ void K_ToggleDirector(const UINT8 viewnum)
 	//if (!directortextactive)
 		//return;
 
+	if (gamestate != GS_LEVEL && (playeringame[displayplayers[viewnum]] || !players[displayplayers[viewnum]].spectator))
+		return;
+
 	if (!K_DirectorIsEnabled(viewnum))
 	{
 		directorinfosplit[viewnum].cooldown = 0; // switch immediately
@@ -448,12 +445,21 @@ void K_ToggleDirector(const UINT8 viewnum)
 
 	directortoggletimer = 0;
 
-	if (directorinfosplit[viewnum].active == false)
-		directorinfosplit[viewnum].active = true;
-	else
-		directorinfosplit[viewnum].active = false;
-
-	CONS_Printf("director active %d for %d\n", directorinfosplit[viewnum].active, viewnum);
-
-	//COM_ImmedExecute("add director 1");
+	switch (viewnum)
+	{
+		case 1:
+			COM_ImmedExecute("add director2 1");
+			break;
+		case 2:
+			COM_ImmedExecute("add director3 1");
+			break;
+		case 3:
+			COM_ImmedExecute("add director4 1");
+			break;
+		case 0:
+			COM_ImmedExecute("add director 1");
+			break;
+		default:
+			break;
+	}
 }
