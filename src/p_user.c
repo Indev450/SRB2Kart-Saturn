@@ -3133,9 +3133,17 @@ fixed_t t_cam_rotate[MAXSPLITSCREENPLAYERS] = {-42, -42, -42, -42};
 
 #define MAXCAMERADIST 140*FRACUNIT // Max distance the camera can be in front of the player (2D mode)
 
+static fixed_t forwardmove[2] = {25<<FRACBITS>>16, 50<<FRACBITS>>16};
+static fixed_t sidemove[2] = {2<<FRACBITS>>16, 4<<FRACBITS>>16};
+static fixed_t angleturn[3] = {KART_FULLTURN/2, KART_FULLTURN, KART_FULLTURN/4}; // + slow turn
+
+static ticcmd_t cameracmd[MAXSPLITSCREENPLAYERS];
+
 void P_ToggleDemoCamera(UINT8 viewnum)
 {
 	camera_t *cam = &camera[viewnum];
+
+	memset(&cameracmd[viewnum], 0, sizeof(ticcmd_t));
 
 	if (!cam->freecam)	// toggle on
 	{
@@ -3149,20 +3157,180 @@ void P_ToggleDemoCamera(UINT8 viewnum)
 	}
 }
 
+static ticcmd_t *P_CameraCmd(camera_t *cam, UINT8 num)
+{
+	INT32 laim, forward, side, axis; //i
+	// these ones used for multiple conditions
+	boolean turnleft, turnright;
+	boolean usejoystick, kbl;
+	angle_t lang;
+	INT32 screen_invert;
+	const UINT8 forplayer = num+1;
+
+	ticcmd_t *cmd = &cameracmd[num];
+
+	lang = cam->localangle;
+	laim = cam->localaiming;
+	kbl = cam->keyboardlook;
+
+	if (!cam->freecam)
+		return cmd;	// empty cmd, no.
+
+	switch (num)
+	{
+		case 1:
+			G_CopyTiccmd(cmd, I_BaseTiccmd2(), 1);
+			break;
+		case 2:
+			G_CopyTiccmd(cmd, I_BaseTiccmd3(), 1);
+			break;
+		case 3:
+			G_CopyTiccmd(cmd, I_BaseTiccmd4(), 1);
+			break;
+		case 0:
+		default:
+			G_CopyTiccmd(cmd, I_BaseTiccmd(), 1); // empty, or external driver
+			break;
+	}
+
+	cmd->angleturn = (INT16)(lang >> 16);
+	cmd->aiming = G_ClipAimingPitch(&laim);
+
+	const boolean lookaxis = cv_lookaxis[num].value;
+	const boolean analogjoystickmove = cv_usejoystick[num].value && !Joystick[num].bGamepadStyle;
+	const boolean gamepadjoystickmove = cv_usejoystick[num].value && Joystick[num].bGamepadStyle;
+
+	usejoystick = (analogjoystickmove || gamepadjoystickmove);
+
+	turnright = InputDown(gc_turnright, forplayer);
+	turnleft = InputDown(gc_turnleft, forplayer);
+
+	axis = JoyAxis(AXISTURN, forplayer);
+
+	if (encoremode)
+	{
+		turnright ^= turnleft; // swap these using three XORs
+		turnleft ^= turnright;
+		turnright ^= turnleft;
+		axis = -axis;
+	}
+
+	if (gamepadjoystickmove && axis != 0)
+	{
+		turnright = turnright || (axis > 0);
+		turnleft = turnleft || (axis < 0);
+	}
+	forward = side = 0;
+
+	// let movement keys cancel each other out
+	if (turnright && !(turnleft))
+	{
+		cmd->angleturn = (INT16)(cmd->angleturn - (angleturn[1]));
+		side += sidemove[1];
+	}
+	else if (turnleft && !(turnright))
+	{
+		cmd->angleturn = (INT16)(cmd->angleturn + (angleturn[1]));
+		side -= sidemove[1];
+	}
+
+	if (analogjoystickmove && axis != 0)
+	{
+		// JOYAXISRANGE should be 1023 (divide by 1024)
+		cmd->angleturn = (INT16)(cmd->angleturn - (((axis * angleturn[1]) >> 10))); // ANALOG!
+		side += ((axis * sidemove[0]) >> 10);
+	}
+
+	cmd->angleturn = (INT16)(cmd->angleturn - ((mousex*(encoremode ? -1 : 1)*8)));
+
+	axis = JoyAxis(AXISAIM, forplayer);
+	if (InputDown(gc_aimforward, forplayer) || (usejoystick && axis < 0))
+		forward += forwardmove[1];
+	if (InputDown(gc_aimbackward, forplayer) || (usejoystick && axis > 0))
+		forward -= forwardmove[1];
+
+	// fire with any button/key
+	axis = JoyAxis(AXISFIRE, forplayer);
+	if (InputDown(gc_fire, 1) || (usejoystick && axis > 0))
+		cmd->buttons |= BT_ATTACK;
+
+	// spectator aiming shit, ahhhh...
+	screen_invert = 1;	// nope
+
+	// mouse look stuff (mouse look is not the same as mouse aim)
+	kbl = false;
+
+	// looking up/down
+	laim += (mlooky<<19)*screen_invert;
+
+	axis = JoyAxis(AXISLOOK, forplayer);
+
+	if (analogjoystickmove && axis != 0 && lookaxis)
+		laim += (axis<<16) * screen_invert;
+
+	// spring back if not using keyboard neither mouselookin'
+	if (!kbl && !lookaxis)
+		laim = 0;
+
+	if (InputDown(gc_lookup, forplayer) || (gamepadjoystickmove && axis < 0))
+	{
+		laim += KB_LOOKSPEED * screen_invert;
+		kbl = true;
+	}
+	else if (InputDown(gc_lookdown, forplayer) || (gamepadjoystickmove && axis > 0))
+	{
+		laim -= KB_LOOKSPEED * screen_invert;
+		kbl = true;
+	}
+
+	if (InputDown(gc_centerview, forplayer)) // No need to put a spectator limit on this one though :V
+		laim = 0;
+
+	cmd->aiming = G_ClipAimingPitch(&laim);
+
+	mousex = mousey = mlooky = 0;
+
+	if (forward > MAXPLMOVE)
+		forward = MAXPLMOVE;
+	else if (forward < -MAXPLMOVE)
+		forward = -MAXPLMOVE;
+
+	if (side > MAXPLMOVE)
+		side = MAXPLMOVE;
+	else if (side < -MAXPLMOVE)
+		side = -MAXPLMOVE;
+
+	if (forward || side)
+	{
+		cmd->forwardmove = (SINT8)(cmd->forwardmove + forward);
+		cmd->sidemove = (SINT8)(cmd->sidemove + side);
+	}
+
+	lang += (cmd->angleturn<<16);
+
+	cam->localangle = lang;
+	cam->localaiming = laim;
+	cam->keyboardlook = kbl;
+
+	return cmd;
+}
+
 #define intsign(n) \
 	((n) < 0 ? -1 : (n) > 0 ? 1 : 0)
 
-void P_DemoCameraMovement(camera_t *cam, UINT8 num)
+static void P_DemoCameraMovement(camera_t *cam, UINT8 num)
 {
 	ticcmd_t *cmd;
 	angle_t thrustangle;
 	player_t *lastp;
-	angle_t turning;
-
+	const UINT8 forplayer = num+1;
 	boolean moving = false;
 
+	cam->localangle = cam->angle;
+	cam->localaiming = cam->aiming;
+
 	// first off we need to get button input
-	cmd = D_LocalTiccmd(num);
+	cmd = P_CameraCmd(cam, num);
 
 	if (cmd->aiming != 0)
 	{
@@ -3171,31 +3339,26 @@ void P_DemoCameraMovement(camera_t *cam, UINT8 num)
 		cam->reset_aiming = false;
 	}
 
-	turning = cmd->angleturn << 16;
-	if (encoremode)
-	{
-		turning = -turning;
-	}
-	cam->angle = turning;
+	cam->angle = cmd->angleturn << 16;
 
 	// camera movement:
 	if (!cam->button_a_held)
 	{
 		fixed_t spd = 32*mapobjectscale*cv_freecam_speed.value;
 
-		if (InputDown(gc_camfloat, num+1))
+		if (InputDown(gc_camfloat, forplayer))
 		{
 			cam->z += spd;
 			moving = true;
 		}
-		else if (InputDown(gc_camsink, num+1))
+		else if (InputDown(gc_camsink, forplayer))
 		{
 			cam->z -= spd;
 			moving = true;
 		}
 	}
 
-	if (!(InputDown(gc_camfloat, num+1) || InputDown(gc_camsink, num+1)) && cam->button_a_held)
+	if (!(InputDown(gc_camfloat, forplayer) || InputDown(gc_camsink, forplayer)) && cam->button_a_held)
 	{
 		cam->button_a_held--;
 	}
@@ -3221,7 +3384,7 @@ void P_DemoCameraMovement(camera_t *cam, UINT8 num)
 	// forward/back will have a slope. So, as long as democam
 	// controls haven't been used to alter the vertical angle,
 	// slowly reset it to flat.
-	if ((cam->reset_aiming && moving) || ((InputDown(gc_camsink, num+1)) && !cam->button_a_held))
+	if ((cam->reset_aiming && moving) || ((InputDown(gc_camsink, forplayer)) && !cam->button_a_held))
 	{
 		INT32 aiming = cam->aiming;
 		INT32 smooth = FixedMul(ANGLE_11hh / 4, FCOS(cam->aiming));

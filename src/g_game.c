@@ -886,6 +886,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		thiscam = (player->bot == 2 ? &camera[0] : &camera[forplayer]);
 	else
 		thiscam = &camera[forplayer];
+
 	lang = localangle[forplayer];
 	laim = localaiming[forplayer];
 	th = turnheld[forplayer];
@@ -7861,6 +7862,9 @@ void G_StopDemo(void)
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; ++i)
 	{
 		camera[i].freecam = false;
+		camera[i].localangle = 0;
+		camera[i].localaiming = 0;
+		camera[i].keyboardlook = false;
 	}
 
 	CV_SetValue(&cv_playbackspeed, 1);
