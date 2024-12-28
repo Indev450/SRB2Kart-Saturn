@@ -3133,13 +3133,9 @@ static fixed_t forwardmove[2] = {25<<FRACBITS>>16, 50<<FRACBITS>>16};
 static fixed_t sidemove[2] = {2<<FRACBITS>>16, 4<<FRACBITS>>16};
 static fixed_t angleturn[3] = {KART_FULLTURN/2, KART_FULLTURN, KART_FULLTURN/4}; // + slow turn
 
-static ticcmd_t cameracmd[MAXSPLITSCREENPLAYERS];
-
 void P_ToggleDemoCamera(UINT8 viewnum)
 {
 	camera_t *cam = &camera[viewnum];
-
-	memset(&cameracmd[viewnum], 0, sizeof(ticcmd_t));
 
 	if (!cam->freecam)	// toggle on
 	{
@@ -3163,14 +3159,14 @@ static ticcmd_t *P_CameraCmd(camera_t *cam, UINT8 num)
 	INT32 screen_invert;
 	const UINT8 forplayer = num+1;
 
-	ticcmd_t *cmd = &cameracmd[num];
+	ticcmd_t *cmd = D_LocalTiccmd(num);
+
+	if (!cam->freecam)
+		return cmd;	// empty cmd, no.
 
 	lang = cam->localangle;
 	laim = cam->localaiming;
 	kbl = cam->keyboardlook;
-
-	if (!cam->freecam)
-		return cmd;	// empty cmd, no.
 
 	switch (num)
 	{
