@@ -465,7 +465,7 @@ void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
 			listenmobj[i] = player->mo;
 		}
 
-		if (origin && origin == listenmobj[i] && !demo.freecam)
+		if (origin && origin == listenmobj[i] && !camera[i].freecam)
 		{
 			itsUs = true;
 		}
@@ -768,15 +768,15 @@ void S_UpdateSounds(void)
 				{
 					boolean itsUs = false;
 
-					if (!demo.freecam)
+					for (i = splitscreen; i >= 0; i--)
 					{
-						for (i = splitscreen; i >= 0; i--)
-						{
-							if (c->origin != listenmobj[i])
-								continue;
+						if (camera[i].freecam)
+							continue;
 
-							itsUs = true;
-						}
+						if (c->origin != listenmobj[i])
+							continue;
+
+						itsUs = true;
 					}
 
 					if (itsUs == false)

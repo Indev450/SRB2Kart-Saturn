@@ -867,6 +867,7 @@ static inline int intsign(int n) {
 angle_t R_ViewRollAngle(const player_t *player)
 {
 	angle_t roll = 0;
+	const UINT8 viewnum = R_GetViewNumber();
 
 	if (gamestate != GS_LEVEL)
 	{
@@ -885,7 +886,7 @@ angle_t R_ViewRollAngle(const player_t *player)
 
 	if (cv_tilting.value)
 	{
-		if (!player->spectator && !demo.freecam)
+		if (!player->spectator && !camera[viewnum].freecam)
 			roll += player->tilt;
 
 		if (cv_actionmovie.value)

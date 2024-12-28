@@ -1279,7 +1279,7 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 		dontforcespb = true;
 
 	// This makes the roulette produce the random noises.
-	if ((player->kartstuff[k_itemroulette] % 3) == 1 && P_IsDisplayPlayer(player) && !demo.freecam)
+	if ((player->kartstuff[k_itemroulette] % 3) == 1 && P_IsDisplayPlayer(player))
 	{
 #define PLAYROULETTESND S_StartSound(NULL, sfx_itrol1 + ((player->kartstuff[k_itemroulette] / 3) % 8))
 		for (i = 0; i <= splitscreen; i++)
@@ -1313,7 +1313,7 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 		//player->kartstuff[k_itemblinkmode] = 1;
 		player->kartstuff[k_itemroulette] = 0;
 		player->kartstuff[k_roulettetype] = 0;
-		if (P_IsDisplayPlayer(player) && !demo.freecam)
+		if (P_IsDisplayPlayer(player))
 			S_StartSound(NULL, sfx_itrole);
 		return;
 	}
@@ -1326,7 +1326,7 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 		player->kartstuff[k_itemblinkmode] = 2;
 		player->kartstuff[k_itemroulette] = 0;
 		player->kartstuff[k_roulettetype] = 0;
-		if (P_IsDisplayPlayer(player) && !demo.freecam)
+		if (P_IsDisplayPlayer(player))
 			S_StartSound(NULL, sfx_dbgsal);
 		return;
 	}
@@ -1358,7 +1358,7 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 		player->kartstuff[k_itemamount] = 1;
 	}
 
-	if (P_IsDisplayPlayer(player) && !demo.freecam)
+	if (P_IsDisplayPlayer(player))
 		S_StartSound(NULL, ((player->kartstuff[k_roulettetype] == 1) ? sfx_itrolk : (mashed ? sfx_itrolm : sfx_itrolf)));
 
 	player->kartstuff[k_itemblink] = TICRATE;
@@ -9656,7 +9656,7 @@ static void K_drawDriftGauge(void)
 		0, 31, 47, 63, 79, 95, 111, 119, 127, 143, 159, 175, 183, 191, 199, 207, 223, 247
 	};
 
-	if (demo.playback && demo.freecam)
+	if (demo.playback && camera[R_GetViewNumber()].freecam)
 		return;
 
 	if (P_MobjWasRemoved(stplyr->mo) || (!splitscreen && !camera->chase))
@@ -10764,22 +10764,19 @@ void K_drawKartHUD(void)
 {
 	boolean isfreeplay = false;
 	boolean battlefullscreen = false;
-	boolean freecam = demo.freecam;	//disable some hud elements w/ freecam
-	UINT8 i;
+	UINT8 viewnum = R_GetViewNumber();
+	boolean freecam = camera[viewnum].freecam;	//disable some hud elements w/ freecam
 
 	// Define the X and Y for each drawn object
 	// This is handled by console/menu values
 	K_initKartHUD();
 
 	// Draw that fun first person HUD! Drawn ASAP so it looks more "real".
-	for (i = 0; i <= splitscreen; i++)
-	{
-		if (stplyr == &players[displayplayers[i]] && !camera[i].chase && !freecam)
-			K_drawKartFirstPerson();
-	}
+	if (!camera[viewnum].chase && !freecam)
+		K_drawKartFirstPerson();
 
 	// Draw full screen stuff that turns off the rest of the HUD
-	if (mapreset && stplyr == &players[displayplayers[0]])
+	if (mapreset && R_GetViewNumber() == 0)
 	{
 		K_drawChallengerScreen();
 		return;
@@ -10872,7 +10869,7 @@ void K_drawKartHUD(void)
 		}
 	}
 
-	if (!stplyr->spectator && !demo.freecam) // Bottom of the screen elements, don't need in spectate mode
+	if (!stplyr->spectator && !freecam) // Bottom of the screen elements, don't need in spectate mode
 	{
 		if (!(splitscreen || demo.title))
 		{

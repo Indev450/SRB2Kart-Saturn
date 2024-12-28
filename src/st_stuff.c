@@ -657,6 +657,8 @@ static void ST_drawLevelTitle(void)
 //
 static void ST_overlayDrawer(void)
 {
+	const UINT8 viewnum = R_GetViewNumber();
+
 	//hu_showscores = auto hide score/time/rings when tab rankings are shown
 	if (!(hu_showscores && (netgame || multiplayer)))
 	{
@@ -665,7 +667,7 @@ static void ST_overlayDrawer(void)
 
 	if (!hu_showscores) // hide the following if TAB is held
 	{
-		if (cv_showdirectorhud.value && !splitscreen && ((demo.playback && !demo.freecam && (!demo.title || !modeattacking)) || !P_IsLocalPlayer(stplyr)) && !K_DirectorIsPlayerAlone())
+		if (cv_showdirectorhud.value && !splitscreen && ((demo.playback && !camera[viewnum].freecam && (!demo.title || !modeattacking)) || !P_IsLocalPlayer(stplyr)) && !K_DirectorIsPlayerAlone())
 		{
 			char directortext[20] = {0};
 

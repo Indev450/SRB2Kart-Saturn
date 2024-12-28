@@ -81,11 +81,15 @@ void P_UnlinkThinker(thinker_t *thinker);
 typedef struct camera_s
 {
 	boolean chase;
+	boolean freecam;
+
 	angle_t aiming;
+
+	// Freecam: A button was held since entering from menu, so don't move camera
+	UINT8 button_a_held;
 
 	// Freecam: aiming needs to be reset after switching from chasecam
 	boolean reset_aiming;
-
 
 	// Things used by FS cameras.
 	fixed_t viewheight;
@@ -118,20 +122,6 @@ typedef struct camera_s
 	fixed_t pan;
 } camera_t;
 
-// demo freecam or something before i commit die
-struct demofreecam_s {
-	camera_t *cam;	// this is useful when the game is paused, notably
-
-	angle_t localangle;	// keeps track of the cam angle for cmds
-	angle_t localaiming;	// ditto with aiming
-	boolean turnheld;	// holding turn button for gradual turn speed
-	boolean keyboardlook;	// keyboard look
-
-	UINT8 button_a_held;	// A button was held since entering from menu, so don't move camera
-};
-
-extern struct demofreecam_s democam;
-
 extern camera_t camera[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_cam_dist[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_cam_still[MAXSPLITSCREENPLAYERS];
@@ -156,10 +146,10 @@ void P_AddPlayerScore(player_t *player, UINT32 amount);
 void P_ResetCamera(player_t *player, camera_t *thiscam);
 boolean P_TryCameraMove(fixed_t x, fixed_t y, camera_t *thiscam);
 void P_SlideCameraMove(camera_t *thiscam);
-void P_DemoCameraMovement(camera_t *cam);
+void P_DemoCameraMovement(camera_t *cam, UINT8 num);
 boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcalled);
 void P_ResetLocalCamAiming(player_t *player);
-void P_ToggleDemoCamera(void);
+void P_ToggleDemoCamera(UINT8 viewnum);
 boolean P_PlayerInPain(player_t *player);
 void P_DoPlayerPain(player_t *player, mobj_t *source, mobj_t *inflictor);
 void P_ResetPlayer(player_t *player);
