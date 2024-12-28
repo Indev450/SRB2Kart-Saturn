@@ -10760,9 +10760,12 @@ void P_SpawnPlayer(INT32 playernum)
 	// Spectators can switch to freecam. This should be
 	// disabled when they enter the race, or when the level
 	// changes.
-	if (playernum == consoleplayer && !demo.playback)
+	if (!demo.playback)
 	{
-		demo.freecam = false;
+		if (!p->spectator)
+		{
+			camera[playernum].freecam = false;
+		}
 	}
 }
 

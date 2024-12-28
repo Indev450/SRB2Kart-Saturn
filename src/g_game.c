@@ -1402,7 +1402,7 @@ boolean G_Responder(event_t *ev)
 		}
 	}
 
-	if (gamestate == GS_LEVEL && ev->type == ev_keydown && multiplayer && demo.playback && !demo.freecam)
+	if (gamestate == GS_LEVEL && ev->type == ev_keydown && multiplayer && demo.playback)
 	{
 		if (ev->data1 == gamecontrolbis[gc_viewpoint][0] || ev->data1 == gamecontrolbis[gc_viewpoint][1])
 		{
@@ -1554,10 +1554,22 @@ boolean G_Responder(event_t *ev)
 			{
 				K_ToggleDirector();
 			}
-			if (ev->data1 == gamecontrol[gc_freecam][0]
-				|| ev->data1 == gamecontrol[gc_freecam][1])
+
+			if (ev->data1 == gamecontrol[gc_freecam][0] || ev->data1 == gamecontrol[gc_freecam][1])
 			{
-				P_ToggleDemoCamera();
+				P_ToggleDemoCamera(0);
+			}
+			else if (ev->data1 == gamecontrolbis[gc_freecam][0] || ev->data1 == gamecontrolbis[gc_freecam][1])
+			{
+				P_ToggleDemoCamera(1);
+			}
+			else if (ev->data1 == gamecontrol3[gc_freecam][0] || ev->data1 == gamecontrol3[gc_freecam][1])
+			{
+				P_ToggleDemoCamera(2);
+			}
+			else if (ev->data1 == gamecontrol4[gc_freecam][0] || ev->data1 == gamecontrol4[gc_freecam][1])
+			{
+				P_ToggleDemoCamera(3);
 			}
 
 			return true;
@@ -1739,13 +1751,6 @@ void G_ResetView(UINT8 viewnum, INT32 playernum, boolean onlyactive)
 		if (viewnum > playersviewable)
 			viewnum = playersviewable;
 		splitscreen = viewnum-1;
-
-		/* Prepare extra views for G_FindView to pass. */
-		for (viewd = splits+1; viewd < viewnum; ++viewd)
-		{
-			displayplayerp = (&displayplayers[viewd-1]);
-			(*displayplayerp) = INT32_MAX;
-		}
 
 		R_ExecuteSetViewSize();
 	}
@@ -5769,9 +5774,6 @@ void G_ConfirmRewind(tic_t rewindtime)
 
 	COM_BufInsertText("renderview on\n");
 
-	if (demo.freecam)
-		return;	// don't touch from there
-
 	splitscreen = oldss;
 	displayplayers[0] = olddp1;
 	displayplayers[1] = olddp2;
@@ -7154,14 +7156,13 @@ void G_DoPlayDemo(char *defdemoname)
 
 	//LUA_HookInt(gamemap, HOOK(MapChange));
 
-	displayplayers[0] = consoleplayer = 0;
+	consoleplayer = 0;
 	memset(playeringame,0,sizeof(playeringame));
+	memset(displayplayers,0,sizeof(displayplayers));
+	memset(camera,0,sizeof(camera)); // reset freecam
 
 	// Load players that were in-game when the map started
 	p = READUINT8(demo_p);
-
-	for (i = 1; i < MAXSPLITSCREENPLAYERS; i++)
-		displayplayers[i] = INT32_MAX;
 
 	while (p != 0xFF)
 	{
@@ -7856,13 +7857,11 @@ void G_StopDemo(void)
 	demo.timing = false;
 	singletics = false;
 
-	demo.freecam = false;
-	// reset democam shit too:
-	democam.cam = NULL;
-	democam.localangle = 0;
-	democam.localaiming = 0;
-	democam.turnheld = false;
-	democam.keyboardlook = false;
+	UINT8 i;
+	for (i = 0; i < MAXSPLITSCREENPLAYERS; ++i)
+	{
+		camera[i].freecam = false;
+	}
 
 	CV_SetValue(&cv_playbackspeed, 1);
 	demo.rewinding = false;
