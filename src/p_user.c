@@ -3117,6 +3117,9 @@ consvar_t cv_cam_rotspeed[MAXSPLITSCREENPLAYERS] = {
 	{"cam4_rotspeed", "10", CV_SAVE, rotation_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
 };
 
+static CV_PossibleValue_t freecam_speed_cons_t[] = {{0, "MIN"}, {10, "MAX"}, {0, NULL}};
+consvar_t cv_freecam_speed = {"freecam_speed", "1", CV_SAVE, freecam_speed_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 consvar_t cv_tilting = {"tilting", "Off", CV_SAVE|CV_CALL, CV_OnOff, Bird_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_quaketilt = {"quaketilt", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_tiltsmoothing = {"tiltsmoothing", "32", CV_SAVE, CV_Natural, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -3178,14 +3181,16 @@ void P_DemoCameraMovement(camera_t *cam, UINT8 num)
 	// camera movement:
 	if (!cam->button_a_held)
 	{
+		fixed_t spd = 32*mapobjectscale*cv_freecam_speed.value;
+
 		if (InputDown(gc_camfloat, num+1))
 		{
-			cam->z += 32*mapobjectscale;
+			cam->z += spd;
 			moving = true;
 		}
 		else if (InputDown(gc_camsink, num+1))
 		{
-			cam->z -= 32*mapobjectscale;
+			cam->z -= spd;
 			moving = true;
 		}
 	}
@@ -3253,14 +3258,16 @@ void P_DemoCameraMovement(camera_t *cam, UINT8 num)
 	cam->momx = cam->momy = cam->momz = 0;
 	if (cmd->forwardmove != 0)
 	{
+		fixed_t spd = cmd->forwardmove*mapobjectscale*cv_freecam_speed.value;
+
 		thrustangle = cam->angle >> ANGLETOFINESHIFT;
 
-		cam->x += FixedMul(cmd->forwardmove*mapobjectscale, FINECOSINE(thrustangle));
-		cam->y += FixedMul(cmd->forwardmove*mapobjectscale, FINESINE(thrustangle));
+		cam->x += FixedMul(spd, FINECOSINE(thrustangle));
+		cam->y += FixedMul(spd, FINESINE(thrustangle));
 
 		if (!cam->reset_aiming)
 		{
-			cam->z += FixedMul(cmd->forwardmove*mapobjectscale, AIMINGTOSLOPE(cam->aiming));
+			cam->z += FixedMul(spd, AIMINGTOSLOPE(cam->aiming));
 		}
 
 		// momentums are useless here, directly add to the coordinates
