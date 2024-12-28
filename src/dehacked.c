@@ -9239,10 +9239,10 @@ int LUA_EnumLib(lua_State *L)
 	lua_glib_push_bool_getter(L, &demo.playback);
 	lua_call(L, 2, 0);
 
-	lua_pushcfunction(L, lua_glib_new_getter);
+	/*lua_pushcfunction(L, lua_glib_new_getter);
 	lua_pushliteral(L, "replayfreecam");
 	lua_glib_push_bool_getter(L, &demo.freecam);
-	lua_call(L, 2, 0);
+	lua_call(L, 2, 0);*/
 
 	if (!mathlib)
 	{
