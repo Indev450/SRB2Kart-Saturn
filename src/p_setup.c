@@ -2552,9 +2552,13 @@ static void P_InitCamera(void)
 
 	if (!dedicated)
 	{
-		if (!demo.freecam)
 			for (i = 0; i <= splitscreen; i++)
+			{
+				if (camera[i].freecam)
+					continue;
+
 				P_SetupCamera(displayplayers[i], &camera[i]);
+			}
 
 		// Though, I don't think anyone would care about cam_rotate being reset back to the only value that makes sense :P
 		for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
