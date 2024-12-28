@@ -337,7 +337,7 @@ INT16 prevmap, nextmap;
 
 // save if director is enabled
 // so demos can disable it by default and restore it after
-static int directorstate = 0;
+static int directorstate[MAXSPLITSCREENPLAYERS] = {0,0,0,0};
 tic_t directortoggletimer = 0;
 
 static CV_PossibleValue_t recordmultiplayerdemos_cons_t[] = {{0, "Disabled"}, {1, "Manual Save"}, {2, "Auto Save"}, {0, NULL}};
@@ -1213,8 +1213,8 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		displayplayers[0] = consoleplayer;
 		G_FixCamera(1);
 		// i dont like this lmao
-		if (cv_director.value)
-			CV_SetValue(&cv_director, 0);
+		if (cv_director[0].value)
+			CV_SetValue(&cv_director[0], 0);
 	}
 }
 
@@ -7292,8 +7292,11 @@ post_compat:
 		players[i].kartweight = kartweight[i];
 	}
 
-	directorstate = cv_director.value;
-	CV_SetValue(&cv_director, 0);
+	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+	{
+		directorstate[i] = cv_director[i].value;
+		CV_SetValue(&cv_director[i], 0);
+	}
 
 	demo.deferstart = true;
 }
@@ -7860,8 +7863,11 @@ void G_StopDemo(void)
 	demobuffer = NULL;
 	if (demo.playback)
 	{
-		CV_SetValue(&cv_director, directorstate);
-		directorstate = 0;
+		for (UINT8 i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+		{
+			CV_SetValue(&cv_director[i], directorstate[i]);
+			directorstate[i] = 0;
+		}
 	}
 	demo.playback = false;
 	if (demo.title)
