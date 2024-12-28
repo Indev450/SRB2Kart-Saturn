@@ -1064,6 +1064,8 @@ R_SetupCommonFrame
 (		player_t * player,
 		subsector_t * subsector)
 {
+	const UINT8 viewnum = R_GetViewNumber();
+
 	newview->player = player;
 
 	newview->x += quake.x;
@@ -1077,7 +1079,7 @@ R_SetupCommonFrame
 	else
 		newview->sector = R_PointInSubsector(newview->x, newview->y)->sector;
 
-	R_InterpolateView(R_UsingFrameInterpolation() ? (demo.freecam ? rendertimefrac_unpaused : rendertimefrac) : FRACUNIT, false);
+	R_InterpolateView(R_UsingFrameInterpolation() ? (camera[viewnum].freecam ? rendertimefrac_unpaused : rendertimefrac) : FRACUNIT, false);
 }
 
 static void R_SetupAimingFrame(player_t *player, camera_t *thiscam)
