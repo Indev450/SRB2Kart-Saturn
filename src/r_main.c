@@ -1535,6 +1535,8 @@ void R_RegisterEngineStuff(void)
 		CV_RegisterVar(&cv_cam_rotspeed[i]);
 	}
 
+	CV_RegisterVar(&cv_freecam_speed);
+
 	CV_RegisterVar(&cv_tilting);
 	CV_RegisterVar(&cv_quaketilt);
 	CV_RegisterVar(&cv_tiltsmoothing);
