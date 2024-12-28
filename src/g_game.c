@@ -360,8 +360,6 @@ void SendWeaponPref2(void);
 void SendWeaponPref3(void);
 void SendWeaponPref4(void);
 
-static void G_FixCamera(UINT8 view);
-
 // don't mind me putting these here, I was lazy to figure out where else I could put those without blowing up the compiler.
 
 // chat timer thingy
@@ -1706,7 +1704,7 @@ INT32 G_CountPlayersPotentiallyViewable(boolean active)
 // Reset camera position, angle and interpolation on a view
 // after changing state.
 //
-static void G_FixCamera(UINT8 view)
+void G_FixCamera(UINT8 view)
 {
 	player_t *player = &players[displayplayers[view - 1]];
 
