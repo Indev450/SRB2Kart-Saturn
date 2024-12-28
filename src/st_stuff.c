@@ -16,6 +16,7 @@
 #include "doomdef.h"
 #include "g_game.h"
 #include "g_input.h"
+#include "k_director.h"
 #include "r_local.h"
 #include "p_local.h"
 #include "f_finale.h"
