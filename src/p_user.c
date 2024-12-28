@@ -3154,6 +3154,7 @@ void P_ToggleDemoCamera(UINT8 viewnum)
 	else				// toggle off
 	{
 		cam->freecam = false;
+		G_FixCamera(viewnum+1);
 	}
 }
 
