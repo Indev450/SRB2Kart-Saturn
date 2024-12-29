@@ -21,13 +21,6 @@
 // Persistent storage/archiving.
 // These are the load / save game routines.
 
-void P_SaveGame(void);
-void P_SaveNetGame(boolean resending);
-boolean P_LoadGame(INT16 mapoverride);
-boolean P_LoadNetGame(boolean resending);
-
-mobj_t *P_FindNewPosition(UINT32 oldposition);
-
 typedef struct
 {
 	UINT8 skincolor;
@@ -41,6 +34,21 @@ typedef struct
 } savedata_t;
 
 extern savedata_t savedata;
-extern UINT8 *save_p;
+
+typedef struct
+{
+	UINT8 *buffer;
+	UINT8 *p;
+} savebuffer_t;
+
+// Persistent storage/archiving.
+// These are the load / save game routines.
+
+void P_SaveGame(savebuffer_t *save);
+void P_SaveNetGame(savebuffer_t *save, boolean resending);
+boolean P_LoadGame(savebuffer_t *save, INT16 mapoverride);
+boolean P_LoadNetGame(savebuffer_t *save, boolean reloading);
+
+mobj_t *P_FindNewPosition(UINT32 oldposition);
 
 #endif
