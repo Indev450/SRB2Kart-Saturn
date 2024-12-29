@@ -4782,6 +4782,7 @@ void G_WriteDemoTiccmd(ticcmd_t *cmd, INT32 playernum)
 
 	if (!demobuf.p)
 		return;
+
 	ziptic_p = demobuf.p++; // the ziptic, written at the end of this function
 
 	if (cmd->forwardmove != oldcmd[playernum].forwardmove)
@@ -4910,10 +4911,14 @@ void G_GhostAddHit(INT32 playernum, mobj_t *victim)
 
 void G_WriteAllGhostTics(void)
 {
+	if (!demobuf.p)
+		return;
+
 	UINT8 *save_demo_p = demobuf.p;
 #define CHECKSPACE(num) if (demobuf.p+(num) > demoend) { demobuf.p = save_demo_p; G_CheckDemoStatus(); return; }
 
 	INT32 i, counter = leveltime;
+
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		if (!playeringame[i] || players[i].spectator)
@@ -4947,11 +4952,12 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 	UINT8 sprite;
 	UINT8 frame;
 
+	if (!demobuf.p)
+		return;
+
 	UINT8 *save_demo_p = demobuf.p;
 #define CHECKSPACE(num) if (demobuf.p+(num) > demoend) { demobuf.p = save_demo_p; G_CheckDemoStatus(); return; }
 
-	if (!demobuf.p)
-		return;
 	if (!(demoflags & DF_GHOST))
 		return; // No ghost data to write.
 
@@ -5144,6 +5150,9 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 
 void G_ConsAllGhostTics(void)
 {
+	if (!demobuf.p)
+		return;
+
 	UINT8 p = READUINT8(demobuf.p);
 
 	while (p != 0xFF)
@@ -5204,7 +5213,8 @@ void G_ConsGhostTic(INT32 playernum)
 		demobuf.p++;
 	if (ziptic & GZT_SPRITE)
 		demobuf.p++;
-	if(ziptic & GZT_NIGHTS) {
+	if (ziptic & GZT_NIGHTS)
+	{
 		if (!testmo || !testmo->player || !(testmo->player->pflags & PF_NIGHTSMODE) || !testmo->tracer)
 			nightsfail = true;
 		else
@@ -6045,8 +6055,12 @@ void G_BeginRecording(void)
 	UINT8 totalfiles;
 	UINT8 *m;
 
-	if (demobuf.p)
+	if (!cv_recordmultiplayerdemos.value)
 		return;
+
+	if (demobuf.p || demobuf.buffer == NULL)
+		return;
+
 	memset(name,0,sizeof(name));
 
 	demobuf.p = demobuf.buffer;
@@ -6056,7 +6070,7 @@ void G_BeginRecording(void)
 		demoflags |= DF_ENCORE;
 
 	if (!modeattacking && gL)	// Ghosts don't read luavars, and you shouldn't ever need to save Lua in replays, you doof!
-						// SERIOUSLY THOUGH WHY WOULD YOU LOAD HOSTMOD AND RECORD A GHOST WITH IT !????
+								// SERIOUSLY THOUGH WHY WOULD YOU LOAD HOSTMOD AND RECORD A GHOST WITH IT !????
 		demoflags |= DF_LUAVARS;
 
 	// Setup header.
@@ -6201,7 +6215,7 @@ void G_BeginMetal(void)
 {
 	mobj_t *mo = players[consoleplayer].mo;
 
-	if (demobuf.p)
+	if (demobuf.p || demobuf.buffer == NULL)
 		return;
 
 	demobuf.p = demobuf.buffer;
@@ -6229,7 +6243,10 @@ void G_WriteStanding(UINT8 ranking, char *name, INT32 skinnum, UINT8 color, UINT
 {
 	char temp[17];
 
-	if (demoinfo_p && *(UINT32 *)demoinfo_p == 0)
+	if (!demobuf.p)
+		return;
+
+	if (demoinfo_p && *(UINT32 *)demoinfo_p == 0 && demobuf.buffer != NULL)
 	{
 		WRITEUINT8(demobuf.p, DEMOMARKER); // add the demo end marker
 		*(UINT32 *)demoinfo_p = demobuf.p - demobuf.buffer;
@@ -6814,6 +6831,9 @@ void G_DoPlayDemo(char *defdemoname)
 #endif
 	boolean spectator;
 	UINT8 slots[MAXPLAYERS], kartspeed[MAXPLAYERS], kartweight[MAXPLAYERS], numslots = 0;
+
+	if (demobuf.buffer == NULL)
+		return;
 
 	G_InitDemoRewind();
 
@@ -7810,7 +7830,7 @@ void G_StopMetalDemo(void)
 ATTRNORETURN void FUNCNORETURN G_StopMetalRecording(void)
 {
 	boolean saved = false;
-	if (demobuf.p)
+	if (demobuf.p && demobuf.buffer != NULL)
 	{
 		UINT8 *p = demobuf.buffer+16; // checksum position
 #ifdef NOMD5
@@ -7972,7 +7992,15 @@ void G_SaveDemo(void)
 		return;
 	}
 
-	UINT8 *p = demobuffer+16; // after version
+	if (demobuf.buffer == NULL)
+	{
+		CONS_Alert(CONS_ERROR, "Failed to save Demo. No Demo buffer allocated!\n");
+		// reset the demo buffer
+		G_ResetDemoRecording();
+		return;
+	}
+
+	UINT8 *p = demobuf.buffer+16; // after version
 	UINT32 length;
 #ifdef NOMD5
 	UINT8 i;
