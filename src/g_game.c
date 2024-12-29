@@ -6082,10 +6082,23 @@ void G_BeginRecording(void)
 	UINT8 *m;
 
 	if (!cv_recordmultiplayerdemos.value)
+	{
+		G_ResetDemoRecording();
 		return;
+	}
 
-	if (demobuf.p || demobuf.buffer == NULL)
+	if (demobuf.buffer == NULL)
+	{
+		CONS_Alert(CONS_ERROR, "No demo buffer allocated\n");
+		G_ResetDemoRecording();
 		return;
+	}
+
+	if (demobuf.p)
+	{
+		G_ResetDemoRecording();
+		return;
+	}
 
 	memset(name,0,sizeof(name));
 
@@ -6241,8 +6254,20 @@ void G_BeginMetal(void)
 {
 	mobj_t *mo = players[consoleplayer].mo;
 
-	if (demobuf.p || demobuf.buffer == NULL)
+	if (demobuf.buffer == NULL)
+	{
+		CONS_Alert(CONS_ERROR, "No metal demo buffer allocated\n");
+		metalrecording = false;
 		return;
+	}
+
+	if (demobuf.p)
+	{
+		Z_Free(demobuf.buffer);
+		demobuf.buffer = NULL;
+		metalrecording = false;
+		return;
+	}
 
 	demobuf.p = demobuf.buffer;
 
