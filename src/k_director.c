@@ -233,11 +233,6 @@ static void K_DirectorSwitch(INT32 player, boolean force, const UINT8 viewnum)
 		return;
 	}
 
-	if (P_IsDisplayPlayer(&players[player]))
-	{
-		return;
-	}
-
 	if (players[player].exiting)
 	{
 		return;
@@ -415,12 +410,6 @@ void K_UpdateDirector(const UINT8 viewnum)
 		if (displayplayers[directorinfo.viewnum] == target)
 		{
 			break;
-		}
-
-		// if this is a splitscreen player, try next pair
-		if (P_IsDisplayPlayer(&players[target]))
-		{
-			continue;
 		}
 
 		// if we're certain the back half of the pair is actually in this position, try to switch
