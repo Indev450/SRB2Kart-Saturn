@@ -457,7 +457,6 @@ extern boolean actionsoverridden[NUMACTIONS];
 #define NUMSPRITEFREESLOTS NUMMOBJFREESLOTS
 #define NUMSTATEFREESLOTS (NUMMOBJFREESLOTS*8)
 
-// Hey, moron! If you change this table, don't forget about sprnames in info.c and the sprite lights in hw_light.c!
 typedef enum sprite
 {
 	SPR_NULL, // invisible object
