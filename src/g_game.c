@@ -6832,9 +6832,6 @@ void G_DoPlayDemo(char *defdemoname)
 	boolean spectator;
 	UINT8 slots[MAXPLAYERS], kartspeed[MAXPLAYERS], kartweight[MAXPLAYERS], numslots = 0;
 
-	if (demobuf.buffer == NULL)
-		return;
-
 	G_InitDemoRewind();
 
 	skin[16] = '\0';
