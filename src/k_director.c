@@ -31,6 +31,8 @@
 
 struct directorinfo
 {
+	UINT8 viewnum;
+	player_t* viewplayer;
 	tic_t cooldown; // how long has it been since we last switched?
 	tic_t freeze;   // when nonzero, fixed switch pending, freeze logic!
 	INT32 attacker; // who to switch to when freeze delay elapses
@@ -88,12 +90,15 @@ void K_InitDirector(void)
 {
 	INT32 playernum;
 
+	directorinfo.viewnum = 0;
+
 	for (UINT8 i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
 		directorinfosplit[i].cooldown = SWITCHTIME;
 		directorinfosplit[i].freeze = 0;
 		directorinfosplit[i].attacker = 0;
 		directorinfosplit[i].maxdist = 0;
+		directorinfosplit[i].viewplayer = NULL;
 
 		for (playernum = 0; playernum < MAXPLAYERS; playernum++)
 		{
@@ -119,8 +124,8 @@ static fixed_t K_GetDistanceToFinish(player_t player)
 				continue;
 
 			dist = P_AproxDistance(P_AproxDistance(mo->x - player.mo->x,
-												mo->y - player.mo->y),
-							mo->z - player.mo->z) / FRACUNIT;
+												   mo->y - player.mo->y),
+												   mo->z - player.mo->z) / FRACUNIT;
 
 			break;
 		}
@@ -139,7 +144,7 @@ static fixed_t K_GetDistanceToFinish(player_t player)
 
 			dist = P_AproxDistance(P_AproxDistance(mo->x - player.mo->x,
 												   mo->y - player.mo->y),
-						  mo->z - player.mo->z) / FRACUNIT;
+												   mo->z - player.mo->z) / FRACUNIT;
 
 			break;
 		}
@@ -258,26 +263,25 @@ static void K_DirectorForceSwitch(INT32 player, INT32 time, const UINT8 viewnum)
 	directorinfosplit[viewnum].freeze = time;
 }
 
-// HACK: this is awful but idk any other way to pass the viewnum to this
-static UINT8 curview = 0;
-
 void K_DirectorFollowAttack(player_t *player, mobj_t *inflictor, mobj_t *source)
 {
-	if (player != &players[displayplayers[curview]])
+	if (!K_DirectorIsEnabled(directorinfo.viewnum))
+	{
 		return;
+	}
 
-	if (!K_DirectorIsEnabled(curview))
+	if (directorinfosplit[directorinfo.viewnum].viewplayer != player)
 	{
 		return;
 	}
 
 	if (inflictor && inflictor->player)
 	{
-		K_DirectorForceSwitch(inflictor->player - players, TRANSFERTIME, curview);
+		K_DirectorForceSwitch(inflictor->player - players, TRANSFERTIME, directorinfo.viewnum);
 	}
 	else if (source && source->player)
 	{
-		K_DirectorForceSwitch(source->player - players, TRANSFERTIME, curview);
+		K_DirectorForceSwitch(source->player - players, TRANSFERTIME, directorinfo.viewnum);
 	}
 }
 
@@ -335,37 +339,36 @@ void K_DrawDirectorDebugger(void)
 
 void K_UpdateDirector(const UINT8 viewnum)
 {
-	INT32 *displayplayerp = &displayplayers[viewnum];
 	INT32 targetposition;
+	directorinfo.viewnum = viewnum;
+	directorinfosplit[directorinfo.viewnum].viewplayer = &players[displayplayers[directorinfo.viewnum]];
 
-	curview = viewnum;
-
-	if (!K_DirectorIsEnabled(viewnum))
+	if (!K_DirectorIsEnabled(directorinfo.viewnum))
 	{
 		return;
 	}
 
-	K_UpdateDirectorPositions(viewnum);
+	K_UpdateDirectorPositions(directorinfo.viewnum);
 
-	if (directorinfosplit[viewnum].cooldown > 0) {
-		directorinfosplit[viewnum].cooldown--;
+	if (directorinfosplit[directorinfo.viewnum].cooldown > 0) {
+		directorinfosplit[directorinfo.viewnum].cooldown--;
 	}
 
 	// handle pending forced switches
-	if (directorinfosplit[viewnum].freeze > 0)
+	if (directorinfosplit[directorinfo.viewnum].freeze > 0)
 	{
-		if (!(--directorinfosplit[viewnum].freeze))
-			K_DirectorSwitch(directorinfosplit[viewnum].attacker, true, viewnum);
+		if (!(--directorinfosplit[directorinfo.viewnum].freeze))
+			K_DirectorSwitch(directorinfosplit[directorinfo.viewnum].attacker, true, directorinfo.viewnum);
 
 		return;
 	}
 
 	// if there's only one player left in the list, just switch to that player
-	if (directorinfosplit[viewnum].sortedplayers[0] != -1 && (directorinfosplit[viewnum].sortedplayers[1] == -1 ||
+	if (directorinfosplit[directorinfo.viewnum].sortedplayers[0] != -1 && (directorinfosplit[directorinfo.viewnum].sortedplayers[1] == -1 ||
 		// TODO: Battle; I just threw this together quick. Focus on leader.
 		!race_rules()))
 	{
-		K_DirectorSwitch(directorinfosplit[viewnum].sortedplayers[0], false, viewnum);
+		K_DirectorSwitch(directorinfosplit[directorinfo.viewnum].sortedplayers[0], false, directorinfo.viewnum);
 		return;
 	}
 
@@ -377,39 +380,39 @@ void K_UpdateDirector(const UINT8 viewnum)
 		INT32 target;
 
 		// you are out of players, try again
-		if (directorinfosplit[viewnum].sortedplayers[targetposition] == -1)
+		if (directorinfosplit[directorinfo.viewnum].sortedplayers[targetposition] == -1)
 		{
 			break;
 		}
 
 		// pair too far apart? try the next one
-		if (directorinfosplit[viewnum].boredom[targetposition - 1] >= BOREDOMTIME)
+		if (directorinfosplit[directorinfo.viewnum].boredom[targetposition - 1] >= BOREDOMTIME)
 		{
 			continue;
 		}
 
 		// pair finished? try the next one
-		if (players[directorinfosplit[viewnum].sortedplayers[targetposition]].exiting)
+		if (players[directorinfosplit[directorinfo.viewnum].sortedplayers[targetposition]].exiting)
 		{
 			continue;
 		}
 
 		// don't risk switching away from forward pairs at race end, might miss something!
-		if (directorinfosplit[viewnum].maxdist > PINCHDIST)
+		if (directorinfosplit[directorinfo.viewnum].maxdist > PINCHDIST)
 		{
 			// if the "next" player is close enough, they should be able to see everyone fine!
 			// walk back through the standings to find a vantage that gets everyone in frame.
 			// (also creates a pretty cool effect w/ overtakes at speed)
-			while (targetposition < MAXPLAYERS && directorinfosplit[viewnum].gap[targetposition] < WALKBACKDIST)
+			while (targetposition < MAXPLAYERS && directorinfosplit[directorinfo.viewnum].gap[targetposition] < WALKBACKDIST)
 			{
 				targetposition++;
 			}
 		}
 
-		target = directorinfosplit[viewnum].sortedplayers[targetposition];
+		target = directorinfosplit[directorinfo.viewnum].sortedplayers[targetposition];
 
 		// stop here since we're already viewing this player
-		if (*displayplayerp == target)
+		if (displayplayers[directorinfo.viewnum] == target)
 		{
 			break;
 		}
@@ -423,13 +426,13 @@ void K_UpdateDirector(const UINT8 viewnum)
 		// if we're certain the back half of the pair is actually in this position, try to switch
 		if (!players[target].kartstuff[k_positiondelay])
 		{
-			K_DirectorSwitch(target, false, viewnum);
+			K_DirectorSwitch(target, false, directorinfo.viewnum);
 		}
 
-		// even if we're not certain, if we're certain we're watching the WRONG player, try to switch
-		if (players[*displayplayerp].kartstuff[k_position] != targetposition+1 && !players[*displayplayerp].kartstuff[k_positiondelay])
+		// even if we're not certain, if we're cetain we're watching the WRONG player, try to switch
+		if (directorinfosplit[directorinfo.viewnum].viewplayer->kartstuff[k_position] != targetposition+1 && !directorinfosplit[directorinfo.viewnum].viewplayer->kartstuff[k_positiondelay])
 		{
-			K_DirectorSwitch(target, false, viewnum);
+			K_DirectorSwitch(target, false, directorinfo.viewnum);
 		}
 
 		break;
