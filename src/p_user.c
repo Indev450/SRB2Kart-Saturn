@@ -3146,9 +3146,8 @@ void P_ToggleDemoCamera(UINT8 viewnum)
 	else	// toggle off
 	{
 		cam->freecam = false;
+		G_FixCamera(viewnum+1);
 	}
-
-	G_FixCamera(viewnum+1);
 }
 
 static ticcmd_t *P_CameraCmd(camera_t *cam, UINT8 num)
