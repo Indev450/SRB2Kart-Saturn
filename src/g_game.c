@@ -6058,8 +6058,16 @@ void G_BeginRecording(void)
 	if (!cv_recordmultiplayerdemos.value)
 		return;
 
-	if (demobuf.p || demobuf.buffer == NULL)
+	if (demobuf.buffer == NULL)
+	{
+		CONS_Alert(CONS_ERROR, "Failed to allocate demo buffer\n");
 		return;
+	}
+
+	if (demobuf.p)
+	{
+		return;
+	}
 
 	memset(name,0,sizeof(name));
 
@@ -6215,7 +6223,13 @@ void G_BeginMetal(void)
 {
 	mobj_t *mo = players[consoleplayer].mo;
 
-	if (demobuf.p || demobuf.buffer == NULL)
+	if (demobuf.buffer == NULL)
+	{
+		CONS_Alert(CONS_ERROR, "Failed to allocate demo buffer\n");
+		return;
+	}
+
+	if (demobuf.p)
 		return;
 
 	demobuf.p = demobuf.buffer;
