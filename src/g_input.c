@@ -1143,8 +1143,8 @@ void G_Controldefault(UINT8 player)
 		gamecontrol[gc_talkkey    ][1] = KEY_HAT1+1; // D-Pad Down
 		gamecontrol[gc_scores     ][1] = KEY_HAT1+0; // D-Pad Up
 
-		gamecontrol[gc_camfloat   ][1] = 'a';
-		gamecontrol[gc_camsink    ][1] = 'd';
+		gamecontrol[gc_camfloat   ][0] = 'a';
+		gamecontrol[gc_camsink    ][0] = 'd';
 
 		gamecontrol[gc_camfloat   ][1] = KEY_JOY1+0; // A
 		gamecontrol[gc_camsink    ][1] = KEY_JOY1+1; // B
