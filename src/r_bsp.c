@@ -583,10 +583,10 @@ static void R_AddLine(seg_t *line)
 
 clippass:
 	g_walloffscreen = false;
+	R_ClipPassWallSegment(x1, x2 - 1, false);
+
 	if (g_walloffscreen)
 		R_ClipPassWallSegment(x1, x2 - 1, true);
-	else
-		R_ClipPassWallSegment(x1, x2 - 1, false);
 	return;
 
 clipsolid:
