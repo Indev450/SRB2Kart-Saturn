@@ -3154,9 +3154,11 @@ void P_ToggleDemoCamera(UINT8 viewnum)
 	}
 }
 
+static ticcmd_t cameracmd[MAXSPLITSCREENPLAYERS];
+
 static ticcmd_t *P_CameraCmd(camera_t *cam, UINT8 num)
 {
-	INT32 laim, th, tspeed, forward, side, axis;
+	INT32 laim, forward, side, axis;
 
 	// these ones used for multiple conditions
 	boolean turnleft, turnright;
@@ -3164,13 +3166,29 @@ static ticcmd_t *P_CameraCmd(camera_t *cam, UINT8 num)
 	angle_t lang;
 	const UINT8 forplayer = num+1;
 
-	ticcmd_t *cmd = D_LocalTiccmd(num);
+	memset(&cameracmd[num], 0, sizeof(ticcmd_t));	// initialize cmd
 
-	if (!cam->freecam)
-		return cmd;	// empty cmd, no.
+	ticcmd_t *cmd = &cameracmd[num];
 
 	lang = cam->localangle;
 	laim = cam->localaiming;
+
+	switch (num)
+	{
+		case 1:
+			G_CopyTiccmd(cmd, I_BaseTiccmd2(), 1);
+			break;
+		case 2:
+			G_CopyTiccmd(cmd, I_BaseTiccmd3(), 1);
+			break;
+		case 3:
+			G_CopyTiccmd(cmd, I_BaseTiccmd4(), 1);
+			break;
+		case 0:
+		default:
+			G_CopyTiccmd(cmd, I_BaseTiccmd(), 1); // empty, or external driver
+			break;
+	}
 
 	cmd->angleturn = (INT16)(lang >> 16);
 	cmd->aiming = G_ClipAimingPitch(&laim);
@@ -3201,27 +3219,15 @@ static ticcmd_t *P_CameraCmd(camera_t *cam, UINT8 num)
 	}
 	forward = side = 0;
 
-	// use two stage accelerative turning
-	// on the keyboard and joystick
-	if (turnleft || turnright)
-		th += 1;
-	else
-		th = 0;
-
-	if (th < SLOWTURNTICS)
-		tspeed = 2; // slow turn
-	else
-		tspeed = 1;
-
 	// let movement keys cancel each other out
 	if (turnright && !(turnleft))
 	{
-		cmd->angleturn = (INT16)(cmd->angleturn - (angleturn[tspeed]));
+		cmd->angleturn = (INT16)(cmd->angleturn - (angleturn[1]));
 		side += sidemove[1];
 	}
 	else if (turnleft && !(turnright))
 	{
-		cmd->angleturn = (INT16)(cmd->angleturn + (angleturn[tspeed]));
+		cmd->angleturn = (INT16)(cmd->angleturn + (angleturn[1]));
 		side -= sidemove[1];
 	}
 
