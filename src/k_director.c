@@ -12,12 +12,15 @@
 
 //#include "k_kart.h"
 #include "doomdef.h"
+#include "doomstat.h"
 #include "g_game.h"
 #include "v_video.h"
 #include "k_director.h"
 #include "d_netcmd.h"
 #include "p_local.h"
 #include "st_stuff.h"
+
+#include "r_fps.h"
 
 #define SWITCHTIME TICRATE * 5		// cooldown between unforced switches
 #define BOREDOMTIME 3 * TICRATE / 2 // how long until players considered far apart?
@@ -28,6 +31,8 @@
 
 struct directorinfo
 {
+	UINT8 viewnum;
+	player_t* viewplayer;
 	tic_t cooldown; // how long has it been since we last switched?
 	tic_t freeze;   // when nonzero, fixed switch pending, freeze logic!
 	INT32 attacker; // who to switch to when freeze delay elapses
@@ -37,6 +42,8 @@ struct directorinfo
 	INT32 gap[MAXPLAYERS];           // gap between a given position and their closest pursuer
 	INT32 boredom[MAXPLAYERS];       // how long has a given position had no credible attackers?
 } directorinfo;
+
+struct directorinfo directorinfosplit[MAXSPLITSCREENPLAYERS];
 
 boolean K_DirectorIsPlayerAlone(void)
 {
@@ -67,25 +74,38 @@ static fixed_t ScaleFromMap(fixed_t n, fixed_t scale)
 	return FixedMul(n, FixedDiv(scale, mapobjectscale));
 }
 
-static boolean K_DirectorIsEnabled(void)
+boolean K_DirectorIsAvailable(UINT8 viewnum)
 {
-	return cv_director.value && !splitscreen && (gamestate == GS_LEVEL && (((!playeringame[consoleplayer] || players[consoleplayer].spectator)) || (demo.playback && !demo.freecam && (!demo.title || !modeattacking))) && !K_DirectorIsPlayerAlone());
+	if ((demo.playback && demo.title) || modeattacking)
+		return false;
+	return ((gamestate == GS_LEVEL) && (demo.playback || ((viewnum <= splitscreen) && (!playeringame[displayplayers[viewnum]] || players[displayplayers[viewnum]].spectator) && !camera[viewnum].freecam && !K_DirectorIsPlayerAlone())));
+}
+
+static boolean K_DirectorIsEnabled(const UINT8 viewnum)
+{
+	return (cv_director[viewnum].value && K_DirectorIsAvailable(viewnum));
 }
 
 void K_InitDirector(void)
 {
 	INT32 playernum;
 
-	directorinfo.cooldown = SWITCHTIME;
-	directorinfo.freeze = 0;
-	directorinfo.attacker = 0;
-	directorinfo.maxdist = 0;
+	directorinfo.viewnum = 0;
 
-	for (playernum = 0; playernum < MAXPLAYERS; playernum++)
+	for (UINT8 i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
-		directorinfo.sortedplayers[playernum] = -1;
-		directorinfo.gap[playernum] = INT32_MAX;
-		directorinfo.boredom[playernum] = 0;
+		directorinfosplit[i].cooldown = SWITCHTIME;
+		directorinfosplit[i].freeze = 0;
+		directorinfosplit[i].attacker = 0;
+		directorinfosplit[i].maxdist = 0;
+		directorinfosplit[i].viewplayer = NULL;
+
+		for (playernum = 0; playernum < MAXPLAYERS; playernum++)
+		{
+			directorinfosplit[i].sortedplayers[playernum] = -1;
+			directorinfosplit[i].gap[playernum] = INT32_MAX;
+			directorinfosplit[i].boredom[playernum] = 0;
+		}
 	}
 }
 
@@ -104,8 +124,8 @@ static fixed_t K_GetDistanceToFinish(player_t player)
 				continue;
 
 			dist = P_AproxDistance(P_AproxDistance(mo->x - player.mo->x,
-												mo->y - player.mo->y),
-							mo->z - player.mo->z) / FRACUNIT;
+												   mo->y - player.mo->y),
+												   mo->z - player.mo->z) / FRACUNIT;
 
 			break;
 		}
@@ -124,7 +144,7 @@ static fixed_t K_GetDistanceToFinish(player_t player)
 
 			dist = P_AproxDistance(P_AproxDistance(mo->x - player.mo->x,
 												   mo->y - player.mo->y),
-						  mo->z - player.mo->z) / FRACUNIT;
+												   mo->z - player.mo->z) / FRACUNIT;
 
 			break;
 		}
@@ -148,13 +168,13 @@ static fixed_t K_GetFinishGap(INT32 leader, INT32 follower)
 	}
 }
 
-static void K_UpdateDirectorPositions(void)
+static void K_UpdateDirectorPositions(const UINT8 viewnum)
 {
 	INT32 playernum;
 	INT32 position;
 	player_t* target;
 
-	memset(directorinfo.sortedplayers, -1, sizeof(directorinfo.sortedplayers));
+	memset(directorinfosplit[viewnum].sortedplayers, -1, sizeof(directorinfo.sortedplayers));
 
 	for (playernum = 0; playernum < MAXPLAYERS; playernum++)
 	{
@@ -162,43 +182,43 @@ static void K_UpdateDirectorPositions(void)
 
 		if (playeringame[playernum] && !target->spectator && target->kartstuff[k_position] > 0)
 		{
-			directorinfo.sortedplayers[target->kartstuff[k_position] - 1] = playernum;
+			directorinfosplit[viewnum].sortedplayers[target->kartstuff[k_position] - 1] = playernum;
 		}
 	}
 
 	for (position = 0; position < MAXPLAYERS - 1; position++)
 	{
-		directorinfo.gap[position] = INT32_MAX;
+		directorinfosplit[viewnum].gap[position] = INT32_MAX;
 
-		if (directorinfo.sortedplayers[position] == -1 || directorinfo.sortedplayers[position + 1] == -1)
+		if (directorinfosplit[viewnum].sortedplayers[position] == -1 || directorinfosplit[viewnum].sortedplayers[position + 1] == -1)
 		{
 			continue;
 		}
 
-		directorinfo.gap[position] = ScaleFromMap(K_GetFinishGap(directorinfo.sortedplayers[position], directorinfo.sortedplayers[position + 1]), FRACUNIT);
+		directorinfosplit[viewnum].gap[position] = ScaleFromMap(K_GetFinishGap(directorinfosplit[viewnum].sortedplayers[position], directorinfosplit[viewnum].sortedplayers[position + 1]), FRACUNIT);
 
-		if (directorinfo.gap[position] >= BREAKAWAYDIST)
+		if (directorinfosplit[viewnum].gap[position] >= BREAKAWAYDIST)
 		{
-			directorinfo.boredom[position] = (INT32)(min(BOREDOMTIME * 2, directorinfo.boredom[position] + 1));
+			directorinfosplit[viewnum].boredom[position] = (INT32)(min(BOREDOMTIME * 2, directorinfosplit[viewnum].boredom[position] + 1));
 		}
-		else if (directorinfo.boredom[position] > 0)
+		else if (directorinfosplit[viewnum].boredom[position] > 0)
 		{
-			directorinfo.boredom[position]--;
+			directorinfosplit[viewnum].boredom[position]--;
 		}
 	}
 
-	if (directorinfo.sortedplayers[0] == -1)
+	if (directorinfosplit[viewnum].sortedplayers[0] == -1)
 	{
-		directorinfo.maxdist = -1;
+		directorinfosplit[viewnum].maxdist = -1;
 		return;
 	}
 
-	directorinfo.maxdist = ScaleFromMap(K_GetDistanceToFinish(players[directorinfo.sortedplayers[0]]), FRACUNIT);
+	directorinfosplit[viewnum].maxdist = ScaleFromMap(K_GetDistanceToFinish(players[directorinfosplit[viewnum].sortedplayers[0]]), FRACUNIT);
 }
 
-static boolean K_CanSwitchDirector(void)
+static boolean K_CanSwitchDirector(const UINT8 viewnum)
 {
-	if (directorinfo.cooldown > 0)
+	if (directorinfosplit[viewnum].cooldown > 0)
 	{
 		return false;
 	}
@@ -206,9 +226,9 @@ static boolean K_CanSwitchDirector(void)
 	return true;
 }
 
-static void K_DirectorSwitch(INT32 player, boolean force)
+static void K_DirectorSwitch(INT32 player, boolean force, const UINT8 viewnum)
 {
-	if (!K_DirectorIsEnabled())
+	if (!K_DirectorIsEnabled(viewnum))
 	{
 		return;
 	}
@@ -223,45 +243,45 @@ static void K_DirectorSwitch(INT32 player, boolean force)
 		return;
 	}
 
-	if (!force && !K_CanSwitchDirector())
+	if (!force && !K_CanSwitchDirector(viewnum))
 	{
 		return;
 	}
 
-	G_ResetView(1, player, true);
-	directorinfo.cooldown = SWITCHTIME;
+	G_ResetView(viewnum+1, player, true);
+	directorinfosplit[viewnum].cooldown = SWITCHTIME;
 }
 
-static void K_DirectorForceSwitch(INT32 player, INT32 time)
+static void K_DirectorForceSwitch(INT32 player, INT32 time, const UINT8 viewnum)
 {
 	if (players[player].exiting)
 	{
 		return;
 	}
 
-	directorinfo.attacker = player;
-	directorinfo.freeze = time;
+	directorinfosplit[viewnum].attacker = player;
+	directorinfosplit[viewnum].freeze = time;
 }
 
 void K_DirectorFollowAttack(player_t *player, mobj_t *inflictor, mobj_t *source)
 {
-	if (!K_DirectorIsEnabled())
+	if (!K_DirectorIsEnabled(directorinfo.viewnum))
 	{
 		return;
 	}
 
-	if (!P_IsDisplayPlayer(player))
+	if (directorinfosplit[directorinfo.viewnum].viewplayer != player)
 	{
 		return;
 	}
 
 	if (inflictor && inflictor->player)
 	{
-		K_DirectorForceSwitch(inflictor->player - players, TRANSFERTIME);
+		K_DirectorForceSwitch(inflictor->player - players, TRANSFERTIME, directorinfo.viewnum);
 	}
 	else if (source && source->player)
 	{
-		K_DirectorForceSwitch(source->player - players, TRANSFERTIME);
+		K_DirectorForceSwitch(source->player - players, TRANSFERTIME, directorinfo.viewnum);
 	}
 }
 
@@ -281,14 +301,14 @@ void K_DrawDirectorDebugger(void)
 	V_DrawThinString(40, 0, V_70TRANS, va("CONF?"));
 	V_DrawThinString(80, 0, V_70TRANS, va("GAP"));
 	V_DrawThinString(120, 0, V_70TRANS, va("BORED"));
-	V_DrawThinString(150, 0, V_70TRANS, va("COOLDOWN: %d", directorinfo.cooldown));
-	V_DrawThinString(230, 0, V_70TRANS, va("MAXDIST: %d", directorinfo.maxdist));
+	V_DrawThinString(150, 0, V_70TRANS, va("COOLDOWN: %d", directorinfosplit[0].cooldown));
+	V_DrawThinString(230, 0, V_70TRANS, va("MAXDIST: %d", directorinfosplit[0].maxdist));
 
 	for (position = 0; position < MAXPLAYERS - 1; position++)
 	{
 		ytxt = 10 * (position + 1);
-		leader = directorinfo.sortedplayers[position];
-		follower = directorinfo.sortedplayers[position + 1];
+		leader = directorinfosplit[0].sortedplayers[position];
+		follower = directorinfosplit[0].sortedplayers[position + 1];
 
 		if (leader == -1 || follower == -1)
 			break;
@@ -301,15 +321,15 @@ void K_DrawDirectorDebugger(void)
 			V_DrawThinString(40, ytxt, V_70TRANS, va("NG"));
 		}
 
-		V_DrawThinString(80, ytxt, V_70TRANS, va("%d", directorinfo.gap[position]));
+		V_DrawThinString(80, ytxt, V_70TRANS, va("%d", directorinfosplit[0].gap[position]));
 
-		if (directorinfo.boredom[position] >= BOREDOMTIME)
+		if (directorinfosplit[0].boredom[position] >= BOREDOMTIME)
 		{
 			V_DrawThinString(120, ytxt, V_70TRANS, va("BORED"));
 		}
 		else
 		{
-			V_DrawThinString(120, ytxt, V_70TRANS, va("%d", directorinfo.boredom[position]));
+			V_DrawThinString(120, ytxt, V_70TRANS, va("%d", directorinfosplit[0].boredom[position]));
 		}
 
 		V_DrawThinString(150, ytxt, V_70TRANS, va("%s", player_names[leader]));
@@ -317,37 +337,38 @@ void K_DrawDirectorDebugger(void)
 	}
 }
 
-void K_UpdateDirector(void)
+void K_UpdateDirector(const UINT8 viewnum)
 {
-	INT32 *displayplayerp = &displayplayers[0];
 	INT32 targetposition;
+	directorinfo.viewnum = viewnum;
+	directorinfosplit[directorinfo.viewnum].viewplayer = &players[displayplayers[directorinfo.viewnum]];
 
-	if (!K_DirectorIsEnabled())
+	if (!K_DirectorIsEnabled(directorinfo.viewnum))
 	{
 		return;
 	}
 
-	K_UpdateDirectorPositions();
+	K_UpdateDirectorPositions(directorinfo.viewnum);
 
-	if (directorinfo.cooldown > 0) {
-		directorinfo.cooldown--;
+	if (directorinfosplit[directorinfo.viewnum].cooldown > 0) {
+		directorinfosplit[directorinfo.viewnum].cooldown--;
 	}
 
 	// handle pending forced switches
-	if (directorinfo.freeze > 0)
+	if (directorinfosplit[directorinfo.viewnum].freeze > 0)
 	{
-		if (!(--directorinfo.freeze))
-			K_DirectorSwitch(directorinfo.attacker, true);
+		if (!(--directorinfosplit[directorinfo.viewnum].freeze))
+			K_DirectorSwitch(directorinfosplit[directorinfo.viewnum].attacker, true, directorinfo.viewnum);
 
 		return;
 	}
 
 	// if there's only one player left in the list, just switch to that player
-	if (directorinfo.sortedplayers[0] != -1 && (directorinfo.sortedplayers[1] == -1 ||
+	if (directorinfosplit[directorinfo.viewnum].sortedplayers[0] != -1 && (directorinfosplit[directorinfo.viewnum].sortedplayers[1] == -1 ||
 		// TODO: Battle; I just threw this together quick. Focus on leader.
 		!race_rules()))
 	{
-		K_DirectorSwitch(directorinfo.sortedplayers[0], false);
+		K_DirectorSwitch(directorinfosplit[directorinfo.viewnum].sortedplayers[0], false, directorinfo.viewnum);
 		return;
 	}
 
@@ -359,39 +380,39 @@ void K_UpdateDirector(void)
 		INT32 target;
 
 		// you are out of players, try again
-		if (directorinfo.sortedplayers[targetposition] == -1)
+		if (directorinfosplit[directorinfo.viewnum].sortedplayers[targetposition] == -1)
 		{
 			break;
 		}
 
 		// pair too far apart? try the next one
-		if (directorinfo.boredom[targetposition - 1] >= BOREDOMTIME)
+		if (directorinfosplit[directorinfo.viewnum].boredom[targetposition - 1] >= BOREDOMTIME)
 		{
 			continue;
 		}
 
 		// pair finished? try the next one
-		if (players[directorinfo.sortedplayers[targetposition]].exiting)
+		if (players[directorinfosplit[directorinfo.viewnum].sortedplayers[targetposition]].exiting)
 		{
 			continue;
 		}
 
 		// don't risk switching away from forward pairs at race end, might miss something!
-		if (directorinfo.maxdist > PINCHDIST)
+		if (directorinfosplit[directorinfo.viewnum].maxdist > PINCHDIST)
 		{
 			// if the "next" player is close enough, they should be able to see everyone fine!
 			// walk back through the standings to find a vantage that gets everyone in frame.
 			// (also creates a pretty cool effect w/ overtakes at speed)
-			while (targetposition < MAXPLAYERS && directorinfo.gap[targetposition] < WALKBACKDIST)
+			while (targetposition < MAXPLAYERS && directorinfosplit[directorinfo.viewnum].gap[targetposition] < WALKBACKDIST)
 			{
 				targetposition++;
 			}
 		}
 
-		target = directorinfo.sortedplayers[targetposition];
+		target = directorinfosplit[directorinfo.viewnum].sortedplayers[targetposition];
 
 		// stop here since we're already viewing this player
-		if (*displayplayerp == target)
+		if (displayplayers[directorinfo.viewnum] == target)
 		{
 			break;
 		}
@@ -405,30 +426,30 @@ void K_UpdateDirector(void)
 		// if we're certain the back half of the pair is actually in this position, try to switch
 		if (!players[target].kartstuff[k_positiondelay])
 		{
-			K_DirectorSwitch(target, false);
+			K_DirectorSwitch(target, false, directorinfo.viewnum);
 		}
 
-		// even if we're not certain, if we're certain we're watching the WRONG player, try to switch
-		if (players[*displayplayerp].kartstuff[k_position] != targetposition+1 && !players[*displayplayerp].kartstuff[k_positiondelay])
+		// even if we're not certain, if we're cetain we're watching the WRONG player, try to switch
+		if (directorinfosplit[directorinfo.viewnum].viewplayer->kartstuff[k_position] != targetposition+1 && !directorinfosplit[directorinfo.viewnum].viewplayer->kartstuff[k_positiondelay])
 		{
-			K_DirectorSwitch(target, false);
+			K_DirectorSwitch(target, false, directorinfo.viewnum);
 		}
 
 		break;
 	}
 }
 
-void K_ToggleDirector(void)
+void K_ToggleDirector(const UINT8 viewnum)
 {
-	if (!directortextactive)
+	if (!K_DirectorIsAvailable(viewnum))
 		return;
 
-	if (!K_DirectorIsEnabled())
+	if (!K_DirectorIsEnabled(viewnum))
 	{
-		directorinfo.cooldown = 0; // switch immediately
+		directorinfosplit[viewnum].cooldown = 0; // switch immediately
 	}
 
 	directortoggletimer = 0;
 
-	COM_ImmedExecute("add director 1");
+	CV_SetValue(&cv_director[viewnum], (cv_director[viewnum].value ^ 1));
 }

@@ -338,7 +338,7 @@ INT16 prevmap, nextmap;
 
 // save if director is enabled
 // so demos can disable it by default and restore it after
-static int directorstate = 0;
+static int directorstate[MAXSPLITSCREENPLAYERS] = {0,0,0,0};
 tic_t directortoggletimer = 0;
 
 static CV_PossibleValue_t recordmultiplayerdemos_cons_t[] = {{0, "Disabled"}, {1, "Manual Save"}, {2, "Auto Save"}, {0, NULL}};
@@ -885,6 +885,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		thiscam = (player->bot == 2 ? &camera[0] : &camera[forplayer]);
 	else
 		thiscam = &camera[forplayer];
+
 	lang = localangle[forplayer];
 	laim = localaiming[forplayer];
 	th = turnheld[forplayer];
@@ -1211,8 +1212,8 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		displayplayers[0] = consoleplayer;
 		G_FixCamera(1);
 		// i dont like this lmao
-		if (cv_director.value)
-			CV_SetValue(&cv_director, 0);
+		if (cv_director[0].value)
+			CV_SetValue(&cv_director[0], 0);
 	}
 }
 
@@ -1401,7 +1402,7 @@ boolean G_Responder(event_t *ev)
 		}
 	}
 
-	if (gamestate == GS_LEVEL && ev->type == ev_keydown && multiplayer && demo.playback && !demo.freecam)
+	if (gamestate == GS_LEVEL && ev->type == ev_keydown && multiplayer && demo.playback)
 	{
 		if (ev->data1 == gamecontrolbis[gc_viewpoint][0] || ev->data1 == gamecontrolbis[gc_viewpoint][1])
 		{
@@ -1548,10 +1549,39 @@ boolean G_Responder(event_t *ev)
 					COM_ImmedExecute("changeteam4 spectator");
 				}
 			}
-			if (ev->data1 == gamecontrol[gc_director][0]
-				|| ev->data1 == gamecontrol[gc_director][1])
+
+			if (ev->data1 == gamecontrol[gc_director][0] || ev->data1 == gamecontrol[gc_director][1])
 			{
-				K_ToggleDirector();
+				K_ToggleDirector(0);
+			}
+			else if (ev->data1 == gamecontrolbis[gc_director][0] || ev->data1 == gamecontrolbis[gc_director][1])
+			{
+				K_ToggleDirector(1);
+			}
+			else if (ev->data1 == gamecontrol3[gc_director][0] || ev->data1 == gamecontrol3[gc_director][1])
+			{
+				K_ToggleDirector(2);
+			}
+			else if (ev->data1 == gamecontrol4[gc_director][0] || ev->data1 == gamecontrol4[gc_director][1])
+			{
+				K_ToggleDirector(3);
+			}
+
+			if (ev->data1 == gamecontrol[gc_freecam][0] || ev->data1 == gamecontrol[gc_freecam][1])
+			{
+				P_ToggleDemoCamera(0);
+			}
+			else if (ev->data1 == gamecontrolbis[gc_freecam][0] || ev->data1 == gamecontrolbis[gc_freecam][1])
+			{
+				P_ToggleDemoCamera(1);
+			}
+			else if (ev->data1 == gamecontrol3[gc_freecam][0] || ev->data1 == gamecontrol3[gc_freecam][1])
+			{
+				P_ToggleDemoCamera(2);
+			}
+			else if (ev->data1 == gamecontrol4[gc_freecam][0] || ev->data1 == gamecontrol4[gc_freecam][1])
+			{
+				P_ToggleDemoCamera(3);
 			}
 
 			return true;
@@ -1734,13 +1764,6 @@ void G_ResetView(UINT8 viewnum, INT32 playernum, boolean onlyactive)
 			viewnum = playersviewable;
 		splitscreen = viewnum-1;
 
-		/* Prepare extra views for G_FindView to pass. */
-		for (viewd = splits+1; viewd < viewnum; ++viewd)
-		{
-			displayplayerp = (&displayplayers[viewd-1]);
-			(*displayplayerp) = INT32_MAX;
-		}
-
 		R_ExecuteSetViewSize();
 	}
 
@@ -1761,7 +1784,7 @@ void G_ResetView(UINT8 viewnum, INT32 playernum, boolean onlyactive)
 		G_FixCamera(viewd);
 	}
 
-	if (viewnum == 1 && demo.playback)
+	if (demo.playback && viewnum == 1)
 		consoleplayer = displayplayers[0];
 }
 
@@ -1775,6 +1798,10 @@ void G_AdjustView(UINT8 viewnum, INT32 offset, boolean onlyactive)
 	INT32 *displayplayerp, oldview;
 	displayplayerp = &displayplayers[viewnum-1];
 	oldview = (*displayplayerp);
+
+	// turn off the freecam
+	camera[viewnum].freecam = false;
+
 	G_ResetView(viewnum, ( (*displayplayerp) + offset ), onlyactive);
 
 	// If no other view could be found, go back to what we had.
@@ -5775,9 +5802,6 @@ void G_ConfirmRewind(tic_t rewindtime)
 
 	COM_BufInsertText("renderview on\n");
 
-	if (demo.freecam)
-		return;	// don't touch from there
-
 	splitscreen = oldss;
 	displayplayers[0] = olddp1;
 	displayplayers[1] = olddp2;
@@ -7170,14 +7194,13 @@ void G_DoPlayDemo(char *defdemoname)
 
 	//LUA_HookInt(gamemap, HOOK(MapChange));
 
-	displayplayers[0] = consoleplayer = 0;
+	consoleplayer = 0;
 	memset(playeringame,0,sizeof(playeringame));
+	memset(displayplayers,0,sizeof(displayplayers));
+	memset(camera,0,sizeof(camera)); // reset freecam
 
 	// Load players that were in-game when the map started
 	p = READUINT8(demobuf.p);
-
-	for (i = 1; i < MAXSPLITSCREENPLAYERS; i++)
-		displayplayers[i] = INT32_MAX;
 
 	while (p != 0xFF)
 	{
@@ -7294,8 +7317,11 @@ post_compat:
 		players[i].kartweight = kartweight[i];
 	}
 
-	directorstate = cv_director.value;
-	CV_SetValue(&cv_director, 0);
+	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+	{
+		directorstate[i] = cv_director[i].value;
+		CV_SetValue(&cv_director[i], 0);
+	}
 
 	demo.deferstart = true;
 }
@@ -7862,8 +7888,11 @@ void G_StopDemo(void)
 	demobuf.buffer = NULL;
 	if (demo.playback)
 	{
-		CV_SetValue(&cv_director, directorstate);
-		directorstate = 0;
+		for (UINT8 i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+		{
+			CV_SetValue(&cv_director[i], directorstate[i]);
+			directorstate[i] = 0;
+		}
 	}
 	demo.playback = false;
 	if (demo.title)
@@ -7872,14 +7901,13 @@ void G_StopDemo(void)
 	demo.timing = false;
 	singletics = false;
 
-	demo.freecam = false;
-	// reset democam shit too:
-	democam.cam = NULL;
-	democam.soundmobj = NULL;
-	democam.localangle = 0;
-	democam.localaiming = 0;
-	democam.turnheld = false;
-	democam.keyboardlook = false;
+	UINT8 i;
+	for (i = 0; i < MAXSPLITSCREENPLAYERS; ++i)
+	{
+		camera[i].freecam = false;
+		camera[i].localangle = 0;
+		camera[i].localaiming = 0;
+	}
 
 	CV_SetValue(&cv_playbackspeed, 1);
 	demo.rewinding = false;

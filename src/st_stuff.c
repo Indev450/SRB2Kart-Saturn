@@ -16,6 +16,7 @@
 #include "doomdef.h"
 #include "g_game.h"
 #include "g_input.h"
+#include "k_director.h"
 #include "r_local.h"
 #include "p_local.h"
 #include "f_finale.h"
@@ -155,8 +156,6 @@ static patch_t *envelope;
 // current player for overlay drawing
 player_t *stplyr;
 UINT8 stplyrnum;
-
-boolean directortextactive = false;
 
 // SRB2kart
 
@@ -652,11 +651,27 @@ static void ST_drawLevelTitle(void)
 		V_DrawLevelTitle(ttlnumxpos+12, bary+6, V_SNAPTOBOTTOM, actnum);
 }
 
+static const char *ST_GetButtonName(INT32 control, const char *inputtext)
+{
+	static char buttname[32] = {0}; // Static buffer
+	const char *item1 = gamecontrol[control][0] != 0 ? G_KeynumToString(gamecontrol[control][0]) : NULL;
+	const char *item2 = gamecontrol[control][1] != 0 ? G_KeynumToString(gamecontrol[control][1]) : NULL;
+
+	if (item1 != NULL && item2 != NULL)
+		snprintf(buttname, 32, "%s/%s - %s", item1, item2, inputtext);
+	else
+		snprintf(buttname, 32, "%s - %s", item1 != NULL ? item1 : item2 != NULL ? item2 : "Not Bound", inputtext);
+
+	return buttname;
+}
+
 // Draw the status bar overlay, customisable: the user chooses which
 // kind of information to overlay
 //
 static void ST_overlayDrawer(void)
 {
+	const UINT8 viewnum = R_GetViewNumber();
+
 	//hu_showscores = auto hide score/time/rings when tab rankings are shown
 	if (!(hu_showscores && (netgame || multiplayer)))
 	{
@@ -665,13 +680,12 @@ static void ST_overlayDrawer(void)
 
 	if (!hu_showscores) // hide the following if TAB is held
 	{
-		if (cv_showdirectorhud.value && !splitscreen && ((demo.playback && !demo.freecam && (!demo.title || !modeattacking)) || !P_IsLocalPlayer(stplyr)) && !K_DirectorIsPlayerAlone())
+		// TODO: splitscreen support!
+		if (cv_showdirectorhud.value && !splitscreen && !P_IsLocalPlayer(stplyr) && K_DirectorIsAvailable(0) && !K_DirectorIsPlayerAlone())
 		{
 			char directortext[20] = {0};
 
-			snprintf(directortext, 20, "Director: %s", cv_director.value ? "On" : "Off");
-
-			directortextactive = true;
+			snprintf(directortext, 20, "Director: %s", cv_director[0].value ? "On" : "Off");
 
 			if ((!demo.playback && directortoggletimer < 13*TICRATE) || (demo.playback && directortoggletimer < 4*TICRATE))
 			{
@@ -687,7 +701,6 @@ static void ST_overlayDrawer(void)
 		else
 		{
 			directortoggletimer = 0;
-			directortextactive = false;
 		}
 
 		if (cv_showviewpointtext.value)
@@ -778,28 +791,16 @@ static void ST_overlayDrawer(void)
 				{
 					V_DrawString(2, BASEVIDHEIGHT-50, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF|V_YELLOWMAP, M_GetText("- SPECTATING -"));
 					V_DrawString(2, BASEVIDHEIGHT-40, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, itemtxt);
-					V_DrawString(2, BASEVIDHEIGHT-30, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, M_GetText("Accelerate - Float"));
-					V_DrawString(2, BASEVIDHEIGHT-20, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, M_GetText("Brake - Sink"));
-
-					char directortoggle[32] = {0};
-					const char *item1 = gamecontrol[gc_director][0] != 0 ? G_KeynumToString(gamecontrol[gc_director][0]) : NULL;
-					const char *item2 = gamecontrol[gc_director][1] != 0 ? G_KeynumToString(gamecontrol[gc_director][1]) : NULL;
-
-					if (item1 != NULL && item2 != NULL)
-						snprintf(directortoggle, 32, "%s/%s - Toggle Director", item1, item2);
-					else
-						snprintf(directortoggle, 32, "%s - Toggle Director", item1 != NULL ? item1 : item2 != NULL ? item2 : "Not Bound");
-
-					V_DrawString(2, BASEVIDHEIGHT-10, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, directortoggle);
-
-					directortextactive = true;
+					V_DrawString(2, BASEVIDHEIGHT-30, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, ST_GetButtonName(gc_camfloat, "Float"));
+					V_DrawString(2, BASEVIDHEIGHT-20, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, ST_GetButtonName(gc_camsink, "Sink"));
+					V_DrawString(2, BASEVIDHEIGHT-10, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, ST_GetButtonName(gc_director, "Toggle Director"));
 				}
 				else
 				{
 					V_DrawString(2, BASEVIDHEIGHT-40, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF|V_YELLOWMAP, M_GetText("- SPECTATING -"));
 					V_DrawString(2, BASEVIDHEIGHT-30, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, itemtxt);
-					V_DrawString(2, BASEVIDHEIGHT-20, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, M_GetText("Accelerate - Float"));
-					V_DrawString(2, BASEVIDHEIGHT-10, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, M_GetText("Brake - Sink"));
+					V_DrawString(2, BASEVIDHEIGHT-20, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, ST_GetButtonName(gc_camfloat, "Float"));
+					V_DrawString(2, BASEVIDHEIGHT-10, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, ST_GetButtonName(gc_camsink, "Sink"));
 				}
 			}
 		}

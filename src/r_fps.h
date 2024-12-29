@@ -37,6 +37,10 @@ enum viewcontext_e
 	VIEWCONTEXT_SKY4
 };
 
+extern enum viewcontext_e viewcontext;
+
+#define R_GetViewNumber() ((viewcontext - VIEWCONTEXT_PLAYER1) & 3)
+
 typedef struct {
 	fixed_t x;
 	fixed_t y;

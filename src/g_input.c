@@ -902,6 +902,9 @@ static const char *gamecontrolname[num_gamecontrols] =
 	"custom2",
 	"custom3",
 	"director",
+	"freecam",
+	"camfloat",
+	"camsink",
 };
 
 #define NUMKEYNAMES (sizeof (keynames)/sizeof (keyname_t))
@@ -1139,6 +1142,12 @@ void G_Controldefault(UINT8 player)
 		//gamecontrol[gc_screenshot ][1] = KEY_HAT1+1; // D-Pad Down // absolutely fucking NOT
 		gamecontrol[gc_talkkey    ][1] = KEY_HAT1+1; // D-Pad Down
 		gamecontrol[gc_scores     ][1] = KEY_HAT1+0; // D-Pad Up
+
+		gamecontrol[gc_camfloat   ][1] = 'a';
+		gamecontrol[gc_camsink    ][1] = 'd';
+
+		gamecontrol[gc_camfloat   ][1] = KEY_JOY1+0; // A
+		gamecontrol[gc_camsink    ][1] = KEY_JOY1+1; // B
 	}
 
 	if (player == 0 || player == 2)

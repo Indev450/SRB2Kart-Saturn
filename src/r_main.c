@@ -867,6 +867,7 @@ static inline int intsign(int n) {
 angle_t R_ViewRollAngle(const player_t *player)
 {
 	angle_t roll = 0;
+	const UINT8 viewnum = R_GetViewNumber();
 
 	if (gamestate != GS_LEVEL)
 	{
@@ -885,7 +886,7 @@ angle_t R_ViewRollAngle(const player_t *player)
 
 	if (cv_tilting.value)
 	{
-		if (!player->spectator && !demo.freecam)
+		if (!player->spectator && !camera[viewnum].freecam)
 			roll += player->tilt;
 
 		if (cv_actionmovie.value)
@@ -1063,6 +1064,8 @@ R_SetupCommonFrame
 (		player_t * player,
 		subsector_t * subsector)
 {
+	const UINT8 viewnum = R_GetViewNumber();
+
 	newview->player = player;
 
 	newview->x += quake.x;
@@ -1076,7 +1079,7 @@ R_SetupCommonFrame
 	else
 		newview->sector = R_PointInSubsector(newview->x, newview->y)->sector;
 
-	R_InterpolateView(R_UsingFrameInterpolation() ? (demo.playback && demo.freecam) ? rendertimefrac_unpaused : rendertimefrac : FRACUNIT, false);
+	R_InterpolateView(R_UsingFrameInterpolation() ? (camera[viewnum].freecam ? rendertimefrac_unpaused : rendertimefrac) : FRACUNIT, false);
 }
 
 static void R_SetupAimingFrame(player_t *player, camera_t *thiscam)
@@ -1222,9 +1225,14 @@ void R_SetupFrame(int s, boolean skybox)
 		thiscam->reset = false;
 	}
 
-	if (player->spectator) // no spectator chasecam
-		chasecam = false; // force chasecam off
-	else if (player->playerstate == PST_DEAD || player->exiting)
+	if (player->spectator)
+	{
+		// Free flying spectator uses demo freecam. This
+		// requires chasecam to be enabled.
+		chasecam = true;
+	}
+
+	if (player->playerstate == PST_DEAD || player->exiting)
 		chasecam = true; // force chasecam on
 
 	if (chasecam && (thiscam && !thiscam->chase))
@@ -1253,7 +1261,7 @@ void R_SetupFrame(int s, boolean skybox)
 
 		R_SetupCommonFrame(player, subsector);
 	}
-	else if (!player->spectator && (thiscam && chasecam)) // use outside cam view
+	else if (thiscam && chasecam) // use outside cam view
 	{
 		viewmobj = NULL;
 
@@ -1528,6 +1536,8 @@ void R_RegisterEngineStuff(void)
 		CV_RegisterVar(&cv_cam_rotate[i]);
 		CV_RegisterVar(&cv_cam_rotspeed[i]);
 	}
+
+	CV_RegisterVar(&cv_freecam_speed);
 
 	CV_RegisterVar(&cv_tilting);
 	CV_RegisterVar(&cv_quaketilt);

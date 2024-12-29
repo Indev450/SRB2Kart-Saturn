@@ -525,8 +525,8 @@ void P_Ticker(boolean run)
 				timeinmap = (timeinmap-1) & ~3;
 			G_PreviewRewind(leveltime);
 		}
-		else if (demo.freecam && democam.cam)	// special case: allow freecam to MOVE during pause!
-			P_DemoCameraMovement(democam.cam);
+		else
+			P_RunChaseCameras();	// special case: allow freecam to MOVE during pause!
 
 		return;
 	}
@@ -726,7 +726,10 @@ void P_Ticker(boolean run)
 		PS_STOP_TIMING(ps_lua_postthinkframe_time);
 	}
 
-	K_UpdateDirector();
+	for (i = 0; i <= splitscreen; i++)
+	{
+		K_UpdateDirector(i);
+	}
 
 	// Always move the camera.
 	P_RunChaseCameras();
