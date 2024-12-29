@@ -3137,13 +3137,17 @@ void P_ToggleDemoCamera(UINT8 viewnum)
 {
 	camera_t *cam = &camera[viewnum];
 
+	// dont let freecam be toggled when in spec lel
+	if (players[displayplayers[viewnum]].spectator)
+		return;
+
 	if (!cam->freecam)	// toggle on
 	{
 		cam->freecam = true;
 		cam->button_a_held = 2;
 		cam->reset_aiming = true;
 	}
-	else	// toggle off
+	else				// toggle off
 	{
 		cam->freecam = false;
 		G_FixCamera(viewnum+1);
