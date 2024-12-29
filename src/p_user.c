@@ -3315,6 +3315,10 @@ static void P_DemoCameraMovement(camera_t *cam, UINT8 num)
 	// first off we need to get button input
 	cmd = P_CameraCmd(cam, num);
 
+	// let centerview work proper
+	if (InputDown(gc_centerview, forplayer))
+		cam->aiming = 0;
+
 	if (cmd->aiming != 0)
 	{
 		cam->aiming = cmd->aiming << FRACBITS;
