@@ -4033,19 +4033,19 @@ boolean M_Responder(event_t *ev)
 			// switch viewpoints:
 			case '1':	// viewpoint for p1 (also f12)
 				// maximum laziness:
-				if (!demo.freecam)
+				if (!camera[0].freecam)
 					G_AdjustView(1, 1, true);
 				break;
 			case '2':	// viewpoint for p2
-				if (!demo.freecam)
+				if (!camera[1].freecam)
 					G_AdjustView(2, 1, true);
 				break;
 			case '3':	// viewpoint for p3
-				if (!demo.freecam)
+				if (!camera[2].freecam)
 					G_AdjustView(3, 1, true);
 				break;
 			case '4':	// viewpoint for p4
-				if (!demo.freecam)
+				if (!camera[3].freecam)
 					G_AdjustView(4, 1, true);
 				break;
 
@@ -4272,19 +4272,19 @@ boolean M_DemoResponder(event_t *ev)
 			// switch viewpoints:
 			case '1':	// viewpoint for p1 (also f12)
 				// maximum laziness:
-				if (!demo.freecam)
+				if (!camera[0].freecam)
 					G_AdjustView(1, 1, true);
 				break;
 			case '2':	// viewpoint for p2
-				if (!demo.freecam)
+				if (!camera[1].freecam)
 					G_AdjustView(2, 1, true);
 				break;
 			case '3':	// viewpoint for p3
-				if (!demo.freecam)
+				if (!camera[2].freecam)
 					G_AdjustView(3, 1, true);
 				break;
 			case '4':	// viewpoint for p4
-				if (!demo.freecam)
+				if (!camera[3].freecam)
 					G_AdjustView(4, 1, true);
 				break;
 
@@ -7691,8 +7691,7 @@ static void M_PlaybackAdvance(INT32 choice)
 
 static void M_PlaybackSetViews(INT32 choice)
 {
-
-	if (demo.freecam)
+	if (camera[0].freecam || camera[1].freecam || camera[2].freecam || camera[3].freecam)
 		return;	// not here.
 
 	if (choice > 0)
