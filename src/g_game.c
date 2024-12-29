@@ -1209,9 +1209,6 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	{
 		displayplayers[0] = consoleplayer;
 		G_FixCamera(1);
-		// i dont like this lmao
-		if (cv_director[0].value)
-			CV_SetValue(&cv_director[0], 0);
 	}
 }
 
