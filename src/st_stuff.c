@@ -157,8 +157,6 @@ static patch_t *envelope;
 player_t *stplyr;
 UINT8 stplyrnum;
 
-boolean directortextactive = false;
-
 // SRB2kart
 
 hudinfo_t hudinfo[NUMHUDITEMS] =
@@ -668,13 +666,12 @@ static void ST_overlayDrawer(void)
 
 	if (!hu_showscores) // hide the following if TAB is held
 	{
+		// TODO: splitscreen support!
 		if (cv_showdirectorhud.value && !splitscreen && !P_IsLocalPlayer(stplyr) && K_DirectorIsAvailable(0) && !K_DirectorIsPlayerAlone())
 		{
 			char directortext[20] = {0};
 
 			snprintf(directortext, 20, "Director: %s", cv_director[0].value ? "On" : "Off");
-
-			//directortextactive = true;
 
 			if ((!demo.playback && directortoggletimer < 13*TICRATE) || (demo.playback && directortoggletimer < 4*TICRATE))
 			{
@@ -690,7 +687,6 @@ static void ST_overlayDrawer(void)
 		else
 		{
 			directortoggletimer = 0;
-			//directortextactive = false;
 		}
 
 		if (cv_showviewpointtext.value)
@@ -794,8 +790,6 @@ static void ST_overlayDrawer(void)
 						snprintf(directortoggle, 32, "%s - Toggle Director", item1 != NULL ? item1 : item2 != NULL ? item2 : "Not Bound");
 
 					V_DrawString(2, BASEVIDHEIGHT-10, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, directortoggle);
-
-					directortextactive = true;
 				}
 				else
 				{

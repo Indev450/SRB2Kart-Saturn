@@ -76,12 +76,12 @@ boolean K_DirectorIsAvailable(UINT8 viewnum)
 {
 	if ((demo.playback && demo.title) || modeattacking)
 		return false;
-	return ((gamestate == GS_LEVEL) && (viewnum <= splitscreen) && (!playeringame[displayplayers[viewnum]] || players[displayplayers[viewnum]].spectator) && !camera[viewnum].freecam);
+	return ((gamestate == GS_LEVEL) && (demo.playback || ((viewnum <= splitscreen) && (!playeringame[displayplayers[viewnum]] || players[displayplayers[viewnum]].spectator) && !camera[viewnum].freecam && !K_DirectorIsPlayerAlone())));
 }
 
 static boolean K_DirectorIsEnabled(const UINT8 viewnum)
 {
-	return (cv_director[viewnum].value && K_DirectorIsAvailable(viewnum) && !K_DirectorIsPlayerAlone());
+	return (cv_director[viewnum].value && K_DirectorIsAvailable(viewnum));
 }
 
 void K_InitDirector(void)
@@ -438,10 +438,7 @@ void K_UpdateDirector(const UINT8 viewnum)
 
 void K_ToggleDirector(const UINT8 viewnum)
 {
-	//if (!directortextactive)
-		//return;
-
-	if (K_DirectorIsAvailable(viewnum))
+	if (!K_DirectorIsAvailable(viewnum))
 		return;
 
 	if (!K_DirectorIsEnabled(viewnum))
@@ -451,21 +448,5 @@ void K_ToggleDirector(const UINT8 viewnum)
 
 	directortoggletimer = 0;
 
-	switch (viewnum)
-	{
-		case 1:
-			COM_ImmedExecute("add director2 1");
-			break;
-		case 2:
-			COM_ImmedExecute("add director3 1");
-			break;
-		case 3:
-			COM_ImmedExecute("add director4 1");
-			break;
-		case 0:
-			COM_ImmedExecute("add director 1");
-			break;
-		default:
-			break;
-	}
+	CV_SetValue(&cv_director[viewnum], (cv_director[viewnum].value ^ 1));
 }
