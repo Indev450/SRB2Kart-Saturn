@@ -63,7 +63,7 @@
 
 #include "md5.h" // map MD5
 
-// for LUAh_MapLoad
+// for MapLoad hook
 #include "lua_script.h"
 #include "lua_hook.h"
 
@@ -460,7 +460,11 @@ FUNCINLINE static ATTRINLINE void P_LoadRawVertexes(UINT8 *data)
   * \param seg Seg to compute length for.
   * \return Length in fracunits.
   */
+#if defined (WALLSPLATS) || defined (FLOORSPLATS)
 fixed_t P_SegLength(seg_t *seg)
+#else
+static inline fixed_t P_SegLength(seg_t *seg)
+#endif
 {
 	INT64 dx = (seg->v2->x - seg->v1->x)>>1;
 	INT64 dy = (seg->v2->y - seg->v1->y)>>1;
@@ -510,7 +514,7 @@ void P_UpdateSegLightOffset(seg_t *li)
 // Loads the SEGS resource from a level.
 static void P_LoadRawSegs(UINT8 *data)
 {
-	INT32 linedef, side;
+	INT32 rawlinedef, rawside;
 	mapseg_t *ml = (mapseg_t*)data;
 	seg_t *li = segs;
 	line_t *ldef;
@@ -530,14 +534,14 @@ static void P_LoadRawSegs(UINT8 *data)
 
 		li->angle = (SHORT(ml->angle))<<FRACBITS;
 		li->offset = (SHORT(ml->offset))<<FRACBITS;
-		linedef = SHORT(ml->linedef);
-		ldef = &lines[linedef];
+		rawlinedef = SHORT(ml->linedef);
+		ldef = &lines[rawlinedef];
 		li->linedef = ldef;
-		li->side = side = SHORT(ml->side);
-		li->sidedef = &sides[ldef->sidenum[side]];
-		li->frontsector = sides[ldef->sidenum[side]].sector;
+		li->side = rawside = SHORT(ml->side);
+		li->sidedef = &sides[ldef->sidenum[rawside]];
+		li->frontsector = sides[ldef->sidenum[rawside]].sector;
 		if (ldef->flags & ML_TWOSIDED)
-			li->backsector = sides[ldef->sidenum[side^1]].sector;
+			li->backsector = sides[ldef->sidenum[rawside^1]].sector;
 		else
 			li->backsector = 0;
 
@@ -1542,15 +1546,22 @@ static void P_CreateBlockMap(void)
 	// First find limits of map
 	for (i = 0; i < numvertexes; i++)
 	{
-		if (vertexes[i].x>>FRACBITS < minx)
-			minx = vertexes[i].x>>FRACBITS;
-		else if (vertexes[i].x>>FRACBITS > maxx)
-			maxx = vertexes[i].x>>FRACBITS;
-		if (vertexes[i].y>>FRACBITS < miny)
-			miny = vertexes[i].y>>FRACBITS;
-		else if (vertexes[i].y>>FRACBITS > maxy)
-			maxy = vertexes[i].y>>FRACBITS;
+		fixed_t t;
+
+		if ((t = vertexes[i].x) < minx)
+			minx = t;
+		else if (t > maxx)
+			maxx = t;
+		if ((t = vertexes[i].y) < miny)
+			miny = t;
+		else if (t > maxy)
+			maxy = t;
 	}
+
+	minx >>= FRACBITS;
+	maxx >>= FRACBITS;
+	miny >>= FRACBITS;
+	maxy >>= FRACBITS;
 
 	// Save blockmap parameters
 	bmaporgx = minx << FRACBITS;
@@ -2426,7 +2437,7 @@ static void P_SetupCamera(UINT8 pnum, camera_t *cam)
 		cam->y = players[pnum].mo->y;
 		cam->z = players[pnum].mo->z;
 		cam->angle = players[pnum].mo->angle;
-		cam->subsector = R_PointInSubsector(cam->x, cam->y); // make sure camera has a subsector set -- Monster Iestyn (12/11/18)
+		cam->subsector = R_PointInSubsectorFast(cam->x, cam->y); // make sure camera has a subsector set -- Monster Iestyn (12/11/18)
 	}
 	else
 	{
@@ -2451,7 +2462,7 @@ static void P_SetupCamera(UINT8 pnum, camera_t *cam)
 		cam->y = thing->y;
 		cam->z = thing->z;
 		cam->angle = FixedAngle((fixed_t)thing->angle << FRACBITS);
-		cam->subsector = R_PointInSubsector(cam->x, cam->y); // make sure camera has a subsector set -- Monster Iestyn (12/11/18)
+		cam->subsector = R_PointInSubsectorFast(cam->x, cam->y); // make sure camera has a subsector set -- Monster Iestyn (12/11/18)
 	}
 }
 
@@ -2466,17 +2477,11 @@ static void P_InitCamera(void)
 				P_SetupCamera(displayplayers[i], &camera[i]);
 
 		// Though, I don't think anyone would care about cam_rotate being reset back to the only value that makes sense :P
-		if (!cv_cam_rotate.changed)
-			CV_Set(&cv_cam_rotate, cv_cam_rotate.defaultvalue);
-
-		if (!cv_cam2_rotate.changed)
-			CV_Set(&cv_cam2_rotate, cv_cam2_rotate.defaultvalue);
-
-		if (!cv_cam3_rotate.changed)
-			CV_Set(&cv_cam3_rotate, cv_cam3_rotate.defaultvalue);
-
-		if (!cv_cam4_rotate.changed)
-			CV_Set(&cv_cam4_rotate, cv_cam4_rotate.defaultvalue);
+		for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+		{
+			if (!cv_cam_rotate[i].changed)
+				CV_Set(&cv_cam_rotate[i], cv_cam_rotate[i].defaultvalue);
+		}
 
 		displayplayers[0] = consoleplayer; // Start with your OWN view, please!
 	}
@@ -2494,6 +2499,9 @@ static void P_InitMinimapInfo(void)
 	fixed_t a;
 	fixed_t b;
 	node_t *bsp = &nodes[numnodes-1];
+
+	minimapinfo.minimap_pic = NULL;
+
 	lumpnum = W_CheckNumForName(va("%sR", G_BuildMapName(gamemap)));
 
 	if (lumpnum != -1)
@@ -2505,6 +2513,7 @@ static void P_InitMinimapInfo(void)
 	minimapinfo.max_x = bsp->bbox[0][BOXRIGHT];
 	minimapinfo.min_y = bsp->bbox[0][BOXBOTTOM];
 	minimapinfo.max_y = bsp->bbox[0][BOXTOP];
+
 	if (bsp->bbox[1][BOXLEFT] < minimapinfo.min_x)
 		minimapinfo.min_x = bsp->bbox[1][BOXLEFT];
 	if (bsp->bbox[1][BOXRIGHT] > minimapinfo.max_x)
@@ -2513,15 +2522,19 @@ static void P_InitMinimapInfo(void)
 		minimapinfo.min_y = bsp->bbox[1][BOXBOTTOM];
 	if (bsp->bbox[1][BOXTOP] > minimapinfo.max_y)
 		minimapinfo.max_y = bsp->bbox[1][BOXTOP];
+
 	// You might be wondering why these are being bitshift here
 	// it's because mapwidth and height would otherwise overflow for maps larger than half the size possible...
 	// map boundaries and sizes will ALWAYS be whole numbers thankfully
 	// later calculations take into consideration that these are actually not in terms of FRACUNIT though
 	minimapinfo.map_w = (minimapinfo.max_x >>= FRACBITS) - (minimapinfo.min_x >>= FRACBITS);
 	minimapinfo.map_h = (minimapinfo.max_y >>= FRACBITS) - (minimapinfo.min_y >>= FRACBITS);
+
 	minimapinfo.minimap_w = minimapinfo.minimap_h = 100;
+
 	a = FixedDiv(minimapinfo.minimap_w<<FRACBITS, minimapinfo.map_w<<4);
 	b = FixedDiv(minimapinfo.minimap_h<<FRACBITS, minimapinfo.map_h<<4);
+
 	if (a < b)
 	{
 		minimapinfo.minimap_h = FixedMul(a, minimapinfo.map_h)>>(FRACBITS-4);
@@ -2535,8 +2548,10 @@ static void P_InitMinimapInfo(void)
 		}
 		minimapinfo.zoom = b;
 	}
+
 	minimapinfo.zoom >>= (FRACBITS-4);
 	minimapinfo.zoom -= (minimapinfo.zoom/20);
+
 	// These should always be small enough to be bitshift back right now
 	minimapinfo.offs_x = FixedMul((minimapinfo.min_x + minimapinfo.map_w/2) << FRACBITS, minimapinfo.zoom);
 	minimapinfo.offs_y = FixedMul((minimapinfo.min_y + minimapinfo.map_h/2) << FRACBITS, minimapinfo.zoom);
@@ -2587,9 +2602,6 @@ boolean P_SetupLevel(boolean skipprecip, boolean reloadinggamestate)
 
 	P_LevelInitStuff(reloadinggamestate);
 
-	for (i = 0; i <= splitscreen; i++)
-		postimgtype[i] = postimg_none;
-
 	if (mapheaderinfo[gamemap-1]->forcecharacter[0] != '\0'
 	&& atoi(mapheaderinfo[gamemap-1]->forcecharacter) != 255)
 		P_ForceCharacter(mapheaderinfo[gamemap-1]->forcecharacter);
@@ -2600,18 +2612,11 @@ boolean P_SetupLevel(boolean skipprecip, boolean reloadinggamestate)
 
 	if (!dedicated)
 	{
-		if (!cv_chasecam.changed)
-			CV_SetValue(&cv_chasecam, chase);
-
-		// same for second player
-		if (!cv_chasecam2.changed)
-			CV_SetValue(&cv_chasecam2, chase);
-
-		if (!cv_chasecam3.changed)
-			CV_SetValue(&cv_chasecam3, chase);
-
-		if (!cv_chasecam4.changed)
-			CV_SetValue(&cv_chasecam4, chase);
+		for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+		{
+			if (!cv_chasecam[i].changed)
+				CV_SetValue(&cv_chasecam[i], chase);
+		}
 	}
 
 	// Initial height of PointOfView
@@ -2741,6 +2746,8 @@ boolean P_SetupLevel(boolean skipprecip, boolean reloadinggamestate)
 	// clear the splats from previous level
 	R_ClearLevelSplats();
 #endif
+
+	mobjcache = NULL;
 
 	R_InitializeLevelInterpolators();
 
@@ -3006,12 +3013,11 @@ boolean P_SetupLevel(boolean skipprecip, boolean reloadinggamestate)
 		}
 		P_PreTicker(2);
 		if (!reloadinggamestate)
-			LUAh_MapLoad();
+			LUA_HookInt(gamemap, HOOK(MapLoad));
 	}
 
 	if (rendermode != render_none && !reloadinggamestate)
 	{
-		R_ResetViewInterpolation(0);
 		R_ResetViewInterpolation(0);
 		R_UpdateMobjInterpolators();
 	}
@@ -3156,11 +3162,6 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, boolean local)
 	// edit music defs
 	//
 	S_LoadMusicDefs(wadnum);
-
-	//
-	// edit music defs for stuff like musictest
-	//
-	S_LoadMTDefs(wadnum);
 
 	//
 	// search for maps

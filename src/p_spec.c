@@ -35,7 +35,7 @@
 #include "hu_stuff.h"
 #include "m_misc.h"
 #include "m_cond.h" //unlock triggers
-#include "lua_hook.h" // LUAh_LinedefExecute
+#include "lua_hook.h" // LUA_HookLinedefExecute
 
 #include "k_kart.h" // SRB2kart
 #include "console.h" // CON_LogMessage
@@ -1431,12 +1431,14 @@ boolean P_RunTriggerLinedef(line_t *triggerline, mobj_t *actor, sector_t *caller
 	}
 	else if (caller)
 	{
-		if (GETSECSPECIAL(caller->special, 2) == 6)
+		INT32 special = GETSECSPECIAL(caller->special, 2);
+
+		if (special == 6)
 		{
 			if (!(ALL7EMERALDS(emeralds)))
 				return false;
 		}
-		else if (GETSECSPECIAL(caller->special, 2) == 7) // SRB2Kart: reusing for Race Lap executor
+		else if (special == 7) // SRB2Kart: reusing for Race Lap executor
 		{
 			UINT8 lap;
 
@@ -1470,7 +1472,7 @@ boolean P_RunTriggerLinedef(line_t *triggerline, mobj_t *actor, sector_t *caller
 		// If we were not triggered by a sector type especially for the purpose,
 		// a Linedef Executor linedef trigger is not handling sector triggers properly, return.
 
-		else if ((!GETSECSPECIAL(caller->special, 2) || GETSECSPECIAL(caller->special, 2) > 7) && (specialtype > 322))
+		else if ((!special || special > 7) && (specialtype > 322))
 		{
 			CONS_Alert(CONS_WARNING,
 				M_GetText("Linedef executor trigger isn't handling sector triggers properly!\nspecialtype = %d, if you are not a dev, report this warning instance\nalong with the wad that caused it!\n"),
@@ -1805,27 +1807,23 @@ void P_SwitchWeather(INT32 weathernum)
 
 			precipmobj = (precipmobj_t *)think;
 
+			mobjtype_t type = 0;
+			INT32 z = 0;
+
+			if (swap == PRECIP_BLANK || swap == PRECIP_STORM_NORAIN) // Remove precip, but keep it around for reuse.
+			{
+				precipmobj->precipflags |= PCF_INVISIBLE;
+				continue;
+			}
+
 			if (swap == PRECIP_RAIN) // Snow To Rain
 			{
-				precipmobj->type = MT_RAIN; // proper set the type
-				precipmobj->info = &mobjinfo[MT_RAIN];
-				precipmobj->flags = mobjinfo[MT_RAIN].flags;
-				st = &states[mobjinfo[MT_RAIN].spawnstate];
-				precipmobj->state = st;
-				precipmobj->tics = st->tics;
-				precipmobj->sprite = st->sprite;
-				precipmobj->frame = st->frame;
-				precipmobj->momz = cv_mobjscaleprecip.value ? FixedMul(mobjinfo[MT_RAIN].speed, mapobjectscale) : mobjinfo[MT_RAIN].speed;
-
-				precipmobj->precipflags &= ~(PCF_INVISIBLE|PCF_SPLASH); // P_PrecipThinker will add this again if it needs to
+				type = MT_RAIN;
 			}
 			else if (swap == PRECIP_SNOW) // Rain To Snow
 			{
-				INT32 z;
+				type = MT_SNOWFLAKE;
 
-				precipmobj->type = MT_SNOWFLAKE; // proper set the type
-				precipmobj->info = &mobjinfo[MT_SNOWFLAKE];
-				precipmobj->flags = mobjinfo[MT_SNOWFLAKE].flags;
 				z = M_RandomByte();
 
 				if (z < 64)
@@ -1834,92 +1832,69 @@ void P_SwitchWeather(INT32 weathernum)
 					z = 1;
 				else
 					z = 0;
-
-				st = &states[mobjinfo[MT_SNOWFLAKE].spawnstate+z];
-				precipmobj->state = st;
-				precipmobj->tics = st->tics;
-				precipmobj->sprite = st->sprite;
-				precipmobj->frame = st->frame;
-				precipmobj->momz = cv_mobjscaleprecip.value ? FixedMul(mobjinfo[MT_SNOWFLAKE].speed, mapobjectscale) : mobjinfo[MT_SNOWFLAKE].speed;
-
-				precipmobj->precipflags &= ~(PCF_INVISIBLE|PCF_SPLASH); // P_PrecipThinker will add this again if it needs to
 			}
-			else if (swap == PRECIP_BLANK || swap == PRECIP_STORM_NORAIN) // Remove precip, but keep it around for reuse.
-			{
-				precipmobj->precipflags |= PCF_INVISIBLE;
-			}
+
+			precipmobj->type = type; // proper set the type
+			precipmobj->info = &mobjinfo[type];
+			precipmobj->flags = mobjinfo[type].flags;
+
+			st = &states[mobjinfo[type].spawnstate+z];
+
+			precipmobj->state = st;
+			precipmobj->tics = st->tics;
+			precipmobj->sprite = st->sprite;
+			precipmobj->frame = st->frame;
+			precipmobj->momz = (cv_mobjscaleprecip.value ? FixedMul(mobjinfo[type].speed, mapobjectscale) : mobjinfo[type].speed);
+
+			precipmobj->precipflags &= ~(PCF_INVISIBLE|PCF_SPLASH); // P_PrecipThinker will add this again if it needs to
 		}
 	}
+
+	boolean dontspawn = false;
 
 	switch (weathernum)
 	{
 		case PRECIP_SNOW: // snow
 			curWeather = PRECIP_SNOW;
-
-			if (!swap)
-				P_SpawnPrecipitation();
-
 			break;
 		case PRECIP_RAIN: // rain
 		{
-			boolean dontspawn = false;
-
 			if (curWeather == PRECIP_RAIN || curWeather == PRECIP_STORM || curWeather == PRECIP_STORM_NOSTRIKES)
 				dontspawn = true;
 
 			curWeather = PRECIP_RAIN;
-
-			if (!dontspawn && !swap)
-				P_SpawnPrecipitation();
-
 			break;
 		}
 		case PRECIP_STORM: // storm
 		{
-			boolean dontspawn = false;
-
 			if (curWeather == PRECIP_RAIN || curWeather == PRECIP_STORM || curWeather == PRECIP_STORM_NOSTRIKES)
 				dontspawn = true;
 
 			curWeather = PRECIP_STORM;
-
-			if (!dontspawn && !swap)
-				P_SpawnPrecipitation();
-
 			break;
 		}
 		case PRECIP_STORM_NOSTRIKES: // storm w/o lightning
 		{
-			boolean dontspawn = false;
-
 			if (curWeather == PRECIP_RAIN || curWeather == PRECIP_STORM || curWeather == PRECIP_STORM_NOSTRIKES)
 				dontspawn = true;
 
 			curWeather = PRECIP_STORM_NOSTRIKES;
-
-			if (!dontspawn && !swap)
-				P_SpawnPrecipitation();
-
 			break;
 		}
 		case PRECIP_STORM_NORAIN: // storm w/o rain
 			curWeather = PRECIP_STORM_NORAIN;
-
-			if (!swap)
-				P_SpawnPrecipitation();
-
 			break;
 		case PRECIP_BLANK:
 			curWeather = PRECIP_BLANK;
-
-			if (!swap)
-				P_SpawnPrecipitation();
-
 			break;
 		default:
+			dontspawn = true;
 			curWeather = PRECIP_NONE;
 			break;
 	}
+
+	if (!dontspawn && !swap)
+		P_SpawnPrecipitation();
 }
 
 /** Gets an object.
@@ -2084,6 +2059,9 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 					mo->y += y;
 					mo->z += z;
 					P_SetThingPosition(mo);
+					mo->old_x = mo->x;
+					mo->old_y = mo->y;
+					mo->old_z = mo->z;
 
 					if (mo->player)
 					{
@@ -2102,7 +2080,6 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 								camera[i].reset = true;
 								camera[i].subsector = R_PointInSubsector(camera[i].x, camera[i].y);
 								R_RelativeTeleportViewInterpolation(i, x, y, z, 0);
-								R_ResetViewInterpolation(i + 1); // reset view interp as well
 								break;
 							}
 						}
@@ -2520,7 +2497,6 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 						if (displayplayers[i] == (mo->player - players))
 						{
 							R_ResetViewInterpolation(i + 1);
-							R_ResetViewInterpolation(i + 1);
 						}
 					}
 				}
@@ -2855,7 +2831,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 
 		case 443: // Calls a named Lua function
 			if (line->text)
-				LUAh_LinedefExecute(line, mo, callsec);
+				LUA_HookLinedefExecute(line, mo, callsec);
 			else
 				CONS_Alert(CONS_WARNING, "Linedef %s is missing the hook name of the Lua function to call! (This should be given in the front texture fields)\n", sizeu1(line-lines));
 			break;

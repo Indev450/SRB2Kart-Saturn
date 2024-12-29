@@ -13,7 +13,7 @@
 
 #include "hw_main.h"
 #include "hw_glob.h"
-#include "hw_drv.h"
+#include "hw_gl.h"
 #include "hw_shaders.h"
 #include "../z_zone.h"
 
@@ -25,12 +25,9 @@ static struct {
 	const char *vertex;
 	const char *fragment;
 } const gl_shadersources[] = {
-	
+
 	// Floor shader
 	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_FLOOR_FRAGMENT_SHADER},
-
-	// Shadow shader
-	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_SHADOW_FRAGMENT_SHADER},
 
 	// Wall shader
 	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_WALL_FRAGMENT_SHADER},
@@ -52,7 +49,7 @@ static struct {
 
 	// Palette postprocess shader
 	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_PALETTE_POSTPROCESS_FRAGMENT_SHADER},
-	
+
 	// UI colormap fade shader
 	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_UI_COLORMAP_FADE_FRAGMENT_SHADER},
 
@@ -90,7 +87,7 @@ boolean HWR_InitShaders(void)
 {
 	int i;
 
-	if (!HWD.pfnInitShaders())
+	if (!GL_InitShaders())
 		return false;
 
 	for (i = 0; i < NUMSHADERTARGETS; i++)
@@ -279,11 +276,11 @@ static char *HWR_PreprocessShader(char *original)
 
 	// Calculate length of modified shader.
 	new_len = original_len;
-	
-	if (cv_grpaletterendering.value)
+
+	if (cv_glpaletterendering.value)
 		ADD_TO_LEN(PALETTE_RENDERING_DEFINE)
 
-	if (cv_lightdither.value)
+	if (cv_gllightdither.value)
 		ADD_TO_LEN(LIGHT_DITHERING_DEFINE)
 
 #undef ADD_TO_LEN
@@ -324,10 +321,10 @@ static char *HWR_PreprocessShader(char *original)
 	}
 
 	// Write the defines.
-	if (cv_grpaletterendering.value)
+	if (cv_glpaletterendering.value)
 		WRITE_DEFINE(PALETTE_RENDERING_DEFINE)
 
-	if (cv_lightdither.value)
+	if (cv_gllightdither.value)
 		WRITE_DEFINE(LIGHT_DITHERING_DEFINE)
 
 #undef WRITE_DEFINE
@@ -369,16 +366,16 @@ static void HWR_CompileShader(int index)
 	{
 		char *preprocessed = HWR_PreprocessShader(vertex_source);
 		if (!preprocessed) return;
-		HWD.pfnLoadShader(index, preprocessed, HWD_SHADERSTAGE_VERTEX);
+		GL_LoadShader(index, preprocessed, HWD_SHADERSTAGE_VERTEX);
 	}
 	if (fragment_source)
 	{
 		char *preprocessed = HWR_PreprocessShader(fragment_source);
 		if (!preprocessed) return;
-		HWD.pfnLoadShader(index, preprocessed, HWD_SHADERSTAGE_FRAGMENT);
+		GL_LoadShader(index, preprocessed, HWD_SHADERSTAGE_FRAGMENT);
 	}
 
-	gl_shaders[index].compiled = HWD.pfnCompileShader(index);
+	gl_shaders[index].compiled = GL_CompileShader(index);
 }
 
 // compile or recompile shaders
@@ -410,7 +407,7 @@ int HWR_GetShaderFromTarget(int shader_target)
 	// - custom shaders are enabled
 	// - custom shaders are allowed by the server
 	if (custom_shader != -1 && gl_shaders[custom_shader].compiled &&
-		cv_grshaders.value == 1)
+		cv_glshaders.value == 1)
 		return custom_shader;
 	else
 		return gl_shadertargets[shader_target].base_shader;
@@ -432,7 +429,6 @@ static inline UINT16 HWR_FindShaderDefs(UINT16 wadnum)
 customshaderxlat_t shaderxlat[] =
 {
 	{"Flat", SHADER_FLOOR},
-	{"Shadow", SHADER_SHADOW},
 	{"WallTexture", SHADER_WALL},
 	{"Sprite", SHADER_SPRITE},
 	{"Model", SHADER_MODEL},
@@ -565,7 +561,7 @@ void HWR_LoadCustomShadersFromFile(UINT16 wadnum, boolean PK3)
 	int i;
 	boolean modified_shaders[NUMSHADERTARGETS] = {0};
 
-	if (!gr_shadersavailable)
+	if (!gl_shadersavailable)
 		return;
 
 	lump = HWR_FindShaderDefs(wadnum);

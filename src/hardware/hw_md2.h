@@ -28,8 +28,8 @@ typedef struct
 	float       scale;
 	float       offset;
 	model_t     *model;
-	void        *grpatch;
-	void        *blendgrpatch;
+	void        *glpatch;
+	void        *blendglpatch;
 	boolean     notfound;
 	INT32       skin;
 	boolean     error;
@@ -40,7 +40,7 @@ extern md2_t md2_playermodels[MAXSKINS];
 extern md2_t md2_localplayermodels[MAXLOCALSKINS];
 
 void HWR_InitMD2(void);
-void HWR_DrawMD2(gr_vissprite_t *spr);
+void HWR_DrawMD2(gl_vissprite_t *spr);
 void HWR_AddPlayerMD2(INT32 skin, boolean local);
 void HWR_AddSpriteMD2(size_t spritenum);
 

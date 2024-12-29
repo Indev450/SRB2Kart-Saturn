@@ -138,7 +138,11 @@ static boolean InitCube(void)
 
 #define diffcons(cv) (cv.value != atoi(cv.defaultvalue))
 
+#ifdef BACKWARDSCOMPATCORRECTION
+	doinggamma = (cv_globalgamma.value < 0); //dont mess up gamma when raising brightness pls
+#else
 	doinggamma = diffcons(cv_globalgamma);
+#endif
 
 #define gammascale 8
 	globalgammamul = (cv_globalgamma.value ? ((255 - (gammascale*abs(cv_globalgamma.value)))/255.0) : 1.0);
@@ -438,32 +442,13 @@ static void LoadPalette(const char *lumpname)
 		pLocalPalette[i].s.alpha = 0xFF;
 
 		// lerp of colour cubing! if you want, make it smoother yourself
-		if (Cubeapply)
-			V_CubeApply(&pLocalPalette[i].s.red, &pLocalPalette[i].s.green, &pLocalPalette[i].s.blue);
+
+		if (!Cubeapply)
+			continue;
+
+		V_CubeApply(&pLocalPalette[i].s.red, &pLocalPalette[i].s.green, &pLocalPalette[i].s.blue);
 	}
 }
-
-#ifdef BACKWARDSCOMPATCORRECTION
-static boolean V_ShouldCube(void)
-{
-#define diffcons(cv) (cv.value != atoi(cv.defaultvalue))
-	return (diffcons(cv_globalsaturation)
-		|| diffcons(cv_rhue)
-		|| diffcons(cv_yhue)
-		|| diffcons(cv_ghue)
-		|| diffcons(cv_chue)
-		|| diffcons(cv_bhue)
-		|| diffcons(cv_mhue)
-		|| diffcons(cv_rgamma)
-		|| diffcons(cv_ygamma)
-		|| diffcons(cv_ggamma)
-		|| diffcons(cv_cgamma)
-		|| diffcons(cv_bgamma)
-		|| diffcons(cv_mgamma)
-		|| (cv_globalgamma.value <= 0));
-#undef diffcons
-}
-#endif
 
 void V_CubeApply(UINT8 *red, UINT8 *green, UINT8 *blue)
 {
@@ -471,11 +456,7 @@ void V_CubeApply(UINT8 *red, UINT8 *green, UINT8 *blue)
 	float linear;
 	UINT8 q;
 
-	if (!Cubeapply
-#ifdef BACKWARDSCOMPATCORRECTION
-	|| !V_ShouldCube()
-#endif
-	)
+	if (!Cubeapply)
 		return;
 
 	linear = (*red/255.0);
@@ -1112,7 +1093,7 @@ void V_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c)
 
 	if (x >= vid.width || y >= vid.height)
 		return; // off the screen
-	
+
 	if (x < 0)
 	{
 		w += x;
@@ -1126,7 +1107,7 @@ void V_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c)
 
 	if (w <= 0 || h <= 0)
 		return; // zero width/height wouldn't draw anything
-	
+
 	if (x + w > vid.width)
 		w = vid.width-x;
 	if (y + h > vid.height)
@@ -1149,7 +1130,7 @@ void V_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c)
 	}
 
 	c &= 255;
-	
+
 	if (alphalevel)
 	{
 		const UINT8 *fadetable = ((UINT8 *)transtables + ((alphalevel-1)<<FF_TRANSSHIFT) + (c*256));
@@ -1170,32 +1151,37 @@ void V_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c)
 // This is now a function since it's otherwise repeated 2 times and honestly looks retarded:
 static UINT32 V_GetHWConsBackColor(void)
 {
-	UINT32 hwcolor;
+	UINT8 r, g, b;
+
 	switch (cons_backcolor.value)
 	{
-		case 0:		hwcolor = 0xffffff00;	break; 	// White
-		case 1:		hwcolor = 0x80808000;	break; 	// Gray
-		case 2:		hwcolor = 0xdeb88700;	break;	// Sepia
-		case 3:		hwcolor = 0x40201000;	break; 	// Brown
-		case 4:		hwcolor = 0xfa807200;	break; 	// Pink
-		case 5:		hwcolor = 0xff69b400;	break; 	// Raspberry
-		case 6:		hwcolor = 0xff000000;	break; 	// Red
-		case 7:		hwcolor = 0xffd68300;	break;	// Creamsicle
-		case 8:		hwcolor = 0xff800000;	break; 	// Orange
-		case 9:		hwcolor = 0xdaa52000;	break; 	// Gold
-		case 10:	hwcolor = 0x80800000;	break; 	// Yellow
-		case 11:	hwcolor = 0x00ff0000;	break; 	// Emerald
-		case 12:	hwcolor = 0x00800000;	break; 	// Green
-		case 13:	hwcolor = 0x4080ff00;	break; 	// Cyan
-		case 14:	hwcolor = 0x4682b400;	break; 	// Steel
-		case 15:	hwcolor = 0x1e90ff00;	break;	// Periwinkle
-		case 16:	hwcolor = 0x0000ff00;	break; 	// Blue
-		case 17:	hwcolor = 0xff00ff00;	break; 	// Purple
-		case 18:	hwcolor = 0xee82ee00;	break; 	// Lavender
+		case 0:		r = 0xff; g = 0xff; b = 0xff;	break; 	// White
+		case 1:		r = 0x80; g = 0x80; b = 0x80;	break; 	// Black
+		case 2:		r = 0xde; g = 0xb8; b = 0x87;	break;	// Sepia
+		case 3:		r = 0x40; g = 0x20; b = 0x10;	break; 	// Brown
+		case 4:		r = 0xfa; g = 0x80; b = 0x72;	break; 	// Pink
+		case 5:		r = 0xff; g = 0x69; b = 0xb4;	break; 	// Raspberry
+		case 6:		r = 0xff; g = 0x00; b = 0x00;	break; 	// Red
+		case 7:		r = 0xff; g = 0xd6; b = 0x83;	break;	// Creamsicle
+		case 8:		r = 0xff; g = 0x80; b = 0x00;	break; 	// Orange
+		case 9:		r = 0xda; g = 0xa5; b = 0x20;	break; 	// Gold
+		case 10:	r = 0x80; g = 0x80; b = 0x00;	break; 	// Yellow
+		case 11:	r = 0x00; g = 0xff; b = 0x00;	break; 	// Emerald
+		case 12:	r = 0x00; g = 0x80; b = 0x00;	break; 	// Green
+		case 13:	r = 0x40; g = 0x80; b = 0xff;	break; 	// Cyan
+		case 14:	r = 0x46; g = 0x82; b = 0xb4;	break; 	// Steel
+		case 15:	r = 0x1e; g = 0x90; b = 0xff;	break;	// Periwinkle
+		case 16:	r = 0x00; g = 0x00; b = 0xff;	break; 	// Blue
+		case 17:	r = 0xff; g = 0x00; b = 0xff;	break; 	// Purple
+		case 18:	r = 0xee; g = 0x82; b = 0xee;	break; 	// Lavender
 		// Default green
-		default:	hwcolor = 0x00800000;	break;
+		default:	r = 0x00; g = 0x80; b = 0x00;	break;
 	}
-	return hwcolor;
+
+	if (!HWR_ShouldUsePaletteRendering())
+		V_CubeApply(&r, &g, &b);
+
+	return (r << 24) | (g << 16) | (b << 8);
 }
 #endif
 
@@ -2495,7 +2481,7 @@ void V_DrawThinStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *str
 		default:
 			break;
 	}
-	
+
 	charflags = (option & V_CHARCOLORMASK);
 	colormap = V_GetStringColormap(charflags);
 
@@ -3189,7 +3175,7 @@ INT32 heatindex[MAXSPLITSCREENPLAYERS] = {0, 0, 0, 0};
 // Perform a particular image postprocessing function.
 //
 
-void V_DoPostProcessor(INT32 view, postimg_t type, INT32 param)
+void V_DoPostProcessor(INT32 view, player_t *player, INT32 param)
 {
 #if NUMSCREENS < 5
 	// do not enable image post processing for ARM, SH and MIPS CPUs
@@ -3197,6 +3183,7 @@ void V_DoPostProcessor(INT32 view, postimg_t type, INT32 param)
 	(void)type;
 	(void)param;
 #else
+	(void)param; // unused motion blur stuff
 	INT32 yoffset, xoffset;
 
 #ifdef HWRENDER
@@ -3205,6 +3192,9 @@ void V_DoPostProcessor(INT32 view, postimg_t type, INT32 param)
 #endif
 
 	if (view < 0 || view > 3 || view > splitscreen)
+		return;
+
+	if (!player->postimgflags)
 		return;
 
 	if ((view == 1 && splitscreen == 1) || view >= 2)
@@ -3217,10 +3207,11 @@ void V_DoPostProcessor(INT32 view, postimg_t type, INT32 param)
 	else
 		xoffset = 0;
 
-	if (type == postimg_water)
+	UINT8 *tmpscr = screens[4];
+	UINT8 *srcscr = screens[0];
+
+	if (player->postimgflags & POSTIMG_WATER)
 	{
-		UINT8 *tmpscr = screens[4];
-		UINT8 *srcscr = screens[0];
 		INT32 y;
 		// Set disStart to a range from 0 to FINEANGLE, incrementing by 128 per tic
 		angle_t disStart = (((leveltime-1)*128) + (rendertimefrac / (FRACUNIT/128))) & FINEMASK;
@@ -3257,29 +3248,30 @@ void V_DoPostProcessor(INT32 view, postimg_t type, INT32 param)
 			}
 
 			/*
-			Unoptimized version
-			for (x = 0; x < vid.width*vid.bpp; x++)
-			{
-				newpix = (x + sine);
+			 Unoptimized version
+			 for (x = 0; x < vid.width*vid.bpp; x++)
+			 {
+			 	newpix = (x + sine);
 
-				if (newpix < 0)
-					newpix = 0;
-				else if (newpix >= vid.width)
-					newpix = vid.width-1;
+			 	if (newpix < 0)
+			 		newpix = 0;
+			 	else if (newpix >= vid.width)
+			 		newpix = vid.width-1;
 
-				tmpscr[y*vid.width + x] = srcscr[y*vid.width+newpix]; // *(transme + (srcscr[y*vid.width+x]<<8) + srcscr[y*vid.width+newpix]);
-			}*/
+			 	tmpscr[y*vid.width + x] = srcscr[y*vid.width+newpix]; // *(transme + (srcscr[y*vid.width+x]<<8) + srcscr[y*vid.width+newpix]);
+			 }*/
+
 			disStart += 22;//the offset into the displacement map, increment each game loop
 			disStart &= FINEMASK; //clip it to FINEMASK
 		}
 
-		VID_BlitLinearScreen(tmpscr+vid.width*vid.bpp*yoffset+xoffset, screens[0]+vid.width*vid.bpp*yoffset+xoffset,
-				viewwidth*vid.bpp, viewheight, vid.width*vid.bpp, vid.width);
+		UINT8 *tmp = tmpscr;
+		tmpscr = srcscr;
+		srcscr = tmp;
 	}
-	else if (type == postimg_motion) // Motion Blur!
-	{
-		UINT8 *tmpscr = screens[4];
-		UINT8 *srcscr = screens[0];
+
+	/*if (player->postimgflags & POSTIMG_MOTION) // Motion Blur!
+	 {
 		INT32 x, y;
 
 		// TODO: Add a postimg_param so that we can pick the translucency level...
@@ -3288,30 +3280,12 @@ void V_DoPostProcessor(INT32 view, postimg_t type, INT32 param)
 		for (y = yoffset; y < yoffset+viewheight; y++)
 		{
 			for (x = xoffset; x < xoffset+viewwidth; x++)
-			{
-				tmpscr[y*vid.width + x]
-					=     colormaps[*(transme     + (srcscr   [(y*vid.width)+x ] <<8) + (tmpscr[(y*vid.width)+x]))];
-			}
+				tmpscr[y*vid.width + x] =     colormaps[*(transme     + (srcscr   [(y*vid.width)+x ] <<8) + (tmpscr[(y*vid.width)+x]))];
 		}
-		VID_BlitLinearScreen(tmpscr+vid.width*vid.bpp*yoffset+xoffset, screens[0]+vid.width*vid.bpp*yoffset+xoffset,
-				viewwidth*vid.bpp, viewheight, vid.width*vid.bpp, vid.width);
-	}
-	else if (type == postimg_flip) // Flip the screen upside-down
-	{
-		UINT8 *tmpscr = screens[4];
-		UINT8 *srcscr = screens[0];
-		INT32 y, y2;
+	}*/
 
-		for (y = yoffset, y2 = yoffset+viewheight - 1; y < yoffset+viewheight; y++, y2--)
-			M_Memcpy(&tmpscr[(y2*vid.width)+xoffset], &srcscr[(y*vid.width)+xoffset], viewwidth);
-
-		VID_BlitLinearScreen(tmpscr+vid.width*vid.bpp*yoffset+xoffset, screens[0]+vid.width*vid.bpp*yoffset+xoffset,
-				viewwidth*vid.bpp, viewheight, vid.width*vid.bpp, vid.width);
-	}
-	else if (type == postimg_heat) // Heat wave
+	if (player->postimgflags & POSTIMG_HEAT) // Heat wave
 	{
-		UINT8 *tmpscr = screens[4];
-		UINT8 *srcscr = screens[0];
 		INT32 y;
 
 		// Make sure table is built
@@ -3352,39 +3326,52 @@ void V_DoPostProcessor(INT32 view, postimg_t type, INT32 param)
 			heatindex[view] %= vid.height;
 		}
 
-		VID_BlitLinearScreen(tmpscr+vid.width*vid.bpp*yoffset+xoffset, screens[0]+vid.width*vid.bpp*yoffset+xoffset,
-				viewwidth*vid.bpp, viewheight, vid.width*vid.bpp, vid.width);
+		UINT8 *tmp = tmpscr;
+		tmpscr = srcscr;
+		srcscr = tmp;
 	}
-	else if (type == postimg_mirror) // Flip the screen on the x axis
+
+	if ((player->postimgflags & POSTIMG_FLIP) && !(player->postimgflags & POSTIMG_MIRROR)) // Flip the screen upside-down
 	{
-		UINT8 *tmpscr = screens[4];
-		UINT8 *srcscr = screens[0];
+		INT32 y, y2;
+
+		for (y = yoffset, y2 = yoffset+viewheight - 1; y < yoffset+viewheight; y++, y2--)
+			M_Memcpy(&tmpscr[(y2*vid.width)+xoffset], &srcscr[(y*vid.width)+xoffset], viewwidth);
+
+		UINT8 *tmp = tmpscr;
+		tmpscr = srcscr;
+		srcscr = tmp;
+	}
+	else if ((player->postimgflags & POSTIMG_MIRROR) && !(player->postimgflags & POSTIMG_FLIP)) // Flip the screen on the x axis
+	{
 		INT32 y, x, x2;
 
 		for (y = yoffset; y < yoffset+viewheight; y++)
-		{
 			for (x = xoffset, x2 = xoffset+((viewwidth*vid.bpp)-1); x < xoffset+(viewwidth*vid.bpp); x++, x2--)
 				tmpscr[y*vid.width + x2] = srcscr[y*vid.width + x];
-		}
 
-		VID_BlitLinearScreen(tmpscr+vid.width*vid.bpp*yoffset+xoffset, screens[0]+vid.width*vid.bpp*yoffset+xoffset,
-				viewwidth*vid.bpp, viewheight, vid.width*vid.bpp, vid.width);
+		UINT8 *tmp = tmpscr;
+		tmpscr = srcscr;
+		srcscr = tmp;
 	}
-	else if (type == postimg_mirrorflip) // Flip the screen upside-down and on the x axis
+	else if ((player->postimgflags & POSTIMG_MIRROR) && (player->postimgflags & POSTIMG_FLIP)) // Flip the screen upside-down and on the x axis
 	{
-		UINT8 *tmpscr = screens[4];
-		UINT8 *srcscr = screens[0];
 		INT32 y, x;
 
 		for (y = yoffset; y < yoffset + viewheight; y++)
 			for (x = xoffset; x < xoffset + viewwidth; x++)
 				tmpscr[((yoffset + viewheight - 1 - y) * vid.width) + xoffset + viewwidth - (x - xoffset) - 1] = srcscr[(y * vid.width) + x];
 
-		VID_BlitLinearScreen(tmpscr+vid.width*vid.bpp*yoffset+xoffset, screens[0]+vid.width*vid.bpp*yoffset+xoffset,
-				viewwidth*vid.bpp, viewheight, vid.width*vid.bpp, vid.width);
+		UINT8 *tmp = tmpscr;
+		tmpscr = srcscr;
+		srcscr = tmp;
 	}
+
+	VID_BlitLinearScreen(srcscr+vid.width*vid.bpp*yoffset+xoffset, tmpscr+vid.width*vid.bpp*yoffset+xoffset,
+						 viewwidth*vid.bpp, viewheight, vid.width*vid.bpp, vid.width);
 #endif
 }
+
 
 // Taken from my videos-in-SRB2 project
 // Generates a color look-up table

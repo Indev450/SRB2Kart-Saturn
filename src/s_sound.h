@@ -109,8 +109,10 @@ void S_InitSfxChannels(INT32 sfxVolume);
 void S_StopSounds(void);
 void S_ClearSfx(void);
 
+void S_ResetKeepAndSpecialMus(void);
+
 void S_InitMapMusic(void);
-void S_StartMapMusic(boolean restore);
+void S_StartMapMusic(void);
 
 void S_CheckMap(void);
 
@@ -168,6 +170,7 @@ boolean S_SpeedMusic(float speed);
 typedef struct musicdef_s
 {
 	char name[7];
+	UINT32 hash;
 	char usage[256];
 	char source[256];
 	char filename[256+1];
@@ -227,6 +230,16 @@ UINT32 S_GetMusicPosition(void);
 //
 // Music Playback
 //
+
+/* this is for the sake of the hook */
+struct MusicChange {
+	char    * newname;
+	UINT16  * mflags;
+	boolean * looping;
+	UINT32  * position;
+	UINT32  * prefadems;
+	UINT32  * fadeinms;
+};
 
 // Start music track, arbitrary, given its name, and set whether looping
 // note: music flags 12 bits for tracknum (gme, other formats with more than one track)

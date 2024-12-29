@@ -139,13 +139,13 @@ UINT32 I_GetRefreshRate(void);
 
 boolean I_UseNativeKeyboard(void);
 
+boolean I_CheckNativeRes(void);
+
 #ifdef USE_FBO_OGL
-#if defined (__unix__)
-extern boolean xwaylandcrap;
-#endif
 
 void RefreshOGLSDLSurface(void);
 void I_DownSample(void);
+boolean UseScreenFBO(void);
 extern boolean downsample;
 #endif
 

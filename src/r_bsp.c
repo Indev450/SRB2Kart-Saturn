@@ -15,6 +15,8 @@
 #include "g_game.h"
 #include "r_local.h"
 #include "r_state.h"
+#include "r_portal.h" // Add seg portals
+
 
 #include "r_splats.h"
 #include "p_local.h" // camera
@@ -28,7 +30,6 @@ side_t *sidedef;
 line_t *linedef;
 sector_t *frontsector;
 sector_t *backsector;
-portal_pair *g_portal; // is curline a portal seg?
 
 // very ugly realloc() of drawsegs at run-time, I upped it to 512
 // instead of 256.. and someone managed to send me a level with
@@ -486,7 +487,7 @@ static void R_AddLine(seg_t *line)
 				line2 = P_FindSpecialLineFromTag(40, line->linedef->tag, line2);
 			if (line2 >= 0) // found it!
 			{
-				R_AddPortal(line->linedef-lines, line2, x1, x2); // Remember the lines for later rendering
+				Portal_Add2Lines(line->linedef-lines, line2, x1, x2); // Remember the lines for later rendering
 				//return; // Don't fill in that space now!
 				goto clipsolid;
 			}
@@ -582,10 +583,10 @@ static void R_AddLine(seg_t *line)
 
 clippass:
 	g_walloffscreen = false;
+	R_ClipPassWallSegment(x1, x2 - 1, false);
+
 	if (g_walloffscreen)
 		R_ClipPassWallSegment(x1, x2 - 1, true);
-	else
-		R_ClipPassWallSegment(x1, x2 - 1, false);
 	return;
 
 clipsolid:
@@ -626,7 +627,21 @@ static boolean R_CheckBBox(const fixed_t *bspcoord)
 	cliprange_t *start;
 
 	// Find the corners of the box that define the edges from current viewpoint.
-	if ((boxpos = (viewx <= bspcoord[BOXLEFT] ? 0 : viewx < bspcoord[BOXRIGHT] ? 1 : 2) + (viewy >= bspcoord[BOXTOP] ? 0 : viewy > bspcoord[BOXBOTTOM] ? 4 : 8)) == 5)
+	if (viewx <= bspcoord[BOXLEFT])
+		boxpos = 0;
+	else if (viewx < bspcoord[BOXRIGHT])
+		boxpos = 1;
+	else
+		boxpos = 2;
+
+	if (viewy >= bspcoord[BOXTOP])
+		boxpos |= 0;
+	else if (viewy > bspcoord[BOXBOTTOM])
+		boxpos |= 1<<2;
+	else
+		boxpos |= 2<<2;
+
+	if (boxpos == 5)
 		return true;
 
 	check = checkcoord[boxpos];
@@ -655,7 +670,8 @@ static boolean R_CheckBBox(const fixed_t *bspcoord)
 	sx2 = viewangletox[angle2];
 
 	// Does not cross a pixel.
-	if (sx1 >= sx2) return false;
+	if (sx1 >= sx2)
+		return false;
 
 	start = solidsegs;
 	while (start->last < sx2)
@@ -1319,7 +1335,8 @@ void R_RenderBSPNode(INT32 bspnum)
 		bsp = &nodes[bspnum];
 
 		// Decide which side the view point is on.
-		side = R_PointOnSide(viewx, viewy, bsp);
+		side = R_PointOnSideFast(viewx, viewy, bsp);
+
 		// Recursively divide front space.
 		R_RenderBSPNode(bsp->children[side]);
 

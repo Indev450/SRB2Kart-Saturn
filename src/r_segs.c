@@ -15,6 +15,7 @@
 #include "r_local.h"
 #include "r_sky.h"
 
+#include "r_portal.h"
 #include "r_splats.h"
 
 #include "w_wad.h"
@@ -660,13 +661,13 @@ static boolean R_IsFFloorTranslucent(visffloor_t *pfloor)
 // Renders all the thick sides in the given range.
 void R_RenderThickSideRange(drawseg_t *ds, INT32 x1, INT32 x2, ffloor_t *pfloor)
 {
-	size_t          pindex;
+	size_t          pindex = 0;
 	column_t *      col;
-	INT32             lightnum;
-	INT32            texnum;
+	INT32           lightnum;
+	INT32           texnum;
 	sector_t        tempsec;
-	INT32             templight;
-	INT32             i, p;
+	INT32           templight;
+	INT32           i, p;
 	fixed_t         bottombounds = viewheight << FRACBITS;
 	fixed_t         topbounds = (con_clipviewtop - 1) << FRACBITS;
 	fixed_t         offsetvalue = 0;
@@ -1035,6 +1036,7 @@ void R_RenderThickSideRange(drawseg_t *ds, INT32 x1, INT32 x2, ffloor_t *pfloor)
 					// Check if the current light effects the colormap/lightlevel
 					rlight = &dc_lightlist[i];
 					lighteffect = !(dc_lightlist[i].flags & FF_NOSHADE);
+
 					if (lighteffect)
 					{
 						lightnum = rlight->lightnum;
@@ -1232,7 +1234,6 @@ static void R_RenderSegLoop (void)
 			}
 		}
 
-
 		yh = bottomfrac>>HEIGHTBITS;
 
 		bottom = floorclip[rw_x]-1;
@@ -1243,13 +1244,14 @@ static void R_RenderSegLoop (void)
 		if (markfloor)
 		{
 			top = yh < ceilingclip[rw_x] ? ceilingclip[rw_x] : yh;
+
 			if (++top <= bottom && floorplane)
 			{
 				floorplane->top[rw_x] = (INT16)top;
 				floorplane->bottom[rw_x] = (INT16)bottom;
 			}
 		}
-		
+
 		rw_floormarked = false;
 		rw_ceilingmarked = false;
 
@@ -1590,6 +1592,8 @@ static void R_RenderSegLoop (void)
 		topfrac += topstep;
 		bottomfrac += bottomstep;
 	}
+	
+	//colfunc = wallcolfunc;
 }
 
 // Uses precalculated seg->length
@@ -1852,21 +1856,19 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 	rw_toptextureslide = rw_midtextureslide = rw_bottomtextureslide = 0;
 	ceilingfrontslide = floorfrontslide = ceilingbackslide = floorbackslide = 0;
 
-	{
-		angle_t lineangle = R_PointToAngle2(curline->v1->x, curline->v1->y, curline->v2->x, curline->v2->y);
+	angle_t lineangle = R_PointToAngle2(curline->v1->x, curline->v1->y, curline->v2->x, curline->v2->y);
 
-		if (frontsector->f_slope)
-			floorfrontslide = FixedMul(frontsector->f_slope->zdelta, FINECOSINE((lineangle-frontsector->f_slope->xydirection)>>ANGLETOFINESHIFT));
+	if (frontsector->f_slope)
+		floorfrontslide = FixedMul(frontsector->f_slope->zdelta, FINECOSINE((lineangle-frontsector->f_slope->xydirection)>>ANGLETOFINESHIFT));
 
-		if (frontsector->c_slope)
-			ceilingfrontslide = FixedMul(frontsector->c_slope->zdelta, FINECOSINE((lineangle-frontsector->c_slope->xydirection)>>ANGLETOFINESHIFT));
+	if (frontsector->c_slope)
+		ceilingfrontslide = FixedMul(frontsector->c_slope->zdelta, FINECOSINE((lineangle-frontsector->c_slope->xydirection)>>ANGLETOFINESHIFT));
 
-		if (backsector && backsector->f_slope)
-			floorbackslide = FixedMul(backsector->f_slope->zdelta, FINECOSINE((lineangle-backsector->f_slope->xydirection)>>ANGLETOFINESHIFT));
+	if (backsector && backsector->f_slope)
+		floorbackslide = FixedMul(backsector->f_slope->zdelta, FINECOSINE((lineangle-backsector->f_slope->xydirection)>>ANGLETOFINESHIFT));
 
-		if (backsector && backsector->c_slope)
-			ceilingbackslide = FixedMul(backsector->c_slope->zdelta, FINECOSINE((lineangle-backsector->c_slope->xydirection)>>ANGLETOFINESHIFT));
-	}
+	if (backsector && backsector->c_slope)
+		ceilingbackslide = FixedMul(backsector->c_slope->zdelta, FINECOSINE((lineangle-backsector->c_slope->xydirection)>>ANGLETOFINESHIFT));
 
 	if (!backsector)
 	{
@@ -1935,9 +1937,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 		ds_p->sprtopclip = ds_p->sprbottomclip = NULL;
 		ds_p->silhouette = 0;
 
-		if (
-			worldbottomslope > worldlowslope ||
-			worldbottom > worldlow)
+		if (worldbottomslope > worldlowslope || worldbottom > worldlow)
 		{
 			ds_p->silhouette = SIL_BOTTOM;
 			if ((backsector->f_slope ? P_GetZAt(backsector->f_slope, viewx, viewy) : backsector->floorheight) > viewz)
@@ -1952,9 +1952,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			// ds_p->sprbottomclip = negonearray;
 		}
 
-		if (
-			worldtopslope < worldhighslope ||
-			worldtop < worldhigh)
+		if (worldtopslope < worldhighslope || worldtop < worldhigh)
 		{
 			ds_p->silhouette |= SIL_TOP;
 			if ((backsector->c_slope ? P_GetZAt(backsector->c_slope, viewx, viewy) : backsector->ceilingheight) < viewz)
@@ -2028,7 +2026,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 		    || frontsector->extra_colormap != backsector->extra_colormap
 		    || (frontsector->ffloors != backsector->ffloors && frontsector->tag != backsector->tag))
 		{
-				markceiling = true;
+			markceiling = true;
 		}
 		else
 		{
@@ -2044,9 +2042,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 		}
 
 		// check TOP TEXTURE
-		if (worldhigh < worldtop
-				|| worldhighslope < worldtopslope
-			)
+		if (worldhigh < worldtop || worldhighslope < worldtopslope)
 		{
 			fixed_t texheight;
 			// top texture
@@ -2123,7 +2119,6 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			// Used for height comparisons and etc across FOFs and slopes
 			fixed_t high1, highslope1, low1, lowslope1, high2, highslope2, low2, lowslope2;
 
-			//markceiling = markfloor = true;
 			maskedtexture = true;
 
 			ds_p->thicksidecol = maskedtexturecol = lastopening - rw_x;

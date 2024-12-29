@@ -1003,7 +1003,7 @@ static void Got_Saycmd(UINT8 **p, INT32 playernum)
 
 	// run the lua hook even if we were supposed to eat the msg, netgame consistency goes first.
 
-	if (LUAh_PlayerMsg(playernum, target, flags, msg, spam_eatmsg))
+	if (LUA_HookPlayerMsg(playernum, target, flags, msg, spam_eatmsg))
 		return;
 
 	if (spam_eatmsg)
@@ -2274,7 +2274,7 @@ void HU_Drawer(void)
 			if (renderisnewtic)
 			{
 				LUA_HUD_ClearDrawList(luahuddrawlist_scores);
-				LUAh_ScoresHUD(luahuddrawlist_scores);
+				LUA_HUDHOOK(scores, luahuddrawlist_scores);
 			}
 
 			LUA_HUD_DrawList(luahuddrawlist_scores);
@@ -2617,7 +2617,8 @@ static void HU_DrawRankings(void)
 	boolean completed[MAXPLAYERS];
 	UINT32 whiteplayer = MAXPLAYERS;
 
-	V_DrawFadeScreen(0xFF00, 16); // A little more readable, and prevents cheating the fades under other circumstances.
+	if (!automapactive)
+		V_DrawFadeScreen(0xFF00, 16); // A little more readable, and prevents cheating the fades under other circumstances.
 
 	if (cons_menuhighlight.value)
 		hilicol = cons_menuhighlight.value;

@@ -1160,7 +1160,7 @@ static menuitem_t OP_ControlsMenu[] =
 
 	{IT_CALL | IT_STRING, NULL, "Player 3 Controls...", &M_Setup3PControlsMenu,  30},
 	{IT_CALL | IT_STRING, NULL, "Player 4 Controls...", &M_Setup4PControlsMenu,  40},
-	
+
 	{IT_SUBMENU | IT_STRING, NULL, "Mouse Options...", &OP_MouseOptionsDef,  60},
 
 	{IT_STRING | IT_CVAR, NULL, "Controls per key",    &cv_controlperkey, 80},
@@ -1224,19 +1224,19 @@ static menuitem_t OP_AllControlsMenu[] =
 static menuitem_t OP_Joystick1Menu[] =
 {
 	{IT_STRING | IT_CALL,  NULL, "Select Gamepad..."  , M_Setup1PJoystickMenu, 10},
-	{IT_STRING | IT_CVAR,  NULL, "Aim Forward/Back"   , &cv_aimaxis          , 20},
-	{IT_STRING | IT_CVAR,  NULL, "Turn Left/Right"    , &cv_turnaxis         , 25},
-	{IT_STRING | IT_CVAR,  NULL, "Accelerate"         , &cv_moveaxis         , 30},
-	{IT_STRING | IT_CVAR,  NULL, "Brake"              , &cv_brakeaxis        , 35},
-	{IT_STRING | IT_CVAR,  NULL, "Drift"              , &cv_driftaxis        , 40},
-	{IT_STRING | IT_CVAR,  NULL, "Use Item"           , &cv_fireaxis         , 45},
-	{IT_STRING | IT_CVAR,  NULL, "Look Backward"      , &cv_lookbackaxis     , 50},
-	{IT_STRING | IT_CVAR,  NULL, "Spec. Look Up/Down" , &cv_lookaxis         , 55},
-	{IT_STRING | IT_CVAR,  NULL, "Custom Button 1"    , &cv_custom1axis      , 60},
-	{IT_STRING | IT_CVAR,  NULL, "Custom Button 2"    , &cv_custom2axis      , 65},
-	{IT_STRING | IT_CVAR,  NULL, "Custom Button 3"    , &cv_custom3axis      , 70},
-	{IT_STRING | IT_CVAR,  NULL, "X deadzone"         , &cv_xdeadzone        , 75},
-	{IT_STRING | IT_CVAR,  NULL, "Y deadzone"         , &cv_ydeadzone        , 80},
+	{IT_STRING | IT_CVAR,  NULL, "Aim Forward/Back"   , &cv_aimaxis[0]          , 20},
+	{IT_STRING | IT_CVAR,  NULL, "Turn Left/Right"    , &cv_turnaxis[0]         , 25},
+	{IT_STRING | IT_CVAR,  NULL, "Accelerate"         , &cv_moveaxis[0]         , 30},
+	{IT_STRING | IT_CVAR,  NULL, "Brake"              , &cv_brakeaxis[0]        , 35},
+	{IT_STRING | IT_CVAR,  NULL, "Drift"              , &cv_driftaxis[0]        , 40},
+	{IT_STRING | IT_CVAR,  NULL, "Use Item"           , &cv_fireaxis[0]         , 45},
+	{IT_STRING | IT_CVAR,  NULL, "Look Backward"      , &cv_lookbackaxis[0]     , 50},
+	{IT_STRING | IT_CVAR,  NULL, "Spec. Look Up/Down" , &cv_lookaxis[0]         , 55},
+	{IT_STRING | IT_CVAR,  NULL, "Custom Button 1"    , &cv_custom1axis[0]      , 60},
+	{IT_STRING | IT_CVAR,  NULL, "Custom Button 2"    , &cv_custom2axis[0]      , 65},
+	{IT_STRING | IT_CVAR,  NULL, "Custom Button 3"    , &cv_custom3axis[0]      , 70},
+	{IT_STRING | IT_CVAR,  NULL, "X deadzone"         , &cv_xdeadzone[0]        , 75},
+	{IT_STRING | IT_CVAR,  NULL, "Y deadzone"         , &cv_ydeadzone[0]        , 80},
 
 	{IT_STRING | IT_CVAR,  NULL, "Controller Rumble"  , &cv_rumble[0]        , 90},
 	{IT_STRING | IT_CVAR,  NULL, "Set LED to skin color"  , &cv_gamepadled[0]    , 95},
@@ -1246,19 +1246,19 @@ static menuitem_t OP_Joystick1Menu[] =
 static menuitem_t OP_Joystick2Menu[] =
 {
 	{IT_STRING | IT_CALL,  NULL, "Select Gamepad..."  , M_Setup2PJoystickMenu, 10},
-	{IT_STRING | IT_CVAR,  NULL, "Aim Forward/Back"   , &cv_aimaxis2         , 20},
-	{IT_STRING | IT_CVAR,  NULL, "Turn Left/Right"    , &cv_turnaxis2        , 25},
-	{IT_STRING | IT_CVAR,  NULL, "Accelerate"         , &cv_moveaxis2        , 30},
-	{IT_STRING | IT_CVAR,  NULL, "Brake"              , &cv_brakeaxis2       , 35},
-	{IT_STRING | IT_CVAR,  NULL, "Drift"              , &cv_driftaxis2       , 40},
-	{IT_STRING | IT_CVAR,  NULL, "Use Item"           , &cv_fireaxis2        , 45},
-	{IT_STRING | IT_CVAR,  NULL, "Look Backward"      , &cv_lookbackaxis2    , 50},
-	{IT_STRING | IT_CVAR,  NULL, "Spec. Look Up/Down" , &cv_lookaxis2        , 55},
-	{IT_STRING | IT_CVAR,  NULL, "Custom Button 1"    , &cv_custom1axis2     , 60},
-	{IT_STRING | IT_CVAR,  NULL, "Custom Button 2"    , &cv_custom2axis2     , 65},
-	{IT_STRING | IT_CVAR,  NULL, "Custom Button 3"    , &cv_custom3axis2     , 70},
-	{IT_STRING | IT_CVAR,  NULL, "X deadzone"         , &cv_xdeadzone2       , 75},
-	{IT_STRING | IT_CVAR,  NULL, "Y deadzone"         , &cv_ydeadzone2       , 80},
+	{IT_STRING | IT_CVAR,  NULL, "Aim Forward/Back"   , &cv_aimaxis[1]         , 20},
+	{IT_STRING | IT_CVAR,  NULL, "Turn Left/Right"    , &cv_turnaxis[1]        , 25},
+	{IT_STRING | IT_CVAR,  NULL, "Accelerate"         , &cv_moveaxis[1]        , 30},
+	{IT_STRING | IT_CVAR,  NULL, "Brake"              , &cv_brakeaxis[1]       , 35},
+	{IT_STRING | IT_CVAR,  NULL, "Drift"              , &cv_driftaxis[1]       , 40},
+	{IT_STRING | IT_CVAR,  NULL, "Use Item"           , &cv_fireaxis[1]        , 45},
+	{IT_STRING | IT_CVAR,  NULL, "Look Backward"      , &cv_lookbackaxis[1]    , 50},
+	{IT_STRING | IT_CVAR,  NULL, "Spec. Look Up/Down" , &cv_lookaxis[1]        , 55},
+	{IT_STRING | IT_CVAR,  NULL, "Custom Button 1"    , &cv_custom1axis[1]     , 60},
+	{IT_STRING | IT_CVAR,  NULL, "Custom Button 2"    , &cv_custom2axis[1]     , 65},
+	{IT_STRING | IT_CVAR,  NULL, "Custom Button 3"    , &cv_custom3axis[1]     , 70},
+	{IT_STRING | IT_CVAR,  NULL, "X deadzone"         , &cv_xdeadzone[1]       , 75},
+	{IT_STRING | IT_CVAR,  NULL, "Y deadzone"         , &cv_ydeadzone[1]       , 80},
 
 	{IT_STRING | IT_CVAR,  NULL, "Controller Rumble"  , &cv_rumble[1]        , 90},
 	{IT_STRING | IT_CVAR,  NULL, "Set LED to skin color"  , &cv_gamepadled[1]    , 95},
@@ -1268,19 +1268,19 @@ static menuitem_t OP_Joystick2Menu[] =
 static menuitem_t OP_Joystick3Menu[] =
 {
 	{IT_STRING | IT_CALL,  NULL, "Select Gamepad..."  , M_Setup3PJoystickMenu, 10},
-	{IT_STRING | IT_CVAR,  NULL, "Aim Forward/Back"   , &cv_aimaxis3         , 20},
-	{IT_STRING | IT_CVAR,  NULL, "Turn Left/Right"    , &cv_turnaxis3        , 25},
-	{IT_STRING | IT_CVAR,  NULL, "Accelerate"         , &cv_moveaxis3        , 30},
-	{IT_STRING | IT_CVAR,  NULL, "Brake"              , &cv_brakeaxis3       , 35},
-	{IT_STRING | IT_CVAR,  NULL, "Drift"              , &cv_driftaxis3       , 40},
-	{IT_STRING | IT_CVAR,  NULL, "Use Item"           , &cv_fireaxis3        , 45},
-	{IT_STRING | IT_CVAR,  NULL, "Look Backward"      , &cv_lookbackaxis3    , 50},
-	{IT_STRING | IT_CVAR,  NULL, "Spec. Look Up/Down" , &cv_lookaxis3        , 55},
-	{IT_STRING | IT_CVAR,  NULL, "Custom Button 1"    , &cv_custom1axis3     , 60},
-	{IT_STRING | IT_CVAR,  NULL, "Custom Button 2"    , &cv_custom2axis3     , 65},
-	{IT_STRING | IT_CVAR,  NULL, "Custom Button 3"    , &cv_custom3axis3     , 70},
-	{IT_STRING | IT_CVAR,  NULL, "X deadzone"         , &cv_xdeadzone3       , 75},
-	{IT_STRING | IT_CVAR,  NULL, "Y deadzone"         , &cv_ydeadzone3       , 80},
+	{IT_STRING | IT_CVAR,  NULL, "Aim Forward/Back"   , &cv_aimaxis[2]         , 20},
+	{IT_STRING | IT_CVAR,  NULL, "Turn Left/Right"    , &cv_turnaxis[2]        , 25},
+	{IT_STRING | IT_CVAR,  NULL, "Accelerate"         , &cv_moveaxis[2]        , 30},
+	{IT_STRING | IT_CVAR,  NULL, "Brake"              , &cv_brakeaxis[2]       , 35},
+	{IT_STRING | IT_CVAR,  NULL, "Drift"              , &cv_driftaxis[2]       , 40},
+	{IT_STRING | IT_CVAR,  NULL, "Use Item"           , &cv_fireaxis[2]        , 45},
+	{IT_STRING | IT_CVAR,  NULL, "Look Backward"      , &cv_lookbackaxis[2]    , 50},
+	{IT_STRING | IT_CVAR,  NULL, "Spec. Look Up/Down" , &cv_lookaxis[2]        , 55},
+	{IT_STRING | IT_CVAR,  NULL, "Custom Button 1"    , &cv_custom1axis[2]     , 60},
+	{IT_STRING | IT_CVAR,  NULL, "Custom Button 2"    , &cv_custom2axis[2]     , 65},
+	{IT_STRING | IT_CVAR,  NULL, "Custom Button 3"    , &cv_custom3axis[2]     , 70},
+	{IT_STRING | IT_CVAR,  NULL, "X deadzone"         , &cv_xdeadzone[2]       , 75},
+	{IT_STRING | IT_CVAR,  NULL, "Y deadzone"         , &cv_ydeadzone[2]       , 80},
 
 	{IT_STRING | IT_CVAR,  NULL, "Controller Rumble"  , &cv_rumble[2]        , 90},
 	{IT_STRING | IT_CVAR,  NULL, "Set LED to skin color"  , &cv_gamepadled[2]    , 95},
@@ -1290,19 +1290,19 @@ static menuitem_t OP_Joystick3Menu[] =
 static menuitem_t OP_Joystick4Menu[] =
 {
 	{IT_STRING | IT_CALL,  NULL, "Select Gamepad..."  , M_Setup4PJoystickMenu, 10},
-	{IT_STRING | IT_CVAR,  NULL, "Aim Forward/Back"   , &cv_aimaxis4         , 20},
-	{IT_STRING | IT_CVAR,  NULL, "Turn Left/Right"    , &cv_turnaxis4        , 25},
-	{IT_STRING | IT_CVAR,  NULL, "Accelerate"         , &cv_moveaxis4        , 30},
-	{IT_STRING | IT_CVAR,  NULL, "Brake"              , &cv_brakeaxis4       , 35},
-	{IT_STRING | IT_CVAR,  NULL, "Drift"              , &cv_driftaxis4       , 40},
-	{IT_STRING | IT_CVAR,  NULL, "Use Item"           , &cv_fireaxis4        , 45},
-	{IT_STRING | IT_CVAR,  NULL, "Look Backward"      , &cv_lookbackaxis4    , 50},
-	{IT_STRING | IT_CVAR,  NULL, "Spec. Look Up/Down" , &cv_lookaxis4        , 55},
-	{IT_STRING | IT_CVAR,  NULL, "Custom Button 1"    , &cv_custom1axis4     , 60},
-	{IT_STRING | IT_CVAR,  NULL, "Custom Button 2"    , &cv_custom2axis4     , 65},
-	{IT_STRING | IT_CVAR,  NULL, "Custom Button 3"    , &cv_custom3axis4     , 70},
-	{IT_STRING | IT_CVAR,  NULL, "X deadzone"         , &cv_xdeadzone4       , 75},
-	{IT_STRING | IT_CVAR,  NULL, "Y deadzone"         , &cv_ydeadzone4       , 80},
+	{IT_STRING | IT_CVAR,  NULL, "Aim Forward/Back"   , &cv_aimaxis[3]         , 20},
+	{IT_STRING | IT_CVAR,  NULL, "Turn Left/Right"    , &cv_turnaxis[3]        , 25},
+	{IT_STRING | IT_CVAR,  NULL, "Accelerate"         , &cv_moveaxis[3]        , 30},
+	{IT_STRING | IT_CVAR,  NULL, "Brake"              , &cv_brakeaxis[3]       , 35},
+	{IT_STRING | IT_CVAR,  NULL, "Drift"              , &cv_driftaxis[3]       , 40},
+	{IT_STRING | IT_CVAR,  NULL, "Use Item"           , &cv_fireaxis[3]        , 45},
+	{IT_STRING | IT_CVAR,  NULL, "Look Backward"      , &cv_lookbackaxis[3]    , 50},
+	{IT_STRING | IT_CVAR,  NULL, "Spec. Look Up/Down" , &cv_lookaxis[3]        , 55},
+	{IT_STRING | IT_CVAR,  NULL, "Custom Button 1"    , &cv_custom1axis[3]     , 60},
+	{IT_STRING | IT_CVAR,  NULL, "Custom Button 2"    , &cv_custom2axis[3]     , 65},
+	{IT_STRING | IT_CVAR,  NULL, "Custom Button 3"    , &cv_custom3axis[3]     , 70},
+	{IT_STRING | IT_CVAR,  NULL, "X deadzone"         , &cv_xdeadzone[3]       , 75},
+	{IT_STRING | IT_CVAR,  NULL, "Y deadzone"         , &cv_ydeadzone[3]       , 80},
 
 	{IT_STRING | IT_CVAR,  NULL, "Controller Rumble"  , &cv_rumble[3]        , 90},
 	{IT_STRING | IT_CVAR,  NULL, "Set LED to skin color"  , &cv_gamepadled[3]    , 95},
@@ -1372,7 +1372,7 @@ static menuitem_t OP_VideoOptionsMenu[] =
 
 	{IT_STRING | IT_CVAR | IT_CV_SLIDER,
 	                        NULL, 	"Saturation",      		&cv_globalsaturation ,    40},
-							
+
 	{IT_SUBMENU|IT_STRING, NULL, "Advanced Color Settings...", &OP_ColorOptionsDef,   50},
 
 	{IT_STRING | IT_CVAR,	NULL,					"Draw Distance",		&cv_drawdist,			  65},
@@ -1484,7 +1484,7 @@ static menuitem_t OP_ColorOptionsMenu[] =
 static menuitem_t OP_ExpOptionsMenu[] =
 {
 	{IT_HEADER, NULL, "Advanced Video Options", NULL, 10},
-	{IT_STRING|IT_CVAR,		NULL, "Interpolation Distance",			&cv_grmaxinterpdist,		 30},
+	{IT_STRING|IT_CVAR,		NULL, "Interpolation Distance",			&cv_maxinterpdist,		 	 30},
 	{IT_STRING | IT_CVAR, 	NULL, "Weather Interpolation", 			&cv_precipinterp, 		 	 40},
 
 	{IT_STRING | IT_CVAR, 	NULL, "Scale Weather with Mobjscale", 	&cv_mobjscaleprecip, 		 60},
@@ -1492,15 +1492,15 @@ static menuitem_t OP_ExpOptionsMenu[] =
 
 	{IT_STRING | IT_CVAR,	NULL, "Skyboxes",						&cv_skybox,				 	 80},
 
-#ifdef HWRENDER	
-	{IT_STRING | IT_CVAR, 	NULL, "Screen Textures", 				&cv_grscreentextures, 		 100},
-#ifdef USE_FBO_OGL
-	{IT_STRING | IT_CVAR, 	NULL, "FBO Downsampling support", 		&cv_grframebuffer, 			 110},
-#endif
-	{IT_STRING | IT_CVAR, 	NULL, "Palette Depth", 					&cv_grpalettedepth, 		 130},
+	{IT_STRING | IT_CVAR,	NULL, "FPS counter sampling",			&cv_accuratefps,			 90},
 
-	{IT_STRING | IT_CVAR, 	NULL, "Splitwall/Slope texture fix",	&cv_splitwallfix, 		 	 150},
-#endif	
+#ifdef HWRENDER
+	{IT_STRING | IT_CVAR, 	NULL, "Screen Textures", 				&cv_glscreentextures, 		 110},
+#ifdef USE_FBO_OGL
+	{IT_STRING | IT_CVAR, 	NULL, "FBO Downsampling support", 		&cv_glframebuffer, 			 120},
+#endif
+	{IT_STRING | IT_CVAR, 	NULL, "Palette Depth", 					&cv_glpalettedepth, 		 140},
+#endif
 };
 
 static const char* OP_ExpTooltips[] =
@@ -1511,13 +1511,13 @@ static const char* OP_ExpTooltips[] =
 	"Should weather be scaled with Mapobjectscale?.",
 	"When weather is on this will cut the object amount used in half.",
 	"Toggle being able to see the sky.",
+	"Change the FPS counter sampling method\nInaccurate updates slower and might miss frame drops and such\nAccurate updates faster and is more accurate, but might be less readable", // how to ingles??
 #ifdef HWRENDER
 	"Should the game do Screen Textures? Provides a good boost to frames\nat the cost of some visual effects not working when disabled.",
 #ifdef USE_FBO_OGL
 	"Allows the game to downsample from a higher resolution than your display\nin OpenGL renderer mode. Requires a GPU with atleast OpenGL 3.0 support.",
 #endif
 	"Change the depth of the Palette in Palette rendering mode\n 16 bits is like software looks ingame\nwhile 24 bits is how software looks in screenshots.",
-	"Fixes issues that resulted in Textures sticking from the ground sometimes.\n This may be CPU heavy and result in worse performance in some cases.",
 #endif
 };
 
@@ -1529,13 +1529,13 @@ enum
 	op_exp_precipmoscale,
 	op_exp_lessprecip,
 	op_exp_skybox,
+	op_exp_accuratefps,
 #ifdef HWRENDER
-	op_exp_grscrtx,
+	op_exp_glscrtx,
 #ifdef USE_FBO_OGL
 	op_exp_fbo,
 #endif
 	op_exp_paldepth,
-	op_exp_spltwal,
 #endif
 };
 
@@ -1543,24 +1543,24 @@ enum
 #ifdef HWRENDER
 static menuitem_t OP_OpenGLOptionsMenu[] =
 {
-	{IT_STRING | IT_CVAR,	NULL, "3D Models",					&cv_grmdls,					15},
-	{IT_STRING | IT_CVAR,	NULL, "Fallback Player 3D Model",	&cv_grfallbackplayermodel,	20},
-	{IT_STRING | IT_CVAR,	NULL, "Shaders",					&cv_grshaders,				25},
-	{IT_STRING | IT_CVAR,	NULL, "Palette Rendering",			&cv_grpaletterendering,		30},
-	{IT_STRING | IT_CVAR,   NULL, "Flashpals in Palette Renderer", &cv_grflashpal,			35},
-	{IT_STRING | IT_CVAR, 	NULL, "Min Shader Brightness", 		&cv_secbright,				40},
+	{IT_STRING | IT_CVAR,	NULL, "3D Models",					&cv_glmdls,					15},
+	{IT_STRING | IT_CVAR,	NULL, "Fallback Player 3D Model",	&cv_glfallbackplayermodel,	20},
+	{IT_STRING | IT_CVAR,	NULL, "Shaders",					&cv_glshaders,				25},
+	{IT_STRING | IT_CVAR,	NULL, "Palette Rendering",			&cv_glpaletterendering,		30},
+	{IT_STRING | IT_CVAR,   NULL, "Palette Rendering Flashpals",&cv_glflashpal,				35},
+	{IT_STRING | IT_CVAR, 	NULL, "Min Shader Brightness", 		&cv_glsecbright,			40},
 
-	{IT_STRING|IT_CVAR,		NULL, "Texture Quality",			&cv_scr_depth,				50},
-	{IT_STRING|IT_CVAR,		NULL, "Texture Filter",				&cv_grfiltermode,			55},
-	{IT_STRING|IT_CVAR,		NULL, "Anisotropic",				&cv_granisotropicmode,		60},
-	{IT_STRING|IT_CVAR,		NULL, "Visual Portals",		  		&cv_grportals,				65},
+	{IT_STRING | IT_CVAR,	NULL, "Texture Quality",			&cv_scr_depth,				50},
+	{IT_STRING | IT_CVAR,	NULL, "Texture Filter",				&cv_glfiltermode,			55},
+	{IT_STRING | IT_CVAR,	NULL, "Anisotropic",				&cv_glanisotropicmode,		60},
+	{IT_STRING | IT_CVAR,	NULL, "Visual Portals",		  		&cv_glportals,				65},
 
-	{IT_STRING|IT_CVAR,		NULL, "Wall Contrast Style",		&cv_grfakecontrast,			75},
-	{IT_STRING|IT_CVAR,		NULL, "Slope Contrast",				&cv_grslopecontrast,		80},
-	{IT_STRING | IT_CVAR, 	NULL, "Dithered Lightning", 		&cv_lightdither,			85},
-	{IT_STRING|IT_CVAR,		NULL, "Sprite Billboarding",		&cv_grspritebillboarding,	90},
-	{IT_STRING|IT_CVAR,		NULL, "Software Perspective",		&cv_grshearing,				95},
-	{IT_STRING|IT_CVAR,		NULL, "Rendering Distance",			&cv_grrenderdistance,		100},
+	{IT_STRING | IT_CVAR,	NULL, "Wall Contrast Style",		&cv_glfakecontrast,			75},
+	{IT_STRING | IT_CVAR,	NULL, "Slope Contrast",				&cv_glslopecontrast,		80},
+	{IT_STRING | IT_CVAR, 	NULL, "Dithered Lightning", 		&cv_gllightdither,			85},
+	{IT_STRING | IT_CVAR,	NULL, "Sprite Billboarding",		&cv_glspritebillboarding,	90},
+	{IT_STRING | IT_CVAR,	NULL, "Software Perspective",		&cv_glshearing,				95},
+	{IT_STRING | IT_CVAR,	NULL, "Rendering Distance",			&cv_glrenderdistance,		100},
 };
 
 static const char* OP_OpenGLTooltips[] =
@@ -1577,11 +1577,32 @@ static const char* OP_OpenGLTooltips[] =
 	"Recreates an effect from software mode that is used on some maps.",
 	"The look of the wall contrast effect.",
 	"Wall contrast but for slopes.",
-	"Should OpenGL lightning be dithered?",
+	"Should shader lightning be dithered?",
 	"Should sprites always face the camera?",
 	"Recreates the look of software mode camera perspective.",
 	"How far the game world should be drawn.",
 };
+
+enum
+{
+	op_gl_mdls,
+	op_gl_falbckmdls,
+	op_gl_shader,
+	op_gl_palrender,
+	op_gl_flashpal,
+	op_gl_secbright,
+	op_gl_scrdepth,
+	op_gl_filter,
+	op_gl_anis,
+	op_gl_portal,
+	op_gl_wallcont,
+	op_gl_slopecont,
+	op_gl_lightdither,
+	op_gl_bill,
+	op_gl_shearing,
+	op_gl_renderdist,
+};
+
 #endif
 
 static menuitem_t OP_SoundOptionsMenu[] =
@@ -1608,7 +1629,7 @@ static menuitem_t OP_SoundOptionsMenu[] =
 	{IT_STRING|IT_CVAR,							NULL, "Character voices",				&cv_kartvoices,			 	75},
 	{IT_STRING|IT_CVAR,							NULL, "Hit Em Delay",				    &cv_karthitemdialog,		85},
 	{IT_STRING|IT_CVAR,							NULL, "Powerup Warning",				&cv_kartinvinsfx,		 	95},
-	
+
 	{IT_KEYHANDLER|IT_STRING,					NULL, "Sound Test",						M_HandleSoundTest,			105},
 	{IT_STRING|IT_CALL,							NULL, "Music Test",						M_MusicTest,				115},
 
@@ -1622,7 +1643,7 @@ static menuitem_t OP_SoundOptionsMenu[] =
 	{IT_STRING|IT_CVAR,							NULL, "Character voices",				&cv_kartvoices,			 	85},
 	{IT_STRING|IT_CVAR,							NULL, "Hit Em Delay",				    &cv_karthitemdialog,		95},
 	{IT_STRING|IT_CVAR,							NULL, "Powerup Warning",				&cv_kartinvinsfx,		 	105},
-	
+
 	{IT_KEYHANDLER|IT_STRING,					NULL, "Sound Test",						M_HandleSoundTest,			115},
 	{IT_STRING|IT_CALL,							NULL, "Music Test",						M_MusicTest,				125},
 
@@ -1683,7 +1704,7 @@ static const char* OP_SoundAdvancedTooltips[] =
 {
 #ifdef HAVE_OPENMPT
 	NULL,
-	
+
 	"Filter used to resample tracker instruments.",
 	"Resample tracker modules to sound similar to Paula hardware.",
 #if OPENMPT_API_VERSION_MAJOR < 1 && OPENMPT_API_VERSION_MINOR > 4
@@ -1796,7 +1817,7 @@ static menuitem_t OP_HUDOptionsMenu[] =
 {
 	{IT_STRING | IT_CVAR, NULL, "Show HUD (F3)",			&cv_showhud,			 10},
 	{IT_STRING | IT_CVAR | IT_CV_SLIDER,
-	                      NULL, "HUD Visibility",			&cv_translucenthud,		 20},				  
+	                      NULL, "HUD Visibility",			&cv_translucenthud,		 20},
 
 	{IT_STRING | IT_SUBMENU, NULL, "Online HUD options...", &OP_ChatOptionsDef, 	 	 35},
 	{IT_STRING | IT_CVAR, NULL, "Background Glass",			&cons_backcolor,		 45},
@@ -1812,9 +1833,9 @@ static menuitem_t OP_HUDOptionsMenu[] =
 	{IT_STRING | IT_CVAR, NULL,	"Console Text Size",		&cv_constextsize,		120},
 
 	{IT_STRING | IT_CVAR, NULL,   "Show Track Addon Name",  &cv_showtrackaddon,   	135},
-	
+
 	{IT_STRING | IT_CVAR, NULL,   "Show All Maps",  &cv_showallmaps,   	145},
-	
+
 	{IT_STRING | IT_CVAR, NULL,   "Show \"FOCUS LOST\"",  &cv_showfocuslost,   		155},
 
 	{IT_STRING | IT_CVAR, NULL,	"2D character select",		&cv_skinselectmenu,		165},
@@ -1851,52 +1872,52 @@ static menuitem_t OP_Player1CamOptionsMenu[] =
 {
 	{IT_HEADER, NULL, "Player 1 Camera Options", NULL, 0},
 
-	{IT_STRING | IT_CVAR, NULL,						"Flipcam",   				&cv_flipcam,		30},
-	{IT_STRING | IT_CVAR | IT_CV_BIGFLOAT, NULL,	"Camera Distance",   		&cv_cam_dist,		40},
-	{IT_STRING | IT_CVAR | IT_CV_BIGFLOAT, NULL,	"Camera Height",   			&cv_cam_height,		50},
-	{IT_STRING | IT_CVAR, NULL,						"Camera Speed",   			&cv_cam_speed,		60},
-	{IT_STRING | IT_CVAR, NULL,						"Camera Rotation Speed",   	&cv_cam_rotspeed,	70},
+	{IT_STRING | IT_CVAR, NULL,						"Flipcam",   				&cv_flipcam[0],		30},
+	{IT_STRING | IT_CVAR | IT_CV_BIGFLOAT, NULL,	"Camera Distance",   		&cv_cam_dist[0],		40},
+	{IT_STRING | IT_CVAR | IT_CV_BIGFLOAT, NULL,	"Camera Height",   			&cv_cam_height[0],		50},
+	{IT_STRING | IT_CVAR, NULL,						"Camera Speed",   			&cv_cam_speed[0],		60},
+	{IT_STRING | IT_CVAR, NULL,						"Camera Rotation Speed",   	&cv_cam_rotspeed[0],	70},
 
-	{IT_STRING | IT_CVAR, NULL,						"Third Person Camera",   	&cv_chasecam,		85},
+	{IT_STRING | IT_CVAR, NULL,						"Third Person Camera",   	&cv_chasecam[0],		85},
 };
 
 static menuitem_t OP_Player2CamOptionsMenu[] =
 {
 	{IT_HEADER, NULL, "Player 2 Camera Options", NULL, 0},
 
-	{IT_STRING | IT_CVAR, NULL,						"Flipcam",   				&cv_flipcam2,		30},
-	{IT_STRING | IT_CVAR | IT_CV_BIGFLOAT, NULL,	"Camera Distance",   		&cv_cam2_dist,		40},
-	{IT_STRING | IT_CVAR | IT_CV_BIGFLOAT, NULL,	"Camera Height",   			&cv_cam2_height,	50},
-	{IT_STRING | IT_CVAR, NULL,						"Camera Speed",   			&cv_cam2_speed,		60},
-	{IT_STRING | IT_CVAR, NULL,						"Camera Rotation Speed",   	&cv_cam2_rotspeed,	70},
+	{IT_STRING | IT_CVAR, NULL,						"Flipcam",   				&cv_flipcam[1],		30},
+	{IT_STRING | IT_CVAR | IT_CV_BIGFLOAT, NULL,	"Camera Distance",   		&cv_cam_dist[1],		40},
+	{IT_STRING | IT_CVAR | IT_CV_BIGFLOAT, NULL,	"Camera Height",   			&cv_cam_height[1],	50},
+	{IT_STRING | IT_CVAR, NULL,						"Camera Speed",   			&cv_cam_speed[1],		60},
+	{IT_STRING | IT_CVAR, NULL,						"Camera Rotation Speed",   	&cv_cam_rotspeed[1],	70},
 
-	{IT_STRING | IT_CVAR, NULL,						"Third Person Camera",   	&cv_chasecam2,		85},
+	{IT_STRING | IT_CVAR, NULL,						"Third Person Camera",   	&cv_chasecam[1],		85},
 };
 
 static menuitem_t OP_Player3CamOptionsMenu[] =
 {
 	{IT_HEADER, NULL, "Player 3 Camera Options", NULL, 0},
 
-	{IT_STRING | IT_CVAR, NULL,						"Flipcam",   				&cv_flipcam3,		30},
-	{IT_STRING | IT_CVAR | IT_CV_BIGFLOAT, NULL,	"Camera Distance",   		&cv_cam3_dist,		40},
-	{IT_STRING | IT_CVAR | IT_CV_BIGFLOAT, NULL,	"Camera Height",   			&cv_cam3_height,	50},
-	{IT_STRING | IT_CVAR, NULL,						"Camera Speed",   			&cv_cam3_speed,		60},
-	{IT_STRING | IT_CVAR, NULL,						"Camera Rotation Speed",   	&cv_cam3_rotspeed,	70},
+	{IT_STRING | IT_CVAR, NULL,						"Flipcam",   				&cv_flipcam[2],		30},
+	{IT_STRING | IT_CVAR | IT_CV_BIGFLOAT, NULL,	"Camera Distance",   		&cv_cam_dist[2],		40},
+	{IT_STRING | IT_CVAR | IT_CV_BIGFLOAT, NULL,	"Camera Height",   			&cv_cam_height[2],	50},
+	{IT_STRING | IT_CVAR, NULL,						"Camera Speed",   			&cv_cam_speed[2],		60},
+	{IT_STRING | IT_CVAR, NULL,						"Camera Rotation Speed",   	&cv_cam_rotspeed[2],	70},
 
-	{IT_STRING | IT_CVAR, NULL,						"Third Person Camera",   	&cv_chasecam3,		85},
+	{IT_STRING | IT_CVAR, NULL,						"Third Person Camera",   	&cv_chasecam[2],		85},
 };
 
 static menuitem_t OP_Player4CamOptionsMenu[] =
 {
 	{IT_HEADER, NULL, "Player 4 Camera Options", NULL, 0},
 
-	{IT_STRING | IT_CVAR, NULL,						"Flipcam",   				&cv_flipcam4,		30},
-	{IT_STRING | IT_CVAR | IT_CV_BIGFLOAT, NULL,	"Camera Distance",   		&cv_cam4_dist,		40},
-	{IT_STRING | IT_CVAR | IT_CV_BIGFLOAT, NULL,	"Camera Height",   			&cv_cam4_height,	50},
-	{IT_STRING | IT_CVAR, NULL,						"Camera Speed",   			&cv_cam4_speed,		60},
-	{IT_STRING | IT_CVAR, NULL,						"Camera Rotation Speed",   	&cv_cam4_rotspeed,	70},
+	{IT_STRING | IT_CVAR, NULL,						"Flipcam",   				&cv_flipcam[3],		30},
+	{IT_STRING | IT_CVAR | IT_CV_BIGFLOAT, NULL,	"Camera Distance",   		&cv_cam_dist[3],		40},
+	{IT_STRING | IT_CVAR | IT_CV_BIGFLOAT, NULL,	"Camera Height",   			&cv_cam_height[3],	50},
+	{IT_STRING | IT_CVAR, NULL,						"Camera Speed",   			&cv_cam_speed[3],		60},
+	{IT_STRING | IT_CVAR, NULL,						"Camera Rotation Speed",   	&cv_cam_rotspeed[3],	70},
 
-	{IT_STRING | IT_CVAR, NULL,						"Third Person Camera",   	&cv_chasecam4,		85},
+	{IT_STRING | IT_CVAR, NULL,						"Third Person Camera",   	&cv_chasecam[3],		85},
 };
 
 static const char* OP_PlayerCamOptionsTooltips[] =
@@ -2066,7 +2087,7 @@ static menuitem_t OP_AdvServerOptionsMenu[] =
 };
 
 static const char* OP_AdvServerOptionsTooltips[] =
-{	
+{
 	"Server used for master server.",
 	"Attempts to resynchronise player to server.",
 #ifdef SATURNSYNCH
@@ -2203,22 +2224,20 @@ static menuitem_t OP_PlayerDistortMenu[] =
 {
 	{IT_HEADER, NULL, "Sprite Distortion", NULL, 0},
 
-	{IT_STRING | IT_CVAR, 	NULL, 	"Sprite Rotation",       	  	  &cv_spriteroll, 	    15},
-	{IT_STRING | IT_CVAR, 	NULL, 	"Sprite Slope Rotation",       	  &cv_sloperoll, 	    30},
-	{IT_STRING | IT_CVAR, 	NULL, 	"Slope Rotation Distance",        &cv_sloperolldist,    45},
-	{IT_STRING | IT_CVAR, 	NULL, 	"Rotate Players when Sliptiding", &cv_sliptideroll, 	60},
-	{IT_STRING | IT_CVAR,	NULL,	"Rotate Sparks and Boost Trails", &cv_sparkroll,        75},
-	{IT_STRING | IT_CVAR,	NULL,	"Player Stretch Factor",	      &cv_gravstretch,      90},
-	{IT_STRING | IT_CVAR,	NULL,	"Squish Sound Effect",	      	  &cv_slamsound,        105},
-	{IT_STRING | IT_CVAR, 	NULL, 	"Saltyhop", 					  &cv_saltyhop, 		120},
-	{IT_STRING | IT_CVAR,	NULL,	"Saltyhop Sound Effect",	      &cv_saltyhopsfx,      135},
-	{IT_STRING | IT_CVAR,	NULL,	"Saltyhop Squish",	      	  	  &cv_saltysquish,      150},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Sprite Slope Rotation",       	  &cv_sloperoll, 	    15},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Slope Rotation Distance",        &cv_sloperolldist,    30},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Rotate Players when Sliptiding", &cv_sliptideroll, 	45},
+	{IT_STRING | IT_CVAR,	NULL,	"Rotate Sparks and Boost Trails", &cv_sparkroll,        60},
+	{IT_STRING | IT_CVAR,	NULL,	"Player Stretch Factor",	      &cv_gravstretch,      75},
+	{IT_STRING | IT_CVAR,	NULL,	"Squish Sound Effect",	      	  &cv_slamsound,        90},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Saltyhop", 					  &cv_saltyhop, 		105},
+	{IT_STRING | IT_CVAR,	NULL,	"Saltyhop Sound Effect",	      &cv_saltyhopsfx,      120},
+	{IT_STRING | IT_CVAR,	NULL,	"Saltyhop Squish",	      	  	  &cv_saltysquish,      135},
 };
 
 static const char* OP_PlayerDistortTooltips[] =
 {
 	NULL,
-	"Sprite rotation features.",
 	"Sprite rotation on slopes. Can either be just players or all objects.",
 	"Distance object rotation should be visable.",
 	"Player rotation when sliptiding.",
@@ -2233,7 +2252,6 @@ static const char* OP_PlayerDistortTooltips[] =
 enum
 {
 	spriteheader,
-	spriterotate,
 	sloperotate,
 	slrotatedist,
 	sliptide,
@@ -2330,7 +2348,6 @@ enum
 	sh_hudoffsets,
 };
 
-
 static menuitem_t OP_HudOffsetMenu[] =
 {
 	{IT_HEADER, NULL, "Kart Hud Offsets", NULL, 0},
@@ -2384,7 +2401,7 @@ static menuitem_t OP_SaturnCreditsMenu[] =
 	{IT_STRING2+IT_SPACE, NULL, 	"xyzzy",     										NULL, 	   70},
 	{IT_STRING2+IT_SPACE, NULL, 	"Chearii", 		 									NULL, 	   80},
 
-	{IT_STRING+IT_SPACE, NULL, 		"", 												NULL,      83},	// dummy text 
+	{IT_STRING+IT_SPACE, NULL, 		"", 												NULL,      83},	// dummy text
 
 	{IT_STRING2+IT_SPACE, NULL, 	"Sunflower aka AnimeSonic", 		 				NULL, 	   90},
 	{IT_STRING2+IT_SPACE, NULL, 	"Yuz aka Yuzler", 		  							NULL, 	  100},
@@ -3377,7 +3394,7 @@ void Addons_option_Onchange(void)
 
 void PDistort_menu_Onchange(void)
 {
-	if (!cv_spriteroll.value)
+	if (!cv_sloperoll.value)
 	{
 		OP_PlayerDistortMenu[sloperotate].status = IT_GRAYEDOUT;
 		OP_PlayerDistortMenu[sliptide].status = IT_GRAYEDOUT;
@@ -3388,15 +3405,10 @@ void PDistort_menu_Onchange(void)
 		OP_PlayerDistortMenu[sliptide].status = IT_STRING | IT_CVAR;
 	}
 
-	if ((cv_sloperoll.value) && (cv_spriteroll.value)) //enable/disable sloperotate distance
+	if (cv_sloperoll.value) //enable/disable sloperotate distance
 		OP_PlayerDistortMenu[slrotatedist].status = IT_STRING | IT_CVAR;
 	else
 		OP_PlayerDistortMenu[slrotatedist].status = IT_GRAYEDOUT;
-		
-	if ((cv_sloperoll.value == 2) && (cv_spriteroll.value)) //enable/disable sparkroll depending on which setting
-		OP_PlayerDistortMenu[sparkrotate].status = IT_STRING | IT_CVAR;
-	else
-		OP_PlayerDistortMenu[sparkrotate].status = IT_GRAYEDOUT;
 }
 
 void Bird_menu_Onchange(void)
@@ -3421,7 +3433,7 @@ void Bird_menu_Onchange(void)
 	OP_AdvancedBirdMenu[fadegrow].status = status;
 	OP_AdvancedBirdMenu[respawnfadeout].status = status;
 	OP_AdvancedBirdMenu[respawnfadein].status = status;
-	
+
 	if (cv_birdmusic.value)
 	{
 		OP_BirdMenu[lvlresum].status = IT_STRING | IT_CVAR;
@@ -3433,7 +3445,7 @@ void Bird_menu_Onchange(void)
 		OP_BirdMenu[lvlresum].status = IT_GRAYEDOUT;
 		OP_BirdMenu[spclresum].status = IT_GRAYEDOUT;
 		OP_BirdMenu[advmusic].status = IT_GRAYEDOUT;
-	}	
+	}
 }
 
 //menu code is nice
@@ -3445,10 +3457,29 @@ void SaturnHud_menu_Onchange(void)
 		status = IT_STRING | IT_CVAR;
 	else
 		status = IT_GRAYEDOUT;
-	
+
 	OP_SaturnHudMenu[sh_coloritem].status = status;
 	OP_SaturnHudMenu[sh_colorhud_customcolor].status = status;
 }
+
+#ifdef HWRENDER
+void M_UpdateOGLMenu(void)
+{
+#ifdef USE_FBO_OGL
+	OP_ExpOptionsMenu[op_exp_fbo].status = (!supportFBO || cv_glscreentextures.value != 2) ? IT_GRAYEDOUT : IT_STRING | IT_CVAR;
+#endif
+	OP_ExpOptionsMenu[op_exp_paldepth].status = (!HWR_ShouldUsePaletteRendering()) ? IT_GRAYEDOUT : IT_STRING | IT_CVAR;
+
+	OP_OpenGLOptionsMenu[op_gl_falbckmdls].status = (!cv_glmdls.value) ? IT_GRAYEDOUT : IT_STRING | IT_CVAR;
+
+	OP_OpenGLOptionsMenu[op_gl_lightdither].status = (!HWR_UseShader()) ? IT_GRAYEDOUT : IT_STRING | IT_CVAR;
+	OP_OpenGLOptionsMenu[op_gl_secbright].status = (!HWR_UseShader()) ? IT_GRAYEDOUT : IT_STRING | IT_CVAR;
+
+	OP_OpenGLOptionsMenu[op_gl_palrender].status = (cv_glscreentextures.value != 2 || !HWR_UseShader()) ? IT_GRAYEDOUT : IT_STRING | IT_CVAR;
+	OP_OpenGLOptionsMenu[op_gl_flashpal].status = (!HWR_ShouldUsePaletteRendering()) ? IT_GRAYEDOUT : IT_STRING | IT_CVAR;
+}
+#endif
+
 
 // ==========================================================================
 // END ORGANIZATION STUFF.
@@ -3709,14 +3740,14 @@ boolean M_Responder(event_t *ev)
 		tic_t thistime = I_GetTime();
 		if (ev->type == ev_joystick)
 		{
-			const INT32 jxdeadzone = ((JOYAXISRANGE-1) * max(cv_xdeadzone.value, FRACUNIT/2)) >> FRACBITS;
-			const INT32 jydeadzone = ((JOYAXISRANGE-1) * max(cv_ydeadzone.value, FRACUNIT/2)) >> FRACBITS;
-			INT32 accelaxis = abs(cv_moveaxis.value);
+			const INT32 jxdeadzone = ((JOYAXISRANGE-1) * max(cv_xdeadzone[0].value, FRACUNIT/2)) >> FRACBITS;
+			const INT32 jydeadzone = ((JOYAXISRANGE-1) * max(cv_ydeadzone[0].value, FRACUNIT/2)) >> FRACBITS;
+			INT32 accelaxis = abs(cv_moveaxis[0].value);
 			if (ev->data1 == 0)
 			{
 				if (ev->data3 != INT32_MAX)
 				{
-					if (Joystick.bGamepadStyle || abs(ev->data3) > jydeadzone)
+					if (Joystick[0].bGamepadStyle || abs(ev->data3) > jydeadzone)
 					{
 						if (joywaity < thistime
 							&& (pjoyy == 0 || (ev->data3 < 0) != (pjoyy < 0))) // no previous direction OR change direction
@@ -3732,7 +3763,7 @@ boolean M_Responder(event_t *ev)
 
 				if (ev->data2 != INT32_MAX && joywaitx < thistime)
 				{
-					if (Joystick.bGamepadStyle || abs(ev->data2) > jxdeadzone)
+					if (Joystick[0].bGamepadStyle || abs(ev->data2) > jxdeadzone)
 					{
 						if (joywaitx < thistime
 							&& (pjoyx == 0 || (ev->data2 < 0) != (pjoyx < 0))) // no previous direction OR change direction
@@ -3760,10 +3791,10 @@ boolean M_Responder(event_t *ev)
 					retaxis = xmode ? ev->data2 : ev->data3;
 					if (retaxis != INT32_MAX)
 					{
-						if (cv_moveaxis.value < 0)
+						if (cv_moveaxis[0].value < 0)
 							retaxis = -retaxis;
 
-						if (Joystick.bGamepadStyle || retaxis > jacceldeadzone)
+						if (Joystick[0].bGamepadStyle || retaxis > jacceldeadzone)
 						{
 							if (joywaitaccel < thistime && retaxis > pjoyaccel) // only on upwards event
 							{
@@ -4320,9 +4351,9 @@ void M_Drawer(void)
 #ifdef HWRENDER
 				if (rendermode == render_opengl)
 				V_DrawThinString(0, 0, V_GREENMAP|V_SNAPTOTOP|V_SNAPTOLEFT|V_TRANSLUCENT|V_ALLOWLOWERCASE, ("Opengl"));
-#endif			
+#endif
 				if (rendermode == render_soft)
-				V_DrawThinString(0, 0, V_REDMAP|V_SNAPTOTOP|V_SNAPTOLEFT|V_TRANSLUCENT|V_ALLOWLOWERCASE, ("Software"));	
+				V_DrawThinString(0, 0, V_REDMAP|V_SNAPTOTOP|V_SNAPTOLEFT|V_TRANSLUCENT|V_ALLOWLOWERCASE, ("Software"));
 			}
 		}
 	}
@@ -4413,18 +4444,18 @@ void M_StartControlPanel(void)
 		MPauseMenu[mpause_psetup].status = IT_DISABLED;
 		MISC_ChangeTeamMenu[0].status = IT_DISABLED;
 		MISC_ChangeSpectateMenu[0].status = IT_DISABLED;
-		
+
 		MPauseMenu[mpause_addlocalskins].status = IT_STRING | IT_CALL;
 		MPauseMenu[mpause_localskin].status = IT_STRING | IT_CALL;
 
 		// Reset these in case splitscreen messes things up
 		MPauseMenu[mpause_addons].alphaKey = 8;
-		
+
 		if (IsPlayerAdmin(consoleplayer))
 			MPauseMenu[mpause_addlocalskins].alphaKey = 16;
 		else
 			MPauseMenu[mpause_addlocalskins].alphaKey = 24;
-	
+
 		MPauseMenu[mpause_scramble].alphaKey = 8;
 		MPauseMenu[mpause_switchmap].alphaKey = 24;
 
@@ -4445,17 +4476,17 @@ void M_StartControlPanel(void)
 			if (G_GametypeHasTeams())
 				MPauseMenu[mpause_scramble].status = IT_STRING | IT_SUBMENU;
 		}
-		
+
 		if (server || (!cv_showlocalskinmenus.value))
 		{
 			MPauseMenu[mpause_addlocalskins].status = IT_DISABLED;
 			MPauseMenu[mpause_localskin].status = IT_DISABLED;
-					
+
 			MPauseMenu[mpause_options].alphaKey = 64;
 			MPauseMenu[mpause_title].alphaKey = 80;
 			MPauseMenu[mpause_quit].alphaKey = 88;
 		}
-				
+
 
 		if (splitscreen)
 		{
@@ -4720,11 +4751,12 @@ void M_Init(void)
 	if (rendermode == render_soft)
 	{
 		OP_VideoOptionsMenu[op_video_ogl].status = IT_DISABLED;
-		OP_ExpOptionsMenu[op_exp_grscrtx].status = IT_DISABLED;
+
+		OP_ExpOptionsMenu[op_exp_glscrtx].status = IT_DISABLED;
 #ifdef USE_FBO_OGL
 		OP_ExpOptionsMenu[op_exp_fbo].status = IT_DISABLED;
 #endif
-		OP_ExpOptionsMenu[op_exp_spltwal].status = IT_DISABLED;
+		OP_ExpOptionsMenu[op_exp_paldepth].status = IT_DISABLED;
 	}
 
 	if (rendermode == render_opengl)
@@ -4733,15 +4765,25 @@ void M_Init(void)
 		if (!supportFBO)
 			OP_ExpOptionsMenu[op_exp_fbo].status = IT_GRAYEDOUT;
 #endif
+		if (!gl_shadersavailable)
+		{
+			OP_OpenGLOptionsMenu[op_gl_shader].status = IT_GRAYEDOUT;
+			OP_OpenGLOptionsMenu[op_gl_lightdither].status = IT_GRAYEDOUT;
+			OP_OpenGLOptionsMenu[op_gl_secbright].status = IT_GRAYEDOUT;
+			OP_OpenGLOptionsMenu[op_gl_palrender].status = IT_GRAYEDOUT;
+			OP_OpenGLOptionsMenu[op_gl_flashpal].status = IT_GRAYEDOUT;
+
+			OP_ExpOptionsMenu[op_exp_paldepth].status = IT_GRAYEDOUT;
+		}
 	}
 #endif
 
 	if (!xtra_speedo && !kartzspeedo && !achi_speedo) // why bother?
 		OP_SaturnHudMenu[sh_speedometer].status = IT_GRAYEDOUT;
-	
+
 	//if (!xtra_speedo && kartzspeedo)
 		//OP_SaturnMenu[sm_speedometer].text = "Speedometer (No Small)";
-	
+
 	//if (xtra_speedo && !kartzspeedo)
 		//OP_SaturnMenu[sm_speedometer].text = "Speedometer (No PMeter)";
 	// idk i dont wanna bother with this tbh lmao
@@ -4973,7 +5015,7 @@ static void M_CentreText(INT32 y, const char *string)
 	INT32 x;
 	//added : 02-02-98 : centre on 320, because V_DrawString centers on vid.width...
 	x = (BASEVIDWIDTH - V_StringWidth(string, V_OLDSPACING))>>1;
-	V_DrawString(x,y,V_OLDSPACING,string);
+	V_DrawString(x,y,V_OLDSPACING|MENUCAPS,string);
 }
 
 //
@@ -5077,7 +5119,7 @@ static void M_DrawSplitText(INT32 x, INT32 y, INT32 option, const char* str, INT
 	yoffset = (((5*10 - num_lines*10)));
 
 	// Draw BG first,,,
-	for (int i = 0; i < num_lines; i++) 
+	for (int i = 0; i < num_lines; i++)
 	{
 		V_DrawFill(0, (y + yoffset - 6)+5, vid.width, 11, 239|V_SNAPTOBOTTOM|V_SNAPTOLEFT);
 		yoffset += 11;
@@ -5086,7 +5128,7 @@ static void M_DrawSplitText(INT32 x, INT32 y, INT32 option, const char* str, INT
 	yoffset = (((5*10 - num_lines*10)));
 
 	// THEN the text
-	for (int i = 0; i < num_lines; i++) 
+	for (int i = 0; i < num_lines; i++)
 	{
         V_DrawCenteredThinString(x, y + yoffset, option, clines[i]);
 		V_DrawCenteredThinString(x, y + yoffset, option|V_YELLOWMAP|((9 - alpha) << V_ALPHASHIFT), clines[i]);
@@ -5102,8 +5144,6 @@ static void M_DrawSplitText(INT32 x, INT32 y, INT32 option, const char* str, INT
 static void M_DrawGenericMenu(void)
 {
 	INT32 x, y, w, i, cursory = 0;
-	
-	INT32 lowercase = !cv_menucaps.value ? V_ALLOWLOWERCASE : 0;
 
 	// DRAW MENU
 	x = currentMenu->x;
@@ -5150,9 +5190,9 @@ static void M_DrawGenericMenu(void)
 					cursory = y;
 
 				if ((currentMenu->menuitems[i].status & IT_DISPLAY)==IT_STRING)
-					V_DrawString(x, y, lowercase, currentMenu->menuitems[i].text);
+					V_DrawString(x, y, MENUCAPS, currentMenu->menuitems[i].text);
 				else
-					V_DrawString(x, y, lowercase|highlightflags, currentMenu->menuitems[i].text);
+					V_DrawString(x, y, MENUCAPS|highlightflags, currentMenu->menuitems[i].text);
 
 				// Cvar specific handling
 				switch (currentMenu->menuitems[i].status & IT_TYPE)
@@ -5179,7 +5219,7 @@ static void M_DrawGenericMenu(void)
 							default:
 								w = V_StringWidth(cv->string, 0);
 								V_DrawString(BASEVIDWIDTH - x - w, y,
-									((cv->flags & CV_CHEAT) && !CV_IsSetToDefault(cv) ? warningflags : highlightflags)|lowercase, cv->string);
+									((cv->flags & CV_CHEAT) && !CV_IsSetToDefault(cv) ? warningflags : highlightflags)|MENUCAPS, cv->string);
 								if (i == itemOn)
 								{
 									V_DrawCharacter(BASEVIDWIDTH - x - 10 - w - (skullAnimCounter/5), y,
@@ -5194,7 +5234,7 @@ static void M_DrawGenericMenu(void)
 					y += STRINGHEIGHT;
 					break;
 			case IT_STRING2:
-				V_DrawString(((BASEVIDWIDTH - V_StringWidth(currentMenu->menuitems[i].text, 0))>>1), y, lowercase, currentMenu->menuitems[i].text);
+				V_DrawString(((BASEVIDWIDTH - V_StringWidth(currentMenu->menuitems[i].text, 0))>>1), y, MENUCAPS, currentMenu->menuitems[i].text);
 				/* FALLTHRU */
 			case IT_DYLITLSPACE:
 				y += SMALLLINEHEIGHT;
@@ -5210,21 +5250,21 @@ static void M_DrawGenericMenu(void)
 					y = currentMenu->y+currentMenu->menuitems[i].alphaKey;
 				/* FALLTHRU */
 			case IT_TRANSTEXT2:
-				V_DrawString(x, y, V_TRANSLUCENT|lowercase, currentMenu->menuitems[i].text);
+				V_DrawString(x, y, V_TRANSLUCENT|MENUCAPS, currentMenu->menuitems[i].text);
 				y += SMALLLINEHEIGHT;
 				break;
 			case IT_QUESTIONMARKS:
 				if (currentMenu->menuitems[i].alphaKey)
 					y = currentMenu->y+currentMenu->menuitems[i].alphaKey;
 
-				V_DrawString(x, y, V_TRANSLUCENT|V_OLDSPACING|lowercase, M_CreateSecretMenuOption(currentMenu->menuitems[i].text));
+				V_DrawString(x, y, V_TRANSLUCENT|V_OLDSPACING|MENUCAPS, M_CreateSecretMenuOption(currentMenu->menuitems[i].text));
 				y += SMALLLINEHEIGHT;
 				break;
 			case IT_HEADERTEXT: // draws 16 pixels to the left, in yellow text
 				if (currentMenu->menuitems[i].alphaKey)
 					y = currentMenu->y+currentMenu->menuitems[i].alphaKey;
 
-				V_DrawString(x-16, y, highlightflags|lowercase, currentMenu->menuitems[i].text);
+				V_DrawString(x-16, y, highlightflags|MENUCAPS, currentMenu->menuitems[i].text);
 				y += SMALLLINEHEIGHT;
 				break;
 		}
@@ -5241,7 +5281,7 @@ static void M_DrawGenericMenu(void)
 	{
 		V_DrawScaledPatch(currentMenu->x - 24, cursory, 0,
 			W_CachePatchName("M_CURSOR", PU_CACHE));
-		V_DrawString(currentMenu->x, cursory, lowercase|highlightflags, currentMenu->menuitems[itemOn].text);
+		V_DrawString(currentMenu->x, cursory, MENUCAPS|highlightflags, currentMenu->menuitems[itemOn].text);
 	}
 
 	// dumb hack
@@ -5318,8 +5358,6 @@ static void M_DrawGenericScrollMenu(void)
 
 	// draw title (or big pic)
 	M_DrawMenuTitle();
-	
-	INT32 lowercase = !cv_menucaps.value ? V_ALLOWLOWERCASE : 0;
 
 	for (; i < max; i++)
 	{
@@ -5337,9 +5375,9 @@ static void M_DrawGenericScrollMenu(void)
 			case IT_STRING:
 			case IT_WHITESTRING:
 				if (i != itemOn && (currentMenu->menuitems[i].status & IT_DISPLAY)==IT_STRING)
-					V_DrawString(x, y, lowercase, currentMenu->menuitems[i].text);
+					V_DrawString(x, y, MENUCAPS, currentMenu->menuitems[i].text);
 				else
-					V_DrawString(x, y, lowercase|highlightflags, currentMenu->menuitems[i].text);
+					V_DrawString(x, y, MENUCAPS|highlightflags, currentMenu->menuitems[i].text);
 
 				// Cvar specific handling
 				switch (currentMenu->menuitems[i].status & IT_TYPE)
@@ -5361,12 +5399,12 @@ static void M_DrawGenericScrollMenu(void)
 								if (itemOn == i)
 									M_DrawTextInput(x + 8, y + 12, &menuinput, 0);
 								else
-									V_DrawString(x + 8, y + 12, lowercase, cv->string);
+									V_DrawString(x + 8, y + 12, MENUCAPS, cv->string);
 
 								break;
 							default:
 								V_DrawRightAlignedString(BASEVIDWIDTH - x, y,
-									((cv->flags & CV_CHEAT) && !CV_IsSetToDefault(cv) ? V_REDMAP : highlightflags)|lowercase, cv->string);
+									((cv->flags & CV_CHEAT) && !CV_IsSetToDefault(cv) ? V_REDMAP : highlightflags)|MENUCAPS, cv->string);
 								if (i == itemOn)
 								{
 									V_DrawCharacter(BASEVIDWIDTH - x - 10 - V_StringWidth(cv->string, 0) - (skullAnimCounter/5), y,
@@ -5380,13 +5418,13 @@ static void M_DrawGenericScrollMenu(void)
 					}
 					break;
 			case IT_TRANSTEXT:
-				V_DrawString(x, y, V_TRANSLUCENT|lowercase, currentMenu->menuitems[i].text);
+				V_DrawString(x, y, V_TRANSLUCENT|MENUCAPS, currentMenu->menuitems[i].text);
 				break;
 			case IT_QUESTIONMARKS:
-				V_DrawString(x, y, lowercase|V_TRANSLUCENT|V_OLDSPACING, M_CreateSecretMenuOption(currentMenu->menuitems[i].text));
+				V_DrawString(x, y, MENUCAPS|V_TRANSLUCENT|V_OLDSPACING, M_CreateSecretMenuOption(currentMenu->menuitems[i].text));
 				break;
 			case IT_HEADERTEXT:
-				V_DrawString(x-16, y, highlightflags|lowercase, currentMenu->menuitems[i].text);
+				V_DrawString(x-16, y, highlightflags|MENUCAPS, currentMenu->menuitems[i].text);
 				break;
 		}
 	}
@@ -5440,8 +5478,6 @@ static void M_DrawCenteredMenu(void)
 
 	// draw title (or big pic)
 	M_DrawMenuTitle();
-	
-	INT32 lowercase = !cv_menucaps.value ? V_ALLOWLOWERCASE : 0;
 
 	for (i = 0; i < currentMenu->numitems; i++)
 	{
@@ -5481,9 +5517,9 @@ static void M_DrawCenteredMenu(void)
 					cursory = y;
 
 				if ((currentMenu->menuitems[i].status & IT_DISPLAY)==IT_STRING)
-					V_DrawCenteredString(x, y, lowercase, currentMenu->menuitems[i].text);
+					V_DrawCenteredString(x, y, MENUCAPS, currentMenu->menuitems[i].text);
 				else
-					V_DrawCenteredString(x, y, highlightflags|lowercase, currentMenu->menuitems[i].text);
+					V_DrawCenteredString(x, y, highlightflags|MENUCAPS, currentMenu->menuitems[i].text);
 
 				// Cvar specific handling
 				switch(currentMenu->menuitems[i].status & IT_TYPE)
@@ -5508,7 +5544,7 @@ static void M_DrawCenteredMenu(void)
 								break;
 							default:
 								V_DrawString(BASEVIDWIDTH - x - V_StringWidth(cv->string, 0), y,
-									((cv->flags & CV_CHEAT) && !CV_IsSetToDefault(cv) ? warningflags : highlightflags)|lowercase, cv->string);
+									((cv->flags & CV_CHEAT) && !CV_IsSetToDefault(cv) ? warningflags : highlightflags)|MENUCAPS, cv->string);
 								break;
 						}
 						break;
@@ -5516,7 +5552,7 @@ static void M_DrawCenteredMenu(void)
 					y += STRINGHEIGHT;
 					break;
 			case IT_STRING2:
-				V_DrawCenteredString(x, y, lowercase, currentMenu->menuitems[i].text);
+				V_DrawCenteredString(x, y, MENUCAPS, currentMenu->menuitems[i].text);
 				/* FALLTHRU */
 			case IT_DYLITLSPACE:
 				y += SMALLLINEHEIGHT;
@@ -5525,7 +5561,7 @@ static void M_DrawCenteredMenu(void)
 				if (currentMenu->menuitems[i].alphaKey)
 					y = currentMenu->y+currentMenu->menuitems[i].alphaKey;
 
-				V_DrawCenteredString(x, y, V_TRANSLUCENT|V_OLDSPACING|lowercase, M_CreateSecretMenuOption(currentMenu->menuitems[i].text));
+				V_DrawCenteredString(x, y, V_TRANSLUCENT|V_OLDSPACING|MENUCAPS, M_CreateSecretMenuOption(currentMenu->menuitems[i].text));
 				y += SMALLLINEHEIGHT;
 				break;
 			case IT_GRAYPATCH:
@@ -5548,7 +5584,7 @@ static void M_DrawCenteredMenu(void)
 	{
 		V_DrawScaledPatch(x - V_StringWidth(currentMenu->menuitems[itemOn].text, 0)/2 - 24, cursory, 0,
 			W_CachePatchName("M_CURSOR", PU_CACHE));
-		V_DrawCenteredString(x, cursory, highlightflags|lowercase, currentMenu->menuitems[itemOn].text);
+		V_DrawCenteredString(x, cursory, highlightflags|MENUCAPS, currentMenu->menuitems[itemOn].text);
 	}
 }
 
@@ -5924,12 +5960,12 @@ static void M_DrawImageDef(void)
 	{
 		INT32 x = BASEVIDWIDTH>>1, y = (BASEVIDHEIGHT>>1) - 4;
 		x += (itemOn ? 1 : -1)*((BASEVIDWIDTH>>2) + 10);
-		V_DrawCenteredString(x, y-10, highlightflags, "USE ARROW KEYS");
+		V_DrawCenteredString(x, y-10, highlightflags|MENUCAPS, "Use arrow keys");
 		V_DrawCharacter(x - 10 - (skullAnimCounter/5), y,
 			'\x1C' | highlightflags, false); // left arrow
 		V_DrawCharacter(x + 2 + (skullAnimCounter/5), y,
 			'\x1D' | highlightflags, false); // right arrow
-		V_DrawCenteredString(x, y+10, highlightflags, "TO LEAF THROUGH");
+		V_DrawCenteredString(x, y+10, highlightflags|MENUCAPS, "to leaf through");
 	}
 }
 
@@ -6327,16 +6363,14 @@ static void M_DrawAddons(void)
 	y = BASEVIDHEIGHT - currentMenu->y + 1;
 
 	M_DrawTextBox(x - (21 + 5), y, MAXSTRINGLENGTH, 1);
-	if (menusearch[0])
-		V_DrawString(x - 18, y + 8, V_ALLOWLOWERCASE, menusearch+1);
+
+	if (menusearch.length)
+		M_DrawTextInput(x - 18, y + 8, &menusearch, 0);
 	else
 		V_DrawString(x - 18, y + 8, V_ALLOWLOWERCASE|V_TRANSLUCENT, "Type to search...");
-	if (skullAnimCounter < 4)
-		V_DrawCharacter(x - 18 + V_StringWidth(menusearch+1, 0), y + 8,
-			'_' | 0x80, false);
 
 	x -= (21 + 5 + 16);
-	V_DrawSmallScaledPatch(x, y + 4, (menusearch[0] ? 0 : V_TRANSLUCENT), addonsp[NUM_EXT+3]);
+	V_DrawSmallScaledPatch(x, y + 4, (menusearch.length ? 0 : V_TRANSLUCENT), addonsp[NUM_EXT+3]);
 
 	x = BASEVIDWIDTH - x - 16;
 	V_DrawSmallScaledPatch(x, y + 4, ((!majormods) ? 0 : V_TRANSLUCENT), addonsp[NUM_EXT+4]);
@@ -6369,7 +6403,7 @@ static void M_AddonAutoLoad(INT32 ch)
 		S_StartSound(NULL, sfx_s26d);
 		return;
 	}
-	
+
 	// first, find the file //
 	path = va("%s"PATHSEP"%s", srb2home, AUTOLOADCONFIGFILENAME);
 	autoloadconfigfile = fopen(path, "a");
@@ -6384,7 +6418,7 @@ static void M_AddonAutoLoad(INT32 ch)
 		case EXT_CFG:
 			CONS_Printf("Added the \x82%s\x80 console script to the autoload configuration list.\n", dirmenu[dir_on[menudepthleft]]+DIR_STRING);
 			fprintf(autoloadconfigfile, "%s\n", dirmenu[dir_on[menudepthleft]]+DIR_STRING);
-				
+
 			S_StartSound(NULL, sfx_s221);
 			break;
 		case EXT_LUA:
@@ -6397,7 +6431,7 @@ static void M_AddonAutoLoad(INT32 ch)
 			{
 				CONS_Printf("Added \x82%s\x80 to the autoload configuration list.\n", dirmenu[dir_on[menudepthleft]]+DIR_STRING);
 				fprintf(autoloadconfigfile, "%s\n", dirmenu[dir_on[menudepthleft]]+DIR_STRING);
-				
+
 				S_StartSound(NULL, sfx_s221);
 			}
 			else
@@ -6407,47 +6441,10 @@ static void M_AddonAutoLoad(INT32 ch)
 			}
 			break;
 	}
-	
+
 	// lastly, do some last things and close the autoload config file //
 	fclose(autoloadconfigfile);
 }
-
-#define len menusearch[0]
-static boolean M_ChangeStringAddons(INT32 choice)
-{
-	choice = M_ShiftChar(choice);
-
-	switch (choice)
-	{
-		case KEY_DEL:
-			if (len)
-			{
-				len = menusearch[1] = 0;
-				return true;
-			}
-			break;
-		case KEY_BACKSPACE:
-			if (len)
-			{
-				menusearch[1+--len] = 0;
-				return true;
-			}
-			break;
-		default:
-			if (choice >= 32 && choice <= 127)
-			{
-				if (len < MAXSTRINGLENGTH - 1)
-				{
-					menusearch[1+len++] = (char)choice;
-					menusearch[1+len] = 0;
-					return true;
-				}
-			}
-			break;
-	}
-	return false;
-}
-#undef len
 
 // i hate myself
 static boolean DumbStartsWith(const char *pre, const char *str)
@@ -6461,8 +6458,10 @@ static void M_HandleAddons(INT32 choice)
 {
 	boolean exitmenu = false; // exit to previous menu
 
-	if (M_ChangeStringAddons(choice))
+	if (M_TextInputHandle(&menusearch, choice))
 	{
+		S_StartSound(NULL,sfx_menu1);
+
 		char *tempname = NULL;
 		if (dirmenu && dirmenu[dir_on[menudepthleft]])
 			tempname = Z_StrDup(dirmenu[dir_on[menudepthleft]]+DIR_STRING); // don't need to I_Error if can't make - not important, just QoL
@@ -6611,7 +6610,7 @@ static void M_HandleAddons(INT32 choice)
 								|| (strcmp(dirmenu[dir_on[menudepthleft]]+DIR_STRING, AUTOLOADCONFIGFILENAME) == 0)
 								|| (strcmp(dirmenu[dir_on[menudepthleft]]+DIR_STRING, "kartserv.cfg") == 0)
 								|| (strcmp(dirmenu[dir_on[menudepthleft]]+DIR_STRING, "kartexec.cfg") == 0))
-							{	
+							{
 								M_StartMessage(va("%c%s\x80\nYou can't autoload this builds' base console scripts, silly!\n They're already autoloaded on startup! \n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), dirmenu[dir_on[menudepthleft]]+DIR_STRING),NULL,MM_NOTHING);
 								S_StartSound(NULL, sfx_s26d);
 							}
@@ -7054,11 +7053,11 @@ static void DrawReplayHutReplayInfo(void)
 	switch (demolist[dir_on[menudepthleft]].type)
 	{
 	case MD_NOTLOADED:
-		V_DrawCenteredString(160, 40, V_SNAPTOTOP, "Loading replay information...");
+		V_DrawCenteredString(160, 40, V_SNAPTOTOP|MENUCAPS, "Loading replay information...");
 		break;
 
 	case MD_INVALID:
-		V_DrawCenteredString(160, 40, V_SNAPTOTOP|warningflags, "This replay cannot be played.");
+		V_DrawCenteredString(160, 40, V_SNAPTOTOP|warningflags|MENUCAPS, "This replay cannot be played.");
 		break;
 
 	case MD_SUBDIR:
@@ -7100,7 +7099,7 @@ static void DrawReplayHutReplayInfo(void)
 		if (mapheaderinfo[demolist[dir_on[menudepthleft]].map-1])
 		{
 			char *title = G_BuildMapTitle(demolist[dir_on[menudepthleft]].map);
-			V_DrawString(x, y, V_SNAPTOTOP, title);
+			V_DrawString(x, y, V_SNAPTOTOP|MENUCAPS, title);
 			Z_Free(title);
 		}
 		else
@@ -7117,26 +7116,24 @@ static void DrawReplayHutReplayInfo(void)
 		{
 			// No standings were loaded!
 			V_DrawString(x, y+39, V_SNAPTOTOP|V_ALLOWLOWERCASE|V_TRANSLUCENT, "No standings available.");
-
-
 			break;
 		}
 
-		V_DrawThinString(x, y+29, V_SNAPTOTOP|highlightflags, "WINNER");
+		V_DrawThinString(x, y+29, V_SNAPTOTOP|highlightflags|MENUCAPS, "Winner");
 		V_DrawString(x+38, y+30, V_SNAPTOTOP|V_ALLOWLOWERCASE, demolist[dir_on[menudepthleft]].standings[0].name);
 
 		if (demolist[dir_on[menudepthleft]].gametype == GT_RACE)
 		{
-			V_DrawThinString(x, y+39, V_SNAPTOTOP|highlightflags, "TIME");
+			V_DrawThinString(x, y+39, V_SNAPTOTOP|highlightflags|MENUCAPS, "Time");
 		}
 		else
 		{
-			V_DrawThinString(x, y+39, V_SNAPTOTOP|highlightflags, "SCORE");
+			V_DrawThinString(x, y+39, V_SNAPTOTOP|highlightflags|MENUCAPS, "Score");
 		}
 
 		if (demolist[dir_on[menudepthleft]].standings[0].timeorscore == (UINT32_MAX-1))
 		{
-			V_DrawThinString(x+32, y+40-1, V_SNAPTOTOP, "NO CONTEST");
+			V_DrawThinString(x+32, y+40-1, V_SNAPTOTOP|MENUCAPS, "No Contest");
 		}
 		else if (demolist[dir_on[menudepthleft]].gametype == GT_RACE)
 		{
@@ -7344,7 +7341,7 @@ static void M_DrawReplayHut(void)
 
 static void M_DrawReplayStartMenu(void)
 {
-	const char *warning;
+	const char *warning = "";
 	UINT8 i;
 
 	M_DrawGenericBackgroundMenu();
@@ -7447,7 +7444,8 @@ static void M_DrawReplayStartMenu(void)
 		return;
 	}
 
-	V_DrawSmallString(4, BASEVIDHEIGHT-14, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_ALLOWLOWERCASE, warning);
+	if (warning)
+		V_DrawSmallString(4, BASEVIDHEIGHT-14, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_ALLOWLOWERCASE, warning);
 }
 
 static boolean M_QuitReplayHut(void)
@@ -7882,7 +7880,7 @@ static void M_Options(INT32 choice)
 	OP_MainMenu[5].status = OP_MainMenu[6].status = (Playing() && !(server || IsPlayerAdmin(consoleplayer))) ? (IT_GRAYEDOUT) : (IT_STRING|IT_SUBMENU);
 
 	OP_MainMenu[10].status = (Playing()) ? (IT_GRAYEDOUT) : (IT_STRING|IT_CALL); // Play credits
-	
+
 	OP_MainMenu[13].status = (!cv_showlocalskinmenus.value) ? (IT_DISABLED) : (IT_CALL|IT_STRING);
 
 #ifdef HAVE_DISCORDRPC
@@ -8142,7 +8140,7 @@ static void M_DrawChecklist(void)
 		++line;
 		secretname = M_CreateSecretMenuOption(unlockables[i].name);
 
-		V_DrawString(8, (line*8), V_RETURN8|(unlockables[i].unlocked ? recommendedflags : warningflags), (secret ? secretname : unlockables[i].name));
+		V_DrawString(8, (line*8), V_RETURN8|MENUCAPS|(unlockables[i].unlocked ? recommendedflags : warningflags), (secret ? secretname : unlockables[i].name));
 
 		if (conditionSets[unlockables[i].conditionset - 1].numconditions)
 		{
@@ -8456,14 +8454,14 @@ static void M_DrawMusicTest(void)
 
 		if (curplaying && curplaying->authors[0])
 			V_DrawRightAlignedThinString(BASEVIDWIDTH-16, 46, V_ALLOWLOWERCASE, curplaying->authors);
-		
+
 		if (curplaying)
 		{
 			if (!curplaying->usage[0])
 				V_DrawString(vid.dupx, vid.height - 10*vid.dupy, V_NOSCALESTART|V_ALLOWLOWERCASE, va("%.6s", curplaying->name));
 			else
 				V_DrawSmallString(vid.dupx, vid.height - 5*vid.dupy, V_NOSCALESTART|V_ALLOWLOWERCASE, va("%.6s - %.255s\n", curplaying->name, curplaying->usage));
-			
+
 			if (cv_showmusicfilename.value)
 				V_DrawSmallString(0, 0, V_SNAPTOTOP|V_SNAPTOLEFT|V_ALLOWLOWERCASE, curplaying->filename);
 		}
@@ -8609,7 +8607,7 @@ static void M_HandleMusicTest(INT32 choice)
 		case KEY_ENTER:
 			S_StopSounds();
 			S_StopMusic();
-			curplaying = soundtestdefs[st_sel];		
+			curplaying = soundtestdefs[st_sel];
 			S_ChangeMusicInternal(curplaying->name, true);
 			break;
 
@@ -8700,8 +8698,8 @@ static void M_DrawStatsMaps(int location)
 		}
 		else if (dotopname)
 		{
-			V_DrawString(20,  y, highlightflags, "LEVEL NAME");
-			V_DrawString(256, y, highlightflags, "MEDALS");
+			V_DrawString(20,  y, highlightflags|MENUCAPS, "Level name");
+			V_DrawString(256, y, highlightflags|MENUCAPS, "Medals");
 			y += 8;
 			dotopname = false;
 		}
@@ -8710,11 +8708,11 @@ static void M_DrawStatsMaps(int location)
 		M_DrawMapEmblems(mnum+1, 295, y);
 
 		if (mapheaderinfo[mnum]->levelflags & LF_NOZONE)
-			V_DrawString(20, y, 0, va("%s %s",
+			V_DrawString(20, y, MENUCAPS, va("%s %s",
 				mapheaderinfo[mnum]->lvlttl,
 				mapheaderinfo[mnum]->actnum));
 		else
-			V_DrawString(20, y, 0, va("%s %s %s",
+			V_DrawString(20, y, MENUCAPS, va("%s %s %s",
 				mapheaderinfo[mnum]->lvlttl,
 				(mapheaderinfo[mnum]->zonttl[0] ? mapheaderinfo[mnum]->zonttl : "Zone"),
 				mapheaderinfo[mnum]->actnum));
@@ -8726,8 +8724,8 @@ static void M_DrawStatsMaps(int location)
 	}
 	if (dotopname && !location)
 	{
-		V_DrawString(20,  y, highlightflags, "LEVEL NAME");
-		V_DrawString(256, y, highlightflags, "MEDALS");
+		V_DrawString(20,  y, highlightflags|MENUCAPS, "Level name");
+		V_DrawString(256, y, highlightflags|MENUCAPS, "Medals");
 		y += 8;
 	}
 	else if (location)
@@ -8738,7 +8736,7 @@ static void M_DrawStatsMaps(int location)
 	{
 		if (i == -1)
 		{
-			V_DrawString(20, y, highlightflags, "EXTRA MEDALS");
+			V_DrawString(20, y, highlightflags|MENUCAPS, "Extra medals");
 			if (location)
 			{
 				y += 8;
@@ -8761,7 +8759,7 @@ static void M_DrawStatsMaps(int location)
 			else
 				V_DrawSmallScaledPatch(295, y, 0, W_CachePatchName("NEEDIT", PU_CACHE));
 
-			V_DrawString(20, y, 0, va("%s", exemblem->description));
+			V_DrawString(20, y, MENUCAPS, va("%s", exemblem->description));
 		}
 
 		y += 8;
@@ -8786,13 +8784,13 @@ static void M_DrawLevelStats(void)
 
 	M_DrawMenuTitle();
 
-	V_DrawString(20, 24, highlightflags, "Total Play Time:");
-	V_DrawCenteredString(BASEVIDWIDTH/2, 32, 0, va("%i hours, %i minutes, %i seconds",
+	V_DrawString(20, 24, highlightflags|MENUCAPS, "Total Play Time:");
+	V_DrawCenteredString(BASEVIDWIDTH/2, 32, MENUCAPS, va("%i hours, %i minutes, %i seconds",
 	                         G_TicsToHours(totalplaytime),
 	                         G_TicsToMinutes(totalplaytime, false),
 	                         G_TicsToSeconds(totalplaytime)));
-	V_DrawString(20, 42, highlightflags, "Total Matches:");
-	V_DrawRightAlignedString(BASEVIDWIDTH-16, 42, 0, va("%i played", matchesplayed));
+	V_DrawString(20, 42, highlightflags|MENUCAPS, "Total Matches:");
+	V_DrawRightAlignedString(BASEVIDWIDTH-16, 42, MENUCAPS, va("%i played", matchesplayed));
 
 	for (i = 0; i < NUMMAPS; i++)
 	{
@@ -8808,17 +8806,17 @@ static void M_DrawLevelStats(void)
 		besttime += mainrecords[i]->time;
 	}
 
-	V_DrawString(20, 62, highlightflags, "Combined time records:");
+	V_DrawString(20, 62, highlightflags|MENUCAPS, "Combined time records:");
 
 	sprintf(beststr, "%i:%02i:%02i.%02i", G_TicsToHours(besttime), G_TicsToMinutes(besttime, false), G_TicsToSeconds(besttime), G_TicsToCentiseconds(besttime));
 	V_DrawRightAlignedString(BASEVIDWIDTH-16, 62, (mapsunfinished ? warningflags : 0), beststr);
 
 	if (mapsunfinished)
-		V_DrawRightAlignedString(BASEVIDWIDTH-16, 70, warningflags, va("(%d unfinished)", mapsunfinished));
+		V_DrawRightAlignedString(BASEVIDWIDTH-16, 70, warningflags|MENUCAPS, va("(%d unfinished)", mapsunfinished));
 	else
-		V_DrawRightAlignedString(BASEVIDWIDTH-16, 70, recommendedflags, "(complete)");
+		V_DrawRightAlignedString(BASEVIDWIDTH-16, 70, recommendedflags|MENUCAPS, "(complete)");
 
-	V_DrawString(32, 70, 0, va("x %d/%d", M_CountEmblems(), numemblems+numextraemblems));
+	V_DrawString(32, 70, MENUCAPS, va("x %d/%d", M_CountEmblems(), numemblems+numextraemblems));
 	V_DrawSmallScaledPatch(20, 70, 0, W_CachePatchName("GOTITA", PU_STATIC));
 
 	M_DrawStatsMaps(statsLocation);
@@ -8906,7 +8904,7 @@ void M_DrawTimeAttackMenu(void)
 		if (i == itemOn)
 			cursory = y;
 
-		V_DrawString(x, y, (dispstatus == IT_WHITESTRING) ? highlightflags : 0 , currentMenu->menuitems[i].text);
+		V_DrawString(x, y, ((dispstatus == IT_WHITESTRING) ? highlightflags : 0)|MENUCAPS, currentMenu->menuitems[i].text);
 
 		// Cvar specific handling
 		if ((currentMenu->menuitems[i].status & IT_TYPE) == IT_CVAR)
@@ -8931,7 +8929,7 @@ void M_DrawTimeAttackMenu(void)
 					soffset = 0;
 
 				// Should see nothing but strings
-				V_DrawString(BASEVIDWIDTH - x - soffset - strw, y, highlightflags, str);
+				V_DrawString(BASEVIDWIDTH - x - soffset - strw, y, highlightflags|MENUCAPS, str);
 
 				if (i == itemOn)
 				{
@@ -8961,7 +8959,7 @@ void M_DrawTimeAttackMenu(void)
 
 	// DRAW THE SKULL CURSOR
 	V_DrawScaledPatch(x - 24, cursory, 0, W_CachePatchName("M_CURSOR", PU_CACHE));
-	V_DrawString(x, cursory, highlightflags, currentMenu->menuitems[itemOn].text);
+	V_DrawString(x, cursory, highlightflags|MENUCAPS, currentMenu->menuitems[itemOn].text);
 
 	// Level record list
 	if (cv_nextmap.value)
@@ -8976,10 +8974,10 @@ void M_DrawTimeAttackMenu(void)
 
 		V_DrawFill((BASEVIDWIDTH - dupadjust)>>1, 78, dupadjust, 36, 239);
 
-		V_DrawRightAlignedString(149, 80, highlightflags, "BEST LAP:");
+		V_DrawRightAlignedString(149, 80, highlightflags|MENUCAPS, "Best Lap:");
 		K_drawKartTimestamp(lap, 19, 86, 0, 2);
 
-		V_DrawRightAlignedString(292, 80, highlightflags, "BEST TIME:");
+		V_DrawRightAlignedString(292, 80, highlightflags|MENUCAPS, "Best Time:");
 		K_drawKartTimestamp(time, 162, 86, cv_nextmap.value, 1);
 	}
 
@@ -8991,7 +8989,7 @@ void M_DrawTimeAttackMenu(void)
 		for (i = 0; i < 4; ++i)
 		{
 			y = currentMenu->y+SP_TimeAttackMenu[i].alphaKey;
-			V_DrawString(x, y, V_TRANSLUCENT, SP_TimeAttackMenu[i].text);
+			V_DrawString(x, y, V_TRANSLUCENT|MENUCAPS, SP_TimeAttackMenu[i].text);
 			ncv = (consvar_t *)SP_TimeAttackMenu[i].itemaction;
 			if (SP_TimeAttackMenu[i].status & IT_CV_STRING)
 			{
@@ -9008,7 +9006,7 @@ void M_DrawTimeAttackMenu(void)
 					soffset = 0;
 
 				// Should see nothing but strings
-				V_DrawString(BASEVIDWIDTH - x - soffset - strw, y, highlightflags|V_TRANSLUCENT, str);
+				V_DrawString(BASEVIDWIDTH - x - soffset - strw, y, highlightflags|V_TRANSLUCENT|MENUCAPS, str);
 			}
 		}
 	}
@@ -9474,10 +9472,10 @@ static void M_Connect(INT32 choice)
 {
 	// do not call menuexitfunc
 	M_ClearMenus(false);
-	
+
 	CV_Set(&cv_lastserver, I_GetNodeAddress(serverlist[choice-FIRSTSERVERLINE + serverlistpage * SERVERS_PER_PAGE].node));
-		
-	COM_BufAddText(va("connect node %d\n", serverlist[choice-FIRSTSERVERLINE + serverlistpage * SERVERS_PER_PAGE].node));	
+
+	COM_BufAddText(va("connect node %d\n", serverlist[choice-FIRSTSERVERLINE + serverlistpage * SERVERS_PER_PAGE].node));
 }
 
 static void M_Refresh(INT32 choice)
@@ -9723,7 +9721,7 @@ void M_SortServerList(void)
 
 #ifndef NONET
 #ifdef UPDATE_ALERT
-#ifdef MASTERSERVER	
+#ifdef MASTERSERVER
 static void M_CheckMODVersion(int id)
 {
 	char updatestring[500];
@@ -9998,9 +9996,9 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 		const char *item2 = gamecontrol[gc_fire][1] != 0 ? G_KeynumToString(gamecontrol[gc_fire][1]) : NULL;
 
 		if (item1 != NULL && item2 != NULL)
-			snprintf(encoretoggle, 32, "%s/%s: Toggle Encore", item1, item2);
+			snprintf(encoretoggle, 32, "%s/%s - Toggle Encore", item1, item2);
 		else
-			snprintf(encoretoggle, 32, "%s: Toggle Encore", item1 != NULL ? item1 : item2 != NULL ? item2 : "Item");
+			snprintf(encoretoggle, 32, "%s - Toggle Encore", item1 != NULL ? item1 : item2 != NULL ? item2 : "Item");
 
 		V_DrawThinString(1, BASEVIDHEIGHT-8-1, V_SNAPTOLEFT|V_SNAPTOBOTTOM|V_TRANSLUCENT|V_ALLOWLOWERCASE, encoretoggle);
 	}
@@ -10038,10 +10036,10 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 		len = strlen(addonname);
 #define charsonside 14
 		if (len > charlimit)
-			V_DrawThinString(x+w+5, y+i-8, V_TRANSLUCENT, va("%.*s...%s", charsonside, addonname, addonname+((len-charlimit) + charsonside))); // variable reuse...
+			V_DrawThinString(x+w+5, y+i-8, V_TRANSLUCENT|MENUCAPS, va("%.*s...%s", charsonside, addonname, addonname+((len-charlimit) + charsonside))); // variable reuse...
 #undef charsonside
 		else
-			V_DrawThinString(x+w+5, y+i-8, V_TRANSLUCENT, addonname); // variable reuse...
+			V_DrawThinString(x+w+5, y+i-8, V_TRANSLUCENT|MENUCAPS, addonname); // variable reuse...
 	}
 
 	if (!cv_kartencore.value || gamestate == GS_TIMEATTACK || cv_newgametype.value != GT_RACE)
@@ -10223,19 +10221,17 @@ static void M_DrawMPMainMenu(void)
 
 	// use generic drawer for cursor, items and title
 	M_DrawGenericMenu();
-	
-	INT32 lowercase = !cv_menucaps.value ? V_ALLOWLOWERCASE : 0;
 
 #ifndef NONET
 #if MAXPLAYERS != 16
 Update the maxplayers label...
 #endif
 	V_DrawRightAlignedString(BASEVIDWIDTH-x, y+MP_MainMenu[4].alphaKey,
-		((itemOn == 4) ? highlightflags : 0)|lowercase, "(2-16 Players)");
+		((itemOn == 4) ? highlightflags : 0)|MENUCAPS, "(2-16 Players)");
 #endif
 
 	V_DrawRightAlignedString(BASEVIDWIDTH-x, y+MP_MainMenu[5].alphaKey,
-		((itemOn == 5) ? highlightflags : 0)|lowercase,
+		((itemOn == 5) ? highlightflags : 0)|MENUCAPS,
 		"(2-4 players)"
 		);
 
@@ -10430,7 +10426,7 @@ static void M_ConnectLastServer(INT32 choice)
 	}
 
 	M_ClearMenus(true);
-	COM_BufAddText(va("connect \"%s\"\n", cv_lastserver.string));	
+	COM_BufAddText(va("connect \"%s\"\n", cv_lastserver.string));
 }
 
 // Tails 11-19-2002
@@ -10601,11 +10597,11 @@ static void M_DrawSetupMultiPlayerMenu(void)
 			statoffset = 0;
 			tw = V_StringWidth("Character", 0);//V_StringWidth(GETSELECTEDSKINNAME, 0);
 			st = V_StringWidth(GETSELECTEDSKINNAME, 0);
-			
+
 			INT32 selectedskin = (itemOn == 1 && setupm_skinselect < numskins ? skinsorted[setupm_skinselect] : setupm_fakeskin);
 			speed = skins[selectedskin].kartspeed;
-			weight = skins[selectedskin].kartweight;		
-				
+			weight = skins[selectedskin].kartweight;
+
 			V_DrawString((mx+(tw/2)) - (st/2), my + 37,
 				((MP_PlayerSetupMenu[2].status & IT_TYPE) == IT_SPACE ? V_TRANSLUCENT : 0) | highlightflags | V_ALLOWLOWERCASE,
 				GETSELECTEDSKINNAME);
@@ -10613,7 +10609,7 @@ static void M_DrawSetupMultiPlayerMenu(void)
 				statoffset = 50;
 			else
 				statoffset = 113;
-				
+
 			V_DrawString(statx - statoffset, staty - 10, V_6WIDTHSPACE, va("\x84%dS \x87%dW", GETSELECTEDSPEED, GETSELECTEDWEIGHT));
 #undef GETSELECTEDSKINNAME
 #undef GETSELECTEDSPEED
@@ -10678,7 +10674,7 @@ static void M_DrawSetupMultiPlayerMenu(void)
 				V_DrawCharacter(mx + 2 + st + (skullAnimCounter/5), my + 164,
 					'\x1D' | highlightflags, false); // right arrow
 			}
-			break;	
+			break;
 		case SKINMENUTYPE_GRID:
 		case SKINMENUTYPE_2D:
 			V_DrawString(mx, my + 152, highlightflags | V_ALLOWLOWERCASE, KartColor_Names[setupm_fakecolor]); // SRB2kart
@@ -10722,8 +10718,8 @@ static void M_DrawSetupMultiPlayerMenu(void)
 			{
 				//Background
 				V_DrawScaledPatch(statx - 50, staty + 4, 0, W_CachePatchName("K_STATNB", PU_CACHE));
-				
-				//Speed				
+
+				//Speed
 				for (i = 0; i < GETSELECTEDSPEED; i++) // draw the stat bars
 				{
 					if (i == 0)
@@ -10733,11 +10729,11 @@ static void M_DrawSetupMultiPlayerMenu(void)
 					else
 						V_DrawScaledPatch(statx - 45, staty + 63 -(5 *i), 0, W_CachePatchName("K_STATN2", PU_CACHE));
 				}
-					
+
 				//Weight
 				for (i = 0; i < GETSELECTEDWEIGHT; i++) // draw the stat bars
 				{
-					
+
 					if (i == 0)
 						V_DrawScaledPatch(statx - 30, staty + 63, 0, W_CachePatchName("K_STATN4", PU_CACHE));
 					else if (i == GETSELECTEDWEIGHT -1)
@@ -11013,10 +11009,10 @@ static void M_DrawSetupMultiPlayerMenu(void)
 #define indexwidth 8
 	{
 		INT32 colwidth = ((BASEVIDWIDTH-(2*mx))-charw)/(2*indexwidth);
-		
+
 		if (cv_skinselectmenu.value == SKINMENUTYPE_EXTENDED)
 			colwidth = colwidth - 10;
-		
+
 		INT32 j = -colwidth;
 		INT16 col = setupm_fakecolor - colwidth;
 		INT32 x = mx;
@@ -11150,7 +11146,7 @@ static void M_DrawSetupMultiPlayerMenu(void)
 		frame = 0; // Try to use standing frame
 
 	sprframe = &sprdef->spriteframes[frame];
-	
+
 	//minenice's speen css, it's a piece of shit but hey
 	//patch = W_CachePatchNum(sprframe->lumppat[1], PU_CACHE);
 	speenframe = (I_GetTime()*cv_skinselectspin.value/TICRATE + 1)%8;
@@ -11220,7 +11216,7 @@ static void M_HandleSetupMultiPlayer(INT32 choice)
 					if (setupm_skinselect < ROUNDSKINSUPTO8 - SKINGRIDWIDTH) //if we arent at the bottom of the menu
 					{
 						setupm_skinselect += SKINGRIDWIDTH;
-						
+
 						if (cv_skinselectmenu.value == SKINMENUTYPE_GRID){
 							if (setupm_skinselect >= ((setupm_skinypos-1)+SKINGRIDHEIGHT)*8 && setupm_skinypos < (ROUNDSKINSUPTO8/8)-SKINGRIDHEIGHT)
 								setupm_skinypos++;
@@ -11293,9 +11289,9 @@ static void M_HandleSetupMultiPlayer(INT32 choice)
 					else if (cv_skinselectmenu.value == SKINMENUTYPE_EXTENDED){
 							setupm_skinypos = (((numskins / SKINGRIDWIDTH) - (SKINGRIDHEIGHT-1)-2) > 0 ? ((numskins / SKINGRIDWIDTH) - (SKINGRIDHEIGHT-1)-2) : 0);
 							M_PrevOpt();
-						
+
 					}
-						
+
 				}
 				else
 					M_PrevOpt();
@@ -11756,7 +11752,7 @@ static boolean M_QuitMultiPlayerMenu(void)
 	}
 	// you know what? always putting these in the buffer won't hurt anything.
 	COM_BufAddText (va("%s \"%s\"\n",setupm_cvskin->name,skins[setupm_fakeskin].name));
-	COM_BufAddText (va("%s %d\n",setupm_cvcolor->name,setupm_fakecolor));	
+	COM_BufAddText (va("%s %d\n",setupm_cvcolor->name,setupm_fakecolor));
 
 	return true;
 }
@@ -11841,30 +11837,30 @@ static void M_DrawJoystick(void)
 		//M_DrawSaveLoadBorder(OP_JoystickSetDef.x, OP_JoystickSetDef.y+LINEHEIGHT*i);
 
 #ifdef JOYSTICK_HOTPLUG
-		if (atoi(cv_usejoystick4.string) > I_NumJoys())
-			compareval4 = atoi(cv_usejoystick4.string);
+		if (atoi(cv_usejoystick[3].string) > I_NumJoys())
+			compareval4 = atoi(cv_usejoystick[3].string);
 		else
-			compareval4 = cv_usejoystick4.value;
+			compareval4 = cv_usejoystick[3].value;
 
-		if (atoi(cv_usejoystick3.string) > I_NumJoys())
-			compareval3 = atoi(cv_usejoystick3.string);
+		if (atoi(cv_usejoystick[2].string) > I_NumJoys())
+			compareval3 = atoi(cv_usejoystick[2].string);
 		else
-			compareval3 = cv_usejoystick3.value;
+			compareval3 = cv_usejoystick[2].value;
 
-		if (atoi(cv_usejoystick2.string) > I_NumJoys())
-			compareval2 = atoi(cv_usejoystick2.string);
+		if (atoi(cv_usejoystick[1].string) > I_NumJoys())
+			compareval2 = atoi(cv_usejoystick[1].string);
 		else
-			compareval2 = cv_usejoystick2.value;
+			compareval2 = cv_usejoystick[1].value;
 
-		if (atoi(cv_usejoystick.string) > I_NumJoys())
-			compareval = atoi(cv_usejoystick.string);
+		if (atoi(cv_usejoystick[0].string) > I_NumJoys())
+			compareval = atoi(cv_usejoystick[0].string);
 		else
-			compareval = cv_usejoystick.value;
+			compareval = cv_usejoystick[0].value;
 #else
-		compareval4 = cv_usejoystick4.value;
-		compareval3 = cv_usejoystick3.value;
-		compareval2 = cv_usejoystick2.value;
-		compareval = cv_usejoystick.value;
+		compareval4 = cv_usejoystick[3].value;
+		compareval3 = cv_usejoystick[2].value;
+		compareval2 = cv_usejoystick[1].value;
+		compareval = cv_usejoystick[0].value;
 #endif
 
 		if ((setupcontrolplayer == 4 && (i == compareval4))
@@ -11902,14 +11898,14 @@ void M_SetupJoystickMenu(INT32 choice)
 		//
 		// Update cv_usejoystick.string here so that the user can
 		// properly change this value.
-		if (i == cv_usejoystick.value)
-			CV_SetValue(&cv_usejoystick, i);
-		if (i == cv_usejoystick2.value)
-			CV_SetValue(&cv_usejoystick2, i);
-		if (i == cv_usejoystick3.value)
-			CV_SetValue(&cv_usejoystick3, i);
-		if (i == cv_usejoystick4.value)
-			CV_SetValue(&cv_usejoystick4, i);
+		if (i == cv_usejoystick[0].value)
+			CV_SetValue(&cv_usejoystick[0], i);
+		if (i == cv_usejoystick[1].value)
+			CV_SetValue(&cv_usejoystick[1], i);
+		if (i == cv_usejoystick[2].value)
+			CV_SetValue(&cv_usejoystick[2], i);
+		if (i == cv_usejoystick[3].value)
+			CV_SetValue(&cv_usejoystick[3], i);
 #endif
 	}
 
@@ -11952,27 +11948,27 @@ static void M_AssignJoystick(INT32 choice)
 
 	if (setupcontrolplayer == 4)
 	{
-		oldchoice = oldstringchoice = atoi(cv_usejoystick4.string) > numjoys ? atoi(cv_usejoystick4.string) : cv_usejoystick4.value;
-		CV_SetValue(&cv_usejoystick4, choice);
+		oldchoice = oldstringchoice = atoi(cv_usejoystick[3].string) > numjoys ? atoi(cv_usejoystick[3].string) : cv_usejoystick[3].value;
+		CV_SetValue(&cv_usejoystick[3], choice);
 
 		// Just in case last-minute changes were made to cv_usejoystick.value,
 		// update the string too
 		// But don't do this if we're intentionally setting higher than numjoys
 		if (choice <= numjoys)
 		{
-			CV_SetValue(&cv_usejoystick4, cv_usejoystick4.value);
+			CV_SetValue(&cv_usejoystick[3], cv_usejoystick[3].value);
 
 			// reset this so the comparison is valid
 			if (oldchoice > numjoys)
-				oldchoice = cv_usejoystick4.value;
+				oldchoice = cv_usejoystick[3].value;
 
 			if (oldchoice != choice)
 			{
 				if (choice && oldstringchoice > numjoys) // if we did not select "None", we likely selected a used device
-					CV_SetValue(&cv_usejoystick4, (oldstringchoice > numjoys ? oldstringchoice : oldchoice));
+					CV_SetValue(&cv_usejoystick[3], (oldstringchoice > numjoys ? oldstringchoice : oldchoice));
 
 				if (oldstringchoice ==
-					(atoi(cv_usejoystick4.string) > numjoys ? atoi(cv_usejoystick4.string) : cv_usejoystick4.value))
+					(atoi(cv_usejoystick[3].string) > numjoys ? atoi(cv_usejoystick[3].string) : cv_usejoystick[3].value))
 					M_StartMessage("This joystick is used by another\n"
 								   "player. Reset the joystick\n"
 								   "for that player first.\n\n"
@@ -11982,27 +11978,27 @@ static void M_AssignJoystick(INT32 choice)
 	}
 	else if (setupcontrolplayer == 3)
 	{
-		oldchoice = oldstringchoice = atoi(cv_usejoystick3.string) > numjoys ? atoi(cv_usejoystick3.string) : cv_usejoystick3.value;
-		CV_SetValue(&cv_usejoystick3, choice);
+		oldchoice = oldstringchoice = atoi(cv_usejoystick[2].string) > numjoys ? atoi(cv_usejoystick[2].string) : cv_usejoystick[2].value;
+		CV_SetValue(&cv_usejoystick[2], choice);
 
 		// Just in case last-minute changes were made to cv_usejoystick.value,
 		// update the string too
 		// But don't do this if we're intentionally setting higher than numjoys
 		if (choice <= numjoys)
 		{
-			CV_SetValue(&cv_usejoystick3, cv_usejoystick3.value);
+			CV_SetValue(&cv_usejoystick[2], cv_usejoystick[2].value);
 
 			// reset this so the comparison is valid
 			if (oldchoice > numjoys)
-				oldchoice = cv_usejoystick3.value;
+				oldchoice = cv_usejoystick[2].value;
 
 			if (oldchoice != choice)
 			{
 				if (choice && oldstringchoice > numjoys) // if we did not select "None", we likely selected a used device
-					CV_SetValue(&cv_usejoystick3, (oldstringchoice > numjoys ? oldstringchoice : oldchoice));
+					CV_SetValue(&cv_usejoystick[2], (oldstringchoice > numjoys ? oldstringchoice : oldchoice));
 
 				if (oldstringchoice ==
-					(atoi(cv_usejoystick3.string) > numjoys ? atoi(cv_usejoystick3.string) : cv_usejoystick3.value))
+					(atoi(cv_usejoystick[2].string) > numjoys ? atoi(cv_usejoystick[2].string) : cv_usejoystick[2].value))
 					M_StartMessage("This joystick is used by another\n"
 								   "player. Reset the joystick\n"
 								   "for that player first.\n\n"
@@ -12012,27 +12008,27 @@ static void M_AssignJoystick(INT32 choice)
 	}
 	else if (setupcontrolplayer == 2)
 	{
-		oldchoice = oldstringchoice = atoi(cv_usejoystick2.string) > numjoys ? atoi(cv_usejoystick2.string) : cv_usejoystick2.value;
-		CV_SetValue(&cv_usejoystick2, choice);
+		oldchoice = oldstringchoice = atoi(cv_usejoystick[1].string) > numjoys ? atoi(cv_usejoystick[1].string) : cv_usejoystick[1].value;
+		CV_SetValue(&cv_usejoystick[1], choice);
 
 		// Just in case last-minute changes were made to cv_usejoystick.value,
 		// update the string too
 		// But don't do this if we're intentionally setting higher than numjoys
 		if (choice <= numjoys)
 		{
-			CV_SetValue(&cv_usejoystick2, cv_usejoystick2.value);
+			CV_SetValue(&cv_usejoystick[1], cv_usejoystick[1].value);
 
 			// reset this so the comparison is valid
 			if (oldchoice > numjoys)
-				oldchoice = cv_usejoystick2.value;
+				oldchoice = cv_usejoystick[1].value;
 
 			if (oldchoice != choice)
 			{
 				if (choice && oldstringchoice > numjoys) // if we did not select "None", we likely selected a used device
-					CV_SetValue(&cv_usejoystick2, (oldstringchoice > numjoys ? oldstringchoice : oldchoice));
+					CV_SetValue(&cv_usejoystick[1], (oldstringchoice > numjoys ? oldstringchoice : oldchoice));
 
 				if (oldstringchoice ==
-					(atoi(cv_usejoystick2.string) > numjoys ? atoi(cv_usejoystick2.string) : cv_usejoystick2.value))
+					(atoi(cv_usejoystick[1].string) > numjoys ? atoi(cv_usejoystick[1].string) : cv_usejoystick[1].value))
 					M_StartMessage("This joystick is used by another\n"
 					               "player. Reset the joystick\n"
 					               "for that player first.\n\n"
@@ -12042,27 +12038,27 @@ static void M_AssignJoystick(INT32 choice)
 	}
 	else if (setupcontrolplayer == 1)
 	{
-		oldchoice = oldstringchoice = atoi(cv_usejoystick.string) > numjoys ? atoi(cv_usejoystick.string) : cv_usejoystick.value;
-		CV_SetValue(&cv_usejoystick, choice);
+		oldchoice = oldstringchoice = atoi(cv_usejoystick[0].string) > numjoys ? atoi(cv_usejoystick[0].string) : cv_usejoystick[0].value;
+		CV_SetValue(&cv_usejoystick[0], choice);
 
 		// Just in case last-minute changes were made to cv_usejoystick.value,
 		// update the string too
 		// But don't do this if we're intentionally setting higher than numjoys
 		if (choice <= numjoys)
 		{
-			CV_SetValue(&cv_usejoystick, cv_usejoystick.value);
+			CV_SetValue(&cv_usejoystick[0], cv_usejoystick[0].value);
 
 			// reset this so the comparison is valid
 			if (oldchoice > numjoys)
-				oldchoice = cv_usejoystick.value;
+				oldchoice = cv_usejoystick[0].value;
 
 			if (oldchoice != choice)
 			{
 				if (choice && oldstringchoice > numjoys) // if we did not select "None", we likely selected a used device
-					CV_SetValue(&cv_usejoystick, (oldstringchoice > numjoys ? oldstringchoice : oldchoice));
+					CV_SetValue(&cv_usejoystick[0], (oldstringchoice > numjoys ? oldstringchoice : oldchoice));
 
 				if (oldstringchoice ==
-					(atoi(cv_usejoystick.string) > numjoys ? atoi(cv_usejoystick.string) : cv_usejoystick.value))
+					(atoi(cv_usejoystick[0].string) > numjoys ? atoi(cv_usejoystick[0].string) : cv_usejoystick[0].value))
 					M_StartMessage("This joystick is used by another\n"
 					               "player. Reset the joystick\n"
 					               "for that player first.\n\n"
@@ -12072,13 +12068,13 @@ static void M_AssignJoystick(INT32 choice)
 	}
 #else
 	if (setupcontrolplayer == 4)
-		CV_SetValue(&cv_usejoystick4, choice);
+		CV_SetValue(&cv_usejoystick[3], choice);
 	else if (setupcontrolplayer == 3)
-		CV_SetValue(&cv_usejoystick3, choice);
+		CV_SetValue(&cv_usejoystick[2], choice);
 	else if (setupcontrolplayer == 2)
-		CV_SetValue(&cv_usejoystick2, choice);
+		CV_SetValue(&cv_usejoystick[1], choice);
 	else if (setupcontrolplayer == 1)
-		CV_SetValue(&cv_usejoystick, choice);
+		CV_SetValue(&cv_usejoystick[0], choice);
 #endif
 }
 
@@ -12432,49 +12428,49 @@ static void M_ResetControlsResponse(INT32 ch)
 	switch (setupcontrolplayer)
 	{
 		case 4:
-			CV_StealthSet(&cv_usejoystick4, cv_usejoystick4.defaultvalue);
-			CV_StealthSet(&cv_turnaxis4, cv_turnaxis4.defaultvalue);
-			CV_StealthSet(&cv_moveaxis4, cv_moveaxis4.defaultvalue);
-			CV_StealthSet(&cv_brakeaxis4, cv_brakeaxis4.defaultvalue);
-			CV_StealthSet(&cv_aimaxis4, cv_aimaxis4.defaultvalue);
-			CV_StealthSet(&cv_lookaxis4, cv_lookaxis4.defaultvalue);
-			CV_StealthSet(&cv_fireaxis4, cv_fireaxis4.defaultvalue);
-			CV_StealthSet(&cv_driftaxis4, cv_driftaxis4.defaultvalue);
-			CV_StealthSet(&cv_lookbackaxis4, cv_lookbackaxis4.defaultvalue);
+			CV_StealthSet(&cv_usejoystick[3],	cv_usejoystick[3].defaultvalue);
+			CV_StealthSet(&cv_turnaxis[3],		cv_turnaxis[3].defaultvalue);
+			CV_StealthSet(&cv_moveaxis[3],		cv_moveaxis[3].defaultvalue);
+			CV_StealthSet(&cv_brakeaxis[3],		cv_brakeaxis[3].defaultvalue);
+			CV_StealthSet(&cv_aimaxis[3],		cv_aimaxis[3].defaultvalue);
+			CV_StealthSet(&cv_lookaxis[3],		cv_lookaxis[3].defaultvalue);
+			CV_StealthSet(&cv_fireaxis[3],		cv_fireaxis[3].defaultvalue);
+			CV_StealthSet(&cv_driftaxis[3],		cv_driftaxis[3].defaultvalue);
+			CV_StealthSet(&cv_lookbackaxis[3],	cv_lookbackaxis[3].defaultvalue);
 			break;
 		case 3:
-			CV_StealthSet(&cv_usejoystick3, cv_usejoystick3.defaultvalue);
-			CV_StealthSet(&cv_turnaxis3, cv_turnaxis3.defaultvalue);
-			CV_StealthSet(&cv_moveaxis3, cv_moveaxis3.defaultvalue);
-			CV_StealthSet(&cv_brakeaxis3, cv_brakeaxis3.defaultvalue);
-			CV_StealthSet(&cv_aimaxis3, cv_aimaxis3.defaultvalue);
-			CV_StealthSet(&cv_lookaxis3, cv_lookaxis3.defaultvalue);
-			CV_StealthSet(&cv_fireaxis3, cv_fireaxis3.defaultvalue);
-			CV_StealthSet(&cv_driftaxis3, cv_driftaxis3.defaultvalue);
-			CV_StealthSet(&cv_lookbackaxis3, cv_lookbackaxis3.defaultvalue);
+			CV_StealthSet(&cv_usejoystick[2],	cv_usejoystick[2].defaultvalue);
+			CV_StealthSet(&cv_turnaxis[2],		cv_turnaxis[2].defaultvalue);
+			CV_StealthSet(&cv_moveaxis[2],		cv_moveaxis[2].defaultvalue);
+			CV_StealthSet(&cv_brakeaxis[2],		cv_brakeaxis[2].defaultvalue);
+			CV_StealthSet(&cv_aimaxis[2],		cv_aimaxis[2].defaultvalue);
+			CV_StealthSet(&cv_lookaxis[2],		cv_lookaxis[2].defaultvalue);
+			CV_StealthSet(&cv_fireaxis[2],		cv_fireaxis[2].defaultvalue);
+			CV_StealthSet(&cv_driftaxis[2],		cv_driftaxis[2].defaultvalue);
+			CV_StealthSet(&cv_lookbackaxis[2],	cv_lookbackaxis[2].defaultvalue);
 			break;
 		case 2:
-			CV_StealthSet(&cv_usejoystick2, cv_usejoystick2.defaultvalue);
-			CV_StealthSet(&cv_turnaxis2, cv_turnaxis2.defaultvalue);
-			CV_StealthSet(&cv_moveaxis2, cv_moveaxis2.defaultvalue);
-			CV_StealthSet(&cv_brakeaxis2, cv_brakeaxis2.defaultvalue);
-			CV_StealthSet(&cv_aimaxis2, cv_aimaxis2.defaultvalue);
-			CV_StealthSet(&cv_lookaxis2, cv_lookaxis2.defaultvalue);
-			CV_StealthSet(&cv_fireaxis2, cv_fireaxis2.defaultvalue);
-			CV_StealthSet(&cv_driftaxis2, cv_driftaxis2.defaultvalue);
-			CV_StealthSet(&cv_lookbackaxis2, cv_lookbackaxis2.defaultvalue);
+			CV_StealthSet(&cv_usejoystick[1],	cv_usejoystick[1].defaultvalue);
+			CV_StealthSet(&cv_turnaxis[1],		cv_turnaxis[1].defaultvalue);
+			CV_StealthSet(&cv_moveaxis[1],		cv_moveaxis[1].defaultvalue);
+			CV_StealthSet(&cv_brakeaxis[1],		cv_brakeaxis[1].defaultvalue);
+			CV_StealthSet(&cv_aimaxis[1],		cv_aimaxis[1].defaultvalue);
+			CV_StealthSet(&cv_lookaxis[1],		cv_lookaxis[1].defaultvalue);
+			CV_StealthSet(&cv_fireaxis[1],		cv_fireaxis[1].defaultvalue);
+			CV_StealthSet(&cv_driftaxis[1],		cv_driftaxis[1].defaultvalue);
+			CV_StealthSet(&cv_lookbackaxis[1],	cv_lookbackaxis[1].defaultvalue);
 			break;
 		case 1:
 		default:
-			CV_StealthSet(&cv_usejoystick, cv_usejoystick.defaultvalue);
-			CV_StealthSet(&cv_turnaxis, cv_turnaxis.defaultvalue);
-			CV_StealthSet(&cv_moveaxis, cv_moveaxis.defaultvalue);
-			CV_StealthSet(&cv_brakeaxis, cv_brakeaxis.defaultvalue);
-			CV_StealthSet(&cv_aimaxis, cv_aimaxis.defaultvalue);
-			CV_StealthSet(&cv_lookaxis, cv_lookaxis.defaultvalue);
-			CV_StealthSet(&cv_fireaxis, cv_fireaxis.defaultvalue);
-			CV_StealthSet(&cv_driftaxis, cv_driftaxis.defaultvalue);
-			CV_StealthSet(&cv_lookbackaxis, cv_lookbackaxis.defaultvalue);
+			CV_StealthSet(&cv_usejoystick[0],	cv_usejoystick[0].defaultvalue);
+			CV_StealthSet(&cv_turnaxis[0],		cv_turnaxis[0].defaultvalue);
+			CV_StealthSet(&cv_moveaxis[0],		cv_moveaxis[0].defaultvalue);
+			CV_StealthSet(&cv_brakeaxis[0],		cv_brakeaxis[0].defaultvalue);
+			CV_StealthSet(&cv_aimaxis[0],		cv_aimaxis[0].defaultvalue);
+			CV_StealthSet(&cv_lookaxis[0],		cv_lookaxis[0].defaultvalue);
+			CV_StealthSet(&cv_fireaxis[0],		cv_fireaxis[0].defaultvalue);
+			CV_StealthSet(&cv_driftaxis[0],		cv_driftaxis[0].defaultvalue);
+			CV_StealthSet(&cv_lookbackaxis[0],	cv_lookbackaxis[0].defaultvalue);
 			break;
 	}
 
@@ -12581,11 +12577,9 @@ static void M_VideoModeMenu(INT32 choice)
 static void M_DrawVideoMenu(void)
 {
 	M_DrawGenericMenu();
-	
-	INT32 lowercase = !cv_menucaps.value ? V_ALLOWLOWERCASE : 0;
 
 	V_DrawRightAlignedString(BASEVIDWIDTH - currentMenu->x, currentMenu->y + OP_VideoOptionsMenu[0].alphaKey,
-		(SCR_IsAspectCorrect(vid.width, vid.height) ? recommendedflags : highlightflags)|lowercase,
+		(SCR_IsAspectCorrect(vid.width, vid.height) ? recommendedflags : highlightflags)|MENUCAPS,
 			va("%dx%d", vid.width, vid.height));
 }
 
@@ -12674,7 +12668,7 @@ static void M_DrawLocalSkinMenu(void)
 		else
 			multi_tics += multi_state->tics * FRACUNIT;
 	}
-	
+
 	// skin 0 is default player sprite
 	if (R_AnySkinAvailable(cv_fakelocalskin.string) != -1)
 	{
@@ -12683,7 +12677,7 @@ static void M_DrawLocalSkinMenu(void)
 	}
 	else
 	{
-		// ATTEMPT TO FIND REAL SKIN	
+		// ATTEMPT TO FIND REAL SKIN
 		if (R_AnySkinAvailable(cv_skin.string) != -1)
 		{
 			sprdef = &allskins[R_AnySkinAvailable(cv_skin.string)].spritedef;
@@ -12750,17 +12744,17 @@ static void M_DrawVideoMode(void)
 	M_DrawMenuTitle();
 
 	V_DrawCenteredString(BASEVIDWIDTH/2, OP_VideoModeDef.y,
-		highlightflags, "Choose mode, reselect to change default");
+		highlightflags|MENUCAPS, "Choose mode, reselect to change default");
 
 	row = 41;
 	col = OP_VideoModeDef.y + 14;
 	for (i = 0; i < vidm_nummodes; i++)
 	{
 		if (i == vidm_selected)
-			V_DrawString(row, col, highlightflags, modedescs[i].desc);
+			V_DrawString(row, col, highlightflags|MENUCAPS, modedescs[i].desc);
 		// Show multiples of 320x200 as green.
 		else
-			V_DrawString(row, col, (modedescs[i].goodratio) ? recommendedflags : 0, modedescs[i].desc);
+			V_DrawString(row, col, ((modedescs[i].goodratio) ? recommendedflags : 0)|MENUCAPS, modedescs[i].desc);
 
 		col += 8;
 		if ((i % vidm_column_size) == (vidm_column_size-1))
@@ -12798,11 +12792,11 @@ static void M_DrawVideoMode(void)
 				cv_scr_width.value, cv_scr_height.value));
 
 		V_DrawCenteredString(BASEVIDWIDTH/2, OP_VideoModeDef.y + 138,
-			recommendedflags, "Marked modes are recommended.");
+			recommendedflags|MENUCAPS, "Marked modes are recommended.");
 		V_DrawCenteredString(BASEVIDWIDTH/2, OP_VideoModeDef.y + 146,
-			highlightflags, "Other modes may have visual errors.");
+			highlightflags|MENUCAPS, "Other modes may have visual errors.");
 		V_DrawCenteredString(BASEVIDWIDTH/2, OP_VideoModeDef.y + 158,
-			highlightflags, "Larger modes may have performance issues.");
+			highlightflags|MENUCAPS, "Larger modes may have performance issues.");
 	}
 
 	// Draw the cursor for the VidMode menu
@@ -12870,9 +12864,9 @@ static void M_DrawColorMenu(void)
 			case IT_STRING:
 			case IT_WHITESTRING:
 				if (i != itemOn && (currentMenu->menuitems[i].status & IT_DISPLAY)==IT_STRING)
-					V_DrawString(x, y, 0, currentMenu->menuitems[i].text);
+					V_DrawString(x, y, MENUCAPS, currentMenu->menuitems[i].text);
 				else
-					V_DrawString(x, y, V_YELLOWMAP, currentMenu->menuitems[i].text);
+					V_DrawString(x, y, V_YELLOWMAP|MENUCAPS, currentMenu->menuitems[i].text);
 
 				// Cvar specific handling
 				switch (currentMenu->menuitems[i].status & IT_TYPE)
@@ -12907,13 +12901,13 @@ static void M_DrawColorMenu(void)
 					}
 					break;
 			case IT_TRANSTEXT:
-				V_DrawString(x, y, V_TRANSLUCENT, currentMenu->menuitems[i].text);
+				V_DrawString(x, y, V_TRANSLUCENT|MENUCAPS, currentMenu->menuitems[i].text);
 				break;
 			case IT_QUESTIONMARKS:
-				V_DrawString(x, y, V_TRANSLUCENT|V_OLDSPACING, M_CreateSecretMenuOption(currentMenu->menuitems[i].text));
+				V_DrawString(x, y, V_TRANSLUCENT|V_OLDSPACING|MENUCAPS, M_CreateSecretMenuOption(currentMenu->menuitems[i].text));
 				break;
 			case IT_HEADERTEXT:
-				V_DrawString(x-16, y, V_YELLOWMAP, currentMenu->menuitems[i].text);
+				V_DrawString(x-16, y, V_YELLOWMAP|MENUCAPS, currentMenu->menuitems[i].text);
 				//V_DrawFill(19, y, 281, 9, currentMenu->menuitems[i+1].alphaKey);
 				//V_DrawFill(300, y, 1, 9, 26);
 				//M_DrawLevelPlatterHeader(y - (lsheadingheight - 12), currentMenu->menuitems[i].text, false);

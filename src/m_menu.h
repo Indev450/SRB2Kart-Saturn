@@ -299,6 +299,10 @@ void Bird_menu_Onchange(void);
 // Saturn Hud menu updating
 void SaturnHud_menu_Onchange(void);
 
+#ifdef HWRENDER
+void M_UpdateOGLMenu(void);
+#endif
+
 void M_ReplayHut(INT32 choice);
 void M_SetPlaybackMenuPointer(void);
 

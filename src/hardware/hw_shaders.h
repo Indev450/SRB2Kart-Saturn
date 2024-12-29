@@ -99,6 +99,7 @@
 		GLSL_DOOM_COLORMAP_NODITHER \
 		"#endif\n" \
 	"}\n"
+
 // lighting cap adjustment:
 // first num (155.0), increase to make it start to go dark sooner
 // second num (0.26), increase to make it go dark faster
@@ -171,7 +172,7 @@
 		"gl_FragColor = final_color;\n" \
 	"}\n" \
 	"#endif\0"
-	
+
 #define GLSL_SOFTWARE_FRAGMENT_SHADER_NOPAL \
 	"uniform sampler2D tex;\n" \
 	"uniform vec4 poly_color;\n" \
@@ -210,10 +211,6 @@
 #define GLSL_WALL_FRAGMENT_SHADER \
 	GLSL_WALL_FUDGES \
 	GLSL_SOFTWARE_FRAGMENT_SHADER
-	
-#define GLSL_SHADOW_FRAGMENT_SHADER \
-	GLSL_FLOOR_FUDGES \
-	GLSL_SOFTWARE_FRAGMENT_SHADER_NOPAL
 
 //
 // Water surface shader

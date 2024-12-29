@@ -261,6 +261,7 @@ typedef enum {
 	PCF_SPLASH    = 1<<4, // Splashed on the ground, return to the ceiling after the animation's over
 	PCF_THUNK     = 1<<5, // Ran the thinker this tic.
 } precipflag_t;
+
 // Map Object definition.
 typedef struct mobj_s
 {
@@ -287,8 +288,7 @@ typedef struct mobj_s
 	spritenum_t sprite; // used to find patch_t and flip value
 	UINT32 frame; // frame number, plus bits see p_pspr.h
 	UINT16 anim_duration; // for FF_ANIMATE states
-	
-	UINT32 renderflags; // render flags
+
 	fixed_t spritexscale, spriteyscale;
 	fixed_t spritexoffset, spriteyoffset;
 	fixed_t old_spritexscale, old_spriteyscale;
@@ -440,8 +440,7 @@ typedef struct precipmobj_s
 	spritenum_t sprite; // used to find patch_t and flip value
 	UINT32 frame; // frame number, plus bits see p_pspr.h
 	UINT16 anim_duration; // for FF_ANIMATE states
-	
-	UINT32 renderflags; // render flags
+
 	fixed_t spritexscale, spriteyscale;
 	fixed_t spritexoffset, spriteyoffset;
 	fixed_t old_spritexscale, old_spriteyscale;
@@ -450,7 +449,7 @@ typedef struct precipmobj_s
 	fixed_t realxscale, realyscale; // funn-E streeetch
 
 	fixed_t stretchslam; // "squish" effect when you land
-	
+
 	//sloperollangle
 	angle_t sloperoll, slopepitch;
 	angle_t old_sloperoll, old_slopepitch;

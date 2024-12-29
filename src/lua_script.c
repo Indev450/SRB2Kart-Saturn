@@ -1312,7 +1312,8 @@ void LUA_Archive(savebuffer_t *save, boolean network)
 		LUAh_NetArchiveHook(NetArchive, save); // call the NetArchive hook in archive mode
 	}
 
-	ArchiveTables(&save->p);
+	LUA_HookNetArchive(NetArchive); // call the NetArchive hook in archive mode
+	ArchiveTables();
 
 	if (gL)
 		lua_pop(gL, 1); // pop tables

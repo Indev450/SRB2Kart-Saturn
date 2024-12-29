@@ -111,6 +111,8 @@ static void A_Lua(mobj_t *actor)
 	lua_pushinteger(gL, var2);
 	LUA_Call(gL, 3, 0, 1);
 
+	lua_pop(gL, 1); // pop error handler
+
 	if (found)
 	{
 		--superstack;
@@ -940,7 +942,7 @@ static int lib_setSfxInfo(lua_State *L)
 
 		if (lua_isnumber(L, 2))
 		{
-			int j = lua_tointeger(L, 2) - 1;
+			int j = lua_tointeger(L, 2);
 
 			// Read and Write enums were combined, need to do this switch now
 			switch (j)

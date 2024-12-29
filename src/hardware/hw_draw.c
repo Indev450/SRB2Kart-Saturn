@@ -18,9 +18,10 @@
 #include "../doomdef.h"
 
 #ifdef HWRENDER
+
 #include "hw_main.h"
 #include "hw_glob.h"
-#include "hw_drv.h"
+#include "hw_gl.h"
 
 #include "../m_misc.h" //FIL_WriteFile()
 #include "../r_draw.h" //viewborderlump
@@ -122,7 +123,7 @@ void HWR_DrawPatch(GLPatch_t *gpatch, INT32 x, INT32 y, INT32 option)
 		flags |= PF_ForceWrapY;
 
 	// clip it since it is used for bunny scroll in doom I
-	HWD.pfnDrawPolygon(NULL, v, 4, flags);
+	GL_DrawPolygon(NULL, v, 4, flags);
 }
 
 void HWR_DrawStretchyFixedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale, fixed_t vscale, INT32 option, const UINT8 *colormap)
@@ -303,10 +304,10 @@ void HWR_DrawStretchyFixedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t
 		else if (alphalevel == 15) Surf.PolyColor.s.alpha = softwaretranstogl_hi[hudtrans];
 		else Surf.PolyColor.s.alpha = softwaretranstogl[10-alphalevel];
 		flags |= PF_Modulated;
-		HWD.pfnDrawPolygon(&Surf, v, 4, flags);
+		GL_DrawPolygon(&Surf, v, 4, flags);
 	}
 	else
-		HWD.pfnDrawPolygon(NULL, v, 4, flags);
+		GL_DrawPolygon(NULL, v, 4, flags);
 }
 
 void HWR_DrawCroppedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale, INT32 option, fixed_t sx, fixed_t sy, fixed_t w, fixed_t h)
@@ -460,10 +461,10 @@ void HWR_DrawCroppedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscal
 		else if (alphalevel == 15) Surf.PolyColor.s.alpha = softwaretranstogl_hi[cv_translucenthud.value];
 		else Surf.PolyColor.s.alpha = softwaretranstogl[10-alphalevel];
 		flags |= PF_Modulated;
-		HWD.pfnDrawPolygon(&Surf, v, 4, flags);
+		GL_DrawPolygon(&Surf, v, 4, flags);
 	}
 	else
-		HWD.pfnDrawPolygon(NULL, v, 4, flags);
+		GL_DrawPolygon(NULL, v, 4, flags);
 }
 
 // ==========================================================================
@@ -539,7 +540,7 @@ void HWR_DrawFlatFill (INT32 x, INT32 y, INT32 w, INT32 h, lumpnum_t flatlumpnum
 	// BTW, I see we put 0 for PFs, and If I'm right, that
 	// means we take the previous PFs as default
 	// how can we be sure they are ok?
-	HWD.pfnDrawPolygon(NULL, v, 4, PF_NoDepthTest); //PF_Translucent);
+	GL_DrawPolygon(NULL, v, 4, PF_NoDepthTest); //PF_Translucent);
 }
 
 
@@ -552,33 +553,33 @@ void HWR_DrawFlatFill (INT32 x, INT32 y, INT32 w, INT32 h, lumpnum_t flatlumpnum
 //  0--1
 void HWR_FadeScreenMenuBack(UINT16 color, UINT8 strength)
 {
-    FOutVector  v[4];
-    FSurfaceInfo Surf;
+	FOutVector  v[4];
+	FSurfaceInfo Surf;
 	FBITFIELD poly_flags = PF_NoTexture|PF_Modulated|PF_NoDepthTest;
 
-    v[0].x = v[3].x = -1.0f;
-    v[2].x = v[1].x =  1.0f;
-    v[0].y = v[1].y = -1.0f;
-    v[2].y = v[3].y =  1.0f;
-    v[0].z = v[1].z = v[2].z = v[3].z = 1.0f;
+	v[0].x = v[3].x = -1.0f;
+	v[2].x = v[1].x =  1.0f;
+	v[0].y = v[1].y = -1.0f;
+	v[2].y = v[3].y =  1.0f;
+	v[0].z = v[1].z = v[2].z = v[3].z = 1.0f;
 
-    v[0].s = v[3].s = 0.0f;
-    v[2].s = v[1].s = 1.0f;
-    v[0].t = v[1].t = 1.0f;
-    v[2].t = v[3].t = 0.0f;
+	v[0].s = v[3].s = 0.0f;
+	v[2].s = v[1].s = 1.0f;
+	v[0].t = v[1].t = 1.0f;
+	v[2].t = v[3].t = 0.0f;
 
-    if (color & 0xFF00) // Do COLORMAP fade.
-    {
-		if (HWR_ShouldUsePaletteRendering() && cv_grscreentextures.value)
+	if (color & 0xFF00) // Do COLORMAP fade.
+	{
+		if (HWR_ShouldUsePaletteRendering() && cv_glscreentextures.value)
 		{
 			const hwdscreentexture_t scr_tex = HWD_SCREENTEXTURE_GENERIC2;
 
 			Surf.LightTableId = HWR_GetLightTableID(NULL);
 			Surf.LightInfo.light_level = strength;
-			HWD.pfnMakeScreenTexture(scr_tex);
-			HWD.pfnSetShader(HWR_GetShaderFromTarget(SHADER_UI_COLORMAP_FADE));
-			HWD.pfnDrawScreenTexture(scr_tex, &Surf, PF_ColorMapped|PF_NoDepthTest);
-			HWD.pfnUnSetShader();
+			GL_MakeScreenTexture(scr_tex);
+			GL_SetShader(HWR_GetShaderFromTarget(SHADER_UI_COLORMAP_FADE));
+			GL_DrawScreenTexture(scr_tex, &Surf, PF_ColorMapped|PF_NoDepthTest);
+			GL_UnSetShader();
 
 			return;
 		}
@@ -588,21 +589,21 @@ void HWR_FadeScreenMenuBack(UINT16 color, UINT8 strength)
 			Surf.PolyColor.s.alpha = (strength*8);
 			poly_flags |= PF_Translucent;
 		}
-    }
-    else // Do TRANSMAP** fade.
-    {
+	}
+	else // Do TRANSMAP** fade.
+	{
 		RGBA_t *palette = HWR_GetTexturePalette();
 		Surf.PolyColor.rgba = palette[color&0xFF].rgba;
-		
+
         if (HWR_ShouldUsePaletteRendering())
 			Surf.PolyColor.s.alpha = softwaretranstogl[strength];
 		else
 			Surf.PolyColor.s.alpha = (UINT8)(strength*25.5f);
-		
-		poly_flags |= PF_Translucent;
-    }
 
-    HWD.pfnDrawPolygon(&Surf, v, 4, poly_flags);
+		poly_flags |= PF_Translucent;
+	}
+
+	GL_DrawPolygon(&Surf, v, 4, poly_flags);
 }
 
 // Draw the console background with translucency support
@@ -629,7 +630,7 @@ void HWR_DrawConsoleBack(UINT32 color, INT32 height)
 	Surf.PolyColor.rgba = UINT2RGBA(color);
 	Surf.PolyColor.s.alpha = 0x80;
 
-	HWD.pfnDrawPolygon(&Surf, v, 4, PF_NoTexture|PF_Modulated|PF_Translucent|PF_NoDepthTest);
+	GL_DrawPolygon(&Surf, v, 4, PF_NoTexture|PF_Modulated|PF_Translucent|PF_NoDepthTest);
 }
 
 
@@ -652,17 +653,17 @@ void HWR_DrawViewBorder(INT32 clearlines)
 	INT32 basewindowx, basewindowy;
 	GLPatch_t *patch;
 
-//    if (gr_viewwidth == vid.width)
+//    if (gl_viewwidth == vid.width)
 //        return;
 
 	if (!clearlines)
 		clearlines = BASEVIDHEIGHT; // refresh all
 
 	// calc view size based on original game resolution
-	baseviewwidth =  FixedInt(FixedDiv(FLOAT_TO_FIXED(gr_viewwidth), vid.fdupx)); //(cv_viewsize.value * BASEVIDWIDTH/10)&~7;
-	baseviewheight = FixedInt(FixedDiv(FLOAT_TO_FIXED(gr_viewheight), vid.fdupy));
-	top = FixedInt(FixedDiv(FLOAT_TO_FIXED(gr_baseviewwindowy), vid.fdupy));
-	side = FixedInt(FixedDiv(FLOAT_TO_FIXED(gr_baseviewwindowx), vid.fdupx));
+	baseviewwidth =  FixedInt(FixedDiv(FLOAT_TO_FIXED(gl_viewwidth), vid.fdupx)); //(cv_viewsize.value * BASEVIDWIDTH/10)&~7;
+	baseviewheight = FixedInt(FixedDiv(FLOAT_TO_FIXED(gl_viewheight), vid.fdupy));
+	top = FixedInt(FixedDiv(FLOAT_TO_FIXED(gl_baseviewwindowy), vid.fdupy));
+	side = FixedInt(FixedDiv(FLOAT_TO_FIXED(gl_baseviewwindowx), vid.fdupx));
 
 	// top
 	HWR_DrawFlatFill(0, 0,
@@ -776,16 +777,16 @@ void HWR_drawAMline(const fline_t *fl, INT32 color)
 	F2DCoord v1, v2;
 	RGBA_t color_rgba;
 	RGBA_t *palette = HWR_GetTexturePalette();
-	
+
 	color_rgba = palette[color&0xFF];
-	
+
 	v1.x = ((float)fl->a.x-(vid.width/2.0f))*(2.0f/vid.width);
 	v1.y = ((float)fl->a.y-(vid.height/2.0f))*(2.0f/vid.height);
 
 	v2.x = ((float)fl->b.x-(vid.width/2.0f))*(2.0f/vid.width);
 	v2.y = ((float)fl->b.y-(vid.height/2.0f))*(2.0f/vid.height);
 
-	HWD.pfnDraw2DLine(&v1, &v2, color_rgba);
+	GL_Draw2DLine(&v1, &v2, color_rgba);
 }
 
 // -----------------+
@@ -879,7 +880,7 @@ void HWR_DrawDiag(INT32 x, INT32 y, INT32 wh, INT32 color)
 
 	Surf.PolyColor = palette[color&0xFF];
 
-	HWD.pfnDrawPolygon(&Surf, v, 4,
+	GL_DrawPolygon(&Surf, v, 4,
 		PF_Modulated|PF_NoTexture|PF_NoDepthTest);
 }
 
@@ -918,7 +919,7 @@ void HWR_DrawConsoleFill(INT32 x, INT32 y, INT32 w, INT32 h, UINT32 color, INT32
 			clearColour.green = (float)rgbaColour.s.green / 255;
 			clearColour.blue = (float)rgbaColour.s.blue / 255;
 			clearColour.alpha = 1;
-			HWD.pfnClearBuffer(true, false, false, &clearColour);
+			GL_ClearBuffer(true, false, false, &clearColour);
 			return;
 		}
 
@@ -989,7 +990,7 @@ void HWR_DrawConsoleFill(INT32 x, INT32 y, INT32 w, INT32 h, UINT32 color, INT32
 	Surf.PolyColor.rgba = UINT2RGBA(color);
 	Surf.PolyColor.s.alpha = 0x80;
 
-	HWD.pfnDrawPolygon(&Surf, v, 4, PF_NoTexture|PF_Modulated|PF_Translucent|PF_NoDepthTest);
+	GL_DrawPolygon(&Surf, v, 4, PF_NoTexture|PF_Modulated|PF_Translucent|PF_NoDepthTest);
 }
 
 // -----------------+
@@ -1029,7 +1030,7 @@ void HWR_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color)
 			clearColour.green = (float)rgbaColour.s.green / 255;
 			clearColour.blue = (float)rgbaColour.s.blue / 255;
 			clearColour.alpha = 1;
-			HWD.pfnClearBuffer(true, false, false, &clearColour);
+			GL_ClearBuffer(true, false, false, &clearColour);
 			return;
 		}
 
@@ -1107,7 +1108,7 @@ void HWR_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color)
 		else Surf.PolyColor.s.alpha = softwaretranstogl[10-alphalevel];
 	}
 
-	HWD.pfnDrawPolygon(&Surf, v, 4, PF_NoTexture|PF_Modulated|PF_Translucent|PF_NoDepthTest);
+	GL_DrawPolygon(&Surf, v, 4, PF_NoTexture|PF_Modulated|PF_Translucent|PF_NoDepthTest);
 }
 
 #ifdef HAVE_PNG
@@ -1191,7 +1192,7 @@ UINT8 *HWR_GetScreenshot(void)
 		return NULL;
 
 	// returns 24bit 888 RGB
-	HWD.pfnReadScreenTexture(HWD_SCREENTEXTURE_GENERIC2, (void *)buf);
+	GL_ReadScreenTexture(HWD_SCREENTEXTURE_GENERIC2, (void *)buf);
 	return buf;
 }
 
@@ -1207,7 +1208,7 @@ boolean HWR_Screenshot(const char *pathname)
 	}
 
 	// returns 24bit 888 RGB
-	HWD.pfnReadScreenTexture(HWD_SCREENTEXTURE_GENERIC2, (void *)buf);
+	GL_ReadScreenTexture(HWD_SCREENTEXTURE_GENERIC2, (void *)buf);
 
 #ifdef USE_PNG
 	ret = M_SavePNG(pathname, buf, vid.width, vid.height, NULL);

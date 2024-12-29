@@ -1,8 +1,10 @@
-// SONIC ROBO BLAST 2
+// SONIC ROBO BLAST 2 KART
 //-----------------------------------------------------------------------------
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 1998-2000 by DooM Legacy Team.
-// Copyright (C) 1999-2018 by Sonic Team Junior.
+// Copyright (C) 2024 by Vivian "toastergrl" Grannell.
+// Copyright (C) 2024 by Kart Krew.
+// Copyright (C) 2020 by Sonic Team Junior.
+// Copyright (C) 2000 by DooM Legacy Team.
 //
 // This program is free software distributed under the
 // terms of the GNU General Public License, version 2.
@@ -26,42 +28,36 @@
 #endif
 
 // For use if I do walls with outsides/insides
-static const UINT8 REDS        = (8*16);
+static const UINT8 REDS        = (2*16);
 static const UINT8 REDRANGE    = 16;
 static const UINT8 GRAYS       = (1*16);
 static const UINT8 GRAYSRANGE  = 16;
-static const UINT8 BROWNS      = (3*16);
-static const UINT8 YELLOWS     = (7*16);
-static const UINT8 GREENS      = (10*16);
+static const UINT8 BROWNS      = (15*16);
+static const UINT8 YELLOWS     = (5*16)+8;
+static const UINT8 GREENS      = (6*16);
+static const UINT8 BLUES       = (9*16);
 static const UINT8 DBLACK      = 31;
 static const UINT8 DWHITE      = 0;
-
-static const UINT8 NOCLIMBREDS        = 248;
-static const UINT8 NOCLIMBREDRANGE    = 8;
-static const UINT8 NOCLIMBGRAYS       = 204;
-static const UINT8 NOCLIMBBROWNS      = (2*16);
-static const UINT8 NOCLIMBYELLOWS     = (11*16);
 
 // Automap colors
 #define BACKGROUND            DBLACK
 #define WALLCOLORS            (REDS + REDRANGE/2)
 #define WALLRANGE             (REDRANGE/2)
-#define NOCLIMBWALLCOLORS     (NOCLIMBREDS + NOCLIMBREDRANGE/2)
-#define NOCLIMBWALLRANGE      (NOCLIMBREDRANGE/2)
 #define THOKWALLCOLORS        REDS
 #define THOKWALLRANGE         REDRANGE
-#define NOCLIMBTHOKWALLCOLORS NOCLIMBREDS
-#define NOCLIMBTHOKWALLRANGE  NOCLIMBREDRANGE
-#define TSWALLCOLORS          GRAYS
-#define TSWALLRANGE           GRAYSRANGE
-#define NOCLIMBTSWALLCOLORS   NOCLIMBGRAYS
+#define TSWALLCOLORS          DWHITE
+#define TSFINISHLINE          GRAYS
+#define TSFOFINFO             (BLUES + 4)
 #define FDWALLCOLORS          BROWNS
-#define NOCLIMBFDWALLCOLORS   NOCLIMBBROWNS
 #define CDWALLCOLORS          YELLOWS
-#define NOCLIMBCDWALLCOLORS   NOCLIMBYELLOWS
 #define THINGCOLORS           GREENS
 #define GRIDCOLORS            (GRAYS + GRAYSRANGE/2)
 #define XHAIRCOLORS           GRAYS
+
+// Automap passes
+#define PASS_SOLID 			1
+#define PASS_INTANGIBLE		2
+#define PASS_FOF			4
 
 // controls
 #define AM_PANUPKEY     KEY_UPARROW
@@ -110,11 +106,6 @@ typedef struct
 	mpoint_t a, b;
 } mline_t;
 
-typedef struct
-{
-	fixed_t slp, islp;
-} islope_t;
-
 //
 // The vector graphics for the automap.
 // A line drawing of the player pointing right,
@@ -136,16 +127,14 @@ static const mline_t player_arrow[] = {
 #undef R
 #define NUMPLYRLINES (sizeof (player_arrow)/sizeof (mline_t))
 
-#if 0
 #define R (FRACUNIT)
-static mline_t triangle_guy[] = {
-	{ { (fixed_t)-.867f*R, (fixed_t)-.5f*R }, { (fixed_t) .867f*R, (fixed_t)-.5f*R } },
-	{ { (fixed_t) .867f*R, (fixed_t)-.5f*R }, { (fixed_t)       0, (fixed_t)     R } },
-	{ { (fixed_t)       0, (fixed_t)     R }, { (fixed_t)-.867f*R, (fixed_t)-.5f*R } }
+static const mline_t cross_mark[] =
+{
+	{ { -R, 0 }, { R, 0} },
+	{ { 0, -R }, { 0, R } },
 };
 #undef R
-#define NUMTRIANGLEGUYLINES (sizeof (triangle_guy)/sizeof (mline_t))
-#endif
+#define NUMCROSSMARKLINES (sizeof(cross_mark)/sizeof(mline_t))
 
 #define R (FRACUNIT)
 static const mline_t thintriangle_guy[] = {
@@ -162,10 +151,14 @@ static boolean draw_grid = false;
 boolean automapactive = false;
 boolean am_recalc = false; //added : 05-02-98 : true when screen size changes
 static boolean am_stopped = true;
+static boolean am_minigen = false;
+
+static UINT8 *am_buf = NULL;
 
 static INT32 f_x, f_y;	// location of window on screen (always zero for both)
 static INT32 f_w, f_h;	// size of window on screen (always the screen width and height respectively)
 
+static boolean m_keydown[4]; // which window panning keys are being pressed down?
 static mpoint_t m_paninc; // how far the window pans each tic (map coords)
 static fixed_t mtof_zoommul; // how far the window zooms in each tic (map coords)
 static fixed_t ftom_zoommul; // how far the window zooms in each tic (fb coords)
@@ -205,12 +198,13 @@ static fixed_t scale_ftom;
 
 static player_t *plr; // the player represented by an arrow
 
-static INT32 followplayer = true; // specifies whether to follow the player around
+static boolean followplayer = true; // specifies whether to follow the player around
 
 // function for drawing lines, depends on rendermode
 typedef void (*AMDRAWFLINEFUNC) (const fline_t *fl, INT32 color);
 static AMDRAWFLINEFUNC AM_drawFline;
 
+static void AM_drawPixel(INT32 xx, INT32 yy, INT32 cc);
 static void AM_drawFline_soft(const fline_t *fl, INT32 color);
 
 static void AM_activateNewScale(void)
@@ -341,21 +335,22 @@ static void AM_initVariables(void)
 }
 
 //
+// Called when the screen size changes.
+//
+static void AM_FrameBufferInit(void)
+{
+	f_x = f_y = 0;
+	f_w = vid.width;
+	f_h = vid.height;
+	am_buf = screens[0];
+}
+
+//
 // should be called at the start of every level
 // right now, i figure it out myself
 //
 static void AM_LevelInit(void)
 {
-	f_x = f_y = 0;
-	f_w = vid.width;
-	f_h = vid.height;
-
-	AM_drawFline = AM_drawFline_soft;
-#ifdef HWRENDER
-	if (rendermode == render_opengl)
-		AM_drawFline = HWR_drawAMline;
-#endif
-
 	AM_findMinMaxBoundaries();
 	scale_mtof = FixedDiv(min_scale_mtof*10, 7*FRACUNIT);
 	if (scale_mtof > max_scale_mtof)
@@ -377,7 +372,7 @@ void AM_Stop(void)
   *
   * \sa AM_Stop
   */
-static inline void AM_Start(void)
+void AM_Start(void)
 {
 	static INT32 lastlevel = -1;
 
@@ -386,8 +381,12 @@ static inline void AM_Start(void)
 	am_stopped = false;
 	if (lastlevel != gamemap || am_recalc) // screen size changed
 	{
-		AM_LevelInit();
-		lastlevel = gamemap;
+		AM_FrameBufferInit();
+		if (lastlevel != gamemap)
+		{
+			AM_LevelInit();
+			lastlevel = gamemap;
+		}
 		am_recalc = false;
 	}
 	AM_initVariables();
@@ -411,6 +410,27 @@ static void AM_maxOutWindowScale(void)
 	scale_mtof = max_scale_mtof;
 	scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
 	AM_activateNewScale();
+}
+
+//
+// set window panning
+//
+static void AM_setWindowPanning(void)
+{
+	// up and down
+	if (m_keydown[2]) // pan up
+		m_paninc.y = FTOM(F_PANINC);
+	else if (m_keydown[3]) // pan down
+		m_paninc.y = -FTOM(F_PANINC);
+	else
+		m_paninc.y = 0;
+	// left and right
+	if (m_keydown[0]) // pan right
+		m_paninc.x = FTOM(F_PANINC);
+	else if (m_keydown[1]) // pan left
+		m_paninc.x = -FTOM(F_PANINC);
+	else
+		m_paninc.x = 0;
 }
 
 /** Responds to user inputs in automap mode.
@@ -445,35 +465,49 @@ boolean AM_Responder(event_t *ev)
 			{
 				case AM_PANRIGHTKEY: // pan right
 					if (!followplayer)
-						m_paninc.x = FTOM(F_PANINC);
+					{
+						m_keydown[0] = true;
+						AM_setWindowPanning();
+					}
 					else
 						rc = false;
 					break;
 				case AM_PANLEFTKEY: // pan left
 					if (!followplayer)
-						m_paninc.x = -FTOM(F_PANINC);
+					{
+						m_keydown[1] = true;
+						AM_setWindowPanning();
+					}
 					else
 						rc = false;
 					break;
 				case AM_PANUPKEY: // pan up
 					if (!followplayer)
-						m_paninc.y = FTOM(F_PANINC);
+					{
+						m_keydown[2] = true;
+						AM_setWindowPanning();
+					}
 					else
 						rc = false;
 					break;
 				case AM_PANDOWNKEY: // pan down
 					if (!followplayer)
-						m_paninc.y = -FTOM(F_PANINC);
+					{
+						m_keydown[3] = true;
+						AM_setWindowPanning();
+					}
 					else
 						rc = false;
 					break;
 				case AM_ZOOMOUTKEY: // zoom out
 					mtof_zoommul = M_ZOOMOUT;
 					ftom_zoommul = M_ZOOMIN;
+					AM_setWindowPanning();
 					break;
 				case AM_ZOOMINKEY: // zoom in
 					mtof_zoommul = M_ZOOMIN;
 					ftom_zoommul = M_ZOOMOUT;
+					AM_setWindowPanning();
 					break;
 				case AM_TOGGLEKEY:
 					AM_Stop();
@@ -487,6 +521,7 @@ boolean AM_Responder(event_t *ev)
 					}
 					else
 						AM_restoreScaleAndLoc();
+					AM_setWindowPanning();
 					break;
 				case AM_FOLLOWKEY:
 					followplayer = !followplayer;
@@ -506,14 +541,32 @@ boolean AM_Responder(event_t *ev)
 			switch (ev->data1)
 			{
 				case AM_PANRIGHTKEY:
+					if (!followplayer)
+					{
+						m_keydown[0] = false;
+						AM_setWindowPanning();
+					}
+					break;
 				case AM_PANLEFTKEY:
 					if (!followplayer)
-						m_paninc.x = 0;
+					{
+						m_keydown[1] = false;
+						AM_setWindowPanning();
+					}
 					break;
 				case AM_PANUPKEY:
+					if (!followplayer)
+					{
+						m_keydown[2] = false;
+						AM_setWindowPanning();
+					}
+					break;
 				case AM_PANDOWNKEY:
 					if (!followplayer)
-						m_paninc.y = 0;
+					{
+						m_keydown[3] = false;
+						AM_setWindowPanning();
+					}
 					break;
 				case AM_ZOOMOUTKEY:
 				case AM_ZOOMINKEY:
@@ -715,6 +768,16 @@ static boolean AM_clipMline(const mline_t *ml, fline_t *fl)
 #undef DOOUTCODE
 
 //
+// Draws a pixel.
+//
+static void AM_drawPixel(INT32 xx, INT32 yy, INT32 cc)
+{
+	if (xx < 0 || yy < 0 || xx >= f_w || yy >= f_h)
+		return; // off the screen
+	am_buf[(yy*f_w) + xx] = cc;
+}
+
+//
 // Classic Bresenham w/ whatever optimizations needed for speed
 //
 static void AM_drawFline_soft(const fline_t *fl, INT32 color)
@@ -735,8 +798,6 @@ static void AM_drawFline_soft(const fline_t *fl, INT32 color)
 	}
 #endif
 
-	#define PUTDOT(xx,yy,cc) V_DrawFill(xx,yy,1,1,cc|V_NOSCALESTART);
-
 	dx = fl->b.x - fl->a.x;
 	ax = 2 * (dx < 0 ? -dx : dx);
 	sx = dx < 0 ? -1 : 1;
@@ -753,7 +814,7 @@ static void AM_drawFline_soft(const fline_t *fl, INT32 color)
 		d = ay - ax/2;
 		for (;;)
 		{
-			PUTDOT(x, y, color)
+			AM_drawPixel(x, y, color);
 			if (x == fl->b.x)
 				return;
 			if (d >= 0)
@@ -770,7 +831,7 @@ static void AM_drawFline_soft(const fline_t *fl, INT32 color)
 		d = ax - ay/2;
 		for (;;)
 		{
-			PUTDOT(x, y, color)
+			AM_drawPixel(x, y, color);
 			if (y == fl->b.y)
 				return;
 			if (d >= 0)
@@ -782,8 +843,6 @@ static void AM_drawFline_soft(const fline_t *fl, INT32 color)
 			d += ax;
 		}
 	}
-
-	#undef PUTDOT
 }
 
 //
@@ -805,17 +864,18 @@ static void AM_drawGrid(INT32 color)
 	fixed_t x, y;
 	fixed_t start, end;
 	mline_t ml;
+	fixed_t gridsize = (MAPBLOCKUNITS<<MAPBITS);
 
 	// Figure out start of vertical gridlines
 	start = m_x;
-	if ((start - bmaporgx) % (MAPBLOCKUNITS<<FRACBITS))
-		start += (MAPBLOCKUNITS<<FRACBITS) - ((start - bmaporgx) % (MAPBLOCKUNITS<<FRACBITS));
+	if ((start - (bmaporgx>>FRACTOMAPBITS)) % gridsize)
+		start += gridsize - ((start - (bmaporgx>>FRACTOMAPBITS)) % gridsize);
 	end = m_x + m_w;
 
 	// draw vertical gridlines
 	ml.a.y = m_y;
 	ml.b.y = m_y + m_h;
-	for (x = start; x < end; x += (MAPBLOCKUNITS<<FRACBITS))
+	for (x = start; x < end; x += gridsize)
 	{
 		ml.a.x = x;
 		ml.b.x = x;
@@ -824,14 +884,14 @@ static void AM_drawGrid(INT32 color)
 
 	// Figure out start of horizontal gridlines
 	start = m_y;
-	if ((start - bmaporgy) % (MAPBLOCKUNITS<<FRACBITS))
-		start += (MAPBLOCKUNITS<<FRACBITS) - ((start - bmaporgy) % (MAPBLOCKUNITS<<FRACBITS));
+	if ((start - (bmaporgy>>FRACTOMAPBITS)) % gridsize)
+		start += gridsize - ((start - (bmaporgy>>FRACTOMAPBITS)) % gridsize);
 	end = m_y + m_h;
 
 	// draw horizontal gridlines
 	ml.a.x = m_x;
 	ml.b.x = m_x + m_w;
-	for (y = start; y < end; y += (MAPBLOCKUNITS<<FRACBITS))
+	for (y = start; y < end; y += gridsize)
 	{
 		ml.a.y = y;
 		ml.b.y = y;
@@ -839,14 +899,63 @@ static void AM_drawGrid(INT32 color)
 	}
 }
 
+#define SLOPEPARAMS(slope, end1, end2, normalheight) \
+		if (slope) { \
+			end1 = (P_GetZAt(slope, lines[i].v1->x, lines[i].v1->y) + FRACUNIT/2) >> FRACBITS; \
+			end2 = (P_GetZAt(slope, lines[i].v2->x, lines[i].v2->y) + FRACUNIT/2) >> FRACBITS; \
+		} else \
+			end1 = end2 = (normalheight + FRACUNIT/2) >> FRACBITS;
+
+static ffloor_t *AM_CompareFOFs(size_t i, ffloor_t *rover, ffloor_t *secondarystore)
+{
+	ffloor_t *secondaryrover = NULL;
+	for (; rover; rover = rover->next)
+	{
+		fixed_t rovt1, rovt2;
+		fixed_t rovb1, rovb2;
+		if (!(rover->flags & FF_EXISTS))
+			continue;
+		if (!(rover->flags & FF_BLOCKPLAYER))
+			continue;
+		SLOPEPARAMS(*rover->t_slope, rovt1, rovt2, *rover->topheight)
+		SLOPEPARAMS(*rover->b_slope, rovb1, rovb2, *rover->bottomheight)
+		for (secondaryrover = secondarystore; secondaryrover; secondaryrover = secondaryrover->next)
+		{
+			fixed_t sect1, sect2;
+			fixed_t secb1, secb2;
+			if (!(secondaryrover->flags & FF_EXISTS))
+				continue;
+			if (!(secondaryrover->flags & FF_BLOCKPLAYER))
+				continue;
+			if (secondaryrover->secnum == rover->secnum)
+				break;
+			SLOPEPARAMS(*secondaryrover->t_slope, sect1, sect2, *secondaryrover->topheight)
+			SLOPEPARAMS(*secondaryrover->b_slope, secb1, secb2, *secondaryrover->bottomheight)
+			if (rovt1 != sect1)
+				continue;
+			if (rovt2 != sect2)
+				continue;
+			if (rovb1 != secb1)
+				continue;
+			if (rovb2 != secb2)
+				continue;
+			break;
+		}
+		if (secondaryrover == NULL)
+			break;
+	}
+	return rover;
+}
+
 //
 // Determines visible lines, draws them.
 // This is LineDef based, not LineSeg based.
 //
-static inline void AM_drawWalls(void)
+static void AM_drawWalls(UINT8 pass)
 {
 	size_t i;
 	static mline_t l;
+	const fixed_t maxstep = FixedMul(MAXSTEPMOVE, mapobjectscale)>>FRACBITS;
 	fixed_t frontf1,frontf2, frontc1, frontc2; // front floor/ceiling ends
 	fixed_t backf1 = 0, backf2 = 0, backc1 = 0, backc2 = 0; // back floor ceiling ends
 
@@ -856,73 +965,142 @@ static inline void AM_drawWalls(void)
 		l.a.y = lines[i].v1->y >> FRACTOMAPBITS;
 		l.b.x = lines[i].v2->x >> FRACTOMAPBITS;
 		l.b.y = lines[i].v2->y >> FRACTOMAPBITS;
-#define SLOPEPARAMS(slope, end1, end2, normalheight) \
-		if (slope) { \
-			end1 = P_GetZAt(slope, lines[i].v1->x, lines[i].v1->y); \
-			end2 = P_GetZAt(slope, lines[i].v2->x, lines[i].v2->y); \
-		} else \
-			end1 = end2 = normalheight;
 
 		SLOPEPARAMS(lines[i].frontsector->f_slope, frontf1, frontf2, lines[i].frontsector->floorheight)
 		SLOPEPARAMS(lines[i].frontsector->c_slope, frontc1, frontc2, lines[i].frontsector->ceilingheight)
-		if (lines[i].backsector) {
-			SLOPEPARAMS(lines[i].backsector->f_slope, backf1,  backf2,  lines[i].backsector->floorheight)
-			SLOPEPARAMS(lines[i].backsector->c_slope, backc1,  backc2,  lines[i].backsector->ceilingheight)
-		}
-#undef SLOPEPARAMS
 
 		if (!lines[i].backsector) // 1-sided
 		{
-			if (lines[i].flags & ML_NOCLIMB)
-				AM_drawMline(&l, NOCLIMBWALLCOLORS);
-			else
+			if (!(pass & PASS_SOLID))
+				;
+			else if (frontf1 != frontc1 || frontf2 != frontc2 || lines[i].frontsector->f_slope)
+			{
+				AM_drawMline(&l, TSWALLCOLORS);
+			}
+			else if (!am_minigen)
+			{
 				AM_drawMline(&l, WALLCOLORS);
+			}
+			continue;
 		}
-		else if ((backf1 == backc1 && backf2 == backc2) // Back is thok barrier
+		SLOPEPARAMS(lines[i].backsector->f_slope, backf1,  backf2,  lines[i].backsector->floorheight)
+		SLOPEPARAMS(lines[i].backsector->c_slope, backc1,  backc2,  lines[i].backsector->ceilingheight)
+		if ((backf1 == backc1 && backf2 == backc2) // Back is thok barrier
 				 || (frontf1 == frontc1 && frontf2 == frontc2)) // Front is thok barrier
 		{
 			if (backf1 == backc1 && backf2 == backc2
 				&& frontf1 == frontc1 && frontf2 == frontc2) // BOTH are thok barriers
 			{
-				if (lines[i].flags & ML_NOCLIMB)
-					AM_drawMline(&l, NOCLIMBTSWALLCOLORS);
-				else
-					AM_drawMline(&l, TSWALLCOLORS);
+				if (!am_minigen && (pass & PASS_INTANGIBLE))
+				{
+					AM_drawMline(&l, GRIDCOLORS);
+				}
 			}
-			else
+			else if (pass & PASS_SOLID)
 			{
-				if (lines[i].flags & ML_NOCLIMB)
-					AM_drawMline(&l, NOCLIMBTHOKWALLCOLORS);
-				else
-					AM_drawMline(&l, THOKWALLCOLORS);
+				AM_drawMline(&l, TSWALLCOLORS);
 			}
 		}
 		else
 		{
-			if (lines[i].flags & ML_NOCLIMB) {
-				if (backf1 != frontf1 || backf2 != frontf2) {
-					AM_drawMline(&l, NOCLIMBFDWALLCOLORS); // floor level change
-				}
-				else if (backc1 != frontc1 || backc2 != frontc2) {
-					AM_drawMline(&l, NOCLIMBCDWALLCOLORS); // ceiling level change
+			//dont think kart even supports those idk?
+			/*if (lines[i].flags & (ML_IMPASSABLE|ML_BLOCKPLAYERS))
+			{
+				if (pass & PASS_SOLID)
+					AM_drawMline(&l, TSWALLCOLORS); // Completely solid course boundary
+			}
+			else if ((lines[i].flags & ML_MIDSOLID)
+				&& sides[lines->sidenum[0]].midtexture)
+			{
+				if (pass & PASS_SOLID)
+					AM_drawMline(&l, TSWALLCOLORS); // solid midtexture, likely a course boundary
+			}*/
+			if ((backf1 != frontf1 && abs(backf1 - frontf1) > maxstep)
+				|| (backf2 != frontf2 && abs(backf2 - frontf2) > maxstep))
+			{
+				if (pass & PASS_SOLID)
+					AM_drawMline(&l, TSWALLCOLORS); // floor-wall, likely a course boundary
+			}
+			/*else if (lines[i].special == 2001) // guh its a sector effect in kart idk how to make it work tbh lol
+			{
+				if (pass & PASS_SOLID)
+					AM_drawMline(&l, TSFINISHLINE); // finish line
+			}*/
+			else if (backf1 != frontf1 || backf2 != frontf2)
+			{
+				if (pass & PASS_INTANGIBLE)
+					AM_drawMline(&l, FDWALLCOLORS); // floorlevel change
+			}
+			else if (backc1 != frontc1 || backc2 != frontc2)
+			{
+				if (!(pass & PASS_INTANGIBLE))
+					;
+				else if (abs(backc1 - frontc1) < maxstep
+					|| abs(backc2 - frontc2) < maxstep)
+				{
+					AM_drawMline(&l, CDWALLCOLORS); // ceilinglevel change
 				}
 				else
-					AM_drawMline(&l, NOCLIMBTSWALLCOLORS);
+				{
+					AM_drawMline(&l, GRIDCOLORS); // ceiling-wall, not likely to be a course boundary but flagged up just in case
+				}
 			}
 			else
 			{
-				if (backf1 != frontf1 || backf2 != frontf2) {
-					AM_drawMline(&l, FDWALLCOLORS); // floor level change
+				{
+					ffloor_t *rover = NULL;
+
+					if (lines[i].frontsector->ffloors || lines[i].backsector->ffloors)
+					{
+						if (lines[i].backsector->ffloors == NULL)
+						{
+							// Check frontside for one solid
+							for (rover = lines[i].frontsector->ffloors; rover; rover = rover->next)
+							{
+								if (!(rover->flags & FF_EXISTS))
+									continue;
+								if (!(rover->flags & FF_BLOCKPLAYER))
+									continue;
+								break;
+							}
+						}
+						else if (lines[i].frontsector->ffloors == NULL)
+						{
+							// Check backside for one solid
+							for (rover = lines[i].backsector->ffloors; rover; rover = rover->next)
+							{
+								if (!(rover->flags & FF_EXISTS))
+									continue;
+								if (!(rover->flags & FF_BLOCKPLAYER))
+									continue;
+								break;
+							}
+						}
+						else
+						{
+							// Check to see if any secnums exist in one but not the other.
+							rover = AM_CompareFOFs(i, lines[i].frontsector->ffloors, lines[i].backsector->ffloors);
+							if (rover == NULL)
+								rover = AM_CompareFOFs(i, lines[i].backsector->ffloors, lines[i].frontsector->ffloors);
+						}
+					}
+					if (rover != NULL)
+					{
+						if (pass & PASS_FOF)
+							AM_drawMline(&l, TSFOFINFO); // a FOF is here but we don't know how to distinguish them yet
+					}
+					else if (!am_minigen)
+					{
+						if (pass & PASS_INTANGIBLE)
+							AM_drawMline(&l, GRIDCOLORS); // likely low-relevance line
+					}
 				}
-				else if (backc1 != frontc1 || backc2 != frontc2) {
-					AM_drawMline(&l, CDWALLCOLORS); // ceiling level change
-				}
-				else
-					AM_drawMline(&l, TSWALLCOLORS);
 			}
 		}
 	}
 }
+
+#undef SLOPEPARAMS
 
 //
 // Rotation in 2D.
@@ -996,7 +1174,7 @@ static inline void AM_drawPlayers(void)
 
 	if (!multiplayer)
 	{
-		AM_drawLineCharacter(player_arrow, NUMPLYRLINES, 0, plr->mo->angle, DWHITE, plr->mo->x, plr->mo->y);
+		AM_drawLineCharacter(player_arrow, NUMPLYRLINES, 16<<FRACBITS, plr->mo->angle, DWHITE, plr->mo->x, plr->mo->y);
 		return;
 	}
 
@@ -1013,7 +1191,7 @@ static inline void AM_drawPlayers(void)
 		if (p->skincolor > 0)
 			color = R_GetTranslationColormap(TC_DEFAULT, p->skincolor, GTC_CACHE)[GREENS + 8];
 
-		AM_drawLineCharacter(player_arrow, NUMPLYRLINES, 0, p->mo->angle, color, p->mo->x, p->mo->y);
+		AM_drawLineCharacter(player_arrow, NUMPLYRLINES, 16<<FRACBITS, p->mo->angle, color, p->mo->x, p->mo->y);
 	}
 }
 
@@ -1033,13 +1211,27 @@ static inline void AM_drawThings(UINT8 colors)
 	}
 }
 
-/** Draws the crosshair, actually just a dot in software mode.
+/** Draws the crosshair.
   *
   * \param color Color for the crosshair.
   */
 static inline void AM_drawCrosshair(UINT8 color)
 {
-	V_DrawFill(f_w/2 + f_x, f_h/2 + f_y, 1, 1, color|V_NOSCALESTART);
+	const fixed_t scale = 4<<FRACBITS;
+	size_t i;
+	fline_t fl;
+	for (i = 0; i < NUMCROSSMARKLINES; i++)
+	{
+		fl.a.x = FixedMul(cross_mark[i].a.x, scale) >> FRACBITS;
+		fl.a.y = FixedMul(cross_mark[i].a.y, scale) >> FRACBITS;
+		fl.b.x = FixedMul(cross_mark[i].b.x, scale) >> FRACBITS;
+		fl.b.y = FixedMul(cross_mark[i].b.y, scale) >> FRACBITS;
+		fl.a.x += f_x + (f_w / 2);
+		fl.a.y += f_y + (f_h / 2);
+		fl.b.x += f_x + (f_w / 2);
+		fl.b.y += f_y + (f_h / 2);
+		AM_drawFline(&fl, color);
+	}
 }
 
 /** Draws the automap.
@@ -1049,11 +1241,80 @@ void AM_Drawer(void)
 	if (!automapactive)
 		return;
 
+	AM_drawFline = AM_drawFline_soft;
+#ifdef HWRENDER
+	if (rendermode == render_opengl)
+		AM_drawFline = HWR_drawAMline;
+#endif
+
 	AM_clearFB(BACKGROUND);
 	if (draw_grid) AM_drawGrid(GRIDCOLORS);
-	AM_drawWalls();
+	AM_drawWalls(PASS_FOF|PASS_INTANGIBLE|PASS_SOLID);
 	AM_drawPlayers();
 	AM_drawThings(THINGCOLORS);
 
-	AM_drawCrosshair(XHAIRCOLORS);
+	if (!followplayer) AM_drawCrosshair(XHAIRCOLORS);
+}
+
+minigen_t *AM_MinimapGenerate(INT32 mul)
+{
+	static minigen_t ret = {0};
+
+	if (automapactive)
+		return NULL;
+
+	am_minigen = true;
+
+	AM_drawFline = AM_drawFline_soft; // yes, even in GL
+
+	//AM_FrameBufferInit();
+	f_x = f_y = 0;
+	ret.w = f_w = minimapinfo.minimap_w * mul;
+	ret.h = f_h = minimapinfo.minimap_h * mul;
+	am_buf = ret.buf = NULL;
+
+	//AM_LevelInit();
+	AM_findMinMaxBoundaries();
+	scale_mtof = min_scale_mtof - (min_scale_mtof/20);
+	scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
+
+	//AM_initVariables();
+	f_oldloc.x = INT32_MAX;
+
+	m_paninc.x = m_paninc.y = 0;
+	ftom_zoommul = FRACUNIT;
+	mtof_zoommul = FRACUNIT;
+
+	m_w = FTOM(f_w);
+	m_h = FTOM(f_h);
+
+	//AM_changeWindowLoc();
+	m_x = min_x - FixedMul(m_w, FRACUNIT/40);
+	m_y = min_y - FixedMul(m_h, FRACUNIT/40);
+	m_x2 = m_x + m_w;
+	m_y2 = m_y + m_h;
+
+	// for saving & restoring
+	old_m_x = m_x;
+	old_m_y = m_y;
+	old_m_w = m_w;
+	old_m_h = m_h;
+
+	am_buf = ret.buf = malloc((f_w*f_h));
+
+	if (ret.buf == NULL)
+		return NULL;
+
+	//AM_clearFB(BACKGROUND);
+	memset(am_buf, 0xff, (f_w*f_h));
+	AM_drawWalls(PASS_FOF);
+	AM_drawWalls(PASS_INTANGIBLE);
+	AM_drawWalls(PASS_SOLID);
+
+	am_buf = NULL;
+	am_recalc = true;
+
+	am_minigen = false;
+
+	return &ret;
 }

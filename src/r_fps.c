@@ -23,6 +23,7 @@
 #include "r_state.h"
 #include "z_zone.h"
 #include "console.h" // con_startup_loadprogress
+#include "i_time.h"
 
 #ifdef HWRENDER
 #include "hardware/hw_main.h" // for cv_grshearing
@@ -79,6 +80,7 @@ static viewvars_t skyview_old[MAXSPLITSCREENPLAYERS];
 static viewvars_t skyview_new[MAXSPLITSCREENPLAYERS];
 
 static viewvars_t *oldview = &pview_old[0];
+static tic_t last_view_update;
 static int oldview_invalid[MAXSPLITSCREENPLAYERS] = {0, 0, 0, 0};
 viewvars_t *newview = &pview_new[0];
 
@@ -89,19 +91,24 @@ static levelinterpolator_t **levelinterpolators;
 static size_t levelinterpolators_len;
 static size_t levelinterpolators_size;
 
+static inline fixed_t R_LerpFixedView(fixed_t from, fixed_t to, fixed_t frac)
+{
+	return from + FixedMul(frac, to - from);
+}
+
+static inline angle_t R_LerpAngleView(angle_t from, angle_t to, fixed_t frac)
+{
+	return from + FixedMul(frac, to - from);
+}
 
 static inline fixed_t R_LerpFixed(fixed_t from, fixed_t to, fixed_t frac)
 {
-	if (from == to)
-		return to;
-	return from + FixedMul(frac, to - from);
+	return ((from == to) ? to : (from + FixedMul(frac, to - from)));
 }
 
 static inline angle_t R_LerpAngle(angle_t from, angle_t to, fixed_t frac)
 {
-	if (from == to)
-		return to;
-	return from + FixedMul(frac, to - from);
+	return ((from == to) ? to : (from + FixedMul(frac, to - from)));
 }
 
 /*static vector2_t *R_LerpVector2(const vector2_t *from, const vector2_t *to, fixed_t frac, vector2_t *out)
@@ -129,7 +136,7 @@ static void R_SetupFreelook(void)
 	// (lmps, network and use F12...)
 	if (rendermode == render_soft
 #ifdef HWRENDER
-		|| cv_grshearing.value
+		|| cv_glshearing.value
 #endif
 	)
 	{
@@ -151,7 +158,7 @@ static void R_SetupFreelook(void)
 
 void R_InterpolateViewRollAngle(fixed_t frac)
 {
-	viewroll = R_LerpAngle(oldview->roll, newview->roll, frac);
+	viewroll = R_LerpAngleView(oldview->roll, newview->roll, frac);
 }
 
 void R_InterpolateView(fixed_t frac, boolean forceinvalid)
@@ -179,19 +186,19 @@ void R_InterpolateView(fixed_t frac, boolean forceinvalid)
 		prevview = newview;
 	}
 
-	viewx = R_LerpFixed(prevview->x, newview->x, frac);
-	viewy = R_LerpFixed(prevview->y, newview->y, frac);
-	viewz = R_LerpFixed(prevview->z, newview->z, frac);
+	viewx = R_LerpFixedView(prevview->x, newview->x, frac);
+	viewy = R_LerpFixedView(prevview->y, newview->y, frac);
+	viewz = R_LerpFixedView(prevview->z, newview->z, frac);
 
-	viewangle = R_LerpAngle(prevview->angle, newview->angle, frac);
-	aimingangle = R_LerpAngle(prevview->aim, newview->aim, frac);
-	viewroll = R_LerpAngle(prevview->roll, newview->roll, frac);
+	viewangle = R_LerpAngleView(prevview->angle, newview->angle, frac);
+	aimingangle = R_LerpAngleView(prevview->aim, newview->aim, frac);
+	viewroll = R_LerpAngleView(prevview->roll, newview->roll, frac);
 
 	viewsin = FINESINE(viewangle>>ANGLETOFINESHIFT);
 	viewcos = FINECOSINE(viewangle>>ANGLETOFINESHIFT);
 
 	viewplayer = newview->player;
-	viewsector = R_PointInSubsector(viewx, viewy)->sector;
+	viewsector = R_PointInSubsectorFast(viewx, viewy)->sector;
 
 	R_SetupFreelook();
 }
@@ -207,21 +214,27 @@ void R_UpdateViewInterpolation(void)
 
 		if (oldview_invalid[i]) oldview_invalid[i]--;
 	}
+
+	last_view_update = I_GetTime();
 }
 
 void R_ResetViewInterpolation(UINT8 p)
 {
+	// Wait an extra tic if the interpolation state hasn't
+	// updated yet.
+	int t = ((last_view_update == I_GetTime()) ? 1 : 2);
+
 	if (p == 0)
 	{
 		UINT8 i;
 		for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 		{
-			oldview_invalid[i]++;
+			oldview_invalid[i] = t;
 		}
 	}
 	else
 	{
-		oldview_invalid[p - 1]++;
+		oldview_invalid[p - 1] = t;
 	}
 }
 
@@ -293,7 +306,7 @@ void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 		out->y = mobj->y;
 		out->z = mobj->z;
 		out->scale = mobj->scale;
-		out->subsector = mobj->subsector;
+		//out->subsector = mobj->subsector;
 		out->angle = mobj->player ? mobj->player->frameangle : mobj->angle;
 		out->pitch = mobj->pitch;
 		out->roll = mobj->roll;
@@ -314,8 +327,7 @@ void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 	out->spritexoffset = mobj->resetinterp ? mobj->spritexoffset : R_LerpFixed(mobj->old_spritexoffset, mobj->spritexoffset, frac);
 	out->spriteyoffset = mobj->resetinterp ? mobj->spriteyoffset : R_LerpFixed(mobj->old_spriteyoffset, mobj->spriteyoffset, frac);
 	out->scale = mobj->resetinterp ? mobj->scale : R_LerpFixed(mobj->old_scale, mobj->scale, frac);
-	//out->subsector = R_PointInSubsector(out->x, out->y); // why was this even done?
-	out->subsector = mobj->subsector;
+	//out->subsector = R_PointInSubsector(out->x, out->y); // this is unused
 
 	if (mobj->player)
 		out->angle = mobj->resetinterp ? mobj->player->frameangle : R_LerpAngle(mobj->player->old_frameangle, mobj->player->frameangle, frac);
@@ -323,7 +335,7 @@ void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 		out->angle = mobj->resetinterp ? mobj->angle : R_LerpAngle(mobj->old_angle, mobj->angle, frac);
 
 #ifdef HWRENDER
-	if (cv_grmdls.value)
+	if (rendermode == render_opengl && cv_glmdls.value)
 	{
 		// pitch roll stuff
 		out->pitch = mobj->resetinterp ? mobj->pitch : R_LerpAngle(mobj->old_pitch, mobj->pitch, frac);
@@ -351,7 +363,7 @@ void R_InterpolatePrecipMobjState(precipmobj_t *mobj, fixed_t frac, interpmobjst
 		out->y = mobj->y;
 		out->z = mobj->z;
 		out->scale = cv_mobjscaleprecip.value ? mapobjectscale : FRACUNIT;
-		out->subsector = mobj->subsector;
+		//out->subsector = mobj->subsector;
 		out->angle = mobj->angle;
 		out->spritexscale = mobj->spritexscale;
 		out->spriteyscale = mobj->spriteyscale;
@@ -368,9 +380,8 @@ void R_InterpolatePrecipMobjState(precipmobj_t *mobj, fixed_t frac, interpmobjst
 		out->spriteyscale = mobj->spriteyscale;
 		out->spritexoffset = mobj->spritexoffset;
 		out->spriteyoffset = mobj->spriteyoffset;
+		//out->subsector = R_PointInSubsector(out->x, out->y); // this is unused
 
-		//out->subsector = R_PointInSubsector(out->x, out->y); // i dont understand lol
-		out->subsector = mobj->subsector;
 		out->angle = R_LerpAngle(mobj->old_angle, mobj->angle, frac);
 }
 

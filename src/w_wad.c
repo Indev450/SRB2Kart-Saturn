@@ -1699,7 +1699,7 @@ void *W_CacheLumpName(const char *name, INT32 tag)
 #ifdef HWRENDER
 FUNCINLINE static ATTRINLINE void *W_CachePatchNumPwad(UINT16 wad, UINT16 lump, INT32 tag)
 {
-	GLPatch_t *grPatch;
+	GLPatch_t *glPatch;
 
 	if (rendermode == render_soft || rendermode == render_none)
 		return W_CacheLumpNumPwad(wad, lump, tag);
@@ -1707,29 +1707,29 @@ FUNCINLINE static ATTRINLINE void *W_CachePatchNumPwad(UINT16 wad, UINT16 lump, 
 	if (!TestValidLump(wad, lump))
 		return NULL;
 
-	grPatch = HWR_GetCachedGLPatchPwad(wad, lump);
+	glPatch = HWR_GetCachedGLPatchPwad(wad, lump);
 
-	if (grPatch->mipmap->data)
+	if (glPatch->mipmap->data)
 	{
 		if (tag == PU_CACHE)
 			tag = PU_HWRCACHE;
-		Z_ChangeTag(grPatch->mipmap->data, tag);
+		Z_ChangeTag(glPatch->mipmap->data, tag);
 	}
 	else
 	{
 		patch_t *ptr = NULL;
 
-		// Only load the patch if we haven't initialised the grPatch yet
-		if (grPatch->mipmap->width == 0)
-			ptr = W_CacheLumpNumPwad(grPatch->wadnum, grPatch->lumpnum, PU_STATIC);
+		// Only load the patch if we haven't initialised the glPatch yet
+		if (glPatch->mipmap->width == 0)
+			ptr = W_CacheLumpNumPwad(glPatch->wadnum, glPatch->lumpnum, PU_STATIC);
 
 		// Run HWR_MakePatch in all cases, to recalculate some things
-		HWR_MakePatch(ptr, grPatch, grPatch->mipmap, false);
+		HWR_MakePatch(ptr, glPatch, glPatch->mipmap, false);
 		Z_Free(ptr);
 	}
 
 	// return GLPatch_t, which can be casted to (patch_t) with valid patch header info
-	return (void *)grPatch;
+	return (void *)glPatch;
 }
 
 void *W_CachePatchNum(lumpnum_t lumpnum, INT32 tag)
@@ -2118,6 +2118,225 @@ int W_VerifyNMUSlumps(const char *filename)
 		{NULL, 0},
 	};
 	return W_VerifyFile(filename, NMUSlist, false);
+}
+
+static int W_NameStartsWith(const char *name, lumpchecklist_t *checklist)
+{
+	size_t j;
+	for (j = 0; checklist[j].len && checklist[j].name; ++j)
+	{
+		if (strncasecmp(name, checklist[j].name, checklist[j].len) == 0)
+			return true;
+	}
+	return false;
+}
+
+// Checks if file contains at least one lump which name starts with one of strings in checklist
+static int W_CheckWADContains(FILE *fp, lumpchecklist_t *checklist)
+{
+	size_t i, j;
+	// if we're here it's a WAD file
+	wadinfo_t header;
+	filelump_t lumpinfo;
+
+	// read the header
+	if (fread(&header, 1, sizeof header, fp) == sizeof header
+		&& header.numlumps < INT16_MAX
+		&& strncmp(header.identification, "ZWAD", 4)
+		&& strncmp(header.identification, "IWAD", 4)
+		&& strncmp(header.identification, "PWAD", 4)
+		&& strncmp(header.identification, "SDLL", 4))
+	{
+		return true;
+	}
+
+	header.numlumps = LONG(header.numlumps);
+	header.infotableofs = LONG(header.infotableofs);
+
+	// let seek to the lumpinfo list
+	if (fseek(fp, header.infotableofs, SEEK_SET) == -1)
+		return true;
+
+	for (i = 0; i < header.numlumps; i++)
+	{
+		// fill in lumpinfo for this wad file directory
+		if (fread(&lumpinfo, sizeof (lumpinfo), 1 , fp) != 1)
+			return -1;
+
+		lumpinfo.filepos = LONG(lumpinfo.filepos);
+		lumpinfo.size = LONG(lumpinfo.size);
+
+		if (lumpinfo.size == 0)
+			continue;
+
+		for (j = 0; j < NUMSPRITES; j++)
+			if (!strncmp(lumpinfo.name, sprnames[j], 4)) // Sprites
+				continue;
+
+		if (W_NameStartsWith(lumpinfo.name, checklist))
+			return true;
+	}
+	return false;
+}
+
+static int W_CheckPK3Contains(FILE *fp, lumpchecklist_t *checklist)
+{
+    zend_t zend;
+    zlentry_t zlentry;
+
+	long file_size;/* size of zip file */
+	long data_size;/* size of data inside zip file */
+
+	UINT16 numlumps;
+	size_t i;
+
+	char pat_central[] = {0x50, 0x4b, 0x01, 0x02, 0x00};
+	char pat_end[] = {0x50, 0x4b, 0x05, 0x06, 0x00};
+
+	char lumpname[9];
+
+	// Haha the ResGetLumpsZip function doesn't
+	// check for file errors, so neither will I.
+
+	// Central directory bullshit
+
+	fseek(fp, 0, SEEK_END);
+	file_size = ftell(fp);
+
+	if (!ResFindSignature(fp, pat_end, max(0, ftell(fp) - (22 + 65536))))
+		return true;
+
+	fseek(fp, -4, SEEK_CUR);
+	if (fread(&zend, 1, sizeof zend, fp) < sizeof zend)
+		return true;
+
+	data_size = sizeof zend;
+
+	numlumps = SHORT(zend.entries);
+
+	fseek(fp, LONG(zend.cdiroffset), SEEK_SET);
+
+	char *cdir = (char*)(malloc(LONG(zend.cdirsize)));
+
+	if (fread(cdir, 1, LONG(zend.cdirsize), fp) < (UINT32)(LONG(zend.cdirsize)))
+		return true;
+
+	size_t offset = 0;
+
+	for (i = 0; i < numlumps; i++)
+	{
+		zentry_t *zentry = (zentry_t*)(cdir + offset);
+		char* fullname;
+		char* trimname;
+		char* dotpos;
+
+		if (memcmp(zentry->signature, pat_central, 4) != 0)
+			return false;
+
+		fullname = (char*)(malloc(SHORT(zentry->namelen) + 1));
+		strlcpy(fullname, (char*)(zentry + 1), SHORT(zentry->namelen) + 1);
+
+		// Strip away file address and extension for the 8char name.
+		if ((trimname = strrchr(fullname, '/')) != 0)
+			trimname++;
+		else
+			trimname = fullname; // Care taken for root files.
+
+		if (*trimname) // Ignore directories, well kinda
+		{
+			if ((dotpos = strrchr(trimname, '.')) == 0)
+				dotpos = fullname + strlen(fullname); // Watch for files without extension.
+
+			memset(lumpname, '\0', 9); // Making sure they're initialized to 0. Is it necessary?
+			strncpy(lumpname, trimname, min(8, dotpos - trimname));
+
+			if (W_NameStartsWith(lumpname, checklist))
+				return true;
+		}
+
+		if (W_NameStartsWith(fullname, checklist))
+			return true;
+
+		free(fullname);
+
+		offset += sizeof *zentry + SHORT(zentry->namelen) + SHORT(zentry->xtralen) + SHORT(zentry->commlen);
+
+		data_size +=
+			sizeof *zentry + SHORT(zentry->namelen) + SHORT(zentry->xtralen) + SHORT(zentry->commlen);
+
+		if (fseek(fp, LONG(zentry->offset), SEEK_SET) != 0)
+			return false;
+
+		if (fread(&zlentry, 1, sizeof(zlentry_t), fp) < sizeof (zlentry_t))
+			return false;
+
+		data_size +=
+			sizeof zlentry + SHORT(zlentry.namelen) + SHORT(zlentry.xtralen) + LONG(zlentry.compsize);
+	}
+
+	free(cdir);
+
+	if (data_size < file_size)
+	{
+		const char * error = "ZIP file has holes (%ld extra bytes)\n";
+		CONS_Alert(CONS_ERROR, error, (file_size - data_size));
+		return -1;
+	}
+	else if (data_size > file_size)
+	{
+		const char * error = "Reported size of ZIP file contents exceeds file size (%ld extra bytes)\n";
+		CONS_Alert(CONS_ERROR, error, (data_size - file_size));
+		return -1;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+static int W_CheckFileContains(const char *filename, lumpchecklist_t *checklist)
+{
+	FILE *handle;
+	int contains = false;
+
+	if (!checklist)
+		I_Error("No checklist for %s\n", filename);
+	// open wad file
+	if ((handle = W_OpenWadFile(&filename, false)) == NULL)
+		return -1;
+
+	if (stricmp(&filename[strlen(filename) - 4], ".pk3") == 0)
+		contains = W_CheckPK3Contains(handle, checklist);
+	else
+	{
+		// detect wad file by the absence of the other supported extensions
+		if (stricmp(&filename[strlen(filename) - 4], ".soc")
+		&& stricmp(&filename[strlen(filename) - 4], ".lua"))
+		{
+			contains = W_CheckWADContains(handle, checklist);
+		}
+	}
+	fclose(handle);
+	return contains;
+}
+
+int W_CheckPostLoadList(const char *filename)
+{
+	static lumpchecklist_t postloadlist[] =
+	{
+		{"Lua/",		4},
+		{"SOC/",		4},
+		{"Skins/",		6},
+		{"S_SKIN",		6},
+		{"LUA_",		4},
+		{"SOC_", 		4},
+		{"MAINCFG",		7},
+		{"OBJCTCFG", 	8},
+		{"MAP",			3},
+
+		{NULL, 0},
+	};
+	return W_CheckFileContains(filename, postloadlist);
 }
 
 /** \brief Generates a virtual resource used for level data loading.

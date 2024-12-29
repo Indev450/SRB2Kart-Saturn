@@ -118,6 +118,15 @@ static void M_TextInputToWordBegin(textinput_t *input, boolean move_sel)
 	if (move_sel) input->select = input->cursor;
 }
 
+static void M_TextInputPaste(textinput_t *input)
+{
+	const char *paste = I_ClipboardPaste();
+	if (input->select != input->cursor)
+		M_TextInputDelSelection(input);
+	if (paste != NULL)
+		M_TextInputAddString(input, paste);
+}
+
 void M_TextInputInit(textinput_t *input, char *buffer, size_t buffer_size)
 {
 	input->buffer = buffer;
@@ -131,6 +140,8 @@ void M_TextInputClear(textinput_t *input)
 	input->cursor = 0;
 	input->select = 0;
 	input->length = 0;
+
+	input->buffer[0] = 0;
 }
 
 void M_TextInputSetString(textinput_t *input, const char *c)
@@ -146,6 +157,12 @@ boolean M_TextInputHandle(textinput_t *input, INT32 key)
 	 || key == KEY_LCTRL || key == KEY_RCTRL
 	 || key == KEY_LALT || key == KEY_RALT)
 		return false;
+
+	if (shiftdown && key == KEY_INS)
+	{
+		M_TextInputPaste(input);
+		return true;
+	}
 
 	if ((cv_keyboardlayout.value != 3 && ctrldown) || (cv_keyboardlayout.value == 3 && ctrldown && !altdown))
 	{
@@ -168,11 +185,7 @@ boolean M_TextInputHandle(textinput_t *input, INT32 key)
 		}
 		else if (key == 'v' || key == 'V')
 		{
-			const char *paste = I_ClipboardPaste();
-			if (input->select != input->cursor)
-				M_TextInputDelSelection(input);
-			if (paste != NULL)
-				M_TextInputAddString(input, paste);
+			M_TextInputPaste(input);
 			return true;
 		}
 		else if (key == 'w' || key == 'W')

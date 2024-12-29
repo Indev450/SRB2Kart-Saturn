@@ -182,6 +182,9 @@ void V_DrawFadeScreen(UINT16 color, UINT8 strength);
 
 void V_DrawFadeConsBack(INT32 plines);
 
+// allow menu text to be displayed in lowercase
+#define MENUCAPS (!cv_menucaps.value ? V_ALLOWLOWERCASE : 0)
+
 // draw a single character
 void V_DrawCharacter(INT32 x, INT32 y, INT32 c, boolean lowercaseallowed);
 // draw a single character, but for the chat
@@ -251,7 +254,9 @@ INT32 V_SubStringLengthToFit(const char *string, INT32 width, INT32 option);
 
 char V_GetSkincolorChar(INT32 color);
 
-void V_DoPostProcessor(INT32 view, postimg_t type, INT32 param);
+typedef struct player_s player_t;
+
+void V_DoPostProcessor(INT32 view, player_t *player, INT32 param);
 
 void V_DrawPatchFill(patch_t *pat);
 

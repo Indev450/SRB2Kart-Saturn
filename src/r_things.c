@@ -31,6 +31,7 @@
 #include "dehacked.h" // get_number (for thok)
 #include "d_netfil.h" // blargh. for nameonly().
 #include "m_cheat.h" // objectplace
+#include "r_portal.h"
 #include "k_kart.h" // SRB2kart
 #include "p_local.h" // stplyr
 #ifdef HWRENDER
@@ -522,7 +523,7 @@ void R_InitSprites(void)
 
 	// it can be is do before loading config for skin cvar possible value
 	R_InitSkins();
-	for (i = 0; i < numwadfiles; i++) 
+	for (i = 0; i < numwadfiles; i++)
 	{
 		R_AddSkins((UINT16)i, false);
 		R_LoadSpriteInfoLumps(i, wadfiles[i]->numlumps);
@@ -732,7 +733,7 @@ static void R_DrawVisSprite(vissprite_t *vis)
 		if (overflow_test < 0) overflow_test = -overflow_test;
 		if ((UINT64)overflow_test&0xFFFFFFFF80000000ULL) return; // ditto
 	}
-	
+
 	// TODO This check should not be necessary. But Papersprites near to the camera will sometimes create invalid values
 	// for the vissprite's startfrac. This happens because they are not depth culled like other sprites.
 	// Someone who is more familiar with papersprites pls check and try to fix <3
@@ -964,7 +965,8 @@ static void R_DrawPrecipitationVisSprite(vissprite_t *vis)
 
 //
 // R_SplitSprite
-// runs through a sector's lightlist and
+// runs through a sector's lightlist and splits the sprite according to the heights
+//
 static void R_SplitSprite(vissprite_t *sprite, mobj_t *thing)
 {
 	INT32 i, lightnum, lindex;
@@ -1114,8 +1116,6 @@ fixed_t R_GetShadowZ(mobj_t *thing, pslope_t **shadowslope)
 //
 static void R_ProjectSprite(mobj_t *thing)
 {
-	mobj_t *oldthing = thing;
-
 	fixed_t tr_x, tr_y;
 	fixed_t gxt, gyt;
 	fixed_t tx, tz;
@@ -1133,24 +1133,23 @@ static void R_ProjectSprite(mobj_t *thing)
 	size_t rot;
 	UINT8 flip;
 
-	boolean mirrored = thing->mirrored;
-	boolean hflip = (!(thing->frame & FF_HORIZONTALFLIP) != !mirrored);
-
 	INT32 lindex;
 
 	vissprite_t *vis;
 
 	angle_t ang = 0; // gcc 4.6 and lower fix
+#ifdef ROTSPRITE
 	angle_t camang = 0;
+#endif
 	fixed_t iscale;
 	fixed_t scalestep; // toast '16
 	fixed_t offset, offset2;
-	boolean papersprite = (thing->frame & FF_PAPERSPRITE);
 	fixed_t paperoffset = 0, paperdistance = 0; angle_t centerangle = 0;
 
 	//SoM: 3/17/2000
 	fixed_t gz, gzt;
 	INT32 heightsec, phs;
+	INT32 dist = -1;
 	INT32 light = 0;
 	fixed_t this_scale;
 	fixed_t spritexscale, spriteyscale;
@@ -1162,21 +1161,28 @@ static void R_ProjectSprite(mobj_t *thing)
 #ifdef ROTSPRITE
 	patch_t *rotsprite = NULL;
 	INT32 rollangle = 0;
-	angle_t rollsum = 0;
 	angle_t pitchnroll = 0;
 	angle_t sliptiderollangle = 0;
 #endif
-	
-	INT32 dist = -1;
 
-	if (cv_grmaxinterpdist.value)
+	if (P_MobjWasRemoved(thing) || thing->subsector == NULL)
+		return;
+
+	mobj_t *oldthing = thing;
+
+	const boolean mirrored = thing->mirrored;
+	const boolean vflip = (thing->eflags & MFE_VERTICALFLIP);
+	const boolean hflip = (!(thing->frame & FF_HORIZONTALFLIP) != !mirrored);
+	const boolean papersprite = (thing->frame & FF_PAPERSPRITE);
+
+	if (cv_maxinterpdist.value)
 		dist = R_QuickCamDist(thing->x, thing->y);
 
 	// uncapped/interpolation
 	interpmobjstate_t interp = {0};
 
 	// do interpolation
-	if (R_UsingFrameInterpolation() && !paused && (!cv_grmaxinterpdist.value || dist < cv_grmaxinterpdist.value))
+	if (R_UsingFrameInterpolation() && !paused && (!cv_maxinterpdist.value || dist < cv_maxinterpdist.value))
 	{
 		R_InterpolateMobjState(oldthing, rendertimefrac, &interp);
 	}
@@ -1205,7 +1211,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	tx = -(gyt + gxt);
 
 	// too far off the side?
-	if (!papersprite && abs(tx) > tz<<2) // papersprite clipping is handled later
+	if (!papersprite && abs(tx) > (INT64)tz<<2) // papersprite clipping is handled later
 		return;
 
 	// aspect ratio stuff
@@ -1218,7 +1224,13 @@ static void R_ProjectSprite(mobj_t *thing)
 		I_Error("R_ProjectSprite: invalid sprite number %d ", thing->sprite);
 #endif
 
-	rot = thing->frame&FF_FRAMEMASK;
+	rot = (thing->frame & FF_FRAMEMASK);
+
+#ifdef ROTSPRITE
+	// determine here if sprite should rotate for optimization
+	const boolean sliprollrotate = (cv_sloperoll.value && cv_sliptideroll.value && (thing->player && thing->player->sliproll));
+	const boolean shouldrotate = (cv_sloperoll.value && (interp.roll || interp.pitch || interp.sloperoll || interp.slopepitch || thing->rollangle || sliprollrotate));
+#endif
 
 	//Fab : 02-08-98: 'skin' override spritedef currently used for skin
 	if ((thing->skin || thing->localskin) && thing->sprite == SPR_PLAY)
@@ -1249,7 +1261,7 @@ static void R_ProjectSprite(mobj_t *thing)
 #ifdef ROTSPRITE
 		sprinfo = &spriteinfo[thing->sprite];
 #endif
-		rot = thing->frame&FF_FRAMEMASK;
+		rot = (thing->frame & FF_FRAMEMASK);
 		if (!thing->skin)
 		{
 			thing->state->sprite = thing->sprite;
@@ -1264,11 +1276,18 @@ static void R_ProjectSprite(mobj_t *thing)
 		I_Error("R_ProjectSprite: sprframes NULL for sprite %d\n", thing->sprite);
 #endif
 
-	if (sprframe->rotate != SRF_SINGLE || papersprite || (cv_sloperoll.value == 2 && cv_spriteroll.value))
+	if (sprframe->rotate != SRF_SINGLE || papersprite ||
+#ifdef ROTSPRITE
+		(shouldrotate)
+#endif
+	)
 	{
-		ang = R_PointToAngle (interp.x, interp.y) - interp.angle;
-		camang = R_PointToAngle (interp.x, interp.y);
-		
+		ang = R_PointToAngle(interp.x, interp.y);
+#ifdef ROTSPRITE
+		camang = ang;
+#endif
+		ang -= interp.angle;
+
 		if (mirrored)
 			ang = InvAngle(ang);
 	}
@@ -1285,9 +1304,9 @@ static void R_ProjectSprite(mobj_t *thing)
 		// choose a different rotation based on player view
 		//ang = R_PointToAngle (interp.x, interp.y) - interpangle;
 
-		if ((ang < ANGLE_180) && (sprframe->rotate & SRF_RIGHT)) // See from right
+		if ((sprframe->rotate & SRF_RIGHT) && (ang < ANGLE_180)) // See from right
 			rot = 6; // F7 slot
-		else if ((ang >= ANGLE_180) && (sprframe->rotate & SRF_LEFT)) // See from left
+		else if ((sprframe->rotate & SRF_LEFT) && (ang >= ANGLE_180)) // See from left
 			rot = 2; // F3 slot
 		else // Normal behaviour
 			rot = (ang+ANGLE_202h)>>29;
@@ -1298,7 +1317,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	}
 
 	I_Assert(lump < max_spritelumps);
-	
+
 	if (thing->localskin && ((skin_t *)thing->localskin)->flags & SF_HIRES)
 		this_scale = FixedMul(this_scale, ((skin_t *)thing->localskin)->highresscale);
 	else if (thing->skin && ((skin_t *)thing->skin)->flags & SF_HIRES)
@@ -1310,9 +1329,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	spr_topoffset = spritecachedinfo[lump].topoffset;
 
 #ifdef ROTSPRITE
-    pitchnroll = 0;  // set this to 0, non-paper sprites will affect this value
-	
-	if (cv_spriteroll.value)
+	if (shouldrotate)
 	{
 		if (papersprite)
 		{
@@ -1330,37 +1347,29 @@ static void R_ProjectSprite(mobj_t *thing)
 		{
 			// this is very messy, but it on-the-fly calculates rotations for all the
 			// pitch and roll variables
-			pitchnroll = FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), interp.roll) +
-						 FixedMul(FINESINE((ang) >> ANGLETOFINESHIFT), interp.pitch) +
-						 FixedMul(FINECOSINE((camang) >> ANGLETOFINESHIFT), interp.sloperoll) +
-						 FixedMul(FINESINE((camang) >> ANGLETOFINESHIFT), interp.slopepitch);
-
+			pitchnroll = R_RotationAngle(ang, camang, &interp);
 			rollangle = thing->rollangle;
 		}
 
-		if (rollangle || pitchnroll || (thing->player && thing->player->sliproll))
+		if (rollangle || pitchnroll || sliprollrotate)
 		{
-			rollsum = pitchnroll;
-
-			if (thing->player)
+			if (sliprollrotate)
 			{
-				sliptiderollangle =
-					cv_sliptideroll.value ? thing->player->sliproll * (thing->player->sliptidemem) : 0;
-				rollsum += thing->rollangle +
-						   FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), sliptiderollangle);
+				sliptiderollangle = thing->player->sliproll * thing->player->kartstuff[k_aizdriftstrat];
+				pitchnroll += rollangle + FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), sliptiderollangle);
 			}
 			else
-				rollsum += thing->rollangle;
+				pitchnroll += rollangle;
 
-			rollangle = R_GetRollAngle(rollsum);
+			rollangle = R_GetRollAngle(pitchnroll);
 			rotsprite = Patch_GetRotatedSprite(sprframe, (thing->frame & FF_FRAMEMASK), rot, flip, false, sprinfo, rollangle);
 
 			if (rotsprite != NULL)
 			{
-				spr_width = rotsprite->width << FRACBITS;
-				spr_height = rotsprite->height << FRACBITS;
-				spr_offset = rotsprite->leftoffset << FRACBITS;
-				spr_topoffset = rotsprite->topoffset << FRACBITS;
+				spr_width = SHORT(rotsprite->width) << FRACBITS;
+				spr_height = SHORT(rotsprite->height) << FRACBITS;
+				spr_offset = SHORT(rotsprite->leftoffset) << FRACBITS;
+				spr_topoffset = SHORT(rotsprite->topoffset) << FRACBITS;
 				spr_topoffset += FEETADJUST;
 
 				// flip -> rotate, not rotate -> flip
@@ -1378,21 +1387,8 @@ static void R_ProjectSprite(mobj_t *thing)
 	if (spritexscale < 1 || spriteyscale < 1)
 		return;
 
-	if (thing->renderflags & RF_ABSOLUTEOFFSETS)
-	{
-		spr_offset = interp.spritexoffset;
-		spr_topoffset = interp.spriteyoffset;
-	}
-	else
-	{
-		SINT8 flipoffset = 1;
-
-		if ((thing->renderflags & RF_FLIPOFFSETS) && flip)
-			flipoffset = -1;
-
-		spr_offset += interp.spritexoffset * flipoffset;
-		spr_topoffset += interp.spriteyoffset * flipoffset;
-	}
+	spr_offset += interp.spritexoffset;
+	spr_topoffset += interp.spriteyoffset;
 
 	if (flip)
 		offset = spr_offset - spr_width;
@@ -1469,7 +1465,7 @@ static void R_ProjectSprite(mobj_t *thing)
 			tx2 += FixedDiv(tx-tx2, div);
 			tz2 = FixedMul(MINZ, this_scale);
 		}
-		
+
 		if ((tx2 / 4) < -(FixedMul(tz2, fovtan)) || (tx / 4) > FixedMul(tz, fovtan)) // too far off the side?
 			return;
 
@@ -1497,7 +1493,7 @@ static void R_ProjectSprite(mobj_t *thing)
 			return;
 
 		range++; // fencepost problem
-		
+
 		if (range > 32767)
 		{
 			// If the range happens to be too large for fixed_t,
@@ -1548,7 +1544,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	}
 
 	//SoM: 3/17/2000: Disregard sprites that are out of view..
-	if (thing->eflags & MFE_VERTICALFLIP)
+	if (vflip)
 	{
 		// When vertical flipped, draw sprites from the top down, at least as far as offsets are concerned.
 		// sprite height - sprite topoffset is the proper inverse of the vertical offset, of course.
@@ -1612,7 +1608,6 @@ static void R_ProjectSprite(mobj_t *thing)
 
 	// store information in a vissprite
 	vis = R_NewVisSprite();
-	vis->renderflags = thing->renderflags;
 	vis->heightsec = heightsec; //SoM: 3/17/2000
 	vis->mobjflags = thing->flags;
 	vis->scale = yscale; //<<detailshift;
@@ -1677,7 +1672,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	//Fab: lumppat is the lump number of the patch to use, this is different
 	//     than lumpid for sprites-in-pwad : the graphics are patched
 #ifdef ROTSPRITE
-	if ((rotsprite != NULL) && (cv_spriteroll.value))
+	if (rotsprite != NULL)
 		vis->patch = rotsprite;
 	else
 #endif
@@ -1715,10 +1710,7 @@ static void R_ProjectSprite(mobj_t *thing)
 
 	vis->precip = false;
 
-	if (thing->eflags & MFE_VERTICALFLIP)
-		vis->vflip = true;
-	else
-		vis->vflip = false;
+	vis->vflip = vflip;
 
 	vis->isScaled = false;
 
@@ -1752,7 +1744,10 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 
 	INT32 dist = 1;
 
-	if (cv_grmaxinterpdist.value)
+	if (!thing || thing->subsector == NULL)
+		return;
+
+	if (cv_maxinterpdist.value)
 		dist = R_QuickCamDist(thing->x, thing->y);
 
 	// uncapped/interpolation
@@ -1765,7 +1760,7 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 	}
 
 	// do interpolation
-	if (R_UsingFrameInterpolation() && !paused && (!cv_grmaxinterpdist.value || dist < cv_grmaxinterpdist.value))
+	if (R_UsingFrameInterpolation() && !paused && (!cv_maxinterpdist.value || dist < cv_maxinterpdist.value))
 	{
 		R_InterpolatePrecipMobjState(thing, rendertimefrac, &interp);
 	}
@@ -1954,6 +1949,7 @@ void R_AddSprites(sector_t *sec, INT32 lightlevel)
 	// Handle all things in sector.
 	// If a limit exists, handle things a tiny bit different.
 	const fixed_t limit_dist = (fixed_t)(cv_drawdist.value) * mapobjectscale;
+
 	for (thing = sec->thinglist; thing; thing = thing->snext)
 	{
 		if (!R_ThingWithinDist(thing, limit_dist))
@@ -1973,7 +1969,8 @@ void R_AddSprites(sector_t *sec, INT32 lightlevel)
 //
 void R_AddPrecipitationSprites(void)
 {
-	fixed_t drawdist = (fixed_t)(cv_drawdist_precip.value) * (cv_mobjscaleprecip.value ? mapobjectscale : FRACUNIT);
+	fixed_t precipscale = (cv_mobjscaleprecip.value ? mapobjectscale : FRACUNIT);
+	fixed_t drawdist = ((fixed_t)(cv_drawdist_precip.value) * precipscale);
 
 	INT32 xl, xh, yl, yh, bx, by;
 	precipmobj_t *th, *next;
@@ -2383,7 +2380,7 @@ static drawnode_t *R_CreateDrawNode(drawnode_t *link)
 	node->thickseg = NULL;
 	node->ffloor = NULL;
 	node->sprite = NULL;
-	
+
 	ps_numdrawnodes.value.i++;
 	return node;
 }
@@ -2660,7 +2657,7 @@ static void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2)
 		if (spr->cliptop[x] == -2)
 			spr->cliptop[x] = -1;
 	}
-	
+
 	// Check if it'll be visible
 	// Not done for floorsprites.
 	if (cv_spriteclip.value)
@@ -2735,7 +2732,7 @@ void R_ClipSprites(void)
 	for (; clippedvissprites < visspritecount; clippedvissprites++)
 	{
 		vissprite_t *spr = R_GetVisSprite(clippedvissprites);
-		
+
 		if (cv_spriteclip.value
 		&& (spr->szt > vid.height || spr->sz < 0))
 		{
@@ -2760,7 +2757,7 @@ void R_ClipSprites(void)
 		}
 
 		R_ClipVisSprite(spr, spr->x1, spr->x2);
-		
+
 		if ((spr->cut & SC_NOTVISIBLE) == 0)
 			numvisiblesprites++;
 	}
@@ -2772,15 +2769,15 @@ boolean R_ThingVisible (mobj_t *thing)
 	if (thing->sprite == SPR_NULL || thing->flags2 & MF2_DONTDRAW)
 		return false;
 
-	if (viewmobj && (thing == viewmobj))
+	if (!P_MobjWasRemoved(viewmobj) && (thing == viewmobj))
 		return false;
 
 	if (splitscreen)
 	{
-		if ((viewssnum == 0 && (thing->renderflags & MFE_DRAWONLYFORP1))
-			|| (viewssnum == 1 && (thing->renderflags & MFE_DRAWONLYFORP2))
-			|| (viewssnum == 2 && (thing->renderflags & MFE_DRAWONLYFORP2))
-			|| (viewssnum == 3 && (thing->renderflags & MFE_DRAWONLYFORP4)))
+		if ((viewssnum == 0 && (thing->eflags & MFE_DRAWONLYFORP1))
+			|| (viewssnum == 1 && (thing->eflags & MFE_DRAWONLYFORP2))
+			|| (viewssnum == 2 && (thing->eflags & MFE_DRAWONLYFORP2))
+			|| (viewssnum == 3 && (thing->eflags & MFE_DRAWONLYFORP4)))
 			return true;
 	}
 
@@ -3287,7 +3284,7 @@ static int skinSortFunc(const void *a, const void *b) //tbh i have no clue what 
 void sortSkinGrid(void)
 {
 	//CONS_Printf("Sorting skin list (%d)...\n", cv_skinselectgridsort.value);
-  qs22j(skinsorted, numskins, sizeof(UINT8), skinSortFunc);
+	qs22j(skinsorted, numskins, sizeof(UINT8), skinSortFunc);
 }
 
 //
@@ -3313,12 +3310,12 @@ void R_AddSkins(UINT16 wadnum, boolean local)
 		// advance by default
 		lastlump = lump + 1;
 
-		if (numskins >= MAXSKINS)
+		if (!local && numskins >= MAXSKINS)
 		{
 			CONS_Alert(CONS_WARNING, M_GetText("Unable to add skin, too many characters are loaded (%d maximum)\n"), MAXSKINS);
 			continue; // so we know how many skins couldn't be added
 		}
-		if (numlocalskins >= MAXLOCALSKINS)
+		if (local && numlocalskins >= MAXLOCALSKINS)
 		{
 			CONS_Alert(CONS_WARNING, M_GetText("Unable to add localskin, too many localskins are loaded (%d maximum)\n"), MAXLOCALSKINS);
 			continue; // so we know how many skins couldn't be added
@@ -3571,7 +3568,7 @@ next_token:
 			Forceskin_cons_t[numskins+1].value = numskins;
 			Forceskin_cons_t[numskins+1].strvalue = skins[numskins].name;
 		}
-		
+
 		skin->localskin = local;
 
 		// so we dont have to guess
@@ -3598,7 +3595,7 @@ next_token:
 			CONS_Debug(DBG_SETUP, M_GetText("Incremented %d, %d to %d\n"), skin->kartspeed, skin->kartweight, skinstatscount[skin->kartspeed - 1][skin->kartweight - 1]);
 			skinsorted[numskins] = numskins;
 		}
-		
+
 		allskins[numallskins] = ( (local) ? localskins : skins )[( (local) ? numlocalskins : numskins )];
 
 		local ? numlocalskins++ : numskins++;

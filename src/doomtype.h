@@ -344,14 +344,12 @@ typedef union FColorRGBA RGBA_t;
 
 typedef enum
 {
-	postimg_none,
-	postimg_water,
-	postimg_motion,
-	postimg_flip,
-	postimg_heat,
-	postimg_mirror,
-	postimg_mirrorflip
-} postimg_t;
+	POSTIMG_WATER	= 1,	// Underwater screen effect.
+	POSTIMG_MOTION	= 1<<1, // Unused motion blur effect.
+	POSTIMG_FLIP	= 1<<2, // Flipcam screen effect.
+	POSTIMG_HEAT	= 1<<3, // Heatwave screen effect.
+	POSTIMG_MIRROR	= 1<<4, // encore screen effect.
+} postimgflag_t;
 
 typedef UINT32 lumpnum_t; // 16 : 16 unsigned long (wad num: lump num)
 #define LUMPERROR UINT32_MAX
@@ -366,6 +364,30 @@ typedef UINT32 tic_t;
 #else
 #define UINT2RGBA(a) (UINT32)((a&0xff)<<24)|((a&0xff00)<<8)|((a&0xff0000)>>8)|(((UINT32)a&0xff000000)>>24)
 #endif
+
+#define TOSTR(x) #x
+
+typedef UINT8 bitarray_t;
+
+#define BIT_ARRAY_SIZE(n) (((n) + 7) >> 3)
+
+static inline int
+in_bit_array (const bitarray_t * const array, const int value)
+{
+	return (array[value >> 3] & (1<<(value & 7)));
+}
+
+static inline void
+set_bit_array (bitarray_t * const array, const int value)
+{
+	array[value >> 3] |= (1<<(value & 7));
+}
+
+static inline void
+unset_bit_array (bitarray_t * const array, const int value)
+{
+	array[value >> 3] &= ~(1<<(value & 7));
+}
 
 typedef UINT64 precise_t;
 

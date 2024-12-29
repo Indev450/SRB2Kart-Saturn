@@ -35,23 +35,33 @@ void P_ClosestPointOnLine(fixed_t x, fixed_t y, line_t *line, vertex_t *result)
 	fixed_t dy = line->dy;
 
 	// Determine t (the length of the vector from �Line[0]� to �p�)
+	fixed_t cx, cy;
+	fixed_t vx, vy;
 	fixed_t magnitude;
 	fixed_t t;
 
+	//Sub (p, &Line[0], &c);
+	cx = x - startx;
+	cy = y - starty;
+
+	//Sub (&Line[1], &Line[0], &V);
+	vx = dx;
+	vy = dy;
+
 	//Normalize (&V, &V);
 	magnitude = R_PointToDist2(line->v2->x, line->v2->y, startx, starty);
-	dx = FixedDiv(dx, magnitude);
-	dy = FixedDiv(dy, magnitude);
+	vx = FixedDiv(vx, magnitude);
+	vy = FixedDiv(vy, magnitude);
 
-	t = (FixedMul(dx, (x - startx)) + FixedMul(dy, (y - starty)));
+	t = (FixedMul(vx, cx) + FixedMul(vy, cy));
 
 	// Return the point between �Line[0]� and �Line[1]�
-	dx = FixedMul(dx, t);
-	dy = FixedMul(dy, t);
+	vx = FixedMul(vx, t);
+	vy = FixedMul(vy, t);
 
 	//Add (&Line[0], &V, out);
-	result->x = startx + dx;
-	result->y = starty + dy;
+	result->x = startx + vx;
+	result->y = starty + vy;
 	return;
 }
 
@@ -69,15 +79,28 @@ void P_ClosestPointOnLine3D(fixed_t x, fixed_t y, fixed_t z, line_t *line, verte
 	fixed_t dz = line->v2->z - line->v1->z;
 
 	// Determine t (the length of the vector from �Line[0]� to �p�)
+	fixed_t cx, cy, cz;
+	fixed_t vx, vy, vz;
 	fixed_t magnitude;
 	fixed_t t;
 
-	magnitude = R_PointToDist2(0, line->v2->z, R_PointToDist2(line->v2->x, line->v2->y, startx, starty), startz);
-	dx = FixedDiv(dx, magnitude);
-	dy = FixedDiv(dy, magnitude);
-	dz = FixedDiv(dz, magnitude);
+	//Sub (p, &Line[0], &c);
+	cx = x - startx;
+	cy = y - starty;
+	cz = z - startz;
 
-	t = (FixedMul(dx, (x - startx)) + FixedMul(dy, (y - starty)) + FixedMul(dz, (z - startz)));
+	//Sub (&Line[1], &Line[0], &V);
+	vx = dx;
+	vy = dy;
+	vz = dz;
+
+	//Normalize (&V, &V);
+	magnitude = R_PointToDist2(0, line->v2->z, R_PointToDist2(line->v2->x, line->v2->y, startx, starty), startz);
+	vx = FixedDiv(vx, magnitude);
+	vy = FixedDiv(vy, magnitude);
+	vz = FixedDiv(vz, magnitude);
+
+	t = (FixedMul(vx, cx) + FixedMul(vy, cy) + FixedMul(vz, cz));
 
 	// Set closest point to the end if it extends past -Red
 	if (t <= 0)
@@ -96,14 +119,14 @@ void P_ClosestPointOnLine3D(fixed_t x, fixed_t y, fixed_t z, line_t *line, verte
 	}
 
 	// Return the point between �Line[0]� and �Line[1]�
-	dx = FixedMul(dx, t);
-	dy = FixedMul(dy, t);
-	dz = FixedMul(dz, t);
+	vx = FixedMul(vx, t);
+	vy = FixedMul(vy, t);
+	vz = FixedMul(vz, t);
 
 	//Add (&Line[0], &V, out);
-	result->x = startx + dx;
-	result->y = starty + dy;
-	result->z = startz + dz;
+	result->x = startx + vx;
+	result->y = starty + vy;
+	result->z = startz + vz;
 	return;
 }
 
@@ -113,16 +136,21 @@ void P_ClosestPointOnLine3D(fixed_t x, fixed_t y, fixed_t z, line_t *line, verte
 //
 INT32 P_PointOnLineSide(fixed_t x, fixed_t y, const line_t *line)
 {
+	fixed_t dx, dy, left, right;
+
 	if (!line->dx)
 		return x <= line->v1->x ? line->dy > 0 : line->dy < 0;
 
 	if (!line->dy)
 		return y <= line->v1->y ? line->dx < 0 : line->dx > 0;
 
-	x -= line->v1->x;
-	y -= line->v1->y;
+	dx = (x - line->v1->x);
+	dy = (y - line->v1->y);
 
-	return FixedMul(y, line->dx>>FRACBITS) < FixedMul(line->dy>>FRACBITS, x) ? 0 : 1;
+	left = FixedMul(line->dy>>FRACBITS, dx);
+	right = FixedMul(dy, line->dx>>FRACBITS);
+
+	return right < left ? 0 : 1;
 }
 
 //
@@ -182,21 +210,27 @@ INT32 P_BoxOnLineSide(fixed_t *tmbox, const line_t *ld)
 //
 static INT32 P_PointOnDivlineSide(fixed_t x, fixed_t y, divline_t *line)
 {
+	fixed_t dx, dy, left, right;
+
 	if (!line->dx)
 		return x <= line->x ? line->dy > 0 : line->dy < 0;
 
 	if (!line->dy)
 		return y <= line->y ? line->dx < 0 : line->dx > 0;
 
-	x -= line->x;
-	y -= line->y;
+	dx = (x - line->x);
+	dy = (y - line->y);
 
 	// try to quickly decide by looking at sign bits
-	if ((line->dy ^ line->dx ^ x ^ y) & 0x80000000)
-		return ((line->dy ^ x) & 0x80000000) ? 1 : 0;
+	if ((line->dy ^ line->dx ^ dx ^ dy) & 0x80000000)
+		return ((line->dy ^ dx) & 0x80000000) ? 1 : 0;
 
-	return FixedMul(y>>8, line->dx>>8) < FixedMul(line->dy>>8, x>>8) ? 0 : 1;
+	left = FixedMul(line->dy>>8, dx>>8);
+	right = FixedMul(dy>>8, line->dx>>8);
+
+	return right < left ? 0 : 1;
 }
+
 
 //
 // P_MakeDivline
@@ -216,14 +250,17 @@ void P_MakeDivline(line_t *li, divline_t *dl)
 //
 fixed_t P_InterceptVector(divline_t *v2, divline_t *v1)
 {
-	fixed_t den;
+	fixed_t frac, num, den;
 
 	den = FixedMul(v1->dy>>8, v2->dx) - FixedMul(v1->dx>>8, v2->dy);
 
 	if (!den)
 		return 0;
 
-	return (FixedDiv(FixedMul((v1->x - v2->x)>>8, v1->dy) + FixedMul((v2->y - v1->y)>>8, v1->dx), den));
+	num = FixedMul((v1->x - v2->x)>>8, v1->dy) + FixedMul((v2->y - v1->y)>>8, v1->dx);
+	frac = FixedDiv(num, den);
+
+	return frac;
 }
 
 //

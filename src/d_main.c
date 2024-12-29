@@ -15,6 +15,7 @@
 ///        plus functions to parse command line parameters, configure game
 ///        parameters, and call the startup functions.
 
+#include "d_netcmd.h"
 #if defined (__unix__) || defined (__APPLE__) || defined (UNIXCOMMON)
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -99,7 +100,6 @@ UINT8 window_notinfocus = false;
 // DEMO LOOP
 //
 //static INT32 demosequence;
-static const char *pagename = "MAP1PIC";
 static char *startupwadfiles[MAX_WADFILES];
 static char *startuppwads[MAX_WADFILES];
 
@@ -116,7 +116,6 @@ boolean devparm = false; // started game with -devparm
 boolean singletics = false; // timedemo
 boolean lastdraw = false;
 
-postimg_t postimgtype[MAXSPLITSCREENPLAYERS];
 INT32 postimgparam[MAXSPLITSCREENPLAYERS];
 
 // These variables are only true if
@@ -183,7 +182,7 @@ static inline void D_DeviceLEDTick(void)
 
 	for (i = 0; i <= splitscreen; i++)
 	{
-		if (G_GetDeviceForPlayer(i) == 0)
+		if (cv_usejoystick[i].value == 0)
 			continue;
 
 		color[i] = G_GetSkinColor(i);
@@ -451,6 +450,8 @@ static boolean D_Display(void)
 			{
 				if (players[displayplayers[i]].mo || players[displayplayers[i]].playerstate == PST_DEAD)
 				{
+					viewssnum = i;
+
 					if (i == 0) // Initialize for P1
 					{
 						viewwindowy = 0;
@@ -459,8 +460,6 @@ static boolean D_Display(void)
 						topleft = screens[0] + viewwindowy*vid.width + viewwindowx;
 						objectsdrawn = 0;
 					}
-
-					viewssnum = i;
 
 #ifdef HWRENDER
 					if (rendermode == render_opengl)
@@ -513,15 +512,12 @@ static boolean D_Display(void)
 
 			if (rendermode == render_soft)
 			{
-					if (!splitscreen)
-						R_ApplyViewMorph();
+				if (!splitscreen)
+					R_ApplyViewMorph();
 
 				for (i = 0; i <= splitscreen; i++)
 				{
-					if (!postimgtype[i])
-						continue;
-
-					V_DoPostProcessor(i, postimgtype[i], postimgparam[i]);
+					V_DoPostProcessor(i, &players[displayplayers[i]], postimgparam[i]);
 				}
 			}
 
@@ -542,6 +538,8 @@ static boolean D_Display(void)
 		PS_START_TIMING(ps_uitime);
 		ST_Drawer();
 		HU_Drawer();
+
+		NetUpdate(); // TEST: run this EVERY frame
 	}
 	else
 	{
@@ -745,10 +743,10 @@ void D_SRB2Loop(void)
 
 		renderisnewtic = (realtics > 0 || singletics);
 
-		refreshdirmenu = 0; // not sure where to put this, here as good as any?
-
 		if (renderisnewtic)
 		{
+			refreshdirmenu = 0; // not sure where to put this, here as good as any?
+
 			// don't skip more than 10 frames at a time
 			// (fadein / fadeout cause massive frame skip!)
 			if (realtics > 8)
@@ -818,7 +816,7 @@ void D_SRB2Loop(void)
 		{
 			renderdeltatics = FLOAT_TO_FIXED(deltatics);
 
-			if (!(paused || P_AutoPause()) && deltatics < 1.0 && !hu_stopped)
+			if (!(paused || P_AutoPause()) && !hu_stopped)
 			{
 				rendertimefrac = g_time.timefrac;
 			}
@@ -857,7 +855,7 @@ void D_SRB2Loop(void)
 		LUA_Step();
 
 #ifdef HAVE_DISCORDRPC
-		if (! dedicated)
+		if (!dedicated)
 		{
 			Discord_RunCallbacks();
 		}
@@ -966,6 +964,9 @@ void D_StartTitle(void)
 	//demosequence = -1;
 	gametype = GT_RACE; // SRB2kart
 	paused = false;
+
+	S_ResetKeepAndSpecialMus(); // just in case
+
 	F_StartTitleScreen();
 
 	// Reset the palette -- SRB2Kart: actually never mind let's do this in the middle of every fade
@@ -1072,8 +1073,7 @@ static void D_FindAddonsToAutoload(void)
 	const char *autoloadpath;
 	boolean postload;
 
-	INT32 i, len;
-	boolean hasprefix = false;
+	INT32 i;
 	char wadsToAutoload[256] = "";
 
 	// does it exist tho
@@ -1095,7 +1095,8 @@ static void D_FindAddonsToAutoload(void)
 			|| (wadsToAutoload[0] == '#'))
 			continue;
 		// this marks it so that it loads after loading server addons
-		else if (fastncmp(wadsToAutoload, "postload ", 9)) {
+		else if (fastncmp(wadsToAutoload, "postload ", 9))
+		{
 			strremove(wadsToAutoload, "postload ");
 			postload = true;
 		}
@@ -1107,34 +1108,10 @@ static void D_FindAddonsToAutoload(void)
 				wadsToAutoload[i] = '\0';
 		}
 
-		len = strlen(wadsToAutoload);
-		hasprefix = false;
-
-		for (i = 0; i < len; ++i)
+		if (!postload && W_CheckPostLoadList(wadsToAutoload))
 		{
-			if (wadsToAutoload[i] == '_')
-			{
-				hasprefix = true;
-				break;
-			}
-		}
-
-		// Lets just hope no one adds bonuschars in autoload
-		if (hasprefix)
-		{
-			// We searching for c in prefix, which stands for "character" and doesn't work well with
-			// autoload atm, only fine for postload
-			for (i = 0; i < len; ++i)
-			{
-				if (wadsToAutoload[i] == '_') break; // Prefix end
-
-				if (wadsToAutoload[i] == 'c' || wadsToAutoload[i] == 'C')
-				{
-					CONS_Alert(CONS_WARNING, "forcing postload for %s as local skin\n", wadsToAutoload);
-					postload = true;
-					break; // Found it
-				}
-			}
+			CONS_Printf("forcing postload for file %s\n", wadsToAutoload);
+			postload = true;
 		}
 
 		// LOAD IT
@@ -1152,30 +1129,30 @@ static void D_FindAddonsToAutoload(void)
 	fclose(autoloadconfigfile);
 }
 
-void D_AddAutoloadFiles(void)
+static void D_AddAutoloadFiles(void)
 {
-	if (wasautoloaded && postautoloaded)
+	if (wasautoloaded)
 		return;
 
-	if (!wasautoloaded && !modeattacking)
-	{
-		CONS_Printf("D_AutoloadFile(): Loading autoloaded addons...\n");
-		if (W_AddAutoloadedLocalFiles(autoloadwadfiles) == 0)
-			CONS_Printf("D_AutoloadFile(): Are you sure you put in valid files or what?\n");
-		D_CleanFile(autoloadwadfiles);
+	CONS_Printf("D_AutoloadFile(): Loading autoloaded addons...\n");
+	if (W_AddAutoloadedLocalFiles(autoloadwadfiles) == 0)
+		CONS_Printf("D_AutoloadFile(): Are you sure you put in valid files or what?\n");
+	D_CleanFile(autoloadwadfiles);
 
-		wasautoloaded = true;
-	}
+	wasautoloaded = true;
+}
 
-	if ((!postautoloaded) && netgame)
-	{
-		CONS_Printf("D_AutoloadFile(): Loading postloaded addons...\n");
-		if (W_AddAutoloadedLocalFiles(autoloadwadfilespost) == 0)
-			CONS_Printf("D_AutoloadFile(): Are you sure you put in valid files or what?\n");
-		D_CleanFile(autoloadwadfilespost);
+void D_AddPostloadFiles(void)
+{
+	if (postautoloaded || !netgame)
+		return;
 
-		postautoloaded = true;
-	}
+	CONS_Printf("D_AddPostloadFiles(): Loading postloaded addons...\n");
+	if (W_AddAutoloadedLocalFiles(autoloadwadfilespost) == 0)
+		CONS_Printf("D_AddPostloadFiles(): Are you sure you put in valid files or what?\n");
+	D_CleanFile(autoloadwadfilespost);
+
+	postautoloaded = true;
 }
 
 void D_CleanFile(char **filearray)
@@ -1865,10 +1842,11 @@ void D_SRB2Main(void)
 	}
 
 	S_InitMusicDefs();
-	S_InitMTDefs();
 
 	CONS_Printf("ST_Init(): Init status bar.\n");
 	ST_Init();
+
+	D_AddAutoloadFiles();
 
 	// Set up splitscreen players before joining!
 	if (!dedicated && (M_CheckParm("-splitscreen") && M_IsNextParm()))
@@ -2071,7 +2049,6 @@ void D_SRB2Main(void)
 
 	if (dedicated && server)
 	{
-		pagename = "TITLESKY";
 		levelstarttic = gametic;
 		G_SetGamestate(GS_LEVEL);
 		if (!P_SetupLevel(false, false))

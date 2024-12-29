@@ -28,6 +28,7 @@
 #include "z_zone.h"
 #include "p_tick.h"
 #include "r_fps.h"
+#include "r_portal.h"
 
 //
 // opening
@@ -38,12 +39,6 @@
 
 // good night sweet prince
 //#define SHITPLANESPARENCY
-
-//SoM: 3/23/2000: Use Boom visplane hashing.
-#define VISPLANEHASHBITS 9
-#define VISPLANEHASHMASK ((1<<VISPLANEHASHBITS)-1)
-// the last visplane list is outside of the hash table and is used for fof planes
-#define MAXVISPLANES ((1<<VISPLANEHASHBITS)+1)
 
 static visplane_t *visplanes[MAXVISPLANES];
 static visplane_t *freetail;
@@ -110,50 +105,6 @@ static fixed_t xoffs, yoffs;
 void R_InitPlanes(void)
 {
 	// FIXME: unused
-}
-
-// R_PortalStoreClipValues
-// Saves clipping values for later. -Red
-void R_PortalStoreClipValues(INT32 start, INT32 end, INT16 *ceil, INT16 *floor, fixed_t *scale)
-{
-	INT32 i;
-	for (i = 0; i < end-start; i++)
-	{
-		*ceil = ceilingclip[start+i];
-		ceil++;
-		*floor = floorclip[start+i];
-		floor++;
-		*scale = frontscale[start+i];
-		scale++;
-	}
-}
-
-// R_PortalRestoreClipValues
-// Inverse of the above. Restores the old value!
-void R_PortalRestoreClipValues(INT32 start, INT32 end, INT16 *ceil, INT16 *floor, fixed_t *scale)
-{
-	INT32 i;
-	for (i = 0; i < end-start; i++)
-	{
-		ceilingclip[start+i] = *ceil;
-		ceil++;
-		floorclip[start+i] = *floor;
-		floor++;
-		frontscale[start+i] = *scale;
-		scale++;
-	}
-
-	// HACKS FOLLOW
-	for (i = 0; i < start; i++)
-	{
-		floorclip[i] = -1;
-		ceilingclip[i] = (INT16)viewheight;
-	}
-	for (i = end; i < vid.width; i++)
-	{
-		floorclip[i] = -1;
-		ceilingclip[i] = (INT16)viewheight;
-	}
 }
 
 //
@@ -305,6 +256,23 @@ void R_MapPlane(INT32 y, INT32 x1, INT32 x2)
 	ds_x2 = x2;
 
 	spanfunc();
+}
+
+void R_ClearFFloorClips (void)
+{
+	INT32 i, p;
+
+	// opening / clipping determination
+	for (i = 0; i < viewwidth; i++)
+	{
+		for (p = 0; p < MAXFFLOORS; p++)
+		{
+			ffloor[p].f_clip[i] = (INT16)viewheight;
+			ffloor[p].c_clip[i] = -1;
+		}
+	}
+
+	numffloors = 0;
 }
 
 //
