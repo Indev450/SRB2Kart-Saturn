@@ -7868,7 +7868,6 @@ void G_StopDemo(void)
 		camera[i].freecam = false;
 		camera[i].localangle = 0;
 		camera[i].localaiming = 0;
-		camera[i].keyboardlook = false;
 	}
 
 	CV_SetValue(&cv_playbackspeed, 1);

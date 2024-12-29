@@ -84,8 +84,6 @@ typedef struct camera_s
 	angle_t localangle;
 	INT32 localaiming;
 
-	boolean keyboardlook;	// keyboard look
-
 	angle_t aiming;
 
 	// Freecam: A button was held since entering from menu, so don't move camera

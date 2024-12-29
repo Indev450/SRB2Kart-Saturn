@@ -3155,12 +3155,12 @@ void P_ToggleDemoCamera(UINT8 viewnum)
 
 static ticcmd_t *P_CameraCmd(camera_t *cam, UINT8 num)
 {
-	INT32 laim, forward, side, axis; //i
+	INT32 laim, th, tspeed, forward, side, axis;
+
 	// these ones used for multiple conditions
 	boolean turnleft, turnright;
-	boolean usejoystick, kbl;
+	boolean usejoystick;
 	angle_t lang;
-	INT32 screen_invert;
 	const UINT8 forplayer = num+1;
 
 	ticcmd_t *cmd = D_LocalTiccmd(num);
@@ -3170,24 +3170,6 @@ static ticcmd_t *P_CameraCmd(camera_t *cam, UINT8 num)
 
 	lang = cam->localangle;
 	laim = cam->localaiming;
-	kbl = cam->keyboardlook;
-
-	switch (num)
-	{
-		case 1:
-			G_CopyTiccmd(cmd, I_BaseTiccmd2(), 1);
-			break;
-		case 2:
-			G_CopyTiccmd(cmd, I_BaseTiccmd3(), 1);
-			break;
-		case 3:
-			G_CopyTiccmd(cmd, I_BaseTiccmd4(), 1);
-			break;
-		case 0:
-		default:
-			G_CopyTiccmd(cmd, I_BaseTiccmd(), 1); // empty, or external driver
-			break;
-	}
 
 	cmd->angleturn = (INT16)(lang >> 16);
 	cmd->aiming = G_ClipAimingPitch(&laim);
@@ -3218,15 +3200,27 @@ static ticcmd_t *P_CameraCmd(camera_t *cam, UINT8 num)
 	}
 	forward = side = 0;
 
+	// use two stage accelerative turning
+	// on the keyboard and joystick
+	if (turnleft || turnright)
+		th += 1;
+	else
+		th = 0;
+
+	if (th < SLOWTURNTICS)
+		tspeed = 2; // slow turn
+	else
+		tspeed = 1;
+
 	// let movement keys cancel each other out
 	if (turnright && !(turnleft))
 	{
-		cmd->angleturn = (INT16)(cmd->angleturn - (angleturn[1]));
+		cmd->angleturn = (INT16)(cmd->angleturn - (angleturn[tspeed]));
 		side += sidemove[1];
 	}
 	else if (turnleft && !(turnright))
 	{
-		cmd->angleturn = (INT16)(cmd->angleturn + (angleturn[1]));
+		cmd->angleturn = (INT16)(cmd->angleturn + (angleturn[tspeed]));
 		side -= sidemove[1];
 	}
 
@@ -3251,32 +3245,22 @@ static ticcmd_t *P_CameraCmd(camera_t *cam, UINT8 num)
 		cmd->buttons |= BT_ATTACK;
 
 	// spectator aiming shit, ahhhh...
-	screen_invert = 1;	// nope
-
-	// mouse look stuff (mouse look is not the same as mouse aim)
-	kbl = false;
 
 	// looking up/down
-	laim += (mlooky<<19)*screen_invert;
+	laim += (mlooky<<19);
 
 	axis = JoyAxis(AXISLOOK, forplayer);
 
 	if (analogjoystickmove && axis != 0 && lookaxis)
-		laim += (axis<<16) * screen_invert;
-
-	// spring back if not using keyboard neither mouselookin'
-	if (!kbl && !lookaxis)
-		laim = 0;
+		laim += (axis<<16);
 
 	if (InputDown(gc_lookup, forplayer) || (gamepadjoystickmove && axis < 0))
 	{
-		laim += KB_LOOKSPEED * screen_invert;
-		kbl = true;
+		laim += KB_LOOKSPEED;
 	}
 	else if (InputDown(gc_lookdown, forplayer) || (gamepadjoystickmove && axis > 0))
 	{
-		laim -= KB_LOOKSPEED * screen_invert;
-		kbl = true;
+		laim -= KB_LOOKSPEED;
 	}
 
 	if (InputDown(gc_centerview, forplayer)) // No need to put a spectator limit on this one though :V
@@ -3306,7 +3290,6 @@ static ticcmd_t *P_CameraCmd(camera_t *cam, UINT8 num)
 
 	cam->localangle = lang;
 	cam->localaiming = laim;
-	cam->keyboardlook = kbl;
 
 	return cmd;
 }
@@ -3341,16 +3324,19 @@ static void P_DemoCameraMovement(camera_t *cam, UINT8 num)
 	if (!cam->button_a_held)
 	{
 		fixed_t spd = 32*mapobjectscale*cv_freecam_speed.value;
+		int dir = ((InputDown(gc_camfloat, forplayer)) ? 1 : 0) + ((InputDown(gc_camsink, forplayer)) ? -1 : 0);
 
-		if (InputDown(gc_camfloat, forplayer))
+		switch (dir)
 		{
-			cam->z += spd;
-			moving = true;
-		}
-		else if (InputDown(gc_camsink, forplayer))
-		{
-			cam->z -= spd;
-			moving = true;
+			case 1:
+				cam->z += spd;
+				moving = true;
+				break;
+
+			case -1:
+				cam->z -= spd;
+				moving = true;
+				break;
 		}
 	}
 
