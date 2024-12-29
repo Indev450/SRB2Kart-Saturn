@@ -78,7 +78,7 @@ boolean K_DirectorIsAvailable(UINT8 viewnum)
 {
 	if ((demo.playback && demo.title) || modeattacking)
 		return false;
-	return ((gamestate == GS_LEVEL) && (demo.playback || ((viewnum <= splitscreen) && (!playeringame[displayplayers[viewnum]] || players[displayplayers[viewnum]].spectator) && !camera[viewnum].freecam && !K_DirectorIsPlayerAlone())));
+	return ((gamestate == GS_LEVEL) && (viewnum <= splitscreen) && (demo.playback || (players[displayplayers[viewnum]].spectator && !K_DirectorIsPlayerAlone())));
 }
 
 static boolean K_DirectorIsEnabled(const UINT8 viewnum)
