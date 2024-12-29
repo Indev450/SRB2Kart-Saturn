@@ -7618,17 +7618,17 @@ INT32 K_calcSplitFlags(INT32 snapflags)
 	if (splitscreen == 0)
 		return snapflags;
 
-	if (stplyr != &players[displayplayers[0]])
+	if (stplyrnum != 0)
 	{
-		if (splitscreen == 1 && stplyr == &players[displayplayers[1]])
+		if (splitscreen == 1 && stplyrnum == 1)
 		{
 			splitflags |= V_SPLITSCREEN;
 		}
 		else if (splitscreen > 1)
 		{
-			if (stplyr == &players[displayplayers[2]] || (splitscreen == 3 && stplyr == &players[displayplayers[3]]))
+			if (stplyrnum == 2 || (splitscreen == 3 && stplyrnum == 3))
 				splitflags |= V_SPLITSCREEN;
-			if (stplyr == &players[displayplayers[1]] || (splitscreen == 3 && stplyr == &players[displayplayers[3]]))
+			if (stplyrnum == 1 || (splitscreen == 3 && stplyrnum == 3))
 				splitflags |= V_HORZSCREEN;
 		}
 	}
@@ -7748,7 +7748,7 @@ static void K_drawKartStats(void)
 
 	for (; splitnum < MAXSPLITSCREENPLAYERS; ++splitnum)
 	{
-		if (stplyr == &players[displayplayers[splitnum]])
+		if (stplyrnum == splitnum)
 			break;
 	}
 
@@ -8334,7 +8334,7 @@ static void K_DrawKartPositionNum(INT32 num)
 	else if (splitscreen == 1)	// for this splitscreen, we'll use case by case because it's a bit different.
 	{
 		fx = POSI_X;
-		if (stplyr == &players[displayplayers[0]])	// for player 1: display this at the top right, above the minimap.
+		if (stplyrnum == 0)	// for player 1: display this at the top right, above the minimap.
 		{
 			fy = 30 + cv_posi_yoffset.value;
 			fflags = V_SNAPTOTOP|V_SNAPTORIGHT;
@@ -8349,11 +8349,11 @@ static void K_DrawKartPositionNum(INT32 num)
 	}
 	else
 	{
-		if (stplyr == &players[displayplayers[0]] || stplyr == &players[displayplayers[2]])	// If we are P1 or P3...
+		if (!(stplyrnum & 1)) // If we are P1 or P3...
 		{
 			fx = POSI_X;
 			fy = POSI_Y;
-			fflags = V_SNAPTOLEFT|((stplyr == &players[displayplayers[2]]) ? V_SPLITSCREEN|V_SNAPTOBOTTOM : 0);	// flip P3 to the bottom.
+			fflags = V_SNAPTOLEFT|((stplyrnum == 2) ? V_SPLITSCREEN|V_SNAPTOBOTTOM : 0);	// flip P3 to the bottom.
 			flipdraw = true;
 			if (num && num >= 10)
 				fx += W;	// this seems dumb, but we need to do this in order for positions above 10 going off screen.
@@ -8362,7 +8362,7 @@ static void K_DrawKartPositionNum(INT32 num)
 		{
 			fx = POSI2_X;
 			fy = POSI2_Y;
-			fflags = V_SNAPTORIGHT|((stplyr == &players[displayplayers[3]]) ? V_SPLITSCREEN|V_SNAPTOBOTTOM : 0);	// flip P4 to the bottom
+			fflags = V_SNAPTORIGHT|((stplyrnum == 3) ? V_SPLITSCREEN|V_SNAPTOBOTTOM : 0);	// flip P4 to the bottom
 		}
 	}
 
@@ -9311,7 +9311,7 @@ static void K_drawDriftGauge(void)
 		0, 31, 47, 63, 79, 95, 111, 119, 127, 143, 159, 175, 183, 191, 199, 207, 223, 247
 	};
 
-	if (demo.playback && camera[R_GetViewNumber()].freecam)
+	if (demo.playback && camera[stplyrnum].freecam)
 		return;
 
 	if (P_MobjWasRemoved(stplyr->mo) || (!splitscreen && !camera->chase))
@@ -9469,7 +9469,7 @@ static void K_drawKartWanted(void)
 	UINT8 *colormap = NULL;
 	INT32 basex = 0, basey = 0;
 
-	if (stplyr != &players[displayplayers[0]])
+	if (stplyrnum != 0)
 		return;
 
 	for (i = 0; i < 4; i++)
@@ -9666,7 +9666,7 @@ static void K_drawKartMinimap(void)
 	if (gamestate != GS_LEVEL)
 		return;
 
-	if (stplyr != &players[displayplayers[0]])
+	if (stplyrnum != 0)
 		return;
 
 	if (minimapinfo.minimap_pic == NULL)
@@ -9828,7 +9828,7 @@ static void K_drawKartFinish(void)
 		xval = (SHORT(kp_racefinish[pnum]->width)<<FRACBITS);
 		x = (FixedMul(((TICRATE - stplyr->kartstuff[k_cardanimation])<<FRACBITS) - R_GetHudUncap(), xval > x ? xval : x))/TICRATE;
 
-		if (splitscreen && stplyr == &players[displayplayers[1]])
+		if (splitscreen && stplyrnum == 1)
 			x = -x;
 
 		V_DrawFixedPatch(x + (STCD_X<<FRACBITS) - (xval>>1),
@@ -9985,14 +9985,9 @@ static void K_drawKartFirstPerson(void)
 	if (stplyr->spectator || !stplyr->mo || (stplyr->mo->flags2 & MF2_DONTDRAW))
 		return;
 
-	if (stplyr == &players[displayplayers[1]] && splitscreen)
-		{ pn = pnum[1]; tn = turn[1]; dr = drift[1]; }
-	else if (stplyr == &players[displayplayers[2]] && splitscreen > 1)
-		{ pn = pnum[2]; tn = turn[2]; dr = drift[2]; }
-	else if (stplyr == &players[displayplayers[3]] && splitscreen > 2)
-		{ pn = pnum[3]; tn = turn[3]; dr = drift[3]; }
-	else
-		{ pn = pnum[0]; tn = turn[0]; dr = drift[0]; }
+	pn = pnum[stplyrnum];
+	tn = turn[stplyrnum];
+	dr = drift[stplyrnum];
 
 	if (splitscreen)
 	{
@@ -10114,14 +10109,9 @@ static void K_drawKartFirstPerson(void)
 
 	V_DrawFixedPatch(x, y, scale, splitflags, kp_fpview[target], colmap);
 
-	if (stplyr == &players[displayplayers[1]] && splitscreen)
-		{ pnum[1] = pn; turn[1] = tn; drift[1] = dr; }
-	else if (stplyr == &players[displayplayers[2]] && splitscreen > 1)
-		{ pnum[2] = pn; turn[2] = tn; drift[2] = dr; }
-	else if (stplyr == &players[displayplayers[3]] && splitscreen > 2)
-		{ pnum[3] = pn; turn[3] = tn; drift[3] = dr; }
-	else
-		{ pnum[0] = pn; turn[0] = tn; drift[0] = dr; }
+	pnum[stplyrnum] = pn;
+	turn[stplyrnum] = tn;
+	drift[stplyrnum] = dr;
 }
 
 // doesn't need to ever support 4p
@@ -10341,7 +10331,7 @@ static void K_drawDistributionDebugger(void)
 	boolean dontforcespb = false;
 	boolean spbrush = false;
 
-	if (stplyr != &players[displayplayers[0]]) // only for p1
+	if (stplyrnum != 0) // only for p1
 		return;
 
 	// The only code duplication from the Kart, just to avoid the actual item function from calculating pingame twice
@@ -10405,7 +10395,7 @@ static void K_drawDistributionDebugger(void)
 
 static void K_drawCheckpointDebugger(void)
 {
-	if (stplyr != &players[displayplayers[0]]) // only for p1
+	if (stplyrnum != 0) // only for p1
 		return;
 
 	if (stplyr->starpostnum >= (numstarposts - (numstarposts/2)))
@@ -10419,19 +10409,18 @@ void K_drawKartHUD(void)
 {
 	boolean isfreeplay = false;
 	boolean battlefullscreen = false;
-	UINT8 viewnum = R_GetViewNumber();
-	boolean freecam = camera[viewnum].freecam;	//disable some hud elements w/ freecam
+	boolean freecam = camera[stplyrnum].freecam;	//disable some hud elements w/ freecam
 
 	// Define the X and Y for each drawn object
 	// This is handled by console/menu values
 	K_initKartHUD();
 
 	// Draw that fun first person HUD! Drawn ASAP so it looks more "real".
-	if (!camera[viewnum].chase && !freecam)
+	if (!camera[stplyrnum].chase && !freecam)
 		K_drawKartFirstPerson();
 
 	// Draw full screen stuff that turns off the rest of the HUD
-	if (mapreset && R_GetViewNumber() == 0)
+	if (mapreset && stplyrnum == 0)
 	{
 		K_drawChallengerScreen();
 		return;
