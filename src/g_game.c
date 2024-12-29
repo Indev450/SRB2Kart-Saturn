@@ -6004,7 +6004,7 @@ void G_RecordDemo(const char *name)
 
 		maxsize = cv_maxdemosize.value*1024*1024;
 
-		demobuf.buffer = Z_Malloc(maxsize, PU_STATIC, NULL);
+		demobuf.buffer = Z_Malloc(maxsize + 100*1024, PU_STATIC, NULL);
 		demoend = demobuf.buffer + maxsize;
 
 		if (demobuf.buffer)
@@ -6022,7 +6022,7 @@ void G_RecordMetal(void)
 		Z_Free(demobuf.buffer);
 	demobuf.p = NULL;
 	metalrecording = false;
-	demobuf.buffer = Z_Malloc(maxsize, PU_STATIC, NULL);
+	demobuf.buffer = Z_Malloc(maxsize + 100*1024, PU_STATIC, NULL);
 	demoend = demobuf.buffer + maxsize;
 
 	if (demobuf.buffer)
