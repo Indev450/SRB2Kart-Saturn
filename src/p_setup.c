@@ -2993,8 +2993,9 @@ boolean P_SetupLevel(boolean skipprecip, boolean reloadinggamestate)
 			: mapheaderinfo[gamemap - 1]->numlaps);
 
 	// Start recording replay in multiplayer with a temp filename
-	//Ensure dedis only record a replay if there is a player at the start of the map, otherwise we get invalid replays!
-	if (!demo.playback && multiplayer && D_NumPlayers()) {
+	// Ensure dedis only record a replay if there is a player at the start of the map, otherwise we get invalid replays!
+	if (!demo.playback && multiplayer && D_NumPlayers())
+	{
 		static char buf[256];
 		sprintf(buf, "replay"PATHSEP"online"PATHSEP"%d-%s", (int) (time(NULL)), G_BuildMapName(gamemap));
 
