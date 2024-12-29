@@ -17,6 +17,7 @@
 #include "doomdef.h"
 #include "doomstat.h"
 #include "d_event.h"
+#include "p_saveg.h"
 #include "m_textinput.h"
 
 extern char gamedatafilename[64];
@@ -33,7 +34,7 @@ extern INT32 player_name_changes[MAXPLAYERS];
 extern player_t players[MAXPLAYERS];
 extern boolean playeringame[MAXPLAYERS];
 
-extern UINT8 *demo_p;
+extern savebuffer_t demobuf;
 
 // ======================================
 // DEMO playback/recording related stuff.

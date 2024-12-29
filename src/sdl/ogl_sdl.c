@@ -45,6 +45,8 @@
 #include "../m_argv.h"
 #include "../i_video.h"
 
+#include "../f_finale.h"
+
 #ifdef DEBUG_TO_FILE
 #include <stdarg.h>
 #if defined (_WIN32) && !defined (__CYGWIN__)
