@@ -1785,7 +1785,7 @@ void G_ResetView(UINT8 viewnum, INT32 playernum, boolean onlyactive)
 		G_FixCamera(viewd);
 	}
 
-	if (viewnum == 1 && demo.playback)
+	if (demo.playback && viewnum == 1)
 		consoleplayer = displayplayers[0];
 }
 
@@ -1799,6 +1799,10 @@ void G_AdjustView(UINT8 viewnum, INT32 offset, boolean onlyactive)
 	INT32 *displayplayerp, oldview;
 	displayplayerp = &displayplayers[viewnum-1];
 	oldview = (*displayplayerp);
+
+	// turn off the freecam
+	camera[viewnum].freecam = false;
+
 	G_ResetView(viewnum, ( (*displayplayerp) + offset ), onlyactive);
 
 	// If no other view could be found, go back to what we had.
