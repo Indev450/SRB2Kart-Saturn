@@ -1079,7 +1079,7 @@ R_SetupCommonFrame
 	else
 		newview->sector = R_PointInSubsector(newview->x, newview->y)->sector;
 
-	R_InterpolateView(R_UsingFrameInterpolation() ? (camera[viewnum].freecam ? rendertimefrac_unpaused : rendertimefrac) : FRACUNIT, false);
+	R_InterpolateView(R_UsingFrameInterpolation() ? rendertimefrac_unpaused : FRACUNIT, false);
 }
 
 static void R_SetupAimingFrame(player_t *player, camera_t *thiscam)
