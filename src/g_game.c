@@ -1800,7 +1800,7 @@ void G_AdjustView(UINT8 viewnum, INT32 offset, boolean onlyactive)
 	oldview = (*displayplayerp);
 
 	// turn off the freecam
-	camera[viewnum].freecam = false;
+	camera[viewnum-1].freecam = false;
 
 	G_ResetView(viewnum, ( (*displayplayerp) + offset ), onlyactive);
 
