@@ -1064,8 +1064,6 @@ R_SetupCommonFrame
 (		player_t * player,
 		subsector_t * subsector)
 {
-	const UINT8 viewnum = R_GetViewNumber();
-
 	newview->player = player;
 
 	newview->x += quake.x;
