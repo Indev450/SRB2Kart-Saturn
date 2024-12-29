@@ -301,14 +301,14 @@ void K_DrawDirectorDebugger(void)
 	V_DrawThinString(40, 0, V_70TRANS, va("CONF?"));
 	V_DrawThinString(80, 0, V_70TRANS, va("GAP"));
 	V_DrawThinString(120, 0, V_70TRANS, va("BORED"));
-	V_DrawThinString(150, 0, V_70TRANS, va("COOLDOWN: %d", directorinfo.cooldown));
-	V_DrawThinString(230, 0, V_70TRANS, va("MAXDIST: %d", directorinfo.maxdist));
+	V_DrawThinString(150, 0, V_70TRANS, va("COOLDOWN: %d", directorinfosplit[0].cooldown));
+	V_DrawThinString(230, 0, V_70TRANS, va("MAXDIST: %d", directorinfosplit[0].maxdist));
 
 	for (position = 0; position < MAXPLAYERS - 1; position++)
 	{
 		ytxt = 10 * (position + 1);
-		leader = directorinfo.sortedplayers[position];
-		follower = directorinfo.sortedplayers[position + 1];
+		leader = directorinfosplit[0].sortedplayers[position];
+		follower = directorinfosplit[0].sortedplayers[position + 1];
 
 		if (leader == -1 || follower == -1)
 			break;
@@ -321,15 +321,15 @@ void K_DrawDirectorDebugger(void)
 			V_DrawThinString(40, ytxt, V_70TRANS, va("NG"));
 		}
 
-		V_DrawThinString(80, ytxt, V_70TRANS, va("%d", directorinfo.gap[position]));
+		V_DrawThinString(80, ytxt, V_70TRANS, va("%d", directorinfosplit[0].gap[position]));
 
-		if (directorinfo.boredom[position] >= BOREDOMTIME)
+		if (directorinfosplit[0].boredom[position] >= BOREDOMTIME)
 		{
 			V_DrawThinString(120, ytxt, V_70TRANS, va("BORED"));
 		}
 		else
 		{
-			V_DrawThinString(120, ytxt, V_70TRANS, va("%d", directorinfo.boredom[position]));
+			V_DrawThinString(120, ytxt, V_70TRANS, va("%d", directorinfosplit[0].boredom[position]));
 		}
 
 		V_DrawThinString(150, ytxt, V_70TRANS, va("%s", player_names[leader]));
