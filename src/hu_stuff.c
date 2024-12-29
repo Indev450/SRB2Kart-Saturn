@@ -2615,7 +2615,6 @@ static void HU_DrawRankings(void)
 	playersort_t tab[MAXPLAYERS];
 	INT32 i, j, scorelines, hilicol, numplayersingame = 0;
 	boolean completed[MAXPLAYERS];
-	UINT32 whiteplayer = MAXPLAYERS;
 
 	if (!automapactive)
 		V_DrawFadeScreen(0xFF00, 16); // A little more readable, and prevents cheating the fades under other circumstances.
@@ -2703,11 +2702,6 @@ static void HU_DrawRankings(void)
 		V_DrawCenteredString(256, 16, hilicol, cv_kartspeed.string);
 	}
 
-	// When you play, you quickly see your score because your name is displayed in white.
-	// When playing back a demo, you quickly see who's the view.
-	if (!splitscreen)
-		whiteplayer = demo.playback ? displayplayers[0] : consoleplayer;
-
 	scorelines = 0;
 	memset(completed, 0, sizeof (completed));
 	memset(tab, 0, sizeof (playersort_t)*MAXPLAYERS);
@@ -2763,7 +2757,7 @@ static void HU_DrawRankings(void)
 #endif
 	}
 
-	HU_DrawTabRankings(((scorelines > 8) ? 32 : 40), 33, tab, scorelines, whiteplayer, hilicol);
+	HU_DrawTabRankings(((scorelines > 8) ? 32 : 40), 33, tab, scorelines, hilicol);
 
 	// draw spectators in a ticker across the bottom
 	if (netgame && G_GametypeHasSpectators())

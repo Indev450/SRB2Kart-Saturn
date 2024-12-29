@@ -8562,11 +8562,13 @@ static boolean K_drawKartPositionFaces(void)
 //
 // HU_DrawTabRankings -- moved here to take advantage of kart stuff!
 //
-void HU_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, INT32 whiteplayer, INT32 hilicol)
+void HU_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, INT32 hilicol)
 {
 	INT32 i, rightoffset = 240;
 	const UINT8 *colormap;
 	INT32 dupadjust = (vid.width/vid.dupx), duptweak = (dupadjust - BASEVIDWIDTH)/2;
+
+	boolean (*_isHighlightedPlayer)(const player_t *) = (demo.playback ? P_IsDisplayPlayer : P_IsLocalPlayer);
 
 	//this function is designed for 9 or less score lines only
 	//I_Assert(scorelines <= 9); -- not today bitch, kart fixed it up
@@ -8587,6 +8589,10 @@ void HU_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, I
 		if (players[pnum].spectator || !players[pnum].mo)
 			continue; //ignore them.
 
+		const boolean whiteplayer = _isHighlightedPlayer(&players[pnum]);
+
+		const INT32 philicol = (whiteplayer ? V_SkinColorToHighlightcolor(players[pnum].skincolor) : 0);
+
 		if (netgame // don't draw it offline
 		&& pnum != serverplayer)
 			HU_drawPing(x + ((i < 8) ? -17 : rightoffset + 11), y-4, playerpingtable[pnum], 0);
@@ -8594,9 +8600,9 @@ void HU_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, I
 		STRBUFCPY(strtime, tab[i].name);
 
 		if (scorelines > 8)
-			V_DrawThinString(x + 20, y, ((tab[i].num == whiteplayer) ? hilicol : 0)|V_ALLOWLOWERCASE|V_6WIDTHSPACE, strtime);
+			V_DrawThinString(x + 20, y, philicol|V_ALLOWLOWERCASE|V_6WIDTHSPACE, strtime);
 		else
-			V_DrawString(x + 20, y, ((tab[i].num == whiteplayer) ? hilicol : 0)|V_ALLOWLOWERCASE, strtime);
+			V_DrawString(x + 20, y, philicol|V_ALLOWLOWERCASE, strtime);
 
 		if (players[pnum].mo->color)
 		{
@@ -8627,7 +8633,7 @@ void HU_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, I
 			}*/
 		}
 
-		if (tab[i].num == whiteplayer)
+		if (whiteplayer)
 			V_DrawScaledPatch(x, y-4, 0, kp_facehighlight[(leveltime / 4) % 8]);
 
 		if (G_BattleGametype() && players[pnum].kartstuff[k_bumper] <= 0)
