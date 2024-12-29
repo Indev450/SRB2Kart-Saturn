@@ -3232,11 +3232,11 @@ static void HWR_DrawSpriteShadow(gl_vissprite_t *spr, GLPatch_t *gpatch)
 		angle_t shadowdir;
 
 		// Set direction
-		if (splitscreen && stplyr == &players[displayplayers[1]])
+		if (splitscreen && R_GetViewNumber() == 1)
 			shadowdir = localangle[1] + FixedAngle(cv_cam_rotate[1].value);
-		else if (splitscreen > 1 && stplyr == &players[displayplayers[2]])
+		else if (splitscreen > 1 && R_GetViewNumber() == 2)
 			shadowdir = localangle[2] + FixedAngle(cv_cam_rotate[2].value);
-		else if (splitscreen > 2 && stplyr == &players[displayplayers[3]])
+		else if (splitscreen > 2 && R_GetViewNumber() == 3)
 			shadowdir = localangle[3] + FixedAngle(cv_cam_rotate[3].value);
 		else
 			shadowdir = localangle[0] + FixedAngle(cv_cam_rotate[0].value);

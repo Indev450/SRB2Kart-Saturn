@@ -671,8 +671,6 @@ static const char *ST_GetButtonName(INT32 control, const char *inputtext)
 //
 static void ST_overlayDrawer(void)
 {
-	const UINT8 viewnum = R_GetViewNumber();
-
 	//hu_showscores = auto hide score/time/rings when tab rankings are shown
 	if (!(hu_showscores && (netgame || multiplayer)))
 	{
@@ -681,7 +679,7 @@ static void ST_overlayDrawer(void)
 
 	if (!hu_showscores) // hide the following if TAB is held
 	{
-		if (cv_showdirectorhud.value && !splitscreen && ((demo.playback && !camera[viewnum].freecam && (!demo.title || !modeattacking)) || !P_IsLocalPlayer(stplyr)) && !K_DirectorIsPlayerAlone())
+		if (cv_showdirectorhud.value && !splitscreen && ((demo.playback && !camera[stplyrnum].freecam && (!demo.title || !modeattacking)) || !P_IsLocalPlayer(stplyr)) && !K_DirectorIsPlayerAlone())
 		{
 			char directortext[20] = {0};
 
@@ -721,7 +719,7 @@ static void ST_overlayDrawer(void)
 					V_DrawCenteredString((BASEVIDWIDTH/2), BASEVIDHEIGHT-32, V_SNAPTOBOTTOM|V_HUDTRANS|V_ALLOWLOWERCASE, player_names[stplyr-players]);
 				}
 			}
-			else if (!demo.title && !demo.freecam)
+			else if (!demo.title && !camera[stplyrnum].freecam)
 			{
 				if (!splitscreen)
 				{
@@ -732,7 +730,7 @@ static void ST_overlayDrawer(void)
 				{
 					char name[MAXPLAYERNAME+12];
 
-					INT32 y = (stplyr == &players[displayplayers[0]]) ? 4 : BASEVIDHEIGHT/2-12;
+					INT32 y = (stplyrnum == 0) ? 4 : BASEVIDHEIGHT/2-12;
 					sprintf(name, "VIEWPOINT: %s", player_names[stplyr-players]);
 					V_DrawRightAlignedThinString(BASEVIDWIDTH-40, y, V_HUDTRANSHALF|V_ALLOWLOWERCASE|K_calcSplitFlags(V_SNAPTOTOP|V_SNAPTOBOTTOM|V_SNAPTORIGHT), name);
 				}
