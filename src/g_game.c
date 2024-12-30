@@ -7322,11 +7322,8 @@ post_compat:
 		players[i].kartweight = kartweight[i];
 	}
 
-	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
-	{
-		directorstate = cv_director.value;
-		CV_SetValue(&cv_director, 0);
-	}
+	directorstate = cv_director.value;
+	CV_SetValue(&cv_director, 0);
 
 	demo.deferstart = true;
 }
