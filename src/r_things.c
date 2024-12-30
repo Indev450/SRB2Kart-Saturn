@@ -631,6 +631,7 @@ void R_DrawMaskedColumn(column_t *column)
 		{
 			dc_source = (UINT8 *)column + 3;
 			dc_sourcelength = column->length;
+			dc_texheight = column->length;
 			dc_texturemid = basetexturemid - (topdelta<<FRACBITS);
 
 			// Drawn by R_DrawColumn.
@@ -696,6 +697,8 @@ static void R_DrawFlippedMaskedColumn(column_t *column)
 		{
 			dc_source = ZZ_Alloc(column->length);
 			dc_sourcelength = column->length;
+			dc_texheight = column->length;
+
 			for (s = (UINT8 *)column+2+column->length, d = dc_source; d < dc_source+column->length; --s)
 				*d++ = *s;
 			dc_texturemid = basetexturemid - (topdelta<<FRACBITS);
