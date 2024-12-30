@@ -883,6 +883,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		thiscam = (player->bot == 2 ? &camera[0] : &camera[forplayer]);
 	else
 		thiscam = &camera[forplayer];
+
 	lang = localangle[forplayer];
 	laim = localaiming[forplayer];
 	th = turnheld[forplayer];
@@ -1208,9 +1209,6 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	{
 		displayplayers[0] = consoleplayer;
 		G_FixCamera(1);
-		// i dont like this lmao
-		if (cv_director.value)
-			CV_SetValue(&cv_director, 0);
 	}
 }
 
@@ -1546,8 +1544,8 @@ boolean G_Responder(event_t *ev)
 					COM_ImmedExecute("changeteam4 spectator");
 				}
 			}
-			if (ev->data1 == gamecontrol[gc_director][0]
-				|| ev->data1 == gamecontrol[gc_director][1])
+
+			if (ev->data1 == gamecontrol[gc_director][0] || ev->data1 == gamecontrol[gc_director][1])
 			{
 				K_ToggleDirector();
 			}
