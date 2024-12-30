@@ -1547,19 +1547,7 @@ boolean G_Responder(event_t *ev)
 
 			if (ev->data1 == gamecontrol[gc_director][0] || ev->data1 == gamecontrol[gc_director][1])
 			{
-				K_ToggleDirector(0);
-			}
-			else if (ev->data1 == gamecontrolbis[gc_director][0] || ev->data1 == gamecontrolbis[gc_director][1])
-			{
-				K_ToggleDirector(1);
-			}
-			else if (ev->data1 == gamecontrol3[gc_director][0] || ev->data1 == gamecontrol3[gc_director][1])
-			{
-				K_ToggleDirector(2);
-			}
-			else if (ev->data1 == gamecontrol4[gc_director][0] || ev->data1 == gamecontrol4[gc_director][1])
-			{
-				K_ToggleDirector(3);
+				K_ToggleDirector();
 			}
 
 			if (ev->data1 == gamecontrol[gc_freecam][0] || ev->data1 == gamecontrol[gc_freecam][1])
@@ -7336,8 +7324,8 @@ post_compat:
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
-		directorstate[i] = cv_director[i].value;
-		CV_SetValue(&cv_director[i], 0);
+		directorstate[i] = cv_director.value;
+		CV_SetValue(&cv_director, 0);
 	}
 
 	demo.deferstart = true;
@@ -7907,7 +7895,7 @@ void G_StopDemo(void)
 	{
 		for (UINT8 i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 		{
-			CV_SetValue(&cv_director[i], directorstate[i]);
+			CV_SetValue(&cv_director, directorstate[i]);
 			directorstate[i] = 0;
 		}
 	}

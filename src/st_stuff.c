@@ -679,11 +679,11 @@ static void ST_overlayDrawer(void)
 	if (!hu_showscores) // hide the following if TAB is held
 	{
 		// TODO: splitscreen support!
-		if (cv_showdirectorhud.value && !splitscreen && !P_IsLocalPlayer(stplyr) && K_DirectorIsAvailable(0) && !K_DirectorIsPlayerAlone())
+		if (cv_showdirectorhud.value && !splitscreen && !P_IsLocalPlayer(stplyr) && K_DirectorIsAvailable() && !K_DirectorIsPlayerAlone())
 		{
 			char directortext[20] = {0};
 
-			snprintf(directortext, 20, "Director: %s", cv_director[0].value ? "On" : "Off");
+			snprintf(directortext, 20, "Director: %s", cv_director.value ? "On" : "Off");
 
 			if ((!demo.playback && directortoggletimer < 13*TICRATE) || (demo.playback && directortoggletimer < 4*TICRATE))
 			{
