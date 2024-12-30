@@ -3364,10 +3364,15 @@ static void P_DemoCameraMovement(camera_t *cam, UINT8 num)
 	if (cmd->buttons & BT_ATTACK)
 	{
 		lastp = &players[displayplayers[0]];	// Fun fact, I was trying displayplayers[0]->mo as if it was Lua like an absolute idiot.
-		cam->angle = R_PointToAngle2(cam->x, cam->y, lastp->mo->x, lastp->mo->y);
-		cam->aiming = R_PointToAngle2(0, cam->z, R_PointToDist2(cam->x, cam->y, lastp->mo->x, lastp->mo->y), lastp->mo->z + lastp->mo->scale*128*P_MobjFlip(lastp->mo));	// This is still unholy. Aim a bit above their heads.
 
-		cam->reset_aiming = false;
+		// dont chase after your spectator self
+		if (!lastp->spectator)
+		{
+			const fixed_t dist = R_PointToDist2(cam->x, cam->y, lastp->mo->x, lastp->mo->y);
+			cam->angle = R_PointToAngle2(cam->x, cam->y, lastp->mo->x, lastp->mo->y);
+			cam->aiming = R_PointToAngle2(0, cam->z, dist, lastp->mo->z + lastp->mo->scale*128*P_MobjFlip(lastp->mo));	// This is still unholy. Aim a bit above their heads.
+			cam->reset_aiming = false;
+		}
 	}
 
 	if (cmd->forwardmove != 0)
