@@ -12,6 +12,7 @@
 
 //#include "k_kart.h"
 #include "doomdef.h"
+#include "doomstat.h"
 #include "g_game.h"
 #include "v_video.h"
 #include "k_director.h"
@@ -28,6 +29,7 @@
 
 struct directorinfo
 {
+	player_t* viewplayer;
 	tic_t cooldown; // how long has it been since we last switched?
 	tic_t freeze;   // when nonzero, fixed switch pending, freeze logic!
 	INT32 attacker; // who to switch to when freeze delay elapses
@@ -38,7 +40,7 @@ struct directorinfo
 	INT32 boredom[MAXPLAYERS];       // how long has a given position had no credible attackers?
 } directorinfo;
 
-boolean K_DirectorIsPlayerAlone(void)
+static boolean K_DirectorIsPlayerAlone(void)
 {
 	UINT8 pingame = 0;
 
@@ -67,9 +69,16 @@ static fixed_t ScaleFromMap(fixed_t n, fixed_t scale)
 	return FixedMul(n, FixedDiv(scale, mapobjectscale));
 }
 
+boolean K_DirectorIsAvailable(void)
+{
+	if ((demo.playback && demo.title) || modeattacking)
+		return false;
+	return ((gamestate == GS_LEVEL) && (demo.playback || (players[consoleplayer].spectator && !K_DirectorIsPlayerAlone())));
+}
+
 static boolean K_DirectorIsEnabled(void)
 {
-	return cv_director.value && !splitscreen && (gamestate == GS_LEVEL && (((!playeringame[consoleplayer] || players[consoleplayer].spectator)) || (demo.playback && !camera[0].freecam && (!demo.title || !modeattacking))) && !K_DirectorIsPlayerAlone());
+	return (cv_director.value && K_DirectorIsAvailable());
 }
 
 void K_InitDirector(void)
@@ -80,6 +89,7 @@ void K_InitDirector(void)
 	directorinfo.freeze = 0;
 	directorinfo.attacker = 0;
 	directorinfo.maxdist = 0;
+	directorinfo.viewplayer = NULL;
 
 	for (playernum = 0; playernum < MAXPLAYERS; playernum++)
 	{
@@ -104,8 +114,8 @@ static fixed_t K_GetDistanceToFinish(player_t player)
 				continue;
 
 			dist = P_AproxDistance(P_AproxDistance(mo->x - player.mo->x,
-												mo->y - player.mo->y),
-							mo->z - player.mo->z) / FRACUNIT;
+												   mo->y - player.mo->y),
+												   mo->z - player.mo->z) / FRACUNIT;
 
 			break;
 		}
@@ -124,7 +134,7 @@ static fixed_t K_GetDistanceToFinish(player_t player)
 
 			dist = P_AproxDistance(P_AproxDistance(mo->x - player.mo->x,
 												   mo->y - player.mo->y),
-						  mo->z - player.mo->z) / FRACUNIT;
+												   mo->z - player.mo->z) / FRACUNIT;
 
 			break;
 		}
@@ -213,11 +223,6 @@ static void K_DirectorSwitch(INT32 player, boolean force)
 		return;
 	}
 
-	if (P_IsDisplayPlayer(&players[player]))
-	{
-		return;
-	}
-
 	if (players[player].exiting)
 	{
 		return;
@@ -250,7 +255,7 @@ void K_DirectorFollowAttack(player_t *player, mobj_t *inflictor, mobj_t *source)
 		return;
 	}
 
-	if (!P_IsDisplayPlayer(player))
+	if (directorinfo.viewplayer != player)
 	{
 		return;
 	}
@@ -319,8 +324,8 @@ void K_DrawDirectorDebugger(void)
 
 void K_UpdateDirector(void)
 {
-	INT32 *displayplayerp = &displayplayers[0];
 	INT32 targetposition;
+	directorinfo.viewplayer = &players[displayplayers[0]];
 
 	if (!K_DirectorIsEnabled())
 	{
@@ -391,15 +396,9 @@ void K_UpdateDirector(void)
 		target = directorinfo.sortedplayers[targetposition];
 
 		// stop here since we're already viewing this player
-		if (*displayplayerp == target)
+		if (displayplayers[0] == target)
 		{
 			break;
-		}
-
-		// if this is a splitscreen player, try next pair
-		if (P_IsDisplayPlayer(&players[target]))
-		{
-			continue;
 		}
 
 		// if we're certain the back half of the pair is actually in this position, try to switch
@@ -408,8 +407,8 @@ void K_UpdateDirector(void)
 			K_DirectorSwitch(target, false);
 		}
 
-		// even if we're not certain, if we're certain we're watching the WRONG player, try to switch
-		if (players[*displayplayerp].kartstuff[k_position] != targetposition+1 && !players[*displayplayerp].kartstuff[k_positiondelay])
+		// even if we're not certain, if we're cetain we're watching the WRONG player, try to switch
+		if (directorinfo.viewplayer->kartstuff[k_position] != targetposition+1 && !directorinfo.viewplayer->kartstuff[k_positiondelay])
 		{
 			K_DirectorSwitch(target, false);
 		}
@@ -420,8 +419,10 @@ void K_UpdateDirector(void)
 
 void K_ToggleDirector(void)
 {
-	if (!directortextactive)
+	if (!K_DirectorIsAvailable())
 		return;
+
+	G_AdjustView(1, 1, true);
 
 	if (!K_DirectorIsEnabled())
 	{
@@ -430,5 +431,5 @@ void K_ToggleDirector(void)
 
 	directortoggletimer = 0;
 
-	COM_ImmedExecute("add director 1");
+	CV_SetValue(&cv_director, (cv_director.value ^ 1));
 }

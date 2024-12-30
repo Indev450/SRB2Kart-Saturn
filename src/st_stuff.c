@@ -16,6 +16,7 @@
 #include "doomdef.h"
 #include "g_game.h"
 #include "g_input.h"
+#include "k_director.h"
 #include "r_local.h"
 #include "p_local.h"
 #include "f_finale.h"
@@ -155,8 +156,6 @@ static patch_t *envelope;
 // current player for overlay drawing
 player_t *stplyr;
 UINT8 stplyrnum;
-
-boolean directortextactive = false;
 
 // SRB2kart
 
@@ -679,13 +678,12 @@ static void ST_overlayDrawer(void)
 
 	if (!hu_showscores) // hide the following if TAB is held
 	{
-		if (cv_showdirectorhud.value && !splitscreen && ((demo.playback && !camera[stplyrnum].freecam && (!demo.title || !modeattacking)) || !P_IsLocalPlayer(stplyr)) && !K_DirectorIsPlayerAlone())
+		// TODO: splitscreen support!
+		if (cv_showdirectorhud.value && !splitscreen && !P_IsLocalPlayer(stplyr) && K_DirectorIsAvailable())
 		{
 			char directortext[20] = {0};
 
 			snprintf(directortext, 20, "Director: %s", cv_director.value ? "On" : "Off");
-
-			directortextactive = true;
 
 			if ((!demo.playback && directortoggletimer < 13*TICRATE) || (demo.playback && directortoggletimer < 4*TICRATE))
 			{
@@ -701,7 +699,6 @@ static void ST_overlayDrawer(void)
 		else
 		{
 			directortoggletimer = 0;
-			directortextactive = false;
 		}
 
 		if (cv_showviewpointtext.value)
