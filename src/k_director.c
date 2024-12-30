@@ -42,7 +42,7 @@ struct directorinfo
 	INT32 boredom[MAXPLAYERS];       // how long has a given position had no credible attackers?
 } directorinfo;
 
-boolean K_DirectorIsPlayerAlone(void)
+static boolean K_DirectorIsPlayerAlone(void)
 {
 	UINT8 pingame = 0;
 
