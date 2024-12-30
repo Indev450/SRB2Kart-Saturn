@@ -4374,6 +4374,7 @@ static void Got_AddPlayer(UINT8 **p, INT32 playernum)
 		if (splitscreenplayer)
 		{
 			displayplayers[splitscreenplayer] = newplayernum;
+			g_localplayers[splitscreenplayer] = newplayernum;
 			DEBFILE(va("spawning one of my sister number %d\n", splitscreenplayer));
 			if (splitscreenplayer == 1 && botingame)
 				players[newplayernum].bot = 1;
@@ -4382,7 +4383,10 @@ static void Got_AddPlayer(UINT8 **p, INT32 playernum)
 		{
 			consoleplayer = newplayernum;
 			for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+			{
 				displayplayers[i] = newplayernum;
+				g_localplayers[i] = newplayernum;
+			}
 			DEBFILE("spawning me\n");
 		}
 		D_SendPlayerConfig();

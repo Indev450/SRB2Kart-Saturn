@@ -122,6 +122,7 @@ extern boolean gamedataloaded;
 // Player taking events, and displaying.
 extern INT32 consoleplayer;
 extern INT32 displayplayers[MAXSPLITSCREENPLAYERS];
+extern INT32 g_localplayers[MAXSPLITSCREENPLAYERS];
 
 // Maps of special importance
 extern INT16 spstage_start;

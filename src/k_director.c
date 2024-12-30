@@ -78,7 +78,7 @@ boolean K_DirectorIsAvailable(UINT8 viewnum)
 {
 	if ((demo.playback && demo.title) || modeattacking)
 		return false;
-	return ((gamestate == GS_LEVEL) && (viewnum <= splitscreen) && (demo.playback || (players[displayplayers[viewnum]].spectator && !K_DirectorIsPlayerAlone())));
+	return ((gamestate == GS_LEVEL) && (viewnum <= splitscreen) && (demo.playback || (players[g_localplayers[viewnum]].spectator && !K_DirectorIsPlayerAlone())));
 }
 
 static boolean K_DirectorIsEnabled(const UINT8 viewnum)
@@ -229,11 +229,6 @@ static boolean K_CanSwitchDirector(const UINT8 viewnum)
 static void K_DirectorSwitch(INT32 player, boolean force, const UINT8 viewnum)
 {
 	if (!K_DirectorIsEnabled(viewnum))
-	{
-		return;
-	}
-
-	if (P_IsDisplayPlayer(&players[player]))
 	{
 		return;
 	}
@@ -417,12 +412,6 @@ void K_UpdateDirector(const UINT8 viewnum)
 			break;
 		}
 
-		// if this is a splitscreen player, try next pair
-		if (P_IsDisplayPlayer(&players[target]))
-		{
-			continue;
-		}
-
 		// if we're certain the back half of the pair is actually in this position, try to switch
 		if (!players[target].kartstuff[k_positiondelay])
 		{
@@ -443,6 +432,8 @@ void K_ToggleDirector(const UINT8 viewnum)
 {
 	if (!K_DirectorIsAvailable(viewnum))
 		return;
+
+	G_AdjustView(viewnum+1, 1, true);
 
 	if (!K_DirectorIsEnabled(viewnum))
 	{
