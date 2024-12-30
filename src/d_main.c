@@ -68,7 +68,7 @@
 #include "fastcmp.h"
 #include "r_fps.h" // Frame interpolation/uncapped
 #include "keys.h"
-#include "filesrch.h" // refreshdirmenu, pathisdirectory
+#include "filesrch.h" // pathisdirectory
 #include "d_protocol.h"
 #include "m_perfstats.h"
 #include "m_random.h"
@@ -738,8 +738,6 @@ void D_SRB2Loop(void)
 
 		if (renderisnewtic)
 		{
-			refreshdirmenu = 0; // not sure where to put this, here as good as any?
-
 			// don't skip more than 10 frames at a time
 			// (fadein / fadeout cause massive frame skip!)
 			if (realtics > 8)

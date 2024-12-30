@@ -52,6 +52,7 @@
 #include "m_perfstats.h"
 #include "d_main.h"
 #include "r_fps.h"
+#include "filesrch.h" // refreshdirmenu
 
 #ifdef CLIENT_LOADINGSCREEN
 // cl loading screen
@@ -6825,6 +6826,7 @@ void NetUpdate(void)
 		I_lock_mutex(&m_menu_mutex);
 #endif
 		M_Ticker();
+		refreshdirmenu = 0;
 #ifdef HAVE_THREADS
 		I_unlock_mutex(m_menu_mutex);
 #endif
