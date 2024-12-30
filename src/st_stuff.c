@@ -683,7 +683,7 @@ static void ST_overlayDrawer(void)
 		{
 			char directortext[20] = {0};
 
-			snprintf(directortext, 20, "Director: %s", cv_director[0].value ? "On" : "Off");
+			snprintf(directortext, 20, "Director: %s", cv_director.value ? "On" : "Off");
 
 			if ((!demo.playback && directortoggletimer < 13*TICRATE) || (demo.playback && directortoggletimer < 4*TICRATE))
 			{

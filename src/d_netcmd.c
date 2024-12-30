@@ -1010,11 +1010,7 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_showviewpointtext);
 	CV_RegisterVar(&cv_showdownloadprompt);
 
-	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
-	{
-		CV_RegisterVar(&cv_director[i]);
-	}
-
+	CV_RegisterVar(&cv_director);
 	CV_RegisterVar(&cv_kartdebugdirector);
 	CV_RegisterVar(&cv_showdirectorhud);
 
