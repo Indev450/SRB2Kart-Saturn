@@ -31,7 +31,6 @@
 
 struct directorinfo
 {
-	UINT8 viewnum;
 	player_t* viewplayer;
 	tic_t cooldown; // how long has it been since we last switched?
 	tic_t freeze;   // when nonzero, fixed switch pending, freeze logic!
@@ -43,9 +42,7 @@ struct directorinfo
 	INT32 boredom[MAXPLAYERS];       // how long has a given position had no credible attackers?
 } directorinfo;
 
-struct directorinfo directorinfosplit[MAXSPLITSCREENPLAYERS];
-
-boolean K_DirectorIsPlayerAlone(void)
+static boolean K_DirectorIsPlayerAlone(void)
 {
 	UINT8 pingame = 0;
 
@@ -74,11 +71,16 @@ static fixed_t ScaleFromMap(fixed_t n, fixed_t scale)
 	return FixedMul(n, FixedDiv(scale, mapobjectscale));
 }
 
-boolean K_DirectorIsAvailable(UINT8 viewnum)
+boolean K_DirectorIsAvailable(void)
 {
 	if ((demo.playback && demo.title) || modeattacking)
 		return false;
-	return ((gamestate == GS_LEVEL) && (demo.playback || ((viewnum <= splitscreen) && (!playeringame[displayplayers[viewnum]] || players[displayplayers[viewnum]].spectator) && !camera[viewnum].freecam && !K_DirectorIsPlayerAlone())));
+	return ((gamestate == GS_LEVEL) && (demo.playback || (players[consoleplayer].spectator && !K_DirectorIsPlayerAlone())));
+}
+
+static boolean K_DirectorIsEnabled(void)
+{
+	return (cv_director.value && K_DirectorIsAvailable());
 }
 
 static boolean K_DirectorIsEnabled(const UINT8 viewnum)
@@ -90,7 +92,11 @@ void K_InitDirector(void)
 {
 	INT32 playernum;
 
-	directorinfo.viewnum = 0;
+	directorinfo.cooldown = SWITCHTIME;
+	directorinfo.freeze = 0;
+	directorinfo.attacker = 0;
+	directorinfo.maxdist = 0;
+	directorinfo.viewplayer = NULL;
 
 	for (UINT8 i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
@@ -233,11 +239,6 @@ static void K_DirectorSwitch(INT32 player, boolean force, const UINT8 viewnum)
 		return;
 	}
 
-	if (P_IsDisplayPlayer(&players[player]))
-	{
-		return;
-	}
-
 	if (players[player].exiting)
 	{
 		return;
@@ -270,7 +271,7 @@ void K_DirectorFollowAttack(player_t *player, mobj_t *inflictor, mobj_t *source)
 		return;
 	}
 
-	if (directorinfosplit[directorinfo.viewnum].viewplayer != player)
+	if (directorinfo.viewplayer != player)
 	{
 		return;
 	}
@@ -340,8 +341,7 @@ void K_DrawDirectorDebugger(void)
 void K_UpdateDirector(const UINT8 viewnum)
 {
 	INT32 targetposition;
-	directorinfo.viewnum = viewnum;
-	directorinfosplit[directorinfo.viewnum].viewplayer = &players[displayplayers[directorinfo.viewnum]];
+	directorinfo.viewplayer = &players[displayplayers[0]];
 
 	if (!K_DirectorIsEnabled(directorinfo.viewnum))
 	{
@@ -412,15 +412,9 @@ void K_UpdateDirector(const UINT8 viewnum)
 		target = directorinfosplit[directorinfo.viewnum].sortedplayers[targetposition];
 
 		// stop here since we're already viewing this player
-		if (displayplayers[directorinfo.viewnum] == target)
+		if (displayplayers[0] == target)
 		{
 			break;
-		}
-
-		// if this is a splitscreen player, try next pair
-		if (P_IsDisplayPlayer(&players[target]))
-		{
-			continue;
 		}
 
 		// if we're certain the back half of the pair is actually in this position, try to switch
@@ -430,7 +424,7 @@ void K_UpdateDirector(const UINT8 viewnum)
 		}
 
 		// even if we're not certain, if we're cetain we're watching the WRONG player, try to switch
-		if (directorinfosplit[directorinfo.viewnum].viewplayer->kartstuff[k_position] != targetposition+1 && !directorinfosplit[directorinfo.viewnum].viewplayer->kartstuff[k_positiondelay])
+		if (directorinfo.viewplayer->kartstuff[k_position] != targetposition+1 && !directorinfo.viewplayer->kartstuff[k_positiondelay])
 		{
 			K_DirectorSwitch(target, false, directorinfo.viewnum);
 		}
@@ -441,15 +435,17 @@ void K_UpdateDirector(const UINT8 viewnum)
 
 void K_ToggleDirector(const UINT8 viewnum)
 {
-	if (!K_DirectorIsAvailable(viewnum))
+	if (!K_DirectorIsAvailable())
 		return;
 
-	if (!K_DirectorIsEnabled(viewnum))
+	G_AdjustView(1, 1, true);
+
+	if (!K_DirectorIsEnabled())
 	{
 		directorinfosplit[viewnum].cooldown = 0; // switch immediately
 	}
 
 	directortoggletimer = 0;
 
-	CV_SetValue(&cv_director[viewnum], (cv_director[viewnum].value ^ 1));
+	CV_SetValue(&cv_director, (cv_director.value ^ 1));
 }

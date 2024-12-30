@@ -3410,12 +3410,10 @@ void PDistort_menu_Onchange(void)
 {
 	if (!cv_sloperoll.value)
 	{
-		OP_PlayerDistortMenu[sloperotate].status = IT_GRAYEDOUT;
 		OP_PlayerDistortMenu[sliptide].status = IT_GRAYEDOUT;
 	}
 	else
 	{
-		OP_PlayerDistortMenu[sloperotate].status = IT_STRING | IT_CVAR;
 		OP_PlayerDistortMenu[sliptide].status = IT_STRING | IT_CVAR;
 	}
 
@@ -12101,6 +12099,7 @@ static void M_Setup1PControlsMenu(INT32 choice)
 	OP_AllControlsMenu[19].status = IT_CONTROL; // GIF
 	OP_AllControlsMenu[20].status = IT_CONTROL; // System Menu
 	OP_AllControlsMenu[21].status = IT_CONTROL; // Console
+	OP_AllControlsMenu[35].status = IT_CONTROL; // Director
 
 	M_SetupNextMenu(&OP_AllControlsDef);
 }
@@ -12123,6 +12122,7 @@ static void M_Setup2PControlsMenu(INT32 choice)
 	OP_AllControlsMenu[19].status = IT_GRAYEDOUT2; // GIF
 	OP_AllControlsMenu[20].status = IT_GRAYEDOUT2; // System Menu
 	OP_AllControlsMenu[21].status = IT_GRAYEDOUT2; // Console
+	OP_AllControlsMenu[35].status = IT_GRAYEDOUT2; // Director
 
 	M_SetupNextMenu(&OP_AllControlsDef);
 }
@@ -12145,6 +12145,7 @@ static void M_Setup3PControlsMenu(INT32 choice)
 	OP_AllControlsMenu[19].status = IT_GRAYEDOUT2; // GIF
 	OP_AllControlsMenu[20].status = IT_GRAYEDOUT2; // System Menu
 	OP_AllControlsMenu[21].status = IT_GRAYEDOUT2; // Console
+	OP_AllControlsMenu[35].status = IT_GRAYEDOUT2; // Director
 
 	M_SetupNextMenu(&OP_AllControlsDef);
 }
@@ -12167,6 +12168,7 @@ static void M_Setup4PControlsMenu(INT32 choice)
 	OP_AllControlsMenu[19].status = IT_GRAYEDOUT2; // GIF
 	OP_AllControlsMenu[20].status = IT_GRAYEDOUT2; // System Menu
 	OP_AllControlsMenu[21].status = IT_GRAYEDOUT2; // Console
+	OP_AllControlsMenu[35].status = IT_GRAYEDOUT2; // Director
 
 	M_SetupNextMenu(&OP_AllControlsDef);
 }

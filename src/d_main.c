@@ -818,7 +818,14 @@ void D_SRB2Loop(void)
 				rendertimefrac = FRACUNIT;
 			}
 
-			rendertimefrac_unpaused = g_time.timefrac;
+			if (!hu_stopped)
+			{
+				rendertimefrac_unpaused = g_time.timefrac;
+			}
+			else
+			{
+				rendertimefrac_unpaused = FRACUNIT;
+			}
 		}
 		else
 		{

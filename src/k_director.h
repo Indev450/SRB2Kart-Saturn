@@ -10,7 +10,7 @@
 /// \file  k_director.h
 /// \brief SRB2kart automatic spectator camera.
 
-boolean K_DirectorIsAvailable(UINT8 viewnum);
+boolean K_DirectorIsAvailable(void);
 void K_InitDirector(void);
 void K_UpdateDirector(UINT8 viewnum);
 void K_DrawDirectorDebugger(void);
