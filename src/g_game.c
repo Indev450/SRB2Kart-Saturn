@@ -338,7 +338,7 @@ INT16 prevmap, nextmap;
 
 // save if director is enabled
 // so demos can disable it by default and restore it after
-static int directorstate[MAXSPLITSCREENPLAYERS] = {0,0,0,0};
+static int directorstate = 0;
 tic_t directortoggletimer = 0;
 
 static CV_PossibleValue_t recordmultiplayerdemos_cons_t[] = {{0, "Disabled"}, {1, "Manual Save"}, {2, "Auto Save"}, {0, NULL}};
@@ -7324,7 +7324,7 @@ post_compat:
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
-		directorstate[i] = cv_director.value;
+		directorstate = cv_director.value;
 		CV_SetValue(&cv_director, 0);
 	}
 
@@ -7893,11 +7893,8 @@ void G_StopDemo(void)
 	demobuf.buffer = NULL;
 	if (demo.playback)
 	{
-		for (UINT8 i = 0; i < MAXSPLITSCREENPLAYERS; i++)
-		{
-			CV_SetValue(&cv_director, directorstate[i]);
-			directorstate[i] = 0;
-		}
+		CV_SetValue(&cv_director, directorstate);
+		directorstate = 0;
 	}
 	demo.playback = false;
 	if (demo.title)
