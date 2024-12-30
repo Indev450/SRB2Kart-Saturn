@@ -3396,12 +3396,10 @@ void PDistort_menu_Onchange(void)
 {
 	if (!cv_sloperoll.value)
 	{
-		OP_PlayerDistortMenu[sloperotate].status = IT_GRAYEDOUT;
 		OP_PlayerDistortMenu[sliptide].status = IT_GRAYEDOUT;
 	}
 	else
 	{
-		OP_PlayerDistortMenu[sloperotate].status = IT_STRING | IT_CVAR;
 		OP_PlayerDistortMenu[sliptide].status = IT_STRING | IT_CVAR;
 	}
 
