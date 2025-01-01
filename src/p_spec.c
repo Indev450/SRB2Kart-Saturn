@@ -1783,8 +1783,10 @@ void P_SwitchWeather(INT32 weathernum)
 		{
 			next = think->next;
 
+#ifdef PARANOIA
 			if (think->function.acp1 != (actionf_p1)P_NullPrecipThinker)
 				continue; // not a precipmobj thinker
+#endif
 
 			precipmobj = (precipmobj_t *)think;
 			P_FreePrecipMobj(precipmobj);
@@ -1798,8 +1800,10 @@ void P_SwitchWeather(INT32 weathernum)
 
 		for (think = precipcap.next; think != &precipcap; think = think->next)
 		{
+#ifdef PARANOIA
 			if (think->function.acp1 != (actionf_p1)P_NullPrecipThinker)
 				continue; // not a precipmobj thinker
+#endif
 
 			precipmobj = (precipmobj_t *)think;
 

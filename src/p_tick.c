@@ -57,6 +57,7 @@ void Command_Numthinkers_f(void)
 	INT32 count = 0;
 	actionf_p1 action;
 	thinker_t *think;
+	thinker_t *listtype;
 
 	if (gamestate != GS_LEVEL)
 	{
@@ -105,25 +106,14 @@ void Command_Numthinkers_f(void)
 			return;
 	}
 
-	if (num == 2) // P_NullPrecipThinker
-	{
-		for (think = precipcap.next; think != &precipcap; think = think->next)
-		{
-			if (think->function.acp1 != action)
-				continue;
+	listtype = (num == 2) ? &precipcap : &thinkercap;
 
-			count++;
-		}
-	}
-	else
+	for (think = listtype->next; think != listtype; think = think->next)
 	{
-		for (think = thinkercap.next; think != &thinkercap; think = think->next)
-		{
-			if (think->function.acp1 != action)
-				continue;
+		if (think->function.acp1 != action)
+			continue;
 
-			count++;
-		}
+		count++;
 	}
 
 	CONS_Printf("%d\n", count);
