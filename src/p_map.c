@@ -2003,7 +2003,11 @@ boolean P_CheckCameraPosition(fixed_t x, fixed_t y, camera_t *thiscam)
 	tmbbox[BOXRIGHT] = x + thiscam->radius;
 	tmbbox[BOXLEFT] = x - thiscam->radius;
 
-	newsubsec = R_PointInSubsector(x, y);
+	if (thiscam->x != x || thiscam->y != y || thiscam->subsector == NULL)
+		newsubsec = R_PointInSubsectorFast(x, y);
+	else
+		newsubsec = thiscam->subsector;
+
 	ceilingline = blockingline = NULL;
 
 	mapcampointer = thiscam;
@@ -2175,7 +2179,13 @@ boolean P_CheckCameraPosition(fixed_t x, fixed_t y, camera_t *thiscam)
 //
 boolean P_TryCameraMove(fixed_t x, fixed_t y, camera_t *thiscam)
 {
-	subsector_t *s = R_PointInSubsector(x, y);
+	subsector_t *s;
+
+	if (thiscam->x != x || thiscam->y != y || thiscam->subsector == NULL)
+		s = R_PointInSubsectorFast(x, y);
+	else
+		s = thiscam->subsector;
+
 	boolean retval = true;
 	boolean itsatwodlevel = false;
 	UINT8 i;
@@ -2378,10 +2388,13 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff)
 		radius = MAXRADIUS/2;
 
 	do {
-		if (thing->flags & MF_NOCLIP) {
+		if (thing->flags & MF_NOCLIP)
+		{
 			tryx = x;
 			tryy = y;
-		} else {
+		}
+		else
+		{
 			if (x-tryx > radius)
 				tryx += radius;
 			else if (x-tryx < -radius)
@@ -2523,14 +2536,16 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff)
 	if (!(thing->flags & MF_NOCLIPHEIGHT))
 	{
 		// Assign thing's standingslope if needed
-		if (thing->z <= tmfloorz && !(thing->eflags & MFE_VERTICALFLIP)) {
+		if (thing->z <= tmfloorz && !(thing->eflags & MFE_VERTICALFLIP))
+		{
 			if (!startingonground && tmfloorslope)
 				P_HandleSlopeLanding(thing, tmfloorslope);
 
 			if (thing->momz <= 0)
 				thing->standingslope = tmfloorslope;
 		}
-		else if (thing->z+thing->height >= tmceilingz && (thing->eflags & MFE_VERTICALFLIP)) {
+		else if (thing->z+thing->height >= tmceilingz && (thing->eflags & MFE_VERTICALFLIP))
+		{
 			if (!startingonground && tmceilingslope)
 				P_HandleSlopeLanding(thing, tmceilingslope);
 
