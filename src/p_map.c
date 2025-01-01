@@ -2181,11 +2181,6 @@ boolean P_TryCameraMove(fixed_t x, fixed_t y, camera_t *thiscam)
 {
 	subsector_t *s;
 
-	if (thiscam->x != x || thiscam->y != y || thiscam->subsector == NULL)
-		s = R_PointInSubsectorFast(x, y);
-	else
-		s = thiscam->subsector;
-
 	boolean retval = true;
 	boolean itsatwodlevel = false;
 	UINT8 i;
@@ -2194,6 +2189,11 @@ boolean P_TryCameraMove(fixed_t x, fixed_t y, camera_t *thiscam)
 
 	if (dedicated) // this crashes so don't even try it
 		return false;
+
+	if (thiscam->x != x || thiscam->y != y || thiscam->subsector == NULL)
+		s = R_PointInSubsectorFast(x, y);
+	else
+		s = thiscam->subsector;
 
 	if (twodlevel)
 		itsatwodlevel = true;
