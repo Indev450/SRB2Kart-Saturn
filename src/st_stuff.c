@@ -788,8 +788,6 @@ static void ST_overlayDrawer(void)
 						snprintf(directortoggle, 32, "%s - Toggle Director", item1 != NULL ? item1 : item2 != NULL ? item2 : "Not Bound");
 
 					V_DrawString(2, BASEVIDHEIGHT-10, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, directortoggle);
-
-					directortextactive = true;
 				}
 				else
 				{
