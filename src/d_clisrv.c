@@ -3069,9 +3069,10 @@ static void Command_connect(void)
 		return;
 	}
 
+	M_ClearMenus(true);
+
 	if (Playing() || demo.title)
 	{
-		M_ClearMenus(true);
 		if (demo.title)
 			G_CheckDemoStatus();
 

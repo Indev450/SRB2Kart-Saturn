@@ -4587,7 +4587,7 @@ void M_ClearMenus(boolean callexitmenufunc)
 	if (currentMenu->quitroutine && callexitmenufunc && !currentMenu->quitroutine())
 		return; // we can't quit this menu (also used to set parameter from the menu)
 
-// Save the config file. I'm sick of crashing the game later and losing all my changes!
+	// Save the config file. I'm sick of crashing the game later and losing all my changes!
 	COM_BufAddText(va("saveconfig \"%s\" -silent\n", configfile));
 
 	if (currentMenu == &MessageDef) // Oh sod off!
@@ -9600,16 +9600,17 @@ static void M_DrawConnectMenu(void)
 	                         highlightflags, va("%u of %d", serverlistpage+1, numPages));
 
 	// Did you change the Server Browser address? Have a little reminder.
-	#ifdef MASTERSERVER
+#ifdef MASTERSERVER
 	if (CV_IsSetToDefault(&cv_masterserver))
 		mservflags = mservflags|highlightflags|V_30TRANS;
 	else
 		mservflags = mservflags|warningflags;
+
 	V_DrawRightAlignedSmallString(BASEVIDWIDTH - currentMenu->x, currentMenu->y+3 + MP_ConnectMenu[mp_connect_refresh].alphaKey,
 	                         mservflags, va("MS: %s", cv_masterserver.string));
 
 	M_DrawServerCountAndHorizontalBar();
-	#endif
+#endif
 
 	// When switching pages, slide the old page and the
 	// new page across the screen
