@@ -4435,7 +4435,7 @@ static void HWR_AddPrecipitationSprites(void)
 
 	fixed_t drawdist;
 
-	// save a little time on invisible weather
+	// save a little time if theres no or invisible weather
 	if (curWeather == PRECIP_NONE || curWeather == PRECIP_BLANK || curWeather == PRECIP_STORM_NORAIN)
 	{
 		return;
