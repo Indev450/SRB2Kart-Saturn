@@ -424,24 +424,13 @@ static void P_DeviceRumbleTick(void)
 
 		if (player->kartstuff[k_brakedrift])
 		{
-			high += FRACUNIT / 256;
+			high = CLAMP((high + FRACUNIT / 256), 0, UINT16_MAX);
 		}
 
 		// hack alert! i just dont want this thing constantly resetting the rumble lol
 		if (low == 0 && high == 0)
 		{
 			continue;
-		}
-
-		// pls dont overflow or smth lel
-		if (low > FRACUNIT-1)
-		{
-			low = FRACUNIT-1;
-		}
-
-		if (high > FRACUNIT-1)
-		{
-			high = FRACUNIT-1;
 		}
 
 		G_PlayerDeviceRumble(i, low, high, 57);
