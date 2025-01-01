@@ -701,9 +701,7 @@ const char *G_BuildMapName(INT32 map)
   */
 INT16 G_ClipAimingPitch(INT32 *aiming)
 {
-	INT32 limitangle;
-
-	limitangle = ANGLE_90 - 1;
+	static const INT32 limitangle = ANGLE_90 - 1;
 
 	if (*aiming > limitangle)
 		*aiming = limitangle;
@@ -715,10 +713,8 @@ INT16 G_ClipAimingPitch(INT32 *aiming)
 
 INT16 G_SoftwareClipAimingPitch(INT32 *aiming)
 {
-	INT32 limitangle;
-
 	// note: the current software mode implementation doesn't have true perspective
-	limitangle = ANGLE_90 - ANG10; // Some viewing fun, but not too far down...
+	static const INT32 limitangle = ANGLE_90 - ANG10; // Some viewing fun, but not too far down...
 
 	if (*aiming > limitangle)
 		*aiming = limitangle;
