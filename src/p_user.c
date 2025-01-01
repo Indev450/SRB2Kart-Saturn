@@ -67,6 +67,8 @@
 
 static boolean onground;
 
+static boolean speccam = false;
+
 //
 // P_Thrust
 // Moves the given origin along a given angle.
@@ -2278,8 +2280,11 @@ static void P_MovePlayer(player_t *player)
 	if (player->spectator)
 	{
 		P_SpectatorMovement(player);
+		speccam = true;
 		return;
 	}
+	else
+		speccam = false;
 
 	//////////////////////
 	// MOVEMENT CODE	//
@@ -3521,7 +3526,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 		num = 0;
 	}
 
-	if (thiscam->freecam || player->spectator)
+	if (thiscam->freecam || (player->spectator && speccam == true))
 	{
 		P_DemoCameraMovement(thiscam, num);
 		return true;
