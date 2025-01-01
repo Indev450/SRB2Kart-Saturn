@@ -354,21 +354,25 @@ static void P_DeviceRumbleTick(void)
 {
 	UINT8 i;
 
-	if (I_NumJoys() == 0 || (cv_rumble[0].value == 0 && cv_rumble[1].value == 0 && cv_rumble[2].value == 0 && cv_rumble[3].value == 0))
+	if (I_NumJoys() == 0 || gamestate != GS_LEVEL)
 	{
 		return;
 	}
 
 	for (i = 0; i <= splitscreen; i++)
 	{
-		player_t *player = &players[displayplayers[i]];
 		UINT16 low = 0;
 		UINT16 high = 0;
 
-		if (!P_IsLocalPlayer(player))
+		if (!cv_usejoystick[i].value)
 			continue;
 
-		if (cv_usejoystick[i].value == 0)
+		if (!cv_rumble[i].value)
+			continue;
+
+		player_t *player = &players[displayplayers[i]];
+
+		if (!P_IsLocalPlayer(player))
 			continue;
 
 		if (!playeringame[displayplayers[i]] || player->spectator)
@@ -402,10 +406,11 @@ static void P_DeviceRumbleTick(void)
 			high = 65536 / 256;
 		}
 
-		 if (low == 0 && high == 0)
+		// hack alert! i just dont want this thing constantly resetting the rumble lol
+		if (low == 0 && high == 0)
 			continue;
 
-		G_PlayerDeviceRumble(i, low, high, 57); // hack alert! i just dont want this think constantly resetting the rumble lol
+		G_PlayerDeviceRumble(i, low, high, 57);
 	}
 }
 
