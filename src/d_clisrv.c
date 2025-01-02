@@ -2008,7 +2008,7 @@ static void CL_ReloadReceivedSavegame(void)
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
-		camera[i].subsector = R_PointInSubsectorFast(camera[i].x, camera[i].y);
+		camera[i].subsector = R_PointInSubsector(camera[i].x, camera[i].y);
 	}
 
 	cl_redownloadinggamestate = false;

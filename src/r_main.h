@@ -182,18 +182,6 @@ FUNCINLINE static ATTRINLINE subsector_t *R_PointInSubsector(fixed_t x, fixed_t 
 	return &subsectors[nodenum & ~NF_SUBSECTOR];
 }
 
-// uses R_PointOnSideFast
-// SHOULD NOT BE USED FOR ANYTHING GAMEPLAY RELATED!!
-FUNCINLINE static ATTRINLINE subsector_t *R_PointInSubsectorFast(fixed_t x, fixed_t y)
-{
-	size_t nodenum = numnodes-1;
-
-	while (!(nodenum & NF_SUBSECTOR))
-		nodenum = nodes[nodenum].children[R_PointOnSideFast(x, y, nodes+nodenum)];
-
-	return &subsectors[nodenum & ~NF_SUBSECTOR];
-}
-
 //
 // R_IsPointInSubsector, same as above but returns 0 if not in subsector
 //
@@ -209,8 +197,7 @@ FUNCINLINE static ATTRINLINE subsector_t *R_IsPointInSubsector(fixed_t x, fixed_
 	while (!(nodenum & NF_SUBSECTOR))
 	{
 		node = &nodes[nodenum];
-		//side = R_PointOnSide(x, y, node);
-		side = R_PointOnSideFast(x, y, node); // this is fine since R_IsPointInSubsector is only used for precip spawn unless you disable noclipcam lol
+		side = R_PointOnSide(x, y, node);
 		nodenum = node->children[side];
 	}
 
