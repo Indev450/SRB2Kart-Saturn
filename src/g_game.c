@@ -903,6 +903,46 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 			break;
 	}
 
+	if (player->spectator)
+	{
+		axis = JoyAxis(AXISMOVE, ssplayer);
+		if (InputDown(gc_accelerate, ssplayer) || (usejoystick && axis > 0))
+			cmd->buttons |= BT_ACCELERATE;
+		axis = JoyAxis(AXISBRAKE, ssplayer);
+		if (InputDown(gc_brake, ssplayer) || (usejoystick && axis > 0))
+			cmd->buttons |= BT_BRAKE;
+		axis = JoyAxis(AXISFIRE, ssplayer);
+		if (InputDown(gc_fire, ssplayer) || (usejoystick && axis > 0))
+			cmd->buttons |= BT_ATTACK;
+
+		// drift with any button/key
+		axis = JoyAxis(AXISDRIFT, ssplayer);
+		if (InputDown(gc_drift, ssplayer) || (usejoystick && axis > 0))
+			cmd->buttons |= BT_DRIFT;
+
+		// Lua scriptable buttons
+		axis = JoyAxis(AXISCUSTOM1, ssplayer);
+		if (InputDown(gc_custom1, ssplayer) || (usejoystick && axis > 0))
+			cmd->buttons |= BT_CUSTOM1;
+		axis = JoyAxis(AXISCUSTOM2, ssplayer);
+		if (InputDown(gc_custom2, ssplayer) || (usejoystick && axis > 0))
+			cmd->buttons |= BT_CUSTOM2;
+		axis = JoyAxis(AXISCUSTOM3, ssplayer);
+		if (InputDown(gc_custom3, ssplayer) || (usejoystick && axis > 0))
+			cmd->buttons |= BT_CUSTOM3;
+
+		// Reset camera
+		if (InputDown(gc_camreset, ssplayer))
+		{
+			if (thiscam->chase && !rd)
+				P_ResetCamera(player, thiscam);
+			rd = true;
+		}
+		else
+			rd = false;
+		return;
+	}
+
 	// why build a ticcmd if we're paused?
 	// Or, for that matter, if we're being reborn.
 	// Kart, don't build a ticcmd if someone is resynching or the server is stopped too so we don't fly off course in bad conditions
