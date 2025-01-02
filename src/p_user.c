@@ -1920,12 +1920,12 @@ static void P_3dMovement(player_t *player)
 
 	if (analogmove)
 	{
-		movepushangle = (cmd->angleturn<<16 /* not FRACBITS */);
+		movepushangle = (angle_t)(cmd->angleturn<<16 /* not FRACBITS */);
 	}
 	else
 	{
 		if (player->kartstuff[k_drift] != 0)
-			movepushangle = player->mo->angle-(ANGLE_45/5)*player->kartstuff[k_drift];
+			movepushangle = (player->mo->angle-(ANGLE_45/5)*(angle_t)player->kartstuff[k_drift]);
 		else if (player->kartstuff[k_spinouttimer] || player->kartstuff[k_wipeoutslow])	// if spun out, use the boost angle
 			movepushangle = (angle_t)player->kartstuff[k_boostangle];
 		else
@@ -1991,7 +1991,7 @@ static void P_3dMovement(player_t *player)
 	// SRB2Kart: pogo spring and speed bumps are supposed to control like you're on the ground
 	onground = (P_IsObjectOnGround(player->mo) || (player->kartstuff[k_pogospring]));
 
-	player->aiming = cmd->aiming<<FRACBITS;
+	player->aiming = (angle_t)cmd->aiming<<FRACBITS;
 
 	// Forward movement
 	if (!((player->exiting || mapreset) || (P_PlayerInPain(player) && !onground)))
@@ -2123,9 +2123,10 @@ static void P_SpectatorMovement(player_t *player)
 
 	// Aiming needed for SEENAMES, etc.
 	// We may not need to fire as a spectator, but this is still handy!
-	player->aiming = cmd->aiming<<FRACBITS;
+	player->aiming = (angle_t)cmd->aiming<<FRACBITS;
 
 	player->mo->momx = player->mo->momy = player->mo->momz = 0;
+
 	if (cmd->forwardmove != 0)
 	{
 		P_Thrust(player->mo, player->mo->angle, cmd->forwardmove*mapobjectscale);
@@ -2303,7 +2304,7 @@ static void P_MovePlayer(player_t *player)
 		{
 			// KART: Don't directly apply angleturn! It may have been either A) forged by a malicious client, or B) not be a smooth turn due to a player dropping frames.
 			// Instead, turn the player only up to the amount they're supposed to turn accounting for latency. Allow exactly 1 extra turn unit to try to keep old replays synced.
-			angle_diff = cmd->angleturn - (player->mo->angle>>16);
+			angle_diff = cmd->angleturn - (INT16)(player->mo->angle>>16);
 			max_left_turn = player->lturn_max[(leveltime + MAXPREDICTTICS - cmd->latency) % MAXPREDICTTICS];
 			max_right_turn = player->rturn_max[(leveltime + MAXPREDICTTICS - cmd->latency) % MAXPREDICTTICS];
 
@@ -2316,13 +2317,13 @@ static void P_MovePlayer(player_t *player)
 			else
 			{
 				// Try to keep normal turning as accurate to 1.0.1 as possible to reduce replay desyncs.
-				player->mo->angle = cmd->angleturn<<16;
+				player->mo->angle = (angle_t)cmd->angleturn<<16;
 				add_delta = false;
 			}
 			//CONS_Printf("applied turn: %d\n", angle_diff);
 
 			if (add_delta) {
-				player->mo->angle += angle_diff<<16;
+				player->mo->angle += (angle_t)angle_diff<<16;
 				player->mo->angle &= ~0xFFFF; // Try to keep the turning somewhat similar to how it was before?
 				//CONS_Printf("leftover turn (%s): %5d or %4d%%\n",
 				//				player_names[player-players],
@@ -3330,7 +3331,7 @@ static void P_DemoCameraMovement(camera_t *cam, UINT8 num)
 		cam->reset_aiming = false;
 	}
 
-	cam->angle = cmd->angleturn << 16;
+	cam->angle = (angle_t)cmd->angleturn << 16;
 
 	// camera movement:
 	if (!cam->button_a_held)
@@ -3390,7 +3391,7 @@ static void P_DemoCameraMovement(camera_t *cam, UINT8 num)
 
 		if (abs(smooth) < abs(aiming))
 		{
-			cam->aiming -= smooth * intsign(aiming);
+			cam->aiming -= (angle_t)(smooth * intsign(aiming));
 		}
 		else
 		{
