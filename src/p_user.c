@@ -67,8 +67,6 @@
 
 static boolean onground;
 
-static boolean speccam = false;
-
 //
 // P_Thrust
 // Moves the given origin along a given angle.
@@ -2279,12 +2277,10 @@ static void P_MovePlayer(player_t *player)
 
 	if (player->spectator)
 	{
+		player->speccam = true;
 		P_SpectatorMovement(player);
-		speccam = true;
 		return;
 	}
-	else
-		speccam = false;
 
 	//////////////////////
 	// MOVEMENT CODE	//
@@ -3526,7 +3522,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 		num = 0;
 	}
 
-	if (thiscam->freecam || (player->spectator && speccam == true))
+	if (thiscam->freecam || (player->spectator && player->speccam == true))
 	{
 		P_DemoCameraMovement(thiscam, num);
 		return true;
@@ -4098,6 +4094,7 @@ boolean P_SpectatorJoinGame(player_t *player)
 			player->mo = NULL;
 		}
 		player->spectator = false;
+		player->speccam = false;
 		player->pflags &= ~PF_WANTSTOJOIN;
 		player->kartstuff[k_spectatewait] = 0;
 		player->ctfteam = changeto;
@@ -4126,6 +4123,7 @@ boolean P_SpectatorJoinGame(player_t *player)
 			player->mo = NULL;
 		}
 		player->spectator = false;
+		player->speccam = false;
 		player->pflags &= ~PF_WANTSTOJOIN;
 		player->kartstuff[k_spectatewait] = 0;
 		player->playerstate = PST_REBORN;
