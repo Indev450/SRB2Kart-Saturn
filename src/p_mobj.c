@@ -10705,7 +10705,10 @@ void P_SpawnPlayer(INT32 playernum)
 	if (multiplayer && demo.playback)
 		; // Don't mess with spectator values since the demo setup handles them already.
 	else if (!G_GametypeHasSpectators())
+	{
 		p->spectator = false;
+		p->speccam = false;
+	}
 	else if (netgame && p->jointime <= 1 && pcount)
 	{
 		p->spectator = true;
@@ -10737,7 +10740,10 @@ void P_SpawnPlayer(INT32 playernum)
 			SendNetXCmd(XD_TEAMCHANGE, &usvalue, sizeof(usvalue));
 		}
 		else // Otherwise, never spectator.
+		{
 			p->spectator = false;
+			p->speccam = false;
+		}
 	}
 
 	if (G_GametypeHasTeams())
