@@ -916,6 +916,8 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	// lmfao this is beyond hellish
 	if (player->spectator)
 	{
+		usejoystick = (analogjoystickmove || gamepadjoystickmove);
+
 		axis = JoyAxis(AXISMOVE, ssplayer);
 		if (InputDown(gc_accelerate, ssplayer) || (usejoystick && axis > 0))
 			cmd->buttons |= BT_ACCELERATE;
