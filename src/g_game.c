@@ -954,6 +954,9 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		else
 			rd = false;
 
+		if (gamestate == GS_LEVEL)
+			LUA_HookTiccmd(player, cmd, HOOK(PlayerCmd));
+
 		return;
 	}
 
