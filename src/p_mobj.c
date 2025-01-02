@@ -3568,11 +3568,14 @@ static void CalculatePrecipFloor(precipmobj_t *mobj)
 {
 	// recalculate floorz each time
 	const sector_t *mobjsecsubsec;
+
 	if (mobj && mobj->subsector && mobj->subsector->sector)
 		mobjsecsubsec = mobj->subsector->sector;
 	else
 		return;
+
 	mobj->floorz = P_GetSectorFloorZAt(mobjsecsubsec, mobj->x, mobj->y);
+
 	if (mobjsecsubsec->ffloors)
 	{
 		ffloor_t *rover;
