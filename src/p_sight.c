@@ -305,8 +305,8 @@ static boolean P_CrossBSPNode(INT32 bspnum, register los_t *los, boolean fast)
 	{
 		register node_t *bsp = nodes + bspnum;
 
-		INT32 side = (fast ? R_PointOnSide(los->strace.x, los->strace.y, bsp) : (P_DivlineSide(los->strace.x,los->strace.y, (divline_t *)bsp) & 1));
-		INT32 side2 = (fast ? R_PointOnSide(los->t2x, los->t2y, bsp) : P_DivlineSide(los->t2x, los->t2y, (divline_t *) bsp));
+		INT32 side = (fast ? R_PointOnSideFast(los->strace.x, los->strace.y, bsp) : (P_DivlineSide(los->strace.x,los->strace.y, (divline_t *)bsp) & 1));
+		INT32 side2 = (fast ? R_PointOnSideFast(los->t2x, los->t2y, bsp) : P_DivlineSide(los->t2x, los->t2y, (divline_t *) bsp));
 
 		if (side == side2)
 		{
