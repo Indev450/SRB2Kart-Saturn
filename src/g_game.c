@@ -848,8 +848,7 @@ static void G_BuildLocalTiccmd(ticcmd_t *cmd, UINT8 ssplayer)
 {
 	boolean moveinput = false;
 	INT32 axis = 0;
-	const UINT8 forplayer = (ssplayer-1);
-	const boolean usejoystick = (cv_usejoystick[forplayer].value);
+	const boolean usejoystick = (cv_usejoystick[(ssplayer-1)].value);
 
 	moveinput = (InputDown(gc_turnleft, ssplayer) || InputDown(gc_turnright, ssplayer)
 	|| InputDown(gc_aimforward, ssplayer) || InputDown(gc_aimbackward, ssplayer) ||
@@ -914,8 +913,8 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	else
 		player = &players[displayplayers[forplayer]];
 
-	if (ssplayer == 2)
-		thiscam = (player->bot == 2 ? &camera[0] : &camera[forplayer]);
+	if ((ssplayer == 2) && (player->bot == 2))
+		thiscam = &camera[0];
 	else
 		thiscam = &camera[forplayer];
 
