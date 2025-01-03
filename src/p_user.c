@@ -2105,7 +2105,7 @@ static void P_SpectatorMovement(player_t *player)
 {
 	ticcmd_t *cmd = &player->cmd;
 
-	player->mo->angle = (cmd->angleturn<<16 /* not FRACBITS */);
+	player->mo->angle = (angle_t)(cmd->angleturn<<16 /* not FRACBITS */);
 
 	ticruned++;
 	if (!(cmd->angleturn & TICCMD_RECEIVED))
@@ -2271,9 +2271,9 @@ static void P_MovePlayer(player_t *player)
 		}
 	}
 
+	// have to keep this crap for synch reasons
 	if (player->spectator)
 	{
-		player->speccam = true;
 		P_SpectatorMovement(player);
 		return;
 	}
@@ -3140,7 +3140,9 @@ void P_ToggleDemoCamera(UINT8 viewnum)
 
 	// dont let freecam be toggled when in spec lel
 	if (players[displayplayers[viewnum]].spectator)
+	{
 		return;
+	}
 
 	if (!cam->freecam)	// toggle on
 	{
@@ -3313,6 +3315,9 @@ static void P_DemoCameraMovement(camera_t *cam, UINT8 num)
 	const UINT8 forplayer = num+1;
 	boolean moving = false;
 
+	if (encoremode)
+		cam->postimg |= POSTIMG_MIRROR;
+
 	cam->localangle = cam->angle;
 	cam->localaiming = cam->aiming;
 
@@ -3321,13 +3326,14 @@ static void P_DemoCameraMovement(camera_t *cam, UINT8 num)
 
 	// let centerview work proper
 	if (InputDown(gc_centerview, forplayer))
+	{
 		cam->aiming = 0;
+		cam->reset_aiming = false;
+	}
 
 	if (cmd->aiming != 0)
 	{
 		cam->aiming = cmd->aiming << FRACBITS;
-
-		cam->reset_aiming = false;
 	}
 
 	cam->angle = cmd->angleturn << 16;
@@ -3359,17 +3365,14 @@ static void P_DemoCameraMovement(camera_t *cam, UINT8 num)
 
 	// if you hold item, you will lock on to displayplayer. (The last player you were ""f12-ing"")
 	// well this only really works in replays for us, since we still move our spec player around which causes displayplayer to be the spec player
-	if (demo.playback)
+	if (cam->freecam && cmd->buttons & BT_ATTACK)
 	{
-		if (cmd->buttons & BT_ATTACK)
-		{
-			lastp = &players[displayplayers[0]];	// Fun fact, I was trying displayplayers[0]->mo as if it was Lua like an absolute idiot.
+		lastp = &players[displayplayers[0]];	// Fun fact, I was trying displayplayers[0]->mo as if it was Lua like an absolute idiot.
 
-			const fixed_t dist = R_PointToDist2(cam->x, cam->y, lastp->mo->x, lastp->mo->y);
-			cam->angle = R_PointToAngle2(cam->x, cam->y, lastp->mo->x, lastp->mo->y);
-			cam->aiming = R_PointToAngle2(0, cam->z, dist, lastp->mo->z + lastp->mo->scale*128*P_MobjFlip(lastp->mo));	// This is still unholy. Aim a bit above their heads.
-			cam->reset_aiming = false;
-		}
+		const fixed_t dist = R_PointToDist2(cam->x, cam->y, lastp->mo->x, lastp->mo->y);
+		cam->angle = R_PointToAngle2(cam->x, cam->y, lastp->mo->x, lastp->mo->y);
+		cam->aiming = R_PointToAngle2(0, cam->z, dist, lastp->mo->z + lastp->mo->scale*128*P_MobjFlip(lastp->mo));	// This is still unholy. Aim a bit above their heads.
+		cam->reset_aiming = false;
 	}
 
 	if (cmd->forwardmove != 0)
@@ -3720,7 +3723,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 		num = 0;
 	}
 
-	if (thiscam->freecam || (player->spectator && player->speccam == true))
+	if (thiscam->freecam || player->spectator)
 	{
 		P_DemoCameraMovement(thiscam, num);
 		return true;
@@ -4100,7 +4103,6 @@ boolean P_SpectatorJoinGame(player_t *player)
 			player->mo = NULL;
 		}
 		player->spectator = false;
-		player->speccam = false;
 		player->pflags &= ~PF_WANTSTOJOIN;
 		player->kartstuff[k_spectatewait] = 0;
 		player->ctfteam = changeto;
@@ -4129,7 +4131,6 @@ boolean P_SpectatorJoinGame(player_t *player)
 			player->mo = NULL;
 		}
 		player->spectator = false;
-		player->speccam = false;
 		player->pflags &= ~PF_WANTSTOJOIN;
 		player->kartstuff[k_spectatewait] = 0;
 		player->playerstate = PST_REBORN;
@@ -4147,14 +4148,90 @@ boolean P_SpectatorJoinGame(player_t *player)
 	return false;
 }
 
-// the below is first person only, if you're curious. check out P_CalcChasePostImg in p_mobj.c for chasecam
-static void P_CalcPostImg(player_t *player)
+static boolean P_CameraCheckHeatFirstperson(player_t *player, sector_t *sector, fixed_t pviewheight)
 {
-	sector_t *sector = player->mo->subsector->sector;
-	INT16 typeflag = 0;
+	if (P_FindSpecialLineFromTag(13, sector->tag, -1) != -1)
+		return true;
+
+	if (sector->ffloors)
+	{
+		ffloor_t *rover;
+
+		for (rover = sector->ffloors; rover; rover = rover->next)
+		{
+			if (!(rover->flags & FF_EXISTS))
+				continue;
+
+			if (pviewheight >= P_GetFFloorTopZAt(rover, player->mo->x, player->mo->y))
+				continue;
+
+			if (pviewheight <= P_GetFFloorBottomZAt(rover, player->mo->x, player->mo->y))
+				continue;
+
+			if (P_FindSpecialLineFromTag(13, rover->master->frontsector->tag, -1) != -1)
+				return true;
+		}
+	}
+
+	return false;
+}
+
+static boolean P_CameraCheckWaterFirstperson(player_t *player, sector_t *sector, fixed_t pviewheight)
+{
+	if (sector->ffloors)
+	{
+		ffloor_t *rover;
+
+		for (rover = sector->ffloors; rover; rover = rover->next)
+		{
+			if (!(rover->flags & FF_EXISTS) || !(rover->flags & FF_SWIMMABLE) || rover->flags & FF_BLOCKPLAYER)
+				continue;
+
+			if (pviewheight >= P_GetFFloorTopZAt(rover, player->mo->x, player->mo->y))
+				continue;
+
+			if (pviewheight <= P_GetFFloorBottomZAt(rover, player->mo->x, player->mo->y))
+				continue;
+
+			return true;
+		}
+	}
+
+	return false;
+}
+
+// the below is first person only, if you're curious. check out P_CalcChasePostImg in p_mobj.c for chasecam
+static void P_CalcPostImg(player_t *player, camera_t *thiscam)
+{
+	sector_t *sector = NULL;
+	INT16 postimgtype = 0;
 	//INT32 *param;
-	fixed_t pviewheight;
-	UINT8 i;
+	fixed_t pviewheight = 0;
+
+	/*for (i = 0; i <= splitscreen; i++)
+	{
+		if (player == &players[displayplayers[i]])
+		{
+			param = &postimgparam[i];
+			break;
+		}
+	}*/
+
+	if (encoremode) // srb2kart
+		postimgtype |= POSTIMG_MIRROR;
+
+	if (player->mo->eflags & MFE_VERTICALFLIP)
+		postimgtype |= POSTIMG_FLIP;
+
+#ifdef HWRENDER
+	if (rendermode == render_opengl && splitscreen)
+	{
+		thiscam->postimg = postimgtype;
+		return;
+	}
+#endif
+
+	sector = player->mo->subsector->sector;
 
 	if (player->mo->eflags & MFE_VERTICALFLIP)
 		pviewheight = player->mo->z + player->mo->height - player->viewheight;
@@ -4167,88 +4244,25 @@ static void P_CalcPostImg(player_t *player)
 		pviewheight = player->awayviewmobj->z + 20*FRACUNIT;
 	}
 
-	/*for (i = 0; i <= splitscreen; i++)
-	{
-		if (player == &players[displayplayers[i]])
-		{
-			param = &postimgparam[i];
-			break;
-		}
-	}*/
-
-	// see if we are in heat (no, not THAT kind of heat...)
-
-	if (P_FindSpecialLineFromTag(13, sector->tag, -1) != -1)
-		typeflag |= POSTIMG_HEAT;
-	else if (sector->ffloors)
-	{
-		ffloor_t *rover;
-		fixed_t topheight;
-		fixed_t bottomheight;
-
-		for (rover = sector->ffloors; rover; rover = rover->next)
-		{
-			if (!(rover->flags & FF_EXISTS))
-				continue;
-
-			topheight = *rover->t_slope ? P_GetZAt(*rover->t_slope, player->mo->x, player->mo->y) : *rover->topheight;
-			bottomheight = *rover->b_slope ? P_GetZAt(*rover->b_slope, player->mo->x, player->mo->y) : *rover->bottomheight;
-
-			if (pviewheight >= topheight || pviewheight <= bottomheight)
-				continue;
-
-			if (P_FindSpecialLineFromTag(13, rover->master->frontsector->tag, -1) != -1)
-				typeflag |= POSTIMG_HEAT;
-		}
-	}
-
 	// see if we are in water (water trumps heat)
-	if (sector->ffloors)
-	{
-		ffloor_t *rover;
-		fixed_t topheight;
-		fixed_t bottomheight;
-
-		for (rover = sector->ffloors; rover; rover = rover->next)
-		{
-			if (!(rover->flags & FF_EXISTS) || !(rover->flags & FF_SWIMMABLE) || rover->flags & FF_BLOCKPLAYER)
-				continue;
-
-			topheight = *rover->t_slope ? P_GetZAt(*rover->t_slope, player->mo->x, player->mo->y) : *rover->topheight;
-			bottomheight = *rover->b_slope ? P_GetZAt(*rover->b_slope, player->mo->x, player->mo->y) : *rover->bottomheight;
-
-			if (pviewheight >= topheight || pviewheight <= bottomheight)
-				continue;
-
-			typeflag |= POSTIMG_WATER;
-		}
-	}
-
-	if (encoremode) // srb2kart
-		typeflag |= POSTIMG_MIRROR;
-
-	if (player->mo->eflags & MFE_VERTICALFLIP)
-		typeflag |= POSTIMG_FLIP;
+	if (P_CameraCheckWaterFirstperson(player, sector, pviewheight))
+		postimgtype |= POSTIMG_WATER;
+	// see if we are in heat (no, not THAT kind of heat...)
+	else if (P_CameraCheckHeatFirstperson(player, sector, pviewheight))
+		postimgtype |= POSTIMG_HEAT;
 
 	// Motion blur
 	// unused
 	/*if (player->speed > (35<<FRACBITS))
 	{
-		typeflag |= POSTIMG_MOTION;
+		postimgtype |= POSTIMG_MOTION;
 		*param = (player->speed - 32)/4;
 
 		if (*param > 5)
 			*param = 5;
 	}*/
 
-	for (i = 0; i <= splitscreen; i++)
-	{
-		if (player != &players[displayplayers[i]])
-			continue;
-
-		players[displayplayers[i]].postimgflags = typeflag;
-		break;
-	}
+	thiscam->postimg = postimgtype;
 }
 
 void P_DoTimeOver(player_t *player)
@@ -5031,7 +5045,7 @@ void P_PlayerAfterThink(player_t *player)
 		if (!thiscam->chase) // bob view only if looking through the player's eyes
 		{
 			P_CalcHeight(player);
-			P_CalcPostImg(player);
+			P_CalcPostImg(player, thiscam);
 		}
 		else
 		{

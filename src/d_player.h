@@ -412,8 +412,6 @@ typedef struct player_s
 	// See pflags_t, above.
 	pflags_t pflags;
 
-	UINT16 postimgflags;
-
 	// playing animation.
 	panim_t panim;
 
@@ -537,8 +535,6 @@ typedef struct player_s
 	mobj_t *awayviewmobj;
 	INT32 awayviewtics;
 	angle_t awayviewaiming; // Used for cut-away view
-
-	boolean speccam;
 
 	boolean spectator;
 	UINT8 bot;

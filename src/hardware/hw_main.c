@@ -5176,8 +5176,11 @@ static void HWR_SetTransformAiming(FTransform *trans)
 	trans->anglex = (float)(gl_aimingangle>>ANGLETOFINESHIFT)*(360.0f/(float)FINEANGLES);
 }
 
-void HWR_SetTransform(float fpov, player_t *player)
+void HWR_SetTransform(float fpov)
 {
+	UINT8 viewnum = R_GetViewNumber();
+	camera_t *thiscam = &camera[viewnum];
+
 	gl_viewx = FIXED_TO_FLOAT(viewx);
 	gl_viewy = FIXED_TO_FLOAT(viewy);
 	gl_viewz = FIXED_TO_FLOAT(viewz);
@@ -5207,15 +5210,15 @@ void HWR_SetTransform(float fpov, player_t *player)
 	atransform.splitscreen = splitscreen;
 
 	atransform.flip = false;
-	if ((player->postimgflags & POSTIMG_FLIP) && !(player->postimgflags & POSTIMG_MIRROR))
+	if ((thiscam->postimg & POSTIMG_FLIP) && !(thiscam->postimg & POSTIMG_MIRROR))
 		atransform.flip = true;
 
 	atransform.mirror = false;
-	if ((player->postimgflags & POSTIMG_MIRROR) && !(player->postimgflags & POSTIMG_FLIP))
+	if ((thiscam->postimg & POSTIMG_MIRROR) && !(thiscam->postimg & POSTIMG_FLIP))
 		atransform.mirror = true;
 
 	atransform.mirrorflip = false;
-	if ((player->postimgflags & POSTIMG_FLIP) && (player->postimgflags & POSTIMG_MIRROR))
+	if ((thiscam->postimg & POSTIMG_FLIP) && (thiscam->postimg & POSTIMG_MIRROR))
 		atransform.mirrorflip = true;
 
 	// Set transform.
@@ -5282,7 +5285,7 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *pl
 	// draw normal things in current frame in current incremented stencil buffer area
 	HWR_SetStencilState(HWR_STENCIL_NORMAL, stencil_level);
 
-	HWR_SetTransform(fpov, player);
+	HWR_SetTransform(fpov);
 
 	HWR_ClearSprites();
 	HWR_ClearClipper();
@@ -5339,7 +5342,7 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *pl
 		HWR_DrawSkyBackground();
 		HWR_SetStencilState(HWR_STENCIL_NORMAL, 0);
 		GL_ClearBuffer(false, false, true, 0);// clear skywall markings from the stencil buffer
-		HWR_SetTransform(fpov, player);// restore transform
+		HWR_SetTransform(fpov);// restore transform
 	}
 	gl_collect_skywalls = false;
 
@@ -5796,8 +5799,12 @@ static void HWR_DoPostProcessor(player_t *player)
 	if (splitscreen) // Not supported in splitscreen - someone want to add support?
 		return;
 
+	//UINT8 viewnum = R_GetViewNumber(); // see above
+	//camera_t *thiscam = &camera[viewnum];
+	camera_t *thiscam = &camera[0];
+
 	// Drunken vision! WooOOooo~
-	if (player->postimgflags & POSTIMG_WATER || player->postimgflags & POSTIMG_HEAT)
+	if (thiscam->postimg & POSTIMG_WATER || thiscam->postimg & POSTIMG_HEAT)
 	{
 		// 10 by 10 grid. 2 coordinates (xy)
 		float v[SCREENVERTS][SCREENVERTS][2];
@@ -5809,7 +5816,7 @@ static void HWR_DoPostProcessor(player_t *player)
 		INT32 FREQUENCY;
 
 		// Modifies the wave.
-		if (player->postimgflags & POSTIMG_WATER)
+		if (thiscam->postimg & POSTIMG_WATER)
 		{
 			WAVELENGTH = 5;
 			AMPLITUDE = 20;
