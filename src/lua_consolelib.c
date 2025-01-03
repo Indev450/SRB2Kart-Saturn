@@ -329,6 +329,7 @@ static int lib_cvRegisterVar(lua_State *L)
 	const char* category = NULL;
 	const char* menu_name = NULL;
 	boolean hasfunc = false;
+	int funcref = 0;
 
 	luaL_checktype(L, 1, LUA_TTABLE);
 	lua_settop(L, 1); // Clear out all other possible arguments, leaving only the first one.
@@ -429,7 +430,9 @@ static int lib_cvRegisterVar(lua_State *L)
 		} else if (i == 5 || (k && fasticmp(k, "func"))) {
 			if (!lua_isfunction(L, 4))
 				TYPEERROR("func", LUA_TFUNCTION)
-			lua_setfield(L, LUA_REGISTRYINDEX, "CVFUNC");
+			if (hasfunc)
+				luaL_unref(L, LUA_REGISTRYINDEX, funcref); // real clever, huh?
+			funcref = luaL_ref(L, LUA_REGISTRYINDEX);
 			hasfunc = true;
 			continue;
 		}
@@ -450,10 +453,11 @@ static int lib_cvRegisterVar(lua_State *L)
 	if (hasfunc) {
 		lua_getfield(L, LUA_REGISTRYINDEX, "CV_OnChange");
 		I_Assert(lua_istable(L, 3));
-		lua_getfield(L, LUA_REGISTRYINDEX, "CVFUNC");
+		lua_rawgeti(L, LUA_REGISTRYINDEX, funcref);
 		lua_setfield(L, 3, cvar->name);
 		lua_pop(L, 1);
 		cvar->func = Lua_OnChange;
+		luaL_unref(L, LUA_REGISTRYINDEX, funcref);
 	}
 
 	lua_getfield(L, LUA_REGISTRYINDEX, "CV_Vars");
