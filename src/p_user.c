@@ -2275,9 +2275,9 @@ static void P_MovePlayer(player_t *player)
 		}
 	}
 
+	// have to keep this crap for synch reasons
 	if (player->spectator)
 	{
-		player->speccam = true;
 		P_SpectatorMovement(player);
 		return;
 	}
@@ -3366,17 +3366,14 @@ static void P_DemoCameraMovement(camera_t *cam, UINT8 num)
 
 	// if you hold item, you will lock on to displayplayer. (The last player you were ""f12-ing"")
 	// well this only really works in replays for us, since we still move our spec player around which causes displayplayer to be the spec player
-	if (demo.playback)
+	if (cmd->buttons & BT_ATTACK)
 	{
-		if (cmd->buttons & BT_ATTACK)
-		{
-			lastp = &players[displayplayers[0]];	// Fun fact, I was trying displayplayers[0]->mo as if it was Lua like an absolute idiot.
+		lastp = &players[displayplayers[0]];	// Fun fact, I was trying displayplayers[0]->mo as if it was Lua like an absolute idiot.
 
-			const fixed_t dist = R_PointToDist2(cam->x, cam->y, lastp->mo->x, lastp->mo->y);
-			cam->angle = R_PointToAngle2(cam->x, cam->y, lastp->mo->x, lastp->mo->y);
-			cam->aiming = R_PointToAngle2(0, cam->z, dist, lastp->mo->z + lastp->mo->scale*128*P_MobjFlip(lastp->mo));	// This is still unholy. Aim a bit above their heads.
-			cam->reset_aiming = false;
-		}
+		const fixed_t dist = R_PointToDist2(cam->x, cam->y, lastp->mo->x, lastp->mo->y);
+		cam->angle = R_PointToAngle2(cam->x, cam->y, lastp->mo->x, lastp->mo->y);
+		cam->aiming = R_PointToAngle2(0, cam->z, dist, lastp->mo->z + lastp->mo->scale*128*P_MobjFlip(lastp->mo));	// This is still unholy. Aim a bit above their heads.
+		cam->reset_aiming = false;
 	}
 
 	if (cmd->forwardmove != 0)
@@ -3727,7 +3724,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 		num = 0;
 	}
 
-	if (thiscam->freecam || (player->spectator && player->speccam == true))
+	if (thiscam->freecam || player->spectator)
 	{
 		P_DemoCameraMovement(thiscam, num);
 		return true;
@@ -4107,7 +4104,6 @@ boolean P_SpectatorJoinGame(player_t *player)
 			player->mo = NULL;
 		}
 		player->spectator = false;
-		player->speccam = false;
 		player->pflags &= ~PF_WANTSTOJOIN;
 		player->kartstuff[k_spectatewait] = 0;
 		player->ctfteam = changeto;
@@ -4136,7 +4132,6 @@ boolean P_SpectatorJoinGame(player_t *player)
 			player->mo = NULL;
 		}
 		player->spectator = false;
-		player->speccam = false;
 		player->pflags &= ~PF_WANTSTOJOIN;
 		player->kartstuff[k_spectatewait] = 0;
 		player->playerstate = PST_REBORN;

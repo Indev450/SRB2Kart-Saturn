@@ -538,8 +538,6 @@ typedef struct player_s
 	INT32 awayviewtics;
 	angle_t awayviewaiming; // Used for cut-away view
 
-	boolean speccam;
-
 	boolean spectator;
 	UINT8 bot;
 

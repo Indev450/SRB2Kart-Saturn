@@ -10620,7 +10620,6 @@ void P_SpawnPlayer(INT32 playernum)
 	else if (!G_GametypeHasSpectators())
 	{
 		p->spectator = false;
-		p->speccam = false;
 	}
 	else if (netgame && p->jointime <= 1 && pcount)
 	{
@@ -10655,7 +10654,6 @@ void P_SpawnPlayer(INT32 playernum)
 		else // Otherwise, never spectator.
 		{
 			p->spectator = false;
-			p->speccam = false;
 		}
 	}
 
