@@ -3316,6 +3316,9 @@ static void P_DemoCameraMovement(camera_t *cam, UINT8 num)
 	const UINT8 forplayer = num+1;
 	boolean moving = false;
 
+	if (encoremode)
+		players[displayplayers[num]].postimgflags |= POSTIMG_MIRROR;
+
 	cam->localangle = cam->angle;
 	cam->localaiming = cam->aiming;
 
