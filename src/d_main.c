@@ -166,6 +166,48 @@ UINT8 ctrldown = 0; // 0x1 left, 0x2 right
 UINT8 altdown = 0; // 0x1 left, 0x2 right
 boolean capslock = 0;	// gee i wonder what this does.
 
+static void D_PadScrollInput(int input)
+{
+	event_t myev = {0, 0, 0, 0};
+	myev.type = ev_keydown;
+	myev.data1 = input;
+	D_PostEvent(&myev); // put into eventlist
+}
+
+#define SCROLLDELAY 19 // TICRATE * ( (k+2) (1 - [wz + h + j - q]^2 - [(gk + 2g + k + 1)(h + j) + h - z]^2 - [16(k + 1)^3(k + 2)(n + 1)^2 + 1 - f^2]^2 calculated by my butt
+
+// this is absolutely awful and i hate it lmao
+// but le hAx0r to make dpad also be able to scroll in the menu
+static void D_GamePadMenuScrollTicker(void)
+{
+	static SINT8 menuInputDelayTimer = 0;
+	int key = 0; // butt-on output
+
+	// wish i had a switch ono
+    if (DPADUPSCROLL)
+		key = KEY_UPARROW;
+    else if (DPADDOWNSCROLL)
+		key = KEY_DOWNARROW;
+    else if (DPADLEFTSCROLL)
+		key = KEY_LEFTARROW;
+    else if (DPADRIGHTSCROLL)
+		key = KEY_RIGHTARROW;
+
+	if (key)
+	{
+		if (menuInputDelayTimer < SCROLLDELAY)
+			menuInputDelayTimer++;
+
+		if (menuInputDelayTimer == SCROLLDELAY)
+			D_PadScrollInput(key);
+	}
+	else
+	{
+		menuInputDelayTimer = 0;
+	}
+}
+#undef SCROLLDELAY
+
 static inline void D_DeviceLEDTick(void)
 {
 	UINT8 i;
@@ -652,7 +694,6 @@ static boolean D_Display(void)
 // =========================================================================
 
 tic_t rendergametic;
-static SINT8 menuInputDelayTimer = 0;
 
 void D_SRB2Loop(void)
 {
@@ -773,35 +814,11 @@ void D_SRB2Loop(void)
 				doDisplay = true;
 			}
 
-#define DPADSCROLLINPUT(INPUT)\
-		{\
-		myev.data1 = INPUT;\
-		M_Responder(&myev);\
-		}
 			// this is absolutely awful and i hate it lmao
-			if (menuactive && (DPADUPSCROLL || DPADDOWNSCROLL || DPADLEFTSCROLL || DPADRIGHTSCROLL))
+			if (menuactive)
 			{
-				event_t myev;
-				myev.type = ev_keydown;
-
-				if (menuInputDelayTimer < 19)
-					menuInputDelayTimer++;
-
-				if (menuInputDelayTimer == 19) // TICRATE * ( (k+2) (1 - [wz + h + j - q]^2 - [(gk + 2g + k + 1)(h + j) + h - z]^2 - [16(k + 1)^3(k + 2)(n + 1)^2 + 1 - f^2]^2 calculated by my butt
-				{
-					if (DPADUPSCROLL)
-						DPADSCROLLINPUT(KEY_UPARROW)
-					else if (DPADDOWNSCROLL)
-						DPADSCROLLINPUT(KEY_DOWNARROW)
-					else if (DPADLEFTSCROLL)
-						DPADSCROLLINPUT(KEY_LEFTARROW)
-					else if (DPADRIGHTSCROLL)
-						DPADSCROLLINPUT(KEY_RIGHTARROW)
-				}
+				D_GamePadMenuScrollTicker();
 			}
-			else
-				menuInputDelayTimer = 0;
-#undef DPADSCROLLINPUT
 
 			D_DeviceLEDTick();
 		}
