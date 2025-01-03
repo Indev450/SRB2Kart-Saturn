@@ -4234,18 +4234,15 @@ static void P_CalcPostImg(player_t *player, camera_t *thiscam)
 
 	sector = player->mo->subsector->sector;
 
-	if (sector->ffloors)
-	{
-		if (player->mo->eflags & MFE_VERTICALFLIP)
-			pviewheight = player->mo->z + player->mo->height - player->viewheight;
-		else
-			pviewheight = player->mo->z + player->viewheight;
+	if (player->mo->eflags & MFE_VERTICALFLIP)
+		pviewheight = player->mo->z + player->mo->height - player->viewheight;
+	else
+		pviewheight = player->mo->z + player->viewheight;
 
-		if (player->awayviewtics && player->awayviewmobj && !P_MobjWasRemoved(player->awayviewmobj))
-		{
-			sector = player->awayviewmobj->subsector->sector;
-			pviewheight = player->awayviewmobj->z + 20*FRACUNIT;
-		}
+	if (player->awayviewtics && player->awayviewmobj && !P_MobjWasRemoved(player->awayviewmobj))
+	{
+		sector = player->awayviewmobj->subsector->sector;
+		pviewheight = player->awayviewmobj->z + 20*FRACUNIT;
 	}
 
 	// see if we are in water (water trumps heat)
