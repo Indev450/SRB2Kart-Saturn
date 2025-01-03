@@ -40,6 +40,8 @@ boolean luaL_checkboolean(lua_State *L, int narg) {
 	return lua_toboolean(L, narg);
 }
 
+static int ref_open, ref_iowrite, ref_fwrite; // original versions of io functions
+
 #define FILELIMIT 1024*1024 // Size limit for reading/writing files
 
 static const char *whitelist[] = { // Allow scripters to write files of these types to SRB2's folder
@@ -102,7 +104,7 @@ static int lib_open(lua_State *L)
 	lua_pushstring(L, destFilename);
 	lua_replace(L, 1);
 	// now call the real io.open
-	lua_pushvalue(L, lua_upvalueindex(1));
+	lua_rawgeti(L, LUA_REGISTRYINDEX, ref_open);
 	lua_insert(L, 1);
 	lua_call(L, lua_gettop(L)-1, LUA_MULTRET);
 	return lua_gettop(L);
@@ -114,8 +116,10 @@ static int lib_write(lua_State *L, int arg)
 	int top = lua_gettop(L);
 	boolean error = true;
 	size_t len, size = 0;
+	int ogref = ref_iowrite;
 
 	if (arg != 1) {
+		ogref = ref_fwrite;
 		FILE *fp = *(FILE **)luaL_checkudata(L, 1, LUA_FILEHANDLE);
 		if (fp == NULL) goto call; // real file:write will throw
 		size = ftell(fp);
@@ -134,7 +138,7 @@ static int lib_write(lua_State *L, int arg)
 	error = false;
 
 call:
-	lua_pushvalue(L, lua_upvalueindex(1));
+	lua_rawgeti(L, LUA_REGISTRYINDEX, ogref);
 	lua_insert(L, 1);
 	lua_call(L, lua_gettop(L)-1, LUA_MULTRET);
 
@@ -3481,25 +3485,24 @@ int LUA_BaseLib(lua_State *L)
 	lua_pop(L, 2); // pop metatable and dummy string
 
 	// replaces an existing function with another,
-	// saving the original as an upvalue
-#define REPLACE(name, func) \
+	// saving the original as a reference
+#define REPLACE(name, func, ref) \
 	lua_pushliteral(L, name); \
 	lua_rawget(L, -2); \
-	lua_pushcclosure(L, &func, 1); \
+	ref = luaL_ref(L, LUA_REGISTRYINDEX); \
 	lua_pushliteral(L, name); \
-	lua_pushvalue(L, -2); \
-	lua_rawset(L, -4); \
-	lua_pop(L, 1);
+	lua_pushcclosure(L, &func, 0); \
+	lua_rawset(L, -3);
 
 	// replace io.open
 	lua_getglobal(L, "io");
-	REPLACE("open", lib_open)
-	REPLACE("write", lib_write_io)
+	REPLACE("open", lib_open, ref_open)
+	REPLACE("write", lib_write_io, ref_iowrite)
 	lua_pop(L, 1);
 
 	// replace file:write
 	luaL_getmetatable(L, LUA_FILEHANDLE);
-	REPLACE("write", lib_write_f)
+	REPLACE("write", lib_write_f, ref_fwrite)
 	lua_pop(L, 1);
 #undef REPLACE
 
