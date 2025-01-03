@@ -3689,40 +3689,28 @@ boolean M_Responder(event_t *ev)
 				break;
 			case KEY_HAT1:
 				ch = KEY_UPARROW;
+				DPADUPSCROLL = true;
 				break;
 			case KEY_HAT1 + 1:
 				ch = KEY_DOWNARROW;
+				DPADDOWNSCROLL = true;
 				break;
 			case KEY_HAT1 + 2:
 				ch = KEY_LEFTARROW;
+				DPADLEFTSCROLL = true;
 				break;
 			case KEY_HAT1 + 3:
 				ch = KEY_RIGHTARROW;
+				DPADRIGHTSCROLL = true;
 				break;
 		}
 
 		if (menuactive)
 		{
-			switch (ev->data1) // if you pressed it set those to true
-			{
-				case KEY_HAT1:
-					DPADUPSCROLL = true;
-					break;
-				case KEY_HAT1 + 1:
-					DPADDOWNSCROLL = true;
-					break;
-				case KEY_HAT1 + 2:
-					DPADLEFTSCROLL = true;
-					break;
-				case KEY_HAT1 + 3:
-					DPADRIGHTSCROLL = true;
-					break;
-			}
-
 			if (currentMenu == &MISC_ChangeLevelDef || currentMenu == &MP_OfflineServerDef || currentMenu == &MP_ServerDef)
 			{
-				if (ev->data1 == gamecontrol[gc_fire][0]
-					|| ev->data1 == gamecontrol[gc_fire][1])
+				if (ch == gamecontrol[gc_fire][0]
+					|| ch == gamecontrol[gc_fire][1])
 				{
 					COM_ImmedExecute("add kartencore 1");
 				}
@@ -4398,10 +4386,12 @@ void M_StartControlPanel(void)
 
 	menuactive = true;
 
+	// reset those just in case the game missed the keyup event
 	DPADUPSCROLL = false;
 	DPADDOWNSCROLL = false;
 	DPADLEFTSCROLL = false;
 	DPADRIGHTSCROLL = false;
+	//
 
 	if (demo.playback)
 	{

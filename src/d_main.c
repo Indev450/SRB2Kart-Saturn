@@ -166,7 +166,7 @@ UINT8 ctrldown = 0; // 0x1 left, 0x2 right
 UINT8 altdown = 0; // 0x1 left, 0x2 right
 boolean capslock = 0;	// gee i wonder what this does.
 
-static void D_PadScrollInput(int input)
+static void D_PadMenuScrollInput(int input)
 {
 	event_t myev = {0, 0, 0, 0};
 	myev.type = ev_keydown;
@@ -199,7 +199,7 @@ static void D_GamePadMenuScrollTicker(void)
 			menuInputDelayTimer++;
 
 		if (menuInputDelayTimer == SCROLLDELAY)
-			D_PadScrollInput(key);
+			D_PadMenuScrollInput(key);
 	}
 	else
 	{
@@ -816,7 +816,6 @@ void D_SRB2Loop(void)
 				doDisplay = true;
 			}
 
-			// this is absolutely awful and i hate it lmao
 			if (menuactive)
 			{
 				D_GamePadMenuScrollTicker();
