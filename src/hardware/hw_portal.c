@@ -160,7 +160,7 @@ static void HWR_RenderPortalSeg(gl_portal_t* portal, SINT8 state)
 void HWR_RenderPortal(gl_portal_t* portal, gl_portal_t* rootportal, const float fpov, player_t *player, int stencil_level)
 {
 	// draw portal seg to stencil buffer with increment
-	HWR_SetTransform(fpov, player);
+	HWR_SetTransform(fpov);
 	HWR_ClearClipper();
 
 	HWR_SetStencilState(HWR_STENCIL_BEGIN, stencil_level);
@@ -180,7 +180,7 @@ void HWR_RenderPortal(gl_portal_t* portal, gl_portal_t* rootportal, const float 
 	}
 
 	// remove portal seg from stencil buffer
-	HWR_SetTransform(fpov, player);
+	HWR_SetTransform(fpov);
 	HWR_ClearClipper();
 
 	HWR_SetStencilState(HWR_STENCIL_REVERSE, stencil_level);

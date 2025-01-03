@@ -517,7 +517,7 @@ static boolean D_Display(void)
 
 				for (i = 0; i <= splitscreen; i++)
 				{
-					V_DoPostProcessor(i, &players[displayplayers[i]], postimgparam[i]);
+					V_DoPostProcessor(i, postimgparam[i]);
 				}
 			}
 

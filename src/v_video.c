@@ -3175,7 +3175,7 @@ INT32 heatindex[MAXSPLITSCREENPLAYERS] = {0, 0, 0, 0};
 // Perform a particular image postprocessing function.
 //
 
-void V_DoPostProcessor(INT32 view, player_t *player, INT32 param)
+void V_DoPostProcessor(INT32 view, INT32 param)
 {
 #if NUMSCREENS < 5
 	// do not enable image post processing for ARM, SH and MIPS CPUs
@@ -3194,7 +3194,9 @@ void V_DoPostProcessor(INT32 view, player_t *player, INT32 param)
 	if (view < 0 || view > 3 || view > splitscreen)
 		return;
 
-	if (!player->postimgflags)
+	camera_t *thiscam = &camera[view];
+
+	if (!thiscam->postimg)
 		return;
 
 	if ((view == 1 && splitscreen == 1) || view >= 2)
@@ -3210,7 +3212,7 @@ void V_DoPostProcessor(INT32 view, player_t *player, INT32 param)
 	UINT8 *tmpscr = screens[4];
 	UINT8 *srcscr = screens[0];
 
-	if (player->postimgflags & POSTIMG_WATER)
+	if (thiscam->postimg & POSTIMG_WATER)
 	{
 		INT32 y;
 		// Set disStart to a range from 0 to FINEANGLE, incrementing by 128 per tic
@@ -3269,22 +3271,7 @@ void V_DoPostProcessor(INT32 view, player_t *player, INT32 param)
 		tmpscr = srcscr;
 		srcscr = tmp;
 	}
-
-	/*if (player->postimgflags & POSTIMG_MOTION) // Motion Blur!
-	 {
-		INT32 x, y;
-
-		// TODO: Add a postimg_param so that we can pick the translucency level...
-		UINT8 *transme = transtables + ((param-1)<<FF_TRANSSHIFT);
-
-		for (y = yoffset; y < yoffset+viewheight; y++)
-		{
-			for (x = xoffset; x < xoffset+viewwidth; x++)
-				tmpscr[y*vid.width + x] =     colormaps[*(transme     + (srcscr   [(y*vid.width)+x ] <<8) + (tmpscr[(y*vid.width)+x]))];
-		}
-	}*/
-
-	if (player->postimgflags & POSTIMG_HEAT) // Heat wave
+	else if (thiscam->postimg & POSTIMG_HEAT) // Heat wave
 	{
 		INT32 y;
 
@@ -3331,7 +3318,21 @@ void V_DoPostProcessor(INT32 view, player_t *player, INT32 param)
 		srcscr = tmp;
 	}
 
-	if ((player->postimgflags & POSTIMG_FLIP) && !(player->postimgflags & POSTIMG_MIRROR)) // Flip the screen upside-down
+	/*if (thiscam->postimg & POSTIMG_MOTION) // Motion Blur!
+	{
+		INT32 x, y;
+
+		// TODO: Add a postimg_param so that we can pick the translucency level...
+		UINT8 *transme = transtables + ((param-1)<<FF_TRANSSHIFT);
+
+		for (y = yoffset; y < yoffset+viewheight; y++)
+		{
+			for (x = xoffset; x < xoffset+viewwidth; x++)
+				tmpscr[y*vid.width + x] =     colormaps[*(transme     + (srcscr   [(y*vid.width)+x ] <<8) + (tmpscr[(y*vid.width)+x]))];
+		}
+	}*/
+
+	if ((thiscam->postimg & POSTIMG_FLIP) && !(thiscam->postimg & POSTIMG_MIRROR)) // Flip the screen upside-down
 	{
 		INT32 y, y2;
 
@@ -3342,7 +3343,7 @@ void V_DoPostProcessor(INT32 view, player_t *player, INT32 param)
 		tmpscr = srcscr;
 		srcscr = tmp;
 	}
-	else if ((player->postimgflags & POSTIMG_MIRROR) && !(player->postimgflags & POSTIMG_FLIP)) // Flip the screen on the x axis
+	else if ((thiscam->postimg & POSTIMG_MIRROR) && !(thiscam->postimg & POSTIMG_FLIP)) // Flip the screen on the x axis
 	{
 		INT32 y, x, x2;
 
@@ -3354,7 +3355,7 @@ void V_DoPostProcessor(INT32 view, player_t *player, INT32 param)
 		tmpscr = srcscr;
 		srcscr = tmp;
 	}
-	else if ((player->postimgflags & POSTIMG_MIRROR) && (player->postimgflags & POSTIMG_FLIP)) // Flip the screen upside-down and on the x axis
+	else if ((thiscam->postimg & POSTIMG_MIRROR) && (thiscam->postimg & POSTIMG_FLIP)) // Flip the screen upside-down and on the x axis
 	{
 		INT32 y, x;
 

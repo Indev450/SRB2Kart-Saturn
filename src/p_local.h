@@ -121,6 +121,9 @@ typedef struct camera_s
 
 	// SRB2Kart: camera pans while drifting
 	fixed_t pan;
+
+	// postproccess effects
+	UINT16 postimg;
 } camera_t;
 
 extern camera_t camera[MAXSPLITSCREENPLAYERS];
