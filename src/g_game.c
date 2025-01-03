@@ -834,14 +834,6 @@ boolean InputDown(INT32 gc, UINT8 p)
 	}
 }
 
-//
-// G_BuildTiccmd
-// Builds a ticcmd from all of the available inputs
-// or reads it from the demo buffer.
-// If recording a demo, write it out
-//
-// set secondaryplayer true to build player 2's ticcmd in splitscreen mode
-//
 INT32 localaiming[MAXSPLITSCREENPLAYERS];
 angle_t localangle[MAXSPLITSCREENPLAYERS];
 boolean camspin[MAXSPLITSCREENPLAYERS];
@@ -852,79 +844,59 @@ static fixed_t angleturn[3] = {KART_FULLTURN/2, KART_FULLTURN, KART_FULLTURN/4};
 
 // this is absolutely awful
 // but we need this if we dont want spectators to move but be able to go to freecam from watching someone
-static void G_BuildLocalTiccmd(UINT8 ssplayer)
+static void G_BuildLocalTiccmd(ticcmd_t *cmd, UINT8 ssplayer)
 {
-	const UINT8 forplayer = ssplayer-1;
-	boolean forward, side, axis; //i
-	boolean usejoystick;
-	boolean turnleft, turnright;
+	boolean forward = false;
+	INT32 axis = 0;
+	const UINT8 forplayer = (ssplayer-1);
+	const boolean usejoystick = (cv_usejoystick[forplayer].value);
 
-	ticcmd_t *cmd = D_LocalTiccmd(forplayer);
-
-	const boolean analogjoystickmove = cv_usejoystick[forplayer].value && !Joystick[forplayer].bGamepadStyle;
-	const boolean gamepadjoystickmove = cv_usejoystick[forplayer].value && Joystick[forplayer].bGamepadStyle;
-
-	usejoystick = (analogjoystickmove || gamepadjoystickmove);
-
-	turnright = InputDown(gc_turnright, ssplayer);
-	turnleft = InputDown(gc_turnleft, ssplayer);
-
+	boolean turn = (InputDown(gc_turnleft, ssplayer) || InputDown(gc_turnright, ssplayer));
 	axis = JoyAxis(AXISTURN, ssplayer);
+	boolean side = (turn || (usejoystick && axis != 0));
 
-	if (gamepadjoystickmove && axis != 0)
-	{
-		turnright = turnright || (axis > 0);
-		turnleft = turnleft || (axis < 0);
-	}
-	side = (turnright || turnleft || (analogjoystickmove && axis != 0));
-
-	forward = false;
 	axis = JoyAxis(AXISAIM, ssplayer);
 	if (InputDown(gc_aimforward, ssplayer) || (usejoystick && axis < 0))
 		forward = true;
 	if (InputDown(gc_aimbackward, ssplayer) || (usejoystick && axis > 0))
 		forward = true;
 
-	axis = JoyAxis(AXISMOVE, ssplayer);
-	if (InputDown(gc_accelerate, ssplayer) || (usejoystick && axis > 0))
-		cmd->buttons |= BT_ACCELERATE;
-	axis = JoyAxis(AXISBRAKE, ssplayer);
-	if (InputDown(gc_brake, ssplayer) || (usejoystick && axis > 0))
-		cmd->buttons |= BT_BRAKE;
-	axis = JoyAxis(AXISFIRE, ssplayer);
-	if (InputDown(gc_fire, ssplayer) || (usejoystick && axis > 0))
-		cmd->buttons |= BT_ATTACK;
+	// check for inputs and return button commands
+	// for stuff like joining with item button, etc.
+#define CHECKINPUT(button, AXIS, buttflag) \
+	axis = JoyAxis(AXIS, ssplayer);        \
+	if (InputDown(button, ssplayer) || (usejoystick && axis > 0)) cmd->buttons |= buttflag;
 
-	// drift with any button/key
-	axis = JoyAxis(AXISDRIFT, ssplayer);
-	if (InputDown(gc_drift, ssplayer) || (usejoystick && axis > 0))
-		cmd->buttons |= BT_DRIFT;
+	CHECKINPUT(gc_accelerate, AXISMOVE, BT_ACCELERATE);
+	CHECKINPUT(gc_brake, AXISBRAKE, BT_BRAKE);
+	CHECKINPUT(gc_fire, AXISFIRE, BT_ATTACK);
+	CHECKINPUT(gc_drift, AXISDRIFT, BT_DRIFT);
+	CHECKINPUT(gc_custom1, AXISCUSTOM1, BT_CUSTOM1);
+	CHECKINPUT(gc_custom2, AXISCUSTOM2, BT_CUSTOM2);
+	CHECKINPUT(gc_custom3, AXISCUSTOM3, BT_CUSTOM3);
 
-	// Lua scriptable buttons
-	axis = JoyAxis(AXISCUSTOM1, ssplayer);
-	if (InputDown(gc_custom1, ssplayer) || (usejoystick && axis > 0))
-		cmd->buttons |= BT_CUSTOM1;
-	axis = JoyAxis(AXISCUSTOM2, ssplayer);
-	if (InputDown(gc_custom2, ssplayer) || (usejoystick && axis > 0))
-		cmd->buttons |= BT_CUSTOM2;
-	axis = JoyAxis(AXISCUSTOM3, ssplayer);
-	if (InputDown(gc_custom3, ssplayer) || (usejoystick && axis > 0))
-		cmd->buttons |= BT_CUSTOM3;
+#undef CHECKINPUT
 
-	//Reset away view if a command is given.
+	// Reset to our spec player if we watch someone else.
 	if ((forward || side || cmd->buttons)
 		&& displayplayers[0] != consoleplayer && ssplayer == 1)
 	{
 		displayplayers[0] = consoleplayer;
-		G_FixCamera(1);
+		R_ResetViewInterpolation(0);
 	}
 }
 
+//
+// G_BuildTiccmd
+// Builds a ticcmd from all of the available inputs
+// or reads it from the demo buffer.
+// If recording a demo, write it out
+//
 void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 {
-	const UINT8 forplayer = ssplayer-1;
-	INT32 laim, th, tspeed, forward, side, axis; //i
-	const INT32 speed = 1;
+	const UINT8 forplayer = (ssplayer-1);
+	INT32 laim, th, tspeed, forward, side, axis;
+
 	// these ones used for multiple conditions
 	boolean turnleft, turnright, mouseaiming;
 	boolean invertmouse, usejoystick, kbl, rd;
@@ -988,7 +960,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	// lmfao this is beyond hellish
 	if (player->spectator)
 	{
-		G_BuildLocalTiccmd(ssplayer);
+		G_BuildLocalTiccmd(cmd, ssplayer);
 
 		if (gamestate == GS_LEVEL)
 			LUA_HookTiccmd(player, cmd, HOOK(PlayerCmd));
@@ -1048,7 +1020,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	if (th < SLOWTURNTICS)
 		tspeed = cv_turnsmooth.value == 2 ? 2 : 0; // slow turn
 	else
-		tspeed = speed;
+		tspeed = 1;
 
 	cmd->driftturn = 0;
 
