@@ -258,7 +258,7 @@ INT32 V_SkinColorToHighlightcolor(skincolors_t color);
 
 typedef struct player_s player_t;
 
-void V_DoPostProcessor(INT32 view, player_t *player, INT32 param);
+void V_DoPostProcessor(INT32 view, INT32 param);
 
 void V_DrawPatchFill(patch_t *pat);
 

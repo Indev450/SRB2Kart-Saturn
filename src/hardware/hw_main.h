@@ -113,7 +113,7 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *pl
 void HWR_ClearSkyDome(void);
 void HWR_BuildSkyDome(void);
 
-void HWR_SetTransform(float fpov, player_t *player);
+void HWR_SetTransform(float fpov);
 void HWR_ClearClipper(void);
 void HWR_SetStencilState(int state, int level);
 
