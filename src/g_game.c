@@ -846,20 +846,14 @@ static fixed_t angleturn[3] = {KART_FULLTURN/2, KART_FULLTURN, KART_FULLTURN/4};
 // but we need this if we dont want spectators to move but be able to go to freecam from watching someone
 static void G_BuildLocalTiccmd(ticcmd_t *cmd, UINT8 ssplayer)
 {
-	boolean forward = false;
+	boolean moveinput = false;
 	INT32 axis = 0;
 	const UINT8 forplayer = (ssplayer-1);
 	const boolean usejoystick = (cv_usejoystick[forplayer].value);
 
-	boolean turn = (InputDown(gc_turnleft, ssplayer) || InputDown(gc_turnright, ssplayer));
-	axis = JoyAxis(AXISTURN, ssplayer);
-	boolean side = (turn || (usejoystick && axis != 0));
-
-	axis = JoyAxis(AXISAIM, ssplayer);
-	if (InputDown(gc_aimforward, ssplayer) || (usejoystick && axis < 0))
-		forward = true;
-	if (InputDown(gc_aimbackward, ssplayer) || (usejoystick && axis > 0))
-		forward = true;
+	moveinput = (InputDown(gc_turnleft, ssplayer) || InputDown(gc_turnright, ssplayer)
+	|| InputDown(gc_aimforward, ssplayer) || InputDown(gc_aimbackward, ssplayer) ||
+	(usejoystick && JoyAxis(AXISAIM, ssplayer) != 0) || (usejoystick && JoyAxis(AXISTURN, ssplayer) != 0));
 
 	// check for inputs and return button commands
 	// for stuff like joining with item button, etc.
@@ -878,11 +872,12 @@ static void G_BuildLocalTiccmd(ticcmd_t *cmd, UINT8 ssplayer)
 #undef CHECKINPUT
 
 	// Reset to our spec player if we watch someone else.
-	if ((forward || side || cmd->buttons)
+	if ((moveinput || cmd->buttons)
 		&& displayplayers[0] != consoleplayer && ssplayer == 1)
 	{
 		displayplayers[0] = consoleplayer;
 		R_ResetViewInterpolation(0);
+		camera[0].reset_aiming = true;
 	}
 }
 

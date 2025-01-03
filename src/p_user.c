@@ -3144,7 +3144,9 @@ void P_ToggleDemoCamera(UINT8 viewnum)
 
 	// dont let freecam be toggled when in spec lel
 	if (players[displayplayers[viewnum]].spectator)
+	{
 		return;
+	}
 
 	if (!cam->freecam)	// toggle on
 	{
@@ -3328,13 +3330,14 @@ static void P_DemoCameraMovement(camera_t *cam, UINT8 num)
 
 	// let centerview work proper
 	if (InputDown(gc_centerview, forplayer))
+	{
 		cam->aiming = 0;
+		cam->reset_aiming = false;
+	}
 
 	if (cmd->aiming != 0)
 	{
 		cam->aiming = cmd->aiming << FRACBITS;
-
-		cam->reset_aiming = false;
 	}
 
 	cam->angle = cmd->angleturn << 16;
@@ -3366,7 +3369,7 @@ static void P_DemoCameraMovement(camera_t *cam, UINT8 num)
 
 	// if you hold item, you will lock on to displayplayer. (The last player you were ""f12-ing"")
 	// well this only really works in replays for us, since we still move our spec player around which causes displayplayer to be the spec player
-	if (cmd->buttons & BT_ATTACK)
+	if (cam->freecam && cmd->buttons & BT_ATTACK)
 	{
 		lastp = &players[displayplayers[0]];	// Fun fact, I was trying displayplayers[0]->mo as if it was Lua like an absolute idiot.
 
