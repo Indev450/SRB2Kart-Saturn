@@ -848,6 +848,76 @@ static fixed_t forwardmove[2] = {25<<FRACBITS>>16, 50<<FRACBITS>>16};
 static fixed_t sidemove[2] = {2<<FRACBITS>>16, 4<<FRACBITS>>16};
 static fixed_t angleturn[3] = {KART_FULLTURN/2, KART_FULLTURN, KART_FULLTURN/4}; // + slow turn
 
+// this is absolutely awful
+// but we need this if we dont want spectators to move but be able to go to freecam from watching someone
+static void G_BuildLocalTiccmd(UINT8 ssplayer)
+{
+	const UINT8 forplayer = ssplayer-1;
+	boolean forward, side, axis; //i
+	boolean usejoystick;
+	boolean turnleft, turnright;
+
+	ticcmd_t *cmd = D_LocalTiccmd(forplayer);
+
+	const boolean analogjoystickmove = cv_usejoystick[forplayer].value && !Joystick[forplayer].bGamepadStyle;
+	const boolean gamepadjoystickmove = cv_usejoystick[forplayer].value && Joystick[forplayer].bGamepadStyle;
+
+	usejoystick = (analogjoystickmove || gamepadjoystickmove);
+
+	turnright = InputDown(gc_turnright, ssplayer);
+	turnleft = InputDown(gc_turnleft, ssplayer);
+
+	axis = JoyAxis(AXISTURN, ssplayer);
+
+	if (gamepadjoystickmove && axis != 0)
+	{
+		turnright = turnright || (axis > 0);
+		turnleft = turnleft || (axis < 0);
+	}
+	side = (turnright || turnleft || (analogjoystickmove && axis != 0));
+
+	forward = false;
+	axis = JoyAxis(AXISAIM, ssplayer);
+	if (InputDown(gc_aimforward, ssplayer) || (usejoystick && axis < 0))
+		forward = true;
+	if (InputDown(gc_aimbackward, ssplayer) || (usejoystick && axis > 0))
+		forward = true;
+
+	axis = JoyAxis(AXISMOVE, ssplayer);
+	if (InputDown(gc_accelerate, ssplayer) || (usejoystick && axis > 0))
+		cmd->buttons |= BT_ACCELERATE;
+	axis = JoyAxis(AXISBRAKE, ssplayer);
+	if (InputDown(gc_brake, ssplayer) || (usejoystick && axis > 0))
+		cmd->buttons |= BT_BRAKE;
+	axis = JoyAxis(AXISFIRE, ssplayer);
+	if (InputDown(gc_fire, ssplayer) || (usejoystick && axis > 0))
+		cmd->buttons |= BT_ATTACK;
+
+	// drift with any button/key
+	axis = JoyAxis(AXISDRIFT, ssplayer);
+	if (InputDown(gc_drift, ssplayer) || (usejoystick && axis > 0))
+		cmd->buttons |= BT_DRIFT;
+
+	// Lua scriptable buttons
+	axis = JoyAxis(AXISCUSTOM1, ssplayer);
+	if (InputDown(gc_custom1, ssplayer) || (usejoystick && axis > 0))
+		cmd->buttons |= BT_CUSTOM1;
+	axis = JoyAxis(AXISCUSTOM2, ssplayer);
+	if (InputDown(gc_custom2, ssplayer) || (usejoystick && axis > 0))
+		cmd->buttons |= BT_CUSTOM2;
+	axis = JoyAxis(AXISCUSTOM3, ssplayer);
+	if (InputDown(gc_custom3, ssplayer) || (usejoystick && axis > 0))
+		cmd->buttons |= BT_CUSTOM3;
+
+	//Reset away view if a command is given.
+	if ((forward || side || cmd->buttons)
+		&& displayplayers[0] != consoleplayer && ssplayer == 1)
+	{
+		displayplayers[0] = consoleplayer;
+		G_FixCamera(1);
+	}
+}
+
 void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 {
 	const UINT8 forplayer = ssplayer-1;
@@ -916,43 +986,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	// lmfao this is beyond hellish
 	if (player->spectator)
 	{
-		usejoystick = (analogjoystickmove || gamepadjoystickmove);
-
-		axis = JoyAxis(AXISMOVE, ssplayer);
-		if (InputDown(gc_accelerate, ssplayer) || (usejoystick && axis > 0))
-			cmd->buttons |= BT_ACCELERATE;
-		axis = JoyAxis(AXISBRAKE, ssplayer);
-		if (InputDown(gc_brake, ssplayer) || (usejoystick && axis > 0))
-			cmd->buttons |= BT_BRAKE;
-		axis = JoyAxis(AXISFIRE, ssplayer);
-		if (InputDown(gc_fire, ssplayer) || (usejoystick && axis > 0))
-			cmd->buttons |= BT_ATTACK;
-
-		// drift with any button/key
-		axis = JoyAxis(AXISDRIFT, ssplayer);
-		if (InputDown(gc_drift, ssplayer) || (usejoystick && axis > 0))
-			cmd->buttons |= BT_DRIFT;
-
-		// Lua scriptable buttons
-		axis = JoyAxis(AXISCUSTOM1, ssplayer);
-		if (InputDown(gc_custom1, ssplayer) || (usejoystick && axis > 0))
-			cmd->buttons |= BT_CUSTOM1;
-		axis = JoyAxis(AXISCUSTOM2, ssplayer);
-		if (InputDown(gc_custom2, ssplayer) || (usejoystick && axis > 0))
-			cmd->buttons |= BT_CUSTOM2;
-		axis = JoyAxis(AXISCUSTOM3, ssplayer);
-		if (InputDown(gc_custom3, ssplayer) || (usejoystick && axis > 0))
-			cmd->buttons |= BT_CUSTOM3;
-
-		// Reset camera
-		if (InputDown(gc_camreset, ssplayer))
-		{
-			if (thiscam->chase && !rd)
-				P_ResetCamera(player, thiscam);
-			rd = true;
-		}
-		else
-			rd = false;
+		G_BuildLocalTiccmd(ssplayer);
 
 		if (gamestate == GS_LEVEL)
 			LUA_HookTiccmd(player, cmd, HOOK(PlayerCmd));
