@@ -868,6 +868,9 @@ static void G_BuildLocalTiccmd(ticcmd_t *cmd, UINT8 ssplayer)
 
 #undef CHECKINPUT
 
+	axis = JoyAxis(AXISLOOKBACK, ssplayer);
+	camspin[ssplayer-1] = (InputDown(gc_lookback, ssplayer) || (usejoystick && axis > 0));
+
 	// Reset to our spec player if we watch someone else.
 	if ((moveinput || cmd->buttons)
 		&& displayplayers[0] != consoleplayer && ssplayer == 1)
