@@ -3155,6 +3155,12 @@ void P_ToggleDemoCamera(UINT8 viewnum)
 		cam->freecam = true;
 		cam->button_a_held = 2;
 		cam->reset_aiming = true;
+
+		// get rid of some hud elements
+		if (displayplayers[0] != consoleplayer)
+		{
+			displayplayers[0] = consoleplayer;
+		}
 	}
 	else				// toggle off
 	{
@@ -3255,12 +3261,9 @@ static ticcmd_t *P_CameraCmd(camera_t *cam, UINT8 num)
 	if (InputDown(gc_aimbackward, forplayer) || (usejoystick && axis > 0))
 		forward -= forwardmove[1];
 
-	// fire with any button/key
 	axis = JoyAxis(AXISFIRE, forplayer);
-	if (InputDown(gc_fire, 1) || (usejoystick && axis > 0))
+	if (InputDown(gc_fire, forplayer) || (usejoystick && axis > 0))
 		cmd->buttons |= BT_ATTACK;
-
-	// spectator aiming shit, ahhhh...
 
 	// looking up/down
 	laim += (mlooky<<19);
