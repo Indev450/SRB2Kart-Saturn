@@ -50,10 +50,6 @@
 #include "console.h" // CON_LogMessage
 #include "m_menu.h"
 
-#ifdef HW3SOUND
-#include "hardware/hw3sound.h"
-#endif
-
 #ifdef HWRENDER
 #include "hardware/hw_main.h"
 #endif
@@ -3433,7 +3429,7 @@ static void P_DemoCameraMovement(camera_t *cam, UINT8 num)
 	}
 
 	// update subsector to avoid crashes;
-	cam->subsector = R_PointInSubsectorFast(cam->x, cam->y);
+	cam->subsector = R_PointInSubsector(cam->x, cam->y);
 }
 
 #undef intsign
@@ -3477,7 +3473,7 @@ void P_ResetCamera(player_t *player, camera_t *thiscam)
 
 	thiscam->relativex = 0;
 
-	thiscam->subsector = R_PointInSubsectorFast(thiscam->x,thiscam->y);
+	thiscam->subsector = R_PointInSubsector(thiscam->x,thiscam->y);
 
 	thiscam->radius = 20*FRACUNIT;
 	thiscam->height = 16*FRACUNIT;
