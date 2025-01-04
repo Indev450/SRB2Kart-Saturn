@@ -3151,6 +3151,12 @@ void P_ToggleDemoCamera(UINT8 viewnum)
 		cam->freecam = true;
 		cam->button_a_held = 2;
 		cam->reset_aiming = true;
+
+		// get rid of some hud elements
+		if (displayplayers[0] != consoleplayer)
+		{
+			displayplayers[0] = consoleplayer;
+		}
 	}
 	else				// toggle off
 	{
@@ -3251,12 +3257,9 @@ static ticcmd_t *P_CameraCmd(camera_t *cam, UINT8 num)
 	if (InputDown(gc_aimbackward, forplayer) || (usejoystick && axis > 0))
 		forward -= forwardmove[1];
 
-	// fire with any button/key
 	axis = JoyAxis(AXISFIRE, forplayer);
-	if (InputDown(gc_fire, 1) || (usejoystick && axis > 0))
+	if (InputDown(gc_fire, forplayer) || (usejoystick && axis > 0))
 		cmd->buttons |= BT_ATTACK;
-
-	// spectator aiming shit, ahhhh...
 
 	// looking up/down
 	laim += (mlooky<<19);
@@ -3366,8 +3369,8 @@ static void P_DemoCameraMovement(camera_t *cam, UINT8 num)
 	}
 
 	// if you hold item, you will lock on to displayplayer. (The last player you were ""f12-ing"")
-	// well this only really works in replays for us, since we still move our spec player around which causes displayplayer to be the spec player
-	if (cam->freecam && cmd->buttons & BT_ATTACK)
+	// this feels kinda pointless for ingame freecam so keep it for replays only
+	if (demo.playback && cmd->buttons & BT_ATTACK)
 	{
 		lastp = &players[displayplayers[0]];	// Fun fact, I was trying displayplayers[0]->mo as if it was Lua like an absolute idiot.
 
