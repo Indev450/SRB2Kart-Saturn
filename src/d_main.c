@@ -744,7 +744,7 @@ void D_SRB2Loop(void)
 
 		{
 			// Casting the return value of a function is bad practice (apparently)
-			double budget = round((1.0 / R_GetFramerateCap()) * I_GetPrecisePrecision());
+			double budget = ((R_GetFramerateCap() == 0) ? 0.0 : round((1.0 / R_GetFramerateCap()) * I_GetPrecisePrecision()));
 			capbudget = (precise_t) budget;
 		}
 
