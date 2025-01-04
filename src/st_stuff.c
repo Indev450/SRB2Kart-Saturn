@@ -655,14 +655,16 @@ static void ST_drawLevelTitle(void)
 // if unbound is set, it returns "Unbound" as a string should there be no button bound to a gamecontrol
 static const char *ST_GetButtonName(INT32 control, const char *inputtext, boolean unbound)
 {
-	static char buttname[32] = {0};
+	static char buttname[32] = "";
 	const char *butt1 = (gamecontrol[control][0] != 0 ? G_KeynumToString(gamecontrol[control][0]) : NULL);
 	const char *butt2 = (gamecontrol[control][1] != 0 ? G_KeynumToString(gamecontrol[control][1]) : NULL); // alternative bind
 
-	if (butt1 != NULL && butt2 != NULL)
+	if (butt1 == NULL && butt2 == NULL) // not bound to a button
+		snprintf(buttname, 32, (unbound ? "%s - %s" : "- %s - %s"), (unbound ? "Unbound" : ""), inputtext);
+	else if (butt1 != NULL && butt2 != NULL) // bound to two buttons
 		snprintf(buttname, 32, "%s/%s - %s", butt1, butt2, inputtext);
-	else
-		snprintf(buttname, 32, (unbound ? "%s - %s" : "- %s - %s"), (butt1 != NULL ? butt1 : butt2 != NULL ? butt2 : unbound ? "Unbound" : ""), inputtext);
+	else // bound to only one
+		snprintf(buttname, 32, "- %s - %s", (butt1 != NULL ? butt1 : butt2 != NULL ? butt2 : ""), inputtext);
 
 	return buttname;
 }
