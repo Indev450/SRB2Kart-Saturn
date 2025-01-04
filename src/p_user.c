@@ -3261,6 +3261,14 @@ static ticcmd_t *P_CameraCmd(camera_t *cam, UINT8 num)
 	if (InputDown(gc_fire, forplayer) || (usejoystick && axis > 0))
 		cmd->buttons |= BT_ATTACK;
 
+	// float and sink
+	axis = JoyAxis(AXISMOVE, forplayer);
+	if (InputDown(gc_accelerate, forplayer) || (usejoystick && axis > 0))
+		cmd->buttons |= BT_ACCELERATE;
+	axis = JoyAxis(AXISBRAKE, forplayer);
+	if (InputDown(gc_brake, forplayer) || (usejoystick && axis > 0))
+		cmd->buttons |= BT_BRAKE;
+
 	// looking up/down
 	laim += (mlooky<<19);
 
@@ -3347,7 +3355,7 @@ static void P_DemoCameraMovement(camera_t *cam, UINT8 num)
 	if (!cam->button_a_held)
 	{
 		fixed_t spd = 32*mapobjectscale*cv_freecam_speed.value;
-		int dir = ((InputDown(gc_camfloat, forplayer)) ? 1 : 0) + ((InputDown(gc_camsink, forplayer)) ? -1 : 0);
+		int dir = ((cmd->buttons & BT_ACCELERATE || InputDown(gc_camfloat, forplayer)) ? 1 : 0) + ((cmd->buttons & BT_BRAKE || InputDown(gc_camsink, forplayer)) ? -1 : 0);
 
 		switch (dir)
 		{
