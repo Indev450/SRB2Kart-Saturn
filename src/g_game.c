@@ -840,33 +840,44 @@ static fixed_t forwardmove[2] = {25<<FRACBITS>>16, 50<<FRACBITS>>16};
 static fixed_t sidemove[2] = {2<<FRACBITS>>16, 4<<FRACBITS>>16};
 static fixed_t angleturn[3] = {KART_FULLTURN/2, KART_FULLTURN, KART_FULLTURN/4}; // + slow turn
 
-// this is absolutely awful
-// but we need this if we dont want spectators to move but be able to go to freecam from watching someone
-static void G_BuildLocalTiccmd(ticcmd_t *cmd, UINT8 ssplayer)
+//
+// G_BuildLocalTiccmd
+// extremely basic cut down ticcmd builder
+// for spectator and freecam
+// this does not make the player move at all but keeps important things working
+//
+static void G_BuildLocalTiccmd(ticcmd_t *cmd, UINT8 ssplayer, boolean freecam)
 {
 	boolean moveinput = false;
 	INT32 axis = 0;
 	const boolean usejoystick = (cv_usejoystick[(ssplayer-1)].value);
 
-	moveinput = (InputDown(gc_turnleft, ssplayer) || InputDown(gc_turnright, ssplayer)
-	|| InputDown(gc_aimforward, ssplayer) || InputDown(gc_aimbackward, ssplayer) ||
-	(usejoystick && JoyAxis(AXISAIM, ssplayer) != 0) || (usejoystick && JoyAxis(AXISTURN, ssplayer) != 0));
-
 	// check for inputs and return button commands
-	// for stuff like joining with item button, etc.
+	// for stuff like joining with item button, saltyhop, honking, etc.
 #define CHECKINPUT(button, AXIS, buttflag) \
 	axis = JoyAxis(AXIS, ssplayer);        \
 	if (InputDown(button, ssplayer) || (usejoystick && axis > 0)) cmd->buttons |= buttflag;
 
-	CHECKINPUT(gc_accelerate, AXISMOVE, BT_ACCELERATE);
-	CHECKINPUT(gc_brake, AXISBRAKE, BT_BRAKE);
 	CHECKINPUT(gc_fire, AXISFIRE, BT_ATTACK);
 	CHECKINPUT(gc_drift, AXISDRIFT, BT_DRIFT);
 	CHECKINPUT(gc_custom1, AXISCUSTOM1, BT_CUSTOM1);
 	CHECKINPUT(gc_custom2, AXISCUSTOM2, BT_CUSTOM2);
 	CHECKINPUT(gc_custom3, AXISCUSTOM3, BT_CUSTOM3);
 
+	// we dont need the rest of this if were in freecam state
+	if (freecam)
+	{
+		return;
+	}
+
+	CHECKINPUT(gc_accelerate, AXISMOVE, BT_ACCELERATE);
+	CHECKINPUT(gc_brake, AXISBRAKE, BT_BRAKE);
+
 #undef CHECKINPUT
+
+	moveinput = (InputDown(gc_turnleft, ssplayer) || InputDown(gc_turnright, ssplayer)
+	|| InputDown(gc_aimforward, ssplayer) || InputDown(gc_aimbackward, ssplayer) ||
+	(usejoystick && JoyAxis(AXISAIM, ssplayer) != 0) || (usejoystick && JoyAxis(AXISTURN, ssplayer) != 0));
 
 	axis = JoyAxis(AXISLOOKBACK, ssplayer);
 	camspin[ssplayer-1] = (InputDown(gc_lookback, ssplayer) || (usejoystick && axis > 0));
@@ -952,11 +963,12 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		return;
 	}
 
-	// lmfao this is beyond hellish
-	if (player->spectator)
+	// dumbass thing so we can use a few buttons but dont accidentally drive away
+	if (player->spectator || camera[forplayer].freecam)
 	{
-		G_BuildLocalTiccmd(cmd, ssplayer);
+		G_BuildLocalTiccmd(cmd, ssplayer, !player->spectator);
 
+		// let lua override everything
 		if (gamestate == GS_LEVEL)
 			LUA_HookTiccmd(player, cmd, HOOK(PlayerCmd));
 
