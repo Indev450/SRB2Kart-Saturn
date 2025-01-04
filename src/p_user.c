@@ -3139,9 +3139,11 @@ void P_ToggleDemoCamera(UINT8 viewnum)
 {
 	camera_t *cam = &camera[viewnum];
 
-	// dont let freecam be toggled when in spec lel
-	if (players[displayplayers[viewnum]].spectator)
+	// dont toggle freecam when in spec
+	// special case since only non splitscreen can change viewpoints
+	if ((!splitscreen && players[consoleplayer].spectator) || players[displayplayers[viewnum]].spectator)
 	{
+		cam->freecam = false;
 		return;
 	}
 
