@@ -410,6 +410,16 @@ static void HWR_GenerateTexture(INT32 texnum, GLMapTexture_t *gltex, boolean noe
 // patch may be NULL if glMipmap has been initialised already and makebitmap is false
 void HWR_MakePatch (patch_t *patch, GLPatch_t *glPatch, GLMipmap_t *glMipmap, boolean makebitmap)
 {
+	if (glMipmap == NULL)
+		return;
+
+	if (patch == NULL || glPatch == NULL)
+	{
+		Z_Free(glMipmap->data);
+		glMipmap->data = NULL;
+		return;
+	}
+
 	// don't do it twice (like a cache)
 	if (glMipmap->width == 0)
 	{
