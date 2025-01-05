@@ -72,7 +72,11 @@ LJLIB_CF(table_maxn)
       lua_Number n = numberVnum(&node[i].key);
       if (n > m) m = n;
     }
+#if LJ_INTONLY
+  setintV(L->top-1, lj_num2int(m));
+#else
   setnumV(L->top-1, m);
+#endif
   return 1;
 }
 

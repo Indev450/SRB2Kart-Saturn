@@ -470,7 +470,11 @@ LJLIB_CF(collectgarbage)
     "\4stop\7restart\7collect\5count\1\377\4step\10setpause\12setstepmul\1\377\11isrunning");
   int32_t data = lj_lib_optint(L, 2, 0);
   if (opt == LUA_GCCOUNT) {
+#if LJ_INTONLY
+    setintV(L->top, G(L)->gc.total/1024);
+#else
     setnumV(L->top, (lua_Number)G(L)->gc.total/1024.0);
+#endif
   } else {
     int res = lua_gc(L, opt, data);
     if (opt == LUA_GCSTEP || opt == LUA_GCISRUNNING)
