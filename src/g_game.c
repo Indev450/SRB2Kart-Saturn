@@ -900,35 +900,29 @@ static void G_BuildLocalTiccmd(ticcmd_t *cmd, UINT8 ssplayer, boolean freecam)
 //
 void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 {
-	const UINT8 forplayer = (ssplayer-1);
 	INT32 laim, th, tspeed, forward, side, axis;
 
 	// these ones used for multiple conditions
 	boolean turnleft, turnright, mouseaiming;
 	boolean invertmouse, usejoystick, kbl, rd;
-	player_t *player;
-	camera_t *thiscam;
 	angle_t lang;
 
 	static INT32 turnheld[MAXSPLITSCREENPLAYERS]; // for accelerative turning
 	static boolean keyboard_look[MAXSPLITSCREENPLAYERS]; // true if lookup/down using keyboard
 	static boolean resetdown[MAXSPLITSCREENPLAYERS]; // don't cam reset every frame
 
+	if (demo.playback)
+		return;
+
+	const UINT8 forplayer = (ssplayer-1);
+	player_t *player = ((ssplayer == 1) ? &players[consoleplayer] : &players[displayplayers[forplayer]]);
+
+	camera_t *thiscam = &camera[forplayer];
+	const boolean freecam = camera[forplayer].freecam;
+
 	const boolean lookaxis = cv_lookaxis[forplayer].value;
 	const boolean analogjoystickmove = cv_usejoystick[forplayer].value && !Joystick[forplayer].bGamepadStyle;
 	const boolean gamepadjoystickmove = cv_usejoystick[forplayer].value && Joystick[forplayer].bGamepadStyle;
-
-	if (demo.playback) return;
-
-	if (ssplayer == 1)
-		player = &players[consoleplayer];
-	else
-		player = &players[displayplayers[forplayer]];
-
-	if ((ssplayer == 2) && (player->bot == 2))
-		thiscam = &camera[0];
-	else
-		thiscam = &camera[forplayer];
 
 	lang = localangle[forplayer];
 	laim = localaiming[forplayer];
@@ -940,16 +934,23 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	{
 		case 2:
 			G_CopyTiccmd(cmd, I_BaseTiccmd2(), 1);
+			mouseaiming = player->spectator;
+			invertmouse = cv_invertmouse2.value;
 			break;
 		case 3:
 			G_CopyTiccmd(cmd, I_BaseTiccmd3(), 1);
+			mouseaiming = false;
+			invertmouse = false;
 			break;
 		case 4:
 			G_CopyTiccmd(cmd, I_BaseTiccmd4(), 1);
+			mouseaiming = false;
+			invertmouse = false;
 			break;
 		case 1:
-		default:
 			G_CopyTiccmd(cmd, I_BaseTiccmd(), 1); // empty, or external driver
+			mouseaiming = player->spectator;
+			invertmouse = cv_invertmouse.value;
 			break;
 	}
 
@@ -964,36 +965,15 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	}
 
 	// dumbass thing so we can use a few buttons but dont accidentally drive away
-	if (player->spectator || camera[forplayer].freecam)
+	if (player->spectator || freecam)
 	{
-		G_BuildLocalTiccmd(cmd, ssplayer, !player->spectator);
+		G_BuildLocalTiccmd(cmd, ssplayer, freecam);
 
 		// let lua override everything
 		if (gamestate == GS_LEVEL)
 			LUA_HookTiccmd(player, cmd, HOOK(PlayerCmd));
 
 		return;
-	}
-
-	switch (ssplayer)
-	{
-		case 2:
-			mouseaiming = player->spectator; //(PLAYER2INPUTDOWN(gc_mouseaiming)) ^ cv_alwaysfreelook2.value;
-			invertmouse = cv_invertmouse2.value;
-			break;
-		case 3:
-			mouseaiming = false;
-			invertmouse = false;
-			break;
-		case 4:
-			mouseaiming = false;
-			invertmouse = false;
-			break;
-		case 1:
-		default:
-			mouseaiming = player->spectator; //(PLAYER1INPUTDOWN(gc_mouseaiming)) ^ cv_alwaysfreelook.value;
-			invertmouse = cv_invertmouse.value;
-			break;
 	}
 
 	usejoystick = (analogjoystickmove || gamepadjoystickmove);
@@ -1147,7 +1127,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		INT32 player_invert = invertmouse ? -1 : 1;
 		INT32 screen_invert =
 			(player->mo && (player->mo->eflags & MFE_VERTICALFLIP)
-			 && (!thiscam->chase || player->pflags & PF_FLIPCAM)) //because chasecam's not inverted
+			 && (!thiscam->chase || player->pflags & PF_FLIPCAM)) // because chasecam's not inverted
 			 ? -1 : 1; // set to -1 or 1 to multiply
 
 		// mouse look stuff (mouse look is not the same as mouse aim)
@@ -1262,8 +1242,8 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		LUA_HookTiccmd(player, cmd, HOOK(PlayerCmd));
 
 	//Reset away view if a command is given.
-	if ((cmd->forwardmove || cmd->sidemove || cmd->buttons)
-		&& displayplayers[0] != consoleplayer && ssplayer == 1)
+	if (displayplayers[0] != consoleplayer && ssplayer == 1
+	&& (cmd->forwardmove || cmd->sidemove || cmd->buttons))
 	{
 		displayplayers[0] = consoleplayer;
 		G_FixCamera(1);
