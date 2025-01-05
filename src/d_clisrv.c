@@ -6265,8 +6265,8 @@ static void Local_Maketic(INT32 realtics)
 	                   // game responder calls HU_Responder, AM_Responder, F_Responder,
 	                   // and G_MapEventsToControls
 	if (!dedicated) rendergametic = gametic;
-	// translate inputs (keyboard/mouse/joystick) into game controls
 
+	// translate inputs (keyboard/mouse/joystick) into game controls
 	for (i = 0; i <= splitscreen; i++)
 	{
 		CreateNewLocalCMD(i, realtics);
@@ -6827,7 +6827,6 @@ void NetUpdate(void)
 		I_lock_mutex(&m_menu_mutex);
 #endif
 		M_Ticker();
-		refreshdirmenu = 0;
 #ifdef HAVE_THREADS
 		I_unlock_mutex(m_menu_mutex);
 #endif

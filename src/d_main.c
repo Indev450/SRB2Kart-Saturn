@@ -353,6 +353,7 @@ static boolean D_Display(void)
 
 	// save the current screen if about to wipe
 	wipe = (gamestate != wipegamestate);
+
 	if (wipe)
 	{
 		// set for all later
@@ -742,11 +743,9 @@ void D_SRB2Loop(void)
 		precise_t enterprecise = I_GetPreciseTime();
 		precise_t finishprecise = enterprecise;
 
-		{
-			// Casting the return value of a function is bad practice (apparently)
-			double budget = ((R_GetFramerateCap() == 0) ? 0.0 : round((1.0 / R_GetFramerateCap()) * I_GetPrecisePrecision()));
-			capbudget = (precise_t) budget;
-		}
+		// Casting the return value of a function is bad practice (apparently)
+		double budget = ((R_GetFramerateCap() == 0) ? 0.0 : round((1.0 / R_GetFramerateCap()) * I_GetPrecisePrecision()));
+		capbudget = (precise_t) budget;
 
 		boolean ranwipe = false;
 
@@ -775,7 +774,9 @@ void D_SRB2Loop(void)
 				debugload--;
 #endif
 
-		interp = R_UsingFrameInterpolation() && !dedicated;
+		refreshdirmenu = 0;
+
+		interp = (R_UsingFrameInterpolation() && !dedicated);
 		doDisplay = false;
 
 		renderisnewtic = (realtics > 0 || singletics);
@@ -790,7 +791,7 @@ void D_SRB2Loop(void)
 			// process tics (but maybe not if realtic == 0)
 			TryRunTics(realtics);
 
-			if (lastdraw || singletics || gametic > rendergametic)
+			if (lastdraw || singletics || (gametic > rendergametic))
 			{
 				rendergametic = gametic;
 				rendertimeout = entertic + TICRATE/17;
@@ -804,7 +805,7 @@ void D_SRB2Loop(void)
 				{
 					// Evaluate the chase cam once for every local realtic
 					// This might actually be better suited inside G_Ticker or TryRunTics
-					for (tic_t chasecamtics = 0; chasecamtics < realtics; chasecamtics++)
+					for (tic_t chasecamtics = 0; (chasecamtics < realtics); chasecamtics++)
 					{
 						P_RunChaseCameras();
 					}
@@ -835,7 +836,7 @@ void D_SRB2Loop(void)
 				rendertimefrac = FRACUNIT;
 			}
 
-			if (deltatics < 1.0 && !hu_stopped)
+			if ((deltatics < 1.0) && !hu_stopped)
 			{
 				rendertimefrac_unpaused = g_time.timefrac;
 			}
@@ -888,7 +889,7 @@ void D_SRB2Loop(void)
 		//
 		// Wipes run an inner loop and artificially increase
 		// the measured time.
-		if (!ranwipe && frameskip < 3 && deltatics > 1.0)
+		if (!ranwipe && (frameskip < 3) && (deltatics > 1.0))
 		{
 			frameskip++;
 		}
@@ -904,7 +905,7 @@ void D_SRB2Loop(void)
 			// in the case of "match refresh rate" + vsync, don't sleep at all
 			const boolean vsync_with_match_refresh = cv_vidwait.value && cv_fpscap.value == 0;
 
-			if (elapsed > 0 && (INT64)capbudget > elapsed && !vsync_with_match_refresh)
+			if ((elapsed > 0) && ((INT64)capbudget > elapsed) && !vsync_with_match_refresh)
 			{
 				I_SleepDuration(capbudget - (finishprecise - enterprecise));
 			}
@@ -979,10 +980,6 @@ void D_StartTitle(void)
 	S_ResetKeepAndSpecialMus(); // just in case
 
 	F_StartTitleScreen();
-
-	// Reset the palette -- SRB2Kart: actually never mind let's do this in the middle of every fade
-	/*if (rendermode != render_none)
-		V_SetPaletteLump("PLAYPAL");*/
 }
 
 //
@@ -2071,7 +2068,7 @@ void D_SRB2Main(void)
 	}
 
 #ifdef HAVE_DISCORDRPC
-	if (! dedicated)
+	if (!dedicated)
 	{
 		DRPC_Init();
 	}
