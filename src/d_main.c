@@ -581,8 +581,6 @@ static boolean D_Display(void)
 		PS_START_TIMING(ps_uitime);
 		ST_Drawer();
 		HU_Drawer();
-
-		NetUpdate(); // TEST: run this EVERY frame
 	}
 	else
 	{
