@@ -2435,6 +2435,9 @@ static void Command_Playdemo_f(void)
 		return;
 	}
 
+	// turn off any open menus
+	M_ClearMenus(true);
+
 	// disconnect from server here?
 	if (demo.playback)
 		G_StopDemo();
@@ -2479,6 +2482,9 @@ static void Command_Timedemo_f(void)
 		CONS_Printf(M_GetText("You can't time a demo while in a game.\n"));
 		return;
 	}
+
+	// turn off any open menus
+	M_ClearMenus(true);
 
 	// disconnect from server here?
 	if (demo.playback)
