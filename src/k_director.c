@@ -73,7 +73,7 @@ boolean K_DirectorIsAvailable(void)
 {
 	if ((demo.playback && demo.title) || modeattacking)
 		return false;
-	return ((gamestate == GS_LEVEL) && (demo.playback || (players[consoleplayer].spectator && !K_DirectorIsPlayerAlone())));
+	return ((gamestate == GS_LEVEL) && ((demo.playback && !camera[0].freecam) || (players[consoleplayer].spectator && !K_DirectorIsPlayerAlone())));
 }
 
 static boolean K_DirectorIsEnabled(void)
