@@ -828,7 +828,7 @@ void D_SRB2Loop(void)
 		{
 			renderdeltatics = FLOAT_TO_FIXED(deltatics);
 
-			if (!(paused || P_AutoPause()) && !hu_stopped)
+			if (!(paused || P_AutoPause()) && deltatics < 1.0 && !hu_stopped)
 			{
 				rendertimefrac = g_time.timefrac;
 			}
@@ -837,7 +837,7 @@ void D_SRB2Loop(void)
 				rendertimefrac = FRACUNIT;
 			}
 
-			if (!hu_stopped)
+			if (deltatics < 1.0 && !hu_stopped)
 			{
 				rendertimefrac_unpaused = g_time.timefrac;
 			}
