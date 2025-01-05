@@ -2522,7 +2522,7 @@ void T_CameraScanner(elevator_t *elevator)
 
 	for (UINT8 i = 0; i <= splitscreen; i++)
 	{
-		if (!players[displayplayers[i]].mo || P_MobjWasRemoved(players[displayplayers[i]].mo))
+		if (P_MobjWasRemoved(players[displayplayers[i]].mo))
 			continue;
 
 		if (players[displayplayers[i]].mo->subsector->sector == elevator->actionsector)

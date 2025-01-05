@@ -1298,7 +1298,7 @@ void T_ExecutorDelay(executor_t *e)
 {
 	if (--e->timer <= 0)
 	{
-		if (e->caller && P_MobjWasRemoved(e->caller)) // If the mobj died while we were delaying
+		if (P_MobjWasRemoved(e->caller)) // If the mobj died while we were delaying
 			P_SetTarget(&e->caller, NULL); // Call with no mobj!
 		P_ProcessLineSpecial(e->line, e->caller, e->sector);
 		P_SetTarget(&e->caller, NULL); // Let the mobj know it can be removed now.

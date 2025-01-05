@@ -4252,7 +4252,7 @@ static void P_CalcPostImg(player_t *player, camera_t *thiscam)
 	else
 		pviewheight = player->mo->z + player->viewheight;
 
-	if (player->awayviewtics && player->awayviewmobj && !P_MobjWasRemoved(player->awayviewmobj))
+	if (!P_MobjWasRemoved(player->awayviewmobj))
 	{
 		sector = player->awayviewmobj->subsector->sector;
 		pviewheight = player->awayviewmobj->z + 20*FRACUNIT;

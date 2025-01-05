@@ -548,7 +548,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			if (player->spectator)
 				return;
 
-			if (special->tracer && !P_MobjWasRemoved(special->tracer) && toucher == special->tracer)
+			if (!P_MobjWasRemoved(special->tracer) && toucher == special->tracer)
 			{
 				mobj_t *spbexplode;
 
@@ -563,7 +563,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 
 				spbexplode = P_SpawnMobj(toucher->x, toucher->y, toucher->z, MT_SPBEXPLOSION);
 				spbexplode->extravalue1 = 1; // Tell K_ExplodePlayer to use extra knockback
-				if (special->target && !P_MobjWasRemoved(special->target))
+				if (!P_MobjWasRemoved(special->target))
 					P_SetTarget(&spbexplode->target, special->target);
 
 				P_RemoveMobj(special);
@@ -572,7 +572,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 				K_SpinPlayer(player, special->target, 0, special, false);
 			return;
 		case MT_SMK_MOLE:
-			if (special->target && !P_MobjWasRemoved(special->target))
+			if (!P_MobjWasRemoved(special->target))
 				return;
 
 			if (special->health <= 0 || toucher->health <= 0)
@@ -1895,7 +1895,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 		case MT_SMK_ICEBLOCK:
 			{
 				mobj_t *cur = target->hnext;
-				while (cur && !P_MobjWasRemoved(cur))
+				while (!P_MobjWasRemoved(cur))
 				{
 					P_SetMobjState(cur, S_SMK_ICEBLOCK2);
 					cur = cur->hnext;
@@ -1968,14 +1968,14 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 	// kill tracer
 	if (target->type == MT_FROGGER)
 	{
-		if (target->tracer && !P_MobjWasRemoved(target->tracer))
+		if (!P_MobjWasRemoved(target->tracer))
 			P_KillMobj(target->tracer, inflictor, source);
 	}
 
 	if (target->type == MT_FROGGER || target->type == MT_ROBRA_HEAD || target->type == MT_BLUEROBRA_HEAD) // clean hnext list
 	{
 		mobj_t *cur = target->hnext;
-		while (cur && !P_MobjWasRemoved(cur))
+		while (!P_MobjWasRemoved(cur))
 		{
 			P_KillMobj(cur, inflictor, source);
 			cur = cur->hnext;
@@ -2397,6 +2397,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 	if (!metalrecording)
 	{
 		UINT8 shouldForce = LUA_HookShouldDamage(target, inflictor, source, damage);
+
 		if (P_MobjWasRemoved(target))
 			return (shouldForce == 1); // mobj was removed
 		if (shouldForce == 1)
