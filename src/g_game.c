@@ -948,6 +948,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 			invertmouse = false;
 			break;
 		case 1:
+		default:
 			G_CopyTiccmd(cmd, I_BaseTiccmd(), 1); // empty, or external driver
 			mouseaiming = player->spectator;
 			invertmouse = cv_invertmouse.value;
