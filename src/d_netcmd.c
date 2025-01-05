@@ -2431,7 +2431,7 @@ static void Command_Playdemo_f(void)
 
 	if (!demo.playback && gamestate == GS_LEVEL) // special case: allow starting another demo while watching a demo
 	{
-		CONS_Printf(M_GetText("You can't time a demo while in a game.\n"));
+		CONS_Printf(M_GetText("You can't play a demo while in a game.\n"));
 		return;
 	}
 
