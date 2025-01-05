@@ -624,6 +624,10 @@ clean:
 	$(REMOVE) $(OBJDIR)/*.o
 ifndef NOBLUAJIT
 	$(REMOVE) $(OBJDIR)/buildvm* $(OBJDIR)/minilua* $(OBJDIR)/lj_vm* $(ALL_HDRGEN)
+
+cleanjit:
+	$(REMOVE) $(LJVMCORE_O) $(ALL_GEN)
+	$(REMOVE) $(OBJDIR)/buildvm* $(OBJDIR)/minilua* $(OBJDIR)/lj_vm* $(ALL_HDRGEN)
 endif
 
 ifdef MINGW
