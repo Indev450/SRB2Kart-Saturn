@@ -485,11 +485,11 @@ static boolean D_Display(void)
 		{
 			PS_START_TIMING(ps_rendercalltime);
 
-			R_ApplyLevelInterpolators(R_UsingFrameInterpolation() ? rendertimefrac : FRACUNIT);
+			R_ApplyLevelInterpolators(rendertimefrac);
 
 			for (i = 0; i <= splitscreen; i++)
 			{
-				if (players[displayplayers[i]].mo || players[displayplayers[i]].playerstate == PST_DEAD)
+				if (!P_MobjWasRemoved(players[displayplayers[i]].mo) || players[displayplayers[i]].playerstate == PST_DEAD)
 				{
 					viewssnum = i;
 
