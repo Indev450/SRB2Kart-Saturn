@@ -23,6 +23,8 @@
 // STATUS BAR
 //
 
+extern tic_t directortoggletimer;
+
 // Called by main loop.
 void ST_Ticker(void);
 
