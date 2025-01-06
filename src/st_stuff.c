@@ -656,18 +656,19 @@ static void ST_drawLevelTitle(void)
 
 // returns the actual button name for any gamecontrol
 // if unbound is set, it returns "Unbound" as a string should there be no button bound to a gamecontrol
-static const char *ST_GetButtonName(INT32 control, const char *inputtext, boolean unbound)
+// if gamectrl is set, it adds an extra "-" for cases where theres also a hardcoded button like accelerate
+static const char *ST_GetButtonName(INT32 control, const char *inputtext, boolean unbound, boolean gamectrl)
 {
 	static char buttname[32] = "";
 	const char *butt1 = (gamecontrol[control][0] != 0 ? G_KeynumToString(gamecontrol[control][0]) : NULL);
 	const char *butt2 = (gamecontrol[control][1] != 0 ? G_KeynumToString(gamecontrol[control][1]) : NULL); // alternative bind
 
 	if (butt1 == NULL && butt2 == NULL) // not bound to a button
-		snprintf(buttname, 32, (unbound ? "%s - %s" : "- %s - %s"), (unbound ? "Unbound" : ""), inputtext);
+		snprintf(buttname, 32, (unbound ? "%s - %s" : (gamectrl ? "-%s - %s" : "%s - %s")), (unbound ? "Unbound" : ""), inputtext);
 	else if (butt1 != NULL && butt2 != NULL) // bound to two buttons
 		snprintf(buttname, 32, "%s/%s - %s", butt1, butt2, inputtext);
 	else // bound to only one
-		snprintf(buttname, 32, "- %s - %s", (butt1 != NULL ? butt1 : butt2 != NULL ? butt2 : ""), inputtext);
+		snprintf(buttname, 32, (gamectrl ? "-%s - %s" : "%s - %s"), (butt1 != NULL ? butt1 : butt2 != NULL ? butt2 : ""), inputtext);
 
 	return buttname;
 }
@@ -796,16 +797,16 @@ static void ST_overlayDrawer(void)
 				{
 					V_DrawString(2, BASEVIDHEIGHT-50, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF|V_YELLOWMAP, M_GetText("- SPECTATING -"));
 					V_DrawString(2, BASEVIDHEIGHT-40, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, itemtxt);
-					V_DrawString(2, BASEVIDHEIGHT-30, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, va("Accelerate %s", ST_GetButtonName(gc_camfloat, "Float", false)));
-					V_DrawString(2, BASEVIDHEIGHT-20, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, va("Brake %s", ST_GetButtonName(gc_camsink, "Sink", false)));
-					V_DrawString(2, BASEVIDHEIGHT-10, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, ST_GetButtonName(gc_director, "Toggle Director", true));
+					V_DrawString(2, BASEVIDHEIGHT-30, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, va("Accelerate %s", ST_GetButtonName(gc_camfloat, "Float", false, true)));
+					V_DrawString(2, BASEVIDHEIGHT-20, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, va("Brake %s", ST_GetButtonName(gc_camsink, "Sink", false, true)));
+					V_DrawString(2, BASEVIDHEIGHT-10, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, ST_GetButtonName(gc_director, "Toggle Director", true, false));
 				}
 				else
 				{
 					V_DrawString(2, BASEVIDHEIGHT-40, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF|V_YELLOWMAP, M_GetText("- SPECTATING -"));
 					V_DrawString(2, BASEVIDHEIGHT-30, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, itemtxt);
-					V_DrawString(2, BASEVIDHEIGHT-30, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, va("Accelerate %s", ST_GetButtonName(gc_camfloat, "Float", false)));
-					V_DrawString(2, BASEVIDHEIGHT-20, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, va("Brake %s", ST_GetButtonName(gc_camsink, "Sink", false)));
+					V_DrawString(2, BASEVIDHEIGHT-30, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, va("Accelerate %s", ST_GetButtonName(gc_camfloat, "Float", false, true)));
+					V_DrawString(2, BASEVIDHEIGHT-20, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, va("Brake %s", ST_GetButtonName(gc_camsink, "Sink", false, true)));
 				}
 			}
 		}
