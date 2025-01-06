@@ -53,6 +53,9 @@
 
 UINT16 objectsdrawn = 0;
 
+// dumb fade thing for director toggle
+tic_t directortoggletimer = 0;
+
 //
 // STATUS BAR DATA
 //
