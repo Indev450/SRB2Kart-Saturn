@@ -1644,10 +1644,7 @@ static void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 				{
 					if (chromakeyed && (*pImgData == HWR_PATCHES_CHROMAKEY_COLORINDEX))
 					{
-						tex[idx].s.red   = 0;
-						tex[idx].s.green = 0;
-						tex[idx].s.blue  = 0;
-						tex[idx].s.alpha = 0;
+						tex[idx].s = (byteColor_t){0, 0, 0, 0};
 						pTexInfo->flags |= TF_TRANSPARENT; // there is a hole in it
 					}
 					else
@@ -1680,12 +1677,7 @@ static void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 			{
 				for (i = 0; i < w; i++, idx++)
 				{
-					tex[idx].s.red   = *pImgData;
-					tex[idx].s.green = *pImgData;
-					tex[idx].s.blue  = *pImgData;
-					pImgData++;
-					tex[idx].s.alpha = *pImgData;
-					pImgData++;
+					tex[idx].s = (byteColor_t){*pImgData, *pImgData, *pImgData++, *pImgData++};
 				}
 			}
 			break;
@@ -1694,15 +1686,13 @@ static void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 			ptex = tex = textureBuffer;
 			texformat = GL_ALPHA;
 
+			memset(&tex->s, 255, sizeof(byteColor_t)*w*h); // 255 because the fade mask is modulated with the screen texture, so alpha affects it while the colours don't
+
 			for (idx = 0, j = 0; j < h; j++)
 			{
 				for (i = 0; i < w; i++, idx++)
 				{
-					tex[idx].s.red   = 255; // 255 because the fade mask is modulated with the screen texture, so alpha affects it while the colours don't
-					tex[idx].s.green = 255;
-					tex[idx].s.blue  = 255;
-					tex[idx].s.alpha = *pImgData;
-					pImgData++;
+					tex[idx].s.alpha = *pImgData++;
 				}
 			}
 			break;
