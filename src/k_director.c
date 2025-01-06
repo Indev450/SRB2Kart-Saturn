@@ -71,7 +71,7 @@ static fixed_t ScaleFromMap(fixed_t n, fixed_t scale)
 
 boolean K_DirectorIsAvailable(void)
 {
-	if ((demo.playback && demo.title) || modeattacking)
+	if (splitscreen || (demo.playback && demo.title) || modeattacking)
 		return false;
 	return ((gamestate == GS_LEVEL) && ((demo.playback && !camera[0].freecam) || (players[consoleplayer].spectator && !K_DirectorIsPlayerAlone())));
 }
@@ -422,10 +422,9 @@ void K_ToggleDirector(void)
 	if (!K_DirectorIsAvailable())
 		return;
 
-	G_AdjustView(1, 1, true);
-
 	if (!K_DirectorIsEnabled())
 	{
+		G_AdjustView(1, 1, true);
 		directorinfo.cooldown = 0; // switch immediately
 	}
 
