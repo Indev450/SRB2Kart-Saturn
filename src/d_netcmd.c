@@ -3180,7 +3180,7 @@ static void Got_Respawn(UINT8 **cp, INT32 playernum)
 		return;
 
 	if (players[respawnplayer].mo)
-		P_DamageMobj(players[respawnplayer].mo, NULL, NULL, 10000);
+		P_DamageMobj(players[respawnplayer].mo, NULL, NULL, DMG_INSTAKILL);
 	demo_extradata[playernum] |= DXD_RESPAWN;
 }
 
@@ -3882,7 +3882,7 @@ static void Got_Teamchange(UINT8 **cp, INT32 playernum)
 	if (!players[playernum].spectator)
 	{
 		if (players[playernum].mo)
-			P_DamageMobj(players[playernum].mo, NULL, NULL, 10000);
+			P_DamageMobj(players[playernum].mo, NULL, NULL, DMG_INSTAKILL);
 		else
 			players[playernum].playerstate = PST_REBORN;
 	}

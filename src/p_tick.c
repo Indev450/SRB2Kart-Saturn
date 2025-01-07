@@ -697,7 +697,7 @@ void P_Ticker(boolean run)
 				if (!players[i].mo)
 					continue;
 
-				P_DamageMobj(players[i].mo, NULL, NULL, 10000);
+				P_DamageMobj(players[i].mo, NULL, NULL, DMG_INSTAKILL);
 			}
 		}
 
