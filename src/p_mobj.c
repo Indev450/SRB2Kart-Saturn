@@ -3221,7 +3221,7 @@ static boolean P_CameraCheckHeat(camera_t *thiscam)
 	sector_t *sector;
 	fixed_t halfheight;
 
-	if (!thiscam)
+	if (!thiscam || !thiscam->subsector)
 		return false;
 
 	halfheight = thiscam->z + (thiscam->height >> 1);
@@ -3259,7 +3259,7 @@ static boolean P_CameraCheckWater(camera_t *thiscam)
 	sector_t *sector;
 	fixed_t halfheight;
 
-	if (!thiscam)
+	if (!thiscam || !thiscam->subsector)
 		return false;
 
 	halfheight = thiscam->z + (thiscam->height >> 1);
