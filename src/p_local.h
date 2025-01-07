@@ -81,6 +81,8 @@ typedef struct camera_s
 	boolean chase;
 	boolean freecam;
 
+	boolean keyboardlook;
+
 	angle_t localangle;
 	INT32 localaiming;
 
