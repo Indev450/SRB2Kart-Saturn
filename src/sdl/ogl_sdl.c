@@ -312,7 +312,8 @@ void OglSdlFinishUpdate(boolean waitvbl)
 
 #if defined (__unix__)
 #ifdef USE_FBO_OGL
-		xwaylandcrap = false;
+		if (loaded_config == true)
+			xwaylandcrap = false;
 #endif
 #endif
 }
