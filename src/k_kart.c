@@ -4148,6 +4148,10 @@ void K_KillBananaChain(mobj_t *banana, mobj_t *inflictor, mobj_t *source)
 	mobj_t *cachenext;
 
 killnext:
+
+	if (!banana)
+		return;
+
 	cachenext = banana->hnext;
 
 	if (banana->health)
