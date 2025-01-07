@@ -724,7 +724,7 @@ static boolean PIT_CheckThing(mobj_t *thing)
 			HU_SetCEchoDuration(5);
 			HU_DoCEcho(va("%s\\was hit by a kitchen sink.\\\\\\\\", player_names[thing->player-players]));
 			I_OutputMsg("%s was hit by a kitchen sink.\n", player_names[thing->player-players]);
-			P_DamageMobj(thing, tmthing, tmthing->target, 10000);
+			P_DamageMobj(thing, tmthing, tmthing->target, DMG_INSTAKILL);
 			P_KillMobj(tmthing, thing, thing);
 		}
 
@@ -991,7 +991,7 @@ static boolean PIT_CheckThing(mobj_t *thing)
 			HU_SetCEchoDuration(5);
 			HU_DoCEcho(va("%s\\was hit by a kitchen sink.\\\\\\\\", player_names[tmthing->player-players]));
 			I_OutputMsg("%s was hit by a kitchen sink.\n", player_names[tmthing->player-players]);
-			P_DamageMobj(tmthing, thing, thing->target, 10000);
+			P_DamageMobj(tmthing, thing, thing->target, DMG_INSTAKILL);
 			P_KillMobj(thing, tmthing, tmthing);
 		}
 
@@ -3674,7 +3674,7 @@ static boolean PIT_ChangeSector(mobj_t *thing, boolean realcrush)
 		{
 			// Crush the object
 			if (netgame && thing->player && thing->player->spectator)
-				P_DamageMobj(thing, NULL, NULL, 42000); // Respawn crushed spectators
+				P_DamageMobj(thing, NULL, NULL, DMG_SPECTATOR); // Respawn crushed spectators
 			else
 			{
 				if (!killer)
@@ -3684,7 +3684,7 @@ static boolean PIT_ChangeSector(mobj_t *thing, boolean realcrush)
 					killer->threshold = 44; // Special flag for crushing
 				}
 				if (!thing->player)
-					P_DamageMobj(thing, killer, killer, 10000);
+					P_DamageMobj(thing, killer, killer, DMG_INSTAKILL);
 				else
 					K_SquishPlayer(thing->player, killer, killer); // SRB2kart - Squish instead of kill
 			}
