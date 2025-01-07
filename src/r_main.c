@@ -1063,11 +1063,6 @@ mobj_t *viewmobj;
 
 static void R_SetupCommonFrame(player_t * player, subsector_t * subsector)
 {
-	if (!player)
-	{
-		return;
-	}
-
 	newview->player = player;
 
 	newview->x += quake.x;
@@ -1076,7 +1071,7 @@ static void R_SetupCommonFrame(player_t * player, subsector_t * subsector)
 
 	newview->roll = R_ViewRollAngle(player);
 
-	if (subsector != NULL)
+	if (subsector && subsector->sector)
 		newview->sector = subsector->sector;
 	else
 		newview->sector = R_PointInSubsector(newview->x, newview->y)->sector;
