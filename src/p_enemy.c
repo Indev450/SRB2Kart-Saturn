@@ -3921,10 +3921,12 @@ void A_MineExplode(mobj_t *actor)
 	for (d = 0; d < 16; d++)
 		K_SpawnKartExplosion(actor->x, actor->y, actor->z, explodedist + 32*mapobjectscale, 32, type, d*(ANGLE_45/4), true, false, actor->target); // 32 <-> 64
 
+	skincolors_t color = SKINCOLOR_KETCHUP;
+
 	if (actor->target && actor->target->player)
-		K_SpawnMineExplosion(actor, actor->target->player->skincolor);
-	else
-		K_SpawnMineExplosion(actor, SKINCOLOR_KETCHUP);
+		color = actor->target->player->skincolor;
+
+	K_SpawnMineExplosion(actor, color);
 
 	P_SpawnMobj(actor->x, actor->y, actor->z, MT_MINEEXPLOSIONSOUND);
 
@@ -10138,7 +10140,7 @@ void A_RemoteDamage(mobj_t *actor)
 	if (locvar2 == 1) // Kill mobj!
 	{
 		if (target->player) // players die using P_DamageMobj instead for some reason
-			P_DamageMobj(target, source, source, 10000);
+			P_DamageMobj(target, source, source, DMG_INSTAKILL);
 		else
 			P_KillMobj(target, source, source);
 	}

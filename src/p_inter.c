@@ -2364,10 +2364,9 @@ static void P_RingDamage(player_t *player, mobj_t *inflictor, mobj_t *source, IN
   *                  player is hit by a ring, the player who shot it. In some
   *                  cases, the target will go after this object after
   *                  receiving damage. This can be NULL.
-  * \param damage    Amount of damage to be dealt. 10000 is instant death.
+  * \param damage    Amount of damage to be dealt. DMG_INSTAKILL is instant death.
   * \return True if the target sustained damage, otherwise false.
   * \todo Clean up this mess, split into multiple functions.
-  * \todo Get rid of the magic number 10000.
   * \sa P_KillMobj
   */
 boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage)
@@ -2388,8 +2387,8 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 	// Spectator handling
 	if (netgame)
 	{
-		if (damage == 42000 && target->player && target->player->spectator)
-			damage = 10000;
+		if (damage == DMG_SPECTATOR && target->player && target->player->spectator)
+			damage = DMG_INSTAKILL;
 		else if (target->player && target->player->spectator)
 			return false;
 
@@ -2529,7 +2528,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 		{
 			if ((G_BattleGametype()) && cv_suddendeath.value
 				&& !player->powers[pw_flashing] && !player->powers[pw_invulnerability])
-				damage = 10000;
+				damage = DMG_INSTAKILL;
 		}
 
 		// Player hits another player
@@ -2543,7 +2542,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 			return false;
 
 		// Instant-Death
-		if (damage == 10000)
+		if (damage == DMG_INSTAKILL)
 			P_KillPlayer(player, source, damage);
 		else if (player->kartstuff[k_invincibilitytimer] > 0 || player->kartstuff[k_growshrinktimer] > 0 || player->powers[pw_flashing])
 		{
@@ -2596,7 +2595,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 		else
 		{
 			player->health -= damage; // mirror mobj health here
-			if (damage < 10000)
+			if (damage < DMG_INSTAKILL)
 			{
 				target->player->powers[pw_flashing] = K_GetKartFlashing(target->player);
 				if (damage > 0) // don't spill emeralds/ammo/panels for shield damage

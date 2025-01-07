@@ -362,7 +362,6 @@ void P_DoPlayerPain(player_t *player, mobj_t *source, mobj_t *inflictor)
 	if (inflictor)
 	{
 		ang = R_PointToAngle2(inflictor->x, inflictor->y, player->mo->x, player->mo->y); // SRB2kart
-		//ang = R_PointToAngle2(inflictor->x-inflictor->momx, inflictor->y - inflictor->momy, player->mo->x - player->mo->momx, player->mo->y - player->mo->momy);
 
 		// explosion and rail rings send you farther back, making it more difficult
 		// to recover
@@ -2486,7 +2485,7 @@ static void P_MovePlayer(player_t *player)
 		&& !(player->mo->flags & MF_NOCLIP))
 	{
 		if ((netgame || multiplayer) && player->spectator)
-			P_DamageMobj(player->mo, NULL, NULL, 42000); // Respawn crushed spectators
+			P_DamageMobj(player->mo, NULL, NULL, DMG_SPECTATOR); // Respawn crushed spectators
 		else
 		{
 			K_SquishPlayer(player, NULL, NULL); // SRB2kart - we don't kill when squished, we squish when squished.
@@ -2676,9 +2675,6 @@ void P_NukeEnemies(mobj_t *inflictor, mobj_t *source, fixed_t radius)
 
 		if (mo->flags & MF_MONITOR)
 			continue; // Monitors cannot be 'nuked'.
-
-		//if (!G_BattleGametype() && mo->type == MT_PLAYER)
-		//	continue; // Don't hurt players in Co-Op!
 
 		if (abs(inflictor->x - mo->x) > radius || abs(inflictor->y - mo->y) > radius || abs(inflictor->z - mo->z) > radius)
 			continue; // Workaround for possible integer overflow in the below -Red
@@ -4295,7 +4291,7 @@ void P_DoTimeOver(player_t *player)
 	if (player->mo)
 	{
 		S_StopSound(player->mo);
-		P_DamageMobj(player->mo, NULL, NULL, 10000);
+		P_DamageMobj(player->mo, NULL, NULL, DMG_INSTAKILL);
 	}
 
 	player->lives = 0;

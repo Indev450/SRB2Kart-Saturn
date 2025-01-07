@@ -435,7 +435,7 @@ void P_ExplodeMissile(mobj_t *mo)
 		}
 
 		// Hack: Release an animal.
-		P_DamageMobj(mo, NULL, NULL, 10000);
+		P_DamageMobj(mo, NULL, NULL, DMG_INSTAKILL);
 	}
 
 	mo->flags &= ~MF_MISSILE;
@@ -1363,12 +1363,16 @@ void P_XYMovement(mobj_t *mo)
 	oldy = mo->y;
 
 	// adjust various things based on slope
-	if (mo->standingslope && abs(mo->standingslope->zdelta) > FRACUNIT>>8) {
-		if (!P_IsObjectOnGround(mo)) { // We fell off at some point? Do the twisty thing!
+	if (mo->standingslope && abs(mo->standingslope->zdelta) > FRACUNIT>>8)
+	{
+		if (!P_IsObjectOnGround(mo)) // We fell off at some point? Do the twisty thing!
+		{
 			P_SlopeLaunch(mo);
 			xmove = mo->momx;
 			ymove = mo->momy;
-		} else { // Still on the ground.
+		}
+		else // Still on the ground.
+		{
 			slopemom.x = xmove;
 			slopemom.y = ymove;
 			slopemom.z = 0;
@@ -1381,7 +1385,8 @@ void P_XYMovement(mobj_t *mo)
 
 			oldslope = mo->standingslope;
 		}
-	} else if (P_IsObjectOnGround(mo) && !mo->momz)
+	}
+	else if (P_IsObjectOnGround(mo) && !mo->momz)
 		predictedz = mo->z;
 
 	// Pushables can break some blocks
@@ -3078,11 +3083,6 @@ void P_MobjCheckWater(mobj_t *mobj)
 					mobj->momz = FixedMul(min, mobj->scale);
 				else if (mobj->eflags & MFE_VERTICALFLIP && mobj->momz > FixedMul(-min, mobj->scale))
 					mobj->momz = FixedMul(-min, mobj->scale);
-
-				/*if (!(mobj->eflags & MFE_VERTICALFLIP) && mobj->momz > FixedMul(max, mobj->scale))
-					mobj->momz = FixedMul(max, mobj->scale);
-				else if (mobj->eflags & MFE_VERTICALFLIP && mobj->momz < FixedMul(-max, mobj->scale))
-					mobj->momz = FixedMul(-max, mobj->scale);*/
 
 				p->kartstuff[k_waterskip]++;
 			}
@@ -4927,7 +4927,13 @@ static void P_Boss7Thinker(mobj_t *mobj)
 				continue;
 
 			mo2 = (mobj_t *)th;
-			if (mo2->type == MT_BOSS3WAYPOINT && mo2->spawnpoint && (mo2->spawnpoint->options & 7) == waypointNum)
+
+			if (mo2->type != MT_BOSS3WAYPOINT)
+				continue;
+			if (!mo2->spawnpoint)
+				continue;
+
+			if ((mo2->spawnpoint->options & 7) == waypointNum)
 			{
 				hitspot = mo2;
 				break;
@@ -5769,9 +5775,6 @@ void P_Attract(mobj_t *source, mobj_t *dest, boolean nightsgrab) // Home in on y
 
 	if (!dest || dest->health <= 0 || !dest->player || !source->tracer)
 		return;
-
-	// change angle
-	//source->angle = R_PointToAngle2(source->x, source->y, tx, ty);
 
 	// change slope
 	dist = P_AproxDistance(P_AproxDistance(tx - source->x, ty - source->y), tz - source->z);
