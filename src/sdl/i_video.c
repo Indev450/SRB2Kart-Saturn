@@ -707,11 +707,6 @@ static void I_CheckDesktopRes(void)
 	int currentDisplayIndex = -1;
 	SDL_DisplayMode curmode;
 
-	if (desktopwidth == vid.width && desktopheight == vid.height)
-	{
-		return;
-	}
-
 	desktopwidth = 0;
 	desktopheight = 0;
 
