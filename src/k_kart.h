@@ -22,14 +22,12 @@ boolean K_UseColorHud(void);
 
 void K_RegisterKartStuff(void);
 
-extern consvar_t cv_colorizedhud;
-extern consvar_t cv_colorizeditembox;
-extern consvar_t cv_colorizedhudcolor;
+extern consvar_t cv_coloredspeedlines;
+extern consvar_t cv_colorizedhud, cv_colorizeditembox, cv_colorizedhudcolor;
 extern consvar_t cv_darkitembox;
 extern consvar_t cv_biglaps;
 extern consvar_t cv_highresportrait;
-extern consvar_t cv_stat_xoffset;
-extern consvar_t cv_stat_yoffset;
+extern consvar_t cv_stat_xoffset, cv_stat_yoffset;
 extern consvar_t cv_showstats;
 extern consvar_t cv_showlaptimes;
 extern consvar_t cv_battlespeedo;
