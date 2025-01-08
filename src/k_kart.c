@@ -121,6 +121,10 @@ consvar_t cv_showstats = {"showstats", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, 
 consvar_t cv_showinput = {"showinput", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_showlaptimes = {"showlaptimes", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_posanim = {"postitionanimation", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_smallposnum = {"smallpositionnumber", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+
 CV_PossibleValue_t speedo_cons_t[NUMSPEEDOSTUFF];
 consvar_t cv_newspeedometer = {"newspeedometer", "Default", CV_SAVE, speedo_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -769,6 +773,10 @@ void K_RegisterKartStuff(void)
 
 	CV_RegisterVar(&cv_showstats);
 	CV_RegisterVar(&cv_showinput);
+
+	CV_RegisterVar(&cv_posanim);
+	CV_RegisterVar(&cv_smallposnum);
+
 	CV_RegisterVar(&cv_showlaptimes);
 	CV_RegisterVar(&cv_newspeedometer);
 
@@ -8650,13 +8658,13 @@ static void K_DrawKartPositionNum(INT32 num)
 	boolean flipvdraw = false;	// used only for 2p splitscreen so overtaking doesn't make 1P's position fly off the screen.
 	boolean overtake = false;
 
-	if (stplyr->kartstuff[k_positiondelay] || stplyr->exiting)
+	if ((cv_posanim.value && stplyr->kartstuff[k_positiondelay]) || stplyr->exiting)
 	{
 		scale *= 2;
 		overtake = true;	// this is used for splitscreen stuff in conjunction with flipdraw.
 	}
 
-	if (splitscreen || (cv_showinput.value && !splitscreen))
+	if (splitscreen || cv_smallposnum.value || cv_showinput.value)
 		scale /= 2;
 
 	W = FixedMul(W<<FRACBITS, scale)>>FRACBITS;
