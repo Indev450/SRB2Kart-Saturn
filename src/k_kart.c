@@ -4839,6 +4839,16 @@ static void K_MoveHeldObjects(player_t *player)
 							targz -= 8*(2*FRACUNIT)/7;
 					}*/
 
+					cur->spriteyoffset = 0;
+					if (P_IsObjectOnGround(player->mo) && player->speed > 0 && player->kartstuff[k_bananadrag] > TICRATE
+						&& M_RandomChance(min(FRACUNIT/2, FixedDiv(player->speed, K_GetKartSpeed(player, false))/2)))
+					{
+						if (leveltime & 1)
+							cur->spriteyoffset += 8*(2*FRACUNIT)/7;
+						else
+							cur->spriteyoffset -= 8*(2*FRACUNIT)/7;
+					}
+
 					if (speed > dist)
 						P_InstaThrust(cur, cur->angle, speed-dist);
 
