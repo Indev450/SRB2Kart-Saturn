@@ -440,6 +440,11 @@ static void P_DeviceRumbleTick(void)
 				low = high = FRACUNIT / 64;
 			}
 		}
+		else if (player->kartstuff[k_bananadrag] > TICRATE)
+		{
+			if (leveltime & 1) // this is actually funny lel
+				high = FRACUNIT / 64;
+		}
 
 		if (player->kartstuff[k_brakedrift])
 		{
