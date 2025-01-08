@@ -116,6 +116,9 @@ IMPL_HUD_OFFSET(stat); // Stats
 #undef IMPL_HUD_OFFSET_X
 #undef IMPL_HUD_OFFSET_Y
 
+static CV_PossibleValue_t colorspeedlines_cons_t[] = {{0, "Off"}, {1, "Normal"}, {2, "Driftcharge"}, {0, NULL}};
+consvar_t cv_coloredspeedlines = {"colorizedspeedlines", "Off", CV_SAVE, colorspeedlines_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 //extra hud things
 consvar_t cv_showstats = {"showstats", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_showinput = {"showinput", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -811,6 +814,8 @@ void K_RegisterKartStuff(void)
 #undef REG_HUD_OFFSET
 #undef REG_HUD_OFFSET_X
 #undef REG_HUD_OFFSET_Y
+
+	CV_RegisterVar(&cv_coloredspeedlines);
 
 	CV_RegisterVar(&cv_showstats);
 	CV_RegisterVar(&cv_showinput);
@@ -5239,36 +5244,39 @@ static inline void K_SpawnNormalSpeedLines(player_t *player)
 
 	K_MatchGenericExtraFlags(fast, player->mo);
 
-	const boolean goodSpeed = (player->speed >= (3*K_GetKartSpeed(player, false))/4);
+	if (cv_coloredspeedlines.value)
+	{
+		const boolean goodSpeed = (player->speed >= (3*K_GetKartSpeed(player, false))/4);
 
-	// cant have nice shit cause of synched rng
-	if (player->kartstuff[k_eggmanexplode])
-	{
-		// Make it red when you have the eggman speed boost
-		fast->color = SKINCOLOR_RED;
-		fast->colorized = true;
-	}
-	else if (player->kartstuff[k_invincibilitytimer])
-	{
-		fast->color = player->mo->color;
-		fast->colorized = true;
-	}
-	else if (goodSpeed)
-	{
-		UINT8 driftcolor = SKINCOLOR_NONE;
-
-		if (player->kartstuff[k_driftboost])
+		// cant have nice shit cause of synched rng
+		if (player->kartstuff[k_eggmanexplode])
 		{
-			if (player->kartstuff[k_driftboost] <= 20)
-				driftcolor = SKINCOLOR_SAPPHIRE;
-			else if (player->kartstuff[k_driftboost] <= 50)
-				driftcolor = SKINCOLOR_RASPBERRY;
-			else if (player->kartstuff[k_driftboost] <= 125)
-				driftcolor = (UINT8)(1 + (leveltime % (MAXSKINCOLORS-1)));
+			// Make it red when you have the eggman speed boost
+			fast->color = SKINCOLOR_RED;
+			fast->colorized = true;
 		}
+		else if (player->kartstuff[k_invincibilitytimer])
+		{
+			fast->color = player->mo->color;
+			fast->colorized = true;
+		}
+		else if (goodSpeed)
+		{
+			UINT8 driftcolor = SKINCOLOR_NONE;
 
-		fast->color = (leveltime & 1) ? player->mo->color : driftcolor;
-		fast->colorized = true;
+			if (cv_coloredspeedlines.value == 2 && player->kartstuff[k_driftboost])
+			{
+				if (player->kartstuff[k_driftboost] <= 20)
+					driftcolor = SKINCOLOR_SAPPHIRE;
+				else if (player->kartstuff[k_driftboost] <= 50)
+					driftcolor = SKINCOLOR_RASPBERRY;
+				else if (player->kartstuff[k_driftboost] <= 125)
+					driftcolor = (UINT8)(1 + (leveltime % (MAXSKINCOLORS-1)));
+			}
+
+			fast->color = (leveltime & 1) ? player->mo->color : driftcolor;
+			fast->colorized = true;
+		}
 	}
 
 	fast->lightlevel = M_RandomRange(20, 255);
