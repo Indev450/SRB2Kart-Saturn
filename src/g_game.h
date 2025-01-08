@@ -167,6 +167,8 @@ DECL_HUD_OFFSET(stat); // Stats
 #undef DECL_HUD_OFFSET_Y
 
 extern consvar_t cv_showinput;
+extern consvar_t cv_posanim;
+extern consvar_t cv_smallposnum;
 extern consvar_t cv_newspeedometer;
 
 extern consvar_t cv_saltyhop;
