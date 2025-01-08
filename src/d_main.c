@@ -208,7 +208,7 @@ static void D_GamePadMenuScrollTicker(void)
 }
 #undef SCROLLDELAY
 
-static inline void D_DeviceLEDTick(void)
+static void D_DeviceLEDTick(void)
 {
 	UINT8 i;
 	UINT16 color[MAXSPLITSCREENPLAYERS];
