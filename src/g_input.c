@@ -908,18 +908,23 @@ static const char *gamecontrolname[num_gamecontrols] =
 
 #include "k_kart.h"
 
-inline UINT16 G_GetSkinColor(INT32 player)
+UINT16 G_GetSkinColor(INT32 playernum)
 {
-	// make rgb rainbow vomit when invul or flash blue when grow
-	if (cv_ledpowerup[player].value && gamestate == GS_LEVEL && players[displayplayers[player]].mo && (players[displayplayers[player]].kartstuff[k_invincibilitytimer] || players[displayplayers[player]].powers[pw_invulnerability] || players[displayplayers[player]].kartstuff[k_growshrinktimer]))
-		return players[displayplayers[player]].mo->color;
+	if (gamestate == GS_LEVEL)
+	{
+		player_t *player = &players[displayplayers[playernum]];
 
-	// take actual player skincolour when ingame
-	if (gamestate == GS_LEVEL && players[displayplayers[player]].skincolor)
-		return players[displayplayers[player]].skincolor;
+		// make rgb rainbow vomit when invul or flash blue when grow
+		if (cv_ledpowerup[playernum].value && player->mo && (player->kartstuff[k_invincibilitytimer] || player->kartstuff[k_growshrinktimer] || player->powers[pw_invulnerability]))
+			return player->mo->color;
+
+		// take actual player skincolour when ingame
+		if (player->skincolor)
+			return player->skincolor;
+	}
 
 	// otherwise just fallback to whatever the cvar is
-	switch (player)
+	switch (playernum)
 	{
 		case 0:
 			return cv_playercolor.value;
@@ -939,49 +944,50 @@ inline UINT16 G_GetSkinColor(INT32 player)
 	}
 }
 
-void G_SetPlayerGamepadIndicatorColor(INT32 player, UINT16 color)
+void G_SetPlayerGamepadIndicatorColor(INT32 playernum, UINT16 color)
 {
 	INT32 device;
 	UINT16 skincolor;
 	byteColor_t byte_color;
 
-	I_Assert(player >= 0 && player < MAXSPLITSCREENPLAYERS);
+	I_Assert(playernum >= 0 && playernum < MAXSPLITSCREENPLAYERS);
 
-	if (cv_gamepadled[player].value == 0)
+	if (cv_gamepadled[playernum].value == 0)
 		return;
 
-	device = cv_usejoystick[player].value;
+	device = cv_usejoystick[playernum].value;
 
 	if (device <= 0)
 	{
 		return;
 	}
 
-	skincolor = color ? color : G_GetSkinColor(player);
+	skincolor = color ? color : G_GetSkinColor(playernum);
 	byte_color = V_GetColor(colortranslations[skincolor][8]).s;
 
 	I_SetGamepadIndicatorColor(device, byte_color.red, byte_color.green, byte_color.blue);
 }
 
-static void G_ResetPlayerGamepadIndicatorColor(INT32 player)
+static void G_ResetPlayerGamepadIndicatorColor(INT32 playernum)
 {
-	if (cv_gamepadled[player].value == 0)
+	if (cv_gamepadled[playernum].value == 0)
 	{
-		INT32 device = cv_usejoystick[player].value;
+		INT32 device = cv_usejoystick[playernum].value;
+
 		if (device <= 0)
 			return;
 
 		I_SetGamepadIndicatorColor(device, 0, 0, 255);
 	}
 	else
-		G_SetPlayerGamepadIndicatorColor(player, 0);
+		G_SetPlayerGamepadIndicatorColor(playernum, 0);
 }
 
-static void G_ResetPlayerDeviceRumble(INT32 player)
+static void G_ResetPlayerDeviceRumble(INT32 playernum)
 {
 	INT32 device_id;
 
-	device_id = cv_usejoystick[player].value;
+	device_id = cv_usejoystick[playernum].value;
 
 	if (device_id < 1)
 	{
@@ -1006,16 +1012,16 @@ void G_ResetAllDeviceRumbles(void)
 	}
 }
 
-void G_PlayerDeviceRumble(INT32 player, UINT16 low_strength, UINT16 high_strength, UINT32 duration)
+void G_PlayerDeviceRumble(INT32 playernum, UINT16 low_strength, UINT16 high_strength, UINT32 duration)
 {
 	INT32 device_id;
 
-	if (cv_rumble[player].value == 0)
+	if (cv_rumble[playernum].value == 0)
 	{
 		return;
 	}
 
-	device_id = cv_usejoystick[player].value;
+	device_id = cv_usejoystick[playernum].value;
 
 	if (device_id < 1)
 	{
