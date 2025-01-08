@@ -406,27 +406,22 @@ static void Y_PlayerStandingsDrawer(y_data_t *standings, INT32 x, INT32 hilicol)
 			if (standings->color[i] != SKINCOLOR_NONE)
 			{
 				UINT8 *colormap = R_GetTranslationColormap(*standings->character[i], *standings->color[i], GTC_CACHE);
+				INT32 skinnum = (players[pnum].localskin ? (players[pnum].localskin - 1) : *standings->character[i]);
+				patch_t *faceprefix = NULL;
 
-				// i fucking hate this i fucking hate this i hate this so much
 				if (!players[pnum].skinlocal)
-				{
-					int skinIndex = (players[pnum].localskin ? (players[pnum].localskin - 1) : *standings->character[i]);
-
-					if (cv_highresportrait.value)
-						V_DrawSmallMappedPatch(x + 16, y - 4, 0, facewantprefix[skinIndex], colormap);
-					else
-						V_DrawMappedPatch(x + 16, y - 4, 0, facerankprefix[skinIndex], colormap);
-				}
+					faceprefix = (cv_highresportrait.value ? facewantprefix[skinnum] : facerankprefix[skinnum]);
 				else
-				{
-					if (cv_highresportrait.value)
-						V_DrawSmallMappedPatch(x + 16, y - 4, 0, localfacewantprefix[players[pnum].localskin - 1], colormap);
-					else
-						V_DrawMappedPatch(x + 16, y - 4, 0, localfacerankprefix[players[pnum].localskin - 1], colormap);
-				}
+					faceprefix = (cv_highresportrait.value ? localfacewantprefix[skinnum] : localfacerankprefix[skinnum]);
+
+
+				if (cv_highresportrait.value)
+					V_DrawSmallMappedPatch(x + 16, y - 4, 0, faceprefix, colormap);
+				else
+					V_DrawMappedPatch(x + 16, y - 4, 0, faceprefix, colormap);
 			}
 
-			if (whiteplayer)
+			if (pnum == whiteplayer)
 			{
 				UINT8 cursorframe = (intertic / 4) % 8;
 				V_DrawScaledPatch(x+16, y-4, 0, W_CachePatchName(va("K_CHILI%d", cursorframe+1), PU_CACHE));

@@ -8997,7 +8997,6 @@ void HU_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, I
 			continue; //ignore them.
 
 		const boolean whiteplayer = _isHighlightedPlayer(&players[pnum]);
-
 		const INT32 philicol = (whiteplayer ? V_SkinColorToHighlightcolor(players[pnum].skincolor) : 0);
 
 		if (netgame // don't draw it offline
@@ -9013,21 +9012,16 @@ void HU_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, I
 
 		if (players[pnum].mo->color)
 		{
-			colormap = R_GetTranslationColormap(players[pnum].skin, players[pnum].mo->color, GTC_CACHE);
-
 			if (players[pnum].mo->colorized)
 				colormap = R_GetTranslationColormap(TC_RAINBOW, players[pnum].mo->color, GTC_CACHE);
 			else
 				colormap = R_GetTranslationColormap(players[pnum].skin, players[pnum].mo->color, GTC_CACHE);
 
-			{
-				player_t *p;
-				p = &players[pnum];
-				if (cv_highresportrait.value)
-					V_DrawSmallMappedPatch(x, y-4, 0, R_GetSkinFaceWant(p), colormap);
-				else
-					V_DrawMappedPatch(x, y-4, 0, R_GetSkinFaceRank(p), colormap);
-			}
+			if (cv_highresportrait.value)
+				V_DrawSmallMappedPatch(x, y-4, 0, R_GetSkinFaceWant(&players[pnum]), colormap);
+			else
+				V_DrawMappedPatch(x, y-4, 0, R_GetSkinFaceRank(&players[pnum]), colormap);
+
 			/*if (G_BattleGametype() && players[pnum].kartstuff[k_bumper] > 0) -- not enough space for this
 			{
 				INT32 bumperx = x+19;
