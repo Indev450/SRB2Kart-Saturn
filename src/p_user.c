@@ -4249,7 +4249,7 @@ static boolean P_CameraCheckWaterFirstperson(player_t *player, sector_t *sector,
 static void P_CalcPostImg(player_t *player, camera_t *thiscam)
 {
 	sector_t *sector = NULL;
-	INT16 postimgtype = 0;
+	UINT8 postimgtype = 0;
 	//INT32 *param;
 	fixed_t pviewheight = 0;
 
