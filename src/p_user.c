@@ -3476,6 +3476,7 @@ void P_ResetCamera(player_t *player, camera_t *thiscam)
 {
 	tic_t tries = 0;
 	fixed_t x, y, z;
+	UINT8 i;
 
 	if (thiscam->freecam)
 		return;	// do not reset the camera there.
@@ -3500,13 +3501,14 @@ void P_ResetCamera(player_t *player, camera_t *thiscam)
 	thiscam->z = z;
 	thiscam->reset = true;
 
-	if (!(thiscam == &camera[0] && (cv_cam_still[0].value))
-		&& !(thiscam == &camera[1] && (cv_cam_still[1].value))
-		&& !(thiscam == &camera[2] && (cv_cam_still[2].value))
-		&& !(thiscam == &camera[3] && (cv_cam_still[3].value)))
+	for (i = 0; i <= splitscreen; i++)
 	{
-		thiscam->angle = player->mo->angle;
-		thiscam->aiming = 0;
+		if (!(thiscam == &camera[i] && cv_cam_still[i].value))
+		{
+			thiscam->angle = player->mo->angle;
+			thiscam->aiming = 0;
+			break;
+		}
 	}
 
 	thiscam->relativex = 0;
@@ -3731,7 +3733,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 {
 	static boolean lookbackactive[MAXSPLITSCREENPLAYERS];
 	static UINT8 lookbackdelay[MAXSPLITSCREENPLAYERS];
-	UINT8 num, plyrnum;
+	UINT8 num = 0;
 	angle_t angle = 0, focusangle = 0, focusaiming = 0;
 	fixed_t x, y, z, dist, viewpointx, viewpointy, camspeed, camdist, camheight, pviewheight;
 	fixed_t pan, xpan, ypan;
@@ -3749,21 +3751,13 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	if (thiscam->subsector == NULL || thiscam->subsector->sector == NULL)
 		return true;
 
-	if (thiscam == &camera[1]) // Camera 2
+	for (UINT8 i = 0; i <= splitscreen; i++)
 	{
-		num = 1;
-	}
-	else if (thiscam == &camera[2]) // Camera 3
-	{
-		num = 2;
-	}
-	else if (thiscam == &camera[3]) // Camera 4
-	{
-		num = 3;
-	}
-	else // Camera 1
-	{
-		num = 0;
+		if (thiscam == &camera[i])
+		{
+			num = i;
+			break;
+		}
 	}
 
 	if (thiscam->freecam || player->spectator)
@@ -3776,28 +3770,9 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	if (paused || P_AutoPause())
 		return true;
 
-	if (player == &players[consoleplayer])
-	{
-		plyrnum = 0;
-	}
-	else if (player == &players[displayplayers[1]])
-	{
-		plyrnum = 1;
-	}
-	else if (player == &players[displayplayers[2]])
-	{
-		plyrnum = 2;
-	}
-	else if (player == &players[displayplayers[3]])
-	{
-		plyrnum = 3;
-	}
-	else
-	{
-		plyrnum = 255;
-	}
-
 	mo = player->mo;
+
+	const boolean vflip = (mo->eflags & MFE_VERTICALFLIP);
 
 	if (player->pflags & PF_TIMEOVER) // 1 for momentum keep, 2 for turnaround
 		timeover = (player->kartstuff[k_timeovercam] > 2*TICRATE ? 2 : 1);
@@ -3815,19 +3790,8 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 
 	if (!thiscam->chase && !resetcalled)
 	{
-		if (plyrnum != 255)
-		{
-			focusangle = localangle[plyrnum];
-		}
-		else
-		{
-			focusangle = mo->angle;
-		}
-
-		if (thiscam == &camera[num])
-			camrotate = cv_cam_rotate[num].value;
-		else
-			camrotate = 0;
+		focusangle = ((P_IsLocalPlayer(player)) ? localangle[num] : mo->angle);
+		camrotate = ((thiscam == &camera[num]) ? cv_cam_rotate[num].value : 0);
 
 		if (leveltime < introtime) // Whoooshy camera!
 		{
@@ -3848,10 +3812,10 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 		focusangle = mo->angle;
 		focusaiming = 0;
 	}
-	else if (plyrnum != 255)
+	else if (P_IsLocalPlayer(player))
 	{
-		focusangle = localangle[plyrnum];
-		focusaiming = localaiming[plyrnum];
+		focusangle = localangle[num];
+		focusaiming = localaiming[num];
 	}
 	else
 	{
@@ -3882,7 +3846,9 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 		camheight += (introcam * mapobjectscale)*2;
 	}
 	else if (player->exiting) // SRB2Kart: Leave the camera behind while exiting, for dramatic effect!
+	{
 		camstill = true;
+	}
 	else if (lookback || lookbackdelay[num]) // SRB2kart - Camera flipper
 	{
 #define MAXLOOKBACKDELAY 2
@@ -3895,26 +3861,35 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 		else
 			lookbackdelay[num]--;
 	}
+
 	lookbackdown = (lookbackdelay[num] == MAXLOOKBACKDELAY) != lookbackactive[num];
 	lookbackactive[num] = (lookbackdelay[num] == MAXLOOKBACKDELAY);
 #undef MAXLOOKBACKDELAY
 
-	if (mo->eflags & MFE_VERTICALFLIP)
+	if (vflip)
 		camheight += thiscam->height;
 
 	if (camspeed > FRACUNIT)
 		camspeed = FRACUNIT;
 
 	if (timeover)
+	{
 		angle = mo->angle + FixedAngle(camrotate*FRACUNIT);
+	}
 	else if (leveltime < starttime)
+	{
 		angle = focusangle + FixedAngle(camrotate*FRACUNIT);
+	}
 	else if (camstill || resetcalled || player->playerstate == PST_DEAD)
+	{
 		angle = thiscam->angle;
+	}
 	else
 	{
 		if (camspeed == FRACUNIT)
+		{
 			angle = focusangle + FixedAngle(camrotate<<FRACBITS);
+		}
 		else
 		{
 			angle_t input = focusangle + FixedAngle(camrotate<<FRACBITS) - thiscam->angle;
@@ -3952,7 +3927,9 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 
 	// SRB2Kart: set camera panning
 	if (camstill || resetcalled || player->playerstate == PST_DEAD)
+	{
 		pan = xpan = ypan = 0;
+	}
 	else
 	{
 		if (player->kartstuff[k_drift] != 0)
@@ -3978,7 +3955,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 
 	pviewheight = FixedMul(32<<FRACBITS, mo->scale);
 
-	if (mo->eflags & MFE_VERTICALFLIP)
+	if (vflip)
 		z = mo->z + mo->height - pviewheight - camheight;
 	else
 		z = mo->z + pviewheight + camheight;
@@ -4006,7 +3983,9 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 		thiscam->momz = 0;
 	}
 	else if (player->exiting || timeover == 2)
+	{
 		thiscam->momx = thiscam->momy = thiscam->momz = 0;
+	}
 	else if (leveltime < starttime)
 	{
 		thiscam->momx = FixedMul(x - thiscam->x, camspeed);
@@ -4037,7 +4016,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	f2 = viewpointy-thiscam->y;
 	dist = FixedHypot(f1, f2);
 
-	if (mo->eflags & MFE_VERTICALFLIP)
+	if (vflip)
 		angle = R_PointToAngle2(0, thiscam->z + thiscam->height, dist, mo->z + mo->height - P_GetPlayerHeight(player));
 	else
 		angle = R_PointToAngle2(0, thiscam->z, dist, mo->z + P_GetPlayerHeight(player));
@@ -4050,7 +4029,9 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 		G_ClipAimingPitch((INT32 *)&angle);
 
 		if (camspeed == FRACUNIT)
+		{
 			thiscam->aiming = angle;
+		}
 		else
 		{
 			angle_t input;
@@ -4073,12 +4054,13 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	{
 		// Don't let the camera match your movement.
 		thiscam->momz = 0;
+
 		if (player->spectator)
 			thiscam->aiming = 0;
 		// Only let the camera go a little bit downwards.
-		else if (!(mo->eflags & MFE_VERTICALFLIP) && thiscam->aiming < ANGLE_337h && thiscam->aiming > ANGLE_180)
+		else if (!vflip && thiscam->aiming < ANGLE_337h && thiscam->aiming > ANGLE_180)
 			thiscam->aiming = ANGLE_337h;
-		else if (mo->eflags & MFE_VERTICALFLIP && thiscam->aiming > ANGLE_22h && thiscam->aiming < ANGLE_180)
+		else if (vflip && thiscam->aiming > ANGLE_22h && thiscam->aiming < ANGLE_180)
 			thiscam->aiming = ANGLE_22h;
 	}
 
@@ -4093,12 +4075,19 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 
 void P_ResetLocalCamAiming(player_t *player)
 {
-	for (int i = 0; i <= splitscreen; i++)
+	UINT8 i;
+
+	if (player == &players[consoleplayer])
+		localaiming[0] = 0;
+	else if (splitscreen)
 	{
-		UINT8 id = (i == 0) ? consoleplayer : displayplayers[i];
-		if (player - players == id)
+		for (i = 1; i <= splitscreen; i++) // Skip P1
 		{
-			localaiming[i] = 0;
+			if (player == &players[displayplayers[i]])
+			{
+				localaiming[i] = 0;
+				break;
+			}
 		}
 	}
 }
