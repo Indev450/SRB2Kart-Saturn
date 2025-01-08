@@ -934,40 +934,7 @@ int LUA_HookHurtMsg(player_t *player, mobj_t *inflictor, mobj_t *source)
 	return hook.status;
 }
 
-#if 0
-void LUA_HookNetArchive(lua_CFunction archFunc)
-{
-	const hook_t * map = &hookIds[HOOK(NetVars)];
-	Hook_State hook;
-	hook.force_mobj = false;
-	/* this is a remarkable case where the stack isn't reset */
-	if (map->numHooks > 0)
-	{
-		// stack: tables
-		I_Assert(lua_gettop(gL) > 0);
-		I_Assert(lua_istable(gL, -1));
-
-		push_error_handler();
-		lua_insert(gL, EINDEX);
-
-		begin_hook_values(&hook);
-
-		// tables becomes an upvalue of archFunc
-		lua_pushvalue(gL, -1);
-		lua_pushcclosure(gL, archFunc, 2);
-		// stack: tables, archFunc
-
-		init_hook_call(&hook, 0, res_none);
-		call_mapped(&hook, map);
-
-		lua_pop(gL, 1); // pop archFunc
-		lua_remove(gL, EINDEX); // pop error handler
-		// stack: tables
-	}
-}
-#endif
-
-void LUA_HookNetArchive(lua_CFunction archFunc, savebuffer_t *save) //
+void LUA_HookNetArchive(lua_CFunction archFunc, savebuffer_t *save)
 {
 	const hook_t * map = &hookIds[HOOK(NetVars)];
 	Hook_State hook;
