@@ -1571,8 +1571,10 @@ void D_SRB2Main(void)
 
 	// Possible value that changes depending on whether required files for speedometer are found or not
 	CV_PossibleValue_t speedo_cons_temp[NUMSPEEDOSTUFF] = {{1, "Default"}, {0, NULL}, {0, NULL}, {0, NULL}, {0, NULL}, {0, NULL}};
+	CV_PossibleValue_t driftgaugestyle_cons_temp[NUMSPEEDOSTUFF] = {{1, "Default"}, {2, "Small"}, {3, "Big Numbers"}, {4, "Numbers Only"}, {0, NULL}, {0, NULL}}; // ugh i dont want this but bleh
 	unsigned last_speedo_i = 0;
-#define PUSHSPEEDO(id, name) { ++last_speedo_i; speedo_cons_temp[last_speedo_i].value = id; speedo_cons_temp[last_speedo_i].strvalue = name; }
+	unsigned last_driftgauge_i = 0;
+#define PUSHCONS(cons, i, id, name) { ++i; cons[i].value = id; cons[i].strvalue = name; }
 
 	if (found_extra_kart || found_extra2_kart || found_extra3_kart) // found the funny, add it in!
 	{
@@ -1588,7 +1590,7 @@ void D_SRB2Main(void)
 		if (W_CheckMultipleLumps("SP_SMSTC", "K_TRNULL", "SP_MKMH", "SP_MMPH", "SP_MFRAC", "SP_MPERC", NULL))
 		{
 			xtra_speedo = true;
-			PUSHSPEEDO(2, "Small");
+			PUSHCONS(speedo_cons_temp, last_speedo_i, 2, "Small");
 		}
 
 		if (W_LumpExists("SC_SMSTC"))
@@ -1598,7 +1600,7 @@ void D_SRB2Main(void)
 		if (W_CheckMultipleLumps("SP_AMSTC", "K_TRNULL", "SP_AKMH", "SP_AMPH", "SP_AFRAC", "SP_APERC", NULL))
 		{
 			achi_speedo = true;
-			PUSHSPEEDO(3, "Achii");
+			PUSHCONS(speedo_cons_temp, last_speedo_i, 3, "Achii");
 		}
 
 		if (W_CheckMultipleLumps("SC_AMSTC", "K_TRNULL", "SC_AKMH", "SC_AMPH", "SC_AFRAC", "SC_APERC", NULL))
@@ -1624,7 +1626,7 @@ void D_SRB2Main(void)
 			"K_KZSP20", "K_KZSP21", "K_KZSP22", "K_KZSP23", "K_KZSP24", "K_KZSP25", NULL))
 		{
 			kartzspeedo = true;
-			PUSHSPEEDO(4, "P-Meter");
+			PUSHCONS(speedo_cons_temp, last_speedo_i, 4, "P-Meter");
 		}
 
 		// stat display for extended player setup
@@ -1637,7 +1639,9 @@ void D_SRB2Main(void)
 			nametaggfx = true;
 
 		if (W_CheckMultipleLumps("K_DGAU","K_DCAU","K_DGSU","K_DCSU", NULL))
+		{
 			driftgaugegfx = true;
+		}
 
 		if (found_extra3_kart)
 		{
@@ -1645,7 +1649,8 @@ void D_SRB2Main(void)
 			if (W_LumpExists("SP_SM3TC"))
 			{
 				xtra_speedo3 = true;
-				PUSHSPEEDO(5, "Extra");
+				PUSHCONS(speedo_cons_temp, last_speedo_i, 5, "Extra");
+				PUSHCONS(driftgaugestyle_cons_temp, last_driftgauge_i, 5, "Extra");
 			}
 
 			if (W_LumpExists("SC_SM3TC"))
@@ -1653,8 +1658,9 @@ void D_SRB2Main(void)
 		}
 	}
 
-#undef PUSHSPEEDO
+#undef PUSHCONS
 	memcpy(speedo_cons_t, speedo_cons_temp, sizeof(speedo_cons_t));
+	memcpy(driftgaugestyle_cons_t, driftgaugestyle_cons_temp, sizeof(driftgaugestyle_cons_t));
 
 	// Do it before P_InitMapData because PNG patch
 	// conversion sometimes needs the palette
