@@ -78,6 +78,7 @@ void P_UnlinkThinker(thinker_t *thinker);
 //
 // P_USER
 //
+
 typedef struct camera_s
 {
 	boolean chase;
@@ -127,8 +128,18 @@ typedef struct camera_s
 	fixed_t pan;
 
 	// postproccess effects
-	UINT16 postimg;
+	UINT8 postimg;
 } camera_t;
+
+// post process types
+enum
+{
+	POSTIMG_WATER	= 1,	// Underwater screen effect.
+	POSTIMG_MOTION	= 1<<1, // Unused motion blur effect.
+	POSTIMG_FLIP	= 1<<2, // Flipcam screen effect.
+	POSTIMG_HEAT	= 1<<3, // Heatwave screen effect.
+	POSTIMG_MIRROR	= 1<<4, // encore screen effect.
+};
 
 extern camera_t camera[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_cam_dist[MAXSPLITSCREENPLAYERS];
