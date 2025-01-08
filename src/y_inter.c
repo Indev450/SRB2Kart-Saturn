@@ -345,10 +345,7 @@ static void Y_PlayerStandingsDrawer(y_data_t *standings, INT32 x, INT32 hilicol)
 		return;
 	}
 
-	INT32 i, whiteplayer = MAXPLAYERS;
-
-	if (!splitscreen)
-		whiteplayer = (demo.playback ? displayplayers[0] : consoleplayer);
+	INT32 i;;
 
 #define NUMFORNEWCOLUMN 8
 	INT32 y = 41, gutter = ((standings->numplayers > NUMFORNEWCOLUMN) ? 0 : (BASEVIDWIDTH/2));
