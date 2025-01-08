@@ -254,6 +254,8 @@ INT32 V_SubStringLengthToFit(const char *string, INT32 width, INT32 option);
 
 char V_GetSkincolorChar(INT32 color);
 
+INT32 V_SkinColorToHighlightcolor(skincolors_t color);
+
 typedef struct player_s player_t;
 
 void V_DoPostProcessor(INT32 view, INT32 param);

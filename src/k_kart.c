@@ -8639,11 +8639,13 @@ static boolean K_drawKartPositionFaces(void)
 //
 // HU_DrawTabRankings -- moved here to take advantage of kart stuff!
 //
-void HU_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, INT32 whiteplayer, INT32 hilicol)
+void HU_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, INT32 hilicol)
 {
 	INT32 i, rightoffset = 240;
 	const UINT8 *colormap;
 	INT32 dupadjust = (vid.width/vid.dupx), duptweak = (dupadjust - BASEVIDWIDTH)/2;
+
+	boolean (*_isHighlightedPlayer)(const player_t *) = (demo.playback ? P_IsDisplayPlayer : P_IsLocalPlayer);
 
 	//this function is designed for 9 or less score lines only
 	//I_Assert(scorelines <= 9); -- not today bitch, kart fixed it up
@@ -8659,42 +8661,48 @@ void HU_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, I
 	for (i = 0; i < scorelines; i++)
 	{
 		char strtime[MAXPLAYERNAME+1];
+		const UINT8 pnum = tab[i].num;
 
-		if (players[tab[i].num].spectator || !players[tab[i].num].mo)
+		if (players[pnum].spectator || !players[pnum].mo)
 			continue; //ignore them.
 
+		const boolean whiteplayer = _isHighlightedPlayer(&players[pnum]);
+
+		const INT32 philicol = (whiteplayer ? V_SkinColorToHighlightcolor(players[pnum].skincolor) : 0);
+
 		if (netgame // don't draw it offline
-		&& tab[i].num != serverplayer)
-			HU_drawPing(x + ((i < 8) ? -17 : rightoffset + 11), y-4, playerpingtable[tab[i].num], 0);
+		&& pnum != serverplayer)
+			HU_drawPing(x + ((i < 8) ? -17 : rightoffset + 11), y-4, playerpingtable[pnum], 0);
 
 		STRBUFCPY(strtime, tab[i].name);
 
 		if (scorelines > 8)
-			V_DrawThinString(x + 20, y, ((tab[i].num == whiteplayer) ? hilicol : 0)|V_ALLOWLOWERCASE|V_6WIDTHSPACE, strtime);
+			V_DrawThinString(x + 20, y, philicol|V_ALLOWLOWERCASE|V_6WIDTHSPACE, strtime);
 		else
-			V_DrawString(x + 20, y, ((tab[i].num == whiteplayer) ? hilicol : 0)|V_ALLOWLOWERCASE, strtime);
+			V_DrawString(x + 20, y, philicol|V_ALLOWLOWERCASE, strtime);
 
-		if (players[tab[i].num].mo->color)
+		if (players[pnum].mo->color)
 		{
-			colormap = R_GetTranslationColormap(players[tab[i].num].skin, players[tab[i].num].mo->color, GTC_CACHE);
-			if (players[tab[i].num].mo->colorized)
-				colormap = R_GetTranslationColormap(TC_RAINBOW, players[tab[i].num].mo->color, GTC_CACHE);
+			colormap = R_GetTranslationColormap(players[pnum].skin, players[pnum].mo->color, GTC_CACHE);
+
+			if (players[pnum].mo->colorized)
+				colormap = R_GetTranslationColormap(TC_RAINBOW, players[pnum].mo->color, GTC_CACHE);
 			else
-				colormap = R_GetTranslationColormap(players[tab[i].num].skin, players[tab[i].num].mo->color, GTC_CACHE);
+				colormap = R_GetTranslationColormap(players[pnum].skin, players[pnum].mo->color, GTC_CACHE);
 
 			{
 				player_t *p;
-				p = &players[tab[i].num];
+				p = &players[pnum];
 				if (cv_highresportrait.value)
 					V_DrawSmallMappedPatch(x, y-4, 0, R_GetSkinFaceWant(p), colormap);
 				else
 					V_DrawMappedPatch(x, y-4, 0, R_GetSkinFaceRank(p), colormap);
 			}
-			/*if (G_BattleGametype() && players[tab[i].num].kartstuff[k_bumper] > 0) -- not enough space for this
+			/*if (G_BattleGametype() && players[pnum].kartstuff[k_bumper] > 0) -- not enough space for this
 			{
 				INT32 bumperx = x+19;
 				V_DrawMappedPatch(bumperx-2, y-4, 0, kp_tinybumper[0], colormap);
-				for (j = 1; j < players[tab[i].num].kartstuff[k_bumper]; j++)
+				for (j = 1; j < players[pnum].kartstuff[k_bumper]; j++)
 				{
 					bumperx += 5;
 					V_DrawMappedPatch(bumperx, y-4, 0, kp_tinybumper[1], colormap);
@@ -8702,14 +8710,14 @@ void HU_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, I
 			}*/
 		}
 
-		if (tab[i].num == whiteplayer)
+		if (whiteplayer)
 			V_DrawScaledPatch(x, y-4, 0, kp_facehighlight[(leveltime / 4) % 8]);
 
-		if (G_BattleGametype() && players[tab[i].num].kartstuff[k_bumper] <= 0)
+		if (G_BattleGametype() && players[pnum].kartstuff[k_bumper] <= 0)
 			V_DrawScaledPatch(x-4, y-7, 0, kp_ranknobumpers);
 		else
 		{
-			INT32 pos = players[tab[i].num].kartstuff[k_position];
+			INT32 pos = players[pnum].kartstuff[k_position];
 			if (pos < 0 || pos > MAXPLAYERS)
 				pos = 0;
 			// Draws the little number over the face
@@ -8721,18 +8729,18 @@ void HU_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, I
 #define timestring(time) va("%i'%02i\"%02i", G_TicsToMinutes(time, true), G_TicsToSeconds(time), G_TicsToCentiseconds(time))
 			if (scorelines > 8)
 			{
-				if (players[tab[i].num].exiting)
-					V_DrawRightAlignedThinString(x+rightoffset, y-1, hilicol|V_6WIDTHSPACE, timestring(players[tab[i].num].realtime));
-				else if (players[tab[i].num].pflags & PF_TIMEOVER)
+				if (players[pnum].exiting)
+					V_DrawRightAlignedThinString(x+rightoffset, y-1, hilicol|V_6WIDTHSPACE, timestring(players[pnum].realtime));
+				else if (players[pnum].pflags & PF_TIMEOVER)
 					V_DrawRightAlignedThinString(x+rightoffset, y-1, V_6WIDTHSPACE, "NO CONTEST.");
 				else if (circuitmap)
 					V_DrawRightAlignedThinString(x+rightoffset, y-1, V_6WIDTHSPACE, va("Lap %d", tab[i].count));
 			}
 			else
 			{
-				if (players[tab[i].num].exiting)
-					V_DrawRightAlignedString(x+rightoffset, y, hilicol, timestring(players[tab[i].num].realtime));
-				else if (players[tab[i].num].pflags & PF_TIMEOVER)
+				if (players[pnum].exiting)
+					V_DrawRightAlignedString(x+rightoffset, y, hilicol, timestring(players[pnum].realtime));
+				else if (players[pnum].pflags & PF_TIMEOVER)
 					V_DrawRightAlignedThinString(x+rightoffset, y-1, 0, "NO CONTEST.");
 				else if (circuitmap)
 					V_DrawRightAlignedString(x+rightoffset, y, 0, va("Lap %d", tab[i].count));

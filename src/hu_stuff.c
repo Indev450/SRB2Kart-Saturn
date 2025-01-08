@@ -2616,7 +2616,6 @@ static void HU_DrawRankings(void)
 	playersort_t tab[MAXPLAYERS];
 	INT32 i, j, scorelines, hilicol, numplayersingame = 0;
 	boolean completed[MAXPLAYERS];
-	UINT32 whiteplayer = MAXPLAYERS;
 
 	if (!automapactive)
 		V_DrawFadeScreen(0xFF00, 16); // A little more readable, and prevents cheating the fades under other circumstances.
@@ -2628,20 +2627,25 @@ static void HU_DrawRankings(void)
 	else
 		hilicol = ((gametype == GT_RACE) ? V_SKYMAP : V_REDMAP);
 
-	// draw the current gametype in the lower right
-	//if (modeattacking)
-		//V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, "Record Attack");
-	//else
-		//V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, gametype_cons_t[gametype].strvalue);
-	
-	// draw the current map in the lower right if theres none just say its unknown
-	char *maptitle = G_BuildMapTitle(gamemap);
-	if (!maptitle)
-		V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, "UNKNOWN");
+	if (!demo.playback)
+	{
+		// draw the current map in the lower right
+		char *maptitle = G_BuildMapTitle(gamemap);
+
+		if (maptitle)
+		{
+			V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, maptitle);
+			Z_Free(maptitle);
+		}
+		else
+		{
+			V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, "UNKNOWN");
+		}
+	}
 	else
 	{
-		V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, maptitle);
-		Z_Free(maptitle);
+		// draw the current gametype in the lower right
+		V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, (modeattacking) ? "Record Attack" : gametype_cons_t[gametype].strvalue);
 	}
 
 	if (G_GametypeHasTeams())
@@ -2704,11 +2708,6 @@ static void HU_DrawRankings(void)
 		V_DrawCenteredString(256, 16, hilicol, cv_kartspeed.string);
 	}
 
-	// When you play, you quickly see your score because your name is displayed in white.
-	// When playing back a demo, you quickly see who's the view.
-	if (!splitscreen)
-		whiteplayer = demo.playback ? displayplayers[0] : consoleplayer;
-
 	scorelines = 0;
 	memset(completed, 0, sizeof (completed));
 	memset(tab, 0, sizeof (playersort_t)*MAXPLAYERS);
@@ -2764,7 +2763,7 @@ static void HU_DrawRankings(void)
 #endif
 	}
 
-	HU_DrawTabRankings(((scorelines > 8) ? 32 : 40), 33, tab, scorelines, whiteplayer, hilicol);
+	HU_DrawTabRankings(((scorelines > 8) ? 32 : 40), 33, tab, scorelines, hilicol);
 
 	// draw spectators in a ticker across the bottom
 	if (netgame && G_GametypeHasSpectators())
