@@ -5224,8 +5224,6 @@ void K_KartPlayerHUDUpdate(player_t *player)
 
 static inline void K_SpawnNormalSpeedLines(player_t *player)
 {
-	const boolean goodSpeed = (player->speed >= (3*K_GetKartSpeed(player, false))/4);
-
 	mobj_t *fast = P_SpawnMobj(player->mo->x + (P_RandomRange(-36,36) * player->mo->scale),
 							   player->mo->y + (P_RandomRange(-36,36) * player->mo->scale),
 							   player->mo->z + (player->mo->height/2) + (P_RandomRange(-20,20) * player->mo->scale),
@@ -5239,13 +5237,9 @@ static inline void K_SpawnNormalSpeedLines(player_t *player)
 	//fast->momz = 3*player->mo->momz/4;
 	P_SetTarget(&fast->target, player->mo); // easier lua access
 
-	/*if (goodSpeed)
-	{
-		fast->destscale = fast->destscale * 2;
-		P_SetScale(fast, 3*fast->scale/2);
-	}*/
-
 	K_MatchGenericExtraFlags(fast, player->mo);
+
+	const boolean goodSpeed = (player->speed >= (3*K_GetKartSpeed(player, false))/4);
 
 	// cant have nice shit cause of synched rng
 	if (player->kartstuff[k_eggmanexplode])
