@@ -124,9 +124,18 @@ consvar_t cv_showlaptimes = {"showlaptimes", "Off", CV_SAVE, CV_OnOff, NULL, 0, 
 consvar_t cv_posanim = {"postitionanimation", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_smallposnum = {"smallpositionnumber", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_minihead = {"smallminimapplayers", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_showminimapnames = {"showminimapnames", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_highresportrait = {"highresportrait", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; //make char potraits use their high-res version instead
+
+consvar_t cv_showlapemblem = {"showlapemblem", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_darkitembox = {"darkitembox", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; //itembox gets a dark box with specific items
+consvar_t cv_biglaps = {"biglaphud", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; //here for ppl who dont want to make 2 more patches for their custom hud
 
 CV_PossibleValue_t speedo_cons_t[NUMSPEEDOSTUFF];
 consvar_t cv_newspeedometer = {"newspeedometer", "Default", CV_SAVE, speedo_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_battlespeedo = {"battlespeedo", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; //toggle for showing the speedometer in battlemode
 
 //hardcode saltyhop mhhm
 consvar_t cv_saltyhop = {"hardcodehop", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -140,13 +149,45 @@ consvar_t cv_colorizeditembox = {"colorizeditembox", "Off", CV_SAVE, CV_OnOff, N
 static CV_PossibleValue_t HudColor_cons_t[MAXSKINCOLORS+1];
 consvar_t cv_colorizedhudcolor = {"colorizedhudcolor", "Skin Color", CV_SAVE, HudColor_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_highresportrait = {"highresportrait", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; //make char potraits use their high-res version instead
+// driftgauge stuffs
+static CV_PossibleValue_t driftgaugeoffset_cons_t[] = {
+	{-FRACUNIT*128, "MIN"}, {FRACUNIT*128, "MAX"}, {0, NULL}};
+CV_PossibleValue_t driftgaugestyle_cons_t[NUMSPEEDOSTUFF];
 
-consvar_t cv_darkitembox = {"darkitembox", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; //itembox gets a dark box with specific items
+consvar_t cv_driftgauge = {"kartdriftgauge", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_driftgaugeofs = {"kartdriftgaugeoffset", "-20", CV_FLOAT|CV_SAVE, driftgaugeoffset_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_driftgaugetrans = {"kartdriftgaugetransparency", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_driftgaugestyle = {"kartdriftgaugestyle", "1", CV_SAVE, driftgaugestyle_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_biglaps = {"biglaphud", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; //here for ppl who dont want to make 2 more patches for their custom hud
+// nametags
+static CV_PossibleValue_t nametagtrans_cons_t[] = {
+	{0, "Never"}, {1, "Far only"}, {2, "Dynamic"}, {3, "Always"}, {4, "HUD Trans."}, {0, NULL}};
+/*static CV_PossibleValue_t nametagscaling_cons_t[] = {
+	{0, "MIN"},  {320, "MAX"}, {0, NULL}};*/
+static CV_PossibleValue_t nametagdistance_cons_t[] = {
+	{0, "MIN"},  {640, "MAX"}, {0, NULL}};
+static CV_PossibleValue_t nametagmaxplayer_cons_t[] = {
+    {1, "MIN"}, {MAXPLAYERS, "MAX"}, {0, NULL}};
+static CV_PossibleValue_t nametagsize_cons_t[] = {
+	{0, "Off"}, {1, "Small"}, {2, "Minimal"}, {0, NULL}};
+static CV_PossibleValue_t nametagrestat_cons_t[] = {
+	{0, "Off"}, {1, "Restat"}, {2, "Always"}, {0, NULL}};
 
-consvar_t cv_battlespeedo = {"battlespeedo", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; //toggle for showing the speedometer in battlemode
+consvar_t cv_nametag = {"kartnametag", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_nametagtrans = {"kartnametagtransparency", "Dynamic", CV_SAVE, nametagtrans_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_nametagfacerank = {"kartnametagfacerank", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_nametagrestat = {"kartnametagrestat", "Restat", CV_SAVE, nametagrestat_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_nametagdist = {"kartnametagdist", "320", CV_SAVE, nametagdistance_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_nametagmaxplayers = {"kartnametagmaxplayers", "3", CV_SAVE, nametagmaxplayer_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_nametagmaxlenght = {"kartnametagmaxlenght", "12", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
+//consvar_t cv_nametagscaling = {"nametagscaling", "160", CV_SAVE, nametagscaling_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_showownnametag = {"kartnametagshowown", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_smallnametags = {"kartnametagsmall", "Off", CV_SAVE, nametagsize_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_nametaghop = {"kartnametaghop", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_nametagscore = {"kartnametagscore", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_shownametagfinish = {"kartshownametagfinished", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_shownametagspectator = {"kartshownametagspectator", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 
 // SOME IMPORTANT VARIABLES DEFINED IN DOOMDEF.H:
 // gamespeed is cc (0 for easy, 1 for normal, 2 for hard)
@@ -782,9 +823,11 @@ void K_RegisterKartStuff(void)
 
 	CV_RegisterVar(&cv_battlespeedo);
 
-	CV_RegisterVar(&cv_saltyhop);
-	CV_RegisterVar(&cv_saltyhopsfx);
-	CV_RegisterVar(&cv_saltysquish);
+	CV_RegisterVar(&cv_minihead);
+	CV_RegisterVar(&cv_showminimapnames);
+	CV_RegisterVar(&cv_showlapemblem);
+
+	CV_RegisterVar(&cv_stagetitle);
 
 	//Colourized HUD
 	CV_RegisterVar(&cv_colorizedhud);
@@ -797,13 +840,30 @@ void K_RegisterKartStuff(void)
 
 	CV_RegisterVar(&cv_highresportrait);
 
+	CV_RegisterVar(&cv_nametag);
+	CV_RegisterVar(&cv_nametagtrans);
+	CV_RegisterVar(&cv_nametagfacerank);
+	CV_RegisterVar(&cv_nametagmaxplayers);
+	CV_RegisterVar(&cv_nametagmaxlenght);
+	//CV_RegisterVar(&cv_nametagscaling);
+	CV_RegisterVar(&cv_nametagdist);
+	CV_RegisterVar(&cv_showownnametag);
+	CV_RegisterVar(&cv_smallnametags);
+	CV_RegisterVar(&cv_nametagrestat);
+	CV_RegisterVar(&cv_nametaghop);
+	CV_RegisterVar(&cv_nametagscore);
+	CV_RegisterVar(&cv_shownametagfinish);
+	CV_RegisterVar(&cv_shownametagspectator);
+
+	CV_RegisterVar(&cv_driftgauge);
+	CV_RegisterVar(&cv_driftgaugeofs);
+	CV_RegisterVar(&cv_driftgaugetrans);
+	CV_RegisterVar(&cv_driftgaugestyle);
+
+	CV_RegisterVar(&cv_saltyhop);
+	CV_RegisterVar(&cv_saltyhopsfx);
+	CV_RegisterVar(&cv_saltysquish);
 	CV_RegisterVar(&cv_slamsound);
-
-	CV_RegisterVar(&cv_minihead);
-	CV_RegisterVar(&cv_showminimapnames);
-	CV_RegisterVar(&cv_showlapemblem);
-
-	CV_RegisterVar(&cv_stagetitle);
 
 	CV_RegisterVar(&cv_lessflicker);
 
