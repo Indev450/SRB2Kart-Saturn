@@ -412,7 +412,8 @@ static void P_DeviceRumbleTick(void)
 
 		if (player->kartstuff[k_spinouttimer])
 		{
-			low = high = FRACUNIT / 4;
+			//low = high = FRACUNIT / 6;
+			low = high = FixedMul((FRACUNIT / 4), (FixedDiv(player->kartstuff[k_spinouttimer], (3*TICRATE / 2))));
 		}
 		else if (player->kartstuff[k_sneakertimer] > (sneakertime-(TICRATE/2)))
 		{
