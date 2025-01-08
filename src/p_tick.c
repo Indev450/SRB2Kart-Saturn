@@ -364,6 +364,8 @@ static void P_DeviceRumbleTick(void)
 		UINT16 low = 0;
 		UINT16 high = 0;
 
+		player_t *player = ((i == 0) ? &players[consoleplayer] : &players[displayplayers[i]]);
+
 		if (!cv_usejoystick[i].value)
 		{
 			continue;
@@ -374,14 +376,12 @@ static void P_DeviceRumbleTick(void)
 			continue;
 		}
 
-		player_t *player = &players[displayplayers[i]];
-
-		if (!P_IsLocalPlayer(player))
+		if (player->spectator)
 		{
 			continue;
 		}
 
-		if (!playeringame[displayplayers[i]] || player->spectator)
+		if (camera[i].freecam)
 		{
 			continue;
 		}
