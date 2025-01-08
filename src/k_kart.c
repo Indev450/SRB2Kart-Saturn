@@ -116,7 +116,7 @@ IMPL_HUD_OFFSET(stat); // Stats
 #undef IMPL_HUD_OFFSET_X
 #undef IMPL_HUD_OFFSET_Y
 
-static CV_PossibleValue_t colorspeedlines_cons_t[] = {{0, "Off"}, {1, "Normal"}, {2, "Driftcharge"}, {0, NULL}};
+static CV_PossibleValue_t colorspeedlines_cons_t[] = {{0, "Off"}, {1, "Normal"}, {2, "+Driftcharge"}, {0, NULL}};
 consvar_t cv_coloredspeedlines = {"colorizedspeedlines", "Off", CV_SAVE, colorspeedlines_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 //extra hud things
