@@ -3561,14 +3561,15 @@ DoneSection2:
 
 				if (!demo.playback || P_AnalogMove(player))
 				{
-					if (player == &players[consoleplayer])
-						localangle[0] = player->mo->angle;
-					else if (player == &players[displayplayers[1]])
-						localangle[1] = player->mo->angle;
-					else if (player == &players[displayplayers[2]])
-						localangle[2] = player->mo->angle;
-					else if (player == &players[displayplayers[3]])
-						localangle[3] = player->mo->angle;
+					for (UINT8 j = 0; j <= splitscreen; ++j)
+					{
+						INT32 id = (j == 0 ? consoleplayer : displayplayers[j]);
+						if (player == &players[id])
+						{
+							localangle[j] = player->mo->angle;
+							break;
+						}
+					}
 				}
 
 				if (!(lines[i].flags & ML_EFFECT4))
@@ -7406,33 +7407,18 @@ void T_Pusher(pusher_t *p)
 
 				if (!demo.playback || P_AnalogMove(thing->player))
 				{
-					if (thing->player == &players[consoleplayer])
+					for (UINT8 i = 0; i <= splitscreen; ++i)
 					{
-						if (thing->angle - localangle[0] > ANGLE_180)
-							localangle[0] -= (localangle[0] - thing->angle) / 8;
-						else
-							localangle[0] += (thing->angle - localangle[0]) / 8;
-					}
-					else if (thing->player == &players[displayplayers[1]])
-					{
-						if (thing->angle - localangle[1] > ANGLE_180)
-							localangle[1] -= (localangle[1] - thing->angle) / 8;
-						else
-							localangle[1] += (thing->angle - localangle[1]) / 8;
-					}
-					else if (thing->player == &players[displayplayers[2]])
-					{
-						if (thing->angle - localangle[2] > ANGLE_180)
-							localangle[2] -= (localangle[2] - thing->angle) / 8;
-						else
-							localangle[2] += (thing->angle - localangle[2]) / 8;
-					}
-					else if (thing->player == &players[displayplayers[3]])
-					{
-						if (thing->angle - localangle[3] > ANGLE_180)
-							localangle[3] -= (localangle[3] - thing->angle) / 8;
-						else
-							localangle[3] += (thing->angle - localangle[3]) / 8;
+						INT32 id = (i == 0 ? consoleplayer : displayplayers[i]);
+						if (thing->player == &players[id])
+						{
+							if (thing->angle - localangle[i] > ANGLE_180)
+								localangle[i] -= (localangle[i] - thing->angle) / 8;
+							else
+								localangle[i] += (thing->angle - localangle[i]) / 8;
+
+							break;
+						}
 					}
 				}
 			}

@@ -222,14 +222,15 @@ boolean P_DoSpring(mobj_t *spring, mobj_t *object)
 
 			if (!demo.playback || P_AnalogMove(object->player))
 			{
-				if (object->player == &players[consoleplayer])
-					localangle[0] = spring->angle;
-				else if (object->player == &players[displayplayers[1]])
-					localangle[1] = spring->angle;
-				else if (object->player == &players[displayplayers[2]])
-					localangle[2] = spring->angle;
-				else if (object->player == &players[displayplayers[3]])
-					localangle[3] = spring->angle;
+				for (UINT8 j = 0; j <= splitscreen; ++j)
+				{
+					INT32 id = (j == 0 ? consoleplayer : displayplayers[j]);
+					if (object->player == &players[id])
+					{
+						localangle[j] = spring->angle;
+						break;
+					}
+				}
 			}
 		}
 
