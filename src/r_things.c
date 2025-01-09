@@ -592,7 +592,7 @@ void R_DrawMaskedColumn(column_t *column)
 
 	basetexturemid = dc_texturemid;
 
-	if (!column || column == 0)
+	if (column == NULL)
 		return;
 
 	for (; column->topdelta != 0xff ;)
