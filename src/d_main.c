@@ -334,7 +334,7 @@ static boolean D_Display(void)
 
 		if (rendermode == render_soft && !splitscreen)
 		{
-			R_InterpolateViewRollAngle(rendertimefrac);
+			R_InterpolateViewRollAngle(rendertimefrac_unpaused);
 			R_CheckViewMorph();
 		}
 
