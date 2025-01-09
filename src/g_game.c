@@ -1802,7 +1802,14 @@ void G_ResetView(UINT8 viewnum, INT32 playernum, boolean onlyactive)
 		(*displayplayerp) = playernumd;
 
 		/* If a viewpoint changes, reset the camera to clear uninitialized memory. */
-		G_FixCamera(viewd);
+		if (viewnum > splits)
+		{
+			G_FixCamera(viewd);
+		}
+		else if ((*displayplayerp) != olddisplayplayer)
+		{
+			G_FixCamera(viewnum);
+		}
 	}
 
 	if (demo.playback && viewnum == 1)
