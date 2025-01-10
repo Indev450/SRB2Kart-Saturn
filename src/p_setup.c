@@ -2592,8 +2592,6 @@ static void P_InitMinimapInfo(void)
 	if (lumpnum != -1)
 		minimapinfo.minimap_pic = W_CachePatchName(va("%sR", G_BuildMapName(gamemap)), PU_HUDGFX);
 
-	minimapinfo.mapthingcount = 0;
-	// TODO iterate over mapthings to look for possible user-defined bounds
 	minimapinfo.min_x = bsp->bbox[0][BOXLEFT];
 	minimapinfo.max_x = bsp->bbox[0][BOXRIGHT];
 	minimapinfo.min_y = bsp->bbox[0][BOXBOTTOM];
@@ -3319,6 +3317,10 @@ boolean P_MultiSetupWadFiles(boolean fullsetup)
 		HU_LoadGraphics();
 		ST_LoadGraphics();
 		ST_ReloadSkinFaceGraphics();
+
+		// reload minimap stuff while were in the map since it may get replaced otherwise
+		if (gamestate == GS_LEVEL)
+			P_InitMinimapInfo();
 
 		if (fullsetup)
 			++partadd_stage; // run next stage too
