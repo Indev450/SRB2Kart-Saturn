@@ -29,6 +29,9 @@ extern fixed_t centerxfrac, centeryfrac;
 extern fixed_t projection, projectiony;
 extern fixed_t fovtan; // field of view
 
+#define MINFOV 5
+#define MAXFOV 179
+
 extern size_t validcount, linecount, loopcount, framecount;
 
 // The fraction of a tic being drawn (for interpolation between two tics)
@@ -203,7 +206,7 @@ extern consvar_t cv_shadow, cv_shadowoffs;
 extern consvar_t cv_ffloorclip, cv_spriteclip;
 extern consvar_t cv_translucency;
 extern consvar_t cv_drawdist, cv_drawdist_precip, cv_lessprecip, cv_mobjscaleprecip;
-extern consvar_t cv_fov;
+extern consvar_t cv_fov, cv_fovchange;
 extern consvar_t cv_skybox;
 extern consvar_t cv_tailspickup;
 extern consvar_t cv_maxinterpdist;
@@ -225,6 +228,7 @@ void R_SetViewSize(void);
 // do it (sometimes explicitly called)
 void R_ExecuteSetViewSize(void);
 
+fixed_t R_GetPlayerFov(player_t *player);
 void R_SkyboxFrame(int s);
 void R_SetupFrame(int s, boolean skybox);
 
