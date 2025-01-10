@@ -409,7 +409,6 @@ extern precipmobj_t **precipblocklinks; // special blockmap for precip rendering
 extern struct minimapinfo
 {
 	patch_t *minimap_pic;
-	UINT8 mapthingcount;
 	INT32 min_x, min_y;
 	INT32 max_x, max_y;
 	INT32 map_w, map_h;
