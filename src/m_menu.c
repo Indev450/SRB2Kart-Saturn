@@ -643,23 +643,23 @@ static menuitem_t MISC_ReplayOptionsMenu[] =
 static tic_t playback_last_menu_interaction_leveltime = 0;
 static menuitem_t PlaybackMenu[] =
 {
-	{IT_CALL   | IT_STRING, "M_PHIDE",  "Hide Menu (Esc)", M_SelectableClearMenus, 0},
+	{IT_CALL   | IT_STRING, "M_PHIDE",  "Hide Menu (Esc)", M_SelectableClearMenus,             0},
 
-	{IT_CALL   | IT_STRING, "M_PREW",   "Rewind ([)",        M_PlaybackRewind,      20},
-	{IT_CALL   | IT_STRING, "M_PPAUSE", "Pause (\\)",         M_PlaybackPause,       36},
-	{IT_CALL   | IT_STRING, "M_PFFWD",  "Fast-Forward (])",  M_PlaybackFastForward, 52},
-	{IT_CALL   | IT_STRING, "M_PSTEPB", "Backup Frame ([)",  M_PlaybackRewind,      20},
-	{IT_CALL   | IT_STRING, "M_PRESUM", "Resume",        M_PlaybackPause,       36},
-	{IT_CALL   | IT_STRING, "M_PFADV",  "Advance Frame (])", M_PlaybackAdvance,     52},
+	{IT_CALL   | IT_STRING, "M_PREW",   "Rewind ([)",        M_PlaybackRewind,                20},
+	{IT_CALL   | IT_STRING, "M_PPAUSE", "Pause (\\)",         M_PlaybackPause,                36},
+	{IT_CALL   | IT_STRING, "M_PFFWD",  "Fast-Forward (])",  M_PlaybackFastForward,           52},
+	{IT_CALL   | IT_STRING, "M_PSTEPB", "Backup Frame ([)",  M_PlaybackRewind,                20},
+	{IT_CALL   | IT_STRING, "M_PRESUM", "Resume",        M_PlaybackPause,                     36},
+	{IT_CALL   | IT_STRING, "M_PFADV",  "Advance Frame (])", M_PlaybackAdvance,               52},
 
-	{IT_ARROWS | IT_STRING, "M_PVIEWS", "View Count (- and =)",  M_PlaybackSetViews, 72},
-	{IT_ARROWS | IT_STRING, "M_PNVIEW", "Viewpoint (1)",   M_PlaybackAdjustView, 88},
-	{IT_ARROWS | IT_STRING, "M_PNVIEW", "Viewpoint 2 (2)", M_PlaybackAdjustView, 104},
-	{IT_ARROWS | IT_STRING, "M_PNVIEW", "Viewpoint 3 (3)", M_PlaybackAdjustView, 120},
-	{IT_ARROWS | IT_STRING, "M_PNVIEW", "Viewpoint 4 (4)", M_PlaybackAdjustView, 136},
+	{IT_ARROWS | IT_STRING, "M_PVIEWS", "View Count (- and =)",  M_PlaybackSetViews,          72},
+	{IT_ARROWS | IT_STRING, "M_PNVIEW", "Viewpoint (1)",   M_PlaybackAdjustView,              88},
+	{IT_ARROWS | IT_STRING, "M_PNVIEW", "Viewpoint 2 (2)", M_PlaybackAdjustView,             104},
+	{IT_ARROWS | IT_STRING, "M_PNVIEW", "Viewpoint 3 (3)", M_PlaybackAdjustView,             120},
+	{IT_ARROWS | IT_STRING, "M_PNVIEW", "Viewpoint 4 (4)", M_PlaybackAdjustView,             136},
 
 	{IT_CALL   | IT_STRING, "M_PVIEWS", "Toggle Free Camera (')",	M_PlaybackToggleFreecam, 156},
-	{IT_CALL   | IT_STRING, "M_PEXIT",  "Stop Playback",   M_PlaybackQuit, 172},
+	{IT_CALL   | IT_STRING, "M_PEXIT",  "Stop Playback",   M_PlaybackQuit,                   172},
 };
 typedef enum
 {
@@ -702,8 +702,8 @@ typedef enum
 // ---------------------
 static menuitem_t MPauseMenu[] =
 {
-	{IT_STRING | IT_CALL,     NULL, "Addons...",          M_Addons,                8},
-	{IT_STRING | IT_CALL,     NULL, "Add local skins...", M_LocalSkins,            16},
+	{IT_STRING | IT_CALL,     NULL, "Addons...",          M_Addons,               8},
+	{IT_STRING | IT_CALL,     NULL, "Add local skins...", M_LocalSkins,           16},
 	{IT_STRING | IT_SUBMENU,  NULL, "Scramble Teams...", &MISC_ScrambleTeamDef,  24},
 	{IT_STRING | IT_CALL,     NULL, "Switch Map..."    , M_MapChange,            32},
 
@@ -766,7 +766,7 @@ static menuitem_t SPauseMenu[] =
 	// Pandora's Box will be shifted up if both options are available
 	{IT_CALL | IT_STRING,    NULL, "Pandora's Box...",     M_PandorasBox,         16},
 	{IT_CALL | IT_STRING,    NULL, "Medal Hints...",       M_EmblemHints,         24},
-	//{IT_CALL | IT_STRING,    NULL, "Level Select...",      M_LoadGameLevelSelect, 32},
+	//{IT_CALL | IT_STRING,    NULL, "Level Select...",    M_LoadGameLevelSelect, 32},
 
 	{IT_CALL | IT_STRING,    NULL, "Continue",             M_SelectableClearMenus,48},
 	{IT_CALL | IT_STRING,    NULL, "Retry",                M_Retry,               56},
@@ -1034,13 +1034,13 @@ menuitem_t PlayerMenu[MAXSKINS];
 static menuitem_t MP_MainMenu[] =
 {
 	{IT_HEADER, NULL, "Players", NULL, 0},
-	{IT_STRING|IT_CVAR,      NULL, "Number of local players",     &cv_splitplayers, 10},
+	{IT_STRING|IT_CVAR,      NULL, "Number of local players",     &cv_splitplayers,            10},
 
-	{IT_STRING|IT_KEYHANDLER,NULL, "Player setup...",     M_SetupMultiHandler,18},
+	{IT_STRING|IT_KEYHANDLER,NULL, "Player setup...",     M_SetupMultiHandler,                 18},
 
 	{IT_HEADER, NULL, "Host a game", NULL, 100-24},
 #ifndef NONET
-	{IT_STRING|IT_CALL,       NULL, "Internet/LAN...",           M_PreStartServerMenu,        110-24},
+	{IT_STRING|IT_CALL,       NULL, "Internet/LAN...",           M_PreStartServerMenu,     110-24},
 #else
 	{IT_GRAYEDOUT,            NULL, "Internet/LAN...",           NULL,                     110-24},
 #endif
@@ -1049,11 +1049,11 @@ static menuitem_t MP_MainMenu[] =
 	{IT_HEADER, NULL, "Join a game", NULL, 132-24},
 #ifndef NONET
 #ifndef MASTERSERVER
-	{IT_GRAYEDOUT,       NULL, "Internet server browser...",NULL,   142-24},
+	{IT_GRAYEDOUT,       NULL, "Internet server browser...",NULL,                          142-24},
 #else
-	{IT_STRING|IT_CALL,       NULL, "Internet server browser...",M_PreConnectMenu,   142-24},
+	{IT_STRING|IT_CALL,       NULL, "Internet server browser...",M_PreConnectMenu,         142-24},
 #endif
-	{IT_STRING|IT_CALL, NULL, "Join last server",     M_ConnectLastServer,        150-24},
+	{IT_STRING|IT_CALL, NULL, "Join last server",     M_ConnectLastServer,                 150-24},
 	{IT_STRING|IT_KEYHANDLER, NULL, "Specify IPv4 address:",     M_HandleConnectIP,        158-24},
 #else
 	{IT_GRAYEDOUT,            NULL, "Internet server browser...",NULL,                     142-24},
@@ -1149,7 +1149,7 @@ static menuitem_t OP_MainMenu[] =
 
 	{IT_SUBMENU|IT_STRING,		NULL, "Saturn Options...",		&OP_SaturnDef,				135},
 
-	{IT_SUBMENU|IT_STRING,		NULL, "Bird...",					&OP_BirdDef,				145},
+	{IT_SUBMENU|IT_STRING,		NULL, "Bird...",				&OP_BirdDef,				145},
 	{IT_CALL|IT_STRING,			NULL, "Local Skin Options...",	M_LocalSkinMenu,			155},
 };
 
@@ -1158,13 +1158,13 @@ static menuitem_t OP_ControlsMenu[] =
 	{IT_CALL | IT_STRING, NULL, "Player 1 Controls...", M_Setup1PControlsMenu,  10},
 	{IT_CALL | IT_STRING, NULL, "Player 2 Controls...", M_Setup2PControlsMenu,  20},
 
-	{IT_CALL | IT_STRING, NULL, "Player 3 Controls...", &M_Setup3PControlsMenu,  30},
-	{IT_CALL | IT_STRING, NULL, "Player 4 Controls...", &M_Setup4PControlsMenu,  40},
+	{IT_CALL | IT_STRING, NULL, "Player 3 Controls...", &M_Setup3PControlsMenu, 30},
+	{IT_CALL | IT_STRING, NULL, "Player 4 Controls...", &M_Setup4PControlsMenu, 40},
 
-	{IT_SUBMENU | IT_STRING, NULL, "Mouse Options...", &OP_MouseOptionsDef,  60},
+	{IT_SUBMENU | IT_STRING, NULL, "Mouse Options...", &OP_MouseOptionsDef,     60},
 
-	{IT_STRING | IT_CVAR, NULL, "Controls per key",    &cv_controlperkey, 80},
-	{IT_STRING | IT_CVAR, NULL, "Digital turn easing", &cv_turnsmooth, 90},
+	{IT_STRING | IT_CVAR, NULL, "Controls per key",    &cv_controlperkey,       80},
+	{IT_STRING | IT_CVAR, NULL, "Digital turn easing", &cv_turnsmooth,          90},
 };
 
 static const char* OP_ControlsTooltips[] =
@@ -1196,7 +1196,7 @@ static menuitem_t OP_AllControlsMenu[] =
 	{IT_CONTROL, NULL, "Aim Backward",          M_ChangeControl, gc_aimbackward},
 	{IT_CONTROL, NULL, "Look Backward",         M_ChangeControl, gc_lookback   },
 
-	{IT_HEADER, NULL, "Miscelleanous Controls", NULL, 0},
+	{IT_HEADER, NULL, "Miscellaneous Controls", NULL, 0},
 	{IT_SPACE, NULL, NULL, NULL, 0},
 	{IT_CONTROL, NULL, "Chat",                  M_ChangeControl, gc_talkkey    },
 	//{IT_CONTROL, NULL, "Team Chat",           M_ChangeControl, gc_teamkey    },
@@ -1217,6 +1217,8 @@ static menuitem_t OP_AllControlsMenu[] =
 	{IT_CONTROL, NULL, "Sink",                  M_ChangeControl, gc_camsink    },
 	{IT_CONTROL, NULL, "Change Viewpoint",      M_ChangeControl, gc_viewpoint  },
 	{IT_CONTROL, NULL, "Reset Camera",          M_ChangeControl, gc_camreset   },
+	{IT_CONTROL, NULL, "Strafe Left",           M_ChangeControl, gc_strafeleft },
+	{IT_CONTROL, NULL, "Strafe Right",          M_ChangeControl, gc_straferight},
 	//{IT_CONTROL, NULL, "Toggle First-Person", M_ChangeControl, gc_camtoggle  },
 
 	{IT_HEADER, NULL, "Spectator Controls", NULL, 0},
@@ -1233,90 +1235,126 @@ static menuitem_t OP_AllControlsMenu[] =
 
 static menuitem_t OP_Joystick1Menu[] =
 {
-	{IT_STRING | IT_CALL,  NULL, "Select Gamepad..."  , M_Setup1PJoystickMenu, 10},
-	{IT_STRING | IT_CVAR,  NULL, "Aim Forward/Back"   , &cv_aimaxis[0]          , 20},
-	{IT_STRING | IT_CVAR,  NULL, "Turn Left/Right"    , &cv_turnaxis[0]         , 25},
-	{IT_STRING | IT_CVAR,  NULL, "Accelerate"         , &cv_moveaxis[0]         , 30},
-	{IT_STRING | IT_CVAR,  NULL, "Brake"              , &cv_brakeaxis[0]        , 35},
-	{IT_STRING | IT_CVAR,  NULL, "Drift"              , &cv_driftaxis[0]        , 40},
-	{IT_STRING | IT_CVAR,  NULL, "Use Item"           , &cv_fireaxis[0]         , 45},
-	{IT_STRING | IT_CVAR,  NULL, "Look Backward"      , &cv_lookbackaxis[0]     , 50},
-	{IT_STRING | IT_CVAR,  NULL, "Spec. Look Up/Down" , &cv_lookaxis[0]         , 55},
-	{IT_STRING | IT_CVAR,  NULL, "Custom Button 1"    , &cv_custom1axis[0]      , 60},
-	{IT_STRING | IT_CVAR,  NULL, "Custom Button 2"    , &cv_custom2axis[0]      , 65},
-	{IT_STRING | IT_CVAR,  NULL, "Custom Button 3"    , &cv_custom3axis[0]      , 70},
-	{IT_STRING | IT_CVAR,  NULL, "X deadzone"         , &cv_xdeadzone[0]        , 75},
-	{IT_STRING | IT_CVAR,  NULL, "Y deadzone"         , &cv_ydeadzone[0]        , 80},
+	{IT_STRING | IT_CALL,  NULL, "Select Gamepad..."  , M_Setup1PJoystickMenu   , 0},
 
-	{IT_STRING | IT_CVAR,  NULL, "Controller Rumble"  , &cv_rumble[0]        , 90},
-	{IT_STRING | IT_CVAR,  NULL, "Set LED to skin color"  , &cv_gamepadled[0]    , 95},
-	{IT_STRING | IT_CVAR,  NULL, "Flash LED on powerups"  , &cv_ledpowerup[0]    , 100},
+	{IT_HEADER, NULL, "Gameplay Controls", NULL, 7},
+	{IT_STRING | IT_CVAR,  NULL, "Aim Forward/Back"   , &cv_aimaxis[0]          , 15},
+	{IT_STRING | IT_CVAR,  NULL, "Turn Left/Right"    , &cv_turnaxis[0]         , 20},
+	{IT_STRING | IT_CVAR,  NULL, "Accelerate"         , &cv_moveaxis[0]         , 25},
+	{IT_STRING | IT_CVAR,  NULL, "Brake"              , &cv_brakeaxis[0]        , 30},
+	{IT_STRING | IT_CVAR,  NULL, "Drift"              , &cv_driftaxis[0]        , 35},
+	{IT_STRING | IT_CVAR,  NULL, "Use Item"           , &cv_fireaxis[0]         , 40},
+	{IT_STRING | IT_CVAR,  NULL, "Look Backward"      , &cv_lookbackaxis[0]     , 45},
+	{IT_STRING | IT_CVAR,  NULL, "Custom Button 1"    , &cv_custom1axis[0]      , 50},
+	{IT_STRING | IT_CVAR,  NULL, "Custom Button 2"    , &cv_custom2axis[0]      , 55},
+	{IT_STRING | IT_CVAR,  NULL, "Custom Button 3"    , &cv_custom3axis[0]      , 60},
+
+	{IT_HEADER, NULL, "Camera Controls", NULL, 67},
+	{IT_STRING | IT_CVAR,  NULL, "Look Up/Down"       , &cv_lookaxis[0]         , 75},
+	{IT_STRING | IT_CVAR,  NULL, "Turn Left/Right"    , &cv_camturnaxis[0]      , 80},
+	{IT_STRING | IT_CVAR,  NULL, "Strafe Left/Right"  , &cv_camstrafeaxis[0]    , 85},
+
+	{IT_HEADER, NULL, "Deadzones", NULL, 92},
+	{IT_STRING | IT_CVAR,  NULL, "X deadzone"         , &cv_xdeadzone[0]        , 100},
+	{IT_STRING | IT_CVAR,  NULL, "Y deadzone"         , &cv_ydeadzone[0]        , 105},
+
+	{IT_HEADER, NULL, "Miscellaneous", NULL, 112},
+	{IT_STRING | IT_CVAR,  NULL, "Controller Rumble"      , &cv_rumble[0]       , 120},
+	{IT_STRING | IT_CVAR,  NULL, "Set LED to skin color"  , &cv_gamepadled[0]   , 125},
+	{IT_STRING | IT_CVAR,  NULL, "Flash LED on powerups"  , &cv_ledpowerup[0]   , 130},
 };
 
 static menuitem_t OP_Joystick2Menu[] =
 {
-	{IT_STRING | IT_CALL,  NULL, "Select Gamepad..."  , M_Setup2PJoystickMenu, 10},
-	{IT_STRING | IT_CVAR,  NULL, "Aim Forward/Back"   , &cv_aimaxis[1]         , 20},
-	{IT_STRING | IT_CVAR,  NULL, "Turn Left/Right"    , &cv_turnaxis[1]        , 25},
-	{IT_STRING | IT_CVAR,  NULL, "Accelerate"         , &cv_moveaxis[1]        , 30},
-	{IT_STRING | IT_CVAR,  NULL, "Brake"              , &cv_brakeaxis[1]       , 35},
-	{IT_STRING | IT_CVAR,  NULL, "Drift"              , &cv_driftaxis[1]       , 40},
-	{IT_STRING | IT_CVAR,  NULL, "Use Item"           , &cv_fireaxis[1]        , 45},
-	{IT_STRING | IT_CVAR,  NULL, "Look Backward"      , &cv_lookbackaxis[1]    , 50},
-	{IT_STRING | IT_CVAR,  NULL, "Spec. Look Up/Down" , &cv_lookaxis[1]        , 55},
-	{IT_STRING | IT_CVAR,  NULL, "Custom Button 1"    , &cv_custom1axis[1]     , 60},
-	{IT_STRING | IT_CVAR,  NULL, "Custom Button 2"    , &cv_custom2axis[1]     , 65},
-	{IT_STRING | IT_CVAR,  NULL, "Custom Button 3"    , &cv_custom3axis[1]     , 70},
-	{IT_STRING | IT_CVAR,  NULL, "X deadzone"         , &cv_xdeadzone[1]       , 75},
-	{IT_STRING | IT_CVAR,  NULL, "Y deadzone"         , &cv_ydeadzone[1]       , 80},
+	{IT_STRING | IT_CALL,  NULL, "Select Gamepad..."  , M_Setup2PJoystickMenu   , 10},
 
-	{IT_STRING | IT_CVAR,  NULL, "Controller Rumble"  , &cv_rumble[1]        , 90},
-	{IT_STRING | IT_CVAR,  NULL, "Set LED to skin color"  , &cv_gamepadled[1]    , 95},
-	{IT_STRING | IT_CVAR,  NULL, "Flash LED on powerups"  , &cv_ledpowerup[1]    , 100},
+	{IT_HEADER, NULL, "Gameplay Controls", NULL, 7},
+	{IT_STRING | IT_CVAR,  NULL, "Aim Forward/Back"   , &cv_aimaxis[1]          , 15},
+	{IT_STRING | IT_CVAR,  NULL, "Turn Left/Right"    , &cv_turnaxis[1]         , 20},
+	{IT_STRING | IT_CVAR,  NULL, "Accelerate"         , &cv_moveaxis[1]         , 25},
+	{IT_STRING | IT_CVAR,  NULL, "Brake"              , &cv_brakeaxis[1]        , 30},
+	{IT_STRING | IT_CVAR,  NULL, "Drift"              , &cv_driftaxis[1]        , 35},
+	{IT_STRING | IT_CVAR,  NULL, "Use Item"           , &cv_fireaxis[1]         , 40},
+	{IT_STRING | IT_CVAR,  NULL, "Look Backward"      , &cv_lookbackaxis[1]     , 45},
+	{IT_STRING | IT_CVAR,  NULL, "Custom Button 1"    , &cv_custom1axis[1]      , 50},
+	{IT_STRING | IT_CVAR,  NULL, "Custom Button 2"    , &cv_custom2axis[1]      , 55},
+	{IT_STRING | IT_CVAR,  NULL, "Custom Button 3"    , &cv_custom3axis[1]      , 60},
+
+	{IT_HEADER, NULL, "Camera Controls", NULL, 67},
+	{IT_STRING | IT_CVAR,  NULL, "Look Up/Down"       , &cv_lookaxis[1]         , 75},
+	{IT_STRING | IT_CVAR,  NULL, "Turn Left/Right"    , &cv_camturnaxis[1]      , 80},
+	{IT_STRING | IT_CVAR,  NULL, "Strafe Left/Right"  , &cv_camstrafeaxis[1]    , 85},
+
+	{IT_HEADER, NULL, "Deadzones", NULL, 92},
+	{IT_STRING | IT_CVAR,  NULL, "X deadzone"         , &cv_xdeadzone[1]        , 100},
+	{IT_STRING | IT_CVAR,  NULL, "Y deadzone"         , &cv_ydeadzone[1]        , 105},
+
+	{IT_HEADER, NULL, "Miscellaneous", NULL, 112},
+	{IT_STRING | IT_CVAR,  NULL, "Controller Rumble"      , &cv_rumble[1]       , 120},
+	{IT_STRING | IT_CVAR,  NULL, "Set LED to skin color"  , &cv_gamepadled[1]   , 125},
+	{IT_STRING | IT_CVAR,  NULL, "Flash LED on powerups"  , &cv_ledpowerup[1]   , 130},
 };
 
 static menuitem_t OP_Joystick3Menu[] =
 {
-	{IT_STRING | IT_CALL,  NULL, "Select Gamepad..."  , M_Setup3PJoystickMenu, 10},
-	{IT_STRING | IT_CVAR,  NULL, "Aim Forward/Back"   , &cv_aimaxis[2]         , 20},
-	{IT_STRING | IT_CVAR,  NULL, "Turn Left/Right"    , &cv_turnaxis[2]        , 25},
-	{IT_STRING | IT_CVAR,  NULL, "Accelerate"         , &cv_moveaxis[2]        , 30},
-	{IT_STRING | IT_CVAR,  NULL, "Brake"              , &cv_brakeaxis[2]       , 35},
-	{IT_STRING | IT_CVAR,  NULL, "Drift"              , &cv_driftaxis[2]       , 40},
-	{IT_STRING | IT_CVAR,  NULL, "Use Item"           , &cv_fireaxis[2]        , 45},
-	{IT_STRING | IT_CVAR,  NULL, "Look Backward"      , &cv_lookbackaxis[2]    , 50},
-	{IT_STRING | IT_CVAR,  NULL, "Spec. Look Up/Down" , &cv_lookaxis[2]        , 55},
-	{IT_STRING | IT_CVAR,  NULL, "Custom Button 1"    , &cv_custom1axis[2]     , 60},
-	{IT_STRING | IT_CVAR,  NULL, "Custom Button 2"    , &cv_custom2axis[2]     , 65},
-	{IT_STRING | IT_CVAR,  NULL, "Custom Button 3"    , &cv_custom3axis[2]     , 70},
-	{IT_STRING | IT_CVAR,  NULL, "X deadzone"         , &cv_xdeadzone[2]       , 75},
-	{IT_STRING | IT_CVAR,  NULL, "Y deadzone"         , &cv_ydeadzone[2]       , 80},
+	{IT_STRING | IT_CALL,  NULL, "Select Gamepad..."  , M_Setup3PJoystickMenu   , 10},
 
-	{IT_STRING | IT_CVAR,  NULL, "Controller Rumble"  , &cv_rumble[2]        , 90},
-	{IT_STRING | IT_CVAR,  NULL, "Set LED to skin color"  , &cv_gamepadled[2]    , 95},
-	{IT_STRING | IT_CVAR,  NULL, "Flash LED on powerups"  , &cv_ledpowerup[2]    , 100},
+	{IT_HEADER, NULL, "Gameplay Controls", NULL, 7},
+	{IT_STRING | IT_CVAR,  NULL, "Aim Forward/Back"   , &cv_aimaxis[2]          , 15},
+	{IT_STRING | IT_CVAR,  NULL, "Turn Left/Right"    , &cv_turnaxis[2]         , 20},
+	{IT_STRING | IT_CVAR,  NULL, "Accelerate"         , &cv_moveaxis[2]         , 25},
+	{IT_STRING | IT_CVAR,  NULL, "Brake"              , &cv_brakeaxis[2]        , 30},
+	{IT_STRING | IT_CVAR,  NULL, "Drift"              , &cv_driftaxis[2]        , 35},
+	{IT_STRING | IT_CVAR,  NULL, "Use Item"           , &cv_fireaxis[2]         , 40},
+	{IT_STRING | IT_CVAR,  NULL, "Look Backward"      , &cv_lookbackaxis[2]     , 45},
+	{IT_STRING | IT_CVAR,  NULL, "Custom Button 1"    , &cv_custom1axis[2]      , 50},
+	{IT_STRING | IT_CVAR,  NULL, "Custom Button 2"    , &cv_custom2axis[2]      , 55},
+	{IT_STRING | IT_CVAR,  NULL, "Custom Button 3"    , &cv_custom3axis[2]      , 60},
+
+	{IT_HEADER, NULL, "Camera Controls", NULL, 67},
+	{IT_STRING | IT_CVAR,  NULL, "Look Up/Down"       , &cv_lookaxis[2]         , 75},
+	{IT_STRING | IT_CVAR,  NULL, "Turn Left/Right"    , &cv_camturnaxis[2]      , 80},
+	{IT_STRING | IT_CVAR,  NULL, "Strafe Left/Right"  , &cv_camstrafeaxis[2]    , 85},
+
+	{IT_HEADER, NULL, "Deadzones", NULL, 92},
+	{IT_STRING | IT_CVAR,  NULL, "X deadzone"         , &cv_xdeadzone[2]        , 100},
+	{IT_STRING | IT_CVAR,  NULL, "Y deadzone"         , &cv_ydeadzone[2]        , 105},
+
+	{IT_HEADER, NULL, "Miscellaneous", NULL, 112},
+	{IT_STRING | IT_CVAR,  NULL, "Controller Rumble"      , &cv_rumble[2]       , 120},
+	{IT_STRING | IT_CVAR,  NULL, "Set LED to skin color"  , &cv_gamepadled[2]   , 125},
+	{IT_STRING | IT_CVAR,  NULL, "Flash LED on powerups"  , &cv_ledpowerup[2]   , 130},
 };
 
 static menuitem_t OP_Joystick4Menu[] =
 {
-	{IT_STRING | IT_CALL,  NULL, "Select Gamepad..."  , M_Setup4PJoystickMenu, 10},
-	{IT_STRING | IT_CVAR,  NULL, "Aim Forward/Back"   , &cv_aimaxis[3]         , 20},
-	{IT_STRING | IT_CVAR,  NULL, "Turn Left/Right"    , &cv_turnaxis[3]        , 25},
-	{IT_STRING | IT_CVAR,  NULL, "Accelerate"         , &cv_moveaxis[3]        , 30},
-	{IT_STRING | IT_CVAR,  NULL, "Brake"              , &cv_brakeaxis[3]       , 35},
-	{IT_STRING | IT_CVAR,  NULL, "Drift"              , &cv_driftaxis[3]       , 40},
-	{IT_STRING | IT_CVAR,  NULL, "Use Item"           , &cv_fireaxis[3]        , 45},
-	{IT_STRING | IT_CVAR,  NULL, "Look Backward"      , &cv_lookbackaxis[3]    , 50},
-	{IT_STRING | IT_CVAR,  NULL, "Spec. Look Up/Down" , &cv_lookaxis[3]        , 55},
-	{IT_STRING | IT_CVAR,  NULL, "Custom Button 1"    , &cv_custom1axis[3]     , 60},
-	{IT_STRING | IT_CVAR,  NULL, "Custom Button 2"    , &cv_custom2axis[3]     , 65},
-	{IT_STRING | IT_CVAR,  NULL, "Custom Button 3"    , &cv_custom3axis[3]     , 70},
-	{IT_STRING | IT_CVAR,  NULL, "X deadzone"         , &cv_xdeadzone[3]       , 75},
-	{IT_STRING | IT_CVAR,  NULL, "Y deadzone"         , &cv_ydeadzone[3]       , 80},
+	{IT_STRING | IT_CALL,  NULL, "Select Gamepad..."  , M_Setup4PJoystickMenu   , 10},
 
-	{IT_STRING | IT_CVAR,  NULL, "Controller Rumble"  , &cv_rumble[3]        , 90},
-	{IT_STRING | IT_CVAR,  NULL, "Set LED to skin color"  , &cv_gamepadled[3]    , 95},
-	{IT_STRING | IT_CVAR,  NULL, "Flash LED on powerups"  , &cv_ledpowerup[3]    , 100},
+	{IT_HEADER, NULL, "Gameplay Controls", NULL, 7},
+	{IT_STRING | IT_CVAR,  NULL, "Aim Forward/Back"   , &cv_aimaxis[3]          , 15},
+	{IT_STRING | IT_CVAR,  NULL, "Turn Left/Right"    , &cv_turnaxis[3]         , 20},
+	{IT_STRING | IT_CVAR,  NULL, "Accelerate"         , &cv_moveaxis[3]         , 25},
+	{IT_STRING | IT_CVAR,  NULL, "Brake"              , &cv_brakeaxis[3]        , 30},
+	{IT_STRING | IT_CVAR,  NULL, "Drift"              , &cv_driftaxis[3]        , 35},
+	{IT_STRING | IT_CVAR,  NULL, "Use Item"           , &cv_fireaxis[3]         , 40},
+	{IT_STRING | IT_CVAR,  NULL, "Look Backward"      , &cv_lookbackaxis[3]     , 45},
+	{IT_STRING | IT_CVAR,  NULL, "Custom Button 1"    , &cv_custom1axis[3]      , 50},
+	{IT_STRING | IT_CVAR,  NULL, "Custom Button 2"    , &cv_custom2axis[3]      , 55},
+	{IT_STRING | IT_CVAR,  NULL, "Custom Button 3"    , &cv_custom3axis[3]      , 60},
+
+	{IT_HEADER, NULL, "Camera Controls", NULL, 67},
+	{IT_STRING | IT_CVAR,  NULL, "Look Up/Down"       , &cv_lookaxis[3]         , 75},
+	{IT_STRING | IT_CVAR,  NULL, "Turn Left/Right"    , &cv_camturnaxis[3]      , 80},
+	{IT_STRING | IT_CVAR,  NULL, "Strafe Left/Right"  , &cv_camstrafeaxis[3]    , 85},
+
+	{IT_HEADER, NULL, "Deadzones", NULL, 92},
+	{IT_STRING | IT_CVAR,  NULL, "X deadzone"         , &cv_xdeadzone[3]        , 100},
+	{IT_STRING | IT_CVAR,  NULL, "Y deadzone"         , &cv_ydeadzone[3]        , 105},
+
+	{IT_HEADER, NULL, "Miscellaneous", NULL, 112},
+	{IT_STRING | IT_CVAR,  NULL, "Controller Rumble"      , &cv_rumble[3]       , 120},
+	{IT_STRING | IT_CVAR,  NULL, "Set LED to skin color"  , &cv_gamepadled[3]   , 125},
+	{IT_STRING | IT_CVAR,  NULL, "Flash LED on powerups"  , &cv_ledpowerup[3]   , 130},
 };
 
 static menuitem_t OP_JoystickSetMenu[] =
@@ -12067,7 +12105,7 @@ static void M_Setup1PControlsMenu(INT32 choice)
 	OP_AllControlsMenu[19].status = IT_CONTROL; // GIF
 	OP_AllControlsMenu[20].status = IT_CONTROL; // System Menu
 	OP_AllControlsMenu[21].status = IT_CONTROL; // Console
-	OP_AllControlsMenu[35].status = IT_CONTROL; // Director
+	OP_AllControlsMenu[37].status = IT_CONTROL; // Director
 
 	M_SetupNextMenu(&OP_AllControlsDef);
 }
@@ -12090,7 +12128,7 @@ static void M_Setup2PControlsMenu(INT32 choice)
 	OP_AllControlsMenu[19].status = IT_GRAYEDOUT2; // GIF
 	OP_AllControlsMenu[20].status = IT_GRAYEDOUT2; // System Menu
 	OP_AllControlsMenu[21].status = IT_GRAYEDOUT2; // Console
-	OP_AllControlsMenu[35].status = IT_GRAYEDOUT2; // Director
+	OP_AllControlsMenu[37].status = IT_GRAYEDOUT2; // Director
 
 	M_SetupNextMenu(&OP_AllControlsDef);
 }
@@ -12113,7 +12151,7 @@ static void M_Setup3PControlsMenu(INT32 choice)
 	OP_AllControlsMenu[19].status = IT_GRAYEDOUT2; // GIF
 	OP_AllControlsMenu[20].status = IT_GRAYEDOUT2; // System Menu
 	OP_AllControlsMenu[21].status = IT_GRAYEDOUT2; // Console
-	OP_AllControlsMenu[35].status = IT_GRAYEDOUT2; // Director
+	OP_AllControlsMenu[37].status = IT_GRAYEDOUT2; // Director
 
 	M_SetupNextMenu(&OP_AllControlsDef);
 }
@@ -12136,7 +12174,7 @@ static void M_Setup4PControlsMenu(INT32 choice)
 	OP_AllControlsMenu[19].status = IT_GRAYEDOUT2; // GIF
 	OP_AllControlsMenu[20].status = IT_GRAYEDOUT2; // System Menu
 	OP_AllControlsMenu[21].status = IT_GRAYEDOUT2; // Console
-	OP_AllControlsMenu[35].status = IT_GRAYEDOUT2; // Director
+	OP_AllControlsMenu[37].status = IT_GRAYEDOUT2; // Director
 
 	M_SetupNextMenu(&OP_AllControlsDef);
 }
@@ -12392,55 +12430,26 @@ static void M_ResetControlsResponse(INT32 ch)
 	G_Controldefault(setupcontrolplayer);
 
 	// Setup gamepad option defaults (yucky)
-	switch (setupcontrolplayer)
+	for (UINT8 j = 0; j < MAXSPLITSCREENPLAYERS; j++)
 	{
-		case 4:
-			CV_StealthSet(&cv_usejoystick[3],	cv_usejoystick[3].defaultvalue);
-			CV_StealthSet(&cv_turnaxis[3],		cv_turnaxis[3].defaultvalue);
-			CV_StealthSet(&cv_moveaxis[3],		cv_moveaxis[3].defaultvalue);
-			CV_StealthSet(&cv_brakeaxis[3],		cv_brakeaxis[3].defaultvalue);
-			CV_StealthSet(&cv_aimaxis[3],		cv_aimaxis[3].defaultvalue);
-			CV_StealthSet(&cv_lookaxis[3],		cv_lookaxis[3].defaultvalue);
-			CV_StealthSet(&cv_fireaxis[3],		cv_fireaxis[3].defaultvalue);
-			CV_StealthSet(&cv_driftaxis[3],		cv_driftaxis[3].defaultvalue);
-			CV_StealthSet(&cv_lookbackaxis[3],	cv_lookbackaxis[3].defaultvalue);
-			break;
-		case 3:
-			CV_StealthSet(&cv_usejoystick[2],	cv_usejoystick[2].defaultvalue);
-			CV_StealthSet(&cv_turnaxis[2],		cv_turnaxis[2].defaultvalue);
-			CV_StealthSet(&cv_moveaxis[2],		cv_moveaxis[2].defaultvalue);
-			CV_StealthSet(&cv_brakeaxis[2],		cv_brakeaxis[2].defaultvalue);
-			CV_StealthSet(&cv_aimaxis[2],		cv_aimaxis[2].defaultvalue);
-			CV_StealthSet(&cv_lookaxis[2],		cv_lookaxis[2].defaultvalue);
-			CV_StealthSet(&cv_fireaxis[2],		cv_fireaxis[2].defaultvalue);
-			CV_StealthSet(&cv_driftaxis[2],		cv_driftaxis[2].defaultvalue);
-			CV_StealthSet(&cv_lookbackaxis[2],	cv_lookbackaxis[2].defaultvalue);
-			break;
-		case 2:
-			CV_StealthSet(&cv_usejoystick[1],	cv_usejoystick[1].defaultvalue);
-			CV_StealthSet(&cv_turnaxis[1],		cv_turnaxis[1].defaultvalue);
-			CV_StealthSet(&cv_moveaxis[1],		cv_moveaxis[1].defaultvalue);
-			CV_StealthSet(&cv_brakeaxis[1],		cv_brakeaxis[1].defaultvalue);
-			CV_StealthSet(&cv_aimaxis[1],		cv_aimaxis[1].defaultvalue);
-			CV_StealthSet(&cv_lookaxis[1],		cv_lookaxis[1].defaultvalue);
-			CV_StealthSet(&cv_fireaxis[1],		cv_fireaxis[1].defaultvalue);
-			CV_StealthSet(&cv_driftaxis[1],		cv_driftaxis[1].defaultvalue);
-			CV_StealthSet(&cv_lookbackaxis[1],	cv_lookbackaxis[1].defaultvalue);
-			break;
-		case 1:
-		default:
-			CV_StealthSet(&cv_usejoystick[0],	cv_usejoystick[0].defaultvalue);
-			CV_StealthSet(&cv_turnaxis[0],		cv_turnaxis[0].defaultvalue);
-			CV_StealthSet(&cv_moveaxis[0],		cv_moveaxis[0].defaultvalue);
-			CV_StealthSet(&cv_brakeaxis[0],		cv_brakeaxis[0].defaultvalue);
-			CV_StealthSet(&cv_aimaxis[0],		cv_aimaxis[0].defaultvalue);
-			CV_StealthSet(&cv_lookaxis[0],		cv_lookaxis[0].defaultvalue);
-			CV_StealthSet(&cv_fireaxis[0],		cv_fireaxis[0].defaultvalue);
-			CV_StealthSet(&cv_driftaxis[0],		cv_driftaxis[0].defaultvalue);
-			CV_StealthSet(&cv_lookbackaxis[0],	cv_lookbackaxis[0].defaultvalue);
-			break;
-	}
+		if (setupcontrolplayer != j)
+			continue;
 
+		CV_StealthSet(&cv_usejoystick[j],	cv_usejoystick[j].defaultvalue);
+		CV_StealthSet(&cv_turnaxis[j],		cv_turnaxis[j].defaultvalue);
+		CV_StealthSet(&cv_camturnaxis[j],	cv_camturnaxis[j].defaultvalue);
+		CV_StealthSet(&cv_camstrafeaxis[j],	cv_camstrafeaxis[j].defaultvalue);
+		CV_StealthSet(&cv_moveaxis[j],		cv_moveaxis[j].defaultvalue);
+		CV_StealthSet(&cv_brakeaxis[j],		cv_brakeaxis[j].defaultvalue);
+		CV_StealthSet(&cv_aimaxis[j],		cv_aimaxis[j].defaultvalue);
+		CV_StealthSet(&cv_lookaxis[j],		cv_lookaxis[j].defaultvalue);
+		CV_StealthSet(&cv_fireaxis[j],		cv_fireaxis[j].defaultvalue);
+		CV_StealthSet(&cv_driftaxis[j],		cv_driftaxis[j].defaultvalue);
+		CV_StealthSet(&cv_lookbackaxis[j],	cv_lookbackaxis[j].defaultvalue);
+		CV_StealthSet(&cv_custom1axis[j],	cv_custom1axis[j].defaultvalue);
+		CV_StealthSet(&cv_custom2axis[j],	cv_custom2axis[j].defaultvalue);
+		CV_StealthSet(&cv_custom3axis[j],	cv_custom3axis[j].defaultvalue);
+	}
 	S_StartSound(NULL, sfx_s224);
 }
 
