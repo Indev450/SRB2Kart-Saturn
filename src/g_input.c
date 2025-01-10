@@ -905,6 +905,8 @@ static const char *gamecontrolname[num_gamecontrols] =
 	"freecam",
 	"camfloat",
 	"camsink",
+	"strafeleft",
+	"straferight",
 };
 
 #define NUMKEYNAMES (sizeof (keynames)/sizeof (keyname_t))

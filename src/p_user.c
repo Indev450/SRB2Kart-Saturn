@@ -3131,8 +3131,9 @@ fixed_t t_cam_rotate[MAXSPLITSCREENPLAYERS] = {-42, -42, -42, -42};
 #define MAXCAMERADIST 140*FRACUNIT // Max distance the camera can be in front of the player (2D mode)
 
 static fixed_t forwardmove[2] = {25<<FRACBITS>>16, 50<<FRACBITS>>16};
-static fixed_t sidemove[2] = {2<<FRACBITS>>16, 4<<FRACBITS>>16};
+//static fixed_t sidemove[2] = {2<<FRACBITS>>16, 4<<FRACBITS>>16};
 static fixed_t angleturn[3] = {KART_FULLTURN/2, KART_FULLTURN, KART_FULLTURN/4}; // + slow turn
+static fixed_t strafemove[2] = {25<<FRACBITS>>16, 50<<FRACBITS>>16}; // faster!
 
 void P_ToggleDemoCamera(UINT8 viewnum)
 {
@@ -3176,6 +3177,7 @@ static ticcmd_t *P_CameraCmd(camera_t *cam, UINT8 num)
 
 	// these ones used for multiple conditions
 	boolean turnleft, turnright, mouseaiming;
+	boolean strafeleft, straferight;
 	boolean invertmouse, usejoystick, kbl;
 	angle_t lang;
 	INT32 player_invert;
@@ -3242,18 +3244,48 @@ static ticcmd_t *P_CameraCmd(camera_t *cam, UINT8 num)
 		turnright = turnright || (axis > 0);
 		turnleft = turnleft || (axis < 0);
 	}
-	forward = side = 0;
+	forward = 0;
 
 	// let movement keys cancel each other out
 	if (turnright && !(turnleft))
 	{
 		cmd->angleturn = (INT16)(cmd->angleturn - (angleturn[1]));
-		side += sidemove[1];
+		//side += sidemove[1];
 	}
 	else if (turnleft && !(turnright))
 	{
 		cmd->angleturn = (INT16)(cmd->angleturn + (angleturn[1]));
-		side -= sidemove[1];
+		//side -= sidemove[1];
+	}
+
+	straferight = InputDown(gc_straferight, forplayer);
+	strafeleft = InputDown(gc_strafeleft, forplayer);
+
+	axis = JoyAxis(AXISSTRAFE, forplayer);
+
+	if (encoremode)
+	{
+		straferight ^= strafeleft; // swap these using three XORs
+		strafeleft ^= straferight;
+		straferight ^= strafeleft;
+		axis = -axis;
+	}
+
+	if (usejoystick && axis != 0)
+	{
+		straferight = straferight || (axis > 0);
+		strafeleft = strafeleft || (axis < 0);
+	}
+	side = 0;
+
+	// let strafe keys cancel each other out
+	if (straferight && !(strafeleft))
+	{
+		side += strafemove[1];
+	}
+	else if (strafeleft && !(straferight))
+	{
+		side -= strafemove[1];
 	}
 
 	cmd->angleturn = (INT16)(cmd->angleturn - ((mousex*(encoremode ? -1 : 1)*8)));
@@ -3468,6 +3500,17 @@ static void P_DemoCameraMovement(camera_t *cam, UINT8 num)
 
 		// this.......... doesn't actually check for floors and walls and whatnot but the function to do that is a pure mess so fuck that.
 		// besides freecam going inside walls sounds pretty cool on paper.
+	}
+
+	// cmd->strafemove -- cant really add stuff to ticcmd struct so im reusing this
+	if (cmd->sidemove != 0) // was disabled in practice anyways, since sidemove was suppressed
+	{
+		//False I fixed this shit - Nep
+		fixed_t spd = cmd->sidemove*mapobjectscale;
+
+		thrustangle = (cam->angle-ANGLE_90) >> ANGLETOFINESHIFT;
+		cam->x += FixedMul(spd, FINECOSINE(thrustangle));
+		cam->y += FixedMul(spd, FINESINE(thrustangle));
 	}
 
 	// update subsector to avoid crashes;
