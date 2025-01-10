@@ -157,9 +157,8 @@ static const udata_field_t player_fields[] = {
     FIELD(player_t, grieftime,        udatalib_getter_tic,         udatalib_setter_tic),
     FIELD(player_t, griefstrikes,     udatalib_getter_uint8,       udatalib_setter_uint8),
     FIELD(player_t, splitscreenindex, udatalib_getter_uint8,       player_splitscreenindex_noset),
-#ifdef HWRENDER
     FIELD(player_t, fovadd,           udatalib_getter_fixed,       udatalib_setter_fixed), // Mmm yeah thats definitely synch safe
-#endif
+
     // Same as player.name
 	{ "sliproll", 0, player_sliproll_getter, player_sliproll_noset },
 	{ "viewrollangle", 0, player_viewrollangle_getter, player_viewrollangle_noset },
