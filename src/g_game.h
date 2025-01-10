@@ -121,6 +121,7 @@ extern consvar_t cv_invertmouse2/*, cv_alwaysfreelook2, cv_chasefreelook2, cv_mo
 
 extern consvar_t cv_turnaxis[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_moveaxis[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_strafeaxis[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_brakeaxis[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_aimaxis[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_lookaxis[MAXSPLITSCREENPLAYERS];
@@ -191,6 +192,7 @@ typedef enum
 	AXISNONE = 0,
 	AXISTURN,
 	AXISMOVE,
+	AXISSTRAFE,
 	AXISBRAKE,
 	AXISAIM,
 	AXISLOOK,

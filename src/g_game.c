@@ -442,6 +442,13 @@ consvar_t cv_moveaxis[MAXSPLITSCREENPLAYERS] = {
 	{"joyaxis4_move", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
 };
 
+consvar_t cv_strafeaxis[MAXSPLITSCREENPLAYERS] = {
+	{"joyaxis_strafe", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyaxis2_strafe", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyaxis3_strafe", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyaxis4_strafe", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
+};
+
 consvar_t cv_brakeaxis[MAXSPLITSCREENPLAYERS] = {
 	{"joyaxis_brake", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"joyaxis2_brake", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
@@ -733,6 +740,9 @@ INT32 JoyAxis(axis_input_e axissel, UINT8 player)
 			break;
 		case AXISMOVE:
 			axisval = cv_moveaxis[player-1].value;
+			break;
+		case AXISSTRAFE:
+			axisval = cv_strafeaxis[player-1].value;
 			break;
 		case AXISBRAKE:
 			axisval = cv_brakeaxis[player-1].value;
