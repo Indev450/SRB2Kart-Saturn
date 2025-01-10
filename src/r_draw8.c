@@ -62,7 +62,7 @@ void R_DrawColumn_8(void)
 
 	register INT32 heightmask = dc_sourcelength-1;
 	npow2min = -1;
-	npow2max = dc_sourcelength;
+	npow2max = dc_sourcelength-1;
 
 	if (dc_sourcelength & heightmask)   // not a power of 2 -- killough
 	{
@@ -183,7 +183,7 @@ void R_Draw2sMultiPatchColumn_8(void)
 	register INT32 heightmask = dc_sourcelength-1;
 	register UINT8 val;
 	npow2min = -1;
-	npow2max = dc_sourcelength;
+	npow2max = dc_sourcelength-1;
 
 	if (dc_sourcelength & heightmask)   // not a power of 2 -- killough
 	{
@@ -322,7 +322,7 @@ void R_Draw2sMultiPatchTranslucentColumn_8(void)
 	register INT32 heightmask = dc_sourcelength-1;
 	register UINT8 val;
 	npow2min = -1;
-	npow2max = dc_sourcelength;
+	npow2max = dc_sourcelength-1;
 
 	if (dc_sourcelength & heightmask)   // not a power of 2 -- killough
 	{
@@ -499,9 +499,9 @@ void R_DrawTranslucentColumn_8(void)
 	register const UINT8 *source = dc_source;
 	register const UINT8 *transmap = dc_transmap;
 	register const lighttable_t *colormap = dc_colormap;
-	register INT32 heightmask = dc_sourcelength - 1;
+	register INT32 heightmask = dc_sourcelength-1;
 	npow2min = -1;
-	npow2max = dc_sourcelength;
+	npow2max = dc_sourcelength-1;
 
 	if (dc_sourcelength & heightmask)
 	{
@@ -605,9 +605,9 @@ void R_DrawTranslatedTranslucentColumn_8(void)
 
 	// Inner loop that does the actual texture mapping, e.g. a DDA-like scaling.
 	// This is as fast as it gets.
-	register INT32 heightmask = dc_sourcelength - 1;
+	register INT32 heightmask = dc_sourcelength-1;
 	npow2min = -1;
-	npow2max = dc_sourcelength;
+	npow2max = dc_sourcelength-1;
 
 	if (dc_sourcelength & heightmask)
 	{
