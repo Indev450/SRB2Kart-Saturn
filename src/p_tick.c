@@ -399,11 +399,6 @@ static void P_DeviceRumbleTick(void)
 			continue;
 		}
 
-		if (camera[i].freecam)
-		{
-			continue;
-		}
-
 		if (player->mo == NULL)
 		{
 			continue;
