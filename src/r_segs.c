@@ -277,7 +277,7 @@ static void R_Render2sidedMultiPatchColumn(column_t *column)
 	if (dc_yl <= dc_yh && dc_yh < vid.height && dc_yh > 0)
 	{
 		dc_source = (UINT8 *)column + 3;
-		dc_sourcelength = 0;
+		dc_sourcelength = column2s_length;
 
 		if (colfunc == wallcolfunc)
 			twosmultipatchfunc();
@@ -1450,7 +1450,7 @@ static void R_RenderSegLoop (void)
 				dc_texturemid = rw_midtexturemid;
 				dc_source = R_GetColumn(midtexture,texturecolumn);
 				dc_texheight = textureheight[midtexture]>>FRACBITS;
-				dc_sourcelength = 0;
+				dc_sourcelength = dc_texheight;
 				colfunc();
 
 				// dont draw anything more for this column, since
@@ -1498,7 +1498,7 @@ static void R_RenderSegLoop (void)
 						dc_texturemid = rw_toptexturemid;
 						dc_source = R_GetColumn(toptexture,texturecolumn);
 						dc_texheight = textureheight[toptexture]>>FRACBITS;
-						dc_sourcelength = 0;
+						dc_sourcelength = dc_texheight;
 						colfunc();
 						ceilingclip[rw_x] = (INT16)mid;
 					}
@@ -1536,7 +1536,7 @@ static void R_RenderSegLoop (void)
 						dc_source = R_GetColumn(bottomtexture,
 							texturecolumn);
 						dc_texheight = textureheight[bottomtexture]>>FRACBITS;
-						dc_sourcelength = 0;
+						dc_sourcelength = dc_texheight;
 						colfunc();
 						floorclip[rw_x] = (INT16)mid;
 					}
