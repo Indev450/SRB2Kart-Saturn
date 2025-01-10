@@ -181,8 +181,6 @@ extern consvar_t cv_glrenderdistance;
 extern consvar_t cv_glhorizonlines;
 extern consvar_t cv_glportals;
 
-extern consvar_t cv_glfovchange;
-
 extern consvar_t cv_glpaletterendering;
 extern consvar_t cv_glpalettedepth;
 extern consvar_t cv_glflashpal;

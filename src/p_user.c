@@ -2485,8 +2485,7 @@ static void P_MovePlayer(player_t *player)
 			return;
 	}
 
-#ifdef HWRENDER
-	if (rendermode == render_opengl && cv_glfovchange.value)
+	if (cv_fovchange.value)
 	{
 		fixed_t speed;
 		const fixed_t runnyspeed = 20*FRACUNIT;
@@ -2506,7 +2505,6 @@ static void P_MovePlayer(player_t *player)
 	}
 	else
 		player->fovadd = 0;
-#endif
 
 #ifdef FLOORSPLATS
 	if (cv_shadow.value && rendermode == render_soft)

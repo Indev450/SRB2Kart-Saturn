@@ -223,8 +223,6 @@ consvar_t cv_glrenderdistance = {"gr_renderdistance", "Max", CV_SAVE, glrenderdi
 consvar_t cv_glhorizonlines = {"gr_horizonlines", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_glportals = {"gr_portals", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_glfovchange = {"gr_fovchange", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-
 consvar_t cv_glpaletterendering = {"gr_paletteshader", "Off", CV_CALL|CV_SAVE, CV_OnOff, CV_glpaletterendering_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_glpalettedepth = {"gr_palettedepth", "16 bits", CV_SAVE|CV_CALL, glpalettedepth_cons_t, CV_glpalettedepth_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_glflashpal = {"gr_flashpal", "On", CV_CALL|CV_SAVE, CV_OnOff, CV_glpaletterendering_OnChange, 0, NULL, NULL, 0, 0, NULL};
@@ -5310,7 +5308,7 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *pl
 // ==========================================================================
 static void HWR_RenderFrame(INT32 viewnumber, player_t *player, boolean skybox)
 {
-	const float fpov = FIXED_TO_FLOAT(cv_fov.value+player->fovadd);
+	const float fpov = FixedToFloat(R_GetPlayerFov(player));
 
 	// set window position
 	gl_viewwindowx = gl_baseviewwindowx;
@@ -5531,8 +5529,6 @@ void HWR_AddCommands(void)
 
 	CV_RegisterVar(&cv_glhorizonlines);
 	CV_RegisterVar(&cv_glportals);
-
-	CV_RegisterVar(&cv_glfovchange);
 
 	CV_RegisterVar(&cv_glpaletterendering);
 	CV_RegisterVar(&cv_glpalettedepth);
