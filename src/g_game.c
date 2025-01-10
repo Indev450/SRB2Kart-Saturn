@@ -442,11 +442,18 @@ consvar_t cv_moveaxis[MAXSPLITSCREENPLAYERS] = {
 	{"joyaxis4_move", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
 };
 
-consvar_t cv_strafeaxis[MAXSPLITSCREENPLAYERS] = {
-	{"joyaxis_strafe", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
-	{"joyaxis2_strafe", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
-	{"joyaxis3_strafe", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
-	{"joyaxis4_strafe", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
+consvar_t cv_camstrafeaxis[MAXSPLITSCREENPLAYERS] = {
+	{"joyaxis_camstrafe", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyaxis2_camstrafe", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyaxis3_camstrafe", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyaxis4_camstrafe", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
+};
+
+consvar_t cv_camturnaxis[MAXSPLITSCREENPLAYERS] = {
+	{"joyaxis_camturn", "Left X", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyaxis2_camturn", "Left X", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyaxis3_camturn", "Left X", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyaxis4_camturn", "Left X", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
 };
 
 consvar_t cv_brakeaxis[MAXSPLITSCREENPLAYERS] = {
@@ -741,8 +748,11 @@ INT32 JoyAxis(axis_input_e axissel, UINT8 player)
 		case AXISMOVE:
 			axisval = cv_moveaxis[player-1].value;
 			break;
-		case AXISSTRAFE:
-			axisval = cv_strafeaxis[player-1].value;
+		case AXISCAMTURN:
+			axisval = cv_camturnaxis[player-1].value;
+			break;
+		case AXISCAMSTRAFE:
+			axisval = cv_camstrafeaxis[player-1].value;
 			break;
 		case AXISBRAKE:
 			axisval = cv_brakeaxis[player-1].value;

@@ -3224,7 +3224,7 @@ static ticcmd_t *P_CameraCmd(camera_t *cam, UINT8 num)
 	turnright = InputDown(gc_turnright, forplayer);
 	turnleft = InputDown(gc_turnleft, forplayer);
 
-	axis = JoyAxis(AXISTURN, forplayer);
+	axis = JoyAxis(AXISCAMTURN, forplayer);
 
 	if (encoremode)
 	{
@@ -3256,7 +3256,7 @@ static ticcmd_t *P_CameraCmd(camera_t *cam, UINT8 num)
 	straferight = InputDown(gc_straferight, forplayer);
 	strafeleft = InputDown(gc_strafeleft, forplayer);
 
-	axis = JoyAxis(AXISSTRAFE, forplayer);
+	axis = JoyAxis(AXISCAMSTRAFE, forplayer);
 
 	if (encoremode)
 	{
