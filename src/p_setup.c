@@ -545,7 +545,14 @@ boolean P_SectorUsesDirectionalLighting(const sector_t *sector)
 
 boolean P_ApplyLightOffset(UINT8 baselightnum, const sector_t *sector)
 {
-	if (!cv_randomdirlight.value && mapheaderinfo[gamemap-1]->use_custom_light == false)
+	mapheader_lighting_t *lighting = &mapheaderinfo[gamemap-1]->lighting;
+
+	if (encoremode && mapheaderinfo[gamemap-1]->use_encore_lighting)
+	{
+		lighting = &mapheaderinfo[gamemap-1]->lighting_encore;
+	}
+
+	if (!cv_randomdirlight.value && lighting->use_custom_light == false)
 		return (baselightnum < LIGHTLEVELS-1 && baselightnum > 0);
 
 	if (!P_SectorUsesDirectionalLighting(sector))
@@ -560,7 +567,14 @@ boolean P_ApplyLightOffset(UINT8 baselightnum, const sector_t *sector)
 
 boolean P_ApplyLightOffsetFine(UINT8 baselightlevel, const sector_t *sector)
 {
-	if (!cv_randomdirlight.value && mapheaderinfo[gamemap-1]->use_custom_light == false)
+	mapheader_lighting_t *lighting = &mapheaderinfo[gamemap-1]->lighting;
+
+	if (encoremode && mapheaderinfo[gamemap-1]->use_encore_lighting)
+	{
+		lighting = &mapheaderinfo[gamemap-1]->lighting_encore;
+	}
+
+	if (!cv_randomdirlight.value && lighting->use_custom_light == false)
 		return (baselightlevel < 255 && baselightlevel > 0);
 
 	if (!P_SectorUsesDirectionalLighting(sector))
