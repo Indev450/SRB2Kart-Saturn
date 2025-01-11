@@ -1604,70 +1604,80 @@ static void R_ProjectSprite(mobj_t *thing)
 			return;
 	}
 
-	if (thing->subsector->sector->numlights)
+	if (oldthing->frame & FF_ABSOLUTELIGHTLEVEL)
 	{
-		light = thing->subsector->sector->numlights - 1;
+		const UINT8 n = R_ThingLightLevel(oldthing);
 
-		for (lightnum = 1; lightnum < thing->subsector->sector->numlights; lightnum++) {
-			fixed_t h = thing->subsector->sector->lightlist[lightnum].slope ? P_GetZAt(thing->subsector->sector->lightlist[lightnum].slope, interp.x, interp.y)
-					: thing->subsector->sector->lightlist[lightnum].height;
-			if (h <= gzt)
-			{
-				light = lightnum - 1;
-				break;
-			}
-		}
-
-		lightnum = *thing->subsector->sector->lightlist[light].lightlevel;
+		// n = uint8 aka 0 - 255, so the shift will always be 0 - LIGHTLEVELS - 1
+		lights_array = scalelight[n >> LIGHTSEGSHIFT];
 	}
 	else
 	{
-		lightnum = thing->subsector->sector->lightlevel;
-	}
 
-	lightnum = (lightnum + R_ThingLightLevel(thing)) >> LIGHTSEGSHIFT;
-
-	if (maplighting.directional == true && P_SectorUsesDirectionalLighting(thing->subsector->sector))
-	{
-		fixed_t extralight = R_GetSpriteDirectionalLighting(papersprite
-				? interp.angle + (ang >= ANGLE_180 ? -ANGLE_90 : ANGLE_90)
-				: R_PointToAngle(interp.x, interp.y));
-
-		// Krangle contrast in 3P/4P because scalelight
-		// scales differently depending on the screen
-		// width (which is halved in 3P/4P).
-		if (splitscreen > 1)
+		if (thing->subsector->sector->numlights)
 		{
-			extralight *= 2;
-		}
+			light = thing->subsector->sector->numlights - 1;
 
-		// Less change in contrast in dark sectors
-		extralight = FixedMul(extralight, min(max(0, lightnum), LIGHTLEVELS - 1) * FRACUNIT / (LIGHTLEVELS - 1));
+			for (lightnum = 1; lightnum < thing->subsector->sector->numlights; lightnum++) {
+				fixed_t h = thing->subsector->sector->lightlist[lightnum].slope ? P_GetZAt(thing->subsector->sector->lightlist[lightnum].slope, interp.x, interp.y)
+						: thing->subsector->sector->lightlist[lightnum].height;
+				if (h <= gzt)
+				{
+					light = lightnum - 1;
+					break;
+				}
+			}
 
-		if (papersprite)
-		{
-			// Papersprite contrast should match walls
-			lightnum += FixedFloor((extralight / 8) + (FRACUNIT / 2)) / FRACUNIT;
+			lightnum = *thing->subsector->sector->lightlist[light].lightlevel;
 		}
 		else
 		{
-			fixed_t n = FixedDiv(FixedMul(xscale, LIGHTRESOLUTIONFIX), ((MAXLIGHTSCALE-1) << LIGHTSCALESHIFT));
-
-			// Less change in contrast at further distances, to counteract DOOM diminished light
-			extralight = FixedMul(extralight, min(n, FRACUNIT));
-
-			// Contrast is stronger for normal sprites, stronger than wall lighting is at the same distance
-			lightnum += FixedFloor((extralight / 4) + (FRACUNIT / 2)) / FRACUNIT;
+			lightnum = thing->subsector->sector->lightlevel;
 		}
+
+		lightnum = (lightnum + R_ThingLightLevel(thing)) >> LIGHTSEGSHIFT;
+
+		if (maplighting.directional == true && P_SectorUsesDirectionalLighting(thing->subsector->sector))
+		{
+			fixed_t extralight = R_GetSpriteDirectionalLighting(papersprite
+					? interp.angle + (ang >= ANGLE_180 ? -ANGLE_90 : ANGLE_90)
+					: R_PointToAngle(interp.x, interp.y));
+
+			// Krangle contrast in 3P/4P because scalelight
+			// scales differently depending on the screen
+			// width (which is halved in 3P/4P).
+			if (splitscreen > 1)
+			{
+				extralight *= 2;
+			}
+
+			// Less change in contrast in dark sectors
+			extralight = FixedMul(extralight, min(max(0, lightnum), LIGHTLEVELS - 1) * FRACUNIT / (LIGHTLEVELS - 1));
+
+			if (papersprite)
+			{
+				// Papersprite contrast should match walls
+				lightnum += FixedFloor((extralight / 8) + (FRACUNIT / 2)) / FRACUNIT;
+			}
+			else
+			{
+				fixed_t n = FixedDiv(FixedMul(xscale, LIGHTRESOLUTIONFIX), ((MAXLIGHTSCALE-1) << LIGHTSCALESHIFT));
+
+				// Less change in contrast at further distances, to counteract DOOM diminished light
+				extralight = FixedMul(extralight, min(n, FRACUNIT));
+
+				// Contrast is stronger for normal sprites, stronger than wall lighting is at the same distance
+				lightnum += FixedFloor((extralight / 4) + (FRACUNIT / 2)) / FRACUNIT;
+			}
+		}
+
+		if (lightnum < 0)
+			lights_array = scalelight[0];
+		else if (lightnum >= LIGHTLEVELS)
+			lights_array = scalelight[LIGHTLEVELS-1];
+		else
+			lights_array = scalelight[lightnum];
 	}
-
-	if (lightnum < 0)
-		lights_array = scalelight[0];
-	else if (lightnum >= LIGHTLEVELS)
-		lights_array = scalelight[LIGHTLEVELS-1];
-	else
-		lights_array = scalelight[lightnum];
-
 
 	heightsec = thing->subsector->sector->heightsec;
 	if (viewplayer && viewplayer->mo && viewplayer->mo->subsector)
