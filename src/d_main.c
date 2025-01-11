@@ -85,10 +85,6 @@
 #include "hardware/hw_main.h" // 3D View Rendering
 #endif
 
-#ifdef HW3SOUND
-#include "hardware/hw3sound.h"
-#endif
-
 #ifdef HAVE_DISCORDRPC
 #include "discord.h"
 #endif
@@ -169,20 +165,65 @@ UINT8 ctrldown = 0; // 0x1 left, 0x2 right
 UINT8 altdown = 0; // 0x1 left, 0x2 right
 boolean capslock = 0;	// gee i wonder what this does.
 
-static inline void D_DeviceLEDTick(void)
+static void D_PadMenuScrollInput(int input)
+{
+	event_t myev = {0, 0, 0, 0};
+	myev.type = ev_keydown;
+	myev.data1 = input;
+	D_PostEvent(&myev); // put into eventlist
+}
+
+#define SCROLLDELAY 19 // TICRATE * ( (k+2) (1 - [wz + h + j - q]^2 - [(gk + 2g + k + 1)(h + j) + h - z]^2 - [16(k + 1)^3(k + 2)(n + 1)^2 + 1 - f^2]^2 calculated by my butt
+
+// this is absolutely awful and i hate it lmao
+// but le hAx0r to make dpad also be able to scroll in the menu
+static void D_GamePadMenuScrollTicker(void)
+{
+	static SINT8 menuInputDelayTimer = 0;
+	int key = 0; // butt-on output
+
+	// wish i had a switch ono
+    if (DPADUPSCROLL)
+		key = KEY_UPARROW;
+    else if (DPADDOWNSCROLL)
+		key = KEY_DOWNARROW;
+    else if (DPADLEFTSCROLL)
+		key = KEY_LEFTARROW;
+    else if (DPADRIGHTSCROLL)
+		key = KEY_RIGHTARROW;
+
+	if (key)
+	{
+		if (menuInputDelayTimer < SCROLLDELAY)
+			menuInputDelayTimer++;
+
+		if (menuInputDelayTimer == SCROLLDELAY)
+			D_PadMenuScrollInput(key);
+	}
+	else
+	{
+		menuInputDelayTimer = 0;
+	}
+}
+#undef SCROLLDELAY
+
+static void D_DeviceLEDTick(void)
 {
 	UINT8 i;
 	UINT16 color[MAXSPLITSCREENPLAYERS];
 	UINT16 curcolor[MAXSPLITSCREENPLAYERS];
 
-	if (I_NumJoys() == 0 || (cv_gamepadled[0].value == 0 && cv_gamepadled[1].value == 0 && cv_gamepadled[2].value == 0 && cv_gamepadled[3].value == 0))
+	if (I_NumJoys() == 0)
 	{
 		return;
 	}
 
 	for (i = 0; i <= splitscreen; i++)
 	{
-		if (cv_usejoystick[i].value == 0)
+		if (!cv_usejoystick[i].value)
+			continue;
+
+		if (!cv_gamepadled[i].value)
 			continue;
 
 		color[i] = G_GetSkinColor(i);
@@ -444,11 +485,11 @@ static boolean D_Display(void)
 		{
 			PS_START_TIMING(ps_rendercalltime);
 
-			R_ApplyLevelInterpolators(R_UsingFrameInterpolation() ? rendertimefrac : FRACUNIT);
+			R_ApplyLevelInterpolators(rendertimefrac);
 
 			for (i = 0; i <= splitscreen; i++)
 			{
-				if (players[displayplayers[i]].mo || players[displayplayers[i]].playerstate == PST_DEAD)
+				if (!P_MobjWasRemoved(players[displayplayers[i]].mo) || players[displayplayers[i]].playerstate == PST_DEAD)
 				{
 					viewssnum = i;
 
@@ -652,7 +693,6 @@ static boolean D_Display(void)
 // =========================================================================
 
 tic_t rendergametic;
-static SINT8 menuInputDelayTimer = 0;
 
 void D_SRB2Loop(void)
 {
@@ -703,7 +743,7 @@ void D_SRB2Loop(void)
 
 		{
 			// Casting the return value of a function is bad practice (apparently)
-			double budget = round((1.0 / R_GetFramerateCap()) * I_GetPrecisePrecision());
+			double budget = ((R_GetFramerateCap() == 0) ? 0.0 : round((1.0 / R_GetFramerateCap()) * I_GetPrecisePrecision()));
 			capbudget = (precise_t) budget;
 		}
 
@@ -736,10 +776,6 @@ void D_SRB2Loop(void)
 
 		interp = R_UsingFrameInterpolation() && !dedicated;
 		doDisplay = false;
-
-#ifdef HW3SOUND
-		HW3S_BeginFrameUpdate();
-#endif
 
 		renderisnewtic = (realtics > 0 || singletics);
 
@@ -779,35 +815,10 @@ void D_SRB2Loop(void)
 				doDisplay = true;
 			}
 
-#define DPADSCROLLINPUT(INPUT)\
-		{\
-		myev.data1 = INPUT;\
-		M_Responder(&myev);\
-		}
-			// this is absolutely awful and i hate it lmao
-			if (menuactive && (DPADUPSCROLL || DPADDOWNSCROLL || DPADLEFTSCROLL || DPADRIGHTSCROLL))
+			if (menuactive)
 			{
-				event_t myev;
-				myev.type = ev_keydown;
-
-				if (menuInputDelayTimer < 19)
-					menuInputDelayTimer++;
-
-				if (menuInputDelayTimer == 19) // TICRATE * ( (k+2) (1 - [wz + h + j - q]^2 - [(gk + 2g + k + 1)(h + j) + h - z]^2 - [16(k + 1)^3(k + 2)(n + 1)^2 + 1 - f^2]^2 calculated by my butt
-				{
-					if (DPADUPSCROLL)
-						DPADSCROLLINPUT(KEY_UPARROW)
-					else if (DPADDOWNSCROLL)
-						DPADSCROLLINPUT(KEY_DOWNARROW)
-					else if (DPADLEFTSCROLL)
-						DPADSCROLLINPUT(KEY_LEFTARROW)
-					else if (DPADRIGHTSCROLL)
-						DPADSCROLLINPUT(KEY_RIGHTARROW)
-				}
+				D_GamePadMenuScrollTicker();
 			}
-			else
-				menuInputDelayTimer = 0;
-#undef DPADSCROLLINPUT
 
 			D_DeviceLEDTick();
 		}
@@ -848,9 +859,6 @@ void D_SRB2Loop(void)
 		// consoleplayer -> displayplayers (hear sounds from viewpoint)
 		S_UpdateSounds(); // move positional sounds
 
-#ifdef HW3SOUND
-		HW3S_EndFrameUpdate();
-#endif
 
 		LUA_Step();
 
@@ -1563,8 +1571,10 @@ void D_SRB2Main(void)
 
 	// Possible value that changes depending on whether required files for speedometer are found or not
 	CV_PossibleValue_t speedo_cons_temp[NUMSPEEDOSTUFF] = {{1, "Default"}, {0, NULL}, {0, NULL}, {0, NULL}, {0, NULL}, {0, NULL}};
+	CV_PossibleValue_t driftgaugestyle_cons_temp[NUMSPEEDOSTUFF] = {{1, "Default"}, {2, "Small"}, {3, "Big Numbers"}, {4, "Numbers Only"}, {0, NULL}, {0, NULL}}; // ugh i dont want this but bleh
 	unsigned last_speedo_i = 0;
-#define PUSHSPEEDO(id, name) { ++last_speedo_i; speedo_cons_temp[last_speedo_i].value = id; speedo_cons_temp[last_speedo_i].strvalue = name; }
+	unsigned last_driftgauge_i = 0;
+#define PUSHCONS(cons, i, id, name) { ++i; cons[i].value = id; cons[i].strvalue = name; }
 
 	if (found_extra_kart || found_extra2_kart || found_extra3_kart) // found the funny, add it in!
 	{
@@ -1580,7 +1590,7 @@ void D_SRB2Main(void)
 		if (W_CheckMultipleLumps("SP_SMSTC", "K_TRNULL", "SP_MKMH", "SP_MMPH", "SP_MFRAC", "SP_MPERC", NULL))
 		{
 			xtra_speedo = true;
-			PUSHSPEEDO(2, "Small");
+			PUSHCONS(speedo_cons_temp, last_speedo_i, 2, "Small");
 		}
 
 		if (W_LumpExists("SC_SMSTC"))
@@ -1590,7 +1600,7 @@ void D_SRB2Main(void)
 		if (W_CheckMultipleLumps("SP_AMSTC", "K_TRNULL", "SP_AKMH", "SP_AMPH", "SP_AFRAC", "SP_APERC", NULL))
 		{
 			achi_speedo = true;
-			PUSHSPEEDO(3, "Achii");
+			PUSHCONS(speedo_cons_temp, last_speedo_i, 3, "Achii");
 		}
 
 		if (W_CheckMultipleLumps("SC_AMSTC", "K_TRNULL", "SC_AKMH", "SC_AMPH", "SC_AFRAC", "SC_APERC", NULL))
@@ -1616,7 +1626,7 @@ void D_SRB2Main(void)
 			"K_KZSP20", "K_KZSP21", "K_KZSP22", "K_KZSP23", "K_KZSP24", "K_KZSP25", NULL))
 		{
 			kartzspeedo = true;
-			PUSHSPEEDO(4, "P-Meter");
+			PUSHCONS(speedo_cons_temp, last_speedo_i, 4, "P-Meter");
 		}
 
 		// stat display for extended player setup
@@ -1629,7 +1639,9 @@ void D_SRB2Main(void)
 			nametaggfx = true;
 
 		if (W_CheckMultipleLumps("K_DGAU","K_DCAU","K_DGSU","K_DCSU", NULL))
+		{
 			driftgaugegfx = true;
+		}
 
 		if (found_extra3_kart)
 		{
@@ -1637,7 +1649,8 @@ void D_SRB2Main(void)
 			if (W_LumpExists("SP_SM3TC"))
 			{
 				xtra_speedo3 = true;
-				PUSHSPEEDO(5, "Extra");
+				PUSHCONS(speedo_cons_temp, last_speedo_i, 5, "Extra");
+				PUSHCONS(driftgaugestyle_cons_temp, last_driftgauge_i, 5, "Extra");
 			}
 
 			if (W_LumpExists("SC_SM3TC"))
@@ -1645,8 +1658,9 @@ void D_SRB2Main(void)
 		}
 	}
 
-#undef PUSHSPEEDO
+#undef PUSHCONS
 	memcpy(speedo_cons_t, speedo_cons_temp, sizeof(speedo_cons_t));
+	memcpy(driftgaugestyle_cons_t, driftgaugestyle_cons_temp, sizeof(driftgaugestyle_cons_t));
 
 	// Do it before P_InitMapData because PNG patch
 	// conversion sometimes needs the palette

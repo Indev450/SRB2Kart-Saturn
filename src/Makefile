@@ -31,18 +31,6 @@
 #       compile all HW render and 3D sound DLLs for the set
 #     opengl_dll
 #       Pure Mingw only, compile OpenGL HW render DLL
-#     minigl_dll
-#       Pure Mingw only, compile MiniGL HW render DLL
-#     ds3d_dll
-#       Pure Mingw only, compile DirectX DirectSound HW sound DLL
-#     fmod_dll
-#       Pure Mingw only, compile FMOD HW sound DLL
-#     openal_dll
-#       Pure Mingw only, compile OpenAL HW sound DLL
-#     fmod_so
-#       Non-Mingw, compile FMOD HW sound SO
-#     openal_so
-#       Non-Mingw, compile OpenAL HW sound SO
 #
 #
 # Addon:
@@ -69,10 +57,7 @@
 #     Compile without SDL_Mixer, add 'NOMIXER=1'
 #     Compile without BSD API, add 'NONET=1'
 #     Compile without IPX/SPX, add 'NOIPX=1'
-#     Compile Mingw/SDL with S_DS3S, add 'DS3D=1'
 #     Compile without libopenmpt, add 'NOOPENMPT=1'
-#     Compile with S_FMOD3D, add 'FMOD=1' (WIP)
-#     Compile with S_OPENAL, add 'OPENAL=1' (WIP)
 #     To link with the whole SDL_Image lib to load Icons, add 'SDL_IMAGE=1' but it isn't not realy needed
 #     To link with SDLMain to hide console or make on a console-less binary, add 'SDLMAIN=1'
 #
@@ -691,7 +676,7 @@ else
 dll : opengl_dll
 endif
 ifdef MINGW
-all_dll: opengl_dll ds3d_dll fmod_dll openal_dll
+all_dll: opengl_dll
 
 opengl_dll: $(BIN)/r_opengl.dll
 $(BIN)/r_opengl.dll: $(OBJDIR)/ogl_win.o $(OBJDIR)/r_opengl.o
@@ -701,44 +686,13 @@ $(BIN)/r_opengl.dll: $(OBJDIR)/ogl_win.o $(OBJDIR)/r_opengl.o
 ifndef NOUPX
 	-$(UPX) $(UPX_OPTS) $@
 endif
-
-ds3d_dll: $(BIN)/s_ds3d.dll
-$(BIN)/s_ds3d.dll: $(OBJDIR)/s_ds3d.o
-	@echo Linking S_DS3d.dll...
-	$(CC) --shared  $^ -o $@ -g -Wl,--add-stdcall-alias -ldsound -luuid
-
-fmod_dll: $(BIN)/s_fmod.dll
-$(BIN)/s_fmod.dll: $(OBJDIR)/s_fmod.o
-	-$(MKDIR) $(BIN)
-	@echo Linking S_FMOD.dll...
-	$(CC) --shared  $^ -o $@ -g -Wl,--add-stdcall-alias -lfmod
-
-openal_dll: $(BIN)/s_openal.dll
-$(BIN)/s_openal.dll: $(OBJDIR)/s_openal.o
-	-$(MKDIR) $(BIN)
-	@echo Linking S_OpenAL.dll...
-	$(CC) --shared  $^ -o $@ -g -Wl,--add-stdcall-alias -lopenal32
-else
-all_dll: fmod_so openal_so
-
-fmod_so: $(BIN)/s_fmod.so
-$(BIN)/s_fmod.so: $(OBJDIR)/s_fmod.o
-	-$(MKDIR) $(BIN)
-	@echo Linking S_FMOD.so...
-	$(CC) --shared $^ -o $@ -g --nostartfiles -lm -lfmod
-
-openal_so: $(BIN)/s_openal.so
-$(BIN)/s_openal.so: $(OBJDIR)/s_openal.o
-	-$(MKDIR) $(BIN)
-	@echo Linking S_OpenAL.so...
-	$(CC) --shared $^ -o $@ -g --nostartfiles -lm -lopenal
 endif
 
 else
 ifdef SDL
 ifdef MINGW
 $(OBJDIR)/r_opengl.o: hardware/r_opengl/r_opengl.c hardware/r_opengl/r_opengl.h \
- doomdef.h doomtype.h g_state.h m_swap.h hardware/hw_drv.h screen.h \
+ doomdef.h doomtype.h g_state.h m_swap.h hardware/hw_gl.h screen.h \
  command.h hardware/hw_data.h hardware/hw_defs.h hardware/hw_md2.h \
  hardware/hw_glob.h hardware/hw_main.h hardware/hw_clip.h hardware/hw_portal.h\
  hardware/hw_md2load.h hardware/hw_md3load.h hardware/hw_model.h hardware/u_list.h \
@@ -747,7 +701,7 @@ $(OBJDIR)/r_opengl.o: hardware/r_opengl/r_opengl.c hardware/r_opengl/r_opengl.h 
 	$(CC) $(CFLAGS) $(WFLAGS) -c $< -o $@
 else
 $(OBJDIR)/r_opengl.o: hardware/r_opengl/r_opengl.c hardware/r_opengl/r_opengl.h \
- doomdef.h doomtype.h g_state.h m_swap.h hardware/hw_drv.h screen.h \
+ doomdef.h doomtype.h g_state.h m_swap.h hardware/hw_gl.h screen.h \
  command.h hardware/hw_data.h hardware/hw_defs.h hardware/hw_md2.h \
  hardware/hw_glob.h hardware/hw_main.h hardware/hw_clip.h hardware/hw_portal.h \
  hardware/hw_md2load.h hardware/hw_md3load.h hardware/hw_model.h hardware/u_list.h \
@@ -821,31 +775,6 @@ ifdef SDL
 ifdef MINGW
 $(OBJDIR)/win_dbg.o: win32/win_dbg.c
 	$(CC) $(CFLAGS) $(WFLAGS) -c $< -o $@
-endif
-
-ifdef STATICHS
-$(OBJDIR)/s_openal.o: hardware/s_openal/s_openal.c hardware/hw3dsdrv.h \
- hardware/hw_dll.h
-	$(CC) $(CFLAGS) $(WFLAGS) -c $< -o $@
-
-$(OBJDIR)/s_fmod.o: hardware/s_fmod/s_fmod.c hardware/hw3dsdrv.h \
- hardware/hw_dll.h
-	$(CC) $(CFLAGS) $(WFLAGS) -c $< -o $@
-
-ifdef MINGW
-$(OBJDIR)/s_ds3d.o: hardware/s_ds3d/s_ds3d.c hardware/hw3dsdrv.h \
- hardware/hw_dll.h
-	$(CC) $(CFLAGS) $(WFLAGS) -c $< -o $@
-endif
-else
-
-$(OBJDIR)/s_fmod.o: hardware/s_fmod/s_fmod.c hardware/hw3dsdrv.h \
- hardware/hw_dll.h
-	$(CC) $(ARCHOPTS) -Os -o $(OBJDIR)/s_fmod.o -DHW3SOUND -DUNIXCOMMON -shared -nostartfiles -c hardware/s_fmod/s_fmod.c
-
-$(OBJDIR)/s_openal.o: hardware/s_openal/s_openal.c hardware/hw3dsdrv.h \
- hardware/hw_dll.h
-	$(CC) $(ARCHOPTS) -Os -o $(OBJDIR)/s_openal.o -DHW3SOUND -DUNIXCOMMON -shared -nostartfiles -c hardware/s_openal/s_openal.c
 endif
 
 ifdef FILTERS

@@ -1062,14 +1062,14 @@ void P_WriteThings(lumpnum_t lumpnum)
 	size_t i, length;
 	mapthing_t *mt;
 	UINT8 *data;
-	UINT8 *savebuffer, *savebuf_p;
+	savebuffer_t save;
 	INT16 temp;
 
 	data = W_CacheLumpNum(lumpnum, PU_LEVEL);
 
-	savebuf_p = savebuffer = (UINT8 *)malloc(nummapthings * sizeof (mapthing_t));
+	save.p = save.buffer = (UINT8 *)malloc(nummapthings * sizeof (mapthing_t));
 
-	if (!savebuf_p)
+	if (!save.p)
 	{
 		CONS_Alert(CONS_ERROR, M_GetText("No more free memory for thing writing!\n"));
 		return;
@@ -1078,23 +1078,23 @@ void P_WriteThings(lumpnum_t lumpnum)
 	mt = mapthings;
 	for (i = 0; i < nummapthings; i++, mt++)
 	{
-		WRITEINT16(savebuf_p, mt->x);
-		WRITEINT16(savebuf_p, mt->y);
+		WRITEINT16(save.p, mt->x);
+		WRITEINT16(save.p, mt->y);
 
-		WRITEINT16(savebuf_p, mt->angle);
+		WRITEINT16(save.p, mt->angle);
 
 		temp = (INT16)(mt->type + ((INT16)mt->extrainfo << 12));
-		WRITEINT16(savebuf_p, temp);
-		WRITEUINT16(savebuf_p, mt->options);
+		WRITEINT16(save.p, temp);
+		WRITEUINT16(save.p, mt->options);
 	}
 
 	Z_Free(data);
 
-	length = savebuf_p - savebuffer;
+	length = save.p - save.buffer;
 
-	FIL_WriteFile(va("newthings%d.lmp", gamemap), savebuffer, length);
-	free(savebuffer);
-	savebuf_p = NULL;
+	FIL_WriteFile(va("newthings%d.lmp", gamemap), save.buffer, length);
+	free(save.buffer);
+	save.p = NULL;
 
 	CONS_Printf(M_GetText("newthings%d.lmp saved.\n"), gamemap);
 }
@@ -2498,7 +2498,7 @@ static void P_SetupCamera(UINT8 pnum, camera_t *cam)
 		cam->y = players[pnum].mo->y;
 		cam->z = players[pnum].mo->z;
 		cam->angle = players[pnum].mo->angle;
-		cam->subsector = R_PointInSubsectorFast(cam->x, cam->y); // make sure camera has a subsector set -- Monster Iestyn (12/11/18)
+		cam->subsector = R_PointInSubsector(cam->x, cam->y); // make sure camera has a subsector set -- Monster Iestyn (12/11/18)
 	}
 	else
 	{
@@ -2523,7 +2523,7 @@ static void P_SetupCamera(UINT8 pnum, camera_t *cam)
 		cam->y = thing->y;
 		cam->z = thing->z;
 		cam->angle = FixedAngle((fixed_t)thing->angle << FRACBITS);
-		cam->subsector = R_PointInSubsectorFast(cam->x, cam->y); // make sure camera has a subsector set -- Monster Iestyn (12/11/18)
+		cam->subsector = R_PointInSubsector(cam->x, cam->y); // make sure camera has a subsector set -- Monster Iestyn (12/11/18)
 	}
 }
 
@@ -2969,8 +2969,9 @@ boolean P_SetupLevel(boolean skipprecip, boolean reloadinggamestate)
 			: mapheaderinfo[gamemap - 1]->numlaps);
 
 	// Start recording replay in multiplayer with a temp filename
-	//Ensure dedis only record a replay if there is a player at the start of the map, otherwise we get invalid replays!
-	if (!demo.playback && multiplayer && D_NumPlayers()) {
+	// Ensure dedis only record a replay if there is a player at the start of the map, otherwise we get invalid replays!
+	if (!demo.playback && multiplayer && D_NumPlayers())
+	{
 		static char buf[256];
 		sprintf(buf, "replay"PATHSEP"online"PATHSEP"%d-%s", (int) (time(NULL)), G_BuildMapName(gamemap));
 

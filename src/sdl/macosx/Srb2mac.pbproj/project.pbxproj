@@ -255,12 +255,6 @@
 			path = ../../../bin/Resources/drill.dta;
 			refType = 2;
 		};
-		6755C8BF101802C300A80195 = {
-			isa = PBXFileReference;
-			name = fmod.dll;
-			path = ../../../bin/Resources/fmod.dll;
-			refType = 2;
-		};
 		6755C8C0101802C300A80195 = {
 			isa = PBXFileReference;
 			name = knux.plr;
@@ -423,14 +417,6 @@
 			);
 			isa = PBXGroup;
 			name = r_opengl;
-			refType = 4;
-		};
-		677B5ECA10180D7100A80195 = {
-			children = (
-				84F202CA08A92AA0000C01D8,
-			);
-			isa = PBXGroup;
-			name = s_openal;
 			refType = 4;
 		};
 		67B2D0C91018779900A80195 = {
@@ -1060,8 +1046,8 @@
 		8417773A085A106C000C01D8 = {
 			fileEncoding = 30;
 			isa = PBXFileReference;
-			name = hw_drv.h;
-			path = ../../hardware/hw_drv.h;
+			name = hw_gl.h;
+			path = ../../hardware/hw_gl.h;
 			refType = 2;
 		};
 		8417773C085A106C000C01D8 = {
@@ -1069,20 +1055,6 @@
 			isa = PBXFileReference;
 			name = hw_glob.h;
 			path = ../../hardware/hw_glob.h;
-			refType = 2;
-		};
-		8417773D085A106C000C01D8 = {
-			fileEncoding = 30;
-			isa = PBXFileReference;
-			name = hw_light.c;
-			path = ../../hardware/hw_light.c;
-			refType = 2;
-		};
-		8417773E085A106C000C01D8 = {
-			fileEncoding = 30;
-			isa = PBXFileReference;
-			name = hw_light.h;
-			path = ../../hardware/hw_light.h;
 			refType = 2;
 		};
 		8417773F085A106C000C01D8 = {
@@ -1111,41 +1083,6 @@
 			isa = PBXFileReference;
 			name = hw_md2.h;
 			path = ../../hardware/hw_md2.h;
-			refType = 2;
-		};
-		84177743085A106C000C01D8 = {
-			fileEncoding = 30;
-			isa = PBXFileReference;
-			name = hw_trick.c;
-			path = ../../hardware/hw_trick.c;
-			refType = 2;
-		};
-		84177744085A106C000C01D8 = {
-			fileEncoding = 30;
-			isa = PBXFileReference;
-			name = hw3dsdrv.h;
-			path = ../../hardware/hw3dsdrv.h;
-			refType = 2;
-		};
-		84177745085A106C000C01D8 = {
-			fileEncoding = 30;
-			isa = PBXFileReference;
-			name = hw3sound.c;
-			path = ../../hardware/hw3sound.c;
-			refType = 2;
-		};
-		84177746085A106C000C01D8 = {
-			fileEncoding = 30;
-			isa = PBXFileReference;
-			name = hw3sound.h;
-			path = ../../hardware/hw3sound.h;
-			refType = 2;
-		};
-		84177747085A106C000C01D8 = {
-			fileEncoding = 30;
-			isa = PBXFileReference;
-			name = hws_data.h;
-			path = ../../hardware/hws_data.h;
 			refType = 2;
 		};
 		84177748085A1097000C01D8 = {
@@ -2136,7 +2073,7 @@
 			buildSettings = {
 				DEBUGGING_SYMBOLS = NO;
 				FRAMEWORK_SEARCH_PATHS = "\"$(LOCAL_LIBRARY_DIR)/Frameworks\"";
-				HEADER_SEARCH_PATHS = "\"$(LOCAL_LIBRARY_DIR)/Frameworks/SDL.framework/Headers\" \"$(LOCAL_LIBRARY_DIR)/Frameworks/SDL_mixer.framework/Headers\" \"$(LOCAL_LIBRARY_DIR)/Frameworks/OpenAL.framework/Headers\" \"$(LOCAL_LIBRARY_DIR)/Frameworks/libpng.framework/Headers\"";
+				HEADER_SEARCH_PATHS = "\"$(LOCAL_LIBRARY_DIR)/Frameworks/SDL.framework/Headers\" \"$(LOCAL_LIBRARY_DIR)/Frameworks/SDL_mixer.framework/Headers\" \"$(LOCAL_LIBRARY_DIR)/Frameworks/libpng.framework/Headers\"";
 				INSTALL_PATH = "$(HOME)/Applications";
 				JAVA_COMPILER_DEBUGGING_SYMBOLS = NO;
 				OPTIMIZATION_CFLAGS = "-O2";
@@ -2328,7 +2265,7 @@
 			);
 			buildSettings = {
 				FRAMEWORK_SEARCH_PATHS = "\"$(LOCAL_LIBRARY_DIR)/Frameworks\"";
-				HEADER_SEARCH_PATHS = "\"$(LOCAL_LIBRARY_DIR)/Frameworks/SDL.framework/Headers\" \"$(LOCAL_LIBRARY_DIR)/Frameworks/SDL_mixer.framework/Headers\" \"$(LOCAL_LIBRARY_DIR)/Frameworks/OpenAL.framework/Headers\" \"$(LOCAL_LIBRARY_DIR)/Frameworks/libpng.framework/Headers\"";
+				HEADER_SEARCH_PATHS = "\"$(LOCAL_LIBRARY_DIR)/Frameworks/SDL.framework/Headers\" \"$(LOCAL_LIBRARY_DIR)/Frameworks/SDL_mixer.framework/Headers\" \"$(LOCAL_LIBRARY_DIR)/Frameworks/libpng.framework/Headers\"";
 				INSTALL_PATH = "$(HOME)/Applications";
 				OPTIMIZATION_CFLAGS = "-O0";
 				OTHER_CFLAGS = "-DMAC_ALERT -DUNIXCOMMON  -DSDLMAIN -DHAVE_MIXER -DHAVE_PNG -D_BIG_ENDIAN -DSTDC_HEADERS -DSDL -Wall -W -Wpointer-arith -Wbad-function-cast -Wcast-qual -Wcast-align -Wwrite-strings -Wsign-compare -Waggregate-return -Wmissing-prototypes -Wmissing-declarations -Wnested-externs -fno-strict-aliasing -fno-exceptions -D_DEBUG";
@@ -3520,19 +3457,6 @@
 			isa = PBXBuildFile;
 			settings = {
 			};
-		};
-		84F202C708A92A5D000C01D8 = {
-			isa = PBXFrameworkReference;
-			name = OpenAL.framework;
-			path = /Library/Frameworks/OpenAL.framework;
-			refType = 0;
-		};
-		84F202CA08A92AA0000C01D8 = {
-			fileEncoding = 30;
-			isa = PBXFileReference;
-			name = s_openal.c;
-			path = ../../hardware/s_openal/s_openal.c;
-			refType = 2;
 		};
 	};
 	rootObject = 84177702085A0C64000C01D8;

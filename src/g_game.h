@@ -17,6 +17,7 @@
 #include "doomdef.h"
 #include "doomstat.h"
 #include "d_event.h"
+#include "p_saveg.h"
 #include "m_textinput.h"
 
 extern char gamedatafilename[64];
@@ -33,7 +34,7 @@ extern INT32 player_name_changes[MAXPLAYERS];
 extern player_t players[MAXPLAYERS];
 extern boolean playeringame[MAXPLAYERS];
 
-extern UINT8 *demo_p;
+extern savebuffer_t demobuf;
 
 // ======================================
 // DEMO playback/recording related stuff.
@@ -166,6 +167,8 @@ DECL_HUD_OFFSET(stat); // Stats
 #undef DECL_HUD_OFFSET_Y
 
 extern consvar_t cv_showinput;
+extern consvar_t cv_posanim;
+extern consvar_t cv_smallposnum;
 extern consvar_t cv_newspeedometer;
 
 extern consvar_t cv_saltyhop;
@@ -436,8 +439,6 @@ FUNCMATH INT32 G_TicsToMinutes(tic_t tics, boolean full);
 FUNCMATH INT32 G_TicsToSeconds(tic_t tics);
 FUNCMATH INT32 G_TicsToCentiseconds(tic_t tics);
 FUNCMATH INT32 G_TicsToMilliseconds(tic_t tics);
-
-boolean K_DirectorIsPlayerAlone(void); // idk where else to put this lol
 
 // Don't split up TOL handling
 INT16 G_TOLFlag(INT32 pgametype);

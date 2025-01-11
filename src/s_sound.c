@@ -33,13 +33,7 @@
 
 #include "lua_hook.h" // MusicChange hook
 
-#ifdef HW3SOUND
-// 3D Sound Interface
-#include "hardware/hw3sound.h"
-#else
 static boolean S_AdjustSoundParams(const mobj_t *listener, const mobj_t *source, INT32 *vol, INT32 *sep, INT32 *pitch, sfxinfo_t *sfxinfo);
-#endif
-
 static void SetChannelsNum(void);
 static void Command_Tunes_f(void);
 static void Command_RestartAudio_f(void);
@@ -330,14 +324,6 @@ static void SetChannelsNum(void)
 	if (cv_numChannels.value == 999999999) //Alam_GBC: OH MY ROD!(ROD rimmiced with GOD!)
 		CV_StealthSet(&cv_numChannels,cv_numChannels.defaultvalue);
 
-#ifdef HW3SOUND
-	if (hws_mode != HWS_DEFAULT_MODE)
-	{
-		HW3S_SetSourcesNum();
-		return;
-	}
-#endif
-
 	if (cv_numChannels.value)
 		channels = (channel_t *)Z_Calloc(cv_numChannels.value * sizeof (channel_t), PU_STATIC, NULL);
 	numofchannels = (channels ? cv_numChannels.value : 0);
@@ -387,14 +373,6 @@ void S_StopSounds(void)
 {
 	INT32 cnum;
 
-#ifdef HW3SOUND
-	if (hws_mode != HWS_DEFAULT_MODE)
-	{
-		HW3S_StopSounds();
-		return;
-	}
-#endif
-
 	// kill all playing sounds at start of level
 	for (cnum = 0; cnum < numofchannels; cnum++)
 		if (channels[cnum].sfxinfo)
@@ -409,13 +387,7 @@ void S_StopSoundByID(void *origin, sfxenum_t sfx_id)
 	// be stopped by new sounds.
 	if (!origin)
 		return;
-#ifdef HW3SOUND
-	if (hws_mode != HWS_DEFAULT_MODE)
-	{
-		HW3S_StopSoundByID(origin, sfx_id);
-		return;
-	}
-#endif
+
 	for (cnum = 0; cnum < numofchannels; cnum++)
 	{
 		if (channels[cnum].sfxinfo == &S_sfx[sfx_id] && channels[cnum].origin == origin)
@@ -429,13 +401,6 @@ void S_StopSoundByNum(sfxenum_t sfxnum)
 {
 	INT32 cnum;
 
-#ifdef HW3SOUND
-	if (hws_mode != HWS_DEFAULT_MODE)
-	{
-		HW3S_StopSoundByNum(sfxnum);
-		return;
-	}
-#endif
 	for (cnum = 0; cnum < numofchannels; cnum++)
 	{
 		if (channels[cnum].sfxinfo == &S_sfx[sfxnum])
@@ -509,14 +474,6 @@ void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
 			itsUs = true;
 		}
 	}
-
-#ifdef HW3SOUND
-	if (hws_mode != HWS_DEFAULT_MODE)
-	{
-		HW3S_StartSound(origin, sfx_id);
-		return;
-	};
-#endif
 
 	for (i = 0; i <= splitscreen; i++)
 	{
@@ -690,12 +647,7 @@ void S_StartSound(const void *origin, sfxenum_t sfx_id)
 	}
 
 	// the volume is handled 8 bits
-#ifdef HW3SOUND
-	if (hws_mode != HWS_DEFAULT_MODE)
-		HW3S_StartSound(origin, sfx_id);
-	else
-#endif
-		S_StartSoundAtVolume(origin, sfx_id, 255);
+	S_StartSoundAtVolume(origin, sfx_id, 255);
 }
 
 void S_StopSound(void *origin)
@@ -707,13 +659,6 @@ void S_StopSound(void *origin)
 	if (!origin)
 		return;
 
-#ifdef HW3SOUND
-	if (hws_mode != HWS_DEFAULT_MODE)
-	{
-		HW3S_StopSound(origin);
-		return;
-	}
-#endif
 	for (cnum = 0; cnum < numofchannels; cnum++)
 	{
 		if (channels[cnum].sfxinfo && channels[cnum].origin == origin)
@@ -760,7 +705,6 @@ void S_UpdateSounds(void)
 		I_UpdateMumble(NULL, listener[0]);
 #endif
 
-		// Stop cutting FMOD out. WE'RE sick of it.
 		I_UpdateSound();
 		return;
 	}
@@ -793,15 +737,6 @@ void S_UpdateSounds(void)
 
 #ifndef NOMUMBLE
 	I_UpdateMumble(players[consoleplayer].mo, listener[0]);
-#endif
-
-#ifdef HW3SOUND
-	if (hws_mode != HWS_DEFAULT_MODE)
-	{
-		HW3S_UpdateSources();
-		I_UpdateSound();
-		return;
-	}
 #endif
 
 	for (i = 0; i <= splitscreen; i++)
@@ -918,12 +853,8 @@ void S_SetSfxVolume(INT32 volume)
 	CV_SetValue(&cv_soundvolume, volume&0x1F);
 	actualsfxvolume = cv_soundvolume.value; // check for change of var
 
-#ifdef HW3SOUND
-	hws_mode == HWS_DEFAULT_MODE ? I_SetSfxVolume(volume&0x1F) : HW3S_SetSfxVolume(volume&0x1F);
-#else
 	// now hardware volume
 	I_SetSfxVolume(volume&0x1F);
-#endif
 }
 
 void S_ClearSfx(void)
@@ -935,6 +866,7 @@ void S_ClearSfx(void)
 
 static void S_StopChannel(INT32 cnum)
 {
+	INT32 i;
 	channel_t *c = &channels[cnum];
 
 	if (c->sfxinfo)
@@ -942,6 +874,12 @@ static void S_StopChannel(INT32 cnum)
 		// stop the sound playing
 		if (I_SoundIsPlaying(c->handle))
 			I_StopSound(c->handle);
+
+		// check to see
+		//  if other channels are playing the sound
+		for (i = 0; i < numofchannels; i++)
+			if (cnum != i && c->sfxinfo == channels[i].sfxinfo)
+				break;
 
 		// degrade usefulness of sound data
 		c->sfxinfo->usefulness--;
@@ -1024,7 +962,7 @@ boolean S_AdjustSoundParams(const mobj_t *listener, const mobj_t *source, INT32 
 		INT64 x, y, yl, yh, xl, xh;
 		fixed_t newdist;
 
-		if (R_PointInSubsectorFast(listensource.x, listensource.y)->sector->ceilingpic == skyflatnum)
+		if (R_PointInSubsector(listensource.x, listensource.y)->sector->ceilingpic == skyflatnum)
 			approx_dist = 0;
 		else
 		{
@@ -1037,7 +975,7 @@ boolean S_AdjustSoundParams(const mobj_t *listener, const mobj_t *source, INT32 
 			for (y = yl; y <= yh; y += FRACUNIT*64)
 				for (x = xl; x <= xh; x += FRACUNIT*64)
 				{
-					if (R_PointInSubsectorFast(x, y)->sector->ceilingpic == skyflatnum)
+					if (R_PointInSubsector(x, y)->sector->ceilingpic == skyflatnum)
 					{
 						// Found the outdoors!
 						newdist = S_CalculateSoundDistance(listensource.x, listensource.y, 0, x, y, 0);
@@ -1112,11 +1050,6 @@ INT32 S_OriginPlaying(void *origin)
 	if (!origin)
 		return false;
 
-#ifdef HW3SOUND
-	if (hws_mode != HWS_DEFAULT_MODE)
-		return HW3S_OriginPlaying(origin);
-#endif
-
 	for (cnum = 0; cnum < numofchannels; cnum++)
 		if (channels[cnum].origin == origin)
 			return 1;
@@ -1128,11 +1061,6 @@ INT32 S_OriginPlaying(void *origin)
 INT32 S_IdPlaying(sfxenum_t id)
 {
 	INT32 cnum;
-
-#ifdef HW3SOUND
-	if (hws_mode != HWS_DEFAULT_MODE)
-		return HW3S_IdPlaying(id);
-#endif
 
 	for (cnum = 0; cnum < numofchannels; cnum++)
 		if ((size_t)(channels[cnum].sfxinfo - S_sfx) == (size_t)id)
@@ -1147,11 +1075,6 @@ INT32 S_SoundPlaying(void *origin, sfxenum_t id)
 	INT32 cnum;
 	if (!origin)
 		return 0;
-
-#ifdef HW3SOUND
-	if (hws_mode != HWS_DEFAULT_MODE)
-		return HW3S_SoundPlaying(origin, id);
-#endif
 
 	for (cnum = 0; cnum < numofchannels; cnum++)
 	{
@@ -1306,12 +1229,13 @@ ReadMusicDefFields (UINT16 wadnum, int line, char *stoken, musicdef_t **defp)
 	if (!stricmp(stoken, "lump"))
 	{
 		value = strtok(NULL, " ");
+
 		if (!value)
 		{
 			CONS_Alert(CONS_WARNING,
 					"MUSICDEF: Field '%s' is missing name. (file %s, line %d)\n",
 					stoken, wadfiles[wadnum]->filename, line);
-			return false;
+			goto skip_lump;
 		}
 		else
 		{
@@ -1332,6 +1256,10 @@ ReadMusicDefFields (UINT16 wadnum, int line, char *stoken, musicdef_t **defp)
 
 			(*defp) = def;
 		}
+
+skip_lump:
+			stoken = strtok(NULL, " ");
+			line++;
 	}
 	else
 	{
@@ -1348,7 +1276,7 @@ ReadMusicDefFields (UINT16 wadnum, int line, char *stoken, musicdef_t **defp)
 			CONS_Alert(CONS_WARNING,
 					"MUSICDEF: Field '%s' is missing value. (file %s, line %d)\n",
 					stoken, wadfiles[wadnum]->filename, line);
-			return false;
+			goto skip_field;
 		}
 		else
 		{
@@ -1400,6 +1328,10 @@ ReadMusicDefFields (UINT16 wadnum, int line, char *stoken, musicdef_t **defp)
 			else
 				CONS_Alert(CONS_WARNING, "MUSICDEF: Invalid field '%s'. (file %s, line %d)\n", stoken, wadfiles[wadnum]->filename, line);
 #undef ADDDEF
+
+skip_field:
+			stoken = strtok(NULL, "= ");
+			line++;
 		}
 	}
 

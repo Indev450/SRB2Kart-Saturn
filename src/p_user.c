@@ -50,10 +50,6 @@
 #include "console.h" // CON_LogMessage
 #include "m_menu.h"
 
-#ifdef HW3SOUND
-#include "hardware/hw3sound.h"
-#endif
-
 #ifdef HWRENDER
 #include "hardware/hw_main.h"
 #endif
@@ -3352,7 +3348,7 @@ void P_DemoCameraMovement(camera_t *cam)
 	democam.soundmobj = awayviewmobj_hack;
 
 	// update subsector to avoid crashes;
-	cam->subsector = R_PointInSubsectorFast(cam->x, cam->y);
+	cam->subsector = R_PointInSubsector(cam->x, cam->y);
 }
 
 void P_ResetCamera(player_t *player, camera_t *thiscam)
@@ -3383,17 +3379,230 @@ void P_ResetCamera(player_t *player, camera_t *thiscam)
 	thiscam->z = z;
 	thiscam->reset = true;
 
-	thiscam->angle = player->mo->angle;
-	thiscam->aiming = 0;
+	if (!(thiscam == &camera[0] && (cv_cam_still[0].value))
+		&& !(thiscam == &camera[1] && (cv_cam_still[1].value))
+		&& !(thiscam == &camera[2] && (cv_cam_still[2].value))
+		&& !(thiscam == &camera[3] && (cv_cam_still[3].value)))
+	{
+		thiscam->angle = player->mo->angle;
+		thiscam->aiming = 0;
+	}
+
 	thiscam->relativex = 0;
 
-	thiscam->subsector = R_PointInSubsectorFast(thiscam->x,thiscam->y);
+	thiscam->subsector = R_PointInSubsector(thiscam->x,thiscam->y);
 
 	thiscam->radius = 20*FRACUNIT;
 	thiscam->height = 16*FRACUNIT;
 
 	while (!P_MoveChaseCamera(player,thiscam,true) && ++tries < 2*TICRATE);
 }
+
+#ifndef NOCLIPCAM // Disable all z-clipping for noclip cam
+static boolean P_CheckNoclipCameraPosition(player_t *player, camera_t *thiscam, fixed_t x, fixed_t y, fixed_t z, boolean resetcalled)
+{
+	subsector_t *newsubsec;
+	boolean cameranoclip;
+	mobj_t *mo = player->mo;
+
+	cameranoclip = ((player->pflags & (PF_NOCLIP|PF_NIGHTSMODE))
+	|| (mo->flags & (MF_NOCLIP|MF_NOCLIPHEIGHT)) // Noclipping player camera noclips too!!
+	|| (leveltime < introtime)); // Kart intro cam
+
+	// move camera down to move under lower ceilings
+	newsubsec = R_IsPointInSubsector(((mo->x>>FRACBITS) + (thiscam->x>>FRACBITS))<<(FRACBITS-1), ((mo->y>>FRACBITS) + (thiscam->y>>FRACBITS))<<(FRACBITS-1));
+
+	if (!newsubsec)
+		newsubsec = thiscam->subsector;
+
+	if (newsubsec)
+	{
+		fixed_t myfloorz, myceilingz;
+		fixed_t midz = thiscam->z + (thiscam->z - mo->z)/2;
+		fixed_t midx = ((mo->x>>FRACBITS) + (thiscam->x>>FRACBITS))<<(FRACBITS-1);
+		fixed_t midy = ((mo->y>>FRACBITS) + (thiscam->y>>FRACBITS))<<(FRACBITS-1);
+
+		// Cameras use the heightsec's heights rather then the actual sector heights.
+		// If you can see through it, why not move the camera through it too?
+		if (newsubsec->sector->camsec >= 0)
+		{
+			myfloorz = sectors[newsubsec->sector->camsec].floorheight;
+			myceilingz = sectors[newsubsec->sector->camsec].ceilingheight;
+		}
+		else if (newsubsec->sector->heightsec >= 0)
+		{
+			myfloorz = sectors[newsubsec->sector->heightsec].floorheight;
+			myceilingz = sectors[newsubsec->sector->heightsec].ceilingheight;
+		}
+		else
+		{
+			myfloorz = P_CameraGetFloorZ(thiscam, newsubsec->sector, midx, midy, NULL);
+			myceilingz = P_CameraGetCeilingZ(thiscam, newsubsec->sector, midx, midy, NULL);
+		}
+
+		// Check list of fake floors and see if floorz/ceilingz need to be altered.
+		if (newsubsec->sector->ffloors)
+		{
+			ffloor_t *rover;
+			fixed_t delta1, delta2;
+			INT32 thingtop = midz + thiscam->height;
+
+			for (rover = newsubsec->sector->ffloors; rover; rover = rover->next)
+			{
+				fixed_t topheight, bottomheight;
+				if (!(rover->flags & FF_BLOCKOTHERS) || !(rover->flags & FF_EXISTS) || !(rover->flags & FF_RENDERALL) || GETSECSPECIAL(rover->master->frontsector->special, 4) == 12)
+					continue;
+
+				topheight = P_CameraGetFOFTopZ(thiscam, newsubsec->sector, rover, midx, midy, NULL);
+				bottomheight = P_CameraGetFOFBottomZ(thiscam, newsubsec->sector, rover, midx, midy, NULL);
+
+				delta1 = midz - (bottomheight
+					+ ((topheight - bottomheight)/2));
+				delta2 = thingtop - (bottomheight
+					+ ((topheight - bottomheight)/2));
+				if (topheight > myfloorz && abs(delta1) < abs(delta2))
+					myfloorz = topheight;
+				if (bottomheight < myceilingz && abs(delta1) >= abs(delta2))
+					myceilingz = bottomheight;
+			}
+		}
+
+		// Check polyobjects and see if floorz/ceilingz need to be altered
+		{
+			INT32 xl, xh, yl, yh, bx, by;
+			validcount++;
+
+			xl = (unsigned)(tmbbox[BOXLEFT] - bmaporgx)>>MAPBLOCKSHIFT;
+			xh = (unsigned)(tmbbox[BOXRIGHT] - bmaporgx)>>MAPBLOCKSHIFT;
+			yl = (unsigned)(tmbbox[BOXBOTTOM] - bmaporgy)>>MAPBLOCKSHIFT;
+			yh = (unsigned)(tmbbox[BOXTOP] - bmaporgy)>>MAPBLOCKSHIFT;
+
+			BMBOUNDFIX(xl, xh, yl, yh);
+
+			for (by = yl; by <= yh; by++)
+			{
+				for (bx = xl; bx <= xh; bx++)
+				{
+					INT32 offset;
+					polymaplink_t *plink; // haleyjd 02/22/06
+
+					if (bx < 0 || by < 0 || bx >= bmapwidth || by >= bmapheight)
+						continue;
+
+					offset = by*bmapwidth + bx;
+
+					// haleyjd 02/22/06: consider polyobject lines
+					plink = polyblocklinks[offset];
+
+					while (plink)
+					{
+						polyobj_t *po = plink->po;
+
+						if (po->validcount != validcount) // if polyobj hasn't been checked
+						{
+							sector_t *polysec;
+							fixed_t delta1, delta2, thingtop;
+							fixed_t polytop, polybottom;
+
+							po->validcount = validcount;
+
+							if (!P_PointInsidePolyobj(po, x, y) || !(po->flags & POF_SOLID))
+							{
+								plink = (polymaplink_t *)(plink->link.next);
+								continue;
+							}
+
+							// We're inside it! Yess...
+							polysec = po->lines[0]->backsector;
+
+							if (GETSECSPECIAL(polysec->special, 4) == 12)
+							{ // Camera noclip polyobj.
+								plink = (polymaplink_t *)(plink->link.next);
+								continue;
+							}
+
+							if (po->flags & POF_CLIPPLANES)
+							{
+								polytop = polysec->ceilingheight;
+								polybottom = polysec->floorheight;
+							}
+							else
+							{
+								polytop = INT32_MAX;
+								polybottom = INT32_MIN;
+							}
+
+							thingtop = midz + thiscam->height;
+							delta1 = midz - (polybottom + ((polytop - polybottom)/2));
+							delta2 = thingtop - (polybottom + ((polytop - polybottom)/2));
+
+							if (polytop > myfloorz && abs(delta1) < abs(delta2))
+								myfloorz = polytop;
+
+							if (polybottom < myceilingz && abs(delta1) >= abs(delta2))
+								myceilingz = polybottom;
+						}
+						plink = (polymaplink_t *)(plink->link.next);
+					}
+				}
+			}
+		}
+
+		// crushed camera
+		if (myceilingz <= myfloorz + thiscam->height && !resetcalled && !cameranoclip)
+		{
+			P_ResetCamera(player, thiscam);
+			return true;
+		}
+
+		// camera fit?
+		if (myceilingz != myfloorz
+			&& myceilingz - thiscam->height < z)
+		{
+			z = myceilingz - thiscam->height-FixedMul(11*FRACUNIT, mo->scale);
+			// is the camera fit is there own sector
+		}
+
+		// Make the camera a tad smarter with 3d floors
+		if (newsubsec->sector->ffloors && !cameranoclip)
+		{
+			ffloor_t *rover;
+
+			for (rover = newsubsec->sector->ffloors; rover; rover = rover->next)
+			{
+				fixed_t topheight, bottomheight;
+				if ((rover->flags & FF_BLOCKOTHERS) && (rover->flags & FF_RENDERALL) && (rover->flags & FF_EXISTS) && GETSECSPECIAL(rover->master->frontsector->special, 4) == 12)
+				{
+					topheight = P_CameraGetFOFTopZ(thiscam, newsubsec->sector, rover, midx, midy, NULL);
+					bottomheight = P_CameraGetFOFBottomZ(thiscam, newsubsec->sector, rover, midx, midy, NULL);
+
+					if (bottomheight - thiscam->height < z
+						&& midz < bottomheight)
+						z = bottomheight - thiscam->height-FixedMul(11*FRACUNIT, mo->scale);
+
+					else if (topheight + thiscam->height > z
+						&& midz > topheight)
+						z = topheight;
+
+					if ((mo->z >= topheight && midz < bottomheight)
+						|| ((mo->z < bottomheight && mo->z+mo->height < topheight) && midz >= topheight))
+					{
+						// Can't see
+						if (!resetcalled)
+							P_ResetCamera(player, thiscam);
+						return true;
+					}
+				}
+			}
+		}
+	}
+
+	if (thiscam->z < thiscam->floorz && !cameranoclip)
+		thiscam->z = thiscam->floorz;
+
+	return false;
+}
+#endif
 
 boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcalled)
 {
@@ -3408,10 +3617,6 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	UINT8 timeover;
 	mobj_t *mo;
 	fixed_t f1, f2;
-#ifndef NOCLIPCAM
-	boolean cameranoclip;
-	subsector_t *newsubsec;
-#endif
 
 	democam.soundmobj = NULL;	// reset this each frame, we don't want the game crashing for stupid reasons now do we
 
@@ -3469,12 +3674,6 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 
 	mo = player->mo;
 
-#ifndef NOCLIPCAM
-	cameranoclip = ((player->pflags & (PF_NOCLIP|PF_NIGHTSMODE))
-		|| (mo->flags & (MF_NOCLIP|MF_NOCLIPHEIGHT)) // Noclipping player camera noclips too!!
-		|| (leveltime < introtime)); // Kart intro cam
-#endif
-
 	if (player->pflags & PF_TIMEOVER) // 1 for momentum keep, 2 for turnaround
 		timeover = (player->kartstuff[k_timeovercam] > 2*TICRATE ? 2 : 1);
 	else
@@ -3500,7 +3699,10 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 			focusangle = mo->angle;
 		}
 
-		camrotate = cv_cam_rotate[num].value;
+		if (thiscam == &camera[num])
+			camrotate = cv_cam_rotate[num].value;
+		else
+			camrotate = 0;
 
 		if (leveltime < introtime) // Whoooshy camera!
 		{
@@ -3604,7 +3806,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	}
 
 	if (!resetcalled && (leveltime > starttime && timeover != 2)
-		&& (t_cam_rotate[num] != -42))
+		&& (thiscam == &camera[num] && t_cam_rotate[num] != -42))
 	{
 		angle = FixedAngle(camrotate*FRACUNIT);
 		thiscam->angle = angle;
@@ -3657,194 +3859,8 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 		z = mo->z + pviewheight + camheight;
 
 #ifndef NOCLIPCAM // Disable all z-clipping for noclip cam
-	// move camera down to move under lower ceilings
-	newsubsec = R_IsPointInSubsector(((mo->x>>FRACBITS) + (thiscam->x>>FRACBITS))<<(FRACBITS-1), ((mo->y>>FRACBITS) + (thiscam->y>>FRACBITS))<<(FRACBITS-1));
-
-	if (!newsubsec)
-		newsubsec = thiscam->subsector;
-
-	if (newsubsec)
-	{
-		fixed_t myfloorz, myceilingz;
-		fixed_t midz = thiscam->z + (thiscam->z - mo->z)/2;
-		fixed_t midx = ((mo->x>>FRACBITS) + (thiscam->x>>FRACBITS))<<(FRACBITS-1);
-		fixed_t midy = ((mo->y>>FRACBITS) + (thiscam->y>>FRACBITS))<<(FRACBITS-1);
-
-		// Cameras use the heightsec's heights rather then the actual sector heights.
-		// If you can see through it, why not move the camera through it too?
-		if (newsubsec->sector->camsec >= 0)
-		{
-			myfloorz = sectors[newsubsec->sector->camsec].floorheight;
-			myceilingz = sectors[newsubsec->sector->camsec].ceilingheight;
-		}
-		else if (newsubsec->sector->heightsec >= 0)
-		{
-			myfloorz = sectors[newsubsec->sector->heightsec].floorheight;
-			myceilingz = sectors[newsubsec->sector->heightsec].ceilingheight;
-		}
-		else
-		{
-			myfloorz = P_CameraGetFloorZ(thiscam, newsubsec->sector, midx, midy, NULL);
-			myceilingz = P_CameraGetCeilingZ(thiscam, newsubsec->sector, midx, midy, NULL);
-		}
-
-		// Check list of fake floors and see if floorz/ceilingz need to be altered.
-		if (newsubsec->sector->ffloors)
-		{
-			ffloor_t *rover;
-			fixed_t delta1, delta2;
-			INT32 thingtop = midz + thiscam->height;
-
-			for (rover = newsubsec->sector->ffloors; rover; rover = rover->next)
-			{
-				fixed_t topheight, bottomheight;
-				if (!(rover->flags & FF_BLOCKOTHERS) || !(rover->flags & FF_EXISTS) || !(rover->flags & FF_RENDERALL) || GETSECSPECIAL(rover->master->frontsector->special, 4) == 12)
-					continue;
-
-				topheight = P_CameraGetFOFTopZ(thiscam, newsubsec->sector, rover, midx, midy, NULL);
-				bottomheight = P_CameraGetFOFBottomZ(thiscam, newsubsec->sector, rover, midx, midy, NULL);
-
-				delta1 = midz - (bottomheight
-					+ ((topheight - bottomheight)/2));
-				delta2 = thingtop - (bottomheight
-					+ ((topheight - bottomheight)/2));
-				if (topheight > myfloorz && abs(delta1) < abs(delta2))
-					myfloorz = topheight;
-				if (bottomheight < myceilingz && abs(delta1) >= abs(delta2))
-					myceilingz = bottomheight;
-			}
-		}
-
-	// Check polyobjects and see if floorz/ceilingz need to be altered
-	{
-		INT32 xl, xh, yl, yh, bx, by;
-		validcount++;
-
-		xl = (unsigned)(tmbbox[BOXLEFT] - bmaporgx)>>MAPBLOCKSHIFT;
-		xh = (unsigned)(tmbbox[BOXRIGHT] - bmaporgx)>>MAPBLOCKSHIFT;
-		yl = (unsigned)(tmbbox[BOXBOTTOM] - bmaporgy)>>MAPBLOCKSHIFT;
-		yh = (unsigned)(tmbbox[BOXTOP] - bmaporgy)>>MAPBLOCKSHIFT;
-
-		BMBOUNDFIX(xl, xh, yl, yh);
-
-		for (by = yl; by <= yh; by++)
-			for (bx = xl; bx <= xh; bx++)
-			{
-				INT32 offset;
-				polymaplink_t *plink; // haleyjd 02/22/06
-
-				if (bx < 0 || by < 0 || bx >= bmapwidth || by >= bmapheight)
-					continue;
-
-				offset = by*bmapwidth + bx;
-
-				// haleyjd 02/22/06: consider polyobject lines
-				plink = polyblocklinks[offset];
-
-				while (plink)
-				{
-					polyobj_t *po = plink->po;
-
-					if (po->validcount != validcount) // if polyobj hasn't been checked
-					{
-						sector_t *polysec;
-						fixed_t delta1, delta2, thingtop;
-						fixed_t polytop, polybottom;
-
-						po->validcount = validcount;
-
-						if (!P_PointInsidePolyobj(po, x, y) || !(po->flags & POF_SOLID))
-						{
-							plink = (polymaplink_t *)(plink->link.next);
-							continue;
-						}
-
-						// We're inside it! Yess...
-						polysec = po->lines[0]->backsector;
-
-						if (GETSECSPECIAL(polysec->special, 4) == 12)
-						{ // Camera noclip polyobj.
-							plink = (polymaplink_t *)(plink->link.next);
-							continue;
-						}
-
-						if (po->flags & POF_CLIPPLANES)
-						{
-							polytop = polysec->ceilingheight;
-							polybottom = polysec->floorheight;
-						}
-						else
-						{
-							polytop = INT32_MAX;
-							polybottom = INT32_MIN;
-						}
-
-						thingtop = midz + thiscam->height;
-						delta1 = midz - (polybottom + ((polytop - polybottom)/2));
-						delta2 = thingtop - (polybottom + ((polytop - polybottom)/2));
-
-						if (polytop > myfloorz && abs(delta1) < abs(delta2))
-							myfloorz = polytop;
-
-						if (polybottom < myceilingz && abs(delta1) >= abs(delta2))
-							myceilingz = polybottom;
-					}
-					plink = (polymaplink_t *)(plink->link.next);
-				}
-			}
-	}
-
-		// crushed camera
-		if (myceilingz <= myfloorz + thiscam->height && !resetcalled && !cameranoclip)
-		{
-			P_ResetCamera(player, thiscam);
-			return true;
-		}
-
-		// camera fit?
-		if (myceilingz != myfloorz
-			&& myceilingz - thiscam->height < z)
-		{
-			z = myceilingz - thiscam->height-FixedMul(11*FRACUNIT, mo->scale);
-			// is the camera fit is there own sector
-		}
-
-		// Make the camera a tad smarter with 3d floors
-		if (newsubsec->sector->ffloors && !cameranoclip)
-		{
-			ffloor_t *rover;
-
-			for (rover = newsubsec->sector->ffloors; rover; rover = rover->next)
-			{
-				fixed_t topheight, bottomheight;
-				if ((rover->flags & FF_BLOCKOTHERS) && (rover->flags & FF_RENDERALL) && (rover->flags & FF_EXISTS) && GETSECSPECIAL(rover->master->frontsector->special, 4) == 12)
-				{
-					topheight = P_CameraGetFOFTopZ(thiscam, newsubsec->sector, rover, midx, midy, NULL);
-					bottomheight = P_CameraGetFOFBottomZ(thiscam, newsubsec->sector, rover, midx, midy, NULL);
-
-					if (bottomheight - thiscam->height < z
-						&& midz < bottomheight)
-						z = bottomheight - thiscam->height-FixedMul(11*FRACUNIT, mo->scale);
-
-					else if (topheight + thiscam->height > z
-						&& midz > topheight)
-						z = topheight;
-
-					if ((mo->z >= topheight && midz < bottomheight)
-						|| ((mo->z < bottomheight && mo->z+mo->height < topheight) && midz >= topheight))
-					{
-						// Can't see
-						if (!resetcalled)
-							P_ResetCamera(player, thiscam);
-						return true;
-					}
-				}
-			}
-		}
-	}
-
-	if (thiscam->z < thiscam->floorz && !cameranoclip)
-		thiscam->z = thiscam->floorz;
+	if (P_CheckNoclipCameraPosition(player, thiscam, x, y, z, resetcalled))
+		return true;
 #endif // NOCLIPCAM
 
 	// point viewed by the camera

@@ -45,7 +45,7 @@ MTL=midl.exe
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /c
-# ADD CPP /nologo /G5 /W3 /GX /Zi /Ot /Og /Oi /Op /Oy /Ob1 /I "..\..\libs\libpng-src" /I "..\..\libs\zlib" /D "NDEBUG" /D "SDLMAIN" /D "NO_STDIO_REDIRECT" /D "USE_WGL_SWAP" /D "DIRECTFULLSCREEN" /D "HAVE_SDL" /D "HWRENDER" /D "HW3SOUND" /D "HAVE_FILTER" /D "HAVE_MIXER" /D "USEASM" /D "HAVE_PNG" /FR /FD /GF /c
+# ADD CPP /nologo /G5 /W3 /GX /Zi /Ot /Og /Oi /Op /Oy /Ob1 /I "..\..\libs\libpng-src" /I "..\..\libs\zlib" /D "NDEBUG" /D "SDLMAIN" /D "NO_STDIO_REDIRECT" /D "USE_WGL_SWAP" /D "DIRECTFULLSCREEN" /D "HAVE_SDL" /D "HWRENDER" /D "HAVE_FILTER" /D "HAVE_MIXER" /D "USEASM" /D "HAVE_PNG" /FR /FD /GF /c
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 # SUBTRACT RSC /x
@@ -72,7 +72,7 @@ LINK32=link.exe
 # PROP Target_Dir ""
 MTL=midl.exe
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /GZ /c
-# ADD CPP /nologo /G6 /W4 /WX /Gm /GX /ZI /Od /Op /I "..\..\libs\libpng-src" /I "..\..\libs\zlib" /D "_DEBUG" /D "USE_WGL_SWAP" /D "DIRECTFULLSCREEN" /D "HAVE_SDL" /D "HWRENDER" /D "HW3SOUND" /D "HAVE_FILTER" /D "HAVE_MIXER" /D "USEASM" /D "HAVE_PNG" /FR /FD /GZ /c
+# ADD CPP /nologo /G6 /W4 /WX /Gm /GX /ZI /Od /Op /I "..\..\libs\libpng-src" /I "..\..\libs\zlib" /D "_DEBUG" /D "USE_WGL_SWAP" /D "DIRECTFULLSCREEN" /D "HAVE_SDL" /D "HWRENDER" /D "HAVE_FILTER" /D "HAVE_MIXER" /D "USEASM" /D "HAVE_PNG" /FR /FD /GZ /c
 # SUBTRACT CPP /YX
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
@@ -536,18 +536,6 @@ SOURCE=..\y_inter.h
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE=..\hardware\hw3dsdrv.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\hardware\hw3sound.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\hardware\hw3sound.h
-# End Source File
-# Begin Source File
-
 SOURCE=..\hardware\hw_bsp.c
 # End Source File
 # Begin Source File
@@ -572,19 +560,11 @@ SOURCE=..\hardware\hw_draw.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\hardware\hw_drv.h
+SOURCE=..\hardware\hw_gl.h
 # End Source File
 # Begin Source File
 
 SOURCE=..\hardware\hw_glob.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\hardware\hw_light.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\hardware\hw_light.h
 # End Source File
 # Begin Source File
 
@@ -603,11 +583,6 @@ SOURCE=..\hardware\hw_md2.c
 SOURCE=..\hardware\hw_md2.h
 # End Source File
 # Begin Source File
-
-SOURCE=..\hardware\hws_data.h
-# End Source File
-# End Group
-# Begin Group "I_Interface"
 
 # PROP Default_Filter ""
 # Begin Source File

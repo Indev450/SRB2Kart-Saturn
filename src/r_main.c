@@ -1086,10 +1086,7 @@ subsector_t *R_IsPointInSubsector(fixed_t x, fixed_t y)
 
 mobj_t *viewmobj;
 
-static void
-R_SetupCommonFrame
-(		player_t * player,
-		subsector_t * subsector)
+static void R_SetupCommonFrame(player_t * player, subsector_t * subsector)
 {
 	newview->player = player;
 
@@ -1099,7 +1096,7 @@ R_SetupCommonFrame
 
 	newview->roll = R_ViewRollAngle(player);
 
-	if (subsector)
+	if (subsector && subsector->sector)
 		newview->sector = subsector->sector;
 	else
 		newview->sector = R_PointInSubsector(newview->x, newview->y)->sector;
@@ -1240,7 +1237,7 @@ void R_SetupFrame(int s, boolean skybox)
 {
 	player_t *player = &players[displayplayers[s]];
 	camera_t *thiscam = &camera[s];
-	boolean chasecam = (cv_chasecam[s].value != 0);
+	boolean chasecam = (cv_chasecam[s].value);
 	subsector_t * subsector = NULL;
 
 	R_SetViewContext(VIEWCONTEXT_PLAYER1 + s);
@@ -1289,7 +1286,10 @@ void R_SetupFrame(int s, boolean skybox)
 		newview->y = thiscam->y;
 		newview->z = thiscam->z + (thiscam->height>>1);
 
-		R_SetupCommonFrame(player, thiscam->subsector);
+		if (thiscam != NULL)
+			subsector = thiscam->subsector;
+
+		R_SetupCommonFrame(player, subsector);
 	}
 	else // use the player's eyes view
 	{

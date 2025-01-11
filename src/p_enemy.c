@@ -25,10 +25,6 @@
 #include "lua_hook.h"
 #include "k_kart.h" // SRB2kart
 
-#ifdef HW3SOUND
-#include "hardware/hw3sound.h"
-#endif
-
 boolean LUA_CallAction(enum actionnum actionnum, mobj_t *actor);
 
 INT32 var1;

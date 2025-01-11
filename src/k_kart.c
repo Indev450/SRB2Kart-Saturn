@@ -79,8 +79,21 @@ consvar_t cv_showstats = {"showstats", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, 
 consvar_t cv_showinput = {"showinput", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_showlaptimes = {"showlaptimes", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_posanim = {"postitionanimation", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_smallposnum = {"smallpositionnumber", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_minihead = {"smallminimapplayers", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_showminimapnames = {"showminimapnames", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_highresportrait = {"highresportrait", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; //make char potraits use their high-res version instead
+
+consvar_t cv_showlapemblem = {"showlapemblem", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_darkitembox = {"darkitembox", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; //itembox gets a dark box with specific items
+consvar_t cv_biglaps = {"biglaphud", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; //here for ppl who dont want to make 2 more patches for their custom hud
+
 CV_PossibleValue_t speedo_cons_t[NUMSPEEDOSTUFF];
 consvar_t cv_newspeedometer = {"newspeedometer", "Default", CV_SAVE, speedo_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_battlespeedo = {"battlespeedo", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; //toggle for showing the speedometer in battlemode
 
 //hardcode saltyhop mhhm
 consvar_t cv_saltyhop = {"hardcodehop", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -94,13 +107,45 @@ consvar_t cv_colorizeditembox = {"colorizeditembox", "Off", CV_SAVE, CV_OnOff, N
 static CV_PossibleValue_t HudColor_cons_t[MAXSKINCOLORS+1];
 consvar_t cv_colorizedhudcolor = {"colorizedhudcolor", "Skin Color", CV_SAVE, HudColor_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_highresportrait = {"highresportrait", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; //make char potraits use their high-res version instead
+// driftgauge stuffs
+static CV_PossibleValue_t driftgaugeoffset_cons_t[] = {
+	{-FRACUNIT*128, "MIN"}, {FRACUNIT*128, "MAX"}, {0, NULL}};
+CV_PossibleValue_t driftgaugestyle_cons_t[NUMSPEEDOSTUFF];
 
-consvar_t cv_darkitembox = {"darkitembox", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; //itembox gets a dark box with specific items
+consvar_t cv_driftgauge = {"kartdriftgauge", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_driftgaugeofs = {"kartdriftgaugeoffset", "-20", CV_FLOAT|CV_SAVE, driftgaugeoffset_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_driftgaugetrans = {"kartdriftgaugetransparency", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_driftgaugestyle = {"kartdriftgaugestyle", "1", CV_SAVE, driftgaugestyle_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_biglaps = {"biglaphud", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; //here for ppl who dont want to make 2 more patches for their custom hud
+// nametags
+static CV_PossibleValue_t nametagtrans_cons_t[] = {
+	{0, "Never"}, {1, "Far only"}, {2, "Dynamic"}, {3, "Always"}, {4, "HUD Trans."}, {0, NULL}};
+/*static CV_PossibleValue_t nametagscaling_cons_t[] = {
+	{0, "MIN"},  {320, "MAX"}, {0, NULL}};*/
+static CV_PossibleValue_t nametagdistance_cons_t[] = {
+	{0, "MIN"},  {640, "MAX"}, {0, NULL}};
+static CV_PossibleValue_t nametagmaxplayer_cons_t[] = {
+    {1, "MIN"}, {MAXPLAYERS, "MAX"}, {0, NULL}};
+static CV_PossibleValue_t nametagsize_cons_t[] = {
+	{0, "Off"}, {1, "Small"}, {2, "Minimal"}, {0, NULL}};
+static CV_PossibleValue_t nametagrestat_cons_t[] = {
+	{0, "Off"}, {1, "Restat"}, {2, "Always"}, {0, NULL}};
 
-consvar_t cv_battlespeedo = {"battlespeedo", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; //toggle for showing the speedometer in battlemode
+consvar_t cv_nametag = {"kartnametag", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_nametagtrans = {"kartnametagtransparency", "Dynamic", CV_SAVE, nametagtrans_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_nametagfacerank = {"kartnametagfacerank", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_nametagrestat = {"kartnametagrestat", "Restat", CV_SAVE, nametagrestat_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_nametagdist = {"kartnametagdist", "320", CV_SAVE, nametagdistance_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_nametagmaxplayers = {"kartnametagmaxplayers", "3", CV_SAVE, nametagmaxplayer_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_nametagmaxlenght = {"kartnametagmaxlenght", "12", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
+//consvar_t cv_nametagscaling = {"nametagscaling", "160", CV_SAVE, nametagscaling_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_showownnametag = {"kartnametagshowown", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_smallnametags = {"kartnametagsmall", "Off", CV_SAVE, nametagsize_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_nametaghop = {"kartnametaghop", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_nametagscore = {"kartnametagscore", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_shownametagfinish = {"kartshownametagfinished", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_shownametagspectator = {"kartshownametagspectator", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 
 // SOME IMPORTANT VARIABLES DEFINED IN DOOMDEF.H:
 // gamespeed is cc (0 for easy, 1 for normal, 2 for hard)
@@ -723,14 +768,20 @@ void K_RegisterKartStuff(void)
 
 	CV_RegisterVar(&cv_showstats);
 	CV_RegisterVar(&cv_showinput);
+
+	CV_RegisterVar(&cv_posanim);
+	CV_RegisterVar(&cv_smallposnum);
+
 	CV_RegisterVar(&cv_showlaptimes);
 	CV_RegisterVar(&cv_newspeedometer);
 
 	CV_RegisterVar(&cv_battlespeedo);
 
-	CV_RegisterVar(&cv_saltyhop);
-	CV_RegisterVar(&cv_saltyhopsfx);
-	CV_RegisterVar(&cv_saltysquish);
+	CV_RegisterVar(&cv_minihead);
+	CV_RegisterVar(&cv_showminimapnames);
+	CV_RegisterVar(&cv_showlapemblem);
+
+	CV_RegisterVar(&cv_stagetitle);
 
 	//Colourized HUD
 	CV_RegisterVar(&cv_colorizedhud);
@@ -743,13 +794,30 @@ void K_RegisterKartStuff(void)
 
 	CV_RegisterVar(&cv_highresportrait);
 
+	CV_RegisterVar(&cv_nametag);
+	CV_RegisterVar(&cv_nametagtrans);
+	CV_RegisterVar(&cv_nametagfacerank);
+	CV_RegisterVar(&cv_nametagmaxplayers);
+	CV_RegisterVar(&cv_nametagmaxlenght);
+	//CV_RegisterVar(&cv_nametagscaling);
+	CV_RegisterVar(&cv_nametagdist);
+	CV_RegisterVar(&cv_showownnametag);
+	CV_RegisterVar(&cv_smallnametags);
+	CV_RegisterVar(&cv_nametagrestat);
+	CV_RegisterVar(&cv_nametaghop);
+	CV_RegisterVar(&cv_nametagscore);
+	CV_RegisterVar(&cv_shownametagfinish);
+	CV_RegisterVar(&cv_shownametagspectator);
+
+	CV_RegisterVar(&cv_driftgauge);
+	CV_RegisterVar(&cv_driftgaugeofs);
+	CV_RegisterVar(&cv_driftgaugetrans);
+	CV_RegisterVar(&cv_driftgaugestyle);
+
+	CV_RegisterVar(&cv_saltyhop);
+	CV_RegisterVar(&cv_saltyhopsfx);
+	CV_RegisterVar(&cv_saltysquish);
 	CV_RegisterVar(&cv_slamsound);
-
-	CV_RegisterVar(&cv_minihead);
-	CV_RegisterVar(&cv_showminimapnames);
-	CV_RegisterVar(&cv_showlapemblem);
-
-	CV_RegisterVar(&cv_stagetitle);
 
 	CV_RegisterVar(&cv_lessflicker);
 
@@ -7106,7 +7174,8 @@ void K_LoadKartHUDGraphics(void)
 		skp_speedpatchesachi[4] = W_CachePatchName("SP_APERC", PU_HUDGFX);
 	}
 
-	if (big_lap){
+	if (big_lap)
+	{
 		kp_lapstickerbig = 		W_CachePatchName("K_STLAPB", PU_HUDGFX);
 		kp_lapstickerbig2 = 	W_CachePatchName("K_STLA2B", PU_HUDGFX);
 	}
@@ -7171,14 +7240,14 @@ void K_LoadKartHUDGraphics(void)
 	// Nametags
 	if (nametaggfx)
 	{
-
 		nametagpic = W_CachePatchName("NTLINE", PU_HUDGFX);
 		nametagline = W_CachePatchName("NTLINEV", PU_HUDGFX);
 		nametagspeed = W_CachePatchName("NTSP", PU_HUDGFX);
 		nametagweight = W_CachePatchName("NTWH", PU_HUDGFX);
 	}
 
-	if (driftgaugegfx){
+	if (driftgaugegfx)
+	{
 		driftgauge =  W_CachePatchName("K_DGAU", PU_HUDGFX);
 		driftgaugecolor =  W_CachePatchName("K_DCAU", PU_HUDGFX);
 		driftgaugesmall =  W_CachePatchName("K_DGSU", PU_HUDGFX);
@@ -8164,13 +8233,13 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 		}
 	}
 
-	if (!K_UseColorHud())
-		V_DrawScaledPatch(TX, TY, splitflags, ((mode == 2) ? kp_lapstickerwide : kp_timestickerwide));
-	else //Colourized hud
+	if (K_UseColorHud()) // Colourized hud
 	{
 		UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
 		V_DrawMappedPatch(TX, TY, splitflags, ((mode == 2) ? kp_lapstickerwideclr : kp_timestickerwideclr), colormap);
 	}
+	else
+		V_DrawScaledPatch(TX, TY, splitflags, ((mode == 2) ? kp_lapstickerwide : kp_timestickerwide));
 
 	TX += 33;
 
@@ -8178,11 +8247,7 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 		;
 	else if (mode && !drawtime)
 	{
-		// apostrophe location     _'__ __
-		V_DrawKartString(TX+24, TY+3, splitflags, va("'"));
-
-		// quotation mark location    _ __"__
-		V_DrawKartString(TX+60, TY+3, splitflags, va("\""));
+		V_DrawKartString(TX, TY+3, splitflags, va("--'--\"--"));
 	}
 	else
 	{
@@ -8312,13 +8377,13 @@ static void K_DrawKartPositionNum(INT32 num)
 	boolean flipvdraw = false;	// used only for 2p splitscreen so overtaking doesn't make 1P's position fly off the screen.
 	boolean overtake = false;
 
-	if (stplyr->kartstuff[k_positiondelay] || stplyr->exiting)
+	if ((cv_posanim.value && stplyr->kartstuff[k_positiondelay]) || stplyr->exiting)
 	{
 		scale *= 2;
 		overtake = true;	// this is used for splitscreen stuff in conjunction with flipdraw.
 	}
 
-	if (splitscreen || (cv_showinput.value && !splitscreen))
+	if (splitscreen || cv_smallposnum.value || cv_showinput.value)
 		scale /= 2;
 
 	W = FixedMul(W<<FRACBITS, scale)>>FRACBITS;
@@ -8673,12 +8738,9 @@ void HU_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, I
 	}
 }
 
-static boolean K_BigLapSticker(void)
+static boolean K_BigLap(void)
 {
-	if (K_UseColorHud())
-		return ((cv_numlaps.value > 9) && (big_lap_color) && (cv_biglaps.value) && (!stplyr->exiting));
-	else
-		return ((cv_numlaps.value > 9) && (big_lap) && (cv_biglaps.value) && (!stplyr->exiting));
+	return (cv_biglaps.value && (cv_numlaps.value > 9) && (K_UseColorHud() ? big_lap_color : big_lap) && (!stplyr->exiting));
 }
 
 static void K_drawKartLaps(void)
@@ -8717,20 +8779,16 @@ static void K_drawKartLaps(void)
 	}
 	else
 	{
-		if (!K_UseColorHud())
-		{
-			if (K_BigLapSticker())
-				V_DrawScaledPatch(fx, fy, V_HUDTRANS|splitflags, ((stplyr->laps + 1 > 9) ? kp_lapstickerbig2 : kp_lapstickerbig));
-			else
-				V_DrawScaledPatch(fx, fy, V_HUDTRANS|splitflags, kp_lapsticker);
-		}
-		else //Colourized hud
+		if (K_UseColorHud()) // Colourized hud
 		{
 			UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
-			if (K_BigLapSticker())
-				V_DrawMappedPatch(fx, fy, V_HUDTRANS|splitflags, ((stplyr->laps + 1 > 9) ? kp_lapstickerbig2clr : kp_lapstickerbigclr), colormap);
-			else
-				V_DrawMappedPatch(fx, fy, V_HUDTRANS|splitflags, kp_lapstickerclr, colormap);
+			patch_t *biglapclr = (K_BigLap() ? ((stplyr->laps + 1 > 9) ? kp_lapstickerbig2clr : kp_lapstickerbigclr) : kp_lapstickerclr);
+			V_DrawMappedPatch(fx, fy, V_HUDTRANS|splitflags, biglapclr, colormap);
+		}
+		else
+		{
+			patch_t *biglap = (K_BigLap() ? ((stplyr->laps + 1 > 9) ? kp_lapstickerbig2 : kp_lapstickerbig) : kp_lapsticker);
+			V_DrawScaledPatch(fx, fy, V_HUDTRANS|splitflags, biglap);
 		}
 
 		if (stplyr->exiting)
@@ -9351,11 +9409,14 @@ skipcrap:
 		case 1:
 		case 2:
 		case 3:
+		case 5:
 			{
 				if (!driftgaugegfx)
 					break;
 
-				if (cv_driftgaugestyle.value == 1 || cv_driftgaugestyle.value == 3 || (cv_driftgaugestyle.value == 5 && xtra_speedo3))
+				const boolean usescaledpatch = (cv_driftgaugestyle.value == 5 && xtra_speedo3);
+
+				if (cv_driftgaugestyle.value == 1 || cv_driftgaugestyle.value == 3 || usescaledpatch)
 				{
 					barx = basex - dup*23;
 					BAR_WIDTH = dup*47;
@@ -9373,12 +9434,26 @@ skipcrap:
 				const INT32 width = ((driftcharge - (driftcharge >= driftval ? limit : 0)) * BAR_WIDTH) / limit;
 				const INT32 level = min(driftcharge / driftval, 2);
 
-				if (!K_UseColorHud())
-					V_DrawMappedPatch(cv_driftgaugestyle.value == 2 ? basex + dup*11 : basex, basey, V_NOSCALESTART|V_OFFSET|drifttrans, cv_driftgaugestyle.value == 2 ? driftgaugesmall : driftgauge, NULL);
-				else //Colourized hud
+				if (usescaledpatch) // i hate hud code i hate hud code i hate hud code i hate hud code i hate hud code.....
 				{
-					UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
-					V_DrawMappedPatch(cv_driftgaugestyle.value == 2 ? basex + dup*11 : basex, basey, V_NOSCALESTART|V_OFFSET|drifttrans, cv_driftgaugestyle.value == 2 ? driftgaugesmallcolor : driftgaugecolor, colormap);
+					if (K_UseColorHud() && xtra_speedo_clr3) // Colourized hud
+					{
+						UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
+						V_DrawStretchyFixedPatch((basex - dup*30)<<FRACBITS, ((basey<<FRACBITS) - FixedMul(dup<<FRACBITS, 21*FRACUNIT/10)), FRACUNIT*0.765, FRACUNIT*0.55, V_NOSCALESTART|V_OFFSET|drifttrans, skp_smallstickerclr3, colormap);
+					}
+					else
+						V_DrawStretchyFixedPatch((basex - dup*30)<<FRACBITS, ((basey<<FRACBITS) - FixedMul(dup<<FRACBITS, 21*FRACUNIT/10)), FRACUNIT*0.765, FRACUNIT*0.55, V_NOSCALESTART|V_OFFSET|drifttrans, skp_smallsticker3, NULL);
+				}
+				else
+				{
+					if (K_UseColorHud()) // Colourized hud
+					{
+						UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
+						V_DrawMappedPatch(cv_driftgaugestyle.value == 2 ? basex + dup*11 : basex, basey, V_NOSCALESTART|V_OFFSET|drifttrans, cv_driftgaugestyle.value == 2 ? driftgaugesmallcolor : driftgaugecolor, colormap);
+					}
+					else
+						V_DrawMappedPatch(cv_driftgaugestyle.value == 2 ? basex + dup*11 : basex, basey, V_NOSCALESTART|V_OFFSET|drifttrans, cv_driftgaugestyle.value == 2 ? driftgaugesmall : driftgauge, NULL);
+
 				}
 
 				if (driftcharge >= driftval*4) // rainbow sparks
@@ -9930,13 +10005,14 @@ static void K_drawBattleFullscreen(void)
 			V_DrawString(x-txoff, ty, 0, va("%d", stplyr->kartstuff[k_comebacktimer]/TICRATE));
 		else
 		{
-			if (!K_UseColorHud())
-				V_DrawFixedPatch(x<<FRACBITS, ty<<FRACBITS, scale, 0, kp_timeoutsticker, NULL);
-			else //Colourized hud
+			if (K_UseColorHud()) // Colourized hud
 			{
 				UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
 				V_DrawFixedPatch(x<<FRACBITS, ty<<FRACBITS, scale, 0, kp_timeoutstickerclr, colormap);
 			}
+			else
+				V_DrawFixedPatch(x<<FRACBITS, ty<<FRACBITS, scale, 0, kp_timeoutsticker, NULL);
+
 
 			V_DrawKartString(x-txoff, ty, 0, va("%d", stplyr->kartstuff[k_comebacktimer]/TICRATE));
 		}

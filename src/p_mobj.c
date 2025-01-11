@@ -3337,7 +3337,7 @@ boolean P_CameraThinker(player_t *player, camera_t *thiscam, boolean resetcalled
 	if (!itsatwodlevel)
 		P_CheckCameraPosition(thiscam->x, thiscam->y, thiscam);
 
-	thiscam->subsector = R_PointInSubsectorFast(thiscam->x, thiscam->y);
+	thiscam->subsector = R_PointInSubsector(thiscam->x, thiscam->y);
 	thiscam->floorz = tmfloorz;
 	thiscam->ceilingz = tmceilingz;
 
@@ -3568,11 +3568,14 @@ static void CalculatePrecipFloor(precipmobj_t *mobj)
 {
 	// recalculate floorz each time
 	const sector_t *mobjsecsubsec;
+
 	if (mobj && mobj->subsector && mobj->subsector->sector)
 		mobjsecsubsec = mobj->subsector->sector;
 	else
 		return;
+
 	mobj->floorz = P_GetSectorFloorZAt(mobjsecsubsec, mobj->x, mobj->y);
+
 	if (mobjsecsubsec->ffloors)
 	{
 		ffloor_t *rover;
@@ -10415,7 +10418,7 @@ void P_PrecipitationEffects(void)
 		for (y = yl; y <= yh; y += RADIUSSTEP)
 			for (x = xl; x <= xh; x += RADIUSSTEP)
 			{
-				if (R_PointInSubsectorFast((fixed_t)x, (fixed_t)y)->sector->ceilingpic != skyflatnum) // Found the outdoors!
+				if (R_PointInSubsector((fixed_t)x, (fixed_t)y)->sector->ceilingpic != skyflatnum) // Found the outdoors!
 					continue;
 
 				newdist = S_CalculateSoundDistance(players[displayplayers[0]].mo->x, players[displayplayers[0]].mo->y, 0, (fixed_t)x, (fixed_t)y, 0);
