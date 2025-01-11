@@ -1549,6 +1549,7 @@ void R_RegisterEngineStuff(void)
 		CV_RegisterVar(&cv_cam_speed[i]);
 		CV_RegisterVar(&cv_cam_rotate[i]);
 		CV_RegisterVar(&cv_cam_rotspeed[i]);
+		CV_RegisterVar(&cv_cam_timeover[i]);
 	}
 
 	CV_RegisterVar(&cv_freecam_speed);

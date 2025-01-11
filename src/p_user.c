@@ -3109,6 +3109,13 @@ consvar_t cv_cam_rotspeed[MAXSPLITSCREENPLAYERS] = {
 	{"cam4_rotspeed", "10", CV_SAVE, rotation_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
 };
 
+consvar_t cv_cam_timeover[MAXSPLITSCREENPLAYERS] = {
+	{"cam_timeover", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"cam2_timeover", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"cam3_timeover", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"cam4_timeover", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+};
+
 static CV_PossibleValue_t freecam_speed_cons_t[] = {{0, "MIN"}, {10, "MAX"}, {0, NULL}};
 consvar_t cv_freecam_speed = {"freecam_speed", "1", CV_SAVE, freecam_speed_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -3816,8 +3823,8 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 
 	const boolean vflip = (mo->eflags & MFE_VERTICALFLIP);
 
-	if (player->pflags & PF_TIMEOVER) // 1 for momentum keep, 2 for turnaround
-		timeover = (player->kartstuff[k_timeovercam] > 2*TICRATE ? 2 : 1);
+	if (cv_cam_timeover[num].value && (player->pflags & PF_TIMEOVER))
+		timeover = (player->kartstuff[k_timeovercam] > 2*TICRATE ? 2 : 1); // 1 for momentum keep, 2 for turnaround
 	else
 		timeover = 0;
 
