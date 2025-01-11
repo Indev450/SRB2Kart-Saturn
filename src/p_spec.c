@@ -5225,6 +5225,28 @@ static void P_RunLevelLoadExecutors(void)
 	}
 }
 
+static void P_SetupDirectionalLight(void)
+{
+	if (cv_randomdirlight.value && mapheaderinfo[gamemap-1]->use_custom_light == false)
+	{
+		static INT16 oldmap = 0; // dont reset stuff when you restart a map
+		if (gamemap != oldmap)
+		{
+			maplighting.contrast = M_RandomRange(0, 58);
+			maplighting.backlight = 0;
+			maplighting.directional = M_RandomRange(0, 1); // either on or off
+			maplighting.angle = M_RandomRange(-382, 382);
+		}
+		oldmap = gamemap;
+		return;
+	}
+
+	maplighting.contrast = mapheaderinfo[gamemap-1]->light_contrast;
+	maplighting.backlight = mapheaderinfo[gamemap-1]->sprite_backlight;
+	maplighting.directional = mapheaderinfo[gamemap-1]->use_light_angle;
+	maplighting.angle = mapheaderinfo[gamemap-1]->light_angle;
+}
+
 /** After the map has loaded, scans for specials that spawn 3Dfloors and
   * thinkers.
   *
@@ -5251,10 +5273,7 @@ void P_SpawnSpecials(INT32 fromnetsave, boolean reloadinggamestate)
 	gravity = (FRACUNIT*8)/10;
 
 	// Set map lighting settings.
-	maplighting.contrast = mapheaderinfo[gamemap-1]->light_contrast;
-	maplighting.backlight = mapheaderinfo[gamemap-1]->sprite_backlight;
-	maplighting.directional = mapheaderinfo[gamemap-1]->use_light_angle;
-	maplighting.angle = mapheaderinfo[gamemap-1]->light_angle;
+	P_SetupDirectionalLight();
 
 	// Defaults in case levels don't have them set.
 	sstimer = 90*TICRATE + 6;

@@ -324,17 +324,13 @@ static void P_ClearSingleMapHeaderInfo(INT16 i)
 	// SRB2Kart
 	//mapheaderinfo[num]->automap = false;
 	mapheaderinfo[num]->mobj_scale = FRACUNIT;
-	// an even further impossibility, delfile custom opts support
+
 	mapheaderinfo[num]->customopts = NULL;
 	mapheaderinfo[num]->numCustomOptions = 0;
-}
-
-void P_ClearDirectionalLightMapHeaderInfo(INT16 i) // lol dont always reset this on every map load
-{
-	mapheaderinfo[i]->light_contrast = cv_randomdirlight.value ? M_RandomRange(0, 58) : 8;
-	mapheaderinfo[i]->sprite_backlight = 0;
-	mapheaderinfo[i]->use_light_angle = cv_randomdirlight.value ? true : false;
-	mapheaderinfo[i]->light_angle = cv_randomdirlight.value ? M_RandomRange(-382, 382) : 0;
+	mapheaderinfo[num]->light_contrast = 8;
+	mapheaderinfo[num]->sprite_backlight = 0;
+	mapheaderinfo[num]->use_light_angle = false;
+	mapheaderinfo[num]->light_angle = 0;
 }
 
 /** Allocates a new map-header structure.
@@ -347,7 +343,6 @@ void P_AllocMapHeader(INT16 i)
 	{
 		mapheaderinfo[i] = Z_Malloc(sizeof(mapheader_t), PU_STATIC, NULL);
 		mapheaderinfo[i]->grades = NULL;
-		P_ClearDirectionalLightMapHeaderInfo(i);
 	}
 	P_ClearSingleMapHeaderInfo(i + 1);
 }

@@ -986,10 +986,12 @@ static void readlevelheader(MYFILE *f, INT32 num, INT32 wadnum)
 			else if (fastcmp(word, "LIGHTCONTRAST"))
 			{
 				mapheaderinfo[num-1]->light_contrast = (UINT8)i;
+				mapheaderinfo[num-1]->use_custom_light = true;
 			}
 			else if (fastcmp(word, "SPRITEBACKLIGHT"))
 			{
 				mapheaderinfo[num-1]->sprite_backlight = (SINT8)i;
+				mapheaderinfo[num-1]->use_custom_light = true;
 			}
 			else if (fastcmp(word, "LIGHTANGLE"))
 			{
@@ -1003,6 +1005,7 @@ static void readlevelheader(MYFILE *f, INT32 num, INT32 wadnum)
 					mapheaderinfo[num-1]->use_light_angle = true;
 					mapheaderinfo[num-1]->light_angle = FixedAngle(FloatToFixed(atof(word2)));
 				}
+				mapheaderinfo[num-1]->use_custom_light = true;
 			}
 
 			// Individual triggers for level flags, for ease of use (and 2.0 compatibility)

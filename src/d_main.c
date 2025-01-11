@@ -183,13 +183,13 @@ static void D_GamePadMenuScrollTicker(void)
 	int key = 0; // butt-on output
 
 	// wish i had a switch ono
-    if (DPADUPSCROLL)
+	if (DPADUPSCROLL)
 		key = KEY_UPARROW;
-    else if (DPADDOWNSCROLL)
+	else if (DPADDOWNSCROLL)
 		key = KEY_DOWNARROW;
-    else if (DPADLEFTSCROLL)
+	else if (DPADLEFTSCROLL)
 		key = KEY_LEFTARROW;
-    else if (DPADRIGHTSCROLL)
+	else if (DPADRIGHTSCROLL)
 		key = KEY_RIGHTARROW;
 
 	if (key)
