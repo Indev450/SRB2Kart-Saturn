@@ -93,6 +93,7 @@ void P_WriteThings(lumpnum_t lump);
 fixed_t P_SegLength(seg_t *seg);
 #endif
 
+extern boolean reinitmaplight;
 void P_UpdateSegLightOffset(seg_t *li);
 boolean P_ApplyLightOffset(UINT8 baselightnum, const sector_t *sector);
 boolean P_ApplyLightOffsetFine(UINT8 baselightlevel, const sector_t *sector);
