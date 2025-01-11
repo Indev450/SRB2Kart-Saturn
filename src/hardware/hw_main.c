@@ -341,7 +341,15 @@ void HWR_ObjectLightLevelPost(gl_vissprite_t *spr, const sector_t *sector, INT32
 {
 	(void)papersprite;
 
-	*lightlevel += R_ThingLightLevel(spr->mobj);
+	if (spr->mobj->frame & FF_ABSOLUTELIGHTLEVEL)
+	{
+		*lightlevel = R_ThingLightLevel(spr->mobj);
+		return;
+	}
+	else
+	{
+		*lightlevel += R_ThingLightLevel(spr->mobj);
+	}
 
 	if (maplighting.directional == false || !P_SectorUsesDirectionalLighting(sector) || model == true)
 		return;

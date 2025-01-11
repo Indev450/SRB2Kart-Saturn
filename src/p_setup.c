@@ -278,6 +278,15 @@ FUNCNORETURN static ATTRNORETURN void CorruptMapError(const char *msg)
 
 #define NUMLAPS_DEFAULT 3
 
+static void P_ClearMapHeaderLighting(mapheader_lighting_t *lighting)
+{
+	lighting->light_contrast = 8;
+	lighting->sprite_backlight = 0;
+	lighting->use_light_angle = false;
+	lighting->light_angle = 0;
+	lighting->use_custom_light = false;
+}
+
 /** Clears the data from a single map header.
   *
   * \param i Map number to clear header for.
@@ -324,17 +333,13 @@ static void P_ClearSingleMapHeaderInfo(INT16 i)
 	// SRB2Kart
 	//mapheaderinfo[num]->automap = false;
 	mapheaderinfo[num]->mobj_scale = FRACUNIT;
-	// an even further impossibility, delfile custom opts support
+
 	mapheaderinfo[num]->customopts = NULL;
 	mapheaderinfo[num]->numCustomOptions = 0;
-}
 
-void P_ClearDirectionalLightMapHeaderInfo(INT16 i) // lol dont always reset this on every map load
-{
-	mapheaderinfo[i]->light_contrast = cv_randomdirlight.value ? M_RandomRange(0, 58) : 8;
-	mapheaderinfo[i]->sprite_backlight = 0;
-	mapheaderinfo[i]->use_light_angle = cv_randomdirlight.value ? true : false;
-	mapheaderinfo[i]->light_angle = cv_randomdirlight.value ? M_RandomRange(-382, 382) : 0;
+	P_ClearMapHeaderLighting(&mapheaderinfo[num]->lighting);
+	P_ClearMapHeaderLighting(&mapheaderinfo[num]->lighting_encore);
+	mapheaderinfo[num]->use_encore_lighting = false;
 }
 
 /** Allocates a new map-header structure.
@@ -347,7 +352,6 @@ void P_AllocMapHeader(INT16 i)
 	{
 		mapheaderinfo[i] = Z_Malloc(sizeof(mapheader_t), PU_STATIC, NULL);
 		mapheaderinfo[i]->grades = NULL;
-		P_ClearDirectionalLightMapHeaderInfo(i);
 	}
 	P_ClearSingleMapHeaderInfo(i + 1);
 }
@@ -550,6 +554,16 @@ boolean P_SectorUsesDirectionalLighting(const sector_t *sector)
 
 boolean P_ApplyLightOffset(UINT8 baselightnum, const sector_t *sector)
 {
+	mapheader_lighting_t *lighting = &mapheaderinfo[gamemap-1]->lighting;
+
+	if (encoremode && mapheaderinfo[gamemap-1]->use_encore_lighting)
+	{
+		lighting = &mapheaderinfo[gamemap-1]->lighting_encore;
+	}
+
+	if (!cv_randomdirlight.value && lighting->use_custom_light == false)
+		return (baselightnum < LIGHTLEVELS-1 && baselightnum > 0);
+
 	if (!P_SectorUsesDirectionalLighting(sector))
 	{
 		return false;
@@ -562,6 +576,16 @@ boolean P_ApplyLightOffset(UINT8 baselightnum, const sector_t *sector)
 
 boolean P_ApplyLightOffsetFine(UINT8 baselightlevel, const sector_t *sector)
 {
+	mapheader_lighting_t *lighting = &mapheaderinfo[gamemap-1]->lighting;
+
+	if (encoremode && mapheaderinfo[gamemap-1]->use_encore_lighting)
+	{
+		lighting = &mapheaderinfo[gamemap-1]->lighting_encore;
+	}
+
+	if (!cv_randomdirlight.value && lighting->use_custom_light == false)
+		return (baselightlevel < 255 && baselightlevel > 0);
+
 	if (!P_SectorUsesDirectionalLighting(sector))
 	{
 		return false;
