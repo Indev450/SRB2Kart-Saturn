@@ -2872,6 +2872,12 @@ static void HWR_Subsector(size_t num)
 		{
 			for (rover = gl_frontsector->ffloors; rover; rover = rover->next)
 			{
+				if (!(rover->flags & FF_EXISTS) || !(rover->flags & FF_RENDERPLANES))
+					continue;
+
+				if (sub->validcount == validcount)
+					continue;
+
 				sector_t *controlSec = &sectors[rover->secnum];
 
 				if (controlSec->moved != true)
