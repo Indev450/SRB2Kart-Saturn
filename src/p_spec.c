@@ -5230,6 +5230,8 @@ static void P_RunLevelLoadExecutors(void)
 	}
 }
 
+// dumb thing to reset maplight on next map change when its toggled
+boolean reinitmaplight = false;
 static void P_SetupDirectionalLight(void)
 {
 	mapheader_lighting_t *lighting = &mapheaderinfo[gamemap-1]->lighting;
@@ -5244,12 +5246,14 @@ static void P_SetupDirectionalLight(void)
 		static INT16 oldmap = 0; // dont reset stuff when you restart a map
 		static boolean oldencore = false;
 
-		if (gamemap != oldmap || encoremode != oldencore)
+		if (gamemap != oldmap || encoremode != oldencore || reinitmaplight)
 		{
 			maplighting.contrast = M_RandomRange(0, 58);
 			maplighting.backlight = 0;
 			maplighting.directional = M_RandomRange(0, 1); // either on or off
 			maplighting.angle = M_RandomRange(-382, 382);
+
+			reinitmaplight = false;
 		}
 
 		oldmap = gamemap;

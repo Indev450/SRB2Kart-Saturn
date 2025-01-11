@@ -161,6 +161,8 @@ void SendWeaponPref2(void);
 void SendWeaponPref3(void);
 void SendWeaponPref4(void);
 
+static void DirLight_OnChange(void);
+
 static void Precipstuff_OnChange(void);
 
 consvar_t cv_tailspickup = {"tailspickup", "On", CV_NETVAR|CV_NOSHOWHELP, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -210,7 +212,13 @@ consvar_t cv_homremoval = {"homremoval", "Yes", CV_SAVE, homremoval_cons_t, NULL
 consvar_t cv_maxportals = {"maxportals", "2", CV_SAVE, maxportals_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 // randomized directional lightning
-consvar_t cv_randomdirlight = {"randomdirectionallight", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_randomdirlight = {"randomdirectionallight", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, DirLight_OnChange, 0, NULL, NULL, 0, 0, NULL};
+
+// tells to reset the maplight at next map change
+static void DirLight_OnChange(void)
+{
+	reinitmaplight = true;
+}
 
 void SplitScreen_OnChange(void)
 {
