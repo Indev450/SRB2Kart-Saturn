@@ -5227,24 +5227,35 @@ static void P_RunLevelLoadExecutors(void)
 
 static void P_SetupDirectionalLight(void)
 {
-	if (cv_randomdirlight.value && mapheaderinfo[gamemap-1]->use_custom_light == false)
+	mapheader_lighting_t *lighting = &mapheaderinfo[gamemap-1]->lighting;
+
+	if (encoremode && mapheaderinfo[gamemap-1]->use_encore_lighting)
+	{
+		lighting = &mapheaderinfo[gamemap-1]->lighting_encore;
+	}
+
+	if (cv_randomdirlight.value && lighting->use_custom_light == false)
 	{
 		static INT16 oldmap = 0; // dont reset stuff when you restart a map
-		if (gamemap != oldmap)
+		static boolean oldencore = false;
+
+		if (gamemap != oldmap || encoremode != oldencore)
 		{
 			maplighting.contrast = M_RandomRange(0, 58);
 			maplighting.backlight = 0;
 			maplighting.directional = M_RandomRange(0, 1); // either on or off
 			maplighting.angle = M_RandomRange(-382, 382);
 		}
+
 		oldmap = gamemap;
+		oldencore = encoremode;
 		return;
 	}
 
-	maplighting.contrast = mapheaderinfo[gamemap-1]->light_contrast;
-	maplighting.backlight = mapheaderinfo[gamemap-1]->sprite_backlight;
-	maplighting.directional = mapheaderinfo[gamemap-1]->use_light_angle;
-	maplighting.angle = mapheaderinfo[gamemap-1]->light_angle;
+	maplighting.contrast = lighting->light_contrast;
+	maplighting.backlight = lighting->sprite_backlight;
+	maplighting.directional = lighting->use_light_angle;
+	maplighting.angle = lighting->light_angle;
 }
 
 /** After the map has loaded, scans for specials that spawn 3Dfloors and

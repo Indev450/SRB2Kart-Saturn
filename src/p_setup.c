@@ -278,6 +278,15 @@ FUNCNORETURN static ATTRNORETURN void CorruptMapError(const char *msg)
 
 #define NUMLAPS_DEFAULT 3
 
+static void P_ClearMapHeaderLighting(mapheader_lighting_t *lighting)
+{
+	lighting->light_contrast = 8;
+	lighting->sprite_backlight = 0;
+	lighting->use_light_angle = false;
+	lighting->light_angle = 0;
+	lighting->use_custom_light = false;
+}
+
 /** Clears the data from a single map header.
   *
   * \param i Map number to clear header for.
@@ -327,10 +336,10 @@ static void P_ClearSingleMapHeaderInfo(INT16 i)
 
 	mapheaderinfo[num]->customopts = NULL;
 	mapheaderinfo[num]->numCustomOptions = 0;
-	mapheaderinfo[num]->light_contrast = 8;
-	mapheaderinfo[num]->sprite_backlight = 0;
-	mapheaderinfo[num]->use_light_angle = false;
-	mapheaderinfo[num]->light_angle = 0;
+
+	P_ClearMapHeaderLighting(&mapheaderinfo[num]->lighting);
+	P_ClearMapHeaderLighting(&mapheaderinfo[num]->lighting_encore);
+	mapheaderinfo[num]->use_encore_lighting = false;
 }
 
 /** Allocates a new map-header structure.
