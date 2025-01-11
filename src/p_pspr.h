@@ -41,12 +41,12 @@
 #define FF_HORIZONTALFLIP 0x400
 /// \brief Frame flags: Thin, paper-like sprite (for collision equivalent, see MF_PAPERCOLLISION)
 #define FF_PAPERSPRITE 0x800
+/// \brief mobj_t.lightlevel is absolute instead of relative
+#define FF_ABSOLUTELIGHTLEVEL 0x2000
 /// \brief Frame flags: Simple stateless animation
 #define FF_ANIMATE 0x4000
 /// \brief Frame flags: frame always appears full bright
 #define FF_FULLBRIGHT 0x8000
-/// \brief mobj_t.lightlevel is absolute instead of relative
-#define FF_ABSOLUTELIGHTLEVEL 0x40000
 /// \brief Frame flags: 0 = no trans(opaque), 1-15 = transl. table
 #define FF_TRANSMASK 0xf0000
 /// \brief shift for FF_TRANSMASK
