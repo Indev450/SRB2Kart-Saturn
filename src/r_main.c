@@ -284,12 +284,14 @@ static void Precipstuff_OnChange(void)
 	thinker_t *next;
 	precipmobj_t *precipmobj;
 
-	for (think = thinkercap.next; think != &thinkercap; think = next)
+	for (think = precipcap.next; think != &precipcap; think = next)
 	{
 		next = think->next;
 
+#ifdef PARANOIA
 		if (think->function.acp1 != (actionf_p1)P_NullPrecipThinker)
 			continue; // not a precipmobj thinker
+#endif
 
 		precipmobj = (precipmobj_t *)think;
 		P_FreePrecipMobj(precipmobj);

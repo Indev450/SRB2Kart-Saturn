@@ -49,6 +49,7 @@ tic_t leveltime;
 
 // Both the head and tail of the thinker list.
 thinker_t thinkercap;
+thinker_t precipcap;
 
 void Command_Numthinkers_f(void)
 {
@@ -56,6 +57,7 @@ void Command_Numthinkers_f(void)
 	INT32 count = 0;
 	actionf_p1 action;
 	thinker_t *think;
+	thinker_t *listtype;
 
 	if (gamestate != GS_LEVEL)
 	{
@@ -104,7 +106,9 @@ void Command_Numthinkers_f(void)
 			return;
 	}
 
-	for (think = thinkercap.next; think != &thinkercap; think = think->next)
+	listtype = (num == 2) ? &precipcap : &thinkercap;
+
+	for (think = listtype->next; think != listtype; think = think->next)
 	{
 		if (think->function.acp1 != action)
 			continue;
@@ -181,6 +185,7 @@ void Command_CountMobjs_f(void)
 void P_InitThinkers(void)
 {
 	thinkercap.prev = thinkercap.next = &thinkercap;
+	precipcap.prev = precipcap.next = &precipcap;
 	waypointcap = NULL;
 }
 
@@ -198,6 +203,22 @@ void P_AddThinker(thinker_t *thinker)
 	thinker->references = 0;    // killough 11/98: init reference counter to 0
 
 	thinker->cachable = (thinker->function.acp1 == (actionf_p1)P_MobjThinker);
+}
+
+//
+// P_AddPrecipThinker
+// Adds a new precip thinker at the end of the list.
+//
+void P_AddPrecipThinker(thinker_t *thinker)
+{
+	precipcap.prev->next = thinker;
+	thinker->next = &precipcap;
+	thinker->prev = precipcap.prev;
+	precipcap.prev = thinker;
+
+	thinker->references = 0;    // killough 11/98: init reference counter to 0
+
+	thinker->cachable = false;
 }
 
 //
@@ -341,8 +362,6 @@ static inline void P_RunThinkers(void)
 {
 	for (currentthinker = thinkercap.next; currentthinker != &thinkercap; currentthinker = currentthinker->next)
 	{
-		if (currentthinker->function.acp1 == (actionf_p1)P_NullPrecipThinker)
-			continue;
 #ifdef PARANOIA
 		I_Assert(currentthinker->function.acp1 != NULL)
 #endif
