@@ -259,6 +259,7 @@ typedef struct
 	//boolean automap;    ///< Displays a level's white map outline in modified games
 	fixed_t mobj_scale; ///< Replacement for TOL_ERZ3
 
+	boolean use_custom_light;
 	UINT8 light_contrast; ///< Range of wall lighting. 0 is no lighting.
 	SINT8 sprite_backlight;				///< Subtract from wall lighting for sprites only.
 	boolean use_light_angle; ///< When false, wall lighting is evenly distributed. When true, wall lighting is directional.
