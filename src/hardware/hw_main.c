@@ -3118,11 +3118,42 @@ static void HWR_Subsector(size_t num)
 // Renders all subsectors below a given node,
 //  traversing subtree recursively.
 // Just call with BSP root.
+//
 
 static void HWR_RenderBSPNode(INT32 bspnum)
 {
-	const node_t *bsp;
-	INT32 side;
+	register const node_t *bsp;
+	register INT32 side;
+	ps_numbspcalls.value.i++;
+
+	while (!(bspnum & NF_SUBSECTOR))  // Keep going until found a subsector
+	{
+		bsp = &nodes[bspnum];
+
+		// Decide which side the view point is on.
+		side = R_PointOnSideFast(viewx, viewy, bsp);
+
+		// Recursively divide front space (toward the viewer).
+		HWR_RenderBSPNode(bsp->children[side]);
+
+		// Possibly divide back space (away from the viewer).
+		if (!(HWR_CheckBBox(bsp->bbox[side^1])))
+			return;
+
+		bspnum = bsp->children[side^1];
+	}
+
+	// e6y: support for extended nodes
+	HWR_Subsector(bspnum == -1 ? 0 : bspnum & ~NF_SUBSECTOR);
+}
+
+//
+// Same thing but with extra portal checks
+//
+static void HWR_RenderPortalBSPNode(INT32 bspnum)
+{
+	register const node_t *bsp;
+	register INT32 side;
 	ps_numbspcalls.value.i++;
 
 	while (!(bspnum & NF_SUBSECTOR))  // Keep going until found a subsector
@@ -3134,7 +3165,7 @@ static void HWR_RenderBSPNode(INT32 bspnum)
 
 		// Recursively divide front space (toward the viewer).
 		if (HWR_PortalCheckBBox(bsp->bbox[side]))
-			HWR_RenderBSPNode(bsp->children[side]);
+			HWR_RenderPortalBSPNode(bsp->children[side]);
 
 		// Possibly divide back space (away from the viewer).
 		if (!(HWR_CheckBBox(bsp->bbox[side^1]) && HWR_PortalCheckBBox(bsp->bbox[side^1])))
@@ -3144,7 +3175,7 @@ static void HWR_RenderBSPNode(INT32 bspnum)
 	}
 
 	// PORTAL CULLING
-	if (portalclipline && portalcullsector)
+	if (portalcullsector)
 	{
 		// skip all subsectors encountered before the portal
 		// destination's front sector
@@ -5262,7 +5293,11 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *pl
 
 		validcount++;
 
-		HWR_RenderBSPNode((INT32)numnodes-1);// no actual rendering happens
+		// no actual rendering happens
+		if (portalclipline)
+			HWR_RenderPortalBSPNode((INT32)numnodes-1);
+		else
+			HWR_RenderBSPNode((INT32)numnodes-1);
 
 		// for each found portal:
 		// note: if necessary, could sort the portals here?
@@ -5313,7 +5348,10 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *pl
 		HWR_SetPortalState(GLPORTAL_INSIDE); // TURN IT OFF
 
 	// Recursively "render" the BSP tree.
-	HWR_RenderBSPNode((INT32)numnodes-1);
+	if (!portalclipline)
+		HWR_RenderBSPNode((INT32)numnodes-1);
+	else
+		HWR_RenderPortalBSPNode((INT32)numnodes-1);
 
 	// woo we back
 	HWR_SetPortalState(oldgl_portal_state);
