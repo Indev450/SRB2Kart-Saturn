@@ -545,6 +545,9 @@ boolean P_SectorUsesDirectionalLighting(const sector_t *sector)
 
 boolean P_ApplyLightOffset(UINT8 baselightnum, const sector_t *sector)
 {
+	if (!cv_randomdirlight.value && mapheaderinfo[gamemap-1]->use_custom_light == false)
+		return (baselightnum < LIGHTLEVELS-1 && baselightnum > 0);
+
 	if (!P_SectorUsesDirectionalLighting(sector))
 	{
 		return false;
@@ -557,6 +560,9 @@ boolean P_ApplyLightOffset(UINT8 baselightnum, const sector_t *sector)
 
 boolean P_ApplyLightOffsetFine(UINT8 baselightlevel, const sector_t *sector)
 {
+	if (!cv_randomdirlight.value && mapheaderinfo[gamemap-1]->use_custom_light == false)
+		return (baselightlevel < 255 && baselightlevel > 0);
+
 	if (!P_SectorUsesDirectionalLighting(sector))
 	{
 		return false;
