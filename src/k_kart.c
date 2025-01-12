@@ -145,9 +145,37 @@ consvar_t cv_newspeedometer = {"newspeedometer", "Default", CV_SAVE, speedo_cons
 consvar_t cv_battlespeedo = {"battlespeedo", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; //toggle for showing the speedometer in battlemode
 
 //hardcode saltyhop mhhm
-consvar_t cv_saltyhop = {"hardcodehop", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+static void saltyhop_onchange(void);
+consvar_t cv_saltyhop = {"hardcodehop", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, saltyhop_onchange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_saltyhopsfx = {"hardcodehopsfx", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_saltysquish = {"hardcodehopsquish", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+static void saltyhop_onchange(void)
+{
+	// reset everything when toggling saltyhop off
+	if (!cv_saltyhop.value && (gamestate == GS_LEVEL))
+	{
+		for (INT32 i = 0; i < MAXPLAYERS; i++)
+		{
+			player_t *player = &players[i];
+
+			if (!playeringame[i] || !player->mo)
+				continue;
+
+			player->mo->spriteyoffset = 0;
+			player->mo->spriteyscale = 0;
+			player->mo->spritexscale = 0;
+
+			player->mo->salty_jump = false;
+			player->mo->salty_zoffset = 0;
+			player->mo->salty_momz = 0;
+
+			player->mo->salty_ready = false;
+			player->mo->salty_tapping = false;
+			player->mo->init_salty = false;
+		}
+	}
+}
 
 //Colourized HUD
 consvar_t cv_colorizedhud = {"colorizedhud", "Off", CV_SAVE|CV_CALL, CV_OnOff, SaturnHud_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
@@ -3399,38 +3427,55 @@ static void K_StretchPlayerGravity(player_t *p)
 
 static void K_QuiteSaltyHop(player_t *p)
 {
+	if (!cv_saltyhop.value)
+		return;
+
 	// what the fuck is this haya
 	fixed_t mos = FRACUNIT; // doesnt work correctly if it isnt :/
 
 	// ready?
-	if (!p->kartstuff[k_jmp]) {
+	if (!p->kartstuff[k_jmp])
+	{
 		p->mo->salty_ready = true;
 		p->mo->salty_tapping = false;
-	} else if (p->mo->salty_ready) {
+	}
+	else if (p->mo->salty_ready)
+	{
 		p->mo->salty_ready = false;
 		p->mo->salty_tapping = true;
-	} else {
+	}
+	else
+	{
 		p->mo->salty_tapping = false;
 	}
 
 	// GO!
-	if (!p->mo->init_salty) {
+	if (!p->mo->init_salty)
+	{
 		p->mo->salty_jump = false;
 		p->mo->salty_zoffset = 0;
 		p->mo->salty_momz = 0;
 		p->mo->init_salty = true;
 	}
-	else if ((p->mo->salty_jump)) {
-		if (p->mo->eflags & MFE_JUSTHITFLOOR) {
+	else if ((p->mo->salty_jump))
+	{
+		if (p->mo->eflags & MFE_JUSTHITFLOOR)
+		{
 			p->mo->salty_zoffset = 0;
-		} else if (P_IsObjectOnGround(p->mo)) {
+		}
+		else if (P_IsObjectOnGround(p->mo))
+		{
 			p->mo->salty_zoffset += p->mo->salty_momz;
 			p->mo->salty_momz -= (mos*3/2);
-		} else {
+		}
+		else
+		{
 			p->mo->salty_zoffset *= (49/50)*mos;
 			p->mo->salty_momz = 0;
 		}
-		if (p->mo->salty_zoffset <= 0) {
+
+		if (p->mo->salty_zoffset <= 0)
+		{
 			if (!(p->mo->eflags & MFE_JUSTHITFLOOR) && P_IsObjectOnGround(p->mo) && cv_saltyhopsfx.value)
 				S_StartSound(p->mo, sfx_s268);
 			p->mo->salty_jump = false;
@@ -3438,18 +3483,23 @@ static void K_QuiteSaltyHop(player_t *p)
 			p->mo->salty_momz = 0;
 			// shlamma damma
 			p->mo->stretchslam += cv_saltysquish.value ? (8*mos) : 0;
-		} else if (p->mo->salty_zoffset >= 0 && cv_saltysquish.value) {
+		}
+		else if (p->mo->salty_zoffset >= 0 && cv_saltysquish.value)
+		{
 			// goofy ahh hack
 			p->mo->spriteyscale += (mos/8);
 			p->mo->spritexscale -= (mos/8);
 		}
+
 		p->mo->spriteyoffset = p->mo->salty_zoffset;
+
 		if (S_SoundPlaying(p->mo, sfx_screec))
 			S_StopSoundByID(p->mo, sfx_screec);
 		if (S_SoundPlaying(p->mo, sfx_drift))
 			S_StopSoundByID(p->mo, sfx_drift);
 	}
-	else if (p->mo->salty_tapping && P_IsObjectOnGround(p->mo) && !p->kartstuff[k_spinouttimer] && !p->kartstuff[k_squishedtimer]) {
+	else if (p->mo->salty_tapping && P_IsObjectOnGround(p->mo) && !p->kartstuff[k_spinouttimer] && !p->kartstuff[k_squishedtimer])
+	{
 		p->mo->salty_jump = true;
 		p->mo->salty_zoffset = 0;
 		p->mo->salty_momz = 6*mos;
@@ -7031,14 +7081,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 	}
 
 	// salty hop! i wanna die
-	if (cv_saltyhop.value)
-		K_QuiteSaltyHop(player);
-	else {
-		player->mo->spriteyoffset = 0;
-		player->mo->salty_jump = false;
-		player->mo->salty_zoffset = 0;
-		player->mo->salty_momz = 0;
-	}
+	K_QuiteSaltyHop(player);
 }
 
 void K_CalculateBattleWanted(void)
