@@ -784,18 +784,19 @@ void K_RegisterKartStuff(void)
 	REG_HUD_OFFSET_X(name)\
 	REG_HUD_OFFSET_Y(name)
 
-	REG_HUD_OFFSET(item); // Item box
-	REG_HUD_OFFSET(time); // Time
-	REG_HUD_OFFSET(laps); // Number of laps
-	REG_HUD_OFFSET(dnft); // Countdown (did not finish timer)
-	REG_HUD_OFFSET(speed); // Speedometer
-	REG_HUD_OFFSET(posi); // Position in race
-	REG_HUD_OFFSET(face); // Mini rankings
-	REG_HUD_OFFSET(stcd); // Starting countdown
+	REG_HUD_OFFSET(item);   // Item box
+	REG_HUD_OFFSET(time);   // Time
+	REG_HUD_OFFSET(laps);   // Number of laps
+	REG_HUD_OFFSET(dnft);   // Countdown (did not finish timer)
+	REG_HUD_OFFSET(speed);  // Speedometer
+	REG_HUD_OFFSET(posi);   // Position in race
+	REG_HUD_OFFSET(wheel);  // Position in race
+	REG_HUD_OFFSET(face);   // Mini rankings
+	REG_HUD_OFFSET(stcd);   // Starting countdown
 	REG_HUD_OFFSET_Y(chek); // Check gfx
-	REG_HUD_OFFSET(mini); // Minimap
-	REG_HUD_OFFSET(want); // Wanted
-	REG_HUD_OFFSET(stat); // Stats
+	REG_HUD_OFFSET(mini);   // Minimap
+	REG_HUD_OFFSET(want);   // Wanted
+	REG_HUD_OFFSET(stat);   // Stats
 
 #undef REG_HUD_OFFSET
 #undef REG_HUD_OFFSET_X
