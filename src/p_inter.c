@@ -2377,6 +2377,10 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 	if (objectplacing)
 		return false;
 
+	// well no clue but this may happen ig
+	if (!target)
+		return false;
+
 	if (target->health <= 0)
 		return false;
 
@@ -2396,6 +2400,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 	if (!metalrecording)
 	{
 		UINT8 shouldForce = LUA_HookShouldDamage(target, inflictor, source, damage);
+
 		if (P_MobjWasRemoved(target))
 			return (shouldForce == 1); // mobj was removed
 		if (shouldForce == 1)
