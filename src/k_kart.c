@@ -163,8 +163,8 @@ static void saltyhop_onchange(void)
 				continue;
 
 			player->mo->spriteyoffset = 0;
-			player->mo->spriteyscale = 0;
-			player->mo->spritexscale = 0;
+			player->mo->spriteyscale = player->mo->scale;
+			player->mo->spritexscale = player->mo->scale;
 
 			player->mo->salty_jump = false;
 			player->mo->salty_zoffset = 0;
