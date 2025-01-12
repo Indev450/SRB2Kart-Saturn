@@ -146,6 +146,38 @@ CV_PossibleValue_t speedo_cons_t[NUMSPEEDOSTUFF];
 consvar_t cv_newspeedometer = {"newspeedometer", "Default", CV_SAVE, speedo_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_battlespeedo = {"battlespeedo", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; //toggle for showing the speedometer in battlemode
 
+// funn-E streeetch
+static void gravstretch_onchange(void);
+static CV_PossibleValue_t stretchfactor_t[] = {
+	{0, "Off"}, {FRACUNIT/4, "0.250"},
+	{3*FRACUNIT/8, "0.375"}, {FRACUNIT/2, "0.500"}, {5*FRACUNIT/8, "0.625"},
+	{3*FRACUNIT/4, "0.750"}, {7*FRACUNIT/8, "0.875"}, {FRACUNIT, "Max"}, {0, NULL}};
+consvar_t cv_gravstretch = {"gravstretch", "0", CV_SAVE|CV_CALL|CV_NOINIT, stretchfactor_t, gravstretch_onchange, 0, NULL, NULL, 0, 0, NULL};
+
+static void gravstretch_onchange(void)
+{
+	// reset everything when toggling gravstretch off
+	if (cv_gravstretch.value == 0)
+	{
+		K_ResetPlayerSpriteStuff();
+	}
+}
+
+static CV_PossibleValue_t slamsound_t[] = {{0, "Off"}, {1, "On"}, {0, NULL}};
+consvar_t cv_slamsound = {"slamsound", "1", CV_SAVE, slamsound_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+// sprite rotatuer stuff
+static CV_PossibleValue_t sloperolldist_cons_t[] = {
+	{512, "512"},	{768, "768"},
+	{1024, "1024"},	{1536, "1536"},	{2048, "2048"},
+	{3072, "3072"},	{4096, "4096"},	{6144, "6144"},
+	{8192, "8192"},	{0, "Infinite"},	{0, NULL}};
+consvar_t cv_sloperolldist = {"sloperolldist", "Infinite", CV_SAVE, sloperolldist_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+static CV_PossibleValue_t sloperoll_cons_t[] = {{0, "Off"}, {1, "Players"}, {2, "Everything"}, {0, NULL}};
+consvar_t cv_sloperoll = {"sloperoll", "Off", CV_SAVE|CV_CALL, sloperoll_cons_t, PDistort_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_sparkroll = {"sparkroll", "Off", CV_SAVE|CV_CALL, CV_OnOff, PDistort_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_sliptideroll = {"sliptideroll", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 //hardcode saltyhop mhhm
 static void saltyhop_onchange(void);
 consvar_t cv_saltyhop = {"hardcodehop", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, saltyhop_onchange, 0, NULL, NULL, 0, 0, NULL};
@@ -155,27 +187,9 @@ consvar_t cv_saltysquish = {"hardcodehopsquish", "On", CV_SAVE, CV_OnOff, NULL, 
 static void saltyhop_onchange(void)
 {
 	// reset everything when toggling saltyhop off
-	if (!cv_saltyhop.value && (gamestate == GS_LEVEL))
+	if (!cv_saltyhop.value)
 	{
-		for (INT32 i = 0; i < MAXPLAYERS; i++)
-		{
-			player_t *player = &players[i];
-
-			if (!playeringame[i] || !player->mo)
-				continue;
-
-			player->mo->spriteyoffset = 0;
-			player->mo->spriteyscale = player->mo->scale;
-			player->mo->spritexscale = player->mo->scale;
-
-			player->mo->salty_jump = false;
-			player->mo->salty_zoffset = 0;
-			player->mo->salty_momz = 0;
-
-			player->mo->salty_ready = false;
-			player->mo->salty_tapping = false;
-			player->mo->init_salty = false;
-		}
+		K_ResetPlayerSpriteStuff();
 	}
 }
 
@@ -916,6 +930,34 @@ void K_RegisterKartStuff(void)
 }
 
 //}
+
+void K_ResetPlayerSpriteStuff(void)
+{
+	if (gamestate != GS_LEVEL)
+		return;
+
+	for (INT32 i = 0; i < MAXPLAYERS; i++)
+	{
+		player_t *player = &players[i];
+
+		if (!playeringame[i] || P_MobjWasRemoved(player->mo))
+			continue;
+
+		player->mo->spritexoffset = 0;
+		player->mo->spriteyoffset = 0;
+		player->mo->spritexscale = player->mo->realxscale;
+		player->mo->spriteyscale = player->mo->realyscale;
+
+		// reset saltyhop stuffs too
+		player->mo->salty_jump = false;
+		player->mo->salty_zoffset = 0;
+		player->mo->salty_momz = 0;
+
+		player->mo->salty_ready = false;
+		player->mo->salty_tapping = false;
+		player->mo->init_salty = false;
+	}
+}
 
 boolean K_IsPlayerLosing(player_t *player)
 {
@@ -3361,8 +3403,17 @@ static void K_SpawnAIZDust(player_t *player)
 	}
 }
 
+#define MAXSTRETCHDIV 17476977
+
 static void K_StretchPlayerGravity(player_t *p)
 {
+	if (cv_gravstretch.value == 0)
+	{
+		p->mo->spritexscale = p->mo->realxscale;
+		p->mo->spriteyscale = p->mo->realyscale;
+		return;
+	}
+
 	I_Assert(p != NULL);
 	I_Assert(p->mo != NULL);
 	I_Assert(!P_MobjWasRemoved(p->mo));
@@ -3370,15 +3421,13 @@ static void K_StretchPlayerGravity(player_t *p)
 	fixed_t mos = FRACUNIT;
 	fixed_t rzs = abs(p->mo->momz);
 	fixed_t zspd = abs(rzs/mos);
-	fixed_t stretchScaleFactor = 0;
-	fixed_t rzsDiv = 1;
-	fixed_t slamDiv = 1;
+	fixed_t stretchScaleFactor = FixedDiv(FRACUNIT*60, cv_gravstretch.value);
+	fixed_t rzsDiv, slamDiv;
 
 	fixed_t dxs = p->mo->realxscale;
 	fixed_t dys = p->mo->realyscale;
-	stretchScaleFactor = FixedDiv(FRACUNIT*60, cv_gravstretch.value);
 
-	if (stretchScaleFactor > 17476977)
+	if (stretchScaleFactor > MAXSTRETCHDIV)
 		rzsDiv = 0;
 	else
 		rzsDiv = FixedDiv(rzs, stretchScaleFactor);
@@ -3388,7 +3437,7 @@ static void K_StretchPlayerGravity(player_t *p)
 	if (p->mo->slamsoundtimer)
 		p->mo->slamsoundtimer--;
 
-	if (cv_slamsound.value && (p->mo->eflags & MFE_JUSTHITFLOOR) && p->mo->stretchslam > 4*mos && !p->mo->slamsoundtimer)
+	if (cv_slamsound.value && (p->mo->eflags & MFE_JUSTHITFLOOR) && !p->mo->slamsoundtimer && (p->mo->stretchslam > 4*mos))
 	{
 		S_StartSound(p->mo, sfx_s3k4c);
 		p->mo->slamsoundtimer = TICRATE;
@@ -3416,7 +3465,7 @@ static void K_StretchPlayerGravity(player_t *p)
 	}
 	else
 	{
-		if (stretchScaleFactor > 17476977)
+		if (stretchScaleFactor > MAXSTRETCHDIV)
 			slamDiv = 0;
 		else
 			slamDiv = FixedDiv(p->mo->stretchslam, stretchScaleFactor);
@@ -3462,7 +3511,7 @@ static void K_QuiteSaltyHop(player_t *p)
 		p->mo->salty_momz = 0;
 		p->mo->init_salty = true;
 	}
-	else if ((p->mo->salty_jump))
+	else if (p->mo->salty_jump)
 	{
 		if (p->mo->eflags & MFE_JUSTHITFLOOR)
 		{
@@ -6965,13 +7014,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 			player->sliproll -= (4*ANG1);
 	}
 
-	if (cv_gravstretch.value > 13107)
-		K_StretchPlayerGravity(player);
-	else
-	{
-		player->mo->spritexscale = player->mo->realxscale;
-		player->mo->spriteyscale = player->mo->realyscale;
-	}
+	K_StretchPlayerGravity(player);
 
 	if (cv_sloperoll.value && !player->mo->salty_jump) // seeing a character rotate mid-hop looks really janky
 	{

@@ -11,6 +11,8 @@
 
 #define KART_FULLTURN 800
 
+void K_ResetPlayerSpriteStuff(void);
+
 void K_LoadExtraVFX(void);
 
 extern UINT8 colortranslations[MAXTRANSLATIONS][16];
