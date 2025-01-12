@@ -8566,11 +8566,11 @@ static void K_drawKartItem(void)
 							case 2:
 								localpatch = kp_multbanana[0];
 								break;
-							case 10:
-								localpatch = kp_multbanana[2];
+							case 3:
+								localpatch = kp_multbanana[1];
 								break;
 							default:
-								localpatch = kp_multbanana[1];
+								localpatch = kp_multbanana[2];
 								break;
 						}
 					}
