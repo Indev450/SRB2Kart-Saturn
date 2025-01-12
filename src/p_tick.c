@@ -386,7 +386,12 @@ static void P_DeviceRumbleTick(void)
 			continue;
 		}
 
-		if (player->mo == NULL)
+		if (camera[i].freecam)
+		{
+			continue;
+		}
+
+		if (P_MobjWasRemoved(player->mo))
 		{
 			continue;
 		}
@@ -619,10 +624,7 @@ void P_Ticker(boolean run)
 		PS_STOP_TIMING(ps_lua_thinkframe_time);
 	}
 
-	// Run shield positioning
-	//P_RunShields();
 	P_RunOverlays();
-
 	P_RunShadows();
 
 	P_UpdateSpecials();
