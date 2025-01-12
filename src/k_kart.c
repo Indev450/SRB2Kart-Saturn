@@ -99,18 +99,19 @@ consvar_t cv_##name##_yoffset = {"hud_" #name "_yoffset", "0", CV_SAVE, NULL, NU
 IMPL_HUD_OFFSET_X(name)\
 IMPL_HUD_OFFSET_Y(name)
 
-IMPL_HUD_OFFSET(item); // Item box
-IMPL_HUD_OFFSET(time); // Time
-IMPL_HUD_OFFSET(laps); // Number of laps
-IMPL_HUD_OFFSET(dnft); // Countdown (did not finish timer)
-IMPL_HUD_OFFSET(speed); // Speedometer
-IMPL_HUD_OFFSET(posi); // Position in race
-IMPL_HUD_OFFSET(face); // Mini rankings
-IMPL_HUD_OFFSET(stcd); // Starting countdown
+IMPL_HUD_OFFSET(item);   // Item box
+IMPL_HUD_OFFSET(time);   // Time
+IMPL_HUD_OFFSET(laps);   // Number of laps
+IMPL_HUD_OFFSET(dnft);   // Countdown (did not finish timer)
+IMPL_HUD_OFFSET(speed);  // Speedometer
+IMPL_HUD_OFFSET(posi);   // Position in race
+IMPL_HUD_OFFSET(wheel);  // RA Wheel
+IMPL_HUD_OFFSET(face);   // Mini rankings
+IMPL_HUD_OFFSET(stcd);   // Starting countdown
 IMPL_HUD_OFFSET_Y(chek); // Check gfx
-IMPL_HUD_OFFSET(mini); // Minimap
-IMPL_HUD_OFFSET(want); // Wanted
-IMPL_HUD_OFFSET(stat); // Stats
+IMPL_HUD_OFFSET(mini);   // Minimap
+IMPL_HUD_OFFSET(want);   // Wanted
+IMPL_HUD_OFFSET(stat);   // Stats
 
 #undef IMPL_HUD_OFFSET
 #undef IMPL_HUD_OFFSET_X
@@ -8723,6 +8724,7 @@ static void K_DrawKartPositionNum(INT32 num)
 	// POSI_X = BASEVIDWIDTH - 51;	// 269
 	// POSI_Y = BASEVIDHEIGHT- 64;	// 136
 
+	const boolean wheeloffs = (cv_showinput.value && cv_posi_xoffset.value == 0 && cv_posi_yoffset.value == 0 && cv_wheel_xoffset.value == 0 && cv_wheel_yoffset.value == 0);
 	boolean win = (stplyr->exiting && num == 1);
 	//INT32 X = POSI_X;
 	INT32 W = SHORT(kp_positionnum[0][0]->width);
@@ -8730,7 +8732,7 @@ static void K_DrawKartPositionNum(INT32 num)
 	patch_t *localpatch = kp_positionnum[0][0];
 	//INT32 splitflags = K_calcSplitFlags(V_SNAPTOBOTTOM|V_SNAPTORIGHT);
 	INT32 fx = 0, fy = 0, fflags = 0;
-	INT32 xoffs = (cv_showinput.value) ? -48 : 0;
+	INT32 xoffs = wheeloffs ? -48 : 0;
 	boolean flipdraw = false;	// flip the order we draw it in for MORE splitscreen bs. fun.
 	boolean flipvdraw = false;	// used only for 2p splitscreen so overtaking doesn't make 1P's position fly off the screen.
 	boolean overtake = false;
@@ -8741,7 +8743,7 @@ static void K_DrawKartPositionNum(INT32 num)
 		overtake = true;	// this is used for splitscreen stuff in conjunction with flipdraw.
 	}
 
-	if (splitscreen || cv_smallposnum.value || cv_showinput.value)
+	if (splitscreen || cv_smallposnum.value || wheeloffs)
 		scale /= 2;
 
 	W = FixedMul(W<<FRACBITS, scale)>>FRACBITS;
@@ -10546,7 +10548,7 @@ static void K_drawInput(void)
 
 	static INT32 pn = 0;
 	INT32 target = 0, splitflags = (V_SNAPTOBOTTOM|V_SNAPTORIGHT|V_HUDTRANS);
-	INT32 x = (BASEVIDWIDTH - 32 + cv_posi_xoffset.value)*FRACUNIT, y = (BASEVIDHEIGHT - 24 + cv_posi_yoffset.value)*FRACUNIT;
+	INT32 x = (BASEVIDWIDTH - 32 + cv_wheel_xoffset.value)*FRACUNIT, y = (BASEVIDHEIGHT - 24 + cv_wheel_yoffset.value)*FRACUNIT;
 	INT32 offs, col;
 	const INT32 accent1 = splitflags|colortranslations[K_GetHudColor()][5];
 	const INT32 accent2 = splitflags|colortranslations[K_GetHudColor()][9];
