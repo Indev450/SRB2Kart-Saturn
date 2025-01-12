@@ -27,23 +27,27 @@ extern boolean usehome; //Alam: which path?
 extern const char *pandf; //Alam: how to path?
 extern char srb2path[256]; //Alam: SRB2's Home
 
+// extra graphic patches for saturn specific thingies
 extern boolean found_extra_kart; // for use in k_kart.c
 extern boolean found_extra2_kart; // for use in k_kart.c
 extern boolean found_extra3_kart; // for use in k_kart.c
 
-extern boolean xtra_speedo; // extra speedometer check
-extern boolean xtra_speedo_clr; // extra speedometer colour check
-extern boolean xtra_speedo3; // 80x11 extra speedometer check
-extern boolean xtra_speedo_clr3; // 80x11 extra speedometer colour check
-extern boolean achi_speedo; // achiiro speedometer check
-extern boolean achi_speedo_clr; // extra speedometer colour check
-extern boolean clr_hud; // colour hud check
-extern boolean big_lap; // bigger lap counter
-extern boolean big_lap_color; // bigger lap counter but colour
-extern boolean kartzspeedo; // kartZ speedo
-extern boolean statdp; // stat display for extended player setup
-extern boolean nametaggfx; // Nametag stuffs
-extern boolean driftgaugegfx;
+extern boolean xtra_speedo;       // extra speedometer check
+extern boolean xtra_speedo_clr;   // extra speedometer colour check
+extern boolean xtra_speedo3;      // 80x11 extra speedometer check
+extern boolean xtra_speedo_clr3;  // 80x11 extra speedometer colour check
+extern boolean achi_speedo;       // achiiro speedometer check
+extern boolean achi_speedo_clr;   // extra speedometer colour check
+extern boolean kartzspeedo;       // kartZ speedo
+
+extern boolean clr_hud;           // colour hud check
+extern boolean big_lap;           // bigger lap counter
+extern boolean big_lap_color;     // bigger lap counter but colour
+extern boolean statdp;            // stat display for extended player setup
+extern boolean nametaggfx;        // Nametag stuffs
+extern boolean driftgaugegfx;     // Driftgauge stuffs
+extern boolean multiitem_icon;    // Extra icons for Sneakers, Banana and Jawz
+//
 
 // autoload stuff
 extern boolean autoloading;
