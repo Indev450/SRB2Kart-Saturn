@@ -75,8 +75,11 @@ IMPL_HUD_OFFSET(stat);   // Stats
 #undef IMPL_HUD_OFFSET_X
 #undef IMPL_HUD_OFFSET_Y
 
+// extra colourisation stuff
 static CV_PossibleValue_t colorspeedlines_cons_t[] = {{0, "Off"}, {1, "Normal"}, {2, "+Driftcharge"}, {0, NULL}};
 consvar_t cv_coloredspeedlines = {"colorizedspeedlines", "Off", CV_SAVE, colorspeedlines_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_coloredsneakertrail = {"sneakertrailcolor", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 //extra hud things
 consvar_t cv_showstats = {"showstats", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -770,7 +773,10 @@ void K_RegisterKartStuff(void)
 #undef REG_HUD_OFFSET_X
 #undef REG_HUD_OFFSET_Y
 
+	// Colored speedlines
 	CV_RegisterVar(&cv_coloredspeedlines);
+	// Colored trails
+	CV_RegisterVar(&cv_coloredsneakertrail);
 
 	CV_RegisterVar(&cv_showstats);
 	CV_RegisterVar(&cv_showinput);
@@ -828,7 +834,6 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_lessflicker);
 
 	CV_RegisterVar(&cv_mouseturn);
-
 }
 
 //}
@@ -3491,6 +3496,13 @@ void K_SpawnBoostTrail(player_t *player)
 		flame->angle = travelangle;
 		flame->fuse = TICRATE*2;
 		flame->destscale = player->mo->scale;
+
+		if (cv_coloredsneakertrail.value)
+		{
+			flame->colorized = true;
+			flame->color = player->skincolor;
+		}
+
 		P_SetScale(flame, player->mo->scale);
 		// not K_MatchGenericExtraFlags so that a stolen sneaker can be seen
 		K_FlipFromObject(flame, player->mo);
