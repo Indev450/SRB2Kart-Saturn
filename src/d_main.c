@@ -1195,19 +1195,22 @@ boolean found_extra_kart;
 boolean found_extra2_kart;
 boolean found_extra3_kart;
 
-boolean xtra_speedo; // extra speedometer check
-boolean xtra_speedo_clr; // extra speedometer colour check
-boolean xtra_speedo3; // 80x 11 extra speedometer check
-boolean xtra_speedo_clr3; // 80x 11 extra speedometer colour check
-boolean achi_speedo; // achiiro speedometer check
-boolean achi_speedo_clr; // extra speedometer colour check
-boolean clr_hud; // colour hud check
-boolean big_lap; // bigger lap counter
-boolean big_lap_color; // bigger lap counter but colour
-boolean kartzspeedo; // kartZ speedo
-boolean statdp; // stat display for extended player setup
-boolean nametaggfx; // Nametag stuffs
-boolean driftgaugegfx;
+boolean xtra_speedo;       // extra speedometer check
+boolean xtra_speedo_clr;   // extra speedometer colour check
+boolean xtra_speedo3;      // 80x 11 extra speedometer check
+boolean xtra_speedo_clr3;  // 80x 11 extra speedometer colour check
+boolean achi_speedo;       // achiiro speedometer check
+boolean achi_speedo_clr;   // extra speedometer colour check
+boolean kartzspeedo;       // kartZ speedo
+
+boolean clr_hud;           // colour hud check
+boolean big_lap;           // bigger lap counter
+boolean big_lap_color;     // bigger lap counter but colour
+boolean statdp;            // stat display for extended player setup
+boolean nametaggfx;        // Nametag stuffs
+boolean driftgaugegfx;     // Driftgauge stuffs
+boolean multiitem_icon;    // Extra icons for Sneakers, Banana and Jawz
+//
 
 static void IdentifyVersion(void)
 {
@@ -1641,9 +1644,11 @@ void D_SRB2Main(void)
 			nametaggfx = true;
 
 		if (W_CheckMultipleLumps("K_DGAU","K_DCAU","K_DGSU","K_DCSU", NULL))
-		{
 			driftgaugegfx = true;
-		}
+
+		// extra item icons
+		if (W_CheckMultipleLumps("K_ITSHO2", "K_ITSHO3", "K_ITBAN2", "K_ITBAN3", "K_ITBAN4", "K_ITJAW2", NULL))
+			multiitem_icon = true;
 
 		if (found_extra3_kart)
 		{
