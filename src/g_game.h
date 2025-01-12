@@ -149,18 +149,19 @@ extern consvar_t cv_##name##_yoffset;
 DECL_HUD_OFFSET_X(name)\
 DECL_HUD_OFFSET_Y(name)
 
-DECL_HUD_OFFSET(item); // Item box
-DECL_HUD_OFFSET(time); // Time
-DECL_HUD_OFFSET(laps); // Number of laps
-DECL_HUD_OFFSET(dnft); // Countdown (did not finish timer)
-DECL_HUD_OFFSET(speed); // Speedometer
-DECL_HUD_OFFSET(posi); // Position in race
-DECL_HUD_OFFSET(face); // Mini rankings
-DECL_HUD_OFFSET(stcd); // Starting countdown
+DECL_HUD_OFFSET(item);   // Item box
+DECL_HUD_OFFSET(time);   // Time
+DECL_HUD_OFFSET(laps);   // Number of laps
+DECL_HUD_OFFSET(dnft);   // Countdown (did not finish timer)
+DECL_HUD_OFFSET(speed);  // Speedometer
+DECL_HUD_OFFSET(posi);   // Position in race
+DECL_HUD_OFFSET(wheel);  // RA Wheel
+DECL_HUD_OFFSET(face);   // Mini rankings
+DECL_HUD_OFFSET(stcd);   // Starting countdown
 DECL_HUD_OFFSET_Y(chek); // Check gfx
-DECL_HUD_OFFSET(mini); // Minimap
-DECL_HUD_OFFSET(want); // Wanted
-DECL_HUD_OFFSET(stat); // Stats
+DECL_HUD_OFFSET(mini);   // Minimap
+DECL_HUD_OFFSET(want);   // Wanted
+DECL_HUD_OFFSET(stat);   // Stats
 
 #undef DECL_HUD_OFFSET
 #undef DECL_HUD_OFFSET_X

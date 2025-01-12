@@ -2378,13 +2378,17 @@ static menuitem_t OP_HudOffsetMenu[] =
 	{IT_STRING | IT_CVAR, 	NULL, 	"Horizontal Offset",  			&cv_mini_xoffset, 		120},
 	{IT_STRING | IT_CVAR,	NULL,	"Vertical Offset",	  	 		&cv_mini_yoffset,     	125},
 
-	{IT_HEADER, NULL, "Position / R.A. Wheel", NULL, 135},
-	{IT_STRING | IT_CVAR, 	NULL, 	"Horizontal Offset",  	  		&cv_posi_xoffset, 		140},
-	{IT_STRING | IT_CVAR,	NULL,	"Vertical Offset",	  	  		&cv_posi_yoffset,     	145},
+	{IT_HEADER, NULL, "Position Number", NULL, 135},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Horizontal Offset",  	  		&cv_wheel_xoffset, 		140},
+	{IT_STRING | IT_CVAR,	NULL,	"Vertical Offset",	  	  		&cv_wheel_yoffset,     	145},
 
-	{IT_HEADER, NULL, "Stat Display", NULL, 155},
-	{IT_STRING | IT_CVAR, 	NULL, 	"Horizontal Offset",  	  		&cv_stat_xoffset, 		160},
-	{IT_STRING | IT_CVAR,	NULL,	"Vertical Offset",	  	  		&cv_stat_yoffset,     	165},
+	{IT_HEADER, NULL, "R.A. Wheel", NULL, 155},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Horizontal Offset",  	  		&cv_posi_xoffset, 		160},
+	{IT_STRING | IT_CVAR,	NULL,	"Vertical Offset",	  	  		&cv_posi_yoffset,     	165},
+
+	{IT_HEADER, NULL, "Stat Display", NULL, 175},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Horizontal Offset",  	  		&cv_stat_xoffset, 		180},
+	{IT_STRING | IT_CVAR,	NULL,	"Vertical Offset",	  	  		&cv_stat_yoffset,     	185},
 };
 
 static menuitem_t OP_SaturnCreditsMenu[] =
