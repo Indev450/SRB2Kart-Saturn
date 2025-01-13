@@ -2341,6 +2341,9 @@ void G_PlayerReborn(INT32 player)
 
 	// If NiGHTS, find lowest mare to start with.
 	p->mare = 0;
+
+	if (!demo.playback && p == &players[consoleplayer])
+		kartstats.respawns++;
 }
 
 //
