@@ -3148,6 +3148,8 @@ static void G_DoCompleted(void)
 	if (metalrecording)
 		G_StopMetalRecording();
 
+	K_StatRound();
+
 	for (i = 0; i < MAXPLAYERS; i++)
 		if (playeringame[i])
 		{
@@ -3173,8 +3175,6 @@ static void G_DoCompleted(void)
 	prevmap = (INT16)(gamemap-1);
 
 	if (demo.playback) goto demointermission;
-
-	K_StatRound();
 
 	// go to next level
 	// nextmap is 0-based, unlike gamemap
