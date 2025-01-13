@@ -599,6 +599,31 @@ tic_t G_GetBestTime(INT16 map)
 	return mainrecords[map-1]->time;
 }
 
+// hack t
+static void G_SetSaveGameModified(void)
+{
+	size_t filenamelen;
+
+	savemoddata = true;
+	majormods = false; // FIXME: this breaks the menu warning screen from popping up, id still want to use it to mention the diff savefile
+
+	strlcpy(gamedatafilename, "modkartdata.dat", sizeof (gamedatafilename));
+	strlwr(gamedatafilename);
+
+	// Also save a time attack folder
+	filenamelen = strlen(gamedatafilename)-4;  // Strip off the extension
+	filenamelen = min(filenamelen, sizeof (timeattackfolder));
+	memcpy(timeattackfolder, gamedatafilename, filenamelen);
+	timeattackfolder[min(filenamelen, sizeof (timeattackfolder) - 1)] = '\0';
+
+	strcpy(savegamename, timeattackfolder);
+	strlcat(savegamename, "%u.ssg", sizeof(savegamename));
+	// can't use sprintf since there is %u in savegamename
+	strcatbf(savegamename, srb2home, PATHSEP);
+
+	G_LoadGameData();
+}
+
 // for consistency among messages: this modifies the game and removes savemoddata.
 void G_SetGameModified(boolean silent, boolean major)
 {
@@ -613,8 +638,10 @@ void G_SetGameModified(boolean silent, boolean major)
 	//savemoddata = false; -- there is literally no reason to do this anymore.
 	majormods = true;
 
+	G_SetSaveGameModified();
+
 	if (!silent)
-		CONS_Alert(CONS_NOTICE, M_GetText("Game must be restarted to play Record Attack.\n"));
+		CONS_Alert(CONS_NOTICE, M_GetText("Record Attack data will be saved to seperate save.\n"));
 
 	// If in record attack recording, cancel it.
 	if (modeattacking)
@@ -3511,7 +3538,8 @@ void G_LoadGameData(void)
 		I_Error("Game data is from another version of SRB2.\nDelete %s(maybe in %s) and try again.", gamedatafilename, gdfolder);
 	}
 
-	K_ReadStats(&save, true);
+	// well no clue but dont think it would like reading garbage from vanilla files
+	K_ReadStats(&save, strcmp(gamedatafilename, "modkartdata.dat") == 0);
 
 	modded = READUINT8(save.p);
 
@@ -3625,7 +3653,7 @@ void G_SaveGameData(boolean force)
 	// Version test
 	WRITEUINT32(save.p, 0xFCAFE211);
 
-	K_WriteStats(&save, true);
+	K_WriteStats(&save, strcmp(gamedatafilename, "modkartdata.dat") == 0);
 
 	btemp = (UINT8)(savemoddata); // what used to be here was profoundly dunderheaded
 	WRITEUINT8(save.p, btemp);
