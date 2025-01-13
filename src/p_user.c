@@ -2495,8 +2495,7 @@ static void P_MovePlayer(player_t *player)
 			return;
 	}
 
-#ifdef HWRENDER
-	if (rendermode == render_opengl && cv_glfovchange.value)
+	if (cv_fovchange.value)
 	{
 		fixed_t speed;
 		const fixed_t runnyspeed = 20*FRACUNIT;
@@ -2516,7 +2515,6 @@ static void P_MovePlayer(player_t *player)
 	}
 	else
 		player->fovadd = 0;
-#endif
 
 #ifdef FLOORSPLATS
 	if (cv_shadow.value && rendermode == render_soft)
@@ -3112,6 +3110,13 @@ consvar_t cv_cam_rotspeed[MAXSPLITSCREENPLAYERS] = {
 	{"cam2_rotspeed", "10", CV_SAVE, rotation_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"cam3_rotspeed", "10", CV_SAVE, rotation_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"cam4_rotspeed", "10", CV_SAVE, rotation_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
+};
+
+consvar_t cv_cam_timeover[MAXSPLITSCREENPLAYERS] = {
+	{"cam_timeover", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"cam2_timeover", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"cam3_timeover", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"cam4_timeover", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
 };
 
 static CV_PossibleValue_t freecam_speed_cons_t[] = {{0, "MIN"}, {10, "MAX"}, {0, NULL}};
@@ -3846,8 +3851,8 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 
 	mo = player->mo;
 
-	if (player->pflags & PF_TIMEOVER) // 1 for momentum keep, 2 for turnaround
-		timeover = (player->kartstuff[k_timeovercam] > 2*TICRATE ? 2 : 1);
+	if (cv_cam_timeover[num].value && (player->pflags & PF_TIMEOVER))
+		timeover = (player->kartstuff[k_timeovercam] > 2*TICRATE ? 2 : 1); // 1 for momentum keep, 2 for turnaround
 	else
 		timeover = 0;
 

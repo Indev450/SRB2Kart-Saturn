@@ -11,6 +11,8 @@
 
 #define KART_FULLTURN 800
 
+void K_ResetPlayerSpriteStuff(void);
+
 extern UINT8 colortranslations[MAXTRANSLATIONS][16];
 extern const char *KartColor_Names[MAXSKINCOLORS];
 extern const UINT8 KartColor_Opposite[MAXSKINCOLORS*2];
@@ -22,20 +24,19 @@ boolean K_UseColorHud(void);
 
 void K_RegisterKartStuff(void);
 
-extern consvar_t cv_colorizedhud;
-extern consvar_t cv_colorizeditembox;
-extern consvar_t cv_colorizedhudcolor;
+extern consvar_t cv_coloredspeedlines, cv_coloredsneakertrail;
+extern consvar_t cv_colorizedhud, cv_colorizeditembox, cv_colorizedhudcolor;
 extern consvar_t cv_darkitembox;
 extern consvar_t cv_biglaps;
 extern consvar_t cv_highresportrait;
-extern consvar_t cv_stat_xoffset;
-extern consvar_t cv_stat_yoffset;
+extern consvar_t cv_stat_xoffset, cv_stat_yoffset;
 extern consvar_t cv_showstats;
 extern consvar_t cv_showlaptimes;
 extern consvar_t cv_battlespeedo;
 
 #define NUMSPEEDOSTUFF 6
 extern CV_PossibleValue_t speedo_cons_t[NUMSPEEDOSTUFF];
+extern CV_PossibleValue_t driftgaugestyle_cons_t[NUMSPEEDOSTUFF];
 
 boolean K_IsPlayerLosing(player_t *player);
 boolean K_IsPlayerWanted(player_t *player);

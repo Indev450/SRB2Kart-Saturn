@@ -223,8 +223,6 @@ consvar_t cv_glrenderdistance = {"gr_renderdistance", "Max", CV_SAVE, glrenderdi
 consvar_t cv_glhorizonlines = {"gr_horizonlines", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_glportals = {"gr_portals", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_glfovchange = {"gr_fovchange", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-
 consvar_t cv_glpaletterendering = {"gr_paletteshader", "Off", CV_CALL|CV_SAVE, CV_OnOff, CV_glpaletterendering_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_glpalettedepth = {"gr_palettedepth", "16 bits", CV_SAVE|CV_CALL, glpalettedepth_cons_t, CV_glpalettedepth_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_glflashpal = {"gr_flashpal", "On", CV_CALL|CV_SAVE, CV_OnOff, CV_glpaletterendering_OnChange, 0, NULL, NULL, 0, 0, NULL};
@@ -2340,31 +2338,19 @@ doaddline:
 // HWR_CheckBBox
 // Checks BSP node/subtree bounding box.
 // Returns true
-//  if some part of the bbox might be visible.
+// if some part of the bbox might be visible.
 //
 // modified to use local variables
 
 static boolean HWR_CheckBBox(const fixed_t *bspcoord)
 {
-	INT32 boxpos;
 	fixed_t px1, py1, px2, py2;
 	angle_t angle1, angle2;
 
 	// Find the corners of the box
 	// that define the edges from current viewpoint.
-	if (viewx <= bspcoord[BOXLEFT])
-		boxpos = 0;
-	else if (viewx < bspcoord[BOXRIGHT])
-		boxpos = 1;
-	else
-		boxpos = 2;
-
-	if (viewy >= bspcoord[BOXTOP])
-		boxpos |= 0;
-	else if (viewy > bspcoord[BOXBOTTOM])
-		boxpos |= 1<<2;
-	else
-		boxpos |= 2<<2;
+	const INT32 boxpos = (viewx <= bspcoord[BOXLEFT] ? 0 : viewx < bspcoord[BOXRIGHT ] ? 1 : 2) +
+	(viewy >= bspcoord[BOXTOP ] ? 0 : viewy > bspcoord[BOXBOTTOM] ? 4 : 8);
 
 	if (boxpos == 5)
 		return true;
@@ -3093,18 +3079,18 @@ static void HWR_RenderBSPNode(INT32 bspnum)
 	INT32 side;
 	ps_numbspcalls.value.i++;
 
-	while (!(bspnum & NF_SUBSECTOR))  // Found a subsector?
+	while (!(bspnum & NF_SUBSECTOR))  // Keep going until found a subsector
 	{
 		bsp = &nodes[bspnum];
 
 		// Decide which side the view point is on.
 		side = R_PointOnSideFast(viewx, viewy, bsp);
 
-		// Recursively divide front space.
+		// Recursively divide front space (toward the viewer).
 		if (HWR_PortalCheckBBox(bsp->bbox[side]))
 			HWR_RenderBSPNode(bsp->children[side]);
 
-		// Possibly divide back space
+		// Possibly divide back space (away from the viewer).
 		if (!(HWR_CheckBBox(bsp->bbox[side^1]) && HWR_PortalCheckBBox(bsp->bbox[side^1])))
 			return;
 
@@ -5256,11 +5242,11 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *pl
 	// Set transform.
 	GL_SetTransform(&atransform);
 
-	validcount++;
-
 	ps_numbspcalls.value.i = 0;
 	ps_numpolyobjects.value.i = 0;
 	PS_START_TIMING(ps_bsptime);
+
+	validcount++;
 
 	if (cv_glbatching.value)
 		HWR_StartBatching();
@@ -5325,7 +5311,7 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *pl
 // ==========================================================================
 static void HWR_RenderFrame(INT32 viewnumber, player_t *player, boolean skybox)
 {
-	const float fpov = FIXED_TO_FLOAT(cv_fov.value+player->fovadd);
+	const float fpov = FixedToFloat(R_GetPlayerFov(player));
 
 	// set window position
 	gl_viewwindowx = gl_baseviewwindowx;
@@ -5546,8 +5532,6 @@ void HWR_AddCommands(void)
 
 	CV_RegisterVar(&cv_glhorizonlines);
 	CV_RegisterVar(&cv_glportals);
-
-	CV_RegisterVar(&cv_glfovchange);
 
 	CV_RegisterVar(&cv_glpaletterendering);
 	CV_RegisterVar(&cv_glpalettedepth);

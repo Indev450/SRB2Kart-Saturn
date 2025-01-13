@@ -2480,55 +2480,58 @@ static void P_PlayerZMovement(mobj_t *mo)
 					msecnode_t *node;
 					boolean stopmovecut = false;
 
-					for (node = mo->touching_sectorlist; node; node = node->m_sectorlist_next)
+					if (numPolyObjects)
 					{
-						sector_t *sec = node->m_sector;
-						subsector_t *newsubsec;
-						size_t i;
-
-						for (i = 0; i < numsubsectors; i++)
+						for (node = mo->touching_sectorlist; node; node = node->m_sectorlist_next)
 						{
-							newsubsec = &subsectors[i];
+							sector_t *sec = node->m_sector;
+							subsector_t *newsubsec;
+							size_t i;
 
-							if (newsubsec->sector != sec)
-								continue;
-
-							if (!newsubsec->polyList)
-								continue;
-
-							polyobj_t *po = newsubsec->polyList;
-							sector_t *polysec;
-
-							while(po)
+							for (i = 0; i < numsubsectors; i++)
 							{
-								if (!P_MobjInsidePolyobj(po, mo) || !(po->flags & POF_SOLID))
-								{
-									po = (polyobj_t *)(po->link.next);
+								newsubsec = &subsectors[i];
+
+								if (newsubsec->sector != sec)
 									continue;
-								}
 
-								// We're inside it! Yess...
-								polysec = po->lines[0]->backsector;
-
-								// Moving polyobjects should act like conveyors if the player lands on one. (I.E. none of the momentum cut thing below) -Red
-								if ((mo->z == polysec->ceilingheight || mo->z+mo->height == polysec->floorheight) && po->thinker)
-									stopmovecut = true;
-
-								if (!(po->flags & POF_LDEXEC))
-								{
-									po = (polyobj_t *)(po->link.next);
+								if (!newsubsec->polyList)
 									continue;
-								}
 
-								if (mo->z == polysec->ceilingheight)
+								polyobj_t *po = newsubsec->polyList;
+								sector_t *polysec;
+
+								while(po)
 								{
-									// We're landing on a PO, so check for
-									// a linedef executor.
-									// Trigger tags are 32000 + the PO's ID number.
-									P_LinedefExecute((INT16)(32000 + po->id), mo, NULL);
-								}
+									if (!P_MobjInsidePolyobj(po, mo) || !(po->flags & POF_SOLID))
+									{
+										po = (polyobj_t *)(po->link.next);
+										continue;
+									}
 
-								po = (polyobj_t *)(po->link.next);
+									// We're inside it! Yess...
+									polysec = po->lines[0]->backsector;
+
+									// Moving polyobjects should act like conveyors if the player lands on one. (I.E. none of the momentum cut thing below) -Red
+									if ((mo->z == polysec->ceilingheight || mo->z+mo->height == polysec->floorheight) && po->thinker)
+										stopmovecut = true;
+
+									if (!(po->flags & POF_LDEXEC))
+									{
+										po = (polyobj_t *)(po->link.next);
+										continue;
+									}
+
+									if (mo->z == polysec->ceilingheight)
+									{
+										// We're landing on a PO, so check for
+										// a linedef executor.
+										// Trigger tags are 32000 + the PO's ID number.
+										P_LinedefExecute((INT16)(32000 + po->id), mo, NULL);
+									}
+
+									po = (polyobj_t *)(po->link.next);
+								}
 							}
 						}
 					}
@@ -10006,7 +10009,7 @@ static precipmobj_t *P_SpawnPrecipMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype
 	mobj->momz = cv_mobjscaleprecip.value ? FixedMul(info->speed, mapobjectscale) : info->speed;
 
 	mobj->thinker.function.acp1 = (actionf_p1)P_NullPrecipThinker;
-	P_AddThinker(&mobj->thinker);
+	P_AddPrecipThinker(&mobj->thinker);
 
 	CalculatePrecipFloor(mobj);
 

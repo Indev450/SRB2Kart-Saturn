@@ -178,6 +178,7 @@ static char returnWadPath[256];
 #include "../d_net.h"
 #include "../g_game.h"
 #include "../filesrch.h"
+#include "../z_zone.h" // Z_Free
 #include "endtxt.h"
 #include "sdlmain.h"
 
@@ -344,7 +345,17 @@ static void write_backtrace(bt_crash_reason_t reason)
 	fprintf(out, "Compiled: %s %s, commit %s, branch %s\n", compdate, comptime, comprevision, compbranch);
 
 	if (gamestate == GS_LEVEL)
-		fprintf(out, "Game map: %s\n", G_BuildMapName(gamemap));
+	{
+		char *title = G_BuildMapTitle(gamemap);
+
+		if (title)
+		{
+			fprintf(out, "Game map: %s (%s)\n", title, G_BuildMapName(gamemap));
+			Z_Free(title);
+		}
+		else
+			fprintf(out, "Game map: %s\n", G_BuildMapName(gamemap));
+	}
 
 	fprintf(out, "Time of crash: %s\n", asctime(timeinfo));
 
@@ -2121,7 +2132,7 @@ void I_Sleep(UINT32 ms)
 
 void I_SleepDuration(precise_t duration)
 {
-#if defined(__linux__) || defined(__FreeBSD__)
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__HAIKU__)
 	UINT64 precision = I_GetPrecisePrecision();
 	struct timespec ts = {
 		.tv_sec = duration / precision,
@@ -2130,7 +2141,7 @@ void I_SleepDuration(precise_t duration)
 	int status;
 	do status = clock_nanosleep(CLOCK_MONOTONIC, 0, &ts, &ts);
 	while (status == EINTR);
-#else
+#elif defined (MIN_SLEEP_DURATION_MS)
 	UINT64 precision = I_GetPrecisePrecision();
 	INT32 sleepvalue = cv_sleep.value;
 	UINT64 delaygranularity;
@@ -2159,7 +2170,6 @@ void I_SleepDuration(precise_t duration)
 		}
 
 		// Otherwise, this is a spinloop.
-
 		cur = I_GetPreciseTime();
 	}
 #endif
