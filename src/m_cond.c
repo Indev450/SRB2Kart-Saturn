@@ -385,9 +385,7 @@ UINT8 M_UpdateUnlockablesAndExtraEmblems(boolean force)
 	INT32 i;
 	char cechoText[992] = "";
 	UINT8 cechoLines = 0;
-
-	if (majormods && !force) // SRB2Kart: for enabling unlocks online in modified servers
-		return false;
+	(void)force;
 
 	M_CheckUnlockConditions();
 

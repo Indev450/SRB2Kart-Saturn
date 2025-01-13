@@ -608,13 +608,12 @@ tic_t G_GetBestTime(INT16 map)
 	return mainrecords[map-1]->time;
 }
 
-// hack t
+// kinda hacky way to do this, but this sets the game to use a seperate savefile if you have addons loaded
 static void G_SetSaveGameModified(void)
 {
 	size_t filenamelen;
 
 	savemoddata = true;
-	majormods = false; // FIXME: this breaks the menu warning screen from popping up, id still want to use it to mention the diff savefile
 
 	strlcpy(gamedatafilename, "modkartdata.dat", sizeof (gamedatafilename));
 	strlwr(gamedatafilename);
@@ -647,6 +646,7 @@ void G_SetGameModified(boolean silent, boolean major)
 	//savemoddata = false; -- there is literally no reason to do this anymore.
 	majormods = true;
 
+	// should this only be done when you load a "major" gameplay modifieng addon?
 	G_SetSaveGameModified();
 
 	if (!silent)
@@ -3718,6 +3718,7 @@ void G_SaveGameData(boolean force)
 	INT32 i, j;
 	UINT8 btemp;
 	savebuffer_t save;
+	(void)force;
 
 	if (!gamedataloaded)
 		return; // If never loaded (-nodata), don't save
@@ -3726,13 +3727,6 @@ void G_SaveGameData(boolean force)
 	if (!save.p)
 	{
 		CONS_Alert(CONS_ERROR, M_GetText("No more free memory for saving game data\n"));
-		return;
-	}
-
-	if (majormods && !force)
-	{
-		free(save.buffer);
-		save.p = save.buffer = NULL;
 		return;
 	}
 
