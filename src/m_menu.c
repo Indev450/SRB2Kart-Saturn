@@ -70,6 +70,7 @@
 #include "st_stuff.h"
 #include "i_sound.h"
 #include "k_kart.h" // SRB2kart
+#include "k_stats.h" // SRB2kart
 #include "d_player.h" // KITEM_ constants
 
 #include "i_joy.h" // for joystick menu controls
@@ -6245,7 +6246,7 @@ static boolean M_AddonsRefresh(void)
 		else if (majormods && !prevmajormods)
 		{
 			S_StartSound(NULL, sfx_s221);
-			message = va("%c%s\x80\nYou've loaded a gameplay-modifying addon.\n\nRecord Attack has been disabled, but you\ncan still play alone in local Multiplayer.\n\nIf you wish to play Record Attack mode, restart the game to disable loaded addons.\n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), refreshdirname);
+			message = va("%c%s\x80\nYou've loaded a gameplay-modifying addon.\n\nRecord Attack data will be saved to seperate save.\n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), refreshdirname);
 			prevmajormods = majormods;
 		}
 
@@ -8799,11 +8800,11 @@ static void M_DrawLevelStats(void)
 
 	V_DrawString(20, 24, highlightflags|MENUCAPS, "Total Play Time:");
 	V_DrawCenteredString(BASEVIDWIDTH/2, 32, MENUCAPS, va("%i hours, %i minutes, %i seconds",
-	                         G_TicsToHours(totalplaytime),
-	                         G_TicsToMinutes(totalplaytime, false),
-	                         G_TicsToSeconds(totalplaytime)));
+	                         G_TicsToHours(kartstats.totalplaytime),
+	                         G_TicsToMinutes(kartstats.totalplaytime, false),
+	                         G_TicsToSeconds(kartstats.totalplaytime)));
 	V_DrawString(20, 42, highlightflags|MENUCAPS, "Total Matches:");
-	V_DrawRightAlignedString(BASEVIDWIDTH-16, 42, MENUCAPS, va("%i played", matchesplayed));
+	V_DrawRightAlignedString(BASEVIDWIDTH-16, 42, MENUCAPS, va("%i played", kartstats.matchesplayed));
 
 	for (i = 0; i < NUMMAPS; i++)
 	{
@@ -11785,8 +11786,7 @@ static void M_EraseDataResponse(INT32 ch)
 	if (erasecontext == 2)
 	{
 		// SRB2Kart: This actually needs to be done FIRST, so that you don't immediately regain playtime/matches secrets
-		totalplaytime = 0;
-		matchesplayed = 0;
+		K_EraseStats();
 		F_StartIntro();
 	}
 	if (erasecontext != 1)
