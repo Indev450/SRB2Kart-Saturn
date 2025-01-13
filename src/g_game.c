@@ -175,7 +175,7 @@ INT32 tokenbits; // Used for setting token bits
 // Old Special Stage
 INT32 sstimer; // Time allotted in the special stage
 
-tic_t totalplaytime, raplaytime, onlineplaytime, raceplaytime, battleplaytime;
+tic_t totalplaytime;
 UINT32 matchesplayed; // SRB2Kart
 boolean gamedataloaded = false;
 
@@ -609,31 +609,6 @@ tic_t G_GetBestTime(INT16 map)
 	return mainrecords[map-1]->time;
 }
 
-// hack t
-static void G_SetSaveGameModified(void)
-{
-	size_t filenamelen;
-
-	savemoddata = true;
-	majormods = false; // FIXME: this breaks the menu warning screen from popping up, id still want to use it to mention the diff savefile
-
-	strlcpy(gamedatafilename, "modkartdata.dat", sizeof (gamedatafilename));
-	strlwr(gamedatafilename);
-
-	// Also save a time attack folder
-	filenamelen = strlen(gamedatafilename)-4;  // Strip off the extension
-	filenamelen = min(filenamelen, sizeof (timeattackfolder));
-	memcpy(timeattackfolder, gamedatafilename, filenamelen);
-	timeattackfolder[min(filenamelen, sizeof (timeattackfolder) - 1)] = '\0';
-
-	strcpy(savegamename, timeattackfolder);
-	strlcat(savegamename, "%u.ssg", sizeof(savegamename));
-	// can't use sprintf since there is %u in savegamename
-	strcatbf(savegamename, srb2home, PATHSEP);
-
-	G_LoadGameData();
-}
-
 // for consistency among messages: this modifies the game and removes savemoddata.
 void G_SetGameModified(boolean silent, boolean major)
 {
@@ -648,10 +623,8 @@ void G_SetGameModified(boolean silent, boolean major)
 	//savemoddata = false; -- there is literally no reason to do this anymore.
 	majormods = true;
 
-	G_SetSaveGameModified();
-
 	if (!silent)
-		CONS_Alert(CONS_NOTICE, M_GetText("Record Attack data will be saved to seperate save.\n"));
+		CONS_Alert(CONS_NOTICE, M_GetText("Game must be restarted to play Record Attack.\n"));
 
 	// If in record attack recording, cancel it.
 	if (modeattacking)
@@ -3594,10 +3567,6 @@ void G_LoadGameData(void)
 	M_ClearSecrets(); // emblems, unlocks, maps visited, etc
 	totalplaytime = 0; // total play time (separate from all)
 	matchesplayed = 0; // SRB2Kart: matches played & finished
-	raplaytime = 0; // SRB2Kart: Record attack play time
-	onlineplaytime = 0; // SRB2Kart: online play time
-	raceplaytime = 0; // SRB2Kart: race mode play time
-	battleplaytime = 0; // SRB2Kart: battle mode play time
 
 	if (M_CheckParm("-nodata"))
 		return; // Don't load.
@@ -3628,15 +3597,6 @@ void G_LoadGameData(void)
 
 	totalplaytime = READUINT32(save.p);
 	matchesplayed = READUINT32(save.p);
-
-	// well no clue but dont think it would like reading garbage from vanilla files
-	if (strcmp(gamedatafilename, "modkartdata.dat") == 0)
-	{
-		raplaytime = READUINT32(save.p);
-		onlineplaytime = READUINT32(save.p);
-		raceplaytime = READUINT32(save.p);
-		battleplaytime = READUINT32(save.p);
-	}
 
 	modded = READUINT8(save.p);
 
@@ -3752,14 +3712,6 @@ void G_SaveGameData(boolean force)
 
 	WRITEUINT32(save.p, totalplaytime);
 	WRITEUINT32(save.p, matchesplayed);
-
-	if (strcmp(gamedatafilename, "modkartdata.dat") == 0)
-	{
-		WRITEUINT32(save.p, raplaytime);
-		WRITEUINT32(save.p, onlineplaytime);
-		WRITEUINT32(save.p, raceplaytime);
-		WRITEUINT32(save.p, battleplaytime);
-	}
 
 	btemp = (UINT8)(savemoddata); // what used to be here was profoundly dunderheaded
 	WRITEUINT8(save.p, btemp);
