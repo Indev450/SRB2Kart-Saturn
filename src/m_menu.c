@@ -6154,8 +6154,6 @@ static void M_AddonsClearName(INT32 choice)
 	M_StopMessage(choice);
 }
 
-int errorshitspam = 0; // prevent the warning screen from crapping itself when errors get spammed lmao
-
 // returns whether to do message draw
 static boolean M_AddonsRefresh(void)
 {
@@ -6184,11 +6182,10 @@ static boolean M_AddonsRefresh(void)
 			else
 				message = va("%c%s\x80\nA file was not loaded.\nCheck the console log for more information.\n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), refreshdirname);
 		}
-		else if ((refreshdirmenu & (REFRESHDIR_WARNING | REFRESHDIR_ERROR)) && !errorshitspam)
+		else if (refreshdirmenu & (REFRESHDIR_WARNING | REFRESHDIR_ERROR))
 		{
 			S_StartSound(NULL, sfx_s224);
 			message = va("%c%s\x80\nA file was loaded with %s.\nCheck the console log for more information.\n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), refreshdirname, ((refreshdirmenu & REFRESHDIR_ERROR) ? "errors" : "warnings"));
-			errorshitspam = 1; // you already said that shit
 		}
 		else if (majormods && !prevmajormods)
 		{
@@ -6540,7 +6537,6 @@ static void M_HandleAddons(INT32 choice)
 								if (DumbStartsWith("KC_", dirmenu[dir_on[menudepthleft]]+DIR_STRING) || DumbStartsWith("kc_", dirmenu[dir_on[menudepthleft]]+DIR_STRING)) {
 									M_StartMessage(va("%c%s\x80\nYou are loading a local skin.\nLocal skins will not be usable\nafter going back from\nthe title screen.\n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), dirmenu[dir_on[menudepthleft]]+DIR_STRING),NULL,MM_NOTHING);
 									COM_BufAddText(va("addskins \"%s%s\"", menupath, dirmenu[dir_on[menudepthleft]]+DIR_STRING));
-									errorshitspam = 0; // reset it so it can show the warning screen again lmao
 								}
 								else
 									S_StartSound(NULL, sfx_s26d);
@@ -6548,7 +6544,6 @@ static void M_HandleAddons(INT32 choice)
 							else
 							{
 								COM_BufAddText(va("addfile \"%s%s\"", menupath, dirmenu[dir_on[menudepthleft]]+DIR_STRING));
-								errorshitspam = 0; // reset it so it can show the warning screen again lmao
 							}
 							break;
 						default:
