@@ -618,7 +618,20 @@ void P_Ticker(boolean run)
 
 	// Keep track of how long they've been playing!
 	if (!demo.playback) // Don't increment if a demo is playing.
+	{
 		totalplaytime++;
+
+		if (netgame)
+			onlineplaytime++;
+		else if (modeattacking)
+			raplaytime++;
+
+		if (G_RaceGametype())
+			raceplaytime++;
+		else if (G_BattleGametype())
+			battleplaytime++;
+	}
+
 
 	if (run)
 	{

@@ -351,7 +351,7 @@ enum GameType // SRB2Kart
 // String names for gametypes
 extern const char *Gametype_Names[NUMGAMETYPES];
 
-extern tic_t totalplaytime;
+extern tic_t totalplaytime, raplaytime, onlineplaytime, raceplaytime, battleplaytime;
 extern UINT32 matchesplayed;
 
 extern UINT8 stagefailed;
