@@ -338,9 +338,6 @@ enum GameType // SRB2Kart
 // String names for gametypes
 extern const char *Gametype_Names[NUMGAMETYPES];
 
-extern tic_t totalplaytime;
-extern UINT32 matchesplayed;
-
 extern UINT8 stagefailed;
 
 // Emeralds stored as bits to throw savegame hackers off.

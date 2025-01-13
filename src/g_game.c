@@ -52,6 +52,7 @@
 #include "md5.h" // demo checksums
 #include "k_director.h" // SRB2kart
 #include "k_kart.h" // SRB2kart
+#include "k_stats.h" // SRB2kart
 #include "r_fps.h" // frame interpolation/uncapped
 
 #ifdef HAVE_DISCORDRPC
@@ -175,8 +176,6 @@ INT32 tokenbits; // Used for setting token bits
 // Old Special Stage
 INT32 sstimer; // Time allotted in the special stage
 
-tic_t totalplaytime;
-UINT32 matchesplayed; // SRB2Kart
 boolean gamedataloaded = false;
 
 // Time attack data for levels
@@ -2011,7 +2010,7 @@ static inline void G_PlayerFinishLevel(INT32 player)
 	{
 		if (legitimateexit && !demo.playback && !mapreset) // (yes you're allowed to unlock stuff this way when the game is modified)
 		{
-			matchesplayed++;
+			kartstats.matchesplayed++;
 			if (M_UpdateUnlockablesAndExtraEmblems(true))
 				S_StartSound(NULL, sfx_ncitem);
 			G_SaveGameData(true);
@@ -3139,6 +3138,8 @@ static void G_DoCompleted(void)
 
 	if (demo.playback) goto demointermission;
 
+	K_StatRound();
+
 	// go to next level
 	// nextmap is 0-based, unlike gamemap
 	if (nextmapoverride != 0)
@@ -3482,8 +3483,6 @@ void G_LoadGameData(void)
 	// to new gamedata
 	G_ClearRecords(); // main and nights records
 	M_ClearSecrets(); // emblems, unlocks, maps visited, etc
-	totalplaytime = 0; // total play time (separate from all)
-	matchesplayed = 0; // SRB2Kart: matches played & finished
 
 	if (M_CheckParm("-nodata"))
 		return; // Don't load.
@@ -3512,8 +3511,7 @@ void G_LoadGameData(void)
 		I_Error("Game data is from another version of SRB2.\nDelete %s(maybe in %s) and try again.", gamedatafilename, gdfolder);
 	}
 
-	totalplaytime = READUINT32(save.p);
-	matchesplayed = READUINT32(save.p);
+	K_ReadStats(&save, true);
 
 	modded = READUINT8(save.p);
 
@@ -3627,8 +3625,7 @@ void G_SaveGameData(boolean force)
 	// Version test
 	WRITEUINT32(save.p, 0xFCAFE211);
 
-	WRITEUINT32(save.p, totalplaytime);
-	WRITEUINT32(save.p, matchesplayed);
+	K_WriteStats(&save, true);
 
 	btemp = (UINT8)(savemoddata); // what used to be here was profoundly dunderheaded
 	WRITEUINT8(save.p, btemp);

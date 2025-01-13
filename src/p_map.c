@@ -26,6 +26,7 @@
 #include "s_sound.h"
 #include "w_wad.h"
 #include "k_kart.h" // SRB2kart 011617
+#include "k_stats.h"
 
 #include "hu_stuff.h" // SRB2kart
 #include "i_system.h" // SRB2kart
@@ -719,6 +720,8 @@ static boolean PIT_CheckThing(mobj_t *thing)
 
 		if (thing->type == MT_PLAYER)
 		{
+			K_StatPlayerSink(thing->player, P_MobjWasRemoved(tmthing->target) ? NULL : tmthing->target->player);
+
 			S_StartSound(NULL, sfx_bsnipe); //let all players hear it.
 			HU_SetCEchoFlags(0);
 			HU_SetCEchoDuration(5);
@@ -985,6 +988,8 @@ static boolean PIT_CheckThing(mobj_t *thing)
 		{
 			if ((thing->target == tmthing) && (thing->threshold > 0))
 				return true;
+
+			K_StatPlayerSink(tmthing->player, P_MobjWasRemoved(thing->target) ? NULL : thing->target->player);
 
 			S_StartSound(NULL, sfx_cgot); //let all players hear it.
 			HU_SetCEchoFlags(0);

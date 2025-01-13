@@ -506,6 +506,7 @@ OBJS:=$(i_main_o) \
 		$(OBJDIR)/st_stuff.o \
 		$(OBJDIR)/k_director.o   \
 		$(OBJDIR)/k_kart.o   \
+		$(OBJDIR)/k_stats.o  \
 		$(OBJDIR)/m_aatree.o \
 		$(OBJDIR)/m_anigif.o \
 		$(OBJDIR)/m_argv.o   \
