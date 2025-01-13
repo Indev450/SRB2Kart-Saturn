@@ -2702,6 +2702,8 @@ static void Command_Map_f(void)
 		return;
 	}
 
+	M_ClearMenus(true);
+
 	last_map_cmd = I_GetTime();
 
 	size_t first_option;
@@ -2894,6 +2896,7 @@ static void Command_Map_f(void)
 	}
 
 	fromlevelselect = false;
+
 	D_MapChange(newmapnum, newgametype, newencoremode, newresetplayers, 0, false, false);
 
 	Z_Free(realmapname);
