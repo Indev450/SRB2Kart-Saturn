@@ -613,6 +613,12 @@ static void G_SetSaveGameModified(void)
 {
 	size_t filenamelen;
 
+	if (savemoddata)
+		return;
+
+	// save vanilla data just to be sure
+	G_SaveGameData(true);
+
 	savemoddata = true;
 
 	strlcpy(gamedatafilename, "modkartdata.dat", sizeof (gamedatafilename));
