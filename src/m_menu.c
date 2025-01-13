@@ -6228,7 +6228,6 @@ static boolean M_AddonsRefresh(void)
 	if ((refreshdirmenu & REFRESHDIR_ADDFILE) || (majormods && !prevmajormods))
 	{
 		char *message = NULL;
-		boolean majormodtext = false;
 
 		if (refreshdirmenu & REFRESHDIR_NOTLOADED)
 		{
@@ -6247,10 +6246,10 @@ static boolean M_AddonsRefresh(void)
 		{
 			S_StartSound(NULL, sfx_s221);
 			message = va("%c%s\x80\nYou've loaded a gameplay-modifying addon.\n\nRecord Attack has been disabled, but you\ncan still play alone in local Multiplayer.\n\nIf you wish to play Record Attack mode, restart the game to disable loaded addons.\n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), refreshdirname);
-			majormodtext = prevmajormods = majormods;
+			prevmajormods = majormods;
 		}
 
-		if (message && (refreshdirmenu || majormodtext)) // special case for gameplay modify text
+		if (message)
 		{
 			M_StartMessage(message,M_AddonsClearName,MM_EVENTHANDLER);
 			return true;
