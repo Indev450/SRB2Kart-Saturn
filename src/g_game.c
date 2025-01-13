@@ -3631,7 +3631,7 @@ void G_LoadGameData(void)
 	}
 
 	// well no clue but dont think it would like reading garbage from vanilla files
-	K_ReadStats(&save, strcmp(gamedatafilename, "modkartdata.dat") != 0);
+	K_ReadStats(&save, !savemoddata);
 
 	modded = READUINT8(save.p);
 
@@ -3739,7 +3739,7 @@ void G_SaveGameData(boolean force)
 	// Version test
 	WRITEUINT32(save.p, 0xFCAFE211);
 
-	K_WriteStats(&save, strcmp(gamedatafilename, "modkartdata.dat") != 0);
+	K_WriteStats(&save, !savemoddata);
 
 	btemp = (UINT8)(savemoddata); // what used to be here was profoundly dunderheaded
 	WRITEUINT8(save.p, btemp);
