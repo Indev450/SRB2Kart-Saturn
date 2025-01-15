@@ -805,8 +805,8 @@ static void ST_overlayDrawer(void)
 				{
 					V_DrawString(2, BASEVIDHEIGHT-40, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF|V_YELLOWMAP, M_GetText("- SPECTATING -"));
 					V_DrawString(2, BASEVIDHEIGHT-30, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, itemtxt);
-					V_DrawString(2, BASEVIDHEIGHT-30, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, va("Accelerate %s", ST_GetButtonName(gc_camfloat, "Float", false, true)));
-					V_DrawString(2, BASEVIDHEIGHT-20, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, va("Brake %s", ST_GetButtonName(gc_camsink, "Sink", false, true)));
+					V_DrawString(2, BASEVIDHEIGHT-20, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, va("Accelerate %s", ST_GetButtonName(gc_camfloat, "Float", false, true)));
+					V_DrawString(2, BASEVIDHEIGHT-10, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, va("Brake %s", ST_GetButtonName(gc_camsink, "Sink", false, true)));
 				}
 			}
 		}
