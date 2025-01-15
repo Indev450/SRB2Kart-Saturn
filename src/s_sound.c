@@ -1961,10 +1961,11 @@ boolean S_FadeOutStopMusic(UINT32 ms)
 static boolean skipmusic = false;
 boolean skipintromus = false;
 
-static const char *musicexception_list[17] = {
+static const char *musicexception_list[] = {
 	"vote", "voteea", "voteeb", "racent", "krwin",
 	"krok", "krlose", "krfail", "kbwin", "kbok",
 	"kblose", "kstart", "estart", "wait2j", "titles",
+	"SPBA_W", "SPBA_L", // SPB Attack music
 	"CHRSHF", "CHRSHP" // no clue what those are tbh
 };
 
@@ -1982,7 +1983,7 @@ static void S_CheckEventMus(const char *newmus)
 	if (!cv_keepmusic.value)
 		return;
 
-	for (int i = 0; i < 17; i++)
+	for (size_t i = 0; i < sizeof(musicexception_list)/sizeof(musicexception_list[0]); i++)
 		if (stricmp(music_name, musicexception_list[i]) == 0 || stricmp(newmus, musicexception_list[i]) == 0) // weird? sure! but were lucky enough newmus reflects whats being replaced
 		{
 			skipmusic = true;
