@@ -16,6 +16,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+
 #include "qs22j.h"
 
 #define INSORTTHRESH	5			// if n < this use insertion sort
