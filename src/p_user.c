@@ -3507,7 +3507,7 @@ static void P_DemoCameraMovement(camera_t *cam, UINT8 num)
 	if (cmd->sidemove != 0) // was disabled in practice anyways, since sidemove was suppressed
 	{
 		//False I fixed this shit - Nep
-		fixed_t spd = cmd->sidemove*mapobjectscale;
+		fixed_t spd = cmd->sidemove*mapobjectscale*cv_freecam_speed.value;
 
 		thrustangle = (cam->angle-ANGLE_90) >> ANGLETOFINESHIFT;
 		cam->x += FixedMul(spd, FINECOSINE(thrustangle));
