@@ -2008,7 +2008,7 @@ void S_CheckMap(void)
 		return;
 	}
 
-	keepmusic = (!skipmusic && gamestate == GS_LEVEL && oldmap == gamemap && oldencore == encoremode);
+	keepmusic = (!skipmusic && (gamestate == GS_LEVEL) && (music_name[0] != 0) && (oldmap == gamemap) && (oldencore == encoremode));
 
 	//CONS_Printf("keepmusic = %s\n", keepmusic);
 
