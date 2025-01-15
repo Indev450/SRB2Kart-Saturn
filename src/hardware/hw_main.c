@@ -2905,7 +2905,7 @@ static void HWR_Subsector(size_t num)
 		{
 			for (rover = gl_frontsector->ffloors; rover; rover = rover->next)
 			{
-				if (!(rover->flags & FF_EXISTS) || !(rover->flags & FF_RENDERPLANES))
+				if (!(rover->flags & FF_EXISTS) || !(rover->flags & FF_RENDERPLANES) || !(rover->flags & FF_RENDERALL))
 					continue;
 
 				if (sub->validcount == validcount)
