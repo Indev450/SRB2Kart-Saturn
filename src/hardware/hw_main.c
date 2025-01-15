@@ -2980,12 +2980,11 @@ static void HWR_Subsector(size_t num)
 	if (gl_frontsector->ffloors)
 	{
 		/// \todo fix light, xoffs, yoffs, extracolormap ?
-		for (rover = gl_frontsector->ffloors;
-			rover; rover = rover->next)
+		for (rover = gl_frontsector->ffloors; rover; rover = rover->next)
 		{
 			fixed_t bottomCullHeight, topCullHeight, centerHeight;
 
-			if (!(rover->flags & FF_EXISTS) || !(rover->flags & FF_RENDERPLANES))
+			if (!(rover->flags & FF_EXISTS) || !(rover->flags & FF_RENDERPLANES) || !(rover->flags & FF_RENDERALL))
 				continue;
 			if (sub->validcount == validcount)
 				continue;
