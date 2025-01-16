@@ -8420,7 +8420,7 @@ static void K_drawKartItem(void)
 
 	boolean flipamount = splitscreen > 1 && stplyrnum & 1;	// Used for 3P/4P splitscreen to flip item amount stuff
 
-	const boolean usemultiicon = (multiitem_icon && cv_multiitemicon.value);
+	const boolean usemultiicon = (multiitem_icon && cv_multiitemicon.value && !offset);
 
 	if (stplyr->kartstuff[k_itemroulette])
 	{
@@ -8562,41 +8562,29 @@ static void K_drawKartItem(void)
 				case KITEM_SNEAKER:
 					if (usemultiicon)
 					{
-						if (offset)
+						numberdisplaymin = 4;
+						switch(stplyr->kartstuff[k_itemamount])
 						{
-							numberdisplaymin = 2;
-							localpatch = kp_sneaker[offset];
+							case 1:
+								localpatch = kp_sneaker[offset];
+								break;
+							case 2:
+								localpatch = kp_multsneaker[0];
+								break;
+							default:
+								localpatch = kp_multsneaker[1];
+								break;
 						}
-						else
-						{
-							numberdisplaymin = 4;
-							switch(stplyr->kartstuff[k_itemamount])
-							{
-								case 1:
-									localpatch = kp_sneaker[offset];
-									break;
-								case 2:
-									localpatch = kp_multsneaker[0];
-									break;
-								default:
-									localpatch = kp_multsneaker[1];
-									break;
-							}
-						}
-
 					}
 					else
 					{
-						numberdisplaymin = 2;
 						localpatch = kp_sneaker[offset];
 					}
 					break;
 				case KITEM_ROCKETSNEAKER:
-					numberdisplaymin = 2;
 					localpatch = kp_rocketsneaker[offset];
 					break;
 				case KITEM_INVINCIBILITY:
-					numberdisplaymin = 2;
 					localpatch = localinv;
 					dark = true;
 					break;
@@ -8622,12 +8610,10 @@ static void K_drawKartItem(void)
 					}
 					else
 					{
-						numberdisplaymin = 2;
 						localpatch = kp_banana[offset];
 					}
 					break;
 				case KITEM_EGGMAN:
-					numberdisplaymin = 2;
 					localpatch = kp_eggman[offset];
 					break;
 				case KITEM_ORBINAUT:
@@ -8642,50 +8628,39 @@ static void K_drawKartItem(void)
 					}
 					else
 					{
-						numberdisplaymin = 2;
 						localpatch = kp_jawz[offset];
 					}
 					break;
 				case KITEM_MINE:
-					numberdisplaymin = 2;
 					localpatch = kp_mine[offset];
 					break;
 				case KITEM_BALLHOG:
-					numberdisplaymin = 2;
 					localpatch = kp_ballhog[offset];
 					break;
 				case KITEM_SPB:
-					numberdisplaymin = 2;
 					localpatch = kp_selfpropelledbomb[offset];
 					dark = true;
 					break;
 				case KITEM_GROW:
-					numberdisplaymin = 2;
 					localpatch = kp_grow[offset];
 					break;
 				case KITEM_SHRINK:
-					numberdisplaymin = 2;
 					localpatch = kp_shrink[offset];
 					break;
 				case KITEM_THUNDERSHIELD:
-					numberdisplaymin = 2;
 					localpatch = kp_thundershield[offset];
 					dark = true;
 					break;
 				case KITEM_HYUDORO:
-					numberdisplaymin = 2;
 					localpatch = kp_hyudoro[offset];
 					break;
 				case KITEM_POGOSPRING:
-					numberdisplaymin = 2;
 					localpatch = kp_pogospring[offset];
 					break;
 				case KITEM_KITCHENSINK:
-					numberdisplaymin = 2;
 					localpatch = kp_kitchensink[offset];
 					break;
 				case KITEM_SAD:
-					numberdisplaymin = 2;
 					localpatch = kp_sadface[offset];
 					break;
 				default:
