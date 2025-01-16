@@ -81,6 +81,8 @@ consvar_t cv_coloredspeedlines = {"colorizedspeedlines", "Off", CV_SAVE, colorsp
 
 consvar_t cv_coloredsneakertrail = {"sneakertrailcolor", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_bananajitter = {"bananadragjitter", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 //extra hud things
 consvar_t cv_showstats = {"showstats", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_showinput = {"showinput", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -822,6 +824,9 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_coloredspeedlines);
 	// Colored trails
 	CV_RegisterVar(&cv_coloredsneakertrail);
+
+	// makes banans do funny jitter jumpy when dragged
+	CV_RegisterVar(&cv_bananajitter);
 
 	CV_RegisterVar(&cv_showstats);
 	CV_RegisterVar(&cv_showinput);
@@ -4840,7 +4845,8 @@ static void K_MoveHeldObjects(player_t *player)
 					}*/
 
 					cur->spriteyoffset = 0;
-					if (P_IsObjectOnGround(player->mo) && player->speed > 0 && player->kartstuff[k_bananadrag] > TICRATE
+
+					if (cv_bananajitter.value && P_IsObjectOnGround(player->mo) && player->speed > 0 && player->kartstuff[k_bananadrag] > TICRATE
 						&& M_RandomChance(min(FRACUNIT/2, FixedDiv(player->speed, K_GetKartSpeed(player, false))/2)))
 					{
 						if (leveltime & 1)
