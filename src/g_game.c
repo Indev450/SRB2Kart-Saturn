@@ -1197,7 +1197,7 @@ static void G_DoLoadLevel(boolean resetplayer)
 
 	// Saturn Music Feature stuffs
 	S_ResetKeepAndSpecialMus();
-	S_CheckMap();
+	S_KeepMusic();
 
 	// Make sure objectplace is OFF when you first start the level!
 	OP_ResetObjectplace();

@@ -118,8 +118,8 @@ consvar_t cv_keepmusic = {"keepmusic", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, N
 consvar_t cv_skipintromusic = {"skipintromusic", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 //consvar_t cv_ignoremusicchanges = {"ignoremusicchanges", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-boolean keepmusic = false;
-static void S_CheckEventMus(const char *newmus);
+boolean keepmusic = false; // keep the current music on map restart
+boolean skipintromus = false; // skip the intro fanfare
 
 #ifdef HAVE_OPENMPT
 openmpt_module *openmpt_mhandle = NULL;
@@ -1748,8 +1748,6 @@ void S_ChangeMusicEx(const char *mmusic, UINT16 mflags, boolean looping, UINT32 
 
 	strncpy(newmusic, mmusic, 6);
 
-	S_CheckEventMus(newmusic);
-
 	if (LUA_HookMusicChange(music_name, &hook_param))
 		return;
 
@@ -1938,29 +1936,6 @@ boolean S_FadeOutStopMusic(UINT32 ms)
 /// Init & Others
 /// ------------------------
 
-/*static boolean S_KeepMusic(void)
-{
-	//if (!cv_keepmusic.value)
-	//return false;
-
-	// should i compare songs or maps?
-	static char oldmusname[7] = "";
-
-	if (strcmp(music_name, mapmusname) != 0)
-		return false;
-
-	if (strcmp(oldmusname, mapmusname) == 0)
-		return true;
-
-	strncpy(oldmusname, mapmusname, 7);
-	oldmusname[6] = '\0';
-
-	return false;
-}*/
-
-static boolean skipmusic = false;
-boolean skipintromus = false;
-
 static const char *musicexception_list[] = {
 	"vote", "voteea", "voteeb", "racent", "krwin",
 	"krok", "krlose", "krfail", "kbwin", "kbok",
@@ -1974,43 +1949,30 @@ void S_ResetKeepAndSpecialMus(void)
 	keepmusic = skipintromus = false;
 }
 
-//checks for any kind of event music like intermission, vote etc.
-//always runs when musicchange gets invoked
-static void S_CheckEventMus(const char *newmus)
-{
-	skipmusic = false;
-
-	if (!cv_keepmusic.value)
-		return;
-
-	for (size_t i = 0; i < sizeof(musicexception_list)/sizeof(musicexception_list[0]); i++)
-		if (stricmp(music_name, musicexception_list[i]) == 0 || stricmp(newmus, musicexception_list[i]) == 0) // weird? sure! but were lucky enough newmus reflects whats being replaced
-		{
-			skipmusic = true;
-			break;
-		}
-
-	//CONS_Printf("music_name = %s\n", music_name);
-	//CONS_Printf("newmus = %s\n", newmus);
-	//CONS_Printf("skipmusic = %d\n", skipmusic);
-}
-
-//this one compares map and encoremode instead of the music itself
-//makes tunes work and stuff
-void S_CheckMap(void)
+// determine if we should keep the music on a map restart
+void S_KeepMusic(void)
 {
 	static INT16 oldmap = 0;
 	static boolean oldencore = false;
 
-	if (!cv_keepmusic.value)
+	if (!cv_keepmusic.value || gamestate != GS_LEVEL || music_name[0] == 0)
 	{
 		keepmusic = false;
-		return;
 	}
+	else if (oldmap == gamemap && oldencore == encoremode)
+	{
+		keepmusic = true;
 
-	keepmusic = (!skipmusic && (gamestate == GS_LEVEL) && (music_name[0] != 0) && (oldmap == gamemap) && (oldencore == encoremode));
-
-	//CONS_Printf("keepmusic = %s\n", keepmusic);
+		// check if the current music is smth we dont want to keep (vote music, etc)
+		for (size_t i = 0; i < sizeof(musicexception_list)/sizeof(musicexception_list[0]); i++)
+		{
+			if (stricmp(music_name, musicexception_list[i]) == 0)
+			{
+				keepmusic = false;
+				break;
+			}
+		}
+	}
 
 	oldencore = encoremode;
 	oldmap = gamemap;
@@ -2023,8 +1985,6 @@ void S_CheckMap(void)
 //
 void S_InitMapMusic(void)
 {
-	skipintromus = false;
-
 	if (mapmusflags & MUSIC_RELOADRESET)
 	{
 		strncpy(mapmusname, mapheaderinfo[gamemap-1]->musname, 7);
@@ -2045,7 +2005,7 @@ void S_InitMapMusic(void)
 	{
 		char *maptitle = G_BuildMapTitle(gamemap);
 		// for some reason, occasionally the title screen music doesent seem to be reset in time, so skipping the intro may make it just continue playing it instead, weird..
-		skipintromus = gamestate == GS_LEVEL && (stricmp(music_name, "titles") != 0) && (maptitle && (stricmp(maptitle, "Wandering Falls") != 0)); // thanks diggle!
+		skipintromus = (stricmp(music_name, "titles") != 0) && (maptitle && (stricmp(maptitle, "Wandering Falls") != 0)); // thanks diggle!
 		if (maptitle)
 			Z_Free(maptitle);
 	}
@@ -2060,7 +2020,7 @@ void S_InitMapMusic(void)
 
 void S_StartMapMusic(void)
 {
-	//no need to constantly run this after race has started
+	// no need to constantly run this after race has started
 	if (leveltime > MUSICSTARTTIME)
 		return;
 
