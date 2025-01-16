@@ -27,6 +27,7 @@ boolean K_UseColorHud(void);
 void K_RegisterKartStuff(void);
 
 extern consvar_t cv_coloredspeedlines, cv_coloredsneakertrail;
+extern consvar_t cv_bananajitter;
 extern consvar_t cv_colorizedhud, cv_colorizeditembox, cv_colorizedhudcolor;
 extern consvar_t cv_darkitembox;
 extern consvar_t cv_biglaps;
