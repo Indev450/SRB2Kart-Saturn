@@ -298,6 +298,7 @@ typedef struct mobj_s
 	INT16 lightlevel; // Add to sector lightlevel, -255 - 255
 
 	fixed_t realxscale, realyscale; // funn-E streeetch
+	fixed_t realxoffset, realyoffset;
 
 	fixed_t stretchslam; // "squish" effect when you land
 
@@ -453,6 +454,7 @@ typedef struct precipmobj_s
 	INT16 lightlevel; // Add to sector lightlevel, -255 - 255
 
 	fixed_t realxscale, realyscale; // funn-E streeetch
+	fixed_t realxoffset, realyoffset;
 
 	fixed_t stretchslam; // "squish" effect when you land
 

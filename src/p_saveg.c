@@ -2149,12 +2149,10 @@ static void LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 	mobj->mirrored = 0;
 
 	// Sprite Rendering stuff
-	mobj->spritexoffset = 0;
-	mobj->spriteyoffset = 0;
-	mobj->spritexscale = FRACUNIT;
-	mobj->spriteyscale = FRACUNIT;
-	mobj->realxscale = FRACUNIT;
-	mobj->realyscale = FRACUNIT;
+	mobj->spritexoffset = mobj->realxoffset = 0;
+	mobj->spriteyoffset = mobj->realxoffset = 0;
+	mobj->spritexscale = mobj->realxscale = FRACUNIT;
+	mobj->spriteyscale = mobj->realyscale = FRACUNIT;
 	mobj->stretchslam = 0;
 
 	// Timer for slam sound effect
