@@ -8685,6 +8685,16 @@ static void K_drawKartItem(void)
 
 	V_DrawMappedPatch(fx, fy, V_HUDTRANS|fflags, localbg, cv_colorizeditembox.value ? colormap : NULL);
 
+	fixed_t rfy = fy<<FRACBITS;
+
+	if (stplyr->kartstuff[k_itemroulette])
+	{
+		fixed_t frac = R_UsingFrameInterpolation() ? (rendertimefrac & FRACMASK) : 0;
+		UINT8   fancystep = (offset ? 6 : 10);
+		fixed_t fancyoffset = (stplyr->kartstuff[k_itemroulette] % 3)-1;
+		rfy += (fancystep * fancyoffset * FRACUNIT) + FixedMul(fancystep*FRACUNIT, frac) - fancystep/2*FRACUNIT;
+	}
+
 	// Then, the numbers:
 	if (stplyr->kartstuff[k_itemamount] >= numberdisplaymin && !stplyr->kartstuff[k_itemroulette])
 	{
@@ -8703,7 +8713,7 @@ static void K_drawKartItem(void)
 		}
 	}
 	else
-		V_DrawFixedPatch(fx<<FRACBITS, fy<<FRACBITS, FRACUNIT, V_HUDTRANS|fflags, localpatch, colmap);
+		V_DrawFixedPatch(fx<<FRACBITS, rfy, FRACUNIT, V_HUDTRANS|fflags, localpatch, colmap);
 
 	// Extensible meter, currently only used for rocket sneaker...
 	if (itembar && hudtrans)
