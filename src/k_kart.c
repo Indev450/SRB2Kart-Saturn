@@ -8687,7 +8687,7 @@ static void K_drawKartItem(void)
 
 	fixed_t rfy = fy<<FRACBITS;
 
-	if (stplyr->kartstuff[k_itemroulette])
+	if (stplyr->kartstuff[k_itemroulette] && !stplyr->deadtimer)
 	{
 		fixed_t frac = R_UsingFrameInterpolation() ? (rendertimefrac & FRACMASK) : 0;
 		UINT8   fancystep = (offset ? 6 : 10);
