@@ -11,7 +11,6 @@
 
 #define KART_FULLTURN 800
 
-void K_ResetPlayerSpriteStuff(void);
 
 extern UINT8 colortranslations[MAXTRANSLATIONS][16];
 extern const char *KartColor_Names[MAXSKINCOLORS];
