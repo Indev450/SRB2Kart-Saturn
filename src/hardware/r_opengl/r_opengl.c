@@ -139,41 +139,7 @@ static boolean fboinit = false;
 //			can know when the textures aren't there, as textures are always considered resident in their virtual memory
 static GLuint screenTextures[NUMSCREENTEXTURES] = {0};
 
-// shortcut for ((float)1/i)
-static const GLfloat byte2float[256] = {
-	0.000000f, 0.003922f, 0.007843f, 0.011765f, 0.015686f, 0.019608f, 0.023529f, 0.027451f,
-	0.031373f, 0.035294f, 0.039216f, 0.043137f, 0.047059f, 0.050980f, 0.054902f, 0.058824f,
-	0.062745f, 0.066667f, 0.070588f, 0.074510f, 0.078431f, 0.082353f, 0.086275f, 0.090196f,
-	0.094118f, 0.098039f, 0.101961f, 0.105882f, 0.109804f, 0.113725f, 0.117647f, 0.121569f,
-	0.125490f, 0.129412f, 0.133333f, 0.137255f, 0.141176f, 0.145098f, 0.149020f, 0.152941f,
-	0.156863f, 0.160784f, 0.164706f, 0.168627f, 0.172549f, 0.176471f, 0.180392f, 0.184314f,
-	0.188235f, 0.192157f, 0.196078f, 0.200000f, 0.203922f, 0.207843f, 0.211765f, 0.215686f,
-	0.219608f, 0.223529f, 0.227451f, 0.231373f, 0.235294f, 0.239216f, 0.243137f, 0.247059f,
-	0.250980f, 0.254902f, 0.258824f, 0.262745f, 0.266667f, 0.270588f, 0.274510f, 0.278431f,
-	0.282353f, 0.286275f, 0.290196f, 0.294118f, 0.298039f, 0.301961f, 0.305882f, 0.309804f,
-	0.313726f, 0.317647f, 0.321569f, 0.325490f, 0.329412f, 0.333333f, 0.337255f, 0.341176f,
-	0.345098f, 0.349020f, 0.352941f, 0.356863f, 0.360784f, 0.364706f, 0.368627f, 0.372549f,
-	0.376471f, 0.380392f, 0.384314f, 0.388235f, 0.392157f, 0.396078f, 0.400000f, 0.403922f,
-	0.407843f, 0.411765f, 0.415686f, 0.419608f, 0.423529f, 0.427451f, 0.431373f, 0.435294f,
-	0.439216f, 0.443137f, 0.447059f, 0.450980f, 0.454902f, 0.458824f, 0.462745f, 0.466667f,
-	0.470588f, 0.474510f, 0.478431f, 0.482353f, 0.486275f, 0.490196f, 0.494118f, 0.498039f,
-	0.501961f, 0.505882f, 0.509804f, 0.513726f, 0.517647f, 0.521569f, 0.525490f, 0.529412f,
-	0.533333f, 0.537255f, 0.541177f, 0.545098f, 0.549020f, 0.552941f, 0.556863f, 0.560784f,
-	0.564706f, 0.568627f, 0.572549f, 0.576471f, 0.580392f, 0.584314f, 0.588235f, 0.592157f,
-	0.596078f, 0.600000f, 0.603922f, 0.607843f, 0.611765f, 0.615686f, 0.619608f, 0.623529f,
-	0.627451f, 0.631373f, 0.635294f, 0.639216f, 0.643137f, 0.647059f, 0.650980f, 0.654902f,
-	0.658824f, 0.662745f, 0.666667f, 0.670588f, 0.674510f, 0.678431f, 0.682353f, 0.686275f,
-	0.690196f, 0.694118f, 0.698039f, 0.701961f, 0.705882f, 0.709804f, 0.713726f, 0.717647f,
-	0.721569f, 0.725490f, 0.729412f, 0.733333f, 0.737255f, 0.741177f, 0.745098f, 0.749020f,
-	0.752941f, 0.756863f, 0.760784f, 0.764706f, 0.768627f, 0.772549f, 0.776471f, 0.780392f,
-	0.784314f, 0.788235f, 0.792157f, 0.796078f, 0.800000f, 0.803922f, 0.807843f, 0.811765f,
-	0.815686f, 0.819608f, 0.823529f, 0.827451f, 0.831373f, 0.835294f, 0.839216f, 0.843137f,
-	0.847059f, 0.850980f, 0.854902f, 0.858824f, 0.862745f, 0.866667f, 0.870588f, 0.874510f,
-	0.878431f, 0.882353f, 0.886275f, 0.890196f, 0.894118f, 0.898039f, 0.901961f, 0.905882f,
-	0.909804f, 0.913726f, 0.917647f, 0.921569f, 0.925490f, 0.929412f, 0.933333f, 0.937255f,
-	0.941177f, 0.945098f, 0.949020f, 0.952941f, 0.956863f, 0.960784f, 0.964706f, 0.968628f,
-	0.972549f, 0.976471f, 0.980392f, 0.984314f, 0.988235f, 0.992157f, 0.996078f, 1.000000f
-};
+#define byte2float(byte) (GLfloat)(byte / 255.0f)
 
 // -----------------+
 // GL_DBG_Printf    : Output debug messages to debug log if DEBUG_TO_FILE is defined,
@@ -2065,24 +2031,24 @@ static void GL_PreparePolygon(FSurfaceInfo *pSurf, FBITFIELD PolyFlags)
 		// If the surface is either modulated or colormapped, or both
 		if (CurrentPolyFlags & (PF_Modulated | PF_ColorMapped))
 		{
-			poly.red   = byte2float[pSurf->PolyColor.s.red];
-			poly.green = byte2float[pSurf->PolyColor.s.green];
-			poly.blue  = byte2float[pSurf->PolyColor.s.blue];
-			poly.alpha = byte2float[pSurf->PolyColor.s.alpha];
+			poly.red   = byte2float(pSurf->PolyColor.s.red);
+			poly.green = byte2float(pSurf->PolyColor.s.green);
+			poly.blue  = byte2float(pSurf->PolyColor.s.blue);
+			poly.alpha = byte2float(pSurf->PolyColor.s.alpha);
 		}
 
 		// Only if the surface is colormapped
 		if (CurrentPolyFlags & PF_ColorMapped)
 		{
-			tint.red   = byte2float[pSurf->TintColor.s.red];
-			tint.green = byte2float[pSurf->TintColor.s.green];
-			tint.blue  = byte2float[pSurf->TintColor.s.blue];
-			tint.alpha = byte2float[pSurf->TintColor.s.alpha];
+			tint.red   = byte2float(pSurf->TintColor.s.red);
+			tint.green = byte2float(pSurf->TintColor.s.green);
+			tint.blue  = byte2float(pSurf->TintColor.s.blue);
+			tint.alpha = byte2float(pSurf->TintColor.s.alpha);
 
-			fade.red   = byte2float[pSurf->FadeColor.s.red];
-			fade.green = byte2float[pSurf->FadeColor.s.green];
-			fade.blue  = byte2float[pSurf->FadeColor.s.blue];
-			fade.alpha = byte2float[pSurf->FadeColor.s.alpha];
+			fade.red   = byte2float(pSurf->FadeColor.s.red);
+			fade.green = byte2float(pSurf->FadeColor.s.green);
+			fade.blue  = byte2float(pSurf->FadeColor.s.blue);
+			fade.alpha = byte2float(pSurf->FadeColor.s.alpha);
 
 			if (pSurf->LightTableId && pSurf->LightTableId != lt_downloaded)
 			{
@@ -2599,10 +2565,10 @@ void GL_DrawModelEx(model_t *model, INT32 frameIndex, float duration, float tics
 			pol = 0.0f;
 	}
 
-	poly.red    = byte2float[Surface->PolyColor.s.red];
-	poly.green  = byte2float[Surface->PolyColor.s.green];
-	poly.blue   = byte2float[Surface->PolyColor.s.blue];
-	poly.alpha  = byte2float[Surface->PolyColor.s.alpha];
+	poly.red    = byte2float(Surface->PolyColor.s.red);
+	poly.green  = byte2float(Surface->PolyColor.s.green);
+	poly.blue   = byte2float(Surface->PolyColor.s.blue);
+	poly.alpha  = byte2float(Surface->PolyColor.s.alpha);
 
 	if (poly.alpha < 1)
 		GL_SetBlend(PF_Translucent|PF_Modulated);
@@ -2611,15 +2577,15 @@ void GL_DrawModelEx(model_t *model, INT32 frameIndex, float duration, float tics
 
 	pglColor4ubv((GLubyte*)&Surface->PolyColor.s);
 
-	tint.red    = byte2float[Surface->TintColor.s.red];
-	tint.green  = byte2float[Surface->TintColor.s.green];
-	tint.blue   = byte2float[Surface->TintColor.s.blue];
-	tint.alpha  = byte2float[Surface->TintColor.s.alpha];
+	tint.red    = byte2float(Surface->TintColor.s.red);
+	tint.green  = byte2float(Surface->TintColor.s.green);
+	tint.blue   = byte2float(Surface->TintColor.s.blue);
+	tint.alpha  = byte2float(Surface->TintColor.s.alpha);
 
-	fade.red   = byte2float[Surface->FadeColor.s.red];
-	fade.green = byte2float[Surface->FadeColor.s.green];
-	fade.blue  = byte2float[Surface->FadeColor.s.blue];
-	fade.alpha = byte2float[Surface->FadeColor.s.alpha];
+	fade.red   = byte2float(Surface->FadeColor.s.red);
+	fade.green = byte2float(Surface->FadeColor.s.green);
+	fade.blue  = byte2float(Surface->FadeColor.s.blue);
+	fade.alpha = byte2float(Surface->FadeColor.s.alpha);
 	
 	if (Surface->LightTableId && Surface->LightTableId != lt_downloaded)
 	{
