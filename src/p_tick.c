@@ -502,6 +502,29 @@ static void P_RunQuakes(void)
 	--quake.time;
 }
 
+static inline void P_ResetSpriteStuff(void)
+{
+	thinker_t *th;
+
+	for (th = thinkercap.next; th != &thinkercap; th = th->next)
+	{
+		mobj_t *mo;
+
+		if (th->function.acp1 != (actionf_p1)P_MobjThinker) // not a mobj
+			continue;
+
+		mo = (mobj_t *)th;
+
+		if (mo->type == MT_SHADOW || mo->sprite == SPR_NULL)
+			continue;
+
+		mo->spritexscale = mo->realxscale;
+		mo->spriteyscale = mo->realyscale;
+		mo->spritexoffset = mo->realxoffset;
+		mo->spriteyoffset = mo->realyoffset;
+	}
+}
+
 //
 // P_Ticker
 //
@@ -601,6 +624,8 @@ void P_Ticker(boolean run)
 		
 		ps_lua_mobjhooks.value.i = 0;
 		ps_checkposition_calls.value.i = 0;
+
+		P_ResetSpriteStuff();
 
 		PS_START_TIMING(ps_lua_prethinkframe_time);
 		LUA_HookPreThinkFrame();

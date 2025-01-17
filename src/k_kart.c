@@ -107,21 +107,11 @@ consvar_t cv_newspeedometer = {"newspeedometer", "Default", CV_SAVE, speedo_cons
 consvar_t cv_battlespeedo = {"battlespeedo", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; //toggle for showing the speedometer in battlemode
 
 // funn-E streeetch
-static void gravstretch_onchange(void);
 static CV_PossibleValue_t stretchfactor_t[] = {
 	{0, "Off"}, {FRACUNIT/4, "0.250"},
 	{3*FRACUNIT/8, "0.375"}, {FRACUNIT/2, "0.500"}, {5*FRACUNIT/8, "0.625"},
 	{3*FRACUNIT/4, "0.750"}, {7*FRACUNIT/8, "0.875"}, {FRACUNIT, "Max"}, {0, NULL}};
-consvar_t cv_gravstretch = {"gravstretch", "0", CV_SAVE|CV_CALL|CV_NOINIT, stretchfactor_t, gravstretch_onchange, 0, NULL, NULL, 0, 0, NULL};
-
-static void gravstretch_onchange(void)
-{
-	// reset everything when toggling gravstretch off
-	if (cv_gravstretch.value == 0)
-	{
-		K_ResetPlayerSpriteStuff();
-	}
-}
+consvar_t cv_gravstretch = {"gravstretch", "0", CV_SAVE, stretchfactor_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static CV_PossibleValue_t slamsound_t[] = {{0, "Off"}, {1, "On"}, {0, NULL}};
 consvar_t cv_slamsound = {"slamsound", "1", CV_SAVE, slamsound_t, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -149,7 +139,24 @@ static void saltyhop_onchange(void)
 	// reset everything when toggling saltyhop off
 	if (!cv_saltyhop.value)
 	{
-		K_ResetPlayerSpriteStuff();
+		if (gamestate != GS_LEVEL)
+			return;
+
+		for (INT32 i = 0; i < MAXPLAYERS; i++)
+		{
+			player_t *player = &players[i];
+
+			if (!playeringame[i] || P_MobjWasRemoved(player->mo))
+				continue;
+
+			player->mo->salty_jump = false;
+			player->mo->salty_zoffset = 0;
+			player->mo->salty_momz = 0;
+
+			player->mo->salty_ready = false;
+			player->mo->salty_tapping = false;
+			player->mo->init_salty = false;
+		}
 	}
 }
 
@@ -889,34 +896,6 @@ void K_RegisterKartStuff(void)
 }
 
 //}
-
-void K_ResetPlayerSpriteStuff(void)
-{
-	if (gamestate != GS_LEVEL)
-		return;
-
-	for (INT32 i = 0; i < MAXPLAYERS; i++)
-	{
-		player_t *player = &players[i];
-
-		if (!playeringame[i] || P_MobjWasRemoved(player->mo))
-			continue;
-
-		player->mo->spritexoffset = 0;
-		player->mo->spriteyoffset = 0;
-		player->mo->spritexscale = player->mo->realxscale;
-		player->mo->spriteyscale = player->mo->realyscale;
-
-		// reset saltyhop stuffs too
-		player->mo->salty_jump = false;
-		player->mo->salty_zoffset = 0;
-		player->mo->salty_momz = 0;
-
-		player->mo->salty_ready = false;
-		player->mo->salty_tapping = false;
-		player->mo->init_salty = false;
-	}
-}
 
 boolean K_IsPlayerLosing(player_t *player)
 {
@@ -3360,8 +3339,6 @@ static void K_StretchPlayerGravity(player_t *p)
 {
 	if (cv_gravstretch.value == 0)
 	{
-		p->mo->spritexscale = p->mo->realxscale;
-		p->mo->spriteyscale = p->mo->realyscale;
 		return;
 	}
 
@@ -4843,8 +4820,6 @@ static void K_MoveHeldObjects(player_t *player)
 						else
 							targz -= 8*(2*FRACUNIT)/7;
 					}*/
-
-					cur->spriteyoffset = 0;
 
 					if (cv_bananajitter.value && P_IsObjectOnGround(player->mo) && player->speed > 0 && player->kartstuff[k_bananadrag] > TICRATE
 						&& M_RandomChance(min(FRACUNIT/2, FixedDiv(player->speed, K_GetKartSpeed(player, false))/2)))
