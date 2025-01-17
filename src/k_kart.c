@@ -134,6 +134,8 @@ consvar_t cv_showlaptimes = {"showlaptimes", "Off", CV_SAVE, CV_OnOff, NULL, 0, 
 consvar_t cv_posanim = {"postitionanimation", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_smallposnum = {"smallpositionnumber", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_fancyroulette = {"animatedroulette", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 consvar_t cv_minihead = {"smallminimapplayers", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_showminimapnames = {"showminimapnames", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -887,6 +889,8 @@ void K_RegisterKartStuff(void)
 
 	CV_RegisterVar(&cv_posanim);
 	CV_RegisterVar(&cv_smallposnum);
+
+	CV_RegisterVar(&cv_fancyroulette);
 
 	CV_RegisterVar(&cv_showlaptimes);
 	CV_RegisterVar(&cv_newspeedometer);
@@ -8688,7 +8692,7 @@ static void K_drawKartItem(void)
 	fixed_t rfy = fy<<FRACBITS;
 	INT32 fancyflags = V_HUDTRANS|fflags;
 
-	if (stplyr->kartstuff[k_itemroulette] && !stplyr->deadtimer)
+	if (cv_fancyroulette.value && stplyr->kartstuff[k_itemroulette] && !stplyr->deadtimer)
 	{
 		fixed_t frac = R_UsingFrameInterpolation() ? (rendertimefrac & FRACMASK) : 0;
 		UINT8   fancystep = (offset ? 6 : 10);
