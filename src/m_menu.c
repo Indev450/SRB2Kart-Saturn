@@ -2347,22 +2347,24 @@ static menuitem_t OP_SaturnHudMenu[] =
 
 	{IT_STRING | IT_CVAR, NULL, "Flash Lap Times",		 				&cv_showlaptimes, 	 		 90},
 
-	{IT_STRING | IT_CVAR, NULL, "Animated Roulette",		 			&cv_fancyroulette, 	 		100},
+	{IT_STRING | IT_CVAR, NULL, "Multi-Item icons",		 			    &cv_multiitemicon, 	 		100},
+	{IT_STRING | IT_CVAR, NULL, "Item Amount Number",		 			&cv_huditemamount, 	 		105},
+	{IT_STRING | IT_CVAR, NULL, "Animated Roulette",		 			&cv_fancyroulette, 	 		110},
 
-	{IT_STRING | IT_CVAR, NULL, "Show Lap Emblem",		 				&cv_showlapemblem, 	 		110},
-	{IT_STRING | IT_CVAR, NULL, "Show Cecho Messages", 					&cv_cechotoggle, 			115},
+	{IT_STRING | IT_CVAR, NULL, "Show Lap Emblem",		 				&cv_showlapemblem, 	 		120},
+	{IT_STRING | IT_CVAR, NULL, "Show Cecho Messages", 					&cv_cechotoggle, 			125},
 
-	{IT_STRING | IT_CVAR, NULL,	"Show Names on Minimap",   				&cv_showminimapnames, 		125},
-	{IT_STRING | IT_CVAR, NULL,	"Small Minimap Players",   				&cv_minihead, 				130},
+	{IT_STRING | IT_CVAR, NULL,	"Show Names on Minimap",   				&cv_showminimapnames, 		135},
+	{IT_STRING | IT_CVAR, NULL,	"Small Minimap Players",   				&cv_minihead, 				140},
 
-	{IT_STRING | IT_CVAR, NULL, "Beta Intermissionscreen", 				&cv_betainterscreen, 		140},
+	{IT_STRING | IT_CVAR, NULL, "Beta Intermissionscreen", 				&cv_betainterscreen, 		150},
 
-	{IT_STRING | IT_CVAR, NULL,	"Show Director Prompt",   				&cv_showdirectorhud, 		150},
+	{IT_STRING | IT_CVAR, NULL,	"Show Director Prompt",   				&cv_showdirectorhud, 		160},
 
-	{IT_STRING | IT_SUBMENU, NULL, "Nametags...", 						&OP_NametagDef, 		   	160},
-	{IT_STRING | IT_SUBMENU, NULL, "Driftgauge...", 					&OP_DriftGaugeDef, 		   	165},
+	{IT_STRING | IT_SUBMENU, NULL, "Nametags...", 						&OP_NametagDef, 		   	170},
+	{IT_STRING | IT_SUBMENU, NULL, "Driftgauge...", 					&OP_DriftGaugeDef, 		   	175},
 
-	{IT_SUBMENU|IT_STRING,	NULL,	"Hud Offsets...", 					&OP_HudOffsetDef,		   	175},
+	{IT_SUBMENU|IT_STRING,	NULL,	"Hud Offsets...", 					&OP_HudOffsetDef,		   	185},
 };
 
 static const char* OP_SaturnHudTooltips[] =
@@ -2379,6 +2381,8 @@ static const char* OP_SaturnHudTooltips[] =
 	"Make the Postionnumber half the size.",
 	"Disable the animation of the Positionnumber\nwhen overtaking someone.",
 	"Flash current Lap Time when doing a Lap on the Timer.",
+	"Use graphics for multiple sneakers, bananas and jawz.",
+	"Change when the item amount is to be displayed\nMultiple will always display the number\nwhen you have multiple of the same Item\nAlways will always display the number regardless of Item amount.",
 	"Enables an animation while the roulette is active.",
 	"Show the big 'LAP' text on a lap change.",
 	"Show the big Cecho Messages.",
@@ -2404,6 +2408,8 @@ enum
 	sh_highresport,
 	sh_smolpos,
 	sh_posanim,
+	sh_multicon,
+	sh_itamnum,
 	sh_laptime,
 	sh_fancy,
 	sh_lapemblem,
