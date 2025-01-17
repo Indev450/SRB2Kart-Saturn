@@ -1345,6 +1345,8 @@ void I_InitJoystick(UINT8 index)
 	UINT8 i;
 	SDL_GameController *newcontroller = NULL;
 
+	SDL_SetHint(SDL_HINT_AUTO_UPDATE_SENSORS, "0");
+
 	//I_ShutdownJoystick();
 	//SDL_SetHintWithPriority("SDL_XINPUT_ENABLED", "0", SDL_HINT_OVERRIDE);
 	if (M_CheckParm("-nojoy"))
