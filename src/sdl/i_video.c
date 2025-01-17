@@ -1882,6 +1882,8 @@ static SDL_bool Impl_CreateWindow(SDL_bool fullscreen)
         SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, msaa);
 	}
 
+	SDL_SetHint(SDL_HINT_VIDEO_DOUBLE_BUFFER, "1");
+
 	// Without a 24-bit depth buffer many visuals are ruined by z-fighting.
 	// Some GPU drivers may give us a 16-bit depth buffer since the
 	// default value for SDL_GL_DEPTH_SIZE is 16.
