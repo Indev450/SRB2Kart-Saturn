@@ -185,6 +185,8 @@ void I_StartupSound(void)
 	SDL_setenv("SDL_AUDIODRIVER", "directsound", 1);
 #endif
 
+	SDL_SetHint(SDL_HINT_AUDIO_RESAMPLING_MODE, "3");
+
 	// EE inits audio first so we're following along.
 	if (SDL_WasInit(SDL_INIT_AUDIO) == SDL_INIT_AUDIO)
 	{
