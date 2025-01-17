@@ -96,17 +96,19 @@ consvar_t cv_fancyroulette = {"animatedroulette", "Off", CV_SAVE, CV_OnOff, NULL
 consvar_t cv_minihead = {"smallminimapplayers", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_showminimapnames = {"showminimapnames", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_highresportrait = {"highresportrait", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; //make char potraits use their high-res version instead
+consvar_t cv_highresportrait = {"highresportrait", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; // make char potraits use their high-res version instead
 
 consvar_t cv_showlapemblem = {"showlapemblem", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_biglaps = {"biglaphud", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; //here for ppl who dont want to make 2 more patches for their custom hud
+consvar_t cv_biglaps = {"biglaphud", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; // here for ppl who dont want to make 2 more patches for their custom hud
 
-consvar_t cv_darkitembox = {"darkitembox", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; //itembox gets a dark box with specific items
+consvar_t cv_darkitembox = {"darkitembox", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; // itembox gets a dark box with specific items
 consvar_t cv_multiitemicon = {"multiitemicon", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+static CV_PossibleValue_t huditemamount_cons_t[] = {{0, "Vanilla"}, {1, "Multiple"}, {1, "Always"},{0, NULL}};
+consvar_t cv_huditemamount = {"showitemamountnumber", "Vanilla", CV_SAVE, huditemamount_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 CV_PossibleValue_t speedo_cons_t[NUMSPEEDOSTUFF];
 consvar_t cv_newspeedometer = {"newspeedometer", "Default", CV_SAVE, speedo_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_battlespeedo = {"battlespeedo", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; //toggle for showing the speedometer in battlemode
+consvar_t cv_battlespeedo = {"battlespeedo", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; // toggle for showing the speedometer in battlemode
 
 // funn-E streeetch
 static CV_PossibleValue_t stretchfactor_t[] = {
@@ -866,6 +868,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_darkitembox);
 
 	CV_RegisterVar(&cv_multiitemicon);
+	CV_RegisterVar(&cv_huditemamount);
 
 	CV_RegisterVar(&cv_highresportrait);
 
@@ -8103,7 +8106,7 @@ static void K_drawKartItem(void)
 	patch_t *localinv = ((offset) ? kp_invincibility[((leveltime % (6*3)) / 3) + 7] : kp_invincibility[(leveltime % (7*3)) / 3]);
 	INT32 fx = 0, fy = 0, fflags = 0;	// final coords for hud and flags...
 	//INT32 splitflags = K_calcSplitFlags(V_SNAPTOTOP|V_SNAPTOLEFT);
-	INT32 numberdisplaymin = 2; // No longer a constant so other things can modify this value
+	INT32 numberdisplaymin = cv_huditemamount.value == 2 ? 1 : 2; // No longer a constant so other things can modify this value
 	INT32 itembar = 0;
 	INT32 maxl = 0; // itembar's normal highest value
 	const INT32 barlength = (splitscreen > 1 ? 12 : 26);
@@ -8256,7 +8259,8 @@ static void K_drawKartItem(void)
 				case KITEM_SNEAKER:
 					if (usemultiicon)
 					{
-						numberdisplaymin = 4;
+						if (!cv_huditemamount.value)
+							numberdisplaymin = 4;
 						switch(stplyr->kartstuff[k_itemamount])
 						{
 							case 1:
@@ -8285,7 +8289,8 @@ static void K_drawKartItem(void)
 				case KITEM_BANANA:
 					if (usemultiicon)
 					{
-						numberdisplaymin = 4;
+						if (!cv_huditemamount.value)
+							numberdisplaymin = 4;
 						switch(stplyr->kartstuff[k_itemamount])
 						{
 							case 1:
@@ -8311,13 +8316,15 @@ static void K_drawKartItem(void)
 					localpatch = kp_eggman[offset];
 					break;
 				case KITEM_ORBINAUT:
-					numberdisplaymin = offset ? 2 : 5;
+					if (!cv_huditemamount.value)
+						numberdisplaymin = offset ? 2 : 5;
 					localpatch = kp_orbinaut[(offset ? 4 : min(stplyr->kartstuff[k_itemamount]-1, 3))];
 					break;
 				case KITEM_JAWZ:
 					if (usemultiicon)
 					{
-						numberdisplaymin = 3;
+						if (!cv_huditemamount.value)
+							numberdisplaymin = 3;
 						localpatch = ((stplyr->kartstuff[k_itemamount] == 1) ? kp_jawz[offset] : kp_multjawz[0]);
 					}
 					else
