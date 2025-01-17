@@ -146,7 +146,7 @@ consvar_t cv_biglaps = {"biglaphud", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NUL
 
 consvar_t cv_darkitembox = {"darkitembox", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; // itembox gets a dark box with specific items
 consvar_t cv_multiitemicon = {"multiitemicon", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-static CV_PossibleValue_t huditemamount_cons_t[] = {{0, "Vanilla"}, {1, "Multiple"}, {1, "Always"},{0, NULL}};
+static CV_PossibleValue_t huditemamount_cons_t[] = {{0, "Vanilla"}, {1, "Multiple"}, {2, "Always"},{0, NULL}};
 consvar_t cv_huditemamount = {"showitemamountnumber", "Vanilla", CV_SAVE, huditemamount_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 CV_PossibleValue_t speedo_cons_t[NUMSPEEDOSTUFF];
