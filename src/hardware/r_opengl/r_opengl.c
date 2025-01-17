@@ -2027,9 +2027,10 @@ static boolean GL_Shader_CompileProgram(gl_shader_t *shader, GLint i)
 	UNIFORM_1(shader->uniforms[gluniform_palette_tex], 2, pglUniform1i);
 	UNIFORM_1(shader->uniforms[gluniform_palette_lookup_tex], 1, pglUniform1i);
 	UNIFORM_1(shader->uniforms[gluniform_lighttable_tex], 2, pglUniform1i);
-
+#ifdef USE_FBO_OGL
 	// supersampling crap
 	UNIFORM_2(shader->uniforms[gluniform_inv_supersamplefactor], InvSupersampleFactorX, InvSupersampleFactorY, pglUniform2f);
+#endif
 
 	// restore gl shader state
 	pglUseProgram(gl_shaderstate.program);
@@ -3335,9 +3336,11 @@ void GL_DrawScreenFinalTexture(int tex, INT32 width, INT32 height, boolean usesh
 	{
 		// godawful but you can only ever run ONE shader per renderpass and since i dont want to draw an extra screen texture when you downsample from higher resolution
 		// so i combined the palette postprocess with this crap
+#ifdef USE_FBO_OGL
 		if (fbo_shader)
 			pglUseProgram(gl_shaders[SHADER_DOWNSAMPLE].program);
 		else
+#endif
 			pglUseProgram(gl_shaders[SHADER_PALETTE_POSTPROCESS].program); // palette postprocess shader
 	}
 

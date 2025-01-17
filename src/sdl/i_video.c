@@ -133,8 +133,9 @@ static void Impl_SetVsync(void);
 static INT32 desktopwidth = 0, desktopheight = 0;
 
 static void I_CheckDesktopRes(void);
+#ifdef USE_FBO_OGL
 static void I_ResetFBOSurface(void);
-
+#endif
 // synchronize page flipping with screen refresh
 consvar_t cv_vidwait = {"vid_wait", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, Impl_SetVsync, 0, NULL, NULL, 0, 0, NULL};
 static consvar_t cv_stretch = {"stretch", "Off", CV_SAVE|CV_NOSHOWHELP, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};

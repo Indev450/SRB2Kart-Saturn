@@ -287,7 +287,11 @@ void OglSdlFinishUpdate(boolean waitvbl)
 		fbo_shader = false;
 #endif
 
+#ifdef USE_FBO_OGL
 	GL_DrawScreenFinalTexture(HWD_SCREENTEXTURE_GENERIC2, sdlw, sdlh, (HWR_ShouldUsePaletteRendering() || fbo_shader));
+#else
+	GL_DrawScreenFinalTexture(HWD_SCREENTEXTURE_GENERIC2, sdlw, sdlh, HWR_ShouldUsePaletteRendering());
+#endif
 
 #ifdef USE_FBO_OGL
 	if (usefbo)
