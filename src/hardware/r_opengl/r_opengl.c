@@ -1677,7 +1677,12 @@ static void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 			{
 				for (i = 0; i < w; i++, idx++)
 				{
-					tex[idx].s = (byteColor_t){*pImgData, *pImgData, *pImgData++, *pImgData++};
+					tex[idx].s.red   = *pImgData;
+					tex[idx].s.green = *pImgData;
+					tex[idx].s.blue  = *pImgData;
+					pImgData++;
+					tex[idx].s.alpha = *pImgData;
+					pImgData++;
 				}
 			}
 			break;
