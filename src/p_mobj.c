@@ -10359,7 +10359,7 @@ void P_SpawnPrecipitation(void)
 				continue;
 
 			height = precipsector->sector->ceilingheight - precipsector->sector->floorheight;
-			height = FixedDiv(height, precipmoscale);
+			height = FixedDiv(height, mapobjectscale);
 
 			// Exists, but is too small for reasonable precipitation.
 			if (height < 64<<FRACBITS)
