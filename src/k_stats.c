@@ -66,8 +66,6 @@ void K_StatRound(void)
 	if (demo.playback)
 		return;
 
-	kartstats.somenewfield = 42;
-
 	int numplayers = 0;
 
 	for (int i = 0; i < MAXPLAYERS; ++i)
