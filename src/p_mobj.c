@@ -10315,7 +10315,7 @@ consvar_t cv_suddendeath = {"suddendeath", "Off", CV_NETVAR|CV_CHEAT|CV_NOSHOWHE
 
 void P_SpawnPrecipitation(void)
 {
-	INT32 i, mrand;
+	INT32 i, j, mrand;
 	fixed_t basex, basey, j, x, y, z;
 	subsector_t *precipsector = NULL;
 	precipmobj_t *rainmo = NULL;
@@ -10323,10 +10323,7 @@ void P_SpawnPrecipitation(void)
 	if (dedicated || !cv_drawdist_precip.value || curWeather == PRECIP_NONE || curWeather == PRECIP_STORM_NORAIN)
 		return;
 
-	fixed_t density = (cv_mobjscaleprecip.value ? mapobjectscale : FRACUNIT);
-
-	if (cv_lessprecip.value)
-		density *= 2; // just spawn half the precip
+	const fixed_t precipmoscale = (cv_mobjscaleprecip.value ? mapobjectscale : FRACUNIT);
 
 	// Use the blockmap to narrow down our placing patterns
 	for (i = 0; i < bmapwidth*bmapheight; ++i)
@@ -10334,9 +10331,15 @@ void P_SpawnPrecipitation(void)
 		basex = bmaporgx + (i % bmapwidth) * MAPBLOCKSIZE;
 		basey = bmaporgy + (i / bmapwidth) * MAPBLOCKSIZE;
 
+		if (cv_lessprecip.value)
+		{
+			basex = 3*basex/2;
+			basey = 3*basey/2;
+		}
+
 		// If mobjscale < FRACUNIT, each blockmap cell covers
 		// more area so spawn more precipitation in that area.
-		for (j = 0; j < FRACUNIT; j += density)
+		for (j = 0; j < FRACUNIT; j += precipmoscale)
 		{
 			INT32 floorz;
 			INT32 ceilingz;
