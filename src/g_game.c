@@ -3602,6 +3602,7 @@ void G_LoadGameData(void)
 	// to new gamedata
 	G_ClearRecords(); // main and nights records
 	M_ClearSecrets(); // emblems, unlocks, maps visited, etc
+	K_EraseStats(); // stats
 
 	if (M_CheckParm("-nodata"))
 		return; // Don't load.
