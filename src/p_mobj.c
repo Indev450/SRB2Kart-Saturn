@@ -10320,7 +10320,7 @@ void P_SpawnPrecipitation(void)
 	subsector_t *precipsector = NULL;
 	precipmobj_t *rainmo = NULL;
 
-	if (dedicated || !cv_drawdist_precip.value || curWeather == PRECIP_NONE) // SRB2Kart
+	if (dedicated || !cv_drawdist_precip.value || curWeather == PRECIP_NONE || curWeather == PRECIP_STORM_NORAIN)
 		return;
 
 	fixed_t density = (cv_mobjscaleprecip.value ? mapobjectscale : FRACUNIT);
@@ -10374,6 +10374,9 @@ void P_SpawnPrecipitation(void)
 			else // everything else.
 				rainmo = P_SpawnPrecipMobj(x, y, z, MT_RAIN);
 
+			if (curWeather == PRECIP_BLANK)
+				rainmo->precipflags |= PCF_INVISIBLE;
+
 			floorz = rainmo->floorz >> FRACBITS;
 			ceilingz = rainmo->ceilingz >> FRACBITS;
 
@@ -10388,17 +10391,6 @@ void P_SpawnPrecipitation(void)
 				rainmo->z = ceilingz << FRACBITS;
 			}
 		}
-	}
-
-	if (curWeather == PRECIP_BLANK)
-	{
-		curWeather = PRECIP_RAIN;
-		P_SwitchWeather(PRECIP_BLANK);
-	}
-	else if (curWeather == PRECIP_STORM_NORAIN)
-	{
-		curWeather = PRECIP_RAIN;
-		P_SwitchWeather(PRECIP_STORM_NORAIN);
 	}
 }
 
