@@ -515,7 +515,7 @@ static inline void P_ResetSpriteStuff(void)
 
 		mo = (mobj_t *)th;
 
-		if (mo->type == MT_SHADOW || mo->sprite == SPR_NULL)
+		if (mo->sprite == SPR_NULL || mo->flags2 & MF2_DONTDRAW || mo->type == MT_SHADOW)
 			continue;
 
 		mo->spritexscale = mo->realxscale;
