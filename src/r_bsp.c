@@ -423,7 +423,7 @@ static void R_AddLine(seg_t *line)
 	span = angle1 - angle2;
 
 	// Back side? i.e. backface culling?
-	if (span >= ANGLE_180)
+	if (span >= ANGLE_180 || !line->linedef)
 		return;
 
 	// Global angle needed by segcalc.
@@ -494,11 +494,12 @@ static void R_AddLine(seg_t *line)
 
 	doorclosed = 0;
 
+	fixed_t frontf1,frontf2, frontc1, frontc2; // front floor/ceiling ends
+	fixed_t backf1, backf2, backc1, backc2; // back floor ceiling ends
+
 	// Closed door.
 	if (frontsector->f_slope || frontsector->c_slope || backsector->f_slope || backsector->c_slope)
 	{
-		fixed_t frontf1,frontf2, frontc1, frontc2; // front floor/ceiling ends
-		fixed_t backf1, backf2, backc1, backc2; // back floor ceiling ends
 #define SLOPEPARAMS(slope, end1, end2, normalheight) \
 		if (slope) { \
 			end1 = P_GetZAt(slope, line->v1->x, line->v1->y); \
@@ -511,57 +512,44 @@ static void R_AddLine(seg_t *line)
 		SLOPEPARAMS( backsector->f_slope, backf1,  backf2,  backsector->floorheight)
 		SLOPEPARAMS( backsector->c_slope, backc1,  backc2,  backsector->ceilingheight)
 #undef SLOPEPARAMS
-		if (viewsector != backsector && viewsector != frontsector)
-		{
-			if ((backc1 <= frontf1 && backc2 <= frontf2)
-				|| (backf1 >= frontc1 && backf2 >= frontc2))
-			{
-				goto clipsolid;
-			}
-
-			// Check for automap fix. Store in doorclosed for r_segs.c
-			doorclosed = (backc1 <= backf1 && backc2 <= backf2
-			&& ((backc1 >= frontc1 && backc2 >= frontc2) || curline->sidedef->toptexture)
-			&& ((backf1 <= frontf1 && backf2 >= frontf2) || curline->sidedef->bottomtexture)
-			&& (backsector->ceilingpic != skyflatnum || frontsector->ceilingpic != skyflatnum));
-
-			if (doorclosed)
-				goto clipsolid;
-		}
-
-		// Window.
-		if (backc1 != frontc1 || backc2 != frontc2
-			|| backf1 != frontf1 || backf2 != frontf2)
-		{
-			goto clippass;
-		}
 	}
 	else
 	{
-		if (viewsector != backsector && viewsector != frontsector)
+		frontf1 = frontf2 = frontsector->floorheight;
+		frontc1 = frontc2 = frontsector->ceilingheight;
+		backf1 = backf2 = backsector->floorheight;
+		backc1 = backc2 = backsector->ceilingheight;
+	}
+
+	if (viewsector != backsector && viewsector != frontsector)
+	{
+		// here we're talking about a CEILING lower than a floor. ...yeah we don't even need to bother.
+		if (backc1 <= frontf1 && backc2 <= frontf2)
 		{
-			if (backsector->ceilingheight <= frontsector->floorheight
-				|| backsector->floorheight >= frontsector->ceilingheight)
-			{
-				goto clipsolid;
-			}
-
-			// Check for automap fix. Store in doorclosed for r_segs.c
-			doorclosed = (backsector->ceilingheight <= backsector->floorheight
-			&& (backsector->ceilingheight >= frontsector->ceilingheight || curline->sidedef->toptexture)
-			&& (backsector->floorheight <= frontsector->floorheight || curline->sidedef->bottomtexture)
-			&& (backsector->ceilingpic != skyflatnum || frontsector->ceilingpic != skyflatnum));
-
-			if (doorclosed)
-				goto clipsolid;
+			goto clipsolid;
 		}
 
-		// Window.
-		if (backsector->ceilingheight != frontsector->ceilingheight
-			|| backsector->floorheight != frontsector->floorheight)
+		// here we're talking about floors higher than ceilings, don't even bother either.
+		if (backf1 >= frontc1 && backf2 >= frontc2)
 		{
-			goto clippass;
+			goto clipsolid;
 		}
+
+		// Check for automap fix. Store in doorclosed for r_segs.c
+		doorclosed = (backc1 <= backf1 && backc2 <= backf2
+		&& ((backc1 >= frontc1 && backc2 >= frontc2) || curline->sidedef->toptexture)
+		&& ((backf1 <= frontf1 && backf2 >= frontf2) || curline->sidedef->bottomtexture)
+		&& (backsector->ceilingpic != skyflatnum || frontsector->ceilingpic != skyflatnum));
+
+		if (doorclosed)
+			goto clipsolid;
+	}
+
+	// Window.
+	if (backc1 != frontc1 || backc2 != frontc2
+		|| backf1 != frontf1 || backf2 != frontf2)
+	{
+		goto clippass;
 	}
 
 	// Reject empty lines used for triggers and special events.
