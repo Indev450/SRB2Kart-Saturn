@@ -10324,18 +10324,13 @@ void P_SpawnPrecipitation(void)
 		return;
 
 	const fixed_t precipmoscale = (cv_mobjscaleprecip.value ? mapobjectscale : FRACUNIT);
+	const INT32 density = (cv_lessprecip.value ? 2 : 1);
 
 	// Use the blockmap to narrow down our placing patterns
-	for (i = 0; i < bmapwidth*bmapheight; ++i)
+	for (i = 0; i < bmapwidth*bmapheight; i += density)
 	{
 		basex = bmaporgx + (i % bmapwidth) * MAPBLOCKSIZE;
 		basey = bmaporgy + (i / bmapwidth) * MAPBLOCKSIZE;
-
-		if (cv_lessprecip.value)
-		{
-			basex = 3*basex/2;
-			basey = 3*basey/2;
-		}
 
 		// If mobjscale < FRACUNIT, each blockmap cell covers
 		// more area so spawn more precipitation in that area.
