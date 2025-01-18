@@ -1784,8 +1784,8 @@ void P_SwitchWeather(INT32 weathernum)
 
 			precipmobj = (precipmobj_t *)think;
 
-			mobjtype_t type = 0;
 			INT32 z = 0;
+			mobjtype_t type = MT_NULL;
 
 			if (weathernum == PRECIP_NONE || weathernum == PRECIP_BLANK || weathernum == PRECIP_STORM_NORAIN) // Remove precip, but keep it around for reuse.
 			{
