@@ -2776,9 +2776,6 @@ boolean R_ThingVisible (mobj_t *thing)
 	if (thing->sprite == SPR_NULL || thing->flags2 & MF2_DONTDRAW)
 		return false;
 
-	if (!P_MobjWasRemoved(viewmobj) && (thing == viewmobj))
-		return false;
-
 	if (splitscreen)
 	{
 		if ((viewssnum == 0 && (thing->eflags & MFE_DRAWONLYFORP1))
