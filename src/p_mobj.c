@@ -10316,7 +10316,7 @@ consvar_t cv_suddendeath = {"suddendeath", "Off", CV_NETVAR|CV_CHEAT|CV_NOSHOWHE
 void P_SpawnPrecipitation(void)
 {
 	INT32 i, j, mrand;
-	fixed_t basex, basey, j, x, y, z;
+	fixed_t basex, basey, x, y, z, height;
 	subsector_t *precipsector = NULL;
 	precipmobj_t *rainmo = NULL;
 
@@ -10358,8 +10358,11 @@ void P_SpawnPrecipitation(void)
 			if (precipsector->sector->ceilingpic != skyflatnum)
 				continue;
 
+			height = precipsector->sector->ceilingheight - precipsector->sector->floorheight;
+			height = FixedDiv(height, precipmoscale);
+
 			// Exists, but is too small for reasonable precipitation.
-			if (!(precipsector->sector->floorheight <= precipsector->sector->ceilingheight - (32<<FRACBITS)))
+			if (height < 64<<FRACBITS)
 				continue;
 
 			// Don't set z properly yet...
