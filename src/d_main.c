@@ -774,15 +774,15 @@ void D_SRB2Loop(void)
 				debugload--;
 #endif
 
-		interp = R_UsingFrameInterpolation() && !dedicated;
+		refreshdirmenu = 0; // not sure where to put this, here as good as any?
+
+		interp = (R_UsingFrameInterpolation() && !dedicated);
 		doDisplay = false;
 
 		renderisnewtic = (realtics > 0 || singletics);
 
 		if (renderisnewtic)
 		{
-			refreshdirmenu = 0; // not sure where to put this, here as good as any?
-
 			// don't skip more than 10 frames at a time
 			// (fadein / fadeout cause massive frame skip!)
 			if (realtics > 8)
@@ -858,7 +858,6 @@ void D_SRB2Loop(void)
 
 		// consoleplayer -> displayplayers (hear sounds from viewpoint)
 		S_UpdateSounds(); // move positional sounds
-
 
 		LUA_Step();
 
