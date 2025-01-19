@@ -6289,8 +6289,6 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 
 						if (P_IsLocalPlayer(player) && cv_supermusic.value == 1 && cv_birdmusic.value)
 							S_ChangeMusicSpecial("kinvnc");
-						else
-							S_StartSound(player->mo, (cv_kartinvinsfx.value ? sfx_alarmi : sfx_kinvnc));
 
 						P_RestoreMusic(player);
 						K_PlayPowerGloatSound(player->mo);
@@ -6495,8 +6493,6 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 							player->kartstuff[k_growshrinktimer] = itemtime+(4*TICRATE); // 12 seconds
 							if (P_IsLocalPlayer(player) && cv_growmusic.value == 1 && cv_birdmusic.value )
 								S_ChangeMusicSpecial("kgrow");
-							else
-								S_StartSound(player->mo, (cv_kartinvinsfx.value ? sfx_alarmg : sfx_kgrow));
 							P_RestoreMusic(player);
 							S_StartSound(player->mo, sfx_kc5a);
 						}
