@@ -8620,8 +8620,8 @@ typedef struct statpage_s {
 } statpage_t;
 
 static statpage_t statsPages[] = {
-	{ "Level Statistics", M_DrawStatsMaps, },
 	{ "Play Time Statistics", M_DrawStatsPlaytime, },
+	{ "Level Statistics", M_DrawStatsMaps, },
 	{ "Extra Statistics", M_DrawStatsExtra, },
 };
 
