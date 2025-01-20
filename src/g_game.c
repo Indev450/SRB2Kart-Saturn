@@ -922,7 +922,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		case 2:
 			G_CopyTiccmd(cmd, I_BaseTiccmd2(), 1);
 			mouseaiming = player->spectator;
-			invertmouse = cv_invertmouse2.value;
+			invertmouse = false;
 			break;
 		case 3:
 			G_CopyTiccmd(cmd, I_BaseTiccmd3(), 1);
