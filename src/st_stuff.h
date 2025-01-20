@@ -73,10 +73,6 @@ extern UINT8 stplyrnum;
 extern lumpnum_t st_borderpatchnum;
 // patches, also used in intermission
 extern patch_t *tallnum[10];
-extern patch_t *sboscore;
-extern patch_t *sbotime;
-extern patch_t *sbocolon;
-extern patch_t *sboperiod;
 extern patch_t *facerankprefix[MAXSKINS]; // ranking
 extern patch_t *facewantprefix[MAXSKINS]; // wanted
 extern patch_t *facemmapprefix[MAXSKINS]; // minimap
@@ -89,8 +85,6 @@ extern char *facemmapprefix_name[MAXSKINS]; // minimap
 extern char *localfacerankprefix_name[MAXLOCALSKINS]; // ranking
 extern char *localfacewantprefix_name[MAXLOCALSKINS]; // wanted
 extern char *localfacemmapprefix_name[MAXLOCALSKINS]; // minimap*/
-extern patch_t *livesback;
-extern patch_t *ngradeletters[7];
 
 /** HUD location information (don't move this comment)
   */
