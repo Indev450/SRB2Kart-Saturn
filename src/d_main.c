@@ -772,12 +772,12 @@ void D_SRB2Loop(void)
 				debugload--;
 #endif
 
-		refreshdirmenu = 0; // not sure where to put this, here as good as any?
-
 		interp = (R_UsingFrameInterpolation() && !dedicated);
 		doDisplay = false;
 
 		renderisnewtic = (realtics > 0 || singletics);
+
+		refreshdirmenu = 0; // not sure where to put this, here as good as any?
 
 		if (renderisnewtic)
 		{
