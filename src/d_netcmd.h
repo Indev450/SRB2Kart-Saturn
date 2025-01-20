@@ -50,13 +50,6 @@ extern consvar_t cv_joyport2;
 #endif
 extern consvar_t cv_joyscale[4]; //MAXSPLITSCREENPLAYERS
 
-// splitscreen with second mouse
-extern consvar_t cv_mouse2port;
-extern consvar_t cv_usemouse2;
-#if defined (__unix__) || defined (__APPLE__) || defined (UNIXCOMMON)
-extern consvar_t cv_mouse2opt;
-#endif
-
 // normally in p_mobj but the .h is not read
 extern consvar_t cv_itemrespawntime;
 extern consvar_t cv_itemrespawn;

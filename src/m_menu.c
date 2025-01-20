@@ -311,7 +311,7 @@ static void M_SetupMultiHandler(INT32 choice);
 // Split into multiple parts due to size
 // Controls
 menu_t OP_ControlsDef, OP_AllControlsDef;
-menu_t OP_MouseOptionsDef, OP_Mouse2OptionsDef;
+menu_t OP_MouseOptionsDef;
 menu_t OP_Joystick1Def, OP_Joystick2Def, OP_Joystick3Def, OP_Joystick4Def;
 menu_t OP_CustomCvarMenuDef;
 static void M_VideoModeMenu(INT32 choice);
@@ -1374,15 +1374,12 @@ static menuitem_t OP_MouseOptionsMenu[] =
 {
 	{IT_STRING | IT_CVAR, NULL, "Use Mouse",        &cv_usemouse,         10},
 
-
-	//{IT_STRING | IT_CVAR, NULL, "First-Person MouseLook", &cv_alwaysfreelook,   30},
-	//{IT_STRING | IT_CVAR, NULL, "Third-Person MouseLook", &cv_chasefreelook,   40},
-	{IT_STRING | IT_CVAR, NULL, "Mouse Turning",       &cv_mouseturn,        20},
+	{IT_STRING | IT_CVAR, NULL, "Mouse Turning",    &cv_mouseturn,        20},
 	{IT_STRING | IT_CVAR, NULL, "Invert Mouse",     &cv_invertmouse,      30},
 	{IT_STRING | IT_CVAR | IT_CV_SLIDER,
 	                      NULL, "Mouse X Speed",    &cv_mousesens,        40},
 	{IT_STRING | IT_CVAR | IT_CV_SLIDER,
-	                      NULL, "Mouse Y Speed",    &cv_mouseysens,        50},
+	                      NULL, "Mouse Y Speed",    &cv_mouseysens,       50},
 };
 
 static const char* OP_MouseTooltips[] =
@@ -1393,21 +1390,6 @@ static const char* OP_MouseTooltips[] =
 	"Mouse horizontal sensitivity.",
 	"Mouse vertical sensitivity.",
 };
-
-/*static menuitem_t OP_Mouse2OptionsMenu[] =
-{
-	{IT_STRING | IT_CVAR, NULL, "Use Mouse 2",      &cv_usemouse2,        10},
-	{IT_STRING | IT_CVAR, NULL, "Second Mouse Serial Port",
-	                                                &cv_mouse2port,       20},
-	{IT_STRING | IT_CVAR, NULL, "First-Person MouseLook", &cv_alwaysfreelook2,  30},
-	{IT_STRING | IT_CVAR, NULL, "Third-Person MouseLook", &cv_chasefreelook2,  40},
-	{IT_STRING | IT_CVAR, NULL, "Mouse Move",       &cv_mousemove2,       50},
-	{IT_STRING | IT_CVAR, NULL, "Invert Mouse",     &cv_invertmouse2,     60},
-	{IT_STRING | IT_CVAR | IT_CV_SLIDER,
-	                      NULL, "Mouse X Speed",    &cv_mousesens2,       70},
-	{IT_STRING | IT_CVAR | IT_CV_SLIDER,
-	                      NULL, "Mouse Y Speed",    &cv_mouseysens2,      80},
-};*/
 
 static menuitem_t OP_VideoOptionsMenu[] =
 {
@@ -4028,7 +4010,7 @@ boolean M_Responder(event_t *ev)
 		else
 		{
 			// dirty hack: for customising controls, I want only buttons/keys, not moves
-			if (ev->type == ev_mouse || ev->type == ev_mouse2 || ev->type == ev_joystick
+			if (ev->type == ev_mouse || ev->type == ev_joystick
 				|| ev->type == ev_joystick2 || ev->type == ev_joystick3 || ev->type == ev_joystick4)
 				return true;
 			if (routine)
@@ -12329,7 +12311,6 @@ static void M_ChangecontrolResponse(event_t *ev)
 		{
 			// ignore mouse/joy movements, just get buttons
 			case ev_mouse:
-			case ev_mouse2:
 			case ev_joystick:
 			case ev_joystick2:
 			case ev_joystick3:
@@ -12362,8 +12343,6 @@ static void M_ChangecontrolResponse(event_t *ev)
 				setupcontrols[control][found] = ch-KEY_MOUSE1+KEY_DBLMOUSE1;
 			else if (ch >= KEY_JOY1 && ch <= KEY_JOY1+JOYBUTTONS)
 				setupcontrols[control][found] = ch-KEY_JOY1+KEY_DBLJOY1;
-			else if (ch >= KEY_2MOUSE1 && ch <= KEY_2MOUSE1+MOUSEBUTTONS)
-				setupcontrols[control][found] = ch-KEY_2MOUSE1+KEY_DBL2MOUSE1;
 			else if (ch >= KEY_2JOY1 && ch <= KEY_2JOY1+JOYBUTTONS)
 				setupcontrols[control][found] = ch-KEY_2JOY1+KEY_DBL2JOY1;
 			else if (ch >= KEY_3JOY1 && ch <= KEY_3JOY1+JOYBUTTONS)

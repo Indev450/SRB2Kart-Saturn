@@ -209,13 +209,6 @@ void SendWeaponPref3(void);
 void SendWeaponPref4(void);
 
 static CV_PossibleValue_t usemouse_cons_t[] = {{0, "Off"}, {1, "On"}, {2, "Force"}, {0, NULL}};
-#if defined (__unix__) || defined (__APPLE__) || defined (UNIXCOMMON)
-static CV_PossibleValue_t mouse2port_cons_t[] = {{0, "/dev/gpmdata"}, {1, "/dev/ttyS0"},
-	{2, "/dev/ttyS1"}, {3, "/dev/ttyS2"}, {4, "/dev/ttyS3"}, {0, NULL}};
-#else
-static CV_PossibleValue_t mouse2port_cons_t[] = {{1, "COM1"}, {2, "COM2"}, {3, "COM3"}, {4, "COM4"},
-	{0, NULL}};
-#endif
 
 #ifdef LJOYSTICK
 static CV_PossibleValue_t joyport_cons_t[] = {{1, "/dev/js0"}, {2, "/dev/js1"}, {3, "/dev/js2"},
@@ -298,7 +291,7 @@ consvar_t cv_skipmapcheck = {"skipmapcheck", "Off", CV_SAVE, CV_OnOff, NULL, 0, 
 INT32 cv_debug;
 
 consvar_t cv_usemouse = {"use_mouse", "Off", CV_SAVE|CV_CALL,usemouse_cons_t, I_StartupMouse, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_usemouse2 = {"use_mouse2", "Off", CV_SAVE|CV_CALL,usemouse_cons_t, I_StartupMouse2, 0, NULL, NULL, 0, 0, NULL};
+
 //WTF
 consvar_t cv_mouseturn = {"mouseturn", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -330,12 +323,6 @@ consvar_t cv_joyscale[2] = { //Alam: Dummy for save
 	{"joyscale", "1", CV_SAVE|CV_HIDEN, NULL, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"joyscale", "1", CV_SAVE|CV_HIDEN, NULL, NULL, 0, NULL, NULL, 0, 0, NULL}
 };
-#endif
-#if defined (__unix__) || defined (__APPLE__) || defined (UNIXCOMMON)
-consvar_t cv_mouse2port = {"mouse2port", "/dev/gpmdata", CV_SAVE, mouse2port_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_mouse2opt = {"mouse2opt", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
-#else
-consvar_t cv_mouse2port = {"mouse2port", "COM2", CV_SAVE, mouse2port_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 #endif
 
 consvar_t cv_matchboxes = {"matchboxes", "Normal", CV_NETVAR|CV_CHEAT|CV_NOSHOWHELP, matchboxes_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -973,10 +960,6 @@ void D_RegisterClientCommands(void)
 
 	CV_RegisterVar(&cv_showlocalskinmenus);
 
-	//CV_RegisterVar(&cv_alwaysfreelook);
-	//CV_RegisterVar(&cv_alwaysfreelook2);
-	//CV_RegisterVar(&cv_chasefreelook);
-	//CV_RegisterVar(&cv_chasefreelook2);
 	CV_RegisterVar(&cv_replaysearchrate);
 	CV_RegisterVar(&cv_showfocuslost);
 	CV_RegisterVar(&cv_pauseifunfocused);
@@ -1009,12 +992,6 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_addons_search_type);
 	CV_RegisterVar(&cv_addons_search_case);
 
-	// WARNING: the order is important when initialising mouse2
-	// we need the mouse2port
-	CV_RegisterVar(&cv_mouse2port);
-#if defined (__unix__) || defined (__APPLE__) || defined (UNIXCOMMON)
-	CV_RegisterVar(&cv_mouse2opt);
-#endif
 	CV_RegisterVar(&cv_controlperkey);
 	CV_RegisterVar(&cv_turnsmooth);
 
@@ -1026,15 +1003,10 @@ void D_RegisterClientCommands(void)
 	}
 
 	CV_RegisterVar(&cv_usemouse);
-	CV_RegisterVar(&cv_usemouse2);
 	CV_RegisterVar(&cv_invertmouse);
-	CV_RegisterVar(&cv_invertmouse2);
 	CV_RegisterVar(&cv_mousesens);
-	CV_RegisterVar(&cv_mousesens2);
 	CV_RegisterVar(&cv_mouseysens);
-	CV_RegisterVar(&cv_mouseysens2);
 	//CV_RegisterVar(&cv_mousemove);
-	//CV_RegisterVar(&cv_mousemove2);
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
