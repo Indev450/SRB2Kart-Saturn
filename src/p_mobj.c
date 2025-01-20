@@ -172,20 +172,28 @@ boolean P_SetPlayerMobjState(mobj_t *mobj, statenum_t state)
 	{
 		// Start flashing, since you've landed.
 		player->powers[pw_flashing] = K_GetKartFlashing(player)-1;
-		//P_DoPityCheck(player);
 	}
 
 	// Set animation state
 	// The pflags version of this was just as convoluted.
 	// Rewriten for SRB2kart ... though I don't know what this is.
-	if ((state >= S_KART_STND1 && state <= S_KART_STND2_R) || state == S_KART_SQUISH || state == S_KART_SPIN)
-		player->panim = PA_IDLE;
-	else if (state >= S_KART_WALK1 && state <= S_KART_WALK2_R)
-		player->panim = PA_WALK;
-	else if (state >= S_KART_RUN1 && state <= S_KART_DRIFT2_R)
-		player->panim = PA_RUN;
-	else
-		player->panim = PA_ETC;
+	switch(state)
+	{
+		case S_KART_STND1...S_KART_STND2_R:
+		case S_KART_SQUISH:
+		case S_KART_SPIN:
+			player->panim = PA_IDLE;
+			break;
+		case S_KART_WALK1...S_KART_WALK2_R:
+			player->panim = PA_WALK;
+			break;
+		case S_KART_RUN1...S_KART_DRIFT2_R:
+			player->panim = PA_RUN;
+			break;
+		default:
+			player->panim = PA_ETC;
+			break;
+	}
 
 	if (recursion++) // if recursion detected,
 		memset(seenstate = tempstate, 0, sizeof tempstate); // clear state table
@@ -2406,9 +2414,6 @@ static void P_PlayerZMovement(mobj_t *mo)
 			mo->player->viewheight -= (mo->z+mo->height) - mo->ceilingz;
 		else
 			mo->player->viewheight -= mo->floorz - mo->z;
-
-		/*mo->player->deltaviewheight =
-			(FixedMul(cv_viewheight.value<<FRACBITS, mo->scale) - mo->player->viewheight)>>3;*/
 	}
 
 	// adjust height
@@ -2473,11 +2478,6 @@ static void P_PlayerZMovement(mobj_t *mo)
 		if (P_MobjFlip(mo)*mo->momz < 0) // falling
 		{
 			mo->pmomz = 0; // We're on a new floor, don't keep doing platform movement.
-
-			// Squat down. Decrease viewheight for a moment after hitting the ground (hard),
-			/*if (P_MobjFlip(mo)*mo->momz < -FixedMul(8*FRACUNIT, mo->scale))
-				mo->player->deltaviewheight = (P_MobjFlip(mo)*mo->momz)>>3; // make sure momz is negative
-			*/
 
 			if (!tmfloorthing || tmfloorthing->flags & (MF_PUSHABLE|MF_MONITOR)
 				|| tmfloorthing->flags2 & MF2_STANDONME || tmfloorthing->type == MT_PLAYER) // Spin Attack
@@ -2586,7 +2586,6 @@ static void P_PlayerZMovement(mobj_t *mo)
 					if (!(mo->player->pflags & PF_GLIDING))
 						mo->player->pflags &= ~PF_JUMPED;
 					mo->player->pflags &= ~PF_THOKKED;
-					//mo->player->pflags &= ~PF_GLIDING;
 					mo->player->jumping = 0;
 					mo->player->secondjump = 0;
 					mo->player->glidetime = 0;
@@ -6108,9 +6107,9 @@ angle_t P_MobjPitchAndRoll(mobj_t *mobj)
 	}
 
 	return_angle = FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), mobj->roll)
-			        + FixedMul(FINESINE((ang) >> ANGLETOFINESHIFT), mobj->pitch)
-					+ FixedMul(FINECOSINE((camang) >> ANGLETOFINESHIFT), mobj->sloperoll)
-					+ FixedMul(FINESINE((camang) >> ANGLETOFINESHIFT), mobj->slopepitch);
+				+ FixedMul(FINESINE((ang) >> ANGLETOFINESHIFT), mobj->pitch)
+				+ FixedMul(FINECOSINE((camang) >> ANGLETOFINESHIFT), mobj->sloperoll)
+				+ FixedMul(FINESINE((camang) >> ANGLETOFINESHIFT), mobj->slopepitch);
 
 	return return_angle;
 }
