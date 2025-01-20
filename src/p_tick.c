@@ -468,7 +468,20 @@ void P_RunChaseCameras(void)
 	for (i = 0; i <= splitscreen; i++)
 	{
 		if (camera[i].chase)
-			P_MoveChaseCamera(&players[displayplayers[i]], &camera[i], false);
+		{
+			player_t *p = &players[displayplayers[i]];
+			camera_t *cam = &camera[i];
+
+			if (p->mo && p->kartstuff[k_throwdir] != 0)
+			{
+				if (p->speed < 6 * p->mo->scale && abs(cam->dpad_y_held) < 2*TICRATE)
+					cam->dpad_y_held += intsign(p->kartstuff[k_throwdir]);
+			}
+			else
+				cam->dpad_y_held = 0;
+
+			P_MoveChaseCamera(p, cam, false);
+		}
 	}
 }
 
