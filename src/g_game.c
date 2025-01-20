@@ -987,6 +987,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	// dumbass thing so we can use a few buttons but dont accidentally drive away
 	if (player->spectator || freecam)
 	{
+		cmd->angleturn = (INT16)(lang >> 16);
 		G_BuildLocalTiccmd(cmd, ssplayer, freecam);
 
 		// let lua override everything
@@ -1053,7 +1054,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		side += ((axis * sidemove[0]) >> 10);
 	}
 
-	if (player->spectator || cv_mouseturn.value)
+	if (cv_mouseturn.value)
 	{
 		//THIS WORKS WTF????????
 		cmd->angleturn = (INT16)(cmd->angleturn - ((mousex*(encoremode ? -1 : 1)*8)));
