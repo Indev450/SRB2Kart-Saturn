@@ -3271,7 +3271,6 @@ static ticcmd_t *P_CameraCmd(camera_t *cam, UINT8 num)
 		straferight = straferight || (axis > 0);
 		strafeleft = strafeleft || (axis < 0);
 	}
-	side = 0;
 
 	// let strafe keys cancel each other out
 	if (straferight && !(strafeleft))
