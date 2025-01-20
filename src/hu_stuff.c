@@ -1154,7 +1154,7 @@ void HU_Ticker(void)
 		|| hu_redownloadinggamestate
 #endif
 		)
-		resynch_ticker++;	//tic tic tic tic tic	
+		resynch_ticker++;	//tic tic tic tic tic
 
 	HU_TickSongCredits();
 }

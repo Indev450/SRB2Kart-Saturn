@@ -33,9 +33,7 @@ static CV_PossibleValue_t turnsmooth_cons_t[] = {{2, "Slow"}, {1, "Fast"}, {0, "
 
 // mouse values are used once
 consvar_t cv_mousesens = {"mousesens", "20", CV_SAVE, mousesens_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_mousesens2 = {"mousesens2", "20", CV_SAVE, mousesens_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_mouseysens = {"mouseysens", "20", CV_SAVE, mousesens_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_mouseysens2 = {"mouseysens2", "20", CV_SAVE, mousesens_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_controlperkey = {"controlperkey", "One", CV_SAVE, onecontrolperkey_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_turnsmooth = {"turnsmoothing", "Slow", CV_SAVE, turnsmooth_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -125,8 +123,6 @@ static void led_off_handle4(void)
 INT32 mousex, mousey;
 INT32 mlooky; // like mousey but with a custom sensitivity for mlook
 
-INT32 mouse2x, mouse2y, mlook2y;
-
 // joystick values are repeated
 INT32 joyxmove[JOYAXISSET], joyymove[JOYAXISSET], joy2xmove[JOYAXISSET], joy2ymove[JOYAXISSET],
 joy3xmove[JOYAXISSET], joy3ymove[JOYAXISSET], joy4xmove[JOYAXISSET], joy4ymove[JOYAXISSET];
@@ -148,7 +144,6 @@ typedef struct
 } dclick_t;
 static dclick_t mousedclicks[MOUSEBUTTONS];
 static dclick_t joydclicks[JOYBUTTONS + JOYHATS*4];
-static dclick_t mouse2dclicks[MOUSEBUTTONS];
 static dclick_t joy2dclicks[JOYBUTTONS + JOYHATS*4];
 static dclick_t joy3dclicks[JOYBUTTONS + JOYHATS*4];
 static dclick_t joy4dclicks[JOYBUTTONS + JOYHATS*4];
@@ -233,14 +228,6 @@ void G_MapEventsToControls(event_t *ev)
 			if (ev->data3 != INT32_MAX) joy4ymove[i] = ev->data3;
 			break;
 
-		case ev_mouse2: // buttons are virtual keys
-			if (menuactive || CON_Ready() || chat_on)
-				break;
-			mouse2x = (INT32)(ev->data2*((cv_mousesens2.value*cv_mousesens2.value)/110.0f + 0.1f));
-			mouse2y = (INT32)(ev->data3*((cv_mousesens2.value*cv_mousesens2.value)/110.0f + 0.1f));
-			mlook2y = (INT32)(ev->data3*((cv_mouseysens2.value*cv_mousesens2.value)/110.0f + 0.1f));
-			break;
-
 		default:
 			break;
 	}
@@ -256,12 +243,6 @@ void G_MapEventsToControls(event_t *ev)
 	{
 		flag = G_CheckDoubleClick(gamekeydown[KEY_JOY1+i], &joydclicks[i]);
 		gamekeydown[KEY_DBLJOY1+i] = flag;
-	}
-
-	for (i = 0; i < MOUSEBUTTONS; i++)
-	{
-		flag = G_CheckDoubleClick(gamekeydown[KEY_2MOUSE1+i], &mouse2dclicks[i]);
-		gamekeydown[KEY_DBL2MOUSE1+i] = flag;
 	}
 
 	for (i = 0; i < JOYBUTTONS + JOYHATS*4; i++)
@@ -401,18 +382,8 @@ static keyname_t keynames[] =
 	{KEY_MOUSE1+5,"MOUSE6"},
 	{KEY_MOUSE1+6,"MOUSE7"},
 	{KEY_MOUSE1+7,"MOUSE8"},
-	{KEY_2MOUSE1+0,"SEC_MOUSE2"}, // BP: sorry my mouse handler swap button 1 and 2
-	{KEY_2MOUSE1+1,"SEC_MOUSE1"},
-	{KEY_2MOUSE1+2,"SEC_MOUSE3"},
-	{KEY_2MOUSE1+3,"SEC_MOUSE4"},
-	{KEY_2MOUSE1+4,"SEC_MOUSE5"},
-	{KEY_2MOUSE1+5,"SEC_MOUSE6"},
-	{KEY_2MOUSE1+6,"SEC_MOUSE7"},
-	{KEY_2MOUSE1+7,"SEC_MOUSE8"},
 	{KEY_MOUSEWHEELUP, "Wheel 1 UP"},
 	{KEY_MOUSEWHEELDOWN, "Wheel 1 Down"},
-	{KEY_2MOUSEWHEELUP, "Wheel 2 UP"},
-	{KEY_2MOUSEWHEELDOWN, "Wheel 2 Down"},
 
 	{KEY_JOY1+0, "JOY1"},
 	{KEY_JOY1+1, "JOY2"},
@@ -423,7 +394,7 @@ static keyname_t keynames[] =
 	{KEY_JOY1+6, "JOY7"},
 	{KEY_JOY1+7, "JOY8"},
 	{KEY_JOY1+8, "JOY9"},
-	
+
 #if !defined (NOMOREJOYBTN_1S)
 	// we use up to 32 buttons in DirectInput
 	{KEY_JOY1+9, "JOY10"},
@@ -476,14 +447,6 @@ static keyname_t keynames[] =
 	{KEY_DBLMOUSE1+5, "DBLMOUSE6"},
 	{KEY_DBLMOUSE1+6, "DBLMOUSE7"},
 	{KEY_DBLMOUSE1+7, "DBLMOUSE8"},
-	{KEY_DBL2MOUSE1+0, "DBLSEC_MOUSE2"}, // BP: sorry my mouse handler swap button 1 and 2
-	{KEY_DBL2MOUSE1+1, "DBLSEC_MOUSE1"},
-	{KEY_DBL2MOUSE1+2, "DBLSEC_MOUSE3"},
-	{KEY_DBL2MOUSE1+3, "DBLSEC_MOUSE4"},
-	{KEY_DBL2MOUSE1+4, "DBLSEC_MOUSE5"},
-	{KEY_DBL2MOUSE1+5, "DBLSEC_MOUSE6"},
-	{KEY_DBL2MOUSE1+6, "DBLSEC_MOUSE7"},
-	{KEY_DBL2MOUSE1+7, "DBLSEC_MOUSE8"},
 
 	{KEY_DBLJOY1+0, "DBLJOY1"},
 	{KEY_DBLJOY1+1, "DBLJOY2"},
@@ -868,7 +831,6 @@ static keyname_t keynames[] =
 	{KEY_DBL4HAT1+13, "DBLFOR_HATDOWN4"},
 	{KEY_DBL4HAT1+14, "DBLFOR_HATLEFT4"},
 	{KEY_DBL4HAT1+15, "DBLFOR_HATRIGHT4"},
-
 };
 
 static const char *gamecontrolname[num_gamecontrols] =
