@@ -3172,10 +3172,6 @@ void P_ToggleDemoCamera(UINT8 viewnum)
 }
 
 static ticcmd_t cameracmd[MAXSPLITSCREENPLAYERS];
-
-#define intsign(n) \
-	((n) < 0 ? -1 : (n) > 0 ? 1 : 0)
-
 static ticcmd_t *P_CameraCmd(camera_t *cam, UINT8 num)
 {
 	INT32 laim, forward, side, axis;
@@ -3496,8 +3492,6 @@ static void P_DemoCameraMovement(camera_t *cam, UINT8 num)
 	// update subsector to avoid crashes;
 	cam->subsector = R_PointInSubsector(cam->x, cam->y);
 }
-
-#undef intsign
 
 void P_ResetCamera(player_t *player, camera_t *thiscam)
 {
@@ -3884,6 +3878,11 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	{
 		focusangle = mo->angle;
 		focusaiming = player->aiming;
+	}
+
+	if (abs(thiscam->dpad_y_held) >= 2*TICRATE)
+	{
+		focusaiming += ANGLE_45 * intsign(thiscam->dpad_y_held) * P_MobjFlip(mo);
 	}
 
 	if (P_CameraThinker(player, thiscam, resetcalled))
