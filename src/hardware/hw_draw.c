@@ -595,7 +595,7 @@ void HWR_FadeScreenMenuBack(UINT16 color, UINT8 strength)
 		RGBA_t *palette = HWR_GetTexturePalette();
 		Surf.PolyColor.rgba = palette[color&0xFF].rgba;
 
-        if (HWR_ShouldUsePaletteRendering())
+		if (HWR_ShouldUsePaletteRendering())
 			Surf.PolyColor.s.alpha = softwaretranstogl[strength];
 		else
 			Surf.PolyColor.s.alpha = (UINT8)(strength*25.5f);
