@@ -100,7 +100,6 @@ patch_t *rflagico;
 patch_t *bflagico;
 patch_t *rmatcico;
 patch_t *bmatcico;
-patch_t *tagico;
 patch_t *tallminus;
 
 //-------------------------------------------
