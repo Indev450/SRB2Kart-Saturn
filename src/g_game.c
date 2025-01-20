@@ -933,12 +933,11 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	INT32 laim, th, tspeed, forward, side, axis;
 
 	// these ones used for multiple conditions
-	boolean turnleft, turnright, mouseaiming;
-	boolean invertmouse, usejoystick, kbl, rd;
+	boolean turnleft, turnright;
+	boolean usejoystick, rd;
 	angle_t lang;
 
 	static INT32 turnheld[MAXSPLITSCREENPLAYERS]; // for accelerative turning
-	static boolean keyboard_look[MAXSPLITSCREENPLAYERS]; // true if lookup/down using keyboard
 	static boolean resetdown[MAXSPLITSCREENPLAYERS]; // don't cam reset every frame
 
 	if (demo.playback)
@@ -950,38 +949,28 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	camera_t *thiscam = &camera[forplayer];
 	const boolean freecam = camera[forplayer].freecam;
 
-	const boolean lookaxis = cv_lookaxis[forplayer].value;
 	const boolean analogjoystickmove = cv_usejoystick[forplayer].value && !Joystick[forplayer].bGamepadStyle;
 	const boolean gamepadjoystickmove = cv_usejoystick[forplayer].value && Joystick[forplayer].bGamepadStyle;
 
 	lang = localangle[forplayer];
 	laim = localaiming[forplayer];
 	th = turnheld[forplayer];
-	kbl = keyboard_look[forplayer];
 	rd = resetdown[forplayer];
 
 	switch (ssplayer)
 	{
 		case 2:
 			G_CopyTiccmd(cmd, I_BaseTiccmd2(), 1);
-			mouseaiming = player->spectator;
-			invertmouse = cv_invertmouse2.value;
 			break;
 		case 3:
 			G_CopyTiccmd(cmd, I_BaseTiccmd3(), 1);
-			mouseaiming = false;
-			invertmouse = false;
 			break;
 		case 4:
 			G_CopyTiccmd(cmd, I_BaseTiccmd4(), 1);
-			mouseaiming = false;
-			invertmouse = false;
 			break;
 		case 1:
 		default:
 			G_CopyTiccmd(cmd, I_BaseTiccmd(), 1); // empty, or external driver
-			mouseaiming = player->spectator;
-			invertmouse = cv_invertmouse.value;
 			break;
 	}
 
@@ -991,7 +980,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	if (paused || P_AutoPause() || (gamestate == GS_LEVEL && player->playerstate == PST_REBORN) || hu_resynching)
 	{
 		cmd->angleturn = (INT16)(lang >> 16);
-		cmd->aiming = G_ClipAimingPitch(&laim);
+		cmd->aiming = 0;
 		return;
 	}
 
@@ -1153,54 +1142,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	else
 		rd = false;
 
-	// spectator aiming shit, ahhhh...
-	{
-		INT32 player_invert = invertmouse ? -1 : 1;
-		INT32 screen_invert =
-			(player->mo && (player->mo->eflags & MFE_VERTICALFLIP)
-			 && (!thiscam->chase || player->pflags & PF_FLIPCAM)) // because chasecam's not inverted
-			 ? -1 : 1; // set to -1 or 1 to multiply
-
-		// mouse look stuff (mouse look is not the same as mouse aim)
-		if (mouseaiming && player->spectator)
-		{
-			kbl = false;
-
-			// looking up/down
-			laim += (mlooky<<19)*player_invert*screen_invert;
-		}
-
-		axis = JoyAxis(AXISLOOK, ssplayer);
-		if (analogjoystickmove && axis != 0 && lookaxis && player->spectator)
-			laim += (axis<<16) * screen_invert;
-
-		// spring back if not using keyboard neither mouselookin'
-		if (!kbl && !lookaxis && !mouseaiming)
-			laim = 0;
-
-		if (player->spectator)
-		{
-			if (InputDown(gc_lookup, ssplayer) || (gamepadjoystickmove && axis < 0))
-			{
-				laim += KB_LOOKSPEED * screen_invert;
-				kbl = true;
-			}
-			else if (InputDown(gc_lookdown, ssplayer) || (gamepadjoystickmove && axis > 0))
-			{
-				laim -= KB_LOOKSPEED * screen_invert;
-				kbl = true;
-			}
-		}
-
-		if (InputDown(gc_centerview, ssplayer)) // No need to put a spectator limit on this one though :V
-			laim = 0;
-
-		// accept no mlook for network games
-		if (!cv_allowmlook.value)
-			laim = 0;
-
-		cmd->aiming = G_ClipAimingPitch(&laim);
-	}
+	cmd->aiming = 0;
 
 	mousex = mousey = mlooky = 0;
 
@@ -1252,7 +1194,6 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	{
 		localangle[forplayer] = lang;
 		localaiming[forplayer] = laim;
-		keyboard_look[forplayer] = kbl;
 		turnheld[forplayer] = th;
 		resetdown[forplayer] = rd;
 		axis = JoyAxis(AXISLOOKBACK, ssplayer);
