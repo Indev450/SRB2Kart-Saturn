@@ -115,8 +115,7 @@ extern consvar_t cv_songcredits;
 extern consvar_t cv_showfreeplay;
 extern consvar_t cv_growmusic, cv_supermusic;
 extern consvar_t cv_pauseifunfocused;
-extern consvar_t cv_invertmouse/*, cv_alwaysfreelook, cv_chasefreelook, cv_mousemove*/;
-extern consvar_t cv_invertmouse2/*, cv_alwaysfreelook2, cv_chasefreelook2, cv_mousemove2*/;
+extern consvar_t cv_invertmouse;
 
 extern consvar_t cv_turnaxis[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_moveaxis[MAXSPLITSCREENPLAYERS];
