@@ -42,8 +42,6 @@
 #define CRED_FONTEND 'Z' // the last font character
 #define CRED_FONTSIZE (CRED_FONTEND - CRED_FONTSTART + 1)
 
-#define HU_CROSSHAIRS 3 // maximum of 9 - see HU_Init();
-
 extern char *shiftxform; // english translation shift table
 extern char english_shiftxform[];
 
@@ -90,13 +88,10 @@ extern patch_t *tallnum[10];
 extern patch_t *pingnum[10];
 extern patch_t *pinggfx[5];
 extern patch_t *ranknum[10];
-extern patch_t *nightsnum[10];
 extern patch_t *framecounter;
 extern patch_t *frameslash;
 extern patch_t *lt_font[LT_FONTSIZE];
 extern patch_t *cred_font[CRED_FONTSIZE];
-extern patch_t *emeraldpics[7];
-extern patch_t *tinyemeraldpics[7];
 extern patch_t *rflagico;
 extern patch_t *bflagico;
 extern patch_t *rmatcico;
