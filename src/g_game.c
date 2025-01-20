@@ -946,7 +946,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	if (paused || P_AutoPause() || (gamestate == GS_LEVEL && player->playerstate == PST_REBORN) || hu_resynching)
 	{
 		cmd->angleturn = (INT16)(lang >> 16);
-		cmd->aiming = 0;
+		cmd->aiming = G_ClipAimingPitch(&laim);
 		return;
 	}
 
@@ -1109,7 +1109,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	else
 		rd = false;
 
-	cmd->aiming = 0;
+	cmd->aiming = G_ClipAimingPitch(&laim);
 
 	mousex = mousey = mlooky = 0;
 
