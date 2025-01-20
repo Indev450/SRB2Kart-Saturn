@@ -95,6 +95,9 @@ typedef struct camera_s
 	// Freecam: aiming needs to be reset after switching from chasecam
 	boolean reset_aiming;
 
+	// Hold up/down to pan the camera vertically
+	SINT8 dpad_y_held;
+
 	// Things used by FS cameras.
 	fixed_t viewheight;
 	angle_t startangle;
