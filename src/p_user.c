@@ -3132,7 +3132,7 @@ fixed_t t_cam_rotate[MAXSPLITSCREENPLAYERS] = {-42, -42, -42, -42};
 #define MAXCAMERADIST 140*FRACUNIT // Max distance the camera can be in front of the player (2D mode)
 
 static fixed_t forwardmove[2] = {25<<FRACBITS>>16, 50<<FRACBITS>>16};
-//static fixed_t sidemove[2] = {2<<FRACBITS>>16, 4<<FRACBITS>>16};
+static fixed_t sidemove[2] = {2<<FRACBITS>>16, 4<<FRACBITS>>16};
 static fixed_t angleturn[3] = {KART_FULLTURN/2, KART_FULLTURN, KART_FULLTURN/4}; // + slow turn
 static fixed_t strafemove[2] = {25<<FRACBITS>>16, 50<<FRACBITS>>16}; // faster!
 
@@ -3177,13 +3177,13 @@ static ticcmd_t *P_CameraCmd(camera_t *cam, UINT8 num)
 	INT32 laim, forward, side, axis;
 
 	// these ones used for multiple conditions
-	boolean turnleft, turnright, mouseaiming;
+	boolean turnleft, turnright;
 	boolean strafeleft, straferight;
-	boolean invertmouse, usejoystick, kbl;
+	boolean usejoystick;
 	angle_t lang;
-	INT32 player_invert;
 	const UINT8 forplayer = num+1;
-	player_t *player = ((forplayer == 1) ? &players[consoleplayer] : &players[displayplayers[forplayer]]);
+
+	SINT8 player_invert = cv_invertmouse.value ? -1 : 1; // who tf uses two mice?
 
 	memset(&cameracmd[num], 0, sizeof(ticcmd_t));	// initialize cmd
 
@@ -3191,37 +3191,27 @@ static ticcmd_t *P_CameraCmd(camera_t *cam, UINT8 num)
 
 	lang = cam->localangle;
 	laim = cam->localaiming;
-	kbl = cam->keyboardlook;
 
 	switch (forplayer)
 	{
 		case 2:
 			G_CopyTiccmd(cmd, I_BaseTiccmd2(), 1);
-			mouseaiming = player->spectator;
-			invertmouse = cv_invertmouse2.value;
 			break;
 		case 3:
 			G_CopyTiccmd(cmd, I_BaseTiccmd3(), 1);
-			mouseaiming = false;
-			invertmouse = false;
 			break;
 		case 4:
 			G_CopyTiccmd(cmd, I_BaseTiccmd4(), 1);
-			mouseaiming = false;
-			invertmouse = false;
 			break;
 		case 1:
 		default:
 			G_CopyTiccmd(cmd, I_BaseTiccmd(), 1); // empty, or external driver
-			mouseaiming = player->spectator;
-			invertmouse = cv_invertmouse.value;
 			break;
 	}
 
 	cmd->angleturn = (INT16)(lang >> 16);
 	cmd->aiming = G_ClipAimingPitch(&laim);
 
-	const boolean lookaxis = cv_lookaxis[num].value;
 	const boolean analogjoystickmove = cv_usejoystick[num].value && !Joystick[num].bGamepadStyle;
 	const boolean gamepadjoystickmove = cv_usejoystick[num].value && Joystick[num].bGamepadStyle;
 
@@ -3251,12 +3241,12 @@ static ticcmd_t *P_CameraCmd(camera_t *cam, UINT8 num)
 	if (turnright && !(turnleft))
 	{
 		cmd->angleturn = (INT16)(cmd->angleturn - (angleturn[1]));
-		//side += sidemove[1];
+		side += sidemove[1];
 	}
 	else if (turnleft && !(turnright))
 	{
 		cmd->angleturn = (INT16)(cmd->angleturn + (angleturn[1]));
-		//side -= sidemove[1];
+		side -= sidemove[1];
 	}
 
 	straferight = InputDown(gc_straferight, forplayer);
@@ -3314,30 +3304,17 @@ static ticcmd_t *P_CameraCmd(camera_t *cam, UINT8 num)
 	if (InputDown(gc_brake, forplayer) || (usejoystick && axis > 0))
 		cmd->buttons |= BT_BRAKE;
 
-	// spectator aiming shit, ahhhh...
-	player_invert = invertmouse ? -1 : 1;
-
-	// mouse look stuff (mouse look is not the same as mouse aim)
-	kbl = false;
-
-	// looking up/down
-	laim += (mlooky<<19)*player_invert;
-
 	axis = JoyAxis(AXISLOOK, forplayer);
 
-	// spring back if not using keyboard neither mouselookin'
-	if (!kbl && !lookaxis && !mouseaiming)
-		laim = 0;
+	laim += (mlooky<<19)*player_invert;
 
 	if (InputDown(gc_lookup, forplayer) || (usejoystick && axis < 0))
 	{
 		laim += KB_LOOKSPEED;
-		kbl = true;
 	}
 	else if (InputDown(gc_lookdown, forplayer) || (usejoystick && axis > 0))
 	{
 		laim -= KB_LOOKSPEED;
-		kbl = true;
 	}
 
 	if (InputDown(gc_centerview, forplayer)) // No need to put a spectator limit on this one though :V
@@ -3393,7 +3370,6 @@ static ticcmd_t *P_CameraCmd(camera_t *cam, UINT8 num)
 	{
 		cam->localaiming = laim;
 	}
-	cam->keyboardlook = kbl;
 
 	return cmd;
 }
