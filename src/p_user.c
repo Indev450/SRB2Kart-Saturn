@@ -3236,7 +3236,7 @@ static ticcmd_t *P_CameraCmd(camera_t *cam, UINT8 num)
 		turnright = turnright || (axis > 0);
 		turnleft = turnleft || (axis < 0);
 	}
-	forward = 0;
+	forward = side = 0;
 
 	// let movement keys cancel each other out
 	if (turnright && !(turnleft))
