@@ -101,7 +101,6 @@ extern patch_t *rflagico;
 extern patch_t *bflagico;
 extern patch_t *rmatcico;
 extern patch_t *bmatcico;
-extern patch_t *tagico;
 extern patch_t *tallminus;
 
 // set true whenever the tab rankings are being shown for any reason
