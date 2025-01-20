@@ -126,10 +126,11 @@ static void P_CycleMobjState(mobj_t *mobj)
 //
 // P_CycleMobjState for players.
 //
-static void P_CyclePlayerMobjState(mobj_t *mobj)
+static void P_CyclePlayerMobjState(mobj_t *mobj, boolean animonly)
 {
 	// state animations
-	P_CycleStateAnimation(mobj);
+	if (!animonly)
+		P_CycleStateAnimation(mobj);
 
 	// cycle through states,
 	// calling action functions at transitions
@@ -3630,17 +3631,7 @@ static void P_PlayerMobjThinker(mobj_t *mobj)
 	}
 
 animonly:
-	// cycle through states,
-	// calling action functions at transitions
-	if (mobj->tics != -1)
-	{
-		mobj->tics--;
-
-		// you can cycle through multiple states in a tic
-		if (!mobj->tics)
-			if (!P_SetPlayerMobjState(mobj, mobj->state->nextstate))
-				return; // freed itself
-	}
+	P_CyclePlayerMobjState(mobj, true);
 }
 
 static void CalculatePrecipFloor(precipmobj_t *mobj)
@@ -9244,7 +9235,7 @@ void P_MobjThinker(mobj_t *mobj)
 
 	// Can end up here if a player dies.
 	if (mobj->player)
-		P_CyclePlayerMobjState(mobj);
+		P_CyclePlayerMobjState(mobj, false);
 	else
 		P_CycleMobjState(mobj);
 
