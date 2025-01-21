@@ -8866,7 +8866,7 @@ static void M_HandleLevelStats(INT32 choice)
 	switch (choice)
 	{
 		case KEY_DOWNARROW:
-			if (statsCurrentPage != 0) // Must be on level stats page
+			if (statsCurrentPage != 1) // Must be on level stats page
 				break;
 			S_StartSound(NULL, sfx_menu1);
 			if (statsLocation < statsMax)
@@ -8874,7 +8874,7 @@ static void M_HandleLevelStats(INT32 choice)
 			break;
 
 		case KEY_UPARROW:
-			if (statsCurrentPage != 0) // Must be on level stats page
+			if (statsCurrentPage != 1) // Must be on level stats page
 				break;
 			S_StartSound(NULL, sfx_menu1);
 			if (statsLocation)
@@ -8897,14 +8897,14 @@ static void M_HandleLevelStats(INT32 choice)
 			break;
 
 		case KEY_PGDN:
-			if (statsCurrentPage != 0) // Must be on level stats page
+			if (statsCurrentPage != 1) // Must be on level stats page
 				break;
 			S_StartSound(NULL, sfx_menu1);
 			statsLocation += (statsLocation+13 >= statsMax) ? statsMax-statsLocation : 13;
 			break;
 
 		case KEY_PGUP:
-			if (statsCurrentPage != 0) // Must be on level stats page
+			if (statsCurrentPage != 1) // Must be on level stats page
 				break;
 			S_StartSound(NULL, sfx_menu1);
 			statsLocation -= (statsLocation < 13) ? statsLocation : 13;
