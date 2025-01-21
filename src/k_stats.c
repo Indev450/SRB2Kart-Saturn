@@ -74,7 +74,7 @@ void K_StatRound(void)
 			++numplayers;
 	}
 
-	if (numplayers > 1)
+	if (numplayers > 1 && !players[consoleplayer].spectator)
 	{
 		if (players[consoleplayer].kartstuff[k_position] == 1)
 			kartstats.totalwins++;
