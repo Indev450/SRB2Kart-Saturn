@@ -34,6 +34,7 @@
 #include "m_cond.h"
 #include "k_director.h"
 #include "k_kart.h"
+#include "k_stats.h"
 #include "f_finale.h"
 #include "lua_hud.h"	// For Lua hud checks
 #include "lua_hook.h"	// For MobjDamage and ShouldDamage
@@ -2513,6 +2514,8 @@ void K_SpinPlayer(player_t *player, mobj_t *source, INT32 type, mobj_t *inflicto
 
 	if (LUA_HookPlayerSpin(player, inflictor, source))	// Let Lua do its thing or overwrite if it wants to. Make sure to let any possible instashield happen because we didn't get "damaged" in this case.
 		return;
+
+	K_StatPlayerHit(player, source ? source->player : NULL);
 
 	if (source && source != player->mo && source->player)
 		K_PlayHitEmSound(source, player->mo);
