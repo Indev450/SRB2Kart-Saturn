@@ -885,7 +885,7 @@ static void R_Subsector(size_t num)
 		{
 			for (rover = frontsector->ffloors; rover; rover = rover->next)
 			{
-				if (!(rover->flags & FF_EXISTS) || !(rover->flags & FF_RENDERPLANES) || !(rover->flags & FF_RENDERALL))
+				if (!(rover->flags & FF_EXISTS) || !(rover->flags & FF_RENDERPLANES))
 					continue;
 
 				sector_t *controlSec = &sectors[rover->secnum];

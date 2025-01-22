@@ -2872,7 +2872,7 @@ static void HWR_Subsector(size_t num)
 		{
 			for (rover = gl_frontsector->ffloors; rover; rover = rover->next)
 			{
-				if (!(rover->flags & FF_EXISTS) || !(rover->flags & FF_RENDERPLANES) || !(rover->flags & FF_RENDERALL))
+				if (!(rover->flags & FF_EXISTS) || !(rover->flags & FF_RENDERPLANES))
 					continue;
 
 				if (sub->validcount == validcount)
@@ -3925,7 +3925,7 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 }
 
 // Sprite drawer for precipitation
-static inline void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
+static void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 {
 	FBITFIELD blend = 0;
 	FOutVector wallVerts[4];
@@ -3934,10 +3934,7 @@ static inline void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 
 	INT32 shader = SHADER_NONE;
 
-	if (!spr->mobj)
-		return;
-
-	if (!spr->mobj->subsector)
+	if (!spr->mobj || !spr->mobj->subsector)
 		return;
 
 	// cache sprite graphics
@@ -4346,6 +4343,24 @@ static void HWR_DrawSprites(void)
 			continue;
 		}
 
+		HWR_DrawSprite(spr);
+	}
+}
+
+static void HWR_DrawModels(void)
+{
+	UINT32 i;
+
+	for (i = 0; i < gl_visspritecount; i++)
+	{
+		gl_vissprite_t *spr = gl_vsprorder[i];
+
+		if (spr->precip)
+		{
+			HWR_DrawPrecipitationSprite(spr);
+			continue;
+		}
+
 		if (spr->mobj && spr->mobj->skin && spr->mobj->sprite == SPR_PLAY)
 		{
 			md2_t *md2;
@@ -4361,14 +4376,14 @@ static void HWR_DrawSprites(void)
 				md2 = &md2_playermodels[(skin_t *)spr->mobj->skin - skins];
 
 			// 8/1/19: Only don't display player models if no default SPR_PLAY is found.
-			if (!cv_glmdls.value || ((md2->notfound || md2->scale < 0.0f) && ((!cv_glfallbackplayermodel.value) || md2_models[SPR_PLAY].notfound || md2_models[SPR_PLAY].scale < 0.0f)) || spr->mobj->state == &states[S_PLAY_SIGN])
+			if (((md2->notfound || md2->scale < 0.0f) && ((!cv_glfallbackplayermodel.value) || md2_models[SPR_PLAY].notfound || md2_models[SPR_PLAY].scale < 0.0f)) || spr->mobj->state == &states[S_PLAY_SIGN])
 				HWR_DrawSprite(spr);
 			else
 				HWR_DrawMD2(spr);
 		}
 		else
 		{
-			if (!cv_glmdls.value || md2_models[spr->mobj->sprite].notfound || md2_models[spr->mobj->sprite].scale < 0.0f)
+			if (md2_models[spr->mobj->sprite].notfound || md2_models[spr->mobj->sprite].scale < 0.0f)
 				HWR_DrawSprite(spr);
 			else
 				HWR_DrawMD2(spr);
@@ -4428,7 +4443,7 @@ static void HWR_AddSprites(sector_t *sec)
 static void HWR_AddPrecipitationSprites(void)
 {
 	INT32 xl, xh, yl, yh, bx, by;
-	precipmobj_t *th;
+	precipmobj_t *th, *next;
 
 	fixed_t drawdist;
 
@@ -4460,6 +4475,9 @@ static void HWR_AddPrecipitationSprites(void)
 		{
 			for (th = precipblocklinks[(by * bmapwidth) + bx]; th; th = th->bnext)
 			{
+				// Store this beforehand because HWR_ProjectPrecipitationSprite may free th (see P_PrecipThinker)
+				next = th->bnext;
+
 				if (th->precipflags & PCF_INVISIBLE)
 					continue;
 
@@ -4531,29 +4549,26 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	if (interp.spritexscale < 1 || interp.spriteyscale < 1)
 		return;
 
+	const boolean papersprite = (thing->frame & FF_PAPERSPRITE);
+
+	// transform the origin point
+	tr_x = FIXED_TO_FLOAT(interp.x);
+	tr_y = FIXED_TO_FLOAT(interp.y);
+
+	// rotation around vertical axis
+	tz = ((tr_x - gl_viewx) * gl_viewcos) + ((tr_y - gl_viewy) * gl_viewsin);
+
+	// thing is behind view plane?
+	if (tz < ZCLIP_PLANE && !papersprite && (!cv_glmdls.value || md2_models[thing->sprite].notfound == true)) // Yellow: Only MD2's dont disappear
+		return;
+
 	const boolean mirrored = thing->mirrored;
 	const boolean vflip = (thing->eflags & MFE_VERTICALFLIP);
 	const boolean hflip = (!(thing->frame & FF_HORIZONTALFLIP) != !mirrored);
-	const boolean papersprite = (thing->frame & FF_PAPERSPRITE);
 
 	this_scale = FIXED_TO_FLOAT(interp.scale);
 	spritexscale = FIXED_TO_FLOAT(interp.spritexscale);
 	spriteyscale = FIXED_TO_FLOAT(interp.spriteyscale);
-
-	// transform the origin point
-	tr_x = FIXED_TO_FLOAT(interp.x) - gl_viewx;
-	tr_y = FIXED_TO_FLOAT(interp.y) - gl_viewy;
-
-	// rotation around vertical axis
-	tz = (tr_x * gl_viewcos) + (tr_y * gl_viewsin);
-
-	// thing is behind view plane?
-	if (tz < ZCLIP_PLANE && !papersprite && (!cv_glmdls.value || md2_models[thing->sprite].notfound == true)) //Yellow: Only MD2's dont disappear
-		return;
-
-	// The above can stay as it works for cutting sprites that are too close
-	tr_x = FIXED_TO_FLOAT(interp.x);
-	tr_y = FIXED_TO_FLOAT(interp.y);
 
 	// decide which patch to use for sprite relative to player
 #ifdef RANGECHECK
@@ -4877,40 +4892,41 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 		R_InterpolatePrecipMobjState(thing, FRACUNIT, &interp);
 	}
 
-	this_scale = FIXED_TO_FLOAT(interp.scale);
-
 	// transform the origin point
-	tr_x = FIXED_TO_FLOAT(interp.x) - gl_viewx;
-	tr_y = FIXED_TO_FLOAT(interp.y) - gl_viewy;
+	tr_x = FIXED_TO_FLOAT(interp.x);
+	tr_y = FIXED_TO_FLOAT(interp.y);
 
 	// rotation around vertical axis
-	tz = (tr_x * gl_viewcos) + (tr_y * gl_viewsin);
+	tz = ((tr_x - gl_viewx) * gl_viewcos) + ((tr_y - gl_viewy) * gl_viewsin);
 
 	// thing is behind view plane?
 	if (tz < ZCLIP_PLANE)
 		return;
 
-	tr_x = FIXED_TO_FLOAT(interp.x);
-	tr_y = FIXED_TO_FLOAT(interp.y);
-
 	// decide which patch to use for sprite relative to player
 	if ((unsigned)thing->sprite >= numsprites)
+	{
 #ifdef RANGECHECK
 		I_Error("HWR_ProjectPrecipitationSprite: invalid sprite number %i ",
 		        thing->sprite);
 #else
 		return;
 #endif
+	}
 
 	sprdef = &sprites[thing->sprite];
 
 	if ((size_t)(thing->frame&FF_FRAMEMASK) >= sprdef->numframes)
+	{
 #ifdef RANGECHECK
 		I_Error("HWR_ProjectPrecipitationSprite: invalid sprite frame %i : %i for %s",
 		        thing->sprite, thing->frame, sprnames[thing->sprite]);
 #else
 		return;
 #endif
+	}
+
+	this_scale = FIXED_TO_FLOAT(interp.scale);
 
 	sprframe = &sprdef->spriteframes[thing->frame & FF_FRAMEMASK];
 
@@ -5388,7 +5404,10 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *pl
 	HWR_SortVisSprites();
 	PS_STOP_TIMING(ps_hw_spritesorttime);
 	PS_START_TIMING(ps_hw_spritedrawtime);
-	HWR_DrawSprites();
+	if (!cv_glmdls.value)
+		HWR_DrawSprites();
+	else
+		HWR_DrawModels();
 	PS_STOP_TIMING(ps_hw_spritedrawtime);
 
 	ps_numdrawnodes.value.i = 0;
