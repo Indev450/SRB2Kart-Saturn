@@ -4396,7 +4396,7 @@ static void HWR_AddSprites(sector_t *sec)
 static void HWR_AddPrecipitationSprites(void)
 {
 	INT32 xl, xh, yl, yh, bx, by;
-	precipmobj_t *th;
+	precipmobj_t *th, *next;
 
 	fixed_t drawdist;
 
@@ -4428,6 +4428,9 @@ static void HWR_AddPrecipitationSprites(void)
 		{
 			for (th = precipblocklinks[(by * bmapwidth) + bx]; th; th = th->bnext)
 			{
+				// Store this beforehand because HWR_ProjectPrecipitationSprite may free th (see P_PrecipThinker)
+				next = th->bnext;
+
 				if (th->precipflags & PCF_INVISIBLE)
 					continue;
 
