@@ -2317,6 +2317,9 @@ static void HWR_AddLine(seg_t *line)
 
 	gl_backsector = line->backsector;
 
+	if (!cv_glportals.value || !gl_maphasportals)
+		goto doaddline;
+
 	// do extra checks on the seg when rendering portals:
 	// don't render segs that are behind the portal destination line
 	if (portalclipline &&
@@ -2778,29 +2781,6 @@ static boolean HWR_DoCulling(line_t *cullheight, line_t *viewcullheight, float v
 	return false;
 }
 
-static inline void HWR_PortalSubsector(seg_t *line, subsector_t *sub, INT16 count)
-{
-	if (line)
-	{
-		//Hurdler: at this point validcount must be the same, but is not because
-		//         gl_frontsector doesn't point anymore to sub->sector due to
-		//         the call gl_frontsector = R_FakeFlat(...)
-		//         if it's not done, the sprite is drawn more than once,
-		//         what looks really bad with translucency or dynamic light,
-		//         without talking about the overdraw of course.
-		sub->sector->validcount = validcount;/// \todo fix that in a better way
-
-		while (count--)
-		{
-				if (!line->polyseg) // ignore segs that belong to polyobjects
-					HWR_AddLine(line);
-				line++;
-		}
-	}
-
-	sub->validcount = validcount;
-}
-
 // -----------------+
 // HWR_Subsector    : Determine floor/ceiling planes.
 //                  : Add sprites of things in sector.
@@ -2853,8 +2833,7 @@ static void HWR_Subsector(size_t num)
 
 	if (gl_portal_state == GLPORTAL_SEARCH)
 	{
-		HWR_PortalSubsector(line, sub, count);
-		return;
+		goto doaddline;
 	}
 
 	floorcolormap = ceilingcolormap = gl_frontsector->extra_colormap;
@@ -3090,6 +3069,7 @@ static void HWR_Subsector(size_t num)
 		}
 	}
 
+doaddline:
 	// Hurdler: here interesting things are happening!
 	// we have just drawn the floor and ceiling
 	// we now draw the sprites first and then the walls
@@ -3110,9 +3090,9 @@ static void HWR_Subsector(size_t num)
 
 		while (count--)
 		{
-				if (!line->polyseg) // ignore segs that belong to polyobjects
-					HWR_AddLine(line);
-				line++;
+			if (!line->polyseg) // ignore segs that belong to polyobjects
+				HWR_AddLine(line);
+			line++;
 		}
 	}
 
@@ -5288,6 +5268,8 @@ void HWR_SetStencilState(int state, int level)
 	GL_SetSpecialState(HWD_SET_PORTAL_MODE, state);
 }
 
+typedef void (*bspfunc)(INT32 bspnum);
+
 // Renders the current viewpoint, though takes portal arguments for recursive portals.
 void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *player, int stencil_level, boolean allow_portals)
 {
@@ -5295,6 +5277,7 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *pl
 
 	const boolean skybox = (skyboxmo[0] && cv_skybox.value);
 	const boolean useportals = cv_glportals.value && gl_maphasportals && allow_portals;
+	bspfunc bspFunc = portalclipline ? HWR_RenderPortalBSPNode : HWR_RenderBSPNode;
 
 	portallist.base = portallist.cap = NULL;
 
@@ -5314,10 +5297,7 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *pl
 		validcount++;
 
 		// no actual rendering happens
-		if (portalclipline)
-			HWR_RenderPortalBSPNode((INT32)numnodes-1);
-		else
-			HWR_RenderBSPNode((INT32)numnodes-1);
+		bspFunc((INT32)numnodes-1);
 
 		// for each found portal:
 		// note: if necessary, could sort the portals here?
@@ -5368,10 +5348,7 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *pl
 		HWR_SetPortalState(GLPORTAL_INSIDE); // TURN IT OFF
 
 	// Recursively "render" the BSP tree.
-	if (!portalclipline)
-		HWR_RenderBSPNode((INT32)numnodes-1);
-	else
-		HWR_RenderPortalBSPNode((INT32)numnodes-1);
+	bspFunc((INT32)numnodes-1);
 
 	// woo we back
 	HWR_SetPortalState(oldgl_portal_state);
