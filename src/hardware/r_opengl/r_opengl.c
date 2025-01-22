@@ -2790,7 +2790,7 @@ void GL_SetTransform(FTransform *stransform)
 
 	if (stransform)
 	{
-		used_fov = stransform->fovxangle;
+		used_fov = stransform->fovangle;
 		shearing = stransform->shearing;
 		// keep a trace of the transformation for md2
 		memcpy(&md2_transform, stransform, sizeof (md2_transform));

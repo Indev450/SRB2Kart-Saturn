@@ -5250,8 +5250,7 @@ void HWR_SetTransform(float fpov)
 	gl_viewludsin = FIXED_TO_FLOAT(FINECOSINE(gl_aimingangle>>ANGLETOFINESHIFT));
 	gl_viewludcos = FIXED_TO_FLOAT(-FINESINE(gl_aimingangle>>ANGLETOFINESHIFT));
 
-	atransform.fovxangle = fpov; // Tails
-	atransform.fovyangle = fpov; // Tails
+	atransform.fovangle = fpov; // Tails
 	HWR_RollTransform(&atransform, viewroll);
 	atransform.splitscreen = splitscreen;
 
