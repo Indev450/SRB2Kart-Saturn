@@ -1071,7 +1071,7 @@ subsector_t *R_IsPointInSubsector(fixed_t x, fixed_t y)
 
 mobj_t *viewmobj;
 
-static void R_SetupCommonFrame(player_t * player, subsector_t * subsector)
+static void R_SetupCommonFrame(player_t * player, sector_t * sector)
 {
 	newview->player = player;
 
@@ -1081,8 +1081,8 @@ static void R_SetupCommonFrame(player_t * player, subsector_t * subsector)
 
 	newview->roll = R_ViewRollAngle(player);
 
-	if (subsector && subsector->sector)
-		newview->sector = subsector->sector;
+	if (sector != NULL)
+		newview->sector = sector;
 	else
 		newview->sector = R_PointInSubsector(newview->x, newview->y)->sector;
 
@@ -1212,10 +1212,10 @@ void R_SkyboxFrame(int s)
 	}
 #undef SETUPSKYVIEW
 
-	if (!P_MobjWasRemoved(viewmobj))
+	if (!P_MobjWasRemoved(viewmobj) && viewmobj->subsector && viewmobj->subsector->sector)
 		subsector = viewmobj->subsector;
 
-	R_SetupCommonFrame(player, subsector);
+	R_SetupCommonFrame(player, subsector->sector);
 }
 
 void R_SetupFrame(int s, boolean skybox)
@@ -1223,7 +1223,7 @@ void R_SetupFrame(int s, boolean skybox)
 	player_t *player = &players[displayplayers[s]];
 	camera_t *thiscam = &camera[s];
 	boolean chasecam = (cv_chasecam[s].value);
-	subsector_t * subsector = NULL;
+	sector_t * sector = NULL;
 
 	R_SetViewContext(VIEWCONTEXT_PLAYER1 + s);
 	if (thiscam->reset)
@@ -1263,10 +1263,10 @@ void R_SetupFrame(int s, boolean skybox)
 		newview->y = viewmobj->y;
 		newview->z = viewmobj->z + 20*FRACUNIT;
 
-		if (!P_MobjWasRemoved(viewmobj))
-			subsector = viewmobj->subsector;
+		if (!P_MobjWasRemoved(viewmobj) && viewmobj->subsector && viewmobj->subsector->sector)
+			sector = viewmobj->subsector->sector;
 
-		R_SetupCommonFrame(player, subsector);
+		R_SetupCommonFrame(player, sector);
 	}
 	else if (thiscam && chasecam) // use outside cam view
 	{
@@ -1276,10 +1276,10 @@ void R_SetupFrame(int s, boolean skybox)
 		newview->y = thiscam->y;
 		newview->z = thiscam->z + (thiscam->height>>1);
 
-		if (thiscam != NULL)
-			subsector = thiscam->subsector;
+		if (thiscam != NULL && thiscam->subsector && thiscam->subsector->sector)
+			sector = thiscam->subsector->sector;
 
-		R_SetupCommonFrame(player, subsector);
+		R_SetupCommonFrame(player, sector);
 	}
 	else // use the player's eyes view
 	{
@@ -1290,10 +1290,10 @@ void R_SetupFrame(int s, boolean skybox)
 		newview->y = viewmobj->y;
 		newview->z = player->viewz;
 
-		if (!P_MobjWasRemoved(viewmobj))
-			subsector = viewmobj->subsector;
+		if (!P_MobjWasRemoved(viewmobj) && viewmobj->subsector && viewmobj->subsector->sector)
+			sector = viewmobj->subsector->sector;
 
-		R_SetupCommonFrame(player, subsector);
+		R_SetupCommonFrame(player, sector);
 	}
 }
 
