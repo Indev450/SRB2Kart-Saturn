@@ -140,7 +140,7 @@ typedef struct
 #endif
 	FLOAT       scalex, scaley, scalez;
 	FLOAT       spritexscale, spriteyscale;
-	FLOAT       fovxangle, fovyangle;
+	FLOAT       fovangle;
 	UINT8       splitscreen;
 	boolean     flip;            // screenflip
 	boolean     roll;
