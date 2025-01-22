@@ -4296,6 +4296,24 @@ static void HWR_DrawSprites(void)
 			continue;
 		}
 
+		HWR_DrawSprite(spr);
+	}
+}
+
+static void HWR_DrawModels(void)
+{
+	UINT32 i;
+
+	for (i = 0; i < gl_visspritecount; i++)
+	{
+		gl_vissprite_t *spr = gl_vsprorder[i];
+
+		if (spr->precip)
+		{
+			HWR_DrawPrecipitationSprite(spr);
+			continue;
+		}
+
 		if (spr->mobj && spr->mobj->skin && spr->mobj->sprite == SPR_PLAY)
 		{
 			md2_t *md2;
@@ -4311,14 +4329,14 @@ static void HWR_DrawSprites(void)
 				md2 = &md2_playermodels[(skin_t *)spr->mobj->skin - skins];
 
 			// 8/1/19: Only don't display player models if no default SPR_PLAY is found.
-			if (!cv_glmdls.value || ((md2->notfound || md2->scale < 0.0f) && ((!cv_glfallbackplayermodel.value) || md2_models[SPR_PLAY].notfound || md2_models[SPR_PLAY].scale < 0.0f)) || spr->mobj->state == &states[S_PLAY_SIGN])
+			if (((md2->notfound || md2->scale < 0.0f) && ((!cv_glfallbackplayermodel.value) || md2_models[SPR_PLAY].notfound || md2_models[SPR_PLAY].scale < 0.0f)) || spr->mobj->state == &states[S_PLAY_SIGN])
 				HWR_DrawSprite(spr);
 			else
 				HWR_DrawMD2(spr);
 		}
 		else
 		{
-			if (!cv_glmdls.value || md2_models[spr->mobj->sprite].notfound || md2_models[spr->mobj->sprite].scale < 0.0f)
+			if (md2_models[spr->mobj->sprite].notfound || md2_models[spr->mobj->sprite].scale < 0.0f)
 				HWR_DrawSprite(spr);
 			else
 				HWR_DrawMD2(spr);
@@ -5335,7 +5353,10 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *pl
 	HWR_SortVisSprites();
 	PS_STOP_TIMING(ps_hw_spritesorttime);
 	PS_START_TIMING(ps_hw_spritedrawtime);
-	HWR_DrawSprites();
+	if (!cv_glmdls.value)
+		HWR_DrawSprites();
+	else
+		HWR_DrawModels();
 	PS_STOP_TIMING(ps_hw_spritedrawtime);
 
 	ps_numdrawnodes.value.i = 0;
