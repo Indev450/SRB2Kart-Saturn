@@ -1799,7 +1799,7 @@ static void readsound(MYFILE *f, INT32 num, const char *savesfxnames[])
  * \sa readmaincfg()
  * \author Graue <graue@oceanbase.org>
  */
-static boolean GoodDataFileName(const char *s)
+/*static boolean GoodDataFileName(const char *s)
 {
 	const char *p;
 	const char *tail = ".dat";
@@ -1819,7 +1819,7 @@ static boolean GoodDataFileName(const char *s)
 	if (fasticmp(s, "online.dat")) return false; // SRB2Kart online replay folder
 
 	return true;
-}
+}*/
 
 static void reademblemdata(MYFILE *f, INT32 num)
 {
@@ -2597,10 +2597,10 @@ static void readmaincfg(MYFILE *f)
 			{
 				maxXtraLife = (UINT8)get_number(word2);
 			}
-
 			else if (fastcmp(word, "GAMEDATA"))
 			{
-				size_t filenamelen;
+				// just ignore it but dont throw a warning
+				/*size_t filenamelen;
 
 				// Check the data filename so that mods
 				// can't write arbitrary files.
@@ -2624,7 +2624,7 @@ static void readmaincfg(MYFILE *f)
 				// can't use sprintf since there is %u in savegamename
 				strcatbf(savegamename, srb2home, PATHSEP);
 
-				refreshdirmenu |= REFRESHDIR_GAMEDATA;
+				refreshdirmenu |= REFRESHDIR_GAMEDATA;*/
 			}
 			else if (fastcmp(word, "RESETDATA"))
 			{

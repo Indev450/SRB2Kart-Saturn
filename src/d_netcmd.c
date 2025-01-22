@@ -5782,12 +5782,8 @@ static void Fishcake_OnChange(void)
   */
 static void Command_Isgamemodified_f(void)
 {
-	if (majormods)
-		CONS_Printf("The game has been modified with major addons, so you cannot play Record Attack.\n");
-	else if (savemoddata)
-		CONS_Printf("The game has been modified with an addon with its own save data, so you can play Record Attack and earn medals.\n");
-	else if (modifiedgame)
-		CONS_Printf("The game has been modified with only minor addons. You can play Record Attack, earn medals and unlock extras.\n");
+	if (majormods || modifiedgame)
+		CONS_Printf("The game has been modified, Record Attack data will be saved to a seperate savegame.\n");
 	else
 		CONS_Printf("The game has not been modified. You can play Record Attack, earn medals and unlock extras.\n");
 }
