@@ -3875,7 +3875,7 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 }
 
 // Sprite drawer for precipitation
-static inline void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
+static void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 {
 	FBITFIELD blend = 0;
 	FOutVector wallVerts[4];
@@ -3884,10 +3884,7 @@ static inline void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 
 	INT32 shader = SHADER_NONE;
 
-	if (!spr->mobj)
-		return;
-
-	if (!spr->mobj->subsector)
+	if (!spr->mobj || !spr->mobj->subsector)
 		return;
 
 	// cache sprite graphics
@@ -4502,29 +4499,26 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	if (interp.spritexscale < 1 || interp.spriteyscale < 1)
 		return;
 
+	const boolean papersprite = (thing->frame & FF_PAPERSPRITE);
+
+	// transform the origin point
+	tr_x = FIXED_TO_FLOAT(interp.x);
+	tr_y = FIXED_TO_FLOAT(interp.y);
+
+	// rotation around vertical axis
+	tz = ((tr_x - gl_viewx) * gl_viewcos) + ((tr_y - gl_viewy) * gl_viewsin);
+
+	// thing is behind view plane?
+	if (tz < ZCLIP_PLANE && !papersprite && (!cv_glmdls.value || md2_models[thing->sprite].notfound == true)) // Yellow: Only MD2's dont disappear
+		return;
+
 	const boolean mirrored = thing->mirrored;
 	const boolean vflip = (thing->eflags & MFE_VERTICALFLIP);
 	const boolean hflip = (!(thing->frame & FF_HORIZONTALFLIP) != !mirrored);
-	const boolean papersprite = (thing->frame & FF_PAPERSPRITE);
 
 	this_scale = FIXED_TO_FLOAT(interp.scale);
 	spritexscale = FIXED_TO_FLOAT(interp.spritexscale);
 	spriteyscale = FIXED_TO_FLOAT(interp.spriteyscale);
-
-	// transform the origin point
-	tr_x = FIXED_TO_FLOAT(interp.x) - gl_viewx;
-	tr_y = FIXED_TO_FLOAT(interp.y) - gl_viewy;
-
-	// rotation around vertical axis
-	tz = (tr_x * gl_viewcos) + (tr_y * gl_viewsin);
-
-	// thing is behind view plane?
-	if (tz < ZCLIP_PLANE && !papersprite && (!cv_glmdls.value || md2_models[thing->sprite].notfound == true)) //Yellow: Only MD2's dont disappear
-		return;
-
-	// The above can stay as it works for cutting sprites that are too close
-	tr_x = FIXED_TO_FLOAT(interp.x);
-	tr_y = FIXED_TO_FLOAT(interp.y);
 
 	// decide which patch to use for sprite relative to player
 #ifdef RANGECHECK
@@ -4848,40 +4842,41 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 		R_InterpolatePrecipMobjState(thing, FRACUNIT, &interp);
 	}
 
-	this_scale = FIXED_TO_FLOAT(interp.scale);
-
 	// transform the origin point
-	tr_x = FIXED_TO_FLOAT(interp.x) - gl_viewx;
-	tr_y = FIXED_TO_FLOAT(interp.y) - gl_viewy;
+	tr_x = FIXED_TO_FLOAT(interp.x);
+	tr_y = FIXED_TO_FLOAT(interp.y);
 
 	// rotation around vertical axis
-	tz = (tr_x * gl_viewcos) + (tr_y * gl_viewsin);
+	tz = ((tr_x - gl_viewx) * gl_viewcos) + ((tr_y - gl_viewy) * gl_viewsin);
 
 	// thing is behind view plane?
 	if (tz < ZCLIP_PLANE)
 		return;
 
-	tr_x = FIXED_TO_FLOAT(interp.x);
-	tr_y = FIXED_TO_FLOAT(interp.y);
-
 	// decide which patch to use for sprite relative to player
 	if ((unsigned)thing->sprite >= numsprites)
+	{
 #ifdef RANGECHECK
 		I_Error("HWR_ProjectPrecipitationSprite: invalid sprite number %i ",
 		        thing->sprite);
 #else
 		return;
 #endif
+	}
 
 	sprdef = &sprites[thing->sprite];
 
 	if ((size_t)(thing->frame&FF_FRAMEMASK) >= sprdef->numframes)
+	{
 #ifdef RANGECHECK
 		I_Error("HWR_ProjectPrecipitationSprite: invalid sprite frame %i : %i for %s",
 		        thing->sprite, thing->frame, sprnames[thing->sprite]);
 #else
 		return;
 #endif
+	}
+
+	this_scale = FIXED_TO_FLOAT(interp.scale);
 
 	sprframe = &sprdef->spriteframes[thing->frame & FF_FRAMEMASK];
 
