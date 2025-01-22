@@ -4423,7 +4423,7 @@ static void HWR_AddPrecipitationSprites(void)
 	{
 		for (by = yl; by <= yh; by++)
 		{
-			for (th = precipblocklinks[(by * bmapwidth) + bx]; th; th = th->bnext)
+			for (th = precipblocklinks[(by * bmapwidth) + bx]; th; th = next)
 			{
 				// Store this beforehand because HWR_ProjectPrecipitationSprite may free th (see P_PrecipThinker)
 				next = th->bnext;
