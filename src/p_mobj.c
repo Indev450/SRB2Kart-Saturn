@@ -10844,7 +10844,19 @@ void P_SpawnPlayer(INT32 playernum)
 	{
 		if (!p->spectator)
 		{
-			camera[playernum].freecam = false;
+			if (playernum == consoleplayer)
+				camera[0].freecam = false;
+			else if (splitscreen)
+			{
+				for (i = 1; i <= splitscreen; i++)
+				{
+					if (playernum == displayplayers[i])
+					{
+						camera[i].freecam = false;
+						break;
+					}
+				}
+			}
 		}
 	}
 }
