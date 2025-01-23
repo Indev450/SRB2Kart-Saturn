@@ -2416,13 +2416,43 @@ Ping_gfx_num (int lag)
 		return 4;
 }
 
+static const UINT8 *
+Ping_gfx_colormap (UINT32 lag, boolean gentleman)
+{
+	const UINT8 *colormap = NULL;
+
+	if (gentleman)
+	{
+		colormap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_PASTEL, GTC_CACHE);
+	}
+
+	if (servermaxping && lag > servermaxping && hu_tick < 4)
+	{
+		// flash ping red if too high
+		colormap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_RASPBERRY, GTC_CACHE);
+	}
+
+	return colormap;
+}
+
+static UINT32
+Ping_conversion (UINT32 lag)
+{
+	if (cv_pingmeasurement.value)
+	{
+		lag = (INT32)(lag * (1000.00f / TICRATE));
+	}
+
+	return lag;
+}
+
+
 //
 // HU_drawPing
 //
 
 void HU_drawPing(INT32 x, INT32 y, INT32 pnum, INT32 flags)
 {
-	UINT8 *colormap = NULL;
 	INT32 measureid = cv_pingmeasurement.value ? 1 : 0;
 	INT32 gfxnum; // gfx to draw
 
@@ -2434,35 +2464,29 @@ void HU_drawPing(INT32 x, INT32 y, INT32 pnum, INT32 flags)
 	//INT32 dx;
 
 	UINT32 lag = playerpingtable[pnum];
+	const boolean gentleman = (cv_mindelay.value && (lag < (tic_t)cv_mindelay.value) && P_IsLocalPlayer(&players[pnum]));
 
-	if (P_IsLocalPlayer(&players[pnum]) && lag < (tic_t)cv_mindelay.value)
+	if (gentleman)
 	{
 		lag = cv_mindelay.value;
-		colormap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_PASTEL, GTC_CACHE);
 	}
 
-	gfxnum = Ping_gfx_num(lag);
-	
-	if (!cv_pingstyle.value)
+	if (cv_pingstyle.value == 0) // kart
 	{
+		gfxnum = Ping_gfx_num(lag);
+
 		if (measureid == 1)
 			V_DrawScaledPatch(x+11 - pingmeasure[measureid]->width, y+9, flags, pingmeasure[measureid]);
 		
 		if (cv_pingicon.value)
 			V_DrawScaledPatch(x+2, y, flags, pinggfx[gfxnum]);
 
-		if (servermaxping && lag > servermaxping && hu_tick < 4)
-			colormap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_RASPBERRY, GTC_CACHE); // flash ping red if too high
-
-		if (cv_pingmeasurement.value)
-			lag = (INT32)(lag * (1000.00f / TICRATE));
-
-		x = V_DrawPingNum(x + (measureid == 1 ? 11 - pingmeasure[measureid]->width : 10), y+9, flags, lag, colormap);
+		x = V_DrawPingNum(x + (measureid == 1 ? 11 - pingmeasure[measureid]->width : 10), y+9, flags, Ping_conversion(lag), Ping_gfx_colormap(lag, gentleman));
 
 		if (measureid == 0)
 			V_DrawScaledPatch(x+1 - pingmeasure[measureid]->width, y+9, flags, pingmeasure[measureid]);
 	}
-	else if (cv_pingstyle.value) // old style ping
+	else if (cv_pingstyle.value == 1) // old style ping
 	{
 		if (cv_pingicon.value)
 		{
@@ -2488,22 +2512,15 @@ void HU_drawPing(INT32 x, INT32 y, INT32 pnum, INT32 flags)
 			}
 		}
 
-		if (cv_pingmeasurement.value)
-			lag = (INT32)(lag * (1000.00f / TICRATE));
-
 		if (vid.width >= 640)	// how sad, we're using a shit resolution.
 		{
 			if (measureid == 1)
 			{
-				//dx = x+1 - (V_SmallStringWidth(va("%dms", lag), V_ALLOWLOWERCASE|flags)/2);
-				//V_DrawSmallString(dx, y+4, V_ALLOWLOWERCASE|flags, va("%dms", lag));
-					V_DrawRightAlignedSmallString(x+12, y+13, V_ALLOWLOWERCASE|flags, va("%dms", lag));
+				V_DrawRightAlignedSmallString(x+12, y+13, V_ALLOWLOWERCASE|flags, va("%dms", Ping_conversion(lag)));
 			}
 			else if (measureid == 0)
 			{
-				//dx = x+1 - (V_SmallStringWidth(va("d%d", lag), flags)/2);
-				//V_DrawSmallString(dx, y+4, flags, va("d%d", lag));
-					V_DrawRightAlignedSmallString(x+12, y+13, flags, va("d%d", lag));
+				V_DrawRightAlignedSmallString(x+12, y+13, flags, va("d%d", Ping_conversion(lag)));
 			}
 		}
 
