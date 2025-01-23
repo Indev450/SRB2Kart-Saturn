@@ -6670,7 +6670,6 @@ static void UpdatePingTable(void)
 		{
 			if (playeringame[i] && playernode[i] > 0 && playernode[i] != UINT8_MAX)
 			{
-				// TicsToMilliseconds can't handle pings over 1000ms lol
 				realpingtable[i] += GetLag(playernode[i]);
 
 				if (!players[i].spectator)
@@ -6690,6 +6689,7 @@ static void UpdatePingTable(void)
 
 		pingmeasurecount++;
 
+#if 0
 		switch (playerpernode[0])
 		{
 			case 4:
@@ -6704,6 +6704,7 @@ static void UpdatePingTable(void)
 			case 1:
 				realpingtable[nodetoplayer[0]] = lowest_lag;
 		}
+#endif
 	}
 	else // We're a client, handle mindelay on the way out.
 	{
