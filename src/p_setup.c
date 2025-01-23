@@ -800,6 +800,23 @@ INT32 P_CheckLevelFlat(const char *flatname)
 	return (INT32)i;
 }
 
+static const sector_t sector_default = {
+	.nexttag = -1,
+	.firsttag = -1,
+	.spawn_nexttag = -1,
+	.spawn_firsttag = -1,
+	.heightsec = -1,
+	.camsec = -1,
+	.floorlightsec = -1,
+	.ceilinglightsec = -1,
+	.maxattached = 1,
+	.moved = true,
+	.bottommap = -1,
+	.midmap = -1,
+	.topmap = -1,
+	.verticalflip = false,
+};
+
 // Sets up the ingame sectors structures.
 static void P_LoadRawSectors(UINT8 *data)
 {
@@ -821,9 +838,12 @@ static void P_LoadRawSectors(UINT8 *data)
 	havepazrcst = false;
 	havefaytpad = false;
 
+	memset(ss, 0, sizeof(sector_t) * numsectors);
+
 	// For each counted sector, copy the sector raw data from our cache pointer ms, to the global table pointer ss.
 	for (i = 0; i < numsectors; i++, ss++, ms++)
 	{
+		*ss = sector_default;
 		ss->floorheight = SHORT(ms->floorheight)<<FRACBITS;
 		ss->ceilingheight = SHORT(ms->ceilingheight)<<FRACBITS;
 
@@ -833,53 +853,8 @@ static void P_LoadRawSectors(UINT8 *data)
 		ss->lightlevel = SHORT(ms->lightlevel);
 		ss->special = SHORT(ms->special);
 		ss->tag = SHORT(ms->tag);
-		ss->nexttag = ss->firsttag = -1;
-		ss->spawn_nexttag = ss->spawn_firsttag = -1;
 
-		memset(&ss->soundorg, 0, sizeof(ss->soundorg));
-		ss->validcount = 0;
-
-		ss->thinglist = NULL;
-		ss->touching_thinglist = NULL;
-
-		ss->touching_preciplist = NULL;
-
-		ss->floordata = NULL;
-		ss->ceilingdata = NULL;
-		ss->lightingdata = NULL;
-
-		ss->linecount = 0;
-		ss->lines = NULL;
-
-		ss->heightsec = -1;
-		ss->camsec = -1;
-		ss->floorlightsec = -1;
-		ss->ceilinglightsec = -1;
-		ss->crumblestate = 0;
-		ss->ffloors = NULL;
-		ss->lightlist = NULL;
-		ss->numlights = 0;
-		ss->attached = NULL;
-		ss->attachedsolid = NULL;
-		ss->numattached = 0;
-		ss->maxattached = 1;
-		ss->moved = true;
-
-		ss->extra_colormap = NULL;
-
-		ss->floor_xoffs = ss->ceiling_xoffs = ss->floor_yoffs = ss->ceiling_yoffs = 0;
-		ss->spawn_flr_xoffs = ss->spawn_ceil_xoffs = ss->spawn_flr_yoffs = ss->spawn_ceil_yoffs = 0;
-		ss->floorpic_angle = ss->ceilingpic_angle = 0;
-		ss->spawn_flrpic_angle = ss->spawn_ceilpic_angle = 0;
-		ss->bottommap = ss->midmap = ss->topmap = -1;
-		ss->gravity = NULL;
-		ss->cullheight = NULL;
-		ss->verticalflip = false;
-		ss->flags = 0;
 		ss->flags |= SF_FLIPSPECIAL_FLOOR;
-
-		ss->floorspeed = 0;
-		ss->ceilspeed = 0;
 	}
 
 	// set the sky flat num
