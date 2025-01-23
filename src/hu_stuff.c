@@ -2360,7 +2360,7 @@ Ping_gfx_num (int lag)
 // HU_drawPing
 //
 
-void HU_drawPing(INT32 x, INT32 y, UINT32 lag, INT32 flags)
+void HU_drawPlayerPing(INT32 x, INT32 y, INT32 pnum, INT32 flags)
 {
 	UINT8 *colormap = NULL;
 	INT32 measureid = cv_pingmeasurement.value ? 1 : 0;
