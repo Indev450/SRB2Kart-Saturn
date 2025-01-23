@@ -1292,8 +1292,8 @@ static void G_DoLoadLevel(boolean resetplayer)
 }
 
 static INT32 pausedelay = 0;
-static INT32 camtoggledelay, camtoggledelay2, camtoggledelay3, camtoggledelay4 = 0;
-static INT32 spectatedelay, spectatedelay2, spectatedelay3, spectatedelay4 = 0;
+static INT32 camtoggledelay[MAXSPLITSCREENPLAYERS] = {0,0,0,0};
+static INT32 spectatedelay[MAXSPLITSCREENPLAYERS] = {0,0,0,0};
 
 //
 // G_Responder
@@ -1474,72 +1474,72 @@ boolean G_Responder(event_t *ev)
 			if (ev->data1 == gamecontrol[gc_camtoggle][0]
 				|| ev->data1 == gamecontrol[gc_camtoggle][1])
 			{
-				if (!camtoggledelay)
+				if (!camtoggledelay[0])
 				{
-					camtoggledelay = NEWTICRATE / 7;
+					camtoggledelay[0] = NEWTICRATE / 7;
 					CV_SetValue(&cv_chasecam[0], cv_chasecam[0].value ? 0 : 1);
 				}
 			}
 			if (ev->data1 == gamecontrolbis[gc_camtoggle][0]
 				|| ev->data1 == gamecontrolbis[gc_camtoggle][1])
 			{
-				if (!camtoggledelay2)
+				if (!camtoggledelay[1])
 				{
-					camtoggledelay2 = NEWTICRATE / 7;
+					camtoggledelay[1] = NEWTICRATE / 7;
 					CV_SetValue(&cv_chasecam[1], cv_chasecam[1].value ? 0 : 1);
 				}
 			}
 			if (ev->data1 == gamecontrol3[gc_camtoggle][0]
 				|| ev->data1 == gamecontrol3[gc_camtoggle][1])
 			{
-				if (!camtoggledelay3)
+				if (!camtoggledelay[2])
 				{
-					camtoggledelay3 = NEWTICRATE / 7;
+					camtoggledelay[2] = NEWTICRATE / 7;
 					CV_SetValue(&cv_chasecam[2], cv_chasecam[2].value ? 0 : 1);
 				}
 			}
 			if (ev->data1 == gamecontrol4[gc_camtoggle][0]
 				|| ev->data1 == gamecontrol4[gc_camtoggle][1])
 			{
-				if (!camtoggledelay4)
+				if (!camtoggledelay[3])
 				{
-					camtoggledelay4 = NEWTICRATE / 7;
+					camtoggledelay[3] = NEWTICRATE / 7;
 					CV_SetValue(&cv_chasecam[3], cv_chasecam[3].value ? 0 : 1);
 				}
 			}
 			if (ev->data1 == gamecontrol[gc_spectate][0]
 				|| ev->data1 == gamecontrol[gc_spectate][1])
 			{
-				if (!spectatedelay)
+				if (!spectatedelay[0])
 				{
-					spectatedelay = NEWTICRATE / 7;
+					spectatedelay[0] = NEWTICRATE / 7;
 					COM_ImmedExecute("changeteam spectator");
 				}
 			}
 			if (ev->data1 == gamecontrolbis[gc_spectate][0]
 				|| ev->data1 == gamecontrolbis[gc_spectate][1])
 			{
-				if (!spectatedelay2)
+				if (!spectatedelay[1])
 				{
-					spectatedelay2 = NEWTICRATE / 7;
+					spectatedelay[1] = NEWTICRATE / 7;
 					COM_ImmedExecute("changeteam2 spectator");
 				}
 			}
 			if (ev->data1 == gamecontrol3[gc_spectate][0]
 				|| ev->data1 == gamecontrol3[gc_spectate][1])
 			{
-				if (!spectatedelay3)
+				if (!spectatedelay[2])
 				{
-					spectatedelay3 = NEWTICRATE / 7;
+					spectatedelay[2] = NEWTICRATE / 7;
 					COM_ImmedExecute("changeteam3 spectator");
 				}
 			}
 			if (ev->data1 == gamecontrol4[gc_spectate][0]
 				|| ev->data1 == gamecontrol4[gc_spectate][1])
 			{
-				if (!spectatedelay4)
+				if (!spectatedelay[3])
 				{
-					spectatedelay4 = NEWTICRATE / 7;
+					spectatedelay[3] = NEWTICRATE / 7;
 					COM_ImmedExecute("changeteam4 spectator");
 				}
 			}
@@ -1998,23 +1998,14 @@ void G_Ticker(boolean run)
 		if (pausedelay)
 			pausedelay--;
 
-		if (camtoggledelay)
-			camtoggledelay--;
-		if (camtoggledelay2)
-			camtoggledelay2--;
-		if (camtoggledelay3)
-			camtoggledelay3--;
-		if (camtoggledelay4)
-			camtoggledelay4--;
+		for (UINT8 j = 0; j < MAXSPLITSCREENPLAYERS;j++)
+		{
+			if (camtoggledelay[i])
+				camtoggledelay[i]--;
 
-		if (spectatedelay)
-			spectatedelay--;
-		if (spectatedelay2)
-			spectatedelay2--;
-		if (spectatedelay3)
-			spectatedelay3--;
-		if (spectatedelay4)
-			spectatedelay4--;
+			if (spectatedelay[i])
+				spectatedelay[i]--;
+		}
 
 		if (gametic % NAMECHANGERATE == 0)
 		{

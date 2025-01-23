@@ -316,7 +316,7 @@ void P_ColorTeamMissile(mobj_t *missile, player_t *source);
 // Special utility to return +1 or -1 depending on mobj's gravity
 FUNCINLINE static ATTRINLINE SINT8 P_MobjFlip(const mobj_t *mobj)
 {
-	return (mobj && mobj->eflags & MFE_VERTICALFLIP) ? -1 : 1;
+	return (mobj && (mobj->eflags & MFE_VERTICALFLIP)) ? -1 : 1;
 }
 
 fixed_t P_GetMobjGravity(mobj_t *mo);
