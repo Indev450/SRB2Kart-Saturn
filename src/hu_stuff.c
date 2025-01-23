@@ -2356,6 +2356,22 @@ Ping_gfx_num (int lag)
 		return 4;
 }
 
+static int
+Ping_gfx_color (int lag)
+{
+	if (lag <= 2)
+		return SKINCOLOR_JAWZ;
+	else if (lag <= 4)
+		return SKINCOLOR_MINT;
+	else if (lag <= 7)
+		return SKINCOLOR_GOLD;
+	else if (lag <= 10)
+		return SKINCOLOR_RASPBERRY;
+	else
+		return SKINCOLOR_MOONSLAM; // SKINCOLOR_MAGENTA
+}
+
+
 //
 // HU_drawPing
 //
@@ -2374,6 +2390,8 @@ void HU_drawPlayerPing(INT32 x, INT32 y, INT32 pnum, INT32 flags)
 	//INT32 dx;
 
 	UINT32 lag = playerpingtable[pnum];
+
+	colormap = R_GetTranslationColormap(TC_RAINBOW, Ping_gfx_color(lag), GTC_CACHE);
 
 	if (P_IsLocalPlayer(&players[pnum]) && lag < (tic_t)cv_mindelay.value)
 	{
