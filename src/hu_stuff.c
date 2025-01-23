@@ -2433,6 +2433,14 @@ void HU_drawPing(INT32 x, INT32 y, UINT32 lag, INT32 flags)
 	SINT8 yoffset = 6;
 	//INT32 dx;
 
+	UINT32 lag = playerpingtable[pnum];
+
+	if (P_IsLocalPlayer(&players[pnum]) && lag < (tic_t)cv_mindelay.value)
+	{
+		lag = cv_mindelay.value;
+		colormap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_PASTEL, GTC_CACHE);
+	}
+
 	gfxnum = Ping_gfx_num(lag);
 	
 	if (!cv_pingstyle.value)
@@ -2452,7 +2460,7 @@ void HU_drawPing(INT32 x, INT32 y, UINT32 lag, INT32 flags)
 		x = V_DrawPingNum(x + (measureid == 1 ? 11 - pingmeasure[measureid]->width : 10), y+9, flags, lag, colormap);
 
 		if (measureid == 0)
-				V_DrawScaledPatch(x+1 - pingmeasure[measureid]->width, y+9, flags, pingmeasure[measureid]);
+			V_DrawScaledPatch(x+1 - pingmeasure[measureid]->width, y+9, flags, pingmeasure[measureid]);
 	}
 	else if (cv_pingstyle.value) // old style ping
 	{
@@ -2500,8 +2508,8 @@ void HU_drawPing(INT32 x, INT32 y, UINT32 lag, INT32 flags)
 		}
 
 		if (cv_pingicon.value)
-		{	
-			for (i=0; (i<3); i++) // Draw the ping bar
+		{
+			for (i = 0; (i < 3); i++) // Draw the ping bar
 			{
 				V_DrawFill(x+2 *(i-1)+7, y+8+yoffset-4, 2, 8-yoffset, 31|flags);
 				if (i < numbars)
@@ -2522,7 +2530,6 @@ static inline void HU_DrawSpectatorTicker(void)
 	INT32 length = 0, height = 174;
 	INT32 totallength = 0, templength = -8;
 	INT32 dupadjust = (vid.width/vid.dupx), duptweak = (dupadjust - BASEVIDWIDTH)/2;
-	UINT32 ping = 0;
 
 	for (i = 0; i < MAXPLAYERS; i++)
 		if (playeringame[i] && players[i].spectator)
@@ -2598,14 +2605,7 @@ static inline void HU_DrawSpectatorTicker(void)
 
 				if ((netgame && i != serverplayer) || (cv_mindelay.value && P_IsLocalPlayer(&players[i])))
 				{
-					ping = playerpingtable[i];
-
-					if (P_IsLocalPlayer(&players[i]) && ping <= (tic_t)cv_mindelay.value)
-					{
-						ping = cv_mindelay.value;
-					}
-
-					HU_drawPing((templength - duptweak)+8, height-20, ping, V_TRANSLUCENT);
+					HU_drawPlayerPing((templength - duptweak)+8, height-20, i, V_TRANSLUCENT);
 				}
 			}
 
