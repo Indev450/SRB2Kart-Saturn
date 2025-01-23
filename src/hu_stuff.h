@@ -119,7 +119,7 @@ void HU_Drawer(void);
 char HU_dequeueChatChar(void);
 void HU_Erase(void);
 void HU_clearChatChars(void);
-void HU_drawPing(INT32 x, INT32 y, UINT32 ping, INT32 flags);	// Lat': Ping drawer for scoreboard.
+void HU_drawPlayerPing(INT32 x, INT32 y, INT32 pnum, INT32 flags);	// Lat': Ping drawer for scoreboard.
 //void HU_DrawTeamTabRankings(playersort_t *tab, INT32 whiteplayer);
 //void HU_DrawDualTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, INT32 whiteplayer);
 void HU_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, INT32 hilicol);

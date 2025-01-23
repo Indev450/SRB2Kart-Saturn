@@ -9176,7 +9176,6 @@ void HU_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, I
 	INT32 i, rightoffset = 240;
 	const UINT8 *colormap;
 	INT32 dupadjust = (vid.width/vid.dupx), duptweak = (dupadjust - BASEVIDWIDTH)/2;
-	UINT32 ping = 0;
 
 	boolean (*_isHighlightedPlayer)(const player_t *) = (demo.playback ? P_IsDisplayPlayer : P_IsLocalPlayer);
 
@@ -9204,14 +9203,7 @@ void HU_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, I
 
 		if ((netgame && pnum != serverplayer) || (cv_mindelay.value && P_IsLocalPlayer(&players[pnum])))
 		{
-			ping = playerpingtable[pnum];
-
-			if (P_IsLocalPlayer(&players[pnum]) && ping <= (tic_t)cv_mindelay.value)
-			{
-				ping = cv_mindelay.value;
-			}
-
-			HU_drawPing(x + ((i < 8) ? -17 : rightoffset + 11), y-4, ping, 0);
+			HU_drawPlayerPing(x + ((i < 8) ? -17 : rightoffset + 11), y-4, pnum, 0);
 		}
 
 		STRBUFCPY(strtime, tab[i].name);
