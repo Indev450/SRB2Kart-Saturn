@@ -2451,7 +2451,7 @@ Ping_conversion (UINT32 lag)
 // HU_drawPing
 //
 
-void HU_drawPing(INT32 x, INT32 y, INT32 pnum, INT32 flags)
+void HU_drawPlayerPing(INT32 x, INT32 y, INT32 pnum, INT32 flags)
 {
 	INT32 measureid = cv_pingmeasurement.value ? 1 : 0;
 	INT32 gfxnum; // gfx to draw

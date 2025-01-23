@@ -8904,9 +8904,9 @@ void HU_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, I
 		if (players[tab[i].num].spectator || !players[tab[i].num].mo)
 			continue; //ignore them.
 
-		if ((netgame && pnum != serverplayer) || (cv_mindelay.value && P_IsLocalPlayer(&players[pnum])))
+		if ((netgame && tab[i].num != serverplayer) || (cv_mindelay.value && P_IsLocalPlayer(&players[tab[i].num])))
 		{
-			HU_drawPlayerPing(x + ((i < 8) ? -17 : rightoffset + 11), y-4, pnum, 0);
+			HU_drawPlayerPing(x + ((i < 8) ? -17 : rightoffset + 11), y-4, tab[i].num, 0);
 		}
 
 		STRBUFCPY(strtime, tab[i].name);
