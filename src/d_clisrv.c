@@ -109,7 +109,6 @@ static tic_t reference_lag;
 static UINT8 spike_time;
 
 static tic_t lowest_lag;
-boolean server_lagless;
 
 static CV_PossibleValue_t mindelay_cons_t[] = {{0, "MIN"}, {30, "MAX"}, {0, NULL}};
 consvar_t cv_mindelay = {"mindelay", "0", CV_SAVE, mindelay_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -6601,47 +6600,39 @@ static void UpdatePingTable(void)
 		{
 			if (playeringame[i] && playernode[i] > 0 && playernode[i] != UINT8_MAX)
 			{
-				if (playernode[i] > 0 && !players[i].spectator)
-				{
-					lag = GetLag(playernode[i]);
-					realpingtable[i] += (lag);
+				// TicsToMilliseconds can't handle pings over 1000ms lol
+				realpingtable[i] += GetLag(playernode[i]);
 
+				if (!players[i].spectator)
+				{
+					lag = playerpingtable[i];
 					if (! fastest || lag < fastest)
 						fastest = lag;
 				}
-				else
-					realpingtable[i] += (GetLag(playernode[i]));
 			}
 		}
 
-		// Don't gentleman below your mindelay
-		if (fastest < (tic_t)cv_mindelay.value)
-			fastest = (tic_t)cv_mindelay.value;
-
-		pingmeasurecount++;
-
 		lowest_lag = fastest;
 
-		if (fastest)
-			lag = fastest;
-		else
-			lag = GetLag(0);
+		// Don't gentleman below your mindelay
+		if (lowest_lag < (tic_t)cv_mindelay.value)
+			lowest_lag = (tic_t)cv_mindelay.value;
 
-		lag = (realpingtable[0] + lag);
+		pingmeasurecount++;
 
 		switch (playerpernode[0])
 		{
 			case 4:
-				realpingtable[nodetoplayer4[0]] = lag;
+				realpingtable[nodetoplayer4[0]] = lowest_lag;
 				/*FALLTHRU*/
 			case 3:
-				realpingtable[nodetoplayer3[0]] = lag;
+				realpingtable[nodetoplayer3[0]] = lowest_lag;
 				/*FALLTHRU*/
 			case 2:
-				realpingtable[nodetoplayer2[0]] = lag;
+				realpingtable[nodetoplayer2[0]] = lowest_lag;
 				/*FALLTHRU*/
 			case 1:
-				realpingtable[nodetoplayer[0]] = lag;
+				realpingtable[nodetoplayer[0]] = lowest_lag;
 		}
 	}
 	else // We're a client, handle mindelay on the way out.
