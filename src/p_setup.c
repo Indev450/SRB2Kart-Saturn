@@ -644,15 +644,12 @@ FUNCINLINE static ATTRINLINE void P_LoadRawSubsectors(void *data)
 	subsector_t *ss = subsectors;
 	size_t i;
 
+	memset(ss, 0, sizeof(subsector_t) * numsubsectors);
+
 	for (i = 0; i < numsubsectors; i++, ss++, ms++)
 	{
-		ss->sector = NULL;
 		ss->numlines = SHORT(ms->numsegs);
 		ss->firstline = (UINT16)SHORT(ms->firstseg);
-#ifdef FLOORSPLATS
-		ss->splats = NULL;
-#endif
-		ss->validcount = 0;
 	}
 }
 
