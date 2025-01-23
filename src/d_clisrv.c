@@ -105,6 +105,17 @@ static tic_t freezetimeout[MAXNETNODES]; // Until when can this node freeze the 
 UINT16 pingmeasurecount = 1;
 UINT32 realpingtable[MAXPLAYERS]; //the base table of ping where an average will be sent to everyone.
 UINT32 playerpingtable[MAXPLAYERS]; //table of player latency values.
+
+#define GENTLEMANSMOOTHING (TICRATE)
+static tic_t reference_lag;
+static UINT8 spike_time;
+
+static tic_t lowest_lag;
+boolean server_lagless;
+
+static CV_PossibleValue_t mindelay_cons_t[] = {{0, "MIN"}, {30, "MAX"}, {0, NULL}};
+consvar_t cv_mindelay = {"mindelay", "0", CV_SAVE, mindelay_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 SINT8 nodetoplayer[MAXNETNODES];
 SINT8 nodetoplayer2[MAXNETNODES]; // say the numplayer for this node if any (splitscreen)
 SINT8 nodetoplayer3[MAXNETNODES]; // say the numplayer for this node if any (splitscreen == 2)
@@ -142,7 +153,7 @@ static UINT8 gamestate_resend_counter[MAXNETNODES];
 boolean hu_stopped = false;
 
 // Client specific
-static ticcmd_t localcmds[MAXSPLITSCREENPLAYERS];
+static ticcmd_t localcmds[MAXSPLITSCREENPLAYERS][MAXGENTLEMENDELAY];
 static boolean cl_packetmissed;
 // here it is for the secondary local player (splitscreen)
 static UINT8 mynode; // my address pointofview server
@@ -502,10 +513,15 @@ static void D_Clearticcmd(tic_t tic)
 
 void D_ResetTiccmds(void)
 {
-	INT32 i;
+	INT32 i, j;
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
-		memset(&localcmds[i], 0, sizeof(ticcmd_t));
+	{
+		for (j = 0; j < MAXGENTLEMENDELAY; j++)
+		{
+			memset(&localcmds[i][j], 0, sizeof(ticcmd_t));
+		}
+	}
 
 	// Reset the net command list
 	for (i = 0; i < TEXTCMD_HASH_SIZE; i++)
@@ -515,7 +531,7 @@ void D_ResetTiccmds(void)
 
 ticcmd_t *D_LocalTiccmd(UINT8 ss)
 {
-	return &localcmds[ss];
+	return &localcmds[ss][0];
 }
 
 // -----------------------------------------------------------------
@@ -4284,7 +4300,7 @@ void SV_ResetServer(void)
 	memset(playeringame, false, sizeof playeringame);
 	memset(playernode, UINT8_MAX, sizeof playernode);
 
-	pingmeasurecount = 1;
+	pingmeasurecount = 0; //Reset count
 	memset(realpingtable, 0, sizeof realpingtable);
 	memset(playerpingtable, 0, sizeof playerpingtable);
 
@@ -6077,27 +6093,78 @@ static void CL_SendClientCmd(void)
 	}
 	else if (gamestate != GS_NULL)
 	{
+		UINT8 lagDelay = 0;
+
+		if (lowest_lag > 0)
+		{
+			// Gentlemens' ping.
+			lagDelay = min(lowest_lag, MAXGENTLEMENDELAY);
+
+			// Is our connection worse than our current gentleman point?
+			// Make sure it stays that way for a bit before increasing delay levels.
+			if (lagDelay > reference_lag)
+			{
+				spike_time++;
+				if (spike_time >= GENTLEMANSMOOTHING)
+				{
+					// Okay, this is genuinely the new baseline delay.
+					reference_lag = lagDelay;
+					spike_time = 0;
+				}
+				else
+				{
+					// Just a temporary fluctuation, ignore it.
+					lagDelay = reference_lag;
+				}
+			}
+			else
+			{
+				reference_lag = lagDelay; // Adjust quickly if the connection improves.
+				spike_time = 0;
+			}
+
+			/*
+			if (server) // Clients have to wait for the gamestate to make it back. Servers don't!
+				lagDelay *= 2; // Simulate the HELLFUCK NIGHTMARE of a complete round trip.
+			*/
+
+			// [deep breath in]
+			// Plausible, elegant explanation that is WRONG AND SUPER HARMFUL.
+			// Clients with stable connections were adding their mindelay to network delay,
+			// even when their mindelay was as high or higher than network delay—which made
+			// client delay APPEAR slower than host mindelay, by the exact value that made
+			// "lmao just double it" make sense at the time.
+			//
+			// While this fix made client connections match server mindelay in our most common
+			// test environment, it also masked an issue that seriously affected online handling
+			// responsiveness, completely ruining our opportunity to further investigate it!
+			//
+			// See UpdatePingTable.
+			// I am taking this shitty code to my grave as an example of "never trust your brain".
+			// -Tyron 2024-05-15
+		}
+
 		packetsize = sizeof (clientcmd_pak);
-		G_MoveTiccmd(&netbuffer->u.clientpak.cmd, &localcmds[0], 1);
-		netbuffer->u.clientpak.consistancy = SHORT(consistancy[gametic%TICQUEUE]);
+		G_MoveTiccmd(&netbuffer->u.clientpak.cmd, &localcmds[0][lagDelay], 1);
+		netbuffer->u.clientpak.consistancy = SHORT(consistancy[gametic % TICQUEUE]);
 
 		if (splitscreen || botingame) // Send a special packet with 2 cmd for splitscreen
 		{
 			netbuffer->packettype = (mis ? PT_CLIENT2MIS : PT_CLIENT2CMD);
 			packetsize = sizeof (client2cmd_pak);
-			G_MoveTiccmd(&netbuffer->u.client2pak.cmd2, &localcmds[1], 1);
+			G_MoveTiccmd(&netbuffer->u.client2pak.cmd2, &localcmds[1][lagDelay], 1);
 
 			if (splitscreen > 1)
 			{
 				netbuffer->packettype = (mis ? PT_CLIENT3MIS : PT_CLIENT3CMD);
 				packetsize = sizeof (client3cmd_pak);
-				G_MoveTiccmd(&netbuffer->u.client3pak.cmd3, &localcmds[2], 1);
+				G_MoveTiccmd(&netbuffer->u.client3pak.cmd3, &localcmds[2][lagDelay], 1);
 
 				if (splitscreen > 2)
 				{
 					netbuffer->packettype = (mis ? PT_CLIENT4MIS : PT_CLIENT4CMD);
 					packetsize = sizeof (client4cmd_pak);
-					G_MoveTiccmd(&netbuffer->u.client4pak.cmd4, &localcmds[3], 1);
+					G_MoveTiccmd(&netbuffer->u.client4pak.cmd4, &localcmds[3][lagDelay], 1);
 				}
 			}
 		}
@@ -6273,8 +6340,15 @@ static void SV_SendTics(void)
 //
 static inline void CreateNewLocalCMD(UINT8 p, INT32 realtics)
 {
-	G_BuildTiccmd(&localcmds[p], realtics, p+1);
-	localcmds[p].angleturn |= TICCMD_RECEIVED;
+	INT32 i;
+
+	for (i = MAXGENTLEMENDELAY-1; i > 0; i--)
+	{
+		G_MoveTiccmd(&localcmds[p][i], &localcmds[p][i-1], 1);
+	}
+
+	G_BuildTiccmd(&localcmds[p][0], realtics, p+1);
+	localcmds[p][0].angleturn |= TICCMD_RECEIVED;
 }
 
 static void Local_Maketic(INT32 realtics)
@@ -6580,16 +6654,77 @@ static tic_t gametime = 0;
 
 static void UpdatePingTable(void)
 {
+	tic_t fastest;
+	tic_t lag;
+
 	INT32 i;
+
 	if (server)
 	{
-		if (netgame && !(gametime % 35))	// update once per second.
+		if (Playing() && !(gametime % 8)) // Value chosen based on _my vibes man_
 			PingUpdate();
+
+		fastest = 0;
+
 		// update node latency values so we can take an average later.
 		for (i = 0; i < MAXPLAYERS; i++)
-			if (playeringame[i] && playernode[i] != UINT8_MAX)
-				realpingtable[i] += GetLag(playernode[i]);
+		{
+			if (playeringame[i] && playernode[i] > 0 && playernode[i] != UINT8_MAX)
+			{
+				if (playernode[i] > 0 && !players[i].spectator)
+				{
+					lag = GetLag(playernode[i]);
+					realpingtable[i] += (lag);
+
+					if (! fastest || lag < fastest)
+						fastest = lag;
+				}
+				else
+					realpingtable[i] += (GetLag(playernode[i]));
+			}
+		}
+
+		// Don't gentleman below your mindelay
+		if (fastest < (tic_t)cv_mindelay.value)
+			fastest = (tic_t)cv_mindelay.value;
+
 		pingmeasurecount++;
+
+		lowest_lag = fastest;
+
+		if (fastest)
+			lag = fastest;
+		else
+			lag = GetLag(0);
+
+		lag = (realpingtable[0] + lag);
+
+		switch (playerpernode[0])
+		{
+			case 4:
+				realpingtable[nodetoplayer4[0]] = lag;
+				/*FALLTHRU*/
+			case 3:
+				realpingtable[nodetoplayer3[0]] = lag;
+				/*FALLTHRU*/
+			case 2:
+				realpingtable[nodetoplayer2[0]] = lag;
+				/*FALLTHRU*/
+			case 1:
+				realpingtable[nodetoplayer[0]] = lag;
+		}
+	}
+	else // We're a client, handle mindelay on the way out.
+	{
+		// Previously (neededtic - gametic) - WRONG VALUE!
+		// Pretty sure that's measuring jitter, not RTT.
+		// Stable connections would be punished by adding their mindelay to network delay!
+		tic_t mydelay = playerpingtable[consoleplayer];
+
+		if (mydelay < (tic_t)cv_mindelay.value)
+			lowest_lag = cv_mindelay.value - mydelay;
+		else
+			lowest_lag = 0;
 	}
 }
 
