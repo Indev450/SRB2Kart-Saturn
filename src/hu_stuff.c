@@ -2365,7 +2365,7 @@ void HU_drawPing(INT32 x, INT32 y, UINT32 lag, INT32 flags)
 	UINT8 *colormap = NULL;
 	INT32 measureid = cv_pingmeasurement.value ? 1 : 0;
 	INT32 gfxnum; // gfx to draw
-	
+
 	//SRB2/Kart v1.0 style
 	UINT8 numbars = 0; // how many ping bars do we draw?
 	UINT8 barcolor = 31; // color we use for the bars (green, yellow, red or black)
@@ -2462,6 +2462,7 @@ static inline void HU_DrawSpectatorTicker(void)
 	INT32 length = 0, height = 174;
 	INT32 totallength = 0, templength = -8;
 	INT32 dupadjust = (vid.width/vid.dupx), duptweak = (dupadjust - BASEVIDWIDTH)/2;
+	UINT32 ping = 0;
 
 	for (i = 0; i < MAXPLAYERS; i++)
 		if (playeringame[i] && players[i].spectator)
@@ -2535,8 +2536,17 @@ static inline void HU_DrawSpectatorTicker(void)
 					}
 				}
 
-				if (netgame && i != serverplayer)
-						HU_drawPing((templength - duptweak)+8, height-20, playerpingtable[i], V_TRANSLUCENT);
+				if ((netgame && i != serverplayer) || (cv_mindelay.value && P_IsLocalPlayer(&players[i])))
+				{
+					ping = playerpingtable[i];
+
+					if (P_IsLocalPlayer(&players[i]) && ping <= (tic_t)cv_mindelay.value)
+					{
+						ping = cv_mindelay.value;
+					}
+
+					HU_drawPing((templength - duptweak)+8, height-20, ping, V_TRANSLUCENT);
+				}
 			}
 
 			if ((length += len) >= dupadjust+8)
