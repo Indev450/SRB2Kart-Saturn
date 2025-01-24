@@ -541,7 +541,7 @@ void D_ResetTiccmds(void)
 
 ticcmd_t *D_LocalTiccmd(UINT8 ss)
 {
-	return &localcmds[ss];
+	return &localcmds[ss][0];
 }
 
 // -----------------------------------------------------------------
