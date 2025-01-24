@@ -125,6 +125,8 @@ consvar_t cv_coloredspeedlines = {"colorizedspeedlines", "Off", CV_SAVE, colorsp
 consvar_t cv_coloredsneakertrail = {"sneakertrailcolor", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_bananajitter = {"bananadragjitter", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+static CV_PossibleValue_t bananthrowroll_cons_t[] = {{0, "Off"}, {1, "Throw"}, {2, "+Onground"}, {0, NULL}};
+consvar_t cv_bananthrowroll = {"bananthrowroll", "0", CV_SAVE, bananthrowroll_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 //extra hud things
 consvar_t cv_showstats = {"showstats", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -885,6 +887,7 @@ void K_RegisterKartStuff(void)
 
 	// makes banans do funny jitter jumpy when dragged
 	CV_RegisterVar(&cv_bananajitter);
+	CV_RegisterVar(&cv_bananthrowroll);
 
 	CV_RegisterVar(&cv_showstats);
 	CV_RegisterVar(&cv_showinput);
@@ -4077,6 +4080,15 @@ static mobj_t *K_ThrowKartItem(player_t *player, boolean missile, mobjtype_t map
 
 				if (mo->eflags & MFE_UNDERWATER)
 					mo->momz = (117 * mo->momz) / 200;
+
+				if (cv_sloperoll.value == 2 && cv_bananthrowroll.value && mapthing == MT_BANANA)
+				{
+					//mo->angle = FixedAngle(M_RandomRange(-180, 180) << FRACBITS);
+					if (cv_bananthrowroll.value == 1)
+						mo->sloperoll = FixedAngle(M_RandomRange(-180, 180) << FRACBITS); // im lazy but this makes sure the banan goes back to upright when it lands lmao
+					else if (cv_bananthrowroll.value == 2)
+						mo->rollangle = FixedAngle(M_RandomRange(-180, 180) << FRACBITS);
+				}
 			}
 
 			// this is the small graphic effect that plops in you when you throw an item:
