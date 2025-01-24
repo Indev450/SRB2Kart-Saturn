@@ -83,6 +83,8 @@ consvar_t cv_coloredspeedlines = {"colorizedspeedlines", "Off", CV_SAVE, colorsp
 consvar_t cv_coloredsneakertrail = {"sneakertrailcolor", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_bananajitter = {"bananadragjitter", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+static CV_PossibleValue_t bananthrowroll_cons_t[] = {{0, "Off"}, {1, "Throw"}, {2, "+Onground"}, {0, NULL}};
+consvar_t cv_bananthrowroll = {"bananthrowroll", "0", CV_SAVE, bananthrowroll_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 //extra hud things
 consvar_t cv_showstats = {"showstats", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -839,6 +841,7 @@ void K_RegisterKartStuff(void)
 
 	// makes banans do funny jitter jumpy when dragged
 	CV_RegisterVar(&cv_bananajitter);
+	CV_RegisterVar(&cv_bananthrowroll);
 
 	CV_RegisterVar(&cv_showstats);
 	CV_RegisterVar(&cv_showinput);
@@ -3557,6 +3560,62 @@ void K_RollMobjBySlopes(mobj_t* mo, boolean usedistance)
 	}
 }
 
+static void K_SetPitchRollFromSlope(mobj_t* mo, pslope_t *slope, boolean usedistance)
+{
+	if (P_MobjWasRemoved(mo))
+		return;
+
+	I_Assert(mo->subsector != NULL);
+	I_Assert(mo->subsector->sector != NULL);
+
+	// lifted from hw_md2
+	if (slope)
+	{
+		angle_t an;
+		const boolean flip = (mo->eflags & MFE_VERTICALFLIP);
+		const fixed_t m_dist = usedistance ? R_PointToDist(mo->x, mo->y) : 0;
+		const fixed_t rolldist = cv_sloperolldist.value * mapobjectscale;
+
+		fixed_t tempz = slope->normal.z;
+		fixed_t tempy = slope->normal.y;
+		fixed_t tempx = slope->normal.x;
+		fixed_t tempangle = -(R_PointToAngle2(0, 0, FixedSqrt(FixedMul(tempy, tempy) + FixedMul(tempz, tempz)), tempx));
+
+		// admittedly this is a very hacky way to do the pitch and roll easing
+
+		// pitch
+		if (!usedistance || (m_dist <= (rolldist)))
+		{
+			an = (INT32)((angle_t)tempangle - mo->pitch_sprite) / SLOPEROLL_DIV;
+
+			mo->pitch_sprite = an ? mo->pitch_sprite + an : (angle_t)tempangle;
+		}
+		else
+			mo->pitch_sprite = FixedAngle(0);
+
+		mo->slopepitch = flip ? InvAngle(mo->pitch_sprite) : mo->pitch_sprite;
+
+		// roll
+		tempangle = (R_PointToAngle2(0, 0, tempz, tempy));
+
+		if (!usedistance || (m_dist <= (rolldist)))
+		{
+			an = (INT32)((angle_t)tempangle - mo->roll_sprite) / SLOPEROLL_DIV;
+
+			mo->roll_sprite = an ? mo->roll_sprite + an : (angle_t)tempangle;
+		}
+		else
+			mo->roll_sprite = FixedAngle(0);
+
+		mo->sloperoll = flip ? InvAngle(mo->roll_sprite) : mo->roll_sprite;
+	}
+	else if (P_IsObjectOnGround(mo))
+	{
+		mo->sloperoll = FixedAngle(0);
+		mo->slopepitch = FixedAngle(0);
+	}
+}
+
 void K_SpawnBoostTrail(player_t *player)
 {
 	fixed_t newx;
@@ -3918,6 +3977,15 @@ static mobj_t *K_ThrowKartItem(player_t *player, boolean missile, mobjtype_t map
 
 				if (mo->eflags & MFE_UNDERWATER)
 					mo->momz = (117 * mo->momz) / 200;
+
+				if (cv_sloperoll.value == 2 && cv_bananthrowroll.value && mapthing == MT_BANANA)
+				{
+					//mo->angle = FixedAngle(M_RandomRange(-180, 180) << FRACBITS);
+					if (cv_bananthrowroll.value == 1)
+						mo->sloperoll = FixedAngle(M_RandomRange(-180, 180) << FRACBITS); // im lazy but this makes sure the banan goes back to upright when it lands lmao
+					else if (cv_bananthrowroll.value == 2)
+						mo->rollangle = FixedAngle(M_RandomRange(-180, 180) << FRACBITS);
+				}
 			}
 
 			// this is the small graphic effect that plops in you when you throw an item:
@@ -4653,6 +4721,150 @@ void K_RepairOrbitChain(mobj_t *orbit)
 	}
 }
 
+// Simplified version of a code bit in P_MobjFloorZ
+static fixed_t K_BananaSlopeZ(pslope_t *slope, fixed_t x, fixed_t y, fixed_t z, fixed_t radius, boolean ceiling)
+{
+	fixed_t testx, testy;
+	fixed_t slopez = 0;
+
+	if (slope == NULL)
+	{
+		testx = x;
+		testy = y;
+	}
+	else
+	{
+		if (slope->d.x < 0)
+			testx = radius;
+		else
+			testx = -radius;
+
+		if (slope->d.y < 0)
+			testy = radius;
+		else
+			testy = -radius;
+
+		if ((slope->zdelta > 0) ^ !!(ceiling))
+		{
+			testx = -testx;
+			testy = -testy;
+		}
+
+		testx += x;
+		testy += y;
+	}
+
+	if (slope)
+	{
+		slopez = P_GetZAt(slope, testx, testy);
+	}
+	else
+		slopez = z;
+
+	return slopez;
+}
+
+static void K_CalculateBananaSlope(mobj_t *mobj, fixed_t x, fixed_t y, fixed_t z, fixed_t radius, fixed_t height, boolean flip, boolean player)
+{
+	fixed_t newz;
+	sector_t *sec;
+	pslope_t *slope = NULL;
+
+	//sec = R_PointInSubsector(x, y)->sector;
+
+	if (mobj->x != x || mobj->y != y || mobj->subsector == NULL)
+		sec = R_PointInSubsector(x, y)->sector;
+	else
+		sec = mobj->subsector->sector;
+
+	if (flip)
+	{
+		slope = sec->c_slope;
+		newz = K_BananaSlopeZ(slope, x, y, sec->ceilingheight, radius, true);
+	}
+	else
+	{
+		slope = sec->f_slope;
+		newz = K_BananaSlopeZ(slope, x, y, sec->floorheight, radius, true);
+	}
+
+	// Check FOFs for a better suited slope
+	if (sec->ffloors)
+	{
+		ffloor_t *rover;
+
+		for (rover = sec->ffloors; rover; rover = rover->next)
+		{
+			fixed_t top, bottom;
+			fixed_t d1, d2;
+
+			if (!(rover->flags & FF_EXISTS))
+				continue;
+
+			if ((!(((rover->flags & FF_BLOCKPLAYER && player)
+				|| (rover->flags & FF_BLOCKOTHERS && !player))
+				|| (rover->flags & FF_QUICKSAND))
+				|| (rover->flags & FF_SWIMMABLE)))
+				continue;
+
+			top = K_BananaSlopeZ(*rover->t_slope, x, y, *rover->topheight, radius, false);
+			bottom = K_BananaSlopeZ(*rover->b_slope, x, y, *rover->bottomheight, radius, true);
+
+			if (flip)
+			{
+				if (rover->flags & FF_QUICKSAND)
+				{
+					if (z < top && (z + height) > bottom)
+					{
+						if (newz > (z + height))
+						{
+							newz = (z + height);
+							slope = NULL;
+						}
+					}
+					continue;
+				}
+
+				d1 = (z + height) - (top + ((bottom - top)/2));
+				d2 = z - (top + ((bottom - top)/2));
+
+				if (bottom < newz && abs(d1) < abs(d2))
+				{
+					newz = bottom;
+					slope = *rover->b_slope;
+				}
+			}
+			else
+			{
+				if (rover->flags & FF_QUICKSAND)
+				{
+					if (z < top && (z + height) > bottom)
+					{
+						if (newz < z)
+						{
+							newz = z;
+							slope = NULL;
+						}
+					}
+					continue;
+				}
+
+				d1 = z - (bottom + ((top - bottom)/2));
+				d2 = (z + height) - (bottom + ((top - bottom)/2));
+
+				if (top > newz && abs(d1) < abs(d2))
+				{
+					newz = top;
+					slope = *rover->t_slope;
+				}
+			}
+		}
+	}
+
+	//mobj->standingslope = slope;
+	K_SetPitchRollFromSlope(mobj, slope, (cv_sloperolldist.value && !splitscreen));
+}
+
 // Move the hnext chain!
 static void K_MoveHeldObjects(player_t *player)
 {
@@ -4847,6 +5059,12 @@ static void K_MoveHeldObjects(player_t *player)
 
 					if (R_PointToDist2(cur->x, cur->y, targx, targy) > 768*FRACUNIT)
 						P_MoveOrigin(cur, targx, targy, cur->z);
+
+					if (cv_sloperoll.value == 2 && P_IsObjectOnGround(cur))
+					{
+						K_CalculateBananaSlope(cur, cur->x, cur->y, cur->z,
+											   cur->radius, cur->height, (cur->eflags & MFE_VERTICALFLIP), false);
+					}
 
 					cur = cur->hnext;
 				}
