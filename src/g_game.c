@@ -2002,11 +2002,11 @@ void G_Ticker(boolean run)
 
 		for (UINT8 j = 0; j < MAXSPLITSCREENPLAYERS;j++)
 		{
-			if (camtoggledelay[i])
-				camtoggledelay[i]--;
+			if (camtoggledelay[j])
+				camtoggledelay[j]--;
 
-			if (spectatedelay[i])
-				spectatedelay[i]--;
+			if (spectatedelay[j])
+				spectatedelay[j]--;
 		}
 
 		if (gametic % NAMECHANGERATE == 0)
