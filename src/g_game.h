@@ -435,11 +435,32 @@ void G_ClearRecords(void);
 
 tic_t G_GetBestTime(INT16 map);
 
-FUNCMATH INT32 G_TicsToHours(tic_t tics);
-FUNCMATH INT32 G_TicsToMinutes(tic_t tics, boolean full);
-FUNCMATH INT32 G_TicsToSeconds(tic_t tics);
-FUNCMATH INT32 G_TicsToCentiseconds(tic_t tics);
-FUNCMATH INT32 G_TicsToMilliseconds(tic_t tics);
+// Time utility functions
+
+FUNCINLINE static ATTRINLINE FUNCMATH INT32 G_TicsToHours(tic_t tics)
+{
+	return tics/(3600*TICRATE);
+}
+
+FUNCINLINE static ATTRINLINE FUNCMATH INT32 G_TicsToMinutes(tic_t tics, boolean full)
+{
+	return full ? (tics/(60*TICRATE)) : (tics/(60*TICRATE)%60);
+}
+
+FUNCINLINE static ATTRINLINE FUNCMATH INT32 G_TicsToSeconds(tic_t tics)
+{
+	return (tics/TICRATE)%60;
+}
+
+FUNCINLINE static ATTRINLINE FUNCMATH INT32 G_TicsToCentiseconds(tic_t tics)
+{
+	return (INT32)((tics%TICRATE) * (100.00f/TICRATE));
+}
+
+FUNCINLINE static ATTRINLINE FUNCMATH INT32 G_TicsToMilliseconds(tic_t tics)
+{
+	return (INT32)((tics%TICRATE) * (1000.00f/TICRATE));
+}
 
 // Don't split up TOL handling
 INT16 G_TOLFlag(INT32 pgametype);
