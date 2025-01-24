@@ -8879,7 +8879,7 @@ static void M_DrawStatsExtra(void)
 	DRAWTIMESTAT(52, "Time spent in spinout:", spinouttime);
 
 	DRAWAMOUNTSTAT(72, "Total wins:", totalwins);
-	DRAWAMOUNTSTAT(82, "Total podium (2nd/3rd place):", totalwins);
+	DRAWAMOUNTSTAT(82, "Total podium (2nd/3rd place):", totalpodium);
 
 	DRAWAMOUNTSTAT(102, "Hits landed:", hits);
 	DRAWAMOUNTSTAT(112, "Self-hits landed:", selfhits);
