@@ -107,11 +107,24 @@ UINT32 playerpingtable[MAXPLAYERS]; //table of player latency values.
 #define GENTLEMANSMOOTHING (TICRATE)
 static tic_t reference_lag;
 static UINT8 spike_time;
+tic_t lowest_lag;
+boolean server_lagless;
 
-static tic_t lowest_lag;
+static void Lagless_OnChange(void)
+{
+	/* don't back out of dishonesty, or go lagless after playing honestly */
+	if (cv_lagless.value && gamestate == GS_LEVEL)
+		server_lagless = true;
+
+	/*if (cv_lagless.value)
+		HU_AddChatText(M_GetText("\x82*Gentlemans Delay has been enabled for Serverplayer."), false);
+	else
+		HU_AddChatText(M_GetText("\x82*Gentlemans Delay will be disabled for Serverplayer."), false);*/
+}
 
 static CV_PossibleValue_t mindelay_cons_t[] = {{0, "MIN"}, {30, "MAX"}, {0, NULL}};
 consvar_t cv_mindelay = {"mindelay", "0", CV_SAVE, mindelay_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_lagless = {"serverlagless", "On", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, Lagless_OnChange, 0, NULL, NULL, 0, 0, NULL}; // this should be a netvar Zzz...
 
 SINT8 nodetoplayer[MAXNETNODES];
 SINT8 nodetoplayer2[MAXNETNODES]; // say the numplayer for this node if any (splitscreen)
@@ -6602,7 +6615,7 @@ static void UpdatePingTable(void)
 			{
 				realpingtable[i] += GetLag(playernode[i]);
 
-				if (!players[i].spectator)
+				if (!server_lagless && !players[i].spectator)
 				{
 					lag = playerpingtable[i];
 					if (! fastest || lag < fastest)
@@ -6611,30 +6624,16 @@ static void UpdatePingTable(void)
 			}
 		}
 
-		lowest_lag = fastest;
+		if (server_lagless)
+			lowest_lag = 0;
+		else
+			lowest_lag = fastest;
 
 		// Don't gentleman below your mindelay
 		if (lowest_lag < (tic_t)cv_mindelay.value)
 			lowest_lag = (tic_t)cv_mindelay.value;
 
 		pingmeasurecount++;
-
-#if 0
-		switch (playerpernode[0])
-		{
-			case 4:
-				realpingtable[nodetoplayer4[0]] = lowest_lag;
-				/*FALLTHRU*/
-			case 3:
-				realpingtable[nodetoplayer3[0]] = lowest_lag;
-				/*FALLTHRU*/
-			case 2:
-				realpingtable[nodetoplayer2[0]] = lowest_lag;
-				/*FALLTHRU*/
-			case 1:
-				realpingtable[nodetoplayer[0]] = lowest_lag;
-		}
-#endif
 	}
 	else // We're a client, handle mindelay on the way out.
 	{

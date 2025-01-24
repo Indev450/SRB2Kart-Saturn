@@ -2464,11 +2464,11 @@ void HU_drawPlayerPing(INT32 x, INT32 y, INT32 pnum, INT32 flags)
 	//INT32 dx;
 
 	UINT32 lag = playerpingtable[pnum];
-	const boolean gentleman = (cv_mindelay.value && (lag < (tic_t)cv_mindelay.value) && P_IsLocalPlayer(&players[pnum]));
+	const boolean gentleman = ((cv_mindelay.value && (lag < (tic_t)cv_mindelay.value) && P_IsLocalPlayer(&players[pnum])) || (pnum == serverplayer && lowest_lag != 0)); // for serverplayer lowest_lag actually reflects mindelay
 
 	if (gentleman)
 	{
-		lag = cv_mindelay.value;
+		lag = (pnum == serverplayer) ? lowest_lag : (tic_t)cv_mindelay.value;
 	}
 
 	if (cv_pingstyle.value == 0) // kart
