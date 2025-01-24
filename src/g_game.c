@@ -7845,7 +7845,6 @@ void G_DoneLevelLoad(void)
 // Stops metal sonic's demo. Separate from other functions because metal + replays can coexist
 void G_StopMetalDemo(void)
 {
-
 	// Metal Sonic finishing doesn't end the game, dammit.
 	Z_Free(metalbuffer);
 	metalbuffer = NULL;
@@ -8179,33 +8178,4 @@ void G_ClearRetryFlag(void)
 boolean G_GetRetryFlag(void)
 {
 	return retrying;
-}
-
-// Time utility functions
-INT32 G_TicsToHours(tic_t tics)
-{
-	return tics/(3600*TICRATE);
-}
-
-INT32 G_TicsToMinutes(tic_t tics, boolean full)
-{
-	if (full)
-		return tics/(60*TICRATE);
-	else
-		return tics/(60*TICRATE)%60;
-}
-
-INT32 G_TicsToSeconds(tic_t tics)
-{
-	return (tics/TICRATE)%60;
-}
-
-INT32 G_TicsToCentiseconds(tic_t tics)
-{
-	return (INT32)((tics%TICRATE) * (100.00f/TICRATE));
-}
-
-INT32 G_TicsToMilliseconds(tic_t tics)
-{
-	return (INT32)((tics%TICRATE) * (1000.00f/TICRATE));
 }
