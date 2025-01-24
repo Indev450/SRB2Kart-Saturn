@@ -288,9 +288,9 @@ void OglSdlFinishUpdate(boolean waitvbl)
 #endif
 
 #ifdef USE_FBO_OGL
-	GL_DrawScreenFinalTexture(HWD_SCREENTEXTURE_GENERIC2, sdlw, sdlh, (HWR_ShouldUsePaletteRendering() || fbo_shader));
+	HWR_DrawScreenFinalTexture(sdlw, sdlh, (HWR_ShouldUsePaletteRendering() || fbo_shader));
 #else
-	GL_DrawScreenFinalTexture(HWD_SCREENTEXTURE_GENERIC2, sdlw, sdlh, HWR_ShouldUsePaletteRendering());
+	HWR_DrawScreenFinalTexture(sdlw, sdlh, HWR_ShouldUsePaletteRendering());
 #endif
 
 #ifdef USE_FBO_OGL
@@ -312,7 +312,7 @@ void OglSdlFinishUpdate(boolean waitvbl)
 #else
 	if (!I_CheckNativeRes() || WipeInAction)
 #endif
-		GL_DrawScreenFinalTexture(HWD_SCREENTEXTURE_GENERIC2, realwidth, realheight, false);
+		HWR_DrawScreenFinalTexture(realwidth, realheight, false);
 
 #if defined (__unix__)
 #ifdef USE_FBO_OGL
