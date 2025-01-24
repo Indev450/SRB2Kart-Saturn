@@ -5397,11 +5397,15 @@ void K_KartPlayerHUDUpdate(player_t *player)
 		player->kartstuff[k_cardanimation] = 0;
 }
 
-static inline void K_SpawnNormalSpeedLines(player_t *player)
+typedef INT32 (*randomFunc)(INT32 min, INT32 max);
+
+static inline void K_SpawnNormalSpeedLines(player_t *player, boolean synched)
 {
-	mobj_t *fast = P_SpawnMobj(player->mo->x + (P_RandomRange(-36,36) * player->mo->scale),
-							   player->mo->y + (P_RandomRange(-36,36) * player->mo->scale),
-							   player->mo->z + (player->mo->height/2) + (P_RandomRange(-20,20) * player->mo->scale),
+	randomFunc randomfunc = synched ? P_RandomRange : M_RandomRange;
+
+	mobj_t *fast = P_SpawnMobj(player->mo->x + (randomfunc(-36,36) * player->mo->scale),
+							   player->mo->y + (randomfunc(-36,36) * player->mo->scale),
+							   player->mo->z + (player->mo->height/2) + (randomfunc(-20,20) * player->mo->scale),
 							   MT_FASTLINE);
 
 	fast->angle = R_PointToAngle2(0, 0, player->mo->momx, player->mo->momy);
@@ -5416,7 +5420,6 @@ static inline void K_SpawnNormalSpeedLines(player_t *player)
 	{
 		const boolean goodSpeed = (player->speed >= (3*K_GetKartSpeed(player, false))/4);
 
-		// cant have nice shit cause of synched rng
 		if (player->kartstuff[k_eggmanexplode])
 		{
 			// Make it red when you have the eggman speed boost
@@ -5467,9 +5470,13 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	K_GetKartBoostPower(player);
 
 	// Speed lines
-	if ((player->kartstuff[k_sneakertimer] || player->kartstuff[k_driftboost] || player->kartstuff[k_startboost] /*|| player->kartstuff[k_eggmanexplode]*/) && player->speed > 0) // gotta love the speedlines calling synched rng :chaosleep:
+	if ((player->kartstuff[k_sneakertimer] || player->kartstuff[k_driftboost] || player->kartstuff[k_startboost]) && player->speed > 0)
 	{
-		K_SpawnNormalSpeedLines(player);
+		K_SpawnNormalSpeedLines(player, true);
+	}
+	else if (cv_coloredspeedlines.value && player->kartstuff[k_eggmanexplode]) // gotta love the speedlines calling synched rng :chaosleep:
+	{
+		K_SpawnNormalSpeedLines(player, false);
 	}
 
 	if (player->playerstate == PST_DEAD || player->kartstuff[k_respawn] > 1) // Ensure these are set correctly here
