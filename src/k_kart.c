@@ -9127,9 +9127,10 @@ void HU_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, I
 		const boolean whiteplayer = _isHighlightedPlayer(&players[pnum]);
 		const INT32 philicol = (whiteplayer ? V_SkinColorToHighlightcolor(players[pnum].skincolor) : 0);
 
-		if (netgame // don't draw it offline
-		&& pnum != serverplayer)
-			HU_drawPing(x + ((i < 8) ? -17 : rightoffset + 11), y-4, playerpingtable[pnum], 0);
+		if ((netgame && pnum != serverplayer) || (cv_mindelay.value && P_IsLocalPlayer(&players[pnum])))
+		{
+			HU_drawPlayerPing(x + ((i < 8) ? -17 : rightoffset + 11), y-4, pnum, 0);
+		}
 
 		STRBUFCPY(strtime, tab[i].name);
 

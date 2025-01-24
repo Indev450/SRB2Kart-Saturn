@@ -1462,11 +1462,14 @@ void I_FinishUpdate(void)
 	if (I_SkipFrame())
 		return;
 
-	if (cv_ticrate.value && st_overlay)
-		SCR_DisplayTicRate();
+	if (st_overlay)
+	{
+		if (cv_ticrate.value)
+			SCR_DisplayTicRate();
 
-	if (cv_showping.value && netgame && consoleplayer != serverplayer && st_overlay)
-		SCR_DisplayLocalPing();
+		if (cv_showping.value && ((netgame && consoleplayer != serverplayer) || ((cv_mindelay.value || (!server_lagless && lowest_lag != 0)) && consoleplayer == serverplayer && Playing())))
+			SCR_DisplayLocalPing();
+	}
 
 #ifdef HAVE_DISCORDRPC
 	if (discordRequestList != NULL)
