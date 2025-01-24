@@ -1206,6 +1206,7 @@ mobj_t *P_SpawnGhostMobj(mobj_t *mobj)
 	ghost->spriteyscale = mobj->spriteyscale;
 	ghost->spritexoffset = mobj->spritexoffset;
 	ghost->spriteyoffset = mobj->spriteyoffset;
+	ghost->rollangle = mobj->rollangle;
 
 	if (mobj->flags2 & MF2_OBJECTFLIP)
 		ghost->flags |= MF2_OBJECTFLIP;
