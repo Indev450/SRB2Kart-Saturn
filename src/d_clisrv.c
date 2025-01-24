@@ -117,9 +117,9 @@ static void Lagless_OnChange(void)
 		server_lagless = true;
 
 	/*if (cv_lagless.value)
-		HU_AddChatText(M_GetText("\x82*Gentlemans Delay has been enabled for Serverplayer."), false);
+		HU_AddChatText(M_GetText("\x82*Gentlemans Delay has been disabled for Serverplayer."), false);
 	else
-		HU_AddChatText(M_GetText("\x82*Gentlemans Delay will be disabled for Serverplayer."), false);*/
+		HU_AddChatText(M_GetText("\x82*Gentlemans Delay will be enabled for Serverplayer."), false);*/
 }
 
 static CV_PossibleValue_t mindelay_cons_t[] = {{0, "MIN"}, {30, "MAX"}, {0, NULL}};
