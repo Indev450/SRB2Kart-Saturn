@@ -911,6 +911,7 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_netstat);
 	CV_RegisterVar(&cv_netticbuffer);
 	CV_RegisterVar(&cv_mindelay);
+	CV_RegisterVar(&cv_lagless);
 
 #ifdef NETGAME_DEVMODE
 	CV_RegisterVar(&cv_fishcake);
