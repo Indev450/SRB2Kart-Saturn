@@ -314,7 +314,7 @@ static void Y_AnimatedVoteScreenCheck(void)
 	currentAnimFrame = 0;
 
 	INT32 i = 1;
-	while(!stopSearching)
+	while (!stopSearching)
 	{
 		boolean normalLumpExists = W_LumpExists(va("%sC%d", tmpPrefix, i));
 		boolean wideLumpExists = W_LumpExists(va("%sW%d", tmpPrefix, i));
@@ -413,7 +413,6 @@ static void Y_PlayerStandingsDrawer(y_data_t *standings, INT32 x, INT32 hilicol)
 					faceprefix = (cv_highresportrait.value ? facewantprefix[skinnum] : facerankprefix[skinnum]);
 				else
 					faceprefix = (cv_highresportrait.value ? localfacewantprefix[skinnum] : localfacerankprefix[skinnum]);
-
 
 				if (cv_highresportrait.value)
 					V_DrawSmallMappedPatch(x + 16, y - 4, 0, faceprefix, colormap);
