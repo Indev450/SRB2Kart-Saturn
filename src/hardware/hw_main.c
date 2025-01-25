@@ -317,24 +317,9 @@ static void CV_glpalettedepth_OnChange(void)
 // Lighting
 // ==========================================================================
 
-boolean HWR_UseShader(void)
-{
-	return (cv_glshaders.value && gl_shadersavailable);
-}
-
 static void HWR_SetShaderState(void)
 {
 	GL_SetSpecialState(HWD_SET_SHADERS, HWR_UseShader() ? 1 : 0);
-}
-
-boolean HWR_ShouldUsePaletteRendering(void)
-{
-	return (cv_glpaletterendering.value && (pLocalPalette != NULL) && HWR_UseShader());
-}
-
-boolean HWR_PalRenderFlashpal(void)
-{
-	return (HWR_ShouldUsePaletteRendering() && cv_glflashpal.value);
 }
 
 void HWR_ObjectLightLevelPost(gl_vissprite_t *spr, const sector_t *sector, INT32 *lightlevel, boolean model, const boolean papersprite)
@@ -3188,7 +3173,7 @@ static gl_vissprite_t *gl_visspritechunks[MAXVISSPRITES >> VISSPRITECHUNKBITS] =
 // HWR_ClearSprites
 // Called at frame start.
 // --------------------------------------------------------------------------
-static void HWR_ClearSprites(void)
+static inline void HWR_ClearSprites(void)
 {
 	gl_visspritecount = 0;
 }
@@ -5785,11 +5770,6 @@ static void HWR_RenderWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD
 #endif
 }
 
-INT32 HWR_GetTextureUsed(void)
-{
-	return GL_GetTextureUsed();
-}
-
 static void HWR_DoPostProcessor(player_t *player)
 {
 	GL_UnSetShader();
@@ -5877,21 +5857,6 @@ static void HWR_DoPostProcessor(player_t *player)
 	// Flipping of the screen isn't done here anymore
 }
 
-void HWR_StartScreenWipe(void)
-{
-	GL_MakeScreenTexture(HWD_SCREENTEXTURE_WIPE_START);
-}
-
-void HWR_EndScreenWipe(void)
-{
-	GL_MakeScreenTexture(HWD_SCREENTEXTURE_WIPE_END);
-}
-
-void HWR_DrawIntermissionBG(void)
-{
-	GL_DrawScreenTexture(HWD_SCREENTEXTURE_GENERIC1, NULL, 0);
-}
-
 void HWR_DoWipe(UINT8 wipenum, UINT8 scrnnum)
 {
 	static char lumpname[9] = "FADEmmss";
@@ -5924,21 +5889,6 @@ void HWR_DoWipe(UINT8 wipenum, UINT8 scrnnum)
 
 	HWR_GetFadeMask(lumpnum);
 	GL_DoScreenWipe(HWD_SCREENTEXTURE_WIPE_START, HWD_SCREENTEXTURE_WIPE_END);
-}
-
-void HWR_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8 downdistort, UINT8 barsize)
-{
-	GL_RenderVhsEffect(upbary, downbary, updistort, downdistort, barsize);
-}
-
-void HWR_MakeScreenFinalTexture(void)
-{
-	GL_MakeScreenTexture(HWD_SCREENTEXTURE_GENERIC2);
-}
-
-void HWR_DrawScreenFinalTexture(INT32 width, INT32 height, boolean useshader)
-{
-	GL_DrawScreenFinalTexture(HWD_SCREENTEXTURE_GENERIC2, width, height, useshader);
 }
 
 #endif // HWRENDER

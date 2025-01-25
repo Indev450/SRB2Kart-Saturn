@@ -20,6 +20,7 @@
 #ifndef __HWR_MAIN_H__
 #define __HWR_MAIN_H__
 
+#include "hw_gl.h"
 #include "hw_glob.h"
 #include "hw_data.h"
 #include "hw_defs.h"
@@ -29,6 +30,7 @@
 #include "../d_player.h"
 #include "../r_defs.h"
 #include "../m_perfstats.h"
+#include "../v_video.h"
 
 #define GLENCORE
 
@@ -112,10 +114,6 @@ void HWR_SetTransform(float fpov);
 void HWR_ClearClipper(void);
 void HWR_SetStencilState(int state, int level);
 
-boolean HWR_UseShader(void);
-boolean HWR_ShouldUsePaletteRendering(void);
-boolean HWR_PalRenderFlashpal(void);
-
 // My original intention was to split hw_main.c
 // into files like hw_bsp.c, hw_sprites.c...
 
@@ -124,17 +122,44 @@ void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *col
 
 FBITFIELD HWR_TranstableToAlpha(INT32 transtablenum, FSurfaceInfo *pSurf);
 
-// Get amount of memory used by gpu textures in bytes
-INT32 HWR_GetTextureUsed(void);
+// Get amount of memory used by gpu textures in bytes;
+FUNCINLINE static ATTRINLINE INT32 HWR_GetTextureUsed(void)
+{
+    return GL_GetTextureUsed();
+}
 
 // hw_main.c: Post-rendering
-void HWR_StartScreenWipe(void);
-void HWR_EndScreenWipe(void);
-void HWR_DrawIntermissionBG(void);
 void HWR_DoWipe(UINT8 wipenum, UINT8 scrnnum);
-void HWR_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8 downdistort, UINT8 barsize);
-void HWR_MakeScreenFinalTexture(void);
-void HWR_DrawScreenFinalTexture(INT32 width, INT32 height, boolean useshader);
+
+FUNCINLINE static ATTRINLINE void HWR_StartScreenWipe(void)
+{
+    GL_MakeScreenTexture(HWD_SCREENTEXTURE_WIPE_START);
+}
+
+FUNCINLINE static ATTRINLINE void HWR_EndScreenWipe(void)
+{
+    GL_MakeScreenTexture(HWD_SCREENTEXTURE_WIPE_END);
+}
+
+FUNCINLINE static ATTRINLINE void HWR_DrawIntermissionBG(void)
+{
+    GL_DrawScreenTexture(HWD_SCREENTEXTURE_GENERIC1, NULL, 0);
+}
+
+FUNCINLINE static ATTRINLINE void HWR_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8 downdistort, UINT8 barsize)
+{
+    GL_RenderVhsEffect(upbary, downbary, updistort, downdistort, barsize);
+}
+
+FUNCINLINE static ATTRINLINE void HWR_MakeScreenFinalTexture(void)
+{
+    GL_MakeScreenTexture(HWD_SCREENTEXTURE_GENERIC2);
+}
+
+FUNCINLINE static ATTRINLINE void HWR_DrawScreenFinalTexture(INT32 width, INT32 height, boolean useshader)
+{
+    GL_DrawScreenFinalTexture(HWD_SCREENTEXTURE_GENERIC2, width, height, useshader);
+}
 
 // hw_main.c: Segs
 void HWR_ProcessSeg(void); // Sort of like GLWall::Process in GZDoom
@@ -184,5 +209,20 @@ extern consvar_t cv_glportals;
 extern consvar_t cv_glpaletterendering;
 extern consvar_t cv_glpalettedepth;
 extern consvar_t cv_glflashpal;
+
+FUNCINLINE static ATTRINLINE boolean HWR_UseShader(void)
+{
+    return (cv_glshaders.value && gl_shadersavailable);
+}
+
+FUNCINLINE static ATTRINLINE boolean HWR_ShouldUsePaletteRendering(void)
+{
+    return (cv_glpaletterendering.value && (pLocalPalette != NULL) && HWR_UseShader());
+}
+
+FUNCINLINE static ATTRINLINE boolean HWR_PalRenderFlashpal(void)
+{
+    return (HWR_ShouldUsePaletteRendering() && cv_glflashpal.value);
+}
 
 #endif

@@ -265,7 +265,7 @@ void OglSdlFinishUpdate(boolean waitvbl)
 	}
 #endif
 
-	GL_DrawScreenFinalTexture(HWD_SCREENTEXTURE_GENERIC2, sdlw, sdlh, HWR_ShouldUsePaletteRendering());
+	HWR_DrawScreenFinalTexture(sdlw, sdlh, HWR_ShouldUsePaletteRendering());
 
 #ifdef USE_FBO_OGL
 	if (usefbo)
@@ -286,7 +286,7 @@ void OglSdlFinishUpdate(boolean waitvbl)
 #else
 	if (!I_CheckNativeRes() || WipeInAction)
 #endif
-		GL_DrawScreenFinalTexture(HWD_SCREENTEXTURE_GENERIC2, realwidth, realheight, false);
+		HWR_DrawScreenFinalTexture(realwidth, realheight, false);
 
 #if defined (__unix__)
 #ifdef USE_FBO_OGL
