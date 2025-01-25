@@ -436,7 +436,8 @@ static void P_DeviceRumbleTick(void)
 				low = high = FRACUNIT / 64;
 			}
 		}
-		else if (player->kartstuff[k_bananadrag] > TICRATE && P_IsObjectOnGround(player->mo))
+		else if ((player->kartstuff[k_bananadrag] > TICRATE)
+			&& P_IsObjectOnGround(player->mo) && player->speed != 0)
 		{
 			if (leveltime & 1) // this is actually funny lel
 				high = FRACUNIT / 64;
