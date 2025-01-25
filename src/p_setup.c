@@ -596,6 +596,50 @@ boolean P_ApplyLightOffsetFine(UINT8 baselightlevel, const sector_t *sector)
 	return (baselightlevel < 255 && baselightlevel > 0);
 }
 
+// dumb thing to reset maplight on next map change when its toggled
+boolean reinitmaplight = false;
+static void P_SetupDirectionalLight(void)
+{
+	mapheader_lighting_t *lighting = &mapheaderinfo[gamemap-1]->lighting;
+
+	if (encoremode && mapheaderinfo[gamemap-1]->use_encore_lighting)
+	{
+		lighting = &mapheaderinfo[gamemap-1]->lighting_encore;
+	}
+
+	if (cv_randomdirlight.value && lighting->use_custom_light == false)
+	{
+		static INT16 oldmap = 0; // dont reset stuff when you restart a map
+		static boolean oldencore = false;
+
+		if (gamemap != oldmap || encoremode != oldencore || reinitmaplight)
+		{
+			maplighting.contrast = M_RandomRange(0, 58);
+			maplighting.backlight = 0;
+			maplighting.directional = M_RandomRange(0, 1); // either on or off
+			maplighting.angle = M_RandomRange(-382, 382);
+
+			reinitmaplight = false;
+		}
+
+		oldmap = gamemap;
+		oldencore = encoremode;
+		return;
+	}
+	else if (lighting->use_custom_light == false)
+	{
+		maplighting.contrast = 8;
+		maplighting.backlight = 0;
+		maplighting.directional = false;
+		maplighting.angle = 0;
+	}
+
+	maplighting.contrast = lighting->light_contrast;
+	maplighting.backlight = lighting->sprite_backlight;
+	maplighting.directional = lighting->use_light_angle;
+	maplighting.angle = lighting->light_angle;
+}
+
 // Loads the SEGS resource from a level.
 static void P_LoadRawSegs(UINT8 *data)
 {
@@ -604,6 +648,9 @@ static void P_LoadRawSegs(UINT8 *data)
 	seg_t *li = segs;
 	line_t *ldef;
 	size_t i;
+
+	// Set map lighting settings.
+	P_SetupDirectionalLight();
 
 	for (i = 0; i < numsegs; i++, li++, ml++)
 	{
