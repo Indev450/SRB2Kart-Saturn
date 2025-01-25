@@ -2359,13 +2359,13 @@ Ping_gfx_num (int lag)
 static int
 Ping_gfx_color (int lag)
 {
-	if (lag <= 2)
+	if (lag < 2)
 		return SKINCOLOR_JAWZ;
-	else if (lag <= 4)
+	else if (lag < 4)
 		return SKINCOLOR_MINT;
-	else if (lag <= 7)
+	else if (lag < 7)
 		return SKINCOLOR_GOLD;
-	else if (lag <= 10)
+	else if (lag < 10)
 		return SKINCOLOR_RED;
 	else
 		return SKINCOLOR_WHITE; // SKINCOLOR_MAGENTA
