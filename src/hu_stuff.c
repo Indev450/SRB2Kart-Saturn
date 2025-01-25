@@ -2366,9 +2366,9 @@ Ping_gfx_color (int lag)
 	else if (lag <= 7)
 		return SKINCOLOR_GOLD;
 	else if (lag <= 10)
-		return SKINCOLOR_RASPBERRY;
+		return SKINCOLOR_RED;
 	else
-		return SKINCOLOR_MOONSLAM; // SKINCOLOR_MAGENTA
+		return SKINCOLOR_WHITE; // SKINCOLOR_MAGENTA
 }
 
 static const UINT8 *
@@ -2376,15 +2376,14 @@ Ping_gfx_colormap (UINT32 lag, boolean gentleman)
 {
 	const UINT8 *colormap = R_GetTranslationColormap(TC_RAINBOW, Ping_gfx_color(lag), GTC_CACHE);
 
-	if (gentleman)
-	{
-		colormap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_PASTEL, GTC_CACHE);
-	}
-
 	if (servermaxping && lag > servermaxping && hu_tick < 4)
 	{
 		// flash ping red if too high
 		colormap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_RASPBERRY, GTC_CACHE);
+	}
+	else if (gentleman)
+	{
+		colormap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_PASTEL, GTC_CACHE);
 	}
 
 	return colormap;
