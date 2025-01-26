@@ -7061,7 +7061,6 @@ void P_MobjThinker(mobj_t *mobj)
 			break;
 		//{ SRB2kart Items - Death States
 		case MT_BANANA:
-		{
 			if (cv_sloperoll.value == 2 && cv_bananthrowroll.value)
 			{
 				angle_t spin = FixedMul(FixedDiv(abs(mobj->momz), 8 * mobj->scale), ANGLE_67h);
@@ -7074,7 +7073,7 @@ void P_MobjThinker(mobj_t *mobj)
 
 				//if (P_IsObjectOnGround(mobj) && mobj->momz * P_MobjFlip(mobj) <= 0)
 			}
-		}
+			/* FALLTHRU */
 		case MT_ORBINAUT:
 		case MT_EGGMANITEM:
 		case MT_SPB:
@@ -7827,7 +7826,7 @@ void P_MobjThinker(mobj_t *mobj)
 				else if (cv_bananthrowroll.value == 2)
 					mobj->rollangle -= spin;
 			}
-
+			/* FALLTHRU */
 		case MT_EGGMANITEM:
 			mobj->friction = ORIG_FRICTION/4;
 			if (mobj->momx || mobj->momy)
