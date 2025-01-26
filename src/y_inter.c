@@ -950,29 +950,16 @@ static void Y_DrawVoteScreenPatch(void)
 		return;
 	}
 
-	patch_t *votebg = bgpatch;
+	patch_t *votebg = bgpatch; // non widescreen patch
+
 	UINT8 prefgametype = (votelevels[0][1] & ~0x80);
 	const boolean widebgreplaced = (prefgametype == GT_MATCH) ? widebattlereplaced : wideracereplaced;
 	const boolean bgreplaced = (prefgametype == GT_MATCH) ? battlereplaced : racereplaced;
 
-	// this is horrid
-	if (widescreen)
+	if ((widescreen && (widebgreplaced || !bgreplaced))
+	|| (!widescreen && (widebgreplaced && !bgreplaced)))
 	{
-		if (widebgreplaced)
-			votebg = widebgpatch;
-		else if (bgreplaced)
-			votebg = bgpatch;
-		else
-			votebg = widebgpatch;
-	}
-	else
-	{
-		if (bgreplaced)
-			votebg = bgpatch;
-		else if (widebgreplaced)
-			votebg = widebgpatch;
-		else
-			votebg = bgpatch;
+		votebg = widebgpatch;
 	}
 
 	V_DrawScaledPatch(((vid.width/2) / vid.dupx) - (SHORT(votebg->width)/2),
