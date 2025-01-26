@@ -915,7 +915,7 @@ static void Y_UnloadData(void)
 //
 // Draw animated patch based on frame counter on vote screen
 //
-static inline void Y_DrawAnimatedVoteScreenPatch(boolean widePatch)
+static void Y_DrawAnimatedVoteScreenPatch(boolean widePatch)
 {
 	char tempAnimPrefix[7];
 	widePatch ? strcpy(tempAnimPrefix, animWidePrefix) : strcpy(tempAnimPrefix, animPrefix);
@@ -932,6 +932,47 @@ static inline void Y_DrawAnimatedVoteScreenPatch(boolean widePatch)
 
 	if (renderisnewtic && votetic % 2 == 0 && !paused)
 		currentAnimFrame = (currentAnimFrame + 1 > tempFoundAnimVoteFrames - 1) ? 0 : currentAnimFrame + 1;
+}
+
+static void Y_DrawVoteScreenPatch(void)
+{
+	const boolean widescreen = (vid.width / vid.dupx > 320);
+	const boolean animvote = (foundAnimVoteWideFrames || foundAnimVoteFrames);
+
+	if (animvote)
+	{
+		Y_DrawAnimatedVoteScreenPatch((foundAnimVoteWideFrames && widescreen));
+		return;
+	}
+
+	patch_t *votebg = bgpatch;
+	UINT8 prefgametype = (votelevels[0][1] & ~0x80);
+	const boolean widebgreplaced = (prefgametype == GT_MATCH) ? widebattlereplaced : wideracereplaced;
+	const boolean bgreplaced = (prefgametype == GT_MATCH) ? battlereplaced : racereplaced;
+
+	// this is horrid
+	if (widescreen)
+	{
+		if (widebgreplaced)
+			votebg = widebgpatch;
+		else if (bgreplaced)
+			votebg = bgpatch;
+		else
+			votebg = widebgpatch;
+	}
+	else
+	{
+		if (bgreplaced)
+			votebg = bgpatch;
+		else if (widebgreplaced)
+			votebg = widebgpatch;
+		else
+			votebg = bgpatch;
+	}
+
+	V_DrawScaledPatch(((vid.width/2) / vid.dupx) - (SHORT(votebg->width)/2),
+					  (vid.height / vid.dupy) - SHORT(votebg->height),
+					  V_SNAPTOTOP|V_SNAPTOLEFT, votebg);
 }
 
 //
@@ -960,28 +1001,8 @@ void Y_VoteDrawer(void)
 
 	V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 31);
 
-	const boolean widescreen = (vid.width / vid.dupx > 320);
-
-	if (foundAnimVoteWideFrames && widescreen)
-	{
-		Y_DrawAnimatedVoteScreenPatch(true);
-	}
-	else if (foundAnimVoteFrames)
-	{
-		Y_DrawAnimatedVoteScreenPatch(false);
-	}
-	else if (widebgpatch && widescreen)
-	{
-		V_DrawScaledPatch(((vid.width/2) / vid.dupx) - (SHORT(widebgpatch->width)/2),
-							(vid.height / vid.dupy) - SHORT(widebgpatch->height),
-							V_SNAPTOTOP|V_SNAPTOLEFT, widebgpatch);
-	}
-	else
-	{
-		V_DrawScaledPatch(((vid.width/2) / vid.dupx) - (SHORT(bgpatch->width)/2), // Keep the width/height adjustments, for screens that are less wide than 320(?)
-							(vid.height / vid.dupy) - SHORT(bgpatch->height),
-							V_SNAPTOTOP|V_SNAPTOLEFT, bgpatch);
-	}
+	// decides which votebg to draw and draws it
+	Y_DrawVoteScreenPatch();
 
 	for (i = 0; i < 4; i++) // First, we need to figure out the height of this thing...
 	{
