@@ -3205,6 +3205,12 @@ boolean P_AddWadFileLocal(const char *wadfilename)
 	return true;
 }
 
+// check for replacement votescreen backgrounds
+boolean wideracereplaced = false;
+boolean racereplaced = false;
+boolean widebattlereplaced = false;
+boolean battlereplaced = false;
+
 //
 // Add a WAD file and do the per-WAD setup stages.
 // Call P_MultiSetupWadFiles as soon as possible after any number of these.
@@ -3330,6 +3336,41 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, boolean local)
 
 	// TODO: Experimental SPRTINFO support, test first
 	R_LoadSpriteInfoLumps(wadnum, wadfiles[wadnum]->numlumps);
+
+	//
+	// check for votescreen replacements
+	//
+	lumpinfo = wadfiles[wadnum]->lumpinfo;
+	for (i = 0; i < numlumps; i++, lumpinfo++)
+	{
+		name = lumpinfo->name;
+
+		// widescreen patch Race
+		if (!wideracereplaced && !strncmp(name, "INTERSCW", 8))
+		{
+			wideracereplaced = true;
+			continue;
+		}
+
+		if (!racereplaced && !strncmp(name, "INTERSCR", 8))
+		{
+			racereplaced = true;
+			continue;
+		}
+
+		// widescreen patch Battle
+		if (!widebattlereplaced && !strncmp(name, "BATTLSCW", 8))
+		{
+			widebattlereplaced = true;
+			continue;
+		}
+
+		if (!battlereplaced && !strncmp(name, "BATTLSCR", 8))
+		{
+			battlereplaced = true;
+			continue;
+		}
+	}
 
 	refreshdirmenu &= ~REFRESHDIR_GAMEDATA; // Under usual circumstances we'd wait for REFRESHDIR_GAMEDATA to disappear the next frame, but it's a bit too dangerous for that...
 	partadd_stage = 0;
