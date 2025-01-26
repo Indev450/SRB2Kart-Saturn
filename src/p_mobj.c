@@ -7127,8 +7127,22 @@ void P_MobjThinker(mobj_t *mobj)
 			}
 			break;
 		//{ SRB2kart Items - Death States
-		case MT_ORBINAUT:
 		case MT_BANANA:
+		{
+			if (cv_sloperoll.value == 2 && cv_bananthrowroll.value)
+			{
+				angle_t spin = FixedMul(FixedDiv(abs(mobj->momz), 8 * mobj->scale), ANGLE_67h);
+				//mobj->angle -= spin;
+
+				if (cv_bananthrowroll.value == 1)
+					mobj->sloperoll += spin; // im lazy but this makes sure the banan goes back to upright when it lands lmao
+				else if (cv_bananthrowroll.value == 2)
+					mobj->rollangle += spin;
+
+				//if (P_IsObjectOnGround(mobj) && mobj->momz * P_MobjFlip(mobj) <= 0)
+			}
+		}
+		case MT_ORBINAUT:
 		case MT_EGGMANITEM:
 		case MT_SPB:
 			if (P_IsObjectOnGround(mobj))
@@ -7873,6 +7887,18 @@ void P_MobjThinker(mobj_t *mobj)
 		}
 		case MT_BANANA:
 			//P_MobjCheckWaterVisual(mobj);
+			if (cv_sloperoll.value == 2 && cv_bananthrowroll.value && !P_IsObjectOnGround(mobj))
+			{
+				// tilt n tumble
+				angle_t spin = FixedMul(FixedDiv(mobj->momz, 8 * mobj->scale), ANGLE_67h);
+				//mobj->angle += spin;
+
+				if (cv_bananthrowroll.value == 1)
+					mobj->sloperoll -= spin; // im lazy but this makes sure the banan goes back to upright when it lands lmao
+				else if (cv_bananthrowroll.value == 2)
+					mobj->rollangle -= spin;
+			}
+
 		case MT_EGGMANITEM:
 			mobj->friction = ORIG_FRICTION/4;
 			if (mobj->momx || mobj->momy)
