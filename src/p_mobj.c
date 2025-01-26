@@ -6176,7 +6176,7 @@ angle_t P_MobjPitchAndRoll(mobj_t *mobj)
 	return return_angle;
 }
 
-static void P_SpawnItemLandDust(mobj_t *mobj)
+/*static void P_SpawnItemLandDust(mobj_t *mobj)
 {
 	const UINT8 numParticles = 5;
 	const angle_t diff = ANGLE_MAX / numParticles;
@@ -6210,7 +6210,7 @@ static void P_SpawnItemLandDust(mobj_t *mobj)
 		P_SetObjectMomZ(spark, (4 + M_RandomRange(-4, 4)) * FRACUNIT, true);
 		P_Thrust(spark, spark->angle, (6 + M_RandomRange(-4, 4)) * spark->scale);
 	}
-}
+}*/
 
 //
 // P_MobjThinker
@@ -7944,7 +7944,7 @@ void P_MobjThinker(mobj_t *mobj)
 				mobj->momx = mobj->momy = 0;
 				mobj->health = 1;
 
-				P_SpawnItemLandDust(mobj);
+				//P_SpawnItemLandDust(mobj);
 			}
 
 			P_RollPitchMobj(mobj);
@@ -7992,7 +7992,7 @@ void P_MobjThinker(mobj_t *mobj)
 					P_SetMobjState(mobj, S_SSMINE_DEPLOY1);
 				}
 
-				P_SpawnItemLandDust(mobj);
+				//P_SpawnItemLandDust(mobj);
 			}
 
 			if ((mobj->state >= &states[S_SSMINE1] && mobj->state <= &states[S_SSMINE4])
