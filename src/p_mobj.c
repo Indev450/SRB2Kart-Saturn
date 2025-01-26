@@ -7921,6 +7921,7 @@ void P_MobjThinker(mobj_t *mobj)
 			break;
 		}
 		case MT_BANANA:
+		case MT_EGGMANITEM:
 			//P_MobjCheckWaterVisual(mobj);
 			if (cv_sloperoll.value == 2 && cv_bananthrowroll.value && !P_IsObjectOnGround(mobj))
 			{
@@ -7933,8 +7934,7 @@ void P_MobjThinker(mobj_t *mobj)
 				else if (cv_bananthrowroll.value == 2)
 					mobj->rollangle -= spin;
 			}
-			/* FALLTHRU */
-		case MT_EGGMANITEM:
+
 			mobj->friction = ORIG_FRICTION/4;
 			if (mobj->momx || mobj->momy)
 				P_SpawnGhostMobj(mobj);
