@@ -6176,6 +6176,42 @@ angle_t P_MobjPitchAndRoll(mobj_t *mobj)
 	return return_angle;
 }
 
+static void P_SpawnItemLandDust(mobj_t *mobj)
+{
+	const UINT8 numParticles = 5;
+	const angle_t diff = ANGLE_MAX / numParticles;
+	UINT8 i;
+
+	for (i = 0; i < numParticles; i++)
+	{
+		mobj_t *spark = P_SpawnMobj(mobj->x, mobj->y, mobj->z, MT_WIPEOUTTRAIL);
+		spark->angle = (diff * i) - (diff / 2);
+
+		if (mobj != NULL && P_MobjWasRemoved(mobj) == false)
+		{
+			// K_MomentumAngle
+			if (FixedHypot(mobj->momx, mobj->momy) >= mobj->scale)
+			{
+				spark->angle += R_PointToAngle2(0, 0, mobj->momx, mobj->momy);
+			}
+			else
+			{
+				spark->angle += mobj->angle; // default to facing angle, rather than 0
+			}
+
+			spark->momx += mobj->momx / 2;
+			spark->momy += mobj->momy / 2;
+			spark->momz += mobj->momz / 2;
+		}
+
+		//spark->spriteyscale = FRACUNIT/2;
+		//spark->spritexscale = FRACUNIT/2;
+
+		P_SetObjectMomZ(spark, (6 + M_RandomRange(-4, 4)) * FRACUNIT, true);
+		P_Thrust(spark, spark->angle, (6 + M_RandomRange(-4, 4)) * spark->scale);
+	}
+}
+
 //
 // P_MobjThinker
 //
@@ -7907,6 +7943,8 @@ void P_MobjThinker(mobj_t *mobj)
 				S_StartSound(mobj, mobj->info->activesound);
 				mobj->momx = mobj->momy = 0;
 				mobj->health = 1;
+
+				P_SpawnItemLandDust(mobj);
 			}
 
 			P_RollPitchMobj(mobj);
@@ -7953,6 +7991,8 @@ void P_MobjThinker(mobj_t *mobj)
 					S_StartSound(mobj, mobj->info->activesound);
 					P_SetMobjState(mobj, S_SSMINE_DEPLOY1);
 				}
+
+				P_SpawnItemLandDust(mobj);
 			}
 
 			if ((mobj->state >= &states[S_SSMINE1] && mobj->state <= &states[S_SSMINE4])
