@@ -1937,7 +1937,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 				//spark->spriteyscale = FRACUNIT/2;
 				//spark->spritexscale = FRACUNIT/2;
 
-				P_SetObjectMomZ(spark, (6 + M_RandomRange(-4, 4)) * FRACUNIT, true);
+				P_SetObjectMomZ(spark, (4 + M_RandomRange(-4, 4)) * FRACUNIT, true);
 				P_Thrust(spark, spark->angle, (6 + M_RandomRange(-4, 4)) * spark->scale);
 
 			}

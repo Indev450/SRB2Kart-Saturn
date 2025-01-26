@@ -6207,7 +6207,7 @@ static void P_SpawnItemLandDust(mobj_t *mobj)
 		//spark->spriteyscale = FRACUNIT/2;
 		//spark->spritexscale = FRACUNIT/2;
 
-		P_SetObjectMomZ(spark, (6 + M_RandomRange(-4, 4)) * FRACUNIT, true);
+		P_SetObjectMomZ(spark, (4 + M_RandomRange(-4, 4)) * FRACUNIT, true);
 		P_Thrust(spark, spark->angle, (6 + M_RandomRange(-4, 4)) * spark->scale);
 	}
 }
