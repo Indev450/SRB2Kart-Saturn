@@ -1973,7 +1973,7 @@ void S_KeepMusic(void)
 	}
 	else if (oldmap == gamemap && oldencore == encoremode)
 	{
-		keepmusic = !skipmusic && !S_CheckMusicException(music_name); // have to recheck cause lua may have overwritten initial music_change
+		keepmusic = !skipmusic && !S_CheckMusicException(music_name) && stricmp(music_name, "kgrow") && stricmp(music_name, "kinvnc"); // have to recheck cause lua may have overwritten initial music_change
 	}
 
 	oldencore = encoremode;
