@@ -47,9 +47,6 @@ static INT32 tmflags;
 fixed_t tmx;
 fixed_t tmy;
 
-static precipmobj_t *tmprecipthing;
-static fixed_t preciptmbbox[4];
-
 // If "floatok" true, move would be ok
 // if within "tmfloorz - tmceilingz".
 boolean floatok;
@@ -69,7 +66,6 @@ line_t *ceilingline;
 line_t *blockingline;
 
 msecnode_t *sector_list = NULL;
-mprecipsecnode_t *precipsector_list = NULL;
 camera_t *mapcampointer;
 
 //
@@ -3728,8 +3724,6 @@ boolean P_CheckSector(sector_t *sector, boolean crunch)
 
 			sec->moved = true;
 
-			P_RecalcPrecipInSector(sec);
-
 			if (!sector->attachedsolid[i])
 				continue;
 
@@ -3790,8 +3784,6 @@ boolean P_CheckSector(sector_t *sector, boolean crunch)
 
 			sec->moved = true;
 
-			P_RecalcPrecipInSector(sec);
-
 			if (!sector->attachedsolid[i])
 				continue;
 
@@ -3842,12 +3834,10 @@ boolean P_CheckSector(sector_t *sector, boolean crunch)
 */
 
 static msecnode_t *headsecnode = NULL;
-static mprecipsecnode_t *headprecipsecnode = NULL;
 
 void P_Initsecnode(void)
 {
 	headsecnode = NULL;
-	headprecipsecnode = NULL;
 }
 
 // P_GetSecnode() retrieves a node from the freelist. The calling routine
@@ -3867,33 +3857,12 @@ static msecnode_t *P_GetSecnode(void)
 	return node;
 }
 
-static mprecipsecnode_t *P_GetPrecipSecnode(void)
-{
-	mprecipsecnode_t *node;
-
-	if (headprecipsecnode)
-	{
-		node = headprecipsecnode;
-		headprecipsecnode = headprecipsecnode->m_thinglist_next;
-	}
-	else
-		node = Z_Calloc(sizeof (*node), PU_LEVEL, NULL);
-	return node;
-}
-
 // P_PutSecnode() returns a node to the freelist.
 
 static inline void P_PutSecnode(msecnode_t *node)
 {
 	node->m_thinglist_next = headsecnode;
 	headsecnode = node;
-}
-
-// Tails 08-25-2002
-static inline void P_PutPrecipSecnode(mprecipsecnode_t *node)
-{
-	node->m_thinglist_next = headprecipsecnode;
-	headprecipsecnode = node;
 }
 
 // P_AddSecnode() searches the current list to see if this sector is
@@ -3941,47 +3910,6 @@ static msecnode_t *P_AddSecnode(sector_t *s, mobj_t *thing, msecnode_t *nextnode
 	return node;
 }
 
-// More crazy crap Tails 08-25-2002
-static mprecipsecnode_t *P_AddPrecipSecnode(sector_t *s, precipmobj_t *thing, mprecipsecnode_t *nextnode)
-{
-	mprecipsecnode_t *node;
-
-	node = nextnode;
-	while (node)
-	{
-		if (node->m_sector == s) // Already have a node for this sector?
-		{
-			node->m_thing = thing; // Yes. Setting m_thing says 'keep it'.
-			return nextnode;
-		}
-		node = node->m_sectorlist_next;
-	}
-
-	// Couldn't find an existing node for this sector. Add one at the head
-	// of the list.
-
-	node = P_GetPrecipSecnode();
-
-	// mark new nodes unvisited.
-	node->visited = 0;
-
-	node->m_sector = s; // sector
-	node->m_thing = thing; // mobj
-	node->m_sectorlist_prev = NULL; // prev node on Thing thread
-	node->m_sectorlist_next = nextnode; // next node on Thing thread
-	if (nextnode)
-		nextnode->m_sectorlist_prev = node; // set back link on Thing
-
-	// Add new node at head of sector thread starting at s->touching_thinglist
-
-	node->m_thinglist_prev = NULL; // prev node on sector thread
-	node->m_thinglist_next = s->touching_preciplist; // next node on sector thread
-	if (s->touching_preciplist)
-		node->m_thinglist_next->m_thinglist_prev = node;
-	s->touching_preciplist = node;
-	return node;
-}
-
 // P_DelSecnode() deletes a sector node from the list of
 // sectors this object appears in. Returns a pointer to the next node
 // on the linked list, or NULL.
@@ -4024,57 +3952,11 @@ static msecnode_t *P_DelSecnode(msecnode_t *node)
 	return tn;
 }
 
-// Tails 08-25-2002
-static mprecipsecnode_t *P_DelPrecipSecnode(mprecipsecnode_t *node)
-{
-	mprecipsecnode_t *tp; // prev node on thing thread
-	mprecipsecnode_t *tn; // next node on thing thread
-	mprecipsecnode_t *sp; // prev node on sector thread
-	mprecipsecnode_t *sn; // next node on sector thread
-
-	if (!node)
-		return NULL;
-
-	// Unlink from the Thing thread. The Thing thread begins at
-	// sector_list and not from mobj_t->touching_sectorlist.
-
-	tp = node->m_sectorlist_prev;
-	tn = node->m_sectorlist_next;
-	if (tp)
-		tp->m_sectorlist_next = tn;
-	if (tn)
-		tn->m_sectorlist_prev = tp;
-
-	// Unlink from the sector thread. This thread begins at
-	// sector_t->touching_thinglist.
-
-	sp = node->m_thinglist_prev;
-	sn = node->m_thinglist_next;
-	if (sp)
-		sp->m_thinglist_next = sn;
-	else
-		node->m_sector->touching_preciplist = sn;
-	if (sn)
-		sn->m_thinglist_prev = sp;
-
-	// Return this node to the freelist
-
-	P_PutPrecipSecnode(node);
-	return tn;
-}
-
 // Delete an entire sector list
 void P_DelSeclist(msecnode_t *node)
 {
 	while (node)
 		node = P_DelSecnode(node);
-}
-
-// Tails 08-25-2002
-void P_DelPrecipSeclist(mprecipsecnode_t *node)
-{
-	while (node)
-		node = P_DelPrecipSecnode(node);
 }
 
 // PIT_GetSectors
@@ -4113,41 +3995,6 @@ static inline boolean PIT_GetSectors(line_t *ld)
 	// Use sidedefs instead of 2s flag to determine two-sidedness.
 	if (ld->backsector)
 		sector_list = P_AddSecnode(ld->backsector, tmthing, sector_list);
-
-	return true;
-}
-
-// Tails 08-25-2002
-static inline boolean PIT_GetPrecipSectors(line_t *ld)
-{
-	if (preciptmbbox[BOXRIGHT] <= ld->bbox[BOXLEFT] ||
-		preciptmbbox[BOXLEFT] >= ld->bbox[BOXRIGHT] ||
-		preciptmbbox[BOXTOP] <= ld->bbox[BOXBOTTOM] ||
-		preciptmbbox[BOXBOTTOM] >= ld->bbox[BOXTOP])
-		return true;
-
-	if (P_BoxOnLineSide(preciptmbbox, ld) != -1)
-		return true;
-
-	if (ld->polyobj) // line belongs to a polyobject, don't add it
-		return true;
-
-	// This line crosses through the object.
-
-	// Collect the sector(s) from the line and add to the
-	// sector_list you're examining. If the Thing ends up being
-	// allowed to move to this position, then the sector_list
-	// will be attached to the Thing's mobj_t at touching_sectorlist.
-
-	precipsector_list = P_AddPrecipSecnode(ld->frontsector, tmprecipthing, precipsector_list);
-
-	// Don't assume all lines are 2-sided, since some Things
-	// like MT_TFOG are allowed regardless of whether their radius takes
-	// them beyond an impassable linedef.
-
-	// Use sidedefs instead of 2s flag to determine two-sidedness.
-	if (ld->backsector)
-		precipsector_list = P_AddPrecipSecnode(ld->backsector, tmprecipthing, precipsector_list);
 
 	return true;
 }
@@ -4236,73 +4083,6 @@ void P_CreateSecNodeList(mobj_t *thing, fixed_t x, fixed_t y)
 		tmbbox[BOXRIGHT]  = tmx + tmthing->radius;
 		tmbbox[BOXLEFT]   = tmx - tmthing->radius;
 	}
-}
-
-// More crazy crap Tails 08-25-2002
-void P_CreatePrecipSecNodeList(precipmobj_t *thing,fixed_t x,fixed_t y)
-{
-	INT32 xl, xh, yl, yh, bx, by;
-	mprecipsecnode_t *node = precipsector_list;
-	precipmobj_t *saved_tmthing = tmprecipthing; /* cph - see comment at func end */
-
-	// First, clear out the existing m_thing fields. As each node is
-	// added or verified as needed, m_thing will be set properly. When
-	// finished, delete all nodes where m_thing is still NULL. These
-	// represent the sectors the Thing has vacated.
-
-	while (node)
-	{
-		node->m_thing = NULL;
-		node = node->m_sectorlist_next;
-	}
-
-	tmprecipthing = thing;
-
-	preciptmbbox[BOXTOP] = y + 2*FRACUNIT;
-	preciptmbbox[BOXBOTTOM] = y - 2*FRACUNIT;
-	preciptmbbox[BOXRIGHT] = x + 2*FRACUNIT;
-	preciptmbbox[BOXLEFT] = x - 2*FRACUNIT;
-
-	validcount++; // used to make sure we only process a line once
-
-	xl = (unsigned)(preciptmbbox[BOXLEFT] - bmaporgx)>>MAPBLOCKSHIFT;
-	xh = (unsigned)(preciptmbbox[BOXRIGHT] - bmaporgx)>>MAPBLOCKSHIFT;
-	yl = (unsigned)(preciptmbbox[BOXBOTTOM] - bmaporgy)>>MAPBLOCKSHIFT;
-	yh = (unsigned)(preciptmbbox[BOXTOP] - bmaporgy)>>MAPBLOCKSHIFT;
-
-	BMBOUNDFIX(xl, xh, yl, yh);
-
-	for (bx = xl; bx <= xh; bx++)
-		for (by = yl; by <= yh; by++)
-			P_BlockLinesIterator(bx, by, PIT_GetPrecipSectors);
-
-	// Add the sector of the (x, y) point to sector_list.
-	precipsector_list = P_AddPrecipSecnode(thing->subsector->sector, thing, precipsector_list);
-
-	// Now delete any nodes that won't be used. These are the ones where
-	// m_thing is still NULL.
-	node = precipsector_list;
-	while (node)
-	{
-		if (!node->m_thing)
-		{
-			if (node == precipsector_list)
-				precipsector_list = node->m_sectorlist_next;
-			node = P_DelPrecipSecnode(node);
-		}
-		else
-			node = node->m_sectorlist_next;
-	}
-
-	/* cph -
-	* This is the strife we get into for using global variables. tmthing
-	*  is being used by several different functions calling
-	*  P_BlockThingIterator, including functions that can be called *from*
-	*  P_BlockThingIterator. Using a global tmthing is not reentrant.
-	* OTOH for Boom/MBF demos we have to preserve the buggy behavior.
-	*  Fun. We restore its previous value unless we're in a Boom/MBF demo.
-	*/
-	tmprecipthing = saved_tmthing;
 }
 
 /* cphipps 2004/08/30 -

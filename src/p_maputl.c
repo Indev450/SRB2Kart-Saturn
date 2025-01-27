@@ -775,9 +775,6 @@ void P_UnsetPrecipThingPosition(precipmobj_t *thing)
 
 	if (bprev && (*bprev = bnext) != NULL)  // unlink from block map
 		bnext->bprev = bprev;
-
-	precipsector_list = thing->touching_sectorlist;
-	thing->touching_sectorlist = NULL; //to be restored by P_SetPrecipThingPosition
 }
 
 static void P_LinkToBlockMap(mobj_t *thing, mobj_t **bmap)
@@ -921,10 +918,6 @@ void P_SetUnderlayPosition(mobj_t *thing)
 void P_SetPrecipitationThingPosition(precipmobj_t *thing)
 {
 	thing->subsector = R_PointInSubsector(thing->x, thing->y);
-
-	P_CreatePrecipSecNodeList(thing, thing->x, thing->y);
-	thing->touching_sectorlist = precipsector_list; // Attach to Thing's precipmobj_t
-	precipsector_list = NULL; // clear for next time
 
 	// NOTE: this works because bnext/bprev are at the same
 	// offsets in precipmobj_t and mobj_t
