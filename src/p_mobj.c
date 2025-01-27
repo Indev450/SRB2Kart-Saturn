@@ -3572,7 +3572,7 @@ animonly:
 	}
 }
 
-static void P_CalculatePrecipFloor(precipmobj_t *mobj)
+static void P_CalculatePrecipFloor(precipmobj_t *mobj, boolean spawn)
 {
 	// recalculate floorz each time
 	const sector_t *mobjsecsubsec;
@@ -3580,6 +3580,10 @@ static void P_CalculatePrecipFloor(precipmobj_t *mobj)
 	if (mobj && mobj->subsector && mobj->subsector->sector)
 		mobjsecsubsec = mobj->subsector->sector;
 	else
+		return;
+
+	// no need to recalc anything if not moved
+	if (!spawn && !mobjsecsubsec->moved)
 		return;
 
 	mobj->floorz = P_GetSectorFloorZAt(mobjsecsubsec, mobj->x, mobj->y);
@@ -3673,7 +3677,7 @@ boolean P_PrecipThinker(precipmobj_t *mobj)
 		return true;
 
 	if (renderisnewtic)
-		P_CalculatePrecipFloor(mobj);
+		P_CalculatePrecipFloor(mobj, false);
 
 	// adjust height
 	if ((mobj->z += mobj->momz) <= mobj->floorz)
@@ -10036,7 +10040,7 @@ static precipmobj_t *P_SpawnPrecipMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype
 	mobj->thinker.function.acp1 = (actionf_p1)P_NullPrecipThinker;
 	P_AddPrecipThinker(&mobj->thinker);
 
-	P_CalculatePrecipFloor(mobj);
+	P_CalculatePrecipFloor(mobj, true);
 
 	if (mobj->floorz != starting_floorz)
 		mobj->precipflags |= PCF_FOF;
