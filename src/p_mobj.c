@@ -3572,7 +3572,7 @@ animonly:
 	}
 }
 
-static void CalculatePrecipFloor(precipmobj_t *mobj)
+static void P_CalculatePrecipFloor(precipmobj_t *mobj)
 {
 	// recalculate floorz each time
 	const sector_t *mobjsecsubsec;
@@ -3604,19 +3604,6 @@ static void CalculatePrecipFloor(precipmobj_t *mobj)
 				mobj->floorz = topheight;
 		}
 	}
-}
-
-void P_RecalcPrecipInSector(sector_t *sector)
-{
-	mprecipsecnode_t *psecnode;
-
-	if (!sector)
-		return;
-
-	sector->moved = true; // Recalc lighting and things too, maybe
-
-	for (psecnode = sector->touching_preciplist; psecnode; psecnode = psecnode->m_thinglist_next)
-		CalculatePrecipFloor(psecnode->m_thing);
 }
 
 //
@@ -3684,6 +3671,8 @@ boolean P_PrecipThinker(precipmobj_t *mobj)
 
 	if (mobj->precipflags & PCF_SPLASH)
 		return true;
+
+	P_CalculatePrecipFloor(mobj);
 
 	// adjust height
 	if ((mobj->z += mobj->momz) <= mobj->floorz)
@@ -10046,7 +10035,7 @@ static precipmobj_t *P_SpawnPrecipMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype
 	mobj->thinker.function.acp1 = (actionf_p1)P_NullPrecipThinker;
 	P_AddPrecipThinker(&mobj->thinker);
 
-	CalculatePrecipFloor(mobj);
+	P_CalculatePrecipFloor(mobj);
 
 	if (mobj->floorz != starting_floorz)
 		mobj->precipflags |= PCF_FOF;
@@ -10206,12 +10195,6 @@ void P_FreePrecipMobj(precipmobj_t *mobj)
 	// unlink from sector and block lists
 	P_UnsetPrecipThingPosition(mobj);
 
-	if (precipsector_list)
-	{
-		P_DelPrecipSeclist(precipsector_list);
-		precipsector_list = NULL;
-	}
-
 	// free block
 	// Precipmobjs don't actually think using their thinker,
 	// so the free cannot be delayed.
@@ -10225,12 +10208,6 @@ void P_RemoveSavegameMobj(mobj_t *mobj)
 	if (((thinker_t *)mobj)->function.acp1 == (actionf_p1)P_NullPrecipThinker)
 	{
 		P_UnsetPrecipThingPosition((precipmobj_t *)mobj);
-
-		if (precipsector_list)
-		{
-			P_DelPrecipSeclist(precipsector_list);
-			precipsector_list = NULL;
-		}
 	}
 	else
 	{

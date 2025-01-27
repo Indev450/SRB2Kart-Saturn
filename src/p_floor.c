@@ -327,7 +327,7 @@ void T_MoveFloor(floormove_t *movefloor)
 					movefloor->direction = (movefloor->floordestheight < movefloor->sector->floorheight) ? -1 : 1;
 					movefloor->sector->floorspeed = movefloor->speed * movefloor->direction;
 					movefloor->delaytimer = movefloor->delay;
-					P_RecalcPrecipInSector(movefloor->sector);
+					movefloor->sector->moved = true;
 					return; // not break, why did this work? Graue 04-03-2004
 				case bounceFloorCrush: // Graue 03-27-2004
 					if (movefloor->floordestheight == lines[movefloor->texture].frontsector->floorheight)
@@ -343,14 +343,14 @@ void T_MoveFloor(floormove_t *movefloor)
 					movefloor->direction = (movefloor->floordestheight < movefloor->sector->floorheight) ? -1 : 1;
 					movefloor->sector->floorspeed = movefloor->speed * movefloor->direction;
 					movefloor->delaytimer = movefloor->delay;
-					P_RecalcPrecipInSector(movefloor->sector);
+					movefloor->sector->moved = true;
 					return; // not break, why did this work? Graue 04-03-2004
 				case crushFloorOnce:
 					movefloor->floordestheight = lines[movefloor->texture].frontsector->floorheight;
 					movefloor->direction = -1;
 					movefloor->sector->soundorg.z = movefloor->sector->floorheight;
 					S_StartSound(&movefloor->sector->soundorg,sfx_pstop);
-					P_RecalcPrecipInSector(movefloor->sector);
+					movefloor->sector->moved = true;
 					return;
 				default:
 					break;
@@ -376,7 +376,7 @@ void T_MoveFloor(floormove_t *movefloor)
 					movefloor->direction = (movefloor->floordestheight < movefloor->sector->floorheight) ? -1 : 1;
 					movefloor->sector->floorspeed = movefloor->speed * movefloor->direction;
 					movefloor->delaytimer = movefloor->delay;
-					P_RecalcPrecipInSector(movefloor->sector);
+					movefloor->sector->moved = true;
 					return; // not break, why did this work? Graue 04-03-2004
 				case bounceFloorCrush: // Graue 03-27-2004
 					if (movefloor->floordestheight == lines[movefloor->texture].frontsector->floorheight)
@@ -392,13 +392,13 @@ void T_MoveFloor(floormove_t *movefloor)
 					movefloor->direction = (movefloor->floordestheight < movefloor->sector->floorheight) ? -1 : 1;
 					movefloor->sector->floorspeed = movefloor->speed * movefloor->direction;
 					movefloor->delaytimer = movefloor->delay;
-					P_RecalcPrecipInSector(movefloor->sector);
+					movefloor->sector->moved = true;
 					return; // not break, why did this work? Graue 04-03-2004
 				case crushFloorOnce:
 					movefloor->sector->floordata = NULL; // Clear up the thinker so others can use it
 					P_RemoveThinker(&movefloor->thinker);
 					movefloor->sector->floorspeed = 0;
-					P_RecalcPrecipInSector(movefloor->sector);
+					movefloor->sector->moved = true;
 					return;
 				default:
 					break;
@@ -415,7 +415,7 @@ void T_MoveFloor(floormove_t *movefloor)
 	else
 		movefloor->sector->floorspeed = 0;
 
-	P_RecalcPrecipInSector(movefloor->sector);
+	movefloor->sector->moved = true;
 }
 
 //
@@ -817,7 +817,6 @@ void T_BounceCheese(levelspecthink_t *bouncer)
 			bouncer->sector->floorheight = bouncer->sector->ceilingheight - (halfheight*2);
 			T_MovePlane(bouncer->sector, 0, bouncer->sector->ceilingheight, 0, 1, -1); // update things on ceiling
 			T_MovePlane(bouncer->sector, 0, bouncer->sector->floorheight, 0, 0, -1); // update things on floor
-			P_RecalcPrecipInSector(actionsector);
 			bouncer->sector->ceilingdata = NULL;
 			bouncer->sector->floordata = NULL;
 			bouncer->sector->floorspeed = 0;
@@ -833,7 +832,6 @@ void T_BounceCheese(levelspecthink_t *bouncer)
 			bouncer->sector->floorheight = floorheight;
 			T_MovePlane(bouncer->sector, 0, bouncer->sector->ceilingheight, 0, 1, -1); // update things on ceiling
 			T_MovePlane(bouncer->sector, 0, bouncer->sector->floorheight, 0, 0, -1); // update things on floor
-			P_RecalcPrecipInSector(actionsector);
 			bouncer->sector->ceilingdata = NULL;
 			bouncer->sector->floordata = NULL;
 			bouncer->sector->floorspeed = 0;
@@ -913,9 +911,6 @@ void T_BounceCheese(levelspecthink_t *bouncer)
 
 		if (bouncer->distance > 0)
 			bouncer->distance--;
-
-		if (actionsector)
-			P_RecalcPrecipInSector(actionsector);
 	}
 #undef speed
 #undef distance
@@ -1102,7 +1097,6 @@ void T_StartCrumble(elevator_t *elevator)
 	{
 		sector = &sectors[i];
 		sector->moved = true;
-		P_RecalcPrecipInSector(sector);
 	}
 }
 
@@ -1156,7 +1150,7 @@ void T_MarioBlock(levelspecthink_t *block)
 	}
 
 	for (i = -1; (i = P_FindSectorFromTag((INT16)block->vars[0], i)) >= 0 ;)
-		P_RecalcPrecipInSector(&sectors[i]);
+		sectors[i].moved = true;
 
 #undef speed
 #undef direction
@@ -1272,7 +1266,7 @@ void T_FloatSector(levelspecthink_t *floater)
 		else if (floater->sector->crumblestate == 0 || floater->sector->crumblestate >= 3/* || floatanyway*/)
 			EV_BounceSector(floater->sector, FRACUNIT, floater->sourceline);
 
-		P_RecalcPrecipInSector(actionsector);
+		actionsector->moved = true;
 	}
 }
 
@@ -1974,7 +1968,7 @@ void T_ThwompSector(levelspecthink_t *thwomp)
 		thwomp->sector->floorspeed = 0;
 	}
 
-	P_RecalcPrecipInSector(actionsector);
+	actionsector->moved = true;
 #undef speed
 #undef direction
 #undef distance
@@ -2503,7 +2497,7 @@ void T_RaiseSector(levelspecthink_t *raise)
 	raise->sector->floorspeed = raise->vars[3]*raise->vars[8];
 
 	for (i = -1; (i = P_FindSectorFromTag(raise->sourceline->tag, i)) >= 0 ;)
-		P_RecalcPrecipInSector(&sectors[i]);
+		sectors[i].moved = true;
 }
 
 void T_CameraScanner(elevator_t *elevator)
