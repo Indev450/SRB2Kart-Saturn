@@ -258,7 +258,6 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type);
 
 mobj_t *P_SpawnShadowMobj(mobj_t * caster);
 
-void P_RecalcPrecipInSector(sector_t *sector);
 void P_PrecipitationEffects(void);
 
 void P_RemoveMobj(mobj_t *th);
@@ -373,8 +372,6 @@ extern line_t *ceilingline;
 extern line_t *blockingline;
 extern msecnode_t *sector_list;
 
-extern mprecipsecnode_t *precipsector_list;
-
 void P_UnsetThingPosition(mobj_t *thing);
 void P_SetThingPosition(mobj_t *thing);
 void P_SetUnderlayPosition(mobj_t *thing);
@@ -398,7 +395,6 @@ void P_CheckHoopPosition(mobj_t *hoopthing, fixed_t x, fixed_t y, fixed_t z, fix
 boolean P_CheckSector(sector_t *sector, boolean crunch);
 
 void P_DelSeclist(msecnode_t *node);
-void P_DelPrecipSeclist(mprecipsecnode_t *node);
 
 void P_CreateSecNodeList(mobj_t *thing, fixed_t x, fixed_t y);
 void P_Initsecnode(void);
