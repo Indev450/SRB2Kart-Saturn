@@ -2455,25 +2455,33 @@ void HU_drawPlayerPing(INT32 x, INT32 y, INT32 pnum, INT32 flags)
 
 		if (cv_pingicon.value)
 		{
-			if (lag < 4)
+			switch (lag)
 			{
-				numbars = 3;
-				barcolor = 184;
+				case 0 ... 1:
+					numbars = 3;
+					barcolor = 215; // Blue
+					break;
+				case 2 ... 3:
+					numbars = 3;
+					barcolor = 184; // Green
+					break;
+				case 4 ... 6:
+					numbars = 2;    // Apparently ternaries w/ multiple statements don't look good in C so I decided against it.
+					barcolor = 103; // Yellow
+					break;
+				case 7 ... 9:
+					numbars = 1;
+					barcolor = 155; // Red
+					break;
+				default:            // Brazil
+					numbars = 0;
+					barcolor = 31;  // black
+					break;
 			}
-			else if (lag < 7)
+
+			if (gentleman)
 			{
-				numbars = 2;	// Apparently ternaries w/ multiple statements don't look good in C so I decided against it.
-				barcolor = 103;
-			}
-			else if (lag < 10)
-			{
-				numbars = 1;
-				barcolor = 155; // need a better red
-			}
-			else // brazil
-			{
-				numbars = 0;
-				barcolor = 31;
+				barcolor = 194; // make it purplish
 			}
 
 			for (i = 0; (i < 3); i++) // Draw the ping bar
