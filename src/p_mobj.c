@@ -3672,7 +3672,8 @@ boolean P_PrecipThinker(precipmobj_t *mobj)
 	if (mobj->precipflags & PCF_SPLASH)
 		return true;
 
-	P_CalculatePrecipFloor(mobj);
+	if (renderisnewtic)
+		P_CalculatePrecipFloor(mobj);
 
 	// adjust height
 	if ((mobj->z += mobj->momz) <= mobj->floorz)
