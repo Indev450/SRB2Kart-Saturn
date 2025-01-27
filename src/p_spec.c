@@ -2080,7 +2080,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 			break;
 
 		case 413: // Change music
-			if (keepmusic && (leveltime <= MUSICSTARTTIME)) //why check for starttime? cause encore music Zzz...
+			if (keepmusic && (leveltime <= MUSICSTARTTIME)) // why check for starttime? cause encore music Zzz...
 				return;
 
 			if (cv_ignoremusicchanges.value && (leveltime >= MUSICSTARTTIME) && !fromlapexec) // keep lap music intanct tho

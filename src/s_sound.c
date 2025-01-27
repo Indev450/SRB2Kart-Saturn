@@ -1721,6 +1721,9 @@ static void S_ChangeMusicToQueue(void)
 	S_ClearQueue();
 }
 
+static boolean skipmusic = false;
+static boolean S_CheckMusicException(const char *music);
+
 void S_ChangeMusicEx(const char *mmusic, UINT16 mflags, boolean looping, UINT32 position, UINT32 prefadems, UINT32 fadeinms)
 {
 	char newmusic[7] = {0};
@@ -1740,6 +1743,8 @@ void S_ChangeMusicEx(const char *mmusic, UINT16 mflags, boolean looping, UINT32 
 		return;
 
 	strncpy(newmusic, mmusic, 6);
+
+	skipmusic = S_CheckMusicException(newmusic);
 
 	if (LUA_HookMusicChange(music_name, &hook_param))
 		return;
@@ -1937,6 +1942,20 @@ static const char *musicexception_list[] = {
 	"CHRSHF", "CHRSHP" // no clue what those are tbh
 };
 
+// check if the current music is smth we dont want to keep (vote music, etc)
+static boolean S_CheckMusicException(const char *music)
+{
+	for (size_t i = 0; i < sizeof(musicexception_list)/sizeof(musicexception_list[0]); i++)
+	{
+		if (!stricmp(music, musicexception_list[i]))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
 void S_ResetKeepAndSpecialMus(void)
 {
 	keepmusic = skipintromus = false;
@@ -1954,17 +1973,7 @@ void S_KeepMusic(void)
 	}
 	else if (oldmap == gamemap && oldencore == encoremode)
 	{
-		keepmusic = true;
-
-		// check if the current music is smth we dont want to keep (vote music, etc)
-		for (size_t i = 0; i < sizeof(musicexception_list)/sizeof(musicexception_list[0]); i++)
-		{
-			if (stricmp(music_name, musicexception_list[i]) == 0)
-			{
-				keepmusic = false;
-				break;
-			}
-		}
+		keepmusic = !skipmusic && !S_CheckMusicException(music_name); // have to recheck cause lua may have overwritten initial music_change
 	}
 
 	oldencore = encoremode;
