@@ -1998,7 +1998,10 @@ void S_InitMapMusic(void)
 	{
 		char *maptitle = G_BuildMapTitle(gamemap);
 		// for some reason, occasionally the title screen music doesent seem to be reset in time, so skipping the intro may make it just continue playing it instead, weird..
-		skipintromus = (stricmp(music_name, "titles") != 0) && (maptitle && (stricmp(maptitle, "Wandering Falls") != 0)); // thanks diggle!
+		skipintromus = true;
+		if (!stricmp(music_name, "titles") || (maptitle && (!stricmp(maptitle, "Wandering Falls")))) // thanks diggle!
+			skipintromus = false;
+
 		if (maptitle)
 			Z_Free(maptitle);
 	}
