@@ -6110,7 +6110,7 @@ void P_RollPitchMobj(mobj_t* mobj)
 		return;
 	}
 
-	K_RollMobjBySlopes(mobj, cv_sloperolldist.value && !splitscreen);
+	K_RollMobjBySlopes(mobj, mobj->standingslope);
 }
 
 angle_t P_MobjPitchAndRoll(mobj_t *mobj)
