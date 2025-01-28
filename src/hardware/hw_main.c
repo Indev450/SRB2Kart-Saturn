@@ -5463,6 +5463,8 @@ static void HWR_RollTransform(FTransform *tr, angle_t roll)
 	{
 		tr->rollangle = roll / (float)ANG1;
 		tr->roll = true;
+		tr->rollx = 1.0f;
+		tr->rollz = 0.0f;
 	}
 }
 
