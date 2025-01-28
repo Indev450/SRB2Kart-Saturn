@@ -5335,7 +5335,7 @@ void G_ConsGhostTic(INT32 playernum)
 		)
 		{
 			if (demosynced)
-				CONS_Alert(CONS_WARNING, M_GetText("Demo playback has desynced (item/bumpers)!\n"));
+				CONS_Alert(CONS_WARNING, "Demo playback has desynced (item/bumpers)!(player %s)!\n", player_names[playernum]);
 			demosynced = false;
 
 			players[playernum].kartstuff[k_itemtype] = ghostext[playernum].kartitem;
