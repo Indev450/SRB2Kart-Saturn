@@ -3504,63 +3504,7 @@ static void K_QuiteSaltyHop(player_t *p)
 }
 
 #define SLOPEROLL_DIV 3
-void K_RollMobjBySlopes(mobj_t* mo, boolean usedistance)
-{
-	if (P_MobjWasRemoved(mo))
-		return;
-
-	I_Assert(mo->subsector != NULL);
-	I_Assert(mo->subsector->sector != NULL);
-
-	// lifted from hw_md2
-	if (mo->standingslope)
-	{
-		angle_t an;
-		const boolean flip = (mo->eflags & MFE_VERTICALFLIP);
-		const fixed_t m_dist = usedistance ? R_PointToDist(mo->x, mo->y) : 0;
-		const fixed_t rolldist = cv_sloperolldist.value * mapobjectscale;
-
-		fixed_t tempz = mo->standingslope->normal.z;
-		fixed_t tempy = mo->standingslope->normal.y;
-		fixed_t tempx = mo->standingslope->normal.x;
-		fixed_t tempangle = -(R_PointToAngle2(0, 0, FixedSqrt(FixedMul(tempy, tempy) + FixedMul(tempz, tempz)), tempx));
-
-		// admittedly this is a very hacky way to do the pitch and roll easing
-
-		// pitch
-		if (!usedistance || (m_dist <= (rolldist)))
-		{
-			an = (INT32)((angle_t)tempangle - mo->pitch_sprite) / SLOPEROLL_DIV;
-
-			mo->pitch_sprite = an ? mo->pitch_sprite + an : (angle_t)tempangle;
-		}
-		else
-			mo->pitch_sprite = FixedAngle(0);
-
-		mo->slopepitch = flip ? InvAngle(mo->pitch_sprite) : mo->pitch_sprite;
-
-		// roll
-		tempangle = (R_PointToAngle2(0, 0, tempz, tempy));
-
-		if (!usedistance || (m_dist <= (rolldist)))
-		{
-			an = (INT32)((angle_t)tempangle - mo->roll_sprite) / SLOPEROLL_DIV;
-
-			mo->roll_sprite = an ? mo->roll_sprite + an : (angle_t)tempangle;
-		}
-		else
-			mo->roll_sprite = FixedAngle(0);
-
-		mo->sloperoll = flip ? InvAngle(mo->roll_sprite) : mo->roll_sprite;
-	}
-	else if (P_IsObjectOnGround(mo))
-	{
-		mo->sloperoll = FixedAngle(0);
-		mo->slopepitch = FixedAngle(0);
-	}
-}
-
-static void K_SetPitchRollFromSlope(mobj_t* mo, pslope_t *slope, boolean usedistance)
+void K_RollMobjBySlopes(mobj_t* mo, pslope_t *slope)
 {
 	if (P_MobjWasRemoved(mo))
 		return;
@@ -3573,8 +3517,9 @@ static void K_SetPitchRollFromSlope(mobj_t* mo, pslope_t *slope, boolean usedist
 	{
 		angle_t an;
 		const boolean flip = (mo->eflags & MFE_VERTICALFLIP);
-		const fixed_t m_dist = usedistance ? R_PointToDist(mo->x, mo->y) : 0;
+		const boolean usedistance = cv_sloperolldist.value && !splitscreen;
 		const fixed_t rolldist = cv_sloperolldist.value * mapobjectscale;
+		const fixed_t m_dist = usedistance ? R_PointToDist(mo->x, mo->y) : 0;
 
 		fixed_t tempz = slope->normal.z;
 		fixed_t tempy = slope->normal.y;
@@ -4862,7 +4807,7 @@ static void K_CalculateBananaSlope(mobj_t *mobj, fixed_t x, fixed_t y, fixed_t z
 	}
 
 	//mobj->standingslope = slope;
-	K_SetPitchRollFromSlope(mobj, slope, (cv_sloperolldist.value && !splitscreen));
+	K_RollMobjBySlopes(mobj, slope);
 }
 
 // Move the hnext chain!
@@ -6942,7 +6887,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 
 	if (cv_sloperoll.value && !player->mo->salty_jump) // seeing a character rotate mid-hop looks really janky
 	{
-		K_RollMobjBySlopes(player->mo, (cv_sloperolldist.value && !splitscreen));
+		K_RollMobjBySlopes(player->mo, player->mo->standingslope);
 	}
 	else
 	{
