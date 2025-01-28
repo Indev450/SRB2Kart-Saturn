@@ -6042,8 +6042,8 @@ void P_RollPitchMobj(mobj_t* mobj)
 
 	if (cv_sloperoll.value != 2)
 	{
-		mobj->sloperoll = FixedAngle(0);
-		mobj->slopepitch = FixedAngle(0);
+		mobj->sloperoll = 0;
+		mobj->slopepitch = 0;
 		return;
 	}
 
