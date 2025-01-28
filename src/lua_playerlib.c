@@ -437,7 +437,7 @@ static int lib_getPlayer(lua_State *L)
 }
 
 // #players -> MAXPLAYERS
-static int lib_lenPlayer(lua_State *L)
+FUNCINLINE static ATTRINLINE int lib_lenPlayer(lua_State *L)
 {
 	lua_pushinteger(L, MAXPLAYERS);
 	return 1;
@@ -521,7 +521,7 @@ static int lib_getDisplayplayers(lua_State *L)
 }
 
 // #displayplayers -> MAXSPLITSCREENPLAYERS
-static int lib_lenDisplayplayers(lua_State *L)
+FUNCINLINE static ATTRINLINE int lib_lenDisplayplayers(lua_State *L)
 {
 	lua_pushinteger(L, MAXSPLITSCREENPLAYERS);
 	return 1;
@@ -629,7 +629,7 @@ static int player_set(lua_State *L)
 
 #undef NOSET
 
-static int player_num(lua_State *L)
+FUNCINLINE static ATTRINLINE int player_num(lua_State *L)
 {
 	player_t *plr = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
 	if (!plr)
@@ -666,7 +666,7 @@ static int power_set(lua_State *L)
 }
 
 // #powers -> NUMPOWERS
-static int power_len(lua_State *L)
+FUNCINLINE static ATTRINLINE int power_len(lua_State *L)
 {
 	lua_pushinteger(L, NUMPOWERS);
 	return 1;
@@ -700,7 +700,7 @@ static int kartstuff_set(lua_State *L)
 }
 
 // #kartstuff -> NUMKARTSTUFF
-static int kartstuff_len(lua_State *L)
+FUNCINLINE static ATTRINLINE int kartstuff_len(lua_State *L)
 {
 	lua_pushinteger(L, NUMKARTSTUFF);
 	return 1;

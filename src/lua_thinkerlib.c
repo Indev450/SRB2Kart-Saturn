@@ -32,7 +32,7 @@ struct iterationState {
 	int next;
 };
 
-static int iterationState_gc(lua_State *L)
+FUNCINLINE static ATTRINLINE int iterationState_gc(lua_State *L)
 {
 	struct iterationState *it = luaL_checkudata(L, -1, META_ITERATIONSTATE);
 	if (it->next != LUA_REFNIL)

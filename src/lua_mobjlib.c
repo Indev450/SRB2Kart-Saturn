@@ -964,7 +964,7 @@ static int lib_getMapthing(lua_State *L)
 	return 0;
 }
 
-static int lib_nummapthings(lua_State *L)
+FUNCINLINE static ATTRINLINE int lib_nummapthings(lua_State *L)
 {
 	lua_pushinteger(L, nummapthings);
 	return 1;

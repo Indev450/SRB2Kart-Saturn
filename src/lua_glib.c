@@ -8,7 +8,7 @@
     #define GLIB_DATABASE_MTABLE  "metatable"   /* Metatable.*/
     #define GLIB_DATABASE_PROXY   "proxy"       /* Proxy table for the library that isn't the global table. */
 
-static inline void lua_glib_push_db(lua_State *L)
+FUNCINLINE static ATTRINLINE void lua_glib_push_db(lua_State *L)
 {
     lua_pushliteral(L, GLIB_DATABASE_GUID);
     lua_gettable(L, LUA_REGISTRYINDEX);
