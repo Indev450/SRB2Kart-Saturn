@@ -64,7 +64,7 @@ static UINT8 * hooksErrored;
 
 static int errorRef;
 
-static boolean mobj_hook_available(int hook_type, mobjtype_t mobj_type)
+FUNCINLINE static ATTRINLINE boolean mobj_hook_available(int hook_type, mobjtype_t mobj_type)
 {
 	return
 		(
@@ -73,7 +73,7 @@ static boolean mobj_hook_available(int hook_type, mobjtype_t mobj_type)
 		);
 }
 
-static unsigned hook_in_list
+FUNCINLINE static ATTRINLINE unsigned hook_in_list
 (
 		const char * const         name,
 		const char * const * const list
@@ -106,7 +106,7 @@ static void get_table(lua_State *L)
 	lua_remove(L, -2);
 }
 
-static void add_hook_to_table(lua_State *L, int n)
+FUNCINLINE static ATTRINLINE void add_hook_to_table(lua_State *L, int n)
 {
 	lua_pushnumber(L, nextid);
 	lua_rawseti(L, -2, n);
@@ -175,14 +175,14 @@ static void add_string_hook(lua_State *L, int type)
 		add_hook_to_table(L, ++hook->numGeneric);
 }
 
-static void add_hook(hook_t *map)
+FUNCINLINE static ATTRINLINE void add_hook(hook_t *map)
 {
 	Z_Realloc(map->ids, (map->numHooks + 1) * sizeof *map->ids,
 			PU_STATIC, &map->ids);
 	map->ids[map->numHooks++] = nextid;
 }
 
-static void add_mobj_hook(lua_State *L, int hook_type)
+FUNCINLINE static ATTRINLINE void add_mobj_hook(lua_State *L, int hook_type)
 {
 	mobjtype_t   mobj_type = luaL_optnumber(L, 3, MT_NULL);
 
@@ -191,7 +191,7 @@ static void add_mobj_hook(lua_State *L, int hook_type)
 	add_hook(&mobjHookIds[mobj_type][hook_type]);
 }
 
-static void add_hud_hook(lua_State *L, int idx)
+FUNCINLINE static ATTRINLINE void add_hud_hook(lua_State *L, int idx)
 {
 	add_hook(&hudHookIds[luaL_checkoption(L,
 										  idx, "game", hudHookNames)]);
@@ -263,7 +263,6 @@ int LUA_HookLib(lua_State *L)
 	return 0;
 }
 
-
 int lib_hudadd(lua_State *L);/* yeah compiler */
 int lib_hudadd(lua_State *L)
 {
@@ -297,24 +296,24 @@ enum {
 	SINDEX = 2,/* string itself is pushed in case of string hook */
 };
 
-static void push_error_handler(void)
+FUNCINLINE static ATTRINLINE void push_error_handler(void)
 {
 	lua_getref(gL, errorRef);
 }
 
 /* repush hook string */
-static void push_string(void)
+FUNCINLINE static ATTRINLINE void push_string(void)
 {
 	lua_pushvalue(gL, SINDEX);
 }
 
-static boolean begin_hook_values(Hook_State *hook)
+FUNCINLINE static ATTRINLINE boolean begin_hook_values(Hook_State *hook)
 {
 	hook->top = lua_gettop(gL);
 	return true;
 }
 
-static void start_hook_stack(void)
+FUNCINLINE static ATTRINLINE void start_hook_stack(void)
 {
 	lua_settop(gL, 0);
 	push_error_handler();
@@ -343,7 +342,7 @@ static boolean init_hook_type
 		return false;
 }
 
-static boolean prepare_hook
+FUNCINLINE static ATTRINLINE boolean prepare_hook
 (
 		Hook_State * hook,
 		int default_status,
@@ -356,7 +355,7 @@ static boolean prepare_hook
 			hookIds[hook_type].numHooks);
 }
 
-static boolean prepare_mobj_hook
+FUNCINLINE static ATTRINLINE boolean prepare_mobj_hook
 (
 		Hook_State * hook,
 		int          default_status,
@@ -373,7 +372,7 @@ static boolean prepare_mobj_hook
 			mobj_hook_available(hook_type, mobj_type));
 }
 
-static boolean prepare_string_hook
+FUNCINLINE static ATTRINLINE boolean prepare_string_hook
 (
 		Hook_State * hook,
 		int          default_status,
@@ -393,7 +392,7 @@ static boolean prepare_string_hook
 		return false;
 }
 
-static void init_hook_call
+FUNCINLINE static ATTRINLINE void init_hook_call
 (
 		Hook_State * hook,
 		int    results,
@@ -406,13 +405,13 @@ static void init_hook_call
 	hook->results_handler = results_handler;
 }
 
-static void get_hook(Hook_State *hook, const int *ids, int n)
+FUNCINLINE static ATTRINLINE void get_hook(Hook_State *hook, const int *ids, int n)
 {
 	hook->id = ids[n];
 	lua_getref(gL, hookRefs[hook->id]);
 }
 
-static void get_hook_from_table(Hook_State *hook, int n)
+FUNCINLINE static ATTRINLINE void get_hook_from_table(Hook_State *hook, int n)
 {
 	lua_rawgeti(gL, -1, n);
 	hook->id = lua_tonumber(gL, -1);
@@ -444,7 +443,7 @@ static int call_single_hook_no_copy(Hook_State *hook)
 	return 1;
 }
 
-static int call_single_hook(Hook_State *hook)
+FUNCINLINE static ATTRINLINE int call_single_hook(Hook_State *hook)
 {
 	int i;
 
@@ -454,7 +453,7 @@ static int call_single_hook(Hook_State *hook)
 	return call_single_hook_no_copy(hook);
 }
 
-static int call_hook_table_for(Hook_State *hook, int n)
+FUNCINLINE static ATTRINLINE int call_hook_table_for(Hook_State *hook, int n)
 {
 	int k;
 
@@ -467,12 +466,12 @@ static int call_hook_table_for(Hook_State *hook, int n)
 	return n;
 }
 
-static int call_hook_table(Hook_State *hook)
+FUNCINLINE static ATTRINLINE int call_hook_table(Hook_State *hook)
 {
 	return call_hook_table_for(hook, lua_objlen(gL, -1));
 }
 
-static int call_mapped(Hook_State *hook, const hook_t *map)
+FUNCINLINE static ATTRINLINE int call_mapped(Hook_State *hook, const hook_t *map)
 {
 	int k;
 
@@ -503,7 +502,7 @@ static int call_string_hooks(Hook_State *hook)
 	return calls;
 }
 
-static int call_mobj_type_hooks(Hook_State *hook, mobjtype_t mobj_type)
+FUNCINLINE static ATTRINLINE int call_mobj_type_hooks(Hook_State *hook, mobjtype_t mobj_type)
 {
 	return call_mapped(hook, &mobjHookIds[mobj_type][hook->hook_type]);
 }
@@ -546,7 +545,7 @@ static int call_hooks
 
 #define res_none NULL
 
-static void res_true(Hook_State *hook)
+FUNCINLINE static ATTRINLINE void res_true(Hook_State *hook)
 {
 	if (lua_toboolean(gL, -1))
 		hook->status = true;
@@ -558,7 +557,7 @@ static void res_true(Hook_State *hook)
 		hook->status = false;
 }*/
 
-static void res_force(Hook_State *hook)
+FUNCINLINE static ATTRINLINE void res_force(Hook_State *hook)
 {
 	if (!lua_isnil(gL, -1))
 	{
@@ -569,7 +568,7 @@ static void res_force(Hook_State *hook)
 	}
 }
 
-static void res_hud(Hook_State *hook)
+FUNCINLINE static ATTRINLINE void res_hud(Hook_State *hook)
 {
 	(void)hook;
 
@@ -700,6 +699,8 @@ static void hook_think_frame(int type)
 	const hook_t * map = &hookIds[type];
 	int k;
 
+	const boolean perfstats = (cv_perfstats.value >= 3);
+
 	if (prepare_hook(&hook, 0, type))
 	{
 		init_hook_call(&hook, 0, res_none);
@@ -708,7 +709,7 @@ static void hook_think_frame(int type)
 		{
 			get_hook(&hook, map->ids, k);
 
-			if (cv_perfstats.value >= 3)
+			if (perfstats)
 			{
 				lua_pushvalue(gL, -1);/* need the function again */
 				time_taken = I_GetPreciseTime();
@@ -716,7 +717,7 @@ static void hook_think_frame(int type)
 
 			call_single_hook(&hook);
 
-			if (cv_perfstats.value >= 3)
+			if (perfstats)
 			{
 				lua_Debug ar;
 				time_taken = I_GetPreciseTime() - time_taken;
@@ -808,7 +809,7 @@ typedef struct {
 	ticcmd_t * cmd;
 } BotAI_State;
 
-static boolean checkbotkey(const char *field)
+FUNCINLINE static ATTRINLINE boolean checkbotkey(const char *field)
 {
 	return lua_toboolean(gL, -1) && strcmp(lua_tostring(gL, -2), field) == 0;
 }
