@@ -872,8 +872,6 @@ static void P_LoadRawSectors(UINT8 *data)
 		ss->thinglist = NULL;
 		ss->touching_thinglist = NULL;
 
-		ss->touching_preciplist = NULL;
-
 		ss->floordata = NULL;
 		ss->ceilingdata = NULL;
 		ss->lightingdata = NULL;
