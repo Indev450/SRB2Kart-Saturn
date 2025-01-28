@@ -421,10 +421,7 @@ static INT32 S_ScaleVolumeWithSplitscreen(INT32 volume)
 
 	root = FixedSqrt((splitscreen + 1) * (FRACUNIT/3));
 
-	return FixedDiv(
-		volume * FRACUNIT,
-		root
-	) / FRACUNIT;
+	return FixedDiv(volume * FRACUNIT, root) / FRACUNIT;
 }
 
 void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
@@ -1946,6 +1943,9 @@ static const char *musicexception_list[] = {
 // check if the current music is smth we dont want to keep (vote music, etc)
 static boolean S_CheckMusicException(void)
 {
+	if (stricmp(music_name, mapmusname))
+		return true;
+
 	for (size_t i = 0; i < sizeof(musicexception_list)/sizeof(musicexception_list[0]); i++)
 	{
 		if (!stricmp(music_name, musicexception_list[i]) || !stricmp(checkmusic, musicexception_list[i]))
