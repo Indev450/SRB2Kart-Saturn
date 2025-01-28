@@ -2600,7 +2600,6 @@ void GL_DrawModelEx(model_t *model, INT32 frameIndex, float duration, float tics
 	pglEnable(GL_CULL_FACE);
 	pglEnable(GL_NORMALIZE);
 
-#ifdef USE_FTRANSFORM_MIRROR
 	// flipped is if the object is vertically flipped
 	// hflipped is if the object is horizontally flipped
 	// pos->flip is if the screen is flipped vertically
@@ -2613,13 +2612,6 @@ void GL_DrawModelEx(model_t *model, INT32 frameIndex, float duration, float tics
 		else
 			pglCullFace(GL_BACK);
 	}
-#else
-	// pos->flip is if the screen is flipped too
-	if (flipped ^ hflipped ^ pos->flip) // If one or three of these are active, but not two, invert the model's culling
-		pglCullFace(GL_FRONT);
-	else
-		pglCullFace(GL_BACK);
-#endif
 
 	pglPushMatrix(); // should be the same as glLoadIdentity
 	pglTranslatef(pos->x, pos->z, pos->y);
@@ -2627,30 +2619,15 @@ void GL_DrawModelEx(model_t *model, INT32 frameIndex, float duration, float tics
 		scaley = -scaley;
 	if (hflipped)
 		scalez = -scalez;
-#ifdef USE_FTRANSFORM_ANGLEZ
-	pglRotatef(pos->anglez2, 0.0f, 0.0f, -1.0f); // rotate by slope from Kart
-#endif
-	pglRotatef(pos->anglex2, -1.0f, 0.0f, 0.0f);
+
+	pglRotatef(pos->anglez, 0.0f, 0.0f, -1.0f);
+	pglRotatef(pos->anglex, 1.0f, 0.0f, 0.0f);
 	pglRotatef(pos->angley, 0.0f, -1.0f, 0.0f);
 	
 	if (pos->roll)
 	{
-		float roll = (1.0f * pos->rollflip);
 		pglTranslatef(pos->centerx, pos->centery, 0);
-
-		// rotate model for pitch and roll
-		pglRotatef(pos->anglex, 1.0f, 0.0f, 0.0f);
-#ifdef USE_FTRANSFORM_ANGLEZ
-		pglRotatef(pos->anglez, 0.0f, 0.0f, -1.0f);
-#endif
-
-		if (pos->rotaxis == 2) // Z
-			pglRotatef(pos->rollangle, 0.0f, 0.0f, roll);
-		else if (pos->rotaxis == 1) // Y
-			pglRotatef(pos->rollangle, 0.0f, roll, 0.0f);
-		else // X
-			pglRotatef(pos->rollangle, roll, 0.0f, 0.0f);
-			
+		pglRotatef(pos->rollangle, pos->rollx, 0.0f, pos->rollz);
 		pglTranslatef(-pos->centerx, -pos->centery, 0);
 	}
 
@@ -2778,15 +2755,12 @@ void GL_SetTransform(FTransform *stransform)
 		// keep a trace of the transformation for md2
 		memcpy(&md2_transform, stransform, sizeof (md2_transform));
 
-#ifdef USE_FTRANSFORM_MIRROR
-		// mirroring from Kart
+
 		if (stransform->mirror)
 			pglScalef(-stransform->scalex, stransform->scaley, -stransform->scalez);
 		else if (stransform->mirrorflip)
 			pglScalef(-stransform->scalex, -stransform->scaley, -stransform->scalez);
-		else
-#endif
-		if (stransform->flip)
+		else if (stransform->flip)
 			pglScalef(stransform->scalex, -stransform->scaley, -stransform->scalez);
 		else
 			pglScalef(stransform->scalex, stransform->scaley, -stransform->scalez);
