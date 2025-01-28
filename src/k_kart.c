@@ -3520,6 +3520,7 @@ void K_RollMobjBySlopes(mobj_t* mo, pslope_t *slope)
 		const boolean usedistance = cv_sloperolldist.value && !splitscreen;
 		const fixed_t rolldist = cv_sloperolldist.value * mapobjectscale;
 		const fixed_t m_dist = usedistance ? R_PointToDist(mo->x, mo->y) : 0;
+		const boolean usepitchnroll = (!usedistance || (m_dist <= rolldist));
 
 		fixed_t tempz = slope->normal.z;
 		fixed_t tempy = slope->normal.y;
@@ -3529,35 +3530,35 @@ void K_RollMobjBySlopes(mobj_t* mo, pslope_t *slope)
 		// admittedly this is a very hacky way to do the pitch and roll easing
 
 		// pitch
-		if (!usedistance || (m_dist <= (rolldist)))
+		if (usepitchnroll)
 		{
 			an = (INT32)((angle_t)tempangle - mo->pitch_sprite) / SLOPEROLL_DIV;
 
 			mo->pitch_sprite = an ? mo->pitch_sprite + an : (angle_t)tempangle;
 		}
 		else
-			mo->pitch_sprite = FixedAngle(0);
+			mo->pitch_sprite = 0;
 
 		mo->slopepitch = flip ? InvAngle(mo->pitch_sprite) : mo->pitch_sprite;
 
 		// roll
 		tempangle = (R_PointToAngle2(0, 0, tempz, tempy));
 
-		if (!usedistance || (m_dist <= (rolldist)))
+		if (usepitchnroll)
 		{
 			an = (INT32)((angle_t)tempangle - mo->roll_sprite) / SLOPEROLL_DIV;
 
 			mo->roll_sprite = an ? mo->roll_sprite + an : (angle_t)tempangle;
 		}
 		else
-			mo->roll_sprite = FixedAngle(0);
+			mo->roll_sprite = 0;
 
 		mo->sloperoll = flip ? InvAngle(mo->roll_sprite) : mo->roll_sprite;
 	}
 	else if (P_IsObjectOnGround(mo))
 	{
-		mo->sloperoll = FixedAngle(0);
-		mo->slopepitch = FixedAngle(0);
+		mo->sloperoll = 0;
+		mo->slopepitch = 0;
 	}
 }
 
@@ -6891,8 +6892,8 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 	}
 	else
 	{
-		player->mo->sloperoll = FixedAngle(0);
-		player->mo->slopepitch = FixedAngle(0);
+		player->mo->sloperoll = 0;
+		player->mo->slopepitch = 0;
 	}
 
 	// Quick Turning
