@@ -4849,6 +4849,7 @@ void G_WriteAllGhostTics(void)
 	UINT8 *save_demo_p = demobuf.p;
 #define CHECKSPACE(num) if (demobuf.p+(num) > demoend) { demobuf.p = save_demo_p; G_CheckDemoStatus(); return; }
 
+	boolean toobig = false;
 	INT32 i, counter = leveltime;
 
 	for (i = 0; i < MAXPLAYERS; i++)
@@ -4861,17 +4862,31 @@ void G_WriteAllGhostTics(void)
 
 		counter++;
 
-		if (counter % cv_netdemosyncquality.value != 0) // Only write 1 in this many ghost datas per tic to cut down on multiplayer replay size.
+		if (multiplayer && ((counter % cv_netdemosyncquality.value) != 0)) // Only write 1 in this many ghost datas per tic to cut down on multiplayer replay size.
 			continue;
 
 		CHECKSPACE(1);
 
 		WRITEUINT8(demobuf.p, i);
 		G_WriteGhostTic(players[i].mo, i);
+
+		// attention here for the ticcmd size!
+		// latest demos with mouse aiming byte in ticcmd
+		if (demobuf.p >= demoend - (13 + 9 + 9))
+		{
+			toobig = true;
+			break;
+		}
 	}
 
 	CHECKSPACE(1);
 	WRITEUINT8(demobuf.p, 0xFF);
+
+	if (toobig)
+	{
+		G_CheckDemoStatus(); // no more space
+		return;
+	}
 
 #undef CHECKSPACE
 }
@@ -5070,23 +5085,17 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 	}
 
 	*ziptic_p = ziptic;
-
-	// attention here for the ticcmd size!
-	// latest demos with mouse aiming byte in ticcmd
-	if (demobuf.p >= demoend - (13 + 9))
-	{
-		G_CheckDemoStatus(); // no more space
-		return;
-	}
 #undef CHECKSPACE
 }
 
 void G_ConsAllGhostTics(void)
 {
-	if (!demobuf.p)
+	UINT8 p;
+
+	if (!demobuf.p || !demo.deferstart)
 		return;
 
-	UINT8 p = READUINT8(demobuf.p);
+	p = READUINT8(demobuf.p);
 
 	while (p != 0xFF)
 	{
@@ -5112,8 +5121,6 @@ void G_ConsGhostTic(INT32 playernum)
 	fixed_t syncleeway;
 	boolean nightsfail = false;
 
-	if (!demobuf.p || !demo.deferstart)
-		return;
 	if (!(demoflags & DF_GHOST))
 		return; // No ghost data to use.
 
