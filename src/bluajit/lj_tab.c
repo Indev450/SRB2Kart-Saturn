@@ -363,7 +363,9 @@ static void rehashtab(lua_State *L, GCtab *t, cTValue *ek)
   total = 1 + asize;
   total += counthash(t, bins, &asize);
 #else
-  total = 1 + asize + counthash(t, bins, &asize);
+  /* more closely matches vanilla lua when abusing undefined behavior (frictionfix.....) */
+  total = counthash(t, bins, &asize);
+  total += 1 + asize;
 #endif
   asize += countint(ek, bins);
   na = bestasize(bins, &asize);
