@@ -4972,53 +4972,60 @@ static void M_DrawSlider(INT32 x, INT32 y, const consvar_t *cv, boolean ontop)
 	INT32 range;
 	patch_t *p;
 
-	for (i = 0; cv->PossibleValue[i+1].strvalue; i++);
-
 	x = BASEVIDWIDTH - x - SLIDER_WIDTH;
 
-	if (ontop)
-	{
-		V_DrawCharacter(x - 16 - (skullAnimCounter/5), y,
-			'\x1C' | highlightflags, false); // left arrow
-		V_DrawCharacter(x+(SLIDER_RANGE*8) + 8 + (skullAnimCounter/5), y,
-			'\x1D' | highlightflags, false); // right arrow
-	}
-
-	if ((range = atoi(cv->defaultvalue)) != cv->value)
-	{
-		range = ((range - cv->PossibleValue[0].value) * 100 /
-		(cv->PossibleValue[1].value - cv->PossibleValue[0].value));
-
-		if (range < 0)
-			range = 0;
-		if (range > 100)
-			range = 100;
-
-		// draw the default
-		p = W_CachePatchName("M_SLIDEC", PU_CACHE);
-		V_DrawScaledPatch(x - 4 + (((SLIDER_RANGE)*8 + 4)*range)/100, y, 0, p);
-	}
-
-	V_DrawScaledPatch(x - 8, y, 0, W_CachePatchName("M_SLIDEL", PU_CACHE));
+	p =  W_CachePatchName("M_SLIDEL", PU_CACHE);
+	V_DrawScaledPatch(x - 8, y, 0, p);
 
 	p =  W_CachePatchName("M_SLIDEM", PU_CACHE);
 	for (i = 0; i < SLIDER_RANGE; i++)
 		V_DrawScaledPatch (x+i*8, y, 0,p);
 
 	p = W_CachePatchName("M_SLIDER", PU_CACHE);
-	V_DrawScaledPatch(x+SLIDER_RANGE*8, y, 0, p);
-
-	range = ((cv->value - cv->PossibleValue[0].value) * 100 /
-	 (cv->PossibleValue[1].value - cv->PossibleValue[0].value));
-
-	if (range < 0)
-		range = 0;
-	if (range > 100)
-		range = 100;
+	V_DrawScaledPatch(x+i*8, y, 0, p);
 
 	// draw the slider cursor
 	p = W_CachePatchName("M_SLIDEC", PU_CACHE);
-	V_DrawScaledPatch(x - 4 + (((SLIDER_RANGE)*8 + 4)*range)/100, y, 0, p);
+
+	for (i = 0; cv->PossibleValue[i+1].strvalue; i++);
+
+	if (cv->flags & CV_FLOAT)
+		range = (INT32)(atof(cv->defaultvalue)*FRACUNIT);
+	else
+		range = atoi(cv->defaultvalue);
+
+	if (range != cv->value)
+	{
+		range = ((range - cv->PossibleValue[0].value) * 100 /
+		 (cv->PossibleValue[i].value - cv->PossibleValue[0].value));
+
+		if (range < 0)
+			range = 0;
+		else if (range > 100)
+			range = 100;
+
+		V_DrawMappedPatch(x - 4 + (((SLIDER_RANGE)*8 + 4)*range)/100, y, 0, p, yellowmap);
+	}
+
+	range = ((cv->value - cv->PossibleValue[0].value) * 100 /
+	 (cv->PossibleValue[i].value - cv->PossibleValue[0].value));
+
+	if (range < 0)
+		range = 0;
+	else if (range > 100)
+		range = 100;
+
+	V_DrawMappedPatch(x - 4 + (((SLIDER_RANGE)*8 + 4)*range)/100, y, 0, p, yellowmap);
+
+	if (ontop)
+	{
+		V_DrawCharacter(x - 16 - (skullAnimCounter/5), y,
+			'\x1C' | highlightflags, false);
+		V_DrawCharacter(x+(SLIDER_RANGE*8) + 8 + (skullAnimCounter/5), y,
+			'\x1D' | highlightflags, false);
+		V_DrawCenteredString(x + ((SLIDER_RANGE*8) + 8)/2, y, V_30TRANS,
+			(cv->flags & CV_FLOAT) ? va("%.2f", FIXED_TO_FLOAT(cv->value)) : va("%d", cv->value));
+	}
 }
 
 //
