@@ -4638,18 +4638,23 @@ void G_ReadDemoExtraData(void)
 	while (p != DW_END)
 	{
 		UINT32 rng;
+		UINT32 checkrng;
 
 		switch (p)
 		{
 		case DW_RNG:
 			rng = READUINT32(demobuf.p);
-			if (P_GetRandSeed() != rng)
+			checkrng = P_GetRandSeed();
+			if (checkrng != rng)
 			{
-				P_SetRandSeed(rng);
-
 				if (demosynced)
+				{
 					CONS_Alert(CONS_WARNING, M_GetText("Demo playback has desynced (RNG)!\n"));
+					CONS_Printf("expected rng %d got %d\n", rng, checkrng);
+				}
 				demosynced = false;
+
+				P_SetRandSeed(rng);
 			}
 		}
 
@@ -5280,7 +5285,10 @@ void G_ConsGhostTic(INT32 playernum)
 				if (mobj && mobj->health != health) // Wasn't damaged?! This is desync! Fix it!
 				{
 					if (demosynced)
+					{
 						CONS_Alert(CONS_WARNING, M_GetText("Demo playback has desynced (health)!\n"));
+						CONS_Printf("expected health %d got %d\n", health, mobj->health);
+					}
 					demosynced = false;
 					P_DamageMobj(mobj, players[0].mo, players[0].mo, 1);
 				}
@@ -5343,7 +5351,11 @@ void G_ConsGhostTic(INT32 playernum)
 		)
 		{
 			if (demosynced)
+			{
 				CONS_Alert(CONS_WARNING, "Demo playback has desynced (item/bumpers)!(player %s)!\n", player_names[playernum]);
+				CONS_Printf("expected item type %d got %d\n", ghostext[playernum].kartitem, players[playernum].kartstuff[k_itemtype]);
+				CONS_Printf("expected item amount %d got %d\n", ghostext[playernum].kartamount, players[playernum].kartstuff[k_itemamount]);
+			}
 			demosynced = false;
 
 			players[playernum].kartstuff[k_itemtype] = ghostext[playernum].kartitem;
