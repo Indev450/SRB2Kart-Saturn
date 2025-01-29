@@ -2480,7 +2480,6 @@ static void P_MovePlayer(player_t *player)
 
 	K_DriftDustHandling(player->mo);
 
-
 	// Crush test...
 	if ((player->mo->ceilingz - player->mo->floorz < player->mo->height)
 		&& !(player->mo->flags & MF_NOCLIP))
@@ -4987,7 +4986,7 @@ void P_PlayerThink(player_t *player)
 
 	K_KartPlayerThink(player, cmd); // SRB2kart
 
-	if (rendermode != render_none)
+	if (rendermode != render_none && cv_tilting.value)
 		DoABarrelRoll(player);
 
 	LUA_HookPlayer(player, HOOK(PlayerThink));
