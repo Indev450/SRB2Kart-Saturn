@@ -551,6 +551,8 @@ typedef struct player_s
 
 	UINT8 splitscreenindex;
 
+	tic_t driftsparkGrowTimer;
+
 	fixed_t fovadd; // adjust FOV for hw rendering
 } player_t;
 

@@ -3298,7 +3298,6 @@ static void K_SpawnDriftSparks(player_t *player)
 
 	for (i = 0; i < 2; i++)
 	{
-		UINT8 pindex;
 		fixed_t driftExtraScale = 0;
 		newx = player->mo->x + P_ReturnThrustX(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, FixedMul(32*FRACUNIT, player->mo->scale));
 		newy = player->mo->y + P_ReturnThrustY(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, FixedMul(32*FRACUNIT, player->mo->scale));
@@ -3308,16 +3307,7 @@ static void K_SpawnDriftSparks(player_t *player)
 		spark->angle = travelangle-(ANGLE_45/5)*player->kartstuff[k_drift];
 
 		// scale increase while driftspark level gained timer is running
-
-		// hack to find the correct player number
-		for (pindex = 0; pindex < MAXPLAYERS; pindex++)
-		{
-			if (player == &players[pindex])
-			{
-				driftExtraScale = FixedDiv(driftsparkGrowTimer[pindex], DRIFTSPARKGROWTICS);
-				break;
-			}
-		}
+		driftExtraScale = FixedDiv(player->driftsparkGrowTimer, DRIFTSPARKGROWTICS);
 		spark->destscale = FixedMul(player->mo->scale, FRACUNIT + FixedMul(driftExtraScale, cv_driftsparkpulse.value));
 		P_SetScale(spark, FixedMul(player->mo->scale, FRACUNIT + FixedMul(driftExtraScale, cv_driftsparkpulse.value)));
 
@@ -6109,7 +6099,6 @@ static void K_KartDrift(player_t *player, boolean onground)
 			player->kartstuff[k_driftend] = 0;
 	}
 
-
 	// Incease/decrease the drift value to continue drifting in that direction
 	if (player->kartstuff[k_spinouttimer] == 0 && player->kartstuff[k_jmp] == 1 && onground && player->kartstuff[k_drift] != 0)
 	{
@@ -6149,20 +6138,11 @@ static void K_KartDrift(player_t *player, boolean onground)
 			|| (player->kartstuff[k_driftcharge] < dstwo && player->kartstuff[k_driftcharge]+driftadditive >= dstwo)
 			|| (player->kartstuff[k_driftcharge] < dsthree && player->kartstuff[k_driftcharge]+driftadditive >= dsthree))
 		{
-			UINT8 pindex;
 			//S_StartSound(player->mo, sfx_s3ka2);
 			if (P_IsLocalPlayer(player)) // UGHGHGH...
 				S_StartSoundAtVolume(player->mo, sfx_s3ka2, 192); // Ugh...
 
-			// hack to find the correct player number
-			for (pindex = 0; pindex < MAXPLAYERS; pindex++)
-			{
-				if (player == &players[pindex])
-				{
-					driftsparkGrowTimer[pindex] = DRIFTSPARKGROWTICS;
-					break;
-				}
-			}
+			player->driftsparkGrowTimer = DRIFTSPARKGROWTICS;
 		}
 
 
@@ -6175,21 +6155,8 @@ static void K_KartDrift(player_t *player, boolean onground)
 		player->kartstuff[k_driftend] = 0;
 	}
 
-	{
-		//im putting this in a block because i want the variables here, not at the top of the block
-		UINT8 pindex;
-
-		// hack to find the correct player number
-		for (pindex = 0; pindex < MAXPLAYERS; pindex++)
-		{
-			if (player == &players[pindex])
-			{
-				if (driftsparkGrowTimer[pindex])
-					driftsparkGrowTimer[pindex]--;
-				break;
-			}
-		}
-	}
+	if (player->driftsparkGrowTimer)
+		player->driftsparkGrowTimer--;
 
 	// Stop drifting
 	if (player->kartstuff[k_spinouttimer] > 0 || player->speed < minspeed)
