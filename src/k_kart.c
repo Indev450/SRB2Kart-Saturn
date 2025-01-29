@@ -6163,12 +6163,6 @@ static void K_KartDrift(player_t *player, boolean onground)
 	{
 		player->kartstuff[k_drift] = player->kartstuff[k_driftcharge] = 0;
 		player->kartstuff[k_aizdriftstrat] = player->kartstuff[k_brakedrift] = 0;
-
-		if (!player->sliproll)
-		{
-			player->sliproll = 0;
-		}
-
 		player->kartstuff[k_getsparks] = 0;
 	}
 
