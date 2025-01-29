@@ -716,13 +716,13 @@ static void Y_UpdateRecordReplays(void)
 	if ((mainrecords[gamemap-1]->time == 0) || (players[consoleplayer].realtime < mainrecords[gamemap-1]->time))
 		mainrecords[gamemap-1]->time = players[consoleplayer].realtime;
 
-	if ((mainrecords[gamemap-1]->lap == 0) || (bestlap < mainrecords[gamemap-1]->lap))
-		mainrecords[gamemap-1]->lap = bestlap;
+	if ((mainrecords[gamemap-1]->lap == 0) || (players[consoleplayer].laptime[LAP_BEST] < mainrecords[gamemap-1]->lap))
+		mainrecords[gamemap-1]->lap = players[consoleplayer].laptime[LAP_BEST];
 
 	// Save demo!
 	bestdemo[255] = '\0';
 	lastdemo[255] = '\0';
-	G_SetDemoTime(players[consoleplayer].realtime, bestlap);
+	G_SetDemoTime(players[consoleplayer].realtime, players[consoleplayer].laptime[LAP_BEST]);
 	G_CheckDemoStatus();
 
 	I_mkdir(va("%s"PATHSEP"replay", srb2home), 0755);

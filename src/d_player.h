@@ -351,6 +351,7 @@ typedef enum
 typedef enum
 {
 	LAP_CUR,
+	LAP_BEST,
 	LAP_LAST,
 	LAP__MAX
 } laptime_e;

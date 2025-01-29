@@ -3913,17 +3913,13 @@ DoneSection2:
 						CON_LogMessage(va(M_GetText("%s has finished the race.\n"), player_names[player-players]));
 
 					// SRB2Kart: save best lap for record attack
-					if (player == &players[consoleplayer])
+					if (player->laptime[LAP_CUR] < player->laptime[LAP_BEST] || player->laptime[LAP_BEST] == 0)
 					{
-						if (curlap < bestlap || bestlap == 0)
-							bestlap = curlap;
-						curlap = 0;
+						player->laptime[LAP_BEST] = player->laptime[LAP_CUR];
 					}
 
-					// ONLY FOR HUD
 					player->laptime[LAP_LAST] = player->laptime[LAP_CUR];
 					player->laptime[LAP_CUR] = 0;
-					//
 
 					player->starposttime = player->realtime;
 					player->starpostnum = 0;
