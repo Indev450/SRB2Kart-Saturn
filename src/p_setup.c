@@ -2122,6 +2122,8 @@ static void P_LevelInitStuff(boolean reloadinggamestate)
 			players[i].laptime[j] = 0;
 		}
 
+		players[i].driftsparkGrowTimer = 0;
+
 		players[i].gotcontinue = false;
 
 		players[i].xtralife = players[i].deadtimer = players[i].numboxes = players[i].totalring = players[i].laps = 0;

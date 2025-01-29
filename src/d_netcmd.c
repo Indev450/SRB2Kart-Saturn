@@ -2428,8 +2428,6 @@ static void Command_StopMovie_f(void)
 
 INT32 mapchangepending = 0;
 
-tic_t driftsparkGrowTimer[MAXPLAYERS];
-
 /** Runs a map change.
   * The supplied data are assumed to be good. If provided by a user, they will
   * have already been checked in Command_Map_f().
@@ -2462,9 +2460,6 @@ void D_MapChange(INT32 mapnum, INT32 newgametype, boolean pencoremode, boolean r
 
 	CONS_Debug(DBG_GAMELOGIC, "Map change: mapnum=%d gametype=%d encoremode=%d resetplayers=%d delay=%d skipprecutscene=%d\n",
 	           mapnum, newgametype, pencoremode, resetplayers, delay, skipprecutscene);
-
-	// just gonna hack in a timer reset here...
-	memset(driftsparkGrowTimer, 0, sizeof(driftsparkGrowTimer));
 
 	if (netgame || multiplayer)
 		FLS = false;
