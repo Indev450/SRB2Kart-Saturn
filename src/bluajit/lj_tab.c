@@ -359,8 +359,12 @@ static void rehashtab(lua_State *L, GCtab *t, cTValue *ek)
   uint32_t total, asize, na, i;
   for (i = 0; i < LJ_MAX_ABITS; i++) bins[i] = 0;
   asize = countarray(t, bins);
+#if 0
   total = 1 + asize;
   total += counthash(t, bins, &asize);
+#else
+  total = 1 + asize + counthash(t, bins, &asize);
+#endif
   asize += countint(ek, bins);
   na = bestasize(bins, &asize);
   total -= na;
