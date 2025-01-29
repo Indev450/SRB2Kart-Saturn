@@ -279,8 +279,6 @@ boolean startedInFreePlay; // Map was started in free play
 // Client-sided, unsynched variables (NEVER use in anything that needs to be synced with other players)
 boolean legitimateexit; // Did this client actually finish the match?
 boolean comebackshowninfo; // Have you already seen the "ATTACK OR PROTECT" message?
-tic_t curlap; // Current lap time
-tic_t bestlap; // Best lap time
 static INT16 randmapbuffer[NUMMAPS+1]; // Buffer for maps RandMap is allowed to roll
 
 tic_t hidetime;

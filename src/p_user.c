@@ -2927,24 +2927,15 @@ static void P_DeathThink(player_t *player)
 		if (leveltime >= starttime)
 		{
 			player->realtime = leveltime - starttime;
-			if (player == &players[consoleplayer])
-			{
-				if (player->spectator || !circuitmap)
-					curlap = 0;
-				else
-					curlap++; // This is too complicated to sync to realtime, just sorta hope for the best :V
-			}
 
 			if (player->spectator)
 				player->laptime[LAP_CUR] = 0;
-			else
+			else if (player->laptime[LAP_CUR] != UINT32_MAX)
 				player->laptime[LAP_CUR]++; // This is too complicated to sync to realtime, just sorta hope for the best :V
 		}
 		else
 		{
 			player->realtime = 0;
-			if (player == &players[consoleplayer])
-				curlap = 0;
 
 			player->laptime[LAP_CUR] = 0;
 		}
@@ -4691,25 +4682,15 @@ void P_PlayerThink(player_t *player)
 		if (leveltime >= starttime)
 		{
 			player->realtime = leveltime - starttime;
-			if (player == &players[consoleplayer])
-			{
-				if (player->spectator || !circuitmap)
-					curlap = 0;
-				else
-					curlap++; // This is too complicated to sync to realtime, just sorta hope for the best :V
-			}
 
 			if (player->spectator)
 				player->laptime[LAP_CUR] = 0;
-			else
+			else if (player->laptime[LAP_CUR] != UINT32_MAX)
 				player->laptime[LAP_CUR]++; // This is too complicated to sync to realtime, just sorta hope for the best :V
 		}
 		else
 		{
 			player->realtime = 0;
-			if (player == &players[consoleplayer])
-				curlap = 0;
-
 			player->laptime[LAP_CUR] = 0;
 		}
 	}
@@ -4821,21 +4802,23 @@ void P_PlayerThink(player_t *player)
 			player->linkcount = 0;
 	}
 
-	// Move around.
-	// Reactiontime is used to prevent movement
-	//  for a bit after a teleport.
 	if (player->mo->reactiontime)
+	{
+		// Reactiontime is used to prevent movement
+		// for a bit after a teleport.
 		player->mo->reactiontime--;
+	}
 	else if (player->mo->tracer && player->mo->tracer->type == MT_TUBEWAYPOINT)
 	{
-		{
-			P_DoZoomTube(player);
-		}
+		P_DoZoomTube(player);
 		player->rmomx = player->rmomy = 0; // no actual momentum from your controls
 		P_ResetScore(player);
 	}
 	else
+	{
+		// Move around.
 		P_MovePlayer(player);
+	}
 
 	if (!player->mo)
 	{

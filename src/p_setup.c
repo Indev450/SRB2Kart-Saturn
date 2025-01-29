@@ -2116,7 +2116,11 @@ static void P_LevelInitStuff(boolean reloadinggamestate)
 		players[i].lives = 1; // SRB2Kart
 
 		players[i].realtime = racecountdown = exitcountdown = 0;
-		curlap = bestlap = 0; // SRB2Kart
+
+		for (INT32 j = 0; j < LAP__MAX; j++)
+		{
+			players[i].laptime[j] = 0;
+		}
 
 		players[i].gotcontinue = false;
 
