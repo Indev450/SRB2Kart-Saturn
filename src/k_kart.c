@@ -743,19 +743,8 @@ boolean K_UseColorHud(void)
 
 //{ SRB2kart Net Variables
 
-void K_RegisterKartStuff(void)
+void K_RegisterServerKartStuff(void)
 {
-	HudColor_cons_t[0].value = 0;
-	HudColor_cons_t[0].strvalue = "Skin Color";
-
-	for (INT32 i = 1; i < MAXSKINCOLORS; i++)
-	{
-		HudColor_cons_t[i].value = i;
-		HudColor_cons_t[i].strvalue = KartColor_Names[i];				// SRB2kart
-	}
-	HudColor_cons_t[MAXSKINCOLORS].value = 0;
-	HudColor_cons_t[MAXSKINCOLORS].strvalue = NULL;
-
 	CV_RegisterVar(&cv_sneaker);
 	CV_RegisterVar(&cv_rocketsneaker);
 	CV_RegisterVar(&cv_invincibility);
@@ -805,6 +794,22 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartdebugcheckpoint);
 	CV_RegisterVar(&cv_kartdebugnodes);
 	CV_RegisterVar(&cv_kartdebugcolorize);
+}
+
+// Registers kart client commands and variables.
+// Nothing needed for a dedicated server should be registered here.
+void K_RegisterClientKartStuff(void)
+{
+	HudColor_cons_t[0].value = 0;
+	HudColor_cons_t[0].strvalue = "Skin Color";
+
+	for (INT32 i = 1; i < MAXSKINCOLORS; i++)
+	{
+		HudColor_cons_t[i].value = i;
+		HudColor_cons_t[i].strvalue = KartColor_Names[i];				// SRB2kart
+	}
+	HudColor_cons_t[MAXSKINCOLORS].value = 0;
+	HudColor_cons_t[MAXSKINCOLORS].strvalue = NULL;
 
 #define REG_HUD_OFFSET_X(name)\
 	CV_RegisterVar(&cv_##name##_xoffset);
