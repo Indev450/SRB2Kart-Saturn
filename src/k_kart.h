@@ -22,7 +22,8 @@ UINT8 K_GetKartColorByName(const char *name);
 UINT8 K_GetHudColor(void);
 boolean K_UseColorHud(void);
 
-void K_RegisterKartStuff(void);
+void K_RegisterServerKartStuff(void);
+void K_RegisterClientKartStuff(void);
 
 extern consvar_t cv_coloredspeedlines, cv_coloredsneakertrail;
 extern consvar_t cv_bananajitter;
