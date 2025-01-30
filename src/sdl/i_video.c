@@ -426,7 +426,6 @@ static INT32 Impl_SDL_Scancode_To_Keycode(SDL_Scancode code)
 static INT32 GetTypedChar(SDL_Scancode code, SDL_Keysym *sym)
 {
 	SDL_Event next_event;
-	boolean Text_Input_Only = (chat_on || CON_Ready() || (menu_text_input && menuactive));  //only use this this if on chat or console or the current menu wants inputs from us (except if its the control setup menu ig)
 
 	// Special cases, where we always return a fixed value.
 	switch (sym->sym)
@@ -437,7 +436,7 @@ static INT32 GetTypedChar(SDL_Scancode code, SDL_Keysym *sym)
 			break;
 	}
 
-	if (Text_Input_Only)
+	if (chat_on || CON_Ready() || (menu_text_input && menuactive)) //only use this this if on chat or console or the current menu wants inputs from us (except if its the control setup menu ig)
 	{
 		if (SDL_PeepEvents(&next_event, 1, SDL_PEEKEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT) == 1 && next_event.type == SDL_TEXTINPUT)
 		{
@@ -884,9 +883,9 @@ static void Impl_HandleKeyboardEvent(SDL_KeyboardEvent evt, Uint32 type)
 		return;
 	}
 
-	if (cv_keyboardlayout.value == 2)
+	if (cv_keyboardlayout.value == 2) // "native"
 		event.data1 = GetTypedChar(evt.keysym.scancode, &evt.keysym);
-	else if (cv_keyboardlayout.value == 3)
+	else if (cv_keyboardlayout.value == 3) // AZERTY
 		event.data1 = Impl_SDL_Keysym_To_Keycode(evt.keysym);
 	else
 		event.data1 = Impl_SDL_Scancode_To_Keycode(evt.keysym.scancode);
@@ -939,8 +938,6 @@ static void Impl_HandleMouseButtonEvent(SDL_MouseButtonEvent evt, Uint32 type)
 {
 	event_t event;
 
-	SDL_memset(&event, 0, sizeof(event_t));
-
 	// Ignore the event if the mouse is not actually focused on the window.
 	// This can happen if you used the mouse to restore keyboard focus;
 	// this apparently makes a mouse button down event but not a mouse button up event,
@@ -952,6 +949,8 @@ static void Impl_HandleMouseButtonEvent(SDL_MouseButtonEvent evt, Uint32 type)
 	/// \todo inputEvent.button.which
 	if (USE_MOUSEINPUT)
 	{
+		SDL_memset(&event, 0, sizeof(event_t));
+
 		if (type == SDL_MOUSEBUTTONUP)
 		{
 			event.type = ev_keyup;
@@ -982,26 +981,29 @@ static void Impl_HandleMouseWheelEvent(SDL_MouseWheelEvent evt)
 {
 	event_t event;
 
-	SDL_memset(&event, 0, sizeof(event_t));
+	if (USE_MOUSEINPUT)
+	{
+		SDL_memset(&event, 0, sizeof(event_t));
 
-	if (evt.y > 0)
-	{
-		event.data1 = KEY_MOUSEWHEELUP;
-		event.type = ev_keydown;
-	}
-	if (evt.y < 0)
-	{
-		event.data1 = KEY_MOUSEWHEELDOWN;
-		event.type = ev_keydown;
-	}
-	if (evt.y == 0)
-	{
-		event.data1 = 0;
-		event.type = ev_keyup;
-	}
-	if (event.type == ev_keyup || event.type == ev_keydown)
-	{
-		D_PostEvent(&event);
+		if (evt.y > 0)
+		{
+			event.data1 = KEY_MOUSEWHEELUP;
+			event.type = ev_keydown;
+		}
+		if (evt.y < 0)
+		{
+			event.data1 = KEY_MOUSEWHEELDOWN;
+			event.type = ev_keydown;
+		}
+		if (evt.y == 0)
+		{
+			event.data1 = 0;
+			event.type = ev_keyup;
+		}
+		if (event.type == ev_keyup || event.type == ev_keydown)
+		{
+			D_PostEvent(&event);
+		}
 	}
 }
 
@@ -1114,6 +1116,7 @@ static void Impl_HandleControllerButtonEvent(SDL_ControllerButtonEvent evt, Uint
 		event.data1 = KEY_4JOY1;
 	}
 	else return;
+
 	if (type == SDL_CONTROLLERBUTTONUP)
 	{
 		event.type = ev_keyup;
@@ -1123,6 +1126,7 @@ static void Impl_HandleControllerButtonEvent(SDL_ControllerButtonEvent evt, Uint
 		event.type = ev_keydown;
 	}
 	else return;
+
 	if (evt.button < JOYBUTTONS)
 	{
 		event.data1 += evt.button;
@@ -1429,37 +1433,6 @@ void I_UpdateNoBlit(void)
 	exposevideo = SDL_FALSE;
 }
 
-// I_SkipFrame
-//
-// Returns true if it thinks we can afford to skip this frame
-// from PrBoom's src/SDL/i_video.c
-static inline boolean I_SkipFrame(void)
-{
-#if 1
-	// While I fixed the FPS counter bugging out with this,
-	// I actually really like being able to pause and
-	// use perfstats to measure rendering performance
-	// without game logic changes.
-	return false;
-#else
-	static boolean skip = false;
-
-	skip = !skip;
-
-	switch (gamestate)
-	{
-		case GS_LEVEL:
-			if (!paused)
-				return false;
-			/* FALLTHRU */
-		case GS_WAITINGPLAYERS:
-			return skip; // Skip odd frames
-		default:
-			return false;
-	}
-#endif
-}
-
 //
 // I_FinishUpdate
 //
@@ -1471,9 +1444,6 @@ void I_FinishUpdate(void)
 		return; //Alam: No software or OpenGl surface
 
 	SCR_CalculateFPS();
-
-	if (I_SkipFrame())
-		return;
 
 	if (st_overlay)
 	{
