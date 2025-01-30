@@ -4392,10 +4392,7 @@ void G_LoadMetal(UINT8 **buffer)
 	metal_p = metalbuffer + READUINT32(*buffer);
 }
 
-ticcmd_t *G_CopyTiccmd(ticcmd_t* dest, const ticcmd_t* src, const size_t n)
-{
-	return M_Memcpy(dest, src, n*sizeof(*src));
-}
+//ticcmd_t *G_CopyTiccmd(ticcmd_t* dest, const ticcmd_t* src, const size_t n)
 
 ticcmd_t *G_MoveTiccmd(ticcmd_t* dest, const ticcmd_t* src, const size_t n)
 {

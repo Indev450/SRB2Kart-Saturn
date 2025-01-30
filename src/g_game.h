@@ -215,8 +215,11 @@ typedef enum
 const char *G_BuildMapName(INT32 map);
 void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer);
 
-// copy ticcmd_t to and fro the normal way
-ticcmd_t *G_CopyTiccmd(ticcmd_t* dest, const ticcmd_t* src, const size_t n);
+// copy ticcmd_t to and from the normal way
+FUNCINLINE static ATTRINLINE ticcmd_t *G_CopyTiccmd(ticcmd_t* dest, const ticcmd_t* src, const size_t n)
+{
+	return M_Memcpy(dest, src, n*sizeof(*src));
+}
 // copy ticcmd_t to and fro network packets
 ticcmd_t *G_MoveTiccmd(ticcmd_t* dest, const ticcmd_t* src, const size_t n);
 
