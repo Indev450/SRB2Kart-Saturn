@@ -688,6 +688,7 @@ static void R_DrawFlippedMaskedColumn(column_t *column)
 		{
 			dc_source = ZZ_Alloc(column->length);
 			dc_sourcelength = column->length;
+
 			for (s = (UINT8 *)column+2+column->length, d = dc_source; d < dc_source+column->length; --s)
 				*d++ = *s;
 			dc_texturemid = basetexturemid - (topdelta<<FRACBITS);
@@ -1969,14 +1970,20 @@ void R_AddSprites(sector_t *sec, INT32 lightlevel)
 //
 void R_AddPrecipitationSprites(void)
 {
-	fixed_t precipscale = (cv_mobjscaleprecip.value ? mapobjectscale : FRACUNIT);
-	fixed_t drawdist = ((fixed_t)(cv_drawdist_precip.value) * precipscale);
-
 	INT32 xl, xh, yl, yh, bx, by;
 	precipmobj_t *th, *next;
 
+	// save a little time if theres no or invisible weather
+	if (curWeather == PRECIP_NONE || curWeather == PRECIP_BLANK || curWeather == PRECIP_STORM_NORAIN)
+	{
+		return;
+	}
+
+	const fixed_t precipscale = (cv_mobjscaleprecip.value ? mapobjectscale : FRACUNIT);
+	const fixed_t drawdist = ((fixed_t)(cv_drawdist_precip.value) * precipscale);
+
 	// no, no infinite draw distance for precipitation. this option at zero is supposed to turn it off
-	if (drawdist == 0 || curWeather == PRECIP_BLANK || curWeather == PRECIP_STORM_NORAIN)
+	if (drawdist == 0)
 	{
 		return;
 	}
@@ -2767,9 +2774,6 @@ void R_ClipSprites(void)
 boolean R_ThingVisible (mobj_t *thing)
 {
 	if (thing->sprite == SPR_NULL || thing->flags2 & MF2_DONTDRAW)
-		return false;
-
-	if (!P_MobjWasRemoved(viewmobj) && (thing == viewmobj))
 		return false;
 
 	if (splitscreen)

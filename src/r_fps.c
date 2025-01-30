@@ -198,7 +198,7 @@ void R_InterpolateView(fixed_t frac, boolean forceinvalid)
 	viewcos = FINECOSINE(viewangle>>ANGLETOFINESHIFT);
 
 	viewplayer = newview->player;
-	viewsector = R_PointInSubsectorFast(viewx, viewy)->sector;
+	viewsector = R_PointInSubsector(viewx, viewy)->sector;
 
 	R_SetupFreelook();
 }

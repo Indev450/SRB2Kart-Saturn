@@ -49,6 +49,7 @@ tic_t leveltime;
 
 // Both the head and tail of the thinker list.
 thinker_t thinkercap;
+thinker_t precipcap;
 
 void Command_Numthinkers_f(void)
 {
@@ -56,6 +57,7 @@ void Command_Numthinkers_f(void)
 	INT32 count = 0;
 	actionf_p1 action;
 	thinker_t *think;
+	thinker_t *listtype;
 
 	if (gamestate != GS_LEVEL)
 	{
@@ -104,7 +106,9 @@ void Command_Numthinkers_f(void)
 			return;
 	}
 
-	for (think = thinkercap.next; think != &thinkercap; think = think->next)
+	listtype = (num == 2) ? &precipcap : &thinkercap;
+
+	for (think = listtype->next; think != listtype; think = think->next)
 	{
 		if (think->function.acp1 != action)
 			continue;
@@ -181,6 +185,7 @@ void Command_CountMobjs_f(void)
 void P_InitThinkers(void)
 {
 	thinkercap.prev = thinkercap.next = &thinkercap;
+	precipcap.prev = precipcap.next = &precipcap;
 	waypointcap = NULL;
 }
 
@@ -198,6 +203,22 @@ void P_AddThinker(thinker_t *thinker)
 	thinker->references = 0;    // killough 11/98: init reference counter to 0
 
 	thinker->cachable = (thinker->function.acp1 == (actionf_p1)P_MobjThinker);
+}
+
+//
+// P_AddPrecipThinker
+// Adds a new precip thinker at the end of the list.
+//
+void P_AddPrecipThinker(thinker_t *thinker)
+{
+	precipcap.prev->next = thinker;
+	thinker->next = &precipcap;
+	thinker->prev = precipcap.prev;
+	precipcap.prev = thinker;
+
+	thinker->references = 0;    // killough 11/98: init reference counter to 0
+
+	thinker->cachable = false;
 }
 
 //
@@ -341,8 +362,6 @@ static inline void P_RunThinkers(void)
 {
 	for (currentthinker = thinkercap.next; currentthinker != &thinkercap; currentthinker = currentthinker->next)
 	{
-		if (currentthinker->function.acp1 == (actionf_p1)P_NullPrecipThinker)
-			continue;
 #ifdef PARANOIA
 		I_Assert(currentthinker->function.acp1 != NULL)
 #endif
@@ -354,28 +373,37 @@ static void P_DeviceRumbleTick(void)
 {
 	UINT8 i;
 
-	if (I_NumJoys() == 0 || (cv_rumble[0].value == 0 && cv_rumble[1].value == 0 && cv_rumble[2].value == 0 && cv_rumble[3].value == 0))
+	if (I_NumJoys() == 0 || gamestate != GS_LEVEL)
 	{
 		return;
 	}
 
 	for (i = 0; i <= splitscreen; i++)
 	{
-		player_t *player = &players[displayplayers[i]];
 		UINT16 low = 0;
 		UINT16 high = 0;
 
-		if (!P_IsLocalPlayer(player))
-			continue;
+		player_t *player = ((i == 0) ? &players[consoleplayer] : &players[displayplayers[i]]);
 
-		if (cv_usejoystick[i].value == 0)
+		if (!cv_usejoystick[i].value)
+		{
 			continue;
+		}
 
-		if (!playeringame[displayplayers[i]] || player->spectator)
+		if (!cv_rumble[i].value)
+		{
 			continue;
+		}
+
+		if (player->spectator)
+		{
+			continue;
+		}
 
 		if (player->mo == NULL)
+		{
 			continue;
+		}
 
 		if (player->exiting)
 		{
@@ -385,27 +413,48 @@ static void P_DeviceRumbleTick(void)
 
 		if (player->kartstuff[k_spinouttimer])
 		{
-			low = high = 65536 / 4;
+			//low = high = FRACUNIT / 6;
+			low = high = FixedMul((FRACUNIT / 4), (FixedDiv(player->kartstuff[k_spinouttimer], (3*TICRATE / 2))));
 		}
 		else if (player->kartstuff[k_sneakertimer] > (sneakertime-(TICRATE/2)))
 		{
-			low = high = 65536 / 8;
+			low = high = FRACUNIT / 8;
 		}
-		else if ((player->kartstuff[k_offroad] && !player->kartstuff[k_hyudorotimer])
+		else if ((player->kartstuff[k_offroad])
 			&& P_IsObjectOnGround(player->mo) && player->speed != 0)
 		{
-			low = high = 65536 / 64;
+			if (player->kartstuff[k_hyudorotimer])
+			{
+				high = FRACUNIT / 128;
+			}
+			else if (player->kartstuff[k_invincibilitytimer])
+			{
+				high = FRACUNIT / 64;
+			}
+			else
+			{
+				low = high = FRACUNIT / 64;
+			}
 		}
-		else if (player->kartstuff[k_brakedrift])
+		else if ((player->kartstuff[k_bananadrag] > TICRATE)
+			&& P_IsObjectOnGround(player->mo) && player->speed != 0)
 		{
-			low = 0;
-			high = 65536 / 256;
+			if (leveltime & 1) // this is actually funny lel
+				high = FRACUNIT / 64;
 		}
 
-		 if (low == 0 && high == 0)
-			continue;
+		if (player->kartstuff[k_brakedrift])
+		{
+			high = CLAMP((high + FRACUNIT / 256), 0, UINT16_MAX);
+		}
 
-		G_PlayerDeviceRumble(i, low, high, 57); // hack alert! i just dont want this think constantly resetting the rumble lol
+		// hack alert! i just dont want this thing constantly resetting the rumble lol
+		if (low == 0 && high == 0)
+		{
+			continue;
+		}
+
+		G_PlayerDeviceRumble(i, low, high, 57);
 	}
 }
 
@@ -448,6 +497,29 @@ static void P_RunQuakes(void)
 	quake.roll = ir;
 
 	--quake.time;
+}
+
+static inline void P_ResetSpriteStuff(void)
+{
+	thinker_t *th;
+
+	for (th = thinkercap.next; th != &thinkercap; th = th->next)
+	{
+		mobj_t *mo;
+
+		if (th->function.acp1 != (actionf_p1)P_MobjThinker) // not a mobj
+			continue;
+
+		mo = (mobj_t *)th;
+
+		if (mo->sprite == SPR_NULL || mo->flags2 & MF2_DONTDRAW || mo->type == MT_SHADOW)
+			continue;
+
+		mo->spritexscale = mo->realxscale;
+		mo->spriteyscale = mo->realyscale;
+		mo->spritexoffset = mo->realxoffset;
+		mo->spriteyoffset = mo->realyoffset;
+	}
 }
 
 //
@@ -550,6 +622,8 @@ void P_Ticker(boolean run)
 		ps_lua_mobjhooks.value.i = 0;
 		ps_checkposition_calls.value.i = 0;
 
+		P_ResetSpriteStuff();
+
 		PS_START_TIMING(ps_lua_prethinkframe_time);
 		LUA_HookPreThinkFrame();
 		PS_STOP_TIMING(ps_lua_prethinkframe_time);
@@ -624,7 +698,7 @@ void P_Ticker(boolean run)
 				if (!players[i].mo)
 					continue;
 
-				P_DamageMobj(players[i].mo, NULL, NULL, 10000);
+				P_DamageMobj(players[i].mo, NULL, NULL, DMG_INSTAKILL);
 			}
 		}
 
@@ -777,8 +851,15 @@ void P_PreTicker(INT32 frames)
 
 		// Run any "after all the other thinkers" stuff
 		for (i = 0; i < MAXPLAYERS; i++)
-			if (playeringame[i] && players[i].mo && !P_MobjWasRemoved(players[i].mo))
-				P_PlayerAfterThink(&players[i]);
+		{
+			if (!playeringame[i])
+				continue;
+
+			if (!players[i].mo || P_MobjWasRemoved(players[i].mo))
+				continue;
+
+			P_PlayerAfterThink(&players[i]);
+		}
 
 		LUA_HookThinkFrame();
 

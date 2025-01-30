@@ -724,7 +724,7 @@ static boolean PIT_CheckThing(mobj_t *thing)
 			HU_SetCEchoDuration(5);
 			HU_DoCEcho(va("%s\\was hit by a kitchen sink.\\\\\\\\", player_names[thing->player-players]));
 			I_OutputMsg("%s was hit by a kitchen sink.\n", player_names[thing->player-players]);
-			P_DamageMobj(thing, tmthing, tmthing->target, 10000);
+			P_DamageMobj(thing, tmthing, tmthing->target, DMG_INSTAKILL);
 			P_KillMobj(tmthing, thing, thing);
 		}
 
@@ -991,7 +991,7 @@ static boolean PIT_CheckThing(mobj_t *thing)
 			HU_SetCEchoDuration(5);
 			HU_DoCEcho(va("%s\\was hit by a kitchen sink.\\\\\\\\", player_names[tmthing->player-players]));
 			I_OutputMsg("%s was hit by a kitchen sink.\n", player_names[tmthing->player-players]);
-			P_DamageMobj(tmthing, thing, thing->target, 10000);
+			P_DamageMobj(tmthing, thing, thing->target, DMG_INSTAKILL);
 			P_KillMobj(thing, tmthing, tmthing);
 		}
 
@@ -1726,7 +1726,10 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 	tmbbox[BOXRIGHT] = x + tmthing->radius;
 	tmbbox[BOXLEFT] = x - tmthing->radius;
 
-	newsubsec = R_PointInSubsector(x, y);
+	if (thing->x != x || thing->y != y || thing->subsector == NULL)
+		newsubsec = R_PointInSubsector(x, y);
+	else
+		newsubsec = thing->subsector;
 
 	ceilingline = blockingline = NULL;
 
@@ -1748,7 +1751,7 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 
 		for (rover = newsubsec->sector->ffloors; rover; rover = rover->next)
 		{
-			fixed_t topheight, bottomheight;
+			fixed_t topheight, bottomheight, midheight;
 
 			if (!(rover->flags & FF_EXISTS))
 				continue;
@@ -1813,10 +1816,10 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 				continue;
 			}
 
-			delta1 = thing->z - (bottomheight
-				+ ((topheight - bottomheight)/2));
-			delta2 = thingtop - (bottomheight
-				+ ((topheight - bottomheight)/2));
+			midheight = (bottomheight + ((topheight - bottomheight)/2));
+
+			delta1 = thing->z - midheight;
+			delta2 = thingtop - midheight;
 
 			if (topheight > tmfloorz && abs(delta1) < abs(delta2)
 				&& !(rover->flags & FF_REVERSEPLATFORM))
@@ -1847,10 +1850,13 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 	BMBOUNDFIX(xl, xh, yl, yh);
 
 	// Check polyobjects and see if tmfloorz/tmceilingz need to be altered
+	// do we really have to iterate through the complete blockmap for polyobjects if there are no polyobjects on the map?
+	if (numPolyObjects)
 	{
 		validcount++;
 
 		for (by = yl; by <= yh; by++)
+		{
 			for (bx = xl; bx <= xh; bx++)
 			{
 				INT32 offset;
@@ -1901,12 +1907,14 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 						delta1 = thing->z - (polybottom + ((polytop - polybottom)/2));
 						delta2 = thingtop - (polybottom + ((polytop - polybottom)/2));
 
-						if (polytop > tmfloorz && abs(delta1) < abs(delta2)) {
+						if (polytop > tmfloorz && abs(delta1) < abs(delta2))
+						{
 							tmfloorz = tmdropoffz = polytop;
 							tmfloorslope = NULL;
 						}
 
-						if (polybottom < tmceilingz && abs(delta1) >= abs(delta2)) {
+						if (polybottom < tmceilingz && abs(delta1) >= abs(delta2))
+						{
 							tmceilingz = tmdrpoffceilz = polybottom;
 							tmceilingslope = NULL;
 						}
@@ -1914,6 +1922,7 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 					plink = (polymaplink_t *)(plink->link.next);
 				}
 			}
+		}
 	}
 
 	// tmfloorthing is set when tmfloorz comes from a thing's top
@@ -1994,7 +2003,11 @@ boolean P_CheckCameraPosition(fixed_t x, fixed_t y, camera_t *thiscam)
 	tmbbox[BOXRIGHT] = x + thiscam->radius;
 	tmbbox[BOXLEFT] = x - thiscam->radius;
 
-	newsubsec = R_PointInSubsector(x, y);
+	if (thiscam->x != x || thiscam->y != y || thiscam->subsector == NULL)
+		newsubsec = R_PointInSubsector(x, y);
+	else
+		newsubsec = thiscam->subsector;
+
 	ceilingline = blockingline = NULL;
 
 	mapcampointer = thiscam;
@@ -2073,6 +2086,8 @@ boolean P_CheckCameraPosition(fixed_t x, fixed_t y, camera_t *thiscam)
 	BMBOUNDFIX(xl, xh, yl, yh);
 
 	// Check polyobjects and see if tmfloorz/tmceilingz need to be altered
+	// do we really have to iterate through the complete blockmap for polyobjects if there are no polyobjects on the map?
+	if (numPolyObjects)
 	{
 		validcount++;
 
@@ -2164,7 +2179,8 @@ boolean P_CheckCameraPosition(fixed_t x, fixed_t y, camera_t *thiscam)
 //
 boolean P_TryCameraMove(fixed_t x, fixed_t y, camera_t *thiscam)
 {
-	subsector_t *s = R_PointInSubsector(x, y);
+	subsector_t *s;
+
 	boolean retval = true;
 	boolean itsatwodlevel = false;
 	UINT8 i;
@@ -2173,6 +2189,11 @@ boolean P_TryCameraMove(fixed_t x, fixed_t y, camera_t *thiscam)
 
 	if (dedicated) // this crashes so don't even try it
 		return false;
+
+	if (thiscam->x != x || thiscam->y != y || thiscam->subsector == NULL)
+		s = R_PointInSubsector(x, y);
+	else
+		s = thiscam->subsector;
 
 	if (twodlevel)
 		itsatwodlevel = true;
@@ -2367,10 +2388,13 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff)
 		radius = MAXRADIUS/2;
 
 	do {
-		if (thing->flags & MF_NOCLIP) {
+		if (thing->flags & MF_NOCLIP)
+		{
 			tryx = x;
 			tryy = y;
-		} else {
+		}
+		else
+		{
 			if (x-tryx > radius)
 				tryx += radius;
 			else if (x-tryx < -radius)
@@ -2514,14 +2538,16 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff)
 	if (!(thing->flags & MF_NOCLIPHEIGHT))
 	{
 		// Assign thing's standingslope if needed
-		if (thing->z <= tmfloorz && !(thing->eflags & MFE_VERTICALFLIP)) {
+		if (thing->z <= tmfloorz && !(thing->eflags & MFE_VERTICALFLIP))
+		{
 			if (!startingonground && tmfloorslope)
 				P_HandleSlopeLanding(thing, tmfloorslope);
 
 			if (thing->momz <= 0)
 				thing->standingslope = tmfloorslope;
 		}
-		else if (thing->z+thing->height >= tmceilingz && (thing->eflags & MFE_VERTICALFLIP)) {
+		else if (thing->z+thing->height >= tmceilingz && (thing->eflags & MFE_VERTICALFLIP))
+		{
 			if (!startingonground && tmceilingslope)
 				P_HandleSlopeLanding(thing, tmceilingslope);
 
@@ -3650,7 +3676,7 @@ static boolean PIT_ChangeSector(mobj_t *thing, boolean realcrush)
 		{
 			// Crush the object
 			if (netgame && thing->player && thing->player->spectator)
-				P_DamageMobj(thing, NULL, NULL, 42000); // Respawn crushed spectators
+				P_DamageMobj(thing, NULL, NULL, DMG_SPECTATOR); // Respawn crushed spectators
 			else
 			{
 				if (!killer)
@@ -3660,7 +3686,7 @@ static boolean PIT_ChangeSector(mobj_t *thing, boolean realcrush)
 					killer->threshold = 44; // Special flag for crushing
 				}
 				if (!thing->player)
-					P_DamageMobj(thing, killer, killer, 10000);
+					P_DamageMobj(thing, killer, killer, DMG_INSTAKILL);
 				else
 					K_SquishPlayer(thing->player, killer, killer); // SRB2kart - Squish instead of kill
 			}

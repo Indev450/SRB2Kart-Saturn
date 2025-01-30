@@ -29,6 +29,9 @@ extern fixed_t centerxfrac, centeryfrac;
 extern fixed_t projection, projectiony;
 extern fixed_t fovtan; // field of view
 
+#define MINFOV 5
+#define MAXFOV 179
+
 extern size_t validcount, linecount, loopcount, framecount;
 
 // The fraction of a tic being drawn (for interpolation between two tics)
@@ -104,7 +107,7 @@ FUNCINLINE static ATTRINLINE PUREFUNC INT32 R_PointOnSide(fixed_t x, fixed_t y, 
 FUNCINLINE static ATTRINLINE PUREFUNC INT32 R_PointOnSideFast(fixed_t x, fixed_t y, const node_t *node)
 {
 	// use cross product to determine side quickly
-	return ((INT64)y - node->y) * node->dx - ((INT64)x - node->x) * node->dy > 0;
+	return ((((INT64)y - node->y) * node->dx - ((INT64)x - node->x) * node->dy) >= 0);
 }
 
 FUNCINLINE static ATTRINLINE PUREFUNC INT32 R_PointOnSegSide(fixed_t x, fixed_t y, const seg_t *line)
@@ -115,7 +118,7 @@ FUNCINLINE static ATTRINLINE PUREFUNC INT32 R_PointOnSegSide(fixed_t x, fixed_t 
     fixed_t ldy = line->v2->y - ly;
 
 	// use cross product to determine side quickly
-	return ((INT64)y - ly) * ldx - ((INT64)x - lx) * ldy > 0;
+	return ((((INT64)y - ly) * ldx - ((INT64)x - lx) * ldy) >= 0);
 }
 
 angle_t R_PointToAngle(fixed_t x, fixed_t y);
@@ -140,17 +143,6 @@ FUNCINLINE static ATTRINLINE subsector_t *R_PointInSubsector(fixed_t x, fixed_t 
 	return &subsectors[nodenum & ~NF_SUBSECTOR];
 }
 
-// uses R_PointOnSideFast
-// SHOULD NOT BE USED FOR ANYTHING GAMEPLAY RELATED!!
-FUNCINLINE static ATTRINLINE subsector_t *R_PointInSubsectorFast(fixed_t x, fixed_t y)
-{
-	size_t nodenum = numnodes-1;
-
-	while (!(nodenum & NF_SUBSECTOR))
-		nodenum = nodes[nodenum].children[R_PointOnSideFast(x, y, nodes+nodenum)];
-
-	return &subsectors[nodenum & ~NF_SUBSECTOR];
-}
 
 #define R_PointToDist(x, y) R_PointToDist2(viewx, viewy, x, y)
 #define R_PointToDist2(px2, py2, px1, py1) FixedHypot((px1) - (px2), (py1) - (py2))
@@ -190,7 +182,7 @@ extern consvar_t cv_shadow, cv_shadowoffs;
 extern consvar_t cv_ffloorclip, cv_spriteclip;
 extern consvar_t cv_translucency;
 extern consvar_t cv_drawdist, cv_drawdist_precip, cv_lessprecip, cv_mobjscaleprecip;
-extern consvar_t cv_fov;
+extern consvar_t cv_fov, cv_fovchange;
 extern consvar_t cv_skybox;
 extern consvar_t cv_tailspickup;
 extern consvar_t cv_maxinterpdist;
@@ -210,6 +202,7 @@ void R_SetViewSize(void);
 // do it (sometimes explicitly called)
 void R_ExecuteSetViewSize(void);
 
+fixed_t R_GetPlayerFov(player_t *player);
 void R_SkyboxFrame(int s);
 void R_SetupFrame(int s, boolean skybox);
 

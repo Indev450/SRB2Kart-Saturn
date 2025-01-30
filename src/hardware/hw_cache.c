@@ -319,7 +319,7 @@ static void HWR_GenerateTexture(INT32 texnum, GLMapTexture_t *gltex, boolean noe
 	patch_t *realpatch;
 	INT32 blockwidth, blockheight, blocksize;
 
-	INT32 i;
+	INT32 i, idx;
 	boolean skyspecial = false; //poor hack for Legacy large skies..
 
 	RGBA_t *palette;
@@ -368,12 +368,10 @@ static void HWR_GenerateTexture(INT32 texnum, GLMapTexture_t *gltex, boolean noe
 
 		col = palette[HWR_CHROMAKEY_EQUIVALENTCOLORINDEX];
 
-		for (j = 0; j < blockheight; j++)
+		for (idx = 0, j = 0; j < blockheight; j++)
 		{
-			for (i = 0; i < blockwidth; i++)
+			for (i = 0; i < blockwidth; i++, idx++)
 			{
-				int idx = (j*blockwidth+i);
-
 				block[4*idx+0] = col.s.red;
 				block[4*idx+1] = col.s.green;
 				block[4*idx+2] = col.s.blue;
@@ -410,6 +408,16 @@ static void HWR_GenerateTexture(INT32 texnum, GLMapTexture_t *gltex, boolean noe
 // patch may be NULL if glMipmap has been initialised already and makebitmap is false
 void HWR_MakePatch (patch_t *patch, GLPatch_t *glPatch, GLMipmap_t *glMipmap, boolean makebitmap)
 {
+	if (glMipmap == NULL)
+		return;
+
+	if (patch == NULL || glPatch == NULL)
+	{
+		Z_Free(glMipmap->data);
+		glMipmap->data = NULL;
+		return;
+	}
+
 	// don't do it twice (like a cache)
 	if (glMipmap->width == 0)
 	{

@@ -551,9 +551,8 @@ typedef struct player_s
 	UINT8 hitemvictim;
 
 	UINT8 splitscreenindex;
-#ifdef HWRENDER
+
 	fixed_t fovadd; // adjust FOV for hw rendering
-#endif
 } player_t;
 
 #endif

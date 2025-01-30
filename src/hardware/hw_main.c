@@ -223,8 +223,6 @@ consvar_t cv_glrenderdistance = {"gr_renderdistance", "Max", CV_SAVE, glrenderdi
 consvar_t cv_glhorizonlines = {"gr_horizonlines", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_glportals = {"gr_portals", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_glfovchange = {"gr_fovchange", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-
 consvar_t cv_glpaletterendering = {"gr_paletteshader", "Off", CV_CALL|CV_SAVE, CV_OnOff, CV_glpaletterendering_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_glpalettedepth = {"gr_palettedepth", "16 bits", CV_SAVE|CV_CALL, glpalettedepth_cons_t, CV_glpalettedepth_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_glflashpal = {"gr_flashpal", "On", CV_CALL|CV_SAVE, CV_OnOff, CV_glpaletterendering_OnChange, 0, NULL, NULL, 0, 0, NULL};
@@ -319,24 +317,9 @@ static void CV_glpalettedepth_OnChange(void)
 // Lighting
 // ==========================================================================
 
-boolean HWR_UseShader(void)
-{
-	return (cv_glshaders.value && gl_shadersavailable);
-}
-
 static void HWR_SetShaderState(void)
 {
 	GL_SetSpecialState(HWD_SET_SHADERS, HWR_UseShader() ? 1 : 0);
-}
-
-boolean HWR_ShouldUsePaletteRendering(void)
-{
-	return (cv_glpaletterendering.value && (pLocalPalette != NULL) && HWR_UseShader());
-}
-
-boolean HWR_PalRenderFlashpal(void)
-{
-	return (HWR_ShouldUsePaletteRendering() && cv_glflashpal.value);
 }
 
 void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *colormap)
@@ -2340,31 +2323,19 @@ doaddline:
 // HWR_CheckBBox
 // Checks BSP node/subtree bounding box.
 // Returns true
-//  if some part of the bbox might be visible.
+// if some part of the bbox might be visible.
 //
 // modified to use local variables
 
 static boolean HWR_CheckBBox(const fixed_t *bspcoord)
 {
-	INT32 boxpos;
 	fixed_t px1, py1, px2, py2;
 	angle_t angle1, angle2;
 
 	// Find the corners of the box
 	// that define the edges from current viewpoint.
-	if (viewx <= bspcoord[BOXLEFT])
-		boxpos = 0;
-	else if (viewx < bspcoord[BOXRIGHT])
-		boxpos = 1;
-	else
-		boxpos = 2;
-
-	if (viewy >= bspcoord[BOXTOP])
-		boxpos |= 0;
-	else if (viewy > bspcoord[BOXBOTTOM])
-		boxpos |= 1<<2;
-	else
-		boxpos |= 2<<2;
+	const INT32 boxpos = (viewx <= bspcoord[BOXLEFT] ? 0 : viewx < bspcoord[BOXRIGHT ] ? 1 : 2) +
+	(viewy >= bspcoord[BOXTOP ] ? 0 : viewy > bspcoord[BOXBOTTOM] ? 4 : 8);
 
 	if (boxpos == 5)
 		return true;
@@ -2840,6 +2811,12 @@ static void HWR_Subsector(size_t num)
 		{
 			for (rover = gl_frontsector->ffloors; rover; rover = rover->next)
 			{
+				if (!(rover->flags & FF_EXISTS) || !(rover->flags & FF_RENDERPLANES))
+					continue;
+
+				if (sub->validcount == validcount)
+					continue;
+
 				sector_t *controlSec = &sectors[rover->secnum];
 
 				if (controlSec->moved != true)
@@ -3086,25 +3063,56 @@ static void HWR_Subsector(size_t num)
 // Renders all subsectors below a given node,
 //  traversing subtree recursively.
 // Just call with BSP root.
+//
 
 static void HWR_RenderBSPNode(INT32 bspnum)
 {
-	const node_t *bsp;
-	INT32 side;
+	register const node_t *bsp;
+	register INT32 side;
 	ps_numbspcalls.value.i++;
 
-	while (!(bspnum & NF_SUBSECTOR))  // Found a subsector?
+	while (!(bspnum & NF_SUBSECTOR))  // Keep going until found a subsector
 	{
 		bsp = &nodes[bspnum];
 
 		// Decide which side the view point is on.
 		side = R_PointOnSideFast(viewx, viewy, bsp);
 
-		// Recursively divide front space.
-		if (HWR_PortalCheckBBox(bsp->bbox[side]))
-			HWR_RenderBSPNode(bsp->children[side]);
+		// Recursively divide front space (toward the viewer).
+		HWR_RenderBSPNode(bsp->children[side]);
 
-		// Possibly divide back space
+		// Possibly divide back space (away from the viewer).
+		if (!(HWR_CheckBBox(bsp->bbox[side^1])))
+			return;
+
+		bspnum = bsp->children[side^1];
+	}
+
+	// e6y: support for extended nodes
+	HWR_Subsector(bspnum == -1 ? 0 : bspnum & ~NF_SUBSECTOR);
+}
+
+//
+// Same thing but with extra portal checks
+//
+static void HWR_RenderPortalBSPNode(INT32 bspnum)
+{
+	register const node_t *bsp;
+	register INT32 side;
+	ps_numbspcalls.value.i++;
+
+	while (!(bspnum & NF_SUBSECTOR))  // Keep going until found a subsector
+	{
+		bsp = &nodes[bspnum];
+
+		// Decide which side the view point is on.
+		side = R_PointOnSideFast(viewx, viewy, bsp);
+
+		// Recursively divide front space (toward the viewer).
+		if (HWR_PortalCheckBBox(bsp->bbox[side]))
+			HWR_RenderPortalBSPNode(bsp->children[side]);
+
+		// Possibly divide back space (away from the viewer).
 		if (!(HWR_CheckBBox(bsp->bbox[side^1]) && HWR_PortalCheckBBox(bsp->bbox[side^1])))
 			return;
 
@@ -3112,7 +3120,7 @@ static void HWR_RenderBSPNode(INT32 bspnum)
 	}
 
 	// PORTAL CULLING
-	if (portalclipline && portalcullsector)
+	if (portalcullsector)
 	{
 		// skip all subsectors encountered before the portal
 		// destination's front sector
@@ -3140,7 +3148,7 @@ static gl_vissprite_t *gl_visspritechunks[MAXVISSPRITES >> VISSPRITECHUNKBITS] =
 // HWR_ClearSprites
 // Called at frame start.
 // --------------------------------------------------------------------------
-static void HWR_ClearSprites(void)
+static inline void HWR_ClearSprites(void)
 {
 	gl_visspritecount = 0;
 }
@@ -3172,7 +3180,7 @@ static gl_vissprite_t *HWR_NewVisSprite(void)
 // Finds a floor through which light does not pass.
 static fixed_t HWR_OpaqueFloorAtPos(fixed_t x, fixed_t y, fixed_t z, fixed_t height)
 {
-	const sector_t *sec = R_PointInSubsectorFast(x, y)->sector;
+	const sector_t *sec = R_PointInSubsector(x, y)->sector;
 	fixed_t floorz = sec->floorheight;
 
 	if (sec->ffloors)
@@ -3852,7 +3860,7 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 }
 
 // Sprite drawer for precipitation
-static inline void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
+static void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 {
 	FBITFIELD blend = 0;
 	FOutVector wallVerts[4];
@@ -3861,10 +3869,7 @@ static inline void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 
 	INT32 shader = SHADER_NONE;
 
-	if (!spr->mobj)
-		return;
-
-	if (!spr->mobj->subsector)
+	if (!spr->mobj || !spr->mobj->subsector)
 		return;
 
 	// cache sprite graphics
@@ -4273,6 +4278,24 @@ static void HWR_DrawSprites(void)
 			continue;
 		}
 
+		HWR_DrawSprite(spr);
+	}
+}
+
+static void HWR_DrawModels(void)
+{
+	UINT32 i;
+
+	for (i = 0; i < gl_visspritecount; i++)
+	{
+		gl_vissprite_t *spr = gl_vsprorder[i];
+
+		if (spr->precip)
+		{
+			HWR_DrawPrecipitationSprite(spr);
+			continue;
+		}
+
 		if (spr->mobj && spr->mobj->skin && spr->mobj->sprite == SPR_PLAY)
 		{
 			md2_t *md2;
@@ -4288,14 +4311,14 @@ static void HWR_DrawSprites(void)
 				md2 = &md2_playermodels[(skin_t *)spr->mobj->skin - skins];
 
 			// 8/1/19: Only don't display player models if no default SPR_PLAY is found.
-			if (!cv_glmdls.value || ((md2->notfound || md2->scale < 0.0f) && ((!cv_glfallbackplayermodel.value) || md2_models[SPR_PLAY].notfound || md2_models[SPR_PLAY].scale < 0.0f)) || spr->mobj->state == &states[S_PLAY_SIGN])
+			if (((md2->notfound || md2->scale < 0.0f) && ((!cv_glfallbackplayermodel.value) || md2_models[SPR_PLAY].notfound || md2_models[SPR_PLAY].scale < 0.0f)) || spr->mobj->state == &states[S_PLAY_SIGN])
 				HWR_DrawSprite(spr);
 			else
 				HWR_DrawMD2(spr);
 		}
 		else
 		{
-			if (!cv_glmdls.value || md2_models[spr->mobj->sprite].notfound || md2_models[spr->mobj->sprite].scale < 0.0f)
+			if (md2_models[spr->mobj->sprite].notfound || md2_models[spr->mobj->sprite].scale < 0.0f)
 				HWR_DrawSprite(spr);
 			else
 				HWR_DrawMD2(spr);
@@ -4355,12 +4378,12 @@ static void HWR_AddSprites(sector_t *sec)
 static void HWR_AddPrecipitationSprites(void)
 {
 	INT32 xl, xh, yl, yh, bx, by;
-	precipmobj_t *th;
+	precipmobj_t *th, *next;
 
 	fixed_t drawdist;
 
-	// save a little time on invisible weather
-	if (curWeather == PRECIP_BLANK || curWeather == PRECIP_STORM_NORAIN)
+	// save a little time if theres no or invisible weather
+	if (curWeather == PRECIP_NONE || curWeather == PRECIP_BLANK || curWeather == PRECIP_STORM_NORAIN)
 	{
 		return;
 	}
@@ -4385,8 +4408,11 @@ static void HWR_AddPrecipitationSprites(void)
 	{
 		for (by = yl; by <= yh; by++)
 		{
-			for (th = precipblocklinks[(by * bmapwidth) + bx]; th; th = th->bnext)
+			for (th = precipblocklinks[(by * bmapwidth) + bx]; th; th = next)
 			{
+				// Store this beforehand because HWR_ProjectPrecipitationSprite may free th (see P_PrecipThinker)
+				next = th->bnext;
+
 				if (th->precipflags & PCF_INVISIBLE)
 					continue;
 
@@ -4458,29 +4484,26 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	if (interp.spritexscale < 1 || interp.spriteyscale < 1)
 		return;
 
+	const boolean papersprite = (thing->frame & FF_PAPERSPRITE);
+
+	// transform the origin point
+	tr_x = FIXED_TO_FLOAT(interp.x);
+	tr_y = FIXED_TO_FLOAT(interp.y);
+
+	// rotation around vertical axis
+	tz = ((tr_x - gl_viewx) * gl_viewcos) + ((tr_y - gl_viewy) * gl_viewsin);
+
+	// thing is behind view plane?
+	if (tz < ZCLIP_PLANE && !papersprite && (!cv_glmdls.value || md2_models[thing->sprite].notfound == true)) // Yellow: Only MD2's dont disappear
+		return;
+
 	const boolean mirrored = thing->mirrored;
 	const boolean vflip = (thing->eflags & MFE_VERTICALFLIP);
 	const boolean hflip = (!(thing->frame & FF_HORIZONTALFLIP) != !mirrored);
-	const boolean papersprite = (thing->frame & FF_PAPERSPRITE);
 
 	this_scale = FIXED_TO_FLOAT(interp.scale);
 	spritexscale = FIXED_TO_FLOAT(interp.spritexscale);
 	spriteyscale = FIXED_TO_FLOAT(interp.spriteyscale);
-
-	// transform the origin point
-	tr_x = FIXED_TO_FLOAT(interp.x) - gl_viewx;
-	tr_y = FIXED_TO_FLOAT(interp.y) - gl_viewy;
-
-	// rotation around vertical axis
-	tz = (tr_x * gl_viewcos) + (tr_y * gl_viewsin);
-
-	// thing is behind view plane?
-	if (tz < ZCLIP_PLANE && !papersprite && (!cv_glmdls.value || md2_models[thing->sprite].notfound == true)) //Yellow: Only MD2's dont disappear
-		return;
-
-	// The above can stay as it works for cutting sprites that are too close
-	tr_x = FIXED_TO_FLOAT(interp.x);
-	tr_y = FIXED_TO_FLOAT(interp.y);
 
 	// decide which patch to use for sprite relative to player
 #ifdef RANGECHECK
@@ -4804,40 +4827,41 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 		R_InterpolatePrecipMobjState(thing, FRACUNIT, &interp);
 	}
 
-	this_scale = FIXED_TO_FLOAT(interp.scale);
-
 	// transform the origin point
-	tr_x = FIXED_TO_FLOAT(interp.x) - gl_viewx;
-	tr_y = FIXED_TO_FLOAT(interp.y) - gl_viewy;
+	tr_x = FIXED_TO_FLOAT(interp.x);
+	tr_y = FIXED_TO_FLOAT(interp.y);
 
 	// rotation around vertical axis
-	tz = (tr_x * gl_viewcos) + (tr_y * gl_viewsin);
+	tz = ((tr_x - gl_viewx) * gl_viewcos) + ((tr_y - gl_viewy) * gl_viewsin);
 
 	// thing is behind view plane?
 	if (tz < ZCLIP_PLANE)
 		return;
 
-	tr_x = FIXED_TO_FLOAT(interp.x);
-	tr_y = FIXED_TO_FLOAT(interp.y);
-
 	// decide which patch to use for sprite relative to player
 	if ((unsigned)thing->sprite >= numsprites)
+	{
 #ifdef RANGECHECK
 		I_Error("HWR_ProjectPrecipitationSprite: invalid sprite number %i ",
 		        thing->sprite);
 #else
 		return;
 #endif
+	}
 
 	sprdef = &sprites[thing->sprite];
 
 	if ((size_t)(thing->frame&FF_FRAMEMASK) >= sprdef->numframes)
+	{
 #ifdef RANGECHECK
 		I_Error("HWR_ProjectPrecipitationSprite: invalid sprite frame %i : %i for %s",
 		        thing->sprite, thing->frame, sprnames[thing->sprite]);
 #else
 		return;
 #endif
+	}
+
+	this_scale = FIXED_TO_FLOAT(interp.scale);
 
 	sprframe = &sprdef->spriteframes[thing->frame & FF_FRAMEMASK];
 
@@ -5158,8 +5182,7 @@ void HWR_SetTransform(float fpov, player_t *player)
 	gl_viewludsin = FIXED_TO_FLOAT(FINECOSINE(gl_aimingangle>>ANGLETOFINESHIFT));
 	gl_viewludcos = FIXED_TO_FLOAT(-FINESINE(gl_aimingangle>>ANGLETOFINESHIFT));
 
-	atransform.fovxangle = fpov; // Tails
-	atransform.fovyangle = fpov; // Tails
+	atransform.fovangle = fpov; // Tails
 	HWR_RollTransform(&atransform, viewroll);
 	atransform.splitscreen = splitscreen;
 
@@ -5222,7 +5245,11 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *pl
 
 		validcount++;
 
-		HWR_RenderBSPNode((INT32)numnodes-1);// no actual rendering happens
+		// no actual rendering happens
+		if (portalclipline)
+			HWR_RenderPortalBSPNode((INT32)numnodes-1);
+		else
+			HWR_RenderBSPNode((INT32)numnodes-1);
 
 		// for each found portal:
 		// note: if necessary, could sort the portals here?
@@ -5253,11 +5280,11 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *pl
 	// Set transform.
 	GL_SetTransform(&atransform);
 
-	validcount++;
-
 	ps_numbspcalls.value.i = 0;
 	ps_numpolyobjects.value.i = 0;
 	PS_START_TIMING(ps_bsptime);
+
+	validcount++;
 
 	if (cv_glbatching.value)
 		HWR_StartBatching();
@@ -5273,7 +5300,10 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *pl
 		HWR_SetPortalState(GLPORTAL_INSIDE); // TURN IT OFF
 
 	// Recursively "render" the BSP tree.
-	HWR_RenderBSPNode((INT32)numnodes-1);
+	if (!portalclipline)
+		HWR_RenderBSPNode((INT32)numnodes-1);
+	else
+		HWR_RenderPortalBSPNode((INT32)numnodes-1);
 
 	// woo we back
 	HWR_SetPortalState(oldgl_portal_state);
@@ -5305,7 +5335,10 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *pl
 	HWR_SortVisSprites();
 	PS_STOP_TIMING(ps_hw_spritesorttime);
 	PS_START_TIMING(ps_hw_spritedrawtime);
-	HWR_DrawSprites();
+	if (!cv_glmdls.value)
+		HWR_DrawSprites();
+	else
+		HWR_DrawModels();
 	PS_STOP_TIMING(ps_hw_spritedrawtime);
 
 	ps_numdrawnodes.value.i = 0;
@@ -5322,7 +5355,7 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *pl
 // ==========================================================================
 static void HWR_RenderFrame(INT32 viewnumber, player_t *player, boolean skybox)
 {
-	const float fpov = FIXED_TO_FLOAT(cv_fov.value+player->fovadd);
+	const float fpov = FixedToFloat(R_GetPlayerFov(player));
 
 	// set window position
 	gl_viewwindowx = gl_baseviewwindowx;
@@ -5544,8 +5577,6 @@ void HWR_AddCommands(void)
 	CV_RegisterVar(&cv_glhorizonlines);
 	CV_RegisterVar(&cv_glportals);
 
-	CV_RegisterVar(&cv_glfovchange);
-
 	CV_RegisterVar(&cv_glpaletterendering);
 	CV_RegisterVar(&cv_glpalettedepth);
 	CV_RegisterVar(&cv_glflashpal);
@@ -5701,11 +5732,6 @@ static void HWR_RenderWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD
 #endif
 }
 
-INT32 HWR_GetTextureUsed(void)
-{
-	return GL_GetTextureUsed();
-}
-
 static void HWR_DoPostProcessor(player_t *player)
 {
 	GL_UnSetShader();
@@ -5789,21 +5815,6 @@ static void HWR_DoPostProcessor(player_t *player)
 	// Flipping of the screen isn't done here anymore
 }
 
-void HWR_StartScreenWipe(void)
-{
-	GL_MakeScreenTexture(HWD_SCREENTEXTURE_WIPE_START);
-}
-
-void HWR_EndScreenWipe(void)
-{
-	GL_MakeScreenTexture(HWD_SCREENTEXTURE_WIPE_END);
-}
-
-void HWR_DrawIntermissionBG(void)
-{
-	GL_DrawScreenTexture(HWD_SCREENTEXTURE_GENERIC1, NULL, 0);
-}
-
 void HWR_DoWipe(UINT8 wipenum, UINT8 scrnnum)
 {
 	static char lumpname[9] = "FADEmmss";
@@ -5836,21 +5847,6 @@ void HWR_DoWipe(UINT8 wipenum, UINT8 scrnnum)
 
 	HWR_GetFadeMask(lumpnum);
 	GL_DoScreenWipe(HWD_SCREENTEXTURE_WIPE_START, HWD_SCREENTEXTURE_WIPE_END);
-}
-
-void HWR_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8 downdistort, UINT8 barsize)
-{
-	GL_RenderVhsEffect(upbary, downbary, updistort, downdistort, barsize);
-}
-
-void HWR_MakeScreenFinalTexture(void)
-{
-	GL_MakeScreenTexture(HWD_SCREENTEXTURE_GENERIC2);
-}
-
-void HWR_DrawScreenFinalTexture(INT32 width, INT32 height, boolean useshader)
-{
-	GL_DrawScreenFinalTexture(HWD_SCREENTEXTURE_GENERIC2, width, height, useshader);
 }
 
 #endif // HWRENDER

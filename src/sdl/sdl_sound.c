@@ -69,12 +69,6 @@
 
 #include "../d_main.h"
 
-#ifdef HW3SOUND
-#include "../hardware/hw3dsdrv.h"
-#include "../hardware/hw3sound.h"
-#include "hwsym_sdl.h"
-#endif
-
 #ifdef HAVE_LIBGME
 #include "gme/gme.h"
 #endif
@@ -195,11 +189,7 @@ static void Snd_LockAudio(void) //Alam: Lock audio data and uninstall audio call
 {
 	if (Snd_Mutex) SDL_LockMutex(Snd_Mutex);
 	else if (sound_disabled) return;
-	else if (midi_disabled && digital_disabled
-#ifdef HW3SOUND
-	         && hws_mode == HWS_DEFAULT_MODE
-#endif
-	        ) SDL_LockAudio();
+	else if (midi_disabled && digital_disabled) SDL_LockAudio();
 #ifdef HAVE_MIXER
 	else if (musicStarted) Mix_SetPostMix(NULL, NULL);
 #endif
@@ -209,11 +199,7 @@ static void Snd_UnlockAudio(void) //Alam: Unlock audio data and reinstall audio 
 {
 	if (Snd_Mutex) SDL_UnlockMutex(Snd_Mutex);
 	else if (sound_disabled) return;
-	else if (midi_disabled && digital_disabled
-#ifdef HW3SOUND
-	         && hws_mode == HWS_DEFAULT_MODE
-#endif
-	        ) SDL_UnlockAudio();
+	else if (midi_disabled && digital_disabled) SDL_UnlockAudio();
 #ifdef HAVE_MIXER
 	else if (musicStarted) Mix_SetPostMix(audio.callback, audio.userdata);
 #endif
@@ -536,11 +522,6 @@ void *I_GetSfx(sfxinfo_t *sfx)
 //	else if (sfx->lumpnum != S_GetSfxLumpNum(sfx))
 //		I_FreeSfx(sfx);
 
-#ifdef HW3SOUND
-	if (hws_mode != HWS_DEFAULT_MODE)
-		return HW3S_GetSfx(sfx);
-#endif
-
 	if (sfx->data)
 		return sfx->data; //Alam: I have it done!
 
@@ -555,39 +536,31 @@ void I_FreeSfx(sfxinfo_t * sfx)
 //	if (sfx->lumpnum<0)
 //		return;
 
-#ifdef HW3SOUND
-	if (hws_mode != HWS_DEFAULT_MODE)
-	{
-		HW3S_FreeSfx(sfx);
-	}
-	else
-#endif
-	{
-		size_t i;
+	size_t i;
 
-		for (i = 1; i < NUMSFX; i++)
+	for (i = 1; i < NUMSFX; i++)
+	{
+		// Alias? Example is the chaingun sound linked to pistol.
+		if (S_sfx[i].data == sfx->data)
 		{
-			// Alias? Example is the chaingun sound linked to pistol.
-			if (S_sfx[i].data == sfx->data)
-			{
-				if (S_sfx+i != sfx) S_sfx[i].data = NULL;
-				S_sfx[i].lumpnum = LUMPERROR;
-				S_sfx[i].length = 0;
-			}
+			if (S_sfx+i != sfx) S_sfx[i].data = NULL;
+			S_sfx[i].lumpnum = LUMPERROR;
+			S_sfx[i].length = 0;
 		}
-		//Snd_LockAudio(); //Alam: too much?
-		// Loop all channels, check.
-		for (i = 0; i < NUM_CHANNELS; i++)
-		{
-			// Active, and using the same SFX?
-			if (channels[i].end && channels[i].id == sfx->data)
-			{
-				channels[i].end = NULL; // Reset.
-			}
-		}
-		//Snd_UnlockAudio(); //Alam: too much?
-		Z_Free(sfx->data);
 	}
+	//Snd_LockAudio(); //Alam: too much?
+	// Loop all channels, check.
+	for (i = 0; i < NUM_CHANNELS; i++)
+	{
+		// Active, and using the same SFX?
+		if (channels[i].end && channels[i].id == sfx->data)
+		{
+			channels[i].end = NULL; // Reset.
+		}
+	}
+	//Snd_UnlockAudio(); //Alam: too much?
+	Z_Free(sfx->data);
+
 	sfx->data = NULL;
 	sfx->lumpnum = LUMPERROR;
 }
@@ -1081,77 +1054,12 @@ void I_UpdateSoundParams(INT32 handle, UINT8 vol, UINT8 sep, UINT8 pitch)
 
 }
 
-#ifdef HW3SOUND
-
-static void *soundso = NULL;
-
-static INT32 Init3DSDriver(const char *soName)
-{
-	if (soName) soundso = hwOpen(soName);
-#if defined (_WIN32) && defined (_X86_) && !defined (STATIC3DS)
-	HW3DS.pfnStartup            = hwSym("Startup@8",soundso);
-	HW3DS.pfnShutdown           = hwSym("Shutdown@0",soundso);
-	HW3DS.pfnAddSfx             = hwSym("AddSfx@4",soundso);
-	HW3DS.pfnAddSource          = hwSym("AddSource@8",soundso);
-	HW3DS.pfnStartSource        = hwSym("StartSource@4",soundso);
-	HW3DS.pfnStopSource         = hwSym("StopSource@4",soundso);
-	HW3DS.pfnGetHW3DSVersion    = hwSym("GetHW3DSVersion@0",soundso);
-	HW3DS.pfnBeginFrameUpdate   = hwSym("BeginFrameUpdate@0",soundso);
-	HW3DS.pfnEndFrameUpdate     = hwSym("EndFrameUpdate@0",soundso);
-	HW3DS.pfnIsPlaying          = hwSym("IsPlaying@4",soundso);
-	HW3DS.pfnUpdateListener     = hwSym("UpdateListener@8",soundso);
-	HW3DS.pfnUpdateSourceParms  = hwSym("UpdateSourceParms@12",soundso);
-	HW3DS.pfnSetCone            = hwSym("SetCone@8",soundso);
-	HW3DS.pfnSetGlobalSfxVolume = hwSym("SetGlobalSfxVolume@4",soundso);
-	HW3DS.pfnUpdate3DSource     = hwSym("Update3DSource@8",soundso);
-	HW3DS.pfnReloadSource       = hwSym("ReloadSource@8",soundso);
-	HW3DS.pfnKillSource         = hwSym("KillSource@4",soundso);
-	HW3DS.pfnKillSfx            = hwSym("KillSfx@4",soundso);
-	HW3DS.pfnGetHW3DSTitle      = hwSym("GetHW3DSTitle@8",soundso);
-#else
-	HW3DS.pfnStartup            = hwSym("Startup",soundso);
-	HW3DS.pfnShutdown           = hwSym("Shutdown",soundso);
-	HW3DS.pfnAddSfx             = hwSym("AddSfx",soundso);
-	HW3DS.pfnAddSource          = hwSym("AddSource",soundso);
-	HW3DS.pfnStartSource        = hwSym("StartSource",soundso);
-	HW3DS.pfnStopSource         = hwSym("StopSource",soundso);
-	HW3DS.pfnGetHW3DSVersion    = hwSym("GetHW3DSVersion",soundso);
-	HW3DS.pfnBeginFrameUpdate   = hwSym("BeginFrameUpdate",soundso);
-	HW3DS.pfnEndFrameUpdate     = hwSym("EndFrameUpdate",soundso);
-	HW3DS.pfnIsPlaying          = hwSym("IsPlaying",soundso);
-	HW3DS.pfnUpdateListener     = hwSym("UpdateListener",soundso);
-	HW3DS.pfnUpdateSourceParms  = hwSym("UpdateSourceParms",soundso);
-	HW3DS.pfnSetCone            = hwSym("SetCone",soundso);
-	HW3DS.pfnSetGlobalSfxVolume = hwSym("SetGlobalSfxVolume",soundso);
-	HW3DS.pfnUpdate3DSource     = hwSym("Update3DSource",soundso);
-	HW3DS.pfnReloadSource       = hwSym("ReloadSource",soundso);
-	HW3DS.pfnKillSource         = hwSym("KillSource",soundso);
-	HW3DS.pfnKillSfx            = hwSym("KillSfx",soundso);
-	HW3DS.pfnGetHW3DSTitle      = hwSym("GetHW3DSTitle",soundso);
-#endif
-
-//	if (HW3DS.pfnUpdateListener2 && HW3DS.pfnUpdateListener2 != soundso)
-		return true;
-//	else
-//		return false;
-}
-#endif
-
 void I_ShutdownSound(void)
 {
 	if (sound_disabled || !sound_started)
 		return;
 
 	CONS_Printf("I_ShutdownSound: ");
-
-#ifdef HW3SOUND
-	if (hws_mode != HWS_DEFAULT_MODE)
-	{
-		HW3S_Shutdown();
-		hwClose(soundso);
-		return;
-	}
-#endif
 
 	if (midi_disabled && digital_disabled)
 		SDL_CloseAudio();
@@ -1169,9 +1077,6 @@ void I_UpdateSound(void)
 
 void I_StartupSound(void)
 {
-#ifdef HW3SOUND
-	const char *sdrv_name = NULL;
-#endif
 #ifndef HAVE_MIXER
 #ifndef NO_MIDI
 	midi_disabled = 
@@ -1228,75 +1133,6 @@ void I_StartupSound(void)
 	if (sound_disabled)
 		return;
 
-#ifdef HW3SOUND
-#ifdef STATIC3DS
-	if (M_CheckParm("-3dsound") || M_CheckParm("-ds3d"))
-	{
-		hws_mode = HWS_OPENAL;
-	}
-#elif defined (_WIN32)
-	if (M_CheckParm("-ds3d"))
-	{
-		hws_mode = HWS_DS3D;
-		sdrv_name = "s_ds3d.dll";
-	}
-	else if (M_CheckParm("-fmod3d"))
-	{
-		hws_mode = HWS_FMOD3D;
-		sdrv_name = "s_fmod.dll";
-	}
-	else if (M_CheckParm("-openal"))
-	{
-		hws_mode = HWS_OPENAL;
-		sdrv_name = "s_openal.dll";
-	}
-#else
-	if (M_CheckParm("-fmod3d"))
-	{
-		hws_mode = HWS_FMOD3D;
-		sdrv_name = "./s_fmod.so";
-	}
-	else if (M_CheckParm("-openal"))
-	{
-		hws_mode = HWS_OPENAL;
-		sdrv_name = "./s_openal.so";
-	}
-#endif
-	else if (M_CheckParm("-sounddriver") &&  M_IsNextParm())
-	{
-		hws_mode = HWS_OTHER;
-		sdrv_name = M_GetNextParm();
-	}
-	if (hws_mode != HWS_DEFAULT_MODE)
-	{
-		if (Init3DSDriver(sdrv_name))
-		{
-			snddev_t            snddev;
-
-			//sound_disabled = true;
-			//I_AddExitFunc(I_ShutdownSound);
-			snddev.bps = 16;
-			snddev.sample_rate = audio.freq;
-			snddev.numsfxs = NUMSFX;
-#if defined (_WIN32)
-			snddev.cooplevel = 0x00000002;
-			snddev.hWnd = vid.WndParent;
-#endif
-			if (HW3S_Init(I_Error, &snddev))
-			{
-				audio.userdata = NULL;
-				CONS_Printf("%s", M_GetText(" Using 3D sound driver\n"));
-				return;
-			}
-			CONS_Printf("%s", M_GetText(" Failed loading 3D sound driver\n"));
-			// Falls back to default sound system
-			HW3S_Shutdown();
-			hwClose(soundso);
-		}
-		CONS_Printf("%s", M_GetText(" Failed loading 3D sound driver\n"));
-		hws_mode = HWS_DEFAULT_MODE;
-	}
-#endif
 	if (!musicStarted && SDL_OpenAudio(&audio, &audio) < 0)
 	{
 		CONS_Printf("%s", M_GetText(" couldn't open audio with desired format\n"));

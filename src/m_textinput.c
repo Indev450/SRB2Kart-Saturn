@@ -1,4 +1,7 @@
 #include "m_textinput.h"
+#include "m_menu.h" // MAXSTRINGLENGTH
+#include "v_video.h"
+#include "r_main.h" // renderisnewtic
 #include "i_system.h"
 #include "keys.h"
 #include "console.h"
@@ -131,6 +134,8 @@ void M_TextInputInit(textinput_t *input, char *buffer, size_t buffer_size)
 {
 	input->buffer = buffer;
 	input->buffer_size = buffer_size;
+
+	input->skull = 0;
 
 	M_TextInputClear(input);
 }
@@ -313,4 +318,70 @@ boolean M_TextInputHandle(textinput_t *input, INT32 key)
 	M_TextInputAddChar(input, key);
 
 	return true;
+}
+
+void M_DrawTextInputScroll(INT32 x, INT32 y, textinput_t *input, INT32 flags, INT32 MAXINPUTWIDTH)
+{
+	if (renderisnewtic)
+		input->skull++;
+	input->skull %= 8;
+
+	char nametodraw[MAXSTRINGLENGTH*2+1] = {0};
+
+	size_t drawstart = 0;
+	size_t drawend = 0; // Only used for selection
+
+	INT32 skullx = x;
+
+	while (V_SubStringWidth(input->buffer+drawstart, input->cursor-drawstart, V_ALLOWLOWERCASE) > MAXINPUTWIDTH)
+		++drawstart;
+
+	size_t drawlength = V_SubStringLengthToFit(input->buffer+drawstart, MAXINPUTWIDTH+8, V_ALLOWLOWERCASE)+1;
+	drawend = drawstart + drawlength;
+
+	memcpy(nametodraw, input->buffer+drawstart, drawlength);
+
+	if (input->length)
+		skullx += V_SubStringWidth(nametodraw, input->cursor-drawstart, V_ALLOWLOWERCASE);
+
+	V_DrawString(x, y, V_ALLOWLOWERCASE|flags, nametodraw);
+
+	// draw text cursor for name
+	if (input->skull < 4) // blink cursor
+		V_DrawCharacter(skullx, y+3, '_'|flags, false);
+
+	// draw selection
+	if (input->select != input->cursor)
+	{
+		size_t start = min(input->select, input->cursor);
+		size_t end =   max(input->select, input->cursor);
+
+		INT32 startx = 0;
+		INT32 width = 0;
+
+		// I couldn't figure out one formula so here's bunch of separate cases
+		if (start < drawstart && end > drawend) // Selection covers whole visible portion of demo name
+		{
+			startx = -2;
+			width = V_StringWidth(nametodraw, V_ALLOWLOWERCASE)+4;
+		}
+		else if (start < drawstart) // Only left side of selection is off visible part
+		{
+			startx = -2;
+			size_t len = (end - start) - (drawstart - start);
+			width = V_SubStringWidth(nametodraw, len, V_ALLOWLOWERCASE)+2;
+		}
+		else if (end > drawend) // Only right side of selection is off visible part
+		{
+			startx = V_SubStringWidth(nametodraw, start-drawstart, V_ALLOWLOWERCASE);
+			width = V_StringWidth(nametodraw+(start-drawstart), V_ALLOWLOWERCASE)+2;
+		}
+		else // All selection is on visible part
+		{
+			startx = V_SubStringWidth(nametodraw, start-drawstart, V_ALLOWLOWERCASE);
+			width = V_SubStringWidth(nametodraw+(start-drawstart), end-start, V_ALLOWLOWERCASE);
+		}
+
+		V_DrawFill(x+startx, y, width, 8, 103|V_TRANSLUCENT|flags);
+	}
 }

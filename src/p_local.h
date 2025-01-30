@@ -66,10 +66,12 @@
 
 // both the head and tail of the thinker list
 extern thinker_t thinkercap;
+extern thinker_t precipcap;
 extern mobj_t *mobjcache;
 
 void P_InitThinkers(void);
 void P_AddThinker(thinker_t *thinker);
+void P_AddPrecipThinker(thinker_t *thinker);
 void P_RemoveThinker(thinker_t *thinker);
 void P_UnlinkThinker(thinker_t *thinker);
 
@@ -133,6 +135,7 @@ extern consvar_t cv_cam_height[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_cam_speed[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_cam_rotate[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_cam_rotspeed[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_cam_timeover[MAXSPLITSCREENPLAYERS];
 
 extern consvar_t cv_tilting;
 extern consvar_t cv_quaketilt;
@@ -406,7 +409,6 @@ extern precipmobj_t **precipblocklinks; // special blockmap for precip rendering
 extern struct minimapinfo
 {
 	patch_t *minimap_pic;
-	UINT8 mapthingcount;
 	INT32 min_x, min_y;
 	INT32 max_x, max_y;
 	INT32 map_w, map_h;
@@ -429,6 +431,10 @@ typedef struct BasicFF_s
 	//All, CONSTANTFORCE �10,000 to 10,000
 	INT32 Magnitude; ///< Magnitude of the effect, in the range from 0 through 10,000.
 } BasicFF_t;
+
+// replace damage magic numbers with smth readable
+#define DMG_INSTAKILL 10000
+#define DMG_SPECTATOR 42000
 
 void P_ForceFeed(const player_t *player, INT32 attack, INT32 fade, tic_t duration, INT32 period);
 void P_ForceConstant(const BasicFF_t *FFInfo);

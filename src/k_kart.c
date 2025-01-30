@@ -57,35 +57,114 @@ consvar_t cv_##name##_yoffset = {"hud_" #name "_yoffset", "0", CV_SAVE, NULL, NU
 IMPL_HUD_OFFSET_X(name)\
 IMPL_HUD_OFFSET_Y(name)
 
-IMPL_HUD_OFFSET(item); // Item box
-IMPL_HUD_OFFSET(time); // Time
-IMPL_HUD_OFFSET(laps); // Number of laps
-IMPL_HUD_OFFSET(dnft); // Countdown (did not finish timer)
-IMPL_HUD_OFFSET(speed); // Speedometer
-IMPL_HUD_OFFSET(posi); // Position in race
-IMPL_HUD_OFFSET(face); // Mini rankings
-IMPL_HUD_OFFSET(stcd); // Starting countdown
+IMPL_HUD_OFFSET(item);   // Item box
+IMPL_HUD_OFFSET(time);   // Time
+IMPL_HUD_OFFSET(laps);   // Number of laps
+IMPL_HUD_OFFSET(dnft);   // Countdown (did not finish timer)
+IMPL_HUD_OFFSET(speed);  // Speedometer
+IMPL_HUD_OFFSET(posi);   // Position in race
+IMPL_HUD_OFFSET(wheel);  // RA Wheel
+IMPL_HUD_OFFSET(face);   // Mini rankings
+IMPL_HUD_OFFSET(stcd);   // Starting countdown
 IMPL_HUD_OFFSET_Y(chek); // Check gfx
-IMPL_HUD_OFFSET(mini); // Minimap
-IMPL_HUD_OFFSET(want); // Wanted
-IMPL_HUD_OFFSET(stat); // Stats
+IMPL_HUD_OFFSET(mini);   // Minimap
+IMPL_HUD_OFFSET(want);   // Wanted
+IMPL_HUD_OFFSET(stat);   // Stats
 
 #undef IMPL_HUD_OFFSET
 #undef IMPL_HUD_OFFSET_X
 #undef IMPL_HUD_OFFSET_Y
+
+// extra colourisation stuff
+static CV_PossibleValue_t colorspeedlines_cons_t[] = {{0, "Off"}, {1, "Normal"}, {2, "+Driftcharge"}, {0, NULL}};
+consvar_t cv_coloredspeedlines = {"colorizedspeedlines", "Off", CV_SAVE, colorspeedlines_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_coloredsneakertrail = {"sneakertrailcolor", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_bananajitter = {"bananadragjitter", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+static CV_PossibleValue_t bananthrowroll_cons_t[] = {{0, "Off"}, {1, "Throw"}, {2, "+Onground"}, {0, NULL}};
+consvar_t cv_bananthrowroll = {"bananthrowroll", "0", CV_SAVE, bananthrowroll_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 //extra hud things
 consvar_t cv_showstats = {"showstats", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_showinput = {"showinput", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_showlaptimes = {"showlaptimes", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_posanim = {"postitionanimation", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_smallposnum = {"smallpositionnumber", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_fancyroulette = {"animatedroulette", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_minihead = {"smallminimapplayers", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_showminimapnames = {"showminimapnames", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_highresportrait = {"highresportrait", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; // make char potraits use their high-res version instead
+
+consvar_t cv_showlapemblem = {"showlapemblem", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_biglaps = {"biglaphud", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; // here for ppl who dont want to make 2 more patches for their custom hud
+
+consvar_t cv_darkitembox = {"darkitembox", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; // itembox gets a dark box with specific items
+consvar_t cv_multiitemicon = {"multiitemicon", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+static CV_PossibleValue_t huditemamount_cons_t[] = {{0, "Vanilla"}, {1, "Multiple"}, {2, "Always"},{0, NULL}};
+consvar_t cv_huditemamount = {"showitemamountnumber", "Vanilla", CV_SAVE, huditemamount_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 CV_PossibleValue_t speedo_cons_t[NUMSPEEDOSTUFF];
 consvar_t cv_newspeedometer = {"newspeedometer", "Default", CV_SAVE, speedo_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_battlespeedo = {"battlespeedo", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; // toggle for showing the speedometer in battlemode
+
+// funn-E streeetch
+static CV_PossibleValue_t stretchfactor_t[] = {
+	{0, "Off"}, {FRACUNIT/4, "0.250"},
+	{3*FRACUNIT/8, "0.375"}, {FRACUNIT/2, "0.500"}, {5*FRACUNIT/8, "0.625"},
+	{3*FRACUNIT/4, "0.750"}, {7*FRACUNIT/8, "0.875"}, {FRACUNIT, "Max"}, {0, NULL}};
+consvar_t cv_gravstretch = {"gravstretch", "0", CV_SAVE, stretchfactor_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+static CV_PossibleValue_t slamsound_t[] = {{0, "Off"}, {1, "On"}, {0, NULL}};
+consvar_t cv_slamsound = {"slamsound", "1", CV_SAVE, slamsound_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+// sprite rotatuer stuff
+static CV_PossibleValue_t sloperolldist_cons_t[] = {
+	{512, "512"},	{768, "768"},
+	{1024, "1024"},	{1536, "1536"},	{2048, "2048"},
+	{3072, "3072"},	{4096, "4096"},	{6144, "6144"},
+	{8192, "8192"},	{0, "Infinite"},	{0, NULL}};
+consvar_t cv_sloperolldist = {"sloperolldist", "Infinite", CV_SAVE, sloperolldist_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+static CV_PossibleValue_t sloperoll_cons_t[] = {{0, "Off"}, {1, "Players"}, {2, "Everything"}, {0, NULL}};
+consvar_t cv_sloperoll = {"sloperoll", "Off", CV_SAVE|CV_CALL, sloperoll_cons_t, PDistort_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_sparkroll = {"sparkroll", "Off", CV_SAVE|CV_CALL, CV_OnOff, PDistort_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_sliptideroll = {"sliptideroll", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 //hardcode saltyhop mhhm
-consvar_t cv_saltyhop = {"hardcodehop", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+static void saltyhop_onchange(void);
+consvar_t cv_saltyhop = {"hardcodehop", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, saltyhop_onchange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_saltyhopsfx = {"hardcodehopsfx", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_saltysquish = {"hardcodehopsquish", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+static void saltyhop_onchange(void)
+{
+	// reset everything when toggling saltyhop off
+	if (!cv_saltyhop.value)
+	{
+		if (gamestate != GS_LEVEL)
+			return;
+
+		for (INT32 i = 0; i < MAXPLAYERS; i++)
+		{
+			player_t *player = &players[i];
+
+			if (!playeringame[i] || P_MobjWasRemoved(player->mo))
+				continue;
+
+			player->mo->salty_jump = false;
+			player->mo->salty_zoffset = 0;
+			player->mo->salty_momz = 0;
+
+			player->mo->salty_ready = false;
+			player->mo->salty_tapping = false;
+			player->mo->init_salty = false;
+		}
+	}
+}
 
 //Colourized HUD
 consvar_t cv_colorizedhud = {"colorizedhud", "Off", CV_SAVE|CV_CALL, CV_OnOff, SaturnHud_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
@@ -94,13 +173,45 @@ consvar_t cv_colorizeditembox = {"colorizeditembox", "Off", CV_SAVE, CV_OnOff, N
 static CV_PossibleValue_t HudColor_cons_t[MAXSKINCOLORS+1];
 consvar_t cv_colorizedhudcolor = {"colorizedhudcolor", "Skin Color", CV_SAVE, HudColor_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_highresportrait = {"highresportrait", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; //make char potraits use their high-res version instead
+// driftgauge stuffs
+static CV_PossibleValue_t driftgaugeoffset_cons_t[] = {
+	{-FRACUNIT*128, "MIN"}, {FRACUNIT*128, "MAX"}, {0, NULL}};
+CV_PossibleValue_t driftgaugestyle_cons_t[NUMSPEEDOSTUFF];
 
-consvar_t cv_darkitembox = {"darkitembox", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; //itembox gets a dark box with specific items
+consvar_t cv_driftgauge = {"kartdriftgauge", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_driftgaugeofs = {"kartdriftgaugeoffset", "-20", CV_FLOAT|CV_SAVE, driftgaugeoffset_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_driftgaugetrans = {"kartdriftgaugetransparency", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_driftgaugestyle = {"kartdriftgaugestyle", "1", CV_SAVE, driftgaugestyle_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_biglaps = {"biglaphud", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; //here for ppl who dont want to make 2 more patches for their custom hud
+// nametags
+static CV_PossibleValue_t nametagtrans_cons_t[] = {
+	{0, "Never"}, {1, "Far only"}, {2, "Dynamic"}, {3, "Always"}, {4, "HUD Trans."}, {0, NULL}};
+/*static CV_PossibleValue_t nametagscaling_cons_t[] = {
+	{0, "MIN"},  {320, "MAX"}, {0, NULL}};*/
+static CV_PossibleValue_t nametagdistance_cons_t[] = {
+	{0, "MIN"},  {640, "MAX"}, {0, NULL}};
+static CV_PossibleValue_t nametagmaxplayer_cons_t[] = {
+    {1, "MIN"}, {MAXPLAYERS, "MAX"}, {0, NULL}};
+static CV_PossibleValue_t nametagsize_cons_t[] = {
+	{0, "Off"}, {1, "Small"}, {2, "Minimal"}, {0, NULL}};
+static CV_PossibleValue_t nametagrestat_cons_t[] = {
+	{0, "Off"}, {1, "Restat"}, {2, "Always"}, {0, NULL}};
 
-consvar_t cv_battlespeedo = {"battlespeedo", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; //toggle for showing the speedometer in battlemode
+consvar_t cv_nametag = {"kartnametag", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_nametagtrans = {"kartnametagtransparency", "Dynamic", CV_SAVE, nametagtrans_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_nametagfacerank = {"kartnametagfacerank", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_nametagrestat = {"kartnametagrestat", "Restat", CV_SAVE, nametagrestat_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_nametagdist = {"kartnametagdist", "320", CV_SAVE, nametagdistance_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_nametagmaxplayers = {"kartnametagmaxplayers", "3", CV_SAVE, nametagmaxplayer_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_nametagmaxlenght = {"kartnametagmaxlenght", "12", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
+//consvar_t cv_nametagscaling = {"nametagscaling", "160", CV_SAVE, nametagscaling_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_showownnametag = {"kartnametagshowown", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_smallnametags = {"kartnametagsmall", "Off", CV_SAVE, nametagsize_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_nametaghop = {"kartnametaghop", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_nametagscore = {"kartnametagscore", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_shownametagfinish = {"kartshownametagfinished", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_shownametagspectator = {"kartshownametagspectator", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 
 // SOME IMPORTANT VARIABLES DEFINED IN DOOMDEF.H:
 // gamespeed is cc (0 for easy, 1 for normal, 2 for hard)
@@ -704,46 +815,45 @@ void K_RegisterKartStuff(void)
 	REG_HUD_OFFSET_X(name)\
 	REG_HUD_OFFSET_Y(name)
 
-	REG_HUD_OFFSET(item); // Item box
-	REG_HUD_OFFSET(time); // Time
-	REG_HUD_OFFSET(laps); // Number of laps
-	REG_HUD_OFFSET(dnft); // Countdown (did not finish timer)
-	REG_HUD_OFFSET(speed); // Speedometer
-	REG_HUD_OFFSET(posi); // Position in race
-	REG_HUD_OFFSET(face); // Mini rankings
-	REG_HUD_OFFSET(stcd); // Starting countdown
+	REG_HUD_OFFSET(item);   // Item box
+	REG_HUD_OFFSET(time);   // Time
+	REG_HUD_OFFSET(laps);   // Number of laps
+	REG_HUD_OFFSET(dnft);   // Countdown (did not finish timer)
+	REG_HUD_OFFSET(speed);  // Speedometer
+	REG_HUD_OFFSET(posi);   // Position in race
+	REG_HUD_OFFSET(wheel);  // Position in race
+	REG_HUD_OFFSET(face);   // Mini rankings
+	REG_HUD_OFFSET(stcd);   // Starting countdown
 	REG_HUD_OFFSET_Y(chek); // Check gfx
-	REG_HUD_OFFSET(mini); // Minimap
-	REG_HUD_OFFSET(want); // Wanted
-	REG_HUD_OFFSET(stat); // Stats
+	REG_HUD_OFFSET(mini);   // Minimap
+	REG_HUD_OFFSET(want);   // Wanted
+	REG_HUD_OFFSET(stat);   // Stats
 
 #undef REG_HUD_OFFSET
 #undef REG_HUD_OFFSET_X
 #undef REG_HUD_OFFSET_Y
 
+	// Colored speedlines
+	CV_RegisterVar(&cv_coloredspeedlines);
+	// Colored trails
+	CV_RegisterVar(&cv_coloredsneakertrail);
+
+	// makes banans do funny jitter jumpy when dragged
+	CV_RegisterVar(&cv_bananajitter);
+	CV_RegisterVar(&cv_bananthrowroll);
+
 	CV_RegisterVar(&cv_showstats);
 	CV_RegisterVar(&cv_showinput);
+
+	CV_RegisterVar(&cv_posanim);
+	CV_RegisterVar(&cv_smallposnum);
+
+	CV_RegisterVar(&cv_fancyroulette);
+
 	CV_RegisterVar(&cv_showlaptimes);
 	CV_RegisterVar(&cv_newspeedometer);
 
 	CV_RegisterVar(&cv_battlespeedo);
-
-	CV_RegisterVar(&cv_saltyhop);
-	CV_RegisterVar(&cv_saltyhopsfx);
-	CV_RegisterVar(&cv_saltysquish);
-
-	//Colourized HUD
-	CV_RegisterVar(&cv_colorizedhud);
-	CV_RegisterVar(&cv_colorizedhudcolor);
-	CV_RegisterVar(&cv_colorizeditembox);
-
-	CV_RegisterVar(&cv_darkitembox);
-
-	CV_RegisterVar(&cv_biglaps);
-
-	CV_RegisterVar(&cv_highresportrait);
-
-	CV_RegisterVar(&cv_slamsound);
 
 	CV_RegisterVar(&cv_minihead);
 	CV_RegisterVar(&cv_showminimapnames);
@@ -751,10 +861,48 @@ void K_RegisterKartStuff(void)
 
 	CV_RegisterVar(&cv_stagetitle);
 
+	// Colourized HUD
+	CV_RegisterVar(&cv_colorizedhud);
+	CV_RegisterVar(&cv_colorizedhudcolor);
+	CV_RegisterVar(&cv_colorizeditembox);
+
+	CV_RegisterVar(&cv_biglaps);
+
+	CV_RegisterVar(&cv_darkitembox);
+
+	CV_RegisterVar(&cv_multiitemicon);
+	CV_RegisterVar(&cv_huditemamount);
+
+	CV_RegisterVar(&cv_highresportrait);
+
+	CV_RegisterVar(&cv_nametag);
+	CV_RegisterVar(&cv_nametagtrans);
+	CV_RegisterVar(&cv_nametagfacerank);
+	CV_RegisterVar(&cv_nametagmaxplayers);
+	CV_RegisterVar(&cv_nametagmaxlenght);
+	//CV_RegisterVar(&cv_nametagscaling);
+	CV_RegisterVar(&cv_nametagdist);
+	CV_RegisterVar(&cv_showownnametag);
+	CV_RegisterVar(&cv_smallnametags);
+	CV_RegisterVar(&cv_nametagrestat);
+	CV_RegisterVar(&cv_nametaghop);
+	CV_RegisterVar(&cv_nametagscore);
+	CV_RegisterVar(&cv_shownametagfinish);
+	CV_RegisterVar(&cv_shownametagspectator);
+
+	CV_RegisterVar(&cv_driftgauge);
+	CV_RegisterVar(&cv_driftgaugeofs);
+	CV_RegisterVar(&cv_driftgaugetrans);
+	CV_RegisterVar(&cv_driftgaugestyle);
+
+	CV_RegisterVar(&cv_saltyhop);
+	CV_RegisterVar(&cv_saltyhopsfx);
+	CV_RegisterVar(&cv_saltysquish);
+	CV_RegisterVar(&cv_slamsound);
+
 	CV_RegisterVar(&cv_lessflicker);
 
 	CV_RegisterVar(&cv_mouseturn);
-
 }
 
 //}
@@ -3048,6 +3196,29 @@ static mobj_t *K_SpawnKartMissile(mobj_t *source, mobjtype_t type, angle_t an, I
 	return NULL;
 }
 
+static UINT16 K_DriftSparkColor(player_t *player, INT32 charge)
+{
+	UINT16 color = SKINCOLOR_NONE;
+
+	if (charge >= K_GetKartDriftSparkValue(player)*4)
+	{
+		color = (UINT8)(1 + (leveltime % (MAXSKINCOLORS-1)));
+	}
+	else if (charge >= K_GetKartDriftSparkValue(player)*2)
+	{
+		if (charge <= (K_GetKartDriftSparkValue(player)*2)+(24*3))
+			color = SKINCOLOR_RASPBERRY; // transition
+		else
+			color = SKINCOLOR_KETCHUP;
+	}
+	else
+	{
+		color = SKINCOLOR_SAPPHIRE;
+	}
+
+	return color;
+}
+
 #define DRIFTSPARKGROWTICS 8
 
 static void K_SpawnDriftSparks(player_t *player)
@@ -3109,21 +3280,7 @@ static void K_SpawnDriftSparks(player_t *player)
 			spark->sloperoll = player->mo->sloperoll;
 		}
 
-		if (player->kartstuff[k_driftcharge] >= K_GetKartDriftSparkValue(player)*4)
-		{
-			spark->color = (UINT8)(1 + (leveltime % (MAXSKINCOLORS-1)));
-		}
-		else if (player->kartstuff[k_driftcharge] >= K_GetKartDriftSparkValue(player)*2)
-		{
-			if (player->kartstuff[k_driftcharge] <= (K_GetKartDriftSparkValue(player)*2)+(24*3))
-				spark->color = SKINCOLOR_RASPBERRY; // transition
-			else
-				spark->color = SKINCOLOR_KETCHUP;
-		}
-		else
-		{
-			spark->color = SKINCOLOR_SAPPHIRE;
-		}
+		spark->color = K_DriftSparkColor(player, player->kartstuff[k_driftcharge]);
 
 		if ((player->kartstuff[k_drift] > 0 && player->cmd.driftturn > 0) // Inward drifts
 			|| (player->kartstuff[k_drift] < 0 && player->cmd.driftturn < 0))
@@ -3186,8 +3343,15 @@ static void K_SpawnAIZDust(player_t *player)
 	}
 }
 
+#define MAXSTRETCHDIV 17476977
+
 static void K_StretchPlayerGravity(player_t *p)
 {
+	if (cv_gravstretch.value == 0)
+	{
+		return;
+	}
+
 	I_Assert(p != NULL);
 	I_Assert(p->mo != NULL);
 	I_Assert(!P_MobjWasRemoved(p->mo));
@@ -3195,15 +3359,13 @@ static void K_StretchPlayerGravity(player_t *p)
 	fixed_t mos = FRACUNIT;
 	fixed_t rzs = abs(p->mo->momz);
 	fixed_t zspd = abs(rzs/mos);
-	fixed_t stretchScaleFactor = 0;
-	fixed_t rzsDiv = 1;
-	fixed_t slamDiv = 1;
+	fixed_t stretchScaleFactor = FixedDiv(FRACUNIT*60, cv_gravstretch.value);
+	fixed_t rzsDiv, slamDiv;
 
 	fixed_t dxs = p->mo->realxscale;
 	fixed_t dys = p->mo->realyscale;
-	stretchScaleFactor = FixedDiv(FRACUNIT*60, cv_gravstretch.value);
 
-	if (stretchScaleFactor > 17476977)
+	if (stretchScaleFactor > MAXSTRETCHDIV)
 		rzsDiv = 0;
 	else
 		rzsDiv = FixedDiv(rzs, stretchScaleFactor);
@@ -3213,7 +3375,7 @@ static void K_StretchPlayerGravity(player_t *p)
 	if (p->mo->slamsoundtimer)
 		p->mo->slamsoundtimer--;
 
-	if (cv_slamsound.value && (p->mo->eflags & MFE_JUSTHITFLOOR) && p->mo->stretchslam > 4*mos && !p->mo->slamsoundtimer)
+	if (cv_slamsound.value && (p->mo->eflags & MFE_JUSTHITFLOOR) && !p->mo->slamsoundtimer && (p->mo->stretchslam > 4*mos))
 	{
 		S_StartSound(p->mo, sfx_s3k4c);
 		p->mo->slamsoundtimer = TICRATE;
@@ -3241,7 +3403,7 @@ static void K_StretchPlayerGravity(player_t *p)
 	}
 	else
 	{
-		if (stretchScaleFactor > 17476977)
+		if (stretchScaleFactor > MAXSTRETCHDIV)
 			slamDiv = 0;
 		else
 			slamDiv = FixedDiv(p->mo->stretchslam, stretchScaleFactor);
@@ -3257,38 +3419,55 @@ static void K_StretchPlayerGravity(player_t *p)
 
 static void K_QuiteSaltyHop(player_t *p)
 {
+	if (!cv_saltyhop.value)
+		return;
+
 	// what the fuck is this haya
 	fixed_t mos = FRACUNIT; // doesnt work correctly if it isnt :/
 
 	// ready?
-	if (!p->kartstuff[k_jmp]) {
+	if (!p->kartstuff[k_jmp])
+	{
 		p->mo->salty_ready = true;
 		p->mo->salty_tapping = false;
-	} else if (p->mo->salty_ready) {
+	}
+	else if (p->mo->salty_ready)
+	{
 		p->mo->salty_ready = false;
 		p->mo->salty_tapping = true;
-	} else {
+	}
+	else
+	{
 		p->mo->salty_tapping = false;
 	}
 
 	// GO!
-	if (!p->mo->init_salty) {
+	if (!p->mo->init_salty)
+	{
 		p->mo->salty_jump = false;
 		p->mo->salty_zoffset = 0;
 		p->mo->salty_momz = 0;
 		p->mo->init_salty = true;
 	}
-	else if ((p->mo->salty_jump)) {
-		if (p->mo->eflags & MFE_JUSTHITFLOOR) {
+	else if (p->mo->salty_jump)
+	{
+		if (p->mo->eflags & MFE_JUSTHITFLOOR)
+		{
 			p->mo->salty_zoffset = 0;
-		} else if (P_IsObjectOnGround(p->mo)) {
+		}
+		else if (P_IsObjectOnGround(p->mo))
+		{
 			p->mo->salty_zoffset += p->mo->salty_momz;
 			p->mo->salty_momz -= (mos*3/2);
-		} else {
+		}
+		else
+		{
 			p->mo->salty_zoffset *= (49/50)*mos;
 			p->mo->salty_momz = 0;
 		}
-		if (p->mo->salty_zoffset <= 0) {
+
+		if (p->mo->salty_zoffset <= 0)
+		{
 			if (!(p->mo->eflags & MFE_JUSTHITFLOOR) && P_IsObjectOnGround(p->mo) && cv_saltyhopsfx.value)
 				S_StartSound(p->mo, sfx_s268);
 			p->mo->salty_jump = false;
@@ -3296,18 +3475,23 @@ static void K_QuiteSaltyHop(player_t *p)
 			p->mo->salty_momz = 0;
 			// shlamma damma
 			p->mo->stretchslam += cv_saltysquish.value ? (8*mos) : 0;
-		} else if (p->mo->salty_zoffset >= 0 && cv_saltysquish.value) {
+		}
+		else if (p->mo->salty_zoffset >= 0 && cv_saltysquish.value)
+		{
 			// goofy ahh hack
 			p->mo->spriteyscale += (mos/8);
 			p->mo->spritexscale -= (mos/8);
 		}
+
 		p->mo->spriteyoffset = p->mo->salty_zoffset;
+
 		if (S_SoundPlaying(p->mo, sfx_screec))
 			S_StopSoundByID(p->mo, sfx_screec);
 		if (S_SoundPlaying(p->mo, sfx_drift))
 			S_StopSoundByID(p->mo, sfx_drift);
 	}
-	else if (p->mo->salty_tapping && P_IsObjectOnGround(p->mo) && !p->kartstuff[k_spinouttimer] && !p->kartstuff[k_squishedtimer]) {
+	else if (p->mo->salty_tapping && P_IsObjectOnGround(p->mo) && !p->kartstuff[k_spinouttimer] && !p->kartstuff[k_squishedtimer])
+	{
 		p->mo->salty_jump = true;
 		p->mo->salty_zoffset = 0;
 		p->mo->salty_momz = 6*mos;
@@ -3336,6 +3520,62 @@ void K_RollMobjBySlopes(mobj_t* mo, boolean usedistance)
 		fixed_t tempz = mo->standingslope->normal.z;
 		fixed_t tempy = mo->standingslope->normal.y;
 		fixed_t tempx = mo->standingslope->normal.x;
+		fixed_t tempangle = -(R_PointToAngle2(0, 0, FixedSqrt(FixedMul(tempy, tempy) + FixedMul(tempz, tempz)), tempx));
+
+		// admittedly this is a very hacky way to do the pitch and roll easing
+
+		// pitch
+		if (!usedistance || (m_dist <= (rolldist)))
+		{
+			an = (INT32)((angle_t)tempangle - mo->pitch_sprite) / SLOPEROLL_DIV;
+
+			mo->pitch_sprite = an ? mo->pitch_sprite + an : (angle_t)tempangle;
+		}
+		else
+			mo->pitch_sprite = FixedAngle(0);
+
+		mo->slopepitch = flip ? InvAngle(mo->pitch_sprite) : mo->pitch_sprite;
+
+		// roll
+		tempangle = (R_PointToAngle2(0, 0, tempz, tempy));
+
+		if (!usedistance || (m_dist <= (rolldist)))
+		{
+			an = (INT32)((angle_t)tempangle - mo->roll_sprite) / SLOPEROLL_DIV;
+
+			mo->roll_sprite = an ? mo->roll_sprite + an : (angle_t)tempangle;
+		}
+		else
+			mo->roll_sprite = FixedAngle(0);
+
+		mo->sloperoll = flip ? InvAngle(mo->roll_sprite) : mo->roll_sprite;
+	}
+	else if (P_IsObjectOnGround(mo))
+	{
+		mo->sloperoll = FixedAngle(0);
+		mo->slopepitch = FixedAngle(0);
+	}
+}
+
+static void K_SetPitchRollFromSlope(mobj_t* mo, pslope_t *slope, boolean usedistance)
+{
+	if (P_MobjWasRemoved(mo))
+		return;
+
+	I_Assert(mo->subsector != NULL);
+	I_Assert(mo->subsector->sector != NULL);
+
+	// lifted from hw_md2
+	if (slope)
+	{
+		angle_t an;
+		const boolean flip = (mo->eflags & MFE_VERTICALFLIP);
+		const fixed_t m_dist = usedistance ? R_PointToDist(mo->x, mo->y) : 0;
+		const fixed_t rolldist = cv_sloperolldist.value * mapobjectscale;
+
+		fixed_t tempz = slope->normal.z;
+		fixed_t tempy = slope->normal.y;
+		fixed_t tempx = slope->normal.x;
 		fixed_t tempangle = -(R_PointToAngle2(0, 0, FixedSqrt(FixedMul(tempy, tempy) + FixedMul(tempz, tempz)), tempx));
 
 		// admittedly this is a very hacky way to do the pitch and roll easing
@@ -3417,6 +3657,13 @@ void K_SpawnBoostTrail(player_t *player)
 		flame->angle = travelangle;
 		flame->fuse = TICRATE*2;
 		flame->destscale = player->mo->scale;
+
+		if (cv_coloredsneakertrail.value)
+		{
+			flame->colorized = true;
+			flame->color = player->skincolor;
+		}
+
 		P_SetScale(flame, player->mo->scale);
 		// not K_MatchGenericExtraFlags so that a stolen sneaker can be seen
 		K_FlipFromObject(flame, player->mo);
@@ -3727,6 +3974,15 @@ static mobj_t *K_ThrowKartItem(player_t *player, boolean missile, mobjtype_t map
 
 				if (mo->eflags & MFE_UNDERWATER)
 					mo->momz = (117 * mo->momz) / 200;
+
+				if (cv_sloperoll.value == 2 && cv_bananthrowroll.value && mapthing == MT_BANANA)
+				{
+					//mo->angle = FixedAngle(M_RandomRange(-180, 180) << FRACBITS);
+					if (cv_bananthrowroll.value == 1)
+						mo->sloperoll = FixedAngle(M_RandomRange(-180, 180) << FRACBITS); // im lazy but this makes sure the banan goes back to upright when it lands lmao
+					else if (cv_bananthrowroll.value == 2)
+						mo->rollangle = FixedAngle(M_RandomRange(-180, 180) << FRACBITS);
+				}
 			}
 
 			// this is the small graphic effect that plops in you when you throw an item:
@@ -4148,6 +4404,10 @@ void K_KillBananaChain(mobj_t *banana, mobj_t *inflictor, mobj_t *source)
 	mobj_t *cachenext;
 
 killnext:
+
+	if (!banana)
+		return;
+
 	cachenext = banana->hnext;
 
 	if (banana->health)
@@ -4458,6 +4718,150 @@ void K_RepairOrbitChain(mobj_t *orbit)
 	}
 }
 
+// Simplified version of a code bit in P_MobjFloorZ
+static fixed_t K_BananaSlopeZ(pslope_t *slope, fixed_t x, fixed_t y, fixed_t z, fixed_t radius, boolean ceiling)
+{
+	fixed_t testx, testy;
+	fixed_t slopez = 0;
+
+	if (slope == NULL)
+	{
+		testx = x;
+		testy = y;
+	}
+	else
+	{
+		if (slope->d.x < 0)
+			testx = radius;
+		else
+			testx = -radius;
+
+		if (slope->d.y < 0)
+			testy = radius;
+		else
+			testy = -radius;
+
+		if ((slope->zdelta > 0) ^ !!(ceiling))
+		{
+			testx = -testx;
+			testy = -testy;
+		}
+
+		testx += x;
+		testy += y;
+	}
+
+	if (slope)
+	{
+		slopez = P_GetZAt(slope, testx, testy);
+	}
+	else
+		slopez = z;
+
+	return slopez;
+}
+
+static void K_CalculateBananaSlope(mobj_t *mobj, fixed_t x, fixed_t y, fixed_t z, fixed_t radius, fixed_t height, boolean flip, boolean player)
+{
+	fixed_t newz;
+	sector_t *sec;
+	pslope_t *slope = NULL;
+
+	//sec = R_PointInSubsector(x, y)->sector;
+
+	if (mobj->x != x || mobj->y != y || mobj->subsector == NULL)
+		sec = R_PointInSubsector(x, y)->sector;
+	else
+		sec = mobj->subsector->sector;
+
+	if (flip)
+	{
+		slope = sec->c_slope;
+		newz = K_BananaSlopeZ(slope, x, y, sec->ceilingheight, radius, true);
+	}
+	else
+	{
+		slope = sec->f_slope;
+		newz = K_BananaSlopeZ(slope, x, y, sec->floorheight, radius, true);
+	}
+
+	// Check FOFs for a better suited slope
+	if (sec->ffloors)
+	{
+		ffloor_t *rover;
+
+		for (rover = sec->ffloors; rover; rover = rover->next)
+		{
+			fixed_t top, bottom;
+			fixed_t d1, d2;
+
+			if (!(rover->flags & FF_EXISTS))
+				continue;
+
+			if ((!(((rover->flags & FF_BLOCKPLAYER && player)
+				|| (rover->flags & FF_BLOCKOTHERS && !player))
+				|| (rover->flags & FF_QUICKSAND))
+				|| (rover->flags & FF_SWIMMABLE)))
+				continue;
+
+			top = K_BananaSlopeZ(*rover->t_slope, x, y, *rover->topheight, radius, false);
+			bottom = K_BananaSlopeZ(*rover->b_slope, x, y, *rover->bottomheight, radius, true);
+
+			if (flip)
+			{
+				if (rover->flags & FF_QUICKSAND)
+				{
+					if (z < top && (z + height) > bottom)
+					{
+						if (newz > (z + height))
+						{
+							newz = (z + height);
+							slope = NULL;
+						}
+					}
+					continue;
+				}
+
+				d1 = (z + height) - (top + ((bottom - top)/2));
+				d2 = z - (top + ((bottom - top)/2));
+
+				if (bottom < newz && abs(d1) < abs(d2))
+				{
+					newz = bottom;
+					slope = *rover->b_slope;
+				}
+			}
+			else
+			{
+				if (rover->flags & FF_QUICKSAND)
+				{
+					if (z < top && (z + height) > bottom)
+					{
+						if (newz < z)
+						{
+							newz = z;
+							slope = NULL;
+						}
+					}
+					continue;
+				}
+
+				d1 = z - (bottom + ((top - bottom)/2));
+				d2 = (z + height) - (bottom + ((top - bottom)/2));
+
+				if (top > newz && abs(d1) < abs(d2))
+				{
+					newz = top;
+					slope = *rover->t_slope;
+				}
+			}
+		}
+	}
+
+	//mobj->standingslope = slope;
+	K_SetPitchRollFromSlope(mobj, slope, (cv_sloperolldist.value && !splitscreen));
+}
+
 // Move the hnext chain!
 static void K_MoveHeldObjects(player_t *player)
 {
@@ -4636,6 +5040,15 @@ static void K_MoveHeldObjects(player_t *player)
 							targz -= 8*(2*FRACUNIT)/7;
 					}*/
 
+					if (cv_bananajitter.value && P_IsObjectOnGround(player->mo) && player->speed > 0 && player->kartstuff[k_bananadrag] > TICRATE
+						&& M_RandomChance(min(FRACUNIT/2, FixedDiv(player->speed, K_GetKartSpeed(player, false))/2)))
+					{
+						if (leveltime & 1)
+							cur->spriteyoffset += 8*(2*FRACUNIT)/7;
+						else
+							cur->spriteyoffset -= 8*(2*FRACUNIT)/7;
+					}
+
 					if (speed > dist)
 						P_InstaThrust(cur, cur->angle, speed-dist);
 
@@ -4643,6 +5056,12 @@ static void K_MoveHeldObjects(player_t *player)
 
 					if (R_PointToDist2(cur->x, cur->y, targx, targy) > 768*FRACUNIT)
 						P_MoveOrigin(cur, targx, targy, cur->z);
+
+					if (cv_sloperoll.value == 2 && P_IsObjectOnGround(cur))
+					{
+						K_CalculateBananaSlope(cur, cur->x, cur->y, cur->z,
+											   cur->radius, cur->height, (cur->eflags & MFE_VERTICALFLIP), false);
+					}
 
 					cur = cur->hnext;
 				}
@@ -5042,6 +5461,57 @@ void K_KartPlayerHUDUpdate(player_t *player)
 		player->kartstuff[k_cardanimation] = 0;
 }
 
+static inline void K_SpawnNormalSpeedLines(player_t *player)
+{
+	mobj_t *fast = P_SpawnMobj(player->mo->x + (P_RandomRange(-36,36) * player->mo->scale),
+							   player->mo->y + (P_RandomRange(-36,36) * player->mo->scale),
+							   player->mo->z + (player->mo->height/2) + (P_RandomRange(-20,20) * player->mo->scale),
+							   MT_FASTLINE);
+
+	fast->angle = R_PointToAngle2(0, 0, player->mo->momx, player->mo->momy);
+	fast->momx = 3*player->mo->momx/4;
+	fast->momy = 3*player->mo->momy/4;
+	fast->momz = 3*player->mo->momz/4;
+	P_SetTarget(&fast->target, player->mo); // easier lua access
+
+	K_MatchGenericExtraFlags(fast, player->mo);
+
+	if (cv_coloredspeedlines.value)
+	{
+		const boolean goodSpeed = (player->speed >= (3*K_GetKartSpeed(player, false))/4);
+
+		// cant have nice shit cause of synched rng
+		if (player->kartstuff[k_eggmanexplode])
+		{
+			// Make it red when you have the eggman speed boost
+			fast->color = SKINCOLOR_RED;
+			fast->colorized = true;
+		}
+		else if (player->kartstuff[k_invincibilitytimer])
+		{
+			fast->color = player->mo->color;
+			fast->colorized = true;
+		}
+		else if (goodSpeed)
+		{
+			UINT8 driftcolor = SKINCOLOR_NONE;
+
+			if (cv_coloredspeedlines.value == 2 && player->kartstuff[k_driftboost])
+			{
+				if (player->kartstuff[k_driftboost] <= 20)
+					driftcolor = SKINCOLOR_SAPPHIRE;
+				else if (player->kartstuff[k_driftboost] <= 50)
+					driftcolor = SKINCOLOR_RASPBERRY;
+				else if (player->kartstuff[k_driftboost] <= 125)
+					driftcolor = (UINT8)(1 + (leveltime % (MAXSKINCOLORS-1)));
+			}
+
+			fast->color = (leveltime & 1) ? player->mo->color : driftcolor;
+			fast->colorized = true;
+		}
+	}
+}
+
 /**	\brief	Decreases various kart timers and powers per frame. Called in P_PlayerThink in p_user.c
 
 	\param	player	player object passed from P_PlayerThink
@@ -5061,18 +5531,9 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	K_GetKartBoostPower(player);
 
 	// Speed lines
-	if ((player->kartstuff[k_sneakertimer] || player->kartstuff[k_driftboost] || player->kartstuff[k_startboost]) && player->speed > 0)
+	if ((player->kartstuff[k_sneakertimer] || player->kartstuff[k_driftboost] || player->kartstuff[k_startboost] /*|| player->kartstuff[k_eggmanexplode]*/) && player->speed > 0) // gotta love the speedlines calling synched rng :chaosleep:
 	{
-		mobj_t *fast = P_SpawnMobj(player->mo->x + (P_RandomRange(-36,36) * player->mo->scale),
-			player->mo->y + (P_RandomRange(-36,36) * player->mo->scale),
-			player->mo->z + (player->mo->height/2) + (P_RandomRange(-20,20) * player->mo->scale),
-			MT_FASTLINE);
-		fast->angle = R_PointToAngle2(0, 0, player->mo->momx, player->mo->momy);
-		fast->momx = 3*player->mo->momx/4;
-		fast->momy = 3*player->mo->momy/4;
-		fast->momz = 3*player->mo->momz/4;
-		P_SetTarget(&fast->target, player->mo); // easier lua access
-		K_MatchGenericExtraFlags(fast, player->mo);
+		K_SpawnNormalSpeedLines(player);
 	}
 
 	if (player->playerstate == PST_DEAD || player->kartstuff[k_respawn] > 1) // Ensure these are set correctly here
@@ -6471,13 +6932,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 			player->sliproll -= (4*ANG1);
 	}
 
-	if (cv_gravstretch.value > 13107)
-		K_StretchPlayerGravity(player);
-	else
-	{
-		player->mo->spritexscale = player->mo->realxscale;
-		player->mo->spriteyscale = player->mo->realyscale;
-	}
+	K_StretchPlayerGravity(player);
 
 	if (cv_sloperoll.value && !player->mo->salty_jump) // seeing a character rotate mid-hop looks really janky
 	{
@@ -6592,14 +7047,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 	}
 
 	// salty hop! i wanna die
-	if (cv_saltyhop.value)
-		K_QuiteSaltyHop(player);
-	else {
-		player->mo->spriteyoffset = 0;
-		player->mo->salty_jump = false;
-		player->mo->salty_zoffset = 0;
-		player->mo->salty_momz = 0;
-	}
+	K_QuiteSaltyHop(player);
 }
 
 void K_CalculateBattleWanted(void)
@@ -7007,12 +7455,15 @@ static patch_t *kp_itemmulsticker[2];
 static patch_t *kp_itemx;
 
 static patch_t *kp_sneaker[2];
+static patch_t *kp_multsneaker[2];
 static patch_t *kp_rocketsneaker[2];
 static patch_t *kp_invincibility[13];
 static patch_t *kp_banana[2];
+static patch_t *kp_multbanana[3];
 static patch_t *kp_eggman[2];
 static patch_t *kp_orbinaut[5];
 static patch_t *kp_jawz[2];
+static patch_t *kp_multjawz[1];
 static patch_t *kp_mine[2];
 static patch_t *kp_ballhog[2];
 static patch_t *kp_selfpropelledbomb[2];
@@ -7274,6 +7725,11 @@ void K_LoadKartHUDGraphics(void)
 	kp_itemx = 					W_CachePatchName("K_ITX", PU_HUDGFX);
 
 	kp_sneaker[0] =				W_CachePatchName("K_ITSHOE", PU_HUDGFX);
+	if (multiitem_icon)
+	{
+		kp_multsneaker[0] = 	W_CachePatchName("K_ITSHO2", PU_HUDGFX);
+		kp_multsneaker[1] = 	W_CachePatchName("K_ITSHO3", PU_HUDGFX);
+	}
 	kp_rocketsneaker[0] =		W_CachePatchName("K_ITRSHE", PU_HUDGFX);
 
 	sprintf(buffer, "K_ITINVx");
@@ -7282,7 +7738,14 @@ void K_LoadKartHUDGraphics(void)
 		buffer[7] = '1'+i;
 		kp_invincibility[i] = (patch_t *) W_CachePatchName(buffer, PU_HUDGFX);
 	}
+
 	kp_banana[0] =				W_CachePatchName("K_ITBANA", PU_HUDGFX);
+	if (multiitem_icon)
+	{
+		kp_multbanana[0] = 	W_CachePatchName("K_ITBAN2", PU_HUDGFX);
+		kp_multbanana[1] =	 W_CachePatchName("K_ITBAN3", PU_HUDGFX);
+		kp_multbanana[2] = 	W_CachePatchName("K_ITBAN4", PU_HUDGFX);
+	}
 	kp_eggman[0] =				W_CachePatchName("K_ITEGGM", PU_HUDGFX);
 	sprintf(buffer, "K_ITORBx");
 	for (i = 0; i < 4; i++)
@@ -7291,6 +7754,10 @@ void K_LoadKartHUDGraphics(void)
 		kp_orbinaut[i] = (patch_t *) W_CachePatchName(buffer, PU_HUDGFX);
 	}
 	kp_jawz[0] =				W_CachePatchName("K_ITJAWZ", PU_HUDGFX);
+	if (multiitem_icon)
+	{
+		kp_multjawz[0] =		W_CachePatchName("K_ITJAW2", PU_HUDGFX);
+	}
 	kp_mine[0] =				W_CachePatchName("K_ITMINE", PU_HUDGFX);
 	kp_ballhog[0] =				W_CachePatchName("K_ITBHOG", PU_HUDGFX);
 	kp_selfpropelledbomb[0] =	W_CachePatchName("K_ITSPB", PU_HUDGFX);
@@ -7857,7 +8324,7 @@ static void K_drawKartItem(void)
 	patch_t *localinv = ((offset) ? kp_invincibility[((leveltime % (6*3)) / 3) + 7] : kp_invincibility[(leveltime % (7*3)) / 3]);
 	INT32 fx = 0, fy = 0, fflags = 0;	// final coords for hud and flags...
 	//INT32 splitflags = K_calcSplitFlags(V_SNAPTOTOP|V_SNAPTOLEFT);
-	const INT32 numberdisplaymin = ((!offset && stplyr->kartstuff[k_itemtype] == KITEM_ORBINAUT) ? 5 : 2);
+	INT32 numberdisplaymin = cv_huditemamount.value == 2 ? 1 : 2; // No longer a constant so other things can modify this value
 	INT32 itembar = 0;
 	INT32 maxl = 0; // itembar's normal highest value
 	const INT32 barlength = (splitscreen > 1 ? 12 : 26);
@@ -7867,6 +8334,8 @@ static void K_drawKartItem(void)
 	UINT8 *colormap = NULL;
 
 	boolean flipamount = splitscreen > 1 && stplyrnum & 1;	// Used for 3P/4P splitscreen to flip item amount stuff
+
+	const boolean usemultiicon = (multiitem_icon && cv_multiitemicon.value && !offset);
 
 	if (stplyr->kartstuff[k_itemroulette])
 	{
@@ -8006,7 +8475,27 @@ static void K_drawKartItem(void)
 			switch(stplyr->kartstuff[k_itemtype])
 			{
 				case KITEM_SNEAKER:
-					localpatch = kp_sneaker[offset];
+					if (usemultiicon)
+					{
+						if (!cv_huditemamount.value)
+							numberdisplaymin = 4;
+						switch(stplyr->kartstuff[k_itemamount])
+						{
+							case 1:
+								localpatch = kp_sneaker[offset];
+								break;
+							case 2:
+								localpatch = kp_multsneaker[0];
+								break;
+							default:
+								localpatch = kp_multsneaker[1];
+								break;
+						}
+					}
+					else
+					{
+						localpatch = kp_sneaker[offset];
+					}
 					break;
 				case KITEM_ROCKETSNEAKER:
 					localpatch = kp_rocketsneaker[offset];
@@ -8016,16 +8505,50 @@ static void K_drawKartItem(void)
 					dark = true;
 					break;
 				case KITEM_BANANA:
-					localpatch = kp_banana[offset];
+					if (usemultiicon)
+					{
+						if (!cv_huditemamount.value)
+							numberdisplaymin = 4;
+						switch(stplyr->kartstuff[k_itemamount])
+						{
+							case 1:
+								localpatch = kp_banana[offset];
+								break;
+							case 2:
+								localpatch = kp_multbanana[0];
+								break;
+							case 3:
+								localpatch = kp_multbanana[1];
+								break;
+							default:
+								localpatch = kp_multbanana[2];
+								break;
+						}
+					}
+					else
+					{
+						localpatch = kp_banana[offset];
+					}
 					break;
 				case KITEM_EGGMAN:
 					localpatch = kp_eggman[offset];
 					break;
 				case KITEM_ORBINAUT:
+					if (!cv_huditemamount.value)
+						numberdisplaymin = offset ? 2 : 5;
 					localpatch = kp_orbinaut[(offset ? 4 : min(stplyr->kartstuff[k_itemamount]-1, 3))];
 					break;
 				case KITEM_JAWZ:
-					localpatch = kp_jawz[offset];
+					if (usemultiicon)
+					{
+						if (!cv_huditemamount.value)
+							numberdisplaymin = 3;
+						localpatch = ((stplyr->kartstuff[k_itemamount] == 1) ? kp_jawz[offset] : kp_multjawz[0]);
+					}
+					else
+					{
+						localpatch = kp_jawz[offset];
+					}
 					break;
 				case KITEM_MINE:
 					localpatch = kp_mine[offset];
@@ -8100,6 +8623,22 @@ static void K_drawKartItem(void)
 
 	V_DrawMappedPatch(fx, fy, V_HUDTRANS|fflags, localbg, cv_colorizeditembox.value ? colormap : NULL);
 
+	fixed_t rfy = fy<<FRACBITS;
+	INT32 fancyflags = V_HUDTRANS|fflags;
+
+	if (cv_fancyroulette.value && stplyr->kartstuff[k_itemroulette] && !stplyr->deadtimer)
+	{
+		fixed_t frac = R_GetHudUncap();
+		UINT8   fancystep = (offset ? 6 : 10);
+		fixed_t fancyoffset = (stplyr->kartstuff[k_itemroulette] % 3)-1;
+		if (fancyoffset != 0)
+		{
+			fancyflags &= ~V_HUDTRANS;
+			fancyflags |=V_HUDTRANSHALF;
+		}
+		rfy += (fancystep * fancyoffset * FRACUNIT) + FixedMul(fancystep*FRACUNIT, frac) - fancystep/2*FRACUNIT;
+	}
+
 	// Then, the numbers:
 	if (stplyr->kartstuff[k_itemamount] >= numberdisplaymin && !stplyr->kartstuff[k_itemroulette])
 	{
@@ -8118,7 +8657,7 @@ static void K_drawKartItem(void)
 		}
 	}
 	else
-		V_DrawFixedPatch(fx<<FRACBITS, fy<<FRACBITS, FRACUNIT, V_HUDTRANS|fflags, localpatch, colmap);
+		V_DrawFixedPatch(fx<<FRACBITS, rfy, FRACUNIT, fancyflags, localpatch, colmap);
 
 	// Extensible meter, currently only used for rocket sneaker...
 	if (itembar && hudtrans)
@@ -8179,11 +8718,7 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 		;
 	else if (mode && !drawtime)
 	{
-		// apostrophe location     _'__ __
-		V_DrawKartString(TX+24, TY+3, splitflags, va("'"));
-
-		// quotation mark location    _ __"__
-		V_DrawKartString(TX+60, TY+3, splitflags, va("\""));
+		V_DrawKartString(TX, TY+3, splitflags, va("--'--\"--"));
 	}
 	else
 	{
@@ -8301,6 +8836,7 @@ static void K_DrawKartPositionNum(INT32 num)
 	// POSI_X = BASEVIDWIDTH - 51;	// 269
 	// POSI_Y = BASEVIDHEIGHT- 64;	// 136
 
+	const boolean wheeloffs = (cv_showinput.value && cv_posi_xoffset.value == 0 && cv_posi_yoffset.value == 0 && cv_wheel_xoffset.value == 0 && cv_wheel_yoffset.value == 0);
 	boolean win = (stplyr->exiting && num == 1);
 	//INT32 X = POSI_X;
 	INT32 W = SHORT(kp_positionnum[0][0]->width);
@@ -8308,18 +8844,18 @@ static void K_DrawKartPositionNum(INT32 num)
 	patch_t *localpatch = kp_positionnum[0][0];
 	//INT32 splitflags = K_calcSplitFlags(V_SNAPTOBOTTOM|V_SNAPTORIGHT);
 	INT32 fx = 0, fy = 0, fflags = 0;
-	INT32 xoffs = (cv_showinput.value) ? -48 : 0;
+	INT32 xoffs = wheeloffs ? -48 : 0;
 	boolean flipdraw = false;	// flip the order we draw it in for MORE splitscreen bs. fun.
 	boolean flipvdraw = false;	// used only for 2p splitscreen so overtaking doesn't make 1P's position fly off the screen.
 	boolean overtake = false;
 
-	if (stplyr->kartstuff[k_positiondelay] || stplyr->exiting)
+	if ((cv_posanim.value && stplyr->kartstuff[k_positiondelay]) || stplyr->exiting)
 	{
 		scale *= 2;
 		overtake = true;	// this is used for splitscreen stuff in conjunction with flipdraw.
 	}
 
-	if (splitscreen || (cv_showinput.value && !splitscreen))
+	if (splitscreen || cv_smallposnum.value || wheeloffs)
 		scale /= 2;
 
 	W = FixedMul(W<<FRACBITS, scale)>>FRACBITS;
@@ -9660,7 +10196,7 @@ static void K_drawKartMinimap(void)
 	INT32 i = 0;
 	INT32 x, y;
 	INT32 minimaptrans, splitflags;
-	SINT8 localplayers[4];
+	SINT8 localplayers[MAXSPLITSCREENPLAYERS];
 	SINT8 numlocalplayers = 0;
 
 	// Draw the HUD only when playing in a level.
@@ -9681,7 +10217,6 @@ static void K_drawKartMinimap(void)
 	x = info.x - (SHORT(minimapinfo.minimap_pic->width)/2);
 	y = info.y - (SHORT(minimapinfo.minimap_pic->height)/2);
 	splitflags = info.flags;
-
 
 	if (forceshowhud)
 		minimaptrans = cv_kartminimap.value;
@@ -9718,7 +10253,7 @@ static void K_drawKartMinimap(void)
 	y -= SHORT(minimapinfo.minimap_pic->topoffset);
 
 	// initialize
-	for (i = 0; i < 4; i++)
+	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 		localplayers[i] = -1;
 
 	// Player's tiny icons on the Automap. (drawn opposite direction so player 1 is drawn last in splitscreen)
@@ -9734,8 +10269,7 @@ static void K_drawKartMinimap(void)
 		if (!stplyr->mo || stplyr->spectator) // do we need the latter..?
 			return;
 
-		localplayers[numlocalplayers] = stplyr-players;
-		numlocalplayers++;
+		localplayers[numlocalplayers++] = stplyr-players;
 	}
 	else
 	{
@@ -9743,29 +10277,27 @@ static void K_drawKartMinimap(void)
 		{
 			if (!playeringame[i])
 				continue;
+
 			if (!players[i].mo || players[i].spectator)
 				continue;
-
-			if (i != displayplayers[0] || splitscreen)
-			{
-				if (G_BattleGametype() && players[i].kartstuff[k_bumper] <= 0)
-					continue;
-
-				if (players[i].kartstuff[k_hyudorotimer] > 0)
-				{
-					if (!((players[i].kartstuff[k_hyudorotimer] < 1*TICRATE/2
-						|| players[i].kartstuff[k_hyudorotimer] > hyudorotime-(1*TICRATE/2))
-						&& !(leveltime & 1)))
-						continue;
-				}
-			}
 
 			if (P_IsDisplayPlayer(&players[i]))
 			{
 				// Draw display players on top of everything else
-				localplayers[numlocalplayers] = i;
-				numlocalplayers++;
+				localplayers[numlocalplayers++] = i;
 				continue;
+			}
+
+			// Now we know it's not a display player, handle non-local player exceptions.
+			if (G_BattleGametype() && players[i].kartstuff[k_bumper] <= 0)
+				continue;
+
+			if (players[i].kartstuff[k_hyudorotimer] > 0)
+			{
+				if (!((players[i].kartstuff[k_hyudorotimer] < 1*TICRATE/2
+					|| players[i].kartstuff[k_hyudorotimer] > hyudorotime-(1*TICRATE/2))
+					&& !(leveltime & 1)))
+					continue;
 			}
 
 			K_drawKartMinimapHead(players[i].mo, x, y, splitflags);
@@ -9778,7 +10310,7 @@ static void K_drawKartMinimap(void)
 
 	for (i = 0; i < numlocalplayers; i++)
 	{
-		if (i == -1)
+		if (localplayers[i] == -1)
 			continue; // this doesn't interest us
 		K_drawKartMinimapHead(players[localplayers[i]].mo, x, y, splitflags);
 	}
@@ -10134,7 +10666,7 @@ static void K_drawInput(void)
 
 	static INT32 pn = 0;
 	INT32 target = 0, splitflags = (V_SNAPTOBOTTOM|V_SNAPTORIGHT|V_HUDTRANS);
-	INT32 x = (BASEVIDWIDTH - 32 + cv_posi_xoffset.value)*FRACUNIT, y = (BASEVIDHEIGHT - 24 + cv_posi_yoffset.value)*FRACUNIT;
+	INT32 x = (BASEVIDWIDTH - 32 + cv_wheel_xoffset.value)*FRACUNIT, y = (BASEVIDHEIGHT - 24 + cv_wheel_yoffset.value)*FRACUNIT;
 	INT32 offs, col;
 	const INT32 accent1 = splitflags|colortranslations[K_GetHudColor()][5];
 	const INT32 accent2 = splitflags|colortranslations[K_GetHudColor()][9];

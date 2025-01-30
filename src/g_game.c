@@ -527,26 +527,6 @@ consvar_t cv_ydeadzone[MAXSPLITSCREENPLAYERS] = {
 static CV_PossibleValue_t driftsparkpulse_t[] = {{0, "MIN"}, {FRACUNIT*3, "MAX"}, {0, NULL}};
 consvar_t cv_driftsparkpulse = {"driftsparkpulse", "1.4", CV_FLOAT | CV_SAVE, driftsparkpulse_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-static CV_PossibleValue_t stretchfactor_t[] = {
-	{0, "Off"}, {FRACUNIT/8, "0.125"}, {FRACUNIT/4, "0.250"},
-	{3*FRACUNIT/8, "0.375"}, {FRACUNIT/2, "0.500"}, {5*FRACUNIT/8, "0.625"},
-	{3*FRACUNIT/4, "0.750"}, {7*FRACUNIT/8, "0.875"}, {FRACUNIT, "Max"}, {0, NULL}};
-consvar_t cv_gravstretch = {"gravstretch", "0", CV_SAVE, stretchfactor_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-
-static CV_PossibleValue_t slamsound_t[] = {{0, "Off"}, {1, "On"}, {0, NULL}};
-consvar_t cv_slamsound = {"slamsound", "1", CV_SAVE, slamsound_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-
-static CV_PossibleValue_t sloperolldist_cons_t[] = {
-	/*{256, "256"},*/	{512, "512"},	{768, "768"},
-	{1024, "1024"},	{1536, "1536"},	{2048, "2048"},
-	{3072, "3072"},	{4096, "4096"},	{6144, "6144"},
-	{8192, "8192"},	{0, "Infinite"},	{0, NULL}};
-consvar_t cv_sloperolldist = {"sloperolldist", "Infinite", CV_SAVE, sloperolldist_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-static CV_PossibleValue_t sloperoll_cons_t[] = {{0, "Off"}, {1, "Players"}, {2, "Everything"}, {0, NULL}};
-consvar_t cv_sloperoll = {"sloperoll", "Off", CV_SAVE|CV_CALL, sloperoll_cons_t, PDistort_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_sparkroll = {"sparkroll", "Off", CV_SAVE|CV_CALL, CV_OnOff, PDistort_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_sliptideroll = {"sliptideroll", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-
 consvar_t cv_cechotoggle = {"show_cecho", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 #if MAXPLAYERS > 16
@@ -701,9 +681,7 @@ const char *G_BuildMapName(INT32 map)
   */
 INT16 G_ClipAimingPitch(INT32 *aiming)
 {
-	INT32 limitangle;
-
-	limitangle = ANGLE_90 - 1;
+	static const INT32 limitangle = ANGLE_90 - 1;
 
 	if (*aiming > limitangle)
 		*aiming = limitangle;
@@ -715,10 +693,8 @@ INT16 G_ClipAimingPitch(INT32 *aiming)
 
 INT16 G_SoftwareClipAimingPitch(INT32 *aiming)
 {
-	INT32 limitangle;
-
 	// note: the current software mode implementation doesn't have true perspective
-	limitangle = ANGLE_90 - ANG10; // Some viewing fun, but not too far down...
+	static const INT32 limitangle = ANGLE_90 - ANG10; // Some viewing fun, but not too far down...
 
 	if (*aiming > limitangle)
 		*aiming = limitangle;
@@ -883,6 +859,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		thiscam = (player->bot == 2 ? &camera[0] : &camera[forplayer]);
 	else
 		thiscam = &camera[forplayer];
+
 	lang = localangle[forplayer];
 	laim = localaiming[forplayer];
 	th = turnheld[forplayer];
@@ -1208,9 +1185,6 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	{
 		displayplayers[0] = consoleplayer;
 		G_FixCamera(1);
-		// i dont like this lmao
-		if (cv_director.value)
-			CV_SetValue(&cv_director, 0);
 	}
 }
 
@@ -1223,7 +1197,7 @@ static void G_DoLoadLevel(boolean resetplayer)
 
 	// Saturn Music Feature stuffs
 	S_ResetKeepAndSpecialMus();
-	S_CheckMap();
+	S_KeepMusic();
 
 	// Make sure objectplace is OFF when you first start the level!
 	OP_ResetObjectplace();
@@ -1546,8 +1520,8 @@ boolean G_Responder(event_t *ev)
 					COM_ImmedExecute("changeteam4 spectator");
 				}
 			}
-			if (ev->data1 == gamecontrol[gc_director][0]
-				|| ev->data1 == gamecontrol[gc_director][1])
+
+			if (ev->data1 == gamecontrol[gc_director][0] || ev->data1 == gamecontrol[gc_director][1])
 			{
 				K_ToggleDirector();
 			}
@@ -4536,7 +4510,7 @@ void G_ReadDemoExtraData(void)
 		if (extradata & DXD_RESPAWN)
 		{
 			if (players[p].mo)
-				P_DamageMobj(players[p].mo, NULL, NULL, 10000); // Is this how this should work..?
+				P_DamageMobj(players[p].mo, NULL, NULL, DMG_INSTAKILL); // Is this how this should work..?
 		}
 		if (extradata & DXD_SKIN)
 		{
@@ -4602,7 +4576,7 @@ void G_ReadDemoExtraData(void)
 				{
 					players[p].spectator = true;
 					if (players[p].mo)
-						P_DamageMobj(players[p].mo, NULL, NULL, 10000);
+						P_DamageMobj(players[p].mo, NULL, NULL, DMG_INSTAKILL);
 					else
 						players[p].playerstate = PST_REBORN;
 				}
@@ -7840,7 +7814,6 @@ void G_DoneLevelLoad(void)
 // Stops metal sonic's demo. Separate from other functions because metal + replays can coexist
 void G_StopMetalDemo(void)
 {
-
 	// Metal Sonic finishing doesn't end the game, dammit.
 	Z_Free(metalbuffer);
 	metalbuffer = NULL;
@@ -8180,33 +8153,4 @@ void G_ClearRetryFlag(void)
 boolean G_GetRetryFlag(void)
 {
 	return retrying;
-}
-
-// Time utility functions
-INT32 G_TicsToHours(tic_t tics)
-{
-	return tics/(3600*TICRATE);
-}
-
-INT32 G_TicsToMinutes(tic_t tics, boolean full)
-{
-	if (full)
-		return tics/(60*TICRATE);
-	else
-		return tics/(60*TICRATE)%60;
-}
-
-INT32 G_TicsToSeconds(tic_t tics)
-{
-	return (tics/TICRATE)%60;
-}
-
-INT32 G_TicsToCentiseconds(tic_t tics)
-{
-	return (INT32)((tics%TICRATE) * (100.00f/TICRATE));
-}
-
-INT32 G_TicsToMilliseconds(tic_t tics)
-{
-	return (INT32)((tics%TICRATE) * (1000.00f/TICRATE));
 }

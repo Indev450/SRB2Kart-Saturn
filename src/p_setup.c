@@ -2437,7 +2437,7 @@ static void P_SetupCamera(UINT8 pnum, camera_t *cam)
 		cam->y = players[pnum].mo->y;
 		cam->z = players[pnum].mo->z;
 		cam->angle = players[pnum].mo->angle;
-		cam->subsector = R_PointInSubsectorFast(cam->x, cam->y); // make sure camera has a subsector set -- Monster Iestyn (12/11/18)
+		cam->subsector = R_PointInSubsector(cam->x, cam->y); // make sure camera has a subsector set -- Monster Iestyn (12/11/18)
 	}
 	else
 	{
@@ -2462,7 +2462,7 @@ static void P_SetupCamera(UINT8 pnum, camera_t *cam)
 		cam->y = thing->y;
 		cam->z = thing->z;
 		cam->angle = FixedAngle((fixed_t)thing->angle << FRACBITS);
-		cam->subsector = R_PointInSubsectorFast(cam->x, cam->y); // make sure camera has a subsector set -- Monster Iestyn (12/11/18)
+		cam->subsector = R_PointInSubsector(cam->x, cam->y); // make sure camera has a subsector set -- Monster Iestyn (12/11/18)
 	}
 }
 
@@ -2507,8 +2507,6 @@ static void P_InitMinimapInfo(void)
 	if (lumpnum != -1)
 		minimapinfo.minimap_pic = W_CachePatchName(va("%sR", G_BuildMapName(gamemap)), PU_HUDGFX);
 
-	minimapinfo.mapthingcount = 0;
-	// TODO iterate over mapthings to look for possible user-defined bounds
 	minimapinfo.min_x = bsp->bbox[0][BOXLEFT];
 	minimapinfo.max_x = bsp->bbox[0][BOXRIGHT];
 	minimapinfo.min_y = bsp->bbox[0][BOXBOTTOM];
@@ -3228,6 +3226,10 @@ boolean P_MultiSetupWadFiles(boolean fullsetup)
 		HU_LoadGraphics();
 		ST_LoadGraphics();
 		ST_ReloadSkinFaceGraphics();
+
+		// reload minimap stuff while were in the map since it may get replaced otherwise
+		if (gamestate == GS_LEVEL)
+			P_InitMinimapInfo();
 
 		if (!partadd_important)
 			partadd_stage = -1; // everything done

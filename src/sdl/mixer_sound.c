@@ -282,6 +282,9 @@ static Mix_Chunk *ds2chunk(void *stream)
 	freq = READUINT16(stream);
 	samples = READUINT32(stream);
 
+	if (freq == 0)
+		return NULL; // division by zero
+
 	// convert from signed 8bit ???hz to signed 16bit 44100hz.
 	switch(freq)
 	{

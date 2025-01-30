@@ -2160,7 +2160,7 @@ static menuitem_t OP_MonitorToggleMenu[] =
 	{IT_KEYHANDLER | IT_NOTHING, NULL, "Jawz x2",				M_HandleMonitorToggles, KRITEM_DUALJAWZ},
 	{IT_KEYHANDLER | IT_NOTHING, NULL, "Ballhogs",				M_HandleMonitorToggles, KITEM_BALLHOG},
 	{IT_KEYHANDLER | IT_NOTHING, NULL, "Self-Propelled Bombs",	M_HandleMonitorToggles, KITEM_SPB},
-	{IT_KEYHANDLER | IT_NOTHING, NULL, "Invinciblity",			M_HandleMonitorToggles, KITEM_INVINCIBILITY},
+	{IT_KEYHANDLER | IT_NOTHING, NULL, "Invincibility",			M_HandleMonitorToggles, KITEM_INVINCIBILITY},
 	{IT_KEYHANDLER | IT_NOTHING, NULL, "Grow",					M_HandleMonitorToggles, KITEM_GROW},
 	{IT_KEYHANDLER | IT_NOTHING, NULL, "Shrink",				M_HandleMonitorToggles, KITEM_SHRINK},
 	{IT_KEYHANDLER | IT_NOTHING, NULL, "Thunder Shields",		M_HandleMonitorToggles, KITEM_THUNDERSHIELD},
@@ -2180,16 +2180,21 @@ static menuitem_t OP_SaturnMenu[] =
 
 	{IT_STRING | IT_CVAR, NULL, "Skin Select Spinning Speed",		 	&cv_skinselectspin, 	 	 20},
 
-	{IT_STRING | IT_CVAR, NULL, "Show Localskin Menus", 				&cv_showlocalskinmenus, 	 30},
-	{IT_STRING | IT_CVAR, NULL, "Uppercase Menu",						&cv_menucaps,   		     35},
+	{IT_STRING | IT_CVAR, NULL, "Colourized Speedlines", 				&cv_coloredspeedlines, 		 30},
+	{IT_STRING | IT_CVAR, NULL, "Colourized Sneakertrails", 			&cv_coloredsneakertrail, 	 35},
 
-	{IT_STRING | IT_CVAR, NULL, "Keyboard Layout",						&cv_keyboardlayout,   	   	 45},
+	{IT_STRING | IT_CVAR, NULL, "Bananadrag Jitter", 					&cv_bananajitter, 	 		 45},
 
-	{IT_STRING | IT_CVAR, NULL, "Less Midnight Channel Flicker", 		&cv_lessflicker, 		   	 55},
+	{IT_STRING | IT_CVAR, NULL, "Show Localskin Menus", 				&cv_showlocalskinmenus, 	 55},
+	{IT_STRING | IT_CVAR, NULL, "Uppercase Menu",						&cv_menucaps,   		     65},
 
-	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Hud...", 					&OP_SaturnHudDef,		   	 65},
-	{IT_SUBMENU|IT_STRING,	NULL,	"Sprite Distortion...", 			&OP_PlayerDistortDef,	   	 70},
-	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Credits", 					&OP_SaturnCreditsDef,	   	 80}, // uwu
+	{IT_STRING | IT_CVAR, NULL, "Keyboard Layout",						&cv_keyboardlayout,   	   	 70},
+
+	{IT_STRING | IT_CVAR, NULL, "Less Midnight Channel Flicker", 		&cv_lessflicker, 		   	 80},
+
+	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Hud...", 					&OP_SaturnHudDef,		   	 90},
+	{IT_SUBMENU|IT_STRING,	NULL,	"Sprite Distortion...", 			&OP_PlayerDistortDef,	   	 95},
+	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Credits", 					&OP_SaturnCreditsDef,	   	105}, // uwu
 };
 
 static const char* OP_SaturnTooltips[] =
@@ -2197,6 +2202,9 @@ static const char* OP_SaturnTooltips[] =
 	NULL,
 	"How long can the game wait before it kicks you out from the server\nconnecting screen.",
 	"How much speen do you want?",
+	"Colourize the speedlines in your skincolor if you go fast enough!",
+	"Colourize the sneaker flame trails in your skincolor!",
+	"Makes bananas and other items jump and jitter\nwhen dragged behind.",
 	"Show Localskin Menus.",
 	"Force menu to only use uppercase.",
 	"Use your desired Keyboard Layout for Text Input\nthis is either the Default, Native or Azerty\nNative does not affect Gameplay only Text!",
@@ -2211,6 +2219,9 @@ enum
 	sm_header,
 	sm_waittime,
 	sm_skinselspeed,
+	sm_colorlines,
+	sm_colorflames,
+	sm_bananjumpy,
 	sm_showlocalskin,
 	op_uppercase_menu,
 	sm_nativkey,
@@ -2226,13 +2237,16 @@ static menuitem_t OP_PlayerDistortMenu[] =
 
 	{IT_STRING | IT_CVAR, 	NULL, 	"Sprite Slope Rotation",       	  &cv_sloperoll, 	    15},
 	{IT_STRING | IT_CVAR, 	NULL, 	"Slope Rotation Distance",        &cv_sloperolldist,    30},
+
 	{IT_STRING | IT_CVAR, 	NULL, 	"Rotate Players when Sliptiding", &cv_sliptideroll, 	45},
 	{IT_STRING | IT_CVAR,	NULL,	"Rotate Sparks and Boost Trails", &cv_sparkroll,        60},
-	{IT_STRING | IT_CVAR,	NULL,	"Player Stretch Factor",	      &cv_gravstretch,      75},
-	{IT_STRING | IT_CVAR,	NULL,	"Squish Sound Effect",	      	  &cv_slamsound,        90},
-	{IT_STRING | IT_CVAR, 	NULL, 	"Saltyhop", 					  &cv_saltyhop, 		105},
-	{IT_STRING | IT_CVAR,	NULL,	"Saltyhop Sound Effect",	      &cv_saltyhopsfx,      120},
-	{IT_STRING | IT_CVAR,	NULL,	"Saltyhop Squish",	      	  	  &cv_saltysquish,      135},
+	{IT_STRING | IT_CVAR,	NULL,	"Rotate Bananas on Throw", 		  &cv_bananthrowroll,   75},
+
+	{IT_STRING | IT_CVAR,	NULL,	"Player Stretch Factor",	      &cv_gravstretch,      90},
+	{IT_STRING | IT_CVAR,	NULL,	"Squish Sound Effect",	      	  &cv_slamsound,        105},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Saltyhop", 					  &cv_saltyhop, 		120},
+	{IT_STRING | IT_CVAR,	NULL,	"Saltyhop Sound Effect",	      &cv_saltyhopsfx,      135},
+	{IT_STRING | IT_CVAR,	NULL,	"Saltyhop Squish",	      	  	  &cv_saltysquish,      150},
 };
 
 static const char* OP_PlayerDistortTooltips[] =
@@ -2242,6 +2256,7 @@ static const char* OP_PlayerDistortTooltips[] =
 	"Distance object rotation should be visable.",
 	"Player rotation when sliptiding.",
 	"Rotation of a player's boost trails and drift sparks.",
+	"Should banans rotate when thrown?\nAnd should they stay rotated when on the ground?.",
 	"Player squash and stretch.",
 	"Player landing sound effect.",
 	"Kart hopping while drifting. This is purely visual.",
@@ -2256,6 +2271,7 @@ enum
 	slrotatedist,
 	sliptide,
 	sparkrotate,
+	bananrotat,
 	stretchyplayer,
 	squishsound,
 	salthmmm,
@@ -2270,34 +2286,39 @@ static menuitem_t OP_SaturnHudMenu[] =
 	{IT_STRING | IT_CVAR, NULL, "Speedometer Style",		 			&cv_newspeedometer, 	 	 10},
 	{IT_STRING | IT_CVAR, NULL, "Battle Speedometer",		 			&cv_battlespeedo, 	 	 	 15},
 
-	{IT_STRING | IT_CVAR, NULL, "Input Display outside of RA",		 	&cv_showinput, 	 			 20},
+	{IT_STRING | IT_CVAR, NULL, "Colourized HUD",						&cv_colorizedhud,		 	 25},
+	{IT_STRING | IT_CVAR, NULL, "Colourized Itembox",					&cv_colorizeditembox,		 30},
+	{IT_STRING | IT_CVAR, NULL, "Colourized HUD Color",					&cv_colorizedhudcolor,		 35},
 
-	{IT_STRING | IT_CVAR, NULL, "Flash Lap Times",		 				&cv_showlaptimes, 	 		 25},
+	{IT_STRING | IT_CVAR, NULL, "Input Display outside of RA",		 	&cv_showinput, 	 			 45},
 
-	{IT_STRING | IT_CVAR, NULL, "Stat Display",		 					&cv_showstats, 	 			 30},
+	{IT_STRING | IT_CVAR, NULL, "Stat Display",		 					&cv_showstats, 	 			 55},
 
-	{IT_STRING | IT_CVAR, NULL, "Higher Resolution Portraits",			&cv_highresportrait, 	 	 35},
+	{IT_STRING | IT_CVAR, NULL, "Higher Resolution Portraits",			&cv_highresportrait, 	 	 65},
 
-	{IT_STRING | IT_CVAR, NULL, "Colourized HUD",						&cv_colorizedhud,		 	 40},
-	{IT_STRING | IT_CVAR, NULL, "Colourized Itembox",					&cv_colorizeditembox,		 45},
-	{IT_STRING | IT_CVAR, NULL, "Colourized HUD Color",					&cv_colorizedhudcolor,		 50},
+	{IT_STRING | IT_CVAR, NULL, "Small Positionnumber",		 			&cv_smallposnum, 	 		 75},
+	{IT_STRING | IT_CVAR, NULL, "Positionnumber Animation", 			&cv_posanim, 			 	 80},
 
-	{IT_STRING | IT_CVAR, NULL, "Show Lap Emblem",		 				&cv_showlapemblem, 	 		 60},
-	{IT_STRING | IT_CVAR, NULL, "Show Cecho Messages", 					&cv_cechotoggle, 			 65},
+	{IT_STRING | IT_CVAR, NULL, "Flash Lap Times",		 				&cv_showlaptimes, 	 		 90},
 
-	{IT_STRING | IT_CVAR, NULL,	"Show Names on Minimap",   				&cv_showminimapnames, 		 70},
-	{IT_STRING | IT_CVAR, NULL,	"Small Minimap Players",   				&cv_minihead, 				 75},
+	{IT_STRING | IT_CVAR, NULL, "Multi-Item icons",		 			    &cv_multiitemicon, 	 		100},
+	{IT_STRING | IT_CVAR, NULL, "Item Amount Number",		 			&cv_huditemamount, 	 		105},
+	{IT_STRING | IT_CVAR, NULL, "Animated Roulette",		 			&cv_fancyroulette, 	 		110},
 
-	{IT_STRING | IT_CVAR, NULL,	"Show Director Prompt",   				&cv_showdirectorhud, 		 80},
+	{IT_STRING | IT_CVAR, NULL, "Show Lap Emblem",		 				&cv_showlapemblem, 	 		120},
+	{IT_STRING | IT_CVAR, NULL, "Show Cecho Messages", 					&cv_cechotoggle, 			125},
 
-	{IT_STRING | IT_CVAR, NULL, "Beta Intermissionscreen", 				&cv_betainterscreen, 		 90},
+	{IT_STRING | IT_CVAR, NULL,	"Show Names on Minimap",   				&cv_showminimapnames, 		135},
+	{IT_STRING | IT_CVAR, NULL,	"Small Minimap Players",   				&cv_minihead, 				140},
 
-	{IT_STRING | IT_CVAR, NULL, "Uncapped HUD", 						&cv_uncappedhud, 		    100},
+	{IT_STRING | IT_CVAR, NULL, "Beta Intermissionscreen", 				&cv_betainterscreen, 		150},
 
-	{IT_STRING | IT_SUBMENU, NULL, "Nametags...", 						&OP_NametagDef, 		   	110},
-	{IT_STRING | IT_SUBMENU, NULL, "Driftgauge...", 					&OP_DriftGaugeDef, 		   	115},
+	{IT_STRING | IT_CVAR, NULL,	"Show Director Prompt",   				&cv_showdirectorhud, 		160},
 
-	{IT_SUBMENU|IT_STRING,	NULL,	"Hud Offsets...", 					&OP_HudOffsetDef,		   	125},
+	{IT_STRING | IT_SUBMENU, NULL, "Nametags...", 						&OP_NametagDef, 		   	170},
+	{IT_STRING | IT_SUBMENU, NULL, "Driftgauge...", 					&OP_DriftGaugeDef, 		   	175},
+
+	{IT_SUBMENU|IT_STRING,	NULL,	"Hud Offsets...", 					&OP_HudOffsetDef,		   	185},
 };
 
 static const char* OP_SaturnHudTooltips[] =
@@ -2305,20 +2326,24 @@ static const char* OP_SaturnHudTooltips[] =
 	NULL,
 	"Change what style the speedometer is.",
 	"Draw the Speedometer in Battle.",
-	"Displays the input display outside of Record Attack. Also adjusts the\nposition scale to match.",
-	"Flash current Lap Time when doing a Lap on the Timer.",
-	"Enable the stat display.",
-	"Enable the use of the higher resolution want icons instead of rank\nfor some places.",
 	"Enable colourized hud.",
 	"Enable the colourized itembox when colourized hud is enabled.",
 	"The color to use instead of the player color when\ncolourized hud is enabled.",
+	"Displays the input display outside of Record Attack. Also adjusts the\nposition scale to match.",
+	"Enable the stat display.",
+	"Enable the use of the higher resolution want icons instead of rank\nfor some places.",
+	"Make the Postionnumber half the size.",
+	"Disable the animation of the Positionnumber\nwhen overtaking someone.",
+	"Flash current Lap Time when doing a Lap on the Timer.",
+	"Use extra graphics for multiple sneakers, bananas and jawz.",
+	"Change when the item amount is to be displayed\nMultiple will always display the number.\nwhen you have multiple of the same Item.\nAlways will always display the number regardless of Item amount.",
+	"Enables an animation while the roulette is active.",
 	"Show the big 'LAP' text on a lap change.",
 	"Show the big Cecho Messages.",
 	"Show player names on the minimap.",
 	"Minimize the player icons on the minimap.",
-	"Show the Director Toggle prompt when spectating.",
 	"Make the Intermission screen look like in beta versions of Kart!\nEither with background or just the rest.",
-	"Uncaps the HUD framerate, making it appear smoother.",
+	"Show the Director Toggle prompt when spectating.",
 	"Nametag Options.",
 	"Driftgauge Options.",
 	"Move position of HUD elements.",
@@ -2329,20 +2354,24 @@ enum
 	sh_header,
 	sh_speedometer,
 	sh_battlespeedo,
-	sh_input,
-	sh_laptime,
-	sh_statdisplay,
-	sh_highresport,
 	sh_colorhud,
 	sh_coloritem,
 	sh_colorhud_customcolor,
+	sh_input,
+	sh_statdisplay,
+	sh_highresport,
+	sh_smolpos,
+	sh_posanim,
+	sh_multicon,
+	sh_itamnum,
+	sh_laptime,
+	sh_fancy,
 	sh_lapemblem,
 	sh_cechotogle,
 	sh_mapname,
 	sh_smallmap,
-	sh_directorhud,
 	sh_betainter,
-	sh_uncappedhud,
+	sh_directorhud,
 	sh_nametagmen,
 	sh_driftgaugemen,
 	sh_hudoffsets,
@@ -2378,13 +2407,17 @@ static menuitem_t OP_HudOffsetMenu[] =
 	{IT_STRING | IT_CVAR, 	NULL, 	"Horizontal Offset",  			&cv_mini_xoffset, 		120},
 	{IT_STRING | IT_CVAR,	NULL,	"Vertical Offset",	  	 		&cv_mini_yoffset,     	125},
 
-	{IT_HEADER, NULL, "Position / R.A. Wheel", NULL, 135},
+	{IT_HEADER, NULL, "Position Number", NULL, 135},
 	{IT_STRING | IT_CVAR, 	NULL, 	"Horizontal Offset",  	  		&cv_posi_xoffset, 		140},
 	{IT_STRING | IT_CVAR,	NULL,	"Vertical Offset",	  	  		&cv_posi_yoffset,     	145},
 
-	{IT_HEADER, NULL, "Stat Display", NULL, 155},
-	{IT_STRING | IT_CVAR, 	NULL, 	"Horizontal Offset",  	  		&cv_stat_xoffset, 		160},
-	{IT_STRING | IT_CVAR,	NULL,	"Vertical Offset",	  	  		&cv_stat_yoffset,     	165},
+	{IT_HEADER, NULL, "R.A. Wheel", NULL, 155},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Horizontal Offset",  	  		&cv_wheel_xoffset, 		160},
+	{IT_STRING | IT_CVAR,	NULL,	"Vertical Offset",	  	  		&cv_wheel_yoffset,     	165},
+
+	{IT_HEADER, NULL, "Stat Display", NULL, 175},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Horizontal Offset",  	  		&cv_stat_xoffset, 		180},
+	{IT_STRING | IT_CVAR,	NULL,	"Vertical Offset",	  	  		&cv_stat_yoffset,     	185},
 };
 
 static menuitem_t OP_SaturnCreditsMenu[] =
@@ -3396,12 +3429,10 @@ void PDistort_menu_Onchange(void)
 {
 	if (!cv_sloperoll.value)
 	{
-		OP_PlayerDistortMenu[sloperotate].status = IT_GRAYEDOUT;
 		OP_PlayerDistortMenu[sliptide].status = IT_GRAYEDOUT;
 	}
 	else
 	{
-		OP_PlayerDistortMenu[sloperotate].status = IT_STRING | IT_CVAR;
 		OP_PlayerDistortMenu[sliptide].status = IT_STRING | IT_CVAR;
 	}
 
@@ -3677,40 +3708,28 @@ boolean M_Responder(event_t *ev)
 				break;
 			case KEY_HAT1:
 				ch = KEY_UPARROW;
+				DPADUPSCROLL = true;
 				break;
 			case KEY_HAT1 + 1:
 				ch = KEY_DOWNARROW;
+				DPADDOWNSCROLL = true;
 				break;
 			case KEY_HAT1 + 2:
 				ch = KEY_LEFTARROW;
+				DPADLEFTSCROLL = true;
 				break;
 			case KEY_HAT1 + 3:
 				ch = KEY_RIGHTARROW;
+				DPADRIGHTSCROLL = true;
 				break;
 		}
 
 		if (menuactive)
 		{
-			switch (ev->data1) // if you pressed it set those to true
-			{
-				case KEY_HAT1:
-					DPADUPSCROLL = true;
-					break;
-				case KEY_HAT1 + 1:
-					DPADDOWNSCROLL = true;
-					break;
-				case KEY_HAT1 + 2:
-					DPADLEFTSCROLL = true;
-					break;
-				case KEY_HAT1 + 3:
-					DPADRIGHTSCROLL = true;
-					break;
-			}
-
 			if (currentMenu == &MISC_ChangeLevelDef || currentMenu == &MP_OfflineServerDef || currentMenu == &MP_ServerDef)
 			{
-				if (ev->data1 == gamecontrol[gc_fire][0]
-					|| ev->data1 == gamecontrol[gc_fire][1])
+				if (ch == gamecontrol[gc_fire][0]
+					|| ch == gamecontrol[gc_fire][1])
 				{
 					COM_ImmedExecute("add kartencore 1");
 				}
@@ -4350,10 +4369,11 @@ void M_Drawer(void)
 
 #ifdef HWRENDER
 				if (rendermode == render_opengl)
-				V_DrawThinString(0, 0, V_GREENMAP|V_SNAPTOTOP|V_SNAPTOLEFT|V_TRANSLUCENT|V_ALLOWLOWERCASE, ("Opengl"));
+					V_DrawThinString(0, 0, V_GREENMAP|V_SNAPTOTOP|V_SNAPTOLEFT|V_TRANSLUCENT|V_ALLOWLOWERCASE, ("Opengl"));
+				else
 #endif
 				if (rendermode == render_soft)
-				V_DrawThinString(0, 0, V_REDMAP|V_SNAPTOTOP|V_SNAPTOLEFT|V_TRANSLUCENT|V_ALLOWLOWERCASE, ("Software"));
+					V_DrawThinString(0, 0, V_REDMAP|V_SNAPTOTOP|V_SNAPTOLEFT|V_TRANSLUCENT|V_ALLOWLOWERCASE, ("Software"));
 			}
 		}
 	}
@@ -4385,10 +4405,12 @@ void M_StartControlPanel(void)
 
 	menuactive = true;
 
+	// reset those just in case the game missed the keyup event
 	DPADUPSCROLL = false;
 	DPADDOWNSCROLL = false;
 	DPADLEFTSCROLL = false;
 	DPADRIGHTSCROLL = false;
+	//
 
 	if (demo.playback)
 	{
@@ -4589,7 +4611,7 @@ void M_ClearMenus(boolean callexitmenufunc)
 	if (currentMenu->quitroutine && callexitmenufunc && !currentMenu->quitroutine())
 		return; // we can't quit this menu (also used to set parameter from the menu)
 
-// Save the config file. I'm sick of crashing the game later and losing all my changes!
+	// Save the config file. I'm sick of crashing the game later and losing all my changes!
 	COM_BufAddText(va("saveconfig \"%s\" -silent\n", configfile));
 
 	if (currentMenu == &MessageDef) // Oh sod off!
@@ -4980,33 +5002,6 @@ void M_DrawTextBoxFlags(INT32 x, INT32 y, INT32 width, INT32 boxlines, INT32 fla
 {
 	// Solid color textbox.
 	V_DrawFill(x+5, y+5, width*8+6, boxlines*8+6, 239|flags);
-}
-
-void M_DrawTextInput(INT32 x, INT32 y, textinput_t *input, INT32 flags)
-{
-	INT32 skullx = x;
-
-	V_DrawString(x, y, V_ALLOWLOWERCASE|flags, input->buffer);
-
-	// draw text cursor for name
-	if (input->length)
-		skullx = x+V_SubStringWidth(input->buffer, input->cursor, V_ALLOWLOWERCASE);
-
-	if (skullAnimCounter < 4) // blink cursor
-		V_DrawCharacter(skullx, y+3, '_'|flags, false);
-
-	// draw selection
-	if (input->select != input->cursor)
-	{
-		size_t start = min(input->select, input->cursor);
-		size_t end =   max(input->select, input->cursor);
-
-		size_t len = end - start;
-
-		INT32 startx = V_SubStringWidth(input->buffer, start, V_ALLOWLOWERCASE);
-
-		V_DrawFill(x+startx, y, V_SubStringWidth(input->buffer+start, len, V_ALLOWLOWERCASE), 8, 103|V_TRANSLUCENT|flags);
-	}
 }
 
 // horizontally centered text
@@ -6181,8 +6176,6 @@ static void M_AddonsClearName(INT32 choice)
 	M_StopMessage(choice);
 }
 
-int errorshitspam = 0; // prevent the warning screen from crapping itself when errors get spammed lmao
-
 // returns whether to do message draw
 static boolean M_AddonsRefresh(void)
 {
@@ -6211,11 +6204,10 @@ static boolean M_AddonsRefresh(void)
 			else
 				message = va("%c%s\x80\nA file was not loaded.\nCheck the console log for more information.\n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), refreshdirname);
 		}
-		else if ((refreshdirmenu & (REFRESHDIR_WARNING | REFRESHDIR_ERROR)) && !errorshitspam)
+		else if (refreshdirmenu & (REFRESHDIR_WARNING | REFRESHDIR_ERROR))
 		{
 			S_StartSound(NULL, sfx_s224);
 			message = va("%c%s\x80\nA file was loaded with %s.\nCheck the console log for more information.\n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), refreshdirname, ((refreshdirmenu & REFRESHDIR_ERROR) ? "errors" : "warnings"));
-			errorshitspam = 1; // you already said that shit
 		}
 		else if (majormods && !prevmajormods)
 		{
@@ -6567,7 +6559,6 @@ static void M_HandleAddons(INT32 choice)
 								if (DumbStartsWith("KC_", dirmenu[dir_on[menudepthleft]]+DIR_STRING) || DumbStartsWith("kc_", dirmenu[dir_on[menudepthleft]]+DIR_STRING)) {
 									M_StartMessage(va("%c%s\x80\nYou are loading a local skin.\nLocal skins will not be usable\nafter going back from\nthe title screen.\n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), dirmenu[dir_on[menudepthleft]]+DIR_STRING),NULL,MM_NOTHING);
 									COM_BufAddText(va("addskins \"%s%s\"", menupath, dirmenu[dir_on[menudepthleft]]+DIR_STRING));
-									errorshitspam = 0; // reset it so it can show the warning screen again lmao
 								}
 								else
 									S_StartSound(NULL, sfx_s26d);
@@ -6575,7 +6566,6 @@ static void M_HandleAddons(INT32 choice)
 							else
 							{
 								COM_BufAddText(va("addfile \"%s%s\"", menupath, dirmenu[dir_on[menudepthleft]]+DIR_STRING));
-								errorshitspam = 0; // reset it so it can show the warning screen again lmao
 							}
 							break;
 						default:
@@ -9472,9 +9462,6 @@ static void M_Connect(INT32 choice)
 {
 	// do not call menuexitfunc
 	M_ClearMenus(false);
-
-	CV_Set(&cv_lastserver, I_GetNodeAddress(serverlist[choice-FIRSTSERVERLINE + serverlistpage * SERVERS_PER_PAGE].node));
-
 	COM_BufAddText(va("connect node %d\n", serverlist[choice-FIRSTSERVERLINE + serverlistpage * SERVERS_PER_PAGE].node));
 }
 
@@ -9602,16 +9589,17 @@ static void M_DrawConnectMenu(void)
 	                         highlightflags, va("%u of %d", serverlistpage+1, numPages));
 
 	// Did you change the Server Browser address? Have a little reminder.
-	#ifdef MASTERSERVER
+#ifdef MASTERSERVER
 	if (CV_IsSetToDefault(&cv_masterserver))
 		mservflags = mservflags|highlightflags|V_30TRANS;
 	else
 		mservflags = mservflags|warningflags;
+
 	V_DrawRightAlignedSmallString(BASEVIDWIDTH - currentMenu->x, currentMenu->y+3 + MP_ConnectMenu[mp_connect_refresh].alphaKey,
 	                         mservflags, va("MS: %s", cv_masterserver.string));
 
 	M_DrawServerCountAndHorizontalBar();
-	#endif
+#endif
 
 	// When switching pages, slide the old page and the
 	// new page across the screen
@@ -10196,7 +10184,8 @@ static void M_StartServerMenu(INT32 choice)
 // CONNECT VIA IP
 // ==============
 
-static char setupm_ip[28];
+#define SETUPM_IP_MAXSIZE ((28-1)*8)
+static char setupm_ip[64];
 static textinput_t setupm_input_ip;
 #endif
 
@@ -10204,8 +10193,8 @@ void M_Multiplayer(INT32 choice)
 {
 	(void)choice;
 #ifndef NONET
-	memset(setupm_ip, 0, 28);
-	M_TextInputInit(&setupm_input_ip, setupm_ip, 28);
+	memset(setupm_ip, 0, sizeof(setupm_ip));
+	M_TextInputInit(&setupm_input_ip, setupm_ip, sizeof(setupm_ip));
 #endif
 	M_SetupNextMenu(&MP_MainDef);
 }
@@ -10244,7 +10233,7 @@ Update the maxplayers label...
 	if (itemOn != 9)
 		V_DrawString(x+8,y+12, V_ALLOWLOWERCASE, setupm_ip);
 	else
-		M_DrawTextInput(x+8, y+12, &setupm_input_ip, 0);
+		M_DrawTextInputScroll(x+8, y+12, &setupm_input_ip, 0, SETUPM_IP_MAXSIZE);
 #endif
 
 	// character bar, ripped off the color bar :V
@@ -10401,7 +10390,6 @@ static void M_ConnectIP(INT32 choice)
 
 	M_ClearMenus(true);
 
-	CV_Set(&cv_lastserver,setupm_ip);
 	COM_BufAddText(va("connect \"%s\"\n", setupm_ip));
 
 	// A little "please wait" message.
