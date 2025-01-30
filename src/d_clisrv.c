@@ -187,6 +187,16 @@ typedef struct textcmdtic_s
 	struct textcmdtic_s *next;
 } textcmdtic_t;
 
+typedef struct textcmdbuf_s textcmdbuf_t;
+
+struct textcmdbuf_s
+{
+	textcmdbuf_t *next;
+	UINT8 cmd[MAXTEXTCMD];
+};
+
+static textcmdbuf_t *textcmdbuf[MAXSPLITSCREENPLAYERS] = {NULL};
+
 ticcmd_t netcmds[TICQUEUE][MAXPLAYERS];
 static textcmdtic_t *textcmds[TEXTCMD_HASH_SIZE] = {NULL};
 
@@ -271,23 +281,57 @@ void RegisterNetXCmd(netxcmd_t id, void (*cmd_f)(UINT8 **p, INT32 playernum))
 	listnetxcmd[id] = cmd_f;
 }
 
-void SendNetXCmdForPlayer(UINT8 playerid, netxcmd_t id, const void *param, size_t nparam)
+static void WriteNetXCmd(UINT8 *cmd, netxcmd_t id, const void *param, size_t nparam)
 {
-	if ((localtextcmd[playerid])[0]+2+nparam > MAXTEXTCMD)
-	{
-		// for future reference: if (cht_debug) != debug disabled.
-		CONS_Alert(CONS_ERROR, M_GetText("NetXCmd buffer full, cannot add netcmd %d! (size: %d, needed: %s)\n"), id, localtextcmd[playerid][0], sizeu1(nparam));
-		return;
-	}
-
-	localtextcmd[playerid][0]++;
-	localtextcmd[playerid][localtextcmd[playerid][0]] = (UINT8)id;
-
+	cmd[0]++;
+	cmd[cmd[0]] = (UINT8)id;
 	if (param && nparam)
 	{
-		M_Memcpy(&localtextcmd[playerid][localtextcmd[playerid][0] + 1], param, nparam);
-		localtextcmd[playerid][0] = (UINT8)(localtextcmd[playerid][0] + (UINT8)nparam);
+		M_Memcpy(&cmd[cmd[0]+1], param, nparam);
+		cmd[0] = (UINT8)(cmd[0] + (UINT8)nparam);
 	}
+}
+
+void SendNetXCmdForPlayer(UINT8 playerid, netxcmd_t id, const void *param, size_t nparam)
+{
+	if (localtextcmd[playerid][0]+2+nparam > MAXTEXTCMD)
+	{
+		textcmdbuf_t *buf = textcmdbuf[playerid];
+
+		if (2+nparam > MAXTEXTCMD)
+		{
+			CONS_Alert(CONS_ERROR, M_GetText("packet too large to fit NetXCmd, cannot add netcmd %d! (size: %s, max: %d)\n"), id, sizeu1(2+nparam), MAXTEXTCMD);
+			return;
+		}
+
+		// for future reference: if (cv_debug) != debug disabled.
+		CONS_Alert(CONS_NOTICE, M_GetText("NetXCmd buffer full, delaying netcmd %d... (size: %d, needed: %s)\n"), id, localtextcmd[playerid][0], sizeu1(nparam));
+		if (buf == NULL)
+		{
+			textcmdbuf[playerid] = Z_Malloc(sizeof(textcmdbuf_t), PU_STATIC, NULL);
+			textcmdbuf[playerid]->cmd[0] = 0;
+			textcmdbuf[playerid]->next = NULL;
+			WriteNetXCmd(textcmdbuf[playerid]->cmd, id, param, nparam);
+			return;
+		}
+
+		while (buf->next != NULL)
+			buf = buf->next;
+
+		if (buf->cmd[0]+2+nparam > MAXTEXTCMD)
+		{
+			buf->next = Z_Malloc(sizeof(textcmdbuf_t), PU_STATIC, NULL);
+			buf->next->cmd[0] = 0;
+			buf->next->next = NULL;
+			WriteNetXCmd(buf->next->cmd, id, param, nparam);
+		}
+		else
+		{
+			WriteNetXCmd(buf->cmd, id, param, nparam);
+		}
+		return;
+	}
+	WriteNetXCmd(localtextcmd[playerid], id, param, nparam);
 }
 
 /*UINT8 GetFreeXCmdSize(UINT8 playerid)
@@ -6075,7 +6119,16 @@ static void CL_SendClientCmd(void)
 				M_Memcpy(netbuffer->u.textcmd, localtextcmd[i], localtextcmd[i][0]+1);
 				// All extra data have been sent
 				if (HSendPacket(servernode, true, 0, localtextcmd[i][0]+1)) // Send can fail...
+				{
 					localtextcmd[i][0] = 0;
+					if (textcmdbuf[i] != NULL)
+					{
+						textcmdbuf_t *buf = textcmdbuf[i];
+						M_Memcpy(localtextcmd[i], textcmdbuf[i]->cmd, textcmdbuf[i]->cmd[0]+1);
+						textcmdbuf[i] = textcmdbuf[i]->next;
+						Z_Free(buf);
+					}
+				}
 			}
 		}
 	}
