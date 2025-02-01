@@ -2410,15 +2410,13 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff)
 
 			if (thing->player)
 			{
-				const INT32 secspecial = GETSECSPECIAL(R_PointInSubsector(x, y)->sector->special, 1);
-
 				// If using type Section1:13, double the maxstep.
 				if (P_PlayerTouchingSectorSpecial(thing->player, 1, 13)
-				|| secspecial == 13)
+				|| GETSECSPECIAL(R_PointInSubsector(x, y)->sector->special, 1) == 13)
 					maxstep <<= 1;
 				// If using type Section1:12, no maxstep. For ledges you don't want the player to climb! (see: Egg Zeppelin & SMK port walls)
 				else if (P_PlayerTouchingSectorSpecial(thing->player, 1, 12)
-				|| secspecial == 12)
+				|| GETSECSPECIAL(R_PointInSubsector(x, y)->sector->special, 1) == 12)
 					maxstep = 0;
 			}
 
