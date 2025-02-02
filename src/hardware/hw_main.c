@@ -5421,7 +5421,7 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *pl
 // ==========================================================================
 // Render the current frame.
 // ==========================================================================
-static void HWR_RenderFrame(INT32 viewnumber, player_t *player, boolean skybox)
+static void HWR_RenderFrame(player_t *player, boolean skybox)
 {
 	const float fpov = FixedToFloat(R_GetPlayerFov(player));
 
@@ -5429,12 +5429,12 @@ static void HWR_RenderFrame(INT32 viewnumber, player_t *player, boolean skybox)
 	gl_viewwindowx = gl_baseviewwindowx;
 	gl_viewwindowy = gl_baseviewwindowy;
 
-	if ((splitscreen == 1 && viewnumber == 1) || (splitscreen > 1 && viewnumber > 1))
+	if ((splitscreen == 1 && viewssnum == 1) || (splitscreen > 1 && viewssnum > 1))
 	{
 		gl_viewwindowy += gl_viewheight;
 	}
 
-	if (splitscreen > 1 && viewnumber & 1)
+	if (splitscreen > 1 && viewssnum & 1)
 	{
 		gl_viewwindowx += gl_viewwidth;
 	}
@@ -5506,12 +5506,14 @@ static void HWR_RollTransform(FTransform *tr, angle_t roll)
 	}
 }
 
-void HWR_RenderPlayerView(INT32 viewnumber, player_t *player)
+void HWR_RenderPlayerView(void)
 {
+	player_t * player = &players[displayplayers[viewssnum]];
+
 	const boolean skybox = (skyboxmo[0] && cv_skybox.value); // True if there's a skybox object and skyboxes are on
 
 	// Clear the color buffer, stops HOMs. Also seems to fix the skybox issue on Intel GPUs.
-	if (viewnumber == 0) // Only do it if it's the first screen being rendered
+	if (viewssnum == 0) // Only do it if it's the first screen being rendered
 	{
 		FRGBAFloat ClearColor;
 
@@ -5536,7 +5538,7 @@ void HWR_RenderPlayerView(INT32 viewnumber, player_t *player)
 		GL_SetShaderInfo(HWD_SHADERINFO_LIGHT_BACKLIGHT, maplighting.backlight);
 	}
 
-	if (viewnumber > 3)
+	if (viewssnum > 3)
 		return;
 
 	// Render the skybox if there is one.
@@ -5545,13 +5547,13 @@ void HWR_RenderPlayerView(INT32 viewnumber, player_t *player)
 	if (skybox)
 	{
 		R_SkyboxFrame(viewssnum);
-		HWR_RenderFrame(viewnumber, player, true);
+		HWR_RenderFrame(player, true);
 	}
 	PS_STOP_TIMING(ps_skyboxtime);
 
 	R_SetupFrame(viewssnum, false); // This can stay false because it is only used to set viewsky in r_main.c, which isn't used here
 	framecount++; // for timedemo
-	HWR_RenderFrame(viewnumber, player, false);
+	HWR_RenderFrame(player, false);
 }
 
 void HWR_LoadLevel(void)
