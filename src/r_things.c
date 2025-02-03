@@ -1042,13 +1042,16 @@ static void R_SplitSprite(vissprite_t *sprite, mobj_t *thing)
 
 			newsprite->extra_colormap = sector->lightlist[i].extra_colormap;
 
-			if (!((thing->frame & (FF_FULLBRIGHT|FF_TRANSMASK) || thing->flags2 & MF2_SHADOW)
+			if (!((newsprite->cut & SC_FULLBRIGHT)
 				&& (!newsprite->extra_colormap || !(newsprite->extra_colormap->fog & 1))))
 			{
 				lindex = FixedMul(sprite->xscale, LIGHTRESOLUTIONFIX)>>(LIGHTSCALESHIFT);
 
 				// Mitigate against negative xscale and arithmetic overflow
 				lindex = CLAMP(lindex, 0, MAXLIGHTSCALE - 1);
+
+				if (newsprite->cut & SC_SEMIBRIGHT)
+					lindex = (MAXLIGHTSCALE/2) + (lindex >>1);
 
 				newsprite->colormap = spritelights[lindex];
 			}
@@ -1163,6 +1166,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	UINT8 flip;
 
 	INT32 lindex;
+	INT32 trans;
 
 	vissprite_t *vis;
 
@@ -1583,6 +1587,24 @@ static void R_ProjectSprite(mobj_t *thing)
 			return;
 	}
 
+	INT32 blendmode;
+	if (oldthing->frame & FF_BLENDMASK)
+		blendmode = ((oldthing->frame & FF_BLENDMASK) >> FF_BLENDSHIFT) + 1;
+	else
+		blendmode = oldthing->blendmode;
+
+	// Determine the translucency value.
+	if (oldthing->flags2 & MF2_SHADOW || thing->flags2 & MF2_SHADOW) // actually only the player should use this (temporary invisibility)
+		trans = tr_trans80; // because now the translucency is set through FF_TRANSMASK
+	else if (oldthing->frame & FF_TRANSMASK)
+	{
+		trans = (oldthing->frame & FF_TRANSMASK) >> FF_TRANSSHIFT;
+		if (!R_BlendLevelVisible(blendmode, trans))
+			return;
+	}
+	else
+		trans = 0;
+
 	//SoM: 3/17/2000: Disregard sprites that are out of view..
 	if (vflip)
 	{
@@ -1760,6 +1782,18 @@ static void R_ProjectSprite(mobj_t *thing)
 		vis->scale += FixedMul(scalestep, spriteyscale) * (vis->x1 - x1);
 	}
 
+	if ((blendmode != AST_COPY) && cv_translucency.value)
+		vis->transmap = R_GetBlendTable(blendmode, trans);
+	else
+		vis->transmap = NULL;
+
+	if (R_ThingIsFullBright(oldthing) || oldthing->flags2 & MF2_SHADOW || thing->flags2 & MF2_SHADOW)
+		vis->cut |= SC_FULLBRIGHT;
+	else if (R_ThingIsSemiBright(oldthing))
+		vis->cut |= SC_SEMIBRIGHT;
+	else if (R_ThingIsFullDark(oldthing))
+		vis->cut |= SC_FULLDARK;
+
 	//Fab: lumppat is the lump number of the patch to use, this is different
 	//     than lumpid for sprites-in-pwad : the graphics are patched
 #ifdef ROTSPRITE
@@ -1769,25 +1803,18 @@ static void R_ProjectSprite(mobj_t *thing)
 #endif
 		vis->patch = W_CachePatchNum(sprframe->lumppat[rot], PU_CACHE);
 
-//
-// determine the colormap (lightlevel & special effects)
-//
-	vis->transmap = NULL;
+	//
+	// determine the colormap (lightlevel & special effects)
+	//
 
-	// specific translucency
-	if (!cv_translucency.value)
-		; // no translucency
-	else if (thing->flags2 & MF2_SHADOW) // actually only the player should use this (temporary invisibility)
-		vis->transmap = transtables + ((tr_trans80-1)<<FF_TRANSSHIFT); // because now the translucency is set through FF_TRANSMASK
-	else if (thing->frame & FF_TRANSMASK)
-		vis->transmap = transtables + (thing->frame & FF_TRANSMASK) - 0x10000;
-
-	if (((thing->frame & FF_FULLBRIGHT) || (thing->flags2 & MF2_SHADOW))
+	if ((vis->cut & SC_FULLBRIGHT)
 		&& (!vis->extra_colormap || !(vis->extra_colormap->fog & 1)))
 	{
 		// full bright: goggles
 		vis->colormap = colormaps;
 	}
+	else if (vis->cut & SC_FULLDARK)
+		vis->colormap = scalelight[0][0];
 	else
 	{
 		// diminished light
@@ -1796,7 +1823,10 @@ static void R_ProjectSprite(mobj_t *thing)
 		// Mitigate against negative xscale and arithmetic overflow
 		lindex = CLAMP(lindex, 0, MAXLIGHTSCALE - 1);
 
-		vis->colormap = lights_array[lindex];
+		if (vis->cut & SC_SEMIBRIGHT)
+			lindex = (MAXLIGHTSCALE/2) + (lindex >> 1);
+
+		vis->colormap = spritelights[lindex];
 	}
 
 	vis->precip = false;
@@ -1834,6 +1864,7 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 	fixed_t this_scale;
 
 	INT32 dist = 1;
+	INT32 trans;
 
 	if (!thing || thing->subsector == NULL)
 		return;
@@ -1937,6 +1968,12 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 			return;
 	}
 
+	// Determine the translucency value.
+	if (thing->frame & FF_TRANSMASK)
+		trans = (thing->frame & FF_TRANSMASK) >> FF_TRANSSHIFT;
+	else
+		trans = 0;
+
 	//SoM: 3/17/2000: Disregard sprites that are out of view..
 	gzt = interp.z + FixedMul(spritecachedinfo[lump].topoffset, this_scale);
 	gz = gzt - FixedMul(spritecachedinfo[lump].height, this_scale);
@@ -1985,8 +2022,8 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 	vis->patch = W_CachePatchNum(sprframe->lumppat[0], PU_CACHE);
 
 	// specific translucency
-	if (thing->frame & FF_TRANSMASK)
-		vis->transmap = (thing->frame & FF_TRANSMASK) - 0x10000 + transtables;
+	if ((thing->blendmode != AST_COPY) && cv_translucency.value)
+		vis->transmap = R_GetTranslucencyTable((thing->frame & FF_TRANSMASK) >> FF_TRANSSHIFT);
 	else
 		vis->transmap = NULL;
 
@@ -2887,6 +2924,21 @@ boolean R_ThingWithinDist (mobj_t *thing, fixed_t limit_dist)
 	}
 
 	return true;
+}
+
+boolean R_ThingIsFullBright(mobj_t *thing)
+{
+	return ((thing->frame & FF_BRIGHTMASK) == FF_FULLBRIGHT);
+}
+
+boolean R_ThingIsSemiBright(mobj_t *thing)
+{
+	return ((thing->frame & FF_BRIGHTMASK) == FF_SEMIBRIGHT);
+}
+
+boolean R_ThingIsFullDark(mobj_t *thing)
+{
+	return ((thing->frame & FF_BRIGHTMASK) == FF_FULLDARK);
 }
 
 //

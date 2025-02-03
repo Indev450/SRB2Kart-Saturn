@@ -805,7 +805,7 @@ void R_DrawSinglePlane(visplane_t *pl)
 		if (pl->polyobj->translucency >= 10)
 			return; // Don't even draw it
 		else if (pl->polyobj->translucency > 0)
-			ds_transmap = transtables + ((pl->polyobj->translucency-1)<<FF_TRANSSHIFT);
+			ds_transmap = R_GetTranslucencyTable(pl->polyobj->translucency);
 		else // Opaque, but allow transparent flat pixels
 			spanfunc = splatfunc;
 
@@ -845,23 +845,23 @@ void R_DrawSinglePlane(visplane_t *pl)
 				if (pl->ffloor->alpha < 12)
 					return; // Don't even draw it
 				else if (pl->ffloor->alpha < 38)
-					ds_transmap = transtables + ((tr_trans90-1)<<FF_TRANSSHIFT);
+					ds_transmap = R_GetTranslucencyTable(tr_trans90);
 				else if (pl->ffloor->alpha < 64)
-					ds_transmap = transtables + ((tr_trans80-1)<<FF_TRANSSHIFT);
+					ds_transmap = R_GetTranslucencyTable(tr_trans80);
 				else if (pl->ffloor->alpha < 89)
-					ds_transmap = transtables + ((tr_trans70-1)<<FF_TRANSSHIFT);
+					ds_transmap = R_GetTranslucencyTable(tr_trans70);
 				else if (pl->ffloor->alpha < 115)
-					ds_transmap = transtables + ((tr_trans60-1)<<FF_TRANSSHIFT);
+					ds_transmap = R_GetTranslucencyTable(tr_trans60);
 				else if (pl->ffloor->alpha < 140)
-					ds_transmap = transtables + ((tr_trans50-1)<<FF_TRANSSHIFT);
+					ds_transmap = R_GetTranslucencyTable(tr_trans50);
 				else if (pl->ffloor->alpha < 166)
-					ds_transmap = transtables + ((tr_trans40-1)<<FF_TRANSSHIFT);
+					ds_transmap = R_GetTranslucencyTable(tr_trans40);
 				else if (pl->ffloor->alpha < 192)
-					ds_transmap = transtables + ((tr_trans30-1)<<FF_TRANSSHIFT);
+					ds_transmap = R_GetTranslucencyTable(tr_trans30);
 				else if (pl->ffloor->alpha < 217)
-					ds_transmap = transtables + ((tr_trans20-1)<<FF_TRANSSHIFT);
+					ds_transmap = R_GetTranslucencyTable(tr_trans20);
 				else if (pl->ffloor->alpha < 243)
-					ds_transmap = transtables + ((tr_trans10-1)<<FF_TRANSSHIFT);
+					ds_transmap = R_GetTranslucencyTable(tr_trans10);
 				else // Opaque, but allow transparent flat pixels
 					spanfunc = splatfunc;
 
@@ -1138,7 +1138,7 @@ using the palette colors.
 	if (spanfunc == R_DrawSpan_8)
 	{
 		INT32 i;
-		ds_transmap = transtables + ((tr_trans50-1)<<FF_TRANSSHIFT);
+		ds_transmap = R_GetTranslucencyTable(tr_trans50);
 		spanfunc = R_DrawTranslucentSpan_8;
 		for (i=0; i<4; i++)
 		{

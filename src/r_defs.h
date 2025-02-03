@@ -673,6 +673,9 @@ typedef struct
 #pragma pack()
 #endif
 
+// Possible alpha types for a patch.
+enum patchalphastyle {AST_COPY, AST_TRANSLUCENT, AST_ADD, AST_SUBTRACT, AST_REVERSESUBTRACT, AST_MODULATE, AST_OVERLAY};
+
 typedef enum
 {
 	SRF_SINGLE      = 0,   // 0-angle for all rotations

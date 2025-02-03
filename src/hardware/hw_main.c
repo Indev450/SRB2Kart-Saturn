@@ -719,7 +719,7 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 
 	HWR_Lighting(&Surf, lightlevel, planecolormap, P_SectorUsesDirectionalLighting(gl_frontsector));
 
-	if (PolyFlags & (PF_Translucent|PF_Fog))
+	if (PolyFlags & (PF_Translucent|PF_Fog|PF_Additive|PF_Subtractive|PF_ReverseSubtract|PF_Multiplicative|PF_Environment))
 	{
 		Surf.PolyColor.s.alpha = (UINT8)alpha;
 		PolyFlags |= PF_Modulated;
@@ -901,20 +901,67 @@ static void HWR_DrawSegsSplats(FSurfaceInfo * pSurf)
 }
 #endif
 
-FBITFIELD HWR_TranstableToAlpha(INT32 transtablenum, FSurfaceInfo *pSurf)
+FBITFIELD HWR_GetBlendModeFlag(INT32 ast)
+{
+	switch (ast)
+	{
+		case AST_TRANSLUCENT:
+			return PF_Translucent;
+		case AST_ADD:
+			return PF_Additive;
+		case AST_SUBTRACT:
+			return PF_Subtractive;
+		case AST_REVERSESUBTRACT:
+			return PF_ReverseSubtract;
+		case AST_MODULATE:
+			return PF_Multiplicative;
+		default:
+			return PF_Masked;
+	}
+
+	return 0;
+}
+
+UINT8 HWR_GetTranstableAlpha(INT32 transtablenum)
 {
 	switch (transtablenum)
 	{
-		case tr_trans10 : pSurf->PolyColor.s.alpha = 0xe6;return  PF_Translucent;
-		case tr_trans20 : pSurf->PolyColor.s.alpha = 0xcc;return  PF_Translucent;
-		case tr_trans30 : pSurf->PolyColor.s.alpha = 0xb3;return  PF_Translucent;
-		case tr_trans40 : pSurf->PolyColor.s.alpha = 0x99;return  PF_Translucent;
-		case tr_trans50 : pSurf->PolyColor.s.alpha = 0x80;return  PF_Translucent;
-		case tr_trans60 : pSurf->PolyColor.s.alpha = 0x66;return  PF_Translucent;
-		case tr_trans70 : pSurf->PolyColor.s.alpha = 0x4c;return  PF_Translucent;
-		case tr_trans80 : pSurf->PolyColor.s.alpha = 0x33;return  PF_Translucent;
-		case tr_trans90 : pSurf->PolyColor.s.alpha = 0x19;return  PF_Translucent;
+		case 0          : return 0xff;
+		case tr_trans10 : return 0xe6;
+		case tr_trans20 : return 0xcc;
+		case tr_trans30 : return 0xb3;
+		case tr_trans40 : return 0x99;
+		case tr_trans50 : return 0x80;
+		case tr_trans60 : return 0x66;
+		case tr_trans70 : return 0x4c;
+		case tr_trans80 : return 0x33;
+		case tr_trans90 : return 0x19;
 	}
+
+	return 0xff;
+}
+
+FBITFIELD HWR_SurfaceBlend(INT32 style, INT32 transtablenum, FSurfaceInfo *pSurf)
+{
+	if (!transtablenum || style <= AST_COPY || style >= AST_OVERLAY)
+	{
+		pSurf->PolyColor.s.alpha = 0xff;
+		return PF_Masked;
+	}
+
+	pSurf->PolyColor.s.alpha = HWR_GetTranstableAlpha(transtablenum);
+	return HWR_GetBlendModeFlag(style);
+}
+
+FBITFIELD HWR_TranstableToAlpha(INT32 transtablenum, FSurfaceInfo *pSurf)
+{
+	if (!transtablenum)
+	{
+		pSurf->PolyColor.s.alpha = 0x00;
+		return PF_Masked;
+	}
+
+	pSurf->PolyColor.s.alpha = HWR_GetTranstableAlpha(transtablenum);
 	return PF_Translucent;
 }
 
@@ -1128,8 +1175,8 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 
 	if (cutflag & FF_FOG)
 		HWR_AddTransparentWall(wallVerts, Surf, texnum, noencore, PF_Fog|PF_NoTexture|polyflags, true, lightnum, colormap);
-	else if (cutflag & FF_TRANSLUCENT)
-		HWR_AddTransparentWall(wallVerts, Surf, texnum, noencore, PF_Translucent|polyflags, false, lightnum, colormap);
+	else if (polyflags & (PF_Translucent|PF_Additive|PF_Subtractive|PF_ReverseSubtract|PF_Multiplicative|PF_Environment))
+		HWR_AddTransparentWall(wallVerts, Surf, texnum, noencore, polyflags, false, lightnum, colormap);
 	else
 		HWR_ProjectWall(wallVerts, Surf, PF_Masked|polyflags, lightnum, colormap);
 }
@@ -3622,6 +3669,12 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 	// co-ordinates
 	memcpy(wallVerts, baseWallVerts, sizeof(baseWallVerts));
 
+	INT32 blendmode;
+	if (spr->mobj->frame & FF_BLENDMASK)
+		blendmode = ((spr->mobj->frame & FF_BLENDMASK) >> FF_BLENDSHIFT) + 1;
+	else
+		blendmode = spr->mobj->blendmode;
+
 	if (!cv_translucency.value) // translucency disabled
 	{
 		Surf.PolyColor.s.alpha = 0xFF;
@@ -3630,10 +3683,13 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 	else if (spr->mobj->flags2 & MF2_SHADOW)
 	{
 		Surf.PolyColor.s.alpha = 0x40;
-		blend = PF_Translucent;
+		blend = HWR_GetBlendModeFlag(blendmode);
 	}
 	else if (spr->mobj->frame & FF_TRANSMASK)
-		blend = HWR_TranstableToAlpha((spr->mobj->frame & FF_TRANSMASK)>>FF_TRANSSHIFT, &Surf);
+	{
+		INT32 trans = (spr->mobj->frame & FF_TRANSMASK)>>FF_TRANSSHIFT;
+		blend = HWR_SurfaceBlend(blendmode, trans, &Surf);
+	}
 	else
 	{
 		// BP: i agree that is little better in environement but it don't
@@ -3641,7 +3697,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 		// Hurdler: PF_Environement would be cool, but we need to fix
 		//          the issue with the fog before
 		Surf.PolyColor.s.alpha = 0xFF;
-		blend = PF_Translucent|PF_Occlude;
+		blend = HWR_GetBlendModeFlag(blendmode)|PF_Occlude;
 	}
 
 	if (HWR_UseShader())
@@ -3659,8 +3715,10 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 	i = 0;
 	temp = FLOAT_TO_FIXED(realtop);
 
-	if (spr->mobj->frame & FF_FULLBRIGHT)
+	if (R_ThingIsFullBright(spr->mobj))
 		lightlevel = 255;
+	else if (R_ThingIsFullDark(spr->mobj))
+		lightlevel = 0;
 
 	for (i = 1; i < sector->numlights; i++)
 	{
@@ -3673,6 +3731,9 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 		colormap = list[i-1].extra_colormap;
 		break;
 	}
+
+	if (R_ThingIsSemiBright(spr->mobj))
+		lightlevel = 128 + (lightlevel>>1);
 
 	HWR_ObjectLightLevelPost(spr, sector, &lightlevel, false, papersprite);
 
@@ -3884,12 +3945,23 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 	extracolormap_t *colormap = sector->extra_colormap;
 	const boolean fullbright = (spr->mobj->frame & FF_FULLBRIGHT);
 
-	if (!fullbright)
+	if (R_ThingIsFullDark(spr->mobj))
+		lightlevel = 0;
+	else if (!(R_ThingIsFullBright(spr->mobj)))
 		lightlevel = min(sector->lightlevel, 255);
+
+	if (R_ThingIsSemiBright(spr->mobj))
+		lightlevel = 128 + (lightlevel>>1);
 
 	HWR_ObjectLightLevelPost(spr, sector, &lightlevel, false, papersprite);
 
 	HWR_Lighting(&Surf, lightlevel, colormap, P_SectorUsesDirectionalLighting(sector) && !fullbright);
+
+	INT32 blendmode;
+	if (spr->mobj->frame & FF_BLENDMASK)
+		blendmode = ((spr->mobj->frame & FF_BLENDMASK) >> FF_BLENDSHIFT) + 1;
+	else
+		blendmode = spr->mobj->blendmode;
 
 	if (!cv_translucency.value) // translucency disabled
 	{
@@ -3899,10 +3971,13 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 	else if (spr->mobj->flags2 & MF2_SHADOW)
 	{
 		Surf.PolyColor.s.alpha = 0x40;
-		blend = PF_Translucent;
+		blend = HWR_GetBlendModeFlag(blendmode);
 	}
 	else if (spr->mobj->frame & FF_TRANSMASK)
-		blend = HWR_TranstableToAlpha((spr->mobj->frame & FF_TRANSMASK)>>FF_TRANSSHIFT, &Surf);
+	{
+		INT32 trans = (spr->mobj->frame & FF_TRANSMASK)>>FF_TRANSSHIFT;
+		blend = HWR_SurfaceBlend(blendmode, trans, &Surf);
+	}
 	else
 	{
 		// BP: i agree that is little better in environement but it don't
@@ -3910,7 +3985,7 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 		// Hurdler: PF_Environement would be cool, but we need to fix
 		//          the issue with the fog before
 		Surf.PolyColor.s.alpha = 0xFF;
-		blend = PF_Translucent|PF_Occlude;
+		blend = HWR_GetBlendModeFlag(blendmode)|PF_Occlude;
 	}
 
 	if (HWR_UseShader())
@@ -3996,7 +4071,10 @@ static void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 	HWR_Lighting(&Surf, lightlevel, colormap, P_SectorUsesDirectionalLighting(sector));
 
 	if (spr->mobj->frame & FF_TRANSMASK)
-		blend = HWR_TranstableToAlpha((spr->mobj->frame & FF_TRANSMASK)>>FF_TRANSSHIFT, &Surf);
+	{
+		INT32 trans = (spr->mobj->frame & FF_TRANSMASK)>>FF_TRANSSHIFT;
+		blend = HWR_SurfaceBlend(AST_TRANSLUCENT, trans, &Surf);
+	}
 	else
 	{
 		// BP: i agree that is little better in environement but it don't
@@ -4004,7 +4082,7 @@ static void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 		// Hurdler: PF_Environement would be cool, but we need to fix
 		//          the issue with the fog before
 		Surf.PolyColor.s.alpha = 0xFF;
-		blend = PF_Translucent|PF_Occlude;
+		blend = HWR_GetBlendModeFlag(AST_TRANSLUCENT)|PF_Occlude;
 	}
 
 	if (HWR_UseShader())
@@ -4545,6 +4623,18 @@ static void HWR_ProjectSprite(mobj_t *thing)
 		return;
 
 	const boolean papersprite = (thing->frame & FF_PAPERSPRITE);
+	INT32 blendmode;
+	if (thing->frame & FF_BLENDMASK)
+		blendmode = ((thing->frame & FF_BLENDMASK) >> FF_BLENDSHIFT) + 1;
+	else
+		blendmode = thing->blendmode;
+
+	// Visibility check by the blend mode.
+	if (thing->frame & FF_TRANSMASK)
+	{
+		if (!R_BlendLevelVisible(blendmode, (thing->frame & FF_TRANSMASK)>>FF_TRANSSHIFT))
+			return;
+	}
 
 	// transform the origin point
 	tr_x = FIXED_TO_FLOAT(interp.x);
@@ -4893,6 +4983,13 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 	else
 	{
 		R_InterpolatePrecipMobjState(thing, FRACUNIT, &interp);
+	}
+
+	// Visibility check by the blend mode.
+	if (thing->frame & FF_TRANSMASK)
+	{
+		if (!R_BlendLevelVisible(thing->blendmode, (thing->frame & FF_TRANSMASK)>>FF_TRANSSHIFT))
+			return;
 	}
 
 	// transform the origin point
@@ -5449,7 +5546,7 @@ static void HWR_RenderFrame(player_t *player, boolean skybox)
 		for (x = vid.width>>1; x < vid.width; x += pw)
 		{
 			for (y = vid.height>>1; y < vid.height; y += ph)
-				HWR_DrawStretchyFixedPatch(gpatch, (x)<<FRACBITS, (y)<<FRACBITS, FRACUNIT, FRACUNIT, V_NOSCALESTART, NULL);
+				HWR_DrawStretchyFixedPatch(gpatch, (x)<<FRACBITS, (y)<<FRACBITS, FRACUNIT, FRACUNIT, V_NOSCALESTART, NULL, 0);
 		}
 	}
 
