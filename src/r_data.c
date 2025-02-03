@@ -282,6 +282,11 @@ static UINT8 *R_GenerateTexture(size_t texnum)
 	for (i = 0, patch = texture->patches; i < texture->patchcount; i++, patch++)
 	{
 		realpatch = W_CacheLumpNumPwad(patch->wad, patch->lump, PU_LEVEL);
+
+		// Well, it's not valid...
+		if (realpatch == NULL)
+			continue;
+
 		x1 = patch->originx;
 		x2 = x1 + SHORT(realpatch->width);
 
