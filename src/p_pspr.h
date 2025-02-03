@@ -41,8 +41,6 @@
 #define FF_HORIZONTALFLIP 0x400
 /// \brief Frame flags: Thin, paper-like sprite (for collision equivalent, see MF_PAPERCOLLISION)
 #define FF_PAPERSPRITE 0x800
-/// \brief mobj_t.lightlevel is absolute instead of relative
-#define FF_ABSOLUTELIGHTLEVEL 0x2000
 
 /// \brief Frame flags: blend types
 #define FF_BLENDMASK 0x7000
@@ -78,6 +76,9 @@
 #define FF_FULLDARK		0x00200000
 /// \brief Frame flags: frame appears between sector bright and full bright
 #define FF_SEMIBRIGHT	(FF_FULLBRIGHT|FF_FULLDARK)
+
+/// \brief mobj_t.lightlevel is absolute instead of relative
+#define FF_ABSOLUTELIGHTLEVEL 0x00400000
 
 /// \brief Frame flags: Simple stateless animation
 #define FF_ANIMATE 0x10000000
