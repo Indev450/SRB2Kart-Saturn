@@ -5447,6 +5447,7 @@ static inline void K_SpawnNormalSpeedLines(player_t *player, boolean synched)
 
 			fast->color = (leveltime & 1) ? player->mo->color : driftcolor;
 			fast->colorized = true;
+			fast->frame |= FF_ADD;
 		}
 	}
 }
