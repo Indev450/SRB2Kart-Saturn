@@ -188,6 +188,7 @@ enum ffloor_e {
 	ffloor_next,
 	ffloor_prev,
 	ffloor_alpha,
+	ffloor_blend,
 };
 
 static const char *const ffloor_opt[] = {
@@ -206,6 +207,7 @@ static const char *const ffloor_opt[] = {
 	"next",
 	"prev",
 	"alpha",
+	"blend",
 	NULL};
 
 static int ffloor_fields_ref = LUA_NOREF;
@@ -1172,6 +1174,9 @@ static int ffloor_get(lua_State *L)
 	case ffloor_alpha:
 		lua_pushinteger(L, ffloor->alpha);
 		return 1;
+	case ffloor_blend:
+		lua_pushinteger(L, ffloor->blend);
+		return 1;
 	}
 	return 0;
 }
@@ -1249,6 +1254,9 @@ static int ffloor_set(lua_State *L)
 	}
 	case ffloor_alpha:
 		ffloor->alpha = (INT32)luaL_checkinteger(L, 3);
+		break;
+	case ffloor_blend:
+		ffloor->blend = (INT32)luaL_checkinteger(L, 3);
 		break;
 	}
 	return 0;

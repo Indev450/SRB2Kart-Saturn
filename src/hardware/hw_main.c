@@ -1279,10 +1279,20 @@ static inline boolean HWR_BlendMidtextureSurface(FSurfaceInfo *pSurf)
 			case 195:
 			case 221:
 			case 253 ... 256:
-				blendmode = PF_Translucent;
+				if (gl_linedef->blendmode)
+					blendmode = HWR_SurfaceBlend(gl_linedef->blendmode, R_GetLinedefTransTable(gl_linedef->alpha), pSurf);
+				else
+					blendmode = PF_Translucent;
 				break;
 			default:
-				if (gl_linedef->alpha > 0 && gl_linedef->alpha < FRACUNIT)
+				if (gl_linedef->blendmode)
+				{
+					if (gl_linedef->alpha >= 0 && gl_linedef->alpha < FRACUNIT)
+						blendmode = HWR_SurfaceBlend(gl_linedef->blendmode, R_GetLinedefTransTable(gl_linedef->alpha), pSurf);
+					else
+						blendmode = HWR_GetBlendModeFlag(gl_linedef->blendmode);
+				}
+				else if (gl_linedef->alpha >= 0 && gl_linedef->alpha < FRACUNIT)
 					blendmode = HWR_TranstableToAlpha(R_GetLinedefTransTable(gl_linedef->alpha), pSurf);
 				else
 					blendmode = PF_Masked;
@@ -1834,7 +1844,9 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 			wallVerts[1].y = FIXED_TO_FLOAT(worldbottomslope);
 
 			if (gl_frontsector->numlights)
+			{
 				HWR_SplitWall(gl_frontsector, wallVerts, gl_midtexture, noencore, &Surf, FF_CUTLEVEL, NULL, 0);
+			}
 			else  // I don't think that solid walls can use translucent linedef types...
 			{
 				if (glTex->mipmap.flags & TF_TRANSPARENT)
@@ -2015,7 +2027,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 					lightnum = (HWR_ShouldUsePaletteRendering() && colormap) ? lightnum : HWR_CalcWallLight(lightnum, gl_curline);
 
 					if (gl_frontsector->numlights)
-						HWR_SplitWall(gl_frontsector, wallVerts, 0, false, &Surf, rover->flags, rover, 0);
+						HWR_SplitWall(gl_frontsector, wallVerts, 0, false, &Surf, rover->flags, rover, blendmode);
 					else
 						HWR_AddTransparentWall(wallVerts, &Surf, 0, false, blendmode, true, lightnum, colormap);
 				}
@@ -2023,14 +2035,14 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 				{
 					FBITFIELD blendmode = PF_Masked;
 
-					if (rover->flags & FF_TRANSLUCENT && rover->alpha < 256)
+					if ((rover->flags & FF_TRANSLUCENT && rover->alpha < 256) || rover->blend)
 					{
-						blendmode = PF_Translucent;
+						blendmode = rover->blend ? HWR_GetBlendModeFlag(rover->blend) : PF_Translucent;
 						Surf.PolyColor.s.alpha = CLAMP(rover->alpha, 0, 255);
 					}
 
 					if (gl_frontsector->numlights)
-						HWR_SplitWall(gl_frontsector, wallVerts, texnum, noencore, &Surf, rover->flags, rover, 0);
+						HWR_SplitWall(gl_frontsector, wallVerts, texnum, noencore, &Surf, rover->flags, rover, blendmode);
 					else
 					{
 						if (blendmode != PF_Masked)
@@ -2130,7 +2142,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 					lightnum = (HWR_ShouldUsePaletteRendering() && colormap) ? lightnum : HWR_CalcWallLight(lightnum, gl_curline);
 
 					if (gl_backsector->numlights)
-						HWR_SplitWall(gl_backsector, wallVerts, 0, false, &Surf, rover->flags, rover, 0);
+						HWR_SplitWall(gl_backsector, wallVerts, 0, false, &Surf, rover->flags, rover, blendmode);
 					else
 						HWR_AddTransparentWall(wallVerts, &Surf, 0, false, blendmode, true, lightnum, colormap);
 				}
@@ -2138,14 +2150,14 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 				{
 					FBITFIELD blendmode = PF_Masked;
 
-					if (rover->flags & FF_TRANSLUCENT && rover->alpha < 256)
+					if ((rover->flags & FF_TRANSLUCENT && rover->alpha < 256) || rover->blend)
 					{
-						blendmode = PF_Translucent;
+						blendmode = rover->blend ? HWR_GetBlendModeFlag(rover->blend) : PF_Translucent;
 						Surf.PolyColor.s.alpha = CLAMP(rover->alpha, 0, 255);
 					}
 
 					if (gl_backsector->numlights)
-						HWR_SplitWall(gl_backsector, wallVerts, texnum, noencore, &Surf, rover->flags, rover, 0);
+						HWR_SplitWall(gl_backsector, wallVerts, texnum, noencore, &Surf, rover->flags, rover, blendmode);
 					else
 					{
 						if (blendmode != PF_Masked)
@@ -2822,6 +2834,13 @@ static boolean HWR_DoCulling(line_t *cullheight, line_t *viewcullheight, float v
 	return false;
 }
 
+static FBITFIELD HWR_RippleBlend(sector_t *sector, ffloor_t *rover, boolean ceiling)
+{
+	(void)sector;
+	(void)ceiling;
+	return /*R_IsRipplePlane(sector, rover, ceiling)*/ (rover->flags & FF_RIPPLE) ? PF_Ripple : 0;
+}
+
 // -----------------+
 // HWR_Subsector    : Determine floor/ceiling planes.
 //                  : Add sprites of things in sector.
@@ -3010,7 +3029,7 @@ static void HWR_Subsector(size_t num)
 					                       alpha, rover->master->frontsector, PF_Fog|PF_NoTexture,
 										   true, rover->master->frontsector->extra_colormap);
 				}
-				else if (rover->flags & FF_TRANSLUCENT && rover->alpha < 256) // SoM: Flags are more efficient
+				else if ((rover->flags & FF_TRANSLUCENT && rover->alpha < 256) || rover->blend) // SoM: Flags are more efficient
 				{
 					light = R_GetPlaneLight(gl_frontsector, centerHeight, viewz < bottomCullHeight  ? true : false);
 
@@ -3019,7 +3038,7 @@ static void HWR_Subsector(size_t num)
 										   false,
 					                       *rover->bottomheight,
 					                       *gl_frontsector->lightlist[light].lightlevel,
-					                       CLAMP(rover->alpha, 0 ,255), rover->master->frontsector, (rover->flags & FF_RIPPLE ? PF_Ripple : 0)|PF_Translucent,
+					                       CLAMP(rover->alpha, 0 ,255), rover->master->frontsector, HWR_RippleBlend(gl_frontsector, rover, false) | (rover->blend ? HWR_GetBlendModeFlag(rover->blend) : PF_Translucent),
 					                       false, gl_frontsector->lightlist[light].extra_colormap);
 				}
 				else
@@ -3027,7 +3046,7 @@ static void HWR_Subsector(size_t num)
 					HWR_GetFlat(levelflats[*rover->bottompic].lumpnum, R_NoEncore(gl_frontsector, false));
 					light = R_GetPlaneLight(gl_frontsector, centerHeight, viewz < bottomCullHeight  ? true : false);
 
-					HWR_RenderPlane(sub, &extrasubsectors[num], false, *rover->bottomheight, (rover->flags & FF_RIPPLE ? PF_Ripple : 0)|PF_Occlude, *gl_frontsector->lightlist[light].lightlevel, levelflats[*rover->bottompic].lumpnum,
+					HWR_RenderPlane(sub, &extrasubsectors[num], false, *rover->bottomheight, HWR_RippleBlend(gl_frontsector, rover, false)|PF_Occlude, *gl_frontsector->lightlist[light].lightlevel, levelflats[*rover->bottompic].lumpnum,
 					                rover->master->frontsector, 255, gl_frontsector->lightlist[light].extra_colormap);
 				}
 			}
@@ -3056,7 +3075,7 @@ static void HWR_Subsector(size_t num)
 					                       alpha, rover->master->frontsector, PF_Fog|PF_NoTexture,
 										   true, rover->master->frontsector->extra_colormap);
 				}
-				else if (rover->flags & FF_TRANSLUCENT && rover->alpha < 256)
+				else if ((rover->flags & FF_TRANSLUCENT && rover->alpha < 256) || rover->blend)
 				{
 					light = R_GetPlaneLight(gl_frontsector, centerHeight, viewz < topCullHeight  ? true : false);
 
@@ -3065,7 +3084,7 @@ static void HWR_Subsector(size_t num)
 											true,
 											*rover->topheight,
 											*gl_frontsector->lightlist[light].lightlevel,
-											CLAMP(rover->alpha, 0 ,255), rover->master->frontsector, (rover->flags & FF_RIPPLE ? PF_Ripple : 0)|PF_Translucent,
+											CLAMP(rover->alpha, 0 ,255), rover->master->frontsector, HWR_RippleBlend(gl_frontsector, rover, false) | (rover->blend ? HWR_GetBlendModeFlag(rover->blend) : PF_Translucent),
 											false, gl_frontsector->lightlist[light].extra_colormap);
 				}
 				else
@@ -3073,7 +3092,7 @@ static void HWR_Subsector(size_t num)
 					HWR_GetFlat(levelflats[*rover->toppic].lumpnum, R_NoEncore(gl_frontsector, true));
 					light = R_GetPlaneLight(gl_frontsector, centerHeight, viewz < topCullHeight  ? true : false);
 
-					HWR_RenderPlane(sub, &extrasubsectors[num], true, *rover->topheight, (rover->flags & FF_RIPPLE ? PF_Ripple : 0)|PF_Occlude, *gl_frontsector->lightlist[light].lightlevel, levelflats[*rover->toppic].lumpnum,
+					HWR_RenderPlane(sub, &extrasubsectors[num], true, *rover->topheight, HWR_RippleBlend(gl_frontsector, rover, false)|PF_Occlude, *gl_frontsector->lightlist[light].lightlevel, levelflats[*rover->toppic].lumpnum,
 									  rover->master->frontsector, 255, gl_frontsector->lightlist[light].extra_colormap);
 				}
 			}

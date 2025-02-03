@@ -10017,6 +10017,7 @@ mobj_t *P_SpawnShadowMobj(mobj_t * caster)
 	mobj->radius = info->radius;
 	mobj->height = info->height;
 	mobj->flags = info->flags;
+	mobj->blendmode = AST_TRANSLUCENT;
 
 	mobj->health = info->spawnhealth;
 

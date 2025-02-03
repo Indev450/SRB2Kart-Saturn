@@ -842,28 +842,17 @@ void R_DrawSinglePlane(visplane_t *pl)
 				spanfunc = R_DrawTranslucentSpan_8;
 
 				// Hacked up support for alpha value in software mode Tails 09-24-2002
-				if (pl->ffloor->alpha < 12)
-					return; // Don't even draw it
-				else if (pl->ffloor->alpha < 38)
-					ds_transmap = R_GetTranslucencyTable(tr_trans90);
-				else if (pl->ffloor->alpha < 64)
-					ds_transmap = R_GetTranslucencyTable(tr_trans80);
-				else if (pl->ffloor->alpha < 89)
-					ds_transmap = R_GetTranslucencyTable(tr_trans70);
-				else if (pl->ffloor->alpha < 115)
-					ds_transmap = R_GetTranslucencyTable(tr_trans60);
-				else if (pl->ffloor->alpha < 140)
-					ds_transmap = R_GetTranslucencyTable(tr_trans50);
-				else if (pl->ffloor->alpha < 166)
-					ds_transmap = R_GetTranslucencyTable(tr_trans40);
-				else if (pl->ffloor->alpha < 192)
-					ds_transmap = R_GetTranslucencyTable(tr_trans30);
-				else if (pl->ffloor->alpha < 217)
-					ds_transmap = R_GetTranslucencyTable(tr_trans20);
-				else if (pl->ffloor->alpha < 243)
-					ds_transmap = R_GetTranslucencyTable(tr_trans10);
-				else // Opaque, but allow transparent flat pixels
-					spanfunc = splatfunc;
+				// ...unhacked by toaster 04-01-2021, re-hacked a little by sphere 19-11-2021
+				// and mercilessly shoved into saturn by chearii 02-02-2025
+				{
+					INT32 trans = (10*((256+12) - pl->ffloor->alpha))/255;
+					if (trans >= 10)
+						return; // Don't even draw it
+					if (pl->ffloor->blend) // additive, (reverse) subtractive, modulative
+						ds_transmap = R_GetBlendTable(pl->ffloor->blend, trans);
+					else if (!(ds_transmap = R_GetTranslucencyTable(trans)) || trans == 0)
+						spanfunc = splatfunc; // Opaque, but allow transparent flat pixels
+				}
 
 #ifdef SHITPLANESPARENCY
 				if (spanfunc == splatfunc || (pl->extra_colormap && pl->extra_colormap->fog))
