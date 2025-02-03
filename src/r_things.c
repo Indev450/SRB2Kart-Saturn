@@ -976,7 +976,7 @@ static void R_DrawPrecipitationVisSprite(vissprite_t *vis)
 // R_SplitSprite
 // runs through a sector's lightlist and splits the sprite according to the heights
 //
-static void R_SplitSprite(vissprite_t *sprite, mobj_t *thing)
+static void R_SplitSprite(vissprite_t *sprite)
 {
 	INT32 i, lightnum, lindex;
 	INT16 cutfrac;
@@ -1820,13 +1820,13 @@ static void R_ProjectSprite(mobj_t *thing)
 		// diminished light
 		lindex = FixedMul(xscale, LIGHTRESOLUTIONFIX)>>(LIGHTSCALESHIFT);
 
-		// Mitigate against negative xscale and arithmetic overflow
-		lindex = CLAMP(lindex, 0, MAXLIGHTSCALE - 1);
-
 		if (vis->cut & SC_SEMIBRIGHT)
 			lindex = (MAXLIGHTSCALE/2) + (lindex >> 1);
 
-		vis->colormap = spritelights[lindex];
+		// Mitigate against negative xscale and arithmetic overflow
+		lindex = CLAMP(lindex, 0, MAXLIGHTSCALE - 1);
+
+		vis->colormap = lights_array[lindex];
 	}
 
 	vis->precip = false;
@@ -1836,7 +1836,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	vis->isScaled = false;
 
 	if (thing->subsector->sector->numlights)
-		R_SplitSprite(vis, thing);
+		R_SplitSprite(vis);
 
 	// Debug
 	++objectsdrawn;

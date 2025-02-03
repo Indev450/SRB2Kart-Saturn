@@ -329,6 +329,8 @@ static void HWR_SetShaderState(void)
 
 void HWR_ObjectLightLevelPost(gl_vissprite_t *spr, const sector_t *sector, INT32 *lightlevel, boolean model, const boolean papersprite)
 {
+	const boolean semibright = R_ThingIsSemiBright(spr->mobj);
+
 	(void)papersprite;
 
 	if (spr->mobj->frame & FF_ABSOLUTELIGHTLEVEL)
@@ -374,6 +376,12 @@ void HWR_ObjectLightLevelPost(gl_vissprite_t *spr, const sector_t *sector, INT32
 
 		// Contrast is stronger for normal sprites, stronger than wall lighting is at the same distance
 		*lightlevel += FixedFloor((extralight * 2) + (FRACUNIT / 2)) / FRACUNIT;
+	}
+
+	// Semibright objects will be made slightly brighter to compensate contrast
+	if (semibright)
+	{
+		*lightlevel += 16;
 	}
 }
 
@@ -3938,11 +3946,11 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 	sector_t *sector = spr->mobj->subsector->sector;
 	INT32 lightlevel = 255;
 	extracolormap_t *colormap = sector->extra_colormap;
-	const boolean fullbright = (spr->mobj->frame & FF_FULLBRIGHT);
+	const boolean fullbright = R_ThingIsFullBright(spr->mobj);
 
 	if (R_ThingIsFullDark(spr->mobj))
 		lightlevel = 0;
-	else if (!(R_ThingIsFullBright(spr->mobj)))
+	else if (!fullbright)
 		lightlevel = min(sector->lightlevel, 255);
 
 	if (R_ThingIsSemiBright(spr->mobj))
