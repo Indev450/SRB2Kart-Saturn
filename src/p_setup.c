@@ -1196,6 +1196,8 @@ static void P_SetupLines(void)
 		ld->dx = v2->x - v1->x;
 		ld->dy = v2->y - v1->y;
 
+		ld->alpha = FRACUNIT;
+
 		if (!ld->dx)
 			ld->slopetype = ST_VERTICAL;
 		else if (!ld->dy)
@@ -1301,6 +1303,17 @@ static void P_LoadLineDefs2(void)
 				if (ld->sidenum[1] != 0xffff && sides[ld->sidenum[1]].text)
 					M_Memcpy(ld->text+strlen(ld->text)+1, sides[ld->sidenum[1]].text, strlen(sides[ld->sidenum[1]].text)+1);
 			}
+			break;
+		case 900: //Translucent wall (10%)
+		case 901: //Translucent wall (20%)
+		case 902: //Translucent wall (30%)
+		case 903: //Translucent wall (40%)
+		case 904: //Translucent wall (50%)
+		case 905: //Translucent wall (60%)
+		case 906: //Translucent wall (70%)
+		case 907: //Translucent wall (80%)
+		case 908: //Translucent wall (90%)
+			ld->alpha = ((909 - ld->special) << FRACBITS)/10;
 			break;
 		}
 	}

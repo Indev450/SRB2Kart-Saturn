@@ -399,6 +399,8 @@ typedef struct line_s
 
 	// Visual appearance: sidedefs.
 	UINT16 sidenum[2]; // sidenum[1] will be 0xffff if one-sided
+	fixed_t alpha; // translucency
+	UINT8 blendmode; // blendmode
 
 	fixed_t bbox[4]; // bounding box for the extent of the linedef
 

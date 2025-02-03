@@ -1269,33 +1269,6 @@ static inline boolean HWR_BlendMidtextureSurface(FSurfaceInfo *pSurf)
 		// set alpha for transparent walls
 		switch (gl_linedef->special)
 		{
-			case 900:
-				blendmode = HWR_TranstableToAlpha(tr_trans10, pSurf);
-				break;
-			case 901:
-				blendmode = HWR_TranstableToAlpha(tr_trans20, pSurf);
-				break;
-			case 902:
-				blendmode = HWR_TranstableToAlpha(tr_trans30, pSurf);
-				break;
-			case 903:
-				blendmode = HWR_TranstableToAlpha(tr_trans40, pSurf);
-				break;
-			case 904:
-				blendmode = HWR_TranstableToAlpha(tr_trans50, pSurf);
-				break;
-			case 905:
-				blendmode = HWR_TranstableToAlpha(tr_trans60, pSurf);
-				break;
-			case 906:
-				blendmode = HWR_TranstableToAlpha(tr_trans70, pSurf);
-				break;
-			case 907:
-				blendmode = HWR_TranstableToAlpha(tr_trans80, pSurf);
-				break;
-			case 908:
-				blendmode = HWR_TranstableToAlpha(tr_trans90, pSurf);
-				break;
 			// Translucent linedef types
 			case 102:
 			case 121 ... 125:
@@ -1309,7 +1282,10 @@ static inline boolean HWR_BlendMidtextureSurface(FSurfaceInfo *pSurf)
 				blendmode = PF_Translucent;
 				break;
 			default:
-				blendmode = PF_Masked;
+				if (gl_linedef->alpha > 0 && gl_linedef->alpha < FRACUNIT)
+					blendmode = HWR_TranstableToAlpha(R_GetLinedefTransTable(gl_linedef->alpha), pSurf);
+				else
+					blendmode = PF_Masked;
 				break;
 		}
 	}
