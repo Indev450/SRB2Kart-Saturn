@@ -289,6 +289,8 @@ typedef struct
 #define LF_NORELOAD       8 ///< Don't reload level on death
 #define LF_NOZONE        16 ///< Don't include "ZONE" on level title
 #define LF_SECTIONRACE   32 ///< Section race level
+#define LF_SUBTRACTNUM   64 ///< Use subtractive position number (for bright levels)
+
 
 #define LF2_HIDEINMENU     1 ///< Hide in the multiplayer menu
 #define LF2_HIDEINSTATS    2 ///< Hide in the statistics screen
