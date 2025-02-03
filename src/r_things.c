@@ -1820,11 +1820,11 @@ static void R_ProjectSprite(mobj_t *thing)
 		// diminished light
 		lindex = FixedMul(xscale, LIGHTRESOLUTIONFIX)>>(LIGHTSCALESHIFT);
 
-		if (vis->cut & SC_SEMIBRIGHT)
-			lindex = (MAXLIGHTSCALE/2) + (lindex >> 1);
-
 		// Mitigate against negative xscale and arithmetic overflow
 		lindex = CLAMP(lindex, 0, MAXLIGHTSCALE - 1);
+
+		if (vis->cut & SC_SEMIBRIGHT)
+			lindex = (MAXLIGHTSCALE/2) + (lindex >> 1);
 
 		vis->colormap = lights_array[lindex];
 	}
