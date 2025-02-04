@@ -214,14 +214,12 @@ const UINT8 Color_Opposite[MAXSKINCOLORS*2] =
 
 CV_PossibleValue_t Color_cons_t[MAXSKINCOLORS+1];
 
-#define TRANSTAB_AMTMUL10 (256.0f / 10.0f)
-
 /** \brief Initializes the translucency tables used by the Software renderer.
 */
 void R_InitTranslucencyTables(void)
 {
-	// Load here the transparency lookup tables 'TINTTAB'
-	// NOTE: the TINTTAB resource MUST BE aligned on 64k for the asm
+	// Load here the transparency lookup tables 'TRANSx0'
+	// NOTE: the TRANSx0 resources MUST BE aligned on 64k for the asm
 	// optimised code (in other words, transtables pointer low word is 0)
 	transtables = Z_MallocAlign(NUMTRANSTABLES*0x10000, PU_STATIC,
 		NULL, 16);
@@ -248,9 +246,9 @@ static void BlendTab_Translucent(UINT8 *table, int style, UINT8 blendamt)
 	if (table == NULL)
 		I_Error("BlendTab_Translucent: input table was NULL!");
 
-	for (bg = 0; bg < 0xFF; bg++)
+	for (bg = 0; bg < 0x100; bg++)
 	{
-		for (fg = 0; fg < 0xFF; fg++)
+		for (fg = 0; fg < 0x100; fg++)
 		{
 			RGBA_t backrgba = V_GetColor(bg);
 			RGBA_t frontrgba = V_GetColor(fg);
@@ -277,9 +275,9 @@ static void BlendTab_Subtractive(UINT8 *table, int style, UINT8 blendamt)
 		return;
 	}
 
-	for (bg = 0; bg < 0xFF; bg++)
+	for (bg = 0; bg < 0x100; bg++)
 	{
-		for (fg = 0; fg < 0xFF; fg++)
+		for (fg = 0; fg < 0x100; fg++)
 		{
 			RGBA_t backrgba = V_GetColor(bg);
 			RGBA_t frontrgba = V_GetColor(fg);
@@ -302,9 +300,9 @@ static void BlendTab_Modulative(UINT8 *table)
 	if (table == NULL)
 		I_Error("BlendTab_Modulative: input table was NULL!");
 
-	for (bg = 0; bg < 0xFF; bg++)
+	for (bg = 0; bg < 0x100; bg++)
 	{
-		for (fg = 0; fg < 0xFF; fg++)
+		for (fg = 0; fg < 0x100; fg++)
 		{
 			RGBA_t backrgba = V_GetColor(bg);
 			RGBA_t frontrgba = V_GetColor(fg);
