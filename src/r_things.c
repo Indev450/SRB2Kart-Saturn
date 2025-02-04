@@ -2108,7 +2108,7 @@ void R_AddPrecipitationSprites(void)
 		{
 			for (th = precipblocklinks[(by * bmapwidth) + bx]; th; th = next)
 			{
-				// Store this beforehand because R_ProjectPrecipitionSprite may free th (see P_PrecipThinker)
+				// Store this beforehand because R_ProjectPrecipitationSprite may free th (see P_PrecipThinker)
 				next = th->bnext;
 
 				if (th->precipflags & PCF_INVISIBLE)
