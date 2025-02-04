@@ -2167,7 +2167,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 				INT32 sfxnum;
 
 				//dont play any funky sound intros that may interfere with the music
-				if (skipintromus && (leveltime < MUSICSTARTTIME))
+				if ((skipintromus || keepmusic) && (leveltime < MUSICSTARTTIME))
 					return;
 
 				sfxnum = sides[line->sidenum[0]].toptexture; //P_AproxDistance(line->dx, line->dy)>>FRACBITS;
