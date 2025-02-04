@@ -3608,6 +3608,7 @@ void K_SpawnBoostTrail(player_t *player)
 		{
 			flame->colorized = true;
 			flame->color = player->skincolor;
+			flame->blendmode = AST_ADD;
 		}
 
 		P_SetScale(flame, player->mo->scale);
