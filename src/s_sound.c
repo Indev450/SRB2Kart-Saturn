@@ -2196,6 +2196,7 @@ static void Command_Tunes_f(void)
 	mapmusresume = 0;
 
 	S_ChangeMusicEx(mapmusname, mapmusflags, true, mapmusposition, 0, 0);
+	S_ShowMusicCredit();
 
 	if (argc > 3)
 	{
