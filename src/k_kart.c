@@ -1715,6 +1715,7 @@ void K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean solid)
 		fx->eflags &= ~MFE_VERTICALFLIP;
 	fx->lightlevel = M_RandomRange(200, 255);
 	fx->frame |= FF_ABSOLUTELIGHTLEVEL;
+	fx->blendmode = AST_ADD;
 	P_SetScale(fx, mobj1->scale);
 
 	// Because this is done during collision now, rmomx and rmomy need to be recalculated
@@ -3353,6 +3354,7 @@ static void K_SpawnDriftSparks(player_t *player)
 
 		spark->lightlevel = M_RandomRange(200, 255);
 		spark->frame |= FF_ABSOLUTELIGHTLEVEL;
+		spark->blendmode = AST_ADD;
 
 		K_MatchGenericExtraFlags(spark, player->mo);
 	}
@@ -3724,6 +3726,7 @@ void K_SpawnSparkleTrail(mobj_t *mo)
 
 		sparkle->lightlevel = M_RandomRange(200, 255);
 		sparkle->frame |= FF_ABSOLUTELIGHTLEVEL;
+		sparkle->blendmode = AST_ADD;
 	}
 
 	P_SetMobjState(sparkle, S_KARTINVULN_LARGE1);
@@ -3865,6 +3868,7 @@ void K_DriftDustHandling(mobj_t *spawner)
 
 			dust->lightlevel = M_RandomRange(200, 255);
 			dust->frame |= FF_ABSOLUTELIGHTLEVEL;
+			dust->blendmode = AST_ADD;
 		}
 		else
 			dust->color = 0; // dont recolour MT_DRIFTDUST
@@ -5560,12 +5564,12 @@ static inline void K_SpawnNormalSpeedLines(player_t *player, boolean synched)
 
 			fast->color = (leveltime & 1) ? player->mo->color : driftcolor;
 			fast->colorized = true;
-			fast->frame |= FF_ADD;
 		}
 	}
 
 	fast->lightlevel = M_RandomRange(200, 255);
 	fast->frame |= FF_ABSOLUTELIGHTLEVEL;
+	fast->blendmode = AST_ADD;
 }
 
 /**	\brief	Decreases various kart timers and powers per frame. Called in P_PlayerThink in p_user.c
