@@ -40,7 +40,6 @@ extern UINT8 dc_hires;
 extern UINT8 *dc_source; // first pixel in a column
 
 // translucency stuff here
-extern UINT8 *transtables; // translucency tables, should be (*transtables)[5][256][256]
 extern UINT8 *dc_transmap;
 
 // translation stuff here
@@ -117,7 +116,6 @@ extern lumpnum_t viewborderlump[8];
 #define TC_BLINK      -6 // For item blinking
 
 // Initialize color translation tables, for player rendering etc.
-void R_InitTranslationTables(void);
 UINT8* R_GetTranslationColormap(INT32 skinnum, skincolors_t color, UINT8 flags);
 UINT8* R_GetLocalTranslationColormap(skin_t *skin, skin_t *localskin, skincolors_t color, UINT8 flags, boolean local);
 patch_t* R_GetSkinFaceRank(player_t* ply);
@@ -125,6 +123,27 @@ patch_t* R_GetSkinFaceWant(player_t* ply);
 patch_t* R_GetSkinFaceMini(player_t* ply);
 void R_FlushTranslationColormapCache(void);
 UINT8 R_GetColorByName(const char *name);
+
+extern UINT8 *transtables; // translucency tables, should be (*transtables)[5][256][256]
+
+enum
+{
+	blendtab_add,
+	blendtab_subtract,
+	blendtab_reversesubtract,
+	blendtab_modulate,
+	NUMBLENDMAPS
+};
+
+extern UINT8 *blendtables[NUMBLENDMAPS];
+
+void R_InitTranslucencyTables(void);
+void R_GenerateBlendTables(void);
+
+UINT8 *R_GetTranslucencyTable(INT32 alphalevel);
+UINT8 *R_GetBlendTable(int style, INT32 alphalevel);
+
+boolean R_BlendLevelVisible(INT32 blendmode, INT32 alphalevel);
 
 // Custom player skin translation
 void R_InitViewBuffer(INT32 width, INT32 height);

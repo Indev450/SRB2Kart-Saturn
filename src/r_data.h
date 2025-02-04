@@ -56,6 +56,9 @@ extern INT32 *texturewidthmask;
 
 extern fixed_t *textureheight; // needed for texture pegging
 
+UINT32 ASTBlendPixel(RGBA_t background, RGBA_t foreground, int style, UINT8 alpha);
+UINT32 ASTBlendTexturePixel(RGBA_t background, RGBA_t foreground, int style, UINT8 alpha);
+
 extern INT16 color8to16[256]; // remap color index to highcolor
 extern INT16 *hicolormaps; // remap high colors to high colors..
 

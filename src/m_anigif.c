@@ -32,6 +32,7 @@ consvar_t cv_gif_downscale =  {"gif_downscale", "On", CV_SAVE, CV_OnOff, NULL, 0
 #ifdef HAVE_ANIGIF
 static boolean gif_optimize = false; // So nobody can do something dumb
 static boolean gif_downscale = false; // like changing cvars mid output
+static RGBA_t *gif_palette = NULL;
 
 static FILE *gif_out = NULL;
 static INT32 gif_frames = 0;
@@ -461,13 +462,15 @@ static size_t gifframe_size = 8192;
 // converts an RGB frame to a frame with a palette.
 //
 #ifdef HWRENDER
+static colorlookup_t gif_colorlookup;
+
 static void GIF_rgbconvert(UINT8 *linear, UINT8 *scr)
 {
 	UINT8 r, g, b;
 	size_t src, dest;
 	int x, y;
 
-	InitColorLUT();
+	InitColorLUT(&gif_colorlookup, gif_palette, true);
 
 	for (x = 0; x < vid.width; x += scrbuf_downscaleamt)
 	{
@@ -479,7 +482,7 @@ static void GIF_rgbconvert(UINT8 *linear, UINT8 *scr)
 			r = (UINT8)linear[src];
 			g = (UINT8)linear[src + 1];
 			b = (UINT8)linear[src + 2];
-			scr[dest] = colorlookup[r >> SHIFTCOLORBITS][g >> SHIFTCOLORBITS][b >> SHIFTCOLORBITS];
+			scr[dest] = GetColorLUTDirect(&gif_colorlookup, r, g, b);
 		}
 	}
 }
@@ -636,6 +639,10 @@ INT32 GIF_open(const char *filename)
 
 	gif_optimize = (!!cv_gif_optimize.value);
 	gif_downscale = (!!cv_gif_downscale.value);
+
+	// no master palettes in SRB2Kart land
+	gif_palette = pLocalPalette;
+
 	GIF_headwrite();
 	gif_frames = 0;
 	return 1;
