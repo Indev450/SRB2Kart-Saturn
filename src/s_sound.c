@@ -1984,6 +1984,7 @@ static void S_SetKeepMusicPosition(void)
 	if (strcasecmp(music_name, mapmusname) == 0)
 	{
 		strncpy(keepmusname, mapmusname, 7);
+		CONS_Printf("saved %s\n", keepmusname);
 		keepmusresume = I_GetSongPosition();
 		keepmusflags = mapmusflags;
 		keepmusposition = mapmusposition;
@@ -2035,6 +2036,7 @@ void S_InitMapMusic(void)
 	{
 		if (keepmusic && keepmusicresume)
 		{
+			CONS_Printf("using %s\n", keepmusname);
 			strncpy(mapmusname, keepmusname, 7);
 			mapmusflags = keepmusflags;
 			mapmusposition = keepmusposition;
@@ -2046,6 +2048,7 @@ void S_InitMapMusic(void)
 			mapmusflags = (mapheaderinfo[gamemap-1]->mustrack & MUSIC_TRACKMASK);
 			mapmusposition = mapheaderinfo[gamemap-1]->muspos;
 		}
+
 		mapmusresume = 0;
 	}
 
