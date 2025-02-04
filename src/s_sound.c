@@ -196,7 +196,7 @@ static INT32 numofchannels = 0;
 //
 static void S_StopChannel(INT32 cnum);
 
-static void S_SetKeepMusicStopStuff(void);
+static void S_SetKeepMusicPosition(void);
 
 //
 // S_getChannel
@@ -1825,7 +1825,7 @@ void S_StopMusic(void)
 
 	mapmusresume = (cv_birdmusic.value && (strcasecmp(music_name, mapmusname) == 0)) ? I_GetSongPosition() : 0;
 
-	S_SetKeepMusicStopStuff();
+	S_SetKeepMusicPosition();
 
 	if (I_SongPaused())
 		I_ResumeSong();
@@ -1969,7 +1969,7 @@ void S_ResetKeepAndSpecialMus(void)
 }
 
 // save some values
-static void S_SetKeepMusicStopStuff(void)
+static void S_SetKeepMusicPosition(void)
 {
 	keepmusposition = 0;
 
@@ -2163,6 +2163,8 @@ static void Command_Tunes_f(void)
 	mapmusresume = 0;
 
 	S_ChangeMusicEx(mapmusname, mapmusflags, true, mapmusposition, 0, 0);
+
+	keepmusposition = 0;
 
 	if (argc > 3)
 	{
