@@ -121,6 +121,9 @@ consvar_t cv_ignoremusicchanges = {"ignoremusicchanges", "No", CV_SAVE, CV_YesNo
 boolean keepmusic = false; // keep the current music on map restart
 boolean skipintromus = false; // skip the intro fanfare
 static boolean keepmusicresume = false;
+static char keepmusname[7];
+static UINT32 keepmusresume = 0;
+static UINT16 keepmusflags = 0;
 static UINT32 keepmusposition = 0;
 
 #ifdef HAVE_OPENMPT
@@ -1760,6 +1763,8 @@ void S_ChangeMusicEx(const char *mmusic, UINT16 mflags, boolean looping, UINT32 
 		return;
 	}
 
+	//S_SetKeepMusicPosition();
+
 	if (prefadems && S_MusicPlaying()) // queue music change for after fade // allow even if the music is the same
 	{
 		CONS_Debug(DBG_DETAILED, "Now fading out song %s\n", music_name);
@@ -1971,12 +1976,26 @@ void S_ResetKeepAndSpecialMus(void)
 // save some values
 static void S_SetKeepMusicPosition(void)
 {
-	keepmusposition = 0;
+	if (!cv_keepmusic.value)
+	{
+		return;
+	}
 
 	if (strcasecmp(music_name, mapmusname) == 0)
 	{
-		keepmusposition = I_GetSongPosition();
+		strncpy(keepmusname, mapmusname, 7);
+		keepmusresume = I_GetSongPosition();
+		keepmusflags = mapmusflags;
+		keepmusposition = mapmusposition;
 	}
+}
+
+static void S_ClearKeepMusicPosition(void)
+{
+	memset(keepmusname, 0, sizeof(keepmusname));
+	keepmusresume = 0;
+	keepmusflags = 0;
+	keepmusposition = 0;
 }
 
 // determine if we should keep the music on a map restart
@@ -1985,15 +2004,20 @@ void S_KeepMusic(void)
 	static INT16 oldmap = 0;
 	static boolean oldencore = false;
 	const boolean musicchanged = S_CheckMusicException();
-	keepmusicresume = (musicchanged && keepmusposition);
 
 	if (!cv_keepmusic.value)
 	{
-		keepmusic = false;
+		keepmusic = keepmusicresume = false;
 	}
 	else if (oldmap == gamemap && oldencore == encoremode)
 	{
+		keepmusicresume = (musicchanged && keepmusresume);
 		keepmusic = (!musicchanged || keepmusicresume);
+	}
+	else
+	{
+		keepmusic = keepmusicresume = false;
+		S_ClearKeepMusicPosition();
 	}
 
 	oldencore = encoremode;
@@ -2009,10 +2033,19 @@ void S_InitMapMusic(void)
 {
 	if (mapmusflags & MUSIC_RELOADRESET)
 	{
-		strncpy(mapmusname, mapheaderinfo[gamemap-1]->musname, 7);
-		mapmusname[6] = 0;
-		mapmusflags = (mapheaderinfo[gamemap-1]->mustrack & MUSIC_TRACKMASK);
-		mapmusposition = mapheaderinfo[gamemap-1]->muspos;
+		if (keepmusic && keepmusicresume)
+		{
+			strncpy(mapmusname, keepmusname, 7);
+			mapmusflags = keepmusflags;
+			mapmusposition = keepmusposition;
+		}
+		else
+		{
+			strncpy(mapmusname, mapheaderinfo[gamemap-1]->musname, 7);
+			mapmusname[6] = 0;
+			mapmusflags = (mapheaderinfo[gamemap-1]->mustrack & MUSIC_TRACKMASK);
+			mapmusposition = mapheaderinfo[gamemap-1]->muspos;
+		}
 		mapmusresume = 0;
 	}
 
@@ -2020,7 +2053,7 @@ void S_InitMapMusic(void)
 	{
 		// this is kinda silly, but we can use it to fade back into the map song at the saved point, should the current music be different from the map music
 		if (keepmusicresume)
-			S_ChangeMusicEx(mapmusname, mapmusflags, true, keepmusposition, 0, 500);
+			S_ChangeMusicEx(mapmusname, mapmusflags, true, keepmusresume, 0, 500);
 		return;
 	}
 
@@ -2163,8 +2196,6 @@ static void Command_Tunes_f(void)
 	mapmusresume = 0;
 
 	S_ChangeMusicEx(mapmusname, mapmusflags, true, mapmusposition, 0, 0);
-
-	keepmusposition = 0;
 
 	if (argc > 3)
 	{
