@@ -120,6 +120,8 @@ consvar_t cv_skipintromusic = {"skipintromusic", "No", CV_SAVE, CV_YesNo, NULL, 
 
 boolean keepmusic = false; // keep the current music on map restart
 boolean skipintromus = false; // skip the intro fanfare
+static boolean keepmusicresume = false;
+static UINT32 keepmusposition = 0;
 
 #ifdef HAVE_OPENMPT
 openmpt_module *openmpt_mhandle = NULL;
@@ -193,6 +195,8 @@ static INT32 numofchannels = 0;
 // Internals.
 //
 static void S_StopChannel(INT32 cnum);
+
+static void S_SetKeepMusicStopStuff(void);
 
 //
 // S_getChannel
@@ -1821,6 +1825,8 @@ void S_StopMusic(void)
 
 	mapmusresume = (cv_birdmusic.value && (strcasecmp(music_name, mapmusname) == 0)) ? I_GetSongPosition() : 0;
 
+	S_SetKeepMusicStopStuff();
+
 	if (I_SongPaused())
 		I_ResumeSong();
 
@@ -1962,19 +1968,32 @@ void S_ResetKeepAndSpecialMus(void)
 	keepmusic = skipintromus = false;
 }
 
+// save some values
+static void S_SetKeepMusicStopStuff(void)
+{
+	keepmusposition = 0;
+
+	if (strcasecmp(music_name, mapmusname) == 0)
+	{
+		keepmusposition = I_GetSongPosition();
+	}
+}
+
 // determine if we should keep the music on a map restart
 void S_KeepMusic(void)
 {
 	static INT16 oldmap = 0;
 	static boolean oldencore = false;
+	const boolean musicchanged = S_CheckMusicException();
+	keepmusicresume = (musicchanged && keepmusposition);
 
-	if (!cv_keepmusic.value || gamestate != GS_LEVEL || music_name[0] == 0)
+	if (!cv_keepmusic.value)
 	{
 		keepmusic = false;
 	}
 	else if (oldmap == gamemap && oldencore == encoremode)
 	{
-		keepmusic = !S_CheckMusicException();
+		keepmusic = (!musicchanged || keepmusicresume);
 	}
 
 	oldencore = encoremode;
@@ -1998,7 +2017,12 @@ void S_InitMapMusic(void)
 	}
 
 	if (keepmusic)
+	{
+		// this is kinda silly, but we can use it to fade back into the map song at the saved point, should the current music be different from the map music
+		if (keepmusicresume)
+			S_ChangeMusicEx(mapmusname, mapmusflags, true, keepmusposition, 0, 500);
 		return;
+	}
 
 	// Starting ambience should always be restarted
 	// lug: but not when we keep the map music lol
