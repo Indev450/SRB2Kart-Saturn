@@ -1587,19 +1587,22 @@ void GL_SetBlend(FBITFIELD PolyFlags)
 			}
 			else
 #endif
-
-			// mix texture colour with Surface->PolyColor
 			if (PolyFlags & PF_Modulated)
+			{   // mix texture colour with Surface->PolyColor
 				pglTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-			// colour from texture is unchanged before blending
+			}
 			else
+			{   // colour from texture is unchanged before blending
 				pglTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+			}
 		}
 
 		if (Xor & PF_Occlude) // depth test but (no) depth write
 		{
 			if (PolyFlags&PF_Occlude)
+			{
 				pglDepthMask(1);
+			}
 			else
 				pglDepthMask(0);
 		}
@@ -1617,9 +1620,12 @@ void GL_SetBlend(FBITFIELD PolyFlags)
 			}
 		}
 		if (PolyFlags & PF_NoTexture)
+		{
 			GL_SetNoTexture();
+		}
 	}
 	CurrentPolyFlags = PolyFlags;
+
 }
 
 static void GL_AllocTextureBuffer(GLMipmap_t *pTexInfo)
