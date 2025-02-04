@@ -1667,6 +1667,7 @@ void K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean solid)
 		fx->eflags |= MFE_VERTICALFLIP;
 	else
 		fx->eflags &= ~MFE_VERTICALFLIP;
+	fx->blendmode = AST_ADD;
 	P_SetScale(fx, mobj1->scale);
 
 	// Because this is done during collision now, rmomx and rmomy need to be recalculated
@@ -3301,6 +3302,7 @@ static void K_SpawnDriftSparks(player_t *player)
 				P_SetMobjState(spark, S_DRIFTSPARK_A1);
 		}
 
+		spark->blendmode = AST_ADD;
 		K_MatchGenericExtraFlags(spark, player->mo);
 	}
 }
@@ -3657,6 +3659,7 @@ void K_SpawnSparkleTrail(mobj_t *mo)
 		sparkle->destscale = mo->destscale;
 		P_SetScale(sparkle, mo->scale);
 		sparkle->color = mo->color;
+		sparkle->blendmode = AST_ADD;
 	}
 
 	P_SetMobjState(sparkle, S_KARTINVULN_LARGE1);
@@ -5457,6 +5460,7 @@ static inline void K_SpawnNormalSpeedLines(player_t *player, boolean synched)
 			fast->colorized = true;
 		}
 	}
+	fast->blendmode = AST_ADD;
 }
 
 /**	\brief	Decreases various kart timers and powers per frame. Called in P_PlayerThink in p_user.c
