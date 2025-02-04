@@ -976,7 +976,7 @@ static void R_DrawPrecipitationVisSprite(vissprite_t *vis)
 // R_SplitSprite
 // runs through a sector's lightlist and splits the sprite according to the heights
 //
-static void R_SplitSprite(vissprite_t *sprite, mobj_t *thing)
+static void R_SplitSprite(vissprite_t *sprite)
 {
 	INT32 i, lightnum, lindex;
 	INT16 cutfrac;
@@ -1828,7 +1828,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	vis->isScaled = false;
 
 	if (thing->subsector->sector->numlights)
-		R_SplitSprite(vis, thing);
+		R_SplitSprite(vis);
 
 	// Debug
 	++objectsdrawn;

@@ -1446,13 +1446,13 @@ static void Clamp2D(GLenum pname)
 #endif
 }
 
-static void SetBlendEquation(GLenum mode)
+static void GL_SetBlendEquation(GLenum mode)
 {
 	if (pglBlendEquation)
 		pglBlendEquation(mode);
 }
 
-static void SetBlendMode(FBITFIELD flags)
+static void GL_SetBlendMode(FBITFIELD flags)
 {
 	// Set blending function
 	switch (flags)
@@ -1491,15 +1491,15 @@ static void SetBlendMode(FBITFIELD flags)
 	switch (flags)
 	{
 		case PF_Subtractive & PF_Blending:
-			SetBlendEquation(GL_FUNC_SUBTRACT);
+			GL_SetBlendEquation(GL_FUNC_SUBTRACT);
 			break;
 		case PF_ReverseSubtract & PF_Blending:
 			// good for shadow
 			// not really but what else ?
-			SetBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
+			GL_SetBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
 			break;
 		default:
-			SetBlendEquation(GL_FUNC_ADD);
+			GL_SetBlendEquation(GL_FUNC_ADD);
 			break;
 	}
 
@@ -1526,14 +1526,14 @@ static void SetBlendMode(FBITFIELD flags)
 	}
 }
 
-EXPORT void HWRAPI(SetBlend) (FBITFIELD PolyFlags)
+void GL_SetBlend(FBITFIELD PolyFlags)
 {
 	FBITFIELD Xor;
 	Xor = CurrentPolyFlags^PolyFlags;
 	if (Xor & (PF_Blending|PF_RemoveYWrap|PF_ForceWrapX|PF_ForceWrapY|PF_Occlude|PF_NoTexture|PF_Modulated|PF_NoDepthTest|PF_Decal|PF_Invisible))
 	{
 		if (Xor & PF_Blending) // if blending mode must be changed
-			SetBlendMode(PolyFlags & PF_Blending);
+			GL_SetBlendMode(PolyFlags & PF_Blending);
 
 		if (Xor & PF_NoAlphaTest)
 		{
@@ -1543,45 +1543,12 @@ EXPORT void HWRAPI(SetBlend) (FBITFIELD PolyFlags)
 				pglEnable(GL_ALPHA_TEST);      // discard 0 alpha pixels (holes in texture)
 		}
 
-	if (Xor & PF_Blending) // if blending mode must be changed
-	{
-		switch (PolyFlags & PF_Blending)
+		if (Xor & PF_Decal)
 		{
-			case (PF_Translucent & PF_Blending):
-				pglBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // alpha = level of transparency
-				pglAlphaFunc(GL_NOTEQUAL, 0.0f);
-				break;
-			case (PF_Masked & PF_Blending):
-				// Hurdler: does that mean lighting is only made by alpha src?
-				// it sounds ok, but not for polygonsmooth
-				pglBlendFunc(GL_SRC_ALPHA, GL_ZERO);                // 0 alpha = holes in texture
-				pglAlphaFunc(GL_GREATER, 0.5f);
-				break;
-			case (PF_Additive & PF_Blending):
-				pglBlendFunc(GL_SRC_ALPHA, GL_ONE);                 // src * alpha + dest
-				pglAlphaFunc(GL_NOTEQUAL, 0.0f);
-				break;
-			case (PF_Environment & PF_Blending):
-				pglBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-				pglAlphaFunc(GL_NOTEQUAL, 0.0f);
-				break;
-			case (PF_Substractive & PF_Blending):
-				// good for shadow
-				// not really but what else ?
-				pglBlendFunc(GL_ZERO, GL_ONE_MINUS_SRC_COLOR);
-				pglAlphaFunc(GL_NOTEQUAL, 0.0f);
-				break;
-			case (PF_Fog & PF_Fog):
-				// Sryder: Fog
-				// multiplies input colour by input alpha, and destination colour by input colour, then adds them
-				pglBlendFunc(GL_SRC_ALPHA, GL_SRC_COLOR);
-				pglAlphaFunc(GL_ALWAYS, 0.0f); // Don't discard zero alpha fragments
-				break;
-			default : // must be 0, otherwise it's an error
-				// No blending
-				pglBlendFunc(GL_ONE, GL_ZERO);   // the same as no blending
-				pglAlphaFunc(GL_GREATER, 0.5f);
-				break;
+			if (PolyFlags & PF_Decal)
+				pglEnable(GL_POLYGON_OFFSET_FILL);
+			else
+				pglDisable(GL_POLYGON_OFFSET_FILL);
 		}
 
 		if (Xor & PF_NoDepthTest)
@@ -1613,47 +1580,45 @@ EXPORT void HWRAPI(SetBlend) (FBITFIELD PolyFlags)
 		if (Xor & PF_Modulated)
 		{
 #if defined (__unix__) || defined (UNIXCOMMON)
-		if (oglflags & GLF_NOTEXENV)
-		{
-			if (!(PolyFlags & PF_Modulated))
-				pglColor4ubv(white);
-		}
-		else
+			if (oglflags & GLF_NOTEXENV)
+			{
+				if (!(PolyFlags & PF_Modulated))
+					pglColor4ubv(white);
+			}
+			else
 #endif
 
-		// mix texture colour with Surface->PolyColor
-		if (PolyFlags & PF_Modulated)
-			pglTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-		// colour from texture is unchanged before blending
-		else
-			pglTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-	}
-
-	if (Xor & PF_Occlude) // depth test but (no) depth write
-	{
-		if (PolyFlags & PF_Occlude)
-			pglDepthMask(1);
-		else
-			pglDepthMask(0);
-	}
-
-	////Hurdler: not used if we don't define POLYSKY
-	if (Xor & PF_Invisible)
-	{
-		if (PolyFlags&PF_Invisible)
-			pglBlendFunc(GL_ZERO, GL_ONE);         // transparent blending
-		else
-		{   // big hack: (TODO: manage that better)
-			// we test only for PF_Masked because PF_Invisible is only used
-			// (for now) with it (yeah, that's crappy, sorry)
-			if ((PolyFlags & PF_Blending) == PF_Masked)
-				pglBlendFunc(GL_SRC_ALPHA, GL_ZERO);
+			// mix texture colour with Surface->PolyColor
+			if (PolyFlags & PF_Modulated)
+				pglTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+			// colour from texture is unchanged before blending
+			else
+				pglTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 		}
+
+		if (Xor & PF_Occlude) // depth test but (no) depth write
+		{
+			if (PolyFlags&PF_Occlude)
+				pglDepthMask(1);
+			else
+				pglDepthMask(0);
+		}
+		////Hurdler: not used if we don't define POLYSKY
+		if (Xor & PF_Invisible)
+		{
+			if (PolyFlags&PF_Invisible)
+				pglBlendFunc(GL_ZERO, GL_ONE);         // transparent blending
+			else
+			{   // big hack: (TODO: manage that better)
+				// we test only for PF_Masked because PF_Invisible is only used
+				// (for now) with it (yeah, that's crappy, sorry)
+				if ((PolyFlags&PF_Blending)==PF_Masked)
+					pglBlendFunc(GL_SRC_ALPHA, GL_ZERO);
+			}
+		}
+		if (PolyFlags & PF_NoTexture)
+			GL_SetNoTexture();
 	}
-
-	if (PolyFlags & PF_NoTexture)
-		GL_SetNoTexture();
-
 	CurrentPolyFlags = PolyFlags;
 }
 
@@ -2666,7 +2631,7 @@ void GL_DrawModelEx(model_t *model, INT32 frameIndex, float duration, float tics
 	
 	pglColor4ubv((GLubyte*)&Surface->PolyColor.s);
 
-	SetBlend((poly.alpha < 1 ? Surface->PolyFlags : (PF_Masked|PF_Occlude))|PF_Modulated);
+	GL_SetBlend((poly.alpha < 1 ? Surface->PolyFlags : (PF_Masked|PF_Occlude))|PF_Modulated);
 
 	tint.red    = byte2float[Surface->TintColor.s.red];
 	tint.green  = byte2float[Surface->TintColor.s.green];
