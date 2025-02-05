@@ -1623,7 +1623,7 @@ actionpointer_t actionpointers[] =
 	{{A_BrakLobShot},          "A_BRAKLOBSHOT"},
 	{{A_NapalmScatter},        "A_NAPALMSCATTER"},
 	{{A_SpawnFreshCopy},       "A_SPAWNFRESHCOPY"},
-	{{A_InvincSparkleRotate},    "A_INVINCSPARKLEROTATE"},
+	//{{A_InvincSparkleRotate},    "A_INVINCSPARKLEROTATE"},
 
 	{{NULL},                   "NONE"},
 

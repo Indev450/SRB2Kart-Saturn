@@ -10918,8 +10918,8 @@ void A_InvincSparkleRotate(mobj_t *actor)
 	fixed_t sx, sy, sz;	// Teleport dests.
 	mobj_t *ghost = NULL;
 
-	if (LUA_CallAction(A_INVINCSPARKLEROTATE, actor))
-		return;
+	//if (LUA_CallAction(A_INVINCSPARKLEROTATE, actor))
+		//return;
 
 	if (!actor->target || P_MobjWasRemoved(actor->target))
 		return;
