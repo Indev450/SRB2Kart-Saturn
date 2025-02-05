@@ -321,7 +321,7 @@ static boolean PIT_CheckThing(mobj_t *thing)
 		return true;
 
 	// Ignore... things.
-	if (!tmthing || P_MobjWasRemoved(thing))
+	if (!tmthing || !thing || P_MobjWasRemoved(thing))
 		return true;
 
 	I_Assert(!P_MobjWasRemoved(tmthing));

@@ -400,7 +400,7 @@ static void P_DeviceRumbleTick(void)
 			continue;
 		}
 
-		if (P_MobjWasRemoved(player->mo))
+		if (player->mo == NULL)
 		{
 			continue;
 		}
@@ -647,12 +647,8 @@ void P_Ticker(boolean run)
 
 		PS_START_TIMING(ps_playerthink_time);
 		for (i = 0; i < MAXPLAYERS; i++)
-		{
-			if (!playeringame[i] || P_MobjWasRemoved(players[i].mo))
-				continue;
-
-			P_PlayerThink(&players[i]);
-		}
+			if (playeringame[i] && players[i].mo && !P_MobjWasRemoved(players[i].mo))
+				P_PlayerThink(&players[i]);
 		PS_STOP_TIMING(ps_playerthink_time);
 	}
 
@@ -671,11 +667,8 @@ void P_Ticker(boolean run)
 
 		// Run any "after all the other thinkers" stuff
 		for (i = 0; i < MAXPLAYERS; i++)
-		{
-			if (!playeringame[i] || P_MobjWasRemoved(players[i].mo))
-				continue;
-			P_PlayerAfterThink(&players[i]);
-		}
+			if (playeringame[i] && players[i].mo && !P_MobjWasRemoved(players[i].mo))
+				P_PlayerAfterThink(&players[i]);
 
 		// Apply rumble to local players
 		if (!demo.playback)
@@ -688,7 +681,10 @@ void P_Ticker(boolean run)
 		PS_STOP_TIMING(ps_lua_thinkframe_time);
 	}
 
+	// Run shield positioning
+	//P_RunShields();
 	P_RunOverlays();
+
 	P_RunShadows();
 
 	P_UpdateSpecials();
@@ -782,8 +778,10 @@ void P_Ticker(boolean run)
 		if (modeattacking)
 			G_GhostTicker();
 
-		if (mapreset > 1 && (--mapreset <= 1) && server) // Remember: server uses it for mapchange, but EVERYONE ticks down for the animation
-			D_MapChange(gamemap, gametype, encoremode, true, 0, false, false);
+		if (mapreset > 1
+			&& --mapreset <= 1
+			&& server) // Remember: server uses it for mapchange, but EVERYONE ticks down for the animation
+				D_MapChange(gamemap, gametype, encoremode, true, 0, false, false);
 
 		PS_START_TIMING(ps_lua_postthinkframe_time);
 		LUA_HookPostThinkFrame();
@@ -846,22 +844,20 @@ void P_PreTicker(INT32 frames)
 		LUA_HOOK(PreThinkFrame);
 
 		for (i = 0; i < MAXPLAYERS; i++)
-		{
-			if (playeringame[i] || P_MobjWasRemoved(players[i].mo))
-				continue;
+			if (playeringame[i] && players[i].mo && !P_MobjWasRemoved(players[i].mo))
+			{
+				// stupid fucking cmd hack
+				// if it isn't for this, players can move in preticker time
+				// (and disrupt demo recording and other things !!)
+				memcpy(&temptic, &players[i].cmd, sizeof(ticcmd_t));
+				memset(&players[i].cmd, 0, sizeof(ticcmd_t));
+				// correct angle on spawn...
+				players[i].cmd.angleturn = temptic.angleturn;
 
-			// stupid fucking cmd hack
-			// if it isn't for this, players can move in preticker time
-			// (and disrupt demo recording and other things !!)
-			memcpy(&temptic, &players[i].cmd, sizeof(ticcmd_t));
-			memset(&players[i].cmd, 0, sizeof(ticcmd_t));
-			// correct angle on spawn...
-			players[i].cmd.angleturn = temptic.angleturn;
+				P_PlayerThink(&players[i]);
 
-			P_PlayerThink(&players[i]);
-
-			memcpy(&players[i].cmd, &temptic, sizeof(ticcmd_t));
-		}
+				memcpy(&players[i].cmd, &temptic, sizeof(ticcmd_t));
+			}
 
 		// Dynamic slopeness
 		if (midgamejoin)
@@ -875,7 +871,7 @@ void P_PreTicker(INT32 frames)
 			if (!playeringame[i])
 				continue;
 
-			if (P_MobjWasRemoved(players[i].mo))
+			if (!players[i].mo || P_MobjWasRemoved(players[i].mo))
 				continue;
 
 			P_PlayerAfterThink(&players[i]);
