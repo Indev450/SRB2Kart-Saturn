@@ -824,7 +824,7 @@ void D_SRB2Loop(void)
 
 		if (interp)
 		{
-			renderdeltatics = FLOAT_TO_FIXED(deltatics);
+			renderdeltatics = DoubleToFixed(deltatics);
 
 			if (!(paused || P_AutoPause()) && deltatics < 1.0 && !hu_stopped)
 			{
@@ -877,7 +877,7 @@ void D_SRB2Loop(void)
 
 		// Use the time before sleep for frameskip calculations:
 		// post-sleep time is literally being intentionally wasted
-		deltasecs = (double)((INT64)(finishprecise - enterprecise)) / I_GetPrecisePrecision();
+		deltasecs = (double)(finishprecise - enterprecise) / I_GetPrecisePrecision();
 		deltatics = deltasecs * NEWTICRATE;
 
 		// If time spent this game loop exceeds a single tic,
@@ -911,7 +911,7 @@ void D_SRB2Loop(void)
 		}
 		// Capture the time once more to get the real delta time.
 		finishprecise = I_GetPreciseTime();
-		deltasecs = (double)((INT64)(finishprecise - enterprecise)) / I_GetPrecisePrecision();
+		deltasecs = (double)(finishprecise - enterprecise) / I_GetPrecisePrecision();
 		deltatics = deltasecs * NEWTICRATE;
 	}
 }

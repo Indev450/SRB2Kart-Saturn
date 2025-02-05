@@ -638,7 +638,11 @@ void HWR_DrawConsoleBack(UINT32 color, INT32 height)
 	Surf.PolyColor.rgba = UINT2RGBA(color);
 	Surf.PolyColor.s.alpha = 0x80;
 
-	GL_DrawPolygon(&Surf, v, 4, PF_NoTexture|PF_Modulated|PF_Translucent|PF_NoDepthTest);
+	int flags = PF_NoTexture|PF_Modulated|PF_NoDepthTest;
+
+	flags |= HWR_GetBlendModeFlag(((B_MODULATE & V_BLENDMASK) >> V_BLENDSHIFT)+1);
+
+	GL_DrawPolygon(&Surf, v, 4, flags);
 }
 
 

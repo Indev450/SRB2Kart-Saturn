@@ -315,7 +315,7 @@ static void BlendTab_Modulative(UINT8 *table)
 
 static INT32 BlendTab_Count[NUMBLENDMAPS] =
 {
-	NUMTRANSTABLES,   // blendtab_add
+	NUMTRANSTABLES+1, // blendtab_add
 	NUMTRANSTABLES+1, // blendtab_subtract
 	NUMTRANSTABLES+1, // blendtab_reversesubtract
 	1                 // blendtab_modulate
@@ -335,7 +335,7 @@ static INT32 BlendTab_FromStyle[] =
 static void BlendTab_GenerateMaps(INT32 tab, INT32 style, void (*genfunc)(UINT8 *, int, UINT8))
 {
 	INT32 i = 0, num = BlendTab_Count[tab];
-	const float amtmul = (256.0f / (float)(NUMTRANSTABLES));
+	const float amtmul = (256.0f / (float)(NUMTRANSTABLES + 1));
 	for (; i < num; i++)
 	{
 		const size_t offs = (0x10000 * i);
@@ -382,7 +382,7 @@ UINT8 *R_GetBlendTable(int style, INT32 alphalevel)
 {
 	size_t offs;
 
-	if (style == AST_COPY || style == AST_OVERLAY)
+	if (style <= AST_COPY || style >= AST_OVERLAY)
 		return NULL;
 
 	offs = (ClipBlendLevel(style, alphalevel) << FF_TRANSSHIFT);
@@ -412,7 +412,7 @@ UINT8 *R_GetBlendTable(int style, INT32 alphalevel)
 
 boolean R_BlendLevelVisible(INT32 blendmode, INT32 alphalevel)
 {
-	if (blendmode == AST_COPY || blendmode == AST_SUBTRACT || blendmode == AST_MODULATE || blendmode == AST_OVERLAY)
+	if (blendmode <= AST_COPY || blendmode == AST_SUBTRACT || blendmode == AST_MODULATE || blendmode >= AST_OVERLAY)
 		return true;
 
 	return (alphalevel < BlendTab_Count[BlendTab_FromStyle[blendmode]]);

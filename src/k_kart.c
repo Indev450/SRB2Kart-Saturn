@@ -1713,8 +1713,8 @@ void K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean solid)
 		fx->eflags |= MFE_VERTICALFLIP;
 	else
 		fx->eflags &= ~MFE_VERTICALFLIP;
-	fx->lightlevel = M_RandomRange(200, 255);
-	fx->frame |= FF_ABSOLUTELIGHTLEVEL;
+	//fx->lightlevel = M_RandomRange(200, 255);
+	//fx->frame |= FF_ABSOLUTELIGHTLEVEL;
 	fx->blendmode = AST_ADD;
 	P_SetScale(fx, mobj1->scale);
 
@@ -3725,8 +3725,8 @@ void K_SpawnSparkleTrail(mobj_t *mo)
 
 		sparkle->color = mo->color;
 
-		sparkle->lightlevel = M_RandomRange(200, 255);
-		sparkle->frame |= FF_ABSOLUTELIGHTLEVEL;
+		//sparkle->lightlevel = M_RandomRange(200, 255);
+		//sparkle->frame |= FF_ABSOLUTELIGHTLEVEL;
 		sparkle->blendmode = AST_ADD;
 	}
 
@@ -3867,8 +3867,8 @@ void K_DriftDustHandling(mobj_t *spawner)
 			else
 				dust->color = SKINCOLOR_SILVER; // fallback
 
-			dust->lightlevel = M_RandomRange(200, 255);
-			dust->frame |= FF_ABSOLUTELIGHTLEVEL;
+			//dust->lightlevel = M_RandomRange(200, 255);
+			//dust->frame |= FF_ABSOLUTELIGHTLEVEL;
 			dust->blendmode = AST_ADD;
 		}
 		else
@@ -5568,8 +5568,8 @@ static inline void K_SpawnNormalSpeedLines(player_t *player, boolean synched)
 		}
 	}
 
-	fast->lightlevel = M_RandomRange(200, 255);
-	fast->frame |= FF_ABSOLUTELIGHTLEVEL;
+	//fast->lightlevel = M_RandomRange(200, 255);
+	//fast->frame |= FF_ABSOLUTELIGHTLEVEL;
 	fast->blendmode = AST_ADD;
 }
 
@@ -9058,7 +9058,7 @@ static void K_DrawKartPositionNum(INT32 num)
 	INT32 W = SHORT(kp_positionnum[0][0]->width);
 	fixed_t scale = FRACUNIT;
 	patch_t *localpatch = kp_positionnum[0][0];
-	INT32 addOrSub = B_ADD;
+	INT32 addOrSub = B_SUBTRACT;
 	//INT32 splitflags = K_calcSplitFlags(V_SNAPTOBOTTOM|V_SNAPTORIGHT);
 	INT32 fx = 0, fy = 0, fflags = 0;
 	INT32 xoffs = wheeloffs ? -48 : 0;
@@ -9068,7 +9068,7 @@ static void K_DrawKartPositionNum(INT32 num)
 
 	if ((mapheaderinfo[gamemap - 1]->levelflags & LF_SUBTRACTNUM) == LF_SUBTRACTNUM)
 	{
-		addOrSub = B_SUBTRACT;
+		addOrSub = B_ADD;
 	}
 
 	if ((cv_posanim.value && stplyr->kartstuff[k_positiondelay]) || stplyr->exiting)
