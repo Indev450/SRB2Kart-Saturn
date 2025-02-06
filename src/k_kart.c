@@ -5460,8 +5460,10 @@ static inline void K_SpawnNormalSpeedLines(player_t *player, boolean synched)
 			fast->color = (leveltime & 1) ? player->mo->color : driftcolor;
 			fast->colorized = true;
 		}
+
+		if (goodSpeed && ((player->kartstuff[k_growshrinktimer] > 0) || player->kartstuff[k_invincibilitytimer] || player->kartstuff[k_sneakertimer]))
+			fast->blendmode = AST_ADD;
 	}
-	fast->blendmode = AST_ADD;
 }
 
 /**	\brief	Decreases various kart timers and powers per frame. Called in P_PlayerThink in p_user.c
