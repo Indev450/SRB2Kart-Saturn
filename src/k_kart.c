@@ -1713,9 +1713,9 @@ void K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean solid)
 		fx->eflags |= MFE_VERTICALFLIP;
 	else
 		fx->eflags &= ~MFE_VERTICALFLIP;
-	//fx->lightlevel = M_RandomRange(200, 255);
-	//fx->frame |= FF_ABSOLUTELIGHTLEVEL;
+
 	fx->blendmode = AST_ADD;
+
 	P_SetScale(fx, mobj1->scale);
 
 	// Because this is done during collision now, rmomx and rmomy need to be recalculated
@@ -3352,8 +3352,6 @@ static void K_SpawnDriftSparks(player_t *player)
 				P_SetMobjState(spark, S_DRIFTSPARK_A1);
 		}
 
-		spark->lightlevel = M_RandomRange(200, 255);
-		spark->frame |= FF_ABSOLUTELIGHTLEVEL;
 		spark->blendmode = AST_ADD;
 
 		K_MatchGenericExtraFlags(spark, player->mo);
@@ -3725,9 +3723,8 @@ void K_SpawnSparkleTrail(mobj_t *mo)
 
 		sparkle->color = mo->color;
 
-		//sparkle->lightlevel = M_RandomRange(200, 255);
-		//sparkle->frame |= FF_ABSOLUTELIGHTLEVEL;
-		sparkle->blendmode = AST_ADD;
+		if (mo->player)
+			sparkle->blendmode = AST_ADD;
 	}
 
 	P_SetMobjState(sparkle, S_KARTINVULN_LARGE1);
@@ -3867,8 +3864,6 @@ void K_DriftDustHandling(mobj_t *spawner)
 			else
 				dust->color = SKINCOLOR_SILVER; // fallback
 
-			//dust->lightlevel = M_RandomRange(200, 255);
-			//dust->frame |= FF_ABSOLUTELIGHTLEVEL;
 			dust->blendmode = AST_ADD;
 		}
 		else
