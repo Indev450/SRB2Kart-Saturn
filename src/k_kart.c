@@ -5449,6 +5449,9 @@ static inline void K_SpawnNormalSpeedLines(player_t *player, boolean synched)
 			fast->colorized = true;
 			fast->frame |= FF_ADD;
 		}
+
+		if (goodSpeed && ((player->kartstuff[k_growshrinktimer] > 0) || player->kartstuff[k_invincibilitytimer] || player->kartstuff[k_sneakertimer]))
+			fast->blendmode = AST_ADD;
 	}
 }
 
