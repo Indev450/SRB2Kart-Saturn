@@ -1238,7 +1238,10 @@ void I_GetEvent(void)
 					////////////////////////////////////////////////////////////
 
 					for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+					{
 						I_InitJoystick(i);
+						G_SetPlayerGamepadIndicatorColor(i, G_GetSkinColor(i)); // gotta update the controller led again on reconnect
+					}
 
 					////////////////////////////////////////////////////////////
 
