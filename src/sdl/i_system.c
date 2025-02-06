@@ -1486,7 +1486,7 @@ const char *I_GetJoyName(INT32 joyindex)
 	return joyname;
 }
 
-void I_GamepadRumble(INT32 device_id, UINT16 low_strength, UINT16 high_strength, UINT32 duration)
+void I_GamepadRumble(INT32 playernum, UINT16 low_strength, UINT16 high_strength, UINT32 duration)
 {
 #if !(SDL_VERSION_ATLEAST(2,0,14))
 	(void)device_id;
@@ -1494,9 +1494,12 @@ void I_GamepadRumble(INT32 device_id, UINT16 low_strength, UINT16 high_strength,
 	(void)high_strength;
 	(void)duration;
 #else
+
+	INT32 device_id = I_GetJoystickDeviceIndex(JoyInfo[playernum].dev);
+
 	I_Assert(device_id > 0); // Gamepad devices are always ID 1 or higher
 
-	SDL_GameController *controller = SDL_GameControllerFromInstanceID(device_id - 1);
+	SDL_GameController *controller = SDL_GameControllerFromInstanceID(device_id);
 	if (controller == NULL)
 	{
 		return;
@@ -1506,7 +1509,7 @@ void I_GamepadRumble(INT32 device_id, UINT16 low_strength, UINT16 high_strength,
 #endif
 }
 
-void I_SetGamepadIndicatorColor(INT32 device_id, UINT8 red, UINT8 green, UINT8 blue)
+void I_SetGamepadIndicatorColor(INT32 playernum, UINT8 red, UINT8 green, UINT8 blue)
 {
 #if !(SDL_VERSION_ATLEAST(2,0,14))
 	(void)device_id;
@@ -1514,9 +1517,12 @@ void I_SetGamepadIndicatorColor(INT32 device_id, UINT8 red, UINT8 green, UINT8 b
 	(void)green;
 	(void)blue;
 #else
+
+	INT32 device_id = I_GetJoystickDeviceIndex(JoyInfo[playernum].dev);
+
 	I_Assert(device_id > 0); // Gamepad devices are always ID 1 or higher
 
-	SDL_GameController *controller = SDL_GameControllerFromInstanceID(device_id - 1);
+	SDL_GameController *controller = SDL_GameControllerFromInstanceID(device_id);
 	if (controller == NULL)
 	{
 		return;
