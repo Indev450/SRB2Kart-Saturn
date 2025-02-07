@@ -10472,8 +10472,9 @@ static void M_HandleConnectIP(INT32 choice)
 
 		default:
 			// Rudimentary number and period enforcing - also allows letters so hostnames can be used instead
-			if ((choice >= '-' && choice <= ':') || (choice >= 'A' && choice <= 'Z') || (choice >= 'a' && choice <= 'z')
-				|| (choice >= 199 && choice <= 211 && choice != 202 && choice != 206)) //numpad too!
+			// ctrl-v allows to bypass that anyway, so we just remove that for now to allow stuff like shift+insert
+			/*if ((choice >= '-' && choice <= ':') || (choice >= 'A' && choice <= 'Z') || (choice >= 'a' && choice <= 'z')
+				|| (choice >= 199 && choice <= 211 && choice != 202 && choice != 206))*/ //numpad too!
 			{
 				if (M_TextInputHandle(&setupm_input_ip, choice))
 					S_StartSound(NULL,sfx_menu1); // Tails
