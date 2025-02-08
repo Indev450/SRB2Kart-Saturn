@@ -2304,18 +2304,7 @@ void G_PlayerReborn(INT32 player)
 	{
 		if (mapmusflags & MUSIC_RELOADRESET)
 		{
-			if (keepmusic)
-			{
-				S_CopyKeepMusicStuff(); // this is horrible, why do we COMPLETELY need to reset the music on respawn?? oh well
-			}
-			else
-			{
-				strncpy(mapmusname, mapheaderinfo[gamemap-1]->musname, 7);
-				mapmusname[6] = 0;
-				mapmusflags = (mapheaderinfo[gamemap-1]->mustrack & MUSIC_TRACKMASK);
-				mapmusposition = mapheaderinfo[gamemap-1]->muspos;
-			}
-			mapmusresume = 0;
+			S_HandleReloadResetMusic();
 			songcredit = true;
 		}
 	}
