@@ -2080,7 +2080,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 			break;
 
 		case 413: // Change music
-			if (keepmusic && (leveltime <= MUSICSTARTTIME)) // why check for starttime? cause encore music Zzz...
+			if (keepmapmusic && (leveltime <= MUSICSTARTTIME)) // why check for starttime? cause encore music Zzz...
 				return;
 
 			if (cv_ignoremusicchanges.value && (leveltime >= MUSICSTARTTIME) && !fromlapexec) // keep lap music intanct tho
@@ -2128,19 +2128,19 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 				// Change the music and apply position/fade operations
 				else
 				{
-					strncpy(mapmusname, sides[line->sidenum[0]].text, 7);
-					mapmusname[6] = 0;
+					strncpy(mapmusic.name, sides[line->sidenum[0]].text, 7);
+					mapmusic.name[6] = 0;
 
-					mapmusflags = tracknum & MUSIC_TRACKMASK;
+					mapmusic.flags = tracknum & MUSIC_TRACKMASK;
 					if (!(line->flags & ML_BLOCKMONSTERS))
-						mapmusflags |= MUSIC_RELOADRESET;
+						mapmusic.flags |= MUSIC_RELOADRESET;
 					if (line->flags & ML_BOUNCY)
-						mapmusflags |= MUSIC_FORCERESET;
+						mapmusic.flags |= MUSIC_FORCERESET;
 
-					mapmusposition = position;
-					mapmusresume = 0;
+					mapmusic.position = position;
+					mapmusic.resume = 0;
 
-					S_ChangeMusicEx(mapmusname, mapmusflags, !(line->flags & ML_EFFECT4), position,
+					S_ChangeMusicEx(mapmusic.name, mapmusic.flags, !(line->flags & ML_EFFECT4), position,
 						!(line->flags & ML_EFFECT2) ? prefadems : 0,
 						!(line->flags & ML_EFFECT2) ? postfadems : 0);
 
@@ -2167,7 +2167,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 				INT32 sfxnum;
 
 				//dont play any funky sound intros that may interfere with the music
-				if ((skipintromus || keepmusic) && (leveltime < MUSICSTARTTIME))
+				if ((skipintromus || keepmapmusic) && (leveltime < MUSICSTARTTIME))
 					return;
 
 				sfxnum = sides[line->sidenum[0]].toptexture; //P_AproxDistance(line->dx, line->dy)>>FRACBITS;
