@@ -85,10 +85,7 @@ static void G_DoStartVote(void);
 
 static void G_ResetDemoPlayback(char *pdemoname);
 
-char   mapmusname[7]; // Music name
-UINT16 mapmusflags; // Track and reset bit
-UINT32 mapmusposition; // Position to jump to
-UINT32 mapmusresume;
+mapmusic_t mapmusic;
 
 INT16 gamemap = 1;
 INT16 maptol;
@@ -2302,7 +2299,7 @@ void G_PlayerReborn(INT32 player)
 
 	if (p-players == consoleplayer)
 	{
-		if (mapmusflags & MUSIC_RELOADRESET)
+		if (mapmusic.flags & MUSIC_RELOADRESET)
 		{
 			S_HandleReloadResetMusic();
 			songcredit = true;
@@ -4059,7 +4056,7 @@ void G_InitNew(UINT8 pencoremode, const char *mapname, boolean resetplayer, bool
 	globalweather = mapheaderinfo[gamemap-1]->weather;
 
 	// Don't carry over custom music change to another map.
-	mapmusflags |= MUSIC_RELOADRESET;
+	mapmusic.flags |= MUSIC_RELOADRESET;
 
 	automapactive = false;
 	imcontinuing = false;
