@@ -2306,7 +2306,7 @@ void G_PlayerReborn(INT32 player)
 		{
 			if (keepmusic)
 			{
-				S_CopyKeepMusicStuff();
+				S_CopyKeepMusicStuff(); // this is horrible, why do we COMPLETELY need to reset the music on respawn?? oh well
 			}
 			else
 			{
