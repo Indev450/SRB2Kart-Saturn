@@ -113,7 +113,6 @@ consvar_t cv_resume = {"resume", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0
 consvar_t cv_fading = {"fading", "Off", CV_SAVE|CV_CALL, CV_OnOff, Bird_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_birdmusic = {"birdmusicstuff", "No", CV_SAVE|CV_CALL, CV_YesNo, Bird_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
 
-
 consvar_t cv_keepmusic = {"keepmusic", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_skipintromusic = {"skipintromusic", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_ignoremusicchanges = {"ignoremusicchanges", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -126,6 +125,7 @@ static UINT32 keepmusresume = 0;
 static UINT16 keepmusflags = 0;
 static UINT32 keepmusposition = 0;
 static void S_SetKeepMusResume(void);
+static void S_SetKeepMusicStuff(void);
 
 #ifdef HAVE_OPENMPT
 openmpt_module *openmpt_mhandle = NULL;
@@ -199,8 +199,6 @@ static INT32 numofchannels = 0;
 // Internals.
 //
 static void S_StopChannel(INT32 cnum);
-
-static void S_SetKeepMusicPosition(void);
 
 //
 // S_getChannel
@@ -1764,7 +1762,7 @@ void S_ChangeMusicEx(const char *mmusic, UINT16 mflags, boolean looping, UINT32 
 		return;
 	}
 
-	//S_SetKeepMusicPosition();
+	//S_SetKeepMusicStuff();
 
 	if (prefadems && S_MusicPlaying()) // queue music change for after fade // allow even if the music is the same
 	{
@@ -1983,7 +1981,7 @@ static void S_SetKeepMusResume(void)
 }
 
 // save some values
-static void S_SetKeepMusicPosition(void)
+static void S_SetKeepMusicStuff(void)
 {
 	if (!cv_keepmusic.value)
 	{
@@ -2024,7 +2022,7 @@ void S_KeepMusic(void)
 	static boolean oldencore = false;
 	const boolean musicchanged = S_CheckMusicException();
 
-	S_SetKeepMusicPosition();
+	S_SetKeepMusicStuff();
 
 	if (!cv_keepmusic.value)
 	{
