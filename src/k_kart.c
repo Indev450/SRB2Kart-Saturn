@@ -5508,6 +5508,25 @@ void K_KartPlayerHUDUpdate(player_t *player)
 		player->kartstuff[k_cardanimation] = 0;
 }
 
+static boolean K_SpeedLinesShouldBlend(player_t *player)
+{
+	fixed_t percentspeed = 0;
+
+	if (!player->mo)
+		return false;
+
+	if (player->kartstuff[k_sneakertimer])
+		return true;
+
+	// this is how the percentage speedometer calcs, i suck at maths so this was the easiest thing to fo lmao
+	percentspeed = (FixedDiv(player->speed, FixedMul(K_GetKartSpeed(player, false), ORIG_FRICTION))*100)>>FRACBITS;
+
+	if (percentspeed > 127) // sneaker boost is around 25%
+		return true;
+
+	return false;
+}
+
 typedef INT32 (*randomFunc)(INT32 min, INT32 max);
 
 static inline void K_SpawnNormalSpeedLines(player_t *player, boolean synched)
@@ -5531,7 +5550,7 @@ static inline void K_SpawnNormalSpeedLines(player_t *player, boolean synched)
 
 	if (cv_coloredspeedlines.value)
 	{
-		const boolean goodSpeed = (player->speed >= (3*K_GetKartSpeed(player, false))/4);
+		const boolean colorSpeed = (player->speed >= (3*K_GetKartSpeed(player, false))/4);
 
 		if (player->kartstuff[k_eggmanexplode])
 		{
@@ -5544,7 +5563,7 @@ static inline void K_SpawnNormalSpeedLines(player_t *player, boolean synched)
 			fast->color = player->mo->color;
 			fast->colorized = true;
 		}
-		else if (goodSpeed)
+		else if (colorSpeed)
 		{
 			UINT8 driftcolor = SKINCOLOR_NONE;
 
@@ -5562,7 +5581,7 @@ static inline void K_SpawnNormalSpeedLines(player_t *player, boolean synched)
 			fast->colorized = true;
 		}
 
-		if (goodSpeed && ((player->kartstuff[k_growshrinktimer] > 0) || player->kartstuff[k_invincibilitytimer] || player->kartstuff[k_sneakertimer]))
+		if (colorSpeed && K_SpeedLinesShouldBlend(player))
 			fast->blendmode = AST_ADD;
 	}
 }
