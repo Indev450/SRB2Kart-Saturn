@@ -125,6 +125,7 @@ static char keepmusname[7];
 static UINT32 keepmusresume = 0;
 static UINT16 keepmusflags = 0;
 static UINT32 keepmusposition = 0;
+static void S_SetKeepMusResume(void);
 
 #ifdef HAVE_OPENMPT
 openmpt_module *openmpt_mhandle = NULL;
@@ -1827,6 +1828,8 @@ void S_StopMusic(void)
 
 	mapmusresume = (cv_birdmusic.value && (strcasecmp(music_name, mapmusname) == 0)) ? I_GetSongPosition() : 0;
 
+	S_SetKeepMusResume();
+
 	if (I_SongPaused())
 		I_ResumeSong();
 
@@ -1971,6 +1974,14 @@ void S_ResetKeepAndSpecialMus(void)
 	keepmusic = skipintromus = false;
 }
 
+static void S_SetKeepMusResume(void)
+{
+	if (strcasecmp(music_name, mapmusname) == 0)
+	{
+		keepmusresume = I_GetSongPosition();
+	}
+}
+
 // save some values
 static void S_SetKeepMusicPosition(void)
 {
@@ -1979,14 +1990,10 @@ static void S_SetKeepMusicPosition(void)
 		return;
 	}
 
-	if (strcasecmp(music_name, mapmusname) == 0)
-	{
-		strncpy(keepmusname, mapmusname, 7);
-		CONS_Printf("saved %s\n", keepmusname);
-		keepmusresume = I_GetSongPosition();
-		keepmusflags = mapmusflags;
-		keepmusposition = mapmusposition;
-	}
+	strncpy(keepmusname, mapmusname, 7);
+	CONS_Printf("saved %s\n", keepmusname);
+	keepmusflags = mapmusflags;
+	keepmusposition = mapmusposition;
 }
 
 static void S_ClearKeepMusicPosition(void)
@@ -1999,13 +2006,15 @@ static void S_ClearKeepMusicPosition(void)
 
 void S_CopyKeepMusicStuff(void)
 {
+	if (!cv_keepmusic.value)
+	{
+		return;
+	}
+
 	CONS_Printf("using %s\n", keepmusname);
 	strncpy(mapmusname, keepmusname, 7);
 	mapmusflags = keepmusflags;
-	if (keepmusicresume)
-		mapmusposition = keepmusposition;
-	else
-		mapmusposition = mapheaderinfo[gamemap-1]->muspos;
+	mapmusposition = keepmusposition;
 }
 
 // determine if we should keep the music on a map restart
