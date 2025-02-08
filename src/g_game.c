@@ -2304,10 +2304,17 @@ void G_PlayerReborn(INT32 player)
 	{
 		if (mapmusflags & MUSIC_RELOADRESET)
 		{
-			strncpy(mapmusname, mapheaderinfo[gamemap-1]->musname, 7);
-			mapmusname[6] = 0;
-			mapmusflags = (mapheaderinfo[gamemap-1]->mustrack & MUSIC_TRACKMASK);
-			mapmusposition = mapheaderinfo[gamemap-1]->muspos;
+			if (keepmusic)
+			{
+				S_CopyKeepMusicStuff();
+			}
+			else
+			{
+				strncpy(mapmusname, mapheaderinfo[gamemap-1]->musname, 7);
+				mapmusname[6] = 0;
+				mapmusflags = (mapheaderinfo[gamemap-1]->mustrack & MUSIC_TRACKMASK);
+				mapmusposition = mapheaderinfo[gamemap-1]->muspos;
+			}
 			mapmusresume = 0;
 			songcredit = true;
 		}

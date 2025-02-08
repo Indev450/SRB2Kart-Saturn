@@ -1827,8 +1827,6 @@ void S_StopMusic(void)
 
 	mapmusresume = (cv_birdmusic.value && (strcasecmp(music_name, mapmusname) == 0)) ? I_GetSongPosition() : 0;
 
-	S_SetKeepMusicPosition();
-
 	if (I_SongPaused())
 		I_ResumeSong();
 
@@ -1999,12 +1997,25 @@ static void S_ClearKeepMusicPosition(void)
 	keepmusposition = 0;
 }
 
+void S_CopyKeepMusicStuff(void)
+{
+	CONS_Printf("using %s\n", keepmusname);
+	strncpy(mapmusname, keepmusname, 7);
+	mapmusflags = keepmusflags;
+	if (keepmusicresume)
+		mapmusposition = keepmusposition;
+	else
+		mapmusposition = mapheaderinfo[gamemap-1]->muspos;
+}
+
 // determine if we should keep the music on a map restart
 void S_KeepMusic(void)
 {
 	static INT16 oldmap = 0;
 	static boolean oldencore = false;
 	const boolean musicchanged = S_CheckMusicException();
+
+	S_SetKeepMusicPosition();
 
 	if (!cv_keepmusic.value)
 	{
@@ -2034,12 +2045,9 @@ void S_InitMapMusic(void)
 {
 	if (mapmusflags & MUSIC_RELOADRESET)
 	{
-		if (keepmusic && keepmusicresume)
+		if (keepmusic)
 		{
-			CONS_Printf("using %s\n", keepmusname);
-			strncpy(mapmusname, keepmusname, 7);
-			mapmusflags = keepmusflags;
-			mapmusposition = keepmusposition;
+			S_CopyKeepMusicStuff();
 		}
 		else
 		{
