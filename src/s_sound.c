@@ -120,7 +120,7 @@ consvar_t cv_skipintromusic = {"skipintromusic", "No", CV_SAVE, CV_YesNo, NULL, 
 boolean keepmapmusic = false; // keep the current music on map restart
 boolean skipintromus = false; // skip the intro fanfare
 static boolean keepmusicresume = false;
-mapmusic_t keepmusic;
+static mapmusic_t keepmusic;
 static void S_SetKeepMusResume(void);
 static void S_SetKeepMusicStuff(void);
 
