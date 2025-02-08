@@ -113,6 +113,7 @@ void S_ResetKeepAndSpecialMus(void);
 
 void S_InitMapMusic(void);
 void S_StartMapMusic(void);
+void S_HandleReloadResetMusic(void);
 
 void S_KeepMusic(void);
 void S_CopyKeepMusicStuff(void);

@@ -2043,6 +2043,27 @@ void S_KeepMusic(void)
 	oldmap = gamemap;
 }
 
+void S_HandleReloadResetMusic(void)
+{
+	if (!(mapmusflags & MUSIC_RELOADRESET))
+		return;
+
+	if (keepmusic)
+	{
+		// this is horrible, this copies over everything about the mapmusic into temporary variables to reuse
+		S_CopyKeepMusicStuff();
+	}
+	else
+	{
+		strncpy(mapmusname, mapheaderinfo[gamemap-1]->musname, 7);
+		mapmusname[6] = 0;
+		mapmusflags = (mapheaderinfo[gamemap-1]->mustrack & MUSIC_TRACKMASK);
+		mapmusposition = mapheaderinfo[gamemap-1]->muspos;
+	}
+
+	mapmusresume = 0;
+}
+
 //
 // Per level startup code.
 // Kills playing sounds at start of level,
@@ -2050,22 +2071,7 @@ void S_KeepMusic(void)
 //
 void S_InitMapMusic(void)
 {
-	if (mapmusflags & MUSIC_RELOADRESET)
-	{
-		if (keepmusic)
-		{
-			S_CopyKeepMusicStuff();
-		}
-		else
-		{
-			strncpy(mapmusname, mapheaderinfo[gamemap-1]->musname, 7);
-			mapmusname[6] = 0;
-			mapmusflags = (mapheaderinfo[gamemap-1]->mustrack & MUSIC_TRACKMASK);
-			mapmusposition = mapheaderinfo[gamemap-1]->muspos;
-		}
-
-		mapmusresume = 0;
-	}
+	S_HandleReloadResetMusic();
 
 	if (keepmusic)
 	{
