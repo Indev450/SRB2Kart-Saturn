@@ -346,7 +346,7 @@ static void write_backtrace(bt_crash_reason_t reason)
 	fprintf(out, "Program name: %s %s\n", SRB2APPLICATION, VERSIONSTRING);
 
 	if (compdate && comptime && comprevision && compbranch)
-	fprintf(out, "Compiled: %s %s, commit %s, branch %s\n", compdate, comptime, comprevision, compbranch);
+		fprintf(out, "Compiled: %s %s, commit %s, branch %s\n", compdate, comptime, comprevision, compbranch);
 
 	if (gamestate == GS_LEVEL)
 	{
@@ -1343,8 +1343,6 @@ void I_InitJoystick(UINT8 index)
 
 	SDL_SetHint(SDL_HINT_AUTO_UPDATE_SENSORS, "0");
 
-	//I_ShutdownJoystick();
-	//SDL_SetHintWithPriority("SDL_XINPUT_ENABLED", "0", SDL_HINT_OVERRIDE);
 	if (M_CheckParm("-nojoy"))
 		return;
 
@@ -1372,6 +1370,11 @@ void I_InitJoystick(UINT8 index)
 			return;
 		}
 	}
+
+	JoyInfo[index].dev = NULL;
+	JoyInfo[index].oldjoy = -1;
+	JoyInfo[index].id = -1;
+	JoyInfo[index].axises = JoyInfo[index].buttons = JoyInfo[index].hats = JoyInfo[index].balls = 0;
 
 	if (cv_usejoystick[index].value)
 		newcontroller = SDL_GameControllerOpen(cv_usejoystick[index].value-1);
