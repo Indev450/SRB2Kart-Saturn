@@ -1017,7 +1017,7 @@ static void Impl_HandleControllerAxisEvent(SDL_ControllerAxisEvent evt)
 	// Determine the Joystick IDs for each current open joystick
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
-		joyid[i] = SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(JoyInfo[i].dev));
+		joyid[i] = JoyInfo[i].id;
 	}
 
 	event.data1 = event.data2 = event.data3 = INT32_MAX;
@@ -1087,7 +1087,7 @@ static void Impl_HandleControllerButtonEvent(SDL_ControllerButtonEvent evt, Uint
 	// Determine the Joystick IDs for each current open joystick
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
-		joyid[i] = SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(JoyInfo[i].dev));
+		joyid[i] = JoyInfo[i].id;
 	}
 
 	if (evt.button == SDL_CONTROLLER_BUTTON_DPAD_UP
