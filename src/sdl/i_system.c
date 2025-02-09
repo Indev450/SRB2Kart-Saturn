@@ -412,6 +412,7 @@ static void JoyReset(SDLJoyInfo_t *JoySet)
 	}
 	JoySet->dev = NULL;
 	JoySet->oldjoy = -1;
+	JoySet->id = -1;
 	JoySet->axises = JoySet->buttons = JoySet->hats = JoySet->balls = 0;
 	//JoySet->scale
 }
