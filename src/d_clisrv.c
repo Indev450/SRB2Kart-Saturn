@@ -6700,7 +6700,8 @@ static void UpdatePingTable(void)
 
 		simulated_lag = lowest_lag;
 
-		lowest_lag += (tic_t)cv_netticbuffer.value; // account for netticbufffer
+		if (lowest_lag != 0)
+			lowest_lag += (tic_t)cv_netticbuffer.value; // account for netticbufffer
 
 		pingmeasurecount++;
 	}
@@ -6718,7 +6719,8 @@ static void UpdatePingTable(void)
 
 		simulated_lag = lowest_lag;
 
-		lowest_lag += (tic_t)cv_netticbuffer.value; // account for netticbufffer
+		if (lowest_lag != 0)
+			lowest_lag += (tic_t)cv_netticbuffer.value; // account for netticbufffer
 	}
 }
 
