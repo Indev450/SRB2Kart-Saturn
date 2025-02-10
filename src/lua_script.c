@@ -605,6 +605,8 @@ void LUA_InvalidateLevel(void)
 {
 	thinker_t *th;
 	size_t i;
+	ffloor_t *rover = NULL;
+
 	if (!gL)
 		return;
 
@@ -616,32 +618,55 @@ void LUA_InvalidateLevel(void)
 	for (i = 0; i < numsubsectors; i++)
 		LUA_InvalidateUserdata(&subsectors[i]);
 	for (i = 0; i < numsectors; i++)
+	{
 		LUA_InvalidateUserdata(&sectors[i]);
+		LUA_InvalidateUserdata(&sectors[i].lines);
+
+		if (sectors[i].ffloors)
+		{
+			for (rover = sectors[i].ffloors; rover; rover = rover->next)
+				LUA_InvalidateUserdata(rover);
+		}
+	}
+
 	for (i = 0; i < numlines; i++)
 	{
 		LUA_InvalidateUserdata(&lines[i]);
 		LUA_InvalidateUserdata(lines[i].sidenum);
 	}
+
 	for (i = 0; i < numsides; i++)
 		LUA_InvalidateUserdata(&sides[i]);
 	for (i = 0; i < numvertexes; i++)
 		LUA_InvalidateUserdata(&vertexes[i]);
+
+	for (pslope_t *slope = slopelist; slope; slope = slope->next)
+	{
+		LUA_InvalidateUserdata(slope);
+		LUA_InvalidateUserdata(&slope->normal);
+		LUA_InvalidateUserdata(&slope->o);
+		LUA_InvalidateUserdata(&slope->d);
+	}
 }
 
 void LUA_InvalidateMapthings(void)
 {
 	size_t i;
+
 	if (!gL)
 		return;
 
 	for (i = 0; i < nummapthings; i++)
+	{
 		LUA_InvalidateUserdata(&mapthings[i]);
+	}
 }
 
 void LUA_InvalidatePlayer(player_t *player)
 {
 	if (!gL)
 		return;
+
 	LUA_InvalidateUserdata(player);
 	LUA_InvalidateUserdata(player->powers);
 	LUA_InvalidateUserdata(player->kartstuff);
@@ -687,7 +712,7 @@ static const struct {
 	{META_SUBSECTOR,ARCH_SUBSECTOR},
 	{META_SECTOR,   ARCH_SECTOR},
 	{META_SLOPE,    ARCH_SLOPE},
-	{META_MAPHEADER,   ARCH_MAPHEADER},
+	{META_MAPHEADER,ARCH_MAPHEADER},
 	{NULL,          ARCH_NULL}
 };
 

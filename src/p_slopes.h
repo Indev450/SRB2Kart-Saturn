@@ -33,6 +33,8 @@ void P_CopySectorSlope(line_t *line);
 
 pslope_t *P_SlopeById(UINT16 id);
 
+extern pslope_t *slopelist;
+
 //
 // P_GetZAt
 //
