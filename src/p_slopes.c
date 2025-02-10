@@ -24,7 +24,7 @@
 #include "w_wad.h"
 
 
-static pslope_t *slopelist = NULL;
+pslope_t *slopelist = NULL;
 static UINT16 slopecount = 0;
 
 // Calculate light
