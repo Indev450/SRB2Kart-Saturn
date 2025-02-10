@@ -6713,11 +6713,12 @@ static void UpdatePingTable(void)
 		tic_t mydelay = playerpingtable[consoleplayer];
 
 		if (mydelay < (tic_t)cv_mindelay.value)
+		{
 			lowest_lag = ((tic_t)cv_mindelay.value - mydelay);
+			simulated_lag = (tic_t)cv_mindelay.value;
+		}
 		else
-			lowest_lag = 0;
-
-		simulated_lag = lowest_lag;
+			lowest_lag = simulated_lag = 0;
 
 		if (lowest_lag != 0)
 			lowest_lag += (tic_t)cv_netticbuffer.value; // account for netticbufffer
