@@ -2417,11 +2417,11 @@ void HU_drawPlayerPing(INT32 x, INT32 y, INT32 pnum, INT32 flags)
 	SINT8 yoffset = 6;
 
 	UINT32 lag = playerpingtable[pnum];
-	const boolean gentleman = ((cv_mindelay.value && (lag < (tic_t)cv_mindelay.value) && P_IsLocalPlayer(&players[pnum])) || (pnum == serverplayer && lowest_lag != 0)); // for serverplayer lowest_lag actually reflects mindelay
+	const boolean gentleman = (cv_mindelay.value && (lag < (tic_t)simulated_lag));
 
 	if (gentleman)
 	{
-		lag = (pnum == serverplayer) ? lowest_lag : (tic_t)cv_mindelay.value;
+		lag = simulated_lag;
 	}
 
 	if (cv_pingstyle.value == 0) // kart
@@ -2482,6 +2482,7 @@ void HU_drawPlayerPing(INT32 x, INT32 y, INT32 pnum, INT32 flags)
 			if (gentleman)
 			{
 				barcolor = 194; // make it purplish
+				// bars get indirectly set earlier
 			}
 
 			for (i = 0; (i < 3); i++) // Draw the ping bar
