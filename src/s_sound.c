@@ -119,7 +119,7 @@ consvar_t cv_skipintromusic = {"skipintromusic", "No", CV_SAVE, CV_YesNo, NULL, 
 
 boolean keepmapmusic = false; // keep the current music on map restart
 boolean skipintromus = false; // skip the intro fanfare
-static boolean keepmusicresume = false;
+static boolean resumekeepmusic = false;
 static music_t keepmusic;
 static void S_SetKeepMusResume(void);
 static void S_SetKeepMusicStuff(void);
@@ -1949,6 +1949,7 @@ static boolean S_CheckMusicException(void)
 	if (stricmp(music.name, mapmusic.name))
 		return true;
 
+	// in case somehow the mapmusic was replaced with smth we dont want to keep
 	for (size_t i = 0; i < sizeof(musicexception_list)/sizeof(musicexception_list[0]); i++)
 	{
 		if (!stricmp(music.name, musicexception_list[i]) || !stricmp(checkmusic, musicexception_list[i]))
@@ -1965,6 +1966,8 @@ void S_ResetKeepAndSpecialMus(void)
 	keepmapmusic = skipintromus = false;
 }
 
+// saves the current song position everytime a song stops
+// so we can resume it in some cases
 static void S_SetKeepMusResume(void)
 {
 	keepmusic.resume = 0;
@@ -1975,7 +1978,7 @@ static void S_SetKeepMusResume(void)
 	}
 }
 
-// save some values
+// copy over all the mapmusic stuff into temporary vars
 static void S_SetKeepMusicStuff(void)
 {
 	if (!cv_keepmusic.value)
@@ -1994,6 +1997,7 @@ static void S_SetKeepMusicStuff(void)
 	keepmusic.position = mapmusic.position;
 }
 
+// replace mapmusic with our saved keepmusic stuff
 static void S_CopyKeepMusicStuff(void)
 {
 	if (!cv_keepmusic.value)
@@ -2008,12 +2012,13 @@ static void S_CopyKeepMusicStuff(void)
 }
 
 // determine if we should keep the music on a map restart
+// this gets called BEFORE the level gets loaded in G_DoLoadLevel
 void S_KeepMusic(void)
 {
 	static INT16 oldmap = -1;
 	static boolean oldencore = false;
 
-	keepmapmusic = keepmusicresume = false;
+	keepmapmusic = resumekeepmusic = false;
 
 	if (!cv_keepmusic.value)
 	{
@@ -2026,14 +2031,16 @@ void S_KeepMusic(void)
 	{
 		const boolean musicchanged = S_CheckMusicException();
 
-		keepmusicresume = (musicchanged && keepmusic.resume);
-		keepmapmusic = (!musicchanged || keepmusicresume);
+		resumekeepmusic = (musicchanged && keepmusic.resume);
+		keepmapmusic = (!musicchanged || resumekeepmusic);
 	}
 
 	oldencore = encoremode;
 	oldmap = gamemap;
 }
 
+// Sets up the map music in case it should be reloaded
+// Special case for keep music
 void S_HandleReloadResetMusic(void)
 {
 	if (!(mapmusic.flags & MUSIC_RELOADRESET))
@@ -2041,7 +2048,7 @@ void S_HandleReloadResetMusic(void)
 
 	if (keepmapmusic)
 	{
-		// this is horrible, this copies over everything about the mapmusic into temporary variables to reuse
+		// this is horrible, but oh well
 		S_CopyKeepMusicStuff();
 	}
 	else
@@ -2053,6 +2060,24 @@ void S_HandleReloadResetMusic(void)
 	}
 
 	mapmusic.resume = 0;
+}
+
+static boolean S_SkipIntroMusic(void)
+{
+	boolean skip = cv_skipintromusic.value;
+
+	if (!skip)
+		return false;
+
+	char *maptitle = G_BuildMapTitle(gamemap); // Zzz...
+
+	// check if menu music is playing, otherwise it may continue playing
+	if (!stricmp(music.name, "titles") || (maptitle && (!stricmp(maptitle, "Wandering Falls")))) // wandering balls changes its song when the race starts Zzz...
+		skip = false;
+
+	Z_Free(maptitle);
+
+	return skip;
 }
 
 //
@@ -2067,7 +2092,7 @@ void S_InitMapMusic(void)
 	if (keepmapmusic)
 	{
 		// this is kinda silly, but we can use it to fade back into the map song at the saved point, should the current music be different from the map music
-		if (keepmusicresume)
+		if (resumekeepmusic)
 			S_ChangeMusicEx(mapmusic.name, mapmusic.flags, true, keepmusic.resume, 0, 500);
 		return;
 	}
@@ -2076,24 +2101,13 @@ void S_InitMapMusic(void)
 	// lug: but not when we keep the map music lol
 	S_StopMusic();
 
-	if (cv_skipintromusic.value)
-	{
-		char *maptitle = G_BuildMapTitle(gamemap);
-		// for some reason, occasionally the title screen music doesent seem to be reset in time, so skipping the intro may make it just continue playing it instead, weird..
-		skipintromus = true;
-		if (!stricmp(music.name, "titles") || (maptitle && (!stricmp(maptitle, "Wandering Falls")))) // thanks diggle!
-			skipintromus = false;
-
-		if (maptitle)
-			Z_Free(maptitle);
-	}
+	skipintromus = S_SkipIntroMusic();
 
 	if (skipintromus)
 		return;
 
 	if (leveltime < MUSICSTARTTIME) // SRB2Kart
 		S_ChangeMusicInternal((encoremode ? "estart" : "kstart"), false); //S_StopMusic();
-	//S_ChangeMusicEx((encoremode ? "estart" : "kstart"), 0, false, mapmusic.position, 0, 0);
 }
 
 void S_StartMapMusic(void)
@@ -2109,8 +2123,9 @@ void S_StartMapMusic(void)
 	{
 		if (leveltime < starttime)
 			S_ChangeMusicEx(mapmusic.name, mapmusic.flags, true, mapmusic.position, 0, 0);
-		if (leveltime == MUSICSTARTTIME)
+		else if (leveltime == MUSICSTARTTIME)
 			S_ShowMusicCredit();
+
 		return;
 	}
 
