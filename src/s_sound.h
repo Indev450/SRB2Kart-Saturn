@@ -116,7 +116,6 @@ void S_StartMapMusic(void);
 void S_HandleReloadResetMusic(void);
 
 void S_KeepMusic(void);
-void S_CopyKeepMusicStuff(void);
 
 // Stops music and restarts it from same position. Used for instant applying changes to amiga filters.
 void S_RestartMusic(void);

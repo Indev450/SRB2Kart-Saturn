@@ -85,7 +85,7 @@ static void G_DoStartVote(void);
 
 static void G_ResetDemoPlayback(char *pdemoname);
 
-mapmusic_t mapmusic;
+music_t mapmusic;
 
 INT16 gamemap = 1;
 INT16 maptol;

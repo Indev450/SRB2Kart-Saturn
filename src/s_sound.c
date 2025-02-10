@@ -120,7 +120,7 @@ consvar_t cv_skipintromusic = {"skipintromusic", "No", CV_SAVE, CV_YesNo, NULL, 
 boolean keepmapmusic = false; // keep the current music on map restart
 boolean skipintromus = false; // skip the intro fanfare
 static boolean keepmusicresume = false;
-static mapmusic_t keepmusic;
+static music_t keepmusic;
 static void S_SetKeepMusResume(void);
 static void S_SetKeepMusicStuff(void);
 
@@ -1195,17 +1195,10 @@ const char *compat_special_music_slots[16] =
 };
 #endif
 
-static char      music_name[7]; // up to 6-character name
-static void      *music_data;
-static UINT16    music_flags;
-static boolean   music_looping;
-static consvar_t *music_refade_cv;
+static music_t music;
+static music_t queue;
 
-static char      queue_name[7];
-static UINT16    queue_flags;
-static boolean   queue_looping;
-static UINT32    queue_position;
-static UINT32    queue_fadeinms;
+static consvar_t *music_refade_cv;
 
 /// ------------------------
 /// Music Definitions
@@ -1477,7 +1470,7 @@ void S_ShowSpecifiedMusicCredit(const char *musname)
 //
 void S_ShowMusicCredit(void)
 {
-	S_ShowSpecifiedMusicCredit(music_name);
+	S_ShowSpecifiedMusicCredit(music.name);
 }
 
 musicdef_t **soundtestdefs = NULL;
@@ -1556,7 +1549,7 @@ musictype_t S_MusicType(void)
 
 const char *S_MusicName(void)
 {
-	return music_name;
+	return music.name;
 }
 
 boolean S_MusicInfo(char *mname, UINT16 *mflags, boolean *looping)
@@ -1564,10 +1557,10 @@ boolean S_MusicInfo(char *mname, UINT16 *mflags, boolean *looping)
 	if (!I_SongPlaying())
 		return false;
 
-	strncpy(mname, music_name, 7);
+	strncpy(mname, music.name, 7);
 	mname[6] = 0;
-	*mflags = music_flags;
-	*looping = music_looping;
+	*mflags = music.flags;
+	*looping = music.looping;
 
 	return (boolean)mname[0];
 }
@@ -1657,9 +1650,9 @@ static boolean S_LoadMusic(const char *mname)
 
 	if (I_LoadSong(mdata, W_LumpLength(mlumpnum)))
 	{
-		strncpy(music_name, mname, 7);
-		music_name[6] = 0;
-		music_data = mdata;
+		strncpy(music.name, mname, 7);
+		music.name[6] = 0;
+		music.data = mdata;
 		return true;
 	}
 	else
@@ -1671,13 +1664,13 @@ static void S_UnloadMusic(void)
 	I_UnloadSong();
 
 #ifndef HAVE_SDL //SDL uses RWOPS
-	Z_ChangeTag(music_data, PU_CACHE);
+	Z_ChangeTag(music.data, PU_CACHE);
 #endif
-	music_data = NULL;
+	music.data = NULL;
 
-	music_name[0] = 0;
-	music_flags = 0;
-	music_looping = false;
+	music.name[0] = 0;
+	music.flags = 0;
+	music.looping = false;
 
 	music_refade_cv = 0;
 }
@@ -1706,21 +1699,21 @@ static boolean S_PlayMusic(boolean looping, UINT32 fadeinms)
 
 static void S_QueueMusic(const char *mmusic, UINT16 mflags, boolean looping, UINT32 position, UINT32 fadeinms)
 {
-	strncpy(queue_name, mmusic, 7);
-	queue_flags = mflags;
-	queue_looping = looping;
-	queue_position = position;
-	queue_fadeinms = fadeinms;
+	strncpy(queue.name, mmusic, 7);
+	queue.flags = mflags;
+	queue.looping = looping;
+	queue.position = position;
+	queue.fadeinms = fadeinms;
 }
 
 static void S_ClearQueue(void)
 {
-	queue_name[0] = queue_flags = queue_looping = queue_position = queue_fadeinms = 0;
+	queue.name[0] = queue.flags = queue.looping = queue.position = queue.fadeinms = 0;
 }
 
 static void S_ChangeMusicToQueue(void)
 {
-	S_ChangeMusicEx(queue_name, queue_flags, queue_looping, queue_position, 0, queue_fadeinms);
+	S_ChangeMusicEx(queue.name, queue.flags, queue.looping, queue.position, 0, queue.fadeinms);
 	S_ClearQueue();
 }
 
@@ -1749,7 +1742,7 @@ void S_ChangeMusicEx(const char *mmusic, UINT16 mflags, boolean looping, UINT32 
 	strncpy(newmusic, mmusic, 6);
 	strncpy(checkmusic, mmusic, 6);
 
-	if (LUA_HookMusicChange(music_name, &hook_param))
+	if (LUA_HookMusicChange(music.name, &hook_param))
 		return;
 
  	// No Music (empty string)
@@ -1766,12 +1759,12 @@ void S_ChangeMusicEx(const char *mmusic, UINT16 mflags, boolean looping, UINT32 
 
 	if (prefadems && S_MusicPlaying()) // queue music change for after fade // allow even if the music is the same
 	{
-		CONS_Debug(DBG_DETAILED, "Now fading out song %s\n", music_name);
+		CONS_Debug(DBG_DETAILED, "Now fading out song %s\n", music.name);
 		S_QueueMusic(newmusic, mflags, looping, position, fadeinms);
 		I_FadeSong(0, prefadems, S_ChangeMusicToQueue);
 		return;
 	}
-	else if (strnicmp(music_name, newmusic, 6) || (mflags & MUSIC_FORCERESET))
+	else if (strnicmp(music.name, newmusic, 6) || (mflags & MUSIC_FORCERESET))
  	{
 		CONS_Debug(DBG_DETAILED, "Now playing song %s\n", newmusic);
 
@@ -1783,8 +1776,8 @@ void S_ChangeMusicEx(const char *mmusic, UINT16 mflags, boolean looping, UINT32 
 			return;
 		}
 
-		music_flags = mflags;
-		music_looping = looping;
+		music.flags = mflags;
+		music.looping = looping;
 
 		if (!S_PlayMusic(looping, fadeinms))
  		{
@@ -1824,7 +1817,7 @@ void S_StopMusic(void)
 		|| demo.title) // SRB2Kart: Demos don't interrupt title screen music
 		return;
 
-	mapmusic.resume = (cv_birdmusic.value && (strcasecmp(music_name, mapmusic.name) == 0)) ? I_GetSongPosition() : 0;
+	mapmusic.resume = (cv_birdmusic.value && (strcasecmp(music.name, mapmusic.name) == 0)) ? I_GetSongPosition() : 0;
 
 	S_SetKeepMusResume();
 
@@ -1953,12 +1946,12 @@ static const char *musicexception_list[] = {
 // check if the current music is smth we dont want to keep (vote music, etc)
 static boolean S_CheckMusicException(void)
 {
-	if (stricmp(music_name, mapmusic.name))
+	if (stricmp(music.name, mapmusic.name))
 		return true;
 
 	for (size_t i = 0; i < sizeof(musicexception_list)/sizeof(musicexception_list[0]); i++)
 	{
-		if (!stricmp(music_name, musicexception_list[i]) || !stricmp(checkmusic, musicexception_list[i]))
+		if (!stricmp(music.name, musicexception_list[i]) || !stricmp(checkmusic, musicexception_list[i]))
 		{
 			return true;
 		}
@@ -1976,7 +1969,7 @@ static void S_SetKeepMusResume(void)
 {
 	keepmusic.resume = 0;
 
-	if (strcasecmp(music_name, mapmusic.name) == 0)
+	if (strcasecmp(music.name, mapmusic.name) == 0)
 	{
 		keepmusic.resume = I_GetSongPosition();
 	}
@@ -2088,7 +2081,7 @@ void S_InitMapMusic(void)
 		char *maptitle = G_BuildMapTitle(gamemap);
 		// for some reason, occasionally the title screen music doesent seem to be reset in time, so skipping the intro may make it just continue playing it instead, weird..
 		skipintromus = true;
-		if (!stricmp(music_name, "titles") || (maptitle && (!stricmp(maptitle, "Wandering Falls")))) // thanks diggle!
+		if (!stricmp(music.name, "titles") || (maptitle && (!stricmp(maptitle, "Wandering Falls")))) // thanks diggle!
 			skipintromus = false;
 
 		if (maptitle)
@@ -2265,7 +2258,7 @@ static void Command_RestartMusic_f(void) //same as RestartAudio but only music g
 
 static void Command_ShowMusicCredit_f(void)
 {
-	const char *musname = music_name;
+	const char *musname = music.name;
 
 	if (COM_Argc() > 1)
 	{
