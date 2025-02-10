@@ -1440,7 +1440,7 @@ void I_FinishUpdate(void)
 		if (cv_ticrate.value)
 			SCR_DisplayTicRate();
 
-		if (cv_showping.value && ((netgame && consoleplayer != serverplayer) || ((cv_mindelay.value || (!server_lagless && lowest_lag != 0)) && consoleplayer == serverplayer && Playing())))
+		if (cv_showping.value && ((netgame && consoleplayer != serverplayer) || (simulated_lag != 0 && consoleplayer == serverplayer && Playing())))
 			SCR_DisplayLocalPing();
 	}
 

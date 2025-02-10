@@ -108,6 +108,7 @@ UINT32 playerpingtable[MAXPLAYERS]; //table of player latency values.
 static tic_t reference_lag;
 static UINT8 spike_time;
 tic_t lowest_lag;
+tic_t simulated_lag; // just for ping readout without netticbuffer added
 boolean server_lagless;
 
 static void Lagless_OnChange(void)
@@ -6697,6 +6698,10 @@ static void UpdatePingTable(void)
 		if (lowest_lag < (tic_t)cv_mindelay.value)
 			lowest_lag = (tic_t)cv_mindelay.value;
 
+		simulated_lag = lowest_lag;
+
+		lowest_lag += (tic_t)cv_netticbuffer.value; // account for netticbufffer
+
 		pingmeasurecount++;
 	}
 	else // We're a client, handle mindelay on the way out.
@@ -6707,9 +6712,13 @@ static void UpdatePingTable(void)
 		tic_t mydelay = playerpingtable[consoleplayer];
 
 		if (mydelay < (tic_t)cv_mindelay.value)
-			lowest_lag = cv_mindelay.value - mydelay;
+			lowest_lag = ((tic_t)cv_mindelay.value - mydelay);
 		else
 			lowest_lag = 0;
+
+		simulated_lag = lowest_lag;
+
+		lowest_lag += (tic_t)cv_netticbuffer.value; // account for netticbufffer
 	}
 }
 
