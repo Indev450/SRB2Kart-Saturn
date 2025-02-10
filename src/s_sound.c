@@ -1971,6 +1971,8 @@ void S_ResetKeepAndSpecialMus(void)
 
 static void S_SetKeepMusResume(void)
 {
+	keepmusic.resume = 0;
+
 	if (strcasecmp(music_name, mapmusic.name) == 0)
 	{
 		keepmusic.resume = I_GetSongPosition();
@@ -1985,21 +1987,19 @@ static void S_SetKeepMusicStuff(void)
 		return;
 	}
 
+	// always reset stuff just in case
+	memset(keepmusic.name, 0, sizeof(keepmusic.name));
+	keepmusic.flags = 0;
+	keepmusic.position = 0;
+
 	strncpy(keepmusic.name, mapmusic.name, 7);
 	CONS_Printf("saved %s\n", keepmusic.name);
+
 	keepmusic.flags = mapmusic.flags;
 	keepmusic.position = mapmusic.position;
 }
 
-static void S_ClearKeepMusicPosition(void)
-{
-	memset(keepmusic.name, 0, sizeof(keepmusic.name));
-	keepmusic.resume = 0;
-	keepmusic.flags = 0;
-	keepmusic.position = 0;
-}
-
-void S_CopyKeepMusicStuff(void)
+static void S_CopyKeepMusicStuff(void)
 {
 	if (!cv_keepmusic.value)
 	{
@@ -2007,6 +2007,7 @@ void S_CopyKeepMusicStuff(void)
 	}
 
 	CONS_Printf("using %s\n", keepmusic.name);
+
 	strncpy(mapmusic.name, keepmusic.name, 7);
 	mapmusic.flags = keepmusic.flags;
 	mapmusic.position = keepmusic.position;
@@ -2015,25 +2016,24 @@ void S_CopyKeepMusicStuff(void)
 // determine if we should keep the music on a map restart
 void S_KeepMusic(void)
 {
-	static INT16 oldmap = 0;
+	static INT16 oldmap = -1;
 	static boolean oldencore = false;
-	const boolean musicchanged = S_CheckMusicException();
 
-	S_SetKeepMusicStuff();
+	keepmapmusic = keepmusicresume = false;
 
 	if (!cv_keepmusic.value)
 	{
-		keepmapmusic = keepmusicresume = false;
+		return;
 	}
-	else if (oldmap == gamemap && oldencore == encoremode)
+
+	S_SetKeepMusicStuff();
+
+	if (oldmap == gamemap && oldencore == encoremode)
 	{
+		const boolean musicchanged = S_CheckMusicException();
+
 		keepmusicresume = (musicchanged && keepmusic.resume);
 		keepmapmusic = (!musicchanged || keepmusicresume);
-	}
-	else
-	{
-		keepmapmusic = keepmusicresume = false;
-		S_ClearKeepMusicPosition();
 	}
 
 	oldencore = encoremode;
