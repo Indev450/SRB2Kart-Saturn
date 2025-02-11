@@ -6706,9 +6706,6 @@ static void UpdatePingTable(void)
 
 		simulated_lag = lowest_lag;
 
-		if (lowest_lag != 0)
-			lowest_lag += (tic_t)cv_netticbuffer.value; // account for netticbufffer
-
 		pingmeasurecount++;
 	}
 	else // We're a client, handle mindelay on the way out.
@@ -6725,9 +6722,6 @@ static void UpdatePingTable(void)
 		}
 		else
 			lowest_lag = simulated_lag = 0;
-
-		if (lowest_lag != 0)
-			lowest_lag += (tic_t)cv_netticbuffer.value; // account for netticbufffer
 	}
 }
 
