@@ -1056,8 +1056,7 @@ UINT16 W_CheckNumForLongNamePwad(const char *name, UINT16 wad, UINT16 startlump)
 	return INT16_MAX;
 }
 
-UINT16
-W_CheckNumForMarkerStartPwad (const char *name, UINT16 wad, UINT16 startlump)
+UINT16 W_CheckNumForMarkerStartPwad (const char *name, UINT16 wad, UINT16 startlump)
 {
 	UINT16 marker;
 	marker = W_CheckNumForNamePwad(name, wad, startlump);
