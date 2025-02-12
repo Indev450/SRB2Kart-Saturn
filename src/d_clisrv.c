@@ -108,6 +108,7 @@ UINT32 playerpingtable[MAXPLAYERS]; //table of player latency values.
 static tic_t reference_lag;
 static UINT8 spike_time;
 tic_t lowest_lag;
+tic_t simulated_lag; // just for ping readout without netticbuffer added
 boolean server_lagless;
 
 static void Lagless_OnChange(void)
@@ -6306,8 +6307,8 @@ static void Local_Maketic(INT32 realtics)
 	                   // game responder calls HU_Responder, AM_Responder, F_Responder,
 	                   // and G_MapEventsToControls
 	if (!dedicated) rendergametic = gametic;
-	// translate inputs (keyboard/mouse/joystick) into game controls
 
+	// translate inputs (keyboard/mouse/joystick) into game controls
 	for (i = 0; i <= splitscreen; i++)
 	{
 		CreateNewLocalCMD(i, realtics);
@@ -6633,6 +6634,8 @@ static void UpdatePingTable(void)
 		if (lowest_lag < (tic_t)cv_mindelay.value)
 			lowest_lag = (tic_t)cv_mindelay.value;
 
+		simulated_lag = lowest_lag;
+
 		pingmeasurecount++;
 	}
 	else // We're a client, handle mindelay on the way out.
@@ -6643,9 +6646,12 @@ static void UpdatePingTable(void)
 		tic_t mydelay = playerpingtable[consoleplayer];
 
 		if (mydelay < (tic_t)cv_mindelay.value)
-			lowest_lag = cv_mindelay.value - mydelay;
+		{
+			lowest_lag = ((tic_t)cv_mindelay.value - mydelay);
+			simulated_lag = (tic_t)cv_mindelay.value;
+		}
 		else
-			lowest_lag = 0;
+			lowest_lag = simulated_lag = 0;
 	}
 }
 

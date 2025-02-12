@@ -1198,7 +1198,7 @@ void HU_Ticker(void)
 		|| hu_redownloadinggamestate
 #endif
 		)
-		resynch_ticker++;	//tic tic tic tic tic	
+		resynch_ticker++;	//tic tic tic tic tic
 
 	HU_TickSongCredits();
 }
@@ -2289,22 +2289,6 @@ void HU_Drawer(void)
 	if (gamestate != GS_LEVEL)
 		return;
 
-	// draw the crosshair, not when viewing demos nor with chasecam
-	/*if (!automapactive && !demo.playback)
-	{
-		if (cv_crosshair.value && !camera[0].chase && !players[displayplayers[0]].spectator)
-			HU_DrawCrosshair();
-
-		if (cv_crosshair2.value && !camera[1].chase && !players[displayplayers[1]].spectator)
-			HU_DrawCrosshair2();
-
-		if (cv_crosshair3.value && !camera[2].chase && !players[displayplayers[2]].spectator)
-			HU_DrawCrosshair3();
-
-		if (cv_crosshair4.value && !camera[3].chase && !players[displayplayers[3]].spectator)
-			HU_DrawCrosshair4();
-	}*/
-
 	// draw song credits
 	if (cv_songcredits.value)
 		HU_DrawSongCredits();
@@ -2461,14 +2445,13 @@ void HU_drawPlayerPing(INT32 x, INT32 y, INT32 pnum, INT32 flags)
 	UINT8 barcolor = 31; // color we use for the bars (green, yellow, red or black)
 	SINT8 i = 0;
 	SINT8 yoffset = 6;
-	//INT32 dx;
 
 	UINT32 lag = playerpingtable[pnum];
-	const boolean gentleman = ((cv_mindelay.value && (lag < (tic_t)cv_mindelay.value) && P_IsLocalPlayer(&players[pnum])) || (pnum == serverplayer && lowest_lag != 0)); // for serverplayer lowest_lag actually reflects mindelay
+	const boolean gentleman = (cv_mindelay.value && (lag < (tic_t)simulated_lag));
 
 	if (gentleman)
 	{
-		lag = (pnum == serverplayer) ? lowest_lag : (tic_t)cv_mindelay.value;
+		lag = simulated_lag;
 	}
 
 	if (cv_pingstyle.value == 0) // kart
@@ -2488,6 +2471,18 @@ void HU_drawPlayerPing(INT32 x, INT32 y, INT32 pnum, INT32 flags)
 	}
 	else if (cv_pingstyle.value == 1) // old style ping
 	{
+		if (vid.width >= 640)	// how sad, we're using a shit resolution.
+		{
+			if (measureid == 1)
+			{
+				V_DrawRightAlignedSmallString(x+12, y+13, V_ALLOWLOWERCASE|flags, va("%dms", Ping_conversion(lag)));
+			}
+			else if (measureid == 0)
+			{
+				V_DrawRightAlignedSmallString(x+12, y+13, flags, va("d%d", Ping_conversion(lag)));
+			}
+		}
+
 		if (cv_pingicon.value)
 		{
 			switch (lag)
@@ -2517,23 +2512,9 @@ void HU_drawPlayerPing(INT32 x, INT32 y, INT32 pnum, INT32 flags)
 			if (gentleman)
 			{
 				barcolor = 194; // make it purplish
+				// bars get indirectly set earlier
 			}
-		}
 
-		if (vid.width >= 640)	// how sad, we're using a shit resolution.
-		{
-			if (measureid == 1)
-			{
-				V_DrawRightAlignedSmallString(x+12, y+13, V_ALLOWLOWERCASE|flags, va("%dms", Ping_conversion(lag)));
-			}
-			else if (measureid == 0)
-			{
-				V_DrawRightAlignedSmallString(x+12, y+13, flags, va("d%d", Ping_conversion(lag)));
-			}
-		}
-
-		if (cv_pingicon.value)
-		{
 			for (i = 0; (i < 3); i++) // Draw the ping bar
 			{
 				V_DrawFill(x+2 *(i-1)+7, y+8+yoffset-4, 2, 8-yoffset, 31|flags);
