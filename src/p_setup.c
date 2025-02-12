@@ -2653,7 +2653,7 @@ static boolean P_CanSave(void)
 struct minimapinfo minimapinfo;
 static void P_InitMinimapInfo(void)
 {
-	INT32 lumpnum;
+	lumpnum_t lumpnum;
 	fixed_t a;
 	fixed_t b;
 
@@ -2663,7 +2663,7 @@ static void P_InitMinimapInfo(void)
 
 	lumpnum = W_CheckNumForName(va("%sR", G_BuildMapName(gamemap)));
 
-	if (lumpnum != -1)
+	if (lumpnum != LUMPERROR)
 		minimapinfo.minimap_pic = W_CachePatchName(va("%sR", G_BuildMapName(gamemap)), PU_HUDGFX);
 
 	minimapinfo.min_x = bsp->bbox[0][BOXLEFT];
