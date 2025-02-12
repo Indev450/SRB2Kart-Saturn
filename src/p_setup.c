@@ -91,6 +91,9 @@
 //
 unsigned char mapmd5[16];
 
+// true when level was loaded from netsave
+boolean midgamejoin = false;
+
 //
 // MAP related Lookup tables.
 // Store VERTEXES, LINEDEFS, SIDEDEFS, etc.
@@ -246,8 +249,6 @@ mobj_t *P_GetClosestWaypoint(UINT8 sequence, mobj_t *mo)
 static SINT8 partadd_stage = -1;
 static boolean partadd_replacescurrentmap = false;
 static boolean partadd_important = false;
-
-SINT8 midgamejoin = 0;
 
 /** Logs an error about a map being corrupt, then terminate.
   * This allows reporting highly technical errors for usefulness, without
@@ -2590,72 +2591,8 @@ static void P_InitMinimapInfo(void)
 	minimapinfo.offs_y = FixedMul((minimapinfo.min_y + minimapinfo.map_h/2) << FRACBITS, minimapinfo.zoom);
 }
 
-/** Loads a level from a lump or external wad.
-  *
-  * \param skipprecip If true, don't spawn precipitation.
-  * \todo Clean up, refactor, split up; get rid of the bloat.
-  */
-boolean P_SetupLevel(boolean skipprecip, boolean reloadinggamestate)
+static boolean P_RunSpecialWipe(boolean reloadinggamestate)
 {
-	// use gamemap to get map number.
-	// 99% of the things already did, so.
-	// Map header should always be in place at this point
-	INT32 i, loadprecip = 1, ranspecialwipe = 0;
-	INT32 loademblems = 1;
-	INT32 fromnetsave = 0;
-	midgamejoin = 0;
-	sector_t *ss;
-	boolean chase;
-
-	levelloading = true;
-
-	// This is needed. Don't touch.
-	maptol = mapheaderinfo[gamemap-1]->typeoflevel;
-
-	CON_Drawer(); // let the user know what we are going to do
-	I_FinishUpdate(); // page flip or blit buffer
-
-	// Initialize sector node list.
-	P_Initsecnode();
-
-	if (netgame || multiplayer)
-		cv_debug = botskin = 0;
-
-	if (metalplayback)
-		G_StopMetalDemo();
-
-	// Clear CECHO messages
-	HU_ClearCEcho();
-
-	if (mapheaderinfo[gamemap-1]->runsoc[0] != '#')
-		P_RunSOC(mapheaderinfo[gamemap-1]->runsoc);
-
-	if (cv_runscripts.value && mapheaderinfo[gamemap-1]->scriptname[0] != '#')
-		P_RunLevelScript(mapheaderinfo[gamemap-1]->scriptname);
-
-	P_LevelInitStuff(reloadinggamestate);
-
-	if (mapheaderinfo[gamemap-1]->forcecharacter[0] != '\0'
-	&& atoi(mapheaderinfo[gamemap-1]->forcecharacter) != 255)
-		P_ForceCharacter(mapheaderinfo[gamemap-1]->forcecharacter);
-
-	// chasecam on in chaos, race, coop
-	// chasecam off in match, tag, capture the flag
-	chase = true; // srb2kart: always on
-
-	if (!dedicated)
-	{
-		for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
-		{
-			if (!cv_chasecam[i].changed)
-				CV_SetValue(&cv_chasecam[i], chase);
-		}
-	}
-
-	// Initial height of PointOfView
-	// will be set by player think.
-	players[consoleplayer].viewz = 1;
-
 	// Cancel all d_main.c fadeouts (keep fade in though).
 	if (reloadinggamestate)
 		wipegamestate = gamestate; // Don't fade if reloading the gamestate
@@ -2688,7 +2625,7 @@ boolean P_SetupLevel(boolean skipprecip, boolean reloadinggamestate)
 			F_RunWipe(wipedefs[wipe_speclevel_towhite], false);
 			F_RunWipe(wipedefs[wipe_level_final], false);
 		}
-		
+
 		locstarttime = nowtime = lastwipetic;
 		endtime = locstarttime + (3*TICRATE)/2;
 
@@ -2709,162 +2646,15 @@ boolean P_SetupLevel(boolean skipprecip, boolean reloadinggamestate)
 			NetKeepAlive();
 		}
 
-		ranspecialwipe = 1;
+		return true;
 	}
 
-	// Make sure all sounds are stopped before Z_FreeTags.
-	S_StopSounds();
+	return false;
+}
 
-	if (!S_PrecacheSound())
-		S_ClearSfx();
-
-	// As oddly named as this is, this handles music only.
-	// We should be fine starting it here.
-	if (!reloadinggamestate)
-		S_InitMapMusic();
-
-	levelfadecol = (encoremode && !ranspecialwipe ? 122 : 120);
-
-	// Let's fade to white here
-	// But only if we didn't do the encore startup wipe
-	if (!ranspecialwipe && !demo.rewinding && !reloadinggamestate)
-	{
-		if (rendermode != render_none)
-		{
-			F_WipeStartScreen();
-			V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, levelfadecol);
-
-			F_WipeEndScreen();
-			F_RunWipe(wipedefs[(encoremode ? wipe_level_final : wipe_level_toblack)], false);
-		}
-		else //dedicated servers
-		{
-			F_RunWipe(wipedefs[(encoremode ? wipe_level_final : wipe_level_toblack)], false);
-		}
-	}
-
-	// Reset the palette now all fades have been done
-	if (rendermode != render_none)
-		V_SetPaletteLump(GetPalette()); // Set the level palette
-
-	// Print "SPEEDING OFF TO [ZONE] [ACT 1]..."
-	/*if (rendermode != render_none)
-	{
-		// Don't include these in the fade!
-		char tx[64];
-		V_DrawSmallString(1, 191, V_ALLOWLOWERCASE, M_GetText("Speeding off to..."));
-		snprintf(tx, 63, "%s%s%s",
-			mapheaderinfo[gamemap-1]->lvlttl,
-			(strlen(mapheaderinfo[gamemap-1]->zonttl) > 0) ? va(" %s",mapheaderinfo[gamemap-1]->zonttl) : // SRB2kart
-			((mapheaderinfo[gamemap-1]->levelflags & LF_NOZONE) ? "" : " Zone"),
-			(strlen(mapheaderinfo[gamemap-1]->actnum) > 0) ? va(", Act %s",mapheaderinfo[gamemap-1]->actnum) : "");
-		V_DrawSmallString(1, 195, V_ALLOWLOWERCASE, tx);
-		I_UpdateNoVsync();
-	}*/
-
-	LUA_InvalidateLevel();
-
-	for (ss = sectors; sectors+numsectors != ss; ss++)
-	{
-		Z_Free(ss->attached);
-		Z_Free(ss->attachedsolid);
-	}
-
-	// Clear pointers that would be left dangling by the purge
-	R_FlushTranslationColormapCache();
-
-	Z_FreeTags(PU_LEVEL, PU_PURGELEVEL - 1);
-
-#if defined (WALLSPLATS) || defined (FLOORSPLATS)
-	// clear the splats from previous level
-	R_ClearLevelSplats();
-#endif
-
-	mobjcache = NULL;
-
-	R_InitializeLevelInterpolators();
-
-	P_InitThinkers();
-	R_InitMobjInterpolators();
-	P_InitCachedActions();
-
-	/// \note for not spawning precipitation, etc. when loading netgame snapshots
-	if (skipprecip)
-	{
-		fromnetsave = 1;
-		loadprecip = 0;
-		loademblems = 0;
-		midgamejoin = 1;
-	}
-
-	// internal game map
-	maplumpname = G_BuildMapName(gamemap);
-	lastloadedmaplumpnum = W_CheckNumForName(maplumpname);
-	if (lastloadedmaplumpnum == INT16_MAX)
-		I_Error("Map %s not found.\n", maplumpname);
-
-	curmapvirt = vres_GetMap(lastloadedmaplumpnum);
-
-	R_ReInitColormaps(mapheaderinfo[gamemap-1]->palette,
-		(encoremode ? W_CheckNumForName(va("%sE", maplumpname)) : LUMPERROR));
-	CON_SetupBackColormap();
-
-	// SRB2 determines the sky texture to be used depending on the map header.
-	P_SetupLevelSky(mapheaderinfo[gamemap-1]->skynum, true);
-
-	numdmstarts = numredctfstarts = numbluectfstarts = 0;
-
-	// reset the player starts
-	for (i = 0; i < MAXPLAYERS; i++)
-		playerstarts[i] = NULL;
-	for (i = 0; i < 2; i++)
-		skyboxmo[i] = NULL;
-
-	P_ResetWaypoints();
-
-	P_MapStart();
-
-	if (lastloadedmaplumpnum)
-		P_LoadMapFromFile();
-
-	P_ResetDynamicSlopes();
-
-	P_LoadThings();
-
-	P_SpawnSecretItems(loademblems);
-
-	P_InitMinimapInfo();
-
-	for (numcoopstarts = 0; numcoopstarts < MAXPLAYERS; numcoopstarts++)
-		if (!playerstarts[numcoopstarts])
-			break;
-
-	globalweather = mapheaderinfo[gamemap-1]->weather;
-
-	// set up world state
-	P_SpawnSpecials(fromnetsave, reloadinggamestate);
-
-	if (loadprecip) //  ugly hack for P_NetUnArchiveMisc (and P_LoadNetGame)
-		P_SpawnPrecipitation();
-
-#ifdef HWRENDER // not win32 only 19990829 by Kin
-	if (rendermode == render_opengl)
-	{
-		HWR_FreeExtraSubsectors();
-
-		// stuff like HWR_CreatePlanePolygons is called there
-		HWR_LoadLevel();
-	}
-#endif
-
-	// oh god I hope this helps
-	// (addendum: apparently it does!
-	//  none of this needs to be done because it's not the beginning of the map when
-	//  a netgame save is being loaded, and could actively be harmful by messing with
-	//  the client's view of the data.)
-	if (fromnetsave)
-		goto netgameskip;
-	// ==========
+static void P_SetupPlayer(void)
+{
+	INT32 i;
 
 	for (i = 0; i < MAXPLAYERS; i++)
 		if (playeringame[i])
@@ -2915,7 +2705,7 @@ boolean P_SetupLevel(boolean skipprecip, boolean reloadinggamestate)
 			}
 		}
 
-		if (realnumplayers) //this should also fix the dedicated crash bug. You only pick a player if one exists to be picked.
+		if (realnumplayers) // this should also fix the dedicated crash bug. You only pick a player if one exists to be picked.
 		{
 			i = P_RandomKey(realnumplayers);
 			players[playersactive[i]].pflags |= PF_TAGIT; //choose our initial tagger before map starts.
@@ -2984,10 +2774,213 @@ boolean P_SetupLevel(boolean skipprecip, boolean reloadinggamestate)
 			startedInFreePlay = true;
 		}
 	}
+}
 
-	// ===========
-	// landing point for netgames.
-	netgameskip:
+/** Loads a level from a lump or external wad.
+  *
+  * \param fromnetsave If true, skip some stuff because we're loading a netgame snapshot.
+  * \todo Clean up, refactor, split up; get rid of the bloat.
+  */
+boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
+{
+	// use gamemap to get map number.
+	// 99% of the things already did, so.
+	// Map header should always be in place at this point
+	INT32 i;
+	boolean ranspecialwipe = false;
+	sector_t *ss;
+
+	midgamejoin = fromnetsave; // makes dynslopes run in P_Ticker/P_PreTicker to avoid synch issues and other stuff
+
+	levelloading = true;
+
+	// This is needed. Don't touch.
+	maptol = mapheaderinfo[gamemap-1]->typeoflevel;
+
+	CON_Drawer(); // let the user know what we are going to do
+	I_FinishUpdate(); // page flip or blit buffer
+
+	// Initialize sector node list.
+	P_Initsecnode();
+
+	if (netgame || multiplayer)
+		cv_debug = botskin = 0;
+
+	if (metalplayback)
+		G_StopMetalDemo();
+
+	// Clear CECHO messages
+	HU_ClearCEcho();
+
+	if (mapheaderinfo[gamemap-1]->runsoc[0] != '#')
+		P_RunSOC(mapheaderinfo[gamemap-1]->runsoc);
+
+	if (cv_runscripts.value && mapheaderinfo[gamemap-1]->scriptname[0] != '#')
+		P_RunLevelScript(mapheaderinfo[gamemap-1]->scriptname);
+
+	P_LevelInitStuff(reloadinggamestate);
+
+	if (mapheaderinfo[gamemap-1]->forcecharacter[0] != '\0'
+	&& atoi(mapheaderinfo[gamemap-1]->forcecharacter) != 255)
+		P_ForceCharacter(mapheaderinfo[gamemap-1]->forcecharacter);
+
+	if (!dedicated)
+	{
+		for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+		{
+			if (!cv_chasecam[i].changed)
+				CV_SetValue(&cv_chasecam[i], true); // srb2kart: always on
+		}
+	}
+
+	// Initial height of PointOfView
+	// will be set by player think.
+	players[consoleplayer].viewz = 1;
+
+	ranspecialwipe = P_RunSpecialWipe(reloadinggamestate);
+
+	// Make sure all sounds are stopped before Z_FreeTags.
+	S_StopSounds();
+
+	if (!S_PrecacheSound())
+		S_ClearSfx();
+
+	// As oddly named as this is, this handles music only.
+	// We should be fine starting it here.
+	if (!reloadinggamestate)
+		S_InitMapMusic();
+
+	levelfadecol = (encoremode && !ranspecialwipe ? 122 : 120);
+
+	// Let's fade to white here
+	// But only if we didn't do the encore startup wipe
+	if (!ranspecialwipe && !demo.rewinding && !reloadinggamestate)
+	{
+		if (rendermode != render_none)
+		{
+			F_WipeStartScreen();
+			V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, levelfadecol);
+			F_WipeEndScreen();
+			F_RunWipe(wipedefs[(encoremode ? wipe_level_final : wipe_level_toblack)], false);
+		}
+		else //dedicated servers
+		{
+			F_RunWipe(wipedefs[(encoremode ? wipe_level_final : wipe_level_toblack)], false);
+		}
+	}
+
+	// Reset the palette now all fades have been done
+	if (rendermode != render_none)
+		V_SetPaletteLump(GetPalette()); // Set the level palette
+
+	// Print "SPEEDING OFF TO [ZONE] [ACT 1]..."
+	/*if (rendermode != render_none)
+	{
+		// Don't include these in the fade!
+		char tx[64];
+		V_DrawSmallString(1, 191, V_ALLOWLOWERCASE, M_GetText("Speeding off to..."));
+		snprintf(tx, 63, "%s%s%s",
+			mapheaderinfo[gamemap-1]->lvlttl,
+			(strlen(mapheaderinfo[gamemap-1]->zonttl) > 0) ? va(" %s",mapheaderinfo[gamemap-1]->zonttl) : // SRB2kart
+			((mapheaderinfo[gamemap-1]->levelflags & LF_NOZONE) ? "" : " Zone"),
+			(strlen(mapheaderinfo[gamemap-1]->actnum) > 0) ? va(", Act %s",mapheaderinfo[gamemap-1]->actnum) : "");
+		V_DrawSmallString(1, 195, V_ALLOWLOWERCASE, tx);
+		I_UpdateNoVsync();
+	}*/
+
+	LUA_InvalidateLevel();
+
+	for (ss = sectors; sectors+numsectors != ss; ss++)
+	{
+		Z_Free(ss->attached);
+		Z_Free(ss->attachedsolid);
+	}
+
+	// Clear pointers that would be left dangling by the purge
+	R_FlushTranslationColormapCache();
+
+	Z_FreeTags(PU_LEVEL, PU_PURGELEVEL - 1);
+
+#if defined (WALLSPLATS) || defined (FLOORSPLATS)
+	// clear the splats from previous level
+	R_ClearLevelSplats();
+#endif
+
+	mobjcache = NULL;
+
+	R_InitializeLevelInterpolators();
+
+	P_InitThinkers();
+	R_InitMobjInterpolators();
+	P_InitCachedActions();
+
+	// internal game map
+	maplumpname = G_BuildMapName(gamemap);
+	lastloadedmaplumpnum = W_CheckNumForName(maplumpname);
+	if (lastloadedmaplumpnum == INT16_MAX)
+		I_Error("Map %s not found.\n", maplumpname);
+
+	curmapvirt = vres_GetMap(lastloadedmaplumpnum);
+
+	R_ReInitColormaps(mapheaderinfo[gamemap-1]->palette,
+		(encoremode ? W_CheckNumForName(va("%sE", maplumpname)) : LUMPERROR));
+	CON_SetupBackColormap();
+
+	// SRB2 determines the sky texture to be used depending on the map header.
+	P_SetupLevelSky(mapheaderinfo[gamemap-1]->skynum, true);
+
+	numdmstarts = numredctfstarts = numbluectfstarts = 0;
+
+	// reset the player starts
+	for (i = 0; i < MAXPLAYERS; i++)
+		playerstarts[i] = NULL;
+	for (i = 0; i < 2; i++)
+		skyboxmo[i] = NULL;
+
+	P_ResetWaypoints();
+
+	P_MapStart();
+
+	if (lastloadedmaplumpnum)
+		P_LoadMapFromFile();
+
+	P_ResetDynamicSlopes();
+
+	P_LoadThings();
+
+	P_SpawnSecretItems(!fromnetsave);
+
+	P_InitMinimapInfo();
+
+	for (numcoopstarts = 0; numcoopstarts < MAXPLAYERS; numcoopstarts++)
+		if (!playerstarts[numcoopstarts])
+			break;
+
+	globalweather = mapheaderinfo[gamemap-1]->weather;
+
+	// set up world state
+	P_SpawnSpecials(fromnetsave, reloadinggamestate);
+
+	if (!fromnetsave) //  ugly hack for P_NetUnArchiveMisc (and P_LoadNetGame)
+		P_SpawnPrecipitation();
+
+#ifdef HWRENDER // not win32 only 19990829 by Kin
+	if (rendermode == render_opengl)
+	{
+		HWR_FreeExtraSubsectors();
+
+		// stuff like HWR_CreatePlanePolygons is called there
+		HWR_LoadLevel();
+	}
+#endif
+
+	// oh god I hope this helps
+	// (addendum: apparently it does!
+	//  none of this needs to be done because it's not the beginning of the map when
+	//  a netgame save is being loaded, and could actively be harmful by messing with
+	//  the client's view of the data.)
+	if (!fromnetsave)
+		P_SetupPlayer();
 
 	if (!reloadinggamestate)
 	{
@@ -3037,7 +3030,7 @@ boolean P_SetupLevel(boolean skipprecip, boolean reloadinggamestate)
 	skyVisible = true;
 	memset(skyVisiblePerPlayer, true, sizeof(skyVisiblePerPlayer));
 
-	if (loadprecip) // uglier hack
+	if (!fromnetsave) // uglier hack
 	{ // to make a newly loaded level start on the second frame.
 		INT32 buf = gametic % TICQUEUE;
 		for (i = 0; i < MAXPLAYERS; i++)

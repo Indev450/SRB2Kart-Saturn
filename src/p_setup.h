@@ -19,10 +19,11 @@
 #include "r_defs.h"
 #include "w_wad.h"
 
-extern SINT8 midgamejoin;
-
 // map md5, sent to players via PT_SERVERINFO
 extern unsigned char mapmd5[16];
+
+// true when level was loaded from netsave
+extern boolean midgamejoin;
 
 // Player spawn spots for deathmatch.
 #define MAX_DM_STARTS 64
@@ -60,7 +61,7 @@ extern mapthing_t *mapthings;
 
 void P_SetupLevelSky(INT32 skynum, boolean global);
 void P_LoadThingsOnly(void);
-boolean P_SetupLevel(boolean skipprecip, boolean reloadinggamestate);
+boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate);
 #ifdef HWRENDER
 void HWR_LoadLevel(void);
 #endif
