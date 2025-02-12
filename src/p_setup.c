@@ -2625,25 +2625,25 @@ static void P_InitCamera(void)
 {
 	INT32 i;
 
-	if (!dedicated)
+	if (dedicated)
+		return;
+
+	for (i = 0; i <= splitscreen; i++)
 	{
-			for (i = 0; i <= splitscreen; i++)
-			{
-				if (camera[i].freecam)
-					continue;
+		if (camera[i].freecam)
+			continue;
 
-				P_SetupCamera(displayplayers[i], &camera[i]);
-			}
-
-		// Though, I don't think anyone would care about cam_rotate being reset back to the only value that makes sense :P
-		for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
-		{
-			if (!cv_cam_rotate[i].changed)
-				CV_Set(&cv_cam_rotate[i], cv_cam_rotate[i].defaultvalue);
-		}
-
-		displayplayers[0] = consoleplayer; // Start with your OWN view, please!
+		P_SetupCamera(displayplayers[i], &camera[i]);
 	}
+
+	// Though, I don't think anyone would care about cam_rotate being reset back to the only value that makes sense :P
+	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+	{
+		if (!cv_cam_rotate[i].changed)
+			CV_Set(&cv_cam_rotate[i], cv_cam_rotate[i].defaultvalue);
+	}
+
+	displayplayers[0] = consoleplayer; // Start with your OWN view, please!
 }
 
 static boolean P_CanSave(void)
