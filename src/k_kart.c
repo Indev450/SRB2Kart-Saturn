@@ -146,7 +146,7 @@ consvar_t cv_highresportrait = {"highresportrait", "Off", CV_SAVE, CV_OnOff, NUL
 consvar_t cv_showlapemblem = {"showlapemblem", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_biglaps = {"biglaphud", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; // here for ppl who dont want to make 2 more patches for their custom hud
 
-consvar_t cv_darkitembox = {"darkitembox", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; // itembox gets a dark box with specific items
+consvar_t cv_darkitembox = {"darkitembox", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; // itembox gets a dark border with specific items
 consvar_t cv_multiitemicon = {"multiitemicon", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 static CV_PossibleValue_t huditemamount_cons_t[] = {{0, "Vanilla"}, {1, "Multiple"}, {2, "Always"},{0, NULL}};
 consvar_t cv_huditemamount = {"showitemamountnumber", "Vanilla", CV_SAVE, huditemamount_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -154,6 +154,8 @@ consvar_t cv_huditemamount = {"showitemamountnumber", "Vanilla", CV_SAVE, hudite
 CV_PossibleValue_t speedo_cons_t[NUMSPEEDOSTUFF];
 consvar_t cv_newspeedometer = {"newspeedometer", "Default", CV_SAVE, speedo_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_battlespeedo = {"battlespeedo", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; // toggle for showing the speedometer in battlemode
+
+consvar_t cv_blendeffects = {"testblendeffects", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 // funn-E streeetch
 static CV_PossibleValue_t stretchfactor_t[] = {
@@ -785,6 +787,8 @@ boolean K_UseColorHud(void)
 	return (cv_colorizedhud.value && clr_hud);
 }
 
+extern consvar_t cv_blendeffects;
+
 //}
 
 //{ SRB2kart Net Variables
@@ -912,6 +916,8 @@ void K_RegisterClientKartStuff(void)
 	CV_RegisterVar(&cv_showlapemblem);
 
 	CV_RegisterVar(&cv_stagetitle);
+
+	CV_RegisterVar(&cv_blendeffects);
 
 	// Colourized HUD
 	CV_RegisterVar(&cv_colorizedhud);
@@ -1714,7 +1720,8 @@ void K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean solid)
 	else
 		fx->eflags &= ~MFE_VERTICALFLIP;
 
-	fx->blendmode = AST_ADD;
+	if (cv_blendeffects.value)
+		fx->blendmode = AST_ADD;
 
 	P_SetScale(fx, mobj1->scale);
 
@@ -3352,7 +3359,8 @@ static void K_SpawnDriftSparks(player_t *player)
 				P_SetMobjState(spark, S_DRIFTSPARK_A1);
 		}
 
-		spark->blendmode = AST_ADD;
+		if (cv_blendeffects.value)
+			spark->blendmode = AST_ADD;
 
 		K_MatchGenericExtraFlags(spark, player->mo);
 	}
@@ -3660,7 +3668,8 @@ void K_SpawnBoostTrail(player_t *player)
 		{
 			flame->colorized = true;
 			flame->color = player->skincolor;
-			flame->blendmode = AST_ADD;
+			if (cv_blendeffects.value)
+				flame->blendmode = AST_ADD;
 		}
 
 		P_SetScale(flame, player->mo->scale);
@@ -3723,7 +3732,7 @@ void K_SpawnSparkleTrail(mobj_t *mo)
 
 		sparkle->color = mo->color;
 
-		if (mo->player)
+		if (mo->player && cv_blendeffects.value)
 			sparkle->blendmode = AST_ADD;
 	}
 
@@ -3864,7 +3873,8 @@ void K_DriftDustHandling(mobj_t *spawner)
 			else
 				dust->color = SKINCOLOR_SILVER; // fallback
 
-			dust->blendmode = AST_ADD;
+			if (cv_blendeffects.value)
+				dust->blendmode = AST_ADD;
 		}
 		else
 			dust->color = 0; // dont recolour MT_DRIFTDUST
@@ -5512,13 +5522,16 @@ static boolean K_SpeedLinesShouldBlend(player_t *player)
 {
 	fixed_t percentspeed = 0;
 
+	if (!cv_blendeffects.value)
+		return false;
+
 	if (!player->mo)
 		return false;
 
 	if (player->kartstuff[k_sneakertimer])
 		return true;
 
-	// this is how the percentage speedometer calcs, i suck at maths so this was the easiest thing to fo lmao
+	// this is how the percentage speedometer calcs, i suck at maths so this was the easiest thing to do lmao
 	percentspeed = (FixedDiv(player->speed, FixedMul(K_GetKartSpeed(player, false), ORIG_FRICTION))*100)>>FRACBITS;
 
 	if (percentspeed > 127) // sneaker boost is around 25%
