@@ -1825,95 +1825,6 @@ INT32 R_TextureNumForName(const char *name)
 	return i;
 }
 
-static void P_PrecacheHWRLevelFlats(void)
-{
-	lumpnum_t lump;
-	size_t i, j;
-
-	// special case for encore remapping
-	if (encoremode)
-	{
-		// this does not account for fofs and polyobjects
-		// TODO: handle atleast fofs
-		for (i = 0; i < numsectors; i++)
-		{
-			for (j = 0; j < 2; j++)
-			{
-				boolean ceiling = (j == 1);
-				INT32 pic = ceiling ? sectors[i].ceilingpic : sectors[i].floorpic;
-
-				lump = levelflats[pic].lumpnum;
-				HWR_GetFlat(lump, R_NoEncore(&sectors[i], ceiling));
-			}
-		}
-	}
-	else
-	{
-		// on non encore we have it simple
-		// just load every flat
-		for (i = 0; i < numlevelflats; i++)
-		{
-			lump = levelflats[i].lumpnum;
-			HWR_GetFlat(lump, false);
-		}
-	}
-}
-
-static void HWR_PrecacheLevel(void)
-{
-	char *texturepresent;
-	size_t i, j;
-
-	if (rendermode != render_opengl)
-		return;
-
-	// Precache flats.
-	P_PrecacheHWRLevelFlats();
-
-	// Precache textures.
-	texturepresent = calloc(numtextures, sizeof (*texturepresent));
-	if (texturepresent == NULL) I_Error("%s: Out of memory looking up textures", "HWR_PrecacheLevel");
-
-	for (i = 0; i < numlines; i++)
-	{
-		line_t *line = &lines[i];
-		boolean noencoremap = (line->flags & ML_TFERLINE);
-
-		// two sides
-		for (j = 0; j < 2; j++)
-		{
-			side_t *side = &sides[line->sidenum[j]];
-
-			// Single-side linedef
-			if (line->sidenum[j] == 0xffff)
-				continue;
-
-			if (side->toptexture >= 0 && side->toptexture < numtextures)
-				texturepresent[side->toptexture] = noencoremap ? 2 : 1;
-			if (side->midtexture >= 0 && side->midtexture < numtextures)
-				texturepresent[side->midtexture] = noencoremap ? 2 : 1;
-			if (side->bottomtexture >= 0 && side->bottomtexture < numtextures)
-				texturepresent[side->bottomtexture] = noencoremap ? 2 : 1;
-		}
-	}
-
-	// Sky texture is always present.
-	// Note that F_SKY1 is the name used to indicate a sky floor/ceiling as a flat,
-	// while the sky texture is stored like a wall texture, with a skynum dependent name.
-	texturepresent[skytexture] = 1;
-
-	for (i = 0; i < (unsigned)numtextures; i++)
-	{
-		if (!texturepresent[i])
-			continue;
-
-		HWR_GetTexture(i, (texturepresent[i] == 2));
-	}
-	free(texturepresent);
-
-	//TODO: precache sprites too
-}
-
 //
 // R_PrecacheLevel
 //
@@ -1931,11 +1842,13 @@ void R_PrecacheLevel(void)
 	if (demo.playback)
 		return;
 
+#ifdef HWRENDER
 	if (rendermode == render_opengl)
 	{
 		HWR_PrecacheLevel();
 		return;
 	}
+#endif
 
 	// do not flush the memory, Z_Malloc twice with same user will cause error in Z_CheckHeap()
 	if (rendermode != render_soft)
