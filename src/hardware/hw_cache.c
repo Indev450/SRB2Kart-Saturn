@@ -615,11 +615,20 @@ void HWR_PrecacheLevel(void)
 				continue;
 
 			if (side->toptexture >= 0 && side->toptexture < numtextures)
-				texturepresent[side->toptexture] = noencoremap ? 2 : 1;
+			{
+				texturepresent[side->toptexture] = 1;
+				texturepresent[side->toptexture] |= noencoremap ? 2 : 1;
+			}
 			if (side->midtexture >= 0 && side->midtexture < numtextures)
-				texturepresent[side->midtexture] = noencoremap ? 2 : 1;
+			{
+				texturepresent[side->midtexture] = 1;
+				texturepresent[side->midtexture] |= noencoremap ? 2 : 1;
+			}
 			if (side->bottomtexture >= 0 && side->bottomtexture < numtextures)
-				texturepresent[side->bottomtexture] = noencoremap ? 2 : 1;
+			{
+				texturepresent[side->bottomtexture] = 1;
+				texturepresent[side->bottomtexture] |= noencoremap ? 2 : 1;
+			}
 		}
 	}
 
@@ -633,7 +642,11 @@ void HWR_PrecacheLevel(void)
 		if (!texturepresent[i])
 			continue;
 
-		HWR_GetTexture(i, (texturepresent[i] == 2));
+		if (texturepresent[j] & 1)
+			HWR_GetTexture(j, false);
+
+		if (texturepresent[j] & 2)
+			HWR_GetTexture(j, true);
 	}
 	free(texturepresent);
 
