@@ -29,6 +29,8 @@
 #include "../r_draw.h"
 #include "../r_main.h"
 #include "../r_patch.h"    // patch rotation
+#include "../p_setup.h" // levelflats
+#include "../r_sky.h"
 
 INT32 patchformat = GL_TEXFMT_AP_88; // use alpha for holes
 INT32 textureformat = GL_TEXFMT_P_8; // use chromakey for hole
@@ -544,6 +546,95 @@ void HWR_FreeTextureCache(void)
 		free(gl_textures);
 	gl_textures = NULL;
 	gl_numtextures = 0;
+}
+
+static void P_PrecacheHWRLevelFlats(void)
+{
+	lumpnum_t lump;
+	size_t i, j;
+
+	// special case for encore remapping
+	if (encoremode)
+	{
+		// this does not account for fofs and polyobjects
+		// TODO: handle atleast fofs
+		for (i = 0; i < numsectors; i++)
+		{
+			for (j = 0; j < 2; j++)
+			{
+				boolean ceiling = (j == 1);
+				INT32 pic = ceiling ? sectors[i].ceilingpic : sectors[i].floorpic;
+
+				lump = levelflats[pic].lumpnum;
+				HWR_GetFlat(lump, R_NoEncore(&sectors[i], ceiling));
+			}
+		}
+	}
+	else
+	{
+		// on non encore we have it simple
+		// just load every flat
+		for (i = 0; i < numlevelflats; i++)
+		{
+			lump = levelflats[i].lumpnum;
+			HWR_GetFlat(lump, false);
+		}
+	}
+}
+
+void HWR_PrecacheLevel(void)
+{
+	char *texturepresent;
+	size_t i, j;
+
+	if (rendermode != render_opengl)
+		return;
+
+	// Precache flats.
+	P_PrecacheHWRLevelFlats();
+
+	// Precache textures.
+	texturepresent = calloc(numtextures, sizeof (*texturepresent));
+	if (texturepresent == NULL) I_Error("%s: Out of memory looking up textures", "HWR_PrecacheLevel");
+
+	for (i = 0; i < numlines; i++)
+	{
+		line_t *line = &lines[i];
+		boolean noencoremap = (line->flags & ML_TFERLINE);
+
+		// two sides
+		for (j = 0; j < 2; j++)
+		{
+			side_t *side = &sides[line->sidenum[j]];
+
+			// Single-side linedef
+			if (line->sidenum[j] == 0xffff)
+				continue;
+
+			if (side->toptexture >= 0 && side->toptexture < numtextures)
+				texturepresent[side->toptexture] = noencoremap ? 2 : 1;
+			if (side->midtexture >= 0 && side->midtexture < numtextures)
+				texturepresent[side->midtexture] = noencoremap ? 2 : 1;
+			if (side->bottomtexture >= 0 && side->bottomtexture < numtextures)
+				texturepresent[side->bottomtexture] = noencoremap ? 2 : 1;
+		}
+	}
+
+	// Sky texture is always present.
+	// Note that F_SKY1 is the name used to indicate a sky floor/ceiling as a flat,
+	// while the sky texture is stored like a wall texture, with a skynum dependent name.
+	texturepresent[skytexture] = 1;
+
+	for (i = 0; i < (unsigned)numtextures; i++)
+	{
+		if (!texturepresent[i])
+			continue;
+
+		HWR_GetTexture(i, (texturepresent[i] == 2));
+	}
+	free(texturepresent);
+
+	//TODO: precache sprites too
 }
 
 void HWR_LoadTextures(size_t pnumtextures)
