@@ -1854,6 +1854,11 @@ static void HWR_PrecacheLevel(void)
 	if (rendermode != render_opengl)
 		return;
 
+	// TODO: handle encoremode
+	// lines flagged with ML_TFERLINE should not be remapped, not sure how to properly check for that
+	if (encoremode)
+		return;
+
 	// Precache flats.
 	flatmemory = P_PrecacheHWRLevelFlats();
 
