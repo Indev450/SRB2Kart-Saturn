@@ -639,11 +639,11 @@ void HWR_PrecacheLevel(void)
 		if (!texturepresent[i])
 			continue;
 
-		if (texturepresent[j] & 1)
-			HWR_GetTexture(j, false);
+		if (texturepresent[i] & 1)
+			HWR_GetTexture(i, false);
 
-		if (texturepresent[j] & 2)
-			HWR_GetTexture(j, true);
+		if (texturepresent[i] & 2)
+			HWR_GetTexture(i, true);
 	}
 	free(texturepresent);
 
