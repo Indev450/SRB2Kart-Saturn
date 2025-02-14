@@ -1825,6 +1825,79 @@ INT32 R_TextureNumForName(const char *name)
 	return i;
 }
 
+static size_t P_PrecacheHWRLevelFlats(void)
+{
+	lumpnum_t lump;
+	size_t i, flatmem = 0;
+
+	//SoM: 4/18/2000: New flat code to make use of levelflats.
+	for (i = 0; i < numlevelflats; i++)
+	{
+		lump = levelflats[i].lumpnum;
+		if (devparm)
+			flatmem += W_LumpLength(lump);
+		HWR_GetFlat(lump, false);
+	}
+
+	return flatmem;
+}
+
+static void HWR_PrecacheLevel(void)
+{
+	char *texturepresent;
+	size_t j;
+
+	if (demo.playback)
+		return;
+
+	// do not flush the memory, Z_Malloc twice with same user will cause error in Z_CheckHeap()
+	if (rendermode != render_opengl)
+		return;
+
+	// Precache flats.
+	flatmemory = P_PrecacheHWRLevelFlats();
+
+	//
+	// Precache textures.
+	//
+	// no need to precache all software textures in 3D mode
+	// (note they are still used with the reference software view)
+	texturepresent = calloc(numtextures, sizeof (*texturepresent));
+	if (texturepresent == NULL) I_Error("%s: Out of memory looking up textures", "R_PrecacheLevel");
+
+	for (j = 0; j < numsides; j++)
+	{
+		// huh, a potential bug here????
+		if (sides[j].toptexture >= 0 && sides[j].toptexture < numtextures)
+			texturepresent[sides[j].toptexture] = 1;
+		if (sides[j].midtexture >= 0 && sides[j].midtexture < numtextures)
+			texturepresent[sides[j].midtexture] = 1;
+		if (sides[j].bottomtexture >= 0 && sides[j].bottomtexture < numtextures)
+			texturepresent[sides[j].bottomtexture] = 1;
+	}
+
+	// Sky texture is always present.
+	// Note that F_SKY1 is the name used to indicate a sky floor/ceiling as a flat,
+	// while the sky texture is stored like a wall texture, with a skynum dependent name.
+	texturepresent[skytexture] = 1;
+
+	texturememory = 0;
+	for (j = 0; j < (unsigned)numtextures; j++)
+	{
+		if (!texturepresent[j])
+			continue;
+
+		HWR_GetTexture(j, false);
+	}
+	free(texturepresent);
+
+	//TODO: precache sprites too
+
+	CONS_Debug(DBG_SETUP, "Precache level done:\n"
+	"flatmemory:    %s k\n"
+	"texturememory: %s k\n", sizeu1(flatmemory>>10), sizeu2(texturememory>>10));
+}
+
 //
 // R_PrecacheLevel
 //
@@ -1841,6 +1914,12 @@ void R_PrecacheLevel(void)
 
 	if (demo.playback)
 		return;
+
+	if (rendermode == render_opengl)
+	{
+		HWR_PrecacheLevel();
+		return;
+	}
 
 	// do not flush the memory, Z_Malloc twice with same user will cause error in Z_CheckHeap()
 	if (rendermode != render_soft)
