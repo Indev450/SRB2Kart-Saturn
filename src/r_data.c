@@ -1828,53 +1828,73 @@ INT32 R_TextureNumForName(const char *name)
 static void P_PrecacheHWRLevelFlats(void)
 {
 	lumpnum_t lump;
-	size_t i;
+	size_t i, j;
 
-	//SoM: 4/18/2000: New flat code to make use of levelflats.
-	for (i = 0; i < numlevelflats; i++)
+	// special case for encore remapping
+	if (encoremode)
 	{
-		lump = levelflats[i].lumpnum;
-		HWR_GetFlat(lump, false);
+		// this does not account for fofs and polyobjects
+		// TODO: handle atleast fofs
+		for (i = 0; i < numsectors; i++)
+		{
+			for (j = 0; j < 2; j++)
+			{
+				boolean ceiling = (j == 1);
+				INT32 pic = ceiling ? sectors[i].ceilingpic : sectors[i].floorpic;
+
+				lump = levelflats[pic].lumpnum;
+				HWR_GetFlat(lump, R_NoEncore(&sectors[i], ceiling));
+			}
+		}
+	}
+	else
+	{
+		// on non encore we have it simple
+		// just load every flat
+		for (i = 0; i < numlevelflats; i++)
+		{
+			lump = levelflats[i].lumpnum;
+			HWR_GetFlat(lump, false);
+		}
 	}
 }
 
 static void HWR_PrecacheLevel(void)
 {
 	char *texturepresent;
-	size_t j;
+	size_t i, j;
 
-	if (demo.playback)
-		return;
-
-	// do not flush the memory, Z_Malloc twice with same user will cause error in Z_CheckHeap()
 	if (rendermode != render_opengl)
-		return;
-
-	// TODO: handle encoremode
-	// lines flagged with ML_TFERLINE should not be remapped, not sure how to properly check for that
-	if (encoremode)
 		return;
 
 	// Precache flats.
 	P_PrecacheHWRLevelFlats();
 
-	//
 	// Precache textures.
-	//
-	// no need to precache all software textures in 3D mode
-	// (note they are still used with the reference software view)
 	texturepresent = calloc(numtextures, sizeof (*texturepresent));
-	if (texturepresent == NULL) I_Error("%s: Out of memory looking up textures", "R_PrecacheLevel");
+	if (texturepresent == NULL) I_Error("%s: Out of memory looking up textures", "HWR_PrecacheLevel");
 
-	for (j = 0; j < numsides; j++)
+	for (i = 0; i < numlines; i++)
 	{
-		// huh, a potential bug here????
-		if (sides[j].toptexture >= 0 && sides[j].toptexture < numtextures)
-			texturepresent[sides[j].toptexture] = 1;
-		if (sides[j].midtexture >= 0 && sides[j].midtexture < numtextures)
-			texturepresent[sides[j].midtexture] = 1;
-		if (sides[j].bottomtexture >= 0 && sides[j].bottomtexture < numtextures)
-			texturepresent[sides[j].bottomtexture] = 1;
+		line_t *line = &lines[i];
+		boolean noencoremap = (line->flags & ML_TFERLINE);
+
+		// two sides
+		for (j = 0; j < 2; j++)
+		{
+			side_t *side = &sides[line->sidenum[j]];
+
+			// Single-side linedef
+			if (line->sidenum[j] == 0xffff)
+				continue;
+
+			if (side->toptexture >= 0 && side->toptexture < numtextures)
+				texturepresent[side->toptexture] = noencoremap ? 2 : 1;
+			if (side->midtexture >= 0 && side->midtexture < numtextures)
+				texturepresent[side->midtexture] = noencoremap ? 2 : 1;
+			if (side->bottomtexture >= 0 && side->bottomtexture < numtextures)
+				texturepresent[side->bottomtexture] = noencoremap ? 2 : 1;
+		}
 	}
 
 	// Sky texture is always present.
@@ -1882,12 +1902,12 @@ static void HWR_PrecacheLevel(void)
 	// while the sky texture is stored like a wall texture, with a skynum dependent name.
 	texturepresent[skytexture] = 1;
 
-	for (j = 0; j < (unsigned)numtextures; j++)
+	for (i = 0; i < (unsigned)numtextures; i++)
 	{
-		if (!texturepresent[j])
+		if (!texturepresent[i])
 			continue;
 
-		HWR_GetTexture(j, false);
+		HWR_GetTexture(i, (texturepresent[i] == 2));
 	}
 	free(texturepresent);
 
