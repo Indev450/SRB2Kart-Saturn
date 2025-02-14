@@ -1825,21 +1825,17 @@ INT32 R_TextureNumForName(const char *name)
 	return i;
 }
 
-static size_t P_PrecacheHWRLevelFlats(void)
+static void P_PrecacheHWRLevelFlats(void)
 {
 	lumpnum_t lump;
-	size_t i, flatmem = 0;
+	size_t i;
 
 	//SoM: 4/18/2000: New flat code to make use of levelflats.
 	for (i = 0; i < numlevelflats; i++)
 	{
 		lump = levelflats[i].lumpnum;
-		if (devparm)
-			flatmem += W_LumpLength(lump);
 		HWR_GetFlat(lump, false);
 	}
-
-	return flatmem;
 }
 
 static void HWR_PrecacheLevel(void)
@@ -1860,7 +1856,7 @@ static void HWR_PrecacheLevel(void)
 		return;
 
 	// Precache flats.
-	flatmemory = P_PrecacheHWRLevelFlats();
+	P_PrecacheHWRLevelFlats();
 
 	//
 	// Precache textures.
@@ -1886,7 +1882,6 @@ static void HWR_PrecacheLevel(void)
 	// while the sky texture is stored like a wall texture, with a skynum dependent name.
 	texturepresent[skytexture] = 1;
 
-	texturememory = 0;
 	for (j = 0; j < (unsigned)numtextures; j++)
 	{
 		if (!texturepresent[j])
@@ -1897,10 +1892,6 @@ static void HWR_PrecacheLevel(void)
 	free(texturepresent);
 
 	//TODO: precache sprites too
-
-	CONS_Debug(DBG_SETUP, "Precache level done:\n"
-	"flatmemory:    %s k\n"
-	"texturememory: %s k\n", sizeu1(flatmemory>>10), sizeu2(texturememory>>10));
 }
 
 //
