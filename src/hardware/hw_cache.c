@@ -641,6 +641,53 @@ static void HWR_PrecacheLevelTextures(void)
 	free(texturepresent);
 }
 
+static void HWR_PrecacheLevelSprites(void)
+{
+	char *spritepresent;
+	size_t i, j, k;
+	lumpnum_t lump;
+
+	thinker_t *th;
+	mobj_t *mo;
+	spriteframe_t *sf;
+
+	spritepresent = calloc(numsprites, sizeof (*spritepresent));
+	if (spritepresent == NULL) I_Error("%s: Out of memory looking up sprites", "HWR_PrecacheLevel");
+
+	for (th = thinkercap.next; th != &thinkercap; th = th->next)
+	{
+		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+			continue;
+
+		mo = (mobj_t *)th;
+
+		//FIXME: cant really precache colorized sprites without a colormap
+		if (mo->color || mo->colorized)
+			continue;
+
+		spritepresent[mo->sprite] = 1;
+	}
+
+	for (i = 0; i < numsprites; i++)
+	{
+		if (!spritepresent[i])
+			continue;
+
+		for (j = 0; j < sprites[i].numframes; j++)
+		{
+			sf = &sprites[i].spriteframes[j];
+			for (k = 0; k < 8; k++)
+			{
+				// see R_InitSprites for more about lumppat,lumpid
+				lump = sf->lumppat[k];
+
+				HWR_GetMappedPatch((GLPatch_t *)W_CachePatchNum(lump, PU_CACHE), NULL);
+			}
+		}
+	}
+	free(spritepresent);
+}
+
 void HWR_PrecacheLevel(void)
 {
 	if (rendermode != render_opengl)
@@ -652,7 +699,8 @@ void HWR_PrecacheLevel(void)
 	// Precache textures.
 	HWR_PrecacheLevelTextures();
 
-	//TODO: precache sprites too
+	// Precache sprites.
+	HWR_PrecacheLevelSprites();
 }
 
 void HWR_LoadTextures(size_t pnumtextures)
