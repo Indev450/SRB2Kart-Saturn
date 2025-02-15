@@ -51,19 +51,6 @@ mobj_t *skyboxmo[2];
 // This must be updated whenever we up the max flat size - quicker to assume rather than figuring out the sqrt of the specific flat's filesize.
 #define MAXFLATSIZE (2048<<FRACBITS)
 
-/** Animated texture descriptor
-  * This keeps track of an animated texture or an animated flat.
-  * \sa P_UpdateSpecials, P_InitPicAnims, animdef_t
-  */
-typedef struct
-{
-	SINT8 istexture; ///< ::true for a texture, ::false for a flat
-	INT32 picnum;    ///< The end flat number
-	INT32 basepic;   ///< The start flat number
-	INT32 numpics;   ///< Number of frames in the animation
-	tic_t speed;     ///< Number of tics for which each frame is shown
-} anim_t;
-
 #if defined(_MSC_VER)
 #pragma pack(1)
 #endif
@@ -113,8 +100,8 @@ static void P_AddSpikeThinker(sector_t *sec, INT32 referrer);
 
 
 //SoM: 3/7/2000: New sturcture without limits.
-static anim_t *lastanim;
-static anim_t *anims = NULL; /// \todo free leak
+anim_t *lastanim;
+anim_t *anims = NULL; /// \todo free leak
 static size_t maxanims;
 
 //
