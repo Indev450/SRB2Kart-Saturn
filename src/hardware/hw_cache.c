@@ -30,6 +30,7 @@
 #include "../r_main.h"
 #include "../r_patch.h"    // patch rotation
 #include "../p_setup.h" // levelflats
+#include "../p_spec.h" // anim_t
 #include "../r_sky.h"
 
 INT32 patchformat = GL_TEXFMT_AP_88; // use alpha for holes
@@ -610,6 +611,8 @@ static void HWR_PrecacheLevelTextures(void)
 {
 	char *texturepresent;
 	size_t i, j;
+	INT32 h;
+	anim_t *anim;
 
 	texturepresent = calloc(numtextures, sizeof (*texturepresent));
 	if (texturepresent == NULL) I_Error("%s: Out of memory looking up textures", "HWR_PrecacheLevel");
@@ -646,6 +649,31 @@ static void HWR_PrecacheLevelTextures(void)
 		}
 	}
 
+	for (anim = anims; anim < lastanim; anim++)
+	{
+		if (!anim->istexture)
+			continue;
+
+		if (!texturepresent[anim->basepic])
+			continue;
+
+		if (texturepresent[anim->basepic] & 1)
+		{
+			for (h = 0; h < anim->numpics; h++)
+			{
+				HWR_GetTexture(anim->basepic+h, false);
+			}
+		}
+
+		if (texturepresent[anim->basepic] & 2)
+		{
+			for (h = 0; h < anim->numpics; h++)
+			{
+				HWR_GetTexture(anim->basepic+h, true);
+			}
+		}
+	}
+
 	// Sky texture is always present.
 	// Note that F_SKY1 is the name used to indicate a sky floor/ceiling as a flat,
 	// while the sky texture is stored like a wall texture, with a skynum dependent name.
@@ -657,10 +685,14 @@ static void HWR_PrecacheLevelTextures(void)
 			continue;
 
 		if (texturepresent[i] & 1)
+		{
 			HWR_GetTexture(i, false);
+		}
 
 		if (texturepresent[i] & 2)
+		{
 			HWR_GetTexture(i, true);
+		}
 	}
 	free(texturepresent);
 }
