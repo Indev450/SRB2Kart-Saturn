@@ -2970,7 +2970,7 @@ boolean P_SetupLevel(boolean skipprecip, boolean reloadinggamestate)
 	if (rendermode != render_none && !reloadinggamestate)
 		V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, levelfadecol);
 
-	if (precache || dedicated)
+	if (precachetextures)
 		R_PrecacheLevel();
 
 	nextmapoverride = 0;

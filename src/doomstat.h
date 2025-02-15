@@ -542,7 +542,7 @@ extern INT32 debugload;
 #endif
 
 // if true, load all graphics at level load
-extern boolean precache;
+extern boolean precachetextures;
 
 // wipegamestate can be set to -1
 //  to force a wipe on the next draw
