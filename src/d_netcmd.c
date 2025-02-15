@@ -2950,7 +2950,7 @@ static void Got_Mapcmd(UINT8 **cp, INT32 playernum)
 	}
 
 	if (demo.playback && !demo.timing)
-		precache = false;
+		precachetextures = false;
 
 	if (resetplayer)
 	{
@@ -2968,7 +2968,7 @@ static void Got_Mapcmd(UINT8 **cp, INT32 playernum)
 	demo.savebutton = 0;
 	G_InitNew(pencoremode, mapname, resetplayer, skipprecutscene);
 	if (demo.playback && !demo.timing)
-		precache = true;
+		precachetextures = true;
 	if (demo.timing)
 		G_DoneLevelLoad();
 

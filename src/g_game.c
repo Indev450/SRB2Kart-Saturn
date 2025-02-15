@@ -326,7 +326,7 @@ static struct {
 // There is no conflict here.
 demoghost *ghosts = NULL;
 
-boolean precache = true; // if true, load all graphics at start
+boolean precachetextures = true; // if true, load all graphics at start
 
 INT16 prevmap, nextmap;
 
