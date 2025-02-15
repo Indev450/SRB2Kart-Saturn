@@ -548,7 +548,7 @@ void HWR_FreeTextureCache(void)
 	gl_numtextures = 0;
 }
 
-static void P_PrecacheHWRLevelFlats(void)
+static void HWR_PrecacheLevelFlats(void)
 {
 	lumpnum_t lump;
 	size_t i, j;
@@ -582,18 +582,11 @@ static void P_PrecacheHWRLevelFlats(void)
 	}
 }
 
-void HWR_PrecacheLevel(void)
+static void HWR_PrecacheLevelTextures(void)
 {
 	char *texturepresent;
 	size_t i, j;
 
-	if (rendermode != render_opengl)
-		return;
-
-	// Precache flats.
-	P_PrecacheHWRLevelFlats();
-
-	// Precache textures.
 	texturepresent = calloc(numtextures, sizeof (*texturepresent));
 	if (texturepresent == NULL) I_Error("%s: Out of memory looking up textures", "HWR_PrecacheLevel");
 
@@ -646,6 +639,18 @@ void HWR_PrecacheLevel(void)
 			HWR_GetTexture(i, true);
 	}
 	free(texturepresent);
+}
+
+void HWR_PrecacheLevel(void)
+{
+	if (rendermode != render_opengl)
+		return;
+
+	// Precache flats.
+	HWR_PrecacheLevelFlats();
+
+	// Precache textures.
+	HWR_PrecacheLevelTextures();
 
 	//TODO: precache sprites too
 }
