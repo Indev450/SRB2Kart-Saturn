@@ -550,14 +550,14 @@ void HWR_FreeTextureCache(void)
 
 static void HWR_PrecacheLevelFlats(void)
 {
+	levelflat_t levelflat;
 	lumpnum_t lump;
 	size_t i, j;
+	INT32 k;
 
 	// special case for encore remapping
 	if (encoremode)
 	{
-		// this does not account for fofs and polyobjects
-		// TODO: handle atleast fofs
 		for (i = 0; i < numsectors; i++)
 		{
 			for (j = 0; j < 2; j++)
@@ -565,8 +565,20 @@ static void HWR_PrecacheLevelFlats(void)
 				boolean ceiling = (j == 1);
 				INT32 pic = ceiling ? sectors[i].ceilingpic : sectors[i].floorpic;
 
-				lump = levelflats[pic].lumpnum;
+				levelflat = levelflats[pic];
+
+				lump = levelflat.lumpnum;
 				HWR_GetFlat(lump, R_NoEncore(&sectors[i], ceiling));
+
+				if (levelflat.speed) // it is an animated flat
+				{
+					for (k = 0; k < levelflat.numpics; k++)
+					{
+						levelflat.lumpnum = levelflat.baselumpnum + k;
+						lump = levelflat.lumpnum;
+						HWR_GetFlat(lump, R_NoEncore(&sectors[i], ceiling));
+					}
+				}
 			}
 		}
 	}
@@ -576,8 +588,20 @@ static void HWR_PrecacheLevelFlats(void)
 		// just load every flat
 		for (i = 0; i < numlevelflats; i++)
 		{
-			lump = levelflats[i].lumpnum;
+			levelflat = levelflats[i];
+			lump = levelflat.lumpnum;
+
 			HWR_GetFlat(lump, false);
+
+			if (levelflat.speed) // it is an animated flat
+			{
+				for (k = 0; k < levelflat.numpics; k++)
+				{
+					levelflat.lumpnum = levelflat.baselumpnum + k;
+					lump = levelflat.lumpnum;
+					HWR_GetFlat(lump, false);
+				}
+			}
 		}
 	}
 }
@@ -661,7 +685,7 @@ static void HWR_PrecacheLevelSprites(void)
 
 		mo = (mobj_t *)th;
 
-		//FIXME: cant really precache colorized sprites without a colormap
+		// ogl is weird
 		if (mo->color || mo->colorized)
 			continue;
 
