@@ -702,6 +702,7 @@ static void HWR_PrecacheLevelTextures(void)
 
 static void HWR_PrecacheLevelSprites(void)
 {
+	GLPatch_t *spritepatch;
 	char *spritepresent;
 	size_t i, j, k;
 	lumpnum_t lump;
@@ -721,6 +722,8 @@ static void HWR_PrecacheLevelSprites(void)
 		mo = (mobj_t *)th;
 
 		// ogl is weird
+		// for some reason it does not want to preload sprites with colormaps
+		// so just save us the work
 		if (mo->color || mo->colorized)
 			continue;
 
@@ -735,12 +738,16 @@ static void HWR_PrecacheLevelSprites(void)
 		for (j = 0; j < sprites[i].numframes; j++)
 		{
 			sf = &sprites[i].spriteframes[j];
+
 			for (k = 0; k < 8; k++)
 			{
 				// see R_InitSprites for more about lumppat,lumpid
 				lump = sf->lumppat[k];
+				spritepatch = (GLPatch_t *)W_CachePatchNum(lump, PU_CACHE);
 
-				HWR_GetMappedPatch((GLPatch_t *)W_CachePatchNum(lump, PU_CACHE), NULL);
+				// yes this may be NULL
+				if (spritepatch != NULL)
+					HWR_GetPatch(spritepatch); // no colormapped sprites for us
 			}
 		}
 	}
