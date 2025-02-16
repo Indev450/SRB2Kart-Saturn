@@ -559,37 +559,42 @@ static void HWR_PrecacheLevelFlats(void)
 	size_t i, j;
 	INT32 k;
 
-	// special case for encore remapping
+	// special case for encore
+#ifdef GLENCORE
 	if (encoremode)
 	{
+		// go through all sectors to determine if it should be remapped for encore
 		for (i = 0; i < numsectors; i++)
 		{
+			sector_t *sec = &sectors[i];
+
+			// gotta check sector floor and ceiling
 			for (j = 0; j < 2; j++)
 			{
-				boolean ceiling = (j == 1);
-				INT32 pic = ceiling ? sectors[i].ceilingpic : sectors[i].floorpic;
+				const boolean ceiling = (j == 1);
+				INT32 pic = ceiling ? sec->ceilingpic : sec->floorpic;
 
 				levelflat = levelflats[pic];
 
 				lump = levelflat.lumpnum;
-				HWR_GetFlat(lump, R_NoEncore(&sectors[i], ceiling));
+				HWR_GetFlat(lump, R_NoEncore(sec, ceiling));
 
 				if (levelflat.speed) // it is an animated flat
 				{
-					for (k = 0; k < levelflat.numpics; k++)
+					for (k = 1; k < levelflat.numpics; k++)
 					{
-						levelflat.lumpnum = levelflat.baselumpnum + k;
-						lump = levelflat.lumpnum;
-						HWR_GetFlat(lump, R_NoEncore(&sectors[i], ceiling));
+						lump = levelflat.baselumpnum + k;
+						HWR_GetFlat(lump, R_NoEncore(sec, ceiling));
 					}
 				}
 			}
 		}
 	}
 	else
+#endif
 	{
 		// on non encore we have it simple
-		// just load every flat
+		// just load every flat in the level
 		for (i = 0; i < numlevelflats; i++)
 		{
 			levelflat = levelflats[i];
@@ -599,10 +604,9 @@ static void HWR_PrecacheLevelFlats(void)
 
 			if (levelflat.speed) // it is an animated flat
 			{
-				for (k = 0; k < levelflat.numpics; k++)
+				for (k = 1; k < levelflat.numpics; k++)
 				{
-					levelflat.lumpnum = levelflat.baselumpnum + k;
-					lump = levelflat.lumpnum;
+					lump = levelflat.baselumpnum + k;
 					HWR_GetFlat(lump, false);
 				}
 			}
@@ -613,9 +617,9 @@ static void HWR_PrecacheLevelFlats(void)
 static void HWR_PrecacheLevelTextures(void)
 {
 	char *texturepresent;
+	anim_t *anim;
 	size_t i, j;
 	INT32 h;
-	anim_t *anim;
 
 	texturepresent = calloc(numtextures, sizeof (*texturepresent));
 	if (texturepresent == NULL) I_Error("%s: Out of memory looking up textures", "HWR_PrecacheLevel");
@@ -623,7 +627,11 @@ static void HWR_PrecacheLevelTextures(void)
 	for (i = 0; i < numlines; i++)
 	{
 		line_t *line = &lines[i];
-		boolean noencoremap = (line->flags & ML_TFERLINE);
+#ifdef GLENCORE
+		const int noencoremap = ((line->flags & ML_TFERLINE) ? 2 : 1);
+#else
+		const int noencoremap = 1;
+#endif
 
 		// two sides
 		for (j = 0; j < 2; j++)
@@ -636,45 +644,46 @@ static void HWR_PrecacheLevelTextures(void)
 
 			if (side->toptexture >= 0 && side->toptexture < numtextures)
 			{
-				texturepresent[side->toptexture] = 1;
-				texturepresent[side->toptexture] |= noencoremap ? 2 : 1;
+				texturepresent[side->toptexture] = 1|noencoremap;
 			}
 			if (side->midtexture >= 0 && side->midtexture < numtextures)
 			{
-				texturepresent[side->midtexture] = 1;
-				texturepresent[side->midtexture] |= noencoremap ? 2 : 1;
+				texturepresent[side->midtexture] = 1|noencoremap;
 			}
 			if (side->bottomtexture >= 0 && side->bottomtexture < numtextures)
 			{
-				texturepresent[side->bottomtexture] = 1;
-				texturepresent[side->bottomtexture] |= noencoremap ? 2 : 1;
+				texturepresent[side->bottomtexture] = 1|noencoremap;
 			}
 		}
 	}
 
+	// check for animated textures
 	for (anim = anims; anim < lastanim; anim++)
 	{
 		if (!anim->istexture)
 			continue;
 
-		if (!texturepresent[anim->basepic])
+		const char texpresent = texturepresent[anim->basepic];
+
+		if (!texpresent)
 			continue;
 
-		if (texturepresent[anim->basepic] & 1)
+		if (texpresent & 1)
 		{
-			for (h = 0; h < anim->numpics; h++)
+			for (h = 1; h < anim->numpics; h++)
 			{
 				HWR_GetTexture(anim->basepic+h, false);
 			}
 		}
-
-		if (texturepresent[anim->basepic] & 2)
+#ifdef GLENCORE
+		if (texpresent & 2)
 		{
-			for (h = 0; h < anim->numpics; h++)
+			for (h = 1; h < anim->numpics; h++)
 			{
 				HWR_GetTexture(anim->basepic+h, true);
 			}
 		}
+#endif
 	}
 
 	// Sky texture is always present.
@@ -684,18 +693,21 @@ static void HWR_PrecacheLevelTextures(void)
 
 	for (i = 0; i < (unsigned)numtextures; i++)
 	{
-		if (!texturepresent[i])
+		const char texpresent = texturepresent[i];
+
+		if (!texpresent)
 			continue;
 
-		if (texturepresent[i] & 1)
+		if (texpresent & 1)
 		{
 			HWR_GetTexture(i, false);
 		}
-
-		if (texturepresent[i] & 2)
+#ifdef GLENCORE
+		if (texpresent & 2)
 		{
 			HWR_GetTexture(i, true);
 		}
+#endif
 	}
 	free(texturepresent);
 }
