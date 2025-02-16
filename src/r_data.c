@@ -1632,6 +1632,10 @@ void R_PrecacheLevel(void)
 	thinker_t *th;
 	spriteframe_t *sf;
 
+	// do not flush the memory, Z_Malloc twice with same user will cause error in Z_CheckHeap()
+	if (rendermode == render_none)
+		return;
+
 	if (demo.playback)
 		return;
 
@@ -1642,10 +1646,6 @@ void R_PrecacheLevel(void)
 		return;
 	}
 #endif
-
-	// do not flush the memory, Z_Malloc twice with same user will cause error in Z_CheckHeap()
-	if (rendermode != render_soft)
-		return;
 
 	// Precache flats.
 	flatmemory = P_PrecacheLevelFlats();

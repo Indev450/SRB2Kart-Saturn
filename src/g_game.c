@@ -330,8 +330,6 @@ static struct {
 // There is no conflict here.
 demoghost *ghosts = NULL;
 
-boolean precachetextures = true; // if true, load all graphics at start
-
 INT16 prevmap, nextmap;
 
 // save if director is enabled
