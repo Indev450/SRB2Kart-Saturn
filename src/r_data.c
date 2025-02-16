@@ -1694,8 +1694,12 @@ void R_PrecacheLevel(void)
 	if (spritepresent == NULL) I_Error("%s: Out of memory looking up sprites", "R_PrecacheLevel");
 
 	for (th = thinkercap.next; th != &thinkercap; th = th->next)
-		if (th->function.acp1 == (actionf_p1)P_MobjThinker)
-			spritepresent[((mobj_t *)th)->sprite] = 1;
+	{
+		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+			continue;
+
+		spritepresent[((mobj_t *)th)->sprite] = 1;
+	}
 
 	spritememory = 0;
 	for (i = 0; i < numsprites; i++)
@@ -1706,16 +1710,32 @@ void R_PrecacheLevel(void)
 		for (j = 0; j < sprites[i].numframes; j++)
 		{
 			sf = &sprites[i].spriteframes[j];
-			for (k = 0; k < 8; k++)
+#define cacheang(a) {\
+			lump = sf->lumppat[a];\
+			if (devparm)\
+				spritememory += W_LumpLength(lump);\
+			W_CachePatchNum(lump, PU_CACHE);\
+		}
+			// see R_InitSprites for more about lumppat,lumpid
+			switch (sf->rotate)
 			{
-				// see R_InitSprites for more about lumppat,lumpid
-				lump = sf->lumppat[k];
-				if (devparm)
-					spritememory += W_LumpLength(lump);
-				W_CachePatchNum(lump, PU_CACHE);
+				case SRF_SINGLE:
+					cacheang(0);
+					break;
+				case SRF_2D:
+					cacheang(2);
+					cacheang(6);
+					break;
+				default:
+					k = 8;
+					while (k--)
+						cacheang(k);
+					break;
 			}
+#undef cacheang
 		}
 	}
+
 	free(spritepresent);
 
 	// FIXME: this is no longer correct with OpenGL render mode
