@@ -763,16 +763,29 @@ static void HWR_PrecacheLevelSprites(void)
 		{
 			sf = &sprites[i].spriteframes[j];
 
-			for (k = 0; k < 8; k++)
-			{
-				// see R_InitSprites for more about lumppat,lumpid
-				lump = sf->lumppat[k];
-				spritepatch = (GLPatch_t *)W_CachePatchNum(lump, PU_CACHE);
-
-				// yes this may be NULL
-				if (spritepatch != NULL)
-					HWR_GetPatch(spritepatch); // no colormapped sprites for us
+#define cacheang(a) {\
+				lump = sf->lumppat[a];\
+				spritepatch = (GLPatch_t *)W_CachePatchNum(lump, PU_CACHE);\
+				if (spritepatch != NULL)\
+					HWR_GetPatch(spritepatch);\
 			}
+			// see R_InitSprites for more about lumppat,lumpid
+			switch (sf->rotate)
+			{
+				case SRF_SINGLE:
+					cacheang(0);
+					break;
+				case SRF_2D:
+					cacheang(2);
+					cacheang(6);
+					break;
+				default:
+					k = 8;
+					while (k--)
+						cacheang(k);
+					break;
+			}
+#undef cacheang
 		}
 	}
 	free(spritepresent);
