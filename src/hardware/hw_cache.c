@@ -568,6 +568,12 @@ static void HWR_PrecacheLevelFlats(void)
 		{
 			sector_t *sec = &sectors[i];
 
+			// sector checked already?
+			if (sec->validcount == validcount)
+				continue;
+
+			sec->validcount = validcount;
+
 			// gotta check sector floor and ceiling
 			for (j = 0; j < 2; j++)
 			{
@@ -632,6 +638,12 @@ static void HWR_PrecacheLevelTextures(void)
 #else
 		const int noencoremap = 1;
 #endif
+
+		// line checked already?
+		if (line->validcount == validcount)
+			continue;
+
+		line->validcount = validcount;
 
 		// two sides
 		for (j = 0; j < 2; j++)
