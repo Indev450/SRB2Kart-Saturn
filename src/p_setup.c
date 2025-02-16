@@ -3124,7 +3124,7 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 	if (rendermode != render_none && !reloadinggamestate)
 		V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, levelfadecol);
 
-	if (precachetextures)
+	if (cv_precachetextures.value)
 		R_PrecacheLevel();
 
 	nextmapoverride = 0;

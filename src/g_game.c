@@ -326,8 +326,6 @@ static struct {
 // There is no conflict here.
 demoghost *ghosts = NULL;
 
-boolean precachetextures = true; // if true, load all graphics at start
-
 INT16 prevmap, nextmap;
 
 static CV_PossibleValue_t recordmultiplayerdemos_cons_t[] = {{0, "Disabled"}, {1, "Manual Save"}, {2, "Auto Save"}, {0, NULL}};
