@@ -586,16 +586,30 @@ levelflat_t *levelflats;
 //SoM: Other files want this info.
 size_t P_PrecacheLevelFlats(void)
 {
+	levelflat_t levelflat;
 	lumpnum_t lump;
 	size_t i, flatmem = 0;
+	INT32 k;
 
 	//SoM: 4/18/2000: New flat code to make use of levelflats.
 	for (i = 0; i < numlevelflats; i++)
 	{
-		lump = levelflats[i].lumpnum;
+		levelflat = levelflats[i];
+		lump = levelflat.lumpnum;
 		if (devparm)
 			flatmem += W_LumpLength(lump);
 		R_GetFlat(lump);
+
+		if (levelflat.speed) // it is an animated flat
+		{
+			for (k = 1; k < levelflat.numpics; k++)
+			{
+				lump = levelflat.baselumpnum + k;
+				if (devparm)
+					flatmem += W_LumpLength(lump);
+				R_GetFlat(lump);
+			}
+		}
 	}
 
 	return flatmem;
