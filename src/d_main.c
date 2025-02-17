@@ -218,7 +218,7 @@ static void D_DeviceLEDTick(void)
 	UINT16 color[MAXSPLITSCREENPLAYERS];
 	UINT16 curcolor[MAXSPLITSCREENPLAYERS];
 
-	if (dedicated || I_NumJoys() == 0)
+	if (dedicated || numcontrollers == 0)
 	{
 		return;
 	}

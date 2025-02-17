@@ -1260,6 +1260,8 @@ void I_GetEvent(void)
 						G_SetPlayerGamepadIndicatorColor(i, G_GetSkinColor(i)); // gotta update the controller led again on reconnect
 					}
 
+					numcontrollers = I_NumJoys();
+
 					////////////////////////////////////////////////////////////
 
 					for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)

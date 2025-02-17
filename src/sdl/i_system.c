@@ -205,6 +205,8 @@ static char returnWadPath[256];
 #include "../byteptr.h"
 #endif
 
+INT32 numcontrollers = 0;
+
 #ifdef HAVE_LIBBACKTRACE
 #include <backtrace.h>
 // TODO - move this to some header file instead
@@ -1406,6 +1408,8 @@ void I_InitJoystick(UINT8 index)
 		cv_usejoystick[index].value = 0;
 		joystick_started[index] = 0;
 	}
+
+	numcontrollers = I_NumJoys();
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
