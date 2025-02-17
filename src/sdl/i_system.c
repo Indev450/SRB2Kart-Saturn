@@ -1176,21 +1176,21 @@ void I_ShutdownJoystick(UINT8 index)
 {
 	INT32 i;
 	event_t event;
-	event.type=ev_keyup;
+	event.type = ev_keyup;
 	event.data2 = 0;
 	event.data3 = 0;
 
 	lastjoybuttons[index] = lastjoyhats[index] = 0;
 
 	// emulate the up of all joystick buttons
-	for (i=0;i<JOYBUTTONS;i++)
+	for (i = 0; i < JOYBUTTONS; i++)
 	{
-		event.data1=KEY_JOY1+i;
+		event.data1=KEY_JOY1 + i;
 		D_PostEvent(&event);
 	}
 
 	// emulate the up of all joystick hats
-	for (i=0;i<JOYHATS*4;i++)
+	for (i = 0; i < JOYHATS*4; i++)
 	{
 		event.data1=KEY_HAT1+i;
 		D_PostEvent(&event);
@@ -1198,7 +1198,7 @@ void I_ShutdownJoystick(UINT8 index)
 
 	// reset joystick position
 	event.type = ev_joystick;
-	for (i=0;i<JOYAXISSET; i++)
+	for (i = 0; i < JOYAXISSET; i++)
 	{
 		event.data1 = i;
 		D_PostEvent(&event);
@@ -1408,8 +1408,6 @@ void I_InitJoystick(UINT8 index)
 		cv_usejoystick[index].value = 0;
 		joystick_started[index] = 0;
 	}
-
-	numcontrollers = I_NumJoys();
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
