@@ -928,20 +928,17 @@ UINT16 G_GetSkinColor(INT32 playernum)
 	{
 		case 0:
 			return cv_playercolor.value;
-			break;
 		case 1:
 			return cv_playercolor2.value;
-			break;
 		case 2:
 			return cv_playercolor3.value;
-			break;
 		case 3:
 			return cv_playercolor4.value;
-			break;
 		default:
 			return 0;
-			break;
 	}
+
+	return 0;
 }
 
 void G_SetPlayerGamepadIndicatorColor(INT32 playernum, UINT16 color)
