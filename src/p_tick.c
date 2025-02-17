@@ -373,7 +373,7 @@ static void P_DeviceRumbleTick(void)
 {
 	UINT8 i;
 
-	if (dedicated || I_NumJoys() == 0 || gamestate != GS_LEVEL)
+	if (dedicated || numcontrollers == 0 || gamestate != GS_LEVEL)
 	{
 		return;
 	}

@@ -230,6 +230,8 @@ void I_InitJoystick4(void);
 */
 INT32 I_NumJoys(void);
 
+extern INT32 numcontrollers;
+
 /**	\brief	The *I_GetJoyName function
 
 	\param	joyindex	which joystick
