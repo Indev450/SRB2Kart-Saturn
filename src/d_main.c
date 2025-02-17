@@ -215,8 +215,8 @@ static void D_GamePadMenuScrollTicker(void)
 static void D_DeviceLEDTick(void)
 {
 	UINT8 i;
-	UINT16 color[MAXSPLITSCREENPLAYERS];
-	UINT16 curcolor[MAXSPLITSCREENPLAYERS];
+	static UINT16 color[MAXSPLITSCREENPLAYERS] = {0, 0, 0, 0};
+	static UINT16 curcolor[MAXSPLITSCREENPLAYERS] = {0, 0, 0, 0};
 
 	if (dedicated || numcontrollers == 0)
 	{
