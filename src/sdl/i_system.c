@@ -1253,8 +1253,6 @@ void I_GetJoystickEvents(UINT8 index)
 	\param	fname	name of joystick
 
 	\return	axises
-
-
 */
 static int joy_open(int playerIndex, int joyIndex)
 {
@@ -1389,6 +1387,8 @@ void I_InitJoystick(UINT8 index)
 		if (JoyInfo[i].dev == newcontroller)
 			break;
 	}
+
+	JoyInfo[index].id = I_GetJoystickDeviceIndex(JoyInfo[index].dev);
 
 	if (newcontroller && i < MAXSPLITSCREENPLAYERS) // don't override an active device
 	{
