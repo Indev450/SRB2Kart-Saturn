@@ -977,7 +977,7 @@ void Got_Filetxpak(void)
 
 	if (filenum >= fileneedednum)
 	{
-		DEBFILE(va("fileframent not needed %d>%d\n", filenum, fileneedednum));
+		DEBFILE(va("filefragment not needed %d>%d\n", filenum, fileneedednum));
 		//I_Error("Received an unneeded file fragment (file id received: %d, file id needed: %d)\n", filenum, fileneedednum);
 		return;
 	}
@@ -1048,10 +1048,13 @@ void Got_Filetxpak(void)
 		}
 		I_Error("Received a file not requested (file id: %d, file status: %s)\n", filenum, s);
 	}
+
 	// Send ack back quickly
 	if (++filetime == 3)
 	{
-		Net_SendAcks(servernode);
+		// send a PT_NOTHING back to acknowledge the packet
+		netbuffer->packettype = PT_NOTHING;
+		HSendPacket(servernode, false, 0, 0);
 		filetime = 0;
 	}
 
