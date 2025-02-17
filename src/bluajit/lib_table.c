@@ -9,6 +9,8 @@
 #define lib_table_c
 #define LUA_LIB
 
+#include "../console.h"
+
 #include "lua.h"
 #include "lauxlib.h"
 #include "lualib.h"
@@ -72,7 +74,9 @@ LJLIB_CF(table_maxn)
       lua_Number n = numberVnum(&node[i].key);
       if (n > m) m = n;
     }
-  setnumV(L->top-1, m);
+  /* This should be setnumV but for some reason it makes numbers broken,
+   * which causes "attempt to perform arithmetic on a number value" errors */
+  setintV(L->top-1, m);
   return 1;
 }
 
