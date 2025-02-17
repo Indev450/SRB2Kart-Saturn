@@ -368,7 +368,7 @@ static void P_DeviceRumbleTick(void)
 {
 	UINT8 i;
 
-	if (I_NumJoys() == 0 || gamestate != GS_LEVEL)
+	if (dedicated || I_NumJoys() == 0 || gamestate != GS_LEVEL)
 	{
 		return;
 	}
@@ -519,6 +519,9 @@ static void P_RunQuakes(void)
 static inline void P_ResetSpriteStuff(void)
 {
 	thinker_t *th;
+
+	if (rendermode == render_none)
+		return;
 
 	for (th = thinkercap.next; th != &thinkercap; th = th->next)
 	{

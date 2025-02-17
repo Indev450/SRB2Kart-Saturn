@@ -6100,6 +6100,10 @@ static void P_KoopaThinker(mobj_t *koopa)
 //
 void P_RollPitchMobj(mobj_t* mobj)
 {
+	// we dont need this in dedi do we?
+	if (rendermode == render_none)
+		return;
+
 	if (P_MobjWasRemoved(mobj))
 		return;
 
