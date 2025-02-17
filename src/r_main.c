@@ -167,6 +167,9 @@ static void Precipstuff_OnChange(void);
 
 consvar_t cv_tailspickup = {"tailspickup", "On", CV_NETVAR|CV_NOSHOWHELP, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+// if enabled, load all graphics at level load
+consvar_t cv_precachetextures = {"precachetextures", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 consvar_t cv_chasecam[MAXSPLITSCREENPLAYERS] = {
 	{"chasecam", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"chasecam2", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
@@ -1517,6 +1520,8 @@ void R_RegisterEngineStuff(void)
 	// Enough for dedicated server
 	if (dedicated)
 		return;
+
+	CV_RegisterVar(&cv_precachetextures);
 
 	CV_RegisterVar(&cv_translucency);
 	CV_RegisterVar(&cv_drawdist);

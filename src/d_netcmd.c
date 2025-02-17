@@ -2949,9 +2949,6 @@ static void Got_Mapcmd(UINT8 **cp, INT32 playernum)
 		CON_LogMessage(M_GetText("Speeding off to level...\n"));
 	}
 
-	if (demo.playback && !demo.timing)
-		precache = false;
-
 	if (resetplayer)
 	{
 		if (!FLS || (netgame || multiplayer))
@@ -2967,8 +2964,7 @@ static void Got_Mapcmd(UINT8 **cp, INT32 playernum)
 	demo.savemode = (cv_recordmultiplayerdemos.value == 2) ? DSM_WILLAUTOSAVE : DSM_NOTSAVING;
 	demo.savebutton = 0;
 	G_InitNew(pencoremode, mapname, resetplayer, skipprecutscene);
-	if (demo.playback && !demo.timing)
-		precache = true;
+
 	if (demo.timing)
 		G_DoneLevelLoad();
 
