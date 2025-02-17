@@ -184,6 +184,9 @@ static void D_GamePadMenuScrollTicker(void)
 	static SINT8 menuInputDelayTimer = 0;
 	int key = 0; // butt-on output
 
+	if (dedicated)
+		return;
+
 	// wish i had a switch ono
 	if (DPADUPSCROLL)
 		key = KEY_UPARROW;
@@ -215,7 +218,7 @@ static void D_DeviceLEDTick(void)
 	UINT16 color[MAXSPLITSCREENPLAYERS];
 	UINT16 curcolor[MAXSPLITSCREENPLAYERS];
 
-	if (I_NumJoys() == 0)
+	if (dedicated || I_NumJoys() == 0)
 	{
 		return;
 	}
