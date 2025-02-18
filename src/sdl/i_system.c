@@ -201,6 +201,8 @@ static char returnWadPath[256];
 #include "../byteptr.h"
 #endif
 
+INT32 numcontrollers = 0;
+
 #ifdef HAVE_LIBBACKTRACE
 #include <backtrace.h>
 // TODO - move this to some header file instead
@@ -1170,21 +1172,21 @@ void I_ShutdownJoystick(UINT8 index)
 {
 	INT32 i;
 	event_t event;
-	event.type=ev_keyup;
+	event.type = ev_keyup;
 	event.data2 = 0;
 	event.data3 = 0;
 
 	lastjoybuttons[index] = lastjoyhats[index] = 0;
 
 	// emulate the up of all joystick buttons
-	for (i=0;i<JOYBUTTONS;i++)
+	for (i = 0; i < JOYBUTTONS; i++)
 	{
-		event.data1=KEY_JOY1+i;
+		event.data1=KEY_JOY1 + i;
 		D_PostEvent(&event);
 	}
 
 	// emulate the up of all joystick hats
-	for (i=0;i<JOYHATS*4;i++)
+	for (i = 0; i < JOYHATS*4; i++)
 	{
 		event.data1=KEY_HAT1+i;
 		D_PostEvent(&event);
@@ -1192,7 +1194,7 @@ void I_ShutdownJoystick(UINT8 index)
 
 	// reset joystick position
 	event.type = ev_joystick;
-	for (i=0;i<JOYAXISSET; i++)
+	for (i = 0; i < JOYAXISSET; i++)
 	{
 		event.data1 = i;
 		D_PostEvent(&event);
@@ -1486,7 +1488,7 @@ const char *I_GetJoyName(INT32 joyindex)
 void I_GamepadRumble(INT32 playernum, UINT16 low_strength, UINT16 high_strength, UINT32 duration)
 {
 #if !(SDL_VERSION_ATLEAST(2,0,14))
-	(void)device_id;
+	(void)playernum;
 	(void)low_strength;
 	(void)high_strength;
 	(void)duration;
@@ -1504,7 +1506,7 @@ void I_GamepadRumble(INT32 playernum, UINT16 low_strength, UINT16 high_strength,
 void I_SetGamepadIndicatorColor(INT32 playernum, UINT8 red, UINT8 green, UINT8 blue)
 {
 #if !(SDL_VERSION_ATLEAST(2,0,14))
-	(void)device_id;
+	(void)playernum;
 	(void)red;
 	(void)green;
 	(void)blue;

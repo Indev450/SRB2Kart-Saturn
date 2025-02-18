@@ -1252,6 +1252,8 @@ void I_GetEvent(void)
 					if (currentMenu == &OP_JoystickSetDef)
 						M_SetupJoystickMenu(0);
 
+					numcontrollers = I_NumJoys();
+
 					for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 					{
 						if (JoyInfo[i].dev == newcontroller)
@@ -1311,6 +1313,9 @@ void I_GetEvent(void)
 				// update the menu
 				if (currentMenu == &OP_JoystickSetDef)
 					M_SetupJoystickMenu(0);
+
+				numcontrollers = I_NumJoys();
+
 				break;
 			case SDL_DROPFILE:
 				dropped_filedir = evt.drop.file;
