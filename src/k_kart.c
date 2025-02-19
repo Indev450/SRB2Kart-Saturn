@@ -85,6 +85,8 @@ consvar_t cv_bananajitter = {"bananadragjitter", "Off", CV_SAVE, CV_OnOff, NULL,
 static CV_PossibleValue_t bananthrowroll_cons_t[] = {{0, "Off"}, {1, "Throw"}, {2, "+Onground"}, {0, NULL}};
 consvar_t cv_bananthrowroll = {"bananthrowroll", "0", CV_SAVE, bananthrowroll_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_airsparks = {"airdriftsparks", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 //extra hud things
 consvar_t cv_showstats = {"showstats", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_showinput = {"showinput", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -839,6 +841,8 @@ void K_RegisterKartStuff(void)
 	// makes banans do funny jitter jumpy when dragged
 	CV_RegisterVar(&cv_bananajitter);
 	CV_RegisterVar(&cv_bananthrowroll);
+
+	CV_RegisterVar(&cv_airsparks);
 
 	CV_RegisterVar(&cv_showstats);
 	CV_RegisterVar(&cv_showinput);
@@ -3232,7 +3236,7 @@ static void K_SpawnDriftSparks(player_t *player)
 	if (leveltime % 2 == 1)
 		return;
 
-	if (!P_IsObjectOnGround(player->mo))
+	if (!cv_airsparks.value && !P_IsObjectOnGround(player->mo))
 		return;
 
 	if (!player->kartstuff[k_drift] || player->kartstuff[k_driftcharge] < K_GetKartDriftSparkValue(player))
