@@ -268,8 +268,8 @@ void HWR_DrawStretchyFixedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t
 	cy = 1.0f - (cy / (vid.height / 2.0f));
 
 	// fwidth and fheight are similar
-	fwidth /= fvw / 2;
-	fheight /= fvh / 2;
+	fwidth /= fvw / 2.0f;
+	fheight /= fvh / 2.0f;
 
 	// set the polygon vertices to the right positions
 	v[0].x = v[3].x = cx;
@@ -442,8 +442,8 @@ void HWR_DrawCroppedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscal
 	cy = 1.0f - (cy / (vid.height / 2.0f));
 
 	// fwidth and fheight are similar
-	fwidth /= fvw / 2;
-	fheight /= fvh / 2;
+	fwidth /= fvw / 2.0f;
+	fheight /= fvh / 2.0f;
 
 	// set the polygon vertices to the right positions
 	v[0].x = v[3].x = cx;
@@ -882,8 +882,8 @@ void HWR_DrawDiag(INT32 x, INT32 y, INT32 wh, INT32 color)
 
 	fx = -1.0f + fx / (vid.width / 2.0f);
 	fy = 1.0f - fy / (vid.height / 2.0f);
-	fw = fw / (fvw / 2);
-	fh = fh / (fvh / 2);
+	fw = fw / (fvw / 2.0f);
+	fh = fh / (fvh / 2.0f);
 
 	v[0].x = v[3].x = fx;
 	v[2].x = v[1].x = fx + fw;
@@ -995,8 +995,8 @@ void HWR_DrawConsoleFill(INT32 x, INT32 y, INT32 w, INT32 h, UINT32 color, INT32
 
 	fx = -1.0f + fx / (vid.width / 2.0f);
 	fy = 1.0f - fy / (vid.height / 2.0f);
-	fw = fw / (fvw / 2);
-	fh = fh / (fvh / 2);
+	fw = fw / (fvw / 2.0f);
+	fh = fh / (fvh / 2.0f);
 
 	v[0].x = v[3].x = fx;
 	v[2].x = v[1].x = fx + fw;
@@ -1084,7 +1084,6 @@ void HWR_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color)
 			fy += (FLOATBASEVIDHEIGHT * dupy)/2;
 		if (color & V_HORZSCREEN)
 			fx += (FLOATBASEVIDWIDTH * dupx)/2;
-
 	}
 
 	if (fx >= vid.width || fy >= vid.height)
@@ -1109,8 +1108,8 @@ void HWR_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color)
 
 	fx = -1.0f + fx / (vid.width / 2.0f);
 	fy = 1.0f - fy / (vid.height / 2.0f);
-	fw = fw / (fvw / 2);
-	fh = fh / (fvh / 2);
+	fw = fw / (fvw / 2.0f);
+	fh = fh / (fvh / 2.0f);
 
 	v[0].x = v[3].x = fx;
 	v[2].x = v[1].x = fx + fw;
