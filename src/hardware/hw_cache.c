@@ -897,8 +897,7 @@ static void HWR_CacheFlat(GLMipmap_t *glMipmap, lumpnum_t flatlumpnum)
 	glMipmap->height = (UINT16)pflatsize;
 
 	// the flat raw data needn't be converted with palettized textures
-	W_ReadLump(flatlumpnum, Z_Malloc(W_LumpLength(flatlumpnum),
-		PU_HWRCACHE, &glMipmap->data));
+	W_ReadLump(flatlumpnum, Z_Malloc(size, PU_HWRCACHE, &glMipmap->data));
 
 #ifdef GLENCORE
 	flat = glMipmap->data;
@@ -1093,6 +1092,7 @@ static void HWR_DrawFadeMaskInCache(GLMipmap_t *mipmap, INT32 pblockwidth, INT32
 	stepy = ((INT32)SHORT(fmheight)<<FRACBITS)/pblockheight;
 	stepx = ((INT32)SHORT(fmwidth)<<FRACBITS)/pblockwidth;
 	posy = 0;
+
 	for (j = 0; j < pblockheight; j++)
 	{
 		posx = 0;
