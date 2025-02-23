@@ -1886,11 +1886,12 @@ static menuitem_t OP_CamOptionsMenu[] =
 
 	{IT_STRING | IT_CVAR, 		NULL, "Lagless Camera",   			&cv_laglesscam, 			 50},
 	{IT_STRING | IT_CVAR, 		NULL, "Camera Lookback Momentum",   &cv_lookbackmom, 			 60},
+	{IT_STRING | IT_CVAR, 		NULL, "Camera Vertical Look",       &cv_verticallook, 			 70},
 
-	{IT_STRING | IT_SUBMENU,	NULL, "Player 1 Camera options...",	&OP_Player1CamOptionsDef,	 80},
-	{IT_STRING | IT_SUBMENU,	NULL, "Player 2 Camera options...",	&OP_Player2CamOptionsDef,	 90},
-	{IT_STRING | IT_SUBMENU,	NULL, "Player 3 Camera options...",	&OP_Player3CamOptionsDef,	 100},
-	{IT_STRING | IT_SUBMENU,	NULL, "Player 4 Camera options...",	&OP_Player4CamOptionsDef,	 110},
+	{IT_STRING | IT_SUBMENU,	NULL, "Player 1 Camera options...",	&OP_Player1CamOptionsDef,	 90},
+	{IT_STRING | IT_SUBMENU,	NULL, "Player 2 Camera options...",	&OP_Player2CamOptionsDef,	 100},
+	{IT_STRING | IT_SUBMENU,	NULL, "Player 3 Camera options...",	&OP_Player3CamOptionsDef,	 110},
+	{IT_STRING | IT_SUBMENU,	NULL, "Player 4 Camera options...",	&OP_Player4CamOptionsDef,	 120},
 };
 
 static const char* OP_CamOptionsTooltips[] =
@@ -1899,6 +1900,7 @@ static const char* OP_CamOptionsTooltips[] =
 	"Player field of view.",
 	"Removes Camera Lag in netgames\nMay cause Camera stutters in poor net conditions.",
 	"Should looking back inherit the Players Momentum?\nEither inherit Player Momentum or double of it\nmay make looking back while boosting or going in high speed less jarring",
+	"Allows looking up/down by holding aim forward/backward while standing still.",
 	NULL,
 	NULL,
 	NULL,
