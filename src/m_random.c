@@ -14,8 +14,9 @@
 
 #include "doomdef.h"
 #include "doomtype.h"
-#include "k_stats.h" // kartstats.totalplaytime
+#include "doomstat.h" // totalplaytime
 #include "i_system.h" // I_GetRandomBytes
+#include "k_stats.h" // kartstats.totalplaytime
 
 #include "m_random.h"
 #include "m_fixed.h"

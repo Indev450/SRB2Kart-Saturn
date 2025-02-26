@@ -46,7 +46,6 @@
 #define FF_BLENDMASK 0x7000
 /// \brief shift for FF_BLENDMASK
 #define FF_BLENDSHIFT 12
-
 /// \brief preshifted blend flags minus 1 as effects don't distinguish between AST_COPY and AST_TRANSLUCENT
 #define FF_ADD             ((AST_ADD-1)<<FF_BLENDSHIFT)
 #define FF_SUBTRACT        ((AST_SUBTRACT-1)<<FF_BLENDSHIFT)

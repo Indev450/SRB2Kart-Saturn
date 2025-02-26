@@ -394,7 +394,7 @@ void HWR_ObjectLightLevelPost(gl_vissprite_t *spr, const sector_t *sector, INT32
 
 	if (semibright)
 	{
-		*lightlevel = 192 + (*lightlevel >> 1);
+		*lightlevel = 128 + (*lightlevel >> 1);
 	}
 }
 

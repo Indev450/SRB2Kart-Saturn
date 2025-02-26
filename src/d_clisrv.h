@@ -659,7 +659,6 @@ extern char motd[254], server_context[8];
 extern UINT8 playernode[MAXPLAYERS];
 
 INT32 D_NumPlayers(void);
-boolean D_IsPlayerHumanAndGaming(INT32 player_number);
 
 void D_ResetTiccmds(void);
 ticcmd_t *D_LocalTiccmd(UINT8 ss);
