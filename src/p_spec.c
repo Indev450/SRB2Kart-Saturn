@@ -5270,20 +5270,29 @@ void P_SpawnSpecials(INT32 fromnetsave, boolean reloadinggamestate)
 		}
 	}
 
-	if (mapheaderinfo[gamemap-1]->weather == 2) // snow
-		curWeather = PRECIP_SNOW;
-	else if (mapheaderinfo[gamemap-1]->weather == 3) // rain
-		curWeather = PRECIP_RAIN;
-	else if (mapheaderinfo[gamemap-1]->weather == 1) // storm
-		curWeather = PRECIP_STORM;
-	else if (mapheaderinfo[gamemap-1]->weather == 5) // storm w/o rain
-		curWeather = PRECIP_STORM_NORAIN;
-	else if (mapheaderinfo[gamemap-1]->weather == 6) // storm w/o lightning
-		curWeather = PRECIP_STORM_NOSTRIKES;
-	else if (mapheaderinfo[gamemap-1]->weather == 4) // blank
-		curWeather = PRECIP_BLANK;
-	else
-		curWeather = PRECIP_NONE;
+	switch (mapheaderinfo[gamemap-1]->weather)
+	{
+		case 2: // snow
+			curWeather = PRECIP_SNOW;
+			break;
+		case 3: // rain
+			curWeather = PRECIP_RAIN;
+			break;
+		case 1: // storm
+			curWeather = PRECIP_STORM;
+			break;
+		case 5: // storm w/o rain
+			curWeather = PRECIP_STORM_NORAIN;
+			break;
+		case 6: // storm w/o lightning
+			curWeather = PRECIP_STORM_NOSTRIKES;
+			break;
+		case 4: // blank
+			curWeather = PRECIP_BLANK;
+			break;
+		default:
+			curWeather = PRECIP_NONE;
+	}
 
 	P_InitTagLists();   // Create xref tables for tags
 	P_SearchForDisableLinedefs(); // Disable linedefs are now allowed to disable *any* line
