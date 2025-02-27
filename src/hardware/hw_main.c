@@ -911,7 +911,7 @@ static void HWR_DrawSegsSplats(FSurfaceInfo * pSurf)
 		}
 
 		if (HWR_UseShader())
-			shader = HWR_ShouldUsePaletteRendering() ? SHADER_WALL : SHADER_FLOOR; //FIXME: inplace shader switching is ass
+			shader = SHADER_WALL;
 
 		HWR_ProcessPolygon(&pSurf, wallVerts, 4, i|PF_Modulated|PF_Decal, shader, false);
 	}
@@ -995,7 +995,7 @@ static void HWR_ProjectWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIEL
 
 	if (HWR_UseShader())
 	{
-		shader = HWR_ShouldUsePaletteRendering() ? SHADER_WALL : SHADER_FLOOR; //FIXME: inplace shader switching is ass
+		shader = SHADER_WALL;
 		blendmode |= PF_ColorMapped;
 	}
 
@@ -3713,7 +3713,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 
 	if (HWR_UseShader())
 	{
-		shader = HWR_ShouldUsePaletteRendering() ? SHADER_SPRITE : SHADER_FLOOR; //FIXME: inplace shader switching is ass
+		shader = SHADER_SPRITE;
 		blend |= PF_ColorMapped;
 	}
 
@@ -3996,7 +3996,7 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 
 	if (HWR_UseShader())
 	{
-		shader = HWR_ShouldUsePaletteRendering() ? SHADER_SPRITE : SHADER_FLOOR; //FIXME: inplace shader switching is ass
+		shader = SHADER_SPRITE;
 		blend |= PF_ColorMapped;
 	}
 
@@ -4093,7 +4093,7 @@ static void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 
 	if (HWR_UseShader())
 	{
-		shader = HWR_ShouldUsePaletteRendering() ? SHADER_SPRITE : SHADER_FLOOR; //FIXME: inplace shader switching is ass
+		shader = SHADER_SPRITE;
 		blend |= PF_ColorMapped;
 	}
 
@@ -5899,7 +5899,7 @@ static void HWR_RenderWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD
 		if (fogwall)
 			shader = SHADER_FOG;
 		else
-			shader = HWR_ShouldUsePaletteRendering() ? SHADER_WALL : SHADER_FLOOR; //FIXME: inplace shader switching is ass
+			shader = SHADER_WALL;
 
 		blendmode |= PF_ColorMapped;
 	}
