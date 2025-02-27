@@ -220,21 +220,28 @@
 
 // hand tuned adjustments for light level calculation
 #define GLSL_FLOOR_FUDGES \
-	"#version 120\n" \
 	"#define STARTMAP_FUDGE 1.06\n" \
 	"#define SCALE_FUDGE 1.15\n"
 
 #define GLSL_WALL_FUDGES \
-	"#version 120\n" \
 	"#define STARTMAP_FUDGE 1.05\n" \
 	"#define SCALE_FUDGE 2.2\n"
 
 #define GLSL_FLOOR_FRAGMENT_SHADER \
+	"#version 120\n" \
 	GLSL_FLOOR_FUDGES \
 	GLSL_SOFTWARE_FRAGMENT_SHADER
 
+// this is very backwards
+// but we wanna have the game look like vanilla does
+// oh well
 #define GLSL_WALL_FRAGMENT_SHADER \
+	"#version 120\n" \
+	"#ifdef SRB2_PALETTE_RENDERING\n" \
 	GLSL_WALL_FUDGES \
+	"#else\n" \
+	GLSL_FLOOR_FUDGES \
+	"#endif\n" \
 	GLSL_SOFTWARE_FRAGMENT_SHADER
 
 //
