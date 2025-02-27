@@ -2224,16 +2224,18 @@ static menuitem_t OP_SaturnMenu[] =
 
 	{IT_STRING | IT_CVAR, NULL, "Bananadrag Jitter", 					&cv_bananajitter, 	 		 45},
 
-	{IT_STRING | IT_CVAR, NULL, "Show Localskin Menus", 				&cv_showlocalskinmenus, 	 55},
-	{IT_STRING | IT_CVAR, NULL, "Uppercase Menu",						&cv_menucaps,   		     65},
+	{IT_STRING | IT_CVAR, NULL, "Midair Driftsparks", 					&cv_airsparks, 	 		 	 55},
 
-	{IT_STRING | IT_CVAR, NULL, "Keyboard Layout",						&cv_keyboardlayout,   	   	 70},
+	{IT_STRING | IT_CVAR, NULL, "Show Localskin Menus", 				&cv_showlocalskinmenus, 	 65},
+	{IT_STRING | IT_CVAR, NULL, "Uppercase Menu",						&cv_menucaps,   		     75},
 
-	{IT_STRING | IT_CVAR, NULL, "Less Midnight Channel Flicker", 		&cv_lessflicker, 		   	 80},
+	{IT_STRING | IT_CVAR, NULL, "Keyboard Layout",						&cv_keyboardlayout,   	   	 80},
 
-	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Hud...", 					&OP_SaturnHudDef,		   	 90},
-	{IT_SUBMENU|IT_STRING,	NULL,	"Sprite Distortion...", 			&OP_PlayerDistortDef,	   	 95},
-	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Credits", 					&OP_SaturnCreditsDef,	   	105}, // uwu
+	{IT_STRING | IT_CVAR, NULL, "Less Midnight Channel Flicker", 		&cv_lessflicker, 		   	 90},
+
+	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Hud...", 					&OP_SaturnHudDef,		   	100},
+	{IT_SUBMENU|IT_STRING,	NULL,	"Sprite Distortion...", 			&OP_PlayerDistortDef,	   	105},
+	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Credits", 					&OP_SaturnCreditsDef,	   	115}, // uwu
 };
 
 static const char* OP_SaturnTooltips[] =
@@ -2244,6 +2246,7 @@ static const char* OP_SaturnTooltips[] =
 	"Colourize the speedlines in your skincolor if you go fast enough!",
 	"Colourize the sneaker flame trails in your skincolor!",
 	"Makes bananas and other items jump and jitter\nwhen dragged behind.",
+	"Keep your driftsparks going while in air.",
 	"Show Localskin Menus.",
 	"Force menu to only use uppercase.",
 	"Use your desired Keyboard Layout for Text Input\nthis is either the Default, Native or Azerty\nNative does not affect Gameplay only Text!",
@@ -2261,6 +2264,7 @@ enum
 	sm_colorlines,
 	sm_colorflames,
 	sm_bananjumpy,
+	sm_airsparks,
 	sm_showlocalskin,
 	op_uppercase_menu,
 	sm_nativkey,
