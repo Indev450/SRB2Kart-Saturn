@@ -2403,12 +2403,10 @@ Ping_gfx_num (int lag)
 static const UINT8 *
 Ping_gfx_colormap (UINT32 lag, boolean gentleman)
 {
-	const UINT8 *colormap = NULL;
+	UINT8 *colormap = NULL;
 
-	if (gentleman)
-	{
-		colormap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_PASTEL, GTC_CACHE);
-	}
+	if (K_UseColorHud())
+		colormap = R_GetTranslationColormap(TC_RAINBOW, Ping_gfx_color(lag), GTC_CACHE);
 
 	if (servermaxping && lag > servermaxping && hu_tick < 4)
 	{
