@@ -71,7 +71,6 @@
 #include "filesrch.h" // refreshdirmenu, pathisdirectory
 #include "d_protocol.h"
 #include "m_perfstats.h"
-#include "m_random.h"
 #include "k_kart.h"
 
 #include "lua_script.h"
@@ -1484,12 +1483,8 @@ void D_SRB2Main(void)
 
 	D_SetupProtocol();
 
-	// seed M_Random because it is necessary; seed P_Random for scripts that
-	// might want to use random numbers immediately at start
-	if (!M_RandomSeedFromOS())
-		M_RandomSeed((UINT32)time(NULL)); // less good but serviceable
-
-	P_SetRandSeed(M_RandomizedSeed());
+	// rand() needs seeded regardless of password
+	srand((unsigned int)time(NULL));
 
 	if (M_CheckParm("-password") && M_IsNextParm())
 		D_SetPassword(M_GetNextParm());
