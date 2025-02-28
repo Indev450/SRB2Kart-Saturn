@@ -1204,7 +1204,7 @@ boolean xtra_speedo3;      // 80x 11 extra speedometer check
 boolean xtra_speedo_clr3;  // 80x 11 extra speedometer colour check
 boolean achi_speedo;       // achiiro speedometer check
 boolean achi_speedo_clr;   // extra speedometer colour check
-boolean kartzspeedo;       // kartZ speedo
+boolean kartz_speedo;       // kartZ speedo
 
 boolean clr_hud;           // colour hud check
 boolean big_lap;           // bigger lap counter
@@ -1631,7 +1631,7 @@ void D_SRB2Main(void)
 			"K_KZSP13", "K_KZSP14", "K_KZSP15", "K_KZSP16", "K_KZSP17", "K_KZSP18", "K_KZSP19", \
 			"K_KZSP20", "K_KZSP21", "K_KZSP22", "K_KZSP23", "K_KZSP24", "K_KZSP25", NULL))
 		{
-			kartzspeedo = true;
+			kartz_speedo = true;
 			PUSHCONS(speedo_cons_temp, last_speedo_i, 4, "P-Meter");
 		}
 

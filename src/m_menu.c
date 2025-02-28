@@ -4839,13 +4839,13 @@ void M_Init(void)
 	}
 #endif
 
-	if (!xtra_speedo && !kartzspeedo && !achi_speedo) // why bother?
+	if (!xtra_speedo && !kartz_speedo && !achi_speedo) // why bother?
 		OP_SaturnHudMenu[sh_speedometer].status = IT_GRAYEDOUT;
 
-	//if (!xtra_speedo && kartzspeedo)
+	//if (!xtra_speedo && kartz_speedo)
 		//OP_SaturnMenu[sm_speedometer].text = "Speedometer (No Small)";
 
-	//if (xtra_speedo && !kartzspeedo)
+	//if (xtra_speedo && !kartz_speedo)
 		//OP_SaturnMenu[sm_speedometer].text = "Speedometer (No PMeter)";
 	// idk i dont wanna bother with this tbh lmao
 
