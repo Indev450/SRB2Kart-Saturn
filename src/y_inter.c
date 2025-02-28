@@ -616,7 +616,7 @@ void Y_Ticker(void)
 
 		if (demo.savemode == DSM_WILLSAVE || demo.savemode == DSM_WILLAUTOSAVE)
 			G_SaveDemo();
-		else
+		else if (demo.savemode != DSM_TITLEENTRY)
 			G_ResetDemoRecording();
 	}
 
