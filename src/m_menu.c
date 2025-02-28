@@ -2576,10 +2576,8 @@ static menuitem_t OP_NametagMenu[] =
 	{IT_STRING | IT_CVAR, NULL, "Nametag Transparency", &cv_nametagtrans, 70},
 	{IT_STRING | IT_CVAR, NULL, "Nametag Score", &cv_nametagscore, 80},
 	{IT_STRING | IT_CVAR, NULL, "Nametag Restat", &cv_nametagrestat, 90},
-	{IT_STRING | IT_CVAR, NULL, "Nametag Hop", &cv_nametaghop, 100},
-	{IT_STRING | IT_CVAR, NULL, "Small Nametags", &cv_smallnametags, 110},
-	{IT_STRING | IT_CVAR, NULL, "Show Nametags after Race finish", &cv_shownametagfinish, 120},
-	{IT_STRING | IT_CVAR, NULL, "Show Nametags in Spectator Mode", &cv_shownametagspectator, 130},
+	{IT_STRING | IT_CVAR, NULL, "Small Nametags", &cv_smallnametags, 100},
+	{IT_STRING | IT_CVAR, NULL, "Show Nametags while Spectating", &cv_shownametagspectator, 110},
 	//{IT_STRING | IT_CVAR, NULL, "Nametag Scaling", &cv_nametagscaling, 70}
 };
 
@@ -2594,9 +2592,7 @@ static const char* OP_NametagTooltips[] =
 	"Transparency of nametags.",
 	"Show player score in nametag.",
 	"Show stats in nametags.",
-	"Enable Saltyhop support for nametags.",
 	"Alternative smaller nametags.",
-	"Show Nametags after Race finish.",
 	"Show Nametags when you are spectating.",
 };
 
@@ -2611,12 +2607,9 @@ enum
 	nt_nttrans,
 	nt_ntpscore,
 	nt_ntrestat,
-	nt_nthop,
 	nt_smol,
-	nt_finish,
 	nt_spec,
 };
-
 
 static menuitem_t OP_DriftGaugeMenu[] =
 {
