@@ -289,6 +289,7 @@
 	"vec4 texel = texture2D(tex, vec2(gl_TexCoord[0].s - sdistort, gl_TexCoord[0].t - cdistort));\n"
 
 #define GLSL_WATER_FRAGMENT_SHADER \
+	"#version 120\n" \
 	GLSL_FLOOR_FUDGES \
 	"const float freq = 0.03;\n" \
 	"const float amp = 0.025;\n" \
@@ -337,6 +338,7 @@
 // The floor fudges are used, but should the wall fudges be used instead? or something inbetween?
 // or separate values for floors and walls? (need to change more than this shader for that)
 #define GLSL_FOG_FRAGMENT_SHADER \
+	"#version 120\n" \
 	GLSL_FLOOR_FUDGES \
 	"uniform vec4 tint_color;\n" \
 	"uniform vec4 fade_color;\n" \
