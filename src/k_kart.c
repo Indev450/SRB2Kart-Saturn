@@ -207,9 +207,7 @@ consvar_t cv_nametagmaxlenght = {"kartnametagmaxlenght", "12", CV_SAVE, CV_Unsig
 //consvar_t cv_nametagscaling = {"nametagscaling", "160", CV_SAVE, nametagscaling_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_showownnametag = {"kartnametagshowown", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_smallnametags = {"kartnametagsmall", "Off", CV_SAVE, nametagsize_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_nametaghop = {"kartnametaghop", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_nametagscore = {"kartnametagscore", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_shownametagfinish = {"kartshownametagfinished", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_shownametagspectator = {"kartshownametagspectator", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 
@@ -885,9 +883,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_showownnametag);
 	CV_RegisterVar(&cv_smallnametags);
 	CV_RegisterVar(&cv_nametagrestat);
-	CV_RegisterVar(&cv_nametaghop);
 	CV_RegisterVar(&cv_nametagscore);
-	CV_RegisterVar(&cv_shownametagfinish);
 	CV_RegisterVar(&cv_shownametagspectator);
 
 	CV_RegisterVar(&cv_driftgauge);
@@ -9287,7 +9283,6 @@ static void K_drawKartSpeedometer(void)
 
 	// man.
 	const boolean useoldspeedo = ((cv_newspeedometer.value == 1) || (cv_newspeedometer.value == 2 && !xtra_speedo) || (cv_newspeedometer.value == 3 && !achi_speedo) || (cv_newspeedometer.value == 4 && !kartz_speedo) || (cv_newspeedometer.value == 5 && !xtra_speedo3));
-	const char *metric = "";
 
 	switch (cv_kartspeedometer.value)
 	{
@@ -9310,6 +9305,8 @@ static void K_drawKartSpeedometer(void)
 
 	if (useoldspeedo)
 	{
+		const char *metric = "";
+
 		switch (cv_kartspeedometer.value)
 		{
 			case 1:
@@ -9387,7 +9384,7 @@ static void K_drawKartSpeedometer(void)
 												35, 37, 40, 42, 45, 47,
 												50, 52, 55};
 
-		fuspeed =  FixedDiv(stplyr->speed, mapobjectscale)/FRACUNIT;
+		fuspeed = FixedDiv(stplyr->speed, mapobjectscale)/FRACUNIT;
 
 		for (INT32 i = 0; i < 22; ++i)
 		{
@@ -9622,27 +9619,31 @@ static void K_drawNameTags(void)
 	UINT8 i,j;
 	INT32 trans = 0;
 	vector2_t pos = {0};
-	fixed_t tagwidth;
-	fixed_t tagwidthsmall;
 	fixed_t namex,namey;
 	int tagsdisplayed = 0;
+	fixed_t distance = 0;
+	fixed_t maxdistance = 0;
+	boolean flipped = false;
+	fixed_t z;
+
 	char *tag;
 	patch_t *icon;
-	const INT32 hudtransflag = V_LocalTransFlag();
 
-	if (P_MobjWasRemoved(stplyr->mo) || (stplyr->spectator && !cv_shownametagspectator.value) || (stplyr->exiting && !cv_shownametagfinish.value))
+	INT32 dup = 0;
+	UINT8 *cm = NULL;
+	UINT8 tagcolor = 0;
+	INT32 vflags = 0;
+	boolean usenametagrestat = false;
+	fixed_t tagwidthsmall;
+	fixed_t tagwidth;
+
+	if (P_MobjWasRemoved(stplyr->mo) || (stplyr->spectator && !cv_shownametagspectator.value) || stplyr->exiting)
 		return;
 
-	// True if currently viewed player is flipped and has flipcam on
-	const boolean flipcam = ((stplyr->pflags & PF_FLIPCAM) && (stplyr->mo->eflags & MFE_VERTICALFLIP));
+	maxdistance = ((10*cv_nametagdist.value) * mapobjectscale);
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		fixed_t distance = 0;
-		const fixed_t maxdistance = ((10*cv_nametagdist.value)* mapobjectscale);
-		boolean flipped = 0;
-		fixed_t z;
-
 		if (i > PLAYERSMASK)
 			continue;
 		if (P_MobjWasRemoved(players[i].mo) || players[i].spectator || !playeringame[i])
@@ -9659,6 +9660,19 @@ static void K_drawNameTags(void)
 			continue;
 		if (!P_CheckSightFast(stplyr->mo, players[i].mo))
 			continue;
+
+		z = players[i].mo->height;
+
+		//Saltyhop hehe
+		z += lerp(players[i].mo->old_spriteyoffset, players[i].mo->spriteyoffset);
+
+		if (!K_GetScreenCoords(&pos, stplyr, players[i].mo, z, false))
+			continue;
+
+		tagsdisplayed += 1;
+
+		if (tagsdisplayed > cv_nametagmaxplayers.value)
+			break;
 
 		switch (cv_nametagtrans.value)
 		{
@@ -9689,35 +9703,11 @@ static void K_drawNameTags(void)
 				trans =  V_40TRANS;
 				break;
 			case 4:
-				trans = hudtransflag;
+				trans = V_LocalTransFlag();
 				break;
 			default:
 				break;
 		}
-
-		const INT32 dup = vid.dupx;
-
-		// If flipcam is on, other player is flipped relative to us when we have different
-		// verticalflip flag value. Otherwise, they are simply flipped when verticalflip flag says
-		// so
-		if (flipcam)
-			flipped = (players[i].mo->eflags & MFE_VERTICALFLIP) != (stplyr->mo->eflags & MFE_VERTICALFLIP);
-		else
-			flipped = players[i].mo->eflags & MFE_VERTICALFLIP;
-
-		z = players[i].mo->height;
-
-		//Saltyhop hehe
-		if (cv_saltyhop.value && cv_nametaghop.value)
-			z += lerp(players[i].mo->old_spriteyoffset, players[i].mo->spriteyoffset);
-
-		if (!K_GetScreenCoords(&pos, stplyr, players[i].mo, z, false))
-			continue;
-
-		tagsdisplayed += 1;
-
-		if (tagsdisplayed > cv_nametagmaxplayers.value)
-			break;
 
 		namex = pos.x>>FRACBITS;
 		namey = pos.y>>FRACBITS;
@@ -9725,13 +9715,22 @@ static void K_drawNameTags(void)
 		tag = va("%s%s ", HU_SkinColorToConsoleColor(players[i].mo->color),player_names[i]);
 		icon = R_GetSkinFaceMini(players[i].mo->player);
 
-		const UINT8 *cm = R_GetTranslationColormap(players[i].skin, players[i].mo->color, GTC_CACHE);
-		const INT32 tagcolor = colortranslations[players[i].mo->color][7];
-		const INT32 vflags = trans | V_NOSCALESTART;
-		tagwidth = cv_smallnametags.value ? dup*V_SmallStringWidth(player_names[i], V_ALLOWLOWERCASE) : dup*V_ThinStringWidth(player_names[i], V_ALLOWLOWERCASE);
+		dup = vid.dupx;
+		cm = R_GetTranslationColormap(players[i].skin, players[i].mo->color, GTC_CACHE);
+		tagcolor = colortranslations[players[i].mo->color][7];
+		vflags = trans | V_NOSCALESTART;
+		usenametagrestat = ((cv_nametagrestat.value == 1 && (players[i].kartspeed != skins[players[i].skin].kartspeed || players[i].kartweight != skins[players[i].skin].kartweight)) || cv_nametagrestat.value == 2);
 		tagwidthsmall = cv_smallnametags.value ? V_SmallStringWidth(player_names[i], V_ALLOWLOWERCASE) : V_ThinStringWidth(player_names[i], V_ALLOWLOWERCASE);
+		tagwidth = dup*tagwidthsmall;
 
-		if (cv_smallnametags.value == 2 || cv_smallnametags.value == 1 || !nametaggfx)
+		// If flipcam is on, other player is flipped relative to us when we have different
+		// verticalflip flag value. Otherwise, they are simply flipped when verticalflip flag says so
+		if ((stplyr->pflags & PF_FLIPCAM) && (stplyr->mo->eflags & MFE_VERTICALFLIP))
+			flipped = (players[i].mo->eflags & MFE_VERTICALFLIP) != (stplyr->mo->eflags & MFE_VERTICALFLIP);
+		else
+			flipped = players[i].mo->eflags & MFE_VERTICALFLIP;
+
+		if (cv_smallnametags.value || !nametaggfx)
 		{
 			if (flipped)
 				namey += dup*5;
@@ -9746,6 +9745,7 @@ static void K_drawNameTags(void)
 				// Have to draw the nametag using patches here since drawfill can't draw at this scale...
 				if (!flipped)
 					V_DrawFixedPatch(namex<<FRACBITS, namey<<FRACBITS, FRACUNIT/2, vflags, nametagline, cm);
+
 				V_DrawStretchyFixedPatch(((namex+dup*3)<<FRACBITS), namey<<FRACBITS,
 					tagwidthsmall<<FRACBITS, FRACUNIT/2, vflags, nametagpic, cm, 0);
 
@@ -9755,14 +9755,14 @@ static void K_drawNameTags(void)
 
 			if (cv_nametagfacerank.value)
 			{
-					V_DrawFixedPatch(namex<<FRACBITS, (namey - icon->height/2)<<FRACBITS, FRACUNIT/2, vflags, icon,  cm);
-					namex += dup*(1+icon->width/2); // add offset to other stuff
+				V_DrawFixedPatch(namex<<FRACBITS, (namey - icon->height/2)<<FRACBITS, FRACUNIT/2, vflags, icon,  cm);
+				namex += dup*(1+icon->width/2); // add offset to other stuff
 			}
 
 			//Name
 			V_DrawSmallString(namex, namey, V_ALLOWLOWERCASE | vflags, tag);
 
-			if ((cv_nametagrestat.value == 1 && (players[i].kartspeed != skins[players[i].skin].kartspeed || players[i].kartweight != skins[players[i].skin].kartweight)) || cv_nametagrestat.value == 2)
+			if (usenametagrestat)
 			{
 				V_DrawSmallString(namex, namey - dup*5, vflags, va("\x84S%d ", players[i].kartspeed));
 				V_DrawSmallString(namex + dup*10, namey - dup*5, vflags, va("\x87W%d ", players[i].kartweight));
@@ -9770,10 +9770,8 @@ static void K_drawNameTags(void)
 
 			if (cv_nametagscore.value)
 			{
-				if ((cv_nametagrestat.value == 1 && (players[i].kartspeed != skins[players[i].skin].kartspeed || players[i].kartweight != skins[players[i].skin].kartweight)) || cv_nametagrestat.value == 2)
-			 		V_DrawSmallString(namex, namey - dup*10, V_ALLOWLOWERCASE | vflags, va("\x8A%d ", players[i].score));
-				else
-					V_DrawSmallString(namex, namey - dup*5, V_ALLOWLOWERCASE | vflags, va("\x8A%d ", players[i].score));
+				INT32 yofs = usenametagrestat ? 10 : 5;
+				V_DrawSmallString(namex, namey - dup*yofs, V_ALLOWLOWERCASE | vflags, va("\x8A%d ", players[i].score));
 			}
 		}
 		else
@@ -9798,16 +9796,17 @@ static void K_drawNameTags(void)
 			}
 			else
 			{
-				for	(j = 0; j < 4; j++)
+				for (j = 0; j < 4; j++)
 				{
 					namey -= dup*4;
 					V_DrawFill(namex, namey, dup*3, dup*4, 31 | vflags);
 					V_DrawFill(namex+dup, namey, dup, dup*4, tagcolor | vflags);
 					namex += dup;
 				}
-					V_DrawFill(namex, namey, dup, dup, 31 | vflags);
-					V_DrawFill(namex+dup, namey, tagwidth - dup*2, dup*3, 31 | vflags);
-					V_DrawFill(namex+dup, namey+dup, tagwidth - dup*3, dup, tagcolor | vflags);
+
+				V_DrawFill(namex, namey, dup, dup, 31 | vflags);
+				V_DrawFill(namex+dup, namey, tagwidth - dup*2, dup*3, 31 | vflags);
+				V_DrawFill(namex+dup, namey+dup, tagwidth - dup*3, dup, tagcolor | vflags);
 			}
 
 			if (cv_nametagfacerank.value)
@@ -9818,7 +9817,7 @@ static void K_drawNameTags(void)
 
 			V_DrawThinString(namex, namey - dup*10, V_ALLOWLOWERCASE | vflags, tag);
 
-			if ((cv_nametagrestat.value == 1 && (players[i].kartspeed != skins[players[i].skin].kartspeed || players[i].kartweight != skins[players[i].skin].kartweight)) || cv_nametagrestat.value == 2)
+			if (usenametagrestat)
 			{
 				V_DrawScaledPatch(namex, namey - dup*20, vflags, nametagspeed);
 				V_DrawScaledPatch(namex + dup*18, namey - dup*20, vflags, nametagweight);
@@ -9828,10 +9827,8 @@ static void K_drawNameTags(void)
 
 			if (cv_nametagscore.value)
 			{
-				if ((cv_nametagrestat.value == 1 && (players[i].kartspeed != skins[players[i].skin].kartspeed || players[i].kartweight != skins[players[i].skin].kartweight)) || cv_nametagrestat.value == 2)
-			 		V_DrawSmallString(namex, namey - dup*25, V_ALLOWLOWERCASE | vflags, va("\x8A%d ", players[i].score));
-				else
-					V_DrawSmallString(namex, namey - dup*15, V_ALLOWLOWERCASE | vflags, va("\x8A%d ", players[i].score));
+				INT32 yofs = usenametagrestat ? 25 : 15;
+				V_DrawSmallString(namex, namey - dup*yofs, V_ALLOWLOWERCASE | vflags, va("\x8A%d ", players[i].score));
 			}
 		}
 	}
@@ -9842,23 +9839,23 @@ static void K_drawDriftGauge(void)
 {
 	vector2_t pos = {0};
 	fixed_t basex, basey;
-	const INT32 hudtransflag = V_LocalTransFlag();
 	const int dup = vid.dupx;
 	int i;
+	UINT8 *cmap;
 
-	UINT8 driftcolors[3][4] = {
+	static UINT8 driftcolors[3][4] = {
 		{0, 0, 10, 16},       // no drift
 		{215, 215, 204, 253}, // blue
 		{125, 125, 151, 159}  // red
 	};
 
-	UINT8 driftskins[3] = {
+	static UINT8 driftskins[3] = {
 		SKINCOLOR_NONE,
 		SKINCOLOR_TEAL,
 		SKINCOLOR_SALMON,
 	};
 
-	UINT8 driftrainbow[18] = {
+	static UINT8 driftrainbow[18] = {
 		0, 31, 47, 63, 79, 95, 111, 119, 127, 143, 159, 175, 183, 191, 199, 207, 223, 247
 	};
 
@@ -9879,17 +9876,17 @@ skipcrap:
 	if (!K_GetScreenCoords(&pos, stplyr, stplyr->mo, FixedMul(cv_driftgaugeofs.value, cv_driftgaugeofs.value > 0 ? stplyr->mo->scale : mapobjectscale), false))
 		return;
 
-	const INT32 driftval = K_GetKartDriftSparkValue(stplyr);
-	const INT32 driftcharge = min(driftval*4, stplyr->kartstuff[k_driftcharge]);
-
-	basex = pos.x>>FRACBITS;
-	basey = pos.y>>FRACBITS;
-
 	fixed_t barx;
 	fixed_t bary;
 	INT32 BAR_WIDTH;
 
-	const INT32 drifttrans = ((cv_driftgaugetrans.value) ? hudtransflag : 0);
+	const INT32 driftval = K_GetKartDriftSparkValue(stplyr);
+	const INT32 driftcharge = min(driftval*4, stplyr->kartstuff[k_driftcharge]);
+	const INT32 driftlevel = min(driftcharge / driftval, 2);
+	const INT32 drifttrans = ((cv_driftgaugetrans.value) ? V_LocalTransFlag() : 0);
+
+	basex = pos.x>>FRACBITS;
+	basey = pos.y>>FRACBITS;
 
 	switch (cv_driftgaugestyle.value)
 	{
@@ -9916,11 +9913,6 @@ skipcrap:
 
 				bary = basey - dup*2;
 
-				UINT8 *cmap;
-				const INT32 limit = driftval * (driftcharge >= driftval*2 ? 2 : 1);
-				const INT32 width = ((driftcharge - (driftcharge >= driftval ? limit : 0)) * BAR_WIDTH) / limit;
-				const INT32 level = min(driftcharge / driftval, 2);
-
 				if (usescaledpatch) // i hate hud code i hate hud code i hate hud code i hate hud code i hate hud code.....
 				{
 					if (K_UseColorHud() && xtra_speedo_clr3) // Colourized hud
@@ -9946,18 +9938,23 @@ skipcrap:
 				if (driftcharge >= driftval*4) // rainbow sparks
 				{
 					cmap = R_GetTranslationColormap(TC_RAINBOW, 1 + leveltime % (MAXSKINCOLORS-1),GTC_CACHE);
-					for	(i = 0; i < 4; i++)
+
+					for (i = 0; i < 4; i++)
 						V_DrawFill(barx, bary+dup*1+dup*i, BAR_WIDTH, dup, (driftrainbow[min((leveltime % 18) + 1, 18 - 1)] + i*2) | V_NOSCALESTART|drifttrans);
 				}
 				else // none/blue/red
 				{
-					cmap =  R_GetTranslationColormap(TC_RAINBOW, driftskins[level],GTC_CACHE);
+					const INT32 limit = (driftval * (driftcharge >= driftval*2 ? 2 : 1));
+					const INT32 width = ((driftcharge - (driftcharge >= driftval ? limit : 0)) * BAR_WIDTH) / limit;
+
+					cmap = R_GetTranslationColormap(TC_RAINBOW, driftskins[driftlevel],GTC_CACHE);
+
 					for (i = 0; i < 4; i++)
 					{
 						if (driftcharge >= driftval)
-							V_DrawFill(barx, bary+dup*1+dup*i, BAR_WIDTH, dup, driftcolors[level-1][i] | V_NOSCALESTART|drifttrans);
+							V_DrawFill(barx, bary+dup*1+dup*i, BAR_WIDTH, dup, driftcolors[driftlevel-1][i] | V_NOSCALESTART|drifttrans);
 
-						V_DrawFill(barx, bary+dup*1+dup*i, width, dup, driftcolors[level][i] | V_NOSCALESTART|drifttrans);
+						V_DrawFill(barx, bary+dup*1+dup*i, width, dup, driftcolors[driftlevel][i] | V_NOSCALESTART|drifttrans);
 					}
 				}
 
@@ -9971,12 +9968,10 @@ skipcrap:
 			break;
 		case 4:
 			{
-				UINT8 *cmap;
-				const INT32 level = min(driftcharge / driftval, 2);
+				cmap = R_GetTranslationColormap(TC_RAINBOW, driftskins[driftlevel],GTC_CACHE);
+
 				if (driftcharge >= driftval*4)
 					cmap = R_GetTranslationColormap(TC_RAINBOW, 1 + leveltime % (MAXSKINCOLORS-1),GTC_CACHE);
-				else
-					cmap =  R_GetTranslationColormap(TC_RAINBOW, driftskins[level],GTC_CACHE);
 
 				V_DrawPaddedTallColorNum(basex + (dup*16), basey, V_NOSCALESTART|V_OFFSET|drifttrans, driftcharge*100 / driftval, 3, cmap);
 			}
@@ -9996,17 +9991,17 @@ static fixed_t K_FindCheckX(fixed_t px, fixed_t py, angle_t ang, fixed_t mx, fix
 
 	dist = abs(R_PointToDist2(px, py, mx, my));
 	if (dist > range)
-		return -320;
+		return -BASEVIDWIDTH;
 
 	diff = R_PointToAngle2(px, py, mx, my) - ang;
 
 	if (diff < ANGLE_90 || diff > ANGLE_270)
-		return -320;
+		return -BASEVIDWIDTH;
 	else
 		x = (FixedMul(FINETANGENT(((diff+ANGLE_90)>>ANGLETOFINESHIFT) & 4095), 160<<FRACBITS) + (160<<FRACBITS))>>FRACBITS;
 
 	if (encoremode)
-		x = 320-x;
+		x = BASEVIDWIDTH-x;
 
 	if (splitscreen > 1)
 		x /= 2;
