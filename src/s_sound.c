@@ -344,7 +344,7 @@ lumpnum_t S_GetSfxLumpNum(sfxinfo_t *sfx)
 	if (sfxlump != LUMPERROR)
 		return sfxlump;
 
-	strlcpy(namebuf, sfx->name, sizeof namebuf);
+	strlcpy(namebuf, sfx->name, sizeof(namebuf));
 
 	sfxlump = W_CheckNumForName(namebuf);
 	if (sfxlump != LUMPERROR)
@@ -1988,7 +1988,7 @@ void S_KeepMusic(void)
 
 	// copy over mapmusicname stuff into temporary var
 	memset(keepmusic.name, 0, sizeof(keepmusic.name));
-	strncpy(keepmusic.name, mapmusic.name, 7);
+	strlcpy(keepmusic.name, mapmusic.name, sizeof(keepmusic.name));
 
 	if (oldmap == gamemap && oldencore == encoremode)
 	{
@@ -2013,14 +2013,14 @@ void S_HandleReloadResetMusic(void)
 	if (keepmapmusic)
 	{
 		// this is horrible, but oh well
-		strncpy(mapmusic.name, keepmusic.name, 7);
+		strlcpy(mapmusic.name, keepmusic.name, sizeof(mapmusic.name));
 	}
 	else
 	{
-		strncpy(mapmusic.name, mapheaderinfo[gamemap-1]->musname, 7);
+
+		strlcpy(mapmusic.name, mapheaderinfo[gamemap-1]->musname, sizeof(mapmusic.name));
 	}
 
-	mapmusic.name[6] = 0;
 	mapmusic.flags = (mapheaderinfo[gamemap-1]->mustrack & MUSIC_TRACKMASK);
 	mapmusic.position = mapheaderinfo[gamemap-1]->muspos;
 	mapmusic.resume = 0;
