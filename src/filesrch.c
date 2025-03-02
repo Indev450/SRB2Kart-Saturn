@@ -661,6 +661,10 @@ boolean preparefilemenu(boolean samedepth, boolean replayhut)
 		return false;
 	}
 
+	if (dirmenu != coredirmenu)
+		Z_Free(dirmenu);
+	dirmenu = NULL;
+
 	for (; sizecoredirmenu > 0; sizecoredirmenu--) // clear out existing items
 	{
 		Z_Free(coredirmenu[sizecoredirmenu-1]);
