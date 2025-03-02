@@ -91,13 +91,9 @@ ifeq ($(OS),Windows_NT) # all windows are Windows_NT...
  
  SDL=1
  WINDOWSHELL=1
- NOUPX=1
  NOOBJDUMP=1
 
 else # if you on the *nix
-
- NOUPX=1
-
  system:=$(shell uname -s)
 
  ifeq ($(system),Linux)
@@ -121,6 +117,7 @@ else # if you on the *nix
 endif
 endif
 
+NOUPX=1
 
 # SRB2 data files
 D_DIR?=../bin/Resources
