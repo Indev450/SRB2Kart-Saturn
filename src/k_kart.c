@@ -5447,7 +5447,7 @@ static boolean K_SpeedLinesShouldBlend(player_t *player)
 
 typedef INT32 (*randomFunc)(INT32 min, INT32 max);
 
-static inline void K_SpawnNormalSpeedLines(player_t *player, boolean synched)
+FUNCINLINE static ATTRINLINE void K_SpawnNormalSpeedLines(player_t *player, boolean synched)
 {
 	randomFunc randomfunc = synched ? P_RandomRange : M_RandomRange;
 
