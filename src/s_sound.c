@@ -2225,7 +2225,6 @@ static void Command_Tunes_f(void)
 	mapmusic.resume = 0;
 
 	S_ChangeMusicEx(mapmusic.name, mapmusic.flags, true, mapmusic.position, 0, 0);
-	S_ShowMusicCredit();
 
 	if (argc > 3)
 	{
