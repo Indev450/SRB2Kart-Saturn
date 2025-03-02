@@ -442,8 +442,7 @@ StrScanFmt lj_strscan_scan(const uint8_t *p, MSize len, TValue *o,
     int cmask = LJ_CHAR_DIGIT;
     int base = (opt & STRSCAN_OPT_C) && *p == '0' ? 0 : 10;
     const uint8_t *sp, *dp = NULL;
-    uint32_t dig = 0, hasdig = 0;
-    uint64_t x = 0;
+    uint32_t dig = 0, hasdig = 0, x = 0;
     int32_t ex = 0;
 
     /* Determine base and skip leading zeros. */
@@ -575,7 +574,10 @@ StrScanFmt lj_strscan_scan(const uint8_t *p, MSize len, TValue *o,
       fmt = strscan_bin(sp, o, fmt, opt, ex, neg, dig);
     else
 #if LJ_INTONLY
-      setintV(o, (int32_t)(double)(neg ? (~x+1u) : x));
+      if (fmt == STRSCAN_NUM)
+        setnumV(o, (lua_Number)(int32_t)(neg ? ~x+1u : x));
+      else
+        setintV(o, (int32_t)(neg ? ~x+1u : x));
 #else
       fmt = strscan_dec(sp, o, fmt, opt, ex, neg, dig);
 #endif
