@@ -1995,21 +1995,6 @@ static void S_SetKeepMusicStuff(void)
 	keepmusic.position = mapmusic.position;
 }
 
-// replace mapmusic with our saved keepmusic stuff
-static void S_CopyKeepMusicStuff(void)
-{
-	if (!cv_keepmusic.value)
-	{
-		return;
-	}
-
-	CONS_Printf("using %s\n", keepmusic.name);
-
-	strncpy(mapmusic.name, keepmusic.name, 7);
-	mapmusic.flags = keepmusic.flags;
-	mapmusic.position = keepmusic.position;
-}
-
 // determine if we should keep the music on a map restart
 // this gets called BEFORE the level gets loaded in G_DoLoadLevel
 void S_KeepMusic(void)
@@ -2045,19 +2030,20 @@ void S_HandleReloadResetMusic(void)
 	if (!(mapmusic.flags & MUSIC_RELOADRESET))
 		return;
 
+	// replace mapmusic with our saved keepmusic stuff
 	if (keepmapmusic)
 	{
 		// this is horrible, but oh well
-		S_CopyKeepMusicStuff();
+		strncpy(mapmusic.name, keepmusic.name, 7);
 	}
 	else
 	{
 		strncpy(mapmusic.name, mapheaderinfo[gamemap-1]->musname, 7);
-		mapmusic.name[6] = 0;
-		mapmusic.flags = (mapheaderinfo[gamemap-1]->mustrack & MUSIC_TRACKMASK);
-		mapmusic.position = mapheaderinfo[gamemap-1]->muspos;
 	}
 
+	mapmusic.name[6] = 0;
+	mapmusic.flags = (mapheaderinfo[gamemap-1]->mustrack & MUSIC_TRACKMASK);
+	mapmusic.position = mapheaderinfo[gamemap-1]->muspos;
 	mapmusic.resume = 0;
 }
 
@@ -2092,7 +2078,9 @@ void S_InitMapMusic(void)
 	{
 		// this is kinda silly, but we can use it to fade back into the map song at the saved point, should the current music be different from the map music
 		if (resumekeepmusic)
+		{
 			S_ChangeMusicEx(mapmusic.name, mapmusic.flags, true, keepmusic.resume, 0, 500);
+		}
 		return;
 	}
 
@@ -2116,7 +2104,9 @@ void S_StartMapMusic(void)
 		return;
 
 	if (keepmapmusic)
+	{
 		return;
+	}
 
 	if (skipintromus)
 	{
