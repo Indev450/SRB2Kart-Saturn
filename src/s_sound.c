@@ -1992,6 +1992,7 @@ void S_KeepMusic(void)
 	// copy over mapmusicname stuff into temporary var
 	memset(keepmusic.name, 0, sizeof(keepmusic.name));
 	strlcpy(keepmusic.name, mapmusic.name, sizeof(keepmusic.name));
+	keepmusic.name[6] = 0;
 
 	if (oldmap == gamemap && oldencore == encoremode)
 	{
@@ -2020,10 +2021,10 @@ void S_HandleReloadResetMusic(void)
 	}
 	else
 	{
-
 		strlcpy(mapmusic.name, mapheaderinfo[gamemap-1]->musname, sizeof(mapmusic.name));
 	}
 
+	mapmusic.name[6] = 0;
 	mapmusic.flags = (mapheaderinfo[gamemap-1]->mustrack & MUSIC_TRACKMASK);
 	mapmusic.position = mapheaderinfo[gamemap-1]->muspos;
 	mapmusic.resume = 0;
