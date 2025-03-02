@@ -575,10 +575,7 @@ StrScanFmt lj_strscan_scan(const uint8_t *p, MSize len, TValue *o,
       fmt = strscan_bin(sp, o, fmt, opt, ex, neg, dig);
     else
 #if LJ_INTONLY
-      if (fmt == STRSCAN_NUM)
-        setnumV(o, (lua_Number)(int32_t)(double)(neg ? ~x+1u : x));
-      else
-        setintV(o, (int32_t)(double)(neg ? ~x+1u : x));
+      setintV(o, (int32_t)(double)(neg ? (~x+1u) : x));
 #else
       fmt = strscan_dec(sp, o, fmt, opt, ex, neg, dig);
 #endif
