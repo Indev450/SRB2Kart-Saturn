@@ -122,7 +122,6 @@ boolean skipintromus = false; // skip the intro fanfare
 static boolean resumekeepmusic = false;
 static music_t keepmusic;
 static void S_SetKeepMusResume(void);
-static void S_SetKeepMusicStuff(void);
 
 #ifdef HAVE_OPENMPT
 openmpt_module *openmpt_mhandle = NULL;
@@ -1755,8 +1754,6 @@ void S_ChangeMusicEx(const char *mmusic, UINT16 mflags, boolean looping, UINT32 
 		return;
 	}
 
-	//S_SetKeepMusicStuff();
-
 	if (prefadems && S_MusicPlaying()) // queue music change for after fade // allow even if the music is the same
 	{
 		CONS_Debug(DBG_DETAILED, "Now fading out song %s\n", music.name);
@@ -1978,25 +1975,6 @@ static void S_SetKeepMusResume(void)
 	}
 }
 
-// copy over all the mapmusic stuff into temporary vars
-static void S_SetKeepMusicStuff(void)
-{
-	if (!cv_keepmusic.value)
-	{
-		return;
-	}
-
-	// always reset stuff just in case
-	memset(keepmusic.name, 0, sizeof(keepmusic.name));
-	keepmusic.flags = 0;
-	keepmusic.position = 0;
-
-	strncpy(keepmusic.name, mapmusic.name, 7);
-
-	keepmusic.flags = mapmusic.flags;
-	keepmusic.position = mapmusic.position;
-}
-
 // determine if we should keep the music on a map restart
 // this gets called BEFORE the level gets loaded in G_DoLoadLevel
 void S_KeepMusic(void)
@@ -2011,7 +1989,9 @@ void S_KeepMusic(void)
 		return;
 	}
 
-	S_SetKeepMusicStuff();
+	// copy over mapmusicname stuff into temporary var
+	memset(keepmusic.name, 0, sizeof(keepmusic.name));
+	strncpy(keepmusic.name, mapmusic.name, 7);
 
 	if (oldmap == gamemap && oldencore == encoremode)
 	{
