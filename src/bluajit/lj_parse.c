@@ -782,15 +782,15 @@ static void bcemit_branch_f(FuncState *fs, ExpDesc *e)
 {
   BCPos pc;
   expr_discharge(fs, e);
-  if (e->k == VKNIL || e->k == VKFALSE
-#if LJ_INTONLY
-    || (expr_isnumk_nojump(e) && expr_intV(e) == 0)
-#endif
-  )
+  if (e->k == VKNIL || e->k == VKFALSE)
     pc = NO_JMP;  /* Never jump. */
   else if (e->k == VJMP)
     pc = e->u.s.info;
-  else if (e->k == VKSTR || e->k == VKNUM || e->k == VKTRUE)
+  else if (e->k == VKSTR || e->k == VKTRUE
+#if !LJ_INTONLY
+    || e->k == VKNUM
+#endif
+  )
     expr_toreg_nobranch(fs, e, NO_REG), pc = bcemit_jmp(fs);
   else
     pc = bcemit_branch(fs, e, 1);
