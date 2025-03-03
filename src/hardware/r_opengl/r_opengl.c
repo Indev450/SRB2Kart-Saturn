@@ -109,7 +109,6 @@ static GLint min_filter = GL_LINEAR;
 static GLint mag_filter = GL_LINEAR;
 static GLint anisotropic_filter = 0;
 boolean supportMipMap = false;
-static FTransform  md2_transform;
 
 const GLubyte *gl_version = NULL;
 const GLubyte *gl_renderer = NULL;
@@ -2814,9 +2813,6 @@ void GL_SetTransform(FTransform *stransform)
 	{
 		used_fov = stransform->fovangle;
 		shearing = stransform->shearing;
-		// keep a trace of the transformation for md2
-		memcpy(&md2_transform, stransform, sizeof (md2_transform));
-
 
 		if (stransform->mirror)
 			pglScalef(-stransform->scalex, stransform->scaley, -stransform->scalez);
@@ -3366,7 +3362,7 @@ void GL_DrawScreenFinalTexture(int tex, INT32 width, INT32 height, boolean usesh
 	pglVertexPointer(3, GL_FLOAT, 0, off);
 
 	pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-	
+
 	if (useshader)
 		pglUseProgram(0);
 
