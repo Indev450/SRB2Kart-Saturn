@@ -665,11 +665,6 @@ static void VID_Command_Mode_f (void)
 		setmodeneeded = modenum+1; // request vid mode change
 }
 
-static inline void SDLJoyRemap(event_t *event)
-{
-	(void)event;
-}
-
 static INT32 SDLJoyAxis(const Sint16 axis, evtype_t which)
 {
 	// -32768 to 32767
@@ -1142,7 +1137,6 @@ static void Impl_HandleControllerButtonEvent(SDL_ControllerButtonEvent evt, Uint
 	}
 	else return;
 
-	SDLJoyRemap(&event);
 	if (event.type != ev_console) D_PostEvent(&event);
 }
 
