@@ -2271,7 +2271,7 @@ static void Impl_SetVsync(void)
 	{
 		if (cv_vidwait.value)
 		{
-			if (SDL_GL_SetSwapInterval(-1) != 0) // try async vsync
+			if (SDL_GL_SetSwapInterval(-1) == -1) // try async vsync
 				SDL_GL_SetSwapInterval(1); // normal vsync
 		}
 		else
