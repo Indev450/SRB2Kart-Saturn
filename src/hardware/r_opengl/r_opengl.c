@@ -1148,7 +1148,7 @@ static void GL_Framebuffer_Delete(void)
 	FramebufferObject = 0;
 }
 
-inline void GL_Framebuffer_Unbind(void)
+void GL_Framebuffer_Unbind(void)
 {
 	if (!supportFBO || fboinit == false)
 		return;
@@ -1160,7 +1160,7 @@ inline void GL_Framebuffer_Unbind(void)
 	pglBindRenderbuffer(GL_RENDERBUFFER, 0);
 }
 
-inline void GL_Framebuffer_Enable(void)
+void GL_Framebuffer_Enable(void)
 {
 	if (!supportFBO || !UseScreenFBO())
 		return;
