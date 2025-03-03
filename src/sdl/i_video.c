@@ -423,12 +423,15 @@ static INT32 Impl_SDL_Scancode_To_Keycode(SDL_Scancode code)
 }
 
 // Get the equivalent ASCII (Unicode?) character for a keypress.
-static INT32 GetTypedChar(SDL_Scancode code, SDL_Keysym *sym)
+static INT32 GetTypedChar(SDL_Keysym keysym)
 {
 	SDL_Event next_event;
+	SDL_Keycode keycode = keysym.sym;
+	SDL_Scancode scancode = keysym.scancode;
+	const boolean Text_Input_Only = (chat_on || CON_Ready() || (menu_text_input && menuactive)); // only use this this if on chat or console or the current menu wants inputs from us (except if its the control setup menu ig)
 
 	// Special cases, where we always return a fixed value.
-	switch (sym->sym)
+	switch (keycode)
 	{
 		case SDLK_BACKSPACE: return KEY_BACKSPACE;
 		case SDLK_RETURN:    return KEY_ENTER;
@@ -436,7 +439,7 @@ static INT32 GetTypedChar(SDL_Scancode code, SDL_Keysym *sym)
 			break;
 	}
 
-	if (chat_on || CON_Ready() || (menu_text_input && menuactive)) //only use this this if on chat or console or the current menu wants inputs from us (except if its the control setup menu ig)
+	if (Text_Input_Only)
 	{
 		if (SDL_PeepEvents(&next_event, 1, SDL_PEEKEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT) == 1 && next_event.type == SDL_TEXTINPUT)
 		{
@@ -445,13 +448,13 @@ static INT32 GetTypedChar(SDL_Scancode code, SDL_Keysym *sym)
 		}
 	}
 
-	return Impl_SDL_Scancode_To_Keycode(code); //fallback
+	return Impl_SDL_Scancode_To_Keycode(scancode); // fallback
 }
 
 static INT32 Impl_SDL_Keysym_To_Keycode(SDL_Keysym keysym)
 {
-	SDL_Keycode keycode= keysym.sym;
-	SDL_Scancode scancode= keysym.scancode;
+	SDL_Keycode keycode = keysym.sym;
+	SDL_Scancode scancode = keysym.scancode;
 
 	if (keycode >= SDLK_a && keycode <= SDLK_z)
 	{
@@ -462,15 +465,14 @@ static INT32 Impl_SDL_Keysym_To_Keycode(SDL_Keysym keysym)
 	{
 		return KEY_F1 + (keycode - SDLK_F1);
 	}
-	if(scancode == SDL_SCANCODE_APOSTROPHE)
+
+	switch (scancode)
 	{
-		return KEY_FR_U_GRAVE;
-	}
-	switch(scancode){
 		case SDL_SCANCODE_APOSTROPHE:    return KEY_FR_U_GRAVE;
 		case SDL_SCANCODE_LEFTBRACKET:   return '^';
 		default:               break;
 	}
+
 	switch (keycode)
 	{
 		// F11 and F12 are separated from the rest of the function keys
@@ -870,6 +872,7 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 static void Impl_HandleKeyboardEvent(SDL_KeyboardEvent evt, Uint32 type)
 {
 	event_t event;
+
 	if (type == SDL_KEYUP)
 	{
 		event.type = ev_keyup;
@@ -883,12 +886,18 @@ static void Impl_HandleKeyboardEvent(SDL_KeyboardEvent evt, Uint32 type)
 		return;
 	}
 
-	if (cv_keyboardlayout.value == 2) // "native"
-		event.data1 = GetTypedChar(evt.keysym.scancode, &evt.keysym);
-	else if (cv_keyboardlayout.value == 3) // AZERTY
-		event.data1 = Impl_SDL_Keysym_To_Keycode(evt.keysym);
-	else
-		event.data1 = Impl_SDL_Scancode_To_Keycode(evt.keysym.scancode);
+	switch (cv_keyboardlayout.value)
+	{
+		case 2: // "native"
+			event.data1 = GetTypedChar(evt.keysym);
+			break;
+		case 3: // AZERTY
+			event.data1 = Impl_SDL_Keysym_To_Keycode(evt.keysym);
+			break;
+		default:
+			event.data1 = Impl_SDL_Scancode_To_Keycode(evt.keysym.scancode);
+			break;
+	}
 
 	if (event.data1) D_PostEvent(&event);
 }
