@@ -2900,12 +2900,11 @@ boolean R_ThingVisible (mobj_t *thing)
 	return true;
 }
 
-boolean R_ThingWithinDist (mobj_t *thing, fixed_t limit_dist)
+boolean R_ThingWithinDist(mobj_t *thing, fixed_t limit_dist)
 {
 	if (limit_dist)
 	{
-		const fixed_t dist = P_AproxDistance(viewx-thing->x, viewy-thing->y);
-		if (dist > limit_dist)
+		if (P_AproxDistance(viewx-thing->x, viewy-thing->y) > limit_dist)
 		{
 			return false;
 		}
@@ -3021,7 +3020,7 @@ static void Sk_SetDefaultValue(skin_t *skin, boolean local)
 	//
 	memset(skin, 0, sizeof (skin_t));
 	snprintf(skin->name,
-		sizeof skin->name, "skin %u", (UINT32)(skin-( (local) ? localskins : skins )));
+		sizeof skin->name, "skin %u", (UINT32)(skin-(local ? localskins : skins)));
 	skin->name[sizeof skin->name - 1] = '\0';
 	skin->wadnum = INT16_MAX;
 	strcpy(skin->sprite, "");
@@ -3191,8 +3190,8 @@ boolean SetPlayerSkin(INT32 playernum, const char *skinname)
 
 void SetLocalPlayerSkin(INT32 playernum, const char *skinname, consvar_t *cvar)
 {
-	player_t *player = &players[playernum];
 	INT32 i;
+	player_t *player = &players[playernum];
 
 	if (strcasecmp(skinname, "none"))
 	{
@@ -3242,8 +3241,8 @@ void SetLocalPlayerSkin(INT32 playernum, const char *skinname, consvar_t *cvar)
 	{
 		if (player->localskin > 0)
 		{
-			CV_StealthSet(&cv_fakelocalskin, ( (player->skinlocal) ? localskins : skins )[player->localskin - 1].name);
-			CV_StealthSet(cvar, ( (player->skinlocal) ? localskins : skins )[player->localskin - 1].name);
+			CV_StealthSet(&cv_fakelocalskin, (player->skinlocal ? localskins : skins)[player->localskin-1].name);
+			CV_StealthSet(cvar, (player->skinlocal ? localskins : skins)[player->localskin-1].name);
 		}
 		else
 		{
@@ -3432,6 +3431,9 @@ void R_AddSkins(UINT16 wadnum, boolean local)
 	skin_t *skin;
 	boolean hudname, realname;
 
+#define lskin (local ? localskins : skins)
+#define lnumskins (local ? numlocalskins : numskins)
+
 	//
 	// search for all skin markers in pwad
 	//
@@ -3463,7 +3465,7 @@ void R_AddSkins(UINT16 wadnum, boolean local)
 		buf2[size] = '\0';
 
 		// set defaults
-		skin = &( (local) ? localskins : skins )[( (local) ? numlocalskins : numskins )];
+		skin = &lskin[lnumskins];
 		Sk_SetDefaultValue(skin, local);
 		skin->wadnum = wadnum;
 		hudname = realname = false;
@@ -3689,34 +3691,29 @@ next_token:
 
 		CONS_Printf(M_GetText("Added skin '%s'\n"), skin->name);
 #ifdef SKINVALUES
-		(local ? localskin_cons_t : skin_cons_t)[(local ? numlocalskins : numskins)].value = (local ? numlocalskins : numskins);
-		(local ? localskin_cons_t : skin_cons_t)[(local ? numlocalskins : numskins)].strvalue = skin->name;
+		(local ? localskin_cons_t : skin_cons_t)[lnumskins].value = lnumskins;
+		(local ? localskin_cons_t : skin_cons_t)[lnumskins].strvalue = skin->name;
 #endif
 
-		// Update the forceskin possiblevalues
 		if (!local)
 		{
+			// Update the forceskin possiblevalues
 			Forceskin_cons_t[numskins+1].value = numskins;
 			Forceskin_cons_t[numskins+1].strvalue = skins[numskins].name;
-		}
-
-		skin->localskin = local;
-
-		// so we dont have to guess
-		if (local)
-			skin->localnum = numlocalskins;
-		else
+			skin->localskin = false;
 			skin->localnum = numskins;
-
-		// add face graphics
-		if (local)
-			ST_LoadLocalFaceGraphics(skin->facerank, skin->facewant, skin->facemmap, numlocalskins);
-		else
 			ST_LoadFaceGraphics(skin->facerank, skin->facewant, skin->facemmap, numskins);
+		}
+		else
+		{
+			skin->localskin = true;
+			skin->localnum = numlocalskins;
+			ST_LoadLocalFaceGraphics(skin->facerank, skin->facewant, skin->facemmap, numlocalskins);
+		}
 
 #ifdef HWRENDER
 		if (rendermode == render_opengl)
-			HWR_AddPlayerMD2(((local) ? numlocalskins : numskins), local);
+			HWR_AddPlayerMD2(lnumskins, local);
 #endif
 		if (!local)
 		{
@@ -3727,12 +3724,14 @@ next_token:
 			skinsorted[numskins] = numskins;
 		}
 
-		allskins[numallskins] = ( (local) ? localskins : skins )[( (local) ? numlocalskins : numskins )];
+		allskins[numallskins] = lskin[lnumskins];
 
 		local ? numlocalskins++ : numskins++;
 		numallskins++;
 	}
 
+#undef lskin
+#undef lnumskins
 	//sortSkinGrid();
 
 	return;
