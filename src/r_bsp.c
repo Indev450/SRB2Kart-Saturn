@@ -375,13 +375,13 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec, INT32 *floorlightlevel,
 boolean R_IsEmptyLine(seg_t *line, sector_t *front, sector_t *back)
 {
 	return (
-		!line->polyseg &&
-		back->ceilingpic == front->ceilingpic
+		!line->polyseg && !line->sidedef->midtexture
+		&& ((front == back)
+		|| (back->ceilingpic == front->ceilingpic
 		&& back->floorpic == front->floorpic
 		&& back->f_slope == front->f_slope
 		&& back->c_slope == front->c_slope
 		&& back->lightlevel == front->lightlevel
-		&& !line->sidedef->midtexture
 		// Check offsets too!
 		&& back->floor_xoffs == front->floor_xoffs
 		&& back->floor_yoffs == front->floor_yoffs
@@ -395,7 +395,7 @@ boolean R_IsEmptyLine(seg_t *line, sector_t *front, sector_t *back)
 		// Consider colormaps
 		&& back->extra_colormap == front->extra_colormap
 		&& ((!front->ffloors && !back->ffloors)
-		|| front->tag == back->tag));
+		|| front->tag == back->tag))));
 }
 
 //
