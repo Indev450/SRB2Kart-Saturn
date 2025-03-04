@@ -372,30 +372,11 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec, INT32 *floorlightlevel,
 	return sec;
 }
 
-boolean R_IsEmptyLine(seg_t *line, sector_t *front, sector_t *back)
+boolean R_IsEmptyLine(seg_t *line, const sector_t *front, const sector_t *back)
 {
-	return (
-		!line->polyseg &&
-		back->ceilingpic == front->ceilingpic
-		&& back->floorpic == front->floorpic
-		&& back->f_slope == front->f_slope
-		&& back->c_slope == front->c_slope
-		&& back->lightlevel == front->lightlevel
-		&& !line->sidedef->midtexture
-		// Check offsets too!
-		&& back->floor_xoffs == front->floor_xoffs
-		&& back->floor_yoffs == front->floor_yoffs
-		&& back->floorpic_angle == front->floorpic_angle
-		&& back->ceiling_xoffs == front->ceiling_xoffs
-		&& back->ceiling_yoffs == front->ceiling_yoffs
-		&& back->ceilingpic_angle == front->ceilingpic_angle
-		// Consider altered lighting.
-		&& back->floorlightsec == front->floorlightsec
-		&& back->ceilinglightsec == front->ceilinglightsec
-		// Consider colormaps
-		&& back->extra_colormap == front->extra_colormap
-		&& ((!front->ffloors && !back->ffloors)
-		|| front->tag == back->tag));
+	return (!line->polyseg && !line->sidedef->midtexture
+	&& ((!front->ffloors && !back->ffloors) || front->tag == back->tag)
+	&& (memcmp(front, back, (offsetof(sector_t, extra_colormap) + sizeof(extracolormap_t *))) == 0));
 }
 
 //
