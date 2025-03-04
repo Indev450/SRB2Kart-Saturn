@@ -1803,13 +1803,10 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 			// This will cause the midtexture appear on top, if a FOF overlaps with it.
 			blendmode |= PF_Decal;
 
-			if (!gl_drawing_stencil)
-			{
-				if (gl_frontsector->numlights)
-					HWR_SplitWall(gl_frontsector, wallVerts, gl_midtexture, noencore, &Surf, (!(blendmode & PF_Masked)) ? FF_TRANSLUCENT : FF_CUTLEVEL, NULL, blendmode);
-				else if (!(blendmode & PF_Masked))
-					HWR_AddTransparentWall(wallVerts, &Surf, gl_midtexture, noencore, blendmode, false, lightnum, colormap);
-			}
+			if (!gl_drawing_stencil && gl_frontsector->numlights)
+				HWR_SplitWall(gl_frontsector, wallVerts, gl_midtexture, noencore, &Surf, (!(blendmode & PF_Masked)) ? FF_TRANSLUCENT : FF_CUTLEVEL, NULL, blendmode);
+			else if (!gl_drawing_stencil && !(blendmode & PF_Masked))
+				HWR_AddTransparentWall(wallVerts, &Surf, gl_midtexture, noencore, blendmode, false, lightnum, colormap);
 			else
 				HWR_ProjectWall(wallVerts, &Surf, blendmode, lightnum, colormap);
 		}
