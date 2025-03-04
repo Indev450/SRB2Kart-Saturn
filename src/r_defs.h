@@ -279,13 +279,32 @@ typedef enum
 //
 typedef struct sector_s
 {
-	fixed_t floorheight;
-	fixed_t ceilingheight;
 	INT32 floorpic;
 	INT32 ceilingpic;
 	INT16 lightlevel;
+
+	pslope_t *f_slope; // floor slope
+	pslope_t *c_slope; // ceiling slope
+
+	// floor and ceiling texture offsets
+	fixed_t floor_xoffs, floor_yoffs;
+	fixed_t ceiling_xoffs, ceiling_yoffs;
+
+	// flat angle
+	angle_t floorpic_angle;
+	angle_t ceilingpic_angle;
+
+	INT32 floorlightsec, ceilinglightsec;
+
+	// per-sector colormaps!
+	extracolormap_t *extra_colormap;
+
+	fixed_t floorheight;
+	fixed_t ceilingheight;
+
 	INT16 special;
 	UINT16 tag;
+
 	INT32 nexttag, firsttag; // for fast tag searches
 
 	// origin for any sounds played by the sector
@@ -303,18 +322,9 @@ typedef struct sector_s
 	void *ceilingdata; // ceiling move thinker
 	void *lightingdata; // lighting change thinker
 
-	// floor and ceiling texture offsets
-	fixed_t floor_xoffs, floor_yoffs;
-	fixed_t ceiling_xoffs, ceiling_yoffs;
-
-	// flat angle
-	angle_t floorpic_angle;
-	angle_t ceilingpic_angle;
-
 	INT32 heightsec; // other sector, or -1 if no other sector
 	INT32 camsec; // used for camera clipping
 
-	INT32 floorlightsec, ceilinglightsec;
 	INT32 crumblestate; // used for crumbling and bobbing
 
 	INT32 bottommap, midmap, topmap; // dynamic colormaps
@@ -341,9 +351,6 @@ typedef struct sector_s
 	INT32 numlights;
 	boolean moved;
 
-	// per-sector colormaps!
-	extracolormap_t *extra_colormap;
-
 	// This points to the master's floorheight, so it can be changed in realtime!
 	fixed_t *gravity; // per-sector gravity
 	boolean verticalflip; // If gravity < 0, then allow flipped physics
@@ -356,8 +363,6 @@ typedef struct sector_s
 	fixed_t floorspeed, ceilspeed;
 
 	// Eternity engine slope
-	pslope_t *f_slope; // floor slope
-	pslope_t *c_slope; // ceiling slope
 	boolean hasslope; // The sector, or one of its visible FOFs, contains a slope
 
 	// these are saved for netgames, so do not let Lua touch these!
