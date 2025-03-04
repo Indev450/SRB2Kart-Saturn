@@ -1161,8 +1161,8 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 
 		if (cutflag & FF_FOG)
 			HWR_AddTransparentWall(wallVerts, Surf, texnum, noencore, PF_Fog|PF_NoTexture|polyflags, true, lightnum, colormap);
-		else if (cutflag & FF_TRANSLUCENT)
-			HWR_AddTransparentWall(wallVerts, Surf, texnum, noencore, PF_Translucent|polyflags, false, lightnum, colormap);
+		else if (polyflags & (PF_Translucent|PF_Additive|PF_Subtractive|PF_ReverseSubtract|PF_Multiplicative|PF_Environment))
+			HWR_AddTransparentWall(wallVerts, Surf, texnum, noencore, polyflags, false, lightnum, colormap);
 		else
 			HWR_ProjectWall(wallVerts, Surf, PF_Masked|polyflags, lightnum, colormap);
 
@@ -1803,10 +1803,13 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 			// This will cause the midtexture appear on top, if a FOF overlaps with it.
 			blendmode |= PF_Decal;
 
-			if (!gl_drawing_stencil && gl_frontsector->numlights)
-				HWR_SplitWall(gl_frontsector, wallVerts, gl_midtexture, noencore, &Surf, (!(blendmode & PF_Masked)) ? FF_TRANSLUCENT : FF_CUTLEVEL, NULL, PF_Decal);
-			else if (!gl_drawing_stencil && !(blendmode & PF_Masked))
-				HWR_AddTransparentWall(wallVerts, &Surf, gl_midtexture, noencore, blendmode, false, lightnum, colormap);
+			if (!gl_drawing_stencil)
+			{
+				if (gl_frontsector->numlights)
+					HWR_SplitWall(gl_frontsector, wallVerts, gl_midtexture, noencore, &Surf, (!(blendmode & PF_Masked)) ? FF_TRANSLUCENT : FF_CUTLEVEL, NULL, blendmode);
+				else if (!(blendmode & PF_Masked))
+					HWR_AddTransparentWall(wallVerts, &Surf, gl_midtexture, noencore, blendmode, false, lightnum, colormap);
+			}
 			else
 				HWR_ProjectWall(wallVerts, &Surf, blendmode, lightnum, colormap);
 		}
@@ -2028,10 +2031,10 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 					wallVerts[0].s = wallVerts[3].s = cliplow * glTex->scaleX;
 					wallVerts[2].s = wallVerts[1].s = cliphigh * glTex->scaleX;
 				}
+				FBITFIELD blendmode;
+
 				if (rover->flags & FF_FOG)
 				{
-					FBITFIELD blendmode;
-
 					blendmode = PF_Fog|PF_NoTexture;
 
 					lightnum = rover->master->frontsector->lightlevel;
@@ -2048,7 +2051,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 				}
 				else
 				{
-					FBITFIELD blendmode = PF_Masked;
+					blendmode = PF_Masked;
 
 					if ((rover->flags & FF_TRANSLUCENT && rover->alpha < 256) || rover->blend)
 					{
@@ -2143,10 +2146,10 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 					wallVerts[2].s = wallVerts[1].s = cliphigh * glTex->scaleX;
 				}
 
+				FBITFIELD blendmode;
+
 				if (rover->flags & FF_FOG)
 				{
-					FBITFIELD blendmode;
-
 					blendmode = PF_Fog|PF_NoTexture;
 
 					lightnum = rover->master->frontsector->lightlevel;
@@ -2163,7 +2166,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 				}
 				else
 				{
-					FBITFIELD blendmode = PF_Masked;
+					blendmode = PF_Masked;
 
 					if ((rover->flags & FF_TRANSLUCENT && rover->alpha < 256) || rover->blend)
 					{
