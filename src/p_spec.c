@@ -4807,16 +4807,34 @@ static ffloor_t *P_AddFakeFloor(sector_t *sec, sector_t *sec2, line_t *master, f
 		else th = th->next;
 	}
 
-
 	if (flags & FF_TRANSLUCENT)
 	{
 		if (sides[master->sidenum[0]].toptexture > 0)
-			ffloor->alpha = sides[master->sidenum[0]].toptexture; // for future reference, "#0" is 1, and "#255" is 256. Be warned
+		{
+			// for future reference, "#0" is 1, and "#255" is 256. Be warned
+			ffloor->alpha = sides[master->sidenum[0]].toptexture;
+
+			if (ffloor->alpha >= 1001) // fourth digit
+			{
+				ffloor->blend = (ffloor->alpha/1000)+1; // becomes an AST
+				ffloor->alpha %= 1000;
+			}
+			else
+			{
+				ffloor->blend = 0;
+			}
+		}
 		else
+		{
 			ffloor->alpha = 0x80;
+			ffloor->blend = 0;
+		}
 	}
 	else
+	{
 		ffloor->alpha = 0xff;
+		ffloor->blend = 0;
+	}
 
 	ffloor->spawnalpha = ffloor->alpha; // save for netgames
 

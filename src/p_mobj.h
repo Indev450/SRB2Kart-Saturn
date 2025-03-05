@@ -289,6 +289,7 @@ typedef struct mobj_s
 	UINT32 frame; // frame number, plus bits see p_pspr.h
 	UINT16 anim_duration; // for FF_ANIMATE states
 
+	INT32 blendmode; // blend mode
 	fixed_t spritexscale, spriteyscale;
 	fixed_t spritexoffset, spriteyoffset;
 	fixed_t old_spritexscale, old_spriteyscale;
@@ -441,6 +442,7 @@ typedef struct precipmobj_s
 	UINT32 frame; // frame number, plus bits see p_pspr.h
 	UINT16 anim_duration; // for FF_ANIMATE states
 
+	INT32 blendmode; // blend mode
 	fixed_t spritexscale, spriteyscale;
 	fixed_t spritexoffset, spriteyoffset;
 	fixed_t old_spritexscale, old_spriteyscale;

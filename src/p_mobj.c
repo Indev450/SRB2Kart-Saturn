@@ -9413,6 +9413,7 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 	}
 
 	// Sprite rendering
+	mobj->blendmode = AST_TRANSLUCENT;
 	mobj->realxscale = mobj->realyscale = mobj->scale;
 	mobj->spritexscale = mobj->realxscale;
 	mobj->spriteyscale = mobj->realyscale;
@@ -9836,6 +9837,7 @@ mobj_t *P_SpawnShadowMobj(mobj_t * caster)
 	mobj->radius = info->radius;
 	mobj->height = info->height;
 	mobj->flags = info->flags;
+	mobj->blendmode = AST_TRANSLUCENT;
 
 	mobj->health = info->spawnhealth;
 

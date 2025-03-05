@@ -52,6 +52,7 @@ int mobj_skin_setter(lua_State *L);
 int mobj_localskin_getter(lua_State *L);
 int mobj_localskin_setter(lua_State *L);
 int mobj_color_setter(lua_State *L);
+int mobj_blendmode_setter(lua_State *L);
 int mobj_bnext_noset(lua_State *L);
 int mobj_bprev_unimplemented(lua_State *L);
 int mobj_hnext_setter(lua_State *L);
@@ -114,6 +115,7 @@ static const udata_field_t mobj_fields[] = {
     FIELD(mobj_t, skin,                mobj_skin_getter,           mobj_skin_setter),
     FIELD(mobj_t, localskin,           mobj_localskin_getter,      mobj_localskin_setter),
     FIELD(mobj_t, color,               udatalib_getter_uint8,      mobj_color_setter),
+    FIELD(mobj_t, blendmode,           udatalib_getter_int32,      mobj_blendmode_setter),
     FIELD(mobj_t, bnext,               udatalib_getter_mobj,       mobj_bnext_noset),
     FIELD(mobj_t, bprev,               mobj_bprev_unimplemented,   mobj_bprev_unimplemented),
     FIELD(mobj_t, hnext,               udatalib_getter_mobj,       mobj_hnext_setter),
@@ -473,6 +475,18 @@ int mobj_color_setter(lua_State *L)
         return luaL_error(L, "mobj.color %d out of range (0 - %d).", newcolor, MAXTRANSLATIONS-1);
     mo->color = newcolor;
 
+    return 0;
+}
+
+int mobj_blendmode_setter(lua_State *L)
+{
+    mobj_t *mo = GETMO();
+    
+	INT32 blendmode = (INT32)luaL_checkinteger(L, 2);
+	if (blendmode < 0 || blendmode > AST_OVERLAY)
+		return luaL_error(L, "mobj.blendmode %d out of range (0 - %d).", blendmode, AST_OVERLAY);
+	mo->blendmode = blendmode;
+	
     return 0;
 }
 

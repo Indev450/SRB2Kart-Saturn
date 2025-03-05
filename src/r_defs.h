@@ -172,6 +172,7 @@ typedef struct ffloor_s
 
 	INT32 lastlight;
 	INT32 alpha;
+	UINT8 blend; // blendmode
 	tic_t norender; // for culling
 
 	// these are saved for netgames, so do not let Lua touch these!
@@ -402,6 +403,8 @@ typedef struct line_s
 
 	// Visual appearance: sidedefs.
 	UINT16 sidenum[2]; // sidenum[1] will be 0xffff if one-sided
+	fixed_t alpha; // translucency
+	UINT8 blendmode; // blendmode
 
 	fixed_t bbox[4]; // bounding box for the extent of the linedef
 
@@ -686,6 +689,9 @@ typedef struct
 #if defined(_MSC_VER)
 #pragma pack()
 #endif
+
+// Possible alpha types for a patch.
+enum patchalphastyle {AST_COPY, AST_TRANSLUCENT, AST_ADD, AST_SUBTRACT, AST_REVERSESUBTRACT, AST_MODULATE, AST_OVERLAY};
 
 typedef enum
 {

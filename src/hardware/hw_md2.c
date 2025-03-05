@@ -1178,13 +1178,31 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 		// Apparently people don't like jump frames like that, so back it goes
 		//if (tics > durs)
 			//durs = tics;
+		
+		INT32 blendmode;
+		if (spr->mobj->frame & FF_BLENDMASK)
+			blendmode = ((spr->mobj->frame & FF_BLENDMASK) >> FF_BLENDSHIFT) + 1;
+		else
+			blendmode = spr->mobj->blendmode;
+		
+		blendmode = min(AST_MODULATE, blendmode);
 
 		if (spr->mobj->flags2 & MF2_SHADOW)
+		{
 			Surf.PolyColor.s.alpha = 0x40;
+			Surf.PolyFlags = HWR_GetBlendModeFlag(blendmode);
+		}
 		else if (spr->mobj->frame & FF_TRANSMASK)
+		{
 			HWR_TranstableToAlpha((spr->mobj->frame & FF_TRANSMASK)>>FF_TRANSSHIFT, &Surf);
+			Surf.PolyFlags = HWR_SurfaceBlend(blendmode, (spr->mobj->frame & FF_TRANSMASK)>>FF_TRANSSHIFT, &Surf);
+		}
 		else
-			Surf.PolyColor.s.alpha = 0xFF;
+		{
+			// this hack is dumb, but the blendmodes refuse to work otherwise
+			Surf.PolyColor.s.alpha = (blendmode == AST_TRANSLUCENT) ? 0xFF : 0xFE;
+			Surf.PolyFlags = HWR_GetBlendModeFlag(blendmode);
+		}
 
 		// dont forget to enabled the depth test because we can't do this like
 		// before: polygons models are not sorted

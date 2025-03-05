@@ -125,13 +125,14 @@ void HWR_DrawPatch(GLPatch_t *gpatch, INT32 x, INT32 y, INT32 option)
 	HWD.pfnDrawPolygon(NULL, v, 4, flags);
 }
 
-void HWR_DrawStretchyFixedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale, fixed_t vscale, INT32 option, const UINT8 *colormap)
+void HWR_DrawStretchyFixedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale, fixed_t vscale, INT32 option, const UINT8 *colormap, INT32 bflags)
 {
 	FOutVector v[4];
 	FBITFIELD flags;
 	float cx = FIXED_TO_FLOAT(x);
 	float cy = FIXED_TO_FLOAT(y);
 	UINT8 alphalevel = ((option & V_ALPHAMASK) >> V_ALPHASHIFT);
+	UINT8 blendmode = ((bflags & V_BLENDMASK) >> V_BLENDSHIFT);
 
 //  3--2
 //  | /|
@@ -286,7 +287,11 @@ void HWR_DrawStretchyFixedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t
 	v[0].t = v[1].t = 0.0f;
 	v[2].t = v[3].t = gpatch->max_t;
 
-	flags = PF_Translucent|PF_NoDepthTest;
+	// whoops
+	if (blendmode)
+		flags = HWR_GetBlendModeFlag(blendmode+1)|PF_NoDepthTest;
+	else
+		flags = PF_Translucent|PF_NoDepthTest;
 
 	if (option & V_WRAPX)
 		flags |= PF_ForceWrapX;
@@ -294,14 +299,17 @@ void HWR_DrawStretchyFixedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t
 		flags |= PF_ForceWrapY;
 
 	// clip it since it is used for bunny scroll in doom I
+
 	if (alphalevel)
 	{
 		FSurfaceInfo Surf;
 		Surf.PolyColor.s.red = Surf.PolyColor.s.green = Surf.PolyColor.s.blue = 0xff;
+		
 		if (alphalevel == 13) Surf.PolyColor.s.alpha = softwaretranstogl_lo[hudtrans];
 		else if (alphalevel == 14) Surf.PolyColor.s.alpha = softwaretranstogl[hudtrans];
 		else if (alphalevel == 15) Surf.PolyColor.s.alpha = softwaretranstogl_hi[hudtrans];
 		else Surf.PolyColor.s.alpha = softwaretranstogl[10-alphalevel];
+
 		flags |= PF_Modulated;
 		HWD.pfnDrawPolygon(&Surf, v, 4, flags);
 	}
@@ -455,10 +463,12 @@ void HWR_DrawCroppedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscal
 	{
 		FSurfaceInfo Surf;
 		Surf.PolyColor.s.red = Surf.PolyColor.s.green = Surf.PolyColor.s.blue = 0xff;
+
 		if (alphalevel == 13) Surf.PolyColor.s.alpha = softwaretranstogl_lo[cv_translucenthud.value];
 		else if (alphalevel == 14) Surf.PolyColor.s.alpha = softwaretranstogl[cv_translucenthud.value];
 		else if (alphalevel == 15) Surf.PolyColor.s.alpha = softwaretranstogl_hi[cv_translucenthud.value];
 		else Surf.PolyColor.s.alpha = softwaretranstogl[10-alphalevel];
+		
 		flags |= PF_Modulated;
 		HWD.pfnDrawPolygon(&Surf, v, 4, flags);
 	}

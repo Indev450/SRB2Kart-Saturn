@@ -635,10 +635,11 @@ static inline UINT8 transmappedpdraw(const UINT8 *dest, const UINT8 *source, fix
 }
 
 // Draws a patch scaled to arbitrary size.
-void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vscale, INT32 scrn, patch_t *patch, const UINT8 *colormap)
+void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vscale, INT32 scrn, patch_t *patch, const UINT8 *colormap, INT32 bflags)
 {
 	UINT8 (*patchdrawfunc)(const UINT8*, const UINT8*, fixed_t);
-	UINT32 alphalevel = 0;
+	UINT32 alphalevel = ((scrn & V_ALPHAMASK) >> V_ALPHASHIFT);
+	UINT32 blendmode = ((bflags & V_BLENDMASK) >> V_BLENDSHIFT);
 
 	fixed_t col, ofs, colfrac, rowfrac, fdup, vdup;
 	INT32 dupx, dupy;
@@ -655,7 +656,7 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 	//if (rendermode != render_soft && !con_startup)		// Why?
 	if (rendermode == render_opengl)
 	{
-		HWR_DrawStretchyFixedPatch((GLPatch_t *)patch, x, y, pscale, vscale, scrn, colormap);
+		HWR_DrawStretchyFixedPatch((GLPatch_t *)patch, x, y, pscale, vscale, scrn, colormap, bflags);
 		return;
 	}
 #endif
@@ -663,7 +664,7 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 	patchdrawfunc = standardpdraw;
 
 	v_translevel = NULL;
-	if ((alphalevel = ((scrn & V_ALPHAMASK) >> V_ALPHASHIFT)))
+	if (alphalevel || blendmode)
 	{
 		if (alphalevel == 13)
 			alphalevel = hudminusalpha[hudtrans];
@@ -675,9 +676,9 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 		if (alphalevel >= 10)
 			return; // invis
 
-		if (alphalevel)
+		if (alphalevel || blendmode)
 		{
-			v_translevel = transtables + ((alphalevel-1)<<FF_TRANSSHIFT);
+			v_translevel = R_GetBlendTable(blendmode+1, alphalevel);
 			patchdrawfunc = translucentpdraw;
 		}
 	}
@@ -3386,28 +3387,49 @@ void V_DoPostProcessor(INT32 view, player_t *player, INT32 param)
 #endif
 }
 
-
-// Taken from my videos-in-SRB2 project
-// Generates a color look-up table
-// which has up to 64 colors at each channel
-// (see the defines in v_video.h)
-
-UINT8 colorlookup[CLUTSIZE][CLUTSIZE][CLUTSIZE];
-
-void InitColorLUT(void)
+// Generates a RGB565 color look-up table
+void InitColorLUT(colorlookup_t *lut, RGBA_t *palette, boolean makecolors)
 {
-	UINT8 r, g, b;
-	static boolean clutinit = false;
-	static RGBA_t *lastpalette = NULL;
-	if ((!clutinit) || (lastpalette != pLocalPalette))
+	size_t palsize = (sizeof(RGBA_t) * 256);
+
+	if (!lut->init || memcmp(lut->palette, palette, palsize))
 	{
-		for (r = 0; r < CLUTSIZE; r++)
-			for (g = 0; g < CLUTSIZE; g++)
-				for (b = 0; b < CLUTSIZE; b++)
-					colorlookup[r][g][b] = NearestColor(r << SHIFTCOLORBITS, g << SHIFTCOLORBITS, b << SHIFTCOLORBITS);
-		clutinit = true;
-		lastpalette = pLocalPalette;
+		INT32 i;
+
+		lut->init = true;
+		memcpy(lut->palette, palette, palsize);
+
+		for (i = 0; i < 0xFFFF; i++)
+			lut->table[i] = 0xFFFF;
+
+		if (makecolors)
+		{
+			UINT8 r, g, b;
+
+			for (r = 0; r < 0xFF; r++)
+			for (g = 0; g < 0xFF; g++)
+			for (b = 0; b < 0xFF; b++)
+			{
+				i = CLUTINDEX(r, g, b);
+				if (lut->table[i] == 0xFFFF)
+					lut->table[i] = NearestPaletteColor(r, g, b, palette);
+			}
+		}
 	}
+}
+
+UINT8 GetColorLUT(colorlookup_t *lut, UINT8 r, UINT8 g, UINT8 b)
+{
+	INT32 i = CLUTINDEX(r, g, b);
+	if (lut->table[i] == 0xFFFF)
+		lut->table[i] = NearestPaletteColor(r, g, b, lut->palette);
+	return lut->table[i];
+}
+
+UINT8 GetColorLUTDirect(colorlookup_t *lut, UINT8 r, UINT8 g, UINT8 b)
+{
+	INT32 i = CLUTINDEX(r, g, b);
+	return lut->table[i];
 }
 
 // V_Init

@@ -2165,6 +2165,7 @@ static void LoadMobjThinker(actionf_p1 thinker)
 	mobj->mirrored = 0;
 
 	// Sprite Rendering stuff
+	mobj->blendmode = AST_TRANSLUCENT;
 	mobj->spritexoffset = 0;
 	mobj->spriteyoffset = 0;
 	mobj->spritexscale = FRACUNIT;
