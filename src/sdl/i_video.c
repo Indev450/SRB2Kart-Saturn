@@ -659,11 +659,6 @@ static void VID_Command_Mode_f (void)
 		setmodeneeded = modenum+1; // request vid mode change
 }
 
-static inline void SDLJoyRemap(event_t *event)
-{
-	(void)event;
-}
-
 static INT32 SDLJoyAxis(const Sint16 axis, evtype_t which)
 {
 	// -32768 to 32767
@@ -1109,6 +1104,7 @@ static void Impl_HandleControllerButtonEvent(SDL_ControllerButtonEvent evt, Uint
 		event.data1 = KEY_4JOY1;
 	}
 	else return;
+
 	if (type == SDL_CONTROLLERBUTTONUP)
 	{
 		event.type = ev_keyup;
@@ -1118,13 +1114,13 @@ static void Impl_HandleControllerButtonEvent(SDL_ControllerButtonEvent evt, Uint
 		event.type = ev_keydown;
 	}
 	else return;
+
 	if (evt.button < JOYBUTTONS)
 	{
 		event.data1 += evt.button;
 	}
 	else return;
 
-	SDLJoyRemap(&event);
 	if (event.type != ev_console) D_PostEvent(&event);
 }
 
@@ -1432,37 +1428,6 @@ void I_UpdateNoBlit(void)
 	exposevideo = SDL_FALSE;
 }
 
-// I_SkipFrame
-//
-// Returns true if it thinks we can afford to skip this frame
-// from PrBoom's src/SDL/i_video.c
-static inline boolean I_SkipFrame(void)
-{
-#if 1
-	// While I fixed the FPS counter bugging out with this,
-	// I actually really like being able to pause and
-	// use perfstats to measure rendering performance
-	// without game logic changes.
-	return false;
-#else
-	static boolean skip = false;
-
-	skip = !skip;
-
-	switch (gamestate)
-	{
-		case GS_LEVEL:
-			if (!paused)
-				return false;
-			/* FALLTHRU */
-		case GS_WAITINGPLAYERS:
-			return skip; // Skip odd frames
-		default:
-			return false;
-	}
-#endif
-}
-
 //
 // I_FinishUpdate
 //
@@ -1474,9 +1439,6 @@ void I_FinishUpdate(void)
 		return; //Alam: No software or OpenGl surface
 
 	SCR_CalculateFPS();
-
-	if (I_SkipFrame())
-		return;
 
 	if (st_overlay)
 	{
