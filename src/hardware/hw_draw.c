@@ -287,16 +287,18 @@ void HWR_DrawStretchyFixedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t
 	v[0].t = v[1].t = 0.0f;
 	v[2].t = v[3].t = gpatch->max_t;
 
+	// whoops
+	if (blendmode)
+		flags = HWR_GetBlendModeFlag(blendmode+1)|PF_NoDepthTest;
+	else
+		flags = PF_Translucent|PF_NoDepthTest;
+
 	if (option & V_WRAPX)
 		flags |= PF_ForceWrapX;
 	if (option & V_WRAPY)
 		flags |= PF_ForceWrapY;
 
 	// clip it since it is used for bunny scroll in doom I
-	if (blendmode)
-		flags = HWR_GetBlendModeFlag(blendmode+1)|PF_NoDepthTest;
-	else
-		flags = PF_Translucent|PF_NoDepthTest;
 
 	if (alphalevel)
 	{
