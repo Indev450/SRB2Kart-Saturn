@@ -540,11 +540,6 @@ void D_ResetTiccmds(void)
 			D_Clearticcmd(textcmds[i]->tic);
 }
 
-ticcmd_t *D_LocalTiccmd(UINT8 ss)
-{
-	return &localcmds[ss];
-}
-
 // -----------------------------------------------------------------
 // end of extra data function
 // -----------------------------------------------------------------
