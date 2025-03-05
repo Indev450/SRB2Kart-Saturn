@@ -509,7 +509,7 @@ static boolean D_Display(void)
 
 #ifdef HWRENDER
 					if (rendermode == render_opengl)
-						HWR_RenderPlayerView(i, &players[displayplayers[i]]);
+						HWR_RenderPlayerView();
 					else
 #endif
 					if (rendermode != render_none)
