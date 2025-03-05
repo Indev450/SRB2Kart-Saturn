@@ -1075,6 +1075,9 @@ static void P_SetupLines(void)
 		ld->dx = v2->x - v1->x;
 		ld->dy = v2->y - v1->y;
 
+		ld->alpha = FRACUNIT;
+		ld->blendmode = 0;
+
 		if (!ld->dx)
 			ld->slopetype = ST_VERTICAL;
 		else if (!ld->dy)
@@ -1182,6 +1185,26 @@ static void P_LoadLineDefs2(void)
 			}
 			break;
 		}
+
+		// Set alpha for translucent walls
+		if (ld->special >= 900 && ld->special < 909)
+			ld->alpha = ((909 - ld->special) << FRACBITS)/10;
+
+		// Set alpha for additive/subtractive/reverse subtractive walls
+		if (ld->special >= 910 && ld->special <= 939)
+			ld->alpha = ((10 - ld->special % 10) << FRACBITS)/10;
+
+		if (ld->special >= 910 && ld->special <= 919) // additive
+			ld->blendmode = AST_ADD;
+
+		if (ld->special >= 920 && ld->special <= 929) // subtractive
+			ld->blendmode = AST_SUBTRACT;
+
+		if (ld->special >= 930 && ld->special <= 939) // reverse subtractive
+			ld->blendmode = AST_REVERSESUBTRACT;
+
+		if (ld->special == 940) // modulate
+			ld->blendmode = AST_MODULATE;
 	}
 }
 
@@ -1460,8 +1483,10 @@ static void P_LoadRawSideDefs2(void *data)
 				if (msd->toptexture[0] == '#')
 				{
 					char *col = msd->toptexture;
-					sd->toptexture = sd->bottomtexture =
-						((col[1]-'0')*100 + (col[2]-'0')*10 + col[3]-'0') + 1;
+					sd->toptexture =
+						((col[1]-'0')*100 + (col[2]-'0')*10 + col[3]-'0')+1;
+					if (col[4]) // extra num for blendmode
+						sd->toptexture += (col[4]-'0')*1000;
 					sd->midtexture = R_TextureNumForName(msd->midtexture);
 				}
 				else

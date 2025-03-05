@@ -37,17 +37,19 @@ cv_rsaturation, cv_ysaturation, cv_gsaturation, cv_csaturation, cv_bsaturation, 
 // Allocates buffer screens, call before R_Init.
 void V_Init(void);
 
-// Taken from my videos-in-SRB2 project
-// Generates a color look-up table
-// which has up to 64 colors at each channel
+// Color look-up table
+#define CLUTINDEX(r, g, b) (((r) >> 3) << 11) | (((g) >> 2) << 5) | ((b) >> 3)
 
-#define COLORBITS 6
-#define SHIFTCOLORBITS (8-COLORBITS)
-#define CLUTSIZE (1<<COLORBITS)
+typedef struct
+{
+	boolean init;
+	RGBA_t palette[256];
+	UINT16 table[0xFFFF];
+} colorlookup_t;
 
-extern UINT8 colorlookup[CLUTSIZE][CLUTSIZE][CLUTSIZE];
-
-void InitColorLUT(void);
+void InitColorLUT(colorlookup_t *lut, RGBA_t *palette, boolean makecolors);
+UINT8 GetColorLUT(colorlookup_t *lut, UINT8 r, UINT8 g, UINT8 b);
+UINT8 GetColorLUTDirect(colorlookup_t *lut, UINT8 r, UINT8 g, UINT8 b);
 
 // Loads the correct palette into memory
 void V_ReloadPalette(void);
@@ -142,6 +144,17 @@ void V_CubeApply(UINT8 *red, UINT8 *green, UINT8 *blue);
 #define V_SPLITSCREEN        0x40000000
 #define V_HORZSCREEN         0x80000000
 
+// blendmodes are separated into their own category so as to allow older visflags to coexist
+// use bits 21-23 for blendmodes
+#define V_BLENDSHIFT         20
+#define V_BLENDMASK          0x00700000
+// preshifted blend flags minus 1 as effects don't distinguish between AST_COPY and AST_TRANSLUCENT
+#define B_ADD                ((AST_ADD-1)<<V_BLENDSHIFT) // Additive
+#define B_SUBTRACT           ((AST_SUBTRACT-1)<<V_BLENDSHIFT) // Subtractive
+#define B_REVERSESUBTRACT    ((AST_REVERSESUBTRACT-1)<<V_BLENDSHIFT) // Reverse subtractive
+#define B_MODULATE           ((AST_MODULATE-1)<<V_BLENDSHIFT) // Modulate
+
+
 // defines for old functions
 #define V_DrawPatch(x,y,s,p) V_DrawFixedPatch((x)<<FRACBITS, (y)<<FRACBITS, FRACUNIT, s|V_NOSCALESTART|V_NOSCALEPATCH, p, NULL)
 #define V_DrawTranslucentMappedPatch(x,y,s,p,c) V_DrawFixedPatch((x)<<FRACBITS, (y)<<FRACBITS, FRACUNIT, s, p, c)
@@ -157,8 +170,9 @@ void V_CubeApply(UINT8 *red, UINT8 *green, UINT8 *blue);
 #define V_DrawSmallTranslucentPatch(x,y,s,p) V_DrawFixedPatch((x)<<FRACBITS, (y)<<FRACBITS, FRACUNIT/2, s, p, NULL)
 #define V_DrawTinyTranslucentPatch(x,y,s,p) V_DrawFixedPatch((x)<<FRACBITS, (y)<<FRACBITS, FRACUNIT/4, s, p, NULL)
 #define V_DrawSciencePatch(x,y,s,p,sc) V_DrawFixedPatch(x,y,sc,s,p,NULL)
-#define V_DrawFixedPatch(x,y,sc,s,p,c) V_DrawStretchyFixedPatch(x,y,sc,sc,s,p,c)
-void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vscale, INT32 scrn, patch_t *patch, const UINT8 *colormap);
+#define V_DrawFixedPatch(x,y,sc,s,p,c) V_DrawStretchyFixedPatch(x,y,sc,sc,s,p,c,0)
+#define V_DrawBlendingFixedPatch(x,y,sc,s,p,c,b) V_DrawStretchyFixedPatch(x,y,sc,sc,s,p,c,b)
+void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vscale, INT32 scrn, patch_t *patch, const UINT8 *colormap, INT32 bflags);
 void V_DrawCroppedPatch(fixed_t x, fixed_t y, fixed_t pscale, INT32 scrn, patch_t *patch, fixed_t sx, fixed_t sy, fixed_t w, fixed_t h);
 
 void V_DrawContinueIcon(INT32 x, INT32 y, INT32 flags, INT32 skinnum, UINT8 skincolor);
