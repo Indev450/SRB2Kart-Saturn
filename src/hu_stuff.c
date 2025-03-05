@@ -2356,92 +2356,134 @@ Ping_gfx_num (int lag)
 		return 4;
 }
 
+static int
+Ping_gfx_color (int lag)
+{
+	if (lag < 2)
+		return SKINCOLOR_JAWZ;
+	else if (lag < 4)
+		return SKINCOLOR_MINT;
+	else if (lag < 7)
+		return SKINCOLOR_GOLD;
+	else if (lag < 10)
+		return SKINCOLOR_RED;
+	else
+		return SKINCOLOR_WHITE; // SKINCOLOR_MAGENTA
+}
+
+static const UINT8 *
+Ping_gfx_colormap (UINT32 lag, boolean gentleman)
+{
+	UINT8 *colormap = NULL;
+
+	if (K_UseColorHud())
+		colormap = R_GetTranslationColormap(TC_RAINBOW, Ping_gfx_color(lag), GTC_CACHE);
+
+	if (servermaxping && lag > servermaxping && hu_tick < 4)
+	{
+		// flash ping red if too high
+		colormap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_RASPBERRY, GTC_CACHE);
+	}
+
+	return colormap;
+}
+
+static UINT32
+Ping_conversion (UINT32 lag)
+{
+	if (cv_pingmeasurement.value)
+	{
+		lag = (INT32)(lag * (1000.00f / TICRATE));
+	}
+
+	return lag;
+}
+
 //
 // HU_drawPing
 //
 
-void HU_drawPing(INT32 x, INT32 y, UINT32 lag, INT32 flags)
+void HU_drawPlayerPing(INT32 x, INT32 y, INT32 pnum, INT32 flags)
 {
-	UINT8 *colormap = NULL;
 	INT32 measureid = cv_pingmeasurement.value ? 1 : 0;
 	INT32 gfxnum; // gfx to draw
-	
+
 	//SRB2/Kart v1.0 style
 	UINT8 numbars = 0; // how many ping bars do we draw?
 	UINT8 barcolor = 31; // color we use for the bars (green, yellow, red or black)
 	SINT8 i = 0;
 	SINT8 yoffset = 6;
-	//INT32 dx;
 
-	gfxnum = Ping_gfx_num(lag);
-	
-	if (!cv_pingstyle.value)
+	UINT32 lag = playerpingtable[pnum];
+	const boolean gentleman = (cv_mindelay.value && (lag < (tic_t)simulated_lag));
+
+	if (gentleman)
 	{
+		lag = simulated_lag;
+	}
+
+	if (cv_pingstyle.value == 0) // kart
+	{
+		gfxnum = Ping_gfx_num(lag);
+
 		if (measureid == 1)
 			V_DrawScaledPatch(x+11 - pingmeasure[measureid]->width, y+9, flags, pingmeasure[measureid]);
 		
 		if (cv_pingicon.value)
 			V_DrawScaledPatch(x+2, y, flags, pinggfx[gfxnum]);
 
-		if (servermaxping && lag > servermaxping && hu_tick < 4)
-			colormap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_RASPBERRY, GTC_CACHE); // flash ping red if too high
-
-		if (cv_pingmeasurement.value)
-			lag = (INT32)(lag * (1000.00f / TICRATE));
-
-		x = V_DrawPingNum(x + (measureid == 1 ? 11 - pingmeasure[measureid]->width : 10), y+9, flags, lag, colormap);
+		x = V_DrawPingNum(x + (measureid == 1 ? 11 - pingmeasure[measureid]->width : 10), y+9, flags, Ping_conversion(lag), Ping_gfx_colormap(lag, gentleman));
 
 		if (measureid == 0)
-				V_DrawScaledPatch(x+1 - pingmeasure[measureid]->width, y+9, flags, pingmeasure[measureid]);
+			V_DrawScaledPatch(x+1 - pingmeasure[measureid]->width, y+9, flags, pingmeasure[measureid]);
 	}
-	else if (cv_pingstyle.value) // old style ping
+	else if (cv_pingstyle.value == 1) // old style ping
 	{
-		if (cv_pingicon.value)
-		{
-			if (lag < 4)
-			{
-				numbars = 3;
-				barcolor = 184;
-			}
-			else if (lag < 7)
-			{
-				numbars = 2;	// Apparently ternaries w/ multiple statements don't look good in C so I decided against it.
-				barcolor = 103;
-			}
-			else if (lag < 10)
-			{
-				numbars = 1;
-				barcolor = 155; // need a better red
-			}
-			else // brazil
-			{
-				numbars = 0;
-				barcolor = 31;
-			}
-		}
-
-		if (cv_pingmeasurement.value)
-			lag = (INT32)(lag * (1000.00f / TICRATE));
-
 		if (vid.width >= 640)	// how sad, we're using a shit resolution.
 		{
 			if (measureid == 1)
 			{
-				//dx = x+1 - (V_SmallStringWidth(va("%dms", lag), V_ALLOWLOWERCASE|flags)/2);
-				//V_DrawSmallString(dx, y+4, V_ALLOWLOWERCASE|flags, va("%dms", lag));
-					V_DrawRightAlignedSmallString(x+12, y+13, V_ALLOWLOWERCASE|flags, va("%dms", lag));
+				V_DrawRightAlignedSmallString(x+12, y+13, V_ALLOWLOWERCASE|flags, va("%dms", Ping_conversion(lag)));
 			}
 			else if (measureid == 0)
 			{
-				//dx = x+1 - (V_SmallStringWidth(va("d%d", lag), flags)/2);
-				//V_DrawSmallString(dx, y+4, flags, va("d%d", lag));
-					V_DrawRightAlignedSmallString(x+12, y+13, flags, va("d%d", lag));
+				V_DrawRightAlignedSmallString(x+12, y+13, flags, va("d%d", Ping_conversion(lag)));
 			}
 		}
 
 		if (cv_pingicon.value)
-		{	
-			for (i=0; (i<3); i++) // Draw the ping bar
+		{
+			switch (lag)
+			{
+				case 0 ... 1:
+					numbars = 3;
+					barcolor = 215; // Blue
+					break;
+				case 2 ... 3:
+					numbars = 3;
+					barcolor = 184; // Green
+					break;
+				case 4 ... 6:
+					numbars = 2;    // Apparently ternaries w/ multiple statements don't look good in C so I decided against it.
+					barcolor = 103; // Yellow
+					break;
+				case 7 ... 9:
+					numbars = 1;
+					barcolor = 155; // Red
+					break;
+				default:            // Brazil
+					numbars = 0;
+					barcolor = 31;  // black
+					break;
+			}
+
+			if (gentleman)
+			{
+				barcolor = 194; // make it purplish
+				// bars get indirectly set earlier
+			}
+
+			for (i = 0; (i < 3); i++) // Draw the ping bar
 			{
 				V_DrawFill(x+2 *(i-1)+7, y+8+yoffset-4, 2, 8-yoffset, 31|flags);
 				if (i < numbars)
@@ -2535,8 +2577,10 @@ static inline void HU_DrawSpectatorTicker(void)
 					}
 				}
 
-				if (netgame && i != serverplayer)
-						HU_drawPing((templength - duptweak)+8, height-20, playerpingtable[i], V_TRANSLUCENT);
+				if ((netgame && i != serverplayer) || (cv_mindelay.value && P_IsLocalPlayer(&players[i])))
+				{
+					HU_drawPlayerPing((templength - duptweak)+8, height-20, i, V_TRANSLUCENT);
+				}
 			}
 
 			if ((length += len) >= dupadjust+8)

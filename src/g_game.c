@@ -1252,6 +1252,8 @@ static void G_DoLoadLevel(boolean resetplayer)
 	// clear hud messages remains (usually from game startup)
 	CON_ClearHUD();
 
+	server_lagless = cv_lagless.value;
+
 	G_ResetAllDeviceRumbles();
 }
 
