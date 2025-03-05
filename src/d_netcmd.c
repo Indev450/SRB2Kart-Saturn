@@ -527,7 +527,8 @@ static CV_PossibleValue_t ps_descriptor_cons_t[] = {
 	{1, "Average"}, {2, "SD"}, {3, "Minimum"}, {4, "Maximum"}, {0, NULL}};
 consvar_t cv_ps_descriptor = {"ps_descriptor", "Average", 0, ps_descriptor_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_director = {"director", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+// only there to better keep track of it globally
+consvar_t cv_director = {"director", "Off", CV_HIDEN, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_kartdebugdirector = {"debugdirector", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_showdirectorhud = {"showdirectorhud", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -985,6 +986,8 @@ void D_RegisterClientCommands(void)
 	{
 		CV_RegisterVar(&cv_turnaxis[i]);
 		CV_RegisterVar(&cv_moveaxis[i]);
+		CV_RegisterVar(&cv_camturnaxis[i]);
+		CV_RegisterVar(&cv_camstrafeaxis[i]);
 		CV_RegisterVar(&cv_brakeaxis[i]);
 		CV_RegisterVar(&cv_aimaxis[i]);
 		CV_RegisterVar(&cv_lookaxis[i]);
@@ -2235,7 +2238,7 @@ static void Command_View_f(void)
 		return;
 	}
 
-	if (demo.freecam)
+	if (camera[viewnum-1].freecam)
 		return;
 
 	displayplayerp = &displayplayers[viewnum-1];

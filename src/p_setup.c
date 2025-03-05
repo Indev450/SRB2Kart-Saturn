@@ -2489,6 +2489,8 @@ static void P_SetupCamera(UINT8 pnum, camera_t *cam)
 		cam->angle = FixedAngle((fixed_t)thing->angle << FRACBITS);
 		cam->subsector = R_PointInSubsector(cam->x, cam->y); // make sure camera has a subsector set -- Monster Iestyn (12/11/18)
 	}
+
+	cam->chase = false; // tell camera to reset its position next tic
 }
 
 static void P_InitCamera(void)
@@ -2497,9 +2499,13 @@ static void P_InitCamera(void)
 
 	if (!dedicated)
 	{
-		if (!demo.freecam)
 			for (i = 0; i <= splitscreen; i++)
+			{
+				if (camera[i].freecam)
+					continue;
+
 				P_SetupCamera(displayplayers[i], &camera[i]);
+			}
 
 		// Though, I don't think anyone would care about cam_rotate being reset back to the only value that makes sense :P
 		for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)

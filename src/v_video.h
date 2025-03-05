@@ -270,7 +270,7 @@ char V_GetSkincolorChar(INT32 color);
 
 typedef struct player_s player_t;
 
-void V_DoPostProcessor(INT32 view, player_t *player, INT32 param);
+void V_DoPostProcessor(INT32 view, INT32 param);
 
 void V_DrawPatchFill(patch_t *pat);
 

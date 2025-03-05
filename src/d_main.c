@@ -338,7 +338,7 @@ static boolean D_Display(void)
 
 		if (rendermode == render_soft && !splitscreen)
 		{
-			R_InterpolateViewRollAngle(rendertimefrac);
+			R_InterpolateViewRollAngle(rendertimefrac_unpaused);
 			R_CheckViewMorph();
 		}
 
@@ -562,7 +562,7 @@ static boolean D_Display(void)
 
 				for (i = 0; i <= splitscreen; i++)
 				{
-					V_DoPostProcessor(i, &players[displayplayers[i]], postimgparam[i]);
+					V_DoPostProcessor(i, postimgparam[i]);
 				}
 			}
 
@@ -840,7 +840,14 @@ void D_SRB2Loop(void)
 				rendertimefrac = FRACUNIT;
 			}
 
-			rendertimefrac_unpaused = g_time.timefrac;
+			if (!hu_stopped)
+			{
+				rendertimefrac_unpaused = g_time.timefrac;
+			}
+			else
+			{
+				rendertimefrac_unpaused = FRACUNIT;
+			}
 		}
 		else
 		{

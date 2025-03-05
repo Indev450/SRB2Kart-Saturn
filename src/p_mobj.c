@@ -3144,7 +3144,7 @@ static boolean P_CameraCheckHeat(camera_t *thiscam)
 	sector_t *sector;
 	fixed_t halfheight;
 
-	if (!thiscam)
+	if (!thiscam || !thiscam->subsector)
 		return false;
 
 	halfheight = thiscam->z + (thiscam->height >> 1);
@@ -3182,7 +3182,7 @@ static boolean P_CameraCheckWater(camera_t *thiscam)
 	sector_t *sector;
 	fixed_t halfheight;
 
-	if (!thiscam)
+	if (!thiscam || !thiscam->subsector)
 		return false;
 
 	halfheight = thiscam->z + (thiscam->height >> 1);
@@ -3235,16 +3235,23 @@ void P_DestroyRobots(void)
 }
 
 // the below is chasecam only, if you're curious. check out P_CalcPostImg in p_user.c for first person
-static void P_CalcChasePostImg(player_t *player, camera_t *thiscam)
+void P_CalcChasePostImg(player_t *player, camera_t *thiscam)
 {
 	const boolean flipcam = (player->pflags & PF_FLIPCAM && !(player->pflags & PF_NIGHTSMODE) && player->mo->eflags & MFE_VERTICALFLIP);
-	UINT16 postimgflags = 0;
-	UINT8 i;
+	UINT8 postimgtype = 0;
 
 	if (encoremode)
-		postimgflags |= POSTIMG_MIRROR;
+		postimgtype |= POSTIMG_MIRROR;
 	if (flipcam)
-		postimgflags |= POSTIMG_FLIP;
+		postimgtype |= POSTIMG_FLIP;
+
+#ifdef HWRENDER
+	if (rendermode == render_opengl && splitscreen)
+	{
+		thiscam->postimg = postimgtype;
+		return;
+	}
+#endif
 
 	if (player->awayviewtics && player->awayviewmobj && !P_MobjWasRemoved(player->awayviewmobj)) // Camera must obviously exist
 	{
@@ -3259,27 +3266,20 @@ static void P_CalcChasePostImg(player_t *player, camera_t *thiscam)
 
 		// Are we in water?
 		if (P_CameraCheckWater(&dummycam))
-			postimgflags |= POSTIMG_WATER;
-		if (P_CameraCheckHeat(&dummycam))
-			postimgflags |= POSTIMG_HEAT;
+			postimgtype |= POSTIMG_WATER;
+		else if (P_CameraCheckHeat(&dummycam))
+			postimgtype |= POSTIMG_HEAT;
 	}
 	else
 	{
 		// Are we in water?
 		if (P_CameraCheckWater(thiscam))
-			postimgflags |= POSTIMG_WATER;
-		if (P_CameraCheckHeat(thiscam))
-			postimgflags |= POSTIMG_HEAT;
+			postimgtype |= POSTIMG_WATER;
+		else if (P_CameraCheckHeat(thiscam))
+			postimgtype |= POSTIMG_HEAT;
 	}
 
-	for (i = 0; i <= splitscreen; i++)
-	{
-		if (player != &players[displayplayers[i]])
-			continue;
-
-		players[displayplayers[i]].postimgflags = postimgflags;
-		break;
-	}
+	thiscam->postimg = postimgtype;
 }
 
 // P_CameraThinker
@@ -10650,7 +10650,9 @@ void P_SpawnPlayer(INT32 playernum)
 	if (multiplayer && demo.playback)
 		; // Don't mess with spectator values since the demo setup handles them already.
 	else if (!G_GametypeHasSpectators())
+	{
 		p->spectator = false;
+	}
 	else if (netgame && p->jointime <= 1 && pcount)
 	{
 		p->spectator = true;
@@ -10682,7 +10684,9 @@ void P_SpawnPlayer(INT32 playernum)
 			SendNetXCmd(XD_TEAMCHANGE, &usvalue, sizeof(usvalue));
 		}
 		else // Otherwise, never spectator.
+		{
 			p->spectator = false;
+		}
 	}
 
 	if (G_GametypeHasTeams())
@@ -10787,6 +10791,30 @@ void P_SpawnPlayer(INT32 playernum)
 			P_SetScale(karmahitbox, mobj->scale);
 		}
 	}
+
+	// TODO: handle splitscreen
+	// Spectators can switch to freecam. This should be
+	// disabled when they enter the race, or when the level
+	// changes.
+	if (!demo.playback)
+	{
+		if (!p->spectator)
+		{
+			if (playernum == consoleplayer)
+				camera[0].freecam = false;
+			else if (splitscreen)
+			{
+				for (i = 1; i <= splitscreen; i++)
+				{
+					if (playernum == displayplayers[i])
+					{
+						camera[i].freecam = false;
+						break;
+					}
+				}
+			}
+		}
+	}
 }
 
 void P_AfterPlayerSpawn(INT32 playernum)
@@ -10829,15 +10857,18 @@ void P_AfterPlayerSpawn(INT32 playernum)
 
 	SV_SpawnPlayer(playernum, mobj->x, mobj->y, mobj->angle);
 
-	for (i = 0; i <= splitscreen; i++)
+	if (p->spectator == false)
 	{
-		if (!camera[i].chase)
-			continue;
+		for (i = 0; i <= splitscreen; i++)
+		{
+			if (!camera[i].chase)
+				continue;
 
-		if (displayplayers[i] != playernum)
-			continue;
+			if (displayplayers[i] != playernum)
+				continue;
 
-		P_ResetCamera(p, &camera[i]);
+			P_ResetCamera(p, &camera[i]);
+		}
 	}
 
 	if (CheckForReverseGravity)

@@ -400,7 +400,12 @@ static void P_DeviceRumbleTick(void)
 			continue;
 		}
 
-		if (player->mo == NULL)
+		if (camera[i].freecam)
+		{
+			continue;
+		}
+
+		if (P_MobjWasRemoved(player->mo))
 		{
 			continue;
 		}
@@ -465,7 +470,20 @@ void P_RunChaseCameras(void)
 	for (i = 0; i <= splitscreen; i++)
 	{
 		if (camera[i].chase)
-			P_MoveChaseCamera(&players[displayplayers[i]], &camera[i], false);
+		{
+			player_t *p = &players[displayplayers[i]];
+			camera_t *cam = &camera[i];
+
+			if (p->mo && p->kartstuff[k_throwdir] != 0)
+			{
+				if (p->speed < 6 * p->mo->scale && abs(cam->dpad_y_held) < 2*TICRATE)
+					cam->dpad_y_held += intsign(p->kartstuff[k_throwdir]);
+			}
+			else
+				cam->dpad_y_held = 0;
+
+			P_MoveChaseCamera(p, cam, false);
+		}
 	}
 }
 
@@ -572,8 +590,8 @@ void P_Ticker(boolean run)
 				timeinmap = (timeinmap-1) & ~3;
 			G_PreviewRewind(leveltime);
 		}
-		else if (demo.freecam && democam.cam)	// special case: allow freecam to MOVE during pause!
-			P_DemoCameraMovement(democam.cam);
+		else
+			P_RunChaseCameras();	// special case: allow freecam to MOVE during pause!
 
 		return;
 	}
@@ -668,10 +686,7 @@ void P_Ticker(boolean run)
 		PS_STOP_TIMING(ps_lua_thinkframe_time);
 	}
 
-	// Run shield positioning
-	//P_RunShields();
 	P_RunOverlays();
-
 	P_RunShadows();
 
 	P_UpdateSpecials();

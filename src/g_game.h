@@ -123,6 +123,8 @@ extern consvar_t cv_invertmouse2/*, cv_alwaysfreelook2, cv_chasefreelook2, cv_mo
 
 extern consvar_t cv_turnaxis[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_moveaxis[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_camturnaxis[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_camstrafeaxis[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_brakeaxis[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_aimaxis[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_lookaxis[MAXSPLITSCREENPLAYERS];
@@ -194,6 +196,8 @@ typedef enum
 	AXISNONE = 0,
 	AXISTURN,
 	AXISMOVE,
+	AXISCAMTURN,
+	AXISCAMSTRAFE,
 	AXISBRAKE,
 	AXISAIM,
 	AXISLOOK,
@@ -230,8 +234,6 @@ INT32 JoyAxis(axis_input_e axissel, UINT8 p);
 extern angle_t localangle[MAXSPLITSCREENPLAYERS];
 extern INT32 localaiming[MAXSPLITSCREENPLAYERS]; // should be an angle_t but signed
 extern boolean camspin[MAXSPLITSCREENPLAYERS]; // SRB2Kart
-
-extern tic_t directortoggletimer;
 
 //
 // GAME
@@ -466,5 +468,7 @@ INT16 G_TOLFlag(INT32 pgametype);
 
 INT16 G_RandMap(INT16 tolflags, INT16 pprevmap, boolean ignorebuffer, UINT8 maphell, boolean callagainsoon, INT16 *extbuffer);
 void G_AddMapToBuffer(INT16 map);
+
+void G_FixCamera(UINT8 view);
 
 #endif

@@ -342,15 +342,6 @@ union FColorRGBA
 } ATTRPACK;
 typedef union FColorRGBA RGBA_t;
 
-typedef enum
-{
-	POSTIMG_WATER	= 1,	// Underwater screen effect.
-	POSTIMG_MOTION	= 1<<1, // Unused motion blur effect.
-	POSTIMG_FLIP	= 1<<2, // Flipcam screen effect.
-	POSTIMG_HEAT	= 1<<3, // Heatwave screen effect.
-	POSTIMG_MIRROR	= 1<<4, // encore screen effect.
-} postimgflag_t;
-
 typedef UINT32 lumpnum_t; // 16 : 16 unsigned long (wad num: lump num)
 #define LUMPERROR UINT32_MAX
 
@@ -388,6 +379,9 @@ unset_bit_array (bitarray_t * const array, const int value)
 {
 	array[value >> 3] &= ~(1<<(value & 7));
 }
+
+#define intsign(n) \
+	((n) < 0 ? -1 : (n) > 0 ? 1 : 0)
 
 typedef UINT64 precise_t;
 

@@ -26,6 +26,7 @@
 #include "i_video.h"
 #include "i_system.h"
 
+#include "r_fps.h"
 #include "st_stuff.h" // ST_HEIGHT
 #include "r_local.h"
 
@@ -2186,7 +2187,7 @@ void HU_DrawSongCredits(void)
 //
 void HU_Drawer(void)
 {
-	if (cv_vhseffect.value && (paused || (demo.playback && cv_playbackspeed.value > 1)))
+	if (cv_vhseffect.value && ((paused && !camera[R_GetViewNumber()].freecam) || (demo.playback && cv_playbackspeed.value > 1)))
 		V_DrawVhsEffect(demo.rewinding);
 
 #ifndef NONET
