@@ -2374,7 +2374,7 @@ Ping_gfx_color (int lag)
 static const UINT8 *
 Ping_gfx_colormap (UINT32 lag, boolean gentleman)
 {
-	UINT8 *colormap = NULL;
+	const UINT8 *colormap = NULL;
 
 	if (K_UseColorHud())
 		colormap = R_GetTranslationColormap(TC_RAINBOW, Ping_gfx_color(lag), GTC_CACHE);
@@ -2383,6 +2383,10 @@ Ping_gfx_colormap (UINT32 lag, boolean gentleman)
 	{
 		// flash ping red if too high
 		colormap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_RASPBERRY, GTC_CACHE);
+	}
+	else if (gentleman)
+	{
+		colormap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_PASTEL, GTC_CACHE);
 	}
 
 	return colormap;
@@ -2428,7 +2432,7 @@ void HU_drawPlayerPing(INT32 x, INT32 y, INT32 pnum, INT32 flags)
 
 		if (measureid == 1)
 			V_DrawScaledPatch(x+11 - pingmeasure[measureid]->width, y+9, flags, pingmeasure[measureid]);
-		
+
 		if (cv_pingicon.value)
 			V_DrawScaledPatch(x+2, y, flags, pinggfx[gfxnum]);
 
