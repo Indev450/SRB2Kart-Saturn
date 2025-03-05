@@ -4749,8 +4749,6 @@ void P_PlayerThink(player_t *player)
 	{
 		player->pflags ^= PF_WANTSTOJOIN;
 		player->powers[pw_flashing] = TICRATE/2 + 1;
-		/*if (P_SpectatorJoinGame(player))
-			return; // player->mo was removed.*/
 	}
 
 	// Even if not NiGHTS, pull in nearby objects when walking around as John Q. Elliot.
@@ -4987,7 +4985,7 @@ void P_PlayerThink(player_t *player)
 
 	K_KartPlayerThink(player, cmd); // SRB2kart
 
-	if (rendermode != render_none)
+	if (rendermode != render_none && cv_tilting.value)
 		DoABarrelRoll(player);
 
 	LUA_HookPlayer(player, HOOK(PlayerThink));
