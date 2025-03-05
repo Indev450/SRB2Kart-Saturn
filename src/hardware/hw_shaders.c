@@ -36,7 +36,7 @@ static struct {
 	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_WALL_FRAGMENT_SHADER},
 
 	// Model shader
-	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_WALL_FRAGMENT_SHADER},
+	{GLSL_MODEL_LIGHTING_VERTEX_SHADER, GLSL_WALL_FRAGMENT_SHADER},
 
 	// Water shader
 	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_WATER_FRAGMENT_SHADER},
@@ -400,17 +400,18 @@ void HWR_CompileShaders(void)
 
 int HWR_GetShaderFromTarget(int shader_target)
 {
-	int custom_shader = gl_shadertargets[shader_target].custom_shader;
-	// use custom shader if following are true
-	// - custom shader exists
-	// - custom shader has been compiled successfully
-	// - custom shaders are enabled
-	// - custom shaders are allowed by the server
-	if (custom_shader != -1 && gl_shaders[custom_shader].compiled &&
-		cv_glshaders.value == 1)
-		return custom_shader;
-	else
-		return gl_shadertargets[shader_target].base_shader;
+	if (cv_glshaders.value == 1)
+	{
+		int custom_shader = gl_shadertargets[shader_target].custom_shader;
+		// use custom shader if following are true
+		// - custom shader exists
+		// - custom shader has been compiled successfully
+		// - custom shaders are enabled
+		if (custom_shader != -1 && gl_shaders[custom_shader].compiled)
+			return custom_shader;
+	}
+
+	return gl_shadertargets[shader_target].base_shader;
 }
 
 static inline UINT16 HWR_FindShaderDefs(UINT16 wadnum)
