@@ -929,8 +929,6 @@ static void Impl_HandleMouseButtonEvent(SDL_MouseButtonEvent evt, Uint32 type)
 {
 	event_t event;
 
-	SDL_memset(&event, 0, sizeof(event_t));
-
 	// Ignore the event if the mouse is not actually focused on the window.
 	// This can happen if you used the mouse to restore keyboard focus;
 	// this apparently makes a mouse button down event but not a mouse button up event,
@@ -942,6 +940,8 @@ static void Impl_HandleMouseButtonEvent(SDL_MouseButtonEvent evt, Uint32 type)
 	/// \todo inputEvent.button.which
 	if (USE_MOUSEINPUT)
 	{
+		SDL_memset(&event, 0, sizeof(event_t));
+
 		if (type == SDL_MOUSEBUTTONUP)
 		{
 			event.type = ev_keyup;
@@ -972,26 +972,29 @@ static void Impl_HandleMouseWheelEvent(SDL_MouseWheelEvent evt)
 {
 	event_t event;
 
-	SDL_memset(&event, 0, sizeof(event_t));
+	if (USE_MOUSEINPUT)
+	{
+		SDL_memset(&event, 0, sizeof(event_t));
 
-	if (evt.y > 0)
-	{
-		event.data1 = KEY_MOUSEWHEELUP;
-		event.type = ev_keydown;
-	}
-	if (evt.y < 0)
-	{
-		event.data1 = KEY_MOUSEWHEELDOWN;
-		event.type = ev_keydown;
-	}
-	if (evt.y == 0)
-	{
-		event.data1 = 0;
-		event.type = ev_keyup;
-	}
-	if (event.type == ev_keyup || event.type == ev_keydown)
-	{
-		D_PostEvent(&event);
+		if (evt.y > 0)
+		{
+			event.data1 = KEY_MOUSEWHEELUP;
+			event.type = ev_keydown;
+		}
+		if (evt.y < 0)
+		{
+			event.data1 = KEY_MOUSEWHEELDOWN;
+			event.type = ev_keydown;
+		}
+		if (evt.y == 0)
+		{
+			event.data1 = 0;
+			event.type = ev_keyup;
+		}
+		if (event.type == ev_keyup || event.type == ev_keydown)
+		{
+			D_PostEvent(&event);
+		}
 	}
 }
 
