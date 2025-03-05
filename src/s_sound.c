@@ -456,11 +456,7 @@ void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
 		memset(&listener[i], 0, sizeof (listener[i]));
 		listenmobj[i] = NULL;
 
-		if (i == 0 && democam.soundmobj)
-		{
-			listenmobj[i] = democam.soundmobj;
-		}
-		else if (player->awayviewtics)
+		if (player->awayviewtics)
 		{
 			listenmobj[i] = player->awayviewmobj;
 		}
@@ -469,7 +465,7 @@ void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
 			listenmobj[i] = player->mo;
 		}
 
-		if (origin && origin == listenmobj[i])
+		if (origin && origin == listenmobj[i] && !camera[i].freecam)
 		{
 			itsUs = true;
 		}
@@ -719,12 +715,6 @@ void S_UpdateSounds(void)
 		memset(&listener[i], 0, sizeof (listener[i]));
 		listenmobj[i] = NULL;
 
-		if (i == 0 && democam.soundmobj)
-		{
-			listenmobj[i] = democam.soundmobj;
-			continue;
-		}
-
 		if (player->awayviewtics)
 		{
 			listenmobj[i] = player->awayviewmobj;
@@ -780,6 +770,9 @@ void S_UpdateSounds(void)
 
 					for (i = splitscreen; i >= 0; i--)
 					{
+						if (camera[i].freecam)
+							continue;
+
 						if (c->origin != listenmobj[i])
 							continue;
 
@@ -1728,6 +1721,10 @@ static void S_ChangeMusicToQueue(void)
 	S_ClearQueue();
 }
 
+// keep copy of music name before lua hook change
+// for custom vote music etc
+static char checkmusic[7] = {0};
+
 void S_ChangeMusicEx(const char *mmusic, UINT16 mflags, boolean looping, UINT32 position, UINT32 prefadems, UINT32 fadeinms)
 {
 	char newmusic[7] = {0};
@@ -1747,6 +1744,7 @@ void S_ChangeMusicEx(const char *mmusic, UINT16 mflags, boolean looping, UINT32 
 		return;
 
 	strncpy(newmusic, mmusic, 6);
+	strncpy(checkmusic, mmusic, 6);
 
 	if (LUA_HookMusicChange(music_name, &hook_param))
 		return;
@@ -1940,9 +1938,24 @@ static const char *musicexception_list[] = {
 	"vote", "voteea", "voteeb", "racent", "krwin",
 	"krok", "krlose", "krfail", "kbwin", "kbok",
 	"kblose", "kstart", "estart", "wait2j", "titles",
+	"kinvnc", "kgrow",  // grow and invinc
 	"SPBA_W", "SPBA_L", // SPB Attack music
-	"CHRSHF", "CHRSHP" // no clue what those are tbh
+	"CHRSHF", "CHRSHP"  // no clue what those are tbh
 };
+
+// check if the current music is smth we dont want to keep (vote music, etc)
+static boolean S_CheckMusicException(void)
+{
+	for (size_t i = 0; i < sizeof(musicexception_list)/sizeof(musicexception_list[0]); i++)
+	{
+		if (!stricmp(music_name, musicexception_list[i]) || !stricmp(checkmusic, musicexception_list[i]))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
 
 void S_ResetKeepAndSpecialMus(void)
 {
@@ -1961,17 +1974,7 @@ void S_KeepMusic(void)
 	}
 	else if (oldmap == gamemap && oldencore == encoremode)
 	{
-		keepmusic = true;
-
-		// check if the current music is smth we dont want to keep (vote music, etc)
-		for (size_t i = 0; i < sizeof(musicexception_list)/sizeof(musicexception_list[0]); i++)
-		{
-			if (stricmp(music_name, musicexception_list[i]) == 0)
-			{
-				keepmusic = false;
-				break;
-			}
-		}
+		keepmusic = !S_CheckMusicException();
 	}
 
 	oldencore = encoremode;
@@ -2005,7 +2008,10 @@ void S_InitMapMusic(void)
 	{
 		char *maptitle = G_BuildMapTitle(gamemap);
 		// for some reason, occasionally the title screen music doesent seem to be reset in time, so skipping the intro may make it just continue playing it instead, weird..
-		skipintromus = (stricmp(music_name, "titles") != 0) && (maptitle && (stricmp(maptitle, "Wandering Falls") != 0)); // thanks diggle!
+		skipintromus = true;
+		if (!stricmp(music_name, "titles") || (maptitle && (!stricmp(maptitle, "Wandering Falls")))) // thanks diggle!
+			skipintromus = false;
+
 		if (maptitle)
 			Z_Free(maptitle);
 	}

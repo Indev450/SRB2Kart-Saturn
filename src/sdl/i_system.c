@@ -201,6 +201,8 @@ static char returnWadPath[256];
 #include "../byteptr.h"
 #endif
 
+INT32 numcontrollers = 0;
+
 #ifdef HAVE_LIBBACKTRACE
 #include <backtrace.h>
 // TODO - move this to some header file instead
@@ -1170,21 +1172,21 @@ void I_ShutdownJoystick(UINT8 index)
 {
 	INT32 i;
 	event_t event;
-	event.type=ev_keyup;
+	event.type = ev_keyup;
 	event.data2 = 0;
 	event.data3 = 0;
 
 	lastjoybuttons[index] = lastjoyhats[index] = 0;
 
 	// emulate the up of all joystick buttons
-	for (i=0;i<JOYBUTTONS;i++)
+	for (i = 0; i < JOYBUTTONS; i++)
 	{
-		event.data1=KEY_JOY1+i;
+		event.data1=KEY_JOY1 + i;
 		D_PostEvent(&event);
 	}
 
 	// emulate the up of all joystick hats
-	for (i=0;i<JOYHATS*4;i++)
+	for (i = 0; i < JOYHATS*4; i++)
 	{
 		event.data1=KEY_HAT1+i;
 		D_PostEvent(&event);
@@ -1192,7 +1194,7 @@ void I_ShutdownJoystick(UINT8 index)
 
 	// reset joystick position
 	event.type = ev_joystick;
-	for (i=0;i<JOYAXISSET; i++)
+	for (i = 0; i < JOYAXISSET; i++)
 	{
 		event.data1 = i;
 		D_PostEvent(&event);
@@ -1483,17 +1485,15 @@ const char *I_GetJoyName(INT32 joyindex)
 	return joyname;
 }
 
-void I_GamepadRumble(INT32 device_id, UINT16 low_strength, UINT16 high_strength, UINT32 duration)
+void I_GamepadRumble(INT32 playernum, UINT16 low_strength, UINT16 high_strength, UINT32 duration)
 {
 #if !(SDL_VERSION_ATLEAST(2,0,14))
-	(void)device_id;
+	(void)playernum;
 	(void)low_strength;
 	(void)high_strength;
 	(void)duration;
 #else
-	I_Assert(device_id > 0); // Gamepad devices are always ID 1 or higher
-
-	SDL_GameController *controller = SDL_GameControllerFromInstanceID(device_id - 1);
+	SDL_GameController *controller = JoyInfo[playernum].dev;
 	if (controller == NULL)
 	{
 		return;
@@ -1503,17 +1503,15 @@ void I_GamepadRumble(INT32 device_id, UINT16 low_strength, UINT16 high_strength,
 #endif
 }
 
-void I_SetGamepadIndicatorColor(INT32 device_id, UINT8 red, UINT8 green, UINT8 blue)
+void I_SetGamepadIndicatorColor(INT32 playernum, UINT8 red, UINT8 green, UINT8 blue)
 {
 #if !(SDL_VERSION_ATLEAST(2,0,14))
-	(void)device_id;
+	(void)playernum;
 	(void)red;
 	(void)green;
 	(void)blue;
 #else
-	I_Assert(device_id > 0); // Gamepad devices are always ID 1 or higher
-
-	SDL_GameController *controller = SDL_GameControllerFromInstanceID(device_id - 1);
+	SDL_GameController *controller = JoyInfo[playernum].dev;
 	if (controller == NULL)
 	{
 		return;
@@ -2502,6 +2500,48 @@ void I_RemoveExitFunc(void (*func)())
 	}
 }
 
+#if !(defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON))
+static void Shittycopyerror(const char *name)
+{
+	I_OutputMsg(
+			"Error copying log file: %s: %s\n",
+			name,
+			strerror(errno)
+	);
+}
+
+static void Shittylogcopy(void)
+{
+	char buf[8192];
+	FILE *fp;
+	size_t r;
+	if (fseek(logstream, 0, SEEK_SET) == -1)
+	{
+		Shittycopyerror("fseek");
+	}
+	else if (( fp = fopen(logfilename, "wt") ))
+	{
+		while (( r = fread(buf, 1, sizeof buf, logstream) ))
+		{
+			if (fwrite(buf, 1, r, fp) < r)
+			{
+				Shittycopyerror("fwrite");
+				break;
+			}
+		}
+		if (ferror(logstream))
+		{
+			Shittycopyerror("fread");
+		}
+		fclose(fp);
+	}
+	else
+	{
+		Shittycopyerror(logfilename);
+	}
+}
+#endif/*!(defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON))*/
+
 //
 //  Closes down everything. This includes restoring the initial
 //  palette and video mode, and removing whatever mouse, keyboard, and
@@ -2524,6 +2564,9 @@ void I_ShutdownSystem(void)
 	if (logstream)
 	{
 		I_OutputMsg("I_ShutdownSystem(): end of logstream.\n");
+#if !(defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON))
+		Shittylogcopy();
+#endif
 		fclose(logstream);
 		logstream = NULL;
 	}

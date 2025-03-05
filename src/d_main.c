@@ -133,6 +133,7 @@ char srb2home[256] = ".";
 char srb2path[256] = ".";
 boolean usehome = true;
 const char *pandf = "%s" PATHSEP "%s";
+static char addonsdir[MAX_WADPATH];
 
 //
 // EVENT HANDLING
@@ -182,6 +183,9 @@ static void D_GamePadMenuScrollTicker(void)
 	static SINT8 menuInputDelayTimer = 0;
 	int key = 0; // butt-on output
 
+	if (dedicated)
+		return;
+
 	// wish i had a switch ono
     if (DPADUPSCROLL)
 		key = KEY_UPARROW;
@@ -210,10 +214,10 @@ static void D_GamePadMenuScrollTicker(void)
 static void D_DeviceLEDTick(void)
 {
 	UINT8 i;
-	UINT16 color[MAXSPLITSCREENPLAYERS];
-	UINT16 curcolor[MAXSPLITSCREENPLAYERS];
+	static UINT16 color[MAXSPLITSCREENPLAYERS] = {0, 0, 0, 0};
+	static UINT16 curcolor[MAXSPLITSCREENPLAYERS] = {0, 0, 0, 0};
 
-	if (I_NumJoys() == 0)
+	if (dedicated || numcontrollers == 0)
 	{
 		return;
 	}
@@ -334,7 +338,7 @@ static boolean D_Display(void)
 
 		if (rendermode == render_soft && !splitscreen)
 		{
-			R_InterpolateViewRollAngle(rendertimefrac);
+			R_InterpolateViewRollAngle(rendertimefrac_unpaused);
 			R_CheckViewMorph();
 		}
 
@@ -558,7 +562,7 @@ static boolean D_Display(void)
 
 				for (i = 0; i <= splitscreen; i++)
 				{
-					V_DoPostProcessor(i, &players[displayplayers[i]], postimgparam[i]);
+					V_DoPostProcessor(i, postimgparam[i]);
 				}
 			}
 
@@ -836,7 +840,14 @@ void D_SRB2Loop(void)
 				rendertimefrac = FRACUNIT;
 			}
 
-			rendertimefrac_unpaused = g_time.timefrac;
+			if (!hu_stopped)
+			{
+				rendertimefrac_unpaused = g_time.timefrac;
+			}
+			else
+			{
+				rendertimefrac_unpaused = FRACUNIT;
+			}
 		}
 		else
 		{
@@ -1437,8 +1448,6 @@ void D_SRB2Main(void)
 
 			// can't use sprintf since there is %u in savegamename
 			strcatbf(savegamename, srb2home, PATHSEP);
-
-			I_mkdir(srb2home, 0700);
 #else
 			snprintf(srb2home, sizeof srb2home, "%s", userhome);
 			snprintf(downloaddir, sizeof downloaddir, "%s", userhome);
@@ -1474,6 +1483,10 @@ void D_SRB2Main(void)
 			remove(testfile);
 		}
 	}
+
+	// Create addons dir
+	snprintf(addonsdir, sizeof addonsdir, "%s%s%s", srb2home, PATHSEP, "addons");
+	I_mkdir(addonsdir, 0755);
 
 	D_SetupProtocol();
 

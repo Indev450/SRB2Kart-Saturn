@@ -26,6 +26,7 @@
 #include "i_video.h"
 #include "i_system.h"
 
+#include "r_fps.h"
 #include "st_stuff.h" // ST_HEIGHT
 #include "r_local.h"
 
@@ -69,7 +70,6 @@ patch_t *hu_font[HU_FONTSIZE];
 patch_t *kart_font[KART_FONTSIZE];	// SRB2kart
 patch_t *tny_font[HU_FONTSIZE];
 patch_t *tallnum[10]; // 0-9
-patch_t *nightsnum[10]; // 0-9
 
 // Level title and credits fonts
 patch_t *lt_font[LT_FONTSIZE];
@@ -100,24 +100,8 @@ patch_t *rflagico;
 patch_t *bflagico;
 patch_t *rmatcico;
 patch_t *bmatcico;
-patch_t *tagico;
 patch_t *tallminus;
 
-//-------------------------------------------
-//              coop hud
-//-------------------------------------------
-
-patch_t *emeraldpics[7];
-patch_t *tinyemeraldpics[7];
-static patch_t *emblemicon;
-static patch_t *tokenicon;
-
-//-------------------------------------------
-//              misc vars
-//-------------------------------------------
-
-// crosshair 0 = off, 1 = cross, 2 = angle, 3 = point, see m_menu.c
-static patch_t *crosshair[HU_CROSSHAIRS]; // 3 precached crosshair graphics
 // song credits
 static patch_t *songcreditbg;
 
@@ -381,8 +365,6 @@ void HU_LoadGraphics(void)
 	{
 		sprintf(buffer, "STTNUM%d", i);
 		tallnum[i] = (patch_t *)W_CachePatchName(buffer, PU_HUDGFX);
-		sprintf(buffer, "NGTNUM%d", i);
-		nightsnum[i] = (patch_t *) W_CachePatchName(buffer, PU_HUDGFX);
 		sprintf(buffer, "PINGN%d", i);
 		pingnum[i] = (patch_t *) W_CachePatchName(buffer, PU_HUDGFX);
 		sprintf(buffer, "OPPRNK0%d", i);
@@ -391,32 +373,6 @@ void HU_LoadGraphics(void)
 
 	// minus for negative tallnums
 	tallminus = (patch_t *)W_CachePatchName("STTMINUS", PU_HUDGFX);
-
-	// cache the crosshairs, don't bother to know which one is being used,
-	// just cache all 3, they're so small anyway.
-	for (i = 0; i < HU_CROSSHAIRS; i++)
-	{
-		sprintf(buffer, "CROSHAI%c", '1'+i);
-		crosshair[i] = (patch_t *)W_CachePatchName(buffer, PU_HUDGFX);
-	}
-
-	emblemicon = W_CachePatchName("EMBLICON", PU_HUDGFX);
-	tokenicon = W_CachePatchName("TOKNICON", PU_HUDGFX);
-
-	emeraldpics[0] = W_CachePatchName("CHAOS1", PU_HUDGFX);
-	emeraldpics[1] = W_CachePatchName("CHAOS2", PU_HUDGFX);
-	emeraldpics[2] = W_CachePatchName("CHAOS3", PU_HUDGFX);
-	emeraldpics[3] = W_CachePatchName("CHAOS4", PU_HUDGFX);
-	emeraldpics[4] = W_CachePatchName("CHAOS5", PU_HUDGFX);
-	emeraldpics[5] = W_CachePatchName("CHAOS6", PU_HUDGFX);
-	emeraldpics[6] = W_CachePatchName("CHAOS7", PU_HUDGFX);
-	tinyemeraldpics[0] = W_CachePatchName("TEMER1", PU_HUDGFX);
-	tinyemeraldpics[1] = W_CachePatchName("TEMER2", PU_HUDGFX);
-	tinyemeraldpics[2] = W_CachePatchName("TEMER3", PU_HUDGFX);
-	tinyemeraldpics[3] = W_CachePatchName("TEMER4", PU_HUDGFX);
-	tinyemeraldpics[4] = W_CachePatchName("TEMER5", PU_HUDGFX);
-	tinyemeraldpics[5] = W_CachePatchName("TEMER6", PU_HUDGFX);
-	tinyemeraldpics[6] = W_CachePatchName("TEMER7", PU_HUDGFX);
 
 	songcreditbg = W_CachePatchName("K_SONGCR", PU_HUDGFX);
 
@@ -2231,7 +2187,7 @@ void HU_DrawSongCredits(void)
 //
 void HU_Drawer(void)
 {
-	if (cv_vhseffect.value && (paused || (demo.playback && cv_playbackspeed.value > 1)))
+	if (cv_vhseffect.value && ((paused && !camera[R_GetViewNumber()].freecam) || (demo.playback && cv_playbackspeed.value > 1)))
 		V_DrawVhsEffect(demo.rewinding);
 
 #ifndef NONET

@@ -1075,6 +1075,9 @@ static void P_SetupLines(void)
 		ld->dx = v2->x - v1->x;
 		ld->dy = v2->y - v1->y;
 
+		ld->alpha = FRACUNIT;
+		ld->blendmode = 0;
+
 		if (!ld->dx)
 			ld->slopetype = ST_VERTICAL;
 		else if (!ld->dy)
@@ -1182,6 +1185,26 @@ static void P_LoadLineDefs2(void)
 			}
 			break;
 		}
+
+		// Set alpha for translucent walls
+		if (ld->special >= 900 && ld->special < 909)
+			ld->alpha = ((909 - ld->special) << FRACBITS)/10;
+
+		// Set alpha for additive/subtractive/reverse subtractive walls
+		if (ld->special >= 910 && ld->special <= 939)
+			ld->alpha = ((10 - ld->special % 10) << FRACBITS)/10;
+
+		if (ld->special >= 910 && ld->special <= 919) // additive
+			ld->blendmode = AST_ADD;
+
+		if (ld->special >= 920 && ld->special <= 929) // subtractive
+			ld->blendmode = AST_SUBTRACT;
+
+		if (ld->special >= 930 && ld->special <= 939) // reverse subtractive
+			ld->blendmode = AST_REVERSESUBTRACT;
+
+		if (ld->special == 940) // modulate
+			ld->blendmode = AST_MODULATE;
 	}
 }
 
@@ -1460,8 +1483,10 @@ static void P_LoadRawSideDefs2(void *data)
 				if (msd->toptexture[0] == '#')
 				{
 					char *col = msd->toptexture;
-					sd->toptexture = sd->bottomtexture =
-						((col[1]-'0')*100 + (col[2]-'0')*10 + col[3]-'0') + 1;
+					sd->toptexture =
+						((col[1]-'0')*100 + (col[2]-'0')*10 + col[3]-'0')+1;
+					if (col[4]) // extra num for blendmode
+						sd->toptexture += (col[4]-'0')*1000;
 					sd->midtexture = R_TextureNumForName(msd->midtexture);
 				}
 				else
@@ -2464,6 +2489,8 @@ static void P_SetupCamera(UINT8 pnum, camera_t *cam)
 		cam->angle = FixedAngle((fixed_t)thing->angle << FRACBITS);
 		cam->subsector = R_PointInSubsector(cam->x, cam->y); // make sure camera has a subsector set -- Monster Iestyn (12/11/18)
 	}
+
+	cam->chase = false; // tell camera to reset its position next tic
 }
 
 static void P_InitCamera(void)
@@ -2472,9 +2499,13 @@ static void P_InitCamera(void)
 
 	if (!dedicated)
 	{
-		if (!demo.freecam)
 			for (i = 0; i <= splitscreen; i++)
+			{
+				if (camera[i].freecam)
+					continue;
+
 				P_SetupCamera(displayplayers[i], &camera[i]);
+			}
 
 		// Though, I don't think anyone would care about cam_rotate being reset back to the only value that makes sense :P
 		for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
@@ -2495,7 +2526,7 @@ static boolean P_CanSave(void)
 struct minimapinfo minimapinfo;
 static void P_InitMinimapInfo(void)
 {
-	INT32 lumpnum;
+	lumpnum_t lumpnum;
 	fixed_t a;
 	fixed_t b;
 	node_t *bsp = &nodes[numnodes-1];
@@ -2504,7 +2535,7 @@ static void P_InitMinimapInfo(void)
 
 	lumpnum = W_CheckNumForName(va("%sR", G_BuildMapName(gamemap)));
 
-	if (lumpnum != -1)
+	if (lumpnum != LUMPERROR)
 		minimapinfo.minimap_pic = W_CachePatchName(va("%sR", G_BuildMapName(gamemap)), PU_HUDGFX);
 
 	minimapinfo.min_x = bsp->bbox[0][BOXLEFT];
@@ -3074,6 +3105,12 @@ boolean P_AddWadFileLocal(const char *wadfilename)
 	return true;
 }
 
+// check for replacement votescreen backgrounds
+boolean wideracereplaced = false;
+boolean racereplaced = false;
+boolean widebattlereplaced = false;
+boolean battlereplaced = false;
+
 //
 // Add a WAD file and do the per-WAD setup stages.
 // Call P_MultiSetupWadFiles as soon as possible after any number of these.
@@ -3197,6 +3234,41 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, boolean local)
 
 	// TODO: Experimental SPRTINFO support, test first
 	R_LoadSpriteInfoLumps(wadnum, wadfiles[wadnum]->numlumps);
+
+	//
+	// check for votescreen replacements
+	//
+	lumpinfo = wadfiles[wadnum]->lumpinfo;
+	for (i = 0; i < numlumps; i++, lumpinfo++)
+	{
+		name = lumpinfo->name;
+
+		// widescreen patch Race
+		if (!wideracereplaced && !strncmp(name, "INTERSCW", 8))
+		{
+			wideracereplaced = true;
+			continue;
+		}
+
+		if (!racereplaced && !strncmp(name, "INTERSCR", 8))
+		{
+			racereplaced = true;
+			continue;
+		}
+
+		// widescreen patch Battle
+		if (!widebattlereplaced && !strncmp(name, "BATTLSCW", 8))
+		{
+			widebattlereplaced = true;
+			continue;
+		}
+
+		if (!battlereplaced && !strncmp(name, "BATTLSCR", 8))
+		{
+			battlereplaced = true;
+			continue;
+		}
+	}
 
 	refreshdirmenu &= ~REFRESHDIR_GAMEDATA; // Under usual circumstances we'd wait for REFRESHDIR_GAMEDATA to disappear the next frame, but it's a bit too dangerous for that...
 	partadd_stage = 0;

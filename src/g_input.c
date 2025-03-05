@@ -902,6 +902,11 @@ static const char *gamecontrolname[num_gamecontrols] =
 	"custom2",
 	"custom3",
 	"director",
+	"freecam",
+	"camfloat",
+	"camsink",
+	"strafeleft",
+	"straferight",
 };
 
 #define NUMKEYNAMES (sizeof (keynames)/sizeof (keyname_t))
@@ -928,36 +933,27 @@ UINT16 G_GetSkinColor(INT32 playernum)
 	{
 		case 0:
 			return cv_playercolor.value;
-			break;
 		case 1:
 			return cv_playercolor2.value;
-			break;
 		case 2:
 			return cv_playercolor3.value;
-			break;
 		case 3:
 			return cv_playercolor4.value;
-			break;
 		default:
 			return 0;
-			break;
 	}
+
+	return 0;
 }
 
 void G_SetPlayerGamepadIndicatorColor(INT32 playernum, UINT16 color)
 {
-	INT32 device;
 	UINT16 skincolor;
 	byteColor_t byte_color;
 
 	I_Assert(playernum >= 0 && playernum < MAXSPLITSCREENPLAYERS);
 
 	if (cv_gamepadled[playernum].value == 0)
-		return;
-
-	device = cv_usejoystick[playernum].value;
-
-	if (device <= 0)
 	{
 		return;
 	}
@@ -965,19 +961,14 @@ void G_SetPlayerGamepadIndicatorColor(INT32 playernum, UINT16 color)
 	skincolor = color ? color : G_GetSkinColor(playernum);
 	byte_color = V_GetColor(colortranslations[skincolor][8]).s;
 
-	I_SetGamepadIndicatorColor(device, byte_color.red, byte_color.green, byte_color.blue);
+	I_SetGamepadIndicatorColor(playernum, byte_color.red, byte_color.green, byte_color.blue);
 }
 
 static void G_ResetPlayerGamepadIndicatorColor(INT32 playernum)
 {
 	if (cv_gamepadled[playernum].value == 0)
 	{
-		INT32 device = cv_usejoystick[playernum].value;
-
-		if (device <= 0)
-			return;
-
-		I_SetGamepadIndicatorColor(device, 0, 0, 255);
+		I_SetGamepadIndicatorColor(playernum, 0, 0, 255);
 	}
 	else
 		G_SetPlayerGamepadIndicatorColor(playernum, 0);
@@ -985,16 +976,7 @@ static void G_ResetPlayerGamepadIndicatorColor(INT32 playernum)
 
 static void G_ResetPlayerDeviceRumble(INT32 playernum)
 {
-	INT32 device_id;
-
-	device_id = cv_usejoystick[playernum].value;
-
-	if (device_id < 1)
-	{
-		return;
-	}
-
-	I_GamepadRumble(device_id, 0, 0, 0);
+	I_GamepadRumble(playernum, 0, 0, 0);
 }
 
 void G_ResetAllDeviceRumbles(void)
@@ -1006,29 +988,20 @@ void G_ResetAllDeviceRumbles(void)
 
 	for (i = 0; i < devices; i++)
 	{
-		INT32 device_id = cv_usejoystick[i].value;
-
-		I_GamepadRumble(device_id, 0, 0, 0);
+		I_GamepadRumble(devices, 0, 0, 0);
 	}
 }
 
 void G_PlayerDeviceRumble(INT32 playernum, UINT16 low_strength, UINT16 high_strength, UINT32 duration)
 {
-	INT32 device_id;
+	I_Assert(playernum >= 0 && playernum < MAXSPLITSCREENPLAYERS);
 
 	if (cv_rumble[playernum].value == 0)
 	{
 		return;
 	}
 
-	device_id = cv_usejoystick[playernum].value;
-
-	if (device_id < 1)
-	{
-		return;
-	}
-
-	I_GamepadRumble(device_id, low_strength, high_strength, duration);
+	I_GamepadRumble(playernum, low_strength, high_strength, duration);
 }
 
 //

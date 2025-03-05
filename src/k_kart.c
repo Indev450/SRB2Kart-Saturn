@@ -82,6 +82,8 @@ consvar_t cv_coloredspeedlines = {"colorizedspeedlines", "Off", CV_SAVE, colorsp
 consvar_t cv_coloredsneakertrail = {"sneakertrailcolor", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_bananajitter = {"bananadragjitter", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+static CV_PossibleValue_t bananthrowroll_cons_t[] = {{0, "Off"}, {1, "Throw"}, {2, "+Onground"}, {0, NULL}};
+consvar_t cv_bananthrowroll = {"bananthrowroll", "0", CV_SAVE, bananthrowroll_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 //extra hud things
 consvar_t cv_showstats = {"showstats", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -838,6 +840,7 @@ void K_RegisterKartStuff(void)
 
 	// makes banans do funny jitter jumpy when dragged
 	CV_RegisterVar(&cv_bananajitter);
+	CV_RegisterVar(&cv_bananthrowroll);
 
 	CV_RegisterVar(&cv_showstats);
 	CV_RegisterVar(&cv_showinput);
@@ -1378,7 +1381,7 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 		dontforcespb = true;
 
 	// This makes the roulette produce the random noises.
-	if ((player->kartstuff[k_itemroulette] % 3) == 1 && P_IsDisplayPlayer(player) && !demo.freecam)
+	if ((player->kartstuff[k_itemroulette] % 3) == 1 && P_IsDisplayPlayer(player))
 	{
 #define PLAYROULETTESND S_StartSound(NULL, sfx_itrol1 + ((player->kartstuff[k_itemroulette] / 3) % 8))
 		for (i = 0; i <= splitscreen; i++)
@@ -1412,7 +1415,7 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 		//player->kartstuff[k_itemblinkmode] = 1;
 		player->kartstuff[k_itemroulette] = 0;
 		player->kartstuff[k_roulettetype] = 0;
-		if (P_IsDisplayPlayer(player) && !demo.freecam)
+		if (P_IsDisplayPlayer(player))
 			S_StartSound(NULL, sfx_itrole);
 		return;
 	}
@@ -1425,7 +1428,7 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 		player->kartstuff[k_itemblinkmode] = 2;
 		player->kartstuff[k_itemroulette] = 0;
 		player->kartstuff[k_roulettetype] = 0;
-		if (P_IsDisplayPlayer(player) && !demo.freecam)
+		if (P_IsDisplayPlayer(player))
 			S_StartSound(NULL, sfx_dbgsal);
 		return;
 	}
@@ -1457,7 +1460,7 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 		player->kartstuff[k_itemamount] = 1;
 	}
 
-	if (P_IsDisplayPlayer(player) && !demo.freecam)
+	if (P_IsDisplayPlayer(player))
 		S_StartSound(NULL, ((player->kartstuff[k_roulettetype] == 1) ? sfx_itrolk : (mashed ? sfx_itrolm : sfx_itrolf)));
 
 	player->kartstuff[k_itemblink] = TICRATE;
@@ -3554,6 +3557,62 @@ void K_RollMobjBySlopes(mobj_t* mo, boolean usedistance)
 	}
 }
 
+static void K_SetPitchRollFromSlope(mobj_t* mo, pslope_t *slope, boolean usedistance)
+{
+	if (P_MobjWasRemoved(mo))
+		return;
+
+	I_Assert(mo->subsector != NULL);
+	I_Assert(mo->subsector->sector != NULL);
+
+	// lifted from hw_md2
+	if (slope)
+	{
+		angle_t an;
+		const boolean flip = (mo->eflags & MFE_VERTICALFLIP);
+		const fixed_t m_dist = usedistance ? R_PointToDist(mo->x, mo->y) : 0;
+		const fixed_t rolldist = cv_sloperolldist.value * mapobjectscale;
+
+		fixed_t tempz = slope->normal.z;
+		fixed_t tempy = slope->normal.y;
+		fixed_t tempx = slope->normal.x;
+		fixed_t tempangle = -(R_PointToAngle2(0, 0, FixedSqrt(FixedMul(tempy, tempy) + FixedMul(tempz, tempz)), tempx));
+
+		// admittedly this is a very hacky way to do the pitch and roll easing
+
+		// pitch
+		if (!usedistance || (m_dist <= (rolldist)))
+		{
+			an = (INT32)((angle_t)tempangle - mo->pitch_sprite) / SLOPEROLL_DIV;
+
+			mo->pitch_sprite = an ? mo->pitch_sprite + an : (angle_t)tempangle;
+		}
+		else
+			mo->pitch_sprite = FixedAngle(0);
+
+		mo->slopepitch = flip ? InvAngle(mo->pitch_sprite) : mo->pitch_sprite;
+
+		// roll
+		tempangle = (R_PointToAngle2(0, 0, tempz, tempy));
+
+		if (!usedistance || (m_dist <= (rolldist)))
+		{
+			an = (INT32)((angle_t)tempangle - mo->roll_sprite) / SLOPEROLL_DIV;
+
+			mo->roll_sprite = an ? mo->roll_sprite + an : (angle_t)tempangle;
+		}
+		else
+			mo->roll_sprite = FixedAngle(0);
+
+		mo->sloperoll = flip ? InvAngle(mo->roll_sprite) : mo->roll_sprite;
+	}
+	else if (P_IsObjectOnGround(mo))
+	{
+		mo->sloperoll = FixedAngle(0);
+		mo->slopepitch = FixedAngle(0);
+	}
+}
+
 void K_SpawnBoostTrail(player_t *player)
 {
 	fixed_t newx;
@@ -3915,6 +3974,15 @@ static mobj_t *K_ThrowKartItem(player_t *player, boolean missile, mobjtype_t map
 
 				if (mo->eflags & MFE_UNDERWATER)
 					mo->momz = (117 * mo->momz) / 200;
+
+				if (cv_sloperoll.value == 2 && cv_bananthrowroll.value && mapthing == MT_BANANA)
+				{
+					//mo->angle = FixedAngle(M_RandomRange(-180, 180) << FRACBITS);
+					if (cv_bananthrowroll.value == 1)
+						mo->sloperoll = FixedAngle(M_RandomRange(-180, 180) << FRACBITS); // im lazy but this makes sure the banan goes back to upright when it lands lmao
+					else if (cv_bananthrowroll.value == 2)
+						mo->rollangle = FixedAngle(M_RandomRange(-180, 180) << FRACBITS);
+				}
 			}
 
 			// this is the small graphic effect that plops in you when you throw an item:
@@ -4650,6 +4718,150 @@ void K_RepairOrbitChain(mobj_t *orbit)
 	}
 }
 
+// Simplified version of a code bit in P_MobjFloorZ
+static fixed_t K_BananaSlopeZ(pslope_t *slope, fixed_t x, fixed_t y, fixed_t z, fixed_t radius, boolean ceiling)
+{
+	fixed_t testx, testy;
+	fixed_t slopez = 0;
+
+	if (slope == NULL)
+	{
+		testx = x;
+		testy = y;
+	}
+	else
+	{
+		if (slope->d.x < 0)
+			testx = radius;
+		else
+			testx = -radius;
+
+		if (slope->d.y < 0)
+			testy = radius;
+		else
+			testy = -radius;
+
+		if ((slope->zdelta > 0) ^ !!(ceiling))
+		{
+			testx = -testx;
+			testy = -testy;
+		}
+
+		testx += x;
+		testy += y;
+	}
+
+	if (slope)
+	{
+		slopez = P_GetZAt(slope, testx, testy);
+	}
+	else
+		slopez = z;
+
+	return slopez;
+}
+
+static void K_CalculateBananaSlope(mobj_t *mobj, fixed_t x, fixed_t y, fixed_t z, fixed_t radius, fixed_t height, boolean flip, boolean player)
+{
+	fixed_t newz;
+	sector_t *sec;
+	pslope_t *slope = NULL;
+
+	//sec = R_PointInSubsector(x, y)->sector;
+
+	if (mobj->x != x || mobj->y != y || mobj->subsector == NULL)
+		sec = R_PointInSubsector(x, y)->sector;
+	else
+		sec = mobj->subsector->sector;
+
+	if (flip)
+	{
+		slope = sec->c_slope;
+		newz = K_BananaSlopeZ(slope, x, y, sec->ceilingheight, radius, true);
+	}
+	else
+	{
+		slope = sec->f_slope;
+		newz = K_BananaSlopeZ(slope, x, y, sec->floorheight, radius, true);
+	}
+
+	// Check FOFs for a better suited slope
+	if (sec->ffloors)
+	{
+		ffloor_t *rover;
+
+		for (rover = sec->ffloors; rover; rover = rover->next)
+		{
+			fixed_t top, bottom;
+			fixed_t d1, d2;
+
+			if (!(rover->flags & FF_EXISTS))
+				continue;
+
+			if ((!(((rover->flags & FF_BLOCKPLAYER && player)
+				|| (rover->flags & FF_BLOCKOTHERS && !player))
+				|| (rover->flags & FF_QUICKSAND))
+				|| (rover->flags & FF_SWIMMABLE)))
+				continue;
+
+			top = K_BananaSlopeZ(*rover->t_slope, x, y, *rover->topheight, radius, false);
+			bottom = K_BananaSlopeZ(*rover->b_slope, x, y, *rover->bottomheight, radius, true);
+
+			if (flip)
+			{
+				if (rover->flags & FF_QUICKSAND)
+				{
+					if (z < top && (z + height) > bottom)
+					{
+						if (newz > (z + height))
+						{
+							newz = (z + height);
+							slope = NULL;
+						}
+					}
+					continue;
+				}
+
+				d1 = (z + height) - (top + ((bottom - top)/2));
+				d2 = z - (top + ((bottom - top)/2));
+
+				if (bottom < newz && abs(d1) < abs(d2))
+				{
+					newz = bottom;
+					slope = *rover->b_slope;
+				}
+			}
+			else
+			{
+				if (rover->flags & FF_QUICKSAND)
+				{
+					if (z < top && (z + height) > bottom)
+					{
+						if (newz < z)
+						{
+							newz = z;
+							slope = NULL;
+						}
+					}
+					continue;
+				}
+
+				d1 = z - (bottom + ((top - bottom)/2));
+				d2 = (z + height) - (bottom + ((top - bottom)/2));
+
+				if (top > newz && abs(d1) < abs(d2))
+				{
+					newz = top;
+					slope = *rover->t_slope;
+				}
+			}
+		}
+	}
+
+	//mobj->standingslope = slope;
+	K_SetPitchRollFromSlope(mobj, slope, (cv_sloperolldist.value && !splitscreen));
+}
+
 // Move the hnext chain!
 static void K_MoveHeldObjects(player_t *player)
 {
@@ -4844,6 +5056,12 @@ static void K_MoveHeldObjects(player_t *player)
 
 					if (R_PointToDist2(cur->x, cur->y, targx, targy) > 768*FRACUNIT)
 						P_MoveOrigin(cur, targx, targy, cur->z);
+
+					if (cv_sloperoll.value == 2 && P_IsObjectOnGround(cur))
+					{
+						K_CalculateBananaSlope(cur, cur->x, cur->y, cur->z,
+											   cur->radius, cur->height, (cur->eflags & MFE_VERTICALFLIP), false);
+					}
 
 					cur = cur->hnext;
 				}
@@ -7857,7 +8075,7 @@ static void K_initKartHUD(void)
 
 	// K_GetScreenCoords needs the right view* variables
 	R_SetViewContext(stplyrnum);
-	R_InterpolateView(R_UsingFrameInterpolation() ? rendertimefrac : FRACUNIT, !cv_uncappedhud.value);
+	R_InterpolateView(R_UsingFrameInterpolation() ? rendertimefrac_unpaused : FRACUNIT, !cv_uncappedhud.value);
 }
 
 INT32 K_calcSplitFlags(INT32 snapflags)
@@ -7867,17 +8085,17 @@ INT32 K_calcSplitFlags(INT32 snapflags)
 	if (splitscreen == 0)
 		return snapflags;
 
-	if (stplyr != &players[displayplayers[0]])
+	if (stplyrnum != 0)
 	{
-		if (splitscreen == 1 && stplyr == &players[displayplayers[1]])
+		if (splitscreen == 1 && stplyrnum == 1)
 		{
 			splitflags |= V_SPLITSCREEN;
 		}
 		else if (splitscreen > 1)
 		{
-			if (stplyr == &players[displayplayers[2]] || (splitscreen == 3 && stplyr == &players[displayplayers[3]]))
+			if (stplyrnum == 2 || (splitscreen == 3 && stplyrnum == 3))
 				splitflags |= V_SPLITSCREEN;
-			if (stplyr == &players[displayplayers[1]] || (splitscreen == 3 && stplyr == &players[displayplayers[3]]))
+			if (stplyrnum == 1 || (splitscreen == 3 && stplyrnum == 3))
 				splitflags |= V_HORZSCREEN;
 		}
 	}
@@ -7997,7 +8215,7 @@ static void K_drawKartStats(void)
 
 	for (; splitnum < MAXSPLITSCREENPLAYERS; ++splitnum)
 	{
-		if (stplyr == &players[displayplayers[splitnum]])
+		if (stplyrnum == splitnum)
 			break;
 	}
 
@@ -8652,7 +8870,7 @@ static void K_DrawKartPositionNum(INT32 num)
 	else if (splitscreen == 1)	// for this splitscreen, we'll use case by case because it's a bit different.
 	{
 		fx = POSI_X;
-		if (stplyr == &players[displayplayers[0]])	// for player 1: display this at the top right, above the minimap.
+		if (stplyrnum == 0)	// for player 1: display this at the top right, above the minimap.
 		{
 			fy = 30 + cv_posi_yoffset.value;
 			fflags = V_SNAPTOTOP|V_SNAPTORIGHT;
@@ -8667,11 +8885,11 @@ static void K_DrawKartPositionNum(INT32 num)
 	}
 	else
 	{
-		if (stplyr == &players[displayplayers[0]] || stplyr == &players[displayplayers[2]])	// If we are P1 or P3...
+		if (!(stplyrnum & 1)) // If we are P1 or P3...
 		{
 			fx = POSI_X;
 			fy = POSI_Y;
-			fflags = V_SNAPTOLEFT|((stplyr == &players[displayplayers[2]]) ? V_SPLITSCREEN|V_SNAPTOBOTTOM : 0);	// flip P3 to the bottom.
+			fflags = V_SNAPTOLEFT|((stplyrnum == 2) ? V_SPLITSCREEN|V_SNAPTOBOTTOM : 0);	// flip P3 to the bottom.
 			flipdraw = true;
 			if (num && num >= 10)
 				fx += W;	// this seems dumb, but we need to do this in order for positions above 10 going off screen.
@@ -8680,7 +8898,7 @@ static void K_DrawKartPositionNum(INT32 num)
 		{
 			fx = POSI2_X;
 			fy = POSI2_Y;
-			fflags = V_SNAPTORIGHT|((stplyr == &players[displayplayers[3]]) ? V_SPLITSCREEN|V_SNAPTOBOTTOM : 0);	// flip P4 to the bottom
+			fflags = V_SNAPTORIGHT|((stplyrnum == 3) ? V_SPLITSCREEN|V_SNAPTOBOTTOM : 0);	// flip P4 to the bottom
 		}
 	}
 
@@ -9148,10 +9366,10 @@ static void K_drawKartSpeedometer(void)
 		if (K_UseColorHud() && xtra_speedo_clr3) //Colourized hud
 		{
 			UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
-			V_DrawStretchyFixedPatch((SPDM_X-1)<<FRACBITS, (SPDM_Y + 5)<<FRACBITS, FRACUNIT*0.765, FRACUNIT*0.55, (V_HUDTRANS|splitflags), (skp_smallstickerclr3), colormap);
+			V_DrawStretchyFixedPatch((SPDM_X-1)<<FRACBITS, (SPDM_Y + 5)<<FRACBITS, FRACUNIT*0.765, FRACUNIT*0.55, (V_HUDTRANS|splitflags), (skp_smallstickerclr3), colormap, 0);
 		}
 		else
-			V_DrawStretchyFixedPatch((SPDM_X-1)<<FRACBITS, (SPDM_Y + 5)<<FRACBITS, FRACUNIT*0.765, FRACUNIT*0.55, (V_HUDTRANS|splitflags), (skp_smallsticker3), NULL);
+			V_DrawStretchyFixedPatch((SPDM_X-1)<<FRACBITS, (SPDM_Y + 5)<<FRACBITS, FRACUNIT*0.765, FRACUNIT*0.55, (V_HUDTRANS|splitflags), (skp_smallsticker3), NULL, 0);
 
 		V_DrawRankNum(SPDM_X + 26, SPDM_Y + 4, V_HUDTRANS|splitflags, convSpeed, 3, NULL);
 		V_DrawScaledPatch(SPDM_X + 31, SPDM_Y + 4, V_HUDTRANS|splitflags, skp_speedpatches[cv_kartspeedometer.value]);
@@ -9515,7 +9733,7 @@ static void K_drawNameTags(void)
 				if (!flipped)
 					V_DrawFixedPatch(namex<<FRACBITS, namey<<FRACBITS, FRACUNIT/2, vflags, nametagline, cm);
 				V_DrawStretchyFixedPatch(((namex+dup*3)<<FRACBITS), namey<<FRACBITS,
-					tagwidthsmall<<FRACBITS, FRACUNIT/2, vflags, nametagpic, cm);
+					tagwidthsmall<<FRACBITS, FRACUNIT/2, vflags, nametagpic, cm, 0);
 
 				namex += dup*2;
 				namey -= dup*4;
@@ -9630,7 +9848,7 @@ static void K_drawDriftGauge(void)
 		0, 31, 47, 63, 79, 95, 111, 119, 127, 143, 159, 175, 183, 191, 199, 207, 223, 247
 	};
 
-	if (demo.playback && demo.freecam)
+	if (camera[stplyrnum].freecam)
 		return;
 
 	if (P_MobjWasRemoved(stplyr->mo) || (!splitscreen && !camera->chase))
@@ -9694,10 +9912,10 @@ skipcrap:
 					if (K_UseColorHud() && xtra_speedo_clr3) // Colourized hud
 					{
 						UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
-						V_DrawStretchyFixedPatch((basex - dup*30)<<FRACBITS, ((basey<<FRACBITS) - FixedMul(dup<<FRACBITS, 21*FRACUNIT/10)), FRACUNIT*0.765, FRACUNIT*0.55, V_NOSCALESTART|V_OFFSET|drifttrans, skp_smallstickerclr3, colormap);
+						V_DrawStretchyFixedPatch((basex - dup*30)<<FRACBITS, ((basey<<FRACBITS) - FixedMul(dup<<FRACBITS, 21*FRACUNIT/10)), FRACUNIT*0.765, FRACUNIT*0.55, V_NOSCALESTART|V_OFFSET|drifttrans, skp_smallstickerclr3, colormap, 0);
 					}
 					else
-						V_DrawStretchyFixedPatch((basex - dup*30)<<FRACBITS, ((basey<<FRACBITS) - FixedMul(dup<<FRACBITS, 21*FRACUNIT/10)), FRACUNIT*0.765, FRACUNIT*0.55, V_NOSCALESTART|V_OFFSET|drifttrans, skp_smallsticker3, NULL);
+						V_DrawStretchyFixedPatch((basex - dup*30)<<FRACBITS, ((basey<<FRACBITS) - FixedMul(dup<<FRACBITS, 21*FRACUNIT/10)), FRACUNIT*0.765, FRACUNIT*0.55, V_NOSCALESTART|V_OFFSET|drifttrans, skp_smallsticker3, NULL, 0);
 				}
 				else
 				{
@@ -9788,7 +10006,7 @@ static void K_drawKartWanted(void)
 	UINT8 *colormap = NULL;
 	INT32 basex = 0, basey = 0;
 
-	if (stplyr != &players[displayplayers[0]])
+	if (stplyrnum != 0)
 		return;
 
 	for (i = 0; i < 4; i++)
@@ -9985,7 +10203,7 @@ static void K_drawKartMinimap(void)
 	if (gamestate != GS_LEVEL)
 		return;
 
-	if (stplyr != &players[displayplayers[0]])
+	if (stplyrnum != 0)
 		return;
 
 	if (minimapinfo.minimap_pic == NULL)
@@ -10143,7 +10361,7 @@ static void K_drawKartFinish(void)
 		xval = (SHORT(kp_racefinish[pnum]->width)<<FRACBITS);
 		x = (FixedMul(((TICRATE - stplyr->kartstuff[k_cardanimation])<<FRACBITS) - R_GetHudUncap(), xval > x ? xval : x))/TICRATE;
 
-		if (splitscreen && stplyr == &players[displayplayers[1]])
+		if (splitscreen && stplyrnum == 1)
 			x = -x;
 
 		V_DrawFixedPatch(x + (STCD_X<<FRACBITS) - (xval>>1),
@@ -10300,14 +10518,9 @@ static void K_drawKartFirstPerson(void)
 	if (stplyr->spectator || !stplyr->mo || (stplyr->mo->flags2 & MF2_DONTDRAW))
 		return;
 
-	if (stplyr == &players[displayplayers[1]] && splitscreen)
-		{ pn = pnum[1]; tn = turn[1]; dr = drift[1]; }
-	else if (stplyr == &players[displayplayers[2]] && splitscreen > 1)
-		{ pn = pnum[2]; tn = turn[2]; dr = drift[2]; }
-	else if (stplyr == &players[displayplayers[3]] && splitscreen > 2)
-		{ pn = pnum[3]; tn = turn[3]; dr = drift[3]; }
-	else
-		{ pn = pnum[0]; tn = turn[0]; dr = drift[0]; }
+	pn = pnum[stplyrnum];
+	tn = turn[stplyrnum];
+	dr = drift[stplyrnum];
 
 	if (splitscreen)
 	{
@@ -10429,14 +10642,9 @@ static void K_drawKartFirstPerson(void)
 
 	V_DrawFixedPatch(x, y, scale, splitflags, kp_fpview[target], colmap);
 
-	if (stplyr == &players[displayplayers[1]] && splitscreen)
-		{ pnum[1] = pn; turn[1] = tn; drift[1] = dr; }
-	else if (stplyr == &players[displayplayers[2]] && splitscreen > 1)
-		{ pnum[2] = pn; turn[2] = tn; drift[2] = dr; }
-	else if (stplyr == &players[displayplayers[3]] && splitscreen > 2)
-		{ pnum[3] = pn; turn[3] = tn; drift[3] = dr; }
-	else
-		{ pnum[0] = pn; turn[0] = tn; drift[0] = dr; }
+	pnum[stplyrnum] = pn;
+	turn[stplyrnum] = tn;
+	drift[stplyrnum] = dr;
 }
 
 // doesn't need to ever support 4p
@@ -10656,7 +10864,7 @@ static void K_drawDistributionDebugger(void)
 	boolean dontforcespb = false;
 	boolean spbrush = false;
 
-	if (stplyr != &players[displayplayers[0]]) // only for p1
+	if (stplyrnum != 0) // only for p1
 		return;
 
 	// The only code duplication from the Kart, just to avoid the actual item function from calculating pingame twice
@@ -10720,7 +10928,7 @@ static void K_drawDistributionDebugger(void)
 
 static void K_drawCheckpointDebugger(void)
 {
-	if (stplyr != &players[displayplayers[0]]) // only for p1
+	if (stplyrnum != 0) // only for p1
 		return;
 
 	if (stplyr->starpostnum >= (numstarposts - (numstarposts/2)))
@@ -10734,22 +10942,18 @@ void K_drawKartHUD(void)
 {
 	boolean isfreeplay = false;
 	boolean battlefullscreen = false;
-	boolean freecam = demo.freecam;	//disable some hud elements w/ freecam
-	UINT8 i;
+	boolean freecam = camera[stplyrnum].freecam;	//disable some hud elements w/ freecam
 
 	// Define the X and Y for each drawn object
 	// This is handled by console/menu values
 	K_initKartHUD();
 
 	// Draw that fun first person HUD! Drawn ASAP so it looks more "real".
-	for (i = 0; i <= splitscreen; i++)
-	{
-		if (stplyr == &players[displayplayers[i]] && !camera[i].chase && !freecam)
-			K_drawKartFirstPerson();
-	}
+	if (!camera[stplyrnum].chase && !freecam)
+		K_drawKartFirstPerson();
 
 	// Draw full screen stuff that turns off the rest of the HUD
-	if (mapreset && stplyr == &players[displayplayers[0]])
+	if (mapreset && stplyrnum == 0)
 	{
 		K_drawChallengerScreen();
 		return;
@@ -10842,7 +11046,7 @@ void K_drawKartHUD(void)
 		}
 	}
 
-	if (!stplyr->spectator && !demo.freecam) // Bottom of the screen elements, don't need in spectate mode
+	if (!stplyr->spectator && !freecam) // Bottom of the screen elements, don't need in spectate mode
 	{
 		if (!(splitscreen || demo.title))
 		{
