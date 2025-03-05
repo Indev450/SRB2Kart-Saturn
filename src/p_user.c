@@ -788,14 +788,14 @@ void P_RestoreMusic(player_t *player)
 			if (G_RaceGametype() && player->laps >= (UINT8)(cv_numlaps.value - 1))
 				S_SpeedMusic(1.2f);
 #endif
-			if (mapmusresume && cv_resume.value) // mapmusresume will be 0 anyways when birdmusic stuff is disabled
-				position = mapmusresume;
+			if (mapmusic.resume && cv_resume.value) // mapmusresume will be 0 anyways when birdmusic stuff is disabled
+				position = mapmusic.resume;
 			else
-				position = mapmusposition;
+				position = mapmusic.position;
 
-			S_ChangeMusicEx(mapmusname, mapmusflags, true, position, 0, S_GetRestoreMusicFadeIn());
+			S_ChangeMusicEx(mapmusic.name, mapmusic.flags, true, position, 0, S_GetRestoreMusicFadeIn());
 			S_ClearRestoreMusicFadeInCvar();
-			mapmusresume = 0;
+			mapmusic.resume = 0;
 		}
 	}
 }
@@ -2478,7 +2478,6 @@ static void P_MovePlayer(player_t *player)
 		K_SpawnWipeoutTrail(player->mo, false);
 
 	K_DriftDustHandling(player->mo);
-
 
 	// Crush test...
 	if ((player->mo->ceilingz - player->mo->floorz < player->mo->height)
