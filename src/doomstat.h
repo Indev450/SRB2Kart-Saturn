@@ -30,16 +30,26 @@
 // =============================
 
 // Selected by user.
-extern INT16 gamemap;
-extern char mapmusname[7];
-extern UINT16 mapmusflags;
-extern UINT32 mapmusposition;
-extern UINT32 mapmusresume;
+
+typedef struct
+{
+	char       name[7];  // Music name, up to 6-character name
+	void       *data;    // Music lump
+	UINT16     flags;    // Track and reset bit
+	boolean    looping;  // Is this music looping?
+	UINT32     position; // Position to jump to
+	UINT32     resume;   // Saved Position when music was stopped
+	UINT32     fadeinms; // Fade in time in ms (used for queue)
+} music_t;
+
+extern music_t mapmusic;
+
 #define MUSIC_TRACKMASK   0x0FFF // ----************
 #define MUSIC_RELOADRESET 0x8000 // *---------------
 #define MUSIC_FORCERESET  0x4000 // -*--------------
 // Use other bits if necessary.
 
+extern INT16 gamemap;
 extern INT16 maptol;
 extern UINT8 globalweather;
 extern INT32 curWeather;

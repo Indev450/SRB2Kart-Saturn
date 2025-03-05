@@ -9184,8 +9184,6 @@ int LUA_EnumLib(lua_State *L)
 	PUSHGETTER(globalweather, u8);
 	PUSHGETTER(levelskynum, i32);
 	PUSHGETTER(globallevelskynum, i32);
-	PUSHGETTER(mapmusflags, u16);
-	PUSHGETTER(mapmusposition, u32);
 	PUSHGETTER(gravity, fxp);
 	PUSHGETTER(gamespeed, u8);
 	PUSHGETTER(encoremode, bool);
@@ -9201,8 +9199,18 @@ int LUA_EnumLib(lua_State *L)
 	PUSHGETTER(exitcountdown, u32);
 
 	lua_pushcfunction(L, lua_glib_new_getter);
+	lua_pushliteral(L, "mapmusflags");
+	lua_glib_push_u16_getter(L, &mapmusic.flags);
+	lua_call(L, 2, 0);
+
+	lua_pushcfunction(L, lua_glib_new_getter);
+	lua_pushliteral(L, "mapmusposition");
+	lua_glib_push_u32_getter(L, &mapmusic.position);
+	lua_call(L, 2, 0);
+
+	lua_pushcfunction(L, lua_glib_new_getter);
 	lua_pushliteral(L, "mapmusname");
-	lua_glib_push_str_getter(L, mapmusname);
+	lua_glib_push_str_getter(L, mapmusic.name);
 	lua_call(L, 2, 0);
 
 	lua_pushcfunction(L, lua_glib_new_getter);
