@@ -551,8 +551,13 @@ typedef struct player_s
 
 	UINT8 splitscreenindex;
 
+<<<<<<< HEAD
 	tic_t driftsparkGrowTimer;
 
+=======
+	fixed_t spinoutrot; // When a player spins out, this value increments modulus 360.
+#ifdef HWRENDER
+>>>>>>> 052dcb263 (Add a cvar for minimap icon spinouts)
 	fixed_t fovadd; // adjust FOV for hw rendering
 } player_t;
 

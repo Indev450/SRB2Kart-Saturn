@@ -5397,6 +5397,7 @@ void K_KartPlayerHUDUpdate(player_t *player)
 		player->kartstuff[k_cardanimation] = 0;
 }
 
+<<<<<<< HEAD
 static boolean K_SpeedLinesShouldBlend(player_t *player)
 {
 	fixed_t percentspeed = 0;
@@ -5472,6 +5473,10 @@ static inline void K_SpawnNormalSpeedLines(player_t *player, boolean synched)
 			fast->blendmode = AST_ADD;
 	}
 }
+=======
+#define SPINOUTROTSPEED (24 * FRACUNIT)
+#define MAXSPINROT (360 * FRACUNIT)
+>>>>>>> 052dcb263 (Add a cvar for minimap icon spinouts)
 
 /**	\brief	Decreases various kart timers and powers per frame. Called in P_PlayerThink in p_user.c
 
@@ -5595,6 +5600,10 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		player->powers[pw_flashing]--;
 	}
 
+	boolean doiconspin;
+
+	doiconspin = false;
+
 	if (player->kartstuff[k_spinouttimer])
 	{
 		if ((P_IsObjectOnGround(player->mo) || ((player->kartstuff[k_spinouttype]+1)/2 == 1)) // spinouttype 1 and 2 - explosion and spb
@@ -5606,6 +5615,8 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 			if (player->kartstuff[k_spinouttimer] == 0)
 				player->kartstuff[k_spinouttype] = 0; // Reset type
 		}
+
+		doiconspin = true;
 	}
 	else
 	{
@@ -5619,6 +5630,31 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 			player->kartstuff[k_comebacktimer]--;
 			if (P_IsLocalPlayer(player) && player->kartstuff[k_bumper] <= 0 && player->kartstuff[k_comebacktimer] <= 0)
 				comebackshowninfo = true; // client has already seen the message
+		}
+	}
+
+	if ((doiconspin) && (player->spinoutrot == 0))
+	{
+		player->spinoutrot = SPINOUTROTSPEED;
+	}
+
+	// MKWii-styled icon spinouts: do a full 360 rotation before stopping.
+	if ((player->spinoutrot) && (player->spinoutrot < MAXSPINROT))
+	{
+		if ((player->spinoutrot + SPINOUTROTSPEED) >= MAXSPINROT)
+		{
+			if (doiconspin)
+			{
+				player->spinoutrot = (player->spinoutrot + SPINOUTROTSPEED) % MAXSPINROT;
+			}
+			else
+			{
+				player->spinoutrot = 0;
+			}
+		}
+		else
+		{
+			player->spinoutrot += SPINOUTROTSPEED;
 		}
 	}
 
@@ -10122,14 +10158,52 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 		V_DrawSciencePatch(amxpos, amypos, flags, ((skinlocal) ? localfacemmapprefix : facemmapprefix)[skin], scale);
 	else
 	{
+		patch_t *minimaphead;
+		
+#ifdef ROTSPRITE
+		angle_t rollangle;
+		INT32 rot;
+
+		rot = 0;
+
+		if (mo->player)
+		{
+			// Rotate counterclockwise.
+			rollangle = FixedAngle(mo->player->spinoutrot * -1);
+			rot = R_GetRollAngle(rollangle);
+		}
+
+		if ((cv_spriteroll.value) && (cv_spinoutroll.value) && (rot))
+		{
+			minimaphead = W_CachePatchNameRotated(((skin_t*)(mo->localskin ? mo->localskin : mo->skin))->facemmap, rot, PU_STATIC);
+		}
+		else
+#endif
+		{
+			minimaphead = ((skinlocal) ? localfacemmapprefix : facemmapprefix)[skin];
+		}
 		UINT8 *colormap;
 		if (mo->colorized)
 			colormap = R_GetTranslationColormap(TC_RAINBOW, mo->color, GTC_CACHE);
 		else
 			colormap = R_GetLocalTranslationColormap(mo->skin, mo->localskin, mo->color, GTC_CACHE, skinlocal);
+<<<<<<< HEAD
 
 		V_DrawFixedPatch(amxpos, amypos, scale, flags, ((skinlocal) ? localfacemmapprefix : facemmapprefix)[skin], colormap);
 
+=======
+		
+		if (cv_minihead.value)
+			V_DrawFixedPatch(amxpos + (2*FRACUNIT), amypos + (2*FRACUNIT), FRACUNIT/2, flags, minimaphead, colormap);
+		else
+			V_DrawFixedPatch(amxpos, amypos, FRACUNIT, flags, minimaphead, colormap);
+		
+		if (cv_showminimapnames.value && !(modeattacking || gamestate == GS_TIMEATTACK))
+		{
+			const char *player_name = va("%c%s", V_GetSkincolorChar(mo->color), player_names[mo->player - players]);
+			V_DrawCenteredSmallStringAtFixed(amxpos + (4*FRACUNIT), amypos - (3*FRACUNIT), V_ALLOWLOWERCASE|flags, player_name);
+		}
+>>>>>>> 052dcb263 (Add a cvar for minimap icon spinouts)
 		if (mo->player
 			&& ((G_RaceGametype() && mo->player->kartstuff[k_position] == spbplace)
 			|| (G_BattleGametype() && K_IsPlayerWanted(mo->player))))
