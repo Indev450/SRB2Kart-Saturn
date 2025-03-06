@@ -2264,12 +2264,17 @@ static void P_LevelInitStuff(boolean reloadinggamestate)
 
 		players[i].realtime = racecountdown = exitcountdown = 0;
 
+<<<<<<< HEAD
 		for (INT32 j = 0; j < LAP__MAX; j++)
 		{
 			players[i].laptime[j] = 0;
 		}
 
 		players[i].driftsparkGrowTimer = 0;
+=======
+		// Neptune
+		players[i].spinoutrot = 0;
+>>>>>>> 052dcb263 (Add a cvar for minimap icon spinouts)
 
 		players[i].gotcontinue = false;
 

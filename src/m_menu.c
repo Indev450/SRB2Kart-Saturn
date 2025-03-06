@@ -2288,6 +2288,7 @@ static menuitem_t OP_PlayerDistortMenu[] =
 {
 	{IT_HEADER, NULL, "Sprite Distortion", NULL, 0},
 
+<<<<<<< HEAD
 	{IT_STRING | IT_CVAR, 	NULL, 	"Sprite Slope Rotation",       	  &cv_sloperoll, 	    15},
 	{IT_STRING | IT_CVAR, 	NULL, 	"Slope Rotation Distance",        &cv_sloperolldist,    30},
 
@@ -2300,6 +2301,19 @@ static menuitem_t OP_PlayerDistortMenu[] =
 	{IT_STRING | IT_CVAR, 	NULL, 	"Saltyhop", 					  &cv_saltyhop, 		120},
 	{IT_STRING | IT_CVAR,	NULL,	"Saltyhop Sound Effect",	      &cv_saltyhopsfx,      135},
 	{IT_STRING | IT_CVAR,	NULL,	"Saltyhop Squish",	      	  	  &cv_saltysquish,      150},
+=======
+	{IT_STRING | IT_CVAR, 	NULL, 	"Sprite Rotation",       	  	  &cv_spriteroll, 	    15},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Sprite Slope Rotation",       	  &cv_sloperoll, 	    30},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Slope Rotation Distance",        &cv_sloperolldist,    45},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Rotate Players when Sliptiding", &cv_sliptideroll, 	60},
+	{IT_STRING | IT_CVAR,	NULL,	"Rotate Sparks and Boost Trails", &cv_sparkroll,        75},
+	{IT_STRING | IT_CVAR,	NULL,	"Spin Minimap Icons", 			  &cv_spinoutroll,      90},
+	{IT_STRING | IT_CVAR,	NULL,	"Player Stretch Factor",	      &cv_gravstretch,      105},
+	{IT_STRING | IT_CVAR,	NULL,	"Squish Sound Effect",	      	  &cv_slamsound,        120},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Saltyhop", 					  &cv_saltyhop, 		135},
+	{IT_STRING | IT_CVAR,	NULL,	"Saltyhop Sound Effect",	      &cv_saltyhopsfx,      150},
+	{IT_STRING | IT_CVAR,	NULL,	"Saltyhop Squish",	      	  	  &cv_saltysquish,      165},
+>>>>>>> 052dcb263 (Add a cvar for minimap icon spinouts)
 };
 
 static const char* OP_PlayerDistortTooltips[] =
@@ -2309,7 +2323,11 @@ static const char* OP_PlayerDistortTooltips[] =
 	"Distance object rotation should be visable.",
 	"Player rotation when sliptiding.",
 	"Rotation of a player's boost trails and drift sparks.",
+<<<<<<< HEAD
 	"Should banans rotate when thrown?\nAnd should they stay rotated when on the ground?.",
+=======
+	"Erratically rotate player icons during spinouts.",
+>>>>>>> 052dcb263 (Add a cvar for minimap icon spinouts)
 	"Player squash and stretch.",
 	"Player landing sound effect.",
 	"Kart hopping while drifting. This is purely visual.",
@@ -2324,7 +2342,11 @@ enum
 	slrotatedist,
 	sliptide,
 	sparkrotate,
+<<<<<<< HEAD
 	bananrotat,
+=======
+	iconspinout,
+>>>>>>> 052dcb263 (Add a cvar for minimap icon spinouts)
 	stretchyplayer,
 	squishsound,
 	salthmmm,
@@ -3479,8 +3501,33 @@ void Moviemode_option_Onchange(void)
 
 void PDistort_menu_Onchange(void)
 {
+<<<<<<< HEAD
 	OP_PlayerDistortMenu[slrotatedist].status =
 		(cv_sloperoll.value) ? IT_STRING | IT_CVAR : IT_GRAYEDOUT;
+=======
+	if (!cv_spriteroll.value)
+	{
+		OP_PlayerDistortMenu[sloperotate].status = IT_GRAYEDOUT;
+		OP_PlayerDistortMenu[sliptide].status = IT_GRAYEDOUT;
+		OP_PlayerDistortMenu[iconspinout].status = IT_GRAYEDOUT;
+	}
+	else
+	{
+		OP_PlayerDistortMenu[sloperotate].status = IT_STRING | IT_CVAR;
+		OP_PlayerDistortMenu[sliptide].status = IT_STRING | IT_CVAR;
+		OP_PlayerDistortMenu[iconspinout].status = IT_STRING | IT_CVAR;
+	}
+
+	if ((cv_sloperoll.value) && (cv_spriteroll.value)) //enable/disable sloperotate distance
+		OP_PlayerDistortMenu[slrotatedist].status = IT_STRING | IT_CVAR;
+	else
+		OP_PlayerDistortMenu[slrotatedist].status = IT_GRAYEDOUT;
+		
+	if ((cv_sloperoll.value == 2) && (cv_spriteroll.value)) //enable/disable sparkroll depending on which setting
+		OP_PlayerDistortMenu[sparkrotate].status = IT_STRING | IT_CVAR;
+	else
+		OP_PlayerDistortMenu[sparkrotate].status = IT_GRAYEDOUT;
+>>>>>>> 052dcb263 (Add a cvar for minimap icon spinouts)
 }
 
 void Bird_menu_Onchange(void)
