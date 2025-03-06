@@ -71,6 +71,10 @@
 #include "hardware/hw_glob.h"
 #endif
 
+#ifdef ROTSPRITE
+#include "r_patch.h" // RotatedPatch_Create
+#endif
+
 #ifndef O_BINARY
 #define O_BINARY 0
 #endif
@@ -824,6 +828,11 @@ UINT16 W_InitFile(const char *filename, boolean local)
 #ifdef HWRENDER
 	// allocates GLPatch info structures and store them in a tree
 	wadfile->hwrcache = M_AATreeAlloc(AATREE_ZUSER);
+#endif
+
+#ifdef ROTSPRITE
+	// allocates rotsprite structures and store them in a tree
+	wadfile->rotcache = M_AATreeAlloc(AATREE_ZUSER);
 #endif
 
 	//
@@ -1789,6 +1798,24 @@ void *W_CachePatchNum(lumpnum_t lumpnum, INT32 tag)
 
 #endif // HWRENDER
 
+#ifdef ROTSPRITE
+// Caches a rotsprite for patch rotation.
+void *W_GetCachedRotPatchPwad(UINT16 wadnum, UINT16 lumpnum)
+{
+	aatree_t *rotcache = wadfiles[wadnum]->rotcache;
+	rotsprite_t *rspr;
+
+	if (!(rspr = M_AATreeGet(rotcache, lumpnum)))
+	{
+		rspr = RotatedPatch_Create(ROTANGLES);
+		M_AATreeSet(rotcache, lumpnum, rspr);
+	}
+
+	return (void *)rspr;
+}
+
+#endif // ROTSPRITE
+
 void W_UnlockCachedPatch(void *patch)
 {
 	if (!patch)
@@ -1816,6 +1843,49 @@ void *W_CachePatchName(const char *name, INT32 tag)
 		return W_CachePatchNum(W_GetNumForName("MISSING"), tag);
 	return W_CachePatchNum(num, tag);
 }
+
+#ifdef ROTSPRITE
+// Caches a patch, and if needed, rotates said patch.
+void *W_CachePatchNameRotated(const char *name, INT32 rotationangle, INT32 tag)
+{
+	lumpnum_t num;
+	patch_t *ptr;
+	rotsprite_t *rspr;
+	INT32 idx = rotationangle;
+
+	const char *finalname = name;
+
+	num = W_CheckNumForName(finalname);
+
+	// No rotation? No need to do any of this nonsense.
+	if (rotationangle < 1 || rotationangle >= ROTANGLES)
+		return W_CachePatchNum(num, tag);
+
+	rspr = (rotsprite_t *)W_GetCachedRotPatchPwad(WADFILENUM(num),LUMPNUM(num));
+
+	if (rspr->patches[idx] == NULL)
+	{
+		INT32 xpivot = 0, ypivot = 0;
+
+		if (num == LUMPERROR)
+			ptr = (patch_t *)(W_CacheLumpNum(W_GetNumForName("MISSING"), PU_STATIC));
+		ptr = (patch_t *)(W_CacheLumpNum(num, PU_STATIC));
+
+		// >y pivot centered
+		// >x pivot not centered
+		// Why?
+		xpivot = ptr->width / 2;
+		ypivot = ptr->height / 2;
+
+		RotatedPatch_DoRotation(rspr, ptr, rotationangle, xpivot, ypivot, false);
+
+		// free image data
+		Z_Free(ptr);
+	}
+
+	return rspr->patches[idx];
+}
+#endif
 
 #ifndef NOMD5
 
