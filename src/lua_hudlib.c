@@ -401,7 +401,7 @@ FUNCINLINE static ATTRINLINE int libd_cachePatch(lua_State *L)
 static int libd_cachePatchRotated(lua_State *L)
 {
 	HUDONLY
-	if ((cv_spriteroll.value))
+	if (cv_sloperoll.value)
 	{
 		angle_t rollangle = luaL_checkangle(L, 2);
 		INT32 rot = R_GetRollAngle(rollangle);
