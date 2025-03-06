@@ -397,6 +397,25 @@ static int libd_cachePatch(lua_State *L)
 	return 1;
 }
 
+#ifdef ROTSPRITE
+static int libd_cachePatchRotated(lua_State *L)
+{
+	HUDONLY
+	if ((cv_spriteroll.value))
+	{
+		angle_t rollangle = luaL_checkangle(L, 2);
+		INT32 rot = R_GetRollAngle(rollangle);
+
+		LUA_PushUserdata(L, W_CachePatchNameRotated(luaL_checkstring(L, 1), rot, PU_STATIC), META_PATCH);
+	}
+	else
+	{
+		LUA_PushUserdata(L, W_CachePatchName(luaL_checkstring(L, 1), PU_STATIC), META_PATCH);
+	}
+	return 1;
+}
+#endif
+
 // this is structured like getSprite2Patch in vanilla 2.2
 // v.getSpritePatch(skin, sprite, [frame, [angle, [rollangle]]])
 static int libd_getSpritePatch(lua_State *L)
@@ -1175,6 +1194,10 @@ static int libd_interpLatch(lua_State *L)
 static luaL_Reg lib_draw[] = {
 	{"patchExists", libd_patchExists},
 	{"cachePatch", libd_cachePatch},
+#ifdef ROTSPRITE
+	// Is this ifdef nonsense? Yes.
+	{"cachePatchRotated", libd_cachePatchRotated},
+#endif
 	{"draw", libd_draw},
 	{"drawScaled", libd_drawScaled},
 	{"drawStretched", libd_drawStretched},

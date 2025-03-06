@@ -130,6 +130,9 @@ typedef struct wadfile_s
 #ifdef HWRENDER
 	aatree_t *hwrcache; // patches are cached in renderer's native format
 #endif
+#ifdef ROTSPRITE
+	aatree_t *rotcache; // Cache rotsprites for rotating patches.
+#endif
 	UINT16 numlumps; // this wad's number of resources
 	FILE *handle;
 	UINT32 filesize; // for network
@@ -218,6 +221,11 @@ void *W_CachePatchNum(lumpnum_t lumpnum, INT32 tag); // return a patch_t
 #else
 //#define W_CachePatchNumPwad(wad, lump, tag) W_CacheLumpNumPwad(wad, lump, tag)
 #define W_CachePatchNum(lumpnum, tag) W_CacheLumpNum(lumpnum, tag)
+#endif
+
+#ifdef ROTSPRITE
+void *W_GetCachedRotPatchPwad(UINT16 wadnum, UINT16 lumpnum); // Get patch-based rotsprites from the cache.
+void *W_CachePatchNameRotated(const char *name, INT32 rotationangle, INT32 tag);
 #endif
 
 void W_UnlockCachedPatch(void *patch);
