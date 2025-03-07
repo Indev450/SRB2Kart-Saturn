@@ -475,6 +475,12 @@ static void Dummystaff_OnChange(void);
 // crap to force hud to show when in saturns hud options
 boolean forceshowhud = false;
 
+// smol text indicating if game is modified
+// so ppl dont wonder where their ra times went and stuff
+#define SHOWMODDEDGAME \
+	if (savemoddata) \
+		V_DrawThinString(0, 0, V_REDMAP|V_SNAPTOTOP|V_SNAPTOLEFT|V_TRANSLUCENT|V_ALLOWLOWERCASE, ("Modified Game"));
+
 // ==========================================================================
 // CONSOLE VARIABLES AND THEIR POSSIBLE VALUES GO HERE.
 // ==========================================================================
@@ -8718,6 +8724,8 @@ static void M_DrawStatsMaps(void)
 	extraemblem_t *exemblem;
 	boolean dotopname = true, dobottomarrow = (location < statsMax);
 
+	SHOWMODDEDGAME
+
 	for (j = 0; j < NUMMAPS; j++)
 	{
 		if (!mapheaderinfo[j] || !(mapheaderinfo[j]->menuflags & LF2_RECORDATTACK))
@@ -8861,6 +8869,8 @@ static void M_DrawStatsPlaytime(void)
 	if (kartstats.vanilla)
 		return;
 
+	SHOWMODDEDGAME
+
 	DRAWTIMESTAT(82, "RA Play Time:", raplaytime);
 	DRAWTIMESTAT(92, "Online Play Time:", onlineplaytime);
 	DRAWTIMESTAT(102, "Race Play Time:", raceplaytime);
@@ -8870,6 +8880,8 @@ static void M_DrawStatsPlaytime(void)
 // Note: only available with non-vanilla stats loaded, so it doesn't check for that
 static void M_DrawStatsExtra(void)
 {
+	SHOWMODDEDGAME
+
 	DRAWTIMESTAT(42, "Time being SPB target:", spbtargettime);
 	DRAWTIMESTAT(52, "Time spent in spinout:", spinouttime);
 
@@ -8990,6 +9002,8 @@ void M_DrawTimeAttackMenu(void)
 	// Sadly we can't just use generic mode menus because we need some extra hacks
 	x = currentMenu->x;
 	y = currentMenu->y;
+
+	SHOWMODDEDGAME
 
 	// Character face!
 	if (W_CheckNumForName(skins[cv_chooseskin.value-1].facewant) != LUMPERROR)
