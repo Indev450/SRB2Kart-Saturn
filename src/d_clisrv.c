@@ -110,8 +110,10 @@ UINT32 playerpingtable[MAXPLAYERS]; //table of player latency values.
 static tic_t reference_lag;
 static UINT8 spike_time;
 tic_t lowest_lag;
-tic_t simulated_lag; // just for ping readout without netticbuffer added
+tic_t simulated_lag;
 boolean server_lagless;
+
+tic_t netticbuffer = 0;
 
 static void Lagless_OnChange(void)
 {
@@ -6535,7 +6537,7 @@ boolean TryRunTics(tic_t realtics)
 			}
 
 			// Leave a certain amount of tics present in the net buffer as long as we've ran at least one tic this frame.
-			if (client && gamestate == GS_LEVEL && leveltime > 3 && neededtic <= gametic + cv_netticbuffer.value)
+			if (client && gamestate == GS_LEVEL && leveltime > 3 && neededtic <= gametic + netticbuffer)
 				break;
 		}
 	}
@@ -6813,6 +6815,9 @@ void NetUpdate(void)
 
 	nowtime = I_GetTime();
 	realtics = nowtime - gametime;
+
+	Net_GetNetStat();
+	netticbuffer = (((gamelostpercent > 1.f) || (playerpingtable[consoleplayer] == 1)) ? CLAMP(cv_netticbuffer.value, 1, 3) : cv_netticbuffer.value);
 
 	if (realtics <= 0) // nothing new to update
 		return;

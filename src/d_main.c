@@ -865,6 +865,8 @@ void D_SRB2Loop(void)
 		if (takescreenshot)
 			M_DoScreenShot();
 
+		NetUpdate();
+
 		// consoleplayer -> displayplayers (hear sounds from viewpoint)
 		S_UpdateSounds(); // move positional sounds
 
