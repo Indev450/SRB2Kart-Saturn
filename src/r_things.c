@@ -1264,8 +1264,8 @@ static void R_ProjectSprite(mobj_t *thing)
 
 #ifdef ROTSPRITE
 	// determine here if sprite should rotate for optimization
-	const boolean sliprollrotate = (cv_sloperoll.value && cv_sliptideroll.value && (thing->player && thing->player->sliproll));
-	const boolean shouldrotate = (cv_sloperoll.value && (interp.roll || interp.pitch || interp.sloperoll || interp.slopepitch || thing->rollangle || sliprollrotate));
+	const boolean sliprollrotate = (cv_sliptideroll.value && (thing->player && thing->player->sliproll));
+	const boolean shouldrotate = (interp.roll || interp.pitch || interp.sloperoll || interp.slopepitch || thing->rollangle || sliprollrotate);
 #endif
 
 	//Fab : 02-08-98: 'skin' override spritedef currently used for skin
