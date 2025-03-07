@@ -387,7 +387,7 @@ angle_t R_PlayerSliptideAngle(player_t *player)
 	spriteframe_t *sprframe;
 	angle_t ang = 0;
 
-	if (!cv_sloperoll.value || !cv_sliptideroll.value || !player || P_MobjWasRemoved(player->mo))
+	if (!cv_sliptideroll.value || !player || P_MobjWasRemoved(player->mo))
 		return 0;
 
 	mo = player->mo;

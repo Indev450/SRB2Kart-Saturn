@@ -401,17 +401,10 @@ static int libd_cachePatch(lua_State *L)
 static int libd_cachePatchRotated(lua_State *L)
 {
 	HUDONLY
-	if (cv_sloperoll.value)
-	{
-		angle_t rollangle = luaL_checkangle(L, 2);
-		INT32 rot = R_GetRollAngle(rollangle);
+	angle_t rollangle = luaL_checkangle(L, 2);
+	INT32 rot = R_GetRollAngle(rollangle);
+	LUA_PushUserdata(L, W_CachePatchNameRotated(luaL_checkstring(L, 1), rot, PU_STATIC), META_PATCH);
 
-		LUA_PushUserdata(L, W_CachePatchNameRotated(luaL_checkstring(L, 1), rot, PU_STATIC), META_PATCH);
-	}
-	else
-	{
-		LUA_PushUserdata(L, W_CachePatchName(luaL_checkstring(L, 1), PU_STATIC), META_PATCH);
-	}
 	return 1;
 }
 #endif
@@ -508,12 +501,13 @@ static int libd_getSpritePatch(lua_State *L)
 		angle = (angle & 7); // modulus angle by 8
 
 	// rotsprite?????
-	if (lua_isnumber(L, 4) && cv_sloperoll.value)
+	if (lua_isnumber(L, 4))
 	{
 		angle_t rollangle = luaL_checkangle(L, 4);
 		INT32 rot = R_GetRollAngle(rollangle);
 
-		if (rot) {
+		if (rot)
+		{
 			patch_t *rotsprite = Patch_GetRotatedSprite(sprframe, frame, angle, sprframe->flip & (1<<angle), false, sprinfo, rot);
 			LUA_PushUserdata(L, rotsprite, META_PATCH);
 			lua_pushboolean(L, false);
