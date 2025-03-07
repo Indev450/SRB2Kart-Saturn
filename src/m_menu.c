@@ -3459,19 +3459,8 @@ void Moviemode_option_Onchange(void)
 
 void PDistort_menu_Onchange(void)
 {
-	if (!cv_sloperoll.value)
-	{
-		OP_PlayerDistortMenu[sliptide].status = IT_GRAYEDOUT;
-	}
-	else
-	{
-		OP_PlayerDistortMenu[sliptide].status = IT_STRING | IT_CVAR;
-	}
-
-	if (cv_sloperoll.value) //enable/disable sloperotate distance
-		OP_PlayerDistortMenu[slrotatedist].status = IT_STRING | IT_CVAR;
-	else
-		OP_PlayerDistortMenu[slrotatedist].status = IT_GRAYEDOUT;
+	OP_PlayerDistortMenu[slrotatedist].status =
+		(cv_sloperoll.value) ? IT_STRING | IT_CVAR : IT_GRAYEDOUT;
 }
 
 void Bird_menu_Onchange(void)

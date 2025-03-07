@@ -1381,7 +1381,7 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 			p.angley = FIXED_TO_FLOAT(anglef);
 		}
 
-		const angle_t sliptideroll = ((cv_sloperoll.value && cv_sliptideroll.value && spr->mobj->player) ? spr->mobj->player->sliproll : 0);
+		const angle_t sliptideroll = ((cv_sliptideroll.value && spr->mobj->player) ? spr->mobj->player->sliproll : 0);
 		const SINT8 flipfactor = flip ? -1 : 1;
 
 		if (spr->mobj->rollangle || sliptideroll)
