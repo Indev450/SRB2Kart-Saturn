@@ -1806,6 +1806,9 @@ void *W_CachePatchNameRotated(const char *name, INT32 rotationangle, INT32 tag)
 
 	num = W_CheckNumForName(finalname);
 
+	if (num == LUMPERROR)
+		num = W_GetNumForName("MISSING");
+
 	// No rotation? No need to do any of this nonsense.
 	if (rotationangle < 1 || rotationangle >= ROTANGLES)
 		return W_CachePatchNum(num, tag);
@@ -1816,8 +1819,6 @@ void *W_CachePatchNameRotated(const char *name, INT32 rotationangle, INT32 tag)
 	{
 		INT32 xpivot = 0, ypivot = 0;
 
-		if (num == LUMPERROR)
-			ptr = (patch_t *)(W_CacheLumpNum(W_GetNumForName("MISSING"), PU_STATIC));
 		ptr = (patch_t *)(W_CacheLumpNum(num, PU_STATIC));
 
 		// >y pivot centered
