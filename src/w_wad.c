@@ -1875,8 +1875,8 @@ void *W_CachePatchNameRotated(const char *name, INT32 rotationangle, INT32 tag)
 		// >y pivot centered
 		// >x pivot not centered
 		// Why?
-		xpivot = ptr->width / 2;
-		ypivot = ptr->height / 2;
+		xpivot = SHORT(ptr->width) / 2;
+		ypivot = SHORT(ptr->height) / 2;
 
 		RotatedPatch_DoRotation(rspr, ptr, rotationangle, xpivot, ypivot, false);
 
