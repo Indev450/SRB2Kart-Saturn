@@ -2117,6 +2117,7 @@ static void P_LevelInitStuff(boolean reloadinggamestate)
 		players[i].realtime = racecountdown = exitcountdown = 0;
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 		for (INT32 j = 0; j < LAP__MAX; j++)
 		{
 			players[i].laptime[j] = 0;
@@ -2128,6 +2129,8 @@ static void P_LevelInitStuff(boolean reloadinggamestate)
 		players[i].spinoutrot = 0;
 >>>>>>> 052dcb263 (Add a cvar for minimap icon spinouts)
 
+=======
+>>>>>>> 432dcd3a3 (Refactor to prevent desynchs)
 		players[i].gotcontinue = false;
 
 		players[i].xtralife = players[i].deadtimer = players[i].numboxes = players[i].totalring = players[i].laps = 0;

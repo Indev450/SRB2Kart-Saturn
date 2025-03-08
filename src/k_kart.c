@@ -5398,6 +5398,7 @@ void K_KartPlayerHUDUpdate(player_t *player)
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 static boolean K_SpeedLinesShouldBlend(player_t *player)
 {
 	fixed_t percentspeed = 0;
@@ -5478,6 +5479,8 @@ static inline void K_SpawnNormalSpeedLines(player_t *player, boolean synched)
 #define MAXSPINROT (360 * FRACUNIT)
 >>>>>>> 052dcb263 (Add a cvar for minimap icon spinouts)
 
+=======
+>>>>>>> 432dcd3a3 (Refactor to prevent desynchs)
 /**	\brief	Decreases various kart timers and powers per frame. Called in P_PlayerThink in p_user.c
 
 	\param	player	player object passed from P_PlayerThink
@@ -5600,9 +5603,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		player->powers[pw_flashing]--;
 	}
 
-	boolean doiconspin;
-
-	doiconspin = false;
+	player->doiconspin = 0;
 
 	if (player->kartstuff[k_spinouttimer])
 	{
@@ -5616,7 +5617,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 				player->kartstuff[k_spinouttype] = 0; // Reset type
 		}
 
-		doiconspin = true;
+		player->doiconspin = 1;
 	}
 	else
 	{
@@ -5630,31 +5631,6 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 			player->kartstuff[k_comebacktimer]--;
 			if (P_IsLocalPlayer(player) && player->kartstuff[k_bumper] <= 0 && player->kartstuff[k_comebacktimer] <= 0)
 				comebackshowninfo = true; // client has already seen the message
-		}
-	}
-
-	if ((doiconspin) && (player->spinoutrot == 0))
-	{
-		player->spinoutrot = SPINOUTROTSPEED;
-	}
-
-	// MKWii-styled icon spinouts: do a full 360 rotation before stopping.
-	if ((player->spinoutrot) && (player->spinoutrot < MAXSPINROT))
-	{
-		if ((player->spinoutrot + SPINOUTROTSPEED) >= MAXSPINROT)
-		{
-			if (doiconspin)
-			{
-				player->spinoutrot = (player->spinoutrot + SPINOUTROTSPEED) % MAXSPINROT;
-			}
-			else
-			{
-				player->spinoutrot = 0;
-			}
-		}
-		else
-		{
-			player->spinoutrot += SPINOUTROTSPEED;
 		}
 	}
 
