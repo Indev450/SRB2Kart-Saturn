@@ -179,7 +179,7 @@ UINT8 *PutFileNeeded(UINT16 firstfile)
 		// Store in the upper four bits
 		if (!cv_downloading.value)
 			filestatus += (2 << 4); // Won't send
-		else if ((wadfiles[i]->filesize <= (UINT32)cv_maxsend.value * 1024))
+		else if (cv_maxsend.value == -1 || wadfiles[i]->filesize <= (UINT32)cv_maxsend.value * 1024)
 			filestatus += (1 << 4); // Will send if requested
 		// else
 			// filestatus += (0 << 4); -- Won't send, too big
@@ -213,6 +213,7 @@ void D_ParseFileneeded(INT32 fileneedednum_parm, UINT8 *fileneededstr, UINT16 fi
 
 	fileneedednum = firstfile + fileneedednum_parm;
 	p = (UINT8 *)fileneededstr;
+
 	for (i = firstfile; i < fileneedednum; i++)
 	{
 		fileneeded[i].status = FS_NOTCHECKED; // We haven't even started looking for the file yet
@@ -703,7 +704,7 @@ static boolean SV_SendFile(INT32 node, const char *filename, UINT8 fileid)
 	}
 
 	// Handle huge file requests (i.e. bigger than cv_maxsend.value KB)
-	if (wadfiles[i]->filesize > (UINT32)cv_maxsend.value * 1024)
+	if (cv_maxsend.value != -1 && wadfiles[i]->filesize > (UINT32)cv_maxsend.value * 1024)
 	{
 		// Too big
 		// Don't inform client (client sucks, man)
