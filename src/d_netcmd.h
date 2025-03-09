@@ -50,13 +50,6 @@ extern consvar_t cv_joyport2;
 #endif
 extern consvar_t cv_joyscale[4]; //MAXSPLITSCREENPLAYERS
 
-// splitscreen with second mouse
-extern consvar_t cv_mouse2port;
-extern consvar_t cv_usemouse2;
-#if defined (__unix__) || defined (__APPLE__) || defined (UNIXCOMMON)
-extern consvar_t cv_mouse2opt;
-#endif
-
 // normally in p_mobj but the .h is not read
 extern consvar_t cv_itemrespawntime;
 extern consvar_t cv_itemrespawn;
@@ -179,9 +172,7 @@ extern consvar_t cv_nametagdist;
 extern consvar_t cv_showownnametag;
 extern consvar_t cv_smallnametags;
 extern consvar_t cv_nametagrestat;
-extern consvar_t cv_nametaghop;
 extern consvar_t cv_nametagscore;
-extern consvar_t cv_shownametagfinish;
 extern consvar_t cv_shownametagspectator;
 
 #define SKINSELECTSPIN_PAIN 25
@@ -303,8 +294,6 @@ typedef union {
 #if defined(_MSC_VER)
 #pragma pack()
 #endif
-
-extern tic_t driftsparkGrowTimer[16];
 
 // add game commands, needs cleanup
 void D_RegisterServerCommands(void);

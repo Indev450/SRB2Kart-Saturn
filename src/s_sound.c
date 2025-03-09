@@ -113,13 +113,15 @@ consvar_t cv_resume = {"resume", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0
 consvar_t cv_fading = {"fading", "Off", CV_SAVE|CV_CALL, CV_OnOff, Bird_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_birdmusic = {"birdmusicstuff", "No", CV_SAVE|CV_CALL, CV_YesNo, Bird_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
 
-
 consvar_t cv_keepmusic = {"keepmusic", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_skipintromusic = {"skipintromusic", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 //consvar_t cv_ignoremusicchanges = {"ignoremusicchanges", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-boolean keepmusic = false; // keep the current music on map restart
+boolean keepmapmusic = false; // keep the current music on map restart
 boolean skipintromus = false; // skip the intro fanfare
+static boolean resumekeepmusic = false;
+static music_t keepmusic;
+static void S_SetKeepMusResume(void);
 
 #ifdef HAVE_OPENMPT
 openmpt_module *openmpt_mhandle = NULL;
@@ -342,7 +344,7 @@ lumpnum_t S_GetSfxLumpNum(sfxinfo_t *sfx)
 	if (sfxlump != LUMPERROR)
 		return sfxlump;
 
-	strlcpy(namebuf, sfx->name, sizeof namebuf);
+	strlcpy(namebuf, sfx->name, sizeof(namebuf));
 
 	sfxlump = W_CheckNumForName(namebuf);
 	if (sfxlump != LUMPERROR)
@@ -456,11 +458,7 @@ void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
 		memset(&listener[i], 0, sizeof (listener[i]));
 		listenmobj[i] = NULL;
 
-		if (i == 0 && democam.soundmobj)
-		{
-			listenmobj[i] = democam.soundmobj;
-		}
-		else if (player->awayviewtics)
+		if (player->awayviewtics)
 		{
 			listenmobj[i] = player->awayviewmobj;
 		}
@@ -469,7 +467,7 @@ void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
 			listenmobj[i] = player->mo;
 		}
 
-		if (origin && origin == listenmobj[i])
+		if (origin && origin == listenmobj[i] && !camera[i].freecam)
 		{
 			itsUs = true;
 		}
@@ -719,12 +717,6 @@ void S_UpdateSounds(void)
 		memset(&listener[i], 0, sizeof (listener[i]));
 		listenmobj[i] = NULL;
 
-		if (i == 0 && democam.soundmobj)
-		{
-			listenmobj[i] = democam.soundmobj;
-			continue;
-		}
-
 		if (player->awayviewtics)
 		{
 			listenmobj[i] = player->awayviewmobj;
@@ -780,6 +772,9 @@ void S_UpdateSounds(void)
 
 					for (i = splitscreen; i >= 0; i--)
 					{
+						if (camera[i].freecam)
+							continue;
+
 						if (c->origin != listenmobj[i])
 							continue;
 
@@ -1199,17 +1194,10 @@ const char *compat_special_music_slots[16] =
 };
 #endif
 
-static char      music_name[7]; // up to 6-character name
-static void      *music_data;
-static UINT16    music_flags;
-static boolean   music_looping;
-static consvar_t *music_refade_cv;
+static music_t music;
+static music_t queue;
 
-static char      queue_name[7];
-static UINT16    queue_flags;
-static boolean   queue_looping;
-static UINT32    queue_position;
-static UINT32    queue_fadeinms;
+static consvar_t *music_refade_cv;
 
 /// ------------------------
 /// Music Definitions
@@ -1481,7 +1469,7 @@ void S_ShowSpecifiedMusicCredit(const char *musname)
 //
 void S_ShowMusicCredit(void)
 {
-	S_ShowSpecifiedMusicCredit(music_name);
+	S_ShowSpecifiedMusicCredit(music.name);
 }
 
 musicdef_t **soundtestdefs = NULL;
@@ -1560,7 +1548,7 @@ musictype_t S_MusicType(void)
 
 const char *S_MusicName(void)
 {
-	return music_name;
+	return music.name;
 }
 
 boolean S_MusicInfo(char *mname, UINT16 *mflags, boolean *looping)
@@ -1568,10 +1556,10 @@ boolean S_MusicInfo(char *mname, UINT16 *mflags, boolean *looping)
 	if (!I_SongPlaying())
 		return false;
 
-	strncpy(mname, music_name, 7);
+	strncpy(mname, music.name, 7);
 	mname[6] = 0;
-	*mflags = music_flags;
-	*looping = music_looping;
+	*mflags = music.flags;
+	*looping = music.looping;
 
 	return (boolean)mname[0];
 }
@@ -1661,9 +1649,9 @@ static boolean S_LoadMusic(const char *mname)
 
 	if (I_LoadSong(mdata, W_LumpLength(mlumpnum)))
 	{
-		strncpy(music_name, mname, 7);
-		music_name[6] = 0;
-		music_data = mdata;
+		strncpy(music.name, mname, 7);
+		music.name[6] = 0;
+		music.data = mdata;
 		return true;
 	}
 	else
@@ -1675,13 +1663,13 @@ static void S_UnloadMusic(void)
 	I_UnloadSong();
 
 #ifndef HAVE_SDL //SDL uses RWOPS
-	Z_ChangeTag(music_data, PU_CACHE);
+	Z_ChangeTag(music.data, PU_CACHE);
 #endif
-	music_data = NULL;
+	music.data = NULL;
 
-	music_name[0] = 0;
-	music_flags = 0;
-	music_looping = false;
+	music.name[0] = 0;
+	music.flags = 0;
+	music.looping = false;
 
 	music_refade_cv = 0;
 }
@@ -1710,21 +1698,21 @@ static boolean S_PlayMusic(boolean looping, UINT32 fadeinms)
 
 static void S_QueueMusic(const char *mmusic, UINT16 mflags, boolean looping, UINT32 position, UINT32 fadeinms)
 {
-	strncpy(queue_name, mmusic, 7);
-	queue_flags = mflags;
-	queue_looping = looping;
-	queue_position = position;
-	queue_fadeinms = fadeinms;
+	strncpy(queue.name, mmusic, 7);
+	queue.flags = mflags;
+	queue.looping = looping;
+	queue.position = position;
+	queue.fadeinms = fadeinms;
 }
 
 static void S_ClearQueue(void)
 {
-	queue_name[0] = queue_flags = queue_looping = queue_position = queue_fadeinms = 0;
+	queue.name[0] = queue.flags = queue.looping = queue.position = queue.fadeinms = 0;
 }
 
 static void S_ChangeMusicToQueue(void)
 {
-	S_ChangeMusicEx(queue_name, queue_flags, queue_looping, queue_position, 0, queue_fadeinms);
+	S_ChangeMusicEx(queue.name, queue.flags, queue.looping, queue.position, 0, queue.fadeinms);
 	S_ClearQueue();
 }
 
@@ -1753,7 +1741,7 @@ void S_ChangeMusicEx(const char *mmusic, UINT16 mflags, boolean looping, UINT32 
 	strncpy(newmusic, mmusic, 6);
 	strncpy(checkmusic, mmusic, 6);
 
-	if (LUA_HookMusicChange(music_name, &hook_param))
+	if (LUA_HookMusicChange(music.name, &hook_param))
 		return;
 
  	// No Music (empty string)
@@ -1768,12 +1756,12 @@ void S_ChangeMusicEx(const char *mmusic, UINT16 mflags, boolean looping, UINT32 
 
 	if (prefadems && S_MusicPlaying()) // queue music change for after fade // allow even if the music is the same
 	{
-		CONS_Debug(DBG_DETAILED, "Now fading out song %s\n", music_name);
+		CONS_Debug(DBG_DETAILED, "Now fading out song %s\n", music.name);
 		S_QueueMusic(newmusic, mflags, looping, position, fadeinms);
 		I_FadeSong(0, prefadems, S_ChangeMusicToQueue);
 		return;
 	}
-	else if (strnicmp(music_name, newmusic, 6) || (mflags & MUSIC_FORCERESET))
+	else if (strnicmp(music.name, newmusic, 6) || (mflags & MUSIC_FORCERESET))
  	{
 		CONS_Debug(DBG_DETAILED, "Now playing song %s\n", newmusic);
 
@@ -1785,8 +1773,8 @@ void S_ChangeMusicEx(const char *mmusic, UINT16 mflags, boolean looping, UINT32 
 			return;
 		}
 
-		music_flags = mflags;
-		music_looping = looping;
+		music.flags = mflags;
+		music.looping = looping;
 
 		if (!S_PlayMusic(looping, fadeinms))
  		{
@@ -1826,7 +1814,9 @@ void S_StopMusic(void)
 		|| demo.title) // SRB2Kart: Demos don't interrupt title screen music
 		return;
 
-	mapmusresume = (cv_birdmusic.value && (strcasecmp(music_name, mapmusname) == 0)) ? I_GetSongPosition() : 0;
+	mapmusic.resume = (cv_birdmusic.value && (strcasecmp(music.name, mapmusic.name) == 0)) ? I_GetSongPosition() : 0;
+
+	S_SetKeepMusResume();
 
 	if (I_SongPaused())
 		I_ResumeSong();
@@ -1953,9 +1943,13 @@ static const char *musicexception_list[] = {
 // check if the current music is smth we dont want to keep (vote music, etc)
 static boolean S_CheckMusicException(void)
 {
+	if (stricmp(music.name, mapmusic.name))
+		return true;
+
+	// in case somehow the mapmusic was replaced with smth we dont want to keep
 	for (size_t i = 0; i < sizeof(musicexception_list)/sizeof(musicexception_list[0]); i++)
 	{
-		if (!stricmp(music_name, musicexception_list[i]) || !stricmp(checkmusic, musicexception_list[i]))
+		if (!stricmp(music.name, musicexception_list[i]) || !stricmp(checkmusic, musicexception_list[i]))
 		{
 			return true;
 		}
@@ -1966,26 +1960,92 @@ static boolean S_CheckMusicException(void)
 
 void S_ResetKeepAndSpecialMus(void)
 {
-	keepmusic = skipintromus = false;
+	keepmapmusic = skipintromus = false;
+}
+
+// saves the current song position everytime a song stops
+// so we can resume it in some cases
+static void S_SetKeepMusResume(void)
+{
+	keepmusic.resume = 0;
+
+	if (strcasecmp(music.name, mapmusic.name) == 0)
+	{
+		keepmusic.resume = I_GetSongPosition();
+	}
 }
 
 // determine if we should keep the music on a map restart
+// this gets called BEFORE the level gets loaded in G_DoLoadLevel
 void S_KeepMusic(void)
 {
-	static INT16 oldmap = 0;
+	static INT16 oldmap = -1;
 	static boolean oldencore = false;
 
-	if (!cv_keepmusic.value || gamestate != GS_LEVEL || music_name[0] == 0)
+	keepmapmusic = resumekeepmusic = false;
+
+	if (!cv_keepmusic.value)
 	{
-		keepmusic = false;
+		return;
 	}
-	else if (oldmap == gamemap && oldencore == encoremode)
+
+	// copy over mapmusicname stuff into temporary var
+	memset(keepmusic.name, 0, sizeof(keepmusic.name));
+	strlcpy(keepmusic.name, mapmusic.name, sizeof(keepmusic.name));
+	keepmusic.name[6] = 0;
+
+	if (oldmap == gamemap && oldencore == encoremode)
 	{
-		keepmusic = !S_CheckMusicException();
+		const boolean musicchanged = S_CheckMusicException();
+
+		resumekeepmusic = (musicchanged && keepmusic.resume);
+		keepmapmusic = (!musicchanged || resumekeepmusic);
 	}
 
 	oldencore = encoremode;
 	oldmap = gamemap;
+}
+
+// Sets up the map music in case it should be reloaded
+// Special case for keep music
+void S_HandleReloadResetMusic(void)
+{
+	if (!(mapmusic.flags & MUSIC_RELOADRESET))
+		return;
+
+	// replace mapmusic with our saved keepmusic stuff
+	if (keepmapmusic)
+	{
+		// this is horrible, but oh well
+		strlcpy(mapmusic.name, keepmusic.name, sizeof(mapmusic.name));
+	}
+	else
+	{
+		strlcpy(mapmusic.name, mapheaderinfo[gamemap-1]->musname, sizeof(mapmusic.name));
+	}
+
+	mapmusic.name[6] = 0;
+	mapmusic.flags = (mapheaderinfo[gamemap-1]->mustrack & MUSIC_TRACKMASK);
+	mapmusic.position = mapheaderinfo[gamemap-1]->muspos;
+	mapmusic.resume = 0;
+}
+
+static boolean S_SkipIntroMusic(void)
+{
+	boolean skip = cv_skipintromusic.value;
+
+	if (!skip)
+		return false;
+
+	char *maptitle = G_BuildMapTitle(gamemap); // Zzz...
+
+	// check if menu music is playing, otherwise it may continue playing
+	if (!stricmp(music.name, "titles") || (maptitle && (!stricmp(maptitle, "Wandering Falls")))) // wandering balls changes its song when the race starts Zzz...
+		skip = false;
+
+	Z_Free(maptitle);
+
+	return skip;
 }
 
 //
@@ -1995,40 +2055,29 @@ void S_KeepMusic(void)
 //
 void S_InitMapMusic(void)
 {
-	if (mapmusflags & MUSIC_RELOADRESET)
-	{
-		strncpy(mapmusname, mapheaderinfo[gamemap-1]->musname, 7);
-		mapmusname[6] = 0;
-		mapmusflags = (mapheaderinfo[gamemap-1]->mustrack & MUSIC_TRACKMASK);
-		mapmusposition = mapheaderinfo[gamemap-1]->muspos;
-		mapmusresume = 0;
-	}
+	S_HandleReloadResetMusic();
 
-	if (keepmusic)
+	if (keepmapmusic)
+	{
+		// this is kinda silly, but we can use it to fade back into the map song at the saved point, should the current music be different from the map music
+		if (resumekeepmusic)
+		{
+			S_ChangeMusicEx(mapmusic.name, mapmusic.flags, true, keepmusic.resume, 0, 500);
+		}
 		return;
+	}
 
 	// Starting ambience should always be restarted
 	// lug: but not when we keep the map music lol
 	S_StopMusic();
 
-	if (cv_skipintromusic.value)
-	{
-		char *maptitle = G_BuildMapTitle(gamemap);
-		// for some reason, occasionally the title screen music doesent seem to be reset in time, so skipping the intro may make it just continue playing it instead, weird..
-		skipintromus = true;
-		if (!stricmp(music_name, "titles") || (maptitle && (!stricmp(maptitle, "Wandering Falls")))) // thanks diggle!
-			skipintromus = false;
-
-		if (maptitle)
-			Z_Free(maptitle);
-	}
+	skipintromus = S_SkipIntroMusic();
 
 	if (skipintromus)
 		return;
 
 	if (leveltime < MUSICSTARTTIME) // SRB2Kart
 		S_ChangeMusicInternal((encoremode ? "estart" : "kstart"), false); //S_StopMusic();
-	//S_ChangeMusicEx((encoremode ? "estart" : "kstart"), 0, false, mapmusposition, 0, 0);
 }
 
 void S_StartMapMusic(void)
@@ -2037,15 +2086,18 @@ void S_StartMapMusic(void)
 	if (leveltime > MUSICSTARTTIME)
 		return;
 
-	if (keepmusic)
+	if (keepmapmusic)
+	{
 		return;
+	}
 
 	if (skipintromus)
 	{
 		if (leveltime < starttime)
-			S_ChangeMusicEx(mapmusname, mapmusflags, true, mapmusposition, 0, 0);
-		if (leveltime == MUSICSTARTTIME)
+			S_ChangeMusicEx(mapmusic.name, mapmusic.flags, true, mapmusic.position, 0, 0);
+		else if (leveltime == MUSICSTARTTIME)
 			S_ShowMusicCredit();
+
 		return;
 	}
 
@@ -2055,7 +2107,7 @@ void S_StartMapMusic(void)
 		S_StopMusic();
 	else if (leveltime == MUSICSTARTTIME) // Plays the music after the starting countdown.
 	{
-		S_ChangeMusicEx(mapmusname, mapmusflags, true, mapmusposition, 0, 0);
+		S_ChangeMusicEx(mapmusic.name, mapmusic.flags, true, mapmusic.position, 0, 0);
 		S_ShowMusicCredit();
 	}
 }
@@ -2105,7 +2157,7 @@ static void Command_Tunes_f(void)
 	if (!strcasecmp(tunearg, "-show"))
 	{
 		CONS_Printf(M_GetText("The current tune is: %s [track %d]\n"),
-			mapmusname, (mapmusflags & MUSIC_TRACKMASK));
+			mapmusic.name, (mapmusic.flags & MUSIC_TRACKMASK));
 		return;
 	}
 	if (!strcasecmp(tunearg, "-none"))
@@ -2133,19 +2185,19 @@ static void Command_Tunes_f(void)
 		track = (UINT16)atoi(COM_Argv(2))-1;
 
 	if (tunenum)
-		snprintf(mapmusname, 7, "%sM", G_BuildMapName(tunenum));
+		snprintf(mapmusic.name, 7, "%sM", G_BuildMapName(tunenum));
 	else
-		strncpy(mapmusname, tunearg, 7);
+		strncpy(mapmusic.name, tunearg, 7);
 
 	if (argc > 4)
 		position = (UINT32)atoi(COM_Argv(4));
 
-	mapmusname[6] = 0;
-	mapmusflags = (track & MUSIC_TRACKMASK);
-	mapmusposition = position;
-	mapmusresume = 0;
+	mapmusic.name[6] = 0;
+	mapmusic.flags = (track & MUSIC_TRACKMASK);
+	mapmusic.position = position;
+	mapmusic.resume = 0;
 
-	S_ChangeMusicEx(mapmusname, mapmusflags, true, mapmusposition, 0, 0);
+	S_ChangeMusicEx(mapmusic.name, mapmusic.flags, true, mapmusic.position, 0, 0);
 
 	if (argc > 3)
 	{
@@ -2193,7 +2245,7 @@ static void Command_RestartMusic_f(void) //same as RestartAudio but only music g
 
 static void Command_ShowMusicCredit_f(void)
 {
-	const char *musname = music_name;
+	const char *musname = music.name;
 
 	if (COM_Argc() > 1)
 	{

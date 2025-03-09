@@ -62,6 +62,9 @@ static UINT8 softwaretranstogl[11]    = {  0, 25, 51, 76,102,127,153,178,204,229
 static UINT8 softwaretranstogl_hi[11] = {  0, 51,102,153,204,255,255,255,255,255,255};
 static UINT8 softwaretranstogl_lo[11] = {  0, 12, 24, 36, 48, 60, 71, 83, 95,111,127};
 
+static const float FLOATBASEVIDWIDTH  = (float)BASEVIDWIDTH;
+static const float FLOATBASEVIDHEIGHT = (float)BASEVIDHEIGHT;
+
 //
 // -----------------+
 // HWR_DrawPatch    : Draw a 'tile' graphic
@@ -126,13 +129,14 @@ void HWR_DrawPatch(GLPatch_t *gpatch, INT32 x, INT32 y, INT32 option)
 	GL_DrawPolygon(NULL, v, 4, flags);
 }
 
-void HWR_DrawStretchyFixedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale, fixed_t vscale, INT32 option, const UINT8 *colormap)
+void HWR_DrawStretchyFixedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale, fixed_t vscale, INT32 option, const UINT8 *colormap, INT32 bflags)
 {
 	FOutVector v[4];
 	FBITFIELD flags;
 	float cx = FIXED_TO_FLOAT(x);
 	float cy = FIXED_TO_FLOAT(y);
 	UINT8 alphalevel = ((option & V_ALPHAMASK) >> V_ALPHASHIFT);
+	UINT8 blendmode = ((bflags & V_BLENDMASK) >> V_BLENDSHIFT);
 
 //  3--2
 //  | /|
@@ -142,6 +146,9 @@ void HWR_DrawStretchyFixedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t
 
 	if (alphalevel >= 10 && alphalevel < 13)
 		return;
+
+	const float fvw = (float)vid.width;
+	const float fvh = (float)vid.height;
 
 	// make patch ready in hardware cache
 	if (!colormap)
@@ -226,21 +233,21 @@ void HWR_DrawStretchyFixedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t
 				Z_Free(realpatch);
 			}
 			// centre screen
-			if (fabsf((float)vid.width - (float)BASEVIDWIDTH * dupx) > 1.0E-36f)
+			if (fabsf(fvw - FLOATBASEVIDWIDTH * dupx) > 1.0E-36f)
 			{
 				if (option & V_SNAPTORIGHT)
-					cx += ((float)vid.width - ((float)BASEVIDWIDTH * dupx));
+					cx += (fvw - (FLOATBASEVIDWIDTH * dupx));
 				else if (!(option & V_SNAPTOLEFT))
-					cx += ((float)vid.width - ((float)BASEVIDWIDTH * dupx))/2;
+					cx += (fvw - (FLOATBASEVIDWIDTH * dupx))/2;
 			}
-			if (fabsf((float)vid.height - (float)BASEVIDHEIGHT * dupy) > 1.0E-36f)
+			if (fabsf(fvh - FLOATBASEVIDHEIGHT * dupy) > 1.0E-36f)
 			{
 				if ((option & (V_SPLITSCREEN|V_SNAPTOTOP)) == (V_SPLITSCREEN|V_SNAPTOTOP))
-					cy += ((float)vid.height/2 - ((float)BASEVIDHEIGHT/2 * dupy));
+					cy += (fvh/2 - (FLOATBASEVIDHEIGHT/2 * dupy));
 				else if (option & V_SNAPTOBOTTOM)
-					cy += ((float)vid.height - ((float)BASEVIDHEIGHT * dupy));
+					cy += (fvh - (FLOATBASEVIDHEIGHT * dupy));
 				else if (!(option & V_SNAPTOTOP))
-					cy += ((float)vid.height - ((float)BASEVIDHEIGHT * dupy))/2;
+					cy += (fvh - (FLOATBASEVIDHEIGHT * dupy))/2;
 			}
 		}
 	}
@@ -257,12 +264,12 @@ void HWR_DrawStretchyFixedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t
 	}
 
 	// positions of the cx, cy, are between 0 and vid.width/vid.height now, we need them to be between -1 and 1
-	cx = -1 + (cx / (vid.width/2));
-	cy = 1 - (cy / (vid.height/2));
+	cx = -1.0f + (cx / (vid.width / 2.0f));
+	cy = 1.0f - (cy / (vid.height / 2.0f));
 
 	// fwidth and fheight are similar
-	fwidth /= vid.width / 2;
-	fheight /= vid.height / 2;
+	fwidth /= fvw / 2.0f;
+	fheight /= fvh / 2.0f;
 
 	// set the polygon vertices to the right positions
 	v[0].x = v[3].x = cx;
@@ -287,7 +294,11 @@ void HWR_DrawStretchyFixedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t
 	v[0].t = v[1].t = 0.0f;
 	v[2].t = v[3].t = gpatch->max_t;
 
-	flags = PF_Translucent|PF_NoDepthTest;
+	// whoops
+	if (blendmode)
+		flags = HWR_GetBlendModeFlag(blendmode+1)|PF_NoDepthTest;
+	else
+		flags = PF_Translucent|PF_NoDepthTest;
 
 	if (option & V_WRAPX)
 		flags |= PF_ForceWrapX;
@@ -295,14 +306,17 @@ void HWR_DrawStretchyFixedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t
 		flags |= PF_ForceWrapY;
 
 	// clip it since it is used for bunny scroll in doom I
+
 	if (alphalevel)
 	{
 		FSurfaceInfo Surf;
 		Surf.PolyColor.s.red = Surf.PolyColor.s.green = Surf.PolyColor.s.blue = 0xff;
+		
 		if (alphalevel == 13) Surf.PolyColor.s.alpha = softwaretranstogl_lo[hudtrans];
 		else if (alphalevel == 14) Surf.PolyColor.s.alpha = softwaretranstogl[hudtrans];
 		else if (alphalevel == 15) Surf.PolyColor.s.alpha = softwaretranstogl_hi[hudtrans];
 		else Surf.PolyColor.s.alpha = softwaretranstogl[10-alphalevel];
+
 		flags |= PF_Modulated;
 		GL_DrawPolygon(&Surf, v, 4, flags);
 	}
@@ -326,6 +340,9 @@ void HWR_DrawCroppedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscal
 
 	if (alphalevel >= 10 && alphalevel < 13)
 		return;
+
+	const float fvw = (float)vid.width;
+	const float fvh = (float)vid.height;
 
 	// make patch ready in hardware cache
 	HWR_GetPatch(gpatch);
@@ -377,21 +394,21 @@ void HWR_DrawCroppedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscal
 				Z_Free(realpatch);
 			}
 			// centre screen
-			if (fabsf((float)vid.width - (float)BASEVIDWIDTH * dupx) > 1.0E-36f)
+			if (fabsf(fvw - FLOATBASEVIDWIDTH * dupx) > 1.0E-36f)
 			{
 				if (option & V_SNAPTORIGHT)
-					cx += ((float)vid.width - ((float)BASEVIDWIDTH * dupx));
+					cx += (fvw - (FLOATBASEVIDWIDTH * dupx));
 				else if (!(option & V_SNAPTOLEFT))
-					cx += ((float)vid.width - ((float)BASEVIDWIDTH * dupx))/2;
+					cx += (fvw - (FLOATBASEVIDWIDTH * dupx))/2;
 			}
-			if (fabsf((float)vid.height - (float)BASEVIDHEIGHT * dupy) > 1.0E-36f)
+			if (fabsf(fvh - FLOATBASEVIDHEIGHT * dupy) > 1.0E-36f)
 			{
 				if ((option & (V_SPLITSCREEN|V_SNAPTOTOP)) == (V_SPLITSCREEN|V_SNAPTOTOP))
-					cy += ((float)vid.height/2 - ((float)BASEVIDHEIGHT/2 * dupy));
+					cy += (fvh/2 - (FLOATBASEVIDHEIGHT/2 * dupy));
 				else if (option & V_SNAPTOBOTTOM)
-					cy += ((float)vid.height - ((float)BASEVIDHEIGHT * dupy));
+					cy += (fvh - (FLOATBASEVIDHEIGHT * dupy));
 				else if (!(option & V_SNAPTOTOP))
-					cy += ((float)vid.height - ((float)BASEVIDHEIGHT * dupy))/2;
+					cy += (fvh - (FLOATBASEVIDHEIGHT * dupy))/2;
 			}
 		}
 	}
@@ -423,12 +440,12 @@ void HWR_DrawCroppedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscal
 	}
 
 	// positions of the cx, cy, are between 0 and vid.width/vid.height now, we need them to be between -1 and 1
-	cx = -1 + (cx / (vid.width/2));
-	cy = 1 - (cy / (vid.height/2));
+	cx = -1.0f + (cx / (vid.width / 2.0f));
+	cy = 1.0f - (cy / (vid.height / 2.0f));
 
 	// fwidth and fheight are similar
-	fwidth /= vid.width / 2;
-	fheight /= vid.height / 2;
+	fwidth /= fvw / 2.0f;
+	fheight /= fvh / 2.0f;
 
 	// set the polygon vertices to the right positions
 	v[0].x = v[3].x = cx;
@@ -456,10 +473,12 @@ void HWR_DrawCroppedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscal
 	{
 		FSurfaceInfo Surf;
 		Surf.PolyColor.s.red = Surf.PolyColor.s.green = Surf.PolyColor.s.blue = 0xff;
+
 		if (alphalevel == 13) Surf.PolyColor.s.alpha = softwaretranstogl_lo[cv_translucenthud.value];
 		else if (alphalevel == 14) Surf.PolyColor.s.alpha = softwaretranstogl[cv_translucenthud.value];
 		else if (alphalevel == 15) Surf.PolyColor.s.alpha = softwaretranstogl_hi[cv_translucenthud.value];
 		else Surf.PolyColor.s.alpha = softwaretranstogl[10-alphalevel];
+		
 		flags |= PF_Modulated;
 		GL_DrawPolygon(&Surf, v, 4, flags);
 	}
@@ -811,6 +830,9 @@ void HWR_DrawDiag(INT32 x, INT32 y, INT32 wh, INT32 color)
 	fy = (float)y;
 	fw = fh = (float)wh;
 
+	const float fvw = (float)vid.width;
+	const float fvh = (float)vid.height;
+
 	if (!(color & V_NOSCALESTART))
 	{
 		float dupx = (float)vid.dupx, dupy = (float)vid.dupy;
@@ -820,20 +842,20 @@ void HWR_DrawDiag(INT32 x, INT32 y, INT32 wh, INT32 color)
 		fw *= dupx;
 		fh *= dupy;
 
-		if (fabsf((float)vid.width - ((float)BASEVIDWIDTH * dupx)) > 1.0E-36f)
+		if (fabsf(fvw - (FLOATBASEVIDWIDTH * dupx)) > 1.0E-36f)
 		{
 			if (color & V_SNAPTORIGHT)
-				fx += ((float)vid.width - ((float)BASEVIDWIDTH * dupx));
+				fx += (fvw - (FLOATBASEVIDWIDTH * dupx));
 			else if (!(color & V_SNAPTOLEFT))
-				fx += ((float)vid.width - ((float)BASEVIDWIDTH * dupx)) / 2;
+				fx += (fvw - (FLOATBASEVIDWIDTH * dupx)) / 2;
 		}
-		if (fabsf((float)vid.height - ((float)BASEVIDHEIGHT * dupy)) > 1.0E-36f)
+		if (fabsf(fvh - (FLOATBASEVIDHEIGHT * dupy)) > 1.0E-36f)
 		{
 			// same thing here
 			if (color & V_SNAPTOBOTTOM)
-				fy += ((float)vid.height - ((float)BASEVIDHEIGHT * dupy));
+				fy += (fvh - (FLOATBASEVIDHEIGHT * dupy));
 			else if (!(color & V_SNAPTOTOP))
-				fy += ((float)vid.height - ((float)BASEVIDHEIGHT * dupy)) / 2;
+				fy += (fvh - (FLOATBASEVIDHEIGHT * dupy)) / 2;
 		}
 	}
 
@@ -854,16 +876,16 @@ void HWR_DrawDiag(INT32 x, INT32 y, INT32 wh, INT32 color)
 		return;
 	if (fx + fw > vid.width)
 	{
-		fwait = fw - ((float)vid.width - fx);
-		fw = (float)vid.width - fx;
+		fwait = fw - (fvw- fx);
+		fw = fvw - fx;
 	}
 	if (fy + fh > vid.height)
-		fh = (float)vid.height - fy;
+		fh = fvh - fy;
 
-	fx = -1 + fx / (vid.width / 2);
-	fy = 1 - fy / (vid.height / 2);
-	fw = fw / (vid.width / 2);
-	fh = fh / (vid.height / 2);
+	fx = -1.0f + fx / (vid.width / 2.0f);
+	fy = 1.0f - fy / (vid.height / 2.0f);
+	fw = fw / (fvw / 2.0f);
+	fh = fh / (fvh / 2.0f);
 
 	v[0].x = v[3].x = fx;
 	v[2].x = v[1].x = fx + fw;
@@ -907,6 +929,9 @@ void HWR_DrawConsoleFill(INT32 x, INT32 y, INT32 w, INT32 h, UINT32 color, INT32
 	fw = (float)w;
 	fh = (float)h;
 
+	const float fvw = (float)vid.width;
+	const float fvh = (float)vid.height;
+
 	if (!(options & V_NOSCALESTART))
 	{
 		float dupx = (float)vid.dupx, dupy = (float)vid.dupy;
@@ -928,25 +953,25 @@ void HWR_DrawConsoleFill(INT32 x, INT32 y, INT32 w, INT32 h, UINT32 color, INT32
 		fw *= dupx;
 		fh *= dupy;
 
-		if (fabsf((float)vid.width - ((float)BASEVIDWIDTH * dupx)) > 1.0E-36f)
+		if (fabsf(fvw - (FLOATBASEVIDWIDTH * dupx)) > 1.0E-36f)
 		{
 			if (options & V_SNAPTORIGHT)
-				fx += ((float)vid.width - ((float)BASEVIDWIDTH * dupx));
+				fx += (fvw - (FLOATBASEVIDWIDTH * dupx));
 			else if (!(options & V_SNAPTOLEFT))
-				fx += ((float)vid.width - ((float)BASEVIDWIDTH * dupx)) / 2;
+				fx += (fvw - (FLOATBASEVIDWIDTH * dupx)) / 2;
 		}
-		if (fabsf((float)vid.height - ((float)BASEVIDHEIGHT * dupy)) > 1.0E-36f)
+		if (fabsf(fvh - (FLOATBASEVIDHEIGHT * dupy)) > 1.0E-36f)
 		{
 			// same thing here
 			if (options & V_SNAPTOBOTTOM)
-				fy += ((float)vid.height - ((float)BASEVIDHEIGHT * dupy));
+				fy += (fvh - (FLOATBASEVIDHEIGHT * dupy));
 			else if (!(options & V_SNAPTOTOP))
-				fy += ((float)vid.height - ((float)BASEVIDHEIGHT * dupy)) / 2;
+				fy += (fvh - (FLOATBASEVIDHEIGHT * dupy)) / 2;
 		}
 		if (options & V_SPLITSCREEN)
-			fy += ((float)BASEVIDHEIGHT * dupy)/2;
+			fy += (FLOATBASEVIDHEIGHT * dupy)/2;
 		if (options & V_HORZSCREEN)
-			fx += ((float)BASEVIDWIDTH * dupx)/2;
+			fx += (FLOATBASEVIDWIDTH * dupx)/2;
 
 	}
 
@@ -966,14 +991,14 @@ void HWR_DrawConsoleFill(INT32 x, INT32 y, INT32 w, INT32 h, UINT32 color, INT32
 	if (fw <= 0 || fh <= 0)
 		return;
 	if (fx + fw > vid.width)
-		fw = (float)vid.width - fx;
+		fw = fvw - fx;
 	if (fy + fh > vid.height)
-		fh = (float)vid.height - fy;
+		fh = fvh - fy;
 
-	fx = -1 + fx / (vid.width / 2);
-	fy = 1 - fy / (vid.height / 2);
-	fw = fw / (vid.width / 2);
-	fh = fh / (vid.height / 2);
+	fx = -1.0f + fx / (vid.width / 2.0f);
+	fy = 1.0f - fy / (vid.height / 2.0f);
+	fw = fw / (fvw / 2.0f);
+	fh = fh / (fvh / 2.0f);
 
 	v[0].x = v[3].x = fx;
 	v[2].x = v[1].x = fx + fw;
@@ -1018,6 +1043,9 @@ void HWR_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color)
 	fw = (float)w;
 	fh = (float)h;
 
+	const float fvw = (float)vid.width;
+	const float fvh = (float)vid.height;
+
 	if (!(color & V_NOSCALESTART))
 	{
 		float dupx = (float)vid.dupx, dupy = (float)vid.dupy;
@@ -1039,26 +1067,25 @@ void HWR_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color)
 		fw *= dupx;
 		fh *= dupy;
 
-		if (fabsf((float)vid.width - (float)BASEVIDWIDTH * dupx) > 1.0E-36f)
+		if (fabsf(fvw - FLOATBASEVIDWIDTH * dupx) > 1.0E-36f)
 		{
 			if (color & V_SNAPTORIGHT)
-				fx += ((float)vid.width - ((float)BASEVIDWIDTH * dupx));
+				fx += (fvw - (FLOATBASEVIDWIDTH * dupx));
 			else if (!(color & V_SNAPTOLEFT))
-				fx += ((float)vid.width - ((float)BASEVIDWIDTH * dupx)) / 2;
+				fx += (fvw - (FLOATBASEVIDWIDTH * dupx)) / 2;
 		}
-		if (fabsf((float)vid.height - (float)BASEVIDHEIGHT * dupy) > 1.0E-36f)
+		if (fabsf(fvh - FLOATBASEVIDHEIGHT * dupy) > 1.0E-36f)
 		{
 			// same thing here
 			if (color & V_SNAPTOBOTTOM)
-				fy += ((float)vid.height - ((float)BASEVIDHEIGHT * dupy));
+				fy += (fvh - (FLOATBASEVIDHEIGHT * dupy));
 			else if (!(color & V_SNAPTOTOP))
-				fy += ((float)vid.height - ((float)BASEVIDHEIGHT * dupy)) / 2;
+				fy += (fvh - (FLOATBASEVIDHEIGHT * dupy)) / 2;
 		}
 		if (color & V_SPLITSCREEN)
-			fy += ((float)BASEVIDHEIGHT * dupy)/2;
+			fy += (FLOATBASEVIDHEIGHT * dupy)/2;
 		if (color & V_HORZSCREEN)
-			fx += ((float)BASEVIDWIDTH * dupx)/2;
-
+			fx += (FLOATBASEVIDWIDTH * dupx)/2;
 	}
 
 	if (fx >= vid.width || fy >= vid.height)
@@ -1077,14 +1104,14 @@ void HWR_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color)
 	if (fw <= 0 || fh <= 0)
 		return;
 	if (fx + fw > vid.width)
-		fw = (float)vid.width - fx;
+		fw = fvw - fx;
 	if (fy + fh > vid.height)
-		fh = (float)vid.height - fy;
+		fh = fvh - fy;
 
-	fx = -1 + fx / (vid.width / 2);
-	fy = 1 - fy / (vid.height / 2);
-	fw = fw / (vid.width / 2);
-	fh = fh / (vid.height / 2);
+	fx = -1.0f + fx / (vid.width / 2.0f);
+	fy = 1.0f - fy / (vid.height / 2.0f);
+	fw = fw / (fvw / 2.0f);
+	fh = fh / (fvh / 2.0f);
 
 	v[0].x = v[3].x = fx;
 	v[2].x = v[1].x = fx + fw;
@@ -1127,7 +1154,7 @@ void HWR_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color)
 #define _FILE_OFFSET_BITS 0
 #endif
 
- #include "png.h"
+#include "png.h"
  #ifdef PNG_WRITE_SUPPORTED
   #define USE_PNG // PNG is only used if write is supported (see ../m_misc.c)
  #endif

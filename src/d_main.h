@@ -38,7 +38,7 @@ extern boolean xtra_speedo3;      // 80x11 extra speedometer check
 extern boolean xtra_speedo_clr3;  // 80x11 extra speedometer colour check
 extern boolean achi_speedo;       // achiiro speedometer check
 extern boolean achi_speedo_clr;   // extra speedometer colour check
-extern boolean kartzspeedo;       // kartZ speedo
+extern boolean kartz_speedo;       // kartZ speedo
 
 extern boolean clr_hud;           // colour hud check
 extern boolean big_lap;           // bigger lap counter

@@ -640,7 +640,7 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 
 	HWR_Lighting(&Surf, lightlevel, planecolormap);
 
-	if (PolyFlags & (PF_Translucent|PF_Fog))
+	if (PolyFlags & (PF_Translucent|PF_Fog|PF_Additive|PF_Subtractive|PF_ReverseSubtract|PF_Multiplicative|PF_Environment))
 	{
 		Surf.PolyColor.s.alpha = (UINT8)alpha;
 		PolyFlags |= PF_Modulated;
@@ -822,20 +822,65 @@ static void HWR_DrawSegsSplats(FSurfaceInfo * pSurf)
 }
 #endif
 
-FBITFIELD HWR_TranstableToAlpha(INT32 transtablenum, FSurfaceInfo *pSurf)
+FBITFIELD HWR_GetBlendModeFlag(INT32 style)
+{
+	switch (style)
+	{
+		case AST_TRANSLUCENT:
+			return PF_Translucent;
+		case AST_ADD:
+			return PF_Additive;
+		case AST_SUBTRACT:
+			return PF_Subtractive;
+		case AST_REVERSESUBTRACT:
+			return PF_ReverseSubtract;
+		case AST_MODULATE:
+			return PF_Multiplicative;
+		default:
+			return PF_Masked;
+	}
+}
+
+UINT8 HWR_GetTranstableAlpha(INT32 transtablenum)
 {
 	switch (transtablenum)
 	{
-		case tr_trans10 : pSurf->PolyColor.s.alpha = 0xe6;return  PF_Translucent;
-		case tr_trans20 : pSurf->PolyColor.s.alpha = 0xcc;return  PF_Translucent;
-		case tr_trans30 : pSurf->PolyColor.s.alpha = 0xb3;return  PF_Translucent;
-		case tr_trans40 : pSurf->PolyColor.s.alpha = 0x99;return  PF_Translucent;
-		case tr_trans50 : pSurf->PolyColor.s.alpha = 0x80;return  PF_Translucent;
-		case tr_trans60 : pSurf->PolyColor.s.alpha = 0x66;return  PF_Translucent;
-		case tr_trans70 : pSurf->PolyColor.s.alpha = 0x4c;return  PF_Translucent;
-		case tr_trans80 : pSurf->PolyColor.s.alpha = 0x33;return  PF_Translucent;
-		case tr_trans90 : pSurf->PolyColor.s.alpha = 0x19;return  PF_Translucent;
+		case 0          : return 0xff;
+		case tr_trans10 : return 0xe6;
+		case tr_trans20 : return 0xcc;
+		case tr_trans30 : return 0xb3;
+		case tr_trans40 : return 0x99;
+		case tr_trans50 : return 0x80;
+		case tr_trans60 : return 0x66;
+		case tr_trans70 : return 0x4c;
+		case tr_trans80 : return 0x33;
+		case tr_trans90 : return 0x19;
 	}
+
+	return 0xff;
+}
+
+FBITFIELD HWR_SurfaceBlend(INT32 style, INT32 transtablenum, FSurfaceInfo *pSurf)
+{
+	if (!transtablenum || style <= AST_COPY || style >= AST_OVERLAY)
+	{
+		pSurf->PolyColor.s.alpha = 0xff;
+		return PF_Masked;
+	}
+
+	pSurf->PolyColor.s.alpha = HWR_GetTranstableAlpha(transtablenum);
+	return HWR_GetBlendModeFlag(style);
+}
+
+FBITFIELD HWR_TranstableToAlpha(INT32 transtablenum, FSurfaceInfo *pSurf)
+{
+	if (!transtablenum)
+	{
+		pSurf->PolyColor.s.alpha = 0x00;
+		return PF_Masked;
+	}
+
+	pSurf->PolyColor.s.alpha = HWR_GetTranstableAlpha(transtablenum);
 	return PF_Translucent;
 }
 
@@ -1020,8 +1065,8 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 
 		if (cutflag & FF_FOG)
 			HWR_AddTransparentWall(wallVerts, Surf, texnum, noencore, PF_Fog|PF_NoTexture|polyflags, true, lightnum, colormap);
-		else if (cutflag & FF_TRANSLUCENT)
-			HWR_AddTransparentWall(wallVerts, Surf, texnum, noencore, PF_Translucent|polyflags, false, lightnum, colormap);
+		else if (polyflags & (PF_Translucent|PF_Additive|PF_Subtractive|PF_ReverseSubtract|PF_Multiplicative|PF_Environment))
+			HWR_AddTransparentWall(wallVerts, Surf, texnum, noencore, polyflags, false, lightnum, colormap);
 		else
 			HWR_ProjectWall(wallVerts, Surf, PF_Masked|polyflags, lightnum, colormap);
 
@@ -1049,8 +1094,8 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 
 	if (cutflag & FF_FOG)
 		HWR_AddTransparentWall(wallVerts, Surf, texnum, noencore, PF_Fog|PF_NoTexture|polyflags, true, lightnum, colormap);
-	else if (cutflag & FF_TRANSLUCENT)
-		HWR_AddTransparentWall(wallVerts, Surf, texnum, noencore, PF_Translucent|polyflags, false, lightnum, colormap);
+	else if (polyflags & (PF_Translucent|PF_Additive|PF_Subtractive|PF_ReverseSubtract|PF_Multiplicative|PF_Environment))
+		HWR_AddTransparentWall(wallVerts, Surf, texnum, noencore, polyflags, false, lightnum, colormap);
 	else
 		HWR_ProjectWall(wallVerts, Surf, PF_Masked|polyflags, lightnum, colormap);
 }
@@ -1143,33 +1188,6 @@ static inline boolean HWR_BlendMidtextureSurface(FSurfaceInfo *pSurf)
 		// set alpha for transparent walls
 		switch (gl_linedef->special)
 		{
-			case 900:
-				blendmode = HWR_TranstableToAlpha(tr_trans10, pSurf);
-				break;
-			case 901:
-				blendmode = HWR_TranstableToAlpha(tr_trans20, pSurf);
-				break;
-			case 902:
-				blendmode = HWR_TranstableToAlpha(tr_trans30, pSurf);
-				break;
-			case 903:
-				blendmode = HWR_TranstableToAlpha(tr_trans40, pSurf);
-				break;
-			case 904:
-				blendmode = HWR_TranstableToAlpha(tr_trans50, pSurf);
-				break;
-			case 905:
-				blendmode = HWR_TranstableToAlpha(tr_trans60, pSurf);
-				break;
-			case 906:
-				blendmode = HWR_TranstableToAlpha(tr_trans70, pSurf);
-				break;
-			case 907:
-				blendmode = HWR_TranstableToAlpha(tr_trans80, pSurf);
-				break;
-			case 908:
-				blendmode = HWR_TranstableToAlpha(tr_trans90, pSurf);
-				break;
 			// Translucent linedef types
 			case 102:
 			case 121 ... 125:
@@ -1179,11 +1197,25 @@ static inline boolean HWR_BlendMidtextureSurface(FSurfaceInfo *pSurf)
 			case 192:
 			case 195:
 			case 221:
-			case 253 ... 256:
-				blendmode = PF_Translucent;
+			case 253:
+			case 256:
+				if (gl_linedef->blendmode)
+					blendmode = HWR_SurfaceBlend(gl_linedef->blendmode, R_GetLinedefTransTable(gl_linedef->alpha), pSurf);
+				else
+					blendmode = PF_Translucent;
 				break;
 			default:
-				blendmode = PF_Masked;
+				if (gl_linedef->blendmode)
+				{
+					if (gl_linedef->alpha >= 0 && gl_linedef->alpha < FRACUNIT)
+						blendmode = HWR_SurfaceBlend(gl_linedef->blendmode, R_GetLinedefTransTable(gl_linedef->alpha), pSurf);
+					else
+						blendmode = HWR_GetBlendModeFlag(gl_linedef->blendmode);
+				}
+				else if (gl_linedef->alpha >= 0 && gl_linedef->alpha < FRACUNIT)
+					blendmode = HWR_TranstableToAlpha(R_GetLinedefTransTable(gl_linedef->alpha), pSurf);
+				else
+					blendmode = PF_Masked;
 				break;
 		}
 	}
@@ -1677,7 +1709,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 			blendmode |= PF_Decal;
 
 			if (!gl_drawing_stencil && gl_frontsector->numlights)
-				HWR_SplitWall(gl_frontsector, wallVerts, gl_midtexture, noencore, &Surf, (!(blendmode & PF_Masked)) ? FF_TRANSLUCENT : FF_CUTLEVEL, NULL, PF_Decal);
+				HWR_SplitWall(gl_frontsector, wallVerts, gl_midtexture, noencore, &Surf, (!(blendmode & PF_Masked)) ? FF_TRANSLUCENT : FF_CUTLEVEL, NULL, blendmode);
 			else if (!gl_drawing_stencil && !(blendmode & PF_Masked))
 				HWR_AddTransparentWall(wallVerts, &Surf, gl_midtexture, noencore, blendmode, false, lightnum, colormap);
 			else
@@ -1732,7 +1764,9 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 			wallVerts[1].y = FIXED_TO_FLOAT(worldbottomslope);
 
 			if (gl_frontsector->numlights)
+			{
 				HWR_SplitWall(gl_frontsector, wallVerts, gl_midtexture, noencore, &Surf, FF_CUTLEVEL, NULL, 0);
+			}
 			else  // I don't think that solid walls can use translucent linedef types...
 			{
 				if (glTex->mipmap.flags & TF_TRANSPARENT)
@@ -1899,10 +1933,10 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 					wallVerts[0].s = wallVerts[3].s = cliplow * glTex->scaleX;
 					wallVerts[2].s = wallVerts[1].s = cliphigh * glTex->scaleX;
 				}
+				FBITFIELD blendmode;
+
 				if (rover->flags & FF_FOG)
 				{
-					FBITFIELD blendmode;
-
 					blendmode = PF_Fog|PF_NoTexture;
 
 					lightnum = rover->master->frontsector->lightlevel;
@@ -1913,22 +1947,22 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 					lightnum = (HWR_ShouldUsePaletteRendering() && colormap) ? lightnum : HWR_CalcWallLight(lightnum, gl_curline);
 
 					if (gl_frontsector->numlights)
-						HWR_SplitWall(gl_frontsector, wallVerts, 0, false, &Surf, rover->flags, rover, 0);
+						HWR_SplitWall(gl_frontsector, wallVerts, 0, false, &Surf, rover->flags, rover, blendmode);
 					else
 						HWR_AddTransparentWall(wallVerts, &Surf, 0, false, blendmode, true, lightnum, colormap);
 				}
 				else
 				{
-					FBITFIELD blendmode = PF_Masked;
+					blendmode = PF_Masked;
 
-					if (rover->flags & FF_TRANSLUCENT && rover->alpha < 256)
+					if ((rover->flags & FF_TRANSLUCENT && rover->alpha < 256) || rover->blend)
 					{
-						blendmode = PF_Translucent;
+						blendmode = rover->blend ? HWR_GetBlendModeFlag(rover->blend) : PF_Translucent;
 						Surf.PolyColor.s.alpha = CLAMP(rover->alpha, 0, 255);
 					}
 
 					if (gl_frontsector->numlights)
-						HWR_SplitWall(gl_frontsector, wallVerts, texnum, noencore, &Surf, rover->flags, rover, 0);
+						HWR_SplitWall(gl_frontsector, wallVerts, texnum, noencore, &Surf, rover->flags, rover, blendmode);
 					else
 					{
 						if (blendmode != PF_Masked)
@@ -2014,10 +2048,10 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 					wallVerts[2].s = wallVerts[1].s = cliphigh * glTex->scaleX;
 				}
 
+				FBITFIELD blendmode;
+
 				if (rover->flags & FF_FOG)
 				{
-					FBITFIELD blendmode;
-
 					blendmode = PF_Fog|PF_NoTexture;
 
 					lightnum = rover->master->frontsector->lightlevel;
@@ -2028,22 +2062,22 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 					lightnum = (HWR_ShouldUsePaletteRendering() && colormap) ? lightnum : HWR_CalcWallLight(lightnum, gl_curline);
 
 					if (gl_backsector->numlights)
-						HWR_SplitWall(gl_backsector, wallVerts, 0, false, &Surf, rover->flags, rover, 0);
+						HWR_SplitWall(gl_backsector, wallVerts, 0, false, &Surf, rover->flags, rover, blendmode);
 					else
 						HWR_AddTransparentWall(wallVerts, &Surf, 0, false, blendmode, true, lightnum, colormap);
 				}
 				else
 				{
-					FBITFIELD blendmode = PF_Masked;
+					blendmode = PF_Masked;
 
-					if (rover->flags & FF_TRANSLUCENT && rover->alpha < 256)
+					if ((rover->flags & FF_TRANSLUCENT && rover->alpha < 256) || rover->blend)
 					{
-						blendmode = PF_Translucent;
+						blendmode = rover->blend ? HWR_GetBlendModeFlag(rover->blend) : PF_Translucent;
 						Surf.PolyColor.s.alpha = CLAMP(rover->alpha, 0, 255);
 					}
 
 					if (gl_backsector->numlights)
-						HWR_SplitWall(gl_backsector, wallVerts, texnum, noencore, &Surf, rover->flags, rover, 0);
+						HWR_SplitWall(gl_backsector, wallVerts, texnum, noencore, &Surf, rover->flags, rover, blendmode);
 					else
 					{
 						if (blendmode != PF_Masked)
@@ -2255,6 +2289,9 @@ static void HWR_AddLine(seg_t *line)
 	checkforemptylines = true;
 
 	gl_backsector = line->backsector;
+
+	if (!cv_glportals.value || !gl_maphasportals)
+		goto doaddline;
 
 	// do extra checks on the seg when rendering portals:
 	// don't render segs that are behind the portal destination line
@@ -2717,27 +2754,11 @@ static boolean HWR_DoCulling(line_t *cullheight, line_t *viewcullheight, float v
 	return false;
 }
 
-static inline void HWR_PortalSubsector(seg_t *line, subsector_t *sub, INT16 count)
+static FBITFIELD HWR_RippleBlend(sector_t *sector, ffloor_t *rover, boolean ceiling)
 {
-	if (line)
-	{
-		//Hurdler: at this point validcount must be the same, but is not because
-		//         gl_frontsector doesn't point anymore to sub->sector due to
-		//         the call gl_frontsector = R_FakeFlat(...)
-		//         if it's not done, the sprite is drawn more than once,
-		//         what looks really bad with translucency or dynamic light,
-		//         without talking about the overdraw of course.
-		sub->sector->validcount = validcount;/// \todo fix that in a better way
-
-		while (count--)
-		{
-				if (!line->polyseg) // ignore segs that belong to polyobjects
-					HWR_AddLine(line);
-				line++;
-		}
-	}
-
-	sub->validcount = validcount;
+	(void)sector;
+	(void)ceiling;
+	return /*R_IsRipplePlane(sector, rover, ceiling)*/ (rover->flags & FF_RIPPLE) ? PF_Ripple : 0;
 }
 
 // -----------------+
@@ -2792,8 +2813,7 @@ static void HWR_Subsector(size_t num)
 
 	if (gl_portal_state == GLPORTAL_SEARCH)
 	{
-		HWR_PortalSubsector(line, sub, count);
-		return;
+		goto doaddline;
 	}
 
 	floorcolormap = ceilingcolormap = gl_frontsector->extra_colormap;
@@ -2886,8 +2906,7 @@ static void HWR_Subsector(size_t num)
 	if (gl_frontsector->ffloors)
 	{
 		/// \todo fix light, xoffs, yoffs, extracolormap ?
-		for (rover = gl_frontsector->ffloors;
-			rover; rover = rover->next)
+		for (rover = gl_frontsector->ffloors; rover; rover = rover->next)
 		{
 			fixed_t bottomCullHeight, topCullHeight, centerHeight;
 
@@ -2930,7 +2949,7 @@ static void HWR_Subsector(size_t num)
 					                       alpha, rover->master->frontsector, PF_Fog|PF_NoTexture,
 										   true, rover->master->frontsector->extra_colormap);
 				}
-				else if (rover->flags & FF_TRANSLUCENT && rover->alpha < 256) // SoM: Flags are more efficient
+				else if ((rover->flags & FF_TRANSLUCENT && rover->alpha < 256) || rover->blend) // SoM: Flags are more efficient
 				{
 					light = R_GetPlaneLight(gl_frontsector, centerHeight, viewz < bottomCullHeight  ? true : false);
 
@@ -2939,7 +2958,7 @@ static void HWR_Subsector(size_t num)
 										   false,
 					                       *rover->bottomheight,
 					                       *gl_frontsector->lightlist[light].lightlevel,
-					                       CLAMP(rover->alpha, 0 ,255), rover->master->frontsector, (rover->flags & FF_RIPPLE ? PF_Ripple : 0)|PF_Translucent,
+					                       CLAMP(rover->alpha, 0 ,255), rover->master->frontsector, HWR_RippleBlend(gl_frontsector, rover, false) | (rover->blend ? HWR_GetBlendModeFlag(rover->blend) : PF_Translucent),
 					                       false, gl_frontsector->lightlist[light].extra_colormap);
 				}
 				else
@@ -2947,7 +2966,7 @@ static void HWR_Subsector(size_t num)
 					HWR_GetFlat(levelflats[*rover->bottompic].lumpnum, R_NoEncore(gl_frontsector, false));
 					light = R_GetPlaneLight(gl_frontsector, centerHeight, viewz < bottomCullHeight  ? true : false);
 
-					HWR_RenderPlane(sub, &extrasubsectors[num], false, *rover->bottomheight, (rover->flags & FF_RIPPLE ? PF_Ripple : 0)|PF_Occlude, *gl_frontsector->lightlist[light].lightlevel, levelflats[*rover->bottompic].lumpnum,
+					HWR_RenderPlane(sub, &extrasubsectors[num], false, *rover->bottomheight, HWR_RippleBlend(gl_frontsector, rover, false)|PF_Occlude, *gl_frontsector->lightlist[light].lightlevel, levelflats[*rover->bottompic].lumpnum,
 					                rover->master->frontsector, 255, gl_frontsector->lightlist[light].extra_colormap);
 				}
 			}
@@ -2976,7 +2995,7 @@ static void HWR_Subsector(size_t num)
 					                       alpha, rover->master->frontsector, PF_Fog|PF_NoTexture,
 										   true, rover->master->frontsector->extra_colormap);
 				}
-				else if (rover->flags & FF_TRANSLUCENT && rover->alpha < 256)
+				else if ((rover->flags & FF_TRANSLUCENT && rover->alpha < 256) || rover->blend)
 				{
 					light = R_GetPlaneLight(gl_frontsector, centerHeight, viewz < topCullHeight  ? true : false);
 
@@ -2985,7 +3004,7 @@ static void HWR_Subsector(size_t num)
 											true,
 											*rover->topheight,
 											*gl_frontsector->lightlist[light].lightlevel,
-											CLAMP(rover->alpha, 0 ,255), rover->master->frontsector, (rover->flags & FF_RIPPLE ? PF_Ripple : 0)|PF_Translucent,
+											CLAMP(rover->alpha, 0 ,255), rover->master->frontsector, HWR_RippleBlend(gl_frontsector, rover, false) | (rover->blend ? HWR_GetBlendModeFlag(rover->blend) : PF_Translucent),
 											false, gl_frontsector->lightlist[light].extra_colormap);
 				}
 				else
@@ -2993,7 +3012,7 @@ static void HWR_Subsector(size_t num)
 					HWR_GetFlat(levelflats[*rover->toppic].lumpnum, R_NoEncore(gl_frontsector, true));
 					light = R_GetPlaneLight(gl_frontsector, centerHeight, viewz < topCullHeight  ? true : false);
 
-					HWR_RenderPlane(sub, &extrasubsectors[num], true, *rover->topheight, (rover->flags & FF_RIPPLE ? PF_Ripple : 0)|PF_Occlude, *gl_frontsector->lightlist[light].lightlevel, levelflats[*rover->toppic].lumpnum,
+					HWR_RenderPlane(sub, &extrasubsectors[num], true, *rover->topheight, HWR_RippleBlend(gl_frontsector, rover, false)|PF_Occlude, *gl_frontsector->lightlist[light].lightlevel, levelflats[*rover->toppic].lumpnum,
 									  rover->master->frontsector, 255, gl_frontsector->lightlist[light].extra_colormap);
 				}
 			}
@@ -3030,6 +3049,7 @@ static void HWR_Subsector(size_t num)
 		}
 	}
 
+doaddline:
 	// Hurdler: here interesting things are happening!
 	// we have just drawn the floor and ceiling
 	// we now draw the sprites first and then the walls
@@ -3050,9 +3070,9 @@ static void HWR_Subsector(size_t num)
 
 		while (count--)
 		{
-				if (!line->polyseg) // ignore segs that belong to polyobjects
-					HWR_AddLine(line);
-				line++;
+			if (!line->polyseg) // ignore segs that belong to polyobjects
+				HWR_AddLine(line);
+			line++;
 		}
 	}
 
@@ -3240,11 +3260,11 @@ static void HWR_DrawSpriteShadow(gl_vissprite_t *spr, GLPatch_t *gpatch)
 		angle_t shadowdir;
 
 		// Set direction
-		if (splitscreen && stplyr == &players[displayplayers[1]])
+		if (splitscreen && R_GetViewNumber() == 1)
 			shadowdir = localangle[1] + FixedAngle(cv_cam_rotate[1].value);
-		else if (splitscreen > 1 && stplyr == &players[displayplayers[2]])
+		else if (splitscreen > 1 && R_GetViewNumber() == 2)
 			shadowdir = localangle[2] + FixedAngle(cv_cam_rotate[2].value);
-		else if (splitscreen > 2 && stplyr == &players[displayplayers[3]])
+		else if (splitscreen > 2 && R_GetViewNumber() == 3)
 			shadowdir = localangle[3] + FixedAngle(cv_cam_rotate[3].value);
 		else
 			shadowdir = localangle[0] + FixedAngle(cv_cam_rotate[0].value);
@@ -3564,6 +3584,12 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 	// co-ordinates
 	memcpy(wallVerts, baseWallVerts, sizeof(baseWallVerts));
 
+	INT32 blendmode;
+	if (spr->mobj->frame & FF_BLENDMASK)
+		blendmode = ((spr->mobj->frame & FF_BLENDMASK) >> FF_BLENDSHIFT) + 1;
+	else
+		blendmode = spr->mobj->blendmode;
+
 	if (!cv_translucency.value) // translucency disabled
 	{
 		Surf.PolyColor.s.alpha = 0xFF;
@@ -3572,10 +3598,13 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 	else if (spr->mobj->flags2 & MF2_SHADOW)
 	{
 		Surf.PolyColor.s.alpha = 0x40;
-		blend = PF_Translucent;
+		blend = HWR_GetBlendModeFlag(blendmode);
 	}
 	else if (spr->mobj->frame & FF_TRANSMASK)
-		blend = HWR_TranstableToAlpha((spr->mobj->frame & FF_TRANSMASK)>>FF_TRANSSHIFT, &Surf);
+	{
+		INT32 trans = (spr->mobj->frame & FF_TRANSMASK)>>FF_TRANSSHIFT;
+		blend = HWR_SurfaceBlend(blendmode, trans, &Surf);
+	}
 	else
 	{
 		// BP: i agree that is little better in environement but it don't
@@ -3583,7 +3612,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 		// Hurdler: PF_Environement would be cool, but we need to fix
 		//          the issue with the fog before
 		Surf.PolyColor.s.alpha = 0xFF;
-		blend = PF_Translucent|PF_Occlude;
+		blend = HWR_GetBlendModeFlag(blendmode)|PF_Occlude;
 	}
 
 	if (HWR_UseShader())
@@ -3601,8 +3630,10 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 	i = 0;
 	temp = FLOAT_TO_FIXED(realtop);
 
-	if (spr->mobj->frame & FF_FULLBRIGHT)
+	if (R_ThingIsFullBright(spr->mobj))
 		lightlevel = 255;
+	else if (R_ThingIsFullDark(spr->mobj))
+		lightlevel = 0;
 
 	for (i = 1; i < sector->numlights; i++)
 	{
@@ -3615,6 +3646,9 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 		colormap = list[i-1].extra_colormap;
 		break;
 	}
+
+	if (R_ThingIsSemiBright(spr->mobj))
+		lightlevel = 128 + (lightlevel>>1);
 
 	for (i = 0; i < sector->numlights; i++)
 	{
@@ -3731,6 +3765,7 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 	GLPatch_t *gpatch; // sprite patch converted to hardware
 	FSurfaceInfo Surf;
 	FBITFIELD blend = 0;
+	INT32 blendmode;
 
 	INT32 shader = SHADER_NONE;
 
@@ -3821,12 +3856,21 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 	sector_t *sector = spr->mobj->subsector->sector;
 	UINT8 lightlevel = 255;
 	extracolormap_t *colormap = sector->extra_colormap;
-	const boolean fullbright = (spr->mobj->frame & FF_FULLBRIGHT);
 
-	if (!fullbright)
+	if (R_ThingIsFullDark(spr->mobj))
+		lightlevel = 0;
+	else if (!(R_ThingIsFullBright(spr->mobj)))
 		lightlevel = min(sector->lightlevel, 255);
 
+	if (R_ThingIsSemiBright(spr->mobj))
+		lightlevel = 128 + (lightlevel>>1);
+
 	HWR_Lighting(&Surf, lightlevel, colormap);
+
+	if (spr->mobj->frame & FF_BLENDMASK)
+		blendmode = ((spr->mobj->frame & FF_BLENDMASK) >> FF_BLENDSHIFT) + 1;
+	else
+		blendmode = spr->mobj->blendmode;
 
 	if (!cv_translucency.value) // translucency disabled
 	{
@@ -3836,10 +3880,13 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 	else if (spr->mobj->flags2 & MF2_SHADOW)
 	{
 		Surf.PolyColor.s.alpha = 0x40;
-		blend = PF_Translucent;
+		blend = HWR_GetBlendModeFlag(blendmode);
 	}
 	else if (spr->mobj->frame & FF_TRANSMASK)
-		blend = HWR_TranstableToAlpha((spr->mobj->frame & FF_TRANSMASK)>>FF_TRANSSHIFT, &Surf);
+	{
+		INT32 trans = (spr->mobj->frame & FF_TRANSMASK)>>FF_TRANSSHIFT;
+		blend = HWR_SurfaceBlend(blendmode, trans, &Surf);
+	}
 	else
 	{
 		// BP: i agree that is little better in environement but it don't
@@ -3847,7 +3894,7 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 		// Hurdler: PF_Environement would be cool, but we need to fix
 		//          the issue with the fog before
 		Surf.PolyColor.s.alpha = 0xFF;
-		blend = PF_Translucent|PF_Occlude;
+		blend = HWR_GetBlendModeFlag(blendmode)|PF_Occlude;
 	}
 
 	if (HWR_UseShader())
@@ -3933,7 +3980,10 @@ static void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 	HWR_Lighting(&Surf, lightlevel, colormap);
 
 	if (spr->mobj->frame & FF_TRANSMASK)
-		blend = HWR_TranstableToAlpha((spr->mobj->frame & FF_TRANSMASK)>>FF_TRANSSHIFT, &Surf);
+	{
+		INT32 trans = (spr->mobj->frame & FF_TRANSMASK)>>FF_TRANSSHIFT;
+		blend = HWR_SurfaceBlend(AST_TRANSLUCENT, trans, &Surf);
+	}
 	else
 	{
 		// BP: i agree that is little better in environement but it don't
@@ -3941,7 +3991,7 @@ static void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 		// Hurdler: PF_Environement would be cool, but we need to fix
 		//          the issue with the fog before
 		Surf.PolyColor.s.alpha = 0xFF;
-		blend = PF_Translucent|PF_Occlude;
+		blend = HWR_GetBlendModeFlag(AST_TRANSLUCENT)|PF_Occlude;
 	}
 
 	if (HWR_UseShader())
@@ -4438,6 +4488,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	float this_scale;
 	float spritexscale, spriteyscale;
 	float gz, gzt;
+	INT32 blendmode;
 	spritedef_t *sprdef;
 	spriteframe_t *sprframe;
 #ifdef ROTSPRITE
@@ -4485,6 +4536,18 @@ static void HWR_ProjectSprite(mobj_t *thing)
 		return;
 
 	const boolean papersprite = (thing->frame & FF_PAPERSPRITE);
+
+	if (thing->frame & FF_BLENDMASK)
+		blendmode = ((thing->frame & FF_BLENDMASK) >> FF_BLENDSHIFT) + 1;
+	else
+		blendmode = thing->blendmode;
+
+	// Visibility check by the blend mode.
+	if (thing->frame & FF_TRANSMASK)
+	{
+		if (!R_BlendLevelVisible(blendmode, (thing->frame & FF_TRANSMASK)>>FF_TRANSSHIFT))
+			return;
+	}
 
 	// transform the origin point
 	tr_x = FIXED_TO_FLOAT(interp.x);
@@ -4827,6 +4890,13 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 		R_InterpolatePrecipMobjState(thing, FRACUNIT, &interp);
 	}
 
+	// Visibility check by the blend mode.
+	if (thing->frame & FF_TRANSMASK)
+	{
+		if (!R_BlendLevelVisible(thing->blendmode, (thing->frame & FF_TRANSMASK)>>FF_TRANSSHIFT))
+			return;
+	}
+
 	// transform the origin point
 	tr_x = FIXED_TO_FLOAT(interp.x);
 	tr_y = FIXED_TO_FLOAT(interp.y);
@@ -5157,8 +5227,11 @@ static void HWR_SetTransformAiming(FTransform *trans)
 	trans->anglex = (float)(gl_aimingangle>>ANGLETOFINESHIFT)*(360.0f/(float)FINEANGLES);
 }
 
-void HWR_SetTransform(float fpov, player_t *player)
+void HWR_SetTransform(float fpov)
 {
+	UINT8 viewnum = R_GetViewNumber();
+	camera_t *thiscam = &camera[viewnum];
+
 	gl_viewx = FIXED_TO_FLOAT(viewx);
 	gl_viewy = FIXED_TO_FLOAT(viewy);
 	gl_viewz = FIXED_TO_FLOAT(viewz);
@@ -5187,15 +5260,15 @@ void HWR_SetTransform(float fpov, player_t *player)
 	atransform.splitscreen = splitscreen;
 
 	atransform.flip = false;
-	if ((player->postimgflags & POSTIMG_FLIP) && !(player->postimgflags & POSTIMG_MIRROR))
+	if ((thiscam->postimg & POSTIMG_FLIP) && !(thiscam->postimg & POSTIMG_MIRROR))
 		atransform.flip = true;
 
 	atransform.mirror = false;
-	if ((player->postimgflags & POSTIMG_MIRROR) && !(player->postimgflags & POSTIMG_FLIP))
+	if ((thiscam->postimg & POSTIMG_MIRROR) && !(thiscam->postimg & POSTIMG_FLIP))
 		atransform.mirror = true;
 
 	atransform.mirrorflip = false;
-	if ((player->postimgflags & POSTIMG_FLIP) && (player->postimgflags & POSTIMG_MIRROR))
+	if ((thiscam->postimg & POSTIMG_FLIP) && (thiscam->postimg & POSTIMG_MIRROR))
 		atransform.mirrorflip = true;
 
 	// Set transform.
@@ -5220,6 +5293,8 @@ void HWR_SetStencilState(int state, int level)
 	GL_SetSpecialState(HWD_SET_PORTAL_MODE, state);
 }
 
+typedef void (*bspfunc)(INT32 bspnum);
+
 // Renders the current viewpoint, though takes portal arguments for recursive portals.
 void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *player, int stencil_level, boolean allow_portals)
 {
@@ -5227,6 +5302,7 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *pl
 
 	const boolean skybox = (skyboxmo[0] && cv_skybox.value);
 	const boolean useportals = cv_glportals.value && gl_maphasportals && allow_portals;
+	bspfunc bspFunc = portalclipline ? HWR_RenderPortalBSPNode : HWR_RenderBSPNode;
 
 	portallist.base = portallist.cap = NULL;
 
@@ -5246,10 +5322,7 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *pl
 		validcount++;
 
 		// no actual rendering happens
-		if (portalclipline)
-			HWR_RenderPortalBSPNode((INT32)numnodes-1);
-		else
-			HWR_RenderBSPNode((INT32)numnodes-1);
+		bspFunc((INT32)numnodes-1);
 
 		// for each found portal:
 		// note: if necessary, could sort the portals here?
@@ -5266,7 +5339,7 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *pl
 	// draw normal things in current frame in current incremented stencil buffer area
 	HWR_SetStencilState(HWR_STENCIL_NORMAL, stencil_level);
 
-	HWR_SetTransform(fpov, player);
+	HWR_SetTransform(fpov);
 
 	HWR_ClearSprites();
 	HWR_ClearClipper();
@@ -5300,10 +5373,7 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *pl
 		HWR_SetPortalState(GLPORTAL_INSIDE); // TURN IT OFF
 
 	// Recursively "render" the BSP tree.
-	if (!portalclipline)
-		HWR_RenderBSPNode((INT32)numnodes-1);
-	else
-		HWR_RenderPortalBSPNode((INT32)numnodes-1);
+	bspFunc((INT32)numnodes-1);
 
 	// woo we back
 	HWR_SetPortalState(oldgl_portal_state);
@@ -5326,7 +5396,7 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *pl
 		HWR_DrawSkyBackground();
 		HWR_SetStencilState(HWR_STENCIL_NORMAL, 0);
 		GL_ClearBuffer(false, false, true, 0);// clear skywall markings from the stencil buffer
-		HWR_SetTransform(fpov, player);// restore transform
+		HWR_SetTransform(fpov);// restore transform
 	}
 	gl_collect_skywalls = false;
 
@@ -5353,7 +5423,7 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *pl
 // ==========================================================================
 // Render the current frame.
 // ==========================================================================
-static void HWR_RenderFrame(INT32 viewnumber, player_t *player, boolean skybox)
+static void HWR_RenderFrame(player_t *player, boolean skybox)
 {
 	const float fpov = FixedToFloat(R_GetPlayerFov(player));
 
@@ -5361,12 +5431,12 @@ static void HWR_RenderFrame(INT32 viewnumber, player_t *player, boolean skybox)
 	gl_viewwindowx = gl_baseviewwindowx;
 	gl_viewwindowy = gl_baseviewwindowy;
 
-	if ((splitscreen == 1 && viewnumber == 1) || (splitscreen > 1 && viewnumber > 1))
+	if ((splitscreen == 1 && viewssnum == 1) || (splitscreen > 1 && viewssnum > 1))
 	{
 		gl_viewwindowy += gl_viewheight;
 	}
 
-	if (splitscreen > 1 && viewnumber & 1)
+	if (splitscreen > 1 && viewssnum & 1)
 	{
 		gl_viewwindowx += gl_viewwidth;
 	}
@@ -5381,7 +5451,7 @@ static void HWR_RenderFrame(INT32 viewnumber, player_t *player, boolean skybox)
 		for (x = vid.width>>1; x < vid.width; x += pw)
 		{
 			for (y = vid.height>>1; y < vid.height; y += ph)
-				HWR_DrawStretchyFixedPatch(gpatch, (x)<<FRACBITS, (y)<<FRACBITS, FRACUNIT, FRACUNIT, V_NOSCALESTART, NULL);
+				HWR_DrawStretchyFixedPatch(gpatch, (x)<<FRACBITS, (y)<<FRACBITS, FRACUNIT, FRACUNIT, V_NOSCALESTART, NULL, 0);
 		}
 	}
 
@@ -5433,15 +5503,19 @@ static void HWR_RollTransform(FTransform *tr, angle_t roll)
 	{
 		tr->rollangle = roll / (float)ANG1;
 		tr->roll = true;
+		tr->rollx = 1.0f;
+		tr->rollz = 0.0f;
 	}
 }
 
-void HWR_RenderPlayerView(INT32 viewnumber, player_t *player)
+void HWR_RenderPlayerView(void)
 {
+	player_t * player = &players[displayplayers[viewssnum]];
+
 	const boolean skybox = (skyboxmo[0] && cv_skybox.value); // True if there's a skybox object and skyboxes are on
 
 	// Clear the color buffer, stops HOMs. Also seems to fix the skybox issue on Intel GPUs.
-	if (viewnumber == 0) // Only do it if it's the first screen being rendered
+	if (viewssnum == 0) // Only do it if it's the first screen being rendered
 	{
 		FRGBAFloat ClearColor;
 
@@ -5458,7 +5532,7 @@ void HWR_RenderPlayerView(INT32 viewnumber, player_t *player)
 		GL_SetShaderInfo(HWD_SHADERINFO_LEVELTIME, (INT32)leveltime); // The water surface shader needs the leveltime.
 	}
 
-	if (viewnumber > 3)
+	if (viewssnum > 3)
 		return;
 
 	// Render the skybox if there is one.
@@ -5467,13 +5541,13 @@ void HWR_RenderPlayerView(INT32 viewnumber, player_t *player)
 	if (skybox)
 	{
 		R_SkyboxFrame(viewssnum);
-		HWR_RenderFrame(viewnumber, player, true);
+		HWR_RenderFrame(player, true);
 	}
 	PS_STOP_TIMING(ps_skyboxtime);
 
 	R_SetupFrame(viewssnum, false); // This can stay false because it is only used to set viewsky in r_main.c, which isn't used here
 	framecount++; // for timedemo
-	HWR_RenderFrame(viewnumber, player, false);
+	HWR_RenderFrame(player, false);
 }
 
 void HWR_LoadLevel(void)
@@ -5771,8 +5845,12 @@ static void HWR_DoPostProcessor(player_t *player)
 	if (splitscreen) // Not supported in splitscreen - someone want to add support?
 		return;
 
+	//UINT8 viewnum = R_GetViewNumber(); // see above
+	//camera_t *thiscam = &camera[viewnum];
+	camera_t *thiscam = &camera[0];
+
 	// Drunken vision! WooOOooo~
-	if (player->postimgflags & POSTIMG_WATER || player->postimgflags & POSTIMG_HEAT)
+	if (thiscam->postimg & POSTIMG_WATER || thiscam->postimg & POSTIMG_HEAT)
 	{
 		// 10 by 10 grid. 2 coordinates (xy)
 		float v[SCREENVERTS][SCREENVERTS][2];
@@ -5784,7 +5862,7 @@ static void HWR_DoPostProcessor(player_t *player)
 		INT32 FREQUENCY;
 
 		// Modifies the wave.
-		if (player->postimgflags & POSTIMG_WATER)
+		if (thiscam->postimg & POSTIMG_WATER)
 		{
 			WAVELENGTH = 5;
 			AMPLITUDE = 20;

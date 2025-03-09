@@ -41,10 +41,18 @@
 #define FF_HORIZONTALFLIP 0x400
 /// \brief Frame flags: Thin, paper-like sprite (for collision equivalent, see MF_PAPERCOLLISION)
 #define FF_PAPERSPRITE 0x800
-/// \brief Frame flags: Simple stateless animation
-#define FF_ANIMATE 0x4000
-/// \brief Frame flags: frame always appears full bright
-#define FF_FULLBRIGHT 0x8000
+
+/// \brief Frame flags: blend types
+#define FF_BLENDMASK 0x7000
+/// \brief shift for FF_BLENDMASK
+#define FF_BLENDSHIFT 12
+/// \brief preshifted blend flags minus 1 as effects don't distinguish between AST_COPY and AST_TRANSLUCENT
+#define FF_ADD             ((AST_ADD-1)<<FF_BLENDSHIFT)
+#define FF_SUBTRACT        ((AST_SUBTRACT-1)<<FF_BLENDSHIFT)
+#define FF_REVERSESUBTRACT ((AST_REVERSESUBTRACT-1)<<FF_BLENDSHIFT)
+#define FF_MODULATE        ((AST_MODULATE-1)<<FF_BLENDSHIFT)
+#define FF_OVERLAY         ((AST_OVERLAY-1)<<FF_BLENDSHIFT)
+
 /// \brief Frame flags: 0 = no trans(opaque), 1-15 = transl. table
 #define FF_TRANSMASK 0xf0000
 /// \brief shift for FF_TRANSMASK
@@ -59,6 +67,18 @@
 #define FF_TRANS70 (tr_trans70<<FF_TRANSSHIFT)
 #define FF_TRANS80 (tr_trans80<<FF_TRANSSHIFT)
 #define FF_TRANS90 (tr_trans90<<FF_TRANSSHIFT)
+
+/// \brief Frame flags: brightness mask
+#define FF_BRIGHTMASK	0x00300000
+/// \brief Frame flags: frame always appears full bright
+#define FF_FULLBRIGHT	0x00100000
+/// \brief Frame flags: frame always appears full darkness
+#define FF_FULLDARK		0x00200000
+/// \brief Frame flags: frame appears between sector bright and full bright
+#define FF_SEMIBRIGHT	(FF_FULLBRIGHT|FF_FULLDARK)
+
+/// \brief Frame flags: Simple stateless animation
+#define FF_ANIMATE 0x10000000
 
 /**	\brief translucency tables
 

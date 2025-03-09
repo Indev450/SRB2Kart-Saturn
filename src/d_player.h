@@ -351,6 +351,7 @@ typedef enum
 typedef enum
 {
 	LAP_CUR,
+	LAP_BEST,
 	LAP_LAST,
 	LAP__MAX
 } laptime_e;
@@ -411,8 +412,6 @@ typedef struct player_s
 	// Bit flags.
 	// See pflags_t, above.
 	pflags_t pflags;
-
-	UINT16 postimgflags;
 
 	// playing animation.
 	panim_t panim;
@@ -551,6 +550,8 @@ typedef struct player_s
 	UINT8 hitemvictim;
 
 	UINT8 splitscreenindex;
+
+	tic_t driftsparkGrowTimer;
 
 	fixed_t fovadd; // adjust FOV for hw rendering
 } player_t;

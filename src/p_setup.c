@@ -740,8 +740,6 @@ static void P_LoadRawSectors(UINT8 *data)
 		ss->thinglist = NULL;
 		ss->touching_thinglist = NULL;
 
-		ss->touching_preciplist = NULL;
-
 		ss->floordata = NULL;
 		ss->ceilingdata = NULL;
 		ss->lightingdata = NULL;
@@ -1075,6 +1073,9 @@ static void P_SetupLines(void)
 		ld->dx = v2->x - v1->x;
 		ld->dy = v2->y - v1->y;
 
+		ld->alpha = FRACUNIT;
+		ld->blendmode = 0;
+
 		if (!ld->dx)
 			ld->slopetype = ST_VERTICAL;
 		else if (!ld->dy)
@@ -1182,6 +1183,26 @@ static void P_LoadLineDefs2(void)
 			}
 			break;
 		}
+
+		// Set alpha for translucent walls
+		if (ld->special >= 900 && ld->special < 909)
+			ld->alpha = ((909 - ld->special) << FRACBITS)/10;
+
+		// Set alpha for additive/subtractive/reverse subtractive walls
+		if (ld->special >= 910 && ld->special <= 939)
+			ld->alpha = ((10 - ld->special % 10) << FRACBITS)/10;
+
+		if (ld->special >= 910 && ld->special <= 919) // additive
+			ld->blendmode = AST_ADD;
+
+		if (ld->special >= 920 && ld->special <= 929) // subtractive
+			ld->blendmode = AST_SUBTRACT;
+
+		if (ld->special >= 930 && ld->special <= 939) // reverse subtractive
+			ld->blendmode = AST_REVERSESUBTRACT;
+
+		if (ld->special == 940) // modulate
+			ld->blendmode = AST_MODULATE;
 	}
 }
 
@@ -1460,8 +1481,10 @@ static void P_LoadRawSideDefs2(void *data)
 				if (msd->toptexture[0] == '#')
 				{
 					char *col = msd->toptexture;
-					sd->toptexture = sd->bottomtexture =
-						((col[1]-'0')*100 + (col[2]-'0')*10 + col[3]-'0') + 1;
+					sd->toptexture =
+						((col[1]-'0')*100 + (col[2]-'0')*10 + col[3]-'0')+1;
+					if (col[4]) // extra num for blendmode
+						sd->toptexture += (col[4]-'0')*1000;
 					sd->midtexture = R_TextureNumForName(msd->midtexture);
 				}
 				else
@@ -2091,7 +2114,13 @@ static void P_LevelInitStuff(boolean reloadinggamestate)
 		players[i].lives = 1; // SRB2Kart
 
 		players[i].realtime = racecountdown = exitcountdown = 0;
-		curlap = bestlap = 0; // SRB2Kart
+
+		for (INT32 j = 0; j < LAP__MAX; j++)
+		{
+			players[i].laptime[j] = 0;
+		}
+
+		players[i].driftsparkGrowTimer = 0;
 
 		players[i].gotcontinue = false;
 
@@ -2464,6 +2493,8 @@ static void P_SetupCamera(UINT8 pnum, camera_t *cam)
 		cam->angle = FixedAngle((fixed_t)thing->angle << FRACBITS);
 		cam->subsector = R_PointInSubsector(cam->x, cam->y); // make sure camera has a subsector set -- Monster Iestyn (12/11/18)
 	}
+
+	cam->chase = false; // tell camera to reset its position next tic
 }
 
 static void P_InitCamera(void)
@@ -2472,9 +2503,13 @@ static void P_InitCamera(void)
 
 	if (!dedicated)
 	{
-		if (!demo.freecam)
 			for (i = 0; i <= splitscreen; i++)
+			{
+				if (camera[i].freecam)
+					continue;
+
 				P_SetupCamera(displayplayers[i], &camera[i]);
+			}
 
 		// Though, I don't think anyone would care about cam_rotate being reset back to the only value that makes sense :P
 		for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)

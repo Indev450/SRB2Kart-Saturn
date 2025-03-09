@@ -251,10 +251,6 @@ void I_UpdateMumble(const mobj_t *mobj, const listener_t listener);
 */
 void I_StartupMouse(void);
 
-/**	\brief Startup the second mouse
-*/
-void I_StartupMouse2(void);
-
 /**	\brief  setup timer irq and user timer routine.
 */
 void I_StartupTimer(void);
@@ -316,10 +312,6 @@ const char *I_LocateWad(void);
 /**	\brief Joystick events
 */
 void I_GetJoystickEvents(UINT8 index);
-
-/**	\brief Mouses events
-*/
-void I_GetMouseEvents(void);
 
 char *I_GetEnv(const char *name);
 

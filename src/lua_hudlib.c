@@ -511,7 +511,7 @@ static int libd_getSpritePatch(lua_State *L)
 
 static int libd_draw(lua_State *L)
 {
-	INT32 x, y, flags;
+	INT32 x, y, flags, blend;
 	patch_t *patch;
 	UINT8 *colormap = NULL;
 	huddrawlist_h list;
@@ -523,6 +523,7 @@ static int libd_draw(lua_State *L)
 	flags = luaL_optinteger(L, 4, 0);
 	if (!lua_isnoneornil(L, 5))
 		colormap = *((UINT8 **)luaL_checkudata(L, 5, META_COLORMAP));
+	blend = luaL_optinteger(L, 6, 0);
 
 	flags &= ~V_PARAMMASK; // Don't let crashes happen.
 
@@ -531,16 +532,16 @@ static int libd_draw(lua_State *L)
 	lua_pop(L, 1);
 
 	if (LUA_HUD_IsDrawListValid(list))
-		LUA_HUD_AddDraw(list, x, y, patch, flags, colormap);
+		LUA_HUD_AddDraw(list, x, y, patch, flags, colormap, blend);
 	else
-		V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, FRACUNIT, flags, patch, colormap);
+		V_DrawBlendingFixedPatch(x<<FRACBITS, y<<FRACBITS, FRACUNIT, flags, patch, colormap, blend);
 	return 0;
 }
 
 static int libd_drawScaled(lua_State *L)
 {
 	fixed_t x, y, scale;
-	INT32 flags;
+	INT32 flags, blend;
 	patch_t *patch;
 	UINT8 *colormap = NULL;
 	huddrawlist_h list;
@@ -555,6 +556,7 @@ static int libd_drawScaled(lua_State *L)
 	flags = luaL_optinteger(L, 5, 0);
 	if (!lua_isnoneornil(L, 6))
 		colormap = *((UINT8 **)luaL_checkudata(L, 6, META_COLORMAP));
+	blend = luaL_optinteger(L, 7, 0);
 
 	flags &= ~V_PARAMMASK; // Don't let crashes happen.
 
@@ -563,9 +565,9 @@ static int libd_drawScaled(lua_State *L)
 	lua_pop(L, 1);
 
 	if (LUA_HUD_IsDrawListValid(list))
-		LUA_HUD_AddDrawScaled(list, x, y, scale, patch, flags, colormap);
+		LUA_HUD_AddDrawScaled(list, x, y, scale, patch, flags, colormap, blend);
 	else
-		V_DrawFixedPatch(x, y, scale, flags, patch, colormap);
+		V_DrawBlendingFixedPatch(x, y, scale, flags, patch, colormap, blend);
 	return 0;
 }
 
@@ -649,7 +651,7 @@ static int libd_drawOnMinimap(lua_State *L)
 	if (gamestate != GS_LEVEL)
 		return 0;
 
-	if (stplyr != &players[displayplayers[0]])
+	if (stplyrnum != 0)
 		return 0;
 
 	AutomapPic = minimapinfo.minimap_pic;
@@ -709,7 +711,7 @@ static int libd_drawOnMinimap(lua_State *L)
 
 	if (LUA_HUD_IsDrawListValid(list))
 	{
-		LUA_HUD_AddDrawScaled(list, amxpos, amypos, scale, patch, splitflags, colormap);
+		LUA_HUD_AddDrawScaled(list, amxpos, amypos, scale, patch, splitflags, colormap, 0);
 	}
 	else
 	{
@@ -722,7 +724,7 @@ static int libd_drawOnMinimap(lua_State *L)
 static int libd_drawStretched(lua_State *L)
 {
 	fixed_t x, y, hscale, vscale;
-	INT32 flags;
+	INT32 flags, blend;
 	patch_t *patch;
 	UINT8 *colormap = NULL;
 	huddrawlist_h list;
@@ -740,6 +742,7 @@ static int libd_drawStretched(lua_State *L)
 	flags = luaL_optinteger(L, 6, 0);
 	if (!lua_isnoneornil(L, 7))
 		colormap = *((UINT8 **)luaL_checkudata(L, 7, META_COLORMAP));
+	blend = luaL_optinteger(L, 8, 0);
 
 	flags &= ~V_PARAMMASK; // Don't let crashes happen.
 
@@ -748,9 +751,9 @@ static int libd_drawStretched(lua_State *L)
 	lua_pop(L, 1);
 
 	if (LUA_HUD_IsDrawListValid(list))
-		LUA_HUD_AddDrawStretched(list, x, y, hscale, vscale, patch, flags, colormap);
+		LUA_HUD_AddDrawStretched(list, x, y, hscale, vscale, patch, flags, colormap, blend);
 	else
-		V_DrawStretchyFixedPatch(x, y, hscale, vscale, flags, patch, colormap);
+		V_DrawStretchyFixedPatch(x, y, hscale, vscale, flags, patch, colormap, blend);
 	return 0;
 }
 
