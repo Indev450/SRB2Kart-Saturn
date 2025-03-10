@@ -287,30 +287,46 @@ void P_CameraLineOpening(line_t *linedef)
 	// If you can see through it, why not move the camera through it too?
 	if (front->camsec >= 0)
 	{
-		frontfloor   = P_GetSectorFloorZAt  (&sectors[front->camsec], camera[0].x, camera[0].y);
-		frontceiling = P_GetSectorCeilingZAt(&sectors[front->camsec], camera[0].x, camera[0].y);
+		frontfloor = sectors[front->camsec].floorheight;
+		frontceiling = sectors[front->camsec].ceilingheight;
+		if (sectors[front->camsec].f_slope)
+			frontfloor = P_GetZAt(sectors[front->camsec].f_slope, camera[0].x, camera[0].y);
+		if (sectors[front->camsec].c_slope)
+			frontceiling = P_GetZAt(sectors[front->camsec].c_slope, camera[0].x, camera[0].y);
 
 	}
 	else if (front->heightsec >= 0)
 	{
-		frontfloor   = P_GetSectorFloorZAt  (&sectors[front->heightsec], camera[0].x, camera[0].y);
-		frontceiling = P_GetSectorCeilingZAt(&sectors[front->heightsec], camera[0].x, camera[0].y);
+		frontfloor = sectors[front->heightsec].floorheight;
+		frontceiling = sectors[front->heightsec].ceilingheight;
+		if (sectors[front->heightsec].f_slope)
+			frontfloor = P_GetZAt(sectors[front->heightsec].f_slope, camera[0].x, camera[0].y);
+		if (sectors[front->heightsec].c_slope)
+			frontceiling = P_GetZAt(sectors[front->heightsec].c_slope, camera[0].x, camera[0].y);
 	}
 	else
 	{
-		frontfloor   = P_CameraGetFloorZ  (mapcampointer, front, tmx, tmy, linedef);
+		frontfloor = P_CameraGetFloorZ(mapcampointer, front, tmx, tmy, linedef);
 		frontceiling = P_CameraGetCeilingZ(mapcampointer, front, tmx, tmy, linedef);
 	}
 
 	if (back->camsec >= 0)
 	{
-		backfloor   = P_GetSectorFloorZAt  (&sectors[back->camsec], camera[0].x, camera[0].y);
-		backceiling = P_GetSectorCeilingZAt(&sectors[back->camsec], camera[0].x, camera[0].y);
+		backfloor = sectors[back->camsec].floorheight;
+		backceiling = sectors[back->camsec].ceilingheight;
+		if (sectors[back->camsec].f_slope)
+			frontfloor = P_GetZAt(sectors[back->camsec].f_slope, camera[0].x, camera[0].y);
+		if (sectors[back->camsec].c_slope)
+			frontceiling = P_GetZAt(sectors[back->camsec].c_slope, camera[0].x, camera[0].y);
 	}
 	else if (back->heightsec >= 0)
 	{
-		backfloor   = P_GetSectorFloorZAt  (&sectors[back->heightsec], camera[0].x, camera[0].y);
-		backceiling = P_GetSectorCeilingZAt(&sectors[back->heightsec], camera[0].x, camera[0].y);
+		backfloor = sectors[back->heightsec].floorheight;
+		backceiling = sectors[back->heightsec].ceilingheight;
+		if (sectors[back->heightsec].f_slope)
+			frontfloor = P_GetZAt(sectors[back->heightsec].f_slope, camera[0].x, camera[0].y);
+		if (sectors[back->heightsec].c_slope)
+			frontceiling = P_GetZAt(sectors[back->heightsec].c_slope, camera[0].x, camera[0].y);
 	}
 	else
 	{
@@ -346,6 +362,10 @@ void P_CameraLineOpening(line_t *linedef)
 	if (front->ffloors || back->ffloors)
 	{
 		ffloor_t *rover;
+		fixed_t highestceiling = highceiling;
+		fixed_t lowestceiling = opentop;
+		fixed_t highestfloor = openbottom;
+		fixed_t lowestfloor = lowfloor;
 		fixed_t delta1, delta2;
 
 		// Check for frontsector's fake floors
@@ -364,15 +384,15 @@ void P_CameraLineOpening(line_t *linedef)
 				delta1 = abs(mapcampointer->z - (bottomheight + ((topheight - bottomheight)/2)));
 				delta2 = abs(thingtop - (bottomheight + ((topheight - bottomheight)/2)));
 
-				if (bottomheight < opentop && delta1 >= delta2)
-					opentop = bottomheight;
-				else if (bottomheight < highceiling && delta1 >= delta2)
-					highceiling = bottomheight;
+				if (bottomheight < lowestceiling && delta1 >= delta2)
+					lowestceiling = bottomheight;
+				else if (bottomheight < highestceiling && delta1 >= delta2)
+					highestceiling = bottomheight;
 
-				if (topheight > openbottom && delta1 < delta2)
-					openbottom = topheight;
-				else if (topheight > lowfloor && delta1 < delta2)
-					lowfloor = topheight;
+				if (topheight > highestfloor && delta1 < delta2)
+					highestfloor = topheight;
+				else if (topheight > lowestfloor && delta1 < delta2)
+					lowestfloor = topheight;
 			}
 		}
 
@@ -392,17 +412,29 @@ void P_CameraLineOpening(line_t *linedef)
 				delta1 = abs(mapcampointer->z - (bottomheight + ((topheight - bottomheight)/2)));
 				delta2 = abs(thingtop - (bottomheight + ((topheight - bottomheight)/2)));
 
-				if (bottomheight < opentop && delta1 >= delta2)
-					opentop = bottomheight;
-				else if (bottomheight < highceiling && delta1 >= delta2)
-					highceiling = bottomheight;
+				if (bottomheight < lowestceiling && delta1 >= delta2)
+					lowestceiling = bottomheight;
+				else if (bottomheight < highestceiling && delta1 >= delta2)
+					highestceiling = bottomheight;
 
-				if (topheight > openbottom && delta1 < delta2)
-					openbottom = topheight;
-				else if (topheight > lowfloor && delta1 < delta2)
-					lowfloor = topheight;
+				if (topheight > highestfloor && delta1 < delta2)
+					highestfloor = topheight;
+				else if (topheight > lowestfloor && delta1 < delta2)
+					lowestfloor = topheight;
 			}
 		}
+
+		if (highestceiling < highceiling)
+			highceiling = highestceiling;
+
+		if (highestfloor > openbottom)
+			openbottom = highestfloor;
+
+		if (lowestceiling < opentop)
+			opentop = lowestceiling;
+
+		if (lowestfloor > lowfloor)
+			lowfloor = lowestfloor;
 	}
 
 	openrange = opentop - openbottom;
@@ -527,7 +559,14 @@ void P_LineOpening(line_t *linedef, mobj_t *mobj)
 		if (front->ffloors || back->ffloors || linedef->polyobj)
 		{
 			ffloor_t *rover;
+
+			fixed_t highestceiling = highceiling;
+			fixed_t lowestceiling = opentop;
+			fixed_t highestfloor = openbottom;
+			fixed_t lowestfloor = lowfloor;
 			fixed_t delta1, delta2;
+			pslope_t *ceilingslope = opentopslope;
+			pslope_t *floorslope = openbottomslope;
 
 			// Check for frontsector's fake floors
 			for (rover = front->ffloors; rover; rover = rover->next)
@@ -551,22 +590,24 @@ void P_LineOpening(line_t *linedef, mobj_t *mobj)
 
 				if (delta1 >= delta2 && !(rover->flags & FF_PLATFORM)) // thing is below FOF
 				{
-					if (bottomheight < opentop) {
-						opentop = bottomheight;
-						opentopslope = *rover->b_slope;
+					if (bottomheight < lowestceiling)
+					{
+						lowestceiling = bottomheight;
+						ceilingslope = *rover->b_slope;
 					}
-					else if (bottomheight < highceiling)
-						highceiling = bottomheight;
+					else if (bottomheight < highestceiling)
+						highestceiling = bottomheight;
 				}
 
 				if (delta1 < delta2 && !(rover->flags & FF_REVERSEPLATFORM)) // thing is above FOF
 				{
-					if (topheight > openbottom) {
-						openbottom = topheight;
-						openbottomslope = *rover->t_slope;
+					if (topheight > highestfloor)
+					{
+						highestfloor = topheight;
+						floorslope = *rover->t_slope;
 					}
-					else if (topheight > lowfloor)
-						lowfloor = topheight;
+					else if (topheight > lowestfloor)
+						lowestfloor = topheight;
 				}
 			}
 
@@ -591,22 +632,24 @@ void P_LineOpening(line_t *linedef, mobj_t *mobj)
 
 				if (delta1 >= delta2 && !(rover->flags & FF_PLATFORM)) // thing is below FOF
 				{
-					if (bottomheight < opentop) {
-						opentop = bottomheight;
-						opentopslope = *rover->b_slope;
+					if (bottomheight < lowestceiling)
+					{
+						lowestceiling = bottomheight;
+						ceilingslope = *rover->b_slope;
 					}
-					else if (bottomheight < highceiling)
-						highceiling = bottomheight;
+					else if (bottomheight < highestceiling)
+						highestceiling = bottomheight;
 				}
 
 				if (delta1 < delta2 && !(rover->flags & FF_REVERSEPLATFORM)) // thing is above FOF
 				{
-					if (topheight > openbottom) {
-						openbottom = topheight;
-						openbottomslope = *rover->t_slope;
+					if (topheight > highestfloor)
+					{
+						highestfloor = topheight;
+						floorslope = *rover->t_slope;
 					}
-					else if (topheight > lowfloor)
-						lowfloor = topheight;
+					else if (topheight > lowestfloor)
+						lowestfloor = topheight;
 				}
 			}
 
@@ -618,22 +661,40 @@ void P_LineOpening(line_t *linedef, mobj_t *mobj)
 				delta1 = abs(mobj->z - (polysec->floorheight + ((polysec->ceilingheight - polysec->floorheight)/2)));
 				delta2 = abs(thingtop - (polysec->floorheight + ((polysec->ceilingheight - polysec->floorheight)/2)));
 
-				if (polysec->floorheight < opentop && delta1 >= delta2)
+				if (polysec->floorheight < lowestceiling && delta1 >= delta2)
 				{
-					opentop = polysec->floorheight;
-					opentopslope = NULL;
+					lowestceiling = polysec->floorheight;
+					ceilingslope = NULL;
 				}
-				else if (polysec->floorheight < highceiling && delta1 >= delta2)
-					highceiling = polysec->floorheight;
+				else if (polysec->floorheight < highestceiling && delta1 >= delta2)
+					highestceiling = polysec->floorheight;
 
-				if (polysec->ceilingheight > openbottom && delta1 < delta2)
+				if (polysec->ceilingheight > highestfloor && delta1 < delta2)
 				{
-					openbottom = polysec->ceilingheight;
-					openbottomslope = NULL;
+					highestfloor = polysec->ceilingheight;
+					floorslope = NULL;
 				}
-				else if (polysec->ceilingheight > lowfloor && delta1 < delta2)
-					lowfloor = polysec->ceilingheight;
+				else if (polysec->ceilingheight > lowestfloor && delta1 < delta2)
+					lowestfloor = polysec->ceilingheight;
 			}
+
+			if (highestceiling < highceiling)
+				highceiling = highestceiling;
+
+			if (highestfloor > openbottom)
+			{
+				openbottom = highestfloor;
+				openbottomslope = floorslope;
+			}
+
+			if (lowestceiling < opentop)
+			{
+				opentop = lowestceiling;
+				opentopslope = ceilingslope;
+			}
+
+			if (lowestfloor > lowfloor)
+				lowfloor = lowestfloor;
 		}
 	}
 
