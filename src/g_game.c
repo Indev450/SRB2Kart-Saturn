@@ -1669,7 +1669,8 @@ void G_FixCamera(UINT8 view)
 
 	// The order of displayplayers can change, which would
 	// invalidate localangle.
-	localangle[view - 1] = (angle_t)(player->cmd.angleturn << 16);
+	if (!P_MobjWasRemoved(player->mo))
+		localangle[view - 1] = player->mo->angle;
 
 	P_ResetCamera(player, &camera[view - 1]);
 
