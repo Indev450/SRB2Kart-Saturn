@@ -224,10 +224,7 @@ static void D_DeviceLEDTick(void)
 
 	for (i = 0; i <= splitscreen; i++)
 	{
-		if (!cv_usejoystick[i].value)
-			continue;
-
-		if (!cv_gamepadled[i].value)
+		if (!cv_usejoystick[i].value || !cv_gamepadled[i].value)
 			continue;
 
 		color[i] = G_GetSkinColor(i);
