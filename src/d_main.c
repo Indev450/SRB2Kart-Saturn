@@ -187,13 +187,13 @@ static void D_GamePadMenuScrollTicker(void)
 		return;
 
 	// wish i had a switch ono
-    if (DPADUPSCROLL)
+	if (DPADUPSCROLL)
 		key = KEY_UPARROW;
-    else if (DPADDOWNSCROLL)
+	else if (DPADDOWNSCROLL)
 		key = KEY_DOWNARROW;
-    else if (DPADLEFTSCROLL)
+	else if (DPADLEFTSCROLL)
 		key = KEY_LEFTARROW;
-    else if (DPADRIGHTSCROLL)
+	else if (DPADRIGHTSCROLL)
 		key = KEY_RIGHTARROW;
 
 	if (key)
@@ -584,8 +584,6 @@ static boolean D_Display(void)
 		PS_START_TIMING(ps_uitime);
 		ST_Drawer();
 		HU_Drawer();
-
-		NetUpdate(); // TEST: run this EVERY frame
 	}
 	else
 	{
@@ -830,7 +828,7 @@ void D_SRB2Loop(void)
 		{
 			renderdeltatics = FLOAT_TO_FIXED(deltatics);
 
-			if (!(paused || P_AutoPause()) && !hu_stopped)
+			if (!(paused || P_AutoPause()) && deltatics < 1.0 && !hu_stopped)
 			{
 				rendertimefrac = g_time.timefrac;
 			}

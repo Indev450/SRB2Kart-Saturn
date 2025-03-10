@@ -1340,9 +1340,9 @@ boolean D_CheckNetGame(void)
 		I_Error("Too many nodes (%d), max:%d", doomcom->numnodes, MAXNETNODES);
 
 	netbuffer = (doomdata_t *)(void *)&doomcom->data;
-	#ifdef HOLEPUNCH
+#ifdef HOLEPUNCH
 	holepunchpacket = (holepunch_t *)(void *)&doomcom->data;
-	#endif
+#endif
 
 #ifdef DEBUGFILE
 	if (M_CheckParm("-debugfile"))
