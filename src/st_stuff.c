@@ -277,9 +277,8 @@ void ST_ReloadSkinFaceGraphics(void)
 	for (i = 0; i < numskins; i++)
 		ST_LoadFaceGraphics(skins[i].facerank, skins[i].facewant, skins[i].facemmap, i);
 	
-	for (i = 0; i < numlocalskins; i++) {
+	for (i = 0; i < numlocalskins; i++)
 		ST_LoadLocalFaceGraphics(localskins[i].facerank, localskins[i].facewant, localskins[i].facemmap, i);
-	}
 }
 
 static inline void ST_InitData(void)
