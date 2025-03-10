@@ -76,7 +76,7 @@ typedef struct
   */
 typedef struct
 {
-	fixed_t x, y;
+	fixed_t x, y, z;
 } vertex_t;
 
 // Forward of linedefs, for sectors.

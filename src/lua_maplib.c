@@ -860,7 +860,8 @@ static int vertex_get(lua_State *L)
 		lua_pushfixed(L, vertex->y);
 		return 1;
 	case vertex_z:
-		return luaL_error(L, "accessed vertex_t doesn't exist anymore.");
+		lua_pushfixed(L, vertex->z);
+		return 1;
 	}
 	return 0;
 }
