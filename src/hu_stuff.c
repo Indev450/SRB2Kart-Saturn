@@ -2403,7 +2403,6 @@ Ping_conversion (UINT32 lag)
 	return lag;
 }
 
-
 //
 // HU_drawPing
 //
@@ -2433,7 +2432,7 @@ void HU_drawPlayerPing(INT32 x, INT32 y, INT32 pnum, INT32 flags)
 
 		if (measureid == 1)
 			V_DrawScaledPatch(x+11 - pingmeasure[measureid]->width, y+9, flags, pingmeasure[measureid]);
-		
+
 		if (cv_pingicon.value)
 			V_DrawScaledPatch(x+2, y, flags, pinggfx[gfxnum]);
 
