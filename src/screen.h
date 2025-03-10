@@ -151,6 +151,8 @@ extern consvar_t cv_highreshudscale;
 extern consvar_t cv_vidwait;
 extern consvar_t cv_timescale;
 
+extern consvar_t cv_alwaysgrabmouse;
+
 // quick fix for tall/short skies, depending on bytesperpixel
 extern void (*walldrawerfunc)(void);
 
