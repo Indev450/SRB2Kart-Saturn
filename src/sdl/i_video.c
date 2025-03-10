@@ -138,6 +138,8 @@ static void I_CheckDesktopRes(void);
 consvar_t cv_vidwait = {"vid_wait", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, Impl_SetVsync, 0, NULL, NULL, 0, 0, NULL};
 static consvar_t cv_stretch = {"stretch", "Off", CV_SAVE|CV_NOSHOWHELP, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_alwaysgrabmouse = {"alwaysgrabmouse", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 // these cant be used since config is read after window creation, so need to use command line parameter instead
 //static CV_PossibleValue_t msaa_cons_t[] = {{0, "Off"}, {2, "2X"}, {4, "4X"}, {8, "8X"}, {16, "16X"}, {0, NULL}};
 //consvar_t cv_msaa = {"msaa", "Off", CV_SAVE, msaa_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -923,6 +925,19 @@ static void Impl_HandleMouseMotionEvent(SDL_MouseMotionEvent evt)
 			SDLdoGrabMouse();
 		}
 	}
+	else if (cv_alwaysgrabmouse.value)
+	{
+		if ((SDL_GetMouseFocus() != window && SDL_GetKeyboardFocus() != window))
+		{
+			SDLdoUngrabMouse();
+			return;
+		}
+
+		if (SDL_GetMouseFocus() == window && SDL_GetKeyboardFocus() == window)
+		{
+			SDLdoGrabMouse();
+		}
+	}
 }
 
 static void Impl_HandleMouseButtonEvent(SDL_MouseButtonEvent evt, Uint32 type)
@@ -1368,7 +1383,7 @@ void I_StartupMouse(void)
 	}
 	else
 		firsttimeonmouse = SDL_FALSE;
-	if (cv_usemouse.value)
+	if (cv_usemouse.value || cv_alwaysgrabmouse.value)
 		SDLdoGrabMouse();
 	else
 		SDLdoUngrabMouse();
@@ -1964,6 +1979,7 @@ void I_StartupGraphics(void)
 	COM_AddCommand ("vid_mode", VID_Command_Mode_f);
 	CV_RegisterVar (&cv_vidwait);
 	CV_RegisterVar (&cv_stretch);
+	CV_RegisterVar (&cv_alwaysgrabmouse);
 	disable_mouse = M_CheckParm("-nomouse");
 	disable_fullscreen = M_CheckParm("-win") ? 1 : 0;
 
@@ -2180,10 +2196,7 @@ void I_StartupGraphics(void)
 
 	if (mousegrabok && !disable_mouse)
 	{
-		SDL_ShowCursor(SDL_DISABLE);
-		SDL_SetRelativeMouseMode(SDL_TRUE);
-		wrapmouseok = SDL_TRUE;
-		SDL_SetWindowGrab(window, SDL_TRUE);
+		SDLdoGrabMouse();
 	}
 
 	graphics_started = true;
