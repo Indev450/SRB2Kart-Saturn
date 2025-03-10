@@ -474,12 +474,16 @@ static int libd_getSpritePatch(lua_State *L)
 	if (skn < 0) // standard sprite
 	{
 		sprdef = &sprites[i];
+#ifdef ROTSPRITE
 		sprinfo = &spriteinfo[i];
+#endif
 	}
 	else // player skin
 	{
 		sprdef = &skins[skn].spritedef;
+#ifdef ROTSPRITE
 		sprinfo = &skins[skn].sprinfo;
+#endif
 	}
 
 	// set frame number
@@ -500,6 +504,7 @@ static int libd_getSpritePatch(lua_State *L)
 	if (angle >= 8) // out of range?
 		angle = (angle & 7); // modulus angle by 8
 
+#ifdef ROTSPRITE
 	// rotsprite?????
 	if (lua_isnumber(L, 4))
 	{
@@ -515,6 +520,7 @@ static int libd_getSpritePatch(lua_State *L)
 			return 3;
 		}
 	}
+#endif
 
 	// push both the patch and its "flip" value
 	LUA_PushUserdata(L, W_CachePatchNum(sprframe->lumppat[angle], PU_STATIC), META_PATCH);

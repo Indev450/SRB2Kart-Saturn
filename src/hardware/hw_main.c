@@ -4688,9 +4688,9 @@ static void HWR_ProjectSprite(mobj_t *thing)
 		I_Error("sprframes NULL for sprite %d\n", thing->sprite);
 #endif
 
-	if (sprframe->rotate != SRF_SINGLE || papersprite ||
+	if (sprframe->rotate != SRF_SINGLE || papersprite
 #ifdef ROTSPRITE
-		(shouldrotate)
+		|| (shouldrotate)
 #endif
 	)
 	{
