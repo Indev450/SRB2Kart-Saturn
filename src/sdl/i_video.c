@@ -903,7 +903,9 @@ static void Impl_HandleMouseMotionEvent(SDL_MouseMotionEvent evt)
 {
 	if (USE_MOUSEINPUT)
 	{
-		if ((SDL_GetMouseFocus() != window && SDL_GetKeyboardFocus() != window))
+		const boolean windowinfocus = (SDL_GetMouseFocus() == window && SDL_GetKeyboardFocus() == window);
+
+		if (!windowinfocus)
 		{
 			SDLdoUngrabMouse();
 			return;
@@ -913,7 +915,7 @@ static void Impl_HandleMouseMotionEvent(SDL_MouseMotionEvent evt)
 		// add on the offsets so we can make an overall event later.
 		if (SDL_GetRelativeMouseMode())
 		{
-			if (SDL_GetMouseFocus() == window && SDL_GetKeyboardFocus() == window)
+			if (windowinfocus)
 			{
 				mousemovex +=  evt.xrel;
 				mousemovey += -evt.yrel;
@@ -933,20 +935,21 @@ static void Impl_HandleMouseMotionEvent(SDL_MouseMotionEvent evt)
 		// just grab and set relative mode
 		// this fixes the stupid camera jerk on mouse entering bug
 		// -- Monster Iestyn
-		if (SDL_GetMouseFocus() == window && SDL_GetKeyboardFocus() == window)
+		if (windowinfocus)
 		{
 			SDLdoGrabMouse();
 		}
 	}
 	else if (cv_alwaysgrabmouse.value)
 	{
-		if ((SDL_GetMouseFocus() != window && SDL_GetKeyboardFocus() != window))
+		const boolean windowinfocus = (SDL_GetMouseFocus() == window && SDL_GetKeyboardFocus() == window);
+
+		if (!windowinfocus)
 		{
 			SDLdoUngrabMouse();
 			return;
 		}
-
-		if (SDL_GetMouseFocus() == window && SDL_GetKeyboardFocus() == window)
+		else if (windowinfocus)
 		{
 			SDLdoGrabMouse();
 		}
