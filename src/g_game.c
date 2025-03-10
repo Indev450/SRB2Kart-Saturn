@@ -1148,27 +1148,27 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	//{ SRB2kart - Drift support
 	// Not grouped with the rest of turn stuff because it needs to know what buttons you're pressing for rubber-burn turn
 	// limit turning to angleturn[1] to stop mouselook letting you look too fast
-	if (cmd->angleturn > (INT16)(angleturn[1]))
-		cmd->angleturn = (INT16)(angleturn[1]);
-	else if (cmd->angleturn < (INT16)(-angleturn[1]))
-		cmd->angleturn = (INT16)(-angleturn[1]);
+	if (cmd->angleturn > (angleturn[1]))
+		cmd->angleturn = (angleturn[1]);
+	else if (cmd->angleturn < (-angleturn[1]))
+		cmd->angleturn = (-angleturn[1]);
 
-	if (cmd->driftturn > (INT16)(angleturn[1]))
-		cmd->driftturn = (INT16)(angleturn[1]);
-	else if (cmd->driftturn < (INT16)(-angleturn[1]))
-		cmd->driftturn = (INT16)(-angleturn[1]);
+	if (cmd->driftturn > (angleturn[1]))
+		cmd->driftturn = (angleturn[1]);
+	else if (cmd->driftturn < (-angleturn[1]))
+		cmd->driftturn = (-angleturn[1]);
 
 	if (player->mo)
 		cmd->angleturn = K_GetKartTurnValue(player, cmd->angleturn);
 
-	cmd->angleturn *= (INT16)realtics;
+	cmd->angleturn *= realtics;
 
 	// SRB2kart - no additional angle if not moving
 	if (((player->mo && player->speed > 0) // Moving
 		|| (leveltime > starttime && (cmd->buttons & BT_ACCELERATE && cmd->buttons & BT_BRAKE)) // Rubber-burn turn
 		|| (player->kartstuff[k_respawn]) // Respawning
 		|| (player->spectator || objectplacing))) // Not a physical player
-		lang += (angle_t)(cmd->angleturn<<16);
+		lang += (cmd->angleturn<<16);
 
 	cmd->angleturn = (INT16)(lang >> 16);
 	cmd->latency = modeattacking ? 0 : (leveltime & 0xFF); // Send leveltime when this tic was generated to the server for control lag calculations
@@ -4688,7 +4688,7 @@ void G_ReadDemoTiccmd(ticcmd_t *cmd, INT32 playernum)
 		|| (players[displayplayers[0]].kartstuff[k_respawn]) // Respawning
 		|| (players[displayplayers[0]].spectator || objectplacing)) // Not a physical player
 		&& !(players[displayplayers[0]].kartstuff[k_spinouttimer] && players[displayplayers[0]].kartstuff[k_sneakertimer])) // Spinning and boosting cancels out spinout
-		localangle[0] += (angle_t)(cmd->angleturn<<16);
+		localangle[0] += (cmd->angleturn<<16);
 
 	if (!(demoflags & DF_GHOST) && *demobuf.p == DEMOMARKER)
 	{

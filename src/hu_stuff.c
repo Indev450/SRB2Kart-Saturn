@@ -2374,7 +2374,7 @@ Ping_gfx_color (int lag)
 static const UINT8 *
 Ping_gfx_colormap (UINT32 lag, boolean gentleman)
 {
-	UINT8 *colormap = NULL;
+	const UINT8 *colormap = NULL;
 
 	if (K_UseColorHud())
 		colormap = R_GetTranslationColormap(TC_RAINBOW, Ping_gfx_color(lag), GTC_CACHE);

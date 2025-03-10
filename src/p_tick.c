@@ -248,20 +248,28 @@ void P_RemoveThinkerDelayed(thinker_t *thinker)
 	else if (thinker->references) // Usually gets cleared up in one frame; what's going on here, then?
 		CONS_Printf("Number of potentially faulty references: %d\n", thinker->references);
 #endif
-
-	if (thinker->references != 0)
+	if (thinker->references)
 		return;
 
+	/* Remove from main thinker list */
+	thinker_t *next = thinker->next;
+	/* Note that currentthinker is guaranteed to point to us,
+	* and since we're freeing our memory, we had better change that. So
+	* point it to thinker->prev, so the iterator will correctly move on to
+	* thinker->prev->next = thinker->next */
+	(next->prev = currentthinker = thinker->prev)->next = next;
 	R_DestroyLevelInterpolators(thinker);
 
-	/* Note that currentthinker is guaranteed to point to us,
-	 * and since we're freeing our memory, we had better change that. So
-	 * point it to thinker->prev, so the iterator will correctly move on to
-	 * thinker->prev->next = thinker->next */
-	currentthinker = thinker->prev;
-
-	/* Remove from main thinker list */
-	P_UnlinkThinker(thinker);
+	if (thinker->cachable == true)
+	{
+		// put cachable thinkers in the mobj cache, so we can avoid allocations
+		((mobj_t *)thinker)->hnext = mobjcache;
+		mobjcache = (mobj_t *)thinker;
+	}
+	else
+	{
+		Z_Free(thinker);
+	}
 }
 
 //
@@ -436,10 +444,6 @@ static void P_DeviceRumbleTick(void)
 				low = high = FRACUNIT / 64;
 			}
 		}
-		else if (player->kartstuff[k_growshrinktimer] > 0 && P_IsObjectOnGround(player->mo))
-		{
-			low = FRACUNIT / 256;
-		}
 		else if ((player->kartstuff[k_bananadrag] > TICRATE)
 			&& P_IsObjectOnGround(player->mo) && player->speed != 0)
 		{
@@ -473,7 +477,7 @@ void P_RunChaseCameras(void)
 			player_t *p = &players[displayplayers[i]];
 			camera_t *cam = &camera[i];
 
-			if (p->mo && p->kartstuff[k_throwdir] != 0)
+			if (cv_verticallook.value && leveltime > starttime && p->mo && p->kartstuff[k_respawn] == 0 && p->kartstuff[k_throwdir] != 0)
 			{
 				if (p->speed < 6 * p->mo->scale && abs(cam->dpad_y_held) < 2*TICRATE)
 					cam->dpad_y_held += intsign(p->kartstuff[k_throwdir]);

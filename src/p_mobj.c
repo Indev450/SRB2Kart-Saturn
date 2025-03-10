@@ -126,11 +126,10 @@ static void P_CycleMobjState(mobj_t *mobj)
 //
 // P_CycleMobjState for players.
 //
-static void P_CyclePlayerMobjState(mobj_t *mobj, boolean animonly)
+static void P_CyclePlayerMobjState(mobj_t *mobj)
 {
 	// state animations
-	if (!animonly)
-		P_CycleStateAnimation(mobj);
+	P_CycleStateAnimation(mobj);
 
 	// cycle through states,
 	// calling action functions at transitions
@@ -3631,7 +3630,17 @@ static void P_PlayerMobjThinker(mobj_t *mobj)
 	}
 
 animonly:
-	P_CyclePlayerMobjState(mobj, true);
+	// cycle through states,
+	// calling action functions at transitions
+	if (mobj->tics != -1)
+	{
+		mobj->tics--;
+
+		// you can cycle through multiple states in a tic
+		if (!mobj->tics)
+			if (!P_SetPlayerMobjState(mobj, mobj->state->nextstate))
+				return; // freed itself
+	}
 }
 
 static void P_CalculatePrecipFloor(precipmobj_t *mobj, boolean spawn)
@@ -9298,7 +9307,7 @@ void P_MobjThinker(mobj_t *mobj)
 
 	// Can end up here if a player dies.
 	if (mobj->player)
-		P_CyclePlayerMobjState(mobj, false);
+		P_CyclePlayerMobjState(mobj);
 	else
 		P_CycleMobjState(mobj);
 
@@ -10359,7 +10368,7 @@ consvar_t cv_suddendeath = {"suddendeath", "Off", CV_NETVAR|CV_CHEAT|CV_NOSHOWHE
 void P_SpawnPrecipitation(void)
 {
 	INT32 i, j, mrand;
-	fixed_t basex, basey, x, y, z, height;
+	fixed_t basex, basey, x, y, z;
 	subsector_t *precipsector = NULL;
 	precipmobj_t *rainmo = NULL;
 
@@ -10367,7 +10376,7 @@ void P_SpawnPrecipitation(void)
 		return;
 
 	const fixed_t precipmoscale = (cv_mobjscaleprecip.value ? mapobjectscale : FRACUNIT);
-	const INT32 density = (cv_lessprecip.value ? 2 : 1);
+	const INT32 density = (cv_lessprecip.value ? 2 : 1); // only spawn half as much
 
 	// Use the blockmap to narrow down our placing patterns
 	for (i = 0; i < bmapwidth*bmapheight; i += density)
@@ -10396,11 +10405,8 @@ void P_SpawnPrecipitation(void)
 			if (precipsector->sector->ceilingpic != skyflatnum)
 				continue;
 
-			height = precipsector->sector->ceilingheight - precipsector->sector->floorheight;
-			height = FixedDiv(height, mapobjectscale);
-
 			// Exists, but is too small for reasonable precipitation.
-			if (height < 64<<FRACBITS)
+			if (!(precipsector->sector->floorheight <= precipsector->sector->ceilingheight - (32<<FRACBITS)))
 				continue;
 
 			// Don't set z properly yet...

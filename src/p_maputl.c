@@ -136,7 +136,7 @@ void P_ClosestPointOnLine3D(fixed_t x, fixed_t y, fixed_t z, line_t *line, verte
 //
 INT32 P_PointOnLineSide(fixed_t x, fixed_t y, const line_t *line)
 {
-	fixed_t dx, dy;
+	fixed_t dx, dy, left, right;
 
 	if (!line->dx)
 		return x <= line->v1->x ? line->dy > 0 : line->dy < 0;
@@ -147,7 +147,10 @@ INT32 P_PointOnLineSide(fixed_t x, fixed_t y, const line_t *line)
 	dx = (x - line->v1->x);
 	dy = (y - line->v1->y);
 
-	return FixedMul(dy, line->dx>>FRACBITS) >= FixedMul(line->dy>>FRACBITS, dx) ? 1 : 0;
+	left = FixedMul(line->dy>>FRACBITS, dx);
+	right = FixedMul(dy, line->dx>>FRACBITS);
+
+	return right < left ? 0 : 1;
 }
 
 //
@@ -207,7 +210,7 @@ INT32 P_BoxOnLineSide(fixed_t *tmbox, const line_t *ld)
 //
 static INT32 P_PointOnDivlineSide(fixed_t x, fixed_t y, divline_t *line)
 {
-	fixed_t dx, dy;
+	fixed_t dx, dy, left, right;
 
 	if (!line->dx)
 		return x <= line->x ? line->dy > 0 : line->dy < 0;
@@ -218,12 +221,16 @@ static INT32 P_PointOnDivlineSide(fixed_t x, fixed_t y, divline_t *line)
 	dx = (x - line->x);
 	dy = (y - line->y);
 
-	// Try to quickly decide by looking at sign bits.
-	// also use a mask to avoid branch prediction
-	INT32 mask = ((line->dy ^ line->dx ^ dx ^ dy) & 0x80000000);
-	return ((mask & ((line->dy ^ dx) & 0x80000000)) |  // (left is negative)
-	(~mask & (FixedMul(dy>>8, line->dx>>8) >= FixedMul(line->dy>>8, dx>>8)))) ? 1 : 0;
+	// try to quickly decide by looking at sign bits
+	if ((line->dy ^ line->dx ^ dx ^ dy) & 0x80000000)
+		return ((line->dy ^ dx) & 0x80000000) ? 1 : 0;
+
+	left = FixedMul(line->dy>>8, dx>>8);
+	right = FixedMul(dy>>8, line->dx>>8);
+
+	return right < left ? 0 : 1;
 }
+
 
 //
 // P_MakeDivline

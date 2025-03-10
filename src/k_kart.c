@@ -10584,10 +10584,6 @@ static void K_drawKartMinimap(void)
 	{
 		if (localplayers[i] == -1)
 			continue; // this doesn't interest us
-
-		if ((players[i].kartstuff[k_hyudorotimer] > 0) && (leveltime & 1))
-			continue;
-
 		K_drawKartMinimapHead(players[localplayers[i]].mo, x, y, splitflags);
 	}
 }
