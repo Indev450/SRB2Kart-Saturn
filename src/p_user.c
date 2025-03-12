@@ -2989,10 +2989,6 @@ static void CV_CamRotate4_OnChange(void)
 		CV_SetValue(&cv_cam_rotate[3], cv_cam_rotate[3].value % 360);
 }
 
-static CV_PossibleValue_t CV_CamSpeed[] = {{0, "MIN"}, {1*FRACUNIT, "MAX"}, {0, NULL}};
-static CV_PossibleValue_t rotation_cons_t[] = {{1, "MIN"}, {45, "MAX"}, {0, NULL}};
-static CV_PossibleValue_t CV_CamRotate[] = {{-720, "MIN"}, {720, "MAX"}, {0, NULL}};
-
 static void CV_PlayerCam1_OnChange(void)
 {
 	if (gamestate != GS_LEVEL)
@@ -3078,25 +3074,21 @@ consvar_t cv_cam_still[MAXSPLITSCREENPLAYERS] = {
 	{"cam4_still", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}
 };
 
+static CV_PossibleValue_t cam_speed_cons_t[] = {{0, "MIN"}, {1*FRACUNIT, "MAX"}, {0, NULL}};
 consvar_t cv_cam_speed[MAXSPLITSCREENPLAYERS] = {
-	{"cam_speed", "0.4", CV_FLOAT|CV_SAVE, CV_CamSpeed, NULL, 0, NULL, NULL, 0, 0, NULL},
-	{"cam2_speed", "0.4", CV_FLOAT|CV_SAVE, CV_CamSpeed, NULL, 0, NULL, NULL, 0, 0, NULL},
-	{"cam3_speed", "0.4", CV_FLOAT|CV_SAVE, CV_CamSpeed, NULL, 0, NULL, NULL, 0, 0, NULL},
-	{"cam4_speed", "0.4", CV_FLOAT|CV_SAVE, CV_CamSpeed, NULL, 0, NULL, NULL, 0, 0, NULL}
+	{"cam_speed", "0.4", CV_FLOAT|CV_SAVE, cam_speed_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"cam2_speed", "0.4", CV_FLOAT|CV_SAVE, cam_speed_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"cam3_speed", "0.4", CV_FLOAT|CV_SAVE, cam_speed_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"cam4_speed", "0.4", CV_FLOAT|CV_SAVE, cam_speed_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
 };
 
+
+static CV_PossibleValue_t cam_rotate_cons_t[] = {{-720, "MIN"}, {720, "MAX"}, {0, NULL}};
 consvar_t cv_cam_rotate[MAXSPLITSCREENPLAYERS] = {
-	{"cam_rotate", "0", CV_CALL|CV_NOINIT, CV_CamRotate, CV_CamRotate_OnChange, 0, NULL, NULL, 0, 0, NULL},
-	{"cam2_rotate", "0", CV_CALL|CV_NOINIT, CV_CamRotate, CV_CamRotate2_OnChange, 0, NULL, NULL, 0, 0, NULL},
-	{"cam3_rotate", "0", CV_CALL|CV_NOINIT, CV_CamRotate, CV_CamRotate3_OnChange, 0, NULL, NULL, 0, 0, NULL},
-	{"cam4_rotate", "0", CV_CALL|CV_NOINIT, CV_CamRotate, CV_CamRotate4_OnChange, 0, NULL, NULL, 0, 0, NULL}
-};
-
-consvar_t cv_cam_rotspeed[MAXSPLITSCREENPLAYERS] = {
-	{"cam_rotspeed", "10", CV_SAVE, rotation_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
-	{"cam2_rotspeed", "10", CV_SAVE, rotation_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
-	{"cam3_rotspeed", "10", CV_SAVE, rotation_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
-	{"cam4_rotspeed", "10", CV_SAVE, rotation_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
+	{"cam_rotate", "0", CV_CALL|CV_NOINIT, cam_rotate_cons_t, CV_CamRotate_OnChange, 0, NULL, NULL, 0, 0, NULL},
+	{"cam2_rotate", "0", CV_CALL|CV_NOINIT, cam_rotate_cons_t, CV_CamRotate2_OnChange, 0, NULL, NULL, 0, 0, NULL},
+	{"cam3_rotate", "0", CV_CALL|CV_NOINIT, cam_rotate_cons_t, CV_CamRotate3_OnChange, 0, NULL, NULL, 0, 0, NULL},
+	{"cam4_rotate", "0", CV_CALL|CV_NOINIT, cam_rotate_cons_t, CV_CamRotate4_OnChange, 0, NULL, NULL, 0, 0, NULL}
 };
 
 consvar_t cv_cam_timeover[MAXSPLITSCREENPLAYERS] = {
@@ -3107,7 +3099,12 @@ consvar_t cv_cam_timeover[MAXSPLITSCREENPLAYERS] = {
 };
 
 static CV_PossibleValue_t freecam_speed_cons_t[] = {{0, "MIN"}, {10, "MAX"}, {0, NULL}};
-consvar_t cv_freecam_speed = {"freecam_speed", "1", CV_SAVE, freecam_speed_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_freecam_speed[MAXSPLITSCREENPLAYERS] = {
+	{"freecam_speed", "1", CV_SAVE, freecam_speed_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"freecam2_speed", "1", CV_SAVE, freecam_speed_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"freecam3_speed", "1", CV_SAVE, freecam_speed_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"freecam4_speed", "1", CV_SAVE, freecam_speed_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+};
 
 consvar_t cv_tilting = {"tilting", "Off", CV_SAVE|CV_CALL, CV_OnOff, Bird_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_quaketilt = {"quaketilt", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -3384,19 +3381,9 @@ static void P_DemoCameraMovement(camera_t *cam, UINT8 num)
 	// camera movement:
 	if (!cam->button_a_held)
 	{
-		fixed_t spd = 32*mapobjectscale*cv_freecam_speed.value;
+		fixed_t spd = (32*mapobjectscale*cv_freecam_speed[num].value);
 		int dir = ((cmd->buttons & BT_ACCELERATE || InputDown(gc_camfloat, forplayer)) ? 1 : 0) + ((cmd->buttons & BT_BRAKE || InputDown(gc_camsink, forplayer)) ? -1 : 0);
-
-		switch (dir)
-		{
-			case 1:
-				cam->z += spd;
-				break;
-
-			case -1:
-				cam->z -= spd;
-				break;
-		}
+		cam->z += spd * dir;
 	}
 
 	if (!(cmd->buttons & (BT_ACCELERATE | BT_DRIFT) || InputDown(gc_camfloat, forplayer)) && cam->button_a_held)
@@ -3448,7 +3435,7 @@ static void P_DemoCameraMovement(camera_t *cam, UINT8 num)
 	cam->momx = cam->momy = cam->momz = 0;
 	if (cmd->forwardmove != 0)
 	{
-		fixed_t spd = cmd->forwardmove*mapobjectscale*cv_freecam_speed.value;
+		fixed_t spd = cmd->forwardmove*mapobjectscale*cv_freecam_speed[num].value;
 
 		thrustangle = cam->angle >> ANGLETOFINESHIFT;
 
@@ -3469,7 +3456,7 @@ static void P_DemoCameraMovement(camera_t *cam, UINT8 num)
 	if (cmd->sidemove != 0) // was disabled in practice anyways, since sidemove was suppressed
 	{
 		//False I fixed this shit - Nep
-		fixed_t spd = cmd->sidemove*mapobjectscale*cv_freecam_speed.value;
+		fixed_t spd = cmd->sidemove*mapobjectscale*cv_freecam_speed[num].value;
 
 		thrustangle = (cam->angle-ANGLE_90) >> ANGLETOFINESHIFT;
 		cam->x += FixedMul(spd, FINECOSINE(thrustangle));
