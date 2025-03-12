@@ -2989,10 +2989,6 @@ static void CV_CamRotate4_OnChange(void)
 		CV_SetValue(&cv_cam_rotate[3], cv_cam_rotate[3].value % 360);
 }
 
-static CV_PossibleValue_t CV_CamSpeed[] = {{0, "MIN"}, {1*FRACUNIT, "MAX"}, {0, NULL}};
-static CV_PossibleValue_t rotation_cons_t[] = {{1, "MIN"}, {45, "MAX"}, {0, NULL}};
-static CV_PossibleValue_t CV_CamRotate[] = {{-720, "MIN"}, {720, "MAX"}, {0, NULL}};
-
 static void CV_PlayerCam1_OnChange(void)
 {
 	if (gamestate != GS_LEVEL)
@@ -3078,25 +3074,21 @@ consvar_t cv_cam_still[MAXSPLITSCREENPLAYERS] = {
 	{"cam4_still", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}
 };
 
+static CV_PossibleValue_t cam_speed_cons_t[] = {{0, "MIN"}, {1*FRACUNIT, "MAX"}, {0, NULL}};
 consvar_t cv_cam_speed[MAXSPLITSCREENPLAYERS] = {
-	{"cam_speed", "0.4", CV_FLOAT|CV_SAVE, CV_CamSpeed, NULL, 0, NULL, NULL, 0, 0, NULL},
-	{"cam2_speed", "0.4", CV_FLOAT|CV_SAVE, CV_CamSpeed, NULL, 0, NULL, NULL, 0, 0, NULL},
-	{"cam3_speed", "0.4", CV_FLOAT|CV_SAVE, CV_CamSpeed, NULL, 0, NULL, NULL, 0, 0, NULL},
-	{"cam4_speed", "0.4", CV_FLOAT|CV_SAVE, CV_CamSpeed, NULL, 0, NULL, NULL, 0, 0, NULL}
+	{"cam_speed", "0.4", CV_FLOAT|CV_SAVE, cam_speed_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"cam2_speed", "0.4", CV_FLOAT|CV_SAVE, cam_speed_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"cam3_speed", "0.4", CV_FLOAT|CV_SAVE, cam_speed_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"cam4_speed", "0.4", CV_FLOAT|CV_SAVE, cam_speed_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
 };
 
+
+static CV_PossibleValue_t cam_rotate_cons_t[] = {{-720, "MIN"}, {720, "MAX"}, {0, NULL}};
 consvar_t cv_cam_rotate[MAXSPLITSCREENPLAYERS] = {
-	{"cam_rotate", "0", CV_CALL|CV_NOINIT, CV_CamRotate, CV_CamRotate_OnChange, 0, NULL, NULL, 0, 0, NULL},
-	{"cam2_rotate", "0", CV_CALL|CV_NOINIT, CV_CamRotate, CV_CamRotate2_OnChange, 0, NULL, NULL, 0, 0, NULL},
-	{"cam3_rotate", "0", CV_CALL|CV_NOINIT, CV_CamRotate, CV_CamRotate3_OnChange, 0, NULL, NULL, 0, 0, NULL},
-	{"cam4_rotate", "0", CV_CALL|CV_NOINIT, CV_CamRotate, CV_CamRotate4_OnChange, 0, NULL, NULL, 0, 0, NULL}
-};
-
-consvar_t cv_cam_rotspeed[MAXSPLITSCREENPLAYERS] = {
-	{"cam_rotspeed", "10", CV_SAVE, rotation_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
-	{"cam2_rotspeed", "10", CV_SAVE, rotation_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
-	{"cam3_rotspeed", "10", CV_SAVE, rotation_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
-	{"cam4_rotspeed", "10", CV_SAVE, rotation_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
+	{"cam_rotate", "0", CV_CALL|CV_NOINIT, cam_rotate_cons_t, CV_CamRotate_OnChange, 0, NULL, NULL, 0, 0, NULL},
+	{"cam2_rotate", "0", CV_CALL|CV_NOINIT, cam_rotate_cons_t, CV_CamRotate2_OnChange, 0, NULL, NULL, 0, 0, NULL},
+	{"cam3_rotate", "0", CV_CALL|CV_NOINIT, cam_rotate_cons_t, CV_CamRotate3_OnChange, 0, NULL, NULL, 0, 0, NULL},
+	{"cam4_rotate", "0", CV_CALL|CV_NOINIT, cam_rotate_cons_t, CV_CamRotate4_OnChange, 0, NULL, NULL, 0, 0, NULL}
 };
 
 consvar_t cv_cam_timeover[MAXSPLITSCREENPLAYERS] = {
