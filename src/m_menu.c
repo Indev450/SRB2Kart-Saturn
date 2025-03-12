@@ -1911,7 +1911,6 @@ static menuitem_t OP_Player1CamOptionsMenu[] =
 	{IT_STRING | IT_CVAR | IT_CV_BIGFLOAT, NULL,	"Camera Distance",   		&cv_cam_dist[0],		40},
 	{IT_STRING | IT_CVAR | IT_CV_BIGFLOAT, NULL,	"Camera Height",   			&cv_cam_height[0],		50},
 	{IT_STRING | IT_CVAR, NULL,						"Camera Speed",   			&cv_cam_speed[0],		60},
-	{IT_STRING | IT_CVAR, NULL,						"Camera Rotation Speed",   	&cv_cam_rotspeed[0],	70},
 
 	{IT_STRING | IT_CVAR, NULL,						"Third Person Camera",   	&cv_chasecam[0],		85},
 };
@@ -1924,7 +1923,6 @@ static menuitem_t OP_Player2CamOptionsMenu[] =
 	{IT_STRING | IT_CVAR | IT_CV_BIGFLOAT, NULL,	"Camera Distance",   		&cv_cam_dist[1],		40},
 	{IT_STRING | IT_CVAR | IT_CV_BIGFLOAT, NULL,	"Camera Height",   			&cv_cam_height[1],	50},
 	{IT_STRING | IT_CVAR, NULL,						"Camera Speed",   			&cv_cam_speed[1],		60},
-	{IT_STRING | IT_CVAR, NULL,						"Camera Rotation Speed",   	&cv_cam_rotspeed[1],	70},
 
 	{IT_STRING | IT_CVAR, NULL,						"Third Person Camera",   	&cv_chasecam[1],		85},
 };
@@ -1937,7 +1935,6 @@ static menuitem_t OP_Player3CamOptionsMenu[] =
 	{IT_STRING | IT_CVAR | IT_CV_BIGFLOAT, NULL,	"Camera Distance",   		&cv_cam_dist[2],		40},
 	{IT_STRING | IT_CVAR | IT_CV_BIGFLOAT, NULL,	"Camera Height",   			&cv_cam_height[2],	50},
 	{IT_STRING | IT_CVAR, NULL,						"Camera Speed",   			&cv_cam_speed[2],		60},
-	{IT_STRING | IT_CVAR, NULL,						"Camera Rotation Speed",   	&cv_cam_rotspeed[2],	70},
 
 	{IT_STRING | IT_CVAR, NULL,						"Third Person Camera",   	&cv_chasecam[2],		85},
 };
@@ -1950,7 +1947,6 @@ static menuitem_t OP_Player4CamOptionsMenu[] =
 	{IT_STRING | IT_CVAR | IT_CV_BIGFLOAT, NULL,	"Camera Distance",   		&cv_cam_dist[3],		40},
 	{IT_STRING | IT_CVAR | IT_CV_BIGFLOAT, NULL,	"Camera Height",   			&cv_cam_height[3],	50},
 	{IT_STRING | IT_CVAR, NULL,						"Camera Speed",   			&cv_cam_speed[3],		60},
-	{IT_STRING | IT_CVAR, NULL,						"Camera Rotation Speed",   	&cv_cam_rotspeed[3],	70},
 
 	{IT_STRING | IT_CVAR, NULL,						"Third Person Camera",   	&cv_chasecam[3],		85},
 };
@@ -1962,7 +1958,6 @@ static const char* OP_PlayerCamOptionsTooltips[] =
 	"Camera distance relative to the Player.",
 	"Height of the Camera",
 	"Speed of the Camera",
-	"Speed of the Camera rotation",
 	"Toggle between Third or First Person camera",
 };
 
