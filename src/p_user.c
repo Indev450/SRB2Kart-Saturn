@@ -3099,7 +3099,12 @@ consvar_t cv_cam_timeover[MAXSPLITSCREENPLAYERS] = {
 };
 
 static CV_PossibleValue_t freecam_speed_cons_t[] = {{0, "MIN"}, {10, "MAX"}, {0, NULL}};
-consvar_t cv_freecam_speed = {"freecam_speed", "1", CV_SAVE, freecam_speed_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_freecam_speed[MAXSPLITSCREENPLAYERS] = {
+	{"freecam_speed", "1", CV_SAVE, freecam_speed_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"freecam2_speed", "1", CV_SAVE, freecam_speed_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"freecam3_speed", "1", CV_SAVE, freecam_speed_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"freecam4_speed", "1", CV_SAVE, freecam_speed_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+};
 
 consvar_t cv_tilting = {"tilting", "Off", CV_SAVE|CV_CALL, CV_OnOff, Bird_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_quaketilt = {"quaketilt", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -3376,19 +3381,9 @@ static void P_DemoCameraMovement(camera_t *cam, UINT8 num)
 	// camera movement:
 	if (!cam->button_a_held)
 	{
-		fixed_t spd = 32*mapobjectscale*cv_freecam_speed.value;
+		fixed_t spd = (32*mapobjectscale*cv_freecam_speed[num].value);
 		int dir = ((cmd->buttons & BT_ACCELERATE || InputDown(gc_camfloat, forplayer)) ? 1 : 0) + ((cmd->buttons & BT_BRAKE || InputDown(gc_camsink, forplayer)) ? -1 : 0);
-
-		switch (dir)
-		{
-			case 1:
-				cam->z += spd;
-				break;
-
-			case -1:
-				cam->z -= spd;
-				break;
-		}
+		cam->z += spd * dir;
 	}
 
 	if (!(cmd->buttons & (BT_ACCELERATE | BT_DRIFT) || InputDown(gc_camfloat, forplayer)) && cam->button_a_held)
@@ -3440,7 +3435,7 @@ static void P_DemoCameraMovement(camera_t *cam, UINT8 num)
 	cam->momx = cam->momy = cam->momz = 0;
 	if (cmd->forwardmove != 0)
 	{
-		fixed_t spd = cmd->forwardmove*mapobjectscale*cv_freecam_speed.value;
+		fixed_t spd = cmd->forwardmove*mapobjectscale*cv_freecam_speed[num].value;
 
 		thrustangle = cam->angle >> ANGLETOFINESHIFT;
 
@@ -3461,7 +3456,7 @@ static void P_DemoCameraMovement(camera_t *cam, UINT8 num)
 	if (cmd->sidemove != 0) // was disabled in practice anyways, since sidemove was suppressed
 	{
 		//False I fixed this shit - Nep
-		fixed_t spd = cmd->sidemove*mapobjectscale*cv_freecam_speed.value;
+		fixed_t spd = cmd->sidemove*mapobjectscale*cv_freecam_speed[num].value;
 
 		thrustangle = (cam->angle-ANGLE_90) >> ANGLETOFINESHIFT;
 		cam->x += FixedMul(spd, FINECOSINE(thrustangle));
