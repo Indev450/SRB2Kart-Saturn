@@ -1043,7 +1043,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		cmd->driftturn = (INT16)(cmd->driftturn - ((mousex*(encoremode ? -1 : 1)*8)));
 	}
 
-	if (player->spectator || objectplacing) // SRB2Kart: spectators need special controls
+	if (objectplacing) // SRB2Kart: spectators need special controls // not anymore huehuehue
 	{
 		axis = JoyAxis(AXISMOVE, ssplayer);
 		if (InputDown(gc_accelerate, ssplayer) || (usejoystick && axis > 0))
