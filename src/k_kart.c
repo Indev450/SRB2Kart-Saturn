@@ -10689,14 +10689,13 @@ static void K_drawInput(void)
 
 	if (cv_showinput.value == 2)
 	{
-		INT32 joyx, joyxoffs, joyy, joyyoffs, joyflags, axis;
+		INT32 joyx, joyxoffs, joyy, joyyoffs, axis;
 		joyxoffs = -8, joyyoffs = -24;
 		joyx = x>>FRACBITS, joyy = y>>FRACBITS;
-		joyflags = V_SNAPTORIGHT|V_SNAPTOBOTTOM;
 
 		// O backing
-		V_DrawFill(joyx+joyxoffs, joyy+joyyoffs-1, 16, 16, joyflags|accent2);
-		V_DrawFill(joyx+joyxoffs, joyy+joyyoffs+15, 16, 1, joyflags|splitflags|31);
+		V_DrawFill(joyx+joyxoffs, joyy+joyyoffs-1, 16, 16, splitflags|accent2);
+		V_DrawFill(joyx+joyxoffs, joyy+joyyoffs+15, 16, 1, splitflags|31);
 
 		// time for pain and suffering
 		// kart does not have anything we can get analogue joystick y axis values from
@@ -10731,21 +10730,21 @@ static void K_drawInput(void)
 		{
 			INT16 turning = encoremode ? -cmd->driftturn : cmd->driftturn;
 			// joystick hole
-			V_DrawFill(joyx+joyxoffs+5, joyy+joyyoffs+4, 6, 6, joyflags|accent1);
+			V_DrawFill(joyx+joyxoffs+5, joyy+joyyoffs+4, 6, 6, splitflags|accent1);
 			// joystick top and back
 			V_DrawFill(joyx+joyxoffs+3-turning/80,
 				joyy+joyyoffs+2-hudforward/80,
-				10, 10, joyflags|31);
+				10, 10, splitflags|31);
 			V_DrawFill(joyx+joyxoffs+3-turning/64,
 				joyy+joyyoffs+1-hudforward/64,
-				10, 10, joyflags|accent1);
+				10, 10, splitflags|accent1);
 		}
 		else
 		{
-			V_DrawFill(joyx+joyxoffs+3, joyy+joyyoffs+11, 10, 1, joyflags|accent2);
+			V_DrawFill(joyx+joyxoffs+3, joyy+joyyoffs+11, 10, 1, splitflags|accent2);
 			V_DrawFill(joyx+joyxoffs+3,
 				joyy+joyyoffs+1,
-				10, 10,joyflags|accent1);
+				10, 10,splitflags|accent1);
 		}
 	}
 	else
