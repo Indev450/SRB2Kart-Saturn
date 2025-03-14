@@ -10994,7 +10994,7 @@ static void K_drawInput(void)
 		// time for pain and suffering
 		// kart does not have anything we can get analogue joystick y axis values from
 		// during normal gameplay, so replicate shit here
-		INT32 hudforward[MAXSPLITSCREENPLAYERS] = {0}; // for the stick input display :chaosleep:
+		INT32 hudforward = 0; // for the stick input display :chaosleep:
 		const boolean analogjoystickmove = cv_usejoystick[stplyrnum].value && !Joystick[stplyrnum].bGamepadStyle;
 		const boolean gamepadjoystickmove = cv_usejoystick[stplyrnum].value && Joystick[stplyrnum].bGamepadStyle;
 		const UINT8 ssplayer = stplyrnum+1;
@@ -11004,33 +11004,33 @@ static void K_drawInput(void)
 		if (analogjoystickmove && axis != 0)
 		{
 			// JOYAXISRANGE is supposed to be 1023 (divide by 1024)
-			hudforward[stplyrnum] -= ((axis * KART_FULLTURN) / (JOYAXISRANGE-1));
+			hudforward -= ((axis * KART_FULLTURN) / (JOYAXISRANGE-1));
 		}
 		else
 		{
 			if (InputDown(gc_aimforward, ssplayer) || (gamepadjoystickmove && axis < 0))
 			{
-				hudforward[stplyrnum] += KART_FULLTURN;
+				hudforward += KART_FULLTURN;
 			}
 			if (InputDown(gc_aimbackward, ssplayer) || (gamepadjoystickmove && axis > 0))
 			{
-				hudforward[stplyrnum] -= KART_FULLTURN;
+				hudforward-= KART_FULLTURN;
 			}
 		}
 
-		hudforward[stplyrnum] = CLAMP(hudforward[stplyrnum], -KART_FULLTURN, KART_FULLTURN);
+		hudforward = CLAMP(hudforward, -KART_FULLTURN, KART_FULLTURN);
 
-		if (cmd->driftturn || hudforward[stplyrnum])
+		if (cmd->driftturn || hudforward)
 		{
 			INT16 turning = encoremode ? -cmd->driftturn : cmd->driftturn;
 			// joystick hole
 			V_DrawFill(joyx+joyxoffs+5, joyy+joyyoffs+4, 6, 6, joyflags|accent1);
 			// joystick top and back
 			V_DrawFill(joyx+joyxoffs+3-turning/80,
-				joyy+joyyoffs+2-hudforward[stplyrnum]/80,
+				joyy+joyyoffs+2-hudforward/80,
 				10, 10, joyflags|31);
 			V_DrawFill(joyx+joyxoffs+3-turning/64,
-				joyy+joyyoffs+1-hudforward[stplyrnum]/64,
+				joyy+joyyoffs+1-hudforward/64,
 				10, 10, joyflags|accent1);
 		}
 		else
