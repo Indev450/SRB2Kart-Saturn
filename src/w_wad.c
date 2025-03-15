@@ -1125,12 +1125,15 @@ lumpnum_t W_CheckNumForName(const char *name)
 			break; //found it
 	}
 
-	if (check == INT16_MAX) return LUMPERROR;
+	if (check == INT16_MAX)
+	{
+		return LUMPERROR;
+	}
 	else
 	{
 		// Update the cache.
 		lumpnumcacheindex = (lumpnumcacheindex + 1) & (LUMPNUMCACHESIZE - 1);
-		memset(lumpnumcache[lumpnumcacheindex].lumpname, '\0', 32);
+		memset(lumpnumcache[lumpnumcacheindex].lumpname, '\0', LUMPNUMCACHENAME);
 		strncpy(lumpnumcache[lumpnumcacheindex].lumpname, name, 8);
 		lumpnumcache[lumpnumcacheindex].lumpnum = (i<<16)+check;
 
@@ -1174,7 +1177,10 @@ lumpnum_t W_CheckNumForLongName(const char *name)
 		}
 	}
 
-	if (check == INT16_MAX) return LUMPERROR;
+	if (check == INT16_MAX)
+	{
+		return LUMPERROR;
+	}
 	else
 	{
 		if (strlen(name) < 32)

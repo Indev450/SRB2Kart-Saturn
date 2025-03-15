@@ -10733,7 +10733,6 @@ void P_SpawnPlayer(INT32 playernum)
 	p->hitemtimer = 0;
 	p->hitemvictim = 255;
 
-	p->doiconspin = 0;
 	p->spinoutrot = 0;
 
 	if (G_BattleGametype()) // SRB2kart

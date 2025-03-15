@@ -551,17 +551,10 @@ typedef struct player_s
 
 	UINT8 splitscreenindex;
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 	tic_t driftsparkGrowTimer;
 
-=======
-=======
-	UINT8 doiconspin; // A boolean in practice. Tells the game to continue spinning the minimap icons.
->>>>>>> 432dcd3a3 (Refactor to prevent desynchs)
 	fixed_t spinoutrot; // When a player spins out, this value increments modulus 360.
-#ifdef HWRENDER
->>>>>>> 052dcb263 (Add a cvar for minimap icon spinouts)
+
 	fixed_t fovadd; // adjust FOV for hw rendering
 } player_t;
 
