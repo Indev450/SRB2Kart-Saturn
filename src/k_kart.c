@@ -10134,7 +10134,7 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 	}
 
 #ifdef ROTSPRITE
-	if (cv_spinoutroll.value && mo->player)
+	if (cv_spinoutroll.value && mo->player && mo->player->spinoutrot)
 	{
 		// Rotate counterclockwise.
 		rollangle = FixedAngle(mo->player->spinoutrot * -1);
