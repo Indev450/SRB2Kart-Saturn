@@ -491,11 +491,9 @@ static FUINT HWR_CalcWallLight(FUINT lightnum, seg_t *seg)
 
 	if (seg != NULL && P_ApplyLightOffsetFine(lightnum, seg->frontsector))
 	{
-		if (cv_glfakecontrast.value == 2) // Smooth setting
-			finallight += seg->hwLightOffset;
-		else
-			finallight += seg->lightOffset * 8;
+		INT16 offset = (cv_glfakecontrast.value == 2) ? seg->hwLightOffset : ((INT16)seg->lightOffset * 8);
 
+		finallight += offset;
 		finallight = CLAMP(finallight, 0 , 255);
 	}
 
@@ -511,11 +509,9 @@ static FUINT HWR_CalcSlopeLight(FUINT lightnum, pslope_t *slope, const sector_t 
 
 	if (slope != NULL && sector != NULL && P_ApplyLightOffsetFine(lightnum, sector))
 	{
-		if (cv_glfakecontrast.value == 2) // Smooth setting
-			finallight += (fof ? -slope->hwLightOffset : slope->hwLightOffset);
-		else
-			finallight += (fof ? -slope->lightOffset * 8 : slope->lightOffset * 8);
+		INT16 offset = (cv_glfakecontrast.value == 2) ? slope->hwLightOffset : (INT16)slope->lightOffset;
 
+		finallight += (fof ? -offset : offset);
 		finallight = CLAMP(finallight, 0 , 255);
 	}
 
