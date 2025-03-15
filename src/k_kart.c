@@ -10407,6 +10407,8 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 	// am xpos & ypos are the icon's starting position. Without
 	// it, they wouldn't 'spawn' on the top-right side of the HUD.
 
+	player_t *player = mo->player;
+
 	UINT8 skinnum = 0;
 	const boolean skinlocal = mo->skinlocal;
 	const skin_t *skin = (skin_t*)(mo->localskin ? mo->localskin : mo->skin);
@@ -10435,9 +10437,9 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 	amxpos = amnumxpos + ((x + (SHORT(minimapinfo.minimap_pic->width)-SHORT(minimaphead->width)) / 2)<<FRACBITS);
 	amypos = amnumypos + ((y + (SHORT(minimapinfo.minimap_pic->height)-SHORT(minimaphead->height)) / 2)<<FRACBITS);
 
-	if (cv_showminimapnames.value && mo->player && !(modeattacking || gamestate == GS_TIMEATTACK))
+	if (cv_showminimapnames.value && player && !(modeattacking || gamestate == GS_TIMEATTACK))
 	{
-		V_DrawCenteredSmallStringAtFixed(amxpos + (4*FRACUNIT), amypos - (3*FRACUNIT), V_ALLOWLOWERCASE|flags|V_SkinColorToHighlightcolor(mo->color), player_names[mo->player - players]);
+		V_DrawCenteredSmallStringAtFixed(amxpos + (4*FRACUNIT), amypos - (3*FRACUNIT), V_ALLOWLOWERCASE|flags|V_SkinColorToHighlightcolor(mo->color), player_names[player - players]);
 	}
 
 	// thx wanted reticle for having weird offsets very cool
@@ -10452,10 +10454,10 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 	}
 
 #ifdef ROTSPRITE
-	if (cv_spinoutroll.value && mo->player && mo->player->spinoutrot)
+	if (cv_spinoutroll.value && player && player->spinoutrot)
 	{
 		// Rotate counterclockwise.
-		rollangle = FixedAngle(mo->player->spinoutrot * -1);
+		rollangle = FixedAngle(player->spinoutrot * -1);
 		rot = R_GetRollAngle(rollangle);
 
 		if (rot)
@@ -10478,9 +10480,9 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 
 		V_DrawFixedPatch(amxpos, amypos, scale, flags, minimaphead, colormap);
 
-		if (mo->player
-			&& ((G_RaceGametype() && mo->player->kartstuff[k_position] == spbplace)
-			|| (G_BattleGametype() && K_IsPlayerWanted(mo->player))))
+		if (player
+			&& ((G_RaceGametype() && player->kartstuff[k_position] == spbplace)
+			|| (G_BattleGametype() && K_IsPlayerWanted(player))))
 		{
 			V_DrawFixedPatch(wntdamxpos, wntdamypos, scale, flags, kp_wantedreticle, NULL);
 		}
