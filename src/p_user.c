@@ -4430,6 +4430,9 @@ DoABarrelRoll (player_t *player)
 		player->tilt = slope;
 }
 
+#define SPINOUTROTSPEED (24 * FRACUNIT)
+#define MAXSPINROT (360 * FRACUNIT)
+
 //
 // P_PlayerThink
 //
@@ -4570,6 +4573,31 @@ void P_PlayerThink(player_t *player)
 					LUA_HookPlayer(player, HOOK(PlayerThink));
 					return;
 				}
+			}
+		}
+
+		if (player->kartstuff[k_spinouttimer] && (player->spinoutrot == 0))
+		{
+			player->spinoutrot = SPINOUTROTSPEED;
+		}
+
+		// MKWii-styled icon spinouts: do a full 360 rotation before stopping.
+		if (player->spinoutrot && (player->spinoutrot < MAXSPINROT))
+		{
+			if ((player->spinoutrot + SPINOUTROTSPEED) >= MAXSPINROT)
+			{
+				if (player->kartstuff[k_spinouttimer])
+				{
+					player->spinoutrot = (player->spinoutrot + SPINOUTROTSPEED) % MAXSPINROT;
+				}
+				else
+				{
+					player->spinoutrot = 0;
+				}
+			}
+			else
+			{
+				player->spinoutrot += SPINOUTROTSPEED;
 			}
 		}
 

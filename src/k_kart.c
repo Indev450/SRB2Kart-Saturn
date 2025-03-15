@@ -182,6 +182,7 @@ static CV_PossibleValue_t sloperoll_cons_t[] = {{0, "Off"}, {1, "Players"}, {2, 
 consvar_t cv_sloperoll = {"sloperoll", "Off", CV_SAVE|CV_CALL, sloperoll_cons_t, PDistort_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_sparkroll = {"sparkroll", "Off", CV_SAVE|CV_CALL, CV_OnOff, PDistort_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_sliptideroll = {"sliptideroll", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_spinoutroll = {"spinoutroll", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 //hardcode saltyhop mhhm
 static void saltyhop_onchange(void);
@@ -10403,18 +10404,27 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 	// The number being divided by is for how fast it moves.
 	// The higher the number, the slower it moves.
 
-	// am xpos & ypos are the icon's starting position. Withouht
+	// am xpos & ypos are the icon's starting position. Without
 	// it, they wouldn't 'spawn' on the top-right side of the HUD.
 
-	UINT8 skin = 0;
-	boolean skinlocal = mo->skinlocal;
+	UINT8 skinnum = 0;
+	const boolean skinlocal = mo->skinlocal;
+	const skin_t *skin = (skin_t*)(mo->localskin ? mo->localskin : mo->skin);
 
 	fixed_t amnumxpos, amnumypos;
 	INT32 amxpos, amypos, wntdamxpos, wntdamypos;
 	fixed_t scale = FRACUNIT;
+	patch_t *minimaphead = NULL;
+
+#ifdef ROTSPRITE
+	angle_t rollangle = 0;
+	INT32 rot = 0;
+#endif
 
 	if (mo->skin)
-		skin = ((skin_t*)(mo->localskin ? mo->localskin : mo->skin))-(skinlocal ? localskins : skins);
+		skinnum = (skin-(skinlocal ? localskins : skins));
+
+	minimaphead = (skinlocal ? localfacemmapprefix : facemmapprefix)[skinnum];
 
 	amnumxpos = (FixedMul(lerp(mo->old_x, mo->x), minimapinfo.zoom) - minimapinfo.offs_x);
 	amnumypos = -(FixedMul(lerp(mo->old_y, mo->y), minimapinfo.zoom) - minimapinfo.offs_y);
@@ -10422,8 +10432,8 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 	if (encoremode)
 		amnumxpos = -amnumxpos;
 
-	amxpos = amnumxpos + ((x + (SHORT(minimapinfo.minimap_pic->width)-SHORT((skinlocal ? localfacemmapprefix : facemmapprefix)[skin]->width)) / 2)<<FRACBITS);
-	amypos = amnumypos + ((y + (SHORT(minimapinfo.minimap_pic->height)-SHORT((skinlocal ? localfacemmapprefix : facemmapprefix)[skin]->height)) / 2)<<FRACBITS);
+	amxpos = amnumxpos + ((x + (SHORT(minimapinfo.minimap_pic->width)-SHORT(minimaphead->width)) / 2)<<FRACBITS);
+	amypos = amnumypos + ((y + (SHORT(minimapinfo.minimap_pic->height)-SHORT(minimaphead->height)) / 2)<<FRACBITS);
 
 	if (cv_showminimapnames.value && mo->player && !(modeattacking || gamestate == GS_TIMEATTACK))
 	{
@@ -10436,22 +10446,37 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 
 	if (cv_minihead.value)
 	{
-		amxpos += (SHORT((skinlocal ? localfacemmapprefix : facemmapprefix)[skin]->width) / 4)<<FRACBITS;
-		amypos += (SHORT((skinlocal ? localfacemmapprefix : facemmapprefix)[skin]->height) / 4)<<FRACBITS;
+		amxpos += (SHORT(minimaphead->width) / 4)<<FRACBITS;
+		amypos += (SHORT(minimaphead->height) / 4)<<FRACBITS;
 		scale /= 2;
 	}
 
+#ifdef ROTSPRITE
+	if (cv_spinoutroll.value && mo->player)
+	{
+		// Rotate counterclockwise.
+		rollangle = FixedAngle(mo->player->spinoutrot * -1);
+		rot = R_GetRollAngle(rollangle);
+
+		if (rot)
+		{
+			minimaphead = W_CachePatchNameRotated(skin->facemmap, rot, PU_STATIC);
+		}
+	}
+#endif
+
 	if (!mo->color) // 'default' color
-		V_DrawSciencePatch(amxpos, amypos, flags, ((skinlocal) ? localfacemmapprefix : facemmapprefix)[skin], scale);
+		V_DrawSciencePatch(amxpos, amypos, flags, minimaphead, scale);
 	else
 	{
 		UINT8 *colormap;
+
 		if (mo->colorized)
 			colormap = R_GetTranslationColormap(TC_RAINBOW, mo->color, GTC_CACHE);
 		else
 			colormap = R_GetLocalTranslationColormap(mo->skin, mo->localskin, mo->color, GTC_CACHE, skinlocal);
 
-		V_DrawFixedPatch(amxpos, amypos, scale, flags, ((skinlocal) ? localfacemmapprefix : facemmapprefix)[skin], colormap);
+		V_DrawFixedPatch(amxpos, amypos, scale, flags, minimaphead, colormap);
 
 		if (mo->player
 			&& ((G_RaceGametype() && mo->player->kartstuff[k_position] == spbplace)

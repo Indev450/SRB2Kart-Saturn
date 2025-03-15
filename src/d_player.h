@@ -553,6 +553,8 @@ typedef struct player_s
 
 	tic_t driftsparkGrowTimer;
 
+	fixed_t spinoutrot; // When a player spins out, this value increments modulus 360.
+
 	fixed_t fovadd; // adjust FOV for hw rendering
 } player_t;
 
