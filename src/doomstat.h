@@ -30,16 +30,26 @@
 // =============================
 
 // Selected by user.
-extern INT16 gamemap;
-extern char mapmusname[7];
-extern UINT16 mapmusflags;
-extern UINT32 mapmusposition;
-extern UINT32 mapmusresume;
+
+typedef struct
+{
+	char       name[7];  // Music name, up to 6-character name
+	void       *data;    // Music lump
+	UINT16     flags;    // Track and reset bit
+	boolean    looping;  // Is this music looping?
+	UINT32     position; // Position to jump to
+	UINT32     resume;   // Saved Position when music was stopped
+	UINT32     fadeinms; // Fade in time in ms (used for queue)
+} music_t;
+
+extern music_t mapmusic;
+
 #define MUSIC_TRACKMASK   0x0FFF // ----************
 #define MUSIC_RELOADRESET 0x8000 // *---------------
 #define MUSIC_FORCERESET  0x4000 // -*--------------
 // Use other bits if necessary.
 
+extern INT16 gamemap;
 extern INT16 maptol;
 extern UINT8 globalweather;
 extern INT32 curWeather;
@@ -212,6 +222,15 @@ typedef struct
 	char value[256]; // 255 usable characters. If this seriously isn't enough then wtf.
 } customoption_t;
 
+typedef struct
+{
+	boolean use_custom_light;
+	UINT8 light_contrast;				///< Range of wall lighting. 0 is no lighting.
+	SINT8 sprite_backlight;				///< Subtract from wall lighting for sprites only.
+	boolean use_light_angle;			///< When false, wall lighting is evenly distributed. When true, wall lighting is directional.
+	angle_t light_angle;				///< Angle of directional wall lighting.
+} mapheader_lighting_t;
+
 /** Map header information.
   */
 typedef struct
@@ -259,6 +278,10 @@ typedef struct
 	//boolean automap;    ///< Displays a level's white map outline in modified games
 	fixed_t mobj_scale; ///< Replacement for TOL_ERZ3
 
+	mapheader_lighting_t lighting;			///< Wall and sprite lighting
+	mapheader_lighting_t lighting_encore;	///< Alternative lighting for Encore mode
+	boolean use_encore_lighting;			///< Whether to use separate Encore lighting
+
 	// Music stuff.
 	UINT32 musinterfadeout;  ///< Fade out level music on intermission screen in milliseconds
 	char musintername[7];    ///< Intermission screen music.
@@ -276,6 +299,8 @@ typedef struct
 #define LF_NORELOAD       8 ///< Don't reload level on death
 #define LF_NOZONE        16 ///< Don't include "ZONE" on level title
 #define LF_SECTIONRACE   32 ///< Section race level
+#define LF_SUBTRACTNUM   64 ///< Use subtractive position number (for bright levels)
+
 
 #define LF2_HIDEINMENU     1 ///< Hide in the multiplayer menu
 #define LF2_HIDEINSTATS    2 ///< Hide in the statistics screen
@@ -337,9 +362,6 @@ enum GameType // SRB2Kart
 
 // String names for gametypes
 extern const char *Gametype_Names[NUMGAMETYPES];
-
-extern tic_t totalplaytime;
-extern UINT32 matchesplayed;
 
 extern UINT8 stagefailed;
 
@@ -454,6 +476,14 @@ extern tic_t racecountdown, exitcountdown;
 extern fixed_t gravity;
 extern fixed_t mapobjectscale;
 
+extern struct maplighting
+{
+	UINT8 contrast;
+	SINT8 backlight;
+	boolean directional;
+	angle_t angle;
+} maplighting;
+
 //for CTF balancing
 extern INT16 autobalance;
 extern INT16 teamscramble;
@@ -482,7 +512,6 @@ extern boolean startedInFreePlay;
 
 extern boolean legitimateexit;
 extern boolean comebackshowninfo;
-extern tic_t curlap, bestlap;
 
 extern INT16 votelevels[4][2];
 extern SINT8 votes[MAXPLAYERS];
@@ -540,9 +569,6 @@ mobj_t *P_GetClosestWaypoint(UINT8 sequence, mobj_t *mo);
 extern FILE *debugfile;
 extern INT32 debugload;
 #endif
-
-// if true, load all graphics at level load
-extern boolean precache;
 
 // wipegamestate can be set to -1
 //  to force a wipe on the next draw

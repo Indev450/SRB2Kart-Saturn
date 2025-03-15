@@ -25,10 +25,6 @@
 #include "lua_hook.h"
 #include "k_kart.h" // SRB2kart
 
-#ifdef HW3SOUND
-#include "hardware/hw3sound.h"
-#endif
-
 boolean LUA_CallAction(enum actionnum actionnum, mobj_t *actor);
 
 INT32 var1;
@@ -165,9 +161,6 @@ void A_SpawnObjectAbsolute(mobj_t *actor);
 void A_SpawnObjectRelative(mobj_t *actor);
 void A_ChangeAngleRelative(mobj_t *actor);
 void A_ChangeAngleAbsolute(mobj_t *actor);
-void A_RollAngle(mobj_t *actor);
-void A_ChangeRollAngleRelative(mobj_t *actor);
-void A_ChangeRollAngleAbsolute(mobj_t *actor);
 void A_PlaySound(mobj_t *actor);
 void A_FindTarget(mobj_t *actor);
 void A_FindTracer(mobj_t *actor);
@@ -2658,7 +2651,7 @@ void A_BossDeath(mobj_t *mo)
 	}
 
 bossjustdie:
-	if (LUAh_BossDeath(mo))
+	if (LUA_HookMobj(mo, MOBJ_HOOK(BossDeath)))
 		return;
 	else if (P_MobjWasRemoved(mo))
 		return;
@@ -3927,10 +3920,12 @@ void A_MineExplode(mobj_t *actor)
 	for (d = 0; d < 16; d++)
 		K_SpawnKartExplosion(actor->x, actor->y, actor->z, explodedist + 32*mapobjectscale, 32, type, d*(ANGLE_45/4), true, false, actor->target); // 32 <-> 64
 
+	skincolors_t color = SKINCOLOR_KETCHUP;
+
 	if (actor->target && actor->target->player)
-		K_SpawnMineExplosion(actor, actor->target->player->skincolor);
-	else
-		K_SpawnMineExplosion(actor, SKINCOLOR_KETCHUP);
+		color = actor->target->player->skincolor;
+
+	K_SpawnMineExplosion(actor, color);
 
 	P_SpawnMobj(actor->x, actor->y, actor->z, MT_MINEEXPLOSIONSOUND);
 
@@ -7183,80 +7178,6 @@ void A_ChangeAngleAbsolute(mobj_t *actor)
 	actor->angle = FixedAngle(P_RandomRange(amin, amax));
 }
 
-// Function: A_RollAngle
-//
-// Description: Changes the roll angle.
-//
-// var1 = angle
-// var2 = relative? (default)
-//
-void A_RollAngle(mobj_t *actor)
-{
-	INT32 locvar1 = var1;
-	INT32 locvar2 = var2;
-	const angle_t angle = FixedAngle(locvar1*FRACUNIT);
-
-	if (LUA_CallAction(A_ROLLANGLE, actor))
-		return;
-
-	// relative (default)
-	if (!locvar2)
-		actor->rollangle += angle;
-	// absolute
-	else
-		actor->rollangle = angle;
-}
-
-// Function: A_ChangeRollAngleRelative
-//
-// Description: Changes the roll angle to a random relative value between the min and max. Set min and max to the same value to eliminate randomness
-//
-// var1 = min
-// var2 = max
-//
-void A_ChangeRollAngleRelative(mobj_t *actor)
-{
-	INT32 locvar1 = var1;
-	INT32 locvar2 = var2;
-	const fixed_t amin = locvar1*FRACUNIT;
-	const fixed_t amax = locvar2*FRACUNIT;
-
-	if (LUA_CallAction(A_CHANGEROLLANGLERELATIVE, actor))
-		return;
-
-#ifdef PARANOIA
-	if (amin > amax)
-		I_Error("A_ChangeRollAngleRelative: var1 is greater than var2");
-#endif
-
-	actor->rollangle += FixedAngle(P_RandomRange(amin, amax));
-}
-
-// Function: A_ChangeRollAngleAbsolute
-//
-// Description: Changes the roll angle to a random absolute value between the min and max. Set min and max to the same value to eliminate randomness
-//
-// var1 = min
-// var2 = max
-//
-void A_ChangeRollAngleAbsolute(mobj_t *actor)
-{
-	INT32 locvar1 = var1;
-	INT32 locvar2 = var2;
-	const fixed_t amin = locvar1*FRACUNIT;
-	const fixed_t amax = locvar2*FRACUNIT;
-
-	if (LUA_CallAction(A_CHANGEROLLANGLEABSOLUTE, actor))
-		return;
-
-#ifdef PARANOIA
-	if (amin > amax)
-		I_Error("A_ChangeRollAngleAbsolute: var1 is greater than var2");
-#endif
-
-	actor->rollangle = FixedAngle(P_RandomRange(amin, amax));
-}
-
 // Function: A_PlaySound
 //
 // Description: Plays a sound
@@ -10218,7 +10139,7 @@ void A_RemoteDamage(mobj_t *actor)
 	if (locvar2 == 1) // Kill mobj!
 	{
 		if (target->player) // players die using P_DamageMobj instead for some reason
-			P_DamageMobj(target, source, source, 10000);
+			P_DamageMobj(target, source, source, DMG_INSTAKILL);
 		else
 			P_KillMobj(target, source, source);
 	}

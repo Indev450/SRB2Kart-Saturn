@@ -323,7 +323,7 @@ static UINT8 *R_GenerateTexture(size_t texnum)
 	{
 		boolean holey = false;
 		patch = texture->patches;
-		realpatch = W_CacheLumpNumPwad(patch->wad, patch->lump, PU_CACHE);
+		realpatch = W_CacheLumpNumPwad(patch->wad, patch->lump, PU_LEVEL);
 
 		// Check the patch for holes.
 		if (texture->width > SHORT(realpatch->width) || texture->height > SHORT(realpatch->height))
@@ -353,8 +353,7 @@ static UINT8 *R_GenerateTexture(size_t texnum)
 		{
 			texture->holes = true;
 			blocksize = W_LumpLengthPwad(patch->wad, patch->lump);
-			block = Z_Calloc(blocksize, PU_STATIC, // will change tag at end of this function
-				&texturecache[texnum]);
+			block = Z_Calloc(blocksize, PU_LEVEL, &texturecache[texnum]);
 			M_Memcpy(block, realpatch, blocksize);
 			texturememory += blocksize;
 
@@ -374,7 +373,7 @@ static UINT8 *R_GenerateTexture(size_t texnum)
 	texture->holes = false;
 	blocksize = (texture->width * 4) + (texture->width * texture->height);
 	texturememory += blocksize;
-	block = Z_Malloc(blocksize+1, PU_STATIC, &texturecache[texnum]);
+	block = Z_Malloc(blocksize+1, PU_LEVEL, &texturecache[texnum]);
 
 	memset(block, 0xF7, blocksize+1); // Transparency hack
 
@@ -388,7 +387,12 @@ static UINT8 *R_GenerateTexture(size_t texnum)
 	// Composite the columns together.
 	for (i = 0, patch = texture->patches; i < texture->patchcount; i++, patch++)
 	{
-		realpatch = W_CacheLumpNumPwad(patch->wad, patch->lump, PU_CACHE);
+		realpatch = W_CacheLumpNumPwad(patch->wad, patch->lump, PU_LEVEL);
+
+		// Well, it's not valid...
+		if (realpatch == NULL)
+			continue;
+
 		x1 = patch->originx;
 		x2 = x1 + SHORT(realpatch->width);
 
@@ -411,8 +415,6 @@ static UINT8 *R_GenerateTexture(size_t texnum)
 	}
 
 done:
-	// Now that the texture has been built in column cache, it is purgable from zone memory.
-	Z_ChangeTag(block, PU_CACHE);
 	return blocktex;
 }
 
@@ -462,7 +464,7 @@ UINT8 *R_GetColumn(fixed_t tex, INT32 col)
 //
 UINT8 *R_GetFlat(lumpnum_t flatlumpnum)
 {
-	return W_CacheLumpNum(flatlumpnum, PU_CACHE);
+	return W_CacheLumpNum(flatlumpnum, PU_LEVEL);
 }
 
 //
@@ -1725,33 +1727,13 @@ INT32 R_TextureNumForName(const char *name)
 	return i;
 }
 
-//
-// R_PrecacheLevel
-//
-// Preloads all relevant graphics for the level.
-//
-void R_PrecacheLevel(void)
+static void R_PrecacheLevelTextures(void)
 {
-	char *texturepresent, *spritepresent;
-	size_t i, j, k;
-	lumpnum_t lump;
+	char *texturepresent;
+	anim_t *anim;
+	size_t j;
+	INT32 h;
 
-	thinker_t *th;
-	spriteframe_t *sf;
-
-	if (demo.playback)
-		return;
-
-	// do not flush the memory, Z_Malloc twice with same user will cause error in Z_CheckHeap()
-	if (rendermode != render_soft)
-		return;
-
-	// Precache flats.
-	flatmemory = P_PrecacheLevelFlats();
-
-	//
-	// Precache textures.
-	//
 	// no need to precache all software textures in 3D mode
 	// (note they are still used with the reference software view)
 	texturepresent = calloc(numtextures, sizeof (*texturepresent));
@@ -1766,6 +1748,22 @@ void R_PrecacheLevel(void)
 			texturepresent[sides[j].midtexture] = 1;
 		if (sides[j].bottomtexture >= 0 && sides[j].bottomtexture < numtextures)
 			texturepresent[sides[j].bottomtexture] = 1;
+	}
+
+	// check for animated textures
+	for (anim = anims; anim < lastanim; anim++)
+	{
+		if (!anim->istexture)
+			continue;
+
+		if (!texturepresent[anim->basepic])
+			continue;
+
+		for (h = 1; h < anim->numpics; h++)
+		{
+			if (!texturecache[anim->basepic+h])
+				R_GenerateTexture(anim->basepic+h);
+		}
 	}
 
 	// Sky texture is always present.
@@ -1785,16 +1783,27 @@ void R_PrecacheLevel(void)
 		// since we cache entire composite textures
 	}
 	free(texturepresent);
+}
 
-	//
-	// Precache sprites.
-	//
+static void R_PrecacheLevelSprites(void)
+{
+	char *spritepresent;
+	size_t i, j, k;
+	lumpnum_t lump;
+
+	thinker_t *th;
+	spriteframe_t *sf;
+
 	spritepresent = calloc(numsprites, sizeof (*spritepresent));
 	if (spritepresent == NULL) I_Error("%s: Out of memory looking up sprites", "R_PrecacheLevel");
 
 	for (th = thinkercap.next; th != &thinkercap; th = th->next)
-		if (th->function.acp1 == (actionf_p1)P_MobjThinker)
-			spritepresent[((mobj_t *)th)->sprite] = 1;
+	{
+		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+			continue;
+
+		spritepresent[((mobj_t *)th)->sprite] = 1;
+	}
 
 	spritememory = 0;
 	for (i = 0; i < numsprites; i++)
@@ -1805,17 +1814,65 @@ void R_PrecacheLevel(void)
 		for (j = 0; j < sprites[i].numframes; j++)
 		{
 			sf = &sprites[i].spriteframes[j];
-			for (k = 0; k < 8; k++)
-			{
-				// see R_InitSprites for more about lumppat,lumpid
-				lump = sf->lumppat[k];
-				if (devparm)
-					spritememory += W_LumpLength(lump);
-				W_CachePatchNum(lump, PU_CACHE);
+#define cacheang(a) {\
+				lump = sf->lumppat[a];\
+				if (devparm)\
+					spritememory += W_LumpLength(lump);\
+				W_CachePatchNum(lump, PU_CACHE);\
 			}
+			// see R_InitSprites for more about lumppat,lumpid
+			switch (sf->rotate)
+			{
+				case SRF_SINGLE:
+					cacheang(0);
+					break;
+				case SRF_2D:
+					cacheang(2);
+					cacheang(6);
+					break;
+				default:
+					k = 8;
+					while (k--)
+						cacheang(k);
+					break;
+			}
+#undef cacheang
 		}
 	}
+
 	free(spritepresent);
+}
+
+//
+// R_PrecacheLevel
+//
+// Preloads all relevant graphics for the level.
+//
+void R_PrecacheLevel(void)
+{
+	// do not flush the memory, Z_Malloc twice with same user will cause error in Z_CheckHeap()
+	if (rendermode == render_none)
+		return;
+
+	if (demo.playback)
+		return;
+
+#ifdef HWRENDER
+	if (rendermode == render_opengl)
+	{
+		HWR_PrecacheLevel();
+		return;
+	}
+#endif
+
+	// Precache flats.
+	flatmemory = P_PrecacheLevelFlats();
+
+	// Precache textures.
+	R_PrecacheLevelTextures();
+
+	// Precache sprites.
+	R_PrecacheLevelSprites();
 
 	// FIXME: this is no longer correct with OpenGL render mode
 	CONS_Debug(DBG_SETUP, "Precache level done:\n"

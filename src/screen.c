@@ -273,10 +273,13 @@ void SCR_Recalc(void)
 	vid.fsmalldupy = vid.smalldupy*FRACUNIT;
 #endif
 
-	// toggle off automap because some screensize-dependent values will
+	// toggle off (then back on) the automap because some screensize-dependent values will
 	// be calculated next time the automap is activated.
 	if (automapactive)
-		AM_Stop();
+	{
+		am_recalc = true;
+		AM_Start();
+	}
 
 	// set the screen[x] ptrs on the new vidbuffers
 	V_Init();
@@ -440,22 +443,20 @@ void SCR_CalculateFPS(void)
 
 void SCR_DisplayTicRate(void)
 {
-	const UINT8 *ticcntcolor = NULL;
 	UINT32 cap = R_GetFramerateCap();
 	UINT32 benchmark = (cap == 0) ? I_GetRefreshRate() : cap;
-	INT32 x = 318;
 	double fps = round(averageFPS);
 	INT32 fpsflags = V_LocalTransFlag()|V_SNAPTOBOTTOM|V_SNAPTORIGHT;
-	const char *fps_string;
-	
-	INT32 ticcntcolor2 = 0;
-	
+
 	if (gamestate == GS_NULL)
 		return;
 
 	// new kart counter
 	if (cv_ticrate.value == 1 || cv_ticrate.value == 2)
 	{
+		const UINT8 *ticcntcolor = NULL;
+		INT32 x = 318;
+
 		// draw "FPS"
 		if (cv_ticrate.value == 1)
 			V_DrawFixedPatch(306<<FRACBITS, 183<<FRACBITS, FRACUNIT, fpsflags, framecounter, R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_YELLOW, GTC_CACHE));
@@ -490,6 +491,9 @@ void SCR_DisplayTicRate(void)
 	}
 	else if (cv_ticrate.value == 3 || cv_ticrate.value == 4) // kart v1.0/srb2 counter
 	{
+		const char *fps_string;
+		INT32 ticcntcolor2 = 0;
+
 		if (fps > (benchmark - 5))
 			ticcntcolor2 = V_GREENMAP;
 		else if (fps < 20)
@@ -499,7 +503,8 @@ void SCR_DisplayTicRate(void)
 			fps_string = va("%d/%d\x82", (INT32)fps, cap);
 		else
 			fps_string = va("%d\x82", (INT32)fps);
-	
+
+		// draw "FPS"
 		if (cv_ticrate.value == 3)
 			V_DrawRightAlignedString(319, 181, V_YELLOWMAP|fpsflags, "FPS");
 			
@@ -512,13 +517,13 @@ void SCR_DisplayTicRate(void)
 
 void SCR_DisplayLocalPing(void)
 {
-	UINT32 ping = playerpingtable[consoleplayer];	// consoleplayer's ping is everyone's ping in a splitnetgame :P
+	UINT32 ping = playerpingtable[consoleplayer];
 	INT32 pingflags = V_LocalTransFlag()|V_SNAPTOBOTTOM|V_SNAPTORIGHT;
 	
-	if (cv_showping.value == 1 || (cv_showping.value == 2 && ping > servermaxping))	// only show 2 (warning) if our ping is at a bad level
+	if (cv_showping.value == 1 || (cv_showping.value == 2 && ping > servermaxping)) // only show 2 (warning) if our ping is at a bad level
 	{
 		INT32 dispy = (cv_ticrate.value == 1) ? 165 : ((cv_ticrate.value == 2 || cv_ticrate.value == 4) ? 172 : ((cv_ticrate.value == 3) ? 163 : 181)); // absolute buttpain
-		
-		HU_drawPing(308, dispy, ping, pingflags);
+
+		HU_drawPlayerPing(308, dispy, consoleplayer, pingflags); // consoleplayer's ping is everyone's ping in a splitnetgame :P
 	}
 }

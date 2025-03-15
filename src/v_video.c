@@ -138,7 +138,11 @@ static boolean InitCube(void)
 
 #define diffcons(cv) (cv.value != atoi(cv.defaultvalue))
 
+#ifdef BACKWARDSCOMPATCORRECTION
+	doinggamma = (cv_globalgamma.value < 0); //dont mess up gamma when raising brightness pls
+#else
 	doinggamma = diffcons(cv_globalgamma);
+#endif
 
 #define gammascale 8
 	globalgammamul = (cv_globalgamma.value ? ((255 - (gammascale*abs(cv_globalgamma.value)))/255.0) : 1.0);
@@ -438,32 +442,13 @@ static void LoadPalette(const char *lumpname)
 		pLocalPalette[i].s.alpha = 0xFF;
 
 		// lerp of colour cubing! if you want, make it smoother yourself
-		if (Cubeapply)
-			V_CubeApply(&pLocalPalette[i].s.red, &pLocalPalette[i].s.green, &pLocalPalette[i].s.blue);
+
+		if (!Cubeapply)
+			continue;
+
+		V_CubeApply(&pLocalPalette[i].s.red, &pLocalPalette[i].s.green, &pLocalPalette[i].s.blue);
 	}
 }
-
-#ifdef BACKWARDSCOMPATCORRECTION
-static boolean V_ShouldCube(void)
-{
-#define diffcons(cv) (cv.value != atoi(cv.defaultvalue))
-	return (diffcons(cv_globalsaturation)
-		|| diffcons(cv_rhue)
-		|| diffcons(cv_yhue)
-		|| diffcons(cv_ghue)
-		|| diffcons(cv_chue)
-		|| diffcons(cv_bhue)
-		|| diffcons(cv_mhue)
-		|| diffcons(cv_rgamma)
-		|| diffcons(cv_ygamma)
-		|| diffcons(cv_ggamma)
-		|| diffcons(cv_cgamma)
-		|| diffcons(cv_bgamma)
-		|| diffcons(cv_mgamma)
-		|| (cv_globalgamma.value <= 0));
-#undef diffcons
-}
-#endif
 
 void V_CubeApply(UINT8 *red, UINT8 *green, UINT8 *blue)
 {
@@ -471,11 +456,7 @@ void V_CubeApply(UINT8 *red, UINT8 *green, UINT8 *blue)
 	float linear;
 	UINT8 q;
 
-	if (!Cubeapply
-#ifdef BACKWARDSCOMPATCORRECTION
-	|| !V_ShouldCube()
-#endif
-	)
+	if (!Cubeapply)
 		return;
 
 	linear = (*red/255.0);
@@ -608,28 +589,22 @@ static UINT8 hudplusalpha[11]  = { 10,  8,  6,  4,  2,  0,  0,  0,  0,  0,  0};
 static UINT8 hudminusalpha[11] = { 10,  9,  9,  8,  8,  7,  7,  6,  6,  5,  5};
 UINT8 hudtrans = 0;
 
-// this is pretty dumb, but has to be done like this, otherwise the fps counter just disappears sometimes for no reason lol
-INT32 V_LocalTransFlag(void)
-{
-	return ((10-cv_translucenthud.value)*V_10TRANS);
-}
-
 static const UINT8 *v_colormap = NULL;
 static const UINT8 *v_translevel = NULL;
 
-static inline UINT8 standardpdraw(const UINT8 *dest, const UINT8 *source, fixed_t ofs)
+FUNCINLINE static ATTRINLINE UINT8 standardpdraw(const UINT8 *dest, const UINT8 *source, fixed_t ofs)
 {
 	(void)dest; return source[ofs>>FRACBITS];
 }
-static inline UINT8 mappedpdraw(const UINT8 *dest, const UINT8 *source, fixed_t ofs)
+FUNCINLINE static ATTRINLINE UINT8 mappedpdraw(const UINT8 *dest, const UINT8 *source, fixed_t ofs)
 {
 	(void)dest; return *(v_colormap + source[ofs>>FRACBITS]);
 }
-static inline UINT8 translucentpdraw(const UINT8 *dest, const UINT8 *source, fixed_t ofs)
+FUNCINLINE static ATTRINLINE UINT8 translucentpdraw(const UINT8 *dest, const UINT8 *source, fixed_t ofs)
 {
 	return *(v_translevel + ((source[ofs>>FRACBITS]<<8)&0xff00) + (*dest&0xff));
 }
-static inline UINT8 transmappedpdraw(const UINT8 *dest, const UINT8 *source, fixed_t ofs)
+FUNCINLINE static ATTRINLINE UINT8 transmappedpdraw(const UINT8 *dest, const UINT8 *source, fixed_t ofs)
 {
 	return *(v_translevel + (((*(v_colormap + source[ofs>>FRACBITS]))<<8)&0xff00) + (*dest&0xff));
 }
@@ -734,7 +709,7 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 		// TODO: make some kind of vertical version of V_FLIP, maybe by deprecating V_OFFSET in future?!?
 		offsety = FixedMul(SHORT(patch->topoffset)<<FRACBITS, vscale);
 
-		if ((scrn & (V_NOSCALESTART|V_OFFSET)) == (V_NOSCALESTART|V_OFFSET)) // Multiply by dupx/dupy for crosshairs
+		if ((scrn & (V_NOSCALESTART|V_OFFSET)) == (V_NOSCALESTART|V_OFFSET)) // Multiply by dupx/dupy
 		{
 			offsetx = FixedMul(offsetx, dupx<<FRACBITS);
 			offsety = FixedMul(offsety, dupy<<FRACBITS);
@@ -1171,32 +1146,37 @@ void V_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c)
 // This is now a function since it's otherwise repeated 2 times and honestly looks retarded:
 static UINT32 V_GetHWConsBackColor(void)
 {
-	UINT32 hwcolor;
+	UINT8 r, g, b;
+
 	switch (cons_backcolor.value)
 	{
-		case 0:		hwcolor = 0xffffff00;	break; 	// White
-		case 1:		hwcolor = 0x80808000;	break; 	// Gray
-		case 2:		hwcolor = 0xdeb88700;	break;	// Sepia
-		case 3:		hwcolor = 0x40201000;	break; 	// Brown
-		case 4:		hwcolor = 0xfa807200;	break; 	// Pink
-		case 5:		hwcolor = 0xff69b400;	break; 	// Raspberry
-		case 6:		hwcolor = 0xff000000;	break; 	// Red
-		case 7:		hwcolor = 0xffd68300;	break;	// Creamsicle
-		case 8:		hwcolor = 0xff800000;	break; 	// Orange
-		case 9:		hwcolor = 0xdaa52000;	break; 	// Gold
-		case 10:	hwcolor = 0x80800000;	break; 	// Yellow
-		case 11:	hwcolor = 0x00ff0000;	break; 	// Emerald
-		case 12:	hwcolor = 0x00800000;	break; 	// Green
-		case 13:	hwcolor = 0x4080ff00;	break; 	// Cyan
-		case 14:	hwcolor = 0x4682b400;	break; 	// Steel
-		case 15:	hwcolor = 0x1e90ff00;	break;	// Periwinkle
-		case 16:	hwcolor = 0x0000ff00;	break; 	// Blue
-		case 17:	hwcolor = 0xff00ff00;	break; 	// Purple
-		case 18:	hwcolor = 0xee82ee00;	break; 	// Lavender
+		case 0:		r = 0xff; g = 0xff; b = 0xff;	break; 	// White
+		case 1:		r = 0x80; g = 0x80; b = 0x80;	break; 	// Black
+		case 2:		r = 0xde; g = 0xb8; b = 0x87;	break;	// Sepia
+		case 3:		r = 0x40; g = 0x20; b = 0x10;	break; 	// Brown
+		case 4:		r = 0xfa; g = 0x80; b = 0x72;	break; 	// Pink
+		case 5:		r = 0xff; g = 0x69; b = 0xb4;	break; 	// Raspberry
+		case 6:		r = 0xff; g = 0x00; b = 0x00;	break; 	// Red
+		case 7:		r = 0xff; g = 0xd6; b = 0x83;	break;	// Creamsicle
+		case 8:		r = 0xff; g = 0x80; b = 0x00;	break; 	// Orange
+		case 9:		r = 0xda; g = 0xa5; b = 0x20;	break; 	// Gold
+		case 10:	r = 0x80; g = 0x80; b = 0x00;	break; 	// Yellow
+		case 11:	r = 0x00; g = 0xff; b = 0x00;	break; 	// Emerald
+		case 12:	r = 0x00; g = 0x80; b = 0x00;	break; 	// Green
+		case 13:	r = 0x40; g = 0x80; b = 0xff;	break; 	// Cyan
+		case 14:	r = 0x46; g = 0x82; b = 0xb4;	break; 	// Steel
+		case 15:	r = 0x1e; g = 0x90; b = 0xff;	break;	// Periwinkle
+		case 16:	r = 0x00; g = 0x00; b = 0xff;	break; 	// Blue
+		case 17:	r = 0xff; g = 0x00; b = 0xff;	break; 	// Purple
+		case 18:	r = 0xee; g = 0x82; b = 0xee;	break; 	// Lavender
 		// Default green
-		default:	hwcolor = 0x00800000;	break;
+		default:	r = 0x00; g = 0x80; b = 0x00;	break;
 	}
-	return hwcolor;
+
+	if (!HWR_ShouldUsePaletteRendering())
+		V_CubeApply(&r, &g, &b);
+
+	return (r << 24) | (g << 16) | (b << 8);
 }
 #endif
 
@@ -3180,6 +3160,132 @@ char V_GetSkincolorChar(INT32 color)
 	return cstart;
 }
 
+INT32 V_SkinColorToHighlightcolor(skincolors_t color)
+{
+	switch (color)
+	{
+		case SKINCOLOR_WHITE:
+		case SKINCOLOR_SILVER:
+		case SKINCOLOR_SLATE:
+			return V_STEELMAP;
+		case SKINCOLOR_GREY:
+		case SKINCOLOR_NICKEL:
+		case SKINCOLOR_BLACK:
+		case SKINCOLOR_SKUNK:
+		case SKINCOLOR_JET:
+			return V_GRAYMAP;
+		case SKINCOLOR_SEPIA:
+		case SKINCOLOR_BEIGE:
+		case SKINCOLOR_WALNUT:
+		case SKINCOLOR_BROWN:
+		case SKINCOLOR_LEATHER:
+		case SKINCOLOR_RUST:
+		case SKINCOLOR_WRISTWATCH:
+			return V_BROWNMAP;
+		case SKINCOLOR_FAIRY:
+		case SKINCOLOR_SALMON:
+		case SKINCOLOR_PINK:
+		case SKINCOLOR_ROSE:
+		case SKINCOLOR_BRICK:
+		case SKINCOLOR_LEMONADE:
+		case SKINCOLOR_BUBBLEGUM:
+		case SKINCOLOR_LILAC:
+			return V_PINKMAP;
+		case SKINCOLOR_CINNAMON:
+		case SKINCOLOR_RUBY:
+		case SKINCOLOR_RASPBERRY:
+		case SKINCOLOR_CHERRY:
+		case SKINCOLOR_RED:
+		case SKINCOLOR_CRIMSON:
+		case SKINCOLOR_MAROON:
+		case SKINCOLOR_FLAME:
+		case SKINCOLOR_SCARLET:
+		case SKINCOLOR_KETCHUP:
+			return V_REDMAP;
+		case SKINCOLOR_DAWN:
+		case SKINCOLOR_SUNSET:
+		case SKINCOLOR_CREAMSICLE:
+		case SKINCOLOR_ORANGE:
+		case SKINCOLOR_PUMPKIN:
+		case SKINCOLOR_ROSEWOOD:
+		case SKINCOLOR_BURGUNDY:
+		case SKINCOLOR_TANGERINE:
+			return V_ORANGEMAP;
+		case SKINCOLOR_PEACH:
+		case SKINCOLOR_CARAMEL:
+		case SKINCOLOR_CREAM:
+			return V_PEACHMAP;
+		case SKINCOLOR_GOLD:
+		case SKINCOLOR_ROYAL:
+		case SKINCOLOR_BRONZE:
+		case SKINCOLOR_COPPER:
+		case SKINCOLOR_THUNDER:
+			return V_GOLDMAP;
+		case SKINCOLOR_POPCORN:
+		case SKINCOLOR_QUARRY:
+		case SKINCOLOR_YELLOW:
+		case SKINCOLOR_MUSTARD:
+		case SKINCOLOR_CROCODILE:
+		case SKINCOLOR_OLIVE:
+			return V_YELLOWMAP;
+		case SKINCOLOR_ARTICHOKE:
+		case SKINCOLOR_VOMIT:
+		case SKINCOLOR_GARDEN:
+		case SKINCOLOR_TEA:
+		case SKINCOLOR_PISTACHIO:
+			return V_TEAMAP;
+		case SKINCOLOR_LIME:
+		case SKINCOLOR_HANDHELD:
+		case SKINCOLOR_MOSS:
+		case SKINCOLOR_CAMOUFLAGE:
+		case SKINCOLOR_ROBOHOOD:
+		case SKINCOLOR_MINT:
+		case SKINCOLOR_GREEN:
+		case SKINCOLOR_PINETREE:
+		case SKINCOLOR_EMERALD:
+		case SKINCOLOR_SWAMP:
+		case SKINCOLOR_DREAM:
+		case SKINCOLOR_PLAGUE:
+		case SKINCOLOR_ALGAE:
+			return V_GREENMAP;
+		case SKINCOLOR_CARIBBEAN:
+		case SKINCOLOR_AZURE:
+		case SKINCOLOR_AQUA:
+		case SKINCOLOR_TEAL:
+		case SKINCOLOR_CYAN:
+		case SKINCOLOR_JAWZ:
+		case SKINCOLOR_CERULEAN:
+		case SKINCOLOR_NAVY:
+		case SKINCOLOR_SAPPHIRE:
+			return V_SKYMAP;
+		case SKINCOLOR_PIGEON:
+		case SKINCOLOR_PLATINUM:
+		case SKINCOLOR_STEEL:
+			return V_STEELMAP;
+		case SKINCOLOR_PERIWINKLE:
+		case SKINCOLOR_BLUE:
+		case SKINCOLOR_BLUEBERRY:
+		case SKINCOLOR_NOVA:
+			return V_BLUEMAP;
+		case SKINCOLOR_ULTRAVIOLET:
+		case SKINCOLOR_PURPLE:
+		case SKINCOLOR_FUCHSIA:
+			return V_PURPLEMAP;
+		case SKINCOLOR_PASTEL:
+		case SKINCOLOR_MOONSLAM:
+		case SKINCOLOR_DUSK:
+		case SKINCOLOR_TOXIC:
+		case SKINCOLOR_MAUVE:
+		case SKINCOLOR_LAVENDER:
+		case SKINCOLOR_BYZANTIUM:
+		case SKINCOLOR_POMEGRANATE:
+			return V_LAVENDERMAP;
+
+		default:
+			return 0;
+	}
+}
+
 boolean *heatshifter = NULL;
 INT32 lastheight = 0;
 INT32 heatindex[MAXSPLITSCREENPLAYERS] = {0, 0, 0, 0};
@@ -3190,7 +3296,7 @@ INT32 heatindex[MAXSPLITSCREENPLAYERS] = {0, 0, 0, 0};
 // Perform a particular image postprocessing function.
 //
 
-void V_DoPostProcessor(INT32 view, player_t *player, INT32 param)
+void V_DoPostProcessor(INT32 view, INT32 param)
 {
 #if NUMSCREENS < 5
 	// do not enable image post processing for ARM, SH and MIPS CPUs
@@ -3209,7 +3315,9 @@ void V_DoPostProcessor(INT32 view, player_t *player, INT32 param)
 	if (view < 0 || view > 3 || view > splitscreen)
 		return;
 
-	if (!player->postimgflags)
+	camera_t *thiscam = &camera[view];
+
+	if (!thiscam->postimg)
 		return;
 
 	if ((view == 1 && splitscreen == 1) || view >= 2)
@@ -3225,7 +3333,7 @@ void V_DoPostProcessor(INT32 view, player_t *player, INT32 param)
 	UINT8 *tmpscr = screens[4];
 	UINT8 *srcscr = screens[0];
 
-	if (player->postimgflags & POSTIMG_WATER)
+	if (thiscam->postimg & POSTIMG_WATER)
 	{
 		INT32 y;
 		// Set disStart to a range from 0 to FINEANGLE, incrementing by 128 per tic
@@ -3284,22 +3392,7 @@ void V_DoPostProcessor(INT32 view, player_t *player, INT32 param)
 		tmpscr = srcscr;
 		srcscr = tmp;
 	}
-
-	/*if (player->postimgflags & POSTIMG_MOTION) // Motion Blur!
-	 {
-		INT32 x, y;
-
-		// TODO: Add a postimg_param so that we can pick the translucency level...
-		UINT8 *transme = transtables + ((param-1)<<FF_TRANSSHIFT);
-
-		for (y = yoffset; y < yoffset+viewheight; y++)
-		{
-			for (x = xoffset; x < xoffset+viewwidth; x++)
-				tmpscr[y*vid.width + x] =     colormaps[*(transme     + (srcscr   [(y*vid.width)+x ] <<8) + (tmpscr[(y*vid.width)+x]))];
-		}
-	}*/
-
-	if (player->postimgflags & POSTIMG_HEAT) // Heat wave
+	else if (thiscam->postimg & POSTIMG_HEAT) // Heat wave
 	{
 		INT32 y;
 
@@ -3346,7 +3439,21 @@ void V_DoPostProcessor(INT32 view, player_t *player, INT32 param)
 		srcscr = tmp;
 	}
 
-	if ((player->postimgflags & POSTIMG_FLIP) && !(player->postimgflags & POSTIMG_MIRROR)) // Flip the screen upside-down
+	/*if (thiscam->postimg & POSTIMG_MOTION) // Motion Blur!
+	{
+		INT32 x, y;
+
+		// TODO: Add a postimg_param so that we can pick the translucency level...
+		UINT8 *transme = transtables + ((param-1)<<FF_TRANSSHIFT);
+
+		for (y = yoffset; y < yoffset+viewheight; y++)
+		{
+			for (x = xoffset; x < xoffset+viewwidth; x++)
+				tmpscr[y*vid.width + x] =     colormaps[*(transme     + (srcscr   [(y*vid.width)+x ] <<8) + (tmpscr[(y*vid.width)+x]))];
+		}
+	}*/
+
+	if ((thiscam->postimg & POSTIMG_FLIP) && !(thiscam->postimg & POSTIMG_MIRROR)) // Flip the screen upside-down
 	{
 		INT32 y, y2;
 
@@ -3357,7 +3464,7 @@ void V_DoPostProcessor(INT32 view, player_t *player, INT32 param)
 		tmpscr = srcscr;
 		srcscr = tmp;
 	}
-	else if ((player->postimgflags & POSTIMG_MIRROR) && !(player->postimgflags & POSTIMG_FLIP)) // Flip the screen on the x axis
+	else if ((thiscam->postimg & POSTIMG_MIRROR) && !(thiscam->postimg & POSTIMG_FLIP)) // Flip the screen on the x axis
 	{
 		INT32 y, x, x2;
 
@@ -3369,7 +3476,7 @@ void V_DoPostProcessor(INT32 view, player_t *player, INT32 param)
 		tmpscr = srcscr;
 		srcscr = tmp;
 	}
-	else if ((player->postimgflags & POSTIMG_MIRROR) && (player->postimgflags & POSTIMG_FLIP)) // Flip the screen upside-down and on the x axis
+	else if ((thiscam->postimg & POSTIMG_MIRROR) && (thiscam->postimg & POSTIMG_FLIP)) // Flip the screen upside-down and on the x axis
 	{
 		INT32 y, x;
 

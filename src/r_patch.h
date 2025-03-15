@@ -15,6 +15,7 @@
 #define __R_PATCH__
 
 #include "r_defs.h"
+#include "r_fps.h"
 #include "doomdef.h"
 
 // Structs
@@ -39,11 +40,7 @@ typedef struct
 
 // Conversions between patches / flats / textures...
 boolean R_CheckIfPatch(lumpnum_t lump);
-void R_TextureToFlat(size_t tex, UINT8 *flat);
-void R_PatchToFlat(patch_t *patch, UINT8 *flat);
-void R_PatchToMaskedFlat(patch_t *patch, UINT16 *raw, boolean flip);
-patch_t *R_FlatToPatch(UINT8 *raw, UINT16 width, UINT16 height, UINT16 leftoffset, UINT16 topoffset, size_t *destsize, boolean transparency);
-patch_t *R_MaskedFlatToPatch(UINT16 *raw, UINT16 width, UINT16 height, UINT16 leftoffset, UINT16 topoffset, size_t *destsize);
+void *R_MaskedFlatToPatch(UINT16 *raw, UINT16 width, UINT16 height, UINT16 leftoffset, UINT16 topoffset, size_t *destsize);
 
 // SpriteInfo
 extern spriteinfo_t spriteinfo[NUMSPRITES];
@@ -53,6 +50,8 @@ void R_ParseSPRTINFOLump(UINT16 wadNum, UINT16 lumpNum);
 // Sprite rotation
 #ifdef ROTSPRITE
 INT32 R_GetRollAngle(angle_t rollangle);
+angle_t R_RotationAngle(angle_t ang, angle_t camang, interpmobjstate_t *interp);
+
 patch_t *Patch_GetRotatedSprite(
 	spriteframe_t *sprite,
 	size_t frame, size_t spriteangle,

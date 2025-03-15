@@ -37,6 +37,10 @@ enum viewcontext_e
 	VIEWCONTEXT_SKY4
 };
 
+extern enum viewcontext_e viewcontext;
+
+#define R_GetViewNumber() ((viewcontext - VIEWCONTEXT_PLAYER1) & 3)
+
 typedef struct {
 	fixed_t x;
 	fixed_t y;
@@ -59,7 +63,7 @@ typedef struct {
 	fixed_t x;
 	fixed_t y;
 	fixed_t z;
-	subsector_t *subsector;
+	//subsector_t *subsector;
 	angle_t angle;
 	fixed_t scale;
 	fixed_t spritexscale;

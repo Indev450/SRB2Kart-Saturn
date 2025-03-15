@@ -351,6 +351,7 @@ typedef enum
 typedef enum
 {
 	LAP_CUR,
+	LAP_BEST,
 	LAP_LAST,
 	LAP__MAX
 } laptime_e;
@@ -403,7 +404,6 @@ typedef struct player_s
 	angle_t old_frameangle, old_frameangle2;
 	
 	// SRB2Kart CEP: Sliptide rolling
-	INT32 sliptidemem;
 	angle_t sliproll;
 
 	INT16 lturn_max[MAXPREDICTTICS]; // What's the expected turn value for full-left for a number of frames back (to account for netgame latency)?
@@ -412,8 +412,6 @@ typedef struct player_s
 	// Bit flags.
 	// See pflags_t, above.
 	pflags_t pflags;
-
-	UINT16 postimgflags;
 
 	// playing animation.
 	panim_t panim;
@@ -552,9 +550,10 @@ typedef struct player_s
 	UINT8 hitemvictim;
 
 	UINT8 splitscreenindex;
-#ifdef HWRENDER
+
+	tic_t driftsparkGrowTimer;
+
 	fixed_t fovadd; // adjust FOV for hw rendering
-#endif
 } player_t;
 
 #endif

@@ -44,7 +44,7 @@
 #define BASEVIDWIDTH 320 // NEVER CHANGE THIS! This is the original
 #define BASEVIDHEIGHT 200 // resolution of the graphics.
 
-// max res for png capture; just here to prevent some crashes on very high resoltions; tho you should never go this high cause ogl allocs certain things with MAXVIDWIDTH and MAXVIDHEIGHT too Zzz...
+// max res for png capture; just here to prevent some crashes on very high resolutions; tho you should never go this high cause ogl allocs certain things with MAXVIDWIDTH and MAXVIDHEIGHT too Zzz...
 #define MAXPNGWIDTH 7680
 #define MAXPNGHEIGHT 4320
 
@@ -94,6 +94,7 @@ typedef struct
 	INT32 vesamode; // vesa mode number plus LINEAR_MODE bit
 	void *plinearmem; // linear address of start of frame buffer
 } vesa_extra_t;
+
 // a video modes from the video modes list,
 // note: video mode 0 is always standard VGA320x200.
 typedef struct vmode_s
@@ -149,6 +150,8 @@ extern consvar_t cv_highreshudscale;
 // wait for page flipping to end or not
 extern consvar_t cv_vidwait;
 extern consvar_t cv_timescale;
+
+extern consvar_t cv_alwaysgrabmouse;
 
 // quick fix for tall/short skies, depending on bytesperpixel
 extern void (*walldrawerfunc)(void);

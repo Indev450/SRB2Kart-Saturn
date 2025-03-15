@@ -111,6 +111,7 @@ static fileused_t transferFiles[UINT8_MAX + 1];
 // Receiver structure
 INT32 fileneedednum; // Number of files needed to join the server
 fileneeded_t fileneeded[MAX_WADFILES]; // List of needed files
+static I_mutex downloadmutex;
 char downloaddir[512] = "DOWNLOAD";
 
 #ifdef CLIENT_LOADINGSCREEN
@@ -232,6 +233,9 @@ void D_ParseFileneeded(INT32 fileneedednum_parm, UINT8 *fileneededstr, UINT16 fi
 
 void CL_PrepareDownloadSaveGame(const char *tmpsave)
 {
+#ifdef CLIENT_LOADINGSCREEN
+	lastfilenum = -1;
+#endif
 	fileneedednum = 1;
 	fileneeded[0].status = FS_REQUESTED;
 	fileneeded[0].totalsize = UINT32_MAX;
@@ -1327,6 +1331,7 @@ void CURLPrepareFile(const char* url, int dfilenum)
 		curl_starttime = time(NULL);
 
 		curl_running = true;
+
 #ifdef HAVE_THREADS
 		I_spawn_thread("http-download", (I_thread_fn)CURLGetFile, NULL);
 #endif
@@ -1336,10 +1341,15 @@ void CURLPrepareFile(const char* url, int dfilenum)
 void CURLAbortFile(void)
 {
 	curl_running = false;
+
+	// lock and unlock to wait for the download thread to exit
+	I_lock_mutex(&downloadmutex);
+	I_unlock_mutex(downloadmutex);
 }
 
 void CURLGetFile(void)
 {
+	I_lock_mutex(&downloadmutex);
 	CURLMcode mc; /* return code used by curl_multi_wait() */
 	CURLcode easyres; /* Return from easy interface */
 	CURLMsg *m; /* for picking up messages with the transfer status */
@@ -1432,6 +1442,7 @@ void CURLGetFile(void)
 		multi_handle = NULL;
     }
 	curl_running = false;
+	I_unlock_mutex(downloadmutex);
 }
 
 HTTP_login *

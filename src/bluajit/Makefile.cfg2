@@ -1,0 +1,63 @@
+Q= @
+E= @true
+#Q=
+#E= @:
+
+$(MINILUA_T): $(MINILUA_O)
+	$(E) "HOSTLINK  $@"
+	$(HOST_CC) -o $@ $(MINILUA_O) $(MINILUA_LIBS)
+
+bluajit/luajit.h: $(MINILUA_DEP) $(GIT_DEP) bluajit/luajit_rolling.h
+	$(E) "VERSION   $@"
+	$(Q)$(GIT_RELVER)
+	$(Q)cd bluajit && ../$(HOST_LUA) host/genversion.lua
+
+bluajit/host/buildvm_arch.h: $(DASM_DASC) $(MINILUA_DEP) bluajit/lj_arch.h bluajit/lua.h bluajit/luaconf.h
+	$(E) "DYNASM    $@"
+	$(Q)$(DASM) $(DASM_FLAGS) -o $@ $(DASM_DASC)
+
+$(OBJDIR)/buildvm.o: $(DASM_DIR)/dasm_*.h
+
+$(BUILDVM_T): $(BUILDVM_O)
+	$(E) "HOSTLINK  $@"
+	$(HOST_CC) -o $@ $(BUILDVM_O)
+
+$(LJVM_BOUT): $(BUILDVM_T)
+	$(E) "BUILDVM   $@"
+	$(Q)$(BUILDVM_X) -m $(LJVM_MODE) -o $@
+
+bluajit/lj_bcdef.h: $(BUILDVM_T) $(LJLIB_C)
+	$(E) "BUILDVM   $@"
+	$(Q)$(BUILDVM_X) -m bcdef -o $@ $(LJLIB_C)
+
+bluajit/lj_ffdef.h: $(BUILDVM_T) $(LJLIB_C)
+	$(E) "BUILDVM   $@"
+	$(Q)$(BUILDVM_X) -m ffdef -o $@ $(LJLIB_C)
+
+bluajit/lj_libdef.h: $(BUILDVM_T) $(LJLIB_C)
+	$(E) "BUILDVM   $@"
+	$(Q)$(BUILDVM_X) -m libdef -o $@ $(LJLIB_C)
+
+bluajit/lj_recdef.h: $(BUILDVM_T) $(LJLIB_C)
+	$(E) "BUILDVM   $@"
+	$(Q)$(BUILDVM_X) -m recdef -o $@ $(LJLIB_C)
+
+$(LIB_VMDEF): $(BUILDVM_T) $(LJLIB_C)
+	$(E) "BUILDVM   $@"
+	$(Q)$(BUILDVM_X) -m vmdef -o $(LIB_VMDEFP) $(LJLIB_C)
+
+bluajit/lj_folddef.h: $(BUILDVM_T) bluajit/lj_opt_fold.c
+	$(E) "BUILDVM   $@"
+	$(Q)$(BUILDVM_X) -m folddef -o $@ bluajit/lj_opt_fold.c
+
+$(OBJDIR)/%.o: bluajit/%.c
+	$(E) "CC        $@"
+	$(TARGET_CC) $(TARGET_ACFLAGS) -c -o $@ $<
+
+$(OBJDIR)/%.o: $(OBJDIR)/lj_vm.S
+	$(E) "ASM       $@"
+	$(TARGET_CC) $(TARGET_ASFLAGS) -c -o $@ $<
+
+$(HOST_O): $(OBJDIR)/%.o: bluajit/host/%.c
+	$(E) "HOSTCC    $@"
+	$(HOST_CC) $(HOST_ACFLAGS) -c -o $@ $<

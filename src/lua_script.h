@@ -13,10 +13,21 @@
 #include "m_fixed.h"
 #include "doomtype.h"
 #include "d_player.h"
+#include "p_saveg.h"
 
+#ifdef NOBLUAJIT
 #include "blua/lua.h"
 #include "blua/lualib.h"
 #include "blua/lauxlib.h"
+#else
+#include "command.h"
+#include "bluajit/lua.h"
+#include "bluajit/lualib.h"
+#include "bluajit/lauxlib.h"
+#define abs_index(L, i)		((i) > 0 || (i) <= LUA_REGISTRYINDEX ? (i) : \
+					lua_gettop(L) + (i) + 1)
+extern consvar_t cv_luajit;
+#endif
 
 #define lua_optboolean(L, i) (!lua_isnoneornil(L, i) && lua_toboolean(L, i))
 #define lua_opttrueboolean(L, i) (lua_isnoneornil(L, i) || lua_toboolean(L, i))
@@ -55,17 +66,14 @@ void LUA_InvalidateLevel(void);
 void LUA_InvalidateMapthings(void);
 void LUA_InvalidatePlayer(player_t *player);
 void LUA_Step(void);
-void LUA_Archive(void);
-void LUA_UnArchive(void);
-
-void LUA_ArchiveDemo(void);
-void LUA_UnArchiveDemo(void);
+void LUA_Archive(savebuffer_t *save, boolean network);
+void LUA_UnArchive(savebuffer_t *save, boolean network);
 
 void Got_Luacmd(UINT8 **cp, INT32 playernum); // lua_consolelib.c
 void LUA_CVarChanged(const char *name); // lua_consolelib.c
 int Lua_optoption(lua_State *L, int narg, int def, int list_ref);
 int Lua_CreateFieldTable(lua_State *L, const char *const lst[]);
-void LUAh_NetArchiveHook(lua_CFunction archFunc);
+void LUA_HookNetArchive(lua_CFunction archFunc, savebuffer_t *save);
 
 // Console wrapper
 void COM_Lua_f(void);

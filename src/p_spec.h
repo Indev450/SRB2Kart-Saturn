@@ -25,6 +25,22 @@ extern mobj_t *skyboxmo[2];
 //
 #define GETSECSPECIAL(i,j) ((i >> ((j-1)*4))&15)
 
+/** Animated texture descriptor
+ * This keeps track of an animated texture or an animated flat.
+ * \sa P_UpdateSpecials, P_InitPicAnims, animdef_t
+ */
+typedef struct
+{
+	SINT8 istexture; ///< ::true for a texture, ::false for a flat
+	INT32 picnum;    ///< The end flat number
+	INT32 basepic;   ///< The start flat number
+	INT32 numpics;   ///< Number of frames in the animation
+	tic_t speed;     ///< Number of tics for which each frame is shown
+} anim_t;
+
+extern anim_t *lastanim;
+extern anim_t *anims;
+
 // at game start
 void P_InitPicAnims(void);
 

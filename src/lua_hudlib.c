@@ -28,6 +28,7 @@
 #include "lua_script.h"
 #include "lua_libs.h"
 #include "lua_hud.h"
+#include "lua_hook.h"
 
 #define HUDONLY if (!hud_running) return luaL_error(L, "HUD rendering code should not be called outside of rendering hooks!");
 
@@ -39,8 +40,6 @@ UINT32 hud_interpcounter = 0;
 boolean hud_interpstring = false;
 boolean hud_interplatch = false;
 static UINT8 hud_enabled[(hud_MAX/8)+1];
-
-static UINT8 hudAvailable; // hud hooks field
 
 static UINT8 camnum = 1;
 
@@ -91,19 +90,6 @@ static const char *const patch_opt[] = {
 	"height",
 	"leftoffset",
 	"topoffset",
-	NULL};
-
-enum hudhook {
-	hudhook_game = 0,
-	hudhook_scores = 1,
-	hudhook_intermission = 2,
-	hudhook_vote = 3,
-};
-static const char *const hudhook_opt[] = {
-	"game",
-	"scores",
-	"intermission",
-	"vote",
 	NULL};
 
 static int patch_fields_ref = LUA_NOREF;
@@ -411,6 +397,18 @@ static int libd_cachePatch(lua_State *L)
 	return 1;
 }
 
+#ifdef ROTSPRITE
+static int libd_cachePatchRotated(lua_State *L)
+{
+	HUDONLY
+	angle_t rollangle = luaL_checkangle(L, 2);
+	INT32 rot = R_GetRollAngle(rollangle);
+	LUA_PushUserdata(L, W_CachePatchNameRotated(luaL_checkstring(L, 1), rot, PU_STATIC), META_PATCH);
+
+	return 1;
+}
+#endif
+
 // this is structured like getSprite2Patch in vanilla 2.2
 // v.getSpritePatch(skin, sprite, [frame, [angle, [rollangle]]])
 static int libd_getSpritePatch(lua_State *L)
@@ -476,12 +474,16 @@ static int libd_getSpritePatch(lua_State *L)
 	if (skn < 0) // standard sprite
 	{
 		sprdef = &sprites[i];
+#ifdef ROTSPRITE
 		sprinfo = &spriteinfo[i];
+#endif
 	}
 	else // player skin
 	{
 		sprdef = &skins[skn].spritedef;
+#ifdef ROTSPRITE
 		sprinfo = &skins[skn].sprinfo;
+#endif
 	}
 
 	// set frame number
@@ -502,13 +504,15 @@ static int libd_getSpritePatch(lua_State *L)
 	if (angle >= 8) // out of range?
 		angle = (angle & 7); // modulus angle by 8
 
+#ifdef ROTSPRITE
 	// rotsprite?????
-	if (lua_isnumber(L, 4) && (cv_spriteroll.value))
+	if (lua_isnumber(L, 4))
 	{
 		angle_t rollangle = luaL_checkangle(L, 4);
 		INT32 rot = R_GetRollAngle(rollangle);
 
-		if (rot) {
+		if (rot)
+		{
 			patch_t *rotsprite = Patch_GetRotatedSprite(sprframe, frame, angle, sprframe->flip & (1<<angle), false, sprinfo, rot);
 			LUA_PushUserdata(L, rotsprite, META_PATCH);
 			lua_pushboolean(L, false);
@@ -516,6 +520,7 @@ static int libd_getSpritePatch(lua_State *L)
 			return 3;
 		}
 	}
+#endif
 
 	// push both the patch and its "flip" value
 	LUA_PushUserdata(L, W_CachePatchNum(sprframe->lumppat[angle], PU_STATIC), META_PATCH);
@@ -665,7 +670,7 @@ static int libd_drawOnMinimap(lua_State *L)
 	if (gamestate != GS_LEVEL)
 		return 0;
 
-	if (stplyr != &players[displayplayers[0]])
+	if (stplyrnum != 0)
 		return 0;
 
 	AutomapPic = minimapinfo.minimap_pic;
@@ -1189,6 +1194,10 @@ static int libd_interpLatch(lua_State *L)
 static luaL_Reg lib_draw[] = {
 	{"patchExists", libd_patchExists},
 	{"cachePatch", libd_cachePatch},
+#ifdef ROTSPRITE
+	// Is this ifdef nonsense? Yes.
+	{"cachePatchRotated", libd_cachePatchRotated},
+#endif
 	{"draw", libd_draw},
 	{"drawScaled", libd_drawScaled},
 	{"drawStretched", libd_drawStretched},
@@ -1217,6 +1226,8 @@ static luaL_Reg lib_draw[] = {
 	{"interpLatch", libd_interpLatch},
 	{NULL, NULL}
 };
+
+static int lib_draw_ref;
 
 //
 // lib_hud
@@ -1251,25 +1262,7 @@ static int lib_hudenabled(lua_State *L)
 }
 
 // add a HUD element for rendering
-static int lib_hudadd(lua_State *L)
-{
-	enum hudhook field;
-
-	luaL_checktype(L, 1, LUA_TFUNCTION);
-	field = luaL_checkoption(L, 2, "game", hudhook_opt);
-
-	lua_getfield(L, LUA_REGISTRYINDEX, "HUD");
-	I_Assert(lua_istable(L, -1));
-	lua_rawgeti(L, -1, field+2); // HUD[2+]
-	I_Assert(lua_istable(L, -1));
-	lua_remove(L, -2);
-
-	lua_pushvalue(L, 1);
-	lua_rawseti(L, -2, (int)(lua_objlen(L, -2) + 1));
-
-	hudAvailable |= 1<<field;
-	return 0;
-}
+extern int lib_hudadd(lua_State *L);
 
 static int lib_hudsetvotebackground(lua_State *L)
 {
@@ -1354,23 +1347,9 @@ int LUA_HudLib(lua_State *L)
 {
 	memset(hud_enabled, 0xff, (hud_MAX/8)+1);
 
-	lua_newtable(L); // HUD registry table
-		lua_newtable(L);
-		luaL_register(L, NULL, lib_draw);
-		lua_rawseti(L, -2, 1); // HUD[1] = lib_draw
-
-		lua_newtable(L);
-		lua_rawseti(L, -2, 2); // HUD[2] = game rendering functions array
-
-		lua_newtable(L);
-		lua_rawseti(L, -2, 3); // HUD[3] = scores rendering functions array
-
-		lua_newtable(L);
-		lua_rawseti(L, -2, 4); // HUD[4] = intermission rendering functions array
-
-		lua_newtable(L);
-		lua_rawseti(L, -2, 5); // HUD[5] = vote rendering functions array
-	lua_setfield(L, LUA_REGISTRYINDEX, "HUD");
+	lua_newtable(L);
+	luaL_register(L, NULL, lib_draw);
+	lib_draw_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
 	luaL_newmetatable(L, META_HUDINFO);
 		lua_pushcfunction(L, hudinfo_get);
@@ -1426,153 +1405,19 @@ boolean LUA_HudEnabled(enum hud option)
 	return false;
 }
 
-// Hook for HUD rendering
-void LUAh_GameHUD(huddrawlist_h list)
+void LUA_SetHudHook(int hook, huddrawlist_h list)
 {
-	if (!gL || !(hudAvailable & (1<<hudhook_game)))
-		return;
-	
+	lua_getref(gL, lib_draw_ref);
+
 	lua_pushlightuserdata(gL, list);
 	lua_setfield(gL, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
 
-	hud_running = true;
-	lua_settop(gL, 0);
-	
-	lua_pushcfunction(gL, LUA_GetErrorMessage);
-
-	lua_getfield(gL, LUA_REGISTRYINDEX, "HUD");
-	I_Assert(lua_istable(gL, -1));
-	lua_rawgeti(gL, -1, hudhook_game+2); // HUD[2] = rendering funcs
-	I_Assert(lua_istable(gL, -1));
-
-	lua_rawgeti(gL, -2, 1); // HUD[1] = lib_draw
-	I_Assert(lua_istable(gL, -1));
-	lua_remove(gL, -3); // pop HUD
-	LUA_PushUserdata(gL, stplyr, META_PLAYER);
-	LUA_PushUserdata(gL, &camera[stplyrnum], META_CAMERA);
-	camnum = stplyrnum + 1;
-
-	hud_interpcounter = 0;
-	lua_pushnil(gL);
-	while (lua_next(gL, -5) != 0) {
-		hud_interpolate = hud_interpstring = hud_interplatch = false;
-		hud_interpcounter++;
-		lua_pushvalue(gL, -5); // graphics library (HUD[1])
-		lua_pushvalue(gL, -5); // stplyr
-		lua_pushvalue(gL, -5); // camera
-		LUA_Call(gL, 3, 0, 1);
+	// there used to be a switch statement here, its gone now.
+	if (hook == HUD_HOOK(game))
+	{
+		LUA_PushUserdata(gL, stplyr, META_PLAYER);
+		LUA_PushUserdata(gL, &camera[stplyrnum], META_CAMERA);
+		camnum = stplyrnum + 1; // for compatibility
 	}
-	lua_settop(gL, 0);
-	hud_running = false;
-
-	lua_pushlightuserdata(gL, NULL);
-	lua_setfield(gL, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
 }
 
-void LUAh_ScoresHUD(huddrawlist_h list)
-{
-	if (!gL || !(hudAvailable & (1<<hudhook_scores)))
-		return;
-	
-	lua_pushlightuserdata(gL, list);
-	lua_setfield(gL, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
-
-	hud_running = true;
-	lua_settop(gL, 0);
-	
-	lua_pushcfunction(gL, LUA_GetErrorMessage);
-
-	lua_getfield(gL, LUA_REGISTRYINDEX, "HUD");
-	I_Assert(lua_istable(gL, -1));
-	lua_rawgeti(gL, -1, hudhook_scores+2); // HUD[3] = rendering funcs
-	I_Assert(lua_istable(gL, -1));
-
-	lua_rawgeti(gL, -2, 1); // HUD[1] = lib_draw
-	I_Assert(lua_istable(gL, -1));
-	lua_remove(gL, -3); // pop HUD
-	lua_pushnil(gL);
-	hud_interpcounter = 0;
-	while (lua_next(gL, -3) != 0) {
-		hud_interpolate = hud_interpstring = hud_interplatch = false;
-		hud_interpcounter++;
-		lua_pushvalue(gL, -3); // graphics library (HUD[1])
-		LUA_Call(gL, 1, 0, 1);
-	}
-	lua_settop(gL, 0);
-	hud_running = false;
-
-	lua_pushlightuserdata(gL, NULL);
-	lua_setfield(gL, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
-}
-
-void LUAh_IntermissionHUD(huddrawlist_h list)
-{
-	if (!gL || !(hudAvailable & (1<<hudhook_intermission)))
-		return;
-	
-	lua_pushlightuserdata(gL, list);
-	lua_setfield(gL, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
-
-	hud_running = true;
-	lua_settop(gL, 0);
-	
-	lua_pushcfunction(gL, LUA_GetErrorMessage);
-
-	lua_getfield(gL, LUA_REGISTRYINDEX, "HUD");
-	I_Assert(lua_istable(gL, -1));
-	lua_rawgeti(gL, -1, hudhook_intermission+2); // HUD[4] = rendering funcs
-	I_Assert(lua_istable(gL, -1));
-
-	lua_rawgeti(gL, -2, 1); // HUD[1] = lib_draw
-	I_Assert(lua_istable(gL, -1));
-	lua_remove(gL, -3); // pop HUD
-	lua_pushnil(gL);
-	hud_interpcounter = 0;
-	while (lua_next(gL, -3) != 0) {
-		hud_interpolate = hud_interpstring = hud_interplatch = false;
-		hud_interpcounter++;
-		lua_pushvalue(gL, -3); // graphics library (HUD[1])
-		LUA_Call(gL, 1, 0, 1);
-	}
-	lua_settop(gL, 0);
-	hud_running = false;
-
-	lua_pushlightuserdata(gL, NULL);
-	lua_setfield(gL, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
-}
-
-void LUAh_VoteHUD(huddrawlist_h list)
-{
-	if (!gL || !(hudAvailable & (1<<hudhook_vote)))
-		return;
-	
-	lua_pushlightuserdata(gL, list);
-	lua_setfield(gL, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
-
-	hud_running = true;
-	lua_settop(gL, 0);
-	
-	lua_pushcfunction(gL, LUA_GetErrorMessage);
-
-	lua_getfield(gL, LUA_REGISTRYINDEX, "HUD");
-	I_Assert(lua_istable(gL, -1));
-	lua_rawgeti(gL, -1, hudhook_vote+2); // HUD[5] = rendering funcs
-	I_Assert(lua_istable(gL, -1));
-
-	lua_rawgeti(gL, -2, 1); // HUD[1] = lib_draw
-	I_Assert(lua_istable(gL, -1));
-	lua_remove(gL, -3); // pop HUD
-	lua_pushnil(gL);
-	hud_interpcounter = 0;
-	while (lua_next(gL, -3) != 0) {
-		hud_interpolate = hud_interpstring = hud_interplatch = false;
-		hud_interpcounter++;
-		lua_pushvalue(gL, -3); // graphics library (HUD[1])
-		LUA_Call(gL, 1, 0, 1);
-	}
-	lua_settop(gL, 0);
-	hud_running = false;
-
-	lua_pushlightuserdata(gL, NULL);
-	lua_setfield(gL, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
-}

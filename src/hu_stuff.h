@@ -42,8 +42,6 @@
 #define CRED_FONTEND 'Z' // the last font character
 #define CRED_FONTSIZE (CRED_FONTEND - CRED_FONTSTART + 1)
 
-#define HU_CROSSHAIRS 3 // maximum of 9 - see HU_Init();
-
 extern char *shiftxform; // english translation shift table
 extern char english_shiftxform[];
 
@@ -90,18 +88,14 @@ extern patch_t *tallnum[10];
 extern patch_t *pingnum[10];
 extern patch_t *pinggfx[5];
 extern patch_t *ranknum[10];
-extern patch_t *nightsnum[10];
 extern patch_t *framecounter;
 extern patch_t *frameslash;
 extern patch_t *lt_font[LT_FONTSIZE];
 extern patch_t *cred_font[CRED_FONTSIZE];
-extern patch_t *emeraldpics[7];
-extern patch_t *tinyemeraldpics[7];
 extern patch_t *rflagico;
 extern patch_t *bflagico;
 extern patch_t *rmatcico;
 extern patch_t *bmatcico;
-extern patch_t *tagico;
 extern patch_t *tallminus;
 
 // set true whenever the tab rankings are being shown for any reason
@@ -125,10 +119,10 @@ void HU_Drawer(void);
 char HU_dequeueChatChar(void);
 void HU_Erase(void);
 void HU_clearChatChars(void);
-void HU_drawPing(INT32 x, INT32 y, UINT32 ping, INT32 flags);	// Lat': Ping drawer for scoreboard.
+void HU_drawPlayerPing(INT32 x, INT32 y, INT32 pnum, INT32 flags);	// Lat': Ping drawer for scoreboard.
 //void HU_DrawTeamTabRankings(playersort_t *tab, INT32 whiteplayer);
 //void HU_DrawDualTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, INT32 whiteplayer);
-void HU_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, INT32 whiteplayer, INT32 hilicol);
+void HU_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, INT32 hilicol);
 void HU_DrawEmeralds(INT32 x, INT32 y, INT32 pemeralds);
 const char *HU_SkinColorToConsoleColor(skincolors_t color);
 

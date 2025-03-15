@@ -34,17 +34,19 @@ void R_DrawColumn_8(void)
 	count = dc_yh - dc_yl;
 
 	if (count < 0) // Zero length, column does not exceed a pixel.
+	{
 		return;
+	}
 
-#ifdef RANGECHECK
+
 	if ((unsigned)dc_x >= (unsigned)vid.width || dc_yl < 0 || dc_yh >= vid.height)
+	{
 		return;
-#endif
+	}
 
 	// Framebuffer destination address.
 	// Use ylookup LUT to avoid multiply with ScreenWidth.
 	// Use columnofs LUT for subwindows?
-
 	dest = &topleft[dc_yl*vid.width + dc_x];
 
 	count++;
@@ -55,73 +57,88 @@ void R_DrawColumn_8(void)
 
 	// Inner loop that does the actual texture mapping, e.g. a DDA-like scaling.
 	// This is as fast as it gets.
+	register const UINT8 *source = dc_source;
+	register const lighttable_t *colormap = dc_colormap;
+
+	register INT32 heightmask = dc_sourcelength-1;
+	npow2min = -1;
+	npow2max = dc_sourcelength-1;
+
+	if (dc_sourcelength & heightmask)   // not a power of 2 -- killough
 	{
-		register const UINT8 *source = dc_source;
-		register const lighttable_t *colormap = dc_colormap;
-		register INT32 heightmask = dc_texheight-1;
+		heightmask = dc_texheight << FRACBITS;
 
-		if (dc_sourcelength <= 0)
+		if (frac < 0)
 		{
-			// Note: we need to unconditionally clamp in npow2 draw loop to avoid a CPU branch
-			// This is to just render it effectively the identity function.
-			npow2min = INT32_MIN;
-			npow2max = INT32_MAX;
+			while ((frac += heightmask) < 0)
+			{
+				;
+			}
 		}
 		else
 		{
-			npow2min = -1;
-			npow2max = dc_sourcelength;
+			while (frac >= heightmask)
+			{
+				frac -= heightmask;
+			}
 		}
 
-		if (dc_texheight & heightmask)   // not a power of 2 -- killough
+		do
 		{
-			heightmask++;
-			heightmask <<= FRACBITS;
+			// Re-map color indices from wall texture column
+			//  using a lighting/special effects LUT.
+			// heightmask is the Tutti-Frutti fix
 
-			if (frac < 0)
-				while ((frac += heightmask) <  0);
+			// -1 is the lower clamp bound because column posts have a "safe" byte before the real data
+			// and a few bytes after as well
+
+			// jartha: faster on my AMD FX-6300 CPU.
+			// Faster than ternaries, faster than std::min/std::max. Don't ask me why.
+			// I tested by viewing a non-PO2 texture from a consistent distance so it covered the entire screen.
+			// The framerate difference was about 50 frames at 640x400.
+			INT32 n = frac >> FRACBITS;
+			if (n < npow2min)
+				n = npow2min;
+			if (n > npow2max)
+				n = npow2max;
+			*dest = colormap[source[n]];
+
+			dest += vid.width;
+
+			// Avoid overflow.
+			if (fracstep > 0x7FFFFFFF - frac)
+			{
+				frac += fracstep - heightmask;
+			}
 			else
-				while (frac >= heightmask)
-					frac -= heightmask;
-
-			do
 			{
-				// Re-map color indices from wall texture column
-				//  using a lighting/special effects LUT.
-				// heightmask is the Tutti-Frutti fix
+				frac += fracstep;
+			}
 
-				// -1 is the lower clamp bound because column posts have a "safe" byte before the real data
-				// and a few bytes after as well
-				*dest = colormap[source[CLAMP(frac>>FRACBITS, npow2min, npow2max)]];
-				dest += vid.width;
-
-				// Avoid overflow.
-				if (fracstep > 0x7FFFFFFF - frac)
-					frac += fracstep - heightmask;
-				else
-					frac += fracstep;
-
-				while (frac >= heightmask)
-					frac -= heightmask;
-			} while (--count);
-		}
-		else
+			while (frac >= heightmask)
+			{
+				frac -= heightmask;
+			}
+		} while (--count);
+	}
+	else
+	{
+		while ((count -= 2) >= 0) // texture height is a power of 2
 		{
-			while ((count -= 2) >= 0) // texture height is a power of 2
-			{
-				*dest = colormap[source[(frac>>FRACBITS) & heightmask]];
-				dest += vid.width;
-				frac += fracstep;
+			*dest = colormap[source[(frac>>FRACBITS) & heightmask]];
 
-				*dest = colormap[source[(frac>>FRACBITS) & heightmask]];
-				dest += vid.width;
-				frac += fracstep;
-			}
+			dest += vid.width;
+			frac += fracstep;
 
-			if (count & 1)
-			{
-				*dest = colormap[source[(frac>>FRACBITS) & heightmask]];
-			}
+			*dest = colormap[source[(frac>>FRACBITS) & heightmask]];
+
+			dest += vid.width;
+			frac += fracstep;
+		}
+
+		if (count & 1)
+		{
+			*dest = colormap[source[(frac>>FRACBITS) & heightmask]];
 		}
 	}
 }
@@ -139,116 +156,127 @@ void R_Draw2sMultiPatchColumn_8(void)
 	count = dc_yh - dc_yl;
 
 	if (count < 0) // Zero length, column does not exceed a pixel.
+	{
 		return;
+	}
 
-#ifdef RANGECHECK
 	if ((unsigned)dc_x >= (unsigned)vid.width || dc_yl < 0 || dc_yh >= vid.height)
+	{
 		return;
-#endif
+	}
 
 	// Framebuffer destination address.
 	// Use ylookup LUT to avoid multiply with ScreenWidth.
 	// Use columnofs LUT for subwindows?
-
-	//dest = ylookup[dc_yl] + columnofs[dc_x];
 	dest = &topleft[dc_yl*vid.width + dc_x];
 
 	count++;
 
 	// Determine scaling, which is the only mapping to be done.
 	fracstep = dc_iscale;
-	//frac = dc_texturemid + (dc_yl - centery)*fracstep;
 	frac = (dc_texturemid + FixedMul((dc_yl << FRACBITS) - centeryfrac, fracstep))*(!dc_hires);
 
 	// Inner loop that does the actual texture mapping, e.g. a DDA-like scaling.
 	// This is as fast as it gets.
+	register const UINT8 *source = dc_source;
+	register const lighttable_t *colormap = dc_colormap;
+	register INT32 heightmask = dc_sourcelength-1;
+	register UINT8 val;
+	npow2min = -1;
+	npow2max = dc_sourcelength-1;
+
+	if (dc_sourcelength & heightmask)   // not a power of 2 -- killough
 	{
-		register const UINT8 *source = dc_source;
-		register const lighttable_t *colormap = dc_colormap;
-		register INT32 heightmask = dc_texheight-1;
-		register UINT8 val;
+		heightmask = dc_texheight << FRACBITS;
 
-		if (dc_sourcelength <= 0)
+		if (frac < 0)
 		{
-			// Note: we need to unconditionally clamp in npow2 draw loop to avoid a CPU branch
-			// This is to just render it effectively the identity function.
-			npow2min = INT32_MIN;
-			npow2max = INT32_MAX;
+			while ((frac += heightmask) < 0)
+			{
+				;
+			}
 		}
 		else
 		{
-			npow2min = -1;
-			npow2max = dc_sourcelength;
+			while (frac >= heightmask)
+			{
+				frac -= heightmask;
+			}
 		}
 
-		if (dc_texheight & heightmask)   // not a power of 2 -- killough
+		do
 		{
-			heightmask++;
-			heightmask <<= FRACBITS;
+			// Re-map color indices from wall texture column
+			//  using a lighting/special effects LUT.
+			// heightmask is the Tutti-Frutti fix
 
-			if (frac < 0)
-				while ((frac += heightmask) <  0);
+			// -1 is the lower clamp bound because column posts have a "safe" byte before the real data
+			// and a few bytes after as well
+
+			// jartha: faster on my AMD FX-6300 CPU.
+			// Faster than ternaries, faster than std::min/std::max. Don't ask me why.
+			// I tested by viewing a non-PO2 texture from a consistent distance so it covered the entire screen.
+			// The framerate difference was about 50 frames at 640x400.
+			INT32 n = frac >> FRACBITS;
+			if (n < npow2min)
+				n = npow2min;
+			if (n > npow2max)
+				n = npow2max;
+
+			val = source[n];
+
+			if (val != TRANSPARENTPIXEL)
+			{
+				*dest = colormap[val];
+			}
+
+			dest += vid.width;
+
+			// Avoid overflow.
+			if (fracstep > 0x7FFFFFFF - frac)
+			{
+				frac += fracstep - heightmask;
+			}
 			else
-				while (frac >= heightmask)
-					frac -= heightmask;
-
-			do
 			{
-				// Re-map color indices from wall texture column
-				//  using a lighting/special effects LUT.
-				// heightmask is the Tutti-Frutti fix
-
-				// -1 is the lower clamp bound because column posts have a "safe" byte before the real data
-				// and a few bytes after as well
-				val = source[CLAMP(frac>>FRACBITS, npow2min, npow2max)];
-
-				if (val != TRANSPARENTPIXEL)
-				{
-					*dest = colormap[val];
-				}
-
-				dest += vid.width;
-
-				// Avoid overflow.
-				if (fracstep > 0x7FFFFFFF - frac)
-					frac += fracstep - heightmask;
-				else
-					frac += fracstep;
-
-				while (frac >= heightmask)
-					frac -= heightmask;
-			} while (--count);
-		}
-		else
-		{
-			while ((count -= 2) >= 0) // texture height is a power of 2
-			{
-				val = source[(frac>>FRACBITS) & heightmask];
-				if (val != TRANSPARENTPIXEL)
-				{
-					*dest = colormap[val];
-				}
-
-				dest += vid.width;
-				frac += fracstep;
-
-				val = source[(frac>>FRACBITS) & heightmask];
-				if (val != TRANSPARENTPIXEL)
-				{
-					*dest = colormap[val];
-				}
-
-				dest += vid.width;
 				frac += fracstep;
 			}
 
-			if (count & 1)
+			while (frac >= heightmask)
 			{
-				val = source[(frac>>FRACBITS) & heightmask];
-				if (val != TRANSPARENTPIXEL)
-				{
-					*dest = colormap[val];
-				}
+				frac -= heightmask;
+			}
+		} while (--count);
+	}
+	else
+	{
+		while ((count -= 2) >= 0) // texture height is a power of 2
+		{
+			val = source[(frac>>FRACBITS) & heightmask];
+			if (val != TRANSPARENTPIXEL)
+			{
+				*dest = colormap[val];
+			}
+
+			dest += vid.width;
+			frac += fracstep;
+
+			val = source[(frac>>FRACBITS) & heightmask];
+			if (val != TRANSPARENTPIXEL)
+			{
+				*dest = colormap[val];
+			}
+
+			dest += vid.width;
+			frac += fracstep;
+		}
+
+		if (count & 1)
+		{
+			val = source[(frac>>FRACBITS) & heightmask];
+			if (val != TRANSPARENTPIXEL)
+			{
+				*dest = colormap[val];
 			}
 		}
 	}
@@ -266,117 +294,128 @@ void R_Draw2sMultiPatchTranslucentColumn_8(void)
 	count = dc_yh - dc_yl;
 
 	if (count < 0) // Zero length, column does not exceed a pixel.
+	{
 		return;
+	}
 
-#ifdef RANGECHECK
 	if ((unsigned)dc_x >= (unsigned)vid.width || dc_yl < 0 || dc_yh >= vid.height)
+	{
 		return;
-#endif
+	}
 
 	// Framebuffer destination address.
 	// Use ylookup LUT to avoid multiply with ScreenWidth.
 	// Use columnofs LUT for subwindows?
-
-	//dest = ylookup[dc_yl] + columnofs[dc_x];
 	dest = &topleft[dc_yl*vid.width + dc_x];
 
 	count++;
 
 	// Determine scaling, which is the only mapping to be done.
 	fracstep = dc_iscale;
-	//frac = dc_texturemid + (dc_yl - centery)*fracstep;
 	frac = (dc_texturemid + FixedMul((dc_yl << FRACBITS) - centeryfrac, fracstep))*(!dc_hires);
 
 	// Inner loop that does the actual texture mapping, e.g. a DDA-like scaling.
 	// This is as fast as it gets.
+	register const UINT8 *source = dc_source;
+	register const UINT8 *transmap = dc_transmap;
+	register const lighttable_t *colormap = dc_colormap;
+	register INT32 heightmask = dc_sourcelength-1;
+	register UINT8 val;
+	npow2min = -1;
+	npow2max = dc_sourcelength-1;
+
+	if (dc_sourcelength & heightmask)   // not a power of 2 -- killough
 	{
-		register const UINT8 *source = dc_source;
-		register const UINT8 *transmap = dc_transmap;
-		register const lighttable_t *colormap = dc_colormap;
-		register INT32 heightmask = dc_texheight-1;
-		register UINT8 val;
+		heightmask = dc_texheight << FRACBITS;
 
-		if (dc_sourcelength <= 0)
+		if (frac < 0)
 		{
-			// Note: we need to unconditionally clamp in npow2 draw loop to avoid a CPU branch
-			// This is to just render it effectively the identity function.
-			npow2min = INT32_MIN;
-			npow2max = INT32_MAX;
+			while ((frac += heightmask) < 0)
+			{
+				;
+			}
 		}
 		else
 		{
-			npow2min = -1;
-			npow2max = dc_sourcelength;
+			while (frac >= heightmask)
+			{
+				frac -= heightmask;
+			}
 		}
 
-		if (dc_texheight & heightmask)   // not a power of 2 -- killough
+		do
 		{
-			heightmask++;
-			heightmask <<= FRACBITS;
+			// Re-map color indices from wall texture column
+			//  using a lighting/special effects LUT.
+			// heightmask is the Tutti-Frutti fix
 
-			if (frac < 0)
-				while ((frac += heightmask) <  0);
+			// -1 is the lower clamp bound because column posts have a "safe" byte before the real data
+			// and a few bytes after as well
+
+			// jartha: faster on my AMD FX-6300 CPU.
+			// Faster than ternaries, faster than std::min/std::max. Don't ask me why.
+			// I tested by viewing a non-PO2 texture from a consistent distance so it covered the entire screen.
+			// The framerate difference was about 50 frames at 640x400.
+			INT32 n = frac >> FRACBITS;
+			if (n < npow2min)
+				n = npow2min;
+			if (n > npow2max)
+				n = npow2max;
+
+			val = source[n];
+
+			if (val != TRANSPARENTPIXEL)
+			{
+				*dest = *(transmap + (colormap[val]<<8) + (*dest));
+			}
+
+			dest += vid.width;
+
+			// Avoid overflow.
+			if (fracstep > 0x7FFFFFFF - frac)
+			{
+				frac += fracstep - heightmask;
+			}
 			else
-				while (frac >= heightmask)
-					frac -= heightmask;
-
-			do
 			{
-				// Re-map color indices from wall texture column
-				//  using a lighting/special effects LUT.
-				// heightmask is the Tutti-Frutti fix
-
-				// -1 is the lower clamp bound because column posts have a "safe" byte before the real data
-				// and a few bytes after as well
-				val = source[CLAMP(frac>>FRACBITS, npow2min, npow2max)];
-
-				if (val != TRANSPARENTPIXEL)
-				{
-					*dest = *(transmap + (colormap[val]<<8) + (*dest));
-				}
-
-				dest += vid.width;
-
-				// Avoid overflow.
-				if (fracstep > 0x7FFFFFFF - frac)
-					frac += fracstep - heightmask;
-				else
-					frac += fracstep;
-
-				while (frac >= heightmask)
-					frac -= heightmask;
-			} while (--count);
-		}
-		else
-		{
-			while ((count -= 2) >= 0) // texture height is a power of 2
-			{
-				val = source[(frac>>FRACBITS) & heightmask];
-				if (val != TRANSPARENTPIXEL)
-				{
-					*dest = *(transmap + (colormap[val]<<8) + (*dest));
-				}
-
-				dest += vid.width;
-				frac += fracstep;
-
-				val = source[(frac>>FRACBITS) & heightmask];
-				if (val != TRANSPARENTPIXEL)
-				{
-					*dest = *(transmap + (colormap[val]<<8) + (*dest));
-				}
-
-				dest += vid.width;
 				frac += fracstep;
 			}
 
-			if (count & 1)
+			while (frac >= heightmask)
 			{
-				val = source[(frac>>FRACBITS) & heightmask];
-				if (val != TRANSPARENTPIXEL)
-				{
-					*dest = *(transmap + (colormap[val]<<8) + (*dest));
-				}
+				frac -= heightmask;
+			}
+		} while (--count);
+	}
+	else
+	{
+		while ((count -= 2) >= 0) // texture height is a power of 2
+		{
+			val = source[(frac>>FRACBITS) & heightmask];
+			if (val != TRANSPARENTPIXEL)
+			{
+				*dest = *(transmap + (colormap[val]<<8) + (*dest));
+			}
+
+			dest += vid.width;
+			frac += fracstep;
+
+			val = source[(frac>>FRACBITS) & heightmask];
+			if (val != TRANSPARENTPIXEL)
+			{
+				*dest = *(transmap + (colormap[val]<<8) + (*dest));
+			}
+
+			dest += vid.width;
+			frac += fracstep;
+		}
+
+		if (count & 1)
+		{
+			val = source[(frac>>FRACBITS) & heightmask];
+			if (val != TRANSPARENTPIXEL)
+			{
+				*dest = *(transmap + (colormap[val]<<8) + (*dest));
 			}
 		}
 	}
@@ -396,21 +435,22 @@ void R_DrawShadeColumn_8(void)
 		return;
 
 	count = dc_yh - dc_yl;
-	if (count < 0)
-		return;
 
-#ifdef RANGECHECK
+	if (count < 0) // Zero length, column does not exceed a pixel.
+	{
+		return;
+	}
+
 	if ((unsigned)dc_x >= (unsigned)vid.width || dc_yl < 0 || dc_yh >= vid.height)
-		I_Error("R_DrawShadeColumn_8: %d to %d at %d", dc_yl, dc_yh, dc_x);
-#endif
+	{
+		return;
+	}
 
 	// FIXME. As above.
-	//dest = ylookup[dc_yl] + columnofs[dc_x];
 	dest = &topleft[dc_yl*vid.width + dc_x];
 
 	// Looks familiar.
 	fracstep = dc_iscale;
-	//frac = dc_texturemid + (dc_yl - centery)*fracstep;
 	frac = (dc_texturemid + FixedMul((dc_yl << FRACBITS) - centeryfrac, fracstep))*(!dc_hires);
 
 	// Here we do an additional index re-mapping.
@@ -438,89 +478,96 @@ void R_DrawTranslucentColumn_8(void)
 	count = dc_yh - dc_yl + 1;
 
 	if (count <= 0) // Zero length, column does not exceed a pixel.
+	{
 		return;
+	}
 
-#ifdef RANGECHECK
 	if ((unsigned)dc_x >= (unsigned)vid.width || dc_yl < 0 || dc_yh >= vid.height)
-		I_Error("R_DrawTranslucentColumn_8: %d to %d at %d", dc_yl, dc_yh, dc_x);
-#endif
+	{
+		return;
+	}
 
 	// FIXME. As above.
-	//dest = ylookup[dc_yl] + columnofs[dc_x];
 	dest = &topleft[dc_yl*vid.width + dc_x];
 
 	// Looks familiar.
 	fracstep = dc_iscale;
-	//frac = dc_texturemid + (dc_yl - centery)*fracstep;
 	frac = (dc_texturemid + FixedMul((dc_yl << FRACBITS) - centeryfrac, fracstep))*(!dc_hires);
 
 	// Inner loop that does the actual texture mapping, e.g. a DDA-like scaling.
 	// This is as fast as it gets.
+	register const UINT8 *source = dc_source;
+	register const UINT8 *transmap = dc_transmap;
+	register const lighttable_t *colormap = dc_colormap;
+	register INT32 heightmask = dc_sourcelength-1;
+	npow2min = -1;
+	npow2max = dc_sourcelength-1;
+
+	if (dc_sourcelength & heightmask)
 	{
-		register const UINT8 *source = dc_source;
-		register const UINT8 *transmap = dc_transmap;
-		register const lighttable_t *colormap = dc_colormap;
-		register INT32 heightmask = dc_texheight - 1;
+		heightmask = dc_texheight << FRACBITS;
 
-		if (dc_sourcelength <= 0)
+		if (frac < 0)
 		{
-			// Note: we need to unconditionally clamp in npow2 draw loop to avoid a CPU branch
-			// This is to just render it effectively the identity function.
-			npow2min = INT32_MIN;
-			npow2max = INT32_MAX;
+			while ((frac += heightmask) < 0)
+			{
+				;
+			}
 		}
 		else
 		{
-			npow2min = -1;
-			npow2max = dc_sourcelength;
+			while (frac >= heightmask)
+			{
+				frac -= heightmask;
+			}
 		}
 
-		if (dc_texheight & heightmask)
+		do
 		{
-			heightmask++;
-			heightmask <<= FRACBITS;
+			// Re-map color indices from wall texture column
+			// using a lighting/special effects LUT.
+			// heightmask is the Tutti-Frutti fix
 
-			if (frac < 0)
-				while ((frac += heightmask) < 0)
-					;
-			else
-				while (frac >= heightmask)
-					frac -= heightmask;
+			// -1 is the lower clamp bound because column posts have a "safe" byte before the real data
+			// and a few bytes after as well
 
-			do
+			// jartha: faster on my AMD FX-6300 CPU.
+			// Faster than ternaries, faster than std::min/std::max. Don't ask me why.
+			// I tested by viewing a non-PO2 texture from a consistent distance so it covered the entire screen.
+			// The framerate difference was about 50 frames at 640x400.
+			INT32 n = frac >> FRACBITS;
+			if (n < npow2min)
+				n = npow2min;
+			if (n > npow2max)
+				n = npow2max;
+
+			*dest = *(transmap + (colormap[source[n]]<<8) + (*dest));
+
+			dest += vid.width;
+
+			if ((frac += fracstep) >= heightmask)
 			{
-				// Re-map color indices from wall texture column
-				// using a lighting/special effects LUT.
-				// heightmask is the Tutti-Frutti fix
-
-				// -1 is the lower clamp bound because column posts have a "safe" byte before the real data
-				// and a few bytes after as well
-				*dest = *(transmap + (colormap[source[CLAMP(frac>>FRACBITS, npow2min, npow2max)]]<<8) + (*dest));
-
-				dest += vid.width;
-
-				if ((frac += fracstep) >= heightmask)
-					frac -= heightmask;
+				frac -= heightmask;
 			}
-			while (--count);
 		}
-		else
+		while (--count);
+	}
+	else
+	{
+		while ((count -= 2) >= 0) // texture height is a power of 2
 		{
-			while ((count -= 2) >= 0) // texture height is a power of 2
-			{
-				*dest = *(transmap + (colormap[source[(frac>>FRACBITS)&heightmask]]<<8) + (*dest));
-				dest += vid.width;
-				frac += fracstep;
+			*dest = *(transmap + (colormap[source[(frac>>FRACBITS)&heightmask]]<<8) + (*dest));
+			dest += vid.width;
+			frac += fracstep;
 
-				*dest = *(transmap + (colormap[source[(frac>>FRACBITS)&heightmask]]<<8) + (*dest));
-				dest += vid.width;
-				frac += fracstep;
-			}
+			*dest = *(transmap + (colormap[source[(frac>>FRACBITS)&heightmask]]<<8) + (*dest));
+			dest += vid.width;
+			frac += fracstep;
+		}
 
-			if (count & 1)
-			{
-				*dest = *(transmap + (colormap[source[(frac>>FRACBITS)&heightmask]]<<8) + (*dest));
-			}
+		if (count & 1)
+		{
+			*dest = *(transmap + (colormap[source[(frac>>FRACBITS)&heightmask]]<<8) + (*dest));
 		}
 	}
 }
@@ -540,80 +587,93 @@ void R_DrawTranslatedTranslucentColumn_8(void)
 	count = dc_yh - dc_yl + 1;
 
 	if (count <= 0) // Zero length, column does not exceed a pixel.
+	{
 		return;
+	}
+
+	if ((unsigned)dc_x >= (unsigned)vid.width || dc_yl < 0 || dc_yh >= vid.height)
+	{
+		return;
+	}
 
 	// FIXME. As above.
-	//dest = ylookup[dc_yl] + columnofs[dc_x];
 	dest = &topleft[dc_yl*vid.width + dc_x];
 
 	// Looks familiar.
 	fracstep = dc_iscale;
-	//frac = dc_texturemid + (dc_yl - centery)*fracstep;
 	frac = (dc_texturemid + FixedMul((dc_yl << FRACBITS) - centeryfrac, fracstep))*(!dc_hires);
 
 	// Inner loop that does the actual texture mapping, e.g. a DDA-like scaling.
 	// This is as fast as it gets.
+	register INT32 heightmask = dc_sourcelength-1;
+	npow2min = -1;
+	npow2max = dc_sourcelength-1;
+
+	if (dc_sourcelength & heightmask)
 	{
-		register INT32 heightmask = dc_texheight - 1;
+		heightmask = dc_texheight << FRACBITS;
 
-		if (dc_sourcelength <= 0)
+		if (frac < 0)
 		{
-			// Note: we need to unconditionally clamp in npow2 draw loop to avoid a CPU branch
-			// This is to just render it effectively the identity function.
-			npow2min = INT32_MIN;
-			npow2max = INT32_MAX;
+			while ((frac += heightmask) < 0)
+			{
+				;
+			}
 		}
 		else
 		{
-			npow2min = -1;
-			npow2max = dc_sourcelength;
+			while (frac >= heightmask)
+			{
+				frac -= heightmask;
+			}
 		}
 
-		if (dc_texheight & heightmask)
+		do
 		{
-			heightmask++;
-			heightmask <<= FRACBITS;
+			// Re-map color indices from wall texture column
+			//  using a lighting/special effects LUT.
+			// heightmask is the Tutti-Frutti fix
 
-			if (frac < 0)
-				while ((frac += heightmask) < 0)
-					;
-			else
-				while (frac >= heightmask)
-					frac -= heightmask;
+			// -1 is the lower clamp bound because column posts have a "safe" byte before the real data
+			// and a few bytes after as well
 
-			do
+			// jartha: faster on my AMD FX-6300 CPU.
+			// Faster than ternaries, faster than std::min/std::max. Don't ask me why.
+			// I tested by viewing a non-PO2 texture from a consistent distance so it covered the entire screen.
+			// The framerate difference was about 50 frames at 640x400.
+			INT32 n = frac >> FRACBITS;
+			if (n < npow2min)
+				n = npow2min;
+			if (n > npow2max)
+				n = npow2max;
+
+			*dest = *(dc_transmap + (dc_colormap[dc_translation[dc_source[n]]]<<8) + (*dest));
+
+			dest += vid.width;
+
+			if ((frac += fracstep) >= heightmask)
 			{
-				// Re-map color indices from wall texture column
-				//  using a lighting/special effects LUT.
-				// heightmask is the Tutti-Frutti fix
-
-				// -1 is the lower clamp bound because column posts have a "safe" byte before the real data
-				// and a few bytes after as well
-				*dest = *(dc_transmap + (dc_colormap[dc_translation[dc_source[CLAMP(frac>>FRACBITS, npow2min, npow2max)]]]<<8) + (*dest));
-				dest += vid.width;
-
-				if ((frac += fracstep) >= heightmask)
-					frac -= heightmask;
+				frac -= heightmask;
 			}
-			while (--count);
 		}
-		else
+		while (--count);
+	}
+	else
+	{
+		while ((count -= 2) >= 0) // texture height is a power of 2
 		{
-			while ((count -= 2) >= 0) // texture height is a power of 2
-			{
-				*dest = *(dc_transmap + (dc_colormap[dc_translation[dc_source[(frac>>FRACBITS)&heightmask]]]<<8) + (*dest));
-				dest += vid.width;
-				frac += fracstep;
+			*dest = *(dc_transmap + (dc_colormap[dc_translation[dc_source[(frac>>FRACBITS)&heightmask]]]<<8) + (*dest));
+			dest += vid.width;
+			frac += fracstep;
 
-				*dest = *(dc_transmap + (dc_colormap[dc_translation[dc_source[(frac>>FRACBITS)&heightmask]]]<<8) + (*dest));
-				dest += vid.width;
-				frac += fracstep;
-			}
+			*dest = *(dc_transmap + (dc_colormap[dc_translation[dc_source[(frac>>FRACBITS)&heightmask]]]<<8) + (*dest));
+			dest += vid.width;
+			frac += fracstep;
+		}
 
-			if (count & 1)
-			{
-				*dest = *(dc_transmap + (dc_colormap[dc_translation[dc_source[(frac>>FRACBITS)&heightmask]]]<<8) + (*dest));
-			}
+		if (count & 1)
+		{
+			*dest = *(dc_transmap + (dc_colormap[dc_translation[dc_source[(frac>>FRACBITS)&heightmask]]]<<8) + (*dest));
 		}
 	}
 }
@@ -630,21 +690,22 @@ void R_DrawTranslatedColumn_8(void)
 	register fixed_t frac, fracstep;
 
 	count = dc_yh - dc_yl;
-	if (count < 0)
-		return;
 
-#ifdef RANGECHECK
+	if (count < 0)
+	{
+		return;
+	}
+
 	if ((unsigned)dc_x >= (unsigned)vid.width || dc_yl < 0 || dc_yh >= vid.height)
-		I_Error("R_DrawTranslatedColumn_8: %d to %d at %d", dc_yl, dc_yh, dc_x);
-#endif
+	{
+		return;
+	}
 
 	// FIXME. As above.
-	//dest = ylookup[dc_yl] + columnofs[dc_x];
 	dest = &topleft[dc_yl*vid.width + dc_x];
 
 	// Looks familiar.
 	fracstep = dc_iscale;
-	//frac = dc_texturemid + (dc_yl-centery)*fracstep;
 	frac = (dc_texturemid + FixedMul((dc_yl << FRACBITS) - centeryfrac, fracstep))*(!dc_hires);
 
 	// Here we do an additional index re-mapping.
@@ -683,16 +744,13 @@ void R_DrawSpan_8 (void)
 	fixed_t xstep, ystep;
 	register UINT32 bit;
 
-	UINT8 *source;
-	UINT8 *colormap;
-	register UINT8 *dest;
+	const UINT8 *source = ds_source;
+	const UINT8 *colormap = ds_colormap;
+	register UINT8 *dest = ylookup[ds_y] + columnofs[ds_x1];
 	const UINT8 *deststop = screens[0] + vid.rowbytes * vid.height;
 
 	register size_t count = (ds_x2 - ds_x1 + 1);
 	size_t i;
-
-	xposition = ds_xfrac; yposition = ds_yfrac;
-	xstep = ds_xstep; ystep = ds_ystep;
 
 	// SoM: we only need 6 bits for the integer part (0 thru 63) so the rest
 	// can be used for the fraction part. This allows calculation of the memory address in the
@@ -701,15 +759,13 @@ void R_DrawSpan_8 (void)
 	// bit per power of two (obviously)
 	// Ok, because I was able to eliminate the variable spot below, this function is now FASTER
 	// than the original span renderer. Whodathunkit?
-	xposition <<= nflatshiftup; yposition <<= nflatshiftup;
-	xstep <<= nflatshiftup; ystep <<= nflatshiftup;
-
-	source = ds_source;
-	colormap = ds_colormap;
-	dest = ylookup[ds_y] + columnofs[ds_x1];
+	xposition = ds_xfrac << nflatshiftup; yposition = ds_yfrac << nflatshiftup;
+	xstep = ds_xstep << nflatshiftup; ystep = ds_ystep << nflatshiftup;
 
 	if (dest+8 > deststop)
+	{
 		return;
+	}
 
 	while (count >= 8)
 	{
@@ -745,19 +801,24 @@ void R_CalcTiltedLighting(fixed_t start, fixed_t end)
 {
 	// ZDoom uses a different lighting setup to us, and I couldn't figure out how to adapt their version
 	// of this function. Here's my own.
-	INT32 left = ds_x1, right = ds_x2;
-	fixed_t step = (end-start)/(ds_x2-ds_x1+1);
 	INT32 i;
+	fixed_t step = (end-start)/(ds_x2-ds_x1+1);
 
 	// I wanna do some optimizing by checking for out-of-range segments on either side to fill in all at once,
 	// but I'm too bad at coding to not crash the game trying to do that. I guess this is fast enough for now...
 
-	for (i = left; i <= right; i++) {
+	for (i = ds_x1; i <= ds_x2; i++)
+	{
 		tiltlighting[i] = (start += step) >> FRACBITS;
+
 		if (tiltlighting[i] < 0)
+		{
 			tiltlighting[i] = 0;
+		}
 		else if (tiltlighting[i] >= MAXLIGHTSCALE)
+		{
 			tiltlighting[i] = MAXLIGHTSCALE-1;
+		}
 	}
 }
 
@@ -768,7 +829,6 @@ void R_CalcTiltedLighting(fixed_t start, fixed_t end)
 */
 void R_DrawTiltedSpan_8(void)
 {
-	// x1, x2 = ds_x1, ds_x2
 	int width = ds_x2 - ds_x1;
 	double iz, uz, vz;
 	UINT32 u, v;
@@ -804,7 +864,6 @@ void R_DrawTiltedSpan_8(void)
 	dest = ylookup[ds_y] + columnofs[ds_x1];
 
 	source = ds_source;
-	//colormap = ds_colormap;
 
 #if 0	// The "perfect" reference version of this routine. Pretty slow.
 		// Use it only to see how things are supposed to look.
@@ -832,7 +891,6 @@ void R_DrawTiltedSpan_8(void)
 	izstep = ds_szp->x * SPANSIZE;
 	uzstep = ds_sup->x * SPANSIZE;
 	vzstep = ds_svp->x * SPANSIZE;
-	//x1 = 0;
 	width++;
 
 	while (width >= SPANSIZE)
@@ -909,7 +967,6 @@ void R_DrawTiltedSpan_8(void)
 */
 void R_DrawTiltedTranslucentSpan_8(void)
 {
-	// x1, x2 = ds_x1, ds_x2
 	int width = ds_x2 - ds_x1;
 	double iz, uz, vz;
 	UINT32 u, v;
@@ -945,7 +1002,6 @@ void R_DrawTiltedTranslucentSpan_8(void)
 	dest = ylookup[ds_y] + columnofs[ds_x1];
 
 	source = ds_source;
-	//colormap = ds_colormap;
 
 #if 0	// The "perfect" reference version of this routine. Pretty slow.
 		// Use it only to see how things are supposed to look.
@@ -973,7 +1029,6 @@ void R_DrawTiltedTranslucentSpan_8(void)
 	izstep = ds_szp->x * SPANSIZE;
 	uzstep = ds_sup->x * SPANSIZE;
 	vzstep = ds_svp->x * SPANSIZE;
-	//x1 = 0;
 	width++;
 
 	while (width >= SPANSIZE)
@@ -1051,7 +1106,6 @@ void R_DrawTiltedTranslucentSpan_8(void)
 */
 void R_DrawTiltedTranslucentWaterSpan_8(void)
 {
-	// x1, x2 = ds_x1, ds_x2
 	int width = ds_x2 - ds_x1;
 	double iz, uz, vz;
 	UINT32 u, v;
@@ -1089,7 +1143,6 @@ void R_DrawTiltedTranslucentWaterSpan_8(void)
 	dsrc = screens[1] + (ds_y+ds_bgofs)*vid.width + ds_x1;
 
 	source = ds_source;
-	//colormap = ds_colormap;
 
 #if 0	// The "perfect" reference version of this routine. Pretty slow.
 		// Use it only to see how things are supposed to look.
@@ -1117,7 +1170,6 @@ void R_DrawTiltedTranslucentWaterSpan_8(void)
 	izstep = ds_szp->x * SPANSIZE;
 	uzstep = ds_sup->x * SPANSIZE;
 	vzstep = ds_svp->x * SPANSIZE;
-	//x1 = 0;
 	width++;
 
 	while (width >= SPANSIZE)
@@ -1489,16 +1541,13 @@ void R_DrawTranslucentSpan_8 (void)
 	fixed_t xstep, ystep;
 	register UINT32 bit;
 
-	UINT8 *source;
-	UINT8 *colormap;
-	register UINT8 *dest;
+	const UINT8 *source = ds_source;
+	const UINT8 *colormap = ds_colormap;
+	register UINT8 *dest = ylookup[ds_y] + columnofs[ds_x1];
 	const UINT8 *deststop = screens[0] + vid.rowbytes * vid.height;
 
 	register size_t count = (ds_x2 - ds_x1 + 1);
 	size_t i;
-
-	xposition = ds_xfrac; yposition = ds_yfrac;
-	xstep = ds_xstep; ystep = ds_ystep;
 
 	// SoM: we only need 6 bits for the integer part (0 thru 63) so the rest
 	// can be used for the fraction part. This allows calculation of the memory address in the
@@ -1507,12 +1556,8 @@ void R_DrawTranslucentSpan_8 (void)
 	// bit per power of two (obviously)
 	// Ok, because I was able to eliminate the variable spot below, this function is now FASTER
 	// than the original span renderer. Whodathunkit?
-	xposition <<= nflatshiftup; yposition <<= nflatshiftup;
-	xstep <<= nflatshiftup; ystep <<= nflatshiftup;
-
-	source = ds_source;
-	colormap = ds_colormap;
-	dest = ylookup[ds_y] + columnofs[ds_x1];
+	xposition = ds_xfrac << nflatshiftup; yposition = ds_yfrac << nflatshiftup;
+	xstep = ds_xstep << nflatshiftup; ystep = ds_ystep << nflatshiftup;
 
 	while (count >= 8)
 	{
@@ -1548,10 +1593,10 @@ void R_DrawTranslucentWaterSpan_8(void)
 	UINT32 xstep, ystep;
 	register UINT32 bit;
 
-	UINT8 *source;
-	UINT8 *colormap;
-	register UINT8 *dest;
-	UINT8 *dsrc;
+	const UINT8 *source = ds_source;
+	const UINT8 *colormap = ds_colormap;
+	register UINT8 *dest = ylookup[ds_y] + columnofs[ds_x1];
+	register UINT8 *dsrc;
 
 	register size_t count;
 	size_t i;
@@ -1566,9 +1611,6 @@ void R_DrawTranslucentWaterSpan_8(void)
 	xposition = ds_xfrac << nflatshiftup; yposition = (ds_yfrac + ds_waterofs) << nflatshiftup;
 	xstep = ds_xstep << nflatshiftup; ystep = ds_ystep << nflatshiftup;
 
-	source = ds_source;
-	colormap = ds_colormap;
-	dest = ylookup[ds_y] + columnofs[ds_x1];
 	dsrc = screens[1] + (ds_y+ds_bgofs)*vid.width + ds_x1;
 	count = ds_x2 - ds_x1 + 1;
 
@@ -1610,7 +1652,6 @@ void R_DrawFogSpan_8(void)
 	register size_t count;
 
 	colormap = ds_colormap;
-	//dest = ylookup[ds_y] + columnofs[ds_x1];
 	dest = &topleft[ds_y *vid.width + ds_x1];
 
 	count = ds_x2 - ds_x1 + 1;

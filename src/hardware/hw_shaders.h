@@ -31,6 +31,31 @@
 		"gl_ClipVertex = gl_ModelViewMatrix * gl_Vertex;\n" \
 	"}\0"
 
+// reinterpretation of sprite lighting for models
+// it's a combination of how it works for normal sprites & papersprites
+#define GLSL_MODEL_LIGHTING_VERTEX_SHADER \
+	"uniform float lighting;\n" \
+	"uniform vec3 light_dir;\n" \
+	"uniform float light_contrast;\n" \
+	"uniform float light_backlight;\n" \
+	"void main()\n" \
+	"{\n" \
+		"gl_Position = gl_ProjectionMatrix * gl_ModelViewMatrix * gl_Vertex;\n" \
+		"float light = lighting;\n" \
+		"if (length(light_dir) > 0.000001) {\n" \
+			"mat4 m4 = gl_ProjectionMatrix * gl_ModelViewMatrix;\n" \
+			"mat3 m3 = mat3( m4[0].xyz, m4[1].xyz, m4[2].xyz );\n" \
+			"float extralight = -dot(normalize(gl_Normal * m3), normalize(light_dir));\n" \
+			"extralight *= light_contrast - light_backlight;\n" \
+			"extralight *= lighting / 255.0;\n" \
+			"light += extralight * 2.5;\n" \
+		"}\n" \
+		"light = clamp(light / 255.0, 0.0, 1.0);\n" \
+		"gl_FrontColor = vec4(light, light, light, 1.0);\n" \
+		"gl_TexCoord[0].xy = gl_MultiTexCoord0.xy;\n" \
+		"gl_ClipVertex = gl_ModelViewMatrix * gl_Vertex;\n" \
+	"}\0"
+
 // ==================
 //  Fragment shaders
 // ==================
@@ -99,6 +124,7 @@
 		GLSL_DOOM_COLORMAP_NODITHER \
 		"#endif\n" \
 	"}\n"
+
 // lighting cap adjustment:
 // first num (155.0), increase to make it start to go dark sooner
 // second num (0.26), increase to make it go dark faster
@@ -194,26 +220,29 @@
 
 // hand tuned adjustments for light level calculation
 #define GLSL_FLOOR_FUDGES \
-	"#version 120\n" \
 	"#define STARTMAP_FUDGE 1.06\n" \
 	"#define SCALE_FUDGE 1.15\n"
 
 #define GLSL_WALL_FUDGES \
-	"#version 120\n" \
 	"#define STARTMAP_FUDGE 1.05\n" \
 	"#define SCALE_FUDGE 2.2\n"
 
 #define GLSL_FLOOR_FRAGMENT_SHADER \
+	"#version 120\n" \
 	GLSL_FLOOR_FUDGES \
 	GLSL_SOFTWARE_FRAGMENT_SHADER
 
+// this is very backwards
+// but we wanna have the game look like vanilla does
+// oh well
 #define GLSL_WALL_FRAGMENT_SHADER \
+	"#version 120\n" \
+	"#ifdef SRB2_PALETTE_RENDERING\n" \
 	GLSL_WALL_FUDGES \
-	GLSL_SOFTWARE_FRAGMENT_SHADER
-
-#define GLSL_SHADOW_FRAGMENT_SHADER \
+	"#else\n" \
 	GLSL_FLOOR_FUDGES \
-	GLSL_SOFTWARE_FRAGMENT_SHADER_NOPAL
+	"#endif\n" \
+	GLSL_SOFTWARE_FRAGMENT_SHADER
 
 //
 // Water surface shader
@@ -230,6 +259,7 @@
 	"vec4 texel = texture2D(tex, vec2(gl_TexCoord[0].s - sdistort, gl_TexCoord[0].t - cdistort));\n"
 
 #define GLSL_WATER_FRAGMENT_SHADER \
+	"#version 120\n" \
 	GLSL_FLOOR_FUDGES \
 	"const float freq = 0.025;\n" \
 	"const float amp = 0.025;\n" \
@@ -278,6 +308,7 @@
 // The floor fudges are used, but should the wall fudges be used instead? or something inbetween?
 // or separate values for floors and walls? (need to change more than this shader for that)
 #define GLSL_FOG_FRAGMENT_SHADER \
+	"#version 120\n" \
 	GLSL_FLOOR_FUDGES \
 	"uniform vec4 tint_color;\n" \
 	"uniform vec4 fade_color;\n" \

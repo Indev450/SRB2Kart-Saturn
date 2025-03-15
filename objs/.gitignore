@@ -3,6 +3,9 @@ SRB2.res
 depend.dep
 depend.ped
 *.o
+buildvm*
+minilua*
+lj_vm.S
 #VC9 folder only
 /VC9/Win32
 /VC9/x64

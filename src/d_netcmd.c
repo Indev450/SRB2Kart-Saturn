@@ -16,6 +16,7 @@
 
 #include "console.h"
 #include "command.h"
+#include "dehacked.h"
 #include "i_time.h"
 #include "i_system.h"
 #include "g_game.h"
@@ -141,6 +142,8 @@ static void Command_Addfile(void);
 static void Command_Addskins(void);
 static void Command_GLocalSkin(void);
 static void Command_ListWADS_f(void);
+static void Command_ListDoomednums_f(void);
+static void Command_ListUnusedSprites_f(void);
 static void Command_RunSOC(void);
 static void Command_Pause(void);
 static void Command_Respawn(void);
@@ -206,13 +209,6 @@ void SendWeaponPref3(void);
 void SendWeaponPref4(void);
 
 static CV_PossibleValue_t usemouse_cons_t[] = {{0, "Off"}, {1, "On"}, {2, "Force"}, {0, NULL}};
-#if defined (__unix__) || defined (__APPLE__) || defined (UNIXCOMMON)
-static CV_PossibleValue_t mouse2port_cons_t[] = {{0, "/dev/gpmdata"}, {1, "/dev/ttyS0"},
-	{2, "/dev/ttyS1"}, {3, "/dev/ttyS2"}, {4, "/dev/ttyS3"}, {0, NULL}};
-#else
-static CV_PossibleValue_t mouse2port_cons_t[] = {{1, "COM1"}, {2, "COM2"}, {3, "COM3"}, {4, "COM4"},
-	{0, NULL}};
-#endif
 
 #ifdef LJOYSTICK
 static CV_PossibleValue_t joyport_cons_t[] = {{1, "/dev/js0"}, {2, "/dev/js1"}, {3, "/dev/js2"},
@@ -295,22 +291,22 @@ consvar_t cv_skipmapcheck = {"skipmapcheck", "Off", CV_SAVE, CV_OnOff, NULL, 0, 
 INT32 cv_debug;
 
 consvar_t cv_usemouse = {"use_mouse", "Off", CV_SAVE|CV_CALL,usemouse_cons_t, I_StartupMouse, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_usemouse2 = {"use_mouse2", "Off", CV_SAVE|CV_CALL,usemouse_cons_t, I_StartupMouse2, 0, NULL, NULL, 0, 0, NULL};
+
 //WTF
 consvar_t cv_mouseturn = {"mouseturn", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 // Lagless camera! Yay!
 consvar_t cv_laglesscam = {"laglesscamera", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_verticallook = {"verticallook", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 #if defined(HAVE_SDL) || defined(_WINDOWS) //joystick 1 and 2
-consvar_t cv_usejoystick = {"use_joystick", "1", CV_SAVE|CV_CALL, usejoystick_cons_t,
-	I_InitJoystick, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_usejoystick2 = {"use_joystick2", "2", CV_SAVE|CV_CALL, usejoystick_cons_t,
-	I_InitJoystick2, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_usejoystick3 = {"use_joystick3", "3", CV_SAVE|CV_CALL, usejoystick_cons_t,
-	I_InitJoystick3, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_usejoystick4 = {"use_joystick4", "4", CV_SAVE|CV_CALL, usejoystick_cons_t,
-	I_InitJoystick4, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_usejoystick[MAXSPLITSCREENPLAYERS] = {
+	{"use_joystick", "1", CV_SAVE|CV_CALL, usejoystick_cons_t, I_InitJoystick1, 0, NULL, NULL, 0, 0, NULL},
+	{"use_joystick2", "2", CV_SAVE|CV_CALL, usejoystick_cons_t, I_InitJoystick2, 0, NULL, NULL, 0, 0, NULL},
+	{"use_joystick3", "3", CV_SAVE|CV_CALL, usejoystick_cons_t, I_InitJoystick3, 0, NULL, NULL, 0, 0, NULL},
+	{"use_joystick4", "4", CV_SAVE|CV_CALL, usejoystick_cons_t, I_InitJoystick4, 0, NULL, NULL, 0, 0, NULL}
+};
 #endif
 
 #if (defined (LJOYSTICK) || defined (HAVE_SDL))
@@ -318,19 +314,17 @@ consvar_t cv_usejoystick4 = {"use_joystick4", "4", CV_SAVE|CV_CALL, usejoystick_
 consvar_t cv_joyport = {"joyport", "/dev/js0", CV_SAVE, joyport_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_joyport2 = {"joyport2", "/dev/js0", CV_SAVE, joyport_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}; //Alam: for later
 #endif
-consvar_t cv_joyscale = {"joyscale", "1", CV_SAVE|CV_CALL, NULL, I_JoyScale, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_joyscale2 = {"joyscale2", "1", CV_SAVE|CV_CALL, NULL, I_JoyScale2, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_joyscale3 = {"joyscale3", "1", CV_SAVE|CV_CALL, NULL, I_JoyScale3, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_joyscale4 = {"joyscale4", "1", CV_SAVE|CV_CALL, NULL, I_JoyScale4, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_joyscale[MAXSPLITSCREENPLAYERS] = {
+	{"joyscale", "1", CV_SAVE|CV_CALL, NULL, I_JoyScale, 0, NULL, NULL, 0, 0, NULL},
+	{"joyscale2", "1", CV_SAVE|CV_CALL, NULL, I_JoyScale2, 0, NULL, NULL, 0, 0, NULL},
+	{"joyscale3", "1", CV_SAVE|CV_CALL, NULL, I_JoyScale3, 0, NULL, NULL, 0, 0, NULL},
+	{"joyscale4", "1", CV_SAVE|CV_CALL, NULL, I_JoyScale4, 0, NULL, NULL, 0, 0, NULL}
+};
 #else
-consvar_t cv_joyscale = {"joyscale", "1", CV_SAVE|CV_HIDEN, NULL, NULL, 0, NULL, NULL, 0, 0, NULL}; //Alam: Dummy for save
-consvar_t cv_joyscale2 = {"joyscale2", "1", CV_SAVE|CV_HIDEN, NULL, NULL, 0, NULL, NULL, 0, 0, NULL}; //Alam: Dummy for save
-#endif
-#if defined (__unix__) || defined (__APPLE__) || defined (UNIXCOMMON)
-consvar_t cv_mouse2port = {"mouse2port", "/dev/gpmdata", CV_SAVE, mouse2port_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_mouse2opt = {"mouse2opt", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
-#else
-consvar_t cv_mouse2port = {"mouse2port", "COM2", CV_SAVE, mouse2port_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_joyscale[2] = { //Alam: Dummy for save
+	{"joyscale", "1", CV_SAVE|CV_HIDEN, NULL, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyscale", "1", CV_SAVE|CV_HIDEN, NULL, NULL, 0, NULL, NULL, 0, 0, NULL}
+};
 #endif
 
 consvar_t cv_matchboxes = {"matchboxes", "Normal", CV_NETVAR|CV_CHEAT|CV_NOSHOWHELP, matchboxes_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -399,18 +393,18 @@ static CV_PossibleValue_t kartvoices_cons_t[] = {{0, "Never"}, {1, "Tasteful"}, 
 consvar_t cv_kartvoices = {"kartvoices", "Tasteful", CV_SAVE, kartvoices_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_karthitemdialog = {"karthitemdialog", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_karteliminatelast = {"karteliminatelast", "Yes", CV_NETVAR|CV_CHEAT|CV_CALL|CV_NOSHOWHELP, CV_YesNo, KartEliminateLast_OnChange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_karteliminatelast = {"karteliminatelast", "Yes", CV_NETVAR|CV_CHEAT|CV_CALL, CV_YesNo, KartEliminateLast_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 static CV_PossibleValue_t kartdebugitem_cons_t[] = {{-1, "MIN"}, {NUMKARTITEMS-1, "MAX"}, {0, NULL}};
-consvar_t cv_kartdebugitem = {"kartdebugitem", "0", CV_NETVAR|CV_CHEAT|CV_NOSHOWHELP, kartdebugitem_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_kartdebugitem = {"kartdebugitem", "0", CV_NETVAR|CV_CHEAT, kartdebugitem_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 static CV_PossibleValue_t kartdebugamount_cons_t[] = {{1, "MIN"}, {255, "MAX"}, {0, NULL}};
-consvar_t cv_kartdebugamount = {"kartdebugamount", "1", CV_NETVAR|CV_CHEAT|CV_NOSHOWHELP, kartdebugamount_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_kartdebugshrink = {"kartdebugshrink", "Off", CV_NETVAR|CV_CHEAT|CV_NOSHOWHELP, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_kartdebugdistribution = {"kartdebugdistribution", "Off", CV_NETVAR|CV_CHEAT|CV_NOSHOWHELP, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_kartdebughuddrop = {"kartdebughuddrop", "Off", CV_NETVAR|CV_CHEAT|CV_NOSHOWHELP, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_kartdebugamount = {"kartdebugamount", "1", CV_NETVAR|CV_CHEAT, kartdebugamount_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_kartdebugshrink = {"kartdebugshrink", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_kartdebugdistribution = {"kartdebugdistribution", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_kartdebughuddrop = {"kartdebughuddrop", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_kartdebugcheckpoint = {"kartdebugcheckpoint", "Off", CV_NOSHOWHELP, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_kartdebugnodes = {"kartdebugnodes", "Off", CV_NOSHOWHELP, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_kartdebugcheckpoint = {"kartdebugcheckpoint", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_kartdebugnodes = {"kartdebugnodes", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_kartdebugcolorize = {"kartdebugcolorize", "Off", CV_NOSHOWHELP, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static CV_PossibleValue_t votetime_cons_t[] = {{1, "MIN"}, {3600, "MAX"}, {0, NULL}};
@@ -485,12 +479,6 @@ consvar_t cv_pingstyle = {"pingstyle", "New", CV_SAVE, cv_pingstyle_cons_t, 0, 0
 
 consvar_t cv_luaimmersion = {"luaimmersion", "On", CV_SAVE, CV_OnOff, 0, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_minihead = {"smallminimapplayers", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-
-consvar_t cv_showminimapnames = {"showminimapnames", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-
-consvar_t cv_showlapemblem = {"showlapemblem", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-
 consvar_t cv_showviewpointtext = {"showviewpointtext", "On", CV_SAVE, CV_OnOff, 0, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_showdownloadprompt = {"showdownloadprompt", "On", CV_SAVE, CV_OnOff, 0, 0, NULL, NULL, 0, 0, NULL};
@@ -511,45 +499,6 @@ consvar_t cv_mute = {"mute", "Off", CV_NETVAR|CV_CALL, CV_OnOff, Mute_OnChange, 
 
 consvar_t cv_sleep = {"cpusleep", "1", CV_SAVE, sleeping_cons_t, NULL, -1, NULL, NULL, 0, 0, NULL};
 
-static CV_PossibleValue_t nametagtrans_cons_t[] = {
-	{0, "Never"}, {1, "Far only"}, {2, "Dynamic"}, {3, "Always"}, {4, "HUD Trans."}, {0, NULL}};
-/*static CV_PossibleValue_t nametagscaling_cons_t[] = {
-	{0, "MIN"},  {320, "MAX"}, {0, NULL}};*/
-static CV_PossibleValue_t nametagdistance_cons_t[] = {
-	{0, "MIN"},  {640, "MAX"}, {0, NULL}};
-static CV_PossibleValue_t nametagmaxplayer_cons_t[] = {
-    {1, "MIN"}, {MAXPLAYERS, "MAX"}, {0, NULL}};
-static CV_PossibleValue_t nametagsize_cons_t[] = {
-	{0, "Off"}, {1, "Small"}, {2, "Minimal"}, {0, NULL}};
-static CV_PossibleValue_t nametagrestat_cons_t[] = {
-	{0, "Off"}, {1, "Restat"}, {2, "Always"}, {0, NULL}};
-
-consvar_t cv_nametag = {"kartnametag", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_nametagtrans = {"kartnametagtransparency", "Dynamic", CV_SAVE, nametagtrans_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_nametagfacerank = {"kartnametagfacerank", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_nametagrestat = {"kartnametagrestat", "Restat", CV_SAVE, nametagrestat_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_nametagdist = {"kartnametagdist", "320", CV_SAVE, nametagdistance_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_nametagmaxplayers = {"kartnametagmaxplayers", "3", CV_SAVE, nametagmaxplayer_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_nametagmaxlenght = {"kartnametagmaxlenght", "12", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
-//consvar_t cv_nametagscaling = {"nametagscaling", "160", CV_SAVE, nametagscaling_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_showownnametag = {"kartnametagshowown", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_smallnametags = {"kartnametagsmall", "Off", CV_SAVE, nametagsize_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_nametaghop = {"kartnametaghop", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_nametagscore = {"kartnametagscore", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_shownametagfinish = {"kartshownametagfinished", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_shownametagspectator = {"kartshownametagspectator", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
-
-static CV_PossibleValue_t driftgaugeoffset_cons_t[] = {
-	{-FRACUNIT*128, "MIN"}, {FRACUNIT*128, "MAX"}, {0, NULL}};
-
-static CV_PossibleValue_t driftgaugestyle_cons_t[] = {
-	{1, "Default"}, {2, "Small"}, {3, "Big Numbers"}, {4, "Numbers Only"}, {0, NULL}};
-
-consvar_t cv_driftgauge = {"kartdriftgauge", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_driftgaugeofs = {"kartdriftgaugeoffset", "-20", CV_FLOAT|CV_SAVE, driftgaugeoffset_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_driftgaugetrans = {"kartdriftgaugetransparency", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_driftgaugestyle = {"kartdriftgaugestyle", "1", CV_SAVE, driftgaugestyle_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-
 static CV_PossibleValue_t skinselectspin_cons_t[] = {
 	{0, "Off"}, {1, "Slow"}, {2, "2"}, {3, "3"}, {4, "4"}, {5, "5"}, {6, "6"}, {7, "7"}, {8, "8"}, {9, "9"}, {10, "Fast"}, {SKINSELECTSPIN_PAIN, "Pain"}, {0, NULL}};
 consvar_t cv_skinselectspin = {"skinselectspin", "5", CV_SAVE, skinselectspin_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -567,7 +516,9 @@ static CV_PossibleValue_t ps_descriptor_cons_t[] = {
 	{1, "Average"}, {2, "SD"}, {3, "Minimum"}, {4, "Maximum"}, {0, NULL}};
 consvar_t cv_ps_descriptor = {"ps_descriptor", "Average", 0, ps_descriptor_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_director = {"director", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+// only there to better keep track of it globally
+consvar_t cv_director = {"director", "Off", CV_HIDEN, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 consvar_t cv_kartdebugdirector = {"debugdirector", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_showdirectorhud = {"showdirectorhud", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -701,8 +652,9 @@ void D_RegisterServerCommands(void)
 	COM_AddCommand("addfilelocal", Command_Addfilelocal);
 	COM_AddCommand("addfile", Command_Addfile);
 	COM_AddCommand("addskins", Command_Addskins);
-	COM_AddCommand("localskin", Command_GLocalSkin);
 	COM_AddCommand("listwad", Command_ListWADS_f);
+	COM_AddCommand("listmapthings", Command_ListDoomednums_f);
+	COM_AddCommand("listunusedsprites", Command_ListUnusedSprites_f);
 
 	COM_AddCommand("runsoc", Command_RunSOC);
 	COM_AddCommand("pause", Command_Pause);
@@ -764,7 +716,7 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_competitionboxes);
 	CV_RegisterVar(&cv_matchboxes);
 
-	K_RegisterKartStuff(); // SRB2kart
+	K_RegisterServerKartStuff(); // SRB2kart
 
 	CV_RegisterVar(&cv_ringslinger);
 
@@ -843,7 +795,9 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_maxdemosize);
 	CV_RegisterVar(&cv_demochangemap);
 
-	CV_RegisterVar(&cv_keyboardlayout);
+#ifndef NOBLUAJIT
+	CV_RegisterVar(&cv_luajit);
+#endif
 }
 
 // =========================================================================
@@ -900,10 +854,17 @@ void D_RegisterClientCommands(void)
 	COM_AddCommand("screenshot", M_ScreenShot);
 	COM_AddCommand("startmovie", Command_StartMovie_f);
 	COM_AddCommand("stopmovie", Command_StopMovie_f);
+	COM_AddCommand("minigen", M_MinimapGenerate);
+
+	COM_AddCommand("localskin", Command_GLocalSkin);
+
+	K_RegisterClientKartStuff(); // SRB2kart
 
 	CV_RegisterVar(&cv_screenshot_option);
 	CV_RegisterVar(&cv_screenshot_folder);
 	CV_RegisterVar(&cv_moviemode);
+	CV_RegisterVar(&cv_movie_option);
+	CV_RegisterVar(&cv_movie_folder);
 	// PNG variables
 	CV_RegisterVar(&cv_zlib_level);
 	CV_RegisterVar(&cv_zlib_memory);
@@ -949,9 +910,13 @@ void D_RegisterClientCommands(void)
 #ifdef SEENAMES
 	CV_RegisterVar(&cv_seenames);
 #endif
+
 	CV_RegisterVar(&cv_rollingdemos);
+
 	CV_RegisterVar(&cv_netstat);
 	CV_RegisterVar(&cv_netticbuffer);
+	CV_RegisterVar(&cv_mindelay);
+	CV_RegisterVar(&cv_lagless);
 
 #ifdef NETGAME_DEVMODE
 	CV_RegisterVar(&cv_fishcake);
@@ -965,6 +930,8 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_pingstyle);
 
 	CV_RegisterVar(&cv_cechotoggle);
+
+	CV_RegisterVar(&cv_keyboardlayout);
 
 	// time attack ghost options are also saved to config
 	CV_RegisterVar(&cv_ghost_besttime);
@@ -1006,71 +973,29 @@ void D_RegisterClientCommands(void)
 
 	CV_RegisterVar(&cv_showlocalskinmenus);
 
-	//CV_RegisterVar(&cv_crosshair);
-	//CV_RegisterVar(&cv_crosshair2);
-	//CV_RegisterVar(&cv_crosshair3);
-	//CV_RegisterVar(&cv_crosshair4);
-	//CV_RegisterVar(&cv_alwaysfreelook);
-	//CV_RegisterVar(&cv_alwaysfreelook2);
-	//CV_RegisterVar(&cv_chasefreelook);
-	//CV_RegisterVar(&cv_chasefreelook2);
 	CV_RegisterVar(&cv_replaysearchrate);
 	CV_RegisterVar(&cv_showfocuslost);
 	CV_RegisterVar(&cv_pauseifunfocused);
 
 	// g_input.c
-	CV_RegisterVar(&cv_turnaxis);
-	CV_RegisterVar(&cv_turnaxis2);
-	CV_RegisterVar(&cv_turnaxis3);
-	CV_RegisterVar(&cv_turnaxis4);
-	CV_RegisterVar(&cv_moveaxis);
-	CV_RegisterVar(&cv_moveaxis2);
-	CV_RegisterVar(&cv_moveaxis3);
-	CV_RegisterVar(&cv_moveaxis4);
-	CV_RegisterVar(&cv_brakeaxis);
-	CV_RegisterVar(&cv_brakeaxis2);
-	CV_RegisterVar(&cv_brakeaxis3);
-	CV_RegisterVar(&cv_brakeaxis4);
-	CV_RegisterVar(&cv_aimaxis);
-	CV_RegisterVar(&cv_aimaxis2);
-	CV_RegisterVar(&cv_aimaxis3);
-	CV_RegisterVar(&cv_aimaxis4);
-	CV_RegisterVar(&cv_lookaxis);
-	CV_RegisterVar(&cv_lookaxis2);
-	CV_RegisterVar(&cv_lookaxis3);
-	CV_RegisterVar(&cv_lookaxis4);
-	CV_RegisterVar(&cv_fireaxis);
-	CV_RegisterVar(&cv_fireaxis2);
-	CV_RegisterVar(&cv_fireaxis3);
-	CV_RegisterVar(&cv_fireaxis4);
-	CV_RegisterVar(&cv_driftaxis);
-	CV_RegisterVar(&cv_driftaxis2);
-	CV_RegisterVar(&cv_driftaxis3);
-	CV_RegisterVar(&cv_driftaxis4);
-	CV_RegisterVar(&cv_lookbackaxis);
-	CV_RegisterVar(&cv_lookbackaxis2);
-	CV_RegisterVar(&cv_lookbackaxis3);
-	CV_RegisterVar(&cv_lookbackaxis4);
-	CV_RegisterVar(&cv_custom1axis);
-	CV_RegisterVar(&cv_custom1axis2);
-	CV_RegisterVar(&cv_custom1axis3);
-	CV_RegisterVar(&cv_custom1axis4);
-	CV_RegisterVar(&cv_custom2axis);
-	CV_RegisterVar(&cv_custom2axis2);
-	CV_RegisterVar(&cv_custom2axis3);
-	CV_RegisterVar(&cv_custom2axis4);
-	CV_RegisterVar(&cv_custom3axis);
-	CV_RegisterVar(&cv_custom3axis2);
-	CV_RegisterVar(&cv_custom3axis3);
-	CV_RegisterVar(&cv_custom3axis4);
-	CV_RegisterVar(&cv_xdeadzone);
-	CV_RegisterVar(&cv_ydeadzone);
-	CV_RegisterVar(&cv_xdeadzone2);
-	CV_RegisterVar(&cv_ydeadzone2);
-	CV_RegisterVar(&cv_xdeadzone3);
-	CV_RegisterVar(&cv_ydeadzone3);
-	CV_RegisterVar(&cv_xdeadzone4);
-	CV_RegisterVar(&cv_ydeadzone4);
+	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+	{
+		CV_RegisterVar(&cv_turnaxis[i]);
+		CV_RegisterVar(&cv_moveaxis[i]);
+		CV_RegisterVar(&cv_camturnaxis[i]);
+		CV_RegisterVar(&cv_camstrafeaxis[i]);
+		CV_RegisterVar(&cv_brakeaxis[i]);
+		CV_RegisterVar(&cv_aimaxis[i]);
+		CV_RegisterVar(&cv_lookaxis[i]);
+		CV_RegisterVar(&cv_fireaxis[i]);
+		CV_RegisterVar(&cv_driftaxis[i]);
+		CV_RegisterVar(&cv_lookbackaxis[i]);
+		CV_RegisterVar(&cv_custom1axis[i]);
+		CV_RegisterVar(&cv_custom2axis[i]);
+		CV_RegisterVar(&cv_custom3axis[i]);
+		CV_RegisterVar(&cv_xdeadzone[i]);
+		CV_RegisterVar(&cv_ydeadzone[i]);
+	}
 
 	// filesrch.c
 	CV_RegisterVar(&cv_addons_option);
@@ -1080,12 +1005,6 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_addons_search_type);
 	CV_RegisterVar(&cv_addons_search_case);
 
-	// WARNING: the order is important when initialising mouse2
-	// we need the mouse2port
-	CV_RegisterVar(&cv_mouse2port);
-#if defined (__unix__) || defined (__APPLE__) || defined (UNIXCOMMON)
-	CV_RegisterVar(&cv_mouse2opt);
-#endif
 	CV_RegisterVar(&cv_controlperkey);
 	CV_RegisterVar(&cv_turnsmooth);
 
@@ -1097,38 +1016,24 @@ void D_RegisterClientCommands(void)
 	}
 
 	CV_RegisterVar(&cv_usemouse);
-	CV_RegisterVar(&cv_usemouse2);
 	CV_RegisterVar(&cv_invertmouse);
-	CV_RegisterVar(&cv_invertmouse2);
 	CV_RegisterVar(&cv_mousesens);
-	CV_RegisterVar(&cv_mousesens2);
 	CV_RegisterVar(&cv_mouseysens);
-	CV_RegisterVar(&cv_mouseysens2);
 	//CV_RegisterVar(&cv_mousemove);
-	//CV_RegisterVar(&cv_mousemove2);
 
-	CV_RegisterVar(&cv_usejoystick);
-	CV_RegisterVar(&cv_usejoystick2);
-	CV_RegisterVar(&cv_usejoystick3);
-	CV_RegisterVar(&cv_usejoystick4);
+	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+	{
+		CV_RegisterVar(&cv_usejoystick[i]);
+	}
 #ifdef LJOYSTICK
 	CV_RegisterVar(&cv_joyport);
 	CV_RegisterVar(&cv_joyport2);
 #endif
-	CV_RegisterVar(&cv_joyscale);
-	CV_RegisterVar(&cv_joyscale2);
-	CV_RegisterVar(&cv_joyscale3);
-	CV_RegisterVar(&cv_joyscale4);
 
-	// Analog Control
-	/*CV_RegisterVar(&cv_analog);
-	CV_RegisterVar(&cv_analog2);
-	CV_RegisterVar(&cv_analog3);
-	CV_RegisterVar(&cv_analog4);
-	CV_RegisterVar(&cv_useranalog);
-	CV_RegisterVar(&cv_useranalog2);
-	CV_RegisterVar(&cv_useranalog3);
-	CV_RegisterVar(&cv_useranalog4);*/
+	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+	{
+		CV_RegisterVar(&cv_joyscale[i]);
+	}
 
 	// s_sound.c
 	CV_RegisterVar(&cv_soundvolume);
@@ -1157,26 +1062,6 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_scr_height);
 
 	CV_RegisterVar(&cv_soundtest);
-	
-	CV_RegisterVar(&cv_nametag);
-	CV_RegisterVar(&cv_nametagtrans);
-	CV_RegisterVar(&cv_nametagfacerank);
-	CV_RegisterVar(&cv_nametagmaxplayers);
-	CV_RegisterVar(&cv_nametagmaxlenght);
-	//CV_RegisterVar(&cv_nametagscaling);
-	CV_RegisterVar(&cv_nametagdist);
-	CV_RegisterVar(&cv_showownnametag);
-	CV_RegisterVar(&cv_smallnametags);
-	CV_RegisterVar(&cv_nametagrestat);
-	CV_RegisterVar(&cv_nametaghop);
-	CV_RegisterVar(&cv_nametagscore);
-	CV_RegisterVar(&cv_shownametagfinish);
-	CV_RegisterVar(&cv_shownametagspectator);
-	
-	CV_RegisterVar(&cv_driftgauge);
-	CV_RegisterVar(&cv_driftgaugeofs);
-	CV_RegisterVar(&cv_driftgaugetrans);
-	CV_RegisterVar(&cv_driftgaugestyle);
 
 	CV_RegisterVar(&cv_perfstats);
 	CV_RegisterVar(&cv_ps_thinkframe_page);
@@ -1191,6 +1076,8 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_betainterscreen);
 
 	CV_RegisterVar(&cv_laglesscam);
+
+	CV_RegisterVar(&cv_verticallook);
 
 	// ingame object placing
 	COM_AddCommand("objectplace", Command_ObjectPlace_f);
@@ -1675,25 +1562,9 @@ static void SendNameAndColor(void)
 		}
 		else if ((foundskin = R_SkinAvailable(cv_skin.string)) != -1)
 		{
-			//boolean notsame;
-
 			cv_skin.value = foundskin;
-
-			//notsame = (cv_skin.value != players[consoleplayer].skin);
-
 			SetPlayerSkin(consoleplayer, cv_skin.string);
 			CV_StealthSet(&cv_skin, skins[cv_skin.value].name);
-
-			// SRB2Kart
-			/*if (notsame)
-			{
-				CV_StealthSetValue(&cv_playercolor, skins[cv_skin.value].prefcolor);
-
-				players[consoleplayer].skincolor = (cv_playercolor.value&0x3F) % MAXSKINCOLORS;
-
-				if (players[consoleplayer].mo)
-					players[consoleplayer].mo->color = (UINT8)players[consoleplayer].skincolor;
-			}*/
 		}
 		else
 		{
@@ -1737,7 +1608,7 @@ static void SendNameAndColor(void)
 	WRITESTRINGN(p, cv_playername.zstring, MAXPLAYERNAME);
 	WRITEUINT8(p, (UINT8)cv_playercolor.value);
 	WRITEUINT8(p, (UINT8)cv_skin.value);
-	SendNetXCmd(XD_NAMEANDCOLOR, buf, p - buf);
+	SendNetXCmdForPlayer(0, XD_NAMEANDCOLOR, buf, p - buf);
 }
 
 // splitscreen
@@ -1807,24 +1678,8 @@ static void SendNameAndColor2(void)
 
 		if ((foundskin = R_SkinAvailable(cv_skin2.string)) != -1)
 		{
-			//boolean notsame;
-
 			cv_skin2.value = foundskin;
-
-			//notsame = (cv_skin2.value != players[secondplaya].skin);
-
 			SetPlayerSkin(secondplaya, cv_skin2.string);
-
-			// SRB2Kart
-			/*if (notsame)
-			{
-				CV_StealthSetValue(&cv_playercolor2, skins[players[secondplaya].skin].prefcolor);
-
-				players[secondplaya].skincolor = (cv_playercolor2.value&0x3F) % MAXSKINCOLORS;
-
-				if (players[secondplaya].mo)
-					players[secondplaya].mo->color = players[secondplaya].skincolor;
-			}*/
 		}
 		else
 		{
@@ -1867,7 +1722,7 @@ static void SendNameAndColor2(void)
 	WRITESTRINGN(p, cv_playername2.zstring, MAXPLAYERNAME);
 	WRITEUINT8(p, (UINT8)cv_playercolor2.value);
 	WRITEUINT8(p, (UINT8)cv_skin2.value);
-	SendNetXCmd2(XD_NAMEANDCOLOR, buf, p - buf);
+	SendNetXCmdForPlayer(1, XD_NAMEANDCOLOR, buf, p - buf);
 }
 
 static void SendNameAndColor3(void)
@@ -1988,7 +1843,7 @@ static void SendNameAndColor3(void)
 	WRITESTRINGN(p, cv_playername3.zstring, MAXPLAYERNAME);
 	WRITEUINT8(p, (UINT8)cv_playercolor3.value);
 	WRITEUINT8(p, (UINT8)cv_skin3.value);
-	SendNetXCmd3(XD_NAMEANDCOLOR, buf, p - buf);
+	SendNetXCmdForPlayer(2, XD_NAMEANDCOLOR, buf, p - buf);
 }
 
 static void SendNameAndColor4(void)
@@ -2057,24 +1912,8 @@ static void SendNameAndColor4(void)
 
 		if ((foundskin = R_SkinAvailable(cv_skin4.string)) != -1)
 		{
-			//boolean notsame;
-
 			cv_skin4.value = foundskin;
-
-			//notsame = (cv_skin4.value != players[fourthplaya].skin);
-
 			SetPlayerSkin(fourthplaya, cv_skin4.string);
-
-			// SRB2Kart
-			/*if (notsame)
-			{
-				CV_StealthSetValue(&cv_playercolor4, skins[players[fourthplaya].skin].prefcolor);
-
-				players[fourthplaya].skincolor = (cv_playercolor4.value&0x3F) % MAXSKINCOLORS;
-
-				if (players[fourthplaya].mo)
-					players[fourthplaya].mo->color = players[fourthplaya].skincolor;
-			}*/
 		}
 		else
 		{
@@ -2117,7 +1956,7 @@ static void SendNameAndColor4(void)
 	WRITESTRINGN(p, cv_playername4.zstring, MAXPLAYERNAME);
 	WRITEUINT8(p, (UINT8)cv_playercolor4.value);
 	WRITEUINT8(p, (UINT8)cv_skin4.value);
-	SendNetXCmd4(XD_NAMEANDCOLOR, buf, p - buf);
+	SendNetXCmdForPlayer(3, XD_NAMEANDCOLOR, buf, p - buf);
 }
 
 static void Got_NameAndColor(UINT8 **cp, INT32 playernum)
@@ -2222,11 +2061,9 @@ void SendWeaponPref(void)
 	UINT8 buf[1];
 
 	buf[0] = 0;
-	if (cv_flipcam.value)
+	if (cv_flipcam[0].value)
 		buf[0] |= 1;
-	if (cv_analog.value)
-		buf[0] |= 2;
-	SendNetXCmd(XD_WEAPONPREF, buf, 1);
+	SendNetXCmdForPlayer(0, XD_WEAPONPREF, buf, 1);
 }
 
 void SendWeaponPref2(void)
@@ -2234,11 +2071,9 @@ void SendWeaponPref2(void)
 	UINT8 buf[1];
 
 	buf[0] = 0;
-	if (cv_flipcam2.value)
+	if (cv_flipcam[1].value)
 		buf[0] |= 1;
-	if (cv_analog2.value)
-		buf[0] |= 2;
-	SendNetXCmd2(XD_WEAPONPREF, buf, 1);
+	SendNetXCmdForPlayer(1, XD_WEAPONPREF, buf, 1);
 }
 
 void SendWeaponPref3(void)
@@ -2246,11 +2081,9 @@ void SendWeaponPref3(void)
 	UINT8 buf[1];
 
 	buf[0] = 0;
-	if (cv_flipcam3.value)
+	if (cv_flipcam[2].value)
 		buf[0] |= 1;
-	if (cv_analog3.value)
-		buf[0] |= 2;
-	SendNetXCmd3(XD_WEAPONPREF, buf, 1);
+	SendNetXCmdForPlayer(2, XD_WEAPONPREF, buf, 1);
 }
 
 void SendWeaponPref4(void)
@@ -2258,11 +2091,9 @@ void SendWeaponPref4(void)
 	UINT8 buf[1];
 
 	buf[0] = 0;
-	if (cv_flipcam4.value)
+	if (cv_flipcam[3].value)
 		buf[0] |= 1;
-	if (cv_analog4.value)
-		buf[0] |= 2;
-	SendNetXCmd4(XD_WEAPONPREF, buf, 1);
+	SendNetXCmdForPlayer(3, XD_WEAPONPREF, buf, 1);
 }
 
 static void Got_WeaponPref(UINT8 **cp,INT32 playernum)
@@ -2394,7 +2225,7 @@ static void Command_View_f(void)
 		return;
 	}
 
-	if (demo.freecam)
+	if (camera[viewnum-1].freecam)
 		return;
 
 	displayplayerp = &displayplayers[viewnum-1];
@@ -2521,6 +2352,15 @@ static void Command_Playdemo_f(void)
 		return;
 	}
 
+	if (!demo.playback && gamestate == GS_LEVEL) // special case: allow starting another demo while watching a demo
+	{
+		CONS_Printf(M_GetText("You can't play a demo while in a game.\n"));
+		return;
+	}
+
+	// turn off any open menus
+	M_ClearMenus(true);
+
 	// disconnect from server here?
 	if (demo.playback)
 		G_StopDemo();
@@ -2560,6 +2400,15 @@ static void Command_Timedemo_f(void)
 		return;
 	}
 
+	if (!demo.playback && gamestate == GS_LEVEL) // special case: allow starting another demo while watching a demo
+	{
+		CONS_Printf(M_GetText("You can't time a demo while in a game.\n"));
+		return;
+	}
+
+	// turn off any open menus
+	M_ClearMenus(true);
+
 	// disconnect from server here?
 	if (demo.playback)
 		G_StopDemo();
@@ -2594,8 +2443,6 @@ static void Command_StopMovie_f(void)
 
 INT32 mapchangepending = 0;
 
-tic_t driftsparkGrowTimer[MAXPLAYERS];
-
 /** Runs a map change.
   * The supplied data are assumed to be good. If provided by a user, they will
   * have already been checked in Command_Map_f().
@@ -2628,9 +2475,6 @@ void D_MapChange(INT32 mapnum, INT32 newgametype, boolean pencoremode, boolean r
 
 	CONS_Debug(DBG_GAMELOGIC, "Map change: mapnum=%d gametype=%d encoremode=%d resetplayers=%d delay=%d skipprecutscene=%d\n",
 	           mapnum, newgametype, pencoremode, resetplayers, delay, skipprecutscene);
-
-	// just gonna hack in a timer reset here...
-	memset(driftsparkGrowTimer, 0, sizeof(driftsparkGrowTimer));
 
 	if (netgame || multiplayer)
 		FLS = false;
@@ -2841,6 +2685,8 @@ static void Command_Map_f(void)
 		return;
 	}
 
+	M_ClearMenus(true);
+
 	last_map_cmd = I_GetTime();
 
 	size_t first_option;
@@ -3023,11 +2869,17 @@ static void Command_Map_f(void)
 		}
 	}
 
-	// spend atleast 35 seconds in one map
-	if (cv_demochangemap.value && demo.recording && demo.savemode != DSM_NOTSAVING && (timeinmap > 1463) && ((cv_demochangemap.value == 2 && newmapnum == gamemap) || newmapnum != gamemap))
-		G_SaveDemo();
+	if (cv_demochangemap.value && demo.recording)
+	{
+		// spend atleast 40 seconds in one map
+		if (demo.savemode != DSM_NOTSAVING && (timeinmap > (TICRATE * 40)) && ((cv_demochangemap.value == 2 && newmapnum == gamemap) || newmapnum != gamemap))
+			G_SaveDemo();
+		else
+			G_ResetDemoRecording();
+	}
 
 	fromlevelselect = false;
+
 	D_MapChange(newmapnum, newgametype, newencoremode, newresetplayers, 0, false, false);
 
 	Z_Free(realmapname);
@@ -3101,9 +2953,6 @@ static void Got_Mapcmd(UINT8 **cp, INT32 playernum)
 		CON_LogMessage(M_GetText("Speeding off to level...\n"));
 	}
 
-	if (demo.playback && !demo.timing)
-		precache = false;
-
 	if (resetplayer)
 	{
 		if (!FLS || (netgame || multiplayer))
@@ -3114,13 +2963,12 @@ static void Got_Mapcmd(UINT8 **cp, INT32 playernum)
 		SetPlayerSkinByNum(0, cv_chooseskin.value-1);
 
 	//mapnumber = M_MapNumber(mapname[3], mapname[4]);
-	//LUAh_MapChange(mapnumber);
+	//LUA_HookInt(mapnumber, HOOK(MapChange));
 
 	demo.savemode = (cv_recordmultiplayerdemos.value == 2) ? DSM_WILLAUTOSAVE : DSM_NOTSAVING;
 	demo.savebutton = 0;
 	G_InitNew(pencoremode, mapname, resetplayer, skipprecutscene);
-	if (demo.playback && !demo.timing)
-		precache = true;
+
 	if (demo.timing)
 		G_DoneLevelLoad();
 
@@ -3311,7 +3159,7 @@ static void Got_Respawn(UINT8 **cp, INT32 playernum)
 		return;
 
 	if (players[respawnplayer].mo)
-		P_DamageMobj(players[respawnplayer].mo, NULL, NULL, 10000);
+		P_DamageMobj(players[respawnplayer].mo, NULL, NULL, DMG_INSTAKILL);
 	demo_extradata[playernum] |= DXD_RESPAWN;
 }
 
@@ -3474,7 +3322,7 @@ static void Command_Teamchange_f(void)
 	}
 
 	usvalue = SHORT(NetPacket.value.l|NetPacket.value.b);
-	SendNetXCmd(XD_TEAMCHANGE, &usvalue, sizeof(usvalue));
+	SendNetXCmdForPlayer(0, XD_TEAMCHANGE, &usvalue, sizeof(usvalue));
 }
 
 static void Command_Teamchange2_f(void)
@@ -3565,7 +3413,7 @@ static void Command_Teamchange2_f(void)
 	}
 
 	usvalue = SHORT(NetPacket.value.l|NetPacket.value.b);
-	SendNetXCmd2(XD_TEAMCHANGE, &usvalue, sizeof(usvalue));
+	SendNetXCmdForPlayer(1, XD_TEAMCHANGE, &usvalue, sizeof(usvalue));
 }
 
 static void Command_Teamchange3_f(void)
@@ -3656,7 +3504,7 @@ static void Command_Teamchange3_f(void)
 	}
 
 	usvalue = SHORT(NetPacket.value.l|NetPacket.value.b);
-	SendNetXCmd3(XD_TEAMCHANGE, &usvalue, sizeof(usvalue));
+	SendNetXCmdForPlayer(2, XD_TEAMCHANGE, &usvalue, sizeof(usvalue));
 }
 
 static void Command_Teamchange4_f(void)
@@ -3747,7 +3595,7 @@ static void Command_Teamchange4_f(void)
 	}
 
 	usvalue = SHORT(NetPacket.value.l|NetPacket.value.b);
-	SendNetXCmd4(XD_TEAMCHANGE, &usvalue, sizeof(usvalue));
+	SendNetXCmdForPlayer(3, XD_TEAMCHANGE, &usvalue, sizeof(usvalue));
 }
 
 static void Command_ServerTeamChange_f(void)
@@ -4013,19 +3861,7 @@ static void Got_Teamchange(UINT8 **cp, INT32 playernum)
 	if (!players[playernum].spectator)
 	{
 		if (players[playernum].mo)
-		{
-			//if (!players[playernum].spectator)
-				P_DamageMobj(players[playernum].mo, NULL, NULL, 10000);
-			/*else
-			{
-				if (players[playernum].mo)
-				{
-					P_RemoveMobj(players[playernum].mo);
-					players[playernum].mo = NULL;
-				}
-				players[playernum].playerstate = PST_REBORN;
-			}*/
-		}
+			P_DamageMobj(players[playernum].mo, NULL, NULL, DMG_INSTAKILL);
 		else
 			players[playernum].playerstate = PST_REBORN;
 	}
@@ -4159,10 +3995,7 @@ static void Got_Teamchange(UINT8 **cp, INT32 playernum)
 			players[playernum].mo->health = 1;
 	}
 
-	// In tag, check to see if you still have a game.
-	/*if (G_TagGametype())
-		P_CheckSurvivors();
-	else*/ if (G_BattleGametype())
+	if (G_BattleGametype())
 		K_CheckBumpers(); // SRB2Kart
 	else if (G_RaceGametype())
 		P_CheckRacers(); // also SRB2Kart
@@ -4886,10 +4719,6 @@ static void Got_RequestAddfilecmd(UINT8 **cp, INT32 playernum)
 	boolean kick = false;
 	boolean toomany = false;
 	INT32 i,j;
-	serverinfo_pak *dummycheck = NULL;
-
-	// Shut the compiler up.
-	(void)dummycheck;
 
 	READSTRINGN(*cp, filename, 240);
 	READMEM(*cp, md5sum, 16);
@@ -5014,6 +4843,151 @@ static void Command_ListWADS_f(void)
 			CONS_Printf("\x82 * %.2d\x80: %s\n", i, tempname);
 		else
 			CONS_Printf("   %.2d: %s\n", i, tempname);
+	}
+}
+
+#define MAXDOOMEDNUM 4095
+
+static void Command_ListDoomednums_f(void)
+{
+	INT16 i, j, k = 0, l = 0;
+	INT32 argc = COM_Argc();
+	INT16 table[MAXDOOMEDNUM];
+
+	switch (argc)
+	{
+		case 1:
+			l = MAXDOOMEDNUM;
+			break;
+		case 3:
+			l = atoi(COM_Argv(2));
+			if (l < 1 || l > MAXDOOMEDNUM)
+			{
+				CONS_Printf("arg 2: doomednum \x82""%d \x85out of range (1-4095)\n", k);
+				return;
+			}
+			//FALLTHRU
+		case 2:
+			k = atoi(COM_Argv(1));
+			if (k < 1 || k > MAXDOOMEDNUM)
+			{
+				CONS_Printf("arg 1: doomednum \x82""%d \x85out of range (1-4095)\n", k);
+				return;
+			}
+			if (!l)
+				l = k;
+			else if (l < k) // silently and helpfully swap.
+			{
+				j = k;
+				k = l;
+				l = j;
+			}
+			break;
+		default:
+			CONS_Printf("listmapthings: \x86too many arguments!\n");
+			return;
+	}
+
+	// see P_SpawnNonMobjMapThing
+	memset(table, 0, sizeof(table));
+	for (i = 1; i <= MAXPLAYERS; i++)
+		table[i-1] = MT_PLAYER; // playerstarts
+	table[33-1] = table[34-1] = table[35-1] = MT_PLAYER; // battle/team starts
+	table[750-1] = table[777-1] = table[778-1] = MT_UNKNOWN; // slopes
+	for (i = 600; i <= 609; i++)
+		table[i-1] = MT_RING; // placement patterns
+	table[1705-1] = table[1713-1] = MT_HOOP; // types of hoop
+
+	CONS_Printf("\x82""Checking for double defines...\n");
+	for (i = 1; i < MT_FIRSTFREESLOT+NUMMOBJFREESLOTS; i++)
+	{
+		j = mobjinfo[i].doomednum;
+		if (j < (k ? k : 1) || j > (l ? l : MAXDOOMEDNUM))
+			continue;
+		if (table[j-1])
+		{
+			CONS_Printf("	doomednum \x82""%d""\x80 is \x85""double-defined\x80 by ", j);
+			if (i < MT_FIRSTFREESLOT)
+			{
+				CONS_Printf("\x87""hardcode %s <-- MAJOR ERROR\n", MOBJTYPE_LIST[i]);
+				continue;
+			}
+			CONS_Printf("\x81""freeslot MT_""%s\n", FREE_MOBJS[i-MT_FIRSTFREESLOT]);
+			continue;
+		}
+		table[j-1] = i;
+	}
+	CONS_Printf("\x82Printing doomednum usage...\n");
+	if (!k)
+	{
+		i = 35; // skip MT_PLAYER spam
+		CONS_Printf("	doomednums \x82""1-35""\x80 are used by ""\x87""hardcode MT_PLAYER\n");
+	}
+	else
+		i = k-1;
+
+	for (; i < l; i++)
+	{
+		if (!table[i])
+		{
+			if (k)
+			{
+				CONS_Printf("	doomednum \x82""%d""\x80 is \x83""free!", i+1);
+				if (i < 99) // above the humble crawla? how dare you
+					CONS_Printf(" (Don't freeslot this low...)");
+				CONS_Printf("\n");
+			}
+			continue;
+		}
+		CONS_Printf("	doomednum \x82""%d""\x80 is used by ", i+1);
+		if (table[i] < MT_FIRSTFREESLOT)
+		{
+			CONS_Printf("\x87""hardcode %s\n", MOBJTYPE_LIST[table[i]]);
+			continue;
+		}
+		CONS_Printf("\x81""freeslot MT_""%s\n", FREE_MOBJS[table[i]-MT_FIRSTFREESLOT]);
+	}
+}
+
+#undef MAXDOOMEDNUM
+
+void Command_ListUnusedSprites_f(void)
+{
+	size_t i, j;
+
+	CONS_Printf("\x82Printing sprite non-usage...\n");
+
+	for (i = 0; i < NUMSPRITES; i++)
+	{
+		if (sprites[i].numframes)
+		{
+			// We're only showing unused sprites...
+			continue;
+		}
+
+		if (i < SPR_FIRSTFREESLOT)
+		{
+			CONS_Printf("	\x87""hardcode SPR_""%.4s\n", sprnames[i]);
+			continue;
+		}
+
+		if (used_spr[(i-SPR_FIRSTFREESLOT)/8] == 0xFF)
+		{
+			for (j = 0; j < 8; j++)
+			{
+				CONS_Printf("	\x81""freeslot SPR_""%.4s\n", sprnames[i+j]);
+			}
+
+			i += j;
+		}
+
+		if (used_spr[(i-SPR_FIRSTFREESLOT)/8] & (1<<(i%8)))
+		{
+			CONS_Printf("	\x81""freeslot SPR_""%.4s\n", sprnames[i]);
+			continue;
+		}
+
+		break;
 	}
 }
 
@@ -5306,9 +5280,6 @@ void D_GameTypeChanged(INT32 lastgametype)
 	else if (!multiplayer && !netgame)
 	{
 		gametype = GT_RACE; // SRB2kart
-		// These shouldn't matter anymore
-		//CV_Set(&cv_itemrespawntime, cv_itemrespawntime.defaultvalue);
-		//CV_SetValue(&cv_itemrespawn, 0);
 	}
 
 	// reset timelimit and pointlimit in race/coop, prevent stupid cheats
@@ -5329,19 +5300,6 @@ void D_GameTypeChanged(INT32 lastgametype)
 				CV_SetValue(&cv_pointlimit, cv_pointlimit.value * 500);
 		}
 	}
-
-	// When swapping to a gametype that supports spectators,
-	// make everyone a spectator initially.
-	/*if (G_GametypeHasSpectators())
-	{
-		INT32 i;
-		for (i = 0; i < MAXPLAYERS; i++)
-			if (playeringame[i])
-			{
-				players[i].ctfteam = 0;
-				players[i].spectator = true;
-			}
-	}*/
 
 	// don't retain teams in other modes or between changes from ctf to team match.
 	// also, stop any and all forms of team scrambling that might otherwise take place.
@@ -5779,6 +5737,7 @@ void Command_ExitGame_f(void)
 	botskin = 0;
 	cv_debug = 0;
 	emeralds = 0;
+	automapactive = false;
 
 	if (dirmenu)
 		closefilemenu(true);
@@ -5793,10 +5752,6 @@ void Command_Retry_f(void)
 		CONS_Printf(M_GetText("You must be in a level to use this.\n"));
 	else if (netgame || multiplayer)
 		CONS_Printf(M_GetText("This only works in single player.\n"));
-	/*else if (!&players[consoleplayer] || players[consoleplayer].lives <= 1)
-		CONS_Printf(M_GetText("You can't retry without any lives remaining!\n"));
-	else if (G_IsSpecialStage(gamemap))
-		CONS_Printf(M_GetText("You can't retry special stages!\n"));*/
 	else
 	{
 		M_ClearMenus(true);
@@ -5829,12 +5784,8 @@ static void Fishcake_OnChange(void)
   */
 static void Command_Isgamemodified_f(void)
 {
-	if (majormods)
-		CONS_Printf("The game has been modified with major addons, so you cannot play Record Attack.\n");
-	else if (savemoddata)
-		CONS_Printf("The game has been modified with an addon with its own save data, so you can play Record Attack and earn medals.\n");
-	else if (modifiedgame)
-		CONS_Printf("The game has been modified with only minor addons. You can play Record Attack, earn medals and unlock extras.\n");
+	if (majormods || modifiedgame)
+		CONS_Printf("The game has been modified, Record Attack data will be saved to a seperate savegame.\n");
 	else
 		CONS_Printf("The game has not been modified. You can play Record Attack, earn medals and unlock extras.\n");
 }
@@ -5866,10 +5817,9 @@ static void Command_Togglemodified_f(void)
 	modifiedgame = !modifiedgame;
 }
 
-extern UINT8 *save_p;
 static void Command_Archivetest_f(void)
 {
-	UINT8 *buf;
+	savebuffer_t save;
 	UINT32 i, wrote;
 	thinker_t *th;
 	if (gamestate != GS_LEVEL)
@@ -5885,28 +5835,28 @@ static void Command_Archivetest_f(void)
 			((mobj_t *)th)->mobjnum = i++;
 
 	// allocate buffer
-	buf = save_p = ZZ_Alloc(1024);
+	save.buffer = save.p = ZZ_Alloc(1024);
 
 	// test archive
 	CONS_Printf("LUA_Archive...\n");
-	LUA_Archive();
-	WRITEUINT8(save_p, 0x7F);
-	wrote = (UINT32)(save_p-buf);
+	LUA_Archive(&save, true);
+	WRITEUINT8(save.p, 0x7F);
+	wrote = (UINT32)(save.p - save.buffer);
 
 	// clear Lua state, so we can really see what happens!
 	CONS_Printf("Clearing state!\n");
 	LUA_ClearExtVars();
 
 	// test unarchive
-	save_p = buf;
+	save.p = save.buffer;
 	CONS_Printf("LUA_UnArchive...\n");
-	LUA_UnArchive();
-	i = READUINT8(save_p);
-	if (i != 0x7F || wrote != (UINT32)(save_p-buf))
-		CONS_Printf("Savegame corrupted. (write %u, read %u)\n", wrote, (UINT32)(save_p-buf));
+	LUA_UnArchive(&save, true);
+	i = READUINT8(save.p);
+	if (i != 0x7F || wrote != (UINT32)(save.p - save.buffer))
+		CONS_Printf("Savegame corrupted. (write %u, read %u)\n", wrote, (UINT32)(save.p - save.buffer));
 
 	// free buffer
-	Z_Free(buf);
+	Z_Free(save.buffer);
 	CONS_Printf("Done. No crash.\n");
 }
 #endif

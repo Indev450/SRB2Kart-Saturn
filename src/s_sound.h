@@ -71,7 +71,7 @@ extern consvar_t cv_birdmusic;
 extern consvar_t cv_keepmusic;
 extern consvar_t cv_skipintromusic;
 //extern consvar_t cv_ignoremusicchanges;
-extern boolean keepmusic;
+extern boolean keepmapmusic;
 extern boolean skipintromus;
 #define MUSICSTARTTIME (starttime + (TICRATE/2))
 
@@ -109,10 +109,13 @@ void S_InitSfxChannels(INT32 sfxVolume);
 void S_StopSounds(void);
 void S_ClearSfx(void);
 
-void S_InitMapMusic(void);
-void S_StartMapMusic(boolean restore);
+void S_ResetKeepAndSpecialMus(void);
 
-void S_CheckMap(void);
+void S_InitMapMusic(void);
+void S_StartMapMusic(void);
+void S_HandleReloadResetMusic(void);
+
+void S_KeepMusic(void);
 
 // Stops music and restarts it from same position. Used for instant applying changes to amiga filters.
 void S_RestartMusic(void);
@@ -168,6 +171,7 @@ boolean S_SpeedMusic(float speed);
 typedef struct musicdef_s
 {
 	char name[7];
+	UINT32 hash;
 	char usage[256];
 	char source[256];
 	char filename[256+1];
@@ -228,6 +232,16 @@ UINT32 S_GetMusicPosition(void);
 // Music Playback
 //
 
+/* this is for the sake of the hook */
+struct MusicChange {
+	char    * newname;
+	UINT16  * mflags;
+	boolean * looping;
+	UINT32  * position;
+	UINT32  * prefadems;
+	UINT32  * fadeinms;
+};
+
 // Start music track, arbitrary, given its name, and set whether looping
 // note: music flags 12 bits for tracknum (gme, other formats with more than one track)
 //       13-15 aren't used yet
@@ -283,10 +297,8 @@ void S_StartSoundName(void *mo, const  char *soundname);
 void S_StopSoundByID(void *origin, sfxenum_t sfx_id);
 void S_StopSoundByNum(sfxenum_t sfxnum);
 
-#ifndef HW3SOUND
 #define S_StartAttackSound S_StartSound
 #define S_StartScreamSound S_StartSound
-#endif
 
 #ifdef MUSICSLOT_COMPATIBILITY
 // For compatibility with code/scripts relying on older versions

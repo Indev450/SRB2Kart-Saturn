@@ -40,6 +40,7 @@ int mobj_sprev_unimplemented(lua_State *L);
 int mobj_angle_setter(lua_State *L);
 int mobj_sloperoll_noop(lua_State *L);
 int mobj_spritescale_setter(lua_State *L);
+int mobj_spriteoffset_setter(lua_State *L);
 int mobj_touching_sectorlist_unimplemented(lua_State *L);
 int mobj_radius_setter(lua_State *L);
 int mobj_height_setter(lua_State *L);
@@ -95,9 +96,10 @@ static const udata_field_t mobj_fields[] = {
     FIELD(mobj_t, anim_duration,       udatalib_getter_uint16,     udatalib_setter_uint16),
     FIELD(mobj_t, spritexscale,        udatalib_getter_fixed,      mobj_spritescale_setter),
     FIELD(mobj_t, spriteyscale,        udatalib_getter_fixed,      mobj_spritescale_setter),
-    FIELD(mobj_t, spritexoffset,       udatalib_getter_fixed,      udatalib_setter_fixed),
-    FIELD(mobj_t, spriteyoffset,       udatalib_getter_fixed,      udatalib_setter_fixed),
+    FIELD(mobj_t, spritexoffset,       udatalib_getter_fixed,      mobj_spriteoffset_setter),
+    FIELD(mobj_t, spriteyoffset,       udatalib_getter_fixed,      mobj_spriteoffset_setter),
     FIELD(mobj_t, touching_sectorlist, mobj_touching_sectorlist_unimplemented, mobj_touching_sectorlist_unimplemented),
+    FIELD(mobj_t, lightlevel,          udatalib_getter_int16,      udatalib_setter_int16),
     FIELD(mobj_t, subsector,           udatalib_getter_subsector,  mobj_nosetpos_subsector),
     FIELD(mobj_t, floorz,              udatalib_getter_fixed,      mobj_nosetpos_floorz),
     FIELD(mobj_t, ceilingz,            udatalib_getter_fixed,      mobj_nosetpos_ceilingz),
@@ -148,7 +150,6 @@ static const udata_field_t mobj_fields[] = {
     FIELD(mobj_t, standingslope,       udatalib_getter_slope,      mobj_standingslope_noset),
     FIELD(mobj_t, colorized,           udatalib_getter_boolean,    udatalib_setter_boolean),
 	FIELD(mobj_t, mirrored,           udatalib_getter_boolean,    udatalib_setter_boolean),
-    FIELD(mobj_t, rollmodel,           udatalib_getter_boolean,    udatalib_setter_boolean),
     { NULL, 0, NULL, NULL },
 };
 #undef FIELD
@@ -275,6 +276,26 @@ int mobj_spritescale_setter(lua_State *L)
             mo->realxscale = luaL_checkfixed(L, 2);
         else
             mo->realyscale = luaL_checkfixed(L, 2);
+    }
+    return 0;
+}
+
+int mobj_spriteoffset_setter(lua_State *L)
+{
+    mobj_t *mo = GETMO();
+
+    fixed_t *spriteoffset;
+    UDATALIB_GETFIELD(fixed_t, spriteoffset);
+
+    if (!mo->player)
+        *spriteoffset = luaL_checkfixed(L, 2);
+    else
+    {
+        // Mmm yea
+        if (spriteoffset == &mo->spritexoffset)
+            mo->realxoffset = luaL_checkfixed(L, 2);
+        else
+            mo->realyoffset = luaL_checkfixed(L, 2);
     }
     return 0;
 }

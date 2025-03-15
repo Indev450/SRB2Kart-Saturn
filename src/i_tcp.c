@@ -168,7 +168,6 @@ static UINT8 UPNP_support = TRUE;
 #endif
 
 #include "i_addrinfo.h"
-#define SELECTTEST
 
 #define DEFAULTPORT "5029"
 
@@ -750,59 +749,6 @@ static boolean SOCK_Get(void)
 }
 #endif
 
-// check if we can send (do not go over the buffer)
-#ifndef NONET
-
-static fd_set masterset;
-
-#ifdef SELECTTEST
-static boolean FD_CPY(fd_set *src, fd_set *dst, SOCKET_TYPE *fd, size_t len)
-{
-	size_t i;
-	boolean testset = false;
-	FD_ZERO(dst);
-	for (i = 0; i < len;i++)
-	{
-		if(fd[i] != (SOCKET_TYPE)ERRSOCKET &&
-		   FD_ISSET(fd[i], src) && !FD_ISSET(fd[i], dst)) // no checking for dups
-		{
-			FD_SET(fd[i], dst);
-			testset = true;
-		}
-	}
-	return testset;
-}
-
-static boolean SOCK_CanSend(void)
-{
-	struct timeval timeval_for_select = {0, 0};
-	fd_set tset;
-	int wselect;
-
-	if(!FD_CPY(&masterset, &tset, mysockets, mysocketses))
-		return false;
-	wselect = select(255, NULL, &tset, NULL, &timeval_for_select);
-	if (wselect >= 1)
-		return true;
-	return false;
-}
-
-static boolean SOCK_CanGet(void)
-{
-	struct timeval timeval_for_select = {0, 0};
-	fd_set tset;
-	int rselect;
-
-	if(!FD_CPY(&masterset, &tset, mysockets, mysocketses))
-		return false;
-	rselect = select(255, &tset, NULL, NULL, &timeval_for_select);
-	if (rselect >= 1)
-		return true;
-	return false;
-}
-#endif
-#endif
-
 #ifndef NONET
 static inline ssize_t SOCK_SendToAddr(SOCKET_TYPE socket, mysockaddr_t *sockaddr)
 {
@@ -877,7 +823,7 @@ static void SOCK_Send(void)
 	}
 }
 #undef ALLOWEDERROR
-#endif
+#endif //NONET
 
 #ifndef NONET
 static void SOCK_FreeNodenum(INT32 numnode)
@@ -1029,7 +975,6 @@ static boolean UDP_Socket(void)
 		mysockets[s] = ERRSOCKET;
 	for (s = 0; s < MAXNETNODES+1; s++)
 		nodesocket[s] = ERRSOCKET;
-	FD_ZERO(&masterset);
 	s = 0;
 
 	memset(&hints, 0x00, sizeof (hints));
@@ -1056,7 +1001,6 @@ static boolean UDP_Socket(void)
 					mysockets[s] = UDP_Bind(runp->ai_family, runp->ai_addr, (socklen_t)runp->ai_addrlen);
 					if (mysockets[s] != (SOCKET_TYPE)ERRSOCKET)
 					{
-						FD_SET(mysockets[s], &masterset);
 						myfamily[s] = hints.ai_family;
 						s++;
 					}
@@ -1077,7 +1021,6 @@ static boolean UDP_Socket(void)
 				mysockets[s] = UDP_Bind(runp->ai_family, runp->ai_addr, (socklen_t)runp->ai_addrlen);
 				if (mysockets[s] != (SOCKET_TYPE)ERRSOCKET)
 				{
-					FD_SET(mysockets[s], &masterset);
 					myfamily[s] = hints.ai_family;
 					s++;
 #ifdef HAVE_MINIUPNPC
@@ -1110,7 +1053,6 @@ static boolean UDP_Socket(void)
 						mysockets[s] = UDP_Bind(runp->ai_family, runp->ai_addr, (socklen_t)runp->ai_addrlen);
 						if (mysockets[s] != (SOCKET_TYPE)ERRSOCKET)
 						{
-							FD_SET(mysockets[s], &masterset);
 							myfamily[s] = hints.ai_family;
 							s++;
 						}
@@ -1131,7 +1073,6 @@ static boolean UDP_Socket(void)
 					mysockets[s] = UDP_Bind(runp->ai_family, runp->ai_addr, (socklen_t)runp->ai_addrlen);
 					if (mysockets[s] != (SOCKET_TYPE)ERRSOCKET)
 					{
-						FD_SET(mysockets[s], &masterset);
 						myfamily[s] = hints.ai_family;
 						s++;
 					}
@@ -1298,16 +1239,15 @@ boolean I_InitTcpDriver(void)
 static void SOCK_CloseSocket(void)
 {
 	size_t i;
-	for (i=0; i < MAXNETNODES+1; i++)
+
+	for (i = 0; i < mysocketses; i++)
 	{
-		if (mysockets[i] != (SOCKET_TYPE)ERRSOCKET
-		 && FD_ISSET(mysockets[i], &masterset))
-		{
-			FD_CLR(mysockets[i], &masterset);
+		if (mysockets[i] != (SOCKET_TYPE)ERRSOCKET)
 			close(mysockets[i]);
-		}
 		mysockets[i] = ERRSOCKET;
 	}
+
+	mysocketses = 0;
 }
 #endif
 
@@ -1417,9 +1357,7 @@ static void rendezvous(int size)
 
 	if (tic == refreshtic)
 	{
-		#ifdef HOLEPUNCH
 		holepunchpacket->magic = hole_punch_magic;
-		#endif
 		sendto(mysockets[0], doomcom->data, size, 0, &rzv.any, sizeof rzv.ip4);
 	}
 
@@ -1444,7 +1382,6 @@ static void SOCK_RegisterHolePunch(void)
 	rendezvous(4);
 }
 #endif
-
 #endif
 
 static boolean SOCK_OpenSocket(void)
@@ -1464,13 +1401,7 @@ static boolean SOCK_OpenSocket(void)
 	I_NetFreeNodenum = SOCK_FreeNodenum;
 	I_NetMakeNodewPort = SOCK_NetMakeNodewPort;
 
-#ifdef SELECTTEST
-	// seem like not work with libsocket : (
-	I_NetCanSend = SOCK_CanSend;
-	I_NetCanGet = SOCK_CanGet;
-#endif
 #ifdef HOLEPUNCH
-
 	I_NetRequestHolePunch = SOCK_RequestHolePunch;
 	I_NetRegisterHolePunch = SOCK_RegisterHolePunch;
 #endif
@@ -1738,7 +1669,6 @@ boolean I_InitTcpNetwork(void)
 		// server address only in ip
 		if (serverhostname[0])
 		{
-			CV_Set(&cv_lastserver, serverhostname);
 			COM_BufAddText("connect \"");
 			COM_BufAddText(serverhostname);
 			COM_BufAddText("\"\n");
@@ -1748,9 +1678,6 @@ boolean I_InitTcpNetwork(void)
 		}
 		else
 		{
-			// Not quite sure if we want to save that but i'll do that for now
-			CV_Set(&cv_lastserver, "any");
-
 			// so we're on a LAN
 			COM_BufAddText("connect any\n");
 

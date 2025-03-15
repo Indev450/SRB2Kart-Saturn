@@ -43,18 +43,6 @@
 
 #define  _CREATE_DLL_  // necessary for Unix AND Windows
 
-#ifdef HWRENDER
-#include "../hardware/hw_drv.h"
-#include "ogl_sdl.h"
-#ifdef STATIC_OPENGL
-#include "../hardware/r_opengl/r_opengl.h"
-#endif
-#endif
-
-#ifdef HW3SOUND
-#include "../hardware/hw3dsdrv.h"
-#endif
-
 #define GETFUNC(func) \
 	else if (0 == strcmp(#func, funcName)) \
 		funcPointer = &func \
@@ -73,84 +61,17 @@
 void *hwSym(const char *funcName,void *handle)
 {
 	void *funcPointer = NULL;
-#ifdef HWRENDER
-	if (0 == strcmp("SetTexturePalette", funcName))
-		funcPointer = &OglSdlSetPalette;
-
-	GETFUNC(Init);
-	GETFUNC(SetupGLInfo);
-	GETFUNC(Draw2DLine);
-	GETFUNC(DrawPolygon);
-	GETFUNC(DrawIndexedTriangles);
-	GETFUNC(SetBlend);
-	GETFUNC(ClearBuffer);
-	GETFUNC(SetTexture);
-	GETFUNC(UpdateTexture);
-	GETFUNC(DeleteTexture);
-	GETFUNC(ReadScreenTexture);
-	GETFUNC(GClipRect);
-	GETFUNC(ClearMipMapCache);
-	GETFUNC(SetSpecialState);
-	GETFUNC(GetTextureUsed);
-	GETFUNC(DrawModel);
-	GETFUNC(CreateModelVBOs);
-	GETFUNC(SetTransform);
-	GETFUNC(PostImgRedraw);
-	GETFUNC(FlushScreenTextures);
-	GETFUNC(DoScreenWipe);
-	GETFUNC(DrawScreenTexture);
-	GETFUNC(MakeScreenTexture);
-	GETFUNC(RenderVhsEffect);
-	GETFUNC(DrawScreenFinalTexture);
-	
-	GETFUNC(RenderSkyDome);
-
-	GETFUNC(InitShaders);
-	GETFUNC(LoadShader);
-	GETFUNC(CompileShader);
-	GETFUNC(SetShader);
-	GETFUNC(UnSetShader);
-
-	GETFUNC(SetShaderInfo);
-	
-	GETFUNC(SetPaletteLookup);
-	GETFUNC(CreateLightTable);
-	GETFUNC(ClearLightTables);
-	GETFUNC(SetScreenPalette);
-
-#else //HWRENDER
-	if (0 == strcmp("FinishUpdate", funcName))
-		return funcPointer; //&FinishUpdate;
-#endif //!HWRENDER
-#ifdef STATIC3DS
-	GETFUNC(Startup);
-	GETFUNC(AddSfx);
-	GETFUNC(AddSource);
-	GETFUNC(StartSource);
-	GETFUNC(StopSource);
-	GETFUNC(GetHW3DSVersion);
-	GETFUNC(BeginFrameUpdate);
-	GETFUNC(EndFrameUpdate);
-	GETFUNC(IsPlaying);
-	GETFUNC(UpdateListener);
-	GETFUNC(UpdateSourceParms);
-	GETFUNC(SetGlobalSfxVolume);
-	GETFUNC(SetCone);
-	GETFUNC(Update3DSource);
-	GETFUNC(ReloadSource);
-	GETFUNC(KillSource);
-	GETFUNC(Shutdown);
-	GETFUNC(GetHW3DSTitle);
-#endif
+	if (0) ;
 #ifdef NOLOADSO
 	else
 		funcPointer = handle;
 #else
 	else if (handle)
-		funcPointer = SDL_LoadFunction(handle,funcName);
+		funcPointer = SDL_LoadFunction(handle, funcName);
 #endif
 	if (!funcPointer)
 		I_OutputMsg("hwSym for %s: %s\n", funcName, SDL_GetError());
+
 	return funcPointer;
 }
 
@@ -159,8 +80,6 @@ void *hwSym(const char *funcName,void *handle)
 	\param	hwfile	Open a handle to the SO
 
 	\return	Handle to SO
-
-
 */
 
 void *hwOpen(const char *hwfile)
@@ -181,8 +100,6 @@ void *hwOpen(const char *hwfile)
 	\param	handle	Close the handle of the SO
 
 	\return	void
-
-
 */
 
 void hwClose(void *handle)

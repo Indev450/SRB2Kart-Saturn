@@ -74,15 +74,17 @@
 #include "../i_video.h"
 #include "../console.h"
 #include "../command.h"
-#include "sdlmain.h"
 #include "../i_system.h"
 #include "../hu_stuff.h" // for chat_on
+
+#include "sdlmain.h"
+
 #ifdef HWRENDER
 #include "../hardware/hw_main.h"
-#include "../hardware/hw_drv.h"
+#include "../hardware/hw_gl.h"
 #include "../hardware/r_opengl/r_opengl.h" //for supportFBO
-// For dynamic referencing of HW rendering functions
-#include "hwsym_sdl.h"
+
+#include "hwsym_sdl.h" // For dynamic referencing of HW rendering functions
 #include "ogl_sdl.h"
 #endif
 
@@ -128,9 +130,15 @@ consvar_t cv_keyboardlayout = {"keyboardlayout", "Default US", CV_SAVE|CV_CALL, 
 
 static void Impl_SetVsync(void);
 
+static INT32 desktopwidth = 0, desktopheight = 0;
+
+static void I_CheckDesktopRes(void);
+
 // synchronize page flipping with screen refresh
 consvar_t cv_vidwait = {"vid_wait", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, Impl_SetVsync, 0, NULL, NULL, 0, 0, NULL};
 static consvar_t cv_stretch = {"stretch", "Off", CV_SAVE|CV_NOSHOWHELP, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_alwaysgrabmouse = {"alwaysgrabmouse", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 // these cant be used since config is read after window creation, so need to use command line parameter instead
 //static CV_PossibleValue_t msaa_cons_t[] = {{0, "Off"}, {2, "2X"}, {4, "4X"}, {8, "8X"}, {16, "16X"}, {0, NULL}};
@@ -217,10 +225,6 @@ static SDL_bool Impl_CreateWindow(SDL_bool fullscreen);
 static void Impl_SetWindowIcon(void);
 
 #ifdef USE_FBO_OGL
-#if defined (__unix__)
-static void I_FixXwaylandNvidia(void);
-boolean xwaylandcrap = false;
-#endif
 boolean downsample = false;
 void RefreshOGLSDLSurface(void)
 {
@@ -278,10 +282,8 @@ static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen)
 #ifdef HWRENDER
 	if (rendermode == render_opengl)
 	{
+		I_CheckDesktopRes();
 #ifdef USE_FBO_OGL
-#if defined (__unix__)
-		I_FixXwaylandNvidia();
-#endif
 		I_DownSample();
 #endif
 		OglSdlSurface(vid.width, vid.height);
@@ -417,13 +419,15 @@ static INT32 Impl_SDL_Scancode_To_Keycode(SDL_Scancode code)
 }
 
 // Get the equivalent ASCII (Unicode?) character for a keypress.
-static INT32 GetTypedChar(SDL_Scancode code, SDL_Keysym *sym)
+static INT32 GetTypedChar(SDL_Keysym keysym)
 {
 	SDL_Event next_event;
-	boolean Text_Input_Only = (chat_on || CON_Ready() || (menu_text_input && menuactive));  //only use this this if on chat or console or the current menu wants inputs from us (except if its the control setup menu ig)
+	SDL_Keycode keycode = keysym.sym;
+	SDL_Scancode scancode = keysym.scancode;
+	const boolean Text_Input_Only = (chat_on || CON_Ready() || (menu_text_input && menuactive)); // only use this this if on chat or console or the current menu wants inputs from us (except if its the control setup menu ig)
 
 	// Special cases, where we always return a fixed value.
-	switch (sym->sym)
+	switch (keycode)
 	{
 		case SDLK_BACKSPACE: return KEY_BACKSPACE;
 		case SDLK_RETURN:    return KEY_ENTER;
@@ -440,13 +444,13 @@ static INT32 GetTypedChar(SDL_Scancode code, SDL_Keysym *sym)
 		}
 	}
 
-	return Impl_SDL_Scancode_To_Keycode(code); //fallback
+	return Impl_SDL_Scancode_To_Keycode(scancode); // fallback
 }
 
 static INT32 Impl_SDL_Keysym_To_Keycode(SDL_Keysym keysym)
 {
-	SDL_Keycode keycode= keysym.sym;
-	SDL_Scancode scancode= keysym.scancode;
+	SDL_Keycode keycode = keysym.sym;
+	SDL_Scancode scancode = keysym.scancode;
 
 	if (keycode >= SDLK_a && keycode <= SDLK_z)
 	{
@@ -457,15 +461,14 @@ static INT32 Impl_SDL_Keysym_To_Keycode(SDL_Keysym keysym)
 	{
 		return KEY_F1 + (keycode - SDLK_F1);
 	}
-	if(scancode == SDL_SCANCODE_APOSTROPHE)
+
+	switch (scancode)
 	{
-		return KEY_FR_U_GRAVE;
-	}
-	switch(scancode){
 		case SDL_SCANCODE_APOSTROPHE:    return KEY_FR_U_GRAVE;
 		case SDL_SCANCODE_LEFTBRACKET:   return '^';
 		default:               break;
 	}
+
 	switch (keycode)
 	{
 		// F11 and F12 are separated from the rest of the function keys
@@ -658,164 +661,120 @@ static void VID_Command_Mode_f (void)
 		setmodeneeded = modenum+1; // request vid mode change
 }
 
-static inline void SDLJoyRemap(event_t *event)
-{
-	(void)event;
-}
-
 static INT32 SDLJoyAxis(const Sint16 axis, evtype_t which)
 {
 	// -32768 to 32767
 	INT32 raxis = axis/32;
+	UINT8 pid;
+
 	if (which == ev_joystick)
-	{
-		if (Joystick.bGamepadStyle)
-		{
-			// gamepad control type, on or off, live or die
-			if (raxis < -(JOYAXISRANGE/2))
-				raxis = -1;
-			else if (raxis > (JOYAXISRANGE/2))
-				raxis = 1;
-			else
-				raxis = 0;
-		}
-		else
-		{
-			raxis = JoyInfo.scale!=1?((raxis/JoyInfo.scale)*JoyInfo.scale):raxis;
-
-#ifdef SDL_JDEADZONE
-			if (-SDL_JDEADZONE <= raxis && raxis <= SDL_JDEADZONE)
-				raxis = 0;
-#endif
-		}
-	}
+		pid = 0;
 	else if (which == ev_joystick2)
-	{
-		if (Joystick2.bGamepadStyle)
-		{
-			// gamepad control type, on or off, live or die
-			if (raxis < -(JOYAXISRANGE/2))
-				raxis = -1;
-			else if (raxis > (JOYAXISRANGE/2))
-				raxis = 1;
-			else raxis = 0;
-		}
-		else
-		{
-			raxis = JoyInfo2.scale!=1?((raxis/JoyInfo2.scale)*JoyInfo2.scale):raxis;
-
-#ifdef SDL_JDEADZONE
-			if (-SDL_JDEADZONE <= raxis && raxis <= SDL_JDEADZONE)
-				raxis = 0;
-#endif
-		}
-	}
+		pid = 1;
 	else if (which == ev_joystick3)
-	{
-		if (Joystick3.bGamepadStyle)
-		{
-			// gamepad control type, on or off, live or die
-			if (raxis < -(JOYAXISRANGE/2))
-				raxis = -1;
-			else if (raxis > (JOYAXISRANGE/2))
-				raxis = 1;
-			else raxis = 0;
-		}
-		else
-		{
-			raxis = JoyInfo3.scale!=1?((raxis/JoyInfo3.scale)*JoyInfo3.scale):raxis;
-
-#ifdef SDL_JDEADZONE
-			if (-SDL_JDEADZONE <= raxis && raxis <= SDL_JDEADZONE)
-				raxis = 0;
-#endif
-		}
-	}
+		pid = 2;
 	else if (which == ev_joystick4)
+		pid = 3;
+	else
+		return 0;
+
+	if (Joystick[pid].bGamepadStyle)
 	{
-		if (Joystick4.bGamepadStyle)
-		{
-			// gamepad control type, on or off, live or die
-			if (raxis < -(JOYAXISRANGE/2))
-				raxis = -1;
-			else if (raxis > (JOYAXISRANGE/2))
-				raxis = 1;
-			else raxis = 0;
-		}
+		// gamepad control type, on or off, live or die
+		if (raxis < -(JOYAXISRANGE/2))
+			raxis = -1;
+		else if (raxis > (JOYAXISRANGE/2))
+			raxis = 1;
 		else
-		{
-			raxis = JoyInfo4.scale!=1?((raxis/JoyInfo4.scale)*JoyInfo4.scale):raxis;
+			raxis = 0;
+	}
+	else
+	{
+		raxis = JoyInfo[pid].scale!=1?((raxis/JoyInfo[pid].scale)*JoyInfo[pid].scale):raxis;
 
 #ifdef SDL_JDEADZONE
-			if (-SDL_JDEADZONE <= raxis && raxis <= SDL_JDEADZONE)
-				raxis = 0;
+		if (-SDL_JDEADZONE <= raxis && raxis <= SDL_JDEADZONE)
+			raxis = 0;
 #endif
-		}
 	}
 	return raxis;
+}
+
+static void I_CheckDesktopRes(void)
+{
+	int currentDisplayIndex = -1;
+	SDL_DisplayMode curmode;
+
+	desktopwidth = 0;
+	desktopheight = 0;
+
+	currentDisplayIndex = SDL_GetWindowDisplayIndex(window);
+
+	// No valid index
+	if (currentDisplayIndex < 0)
+	{
+		return;
+	}
+
+	if (SDL_GetCurrentDisplayMode(currentDisplayIndex, &curmode) != 0)
+	{
+		return;
+	}
+
+	desktopwidth = curmode.w;
+	desktopheight = curmode.h;
+}
+
+boolean I_CheckNativeRes(void)
+{
+	return (vid.width == desktopwidth && vid.height == desktopheight);
 }
 
 #ifdef USE_FBO_OGL
 void I_DownSample(void)
 {
-	if (!cv_glframebuffer.value || !supportFBO) //no sense to do this crap if we cant benefit from it
+	boolean needrefresh = false;
+
+	if (!cv_glframebuffer.value || !supportFBO || (cv_glscreentextures.value == 0)) // no sense to do this crap if we cant benefit from it
 	{
 		downsample = false;
 		return;
 	}
 
-	int currentDisplayIndex = SDL_GetWindowDisplayIndex(window);
-	SDL_DisplayMode curmode;
-
-	if (SDL_GetCurrentDisplayMode(currentDisplayIndex, &curmode) != 0)
+	if (I_CheckNativeRes() && (downsample == true))
 	{
-		downsample = false; // couldnt get display info so turn the thing off
+		downsample = false;
 		RefreshOGLSDLSurface();
 		return;
 	}
 
-	if ((vid.width > curmode.w) || (vid.height > curmode.h)) //check if current resolution is higher than current display resolution
+	if ((vid.width > desktopwidth) || (vid.height > desktopheight)) //check if current resolution is higher than current display resolution
 	{
 		downsample = true;
+		needrefresh = true;
+	}
+	else if (downsample == true)
+	{
+		downsample = false;
+		needrefresh = true;
+	}
+
+	if (needrefresh)
+	{
 		RefreshOGLSDLSurface();
-	}
-	else
-	{
-		if (downsample == true)
-		{
-			downsample = false; // its not so no need to do crap
-			RefreshOGLSDLSurface();
-		}
+		needrefresh = false;
 	}
 }
-
-#if defined (__unix__)
-static void I_FixXwaylandNvidia(void) //dumbass crap, fix ur shit nvidia
-{
-	if (!supportFBO)
-	{
-		xwaylandcrap = false;
-		return;
-	}
-
-	// enable fbo resize shit, update the ogl surface and turn crap back off lol
-	xwaylandcrap = true;
-	RefreshOGLSDLSurface();
-	xwaylandcrap = false;
-	RefreshOGLSDLSurface();
-}
-#endif
 #endif
 
 static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 {
-#define FOCUSUNION (mousefocus | (kbfocus << 1))
+#define FOCUSUNION (mousefocus | (kbfocus << 1) | (windowmoved << 2))
+
 	static SDL_bool firsttimeonmouse = SDL_TRUE;
 	static SDL_bool mousefocus = SDL_TRUE;
 	static SDL_bool kbfocus = SDL_TRUE;
-#ifdef USE_FBO_OGL
 	static SDL_bool windowmoved = SDL_FALSE;
-#endif
 
 	const unsigned int oldfocus = FOCUSUNION;
 
@@ -837,11 +796,9 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 			break;
 		case SDL_WINDOWEVENT_MAXIMIZED:
 			break;
-#ifdef USE_FBO_OGL
 		case SDL_WINDOWEVENT_MOVED:
 			windowmoved = SDL_TRUE;
             break;
-#endif
 	}
 
 	if (FOCUSUNION == oldfocus) // No state change
@@ -849,12 +806,13 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 		return;
 	}
 
-#ifdef USE_FBO_OGL
 	if (windowmoved && rendermode == render_opengl)
 	{
+		I_CheckDesktopRes();
+#ifdef USE_FBO_OGL
 		I_DownSample();
-	}
 #endif
+	}
 
 	if (mousefocus && kbfocus)
 	{
@@ -898,6 +856,7 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 static void Impl_HandleKeyboardEvent(SDL_KeyboardEvent evt, Uint32 type)
 {
 	event_t event;
+
 	if (type == SDL_KEYUP)
 	{
 		event.type = ev_keyup;
@@ -911,12 +870,18 @@ static void Impl_HandleKeyboardEvent(SDL_KeyboardEvent evt, Uint32 type)
 		return;
 	}
 
-	if (cv_keyboardlayout.value == 2)
-		event.data1 = GetTypedChar(evt.keysym.scancode, &evt.keysym);
-	else if (cv_keyboardlayout.value == 3)
-		event.data1 = Impl_SDL_Keysym_To_Keycode(evt.keysym);
-	else
-		event.data1 = Impl_SDL_Scancode_To_Keycode(evt.keysym.scancode);
+	switch (cv_keyboardlayout.value)
+	{
+		case 2: // "native"
+			event.data1 = GetTypedChar(evt.keysym);
+			break;
+		case 3: // AZERTY
+			event.data1 = Impl_SDL_Keysym_To_Keycode(evt.keysym);
+			break;
+		default:
+			event.data1 = Impl_SDL_Scancode_To_Keycode(evt.keysym.scancode);
+			break;
+	}
 
 	if (event.data1) D_PostEvent(&event);
 }
@@ -925,7 +890,9 @@ static void Impl_HandleMouseMotionEvent(SDL_MouseMotionEvent evt)
 {
 	if (USE_MOUSEINPUT)
 	{
-		if ((SDL_GetMouseFocus() != window && SDL_GetKeyboardFocus() != window))
+		const boolean windowinfocus = (SDL_GetMouseFocus() == window && SDL_GetKeyboardFocus() == window);
+
+		if (!windowinfocus)
 		{
 			SDLdoUngrabMouse();
 			return;
@@ -935,7 +902,7 @@ static void Impl_HandleMouseMotionEvent(SDL_MouseMotionEvent evt)
 		// add on the offsets so we can make an overall event later.
 		if (SDL_GetRelativeMouseMode())
 		{
-			if (SDL_GetMouseFocus() == window && SDL_GetKeyboardFocus() == window)
+			if (windowinfocus)
 			{
 				mousemovex +=  evt.xrel;
 				mousemovey += -evt.yrel;
@@ -955,7 +922,21 @@ static void Impl_HandleMouseMotionEvent(SDL_MouseMotionEvent evt)
 		// just grab and set relative mode
 		// this fixes the stupid camera jerk on mouse entering bug
 		// -- Monster Iestyn
-		if (SDL_GetMouseFocus() == window && SDL_GetKeyboardFocus() == window)
+		if (windowinfocus)
+		{
+			SDLdoGrabMouse();
+		}
+	}
+	else if (cv_alwaysgrabmouse.value)
+	{
+		const boolean windowinfocus = (SDL_GetMouseFocus() == window && SDL_GetKeyboardFocus() == window);
+
+		if (!windowinfocus)
+		{
+			SDLdoUngrabMouse();
+			return;
+		}
+		else if (windowinfocus)
 		{
 			SDLdoGrabMouse();
 		}
@@ -965,8 +946,6 @@ static void Impl_HandleMouseMotionEvent(SDL_MouseMotionEvent evt)
 static void Impl_HandleMouseButtonEvent(SDL_MouseButtonEvent evt, Uint32 type)
 {
 	event_t event;
-
-	SDL_memset(&event, 0, sizeof(event_t));
 
 	// Ignore the event if the mouse is not actually focused on the window.
 	// This can happen if you used the mouse to restore keyboard focus;
@@ -979,6 +958,8 @@ static void Impl_HandleMouseButtonEvent(SDL_MouseButtonEvent evt, Uint32 type)
 	/// \todo inputEvent.button.which
 	if (USE_MOUSEINPUT)
 	{
+		SDL_memset(&event, 0, sizeof(event_t));
+
 		if (type == SDL_MOUSEBUTTONUP)
 		{
 			event.type = ev_keyup;
@@ -1009,26 +990,29 @@ static void Impl_HandleMouseWheelEvent(SDL_MouseWheelEvent evt)
 {
 	event_t event;
 
-	SDL_memset(&event, 0, sizeof(event_t));
+	if (USE_MOUSEINPUT)
+	{
+		SDL_memset(&event, 0, sizeof(event_t));
 
-	if (evt.y > 0)
-	{
-		event.data1 = KEY_MOUSEWHEELUP;
-		event.type = ev_keydown;
-	}
-	if (evt.y < 0)
-	{
-		event.data1 = KEY_MOUSEWHEELDOWN;
-		event.type = ev_keydown;
-	}
-	if (evt.y == 0)
-	{
-		event.data1 = 0;
-		event.type = ev_keyup;
-	}
-	if (event.type == ev_keyup || event.type == ev_keydown)
-	{
-		D_PostEvent(&event);
+		if (evt.y > 0)
+		{
+			event.data1 = KEY_MOUSEWHEELUP;
+			event.type = ev_keydown;
+		}
+		if (evt.y < 0)
+		{
+			event.data1 = KEY_MOUSEWHEELDOWN;
+			event.type = ev_keydown;
+		}
+		if (evt.y == 0)
+		{
+			event.data1 = 0;
+			event.type = ev_keyup;
+		}
+		if (event.type == ev_keyup || event.type == ev_keydown)
+		{
+			D_PostEvent(&event);
+		}
 	}
 }
 
@@ -1037,12 +1021,13 @@ static void Impl_HandleControllerAxisEvent(SDL_ControllerAxisEvent evt)
 	event_t event;
 	SDL_JoystickID joyid[4];
 	INT32 value;
+	UINT8 i;
 
 	// Determine the Joystick IDs for each current open joystick
-	joyid[0] = SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(JoyInfo.dev));
-	joyid[1] = SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(JoyInfo2.dev));
-	joyid[2] = SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(JoyInfo3.dev));
-	joyid[3] = SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(JoyInfo4.dev));
+	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+	{
+		joyid[i] = SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(JoyInfo[i].dev));
+	}
 
 	event.data1 = event.data2 = event.data3 = INT32_MAX;
 
@@ -1063,9 +1048,11 @@ static void Impl_HandleControllerAxisEvent(SDL_ControllerAxisEvent evt)
 		event.type = ev_joystick4;
 	}
 	else return;
+
 	//axis
 	if (evt.axis > JOYAXISSET*2)
 		return;
+
 	//vaule
 	value = SDLJoyAxis(evt.value, event.type);
 	switch (evt.axis)
@@ -1100,43 +1087,17 @@ static void Impl_HandleControllerAxisEvent(SDL_ControllerAxisEvent evt)
 	D_PostEvent(&event);
 }
 
-#if 0
-static void Impl_HandleJoystickHatEvent(SDL_JoyHatEvent evt)
-{
-	event_t event;
-	SDL_JoystickID joyid[2];
-
-	// Determine the Joystick IDs for each current open joystick
-	joyid[0] = SDL_JoystickInstanceID(JoyInfo.dev);
-	joyid[1] = SDL_JoystickInstanceID(JoyInfo2.dev);
-
-	if (evt.hat >= JOYHATS)
-		return; // ignore hats with too high an index
-
-	if (evt.which == joyid[0])
-	{
-		event.data1 = KEY_HAT1 + (evt.hat*4);
-	}
-	else if (evt.which == joyid[1])
-	{
-		event.data1 = KEY_2HAT1 + (evt.hat*4);
-	}
-	else return;
-
-	// NOTE: UNFINISHED
-}
-#endif
-
 static void Impl_HandleControllerButtonEvent(SDL_ControllerButtonEvent evt, Uint32 type)
 {
 	event_t event;
 	SDL_JoystickID joyid[4];
+	UINT8 i;
 
 	// Determine the Joystick IDs for each current open joystick
-	joyid[0] = SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(JoyInfo.dev));
-	joyid[1] = SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(JoyInfo2.dev));
-	joyid[2] = SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(JoyInfo3.dev));
-	joyid[3] = SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(JoyInfo4.dev));
+	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+	{
+		joyid[i] = SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(JoyInfo[i].dev));
+	}
 
 	if (evt.button == SDL_CONTROLLER_BUTTON_DPAD_UP
 		|| evt.button == SDL_CONTROLLER_BUTTON_DPAD_DOWN
@@ -1164,6 +1125,7 @@ static void Impl_HandleControllerButtonEvent(SDL_ControllerButtonEvent evt, Uint
 		event.data1 = KEY_4JOY1;
 	}
 	else return;
+
 	if (type == SDL_CONTROLLERBUTTONUP)
 	{
 		event.type = ev_keyup;
@@ -1173,17 +1135,15 @@ static void Impl_HandleControllerButtonEvent(SDL_ControllerButtonEvent evt, Uint
 		event.type = ev_keydown;
 	}
 	else return;
+
 	if (evt.button < JOYBUTTONS)
 	{
 		event.data1 += evt.button;
 	}
 	else return;
 
-	SDLJoyRemap(&event);
 	if (event.type != ev_console) D_PostEvent(&event);
 }
-
-
 
 void I_GetEvent(void)
 {
@@ -1192,6 +1152,7 @@ void I_GetEvent(void)
 	// We only want the first motion event,
 	// otherwise we'll end up catching the warp back to center.
 	//int mouseMotionOnce = 0;
+	INT32 i;
 
 	if (!graphics_started)
 	{
@@ -1257,77 +1218,42 @@ void I_GetEvent(void)
 					//      * BUT: If that default index is being occupied, use ANOTHER cv_usejoystick's default value!
 					////////////////////////////////////////////////////////////
 
-					//////////////////////////////
-					// PLAYER 1
-					//////////////////////////////
-
-					if (newcontroller && (!JoyInfo.dev || !SDL_GameControllerGetAttached(JoyInfo.dev))
-						&& JoyInfo2.dev != newcontroller && JoyInfo3.dev != newcontroller && JoyInfo4.dev != newcontroller) // don't override a currently active device
+					for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 					{
-						cv_usejoystick.value = evt.cdevice.which + 1;
-						I_UpdateJoystickDeviceIndices(1);
-					}
+						if (newcontroller && (!JoyInfo[i].dev || !SDL_GameControllerGetAttached(JoyInfo[i].dev)))
+						{
+							UINT8 j;
 
-					//////////////////////////////
-					// PLAYER 2
-					//////////////////////////////
+							for (j = 0; j < MAXSPLITSCREENPLAYERS; j++)
+							{
+								if (i == j)
+									continue;
 
-					else if (newcontroller && (!JoyInfo2.dev || !SDL_GameControllerGetAttached(JoyInfo2.dev))
-						&& JoyInfo.dev != newcontroller && JoyInfo3.dev != newcontroller && JoyInfo4.dev != newcontroller) // don't override a currently active device
-					{
-						cv_usejoystick2.value = evt.cdevice.which + 1;
-						I_UpdateJoystickDeviceIndices(2);
-					}
+								if (JoyInfo[j].dev == newcontroller)
+									break;
+							}
 
-					//////////////////////////////
-					// PLAYER 3
-					//////////////////////////////
-
-					else if (newcontroller && (!JoyInfo3.dev || !SDL_GameControllerGetAttached(JoyInfo3.dev))
-						&& JoyInfo.dev != newcontroller && JoyInfo2.dev != newcontroller && JoyInfo4.dev != newcontroller) // don't override a currently active device
-					{
-						cv_usejoystick3.value = evt.cdevice.which + 1;
-						I_UpdateJoystickDeviceIndices(3);
-					}
-
-					//////////////////////////////
-					// PLAYER 4
-					//////////////////////////////
-
-					else if (newcontroller && (!JoyInfo4.dev || !SDL_GameControllerGetAttached(JoyInfo4.dev))
-						&& JoyInfo.dev != newcontroller && JoyInfo2.dev != newcontroller && JoyInfo3.dev != newcontroller) // don't override a currently active device
-					{
-						cv_usejoystick4.value = evt.cdevice.which + 1;
-						I_UpdateJoystickDeviceIndices(4);
+							if (j == MAXSPLITSCREENPLAYERS)
+							{
+								// ensures we aren't overriding a currently active device
+								cv_usejoystick[i].value = evt.jdevice.which + 1;
+								I_UpdateJoystickDeviceIndices(0);
+							}
+						}
 					}
 
 					////////////////////////////////////////////////////////////
 					// Was cv_usejoystick disabled in settings?
 					////////////////////////////////////////////////////////////
 
-					if (!strcmp(cv_usejoystick.string, "0") || !cv_usejoystick.value)
-						cv_usejoystick.value = 0;
-					else if (atoi(cv_usejoystick.string) <= I_NumJoys() // don't mess if we intentionally set higher than NumJoys
-						     && cv_usejoystick.value) // update the cvar ONLY if a device exists
-						CV_SetValue(&cv_usejoystick, cv_usejoystick.value);
-
-					if (!strcmp(cv_usejoystick2.string, "0") || !cv_usejoystick2.value)
-						cv_usejoystick2.value = 0;
-					else if (atoi(cv_usejoystick2.string) <= I_NumJoys() // don't mess if we intentionally set higher than NumJoys
-					         && cv_usejoystick2.value) // update the cvar ONLY if a device exists
-						CV_SetValue(&cv_usejoystick2, cv_usejoystick2.value);
-
-					if (!strcmp(cv_usejoystick3.string, "0") || !cv_usejoystick3.value)
-						cv_usejoystick3.value = 0;
-					else if (atoi(cv_usejoystick3.string) <= I_NumJoys() // don't mess if we intentionally set higher than NumJoys
-						&& cv_usejoystick3.value) // update the cvar ONLY if a device exists
-						CV_SetValue(&cv_usejoystick3, cv_usejoystick3.value);
-
-					if (!strcmp(cv_usejoystick4.string, "0") || !cv_usejoystick4.value)
-						cv_usejoystick4.value = 0;
-					else if (atoi(cv_usejoystick4.string) <= I_NumJoys() // don't mess if we intentionally set higher than NumJoys
-						&& cv_usejoystick4.value) // update the cvar ONLY if a device exists
-						CV_SetValue(&cv_usejoystick4, cv_usejoystick4.value);
+					for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+					{
+						if (!strcmp(cv_usejoystick[i].string, "0") || !cv_usejoystick[i].value)
+							cv_usejoystick[i].value = 0;
+						else if (atoi(cv_usejoystick[i].string) <= I_NumJoys() // don't mess if we intentionally set higher than NumJoys
+							&& cv_usejoystick[i].value) // update the cvar ONLY if a device exists
+						CV_SetValue(&cv_usejoystick[i], cv_usejoystick[i].value);
+					}
 
 					////////////////////////////////////////////////////////////
 					// Update all joysticks' init states
@@ -1336,23 +1262,30 @@ void I_GetEvent(void)
 					// if the device is already active, this should do nothing, effectively.
 					////////////////////////////////////////////////////////////
 
-					I_InitJoystick();
-					I_InitJoystick2();
-					I_InitJoystick3();
-					I_InitJoystick4();
+					for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+					{
+						I_InitJoystick(i);
+						G_SetPlayerGamepadIndicatorColor(i, G_GetSkinColor(i)); // gotta update the controller led again on reconnect
+					}
 
 					////////////////////////////////////////////////////////////
 
-					CONS_Debug(DBG_GAMELOGIC, "Joystick1 device index: %d\n", JoyInfo.oldjoy);
-					CONS_Debug(DBG_GAMELOGIC, "Joystick2 device index: %d\n", JoyInfo2.oldjoy);
-					CONS_Debug(DBG_GAMELOGIC, "Joystick3 device index: %d\n", JoyInfo3.oldjoy);
-					CONS_Debug(DBG_GAMELOGIC, "Joystick4 device index: %d\n", JoyInfo4.oldjoy);
+					for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+						CONS_Debug(DBG_GAMELOGIC, "Joystick%d device index: %d\n", i+1, JoyInfo[i].oldjoy);
 
 					// update the menu
 					if (currentMenu == &OP_JoystickSetDef)
 						M_SetupJoystickMenu(0);
 
-					if (JoyInfo.dev != newcontroller && JoyInfo2.dev != newcontroller && JoyInfo3.dev != newcontroller && JoyInfo4.dev != newcontroller)
+					numcontrollers = I_NumJoys();
+
+					for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+					{
+						if (JoyInfo[i].dev == newcontroller)
+							break;
+					}
+
+					if (i == MAXSPLITSCREENPLAYERS)
 						SDL_GameControllerClose(newcontroller);
 				}
 				break;
@@ -1360,28 +1293,13 @@ void I_GetEvent(void)
 			////////////////////////////////////////////////////////////
 
 			case SDL_CONTROLLERDEVICEREMOVED:
-				if (JoyInfo.dev && !SDL_GameControllerGetAttached(JoyInfo.dev))
+				for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 				{
-					CONS_Debug(DBG_GAMELOGIC, "Joystick1 removed, device index: %d\n", JoyInfo.oldjoy);
-					I_ShutdownJoystick();
-				}
-
-				if (JoyInfo2.dev && !SDL_GameControllerGetAttached(JoyInfo2.dev))
-				{
-					CONS_Debug(DBG_GAMELOGIC, "Joystick2 removed, device index: %d\n", JoyInfo2.oldjoy);
-					I_ShutdownJoystick2();
-				}
-
-				if (JoyInfo3.dev && !SDL_GameControllerGetAttached(JoyInfo3.dev))
-				{
-					CONS_Debug(DBG_GAMELOGIC, "Joystick3 removed, device index: %d\n", JoyInfo3.oldjoy);
-					I_ShutdownJoystick3();
-				}
-
-				if (JoyInfo4.dev && !SDL_GameControllerGetAttached(JoyInfo4.dev))
-				{
-					CONS_Debug(DBG_GAMELOGIC, "Joystick4 removed, device index: %d\n", JoyInfo4.oldjoy);
-					I_ShutdownJoystick4();
+					if (JoyInfo[i].dev && !SDL_GameControllerGetAttached(JoyInfo[i].dev))
+					{
+						CONS_Debug(DBG_GAMELOGIC, "Joystick%d removed, device index: %d\n", i+1, JoyInfo[i].oldjoy);
+						I_ShutdownJoystick(i);
+					}
 				}
 
 				////////////////////////////////////////////////////////////
@@ -1390,128 +1308,39 @@ void I_GetEvent(void)
 				//   * BUT: If that default index is being occupied, use ANOTHER cv_usejoystick's default value!
 				////////////////////////////////////////////////////////////
 
-				if (JoyInfo.dev)
-					cv_usejoystick.value = JoyInfo.oldjoy = I_GetJoystickDeviceIndex(JoyInfo.dev) + 1;
-				else if (atoi(cv_usejoystick.string) != JoyInfo2.oldjoy
-					&& atoi(cv_usejoystick.string) != JoyInfo3.oldjoy
-					&& atoi(cv_usejoystick.string) != JoyInfo4.oldjoy)
-					cv_usejoystick.value = atoi(cv_usejoystick.string);
-				else if (atoi(cv_usejoystick2.string) != JoyInfo2.oldjoy
-					&& atoi(cv_usejoystick2.string) != JoyInfo3.oldjoy
-					&& atoi(cv_usejoystick2.string) != JoyInfo4.oldjoy)
-					cv_usejoystick.value = atoi(cv_usejoystick2.string);
-				else if (atoi(cv_usejoystick3.string) != JoyInfo2.oldjoy
-					&& atoi(cv_usejoystick3.string) != JoyInfo3.oldjoy
-					&& atoi(cv_usejoystick3.string) != JoyInfo4.oldjoy)
-					cv_usejoystick.value = atoi(cv_usejoystick3.string);
-				else if (atoi(cv_usejoystick4.string) != JoyInfo2.oldjoy
-					&& atoi(cv_usejoystick4.string) != JoyInfo3.oldjoy
-					&& atoi(cv_usejoystick4.string) != JoyInfo4.oldjoy)
-					cv_usejoystick.value = atoi(cv_usejoystick4.string);
-				else // we tried...
-					cv_usejoystick.value = 0;
-
-				if (JoyInfo2.dev)
-					cv_usejoystick2.value = JoyInfo2.oldjoy = I_GetJoystickDeviceIndex(JoyInfo2.dev) + 1;
-				else if (atoi(cv_usejoystick.string) != JoyInfo.oldjoy
-					&& atoi(cv_usejoystick.string) != JoyInfo3.oldjoy
-					&& atoi(cv_usejoystick.string) != JoyInfo4.oldjoy)
-					cv_usejoystick2.value = atoi(cv_usejoystick.string);
-				else if (atoi(cv_usejoystick2.string) != JoyInfo.oldjoy
-					&& atoi(cv_usejoystick2.string) != JoyInfo3.oldjoy
-					&& atoi(cv_usejoystick2.string) != JoyInfo4.oldjoy)
-					cv_usejoystick2.value = atoi(cv_usejoystick2.string);
-				else if (atoi(cv_usejoystick3.string) != JoyInfo.oldjoy
-					&& atoi(cv_usejoystick3.string) != JoyInfo3.oldjoy
-					&& atoi(cv_usejoystick3.string) != JoyInfo4.oldjoy)
-					cv_usejoystick2.value = atoi(cv_usejoystick3.string);
-				else if (atoi(cv_usejoystick4.string) != JoyInfo.oldjoy
-					&& atoi(cv_usejoystick4.string) != JoyInfo3.oldjoy
-					&& atoi(cv_usejoystick4.string) != JoyInfo4.oldjoy)
-					cv_usejoystick2.value = atoi(cv_usejoystick4.string);
-				else // we tried...
-					cv_usejoystick2.value = 0;
-
-				if (JoyInfo3.dev)
-					cv_usejoystick3.value = JoyInfo3.oldjoy = I_GetJoystickDeviceIndex(JoyInfo3.dev) + 1;
-				else if (atoi(cv_usejoystick.string) != JoyInfo.oldjoy
-					&& atoi(cv_usejoystick.string) != JoyInfo2.oldjoy
-					&& atoi(cv_usejoystick.string) != JoyInfo4.oldjoy)
-					cv_usejoystick3.value = atoi(cv_usejoystick.string);
-				else if (atoi(cv_usejoystick2.string) != JoyInfo.oldjoy
-					&& atoi(cv_usejoystick2.string) != JoyInfo2.oldjoy
-					&& atoi(cv_usejoystick2.string) != JoyInfo4.oldjoy)
-					cv_usejoystick3.value = atoi(cv_usejoystick2.string);
-				else if (atoi(cv_usejoystick3.string) != JoyInfo.oldjoy
-					&& atoi(cv_usejoystick3.string) != JoyInfo2.oldjoy
-					&& atoi(cv_usejoystick3.string) != JoyInfo4.oldjoy)
-					cv_usejoystick3.value = atoi(cv_usejoystick3.string);
-				else if (atoi(cv_usejoystick4.string) != JoyInfo.oldjoy
-					&& atoi(cv_usejoystick4.string) != JoyInfo2.oldjoy
-					&& atoi(cv_usejoystick4.string) != JoyInfo4.oldjoy)
-					cv_usejoystick3.value = atoi(cv_usejoystick4.string);
-				else // we tried...
-					cv_usejoystick3.value = 0;
-
-				if (JoyInfo4.dev)
-					cv_usejoystick4.value = JoyInfo4.oldjoy = I_GetJoystickDeviceIndex(JoyInfo4.dev) + 1;
-				else if (atoi(cv_usejoystick.string) != JoyInfo.oldjoy
-					&& atoi(cv_usejoystick.string) != JoyInfo2.oldjoy
-					&& atoi(cv_usejoystick.string) != JoyInfo3.oldjoy)
-					cv_usejoystick4.value = atoi(cv_usejoystick.string);
-				else if (atoi(cv_usejoystick2.string) != JoyInfo.oldjoy
-					&& atoi(cv_usejoystick2.string) != JoyInfo2.oldjoy
-					&& atoi(cv_usejoystick2.string) != JoyInfo3.oldjoy)
-					cv_usejoystick4.value = atoi(cv_usejoystick2.string);
-				else if (atoi(cv_usejoystick3.string) != JoyInfo.oldjoy
-					&& atoi(cv_usejoystick3.string) != JoyInfo2.oldjoy
-					&& atoi(cv_usejoystick3.string) != JoyInfo3.oldjoy)
-					cv_usejoystick4.value = atoi(cv_usejoystick3.string);
-				else if (atoi(cv_usejoystick4.string) != JoyInfo.oldjoy
-					&& atoi(cv_usejoystick4.string) != JoyInfo2.oldjoy
-					&& atoi(cv_usejoystick4.string) != JoyInfo3.oldjoy)
-					cv_usejoystick4.value = atoi(cv_usejoystick4.string);
-				else // we tried...
-					cv_usejoystick4.value = 0;
+				for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+				{
+					I_UpdateJoystickDeviceIndex(i);
+				}
 
 				////////////////////////////////////////////////////////////
 				// Was cv_usejoystick disabled in settings?
 				////////////////////////////////////////////////////////////
 
-				if (!strcmp(cv_usejoystick.string, "0"))
-					cv_usejoystick.value = 0;
-				else if (atoi(cv_usejoystick.string) <= I_NumJoys() // don't mess if we intentionally set higher than NumJoys
-						 && cv_usejoystick.value) // update the cvar ONLY if a device exists
-					CV_SetValue(&cv_usejoystick, cv_usejoystick.value);
-
-				if (!strcmp(cv_usejoystick2.string, "0"))
-					cv_usejoystick2.value = 0;
-				else if (atoi(cv_usejoystick2.string) <= I_NumJoys() // don't mess if we intentionally set higher than NumJoys
-						 && cv_usejoystick2.value) // update the cvar ONLY if a device exists
-					CV_SetValue(&cv_usejoystick2, cv_usejoystick2.value);
-
-				if (!strcmp(cv_usejoystick3.string, "0"))
-					cv_usejoystick3.value = 0;
-				else if (atoi(cv_usejoystick3.string) <= I_NumJoys() // don't mess if we intentionally set higher than NumJoys
-					&& cv_usejoystick3.value) // update the cvar ONLY if a device exists
-					CV_SetValue(&cv_usejoystick3, cv_usejoystick3.value);
-
-				if (!strcmp(cv_usejoystick4.string, "0"))
-					cv_usejoystick4.value = 0;
-				else if (atoi(cv_usejoystick4.string) <= I_NumJoys() // don't mess if we intentionally set higher than NumJoys
-					&& cv_usejoystick4.value) // update the cvar ONLY if a device exists
-					CV_SetValue(&cv_usejoystick4, cv_usejoystick4.value);
+				for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+				{
+					if (!strcmp(cv_usejoystick[i].string, "0"))
+					{
+						cv_usejoystick[i].value = 0;
+					}
+					else if (atoi(cv_usejoystick[i].string) <= I_NumJoys() // don't mess if we intentionally set higher than NumJoys
+						&& cv_usejoystick[i].value) // update the cvar ONLY if a device exists
+					{
+						CV_SetValue(&cv_usejoystick[i], cv_usejoystick[i].value);
+					}
+				}
 
 				////////////////////////////////////////////////////////////
 
-				CONS_Debug(DBG_GAMELOGIC, "Joystick1 device index: %d\n", JoyInfo.oldjoy);
-				CONS_Debug(DBG_GAMELOGIC, "Joystick2 device index: %d\n", JoyInfo2.oldjoy);
-				CONS_Debug(DBG_GAMELOGIC, "Joystick3 device index: %d\n", JoyInfo3.oldjoy);
-				CONS_Debug(DBG_GAMELOGIC, "Joystick4 device index: %d\n", JoyInfo4.oldjoy);
+				for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+					CONS_Debug(DBG_GAMELOGIC, "Joystick%d device index: %d\n", i+1, JoyInfo[i].oldjoy);
 
 				// update the menu
 				if (currentMenu == &OP_JoystickSetDef)
 					M_SetupJoystickMenu(0);
+
+				numcontrollers = I_NumJoys();
+
 				break;
 			case SDL_DROPFILE:
 				dropped_filedir = evt.drop.file;
@@ -1557,7 +1386,7 @@ void I_StartupMouse(void)
 	}
 	else
 		firsttimeonmouse = SDL_FALSE;
-	if (cv_usemouse.value)
+	if (cv_usemouse.value || cv_alwaysgrabmouse.value)
 		SDLdoGrabMouse();
 	else
 		SDLdoUngrabMouse();
@@ -1569,19 +1398,16 @@ void I_StartupMouse(void)
 void I_OsPolling(void)
 {
 	SDL_Keymod mod;
+	INT32 i;
 
 	if (consolevent)
 		I_GetConsoleEvents();
 	if (SDL_WasInit(SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER) == (SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER))
 	{
 		SDL_GameControllerUpdate();
-		I_GetJoystickEvents();
-		I_GetJoystick2Events();
-		I_GetJoystick3Events();
-		I_GetJoystick4Events();
+		for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+			I_GetJoystickEvents(i);
 	}
-
-	I_GetMouseEvents();
 
 	I_GetEvent();
 
@@ -1623,37 +1449,6 @@ void I_UpdateNoBlit(void)
 	exposevideo = SDL_FALSE;
 }
 
-// I_SkipFrame
-//
-// Returns true if it thinks we can afford to skip this frame
-// from PrBoom's src/SDL/i_video.c
-static inline boolean I_SkipFrame(void)
-{
-#if 1
-	// While I fixed the FPS counter bugging out with this,
-	// I actually really like being able to pause and
-	// use perfstats to measure rendering performance
-	// without game logic changes.
-	return false;
-#else
-	static boolean skip = false;
-
-	skip = !skip;
-
-	switch (gamestate)
-	{
-		case GS_LEVEL:
-			if (!paused)
-				return false;
-			/* FALLTHRU */
-		case GS_WAITINGPLAYERS:
-			return skip; // Skip odd frames
-		default:
-			return false;
-	}
-#endif
-}
-
 //
 // I_FinishUpdate
 //
@@ -1666,14 +1461,14 @@ void I_FinishUpdate(void)
 
 	SCR_CalculateFPS();
 
-	if (I_SkipFrame())
-		return;
+	if (st_overlay)
+	{
+		if (cv_ticrate.value)
+			SCR_DisplayTicRate();
 
-	if (cv_ticrate.value && st_overlay)
-		SCR_DisplayTicRate();
-
-	if (cv_showping.value && netgame && consoleplayer != serverplayer && st_overlay)
-		SCR_DisplayLocalPing();
+		if (cv_showping.value && ((netgame && consoleplayer != serverplayer) || (simulated_lag != 0 && consoleplayer == serverplayer && Playing())))
+			SCR_DisplayLocalPing();
+	}
 
 #ifdef HAVE_DISCORDRPC
 	if (discordRequestList != NULL)
@@ -2187,6 +1982,7 @@ void I_StartupGraphics(void)
 	COM_AddCommand ("vid_mode", VID_Command_Mode_f);
 	CV_RegisterVar (&cv_vidwait);
 	CV_RegisterVar (&cv_stretch);
+	CV_RegisterVar (&cv_alwaysgrabmouse);
 	disable_mouse = M_CheckParm("-nomouse");
 	disable_fullscreen = M_CheckParm("-win") ? 1 : 0;
 
@@ -2217,27 +2013,27 @@ void I_StartupGraphics(void)
 	else if (M_CheckParm("-opengl"))
 		rendermode = render_opengl;
 
-    msaa = 0; boolean msaa_set = false;
-    a2c = false; boolean a2c_set = false;
+	msaa = 0; boolean msaa_set = false;
+	a2c = false; boolean a2c_set = false;
 
-    if (M_CheckParm("-msaa") && M_IsNextParm())
-    {
-        const char* str = M_GetNextParm();
-        if (sscanf(str, "%u", &msaa))
-        {
-            msaa_set = true;
-        }
-    }
+	if (M_CheckParm("-msaa") && M_IsNextParm())
+	{
+		const char* str = M_GetNextParm();
+		if (sscanf(str, "%u", &msaa))
+		{
+			msaa_set = true;
+		}
+	}
 
-    if (M_CheckParm("-a2c"))
-    {
-        a2c = true;
-        a2c_set = true;
-    }
-    else if (M_CheckParm("-noa2c"))
-    {
-        a2c_set = true;
-    }
+	if (M_CheckParm("-a2c"))
+	{
+		a2c = true;
+		a2c_set = true;
+	}
+	else if (M_CheckParm("-noa2c"))
+	{
+		a2c_set = true;
+	}
 
     {
 		char   line[16];
@@ -2247,52 +2043,52 @@ void I_StartupGraphics(void)
 		{
 			while (fgets(line, sizeof line, file) != NULL)
 			{
-                word = strtok(line, " \n");
+				word = strtok(line, " \n");
 
-                if (rendermode == render_none)
-                {
-                    if (strcasecmp(word, "software") == 0)
-                    {
-                        rendermode = render_soft;
-                    }
-                    else if (strcasecmp(word, "opengl") == 0)
-                    {
-                        rendermode = render_opengl;
-                    }
+				if (rendermode == render_none)
+				{
+					if (strcasecmp(word, "software") == 0)
+					{
+						rendermode = render_soft;
+					}
+					else if (strcasecmp(word, "opengl") == 0)
+					{
+						rendermode = render_opengl;
+					}
 
-                    if (rendermode != render_none)
-                    {
-                        CONS_Printf("Using last known renderer: %s\n", line);
-                    }
+					if (rendermode != render_none)
+					{
+						CONS_Printf("Using last known renderer: %s\n", line);
+					}
 			    }
 
-                if (!msaa_set)
-                {
-                    if (strcasecmp(word, "msaa") == 0)
-                    {
-                        const char *nextword = strtok(NULL, " \n");
+				if (!msaa_set)
+				{
+					if (strcasecmp(word, "msaa") == 0)
+					{
+						const char *nextword = strtok(NULL, " \n");
 
-                        if (!nextword || !sscanf(nextword, "%u", &msaa))
-                        {
-                            CONS_Alert(CONS_ERROR, "Malformed MSAA entry in renderer.txt\n");
-                        }
-                        else
-                        {
-                            CONS_Printf("Using last know MSAA value: %u\n", msaa);
-                        }
-                    }
-                }
+						if (!nextword || !sscanf(nextword, "%u", &msaa))
+						{
+							CONS_Alert(CONS_ERROR, "Malformed MSAA entry in renderer.txt\n");
+						}
+						else
+						{
+							CONS_Printf("Using last know MSAA value: %u\n", msaa);
+						}
+					}
+				}
 
-                if (!a2c_set)
-                {
-                    if (strcasecmp(word, "a2c") == 0)
-                    {
-                        a2c = true;
+				if (!a2c_set)
+				{
+					if (strcasecmp(word, "a2c") == 0)
+					{
+						a2c = true;
 
-                        CONS_Printf("Using a2c because it was specified to be used earlier\n");
-                    }
-                }
-            }
+						CONS_Printf("Using a2c because it was specified to be used earlier\n");
+					}
+				}
+			}
 
 			fclose(file);
 		}
@@ -2324,13 +2120,13 @@ void I_StartupGraphics(void)
 			}
 
 #ifdef HWRENDER
-            fprintf(file, "msaa %u\n", msaa);
+			fprintf(file, "msaa %u\n", msaa);
 
-            if (a2c)
-                fputs("a2c\n", file);
+			if (a2c)
+				fputs("a2c\n", file);
 #endif
 
-            fclose(file);
+			fclose(file);
 		}
 		else
 		{
@@ -2341,55 +2137,13 @@ void I_StartupGraphics(void)
 	usesdl2soft = M_CheckParm("-softblit");
 	borderlesswindow = M_CheckParm("-borderless");
 
-	//SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY>>1,SDL_DEFAULT_REPEAT_INTERVAL<<2);
 	VID_Command_ModeList_f();
+
 #ifdef HWRENDER
 	if (rendermode == render_opengl)
 	{
-		HWD.pfnInit             = hwSym("Init",NULL);
-		HWD.pfnSetupGLInfo      = hwSym("SetupGLInfo",NULL);
-		HWD.pfnFinishUpdate     = NULL;
-		HWD.pfnDraw2DLine       = hwSym("Draw2DLine",NULL);
-		HWD.pfnDrawPolygon      = hwSym("DrawPolygon",NULL);
-		HWD.pfnDrawIndexedTriangles = hwSym("DrawIndexedTriangles",NULL);
-		HWD.pfnSetBlend         = hwSym("SetBlend",NULL);
-		HWD.pfnClearBuffer      = hwSym("ClearBuffer",NULL);
-		HWD.pfnSetTexture       = hwSym("SetTexture",NULL);
-		HWD.pfnUpdateTexture    = hwSym("UpdateTexture",NULL);
-		HWD.pfnDeleteTexture    = hwSym("DeleteTexture",NULL);
-		HWD.pfnReadScreenTexture= hwSym("ReadScreenTexture",NULL);
-		HWD.pfnGClipRect        = hwSym("GClipRect",NULL);
-		HWD.pfnClearMipMapCache = hwSym("ClearMipMapCache",NULL);
-		HWD.pfnSetSpecialState  = hwSym("SetSpecialState",NULL);
-		HWD.pfnSetTexturePalette= hwSym("SetTexturePalette",NULL);
-		HWD.pfnGetTextureUsed   = hwSym("GetTextureUsed",NULL);
-		HWD.pfnDrawModel        = hwSym("DrawModel",NULL);
-		HWD.pfnCreateModelVBOs  = hwSym("CreateModelVBOs",NULL);
-		HWD.pfnSetTransform     = hwSym("SetTransform",NULL);
-		HWD.pfnPostImgRedraw    = hwSym("PostImgRedraw",NULL);
-		HWD.pfnFlushScreenTextures=hwSym("FlushScreenTextures",NULL);
-		HWD.pfnDoScreenWipe     = hwSym("DoScreenWipe",NULL);
-		HWD.pfnDrawScreenTexture= hwSym("DrawScreenTexture",NULL);
-		HWD.pfnMakeScreenTexture= hwSym("MakeScreenTexture",NULL);
-		HWD.pfnRenderVhsEffect  = hwSym("RenderVhsEffect",NULL);
-		HWD.pfnDrawScreenFinalTexture=hwSym("DrawScreenFinalTexture",NULL);
+		vid.glstate = (VID_LoadOGLAPI() && GL_Init()) ? VID_GL_LIBRARY_LOADED : VID_GL_LIBRARY_ERROR;
 
-		HWD.pfnRenderSkyDome = hwSym("RenderSkyDome",NULL);
-
-		HWD.pfnInitShaders      = hwSym("InitShaders",NULL);
-		HWD.pfnLoadShader       = hwSym("LoadShader",NULL);
-		HWD.pfnCompileShader    = hwSym("CompileShader",NULL);
-		HWD.pfnSetShader 		= hwSym("SetShader",NULL);
-		HWD.pfnUnSetShader 		= hwSym("UnSetShader",NULL);
-
-		HWD.pfnSetShaderInfo    = hwSym("SetShaderInfo",NULL);
-
-		HWD.pfnSetPaletteLookup = hwSym("SetPaletteLookup",NULL);
-		HWD.pfnCreateLightTable = hwSym("CreateLightTable",NULL);
-		HWD.pfnClearLightTables = hwSym("ClearLightTables",NULL);
-		HWD.pfnSetScreenPalette = hwSym("SetScreenPalette",NULL);
-
-		vid.glstate = HWD.pfnInit() ? VID_GL_LIBRARY_LOADED : VID_GL_LIBRARY_ERROR; // let load the OpenGL library
 		if (vid.glstate == VID_GL_LIBRARY_ERROR)
 		{
 			rendermode = render_soft;
@@ -2445,10 +2199,7 @@ void I_StartupGraphics(void)
 
 	if (mousegrabok && !disable_mouse)
 	{
-		SDL_ShowCursor(SDL_DISABLE);
-		SDL_SetRelativeMouseMode(SDL_TRUE);
-		wrapmouseok = SDL_TRUE;
-		SDL_SetWindowGrab(window, SDL_TRUE);
+		SDLdoGrabMouse();
 	}
 
 	graphics_started = true;
@@ -2515,4 +2266,5 @@ static void Impl_SetVsync(void)
 	}
 #endif
 }
+
 #endif

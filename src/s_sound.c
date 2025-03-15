@@ -33,13 +33,7 @@
 
 #include "lua_hook.h" // MusicChange hook
 
-#ifdef HW3SOUND
-// 3D Sound Interface
-#include "hardware/hw3sound.h"
-#else
 static boolean S_AdjustSoundParams(const mobj_t *listener, const mobj_t *source, INT32 *vol, INT32 *sep, INT32 *pitch, sfxinfo_t *sfxinfo);
-#endif
-
 static void SetChannelsNum(void);
 static void Command_Tunes_f(void);
 static void Command_RestartAudio_f(void);
@@ -119,13 +113,15 @@ consvar_t cv_resume = {"resume", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0
 consvar_t cv_fading = {"fading", "Off", CV_SAVE|CV_CALL, CV_OnOff, Bird_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_birdmusic = {"birdmusicstuff", "No", CV_SAVE|CV_CALL, CV_YesNo, Bird_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
 
-
 consvar_t cv_keepmusic = {"keepmusic", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_skipintromusic = {"skipintromusic", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 //consvar_t cv_ignoremusicchanges = {"ignoremusicchanges", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-boolean keepmusic = false;
-static void S_CheckEventMus(const char *newmus);
+boolean keepmapmusic = false; // keep the current music on map restart
+boolean skipintromus = false; // skip the intro fanfare
+static boolean resumekeepmusic = false;
+static music_t keepmusic;
+static void S_SetKeepMusResume(void);
 
 #ifdef HAVE_OPENMPT
 openmpt_module *openmpt_mhandle = NULL;
@@ -330,14 +326,6 @@ static void SetChannelsNum(void)
 	if (cv_numChannels.value == 999999999) //Alam_GBC: OH MY ROD!(ROD rimmiced with GOD!)
 		CV_StealthSet(&cv_numChannels,cv_numChannels.defaultvalue);
 
-#ifdef HW3SOUND
-	if (hws_mode != HWS_DEFAULT_MODE)
-	{
-		HW3S_SetSourcesNum();
-		return;
-	}
-#endif
-
 	if (cv_numChannels.value)
 		channels = (channel_t *)Z_Calloc(cv_numChannels.value * sizeof (channel_t), PU_STATIC, NULL);
 	numofchannels = (channels ? cv_numChannels.value : 0);
@@ -356,7 +344,7 @@ lumpnum_t S_GetSfxLumpNum(sfxinfo_t *sfx)
 	if (sfxlump != LUMPERROR)
 		return sfxlump;
 
-	strlcpy(namebuf, sfx->name, sizeof namebuf);
+	strlcpy(namebuf, sfx->name, sizeof(namebuf));
 
 	sfxlump = W_CheckNumForName(namebuf);
 	if (sfxlump != LUMPERROR)
@@ -387,14 +375,6 @@ void S_StopSounds(void)
 {
 	INT32 cnum;
 
-#ifdef HW3SOUND
-	if (hws_mode != HWS_DEFAULT_MODE)
-	{
-		HW3S_StopSounds();
-		return;
-	}
-#endif
-
 	// kill all playing sounds at start of level
 	for (cnum = 0; cnum < numofchannels; cnum++)
 		if (channels[cnum].sfxinfo)
@@ -409,13 +389,7 @@ void S_StopSoundByID(void *origin, sfxenum_t sfx_id)
 	// be stopped by new sounds.
 	if (!origin)
 		return;
-#ifdef HW3SOUND
-	if (hws_mode != HWS_DEFAULT_MODE)
-	{
-		HW3S_StopSoundByID(origin, sfx_id);
-		return;
-	}
-#endif
+
 	for (cnum = 0; cnum < numofchannels; cnum++)
 	{
 		if (channels[cnum].sfxinfo == &S_sfx[sfx_id] && channels[cnum].origin == origin)
@@ -429,13 +403,6 @@ void S_StopSoundByNum(sfxenum_t sfxnum)
 {
 	INT32 cnum;
 
-#ifdef HW3SOUND
-	if (hws_mode != HWS_DEFAULT_MODE)
-	{
-		HW3S_StopSoundByNum(sfxnum);
-		return;
-	}
-#endif
 	for (cnum = 0; cnum < numofchannels; cnum++)
 	{
 		if (channels[cnum].sfxinfo == &S_sfx[sfxnum])
@@ -491,11 +458,7 @@ void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
 		memset(&listener[i], 0, sizeof (listener[i]));
 		listenmobj[i] = NULL;
 
-		if (i == 0 && democam.soundmobj)
-		{
-			listenmobj[i] = democam.soundmobj;
-		}
-		else if (player->awayviewtics)
+		if (player->awayviewtics)
 		{
 			listenmobj[i] = player->awayviewmobj;
 		}
@@ -504,19 +467,11 @@ void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
 			listenmobj[i] = player->mo;
 		}
 
-		if (origin && origin == listenmobj[i])
+		if (origin && origin == listenmobj[i] && !camera[i].freecam)
 		{
 			itsUs = true;
 		}
 	}
-
-#ifdef HW3SOUND
-	if (hws_mode != HWS_DEFAULT_MODE)
-	{
-		HW3S_StartSound(origin, sfx_id);
-		return;
-	};
-#endif
 
 	for (i = 0; i <= splitscreen; i++)
 	{
@@ -656,12 +611,6 @@ void S_StartSound(const void *origin, sfxenum_t sfx_id)
 	{
 		switch (sfx_id)
 		{
-//			case sfx_altow1:
-//			case sfx_altow2:
-//			case sfx_altow3:
-//			case sfx_altow4:
-//				sfx_id = sfx_mario8;
-//				break;
 			case sfx_thok:
 				sfx_id = sfx_mario7;
 				break;
@@ -677,15 +626,6 @@ void S_StartSound(const void *origin, sfxenum_t sfx_id)
 			case sfx_itemup:
 				sfx_id = sfx_mario4;
 				break;
-//			case sfx_tink:
-//				sfx_id = sfx_mario1;
-//				break;
-//			case sfx_cgot:
-//				sfx_id = sfx_mario9;
-//				break;
-//			case sfx_lose:
-//				sfx_id = sfx_mario2;
-//				break;
 			default:
 				break;
 		}
@@ -705,12 +645,7 @@ void S_StartSound(const void *origin, sfxenum_t sfx_id)
 	}
 
 	// the volume is handled 8 bits
-#ifdef HW3SOUND
-	if (hws_mode != HWS_DEFAULT_MODE)
-		HW3S_StartSound(origin, sfx_id);
-	else
-#endif
-		S_StartSoundAtVolume(origin, sfx_id, 255);
+	S_StartSoundAtVolume(origin, sfx_id, 255);
 }
 
 void S_StopSound(void *origin)
@@ -722,13 +657,6 @@ void S_StopSound(void *origin)
 	if (!origin)
 		return;
 
-#ifdef HW3SOUND
-	if (hws_mode != HWS_DEFAULT_MODE)
-	{
-		HW3S_StopSound(origin);
-		return;
-	}
-#endif
 	for (cnum = 0; cnum < numofchannels; cnum++)
 	{
 		if (channels[cnum].sfxinfo && channels[cnum].origin == origin)
@@ -775,7 +703,6 @@ void S_UpdateSounds(void)
 		I_UpdateMumble(NULL, listener[0]);
 #endif
 
-		// Stop cutting FMOD out. WE'RE sick of it.
 		I_UpdateSound();
 		return;
 	}
@@ -790,12 +717,6 @@ void S_UpdateSounds(void)
 		memset(&listener[i], 0, sizeof (listener[i]));
 		listenmobj[i] = NULL;
 
-		if (i == 0 && democam.soundmobj)
-		{
-			listenmobj[i] = democam.soundmobj;
-			continue;
-		}
-
 		if (player->awayviewtics)
 		{
 			listenmobj[i] = player->awayviewmobj;
@@ -808,15 +729,6 @@ void S_UpdateSounds(void)
 
 #ifndef NOMUMBLE
 	I_UpdateMumble(players[consoleplayer].mo, listener[0]);
-#endif
-
-#ifdef HW3SOUND
-	if (hws_mode != HWS_DEFAULT_MODE)
-	{
-		HW3S_UpdateSources();
-		I_UpdateSound();
-		return;
-	}
 #endif
 
 	for (i = 0; i <= splitscreen; i++)
@@ -860,6 +772,9 @@ void S_UpdateSounds(void)
 
 					for (i = splitscreen; i >= 0; i--)
 					{
+						if (camera[i].freecam)
+							continue;
+
 						if (c->origin != listenmobj[i])
 							continue;
 
@@ -933,12 +848,8 @@ void S_SetSfxVolume(INT32 volume)
 	CV_SetValue(&cv_soundvolume, volume&0x1F);
 	actualsfxvolume = cv_soundvolume.value; // check for change of var
 
-#ifdef HW3SOUND
-	hws_mode == HWS_DEFAULT_MODE ? I_SetSfxVolume(volume&0x1F) : HW3S_SetSfxVolume(volume&0x1F);
-#else
 	// now hardware volume
 	I_SetSfxVolume(volume&0x1F);
-#endif
 }
 
 void S_ClearSfx(void)
@@ -1134,11 +1045,6 @@ INT32 S_OriginPlaying(void *origin)
 	if (!origin)
 		return false;
 
-#ifdef HW3SOUND
-	if (hws_mode != HWS_DEFAULT_MODE)
-		return HW3S_OriginPlaying(origin);
-#endif
-
 	for (cnum = 0; cnum < numofchannels; cnum++)
 		if (channels[cnum].origin == origin)
 			return 1;
@@ -1150,11 +1056,6 @@ INT32 S_OriginPlaying(void *origin)
 INT32 S_IdPlaying(sfxenum_t id)
 {
 	INT32 cnum;
-
-#ifdef HW3SOUND
-	if (hws_mode != HWS_DEFAULT_MODE)
-		return HW3S_IdPlaying(id);
-#endif
 
 	for (cnum = 0; cnum < numofchannels; cnum++)
 		if ((size_t)(channels[cnum].sfxinfo - S_sfx) == (size_t)id)
@@ -1169,11 +1070,6 @@ INT32 S_SoundPlaying(void *origin, sfxenum_t id)
 	INT32 cnum;
 	if (!origin)
 		return 0;
-
-#ifdef HW3SOUND
-	if (hws_mode != HWS_DEFAULT_MODE)
-		return HW3S_SoundPlaying(origin, id);
-#endif
 
 	for (cnum = 0; cnum < numofchannels; cnum++)
 	{
@@ -1298,17 +1194,10 @@ const char *compat_special_music_slots[16] =
 };
 #endif
 
-static char      music_name[7]; // up to 6-character name
-static void      *music_data;
-static UINT16    music_flags;
-static boolean   music_looping;
-static consvar_t *music_refade_cv;
+static music_t music;
+static music_t queue;
 
-static char      queue_name[7];
-static UINT16    queue_flags;
-static boolean   queue_looping;
-static UINT32    queue_position;
-static UINT32    queue_fadeinms;
+static consvar_t *music_refade_cv;
 
 /// ------------------------
 /// Music Definitions
@@ -1317,175 +1206,200 @@ static UINT32    queue_fadeinms;
 musicdef_t *musicdefstart = NULL; // First music definition
 struct cursongcredit cursongcredit; // Currently displayed song credit info
 
-//
-// search for music definition in wad
-//
-static UINT16 W_CheckForMusicDefInPwad(UINT16 wadid)
+static boolean
+ReadMusicDefFields (UINT16 wadnum, int line, char *stoken, musicdef_t **defp)
 {
-	UINT16 i;
-	lumpinfo_t *lump_p;
+	musicdef_t *def;
 
-	lump_p = wadfiles[wadid]->lumpinfo;
-	for (i = 0; i < wadfiles[wadid]->numlumps; i++, lump_p++)
-		if (memcmp(lump_p->name, "MUSICDEF", 8) == 0)
-			return i;
-
-	return INT16_MAX; // not found
-}
-
-void S_LoadMusicDefs(UINT16 wadnum)
-{
-	UINT16 lump;
-	char *buf;
-	char *buf2;
-	char *stoken;
 	char *value;
-	size_t size;
-	musicdef_t *def, *prev;
-	UINT16 line = 1; // for better error msgs
+	char *textline;
 
-	lump = W_CheckForMusicDefInPwad(wadnum);
-	if (lump == INT16_MAX)
-		return;
-
-	buf = W_CacheLumpNumPwad(wadnum, lump, PU_CACHE);
-	size = W_LumpLengthPwad(wadnum, lump);
-
-	// for strtok
-	buf2 = malloc(size+1);
-	if (!buf2)
-		I_Error("S_LoadMusicDefs: No more free memory\n");
-	M_Memcpy(buf2,buf,size);
-	buf2[size] = '\0';
-
-	def = prev = NULL;
-
-	stoken = strtok (buf2, "\r\n ");
-	// Find music def
-	while (stoken)
+	if (!stricmp(stoken, "lump"))
 	{
-		if (!stricmp(stoken, "lump"))
+		value = strtok(NULL, " ");
+
+		if (!value)
 		{
-			value = strtok(NULL, "\r\n ");
-
-			if (!value)
-			{
-				CONS_Alert(CONS_WARNING, "MUSICDEF: Lump '%s' is missing name. (file %s, line %d)\n", stoken, wadfiles[wadnum]->filename, line);
-				stoken = strtok(NULL, "\r\n"); // skip end of line
-				goto skip_lump;
-			}
-
-			// No existing musicdefs
-			if (!musicdefstart)
-			{
-				musicdefstart = Z_Calloc(sizeof (musicdef_t), PU_STATIC, NULL);
-				STRBUFCPY(musicdefstart->name, value);
-				strlwr(musicdefstart->name);
-				def = musicdefstart;
-				//CONS_Printf("S_LoadMusicDefs: Initialized musicdef w/ song '%s'\n", def->name);
-			}
-			else
-			{
-				def = musicdefstart;
-
-				// Search if this is a replacement
-				//CONS_Printf("S_LoadMusicDefs: Searching for song replacement...\n");
-				while (def)
-				{
-					if (!stricmp(def->name, value))
-					{
-						//CONS_Printf("S_LoadMusicDefs: Found song replacement '%s'\n", def->name);
-						break;
-					}
-
-					prev = def;
-					def = def->next;
-				}
-
-				// Nothing found, add to the end.
-				if (!def)
-				{
-					def = Z_Calloc(sizeof (musicdef_t), PU_STATIC, NULL);
-					STRBUFCPY(def->name, value);
-					strlwr(def->name);
-					if (prev != NULL)
-						prev->next = def;
-					//CONS_Printf("S_LoadMusicDefs: Added song '%s'\n", def->name);
-				}
-			}
-
-			strncpy(def->filename, wadfiles[wadnum]->filename, 256);
-			def->filename[256] = '\0';
-
-skip_lump:
-			stoken = strtok(NULL, "\r\n ");
-			line++;
+			CONS_Alert(CONS_WARNING,
+					"MUSICDEF: Field '%s' is missing name. (file %s, line %d)\n",
+					stoken, wadfiles[wadnum]->filename, line);
+			goto skip_lump;
 		}
 		else
 		{
-			value = strtok(NULL, "\r\n= ");
+			def = S_FindMusicCredit(value);
 
-			if (!value)
+			// Nothing found, add to the end.
+			if (!def)
 			{
-				CONS_Alert(CONS_WARNING, "MUSICDEF: Field '%s' is missing value. (file %s, line %d)\n", stoken, wadfiles[wadnum]->filename, line);
-				stoken = strtok(NULL, "\r\n"); // skip end of line
-				goto skip_field;
+				def = Z_Calloc(sizeof (musicdef_t), PU_STATIC, NULL);
+
+				STRBUFCPY(def->name, value);
+				strlwr(def->name);
+				def->hash = quickncasehash (def->name, 6);
+
+				def->next = musicdefstart;
+				musicdefstart = def;
 			}
+
+			(*defp) = def;
+		}
+
+skip_lump:
+			stoken = strtok(NULL, " ");
+			line++;
+	}
+	else
+	{
+		value = strtok(NULL, "");
+
+		if (value)
+		{
+			// Find the equals sign.
+			value = strchr(value, '=');
+		}
+
+		if (!value)
+		{
+			CONS_Alert(CONS_WARNING,
+					"MUSICDEF: Field '%s' is missing value. (file %s, line %d)\n",
+					stoken, wadfiles[wadnum]->filename, line);
+			goto skip_field;
+		}
+		else
+		{
+			def = (*defp);
 
 			if (!def)
 			{
-				CONS_Alert(CONS_ERROR, "MUSICDEF: No music definition before field '%s'. (file %s, line %d)\n", stoken, wadfiles[wadnum]->filename, line);
-				free(buf2);
-				return;
+				CONS_Alert(CONS_ERROR,
+						"MUSICDEF: No music definition before field '%s'. (file %s, line %d)\n",
+						stoken, wadfiles[wadnum]->filename, line);
+				return false;
 			}
-			
+
+			// Skip the equals sign.
+			value++;
+
+			// Now skip funny whitespace.
+			value += strspn(value, "\t ");
+
+			textline = value;
+
+// turn _ into spaces.
+#define ADDDEF(field)\
+	STRBUFCPY(def->field, textline);\
+	for (textline = def->field; *textline; textline++)\
+		if (*textline == '_') *textline = ' ';
+
 			if (!stricmp(stoken, "usage"))
 			{
-				STRBUFCPY(def->usage, value);
-				for (value = def->usage; *value; value++)
-					if (*value == '_') *value = ' '; // turn _ into spaces.
-				//CONS_Printf("S_LoadMusicDefs: Set usage to '%s'\n", def->usage);
+				ADDDEF(usage);
 			}
 			else if (!stricmp(stoken, "source"))
 			{
-				STRBUFCPY(def->source, value);
-				for (value = def->source; *value; value++)
-					if (*value == '_') *value = ' '; // turn _ into spaces.
-				//CONS_Printf("S_LoadMusicDefs: Set source to '%s'\n", def->source);
+				ADDDEF(source);
 			}
 			else if (!stricmp(stoken, "title"))
 			{
 				def->use_info = true;
-				STRBUFCPY(def->title, value);
-				for (value = def->title; *value; value++)
-					if (*value == '_') *value = ' '; // turn _ into spaces.
-				//CONS_Printf("S_LoadMusicDefs: Set source to '%s'\n", def->source);
+				ADDDEF(title);
 			}
 			else if (!stricmp(stoken, "alttitle"))
 			{
-				STRBUFCPY(def->alttitle, value);
-				for (value = def->alttitle; *value; value++)
-					if (*value == '_') *value = ' '; // turn _ into spaces.
-				//CONS_Printf("S_LoadMusicDefs: Set source to '%s'\n", def->source);
+				ADDDEF(alttitle);
 			}
 			else if (!stricmp(stoken, "authors"))
 			{
-				STRBUFCPY(def->authors, value);
-				for (value = def->authors; *value; value++)
-					if (*value == '_') *value = ' '; // turn _ into spaces.
-				//CONS_Printf("S_LoadMusicDefs: Set source to '%s'\n", def->source);
+				ADDDEF(authors);
 			}
 			else
 				CONS_Alert(CONS_WARNING, "MUSICDEF: Invalid field '%s'. (file %s, line %d)\n", stoken, wadfiles[wadnum]->filename, line);
+#undef ADDDEF
 
 skip_field:
-			stoken = strtok(NULL, "\r\n= ");
+			stoken = strtok(NULL, "= ");
 			line++;
 		}
 	}
 
-	free(buf2);
-	return;
+	return true;
+}
+
+void S_LoadMusicDefs(UINT16 wadnum)
+{
+	UINT16 lumpnum;
+	char *lump;
+	char *musdeftext;
+	size_t size;
+
+	char *lf;
+	char *stoken;
+
+	size_t nlf;
+	size_t ncr;
+
+	musicdef_t *def = NULL;
+	int line = 1; // for better error msgs
+
+	for (int k = 0; k < 2; k++)
+	{
+		lumpnum = W_CheckNumForNamePwad((k == 1 ? "MUSCINFO" : "MUSICDEF") , wadnum, 0); //check for MUSCINFO lump on 2nd iteration
+
+		if (lumpnum == INT16_MAX)
+			continue;
+
+		lump = W_CacheLumpNumPwad(wadnum, lumpnum, PU_CACHE);
+		size = W_LumpLengthPwad(wadnum, lumpnum);
+
+		// Null-terminated MUSICDEF lump.
+		musdeftext = malloc(size+1);
+		if (!musdeftext)
+			I_Error("S_LoadMusicDefs: No more free memory for the parser\n");
+		M_Memcpy(musdeftext, lump, size);
+		musdeftext[size] = '\0';
+
+		// Find music def
+		stoken = musdeftext;
+		for (;;)
+		{
+			lf = strpbrk(stoken, "\r\n");
+			if (lf)
+			{
+				if (*lf == '\n')
+					nlf = 1;
+				else
+					nlf = 0;
+				*lf++ = '\0';/* now we can delimit to here */
+			}
+
+			stoken = strtok(stoken, " ");
+			if (stoken)
+			{
+				if (! ReadMusicDefFields(wadnum, line, stoken, &def))
+					break;
+			}
+
+			if (lf)
+			{
+				do
+				{
+					line += nlf;
+					ncr = strspn(lf, "\r");/* skip CR */
+					lf += ncr;
+					nlf = strspn(lf, "\n");
+					lf += nlf;
+				}
+				while (nlf || ncr) ;
+
+				stoken = lf;/* now the next nonempty line */
+			}
+			else
+				break;/* EOF */
+		}
+
+		free(musdeftext);
+	}
 }
 
 //
@@ -1501,183 +1415,23 @@ void S_InitMusicDefs(void)
 }
 
 //
-// search for music definition in wad
-//
-static UINT16 W_CheckForMusicInfoInPwad(UINT16 wadid)
-{
-	UINT16 i;
-	lumpinfo_t *lump_p;
-
-	lump_p = wadfiles[wadid]->lumpinfo;
-	for (i = 0; i < wadfiles[wadid]->numlumps; i++, lump_p++)
-		if (memcmp(lump_p->name, "MUSCINFO", 8) == 0)
-			return i;
-
-	return INT16_MAX; // not found
-}
-
-void S_LoadMTDefs(UINT16 wadnum)
-{
-	UINT16 lump;
-	char *buf;
-	char *buf2;
-	char *stoken;
-	char *value;
-	size_t size;
-	musicdef_t *def, *prev;
-	UINT16 line = 1; // for better error msgs
-
-	lump = W_CheckForMusicInfoInPwad(wadnum);
-	if (lump == INT16_MAX)
-		return;
-
-	buf = W_CacheLumpNumPwad(wadnum, lump, PU_CACHE);
-	size = W_LumpLengthPwad(wadnum, lump);
-
-	// for strtok
-	buf2 = malloc(size+1);
-	if (!buf2)
-		I_Error("S_LoadMTDefs: No more free memory\n");
-	M_Memcpy(buf2,buf,size);
-	buf2[size] = '\0';
-
-	def = prev = NULL;
-
-	stoken = strtok (buf2, "\r\n ");
-	// Find music def
-	while (stoken)
-	{
-		if (!stricmp(stoken, "lump"))
-		{
-			value = strtok(NULL, "\r\n ");
-
-			if (!value)
-			{
-				CONS_Alert(CONS_WARNING, "MUSICDEF: Lump '%s' is missing name. (file %s, line %d)\n", stoken, wadfiles[wadnum]->filename, line);
-				stoken = strtok(NULL, "\r\n"); // skip end of line
-				goto skip_lump;
-			}
-
-			// No existing musicdefs
-			if (!musicdefstart)
-			{
-				musicdefstart = Z_Calloc(sizeof (musicdef_t), PU_STATIC, NULL);
-				STRBUFCPY(musicdefstart->name, value);
-				strlwr(musicdefstart->name);
-				def = musicdefstart;
-				//CONS_Printf("S_LoadMusicDefs: Initialized musicdef w/ song '%s'\n", def->name);
-			}
-			else
-			{
-				def = musicdefstart;
-
-				// Search if this is a replacement
-				//CONS_Printf("S_LoadMusicDefs: Searching for song replacement...\n");
-				while (def)
-				{
-					if (!stricmp(def->name, value))
-					{
-						//CONS_Printf("S_LoadMusicDefs: Found song replacement '%s'\n", def->name);
-						break;
-					}
-
-					prev = def;
-					def = def->next;
-				}
-
-				// Nothing found, abort.
-				if (!def)
-				{
-					CONS_Alert(CONS_WARNING, "MUSCINFO: Music def for '%s' does not exist. (file %s, line %d)\n", stoken, wadfiles[wadnum]->filename, line);
-					free(buf2);
-					return;
-				}
-			}
-
-skip_lump:
-			stoken = strtok(NULL, "\r\n ");
-			line++;
-		}
-		else
-		{
-			value = strtok(NULL, "\r\n= ");
-
-			if (!value)
-			{
-				CONS_Alert(CONS_WARNING, "MUSCINFO: Field '%s' is missing value. (file %s, line %d)\n", stoken, wadfiles[wadnum]->filename, line);
-				stoken = strtok(NULL, "\r\n"); // skip end of line
-				goto skip_field;
-			}
-
-			if (!def)
-			{
-				CONS_Alert(CONS_ERROR, "MUSCINFO: No music definition before field '%s'. (file %s, line %d)\n", stoken, wadfiles[wadnum]->filename, line);
-				free(buf2);
-				return;
-			}
-			
-			if (!stricmp(stoken, "title"))
-			{
-				def->use_info = true;
-				STRBUFCPY(def->title, value);
-				for (value = def->title; *value; value++)
-					if (*value == '_') *value = ' '; // turn _ into spaces.
-				//CONS_Printf("S_LoadMusicDefs: Set source to '%s'\n", def->source);
-			}
-			else if (!stricmp(stoken, "alttitle"))
-			{
-				STRBUFCPY(def->alttitle, value);
-				for (value = def->alttitle; *value; value++)
-					if (*value == '_') *value = ' '; // turn _ into spaces.
-				//CONS_Printf("S_LoadMusicDefs: Set source to '%s'\n", def->source);
-			}
-			else if (!stricmp(stoken, "authors"))
-			{
-				STRBUFCPY(def->authors, value);
-				for (value = def->authors; *value; value++)
-					if (*value == '_') *value = ' '; // turn _ into spaces.
-				//CONS_Printf("S_LoadMusicDefs: Set source to '%s'\n", def->source);
-			}
-			else
-				CONS_Alert(CONS_WARNING, "MUSCINFO: Invalid field '%s'. (file %s, line %d)\n", stoken, wadfiles[wadnum]->filename, line);
-
-skip_field:
-			stoken = strtok(NULL, "\r\n= ");
-			line++;
-		}
-	}
-
-	free(buf2);
-	return;
-}
-
-void S_InitMTDefs(void)
-{
-	UINT16 i;
-	for (i = 0; i < numwadfiles; i++)
-		S_LoadMTDefs(i);
-}
-
-//
 // S_FindMusicCredit
 //
 // Returns musicdef of specified song, or null if musicdef for it doesn't exist
 //
 musicdef_t *S_FindMusicCredit(const char *musname)
 {
-	musicdef_t *def = musicdefstart;
+	UINT32 hash = quickncasehash (musname, 6);
+	musicdef_t *def;
 
-	if (!def) // No definitions
-		return NULL;
-
-	while (def)
+	for (def = musicdefstart; def; def = def->next)
 	{
-		if (!stricmp(def->name, musname))
-		{
-			return def;
-		}
-		else
-			def = def->next;
+		if (hash != def->hash)
+			continue;
+		if (stricmp(def->name, musname))
+			continue;
+
+		return def;
 	}
 
 	return NULL;
@@ -1715,7 +1469,7 @@ void S_ShowSpecifiedMusicCredit(const char *musname)
 //
 void S_ShowMusicCredit(void)
 {
-	S_ShowSpecifiedMusicCredit(music_name);
+	S_ShowSpecifiedMusicCredit(music.name);
 }
 
 musicdef_t **soundtestdefs = NULL;
@@ -1794,7 +1548,7 @@ musictype_t S_MusicType(void)
 
 const char *S_MusicName(void)
 {
-	return music_name;
+	return music.name;
 }
 
 boolean S_MusicInfo(char *mname, UINT16 *mflags, boolean *looping)
@@ -1802,10 +1556,10 @@ boolean S_MusicInfo(char *mname, UINT16 *mflags, boolean *looping)
 	if (!I_SongPlaying())
 		return false;
 
-	strncpy(mname, music_name, 7);
+	strncpy(mname, music.name, 7);
 	mname[6] = 0;
-	*mflags = music_flags;
-	*looping = music_looping;
+	*mflags = music.flags;
+	*looping = music.looping;
 
 	return (boolean)mname[0];
 }
@@ -1895,9 +1649,9 @@ static boolean S_LoadMusic(const char *mname)
 
 	if (I_LoadSong(mdata, W_LumpLength(mlumpnum)))
 	{
-		strncpy(music_name, mname, 7);
-		music_name[6] = 0;
-		music_data = mdata;
+		strncpy(music.name, mname, 7);
+		music.name[6] = 0;
+		music.data = mdata;
 		return true;
 	}
 	else
@@ -1909,13 +1663,13 @@ static void S_UnloadMusic(void)
 	I_UnloadSong();
 
 #ifndef HAVE_SDL //SDL uses RWOPS
-	Z_ChangeTag(music_data, PU_CACHE);
+	Z_ChangeTag(music.data, PU_CACHE);
 #endif
-	music_data = NULL;
+	music.data = NULL;
 
-	music_name[0] = 0;
-	music_flags = 0;
-	music_looping = false;
+	music.name[0] = 0;
+	music.flags = 0;
+	music.looping = false;
 
 	music_refade_cv = 0;
 }
@@ -1944,27 +1698,40 @@ static boolean S_PlayMusic(boolean looping, UINT32 fadeinms)
 
 static void S_QueueMusic(const char *mmusic, UINT16 mflags, boolean looping, UINT32 position, UINT32 fadeinms)
 {
-	strncpy(queue_name, mmusic, 7);
-	queue_flags = mflags;
-	queue_looping = looping;
-	queue_position = position;
-	queue_fadeinms = fadeinms;
+	strncpy(queue.name, mmusic, 7);
+	queue.flags = mflags;
+	queue.looping = looping;
+	queue.position = position;
+	queue.fadeinms = fadeinms;
 }
 
 static void S_ClearQueue(void)
 {
-	queue_name[0] = queue_flags = queue_looping = queue_position = queue_fadeinms = 0;
+	queue.name[0] = queue.flags = queue.looping = queue.position = queue.fadeinms = 0;
 }
 
 static void S_ChangeMusicToQueue(void)
 {
-	S_ChangeMusicEx(queue_name, queue_flags, queue_looping, queue_position, 0, queue_fadeinms);
+	S_ChangeMusicEx(queue.name, queue.flags, queue.looping, queue.position, 0, queue.fadeinms);
 	S_ClearQueue();
 }
+
+// keep copy of music name before lua hook change
+// for custom vote music etc
+static char checkmusic[7] = {0};
 
 void S_ChangeMusicEx(const char *mmusic, UINT16 mflags, boolean looping, UINT32 position, UINT32 prefadems, UINT32 fadeinms)
 {
 	char newmusic[7] = {0};
+
+	struct MusicChange hook_param = {
+		newmusic,
+		&mflags,
+		&looping,
+		&position,
+		&prefadems,
+		&fadeinms
+	};
 
 	if (S_MusicDisabled()
 		|| demo.rewinding // Don't mess with music while rewinding!
@@ -1972,10 +1739,9 @@ void S_ChangeMusicEx(const char *mmusic, UINT16 mflags, boolean looping, UINT32 
 		return;
 
 	strncpy(newmusic, mmusic, 6);
+	strncpy(checkmusic, mmusic, 6);
 
-	S_CheckEventMus(newmusic);
-
-	if (LUAh_MusicChange(music_name, newmusic, &mflags, &looping, &position, &prefadems, &fadeinms))
+	if (LUA_HookMusicChange(music.name, &hook_param))
 		return;
 
  	// No Music (empty string)
@@ -1990,12 +1756,12 @@ void S_ChangeMusicEx(const char *mmusic, UINT16 mflags, boolean looping, UINT32 
 
 	if (prefadems && S_MusicPlaying()) // queue music change for after fade // allow even if the music is the same
 	{
-		CONS_Debug(DBG_DETAILED, "Now fading out song %s\n", music_name);
+		CONS_Debug(DBG_DETAILED, "Now fading out song %s\n", music.name);
 		S_QueueMusic(newmusic, mflags, looping, position, fadeinms);
 		I_FadeSong(0, prefadems, S_ChangeMusicToQueue);
 		return;
 	}
-	else if (strnicmp(music_name, newmusic, 6) || (mflags & MUSIC_FORCERESET))
+	else if (strnicmp(music.name, newmusic, 6) || (mflags & MUSIC_FORCERESET))
  	{
 		CONS_Debug(DBG_DETAILED, "Now playing song %s\n", newmusic);
 
@@ -2007,8 +1773,8 @@ void S_ChangeMusicEx(const char *mmusic, UINT16 mflags, boolean looping, UINT32 
 			return;
 		}
 
-		music_flags = mflags;
-		music_looping = looping;
+		music.flags = mflags;
+		music.looping = looping;
 
 		if (!S_PlayMusic(looping, fadeinms))
  		{
@@ -2048,10 +1814,9 @@ void S_StopMusic(void)
 		|| demo.title) // SRB2Kart: Demos don't interrupt title screen music
 		return;
 
-	if (cv_birdmusic.value && (strcasecmp(music_name, mapmusname) == 0))
-		mapmusresume = I_GetSongPosition();
-	else
-		mapmusresume = 0;
+	mapmusic.resume = (cv_birdmusic.value && (strcasecmp(music.name, mapmusic.name) == 0)) ? I_GetSongPosition() : 0;
+
+	S_SetKeepMusResume();
 
 	if (I_SongPaused())
 		I_ResumeSong();
@@ -2166,73 +1931,121 @@ boolean S_FadeOutStopMusic(UINT32 ms)
 /// Init & Others
 /// ------------------------
 
-/*static boolean S_KeepMusic(void)
-{
-	//if (!cv_keepmusic.value)
-	//return false;
-
-	// should i compare songs or maps?
-	static char oldmusname[7] = "";
-
-	if (strcmp(music_name, mapmusname) != 0)
-		return false;
-
-	if (strcmp(oldmusname, mapmusname) == 0)
-		return true;
-
-	strncpy(oldmusname, mapmusname, 7);
-	oldmusname[6] = '\0';
-
-	return false;
-}*/
-
-static INT16 oldmap = 0;
-static boolean oldencore = false;
-static boolean skipmusic = false;
-boolean skipintromus = false;
-
-static const char *musicexception_list[16] = {
+static const char *musicexception_list[] = {
 	"vote", "voteea", "voteeb", "racent", "krwin",
 	"krok", "krlose", "krfail", "kbwin", "kbok",
-	"kblose", "kstart", "estart", "wait2j", "CHRSHP",
-	"CHRSHF"
+	"kblose", "kstart", "estart", "wait2j", "titles",
+	"kinvnc", "kgrow",  // grow and invinc
+	"SPBA_W", "SPBA_L", // SPB Attack music
+	"CHRSHF", "CHRSHP"  // no clue what those are tbh
 };
 
-//checks for any kind of event music like intermission, vote etc.
-//always runs when musicchange gets invoked
-static void S_CheckEventMus(const char *newmus)
+// check if the current music is smth we dont want to keep (vote music, etc)
+static boolean S_CheckMusicException(void)
 {
-	skipmusic = false;
+	if (stricmp(music.name, mapmusic.name))
+		return true;
 
-	if (!cv_keepmusic.value)
-		return;
-
-	for (int i = 0; i < 16; i++)
-		if (stricmp(music_name, musicexception_list[i]) == 0 || stricmp(newmus, musicexception_list[i]) == 0) // weird? sure! but were lucky enough newmus reflects whats being replaced
+	// in case somehow the mapmusic was replaced with smth we dont want to keep
+	for (size_t i = 0; i < sizeof(musicexception_list)/sizeof(musicexception_list[0]); i++)
+	{
+		if (!stricmp(music.name, musicexception_list[i]) || !stricmp(checkmusic, musicexception_list[i]))
 		{
-			skipmusic = true;
-			break;
+			return true;
 		}
+	}
 
-	//CONS_Printf("musname = %s\n", music_name);
-	//CONS_Printf("newmus = %s\n", newmus);
-	//CONS_Printf("newmus = %d\n", skipmusic);
+	return false;
 }
 
-//this one compares map and encoremode instead of the music itself
-//makes tunes work and stuff
-void S_CheckMap(void)
+void S_ResetKeepAndSpecialMus(void)
 {
+	keepmapmusic = skipintromus = false;
+}
+
+// saves the current song position everytime a song stops
+// so we can resume it in some cases
+static void S_SetKeepMusResume(void)
+{
+	keepmusic.resume = 0;
+
+	if (strcasecmp(music.name, mapmusic.name) == 0)
+	{
+		keepmusic.resume = I_GetSongPosition();
+	}
+}
+
+// determine if we should keep the music on a map restart
+// this gets called BEFORE the level gets loaded in G_DoLoadLevel
+void S_KeepMusic(void)
+{
+	static INT16 oldmap = -1;
+	static boolean oldencore = false;
+
+	keepmapmusic = resumekeepmusic = false;
+
 	if (!cv_keepmusic.value)
 	{
-		keepmusic = false;
 		return;
 	}
 
-	keepmusic = (!skipmusic && gamestate == GS_LEVEL && oldmap == gamemap && oldencore == encoremode);
+	// copy over mapmusicname stuff into temporary var
+	memset(keepmusic.name, 0, sizeof(keepmusic.name));
+	strlcpy(keepmusic.name, mapmusic.name, sizeof(keepmusic.name));
+	keepmusic.name[6] = 0;
+
+	if (oldmap == gamemap && oldencore == encoremode)
+	{
+		const boolean musicchanged = S_CheckMusicException();
+
+		resumekeepmusic = (musicchanged && keepmusic.resume);
+		keepmapmusic = (!musicchanged || resumekeepmusic);
+	}
 
 	oldencore = encoremode;
 	oldmap = gamemap;
+}
+
+// Sets up the map music in case it should be reloaded
+// Special case for keep music
+void S_HandleReloadResetMusic(void)
+{
+	if (!(mapmusic.flags & MUSIC_RELOADRESET))
+		return;
+
+	// replace mapmusic with our saved keepmusic stuff
+	if (keepmapmusic)
+	{
+		// this is horrible, but oh well
+		strlcpy(mapmusic.name, keepmusic.name, sizeof(mapmusic.name));
+	}
+	else
+	{
+		strlcpy(mapmusic.name, mapheaderinfo[gamemap-1]->musname, sizeof(mapmusic.name));
+	}
+
+	mapmusic.name[6] = 0;
+	mapmusic.flags = (mapheaderinfo[gamemap-1]->mustrack & MUSIC_TRACKMASK);
+	mapmusic.position = mapheaderinfo[gamemap-1]->muspos;
+	mapmusic.resume = 0;
+}
+
+static boolean S_SkipIntroMusic(void)
+{
+	boolean skip = cv_skipintromusic.value;
+
+	if (!skip)
+		return false;
+
+	char *maptitle = G_BuildMapTitle(gamemap); // Zzz...
+
+	// check if menu music is playing, otherwise it may continue playing
+	if (!stricmp(music.name, "titles") || (maptitle && (!stricmp(maptitle, "Wandering Falls")))) // wandering balls changes its song when the race starts Zzz...
+		skip = false;
+
+	Z_Free(maptitle);
+
+	return skip;
 }
 
 //
@@ -2242,55 +2055,49 @@ void S_CheckMap(void)
 //
 void S_InitMapMusic(void)
 {
-	if (!cv_skipintromusic.value)
-		skipintromus = false;
-	else
-	{
-		char *maptitle = G_BuildMapTitle(gamemap);
-		skipintromus = cv_skipintromusic.value && stricmp(maptitle, "Wandering Falls") != 0; // thanks diggle!
-		if (maptitle)
-			Z_Free(maptitle);
-	}
+	S_HandleReloadResetMusic();
 
-	if (mapmusflags & MUSIC_RELOADRESET)
+	if (keepmapmusic)
 	{
-		strncpy(mapmusname, mapheaderinfo[gamemap-1]->musname, 7);
-		mapmusname[6] = 0;
-		mapmusflags = (mapheaderinfo[gamemap-1]->mustrack & MUSIC_TRACKMASK);
-		mapmusposition = mapheaderinfo[gamemap-1]->muspos;
-		mapmusresume = 0;
-	}
-
-	if (keepmusic)
+		// this is kinda silly, but we can use it to fade back into the map song at the saved point, should the current music be different from the map music
+		if (resumekeepmusic)
+		{
+			S_ChangeMusicEx(mapmusic.name, mapmusic.flags, true, keepmusic.resume, 0, 500);
+		}
 		return;
+	}
 
 	// Starting ambience should always be restarted
 	// lug: but not when we keep the map music lol
 	S_StopMusic();
+
+	skipintromus = S_SkipIntroMusic();
 
 	if (skipintromus)
 		return;
 
 	if (leveltime < MUSICSTARTTIME) // SRB2Kart
 		S_ChangeMusicInternal((encoremode ? "estart" : "kstart"), false); //S_StopMusic();
-	//S_ChangeMusicEx((encoremode ? "estart" : "kstart"), 0, false, mapmusposition, 0, 0);
 }
 
-void S_StartMapMusic(boolean restore)
+void S_StartMapMusic(void)
 {
-	//no need to constantly run this after race has started
+	// no need to constantly run this after race has started
 	if (leveltime > MUSICSTARTTIME)
 		return;
 
-	if (keepmusic && !restore) // make sure this doesent kill the music when its called from P_RestoreMusic in some cases
+	if (keepmapmusic)
+	{
 		return;
+	}
 
 	if (skipintromus)
 	{
 		if (leveltime < starttime)
-			S_ChangeMusicEx(mapmusname, mapmusflags, true, mapmusposition, 0, 0);
-		if (leveltime == MUSICSTARTTIME)
+			S_ChangeMusicEx(mapmusic.name, mapmusic.flags, true, mapmusic.position, 0, 0);
+		else if (leveltime == MUSICSTARTTIME)
 			S_ShowMusicCredit();
+
 		return;
 	}
 
@@ -2300,7 +2107,7 @@ void S_StartMapMusic(boolean restore)
 		S_StopMusic();
 	else if (leveltime == MUSICSTARTTIME) // Plays the music after the starting countdown.
 	{
-		S_ChangeMusicEx(mapmusname, mapmusflags, true, mapmusposition, 0, 0);
+		S_ChangeMusicEx(mapmusic.name, mapmusic.flags, true, mapmusic.position, 0, 0);
 		S_ShowMusicCredit();
 	}
 }
@@ -2316,6 +2123,8 @@ void S_RestartMusic(void)
 #else
 	S_SetMusicVolume(cv_digmusicvolume.value, cv_midimusicvolume.value);
 #endif
+
+	S_ResetKeepAndSpecialMus();
 
 	if (Playing()) // Gotta make sure the player is in a level
 		P_RestoreMusic(&players[consoleplayer]);
@@ -2348,7 +2157,7 @@ static void Command_Tunes_f(void)
 	if (!strcasecmp(tunearg, "-show"))
 	{
 		CONS_Printf(M_GetText("The current tune is: %s [track %d]\n"),
-			mapmusname, (mapmusflags & MUSIC_TRACKMASK));
+			mapmusic.name, (mapmusic.flags & MUSIC_TRACKMASK));
 		return;
 	}
 	if (!strcasecmp(tunearg, "-none"))
@@ -2376,19 +2185,19 @@ static void Command_Tunes_f(void)
 		track = (UINT16)atoi(COM_Argv(2))-1;
 
 	if (tunenum)
-		snprintf(mapmusname, 7, "%sM", G_BuildMapName(tunenum));
+		snprintf(mapmusic.name, 7, "%sM", G_BuildMapName(tunenum));
 	else
-		strncpy(mapmusname, tunearg, 7);
+		strncpy(mapmusic.name, tunearg, 7);
 
 	if (argc > 4)
 		position = (UINT32)atoi(COM_Argv(4));
 
-	mapmusname[6] = 0;
-	mapmusflags = (track & MUSIC_TRACKMASK);
-	mapmusposition = position;
-	mapmusresume = 0;
+	mapmusic.name[6] = 0;
+	mapmusic.flags = (track & MUSIC_TRACKMASK);
+	mapmusic.position = position;
+	mapmusic.resume = 0;
 
-	S_ChangeMusicEx(mapmusname, mapmusflags, true, mapmusposition, 0, 0);
+	S_ChangeMusicEx(mapmusic.name, mapmusic.flags, true, mapmusic.position, 0, 0);
 
 	if (argc > 3)
 	{
@@ -2421,6 +2230,8 @@ static void Command_RestartAudio_f(void)
 
 	S_StartSound(NULL, sfx_strpst);
 
+	S_ResetKeepAndSpecialMus();
+
 	if (Playing()) // Gotta make sure the player is in a level
 		P_RestoreMusic(&players[consoleplayer]);
 	else
@@ -2434,7 +2245,7 @@ static void Command_RestartMusic_f(void) //same as RestartAudio but only music g
 
 static void Command_ShowMusicCredit_f(void)
 {
-	const char *musname = music_name;
+	const char *musname = music.name;
 
 	if (COM_Argc() > 1)
 	{
@@ -2497,6 +2308,8 @@ static void GameDigiMusic_OnChange(void)
 		digital_disabled = false;
 		I_StartupSound(); // will return early if initialised
 		I_InitMusic();
+
+		S_ResetKeepAndSpecialMus();
 
 		if (Playing())
 			P_RestoreMusic(&players[consoleplayer]);
@@ -2583,6 +2396,9 @@ static void GameMIDIMusic_OnChange(void)
 	{
 		midi_disabled = false;
 		I_InitMusic();
+
+		S_ResetKeepAndSpecialMus();
+
 		if (Playing())
 			P_RestoreMusic(&players[consoleplayer]);
 		else

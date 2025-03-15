@@ -17,6 +17,7 @@
 #include "doomdef.h"
 #include "doomstat.h"
 #include "d_event.h"
+#include "p_saveg.h"
 #include "m_textinput.h"
 
 extern char gamedatafilename[64];
@@ -33,7 +34,7 @@ extern INT32 player_name_changes[MAXPLAYERS];
 extern player_t players[MAXPLAYERS];
 extern boolean playeringame[MAXPLAYERS];
 
-extern UINT8 *demo_p;
+extern savebuffer_t demobuf;
 
 // ======================================
 // DEMO playback/recording related stuff.
@@ -65,9 +66,6 @@ struct demovars_s {
 		DSM_WILLSAVE,
 		DSM_SAVED
 	} savemode;
-
-	boolean freecam;
-
 };
 
 extern struct demovars_s demo;
@@ -117,15 +115,24 @@ extern consvar_t cv_songcredits;
 extern consvar_t cv_showfreeplay;
 extern consvar_t cv_growmusic, cv_supermusic;
 extern consvar_t cv_pauseifunfocused;
-//extern consvar_t cv_crosshair, cv_crosshair2, cv_crosshair3, cv_crosshair4;
-extern consvar_t cv_invertmouse/*, cv_alwaysfreelook, cv_chasefreelook, cv_mousemove*/;
-extern consvar_t cv_invertmouse2/*, cv_alwaysfreelook2, cv_chasefreelook2, cv_mousemove2*/;
-extern consvar_t cv_useranalog, cv_useranalog2, cv_useranalog3, cv_useranalog4;
-extern consvar_t cv_analog, cv_analog2, cv_analog3, cv_analog4;
-extern consvar_t cv_turnaxis,cv_moveaxis,cv_brakeaxis,cv_aimaxis,cv_lookaxis,cv_fireaxis,cv_driftaxis,cv_lookbackaxis,cv_custom1axis,cv_custom2axis,cv_custom3axis,cv_xdeadzone,cv_ydeadzone;
-extern consvar_t cv_turnaxis2,cv_moveaxis2,cv_brakeaxis2,cv_aimaxis2,cv_lookaxis2,cv_fireaxis2,cv_driftaxis2,cv_lookbackaxis2,cv_custom1axis2,cv_custom2axis2,cv_custom3axis2,cv_xdeadzone2,cv_ydeadzone2;
-extern consvar_t cv_turnaxis3,cv_moveaxis3,cv_brakeaxis3,cv_aimaxis3,cv_lookaxis3,cv_fireaxis3,cv_driftaxis3,cv_lookbackaxis3,cv_custom1axis3,cv_custom2axis3,cv_custom3axis3,cv_xdeadzone3,cv_ydeadzone3;
-extern consvar_t cv_turnaxis4,cv_moveaxis4,cv_brakeaxis4,cv_aimaxis4,cv_lookaxis4,cv_fireaxis4,cv_driftaxis4,cv_lookbackaxis4,cv_custom1axis4,cv_custom2axis4,cv_custom3axis4,cv_xdeadzone4,cv_ydeadzone4;
+extern consvar_t cv_invertmouse;
+
+extern consvar_t cv_turnaxis[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_moveaxis[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_camturnaxis[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_camstrafeaxis[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_brakeaxis[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_aimaxis[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_lookaxis[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_lookbackaxis[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_fireaxis[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_driftaxis[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_custom1axis[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_custom2axis[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_custom3axis[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_xdeadzone[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_ydeadzone[MAXSPLITSCREENPLAYERS];
+
 extern consvar_t cv_ghost_besttime, cv_ghost_bestlap, cv_ghost_last, cv_ghost_guest, cv_ghost_staff;
 
 // Hud offsets
@@ -139,24 +146,27 @@ extern consvar_t cv_##name##_yoffset;
 DECL_HUD_OFFSET_X(name)\
 DECL_HUD_OFFSET_Y(name)
 
-DECL_HUD_OFFSET(item); // Item box
-DECL_HUD_OFFSET(time); // Time
-DECL_HUD_OFFSET(laps); // Number of laps
-DECL_HUD_OFFSET(dnft); // Countdown (did not finish timer)
-DECL_HUD_OFFSET(speed); // Speedometer
-DECL_HUD_OFFSET(posi); // Position in race
-DECL_HUD_OFFSET(face); // Mini rankings
-DECL_HUD_OFFSET(stcd); // Starting countdown
+DECL_HUD_OFFSET(item);   // Item box
+DECL_HUD_OFFSET(time);   // Time
+DECL_HUD_OFFSET(laps);   // Number of laps
+DECL_HUD_OFFSET(dnft);   // Countdown (did not finish timer)
+DECL_HUD_OFFSET(speed);  // Speedometer
+DECL_HUD_OFFSET(posi);   // Position in race
+DECL_HUD_OFFSET(wheel);  // RA Wheel
+DECL_HUD_OFFSET(face);   // Mini rankings
+DECL_HUD_OFFSET(stcd);   // Starting countdown
 DECL_HUD_OFFSET_Y(chek); // Check gfx
-DECL_HUD_OFFSET(mini); // Minimap
-DECL_HUD_OFFSET(want); // Wanted
-DECL_HUD_OFFSET(stat); // Stats
+DECL_HUD_OFFSET(mini);   // Minimap
+DECL_HUD_OFFSET(want);   // Wanted
+DECL_HUD_OFFSET(stat);   // Stats
 
 #undef DECL_HUD_OFFSET
 #undef DECL_HUD_OFFSET_X
 #undef DECL_HUD_OFFSET_Y
 
 extern consvar_t cv_showinput;
+extern consvar_t cv_posanim;
+extern consvar_t cv_smallposnum;
 extern consvar_t cv_newspeedometer;
 
 extern consvar_t cv_saltyhop;
@@ -166,7 +176,6 @@ extern consvar_t cv_saltysquish;
 extern consvar_t cv_driftsparkpulse;
 extern consvar_t cv_gravstretch;
 extern consvar_t cv_sloperoll;
-extern consvar_t cv_spriteroll;
 extern consvar_t cv_sliptideroll;
 extern consvar_t cv_slamsound;
 extern consvar_t cv_sloperolldist;
@@ -183,6 +192,8 @@ typedef enum
 	AXISNONE = 0,
 	AXISTURN,
 	AXISMOVE,
+	AXISCAMTURN,
+	AXISCAMSTRAFE,
 	AXISBRAKE,
 	AXISAIM,
 	AXISLOOK,
@@ -219,8 +230,6 @@ INT32 JoyAxis(axis_input_e axissel, UINT8 p);
 extern angle_t localangle[MAXSPLITSCREENPLAYERS];
 extern INT32 localaiming[MAXSPLITSCREENPLAYERS]; // should be an angle_t but signed
 extern boolean camspin[MAXSPLITSCREENPLAYERS]; // SRB2Kart
-
-extern tic_t directortoggletimer;
 
 //
 // GAME
@@ -266,7 +275,6 @@ void G_SpawnPlayer(INT32 playernum, boolean starpost);
 // A normal game starts at map 1, but a warp test can start elsewhere
 void G_DeferedInitNew(boolean pencoremode, const char *mapname, INT32 pickedchar,
 	UINT8 ssplayers, boolean FLS);
-void G_DoLoadLevel(boolean resetplayer);
 
 void G_LoadDemoInfo(menudemo_t *pdemo);
 void G_LoadDemoTitle(menudemo_t *pdemo); // For use in replay search feature
@@ -356,6 +364,7 @@ extern demoghost *ghosts;
 #define DFILE_ERROR_CANNOTLOAD           0x04 // Files are missing and cannot be loaded.
 #define DFILE_ERROR_EXTRAFILES           0x05 // Extra files outside of the replay's file list are loaded.
 
+void G_ResetDemoRecording(void);
 void G_DoPlayDemo(char *defdemoname);
 void G_TimeDemo(const char *name);
 void G_AddGhost(char *defdemoname);
@@ -423,18 +432,39 @@ void G_ClearRecords(void);
 
 tic_t G_GetBestTime(INT16 map);
 
-FUNCMATH INT32 G_TicsToHours(tic_t tics);
-FUNCMATH INT32 G_TicsToMinutes(tic_t tics, boolean full);
-FUNCMATH INT32 G_TicsToSeconds(tic_t tics);
-FUNCMATH INT32 G_TicsToCentiseconds(tic_t tics);
-FUNCMATH INT32 G_TicsToMilliseconds(tic_t tics);
+// Time utility functions
 
-boolean K_DirectorIsPlayerAlone(void); // idk where else to put this lol
+FUNCINLINE static ATTRINLINE FUNCMATH INT32 G_TicsToHours(tic_t tics)
+{
+	return tics/(3600*TICRATE);
+}
+
+FUNCINLINE static ATTRINLINE FUNCMATH INT32 G_TicsToMinutes(tic_t tics, boolean full)
+{
+	return full ? (tics/(60*TICRATE)) : (tics/(60*TICRATE)%60);
+}
+
+FUNCINLINE static ATTRINLINE FUNCMATH INT32 G_TicsToSeconds(tic_t tics)
+{
+	return (tics/TICRATE)%60;
+}
+
+FUNCINLINE static ATTRINLINE FUNCMATH INT32 G_TicsToCentiseconds(tic_t tics)
+{
+	return (INT32)((tics%TICRATE) * (100.00f/TICRATE));
+}
+
+FUNCINLINE static ATTRINLINE FUNCMATH INT32 G_TicsToMilliseconds(tic_t tics)
+{
+	return (INT32)((tics%TICRATE) * (1000.00f/TICRATE));
+}
 
 // Don't split up TOL handling
 INT16 G_TOLFlag(INT32 pgametype);
 
 INT16 G_RandMap(INT16 tolflags, INT16 pprevmap, boolean ignorebuffer, UINT8 maphell, boolean callagainsoon, INT16 *extbuffer);
 void G_AddMapToBuffer(INT16 map);
+
+void G_FixCamera(UINT8 view);
 
 #endif

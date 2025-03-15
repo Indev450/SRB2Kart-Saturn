@@ -64,10 +64,6 @@ void M_DrawTextBox(INT32 x, INT32 y, INT32 width, INT32 boxlines);
 // Same but with extra flags applied
 void M_DrawTextBoxFlags(INT32 x, INT32 y, INT32 width, INT32 boxlines, INT32 flags);
 
-// Draw text input
-typedef struct textinput_s textinput_t;
-void M_DrawTextInput(INT32 x, INT32 y, textinput_t *input, INT32 flags);
-
 // Used in d_netcmd to restart time attack
 void M_ModeAttackRetry(INT32 choice);
 
@@ -289,6 +285,9 @@ void Screenshot_option_Onchange(void);
 
 // Addons menu updating
 void Addons_option_Onchange(void);
+
+// Moviemode menu updating
+void Moviemode_option_Onchange(void);
 
 // Player distortion menu updating
 void PDistort_menu_Onchange(void);
