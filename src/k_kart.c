@@ -10700,27 +10700,35 @@ static void K_drawInput(void)
 		// kart does not have anything we can get analogue joystick y axis values from
 		// during normal gameplay, so replicate shit here
 		INT32 hudforward = 0; // for the stick input display :chaosleep:
-		const boolean analogjoystickmove = cv_usejoystick[stplyrnum].value && !Joystick[stplyrnum].bGamepadStyle;
-		const boolean gamepadjoystickmove = cv_usejoystick[stplyrnum].value && Joystick[stplyrnum].bGamepadStyle;
-		const UINT8 ssplayer = stplyrnum+1;
 
-		axis = JoyAxis(AXISAIM, ssplayer);
-
-		if (analogjoystickmove && axis != 0)
+		if (!demo.playback)
 		{
-			// JOYAXISRANGE is supposed to be 1023 (divide by 1024)
-			hudforward -= ((axis * KART_FULLTURN) / (JOYAXISRANGE-1));
+			const boolean analogjoystickmove = cv_usejoystick[stplyrnum].value && !Joystick[stplyrnum].bGamepadStyle;
+			const boolean gamepadjoystickmove = cv_usejoystick[stplyrnum].value && Joystick[stplyrnum].bGamepadStyle;
+			const UINT8 ssplayer = stplyrnum+1;
+
+			axis = JoyAxis(AXISAIM, ssplayer);
+
+			if (analogjoystickmove && axis != 0)
+			{
+				// JOYAXISRANGE is supposed to be 1023 (divide by 1024)
+				hudforward -= ((axis * KART_FULLTURN) / (JOYAXISRANGE-1));
+			}
+			else
+			{
+				if (InputDown(gc_aimforward, ssplayer) || (gamepadjoystickmove && axis < 0))
+				{
+					hudforward += KART_FULLTURN;
+				}
+				if (InputDown(gc_aimbackward, ssplayer) || (gamepadjoystickmove && axis > 0))
+				{
+					hudforward-= KART_FULLTURN;
+				}
+			}
 		}
-		else
+		else // this is horrid but we cant get actual input in replays so uhh
 		{
-			if (InputDown(gc_aimforward, ssplayer) || (gamepadjoystickmove && axis < 0))
-			{
-				hudforward += KART_FULLTURN;
-			}
-			if (InputDown(gc_aimbackward, ssplayer) || (gamepadjoystickmove && axis > 0))
-			{
-				hudforward-= KART_FULLTURN;
-			}
+			hudforward = stplyr->kartstuff[k_throwdir] * KART_FULLTURN;
 		}
 
 		hudforward = CLAMP(hudforward, -KART_FULLTURN, KART_FULLTURN);
