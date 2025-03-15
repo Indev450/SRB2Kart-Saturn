@@ -135,6 +135,7 @@ static CV_PossibleValue_t sloperoll_cons_t[] = {{0, "Off"}, {1, "Players"}, {2, 
 consvar_t cv_sloperoll = {"sloperoll", "Off", CV_SAVE|CV_CALL, sloperoll_cons_t, PDistort_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_sparkroll = {"sparkroll", "Off", CV_SAVE|CV_CALL, CV_OnOff, PDistort_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_sliptideroll = {"sliptideroll", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_spinoutroll = {"spinoutroll", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 //hardcode saltyhop mhhm
 static void saltyhop_onchange(void);
@@ -5397,8 +5398,6 @@ void K_KartPlayerHUDUpdate(player_t *player)
 		player->kartstuff[k_cardanimation] = 0;
 }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 static boolean K_SpeedLinesShouldBlend(player_t *player)
 {
 	fixed_t percentspeed = 0;
@@ -5474,13 +5473,7 @@ static inline void K_SpawnNormalSpeedLines(player_t *player, boolean synched)
 			fast->blendmode = AST_ADD;
 	}
 }
-=======
-#define SPINOUTROTSPEED (24 * FRACUNIT)
-#define MAXSPINROT (360 * FRACUNIT)
->>>>>>> 052dcb263 (Add a cvar for minimap icon spinouts)
 
-=======
->>>>>>> 432dcd3a3 (Refactor to prevent desynchs)
 /**	\brief	Decreases various kart timers and powers per frame. Called in P_PlayerThink in p_user.c
 
 	\param	player	player object passed from P_PlayerThink
@@ -5603,8 +5596,6 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		player->powers[pw_flashing]--;
 	}
 
-	player->doiconspin = 0;
-
 	if (player->kartstuff[k_spinouttimer])
 	{
 		if ((P_IsObjectOnGround(player->mo) || ((player->kartstuff[k_spinouttype]+1)/2 == 1)) // spinouttype 1 and 2 - explosion and spb
@@ -5616,8 +5607,6 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 			if (player->kartstuff[k_spinouttimer] == 0)
 				player->kartstuff[k_spinouttype] = 0; // Reset type
 		}
-
-		player->doiconspin = 1;
 	}
 	else
 	{
@@ -8811,7 +8800,9 @@ static void K_DrawKartPositionNum(INT32 num)
 	}
 
 	if (splitscreen || cv_smallposnum.value || wheeloffs)
+	{
 		scale /= 2;
+	}
 
 	W = FixedMul(W<<FRACBITS, scale)>>FRACBITS;
 
@@ -8900,7 +8891,9 @@ static void K_DrawKartPositionNum(INT32 num)
 			}
 		}
 		else
+		{
 			localpatch = kp_positionnum[num % 10][0];
+		}
 
 		V_DrawFixedPatch((fx<<FRACBITS) + ((overtake && flipdraw) ? (SHORT(localpatch->width)*scale/2) : 0), (fy<<FRACBITS) + ((overtake && flipvdraw) ? (SHORT(localpatch->height)*scale/2) : 0), scale, V_HUDTRANSHALF|fflags, localpatch, NULL);
 		// ^ if we overtake as p1 or p3 in splitscren, we shift it so that it doesn't go off screen.
@@ -10091,18 +10084,27 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 	// The number being divided by is for how fast it moves.
 	// The higher the number, the slower it moves.
 
-	// am xpos & ypos are the icon's starting position. Withouht
+	// am xpos & ypos are the icon's starting position. Without
 	// it, they wouldn't 'spawn' on the top-right side of the HUD.
 
-	UINT8 skin = 0;
-	boolean skinlocal = mo->skinlocal;
+	UINT8 skinnum = 0;
+	const boolean skinlocal = mo->skinlocal;
+	const skin_t *skin = (skin_t*)(mo->localskin ? mo->localskin : mo->skin);
 
 	fixed_t amnumxpos, amnumypos;
 	INT32 amxpos, amypos, wntdamxpos, wntdamypos;
 	fixed_t scale = FRACUNIT;
+	patch_t *minimaphead = NULL;
+
+#ifdef ROTSPRITE
+	angle_t rollangle = 0;
+	INT32 rot = 0;
+#endif
 
 	if (mo->skin)
-		skin = ((skin_t*)(mo->localskin ? mo->localskin : mo->skin))-(skinlocal ? localskins : skins);
+		skinnum = (skin-(skinlocal ? localskins : skins));
+
+	minimaphead = (skinlocal ? localfacemmapprefix : facemmapprefix)[skinnum];
 
 	amnumxpos = (FixedMul(lerp(mo->old_x, mo->x), minimapinfo.zoom) - minimapinfo.offs_x);
 	amnumypos = -(FixedMul(lerp(mo->old_y, mo->y), minimapinfo.zoom) - minimapinfo.offs_y);
@@ -10110,8 +10112,8 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 	if (encoremode)
 		amnumxpos = -amnumxpos;
 
-	amxpos = amnumxpos + ((x + (SHORT(minimapinfo.minimap_pic->width)-SHORT((skinlocal ? localfacemmapprefix : facemmapprefix)[skin]->width)) / 2)<<FRACBITS);
-	amypos = amnumypos + ((y + (SHORT(minimapinfo.minimap_pic->height)-SHORT((skinlocal ? localfacemmapprefix : facemmapprefix)[skin]->height)) / 2)<<FRACBITS);
+	amxpos = amnumxpos + ((x + (SHORT(minimapinfo.minimap_pic->width)-SHORT(minimaphead->width)) / 2)<<FRACBITS);
+	amypos = amnumypos + ((y + (SHORT(minimapinfo.minimap_pic->height)-SHORT(minimaphead->height)) / 2)<<FRACBITS);
 
 	if (cv_showminimapnames.value && mo->player && !(modeattacking || gamestate == GS_TIMEATTACK))
 	{
@@ -10125,61 +10127,38 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 
 	if (cv_minihead.value)
 	{
-		amxpos += (SHORT((skinlocal ? localfacemmapprefix : facemmapprefix)[skin]->width) / 4)<<FRACBITS;
-		amypos += (SHORT((skinlocal ? localfacemmapprefix : facemmapprefix)[skin]->height) / 4)<<FRACBITS;
+		amxpos += (SHORT(minimaphead->width) / 4)<<FRACBITS;
+		amypos += (SHORT(minimaphead->height) / 4)<<FRACBITS;
 		scale /= 2;
 	}
 
+#ifdef ROTSPRITE
+	if (cv_spinoutroll.value && mo->player)
+	{
+		// Rotate counterclockwise.
+		rollangle = FixedAngle(mo->player->spinoutrot * -1);
+		rot = R_GetRollAngle(rollangle);
+
+		if (rot)
+		{
+			minimaphead = W_CachePatchNameRotated(skin->facemmap, rot, PU_STATIC);
+		}
+	}
+#endif
+
 	if (!mo->color) // 'default' color
-		V_DrawSciencePatch(amxpos, amypos, flags, ((skinlocal) ? localfacemmapprefix : facemmapprefix)[skin], scale);
+		V_DrawSciencePatch(amxpos, amypos, flags, minimaphead, scale);
 	else
 	{
-		patch_t *minimaphead;
-		
-#ifdef ROTSPRITE
-		angle_t rollangle;
-		INT32 rot;
-
-		rot = 0;
-
-		if (mo->player)
-		{
-			// Rotate counterclockwise.
-			rollangle = FixedAngle(mo->player->spinoutrot * -1);
-			rot = R_GetRollAngle(rollangle);
-		}
-
-		if ((cv_spriteroll.value) && (cv_spinoutroll.value) && (rot))
-		{
-			minimaphead = W_CachePatchNameRotated(((skin_t*)(mo->localskin ? mo->localskin : mo->skin))->facemmap, rot, PU_STATIC);
-		}
-		else
-#endif
-		{
-			minimaphead = ((skinlocal) ? localfacemmapprefix : facemmapprefix)[skin];
-		}
 		UINT8 *colormap;
+
 		if (mo->colorized)
 			colormap = R_GetTranslationColormap(TC_RAINBOW, mo->color, GTC_CACHE);
 		else
 			colormap = R_GetLocalTranslationColormap(mo->skin, mo->localskin, mo->color, GTC_CACHE, skinlocal);
-<<<<<<< HEAD
 
-		V_DrawFixedPatch(amxpos, amypos, scale, flags, ((skinlocal) ? localfacemmapprefix : facemmapprefix)[skin], colormap);
+		V_DrawFixedPatch(amxpos, amypos, scale, flags, minimaphead, colormap);
 
-=======
-		
-		if (cv_minihead.value)
-			V_DrawFixedPatch(amxpos + (2*FRACUNIT), amypos + (2*FRACUNIT), FRACUNIT/2, flags, minimaphead, colormap);
-		else
-			V_DrawFixedPatch(amxpos, amypos, FRACUNIT, flags, minimaphead, colormap);
-		
-		if (cv_showminimapnames.value && !(modeattacking || gamestate == GS_TIMEATTACK))
-		{
-			const char *player_name = va("%c%s", V_GetSkincolorChar(mo->color), player_names[mo->player - players]);
-			V_DrawCenteredSmallStringAtFixed(amxpos + (4*FRACUNIT), amypos - (3*FRACUNIT), V_ALLOWLOWERCASE|flags, player_name);
-		}
->>>>>>> 052dcb263 (Add a cvar for minimap icon spinouts)
 		if (mo->player
 			&& ((G_RaceGametype() && mo->player->kartstuff[k_position] == spbplace)
 			|| (G_BattleGametype() && K_IsPlayerWanted(mo->player))))

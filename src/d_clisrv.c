@@ -108,7 +108,7 @@ UINT32 playerpingtable[MAXPLAYERS]; //table of player latency values.
 static tic_t reference_lag;
 static UINT8 spike_time;
 tic_t lowest_lag;
-tic_t simulated_lag; // just for ping readout without netticbuffer added
+tic_t simulated_lag;
 boolean server_lagless;
 
 static void Lagless_OnChange(void)
